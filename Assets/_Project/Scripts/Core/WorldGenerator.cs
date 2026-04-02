@@ -419,6 +419,18 @@ namespace ProjectC.Core
         [ContextMenu("Regenerate World")]
         public void RegenerateWorld()
         {
+            // Пытаемся загрузить настройки, если не назначены
+            if (settings == null)
+            {
+                settings = Resources.Load<WorldGenerationSettings>("WorldGenerationSettings");
+                
+                if (settings == null)
+                {
+                    Debug.LogWarning("[WorldGenerator] WorldGenerationSettings не найден. Создаются настройки по умолчанию.");
+                    settings = ScriptableObject.CreateInstance<WorldGenerationSettings>();
+                }
+            }
+            
             GenerateWorld();
         }
 

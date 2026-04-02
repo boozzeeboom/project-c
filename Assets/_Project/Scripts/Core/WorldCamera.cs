@@ -33,7 +33,7 @@ namespace ProjectC.Core
             // Принудительно устанавливаем высоту облаков, если значение слишком большое
             if (startHeight > 1000f)
             {
-                Debug.LogWarning($"[WorldCamera] StartHeight слишком большой ({startHeight}м), установлено 500м");
+                Debug.Log($"[WorldCamera] StartHeight был {startHeight}м, установлено 500м (уровень облаков)");
                 startHeight = 500f;
             }
         }

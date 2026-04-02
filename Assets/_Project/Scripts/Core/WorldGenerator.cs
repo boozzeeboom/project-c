@@ -179,56 +179,106 @@ namespace ProjectC.Core
             List<int> triangles = new List<int>();
             List<Vector3> normals = new List<Vector3>();
 
+            int segments = settings.peakDetail;
+            float angleStep = (Mathf.PI * 2) / segments;
+            
+            // Количество колец по высоте (каждые ~100м)
+            int rings = Mathf.Max(3, Mathf.CeilToInt(height / 100f));
+            
             // Вершина горы
             vertices.Add(new Vector3(0, height, 0));
             normals.Add(Vector3.up);
 
-            // Основание горы (круг с сегментами)
-            int segments = settings.peakDetail;
-            float angleStep = (Mathf.PI * 2) / segments;
+            // Генерируем кольца вершин по высоте
+            for (int ring = 1; ring < rings; ring++)
+            {
+                float t = ring / (float)rings; // 0..1
+                float ringY = height * (1 - t);
+                float ringRadius = radius * t;
+                
+                for (int i = 0; i < segments; i++)
+                {
+                    float angle = i * angleStep;
+                    float x = Mathf.Cos(angle) * ringRadius;
+                    float z = Mathf.Sin(angle) * ringRadius;
+                    
+                    // Шум для неровности
+                    float noise = Mathf.PerlinNoise(x * 0.01f + ring * 0.5f, z * 0.01f + ring * 0.5f) * 10f;
+                    
+                    vertices.Add(new Vector3(x, ringY + noise, z));
+                    normals.Add(Vector3.up);
+                }
+            }
 
+            // Основание горы
             for (int i = 0; i < segments; i++)
             {
                 float angle = i * angleStep;
                 float x = Mathf.Cos(angle) * radius;
                 float z = Mathf.Sin(angle) * radius;
                 
-                // Добавляем шум к высоте основания
                 float noise = Mathf.PerlinNoise(x * 0.01f, z * 0.01f) * 20f;
                 
                 vertices.Add(new Vector3(x, noise, z));
                 normals.Add(Vector3.up);
             }
 
-            // Треугольники от вершины к основанию
-            for (int i = 1; i < segments; i++)
+            // Треугольники между кольцами
+            int ringVertexCount = segments;
+            for (int ring = 0; ring < rings - 1; ring++)
             {
-                triangles.Add(0);
-                triangles.Add(i + 1);
-                triangles.Add(i);
+                int currentRingStart = 1 + (ring * segments);
+                int nextRingStart = 1 + ((ring + 1) * segments);
+                
+                for (int i = 0; i < segments; i++)
+                {
+                    int nextI = (i + 1) % segments;
+                    
+                    // Первый треугольник
+                    triangles.Add(currentRingStart + i);
+                    triangles.Add(currentRingStart + nextI);
+                    triangles.Add(nextRingStart + i);
+                    
+                    // Второй треугольник
+                    triangles.Add(currentRingStart + nextI);
+                    triangles.Add(nextRingStart + nextI);
+                    triangles.Add(nextRingStart + i);
+                }
             }
-            triangles.Add(0);
-            triangles.Add(1);
-            triangles.Add(segments);
 
-            // Основание горы (дно)
-            int baseVertex = vertices.Count;
-            vertices.Add(new Vector3(0, -50f, 0)); // Центр дна
+            // Соединяем последнее кольцо с основанием
+            int lastRingStart = 1 + ((rings - 2) * segments);
+            int baseStart = 1 + ((rings - 1) * segments);
             
             for (int i = 0; i < segments; i++)
             {
-                float angle = i * angleStep;
-                float x = Mathf.Cos(angle) * radius;
-                float z = Mathf.Sin(angle) * radius;
-                vertices.Add(new Vector3(x, -50f, z));
+                int nextI = (i + 1) % segments;
+                
+                triangles.Add(lastRingStart + i);
+                triangles.Add(lastRingStart + nextI);
+                triangles.Add(baseStart + i);
+                
+                triangles.Add(lastRingStart + nextI);
+                triangles.Add(baseStart + nextI);
+                triangles.Add(baseStart + i);
+            }
+
+            // Основание горы (дно)
+            int bottomCenter = vertices.Count;
+            vertices.Add(new Vector3(0, -50f, 0));
+            
+            int bottomRingStart = 1 + ((rings - 1) * segments);
+            for (int i = 0; i < segments; i++)
+            {
+                vertices.Add(vertices[bottomRingStart + i]);
             }
 
             // Треугольники дна
             for (int i = 1; i < segments; i++)
             {
-                triangles.Add(baseVertex);
-                triangles.Add(baseVertex + i);
-                triangles.Add(baseVertex + i + 1);
+                triangles.Add(bottomCenter);
+                triangles.Add(bottomCenter + i + 1);
+                triangles.Add(bottomCenter + i);
             }
 
             mesh.vertices = vertices.ToArray();

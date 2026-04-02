@@ -15,9 +15,6 @@ namespace ProjectC.UI
         [Header("Настройки")]
         [Tooltip("Показывать ли подсказки")]
         [SerializeField] private bool showHints = true;
-        
-        [Tooltip("Прозрачность фона")]
-        [SerializeField] private float backgroundAlpha = 0.7f;
 
         [Header("Цвета")]
         [SerializeField] private Color titleColor = Color.yellow;

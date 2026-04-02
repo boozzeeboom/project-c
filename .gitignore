@@ -1,0 +1,42 @@
+# Unity .gitignore Template
+# Source: https://github.com/github/gitignore/blob/main/Unity.gitignore
+
+# This .gitignore file should be placed at the root of your Unity project directory
+
+.utmp/
+/[Ll]ibrary/
+/[Tt]emp/
+/[Oo]bj/
+/[Bb]uild/
+/[Bb]uilds/
+/[Ll]ogs/
+/[Uu]ser[Ss]ettings/
+*.log
+
+# MemoryCaptures
+/[Mm]emoryCaptures/
+
+# Recordings
+/[Rr]ecordings/
+
+# Visual Studio
+.vs/
+*.csproj
+*.sln
+*.suo
+*.user
+
+# Mono
+mono_crash.*
+
+# Unity generated
+*.pidb
+*.pdb.meta
+*.mdb.meta
+
+# Addressables
+/ServerData
+/[Aa]ssets/StreamingAssets/aa*
+
+# Visual Scripting
+/[Aa]ssets/Unity.VisualScripting.Generated/

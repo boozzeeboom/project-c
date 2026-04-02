@@ -1,8 +1,43 @@
 # Qwen Code Context — Project C
 
-**Последнее обновление:** 2 апреля 2026 г.  
-**Ветка Git:** `qwen-dev`  
+**Последнее обновление:** 2 апреля 2026 г.
+**Ветка Git:** `qwen-dev`
 **Последний коммит:** `6a04f4a`
+
+---
+
+## 🚀 Быстрый старт
+
+### Команда для перезапуска Qwen с правильным контекстом:
+
+```
+Продолжи работу над Project C. Прочитай файлы QWEN_CONTEXT.md и MMO_Development_Plan.md
+```
+
+### Если что-то сломалось — откатиться:
+
+```bash
+git fetch upstream
+git reset --hard upstream/qwen-dev
+```
+
+### Создать резервную версию перед экспериментами:
+
+```bash
+git tag backup/$(date +%Y-%m-%d)
+git checkout -b test/new-feature
+```
+
+---
+
+## 📚 Документация по версиям и Git
+
+| Файл | Назначение |
+|------|------------|
+| [`GIT_WORKFLOW_ADVANCED.md`](GIT_WORKFLOW_ADVANCED.md) | **Продвинутый Git workflow** — ветки, коммиты, откаты |
+| [`VERSION_BACKUP.md`](VERSION_BACKUP.md) | **Резервное копирование** — как сохранять и восстанавливать версии |
+| [`GIT_WORKFLOW.md`](GIT_WORKFLOW.md) | Базовые Git команды (шпаргалка) |
+| [`QWEN_CONTEXT.md`](QWEN_CONTEXT.md) | Текущее состояние проекта (этот файл) |
 
 ---
 

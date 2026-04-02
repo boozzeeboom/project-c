@@ -10,7 +10,8 @@ namespace ProjectC.UI
     public class ControlHintsUI : MonoBehaviour
     {
         [Header("Ссылки на UI элементы")]
-        [SerializeField] private TextMeshProUGUI hintsText;
+        [Tooltip("Текст подсказок")]
+        public TextMeshProUGUI hintsText;
         
         [Header("Настройки")]
         [Tooltip("Показывать ли подсказки")]

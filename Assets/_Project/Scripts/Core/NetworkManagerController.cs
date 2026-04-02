@@ -13,9 +13,6 @@ namespace ProjectC.Core
         [SerializeField] private string serverIp = "127.0.0.1";
         [SerializeField] private ushort serverPort = 7777;
 
-        [Header("Настройки клиента")]
-        [SerializeField] private float connectionTimeout = 30f;
-
         private Unity.Netcode.NetworkManager networkManager;
 
         private void Awake()
@@ -58,9 +55,10 @@ namespace ProjectC.Core
             ushort targetPort = port == 0 ? serverPort : port;
 
             networkManager.NetworkConfig.ConnectAddress = targetIp;
-            networkManager.StartClient();
             
             Debug.Log($"[Client] Подключение к {targetIp}:{targetPort}");
+            
+            networkManager.StartClient();
         }
 
         /// <summary>

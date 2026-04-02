@@ -9,9 +9,6 @@ namespace ProjectC.Player
     /// </summary>
     public class NetworkPlayer : NetworkBehaviour
     {
-        [Header("Настройки синхронизации")]
-        [SerializeField] private float positionSyncThreshold = 0.01f;
-        
         // NetworkObject для этого игрока
         private NetworkObject networkObject;
 
@@ -40,7 +37,7 @@ namespace ProjectC.Player
         /// <summary>
         /// Проверка: это локальный игрок?
         /// </summary>
-        public bool IsLocalPlayer => IsOwner;
+        public new bool IsLocalPlayer => IsOwner;
 
         /// <summary>
         /// Получить ClientId владельца

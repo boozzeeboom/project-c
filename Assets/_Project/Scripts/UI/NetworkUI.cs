@@ -22,7 +22,7 @@ namespace ProjectC.UI
         private void Awake()
         {
             // Находим Network Manager
-            networkManagerController = FindObjectOfType<NetworkManagerController>();
+            networkManagerController = FindFirstObjectByType<NetworkManagerController>();
 
             if (networkManagerController == null)
             {

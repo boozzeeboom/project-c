@@ -39,26 +39,33 @@ namespace ProjectC.Core
         [Range(32, 128)]
         public int peakDetail = 64;
 
-        [Header("☁️ Облачный слой")]
+        [Header("☁️ Облачный слой (Legacy)")]
         [Tooltip("Высота облачного слоя (уровень 'нижнего мира')")]
-        [Range(0f, 500f)]
-        public float cloudLayerHeight = 200f;
-        
+        [Range(0f, 2000f)]
+        public float cloudLayerHeight = 1500f;
+
         [Tooltip("Толщина облачного слоя")]
-        [Range(50f, 300f)]
-        public float cloudLayerThickness = 100f;
-        
+        [Range(50f, 3000f)]
+        public float cloudLayerThickness = 2500f;
+
         [Tooltip("Плотность облаков (0-1)")]
         [Range(0.1f, 1f)]
         public float cloudDensity = 0.7f;
-        
+
         [Tooltip("Размер одного облака")]
         [Range(20f, 200f)]
-        public float cloudSize = 80f;
-        
+        public float cloudSize = 100f;
+
         [Tooltip("Вариативность размера облаков")]
         [Range(0.5f, 2f)]
-        public float cloudSizeVariation = 1.5f;
+        public float cloudSizeVariation = 2f;
+
+        [Header("☁️ Новая система облаков")]
+        [Tooltip("Префаб CloudSystem для генерации облаков")]
+        public GameObject cloudSystemPrefab;
+        
+        [Tooltip("Ссылка на CloudSystem (находится автоматически)")]
+        public CloudSystem cloudSystem;
 
         [Header("🎨 Материалы")]
         [Tooltip("Материал для горных пиков")]

@@ -40,3 +40,7 @@ mono_crash.*
 
 # Visual Scripting
 /[Aa]ssets/Unity.VisualScripting.Generated/
+
+# Unity Package Manager
+/[Aa]ssets/Resources/
+/[Aa]ssets/MobileDependencyResolver/

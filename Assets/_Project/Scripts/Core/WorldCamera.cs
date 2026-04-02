@@ -17,9 +17,6 @@ namespace ProjectC.Core
         
         [Tooltip("Высота камеры")]
         [SerializeField] private float height = 5f;
-        
-        [Tooltip("Скорость поворота камеры")]
-        [SerializeField] private float rotationSpeed = 5f;
 
         [Header("Настройки полёта")]
         [Tooltip("Скорость движения камеры в режиме полёта")]

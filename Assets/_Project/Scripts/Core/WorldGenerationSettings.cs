@@ -36,8 +36,8 @@ namespace ProjectC.Core
         public float maxPeakRadius = 800f;
         
         [Tooltip("Детализация меша пика (количество сегментов)")]
-        [Range(16, 64)]
-        public int peakDetail = 32;
+        [Range(32, 128)]
+        public int peakDetail = 64;
 
         [Header("☁️ Облачный слой")]
         [Tooltip("Высота облачного слоя (уровень 'нижнего мира')")]

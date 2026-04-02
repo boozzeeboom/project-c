@@ -46,7 +46,7 @@
 
 ## 🔗 Git информация
 
-**Ветка для работы:** `qwen-code-f3dbb381-a66e-4c3f-8475-937fd11685bb`
+**Ветка для работы:** `qwen-dev`
 
 **Remote:**
 - `upstream` — основной репозиторий: `https://github.com/boozzeeboom/project-c.git`
@@ -156,5 +156,5 @@ git push upstream qwen-code-f3dbb381-a66e-4c3f-8475-937fd11685bb
 ---
 
 **Последнее обновление:** 2 апреля 2026 г.
-**Ветка:** `qwen-code-f3dbb381-a66e-4c3f-8475-937fd11685bb`
-**Последний коммит:** `21ee93a`
+**Ветка:** `qwen-dev`
+**Последний коммит:** `b0e3025`

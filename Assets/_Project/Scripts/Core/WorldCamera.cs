@@ -1,4 +1,6 @@
 using UnityEngine;
+using UnityEngine.UI;
+using TMPro;
 
 namespace ProjectC.Core
 {
@@ -88,6 +90,9 @@ namespace ProjectC.Core
             transform.position = new Vector3(0, startHeight, 0);
             Debug.Log($"[WorldCamera] Стартовая высота: {startHeight}м");
 
+            // Создаём UI подсказок автоматически, если нет на сцене
+            CreateControlHintsUI();
+
             // Устанавливаем стартовую позицию
             if (flyToFirstPeakOnStart && worldGenerator != null)
             {
@@ -98,6 +103,55 @@ namespace ProjectC.Core
                     TeleportToPeak(0);
                 }
             }
+        }
+
+        /// <summary>
+        /// Создать UI подсказок автоматически
+        /// </summary>
+        private void CreateControlHintsUI()
+        {
+            // Проверяем, есть ли уже ControlHintsUI на сцене
+            var existingHints = FindAnyObjectByType<ControlHintsUI>();
+            if (existingHints != null)
+            {
+                Debug.Log("[WorldCamera] ControlHintsUI уже существует на сцене");
+                return;
+            }
+
+            // Создаём Canvas если нет
+            var canvas = FindAnyObjectByType<Canvas>();
+            if (canvas == null)
+            {
+                GameObject canvasObj = new GameObject("Canvas");
+                canvas = canvasObj.AddComponent<Canvas>();
+                canvasObj.AddComponent<UnityEngine.UI.CanvasScaler>();
+                canvasObj.AddComponent<UnityEngine.UI.GraphicRaycaster>();
+                canvas.renderMode = RenderMode.ScreenSpaceOverlay;
+                Debug.Log("[WorldCamera] Создан Canvas");
+            }
+
+            // Создаём TextMeshPro
+            var textObj = new GameObject("ControlHintsText");
+            textObj.transform.SetParent(canvas.transform);
+            RectTransform rectTransform = textObj.AddComponent<RectTransform>();
+            rectTransform.anchorMin = new Vector2(0, 1);
+            rectTransform.anchorMax = new Vector2(0, 1);
+            rectTransform.pivot = new Vector2(0, 1);
+            rectTransform.anchoredPosition = new Vector2(20, -20);
+            rectTransform.sizeDelta = new Vector2(300, 400);
+
+            var tmpText = textObj.AddComponent<TextMeshProUGUI>();
+            tmpText.fontSize = 14;
+            tmpText.color = Color.white;
+            tmpText.alignment = TextAlignmentOptions.TopLeft;
+
+            // Создаём ControlHintsUI
+            GameObject hintsObj = new GameObject("ControlHintsUI");
+            hintsObj.transform.SetParent(canvas.transform);
+            var controlHints = hintsObj.AddComponent<ControlHintsUI>();
+            controlHints.hintsText = tmpText;
+
+            Debug.Log("[WorldCamera] Создан ControlHintsUI автоматически");
         }
 
         private void LateUpdate()

@@ -13,35 +13,52 @@ namespace ProjectC.Core
         [SerializeField] private Transform target;
         
         [Tooltip("Дистанция до цели")]
-        [SerializeField] private float distance = 10f;
+        [SerializeField] private float distance = 50f;
         
         [Tooltip("Высота камеры")]
-        [SerializeField] private float height = 5f;
+        [SerializeField] private float height = 20f;
+
+        [Header("Стартовая позиция")]
+        [Tooltip("Начальная высота камеры при старте")]
+        [SerializeField] private float startHeight = 5000f;
+        
+        [Tooltip("Автоматически лететь к первому пику при старте")]
+        [SerializeField] private bool flyToFirstPeakOnStart = true;
 
         [Header("Настройки полёта")]
         [Tooltip("Скорость движения камеры в режиме полёта")]
-        [SerializeField] private float flySpeed = 20f;
+        [SerializeField] private float flySpeed = 100f;
         
         [Tooltip("Ускорение в режиме полёта")]
-        [SerializeField] private float flyAcceleration = 5f;
+        [SerializeField] private float flyAcceleration = 10f;
+        
+        [Tooltip("Максимальная скорость")]
+        [SerializeField] private float maxSpeed = 500f;
 
         [Header("Настройки вращения")]
         [Tooltip("Чувствительность мыши по горизонтали")]
-        [SerializeField] private float mouseSensitivityX = 2f;
+        [SerializeField] private float mouseSensitivityX = 3f;
         
         [Tooltip("Чувствительность мыши по вертикали")]
-        [SerializeField] private float mouseSensitivityY = 2f;
+        [SerializeField] private float mouseSensitivityY = 3f;
         
         [Tooltip("Минимальный угол обзора по вертикали")]
-        [SerializeField] private float minVerticalAngle = -80f;
+        [SerializeField] private float minVerticalAngle = -89f;
         
         [Tooltip("Максимальный угол обзора по вертикали")]
-        [SerializeField] private float maxVerticalAngle = 80f;
+        [SerializeField] private float maxVerticalAngle = 89f;
+
+        [Header("Быстрое перемещение")]
+        [Tooltip("Скорость телепортации к пику")]
+        [SerializeField] private float teleportSpeed = 200f;
 
         private float currentX = 0f;
         private float currentY = 0f;
         private Vector3 currentVelocity = Vector3.zero;
         private bool isFlying = true;
+        private bool isTeleporting = false;
+        private Vector3 teleportTarget = Vector3.zero;
+        private WorldGenerator worldGenerator;
 
         private void Start()
         {
@@ -53,10 +70,40 @@ namespace ProjectC.Core
             Vector3 angles = transform.eulerAngles;
             currentX = angles.y;
             currentY = angles.x;
+
+            // Находим WorldGenerator для получения списка пиков
+            worldGenerator = FindObjectOfType<WorldGenerator>();
+
+            // Устанавливаем стартовую позицию
+            if (flyToFirstPeakOnStart && worldGenerator != null)
+            {
+                var peaks = worldGenerator.GetAllPeaks();
+                if (peaks.Count > 0)
+                {
+                    // Телепорт к первому пику
+                    TeleportToPeak(0);
+                }
+                else
+                {
+                    // Если пиков нет, просто поднимаем камеру
+                    transform.position = new Vector3(0, startHeight, 0);
+                }
+            }
+            else
+            {
+                transform.position = new Vector3(0, startHeight, 0);
+            }
         }
 
         private void LateUpdate()
         {
+            // Обработка телепортации
+            if (isTeleporting)
+            {
+                HandleTeleport();
+                return;
+            }
+
             if (target != null)
             {
                 FollowTarget();
@@ -64,6 +111,72 @@ namespace ProjectC.Core
             
             HandleRotation();
             HandleMovement();
+            HandleHotkeys();
+        }
+
+        /// <summary>
+        /// Обработка телепортации к пику
+        /// </summary>
+        private void HandleTeleport()
+        {
+            transform.position = Vector3.MoveTowards(transform.position, teleportTarget, teleportSpeed * Time.deltaTime);
+            
+            if (Vector3.Distance(transform.position, teleportTarget) < 1f)
+            {
+                isTeleporting = false;
+                Debug.Log("[WorldCamera] Телепортация завершена");
+            }
+        }
+
+        /// <summary>
+        /// Горячие клавиши для управления
+        /// </summary>
+        private void HandleHotkeys()
+        {
+            // Переключение режима полёта (F)
+            if (Input.GetKeyDown(KeyCode.F))
+            {
+                ToggleFlyMode();
+            }
+
+            // Телепорт к следующему пику (N или PageUp)
+            if (Input.GetKeyDown(KeyCode.N) || Input.GetKeyDown(KeyCode.PageUp))
+            {
+                TeleportToNextPeak();
+            }
+
+            // Телепорт к предыдущему пику (B или PageDown)
+            if (Input.GetKeyDown(KeyCode.B) || Input.GetKeyDown(KeyCode.PageDown))
+            {
+                TeleportToPreviousPeak();
+            }
+
+            // Телепорт к случайному пику (R)
+            if (Input.GetKeyDown(KeyCode.R))
+            {
+                TeleportToRandomPeak();
+            }
+
+            // Возврат на высокую позицию (H)
+            if (Input.GetKeyDown(KeyCode.H))
+            {
+                transform.position = new Vector3(
+                    transform.position.x,
+                    2000f,
+                    transform.position.z
+                );
+                Debug.Log("[WorldCamera] Возврат на высоту");
+            }
+
+            // Ускорение (Left Shift)
+            if (Input.GetKey(KeyCode.LeftShift))
+            {
+                flySpeed = maxSpeed;
+            }
+            else
+            {
+                flySpeed = 100f;
+            }
         }
 
         /// <summary>
@@ -149,6 +262,73 @@ namespace ProjectC.Core
         public void SetFlyMode(bool flying)
         {
             isFlying = flying;
+        }
+
+        /// <summary>
+        /// Телепортация к пику по индексу
+        /// </summary>
+        public void TeleportToPeak(int peakIndex)
+        {
+            if (worldGenerator == null)
+            {
+                Debug.LogWarning("[WorldCamera] WorldGenerator не найден!");
+                return;
+            }
+
+            var peaks = worldGenerator.GetAllPeaks();
+            if (peakIndex >= 0 && peakIndex < peaks.Count)
+            {
+                var peak = peaks[peakIndex];
+                teleportTarget = peak.position + Vector3.up * (peak.height * 0.5f);
+                transform.position = teleportTarget;
+                isTeleporting = false;
+                
+                Debug.Log($"[WorldCamera] Телепорт к пику {peakIndex}: {peak.name} (высота: {peak.height:F0}м)");
+            }
+        }
+
+        /// <summary>
+        /// Телепорт к следующему пику
+        /// </summary>
+        private int currentPeakIndex = -1;
+        
+        public void TeleportToNextPeak()
+        {
+            if (worldGenerator == null) return;
+            
+            var peaks = worldGenerator.GetAllPeaks();
+            if (peaks.Count == 0) return;
+            
+            currentPeakIndex = (currentPeakIndex + 1) % peaks.Count;
+            TeleportToPeak(currentPeakIndex);
+        }
+
+        /// <summary>
+        /// Телепорт к предыдущему пику
+        /// </summary>
+        public void TeleportToPreviousPeak()
+        {
+            if (worldGenerator == null) return;
+            
+            var peaks = worldGenerator.GetAllPeaks();
+            if (peaks.Count == 0) return;
+            
+            currentPeakIndex = (currentPeakIndex - 1 + peaks.Count) % peaks.Count;
+            TeleportToPeak(currentPeakIndex);
+        }
+
+        /// <summary>
+        /// Телепорт к случайному пику
+        /// </summary>
+        public void TeleportToRandomPeak()
+        {
+            if (worldGenerator == null) return;
+            
+            var peaks = worldGenerator.GetAllPeaks();
+            if (peaks.Count == 0) return;
+            
+            currentPeakIndex = Random.Range(0, peaks.Count);
+            TeleportToPeak(currentPeakIndex);
         }
     }
 }

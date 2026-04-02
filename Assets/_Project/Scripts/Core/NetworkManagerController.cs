@@ -1,4 +1,5 @@
 using Unity.Netcode;
+using Unity.Netcode.Transports.UTP;
 using UnityEngine;
 
 namespace ProjectC.Core
@@ -54,10 +55,15 @@ namespace ProjectC.Core
             string targetIp = string.IsNullOrEmpty(ipAddress) ? serverIp : ipAddress;
             ushort targetPort = port == 0 ? serverPort : port;
 
-            networkManager.NetworkConfig.ConnectAddress = targetIp;
-            
+            // Устанавливаем адрес подключения через NetworkManager
+            var transport = networkManager.NetworkConfig.NetworkTransport;
+            if (transport is Unity.Netcode.Transports.UTP.UnityTransport unityTransport)
+            {
+                unityTransport.SetConnectionData(targetIp, targetPort);
+            }
+
             Debug.Log($"[Client] Подключение к {targetIp}:{targetPort}");
-            
+
             networkManager.StartClient();
         }
 

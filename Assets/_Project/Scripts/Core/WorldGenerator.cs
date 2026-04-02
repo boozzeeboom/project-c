@@ -5,7 +5,7 @@ namespace ProjectC.Core
 {
     /// <summary>
     /// Процедурный генератор мира Project C
-    /// Генерирует облачные острова с помощью шума Перлина
+    /// Концепция: обширный мир с горными пиками над плотным облачным слоем
     /// </summary>
     public class WorldGenerator : MonoBehaviour
     {
@@ -13,15 +13,32 @@ namespace ProjectC.Core
         [SerializeField] private WorldGenerationSettings settings;
         
         [Header("Ссылки")]
-        [SerializeField] private Transform islandsParent;
+        [SerializeField] private Transform peaksParent;
         [SerializeField] private Transform cloudsParent;
+        [SerializeField] private Transform minorIslandsParent;
 
         [Header("Рандомизация")]
         [SerializeField] private int seed = 0;
         [SerializeField] private bool randomizeSeed = true;
 
-        private List<GameObject> generatedIslands = new List<GameObject>();
+        [Header("Информация о мире")]
+        [SerializeField] private List<PeakInfo> generatedPeaks = new List<PeakInfo>();
+
         private List<GameObject> generatedClouds = new List<GameObject>();
+        private List<GameObject> generatedMinorIslands = new List<GameObject>();
+
+        /// <summary>
+        /// Информация о сгенерированном пике
+        /// </summary>
+        [System.Serializable]
+        public class PeakInfo
+        {
+            public string name;
+            public Vector3 position;
+            public float height;
+            public float radius;
+            public GameObject gameObject;
+        }
 
         private void Start()
         {
@@ -33,7 +50,6 @@ namespace ProjectC.Core
                 if (settings == null)
                 {
                     Debug.LogWarning("[WorldGenerator] WorldGenerationSettings не найден. Используются настройки по умолчанию.");
-                    // Создаём настройки по умолчанию программно
                     settings = ScriptableObject.CreateInstance<WorldGenerationSettings>();
                 }
             }
@@ -45,6 +61,8 @@ namespace ProjectC.Core
             
             Random.InitState(seed);
             Debug.Log($"[WorldGenerator] Seed: {seed}");
+            Debug.Log($"[WorldGenerator] Радиус мира: {settings.worldRadius}м");
+            Debug.Log($"[WorldGenerator] Количество пиков: {settings.peakCount}");
 
             GenerateWorld();
         }
@@ -62,110 +80,156 @@ namespace ProjectC.Core
                 return;
             }
 
-            GenerateIslands();
+            Debug.Log("[WorldGenerator] Генерация горных пиков...");
+            GeneratePeaks();
+            
+            Debug.Log("[WorldGenerator] Генерация облачного слоя...");
             GenerateCloudLayer();
             
-            Debug.Log($"[WorldGenerator] Мир сгенерирован: {generatedIslands.Count} островов, {generatedClouds.Count} облаков");
+            if (settings.addMinorIslands)
+            {
+                Debug.Log("[WorldGenerator] Генерация мелких островов...");
+                GenerateMinorIslands();
+            }
+            
+            Debug.Log($"[WorldGenerator] Мир сгенерирован: {generatedPeaks.Count} пиков, {generatedClouds.Count} облаков, {generatedMinorIslands.Count} мелких островов");
         }
 
         /// <summary>
-        /// Сгенерировать острова
+        /// Сгенерировать горные пики (точки интереса)
         /// </summary>
-        private void GenerateIslands()
+        private void GeneratePeaks()
         {
-            for (int i = 0; i < settings.islandCount; i++)
+            for (int i = 0; i < settings.peakCount; i++)
             {
-                Vector3 position = GenerateIslandPosition(i);
-                GameObject island = CreateIsland(position, i);
-                generatedIslands.Add(island);
+                Vector3 position = GeneratePeakPosition(i);
+                float height = Random.Range(settings.minPeakHeight, settings.maxPeakHeight);
+                float radius = Random.Range(settings.minPeakRadius, settings.maxPeakRadius);
+                
+                PeakInfo peak = new PeakInfo
+                {
+                    name = $"Peak_{i}",
+                    position = position,
+                    height = height,
+                    radius = radius
+                };
+                
+                peak.gameObject = CreatePeak(peak);
+                generatedPeaks.Add(peak);
+                
+                Debug.Log($"[WorldGenerator] Пик {i}: {peak.name} высота={height:F0}м, радиус={radius:F0}м");
             }
         }
 
         /// <summary>
-        /// Сгенерировать позицию для острова
+        /// Сгенерировать позицию для пика (распределение по кругу)
         /// </summary>
-        private Vector3 GenerateIslandPosition(int index)
+        private Vector3 GeneratePeakPosition(int index)
         {
-            float angle = (index / (float)settings.islandCount) * Mathf.PI * 2;
-            float radius = settings.minDistanceBetweenIslands * 0.5f + index * 20f;
+            // Распределяем пики по спирали для равномерного покрытия
+            float angle = index * (Mathf.PI * 2f * 0.382f); // Золотой угол
+            float radius = Mathf.Lerp(settings.worldRadius * 0.2f, settings.worldRadius * 0.9f, index / (float)settings.peakCount);
             
             float x = Mathf.Cos(angle) * radius;
             float z = Mathf.Sin(angle) * radius;
-            float y = 0;
+            float y = settings.cloudLayerHeight; // Основание на уровне облаков
 
             return new Vector3(x, y, z);
         }
 
         /// <summary>
-        /// Создать остров
+        /// Создать горный пик
         /// </summary>
-        private GameObject CreateIsland(Vector3 position, int index)
+        private GameObject CreatePeak(PeakInfo peakInfo)
         {
-            GameObject island = new GameObject($"Island_{index}");
-            island.transform.position = position;
-            island.transform.SetParent(islandsParent);
+            GameObject peak = new GameObject(peakInfo.name);
+            peak.transform.position = peakInfo.position;
+            peak.transform.SetParent(peaksParent);
 
-            // Добавляем MeshFilter и MeshRenderer
-            MeshFilter meshFilter = island.AddComponent<MeshFilter>();
-            MeshRenderer meshRenderer = island.AddComponent<MeshRenderer>();
+            // MeshFilter и MeshRenderer
+            MeshFilter meshFilter = peak.AddComponent<MeshFilter>();
+            MeshRenderer meshRenderer = peak.AddComponent<MeshRenderer>();
 
-            // Генерируем меш острова
-            Mesh islandMesh = GenerateIslandMesh();
-            meshFilter.mesh = islandMesh;
+            // Генерируем меш горы (конус с шумом)
+            Mesh peakMesh = GeneratePeakMesh(peakInfo.height, peakInfo.radius);
+            meshFilter.mesh = peakMesh;
 
-            // Добавляем материал (будет заменён на реальный)
-            Material mat = new Material(Shader.Find("Standard"));
-            mat.color = new Color(0.3f, 0.6f, 0.3f, 1f); // Зелёный цвет
+            // Материал
+            Material mat = settings.peakMaterial != null 
+                ? settings.peakMaterial 
+                : CreateDefaultPeakMaterial();
             meshRenderer.material = mat;
 
-            // Добавляем коллайдер
-            MeshCollider collider = island.AddComponent<MeshCollider>();
-            collider.sharedMesh = islandMesh;
+            // Коллайдер
+            MeshCollider collider = peak.AddComponent<MeshCollider>();
+            collider.sharedMesh = peakMesh;
 
-            return island;
+            return peak;
         }
 
         /// <summary>
-        /// Сгенерировать меш острова
+        /// Сгенерировать меш горы (конус с детализацией)
         /// </summary>
-        private Mesh GenerateIslandMesh()
+        private Mesh GeneratePeakMesh(float height, float radius)
         {
             Mesh mesh = new Mesh();
-            mesh.name = "IslandMesh";
+            mesh.name = "PeakMesh";
 
             List<Vector3> vertices = new List<Vector3>();
             List<int> triangles = new List<int>();
+            List<Vector3> normals = new List<Vector3>();
 
-            // Центр острова
-            vertices.Add(new Vector3(0, settings.baseHeight, 0));
+            // Вершина горы
+            vertices.Add(new Vector3(0, height, 0));
+            normals.Add(Vector3.up);
 
-            // Вершины по кругу
-            float angleStep = (Mathf.PI * 2) / settings.islandVertices;
-            for (int i = 0; i < settings.islandVertices; i++)
+            // Основание горы (круг с сегментами)
+            int segments = settings.peakDetail;
+            float angleStep = (Mathf.PI * 2) / segments;
+
+            for (int i = 0; i < segments; i++)
             {
                 float angle = i * angleStep;
-                float radius = settings.islandSize * (0.5f + Random.Range(-0.1f, 0.1f));
-                
                 float x = Mathf.Cos(angle) * radius;
                 float z = Mathf.Sin(angle) * radius;
-                float y = Mathf.PerlinNoise(
-                    x * settings.shapeNoiseScale, 
-                    z * settings.shapeNoiseScale
-                ) * (settings.maxHeight - settings.baseHeight);
-
-                vertices.Add(new Vector3(x, y, z));
+                
+                // Добавляем шум к высоте основания
+                float noise = Mathf.PerlinNoise(x * 0.01f, z * 0.01f) * 20f;
+                
+                vertices.Add(new Vector3(x, noise, z));
+                normals.Add(Vector3.up);
             }
 
-            // Треугольники от центра к вершинам
-            for (int i = 1; i < settings.islandVertices; i++)
+            // Треугольники от вершины к основанию
+            for (int i = 1; i < segments; i++)
             {
                 triangles.Add(0);
-                triangles.Add(i);
                 triangles.Add(i + 1);
+                triangles.Add(i);
             }
             triangles.Add(0);
-            triangles.Add(settings.islandVertices);
             triangles.Add(1);
+            triangles.Add(segments);
+
+            // Основание горы (дно)
+            int baseVertex = vertices.Count;
+            vertices.Add(new Vector3(0, -50f, 0)); // Центр дна
+            
+            for (int i = 0; i < segments; i++)
+            {
+                float angle = i * angleStep;
+                float x = Mathf.Cos(angle) * radius;
+                float z = Mathf.Sin(angle) * radius;
+                vertices.Add(new Vector3(x, -50f, z));
+            }
+
+            // Треугольники дна
+            for (int i = 1; i < segments; i++)
+            {
+                triangles.Add(baseVertex);
+                triangles.Add(baseVertex + i);
+                triangles.Add(baseVertex + i + 1);
+            }
 
             mesh.vertices = vertices.ToArray();
             mesh.triangles = triangles.ToArray();
@@ -176,11 +240,30 @@ namespace ProjectC.Core
         }
 
         /// <summary>
-        /// Сгенерировать слой облаков
+        /// Создать материал для пика по умолчанию
+        /// </summary>
+        private Material CreateDefaultPeakMaterial()
+        {
+            Material mat = new Material(Shader.Find("Standard"));
+            mat.color = new Color(0.4f, 0.35f, 0.3f, 1f); // Коричнево-серый (скалы)
+            mat.SetFloat("_Glossiness", 0.1f);
+            mat.SetFloat("_Metallic", 0.2f);
+            return mat;
+        }
+
+        /// <summary>
+        /// Сгенерировать плотный облачный слой
         /// </summary>
         private void GenerateCloudLayer()
         {
-            int cloudCount = Mathf.RoundToInt(settings.islandCount * 3f * settings.cloudDensity);
+            // Покрываем весь мир облаками
+            int cloudCount = Mathf.RoundToInt(
+                (Mathf.PI * settings.worldRadius * settings.worldRadius) / 
+                (settings.cloudSize * settings.cloudSize) * 
+                settings.cloudDensity
+            );
+
+            Debug.Log($"[WorldGenerator] Генерация {cloudCount} облаков...");
 
             for (int i = 0; i < cloudCount; i++)
             {
@@ -191,13 +274,20 @@ namespace ProjectC.Core
         }
 
         /// <summary>
-        /// Сгенерировать позицию облака
+        /// Сгенерировать позицию облака (равномерно по миру)
         /// </summary>
         private Vector3 GenerateCloudPosition()
         {
-            float x = Random.Range(-settings.minDistanceBetweenIslands, settings.minDistanceBetweenIslands);
-            float y = settings.cloudLayerHeight + Random.Range(-20f, 20f);
-            float z = Random.Range(-settings.minDistanceBetweenIslands, settings.minDistanceBetweenIslands);
+            // Позиция в пределах радиуса мира
+            float angle = Random.value * Mathf.PI * 2;
+            float radius = Mathf.Sqrt(Random.value) * settings.worldRadius;
+            
+            float x = Mathf.Cos(angle) * radius;
+            float z = Mathf.Sin(angle) * radius;
+            
+            // Высота в пределах облачного слоя
+            float y = settings.cloudLayerHeight + 
+                      Random.Range(0, settings.cloudLayerThickness);
 
             return new Vector3(x, y, z);
         }
@@ -211,23 +301,89 @@ namespace ProjectC.Core
             cloud.name = "Cloud";
             cloud.transform.position = position;
             cloud.transform.SetParent(cloudsParent);
-            cloud.transform.localScale = Vector3.one * settings.cloudSize * Random.Range(0.8f, 1.5f);
+            
+            // Вариативный размер
+            float scale = settings.cloudSize * Random.Range(
+                1f / settings.cloudSizeVariation, 
+                settings.cloudSizeVariation
+            );
+            cloud.transform.localScale = new Vector3(scale, scale * 0.6f, scale);
 
             // Материал облака
+            Material mat = settings.cloudMaterial != null 
+                ? settings.cloudMaterial 
+                : CreateDefaultCloudMaterial();
+            cloud.GetComponent<Renderer>().material = mat;
+
+            // Удаляем коллайдер (не нужен для облаков)
+            DestroyImmediate(cloud.GetComponent<Collider>());
+
+            return cloud;
+        }
+
+        /// <summary>
+        /// Создать материал для облака по умолчанию
+        /// </summary>
+        private Material CreateDefaultCloudMaterial()
+        {
             Material mat = new Material(Shader.Find("Standard"));
-            mat.color = new Color(1f, 1f, 1f, 0.3f); // Белый полупрозрачный
-            mat.SetFloat("_Mode", 3); // Transparent mode
+            mat.color = new Color(1f, 1f, 1f, 0.4f); // Белый полупрозрачный
+            mat.SetFloat("_Mode", 3); // Transparent
             mat.SetInt("_SrcBlend", (int)UnityEngine.Rendering.BlendMode.SrcAlpha);
             mat.SetInt("_DstBlend", (int)UnityEngine.Rendering.BlendMode.OneMinusSrcAlpha);
             mat.SetInt("_ZWrite", 0);
             mat.DisableKeyword("_ALPHATEST_ON");
             mat.EnableKeyword("_ALPHABLEND_ON");
-            mat.DisableKeyword("_ALPHAPREMULTIPLY_ON");
             mat.renderQueue = 3000;
+            mat.SetFloat("_Glossiness", 0.0f);
+            return mat;
+        }
 
-            cloud.GetComponent<Renderer>().material = mat;
+        /// <summary>
+        /// Сгенерировать мелкие острова между пиками
+        /// </summary>
+        private void GenerateMinorIslands()
+        {
+            for (int i = 0; i < settings.minorIslandCount; i++)
+            {
+                Vector3 position = GenerateMinorIslandPosition();
+                GameObject island = CreateMinorIsland(position);
+                generatedMinorIslands.Add(island);
+            }
+        }
 
-            return cloud;
+        /// <summary>
+        /// Позиция для мелкого острова
+        /// </summary>
+        private Vector3 GenerateMinorIslandPosition()
+        {
+            float angle = Random.value * Mathf.PI * 2;
+            float radius = Random.Range(settings.worldRadius * 0.3f, settings.worldRadius * 0.8f);
+            
+            float x = Mathf.Cos(angle) * radius;
+            float z = Mathf.Sin(angle) * radius;
+            float y = settings.cloudLayerHeight - 50f; // Чуть ниже основных пиков
+
+            return new Vector3(x, y, z);
+        }
+
+        /// <summary>
+        /// Создать мелкий остров
+        /// </summary>
+        private GameObject CreateMinorIsland(Vector3 position)
+        {
+            GameObject island = GameObject.CreatePrimitive(PrimitiveType.Cylinder);
+            island.name = "MinorIsland";
+            island.transform.position = position;
+            island.transform.SetParent(minorIslandsParent);
+            
+            float scale = Random.Range(20f, 80f);
+            island.transform.localScale = new Vector3(scale, Random.Range(30f, 100f), scale);
+
+            Material mat = CreateDefaultPeakMaterial();
+            island.GetComponent<Renderer>().material = mat;
+
+            return island;
         }
 
         /// <summary>
@@ -235,12 +391,12 @@ namespace ProjectC.Core
         /// </summary>
         private void ClearGeneratedObjects()
         {
-            foreach (var island in generatedIslands)
+            foreach (var peak in generatedPeaks)
             {
-                if (island != null)
-                    DestroyImmediate(island);
+                if (peak.gameObject != null)
+                    DestroyImmediate(peak.gameObject);
             }
-            generatedIslands.Clear();
+            generatedPeaks.Clear();
 
             foreach (var cloud in generatedClouds)
             {
@@ -248,6 +404,13 @@ namespace ProjectC.Core
                     DestroyImmediate(cloud);
             }
             generatedClouds.Clear();
+
+            foreach (var island in generatedMinorIslands)
+            {
+                if (island != null)
+                    DestroyImmediate(island);
+            }
+            generatedMinorIslands.Clear();
         }
 
         /// <summary>
@@ -257,6 +420,24 @@ namespace ProjectC.Core
         public void RegenerateWorld()
         {
             GenerateWorld();
+        }
+
+        /// <summary>
+        /// Получить информацию о пике по индексу
+        /// </summary>
+        public PeakInfo GetPeakInfo(int index)
+        {
+            if (index >= 0 && index < generatedPeaks.Count)
+                return generatedPeaks[index];
+            return null;
+        }
+
+        /// <summary>
+        /// Получить все пики
+        /// </summary>
+        public List<PeakInfo> GetAllPeaks()
+        {
+            return new List<PeakInfo>(generatedPeaks);
         }
     }
 }

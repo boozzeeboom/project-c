@@ -72,7 +72,7 @@ namespace ProjectC.Core
             currentY = angles.x;
 
             // Находим WorldGenerator для получения списка пиков
-            worldGenerator = FindObjectOfType<WorldGenerator>();
+            worldGenerator = FindAnyObjectByType<WorldGenerator>();
 
             // Устанавливаем стартовую позицию
             if (flyToFirstPeakOnStart && worldGenerator != null)

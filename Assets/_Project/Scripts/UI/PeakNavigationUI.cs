@@ -26,7 +26,7 @@ namespace ProjectC.Core
         {
             if (worldCamera == null)
             {
-                worldCamera = FindObjectOfType<WorldCamera>();
+                worldCamera = FindAnyObjectByType<WorldCamera>();
             }
 
             if (autoPopulate)
@@ -54,7 +54,7 @@ namespace ProjectC.Core
             peakButtons.Clear();
 
             // Получаем пики
-            var worldGenerator = FindObjectOfType<WorldGenerator>();
+            var worldGenerator = FindAnyObjectByType<WorldGenerator>();
             if (worldGenerator == null)
             {
                 Debug.LogWarning("[PeakNavigationUI] WorldGenerator не найден!");
@@ -143,7 +143,7 @@ namespace ProjectC.Core
         {
             if (currentPeakText != null && currentPeakIndex >= 0)
             {
-                var worldGenerator = FindObjectOfType<WorldGenerator>();
+                var worldGenerator = FindAnyObjectByType<WorldGenerator>();
                 if (worldGenerator != null)
                 {
                     var peaks = worldGenerator.GetAllPeaks();

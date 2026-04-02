@@ -19,8 +19,8 @@ namespace ProjectC.Core
         [SerializeField] private float height = 20f;
 
         [Header("Стартовая позиция")]
-        [Tooltip("Начальная высота камеры при старте")]
-        [SerializeField] private float startHeight = 5000f;
+        [Tooltip("Начальная высота камеры при старте (уровень облаков)")]
+        [SerializeField] private float startHeight = 500f;
         
         [Tooltip("Автоматически лететь к первому пику при старте")]
         [SerializeField] private bool flyToFirstPeakOnStart = true;
@@ -162,10 +162,10 @@ namespace ProjectC.Core
             {
                 transform.position = new Vector3(
                     transform.position.x,
-                    2000f,
+                    500f,
                     transform.position.z
                 );
-                Debug.Log("[WorldCamera] Возврат на высоту");
+                Debug.Log("[WorldCamera] Возврат на высоту облаков");
             }
 
             // Ускорение (Left Shift)

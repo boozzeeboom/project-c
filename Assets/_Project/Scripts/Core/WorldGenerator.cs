@@ -304,18 +304,28 @@ namespace ProjectC.Core
         }
 
         /// <summary>
-        /// Сгенерировать плотный облачный слой
+        /// Сгенерировать облачный слой (использует новую систему CloudSystem)
         /// </summary>
         private void GenerateCloudLayer()
         {
+            // CloudSystem сгенерирует облака автоматически в своём Start()
+            // Просто логируем что используем новую систему
+            Debug.Log("[WorldGenerator] Облака будут сгенерированы через CloudSystem (автоматически)");
+        }
+
+        /// <summary>
+        /// Сгенерировать плотный облачный слой (legacy метод)
+        /// </summary>
+        private void GenerateCloudLayerLegacy()
+        {
             // Покрываем весь мир облаками
             int cloudCount = Mathf.RoundToInt(
-                (Mathf.PI * settings.worldRadius * settings.worldRadius) / 
-                (settings.cloudSize * settings.cloudSize) * 
+                (Mathf.PI * settings.worldRadius * settings.worldRadius) /
+                (settings.cloudSize * settings.cloudSize) *
                 settings.cloudDensity
             );
 
-            Debug.Log($"[WorldGenerator] Генерация {cloudCount} облаков...");
+            Debug.Log($"[WorldGenerator] Генерация {cloudCount} облаков (legacy)...");
 
             for (int i = 0; i < cloudCount; i++)
             {

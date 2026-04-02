@@ -12,7 +12,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: ffa8f7ac87ca1a64fa0d2883a3214cf2, type: 3}
   m_Name: UpperCloudConfig
   m_EditorClassIdentifier: Assembly-CSharp::ProjectC.Core.CloudLayerConfig
-  layerType: 1
+  layerType: 0
   minHeight: 6000
   maxHeight: 8000
   density: 1
@@ -20,7 +20,7 @@ MonoBehaviour:
   sizeVariation: 2
   moveSpeed: 5
   moveDirection: {x: 1, y: 0, z: 0}
-  animateMorph: 0
+  animateMorph: 1
   morphSpeed: 0.5
   cloudMaterial: {fileID: 2100000, guid: 1113070119fa4ec4f93620807a2d0511, type: 2}
-  use2DPlanes: 1
+  use2DPlanes: 0

@@ -12,7 +12,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: ffa8f7ac87ca1a64fa0d2883a3214cf2, type: 3}
   m_Name: LowerCloudConfig
   m_EditorClassIdentifier: Assembly-CSharp::ProjectC.Core.CloudLayerConfig
-  layerType: 1
+  layerType: 2
   minHeight: 1500
   maxHeight: 3000
   density: 1

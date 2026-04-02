@@ -1,8 +1,8 @@
 # Qwen Code Context — Project C
 
 **Последнее обновление:** 2 апреля 2026 г.  
-**Ветка Git:** `qwen-code-f3dbb381-a66e-4c3f-8475-937fd11685bb`  
-**Последний коммит:** `c3f7c4e`
+**Ветка Git:** `qwen-dev`  
+**Последний коммит:** `b0e3025`
 
 ---
 
@@ -39,7 +39,7 @@ ProjectC_Server/          (.NET 8 сервер)
 
 1. **Настройка репозитория:**
    - ✅ Добавлен `upstream` remote: `https://github.com/boozzeeboom/project-c.git`
-   - ✅ Ветка `qwen-code-f3dbb381-a66e-4c3f-8475-937fd11685bb` создана и отправлена на GitHub
+   - ✅ Ветка `qwen-dev` создана и отправлена на GitHub
    - ✅ Добавлен файл `MMO_Development_Plan.md` (в upstream)
    - ✅ Настроен `.gitattributes` с Git LFS для больших файлов (PNG, текстуры, аудио и т.д.)
    - ✅ Настроен `.gitignore` — игнорирует `Library/`, `Temp/`, `Logs/`, `UserSettings/`
@@ -111,7 +111,7 @@ origin  https://github.com/boozzeeboom/project-c-2026-04-02_14-41-56.git
 upstream  https://github.com/boozzeeboom/project-c.git
 ```
 
-**Ветка для работы:** `qwen-code-f3dbb381-a66e-4c3f-8475-937fd11685bb`
+**Ветка для работы:** `qwen-dev`
 
 **Push в upstream:** ✅ Работает
 

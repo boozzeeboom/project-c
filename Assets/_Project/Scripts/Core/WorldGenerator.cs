@@ -25,6 +25,19 @@ namespace ProjectC.Core
 
         private void Start()
         {
+            // Пытаемся загрузить настройки автоматически, если не назначены
+            if (settings == null)
+            {
+                settings = Resources.Load<WorldGenerationSettings>("WorldGenerationSettings");
+                
+                if (settings == null)
+                {
+                    Debug.LogWarning("[WorldGenerator] WorldGenerationSettings не найден. Используются настройки по умолчанию.");
+                    // Создаём настройки по умолчанию программно
+                    settings = ScriptableObject.CreateInstance<WorldGenerationSettings>();
+                }
+            }
+            
             if (randomizeSeed)
             {
                 seed = Random.Range(int.MinValue, int.MaxValue);

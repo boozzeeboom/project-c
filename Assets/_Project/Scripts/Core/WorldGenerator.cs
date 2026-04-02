@@ -160,9 +160,11 @@ namespace ProjectC.Core
                 : CreateDefaultPeakMaterial();
             meshRenderer.material = mat;
 
-            // Коллайдер
-            MeshCollider collider = peak.AddComponent<MeshCollider>();
-            collider.sharedMesh = peakMesh;
+            // Отключаем коллайдер для больших пиков (избегание варнов Unity)
+            // MeshCollider: varns о треугольниках >500 units
+            // Для прототипа коллизии не критичны
+            // MeshCollider collider = peak.AddComponent<MeshCollider>();
+            // collider.sharedMesh = peakMesh;
 
             return peak;
         }

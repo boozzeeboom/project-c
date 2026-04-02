@@ -25,6 +25,16 @@ namespace ProjectC.Core
         [Tooltip("Автоматически лететь к первому пику при старте")]
         [SerializeField] private bool flyToFirstPeakOnStart = true;
 
+        private void Awake()
+        {
+            // Принудительно устанавливаем высоту облаков, если значение слишком большое
+            if (startHeight > 1000f)
+            {
+                Debug.LogWarning($"[WorldCamera] StartHeight слишком большой ({startHeight}м), установлено 500м");
+                startHeight = 500f;
+            }
+        }
+
         [Header("Настройки полёта")]
         [Tooltip("Скорость движения камеры в режиме полёта")]
         [SerializeField] private float flySpeed = 100f;
@@ -74,6 +84,10 @@ namespace ProjectC.Core
             // Находим WorldGenerator для получения списка пиков
             worldGenerator = FindAnyObjectByType<WorldGenerator>();
 
+            // Принудительно устанавливаем стартовую высоту
+            transform.position = new Vector3(0, startHeight, 0);
+            Debug.Log($"[WorldCamera] Стартовая высота: {startHeight}м");
+
             // Устанавливаем стартовую позицию
             if (flyToFirstPeakOnStart && worldGenerator != null)
             {
@@ -83,15 +97,6 @@ namespace ProjectC.Core
                     // Телепорт к первому пику
                     TeleportToPeak(0);
                 }
-                else
-                {
-                    // Если пиков нет, просто поднимаем камеру
-                    transform.position = new Vector3(0, startHeight, 0);
-                }
-            }
-            else
-            {
-                transform.position = new Vector3(0, startHeight, 0);
             }
         }
 

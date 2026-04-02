@@ -26,9 +26,19 @@ namespace ProjectC.UI
 
         private void Start()
         {
+            if (hintsText == null)
+            {
+                // Пытаемся найти Text автоматически
+                hintsText = FindAnyObjectByType<TextMeshProUGUI>();
+            }
+            
             if (hintsText != null && showHints)
             {
                 UpdateHints();
+            }
+            else if (hintsText == null)
+            {
+                Debug.LogWarning("[ControlHintsUI] Hints Text не назначен! Подсказки не будут показаны.");
             }
         }
 

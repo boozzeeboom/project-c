@@ -1,0 +1,36 @@
+# Unity - большие бинарные файлы и временные данные
+Library/
+Temp/
+Logs/
+UserSettings/
+Builds/
+*.unitypackage
+*.unitypackage.meta
+
+# Unity - метаданные (не нужны для чтения контекста)
+*.meta
+
+# Unity - проект сервера (не в этом репо)
+../ProjectC_Server/
+
+# Git
+.git/
+
+# Системные файлы
+$null
+Thumbs.db
+desktop.ini
+
+# IDE
+.vs/
+.vscode/
+.idea/
+*.suo
+*.user
+*.userprefs
+
+# OS
+.DS_Store
+
+# qwen - внутренние файлы
+.qwen/

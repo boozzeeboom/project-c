@@ -78,7 +78,6 @@ namespace ProjectC.Core
         private Vector2 _moveInput;
         private Vector2 _lookInput;
         private float _scrollInput;
-        private bool _boostActive;
 
         private void Awake()
         {
@@ -119,8 +118,7 @@ namespace ProjectC.Core
             _previousPeakAction.performed += ctx => TeleportToPreviousPeak();
             _randomPeakAction.performed += ctx => TeleportToRandomPeak();
             _returnToHeightAction.performed += ctx => ReturnToCloudHeight();
-            _boostAction.performed += ctx => _boostActive = true;
-            _boostAction.canceled += ctx => _boostActive = false;
+            // Boost проверяем каждый кадр через ReadValue — надёжнее чем performed/canceled
         }
 
         private void OnEnable()
@@ -318,8 +316,9 @@ namespace ProjectC.Core
         {
             if (!isFlying) return;
 
-            // Обновляем скорость ускорения
-            float currentFlySpeed = _boostActive ? maxSpeed : flySpeed;
+            // Boost проверяем каждый кадр — надёжнее
+            bool boosting = _boostAction.ReadValue<float>() > 0.5f;
+            float currentFlySpeed = boosting ? maxSpeed : flySpeed;
 
             // Движение вперёд/назад + стрейф
             Vector3 moveDirection = transform.right * _moveInput.x + transform.forward * _moveInput.y;

@@ -73,10 +73,18 @@ namespace ProjectC.UI
 <color=#{ColorToHex(keyColor)}><b>Персонаж</b></color>
 <color=#{ColorToHex(textColor)}><b>W</b></color> - Вперёд
 <color=#{ColorToHex(textColor)}><b>S</b></color> - Назад
-<color=#{ColorToHex(textColor)}><b>A D</b></color> - Стрейф влево/вправо
+<color=#{ColorToHex(textColor)}><b>A D</b></color> - Стрейф
 <color=#{ColorToHex(textColor)}><b>Мышь</b></color> - Вращение камеры
 <color=#{ColorToHex(textColor)}><b>Space</b></color> - Прыжок
 <color=#{ColorToHex(textColor)}><b>Left Shift</b></color> - Бег
+<color=#{ColorToHex(textColor)}><b>F</b></color> - Сесть в корабль / выйти
+
+<color=#{ColorToHex(keyColor)}><b>Корабль</b></color>
+<color=#{ColorToHex(textColor)}><b>W/S</b></color> - Тяга
+<color=#{ColorToHex(textColor)}><b>A/D</b></color> - Рыскание
+<color=#{ColorToHex(textColor)}><b>Q/E</b></color> - Вниз/Вверх (лифт)
+<color=#{ColorToHex(textColor)}><b>Мышь</b></color> - Тангаж
+<color=#{ColorToHex(textColor)}><b>Shift</b></color> - Ускорение
 
 <color=#{ColorToHex(keyColor)}><b>F1</b></color> - Скрыть/показать";
 

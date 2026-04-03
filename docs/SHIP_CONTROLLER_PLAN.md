@@ -55,31 +55,36 @@ Player (GameObject)
 
 ---
 
-### Шаг 2: PlayerStateMachine — переключение режимов
+### Шаг 2: PlayerStateMachine — переключение режимов ✅ ЗАВЕРШЁН
 
 **Файлы:** `Assets/_Project/Scripts/Player/PlayerStateMachine.cs`
 
-**Что сделать:**
-- Перечисление: `enum PlayerState { Walking, Flying }`
-- Клавиша **F** — переключение
-- При Walking → Flying:
-  - `PlayerController.enabled = false`
-  - `ShipController.enabled = true`
-  - `ShipModel.SetActive(true)`
-- При Flying → Walking:
-  - Проверка: корабль на земле (Raycast вниз)
-  - `ShipController.enabled = false`
-  - `PlayerController.enabled = true`
-  - `ShipModel.SetActive(false)`
+**Что сделано:**
+- Поиск кораблей по тегу `Ship` в радиусе 5м
+- F — переключение пешком ↔ корабль
+- При посадке: CharacterController + Renderer отключаются (игрок не физический)
+- При выходе: игрок появляется на палубе (GetExitPosition)
+- Проверка посадки: корабль на земле ИЛИ скорость < 2 м/с
+- Камера автоматически переключается между игроком и кораблём
+- Поддержка множества кораблей на сцене
 
 **Готовые решения Unity:**
-- `Behaviour.enabled` — вкл/выкл MonoBehaviour
-- `Physics.Raycast()` — проверка земли
-- State Machine — стандартный паттерн
+- `GameObject.FindGameObjectsWithTag()` — поиск кораблей
+- `CharacterController.enabled` — вкл/выкл физики пешехода
+- `Renderer.enabled` — вкл/выкл визуала
+- `Behaviour.enabled` — вкл/выкл контроллеров
 
-**Тест:** Нажимаешь F — управление меняется. Без посадки — нельзя выйти.
+**Тест:** ✅ Подойти к кораблю → F → управление кораблём → F → выйти на палубе
 
-**Коммит:** ✅ → тест → следующий шаг
+**Известные проблемы:**
+- ⚠️ Управление кораблём дёрганое (нет плавности)
+- ⚠️ Нет banking (крен при повороте)
+- ⚠️ Нет системы топлива
+- ⚠️ Нет анимации перехода
+
+**Коммит:** ✅ (будет после документации)
+
+**Документация:** `docs/SHIP_SYSTEM_DOCUMENTATION.md`
 
 ---
 

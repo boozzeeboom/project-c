@@ -1,4 +1,5 @@
 using UnityEngine;
+using UnityEngine.InputSystem;
 using UnityEngine.UI;
 using TMPro;
 
@@ -12,7 +13,7 @@ namespace ProjectC.UI
         [Header("Ссылки на UI элементы")]
         [Tooltip("Текст подсказок")]
         public TextMeshProUGUI hintsText;
-        
+
         [Header("Настройки")]
         [Tooltip("Показывать ли подсказки")]
         [SerializeField] private bool showHints = true;
@@ -22,6 +23,9 @@ namespace ProjectC.UI
         [SerializeField] private Color keyColor = Color.cyan;
         [SerializeField] private Color textColor = Color.white;
 
+        // Input System
+        private InputAction _toggleHintsAction;
+
         private void Start()
         {
             if (hintsText == null)
@@ -29,7 +33,7 @@ namespace ProjectC.UI
                 // Пытаемся найти Text автоматически
                 hintsText = FindAnyObjectByType<TextMeshProUGUI>();
             }
-            
+
             if (hintsText != null && showHints)
             {
                 UpdateHints();
@@ -37,6 +41,26 @@ namespace ProjectC.UI
             else if (hintsText == null)
             {
                 Debug.LogWarning("[ControlHintsUI] Hints Text не назначен! Подсказки не будут показаны.");
+            }
+
+            // Создаём Input Action программно
+            _toggleHintsAction = new InputAction("ToggleHints", binding: "<Keyboard>/f1", expectedControlType: "Button");
+            _toggleHintsAction.performed += ctx => ToggleHints();
+        }
+
+        private void OnEnable()
+        {
+            if (_toggleHintsAction != null)
+            {
+                _toggleHintsAction.Enable();
+            }
+        }
+
+        private void OnDisable()
+        {
+            if (_toggleHintsAction != null)
+            {
+                _toggleHintsAction.Disable();
             }
         }
 
@@ -77,17 +101,6 @@ namespace ProjectC.UI
                 (int)(color.r * 255),
                 (int)(color.g * 255),
                 (int)(color.b * 255));
-        }
-
-        /// <summary>
-        /// Переключить видимость подсказок (F1)
-        /// </summary>
-        private void Update()
-        {
-            if (Input.GetKeyDown(KeyCode.F1))
-            {
-                ToggleHints();
-            }
         }
 
         public void ToggleHints()

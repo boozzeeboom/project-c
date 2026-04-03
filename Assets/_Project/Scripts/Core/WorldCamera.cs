@@ -1,4 +1,5 @@
 using UnityEngine;
+using UnityEngine.InputSystem;
 using UnityEngine.UI;
 using TMPro;
 using ProjectC.UI;
@@ -14,50 +15,40 @@ namespace ProjectC.Core
         [Header("Настройки камеры")]
         [Tooltip("Цель для слежения (игрок)")]
         [SerializeField] private Transform target;
-        
+
         [Tooltip("Дистанция до цели")]
         [SerializeField] private float distance = 50f;
-        
+
         [Tooltip("Высота камеры")]
         [SerializeField] private float height = 20f;
 
         [Header("Стартовая позиция")]
         [Tooltip("Начальная высота камеры при старте (уровень облаков)")]
         [SerializeField] private float startHeight = 500f;
-        
+
         [Tooltip("Автоматически лететь к первому пику при старте")]
         [SerializeField] private bool flyToFirstPeakOnStart = true;
-
-        private void Awake()
-        {
-            // Принудительно устанавливаем высоту облаков, если значение слишком большое
-            if (startHeight > 1000f)
-            {
-                Debug.Log($"[WorldCamera] StartHeight был {startHeight}м, установлено 500м (уровень облаков)");
-                startHeight = 500f;
-            }
-        }
 
         [Header("Настройки полёта")]
         [Tooltip("Скорость движения камеры в режиме полёта")]
         [SerializeField] private float flySpeed = 100f;
-        
+
         [Tooltip("Ускорение в режиме полёта")]
         [SerializeField] private float flyAcceleration = 10f;
-        
+
         [Tooltip("Максимальная скорость")]
         [SerializeField] private float maxSpeed = 500f;
 
         [Header("Настройки вращения")]
         [Tooltip("Чувствительность мыши по горизонтали")]
         [SerializeField] private float mouseSensitivityX = 3f;
-        
+
         [Tooltip("Чувствительность мыши по вертикали")]
         [SerializeField] private float mouseSensitivityY = 3f;
-        
+
         [Tooltip("Минимальный угол обзора по вертикали")]
         [SerializeField] private float minVerticalAngle = -89f;
-        
+
         [Tooltip("Максимальный угол обзора по вертикали")]
         [SerializeField] private float maxVerticalAngle = 89f;
 
@@ -72,6 +63,91 @@ namespace ProjectC.Core
         private bool isTeleporting = false;
         private Vector3 teleportTarget = Vector3.zero;
         private WorldGenerator worldGenerator;
+
+        // Input System — программно созданные действия
+        private InputAction _moveAction;
+        private InputAction _lookAction;
+        private InputAction _scrollAction;
+        private InputAction _toggleFlyAction;
+        private InputAction _nextPeakAction;
+        private InputAction _previousPeakAction;
+        private InputAction _randomPeakAction;
+        private InputAction _returnToHeightAction;
+        private InputAction _boostAction;
+
+        private Vector2 _moveInput;
+        private Vector2 _lookInput;
+        private float _scrollInput;
+        private bool _boostActive;
+
+        private void Awake()
+        {
+            // Принудительно устанавливаем высоту облаков, если значение слишком большое
+            if (startHeight > 1000f)
+            {
+                Debug.Log($"[WorldCamera] StartHeight был {startHeight}м, установлено 500м (уровень облаков)");
+                startHeight = 500f;
+            }
+
+            // Создаём Input Actions программно
+            _moveAction = new InputAction("Move", binding: "<Keyboard>/w,<Keyboard>/s,<Keyboard>/a,<Keyboard>/d", expectedControlType: "Vector2");
+            _moveAction.AddCompositeBinding("2DVector")
+                .With("Up", "<Keyboard>/w")
+                .With("Down", "<Keyboard>/s")
+                .With("Left", "<Keyboard>/a")
+                .With("Right", "<Keyboard>/d");
+
+            _lookAction = new InputAction("Look", binding: "<Mouse>/delta", expectedControlType: "Vector2");
+            _scrollAction = new InputAction("Scroll", binding: "<Mouse>/scroll/y", expectedControlType: "Float");
+
+            _toggleFlyAction = new InputAction("ToggleFlyMode", binding: "<Keyboard>/f", expectedControlType: "Button");
+            _nextPeakAction = new InputAction("NextPeak", expectedControlType: "Button");
+            _nextPeakAction.AddBinding("<Keyboard>/n");
+            _nextPeakAction.AddBinding("<Keyboard>/pageUp");
+
+            _previousPeakAction = new InputAction("PreviousPeak", expectedControlType: "Button");
+            _previousPeakAction.AddBinding("<Keyboard>/b");
+            _previousPeakAction.AddBinding("<Keyboard>/pageDown");
+
+            _randomPeakAction = new InputAction("RandomPeak", binding: "<Keyboard>/r", expectedControlType: "Button");
+            _returnToHeightAction = new InputAction("ReturnToHeight", binding: "<Keyboard>/h", expectedControlType: "Button");
+            _boostAction = new InputAction("Boost", binding: "<Keyboard>/leftShift", expectedControlType: "Button");
+
+            // Подписка на события
+            _toggleFlyAction.performed += ctx => ToggleFlyMode();
+            _nextPeakAction.performed += ctx => TeleportToNextPeak();
+            _previousPeakAction.performed += ctx => TeleportToPreviousPeak();
+            _randomPeakAction.performed += ctx => TeleportToRandomPeak();
+            _returnToHeightAction.performed += ctx => ReturnToCloudHeight();
+            _boostAction.performed += ctx => _boostActive = true;
+            _boostAction.canceled += ctx => _boostActive = false;
+        }
+
+        private void OnEnable()
+        {
+            _moveAction.Enable();
+            _lookAction.Enable();
+            _scrollAction.Enable();
+            _toggleFlyAction.Enable();
+            _nextPeakAction.Enable();
+            _previousPeakAction.Enable();
+            _randomPeakAction.Enable();
+            _returnToHeightAction.Enable();
+            _boostAction.Enable();
+        }
+
+        private void OnDisable()
+        {
+            _moveAction.Disable();
+            _lookAction.Disable();
+            _scrollAction.Disable();
+            _toggleFlyAction.Disable();
+            _nextPeakAction.Disable();
+            _previousPeakAction.Disable();
+            _randomPeakAction.Disable();
+            _returnToHeightAction.Disable();
+            _boostAction.Disable();
+        }
 
         private void Start()
         {
@@ -157,6 +233,11 @@ namespace ProjectC.Core
 
         private void LateUpdate()
         {
+            // Считываем continuous input каждый кадр
+            _moveInput = _moveAction.ReadValue<Vector2>();
+            _lookInput = _lookAction.ReadValue<Vector2>();
+            _scrollInput = _scrollAction.ReadValue<float>();
+
             // Обработка телепортации
             if (isTeleporting)
             {
@@ -168,10 +249,9 @@ namespace ProjectC.Core
             {
                 FollowTarget();
             }
-            
+
             HandleRotation();
             HandleMovement();
-            HandleHotkeys();
         }
 
         /// <summary>
@@ -180,7 +260,7 @@ namespace ProjectC.Core
         private void HandleTeleport()
         {
             transform.position = Vector3.MoveTowards(transform.position, teleportTarget, teleportSpeed * Time.deltaTime);
-            
+
             if (Vector3.Distance(transform.position, teleportTarget) < 1f)
             {
                 isTeleporting = false;
@@ -189,54 +269,16 @@ namespace ProjectC.Core
         }
 
         /// <summary>
-        /// Горячие клавиши для управления
+        /// Возврат на высоту облаков
         /// </summary>
-        private void HandleHotkeys()
+        private void ReturnToCloudHeight()
         {
-            // Переключение режима полёта (F)
-            if (Input.GetKeyDown(KeyCode.F))
-            {
-                ToggleFlyMode();
-            }
-
-            // Телепорт к следующему пику (N или PageUp)
-            if (Input.GetKeyDown(KeyCode.N) || Input.GetKeyDown(KeyCode.PageUp))
-            {
-                TeleportToNextPeak();
-            }
-
-            // Телепорт к предыдущему пику (B или PageDown)
-            if (Input.GetKeyDown(KeyCode.B) || Input.GetKeyDown(KeyCode.PageDown))
-            {
-                TeleportToPreviousPeak();
-            }
-
-            // Телепорт к случайному пику (R)
-            if (Input.GetKeyDown(KeyCode.R))
-            {
-                TeleportToRandomPeak();
-            }
-
-            // Возврат на высокую позицию (H)
-            if (Input.GetKeyDown(KeyCode.H))
-            {
-                transform.position = new Vector3(
-                    transform.position.x,
-                    500f,
-                    transform.position.z
-                );
-                Debug.Log("[WorldCamera] Возврат на высоту облаков");
-            }
-
-            // Ускорение (Left Shift)
-            if (Input.GetKey(KeyCode.LeftShift))
-            {
-                flySpeed = maxSpeed;
-            }
-            else
-            {
-                flySpeed = 100f;
-            }
+            transform.position = new Vector3(
+                transform.position.x,
+                500f,
+                transform.position.z
+            );
+            Debug.Log("[WorldCamera] Возврат на высоту облаков");
         }
 
         /// <summary>
@@ -247,7 +289,7 @@ namespace ProjectC.Core
             if (target == null) return;
 
             Vector3 targetPosition = target.position + Vector3.up * height;
-            
+
             // Плавное следование
             transform.position = Vector3.SmoothDamp(
                 transform.position,
@@ -262,8 +304,8 @@ namespace ProjectC.Core
         /// </summary>
         private void HandleRotation()
         {
-            currentX += Input.GetAxis("Mouse X") * mouseSensitivityX;
-            currentY -= Input.GetAxis("Mouse Y") * mouseSensitivityY;
+            currentX += _lookInput.x * mouseSensitivityX;
+            currentY -= _lookInput.y * mouseSensitivityY;
             currentY = Mathf.Clamp(currentY, minVerticalAngle, maxVerticalAngle);
 
             transform.eulerAngles = new Vector3(currentY, currentX, 0);
@@ -276,26 +318,25 @@ namespace ProjectC.Core
         {
             if (!isFlying) return;
 
-            float h = Input.GetAxis("Horizontal");
-            float v = Input.GetAxis("Vertical");
-            
+            // Обновляем скорость ускорения
+            float currentFlySpeed = _boostActive ? maxSpeed : flySpeed;
+
             // Движение вперёд/назад + стрейф
-            Vector3 moveDirection = transform.right * h + transform.forward * v;
-            
+            Vector3 moveDirection = transform.right * _moveInput.x + transform.forward * _moveInput.y;
+
             // Ускорение
             currentVelocity = Vector3.Lerp(
                 currentVelocity,
-                moveDirection * flySpeed,
+                moveDirection * currentFlySpeed,
                 flyAcceleration * Time.deltaTime
             );
 
             transform.position += currentVelocity * Time.deltaTime;
 
             // Высота (вверх/вниз)
-            float altitude = Input.GetAxis("Mouse ScrollWheel");
-            if (altitude != 0)
+            if (_scrollInput != 0)
             {
-                transform.position += Vector3.up * altitude * 10f;
+                transform.position += Vector3.up * _scrollInput * 10f;
             }
         }
 
@@ -342,7 +383,7 @@ namespace ProjectC.Core
                 teleportTarget = peak.position + Vector3.up * (peak.height * 0.5f);
                 transform.position = teleportTarget;
                 isTeleporting = false;
-                
+
                 Debug.Log($"[WorldCamera] Телепорт к пику {peakIndex}: {peak.name} (высота: {peak.height:F0}м)");
             }
         }
@@ -351,14 +392,14 @@ namespace ProjectC.Core
         /// Телепорт к следующему пику
         /// </summary>
         private int currentPeakIndex = -1;
-        
+
         public void TeleportToNextPeak()
         {
             if (worldGenerator == null) return;
-            
+
             var peaks = worldGenerator.GetAllPeaks();
             if (peaks.Count == 0) return;
-            
+
             currentPeakIndex = (currentPeakIndex + 1) % peaks.Count;
             TeleportToPeak(currentPeakIndex);
         }
@@ -369,10 +410,10 @@ namespace ProjectC.Core
         public void TeleportToPreviousPeak()
         {
             if (worldGenerator == null) return;
-            
+
             var peaks = worldGenerator.GetAllPeaks();
             if (peaks.Count == 0) return;
-            
+
             currentPeakIndex = (currentPeakIndex - 1 + peaks.Count) % peaks.Count;
             TeleportToPeak(currentPeakIndex);
         }
@@ -383,10 +424,10 @@ namespace ProjectC.Core
         public void TeleportToRandomPeak()
         {
             if (worldGenerator == null) return;
-            
+
             var peaks = worldGenerator.GetAllPeaks();
             if (peaks.Count == 0) return;
-            
+
             currentPeakIndex = Random.Range(0, peaks.Count);
             TeleportToPeak(currentPeakIndex);
         }

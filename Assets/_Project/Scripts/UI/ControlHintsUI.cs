@@ -73,21 +73,20 @@ namespace ProjectC.UI
 
             string hints = $@"<color=#{ColorToHex(titleColor)}><b>Управление</b></color>
 
-<color=#{ColorToHex(keyColor)}><b>Навигация</b></color>
-<color=#{ColorToHex(textColor)}><b>W A S D</b></color> - Полет
+<color=#{ColorToHex(keyColor)}><b>Персонаж</b></color>
+<color=#{ColorToHex(textColor)}><b>W A S D</b></color> - Движение
 <color=#{ColorToHex(textColor)}><b>Мышь</b></color> - Обзор
-<color=#{ColorToHex(textColor)}><b>Shift</b></color> - Ускорение
+<color=#{ColorToHex(textColor)}><b>Space</b></color> - Прыжок
+<color=#{ColorToHex(textColor)}><b>Shift</b></color> - Бег
 
-<color=#{ColorToHex(keyColor)}><b>Телепортация</b></color>
-<color=#{ColorToHex(textColor)}><b>N / PgUp</b></color> - След. пик [UP]
-<color=#{ColorToHex(textColor)}><b>B / PgDown</b></color> - Пред. пик [DN]
+<color=#{ColorToHex(keyColor)}><b>Камера мира</b></color>
+<color=#{ColorToHex(textColor)}><b>N / PgUp</b></color> - След. пик
+<color=#{ColorToHex(textColor)}><b>B / PgDown</b></color> - Пред. пик
 <color=#{ColorToHex(textColor)}><b>R</b></color> - Случ. пик
-<color=#{ColorToHex(textColor)}><b>H</b></color> - На высоту [UP]
+<color=#{ColorToHex(textColor)}><b>H</b></color> - На высоту облаков
+<color=#{ColorToHex(textColor)}><b>F</b></color> - Полёт вкл/выкл
 
-<color=#{ColorToHex(keyColor)}><b>Режимы</b></color>
-<color=#{ColorToHex(textColor)}><b>F</b></color> - Полет вкл/выкл
-<color=#{ColorToHex(textColor)}><b>Колесико</b></color> - Высота
-<color=#{ColorToHex(textColor)}><b>F1</b></color> - Скрыть/показать";
+<color=#{ColorToHex(keyColor)}><b>F1</b></color> - Скрыть/показать";
 
             hintsText.text = hints;
         }

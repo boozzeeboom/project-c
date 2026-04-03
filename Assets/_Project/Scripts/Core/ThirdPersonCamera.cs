@@ -29,10 +29,6 @@ namespace ProjectC.Core
         [Tooltip("Высота камеры относительно цели (корабль)")]
         [SerializeField] private float shipHeight = 6f;
 
-        [Header("Переключение")]
-        [Tooltip("Скорость плавного переключения дистанции")]
-        [SerializeField] private float switchSpeed = 5f;
-
         // Текущие интерполированные значения
         private float _currentDistance;
         private float _currentHeight;

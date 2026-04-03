@@ -49,7 +49,6 @@ namespace ProjectC.Core
                 
                 if (settings == null)
                 {
-                    Debug.LogWarning("[WorldGenerator] WorldGenerationSettings не найден. Используются настройки по умолчанию.");
                     settings = ScriptableObject.CreateInstance<WorldGenerationSettings>();
                 }
             }

@@ -94,14 +94,10 @@ namespace ProjectC.Core
             ShipController nearestShip = FindNearestShip();
 
             if (nearestShip == null)
-            {
-                Debug.Log($"[PlayerStateMachine] Нет кораблей рядом (радиус {boardDistance}м)");
                 return;
-            }
 
             _currentShip = nearestShip;
             ApplyFlying();
-            Debug.Log($"[PlayerStateMachine] → Сел в {_currentShip.name}");
         }
 
         /// <summary>
@@ -115,10 +111,7 @@ namespace ProjectC.Core
 
             // Проверка: можно ли выйти (на земле или медленно)
             if (!shipToExit.IsGrounded && shipToExit.CurrentSpeed > 2f)
-            {
-                Debug.Log("[PlayerStateMachine] Нельзя выйти: корабль не на земле или слишком быстрый!");
                 return;
-            }
 
             // Перемещаем игрока на палубу корабля
             transform.position = shipToExit.GetExitPosition();
@@ -129,8 +122,6 @@ namespace ProjectC.Core
 
             // Включаем пешехода
             ApplyWalking();
-
-            Debug.Log("[PlayerStateMachine] → Вышел на палубе");
         }
 
         /// <summary>

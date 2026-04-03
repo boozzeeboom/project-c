@@ -26,8 +26,11 @@ namespace ProjectC.Player
         [SerializeField] private float gravity = -20f;
 
         [Header("Камера")]
-        [Tooltip("Ссылка на камеру для определения направления")]
+        [Tooltip("Ссылка на ThirdPersonCamera для определения направления")]
         [SerializeField] private Transform cameraTransform;
+
+        // ThirdPersonCamera (кэш)
+        private ProjectC.Core.ThirdPersonCamera _thirdPersonCamera;
 
         // CharacterController
         private CharacterController _controller;
@@ -82,18 +85,17 @@ namespace ProjectC.Player
                     cameraTransform = mainCamera.transform;
                 }
             }
+
+            // Кэшируем ThirdPersonCamera если есть
+            if (cameraTransform != null)
+            {
+                _thirdPersonCamera = cameraTransform.GetComponent<ProjectC.Core.ThirdPersonCamera>();
+            }
         }
 
         private void Update()
         {
             HandleInput();
-            
-            // Отладка
-            if (Time.frameCount % 30 == 0)
-            {
-                Debug.Log($"[PlayerController] Move input: {_moveInput}, Grounded: {_isGrounded}, Speed: {(_runAction.ReadValue<float>() > 0.5f ? runSpeed : walkSpeed)}");
-            }
-            
             HandleMovement();
         }
 
@@ -120,12 +122,23 @@ namespace ProjectC.Player
             }
 
             // Направление движения относительно камеры
-            Vector3 forward = cameraTransform != null ? cameraTransform.forward : transform.forward;
-            Vector3 right = cameraTransform != null ? cameraTransform.right : transform.right;
+            Vector3 forward, right;
 
-            // Убираем наклон по Y для горизонтального движения
-            forward.y = 0;
-            right.y = 0;
+            if (_thirdPersonCamera != null)
+            {
+                // Использовать направление ThirdPersonCamera
+                forward = _thirdPersonCamera.Forward;
+                right = _thirdPersonCamera.Right;
+            }
+            else
+            {
+                // Фоллбэк — из transform камеры
+                forward = cameraTransform != null ? cameraTransform.forward : transform.forward;
+                right = cameraTransform != null ? cameraTransform.right : transform.right;
+                forward.y = 0;
+                right.y = 0;
+            }
+
             forward.Normalize();
             right.Normalize();
 
@@ -146,12 +159,6 @@ namespace ProjectC.Player
 
             // Применяем горизонтальное движение
             _controller.Move(moveDirection * currentSpeed * Time.deltaTime);
-
-            // Отладка движения
-            if (Time.frameCount % 30 == 0 && moveDirection.magnitude > 0.01f)
-            {
-                Debug.Log($"[PlayerController] Moving! Dir: {moveDirection}, Speed: {currentSpeed}, Pos: {transform.position}");
-            }
 
             // Прыжок
             if (_isGrounded && _jumpAction.WasPerformedThisFrame())

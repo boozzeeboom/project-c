@@ -1,21 +1,20 @@
 using UnityEngine;
 using UnityEngine.InputSystem;
+using UnityEngine.UI;
+using TMPro;
 
 namespace ProjectC.Core
 {
     /// <summary>
     /// Орбитальная камера от третьего лица
-    /// Камера ВСЕГДА сзади-сверху персонажа
-    /// Мышь вращает персонажа (yaw) — камера следует
+    /// Мышь вращает КАМЕРУ вокруг персонажа
+    /// Камера ВСЕГДА смотрит на персонажа
     /// </summary>
     public class ThirdPersonCamera : MonoBehaviour
     {
         [Header("Цель")]
-        [Tooltip("Персонаж за которым следовать")]
+        [Tooltip("Персонаж за которым следить")]
         [SerializeField] private Transform target;
-
-        [Tooltip("Персонаж (для получения yaw)")]
-        [SerializeField] private Transform targetBody;
 
         [Header("Орбита")]
         [Tooltip("Дистанция от цели")]
@@ -24,13 +23,47 @@ namespace ProjectC.Core
         [Tooltip("Высота камеры относительно цели")]
         [SerializeField] private float height = 2f;
 
-        [Header("Смещение орбиты")]
-        [Tooltip("Смещение угла камеры относительно персонажа (градусы)")]
-        [SerializeField] private float orbitPitch = 15f;
+        [Header("Вращение")]
+        [Tooltip("Чувствительность мыши X")]
+        [SerializeField] private float mouseSensitivityX = 3f;
+
+        [Tooltip("Чувствительность мыши Y")]
+        [SerializeField] private float mouseSensitivityY = 3f;
+
+        [Tooltip("Минимальный угол обзора")]
+        [SerializeField] private float minVerticalAngle = 0f;
+
+        [Tooltip("Максимальный угол обзора")]
+        [SerializeField] private float maxVerticalAngle = 80f;
+
+        // Углы орбиты
+        private float _yaw;
+        private float _pitch;
 
         // Ввод
         private InputAction _lookAction;
         private Vector2 _lookInput;
+
+        /// <summary>
+        /// Горизонтальное направление камеры (куда бежит персонаж по W)
+        /// </summary>
+        public Vector3 CameraForward
+        {
+            get
+            {
+                float yawRad = _yaw * Mathf.Deg2Rad;
+                return new Vector3(Mathf.Sin(yawRad), 0, Mathf.Cos(yawRad));
+            }
+        }
+
+        public Vector3 CameraRight
+        {
+            get
+            {
+                float yawRad = _yaw * Mathf.Deg2Rad;
+                return new Vector3(Mathf.Cos(yawRad), 0, -Mathf.Sin(yawRad));
+            }
+        }
 
         private void Awake()
         {
@@ -47,7 +80,61 @@ namespace ProjectC.Core
                 Debug.LogError("[ThirdPersonCamera] Target не назначен!");
                 return;
             }
+
+            _yaw = 0f;
+            _pitch = 15f;
+
             UpdateCameraPosition();
+
+            // Создаём UI подсказок если нет
+            CreateControlHintsUI();
+        }
+
+        /// <summary>
+        /// Создать UI подсказок автоматически
+        /// </summary>
+        private void CreateControlHintsUI()
+        {
+            var existingHints = FindAnyObjectByType<ProjectC.UI.ControlHintsUI>();
+            if (existingHints != null)
+            {
+                Debug.Log("[ThirdPersonCamera] ControlHintsUI уже существует");
+                return;
+            }
+
+            // Создаём Canvas
+            var canvas = FindAnyObjectByType<Canvas>();
+            if (canvas == null)
+            {
+                GameObject canvasObj = new GameObject("Canvas");
+                canvas = canvasObj.AddComponent<Canvas>();
+                canvasObj.AddComponent<UnityEngine.UI.CanvasScaler>();
+                canvasObj.AddComponent<UnityEngine.UI.GraphicRaycaster>();
+                canvas.renderMode = RenderMode.ScreenSpaceOverlay;
+            }
+
+            // TextMeshPro
+            var textObj = new GameObject("ControlHintsText");
+            textObj.transform.SetParent(canvas.transform);
+            RectTransform rt = textObj.AddComponent<RectTransform>();
+            rt.anchorMin = new Vector2(0, 1);
+            rt.anchorMax = new Vector2(0, 1);
+            rt.pivot = new Vector2(0, 1);
+            rt.anchoredPosition = new Vector2(20, -20);
+            rt.sizeDelta = new Vector2(300, 300);
+
+            var tmpText = textObj.AddComponent<TextMeshProUGUI>();
+            tmpText.fontSize = 14;
+            tmpText.color = Color.white;
+            tmpText.alignment = TextAlignmentOptions.TopLeft;
+
+            // ControlHintsUI
+            GameObject hintsObj = new GameObject("ControlHintsUI");
+            hintsObj.transform.SetParent(canvas.transform);
+            var controlHints = hintsObj.AddComponent<ProjectC.UI.ControlHintsUI>();
+            controlHints.hintsText = tmpText;
+
+            Debug.Log("[ThirdPersonCamera] Создан ControlHintsUI");
         }
 
         private void LateUpdate()
@@ -55,29 +142,27 @@ namespace ProjectC.Core
             if (target == null) return;
 
             _lookInput = _lookAction.ReadValue<Vector2>();
+
+            _yaw += _lookInput.x * mouseSensitivityX;
+            _pitch -= _lookInput.y * mouseSensitivityY;
+            _pitch = Mathf.Clamp(_pitch, minVerticalAngle, maxVerticalAngle);
+
             UpdateCameraPosition();
         }
 
         private void UpdateCameraPosition()
         {
-            if (targetBody == null)
-            {
-                // Если body не назначен — используем target
-                targetBody = target;
-            }
+            float yawRad = _yaw * Mathf.Deg2Rad;
+            float pitchRad = _pitch * Mathf.Deg2Rad;
 
-            // Камера сзади персонажа (на основе yaw персонажа)
-            float yaw = targetBody.eulerAngles.y * Mathf.Deg2Rad;
-            float pitch = orbitPitch * Mathf.Deg2Rad;
-
-            // Позиция камеры позади цели
+            // Направление от цели к камере (обратное от forward камеры)
             Vector3 dir = new Vector3(
-                Mathf.Sin(yaw) * Mathf.Cos(pitch),
-                Mathf.Sin(pitch),
-                Mathf.Cos(yaw) * Mathf.Cos(pitch)
+                -Mathf.Sin(yawRad) * Mathf.Cos(pitchRad),
+                Mathf.Sin(pitchRad),
+                -Mathf.Cos(yawRad) * Mathf.Cos(pitchRad)
             );
 
-            transform.position = target.position - dir * distance + Vector3.up * height;
+            transform.position = target.position + dir * distance + Vector3.up * height;
             transform.LookAt(target.position + Vector3.up * 1.5f);
         }
     }

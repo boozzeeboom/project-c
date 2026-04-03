@@ -46,22 +46,19 @@ namespace ProjectC.UI
             // Создаём Input Action программно
             _toggleHintsAction = new InputAction("ToggleHints", binding: "<Keyboard>/f1", expectedControlType: "Button");
             _toggleHintsAction.performed += ctx => ToggleHints();
+            _toggleHintsAction.Enable();
         }
 
         private void OnEnable()
         {
             if (_toggleHintsAction != null)
-            {
                 _toggleHintsAction.Enable();
-            }
         }
 
         private void OnDisable()
         {
             if (_toggleHintsAction != null)
-            {
                 _toggleHintsAction.Disable();
-            }
         }
 
         /// <summary>
@@ -74,17 +71,12 @@ namespace ProjectC.UI
             string hints = $@"<color=#{ColorToHex(titleColor)}><b>Управление</b></color>
 
 <color=#{ColorToHex(keyColor)}><b>Персонаж</b></color>
-<color=#{ColorToHex(textColor)}><b>W A S D</b></color> - Движение
-<color=#{ColorToHex(textColor)}><b>Мышь</b></color> - Обзор
+<color=#{ColorToHex(textColor)}><b>W</b></color> - Вперёд
+<color=#{ColorToHex(textColor)}><b>S</b></color> - Назад
+<color=#{ColorToHex(textColor)}><b>A D</b></color> - Стрейф влево/вправо
+<color=#{ColorToHex(textColor)}><b>Мышь</b></color> - Вращение камеры
 <color=#{ColorToHex(textColor)}><b>Space</b></color> - Прыжок
-<color=#{ColorToHex(textColor)}><b>Shift</b></color> - Бег
-
-<color=#{ColorToHex(keyColor)}><b>Камера мира</b></color>
-<color=#{ColorToHex(textColor)}><b>N / PgUp</b></color> - След. пик
-<color=#{ColorToHex(textColor)}><b>B / PgDown</b></color> - Пред. пик
-<color=#{ColorToHex(textColor)}><b>R</b></color> - Случ. пик
-<color=#{ColorToHex(textColor)}><b>H</b></color> - На высоту облаков
-<color=#{ColorToHex(textColor)}><b>V</b></color> - Полёт вкл/выкл (камера)
+<color=#{ColorToHex(textColor)}><b>Left Shift</b></color> - Бег
 
 <color=#{ColorToHex(keyColor)}><b>F1</b></color> - Скрыть/показать";
 

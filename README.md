@@ -1,12 +1,32 @@
-# Project C: The Clouds  
-**Version:** 0.2.1.1 | **Stage:** Prototype 
+# Project C: The Clouds
+**Version:** 0.2.1.1 | **Stage:** Prototype
 ## Whole project: [TheGravity](https://thegravity.ru) & [TheClouds](https://thegravity.ru/project-c/)
 
 ---
 **no marketing/bullshit/tech-heavy/sound sections**
 ---
 
-## 1. Introduction  
+## 📁 Документация
+
+Вся документация проекта находится в папке [`docs/`](docs/):
+
+| Файл | Описание |
+|------|----------|
+| [`docs/QWEN_CONTEXT.md`](docs/QWEN_CONTEXT.md) | **Текущий контекст** — что сделано, какие задачи в работе |
+| [`docs/MMO_Development_Plan.md`](docs/MMO_Development_Plan.md) | **Полный план разработки** MMO игры |
+| [`docs/STEP_BY_STEP_DEVELOPMENT.md`](docs/STEP_BY_STEP_DEVELOPMENT.md) | **Пошаговая разработка** |
+| [`docs/README_QWEN.md`](docs/README_QWEN.md) | Как продолжить работу с Qwen Code |
+| [`docs/README_CONTINUE.md`](docs/README_CONTINUE.md) | Быстрый старт |
+| [`docs/CONTROLS.md`](docs/CONTROLS.md) | Документация по управлению |
+| [`docs/GIT_WORKFLOW.md`](docs/GIT_WORKFLOW.md) | Шпаргалка Git команд |
+| [`docs/GIT_WORKFLOW_ADVANCED.md`](docs/GIT_WORKFLOW_ADVANCED.md) | Продвинутый Git workflow |
+| [`docs/QUICK_GIT_COMMANDS.md`](docs/QUICK_GIT_COMMANDS.md) | Быстрые команды Git |
+| [`docs/VERSION_BACKUP.md`](docs/VERSION_BACKUP.md) | Резервное копирование |
+| `docs/unity6/` | Документация по Unity 6 |
+
+---
+
+## 1. Introduction
 "Project-C" is a sci-fi flight simulator focused on trading and interaction in an alternate reality based on the book *Integral Pyavitsa*.
 
 **Setting:**  

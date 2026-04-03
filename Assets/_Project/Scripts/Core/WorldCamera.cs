@@ -123,9 +123,12 @@ namespace ProjectC.Core
 
         private void OnEnable()
         {
-            _moveAction.Enable();
-            _lookAction.Enable();
-            _scrollAction.Enable();
+            // Если есть target (персонаж), отключаем WASD и scroll — камера только вращается мышью
+            bool hasTarget = target != null;
+
+            _moveAction.enabled = !hasTarget;
+            _lookAction.Enable(); // Мышь всегда работает для вращения
+            _scrollAction.enabled = !hasTarget;
             _toggleFlyAction.Enable();
             _nextPeakAction.Enable();
             _previousPeakAction.Enable();
@@ -161,23 +164,32 @@ namespace ProjectC.Core
             // Находим WorldGenerator для получения списка пиков
             worldGenerator = FindAnyObjectByType<WorldGenerator>();
 
-            // Принудительно устанавливаем стартовую высоту
-            transform.position = new Vector3(0, startHeight, 0);
-            Debug.Log($"[WorldCamera] Стартовая высота: {startHeight}м");
+            // Если есть target (персонаж), не телепортируемся к пику
+            if (target != null)
+            {
+                // Камера следует за персонажем, старт с начальной позиции рядом
+                transform.position = target.position - transform.forward * distance + Vector3.up * height;
+                Debug.Log($"[WorldCamera] Следование за персонажем на {target.position}");
+            }
+            else
+            {
+                // Принудительно устанавливаем стартовую высоту
+                transform.position = new Vector3(0, startHeight, 0);
+                Debug.Log($"[WorldCamera] Стартовая высота: {startHeight}м");
+
+                // Телепорт к первому пику если нет персонажа
+                if (flyToFirstPeakOnStart && worldGenerator != null)
+                {
+                    var peaks = worldGenerator.GetAllPeaks();
+                    if (peaks.Count > 0)
+                    {
+                        TeleportToPeak(0);
+                    }
+                }
+            }
 
             // Создаём UI подсказок автоматически, если нет на сцене
             CreateControlHintsUI();
-
-            // Устанавливаем стартовую позицию
-            if (flyToFirstPeakOnStart && worldGenerator != null)
-            {
-                var peaks = worldGenerator.GetAllPeaks();
-                if (peaks.Count > 0)
-                {
-                    // Телепорт к первому пику
-                    TeleportToPeak(0);
-                }
-            }
         }
 
         /// <summary>
@@ -231,7 +243,24 @@ namespace ProjectC.Core
 
         private void LateUpdate()
         {
-            // Считываем continuous input каждый кадр
+            // Если есть цель (персонаж) — камера следует + вращается мышью
+            if (target != null)
+            {
+                // Обработка телепортации
+                if (isTeleporting)
+                {
+                    HandleTeleport();
+                    return;
+                }
+
+                // Считываем мышь для вращения вокруг персонажа
+                _lookInput = _lookAction.ReadValue<Vector2>();
+                HandleRotation();
+                HandleFollowTarget();
+                return;
+            }
+
+            // Режим свободного полёта — камера управляется сама
             _moveInput = _moveAction.ReadValue<Vector2>();
             _lookInput = _lookAction.ReadValue<Vector2>();
             _scrollInput = _scrollAction.ReadValue<float>();
@@ -241,11 +270,6 @@ namespace ProjectC.Core
             {
                 HandleTeleport();
                 return;
-            }
-
-            if (target != null)
-            {
-                FollowTarget();
             }
 
             HandleRotation();
@@ -280,6 +304,38 @@ namespace ProjectC.Core
         }
 
         /// <summary>
+        /// Следование за целью (персонажем) — камера от третьего лица
+        /// </summary>
+        private void HandleFollowTarget()
+        {
+            if (target == null) return;
+
+            // Вычисляем позицию камеры на основе углов орбиты
+            float yaw = currentX;
+            float pitch = currentY;
+
+            // Направление от цели к камере
+            Vector3 direction = new Vector3(
+                Mathf.Sin(yaw * Mathf.Deg2Rad) * Mathf.Cos(pitch * Mathf.Deg2Rad),
+                Mathf.Sin(pitch * Mathf.Deg2Rad),
+                Mathf.Cos(yaw * Mathf.Deg2Rad) * Mathf.Cos(pitch * Mathf.Deg2Rad)
+            );
+
+            Vector3 desiredPosition = target.position - direction.normalized * distance;
+
+            // Плавное следование
+            transform.position = Vector3.SmoothDamp(
+                transform.position,
+                desiredPosition,
+                ref currentVelocity,
+                0.15f
+            );
+
+            // Камера смотрит на цель
+            transform.LookAt(target.position + Vector3.up * 1.5f);
+        }
+
+        /// <summary>
         /// Следование за целью
         /// </summary>
         private void FollowTarget()
@@ -306,7 +362,12 @@ namespace ProjectC.Core
             currentY -= _lookInput.y * mouseSensitivityY;
             currentY = Mathf.Clamp(currentY, minVerticalAngle, maxVerticalAngle);
 
-            transform.eulerAngles = new Vector3(currentY, currentX, 0);
+            // В режиме следования за персонажем — не вращаем саму камеру, 
+            // а обновляем углы орбиты (HandleFollowTarget использует их)
+            if (target == null)
+            {
+                transform.eulerAngles = new Vector3(currentY, currentX, 0);
+            }
         }
 
         /// <summary>
@@ -314,6 +375,8 @@ namespace ProjectC.Core
         /// </summary>
         private void HandleMovement()
         {
+            // Не двигаем камеру если следуем за персонажем — персонаж двигается сам
+            if (target != null) return;
             if (!isFlying) return;
 
             // Boost проверяем каждый кадр — надёжнее

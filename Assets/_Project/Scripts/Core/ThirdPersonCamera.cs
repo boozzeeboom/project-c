@@ -120,6 +120,18 @@ namespace ProjectC.Core
         }
 
         /// <summary>
+        /// Установить новую цель (например, корабль)
+        /// </summary>
+        public void SetTarget(Transform newTarget)
+        {
+            if (newTarget != null)
+            {
+                target = newTarget;
+                Debug.Log($"[ThirdPersonCamera] Target changed to {newTarget.name}");
+            }
+        }
+
+        /// <summary>
         /// Создать UI подсказок автоматически
         /// </summary>
         private void CreateControlHintsUI()

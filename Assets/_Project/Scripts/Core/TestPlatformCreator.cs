@@ -35,10 +35,16 @@ namespace ProjectC.Core
             platform.transform.position = platformPosition;
             platform.transform.localScale = platformSize;
 
-            // Материал
-            Material mat = new Material(Shader.Find("Universal Render Pipeline/Lit"));
-            mat.color = platformColor;
-            platform.GetComponent<Renderer>().material = mat;
+            // Материал с фоллбэком
+            Material mat = null;
+            Shader shader = Shader.Find("Universal Render Pipeline/Lit");
+            if (shader == null) shader = Shader.Find("Standard");
+            if (shader != null)
+            {
+                mat = new Material(shader);
+                mat.color = platformColor;
+                platform.GetComponent<Renderer>().material = mat;
+            }
 
             Debug.Log($"[TestPlatform] Создана платформа: {platformSize}");
         }
@@ -50,9 +56,15 @@ namespace ProjectC.Core
             wall.transform.position = platformPosition + new Vector3(0, 3, -platformSize.z / 2 - 1);
             wall.transform.localScale = new Vector3(platformSize.x, 6, 1);
 
-            Material mat = new Material(Shader.Find("Universal Render Pipeline/Lit"));
-            mat.color = Color.blue;
-            wall.GetComponent<Renderer>().material = mat;
+            Material mat = null;
+            Shader shader = Shader.Find("Universal Render Pipeline/Lit");
+            if (shader == null) shader = Shader.Find("Standard");
+            if (shader != null)
+            {
+                mat = new Material(shader);
+                mat.color = Color.blue;
+                wall.GetComponent<Renderer>().material = mat;
+            }
 
             Debug.Log("[TestPlatform] Создана стена-ориентир");
         }

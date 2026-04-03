@@ -99,7 +99,7 @@ namespace ProjectC.Core
             _lookAction = new InputAction("Look", binding: "<Mouse>/delta", expectedControlType: "Vector2");
             _scrollAction = new InputAction("Scroll", binding: "<Mouse>/scroll/y", expectedControlType: "Float");
 
-            _toggleFlyAction = new InputAction("ToggleFlyMode", binding: "<Keyboard>/f", expectedControlType: "Button");
+            _toggleFlyAction = new InputAction("ToggleFlyMode", binding: "<Keyboard>/v", expectedControlType: "Button");
             _nextPeakAction = new InputAction("NextPeak", expectedControlType: "Button");
             _nextPeakAction.AddBinding("<Keyboard>/n");
             _nextPeakAction.AddBinding("<Keyboard>/pageUp");
@@ -126,9 +126,18 @@ namespace ProjectC.Core
             // Если есть target (персонаж), отключаем WASD и scroll — камера только вращается мышью
             bool hasTarget = target != null;
 
-            _moveAction.enabled = !hasTarget;
+            if (hasTarget)
+            {
+                _moveAction.Disable();
+                _scrollAction.Disable();
+            }
+            else
+            {
+                _moveAction.Enable();
+                _scrollAction.Enable();
+            }
+
             _lookAction.Enable(); // Мышь всегда работает для вращения
-            _scrollAction.enabled = !hasTarget;
             _toggleFlyAction.Enable();
             _nextPeakAction.Enable();
             _previousPeakAction.Enable();

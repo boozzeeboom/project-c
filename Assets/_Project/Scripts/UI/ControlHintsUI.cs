@@ -84,7 +84,7 @@ namespace ProjectC.UI
 <color=#{ColorToHex(textColor)}><b>B / PgDown</b></color> - Пред. пик
 <color=#{ColorToHex(textColor)}><b>R</b></color> - Случ. пик
 <color=#{ColorToHex(textColor)}><b>H</b></color> - На высоту облаков
-<color=#{ColorToHex(textColor)}><b>F</b></color> - Полёт вкл/выкл
+<color=#{ColorToHex(textColor)}><b>V</b></color> - Полёт вкл/выкл (камера)
 
 <color=#{ColorToHex(keyColor)}><b>F1</b></color> - Скрыть/показать";
 

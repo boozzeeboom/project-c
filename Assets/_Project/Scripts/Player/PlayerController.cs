@@ -87,6 +87,13 @@ namespace ProjectC.Player
         private void Update()
         {
             HandleInput();
+            
+            // Отладка
+            if (Time.frameCount % 30 == 0)
+            {
+                Debug.Log($"[PlayerController] Move input: {_moveInput}, Grounded: {_isGrounded}, Speed: {(_runAction.ReadValue<float>() > 0.5f ? runSpeed : walkSpeed)}");
+            }
+            
             HandleMovement();
         }
 
@@ -139,6 +146,12 @@ namespace ProjectC.Player
 
             // Применяем горизонтальное движение
             _controller.Move(moveDirection * currentSpeed * Time.deltaTime);
+
+            // Отладка движения
+            if (Time.frameCount % 30 == 0 && moveDirection.magnitude > 0.01f)
+            {
+                Debug.Log($"[PlayerController] Moving! Dir: {moveDirection}, Speed: {currentSpeed}, Pos: {transform.position}");
+            }
 
             // Прыжок
             if (_isGrounded && _jumpAction.WasPerformedThisFrame())

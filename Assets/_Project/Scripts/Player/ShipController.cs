@@ -92,20 +92,18 @@ namespace ProjectC.Player
             _verticalDown.Enable();
             _verticalUp.Enable();
             _boostAction.Enable();
-
-            Debug.Log($"[ShipController] {name} — управление активно");
         }
 
         private void OnDisable()
         {
-            _thrustPositive.Disable();
-            _thrustNegative.Disable();
-            _yawLeft.Disable();
-            _yawRight.Disable();
-            _pitchAction.Disable();
-            _verticalDown.Disable();
-            _verticalUp.Disable();
-            _boostAction.Disable();
+            if (_thrustPositive != null) _thrustPositive.Disable();
+            if (_thrustNegative != null) _thrustNegative.Disable();
+            if (_yawLeft != null) _yawLeft.Disable();
+            if (_yawRight != null) _yawRight.Disable();
+            if (_pitchAction != null) _pitchAction.Disable();
+            if (_verticalDown != null) _verticalDown.Disable();
+            if (_verticalUp != null) _verticalUp.Disable();
+            if (_boostAction != null) _boostAction.Disable();
         }
 
         private void FixedUpdate()

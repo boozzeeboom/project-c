@@ -4,9 +4,11 @@ using UnityEngine.InputSystem;
 namespace ProjectC.Player
 {
     /// <summary>
-    /// Контроллер персонажа — пеший режим
-    /// WASD движение + гравитация + прыжок
-    /// Вращение обрабатывает камера (WorldCamera)
+    /// Контроллер персонажа — классический вид от третьего лица
+    /// Мышь X — поворот персонажа
+    /// W — идти вперёд (куда смотрит персонаж)
+    /// A/D — поворот влево/вправо
+    /// Space — прыжок
     /// </summary>
     [RequireComponent(typeof(CharacterController))]
     public class PlayerController : MonoBehaviour
@@ -18,6 +20,13 @@ namespace ProjectC.Player
         [Tooltip("Скорость бега")]
         [SerializeField] private float runSpeed = 10f;
 
+        [Header("Вращение")]
+        [Tooltip("Чувствительность мыши для поворота")]
+        [SerializeField] private float lookSensitivity = 3f;
+
+        [Tooltip("Скорость поворота при A/D (градусы/сек)")]
+        [SerializeField] private float rotationSpeed = 180f;
+
         [Header("Прыжок")]
         [Tooltip("Сила прыжка")]
         [SerializeField] private float jumpForce = 8f;
@@ -26,11 +35,8 @@ namespace ProjectC.Player
         [SerializeField] private float gravity = -20f;
 
         [Header("Камера")]
-        [Tooltip("Ссылка на ThirdPersonCamera для определения направления")]
-        [SerializeField] private Transform cameraTransform;
-
-        // ThirdPersonCamera (кэш)
-        private ProjectC.Core.ThirdPersonCamera _thirdPersonCamera;
+        [Tooltip("Ссылка на ThirdPersonCamera")]
+        [SerializeField] private ThirdPersonCamera cameraController;
 
         // CharacterController
         private CharacterController _controller;
@@ -39,16 +45,17 @@ namespace ProjectC.Player
 
         // Ввод
         private InputAction _moveAction;
+        private InputAction _lookAction;
         private InputAction _jumpAction;
         private InputAction _runAction;
 
         private Vector2 _moveInput;
+        private Vector2 _lookInput;
 
         private void Awake()
         {
             _controller = GetComponent<CharacterController>();
 
-            // Создаём Input Actions программно
             _moveAction = new InputAction("Move", expectedControlType: "Vector2");
             _moveAction.AddCompositeBinding("2DVector")
                 .With("Up", "<Keyboard>/w")
@@ -56,6 +63,7 @@ namespace ProjectC.Player
                 .With("Left", "<Keyboard>/a")
                 .With("Right", "<Keyboard>/d");
 
+            _lookAction = new InputAction("Look", binding: "<Mouse>/delta", expectedControlType: "Vector2");
             _jumpAction = new InputAction("Jump", binding: "<Keyboard>/space", expectedControlType: "Button");
             _runAction = new InputAction("Run", binding: "<Keyboard>/leftShift", expectedControlType: "Button");
         }
@@ -63,6 +71,7 @@ namespace ProjectC.Player
         private void OnEnable()
         {
             _moveAction.Enable();
+            _lookAction.Enable();
             _jumpAction.Enable();
             _runAction.Enable();
         }
@@ -70,95 +79,72 @@ namespace ProjectC.Player
         private void OnDisable()
         {
             _moveAction.Disable();
+            _lookAction.Disable();
             _jumpAction.Disable();
             _runAction.Disable();
         }
 
         private void Start()
         {
-            // Если камера не назначена, ищем главную камеру
-            if (cameraTransform == null)
+            if (cameraController == null)
             {
-                var mainCamera = Camera.main;
-                if (mainCamera != null)
-                {
-                    cameraTransform = mainCamera.transform;
-                }
-            }
-
-            // Кэшируем ThirdPersonCamera если есть
-            if (cameraTransform != null)
-            {
-                _thirdPersonCamera = cameraTransform.GetComponent<ProjectC.Core.ThirdPersonCamera>();
+                cameraController = FindAnyObjectByType<ThirdPersonCamera>();
             }
         }
 
         private void Update()
         {
             HandleInput();
+            HandleLook();
             HandleMovement();
         }
 
-        /// <summary>
-        /// Считать ввод
-        /// </summary>
         private void HandleInput()
         {
             _moveInput = _moveAction.ReadValue<Vector2>();
+            _lookInput = _lookAction.ReadValue<Vector2>();
         }
 
         /// <summary>
-        /// Обработка движения
+        /// Мышь вращает персонажа по Y
+        /// </summary>
+        private void HandleLook()
+        {
+            float yaw = _lookInput.x * lookSensitivity;
+            transform.Rotate(Vector3.up, yaw);
+        }
+
+        /// <summary>
+        /// Движение
         /// </summary>
         private void HandleMovement()
         {
-            // Проверка земли
             _isGrounded = _controller.isGrounded;
 
-            // Сброс вертикальной скорости на земле
             if (_isGrounded && _velocity.y < 0)
             {
                 _velocity.y = -2f;
             }
 
-            // Направление движения относительно камеры
-            Vector3 forward, right;
-
-            if (_thirdPersonCamera != null)
-            {
-                // Использовать направление ThirdPersonCamera
-                forward = _thirdPersonCamera.Forward;
-                right = _thirdPersonCamera.Right;
-            }
-            else
-            {
-                // Фоллбэк — из transform камеры
-                forward = cameraTransform != null ? cameraTransform.forward : transform.forward;
-                right = cameraTransform != null ? cameraTransform.right : transform.right;
-                forward.y = 0;
-                right.y = 0;
-            }
-
-            forward.Normalize();
-            right.Normalize();
-
-            // Вычисляем направление движения
-            Vector3 moveDirection = forward * _moveInput.y + right * _moveInput.x;
-            moveDirection.Normalize();
-
-            // Определяем скорость (бег/ходьба)
+            // W/S = вперёд/назад относительно персонажа
+            // A/D = поворот влево/вправо
             bool running = _runAction.ReadValue<float>() > 0.5f;
             float currentSpeed = running ? runSpeed : walkSpeed;
 
-            // Поворачиваем персонажа по направлению движения
-            if (moveDirection.magnitude > 0.01f)
+            // Вперёд/назад
+            float forwardInput = _moveInput.y;
+            if (Mathf.Abs(forwardInput) > 0.01f)
             {
-                Quaternion targetRotation = Quaternion.LookRotation(moveDirection);
-                transform.rotation = Quaternion.Slerp(transform.rotation, targetRotation, 10f * Time.deltaTime);
+                Vector3 moveDir = transform.forward * forwardInput;
+                _controller.Move(moveDir * currentSpeed * Time.deltaTime);
             }
 
-            // Применяем горизонтальное движение
-            _controller.Move(moveDirection * currentSpeed * Time.deltaTime);
+            // A/D = поворот
+            float turnInput = _moveInput.x;
+            if (Mathf.Abs(turnInput) > 0.01f)
+            {
+                transform.Rotate(Vector3.up, turnInput * rotationSpeed * Time.deltaTime);
+            }
 
             // Прыжок
             if (_isGrounded && _jumpAction.WasPerformedThisFrame())
@@ -171,9 +157,6 @@ namespace ProjectC.Player
             _controller.Move(_velocity * Time.deltaTime);
         }
 
-        /// <summary>
-        /// Проверка: на земле ли персонаж?
-        /// </summary>
         public bool IsGrounded => _isGrounded;
     }
 }

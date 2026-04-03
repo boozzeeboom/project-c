@@ -348,9 +348,12 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 6dd099347e732b6408915e0b059d2897, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::ProjectC.Core.ThirdPersonCamera
-  target: {fileID: 700419375}
+  target: {fileID: 2041231975}
   distance: 8
+  shipDistance: 18
   height: 3
+  shipHeight: 6
+  switchSpeed: 5
   mouseSensitivityX: 3
   mouseSensitivityY: 3
   minVerticalAngle: 0
@@ -620,6 +623,7 @@ MonoBehaviour:
   angularDrag: 2
   stabilizationForce: 50
   autoStabilize: 1
+  cameraController: {fileID: 589887861}
 --- !u!54 &2041231971
 Rigidbody:
   m_ObjectHideFlags: 0

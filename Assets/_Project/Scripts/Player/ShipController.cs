@@ -1,5 +1,6 @@
 using UnityEngine;
 using UnityEngine.InputSystem;
+using ProjectC.Core;
 
 namespace ProjectC.Player
 {
@@ -18,14 +19,14 @@ namespace ProjectC.Player
         [SerializeField] private float maxSpeed = 30f;
 
         [Header("Вращение")]
-        [Tooltip("Сила рыскания (yaw, лево/право)")]
-        [SerializeField] private float yawForce = 200f;
+        [Tooltip("Сила рыскания (yaw, лево/право) — медленная, как у баржи")]
+        [SerializeField] private float yawForce = 100f;
 
         [Tooltip("Сила тангажа (pitch, вверх/вниз)")]
-        [SerializeField] private float pitchForce = 200f;
+        [SerializeField] private float pitchForce = 80f;
 
-        [Tooltip("Сила крена (roll)")]
-        [SerializeField] private float rollForce = 150f;
+        [Tooltip("Сила крена (roll) — минимальная, рамка стабилизирует")]
+        [SerializeField] private float rollForce = 10f;
 
         [Header("Антигравитация")]
         [Tooltip("Компенсация гравитации (0 = падает, 1 = зависает)")]
@@ -44,6 +45,10 @@ namespace ProjectC.Player
 
         [Tooltip("Автоматическая стабилизация при отсутствии ввода")]
         [SerializeField] private bool autoStabilize = true;
+
+        [Header("Камера")]
+        [Tooltip("Ссылка на ThirdPersonCamera")]
+        [SerializeField] private ThirdPersonCamera cameraController;
 
         // Rigidbody
         private Rigidbody _rb;
@@ -95,6 +100,12 @@ namespace ProjectC.Player
             _rollLeft.Enable();
             _rollRight.Enable();
             _boostAction.Enable();
+
+            // Переключаем камеру в режим корабля
+            if (cameraController == null)
+                cameraController = FindAnyObjectByType<ThirdPersonCamera>();
+            if (cameraController != null)
+                cameraController.SetShipMode(true);
         }
 
         private void OnDisable()
@@ -107,6 +118,10 @@ namespace ProjectC.Player
             _rollLeft.Disable();
             _rollRight.Disable();
             _boostAction.Disable();
+
+            // Возвращаем камеру в пеший режим
+            if (cameraController != null)
+                cameraController.SetShipMode(false);
         }
 
         private void FixedUpdate()

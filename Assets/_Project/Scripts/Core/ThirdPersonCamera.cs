@@ -17,11 +17,25 @@ namespace ProjectC.Core
         [SerializeField] private Transform target;
 
         [Header("Орбита")]
-        [Tooltip("Дистанция от цели")]
+        [Tooltip("Дистанция от цели (пеший режим)")]
         [SerializeField] private float distance = 5f;
 
-        [Tooltip("Высота камеры относительно цели")]
+        [Tooltip("Дистанция от цели (режим корабля)")]
+        [SerializeField] private float shipDistance = 18f;
+
+        [Tooltip("Высота камеры относительно цели (пеший)")]
         [SerializeField] private float height = 2f;
+
+        [Tooltip("Высота камеры относительно цели (корабль)")]
+        [SerializeField] private float shipHeight = 6f;
+
+        [Header("Переключение")]
+        [Tooltip("Скорость плавного переключения дистанции")]
+        [SerializeField] private float switchSpeed = 5f;
+
+        // Текущие интерполированные значения
+        private float _currentDistance;
+        private float _currentHeight;
 
         [Header("Вращение")]
         [Tooltip("Чувствительность мыши X")]
@@ -83,11 +97,26 @@ namespace ProjectC.Core
 
             _yaw = 0f;
             _pitch = 15f;
+            _currentDistance = distance;
+            _currentHeight = height;
 
             UpdateCameraPosition();
 
             // Создаём UI подсказок если нет
             CreateControlHintsUI();
+        }
+
+        /// <summary>
+        /// Переключить режим камеры (пеший ↔ корабль)
+        /// </summary>
+        public void SetShipMode(bool isShip)
+        {
+            float targetDistance = isShip ? shipDistance : distance;
+            float targetHeight = isShip ? shipHeight : height;
+
+            // Плавное переключение будет в LateUpdate через Lerp
+            _currentDistance = targetDistance;
+            _currentHeight = targetHeight;
         }
 
         /// <summary>
@@ -162,7 +191,7 @@ namespace ProjectC.Core
                 -Mathf.Cos(yawRad) * Mathf.Cos(pitchRad)
             );
 
-            transform.position = target.position + dir * distance + Vector3.up * height;
+            transform.position = target.position + dir * _currentDistance + Vector3.up * _currentHeight;
             transform.LookAt(target.position + Vector3.up * 1.5f);
         }
     }

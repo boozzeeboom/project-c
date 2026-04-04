@@ -2,6 +2,8 @@
 
 **Последнее обновление:** 4 апреля 2026 г. | **Ветка:** `qwen-dev` | **Версия:** `v0.0.5.1`
 
+📄 Файл на GitHub: https://github.com/boozzeeboom/project-c/blob/qwen-dev/docs/STRUCTURE.md
+
 ---
 
 ## 📂 Каталог документов

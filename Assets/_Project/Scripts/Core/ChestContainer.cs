@@ -56,41 +56,23 @@ namespace ProjectC.Items
         }
 
         /// <summary>
-        /// Открыть сундук. Вызывается из ItemPickupSystem.
-        /// Возвращает список подобранных предметов.
+        /// Открыть сундук. Запускает ТОЛЬКО анимацию.
+        /// Инвентарь управляется из NetworkPlayer.
         /// </summary>
-        public List<ItemData> Open()
+        public void Open()
         {
-            if (_isOpen || lootTable == null) return new List<ItemData>();
+            if (_isOpen) return;
             _isOpen = true;
+            // Только анимация — инвентарь управляется отдельно
+        }
 
-            // Генерируем лут
-            var loot = lootTable.GenerateLoot();
-
-            // Добавляем всё в инвентарь
-            if (Inventory.Instance != null)
-            {
-                Inventory.Instance.AddMultipleItems(loot);
-
-                // Запускаем визуальную вспышку в UI
-                var inventoryUI = FindAnyObjectByType<InventoryUI>();
-                if (inventoryUI != null)
-                {
-                    inventoryUI.TriggerSectorFlash();
-                }
-            }
-            else
-            {
-                Debug.LogError("[ChestContainer] Inventory.Instance == null!");
-            }
-
-            // Автоуничтожение после открытия
-            if (autoDestroy)
-            {
-                Destroy(gameObject, openDuration + 0.5f);
-            }
-
-            return loot;
+        /// <summary>
+        /// Получить список предметов из LootTable (без открытия, для серверной логики).
+        /// </summary>
+        public List<ItemData> GetLootItems()
+        {
+            if (lootTable == null) return new List<ItemData>();
+            return lootTable.GenerateLoot();
         }
 
         /// <summary>

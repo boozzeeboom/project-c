@@ -6,27 +6,16 @@ namespace ProjectC.Items
     /// <summary>
     /// Менеджер инвентаря. Хранит предметы, сгруппированные по типам.
     /// Каждый тип привязан к своему сектору кругового колеса (8 секторов).
+    /// Каждый игрок имеет свой экземпляр Inventory (вешается на NetworkPlayer).
     /// </summary>
     public class Inventory : MonoBehaviour
     {
-        public static Inventory Instance { get; private set; }
-
         // Словарь: тип предмета → список предметов этого типа
         private Dictionary<ItemType, List<ItemData>> _itemsByType = new Dictionary<ItemType, List<ItemData>>();
 
         // Инициализируем все 8 типов пустыми списками
         private void Awake()
         {
-            if (Instance == null)
-            {
-                Instance = this;
-            }
-            else
-            {
-                Destroy(gameObject);
-                return;
-            }
-
             foreach (ItemType type in System.Enum.GetValues(typeof(ItemType)))
             {
                 _itemsByType[type] = new List<ItemData>();

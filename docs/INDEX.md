@@ -17,6 +17,11 @@
 | Файл | Описание |
 |------|----------|
 | [CONTROLS.md](CONTROLS.md) | Документация по управлению |
+| [WORLD_LORE_BOOK.md](WORLD_LORE_BOOK.md) | **Полный лор книги «Интеграл Пьявица»** — мир, технологии, персонажи, сюжет |
+| [WORLD_LORE_GRAVITY.md](WORLD_LORE_GRAVITY.md) | Краткий справочник лора (антигравий, мезий, корабли) |
+| [SHIP_LORE_AND_MECHANICS.md](SHIP_LORE_AND_MECHANICS.md) | Механики кораблей из лора |
+| [SHIP_SYSTEM_DOCUMENTATION.md](SHIP_SYSTEM_DOCUMENTATION.md) | Текущая реализация системы кораблей |
+| [SHIP_CONTROLLER_PLAN.md](SHIP_CONTROLLER_PLAN.md) | План разработки контроллера корабля |
 
 ---
 
@@ -66,5 +71,5 @@ ProjectC_client/
 
 ---
 
-**Последнее обновление:** 3 апреля 2026 г.
+**Последнее обновление:** 4 апреля 2026 г.
 **Ветка:** `qwen-dev`

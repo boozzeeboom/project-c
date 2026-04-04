@@ -1,6 +1,6 @@
-# Система инвентаря и подбора предметов
+# Система инвентаря, подбора предметов и сундуков
 
-**Последнее обновление:** 4 апреля 2026 г. | **Версия:** `v0.0.6-inventory`
+**Последнее обновление:** 4 апреля 2026 г. | **Версия:** `v0.0.7-chest-system`
 
 ---
 
@@ -17,22 +17,22 @@
 | Файл | Роль |
 |------|------|
 | `ItemType.cs` | Enum типов (Type1–Type8) + ItemData ScriptableObject |
-| `Inventory.cs` | Singleton-менеджер: группирует предметы по типам |
+| `Inventory.cs` | Singleton-менеджер: группирует предметы по типам, `AddMultipleItems()` |
 | `PickupItem.cs` | Подбираемый объект в мире (триггер, покачивание) |
-| `ItemPickupSystem.cs` | Обработка клавиши E: поиск ближайшего → подбор |
-| `InventoryUI.cs` | Круговое колесо: 8 секторов, GL-рендер, hover, подсписки |
+| `ItemPickupSystem.cs` | Обработка клавиши E: поиск ближайшего → подбор ИЛИ открытие сундука |
+| `InventoryUI.cs` | Круговое колесо: 8 секторов, GL-рендер, hover, подсписки, вспышка |
 | `ControlHintsUI.cs` | Подсказки E и Tab в HUD |
+| `LootTable.cs` | ScriptableObject таблицы добычи (шансы, min/max, guaranteed) |
+| `ChestContainer.cs` | Компонент сундука: анимация открытия, LootTable, автоуничтожение |
 
 ### Поток данных
 
 ```
 Игрок (E) → ItemPickupSystem → PickupItem.Collect()
-    ↓
-Inventory.AddItem(ItemData)
-    ↓
-InventoryUI: обновляет цвет сектора + счётчик
-    ↓
-Hover на сектор → DrawSublist (если count > 1)
+    ↓                                ↓
+Inventory.AddItem(ItemData)      Inventory.AddMultipleItems(list)
+    ↓                                ↓
+InventoryUI: обновляет цвет      InventoryUI.TriggerSectorFlash()
 ```
 
 ---
@@ -41,7 +41,7 @@ Hover на сектор → DrawSublist (если count > 1)
 
 | Клавиша | Действие | Режим |
 |---------|----------|-------|
-| **E** | Подобрать ближайший предмет (радиус 3м) | Пеший |
+| **E** | Подобрать ближайший предмет (радиус 3м) ИЛИ открыть сундук | Пеший |
 | **Tab** | Открыть/закрыть круговой инвентарь | Пеший |
 
 ---
@@ -93,7 +93,37 @@ Project окно → Create → Project C → Item Data
 
 ---
 
+## 📦 Создание сундука
+
+### 1. Создать LootTable (ScriptableObject)
+
+```
+Project окно → Create → Project C → Loot Table
+```
+
+Поля:
+- **Entries** — список возможных предметов:
+  - `item` — ItemData
+  - `chance` — шанс выпадения (0-1)
+  - `minCount` / `maxCount` — диапазон количества
+- **Guaranteed Items** — гарантированные предметы (игнорируют шанс)
+
+### 2. Разместить сундук в мире
+
+1. Создать 3D-объект (Cube/сундук/etc.)
+2. Добавить компонент `ChestContainer`
+3. Перетащить LootTable в поле **Loot Table**
+4. Настроить `openRadius`, анимацию (`openRotationOffset`, `openScaleOffset`)
+
+---
+
 ## ⏳ Запланированные доработки
+
+### ✅ Выполнено (v0.0.7)
+- ✅ **Открытие сундуков** — контейнеры с несколькими предметами через LootTable
+- ✅ **Анимация сундука** — плавное вращение + масштаб при открытии
+- ✅ **Вспышка секторов** — визуальная обратная связь при получении лута
+- ✅ **Приоритет взаимодействия** — сундук > обычный предмет
 
 ### Фаза 2: Визуальное улучшение (следующая сессия)
 
@@ -102,7 +132,6 @@ Project окно → Create → Project C → Item Data
 - [ ] **«Облачный» дизайн** колеса — в стиле Ghibli-эстетики
 - [ ] **Отображение на персонаже** — подобранные предметы видны визуально
 - [ ] **Удобная система добавления** — редактор для расстановки предметов в мире
-- [ ] **Открытие сундуков** — контейнеры с несколькими предметами
 
 ### Фаза 3: Сетевая синхронизация (Этап 2 MMO-плана)
 
@@ -119,5 +148,7 @@ Project окно → Create → Project C → Item Data
 - [`PickupItem.cs`](../Assets/_Project/Scripts/Core/PickupItem.cs)
 - [`ItemPickupSystem.cs`](../Assets/_Project/Scripts/Player/ItemPickupSystem.cs)
 - [`ItemType.cs`](../Assets/_Project/Scripts/Core/ItemType.cs)
+- [`LootTable.cs`](../Assets/_Project/Scripts/Core/LootTable.cs)
+- [`ChestContainer.cs`](../Assets/_Project/Scripts/Core/ChestContainer.cs)
 - [`CONTROLS.md`](CONTROLS.md)
 - [`MMO_Development_Plan.md`](MMO_Development_Plan.md)

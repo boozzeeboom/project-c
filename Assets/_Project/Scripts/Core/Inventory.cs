@@ -45,6 +45,22 @@ namespace ProjectC.Items
         }
 
         /// <summary>
+        /// Добавить несколько предметов пакетом (для сундуков).
+        /// Вызывает событие для UI после каждого добавления.
+        /// </summary>
+        public void AddMultipleItems(List<ItemData> items)
+        {
+            if (items == null || items.Count == 0) return;
+
+            foreach (var item in items)
+            {
+                AddItem(item);
+            }
+
+            Debug.Log($"[Inventory] Открыл сундук: подобрано {items.Count} предметов.");
+        }
+
+        /// <summary>
         /// Получить все предметы определённого типа
         /// </summary>
         public List<ItemData> GetItemsByType(ItemType type)

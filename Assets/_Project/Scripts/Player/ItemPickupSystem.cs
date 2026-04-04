@@ -24,8 +24,9 @@ namespace ProjectC.Player
         private PlayerStateMachine _stateMachine;
         private InputAction _pickupAction;
 
-        // Для индикации: ближайший доступный предмет
+        // Для индикации: ближайший доступный предмет или сундук
         private PickupItem _nearestPickup;
+        private ChestContainer _nearestChest;
 
         private void Awake()
         {
@@ -52,43 +53,75 @@ namespace ProjectC.Player
             if (!_stateMachine.IsWalking)
             {
                 _nearestPickup = null;
+                _nearestChest = null;
                 return;
             }
 
-            FindNearestPickup();
+            FindNearestInteractable();
         }
 
         /// <summary>
-        /// Найти ближайший подбираемый предмет в радиусе
+        /// Найти ближайший подбираемый предмет или сундук в радиусе
         /// </summary>
-        private void FindNearestPickup()
+        private void FindNearestInteractable()
         {
             _nearestPickup = null;
+            _nearestChest = null;
             float nearestDist = float.MaxValue;
+            bool foundChest = false;
 
-            // Находим все активные PickupItem на сцене (Unity 6 API — последняя версия)
-            var pickups = FindObjectsByType<PickupItem>();
-
-            foreach (var pickup in pickups)
+            // Ищем сундуки
+            var chests = FindObjectsByType<ChestContainer>(FindObjectsInactive.Include);
+            foreach (var chest in chests)
             {
-                if (!pickup.gameObject.activeSelf) continue;
+                if (!chest.gameObject.activeSelf) continue;
 
-                float dist = Vector3.Distance(transform.position, pickup.transform.position);
-                if (dist < pickupRange && dist < nearestDist)
+                float dist = Vector3.Distance(transform.position, chest.transform.position);
+                if (dist < chest.GetOpenRadius() && dist < nearestDist)
                 {
                     nearestDist = dist;
-                    _nearestPickup = pickup;
+                    _nearestChest = chest;
+                    foundChest = true;
+                    _nearestPickup = null; // Приоритет сундуку
+                }
+            }
+
+            // Если сундук не найден — ищем обычные предметы
+            if (!foundChest)
+            {
+                var pickups = FindObjectsByType<PickupItem>(FindObjectsInactive.Include);
+                nearestDist = float.MaxValue;
+
+                foreach (var pickup in pickups)
+                {
+                    if (!pickup.gameObject.activeSelf) continue;
+
+                    float dist = Vector3.Distance(transform.position, pickup.transform.position);
+                    if (dist < pickupRange && dist < nearestDist)
+                    {
+                        nearestDist = dist;
+                        _nearestPickup = pickup;
+                    }
                 }
             }
         }
 
         /// <summary>
-        /// Попытка подобрать предмет по нажатию E
+        /// Попытка взаимодействия по нажатию E
         /// </summary>
         private void TryPickup()
         {
             if (!_stateMachine.IsWalking) return;
 
+            // Приоритет: сундук
+            if (_nearestChest != null)
+            {
+                _nearestChest.Open();
+                _nearestChest = null;
+                return;
+            }
+
+            // Обычный предмет
             if (_nearestPickup != null)
             {
                 _nearestPickup.Collect();
@@ -97,21 +130,33 @@ namespace ProjectC.Player
         }
 
         /// <summary>
-        /// Есть ли предмет рядом для подбора (для UI подсказки)
+        /// Есть ли предмет или сундук рядом для взаимодействия (для UI подсказки)
         /// </summary>
         public bool HasNearbyPickup()
         {
-            return _nearestPickup != null && _stateMachine.IsWalking;
+            return (_nearestPickup != null || _nearestChest != null) && _stateMachine.IsWalking;
         }
 
         /// <summary>
-        /// Получить имя ближайшего предмета (для UI)
+        /// Получить имя ближайшего предмета или сундука (для UI)
         /// </summary>
         public string GetNearbyPickupName()
         {
+            // Сундук — приоритет
+            if (_nearestChest != null)
+                return "Сундук";
+
             if (_nearestPickup != null && _nearestPickup.itemData != null)
                 return _nearestPickup.itemData.itemName;
             return "";
+        }
+
+        /// <summary>
+        /// Является ли ближайшее взаимодействие сундуком (для UI иконки)
+        /// </summary>
+        public bool IsNearbyChest()
+        {
+            return _nearestChest != null && _stateMachine.IsWalking;
         }
 
         private void OnDrawGizmosSelected()

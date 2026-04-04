@@ -78,7 +78,7 @@ namespace ProjectC.UI
 <color=#{ColorToHex(textColor)}><b>Space</b></color> - Прыжок
 <color=#{ColorToHex(textColor)}><b>Left Shift</b></color> - Бег
 <color=#{ColorToHex(textColor)}><b>F</b></color> - Сесть в корабль / выйти
-<color=#{ColorToHex(textColor)}><b>E</b></color> - Подобрать предмет
+<color=#{ColorToHex(textColor)}><b>E</b></color> - Подобрать предмет / открыть сундук
 <color=#{ColorToHex(textColor)}><b>Tab</b></color> - Открыть инвентарь
 
 <color=#{ColorToHex(keyColor)}><b>Корабль</b></color>

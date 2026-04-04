@@ -345,12 +345,14 @@ git reset --hard HEAD
 
 | Шаг | Описание | Статус | Коммит |
 |-----|----------|--------|--------|
-| 1 | NETWORK_PHASE2_PLAN.md создан | ✅ | — |
-| 2 | STEP_1_NETWORKPLAYER_SETUP.md создан | ✅ | — |
-| 3 | NetworkPlayer.cs добавлен на префаб (Unity Editor) | ⏳ | — |
-| 4 | PlayerPrefab указан в NetworkManager (Unity Editor) | ⏳ | — |
-| 5 | NetworkPlayer добавлен в DefaultNetworkPrefabs (Unity Editor) | ⏳ | — |
-| 6 | Тест: Host → "Local player spawned" в консоли | ⏳ | — |
+| 1 | NETWORK_PHASE2_PLAN.md создан | ✅ | `721253b` |
+| 2 | STEP_1_NETWORKPLAYER_SETUP.md создан | ✅ | `721253b` |
+| 3 | NetworkPlayer.cs добавлен на префаб (Unity Editor) | ✅ | `2957402` |
+| 4 | PlayerPrefab указан в NetworkManager (Unity Editor) | ✅ | `2957402` |
+| 5 | NetworkPlayer добавлен в DefaultNetworkPrefabs (Unity Editor) | ✅ | `2957402` |
+| 6 | UI панель подключения создана | ✅ | `2957402` |
+| 7 | Тест: Host → "Local player spawned" в консоли | ✅ | `2957402` |
+| 8 | Тест: Host + Client (2 окна) — синхронизация | ⏳ | — |
 
 **Версия:** `v0.0.8-network-phase2` | **Дата:** 4 апреля 2026 г.
 

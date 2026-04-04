@@ -12,7 +12,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: bc6870a8389fd0740996fd002c22ffb2, type: 3}
   m_Name: TestItem_Type1
   m_EditorClassIdentifier: Assembly-CSharp::ProjectC.Items.ItemData
-  itemName: "\u041C\u0435\u0437\u0438\u0439"
+  itemName: "\u0413\u043E\u0432\u043D\u043E"
   itemType: 0
   description: 
   icon: {fileID: 0}

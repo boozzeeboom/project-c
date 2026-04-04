@@ -21,6 +21,7 @@
 | [WORLD_LORE_GRAVITY.md](WORLD_LORE_GRAVITY.md) | Краткий справочник лора (антигравий, мезий, корабли) |
 | [SHIP_LORE_AND_MECHANICS.md](SHIP_LORE_AND_MECHANICS.md) | Механики кораблей из лора |
 | [SHIP_SYSTEM_DOCUMENTATION.md](SHIP_SYSTEM_DOCUMENTATION.md) | Текущая реализация системы кораблей |
+| [INVENTORY_SYSTEM.md](INVENTORY_SYSTEM.md) | **Система инвентаря** — круговое колесо, подбор, группировка |
 | [SHIP_CONTROLLER_PLAN.md](SHIP_CONTROLLER_PLAN.md) | План разработки контроллера корабля |
 
 ---

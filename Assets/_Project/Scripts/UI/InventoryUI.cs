@@ -32,6 +32,11 @@ namespace ProjectC.Items
         private InputAction _toggleAction;
         private InputAction _mousePosAction;
 
+        // Анимация получения предметов (вспышка секторов)
+        private float _flashTimer = 0f;
+        private const float _flashDuration = 0.6f;
+        private bool[] _flashingSectors = new bool[8];
+
         // Углы секторов: index 0 = верх, по часовой стрелке (стандартная математика)
         private static readonly float[] _sectorMidAngles = new float[]
         {
@@ -69,11 +74,42 @@ namespace ProjectC.Items
         {
             if (_isOpen)
                 UpdateHover();
+
+            // Обновляем анимацию вспышки
+            if (_flashTimer > 0f)
+            {
+                _flashTimer -= Time.deltaTime;
+                if (_flashTimer <= 0f)
+                {
+                    _flashTimer = 0f;
+                    for (int i = 0; i < 8; i++)
+                        _flashingSectors[i] = false;
+                }
+            }
         }
 
         private void ToggleInventory()
         {
             _isOpen = !_isOpen;
+        }
+
+        /// <summary>
+        /// Запустить анимацию вспышки секторов при получении предметов.
+        /// Вызывается после открытия сундука.
+        /// </summary>
+        public void TriggerSectorFlash()
+        {
+            _flashTimer = _flashDuration;
+
+            // Помечаем все непустые секторы
+            if (Inventory.Instance != null)
+            {
+                for (int i = 0; i < 8; i++)
+                {
+                    ItemType type = (ItemType)i;
+                    _flashingSectors[i] = Inventory.Instance.HasItemsInType(type);
+                }
+            }
         }
 
         private void UpdateHover()
@@ -180,7 +216,16 @@ namespace ProjectC.Items
                 );
             }
 
-            DrawFilledFan(vertices, color);
+            // Если сектор мерцает — усиливаем цвет
+            Color finalColor = color;
+            if (_flashTimer > 0f && _flashingSectors[index])
+            {
+                float t = _flashTimer / _flashDuration; // 1→0
+                Color flashColor = Color.Lerp(hasItemsColor, new Color(0.5f, 0.9f, 0.5f, 0.95f), t);
+                finalColor = Color.Lerp(color, flashColor, t);
+            }
+
+            DrawFilledFan(vertices, finalColor);
             DrawOutline(vertices);
         }
 

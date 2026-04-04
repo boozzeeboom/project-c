@@ -9,14 +9,16 @@ namespace ProjectC.Items
     /// Tab — открыть/закрыть.
     /// Наведение мыши подсвечивает сектор.
     /// При >1 предмете в секторе — подсписок.
+    /// Каждый экземпляр привязан к своему Inventory (на NetworkPlayer).
     /// </summary>
     public class InventoryUI : MonoBehaviour
     {
+        [Header("Ссылки")]
+        [SerializeField] private Inventory inventory;
+
         [Header("Настройки колеса")]
-        [Tooltip("Радиус круга")]
         [SerializeField] private float wheelRadius = 210f;
 
-        [Tooltip("Радиус центрального отверстия")]
         [SerializeField] private float innerRadius = 70f;
 
         [Header("Цвета")]
@@ -102,12 +104,12 @@ namespace ProjectC.Items
             _flashTimer = _flashDuration;
 
             // Помечаем все непустые секторы
-            if (Inventory.Instance != null)
+            if (inventory != null)
             {
                 for (int i = 0; i < 8; i++)
                 {
                     ItemType type = (ItemType)i;
-                    _flashingSectors[i] = Inventory.Instance.HasItemsInType(type);
+                    _flashingSectors[i] = inventory.HasItemsInType(type);
                 }
             }
         }
@@ -155,7 +157,7 @@ namespace ProjectC.Items
             for (int i = 0; i < 8; i++)
             {
                 ItemType type = (ItemType)i;
-                bool hasItems = Inventory.Instance != null && Inventory.Instance.HasItemsInType(type);
+                bool hasItems = inventory != null && inventory.HasItemsInType(type);
                 bool isHovered = (i == _hoveredSector);
 
                 Color sectorColor = hasItems ? hasItemsColor : emptyColor;
@@ -170,14 +172,14 @@ namespace ProjectC.Items
             for (int i = 0; i < 8; i++)
             {
                 ItemType type = (ItemType)i;
-                bool hasItems = Inventory.Instance != null && Inventory.Instance.HasItemsInType(type);
+                bool hasItems = inventory != null && inventory.HasItemsInType(type);
                 bool isHovered = (i == _hoveredSector);
 
                 // Текст сектора
                 DrawSectorLabel(center, i, type, hasItems);
 
                 // Подсписок при наведении
-                if (isHovered && Inventory.Instance != null && Inventory.Instance.GetCountByType(type) > 1)
+                if (isHovered && inventory != null && inventory.GetCountByType(type) > 1)
                 {
                     DrawSublist(center, i, type);
                 }
@@ -236,7 +238,7 @@ namespace ProjectC.Items
             Vector2 textPos = center + new Vector2(Mathf.Cos(rad), Mathf.Sin(rad)) * (wheelRadius * 0.65f);
 
             int displayNum = index + 1;
-            string label = hasItems ? $"Тип {displayNum}\n[{Inventory.Instance.GetCountByType(type)}]" : $"Тип {displayNum}";
+            string label = hasItems ? $"Тип {displayNum}\n[{inventory.GetCountByType(type)}]" : $"Тип {displayNum}";
 
             GUIStyle style = new GUIStyle();
             style.alignment = TextAnchor.MiddleCenter;
@@ -249,7 +251,7 @@ namespace ProjectC.Items
 
         private void DrawSublist(Vector2 center, int index, ItemType type)
         {
-            var items = Inventory.Instance.GetItemsByType(type);
+            var items = inventory.GetItemsByType(type);
             if (items.Count <= 1) return;
 
             float midAngle = _sectorMidAngles[index];

@@ -87,7 +87,7 @@ namespace ProjectC.Core
         {
             if (target == null)
             {
-                Debug.LogError("[ThirdPersonCamera] Target не назначен!");
+                // Target будет назначен позже через SetTarget()
                 return;
             }
 

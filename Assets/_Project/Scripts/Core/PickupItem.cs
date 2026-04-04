@@ -44,21 +44,18 @@ namespace ProjectC.Items
         }
 
         /// <summary>
-        /// Подобрать предмет. Вызывается из ItemPickupSystem.
+        /// Подобрать предмет. Вызывается из ItemPickupSystem (legacy) или через ServerRpc (сеть).
         /// </summary>
         public void Collect()
         {
             if (_isCollected || itemData == null) return;
             _isCollected = true;
 
-            // Добавляем в инвентарь
-            if (Inventory.Instance != null)
+            // Добавляем в инвентарь (ищем ближайший — legacy)
+            var inv = FindAnyObjectByType<Inventory>();
+            if (inv != null)
             {
-                Inventory.Instance.AddItem(itemData);
-            }
-            else
-            {
-                Debug.LogError("[PickupItem] Inventory.Instance == null! Убедись что Inventory.cs висит на GameObject на сцене.");
+                inv.AddItem(itemData);
             }
 
             // Визуальный эффект — исчезновение

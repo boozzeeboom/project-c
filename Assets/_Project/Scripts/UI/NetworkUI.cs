@@ -1,4 +1,5 @@
 using UnityEngine;
+using TMPro;
 using UnityEngine.UI;
 using ProjectC.Core;
 
@@ -12,9 +13,9 @@ namespace ProjectC.UI
         [Header("Ссылки на UI элементы")]
         [SerializeField] private Button startHostButton;
         [SerializeField] private Button startClientButton;
-        [SerializeField] private InputField serverIpInput;
-        [SerializeField] private InputField serverPortInput;
-        [SerializeField] private Text statusText;
+        [SerializeField] private TMP_InputField serverIpInput;
+        [SerializeField] private TMP_InputField serverPortInput;
+        [SerializeField] private TextMeshProUGUI statusText;
         [SerializeField] private GameObject connectionPanel;
 
         private NetworkManagerController networkManagerController;

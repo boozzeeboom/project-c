@@ -1,0 +1,625 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Project C — Roadmap</title>
+<style>
+  /* ===== RESET & BASE ===== */
+  *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+
+  :root {
+    --bg:        #0a0a0f;
+    --surface:   #12121a;
+    --border:    #1e1e2e;
+    --text:      #c8c8d4;
+    --text-dim:  #6e6e82;
+    --accent:    #4ade80;
+    --accent2:   #38bdf8;
+    --warning:   #facc15;
+    --done:      #4ade80;
+    --future:    #333345;
+    --radius:    12px;
+  }
+
+  html { scroll-behavior: smooth; }
+
+  body {
+    font-family: 'Inter', 'Segoe UI', system-ui, -apple-system, sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    line-height: 1.6;
+    overflow-x: hidden;
+  }
+
+  /* ===== CLOUD BACKGROUND ===== */
+  .clouds {
+    position: fixed;
+    inset: 0;
+    pointer-events: none;
+    z-index: 0;
+    overflow: hidden;
+  }
+  .cloud {
+    position: absolute;
+    border-radius: 50%;
+    filter: blur(80px);
+    opacity: .06;
+    animation: drift linear infinite;
+  }
+  .cloud:nth-child(1) { width:600px;height:300px;background:#4ade80;top:10%;left:-10%;animation-duration:90s; }
+  .cloud:nth-child(2) { width:500px;height:250px;background:#38bdf8;top:40%;left:60%;animation-duration:120s;animation-delay:-30s; }
+  .cloud:nth-child(3) { width:700px;height:350px;background:#a78bfa;top:70%;left:20%;animation-duration:100s;animation-delay:-60s; }
+
+  @keyframes drift {
+    0%   { transform: translateX(0); }
+    100% { transform: translateX(110vw); }
+  }
+
+  /* ===== LAYOUT ===== */
+  .wrapper {
+    position: relative;
+    z-index: 1;
+    max-width: 860px;
+    margin: 0 auto;
+    padding: 60px 24px 80px;
+  }
+
+  /* ===== HEADER ===== */
+  .header {
+    text-align: center;
+    margin-bottom: 64px;
+  }
+  .header__badge {
+    display: inline-block;
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    color: var(--accent);
+    border: 1px solid var(--accent);
+    border-radius: 999px;
+    padding: 6px 18px;
+    margin-bottom: 20px;
+    animation: fadeDown .8s ease both;
+  }
+  .header__title {
+    font-size: clamp(2rem, 5vw, 3.2rem);
+    font-weight: 800;
+    letter-spacing: -1px;
+    color: #fff;
+    margin-bottom: 12px;
+    animation: fadeDown .8s .15s ease both;
+  }
+  .header__title span { color: var(--accent); }
+  .header__sub {
+    font-size: 1.05rem;
+    color: var(--text-dim);
+    max-width: 540px;
+    margin: 0 auto 32px;
+    animation: fadeDown .8s .3s ease both;
+  }
+
+  /* ===== BUTTONS ===== */
+  .buttons {
+    display: flex;
+    justify-content: center;
+    gap: 14px;
+    flex-wrap: wrap;
+    animation: fadeDown .8s .45s ease both;
+  }
+  .btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 14px;
+    font-weight: 600;
+    text-decoration: none;
+    border-radius: 999px;
+    padding: 12px 26px;
+    transition: all .25s ease;
+    cursor: pointer;
+    border: none;
+  }
+  .btn--primary {
+    background: var(--accent);
+    color: #0a0a0f;
+  }
+  .btn--primary:hover { background: #22c55e; transform: translateY(-2px); box-shadow: 0 8px 30px rgba(74,222,128,.25); }
+  .btn--ghost {
+    background: transparent;
+    color: var(--text);
+    border: 1px solid var(--border);
+  }
+  .btn--ghost:hover { border-color: var(--text-dim); transform: translateY(-2px); }
+  .btn svg { width: 18px; height: 18px; flex-shrink: 0; }
+
+  /* ===== TIMELINE ===== */
+  .timeline {
+    position: relative;
+    padding-left: 40px;
+  }
+  .timeline::before {
+    content: '';
+    position: absolute;
+    left: 14px;
+    top: 0;
+    bottom: 0;
+    width: 2px;
+    background: var(--border);
+  }
+
+  /* ===== PHASE CARD ===== */
+  .phase {
+    position: relative;
+    margin-bottom: 32px;
+    opacity: 0;
+    transform: translateY(30px);
+    transition: opacity .6s ease, transform .6s ease;
+  }
+  .phase.visible {
+    opacity: 1;
+    transform: translateY(0);
+  }
+
+  /* Dot on the line */
+  .phase__dot {
+    position: absolute;
+    left: -33px;
+    top: 28px;
+    width: 16px;
+    height: 16px;
+    border-radius: 50%;
+    background: var(--future);
+    border: 3px solid var(--border);
+    transition: all .4s ease;
+  }
+  .phase--done .phase__dot,
+  .phase--active .phase__dot {
+    background: var(--done);
+    border-color: var(--done);
+    box-shadow: 0 0 12px rgba(74,222,128,.5);
+  }
+  .phase--active .phase__dot {
+    animation: pulse 2s ease-in-out infinite;
+  }
+
+  @keyframes pulse {
+    0%, 100% { box-shadow: 0 0 12px rgba(74,222,128,.5); }
+    50%      { box-shadow: 0 0 24px rgba(74,222,128,.8); }
+  }
+
+  .phase__card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 28px 28px 24px;
+    transition: border-color .3s ease;
+  }
+  .phase--active .phase__card {
+    border-color: var(--accent);
+  }
+  .phase__card:hover {
+    border-color: var(--text-dim);
+  }
+
+  /* Header row */
+  .phase__head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    flex-wrap: wrap;
+    margin-bottom: 14px;
+  }
+  .phase__tag {
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 1.5px;
+    text-transform: uppercase;
+    color: var(--text-dim);
+  }
+  .phase--active .phase__tag { color: var(--accent); }
+  .phase--done  .phase__tag { color: var(--done); }
+
+  .phase__status {
+    font-size: 12px;
+    font-weight: 600;
+    padding: 4px 14px;
+    border-radius: 999px;
+    letter-spacing: .5px;
+  }
+  .phase--done  .phase__status { background: rgba(74,222,128,.12); color: var(--done); }
+  .phase--active .phase__status { background: rgba(74,222,128,.15); color: var(--accent); animation: blink 2s ease infinite; }
+  .phase--future .phase__status { background: rgba(51,51,69,.6); color: var(--text-dim); }
+
+  @keyframes blink {
+    0%, 100% { opacity: 1; }
+    50%      { opacity: .5; }
+  }
+
+  .phase__title {
+    font-size: 1.25rem;
+    font-weight: 700;
+    color: #fff;
+    margin-bottom: 6px;
+  }
+  .phase__goal {
+    font-size: .92rem;
+    color: var(--text-dim);
+    margin-bottom: 18px;
+  }
+
+  /* Task list */
+  .phase__tasks {
+    list-style: none;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+  }
+  .phase__tasks li {
+    display: flex;
+    align-items: flex-start;
+    gap: 10px;
+    font-size: .9rem;
+    color: var(--text);
+    line-height: 1.5;
+  }
+  .phase__tasks li::before {
+    content: '';
+    flex-shrink: 0;
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    margin-top: 7px;
+    background: var(--future);
+  }
+  .phase--done .phase__tasks li::before { background: var(--done); }
+  .phase--active .phase__tasks li::before { background: var(--accent); }
+
+  .task--done {
+    text-decoration: line-through;
+    color: var(--text-dim) !important;
+  }
+  .task--done::before { background: var(--done) !important; }
+
+  /* Progress bar */
+  .phase__progress {
+    margin-top: 18px;
+    height: 4px;
+    background: var(--future);
+    border-radius: 999px;
+    overflow: hidden;
+  }
+  .phase__bar {
+    height: 100%;
+    border-radius: 999px;
+    background: linear-gradient(90deg, var(--accent), var(--accent2));
+    width: 0;
+    transition: width 1.2s ease;
+  }
+  .phase__pct {
+    font-size: 11px;
+    font-weight: 700;
+    color: var(--text-dim);
+    margin-top: 6px;
+    text-align: right;
+  }
+
+  /* ===== FOOTER ===== */
+  .footer {
+    text-align: center;
+    margin-top: 72px;
+    padding-top: 40px;
+    border-top: 1px solid var(--border);
+  }
+  .footer__text {
+    font-size: .85rem;
+    color: var(--text-dim);
+    margin-bottom: 20px;
+  }
+  .footer__links {
+    display: flex;
+    justify-content: center;
+    gap: 20px;
+    flex-wrap: wrap;
+  }
+  .footer__links a {
+    color: var(--text);
+    text-decoration: none;
+    font-size: .9rem;
+    font-weight: 500;
+    transition: color .2s;
+  }
+  .footer__links a:hover { color: var(--accent); }
+
+  /* ===== ANIMATIONS ===== */
+  @keyframes fadeDown {
+    from { opacity: 0; transform: translateY(-16px); }
+    to   { opacity: 1; transform: translateY(0); }
+  }
+
+  /* ===== RESPONSIVE ===== */
+  @media (max-width: 600px) {
+    .wrapper { padding: 40px 16px 60px; }
+    .timeline { padding-left: 32px; }
+    .phase__dot { left: -25px; width: 12px; height: 12px; }
+    .phase__card { padding: 20px 18px 18px; }
+    .phase__head { flex-direction: column; align-items: flex-start; }
+  }
+</style>
+</head>
+<body>
+
+<!-- Cloud BG -->
+<div class="clouds">
+  <div class="cloud"></div>
+  <div class="cloud"></div>
+  <div class="cloud"></div>
+</div>
+
+<div class="wrapper">
+
+  <!-- HEADER -->
+  <header class="header">
+    <div class="header__badge">Pre-Alpha · v0.0.6</div>
+    <h1 class="header__title">Project <span>C</span> — Roadmap</h1>
+    <p class="header__sub">Мир над облаками. Авторская фантастика из первых рук.</p>
+
+    <div class="buttons">
+      <a href="https://github.com/boozzeeboom/project-c" target="_blank" rel="noopener" class="btn btn--primary">
+        <svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 .5C5.37.5 0 5.78 0 12.29c0 5.21 3.43 9.64 8.2 11.21.6.11.82-.26.82-.57v-2.01c-3.34.72-4.04-1.61-4.04-1.61-.55-1.37-1.33-1.74-1.33-1.74-1.09-.73.08-.72.08-.72 1.2.09 1.84 1.22 1.84 1.22 1.07 1.8 2.8 1.28 3.49.98.1-.76.42-1.28.76-1.57-2.67-.3-5.47-1.31-5.47-5.84 0-1.29.47-2.34 1.23-3.17-.12-.3-.53-1.5.12-3.12 0 0 1-.32 3.3 1.21a11.5 11.5 0 0 1 6.02 0c2.28-1.53 3.29-1.21 3.29-1.21.66 1.62.25 2.82.12 3.12.77.83 1.23 1.88 1.23 3.17 0 4.54-2.81 5.53-5.48 5.83.43.37.82 1.1.82 2.22v3.29c0 .31.21.69.83.57C20.57 21.92 24 17.5 24 12.29 24 5.78 18.63.5 12 .5z"/></svg>
+        GitHub
+      </a>
+      <a href="https://t.me/thegravity_ru" target="_blank" rel="noopener" class="btn btn--ghost">
+        <svg viewBox="0 0 24 24" fill="currentColor"><path d="M11.94 24c6.6 0 12-5.4 12-12S18.54 0 11.94 0 0 5.4 0 12s5.4 12 11.94 12Zm-1.5-16.8c.6-.6 1.5-.6 2.1 0l5.4 5.4c.6.6.6 1.5 0 2.1-.6.6-1.5.6-2.1 0L11.94 10.8l-4.2 4.2c-.6.6-1.5.6-2.1 0-.6-.6-.6-1.5 0-2.1l5.4-5.4Z"/></svg>
+        Telegram
+      </a>
+    </div>
+  </header>
+
+  <!-- TIMELINE -->
+  <div class="timeline">
+
+    <!-- ЭТАП 0 -->
+    <div class="phase phase--done" data-delay="0">
+      <div class="phase__dot"></div>
+      <div class="phase__card">
+        <div class="phase__head">
+          <span class="phase__tag">Этап 0 · Неделя 1</span>
+          <span class="phase__status">Готово</span>
+        </div>
+        <h3 class="phase__title">Подготовка окружения</h3>
+        <p class="phase__goal">Настроить рабочую среду и базовую архитектуру проекта.</p>
+        <ul class="phase__tasks">
+          <li class="task--done">Unity 6 + URP + Netcode for GameObjects</li>
+          <li class="task--done">Git LFS, структура репозитория, ветки</li>
+          <li class="task--done">Сервер: .NET 8 Console App (WebSocket/TCP)</li>
+          <li class="task--done">NetworkManager, NetworkPlayer, NetworkUI</li>
+        </ul>
+        <div class="phase__progress"><div class="phase__bar" data-width="100"></div></div>
+        <div class="phase__pct">100%</div>
+      </div>
+    </div>
+
+    <!-- ЭТАП 1 -->
+    <div class="phase phase--active" data-delay="100">
+      <div class="phase__dot"></div>
+      <div class="phase__card">
+        <div class="phase__head">
+          <span class="phase__tag">Этап 1 · Недели 2–4</span>
+          <span class="phase__status">В процессе</span>
+        </div>
+        <h3 class="phase__title">Прототип ядра геймплея</h3>
+        <p class="phase__goal">Реализовать базовые механики в оффлайн-режиме.</p>
+        <ul class="phase__tasks">
+          <li class="task--done">Пеший режим: WASD, прыжок, бег, ThirdPersonCamera</li>
+          <li class="task--done">ShipController: антигравитация, тяга, рыскание, тангаж</li>
+          <li class="task--done">Переключение F: сесть / выйти из корабля</li>
+          <li class="task--done">Процедурный мир: 15 пиков + 890+ облаков</li>
+          <li class="task--done">Подбор предметов (E) + круговой инвентарь (Tab, 8 секторов)</li>
+          <li>Открытие сундуков (контейнеры с несколькими предметами)</li>
+          <li>Ghibli-style освещение и объёмные облака</li>
+        </ul>
+        <div class="phase__progress"><div class="phase__bar" data-width="72"></div></div>
+        <div class="phase__pct">72%</div>
+      </div>
+    </div>
+
+    <!-- ЭТАП 1.5 -->
+    <div class="phase phase--future" data-delay="200">
+      <div class="phase__dot"></div>
+      <div class="phase__card">
+        <div class="phase__head">
+          <span class="phase__tag">Этап 1.5 · Недели 5–6</span>
+          <span class="phase__status">Планируется</span>
+        </div>
+        <h3 class="phase__title">Доработка инвентаря</h3>
+        <p class="phase__goal">Улучшить визуал и функциональность системы предметов.</p>
+        <ul class="phase__tasks">
+          <li>3D/2D иконки предметов в секторах колеса</li>
+          <li>Слот 9 (центр) для ключевого предмета</li>
+          <li>«Облачный» дизайн колеса в стиле Ghibli</li>
+          <li>Подобранные предметы отображаются на персонаже</li>
+          <li>Редактор расстановки предметов в мире</li>
+        </ul>
+        <div class="phase__progress"><div class="phase__bar" data-width="0"></div></div>
+        <div class="phase__pct">0%</div>
+      </div>
+    </div>
+
+    <!-- ЭТАП 2 -->
+    <div class="phase phase--future" data-delay="300">
+      <div class="phase__dot"></div>
+      <div class="phase__card">
+        <div class="phase__head">
+          <span class="phase__tag">Этап 2 · Недели 7–10</span>
+          <span class="phase__status">Планируется</span>
+        </div>
+        <h3 class="phase__title">Сетевой фундамент</h3>
+        <p class="phase__goal">Реализовать клиент-серверное взаимодействие.</p>
+        <ul class="phase__tasks">
+          <li>Авторитарный сервер: WebSocket + комнаты до 4 игроков</li>
+          <li>NetworkBehaviour вместо локальных контроллеров</li>
+          <li>Client-side Prediction + интерполяция</li>
+          <li>Синхронизация физики кораблей</li>
+          <li>Переподключение при разрыве соединения</li>
+        </ul>
+        <div class="phase__progress"><div class="phase__bar" data-width="0"></div></div>
+        <div class="phase__pct">0%</div>
+      </div>
+    </div>
+
+    <!-- ЭТАП 3 -->
+    <div class="phase phase--future" data-delay="400">
+      <div class="phase__dot"></div>
+      <div class="phase__card">
+        <div class="phase__head">
+          <span class="phase__tag">Этап 3 · Недели 9–12</span>
+          <span class="phase__status">Планируется</span>
+        </div>
+        <h3 class="phase__title">Ролевая система и прогрессия</h3>
+        <p class="phase__goal">Добавить RPG-элементы и сохранение данных.</p>
+        <ul class="phase__tasks">
+          <li>Система прокачки, уровни, очки навыков</li>
+          <li>PostgreSQL + Redis для хранения прогресса</li>
+          <li>Серверная валидация инвентаря и транзакций</li>
+          <li>Крафт предметов из ресурсов</li>
+        </ul>
+        <div class="phase__progress"><div class="phase__bar" data-width="0"></div></div>
+        <div class="phase__pct">0%</div>
+      </div>
+    </div>
+
+    <!-- ЭТАП 4 -->
+    <div class="phase phase--future" data-delay="500">
+      <div class="phase__dot"></div>
+      <div class="phase__card">
+        <div class="phase__head">
+          <span class="phase__tag">Этап 4 · Недели 13–18</span>
+          <span class="phase__status">Планируется</span>
+        </div>
+        <h3 class="phase__title">Контент и полировка</h3>
+        <p class="phase__goal">Наполнить мир контентом и улучшить визуал.</p>
+        <ul class="phase__tasks">
+          <li>Миссии, квесты, диалоги с NPC</li>
+          <li>Финальные шейдеры облаков и воды</li>
+          <li>Анимации персонажей и кораблей</li>
+          <li>Динамический саундтрек + 3D-звуки</li>
+        </ul>
+        <div class="phase__progress"><div class="phase__bar" data-width="0"></div></div>
+        <div class="phase__pct">0%</div>
+      </div>
+    </div>
+
+    <!-- ЭТАП 5 -->
+    <div class="phase phase--future" data-delay="600">
+      <div class="phase__dot"></div>
+      <div class="phase__card">
+        <div class="phase__head">
+          <span class="phase__tag">Этап 5 · Недели 19–24</span>
+          <span class="phase__status">Планируется</span>
+        </div>
+        <h3 class="phase__title">Масштабирование и оптимизация</h3>
+        <p class="phase__goal">Подготовить инфраструктуру для большого онлайна.</p>
+        <ul class="phase__tasks">
+          <li>Шардинг мира + Kubernetes автомасштабирование</li>
+          <li>LOD, Occlusion Culling, пулинг объектов</li>
+          <li>Античит: серверная валидация + репорты</li>
+        </ul>
+        <div class="phase__progress"><div class="phase__bar" data-width="0"></div></div>
+        <div class="phase__pct">0%</div>
+      </div>
+    </div>
+
+    <!-- ЭТАП 6 -->
+    <div class="phase phase--future" data-delay="700">
+      <div class="phase__dot"></div>
+      <div class="phase__card">
+        <div class="phase__head">
+          <span class="phase__tag">Этап 6 · Недели 25–28</span>
+          <span class="phase__status">Планируется</span>
+        </div>
+        <h3 class="phase__title">Закрытое бета-тестирование</h3>
+        <p class="phase__goal">Выявить проблемы перед публичным релизом.</p>
+        <ul class="phase__tasks">
+          <li>50–100 тестеров, сбор метрик и фидбека</li>
+          <li>Балансировка экономики и прокачки</li>
+          <li>Локализация (EN, RU) + подготовка к Steam/Epic</li>
+        </ul>
+        <div class="phase__progress"><div class="phase__bar" data-width="0"></div></div>
+        <div class="phase__pct">0%</div>
+      </div>
+    </div>
+
+    <!-- ЭТАП 7 -->
+    <div class="phase phase--future" data-delay="800">
+      <div class="phase__dot"></div>
+      <div class="phase__card">
+        <div class="phase__head">
+          <span class="phase__tag">Этап 7 · Постоянно</span>
+          <span class="phase__status">Планируется</span>
+        </div>
+        <h3 class="phase__title">Ранний доступ и поддержка</h3>
+        <p class="phase__goal">Постепенный рост аудитории и контента.</p>
+        <ul class="phase__tasks">
+          <li>Релиз в Early Access (Steam, Epic)</li>
+          <li>Новые острова, корабли, сюжетные линии</li>
+          <li>Сезонные события, гильдии, рейды</li>
+          <li>Косметика без pay-to-win</li>
+        </ul>
+        <div class="phase__progress"><div class="phase__bar" data-width="0"></div></div>
+        <div class="phase__pct">0%</div>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- FOOTER -->
+  <footer class="footer">
+    <p class="footer__text">Открытая разработка · Все коммиты на GitHub · Версия v0.0.6 · 4 апреля 2026</p>
+    <div class="footer__links">
+      <a href="https://github.com/boozzeeboom/project-c" target="_blank" rel="noopener">GitHub</a>
+      <a href="https://t.me/thegravity_ru" target="_blank" rel="noopener">Telegram</a>
+      <a href="mailto:your@email.com">Email</a>
+    </div>
+  </footer>
+
+</div>
+
+<script>
+  /* ===== SCROLL-TRIGGERED ANIMATION ===== */
+  const phases = document.querySelectorAll('.phase');
+  const bars   = document.querySelectorAll('.phase__bar');
+
+  const observer = new IntersectionObserver((entries) => {
+    entries.forEach(entry => {
+      if (entry.isIntersecting) {
+        const el = entry.target;
+        const delay = parseInt(el.dataset.delay) || 0;
+        setTimeout(() => el.classList.add('visible'), delay);
+        observer.unobserve(el);
+      }
+    });
+  }, { threshold: 0.15 });
+
+  phases.forEach(p => observer.observe(p));
+
+  /* Progress bars */
+  const barObserver = new IntersectionObserver((entries) => {
+    entries.forEach(entry => {
+      if (entry.isIntersecting) {
+        const bar = entry.target;
+        setTimeout(() => {
+          bar.style.width = bar.dataset.width + '%';
+        }, 400);
+        barObserver.unobserve(bar);
+      }
+    });
+  }, { threshold: 0.3 });
+
+  bars.forEach(b => barObserver.observe(b));
+</script>
+
+</body>
+</html>

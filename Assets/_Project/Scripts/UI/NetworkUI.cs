@@ -50,7 +50,7 @@ namespace ProjectC.UI
         {
             string ip = serverIpInput?.text ?? "127.0.0.1";
             ushort port = 7777;
-            
+
             if (serverPortInput != null && !string.IsNullOrEmpty(serverPortInput.text))
             {
                 ushort.TryParse(serverPortInput.text, out port);
@@ -58,6 +58,9 @@ namespace ProjectC.UI
 
             networkManagerController.ConnectToServer(ip, port);
             UpdateStatus($"Подключение к {ip}:{port}...");
+
+            // Скрываем панель после попытки подключения
+            HideConnectionPanel();
         }
 
         private void UpdateStatus(string status)

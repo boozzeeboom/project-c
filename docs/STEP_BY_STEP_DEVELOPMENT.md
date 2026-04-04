@@ -341,6 +341,24 @@ git reset --hard HEAD
 - Вспышка UI через FindAnyObjectByType (однократно при открытии)
 - Автоуничтожение сундука после открытия (настраивается)
 
+### 2026-04-04: Этап 2 — Сетевой фундамент (Dedicated Server)
+
+| Шаг | Описание | Статус | Коммит |
+|-----|----------|--------|--------|
+| 1 | NETWORK_PHASE2_PLAN.md создан | ✅ | — |
+| 2 | STEP_1_NETWORKPLAYER_SETUP.md создан | ✅ | — |
+| 3 | NetworkPlayer.cs добавлен на префаб (Unity Editor) | ⏳ | — |
+| 4 | PlayerPrefab указан в NetworkManager (Unity Editor) | ⏳ | — |
+| 5 | NetworkPlayer добавлен в DefaultNetworkPrefabs (Unity Editor) | ⏳ | — |
+| 6 | Тест: Host → "Local player spawned" в консоли | ⏳ | — |
+
+**Версия:** `v0.0.8-network-phase2` | **Дата:** 4 апреля 2026 г.
+
+**Архитектура:**
+- Авторитарный сервер (ServerRpc → сервер считает → NetworkVariable реплицирует)
+- Тестирование через Host (сервер+клиент в одном процессе)
+- Финальный запуск: headless Dedicated Server build (Linux)
+
 ---
 
 ## 🔗 Связанные документы

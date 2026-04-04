@@ -8,37 +8,42 @@ namespace ProjectC.Items
     /// 8 секторов = 8 типов предметов.
     /// Tab — открыть/закрыть.
     /// Наведение мыши подсвечивает сектор.
+    /// При >1 предмете в секторе — подсписок.
     /// </summary>
     public class InventoryUI : MonoBehaviour
     {
         [Header("Настройки колеса")]
         [Tooltip("Радиус круга")]
-        [SerializeField] private float wheelRadius = 210f; // Увеличен на 40% (было 150)
+        [SerializeField] private float wheelRadius = 210f;
 
         [Tooltip("Радиус центрального отверстия")]
         [SerializeField] private float innerRadius = 70f;
-
-        [Tooltip("Позиция центра на экране (0,0 = центр экрана)")]
-        [SerializeField] private Vector2 screenCenter = new Vector2(0.5f, 0.5f);
 
         [Header("Цвета")]
         [SerializeField] private Color emptyColor = new Color(0.2f, 0.2f, 0.2f, 0.7f);
         [SerializeField] private Color hasItemsColor = new Color(0.3f, 0.5f, 0.3f, 0.8f);
         [SerializeField] private Color hoverColor = new Color(0.9f, 0.8f, 0.2f, 0.9f);
 
-        [Header("Текст")]
-        [SerializeField] private Color textColor = Color.white;
-        [SerializeField] private float fontSize = 14f;
-
         private bool _isOpen = false;
         private int _hoveredSector = -1;
 
-        // Material для GL
-        private static Material _lineMaterial;
+        private static Material _glMaterial;
 
-        // Ввод
         private InputAction _toggleAction;
         private InputAction _mousePosAction;
+
+        // Углы секторов: index 0 = верх, по часовой стрелке (стандартная математика)
+        private static readonly float[] _sectorMidAngles = new float[]
+        {
+            90f,    // 0: верх     — Тип 1
+            45f,    // 1: верх-право  — Тип 2
+            0f,     // 2: право    — Тип 3
+            -45f,   // 3: низ-право  — Тип 4
+            -90f,   // 4: низ      — Тип 5
+            -135f,  // 5: низ-лево  — Тип 6
+            180f,   // 6: лево     — Тип 7
+            135f,   // 7: верх-лево  — Тип 8
+        };
 
         private void Awake()
         {
@@ -63,32 +68,40 @@ namespace ProjectC.Items
         private void Update()
         {
             if (_isOpen)
-            {
                 UpdateHover();
-            }
         }
 
         private void ToggleInventory()
         {
             _isOpen = !_isOpen;
-            Debug.Log($"[InventoryUI] Инвентарь: {(_isOpen ? "открыт" : "закрыт")}");
         }
 
         private void UpdateHover()
         {
             Vector2 mousePos = _mousePosAction.ReadValue<Vector2>();
-            Vector2 center = new Vector2(Screen.width * screenCenter.x, Screen.height * screenCenter.y);
+            Vector2 center = new Vector2(Screen.width * 0.5f, Screen.height * 0.5f);
             Vector2 dir = mousePos - center;
             float dist = dir.magnitude;
 
             if (dist >= innerRadius && dist <= wheelRadius)
             {
-                float angle = Mathf.Atan2(dir.y, dir.x) * Mathf.Rad2Deg;
+                // Угол мыши (0° = вправо, 90° = вверх в стандартной математике)
+                // Но в экранных координатах Y вниз, поэтому инвертируем
+                float angle = Mathf.Atan2(-dir.y, dir.x) * Mathf.Rad2Deg;
 
-                // Сектора по часовой от верха: 0=верх(90°), 1=верх-право(45°), 2=право(0°)...
-                // Корректируем: верх = 0, по часовой = уменьшение индекса
-                float adjustedAngle = (90 - angle + 360) % 360;
-                _hoveredSector = Mathf.FloorToInt(adjustedAngle / 45f) % 8;
+                // Сектор i охватывает углы от (midAngle - 22.5) до (midAngle + 22.5)
+                float bestDiff = float.MaxValue;
+                _hoveredSector = -1;
+
+                for (int i = 0; i < 8; i++)
+                {
+                    float diff = Mathf.DeltaAngle(angle, _sectorMidAngles[i]);
+                    if (Mathf.Abs(diff) < 22.5f && Mathf.Abs(diff) < bestDiff)
+                    {
+                        bestDiff = Mathf.Abs(diff);
+                        _hoveredSector = i;
+                    }
+                }
             }
             else
             {
@@ -100,9 +113,9 @@ namespace ProjectC.Items
         {
             if (!_isOpen) return;
 
-            Vector2 center = new Vector2(Screen.width * screenCenter.x, Screen.height * screenCenter.y);
+            Vector2 center = new Vector2(Screen.width * 0.5f, Screen.height * 0.5f);
 
-            // Сначала рисуем все GL секторы
+            // 1. Рисуем все секторы (GL)
             for (int i = 0; i < 8; i++)
             {
                 ItemType type = (ItemType)i;
@@ -112,41 +125,45 @@ namespace ProjectC.Items
                 Color sectorColor = hasItems ? hasItemsColor : emptyColor;
                 if (isHovered) sectorColor = hoverColor;
 
-                DrawSectorFill(center, i, sectorColor);
+                DrawSector(center, i, sectorColor);
             }
 
-            // Сбрасываем цвет после GL операций
+            // 2. Рисуем текст и подсписки (GUI)
             GUI.color = Color.white;
 
-            // Потом рисуем текстовые метки
             for (int i = 0; i < 8; i++)
             {
-                // Отображаемый номер типа должен соответствовать типу для подсчёта
-                int displayNum = ((4 - i + 8) % 8) + 1;
-                ItemType type = (ItemType)(displayNum - 1);
+                ItemType type = (ItemType)i;
                 bool hasItems = Inventory.Instance != null && Inventory.Instance.HasItemsInType(type);
+                bool isHovered = (i == _hoveredSector);
 
-                DrawSectorText(center, i, type, hasItems);
+                // Текст сектора
+                DrawSectorLabel(center, i, type, hasItems);
+
+                // Подсписок при наведении
+                if (isHovered && Inventory.Instance != null && Inventory.Instance.GetCountByType(type) > 1)
+                {
+                    DrawSublist(center, i, type);
+                }
             }
 
-            // Центральный текст
+            // Центр
             GUI.color = Color.white;
             GUIStyle centerStyle = new GUIStyle(GUI.skin.label)
             {
-                fontSize = (int)fontSize,
+                fontSize = 14,
                 alignment = TextAnchor.MiddleCenter,
                 normal = new GUIStyleState { textColor = Color.white }
             };
             GUI.Label(new Rect(center.x - 40, center.y - 10, 80, 20), "Инвентарь", centerStyle);
         }
 
-        /// <summary>
-        /// Рисует заполненный сектор (GL операции)
-        /// </summary>
-        private void DrawSectorFill(Vector2 center, int index, Color color)
+        private void DrawSector(Vector2 center, int index, Color color)
         {
-            float startAngle = 67.5f - index * 45f;
-            float endAngle = 112.5f - index * 45f;
+            float midAngle = _sectorMidAngles[index];
+            // Инвертируем угол для рендера (экранная Y направлена вниз)
+            float startAngle = -midAngle + 22.5f;
+            float endAngle = -midAngle - 22.5f;
 
             int segments = 16;
             Vector3[] vertices = new Vector3[segments + 2];
@@ -167,54 +184,81 @@ namespace ProjectC.Items
             DrawOutline(vertices);
         }
 
-        /// <summary>
-        /// Рисует текстовую метку сектора (GUI операции)
-        /// </summary>
-        private void DrawSectorText(Vector2 center, int index, ItemType type, bool hasItems)
+        private void DrawSectorLabel(Vector2 center, int index, ItemType type, bool hasItems)
         {
-            // Обводка текста (для читаемости на тёмном фоне)
-            float startAngle = 67.5f - index * 45f;
-            float endAngle = 112.5f - index * 45f;
-            float midAngle = (startAngle + endAngle) / 2 * Mathf.Deg2Rad;
-            Vector2 textPos = center + new Vector2(Mathf.Cos(midAngle), Mathf.Sin(midAngle)) * (wheelRadius * 0.65f);
+            float midAngle = _sectorMidAngles[index];
+            float rad = midAngle * Mathf.Deg2Rad;
+            Vector2 textPos = center + new Vector2(Mathf.Cos(rad), Mathf.Sin(rad)) * (wheelRadius * 0.65f);
 
-            int displayNum = ((4 - index + 8) % 8) + 1;
+            int displayNum = index + 1;
             string label = hasItems ? $"Тип {displayNum}\n[{Inventory.Instance.GetCountByType(type)}]" : $"Тип {displayNum}";
 
             GUIStyle style = new GUIStyle();
             style.alignment = TextAnchor.MiddleCenter;
-            style.fontSize = (int)fontSize;
+            style.fontSize = 14;
             style.normal.textColor = Color.white;
 
-            // Явно белый с полной непрозрачностью
             GUI.color = new Color(1f, 1f, 1f, 1f);
             GUI.Label(new Rect(textPos.x - 30, textPos.y - 15, 60, 30), label, style);
         }
 
+        private void DrawSublist(Vector2 center, int index, ItemType type)
+        {
+            var items = Inventory.Instance.GetItemsByType(type);
+            if (items.Count <= 1) return;
+
+            float midAngle = _sectorMidAngles[index];
+            float rad = midAngle * Mathf.Deg2Rad;
+            Vector2 listPos = center + new Vector2(Mathf.Cos(rad), Mathf.Sin(rad)) * (wheelRadius + 40f);
+
+            float boxWidth = 130f;
+            float boxHeight = items.Count * 18f + 10f;
+
+            // Фон
+            GUI.color = new Color(0.1f, 0.1f, 0.1f, 0.92f);
+            GUI.DrawTexture(new Rect(listPos.x - boxWidth / 2, listPos.y - boxHeight / 2, boxWidth, boxHeight), Texture2D.whiteTexture);
+
+            // Обводка
+            GUI.color = new Color(0.9f, 0.8f, 0.2f, 0.9f);
+            GUI.DrawTexture(new Rect(listPos.x - boxWidth / 2, listPos.y - boxHeight / 2, boxWidth, 1f), Texture2D.whiteTexture);
+            GUI.DrawTexture(new Rect(listPos.x - boxWidth / 2, listPos.y + boxHeight / 2 - 1f, boxWidth, 1f), Texture2D.whiteTexture);
+            GUI.DrawTexture(new Rect(listPos.x - boxWidth / 2, listPos.y - boxHeight / 2, 1f, boxHeight), Texture2D.whiteTexture);
+            GUI.DrawTexture(new Rect(listPos.x + boxWidth / 2 - 1f, listPos.y - boxHeight / 2, 1f, boxHeight), Texture2D.whiteTexture);
+
+            // Предметы
+            GUI.color = Color.white;
+            GUIStyle itemStyle = new GUIStyle();
+            itemStyle.fontSize = 11;
+            itemStyle.alignment = TextAnchor.MiddleLeft;
+            itemStyle.normal.textColor = Color.white;
+
+            for (int i = 0; i < items.Count; i++)
+            {
+                float y = listPos.y - boxHeight / 2 + 6f + i * 18f;
+                string itemName = items[i] != null ? items[i].itemName : "(пусто)";
+                GUI.Label(new Rect(listPos.x - boxWidth / 2 + 5f, y, boxWidth - 10f, 18f), $"• {itemName}", itemStyle);
+            }
+        }
+
         private void DrawFilledFan(Vector3[] vertices, Color color)
         {
-            if (_lineMaterial == null)
+            if (_glMaterial == null)
             {
-                _lineMaterial = new Material(Shader.Find("Hidden/Internal-Colored"));
-                _lineMaterial.hideFlags = HideFlags.HideAndDontSave;
-                _lineMaterial.SetInt("_SrcBlend", (int)UnityEngine.Rendering.BlendMode.SrcAlpha);
-                _lineMaterial.SetInt("_DstBlend", (int)UnityEngine.Rendering.BlendMode.OneMinusSrcAlpha);
-                _lineMaterial.SetInt("_Cull", (int)UnityEngine.Rendering.CullMode.Off);
-                _lineMaterial.SetInt("_ZWrite", 0);
+                _glMaterial = new Material(Shader.Find("Hidden/Internal-Colored"));
+                _glMaterial.hideFlags = HideFlags.HideAndDontSave;
             }
 
-            _lineMaterial.SetPass(0);
+            _glMaterial.SetPass(0);
             GL.PushMatrix();
             GL.LoadPixelMatrix();
 
-            // Рисуем треугольники от центра (GL.TRIANGLES — рисует каждый triplet как отдельный треугольник)
             GL.Begin(GL.TRIANGLES);
             GL.Color(color);
             for (int i = 1; i < vertices.Length - 1; i++)
             {
-                GL.Vertex(vertices[0]);       // центр
-                GL.Vertex(vertices[i]);       // точка i
-                GL.Vertex(vertices[i + 1]);   // точка i+1
+                GL.Vertex(vertices[0]);
+                GL.Vertex(vertices[i]);
+                GL.Vertex(vertices[i + 1]);
             }
             GL.End();
 
@@ -223,17 +267,16 @@ namespace ProjectC.Items
 
         private void DrawOutline(Vector3[] vertices)
         {
-            if (_lineMaterial == null)
+            if (_glMaterial == null)
             {
-                _lineMaterial = new Material(Shader.Find("Hidden/Internal-Colored"));
-                _lineMaterial.hideFlags = HideFlags.HideAndDontSave;
+                _glMaterial = new Material(Shader.Find("Hidden/Internal-Colored"));
+                _glMaterial.hideFlags = HideFlags.HideAndDontSave;
             }
 
-            _lineMaterial.SetPass(0);
+            _glMaterial.SetPass(0);
             GL.PushMatrix();
             GL.LoadPixelMatrix();
 
-            // Рисуем контур линиями
             GL.Begin(GL.LINES);
             GL.Color(Color.white);
             for (int i = 1; i < vertices.Length; i++)
@@ -244,15 +287,6 @@ namespace ProjectC.Items
             GL.End();
 
             GL.PopMatrix();
-        }
-
-        private void DrawLine(Vector2 start, Vector2 end, float thickness)
-        {
-            Vector2 dir = end - start;
-            float angle = Mathf.Atan2(dir.y, dir.x) * Mathf.Rad2Deg;
-            GUIUtility.RotateAroundPivot(angle, start);
-            GUI.DrawTexture(new Rect(start.x, start.y, dir.magnitude, thickness), Texture2D.whiteTexture);
-            GUIUtility.RotateAroundPivot(-angle, start);
         }
     }
 }

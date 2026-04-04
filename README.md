@@ -1,6 +1,7 @@
 # Project C: The Clouds
-**Version:** 0.2.1.1 | **Stage:** Prototype
-## Whole project: [TheGravity](https://thegravity.ru) & [TheClouds](https://thegravity.ru/project-c/)
+**Version:** 0.0.5.1 | **Stage:** Early Pre-Alpha (прототип ядра)
+**По мотивам книги «Интеграл Пьявица» — Бруно Арендт**
+## Весь проект: [TheGravity](https://thegravity.ru) & [TheClouds](https://thegravity.ru/project-c/)
 
 ---
 **no marketing/bullshit/tech-heavy/sound sections**
@@ -12,230 +13,180 @@
 
 | Файл | Описание |
 |------|----------|
+| [`docs/WORLD_LORE_BOOK.md`](docs/WORLD_LORE_BOOK.md) | **Полный лор книги** — мир, технологии, гильдии, персонажи, сюжет |
 | [`docs/QWEN_CONTEXT.md`](docs/QWEN_CONTEXT.md) | **Текущий контекст** — что сделано, какие задачи в работе |
 | [`docs/MMO_Development_Plan.md`](docs/MMO_Development_Plan.md) | **Полный план разработки** MMO игры |
 | [`docs/STEP_BY_STEP_DEVELOPMENT.md`](docs/STEP_BY_STEP_DEVELOPMENT.md) | **Пошаговая разработка** |
-| [`docs/README_QWEN.md`](docs/README_QWEN.md) | Как продолжить работу с Qwen Code |
-| [`docs/README_CONTINUE.md`](docs/README_CONTINUE.md) | Быстрый старт |
 | [`docs/CONTROLS.md`](docs/CONTROLS.md) | Документация по управлению |
+| [`docs/SHIP_SYSTEM_DOCUMENTATION.md`](docs/SHIP_SYSTEM_DOCUMENTATION.md) | Система кораблей (текущая реализация) |
 | [`docs/GIT_WORKFLOW.md`](docs/GIT_WORKFLOW.md) | Шпаргалка Git команд |
 | [`docs/GIT_WORKFLOW_ADVANCED.md`](docs/GIT_WORKFLOW_ADVANCED.md) | Продвинутый Git workflow |
 | [`docs/QUICK_GIT_COMMANDS.md`](docs/QUICK_GIT_COMMANDS.md) | Быстрые команды Git |
 | [`docs/VERSION_BACKUP.md`](docs/VERSION_BACKUP.md) | Резервное копирование |
-| `docs/unity6/` | Документация по Unity 6 |
+
+**Полный каталог:** [`docs/INDEX.md`](docs/INDEX.md)
 
 ---
 
-## 1. Introduction
-"Project-C" is a sci-fi flight simulator focused on trading and interaction in an alternate reality based on the book *Integral Pyavitsa*.
+## 1. Мир
 
-**Setting:**  
-- **1930s:** Meteorites carrying the substance "Mezy" and metal "Antigravium" poisoned Earth’s lower atmosphere. Humanity built an artificial barrier to contain the toxins.  
-- **2050s:** Civilizations thrive above the clouds using antigravity platforms and Mezy-powered generators. Key settlements exist on mountaintops (names from the book) and flying platforms.  
+**1930 год.** На Землю падают метеориты, неся два вещества:
+- **Антигравий** — металл, нарушающий гравитацию при подаче тока
+- **Мезий** — яд, расщепляющий органику (t° кипения ≈ 17°C)
 
-**Technologies:**  
-- **Antigravium:** A metal that disrupts gravity when electrified. Used in ships with propeller engines and antigravity modules.  
-- **Mezy Generators:** Power cities but require frequent maintenance.  
+Человечество (~2 млн человек) вытеснено **«над облака»** — на платформы, закреплённые на горных вершинах. Поверхность скрыта под **Завесой** — искусственным дымом, сдерживающим пары мезия.
 
-**Game Focus:**  
-- **Exploration:** Vast world with locations inspired by real mountains (Everest, Kilimanjaro) and artificial platforms.  
-- **Trade & Logistics:** Dynamic economy with cargo transport, smuggling, and resource management.  
-- **Conflict:** Battles against pirates using pneumatic weapons (harpoons, nets).  
-- **Progression:** Ship customization, faction interactions, uncovering secrets of Mezy/Antigravium.  
+**~2090 год.** Новая Цивилизация — 4 города на вершинах (Примум/Эверест, Секунд, Тертиус, Квартус), фермерские угодья на пиках, корабли на антигравии курсируют между поселениями. Тоталитарное **Новое Правительство** контролирует всё через систему **СОЛ**. Пять **Гильдий** управляют инженерию, медицину, охрану, порядок и экономику.
 
----
+### Технологии
+- **МАГ/ГМАГ** — мезий-антигравиевые генераторы: жидкий мезий + антигравиевый вал → электричество → рамка-контур корабля → антигравитационное поле
+- **Ветровые лопасти** — электродвигатели горизонтального движения
+- **Паромы** — маршрутный транспорт по подвесным тросам (до 40 км/ч)
+- **ГРАДАР** — гравитационный радар навигации
+- **СОЛ** — система идентификации граждан (гравитационное сканирование)
 
-## 2. Visual Style: Sci-Fi + Ghibli Elements  
-**Architecture:**  
-- **Platforms:** Industrial designs (steel, pipes) blended with Ghibli-esque curves — domes with stained glass, intricate bridges.  
-- **Mountain Bases:** Cliffside settlements with terraces and waterfalls.  
+### Корабли
+| Класс | Форма | Скорость |
+|-------|-------|----------|
+| Лёгкий | Торообразный, 2-4 чел. | ~350 км/ч |
+| Средний | Сигарообразный, до 13 чел. | ~300 км/ч |
+| Тяжёлый I | Платформа до 3 ярусов | 150 км/ч |
+| Тяжёлый II | Грузовая открытая платформа | 150 км/ч |
 
-**Sky & Clouds:**  
-- **Ghibli Aesthetic:** Soft sunset gradients, volumetric glowing clouds.  
-- **Realistic Cloud Layers** stratified by altitude.  
-- **Tech Elements:** Cracked artificial barrier with lightning, patrol drones.  
-
-**Ships:**  
-Utilitarian designs with propellers/antigrav modules + smooth contours, neon accents, gradient paint.  
+**Физика:** медленный разгон, нет крена, плавное зависание, инерция массы. Баржи, не истребители.
 
 ---
 
-## 3. Core Mechanics  
-### Technical Layer: Controls & Gameplay (PC)  
-#### 1. Core Control Principles  
-Arcade-style controls prioritize accessibility and fluidity. Simplified physics: no wind or complex aerodynamics.  
+## 2. Визуальный стиль: Sci-Fi + Ghibli
 
-**1.1. Third-Person View**  
-- **Ship:** Camera follows from behind/above for environmental awareness.  
-- **Character:** Over-the-shoulder view when on foot, with manual camera rotation.  
+**Архитектура:**
+- **Города НП:** многоуровневые структуры на гигантских стойках, уходящих в Завесу. Гранит, кирпич, металл
+- **Фермы:** террасы на горных пиках, антигравийные опорные платформы
+- **Платформы:** промышленный дизайн (сталь, трубы) + плавные контуры, купола, intricate мосты
 
-#### 2. Ship Controls (Keyboard & Mouse)  
-| Action                  | Key/Mouse Input        | Description                                                                 |
-|-------------------------|------------------------|-----------------------------------------------------------------------------|
-| Forward Thrust          | W                      | Smooth acceleration. Max speed in 2-3 seconds.                             |
-| Reverse Thrust          | S                      | Deceleration or slow backward movement.                                    |
-| Turn Left/Right         | A/D                    | Inertia-based rotation. Sharp turns cause slight drift.                    |
-| Ascend                  | Space                  | Activates antigravium for vertical lift.                                   |
-| Descend                 | Ctrl                   | Gradual altitude drop.                                                     |
-| Turbo Boost             | Shift                  | Short burst forward. 5-second cooldown.                                    |
-| Fire (Harpoons/Nets)    | Left Mouse Button      | Limited ammo. Reload at docks.                                             |
-| Interact (Dock)         | E                      | Auto-land on nearest platform.                                             |
-| Map/Menu                | Tab                    | Pause to access map, inventory, and settings.                              |
+**Небо и облака:**
+- **Ghibli-эстетика:** мягкие закаты, объёмные светящиеся облака
+- **Реалистичные слои облаков** стратифицированы по высоте
+- **Тех-элементы:** Завеса с фиолетовыми молниями, патрульные дроны
 
-**Features:**  
-- **Auto-Stabilization:** Ship auto-levels when releasing controls.  
-- **Camera Control:** Hold right mouse button to freely rotate the camera.  
-- **Hints:** On-screen prompts for key actions (docking, turbo).  
-
-#### 3. On-Foot Controls  
-| Action                  | Key/Mouse Input        | Description                                      |
-|-------------------------|------------------------|--------------------------------------------------|
-| Movement                | W/A/S/D                | Smooth multidirectional movement.               |
-| NPC Interaction         | E                      | Dialogues, quests, trading.                     |
-| Jump                    | Space                  | Short hop with auto-landing.                    |
-| Sprint                  | Shift                  | Faster movement in settlements.                 |
-| Environment Scan        | Right Mouse + Move     | Rotate camera to inspect surroundings.          |
-| Inventory/Settings      | I                      | Access gear, map, and upgrades.                 |
-
-#### 4. Control Customization  
-- **Rebind Keys:** Fully customizable input mapping.  
-- **Mouse Sensitivity:** Adjust camera/ship rotation speed.  
-
-#### 5. Tutorial  
-- **Integrated Tutorial:** Step-by-step guides for basics (flight, docking, trade). Hints disappear after first use.  
-- **Dynamic Tips:** Contextual advice for new scenarios (e.g., entering turbulence).  
-
-### 3.1. Flight & Physics  
-- **Altitude Effects:** Temperature, pressure, and turbulence vary with height.  
-- **Antigravium Mechanics:** Reduces ship mass; propellers provide thrust.  
-- **Mezy Turbulence:** Hazardous zones with high Mezy concentration.  
-
-- **Customization:**  
-  - **Functional:** Upgrade cargo capacity, speed, armor.  
-  - **Cosmetic:** Gradient paints, neon lights, decorative parts (e.g., "feather" stabilizers).  
-  - **Repairs:** Fix components at docks or perform emergency mid-flight repairs.  
-
-### 3.2. Trade & Economy  
-- **Dynamic Pricing:** Prices shift based on location/events (disasters, pirate raids).  
-- **Contracts:** Delivery missions, urgent orders, smuggling.  
-- **Black Market:** Trade rare resources and tech.  
-
-### 3.3. Piracy  
-- **Pirate Tactics:** Harpoons to immobilize ships, nets to restrict movement.  
-- **Countermeasures:** Evasive maneuvers or exploiting turbulence zones.  
-
-### 3.4. Factions  
-- **Impact:**  
-  - **Story:** Unique quests revealing world lore.  
-  - **Access:** Exclusive tech, locations, and resources via reputation.  
-
-### 3.5. Exploration  
-- **Abandoned Platforms:** Loot artifacts (blueprints, logs) amid traps and toxins.  
-- **Dynamic Events:** Antigravity anomalies, electric storms.  
+**Корабли:**
+- Утилитарный дизайн с ветровыми лопастями + плавные контуры, градиентная окраска
 
 ---
 
-## 4. On-Foot Gameplay  
-### 4.1. Settlements & Stations  
-**Locations (from the book):**  
-- **Trade Hubs:** Multi-level markets with automated cranes/conveyors.  
-- **Engineering Docks:** Robotic repair bays.  
-- **Administrative Centers:** Platform resource management zones.  
+## 3. Геймплей
 
-**NPCs:**  
-- **Mechanics:** Offer quests for rare components.  
-- **Contractors:** Provide special cargo missions.  
-- **Scientists:** Share Mezy/Antigravium lore via dialogue.  
+### Управление (PC)
 
-**Interactions:**  
-- **System Management:** Mini-games to balance platform energy grids.  
-- **Negotiations:** Influence prices through trader dialogues.  
+#### Пеший режим (вид от третьего лица)
+| Клавиша | Действие |
+|---------|----------|
+| W/S | Вперёд/назад |
+| A/D | Поворот влево/вправо |
+| Мышь | Вращение камеры |
+| Left Shift | Бег |
+| Space | Прыжок |
+| **F** | Сесть в корабль (ближайший < 5м) |
 
-### 4.2. Ruin Exploration  
-- **Descent Below the Barrier:** Limited time due to toxicity. Hunt pre-collapse artifacts (documents, tech).  
-- **Dangers:** Collapsing structures, pirate traps.  
+#### Режим корабля
+| Клавиша | Действие |
+|---------|----------|
+| W/S | Тяга вперёд/назад |
+| A/D | Рыскание (поворот) |
+| Q/E | Подъём/спуск (лифт) |
+| Мышь Y | Тангаж (нос вверх/вниз) |
+| Left Shift | Ускорение |
+| **F** | Выйти из корабля |
 
-### 4.3. Social Systems  
-- **Settlement Quests:**  
-  - **Investigations:** Track missing cargo or sabotage.  
-  - **Technical Tasks:** Repair infrastructure (e.g., stabilize generators).  
-- **Mini-Games:**  
-  - **System Repairs:** Tool-based repair mechanics.  
-  - **Trade Auctions:** Strategic bidding for rare resources.  
+**Полная карта:** [`docs/CONTROLS.md`](docs/CONTROLS.md)
 
----
+### Физика полёта
+- **Антигравитация** компенсирует гравитацию — корабль зависает
+- **Ветровые лопасти** обеспечивают горизонтальную тягу
+- **Плавность** — ключевая характеристика (масса + инерция)
+- **Автоматическая стабилизация** — возврат к горизонту
+- **Нет крена** — рамка-контур стабилизирует
 
-## 5. Core Loop  
-1. **Accept Mission:** Choose contracts (trade, exploration, piracy).  
-2. **Execute:**  
-   - Pilot your ship.  
-   - Trade, repair, combat.  
-   - Explore stations/ruins on foot.  
-3. **Progress:**  
-   - Earn credits/resources.  
-   - Upgrade ships/build faction rep.  
-   - Unlock new missions/locations.  
+### Исследование
+- **4 города НП** — торговые аллеи, административные центры, хостелы, библиотеки
+- **Фермерские угодья** — разбросаны по горным пикам (Эверест, Килиманджаро, Эльбрус)
+- **Заброшенные корабли** — остовы, лут, убежища потеряшек
+- **Завеса** — ядовитый слой, спуск = опасность
 
-**Example:**  
-Player delivers cargo to a mountain base → explores station for artifact quest → finds it in a derelict platform → upgrades ship → unlocks faction missions.  
-
----
-
-## 6. Unique Selling Points  
-- **Ghibli x Sci-Fi:** Gradient-heavy visuals meets industrial realism.  
-- **Depth:** Trade, customization, factions, on-foot exploration.  
-- **No Magic:** All tech grounded in Mezy/Antigravium.  
+### Фракции
+- **5 Гильдий** (Мысли, Созидания, Силы, Тайн, Успеха) — ранговая система, квесты, репутация
+- **Подпольные организации** — сопротивление, свободные торговцы, культ Фрейхейта
+- **Новое Правительство** — тоталитарный контроль, цензура, репрессии
 
 ---
 
-## 7. Co-Op Mode  
-Team up with players for shared missions, exploration, and threats.  
+## 4. Core Loop
 
-### 7.1. Key Features  
-- **Shared Missions:**  
-  - **Cargo Escort:** Defend transports from pirates.  
-  - **Platform Assault:** Clear pirate bases (roles: pilot, gunner, engineer).  
-  - **Ruin Exploration:** Split roles (pilot + explorer).  
+1. **Прими контракт** — доставка, разведка, сопровождение,走私
+2. **Выполни:**
+   - Управляй кораблём (навигация, стыковка, торговля)
+   - Исследуй локации пешком (NPC, квесты, лут)
+   - Управляй ресурсами (мезий, МНП, груз)
+3. **Прогресс:**
+   - Зарабатывай кредиты/ресурсы
+   - Улучшай корабль / расти репутацию у фракций
+   - Открывай новые миссии и локации
 
-- **Shared Progression:**  
-  - Split credits/resources.  
-  - Collaborative ship customization (merge parts for unique designs).  
+**Пример:** Игрок доставляет груз на базу → находит квест на артефакт → находит его на заброшенной платформе → улучшает корабль → открывает миссии Гильдии.
 
-- **Sync:**  
-  - Seamless join/leave without interrupting gameplay.  
-  - Shared inventory for critical quests (e.g., joint artifact delivery).  
+---
 
-### 7.2. Co-Op Mechanics  
-- **Role Division:**  
-  - **Pilot:** Navigate/evade.  
-  - **Engineer:** Repair/optimize systems.  
-  - **Gunner:** Control weapons (harpoons, nets).  
+## 5. Уникальные особенности
 
-- **Co-Op Events:**  
-  - **Antigravity Storms:** Require synchronized engine stabilization.  
-  - **Pirate Raids:** Defend convoys in PvE.  
+- **Основано на книге** — глубокий лор, уникальные технологии, фракции, история
+- **Ghibli x Sci-Fi** — градиенты и мягкий свет + промышленный реализм
+- **Нет магии** — всё на антигравии и мезии
+- **Плавный полёт** — корабли-баржи, не истребители
+- **Стелс** — обход системы СОЛ, избежание правительственных агентов
+- **Шифрование** — головоломки с кодами и дешифровкой
 
-### 7.3. Technical Implementation  
-- **Networking:**  
-  - Up to 4 players per session.  
-  - Voice chat and marker system for coordination.  
+---
 
-- **Balance:**  
-  - Increased difficulty in co-op.  
-  - Exclusive rewards (e.g., Ghibli-themed ship skins).  
+## 6. Co-Op режим
 
-### Co-Op Integration into Core Loop  
-1. **Accept Mission:** Choose co-op missions or host a session.  
-2. **Execute:**  
-   - Shared ship control or role split.  
-   - Coordinate via UI (mark objectives, share resources).  
-3. **Progress:**  
-   - Shared credits/resources.  
-   - Unlock team-exclusive upgrades.  
+- До **4 игроков** в сессии
+- Разделение ролей: пилот, инженер, стрелок
+- Общие миссии: eskort грузов, зачистка пиратских баз, разведка
+- Общий прогресс и ресурсы
 
-**Example:**  
-Players A & B deliver Antigravium through a danger zone.  
-Player A pilots; Player B repairs during turbulence.  
-Success grants double rewards and a co-op-exclusive skin.  
-**Repository:** [GitHub Link](https://github.com/boozzeeboom/project-c)  
-**Contact:** [@indeed174](https://t.me/indeed174).
+---
+
+## 7. Технический стек
+
+| Компонент | Технология |
+|-----------|-----------|
+| Клиент | Unity 6, URP, Input System |
+| Сеть | Netcode for GameObjects |
+| Сервер | .NET 8 |
+| Язык | C# |
+
+---
+
+## 8. Текущий статус
+
+**Ветка:** `qwen-dev` | **Версия:** `v0.0.5.1-ship-system`
+
+### ✅ Реализовано
+- Процедурная генерация мира (15 горных пиков + 890+ облаков, 3 слоя)
+- Контроллер персонажа (пеший режим: WASD, бег, прыжок)
+- Контроллер корабля (Rigidbody: тяга, рыскание, тангаж, лифт Q/E, антигравитация)
+- Переключение режимов F (пеший ↔ корабль, радиус 5м)
+- Third-person камера (адаптивная)
+- WorldCamera (режим свободного полёта для разработки)
+- UI: подсказки управления, навигация по пикам
+- Базовый сетевой стек (NetworkManager, NetworkPlayer, NetworkUI)
+
+### 🔜 Следующие задачи
+- Доработка физики корабля (плавность, инерция)
+- Система топлива (мезий)
+- Подбор предметов и инвентарь
+
+---
+
+**Репозиторий:** [github.com/boozzeeboom/project-c](https://github.com/boozzeeboom/project-c)
+**Контакт:** [@indeed174](https://t.me/indeed174)

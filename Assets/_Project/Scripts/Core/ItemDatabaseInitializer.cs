@@ -1,10 +1,11 @@
 using UnityEngine;
 using ProjectC.Items;
+using System.Collections.Generic;
 
 namespace ProjectC.Core
 {
     /// <summary>
-    /// Автоматически регистрирует все предметы из Resources в NetworkInventory.
+    /// Автоматически регистрирует все предметы из Resources и сцены в NetworkInventory.
     /// Вешается на стартовый объект сцены.
     /// </summary>
     public class ItemDatabaseInitializer : MonoBehaviour
@@ -19,26 +20,68 @@ namespace ProjectC.Core
         }
 
         /// <summary>
-        /// Загрузить все предметы из Resources и зарегистрировать
+        /// Загрузить все предметы из Resources и сцены
         /// </summary>
         private void RegisterAllItems()
         {
-            var items = Resources.LoadAll<ItemData>(itemsResourcePath);
-            
-            if (items.Length == 0)
+            var allItems = new List<ItemData>();
+
+            // 1. Из Resources
+            var resourceItems = Resources.LoadAll<ItemData>(itemsResourcePath);
+            allItems.AddRange(resourceItems);
+
+            // 2. Из PickupItem на сцене
+            var pickups = FindObjectsByType<PickupItem>(FindObjectsInactive.Include);
+            foreach (var pickup in pickups)
             {
-                Debug.LogWarning($"[ItemDatabase] Не найдено предметов в Resources/{itemsResourcePath}. Создай ScriptableObject предметы!");
-                return;
+                if (pickup.itemData != null && !allItems.Contains(pickup.itemData))
+                {
+                    allItems.Add(pickup.itemData);
+                }
             }
 
-            for (int i = 0; i < items.Length; i++)
+            // 3. Из ChestContainer (LootTable) на сцене
+            var chests = FindObjectsByType<ChestContainer>(FindObjectsInactive.Include);
+            foreach (var chest in chests)
             {
-                int itemId = startItemId + i;
-                NetworkInventory.RegisterItem(itemId, items[i]);
-                Debug.Log($"[ItemDatabase] Зарегистрирован: ID {itemId} - {items[i].itemName}");
+                if (chest.lootTable != null)
+                {
+                    // entries
+                    if (chest.lootTable.entries != null)
+                    {
+                        foreach (var entry in chest.lootTable.entries)
+                        {
+                            if (entry.item != null && !allItems.Contains(entry.item))
+                            {
+                                allItems.Add(entry.item);
+                            }
+                        }
+                    }
+
+                    // guaranteedItems
+                    if (chest.lootTable.guaranteedItems != null)
+                    {
+                        foreach (var item in chest.lootTable.guaranteedItems)
+                        {
+                            if (item != null && !allItems.Contains(item))
+                            {
+                                allItems.Add(item);
+                            }
+                        }
+                    }
+                }
             }
 
-            Debug.Log($"[ItemDatabase] Всего зарегистрировано: {items.Length}");
+            // Регистрируем все найденные предметы
+            int id = startItemId;
+            foreach (var item in allItems)
+            {
+                NetworkInventory.RegisterItem(id, item);
+                Debug.Log($"[ItemDatabase] Зарегистрирован: ID {id} - {item.itemName}");
+                id++;
+            }
+
+            Debug.Log($"[ItemDatabase] Всего зарегистрировано: {allItems.Count}");
         }
     }
 }

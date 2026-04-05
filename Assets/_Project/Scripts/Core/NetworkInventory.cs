@@ -121,10 +121,11 @@ namespace ProjectC.Core
                 return;
             }
 
-            // Валидация: предмет существует
+            // Валидация: предмет существует (если нет — регистрируем)
             if (!_itemDatabase.ContainsKey(itemId))
             {
-                Debug.LogWarning($"[NetworkInventory] Предмет с ID {itemId} не найден в базе (база пуста?)");
+                // Сервер не знает этот предмет — клиент мог авто-регистрацию
+                Debug.LogWarning($"[NetworkInventory] Предмет с ID {itemId} не найден на сервере. Клиент авто-регистрацию сделал?");
                 return;
             }
 
@@ -224,11 +225,19 @@ namespace ProjectC.Core
         /// </summary>
         public static int GetItemId(ItemData itemData)
         {
+            if (itemData == null) return -1;
+
+            // Сначала ищем по ссылке
             foreach (var kvp in _itemDatabase)
             {
                 if (kvp.Value == itemData) return kvp.Key;
             }
-            return -1;
+
+            // Если не нашли — регистрируем автоматически
+            int newId = _itemDatabase.Count + 1;
+            RegisterItem(newId, itemData);
+            Debug.Log($"[NetworkInventory] Авто-регистрация: ID {newId} - {itemData.itemName}");
+            return newId;
         }
 
         /// <summary>

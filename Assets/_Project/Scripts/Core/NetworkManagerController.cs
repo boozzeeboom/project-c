@@ -1,12 +1,13 @@
 using Unity.Netcode;
 using Unity.Netcode.Transports.UTP;
 using UnityEngine;
+using System;
 
 namespace ProjectC.Core
 {
     /// <summary>
     /// Менеджер сетевого соединения для Project C
-    /// Управляет подключениями клиентов и хостом
+    /// Управляет подключениями, отключениями, обработкой обрывов
     /// </summary>
     public class NetworkManagerController : MonoBehaviour
     {
@@ -16,35 +17,92 @@ namespace ProjectC.Core
 
         private Unity.Netcode.NetworkManager networkManager;
 
+        // События для UI
+        public event Action<string> OnConnectionStatusChanged;
+        public event Action<ulong> OnPlayerConnected;
+        public event Action<ulong> OnPlayerDisconnected;
+
         private void Awake()
         {
-            // Получаем или добавляем Network Manager
             networkManager = GetComponent<Unity.Netcode.NetworkManager>();
-            
             if (networkManager == null)
-            {
                 networkManager = gameObject.AddComponent<Unity.Netcode.NetworkManager>();
-            }
 
             DontDestroyOnLoad(gameObject);
         }
 
+        private void OnEnable()
+        {
+            if (networkManager != null)
+            {
+                networkManager.OnClientConnectedCallback += HandleClientConnected;
+                networkManager.OnClientDisconnectCallback += HandleClientDisconnected;
+                networkManager.OnServerStarted += HandleServerStarted;
+                networkManager.OnTransportFailure += HandleTransportFailure;
+            }
+        }
+
+        private void OnDisable()
+        {
+            if (networkManager != null)
+            {
+                networkManager.OnClientConnectedCallback -= HandleClientConnected;
+                networkManager.OnClientDisconnectCallback -= HandleClientDisconnected;
+                networkManager.OnServerStarted -= HandleServerStarted;
+                networkManager.OnTransportFailure -= HandleTransportFailure;
+            }
+        }
+
+        private void HandleClientConnected(ulong clientId)
+        {
+            Debug.Log($"[Network] Клиент подключился: {clientId}");
+            OnPlayerConnected?.Invoke(clientId);
+
+            if (IsHost)
+                UpdateStatus($"Хост запущен. Игроков: {networkManager.ConnectedClients.Count}");
+            else
+                UpdateStatus("Подключено к серверу");
+        }
+
+        private void HandleClientDisconnected(ulong clientId)
+        {
+            Debug.Log($"[Network] Клиент отключился: {clientId}");
+            OnPlayerDisconnected?.Invoke(clientId);
+
+            if (IsHost)
+                UpdateStatus($"Хост запущен. Игроков: {networkManager.ConnectedClients.Count}");
+        }
+
+        private void HandleServerStarted()
+        {
+            Debug.Log("[Network] Сервер запущен");
+            UpdateStatus($"Сервер запущен на порту {serverPort}");
+        }
+
+        private void HandleTransportFailure()
+        {
+            Debug.LogError("[Network] Ошибка транспорта!");
+            UpdateStatus("Ошибка подключения");
+        }
+
         /// <summary>
-        /// Запустить сервер (хост)
+        /// Запустить сервер (хост = сервер + клиент)
         /// </summary>
         public void StartHost()
         {
             networkManager.StartHost();
             Debug.Log($"[Server] Запущен хост на порту {serverPort}");
+            UpdateStatus("Запуск хоста...");
         }
 
         /// <summary>
-        /// Запустить сервер (dedicated)
+        /// Запустить сервер (dedicated, без клиента)
         /// </summary>
         public void StartServer()
         {
             networkManager.StartServer();
             Debug.Log($"[Server] Запущен сервер на порту {serverPort}");
+            UpdateStatus("Запуск сервера...");
         }
 
         /// <summary>
@@ -55,14 +113,14 @@ namespace ProjectC.Core
             string targetIp = string.IsNullOrEmpty(ipAddress) ? serverIp : ipAddress;
             ushort targetPort = port == 0 ? serverPort : port;
 
-            // Устанавливаем адрес подключения через NetworkManager
             var transport = networkManager.NetworkConfig.NetworkTransport;
-            if (transport is Unity.Netcode.Transports.UTP.UnityTransport unityTransport)
+            if (transport is UnityTransport unityTransport)
             {
                 unityTransport.SetConnectionData(targetIp, targetPort);
             }
 
             Debug.Log($"[Client] Подключение к {targetIp}:{targetPort}");
+            UpdateStatus($"Подключение к {targetIp}:{targetPort}...");
 
             networkManager.StartClient();
         }
@@ -75,23 +133,20 @@ namespace ProjectC.Core
             if (networkManager.IsConnectedClient || networkManager.IsListening)
             {
                 networkManager.Shutdown();
-                Debug.Log("[Network] Отключено от сервера");
+                Debug.Log("[Network] Отключено");
+                UpdateStatus("Отключено");
             }
         }
 
-        /// <summary>
-        /// Проверка: мы сервер?
-        /// </summary>
-        public bool IsServer => networkManager.IsServer;
+        private void UpdateStatus(string status)
+        {
+            OnConnectionStatusChanged?.Invoke(status);
+        }
 
-        /// <summary>
-        /// Проверка: мы клиент?
-        /// </summary>
-        public bool IsClient => networkManager.IsClient;
-
-        /// <summary>
-        /// Проверка: мы хост?
-        /// </summary>
-        public bool IsHost => networkManager.IsHost;
+        public bool IsServer => networkManager != null && networkManager.IsServer;
+        public bool IsClient => networkManager != null && networkManager.IsClient;
+        public bool IsHost => networkManager != null && networkManager.IsHost;
+        public bool IsConnected => networkManager != null && networkManager.IsListening;
+        public int ConnectedPlayers => networkManager != null ? networkManager.ConnectedClients.Count : 0;
     }
 }

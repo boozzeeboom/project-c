@@ -189,7 +189,7 @@ namespace ProjectC.Player
                 bool boost = Keyboard.current.leftShiftKey.isPressed;
 
                 if (_currentShip != null)
-                    _currentShip.SendShipInput(thrust, yaw, pitch, vertical);
+                    _currentShip.SendShipInput(thrust, yaw, pitch, vertical, boost);
 
                 // E в корабле — пока ничего
                 if (Keyboard.current.eKey.wasPressedThisFrame && Keyboard.current.qKey.isPressed == false)

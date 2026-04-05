@@ -64,6 +64,19 @@ namespace ProjectC.Player
         // NetworkObject
         private NetworkObject networkObject;
 
+        // ==================== CLIENT-SIDE PREDICTION ====================
+
+        [Header("Коррекция позиции (prediction)")]
+        [Tooltip("Порог рассинхронизации для коррекции (м)")]
+        [SerializeField] private float positionCorrectionThreshold = 0.5f;
+
+        [Tooltip("Скорость плавной коррекции позиции")]
+        [SerializeField] private float positionCorrectionSpeed = 10f;
+
+        // Серверная позиция для коррекции
+        private Vector3 _serverPosition;
+        private bool _hasServerPosition = false;
+
         public bool IsInShip => _inShip;
         public ShipController CurrentShip => _currentShip;
 
@@ -86,19 +99,14 @@ namespace ProjectC.Player
             var legacyController = GetComponent<PlayerController>();
             if (legacyController != null) legacyController.enabled = false;
 
-            Debug.Log($"[Player] Найдено {_playerRenderers.Count} Renderer, {_playerColliders.Count} Collider");
-
             if (IsOwner)
             {
-                Debug.Log($"[Player] Локальный игрок spawned. OwnerClientId: {OwnerClientId}");
-
                 SpawnCamera();
                 SpawnInventory();
                 ApplyWalkingState();
             }
             else
             {
-                Debug.Log($"[Player] Удалённый игрок spawned. OwnerClientId: {OwnerClientId}");
                 _controller.enabled = false;
             }
         }
@@ -110,8 +118,6 @@ namespace ProjectC.Player
             if (_myCamera != null) Destroy(_myCamera.gameObject);
             if (_inventoryUI != null) Destroy(_inventoryUI.gameObject);
             if (_inShip && _currentShip != null) _currentShip.RemovePilot(OwnerClientId);
-
-            Debug.Log($"[Player] Игрок despawned. OwnerClientId: {OwnerClientId}");
         }
 
         // ==================== КАМЕРА ====================
@@ -125,7 +131,6 @@ namespace ProjectC.Player
                 if (_myCamera != null)
                 {
                     _myCamera.SetTarget(transform);
-                    Debug.Log("[Player] Персональная камера создана");
                 }
             }
             else
@@ -151,8 +156,6 @@ namespace ProjectC.Player
             var invField = typeof(InventoryUI).GetField("inventory", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
             if (invField != null)
                 invField.SetValue(_inventoryUI, _inventory);
-
-            Debug.Log("[Player] Инвентарь создан");
         }
 
         // ==================== ВВОД ====================
@@ -222,6 +225,27 @@ namespace ProjectC.Player
         }
 
         // ==================== ДВИЖЕНИЕ ====================
+
+        private void FixedUpdate()
+        {
+            // Плавная коррекция позиции только для локального игрока (Owner)
+            if (!IsOwner || _inShip) return;
+
+            if (_hasServerPosition)
+            {
+                float dist = Vector3.Distance(transform.position, _serverPosition);
+                if (dist > positionCorrectionThreshold)
+                {
+                    // Рассинхронизация — плавно возвращаем к серверной позиции
+                    transform.position = Vector3.Lerp(transform.position, _serverPosition, positionCorrectionSpeed * Time.fixedDeltaTime);
+                }
+                else
+                {
+                    // Позиция синхронизирована — отключаем коррекцию
+                    _hasServerPosition = false;
+                }
+            }
+        }
 
         private void ProcessMovement(Vector2 moveInput, bool jump, bool run)
         {
@@ -330,7 +354,6 @@ namespace ProjectC.Player
                 _myCamera.SetTarget(transform);
                 _myCamera.SetShipMode(false);
             }
-            Debug.Log("[Player] Режим: пешком");
         }
 
         private void ApplyShipState()
@@ -340,7 +363,6 @@ namespace ProjectC.Player
                 _myCamera.SetTarget(_currentShip.transform);
                 _myCamera.SetShipMode(true);
             }
-            Debug.Log("[Player] Режим: корабль");
         }
 
         // ==================== ПОДБОР ПРЕДМЕТОВ ====================
@@ -452,6 +474,16 @@ namespace ProjectC.Player
             return "";
         }
         public bool IsNearbyChest() => !_inShip && _nearestChest != null;
+
+        /// <summary>
+        /// Вызывается сервером для коррекции позиции клиента при рассинхронизации
+        /// </summary>
+        [Rpc(SendTo.Owner)]
+        public void ApplyServerPositionRpc(Vector3 serverPosition, RpcParams rpcParams = default)
+        {
+            _serverPosition = serverPosition;
+            _hasServerPosition = true;
+        }
 
         public new bool IsLocalPlayer => IsOwner;
         public ulong GetOwnerId() => OwnerClientId;

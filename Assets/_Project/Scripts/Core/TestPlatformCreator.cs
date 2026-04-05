@@ -45,8 +45,6 @@ namespace ProjectC.Core
                 mat.color = platformColor;
                 platform.GetComponent<Renderer>().material = mat;
             }
-
-            Debug.Log($"[TestPlatform] Создана платформа: {platformSize}");
         }
 
         private void CreateWall()
@@ -65,8 +63,6 @@ namespace ProjectC.Core
                 mat.color = Color.blue;
                 wall.GetComponent<Renderer>().material = mat;
             }
-
-            Debug.Log("[TestPlatform] Создана стена-ориентир");
         }
     }
 }

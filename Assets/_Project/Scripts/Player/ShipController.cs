@@ -168,7 +168,6 @@ namespace ProjectC.Player
         {
             _pilots.Add(clientId);
             enabled = true;
-            Debug.Log($"[Ship] Пилот вошёл: Client {clientId} (всего: {_pilots.Count})");
         }
 
         /// <summary>
@@ -184,7 +183,6 @@ namespace ProjectC.Player
         {
             _pilots.Remove(clientId);
             if (_pilots.Count == 0) enabled = false;
-            Debug.Log($"[Ship] Пилот вышел: Client {clientId} (осталось: {_pilots.Count})");
         }
     }
 }

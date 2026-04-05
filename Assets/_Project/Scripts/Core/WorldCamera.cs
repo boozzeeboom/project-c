@@ -84,7 +84,6 @@ namespace ProjectC.Core
             // Принудительно устанавливаем высоту облаков, если значение слишком большое
             if (startHeight > 1000f)
             {
-                Debug.Log($"[WorldCamera] StartHeight был {startHeight}м, установлено 500м (уровень облаков)");
                 startHeight = 500f;
             }
 
@@ -178,13 +177,11 @@ namespace ProjectC.Core
             {
                 // Камера следует за персонажем, старт с начальной позиции рядом
                 transform.position = target.position - transform.forward * distance + Vector3.up * height;
-                Debug.Log($"[WorldCamera] Следование за персонажем на {target.position}");
             }
             else
             {
                 // Принудительно устанавливаем стартовую высоту
                 transform.position = new Vector3(0, startHeight, 0);
-                Debug.Log($"[WorldCamera] Стартовая высота: {startHeight}м");
 
                 // Телепорт к первому пику если нет персонажа
                 if (flyToFirstPeakOnStart && worldGenerator != null)
@@ -210,7 +207,6 @@ namespace ProjectC.Core
             var existingHints = FindAnyObjectByType<ControlHintsUI>();
             if (existingHints != null)
             {
-                Debug.Log("[WorldCamera] ControlHintsUI уже существует на сцене");
                 return;
             }
 
@@ -223,7 +219,6 @@ namespace ProjectC.Core
                 canvasObj.AddComponent<UnityEngine.UI.CanvasScaler>();
                 canvasObj.AddComponent<UnityEngine.UI.GraphicRaycaster>();
                 canvas.renderMode = RenderMode.ScreenSpaceOverlay;
-                Debug.Log("[WorldCamera] Создан Canvas");
             }
 
             // Создаём TextMeshPro
@@ -246,8 +241,6 @@ namespace ProjectC.Core
             hintsObj.transform.SetParent(canvas.transform);
             var controlHints = hintsObj.AddComponent<ControlHintsUI>();
             controlHints.hintsText = tmpText;
-
-            Debug.Log("[WorldCamera] Создан ControlHintsUI автоматически");
         }
 
         private void LateUpdate()
@@ -295,7 +288,6 @@ namespace ProjectC.Core
             if (Vector3.Distance(transform.position, teleportTarget) < 1f)
             {
                 isTeleporting = false;
-                Debug.Log("[WorldCamera] Телепортация завершена");
             }
         }
 
@@ -309,7 +301,6 @@ namespace ProjectC.Core
                 500f,
                 transform.position.z
             );
-            Debug.Log("[WorldCamera] Возврат на высоту облаков");
         }
 
         /// <summary>
@@ -425,7 +416,6 @@ namespace ProjectC.Core
         public void ToggleFlyMode()
         {
             isFlying = !isFlying;
-            Debug.Log($"[WorldCamera] Fly mode: {isFlying}");
         }
 
         /// <summary>
@@ -454,8 +444,6 @@ namespace ProjectC.Core
                 teleportTarget = peak.position + Vector3.up * (peak.height * 0.5f);
                 transform.position = teleportTarget;
                 isTeleporting = false;
-
-                Debug.Log($"[WorldCamera] Телепорт к пику {peakIndex}: {peak.name} (высота: {peak.height:F0}м)");
             }
         }
 

@@ -123,7 +123,6 @@ namespace ProjectC.Core
             if (newTarget != null)
             {
                 target = newTarget;
-                Debug.Log($"[ThirdPersonCamera] Target changed to {newTarget.name}");
             }
         }
 
@@ -135,7 +134,6 @@ namespace ProjectC.Core
             var existingHints = FindAnyObjectByType<ProjectC.UI.ControlHintsUI>();
             if (existingHints != null)
             {
-                Debug.Log("[ThirdPersonCamera] ControlHintsUI уже существует");
                 return;
             }
 
@@ -170,8 +168,6 @@ namespace ProjectC.Core
             hintsObj.transform.SetParent(canvas.transform);
             var controlHints = hintsObj.AddComponent<ProjectC.UI.ControlHintsUI>();
             controlHints.hintsText = tmpText;
-
-            Debug.Log("[ThirdPersonCamera] Создан ControlHintsUI");
         }
 
         private void LateUpdate()

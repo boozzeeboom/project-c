@@ -49,8 +49,6 @@ namespace ProjectC.Core
         /// </summary>
         private void Start()
         {
-            Debug.Log("[CloudSystem] Инициализация системы облаков...");
-
             // Найти или создать родителя
             if (cloudParent == null)
             {
@@ -66,8 +64,6 @@ namespace ProjectC.Core
             {
                 UpdateDayNightCycle();
             }
-
-            Debug.Log($"[CloudSystem] Система инициализирована. Всего облаков: {totalCloudCount}");
         }
 
         /// <summary>
@@ -93,7 +89,6 @@ namespace ProjectC.Core
                 upperObj.transform.SetParent(cloudParent);
                 upperLayer = upperObj.AddComponent<CloudLayer>();
                 upperLayer.config = upperLayerConfig;
-                Debug.Log($"[CloudSystem] Создан верхний слой: {upperLayerConfig.layerType}");
             }
 
             // Средний слой
@@ -103,7 +98,6 @@ namespace ProjectC.Core
                 middleObj.transform.SetParent(cloudParent);
                 middleLayer = middleObj.AddComponent<CloudLayer>();
                 middleLayer.config = middleLayerConfig;
-                Debug.Log($"[CloudSystem] Создан средний слой: {middleLayerConfig.layerType}");
             }
 
             // Нижний слой
@@ -113,7 +107,6 @@ namespace ProjectC.Core
                 lowerObj.transform.SetParent(cloudParent);
                 lowerLayer = lowerObj.AddComponent<CloudLayer>();
                 lowerLayer.config = lowerLayerConfig;
-                Debug.Log($"[CloudSystem] Создан нижний слой: {lowerLayerConfig.layerType}");
             }
 
             // Подсчитать облака
@@ -219,7 +212,6 @@ namespace ProjectC.Core
             if (middleLayer != null) middleLayer.RegenerateLayer();
             if (lowerLayer != null) lowerLayer.RegenerateLayer();
             UpdateCloudCount();
-            Debug.Log($"[CloudSystem] Слои пересгенерированы. Всего облаков: {totalCloudCount}");
         }
 
         /// <summary>
@@ -232,7 +224,6 @@ namespace ProjectC.Core
             if (middleLayer != null) middleLayer.ClearLayer();
             if (lowerLayer != null) lowerLayer.ClearLayer();
             UpdateCloudCount();
-            Debug.Log("[CloudSystem] Все слои очищены");
         }
 
         /// <summary>

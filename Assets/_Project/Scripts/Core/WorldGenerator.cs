@@ -59,9 +59,6 @@ namespace ProjectC.Core
             }
             
             Random.InitState(seed);
-            Debug.Log($"[WorldGenerator] Seed: {seed}");
-            Debug.Log($"[WorldGenerator] Радиус мира: {settings.worldRadius}м");
-            Debug.Log($"[WorldGenerator] Количество пиков: {settings.peakCount}");
 
             GenerateWorld();
         }
@@ -72,26 +69,20 @@ namespace ProjectC.Core
         public void GenerateWorld()
         {
             ClearGeneratedObjects();
-            
+
             if (settings == null)
             {
                 Debug.LogError("[WorldGenerator] WorldGenerationSettings не назначен!");
                 return;
             }
 
-            Debug.Log("[WorldGenerator] Генерация горных пиков...");
             GeneratePeaks();
-            
-            Debug.Log("[WorldGenerator] Генерация облачного слоя...");
             GenerateCloudLayer();
-            
+
             if (settings.addMinorIslands)
             {
-                Debug.Log("[WorldGenerator] Генерация мелких островов...");
                 GenerateMinorIslands();
             }
-            
-            Debug.Log($"[WorldGenerator] Мир сгенерирован: {generatedPeaks.Count} пиков, {generatedClouds.Count} облаков, {generatedMinorIslands.Count} мелких островов");
         }
 
         /// <summary>
@@ -115,8 +106,6 @@ namespace ProjectC.Core
                 
                 peak.gameObject = CreatePeak(peak);
                 generatedPeaks.Add(peak);
-                
-                Debug.Log($"[WorldGenerator] Пик {i}: {peak.name} высота={height:F0}м, радиус={radius:F0}м");
             }
         }
 
@@ -308,8 +297,6 @@ namespace ProjectC.Core
         private void GenerateCloudLayer()
         {
             // CloudSystem сгенерирует облака автоматически в своём Start()
-            // Просто логируем что используем новую систему
-            Debug.Log("[WorldGenerator] Облака будут сгенерированы через CloudSystem (автоматически)");
         }
 
         /// <summary>
@@ -323,8 +310,6 @@ namespace ProjectC.Core
                 (settings.cloudSize * settings.cloudSize) *
                 settings.cloudDensity
             );
-
-            Debug.Log($"[WorldGenerator] Генерация {cloudCount} облаков (legacy)...");
 
             for (int i = 0; i < cloudCount; i++)
             {

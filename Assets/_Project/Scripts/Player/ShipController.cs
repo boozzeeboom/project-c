@@ -1,32 +1,30 @@
 using UnityEngine;
-using UnityEngine.InputSystem;
+using Unity.Netcode;
+using System.Collections.Generic;
 
 namespace ProjectC.Player
 {
     /// <summary>
-    /// Контроллер корабля — полёт на Rigidbody
-    /// Вешается на объект корабля (Ship_01, Ship_02 и т.д.)
-    /// Управляет ТОЛЬКО своим объектом
+    /// Сетевой контроллер корабля — полёт на Rigidbody.
+    /// Кооп-пилотирование: несколько игроков могут управлять одновременно.
+    /// Ввод суммируется на сервере. NetworkTransform(ServerAuthority) реплицирует всем.
     /// </summary>
     [RequireComponent(typeof(Rigidbody))]
-    public class ShipController : MonoBehaviour
+    [RequireComponent(typeof(NetworkObject))]
+    public class ShipController : NetworkBehaviour
     {
         [Header("Тяга")]
         [SerializeField] private float thrustForce = 500f;
         [SerializeField] private float maxSpeed = 30f;
 
         [Header("Вращение")]
-        [Tooltip("Рыскание (A/D) — медленное, как у баржи")]
         [SerializeField] private float yawForce = 30f;
-
         [SerializeField] private float pitchForce = 40f;
 
         [Header("Вертикальное движение")]
-        [Tooltip("Сила подъёма/снижения (Q = вниз, E = вверх)")]
         [SerializeField] private float verticalForce = 300f;
 
         [Header("Антигравитация")]
-        [Tooltip("0 = падает, 1 = зависает")]
         [SerializeField] [Range(0f, 1.5f)] private float antiGravity = 1f;
 
         [Header("Аэродинамика")]
@@ -40,29 +38,16 @@ namespace ProjectC.Player
         // Rigidbody
         private Rigidbody _rb;
 
-        // Ввод
-        private InputAction _thrustPositive;
-        private InputAction _thrustNegative;
-        private InputAction _yawLeft;
-        private InputAction _yawRight;
-        private InputAction _pitchAction;
-        private InputAction _verticalDown;
-        private InputAction _verticalUp;
-        private InputAction _boostAction;
+        // Список пилотов (кооп-управление)
+        private HashSet<ulong> _pilots = new HashSet<ulong>();
 
-        private float _thrustInput;
-        private float _yawInput;
-        private float _pitchInput;
-        private float _verticalInput;
-        private bool _boostActive;
+        // Накопленный ввод от всех пилотов (сервер)
+        private float _sumThrust, _sumYaw, _sumPitch, _sumVertical;
+        private int _inputCount;
 
         private void Awake()
         {
-            // По умолчанию корабль не управляется — управление даёт PlayerStateMachine при посадке
-            enabled = false;
-
             _rb = GetComponent<Rigidbody>();
-
             if (_rb != null)
             {
                 _rb.linearDamping = linearDrag;
@@ -70,82 +55,59 @@ namespace ProjectC.Player
                 _rb.useGravity = true;
                 _rb.constraints = RigidbodyConstraints.None;
             }
-
-            // Input Actions
-            _thrustPositive = new InputAction("ThrustPos", binding: "<Keyboard>/w", expectedControlType: "Button");
-            _thrustNegative = new InputAction("ThrustNeg", binding: "<Keyboard>/s", expectedControlType: "Button");
-            _yawLeft = new InputAction("YawLeft", binding: "<Keyboard>/a", expectedControlType: "Button");
-            _yawRight = new InputAction("YawRight", binding: "<Keyboard>/d", expectedControlType: "Button");
-            _pitchAction = new InputAction("Pitch", binding: "<Mouse>/delta/y", expectedControlType: "Axis");
-            _verticalDown = new InputAction("VerticalDown", binding: "<Keyboard>/q", expectedControlType: "Button");
-            _verticalUp = new InputAction("VerticalUp", binding: "<Keyboard>/e", expectedControlType: "Button");
-            _boostAction = new InputAction("Boost", binding: "<Keyboard>/leftShift", expectedControlType: "Button");
-        }
-
-        private void OnEnable()
-        {
-            _thrustPositive.Enable();
-            _thrustNegative.Enable();
-            _yawLeft.Enable();
-            _yawRight.Enable();
-            _pitchAction.Enable();
-            _verticalDown.Enable();
-            _verticalUp.Enable();
-            _boostAction.Enable();
-        }
-
-        private void OnDisable()
-        {
-            if (_thrustPositive != null) _thrustPositive.Disable();
-            if (_thrustNegative != null) _thrustNegative.Disable();
-            if (_yawLeft != null) _yawLeft.Disable();
-            if (_yawRight != null) _yawRight.Disable();
-            if (_pitchAction != null) _pitchAction.Disable();
-            if (_verticalDown != null) _verticalDown.Disable();
-            if (_verticalUp != null) _verticalUp.Disable();
-            if (_boostAction != null) _boostAction.Disable();
         }
 
         private void FixedUpdate()
         {
-            if (_rb == null) return;
+            if (_rb == null || !IsServer) return;
+            if (_pilots.Count == 0) return;
 
-            HandleInput();
-            ApplyThrust();
+            // Усредняем ввод от всех пилотов
+            int n = Mathf.Max(1, _inputCount);
+            float avgThrust = _sumThrust / n;
+            float avgYaw = _sumYaw / n;
+            float avgPitch = _sumPitch / n;
+            float avgVertical = _sumVertical / n;
+
+            ApplyThrust(avgThrust);
             ApplyAntiGravity();
-            ApplyVertical();
-            ApplyRotation();
+            ApplyVertical(avgVertical);
+            ApplyRotation(avgYaw, avgPitch);
 
-            if (autoStabilize && HasNoInput())
+            if (autoStabilize && HasNoInput(avgThrust, avgYaw, avgPitch, avgVertical))
                 ApplyStabilization();
 
             ClampVelocity();
+
+            // Сброс буфера
+            _sumThrust = 0; _sumYaw = 0; _sumPitch = 0; _sumVertical = 0;
+            _inputCount = 0;
         }
 
-        private void HandleInput()
+        /// <summary>
+        /// Пилот шлёт ввод на сервер
+        /// </summary>
+        [Rpc(SendTo.Server)]
+        private void SubmitShipInputRpc(float thrust, float yaw, float pitch, float vertical, RpcParams rpcParams = default)
         {
-            _thrustInput = (_thrustPositive.ReadValue<float>() > 0.5f ? 1f : 0f)
-                         - (_thrustNegative.ReadValue<float>() > 0.5f ? 1f : 0f);
+            if (!_pilots.Contains(rpcParams.Receive.SenderClientId)) return;
 
-            _yawInput = (_yawRight.ReadValue<float>() > 0.5f ? 1f : 0f)
-                      - (_yawLeft.ReadValue<float>() > 0.5f ? 1f : 0f);
-
-            _pitchInput = _pitchAction.ReadValue<float>();
-            _pitchInput = Mathf.Clamp(_pitchInput, -1f, 1f);
-
-            // Q = вниз, E = вверх
-            _verticalInput = (_verticalUp.ReadValue<float>() > 0.5f ? 1f : 0f)
-                           - (_verticalDown.ReadValue<float>() > 0.5f ? 1f : 0f);
-
-            _boostActive = _boostAction.ReadValue<float>() > 0.5f;
+            _sumThrust += thrust;
+            _sumYaw += yaw;
+            _sumPitch += pitch;
+            _sumVertical += vertical;
+            _inputCount++;
         }
 
-        private void ApplyThrust()
+        public void SendShipInput(float thrust, float yaw, float pitch, float vertical)
         {
-            if (Mathf.Abs(_thrustInput) < 0.01f) return;
+            SubmitShipInputRpc(thrust, yaw, pitch, vertical);
+        }
 
-            float currentThrust = _boostActive ? thrustForce * 2f : thrustForce;
-            _rb.AddForce(transform.forward * _thrustInput * currentThrust, ForceMode.Force);
+        private void ApplyThrust(float input)
+        {
+            if (Mathf.Abs(input) < 0.01f) return;
+            _rb.AddForce(transform.forward * input * thrustForce, ForceMode.Force);
         }
 
         private void ApplyAntiGravity()
@@ -155,22 +117,19 @@ namespace ProjectC.Player
             _rb.AddForce(Vector3.up * gravityCompensation, ForceMode.Force);
         }
 
-        /// <summary>
-        /// Вертикальное движение (Q/E — лифт)
-        /// </summary>
-        private void ApplyVertical()
+        private void ApplyVertical(float input)
         {
-            if (Mathf.Abs(_verticalInput) < 0.01f) return;
-            _rb.AddForce(Vector3.up * _verticalInput * verticalForce, ForceMode.Force);
+            if (Mathf.Abs(input) < 0.01f) return;
+            _rb.AddForce(Vector3.up * input * verticalForce, ForceMode.Force);
         }
 
-        private void ApplyRotation()
+        private void ApplyRotation(float yaw, float pitch)
         {
-            if (Mathf.Abs(_yawInput) > 0.01f)
-                _rb.AddTorque(Vector3.up * _yawInput * yawForce, ForceMode.Force);
+            if (Mathf.Abs(yaw) > 0.01f)
+                _rb.AddTorque(Vector3.up * yaw * yawForce, ForceMode.Force);
 
-            if (Mathf.Abs(_pitchInput) > 0.01f)
-                _rb.AddTorque(transform.right * -_pitchInput * pitchForce, ForceMode.Force);
+            if (Mathf.Abs(pitch) > 0.01f)
+                _rb.AddTorque(transform.right * -pitch * pitchForce, ForceMode.Force);
         }
 
         private void ApplyStabilization()
@@ -179,13 +138,8 @@ namespace ProjectC.Player
             _rb.AddTorque(stabilizationTorque, ForceMode.Force);
         }
 
-        private bool HasNoInput()
-        {
-            return Mathf.Abs(_thrustInput) < 0.01f
-                && Mathf.Abs(_yawInput) < 0.01f
-                && Mathf.Abs(_pitchInput) < 0.01f
-                && Mathf.Abs(_verticalInput) < 0.01f;
-        }
+        private bool HasNoInput(float t, float y, float p, float v) =>
+            Mathf.Abs(t) < 0.01f && Mathf.Abs(y) < 0.01f && Mathf.Abs(p) < 0.01f && Mathf.Abs(v) < 0.01f;
 
         private void ClampVelocity()
         {
@@ -195,13 +149,39 @@ namespace ProjectC.Player
 
         public float CurrentSpeed => _rb != null ? _rb.linearVelocity.magnitude : 0f;
         public bool IsGrounded => Physics.Raycast(transform.position, Vector3.down, out _, 1.5f);
+        public Vector3 GetExitPosition() => transform.position + Vector3.up * 1.5f;
+        public int PilotCount => _pilots.Count;
 
         /// <summary>
-        /// Точка выхода из корабля (на палубе)
+        /// Добавить пилота (кооп — несколько могут одновременно)
         /// </summary>
-        public Vector3 GetExitPosition()
+        public void AddPilot(NetworkPlayer pilot)
         {
-            return transform.position + Vector3.up * 1.5f;
+            AddPilotRpc(pilot.OwnerClientId);
+        }
+
+        [Rpc(SendTo.Everyone)]
+        private void AddPilotRpc(ulong clientId, RpcParams rpcParams = default)
+        {
+            _pilots.Add(clientId);
+            enabled = true;
+            Debug.Log($"[Ship] Пилот вошёл: Client {clientId} (всего: {_pilots.Count})");
+        }
+
+        /// <summary>
+        /// Снять пилота
+        /// </summary>
+        public void RemovePilot(ulong clientId)
+        {
+            RemovePilotRpc(clientId);
+        }
+
+        [Rpc(SendTo.Everyone)]
+        private void RemovePilotRpc(ulong clientId, RpcParams rpcParams = default)
+        {
+            _pilots.Remove(clientId);
+            if (_pilots.Count == 0) enabled = false;
+            Debug.Log($"[Ship] Пилот вышел: Client {clientId} (осталось: {_pilots.Count})");
         }
     }
 }

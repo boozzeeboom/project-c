@@ -62,12 +62,26 @@ namespace ProjectC.UI
         {
             UpdateButtons(true);
             HideReconnectButton();
+            UpdatePlayerCount();
         }
 
         private void HandlePlayerDisconnected(ulong clientId)
         {
+            UpdatePlayerCount();
             if (!networkManagerController.IsConnected)
                 UpdateButtons(false);
+        }
+
+        private void UpdatePlayerCount()
+        {
+            if (playerCountText == null) return;
+
+            int count = networkManagerController.ConnectedPlayers;
+            // Host тоже считается как игрок
+            if (networkManagerController.IsHost)
+                count += 1;
+
+            playerCountText.text = $"Игроков: {count}";
         }
 
         private void CreateDisconnectButton()
@@ -145,6 +159,7 @@ namespace ProjectC.UI
             networkManagerController.StartHost();
             HideConnectionPanel();
             UpdateButtons(true); // Мгновенно показываем Disconnect
+            UpdatePlayerCount();
         }
 
         private void OnStartServerClicked()
@@ -188,6 +203,7 @@ namespace ProjectC.UI
             networkManagerController.Disconnect();
             ShowConnectionPanel();
             UpdateStatus("Отключено");
+            ShowReconnectButton();
         }
 
         private void UpdateStatus(string status)

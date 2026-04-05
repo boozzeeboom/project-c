@@ -1,4 +1,5 @@
 using UnityEngine;
+using ProjectC.Core;
 
 namespace ProjectC.Items
 {
@@ -6,6 +7,7 @@ namespace ProjectC.Items
     /// Компонент подбираемого предмета в мире.
     /// Навесить на GameObject с триггер-коллайдером.
     /// При нажатии E рядом — предмет подбирается и попадает в Inventory.
+    /// Работает с NetworkInventory (синхронизация) и legacy Inventory (локальный).
     /// </summary>
     public class PickupItem : MonoBehaviour
     {
@@ -43,21 +45,14 @@ namespace ProjectC.Items
         }
 
         /// <summary>
-        /// Подобрать предмет. Вызывается из ItemPickupSystem (legacy) или через ServerRpc (сеть).
+        /// Подобрать предмет. Вызывается из NetworkPlayer.TryPickup().
         /// </summary>
         public void Collect()
         {
             if (_isCollected || itemData == null) return;
             _isCollected = true;
 
-            // Добавляем в инвентарь (ищем ближайший — legacy)
-            var inv = FindAnyObjectByType<Inventory>();
-            if (inv != null)
-            {
-                inv.AddItem(itemData);
-            }
-
-            // Визуальный эффект — исчезновение
+            // Скрыть предмет
             gameObject.SetActive(false);
         }
 

@@ -15,12 +15,24 @@ namespace ProjectC.Core
         [SerializeField] private string serverIp = "127.0.0.1";
         [SerializeField] private ushort serverPort = 7777;
 
+        [Header("Reconnect")]
+        [SerializeField] private bool enableAutoReconnect = true;
+        [SerializeField] private float reconnectDelay = 3f;
+        [SerializeField] private int maxReconnectAttempts = 5;
+
         private Unity.Netcode.NetworkManager networkManager;
+
+        // Состояние reconnect
+        private string _lastServerIp = "127.0.0.1";
+        private ushort _lastServerPort = 7777;
+        private int _reconnectAttempts = 0;
+        private bool _isReconnecting = false;
 
         // События для UI
         public event Action<string> OnConnectionStatusChanged;
         public event Action<ulong> OnPlayerConnected;
         public event Action<ulong> OnPlayerDisconnected;
+        public event Action OnReconnectRequested; // Для UI кнопки Reconnect
 
         private void Awake()
         {
@@ -101,6 +113,87 @@ namespace ProjectC.Core
         {
             Debug.LogError("[Network] Ошибка транспорта!");
             UpdateStatus("Ошибка подключения");
+
+            // Запускаем авто-реконнект
+            if (enableAutoReconnect && !_isReconnecting)
+            {
+                StartAutoReconnect();
+            }
+        }
+
+        /// <summary>
+        /// Запустить автоматический реконнект
+        /// </summary>
+        private void StartAutoReconnect()
+        {
+            _isReconnecting = true;
+            _reconnectAttempts = 0;
+            UpdateStatus($"Попытка восстановления соединения...");
+            Invoke(nameof(TryReconnect), reconnectDelay);
+        }
+
+        /// <summary>
+        /// Попытка реконнекта
+        /// </summary>
+        private void TryReconnect()
+        {
+            _reconnectAttempts++;
+
+            if (_reconnectAttempts > maxReconnectAttempts)
+            {
+                _isReconnecting = false;
+                UpdateStatus("Не удалось подключиться. Используйте кнопку Reconnect.");
+                OnReconnectRequested?.Invoke();
+                return;
+            }
+
+            Debug.Log($"[Network] Попытка реконнекта {_reconnectAttempts}/{maxReconnectAttempts}");
+            UpdateStatus($"Реконнект... ({_reconnectAttempts}/{maxReconnectAttempts})");
+
+            // Очищаем старое соединение
+            if (networkManager.IsListening || networkManager.IsConnectedClient)
+            {
+                networkManager.Shutdown();
+            }
+
+            // Пересоздаём NetworkManager для чистого состояния
+            ResetNetworkManager();
+
+            // Подключаемся к последнему серверу
+            ConnectToServer(_lastServerIp, _lastServerPort);
+        }
+
+        /// <summary>
+        /// Сбросить NetworkManager (для чистого состояния)
+        /// </summary>
+        private void ResetNetworkManager()
+        {
+            if (networkManager != null)
+            {
+                OnDisable();
+                networkManager.Shutdown();
+                UnityEngine.Object.Destroy(networkManager);
+            }
+            networkManager = gameObject.AddComponent<Unity.Netcode.NetworkManager>();
+            OnEnable();
+        }
+
+        /// <summary>
+        /// Ручной реконнект (по кнопке UI)
+        /// </summary>
+        public void Reconnect()
+        {
+            if (_lastServerIp == null)
+            {
+                UpdateStatus("Нет сохранённого сервера для реконнекта");
+                return;
+            }
+
+            Debug.Log($"[Network] Ручной реконнект к {_lastServerIp}:{_lastServerPort}");
+            UpdateStatus($"Подключение к {_lastServerIp}:{_lastServerPort}...");
+
+            ResetNetworkManager();
+            ConnectToServer(_lastServerIp, _lastServerPort);
         }
 
         public void StartHost()
@@ -126,6 +219,12 @@ namespace ProjectC.Core
             string targetIp = string.IsNullOrEmpty(ipAddress) ? serverIp : ipAddress;
             ushort targetPort = port == 0 ? serverPort : port;
 
+            // Сохраняем для реконнекта
+            _lastServerIp = targetIp;
+            _lastServerPort = targetPort;
+            _isReconnecting = false;
+            _reconnectAttempts = 0;
+
             var transport = networkManager.NetworkConfig.NetworkTransport;
             if (transport is UnityTransport unityTransport)
             {
@@ -144,6 +243,11 @@ namespace ProjectC.Core
         {
             if (networkManager.IsConnectedClient || networkManager.IsListening)
             {
+                // Отменяем реконнект
+                CancelInvoke(nameof(TryReconnect));
+                _isReconnecting = false;
+                _reconnectAttempts = 0;
+
                 networkManager.Shutdown();
                 UpdateStatus("Отключено");
             }

@@ -103,6 +103,17 @@ namespace ProjectC.Player
             {
                 SpawnCamera();
                 SpawnInventory();
+                
+                // Загружаем инвентарь из сохранения (после реконнекта)
+                if (_inventory != null)
+                {
+                    _inventory.LoadFromPrefs();
+                    if (_inventory.GetTotalItemCount() > 0 && _inventoryUI != null)
+                    {
+                        _inventoryUI.TriggerSectorFlash();
+                    }
+                }
+                
                 ApplyWalkingState();
             }
             else
@@ -114,6 +125,12 @@ namespace ProjectC.Player
         public override void OnNetworkDespawn()
         {
             base.OnNetworkDespawn();
+
+            // Сохраняем инвентарь перед отключением
+            if (_inventory != null && _inventory.GetTotalItemCount() > 0)
+            {
+                _inventory.SaveToPrefs();
+            }
 
             if (_myCamera != null) Destroy(_myCamera.gameObject);
             if (_inventoryUI != null) Destroy(_inventoryUI.gameObject);

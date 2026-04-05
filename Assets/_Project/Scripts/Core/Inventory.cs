@@ -6,7 +6,8 @@ namespace ProjectC.Items
     /// <summary>
     /// Менеджер инвентаря. Хранит предметы, сгруппированные по типам.
     /// Каждый тип привязан к своему сектору кругового колеса (8 секторов).
-    /// Каждый игрок имеет свой экземпляр Inventory (вешается на NetworkPlayer).
+    /// Каждый игрок имеет свой экземпляр Inventory (вешется на NetworkPlayer).
+    /// Поддержка сохранения/загрузки (через PlayerPrefs) для реконнекта.
     /// </summary>
     public class Inventory : MonoBehaviour
     {
@@ -97,6 +98,83 @@ namespace ProjectC.Items
                     result.Add(kvp.Key);
             }
             return result;
+        }
+
+        // ==================== СОХРАНЕНИЕ / ЗАГРУЗКА ====================
+
+        /// <summary>
+        /// Сохранить инвентарь в PlayerPrefs (для реконнекта)
+        /// </summary>
+        public void SaveToPrefs(string key = "InventoryData")
+        {
+            var saveData = new List<string>();
+            foreach (var kvp in _itemsByType)
+            {
+                foreach (var item in kvp.Value)
+                {
+                    if (item != null)
+                    {
+                        // Сохраняем имя предмета как идентификатор
+                        saveData.Add($"{(int)kvp.Key}:{item.itemName}");
+                    }
+                }
+            }
+            PlayerPrefs.SetString(key, string.Join(",", saveData));
+            PlayerPrefs.Save();
+            Debug.Log($"[Inventory] Сохранено: {saveData.Count} предметов");
+        }
+
+        /// <summary>
+        /// Загрузить инвентарь из PlayerPrefs (после реконнекта)
+        /// </summary>
+        public void LoadFromPrefs(string key = "InventoryData")
+        {
+            string data = PlayerPrefs.GetString(key, "");
+            if (string.IsNullOrEmpty(data))
+            {
+                Debug.Log("[Inventory] Нет сохранённых данных");
+                return;
+            }
+
+            var parts = data.Split(',');
+            int loaded = 0;
+
+            // Загружаем ВСЕ предметы из всех Resources папок
+            var allItems = Resources.LoadAll<ItemData>("");
+
+            foreach (var part in parts)
+            {
+                if (string.IsNullOrEmpty(part)) continue;
+
+                var split = part.Split(':');
+                if (split.Length >= 2 && int.TryParse(split[0], out int typeIdx))
+                {
+                    ItemType type = (ItemType)typeIdx;
+                    string itemName = split[1];
+
+                    // Ищем предмет по имени и типу
+                    foreach (var item in allItems)
+                    {
+                        if (item.itemName == itemName && item.itemType == type)
+                        {
+                            _itemsByType[type].Add(item);
+                            loaded++;
+                            break;
+                        }
+                    }
+                }
+            }
+
+            Debug.Log($"[Inventory] Загружено: {loaded} предметов");
+        }
+
+        /// <summary>
+        /// Очистить сохранённые данные
+        /// </summary>
+        public static void ClearSavedInventory(string key = "InventoryData")
+        {
+            PlayerPrefs.DeleteKey(key);
+            PlayerPrefs.Save();
         }
     }
 }

@@ -2,6 +2,8 @@ using Unity.Netcode;
 using Unity.Netcode.Transports.UTP;
 using UnityEngine;
 using System;
+using ProjectC.Items;
+using ProjectC.Player;
 
 namespace ProjectC.Core
 {
@@ -242,6 +244,21 @@ namespace ProjectC.Core
                 CancelInvoke(nameof(TryReconnect));
                 _isReconnecting = false;
                 _reconnectAttempts = 0;
+
+                // Сохраняем инвентарь перед отключением
+                var player = FindAnyObjectByType<NetworkPlayer>();
+                if (player != null)
+                {
+                    var inventoryField = typeof(NetworkPlayer).GetField("_inventory", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
+                    if (inventoryField != null)
+                    {
+                        var inventory = inventoryField.GetValue(player) as Inventory;
+                        if (inventory != null && inventory.GetTotalItemCount() > 0)
+                        {
+                            inventory.SaveToPrefs();
+                        }
+                    }
+                }
 
                 networkManager.Shutdown();
                 UpdateStatus("Отключено");

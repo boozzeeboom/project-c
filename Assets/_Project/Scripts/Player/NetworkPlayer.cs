@@ -470,10 +470,6 @@ namespace ProjectC.Player
                             _networkInventory.PickupItemServerRpc(itemId, _nearestChest.transform.position);
                         }
                     }
-
-                    // Локально добавляем для мгновенного отклика
-                    _inventory.AddMultipleItems(loot);
-                    if (_inventoryUI != null) _inventoryUI.TriggerSectorFlash();
                 }
                 OpenChestRpc(_nearestChest.transform.position);
                 _nearestChest = null;
@@ -487,10 +483,6 @@ namespace ProjectC.Player
                 {
                     // Отправляем на сервер для валидации
                     _networkInventory.PickupItemServerRpc(itemId, _nearestPickup.transform.position);
-
-                    // Локально добавляем для мгновенного отклика
-                    if (_inventory != null)
-                        _inventory.AddItem(_nearestPickup.itemData);
                 }
 
                 HidePickupRpc(_nearestPickup.transform.position);

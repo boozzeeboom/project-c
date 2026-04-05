@@ -103,12 +103,19 @@ namespace ProjectC.Core
         [Rpc(SendTo.Server)]
         public void PickupItemServerRpc(int itemId, Vector3 pickupPosition, RpcParams rpcParams = default)
         {
+            Debug.Log($"[NetworkInventory] ServerRpc: itemId={itemId}, from client {OwnerClientId}");
+
             // Валидация: проверяем дистанцию (анти-чит)
             var serverPlayer = GetComponent<NetworkPlayer>();
-            if (serverPlayer == null) return;
+            if (serverPlayer == null)
+            {
+                Debug.LogWarning("[NetworkInventory] NetworkPlayer не найден!");
+                return;
+            }
 
             float dist = Vector3.Distance(serverPlayer.transform.position, pickupPosition);
-            if (dist > 5f) // Максимальная дистанция подбора
+            Debug.Log($"[NetworkInventory] Дистанция: {dist:F1}м (порог: 5м)");
+            if (dist > 5f)
             {
                 Debug.LogWarning($"[NetworkInventory] Игрок {OwnerClientId} пытается подобрать предмет на расстоянии {dist}м (анти-чит)");
                 return;
@@ -117,7 +124,7 @@ namespace ProjectC.Core
             // Валидация: предмет существует
             if (!_itemDatabase.ContainsKey(itemId))
             {
-                Debug.LogWarning($"[NetworkInventory] Предмет с ID {itemId} не найден в базе");
+                Debug.LogWarning($"[NetworkInventory] Предмет с ID {itemId} не найден в базе (база пуста?)");
                 return;
             }
 
@@ -125,13 +132,14 @@ namespace ProjectC.Core
             var currentIds = GetCurrentItemIds();
             if (currentIds.Count >= maxSlots)
             {
-                Debug.LogWarning($"[NetworkInventory] Инвентарь игрока {OwnerClientId} полон");
+                Debug.LogWarning($"[NetworkInventory] Инвентарь игрока {OwnerClientId} полон ({currentIds.Count}/{maxSlots})");
                 return;
             }
 
             // Добавляем предмет
             currentIds.Add(itemId);
             _itemIdsString.Value = string.Join(",", currentIds);
+            Debug.Log($"[NetworkInventory] Предмет ID={itemId} добавлен! Всего: {currentIds.Count}");
 
             // Уведомляем клиента об успехе
             PickupResultClientRpc(itemId, true);

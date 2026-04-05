@@ -459,15 +459,20 @@ namespace ProjectC.Player
             if (_nearestChest != null)
             {
                 var loot = _nearestChest.GetLootItems();
+                Debug.Log($"[Pickup] Сундук: {loot.Count} предметов");
                 if (loot.Count > 0)
                 {
-                    // Отправляем каждый предмет через сервер
                     foreach (var item in loot)
                     {
                         int itemId = NetworkInventory.GetItemId(item);
-                        if (itemId > 0)
+                        Debug.Log($"[Pickup] Предмет: {item.itemName}, ID: {itemId}");
+                        if (itemId > 0 && _networkInventory != null)
                         {
                             _networkInventory.PickupItemServerRpc(itemId, _nearestChest.transform.position);
+                        }
+                        else if (_networkInventory == null)
+                        {
+                            Debug.LogError("[Pickup] NetworkInventory = null!");
                         }
                     }
                 }
@@ -479,13 +484,18 @@ namespace ProjectC.Player
             if (_nearestPickup != null)
             {
                 int itemId = NetworkInventory.GetItemId(_nearestPickup.itemData);
-                if (itemId > 0)
+                Debug.Log($"[Pickup] Предмет: {_nearestPickup.itemData?.itemName}, ID: {itemId}, NetworkInventory: {_networkInventory != null}");
+                
+                if (itemId > 0 && _networkInventory != null)
                 {
-                    // Отправляем на сервер для валидации
                     _networkInventory.PickupItemServerRpc(itemId, _nearestPickup.transform.position);
+                    _nearestPickup.gameObject.SetActive(false);
+                }
+                else
+                {
+                    Debug.LogWarning("[Pickup] Не удалось подобрать — ID=-1 или нет NetworkInventory");
                 }
 
-                HidePickupRpc(_nearestPickup.transform.position);
                 _nearestPickup = null;
             }
         }

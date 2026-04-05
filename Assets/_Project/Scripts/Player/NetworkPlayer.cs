@@ -9,7 +9,8 @@ namespace ProjectC.Player
 {
     /// <summary>
     /// Сетевой компонент игрока.
-    /// • Движение: WASD + Space + Shift (локально, NetworkTransform синхронизирует)
+    /// • Движение: WASD + Space + Shift (пеший), W/S/A/D/Q/E/Shift (корабль)
+    /// • Переключение: F — сесть/выйти из корабля
     /// • Камера: персональная для каждого игрока
     /// • Инвентарь: E подобрать, Tab открыть колесо
     /// • Сундуки: E открыть
@@ -17,7 +18,7 @@ namespace ProjectC.Player
     [RequireComponent(typeof(CharacterController))]
     public class NetworkPlayer : NetworkBehaviour
     {
-        [Header("Движение")]
+        [Header("Движение (пеший)")]
         [SerializeField] private float walkSpeed = 5f;
         [SerializeField] private float runSpeed = 10f;
         [SerializeField] private float rotationSpeed = 12f;
@@ -29,16 +30,26 @@ namespace ProjectC.Player
         [Header("Камера")]
         [SerializeField] private ThirdPersonCamera cameraPrefab;
 
+        [Header("Корабль")]
+        [Tooltip("Максимальная дистанция для посадки (м)")]
+        [SerializeField] private float boardDistance = 5f;
+
         [Header("Инвентарь")]
-        [Tooltip("Радиус подбора предмета/сундука")]
         [SerializeField] private float pickupRange = 3f;
 
+        // Компоненты
         private CharacterController _controller;
         private Vector3 _velocity;
         private bool _isGrounded;
         private ThirdPersonCamera _myCamera;
         private Inventory _inventory;
         private InventoryUI _inventoryUI;
+
+        // Состояние
+        private bool _inShip = false;
+        private ShipController _currentShip;
+        private List<Renderer> _playerRenderers = new List<Renderer>();
+        private List<Collider> _playerColliders = new List<Collider>();
 
         // Ввод
         private Vector2 _moveInput;
@@ -48,9 +59,13 @@ namespace ProjectC.Player
         // Поиск ближайшего объекта
         private PickupItem _nearestPickup;
         private ChestContainer _nearestChest;
+        private ShipController _nearestShip;
 
         // NetworkObject
         private NetworkObject networkObject;
+
+        public bool IsInShip => _inShip;
+        public ShipController CurrentShip => _currentShip;
 
         public override void OnNetworkSpawn()
         {
@@ -59,18 +74,27 @@ namespace ProjectC.Player
             networkObject = GetComponent<NetworkObject>();
             _controller = GetComponent<CharacterController>();
 
+            // Находим ВСЕ Renderer и Collider на объекте (включая дочерние)
+            GetComponentsInChildren(true, _playerRenderers);
+            GetComponentsInChildren(true, _playerColliders);
+
+            // Убираем CharacterController и сам NetworkObject из списков
+            _playerRenderers.RemoveAll(r => r == null);
+            _playerColliders.RemoveAll(c => c == null || c is CharacterController);
+
+            // Отключаем старый PlayerController (если остался от legacy)
+            var legacyController = GetComponent<PlayerController>();
+            if (legacyController != null) legacyController.enabled = false;
+
+            Debug.Log($"[Player] Найдено {_playerRenderers.Count} Renderer, {_playerColliders.Count} Collider");
+
             if (IsOwner)
             {
                 Debug.Log($"[Player] Локальный игрок spawned. OwnerClientId: {OwnerClientId}");
 
-                // Камера
                 SpawnCamera();
-
-                // Инвентарь
                 SpawnInventory();
-
-                // Интерактивность только для локального
-                Update();
+                ApplyWalkingState();
             }
             else
             {
@@ -85,6 +109,7 @@ namespace ProjectC.Player
 
             if (_myCamera != null) Destroy(_myCamera.gameObject);
             if (_inventoryUI != null) Destroy(_inventoryUI.gameObject);
+            if (_inShip && _currentShip != null) _currentShip.RemovePilot(OwnerClientId);
 
             Debug.Log($"[Player] Игрок despawned. OwnerClientId: {OwnerClientId}");
         }
@@ -117,20 +142,15 @@ namespace ProjectC.Player
 
         private void SpawnInventory()
         {
-            // Создаём Inventory для этого игрока
             var invObj = new GameObject("Inventory");
             invObj.transform.SetParent(transform);
             _inventory = invObj.AddComponent<Inventory>();
 
-            // Создаём InventoryUI и связываем с Inventory
             var uiObj = new GameObject("InventoryUI");
             _inventoryUI = uiObj.AddComponent<InventoryUI>();
-            // Связываем через поле (используем reflection т.к. поле private)
             var invField = typeof(InventoryUI).GetField("inventory", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
             if (invField != null)
-            {
                 invField.SetValue(_inventoryUI, _inventory);
-            }
 
             Debug.Log("[Player] Инвентарь создан");
         }
@@ -141,26 +161,64 @@ namespace ProjectC.Player
         {
             if (!IsOwner) return;
 
-            // Движение
-            _moveInput = Vector2.zero;
-            if (Keyboard.current.wKey.isPressed) _moveInput.y += 1;
-            if (Keyboard.current.sKey.isPressed) _moveInput.y -= 1;
-            if (Keyboard.current.aKey.isPressed) _moveInput.x -= 1;
-            if (Keyboard.current.dKey.isPressed) _moveInput.x += 1;
-            _jumpPressed = Keyboard.current.spaceKey.wasPressedThisFrame;
-            _runPressed = Keyboard.current.leftShiftKey.isPressed;
-
-            ProcessMovement(_moveInput, _jumpPressed, _runPressed);
-
-            // Подбор (E)
-            if (Keyboard.current.eKey.wasPressedThisFrame)
+            // F — переключение режимов
+            if (Keyboard.current.fKey.wasPressedThisFrame)
             {
-                FindNearestInteractable();
-                TryPickup();
+                SubmitSwitchModeRpc();
             }
 
-            // Поиск для UI подсказок (каждый кадр)
-            FindNearestInteractable();
+            if (_inShip)
+            {
+                // Управление кораблём
+                float thrust = 0;
+                if (Keyboard.current.wKey.isPressed) thrust += 1;
+                if (Keyboard.current.sKey.isPressed) thrust -= 1;
+
+                float yaw = 0;
+                if (Keyboard.current.dKey.isPressed) yaw += 1;
+                if (Keyboard.current.aKey.isPressed) yaw -= 1;
+
+                float pitch = 0;
+                if (Mouse.current.delta.y.ReadValue() > 1) pitch += 1;
+                if (Mouse.current.delta.y.ReadValue() < -1) pitch -= 1;
+
+                float vertical = 0;
+                if (Keyboard.current.eKey.isPressed) vertical += 1;
+                if (Keyboard.current.qKey.isPressed) vertical -= 1;
+
+                bool boost = Keyboard.current.leftShiftKey.isPressed;
+
+                if (_currentShip != null)
+                    _currentShip.SendShipInput(thrust, yaw, pitch, vertical);
+
+                // E в корабле — пока ничего
+                if (Keyboard.current.eKey.wasPressedThisFrame && Keyboard.current.qKey.isPressed == false)
+                {
+                    // Reserved for future: docking/refueling
+                }
+            }
+            else
+            {
+                // Пеший режим
+                _moveInput = Vector2.zero;
+                if (Keyboard.current.wKey.isPressed) _moveInput.y += 1;
+                if (Keyboard.current.sKey.isPressed) _moveInput.y -= 1;
+                if (Keyboard.current.aKey.isPressed) _moveInput.x -= 1;
+                if (Keyboard.current.dKey.isPressed) _moveInput.x += 1;
+                _jumpPressed = Keyboard.current.spaceKey.wasPressedThisFrame;
+                _runPressed = Keyboard.current.leftShiftKey.isPressed;
+
+                ProcessMovement(_moveInput, _jumpPressed, _runPressed);
+
+                // E — подбор
+                if (Keyboard.current.eKey.wasPressedThisFrame)
+                {
+                    FindNearestInteractable();
+                    TryPickup();
+                }
+
+                FindNearestInteractable();
+            }
         }
 
         // ==================== ДВИЖЕНИЕ ====================
@@ -187,12 +245,102 @@ namespace ProjectC.Player
             }
 
             if (_isGrounded && jump)
-            {
                 _velocity.y = Mathf.Sqrt(jumpForce * -2f * gravity);
-            }
 
             _velocity.y += gravity * Time.deltaTime;
             _controller.Move(_velocity * Time.deltaTime);
+        }
+
+        // ==================== КОРАБЛЬ ====================
+
+        /// <summary>
+        /// Синхронизация переключения режима всем клиентам
+        /// </summary>
+        [Rpc(SendTo.Everyone)]
+        private void SubmitSwitchModeRpc(RpcParams rpcParams = default)
+        {
+            if (_inShip)
+            {
+                // Выход из корабля
+                if (_currentShip == null) return;
+
+                // Проверка: можно ли выйти
+                if (!_currentShip.IsGrounded && _currentShip.CurrentSpeed > 2f) return;
+
+                // Телепорт на палубу
+                transform.position = _currentShip.GetExitPosition();
+
+                // Показываем игрока
+                _controller.enabled = true;
+                foreach (var r in _playerRenderers) r.enabled = true;
+                foreach (var c in _playerColliders) c.enabled = true;
+
+                // Снимаем пилота (себя)
+                _currentShip.RemovePilot(OwnerClientId);
+                _currentShip = null;
+
+                _inShip = false;
+                ApplyWalkingState();
+            }
+            else
+            {
+                // Посадка в ближайший корабль
+                _nearestShip = FindNearestShip();
+                if (_nearestShip == null) return;
+
+                _currentShip = _nearestShip;
+                _inShip = true;
+
+                // Скрываем игрока (ВСЕ renderer и collider)
+                _controller.enabled = false;
+                foreach (var r in _playerRenderers) r.enabled = false;
+                foreach (var c in _playerColliders) c.enabled = true; // Collider оставляем для рейкаста
+
+                // Добавляем себя как пилота (кооп)
+                _currentShip.AddPilot(this);
+
+                ApplyShipState();
+            }
+        }
+
+        private ShipController FindNearestShip()
+        {
+            var ships = FindObjectsByType<ShipController>(FindObjectsInactive.Include);
+            ShipController nearest = null;
+            float minDist = float.MaxValue;
+
+            foreach (var ship in ships)
+            {
+                if (!ship.gameObject.activeSelf) continue;
+                float dist = Vector3.Distance(transform.position, ship.transform.position);
+                if (dist < boardDistance && dist < minDist)
+                {
+                    minDist = dist;
+                    nearest = ship;
+                }
+            }
+
+            return nearest;
+        }
+
+        private void ApplyWalkingState()
+        {
+            if (_myCamera != null)
+            {
+                _myCamera.SetTarget(transform);
+                _myCamera.SetShipMode(false);
+            }
+            Debug.Log("[Player] Режим: пешком");
+        }
+
+        private void ApplyShipState()
+        {
+            if (_currentShip != null && _myCamera != null)
+            {
+                _myCamera.SetTarget(_currentShip.transform);
+                _myCamera.SetShipMode(true);
+            }
+            Debug.Log("[Player] Режим: корабль");
         }
 
         // ==================== ПОДБОР ПРЕДМЕТОВ ====================
@@ -204,7 +352,6 @@ namespace ProjectC.Player
             float nearestDist = float.MaxValue;
             bool foundChest = false;
 
-            // Ищем сундуки (приоритет)
             var chests = FindObjectsByType<ChestContainer>(FindObjectsInactive.Include);
             foreach (var chest in chests)
             {
@@ -237,41 +384,31 @@ namespace ProjectC.Player
 
         private void TryPickup()
         {
-            // Приоритет: сундук
+            if (_inShip) return; // Нельзя подбирать в корабле
+
             if (_nearestChest != null)
             {
-                // Локально добавляем в свой инвентарь
                 var loot = _nearestChest.GetLootItems();
                 if (_inventory != null && loot.Count > 0)
                 {
                     _inventory.AddMultipleItems(loot);
                     if (_inventoryUI != null) _inventoryUI.TriggerSectorFlash();
                 }
-
-                // Шлём всем чтобы скрыли сундук
                 OpenChestRpc(_nearestChest.transform.position);
                 _nearestChest = null;
                 return;
             }
 
-            // Обычный предмет
             if (_nearestPickup != null)
             {
-                // Локально добавляем в свой инвентарь
                 if (_inventory != null)
-                {
                     _inventory.AddItem(_nearestPickup.itemData);
-                }
 
-                // Шлём всем чтобы скрыли предмет
                 HidePickupRpc(_nearestPickup.transform.position);
                 _nearestPickup = null;
             }
         }
 
-        /// <summary>
-        /// Синхронизация скрытия предмета всем клиентам
-        /// </summary>
         [Rpc(SendTo.Everyone)]
         private void HidePickupRpc(Vector3 targetPos, RpcParams rpcParams = default)
         {
@@ -288,9 +425,6 @@ namespace ProjectC.Player
             }
         }
 
-        /// <summary>
-        /// Синхронизация открытия сундука всем клиентам
-        /// </summary>
         [Rpc(SendTo.Everyone)]
         private void OpenChestRpc(Vector3 targetPos, RpcParams rpcParams = default)
         {
@@ -303,22 +437,21 @@ namespace ProjectC.Player
                 {
                     chest.Open();
                     if (chest.autoDestroy)
-                    {
                         chest.gameObject.SetActive(false);
-                    }
                     return;
                 }
             }
         }
 
-        public bool HasNearbyInteractable() => _nearestPickup != null || _nearestChest != null;
+        public bool HasNearbyInteractable() => !_inShip && (_nearestPickup != null || _nearestChest != null);
         public string GetNearbyInteractableName()
         {
+            if (_inShip) return "";
             if (_nearestChest != null) return "Сундук";
             if (_nearestPickup != null && _nearestPickup.itemData != null) return _nearestPickup.itemData.itemName;
             return "";
         }
-        public bool IsNearbyChest() => _nearestChest != null;
+        public bool IsNearbyChest() => !_inShip && _nearestChest != null;
 
         public new bool IsLocalPlayer => IsOwner;
         public ulong GetOwnerId() => OwnerClientId;

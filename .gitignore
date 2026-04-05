@@ -44,3 +44,6 @@ mono_crash.*
 # Unity Package Manager
 /[Aa]ssets/Resources/
 /[Aa]ssets/MobileDependencyResolver/
+
+# Qwen Unity Game Studio - junction (each dev creates locally)
+.qwenencode

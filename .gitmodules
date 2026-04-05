@@ -1,0 +1,3 @@
+[submodule "game-studio"]
+	path = game-studio
+	url = https://github.com/boozzeeboom/qwen-unity-game-studio.git

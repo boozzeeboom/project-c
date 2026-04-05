@@ -66,12 +66,30 @@ namespace ProjectC.UI
             btnObj.transform.SetParent(canvas.transform, false);
 
             var rt = btnObj.AddComponent<RectTransform>();
+            
             // Позиционируем прямо по центру экрана
-            rt.anchoredPosition = Vector2.zero;
             rt.anchorMin = new Vector2(0.5f, 0.5f);
             rt.anchorMax = new Vector2(0.5f, 0.5f);
             rt.pivot = new Vector2(0.5f, 0.5f);
+            rt.anchoredPosition = Vector2.zero;
             rt.sizeDelta = new Vector2(200, 50);
+
+            Debug.Log($"[NetworkUI] Canvas: {canvas.name}, RenderMode: {canvas.renderMode}");
+            
+            var canvasRt = canvas.GetComponent<RectTransform>();
+            
+            // Исправляем Canvas: растягиваем на весь экран и центрируем
+            canvasRt.anchorMin = Vector2.zero;
+            canvasRt.anchorMax = Vector2.one;
+            canvasRt.anchoredPosition = Vector2.zero;
+            canvasRt.sizeDelta = Vector2.zero;
+            
+            Debug.Log($"[NetworkUI] Canvas RectTransform - anchorMin: {canvasRt.anchorMin}, anchorMax: {canvasRt.anchorMax}, " +
+                      $"pivot: {canvasRt.pivot}, anchoredPosition: {canvasRt.anchoredPosition}, " +
+                      $"localScale: {canvasRt.localScale}, sizeDelta: {canvasRt.sizeDelta}");
+            
+            Debug.Log($"[NetworkUI] Button created - anchorMin: {rt.anchorMin}, anchorMax: {rt.anchorMax}, " +
+                      $"pivot: {rt.pivot}, anchoredPosition: {rt.anchoredPosition}, sizeDelta: {rt.sizeDelta}");
 
             var image = btnObj.AddComponent<Image>();
             image.color = new Color(0.9f, 0.2f, 0.2f, 0.95f);

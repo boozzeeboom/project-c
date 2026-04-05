@@ -111,7 +111,6 @@ namespace ProjectC.UI
             {
                 hintsText.gameObject.SetActive(showHints);
             }
-            Debug.Log($"[ControlHints] Подсказки: {(showHints ? "вкл" : "выкл")}");
         }
 
         public void ShowHints(bool show)

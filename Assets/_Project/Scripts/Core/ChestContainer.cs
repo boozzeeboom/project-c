@@ -35,7 +35,6 @@ namespace ProjectC.Items
             var collider = GetComponent<Collider>();
             if (collider == null)
             {
-                Debug.LogWarning($"[ChestContainer] {gameObject.name} — нет Collider! Добавлен BoxCollider.");
                 collider = gameObject.AddComponent<BoxCollider>();
             }
             collider.isTrigger = true;

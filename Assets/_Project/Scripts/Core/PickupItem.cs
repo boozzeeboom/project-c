@@ -27,7 +27,6 @@ namespace ProjectC.Items
             var collider = GetComponent<Collider>();
             if (collider == null)
             {
-                Debug.LogWarning($"[PickupItem] {gameObject.name} — нет Collider! Добавлен SphereCollider.");
                 collider = gameObject.AddComponent<SphereCollider>();
             }
             collider.isTrigger = true;

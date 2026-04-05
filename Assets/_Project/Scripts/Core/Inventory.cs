@@ -30,7 +30,6 @@ namespace ProjectC.Items
             if (item == null) return;
 
             _itemsByType[item.itemType].Add(item);
-            Debug.Log($"[Inventory] Подобрал: {item.itemName} (Тип: {item.itemType}) — всего в ячейке: {_itemsByType[item.itemType].Count}");
         }
 
         /// <summary>
@@ -45,8 +44,6 @@ namespace ProjectC.Items
             {
                 AddItem(item);
             }
-
-            Debug.Log($"[Inventory] Открыл сундук: подобрано {items.Count} предметов.");
         }
 
         /// <summary>

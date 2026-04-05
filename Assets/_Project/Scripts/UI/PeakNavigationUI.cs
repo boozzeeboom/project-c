@@ -68,7 +68,7 @@ namespace ProjectC.Core
             {
                 var peak = peaks[i];
                 GameObject buttonObj = Instantiate(peakButtonPrefab, contentPanel);
-                
+
                 TextMeshProUGUI buttonText = buttonObj.GetComponentInChildren<TextMeshProUGUI>();
                 if (buttonText != null)
                 {
@@ -83,8 +83,6 @@ namespace ProjectC.Core
                     peakButtons.Add(button);
                 }
             }
-
-            Debug.Log($"[PeakNavigationUI] Создано {peaks.Count} кнопок пиков");
         }
 
         /// <summary>

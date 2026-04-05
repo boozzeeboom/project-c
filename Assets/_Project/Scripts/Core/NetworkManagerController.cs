@@ -55,7 +55,6 @@ namespace ProjectC.Core
 
         private void HandleClientConnected(ulong clientId)
         {
-            Debug.Log($"[Network] Клиент подключился: {clientId}");
             OnPlayerConnected?.Invoke(clientId);
 
             if (IsHost)
@@ -66,7 +65,6 @@ namespace ProjectC.Core
 
         private void HandleClientDisconnected(ulong clientId)
         {
-            Debug.Log($"[Network] Клиент отключился: {clientId}");
             OnPlayerDisconnected?.Invoke(clientId);
 
             if (IsHost)
@@ -75,7 +73,6 @@ namespace ProjectC.Core
 
         private void HandleServerStarted()
         {
-            Debug.Log("[Network] Сервер запущен");
             UpdateStatus($"Сервер запущен на порту {serverPort}");
         }
 
@@ -85,13 +82,9 @@ namespace ProjectC.Core
             UpdateStatus("Ошибка подключения");
         }
 
-        /// <summary>
-        /// Запустить сервер (хост = сервер + клиент)
-        /// </summary>
         public void StartHost()
         {
             networkManager.StartHost();
-            Debug.Log($"[Server] Запущен хост на порту {serverPort}");
             UpdateStatus("Запуск хоста...");
         }
 
@@ -101,7 +94,6 @@ namespace ProjectC.Core
         public void StartServer()
         {
             networkManager.StartServer();
-            Debug.Log($"[Server] Запущен сервер на порту {serverPort}");
             UpdateStatus("Запуск сервера...");
         }
 
@@ -119,7 +111,6 @@ namespace ProjectC.Core
                 unityTransport.SetConnectionData(targetIp, targetPort);
             }
 
-            Debug.Log($"[Client] Подключение к {targetIp}:{targetPort}");
             UpdateStatus($"Подключение к {targetIp}:{targetPort}...");
 
             networkManager.StartClient();
@@ -133,7 +124,6 @@ namespace ProjectC.Core
             if (networkManager.IsConnectedClient || networkManager.IsListening)
             {
                 networkManager.Shutdown();
-                Debug.Log("[Network] Отключено");
                 UpdateStatus("Отключено");
             }
         }

@@ -71,8 +71,6 @@ namespace ProjectC.Core
 
             // Расчёт количества облаков
             int count = CalculateCloudCount();
-            
-            Debug.Log($"[CloudLayer] Генерация {count} облаков для слоя {config.layerType}");
 
             // Генерация облаков
             for (int i = 0; i < count; i++)
@@ -81,7 +79,6 @@ namespace ProjectC.Core
             }
 
             cloudCount = clouds.Count;
-            Debug.Log($"[CloudLayer] Слой {config.layerType} сгенерирован: {cloudCount} облаков");
         }
 
         /// <summary>

@@ -44,7 +44,6 @@ namespace ProjectC.Player
         private ThirdPersonCamera _myCamera;
         private Inventory _inventory;
         private InventoryUI _inventoryUI;
-        private NetworkInventory _networkInventory;
 
         // Состояние
         private bool _inShip = false;
@@ -118,10 +117,6 @@ namespace ProjectC.Player
 
             if (_myCamera != null) Destroy(_myCamera.gameObject);
             if (_inventoryUI != null) Destroy(_inventoryUI.gameObject);
-            if (_networkInventory != null)
-            {
-                _networkInventory.OnInventoryChanged -= SyncInventoryToUI;
-            }
             if (_inShip && _currentShip != null) _currentShip.RemovePilot(OwnerClientId);
         }
 
@@ -152,12 +147,6 @@ namespace ProjectC.Player
 
         private void SpawnInventory()
         {
-            // Сетевой инвентарь (синхронизируется)
-            var netInvObj = new GameObject("NetworkInventory");
-            netInvObj.transform.SetParent(transform);
-            _networkInventory = netInvObj.AddComponent<NetworkInventory>();
-
-            // Локальный инвентарь (для UI)
             var invObj = new GameObject("Inventory");
             invObj.transform.SetParent(transform);
             _inventory = invObj.AddComponent<Inventory>();
@@ -167,43 +156,6 @@ namespace ProjectC.Player
             var invField = typeof(InventoryUI).GetField("inventory", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
             if (invField != null)
                 invField.SetValue(_inventoryUI, _inventory);
-
-            // Подписываем NetworkInventory на изменения UI
-            _networkInventory.OnInventoryChanged += SyncInventoryToUI;
-        }
-
-        /// <summary>
-        /// Синхронизировать инвентарь из NetworkInventory в локальный Inventory (для UI)
-        /// </summary>
-        private void SyncInventoryToUI()
-        {
-            if (_networkInventory == null) return;
-
-            // Пересоздаём локальный инвентарь
-            if (_inventory != null)
-            {
-                Destroy(_inventory.gameObject);
-            }
-
-            var invObj = new GameObject("Inventory");
-            invObj.transform.SetParent(transform);
-            _inventory = invObj.AddComponent<Inventory>();
-
-            // Заполняем из сетевого инвентаря
-            foreach (var item in _networkInventory.Items)
-            {
-                _inventory.AddItem(item);
-            }
-
-            // Обновляем ссылку в UI
-            if (_inventoryUI != null)
-            {
-                var invField = typeof(InventoryUI).GetField("inventory", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
-                if (invField != null)
-                    invField.SetValue(_inventoryUI, _inventory);
-
-                _inventoryUI.TriggerSectorFlash();
-            }
         }
 
         // ==================== ВВОД ====================
@@ -454,27 +406,15 @@ namespace ProjectC.Player
 
         private void TryPickup()
         {
-            if (_inShip) return; // Нельзя подбирать в корабле
+            if (_inShip) return;
 
             if (_nearestChest != null)
             {
                 var loot = _nearestChest.GetLootItems();
-                Debug.Log($"[Pickup] Сундук: {loot.Count} предметов");
-                if (loot.Count > 0)
+                if (_inventory != null && loot.Count > 0)
                 {
-                    foreach (var item in loot)
-                    {
-                        int itemId = NetworkInventory.GetItemId(item);
-                        Debug.Log($"[Pickup] Предмет: {item.itemName}, ID: {itemId}");
-                        if (itemId > 0 && _networkInventory != null)
-                        {
-                            _networkInventory.PickupItemServerRpc(itemId, _nearestChest.transform.position);
-                        }
-                        else if (_networkInventory == null)
-                        {
-                            Debug.LogError("[Pickup] NetworkInventory = null!");
-                        }
-                    }
+                    _inventory.AddMultipleItems(loot);
+                    if (_inventoryUI != null) _inventoryUI.TriggerSectorFlash();
                 }
                 OpenChestRpc(_nearestChest.transform.position);
                 _nearestChest = null;
@@ -483,19 +423,10 @@ namespace ProjectC.Player
 
             if (_nearestPickup != null)
             {
-                int itemId = NetworkInventory.GetItemId(_nearestPickup.itemData);
-                Debug.Log($"[Pickup] Предмет: {_nearestPickup.itemData?.itemName}, ID: {itemId}, NetworkInventory: {_networkInventory != null}");
-                
-                if (itemId > 0 && _networkInventory != null)
-                {
-                    _networkInventory.PickupItemServerRpc(itemId, _nearestPickup.transform.position);
-                    _nearestPickup.gameObject.SetActive(false);
-                }
-                else
-                {
-                    Debug.LogWarning("[Pickup] Не удалось подобрать — ID=-1 или нет NetworkInventory");
-                }
+                if (_inventory != null)
+                    _inventory.AddItem(_nearestPickup.itemData);
 
+                _nearestPickup.gameObject.SetActive(false);
                 _nearestPickup = null;
             }
         }

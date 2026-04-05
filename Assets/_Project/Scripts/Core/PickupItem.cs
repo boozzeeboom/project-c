@@ -1,5 +1,4 @@
 using UnityEngine;
-using ProjectC.Core;
 
 namespace ProjectC.Items
 {

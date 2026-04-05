@@ -2,6 +2,7 @@ using System.Collections.Generic;
 using Unity.Netcode;
 using UnityEngine;
 using ProjectC.Items;
+using ProjectC.Player;
 
 namespace ProjectC.Core
 {

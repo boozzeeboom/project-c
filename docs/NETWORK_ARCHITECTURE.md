@@ -1,7 +1,7 @@
 # Сетевая архитектура Project C — Полная документация
 
-**Версия:** `v0.0.9-network-coop` | **Дата:** 5 апреля 2026 г.
-**Ветка:** `qwen-dev` | **Архитектура:** Авторитарный сервер (Host = Server + Client 0)
+**Версия:** `v0.0.12-stage2-complete` | **Дата:** 5 апреля 2026 г.
+**Ветка:** `qwen-gamestudio-agent-dev` | **Архитектура:** Авторитарный сервер (Host = Server + Client 0)
 
 ---
 
@@ -12,14 +12,25 @@
 | Проблема | Описание |
 |----------|----------|
 | Boost (Shift) для кораблей | Сервер не знает о бусте клиента — параметр `boost` не передаётся в RPC |
+| Инвентарь локальный | Сохраняется в PlayerPrefs, но НЕ синхронизируется между игроками |
 | WorldGenerationSettings.asset | Legacy предупреждение при запуске (не критично) |
-| Инвентарь не синхронизируется | Каждый игрок видит только свои предметы |
+
+### 🔴 Отложено (Этап 5+)
+
+| Задача | Описание |
+|--------|----------|
+| Отдельный серверный билд (.NET 8) | Master-сервер для матчмейкинга и лобби |
+| Система лобби/комнат | Группировка игроков до 4 чел, приглашения |
+| Полная серверная валидация инвентаря | Anti-cheat, серверный авторитет для предметов |
 
 ### ✅ Исправлено
 
 | Проблема | Статус |
 |----------|--------|
 | ~~Disconnect кнопка в левом углу~~ | ✅ Пофиксено — кнопка по центру экрана |
+| ~~Предметы не исчезают у других игроков~~ | ✅ HidePickupRpc (SendTo.Everyone) |
+| ~~Сундуки не работали после изменений~~ | ✅ Возвращён старый рабочий подбор |
+| ~~Инвентарь терялся при реконнекте~~ | ✅ Сохранение/загрузка через PlayerPrefs |
 
 ---
 
@@ -74,9 +85,15 @@
 **Запуск режимов:**
 ```csharp
 networkManager.StartHost();   // Сервер + клиент 0 (тестирование)
-networkManager.StartServer(); // Только сервер (Dedicated, позже)
+networkManager.StartServer(); // Только сервер (Dedicated, кнопка в UI + -server build arg)
 networkManager.StartClient(); // Только клиент
 ```
+
+**Dedicated Server:**
+- Кнопка "Start Server" в NetworkUI
+- Автозапуск при аргументе `-server` или `-dedicatedserver`
+- Headless режим: `-batchmode -nographics -server`
+- См. [`DEDICATED_SERVER.md`](DEDICATED_SERVER.md)
 
 ---
 
@@ -180,8 +197,9 @@ if (IsOwner) {
 
 **Архитектура:**
 - Каждый игрок имеет **свой** Inventory (спавнится как дочерний объект NetworkPlayer)
-- Инвентари **не синхронизируются** между игроками (каждый видит свои предметы)
+- Инвентари **НЕ синхронизируются** между игроками (каждый видит свои предметы)
 - Предметы в мире исчезают синхронно через RPC
+- **Сохранение:** при Disconnect инвентарь сохраняется в PlayerPrefs, при Reconnect — восстанавливается
 
 **Подбор предмета (E):**
 ```
@@ -192,16 +210,21 @@ if (IsOwner) {
 Сундук:
   1. Локально: _inventory.AddMultipleItems(loot) + TriggerSectorFlash()
   2. OpenChestRpc(pos) → SendTo.Everyone → все открывают/скрывают сундук
+
+Реконнект:
+  1. Disconnect → _inventory.SaveToPrefs() → PlayerPrefs
+  2. Reconnect → OnNetworkSpawn → _inventory.LoadFromPrefs() → предметы восстановлены
 ```
 
 **Компоненты:**
 | Файл | Назначение |
 |------|-----------|
-| `Inventory.cs` | Хранение предметов по типам (каждый игрок — свой экземпляр) |
+| `Inventory.cs` | Хранение предметов по типам + SaveToPrefs/LoadFromPrefs |
 | `InventoryUI.cs` | Круговое колесо (GL-рендер), привязан к Inventory |
 | `PickupItem.cs` | Подбираемый предмет в мире (триггер, покачивание) |
 | `ChestContainer.cs` | Сундук с LootTable, анимация открытия |
 | `LootTable.cs` | ScriptableObject: таблица добычи (шансы, min/max, guaranteed) |
+| `ItemDatabaseInitializer.cs` | Авто-регистрация всех предметов из Resources и сцены |
 
 ---
 
@@ -240,23 +263,42 @@ if (IsOwner) {
 
 | Событие | Когда срабатывает | Что делает |
 |---------|-------------------|------------|
-| `OnClientConnectedCallback` | Клиент подключился | Логирует, обновляет UI |
-| `OnClientDisconnectCallback` | Клиент отключился | Логирует, обновляет UI |
+| `OnClientConnectedCallback` | Клиент подключился | Логирует, обновляет UI, обновляет счётчик игроков |
+| `OnClientDisconnectCallback` | Клиент отключился | Логирует, обновляет UI, обновляет счётчик игроков |
 | `OnServerStarted` | Сервер запущен | Логирует |
-| `OnTransportFailure` | Ошибка транспорта | Логирует ошибку |
+| `OnTransportFailure` | Ошибка транспорта | Логирует ошибку, запускает авто-реконнект |
 
-### NetworkUI — Disconnect кнопка
+### Reconnect система
+
+**Авто-реконнект:**
+- При `OnTransportFailure` → автоматические попытки (до 5, с задержкой 3с)
+- Если все попытки провалились → показывается кнопка Reconnect
+
+**Ручной реконнект:**
+- Кнопка "Reconnect" появляется после Disconnect или провала авто-реконнекта
+- Сохраняет последний IP:Port → Shutdown → ConnectToServer
+
+**Сохранение при отключении:**
+- Disconnect → `Inventory.SaveToPrefs()` → PlayerPrefs
+- OnNetworkDespawn → `Inventory.SaveToPrefs()`
+- OnNetworkSpawn (Owner) → `Inventory.LoadFromPrefs()`
+
+### NetworkUI — Disconnect и Reconnect кнопки
 
 **Архитектура:**
-- Кнопка Disconnect создаётся **программно** в `CreateDisconnectButton()` (не через Inspector)
-- Причина: в билде ссылки на UI-элементы теряются, программное создание надёжнее
-- Показывается при подключении, скрывается при отключении
-- **Escape** — toggle видимости (экстренный выход)
-- **Позиционирование:** по центру экрана (anchorMin/Max = 0.5, anchoredPosition = zero)
+- Disconnect кнопка создаётся **программно** в `CreateDisconnectButton()`
+- Reconnect кнопка — назначается через Inspector, скрыта по умолчанию
+- Показывается при подключении/сбое, скрывается при отключении
+- **Escape** — toggle видимости Disconnect (экстренный выход)
+- **Позиционирование:** по центру экрана
+
+**Player Count:**
+- `playerCountText` обновляется при connect/disconnect/host start
+- Host учитывается как +1 к ConnectedClients
 
 **Связанные файлы:**
-- `NetworkManagerController.cs` — события подключения
-- `NetworkUI.cs` — Disconnect кнопка, обновление UI
+- `NetworkManagerController.cs` — события подключения, реконнект, Dedicated Server
+- `NetworkUI.cs` — Disconnect/Reconnect кнопки, player count, статус
 
 ---
 
@@ -294,7 +336,7 @@ if (IsOwner) {
 
 | Ограничение | Описание | Когда исправить |
 |-------------|----------|-----------------|
-| Инвентарь не синхронизируется | Каждый игрок видит только свои предметы | Этап 3 (RPG система) |
+| Инвентарь не синхронизируется | Каждый игрок видит только свои предметы (локальный + PlayerPrefs) | Этап 3 (RPG система, серверная валидация) |
 | Корабли на сцене (не префабы) | NetworkTransform добавляется вручную в Unity | Префабы кораблей позже |
 | Boost (Shift) не передаётся в RPC | Сервер не знает о бусте клиента | Добавить в SubmitShipInputRpc |
 
@@ -303,6 +345,23 @@ if (IsOwner) {
 | Фича | Описание |
 |------|----------|
 | Client-side Prediction | Клиент сразу двигает себя (OwnerAuthority), сервер корректирует при рассинхронизации |
+| Dedicated Server | Кнопка в UI + автозапуск через `-server` аргумент |
+| Reconnect система | Авто-реконнект (5 попыток) + ручная кнопка + сохранение инвентаря |
+| Синхронизация подбора | HidePickupRpc + OpenChestRpc (SendTo.Everyone) — предметы исчезают у всех |
+| Player Count | Счётчик игроков обновляется в реальном времени |
+| ItemDatabase | Авто-регистрация предметов из Resources, PickupItem, ChestContainer |
+
+---
+
+## 📦 Дополнительные сетевые фичи (Этап 5+)
+
+| Фича | Описание | Приоритет |
+|------|----------|-----------|
+| Отдельный серверный билд | Headless Unity или .NET 8 сервер, 24/7 | 🔴 Высокий |
+| Система лобби/комнат | Мастер-сервер, создание комнат, матчмейкинг | 🔴 Высокий |
+| Серверная валидация инвентаря | Anti-cheat, серверный авторитет для предметов | 🟡 Средний |
+| Полная синхронизация инвентаря | NetworkVariable/NetworkList для репликации | 🟡 Средний |
+| Улучшенная интерполяция | Кастомный буфер истории позиций, экстраполяция | 🟢 Низкий |
 
 ---
 
@@ -311,11 +370,10 @@ if (IsOwner) {
 - [`MMO_Development_Plan.md`](MMO_Development_Plan.md) — общий план
 - [`STEP_BY_STEP_DEVELOPMENT.md`](STEP_BY_STEP_DEVELOPMENT.md) — журнал шагов
 - [`CONTROLS.md`](CONTROLS.md) — карта клавиш
-- [`SHIP_LORE_AND_MECHANICS.md`](SHIP_LORE_AND_MECHANICS.md) — лор кораблей
-- [`STEP_NETWORK_SHIP.md`](STEP_NETWORK_SHIP.md) — план разработки корабля
+- [`DEDICATED_SERVER.md`](DEDICATED_SERVER.md) — запуск выделенного сервера
+- [`SHIP_SYSTEM_DOCUMENTATION.md`](SHIP_SYSTEM_DOCUMENTATION.md) — система кораблей
 
 ---
 
-**Последнее обновление:** 5 апреля 2026 г.  
-**Версия:** `v0.0.9-network-coop`  
-**Коммит:** (будет создан)
+**Последнее обновление:** 5 апреля 2026 г.
+**Версия:** `v0.0.12-stage2-complete`

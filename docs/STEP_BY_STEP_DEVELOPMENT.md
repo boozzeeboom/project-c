@@ -393,6 +393,70 @@ git reset --hard HEAD
 
 ---
 
+## 📝 Сессия: 5 апреля 2026 — Этап 2 завершён
+
+**Версия:** `v0.0.12-stage2-complete` | **Ветка:** `qwen-gamestudio-agent-dev`
+
+### Что было сделано:
+
+#### 1. Dedicated Server режим ✅
+- Кнопка "Start Server" в NetworkUI
+- Автозапуск при аргументе `-server` / `-dedicatedserver`
+- Headless режим: `-batchmode -nographics -server`
+- Документация: `docs/DEDICATED_SERVER.md`
+
+#### 2. Reconnect система ✅
+- Авто-реконнект при `OnTransportFailure` (до 5 попыток, 3с задержка)
+- Кнопка "Reconnect" в UI (появляется после Disconnect/провала)
+- Сохранение последнего IP:Port
+- Упрощённый `ResetNetworkManager` → просто Shutdown + Connect
+
+#### 3. Инвентарь — сохранение при реконнекте ✅
+- `Inventory.SaveToPrefs()` → PlayerPrefs при Disconnect
+- `Inventory.LoadFromPrefs()` → восстановление при OnNetworkSpawn
+- Предметы не теряются после реконнекта
+
+#### 4. Синхронизация подбора предметов ✅
+- `HidePickupRpc` (SendTo.Everyone) — предмет исчезает у всех игроков
+- `OpenChestRpc` (SendTo.Everyone) — сундук открывается/скрывается у всех
+- Раньше: клиент скрывал только у себя → другие видели предмет
+
+#### 5. Player Count ✅
+- `playerCountText` обновляется при connect/disconnect/host start
+- Host считается как +1 к ConnectedClients
+
+#### 6. ItemDatabaseInitializer ✅
+- Авто-регистрация ВСЕХ предметов из:
+  - `Resources/Items/` (ScriptableObject)
+  - `PickupItem` на сцене
+  - `ChestContainer.LootTable` (entries + guaranteedItems)
+- Предметы из сундуков теперь работают
+
+#### 7. Исправления багов:
+- ❌→✅ PickupItem.Collect() — убран FindAnyObjectByType (ломал сеть)
+- ❌→✅ Дубликат HidePickupRpc — удалён
+- ❌→✅ NetworkInventory (NetworkVariable<string>) — откат (не поддерживается NGO)
+- ❌→✅ Сундуки сломались — возвращён старый рабочий подбор
+
+### Что НЕ было сделано (отложено):
+- ❌ Полная синхронизация инвентаря (NetworkVariable не работает с string)
+- ❌ Отдельный серверный билд (.NET 8)
+- ❌ Система лобби/комнат
+
+### Файлы изменены:
+| Файл | Изменение |
+|------|-----------|
+| `NetworkManagerController.cs` | Dedicated Server, Reconnect, сохранение инвентаря |
+| `NetworkUI.cs` | Start Server, Reconnect, Player Count |
+| `NetworkPlayer.cs` | HidePickupRpc, LoadFromPrefs при спавне, SaveToPrefs при деспауне |
+| `Inventory.cs` | SaveToPrefs/LoadFromPrefs методы |
+| `PickupItem.cs` | Убран FindAnyObjectByType, только HidePickupRpc |
+| `ItemDatabaseInitializer.cs` | Авто-регистрация из Resources + сцена |
+| `docs/NETWORK_ARCHITECTURE.md` | Обновлена вся документация |
+| `docs/DEDICATED_SERVER.md` | Новый файл |
+
+---
+
 ## 🔗 Связанные документы
 
 - [GIT_WORKFLOW_ADVANCED.md](GIT_WORKFLOW_ADVANCED.md) — Git workflow
@@ -405,5 +469,5 @@ git reset --hard HEAD
 **Запомнить:**
 > **Лучше 10 маленьких шагов за день, чем 1 большой за неделю.**
 
-**Ветка:** `qwen-dev`  
+**Ветка:** `qwen-gamestudio-agent-dev`
 **Принцип:** "Медленнее = Быстрее"

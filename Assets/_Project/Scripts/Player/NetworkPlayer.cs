@@ -450,22 +450,6 @@ namespace ProjectC.Player
         }
 
         [Rpc(SendTo.Everyone)]
-        private void HidePickupRpc(Vector3 targetPos, RpcParams rpcParams = default)
-        {
-            var pickups = FindObjectsByType<PickupItem>(FindObjectsInactive.Include);
-            foreach (var pickup in pickups)
-            {
-                if (!pickup.gameObject.activeSelf) continue;
-                float dist = Vector3.Distance(targetPos, pickup.transform.position);
-                if (dist < 3f)
-                {
-                    pickup.gameObject.SetActive(false);
-                    return;
-                }
-            }
-        }
-
-        [Rpc(SendTo.Everyone)]
         private void OpenChestRpc(Vector3 targetPos, RpcParams rpcParams = default)
         {
             var chests = FindObjectsByType<ChestContainer>(FindObjectsInactive.Include);

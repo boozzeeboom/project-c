@@ -362,7 +362,7 @@
 
   <!-- HEADER -->
   <header class="header">
-    <div class="header__badge">Pre-Alpha · v0.0.7</div>
+    <div class="header__badge">Pre-Alpha · v0.0.12 · Этап 2 завершён</div>
     <h1 class="header__title">Project <span>C</span> — Roadmap</h1>
     <p class="header__sub">Мир над облаками. MMO/Co-Op авиасимулятор по книге «Интеграл Пьявица».</p>
 
@@ -404,12 +404,12 @@
     </div>
 
     <!-- ЭТАП 1 -->
-    <div class="phase phase--active" data-delay="100">
+    <div class="phase phase--done" data-delay="100">
       <div class="phase__dot"></div>
       <div class="phase__card">
         <div class="phase__head">
           <span class="phase__tag">Этап 1 · Недели 2–4</span>
-          <span class="phase__status">В процессе</span>
+          <span class="phase__status">Завершён</span>
         </div>
         <h3 class="phase__title">Прототип ядра геймплея</h3>
         <p class="phase__goal">Реализовать базовые механики в оффлайн-режиме.</p>
@@ -424,31 +424,36 @@
           <li class="task--done">Hover-подсветка секторов + подсписок при &gt;1 предмете</li>
           <li class="task--done">Сундуки: LootTable (шансы, min/max), анимация открытия, автоуничтожение</li>
           <li class="task--done">Вспышка секторов инвентаря при получении лута из сундука</li>
-          <li>Доработка физики корабля (banking, инерция, плавность)</li>
-          <li>Система топлива (мезий)</li>
-          <li>Звуки двигателя, шагов, ветра</li>
+          <li class="task--done">Приоритет взаимодействия — сундук &gt; обычный предмет</li>
+          <li class="task--done">UI: ControlHintsUI, PeakNavigationUI, InventoryUI (GL-рендер)</li>
+          <li class="task--done">Сетевой мультиплеер: Host + Client, синхронизация движения, камеры, кораблей</li>
+          <li class="task--done">Кооп-корабли — несколько игроков, усреднение ввода</li>
+          <li class="task--done">Обработка обрывов соединения (OnClientDisconnectCallback, OnTransportFailure)</li>
+          <li class="task--done">Disconnect UI — кнопка по центру экрана</li>
         </ul>
-        <div class="phase__progress"><div class="phase__bar" data-width="78"></div></div>
-        <div class="phase__pct">78%</div>
+        <div class="phase__progress"><div class="phase__bar" data-width="100"></div></div>
+        <div class="phase__pct">100%</div>
       </div>
     </div>
 
-    <!-- ЭТАП 1.5: Доработка инвентаря -->
-    <div class="phase phase--future" data-delay="200">
+    <!-- ЭТАП 1 — Что осталось -->
+    <div class="phase phase--future" data-delay="150">
       <div class="phase__dot"></div>
       <div class="phase__card">
         <div class="phase__head">
-          <span class="phase__tag">Этап 1.5 · Недели 5–6</span>
+          <span class="phase__tag">Этап 1 · Что осталось</span>
           <span class="phase__status">Планируется</span>
         </div>
-        <h3 class="phase__title">Доработка инвентаря</h3>
-        <p class="phase__goal">Улучшить визуал и функциональность системы предметов.</p>
+        <h3 class="phase__title">Доработка геймплея</h3>
+        <p class="phase__goal">Улучшить физику, добавить звуки и визуальные элементы.</p>
         <ul class="phase__tasks">
-          <li>3D/2D иконки предметов в секторах колеса</li>
-          <li>Слот 9 (центр) для ключевого/тяжёлого предмета</li>
-          <li>«Облачный» дизайн колеса в стиле Ghibli</li>
-          <li>Подобранные предметы отображаются на модели персонажа</li>
-          <li>Редактор расстановки предметов в мире (лут-таблицы)</li>
+          <li>Доработка физики корабля (banking, инерция, плавность)</li>
+          <li>Система топлива (мезий)</li>
+          <li>Модели кораблей вместо примитивов</li>
+          <li>Звуки двигателя, шагов, ветра</li>
+          <li>3D/2D иконки в секторах инвентаря</li>
+          <li>Слот 9 (центр) для ключевого предмета</li>
+          <li>«Облачный» дизайн колеса (Ghibli-эстетика)</li>
         </ul>
         <div class="phase__progress"><div class="phase__bar" data-width="0"></div></div>
         <div class="phase__pct">0%</div>
@@ -456,35 +461,42 @@
     </div>
 
     <!-- ЭТАП 2 -->
-    <div class="phase phase--future" data-delay="300">
+    <div class="phase phase--done" data-delay="200">
       <div class="phase__dot"></div>
       <div class="phase__card">
         <div class="phase__head">
           <span class="phase__tag">Этап 2 · Недели 7–10</span>
-          <span class="phase__status">Планируется</span>
+          <span class="phase__status">Завершён</span>
         </div>
         <h3 class="phase__title">Сетевой фундамент</h3>
         <p class="phase__goal">Реализовать клиент-серверное взаимодействие.</p>
         <ul class="phase__tasks">
-          <li>Авторитарный сервер: клиент только отправляет ввод</li>
-          <li>WebSocket сервер .NET 8 + комнаты до 4 игроков</li>
-          <li>Замена локальных контроллеров на NetworkBehaviour</li>
-          <li>Client-side Prediction + интерполяция (Lerp + буферизация)</li>
-          <li>Синхронизация физики кораблей</li>
-          <li>Переподключение при разрыве соединения</li>
+          <li class="task--done">Авторитарный сервер: клиент только отправляет ввод</li>
+          <li class="task--done">Dedicated Server режим (кнопка в UI + `-server` build arg)</li>
+          <li class="task--done">Headless режим: `-batchmode -nographics -server`</li>
+          <li class="task--done">Сетевой контроллер (NetworkBehaviour)</li>
+          <li class="task--done">Client-side Prediction (базовое — коррекция позиции)</li>
+          <li class="task--done">Интерполяция других игроков (NetworkTransform Lerp 0.1s)</li>
+          <li class="task--done">Сохранение/восстановление инвентаря при реконнекте (PlayerPrefs)</li>
+          <li class="task--done">Синхронизация подбора (HidePickupRpc, OpenChestRpc — SendTo.Everyone)</li>
+          <li class="task--done">Локальный запуск: Host + Client (1 сервер + 1 клиент)</li>
+          <li class="task--done">Синхронизация физики кораблей (кооп-пилотирование)</li>
+          <li class="task--done">Обработка разрывов соединения (авто-реконнект + ручная кнопка)</li>
+          <li class="task--done">Player Count (обновляется в реальном времени)</li>
+          <li>Тестирование 1 сервер + 2-3 клиента (нужен 2й компьютер)</li>
         </ul>
-        <div class="phase__progress"><div class="phase__bar" data-width="0"></div></div>
-        <div class="phase__pct">0%</div>
+        <div class="phase__progress"><div class="phase__bar" data-width="95"></div></div>
+        <div class="phase__pct">95%</div>
       </div>
     </div>
 
     <!-- ЭТАП 3 -->
-    <div class="phase phase--future" data-delay="400">
+    <div class="phase phase--active" data-delay="300">
       <div class="phase__dot"></div>
       <div class="phase__card">
         <div class="phase__head">
           <span class="phase__tag">Этап 3 · Недели 9–12</span>
-          <span class="phase__status">Планируется</span>
+          <span class="phase__status">Следующий</span>
         </div>
         <h3 class="phase__title">Ролевая система и прогрессия</h3>
         <p class="phase__goal">Добавить RPG-элементы и сохранение данных.</p>
@@ -501,8 +513,31 @@
       </div>
     </div>
 
+    <!-- ЭТАП 3.5 — Дополнительные сетевые фичи -->
+    <div class="phase phase--future" data-delay="350">
+      <div class="phase__dot"></div>
+      <div class="phase__card">
+        <div class="phase__head">
+          <span class="phase__tag">Этап 5+ · Дополнительные сетевые фичи</span>
+          <span class="phase__status">Отложено</span>
+        </div>
+        <h3 class="phase__title">Серверный билд и лобби</h3>
+        <p class="phase__goal">Отдельный сервер, матчмейкинг, комнаты.</p>
+        <ul class="phase__tasks">
+          <li>Отдельный серверный билд (Headless Unity / .NET 8, 24/7)</li>
+          <li>Система лобби/комнат — группировка до 4 игроков</li>
+          <li>Мастер-сервер — список комнат, матчмейкинг</li>
+          <li>Приглашения друзей</li>
+          <li>Полная серверная валидация инвентаря (anti-cheat)</li>
+          <li>Полная синхронизация инвентаря (NetworkVariable/NetworkList)</li>
+        </ul>
+        <div class="phase__progress"><div class="phase__bar" data-width="0"></div></div>
+        <div class="phase__pct">0%</div>
+      </div>
+    </div>
+
     <!-- ЭТАП 4 -->
-    <div class="phase phase--future" data-delay="500">
+    <div class="phase phase--future" data-delay="400">
       <div class="phase__dot"></div>
       <div class="phase__card">
         <div class="phase__head">
@@ -526,6 +561,29 @@
     </div>
 
     <!-- ЭТАП 5 -->
+    <div class="phase phase--future" data-delay="500">
+      <div class="phase__dot"></div>
+      <div class="phase__card">
+        <div class="phase__head">
+          <span class="phase__tag">Этап 5 · Недели 19–24</span>
+          <span class="phase__status">Планируется</span>
+        </div>
+        <h3 class="phase__title">Масштабирование и оптимизация</h3>
+        <p class="phase__goal">Подготовить инфраструктуру для большого онлайна.</p>
+        <ul class="phase__tasks">
+          <li>Шардинг мира (разделение на зоны/сервера)</li>
+          <li>Kubernetes автомасштабирование</li>
+          <li>Мониторинг: Prometheus + Grafana</li>
+          <li>LOD-системы для кораблей и островов</li>
+          <li>Occlusion Culling + пулинг объектов</li>
+          <li>Античит: серверная валидация + репорты + авто-баны</li>
+        </ul>
+        <div class="phase__progress"><div class="phase__bar" data-width="0"></div></div>
+        <div class="phase__pct">0%</div>
+      </div>
+    </div>
+
+    <!-- ЭТАП 6 -->
     <div class="phase phase--future" data-delay="600">
       <div class="phase__dot"></div>
       <div class="phase__card">
@@ -572,7 +630,7 @@
     </div>
 
     <!-- ЭТАП 7 -->
-    <div class="phase phase--future" data-delay="800">
+    <div class="phase phase--future" data-delay="700">
       <div class="phase__dot"></div>
       <div class="phase__card">
         <div class="phase__head">
@@ -598,7 +656,7 @@
 
   <!-- FOOTER -->
   <footer class="footer">
-    <p class="footer__text">Открытая разработка · Все коммиты на GitHub · Версия v0.0.7 · 4 апреля 2026</p>
+    <p class="footer__text">Открытая разработка · Все коммиты на GitHub · Версия v0.0.12 · 5 апреля 2026</p>
     <div class="footer__links">
       <a href="https://github.com/boozzeeboom/project-c" target="_blank" rel="noopener">GitHub</a>
       <a href="https://t.me/thegravity_ru" target="_blank" rel="noopener">Telegram</a>

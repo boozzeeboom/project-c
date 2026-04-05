@@ -150,32 +150,12 @@ namespace ProjectC.Core
             Debug.Log($"[Network] Попытка реконнекта {_reconnectAttempts}/{maxReconnectAttempts}");
             UpdateStatus($"Реконнект... ({_reconnectAttempts}/{maxReconnectAttempts})");
 
-            // Очищаем старое соединение
             if (networkManager.IsListening || networkManager.IsConnectedClient)
             {
                 networkManager.Shutdown();
             }
 
-            // Пересоздаём NetworkManager для чистого состояния
-            ResetNetworkManager();
-
-            // Подключаемся к последнему серверу
             ConnectToServer(_lastServerIp, _lastServerPort);
-        }
-
-        /// <summary>
-        /// Сбросить NetworkManager (для чистого состояния)
-        /// </summary>
-        private void ResetNetworkManager()
-        {
-            if (networkManager != null)
-            {
-                OnDisable();
-                networkManager.Shutdown();
-                UnityEngine.Object.Destroy(networkManager);
-            }
-            networkManager = gameObject.AddComponent<Unity.Netcode.NetworkManager>();
-            OnEnable();
         }
 
         /// <summary>
@@ -192,7 +172,15 @@ namespace ProjectC.Core
             Debug.Log($"[Network] Ручной реконнект к {_lastServerIp}:{_lastServerPort}");
             UpdateStatus($"Подключение к {_lastServerIp}:{_lastServerPort}...");
 
-            ResetNetworkManager();
+            _isReconnecting = false;
+            _reconnectAttempts = 0;
+
+            // Просто Shutdown + reconnect
+            if (networkManager.IsListening || networkManager.IsConnectedClient)
+            {
+                networkManager.Shutdown();
+            }
+
             ConnectToServer(_lastServerIp, _lastServerPort);
         }
 
@@ -225,10 +213,17 @@ namespace ProjectC.Core
             _isReconnecting = false;
             _reconnectAttempts = 0;
 
+            Debug.Log($"[Network] ConnectToServer: {targetIp}:{targetPort}, IsListening={networkManager.IsListening}");
+
             var transport = networkManager.NetworkConfig.NetworkTransport;
             if (transport is UnityTransport unityTransport)
             {
                 unityTransport.SetConnectionData(targetIp, targetPort);
+                Debug.Log($"[Network] Transport настроен на {targetIp}:{targetPort}");
+            }
+            else
+            {
+                Debug.LogError("[Network] UnityTransport не найден в NetworkConfig!");
             }
 
             UpdateStatus($"Подключение к {targetIp}:{targetPort}...");

@@ -425,9 +425,27 @@ namespace ProjectC.Player
             {
                 if (_inventory != null)
                     _inventory.AddItem(_nearestPickup.itemData);
+                if (_inventoryUI != null) _inventoryUI.TriggerSectorFlash();
 
-                _nearestPickup.gameObject.SetActive(false);
+                // Серверная RPC — скрыть предмет у ВСЕХ
+                HidePickupRpc(_nearestPickup.transform.position);
                 _nearestPickup = null;
+            }
+        }
+
+        [Rpc(SendTo.Everyone)]
+        private void HidePickupRpc(Vector3 targetPos, RpcParams rpcParams = default)
+        {
+            var pickups = FindObjectsByType<PickupItem>(FindObjectsInactive.Include);
+            foreach (var pickup in pickups)
+            {
+                if (!pickup.gameObject.activeSelf) continue;
+                float dist = Vector3.Distance(targetPos, pickup.transform.position);
+                if (dist < 3f)
+                {
+                    pickup.gameObject.SetActive(false);
+                    return;
+                }
             }
         }
 

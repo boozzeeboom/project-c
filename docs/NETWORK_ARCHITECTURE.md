@@ -1,7 +1,37 @@
 # Сетевая архитектура Project C — Полная документация
 
-**Версия:** `v0.0.9-network-coop` | **Дата:** 5 апреля 2026 г.  
+**Версия:** `v0.0.9-network-coop` | **Дата:** 5 апреля 2026 г.
 **Ветка:** `qwen-dev` | **Архитектура:** Авторитарный сервер (Host = Server + Client 0)
+
+---
+
+## ⚠️ Известные проблемы и задачи
+
+### 🔴 Критично (нужно починить)
+
+| Проблема | Описание | Файл |
+|----------|----------|------|
+| **Disconnect кнопка в левом углу** | Кнопка Disconnect создаётся программно через `CreateDisconnectButton()` в `NetworkUI.cs`, но позиционируется в левом нижнем углу экрана — почти невидима. Нужно исправить якоря/позицию. | `NetworkUI.cs:CreateDisconnectButton()` |
+
+**Инструкция по починке:**
+```csharp
+// В CreateDisconnectButton() заменить:
+rt.anchorMin = new Vector2(0.5f, 0.5f);
+rt.anchorMax = new Vector2(0.5f, 0.5f);
+rt.pivot = new Vector2(0.5f, 0.5f);
+rt.anchoredPosition = Vector2.zero;  // центр экрана
+
+// Если не работает — попробовать привязать к ConnectionPanel:
+Transform parent = connectionPanel != null ? connectionPanel.transform : canvas.transform;
+```
+
+### 🟡 Среднеприоритетные
+
+| Проблема | Описание |
+|----------|----------|
+| Boost (Shift) для кораблей | Сервер не знает о бусте клиента — параметр `boost` не передаётся в RPC |
+| WorldGenerationSettings.asset | Legacy предупреждение при запуске (не критично) |
+| Инвентарь не синхронизируется | Каждый игрок видит только свои предметы |
 
 ---
 
@@ -207,6 +237,33 @@ if (IsOwner) {
 | `SubmitShipInputRpc(...)` | SendTo.Server | Клиент → сервер | Ввод корабля (60 раз/сек) |
 | `AddPilotRpc(clientId)` | SendTo.Everyone | Клиент → все | Добавить пилота в корабль |
 | `RemovePilotRpc(clientId)` | SendTo.Everyone | Клиент → все | Снять пилота |
+
+---
+
+## 🔌 События подключения/отключения
+
+### NetworkManagerController
+
+| Событие | Когда срабатывает | Что делает |
+|---------|-------------------|------------|
+| `OnClientConnectedCallback` | Клиент подключился | Логирует, обновляет UI |
+| `OnClientDisconnectCallback` | Клиент отключился | Логирует, обновляет UI |
+| `OnServerStarted` | Сервер запущен | Логирует |
+| `OnTransportFailure` | Ошибка транспорта | Логирует ошибку |
+
+### NetworkUI — Disconnect кнопка
+
+**Архитектура:**
+- Кнопка Disconnect создаётся **программно** в `CreateDisconnectButton()` (не через Inspector)
+- Причина: в билде ссылки на UI-элементы теряются, программное создание надёжнее
+- Показывается при подключении, скрывается при отключении
+- **Escape** — toggle видимости (экстренный выход)
+
+**⚠️ Известная проблема:** Кнопка позиционируется в левом нижнем углу экрана — почти невидима. Нужно исправить якоря/позицию в `CreateDisconnectButton()`.
+
+**Связанные файлы:**
+- `NetworkManagerController.cs` — события подключения
+- `NetworkUI.cs` — Disconnect кнопка, обновление UI
 
 ---
 

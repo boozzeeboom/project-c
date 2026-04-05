@@ -43,7 +43,7 @@ namespace ProjectC.Player
 
         // Накопленный ввод от всех пилотов (сервер)
         private float _sumThrust, _sumYaw, _sumPitch, _sumVertical;
-        private int _inputCount;
+        private int _boostCount, _inputCount;
 
         private void Awake()
         {
@@ -68,8 +68,9 @@ namespace ProjectC.Player
             float avgYaw = _sumYaw / n;
             float avgPitch = _sumPitch / n;
             float avgVertical = _sumVertical / n;
+            bool anyBoost = _boostCount > 0; // Достаточно одного пилота с boost
 
-            ApplyThrust(avgThrust);
+            ApplyThrust(avgThrust, anyBoost);
             ApplyAntiGravity();
             ApplyVertical(avgVertical);
             ApplyRotation(avgYaw, avgPitch);
@@ -81,14 +82,14 @@ namespace ProjectC.Player
 
             // Сброс буфера
             _sumThrust = 0; _sumYaw = 0; _sumPitch = 0; _sumVertical = 0;
-            _inputCount = 0;
+            _boostCount = 0; _inputCount = 0;
         }
 
         /// <summary>
         /// Пилот шлёт ввод на сервер
         /// </summary>
         [Rpc(SendTo.Server)]
-        private void SubmitShipInputRpc(float thrust, float yaw, float pitch, float vertical, RpcParams rpcParams = default)
+        private void SubmitShipInputRpc(float thrust, float yaw, float pitch, float vertical, bool boost, RpcParams rpcParams = default)
         {
             if (!_pilots.Contains(rpcParams.Receive.SenderClientId)) return;
 
@@ -96,18 +97,20 @@ namespace ProjectC.Player
             _sumYaw += yaw;
             _sumPitch += pitch;
             _sumVertical += vertical;
+            if (boost) _boostCount++;
             _inputCount++;
         }
 
-        public void SendShipInput(float thrust, float yaw, float pitch, float vertical)
+        public void SendShipInput(float thrust, float yaw, float pitch, float vertical, bool boost)
         {
-            SubmitShipInputRpc(thrust, yaw, pitch, vertical);
+            SubmitShipInputRpc(thrust, yaw, pitch, vertical, boost);
         }
 
-        private void ApplyThrust(float input)
+        private void ApplyThrust(float input, bool boost)
         {
             if (Mathf.Abs(input) < 0.01f) return;
-            _rb.AddForce(transform.forward * input * thrustForce, ForceMode.Force);
+            float currentThrust = boost ? thrustForce * 2f : thrustForce;
+            _rb.AddForce(transform.forward * input * currentThrust, ForceMode.Force);
         }
 
         private void ApplyAntiGravity()

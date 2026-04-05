@@ -16,7 +16,6 @@ namespace ProjectC.Core
         private void Awake()
         {
             RegisterAllItems();
-            Debug.Log("[ItemDatabase] Предметы зарегистрированы");
         }
 
         /// <summary>
@@ -28,7 +27,7 @@ namespace ProjectC.Core
             
             if (items.Length == 0)
             {
-                Debug.LogWarning($"[ItemDatabase] Не найдено предметов в Resources/{itemsResourcePath}");
+                Debug.LogWarning($"[ItemDatabase] Не найдено предметов в Resources/{itemsResourcePath}. Создай ScriptableObject предметы!");
                 return;
             }
 
@@ -38,6 +37,8 @@ namespace ProjectC.Core
                 NetworkInventory.RegisterItem(itemId, items[i]);
                 Debug.Log($"[ItemDatabase] Зарегистрирован: ID {itemId} - {items[i].itemName}");
             }
+
+            Debug.Log($"[ItemDatabase] Всего зарегистрировано: {items.Length}");
         }
     }
 }

@@ -15,6 +15,7 @@ namespace ProjectC.UI
     {
         [Header("Ссылки на UI элементы")]
         [SerializeField] private Button startHostButton;
+        [SerializeField] private Button startServerButton;
         [SerializeField] private Button startClientButton;
         [SerializeField] private TMP_InputField serverIpInput;
         [SerializeField] private TMP_InputField serverPortInput;
@@ -38,6 +39,7 @@ namespace ProjectC.UI
 
             // Кнопки
             if (startHostButton != null) startHostButton.onClick.AddListener(OnStartHostClicked);
+            if (startServerButton != null) startServerButton.onClick.AddListener(OnStartServerClicked);
             if (startClientButton != null) startClientButton.onClick.AddListener(OnStartClientClicked);
 
             // События сети
@@ -122,6 +124,7 @@ namespace ProjectC.UI
         private void UpdateButtons(bool connected)
         {
             if (startHostButton != null) startHostButton.gameObject.SetActive(!connected);
+            if (startServerButton != null) startServerButton.gameObject.SetActive(!connected);
             if (startClientButton != null) startClientButton.gameObject.SetActive(!connected);
             if (_disconnectButton != null) _disconnectButton.gameObject.SetActive(connected);
         }
@@ -131,6 +134,13 @@ namespace ProjectC.UI
             networkManagerController.StartHost();
             HideConnectionPanel();
             UpdateButtons(true); // Мгновенно показываем Disconnect
+        }
+
+        private void OnStartServerClicked()
+        {
+            networkManagerController.StartServer();
+            HideConnectionPanel();
+            UpdateButtons(true);
         }
 
         private void OnStartClientClicked()
@@ -170,6 +180,7 @@ namespace ProjectC.UI
         private void OnDestroy()
         {
             if (startHostButton != null) startHostButton.onClick.RemoveListener(OnStartHostClicked);
+            if (startServerButton != null) startServerButton.onClick.RemoveListener(OnStartServerClicked);
             if (startClientButton != null) startClientButton.onClick.RemoveListener(OnStartClientClicked);
 
             if (networkManagerController != null)

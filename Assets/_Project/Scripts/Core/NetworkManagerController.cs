@@ -29,6 +29,27 @@ namespace ProjectC.Core
                 networkManager = gameObject.AddComponent<Unity.Netcode.NetworkManager>();
 
             DontDestroyOnLoad(gameObject);
+
+            // Автоматический запуск Dedicated Server если передан аргумент -server
+            if (IsDedicatedServerMode())
+            {
+                Debug.Log("[Network] Запуск в режиме Dedicated Server");
+                Invoke(nameof(StartServer), 0.5f);
+            }
+        }
+
+        /// <summary>
+        /// Проверка режима Dedicated Server (аргумент командной строки -server)
+        /// </summary>
+        private bool IsDedicatedServerMode()
+        {
+            string[] args = Environment.GetCommandLineArgs();
+            foreach (var arg in args)
+            {
+                if (arg.ToLower() == "-server" || arg.ToLower() == "-dedicatedserver")
+                    return true;
+            }
+            return false;
         }
 
         private void OnEnable()

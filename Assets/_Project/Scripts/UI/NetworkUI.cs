@@ -17,6 +17,7 @@ namespace ProjectC.UI
         [SerializeField] private Button startHostButton;
         [SerializeField] private Button startServerButton;
         [SerializeField] private Button startClientButton;
+        [SerializeField] private Button reconnectButton;
         [SerializeField] private TMP_InputField serverIpInput;
         [SerializeField] private TMP_InputField serverPortInput;
         [SerializeField] private TextMeshProUGUI statusText;
@@ -41,17 +42,27 @@ namespace ProjectC.UI
             if (startHostButton != null) startHostButton.onClick.AddListener(OnStartHostClicked);
             if (startServerButton != null) startServerButton.onClick.AddListener(OnStartServerClicked);
             if (startClientButton != null) startClientButton.onClick.AddListener(OnStartClientClicked);
+            if (reconnectButton != null)
+            {
+                reconnectButton.onClick.AddListener(OnReconnectClicked);
+                reconnectButton.gameObject.SetActive(false); // Скрыта по умолчанию
+            }
 
             // События сети
             networkManagerController.OnConnectionStatusChanged += UpdateStatus;
             networkManagerController.OnPlayerConnected += HandlePlayerConnected;
             networkManagerController.OnPlayerDisconnected += HandlePlayerDisconnected;
+            networkManagerController.OnReconnectRequested += ShowReconnectButton;
 
             CreateDisconnectButton();
             UpdateButtons(false);
         }
 
-        private void HandlePlayerConnected(ulong clientId) => UpdateButtons(true);
+        private void HandlePlayerConnected(ulong clientId)
+        {
+            UpdateButtons(true);
+            HideReconnectButton();
+        }
 
         private void HandlePlayerDisconnected(ulong clientId)
         {
@@ -155,6 +166,23 @@ namespace ProjectC.UI
             // Disconnect появится когда сработает OnPlayerConnected
         }
 
+        private void OnReconnectClicked()
+        {
+            networkManagerController.Reconnect();
+            HideConnectionPanel();
+            if (reconnectButton != null) reconnectButton.gameObject.SetActive(false);
+        }
+
+        private void ShowReconnectButton()
+        {
+            if (reconnectButton != null) reconnectButton.gameObject.SetActive(true);
+        }
+
+        private void HideReconnectButton()
+        {
+            if (reconnectButton != null) reconnectButton.gameObject.SetActive(false);
+        }
+
         private void OnDisconnectClicked()
         {
             networkManagerController.Disconnect();
@@ -182,12 +210,14 @@ namespace ProjectC.UI
             if (startHostButton != null) startHostButton.onClick.RemoveListener(OnStartHostClicked);
             if (startServerButton != null) startServerButton.onClick.RemoveListener(OnStartServerClicked);
             if (startClientButton != null) startClientButton.onClick.RemoveListener(OnStartClientClicked);
+            if (reconnectButton != null) reconnectButton.onClick.RemoveListener(OnReconnectClicked);
 
             if (networkManagerController != null)
             {
                 networkManagerController.OnConnectionStatusChanged -= UpdateStatus;
                 networkManagerController.OnPlayerConnected -= HandlePlayerConnected;
                 networkManagerController.OnPlayerDisconnected -= HandlePlayerDisconnected;
+                networkManagerController.OnReconnectRequested -= ShowReconnectButton;
             }
         }
     }

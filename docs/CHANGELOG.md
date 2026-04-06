@@ -2,6 +2,70 @@
 
 ---
 
+## v0.0.13-urp-setup (6 апреля 2026)
+
+**Ветка:** `qwen-gamestudio-agent-dev`
+**Этап 2.5: Визуальный прототип** — 🔄 В ПРОЦЕССЕ
+
+### 🆕 Новое
+
+#### URP Pipeline (Universal Render Pipeline)
+- ✅ URP пакет установлен (com.unity.render-pipelines.universal 17.4.0)
+- ✅ URP Pipeline Asset создан и назначен в Graphics Settings
+- ✅ Все материалы конвертированы: Standard → URP Lit/Unlit
+- ✅ WorldGenerator.cs обновлён: использует URP/Lit и URP/Unlit
+- ✅ MaterialURPUpgrader.cs — скрипт массовой конвертации материалов (ProjectC → Upgrade Materials to URP)
+
+#### Облака Ghibli-стиль
+- ✅ CloudGhibli.shader — кастомный URP Unlit шейдер
+  - Noise + rim glow + vertex displacement (морфинг форм)
+  - Soft edges, depth fade, scroll UV анимация
+- ✅ ProceduralNoiseGenerator.cs — FBM noise текстуры 512×512
+- ✅ CloudLayer.cs — авто-интеграция CloudGhibli при старте
+
+#### Документация
+- ✅ docs/ART_BIBLE.md — полная визуальная спецификация (12 секций)
+  - Цветовая палитра, освещение, post-processing
+  - Спецификации кораблей, персонажей, окружения, UI
+  - Пайплайн ассетов, конвенция имён, референсы
+- ✅ docs/unity6/UNITY6_URP_SETUP.md — справочник по URP в Unity 6
+  - Breaking changes в URP 17
+  - Частые ошибки и решения
+  - Сериализуемые свойства Pipeline Asset
+- ✅ docs/MMO_Development_Plan.md — добавлен Этап 2.5: Визуальный прототип
+- ✅ docs/INDEX.md — обновлён каталог
+
+### 📦 Новые файлы
+| Файл | Назначение |
+|------|-----------|
+| `Assets/_Project/Art/Shaders/CloudGhibli.shader` | Кастомный шейдер облаков (URP Unlit) |
+| `Assets/_Project/Material/CloudMaterial_URP.mat` | URP-совместимый материал облаков |
+| `Assets/_Project/Material/character_URP.mat` | URP-совместимый материал персонажа |
+| `Assets/_Project/Scripts/Core/MaterialURPConverter.cs` | Авто-конвертация материалов при запуске |
+| `Assets/_Project/Scripts/Core/ProceduralNoiseGenerator.cs` | Генерация noise-текстур (FBM) |
+| `Assets/_Project/Scripts/Editor/MaterialURPUpgrader.cs` | Массовая конвертация Standard → URP |
+| `Assets/_Project/Scripts/Core/CloudLayer.cs` | Обновлён: авто-интеграция CloudGhibli |
+| `Assets/_Project/Scripts/Core/WorldGenerator.cs` | Обновлён: URP/Lit + URP/Unlit |
+| `docs/ART_BIBLE.md` | Визуальная спецификация проекта |
+| `docs/unity6/UNITY6_URP_SETUP.md` | Справочник URP для Unity 6 |
+
+### 🐛 Исправления
+| Баг | Решение |
+|-----|---------|
+| Все материалы розовые (Standard не работает в URP) | Конвертированы в URP Lit/Unlit |
+| CloudGhibli.shader не компилировался (Core.hlsl not found) | URP пакет установлен, Pipeline Asset назначен |
+| CS0618 FindObjectsSortMode deprecated | Убран из MaterialURPConverter.cs |
+| CS0246 UniversalRenderPipelineAsset not found | Удалён скрипт URPSetup.cs, настройка через Editor |
+
+### ⚠️ Известные проблемы
+| Приоритет | Проблема | Статус |
+|-----------|----------|--------|
+| 🟡 Средне | Модель корабля — примитив (сфера) | ⏳ Этап 2.5 |
+| 🟡 Средне | Персонаж — capsule | ⏳ Этап 2.5 |
+| 🟢 Низко | Горные пики — процедурные без текстур | ⏳ Этап 2.5 |
+
+---
+
 ## v0.0.12-stage2-complete (5 апреля 2026)
 
 **Ветка:** `qwen-gamestudio-agent-dev`

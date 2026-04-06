@@ -393,6 +393,60 @@ git reset --hard HEAD
 
 ---
 
+## 📝 Сессия: 6 апреля 2026 — Этап 2.5: Визуальный прототип
+
+**Версия:** `v0.0.13-urp-setup` | **Ветка:** `qwen-gamestudio-agent-dev`
+
+### Онбординг проекта:
+| Шаг | Описание | Статус |
+|-----|----------|--------|
+| 1 | Прочитан QWEN_CONTEXT.md, ONBOARDING_QWEN.md, README.md | ✅ |
+| 2 | Изучены docs: MMO_Development_Plan.md, STEP_BY_STEP_DEVELOPMENT.md, NETWORK_ARCHITECTURE.md | ✅ |
+| 3 | Изучена структура .qwenencode (агенты, навыки, правила) | ✅ |
+| 4 | Запущены субагенты: Creative Director + Art Director анализ | ✅ |
+
+### Визуальный прототип:
+| Шаг | Описание | Статус | Файл |
+|-----|----------|--------|------|
+| 1 | docs/ART_BIBLE.md — полная визуальная спецификация | ✅ | `docs/ART_BIBLE.md` |
+| 2 | docs/MMO_Development_Plan.md — добавлен Этап 2.5 | ✅ | `docs/MMO_Development_Plan.md` |
+| 3 | URP пакет добавлен в manifest.json | ✅ | `Packages/manifest.json` |
+| 4 | URP Pipeline Asset создан (через Unity Editor) | ✅ | `Assets/_Project/Settings/ProjectC_URP` |
+| 5 | WorldGenerator.cs: Standard → URP/Lit + URP/Unlit | ✅ | `WorldGenerator.cs` |
+| 6 | CloudGhibli.shader: кастомный URP Unlit | ✅ | `CloudGhibli.shader` |
+| 7 | ProceduralNoiseGenerator.cs: FBM noise текстуры | ✅ | `ProceduralNoiseGenerator.cs` |
+| 8 | CloudLayer.cs: авто-интеграция CloudGhibli | ✅ | `CloudLayer.cs` |
+| 9 | MaterialURPConverter.cs: авто-конвертация при запуске | ✅ | `MaterialURPConverter.cs` |
+| 10 | MaterialURPUpgrader.cs: Editor-скрипт конвертации | ✅ | `MaterialURPUpgrader.cs` |
+| 11 | Ручная конвертация материалов в Unity Inspector | ✅ | `CloudMaterial_URP.mat`, `character_URP.mat` |
+| 12 | docs/unity6/UNITY6_URP_SETUP.md: справочник URP | ✅ | `docs/unity6/UNITY6_URP_SETUP.md` |
+| 13 | docs/CHANGELOG.md: добавлена v0.0.13-urp-setup | ✅ | `docs/CHANGELOG.md` |
+| 14 | docs/QWEN_CONTEXT.md: обновлён контекст сессии | ✅ | `docs/QWEN_CONTEXT.md` |
+
+### Известные проблемы при настройке URP:
+| Проблема | Решение |
+|----------|---------|
+| URPSetup.cs не компилировался (CS0246) | Удалён, настройка через Unity Editor |
+| Ручные YAML-файлы не распознавались | Удалены, созданы через Unity Create menu |
+| Меню Upgrade Project Materials не появлялось | Конвертация через Inspector вручную + MaterialURPUpgrader.cs |
+| CS0618 FindObjectsSortMode deprecated | Исправлен в MaterialURPConverter.cs |
+
+### Что работает:
+- ✅ URP Pipeline 17.4.0 активен
+- ✅ CloudGhibli.shader компилируется
+- ✅ Облака рендерятся через URP Unlit с noise + rim glow
+- ✅ Все материалы конвертированы в URP Lit/Unlit
+
+### Что отложено (Этап 2.5 продолжение):
+- ❌ Модель корабля (Blender → FBX)
+- ❌ Модель персонажа (Mixamo)
+- ❌ Текстуры пиков (Poly Haven)
+- ❌ Post-Processing (URP Volume)
+
+**Версия:** `v0.0.13-urp-setup` | **Дата:** 6 апреля 2026 г.
+
+---
+
 ## 📝 Сессия: 5 апреля 2026 — Этап 2 завершён
 
 **Версия:** `v0.0.12-stage2-complete` | **Ветка:** `qwen-gamestudio-agent-dev`

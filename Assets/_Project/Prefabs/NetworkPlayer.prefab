@@ -48,7 +48,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: d5a57f767e5e46a458fc5d3c628d0cbb, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Unity.Netcode.Runtime::Unity.Netcode.NetworkObject
-  GlobalObjectIdHash: 186599647
+  GlobalObjectIdHash: 3381727993
   InScenePlacedSourceGlobalObjectIdHash: 0
   DeferredDespawnTick: 0
   Ownership: 1
@@ -126,6 +126,10 @@ MonoBehaviour:
   jumpForce: 8
   gravity: -20
   cameraPrefab: {fileID: 5405426399639928988, guid: 020b4cd7c3349134b8c1de87bed1f706, type: 3}
+  boardDistance: 5
+  pickupRange: 3
+  positionCorrectionThreshold: 0.5
+  positionCorrectionSpeed: 10
 --- !u!143 &-8638653109892984551
 CharacterController:
   m_ObjectHideFlags: 0

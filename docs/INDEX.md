@@ -1,5 +1,9 @@
 # 📚 Документация Project C
 
+**Последнее обновление:** 6 апреля 2026 г. | **Ветка:** `qwen-gamestudio-agent-dev` | **Версия:** `v0.0.13-urp-setup`
+
+---
+
 ## 🚀 Для Qwen Code (AI-ассистент)
 
 | Файл | Когда использовать |
@@ -7,6 +11,7 @@
 | [QWEN_CONTEXT.md](QWEN_CONTEXT.md) | **Первый файл для чтения** — текущий контекст сессии |
 | [MMO_Development_Plan.md](MMO_Development_Plan.md) | Общий план разработки MMO |
 | [STEP_BY_STEP_DEVELOPMENT.md](STEP_BY_STEP_DEVELOPMENT.md) | Принцип пошаговой разработки |
+| [CHANGELOG.md](CHANGELOG.md) | **История изменений** — что было сделано в каждой версии |
 | [README_QWEN.md](README_QWEN.md) | Как продолжить работу с Qwen Code |
 | [README_CONTINUE.md](README_CONTINUE.md) | Быстрый старт |
 
@@ -26,6 +31,25 @@
 
 ---
 
+## 🎨 Арт и визуал
+
+| Файл | Описание |
+|------|----------|
+| [ART_BIBLE.md](ART_BIBLE.md) | **Визуальная спецификация** — цвета, модели, UI, пайплайн ассетов |
+| [unity6/UNITY6_URP_SETUP.md](unity6/UNITY6_URP_SETUP.md) | **Справочник URP в Unity 6** — настройка, ошибки, breaking changes |
+
+---
+
+## 🔌 Сеть
+
+| Файл | Описание |
+|------|----------|
+| [NETWORK_ARCHITECTURE.md](NETWORK_ARCHITECTURE.md) | Сетевая архитектура, RPC, синхронизация |
+| [DEDICATED_SERVER.md](DEDICATED_SERVER.md) | Запуск Dedicated Server |
+| [NETWORK_PHASE2_PLAN.md](NETWORK_PHASE2_PLAN.md) | План сетевого этапа |
+
+---
+
 ## 🔧 Git & Версионирование
 
 | Файл | Описание |
@@ -39,39 +63,11 @@
 
 ## 📘 Unity 6
 
-В папке [`unity6/`](unity6/) будет документация по Unity 6:
-- Шейдеры и URP
-- Netcode for GameObjects
-- Оптимизация
-- И т.д.
+В папке [`unity6/`](unity6/) документация по Unity 6:
+- [UNITY6_URP_SETUP.md](unity6/UNITY6_URP_SETUP.md) — настройка URP, ошибки, breaking changes
 
 ---
 
-## 📁 Структура проекта
-
-```
-ProjectC_client/
-├── docs/                     (эта папка)
-│   ├── QWEN_CONTEXT.md       (контекст сессии)
-│   ├── MMO_Development_Plan.md
-│   ├── STEP_BY_STEP_DEVELOPMENT.md
-│   ├── README_QWEN.md
-│   ├── README_CONTINUE.md
-│   ├── CONTROLS.md
-│   ├── GIT_WORKFLOW.md
-│   ├── GIT_WORKFLOW_ADVANCED.md
-│   ├── QUICK_GIT_COMMANDS.md
-│   ├── VERSION_BACKUP.md
-│   └── unity6/               (документация Unity 6)
-├── Assets/                   (ассеты Unity)
-├── ProjectSettings/          (настройки проекта)
-├── Packages/                 (Unity пакеты)
-├── run_qwen.bat              (запуск Qwen Code)
-└── README.md                 (общее описание проекта)
-```
-
----
-
-**Последнее обновление:** 4 апреля 2026 г.
-**Ветка:** `qwen-dev`
-**Версия:** `v0.0.7-chest-system`
+**Последнее обновление:** 6 апреля 2026 г.
+**Ветка:** `qwen-gamestudio-agent-dev`
+**Версия:** `v0.0.13-urp-setup`

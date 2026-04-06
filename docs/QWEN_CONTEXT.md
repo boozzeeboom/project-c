@@ -1,7 +1,7 @@
 # Project C: The Clouds — Единый стартовый файл для Qwen Code
 
-**Версия:** `v0.0.12-stage2-complete` | **Дата:** 5 апреля 2026 г.
-**Ветка:** `qwen-gamestudio-agent-dev` (основная) | **Этап:** Этап 2 ЗАВЕРШЁН, Этап 3 начинается
+**Версия:** `v0.0.13-urp-setup` | **Дата:** 6 апреля 2026 г.
+**Ветка:** `qwen-gamestudio-agent-dev` (основная) | **Этап:** Этап 2 ЗАВЕРШЁН, Этап 2.5 В ПРОЦЕССЕ
 **По мотивам книги «Интеграл Пьявица» — Бруно Арендт**
 
 ---
@@ -53,6 +53,15 @@ git reset --hard upstream/qwen-gamestudio-agent-dev
 - ✅ Player Count — счётчик игроков обновляется в реальном времени
 - ✅ Отладочное логирование Canvas и RectTransform
 
+### Визуал (URP)
+- ✅ URP Pipeline 17.4.0 — установлен и активен
+- ✅ CloudGhibli.shader — кастомный шейдер облаков (noise + rim glow + morph)
+- ✅ ProceduralNoiseGenerator — FBM noise текстуры
+- ✅ Все материалы конвертированы: Standard → URP Lit/Unlit
+- ✅ MaterialURPUpgrader — скрипт массовой конвертации
+- ✅ WorldGenerator — URP-совместимые материалы
+- ✅ docs/ART_BIBLE.md — полная визуальная спецификация
+
 ### Геймплей
 - ✅ Пеший режим: WASD + Space + Shift
 - ✅ Корабль: WASD + Q/E + мышь + Shift (boost)
@@ -77,9 +86,11 @@ Unity автоматически создаёт `.meta` файлы для каж
 
 | Приоритет | Проблема | Файл | Как починить |
 |-----------|----------|------|--------------|
+| 🟡 Средне | Модель корабля — примитив (сфера) | ShipController | Заменить на FBX модель (Этап 2.5) |
+| 🟡 Средне | Персонаж — capsule | NetworkPlayer | Заменить на Mixamo модель (Этап 2.5) |
 | 🟡 Средне | Инвентарь не синхронизируется между игроками | Архитектура | Этап 3 (RPG система, серверная валидация) |
 | 🟡 Средне | Boost (Shift) корабля не передаётся в RPC | ShipController | Добавить параметр в SubmitShipInputRpc |
-| 🟢 Низко | WorldGenerationSettings.asset legacy предупреждение | Не критично | — |
+| 🟢 Низко | Горные пики — процедурные без текстур | WorldGenerator | Добавить текстуры из Poly Haven (Этап 2.5) |
 | 🔴 Отложено | Отдельный серверный билд (.NET 8) | Архитектура | Этап 5+ |
 | 🔴 Отложено | Система лобби/комнат | Архитектура | Этап 5+ |
 
@@ -92,6 +103,8 @@ Unity автоматически создаёт `.meta` файлы для каж
 | ~~Сундуки не работали~~ | ✅ Возвращён старый рабочий подбор |
 | ~~Инвентарь терялся при реконнекте~~ | ✅ Сохранение/загрузка через PlayerPrefs |
 | ~~NetworkInventory не работал~~ | ✅ Откат — NGO не поддерживает NetworkVariable<string> |
+| ~~Все материалы розовые (Standard в URP)~~ | ✅ Конвертированы в URP Lit/Unlit |
+| ~~CloudGhibli.shader не компилировался~~ | ✅ URP пакет установлен, Pipeline Asset назначен |
 
 ---
 
@@ -515,6 +528,12 @@ ProjectC_client/
 | `WorldGenerator.cs` | Процедурная генерация: 15 пиков, 890+ облаков |
 | `PlayerController.cs` | Пеший контроллер (WASD, бег, прыжок) |
 | `ControlHintsUI.cs` | Подсказки клавиш на экране |
+| `CloudGhibli.shader` | Кастомный шейдер облаков (URP Unlit + noise + rim glow) |
+| `ProceduralNoiseGenerator.cs` | Генерация FBM noise-текстур для облаков |
+| `MaterialURPConverter.cs` | Авто-конвертация материалов при запуске |
+| `MaterialURPUpgrader.cs` | Editor-скрипт массовой конвертации Standard → URP |
+| `CloudLayer.cs` | Обновлён: авто-интеграция CloudGhibli шейдера |
+| `WorldGenerator.cs` | Обновлён: URP/Lit + URP/Unlit материалы |
 
 ---
 
@@ -612,6 +631,43 @@ git status && git log --oneline -3
 **Последнее обновление:** 5 апреля 2026 г.
 **Версия:** `v0.0.12-stage2-complete`
 **Автор документа:** Qwen Code (Game Studio)
+
+---
+
+## 📝 ИТОГИ СЕССИИ (6 апреля 2026)
+
+### Что было сделано:
+1. ✅ **URP Pipeline** — установлен пакет 17.4.0, Pipeline Asset создан и назначен
+2. ✅ **CloudGhibli.shader** — кастомный URP Unlit шейдер (noise + rim glow + morph)
+3. ✅ **ProceduralNoiseGenerator** — FBM noise текстуры 512×512
+4. ✅ **MaterialURPConverter** — авто-конвертация при запуске
+5. ✅ **MaterialURPUpgrader** — Editor-скрипт массовой конвертации
+6. ✅ **WorldGenerator.cs** — Standard → URP/Lit + URP/Unlit
+7. ✅ **docs/ART_BIBLE.md** — полная визуальная спецификация (12 секций)
+8. ✅ **docs/unity6/UNITY6_URP_SETUP.md** — справочник по URP в Unity 6
+9. ✅ **docs/MMO_Development_Plan.md** — добавлен Этап 2.5: Визуальный прототип
+10. ✅ **docs/CHANGELOG.md** — добавлена v0.0.13-urp-setup
+11. ✅ **Исправлены ошибки** — CS0618, CS0246, розовые материалы
+
+### Что НЕ было сделано (отложено на Этап 2.5):
+- ❌ Модель корабля (замена примитива на FBX)
+- ❌ Модель персонажа (Mixamo вместо capsule)
+- ❌ Текстуры горных пиков (Poly Haven)
+- ❌ Постройки на пиках (префабы зданий)
+- ❌ Post-Processing (Bloom, Color Grading, Vignette)
+
+### Что работает:
+- URP Pipeline активен (ProjectC_URP)
+- CloudGhibli.shader компилируется
+- Облака рендерятся через URP Unlit
+- Пики и персонаж через URP Lit
+- Все материалы конвертированы
+
+### Следующий шаг:
+**Этап 2.5: Визуальный прототип** — модель лёгкого корабля в Blender
+- Торообразная форма, 5-8k tri, ветровые лопасти
+- Интеграция в ShipController (замена примитива)
+- См. docs/ART_BIBLE.md раздел 4.1
 
 ---
 

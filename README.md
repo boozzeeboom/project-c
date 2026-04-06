@@ -11,6 +11,31 @@
 
 Вся документация проекта находится в папке [`docs/`](docs/):
 
+### 📋 Game Design Documents (GDD)
+
+Полная спецификация всех игровых систем в папке [`docs/gdd/`](docs/gdd/):
+
+| # | Документ | Описание |
+|---|----------|----------|
+| 00 | [GDD_00: Game Overview](docs/gdd/GDD_00_Overview.md) | Концепция, пиллары, USP, целевая аудитория |
+| 01 | [GDD_01: Core Gameplay](docs/gdd/GDD_01_Core_Gameplay.md) | Core Loop, управление, физика, режимы |
+| 02 | [GDD_02: World & Environment](docs/gdd/GDD_02_World_Environment.md) | Мир, 15 пиков, 4 города, Завеса, погода |
+| 10 | [GDD_10: Ship System](docs/gdd/GDD_10_Ship_System.md) | 4 класса кораблей, физика, кооп-пилотирование |
+| 11 | [GDD_11: Inventory & Items](docs/gdd/GDD_11_Inventory_Items.md) | 8 типов, круговое колесо, LootTable, сундуки |
+| 12 | [GDD_12: Network & Multiplayer](docs/gdd/GDD_12_Network_Multiplayer.md) | NGO, RPC, реконнект, Dedicated Server |
+| 13 | [GDD_13: UI/UX System](docs/gdd/GDD_13_UI_UX_System.md) | HUD, Ghibli стиль, адаптивность, доступность |
+| 14 | [GDD_14: Visual & Art Pipeline](docs/gdd/GDD_14_Visual_Art_Pipeline.md) | URP, CloudGhibli, шейдеры, постобработка |
+| 15 | [GDD_15: Audio System](docs/gdd/GDD_15_Audio_System.md) | AudioMixer, SFX, музыка, 3D звук |
+| 20 | [GDD_20: Progression & RPG](docs/gdd/GDD_20_Progression_RPG.md) | XP, уровни 1-50, деревья навыков |
+| 21 | [GDD_21: Quest & Mission System](docs/gdd/GDD_21_Quest_Mission_System.md) | 5 типов квестов, цепочки гильдий |
+| 22 | [GDD_22: Economy & Trading](docs/gdd/GDD_22_Economy_Trading.md) | Кредиты, ресурсы, спрос/предложение |
+| 23 | [GDD_23: Faction & Reputation](docs/gdd/GDD_23_Faction_Reputation.md) | 5 Гильдий, подполье, СОЛ, репутация |
+| 24 | [GDD_24: Narrative & World Lore](docs/gdd/GDD_24_Narrative_World_Lore.md) | Хронология, глоссарий, сюжетные арки |
+
+**Полный каталог GDD:** [`docs/gdd/GDD_INDEX.md`](docs/gdd/GDD_INDEX.md)
+
+### 📚 Техническая документация
+
 | Файл | Описание |
 |------|----------|
 | [`docs/WORLD_LORE_BOOK.md`](docs/WORLD_LORE_BOOK.md) | **Полный лор книги** — мир, технологии, гильдии, персонажи, сюжет |
@@ -19,6 +44,7 @@
 | [`docs/STEP_BY_STEP_DEVELOPMENT.md`](docs/STEP_BY_STEP_DEVELOPMENT.md) | **Пошаговая разработка** |
 | [`docs/CONTROLS.md`](docs/CONTROLS.md) | Документация по управлению |
 | [`docs/SHIP_SYSTEM_DOCUMENTATION.md`](docs/SHIP_SYSTEM_DOCUMENTATION.md) | Система кораблей (текущая реализация) |
+| [`docs/ART_BIBLE.md`](docs/ART_BIBLE.md) | Визуальная спецификация |
 | [`docs/GIT_WORKFLOW.md`](docs/GIT_WORKFLOW.md) | Шпаргалка Git команд |
 | [`docs/GIT_WORKFLOW_ADVANCED.md`](docs/GIT_WORKFLOW_ADVANCED.md) | Продвинутый Git workflow |
 | [`docs/QUICK_GIT_COMMANDS.md`](docs/QUICK_GIT_COMMANDS.md) | Быстрые команды Git |

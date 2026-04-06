@@ -355,4 +355,49 @@
 
 ---
 
+## 📋 Game Design Documents (GDD)
+
+Полная спецификация всех игровых систем разработана в формате GDD:
+
+### Core — Фундаментальные документы
+| Документ | Описание |
+|----------|----------|
+| [GDD_00: Game Overview](gdd/GDD_00_Overview.md) | Концепция, пиллары, USP, целевая аудитория |
+| [GDD_01: Core Gameplay](gdd/GDD_01_Core_Gameplay.md) | Core Loop, управление, физика, режимы |
+| [GDD_02: World & Environment](gdd/GDD_02_World_Environment.md) | Мир, 15 пиков, 4 города, Завеса, погода |
+
+### Systems — Технические системы
+| Документ | Описание |
+|----------|----------|
+| [GDD_10: Ship System](gdd/GDD_10_Ship_System.md) | 4 класса кораблей, физика, кооп-пилотирование |
+| [GDD_11: Inventory & Items](gdd/GDD_11_Inventory_Items.md) | 8 типов, круговое колесо, LootTable, сундуки |
+| [GDD_12: Network & Multiplayer](gdd/GDD_12_Network_Multiplayer.md) | NGO, RPC, реконнект, Dedicated Server |
+| [GDD_13: UI/UX System](gdd/GDD_13_UI_UX_System.md) | HUD, Ghibli стиль, адаптивность |
+| [GDD_14: Visual & Art Pipeline](gdd/GDD_14_Visual_Art_Pipeline.md) | URP, CloudGhibli, шейдеры, постобработка |
+| [GDD_15: Audio System](gdd/GDD_15_Audio_System.md) | AudioMixer, SFX, музыка, 3D звук |
+
+### Content — Контентные системы
+| Документ | Описание |
+|----------|----------|
+| [GDD_20: Progression & RPG](gdd/GDD_20_Progression_RPG.md) | XP, уровни 1-50, деревья навыков |
+| [GDD_21: Quest & Mission System](gdd/GDD_21_Quest_Mission_System.md) | 5 типов квестов, цепочки гильдий |
+| [GDD_22: Economy & Trading](gdd/GDD_22_Economy_Trading.md) | Кредиты, ресурсы, спрос/предложение |
+| [GDD_23: Faction & Reputation](gdd/GDD_23_Faction_Reputation.md) | 5 Гильдий, подполье, СОЛ, репутация |
+| [GDD_24: Narrative & World Lore](gdd/GDD_24_Narrative_World_Lore.md) | Хронология, глоссарий, сюжетные арки |
+
+**Полный каталог:** [`docs/gdd/GDD_INDEX.md`](gdd/GDD_INDEX.md)
+
+### Связь GDD с этапами разработки
+
+| Этап | Связанные GDD |
+|------|--------------|
+| Этап 1 (Прототип ядра) | GDD_01, GDD_10, GDD_11 |
+| Этап 2 (Сетевой фундамент) | GDD_12, GDD_13 |
+| Этап 2.5 (Визуальный прототип) | GDD_02, GDD_14, GDD_15 |
+| Этап 3 (RPG система) | GDD_20, GDD_22 |
+| Этап 4 (Контент и полировка) | GDD_21, GDD_23, GDD_24 |
+| Этап 5+ (Масштабирование) | GDD_12 (Future Architecture) |
+
+---
+
 *Примечание: План ориентировочный. Длительность этапов может меняться в зависимости от размера команды, фидбека и технических сложностей. Рекомендуется использовать спринты по 2 недели с демонстрацией результатов.*

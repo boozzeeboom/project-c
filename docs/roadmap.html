@@ -339,8 +339,8 @@
     background: var(--surface);
     border: 1px solid var(--border);
     border-radius: var(--radius);
-    padding: 28px 28px 24px;
     margin-bottom: 32px;
+    overflow: hidden;
     opacity: 0;
     transform: translateY(30px);
     transition: opacity .6s ease, transform .6s ease;
@@ -349,67 +349,110 @@
     opacity: 1;
     transform: translateY(0);
   }
-  .md-content h2 {
+
+  /* Collapsible header */
+  .md-content__toggle {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    cursor: pointer;
+    padding: 20px 28px;
+    user-select: none;
+    transition: background .2s ease;
+  }
+  .md-content__toggle:hover {
+    background: rgba(255,255,255,.02);
+  }
+  .md-content__toggle h2 {
+    font-size: 1.25rem;
+    font-weight: 700;
+    color: #fff;
+    margin: 0;
+  }
+  .md-content__arrow {
+    width: 20px;
+    height: 20px;
+    fill: var(--text-dim);
+    transition: transform .3s ease;
+    flex-shrink: 0;
+    margin-left: 16px;
+  }
+  .md-content--open .md-content__arrow {
+    transform: rotate(180deg);
+  }
+
+  /* Collapsible body */
+  .md-content__body {
+    max-height: 0;
+    overflow: hidden;
+    transition: max-height .4s ease, padding .4s ease;
+    padding: 0 28px;
+  }
+  .md-content--open .md-content__body {
+    max-height: 2000px;
+    padding: 0 28px 24px;
+  }
+  .md-content__body h2 {
     font-size: 1.25rem;
     font-weight: 700;
     color: #fff;
     margin-bottom: 16px;
   }
-  .md-content h3 {
+  .md-content__body h3 {
     font-size: 1.05rem;
     font-weight: 600;
     color: var(--accent);
     margin-top: 18px;
     margin-bottom: 8px;
   }
-  .md-content p {
+  .md-content__body p {
     font-size: .92rem;
     color: var(--text-dim);
     margin-bottom: 12px;
     line-height: 1.6;
   }
-  .md-content p strong {
+  .md-content__body p strong {
     color: var(--text);
   }
-  .md-content ul {
+  .md-content__body ul {
     list-style: none;
     display: flex;
     flex-direction: column;
     gap: 6px;
     margin-bottom: 12px;
   }
-  .md-content ul li {
+  .md-content__body ul li {
     font-size: .9rem;
     color: var(--text);
     line-height: 1.5;
     padding-left: 16px;
     position: relative;
   }
-  .md-content ul li::before {
+  .md-content__body ul li::before {
     content: '•';
     position: absolute;
     left: 0;
     color: var(--accent);
     font-weight: 700;
   }
-  .md-content ul li ul {
+  .md-content__body ul li ul {
     margin-top: 4px;
     margin-left: 0;
   }
-  .md-content ul li ul li {
+  .md-content__body ul li ul li {
     font-size: .84rem;
     color: var(--text-dim);
   }
-  .md-content ul li ul li::before {
+  .md-content__body ul li ul li::before {
     content: '›';
     color: var(--text-dim);
   }
-  .md-content em {
+  .md-content__body em {
     font-style: italic;
     color: var(--text-dim);
     font-size: .85rem;
   }
-  .md-content blockquote {
+  .md-content__body blockquote {
     border-left: 3px solid var(--accent);
     padding-left: 16px;
     margin: 12px 0;
@@ -417,7 +460,7 @@
     font-size: .9rem;
     font-style: italic;
   }
-  .md-content code {
+  .md-content__body code {
     font-family: 'Fira Code', 'Consolas', monospace;
     background: rgba(56, 189, 248, .08);
     color: var(--accent2);
@@ -425,7 +468,7 @@
     border-radius: 4px;
     font-size: .84rem;
   }
-  .md-content hr {
+  .md-content__body hr {
     border: none;
     height: 1px;
     background: var(--border);
@@ -916,14 +959,38 @@
       timelineEl.appendChild(card);
     });
 
-    /* -- Extra content (risks, tools, etc.) using marked.js for rendering -- */
+    /* -- Extra content (risks, tools, etc.) — split by H2 and make collapsible -- */
     const extraMd = extraLines.join('\n').trim();
     if (extraMd) {
-      const extraDiv = document.createElement('div');
-      extraDiv.className = 'md-content';
-      extraDiv.dataset.delay = (sections.length + 1) * 100;
-      extraDiv.innerHTML = marked.parse(extraMd);
-      extraContentEl.appendChild(extraDiv);
+      const extraSections = extraMd.split(/^##\s+(.+)$/gm).slice(1); // [title, content, title, content, ...]
+      for (let i = 0; i < extraSections.length; i += 2) {
+        const title = extraSections[i]?.trim();
+        const content = extraSections[i + 1]?.trim();
+        if (!title) continue;
+
+        const extraDiv = document.createElement('div');
+        extraDiv.className = 'md-content';
+        extraDiv.dataset.delay = (sections.length + 1 + i / 2) * 100;
+
+        const arrowSvg = `<svg class="md-content__arrow" viewBox="0 0 24 24"><path d="M7 10l5 5 5-5z"/></svg>`;
+
+        extraDiv.innerHTML = `
+          <div class="md-content__toggle">
+            <h2>${escHtml(title)}</h2>
+            ${arrowSvg}
+          </div>
+          <div class="md-content__body">
+            ${marked.parse(content || '')}
+          </div>
+        `;
+
+        // Toggle click handler
+        extraDiv.querySelector('.md-content__toggle').addEventListener('click', () => {
+          extraDiv.classList.toggle('md-content--open');
+        });
+
+        extraContentEl.appendChild(extraDiv);
+      }
     }
 
     /* -- Init scroll animations -- */

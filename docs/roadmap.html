@@ -818,6 +818,7 @@
   /* ===== GITHUB COMMITS FETCH ===== */
   const commitsContainer = document.getElementById('commits-container');
   const REPO_URL = 'https://api.github.com/repos/boozzeeboom/project-c/commits?per_page=3';
+  const REPO_URL_NOCACHE = () => `${REPO_URL}&_=${Date.now()}`;
 
   function timeAgo(dateStr) {
     const now = new Date();
@@ -841,7 +842,7 @@
     return 'только что';
   }
 
-  fetch(REPO_URL)
+  fetch(REPO_URL_NOCACHE(), { cache: 'no-store' })
     .then(res => {
       if (!res.ok) throw new Error(`HTTP ${res.status}`);
       return res.json();

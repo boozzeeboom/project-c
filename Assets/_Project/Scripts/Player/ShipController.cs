@@ -35,6 +35,10 @@ namespace ProjectC.Player
         [SerializeField] private float stabilizationForce = 50f;
         [SerializeField] private bool autoStabilize = true;
 
+        [Header("Cargo (Сессия 2)")]
+        [Tooltip("Система груза корабля (влияет на скорость)")]
+        [SerializeField] private ProjectC.Player.CargoSystem cargoSystem;
+
         // Rigidbody
         private Rigidbody _rb;
 
@@ -109,8 +113,16 @@ namespace ProjectC.Player
         private void ApplyThrust(float input, bool boost)
         {
             if (Mathf.Abs(input) < 0.01f) return;
+            
+            // Применяем штраф скорости от груза (Сессия 2)
+            float cargoPenalty = 1.0f;
+            if (cargoSystem != null)
+            {
+                cargoPenalty = cargoSystem.GetSpeedPenalty();
+            }
+            
             float currentThrust = boost ? thrustForce * 2f : thrustForce;
-            _rb.AddForce(transform.forward * input * currentThrust, ForceMode.Force);
+            _rb.AddForce(transform.forward * input * currentThrust * cargoPenalty, ForceMode.Force);
         }
 
         private void ApplyAntiGravity()

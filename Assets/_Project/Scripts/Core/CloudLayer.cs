@@ -69,6 +69,9 @@ namespace ProjectC.Core
                 return;
             }
 
+            // Попробовать использовать CloudGhibli шейдер
+            TrySetupGhibliShader();
+
             // Расчёт количества облаков
             int count = CalculateCloudCount();
 
@@ -79,6 +82,51 @@ namespace ProjectC.Core
             }
 
             cloudCount = clouds.Count;
+        }
+
+        /// <summary>
+        /// Попытка назначить CloudGhibli шейдер на материал конфига
+        /// </summary>
+        private void TrySetupGhibliShader()
+        {
+            if (config.cloudMaterial != null)
+            {
+                // Проверяем, используется ли старый Standard шейдер
+                if (config.cloudMaterial.shader.name == "Standard" ||
+                    config.cloudMaterial.shader.name.Contains("Universal Render Pipeline/Unlit"))
+                {
+                    // Пробуем найти CloudGhibli
+                    Shader ghibliShader = Shader.Find("ProjectC/CloudGhibli");
+                    if (ghibliShader != null)
+                    {
+                        // Создаём новый материал с CloudGhibli
+                        Material ghibliMat = new Material(ghibliShader);
+
+                        // Копируем базовый цвет из старого материала
+                        Color baseColor = config.cloudMaterial.color;
+                        ghibliMat.SetColor("_BaseColor", new Color(baseColor.r, baseColor.g, baseColor.b, 0.4f));
+
+                        // Настраиваем rim glow (Ghibli signature)
+                        ghibliMat.SetColor("_RimColor", new Color(1f, 0.85f, 0.6f, 0.6f));
+                        ghibliMat.SetFloat("_RimPower", 2.0f);
+                        ghibliMat.SetFloat("_AlphaBase", 0.4f);
+                        ghibliMat.SetFloat("_Softness", 0.3f);
+                        ghibliMat.SetFloat("_VertexDisplacement", 3.0f);
+
+                        // Назначаем noise-текстуры
+                        ghibliMat.SetTexture("_NoiseTex", ProceduralNoiseGenerator.GetNoiseTexture1());
+                        ghibliMat.SetTexture("_NoiseTex2", ProceduralNoiseGenerator.GetNoiseTexture2());
+                        ghibliMat.SetFloat("_NoiseScale", 1.0f);
+
+                        config.cloudMaterial = ghibliMat;
+                        Debug.Log($"[CloudLayer] Используется CloudGhibli шейдер для {gameObject.name}");
+                    }
+                    else
+                    {
+                        Debug.LogWarning("[CloudLayer] CloudGhibli шейдер не найден, используется fallback материал.");
+                    }
+                }
+            }
         }
 
         /// <summary>

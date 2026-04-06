@@ -280,13 +280,19 @@ namespace ProjectC.Core
         }
 
         /// <summary>
-        /// Создать материал для пика по умолчанию
+        /// Создать материал для пика по умолчанию (URP-совместимый)
         /// </summary>
         private Material CreateDefaultPeakMaterial()
         {
-            Material mat = new Material(Shader.Find("Standard"));
-            mat.color = new Color(0.4f, 0.35f, 0.3f, 1f); // Коричнево-серый (скалы)
-            mat.SetFloat("_Glossiness", 0.1f);
+            Shader shader = Shader.Find("Universal Render Pipeline/Lit");
+            if (shader == null)
+            {
+                Debug.LogError("[WorldGenerator] Не удалось найти URP/Lit шейдер! Проверьте установку URP.");
+                shader = Shader.Find("Standard"); // Fallback
+            }
+            Material mat = new Material(shader);
+            mat.SetColor("_BaseColor", new Color(0.4f, 0.35f, 0.3f, 1f)); // Коричнево-серый (скалы)
+            mat.SetFloat("_Smoothness", 0.1f);
             mat.SetFloat("_Metallic", 0.2f);
             return mat;
         }
@@ -368,20 +374,24 @@ namespace ProjectC.Core
         }
 
         /// <summary>
-        /// Создать материал для облака по умолчанию
+        /// Создать материал для облака по умолчанию (URP-совместимый)
         /// </summary>
         private Material CreateDefaultCloudMaterial()
         {
-            Material mat = new Material(Shader.Find("Standard"));
-            mat.color = new Color(1f, 1f, 1f, 0.4f); // Белый полупрозрачный
-            mat.SetFloat("_Mode", 3); // Transparent
+            Shader shader = Shader.Find("Universal Render Pipeline/Unlit");
+            if (shader == null)
+            {
+                Debug.LogError("[WorldGenerator] Не удалось найти URP/Unlit шейдер! Проверьте установку URP.");
+                shader = Shader.Find("Standard"); // Fallback
+            }
+            Material mat = new Material(shader);
+            mat.SetColor("_BaseColor", new Color(1f, 1f, 1f, 0.4f)); // Белый полупрозрачный
+            mat.SetInt("_Surface", 1); // Transparent
             mat.SetInt("_SrcBlend", (int)UnityEngine.Rendering.BlendMode.SrcAlpha);
             mat.SetInt("_DstBlend", (int)UnityEngine.Rendering.BlendMode.OneMinusSrcAlpha);
             mat.SetInt("_ZWrite", 0);
-            mat.DisableKeyword("_ALPHATEST_ON");
-            mat.EnableKeyword("_ALPHABLEND_ON");
             mat.renderQueue = 3000;
-            mat.SetFloat("_Glossiness", 0.0f);
+            mat.SetFloat("_Smoothness", 0.0f);
             return mat;
         }
 

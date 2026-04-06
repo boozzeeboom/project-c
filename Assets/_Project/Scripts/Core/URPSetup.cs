@@ -1,54 +1,84 @@
 using UnityEngine;
 #if UNITY_EDITOR
 using UnityEditor;
+using UnityEditor.Rendering.Universal;
 #endif
 
 namespace ProjectC.Core
 {
     /// <summary>
-    /// Автоматически настраивает URP при первом запуске в редакторе.
-    /// Меню: ProjectC → Setup URP Pipeline
+    /// Помощник для настройки URP через встроенный конвертер Unity.
+    /// Меню: ProjectC → Convert to URP (uses Unity's built-in wizard)
     /// </summary>
 #if UNITY_EDITOR
-    public static class URPSetupEditor
+    public static class URPSetupHelper
     {
-        [MenuItem("ProjectC/Setup URP Pipeline")]
-        public static void SetupURP()
+        [MenuItem("ProjectC/Convert to URP (Recommended)")]
+        public static void ConvertToURP()
         {
-            // Находим Pipeline Asset
-            string assetPath = "Assets/_Project/Settings/URP_PipelineAsset.asset";
-            var pipelineAsset = AssetDatabase.LoadAssetAtPath<UnityEngine.Rendering.RenderPipelineAsset>(assetPath);
-
-            if (pipelineAsset == null)
+            // Используем встроенный конвертер Unity — он сам создаст все ассеты
+            Debug.Log("[URPSetup] Запускаю встроенный конвертер Unity...");
+            Debug.Log("[URPSetup] Откроется окно 'Universal RP Conversion' — нажмите 'Yes' или 'Convert'");
+            
+            // Вызываем встроенный конвертер
+            var pipeline = UnityEngine.Rendering.GraphicsSettings.defaultRenderPipeline;
+            if (pipeline != null)
             {
-                Debug.LogError($"[URPSetup] Не удалось найти {assetPath}. " +
-                    "Убедитесь что URP пакет установлен (Packages/manifest.json).");
+                Debug.Log($"[URPSetup] URP уже настроен: {pipeline.name}");
                 return;
             }
 
-            // Устанавливаем URP как активный рендер-пайплайн
-            GraphicsSettings.defaultRenderPipeline = pipelineAsset;
-
-            // Сохраняем настройки
-            EditorUtility.SetDirty(pipelineAsset);
-            AssetDatabase.SaveAssets();
-
-            Debug.Log("[URPSetup] ✅ URP Pipeline установлен успешно!");
-            Debug.Log("[URPSetup] Перезапустите Play Mode если материалы отображаются некорректно.");
+            // Открываем Package Manager для установки URP через Wizard
+            EditorApplication.ExecuteMenuItem("Window/Package Manager");
+            
+            Debug.Log("[URPSetup] Инструкция:");
+            Debug.Log("1. В Package Manager найдите 'Universal RP'");
+            Debug.Log("2. Нажмите Install");
+            Debug.Log("3. После установки появится окно 'Convert to URP'");
+            Debug.Log("4. Нажмите 'Yes, convert' — Unity сам создаст Pipeline Asset и Renderer");
+            Debug.Log("5. Перезапустите Play Mode");
         }
 
         [MenuItem("ProjectC/Check URP Status")]
         public static void CheckURPStatus()
         {
-            var currentPipeline = GraphicsSettings.defaultRenderPipeline;
+            var currentPipeline = UnityEngine.Rendering.GraphicsSettings.defaultRenderPipeline;
             if (currentPipeline != null)
             {
-                Debug.Log($"[URPSetup] ✅ Текущий рендер-пайплайн: {currentPipeline.name}");
+                Debug.Log($"[URPSetup] ✅ URP активен: {currentPipeline.name}");
+                Debug.Log($"[URPSetup] Pipeline Asset: {AssetDatabase.GetAssetPath(currentPipeline)}");
             }
             else
             {
-                Debug.LogWarning("[URPSetup] ❌ Рендер-пайплайн НЕ настроен! " +
-                    "Запустите: ProjectC → Setup URP Pipeline");
+                Debug.LogWarning("[URPSetup] ❌ URP НЕ активен!");
+                Debug.Log("[URPSetup] Запустите: ProjectC → Convert to URP");
+            }
+        }
+
+        [MenuItem("ProjectC/Apply URP Pipeline Asset Manually")]
+        public static void ApplyURPManually()
+        {
+            // Ищем любой UniversalRenderPipelineAsset в проекте
+            string[] guids = AssetDatabase.FindAssets("t:UniversalRenderPipelineAsset");
+            
+            if (guids.Length == 0)
+            {
+                Debug.LogError("[URPSetup] URP Pipeline Asset не найден! " +
+                    "Сначала установите URP через ProjectC → Convert to URP");
+                return;
+            }
+
+            string path = AssetDatabase.GUIDToAssetPath(guids[0]);
+            var pipeline = AssetDatabase.LoadAssetAtPath<UniversalRenderPipelineAsset>(path);
+            
+            if (pipeline != null)
+            {
+                UnityEngine.Rendering.GraphicsSettings.defaultRenderPipeline = pipeline;
+                UnityEngine.Rendering.GraphicsSettings.renderPipelineAsset = pipeline;
+                EditorUtility.SetDirty(pipeline);
+                AssetDatabase.SaveAssets();
+                
+                Debug.Log($"[URPSetup] ✅ Применён Pipeline Asset: {path}");
             }
         }
     }

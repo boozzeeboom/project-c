@@ -1,0 +1,17 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 63cc6a0332013314eab5fa8f1bc26f89, type: 3}
+  m_Name: TradeItemDatabase
+  m_EditorClassIdentifier: Assembly-CSharp::ProjectC.Trade.TradeDatabase
+  allItems:
+  - {fileID: 11400000, guid: ed66825e934a87a43b520aee290591a8, type: 2}
+  - {fileID: 11400000, guid: a42e66c79c7d213499b91953538249f3, type: 2}

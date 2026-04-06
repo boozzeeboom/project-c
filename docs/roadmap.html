@@ -749,210 +749,189 @@
     });
 
   function parseAndRender(md) {
-    /* -- Extract version info from first paragraph -- */
-    const firstP = md.match(/\*\*Последнее обновление:\*\*(.+?)\|/);
-    if (firstP) {
-      const info = firstP[1].trim();
-      const versionMatch = md.match(/`([^`]+)`/);
-      const ver = versionMatch ? versionMatch[1] : '';
-      badgeEl.textContent = `Pre-Alpha · ${ver}`.trim();
-      subEl.textContent = `Мир над облаками. MMO/Co-Op авиасимулятор по книге «Интеграл Пьявица». Обновлено: ${info.replace(/\*\*/g, '')}`;
+    /* -- Extract version info -- */
+    const versionMatch = md.match(/\*\*Текущая версия:\*\*\s*`([^`]+)`/);
+    const dateMatch = md.match(/\*\*Последнее обновление:\*\*\s*(.+?)\s*\|/);
+    if (versionMatch) {
+      badgeEl.textContent = `Pre-Alpha · ${versionMatch[1]}`;
+    }
+    if (dateMatch) {
+      subEl.textContent = `Мир над облаками. MMO/Co-Op авиасимулятор по книге «Интеграл Пьявица». Обновлено: ${dateMatch[1].trim()}`;
+    }
+    const footerVersion = md.match(/\*\*Версия:\*\*\s*`([^`]+)`/);
+    if (footerVersion) {
+      footerTextEl.textContent = `Открытая разработка · Все коммиты на GitHub · ${footerVersion[1]}`;
     }
 
-    /* -- Parse the markdown into HTML via marked.js -- */
-    const rawHtml = marked.parse(md);
-    const tempDiv = document.createElement('div');
-    tempDiv.innerHTML = rawHtml;
+    /* -- Split by H2 sections -- */
+    const lines = md.split('\n');
+    const sections = [];
+    let currentSection = null;
+    let extraLines = []; // lines before first H2
+    let beforeFirstH2 = true;
 
-    /* -- Walk the parsed HTML and build timeline cards from H2 sections -- */
-    const allElements = Array.from(tempDiv.children);
-    let phases = [];
-    let extraSections = [];
-    let currentPhase = null;
-
-    for (const el of allElements) {
-      if (el.tagName === 'H2') {
-        if (currentPhase) phases.push(currentPhase);
-        currentPhase = { type: 'phase', title: el.textContent, elements: [] };
-      } else if (el.tagName === 'HR') {
-        // skip hr
-      } else if (currentPhase) {
-        currentPhase.elements.push(el.outerHTML);
-      } else {
-        extraSections.push(el.outerHTML);
+    for (const line of lines) {
+      if (line.startsWith('## ')) {
+        beforeFirstH2 = false;
+        currentSection = { title: line.replace('## ', '').trim(), lines: [] };
+        sections.push(currentSection);
+      } else if (currentSection) {
+        currentSection.lines.push(line);
+      } else if (!beforeFirstH2) {
+        extraLines.push(line);
       }
     }
-    if (currentPhase) phases.push(currentPhase);
 
-    /* -- Determine phase status from emoji / text in title -- */
-    function getStatus(title) {
-      if (title.includes('✅')) return 'done';
-      if (title.includes('🔄')) return 'active';
-      return 'future';
-    }
+    /* -- Process each H2 section as a phase card -- */
+    sections.forEach((section, idx) => {
+      const titleText = section.title;
+      const hasCheck = titleText.includes('✅');
+      const hasSpinner = titleText.includes('🔄');
 
-    function cleanTitle(title) {
-      return title.replace(/✅|🔄|⏳/g, '').trim();
-    }
+      let status = 'future';
+      let statusLabel = 'Планируется';
+      if (hasCheck) { status = 'done'; statusLabel = 'Готово'; }
+      else if (hasSpinner) { status = 'active'; statusLabel = 'В процессе'; }
 
-    /* -- Build timeline cards -- */
-    phases.forEach((phase, idx) => {
-      const status = getStatus(phase.title);
-      const title = cleanTitle(phase.title);
+      // Clean title
+      let cleanTitle = titleText.replace(/✅|🔄|⏳/g, '').trim();
+      // Extract tag (e.g. "Этап 0: Подготовка окружения" → tag="Этап 0", title="Подготовка окружения")
+      const colonIdx = cleanTitle.indexOf(':');
+      let tag = '';
+      let displayTitle = cleanTitle;
+      if (colonIdx > 0) {
+        tag = cleanTitle.substring(0, colonIdx).trim();
+        displayTitle = cleanTitle.substring(colonIdx + 1).trim();
+      } else {
+        // Try parenthetical like "Этап 2: Сетевой фундамент (Недели 7-10)"
+        const parenMatch = cleanTitle.match(/^(.+?)\s*\((.+?)\)/);
+        if (parenMatch) {
+          tag = parenMatch[1].trim();
+          displayTitle = parenMatch[2].trim();
+        }
+      }
 
-      // Extract tag (first bold text or part before newline)
-      const tagMatch = title.match(/^(.+?)[:\s(]/);
-      const tag = tagMatch ? tagMatch[1].trim() : title;
-      // Remove tag prefix from title
-      const cleanTitleText = title.replace(tag, '').replace(/^[:\s]+/, '').trim() || tag;
+      // Parse tasks from section text
+      const sectionText = section.lines.join('\n');
+      const allTasks = [];
+
+      // 1) Checkbox tasks (any indent): - [ ] or - [x]
+      const checkboxRe = /^(\s*)-\s*\[([ x])\]\s*(.+)$/gm;
+      let m;
+      while ((m = checkboxRe.exec(sectionText)) !== null) {
+        const indent = m[1].length;
+        const text = m[3].trim();
+        const done = m[2] === 'x';
+        allTasks.push({ text, done, indent });
+      }
+
+      // 2) Top-level bullet tasks (no leading spaces): "- ✅ текст" or "- ⏳ текст" or "- текст"
+      const bulletRe = /^[-*]\s+(.+)$/gm;
+      while ((m = bulletRe.exec(sectionText)) !== null) {
+        const raw = m[1].trim();
+        if (raw.startsWith('[')) continue;
+        if (/^(Результат:|Версия:|⏳\s*Отложено)/.test(raw)) continue;
+
+        const isDone = raw.startsWith('✅');
+        const isFuture = raw.startsWith('⏳');
+        const cleanText = raw.replace(/^(✅|⏳)\s*/, '').trim();
+        if (!cleanText) continue;
+        // Skip category headers
+        if (/\*\*.*\*\*\s*:/.test(raw) && raw.split(':').length <= 2 && !raw.includes('—') && !raw.includes('(')) continue;
+
+        allTasks.push({ text: cleanText, done: isDone && !isFuture, indent: 0 });
+      }
+
+      // 3) Sub-item bullet tasks (indented 2+ spaces): "  - ✅ текст"
+      const subBulletRe = /^(\s{2,})[-*]\s+(.+)$/gm;
+      while ((m = subBulletRe.exec(sectionText)) !== null) {
+        const raw = m[2].trim();
+        if (raw.startsWith('[')) continue;
+        if (/^(Результат:|Версия:)/.test(raw)) continue;
+
+        const isDone = raw.startsWith('✅');
+        const isFuture = raw.startsWith('⏳');
+        const cleanText = raw.replace(/^(✅|⏳)\s*/, '').trim();
+        if (!cleanText) continue;
+
+        allTasks.push({ text: cleanText, done: isDone && !isFuture, indent: m[1].length });
+      }
+
+      // Count: prefer sub-items if they exist, otherwise top-level bullets
+      const subTasks = allTasks.filter(t => t.indent >= 2);
+      const topBullets = allTasks.filter(t => t.indent === 0 && !t.text.match(/^\d+\.\s*\*\*/));
+
+      let totalTasks, doneTasks;
+
+      if (subTasks.length > 0) {
+        // Section has numbered lists with sub-items — count sub-items
+        totalTasks = subTasks.length;
+        doneTasks = subTasks.filter(t => t.done).length;
+      } else {
+        // Flat list — count top-level bullets
+        totalTasks = topBullets.length;
+        doneTasks = topBullets.filter(t => t.done).length;
+      }
+
+      if (totalTasks === 0 && status === 'done') {
+        totalTasks = 1;
+        doneTasks = 1;
+      }
+
+      const pct = totalTasks > 0 ? Math.round((doneTasks / totalTasks) * 100) : 0;
+
+      // Build task HTML — use the same tasks we counted
+      let tasksHtml = '';
+      const displayTasks = subTasks.length > 0 ? subTasks : topBullets;
+
+      if (displayTasks.length > 0) {
+        tasksHtml = '<ul class="phase__tasks">';
+        displayTasks.forEach(t => {
+          tasksHtml += `<li class="${t.done ? 'task--done' : ''}">${escHtml(t.text)}</li>`;
+        });
+        tasksHtml += '</ul>';
+      }
+
+      // Goal: first bold paragraph
+      const goalMatch = sectionText.match(/\*\*Цель:\*\*\s*(.+)/);
+      const goalHtml = goalMatch ? `<div class="phase__goal">${escHtml(goalMatch[1].replace(/\*\*/g, ''))}</div>` : '';
 
       const card = document.createElement('div');
       card.className = `phase phase--${status}`;
       card.dataset.delay = idx * 100;
-
-      // Build content from elements
-      let goalHtml = '';
-      let tasksHtml = '';
-      let totalTasks = 0;
-      let doneTasks = 0;
-
-      for (const html of phase.elements) {
-        const tmp = document.createElement('div');
-        tmp.innerHTML = html;
-        const inner = tmp.firstElementChild;
-        if (!inner) continue;
-
-        if (inner.tagName === 'P' && !goalHtml) {
-          goalHtml = html;
-        } else if (inner.tagName === 'UL') {
-          // Parse list items
-          const lis = inner.querySelectorAll('li');
-          const taskList = [];
-
-          lis.forEach(li => {
-            const text = li.textContent.trim();
-            // Skip "Результат:" lines
-            if (text.startsWith('Результат:')) return;
-            // Skip version lines
-            if (text.startsWith('**Версия:**')) return;
-            // Skip section headers inside lists
-            if (text.startsWith('###') || text.match(/^#\s/)) return;
-
-            const isDone = text.startsWith('✅');
-            const isCheckboxDone = li.querySelector('input[checked]');
-            const isCheckboxUnchecked = li.querySelector('input:not([checked])');
-
-            if (isCheckboxUnchecked) {
-              // checkbox task — future
-              const cleanText = text.replace(/^\s*☐\s*/, '').replace(/^\s*-\s*\[\s*\]\s*/, '').trim();
-              if (cleanText) {
-                taskList.push({ text: cleanText, done: false });
-                totalTasks++;
-              }
-            } else if (isDone || isCheckboxDone) {
-              const cleanText = text.replace(/^✅\s*/, '').replace(/^\s*☑\s*/, '').replace(/^\s*-\s*\[\s*x\s*\]\s*/, '').trim();
-              if (cleanText) {
-                taskList.push({ text: cleanText, done: true });
-                totalTasks++;
-                doneTasks++;
-              }
-            } else {
-              // Check if line contains sub-items
-              const subUl = li.querySelector('ul');
-              if (subUl) {
-                const mainText = li.childNodes[0]?.textContent?.trim().replace(/^[-•]\s*/, '') || '';
-                const subItems = [];
-                subUl.querySelectorAll('li').forEach(subLi => {
-                  const st = subLi.textContent.trim();
-                  const sDone = st.startsWith('✅');
-                  const sClean = st.replace(/^✅\s*|^⏳\s*/, '').trim();
-                  if (sClean) {
-                    subItems.push({ text: sClean, done: sDone });
-                  }
-                });
-                if (mainText) {
-                  taskList.push({ text: mainText, done: false, subItems });
-                  totalTasks += subItems.length;
-                  doneTasks += subItems.filter(s => s.done).length;
-                }
-              } else {
-                // Plain task
-                const cleanText = text.replace(/^[-•]\s*/, '').trim();
-                if (cleanText) {
-                  taskList.push({ text: cleanText, done: false });
-                  totalTasks++;
-                }
-              }
-            }
-          });
-
-          if (taskList.length) {
-            let ulHtml = '<ul class="phase__tasks">';
-            taskList.forEach(t => {
-              if (t.subItems && t.subItems.length) {
-                ulHtml += `<li class="${t.done ? 'task--done' : ''}">${escHtml(t.text)}`;
-                ulHtml += '<ul class="phase__subtasks">';
-                t.subItems.forEach(s => {
-                  ulHtml += `<li class="${s.done ? 'task--done' : ''}">${escHtml(s.text)}</li>`;
-                });
-                ulHtml += '</ul></li>';
-              } else {
-                ulHtml += `<li class="${t.done ? 'task--done' : ''}">${escHtml(t.text)}</li>`;
-              }
-            });
-            ulHtml += '</ul>';
-            tasksHtml += ulHtml;
-          }
-        } else {
-          // Other content (bold lines, etc.) — append as-is
-          if (html.trim() && !html.includes('<strong>Результат:</strong>') && !html.includes('<strong>Версия:</strong>')) {
-            tasksHtml += html;
-          }
-        }
-      }
-
-      // Calculate progress
-      const pct = totalTasks > 0 ? Math.round((doneTasks / totalTasks) * 100) : (status === 'done' ? 100 : 0);
-
       card.innerHTML = `
         <div class="phase__dot"></div>
         <div class="phase__card">
           <div class="phase__head">
             <span class="phase__tag">${escHtml(tag)}</span>
-            <span class="phase__status">${status === 'done' ? 'Готово' : status === 'active' ? 'В процессе' : 'Планируется'}</span>
+            <span class="phase__status">${statusLabel}</span>
           </div>
-          <h3 class="phase__title">${escHtml(cleanTitleText)}</h3>
-          ${goalHtml ? `<div class="phase__goal">${goalHtml}</div>` : ''}
+          <h3 class="phase__title">${escHtml(displayTitle)}</h3>
+          ${goalHtml}
           ${tasksHtml}
           <div class="phase__progress"><div class="phase__bar" data-width="${pct}"></div></div>
           <div class="phase__pct">${pct}%</div>
         </div>
       `;
-
       timelineEl.appendChild(card);
     });
 
-    /* -- Extra sections (риски, инструменты) -- */
-    if (extraSections.length) {
+    /* -- Extra content (risks, tools, etc.) using marked.js for rendering -- */
+    const extraMd = extraLines.join('\n').trim();
+    if (extraMd) {
       const extraDiv = document.createElement('div');
       extraDiv.className = 'md-content';
-      extraDiv.dataset.delay = (phases.length + 1) * 100;
-      extraDiv.innerHTML = extraSections.join('');
+      extraDiv.dataset.delay = (sections.length + 1) * 100;
+      extraDiv.innerHTML = marked.parse(extraMd);
       extraContentEl.appendChild(extraDiv);
     }
 
-    /* -- Footer -- */
-    const versionMatch = md.match(/\*\*Версия:\*\*\s*`([^`]+)`/);
-    const dateMatch = md.match(/`([^`]+)`\s*\(\d/);
-    if (versionMatch) {
-      footerTextEl.textContent = `Открытая разработка · Все коммиты на GitHub · ${versionMatch[1]}`;
-    }
-
-    /* -- Init animations -- */
+    /* -- Init scroll animations -- */
     initAnimations();
   }
 
   function escHtml(str) {
+    if (!str) return '';
     return str.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
   }
 

@@ -4,6 +4,8 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Project C — Roadmap</title>
+<!-- Marked.js для парсинга Markdown -->
+<script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
 <style>
   /* ===== RESET & BASE ===== */
   *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
@@ -283,6 +285,32 @@
   }
   .task--done::before { background: var(--done) !important; }
 
+  /* Sub-items (вложенные списки — подзадачи) */
+  .phase__subtasks {
+    list-style: none;
+    margin-left: 16px;
+    margin-top: 4px;
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+  }
+  .phase__subtasks li {
+    font-size: .84rem;
+    color: var(--text-dim);
+    line-height: 1.45;
+    display: flex;
+    align-items: flex-start;
+    gap: 8px;
+  }
+  .phase__subtasks li::before {
+    content: '›';
+    flex-shrink: 0;
+    font-weight: 700;
+    color: var(--text-dim);
+    font-size: .9rem;
+    line-height: 1.5;
+  }
+
   /* Progress bar */
   .phase__progress {
     margin-top: 18px;
@@ -304,6 +332,104 @@
     color: var(--text-dim);
     margin-top: 6px;
     text-align: right;
+  }
+
+  /* Markdown-rendered sections (риски, инструменты и т.д.) */
+  .md-content {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 28px 28px 24px;
+    margin-bottom: 32px;
+    opacity: 0;
+    transform: translateY(30px);
+    transition: opacity .6s ease, transform .6s ease;
+  }
+  .md-content.visible {
+    opacity: 1;
+    transform: translateY(0);
+  }
+  .md-content h2 {
+    font-size: 1.25rem;
+    font-weight: 700;
+    color: #fff;
+    margin-bottom: 16px;
+  }
+  .md-content h3 {
+    font-size: 1.05rem;
+    font-weight: 600;
+    color: var(--accent);
+    margin-top: 18px;
+    margin-bottom: 8px;
+  }
+  .md-content p {
+    font-size: .92rem;
+    color: var(--text-dim);
+    margin-bottom: 12px;
+    line-height: 1.6;
+  }
+  .md-content p strong {
+    color: var(--text);
+  }
+  .md-content ul {
+    list-style: none;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    margin-bottom: 12px;
+  }
+  .md-content ul li {
+    font-size: .9rem;
+    color: var(--text);
+    line-height: 1.5;
+    padding-left: 16px;
+    position: relative;
+  }
+  .md-content ul li::before {
+    content: '•';
+    position: absolute;
+    left: 0;
+    color: var(--accent);
+    font-weight: 700;
+  }
+  .md-content ul li ul {
+    margin-top: 4px;
+    margin-left: 0;
+  }
+  .md-content ul li ul li {
+    font-size: .84rem;
+    color: var(--text-dim);
+  }
+  .md-content ul li ul li::before {
+    content: '›';
+    color: var(--text-dim);
+  }
+  .md-content em {
+    font-style: italic;
+    color: var(--text-dim);
+    font-size: .85rem;
+  }
+  .md-content blockquote {
+    border-left: 3px solid var(--accent);
+    padding-left: 16px;
+    margin: 12px 0;
+    color: var(--text-dim);
+    font-size: .9rem;
+    font-style: italic;
+  }
+  .md-content code {
+    font-family: 'Fira Code', 'Consolas', monospace;
+    background: rgba(56, 189, 248, .08);
+    color: var(--accent2);
+    padding: 2px 7px;
+    border-radius: 4px;
+    font-size: .84rem;
+  }
+  .md-content hr {
+    border: none;
+    height: 1px;
+    background: var(--border);
+    margin: 24px 0;
   }
 
   /* ===== FOOTER ===== */
@@ -333,19 +459,23 @@
   }
   .footer__links a:hover { color: var(--accent); }
 
-  /* ===== ANIMATIONS ===== */
-  @keyframes fadeDown {
-    from { opacity: 0; transform: translateY(-16px); }
-    to   { opacity: 1; transform: translateY(0); }
+  /* ===== LOADING / ERROR ===== */
+  .loading-state {
+    text-align: center;
+    padding: 60px 20px;
+    color: var(--text-dim);
   }
-
-  /* ===== RESPONSIVE ===== */
-  @media (max-width: 600px) {
-    .wrapper { padding: 40px 16px 60px; }
-    .timeline { padding-left: 32px; }
-    .phase__dot { left: -25px; width: 12px; height: 12px; }
-    .phase__card { padding: 20px 18px 18px; }
-    .phase__head { flex-direction: column; align-items: flex-start; }
+  .loading-state__spinner {
+    width: 32px;
+    height: 32px;
+    border: 3px solid var(--border);
+    border-top-color: var(--accent);
+    border-radius: 50%;
+    animation: spin 1s linear infinite;
+    margin: 0 auto 16px;
+  }
+  @keyframes spin {
+    to { transform: rotate(360deg); }
   }
 
   /* ===== GITHUB COMMITS BLOCK ===== */
@@ -437,20 +567,35 @@
     content: '·';
     margin-right: 12px;
   }
-  .commits-loading {
+  .commits-loading, .commits-error {
     text-align: center;
-    color: var(--text-dim);
     font-size: .85rem;
     padding: 20px;
   }
   .commits-error {
-    text-align: center;
     color: #f87171;
-    font-size: .85rem;
-    padding: 20px;
     border: 1px dashed rgba(248, 113, 113, .3);
     border-radius: var(--radius);
     background: rgba(248, 113, 113, .05);
+  }
+  .commits-error a {
+    color: #f87171;
+    text-decoration: underline;
+  }
+
+  /* ===== ANIMATIONS ===== */
+  @keyframes fadeDown {
+    from { opacity: 0; transform: translateY(-16px); }
+    to   { opacity: 1; transform: translateY(0); }
+  }
+
+  /* ===== RESPONSIVE ===== */
+  @media (max-width: 600px) {
+    .wrapper { padding: 40px 16px 60px; }
+    .timeline { padding-left: 32px; }
+    .phase__dot { left: -25px; width: 12px; height: 12px; }
+    .phase__card { padding: 20px 18px 18px; }
+    .phase__head { flex-direction: column; align-items: flex-start; }
   }
 </style>
 </head>
@@ -478,9 +623,9 @@
 
   <!-- HEADER -->
   <header class="header">
-    <div class="header__badge">Pre-Alpha · v0.0.12 · Этап 2 завершён</div>
+    <div id="header-badge" class="header__badge">Pre-Alpha</div>
     <h1 class="header__title">Project <span>C</span> — Roadmap</h1>
-    <p class="header__sub">Мир над облаками. MMO/Co-Op авиасимулятор по книге «Интеграл Пьявица».</p>
+    <p id="header-sub" class="header__sub">Мир над облаками. MMO/Co-Op авиасимулятор по книге «Интеграл Пьявица».</p>
 
     <div class="buttons">
       <a href="https://github.com/boozzeeboom/project-c" target="_blank" rel="noopener" class="btn btn--primary">
@@ -494,285 +639,21 @@
     </div>
   </header>
 
-  <!-- TIMELINE -->
-  <div class="timeline">
-
-    <!-- ЭТАП 0 -->
-    <div class="phase phase--done" data-delay="0">
-      <div class="phase__dot"></div>
-      <div class="phase__card">
-        <div class="phase__head">
-          <span class="phase__tag">Этап 0 · Неделя 1</span>
-          <span class="phase__status">Готово</span>
-        </div>
-        <h3 class="phase__title">Подготовка окружения</h3>
-        <p class="phase__goal">Настроить рабочую среду и базовую архитектуру проекта.</p>
-        <ul class="phase__tasks">
-          <li class="task--done">Unity 6 + URP</li>
-          <li class="task--done">Netcode for GameObjects (вместо Mirror)</li>
-          <li class="task--done">Git LFS, .gitignore, .qwenignore, ветка qwen-dev</li>
-          <li class="task--done">Структура Assets/_Project/ (Scripts, Items, UI)</li>
-          <li class="task--done">Сервер: .NET 8 Console App (базовый)</li>
-        </ul>
-        <div class="phase__progress"><div class="phase__bar" data-width="100"></div></div>
-        <div class="phase__pct">100%</div>
-      </div>
-    </div>
-
-    <!-- ЭТАП 1 -->
-    <div class="phase phase--done" data-delay="100">
-      <div class="phase__dot"></div>
-      <div class="phase__card">
-        <div class="phase__head">
-          <span class="phase__tag">Этап 1 · Недели 2–4</span>
-          <span class="phase__status">Завершён</span>
-        </div>
-        <h3 class="phase__title">Прототип ядра геймплея</h3>
-        <p class="phase__goal">Реализовать базовые механики в оффлайн-режиме.</p>
-        <ul class="phase__tasks">
-          <li class="task--done">Мир: процедурная генерация горных пиков + 890+ облаков (3 слоя)</li>
-          <li class="task--done">WorldCamera — свободный полёт, телепортация к пикам</li>
-          <li class="task--done">ThirdPersonCamera — орбитальная камера от третьего лица</li>
-          <li class="task--done">Пеший режим: WASD, прыжок, бег, CharacterController</li>
-          <li class="task--done">ShipController: антигравитация, тяга, рыскание, тангаж, Rigidbody</li>
-          <li class="task--done">Переключение F: сесть / выйти из корабля (PlayerStateMachine)</li>
-          <li class="task--done">Подбор предметов (E, радиус 3м) + круговой инвентарь (Tab, 8 секторов)</li>
-          <li class="task--done">Hover-подсветка секторов + подсписок при &gt;1 предмете</li>
-          <li class="task--done">Сундуки: LootTable (шансы, min/max), анимация открытия, автоуничтожение</li>
-          <li class="task--done">Вспышка секторов инвентаря при получении лута из сундука</li>
-          <li class="task--done">Приоритет взаимодействия — сундук &gt; обычный предмет</li>
-          <li class="task--done">UI: ControlHintsUI, PeakNavigationUI, InventoryUI (GL-рендер)</li>
-          <li class="task--done">Сетевой мультиплеер: Host + Client, синхронизация движения, камеры, кораблей</li>
-          <li class="task--done">Кооп-корабли — несколько игроков, усреднение ввода</li>
-          <li class="task--done">Обработка обрывов соединения (OnClientDisconnectCallback, OnTransportFailure)</li>
-          <li class="task--done">Disconnect UI — кнопка по центру экрана</li>
-        </ul>
-        <div class="phase__progress"><div class="phase__bar" data-width="100"></div></div>
-        <div class="phase__pct">100%</div>
-      </div>
-    </div>
-
-    <!-- ЭТАП 1 — Что осталось -->
-    <div class="phase phase--future" data-delay="150">
-      <div class="phase__dot"></div>
-      <div class="phase__card">
-        <div class="phase__head">
-          <span class="phase__tag">Этап 1 · Что осталось</span>
-          <span class="phase__status">Планируется</span>
-        </div>
-        <h3 class="phase__title">Доработка геймплея</h3>
-        <p class="phase__goal">Улучшить физику, добавить звуки и визуальные элементы.</p>
-        <ul class="phase__tasks">
-          <li>Доработка физики корабля (banking, инерция, плавность)</li>
-          <li>Система топлива (мезий)</li>
-          <li>Модели кораблей вместо примитивов</li>
-          <li>Звуки двигателя, шагов, ветра</li>
-          <li>3D/2D иконки в секторах инвентаря</li>
-          <li>Слот 9 (центр) для ключевого предмета</li>
-          <li>«Облачный» дизайн колеса (Ghibli-эстетика)</li>
-        </ul>
-        <div class="phase__progress"><div class="phase__bar" data-width="0"></div></div>
-        <div class="phase__pct">0%</div>
-      </div>
-    </div>
-
-    <!-- ЭТАП 2 -->
-    <div class="phase phase--done" data-delay="200">
-      <div class="phase__dot"></div>
-      <div class="phase__card">
-        <div class="phase__head">
-          <span class="phase__tag">Этап 2 · Недели 7–10</span>
-          <span class="phase__status">Завершён</span>
-        </div>
-        <h3 class="phase__title">Сетевой фундамент</h3>
-        <p class="phase__goal">Реализовать клиент-серверное взаимодействие.</p>
-        <ul class="phase__tasks">
-          <li class="task--done">Авторитарный сервер: клиент только отправляет ввод</li>
-          <li class="task--done">Dedicated Server режим (кнопка в UI + `-server` build arg)</li>
-          <li class="task--done">Headless режим: `-batchmode -nographics -server`</li>
-          <li class="task--done">Сетевой контроллер (NetworkBehaviour)</li>
-          <li class="task--done">Client-side Prediction (базовое — коррекция позиции)</li>
-          <li class="task--done">Интерполяция других игроков (NetworkTransform Lerp 0.1s)</li>
-          <li class="task--done">Сохранение/восстановление инвентаря при реконнекте (PlayerPrefs)</li>
-          <li class="task--done">Синхронизация подбора (HidePickupRpc, OpenChestRpc — SendTo.Everyone)</li>
-          <li class="task--done">Локальный запуск: Host + Client (1 сервер + 1 клиент)</li>
-          <li class="task--done">Синхронизация физики кораблей (кооп-пилотирование)</li>
-          <li class="task--done">Обработка разрывов соединения (авто-реконнект + ручная кнопка)</li>
-          <li class="task--done">Player Count (обновляется в реальном времени)</li>
-          <li>Тестирование 1 сервер + 2-3 клиента (нужен 2й компьютер)</li>
-        </ul>
-        <div class="phase__progress"><div class="phase__bar" data-width="95"></div></div>
-        <div class="phase__pct">95%</div>
-      </div>
-    </div>
-
-    <!-- ЭТАП 3 -->
-    <div class="phase phase--active" data-delay="300">
-      <div class="phase__dot"></div>
-      <div class="phase__card">
-        <div class="phase__head">
-          <span class="phase__tag">Этап 3 · Недели 9–12</span>
-          <span class="phase__status">Следующий</span>
-        </div>
-        <h3 class="phase__title">Ролевая система и прогрессия</h3>
-        <p class="phase__goal">Добавить RPG-элементы и сохранение данных.</p>
-        <ul class="phase__tasks">
-          <li>Система прокачки: опыт, уровни, очки навыков</li>
-          <li>Деревья навыков для пилотирования и выживания</li>
-          <li>PostgreSQL для аккаунтов, прогресса, инвентаря</li>
-          <li>Redis для кэширования сессионных данных</li>
-          <li>Серверная валидация инвентаря и транзакций (защита от читов)</li>
-          <li>Крафт предметов из ресурсов</li>
-        </ul>
-        <div class="phase__progress"><div class="phase__bar" data-width="0"></div></div>
-        <div class="phase__pct">0%</div>
-      </div>
-    </div>
-
-    <!-- ЭТАП 3.5 — Дополнительные сетевые фичи -->
-    <div class="phase phase--future" data-delay="350">
-      <div class="phase__dot"></div>
-      <div class="phase__card">
-        <div class="phase__head">
-          <span class="phase__tag">Этап 5+ · Дополнительные сетевые фичи</span>
-          <span class="phase__status">Отложено</span>
-        </div>
-        <h3 class="phase__title">Серверный билд и лобби</h3>
-        <p class="phase__goal">Отдельный сервер, матчмейкинг, комнаты.</p>
-        <ul class="phase__tasks">
-          <li>Отдельный серверный билд (Headless Unity / .NET 8, 24/7)</li>
-          <li>Система лобби/комнат — группировка до 4 игроков</li>
-          <li>Мастер-сервер — список комнат, матчмейкинг</li>
-          <li>Приглашения друзей</li>
-          <li>Полная серверная валидация инвентаря (anti-cheat)</li>
-          <li>Полная синхронизация инвентаря (NetworkVariable/NetworkList)</li>
-        </ul>
-        <div class="phase__progress"><div class="phase__bar" data-width="0"></div></div>
-        <div class="phase__pct">0%</div>
-      </div>
-    </div>
-
-    <!-- ЭТАП 4 -->
-    <div class="phase phase--future" data-delay="400">
-      <div class="phase__dot"></div>
-      <div class="phase__card">
-        <div class="phase__head">
-          <span class="phase__tag">Этап 4 · Недели 13–18</span>
-          <span class="phase__status">Планируется</span>
-        </div>
-        <h3 class="phase__title">Контент и полировка</h3>
-        <p class="phase__goal">Наполнить мир контентом и улучшить визуал.</p>
-        <ul class="phase__tasks">
-          <li>Миссии, квесты, диалоги с NPC (ветвящиеся сюжеты)</li>
-          <li>Ежедневные испытания для удержания игроков</li>
-          <li>Финальные шейдеры облаков и воды</li>
-          <li>Анимации персонажей и кораблей (Mixamo/Custom)</li>
-          <li>Пост-обработка: bloom, color grading, хроматическая аберрация</li>
-          <li>Динамический саундтрек + 3D-звуки двигателей, ветра, шагов</li>
-          <li>Голосовой чат (Vivox/Discord SDK)</li>
-        </ul>
-        <div class="phase__progress"><div class="phase__bar" data-width="0"></div></div>
-        <div class="phase__pct">0%</div>
-      </div>
-    </div>
-
-    <!-- ЭТАП 5 -->
-    <div class="phase phase--future" data-delay="500">
-      <div class="phase__dot"></div>
-      <div class="phase__card">
-        <div class="phase__head">
-          <span class="phase__tag">Этап 5 · Недели 19–24</span>
-          <span class="phase__status">Планируется</span>
-        </div>
-        <h3 class="phase__title">Масштабирование и оптимизация</h3>
-        <p class="phase__goal">Подготовить инфраструктуру для большого онлайна.</p>
-        <ul class="phase__tasks">
-          <li>Шардинг мира (разделение на зоны/сервера)</li>
-          <li>Kubernetes автомасштабирование</li>
-          <li>Мониторинг: Prometheus + Grafana</li>
-          <li>LOD-системы для кораблей и островов</li>
-          <li>Occlusion Culling + пулинг объектов</li>
-          <li>Античит: серверная валидация + репорты + авто-баны</li>
-        </ul>
-        <div class="phase__progress"><div class="phase__bar" data-width="0"></div></div>
-        <div class="phase__pct">0%</div>
-      </div>
-    </div>
-
-    <!-- ЭТАП 6 -->
-    <div class="phase phase--future" data-delay="600">
-      <div class="phase__dot"></div>
-      <div class="phase__card">
-        <div class="phase__head">
-          <span class="phase__tag">Этап 5 · Недели 19–24</span>
-          <span class="phase__status">Планируется</span>
-        </div>
-        <h3 class="phase__title">Масштабирование и оптимизация</h3>
-        <p class="phase__goal">Подготовить инфраструктуру для большого онлайна.</p>
-        <ul class="phase__tasks">
-          <li>Шардинг мира (разделение на зоны/сервера)</li>
-          <li>Kubernetes автомасштабирование</li>
-          <li>Мониторинг: Prometheus + Grafana</li>
-          <li>LOD-системы для кораблей и островов</li>
-          <li>Occlusion Culling + пулинг объектов</li>
-          <li>Античит: серверная валидация + репорты + авто-баны</li>
-        </ul>
-        <div class="phase__progress"><div class="phase__bar" data-width="0"></div></div>
-        <div class="phase__pct">0%</div>
-      </div>
-    </div>
-
-    <!-- ЭТАП 6 -->
-    <div class="phase phase--future" data-delay="700">
-      <div class="phase__dot"></div>
-      <div class="phase__card">
-        <div class="phase__head">
-          <span class="phase__tag">Этап 6 · Недели 25–28</span>
-          <span class="phase__status">Планируется</span>
-        </div>
-        <h3 class="phase__title">Закрытое бета-тестирование</h3>
-        <p class="phase__goal">Выявить проблемы перед публичным релизом.</p>
-        <ul class="phase__tasks">
-          <li>50–100 тестеров, сбор метрик и фидбека</li>
-          <li>Хотфиксы критичных багов</li>
-          <li>Балансировка экономики и прокачки</li>
-          <li>Улучшение туториала и первого впечатления</li>
-          <li>Локализация (EN, RU)</li>
-          <li>Страницы в Steam/Epic + маркетинг: трейлер, скриншоты</li>
-        </ul>
-        <div class="phase__progress"><div class="phase__bar" data-width="0"></div></div>
-        <div class="phase__pct">0%</div>
-      </div>
-    </div>
-
-    <!-- ЭТАП 7 -->
-    <div class="phase phase--future" data-delay="700">
-      <div class="phase__dot"></div>
-      <div class="phase__card">
-        <div class="phase__head">
-          <span class="phase__tag">Этап 7 · Постоянно</span>
-          <span class="phase__status">Планируется</span>
-        </div>
-        <h3 class="phase__title">Ранний доступ и поддержка</h3>
-        <p class="phase__goal">Постепенный рост аудитории и контента.</p>
-        <ul class="phase__tasks">
-          <li>Релиз в Early Access (Steam, Epic)</li>
-          <li>Поддержка сообщества (Discord, форумы)</li>
-          <li>Регулярные патчи раз в 2 недели</li>
-          <li>Новые острова, корабли, сюжетные линии</li>
-          <li>Сезонные события, гильдии, рейды</li>
-          <li>Косметика без pay-to-win</li>
-        </ul>
-        <div class="phase__progress"><div class="phase__bar" data-width="0"></div></div>
-        <div class="phase__pct">0%</div>
-      </div>
-    </div>
-
+  <!-- LOADING STATE -->
+  <div id="loading-state" class="loading-state">
+    <div class="loading-state__spinner"></div>
+    <div>Загрузка плана разработки…</div>
   </div>
+
+  <!-- TIMELINE (заполняется динамически) -->
+  <div id="timeline" class="timeline"></div>
+
+  <!-- EXTRA CONTENT (риски, инструменты и т.д.) -->
+  <div id="extra-content"></div>
 
   <!-- FOOTER -->
   <footer class="footer">
-    <p class="footer__text">Открытая разработка · Все коммиты на GitHub · Версия v0.0.12 · 5 апреля 2026</p>
+    <p id="footer-text" class="footer__text">Открытая разработка · Все коммиты на GitHub</p>
     <div class="footer__links">
       <a href="https://github.com/boozzeeboom/project-c" target="_blank" rel="noopener">GitHub</a>
       <a href="https://t.me/thegravity_ru" target="_blank" rel="noopener">Telegram</a>
@@ -783,39 +664,10 @@
 </div>
 
 <script>
-  /* ===== SCROLL-TRIGGERED ANIMATION ===== */
-  const phases = document.querySelectorAll('.phase');
-  const bars   = document.querySelectorAll('.phase__bar');
-
-  const observer = new IntersectionObserver((entries) => {
-    entries.forEach(entry => {
-      if (entry.isIntersecting) {
-        const el = entry.target;
-        const delay = parseInt(el.dataset.delay) || 0;
-        setTimeout(() => el.classList.add('visible'), delay);
-        observer.unobserve(el);
-      }
-    });
-  }, { threshold: 0.15 });
-
-  phases.forEach(p => observer.observe(p));
-
-  /* Progress bars */
-  const barObserver = new IntersectionObserver((entries) => {
-    entries.forEach(entry => {
-      if (entry.isIntersecting) {
-        const bar = entry.target;
-        setTimeout(() => {
-          bar.style.width = bar.dataset.width + '%';
-        }, 400);
-        barObserver.unobserve(bar);
-      }
-    });
-  }, { threshold: 0.3 });
-
-  bars.forEach(b => barObserver.observe(b));
-
-  /* ===== GITHUB COMMITS FETCH ===== */
+/* ================================================================
+   1. GITHUB COMMITS
+   ================================================================ */
+(function loadCommits() {
   const commitsContainer = document.getElementById('commits-container');
   const REPO_URL = 'https://api.github.com/repos/boozzeeboom/project-c/commits?per_page=3&sha=qwen-gamestudio-agent-dev';
   const REPO_URL_NOCACHE = () => `${REPO_URL}&_=${Date.now()}`;
@@ -824,7 +676,6 @@
     const now = new Date();
     const date = new Date(dateStr);
     const seconds = Math.floor((now - date) / 1000);
-
     const intervals = [
       { label: 'лет', seconds: 31536000 },
       { label: 'мес', seconds: 2592000 },
@@ -832,27 +683,17 @@
       { label: 'ч', seconds: 3600 },
       { label: 'мин', seconds: 60 },
     ];
-
     for (const interval of intervals) {
       const count = Math.floor(seconds / interval.seconds);
-      if (count >= 1) {
-        return `${count} ${interval.label} назад`;
-      }
+      if (count >= 1) return `${count} ${interval.label} назад`;
     }
     return 'только что';
   }
 
   fetch(REPO_URL_NOCACHE(), { cache: 'no-store' })
-    .then(res => {
-      if (!res.ok) throw new Error(`HTTP ${res.status}`);
-      return res.json();
-    })
+    .then(res => { if (!res.ok) throw new Error(`HTTP ${res.status}`); return res.json(); })
     .then(commits => {
-      if (!commits.length) {
-        commitsContainer.innerHTML = '<div class="commits-loading">Нет коммитов</div>';
-        return;
-      }
-
+      if (!commits.length) { commitsContainer.innerHTML = '<div class="commits-loading">Нет коммитов</div>'; return; }
       const html = commits.map(commit => {
         const sha = commit.sha.substring(0, 7);
         const message = commit.commit.message.split('\n')[0];
@@ -860,10 +701,7 @@
         const avatarUrl = commit.author?.avatar_url || '';
         const date = commit.commit.author.date;
         const commitUrl = commit.html_url;
-
-        // Экранируем HTML
         const esc = str => str.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
-
         return `
           <a href="${commitUrl}" target="_blank" rel="noopener" class="commit-item">
             <span class="commit-hash">${esc(sha)}</span>
@@ -877,23 +715,280 @@
                 <span class="commit-date">${timeAgo(date)}</span>
               </div>
             </div>
-          </a>
-        `;
+          </a>`;
       }).join('');
-
       commitsContainer.innerHTML = `<div class="commits-list">${html}</div>`;
     })
     .catch(err => {
       console.error('GitHub API error:', err);
-      commitsContainer.innerHTML = `
-        <div class="commits-error">
-          Не удалось загрузить коммиты.<br>
-          <a href="https://github.com/boozzeeboom/project-c/commits" target="_blank" rel="noopener" style="color: #f87171; text-decoration: underline;">
-            Посмотреть на GitHub →
-          </a>
+      commitsContainer.innerHTML = `<div class="commits-error">Не удалось загрузить коммиты. <a href="https://github.com/boozzeeboom/project-c/commits" target="_blank" rel="noopener">Посмотреть на GitHub →</a></div>`;
+    });
+})();
+
+/* ================================================================
+   2. LOAD & PARSE MARKDOWN FROM GitHub
+   ================================================================ */
+(function loadRoadmap() {
+  const MD_URL = 'https://raw.githubusercontent.com/boozzeeboom/project-c/qwen-gamestudio-agent-dev/docs/MMO_Development_Plan.md?_=' + Date.now();
+  const loadingEl = document.getElementById('loading-state');
+  const timelineEl = document.getElementById('timeline');
+  const extraContentEl = document.getElementById('extra-content');
+  const badgeEl = document.getElementById('header-badge');
+  const subEl = document.getElementById('header-sub');
+  const footerTextEl = document.getElementById('footer-text');
+
+  fetch(MD_URL, { cache: 'no-store' })
+    .then(res => { if (!res.ok) throw new Error(`HTTP ${res.status}`); return res.text(); })
+    .then(markdown => {
+      loadingEl.style.display = 'none';
+      parseAndRender(markdown);
+    })
+    .catch(err => {
+      console.error('MD load error:', err);
+      loadingEl.innerHTML = `<div class="commits-error">Не удалось загрузить план разработки.<br><a href="https://github.com/boozzeeboom/project-c/blob/qwen-gamestudio-agent-dev/docs/MMO_Development_Plan.md" target="_blank" rel="noopener">Открыть на GitHub →</a></div>`;
+    });
+
+  function parseAndRender(md) {
+    /* -- Extract version info from first paragraph -- */
+    const firstP = md.match(/\*\*Последнее обновление:\*\*(.+?)\|/);
+    if (firstP) {
+      const info = firstP[1].trim();
+      const versionMatch = md.match(/`([^`]+)`/);
+      const ver = versionMatch ? versionMatch[1] : '';
+      badgeEl.textContent = `Pre-Alpha · ${ver}`.trim();
+      subEl.textContent = `Мир над облаками. MMO/Co-Op авиасимулятор по книге «Интеграл Пьявица». Обновлено: ${info.replace(/\*\*/g, '')}`;
+    }
+
+    /* -- Parse the markdown into HTML via marked.js -- */
+    const rawHtml = marked.parse(md);
+    const tempDiv = document.createElement('div');
+    tempDiv.innerHTML = rawHtml;
+
+    /* -- Walk the parsed HTML and build timeline cards from H2 sections -- */
+    const allElements = Array.from(tempDiv.children);
+    let phases = [];
+    let extraSections = [];
+    let currentPhase = null;
+
+    for (const el of allElements) {
+      if (el.tagName === 'H2') {
+        if (currentPhase) phases.push(currentPhase);
+        currentPhase = { type: 'phase', title: el.textContent, elements: [] };
+      } else if (el.tagName === 'HR') {
+        // skip hr
+      } else if (currentPhase) {
+        currentPhase.elements.push(el.outerHTML);
+      } else {
+        extraSections.push(el.outerHTML);
+      }
+    }
+    if (currentPhase) phases.push(currentPhase);
+
+    /* -- Determine phase status from emoji / text in title -- */
+    function getStatus(title) {
+      if (title.includes('✅')) return 'done';
+      if (title.includes('🔄')) return 'active';
+      return 'future';
+    }
+
+    function cleanTitle(title) {
+      return title.replace(/✅|🔄|⏳/g, '').trim();
+    }
+
+    /* -- Build timeline cards -- */
+    phases.forEach((phase, idx) => {
+      const status = getStatus(phase.title);
+      const title = cleanTitle(phase.title);
+
+      // Extract tag (first bold text or part before newline)
+      const tagMatch = title.match(/^(.+?)[:\s(]/);
+      const tag = tagMatch ? tagMatch[1].trim() : title;
+      // Remove tag prefix from title
+      const cleanTitleText = title.replace(tag, '').replace(/^[:\s]+/, '').trim() || tag;
+
+      const card = document.createElement('div');
+      card.className = `phase phase--${status}`;
+      card.dataset.delay = idx * 100;
+
+      // Build content from elements
+      let goalHtml = '';
+      let tasksHtml = '';
+      let totalTasks = 0;
+      let doneTasks = 0;
+
+      for (const html of phase.elements) {
+        const tmp = document.createElement('div');
+        tmp.innerHTML = html;
+        const inner = tmp.firstElementChild;
+        if (!inner) continue;
+
+        if (inner.tagName === 'P' && !goalHtml) {
+          goalHtml = html;
+        } else if (inner.tagName === 'UL') {
+          // Parse list items
+          const lis = inner.querySelectorAll('li');
+          const taskList = [];
+
+          lis.forEach(li => {
+            const text = li.textContent.trim();
+            // Skip "Результат:" lines
+            if (text.startsWith('Результат:')) return;
+            // Skip version lines
+            if (text.startsWith('**Версия:**')) return;
+            // Skip section headers inside lists
+            if (text.startsWith('###') || text.match(/^#\s/)) return;
+
+            const isDone = text.startsWith('✅');
+            const isCheckboxDone = li.querySelector('input[checked]');
+            const isCheckboxUnchecked = li.querySelector('input:not([checked])');
+
+            if (isCheckboxUnchecked) {
+              // checkbox task — future
+              const cleanText = text.replace(/^\s*☐\s*/, '').replace(/^\s*-\s*\[\s*\]\s*/, '').trim();
+              if (cleanText) {
+                taskList.push({ text: cleanText, done: false });
+                totalTasks++;
+              }
+            } else if (isDone || isCheckboxDone) {
+              const cleanText = text.replace(/^✅\s*/, '').replace(/^\s*☑\s*/, '').replace(/^\s*-\s*\[\s*x\s*\]\s*/, '').trim();
+              if (cleanText) {
+                taskList.push({ text: cleanText, done: true });
+                totalTasks++;
+                doneTasks++;
+              }
+            } else {
+              // Check if line contains sub-items
+              const subUl = li.querySelector('ul');
+              if (subUl) {
+                const mainText = li.childNodes[0]?.textContent?.trim().replace(/^[-•]\s*/, '') || '';
+                const subItems = [];
+                subUl.querySelectorAll('li').forEach(subLi => {
+                  const st = subLi.textContent.trim();
+                  const sDone = st.startsWith('✅');
+                  const sClean = st.replace(/^✅\s*|^⏳\s*/, '').trim();
+                  if (sClean) {
+                    subItems.push({ text: sClean, done: sDone });
+                  }
+                });
+                if (mainText) {
+                  taskList.push({ text: mainText, done: false, subItems });
+                  totalTasks += subItems.length;
+                  doneTasks += subItems.filter(s => s.done).length;
+                }
+              } else {
+                // Plain task
+                const cleanText = text.replace(/^[-•]\s*/, '').trim();
+                if (cleanText) {
+                  taskList.push({ text: cleanText, done: false });
+                  totalTasks++;
+                }
+              }
+            }
+          });
+
+          if (taskList.length) {
+            let ulHtml = '<ul class="phase__tasks">';
+            taskList.forEach(t => {
+              if (t.subItems && t.subItems.length) {
+                ulHtml += `<li class="${t.done ? 'task--done' : ''}">${escHtml(t.text)}`;
+                ulHtml += '<ul class="phase__subtasks">';
+                t.subItems.forEach(s => {
+                  ulHtml += `<li class="${s.done ? 'task--done' : ''}">${escHtml(s.text)}</li>`;
+                });
+                ulHtml += '</ul></li>';
+              } else {
+                ulHtml += `<li class="${t.done ? 'task--done' : ''}">${escHtml(t.text)}</li>`;
+              }
+            });
+            ulHtml += '</ul>';
+            tasksHtml += ulHtml;
+          }
+        } else {
+          // Other content (bold lines, etc.) — append as-is
+          if (html.trim() && !html.includes('<strong>Результат:</strong>') && !html.includes('<strong>Версия:</strong>')) {
+            tasksHtml += html;
+          }
+        }
+      }
+
+      // Calculate progress
+      const pct = totalTasks > 0 ? Math.round((doneTasks / totalTasks) * 100) : (status === 'done' ? 100 : 0);
+
+      card.innerHTML = `
+        <div class="phase__dot"></div>
+        <div class="phase__card">
+          <div class="phase__head">
+            <span class="phase__tag">${escHtml(tag)}</span>
+            <span class="phase__status">${status === 'done' ? 'Готово' : status === 'active' ? 'В процессе' : 'Планируется'}</span>
+          </div>
+          <h3 class="phase__title">${escHtml(cleanTitleText)}</h3>
+          ${goalHtml ? `<div class="phase__goal">${goalHtml}</div>` : ''}
+          ${tasksHtml}
+          <div class="phase__progress"><div class="phase__bar" data-width="${pct}"></div></div>
+          <div class="phase__pct">${pct}%</div>
         </div>
       `;
+
+      timelineEl.appendChild(card);
     });
+
+    /* -- Extra sections (риски, инструменты) -- */
+    if (extraSections.length) {
+      const extraDiv = document.createElement('div');
+      extraDiv.className = 'md-content';
+      extraDiv.dataset.delay = (phases.length + 1) * 100;
+      extraDiv.innerHTML = extraSections.join('');
+      extraContentEl.appendChild(extraDiv);
+    }
+
+    /* -- Footer -- */
+    const versionMatch = md.match(/\*\*Версия:\*\*\s*`([^`]+)`/);
+    const dateMatch = md.match(/`([^`]+)`\s*\(\d/);
+    if (versionMatch) {
+      footerTextEl.textContent = `Открытая разработка · Все коммиты на GitHub · ${versionMatch[1]}`;
+    }
+
+    /* -- Init animations -- */
+    initAnimations();
+  }
+
+  function escHtml(str) {
+    return str.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+  }
+
+  /* -- Scroll animations -- */
+  function initAnimations() {
+    const phases = document.querySelectorAll('.phase');
+    const bars = document.querySelectorAll('.phase__bar');
+    const extras = document.querySelectorAll('.md-content');
+
+    const observer = new IntersectionObserver((entries) => {
+      entries.forEach(entry => {
+        if (entry.isIntersecting) {
+          const el = entry.target;
+          const delay = parseInt(el.dataset.delay) || 0;
+          setTimeout(() => el.classList.add('visible'), delay);
+          observer.unobserve(el);
+        }
+      });
+    }, { threshold: 0.15 });
+
+    phases.forEach(p => observer.observe(p));
+    extras.forEach(e => observer.observe(e));
+
+    const barObserver = new IntersectionObserver((entries) => {
+      entries.forEach(entry => {
+        if (entry.isIntersecting) {
+          const bar = entry.target;
+          setTimeout(() => { bar.style.width = bar.dataset.width + '%'; }, 400);
+          barObserver.unobserve(bar);
+        }
+      });
+    }, { threshold: 0.3 });
+
+    bars.forEach(b => barObserver.observe(b));
+  }
+})();
 </script>
 
 </body>

@@ -41,7 +41,7 @@ namespace ProjectC.Core
 
         private void ConvertAllRenderers()
         {
-            var renderers = FindObjectsByType<Renderer>(FindObjectsInactive.Include, FindObjectsSortMode.None);
+            var renderers = FindObjectsByType<Renderer>(FindObjectsInactive.Include);
 
             foreach (var renderer in renderers)
             {

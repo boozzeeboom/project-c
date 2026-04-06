@@ -1,0 +1,30 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 84a600ec1ebc5d446a30efa464c415a8, type: 3}
+  m_Name: Market_Quartus_v01
+  m_EditorClassIdentifier: Assembly-CSharp::ProjectC.Trade.LocationMarket
+  locationId: quartus
+  locationName: "\u041A\u0432\u0430\u0440\u0442\u0443\u0441 (\u041D\u0430\u0443\u0447\u043D\u044B\u0439
+    \u0446\u0435\u043D\u0442\u0440)"
+  items:
+  - item: {fileID: 11400000, guid: ed66825e934a87a43b520aee290591a8, type: 2}
+    basePrice: 10
+    currentPrice: 15
+    availableStock: 30
+    demandFactor: 0
+    supplyFactor: 0
+  - item: {fileID: 11400000, guid: a42e66c79c7d213499b91953538249f3, type: 2}
+    basePrice: 50
+    currentPrice: 60
+    availableStock: 60
+    demandFactor: 0
+    supplyFactor: 0

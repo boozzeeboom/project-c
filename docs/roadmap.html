@@ -817,7 +817,7 @@
 
   /* ===== GITHUB COMMITS FETCH ===== */
   const commitsContainer = document.getElementById('commits-container');
-  const REPO_URL = 'https://api.github.com/repos/boozzeeboom/project-c/commits?per_page=3';
+  const REPO_URL = 'https://api.github.com/repos/boozzeeboom/project-c/commits?per_page=3&sha=qwen-gamestudio-agent-dev';
   const REPO_URL_NOCACHE = () => `${REPO_URL}&_=${Date.now()}`;
 
   function timeAgo(dateStr) {

@@ -30,6 +30,8 @@ public class TradeUI : MonoBehaviour
 
     private List<Button> _uiButtons = new List<Button>();
     private List<GameObject> _itemRows = new List<GameObject>();
+    private Button _buyBtn;
+    private Button _sellBtn;
 
     private bool _isOpen;
     private int _selectedIndex = -1;
@@ -141,8 +143,10 @@ public class TradeUI : MonoBehaviour
 
         // --- Кнопки (внизу панели) ---
         // Используем anchoredPosition для точного позиционирования
-        _uiButtons.Add(MakeBtn("BuyBtn", _tradePanel.transform, "КУПИТЬ (Enter)", 0, -80, 240, 36, OnBuyClicked));
-        _uiButtons.Add(MakeBtn("SellBtn", _tradePanel.transform, "ПРОДАТЬ (Shift+Enter)", 0, -125, 280, 36, OnSellClicked));
+        _buyBtn = MakeBtn("BuyBtn", _tradePanel.transform, "КУПИТЬ (Enter)", 0, -80, 240, 36, OnBuyClicked);
+        _uiButtons.Add(_buyBtn);
+        _sellBtn = MakeBtn("SellBtn", _tradePanel.transform, "ПРОДАТЬ (Shift+Enter)", 0, -125, 280, 36, OnSellClicked);
+        _uiButtons.Add(_sellBtn);
         _uiButtons.Add(MakeBtn("LoadBtn", _tradePanel.transform, "ПОГРУЗИТЬ (L)", -130, -175, 240, 36, OnLoadClicked));
         _uiButtons.Add(MakeBtn("UnloadBtn", _tradePanel.transform, "РАЗГРУЗИТЬ (U)", 130, -175, 240, 36, OnUnloadClicked));
         _uiButtons.Add(MakeBtn("CloseBtn", _tradePanel.transform, "ЗАКРЫТЬ (Esc)", 0, -285, 200, 36, OnCloseClicked));
@@ -313,7 +317,10 @@ public class TradeUI : MonoBehaviour
 
     private void RenderItems()
     {
-        if (_contentPanel == null) return;
+        if (_contentPanel == null) { Debug.LogWarning("[TradeUI] RenderItems: _contentPanel == null!"); return; }
+        
+        Debug.Log($"[TradeUI] RenderItems: showWarehouse={_showWarehouseTab}, склад={playerStorage?.warehouse.Count ?? 0}, рынок={currentMarket?.items.Count ?? 0}, груз={_nearbyCargo?.cargo.Count ?? 0}");
+        
         for (int i = _contentPanel.childCount - 1; i >= 0; i--)
             Destroy(_contentPanel.GetChild(i).gameObject);
         _itemRows.Clear();
@@ -360,6 +367,24 @@ public class TradeUI : MonoBehaviour
             if (index == 0) MakeEmptyRow("Рынок пуст");
         }
         if (_modeText != null) _modeText.text = _showWarehouseTab ? "[СКЛАД + ТРЮМ]" : "[РЫНОК]";
+        UpdateButtonStates();
+    }
+
+    private void UpdateButtonStates()
+    {
+        bool showBuySell = !_showWarehouseTab;
+        bool showLoadUnload = _showWarehouseTab;
+
+        if (_buyBtn != null) _buyBtn.gameObject.SetActive(showBuySell);
+        if (_sellBtn != null) _sellBtn.gameObject.SetActive(showBuySell);
+
+        // Находим кнопки Load/Unload по имени
+        foreach (var btn in _uiButtons)
+        {
+            if (btn == null) continue;
+            if (btn.gameObject.name == "LoadBtn") btn.gameObject.SetActive(showLoadUnload);
+            if (btn.gameObject.name == "UnloadBtn") btn.gameObject.SetActive(showLoadUnload);
+        }
     }
 
     private void MakeDividerRow(string text)
@@ -582,6 +607,7 @@ public class TradeUI : MonoBehaviour
         {
             _showWarehouseTab = !_showWarehouseTab;
             _selectedIndex = 0;
+            Debug.Log($"[TradeUI] Переключение на {(_showWarehouseTab ? "[СКЛАД + ТРЮМ]" : "[РЫНОК]")}, склад предметов: {playerStorage?.warehouse.Count ?? 0}, груз корабля: {_nearbyCargo?.cargo.Count ?? 0}");
             RenderItems();
             UpdateDisplays();
         }

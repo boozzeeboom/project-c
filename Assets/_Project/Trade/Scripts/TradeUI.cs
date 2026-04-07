@@ -58,15 +58,7 @@ public class TradeUI : MonoBehaviour
 
     private void Start()
     {
-        Debug.Log("[TradeUI] Start() вызван");
-        try
-        {
-            BuildUI();
-        }
-        catch (System.Exception e)
-        {
-            Debug.LogError($"[TradeUI] Ошибка в BuildUI: {e.Message}\n{e.StackTrace}");
-        }
+        BuildUI();
     }
 
     private void OnDestroy()
@@ -83,8 +75,6 @@ public class TradeUI : MonoBehaviour
 
     private void BuildUI()
     {
-        Debug.Log("[TradeUI] BuildUI() START");
-        
         try
         {
         // --- Root Canvas ---
@@ -102,12 +92,10 @@ public class TradeUI : MonoBehaviour
         scaler.matchWidthOrHeight = 0.5f;
 
         _rootCanvas.AddComponent<GraphicRaycaster>();
-        Debug.Log("[TradeUI] BuildUI: Canvas создан");
 
         // --- Панель ---
         _tradePanel = CreatePanel("TradePanel", _rootCanvas.transform, 0, 0, 520, 640);
         _tradePanel.SetActive(false);
-        Debug.Log("[TradeUI] BuildUI: Панель создана");
 
         // --- Заголовок ---
         MakeLabel("Title", _tradePanel.transform, "ТОРГОВЛЯ", 0, 280, 22, Color.yellow, 480);
@@ -139,18 +127,15 @@ public class TradeUI : MonoBehaviour
 
         var contentGO = new GameObject("Content", typeof(RectTransform));
         contentGO.transform.SetParent(vpGO.transform, false);
-        _contentPanel = contentGO.transform; // Сохраняем ПОСЛЕ SetParent
-        Debug.Log($"[TradeUI] BuildUI: _contentPanel создан, null={_contentPanel == null}");
-        
+        _contentPanel = contentGO.transform;
+
         var contentRect = contentGO.GetComponent<RectTransform>();
         contentRect.anchorMin = new Vector2(0, 1);
         contentRect.anchorMax = new Vector2(1, 1);
         contentRect.pivot = new Vector2(0.5f, 1);
         contentRect.sizeDelta = new Vector2(0, 0);
 
-        Debug.Log($"[TradeUI] BuildUI: после RectTransform, _contentPanel={_contentPanel != null}");
         var layout = contentGO.AddComponent<VerticalLayoutGroup>();
-        Debug.Log($"[TradeUI] BuildUI: после VerticalLayoutGroup, _contentPanel={_contentPanel != null}");
         layout.childControlWidth = true;
         layout.childControlHeight = true;
         layout.childForceExpandWidth = true;
@@ -159,7 +144,6 @@ public class TradeUI : MonoBehaviour
         layout.padding = new RectOffset(4, 4, 4, 4);
 
         contentGO.AddComponent<ContentSizeFitter>().verticalFit = ContentSizeFitter.FitMode.PreferredSize;
-        Debug.Log($"[TradeUI] BuildUI: после ContentSizeFitter, _contentPanel={_contentPanel != null}");
 
         scrollGO.AddComponent<Mask>().showMaskGraphic = false;
         var sr = scrollGO.AddComponent<ScrollRect>();
@@ -183,8 +167,6 @@ public class TradeUI : MonoBehaviour
         _messageText = MakeLabel("MsgText", _tradePanel.transform, "Выберите товар и нажмите Enter", 0, -230, 13, new Color(0.9f, 0.9f, 0.4f), 480);
         MakeLabel("Hint1", _tradePanel.transform, "T - склад | Up/Down - выбор | Left/Right - кол-во", 0, -255, 11, Color.grey, 480);
         MakeLabel("Hint2", _tradePanel.transform, "L/U - погрузить/разгрузить | Esc - закрыть | R - сброс", 0, -272, 11, Color.grey, 480);
-        
-        Debug.Log($"[TradeUI] BuildUI() END — _contentPanel={_contentPanel != null}, _tradePanel={_tradePanel != null}");
         }
         catch (System.Exception e)
         {
@@ -295,13 +277,10 @@ public class TradeUI : MonoBehaviour
     public void OpenTrade(LocationMarket market)
     {
         if (market == null) return;
-        
-        Debug.Log($"[TradeUI] OpenTrade() вызван. _tradePanel={( _tradePanel != null ? "Создан" : "null")}");
-        
+
         // Создаём UI если ещё не создан
-        if (_tradePanel == null) 
+        if (_tradePanel == null)
         {
-            Debug.Log("[TradeUI] BuildUI() вызывается из OpenTrade()");
             BuildUI();
         }
         if (_tradePanel == null) { Debug.LogError("[TradeUI] Не удалось создать UI!"); return; }
@@ -323,8 +302,6 @@ public class TradeUI : MonoBehaviour
 
         // Снимаем фокус с кнопок чтобы Enter не срабатывал на них
         UnityEngine.EventSystems.EventSystem.current?.SetSelectedGameObject(null);
-
-        Debug.Log($"[TradeUI] Открыт рынок: {market.locationName} | Товаров: {market.items.Count}");
     }
 
     public void CloseTrade()
@@ -361,9 +338,7 @@ public class TradeUI : MonoBehaviour
     public void RenderItems()
     {
         if (_contentPanel == null) { Debug.LogWarning("[TradeUI] RenderItems: _contentPanel == null!"); return; }
-        
-        Debug.Log($"[TradeUI] RenderItems: showWarehouse={_showWarehouseTab}, склад={playerStorage?.warehouse.Count ?? 0}, рынок={currentMarket?.items.Count ?? 0}, груз={_nearbyCargo?.cargo.Count ?? 0}");
-        
+
         for (int i = _contentPanel.childCount - 1; i >= 0; i--)
             Destroy(_contentPanel.GetChild(i).gameObject);
         _itemRows.Clear();
@@ -660,7 +635,6 @@ public class TradeUI : MonoBehaviour
         {
             _showWarehouseTab = !_showWarehouseTab;
             _selectedIndex = 0;
-            Debug.Log($"[TradeUI] Переключение на {(_showWarehouseTab ? "[СКЛАД + ТРЮМ]" : "[РЫНОК]")}, склад предметов: {playerStorage?.warehouse.Count ?? 0}, груз корабля: {_nearbyCargo?.cargo.Count ?? 0}");
             RenderItems();
             UpdateDisplays();
         }
@@ -871,7 +845,6 @@ public class TradeUI : MonoBehaviour
         _activeEventIcons[eventId] = displayIcon;
 
         ShowMessage($"📢 {displayIcon} {displayName}! Длительность: {durationTicks} тиков");
-        Debug.Log($"[TradeUI] Событие начато: {displayName} ({displayIcon})");
 
         // Перерендерим рынок чтобы показать изменённые цены
         RenderItems();
@@ -890,7 +863,6 @@ public class TradeUI : MonoBehaviour
         _activeEventIcons.Remove(eventId);
 
         ShowMessage($"📢 Событие '{displayName}' окончилось. Цены возвращаются к норме.");
-        Debug.Log($"[TradeUI] Событие окончено: {eventId}");
 
         RenderItems();
         UpdateDisplays();

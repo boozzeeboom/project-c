@@ -36,8 +36,8 @@ public class TradeSetup : MonoBehaviour
         var netObj = go.AddComponent<NetworkObject>();
         var server = go.AddComponent<TradeMarketServer>();
 
-        // Спавним как серверный объект (без префаба)
-        netObj.SpawnAsSceneObject();
+        // Спавним как серверный объект
+        netObj.Spawn();
 
         Debug.Log("[TradeSetup] TradeMarketServer создан автоматически");
     }

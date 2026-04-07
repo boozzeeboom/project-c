@@ -504,6 +504,53 @@ namespace ProjectC.Player
             _hasServerPosition = true;
         }
 
+        // ==================== TRADE RPC (Сессия 5) ====================
+
+        /// <summary>
+        /// Купить товар — клиент запрашивает, сервер валидирует
+        /// </summary>
+        [Rpc(SendTo.Server)]
+        public void TradeBuyServerRpc(string itemId, int quantity, string locationId, RpcParams rpcParams = default)
+        {
+            // Серверная логика в TradeMarketServer
+            if (TradeMarketServer.Instance != null)
+            {
+                TradeMarketServer.Instance.BuyItemServerRpc(itemId, quantity, locationId);
+            }
+            else
+            {
+                Debug.LogWarning("[NetworkPlayer] TradeMarketServer не найден");
+            }
+        }
+
+        /// <summary>
+        /// Продать товар — клиент запрашивает, сервер валидирует
+        /// </summary>
+        [Rpc(SendTo.Server)]
+        public void TradeSellServerRpc(string itemId, int quantity, string locationId, RpcParams rpcParams = default)
+        {
+            if (TradeMarketServer.Instance != null)
+            {
+                TradeMarketServer.Instance.SellItemServerRpc(itemId, quantity, locationId);
+            }
+            else
+            {
+                Debug.LogWarning("[NetworkPlayer] TradeMarketServer не найден");
+            }
+        }
+
+        /// <summary>
+        /// Результат торговли — сервер отправляет клиенту
+        /// </summary>
+        [Rpc(SendTo.Owner)]
+        public void TradeResultClientRpc(bool success, string message, float newCredits, RpcParams rpcParams = default)
+        {
+            if (TradeUI.Instance != null)
+            {
+                TradeUI.Instance.OnTradeResult(success, message, newCredits);
+            }
+        }
+
         public new bool IsLocalPlayer => IsOwner;
         public ulong GetOwnerId() => OwnerClientId;
     }

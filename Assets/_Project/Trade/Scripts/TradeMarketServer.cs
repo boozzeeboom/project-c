@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using UnityEngine;
 using Unity.Netcode;
 using ProjectC.Trade;
+using ProjectC.Player;
 
 /// <summary>
 /// Серверный менеджер рынка — авторитетный источник всей торговой логики.
@@ -69,9 +70,10 @@ public class TradeMarketServer : NetworkBehaviour
         CleanupOldTimestamps();
     }
 
-    private void OnDestroy()
+    public override void OnDestroy()
     {
         if (Instance == this) Instance = null;
+        base.OnDestroy();
     }
 
     // ==================== ИНИЦИАЛИЗАЦИЯ ====================
@@ -109,9 +111,10 @@ public class TradeMarketServer : NetworkBehaviour
     /// <summary>
     /// Купить товар у NPC рынка
     /// </summary>
-    [ServerRpc(RequireOwnership = false)]
-    public void BuyItemServerRpc(string itemId, int quantity, string locationId, ulong clientId)
+    [ServerRpc]
+    public void BuyItemServerRpc(string itemId, int quantity, string locationId, ServerRpcParams rpcParams = default)
     {
+        ulong clientId = rpcParams.Receive.SenderClientId;
         // 1. Rate limiting
         if (!CheckRateLimit(clientId))
         {
@@ -222,15 +225,17 @@ public class TradeMarketServer : NetworkBehaviour
             creditsManager.Credits, marketItem.availableStock, 0, 0, 0);
 
         // Обновляем рынок у всех клиентов
-        SendMarketUpdateClientRpc(locationId, SerializeMarket(market));
+        var buyData = SerializeMarketData(market);
+        SendMarketUpdateClientRpc(locationId, buyData.itemIds, buyData.prices, buyData.stocks, buyData.demands, buyData.supplies);
     }
 
     /// <summary>
     /// Продать товар NPC рынку
     /// </summary>
-    [ServerRpc(RequireOwnership = false)]
-    public void SellItemServerRpc(string itemId, int quantity, string locationId, ulong clientId)
+    [ServerRpc]
+    public void SellItemServerRpc(string itemId, int quantity, string locationId, ServerRpcParams rpcParams = default)
     {
+        ulong clientId = rpcParams.Receive.SenderClientId;
         // 1. Rate limiting
         if (!CheckRateLimit(clientId))
         {
@@ -301,59 +306,98 @@ public class TradeMarketServer : NetworkBehaviour
             creditsManager?.Credits ?? 0f, marketItem.availableStock + quantity, 0, 0, 0);
 
         // Обновляем рынок у всех
-        SendMarketUpdateClientRpc(locationId, SerializeMarket(market));
+        var sellData = SerializeMarketData(market);
+        SendMarketUpdateClientRpc(locationId, sellData.itemIds, sellData.prices, sellData.stocks, sellData.demands, sellData.supplies);
     }
 
     // ==================== CLIENTRPC: ОБНОВЛЕНИЯ ====================
 
     /// <summary>
     /// Отправить результат торговли конкретному клиенту
-    /// Вызывается ТОЛЬКО на сервере → таргетированный ClientRpc
+    /// Используем примитивные типы — NGO не умеет сериализовать кастомные структуры
     /// </summary>
     private void SendTradeResultToClient(ulong clientId, bool success, string message,
         float newCredits, int newStock, int newCargoWeight, int newCargoVolume, int newCargoSlots)
     {
-        // Создаём NetworkWriter для передачи данных
-        var payload = new TradeResultPayload
+        // Находим NetworkPlayer клиента и отправляем результат через него
+        var player = FindPlayerNetworkPlayer(clientId);
+        if (player != null)
         {
-            success = success,
-            message = message,
-            newCredits = newCredits,
-            clientId = clientId
-        };
-
-        // Таргетированная отправка через ClientRpc
-        TradeResultClientRpc(payload, new ClientRpcParams
+            player.TradeResultClientRpc(success, message, newCredits);
+        }
+        else
         {
-            Send = new ClientSendParams { TargetClientIds = new ulong[] { clientId } }
-        });
-    }
-
-    [ClientRpc]
-    private void TradeResultClientRpc(TradeResultPayload payload, ClientRpcParams clientRpcParams = default)
-    {
-        // Вызывается на конкретном клиенте
-        if (TradeUI.Instance != null)
-        {
-            TradeUI.Instance.OnTradeResult(payload.success, payload.message, payload.newCredits);
+            Debug.LogWarning($"[TradeMarketServer] Не удалось найти NetworkPlayer для клиента {clientId}");
         }
     }
 
     [ClientRpc]
-    public void SendMarketUpdateClientRpc(string locationId, MarketSnapshot snapshot)
+    public void SendMarketUpdateClientRpc(string locationId, string itemIdsJson, string pricesJson, string stocksJson, string demandJson, string supplyJson)
     {
         // Обновляем локальный рынок
-        var market = LocationMarket.FromSnapshot(snapshot);
         if (TradeUI.Instance != null && TradeUI.Instance.currentMarket != null &&
             TradeUI.Instance.currentMarket.locationId == locationId)
         {
-            TradeUI.Instance.currentMarket.items = market.items;
+            var market = TradeUI.Instance.currentMarket;
+            // Парсим JSON и обновляем MarketItem
+            var itemIds = itemIdsJson.Split(',');
+            var prices = pricesJson.Split(',');
+            var stocks = stocksJson.Split(',');
+            var demands = demandJson.Split(',');
+            var supplies = supplyJson.Split(',');
+
+            for (int i = 0; i < itemIds.Length && i < prices.Length; i++)
+            {
+                var mi = market.GetItem(itemIds[i]);
+                if (mi != null)
+                {
+                    mi.currentPrice = float.Parse(prices[i]);
+                    mi.availableStock = int.Parse(stocks[i]);
+                    if (i < demands.Length) mi.demandFactor = float.Parse(demands[i]);
+                    if (i < supplies.Length) mi.supplyFactor = float.Parse(supplies[i]);
+                }
+            }
+
             TradeUI.Instance.RenderItems();
             TradeUI.Instance.UpdateDisplays();
         }
     }
 
     // ==================== TICK СИСТЕМА ====================
+
+    // ==================== СЕРИАЛИЗАЦИЯ ====================
+
+    /// <summary>
+    /// Сериализовать данные рынка в строки CSV для ClientRPC
+    /// </summary>
+    private (string itemIds, string prices, string stocks, string demands, string supplies) SerializeMarketData(LocationMarket market)
+    {
+        var itemIds = new System.Text.StringBuilder();
+        var prices = new System.Text.StringBuilder();
+        var stocks = new System.Text.StringBuilder();
+        var demands = new System.Text.StringBuilder();
+        var supplies = new System.Text.StringBuilder();
+
+        foreach (var mi in market.items)
+        {
+            if (mi.item == null) continue;
+            if (itemIds.Length > 0)
+            {
+                itemIds.Append(',');
+                prices.Append(',');
+                stocks.Append(',');
+                demands.Append(',');
+                supplies.Append(',');
+            }
+            itemIds.Append(mi.item.itemId);
+            prices.Append(mi.currentPrice.ToString("F2"));
+            stocks.Append(mi.availableStock.ToString());
+            demands.Append(mi.demandFactor.ToString("F3"));
+            supplies.Append(mi.supplyFactor.ToString("F3"));
+        }
+
+        return (itemIds.ToString(), prices.ToString(), stocks.ToString(), demands.ToString(), supplies.ToString());
+    }
 
     private void MarketTick()
     {
@@ -367,7 +411,8 @@ public class TradeMarketServer : NetworkBehaviour
         // 2. Отправка обновлений клиентам
         foreach (var market in _markets.Values)
         {
-            SendMarketUpdateClientRpc(market.locationId, SerializeMarket(market));
+            var data = SerializeMarketData(market);
+            SendMarketUpdateClientRpc(market.locationId, data.itemIds, data.prices, data.stocks, data.demands, data.supplies);
         }
 
         Debug.Log($"[TradeMarketServer] MarketTick выполнен. Рынков: {_markets.Count}");
@@ -417,86 +462,38 @@ public class TradeMarketServer : NetworkBehaviour
     private PlayerCreditsManager FindPlayerCredits(ulong clientId)
     {
         // Ищем среди всех NetworkPlayer
-        var players = FindObjectsByType<NetworkPlayer>(FindObjectsInactive.Exclude);
-        foreach (var player in players)
+        var player = FindPlayerNetworkPlayer(clientId);
+        if (player == null) return null;
+
+        var credits = player.GetComponent<PlayerCreditsManager>();
+        if (credits == null)
         {
-            if (player.OwnerClientId == clientId)
-            {
-                var credits = player.GetComponent<PlayerCreditsManager>();
-                if (credits == null)
-                {
-                    credits = player.gameObject.AddComponent<PlayerCreditsManager>();
-                }
-                return credits;
-            }
+            credits = player.gameObject.AddComponent<PlayerCreditsManager>();
         }
-        return null;
+        return credits;
     }
 
     private PlayerTradeStorage FindPlayerStorage(ulong clientId)
     {
+        var player = FindPlayerNetworkPlayer(clientId);
+        if (player == null) return null;
+
+        var storage = player.GetComponent<PlayerTradeStorage>();
+        if (storage == null)
+        {
+            storage = player.gameObject.AddComponent<PlayerTradeStorage>();
+        }
+        return storage;
+    }
+
+    private NetworkPlayer FindPlayerNetworkPlayer(ulong clientId)
+    {
         var players = FindObjectsByType<NetworkPlayer>(FindObjectsInactive.Exclude);
         foreach (var player in players)
         {
             if (player.OwnerClientId == clientId)
-            {
-                var storage = player.GetComponent<PlayerTradeStorage>();
-                if (storage == null)
-                {
-                    storage = player.gameObject.AddComponent<PlayerTradeStorage>();
-                }
-                return storage;
-            }
+                return player;
         }
         return null;
-    }
-
-    // ==================== СЕРИАЛИЗАЦИЯ ====================
-
-    private MarketSnapshot SerializeMarket(LocationMarket market)
-    {
-        var snapshot = new MarketSnapshot
-        {
-            locationId = market.locationId,
-            locationName = market.locationName,
-            itemIds = new List<string>(),
-            currentPrices = new List<float>(),
-            availableStocks = new List<int>(),
-            demandFactors = new List<float>(),
-            supplyFactors = new List<float>()
-        };
-
-        foreach (var mi in market.items)
-        {
-            if (mi.item == null) continue;
-            snapshot.itemIds.Add(mi.item.itemId);
-            snapshot.currentPrices.Add(mi.currentPrice);
-            snapshot.availableStocks.Add(mi.availableStock);
-            snapshot.demandFactors.Add(mi.demandFactor);
-            snapshot.supplyFactors.Add(mi.supplyFactor);
-        }
-
-        return snapshot;
-    }
-
-    [System.Serializable]
-    public struct MarketSnapshot
-    {
-        public string locationId;
-        public string locationName;
-        public List<string> itemIds;
-        public List<float> currentPrices;
-        public List<int> availableStocks;
-        public List<float> demandFactors;
-        public List<float> supplyFactors;
-    }
-
-    [System.Serializable]
-    public struct TradeResultPayload
-    {
-        public bool success;
-        public string message;
-        public float newCredits;
-        public ulong clientId;
     }
 }

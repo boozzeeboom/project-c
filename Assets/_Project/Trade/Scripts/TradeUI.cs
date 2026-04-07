@@ -139,7 +139,9 @@ public class TradeUI : MonoBehaviour
         contentRect.pivot = new Vector2(0.5f, 1);
         contentRect.sizeDelta = new Vector2(0, 0);
 
+        Debug.Log($"[TradeUI] BuildUI: после RectTransform, _contentPanel={_contentPanel != null}");
         var layout = contentGO.AddComponent<VerticalLayoutGroup>();
+        Debug.Log($"[TradeUI] BuildUI: после VerticalLayoutGroup, _contentPanel={_contentPanel != null}");
         layout.childControlWidth = true;
         layout.childControlHeight = true;
         layout.childForceExpandWidth = true;
@@ -148,6 +150,7 @@ public class TradeUI : MonoBehaviour
         layout.padding = new RectOffset(4, 4, 4, 4);
 
         contentGO.AddComponent<ContentSizeFitter>().verticalFit = ContentSizeFitter.FitMode.PreferredSize;
+        Debug.Log($"[TradeUI] BuildUI: после ContentSizeFitter, _contentPanel={_contentPanel != null}");
 
         scrollGO.AddComponent<Mask>().showMaskGraphic = false;
         var sr = scrollGO.AddComponent<ScrollRect>();

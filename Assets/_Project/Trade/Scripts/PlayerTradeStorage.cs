@@ -55,9 +55,10 @@ namespace ProjectC.Trade
 
         public bool BuyItem(TradeItemDefinition item, int quantity, float pricePerUnit)
         {
-            if (item == null || quantity <= 0) return false;
+            Debug.Log($"[PlayerTradeStorage] BuyItem: {item?.displayName} x{quantity} @ {pricePerUnit}, credits={credits:F0}");
+            if (item == null || quantity <= 0) { Debug.LogWarning("[PTS] null item или quantity<=0"); return false; }
             float totalCost = pricePerUnit * quantity;
-            if (credits < totalCost) { Debug.LogWarning($"[PlayerTradeStorage] Нет кредитов! {totalCost:F0} > {credits:F0}"); return false; }
+            if (credits < totalCost) { Debug.LogWarning($"[PTS] Нет кредитов! {totalCost:F0} > {credits:F0}"); return false; }
 
             float newWeight = CurrentWeight + item.weight * quantity;
             float newVolume = CurrentVolume + item.volume * quantity;

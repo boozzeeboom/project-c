@@ -20,6 +20,19 @@ public class TradeMarketServer : NetworkBehaviour
     [Tooltip("Интервал тика рынка (секунды). Host=300, Dedicated=120")]
     [SerializeField] private float tickInterval = 300f;
 
+    [Tooltip("ТЕСТОВЫЙ РЕЖИМ: уменьшить tickInterval до 30 сек для быстрой проверки")]
+    [SerializeField] private bool testMode = false;
+
+    // Публичный доступ к tickInterval — защита от 0
+    public float TickInterval
+    {
+        get
+        {
+            float val = testMode ? 30f : tickInterval;
+            return val <= 0f ? 300f : val; // Защита: если 0, используем 300 сек
+        }
+    }
+
     [Header("NPC Traders — Session 6")]
     [Tooltip("Список NPC-трейдеров (серверная абстракция)")]
     [SerializeField] private List<NPCTrader> _npcTraders = new List<NPCTrader>();
@@ -65,17 +78,43 @@ public class TradeMarketServer : NetworkBehaviour
         // Загружаем все рынки из Resources
         LoadAllMarkets();
 
+        Debug.Log($"[TradeMarketServer] Загружено рынков: {_markets.Count} | " +
+                  $"TestMode: {testMode} | TickInterval: {TickInterval} сек | IsServer: {IsServer}");
+
+        // Fallback: если OnNetworkSpawn не вызвался (объект создан вручную в иерархии),
+        // пробуем инициализировать серверную сторону
+        if (IsServer && _npcTraders.Count == 0)
+        {
+            InitServerSide();
+        }
+    }
+
+    public override void OnNetworkSpawn()
+    {
+        base.OnNetworkSpawn();
+        InitServerSide();
+    }
+
+    /// <summary>
+    /// Инициализация серверной стороны. Вызывается из OnNetworkSpawn() или Start() как fallback.
+    /// </summary>
+    private void InitServerSide()
+    {
+        if (!IsServer) return;
+
         // Инициализируем NPC-трейдеров (Сессия 6)
-        if (autoInitNPCTraders && IsServer && _npcTraders.Count == 0)
+        if (autoInitNPCTraders && _npcTraders.Count == 0)
         {
             InitDefaultNPCTraders();
         }
 
         // Инициализируем событие "Мезиевая лихорадка" (Сессия 6)
-        if (IsServer && _activeEvents.Count == 0)
+        if (_activeEvents.Count == 0)
         {
             InitDefaultMarketEvents();
         }
+
+        Debug.Log($"[TradeMarketServer] Сервер инициализирован. NPC: {_npcTraders.Count}, События: {_activeEvents.Count}");
     }
 
     /// <summary>
@@ -139,8 +178,11 @@ public class TradeMarketServer : NetworkBehaviour
     {
         if (!IsServer) return;
 
+        float interval = TickInterval;
+        if (interval <= 0f) interval = 300f; // Защита от нулевого интервала
+
         _tickTimer += Time.fixedDeltaTime;
-        if (_tickTimer >= tickInterval)
+        if (_tickTimer >= interval)
         {
             MarketTick();
             _tickTimer = 0f;
@@ -482,8 +524,10 @@ public class TradeMarketServer : NetworkBehaviour
     }
 
     /// <summary>
-    /// Основной тик рынка — вызывается каждые tickInterval секунд (Сессия 6: полный)
+    /// Основной тик рынка — вызывается каждые TickInterval секунд (Сессия 6: полный)
+    /// [ContextMenu] позволяет вызвать вручную из Inspector в Unity
     /// </summary>
+    [ContextMenu("Вызвать MarketTick вручную")]
     private void MarketTick()
     {
         if (!IsServer) return;

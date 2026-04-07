@@ -25,17 +25,23 @@ namespace ProjectC.Trade
             {
                 if (_tradeUI == null)
                 {
-                    var go = GameObject.Find("TradeUI");
+                    // Ищем TradeUI созданный AutoTradeZone (квадратные скобки)
+                    var go = GameObject.Find("[TradeUI]");
                     if (go != null)
                     {
                         _tradeUI = go.GetComponent<TradeUI>();
                     }
-                    else
+                    
+                    // Если нет — ищем любой TradeUI в сцене
+                    if (_tradeUI == null)
                     {
-                        // Создаём TradeUI автоматически
-                        go = new GameObject("TradeUI");
-                        _tradeUI = go.AddComponent<TradeUI>();
-                        Debug.Log("[TradeTrigger] TradeUI GameObject создан автоматически");
+                        _tradeUI = FindAnyObjectByType<TradeUI>();
+                    }
+                    
+                    // Если всё ещё нет — используем AutoTradeZone для создания
+                    if (_tradeUI == null)
+                    {
+                        Debug.LogWarning("[TradeTrigger] TradeUI не найден! Убедись что AutoTradeZone настроен.");
                     }
                 }
                 return _tradeUI;
@@ -71,11 +77,18 @@ namespace ProjectC.Trade
         private void Update()
         {
             if (!_playerInside) return;
+            if (_player != null && _player.IsInShip) return;
+
             if (Keyboard.current != null && Keyboard.current.eKey.wasPressedThisFrame)
             {
-                if (_player != null && _player.IsInShip) return;
                 if (TradeUI == null) { Debug.LogError("[TradeTrigger] TradeUI не найден!"); return; }
+                
+                // Если market не назначен — берём из TradeUI (который получил его от AutoTradeZone)
+                if (market == null && TradeUI.currentMarket != null)
+                    market = TradeUI.currentMarket;
+                
                 if (market == null) { Debug.LogError("[TradeTrigger] Market не назначен!"); return; }
+                
                 Debug.Log($"[TradeTrigger] {npcName}: Открываю торговлю");
                 TradeUI.OpenTrade(market);
             }

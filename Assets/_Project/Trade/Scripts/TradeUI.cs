@@ -402,6 +402,10 @@ public class TradeUI : MonoBehaviour
         }
         if (_modeText != null) _modeText.text = _showWarehouseTab ? "[СКЛАД + ТРЮМ]" : "[РЫНОК]";
         UpdateButtonStates();
+        
+        // Принудительный пересчёт layout
+        if (_contentPanel != null)
+            UnityEngine.UI.LayoutRebuilder.ForceRebuildLayoutImmediate(_contentPanel as RectTransform);
     }
 
     private void UpdateButtonStates()
@@ -440,7 +444,13 @@ public class TradeUI : MonoBehaviour
         var rowGO = new GameObject($"Row_{index}");
         rowGO.transform.SetParent(_contentPanel, false);
         var rRect = rowGO.AddComponent<RectTransform>();
-        rRect.sizeDelta = new Vector2(0, 30);
+        rRect.anchorMin = Vector2.zero;
+        rRect.anchorMax = Vector2.one;
+        rRect.sizeDelta = Vector2.zero;
+        
+        // Явная высота через LayoutElement
+        var layoutElem = rowGO.AddComponent<UnityEngine.UI.LayoutElement>();
+        layoutElem.preferredHeight = 30f;
 
         var bg = rowGO.AddComponent<Image>();
         if (isInCargo)

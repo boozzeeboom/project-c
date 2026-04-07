@@ -2,7 +2,6 @@ using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.InputSystem;
 using UnityEngine.UI;
-using Unity.Netcode;
 using ProjectC.Trade;
 using ProjectC.Player;
 
@@ -11,9 +10,9 @@ using ProjectC.Player;
 /// Поток: Рынок <-> Склад игрока <-> Трюм корабля
 ///
 /// Простой UI через UnityEngine.UI.Text (без TMP).
-/// Все торговые операции идут через ServerRpc → сервер авторитетен.
+/// Все торговые операции идут через NetworkPlayer → ServerRpc → сервер авторитетен.
 /// </summary>
-public class TradeUI : NetworkBehaviour
+public class TradeUI : MonoBehaviour
 {
     public static TradeUI Instance { get; private set; }
     [Header("Data")]
@@ -57,11 +56,9 @@ public class TradeUI : NetworkBehaviour
         }
     }
 
-    public override void OnNetworkSpawn()
+    private void Start()
     {
-        base.OnNetworkSpawn();
-        Debug.Log($"[TradeUI] Спавн на клиенте {OwnerClientId}. IsServer={IsServer}");
-
+        Debug.Log("[TradeUI] Start() вызван");
         try
         {
             BuildUI();
@@ -361,7 +358,7 @@ public class TradeUI : NetworkBehaviour
 
     // ==================== РЕНДЕР ====================
 
-    private void RenderItems()
+    public void RenderItems()
     {
         if (_contentPanel == null) { Debug.LogWarning("[TradeUI] RenderItems: _contentPanel == null!"); return; }
         
@@ -572,7 +569,7 @@ public class TradeUI : NetworkBehaviour
 
     // ==================== ДИСПЛЕИ ====================
 
-    private void UpdateDisplays()
+    public void UpdateDisplays()
     {
         if (_creditsText != null && playerStorage != null)
             _creditsText.text = $"Кредиты: {playerStorage.credits:F0} CR";
@@ -722,9 +719,8 @@ public class TradeUI : NetworkBehaviour
         var mi = currentMarket.items[_selectedIndex];
         if (mi?.item == null) return;
 
-        // Серверная покупка через RPC
-        ulong clientId = IsOwner ? OwnerClientId : 0;
-        BuyItemServerRpc(mi.item.itemId, _buyQuantity, currentMarket.locationId, clientId);
+        // Серверная покупка через NetworkPlayer RPC
+        BuyItemViaServer(mi.item.itemId, _buyQuantity);
     }
 
     private void OnSellClicked()
@@ -734,9 +730,8 @@ public class TradeUI : NetworkBehaviour
         var mi = currentMarket.items[_selectedIndex];
         if (mi?.item == null) return;
 
-        // Серверная продажа через RPC
-        ulong clientId = IsOwner ? OwnerClientId : 0;
-        SellItemServerRpc(mi.item.itemId, _buyQuantity, currentMarket.locationId, clientId);
+        // Серверная продажа через NetworkPlayer RPC
+        SellItemViaServer(mi.item.itemId, _buyQuantity);
     }
 
     private void OnLoadClicked()
@@ -775,44 +770,35 @@ public class TradeUI : NetworkBehaviour
 
     // ==================== ПОКУПКА / ПРОДАЖА (СЕРВЕРНАЯ ЧЕРЕЗ RPC) ====================
 
-    /// <summary>
-    /// Запросить покупку товара у сервера
-    /// </summary>
-    [ServerRpc(RequireOwnership = false)]
-    private void BuyItemServerRpc(string itemId, int quantity, string locationId, ulong clientId)
+    private void BuyItemViaServer(string itemId, int quantity)
     {
-        // Серверная логика теперь в TradeMarketServer
-        if (TradeMarketServer.Instance != null)
+        // Отправляем RPC через NetworkPlayer (он уже заспавнен)
+        if (_player != null && _player.IsOwner)
         {
-            TradeMarketServer.Instance.BuyItemServerRpc(itemId, quantity, locationId, clientId);
+            _player.TradeBuyServerRpc(itemId, quantity, currentMarket.locationId);
         }
         else
         {
-            // Fallback: локальная покупка (если TradeMarketServer не настроен)
-            Debug.LogWarning("[TradeUI] TradeMarketServer не найден, используется локальная покупка");
+            Debug.LogWarning("[TradeUI] NetworkPlayer не найден или не локальный, fallback на локальную покупку");
             BuyItemLocal(itemId, quantity);
         }
     }
 
-    /// <summary>
-    /// Запросить продажу товара серверу
-    /// </summary>
-    [ServerRpc(RequireOwnership = false)]
-    private void SellItemServerRpc(string itemId, int quantity, string locationId, ulong clientId)
+    private void SellItemViaServer(string itemId, int quantity)
     {
-        if (TradeMarketServer.Instance != null)
+        if (_player != null && _player.IsOwner)
         {
-            TradeMarketServer.Instance.SellItemServerRpc(itemId, quantity, locationId, clientId);
+            _player.TradeSellServerRpc(itemId, quantity, currentMarket.locationId);
         }
         else
         {
-            Debug.LogWarning("[TradeUI] TradeMarketServer не найден, используется локальная продажа");
+            Debug.LogWarning("[TradeUI] NetworkPlayer не найден или не локальный, fallback на локальную продажу");
             SellItemLocal(itemId, quantity);
         }
     }
 
     /// <summary>
-    /// Вызывается из ClientRPC с результатом торговли
+    /// Вызывается из TradeResultClientRpc (NetworkPlayer) с результатом торговли
     /// </summary>
     public void OnTradeResult(bool success, string message, float newCredits)
     {

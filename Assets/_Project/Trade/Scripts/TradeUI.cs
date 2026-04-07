@@ -2,17 +2,20 @@ using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.InputSystem;
 using UnityEngine.UI;
+using Unity.Netcode;
 using ProjectC.Trade;
 using ProjectC.Player;
 
 /// <summary>
-/// Клиентский UI торговли. Сессия 4.
+/// Клиентский UI торговли. Сессия 5: Серверная торговля (NGO RPC).
 /// Поток: Рынок <-> Склад игрока <-> Трюм корабля
 ///
 /// Простой UI через UnityEngine.UI.Text (без TMP).
+/// Все торговые операции идут через ServerRpc → сервер авторитетен.
 /// </summary>
-public class TradeUI : MonoBehaviour
+public class TradeUI : NetworkBehaviour
 {
+    public static TradeUI Instance { get; private set; }
     [Header("Data")]
     public LocationMarket currentMarket;
     public PlayerTradeStorage playerStorage;
@@ -46,11 +49,19 @@ public class TradeUI : MonoBehaviour
             playerStorage = FindAnyObjectByType<PlayerTradeStorage>();
         // Находим игрока для блокировки ввода
         _player = FindAnyObjectByType<NetworkPlayer>();
+
+        // Singleton
+        if (Instance == null)
+        {
+            Instance = this;
+        }
     }
 
-    private void Start()
+    public override void OnNetworkSpawn()
     {
-        Debug.Log("[TradeUI] Start() вызван");
+        base.OnNetworkSpawn();
+        Debug.Log($"[TradeUI] Спавн на клиенте {OwnerClientId}. IsServer={IsServer}");
+
         try
         {
             BuildUI();
@@ -63,6 +74,7 @@ public class TradeUI : MonoBehaviour
 
     private void OnDestroy()
     {
+        if (Instance == this) Instance = null;
         DestroyUI();
     }
 
@@ -709,7 +721,10 @@ public class TradeUI : MonoBehaviour
         if (_selectedIndex >= currentMarket.items.Count) return;
         var mi = currentMarket.items[_selectedIndex];
         if (mi?.item == null) return;
-        BuyItem(mi.item, _buyQuantity);
+
+        // Серверная покупка через RPC
+        ulong clientId = IsOwner ? OwnerClientId : 0;
+        BuyItemServerRpc(mi.item.itemId, _buyQuantity, currentMarket.locationId, clientId);
     }
 
     private void OnSellClicked()
@@ -718,7 +733,10 @@ public class TradeUI : MonoBehaviour
         if (_selectedIndex >= currentMarket.items.Count) return;
         var mi = currentMarket.items[_selectedIndex];
         if (mi?.item == null) return;
-        SellItem(mi.item, _buyQuantity);
+
+        // Серверная продажа через RPC
+        ulong clientId = IsOwner ? OwnerClientId : 0;
+        SellItemServerRpc(mi.item.itemId, _buyQuantity, currentMarket.locationId, clientId);
     }
 
     private void OnLoadClicked()
@@ -755,39 +773,101 @@ public class TradeUI : MonoBehaviour
 
     private void OnCloseClicked() => CloseTrade();
 
-    // ==================== ПОКУПКА / ПРОДАЖА ====================
+    // ==================== ПОКУПКА / ПРОДАЖА (СЕРВЕРНАЯ ЧЕРЕЗ RPC) ====================
 
-    private void BuyItem(TradeItemDefinition item, int quantity)
+    /// <summary>
+    /// Запросить покупку товара у сервера
+    /// </summary>
+    [ServerRpc(RequireOwnership = false)]
+    private void BuyItemServerRpc(string itemId, int quantity, string locationId, ulong clientId)
+    {
+        // Серверная логика теперь в TradeMarketServer
+        if (TradeMarketServer.Instance != null)
+        {
+            TradeMarketServer.Instance.BuyItemServerRpc(itemId, quantity, locationId, clientId);
+        }
+        else
+        {
+            // Fallback: локальная покупка (если TradeMarketServer не настроен)
+            Debug.LogWarning("[TradeUI] TradeMarketServer не найден, используется локальная покупка");
+            BuyItemLocal(itemId, quantity);
+        }
+    }
+
+    /// <summary>
+    /// Запросить продажу товара серверу
+    /// </summary>
+    [ServerRpc(RequireOwnership = false)]
+    private void SellItemServerRpc(string itemId, int quantity, string locationId, ulong clientId)
+    {
+        if (TradeMarketServer.Instance != null)
+        {
+            TradeMarketServer.Instance.SellItemServerRpc(itemId, quantity, locationId, clientId);
+        }
+        else
+        {
+            Debug.LogWarning("[TradeUI] TradeMarketServer не найден, используется локальная продажа");
+            SellItemLocal(itemId, quantity);
+        }
+    }
+
+    /// <summary>
+    /// Вызывается из ClientRPC с результатом торговли
+    /// </summary>
+    public void OnTradeResult(bool success, string message, float newCredits)
+    {
+        if (success)
+        {
+            ShowMessage(message);
+            if (playerStorage != null)
+            {
+                playerStorage.credits = newCredits;
+            }
+        }
+        else
+        {
+            ShowMessage($"ОШИБКА: {message}");
+        }
+        UpdateDisplays();
+        RenderItems();
+    }
+
+    // ==================== ЛОКАЛЬНАЯ ТОРГОВЛЯ (FALLBACK) ====================
+
+    private void BuyItemLocal(string itemId, int quantity)
     {
         if (currentMarket == null || playerStorage == null) return;
-        var mi = currentMarket.items.Find(m => m.item != null && m.item.itemId == item.itemId);
+        var mi = currentMarket.items.Find(m => m.item != null && m.item.itemId == itemId);
         if (mi == null || mi.item == null) return;
         if (mi.availableStock < quantity) { ShowMessage($"Недостаточно товара! Есть {mi.availableStock}"); return; }
 
-        bool ok = playerStorage.BuyItem(item, quantity, mi.currentPrice);
+        bool ok = playerStorage.BuyItem(mi.item, quantity, mi.currentPrice);
         if (!ok) { ShowMessage("Недостаточно кредитов или места!"); return; }
 
         mi.availableStock -= quantity;
         mi.UpdateDemand(quantity);
         UpdateDisplays();
         RenderItems();
-        ShowMessage($"КУПЛЕНО: {item.displayName} x{quantity} за {mi.currentPrice * quantity:F0} CR");
+        ShowMessage($"КУПЛЕНО: {mi.item.displayName} x{quantity} за {mi.currentPrice * quantity:F0} CR");
     }
 
-    private void SellItem(TradeItemDefinition item, int quantity)
+    private void SellItemLocal(string itemId, int quantity)
     {
         if (currentMarket == null || playerStorage == null) return;
-        var mi = currentMarket.items.Find(m => m.item != null && m.item.itemId == item.itemId);
+        var mi = currentMarket.items.Find(m => m.item != null && m.item.itemId == itemId);
         if (mi == null || mi.item == null) return;
 
+        var wi = playerStorage.warehouse.Find(w => w.item != null && w.item.itemId == itemId);
+        if (wi == null || wi.quantity < quantity) { ShowMessage("Нет товара на складе!"); return; }
+
         float sellPrice = mi.currentPrice * 0.8f;
-        bool ok = playerStorage.SellItem(item, quantity, sellPrice);
-        if (!ok) { ShowMessage("Нет товара на складе!"); return; }
+        bool ok = playerStorage.SellItem(wi.item, quantity, sellPrice);
+        if (!ok) { ShowMessage("Ошибка продажи!"); return; }
 
         mi.availableStock += quantity;
         mi.UpdateSupply(quantity);
         UpdateDisplays();
         RenderItems();
-        ShowMessage($"ПРОДАНО: {item.displayName} x{quantity} за {sellPrice * quantity:F0} CR (80%)");
+        ShowMessage($"ПРОДАНО: {wi.item.displayName} x{quantity} за {sellPrice * quantity:F0} CR (80%)");
     }
 }

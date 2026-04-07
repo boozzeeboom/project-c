@@ -133,8 +133,6 @@ public class TradeMarketServer : NetworkBehaviour
             "npc_shuttle", "Челнок",
             "secundus", "primium", "mesium_canister_v01",
             2, 4, TradeCondition.PriceThreshold, 1.3f));
-
-        Debug.Log($"[TradeMarketServer] Инициализировано {_npcTraders.Count} NPC-трейдеров");
     }
 
     private void FixedUpdate()
@@ -172,7 +170,6 @@ public class TradeMarketServer : NetworkBehaviour
             if (market != null && !_markets.ContainsKey(market.locationId))
             {
                 _markets[market.locationId] = market;
-                Debug.Log($"[TradeMarketServer] Загружен рынок: {market.locationName} ({market.locationId})");
             }
         }
 #else
@@ -184,8 +181,6 @@ public class TradeMarketServer : NetworkBehaviour
                 _markets[market.locationId] = market;
         }
 #endif
-
-        Debug.Log($"[TradeMarketServer] Всего загружено рынков: {_markets.Count}");
     }
 
     // ==================== SERVERRPC: ТОРГОВЛЯ ====================
@@ -526,8 +521,20 @@ public class TradeMarketServer : NetworkBehaviour
         {
             if (evt.isActive) activeEventCount++;
         }
-        Debug.Log($"[TradeMarketServer] MarketTick выполнен. Рынков: {_markets.Count}, " +
-                  $"NPC-трейдеров: {_npcTraders.Count}, Событий активно: {activeEventCount}");
+
+        // Информативный лог для отладки tick-системы
+        string marketSummary = "";
+        foreach (var market in _markets.Values)
+        {
+            foreach (var item in market.items)
+            {
+                if (item != null && item.item != null && item.item.itemId == "mesium_canister_v01")
+                {
+                    marketSummary += $" | {market.locationId}: мезий={item.currentPrice:F1}CR d={item.demandFactor:F2} s={item.supplyFactor:F2} stock={item.availableStock}";
+                }
+            }
+        }
+        Debug.Log($"[TICK #{Time.time / tickInterval:F0}] Рынков:{_markets.Count} NPC:{_npcTraders.Count} Событий:{activeEventCount}{marketSummary}");
     }
 
     // ==================== NPC-ТРЕЙДЕРЫ (Сессия 6) ====================
@@ -574,8 +581,6 @@ public class TradeMarketServer : NetworkBehaviour
 
                 BroadcastEventClientRpc(evt.eventId, evt.displayName, evt.displayIcon,
                     evt.durationTicks, evt.affectedItemId);
-
-                Debug.Log($"[TradeMarketServer] 🔥 СОБЫТИЕ: {evt.displayName} ({evt.displayIcon})");
             }
         }
 
@@ -592,8 +597,6 @@ public class TradeMarketServer : NetworkBehaviour
 
                 evt.Deactivate();
                 RemoveEventClientRpc(evt.eventId);
-
-                Debug.Log($"[TradeMarketServer] 📢 Событие окончилось: {evt.eventId}");
             }
         }
     }
@@ -685,7 +688,6 @@ public class TradeMarketServer : NetworkBehaviour
         {
             TradeUI.Instance.OnMarketEventStarted(eventId, displayName, displayIcon, durationTicks, affectedItemId);
         }
-        Debug.Log($"[TradeMarketServer] 🔥 СОБЫТИЕ: {displayName} ({displayIcon})");
     }
 
     /// <summary>
@@ -698,7 +700,6 @@ public class TradeMarketServer : NetworkBehaviour
         {
             TradeUI.Instance.OnMarketEventEnded(eventId);
         }
-        Debug.Log($"[TradeMarketServer] 📢 Событие окончилось: {eventId}");
     }
 
     /// <summary>

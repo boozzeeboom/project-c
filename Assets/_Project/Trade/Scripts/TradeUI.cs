@@ -36,15 +36,14 @@ public class TradeUI : MonoBehaviour
     private int _buyQuantity = 1;
     private bool _showWarehouseTab = false;
     private CargoSystem _nearbyCargo;
+    private NetworkPlayer _player;
 
     private void Awake()
     {
         if (playerStorage == null)
-        {
             playerStorage = FindAnyObjectByType<PlayerTradeStorage>();
-            if (playerStorage != null)
-                Debug.Log("[TradeUI] Найден PlayerTradeStorage");
-        }
+        // Находим игрока для блокировки ввода
+        _player = FindAnyObjectByType<NetworkPlayer>();
     }
 
     private void Start()
@@ -95,7 +94,7 @@ public class TradeUI : MonoBehaviour
         _shipCargoInfoText = MakeLabel("ShipCargoInfo", _tradePanel.transform, "Корабль: нет рядом", 0, 176, 12, Color.grey, 480);
 
         // --- Кол-во ---
-        MakeLabel("QtyLabel", _tradePanel.transform, "Кол-во (W/S):", -120, 152, 13, Color.white, 150);
+        MakeLabel("QtyLabel", _tradePanel.transform, "Кол-во (< >):", -120, 152, 13, Color.white, 150);
         _quantityText = MakeLabel("QuantityText", _tradePanel.transform, "1", 140, 152, 14, Color.white, 60);
 
         // --- Scroll-зона ---
@@ -150,7 +149,7 @@ public class TradeUI : MonoBehaviour
 
         // --- Сообщение ---
         _messageText = MakeLabel("MsgText", _tradePanel.transform, "Выберите товар и нажмите Enter", 0, -230, 13, new Color(0.9f, 0.9f, 0.4f), 480);
-        MakeLabel("Hint1", _tradePanel.transform, "Tab - вкладка | Up/Down - выбор | W/S - кол-во", 0, -255, 11, Color.grey, 480);
+        MakeLabel("Hint1", _tradePanel.transform, "Tab - вкладка | Up/Down - выбор | Left/Right - кол-во", 0, -255, 11, Color.grey, 480);
         MakeLabel("Hint2", _tradePanel.transform, "L/U - погрузить/разгрузить | Esc - закрыть", 0, -272, 11, Color.grey, 480);
     }
 
@@ -263,10 +262,21 @@ public class TradeUI : MonoBehaviour
         _selectedIndex = -1;
         if (playerStorage != null) playerStorage.Load();
         CheckNearbyShip();
+
+        // Блокируем ввод игрока (не нужно — используем другие кнопки)
+        // if (_player != null) _player.InputLocked = true;
+
+        // Автовыбор первого товара
+        _selectedIndex = 0;
+
         _tradePanel.SetActive(true);
         _tradePanel.transform.SetAsLastSibling();
         RenderItems();
         UpdateDisplays();
+
+        // Снимаем фокус с кнопок чтобы Enter не срабатывал на них
+        UnityEngine.EventSystems.EventSystem.current?.SetSelectedGameObject(null);
+
         Debug.Log($"[TradeUI] Открыт рынок: {market.locationName} | Товаров: {market.items.Count}");
     }
 
@@ -276,6 +286,10 @@ public class TradeUI : MonoBehaviour
         _selectedIndex = -1;
         if (_tradePanel != null) _tradePanel.SetActive(false);
         if (playerStorage != null) playerStorage.Save();
+
+        // Разблокируем ввод игрока
+        // if (_player != null) _player.InputLocked = false;
+
         ShowMessage("");
     }
 
@@ -446,9 +460,11 @@ public class TradeUI : MonoBehaviour
         var kb = Keyboard.current;
         if (kb == null) return;
 
-        if (kb.wKey.wasPressedThisFrame) { _buyQuantity = Mathf.Min(_buyQuantity + 1, 99); UpdateDisplays(); }
-        if (kb.sKey.wasPressedThisFrame) { _buyQuantity = Mathf.Max(_buyQuantity - 1, 1); UpdateDisplays(); }
+        // Left/Right — кол-во
+        if (kb.leftArrowKey.wasPressedThisFrame) { _buyQuantity = Mathf.Max(_buyQuantity - 1, 1); UpdateDisplays(); }
+        if (kb.rightArrowKey.wasPressedThisFrame) { _buyQuantity = Mathf.Min(_buyQuantity + 1, 99); UpdateDisplays(); }
 
+        // Up/Down — выбор товара
         if (kb.upArrowKey.wasPressedThisFrame)
         {
             int max = (_showWarehouseTab ? (playerStorage?.warehouse.Count ?? 0) : (currentMarket?.items.Count ?? 0)) - 1;
@@ -475,6 +491,7 @@ public class TradeUI : MonoBehaviour
         if (kb.tabKey.wasPressedThisFrame)
         {
             _showWarehouseTab = !_showWarehouseTab;
+            _selectedIndex = 0;
             RenderItems();
             UpdateDisplays();
         }
@@ -495,9 +512,11 @@ public class TradeUI : MonoBehaviour
 
     private void OnBuyClicked()
     {
+        Debug.Log($"[TradeUI] OnBuyClicked: showWarehouse={_showWarehouseTab}, selIdx={_selectedIndex}, items.Count={currentMarket?.items.Count}");
         if (_showWarehouseTab || _selectedIndex < 0 || currentMarket == null) return;
         if (_selectedIndex >= currentMarket.items.Count) return;
         var mi = currentMarket.items[_selectedIndex];
+        Debug.Log($"[TradeUI] Selected item: {mi?.item?.displayName}, price={mi?.currentPrice}, stock={mi?.availableStock}");
         if (mi?.item == null) return;
         BuyItem(mi.item, _buyQuantity);
     }
@@ -537,12 +556,18 @@ public class TradeUI : MonoBehaviour
 
     private void BuyItem(TradeItemDefinition item, int quantity)
     {
-        if (currentMarket == null || playerStorage == null) return;
+        Debug.Log($"[TradeUI] BuyItem: {item.displayName} x{quantity} @ {item.basePrice} CR");
+        Debug.Log($"[TradeUI] currentMarket={currentMarket != null}, playerStorage={playerStorage != null}, credits={playerStorage?.credits}");
+
+        if (currentMarket == null || playerStorage == null) { Debug.LogError("[TradeUI] market или storage null"); return; }
+
         var mi = currentMarket.items.Find(m => m.item != null && m.item.itemId == item.itemId);
-        if (mi == null || mi.item == null) return;
+        Debug.Log($"[TradeUI] marketItem found: {mi != null}, stock: {mi?.availableStock}, price: {mi?.currentPrice}");
+        if (mi == null || mi.item == null) { Debug.LogError("[TradeUI] товар не найден в рынке"); return; }
         if (mi.availableStock < quantity) { ShowMessage($"Недостаточно товара! Есть {mi.availableStock}"); return; }
 
         bool ok = playerStorage.BuyItem(item, quantity, mi.currentPrice);
+        Debug.Log($"[TradeUI] BuyItem result: {ok}, credits after: {playerStorage.credits}");
         if (!ok) { ShowMessage("Недостаточно кредитов или места!"); return; }
 
         mi.availableStock -= quantity;

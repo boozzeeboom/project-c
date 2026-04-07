@@ -128,12 +128,12 @@ public class TradeUI : MonoBehaviour
         vpRect.anchorMax = Vector2.one;
         vpRect.offsetMax = new Vector2(-14, 0);
 
-        var contentGO = new GameObject("Content");
+        var contentGO = new GameObject("Content", typeof(RectTransform));
         contentGO.transform.SetParent(vpGO.transform, false);
-        _contentPanel = contentGO.transform;
+        _contentPanel = contentGO.transform; // Сохраняем ПОСЛЕ SetParent
         Debug.Log($"[TradeUI] BuildUI: _contentPanel создан, null={_contentPanel == null}");
         
-        var contentRect = contentGO.AddComponent<RectTransform>();
+        var contentRect = contentGO.GetComponent<RectTransform>();
         contentRect.anchorMin = new Vector2(0, 1);
         contentRect.anchorMax = new Vector2(1, 1);
         contentRect.pivot = new Vector2(0.5f, 1);

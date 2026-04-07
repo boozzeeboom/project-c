@@ -55,8 +55,7 @@ namespace ProjectC.Trade
 
         public bool BuyItem(TradeItemDefinition item, int quantity, float pricePerUnit)
         {
-            Debug.Log($"[PlayerTradeStorage] BuyItem: {item?.displayName} x{quantity} @ {pricePerUnit}, credits={credits:F0}");
-            if (item == null || quantity <= 0) { Debug.LogWarning("[PTS] null item или quantity<=0"); return false; }
+            if (item == null || quantity <= 0) return false;
             float totalCost = pricePerUnit * quantity;
             if (credits < totalCost) { Debug.LogWarning($"[PTS] Нет кредитов! {totalCost:F0} > {credits:F0}"); return false; }
 
@@ -93,15 +92,11 @@ namespace ProjectC.Trade
 
         public bool LoadToShip(string itemId, int quantity, ProjectC.Player.CargoSystem cargo)
         {
-            Debug.Log($"[PTS] LoadToShip: {itemId} x{quantity}, cargo={cargo != null}");
-            if (cargo == null) { Debug.LogWarning("[PTS] cargo null"); return false; }
+            if (cargo == null) return false;
             var wi = warehouse.Find(w => w.item != null && w.item.itemId == itemId);
-            if (wi == null || wi.quantity < quantity) { Debug.LogWarning($"[PTS] нет {itemId} на складе"); return false; }
+            if (wi == null || wi.quantity < quantity) return false;
 
             var item = wi.item;
-            Debug.Log($"[PTS] item weight={item.weight}, slots={item.slots}, cargo limits: W={cargo.MaxWeight}, V={cargo.MaxVolume}, S={cargo.MaxSlots}");
-            Debug.Log($"[PTS] cargo current: W={cargo.CurrentWeight}, V={cargo.CurrentVolume}, S={cargo.UsedSlots}");
-
             if (cargo.CurrentWeight + item.weight * quantity > cargo.MaxWeight ||
                 cargo.CurrentVolume + item.volume * quantity > cargo.MaxVolume ||
                 cargo.UsedSlots + item.slots * quantity > cargo.MaxSlots)

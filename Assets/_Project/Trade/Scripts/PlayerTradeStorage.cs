@@ -181,6 +181,48 @@ namespace ProjectC.Trade
             return Resources.Load<TradeDatabase>("Trade/TradeItemDatabase");
         }
 
+        /// <summary>
+        /// Добавить товар контракта на склад (бесплатно, для Receipt контрактов).
+        /// Сессия 7: ContractSystem.
+        /// </summary>
+        public bool AddContractItem(TradeItemDefinition item, int quantity)
+        {
+            if (item == null || quantity <= 0) return false;
+
+            float newWeight = CurrentWeight + item.weight * quantity;
+            float newVolume = CurrentVolume + item.volume * quantity;
+            if (newWeight > maxWeight) { Debug.LogWarning($"[PTS] Не хватает места на складе для контрактного товара"); return false; }
+            if (newVolume > maxVolume) { Debug.LogWarning($"[PTS] Не хватает объёма на складе для контрактного товара"); return false; }
+
+            var existing = warehouse.Find(w => w.item == item);
+            if (existing != null)
+            {
+                existing.quantity += quantity;
+            }
+            else
+            {
+                if (warehouse.Count >= maxItemTypes) { Debug.LogWarning($"[PTS] Превышен лимит типов для контрактного товара"); return false; }
+                warehouse.Add(new WarehouseItem { item = item, quantity = quantity });
+            }
+
+            Debug.Log($"[PlayerTradeStorage] Контрактный товар: {item.displayName} x{quantity} (бесплатно)");
+            return true;
+        }
+
+        /// <summary>
+        /// Удалить товар со склада (для завершения контракта)
+        /// Сессия 7: ContractSystem.
+        /// </summary>
+        public bool RemoveItem(string itemId, int quantity)
+        {
+            var wi = warehouse.Find(w => w.item != null && w.item.itemId == itemId);
+            if (wi == null || wi.quantity < quantity) return false;
+
+            wi.quantity -= quantity;
+            if (wi.quantity <= 0) warehouse.Remove(wi);
+            return true;
+        }
+
         private void OnApplicationQuit() { Save(); }
     }
 

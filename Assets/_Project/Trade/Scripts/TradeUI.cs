@@ -260,11 +260,7 @@ public class TradeUI : MonoBehaviour
         _isOpen = true;
         _showWarehouseTab = false;
         _selectedIndex = -1;
-        if (playerStorage != null)
-        {
-            playerStorage.Load();
-            Debug.Log($"[TradeUI] После Load(): credits={playerStorage.credits:F0}, warehouse={playerStorage.warehouse.Count}");
-        }
+        if (playerStorage != null) playerStorage.Load();
         CheckNearbyShip();
 
         // Блокируем ввод игрока (не нужно — используем другие кнопки)
@@ -528,11 +524,9 @@ public class TradeUI : MonoBehaviour
 
     private void OnBuyClicked()
     {
-        Debug.Log($"[TradeUI] OnBuyClicked: showWarehouse={_showWarehouseTab}, selIdx={_selectedIndex}, items.Count={currentMarket?.items.Count}");
         if (_showWarehouseTab || _selectedIndex < 0 || currentMarket == null) return;
         if (_selectedIndex >= currentMarket.items.Count) return;
         var mi = currentMarket.items[_selectedIndex];
-        Debug.Log($"[TradeUI] Selected item: {mi?.item?.displayName}, price={mi?.currentPrice}, stock={mi?.availableStock}");
         if (mi?.item == null) return;
         BuyItem(mi.item, _buyQuantity);
     }
@@ -548,21 +542,10 @@ public class TradeUI : MonoBehaviour
 
     private void OnLoadClicked()
     {
-        Debug.Log($"[TradeUI] OnLoadClicked: cargo={_nearbyCargo != null}, storage={playerStorage != null}, warehouseCount={playerStorage?.warehouse.Count}");
-        if (_nearbyCargo == null || playerStorage == null || playerStorage.warehouse.Count == 0)
-        {
-            Debug.Log($"[TradeUI] OnLoadClicked FAILED: нет склада или склада пуст");
-            return;
-        }
-        // Берём товар из склада (независимо от вкладки)
+        if (_nearbyCargo == null || playerStorage == null || playerStorage.warehouse.Count == 0) return;
         int idx = _showWarehouseTab ? _selectedIndex : 0;
-        if (idx < 0 || idx >= playerStorage.warehouse.Count)
-        {
-            Debug.Log($"[TradeUI] OnLoadClicked: index {idx} out of range");
-            return;
-        }
+        if (idx < 0 || idx >= playerStorage.warehouse.Count) return;
         var item = playerStorage.warehouse[idx]?.item;
-        Debug.Log($"[TradeUI] OnLoadClicked: item={item?.displayName}, qty={_buyQuantity}");
         if (item != null) playerStorage.LoadToShip(item.itemId, _buyQuantity, _nearbyCargo);
         UpdateDisplays();
         RenderItems();
@@ -584,18 +567,12 @@ public class TradeUI : MonoBehaviour
 
     private void BuyItem(TradeItemDefinition item, int quantity)
     {
-        Debug.Log($"[TradeUI] BuyItem: {item.displayName} x{quantity} @ {item.basePrice} CR");
-        Debug.Log($"[TradeUI] currentMarket={currentMarket != null}, playerStorage={playerStorage != null}, credits={playerStorage?.credits}");
-
-        if (currentMarket == null || playerStorage == null) { Debug.LogError("[TradeUI] market или storage null"); return; }
-
+        if (currentMarket == null || playerStorage == null) return;
         var mi = currentMarket.items.Find(m => m.item != null && m.item.itemId == item.itemId);
-        Debug.Log($"[TradeUI] marketItem found: {mi != null}, stock: {mi?.availableStock}, price: {mi?.currentPrice}");
-        if (mi == null || mi.item == null) { Debug.LogError("[TradeUI] товар не найден в рынке"); return; }
+        if (mi == null || mi.item == null) return;
         if (mi.availableStock < quantity) { ShowMessage($"Недостаточно товара! Есть {mi.availableStock}"); return; }
 
         bool ok = playerStorage.BuyItem(item, quantity, mi.currentPrice);
-        Debug.Log($"[TradeUI] BuyItem result: {ok}, credits after: {playerStorage.credits}");
         if (!ok) { ShowMessage("Недостаточно кредитов или места!"); return; }
 
         mi.availableStock -= quantity;

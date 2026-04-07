@@ -7,14 +7,19 @@ namespace ProjectC.Trade
     /// <summary>
     /// Данные конкретного предмета в рынке локации.
     /// Serializable — хранится внутри LocationMarket.
-    /// Формула цены (GDD_22 секция 4):
-    ///   currentPrice = basePrice × (1 + demandFactor - supplyFactor)
+    /// Формула цены (GDD_25 секция 5.1):
+    ///   currentPrice = basePrice × (1 + demandFactor - supplyFactor) × eventMultiplier
+    /// Сессия 6: добавлен elastic decay, eventMultiplier, isDirty для delta-отправки.
     /// </summary>
     [Serializable]
     public class MarketItem
     {
         [Tooltip("Ссылка на определение товара")]
         public TradeItemDefinition item;
+
+        [Header("Stock")]
+        [Tooltip("Базовый сток для пассивной регенерации")]
+        public int initialStock = 50;
 
         [Header("Auto-calculated")]
         [Tooltip("Базовая цена (копируется из item.basePrice)")]
@@ -34,6 +39,13 @@ namespace ProjectC.Trade
         [Range(0f, 1.5f)]
         public float supplyFactor;
 
+        [Header("Session 6: Dynamic Economy")]
+        [Tooltip("Множитель от глобальных событий (1.0 = нет события)")]
+        public float eventMultiplier = 1f;
+
+        [Tooltip("Флаг изменения для delta-отправки клиентам")]
+        public bool isDirty;
+
         /// <summary>
         /// Инициализация из TradeItemDefinition
         /// </summary>
@@ -48,16 +60,17 @@ namespace ProjectC.Trade
         }
 
         /// <summary>
-        /// Пересчёт текущей цены по формуле
+        /// Пересчёт текущей цены по формуле (GDD_25 секция 5.1):
+        /// currentPrice = basePrice × (1 + demandFactor - supplyFactor) × eventMultiplier
         /// </summary>
         public void RecalculatePrice()
         {
             if (item == null) return;
 
             basePrice = item.basePrice;
-            currentPrice = basePrice * (1f + demandFactor - supplyFactor);
+            currentPrice = basePrice * (1f + demandFactor - supplyFactor) * eventMultiplier;
 
-            // Ограничение максимума ×5 (anti-exploit GDD_22 секция 10)
+            // Ограничение максимума ×5 (anti-exploit GDD_25 секция 11)
             float maxPrice = basePrice * 5f;
             currentPrice = Mathf.Min(currentPrice, maxPrice);
 
@@ -74,6 +87,7 @@ namespace ProjectC.Trade
         {
             demandFactor += quantity * 0.02f;
             demandFactor = Mathf.Clamp(demandFactor, 0f, 1.5f);
+            isDirty = true;
             RecalculatePrice();
         }
 
@@ -86,20 +100,51 @@ namespace ProjectC.Trade
             supplyFactor += quantity * 0.02f;
             supplyFactor = Mathf.Clamp(supplyFactor, 0f, 1.5f);
             availableStock += quantity;
+            isDirty = true;
             RecalculatePrice();
         }
 
         /// <summary>
-        /// Затухание спроса/предложения (GDD_25 секция 5.2)
-        /// factor *= 0.95 каждый тик
+        /// Затухание спроса/предложения — ELASTIC "КАЧЕЛИ" (GDD_25 секция 5.2, Сессия 6)
+        /// Эффективный множитель: decayRate × (1 - elasticStrength) = 0.92 × 0.92 = 0.846 за тик
+        /// Из пика 1.5 возврат к норме за ~80 мин (16 тиков по 5 мин)
         /// </summary>
-        public void DecayFactors(float decayRate = 0.95f)
+        public void DecayFactors(float decayRate = 0.92f, float elasticStrength = 0.08f)
         {
-            demandFactor *= decayRate;
-            supplyFactor *= decayRate;
-            // Округляем до 3 знаков чтобы избежать дрейфа
+            // Экспоненциальное затухание + эластичный возврат
+            float effectiveMultiplier = decayRate * (1f - elasticStrength); // 0.846
+            demandFactor *= effectiveMultiplier;
+            supplyFactor *= effectiveMultiplier;
+
+            // Минимальный порог — обнуляем мелочь чтобы избежать дрейфа
+            if (demandFactor < 0.01f) demandFactor = 0f;
+            if (supplyFactor < 0.01f) supplyFactor = 0f;
+
+            // Округляем до 3 знаков
             demandFactor = Mathf.Round(demandFactor * 1000f) / 1000f;
             supplyFactor = Mathf.Round(supplyFactor * 1000f) / 1000f;
+
+            isDirty = true;
+            RecalculatePrice();
+        }
+
+        /// <summary>
+        /// Применить множитель от глобального события
+        /// </summary>
+        public void ApplyEventMultiplier(float multiplier)
+        {
+            eventMultiplier = multiplier;
+            isDirty = true;
+            RecalculatePrice();
+        }
+
+        /// <summary>
+        /// Сбросить множитель события (когда событие окончилось)
+        /// </summary>
+        public void ResetEventMultiplier()
+        {
+            eventMultiplier = 1f;
+            isDirty = true;
             RecalculatePrice();
         }
     }

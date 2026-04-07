@@ -20,6 +20,17 @@ public class TradeMarketServer : NetworkBehaviour
     [Tooltip("Интервал тика рынка (секунды). Host=300, Dedicated=120")]
     [SerializeField] private float tickInterval = 300f;
 
+    [Header("NPC Traders — Session 6")]
+    [Tooltip("Список NPC-трейдеров (серверная абстракция)")]
+    [SerializeField] private List<NPCTrader> _npcTraders = new List<NPCTrader>();
+
+    [Header("Market Events — Session 6")]
+    [Tooltip("Список активных событий")]
+    [SerializeField] private List<MarketEvent> _activeEvents = new List<MarketEvent>();
+
+    [Tooltip("Автоматически инициализировать NPC-трейдеров при старте")]
+    [SerializeField] private bool autoInitNPCTraders = true;
+
     [Header("Rate Limiting")]
     [Tooltip("Максимум сделок в минуту на игрока")]
     [SerializeField] private int maxTradesPerMinute = 10;
@@ -53,6 +64,77 @@ public class TradeMarketServer : NetworkBehaviour
     {
         // Загружаем все рынки из Resources
         LoadAllMarkets();
+
+        // Инициализируем NPC-трейдеров (Сессия 6)
+        if (autoInitNPCTraders && IsServer && _npcTraders.Count == 0)
+        {
+            InitDefaultNPCTraders();
+        }
+
+        // Инициализируем событие "Мезиевая лихорадка" (Сессия 6)
+        if (IsServer && _activeEvents.Count == 0)
+        {
+            InitDefaultMarketEvents();
+        }
+    }
+
+    /// <summary>
+    /// Инициализировать событие "Мезиевая лихорадка" (Сессия 6)
+    /// Триггер: demandFactor мезия > 0.8 на любом рынке
+    /// </summary>
+    private void InitDefaultMarketEvents()
+    {
+        var mesiumRush = new MarketEvent
+        {
+            eventId = "mesium_rush_001",
+            displayName = "Мезиевая лихорадка",
+            displayIcon = "🔥",
+            affectedItemId = "mesium_canister_v01",
+            affectedLocations = new[] { "ALL" },
+            demandMultiplier = 1.4f,   // спрос +40%
+            supplyMultiplier = 1.0f,    // предложение не меняется
+            durationTicks = 6,          // 30 мин (6 × 5 мин)
+            cooldownTicks = 24,         // 2 часа кулдаун
+            triggerType = TriggerType.DemandThreshold,
+            triggerValue = 0.8f,        // demandFactor > 0.8
+            isActive = false,
+            cooldownRemaining = 0
+        };
+
+        _activeEvents.Add(mesiumRush);
+        Debug.Log("[TradeMarketServer] Инициализировано событие: Мезиевая лихорадка 🔥");
+    }
+
+    /// <summary>
+    /// Инициализировать 4 NPC-трейдеров по умолчанию (Сессия 6)
+    /// </summary>
+    private void InitDefaultNPCTraders()
+    {
+        // 1. ГосКонвой: Приму → Тертиус, мезий, 5-8, всегда
+        _npcTraders.Add(NPCTrader.CreateDefault(
+            "npc_state_convoy", "ГосКонвой",
+            "primium", "tertius", "mesium_canister_v01",
+            5, 8, TradeCondition.Always));
+
+        // 2. Ветер: Приму → Секунд, антигравий, 3-5, всегда
+        _npcTraders.Add(NPCTrader.CreateDefault(
+            "npc_wind_trader", "Ветер",
+            "primium", "secundus", "antigrav_ingot_v01",
+            3, 5, TradeCondition.Always));
+
+        // 3. Караванщик: Тертиус → Квартус, латекс, 8-12, при supplyFactor > 0.3
+        _npcTraders.Add(NPCTrader.CreateDefault(
+            "npc_caravan", "Караванщик",
+            "tertius", "quartus", "latex_roll_v01",
+            8, 12, TradeCondition.SupplyThreshold, 0.3f));
+
+        // 4. Челнок: Секунд → Приму, мезий, 2-4, при цене > basePrice × 1.3
+        _npcTraders.Add(NPCTrader.CreateDefault(
+            "npc_shuttle", "Челнок",
+            "secundus", "primium", "mesium_canister_v01",
+            2, 4, TradeCondition.PriceThreshold, 1.3f));
+
+        Debug.Log($"[TradeMarketServer] Инициализировано {_npcTraders.Count} NPC-трейдеров");
     }
 
     private void FixedUpdate()
@@ -332,7 +414,7 @@ public class TradeMarketServer : NetworkBehaviour
     }
 
     [ClientRpc]
-    public void SendMarketUpdateClientRpc(string locationId, string itemIdsJson, string pricesJson, string stocksJson, string demandJson, string supplyJson)
+    public void SendMarketUpdateClientRpc(string locationId, string itemIdsJson, string pricesJson, string stocksJson, string demandJson, string supplyJson, string eventMultipliersJson = "")
     {
         // Обновляем локальный рынок
         if (TradeUI.Instance != null && TradeUI.Instance.currentMarket != null &&
@@ -345,6 +427,9 @@ public class TradeMarketServer : NetworkBehaviour
             var stocks = stocksJson.Split(',');
             var demands = demandJson.Split(',');
             var supplies = supplyJson.Split(',');
+            var eventMultipliers = string.IsNullOrEmpty(eventMultipliersJson)
+                ? null
+                : eventMultipliersJson.Split(',');
 
             for (int i = 0; i < itemIds.Length && i < prices.Length; i++)
             {
@@ -355,6 +440,8 @@ public class TradeMarketServer : NetworkBehaviour
                     mi.availableStock = int.Parse(stocks[i]);
                     if (i < demands.Length) mi.demandFactor = float.Parse(demands[i]);
                     if (i < supplies.Length) mi.supplyFactor = float.Parse(supplies[i]);
+                    if (eventMultipliers != null && i < eventMultipliers.Length)
+                        mi.eventMultiplier = float.Parse(eventMultipliers[i]);
                 }
             }
 
@@ -399,23 +486,283 @@ public class TradeMarketServer : NetworkBehaviour
         return (itemIds.ToString(), prices.ToString(), stocks.ToString(), demands.ToString(), supplies.ToString());
     }
 
+    /// <summary>
+    /// Основной тик рынка — вызывается каждые tickInterval секунд (Сессия 6: полный)
+    /// </summary>
     private void MarketTick()
     {
-        // 1. Затухание спроса/предложения
+        if (!IsServer) return;
+
+        // 1. NPC-трейдеры перемещают товары
+        ProcessNPCTrades();
+
+        // 2. Проверка и обновление событий
+        UpdateEvents();
+
+        // 3. Затухание спроса/предложения (elastic "качели") + пассивная регенерация стока
         foreach (var market in _markets.Values)
         {
-            market.DecaySupplyAndDemand(0.95f);
+            market.DecaySupplyAndDemand(0.92f, 0.08f);
+        }
+
+        // 4. Пересчёт цен (с eventMultiplier)
+        foreach (var market in _markets.Values)
+        {
             market.RecalculatePrices();
         }
 
-        // 2. Отправка обновлений клиентам
-        foreach (var market in _markets.Values)
+        // 5. Delta-отправка обновлений клиентам (только изменённые предметы)
+        SendDeltaUpdatesToClients();
+
+        // 6. Уменьшаем кулдауны событий
+        foreach (var evt in _activeEvents)
         {
-            var data = SerializeMarketData(market);
-            SendMarketUpdateClientRpc(market.locationId, data.itemIds, data.prices, data.stocks, data.demands, data.supplies);
+            if (!evt.isActive)
+                evt.TickCooldown();
         }
 
-        Debug.Log($"[TradeMarketServer] MarketTick выполнен. Рынков: {_markets.Count}");
+        int activeEventCount = 0;
+        foreach (var evt in _activeEvents)
+        {
+            if (evt.isActive) activeEventCount++;
+        }
+        Debug.Log($"[TradeMarketServer] MarketTick выполнен. Рынков: {_markets.Count}, " +
+                  $"NPC-трейдеров: {_npcTraders.Count}, Событий активно: {activeEventCount}");
+    }
+
+    // ==================== NPC-ТРЕЙДЕРЫ (Сессия 6) ====================
+
+    /// <summary>
+    /// Обработать торговлю всех NPC-трейдеров
+    /// </summary>
+    private void ProcessNPCTrades()
+    {
+        foreach (var trader in _npcTraders)
+        {
+            if (!_markets.ContainsKey(trader.fromLocationId) ||
+                !_markets.ContainsKey(trader.toLocationId)) continue;
+
+            var fromMarket = _markets[trader.fromLocationId];
+            var toMarket = _markets[trader.toLocationId];
+
+            if (trader.ShouldTrade(fromMarket, toMarket))
+            {
+                trader.ExecuteTrade(_markets);
+            }
+        }
+    }
+
+    // ==================== СОБЫТИЯ РЫНКА (Сессия 6) ====================
+
+    /// <summary>
+    /// Обновить активные события: проверка триггеров, таймеры, окончание
+    /// </summary>
+    private void UpdateEvents()
+    {
+        // Проверка триггеров для неактивных событий
+        foreach (var evt in _activeEvents)
+        {
+            if (!evt.isActive && evt.cooldownRemaining <= 0 && evt.ShouldTrigger(_markets))
+            {
+                evt.Activate();
+
+                // Применить эффект ко всем рынкам
+                foreach (var market in _markets.Values)
+                {
+                    evt.ApplyToAllAffectedItems(market);
+                }
+
+                BroadcastEventClientRpc(evt.eventId, evt.displayName, evt.displayIcon,
+                    evt.durationTicks, evt.affectedItemId);
+
+                Debug.Log($"[TradeMarketServer] 🔥 СОБЫТИЕ: {evt.displayName} ({evt.displayIcon})");
+            }
+        }
+
+        // Обновление активных событий
+        foreach (var evt in _activeEvents)
+        {
+            if (evt.isActive && evt.IsExpired())
+            {
+                // Убрать эффект со всех рынков
+                foreach (var market in _markets.Values)
+                {
+                    evt.RemoveFromAllAffectedItems(market);
+                }
+
+                evt.Deactivate();
+                RemoveEventClientRpc(evt.eventId);
+
+                Debug.Log($"[TradeMarketServer] 📢 Событие окончилось: {evt.eventId}");
+            }
+        }
+    }
+
+    /// <summary>
+    /// Создать новое событие рынка (вызывается из кода или админ-команды)
+    /// </summary>
+    public void StartMarketEvent(MarketEvent newEvent)
+    {
+        _activeEvents.Add(newEvent);
+        newEvent.Activate();
+
+        foreach (var market in _markets.Values)
+        {
+            newEvent.ApplyToAllAffectedItems(market);
+        }
+
+        BroadcastEventClientRpc(newEvent.eventId, newEvent.displayName, newEvent.displayIcon,
+            newEvent.durationTicks, newEvent.affectedItemId);
+    }
+
+    // ==================== DELTA-ОТПРАВКА (Сессия 6) ====================
+
+    /// <summary>
+    /// Отправить клиентам только изменённые предметы (isDirty flag)
+    /// </summary>
+    private void SendDeltaUpdatesToClients()
+    {
+        foreach (var market in _markets.Values)
+        {
+            var dirtyItems = market.GetDirtyItems();
+            if (dirtyItems.Count == 0) continue;
+
+            var data = SerializeMarketDataDelta(market, dirtyItems);
+            SendMarketUpdateClientRpc(market.locationId, data.itemIds, data.prices,
+                data.stocks, data.demands, data.supplies, data.eventMultipliers);
+
+            // Сброс isDirty
+            market.ClearDirtyFlags();
+        }
+    }
+
+    /// <summary>
+    /// Сериализовать только изменённые предметы
+    /// </summary>
+    private (string itemIds, string prices, string stocks, string demands, string supplies, string eventMultipliers)
+        SerializeMarketDataDelta(LocationMarket market, List<MarketItem> dirtyItems)
+    {
+        var itemIds = new System.Text.StringBuilder();
+        var prices = new System.Text.StringBuilder();
+        var stocks = new System.Text.StringBuilder();
+        var demands = new System.Text.StringBuilder();
+        var supplies = new System.Text.StringBuilder();
+        var eventMultipliers = new System.Text.StringBuilder();
+
+        foreach (var mi in dirtyItems)
+        {
+            if (mi.item == null) continue;
+            if (itemIds.Length > 0)
+            {
+                itemIds.Append(',');
+                prices.Append(',');
+                stocks.Append(',');
+                demands.Append(',');
+                supplies.Append(',');
+                eventMultipliers.Append(',');
+            }
+            itemIds.Append(mi.item.itemId);
+            prices.Append(mi.currentPrice.ToString("F2"));
+            stocks.Append(mi.availableStock.ToString());
+            demands.Append(mi.demandFactor.ToString("F3"));
+            supplies.Append(mi.supplyFactor.ToString("F3"));
+            eventMultipliers.Append(mi.eventMultiplier.ToString("F3"));
+        }
+
+        return (itemIds.ToString(), prices.ToString(), stocks.ToString(),
+                demands.ToString(), supplies.ToString(), eventMultipliers.ToString());
+    }
+
+    // ==================== CLIENTRPC: СОБЫТИЯ (Сессия 6) ====================
+
+    /// <summary>
+    /// Уведомить всех клиентов о начале события
+    /// </summary>
+    [ClientRpc]
+    private void BroadcastEventClientRpc(string eventId, string displayName, string displayIcon, int durationTicks, string affectedItemId)
+    {
+        if (TradeUI.Instance != null)
+        {
+            TradeUI.Instance.OnMarketEventStarted(eventId, displayName, displayIcon, durationTicks, affectedItemId);
+        }
+        Debug.Log($"[TradeMarketServer] 🔥 СОБЫТИЕ: {displayName} ({displayIcon})");
+    }
+
+    /// <summary>
+    /// Уведомить всех клиентов об окончании события
+    /// </summary>
+    [ClientRpc]
+    private void RemoveEventClientRpc(string eventId)
+    {
+        if (TradeUI.Instance != null)
+        {
+            TradeUI.Instance.OnMarketEventEnded(eventId);
+        }
+        Debug.Log($"[TradeMarketServer] 📢 Событие окончилось: {eventId}");
+    }
+
+    /// <summary>
+    /// Отправить все активные события новому клиенту при подключении
+    /// </summary>
+    [ClientRpc]
+    public void SendActiveEventsClientRpc(string eventIdsJson, string displayNamesJson, string displayIconsJson, string durationsJson, string affectedItemIdsJson)
+    {
+        var eventIds = string.IsNullOrEmpty(eventIdsJson) ? new string[0] : eventIdsJson.Split(',');
+        var displayNames = string.IsNullOrEmpty(displayNamesJson) ? new string[0] : displayNamesJson.Split(',');
+        var displayIcons = string.IsNullOrEmpty(displayIconsJson) ? new string[0] : displayIconsJson.Split(',');
+        var durations = string.IsNullOrEmpty(durationsJson) ? new string[0] : durationsJson.Split(',');
+        var affectedItemIds = string.IsNullOrEmpty(affectedItemIdsJson) ? new string[0] : affectedItemIdsJson.Split(',');
+
+        if (TradeUI.Instance != null)
+        {
+            for (int i = 0; i < eventIds.Length; i++)
+            {
+                TradeUI.Instance.OnMarketEventStarted(
+                    eventIds[i],
+                    i < displayNames.Length ? displayNames[i] : "",
+                    i < displayIcons.Length ? displayIcons[i] : "",
+                    i < durations.Length ? int.Parse(durations[i]) : 0,
+                    i < affectedItemIds.Length ? affectedItemIds[i] : "");
+            }
+        }
+    }
+
+    /// <summary>
+    /// Публичный метод для отправки активных событий конкретному клиенту
+    /// </summary>
+    public void SendActiveEventsToClient(ulong clientId)
+    {
+        var activeEvents = _activeEvents.FindAll(e => e.isActive);
+        if (activeEvents.Count == 0) return;
+
+        var ids = new System.Text.StringBuilder();
+        var names = new System.Text.StringBuilder();
+        var icons = new System.Text.StringBuilder();
+        var durations = new System.Text.StringBuilder();
+        var itemIds = new System.Text.StringBuilder();
+
+        foreach (var evt in activeEvents)
+        {
+            if (ids.Length > 0)
+            {
+                ids.Append(',');
+                names.Append(',');
+                icons.Append(',');
+                durations.Append(',');
+                itemIds.Append(',');
+            }
+            ids.Append(evt.eventId);
+            names.Append(evt.displayName);
+            icons.Append(evt.displayIcon);
+            durations.Append(evt.remainingTicks.ToString());
+            itemIds.Append(evt.affectedItemId);
+        }
+
+        // ClientRPC шлётся всем, но TradeUI обработает только для себя
+        // Для отправки конкретному клиенту нужен отдельный механизм
+        // Пока шлём всем — это упрощение
+        SendActiveEventsClientRpc(ids.ToString(), names.ToString(), icons.ToString(),
+            durations.ToString(), itemIds.ToString());
     }
 
     // ==================== УТИЛИТЫ ====================

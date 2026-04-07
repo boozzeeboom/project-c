@@ -121,14 +121,51 @@ namespace ProjectC.Trade
         }
 
         /// <summary>
-        /// Затухание спроса/предложения (tick-система)
+        /// Затухание спроса/предложения — ELASTIC "КАЧЕЛИ" (Сессия 6)
+        /// + пассивная регенерация стока (+2% от initialStock за тик)
         /// </summary>
-        public void DecaySupplyAndDemand(float decayRate = 0.95f)
+        public void DecaySupplyAndDemand(float decayRate = 0.92f, float elasticStrength = 0.08f)
         {
             foreach (var marketItem in items)
             {
                 if (marketItem != null)
-                    marketItem.DecayFactors(decayRate);
+                {
+                    // Пассивная регенерация стока: +2% от базового за тик
+                    int regenAmount = Mathf.Max(1, Mathf.RoundToInt(marketItem.initialStock * 0.02f));
+                    if (marketItem.availableStock < marketItem.initialStock)
+                    {
+                        marketItem.availableStock += regenAmount;
+                        marketItem.isDirty = true;
+                    }
+
+                    marketItem.DecayFactors(decayRate, elasticStrength);
+                }
+            }
+        }
+
+        /// <summary>
+        /// Получить список изменённых предметов (для delta-отправки)
+        /// </summary>
+        public List<MarketItem> GetDirtyItems()
+        {
+            var dirty = new List<MarketItem>();
+            foreach (var marketItem in items)
+            {
+                if (marketItem != null && marketItem.isDirty)
+                    dirty.Add(marketItem);
+            }
+            return dirty;
+        }
+
+        /// <summary>
+        /// Сбросить isDirty у всех предметов
+        /// </summary>
+        public void ClearDirtyFlags()
+        {
+            foreach (var marketItem in items)
+            {
+                if (marketItem != null)
+                    marketItem.isDirty = false;
             }
         }
 

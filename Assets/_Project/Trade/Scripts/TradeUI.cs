@@ -856,4 +856,43 @@ public class TradeUI : MonoBehaviour
         RenderItems();
         ShowMessage($"ПРОДАНО: {wi.item.displayName} x{quantity} за {sellPrice * quantity:F0} CR (80%)");
     }
+
+    // ==================== СОБЫТИЯ РЫНКА (Сессия 6) ====================
+
+    private Dictionary<string, string> _activeEventDisplayNames = new Dictionary<string, string>();
+    private Dictionary<string, string> _activeEventIcons = new Dictionary<string, string>();
+
+    /// <summary>
+    /// Вызывается из BroadcastEventClientRpc при начале события
+    /// </summary>
+    public void OnMarketEventStarted(string eventId, string displayName, string displayIcon, int durationTicks, string affectedItemId)
+    {
+        _activeEventDisplayNames[eventId] = displayName;
+        _activeEventIcons[eventId] = displayIcon;
+
+        ShowMessage($"📢 {displayIcon} {displayName}! Длительность: {durationTicks} тиков");
+        Debug.Log($"[TradeUI] Событие начато: {displayName} ({displayIcon})");
+
+        // Перерендерим рынок чтобы показать изменённые цены
+        RenderItems();
+        UpdateDisplays();
+    }
+
+    /// <summary>
+    /// Вызывается из RemoveEventClientRpc при окончании события
+    /// </summary>
+    public void OnMarketEventEnded(string eventId)
+    {
+        string displayName = _activeEventDisplayNames.ContainsKey(eventId)
+            ? _activeEventDisplayNames[eventId] : eventId;
+
+        _activeEventDisplayNames.Remove(eventId);
+        _activeEventIcons.Remove(eventId);
+
+        ShowMessage($"📢 Событие '{displayName}' окончилось. Цены возвращаются к норме.");
+        Debug.Log($"[TradeUI] Событие окончено: {eventId}");
+
+        RenderItems();
+        UpdateDisplays();
+    }
 }

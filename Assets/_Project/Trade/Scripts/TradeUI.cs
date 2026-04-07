@@ -149,8 +149,8 @@ public class TradeUI : MonoBehaviour
 
         // --- Сообщение ---
         _messageText = MakeLabel("MsgText", _tradePanel.transform, "Выберите товар и нажмите Enter", 0, -230, 13, new Color(0.9f, 0.9f, 0.4f), 480);
-        MakeLabel("Hint1", _tradePanel.transform, "Tab - вкладка | Up/Down - выбор | Left/Right - кол-во", 0, -255, 11, Color.grey, 480);
-        MakeLabel("Hint2", _tradePanel.transform, "L/U - погрузить/разгрузить | Esc - закрыть", 0, -272, 11, Color.grey, 480);
+        MakeLabel("Hint1", _tradePanel.transform, "B - склад | Up/Down - выбор | Left/Right - кол-во", 0, -255, 11, Color.grey, 480);
+        MakeLabel("Hint2", _tradePanel.transform, "L/U - погрузить/разгрузить | Esc - закрыть | R - сброс", 0, -272, 11, Color.grey, 480);
     }
 
     private void DestroyUI()
@@ -260,7 +260,11 @@ public class TradeUI : MonoBehaviour
         _isOpen = true;
         _showWarehouseTab = false;
         _selectedIndex = -1;
-        if (playerStorage != null) playerStorage.Load();
+        if (playerStorage != null)
+        {
+            playerStorage.Load();
+            Debug.Log($"[TradeUI] После Load(): credits={playerStorage.credits:F0}, warehouse={playerStorage.warehouse.Count}");
+        }
         CheckNearbyShip();
 
         // Блокируем ввод игрока (не нужно — используем другие кнопки)
@@ -487,8 +491,8 @@ public class TradeUI : MonoBehaviour
         if (kb.enterKey.wasPressedThisFrame && (kb.leftShiftKey.isPressed || kb.rightShiftKey.isPressed))
             OnSellClicked();
 
-        // Tab — смена вкладки
-        if (kb.tabKey.wasPressedThisFrame)
+        // B — смена вкладки (Tab занят инвентарём)
+        if (kb.bKey.wasPressedThisFrame)
         {
             _showWarehouseTab = !_showWarehouseTab;
             _selectedIndex = 0;
@@ -506,6 +510,18 @@ public class TradeUI : MonoBehaviour
 
         // Esc — закрыть
         if (kb.escapeKey.wasPressedThisFrame) CloseTrade();
+
+        // R — сбросить кредиты (отладка)
+        if (kb.rKey.wasPressedThisFrame && playerStorage != null)
+        {
+            playerStorage.credits = 1000;
+            playerStorage.warehouse.Clear();
+            PlayerPrefs.DeleteKey("TradeCredits");
+            PlayerPrefs.DeleteKey("TradeWarehouse");
+            UpdateDisplays();
+            RenderItems();
+            ShowMessage("Кредиты сброшены: 1000 CR");
+        }
     }
 
     // ==================== КНОПКИ ====================
@@ -532,9 +548,21 @@ public class TradeUI : MonoBehaviour
 
     private void OnLoadClicked()
     {
-        if (!_showWarehouseTab || _nearbyCargo == null || playerStorage == null || _selectedIndex < 0) return;
-        if (_selectedIndex >= playerStorage.warehouse.Count) return;
-        var item = playerStorage.warehouse[_selectedIndex]?.item;
+        Debug.Log($"[TradeUI] OnLoadClicked: cargo={_nearbyCargo != null}, storage={playerStorage != null}, warehouseCount={playerStorage?.warehouse.Count}");
+        if (_nearbyCargo == null || playerStorage == null || playerStorage.warehouse.Count == 0)
+        {
+            Debug.Log($"[TradeUI] OnLoadClicked FAILED: нет склада или склада пуст");
+            return;
+        }
+        // Берём товар из склада (независимо от вкладки)
+        int idx = _showWarehouseTab ? _selectedIndex : 0;
+        if (idx < 0 || idx >= playerStorage.warehouse.Count)
+        {
+            Debug.Log($"[TradeUI] OnLoadClicked: index {idx} out of range");
+            return;
+        }
+        var item = playerStorage.warehouse[idx]?.item;
+        Debug.Log($"[TradeUI] OnLoadClicked: item={item?.displayName}, qty={_buyQuantity}");
         if (item != null) playerStorage.LoadToShip(item.itemId, _buyQuantity, _nearbyCargo);
         UpdateDisplays();
         RenderItems();

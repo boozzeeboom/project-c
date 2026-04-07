@@ -50,7 +50,15 @@ public class TradeUI : MonoBehaviour
 
     private void Start()
     {
-        BuildUI();
+        Debug.Log("[TradeUI] Start() вызван");
+        try
+        {
+            BuildUI();
+        }
+        catch (System.Exception e)
+        {
+            Debug.LogError($"[TradeUI] Ошибка в BuildUI: {e.Message}\n{e.StackTrace}");
+        }
     }
 
     private void OnDestroy()
@@ -68,6 +76,8 @@ public class TradeUI : MonoBehaviour
     {
         Debug.Log("[TradeUI] BuildUI() START");
         
+        try
+        {
         // --- Root Canvas ---
         _rootCanvas = new GameObject("[TradeUI]_RootCanvas");
         _rootCanvas.layer = LayerMask.NameToLayer("UI");
@@ -163,6 +173,11 @@ public class TradeUI : MonoBehaviour
         MakeLabel("Hint2", _tradePanel.transform, "L/U - погрузить/разгрузить | Esc - закрыть | R - сброс", 0, -272, 11, Color.grey, 480);
         
         Debug.Log($"[TradeUI] BuildUI() END — _contentPanel={_contentPanel != null}, _tradePanel={_tradePanel != null}");
+        }
+        catch (System.Exception e)
+        {
+            Debug.LogError($"[TradeUI] Ошибка в BuildUI: {e.Message}\n{e.StackTrace}");
+        }
     }
 
     private void DestroyUI()
@@ -269,8 +284,14 @@ public class TradeUI : MonoBehaviour
     {
         if (market == null) return;
         
+        Debug.Log($"[TradeUI] OpenTrade() вызван. _tradePanel={( _tradePanel != null ? "Создан" : "null")}");
+        
         // Создаём UI если ещё не создан
-        if (_tradePanel == null) BuildUI();
+        if (_tradePanel == null) 
+        {
+            Debug.Log("[TradeUI] BuildUI() вызывается из OpenTrade()");
+            BuildUI();
+        }
         if (_tradePanel == null) { Debug.LogError("[TradeUI] Не удалось создать UI!"); return; }
         
         currentMarket = market;

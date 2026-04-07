@@ -66,6 +66,8 @@ public class TradeUI : MonoBehaviour
 
     private void BuildUI()
     {
+        Debug.Log("[TradeUI] BuildUI() START");
+        
         // --- Root Canvas ---
         _rootCanvas = new GameObject("[TradeUI]_RootCanvas");
         _rootCanvas.layer = LayerMask.NameToLayer("UI");
@@ -81,10 +83,12 @@ public class TradeUI : MonoBehaviour
         scaler.matchWidthOrHeight = 0.5f;
 
         _rootCanvas.AddComponent<GraphicRaycaster>();
+        Debug.Log("[TradeUI] BuildUI: Canvas создан");
 
         // --- Панель ---
         _tradePanel = CreatePanel("TradePanel", _rootCanvas.transform, 0, 0, 520, 640);
         _tradePanel.SetActive(false);
+        Debug.Log("[TradeUI] BuildUI: Панель создана");
 
         // --- Заголовок ---
         MakeLabel("Title", _tradePanel.transform, "ТОРГОВЛЯ", 0, 280, 22, Color.yellow, 480);
@@ -117,6 +121,8 @@ public class TradeUI : MonoBehaviour
         var contentGO = new GameObject("Content");
         contentGO.transform.SetParent(vpGO.transform, false);
         _contentPanel = contentGO.transform;
+        Debug.Log($"[TradeUI] BuildUI: _contentPanel создан, null={_contentPanel == null}");
+        
         var contentRect = contentGO.AddComponent<RectTransform>();
         contentRect.anchorMin = new Vector2(0, 1);
         contentRect.anchorMax = new Vector2(1, 1);
@@ -140,9 +146,9 @@ public class TradeUI : MonoBehaviour
         sr.horizontal = false;
         sr.vertical = true;
         sr.movementType = ScrollRect.MovementType.Clamped;
+        Debug.Log("[TradeUI] BuildUI: ScrollRect создан");
 
         // --- Кнопки (внизу панели) ---
-        // Используем anchoredPosition для точного позиционирования
         _buyBtn = MakeBtn("BuyBtn", _tradePanel.transform, "КУПИТЬ (Enter)", 0, -80, 240, 36, OnBuyClicked);
         _uiButtons.Add(_buyBtn);
         _sellBtn = MakeBtn("SellBtn", _tradePanel.transform, "ПРОДАТЬ (Shift+Enter)", 0, -125, 280, 36, OnSellClicked);
@@ -155,6 +161,8 @@ public class TradeUI : MonoBehaviour
         _messageText = MakeLabel("MsgText", _tradePanel.transform, "Выберите товар и нажмите Enter", 0, -230, 13, new Color(0.9f, 0.9f, 0.4f), 480);
         MakeLabel("Hint1", _tradePanel.transform, "T - склад | Up/Down - выбор | Left/Right - кол-во", 0, -255, 11, Color.grey, 480);
         MakeLabel("Hint2", _tradePanel.transform, "L/U - погрузить/разгрузить | Esc - закрыть | R - сброс", 0, -272, 11, Color.grey, 480);
+        
+        Debug.Log($"[TradeUI] BuildUI() END — _contentPanel={_contentPanel != null}, _tradePanel={_tradePanel != null}");
     }
 
     private void DestroyUI()

@@ -259,16 +259,18 @@ public class TradeUI : MonoBehaviour
 
     public void OpenTrade(LocationMarket market)
     {
-        if (market == null || _tradePanel == null) return;
+        if (market == null) return;
+        
+        // Создаём UI если ещё не создан
+        if (_tradePanel == null) BuildUI();
+        if (_tradePanel == null) { Debug.LogError("[TradeUI] Не удалось создать UI!"); return; }
+        
         currentMarket = market;
         _isOpen = true;
         _showWarehouseTab = false;
         _selectedIndex = -1;
         if (playerStorage != null) playerStorage.Load();
         CheckNearbyShip();
-
-        // Блокируем ввод игрока (не нужно — используем другие кнопки)
-        // if (_player != null) _player.InputLocked = true;
 
         // Автовыбор первого товара
         _selectedIndex = 0;

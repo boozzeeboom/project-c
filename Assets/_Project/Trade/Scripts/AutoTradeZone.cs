@@ -1,6 +1,9 @@
 using UnityEngine;
 using UnityEngine.InputSystem;
 using ProjectC.Player;
+#if UNITY_EDITOR
+using UnityEditor;
+#endif
 
 namespace ProjectC.Trade
 {
@@ -142,11 +145,11 @@ namespace ProjectC.Trade
         {
             // В Editor: ищем через AssetDatabase
 #if UNITY_EDITOR
-            string[] guids = UnityEditor.AssetDatabase.FindAssets("t:LocationMarket");
+            string[] guids = AssetDatabase.FindAssets("t:LocationMarket");
             if (guids.Length > 0)
             {
-                string path = UnityEditor.AssetDatabase.GUIDToAssetPath(guids[0]);
-                var market = UnityEditor.AssetDatabase.LoadAssetAtPath<LocationMarket>(path);
+                string path = AssetDatabase.GUIDToAssetPath(guids[0]);
+                var market = AssetDatabase.LoadAssetAtPath<LocationMarket>(path);
                 if (market != null && market.items != null && market.items.Count > 0 && market.items[0].item != null)
                     return market;
             }
@@ -185,11 +188,11 @@ namespace ProjectC.Trade
         private static TradeDatabase FindTradeDatabase()
         {
 #if UNITY_EDITOR
-            string[] guids = UnityEditor.AssetDatabase.FindAssets("t:TradeDatabase");
+            string[] guids = AssetDatabase.FindAssets("t:TradeDatabase");
             if (guids.Length > 0)
             {
-                string path = UnityEditor.AssetDatabase.GUIDToAssetPath(guids[0]);
-                return UnityEditor.AssetDatabase.LoadAssetAtPath<TradeDatabase>(path);
+                string path = AssetDatabase.GUIDToAssetPath(guids[0]);
+                return AssetDatabase.LoadAssetAtPath<TradeDatabase>(path);
             }
 #endif
             return Resources.Load<TradeDatabase>("Trade/TradeItemDatabase");

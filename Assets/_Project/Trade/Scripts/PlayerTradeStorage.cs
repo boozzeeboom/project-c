@@ -1,6 +1,9 @@
 using System;
 using System.Collections.Generic;
 using UnityEngine;
+#if UNITY_EDITOR
+using UnityEditor;
+#endif
 
 namespace ProjectC.Trade
 {
@@ -168,11 +171,11 @@ namespace ProjectC.Trade
         private static TradeDatabase FindTradeDatabase()
         {
 #if UNITY_EDITOR
-            string[] guids = UnityEditor.AssetDatabase.FindAssets("t:TradeDatabase");
+            string[] guids = AssetDatabase.FindAssets("t:TradeDatabase");
             if (guids.Length > 0)
             {
-                string path = UnityEditor.AssetDatabase.GUIDToAssetPath(guids[0]);
-                return UnityEditor.AssetDatabase.LoadAssetAtPath<TradeDatabase>(path);
+                string path = AssetDatabase.GUIDToAssetPath(guids[0]);
+                return AssetDatabase.LoadAssetAtPath<TradeDatabase>(path);
             }
 #endif
             return Resources.Load<TradeDatabase>("Trade/TradeItemDatabase");

@@ -67,7 +67,15 @@ namespace ProjectC.Trade
         }
 
         /// <summary>
-        /// Обновить спрос для товара
+        /// Получить MarketItem по ID
+        /// </summary>
+        public MarketItem GetItem(string itemId)
+        {
+            return items.Find(m => m.item != null && m.item.itemId == itemId);
+        }
+
+        /// <summary>
+        /// Обновить спрос для товара (int quantity)
         /// </summary>
         public void UpdateDemand(string itemId, int quantity)
         {
@@ -77,13 +85,39 @@ namespace ProjectC.Trade
         }
 
         /// <summary>
-        /// Обновить предложение для товара
+        /// Обновить спрос для товара (float delta — для серверной торговли)
+        /// </summary>
+        public void UpdateDemand(string itemId, float delta)
+        {
+            var marketItem = items.Find(m => m.item != null && m.item.itemId == itemId);
+            if (marketItem != null)
+            {
+                marketItem.demandFactor = Mathf.Clamp(marketItem.demandFactor + delta, 0f, 1.5f);
+                marketItem.RecalculatePrice();
+            }
+        }
+
+        /// <summary>
+        /// Обновить предложение для товара (int quantity)
         /// </summary>
         public void UpdateSupply(string itemId, int quantity)
         {
             var marketItem = items.Find(m => m.item != null && m.item.itemId == itemId);
             if (marketItem != null)
                 marketItem.UpdateSupply(quantity);
+        }
+
+        /// <summary>
+        /// Обновить предложение для товара (float delta — для серверной торговли)
+        /// </summary>
+        public void UpdateSupply(string itemId, float delta)
+        {
+            var marketItem = items.Find(m => m.item != null && m.item.itemId == itemId);
+            if (marketItem != null)
+            {
+                marketItem.supplyFactor = Mathf.Clamp(marketItem.supplyFactor + delta, 0f, 1.5f);
+                marketItem.RecalculatePrice();
+            }
         }
 
         /// <summary>
@@ -117,6 +151,52 @@ namespace ProjectC.Trade
         {
             // Переинициализация при загрузке
             InitItems();
+        }
+
+        /// <summary>
+        /// Восстановить рынок из снимка (для ClientRPC синхронизации)
+        /// </summary>
+        public static LocationMarket FromSnapshot(TradeMarketServer.MarketSnapshot snapshot)
+        {
+            var market = ScriptableObject.CreateInstance<LocationMarket>();
+            market.locationId = snapshot.locationId;
+            market.locationName = snapshot.locationName;
+            market.items = new List<MarketItem>();
+
+            // Находим оригинальные MarketItem из Resources/AssetDatabase
+            var db = FindTradeDatabase();
+            for (int i = 0; i < snapshot.itemIds.Count; i++)
+            {
+                string itemId = snapshot.itemIds[i];
+                var itemDef = db?.GetItemById(itemId);
+                if (itemDef == null) continue;
+
+                var marketItem = new MarketItem
+                {
+                    item = itemDef,
+                    basePrice = itemDef.basePrice,
+                    currentPrice = snapshot.currentPrices[i],
+                    availableStock = snapshot.availableStocks[i],
+                    demandFactor = snapshot.demandFactors[i],
+                    supplyFactor = snapshot.supplyFactors[i]
+                };
+                market.items.Add(marketItem);
+            }
+
+            return market;
+        }
+
+        private static TradeDatabase FindTradeDatabase()
+        {
+#if UNITY_EDITOR
+            string[] guids = UnityEditor.AssetDatabase.FindAssets("t:TradeDatabase");
+            if (guids.Length > 0)
+            {
+                string path = UnityEditor.AssetDatabase.GUIDToAssetPath(guids[0]);
+                return UnityEditor.AssetDatabase.LoadAssetAtPath<TradeDatabase>(path);
+            }
+#endif
+            return Resources.Load<TradeDatabase>("Trade/TradeItemDatabase");
         }
     }
 }

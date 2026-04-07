@@ -3,6 +3,7 @@ using UnityEngine;
 using UnityEngine.InputSystem;
 using ProjectC.Core;
 using ProjectC.Items;
+using ProjectC.Trade;
 using System.Collections.Generic;
 
 namespace ProjectC.Player
@@ -553,5 +554,105 @@ namespace ProjectC.Player
 
         public new bool IsLocalPlayer => IsOwner;
         public ulong GetOwnerId() => OwnerClientId;
+
+        // ==================== CONTRACT RPC (Сессия 7) ====================
+
+        /// <summary>
+        /// Запросить доступные контракты — клиент → сервер
+        /// </summary>
+        [Rpc(SendTo.Server)]
+        public void ContractRequestServerRpc(string locationId, RpcParams rpcParams = default)
+        {
+            if (ContractSystem.Instance != null)
+            {
+                ContractSystem.Instance.RequestAvailableContractsServerRpc(locationId);
+            }
+            else
+            {
+                Debug.LogWarning("[NetworkPlayer] ContractSystem не найден");
+            }
+        }
+
+        /// <summary>
+        /// Принять контракт — клиент → сервер
+        /// </summary>
+        [Rpc(SendTo.Server)]
+        public void ContractAcceptServerRpc(string contractId, RpcParams rpcParams = default)
+        {
+            if (ContractSystem.Instance != null)
+            {
+                ContractSystem.Instance.AcceptContractServerRpc(contractId);
+            }
+            else
+            {
+                Debug.LogWarning("[NetworkPlayer] ContractSystem не найден");
+            }
+        }
+
+        /// <summary>
+        /// Завершить контракт — клиент → сервер
+        /// </summary>
+        [Rpc(SendTo.Server)]
+        public void ContractCompleteServerRpc(string contractId, string completionLocationId, RpcParams rpcParams = default)
+        {
+            if (ContractSystem.Instance != null)
+            {
+                ContractSystem.Instance.CompleteContractServerRpc(contractId, completionLocationId);
+            }
+            else
+            {
+                Debug.LogWarning("[NetworkPlayer] ContractSystem не найден");
+            }
+        }
+
+        /// <summary>
+        /// Провалить контракт (отмена) — клиент → сервер
+        /// </summary>
+        [Rpc(SendTo.Server)]
+        public void ContractFailServerRpc(string contractId, RpcParams rpcParams = default)
+        {
+            if (ContractSystem.Instance != null)
+            {
+                ContractSystem.Instance.FailContractServerRpc(contractId);
+            }
+            else
+            {
+                Debug.LogWarning("[NetworkPlayer] ContractSystem не найден");
+            }
+        }
+
+        /// <summary>
+        /// Список доступных контрактов — сервер → клиент
+        /// </summary>
+        [Rpc(SendTo.Owner)]
+        public void ContractListClientRpc(string serializedContracts, string locationId, RpcParams rpcParams = default)
+        {
+            Debug.Log($"[NetworkPlayer] ContractListClientRpc: {serializedContracts.Length} символов, локация {locationId}");
+            if (ContractBoardUI.Instance != null)
+            {
+                Debug.Log("[NetworkPlayer] ContractBoardUI.Instance найден, вызываю OnContractsReceived");
+                ContractBoardUI.Instance.OnContractsReceived(serializedContracts, locationId);
+            }
+            else
+            {
+                Debug.LogWarning("[NetworkPlayer] ContractBoardUI.Instance == null!");
+            }
+        }
+
+        /// <summary>
+        /// Результат контракта — сервер → клиент
+        /// </summary>
+        [Rpc(SendTo.Owner)]
+        public void ContractResultClientRpc(bool success, string message, float reward, RpcParams rpcParams = default)
+        {
+            if (ContractBoardUI.Instance != null)
+            {
+                ContractBoardUI.Instance.OnContractResult(success, message, reward);
+            }
+            else if (TradeUI.Instance != null)
+            {
+                TradeUI.Instance.ShowMessagePublic(message);
+            }
+        }
     }
 }

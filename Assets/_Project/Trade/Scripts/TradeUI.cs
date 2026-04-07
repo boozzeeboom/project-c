@@ -573,6 +573,15 @@ public class TradeUI : MonoBehaviour
         if (_messageText != null) _messageText.text = msg;
     }
 
+    /// <summary>
+    /// Публичный метод для отображения сообщения (используется NetworkPlayer)
+    /// Сессия 7: ContractSystem.
+    /// </summary>
+    public void ShowMessagePublic(string msg)
+    {
+        ShowMessage(msg);
+    }
+
     // ==================== ВВОД ====================
 
     private void HandleInput()

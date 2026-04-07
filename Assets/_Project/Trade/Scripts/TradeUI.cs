@@ -149,7 +149,7 @@ public class TradeUI : MonoBehaviour
 
         // --- Сообщение ---
         _messageText = MakeLabel("MsgText", _tradePanel.transform, "Выберите товар и нажмите Enter", 0, -230, 13, new Color(0.9f, 0.9f, 0.4f), 480);
-        MakeLabel("Hint1", _tradePanel.transform, "B - склад | Up/Down - выбор | Left/Right - кол-во", 0, -255, 11, Color.grey, 480);
+        MakeLabel("Hint1", _tradePanel.transform, "T - склад | Up/Down - выбор | Left/Right - кол-во", 0, -255, 11, Color.grey, 480);
         MakeLabel("Hint2", _tradePanel.transform, "L/U - погрузить/разгрузить | Esc - закрыть | R - сброс", 0, -272, 11, Color.grey, 480);
     }
 
@@ -321,6 +321,7 @@ public class TradeUI : MonoBehaviour
         int index = 0;
         if (_showWarehouseTab)
         {
+            // === ВКЛАДКА [СКЛАД] — показываем склад игрока + груз корабля ===
             if (playerStorage != null)
             {
                 foreach (var wItem in playerStorage.warehouse)
@@ -331,9 +332,22 @@ public class TradeUI : MonoBehaviour
                 }
             }
             if (index == 0) MakeEmptyRow("Склад пуст");
+
+            // Разделитель
+            if (_nearbyCargo != null)
+            {
+                MakeDividerRow("─── ГРУЗ КОРАБЛЯ ───");
+                foreach (var cItem in _nearbyCargo.cargo)
+                {
+                    if (cItem.item == null) continue;
+                    MakeRow(cItem.item.displayName, 0, cItem.quantity, index, false, true);
+                    index++;
+                }
+            }
         }
         else
         {
+            // === ВКЛАДКА [РЫНОК] ===
             if (currentMarket != null)
             {
                 foreach (var mi in currentMarket.items)
@@ -345,10 +359,24 @@ public class TradeUI : MonoBehaviour
             }
             if (index == 0) MakeEmptyRow("Рынок пуст");
         }
-        if (_modeText != null) _modeText.text = _showWarehouseTab ? "[СКЛАД]" : "[РЫНОК]";
+        if (_modeText != null) _modeText.text = _showWarehouseTab ? "[СКЛАД + ТРЮМ]" : "[РЫНОК]";
     }
 
-    private void MakeRow(string name, float price, int qty, int index, bool isMarket)
+    private void MakeDividerRow(string text)
+    {
+        var go = new GameObject("DividerRow");
+        go.transform.SetParent(_contentPanel, false);
+        var r = go.AddComponent<RectTransform>();
+        r.sizeDelta = new Vector2(0, 22);
+        var t = go.AddComponent<Text>();
+        t.text = text;
+        t.fontSize = 11;
+        t.color = Color.cyan;
+        t.alignment = TextAnchor.MiddleCenter;
+        t.font = Resources.GetBuiltinResource<Font>("LegacyRuntime.ttf");
+    }
+
+    private void MakeRow(string name, float price, int qty, int index, bool isMarket, bool isInCargo = false)
     {
         var rowGO = new GameObject($"Row_{index}");
         rowGO.transform.SetParent(_contentPanel, false);
@@ -356,7 +384,10 @@ public class TradeUI : MonoBehaviour
         rRect.sizeDelta = new Vector2(0, 30);
 
         var bg = rowGO.AddComponent<Image>();
-        bg.color = index % 2 == 0 ? new Color(0.06f, 0.06f, 0.10f) : new Color(0.10f, 0.10f, 0.15f);
+        if (isInCargo)
+            bg.color = index % 2 == 0 ? new Color(0.12f, 0.08f, 0.04f) : new Color(0.15f, 0.10f, 0.06f);
+        else
+            bg.color = index % 2 == 0 ? new Color(0.06f, 0.06f, 0.10f) : new Color(0.10f, 0.10f, 0.15f);
 
         var tGO = new GameObject("Text");
         tGO.transform.SetParent(rowGO.transform, false);
@@ -368,7 +399,7 @@ public class TradeUI : MonoBehaviour
         var t = tGO.AddComponent<Text>();
         t.text = isMarket ? $"{name}  -  {price:F0} CR  (сток: {qty})" : $"{name}  -  {qty} ед.";
         t.fontSize = 13;
-        t.color = Color.white;
+        t.color = isInCargo ? new Color(1f, 0.85f, 0.5f) : Color.white;
         t.alignment = TextAnchor.MiddleLeft;
         t.font = Resources.GetBuiltinResource<Font>("LegacyRuntime.ttf");
 
@@ -398,27 +429,63 @@ public class TradeUI : MonoBehaviour
     {
         _selectedIndex = index;
         HighlightRow(index);
+
         if (isMarket && currentMarket != null && index >= 0 && index < currentMarket.items.Count)
         {
             var mi = currentMarket.items[index];
             if (mi?.item != null)
                 ShowMessage($"{mi.item.displayName} | {mi.currentPrice:F0} CR | Сток: {mi.availableStock}");
         }
-        else if (!isMarket && playerStorage != null && index >= 0 && index < playerStorage.warehouse.Count)
+        else if (_showWarehouseTab && playerStorage != null)
         {
-            var wi = playerStorage.warehouse[index];
-            if (wi?.item != null)
-                ShowMessage($"{wi.item.displayName} | {wi.quantity} ед.");
+            int warehouseCount = playerStorage.warehouse.Count;
+            int cargoStartIndex = warehouseCount + 1;
+
+            if (index < warehouseCount)
+            {
+                // Товар на складе игрока
+                var wi = playerStorage.warehouse[index];
+                if (wi?.item != null)
+                    ShowMessage($"{wi.item.displayName} | {wi.quantity} ед. (СКЛАД)");
+            }
+            else if (index >= cargoStartIndex && _nearbyCargo != null)
+            {
+                // Товар в трюме корабля
+                int cargoIdx = index - cargoStartIndex;
+                if (cargoIdx >= 0 && cargoIdx < _nearbyCargo.cargo.Count)
+                {
+                    var ci = _nearbyCargo.cargo[cargoIdx];
+                    if (ci?.item != null)
+                        ShowMessage($"{ci.item.displayName} | {ci.quantity} ед. (ТРЮМ)");
+                }
+            }
         }
     }
 
     private void HighlightRow(int index)
     {
+        if (_contentPanel == null) return;
         for (int i = 0; i < _contentPanel.childCount; i++)
         {
-            var bg = _contentPanel.GetChild(i).GetComponent<Image>();
-            if (bg != null)
-                bg.color = i == index ? new Color(0.2f, 0.25f, 0.15f) : (i % 2 == 0 ? new Color(0.06f, 0.06f, 0.10f) : new Color(0.10f, 0.10f, 0.15f));
+            var child = _contentPanel.GetChild(i);
+            var bg = child.GetComponent<Image>();
+            if (bg == null) continue; // DividerRow без Image
+
+            // Определяем тип строки
+            bool isInCargo = child.name.StartsWith("Row_") && _showWarehouseTab && _nearbyCargo != null;
+            if (isInCargo)
+            {
+                int warehouseCount = playerStorage != null ? playerStorage.warehouse.Count : 0;
+                int cargoStartIndex = warehouseCount + 1;
+                isInCargo = i >= cargoStartIndex;
+            }
+
+            if (i == index)
+                bg.color = new Color(0.2f, 0.25f, 0.15f); // selected
+            else if (isInCargo)
+                bg.color = i % 2 == 0 ? new Color(0.12f, 0.08f, 0.04f) : new Color(0.15f, 0.10f, 0.06f);
+            else
+                bg.color = i % 2 == 0 ? new Color(0.06f, 0.06f, 0.10f) : new Color(0.10f, 0.10f, 0.15f);
         }
     }
 
@@ -467,15 +534,38 @@ public class TradeUI : MonoBehaviour
         // Up/Down — выбор товара
         if (kb.upArrowKey.wasPressedThisFrame)
         {
-            int max = (_showWarehouseTab ? (playerStorage?.warehouse.Count ?? 0) : (currentMarket?.items.Count ?? 0)) - 1;
-            _selectedIndex = Mathf.Max(0, _selectedIndex - 1);
-            if (_selectedIndex > max) _selectedIndex = max;
+            int totalRows = _contentPanel != null ? _contentPanel.childCount : 0;
+            if (_showWarehouseTab)
+            {
+                // Пропускаем разделитель
+                int warehouseCount = playerStorage != null ? playerStorage.warehouse.Count : 0;
+                int dividerIndex = warehouseCount;
+                _selectedIndex = Mathf.Max(0, _selectedIndex - 1);
+                if (_selectedIndex == dividerIndex) _selectedIndex = Mathf.Max(0, _selectedIndex - 1);
+            }
+            else
+            {
+                int max = (currentMarket?.items.Count ?? 0) - 1;
+                _selectedIndex = Mathf.Max(0, _selectedIndex - 1);
+            }
             HighlightRow(_selectedIndex);
         }
         if (kb.downArrowKey.wasPressedThisFrame)
         {
-            int max = (_showWarehouseTab ? (playerStorage?.warehouse.Count ?? 0) : (currentMarket?.items.Count ?? 0)) - 1;
-            _selectedIndex = Mathf.Min(max, _selectedIndex + 1);
+            int totalRows = _contentPanel != null ? _contentPanel.childCount : 0;
+            if (_showWarehouseTab)
+            {
+                int warehouseCount = playerStorage != null ? playerStorage.warehouse.Count : 0;
+                int dividerIndex = warehouseCount;
+                int maxIndex = totalRows - 1;
+                _selectedIndex = Mathf.Min(maxIndex, _selectedIndex + 1);
+                if (_selectedIndex == dividerIndex) _selectedIndex = Mathf.Min(maxIndex, _selectedIndex + 1);
+            }
+            else
+            {
+                int max = (currentMarket?.items.Count ?? 0) - 1;
+                _selectedIndex = Mathf.Min(max, _selectedIndex + 1);
+            }
             HighlightRow(_selectedIndex);
         }
 
@@ -487,8 +577,8 @@ public class TradeUI : MonoBehaviour
         if (kb.enterKey.wasPressedThisFrame && (kb.leftShiftKey.isPressed || kb.rightShiftKey.isPressed))
             OnSellClicked();
 
-        // B — смена вкладки (Tab занят инвентарём)
-        if (kb.bKey.wasPressedThisFrame)
+        // T — смена вкладки (B занят инвентарём)
+        if (kb.tKey.wasPressedThisFrame)
         {
             _showWarehouseTab = !_showWarehouseTab;
             _selectedIndex = 0;
@@ -496,13 +586,34 @@ public class TradeUI : MonoBehaviour
             UpdateDisplays();
         }
 
-        // L — погрузить
-        if (kb.lKey.wasPressedThisFrame && _nearbyCargo != null && _showWarehouseTab && _selectedIndex >= 0 && playerStorage != null)
+        // L — погрузить (работает с вкладки [СКЛАД])
+        if (kb.lKey.wasPressedThisFrame && _nearbyCargo != null && _showWarehouseTab && _selectedIndex >= 0 && playerStorage != null && playerStorage.warehouse.Count > 0)
             OnLoadClicked();
 
-        // U — разгрузить
-        if (kb.uKey.wasPressedThisFrame && _nearbyCargo != null && !_showWarehouseTab && _selectedIndex >= 0 && currentMarket != null && playerStorage != null)
-            OnUnloadClicked();
+        // U — разгрузить (работает с вкладки [СКЛАД], если рядом корабль)
+        if (kb.uKey.wasPressedThisFrame && _nearbyCargo != null && _showWarehouseTab && playerStorage != null && _selectedIndex >= 0)
+        {
+            // Ищем товар в грузе корабля (пропускаем склад игрока)
+            int warehouseCount = playerStorage.warehouse.Count;
+            // Пропускаем разделитель
+            int cargoStartIndex = warehouseCount + 1;
+            if (_selectedIndex >= cargoStartIndex)
+            {
+                int cargoIdx = _selectedIndex - cargoStartIndex;
+                if (cargoIdx >= 0 && cargoIdx < _nearbyCargo.cargo.Count)
+                {
+                    var cargoItem = _nearbyCargo.cargo[cargoIdx];
+                    if (cargoItem?.item != null)
+                    {
+                        bool ok = playerStorage.UnloadFromShip(cargoItem.item.itemId, _buyQuantity, _nearbyCargo);
+                        if (ok) ShowMessage($"РАЗГРУЖЕНО: {cargoItem.item.displayName} x{_buyQuantity}");
+                        else ShowMessage("Не хватает места на складе!");
+                        UpdateDisplays();
+                        RenderItems();
+                    }
+                }
+            }
+        }
 
         // Esc — закрыть
         if (kb.escapeKey.wasPressedThisFrame) CloseTrade();
@@ -542,21 +653,32 @@ public class TradeUI : MonoBehaviour
 
     private void OnLoadClicked()
     {
-        if (_nearbyCargo == null || playerStorage == null || playerStorage.warehouse.Count == 0) return;
-        int idx = _showWarehouseTab ? _selectedIndex : 0;
+        if (_nearbyCargo == null || playerStorage == null) return;
+        // Погружаем со склада игрока в трюм корабля
+        int idx = _selectedIndex;
         if (idx < 0 || idx >= playerStorage.warehouse.Count) return;
         var item = playerStorage.warehouse[idx]?.item;
-        if (item != null) playerStorage.LoadToShip(item.itemId, _buyQuantity, _nearbyCargo);
+        if (item == null) return;
+        bool ok = playerStorage.LoadToShip(item.itemId, _buyQuantity, _nearbyCargo);
+        if (ok) ShowMessage($"ПОГРУЖЕНО: {item.displayName} x{_buyQuantity}");
+        else ShowMessage("Не хватает места в трюме!");
         UpdateDisplays();
         RenderItems();
     }
 
     private void OnUnloadClicked()
     {
-        if (_showWarehouseTab || _nearbyCargo == null || currentMarket == null || playerStorage == null || _selectedIndex < 0) return;
-        if (_selectedIndex >= currentMarket.items.Count) return;
-        var item = currentMarket.items[_selectedIndex]?.item;
-        if (item != null) playerStorage.UnloadFromShip(item.itemId, _buyQuantity, _nearbyCargo);
+        if (_nearbyCargo == null || playerStorage == null) return;
+        // Разгружаем из трюма корабля на склад игрока
+        int idx = _selectedIndex;
+        if (idx < 0) { ShowMessage("Выберите товар"); return; }
+        // Ищем товар в грузе корабля
+        if (idx >= _nearbyCargo.cargo.Count) { ShowMessage("Товар не найден в трюме"); return; }
+        var cargoItem = _nearbyCargo.cargo[idx];
+        if (cargoItem?.item == null) return;
+        bool ok = playerStorage.UnloadFromShip(cargoItem.item.itemId, _buyQuantity, _nearbyCargo);
+        if (ok) ShowMessage($"РАЗГРУЖЕНО: {cargoItem.item.displayName} x{_buyQuantity}");
+        else ShowMessage("Не хватает места на складе!");
         UpdateDisplays();
         RenderItems();
     }

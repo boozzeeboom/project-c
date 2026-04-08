@@ -551,13 +551,16 @@ namespace ProjectC.Trade
                 // Если на складе нет — проверяем трюм корабля
                 if (!hasCargo)
                 {
+                    Debug.Log($"[ContractSystem] На складе нет {contract.itemId}, проверяю трюм корабля...");
                     // Сессия 8: CargoSystem находится на ShipController
                     ProjectC.Player.CargoSystem cargo = null;
                     var ships = FindObjectsByType<ProjectC.Player.ShipController>(FindObjectsInactive.Include);
-
+                    Debug.Log($"[ContractSystem] Найдено ShipController: {ships.Length}");
+                    
                     foreach (var ship in ships)
                     {
                         var cs = ship.GetComponent<ProjectC.Player.CargoSystem>();
+                        Debug.Log($"[ContractSystem] ShipController {ship.name}: CargoSystem={cs != null}, cargo.Count={cs?.cargo.Count ?? 0}");
                         if (cs != null)
                         {
                             cargo = cs;
@@ -567,12 +570,28 @@ namespace ProjectC.Trade
 
                     if (cargo != null)
                     {
+                        Debug.Log($"[ContractSystem] Проверка трюма: {cargo.cargo.Count} типов грузов");
+                        foreach (var c in cargo.cargo)
+                        {
+                            if (c.item != null)
+                                Debug.Log($"  - {c.item.itemId} x{c.quantity}");
+                        }
+
                         var cargoItem = cargo.cargo.Find(c => c.item != null && c.item.itemId == contract.itemId);
                         if (cargoItem != null && cargoItem.quantity >= contract.quantity)
                         {
                             hasCargo = true;
+                            Debug.Log($"[ContractSystem] Товар {contract.itemId} x{contract.quantity} найден в трюме!");
                             cargo.RemoveCargo(contract.itemId, contract.quantity);
                         }
+                        else
+                        {
+                            Debug.LogWarning($"[ContractSystem] Товар {contract.itemId} x{contract.quantity} НЕ НАЙДЕН в трюме!");
+                        }
+                    }
+                    else
+                    {
+                        Debug.LogError($"[ContractSystem] CargoSystem не найден! ShipController: {ships.Length}");
                     }
                 }
 

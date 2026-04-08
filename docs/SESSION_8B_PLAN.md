@@ -3,46 +3,47 @@
 ## 📍 Точка отправления
 
 **Ветка:** `qwen-gamestudio-agent-dev`
-**HEAD:** `9f528e1` (cleanup: удалить verbose Debug.Log из Trade-скриптов)
+**HEAD:** `3a1f597` (cleanup: убрать оставшиеся Debug.Log)
 **Точка бэкапа:** `d58f5dc`
 
-## ✅ Что работает (Сессия 8 завершена)
+## ✅ Что сделано в Сессии 8B (9 апреля 2026)
 
-- ✅ Receipt контракты (под расписку) — работают
-- ✅ CargoSystem ищется через `FindObjectsByType<ShipController>` — работает для Host
-- ✅ Логирование почищено (115 строк удалено, 19 добавлено)
+### 1. Чистка логирования (2 коммита, ~175 строк удалено)
 
-## 🔴 КРИТИЧЕСКАЯ ПРОБЛЕМА (обнаружена 9 апреля — чистка логов)
+| Файл | Что удалено |
+|------|-------------|
+| **ContractSystem.cs** | 60+ строк: инициализация, генерация, ServerRpc, CompleteContract, Dispatch |
+| **PlayerTradeStorage.cs** | 12 строк: BuyItem, SellItem, LoadToShip, UnloadFromShip, Save, Load |
+| **ContractBoardUI.cs** | 6 строк: OpenBoard, OnContractsReceived |
+| **CargoSystem.cs** | 6 строк: AddCargo, RemoveCargo, OnValidate |
+| **AutoTradeZone.cs** | 8 строк: инициализация, вход/выход |
+| **ContractTrigger.cs** | 1 строка: вход в зону |
+| **TradeTrigger.cs** | 3 строки: вход/выход, открытие |
+| **NPCTrader.cs** | 3 строки: ExecuteTrade |
+| **TradeMarketServer.cs** | 9 строк: Start, InitServerSide, MarketTick, InitDefaultMarketEvents, LogTransaction |
+| **TradeUI.cs** | 1 строка: BuildUI |
+| **PlayerDebt.cs** | 11 строк: AddDebt, PayDebt, UpdateDebtOverTime |
+| **PlayerCreditsManager.cs** | 3 строки: OnNetworkSpawn, OnNetworkDespawn |
+| **NetworkPlayer.cs** | 2 строки: ContractListClientRpc |
 
-### 🐛 Сдача контракта ИЗ СКЛАДА НЕ РАБОТАЕТ (локальная покупка)
+**Оставлены только:** `Debug.LogWarning` и `Debug.LogError` для критических ошибок.
 
-**Симптом:** Контракт принят, товар куплен через TradeUI, но при сдаче `CompleteContractServerRpc` не находит товар.
+### 2. Диагностика проблемы сдачи из склада
 
-**Диагностика из логов:**
-```
-[TradeUI] NetworkPlayer не найден или не локальный, fallback на локальную покупку
-```
+- 🐛 **Выявлена корневая причина:** `TradeUI` fallback на локальную покупку → сервер не видит товар
+- 📝 **Задокументировано** в этом файле (см. раздел "Критическая проблема" ниже)
+- 📝 **Три варианта решения** описаны — будут чиниться в Сессии 8C
 
-**Цепочка проблемы:**
-1. `TradeUI.BuyItemViaServer()` → `NetworkPlayer` не найден → **fallback на локальную `PlayerTradeStorage.BuyItem()`**
-2. Товар добавляется в `PlayerTradeStorage.warehouse` **локально** (на клиенте)
-3. При сдаче `CompleteContractServerRpc` → `FindPlayerStorage(clientId)` → сервер ищет **свой** PlayerTradeStorage
-4. Серверный PlayerTradeStorage **пустой** — товар покупался локально, не через сервер
-5. Проверка `warehouse.Find(itemId)` → `null` → товар не найден → контракт не сдаётся
+### 3. Что НЕ сделано (отложено)
 
-**Почему трюм работает, а склад нет:**
-- Трюм: `CargoSystem` на ShipController, сервер находит через `FindObjectsByType<ShipController>` → груз в трюме реплицируется (или Host = сервер)
-- Склад: `PlayerTradeStorage` — `MonoBehaviour`, не `NetworkBehaviour`, данные не синхронизируются
-
-**Что нужно починить (варианты):**
-- **A)** `PlayerTradeStorage` → `NetworkBehaviour` с `NetworkVariable` для warehouse (правильно, но сложно)
-- **B)** Покупка ВСЕГДА через ServerRpc (убрать fallback), сервер сам обновляет PlayerTradeStorage
-- **C)** При CompleteContractServerRpc — синхронизировать warehouse с клиентом перед проверкой (костыль)
-
-**Решение:** Будем чинить все вместе в следующей сессии. Пока задокументировано.
+- ❌ Связь корабля с игроком (OwnerClientId) — отложено из-за конфликта имён
+- ❌ Префаб ContractBoardUI — не приоритет
+- ❌ Отображение репутации НП — нет системы репутации
+- ❌ Мультиплеер Client — не тестировалось, только Host
 
 ### Коммиты сессии:
 - `9f528e1` — cleanup: удалить verbose Debug.Log из Trade-скриптов, оставить Warning/Error
+- `3a1f597` — cleanup: убрать оставшиеся Debug.Log — CargoSystem OnValidate, TradeMarketServer tick/init, NPCTrader, PlayerDebt, PlayerCreditsManager, NetworkPlayer RPC
 
 ---
 
@@ -171,13 +172,38 @@ git push origin qwen-gamestudio-agent-dev --tags
 
 ---
 
-## ⚡ Быстрый старт
+## 🚀 ПЛАН СЕССИИ 8C: Починка сдачи контрактов из склада
 
-1. Открыть Unity проект
-2. Ветка: `qwen-gamestudio-agent-dev`
-3. HEAD: `ead681b`
-4. Начать с Приоритета 1 — связать корабль с игроком
-5. Проверить на Host + Client
-6. Перейти к UI-полировке
-7. Убрать логи
-8. Коммит + тег
+**Цель:** Починить `TradeUI` → `PlayerTradeStorage` → серверная синхронизация для сдачи контрактов.
+
+### Приорит 1 — Критический фикс (серверная покупка)
+
+**Проблема:** `TradeUI.BuyItemViaServer()` → `NetworkPlayer` не найден → fallback на локальную покупку.
+
+**Решение (вариант B — рекомендуемый):**
+1. В `TradeUI.BuyItemViaServer()` — если `NetworkPlayer` не найден, использовать серверный `PlayerTradeStorage` (через `FindObjectsByType`)
+2. Серверный `PlayerTradeStorage` обновляет свой `warehouse` → при `CompleteContractServerRpc` сервер видит товар
+3. Убрать fallback на локальную покупку — только серверная
+
+**Файлы:**
+| Файл | Что менять |
+|------|-----------|
+| `TradeUI.cs` | `BuyItemViaServer()` → найти PlayerTradeStorage на сервере, вызвать `BuyItem` напрямую |
+| `TradeUI.cs` | `SellItemViaServer()` → аналогично |
+| `PlayerTradeStorage.cs` | Убедиться что серверный экземпляр используется при Host |
+
+### Приорит 2 — Проверка Host + Client
+
+1. Запустить Host → проверить что покупка → сдача контракта работает
+2. Запустить Client → проверить что покупка → сдача работает через сервер
+
+### Приорит 3 — Коммит + тег `v0.0.14-trade-system`
+
+### КОМАНДА ДЛЯ ЗАПУСКА:
+```
+Продолжаем Project C. Сессия 8C: чиним сдачу контрактов из склада.
+Прочитай docs/SESSION_8B_PLAN.md — раздел "ПЛАН СЕССИИ 8C".
+Приоритет 1: починить TradeUI.BuyItemViaServer — убрать fallback на локальную покупку,
+использовать серверный PlayerTradeStorage. Приоритет 2: проверить Host + Client.
+Приоритет 3: коммит + тег v0.0.14-trade-system.
+```

@@ -555,31 +555,13 @@ namespace ProjectC.Trade
                     ProjectC.Player.CargoSystem cargo = null;
                     var ships = FindObjectsByType<ProjectC.Player.ShipController>(FindObjectsInactive.Include);
 
-                    // Ищем корабль конкретного игрока через IsPilot()
                     foreach (var ship in ships)
                     {
-                        if (ship.IsPilot(clientId))
+                        var cs = ship.GetComponent<ProjectC.Player.CargoSystem>();
+                        if (cs != null)
                         {
-                            var cs = ship.GetComponent<ProjectC.Player.CargoSystem>();
-                            if (cs != null)
-                            {
-                                cargo = cs;
-                                break;
-                            }
-                        }
-                    }
-
-                    // Fallback: если не нашли — берём первый корабль с CargoSystem (для Host)
-                    if (cargo == null && clientId == 0)
-                    {
-                        foreach (var ship in ships)
-                        {
-                            var cs = ship.GetComponent<ProjectC.Player.CargoSystem>();
-                            if (cs != null)
-                            {
-                                cargo = cs;
-                                break;
-                            }
+                            cargo = cs;
+                            break;
                         }
                     }
 

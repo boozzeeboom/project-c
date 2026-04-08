@@ -15,11 +15,38 @@
 
 ## 🔴 КРИТИЧЕСКАЯ ПРОБЛЕМА (обнаружена 9 апреля)
 
-### Сдача из трюма корабля НЕ работает
-**Симптом:** `[ContractSystem] Товар antigrav_ingot_v01 x6 НЕ НАЙДЕН в трюме!`
-**Причина:** `CargoSystem` — `MonoBehaviour` (не `NetworkBehaviour`). Груз добавляется на клиенте, сервер (ContractSystem) не видит его.
-**Диагностика:** Сдача со склада работает → проблема только в синхронизации CargoSystem.
-**Решение:** Convert CargoSystem → NetworkBehaviour + NetworkVariable для cargo списка, AddCargo/RemoveCargo через ServerRpc.
+### ~~Сдача из трюма корабля НЕ работает~~ ✅ РЕШЕНО
+**Статус:** Исправлено восстановлением рабочей версии `ead681b` (коммит `76ef271`)
+**Диагностика:** Сдача из трюма работает на Host. Предупреждение NetworkPlayer — fallback на локальную покупку.
+
+## 📝 Журнал сессии 8B (9 апреля 2026)
+
+### Что делали:
+
+**Попытка 1: Связать корабль с владельцем (OwnerClientId)**
+- ❌ Добавили `OwnerClientId` в `ShipController` → конфликт с `NetworkBehaviour.OwnerClientId`
+- ❌ Переименовали в `_ownerClientId` + `[SerializeField]` → Unity: "The same field name is serialized multiple times"
+- ❌ Попробовали `IsPilot(ulong clientId)` → сломало сдачу контрактов
+- ✅ **Откатились к рабочей версии `ead681b`** (коммит `76ef271`)
+
+**Диагностика проблемы сдачи из трюма:**
+- 🐛 Симптом: `[ContractSystem] Товар antigrav_ingot_v01 x6 НЕ НАЙДЕН в трюме!`
+- 🔍 Причина: думали что `CargoSystem` — `MonoBehaviour`, сервер не видит груз клиента
+- ✅ **Результат:** Сдача из трюма РАБОТАЕТ на Host! Проблема была в сломанном коммите, не в архитектуре.
+- ⚠️ `PlayerTradeStorage`: добавлены отладочные логи ДО/ПОСЛЕ `cargo.AddCargo` для диагностики
+
+**Выводы:**
+- Текущая реализация CargoSystem (MonoBehaviour) работает для Host
+- Для Client (мультиплеер) потребуется конвертация в NetworkBehaviour — но это отдельная задача
+- Не ломать рабочее — сначала тестировать на Host после каждого изменения
+
+### Коммиты сессии:
+- `3c41008` — fix: IsPilot() вместо OwnerClientId (сломал сдачу)
+- `3353e58` — revert: откат к рабочей версии
+- `76ef271` — restore: восстановление ead681b
+- `48a830b` — docs: диагностика, добавлены логи в PlayerTradeStorage
+
+---
 
 ## ⚠️ Известные проблемы (требуют решения)
 

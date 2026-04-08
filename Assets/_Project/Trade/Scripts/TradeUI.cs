@@ -327,7 +327,8 @@ public class TradeUI : MonoBehaviour
         _isOpen = false;
         _selectedIndex = -1;
         if (_tradePanel != null) _tradePanel.SetActive(false);
-        if (playerStorage != null) playerStorage.Save();
+        // Сессия 8: Убрал Save() из CloseTrade — сохранение происходит при модификации данных (BuyItem, SellItem, LoadToShip, UnloadFromShip)
+        // Save() здесь был проблемой: он перезаписывал данные склада пустыми данными при закрытии
 
         // Разблокируем ввод игрока
         // if (_player != null) _player.InputLocked = false;

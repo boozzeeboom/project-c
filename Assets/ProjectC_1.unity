@@ -5195,6 +5195,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: eb3f6db97dbee8d49ba0bdc79568ea2c, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::ProjectC.Trade.PlayerTradeStorage
+  currentLocationId: 
   maxWeight: 10000
   maxVolume: 200
   maxItemTypes: 50
@@ -5594,7 +5595,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: cd69af27b8ac1c84ab55ac3ccf6bb253, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::ProjectC.Player.CargoSystem
-  shipClass: 0
+  shipClass: 3
   cargo: []
 --- !u!1 &2057216163
 GameObject:

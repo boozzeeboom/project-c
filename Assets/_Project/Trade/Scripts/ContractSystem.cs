@@ -451,17 +451,22 @@ namespace ProjectC.Trade
         public void CompleteContractServerRpc(string contractId, string completionLocationId, ServerRpcParams rpcParams = default)
         {
             ulong clientId = rpcParams.Receive.SenderClientId;
+            Debug.Log($"[ContractSystem] CompleteContract: contractId={contractId}, location={completionLocationId}, clientId={clientId}");
 
             // 1. Валидация контракта
             if (!_availableContracts.ContainsKey(contractId))
             {
+                Debug.LogWarning($"[ContractSystem] Контракт {contractId} не найден! Доступно: {_availableContracts.Count}");
                 DispatchContractResultToClient(clientId, false, "Контракт не найден!", 0f);
                 return;
             }
 
             var contract = _availableContracts[contractId];
+            Debug.Log($"[ContractSystem] Контракт найден: state={contract.state}, type={contract.type}, toLocation={contract.toLocationId}");
+
             if (contract.state != ContractState.Active)
             {
+                Debug.LogWarning($"[ContractSystem] Контракт не активен: state={contract.state}");
                 DispatchContractResultToClient(clientId, false, "Контракт не активен!", 0f);
                 return;
             }
@@ -469,6 +474,7 @@ namespace ProjectC.Trade
             // 2. Проверка что это контракт этого игрока
             if (contract.assignedPlayerId != clientId)
             {
+                Debug.LogWarning($"[ContractSystem] Чужой контракт: assigned={contract.assignedPlayerId}, clientId={clientId}");
                 DispatchContractResultToClient(clientId, false, "Это не ваш контракт!", 0f);
                 return;
             }
@@ -479,11 +485,13 @@ namespace ProjectC.Trade
                 contract.Fail();
                 _availableContracts[contractId] = contract;
                 HandleFailedContract(contract, clientId);
+                Debug.LogWarning($"[ContractSystem] Время истекло: remaining={contract.timeRemaining:F0}");
                 DispatchContractResultToClient(clientId, false, "Время контракта истекло!", 0f);
                 return;
             }
 
             // 4. Проверка позиции (игрок в целевой локации?)
+            Debug.Log($"[ContractSystem] Проверка позиции: completionLocation={completionLocationId}, need={contract.toLocationId}, match={completionLocationId == contract.toLocationId}");
             if (completionLocationId != contract.toLocationId)
             {
                 DispatchContractResultToClient(clientId, false, $"Вы не в целевой локации! Нужно: {contract.toLocationId}", 0f);
@@ -491,20 +499,99 @@ namespace ProjectC.Trade
             }
 
             // 5. Проверка наличия груза (для не-Receipt контрактов)
+            // Проверяем И склад текущей локации И трюм корабля
             if (!contract.isReceiptContract)
             {
                 var storage = FindPlayerStorage(clientId);
+                bool hasCargo = false;
+
                 if (storage != null)
                 {
-                    var warehouseItem = storage.warehouse.Find(w => w.item != null && w.item.itemId == contract.itemId);
-                    if (warehouseItem == null || warehouseItem.quantity < contract.quantity)
+                    // Логируем что на складе
+                    Debug.Log($"[ContractSystem] Проверка склада игрока {clientId}: {storage.warehouse.Count} типов товаров, локация={storage.currentLocationId}");
+                    foreach (var w in storage.warehouse)
                     {
-                        DispatchContractResultToClient(clientId, false, "Нет груза на складе! Доставьте товар.", 0f);
-                        return;
+                        if (w.item != null)
+                            Debug.Log($"  - {w.item.itemId} x{w.quantity}");
                     }
 
-                    // Удаляем груз со склада
-                    storage.RemoveItem(contract.itemId, contract.quantity);
+                    var warehouseItem = storage.warehouse.Find(w => w.item != null && w.item.itemId == contract.itemId);
+                    if (warehouseItem != null && warehouseItem.quantity >= contract.quantity)
+                    {
+                        hasCargo = true;
+                        Debug.Log($"[ContractSystem] Товар {contract.itemId} x{contract.quantity} найден на складе!");
+                        // Удаляем груз со склада
+                        storage.RemoveItem(contract.itemId, contract.quantity);
+                    }
+                }
+                else
+                {
+                    Debug.LogWarning($"[ContractSystem] PlayerStorage не найден для игрока {clientId}!");
+                }
+
+                // Если на складе нет — проверяем трюм корабля
+                if (!hasCargo)
+                {
+                    Debug.Log($"[ContractSystem] На складе нет {contract.itemId}, проверяю трюм корабля...");
+                    var player = FindPlayerNetworkPlayer(clientId);
+                    if (player != null)
+                    {
+                        Debug.Log($"[ContractSystem] NetworkPlayer найден, ищу CargoSystem на нём или дочерних...");
+                        var cargo = player.GetComponent<ProjectC.Player.CargoSystem>();
+                        if (cargo == null)
+                        {
+                            // CargoSystem может быть на дочернем объекте (корабль)
+                            cargo = player.GetComponentInChildren<ProjectC.Player.CargoSystem>();
+                            if (cargo == null)
+                            {
+                                Debug.LogWarning($"[ContractSystem] CargoSystem НЕ НАЙДЕН на NetworkPlayer! Ищу по сцене...");
+                                // Fallback: ищем любой CargoSystem в сцене (для Host)
+                                var allCargo = FindObjectsByType<ProjectC.Player.CargoSystem>(FindObjectsInactive.Include);
+                                if (allCargo.Length > 0)
+                                {
+                                    cargo = allCargo[0];
+                                    Debug.Log($"[ContractSystem] Fallback: нашёл CargoSystem через FindObjectsByType");
+                                }
+                            }
+                        }
+
+                        if (cargo != null)
+                        {
+                            Debug.Log($"[ContractSystem] Проверка трюма: {cargo.cargo.Count} типов грузов");
+                            foreach (var c in cargo.cargo)
+                            {
+                                if (c.item != null)
+                                    Debug.Log($"  - {c.item.itemId} x{c.quantity}");
+                            }
+
+                            var cargoItem = cargo.cargo.Find(c => c.item != null && c.item.itemId == contract.itemId);
+                            if (cargoItem != null && cargoItem.quantity >= contract.quantity)
+                            {
+                                hasCargo = true;
+                                Debug.Log($"[ContractSystem] Товар {contract.itemId} x{contract.quantity} найден в трюме!");
+                                // Удаляем из трюма
+                                cargo.RemoveCargo(contract.itemId, contract.quantity);
+                            }
+                            else
+                            {
+                                Debug.LogWarning($"[ContractSystem] Товар {contract.itemId} x{contract.quantity} НЕ НАЙДЕН в трюме!");
+                            }
+                        }
+                        else
+                        {
+                            Debug.LogError($"[ContractSystem] CargoSystem не найден для игрока {clientId}!");
+                        }
+                    }
+                    else
+                    {
+                        Debug.LogError($"[ContractSystem] NetworkPlayer не найден для игрока {clientId}!");
+                    }
+                }
+
+                if (!hasCargo)
+                {
+                    DispatchContractResultToClient(clientId, false, $"Нет груза {contract.itemId} x{contract.quantity}! На складе или в трюме.", 0f);
+                    return;
                 }
             }
 
@@ -769,11 +856,31 @@ namespace ProjectC.Trade
         private ProjectC.Player.NetworkPlayer FindPlayerNetworkPlayer(ulong clientId)
         {
             var players = FindObjectsByType<ProjectC.Player.NetworkPlayer>(FindObjectsInactive.Include);
+            
+            // Сначала ищем точное совпадение OwnerClientId
             foreach (var player in players)
             {
                 if (player.IsSpawned && player.OwnerClientId == clientId)
+                {
+                    Debug.Log($"[ContractSystem] Нашёл NetworkPlayer clientId={clientId}, IsSpawned={player.IsSpawned}, IsLocalPlayer={player.IsOwner}");
                     return player;
+                }
             }
+
+            // Fallback для Host (clientId=0): ищем любого заспавненного игрока
+            if (clientId == 0)
+            {
+                foreach (var player in players)
+                {
+                    if (player.IsSpawned || player.IsOwner)
+                    {
+                        Debug.Log($"[ContractSystem] Fallback Host: нашёл NetworkPlayer IsSpawned={player.IsSpawned}, IsOwner={player.IsOwner}");
+                        return player;
+                    }
+                }
+            }
+
+            Debug.LogWarning($"[ContractSystem] Не нашёл NetworkPlayer для clientId={clientId}. Всего игроков: {players.Length}");
             return null;
         }
 

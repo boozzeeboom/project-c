@@ -45,12 +45,6 @@ namespace ProjectC.Player
         // Список пилотов (кооп-управление)
         private HashSet<ulong> _pilots = new HashSet<ulong>();
 
-        /// <summary>
-        /// ID владельца корабля (клиент, который добавил пилота)
-        /// Используется для мультиплеера — чтобы ContractSystem мог найти правильный корабль
-        /// </summary>
-        public ulong OwnerClientId { get; private set; }
-
         // Накопленный ввод от всех пилотов (сервер)
         private float _sumThrust, _sumYaw, _sumPitch, _sumVertical;
         private int _boostCount, _inputCount;
@@ -174,6 +168,11 @@ namespace ProjectC.Player
         public int PilotCount => _pilots.Count;
 
         /// <summary>
+        /// Проверить является ли игрок пилотом этого корабля
+        /// </summary>
+        public bool IsPilot(ulong clientId) => _pilots.Contains(clientId);
+
+        /// <summary>
         /// Добавить пилота (кооп — несколько могут одновременно)
         /// </summary>
         public void AddPilot(NetworkPlayer pilot)
@@ -185,7 +184,6 @@ namespace ProjectC.Player
         private void AddPilotRpc(ulong clientId, RpcParams rpcParams = default)
         {
             _pilots.Add(clientId);
-            OwnerClientId = clientId;
             enabled = true;
         }
 
@@ -201,11 +199,7 @@ namespace ProjectC.Player
         private void RemovePilotRpc(ulong clientId, RpcParams rpcParams = default)
         {
             _pilots.Remove(clientId);
-            if (_pilots.Count == 0)
-            {
-                OwnerClientId = 0;
-                enabled = false;
-            }
+            if (_pilots.Count == 0) enabled = false;
         }
     }
 }

@@ -48,7 +48,6 @@ public class ContractTrigger : MonoBehaviour
         if (player != null && player.IsOwner)
         {
             _nearbyPlayer = player;
-            Debug.Log($"[ContractTrigger] {npcAgentName}: игрок вошёл в зону. Нажмите C для открытия контрактов.");
         }
     }
 

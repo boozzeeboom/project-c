@@ -146,8 +146,6 @@ namespace ProjectC.Player
                 cargo.Add(new CargoItem { item = item, quantity = quantity });
             }
 
-            Debug.Log($"[CargoSystem] Добавлен {item.displayName} x{quantity} | " +
-                $"Вес: {CurrentWeight:F1}/{MaxWeight}, Объём: {CurrentVolume:F1}/{MaxVolume}, Слоты: {UsedSlots}/{MaxSlots}");
             return true;
         }
 
@@ -175,8 +173,6 @@ namespace ProjectC.Player
                 cargo.Remove(cargoItem);
             }
 
-            Debug.Log($"[CargoSystem] Убран {itemId} x{quantity} | " +
-                $"Вес: {CurrentWeight:F1}/{MaxWeight}, Объём: {CurrentVolume:F1}/{MaxVolume}");
             return true;
         }
 

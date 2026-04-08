@@ -40,7 +40,6 @@ namespace ProjectC.Trade
                     enabled = false;
                     return;
                 }
-                Debug.Log($"[AutoTradeZone] Найден рынок: {market.locationName}");
             }
 
             // Создаём/находим TradeUI
@@ -49,7 +48,6 @@ namespace ProjectC.Trade
             {
                 var go = new GameObject("[TradeUI]");
                 _tradeUI = go.AddComponent<TradeUI>();
-                Debug.Log("[AutoTradeZone] Создан TradeUI");
             }
 
             // Создаём/находим PlayerTradeStorage
@@ -58,7 +56,6 @@ namespace ProjectC.Trade
             {
                 var go = new GameObject("[PlayerTradeStorage]");
                 _storage = go.AddComponent<PlayerTradeStorage>();
-                Debug.Log("[AutoTradeZone] Создан PlayerTradeStorage");
             }
 
             // Связываем
@@ -73,7 +70,6 @@ namespace ProjectC.Trade
                 if (ship.GetComponent<CargoSystem>() == null)
                 {
                     ship.gameObject.AddComponent<CargoSystem>();
-                    Debug.Log($"[AutoTradeZone] Добавлен CargoSystem на {ship.gameObject.name}");
                 }
             }
 
@@ -82,9 +78,6 @@ namespace ProjectC.Trade
 
             // Загружаем данные
             _storage.Load();
-
-            Debug.Log($"[AutoTradeZone] Торговая зона готова: {market.locationName}");
-            Debug.Log($"[AutoTradeZone] Позиция: {transform.position}, Радиус: {triggerRadius}");
         }
 
         private void SetupTrigger()
@@ -105,7 +98,6 @@ namespace ProjectC.Trade
             if (player == null) return;
             _playerInside = true;
             _localPlayer = player;
-            Debug.Log("[AutoTradeZone] Игрок вошёл в зону. Нажми E для торговли.");
         }
 
         private void OnTriggerExit(Collider other)
@@ -115,7 +107,6 @@ namespace ProjectC.Trade
             _playerInside = false;
             _localPlayer = null;
             _tradeUI.CloseTrade();
-            Debug.Log("[AutoTradeZone] Игрок вышел из зоны.");
         }
 
         private void Update()
@@ -181,7 +172,6 @@ namespace ProjectC.Trade
                     supplyFactor = 0
                 });
             }
-            Debug.Log($"[AutoTradeZone] Создан временный рынок с {marketRes.items.Count} товарами");
             return marketRes;
         }
 

@@ -60,7 +60,6 @@ namespace ProjectC.Trade
             if (player == null) return;
             _playerInside = true;
             _player = player;
-            Debug.Log($"[TradeTrigger] {npcName}: Игрок вошёл в зону торговли");
         }
 
         private void OnTriggerExit(Collider other)
@@ -71,7 +70,6 @@ namespace ProjectC.Trade
             _player = null;
             if (TradeUI != null)
                 TradeUI.CloseTrade();
-            Debug.Log($"[TradeTrigger] {npcName}: Игрок вышел из зоны торговли");
         }
 
         private void Update()
@@ -82,14 +80,13 @@ namespace ProjectC.Trade
             if (Keyboard.current != null && Keyboard.current.eKey.wasPressedThisFrame)
             {
                 if (TradeUI == null) { Debug.LogError("[TradeTrigger] TradeUI не найден!"); return; }
-                
+
                 // Если market не назначен — берём из TradeUI (который получил его от AutoTradeZone)
                 if (market == null && TradeUI.currentMarket != null)
                     market = TradeUI.currentMarket;
-                
+
                 if (market == null) { Debug.LogError("[TradeTrigger] Market не назначен!"); return; }
-                
-                Debug.Log($"[TradeTrigger] {npcName}: Открываю торговлю");
+
                 TradeUI.OpenTrade(market);
             }
         }

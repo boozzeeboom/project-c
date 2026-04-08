@@ -75,8 +75,7 @@ namespace ProjectC.Trade
             if (existing != null) existing.quantity += quantity;
             else warehouse.Add(new WarehouseItem { item = item, quantity = quantity });
 
-            Debug.Log($"[PlayerTradeStorage] Куплено: {item.displayName} x{quantity} за {totalCost:F0} CR");
-            Save(); // Сессия 8: Сохраняем сразу после покупки
+            Save();
             return true;
         }
 
@@ -91,8 +90,7 @@ namespace ProjectC.Trade
             wi.quantity -= quantity;
             if (wi.quantity <= 0) warehouse.Remove(wi);
 
-            Debug.Log($"[PlayerTradeStorage] Продано: {item.displayName} x{quantity} за {totalRevenue:F0} CR");
-            Save(); // Сессия 8: Сохраняем сразу после продажи
+            Save();
             return true;
         }
 
@@ -110,11 +108,6 @@ namespace ProjectC.Trade
             float newWeight = cargo.CurrentWeight + item.weight * quantity;
             float newVolume = cargo.CurrentVolume + item.volume * quantity;
             int newSlots = cargo.UsedSlots + item.slots * quantity;
-
-            Debug.Log($"[PTS] Погрузка {item.displayName} x{quantity}: " +
-                      $"вес {cargo.CurrentWeight:F1}/{cargo.MaxWeight}, " +
-                      $"объём {cargo.CurrentVolume:F1}/{cargo.MaxVolume}, " +
-                      $"слоты {cargo.UsedSlots}/{cargo.MaxSlots} → новые слоты: {newSlots}");
 
             if (newWeight > cargo.MaxWeight)
             {
@@ -134,13 +127,15 @@ namespace ProjectC.Trade
 
             wi.quantity -= quantity;
             if (wi.quantity <= 0) warehouse.Remove(wi);
-            
-            Debug.Log($"[PTS] ДО cargo.AddCargo: cargo.cargo.Count={cargo.cargo.Count}");
+
             bool added = cargo.AddCargo(item, quantity);
-            Debug.Log($"[PTS] ПОСЛЕ cargo.AddCargo: returned={added}, cargo.cargo.Count={cargo.cargo.Count}");
-            
-            Debug.Log($"[PTS] Погружено: {item.displayName} x{quantity}");
-            Save(); // Сессия 8: Сохраняем после погрузки
+            if (!added)
+            {
+                Debug.LogError($"[PTS] Не удалось загрузить {item.displayName} x{quantity} в трюм!");
+                return false;
+            }
+
+            Save();
             return true;
         }
 
@@ -166,15 +161,13 @@ namespace ProjectC.Trade
             if (existing != null) existing.quantity += quantity;
             else warehouse.Add(new WarehouseItem { item = item, quantity = quantity });
 
-            Debug.Log($"[PlayerTradeStorage] Разгружено: {item.displayName} x{quantity}");
-            Save(); // Сессия 8: Сохраняем после разгрузки
+            Save();
             return true;
         }
 
         public void Save()
         {
             string locKey = string.IsNullOrEmpty(currentLocationId) ? "global" : currentLocationId.ToLower();
-            Debug.Log($"[PlayerTradeStorage] Save локация={locKey}, кредиты={credits:F0}, товаров={warehouse.Count}");
             PlayerPrefs.SetFloat($"TradeCredits_{locKey}", credits);
             var data = new WarehouseSaveData { items = new List<WarehouseSaveItem>() };
             foreach (var w in warehouse)
@@ -188,28 +181,23 @@ namespace ProjectC.Trade
             string locKey = string.IsNullOrEmpty(currentLocationId) ? "global" : currentLocationId.ToLower();
             credits = PlayerPrefs.GetFloat($"TradeCredits_{locKey}", 1000f);
             string json = PlayerPrefs.GetString($"TradeWarehouse_{locKey}", "");
-            Debug.Log($"[PlayerTradeStorage] Load локация={locKey}, ключ=TradeWarehouse_{locKey}, json длина={json.Length}");
             if (!string.IsNullOrEmpty(json))
             {
                 var data = UnityEngine.JsonUtility.FromJson<WarehouseSaveData>(json);
                 warehouse.Clear();
                 var db = FindTradeDatabase();
-                Debug.Log($"[PlayerTradeStorage] FindTradeDatabase: {db != null}, items={data?.items?.Count ?? 0}");
                 if (db != null && data != null)
                 {
                     foreach (var si in data.items)
                     {
                         var def = db.GetItemById(si.itemId);
-                        Debug.Log($"[PlayerTradeStorage]   - {si.itemId}: found={def != null}");
                         if (def != null) warehouse.Add(new WarehouseItem { item = def, quantity = si.quantity });
                     }
                 }
-                Debug.Log($"[PlayerTradeStorage] Загружено {warehouse.Count} товаров");
             }
             else
             {
                 warehouse.Clear();
-                Debug.Log($"[PlayerTradeStorage] Нет данных для локации {locKey}, склад пуст");
             }
         }
 
@@ -251,7 +239,7 @@ namespace ProjectC.Trade
             }
 
             Debug.Log($"[PlayerTradeStorage] Контрактный товар: {item.displayName} x{quantity} (бесплатно)");
-            Save(); // Сессия 8: Сохраняем после добавления контрактного товара
+            Save();
             return true;
         }
 
@@ -266,7 +254,7 @@ namespace ProjectC.Trade
 
             wi.quantity -= quantity;
             if (wi.quantity <= 0) warehouse.Remove(wi);
-            Save(); // Сессия 8: Сохраняем после удаления товара
+            Save();
             return true;
         }
 

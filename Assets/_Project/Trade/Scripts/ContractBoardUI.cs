@@ -265,13 +265,11 @@ public class ContractBoardUI : MonoBehaviour
         if (_player == null)
         {
             _player = FindAnyObjectByType<NetworkPlayer>();
-            Debug.Log($"[ContractBoardUI] Нашёл NetworkPlayer: {_player != null}, IsOwner: {_player?.IsOwner}");
         }
 
         // Запросить контракты у сервера (только от Owner)
         if (_player != null && _player.IsOwner)
         {
-            Debug.Log($"[ContractBoardUI] Отправляю ContractRequestServerRpc для {market.locationId}");
             _player.ContractRequestServerRpc(market.locationId);
         }
         else if (_player == null)
@@ -304,8 +302,6 @@ public class ContractBoardUI : MonoBehaviour
     /// </summary>
     public void OnContractsReceived(string serializedContracts, string locationId)
     {
-        Debug.Log($"[ContractBoardUI] OnContractsReceived: {serializedContracts.Length} символов");
-
         // Парсим двойной формат: доступные|||активные
         string[] parts = serializedContracts.Split(new[] { "|||" }, System.StringSplitOptions.None);
         string availablePart = parts.Length > 0 ? parts[0] : "";
@@ -314,8 +310,6 @@ public class ContractBoardUI : MonoBehaviour
         _currentContracts = ContractSystem.DeserializeContracts(availablePart);
         _activeContracts = ContractSystem.DeserializeContracts(activePart);
         _currentLocationId = locationId;
-
-        Debug.Log($"[ContractBoardUI] Доступных: {_currentContracts.Length}, Активных: {_activeContracts.Length}");
 
         // Обновить отображение долга
         UpdateDebtDisplay();

@@ -134,7 +134,11 @@ namespace ProjectC.Trade
 
             wi.quantity -= quantity;
             if (wi.quantity <= 0) warehouse.Remove(wi);
-            cargo.AddCargo(item, quantity);
+            
+            Debug.Log($"[PTS] ДО cargo.AddCargo: cargo.cargo.Count={cargo.cargo.Count}");
+            bool added = cargo.AddCargo(item, quantity);
+            Debug.Log($"[PTS] ПОСЛЕ cargo.AddCargo: returned={added}, cargo.cargo.Count={cargo.cargo.Count}");
+            
             Debug.Log($"[PTS] Погружено: {item.displayName} x{quantity}");
             Save(); // Сессия 8: Сохраняем после погрузки
             return true;

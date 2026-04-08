@@ -499,7 +499,7 @@ namespace ProjectC.Trade
             }
 
             // 5. Проверка наличия груза (для не-Receipt контрактов)
-            // Проверяем И склад текущей локации И трюм корабля
+            // Сессия 8: Исправлено — обновляем локацию склада перед проверкой
             if (!contract.isReceiptContract)
             {
                 var storage = FindPlayerStorage(clientId);
@@ -507,6 +507,22 @@ namespace ProjectC.Trade
 
                 if (storage != null)
                 {
+                    // Сессия 8: Устанавливаем правильную локацию и загружаем склад
+                    bool needLoad = (storage.currentLocationId != completionLocationId);
+                    // Также загружаем если склад пустой (даже если локация совпадает)
+                    if (storage.warehouse.Count == 0)
+                    {
+                        needLoad = true;
+                        Debug.Log($"[ContractSystem] Склад пустой, принудительная загрузка...");
+                    }
+                    
+                    if (needLoad)
+                    {
+                        Debug.Log($"[ContractSystem] Локация склада была '{storage.currentLocationId}', устанавливаю '{completionLocationId}'");
+                        storage.currentLocationId = completionLocationId;
+                        storage.Load();
+                    }
+
                     // Логируем что на складе
                     Debug.Log($"[ContractSystem] Проверка склада игрока {clientId}: {storage.warehouse.Count} типов товаров, локация={storage.currentLocationId}");
                     foreach (var w in storage.warehouse)
@@ -520,8 +536,11 @@ namespace ProjectC.Trade
                     {
                         hasCargo = true;
                         Debug.Log($"[ContractSystem] Товар {contract.itemId} x{contract.quantity} найден на складе!");
-                        // Удаляем груз со склада
                         storage.RemoveItem(contract.itemId, contract.quantity);
+                    }
+                    else
+                    {
+                        Debug.Log($"[ContractSystem] На складе нет {contract.itemId}. Нужно: x{contract.quantity}");
                     }
                 }
                 else
@@ -533,58 +552,46 @@ namespace ProjectC.Trade
                 if (!hasCargo)
                 {
                     Debug.Log($"[ContractSystem] На складе нет {contract.itemId}, проверяю трюм корабля...");
-                    var player = FindPlayerNetworkPlayer(clientId);
-                    if (player != null)
+                    // Сессия 8: CargoSystem находится на ShipController
+                    ProjectC.Player.CargoSystem cargo = null;
+                    var ships = FindObjectsByType<ProjectC.Player.ShipController>(FindObjectsInactive.Include);
+                    Debug.Log($"[ContractSystem] Найдено ShipController: {ships.Length}");
+                    
+                    foreach (var ship in ships)
                     {
-                        Debug.Log($"[ContractSystem] NetworkPlayer найден, ищу CargoSystem на нём или дочерних...");
-                        var cargo = player.GetComponent<ProjectC.Player.CargoSystem>();
-                        if (cargo == null)
+                        var cs = ship.GetComponent<ProjectC.Player.CargoSystem>();
+                        Debug.Log($"[ContractSystem] ShipController {ship.name}: CargoSystem={cs != null}, cargo.Count={cs?.cargo.Count ?? 0}");
+                        if (cs != null)
                         {
-                            // CargoSystem может быть на дочернем объекте (корабль)
-                            cargo = player.GetComponentInChildren<ProjectC.Player.CargoSystem>();
-                            if (cargo == null)
-                            {
-                                Debug.LogWarning($"[ContractSystem] CargoSystem НЕ НАЙДЕН на NetworkPlayer! Ищу по сцене...");
-                                // Fallback: ищем любой CargoSystem в сцене (для Host)
-                                var allCargo = FindObjectsByType<ProjectC.Player.CargoSystem>(FindObjectsInactive.Include);
-                                if (allCargo.Length > 0)
-                                {
-                                    cargo = allCargo[0];
-                                    Debug.Log($"[ContractSystem] Fallback: нашёл CargoSystem через FindObjectsByType");
-                                }
-                            }
+                            cargo = cs;
+                            break;
+                        }
+                    }
+
+                    if (cargo != null)
+                    {
+                        Debug.Log($"[ContractSystem] Проверка трюма: {cargo.cargo.Count} типов грузов");
+                        foreach (var c in cargo.cargo)
+                        {
+                            if (c.item != null)
+                                Debug.Log($"  - {c.item.itemId} x{c.quantity}");
                         }
 
-                        if (cargo != null)
+                        var cargoItem = cargo.cargo.Find(c => c.item != null && c.item.itemId == contract.itemId);
+                        if (cargoItem != null && cargoItem.quantity >= contract.quantity)
                         {
-                            Debug.Log($"[ContractSystem] Проверка трюма: {cargo.cargo.Count} типов грузов");
-                            foreach (var c in cargo.cargo)
-                            {
-                                if (c.item != null)
-                                    Debug.Log($"  - {c.item.itemId} x{c.quantity}");
-                            }
-
-                            var cargoItem = cargo.cargo.Find(c => c.item != null && c.item.itemId == contract.itemId);
-                            if (cargoItem != null && cargoItem.quantity >= contract.quantity)
-                            {
-                                hasCargo = true;
-                                Debug.Log($"[ContractSystem] Товар {contract.itemId} x{contract.quantity} найден в трюме!");
-                                // Удаляем из трюма
-                                cargo.RemoveCargo(contract.itemId, contract.quantity);
-                            }
-                            else
-                            {
-                                Debug.LogWarning($"[ContractSystem] Товар {contract.itemId} x{contract.quantity} НЕ НАЙДЕН в трюме!");
-                            }
+                            hasCargo = true;
+                            Debug.Log($"[ContractSystem] Товар {contract.itemId} x{contract.quantity} найден в трюме!");
+                            cargo.RemoveCargo(contract.itemId, contract.quantity);
                         }
                         else
                         {
-                            Debug.LogError($"[ContractSystem] CargoSystem не найден для игрока {clientId}!");
+                            Debug.LogWarning($"[ContractSystem] Товар {contract.itemId} x{contract.quantity} НЕ НАЙДЕН в трюме!");
                         }
                     }
                     else
                     {
-                        Debug.LogError($"[ContractSystem] NetworkPlayer не найден для игрока {clientId}!");
+                        Debug.LogError($"[ContractSystem] CargoSystem не найден! ShipController: {ships.Length}");
                     }
                 }
 

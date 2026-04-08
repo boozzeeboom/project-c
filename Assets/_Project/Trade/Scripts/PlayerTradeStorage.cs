@@ -76,6 +76,7 @@ namespace ProjectC.Trade
             else warehouse.Add(new WarehouseItem { item = item, quantity = quantity });
 
             Debug.Log($"[PlayerTradeStorage] Куплено: {item.displayName} x{quantity} за {totalCost:F0} CR");
+            Save(); // Сессия 8: Сохраняем сразу после покупки
             return true;
         }
 
@@ -91,6 +92,7 @@ namespace ProjectC.Trade
             if (wi.quantity <= 0) warehouse.Remove(wi);
 
             Debug.Log($"[PlayerTradeStorage] Продано: {item.displayName} x{quantity} за {totalRevenue:F0} CR");
+            Save(); // Сессия 8: Сохраняем сразу после продажи
             return true;
         }
 
@@ -134,6 +136,7 @@ namespace ProjectC.Trade
             if (wi.quantity <= 0) warehouse.Remove(wi);
             cargo.AddCargo(item, quantity);
             Debug.Log($"[PTS] Погружено: {item.displayName} x{quantity}");
+            Save(); // Сессия 8: Сохраняем после погрузки
             return true;
         }
 
@@ -160,6 +163,7 @@ namespace ProjectC.Trade
             else warehouse.Add(new WarehouseItem { item = item, quantity = quantity });
 
             Debug.Log($"[PlayerTradeStorage] Разгружено: {item.displayName} x{quantity}");
+            Save(); // Сессия 8: Сохраняем после разгрузки
             return true;
         }
 
@@ -186,11 +190,13 @@ namespace ProjectC.Trade
                 var data = UnityEngine.JsonUtility.FromJson<WarehouseSaveData>(json);
                 warehouse.Clear();
                 var db = FindTradeDatabase();
+                Debug.Log($"[PlayerTradeStorage] FindTradeDatabase: {db != null}, items={data?.items?.Count ?? 0}");
                 if (db != null && data != null)
                 {
                     foreach (var si in data.items)
                     {
                         var def = db.GetItemById(si.itemId);
+                        Debug.Log($"[PlayerTradeStorage]   - {si.itemId}: found={def != null}");
                         if (def != null) warehouse.Add(new WarehouseItem { item = def, quantity = si.quantity });
                     }
                 }
@@ -241,6 +247,7 @@ namespace ProjectC.Trade
             }
 
             Debug.Log($"[PlayerTradeStorage] Контрактный товар: {item.displayName} x{quantity} (бесплатно)");
+            Save(); // Сессия 8: Сохраняем после добавления контрактного товара
             return true;
         }
 
@@ -255,6 +262,7 @@ namespace ProjectC.Trade
 
             wi.quantity -= quantity;
             if (wi.quantity <= 0) warehouse.Remove(wi);
+            Save(); // Сессия 8: Сохраняем после удаления товара
             return true;
         }
 

@@ -124,9 +124,6 @@ namespace ProjectC.Trade
             // Локация назначения: NPC "продаёт" на рынок
             toItem.availableStock += volume;
             toMarket.UpdateSupply(itemId, volume * 0.02f);
-
-            Debug.Log($"[NPCTrader {traderName}] {fromLocationId} → {toLocationId}: {itemId} x{volume} | " +
-                      $"From stock: {fromItem.availableStock}, To stock: {toItem.availableStock}");
         }
 
         /// <summary>

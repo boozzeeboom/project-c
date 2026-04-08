@@ -152,7 +152,6 @@ public class TradeUI : MonoBehaviour
         sr.horizontal = false;
         sr.vertical = true;
         sr.movementType = ScrollRect.MovementType.Clamped;
-        Debug.Log("[TradeUI] BuildUI: ScrollRect создан");
 
         // --- Кнопки (внизу панели) ---
         _buyBtn = MakeBtn("BuyBtn", _tradePanel.transform, "КУПИТЬ (Enter)", 0, -80, 240, 36, OnBuyClicked);

@@ -268,8 +268,8 @@ namespace ProjectC.Player
 
         private void OnValidate()
         {
-            Debug.Log($"[CargoSystem] Класс: {shipClass} | " +
-                $"Слоты: {MaxSlots}, Вес: {MaxWeight} кг, Объём: {MaxVolume} м³, Penalty: {Limits.penaltyFactor}");
+            // Debug.Log($"[CargoSystem] Класс: {shipClass} | " +
+            //     $"Слоты: {MaxSlots}, Вес: {MaxWeight} кг, Объём: {MaxVolume} м³, Penalty: {Limits.penaltyFactor}");
         }
     }
 

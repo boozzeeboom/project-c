@@ -238,7 +238,6 @@ namespace ProjectC.Trade
                 warehouse.Add(new WarehouseItem { item = item, quantity = quantity });
             }
 
-            Debug.Log($"[PlayerTradeStorage] Контрактный товар: {item.displayName} x{quantity} (бесплатно)");
             Save();
             return true;
         }

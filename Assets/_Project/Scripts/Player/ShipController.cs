@@ -168,11 +168,6 @@ namespace ProjectC.Player
         public int PilotCount => _pilots.Count;
 
         /// <summary>
-        /// Проверить является ли игрок пилотом этого корабля
-        /// </summary>
-        public bool IsPilot(ulong clientId) => _pilots.Contains(clientId);
-
-        /// <summary>
         /// Добавить пилота (кооп — несколько могут одновременно)
         /// </summary>
         public void AddPilot(NetworkPlayer pilot)

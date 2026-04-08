@@ -33,8 +33,6 @@ public class PlayerCreditsManager : NetworkBehaviour
         // Загружаем сохранённые кредиты
         float savedCredits = PlayerPrefs.GetFloat($"Credits_{OwnerClientId}", 1000f);
         _credits.Value = Mathf.Max(0f, savedCredits);
-
-        Debug.Log($"[PlayerCreditsManager] Игрок {OwnerClientId} подключился с {Credits:F0} CR");
     }
 
     public override void OnNetworkDespawn()
@@ -44,7 +42,6 @@ public class PlayerCreditsManager : NetworkBehaviour
             // Сохраняем при отключении
             PlayerPrefs.SetFloat($"Credits_{OwnerClientId}", Credits);
             PlayerPrefs.Save();
-            Debug.Log($"[PlayerCreditsManager] Игрок {OwnerClientId} отключился. Сохранено: {Credits:F0} CR");
         }
     }
 

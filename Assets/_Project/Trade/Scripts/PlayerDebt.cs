@@ -51,9 +51,6 @@ namespace ProjectC.Trade
         {
             currentDebt += amount;
             lastDebtUpdateTime = Time.time;
-
-            DebtLevel level = GetDebtLevel();
-            Debug.Log($"[PlayerDebt] Игрок {ownerId}: долг +{amount:F0} CR (итого: {currentDebt:F0} CR, уровень: {level})");
         }
 
         /// <summary>
@@ -66,9 +63,6 @@ namespace ProjectC.Trade
             currentDebt -= amount;
             if (currentDebt < 0f) currentDebt = 0f;
             lastDebtUpdateTime = Time.time;
-
-            DebtLevel level = GetDebtLevel();
-            Debug.Log($"[PlayerDebt] Игрок {ownerId}: погашено {amount:F0} CR (остаток: {currentDebt:F0} CR, уровень: {level})");
         }
 
         /// <summary>
@@ -96,11 +90,6 @@ namespace ProjectC.Trade
             if (currentDebt < 0.01f)
             {
                 currentDebt = 0f;
-                Debug.Log($"[PlayerDebt] Игрок {ownerId}: долг полностью погашен временем (было {oldDebt:F0} CR)");
-            }
-            else
-            {
-                Debug.Log($"[PlayerDebt] Игрок {ownerId}: затухание долга {daysSinceUpdate:F0} дн. {oldDebt:F0} → {currentDebt:F0} CR");
             }
         }
 

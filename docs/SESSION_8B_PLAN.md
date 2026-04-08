@@ -3,48 +3,46 @@
 ## 📍 Точка отправления
 
 **Ветка:** `qwen-gamestudio-agent-dev`
-**HEAD:** `76ef271` (restore(session8): восстановление рабочей версии ead681b)
+**HEAD:** `9f528e1` (cleanup: удалить verbose Debug.Log из Trade-скриптов)
 **Точка бэкапа:** `d58f5dc`
 
 ## ✅ Что работает (Сессия 8 завершена)
 
-- ✅ Сдача контрактов **из локального склада** — работает (после фикса Save/Load)
 - ✅ Receipt контракты (под расписку) — работают
 - ✅ CargoSystem ищется через `FindObjectsByType<ShipController>` — работает для Host
-- ✅ Сохранение склада происходит после каждой модификации (BuyItem, SellItem, LoadToShip, UnloadFromShip)
+- ✅ Логирование почищено (115 строк удалено, 19 добавлено)
 
-## 🔴 КРИТИЧЕСКАЯ ПРОБЛЕМА (обнаружена 9 апреля)
+## 🔴 КРИТИЧЕСКАЯ ПРОБЛЕМА (обнаружена 9 апреля — чистка логов)
 
-### ~~Сдача из трюма корабля НЕ работает~~ ✅ РЕШЕНО
-**Статус:** Исправлено восстановлением рабочей версии `ead681b` (коммит `76ef271`)
-**Диагностика:** Сдача из трюма работает на Host. Предупреждение NetworkPlayer — fallback на локальную покупку.
+### 🐛 Сдача контракта ИЗ СКЛАДА НЕ РАБОТАЕТ (локальная покупка)
 
-## 📝 Журнал сессии 8B (9 апреля 2026)
+**Симптом:** Контракт принят, товар куплен через TradeUI, но при сдаче `CompleteContractServerRpc` не находит товар.
 
-### Что делали:
+**Диагностика из логов:**
+```
+[TradeUI] NetworkPlayer не найден или не локальный, fallback на локальную покупку
+```
 
-**Попытка 1: Связать корабль с владельцем (OwnerClientId)**
-- ❌ Добавили `OwnerClientId` в `ShipController` → конфликт с `NetworkBehaviour.OwnerClientId`
-- ❌ Переименовали в `_ownerClientId` + `[SerializeField]` → Unity: "The same field name is serialized multiple times"
-- ❌ Попробовали `IsPilot(ulong clientId)` → сломало сдачу контрактов
-- ✅ **Откатились к рабочей версии `ead681b`** (коммит `76ef271`)
+**Цепочка проблемы:**
+1. `TradeUI.BuyItemViaServer()` → `NetworkPlayer` не найден → **fallback на локальную `PlayerTradeStorage.BuyItem()`**
+2. Товар добавляется в `PlayerTradeStorage.warehouse` **локально** (на клиенте)
+3. При сдаче `CompleteContractServerRpc` → `FindPlayerStorage(clientId)` → сервер ищет **свой** PlayerTradeStorage
+4. Серверный PlayerTradeStorage **пустой** — товар покупался локально, не через сервер
+5. Проверка `warehouse.Find(itemId)` → `null` → товар не найден → контракт не сдаётся
 
-**Диагностика проблемы сдачи из трюма:**
-- 🐛 Симптом: `[ContractSystem] Товар antigrav_ingot_v01 x6 НЕ НАЙДЕН в трюме!`
-- 🔍 Причина: думали что `CargoSystem` — `MonoBehaviour`, сервер не видит груз клиента
-- ✅ **Результат:** Сдача из трюма РАБОТАЕТ на Host! Проблема была в сломанном коммите, не в архитектуре.
-- ⚠️ `PlayerTradeStorage`: добавлены отладочные логи ДО/ПОСЛЕ `cargo.AddCargo` для диагностики
+**Почему трюм работает, а склад нет:**
+- Трюм: `CargoSystem` на ShipController, сервер находит через `FindObjectsByType<ShipController>` → груз в трюме реплицируется (или Host = сервер)
+- Склад: `PlayerTradeStorage` — `MonoBehaviour`, не `NetworkBehaviour`, данные не синхронизируются
 
-**Выводы:**
-- Текущая реализация CargoSystem (MonoBehaviour) работает для Host
-- Для Client (мультиплеер) потребуется конвертация в NetworkBehaviour — но это отдельная задача
-- Не ломать рабочее — сначала тестировать на Host после каждого изменения
+**Что нужно починить (варианты):**
+- **A)** `PlayerTradeStorage` → `NetworkBehaviour` с `NetworkVariable` для warehouse (правильно, но сложно)
+- **B)** Покупка ВСЕГДА через ServerRpc (убрать fallback), сервер сам обновляет PlayerTradeStorage
+- **C)** При CompleteContractServerRpc — синхронизировать warehouse с клиентом перед проверкой (костыль)
+
+**Решение:** Будем чинить все вместе в следующей сессии. Пока задокументировано.
 
 ### Коммиты сессии:
-- `3c41008` — fix: IsPilot() вместо OwnerClientId (сломал сдачу)
-- `3353e58` — revert: откат к рабочей версии
-- `76ef271` — restore: восстановление ead681b
-- `48a830b` — docs: диагностика, добавлены логи в PlayerTradeStorage
+- `9f528e1` — cleanup: удалить verbose Debug.Log из Trade-скриптов, оставить Warning/Error
 
 ---
 

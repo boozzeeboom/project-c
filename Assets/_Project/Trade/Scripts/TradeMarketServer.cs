@@ -78,9 +78,6 @@ public class TradeMarketServer : NetworkBehaviour
         // Загружаем все рынки из Resources
         LoadAllMarkets();
 
-        Debug.Log($"[TradeMarketServer] Загружено рынков: {_markets.Count} | " +
-                  $"TestMode: {testMode} | TickInterval: {TickInterval} сек | IsServer: {IsServer}");
-
         // Fallback: если OnNetworkSpawn не вызвался (объект создан вручную в иерархии),
         // пробуем инициализировать серверную сторону
         if (IsServer && _npcTraders.Count == 0)
@@ -113,8 +110,6 @@ public class TradeMarketServer : NetworkBehaviour
         {
             InitDefaultMarketEvents();
         }
-
-        Debug.Log($"[TradeMarketServer] Сервер инициализирован. NPC: {_npcTraders.Count}, События: {_activeEvents.Count}");
     }
 
     /// <summary>
@@ -141,7 +136,6 @@ public class TradeMarketServer : NetworkBehaviour
         };
 
         _activeEvents.Add(mesiumRush);
-        Debug.Log("[TradeMarketServer] Инициализировано событие: Мезиевая лихорадка 🔥");
     }
 
     /// <summary>
@@ -578,7 +572,6 @@ public class TradeMarketServer : NetworkBehaviour
                 }
             }
         }
-        Debug.Log($"[TICK #{Time.time / tickInterval:F0}] Рынков:{_markets.Count} NPC:{_npcTraders.Count} Событий:{activeEventCount}{marketSummary}");
     }
 
     // ==================== NPC-ТРЕЙДЕРЫ (Сессия 6) ====================
@@ -842,7 +835,7 @@ public class TradeMarketServer : NetworkBehaviour
     {
         string logEntry = $"[{Time.time:F0}] {type} | Client:{clientId} | {itemId} x{quantity} | {status} | {details}";
         _transactionLog.Add(logEntry);
-        Debug.Log($"[TradeMarketServer] {logEntry}");
+        // Debug.Log($"[TradeMarketServer] {logEntry}");
 
         // Храним последние 1000 записей
         if (_transactionLog.Count > 1000)

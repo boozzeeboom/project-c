@@ -95,8 +95,6 @@ namespace ProjectC.Trade
             {
                 GenerateContractsForAllLocations();
             }
-
-            Debug.Log($"[ContractSystem] Сервер инициализирован. Доступно товаров: {_availableItems.Count}");
         }
 
         // ==================== ТАБЛИЦА РАССТОЯНИЙ ====================

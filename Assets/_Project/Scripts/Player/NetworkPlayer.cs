@@ -627,10 +627,8 @@ namespace ProjectC.Player
         [Rpc(SendTo.Owner)]
         public void ContractListClientRpc(string serializedContracts, string locationId, RpcParams rpcParams = default)
         {
-            Debug.Log($"[NetworkPlayer] ContractListClientRpc: {serializedContracts.Length} символов, локация {locationId}");
             if (ContractBoardUI.Instance != null)
             {
-                Debug.Log("[NetworkPlayer] ContractBoardUI.Instance найден, вызываю OnContractsReceived");
                 ContractBoardUI.Instance.OnContractsReceived(serializedContracts, locationId);
             }
             else

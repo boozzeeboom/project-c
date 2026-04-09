@@ -405,7 +405,7 @@ namespace ProjectC.Trade
                     return;
                 }
 
-                var storage = FindPlayerStorage(clientId);
+                var storage = FindPlayerStorage(clientId, contract.fromLocationId);
                 if (storage == null)
                 {
                     DispatchContractResultToClient(clientId, false, "Склад игрока не найден!", 0f);
@@ -482,24 +482,12 @@ namespace ProjectC.Trade
             // 5. Проверка наличия груза (для не-Receipt контрактов)
             if (!contract.isReceiptContract)
             {
-                var storage = FindPlayerStorage(clientId);
+                var storage = FindPlayerStorage(clientId, completionLocationId);
                 bool hasCargo = false;
 
                 if (storage != null)
                 {
-                    // Сессия 8: Устанавливаем правильную локацию и загружаем склад
-                    bool needLoad = (storage.currentLocationId != completionLocationId);
-                    if (storage.warehouse.Count == 0)
-                    {
-                        needLoad = true;
-                    }
-
-                    if (needLoad)
-                    {
-                        storage.currentLocationId = completionLocationId;
-                        storage.Load();
-                    }
-
+                    // FindPlayerStorage уже загрузил данные из PlayerDataStore
                     var warehouseItem = storage.warehouse.Find(w => w.item != null && w.item.itemId == contract.itemId);
                     if (warehouseItem != null && warehouseItem.quantity >= contract.quantity)
                     {
@@ -826,7 +814,7 @@ namespace ProjectC.Trade
             return null;
         }
 
-        private PlayerTradeStorage FindPlayerStorage(ulong clientId)
+        private PlayerTradeStorage FindPlayerStorage(ulong clientId, string locationId)
         {
             var player = FindPlayerNetworkPlayer(clientId);
             if (player == null) return null;
@@ -836,6 +824,8 @@ namespace ProjectC.Trade
             {
                 storage = player.gameObject.AddComponent<PlayerTradeStorage>();
             }
+            storage.currentLocationId = locationId;
+            storage.LoadFromPlayerDataStore(clientId);
             return storage;
         }
 

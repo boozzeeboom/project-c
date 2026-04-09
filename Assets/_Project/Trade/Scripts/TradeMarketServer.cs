@@ -46,7 +46,7 @@ public class TradeMarketServer : NetworkBehaviour
 
     [Header("Rate Limiting")]
     [Tooltip("Максимум сделок в минуту на игрока")]
-    [SerializeField] private int maxTradesPerMinute = 10;
+    [SerializeField] private int maxTradesPerMinute = 30;
 
     // Рынки локаций
     private Dictionary<string, LocationMarket> _markets = new Dictionary<string, LocationMarket>();
@@ -819,6 +819,7 @@ public class TradeMarketServer : NetworkBehaviour
         var timestamps = _tradeTimestamps[clientId];
         if (timestamps.Count >= maxTradesPerMinute)
         {
+            Debug.LogWarning($"[TradeMarketServer] Rate limit! Client:{clientId} сделал {timestamps.Count} запросов (лимит: {maxTradesPerMinute}/мин)");
             return false;
         }
 
@@ -837,9 +838,9 @@ public class TradeMarketServer : NetworkBehaviour
 
     private void LogTransaction(ulong clientId, string type, string itemId, int quantity, string status, string details)
     {
-        string logEntry = $"[{Time.time:F0}] {type} | Client:{clientId} | {itemId} x{quantity} | {status} | {details}";
+        string logEntry = $"[TradeMarketServer] {type} | Client:{clientId} | {itemId} x{quantity} | {status} | {details}";
         _transactionLog.Add(logEntry);
-        // Debug.Log($"[TradeMarketServer] {logEntry}");
+        Debug.Log(logEntry);
 
         // Храним последние 1000 записей
         if (_transactionLog.Count > 1000)

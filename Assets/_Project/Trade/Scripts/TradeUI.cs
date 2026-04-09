@@ -795,8 +795,9 @@ public class TradeUI : MonoBehaviour
         if (_showWarehouseTab || _selectedIndex < 0 || currentMarket == null) return;
         if (_selectedIndex >= currentMarket.items.Count) return;
         var mi = currentMarket.items[_selectedIndex];
-        if (mi?.item == null) return;
+        if (mi?.item == null) { ShowMessage("Выберите товар!"); return; }
 
+        Debug.Log($"[TradeUI] Покупка: {mi.item.displayName} x{_buyQuantity} (index={_selectedIndex})");
         // Серверная покупка через NetworkPlayer RPC
         BuyItemViaServer(mi.item.itemId, _buyQuantity);
     }
@@ -806,8 +807,9 @@ public class TradeUI : MonoBehaviour
         if (_showWarehouseTab || _selectedIndex < 0 || currentMarket == null) return;
         if (_selectedIndex >= currentMarket.items.Count) return;
         var mi = currentMarket.items[_selectedIndex];
-        if (mi?.item == null) return;
+        if (mi?.item == null) { ShowMessage("Выберите товар!"); return; }
 
+        Debug.Log($"[TradeUI] Продажа: {mi.item.displayName} x{_buyQuantity} (index={_selectedIndex})");
         // Серверная продажа через NetworkPlayer RPC
         SellItemViaServer(mi.item.itemId, _buyQuantity);
     }

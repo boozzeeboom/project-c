@@ -969,6 +969,7 @@ public class TradeUI : MonoBehaviour
     /// Вызывается из TradeResultClientRpc (NetworkPlayer) с результатом торговли
     /// Сессия 8C: добавлена синхронизация предметов — сервер передаёт itemId и quantity при успешной покупке/продаже
     /// Сессия 8D: сброс _tradeLocked — разрешение на следующую операцию
+    /// Сессия 8D hotfix: загружаем актуальные данные с сервера вместо ручного добавления/удаления
     /// </summary>
     public void OnTradeResult(bool success, string message, float newCredits, string itemId = "", int itemQuantity = 0, bool isPurchase = true)
     {
@@ -982,16 +983,9 @@ public class TradeUI : MonoBehaviour
             {
                 playerStorage.credits = newCredits;
 
-                // Синхронизация предметов: при покупке сервер добавляет товар на склад игрока
-                if (isPurchase && !string.IsNullOrEmpty(itemId) && itemQuantity > 0)
-                {
-                    SyncWarehouseItem(itemId, itemQuantity);
-                }
-                // При продаже сервер удаляет товар — клиент тоже должен удалить
-                else if (!isPurchase && !string.IsNullOrEmpty(itemId) && itemQuantity > 0)
-                {
-                    RemoveFromWarehouse(itemId, itemQuantity);
-                }
+                // Сессия 8D hotfix: Загружаем актуальные данные склада с сервера
+                // Вместо ручного добавления/удаления — сервер уже сохранил, мы загружаем
+                playerStorage.Load();
             }
         }
         else

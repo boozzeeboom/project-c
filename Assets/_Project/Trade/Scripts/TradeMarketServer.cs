@@ -333,9 +333,10 @@ public class TradeMarketServer : NetworkBehaviour
         // Лог
         LogTransaction(clientId, "BUY", itemId, quantity, "SUCCESS", $"За {totalCost:F0} CR");
 
-        // Отправляем результат клиенту
+        // Отправляем результат клиенту (Сессия 8C: itemId + quantity для синхронизации склада)
         SendTradeResultToClient(clientId, true, $"Куплено {itemId} x{quantity} за {totalCost:F0} CR",
-            creditsManager.Credits, marketItem.availableStock, 0, 0, 0);
+            creditsManager.Credits, marketItem.availableStock, 0, 0, 0,
+            itemId, quantity, true);
 
         // Обновляем рынок у всех клиентов
         var buyData = SerializeMarketData(market);
@@ -414,9 +415,10 @@ public class TradeMarketServer : NetworkBehaviour
         // Лог
         LogTransaction(clientId, "SELL", itemId, quantity, "SUCCESS", $"За {sellPrice:F0} CR");
 
-        // Отправляем результат
+        // Отправляем результат (Сессия 8C: itemId + quantity для синхронизации склада)
         SendTradeResultToClient(clientId, true, $"Продано {itemId} x{quantity} за {sellPrice:F0} CR",
-            creditsManager?.Credits ?? 0f, marketItem.availableStock + quantity, 0, 0, 0);
+            creditsManager?.Credits ?? 0f, marketItem.availableStock + quantity, 0, 0, 0,
+            itemId, quantity, false);
 
         // Обновляем рынок у всех
         var sellData = SerializeMarketData(market);
@@ -428,15 +430,17 @@ public class TradeMarketServer : NetworkBehaviour
     /// <summary>
     /// Отправить результат торговли конкретному клиенту
     /// Используем примитивные типы — NGO не умеет сериализовать кастомные структуры
+    /// Сессия 8C: добавлены itemId и itemQuantity для синхронизации склада на клиенте
     /// </summary>
     private void SendTradeResultToClient(ulong clientId, bool success, string message,
-        float newCredits, int newStock, int newCargoWeight, int newCargoVolume, int newCargoSlots)
+        float newCredits, int newStock, int newCargoWeight, int newCargoVolume, int newCargoSlots,
+        string itemId = "", int itemQuantity = 0, bool isPurchase = true)
     {
         // Находим NetworkPlayer клиента и отправляем результат через него
         var player = FindPlayerNetworkPlayer(clientId);
         if (player != null)
         {
-            player.TradeResultClientRpc(success, message, newCredits);
+            player.TradeResultClientRpc(success, message, newCredits, itemId, itemQuantity, isPurchase);
         }
         else
         {

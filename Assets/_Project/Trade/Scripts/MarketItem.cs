@@ -80,7 +80,6 @@ namespace ProjectC.Trade
                     if (item != null)
                     {
                         basePrice = item.basePrice;
-                        Debug.Log($"[MarketItem] Восстановлена ссылка на item: {itemId} (basePrice={basePrice})");
                     }
                 }
             }
@@ -90,12 +89,11 @@ namespace ProjectC.Trade
                 // Сессия 8D: Если item всё ещё null, используем сохранённый basePrice
                 if (basePrice <= 0f)
                 {
-                    Debug.LogWarning($"[MarketItem] item == null И basePrice=0! itemId={itemId ?? "unknown"}. Не могу пересчитать цену.");
+                    Debug.LogWarning($"[MarketItem] item == null И basePrice=0! itemId={itemId ?? "unknown"}.");
                     currentPrice = 0f;
                     return;
                 }
                 // Используем сохранённый basePrice — он был установлен при InitFromItem()
-                Debug.LogWarning($"[MarketItem] item == null для {itemId ?? "unknown"}, использую сохранённый basePrice={basePrice}");
             }
             else
             {

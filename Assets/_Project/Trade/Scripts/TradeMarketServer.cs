@@ -206,6 +206,9 @@ public class TradeMarketServer : NetworkBehaviour
             if (market != null && !_markets.ContainsKey(market.locationId))
             {
                 _markets[market.locationId] = market;
+                // Инициализация цен — ScriptableObject.OnEnable() может не вызваться
+                market.InitItems();
+                market.RecalculatePrices();
             }
         }
 #else
@@ -214,7 +217,11 @@ public class TradeMarketServer : NetworkBehaviour
         foreach (var market in markets)
         {
             if (!_markets.ContainsKey(market.locationId))
+            {
                 _markets[market.locationId] = market;
+                market.InitItems();
+                market.RecalculatePrices();
+            }
         }
 #endif
     }
@@ -328,6 +335,7 @@ public class TradeMarketServer : NetworkBehaviour
             {
                 playerStorage.warehouse.Add(new WarehouseItem { item = itemDef, quantity = quantity });
             }
+            playerStorage.Save(); // Сессия 8C: сохраняем чтобы данные не терялись
         }
 
         // Лог
@@ -401,6 +409,7 @@ public class TradeMarketServer : NetworkBehaviour
         {
             playerStorage.warehouse.Remove(warehouseItem);
         }
+        playerStorage.Save(); // Сессия 8C: сохраняем после модификации
 
         // Начисляем кредиты
         var creditsManager = FindPlayerCredits(clientId);

@@ -854,35 +854,36 @@ public class TradeUI : MonoBehaviour
 
     private void BuyItemViaServer(string itemId, int quantity)
     {
-        // Отправляем RPC через NetworkPlayer (он уже заспавнен)
-        if (_player != null && _player.IsOwner)
+        // Отправляем RPC через NetworkPlayer — сервер авторитетен, fallback запрещён
+        if (_player != null)
         {
             _player.TradeBuyServerRpc(itemId, quantity, currentMarket.locationId);
         }
         else
         {
-            Debug.LogWarning("[TradeUI] NetworkPlayer не найден или не локальный, fallback на локальную покупку");
-            BuyItemLocal(itemId, quantity);
+            ShowMessage("ОШИБКА: NetworkPlayer не найден. Попробуйте перезайти.");
+            Debug.LogError("[TradeUI] NetworkPlayer не найден — невозможно выполнить покупку");
         }
     }
 
     private void SellItemViaServer(string itemId, int quantity)
     {
-        if (_player != null && _player.IsOwner)
+        if (_player != null)
         {
             _player.TradeSellServerRpc(itemId, quantity, currentMarket.locationId);
         }
         else
         {
-            Debug.LogWarning("[TradeUI] NetworkPlayer не найден или не локальный, fallback на локальную продажу");
-            SellItemLocal(itemId, quantity);
+            ShowMessage("ОШИБКА: NetworkPlayer не найден. Попробуйте перезайти.");
+            Debug.LogError("[TradeUI] NetworkPlayer не найден — невозможно выполнить продажу");
         }
     }
 
     /// <summary>
     /// Вызывается из TradeResultClientRpc (NetworkPlayer) с результатом торговли
+    /// Сессия 8C: добавлена синхронизация предметов — сервер передаёт itemId и quantity при успешной покупке/продаже
     /// </summary>
-    public void OnTradeResult(bool success, string message, float newCredits)
+    public void OnTradeResult(bool success, string message, float newCredits, string itemId = "", int itemQuantity = 0, bool isPurchase = true)
     {
         if (success)
         {
@@ -890,6 +891,15 @@ public class TradeUI : MonoBehaviour
             if (playerStorage != null)
             {
                 playerStorage.credits = newCredits;
+
+                // Синхронизация предметов: при покупке сервер добавляет товар на склад игрока
+                // Клиент должен отобразить актуальное состояние
+                if (isPurchase && !string.IsNullOrEmpty(itemId) && itemQuantity > 0)
+                {
+                    SyncWarehouseItem(itemId, itemQuantity);
+                }
+                // При продаже предмет уже удалён из клиентского склада через TradeMarketServer.SellItemServerRpc
+                // (сервер работает с тем же playerStorage через FindPlayerStorage)
             }
         }
         else
@@ -900,44 +910,67 @@ public class TradeUI : MonoBehaviour
         RenderItems();
     }
 
-    // ==================== ЛОКАЛЬНАЯ ТОРГОВЛЯ (FALLBACK) ====================
+    /// <summary>
+    /// Синхронизировать предмет на складе игрока после серверной операции
+    /// Сессия 8C: обеспечивает отображение товаров, добавленных сервером при покупке
+    /// </summary>
+    private void SyncWarehouseItem(string itemId, int quantity)
+    {
+        if (playerStorage == null) return;
 
+        var db = FindTradeDatabase();
+        if (db == null) return;
+
+        var itemDef = db.GetItemById(itemId);
+        if (itemDef == null)
+        {
+            Debug.LogWarning($"[TradeUI] Не найден TradeItemDefinition для {itemId}");
+            return;
+        }
+
+        var existing = playerStorage.warehouse.Find(w => w.item != null && w.item.itemId == itemId);
+        if (existing != null)
+        {
+            existing.quantity += quantity;
+        }
+        else
+        {
+            playerStorage.warehouse.Add(new WarehouseItem { item = itemDef, quantity = quantity });
+        }
+    }
+
+    private static TradeDatabase FindTradeDatabase()
+    {
+#if UNITY_EDITOR
+        string[] guids = UnityEditor.AssetDatabase.FindAssets("t:TradeDatabase");
+        if (guids.Length > 0)
+        {
+            string path = UnityEditor.AssetDatabase.GUIDToAssetPath(guids[0]);
+            return UnityEditor.AssetDatabase.LoadAssetAtPath<TradeDatabase>(path);
+        }
+#endif
+        return Resources.Load<TradeDatabase>("Trade/TradeItemDatabase");
+    }
+
+    // ==================== ЛОКАЛЬНАЯ ТОРГОВЛЯ (ОТКЛЮЧЕНО — Сессия 8C) ====================
+    //Fallback удалён: все операции должны идти через сервер.
+    // Эти методы оставлены только для отладки/референса.
+
+    /*
     private void BuyItemLocal(string itemId, int quantity)
     {
-        if (currentMarket == null || playerStorage == null) return;
-        var mi = currentMarket.items.Find(m => m.item != null && m.item.itemId == itemId);
-        if (mi == null || mi.item == null) return;
-        if (mi.availableStock < quantity) { ShowMessage($"Недостаточно товара! Есть {mi.availableStock}"); return; }
-
-        bool ok = playerStorage.BuyItem(mi.item, quantity, mi.currentPrice);
-        if (!ok) { ShowMessage("Недостаточно кредитов или места!"); return; }
-
-        mi.availableStock -= quantity;
-        mi.UpdateDemand(quantity);
-        UpdateDisplays();
-        RenderItems();
-        ShowMessage($"КУПЛЕНО: {mi.item.displayName} x{quantity} за {mi.currentPrice * quantity:F0} CR");
+        // ОТКЛЮЧЕНО: локальная покупка обходит сервер, контракты не видят товар
+        Debug.LogError("[TradeUI] BuyItemLocal вызван — это ошибка! Все покупки должны идти через сервер.");
+        // ... старый код ...
     }
 
     private void SellItemLocal(string itemId, int quantity)
     {
-        if (currentMarket == null || playerStorage == null) return;
-        var mi = currentMarket.items.Find(m => m.item != null && m.item.itemId == itemId);
-        if (mi == null || mi.item == null) return;
-
-        var wi = playerStorage.warehouse.Find(w => w.item != null && w.item.itemId == itemId);
-        if (wi == null || wi.quantity < quantity) { ShowMessage("Нет товара на складе!"); return; }
-
-        float sellPrice = mi.currentPrice * 0.8f;
-        bool ok = playerStorage.SellItem(wi.item, quantity, sellPrice);
-        if (!ok) { ShowMessage("Ошибка продажи!"); return; }
-
-        mi.availableStock += quantity;
-        mi.UpdateSupply(quantity);
-        UpdateDisplays();
-        RenderItems();
-        ShowMessage($"ПРОДАНО: {wi.item.displayName} x{quantity} за {sellPrice * quantity:F0} CR (80%)");
+        // ОТКЛЮЧЕНО: локальная продажа обходит сервер
+        Debug.LogError("[TradeUI] SellItemLocal вызван — это ошибка! Все продажи должны идти через сервер.");
+        // ... старый код ...
     }
+    */
 
     // ==================== СОБЫТИЯ РЫНКА (Сессия 6) ====================
 

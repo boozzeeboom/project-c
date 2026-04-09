@@ -542,13 +542,14 @@ namespace ProjectC.Player
 
         /// <summary>
         /// Результат торговли — сервер отправляет клиенту
+        /// Сессия 8C: добавлены itemId, itemQuantity, isPurchase для синхронизации склада
         /// </summary>
         [Rpc(SendTo.Owner)]
-        public void TradeResultClientRpc(bool success, string message, float newCredits, RpcParams rpcParams = default)
+        public void TradeResultClientRpc(bool success, string message, float newCredits, string itemId = "", int itemQuantity = 0, bool isPurchase = true, RpcParams rpcParams = default)
         {
             if (TradeUI.Instance != null)
             {
-                TradeUI.Instance.OnTradeResult(success, message, newCredits);
+                TradeUI.Instance.OnTradeResult(success, message, newCredits, itemId, itemQuantity, isPurchase);
             }
         }
 

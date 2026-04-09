@@ -45,8 +45,8 @@ public class TradeMarketServer : NetworkBehaviour
     [SerializeField] private bool autoInitNPCTraders = true;
 
     [Header("Rate Limiting")]
-    [Tooltip("Максимум сделок в минуту на игрока")]
-    [SerializeField] private int maxTradesPerMinute = 30;
+    [Tooltip("Максимум сделок в минуту на игрока. 0 = без лимита (отключено для отладки)")]
+    [SerializeField] private int maxTradesPerMinute = 0;
 
     // Рынки локаций
     private Dictionary<string, LocationMarket> _markets = new Dictionary<string, LocationMarket>();
@@ -258,6 +258,13 @@ public class TradeMarketServer : NetworkBehaviour
             SendTradeResultToClient(clientId, false, "Товар не найден!", 0f, 0, 0, 0, 0);
             return;
         }
+        if (marketItem.item == null)
+        {
+            Debug.LogError($"[TradeMarketServer] MarketItem.item == null для {itemId}! Проверь ScriptableObject рынка {locationId}");
+            LogTransaction(clientId, "BUY", itemId, quantity, "FAIL", "MarketItem.item == null!");
+            SendTradeResultToClient(clientId, false, "Ошибка товара! (item=null)", 0f, 0, 0, 0, 0);
+            return;
+        }
 
         // 3. Проверка стока
         if (marketItem.availableStock < quantity)
@@ -379,6 +386,13 @@ public class TradeMarketServer : NetworkBehaviour
         {
             LogTransaction(clientId, "SELL", itemId, quantity, "FAIL", "Товар не найден");
             SendTradeResultToClient(clientId, false, "Товар не найден!", 0f, 0, 0, 0, 0);
+            return;
+        }
+        if (marketItem.item == null)
+        {
+            Debug.LogError($"[TradeMarketServer] MarketItem.item == null для {itemId} при продаже! Проверь ScriptableObject рынка {locationId}");
+            LogTransaction(clientId, "SELL", itemId, quantity, "FAIL", "MarketItem.item == null!");
+            SendTradeResultToClient(clientId, false, "Ошибка товара! (item=null)", 0f, 0, 0, 0, 0);
             return;
         }
 
@@ -820,6 +834,8 @@ public class TradeMarketServer : NetworkBehaviour
 
     private bool CheckRateLimit(ulong clientId)
     {
+        if (maxTradesPerMinute <= 0) return true; // Лимит отключён
+
         if (!_tradeTimestamps.ContainsKey(clientId))
         {
             _tradeTimestamps[clientId] = new List<float>();

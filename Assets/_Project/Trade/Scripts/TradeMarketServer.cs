@@ -353,6 +353,7 @@ public class TradeMarketServer : NetworkBehaviour
 
         // Списываем кредиты
         creditsManager.Credits -= totalCost;
+        Debug.Log($"[TradeMarketServer] BUY: creditsManager.Credits BEFORE sync={creditsManager.Credits:F0}");
 
         // Обновляем рынок: сток и demand
         marketItem.availableStock -= quantity;
@@ -534,6 +535,8 @@ public class TradeMarketServer : NetworkBehaviour
         float newCredits, int newStock, int newCargoWeight, int newCargoVolume, int newCargoSlots,
         string itemId = "", int itemQuantity = 0, bool isPurchase = true)
     {
+        Debug.Log($"[TradeMarketServer] SendTradeResultToClient: clientId={clientId}, success={success}, newCredits={newCredits:F0}");
+
         // Находим NetworkPlayer клиента и отправляем результат через него
         var player = FindPlayerNetworkPlayer(clientId);
         if (player != null)
@@ -955,9 +958,15 @@ public class TradeMarketServer : NetworkBehaviour
         if (player == null) return null;
 
         var credits = player.GetComponent<PlayerCreditsManager>();
-        if (credits == null)
+        bool isNew = (credits == null);
+        if (isNew)
         {
             credits = player.gameObject.AddComponent<PlayerCreditsManager>();
+            // Сессия 8E: OnNetworkSpawn() не вызывается для AddComponent после спавна.
+            // Загружаем кредиты вручную из PlayerPrefs.
+            float savedCredits = PlayerPrefs.GetFloat($"Credits_{clientId}", 1000f);
+            credits.Credits = Mathf.Max(0f, savedCredits);
+            Debug.Log($"[TradeMarketServer] FindPlayerCredits: created new, loaded credits={credits.Credits:F0} from PlayerPrefs");
         }
         return credits;
     }

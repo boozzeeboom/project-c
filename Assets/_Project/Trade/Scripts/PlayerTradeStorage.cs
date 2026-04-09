@@ -314,9 +314,4 @@ namespace ProjectC.Trade
 
         private void OnApplicationQuit() { Save(); }
     }
-
-    [Serializable]
-    public class WarehouseSaveData { public List<WarehouseSaveItem> items; }
-    [Serializable]
-    public class WarehouseSaveItem { public string itemId; public int quantity; }
 }

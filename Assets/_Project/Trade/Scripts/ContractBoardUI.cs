@@ -33,7 +33,9 @@ public class ContractBoardUI : MonoBehaviour
     private ContractData[] _activeContracts = new ContractData[0];
     private string _currentLocationId = "";
     private NetworkPlayer _player;
+#pragma warning disable 0414
     private bool _showActiveTab = false;
+#pragma warning restore 0414
 
     private void Awake()
     {

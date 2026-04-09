@@ -373,7 +373,12 @@ public class TradeMarketServer : NetworkBehaviour
             }
             // Сессия 8E: Синхронизируем credits с PlayerCreditsManager перед сохранением
             playerStorage.credits = creditsManager.Credits;
+            Debug.Log($"[TradeMarketServer] BUY sync: creditsManager.Credits={creditsManager.Credits:F0}, playerStorage.credits={playerStorage.credits:F0}");
             playerStorage.Save(); // Сессия 8C: сохраняем чтобы данные не терялись
+
+            // Сессия 8E: Сохраняем также в PlayerCreditsManager (авторитетный источник)
+            PlayerPrefs.SetFloat($"Credits_{clientId}", creditsManager.Credits);
+            PlayerPrefs.Save();
         }
 
         // Лог
@@ -494,6 +499,13 @@ public class TradeMarketServer : NetworkBehaviour
         // Сессия 8E: Синхронизируем credits с PlayerCreditsManager перед сохранением
         playerStorage.credits = creditsManager?.Credits ?? playerStorage.credits;
         playerStorage.Save(); // Сессия 8C: сохраняем после модификации
+
+        // Сессия 8E: Сохраняем также в PlayerCreditsManager (авторитетный источник)
+        if (creditsManager != null)
+        {
+            PlayerPrefs.SetFloat($"Credits_{clientId}", creditsManager.Credits);
+            PlayerPrefs.Save();
+        }
 
         // Обновляем рынок: supply
         market.UpdateSupply(itemId, quantity * 0.02f);
@@ -956,14 +968,49 @@ public class TradeMarketServer : NetworkBehaviour
         if (player == null) return null;
 
         var storage = player.GetComponent<PlayerTradeStorage>();
-        if (storage == null)
+        bool isNew = (storage == null);
+        if (isNew)
         {
             storage = player.gameObject.AddComponent<PlayerTradeStorage>();
         }
 
-        // Сессия 8D: Всегда загружаем данные — между RPC компонент может быть пересоздан
-        // или данные могут быть устаревшими. Load() быстрый для одного игрока.
-        storage.Load();
+        // Сессия 8E: Загружаем склад из PlayerPrefs (items)
+        // Но НЕ credits — они берутся из авторитетного PlayerCreditsManager
+        if (!isNew)
+        {
+            // Компонент уже существует — загружаем актуальный warehouse
+            string locKey = string.IsNullOrEmpty(storage.currentLocationId) ? "global" : storage.currentLocationId.ToLower();
+            string json = PlayerPrefs.GetString($"TradeWarehouse_{locKey}", "");
+            if (!string.IsNullOrEmpty(json))
+            {
+                var data = UnityEngine.JsonUtility.FromJson<WarehouseSaveData>(json);
+                storage.warehouse.Clear();
+                var db = FindTradeDatabase();
+                if (db != null && data != null)
+                {
+                    foreach (var si in data.items)
+                    {
+                        var def = db.GetItemById(si.itemId);
+                        if (def != null) storage.warehouse.Add(new WarehouseItem { item = def, quantity = si.quantity });
+                    }
+                }
+            }
+            else
+            {
+                storage.warehouse.Clear();
+            }
+        }
+
+        // Сессия 8E: Синхронизируем credits с PlayerCreditsManager (авторитетный источник)
+        // PlayerTradeStorage и PlayerCreditsManager — два независимых хранилища:
+        // - PlayerCreditsManager: ключ "Credits_{clientId}", NetworkVariable
+        // - PlayerTradeStorage: ключ "TradeCredits_{locKey}", PlayerPrefs
+        // При первом создании storage.credits = 1000 (default). Берём из NetworkVariable.
+        var creditsManager = FindPlayerCredits(clientId);
+        if (creditsManager != null)
+        {
+            storage.credits = creditsManager.Credits;
+        }
 
         return storage;
     }

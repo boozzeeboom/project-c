@@ -235,6 +235,23 @@ public class TradeMarketServer : NetworkBehaviour
     public void BuyItemServerRpc(string itemId, int quantity, string locationId, ServerRpcParams rpcParams = default)
     {
         ulong clientId = rpcParams.Receive.SenderClientId;
+
+        // Сессия 8E: Валидация quantity > 0 — защита от эксплойта
+        if (quantity <= 0)
+        {
+            LogTransaction(clientId, "BUY", itemId, quantity, "FAIL", "quantity <= 0");
+            SendTradeResultToClient(clientId, false, "Неверное количество!", 0f, 0, 0, 0, 0);
+            return;
+        }
+
+        // Сессия 8E: Валидация locationId — защита от пустого ID
+        if (string.IsNullOrEmpty(locationId))
+        {
+            LogTransaction(clientId, "BUY", itemId, quantity, "FAIL", "locationId пустой");
+            SendTradeResultToClient(clientId, false, "Локация не указана!", 0f, 0, 0, 0, 0);
+            return;
+        }
+
         // 1. Rate limiting
         if (!CheckRateLimit(clientId))
         {
@@ -377,6 +394,23 @@ public class TradeMarketServer : NetworkBehaviour
     public void SellItemServerRpc(string itemId, int quantity, string locationId, ServerRpcParams rpcParams = default)
     {
         ulong clientId = rpcParams.Receive.SenderClientId;
+
+        // Сессия 8E: Валидация quantity > 0 — защита от эксплойта
+        if (quantity <= 0)
+        {
+            LogTransaction(clientId, "SELL", itemId, quantity, "FAIL", "quantity <= 0");
+            SendTradeResultToClient(clientId, false, "Неверное количество!", 0f, 0, 0, 0, 0);
+            return;
+        }
+
+        // Сессия 8E: Валидация locationId — защита от пустого ID
+        if (string.IsNullOrEmpty(locationId))
+        {
+            LogTransaction(clientId, "SELL", itemId, quantity, "FAIL", "locationId пустой");
+            SendTradeResultToClient(clientId, false, "Локация не указана!", 0f, 0, 0, 0, 0);
+            return;
+        }
+
         // 1. Rate limiting
         if (!CheckRateLimit(clientId))
         {

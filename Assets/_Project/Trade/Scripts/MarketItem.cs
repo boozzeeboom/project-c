@@ -70,6 +70,10 @@ namespace ProjectC.Trade
         /// </summary>
         public void RecalculatePrice()
         {
+            // Сессия 8E: Clamp факторов перед расчётом — защита от corrupted ScriptableObject данных
+            demandFactor = Mathf.Clamp(demandFactor, 0f, 1.5f);
+            supplyFactor = Mathf.Clamp(supplyFactor, 0f, 1.5f);
+
             // Сессия 8D: Восстановление item ссылки по itemId если она потерялась
             if (item == null && !string.IsNullOrEmpty(itemId))
             {

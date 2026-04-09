@@ -2,8 +2,9 @@
 
 **Проект:** Project C: The Clouds
 **Ветка:** `qwen-gamestudio-agent-dev`
-**Статус:** 🔴 Запланировано
+**Статус:** ✅ ЗАВЕРШЕНО (все 8 сессий + 8E фикс кредитов)
 **Дата создания:** 6 апреля 2026 г.
+**Дата завершения:** 9 апреля 2026 г.
 
 ---
 
@@ -654,6 +655,31 @@
 - ✅ Документация обновлена
 - ✅ Коммит и пуш
 - ✅ Тег версии: `v0.0.14-trade-system`
+
+---
+
+# ═══════════════════════════════════════════════════════
+# СЕССИЯ 8E: Фикс синхронизации кредитов
+# ═══════════════════════════════════════════════════════
+
+**Агенты:** `@technical-director`
+
+**Дата:** 9 апреля 2026 г.
+
+**Проблема:** Кредиты хранились в двух местах — `PlayerCreditsManager` (NetworkVariable) и `TradeMarketServer._playerCredits` (Dictionary). Контракты начисляли в `PlayerCreditsManager`, а торговля использовала Dictionary — данные не синхронизировались. Сдача контрактов не добавляла кредитов.
+
+**Решение:**
+1. `TradeMarketServer` — единый авторитетный источник кредитов (Dictionary + PlayerPrefs)
+2. `ContractSystem.CompleteContractServerRpc` → `TradeMarketServer.SetPlayerCreditsStatic`
+3. `ContractBoardUI.OnContractResult` и `TradeUI.OnContractResult` → обновляют кредиты UI из `TradeMarketServer`
+4. Удалён `FindPlayerCredits` из TradeMarketServer и ContractSystem
+5. `FindPlayerStorage` синхронизирует credits из Dictionary вместо PlayerCreditsManager
+
+**Коммиты:**
+- `c680a46` fix(session 8E): contract credits sync — единый источник TradeMarketServer
+- `f661c4a` fix(session 8E): add using Unity.Netcode to TradeUI.cs for NetworkManager
+
+**Результат:** ✅ Сдача контрактов начисляет кредиты, покупка списывает корректно
 
 ---
 

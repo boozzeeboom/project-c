@@ -1,7 +1,7 @@
 # Project C: The Clouds — Единый стартовый файл для Qwen Code
 
-**Версия:** `v0.0.13-urp-setup` | **Дата:** 6 апреля 2026 г.
-**Ветка:** `qwen-gamestudio-agent-dev` (основная) | **Этап:** Этап 2 ЗАВЕРШЁН, Этап 2.5 В ПРОЦЕССЕ
+**Версия:** `v0.0.14-trade-system` | **Дата:** 9 апреля 2026 г.
+**Ветка:** `qwen-gamestudio-agent-dev` (основная) | **Этап:** Этап 2 ЗАВЕРШЁН, Торговая система (сессии 1-8E)
 **По мотивам книги «Интеграл Пьявица» — Бруно Арендт**
 
 ---
@@ -72,6 +72,19 @@ git reset --hard upstream/qwen-gamestudio-agent-dev
 - ✅ Персональная камера для каждого игрока
 - ✅ Процедурная генерация мира (15 пиков, 890+ облаков, 3 слоя)
 
+### Торговая система (Сессии 1-8E)
+- ✅ **ScriptableObject товаров** — TradeItemDefinition, TradeDatabase
+- ✅ **CargoSystem** — груз корабля (вес/объём)
+- ✅ **LocationMarket** — рынки для каждой локации (Primium, Secundus, Tertius, Quartus)
+- ✅ **TradeUI** — интерфейс торговли (покупка/продажа, склад/трюм)
+- ✅ **Серверная торговля (NGO RPC)** — BuyItem/SellItem через ServerRpc
+- ✅ **Tick-система** — динамическая экономика, изменение цен
+- ✅ **ContractSystem** — контракты НП (принятие/завершение/провал)
+- ✅ **PlayerTradeStorage** — склад игрока (локация, предметы, кредиты)
+- ✅ **Синхронизация кредитов** — единый источник TradeMarketServer (Dictionary + PlayerPrefs)
+- ✅ **Валидация** — quantity > 0, locationId, clamp demandFactor/supplyFactor
+- ✅ **Сохранение/загрузка** — кредиты, предметы, вес, объём
+
 ---
 
 ## 🔴 КРИТИЧНО: НЕ ТРОГАТЬ `.meta` ФАЙЛЫ
@@ -105,6 +118,8 @@ Unity автоматически создаёт `.meta` файлы для каж
 | ~~NetworkInventory не работал~~ | ✅ Откат — NGO не поддерживает NetworkVariable<string> |
 | ~~Все материалы розовые (Standard в URP)~~ | ✅ Конвертированы в URP Lit/Unlit |
 | ~~CloudGhibli.shader не компилировался~~ | ✅ URP пакет установлен, Pipeline Asset назначен |
+| ~~Кредиты не синхронизировались (два источника)~~ | ✅ Единый источник TradeMarketServer (сессия 8E) |
+| ~~Сдача контрактов не добавляла кредитов~~ | ✅ ContractSystem → TradeMarketServer.SetPlayerCreditsStatic |
 
 ---
 
@@ -131,6 +146,7 @@ Unity автоматически создаёт `.meta` файлы для каж
 | Файл | Когда читать |
 |------|-------------|
 | `docs/CHANGELOG.md` | ⭐ **История изменений** — что было сделано в каждой версии |
+| `docs/QWENTRADING8SESSION.md` | ⭐ **План торговой системы** — 8 сессий, зависимости, команды |
 | `docs/NETWORK_ARCHITECTURE.md` | Работа с сетью, RPC, синхронизация, reconect |
 | `docs/STEP_BY_STEP_DEVELOPMENT.md` | История шагов, что и как делалось |
 | `docs/DEDICATED_SERVER.md` | Запуск Dedicated Server (кнопка, build args) |

@@ -17,6 +17,10 @@ namespace ProjectC.Trade
         [Tooltip("Ссылка на определение товара")]
         public TradeItemDefinition item;
 
+        [Header("Item ID — для восстановления ссылки")]
+        [Tooltip("ID предмета (сохраняется даже если item ссылка теряется)")]
+        public string itemId;
+
         [Header("Stock")]
         [Tooltip("Базовый сток для пассивной регенерации")]
         public int initialStock = 50;
@@ -53,6 +57,7 @@ namespace ProjectC.Trade
         {
             if (item != null)
             {
+                itemId = item.itemId; // Сохраняем ID для восстановления
                 basePrice = item.basePrice;
                 if (currentPrice == 0f)
                     currentPrice = basePrice;
@@ -65,14 +70,38 @@ namespace ProjectC.Trade
         /// </summary>
         public void RecalculatePrice()
         {
-            if (item == null)
+            // Сессия 8D: Восстановление item ссылки по itemId если она потерялась
+            if (item == null && !string.IsNullOrEmpty(itemId))
             {
-                Debug.LogWarning($"[MarketItem] item == null! Не могу пересчитать цену. basePrice={basePrice}, demandFactor={demandFactor}, supplyFactor={supplyFactor}");
-                currentPrice = 0f;
-                return;
+                var db = FindTradeDatabase();
+                if (db != null)
+                {
+                    item = db.GetItemById(itemId);
+                    if (item != null)
+                    {
+                        basePrice = item.basePrice;
+                        Debug.Log($"[MarketItem] Восстановлена ссылка на item: {itemId} (basePrice={basePrice})");
+                    }
+                }
             }
 
-            basePrice = item.basePrice;
+            if (item == null)
+            {
+                // Сессия 8D: Если item всё ещё null, используем сохранённый basePrice
+                if (basePrice <= 0f)
+                {
+                    Debug.LogWarning($"[MarketItem] item == null И basePrice=0! itemId={itemId ?? "unknown"}. Не могу пересчитать цену.");
+                    currentPrice = 0f;
+                    return;
+                }
+                // Используем сохранённый basePrice — он был установлен при InitFromItem()
+                Debug.LogWarning($"[MarketItem] item == null для {itemId ?? "unknown"}, использую сохранённый basePrice={basePrice}");
+            }
+            else
+            {
+                basePrice = item.basePrice;
+            }
+
             currentPrice = basePrice * (1f + demandFactor - supplyFactor) * eventMultiplier;
 
             // Ограничение максимума ×5 (anti-exploit GDD_25 секция 11)
@@ -82,6 +111,19 @@ namespace ProjectC.Trade
             // Минимум — половина базовой цены
             float minPrice = basePrice * 0.5f;
             currentPrice = Mathf.Max(currentPrice, minPrice);
+        }
+
+        private static TradeDatabase FindTradeDatabase()
+        {
+#if UNITY_EDITOR
+            string[] guids = UnityEditor.AssetDatabase.FindAssets("t:TradeDatabase");
+            if (guids.Length > 0)
+            {
+                string path = UnityEditor.AssetDatabase.GUIDToAssetPath(guids[0]);
+                return UnityEditor.AssetDatabase.LoadAssetAtPath<TradeDatabase>(path);
+            }
+#endif
+            return UnityEngine.Resources.Load<TradeDatabase>("Trade/TradeItemDatabase");
         }
 
         /// <summary>

@@ -191,7 +191,7 @@ public class TradeUI : MonoBehaviour
         // --- Сообщение ---
         _messageText = MakeLabel("MsgText", _tradePanel.transform, "Выберите товар и нажмите КУПИТЬ/ПРОДАТЬ", 0, -230, 13, new Color(0.9f, 0.9f, 0.4f), 480);
         MakeLabel("Hint1", _tradePanel.transform, "T - склад | Up/Down - выбор | Left/Right - кол-во", 0, -255, 11, Color.grey, 480);
-        MakeLabel("Hint2", _tradePanel.transform, "L/U - погрузить/разгрузить | Esc - закрыть | R - сброс", 0, -272, 11, Color.grey, 480);
+        MakeLabel("Hint2", _tradePanel.transform, "1-КУПИТЬ 2-ПРОДАТЬ | L/U - погрузить/разгрузить | Esc - закрыть", 0, -272, 11, Color.grey, 480);
         }
         catch (System.Exception e)
         {
@@ -745,7 +745,15 @@ public class TradeUI : MonoBehaviour
         }
 
         // Сессия 8C: Enter/Shift+Enter УБРАНЫ — вызывали двойные RPC вместе с Button.onClick
-        // Покупка/продажа ТОЛЬКО кнопками мыши
+        // Сессия 8D: 1 — купить, 2 — продать (альтернатива клику мышью по кнопкам)
+        if (kb.digit1Key.wasPressedThisFrame || (kb.numpad1Key != null && kb.numpad1Key.wasPressedThisFrame))
+        {
+            TryBuyItem();
+        }
+        if (kb.digit2Key.wasPressedThisFrame || (kb.numpad2Key != null && kb.numpad2Key.wasPressedThisFrame))
+        {
+            TrySellItem();
+        }
 
         // T — смена вкладки (B занят инвентарём)
         if (kb.tKey.wasPressedThisFrame)
@@ -807,37 +815,39 @@ public class TradeUI : MonoBehaviour
 
     private float _lastTradeTime = 0f;
     private const float TRADE_COOLDOWN = 0.5f; // Дебаунс — защита от двойного клика
-    private bool _tradePending = false; // Флаг блокировки повторного вызова в том же кадре
+
+    // Сессия 8D: Флаг блокировки сбрасывается ТОЛЬКО при получении ответа от сервера
+    // а не через Invoke — это гарантирует защиту от двойных RPC
+    private bool _tradeLocked = false;
 
     // ==================== КНОПКИ ====================
+    // Сессия 8D: Кнопки Buy/Sell ТОЛЬКО для визуала — клик обрабатывается через HandleInput
+    // Это гарантированно исключает двойной вызов (onClick + keyboard в одном кадре)
 
     private void OnBuyClicked()
     {
-        // Защита от двойного вызова (Button onClick может сработать дважды в одном кадре)
-        if (_tradePending) return;
-        if (Time.time - _lastTradeTime < TRADE_COOLDOWN) return;
-
-        if (_showWarehouseTab || _selectedIndex < 0 || currentMarket == null) return;
-        if (_selectedIndex >= currentMarket.items.Count) return;
-        var mi = currentMarket.items[_selectedIndex];
-        if (mi?.item == null) { ShowMessage("Выберите товар!"); return; }
-
-        _tradePending = true;
-        _lastTradeTime = Time.time;
-        Debug.Log($"[TradeUI] Покупка: {mi.item.displayName} x{_buyQuantity} (index={_selectedIndex})");
-
-        // Снимаем выделение с кнопки чтобы EventSystem не resend-ил событие
-        UnityEngine.EventSystems.EventSystem.current?.SetSelectedGameObject(null);
-
-        BuyItemViaServer(mi.item.itemId, _buyQuantity);
-
-        // Сброс флага через задержку
-        Invoke(nameof(ResetTradePending), 0.3f);
+        // Сессия 8D: Перенаправляем на TryBuyItem — вся защита там
+        TryBuyItem();
     }
 
     private void OnSellClicked()
     {
-        if (_tradePending) return;
+        // Сессия 8D: Перенаправляем на TrySellItem — вся защита там
+        TrySellItem();
+    }
+
+    /// <summary>
+    /// Попытка покупки — единая точка входа с надёжной защитой от двойных вызовов
+    /// Сессия 8D: _tradeLocked сбрасывается ТОЛЬКО в OnTradeResult()
+    /// </summary>
+    private void TryBuyItem()
+    {
+        // Блокировка — сбрасывается ТОЛЬКО при получении ответа от сервера
+        if (_tradeLocked)
+        {
+            Debug.LogWarning("[TradeUI] Покупка заблокирована — ожидание ответа от сервера");
+            return;
+        }
         if (Time.time - _lastTradeTime < TRADE_COOLDOWN) return;
 
         if (_showWarehouseTab || _selectedIndex < 0 || currentMarket == null) return;
@@ -845,20 +855,36 @@ public class TradeUI : MonoBehaviour
         var mi = currentMarket.items[_selectedIndex];
         if (mi?.item == null) { ShowMessage("Выберите товар!"); return; }
 
-        _tradePending = true;
+        // Устанавливаем блокировку ПЕРЕД отправкой RPC
+        _tradeLocked = true;
+        _lastTradeTime = Time.time;
+        Debug.Log($"[TradeUI] Покупка: {mi.item.displayName} x{_buyQuantity} (index={_selectedIndex})");
+
+        BuyItemViaServer(mi.item.itemId, _buyQuantity);
+    }
+
+    /// <summary>
+    /// Попытка продажи — единая точка входа с надёжной защитой
+    /// </summary>
+    private void TrySellItem()
+    {
+        if (_tradeLocked)
+        {
+            Debug.LogWarning("[TradeUI] Продажа заблокирована — ожидание ответа от сервера");
+            return;
+        }
+        if (Time.time - _lastTradeTime < TRADE_COOLDOWN) return;
+
+        if (_showWarehouseTab || _selectedIndex < 0 || currentMarket == null) return;
+        if (_selectedIndex >= currentMarket.items.Count) return;
+        var mi = currentMarket.items[_selectedIndex];
+        if (mi?.item == null) { ShowMessage("Выберите товар!"); return; }
+
+        _tradeLocked = true;
         _lastTradeTime = Time.time;
         Debug.Log($"[TradeUI] Продажа: {mi.item.displayName} x{_buyQuantity} (index={_selectedIndex})");
 
-        UnityEngine.EventSystems.EventSystem.current?.SetSelectedGameObject(null);
-
         SellItemViaServer(mi.item.itemId, _buyQuantity);
-
-        Invoke(nameof(ResetTradePending), 0.3f);
-    }
-
-    private void ResetTradePending()
-    {
-        _tradePending = false;
     }
 
     private void OnLoadClicked()
@@ -942,9 +968,13 @@ public class TradeUI : MonoBehaviour
     /// <summary>
     /// Вызывается из TradeResultClientRpc (NetworkPlayer) с результатом торговли
     /// Сессия 8C: добавлена синхронизация предметов — сервер передаёт itemId и quantity при успешной покупке/продаже
+    /// Сессия 8D: сброс _tradeLocked — разрешение на следующую операцию
     /// </summary>
     public void OnTradeResult(bool success, string message, float newCredits, string itemId = "", int itemQuantity = 0, bool isPurchase = true)
     {
+        // Сессия 8D: Сброс блокировки — сервер ответил, можно продолжать
+        _tradeLocked = false;
+
         if (success)
         {
             ShowMessage(message);

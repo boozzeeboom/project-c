@@ -32,7 +32,12 @@ namespace ProjectC.Trade
             foreach (var marketItem in items)
             {
                 if (marketItem != null)
+                {
                     marketItem.InitFromItem();
+                    // Сессия 8E: Clamp факторов при загрузке — защита от Inspector-значений > 1.5
+                    marketItem.demandFactor = Mathf.Clamp(marketItem.demandFactor, 0f, 1.5f);
+                    marketItem.supplyFactor = Mathf.Clamp(marketItem.supplyFactor, 0f, 1.5f);
+                }
             }
         }
 

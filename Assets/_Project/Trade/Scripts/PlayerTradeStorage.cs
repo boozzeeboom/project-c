@@ -168,6 +168,10 @@ namespace ProjectC.Trade
         public void Save()
         {
             string locKey = string.IsNullOrEmpty(currentLocationId) ? "global" : currentLocationId.ToLower();
+
+            // Сессия 8E: Лог для отладки рассинхронизации
+            Debug.Log($"[PTS] Save: loc={locKey}, credits={credits:F0}, items={warehouse.Count}, weight={CurrentWeight:F1}/{maxWeight:F1}, volume={CurrentVolume:F1}/{maxVolume:F1}");
+
             PlayerPrefs.SetFloat($"TradeCredits_{locKey}", credits);
             var data = new WarehouseSaveData { items = new List<WarehouseSaveItem>() };
             foreach (var w in warehouse)
@@ -179,6 +183,10 @@ namespace ProjectC.Trade
         public void Load()
         {
             string locKey = string.IsNullOrEmpty(currentLocationId) ? "global" : currentLocationId.ToLower();
+
+            // Сессия 8E: Лог до загрузки
+            Debug.Log($"[PTS] Load: loc={locKey}");
+
             credits = PlayerPrefs.GetFloat($"TradeCredits_{locKey}", 1000f);
             string json = PlayerPrefs.GetString($"TradeWarehouse_{locKey}", "");
             if (!string.IsNullOrEmpty(json))
@@ -199,6 +207,9 @@ namespace ProjectC.Trade
             {
                 warehouse.Clear();
             }
+
+            // Сессия 8E: Лог после загрузки
+            Debug.Log($"[PTS] Loaded: loc={locKey}, credits={credits:F0}, items={warehouse.Count}");
         }
 
         private static TradeDatabase FindTradeDatabase()

@@ -976,30 +976,7 @@ public class TradeMarketServer : NetworkBehaviour
 
         // Сессия 8E: Загружаем склад из PlayerPrefs (items)
         // Но НЕ credits — они берутся из авторитетного PlayerCreditsManager
-        if (!isNew)
-        {
-            // Компонент уже существует — загружаем актуальный warehouse
-            string locKey = string.IsNullOrEmpty(storage.currentLocationId) ? "global" : storage.currentLocationId.ToLower();
-            string json = PlayerPrefs.GetString($"TradeWarehouse_{locKey}", "");
-            if (!string.IsNullOrEmpty(json))
-            {
-                var data = UnityEngine.JsonUtility.FromJson<WarehouseSaveData>(json);
-                storage.warehouse.Clear();
-                var db = FindTradeDatabase();
-                if (db != null && data != null)
-                {
-                    foreach (var si in data.items)
-                    {
-                        var def = db.GetItemById(si.itemId);
-                        if (def != null) storage.warehouse.Add(new WarehouseItem { item = def, quantity = si.quantity });
-                    }
-                }
-            }
-            else
-            {
-                storage.warehouse.Clear();
-            }
-        }
+        storage.Load();
 
         // Сессия 8E: Синхронизируем credits с PlayerCreditsManager (авторитетный источник)
         // PlayerTradeStorage и PlayerCreditsManager — два независимых хранилища:

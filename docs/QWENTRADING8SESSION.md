@@ -715,3 +715,57 @@
 - [GDD_23_Faction_Reputation.md](docs/gdd/GDD_23_Faction_Reputation.md)
 - [GDD_25_Trade_Routes.md](docs/gdd/GDD_25_Trade_Routes.md)
 - [MMO_Development_Plan.md](docs/MMO_Development_Plan.md)
+
+---
+
+# ═══════════════════════════════════════════════════════
+# СЕССИЯ 9: Документация + ревью архитектуры
+# ═══════════════════════════════════════════════════════
+
+**Агенты:** `@technical-director` + `@network-programmer`
+
+**Дата:** 10 апреля 2026 г.
+
+**Цель:** Провести ревью архитектуры торговой системы, обновить документацию, создать RAG-подобный документ для будущих сессий.
+
+### Что сделано:
+
+1. **Ревью архитектуры (technical-director):**
+   - P0: PlayerPrefs → заменить на IPlayerDataRepository + БД
+   - P0: FindAnyObjectByType → PlayerRegistry словарь
+   - P0: ScriptableObject state → разделить MarketConfig + MarketState
+   - P1: Валидация позиции в RPC
+   - P1: Clamp quantity + включить rate limiting
+   - P2: Вынести Editor-код, TradeUI → UXML, унифицировать FindPlayerNetworkPlayer
+
+2. **Создан TRADE_SYSTEM_RAG.md:**
+   - Полная архитектура (3 слоя: клиент → RPC → сервер)
+   - Потоки данных (покупка, продажа, контракты)
+   - Формулы экономики
+   - Сетевая модель (RPC таблица, валидация)
+   - Известные проблемы с приоритетами
+   - Приоритеты рефакторинга
+
+3. **Обновлены GDD документы:**
+   - GDD_22_Economy_Trading.md → v3.0
+   - Техническая архитектура приведена в соответствие с кодом
+   - Acceptance Criteria обновлены (10/14 ✅, 4 отложено)
+   - Добавлена цепочка RPC покупки
+   - Добавлена секция хранения данных (PlayerDataStore)
+
+4. **Обновлён QWEN_CONTEXT.md:**
+   - Статус торговой системы: Сессии 1-8F ЗАВЕРШЕНЫ
+   - Добавлены P0/P1 проблемы
+   - Обновлена навигация по документации
+   - Добавлены ссылки на RAG документы
+
+### Коммиты:
+- `docs(session 9): TRADE_SYSTEM_RAG.md — итоговая RAG документация`
+- `docs(session 9): update GDD_22 v3.0 — архитектура, acceptance criteria`
+- `docs(session 9): update QWEN_CONTEXT.md — статус торговли, проблемы`
+
+### Результат:
+- ✅ Полная документация торговой системы
+- ✅ Архитектурное ревью с приоритетами
+- ✅ Готовый план для Сессии 10 (рефакторинг P0/P1 проблем)
+- ✅ RAG документация для ИИ-агентов

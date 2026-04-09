@@ -560,12 +560,9 @@ namespace ProjectC.Trade
             if (_playerContracts.ContainsKey(clientId))
                 _playerContracts[clientId].Remove(contractId);
 
-            // Начисляем награду
-            var credits = FindPlayerCredits(clientId);
-            if (credits != null)
-            {
-                credits.Credits += contract.reward;
-            }
+            // Начисляем награду (используем TradeMarketServer как авторитетный источник)
+            float currentCredits = TradeMarketServer.GetPlayerCreditsStatic(clientId);
+            TradeMarketServer.SetPlayerCreditsStatic(clientId, currentCredits + contract.reward);
 
             DispatchContractResultToClient(clientId, true, $"Контракт завершён! Награда: {contract.reward:F0} CR", contract.reward);
         }
@@ -633,10 +630,10 @@ namespace ProjectC.Trade
                     float penalty = contract.reward * 0.2f; // 20% от награды
                     if (penalty > 0f)
                     {
-                        var credits = FindPlayerCredits(playerId);
-                        if (credits != null && credits.Credits >= penalty)
+                        float currentCredits = TradeMarketServer.GetPlayerCreditsStatic(playerId);
+                        if (currentCredits >= penalty)
                         {
-                            credits.Credits -= penalty;
+                            TradeMarketServer.SetPlayerCreditsStatic(playerId, currentCredits - penalty);
                         }
                     }
                 }
@@ -840,19 +837,6 @@ namespace ProjectC.Trade
                 storage = player.gameObject.AddComponent<PlayerTradeStorage>();
             }
             return storage;
-        }
-
-        private PlayerCreditsManager FindPlayerCredits(ulong clientId)
-        {
-            var player = FindPlayerNetworkPlayer(clientId);
-            if (player == null) return null;
-
-            var credits = player.GetComponent<PlayerCreditsManager>();
-            if (credits == null)
-            {
-                credits = player.gameObject.AddComponent<PlayerCreditsManager>();
-            }
-            return credits;
         }
 
         public override void OnDestroy()

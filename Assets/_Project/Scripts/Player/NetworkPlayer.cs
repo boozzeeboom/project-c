@@ -650,7 +650,7 @@ namespace ProjectC.Player
             }
             else if (TradeUI.Instance != null)
             {
-                TradeUI.Instance.ShowMessagePublic(message);
+                TradeUI.Instance.OnContractResult(success, message, reward);
             }
         }
     }

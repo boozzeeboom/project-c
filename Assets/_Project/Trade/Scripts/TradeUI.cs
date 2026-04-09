@@ -713,6 +713,22 @@ public class TradeUI : MonoBehaviour
         ShowMessage(msg);
     }
 
+    /// <summary>
+    /// Обработать результат контракта (когда ContractBoardUI закрыт)
+    /// Сессия 8E: Обновляем кредиты из авторитетного источника TradeMarketServer
+    /// </summary>
+    public void OnContractResult(bool success, string message, float reward)
+    {
+        ShowMessage(message);
+        if (success && playerStorage != null && TradeMarketServer.Instance != null)
+        {
+            float newCredits = TradeMarketServer.GetPlayerCreditsStatic(NetworkManager.Singleton.LocalClientId);
+            playerStorage.credits = newCredits;
+            playerStorage.Save();
+            UpdateDisplays();
+        }
+    }
+
     // ==================== ВВОД ====================
 
     private void HandleInput()

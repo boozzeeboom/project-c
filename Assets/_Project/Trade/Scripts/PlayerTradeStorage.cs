@@ -170,6 +170,14 @@ namespace ProjectC.Trade
 
         public void Save()
         {
+            // Убеждаемся что clientId установлен
+            if (_clientId == 0)
+            {
+                var nm = Unity.Netcode.NetworkManager.Singleton;
+                if (nm != null && nm.IsListening) _clientId = nm.LocalClientId;
+            }
+            if (_clientId == 0) return; // Не сохраняем без clientId
+
             string locKey = string.IsNullOrEmpty(currentLocationId) ? "global" : currentLocationId.ToLower();
 
             // Сессия 8F: Сохраняем ТОЛЬКО склад в PlayerDataStore

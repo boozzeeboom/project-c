@@ -343,16 +343,11 @@ public class ContractBoardUI : MonoBehaviour
                 _player.ContractRequestServerRpc(_currentLocationId);
             }
 
-            // Сессия 8E: Обновляем кредиты UI из авторитетного источника
-            if (TradeUI.Instance != null && TradeMarketServer.Instance != null)
+            // Сессия 8F: Обновляем данные UI из PlayerDataStore (единый источник)
+            if (TradeUI.Instance != null && TradeUI.Instance.playerStorage != null)
             {
-                float newCredits = TradeMarketServer.GetPlayerCreditsStatic(_player.OwnerClientId);
-                if (TradeUI.Instance.playerStorage != null)
-                {
-                    TradeUI.Instance.playerStorage.credits = newCredits;
-                    TradeUI.Instance.playerStorage.Save();
-                    TradeUI.Instance.UpdateDisplays();
-                }
+                TradeUI.Instance.playerStorage.LoadFromPlayerDataStore(_player.OwnerClientId);
+                TradeUI.Instance.UpdateDisplays();
             }
         }
     }

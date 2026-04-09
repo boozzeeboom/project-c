@@ -342,7 +342,9 @@ public class TradeUI : MonoBehaviour
             {
                 Debug.LogWarning($"[TradeUI] market.locationId И locationName пустые! Проверь ScriptableObject LocationMarket");
             }
-            playerStorage.Load();
+            // Сессия 8F: Загружаем из PlayerDataStore (единый источник)
+            ulong clientId = NetworkManager.Singleton.LocalClientId;
+            playerStorage.LoadFromPlayerDataStore(clientId);
         }
         CheckNearbyShip();
 
@@ -671,7 +673,8 @@ public class TradeUI : MonoBehaviour
                 {
                     playerStorage.currentLocationId = currentMarket.locationId;
                 }
-                playerStorage.Load();
+                ulong clientId = NetworkManager.Singleton.LocalClientId;
+                playerStorage.LoadFromPlayerDataStore(clientId);
             }
         }
 
@@ -721,11 +724,11 @@ public class TradeUI : MonoBehaviour
     public void OnContractResult(bool success, string message, float reward)
     {
         ShowMessage(message);
-        if (success && playerStorage != null && TradeMarketServer.Instance != null)
+        if (success && playerStorage != null)
         {
-            float newCredits = TradeMarketServer.GetPlayerCreditsStatic(NetworkManager.Singleton.LocalClientId);
-            playerStorage.credits = newCredits;
-            playerStorage.Save();
+            // Сессия 8F: Загружаем актуальные данные из PlayerDataStore
+            ulong clientId = NetworkManager.Singleton.LocalClientId;
+            playerStorage.LoadFromPlayerDataStore(clientId);
             UpdateDisplays();
         }
     }
@@ -1025,7 +1028,8 @@ public class TradeUI : MonoBehaviour
                 {
                     playerStorage.currentLocationId = currentMarket.locationId;
                 }
-                playerStorage.Load();
+                ulong clientId = NetworkManager.Singleton.LocalClientId;
+                playerStorage.LoadFromPlayerDataStore(clientId);
             }
         }
 
@@ -1034,19 +1038,18 @@ public class TradeUI : MonoBehaviour
             ShowMessage(message);
             if (playerStorage != null)
             {
-                // Сессия 8E: Порядок критично важен!
-                // 1. Загружаем склад (сервер уже сохранил обновлённый warehouse)
-                playerStorage.Load();
+                // Сессия 8F: Загружаем склад из PlayerDataStore
+                ulong clientId = NetworkManager.Singleton.LocalClientId;
+                playerStorage.LoadFromPlayerDataStore(clientId);
 
-                // 2. Переопределяем кредиты значением от сервера
-                // Load() загружает из PlayerPrefs где может быть старое значение credits
+                // Переопределяем кредиты значением от сервера
                 // Сервер шлёт актуальные newCredits через ClientRpc
                 playerStorage.credits = newCredits;
 
-                // 3. Сохраняем чтобы новые creditы не потерялись
+                // Сохраняем чтобы новые кредиты не потерялись
                 playerStorage.Save();
 
-                // 4. Обновляем UI — КРИТИЧНО: должен быть после Save()
+                // Обновляем UI — КРИТИЧНО: должен быть после Save()
                 UpdateDisplays();
                 RenderItems();
             }

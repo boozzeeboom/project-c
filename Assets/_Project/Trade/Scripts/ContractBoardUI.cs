@@ -337,10 +337,22 @@ public class ContractBoardUI : MonoBehaviour
         ShowMessage(message);
         if (success)
         {
-            // Обновить список контрактов после успешного принятия
+            // Обновить список контрактов после успешного принятия/завершения
             if (_player != null && _player.IsOwner)
             {
                 _player.ContractRequestServerRpc(_currentLocationId);
+            }
+
+            // Сессия 8E: Обновляем кредиты UI из авторитетного источника
+            if (TradeUI.Instance != null && TradeMarketServer.Instance != null)
+            {
+                float newCredits = TradeMarketServer.GetPlayerCreditsStatic(_player.OwnerClientId);
+                if (TradeUI.Instance.playerStorage != null)
+                {
+                    TradeUI.Instance.playerStorage.credits = newCredits;
+                    TradeUI.Instance.playerStorage.Save();
+                    TradeUI.Instance.UpdateDisplays();
+                }
             }
         }
     }

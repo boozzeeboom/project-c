@@ -940,6 +940,12 @@ public class TradeMarketServer : NetworkBehaviour
     /// <summary>
     /// Получить кредиты игрока (авторитетный источник — локальный Dictionary + PlayerPrefs)
     /// </summary>
+    public static float GetPlayerCreditsStatic(ulong clientId)
+    {
+        if (Instance == null) return 1000f;
+        return Instance.GetPlayerCredits(clientId);
+    }
+
     private float GetPlayerCredits(ulong clientId)
     {
         if (_playerCredits.TryGetValue(clientId, out float credits))
@@ -954,32 +960,18 @@ public class TradeMarketServer : NetworkBehaviour
     /// <summary>
     /// Установить кредиты игрока (сохраняет в Dictionary + PlayerPrefs)
     /// </summary>
+    public static void SetPlayerCreditsStatic(ulong clientId, float newCredits)
+    {
+        if (Instance == null) return;
+        Instance.SetPlayerCredits(clientId, newCredits);
+    }
+
     private void SetPlayerCredits(ulong clientId, float newCredits)
     {
         newCredits = Mathf.Max(0f, newCredits);
         _playerCredits[clientId] = newCredits;
         PlayerPrefs.SetFloat($"Credits_{clientId}", newCredits);
         PlayerPrefs.Save();
-    }
-
-    private PlayerCreditsManager FindPlayerCredits(ulong clientId)
-    {
-        // Ищем среди всех NetworkPlayer
-        var player = FindPlayerNetworkPlayer(clientId);
-        if (player == null) return null;
-
-        var credits = player.GetComponent<PlayerCreditsManager>();
-        bool isNew = (credits == null);
-        if (isNew)
-        {
-            credits = player.gameObject.AddComponent<PlayerCreditsManager>();
-            // Сессия 8E: OnNetworkSpawn() не вызывается для AddComponent после спавна.
-            // Загружаем кредиты вручную из PlayerPrefs.
-            float savedCredits = PlayerPrefs.GetFloat($"Credits_{clientId}", 1000f);
-            credits.Credits = Mathf.Max(0f, savedCredits);
-            Debug.Log($"[TradeMarketServer] FindPlayerCredits: created new, loaded credits={credits.Credits:F0} from PlayerPrefs");
-        }
-        return credits;
     }
 
     private PlayerTradeStorage FindPlayerStorage(ulong clientId)
@@ -995,19 +987,11 @@ public class TradeMarketServer : NetworkBehaviour
         }
 
         // Сессия 8E: Загружаем склад из PlayerPrefs (items)
-        // Но НЕ credits — они берутся из авторитетного PlayerCreditsManager
         storage.Load();
 
-        // Сессия 8E: Синхронизируем credits с PlayerCreditsManager (авторитетный источник)
-        // PlayerTradeStorage и PlayerCreditsManager — два независимых хранилища:
-        // - PlayerCreditsManager: ключ "Credits_{clientId}", NetworkVariable
-        // - PlayerTradeStorage: ключ "TradeCredits_{locKey}", PlayerPrefs
-        // При первом создании storage.credits = 1000 (default). Берём из NetworkVariable.
-        var creditsManager = FindPlayerCredits(clientId);
-        if (creditsManager != null)
-        {
-            storage.credits = creditsManager.Credits;
-        }
+        // Сессия 8E: Синхронизируем credits с авторитетным Dictionary _playerCredits
+        // При первом создании storage.credits = 1000 (default). Берём из Dictionary.
+        storage.credits = GetPlayerCredits(clientId);
 
         return storage;
     }

@@ -659,8 +659,26 @@ public class TradeUI : MonoBehaviour
 
     public void UpdateDisplays()
     {
+        // КРИТИЧНО: гарантируем что playerStorage инициализирован
+        if (playerStorage == null)
+        {
+            playerStorage = GetPlayerStorageFromNetworkPlayer();
+            if (playerStorage != null)
+            {
+                // Устанавливаем локацию перед использованием
+                if (currentMarket != null && !string.IsNullOrEmpty(currentMarket.locationId))
+                {
+                    playerStorage.currentLocationId = currentMarket.locationId;
+                }
+                playerStorage.Load();
+            }
+        }
+
         if (_creditsText != null && playerStorage != null)
+        {
             _creditsText.text = $"Кредиты: {playerStorage.credits:F0} CR";
+            Debug.Log($"[TradeUI] UpdateDisplays: credits={playerStorage.credits:F0}");
+        }
 
         if (_warehouseInfoText != null && playerStorage != null)
             _warehouseInfoText.text = $"Склад: {playerStorage.CurrentWeight:F0}/{playerStorage.maxWeight} кг | {playerStorage.CurrentVolume:F1}/{playerStorage.maxVolume} m3 | {playerStorage.warehouse.Count}/{playerStorage.maxItemTypes}";
@@ -976,6 +994,24 @@ public class TradeUI : MonoBehaviour
         // Сессия 8D: Сброс блокировки — сервер ответил, можно продолжать
         _tradeLocked = false;
 
+        Debug.Log($"[TradeUI] OnTradeResult: success={success}, newCredits={newCredits:F0}, itemId={itemId}, qty={itemQuantity}, isPurchase={isPurchase}");
+
+        // КРИТИЧНО: playerStorage мог не инициализироваться если OpenTrade() ещё не вызывался
+        // Гарантируем что playerStorage всегда валиден перед работой с кредитами
+        if (playerStorage == null)
+        {
+            playerStorage = GetPlayerStorageFromNetworkPlayer();
+            if (playerStorage != null)
+            {
+                // Устанавливаем локацию перед загрузкой
+                if (currentMarket != null && !string.IsNullOrEmpty(currentMarket.locationId))
+                {
+                    playerStorage.currentLocationId = currentMarket.locationId;
+                }
+                playerStorage.Load();
+            }
+        }
+
         if (success)
         {
             ShowMessage(message);
@@ -992,14 +1028,27 @@ public class TradeUI : MonoBehaviour
 
                 // 3. Сохраняем чтобы новые creditы не потерялись
                 playerStorage.Save();
+
+                // 4. Обновляем UI — КРИТИЧНО: должен быть после Save()
+                UpdateDisplays();
+                RenderItems();
+            }
+            else
+            {
+                // playerStorage всё ещё null — логгируем ошибку
+                Debug.LogError("[TradeUI] OnTradeResult: playerStorage == null! Кредиты НЕ обновлены в UI!");
             }
         }
         else
         {
             ShowMessage($"ОШИБКА: {message}");
+            // При ошибке тоже обновляем UI если playerStorage доступен
+            if (playerStorage != null)
+            {
+                UpdateDisplays();
+                RenderItems();
+            }
         }
-        UpdateDisplays();
-        RenderItems();
     }
 
     /// <summary>

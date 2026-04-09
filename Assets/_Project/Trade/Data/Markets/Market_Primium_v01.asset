@@ -16,14 +16,22 @@ MonoBehaviour:
   locationName: "\u041F\u0440\u0438\u043C\u0443\u043C (\u0421\u0442\u043E\u043B\u0438\u0446\u0430)"
   items:
   - item: {fileID: 11400000, guid: ed66825e934a87a43b520aee290591a8, type: 2}
+    itemId: mesium_canister_v01
+    initialStock: 50
     basePrice: 10
-    currentPrice: 10
-    availableStock: 100
-    demandFactor: 0
+    currentPrice: 11.35
+    availableStock: 48
+    demandFactor: 0.135
     supplyFactor: 0
+    eventMultiplier: 1
+    isDirty: 0
   - item: {fileID: 11400000, guid: a42e66c79c7d213499b91953538249f3, type: 2}
+    itemId: antigrav_ingot_v01
+    initialStock: 50
     basePrice: 50
-    currentPrice: 40
-    availableStock: 50
-    demandFactor: 0
+    currentPrice: 25
+    availableStock: 24
+    demandFactor: 1.27
     supplyFactor: 0
+    eventMultiplier: 0
+    isDirty: 0

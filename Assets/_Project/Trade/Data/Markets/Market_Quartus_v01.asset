@@ -17,14 +17,22 @@ MonoBehaviour:
     \u0446\u0435\u043D\u0442\u0440)"
   items:
   - item: {fileID: 11400000, guid: ed66825e934a87a43b520aee290591a8, type: 2}
+    itemId: mesium_canister_v01
+    initialStock: 50
     basePrice: 10
     currentPrice: 15
     availableStock: 30
     demandFactor: 0
     supplyFactor: 0
+    eventMultiplier: 1
+    isDirty: 0
   - item: {fileID: 11400000, guid: a42e66c79c7d213499b91953538249f3, type: 2}
+    itemId: antigrav_ingot_v01
+    initialStock: 50
     basePrice: 50
     currentPrice: 60
     availableStock: 60
     demandFactor: 0
     supplyFactor: 0
+    eventMultiplier: 1
+    isDirty: 0

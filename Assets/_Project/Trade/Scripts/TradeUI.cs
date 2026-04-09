@@ -180,16 +180,16 @@ public class TradeUI : MonoBehaviour
         sr.movementType = ScrollRect.MovementType.Clamped;
 
         // --- Кнопки (внизу панели) ---
-        _buyBtn = MakeBtn("BuyBtn", _tradePanel.transform, "КУПИТЬ (Enter)", 0, -80, 240, 36, OnBuyClicked);
+        _buyBtn = MakeBtn("BuyBtn", _tradePanel.transform, "КУПИТЬ", 0, -80, 240, 36, OnBuyClicked);
         _uiButtons.Add(_buyBtn);
-        _sellBtn = MakeBtn("SellBtn", _tradePanel.transform, "ПРОДАТЬ (Shift+Enter)", 0, -125, 280, 36, OnSellClicked);
+        _sellBtn = MakeBtn("SellBtn", _tradePanel.transform, "ПРОДАТЬ", 0, -125, 280, 36, OnSellClicked);
         _uiButtons.Add(_sellBtn);
         _uiButtons.Add(MakeBtn("LoadBtn", _tradePanel.transform, "ПОГРУЗИТЬ (L)", -130, -175, 240, 36, OnLoadClicked));
         _uiButtons.Add(MakeBtn("UnloadBtn", _tradePanel.transform, "РАЗГРУЗИТЬ (U)", 130, -175, 240, 36, OnUnloadClicked));
         _uiButtons.Add(MakeBtn("CloseBtn", _tradePanel.transform, "ЗАКРЫТЬ (Esc)", 0, -285, 200, 36, OnCloseClicked));
 
         // --- Сообщение ---
-        _messageText = MakeLabel("MsgText", _tradePanel.transform, "Выберите товар и нажмите Enter", 0, -230, 13, new Color(0.9f, 0.9f, 0.4f), 480);
+        _messageText = MakeLabel("MsgText", _tradePanel.transform, "Выберите товар и нажмите КУПИТЬ/ПРОДАТЬ", 0, -230, 13, new Color(0.9f, 0.9f, 0.4f), 480);
         MakeLabel("Hint1", _tradePanel.transform, "T - склад | Up/Down - выбор | Left/Right - кол-во", 0, -255, 11, Color.grey, 480);
         MakeLabel("Hint2", _tradePanel.transform, "L/U - погрузить/разгрузить | Esc - закрыть | R - сброс", 0, -272, 11, Color.grey, 480);
         }
@@ -352,9 +352,6 @@ public class TradeUI : MonoBehaviour
         _tradePanel.transform.SetAsLastSibling();
         RenderItems();
         UpdateDisplays();
-
-        // Снимаем фокус с кнопок чтобы Enter не срабатывал на них
-        UnityEngine.EventSystems.EventSystem.current?.SetSelectedGameObject(null);
     }
 
     public void CloseTrade()
@@ -747,13 +744,8 @@ public class TradeUI : MonoBehaviour
             HighlightRow(_selectedIndex);
         }
 
-        // Enter — купить
-        if (kb.enterKey.wasPressedThisFrame && !kb.leftShiftKey.isPressed && !kb.rightShiftKey.isPressed)
-            OnBuyClicked();
-
-        // Shift+Enter — продать
-        if (kb.enterKey.wasPressedThisFrame && (kb.leftShiftKey.isPressed || kb.rightShiftKey.isPressed))
-            OnSellClicked();
+        // Сессия 8C: Enter/Shift+Enter УБРАНЫ — вызывали двойные RPC вместе с Button.onClick
+        // Покупка/продажа ТОЛЬКО кнопками мыши
 
         // T — смена вкладки (B занят инвентарём)
         if (kb.tKey.wasPressedThisFrame)
@@ -820,16 +812,8 @@ public class TradeUI : MonoBehaviour
 
     private void OnBuyClicked()
     {
-        // Дебаунс: Enter в HandleInput() + Button onClick могут сработать одновременно
+        // Дебаунс: защита от быстрых кликов
         if (Time.time - _lastTradeTime < TRADE_COOLDOWN) return;
-
-        // Защита: если кнопка выбрана в EventSystem — пропускаем клавиатурный ввод
-        if (UnityEngine.EventSystems.EventSystem.current?.currentSelectedGameObject != null)
-        {
-            // Проверяем что это наша кнопка, а не что-то другое
-            var sel = UnityEngine.EventSystems.EventSystem.current.currentSelectedGameObject;
-            if (sel != null && sel.name != "BuyBtn") return;
-        }
 
         if (_showWarehouseTab || _selectedIndex < 0 || currentMarket == null) return;
         if (_selectedIndex >= currentMarket.items.Count) return;
@@ -838,20 +822,12 @@ public class TradeUI : MonoBehaviour
 
         Debug.Log($"[TradeUI] Покупка: {mi.item.displayName} x{_buyQuantity} (index={_selectedIndex})");
         _lastTradeTime = Time.time;
-        // Серверная покупка через NetworkPlayer RPC
         BuyItemViaServer(mi.item.itemId, _buyQuantity);
     }
 
     private void OnSellClicked()
     {
-        // Дебаунс
         if (Time.time - _lastTradeTime < TRADE_COOLDOWN) return;
-
-        if (UnityEngine.EventSystems.EventSystem.current?.currentSelectedGameObject != null)
-        {
-            var sel = UnityEngine.EventSystems.EventSystem.current.currentSelectedGameObject;
-            if (sel != null && sel.name != "SellBtn") return;
-        }
 
         if (_showWarehouseTab || _selectedIndex < 0 || currentMarket == null) return;
         if (_selectedIndex >= currentMarket.items.Count) return;
@@ -860,7 +836,6 @@ public class TradeUI : MonoBehaviour
 
         Debug.Log($"[TradeUI] Продажа: {mi.item.displayName} x{_buyQuantity} (index={_selectedIndex})");
         _lastTradeTime = Time.time;
-        // Серверная продажа через NetworkPlayer RPC
         SellItemViaServer(mi.item.itemId, _buyQuantity);
     }
 

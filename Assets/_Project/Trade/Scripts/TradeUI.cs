@@ -42,12 +42,23 @@ public class TradeUI : MonoBehaviour
     private CargoSystem _nearbyCargo;
     private NetworkPlayer _player;
 
+    /// <summary>
+    /// Получить NetworkPlayer — ленивый поиск, т.к. в Awake() объект ещё не заспавнен сетью
+    /// </summary>
+    private NetworkPlayer Player
+    {
+        get
+        {
+            if (_player == null)
+                _player = FindAnyObjectByType<NetworkPlayer>();
+            return _player;
+        }
+    }
+
     private void Awake()
     {
         if (playerStorage == null)
             playerStorage = FindAnyObjectByType<PlayerTradeStorage>();
-        // Находим игрока для блокировки ввода
-        _player = FindAnyObjectByType<NetworkPlayer>();
 
         // Singleton
         if (Instance == null)
@@ -855,9 +866,9 @@ public class TradeUI : MonoBehaviour
     private void BuyItemViaServer(string itemId, int quantity)
     {
         // Отправляем RPC через NetworkPlayer — сервер авторитетен, fallback запрещён
-        if (_player != null)
+        if (Player != null)
         {
-            _player.TradeBuyServerRpc(itemId, quantity, currentMarket.locationId);
+            Player.TradeBuyServerRpc(itemId, quantity, currentMarket.locationId);
         }
         else
         {
@@ -868,9 +879,9 @@ public class TradeUI : MonoBehaviour
 
     private void SellItemViaServer(string itemId, int quantity)
     {
-        if (_player != null)
+        if (Player != null)
         {
-            _player.TradeSellServerRpc(itemId, quantity, currentMarket.locationId);
+            Player.TradeSellServerRpc(itemId, quantity, currentMarket.locationId);
         }
         else
         {

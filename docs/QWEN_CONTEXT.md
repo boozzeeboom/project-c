@@ -1,7 +1,7 @@
 # Project C: The Clouds — Единый стартовый файл для Qwen Code
 
-**Версия:** `v0.0.14-trade-system` | **Дата:** 9 апреля 2026 г.
-**Ветка:** `qwen-gamestudio-agent-dev` (основная) | **Этап:** Этап 2 ЗАВЕРШЁН, Торговая система (сессии 1-8E)
+**Версия:** `v0.0.15-trade-docs` | **Дата:** 10 апреля 2026 г.
+**Ветка:** `qwen-gamestudio-agent-dev` (основная) | **Этап:** Этап 2 ЗАВЕРШЁН, Торговая система ЗАВЕРШЕНА (сессии 1-8F), Сессия 9 — Документация
 **По мотивам книги «Интеграл Пьявица» — Бруно Арендт**
 
 ---
@@ -72,18 +72,21 @@ git reset --hard upstream/qwen-gamestudio-agent-dev
 - ✅ Персональная камера для каждого игрока
 - ✅ Процедурная генерация мира (15 пиков, 890+ облаков, 3 слоя)
 
-### Торговая система (Сессии 1-8E)
+### Торговая система (Сессии 1-8F — ЗАВЕРШЕНА)
 - ✅ **ScriptableObject товаров** — TradeItemDefinition, TradeDatabase
-- ✅ **CargoSystem** — груз корабля (вес/объём)
+- ✅ **CargoSystem** — груз корабля (вес/объём/слоты, влияние на скорость)
 - ✅ **LocationMarket** — рынки для каждой локации (Primium, Secundus, Tertius, Quartus)
-- ✅ **TradeUI** — интерфейс торговли (покупка/продажа, склад/трюм)
-- ✅ **Серверная торговля (NGO RPC)** — BuyItem/SellItem через ServerRpc
-- ✅ **Tick-система** — динамическая экономика, изменение цен
-- ✅ **ContractSystem** — контракты НП (принятие/завершение/провал)
-- ✅ **PlayerTradeStorage** — склад игрока (локация, предметы, кредиты)
-- ✅ **Синхронизация кредитов** — единый источник TradeMarketServer (Dictionary + PlayerPrefs)
-- ✅ **Валидация** — quantity > 0, locationId, clamp demandFactor/supplyFactor
-- ✅ **Сохранение/загрузка** — кредиты, предметы, вес, объём
+- ✅ **TradeUI** — интерфейс торговли (покупка/продажа, склад/трюм, _tradeLocked защита)
+- ✅ **Серверная торговля (NGO RPC)** — BuyItem/SellItem через ServerRpc, валидация
+- ✅ **Tick-система** — динамическая экономика, NPC-трейдеры, затухание 0.92x
+- ✅ **ContractSystem** — контракты НП (принятие/завершение/провал, долги)
+- ✅ **PlayerTradeStorage** — склад игрока (локация, предметы, погрузка/разгрузка)
+- ✅ **PlayerDataStore** — единый источник данных (кредиты общие, склады по локациям)
+- ✅ **Валидация** — quantity > 0, locationId, currentPrice > 0, clamp факторов
+- ✅ **Сохранение/загрузка** — PlayerDataStore (PlayerPrefs, P0: заменить на БД)
+- ✅ **Защита от Double RPC** — _tradeLocked флаг, сброс только в OnTradeResult()
+- ✅ **Защита от price=0** — itemId восстановление ссылки, RecalculatePrice()
+- ✅ **RAG документация** — docs/TRADE_SYSTEM_RAG.md, docs/TRADE_DEBUG_GUIDE.md
 
 ---
 
@@ -99,13 +102,17 @@ Unity автоматически создаёт `.meta` файлы для каж
 
 | Приоритет | Проблема | Файл | Как починить |
 |-----------|----------|------|--------------|
+| 🔴 P0 | PlayerPrefs для данных игрока | PlayerDataStore | Заменить на IPlayerDataRepository + БД (Сессия 10) |
+| 🔴 P0 | FindAnyObjectByType ненадёжно | TradeUI | PlayerRegistry словарь (Сессия 10) |
+| 🔴 P0 | ScriptableObject state теряется | LocationMarket | Разделить MarketConfig + MarketState (Сессия 10) |
+| 🟡 P1 | Нет проверки позиции в RPC | TradeMarketServer | Добавить player.currentLocationId == locationId (Сессия 10) |
+| 🟡 P1 | Quantity overflow | TradeMarketServer | Clamp quantity до 9999 (Сессия 10) |
+| 🟡 P1 | Rate limit отключён | TradeMarketServer | Включить 30/min по умолчанию (Сессия 10) |
 | 🟡 Средне | Модель корабля — примитив (сфера) | ShipController | Заменить на FBX модель (Этап 2.5) |
 | 🟡 Средне | Персонаж — capsule | NetworkPlayer | Заменить на Mixamo модель (Этап 2.5) |
 | 🟡 Средне | Инвентарь не синхронизируется между игроками | Архитектура | Этап 3 (RPG система, серверная валидация) |
-| 🟡 Средне | Boost (Shift) корабля не передаётся в RPC | ShipController | Добавить параметр в SubmitShipInputRpc |
 | 🟢 Низко | Горные пики — процедурные без текстур | WorldGenerator | Добавить текстуры из Poly Haven (Этап 2.5) |
 | 🔴 Отложено | Отдельный серверный билд (.NET 8) | Архитектура | Этап 5+ |
-| 🔴 Отложено | Система лобби/комнат | Архитектура | Этап 5+ |
 
 ### ✅ Исправлено
 
@@ -146,8 +153,12 @@ Unity автоматически создаёт `.meta` файлы для каж
 | Файл | Когда читать |
 |------|-------------|
 | `docs/CHANGELOG.md` | ⭐ **История изменений** — что было сделано в каждой версии |
+| `docs/TRADE_SYSTEM_RAG.md` | ⭐⭐ **RAG документация торговой системы** — архитектура, потоки, формулы |
 | `docs/QWENTRADING8SESSION.md` | ⭐ **План торговой системы** — 8 сессий, зависимости, команды |
-| `docs/NETWORK_ARCHITECTURE.md` | Работа с сетью, RPC, синхронизация, reconect |
+| `docs/QWENTRADING8D_SESSION.md` | Итоги сессии 8D (double RPC, price=0 fix) |
+| `docs/QWENTRADING8E_SESSION.md` | Итоги сессии 8E (clamp, валидация) |
+| `docs/TRADE_DEBUG_GUIDE.md` | Отладка торговли — симптомы → решения |
+| `docs/NETWORK_ARCHITECTURE.md` | Работа с сетью, RPC, синхронизация, reconnect |
 | `docs/STEP_BY_STEP_DEVELOPMENT.md` | История шагов, что и как делалось |
 | `docs/DEDICATED_SERVER.md` | Запуск Dedicated Server (кнопка, build args) |
 | `docs/CONTROLS.md` | Полная карта клавиш |
@@ -155,6 +166,9 @@ Unity автоматически создаёт `.meta` файлы для каж
 | `docs/WORLD_LORE_BOOK.md` | Лор книги — мир, технологии, фракции |
 | `docs/SHIP_SYSTEM_DOCUMENTATION.md` | Система кораблей (текущая реализация) |
 | `docs/INVENTORY_SYSTEM.md` | Система инвентаря |
+| `docs/gdd/GDD_22_Economy_Trading.md` | GDD экономики (обновлён v3.0) |
+| `docs/gdd/GDD_25_Trade_Routes.md` | GDD торговых маршрутов |
+| `docs/gdd/GDD_23_Faction_Reputation.md` | GDD репутации фракций |
 
 ---
 

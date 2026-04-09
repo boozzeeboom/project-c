@@ -1,7 +1,7 @@
 # GDD-22: Economy & Trading — Project C: The Clouds
 
-**Версия:** 2.0 | **Дата:** 6 апреля 2026 г. | **Статус:** 🔴 Запланировано (Этап 3-4)
-**Автор:** Qwen Code (Game Studio: @economy-designer + @systems-designer + @game-designer + @network-programmer)
+**Версия:** 3.0 | **Дата:** 10 апреля 2026 г. | **Статус:** ✅ Базовая торговля реализована (Сессии 1-8F)
+**Автор:** Qwen Code (Game Studio: @economy-designer + @systems-designer + @game-designer + @network-programmer + @technical-director)
 
 ---
 
@@ -315,51 +315,173 @@ speed_multiplier = 1.0 - (cargo_weight / max_capacity) × penalty_factor
 
 ```
 TradeMarketServer (NetworkBehaviour)
-├── LocationMarket[] — рынок каждой локации
-│   ├── MarketItem[] — товары с demand/supply
-│   └── RecalculatePrices() — пересчёт каждый тик
-├── RouteStatus[] — статус маршрутов
-├── MarketEvent[] — активные события
-├── NPCTrader[] — NPC-трейдеры
-├── PlayerDebt[] — долги игроков
-└── MarketTick() — обновление каждые N минут
+├── _markets: Dictionary<string, LocationMarket> — рынок каждой локации
+│   ├── MarketItem[] — товары с demand/supply/eventMultiplier
+│   ├── RecalculatePrices() — пересчёт каждый тик
+│   └── DecaySupplyAndDemand() — затухание 0.92x
+├── _npcTraders: List<NPCTrader> — NPC-трейдеры
+├── _activeEvents: List<MarketEvent> — глобальные события
+├── _playerCredits: Dictionary<ulong, float> — кэш кредитов (авторитет)
+├── FindPlayerStorage(clientId, locationId) — найти склад игрока
+├── BuyItemServerRpc() — покупка с валидацией
+├── SellItemServerRpc() — продажа с валидацией
+├── MarketTick() — обновление каждые N минут
+│   ├── ProcessNPCTrades() — NPC торгуют
+│   ├── UpdateEvents() — обновление событий
+│   ├── DecaySupplyAndDemand() — затухание
+│   └── RecalculatePrices() — пересчёт цен
+└── SendMarketUpdateClientRpc() — обновление UI клиентов
+
+PlayerDataStore (singleton, НЕ NetworkBehaviour)
+├── GetCredits(clientId) — кредиты (ОБЩИЕ для всех локаций)
+├── SetCredits(clientId, amount) — установить кредиты
+├── ModifyCredits(clientId, delta) — изменить кредиты
+├── GetWarehouse(clientId, locationId) — склад (привязан к локации)
+├── SetWarehouse(clientId, locationId, items) — сохранить склад
+└── Кэш в памяти + PlayerPrefs (P0: заменить на БД)
+
+ContractSystem (NetworkBehaviour)
+├── _availableContracts: Dictionary<string, ContractData>
+├── AcceptContractServerRpc() — принятие контракта
+├── CompleteContractServerRpc() — сдача контракта
+│   ├── Проверка груза в CargoSystem
+│   ├── PlayerDataStore.ModifyCredits(reward)
+│   └── contract.Complete()
+└── FailContract() — провал контракта → долг
 ```
 
 ### Клиент (NGO RPC)
 
 ```
-TradeUI (NetworkBehaviour)
-├── RequestMarketDataServerRpc() — запрос цен
-├── UpdateMarketDataClientRpc() — получение данных
-├── BuyItemServerRpc() — покупка
-├── SellItemServerRpc() — продажа
-└── AcceptContractServerRpc() — принятие контракта
+TradeUI (MonoBehaviour, НЕ NetworkBehaviour)
+├── currentMarket: LocationMarket — ScriptableObject текущего рынка
+├── playerStorage: PlayerTradeStorage — склад (через NetworkPlayer)
+├── OpenTrade(market) → LoadFromPlayerDataStore(clientId)
+├── TryBuyItem() → _tradeLocked проверка → BuyItemViaServer()
+├── BuyItemViaServer() → NetworkPlayer.TradeBuyServerRpc()
+├── OnTradeResult() → _tradeLocked=false + LoadFromPlayerDataStore()
+├── SendMarketUpdateClientRpc() — парсинг CSV → обновление MarketItem
+└── RenderItems() — рынок / склад / трюм корабля
 
-CargoSystem (NetworkBehaviour)
-├── cargo[] — груз корабля
+NetworkPlayer (NetworkBehaviour) — RPC прокси
+├── TradeBuyServerRpc(itemId, qty, locationId) → TradeMarketServer
+├── TradeSellServerRpc(itemId, qty, locationId) → TradeMarketServer
+├── TradeResultClientRpc(success, message, credits, itemId, qty, isPurchase)
+└── ContractListClientRpc(contracts) ← ContractSystem
+
+PlayerTradeStorage (MonoBehaviour, на NetworkPlayer)
+├── warehouse: List<WarehouseItem> — товары на складе
+├── credits: float — кредиты (синхронизировано с PlayerDataStore)
+├── BuyItem/SellItem — локальная логика покупки/продажи
+├── LoadToShip/UnloadFromShip — перемещение в трюм корабля
+├── LoadFromPlayerDataStore(clientId) — загрузка из PlayerDataStore
+└── Save() → PlayerDataStore.SetWarehouse()
+
+CargoSystem (NetworkBehaviour, на корабле)
+├── cargo: List<CargoItem> — груз корабля
+├── maxSlots, maxWeight, maxVolume — лимиты по классу корабля
+├── CurrentWeight, CurrentVolume, UsedSlots — расчёты
 ├── GetSpeedPenalty() — влияние на скорость
-└── CheckLeakOnCollision() — опасный груз
+├── CheckLeakOnCollision() — опасный груз (5% шанс)
+└── AddCargo/RemoveCargo — управление грузом
 ```
 
 ### ScriptableObject
 
 ```
-TradeItemDefinition
-├── itemId, displayName, icon
-├── basePrice, weight, volume, slots
-├── isDangerous, isFragile, isContraband
-└── requiredFaction
+TradeItemDefinition (CreateAssetMenu)
+├── itemId: string — уникальный ID (напр. "mesium_canister_v01")
+├── displayName: string — отображаемое имя
+├── icon: Sprite — иконка товара
+├── basePrice: float — базовая цена CR
+├── weight: float — кг за единицу
+├── volume: float — м³ за единицу
+├── slots: int — слотов за единицу
+├── isDangerous: bool — мезий (протечка при столкновении)
+├── isFragile: bool — двигатели, МНП (повреждение)
+├── isContraband: bool — нелегальный товар
+└── requiredFaction: Faction — кто может продавать (null = все)
+
+TradeDatabase (CreateAssetMenu)
+├── allItems: List<TradeItemDefinition>
+├── GetItemById(string id)
+├── GetItemByDisplayName(string name)
+├── GetItemsByFaction(Faction f)
+└── GetContrabandItems()
+
+LocationMarket (ScriptableObject, рынок локации)
+├── locationId: string — "primium", "secundus", "tertius", "quartus"
+├── locationName: string — отображаемое имя
+├── items: List<MarketItem> — товары рынка
+├── InitItems() — инициализация + clamp факторов
+├── RecalculatePrices() — пересчёт цен всех товаров
+├── GetItem(itemId) — найти товар
+├── UpdateDemand(itemId, delta) — спрос +delta
+├── UpdateSupply(itemId, delta) — предложение +delta
+└── DecaySupplyAndDemand(decayRate, regenRate) — затухание
+
+MarketItem (Serializable, внутри LocationMarket)
+├── item: TradeItemDefinition — ссылка на товар (хрупкая!)
+├── itemId: string — ID для восстановления ссылки (Сессия 8D)
+├── basePrice: float — базовая цена
+├── currentPrice: float — текущая цена (рассчитывается)
+├── demandFactor: float — 0.0 … 1.5 (clamp)
+├── supplyFactor: float — 0.0 … 1.5 (clamp)
+├── eventMultiplier: float — 0.5 … 3.0 (1.0 = нет событий)
+├── availableStock: int — доступный сток
+├── RecalculatePrice() — расчёт цены с восстановлением item
+└── FindTradeDatabase() — поиск TradeDatabase для восстановления
 ```
 
 ### Сетевая синхронизация
 
-| Данные | Частота | Тип | 
-|--------|---------|-----|
-| Цены рынка | Каждый тик | ServerRpc → ClientRpc |
-| Контракт принят | По событию | ServerRpc |
-| Груз изменён | По событию | ServerRpc |
-| Событие рынка | По событию | ClientRpc |
-| Долг игрока | По событию | ServerRpc |
+| Данные | Частота | Метод | Направление |
+|--------|---------|-------|-------------|
+| Цены рынка | Каждый тик | SendMarketUpdateClientRpc | Server → All |
+| Результат сделки | По событию | TradeResultClientRpc | Server → Owner |
+| Покупка/продажа | По действию | TradeBuy/SellServerRpc | Client → Server |
+| Контракты | По запросу | ContractListClientRpc | Server → Owner |
+| Принятие контракта | По событию | AcceptContractServerRpc | Client → Server |
+| Сдача контракта | По событию | CompleteContractServerRpc | Client → Server |
+
+### Цепочка RPC покупки
+
+```
+TradeUI.TryBuyItem()
+  → проверка _tradeLocked
+  → TradeUI.BuyItemViaServer(itemId, quantity)
+  → NetworkPlayer.TradeBuyServerRpc(itemId, quantity, locationId)
+     [RPC: SendTo.Server]
+  → TradeMarketServer.BuyItemServerRpc(itemId, quantity, locationId)
+     ├── Валидация (quantity, locationId, rate limit, рынок, товар, сток, цена, кредиты, лимиты)
+     ├── PlayerDataStore.ModifyCredits(-totalCost)
+     ├── playerStorage.warehouse.Add/Update
+     ├── playerStorage.Save()
+     └── SendTradeResultToClient(clientId, success, message, newCredits, itemId, qty, isPurchase)
+        → NetworkPlayer.TradeResultClientRpc(...)
+           [RPC: SendTo.Owner]
+        → TradeUI.OnTradeResult()
+           ├── _tradeLocked = false
+           ├── playerStorage.LoadFromPlayerDataStore(clientId)
+           └── UpdateDisplays() + RenderItems()
+```
+
+### Хранение данных (Сессия 8F)
+
+```
+# PlayerDataStore — единый источник
+PD_Credits_{clientId}                 — кредиты (ОБЩИЕ для всех локаций)
+PD_Warehouse_{clientId}_{locationId}  — склад (привязан к локации)
+
+# PlayerTradeStorage.LoadFromPlayerDataStore():
+  credits = PlayerDataStore.GetCredits(clientId)
+  warehouse = PlayerDataStore.GetWarehouse(clientId, locationId)
+
+# PlayerTradeStorage.Save():
+  PlayerDataStore.SetWarehouse(clientId, currentLocationId, warehouse)
+
+# P0: PlayerPrefs → заменить на IPlayerDataRepository + БД
+```
 
 ---
 
@@ -400,20 +522,20 @@ TradeItemDefinition
 
 | # | Критерий | Как проверить | Статус |
 |---|----------|--------------|--------|
-| 1 | Кредиты отображаются в UI | Проверить HUD | 🔴 |
-| 2 | Рынок каждой локации уникален | Сравнить цены в 2+ городах | 🔴 |
-| 3 | NPC-торговец открывает магазин | Взаимодействие с NPC | 🔴 |
-| 4 | Динамические цены работают | Цены меняются после тика | 🔴 |
-| 5 | Покупка/продажа влияет на цены | Купить 10 ед. → цена выросла | 🔴 |
-| 6 | Контракт НП работает | Взять → доставить → получить | 🔴 |
-| 7 | Система «под расписку» работает | Не доставить → долг | 🔴 |
-| 8 | Контрабанда обнаруживается | Провезти → штраф | 🔴 |
-| 9 | Репутация влияет на цены | Сравнить при разной репутации | 🔴 |
-| 10 | Груз влияет на скорость | Загрузить → проверить скорость | 🔴 |
-| 11 | P2P торговля работает | Обмен между 2 игроками | 🔴 |
-| 12 | Серверная валидация | Попытка чита → отклонение | 🔴 |
-| 13 | События рынка работают | Создать событие → цены изменились | 🔴 |
-| 14 | Маршрут блокируется | Событие → маршрут закрыт | 🔴 |
+| 1 | Кредиты отображаются в UI | Проверить HUD | ✅ |
+| 2 | Рынок каждой локации уникален | Сравнить цены в 2+ городах | ✅ |
+| 3 | NPC-торговец открывает магазин | Взаимодействие с NPC | ✅ |
+| 4 | Динамические цены работают | Цены меняются после тика | ✅ |
+| 5 | Покупка/продажа влияет на цены | Купить 10 ед. → цена выросла | ✅ |
+| 6 | Контракт НП работает | Взять → доставить → получить | ✅ |
+| 7 | Система «под расписку» работает | Не доставить → долг | ✅ |
+| 8 | Контрабанда обнаруживается | Провезти → штраф | 🔴 (Этап 5) |
+| 9 | Репутация влияет на цены | Сравнить при разной репутации | 🔴 (Этап 5) |
+| 10 | Груз влияет на скорость | Загрузить → проверить скорость | ✅ |
+| 11 | P2P торговля работает | Обмен между 2 игроками | 🔴 (Этап 5) |
+| 12 | Серверная валидация | Попытка чита → отклонение | ✅ |
+| 13 | События рынка работают | Создать событие → цены изменились | ✅ |
+| 14 | Маршрут блокируется | Событие → маршрут закрыт | 🔴 (Этап 5) |
 
 ---
 

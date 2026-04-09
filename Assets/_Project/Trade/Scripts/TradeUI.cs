@@ -813,28 +813,53 @@ public class TradeUI : MonoBehaviour
         }
     }
 
+    private float _lastTradeTime = 0f;
+    private const float TRADE_COOLDOWN = 0.5f; // Дебаунс — защита от двойного клика/Enter
+
     // ==================== КНОПКИ ====================
 
     private void OnBuyClicked()
     {
+        // Дебаунс: Enter в HandleInput() + Button onClick могут сработать одновременно
+        if (Time.time - _lastTradeTime < TRADE_COOLDOWN) return;
+
+        // Защита: если кнопка выбрана в EventSystem — пропускаем клавиатурный ввод
+        if (UnityEngine.EventSystems.EventSystem.current?.currentSelectedGameObject != null)
+        {
+            // Проверяем что это наша кнопка, а не что-то другое
+            var sel = UnityEngine.EventSystems.EventSystem.current.currentSelectedGameObject;
+            if (sel != null && sel.name != "BuyBtn") return;
+        }
+
         if (_showWarehouseTab || _selectedIndex < 0 || currentMarket == null) return;
         if (_selectedIndex >= currentMarket.items.Count) return;
         var mi = currentMarket.items[_selectedIndex];
         if (mi?.item == null) { ShowMessage("Выберите товар!"); return; }
 
         Debug.Log($"[TradeUI] Покупка: {mi.item.displayName} x{_buyQuantity} (index={_selectedIndex})");
+        _lastTradeTime = Time.time;
         // Серверная покупка через NetworkPlayer RPC
         BuyItemViaServer(mi.item.itemId, _buyQuantity);
     }
 
     private void OnSellClicked()
     {
+        // Дебаунс
+        if (Time.time - _lastTradeTime < TRADE_COOLDOWN) return;
+
+        if (UnityEngine.EventSystems.EventSystem.current?.currentSelectedGameObject != null)
+        {
+            var sel = UnityEngine.EventSystems.EventSystem.current.currentSelectedGameObject;
+            if (sel != null && sel.name != "SellBtn") return;
+        }
+
         if (_showWarehouseTab || _selectedIndex < 0 || currentMarket == null) return;
         if (_selectedIndex >= currentMarket.items.Count) return;
         var mi = currentMarket.items[_selectedIndex];
         if (mi?.item == null) { ShowMessage("Выберите товар!"); return; }
 
         Debug.Log($"[TradeUI] Продажа: {mi.item.displayName} x{_buyQuantity} (index={_selectedIndex})");
+        _lastTradeTime = Time.time;
         // Серверная продажа через NetworkPlayer RPC
         SellItemViaServer(mi.item.itemId, _buyQuantity);
     }

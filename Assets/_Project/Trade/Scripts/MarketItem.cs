@@ -65,7 +65,12 @@ namespace ProjectC.Trade
         /// </summary>
         public void RecalculatePrice()
         {
-            if (item == null) return;
+            if (item == null)
+            {
+                Debug.LogWarning($"[MarketItem] item == null! Не могу пересчитать цену. basePrice={basePrice}, demandFactor={demandFactor}, supplyFactor={supplyFactor}");
+                currentPrice = 0f;
+                return;
+            }
 
             basePrice = item.basePrice;
             currentPrice = basePrice * (1f + demandFactor - supplyFactor) * eventMultiplier;

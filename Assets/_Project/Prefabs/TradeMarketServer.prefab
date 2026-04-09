@@ -77,7 +77,7 @@ MonoBehaviour:
   _npcTraders: []
   _activeEvents: []
   autoInitNPCTraders: 1
-  maxTradesPerMinute: 10
+  maxTradesPerMinute: 0
 --- !u!114 &2590737261042709725
 MonoBehaviour:
   m_ObjectHideFlags: 0

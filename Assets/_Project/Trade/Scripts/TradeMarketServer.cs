@@ -931,6 +931,11 @@ public class TradeMarketServer : NetworkBehaviour
         {
             storage = player.gameObject.AddComponent<PlayerTradeStorage>();
         }
+
+        // Сессия 8D: Всегда загружаем данные — между RPC компонент может быть пересоздан
+        // или данные могут быть устаревшими. Load() быстрый для одного игрока.
+        storage.Load();
+
         return storage;
     }
 

@@ -1005,6 +1005,7 @@ public class TradeUI : MonoBehaviour
     /// <summary>
     /// Синхронизировать предмет на складе игрока после серверной операции
     /// Сессия 8C: обеспечивает отображение товаров, добавленных сервером при покупке
+    /// Сессия 8D: вызываем Save() чтобы данные не терялись при следующем Load()
     /// </summary>
     private void SyncWarehouseItem(string itemId, int quantity)
     {
@@ -1029,11 +1030,15 @@ public class TradeUI : MonoBehaviour
         {
             playerStorage.warehouse.Add(new WarehouseItem { item = itemDef, quantity = quantity });
         }
+
+        // Сессия 8D: Сохраняем чтобы данные не терялись
+        playerStorage.Save();
     }
 
     /// <summary>
     /// Удалить предмет из клиентского склада после успешной серверной продажи
     /// Сессия 8C: клиентский склад должен совпадать с серверным
+    /// Сессия 8D: вызываем Save() чтобы данные не терялись
     /// </summary>
     private void RemoveFromWarehouse(string itemId, int quantity)
     {
@@ -1053,6 +1058,9 @@ public class TradeUI : MonoBehaviour
             {
                 Debug.Log($"[TradeUI] RemoveFromWarehouse: осталось {wi.quantity}");
             }
+
+            // Сессия 8D: Сохраняем после модификации
+            playerStorage.Save();
         }
         else
         {

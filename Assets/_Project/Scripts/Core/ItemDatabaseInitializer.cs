@@ -77,7 +77,6 @@ namespace ProjectC.Core
             foreach (var item in allItems)
             {
                 NetworkInventory.RegisterItem(id, item);
-                Debug.Log($"[ItemDatabase] Зарегистрирован: ID {id} - {item.itemName}");
                 id++;
             }
 

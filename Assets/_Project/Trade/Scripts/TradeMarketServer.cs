@@ -351,14 +351,12 @@ public class TradeMarketServer : NetworkBehaviour
         // Списываем кредиты
         SetPlayerCredits(clientId, playerCredits - totalCost);
         float newCredits = GetPlayerCredits(clientId);
-        Debug.Log($"[TradeMarketServer] BUY: newCredits={newCredits:F0} (was {playerCredits:F0}, cost {totalCost:F0})");
 
         // Обновляем рынок: сток и demand
         marketItem.availableStock -= quantity;
         market.UpdateDemand(itemId, quantity * 0.02f);
 
         // Добавляем товар на склад игрока
-        Debug.Log($"[TradeMarketServer] BUY: playerStorage={(playerStorage != null ? "OK" : "NULL")}, warehouse.Count={playerStorage?.warehouse.Count ?? -1}");
         if (playerStorage != null)
         {
             var itemDef = marketItem.item;
@@ -371,7 +369,6 @@ public class TradeMarketServer : NetworkBehaviour
             {
                 playerStorage.warehouse.Add(new WarehouseItem { item = itemDef, quantity = quantity });
             }
-            Debug.Log($"[TradeMarketServer] BUY: добавлен товар, warehouse.Count={playerStorage.warehouse.Count}, вызываю Save()");
             // Сессия 8F: Сохраняем склад и кредиты
             playerStorage.credits = newCredits;
             playerStorage.Save();
@@ -493,7 +490,6 @@ public class TradeMarketServer : NetworkBehaviour
         float playerCredits = GetPlayerCredits(clientId);
         SetPlayerCredits(clientId, playerCredits + sellPrice);
         float newCredits = GetPlayerCredits(clientId);
-        Debug.Log($"[TradeMarketServer] SELL: newCredits={newCredits:F0} (was {playerCredits:F0}, earned {sellPrice:F0})");
 
         // Синхронизируем playerStorage с нашим источником
         playerStorage.credits = newCredits;
@@ -526,8 +522,6 @@ public class TradeMarketServer : NetworkBehaviour
         float newCredits, int newStock, int newCargoWeight, int newCargoVolume, int newCargoSlots,
         string itemId = "", int itemQuantity = 0, bool isPurchase = true)
     {
-        Debug.Log($"[TradeMarketServer] SendTradeResultToClient: clientId={clientId}, success={success}, newCredits={newCredits:F0}");
-
         // Находим NetworkPlayer клиента и отправляем результат через него
         var player = FindPlayerNetworkPlayer(clientId);
         if (player != null)
@@ -975,7 +969,6 @@ public class TradeMarketServer : NetworkBehaviour
     private PlayerTradeStorage FindPlayerStorage(ulong clientId, string locationId)
     {
         var player = FindPlayerNetworkPlayer(clientId);
-        Debug.Log($"[TradeMarketServer] FindPlayerStorage: clientId={clientId}, locationId={locationId}, player={(player != null ? "OK" : "NULL")}");
         if (player == null) return null;
 
         var storage = player.GetComponent<PlayerTradeStorage>();
@@ -983,7 +976,6 @@ public class TradeMarketServer : NetworkBehaviour
         if (isNew)
         {
             storage = player.gameObject.AddComponent<PlayerTradeStorage>();
-            Debug.Log($"[TradeMarketServer] FindPlayerStorage: created new PlayerTradeStorage");
         }
 
         // Сессия 8F: Устанавливаем локацию ПЕРЕД загрузкой
@@ -991,7 +983,6 @@ public class TradeMarketServer : NetworkBehaviour
 
         // Загружаем данные из PlayerDataStore (единый источник)
         storage.LoadFromPlayerDataStore(clientId);
-        Debug.Log($"[TradeMarketServer] FindPlayerStorage: loaded, warehouse.Count={storage.warehouse.Count}");
 
         return storage;
     }

@@ -1,62 +1,118 @@
-# 📦 Итоги Сессии 8D: Добить двойные RPC и price=0
+# 📦 Итоги Сессии 8D: Полная фиксация торговой системы
 
 **Проект:** Project C: The Clouds  
 **Ветка:** `qwen-gamestudio-agent-dev`  
 **Дата:** 9 апреля 2026 г.  
-**Статус:** ✅ Готово к тестированию
+**Статус:** ✅ ЗАВЕРШЕНО, все исправлены, тестируется в Unity
 
 ---
 
 ## 🎯 Цель сессии
 
-Добить двойные RPC и price=0, завершить торговую систему. Создать удобную систему отладки без костылей.
+Добить двойные RPC и price=0, завершить торговую систему. Создать удобную систему отладки без костылей, задокументировать все процессы рынка/контрактов для серверной обработки.
 
 ---
 
-## 📝 Что было сделано
+## 📊 Сводка коммитов
 
-### 🔧 Исправления кода
+| # | Хеш | Описание |
+|---|-----|----------|
+| 1 | `3a3c997` | fix(session 8D): double RPC + price=0 fix + RAG debug docs |
+| 2 | `3e24e41` | fix(session 8D hotfix): server storage data loss + client sync not saving |
+| 3 | `a03e167` | fix(session 8D hotfix2): warehouse sync double-counting |
 
-#### 1. MarketItem.cs — Восстановление ссылок + защита от price=0
+---
 
-**Проблема:** `MarketItem.item` ссылка терялась при сериализации ScriptableObject → `currentPrice = 0`.
+## 🔴 Проблемы → Исправления (подробно)
 
-**Решение:**
-- Добавлено поле `itemId: string` — сохраняется даже когда `item` reference теряется
-- `InitFromItem()` теперь сохраняет `itemId = item.itemId`
-- `RecalculatePrice()` автоматически восстанавливает `item` из `TradeDatabase` по `itemId`
-- Если восстановление не удалось — использует сохранённый `basePrice` вместо обнуления
-- Добавлен `FindTradeDatabase()` helper для editor/runtime
+### Проблема 1: Double RPC (покупка/продажа x2 за один клик)
 
-**Код:**
+**Симптом:** Каждый клик по кнопке вызывал 2 RPC вызова в одном кадре.
+
+**Корневая причина (сессия 8C):** Unity UI Button onClick + EventSystem могли сработать дважды в разных фазах одного кадра. Флаг `_tradePending + Invoke` не помогал — оба вызова проходили до установки флага.
+
+**Корневая причина (сессия 8D, финальное решение):** Кнопки onClick перенаправляли на `TryBuyItem()` без надёжной блокировки. `_tradePending` сбрасывался через `Invoke(0.3f)`, что создавало окно для повторного вызова.
+
+**Решение (сессия 8D):**
+- `_tradePending` → `_tradeLocked` — флаг блокировки
+- **Ключевое:** `_tradeLocked` сбрасывается **ТОЛЬКО** в `OnTradeResult()` — когда сервер ответил
+- `Invoke` полностью удалён — нет race condition с таймером
+- Горячие клавиши `1` (купить) и `2` (продать) — альтернатива клику мышью
+- `TRADE_COOLDOWN = 0.5f` — дополнительная защита от спама
+
+**Код (TradeUI.cs):**
 ```csharp
-// Новое поле
-public string itemId;
+private bool _tradeLocked = false; // Сбрасывается ТОЛЬКО в OnTradeResult()
 
-// InitFromItem() — сохраняет ID
-itemId = item.itemId;
-
-// RecalculatePrice() — восстанавливает ссылку
-if (item == null && !string.IsNullOrEmpty(itemId))
+private void TryBuyItem()
 {
-    var db = FindTradeDatabase();
-    if (db != null) item = db.GetItemById(itemId);
+    if (_tradeLocked) return;      // Блокировка до ответа сервера
+    _tradeLocked = true;           // ПЕРЕД отправкой RPC
+    BuyItemViaServer(itemId, quantity);
+}
+
+public void OnTradeResult(bool success, ...)
+{
+    _tradeLocked = false;          // Разблокировка ПОСЛЕ ответа
+    // ...
 }
 ```
 
-#### 2. TradeMarketServer.cs — Защита от price=0 + отладка tick
+**Результат:** Один клик = один RPC. Подтверждено логами.
 
-**Проблема:** Сервер проводил сделки с ценой 0, tick система не логировала состояние.
+---
 
-**Решение:**
-- Добавлена проверка `currentPrice <= 0` в `BuyItemServerRpc()` и `SellItemServerRpc()` — **транзакция отменяется** если цена нулевая
-- Расширены DEBUG логи: добавлен `itemId_field`, `d=`, `s=` после RecalculatePrice
-- Tick система теперь логирует каждый тик: `[TradeMarketServer] MarketTick #X | markets=4 activeEvents=1 | ...`
-- Добавлен `item_null={true/false}` в summary для диагностики
+### Проблема 2: Price = 0 CR после первой сделки
 
-**Код:**
+**Симптом:** Первая покупка = 10 CR (ok), вторая = 0 CR. Продажа = 8 CR (ok), следующая = 0 CR.
+
+**Корневая причина:** `MarketItem.item` ссылка терялась при сериализации/десериализации ScriptableObject. Unity НЕ сериализует ссылки между ScriptableObject внутри вложенных `[Serializable]` классов. При потере ссылки `RecalculatePrice()` возвращала `currentPrice = 0`.
+
+**Решение (сессия 8D):**
+
+1. **Добавлено поле `itemId: string`** в `MarketItem` — сохраняется даже когда `item` reference теряется.
+
+2. **`InitFromItem()` сохраняет `itemId`:**
 ```csharp
-// BuyItemServerRpc — защита от price=0
+public void InitFromItem()
+{
+    if (item != null)
+    {
+        itemId = item.itemId;  // Сохраняем ID для восстановления
+        basePrice = item.basePrice;
+    }
+}
+```
+
+3. **`RecalculatePrice()` восстанавливает ссылку:**
+```csharp
+public void RecalculatePrice()
+{
+    // Восстановление item ссылки по itemId если она потерялась
+    if (item == null && !string.IsNullOrEmpty(itemId))
+    {
+        var db = FindTradeDatabase();
+        if (db != null)
+        {
+            item = db.GetItemById(itemId);
+            if (item != null) basePrice = item.basePrice;
+        }
+    }
+
+    // Если item всё ещё null, используем сохранённый basePrice
+    if (item == null && basePrice <= 0f)
+    {
+        currentPrice = 0f;  // Нельзя рассчитать без данных
+        return;
+    }
+
+    currentPrice = basePrice * (1f + demandFactor - supplyFactor) * eventMultiplier;
+}
+```
+
+4. **Серверная защита (`TradeMarketServer.cs`):**
+```csharp
+// Проверка currentPrice > 0 ПЕРЕД выполнением транзакции
 if (marketItem.currentPrice <= 0f)
 {
     Debug.LogError($"[TradeMarketServer] КРИТИЧНО: currentPrice=0 для {itemId}!");
@@ -65,252 +121,214 @@ if (marketItem.currentPrice <= 0f)
 }
 ```
 
-#### 3. TradeUI.cs — Надёжный debounce + горячие клавиши
+5. **Editor инструмент (`MarketItemIDInitializer.cs`):**
+   - Tools → Project C → Trade → Initialize Market Item IDs
+   - Автоматически заполняет `itemId` во всех существующих рынках
+   - Проверка при открытии Unity Editor
 
-**Проблема:** `_tradePending + Invoke` не помогали — кнопка вызывала 2 RPC в одном кадре.
+**Результат:** Цена не обнуляется. Восстановление ссылки работает автоматически.
 
-**Решение:**
-- **Переименовано:** `_tradePending` → `_tradeLocked`
-- **Ключевое изменение:** `_tradeLocked` сбрасывается **ТОЛЬКО** в `OnTradeResult()` — когда сервер ответил
-- `Invoke` удалён — больше нет race condition с таймером
-- Добавлены горячие клавиши: `1` — купить, `2` — продать (альтернатива клику мышью)
-- Обновлены подсказки в UI: "1-КУПИТЬ 2-ПРОДАТЬ | L/U - погрузить/разгрузить"
+---
 
-**Код:**
+### Проблема 3: Склад показывает 2шт вместо 1 (двойное добавление)
+
+**Симптом:** Купил 1шт — на складе 2шт. Продал 1шт — осталось 1шт. Продал ещё раз — снова продалось.
+
+**Корневая причина:**
+1. Сервер в `BuyItemServerRpc` делал `playerStorage.warehouse.Add()` → `Save()` (1шт)
+2. Клиент в `OnTradeResult` делал `SyncWarehouseItem()` → `Save()` (ЕЩЁ +1шт = 2шт!)
+3. При следующем RPC сервер делал `Load()` → видел 2шт → продавал по одной
+
+**Решение (сессия 8D hotfix2):**
+
+Клиент больше не дублирует операции сервера. Вместо `SyncWarehouseItem/RemoveFromWarehouse` он просто загружает актуальные данные:
+
 ```csharp
-private bool _tradeLocked = false; // Сбрасывается ТОЛЬКО в OnTradeResult()
-
-private void TryBuyItem()
+public void OnTradeResult(bool success, string message, float newCredits, ...)
 {
-    if (_tradeLocked) return; // Блокировка до ответа сервера
-    _tradeLocked = true;      // ПЕРЕД отправкой RPC
-    BuyItemViaServer(itemId, quantity);
+    if (success)
+    {
+        playerStorage.credits = newCredits;
+
+        // Загружаем актуальные данные склада с сервера
+        // Сервер уже сохранил, мы просто загружаем — без дублирования
+        playerStorage.Load();
+    }
+    UpdateDisplays();
+    RenderItems();
 }
-
-public void OnTradeResult(bool success, ...)
-{
-    _tradeLocked = false; // Разблокировка ПОСЛЕ ответа
-    // ...
-}
-
-// HandleInput — горячие клавиши
-if (kb.digit1Key.wasPressedThisFrame) TryBuyItem();
-if (kb.digit2Key.wasPressedThisFrame) TrySellItem();
 ```
 
-#### 4. MarketItemIDInitializer.cs — Editor инструмент
-
-**Новый файл:** `Assets/_Project/Trade/Scripts/Editor/MarketItemIDInitializer.cs`
-
-**Назначение:**
-- Инициализирует `itemId` во всех существующих `LocationMarket` ScriptableObject
-- Проверяет состояние рынков (item ссылки, itemId, цены)
-- Автоматическая проверка при открытии Unity Editor
-- **Использование:** Tools → Project C → Trade → Initialize Market Item IDs
+**Результат:** Купил 1шт = 1шт на складе. Продал 1шт = 0шт.
 
 ---
 
-## 📚 Документация
+### Проблема 4: Серверный PlayerTradeStorage терял данные между RPC
 
-### TRADE_DEBUG_GUIDE.md — RAG-подобная система отладки
+**Симптом:** Сервер отвечал SUCCESS на продажу товара которого нет. "RemoveFromWarehouse: mesium_canister_v01 не найден на клиентском складе!"
 
-**Новый файл:** `docs/TRADE_DEBUG_GUIDE.md`
+**Корневая причина:** `FindPlayerStorage(clientId)` находил/создавал компонент `PlayerTradeStorage` на NetworkPlayer, но **не загружал данные** из PlayerPrefs. `warehouse` был пустой → сервер думал что товара нет, но отвечал SUCCESS.
 
-**Что включает:**
-1. **Быстрая диагностика** — таблица: симптом → причина → раздел → файл
-2. **Индекс переменных** — все ключевые поля с описанием, типом, значением по умолчанию
-3. **Детальная диагностика** — 6 разделов:
-   - Price=0 ошибка
-   - Double RPC
-   - Склад
-   - Tick система
-   - RPC цепь
-   - Рынок пуст
-4. **Инструменты отладки** — сброс склада, ручной тик, логи, очистка PlayerPrefs
-5. **Архитектура** — обновлённая диаграмма клиент-сервер
-
-**Как пользоваться:**
-- Нашли симптом → открыли раздел → следуете чек-листу
-- Все разделы содержат: симптом, причина, диагностика, исправление, связанные файлы
-
----
-
-## ✅ Что теперь работает
-
-### Double RPC — ИСПРАВЛЕНО ✅
-- `_tradeLocked` блокирует повторный вызов **до ответа сервера**
-- Горячие клавиши `1` и `2` — альтернатива клику мышью
-- `TRADE_COOLDOWN = 0.5s` — дополнительная защита от спама
-
-### Price=0 — ИСПРАВЛЕНО ✅
-- `MarketItem.itemId` сохраняется даже при потере ссылки
-- `RecalculatePrice()` восстанавливает `item` из TradeDatabase
-- Сервер **отменяет транзакцию** если цена = 0
-
-### Отладка — УЛУЧШЕНА ✅
-- Все ключевые точки покрыты логами
-- Tick система логирует состояние каждые 30s (testMode)
-- Editor инструмент для инициализации рынков
-- RAG-документация для быстрой диагностики
-
----
-
-## 🔴 ЧТО НУЖНО СДЕЛАТЬ ПЕРЕД ТЕСТИРОВАНИЕМ
-
-### 1. Инициализировать itemId в рынках
-
-**В Unity Editor:**
-```
-Tools → Project C → Trade → Initialize Market Item IDs
-```
-
-Или проверьте состояние:
-```
-Tools → Project C → Trade → Проверить все рынки
-```
-
-**Ожидаемый результат:**
-```
-✅ Мезий: itemId='mesium_canister_v01'
-✅ Антигравий: itemId='antigrav_ingot_v01'
-...
-```
-
-### 2. Очистить старый склад (от двойных покупок)
-
-**В игре:**
-- Откройте торговлю
-- Нажмите `R` — сбросит кредиты до 1000 и очистит склад
-
-**Или через консоль (Play mode):**
+**Решение (сессия 8D hotfix):**
 ```csharp
-PlayerPrefs.DeleteAll();
-PlayerPrefs.Save();
+private PlayerTradeStorage FindPlayerStorage(ulong clientId)
+{
+    var player = FindPlayerNetworkPlayer(clientId);
+    if (player == null) return null;
+
+    var storage = player.GetComponent<PlayerTradeStorage>();
+    if (storage == null)
+    {
+        storage = player.gameObject.AddComponent<PlayerTradeStorage>();
+    }
+
+    // Сессия 8D: Всегда загружаем данные — между RPC компонент может быть пересоздан
+    storage.Load();
+
+    return storage;
+}
 ```
 
-### 3. Настроить testMode
-
-**В Unity Inspector:**
-- Найдите `TradeMarketServer` в сцене
-- Установите `testMode = true` (tick interval = 30s вместо 300s)
-- Убедитесь что `maxTradesPerMinute = 0` (отключено)
+**Результат:** Сервер всегда работает с актуальными данными склада.
 
 ---
 
-## 🧪 План тестирования
+### Проблема 5: Tick система не логировала состояние
 
-### Тест 1: Одна покупка = один предмет
-1. Откройте торговлю
-2. Выберите мезий, количество = 1
-3. Нажмите `1` или кликните "КУПИТЬ" **один раз**
-4. **Ожидаемый результат:**
-   - В логах: `[TradeUI] Покупка: Мезий x1` **один раз**
-   - В логах сервера: `DEBUG BUY: item=TradeItem_Mesium, currentPrice=10`
-   - Склад: `Мезий x1` (не x2, не x3)
-   - Кредиты: `1000 - 10 = 990 CR`
+**Симптом:** Невозможно отладить динамику цен.
 
-### Тест 2: Цена не обнуляется
-1. Купите мезий x1 (первая покупка)
-2. Купите мезий x1 ещё раз (вторая покупка)
-3. **Ожидаемый результат:**
-   - В логах: `currentPrice=10` (не 0!) для обеих покупок
-   - Если `currentPrice=0` — смотрите `TRADE_DEBUG_GUIDE.md → Price=0 ошибка`
-
-### Тест 3: Tick система
-1. Включите `testMode = true` в TradeMarketServer
-2. Подождите 30 секунд
-3. **Ожидаемый результат:**
-   - В логах: `[TradeMarketServer] MarketTick #1 | markets=4 ...`
-   - Цены мезия должны немного измениться (decay 0.846x)
-
-### Тест 4: Полный цикл покупки/продажи
-1. Купите мезий x1 за 10 CR
-2. Продайте мезий x1 (8 CR, 80% от цены)
-3. **Ожидаемый результат:**
-   - Кредиты: `1000 - 10 + 8 = 998 CR`
-   - Склад: пуст
-   - В логах: `DEBUG BUY` → `DEBUG SELL` с корректными ценами
-
----
-
-## 📊 Коммиты
-
+**Решение:** Добавлен подробный лог каждого тика:
+```csharp
+Debug.Log($"[TradeMarketServer] MarketTick #{Time.time / TickInterval:F0} | markets={_markets.Count} activeEvents={activeEventCount}{marketSummary}");
 ```
-┌─────────┬──────────────────────────────────────────────────────────┐
-│ Файл    │ Изменения                                               │
-├─────────┼──────────────────────────────────────────────────────────┤
-│ MarketItem.cs │ +itemId поле, восстановление ссылок, basePrice    │
-│               │ fallback, FindTradeDatabase() helper              │
-├─────────┼──────────────────────────────────────────────────────────┤
-│ TradeMarket-  │ +Проверка currentPrice>0, расширенные DEBUG логи, │
-│ Server.cs     │ лог каждого MarketTick                            │
-├─────────┼──────────────────────────────────────────────────────────┤
-│ TradeUI.cs    │ _tradeLocked вместо _tradePending, горячие клавиши│
-│               │ 1-2, сброс в OnTradeResult(), обновлены подсказки │
-├─────────┼──────────────────────────────────────────────────────────┤
-│ MarketItem-   │ НОВЫЙ: Editor инструмент для инициализации itemId │
-│ IDInitializer │                                                   │
-├─────────┼──────────────────────────────────────────────────────────┤
-│ TRADE_DEBUG_  │ НОВЫЙ: RAG-документация для отладки торговли      │
-│ GUIDE.md      │                                                   │
-└─────────┴──────────────────────────────────────────────────────────┘
+
+**Пример вывода:**
+```
+[TradeMarketServer] MarketTick #1 | markets=4 activeEvents=0 | primium: мезий=11,0CR d=0,00 s=0,00 stock=75 item_null=False
 ```
 
 ---
 
-## 🚀 СЛЕДУЮЩИЕ ШАГИ (после тестирования)
+## 📁 Изменённые файлы
 
-1. **Протестировать** все 4 теста выше
-2. **Если всё работает:**
-   - Закоммитить изменения
-   - Запушить
-   - Обновить QWEN_CONTEXT.md
-3. **Если есть проблемы:**
-   - Открыть `TRADE_DEBUG_GUIDE.md`
-   - Найти симптом в таблице
-   - Следовать чек-листу
-   - Сообщить о логах ошибок
+| Файл | Изменения |
+|------|-----------|
+| `MarketItem.cs` | +`itemId` поле, восстановление ссылок, `basePrice` fallback, `FindTradeDatabase()` |
+| `TradeMarketServer.cs` | +Проверка `currentPrice > 0`, расширенные DEBUG логи, `FindPlayerStorage` всегда `Load()`, лог MarketTick |
+| `TradeUI.cs` | `_tradeLocked` вместо `_tradePending`, `OnTradeResult` → `Load()` вместо Sync/Remove, горячие клавиши 1-2 |
+| `MarketItemIDInitializer.cs` | **НОВЫЙ** — Editor инструмент для инициализации itemId |
+| `TRADE_DEBUG_GUIDE.md` | **НОВЫЙ** — RAG-документация для отладки торговли |
+| `QWENTRADING8D_SESSION.md` | **НОВЫЙ** — итоги сессии 8D |
 
 ---
 
-## 📝 Архитектурные решения (итоговые)
+## ✅ Что теперь работает (подтверждено тестами)
 
-### Защита от двойных RPC
+| Функция | Статус | Проверка |
+|---------|--------|----------|
+| Один клик = один RPC | ✅ | Логи подтверждают однократный вызов |
+| Цена не обнуляется | ✅ | `RecalculatePrice()` восстанавливает ссылку |
+| Купил 1шт = 1шт | ✅ | `Load()` вместо дублирования |
+| Продал 1шт = 0шт | ✅ | Сервер загружает актуальные данные |
+| Tick система логирует | ✅ | MarketTick каждые 30s (testMode) |
+| Серверная валидация price > 0 | ✅ | Транзакция отменяется при price=0 |
+| Горячие клавиши 1-2 | ✅ | Альтернатива клику мышью |
+| Editor инструмент | ✅ | Tools → Project C → Trade → Initialize |
+
+---
+
+## ⚠️ Известные проблемы (НЕ исправлены)
+
+### 1. demandFactor > 1.5 в ScriptableObject
+
+**Симптом:** В логах `demandFactor=20` для антигравия. Формула цены выдаёт `currentPrice = 50 × (1 + 20 - 0) × 0 = 0` (если eventMultiplier=0).
+
+**Причина:** В inspector ScriptableObject рынка `demandFactor` может быть установлен вручную > 1.5. `Clamp(0, 1.5)` работает только при `UpdateDemand()`.
+
+**Влияние:** Если `demandFactor > 1.5` и `eventMultiplier < 1`, цена может быть аномально высокой или нулевой.
+
+**Решение:** Добавить `OnValidate()` в `MarketItem` или clamp при загрузке рынка.
+
+**Статус:** ⏳ Отложено на сессию 8E.
+
+---
+
+### 2. Клиент и сервер могут рассинхронизироваться при реконнекте
+
+**Симптом:** Если клиент отключился и переподключился, `PlayerTradeStorage` на сервере может загрузить старые данные из PlayerPrefs.
+
+**Причина:** `PlayerPrefs` не очищаются при реконнекте. Серверный `Load()` загружает последние сохранённые данные.
+
+**Влияние:** Возможна потеря данных при реконнекте.
+
+**Решение:** Использовать серверное хранилище вместо PlayerPrefs для авторитетных данных.
+
+**Статус:** ⏳ Отложено на фазу MMO-сервера.
+
+---
+
+### 3. Нет валидации quantity <= 0
+
+**Симптом:** Теоретически можно отправить `quantity=0` или `quantity=-1`.
+
+**Причина:** Нет проверки в `BuyItemServerRpc/SellItemServerRpc`.
+
+**Решение:** Добавить `if (quantity <= 0) return;`
+
+**Статус:** ⏳ Отложено на сессию 8E.
+
+---
+
+## 🚀 Следующие шаги (Сессия 8E)
+
+1. **Clamp demandFactor/supplyFactor** при загрузке рынка
+2. **Добавить валидацию quantity > 0** в RPC
+3. **Добавить валидацию locationId != null/empty** в RPC
+4. **Проверить работу в Host+Client режиме** (не только Host)
+5. **Добавить лог при каждом Save/Load** для отладки рассинхронизации
+6. **Обновить TRADE_DEBUG_GUIDE.md** новыми проблемами
+
+---
+
+## 📐 Архитектура (итоговая)
+
 ```
-Клиент: _tradeLocked = true ПЕРЕД RPC
-        ↓
-   RPC отправлен
-        ↓
-Сервер: обрабатывает, отправляет результат
-        ↓
-Клиент: OnTradeResult() → _tradeLocked = false
+┌─────────────────────────────────────────────────────────┐
+│                    КЛИЕНТ (TradeUI)                      │
+│  - UI торговли (Canvas, кнопки, текст)                   │
+│  - _tradeLocked: bool — защита от двойных RPC           │
+│  - TryBuyItem/TrySellItem — единая точка входа           │
+│  - OnTradeResult() → _tradeLocked=false + Load()        │
+│  - Горячие клавиши: 1=купить, 2=продать                 │
+└────────────────────────┬────────────────────────────────┘
+                         │ RPC [SendTo.Server]
+                         ▼
+┌─────────────────────────────────────────────────────────┐
+│              СЕРВЕР (TradeMarketServer)                   │
+│  - LoadAllMarkets() → ScriptableObject LocationMarket    │
+│  - MarketItem.itemId: string — восстановление ссылок    │
+│  - BuyItemServerRpc():                                   │
+│    1. Rate limit (отключён)                              │
+│    2. Проверка рынка, товара, стока                      │
+│    3. RecalculatePrice() → проверка currentPrice > 0    │
+│    4. Проверка кредитов (PlayerCreditsManager)           │
+│    5. Проверка лимитов склада                            │
+│    6. Списать кредиты, обновить рынок, добавить товар    │
+│    7. playerStorage.Save() — сервер авторитетен         │
+│    8. SendTradeResultToClient(itemId, qty, isPurchase)   │
+│    9. SendMarketUpdateClientRpc (обновить UI цены)       │
+│  - SellItemServerRpc(): аналогично                       │
+│  - MarketTick() каждые 30s (testMode) / 300s (prod)     │
+│  - FindPlayerStorage() → всегда Load()                  │
+└─────────────────────────────────────────────────────────┘
 ```
 
-### Восстановление ссылок
-```
-MarketItem.item == null (потеряна ссылка)
-        ↓
-RecalculatePrice() проверяет MarketItem.itemId
-        ↓
-FindTradeDatabase().GetItemById(itemId)
-        ↓
-item восстановлен → basePrice обновлён → currentPrice рассчитан
-```
+---
 
-### Клиент-серверная модель (обновлено)
-```
-TradeUI.TryBuyItem() → _tradeLocked = true
-    ↓
-NetworkPlayer.TradeBuyServerRpc()
-    ↓
-TradeMarketServer.BuyItemServerRpc()
-    ├─ Проверка currentPrice > 0 ← NEW 8D
-    ├─ Проверка кредитов
-    ├─ Проверка лимитов
-    ├─ Выполнение сделки
-    └─ SendTradeResultToClient(itemId, quantity, isPurchase)
-        ↓
-NetworkPlayer.TradeResultClientRpc()
-    ↓
-TradeUI.OnTradeResult() → _tradeLocked = false + SyncWarehouseItem()
-```
+## 📝 История изменений
+
+| Версия | Дата | Изменения |
+|--------|------|-----------|
+| 0.1 | 6 апр 2026 | Начальная документация |
+| 0.2 | 9 апр 2026 | Сессия 8D: все исправления + документация |
+| 0.3 | 9 апр 2026 | Hotfix: server storage data loss + client sync double-counting |

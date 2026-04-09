@@ -51,9 +51,8 @@ public class TradeMarketServer : NetworkBehaviour
     // Рынки локаций
     private Dictionary<string, LocationMarket> _markets = new Dictionary<string, LocationMarket>();
 
-    // Сессия 8E: Локальное хранение кредитов — НЕ через NetworkVariable
-    // NetworkVariable не работает для компонентов созданных через AddComponent после спавна
-    private Dictionary<ulong, float> _playerCredits = new Dictionary<ulong, float>();
+    // Сессия 8F: Кредиты хранятся в PlayerDataStore (единый источник)
+    // PlayerDataStore.Instance.GetCredits/SetCredits
 
     // Логирование транзакций
     private List<string> _transactionLog = new List<string>();
@@ -938,40 +937,29 @@ public class TradeMarketServer : NetworkBehaviour
     }
 
     /// <summary>
-    /// Получить кредиты игрока (авторитетный источник — локальный Dictionary + PlayerPrefs)
+    /// Получить кредиты игрока (делегирование в PlayerDataStore)
     /// </summary>
     public static float GetPlayerCreditsStatic(ulong clientId)
     {
-        if (Instance == null) return 1000f;
-        return Instance.GetPlayerCredits(clientId);
+        return PlayerDataStore.Instance.GetCredits(clientId);
     }
 
     private float GetPlayerCredits(ulong clientId)
     {
-        if (_playerCredits.TryGetValue(clientId, out float credits))
-            return credits;
-
-        // Загружаем из PlayerPrefs если ещё не в кэше
-        credits = PlayerPrefs.GetFloat($"Credits_{clientId}", 1000f);
-        _playerCredits[clientId] = credits;
-        return credits;
+        return PlayerDataStore.Instance.GetCredits(clientId);
     }
 
     /// <summary>
-    /// Установить кредиты игрока (сохраняет в Dictionary + PlayerPrefs)
+    /// Установить кредиты игрока (делегирование в PlayerDataStore)
     /// </summary>
     public static void SetPlayerCreditsStatic(ulong clientId, float newCredits)
     {
-        if (Instance == null) return;
-        Instance.SetPlayerCredits(clientId, newCredits);
+        PlayerDataStore.Instance.SetCredits(clientId, newCredits);
     }
 
     private void SetPlayerCredits(ulong clientId, float newCredits)
     {
-        newCredits = Mathf.Max(0f, newCredits);
-        _playerCredits[clientId] = newCredits;
-        PlayerPrefs.SetFloat($"Credits_{clientId}", newCredits);
-        PlayerPrefs.Save();
+        PlayerDataStore.Instance.SetCredits(clientId, newCredits);
     }
 
     private PlayerTradeStorage FindPlayerStorage(ulong clientId)
@@ -986,12 +974,8 @@ public class TradeMarketServer : NetworkBehaviour
             storage = player.gameObject.AddComponent<PlayerTradeStorage>();
         }
 
-        // Сессия 8E: Загружаем склад из PlayerPrefs (items)
-        storage.Load();
-
-        // Сессия 8E: Синхронизируем credits с авторитетным Dictionary _playerCredits
-        // При первом создании storage.credits = 1000 (default). Берём из Dictionary.
-        storage.credits = GetPlayerCredits(clientId);
+        // Сессия 8F: Загружаем данные из PlayerDataStore (единый источник)
+        storage.LoadFromPlayerDataStore(clientId);
 
         return storage;
     }

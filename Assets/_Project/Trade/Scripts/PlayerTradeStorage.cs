@@ -35,6 +35,9 @@ namespace ProjectC.Trade
         [Header("Warehouse Content")]
         public List<WarehouseItem> warehouse = new List<WarehouseItem>();
 
+        // Сессия 8F: ClientId для доступа к PlayerDataStore
+        private ulong _clientId;
+
         public float CurrentWeight
         {
             get
@@ -169,26 +172,68 @@ namespace ProjectC.Trade
         {
             string locKey = string.IsNullOrEmpty(currentLocationId) ? "global" : currentLocationId.ToLower();
 
-            // Сессия 8E: Лог для отладки рассинхронизации
-            Debug.Log($"[PTS] Save: loc={locKey}, credits={credits:F0}, items={warehouse.Count}, weight={CurrentWeight:F1}/{maxWeight:F1}, volume={CurrentVolume:F1}/{maxVolume:F1}");
-
-            PlayerPrefs.SetFloat($"TradeCredits_{locKey}", credits);
-            var data = new WarehouseSaveData { items = new List<WarehouseSaveItem>() };
+            // Сессия 8F: Сохраняем ТОЛЬКО склад в PlayerDataStore
+            // Кредиты хранятся отдельно в PlayerDataStore (общие для всех локаций)
+            var saveItems = new List<WarehouseSaveItem>();
             foreach (var w in warehouse)
-                if (w.item != null) data.items.Add(new WarehouseSaveItem { itemId = w.item.itemId, quantity = w.quantity });
-            PlayerPrefs.SetString($"TradeWarehouse_{locKey}", UnityEngine.JsonUtility.ToJson(data));
-            PlayerPrefs.Save();
+                if (w.item != null) saveItems.Add(new WarehouseSaveItem { itemId = w.item.itemId, quantity = w.quantity });
+
+            PlayerDataStore.Instance.SetWarehouse(_clientId, currentLocationId, saveItems);
+
+            Debug.Log($"[PTS] Save: loc={locKey}, items={warehouse.Count}, weight={CurrentWeight:F1}/{maxWeight:F1}, volume={CurrentVolume:F1}/{maxVolume:F1}");
         }
 
+        /// <summary>
+        /// Загрузить данные из PlayerDataStore (единый источник). Сессия 8F.
+        /// </summary>
+        public void LoadFromPlayerDataStore(ulong clientId)
+        {
+            _clientId = clientId;
+
+            // Кредиты — ОБЩИЕ для всех локаций
+            credits = PlayerDataStore.Instance.GetCredits(clientId);
+
+            // Склад — привязан к локации
+            string locKey = string.IsNullOrEmpty(currentLocationId) ? "global" : currentLocationId.ToLower();
+            var saveItems = PlayerDataStore.Instance.GetWarehouse(clientId, currentLocationId);
+
+            warehouse.Clear();
+            var db = FindTradeDatabase();
+            if (db != null)
+            {
+                foreach (var si in saveItems)
+                {
+                    var def = db.GetItemById(si.itemId);
+                    if (def != null) warehouse.Add(new WarehouseItem { item = def, quantity = si.quantity });
+                }
+            }
+
+            Debug.Log($"[PTS] Loaded from PDS: loc={locKey}, credits={credits:F0}, items={warehouse.Count}");
+        }
+
+        /// <summary>
+        /// Legacy Load из PlayerPrefs — оставлен для обратной совместимости.
+        /// Используйте LoadFromPlayerDataStore.
+        /// </summary>
         public void Load()
         {
             string locKey = string.IsNullOrEmpty(currentLocationId) ? "global" : currentLocationId.ToLower();
 
-            // Сессия 8E: Лог до загрузки
-            Debug.Log($"[PTS] Load: loc={locKey}");
+            // Сессия 8F: Пробуем новые ключи PD_, fallback на старые
+            credits = PlayerPrefs.GetFloat($"PD_Credits_{_clientId}", -1f);
+            if (credits < 0f)
+            {
+                // Fallback на старый ключ
+                credits = PlayerPrefs.GetFloat($"TradeCredits_{locKey}", 1000f);
+            }
 
-            credits = PlayerPrefs.GetFloat($"TradeCredits_{locKey}", 1000f);
-            string json = PlayerPrefs.GetString($"TradeWarehouse_{locKey}", "");
+            string json = PlayerPrefs.GetString($"PD_Warehouse_{_clientId}_{locKey}", "");
+            if (string.IsNullOrEmpty(json))
+            {
+                // Fallback на старый ключ
+                json = PlayerPrefs.GetString($"TradeWarehouse_{locKey}", "");
+            }
+
             if (!string.IsNullOrEmpty(json))
             {
                 var data = UnityEngine.JsonUtility.FromJson<WarehouseSaveData>(json);
@@ -208,8 +253,7 @@ namespace ProjectC.Trade
                 warehouse.Clear();
             }
 
-            // Сессия 8E: Лог после загрузки
-            Debug.Log($"[PTS] Loaded: loc={locKey}, credits={credits:F0}, items={warehouse.Count}");
+            Debug.Log($"[PTS] Load (legacy): loc={locKey}, credits={credits:F0}, items={warehouse.Count}");
         }
 
         private static TradeDatabase FindTradeDatabase()

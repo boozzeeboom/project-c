@@ -906,13 +906,15 @@ public class TradeUI : MonoBehaviour
                 playerStorage.credits = newCredits;
 
                 // Синхронизация предметов: при покупке сервер добавляет товар на склад игрока
-                // Клиент должен отобразить актуальное состояние
                 if (isPurchase && !string.IsNullOrEmpty(itemId) && itemQuantity > 0)
                 {
                     SyncWarehouseItem(itemId, itemQuantity);
                 }
-                // При продаже предмет уже удалён из клиентского склада через TradeMarketServer.SellItemServerRpc
-                // (сервер работает с тем же playerStorage через FindPlayerStorage)
+                // При продаже сервер удаляет товар — клиент тоже должен удалить
+                else if (!isPurchase && !string.IsNullOrEmpty(itemId) && itemQuantity > 0)
+                {
+                    RemoveFromWarehouse(itemId, itemQuantity);
+                }
             }
         }
         else
@@ -949,6 +951,35 @@ public class TradeUI : MonoBehaviour
         else
         {
             playerStorage.warehouse.Add(new WarehouseItem { item = itemDef, quantity = quantity });
+        }
+    }
+
+    /// <summary>
+    /// Удалить предмет из клиентского склада после успешной серверной продажи
+    /// Сессия 8C: клиентский склад должен совпадать с серверным
+    /// </summary>
+    private void RemoveFromWarehouse(string itemId, int quantity)
+    {
+        if (playerStorage == null) return;
+
+        var wi = playerStorage.warehouse.Find(w => w.item != null && w.item.itemId == itemId);
+        if (wi != null)
+        {
+            Debug.Log($"[TradeUI] RemoveFromWarehouse: {itemId} x{quantity} (было: {wi.quantity})");
+            wi.quantity -= quantity;
+            if (wi.quantity <= 0)
+            {
+                playerStorage.warehouse.Remove(wi);
+                Debug.Log($"[TradeUI] RemoveFromWarehouse: удалён полностью. Осталось типов: {playerStorage.warehouse.Count}");
+            }
+            else
+            {
+                Debug.Log($"[TradeUI] RemoveFromWarehouse: осталось {wi.quantity}");
+            }
+        }
+        else
+        {
+            Debug.LogWarning($"[TradeUI] RemoveFromWarehouse: {itemId} не найден на клиентском складе! Склад: {playerStorage.warehouse.Count} типов");
         }
     }
 

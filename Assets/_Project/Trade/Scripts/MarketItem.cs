@@ -106,13 +106,11 @@ namespace ProjectC.Trade
 
             currentPrice = basePrice * (1f + demandFactor - supplyFactor) * eventMultiplier;
 
-            // Ограничение максимума ×5 (anti-exploit GDD_25 секция 11)
-            float maxPrice = basePrice * 5f;
-            currentPrice = Mathf.Min(currentPrice, maxPrice);
-
-            // Минимум — половина базовой цены
+            // Сессия 8E: Clamp eventMultiplier [0.5, 2.0] — защита от eventMultiplier=0
+            // Если eventMultiplier=0, цена тоже 0. Минимум 50% от базовой цены.
             float minPrice = basePrice * 0.5f;
-            currentPrice = Mathf.Max(currentPrice, minPrice);
+            float maxPrice = basePrice * 5f;
+            currentPrice = Mathf.Clamp(currentPrice, minPrice, maxPrice);
         }
 
         private static TradeDatabase FindTradeDatabase()

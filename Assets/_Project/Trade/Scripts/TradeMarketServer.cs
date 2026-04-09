@@ -318,7 +318,7 @@ public class TradeMarketServer : NetworkBehaviour
         }
 
         // 5. Проверка лимитов склада игрока (через PlayerTradeStorage)
-        var playerStorage = FindPlayerStorage(clientId);
+        var playerStorage = FindPlayerStorage(clientId, locationId);
         if (playerStorage != null)
         {
             var itemDef = marketItem.item;
@@ -444,7 +444,7 @@ public class TradeMarketServer : NetworkBehaviour
         }
 
         // 3. Проверка наличия у игрока
-        var playerStorage = FindPlayerStorage(clientId);
+        var playerStorage = FindPlayerStorage(clientId, locationId);
         if (playerStorage == null)
         {
             LogTransaction(clientId, "SELL", itemId, quantity, "FAIL", "Склад игрока не найден");
@@ -962,7 +962,11 @@ public class TradeMarketServer : NetworkBehaviour
         PlayerDataStore.Instance.SetCredits(clientId, newCredits);
     }
 
-    private PlayerTradeStorage FindPlayerStorage(ulong clientId)
+    /// <summary>
+    /// Найти или создать PlayerTradeStorage для игрока.
+    /// Сессия 8F: locationId обязателен для загрузки правильного склада.
+    /// </summary>
+    private PlayerTradeStorage FindPlayerStorage(ulong clientId, string locationId)
     {
         var player = FindPlayerNetworkPlayer(clientId);
         if (player == null) return null;
@@ -974,7 +978,10 @@ public class TradeMarketServer : NetworkBehaviour
             storage = player.gameObject.AddComponent<PlayerTradeStorage>();
         }
 
-        // Сессия 8F: Загружаем данные из PlayerDataStore (единый источник)
+        // Сессия 8F: Устанавливаем локацию ПЕРЕД загрузкой
+        storage.currentLocationId = locationId;
+
+        // Загружаем данные из PlayerDataStore (единый источник)
         storage.LoadFromPlayerDataStore(clientId);
 
         return storage;

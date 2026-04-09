@@ -121,7 +121,6 @@ namespace ProjectC.Items
             }
             PlayerPrefs.SetString(key, string.Join(",", saveData));
             PlayerPrefs.Save();
-            Debug.Log($"[Inventory] Сохранено: {saveData.Count} предметов");
         }
 
         /// <summary>
@@ -164,8 +163,6 @@ namespace ProjectC.Items
                     }
                 }
             }
-
-            Debug.Log($"[Inventory] Загружено: {loaded} предметов");
         }
 
         /// <summary>

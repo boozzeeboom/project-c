@@ -681,7 +681,6 @@ public class TradeUI : MonoBehaviour
         if (_creditsText != null && playerStorage != null)
         {
             _creditsText.text = $"Кредиты: {playerStorage.credits:F0} CR";
-            Debug.Log($"[TradeUI] UpdateDisplays: credits={playerStorage.credits:F0}");
         }
 
         if (_warehouseInfoText != null && playerStorage != null)
@@ -896,7 +895,6 @@ public class TradeUI : MonoBehaviour
         // Устанавливаем блокировку ПЕРЕД отправкой RPC
         _tradeLocked = true;
         _lastTradeTime = Time.time;
-        Debug.Log($"[TradeUI] Покупка: {mi.item.displayName} x{_buyQuantity} (index={_selectedIndex})");
 
         BuyItemViaServer(mi.item.itemId, _buyQuantity);
     }
@@ -920,7 +918,6 @@ public class TradeUI : MonoBehaviour
 
         _tradeLocked = true;
         _lastTradeTime = Time.time;
-        Debug.Log($"[TradeUI] Продажа: {mi.item.displayName} x{_buyQuantity} (index={_selectedIndex})");
 
         SellItemViaServer(mi.item.itemId, _buyQuantity);
     }
@@ -1013,8 +1010,6 @@ public class TradeUI : MonoBehaviour
     {
         // Сессия 8D: Сброс блокировки — сервер ответил, можно продолжать
         _tradeLocked = false;
-
-        Debug.Log($"[TradeUI] OnTradeResult: success={success}, newCredits={newCredits:F0}, itemId={itemId}, qty={itemQuantity}, isPurchase={isPurchase}");
 
         // КРИТИЧНО: playerStorage мог не инициализироваться если OpenTrade() ещё не вызывался
         // Гарантируем что playerStorage всегда валиден перед работой с кредитами

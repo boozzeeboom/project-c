@@ -66,7 +66,6 @@ namespace ProjectC.Trade
                 return items;
 
             string json = PlayerPrefs.GetString(key, "");
-            Debug.Log($"[PDS] GetWarehouse: key={key}, json_len={json.Length}, json={json}");
             var loaded = ParseWarehouseJson(json);
             _warehouseCache[key] = loaded;
             return loaded;
@@ -82,12 +81,10 @@ namespace ProjectC.Trade
                 var data = new WarehouseSaveData { items = items };
                 string json = JsonUtility.ToJson(data);
                 PlayerPrefs.SetString(key, json);
-                Debug.Log($"[PDS] SetWarehouse: key={key}, items={items.Count}, json={json}");
             }
             else
             {
                 PlayerPrefs.DeleteKey(key);
-                Debug.Log($"[PDS] SetWarehouse: key={key}, items=0 (deleted)");
             }
             PlayerPrefs.Save();
         }

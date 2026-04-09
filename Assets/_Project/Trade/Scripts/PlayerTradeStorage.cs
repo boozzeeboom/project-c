@@ -191,10 +191,7 @@ namespace ProjectC.Trade
             foreach (var w in warehouse)
                 if (w.item != null) saveItems.Add(new WarehouseSaveItem { itemId = w.item.itemId, quantity = w.quantity });
 
-            Debug.Log($"[PTS] Save: clientId={_clientId}, loc={locKey}, warehouse.Count={warehouse.Count}, saveItems.Count={saveItems.Count}");
             PlayerDataStore.Instance.SetWarehouse(_clientId, currentLocationId, saveItems);
-
-            Debug.Log($"[PTS] Save: loc={locKey}, items={warehouse.Count}, weight={CurrentWeight:F1}/{maxWeight:F1}, volume={CurrentVolume:F1}/{maxVolume:F1}");
         }
 
         /// <summary>
@@ -222,8 +219,6 @@ namespace ProjectC.Trade
                     if (def != null) warehouse.Add(new WarehouseItem { item = def, quantity = si.quantity });
                 }
             }
-
-            Debug.Log($"[PTS] Loaded from PDS: loc={locKey}, credits={credits:F0}, items={warehouse.Count}");
         }
 
         /// <summary>
@@ -267,8 +262,6 @@ namespace ProjectC.Trade
             {
                 warehouse.Clear();
             }
-
-            Debug.Log($"[PTS] Load (legacy): loc={locKey}, credits={credits:F0}, items={warehouse.Count}");
         }
 
         private static TradeDatabase FindTradeDatabase()

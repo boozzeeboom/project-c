@@ -1041,16 +1041,10 @@ public class TradeUI : MonoBehaviour
         var wi = playerStorage.warehouse.Find(w => w.item != null && w.item.itemId == itemId);
         if (wi != null)
         {
-            Debug.Log($"[TradeUI] RemoveFromWarehouse: {itemId} x{quantity} (было: {wi.quantity})");
             wi.quantity -= quantity;
             if (wi.quantity <= 0)
             {
                 playerStorage.warehouse.Remove(wi);
-                Debug.Log($"[TradeUI] RemoveFromWarehouse: удалён полностью. Осталось типов: {playerStorage.warehouse.Count}");
-            }
-            else
-            {
-                Debug.Log($"[TradeUI] RemoveFromWarehouse: осталось {wi.quantity}");
             }
 
             // Сессия 8D: Сохраняем после модификации
@@ -1058,7 +1052,7 @@ public class TradeUI : MonoBehaviour
         }
         else
         {
-            Debug.LogWarning($"[TradeUI] RemoveFromWarehouse: {itemId} не найден на клиентском складе! Склад: {playerStorage.warehouse.Count} типов");
+            Debug.LogWarning($"[TradeUI] RemoveFromWarehouse: {itemId} не найден на клиентском складе!");
         }
     }
 

@@ -274,17 +274,13 @@ public class TradeMarketServer : NetworkBehaviour
             return;
         }
 
-        // === DEBUG: лог состояния товара перед расчётом цены ===
-        Debug.Log($"[TradeMarketServer] DEBUG BUY: itemId={itemId}, item={marketItem.item?.name ?? "NULL"}, itemId_field={marketItem.itemId ?? "NULL"}, basePrice={marketItem.basePrice}, currentPrice={marketItem.currentPrice}, d={marketItem.demandFactor:F3}, s={marketItem.supplyFactor:F3}, event={marketItem.eventMultiplier:F3}");
-
         // Принудительный пересчёт цены — защита от stale данных
         marketItem.RecalculatePrice();
-        Debug.Log($"[TradeMarketServer] DEBUG BUY после RecalculatePrice: currentPrice={marketItem.currentPrice}, basePrice={marketItem.basePrice}, item={marketItem.item?.name ?? "NULL"}, d={marketItem.demandFactor:F3}, s={marketItem.supplyFactor:F3}");
 
         // Сессия 8D: КРИТИЧНО — защита от нулевой цены
         if (marketItem.currentPrice <= 0f)
         {
-            Debug.LogError($"[TradeMarketServer] КРИТИЧНО: currentPrice=0 для {itemId} после RecalculatePrice! item={marketItem.item?.name ?? "NULL"}, basePrice={marketItem.basePrice}, d={marketItem.demandFactor:F3}, s={marketItem.supplyFactor:F3}. Отмена транзакции.");
+            Debug.LogError($"[TradeMarketServer] КРИТИЧНО: currentPrice=0 для {itemId}! Отмена транзакции.");
             LogTransaction(clientId, "BUY", itemId, quantity, "FAIL", "Цена товара = 0!");
             SendTradeResultToClient(clientId, false, "Ошибка цены товара! (price=0)", 0f, 0, 0, 0, 0);
             return;
@@ -429,15 +425,13 @@ public class TradeMarketServer : NetworkBehaviour
             return;
         }
 
-        // === DEBUG: лог состояния товара перед расчётом цены продажи ===
-        Debug.Log($"[TradeMarketServer] DEBUG SELL: itemId={itemId}, item={marketItem.item?.name ?? "NULL"}, itemId_field={marketItem.itemId ?? "NULL"}, basePrice={marketItem.basePrice}, currentPrice={marketItem.currentPrice}, d={marketItem.demandFactor:F3}, s={marketItem.supplyFactor:F3}, event={marketItem.eventMultiplier:F3}");
+        // Принудительный пересчёт цены — защита от stale данных
         marketItem.RecalculatePrice();
-        Debug.Log($"[TradeMarketServer] DEBUG SELL после RecalculatePrice: currentPrice={marketItem.currentPrice}, basePrice={marketItem.basePrice}, item={marketItem.item?.name ?? "NULL"}, d={marketItem.demandFactor:F3}, s={marketItem.supplyFactor:F3}");
 
         // Сессия 8D: КРИТИЧНО — защита от нулевой цены
         if (marketItem.currentPrice <= 0f)
         {
-            Debug.LogError($"[TradeMarketServer] КРИТИЧНО: currentPrice=0 для {itemId} при продаже! item={marketItem.item?.name ?? "NULL"}, basePrice={marketItem.basePrice}. Отмена транзакции.");
+            Debug.LogError($"[TradeMarketServer] КРИТИЧНО: currentPrice=0 при продаже {itemId}! Отмена транзакции.");
             LogTransaction(clientId, "SELL", itemId, quantity, "FAIL", "Цена товара = 0!");
             SendTradeResultToClient(clientId, false, "Ошибка цены товара! (price=0)", 0f, 0, 0, 0, 0);
             return;
@@ -617,21 +611,17 @@ public class TradeMarketServer : NetworkBehaviour
             if (evt.isActive) activeEventCount++;
         }
 
-        // Информативный лог для отладки tick-системы
-        string marketSummary = "";
+        // Информативный лог для отладки tick-системы (только при аномалиях)
         foreach (var market in _markets.Values)
         {
             foreach (var item in market.items)
             {
-                if (item != null && item.item != null && item.item.itemId == "mesium_canister_v01")
+                if (item != null && item.currentPrice <= 0f && item.item != null)
                 {
-                    marketSummary += $" | {market.locationId}: мезий={item.currentPrice:F1}CR d={item.demandFactor:F2} s={item.supplyFactor:F2} stock={item.availableStock} item_null={item.item==null}";
+                    Debug.LogWarning($"[TradeMarketServer] MarketTick: price=0 для {item.item.itemId} на {market.locationId} (basePrice={item.basePrice}, d={item.demandFactor:F2}, s={item.supplyFactor:F2})");
                 }
             }
         }
-        
-        // Сессия 8D: Детальный лог каждого тика
-        Debug.Log($"[TradeMarketServer] MarketTick #{Time.time / TickInterval:F0} | markets={_markets.Count} activeEvents={activeEventCount}{marketSummary}");
     }
 
     // ==================== NPC-ТРЕЙДЕРЫ (Сессия 6) ====================

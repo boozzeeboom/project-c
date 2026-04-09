@@ -806,13 +806,15 @@ public class TradeUI : MonoBehaviour
     }
 
     private float _lastTradeTime = 0f;
-    private const float TRADE_COOLDOWN = 0.5f; // Дебаунс — защита от двойного клика/Enter
+    private const float TRADE_COOLDOWN = 0.5f; // Дебаунс — защита от двойного клика
+    private bool _tradePending = false; // Флаг блокировки повторного вызова в том же кадре
 
     // ==================== КНОПКИ ====================
 
     private void OnBuyClicked()
     {
-        // Дебаунс: защита от быстрых кликов
+        // Защита от двойного вызова (Button onClick может сработать дважды в одном кадре)
+        if (_tradePending) return;
         if (Time.time - _lastTradeTime < TRADE_COOLDOWN) return;
 
         if (_showWarehouseTab || _selectedIndex < 0 || currentMarket == null) return;
@@ -820,13 +822,22 @@ public class TradeUI : MonoBehaviour
         var mi = currentMarket.items[_selectedIndex];
         if (mi?.item == null) { ShowMessage("Выберите товар!"); return; }
 
-        Debug.Log($"[TradeUI] Покупка: {mi.item.displayName} x{_buyQuantity} (index={_selectedIndex})");
+        _tradePending = true;
         _lastTradeTime = Time.time;
+        Debug.Log($"[TradeUI] Покупка: {mi.item.displayName} x{_buyQuantity} (index={_selectedIndex})");
+
+        // Снимаем выделение с кнопки чтобы EventSystem не resend-ил событие
+        UnityEngine.EventSystems.EventSystem.current?.SetSelectedGameObject(null);
+
         BuyItemViaServer(mi.item.itemId, _buyQuantity);
+
+        // Сброс флага через задержку
+        Invoke(nameof(ResetTradePending), 0.3f);
     }
 
     private void OnSellClicked()
     {
+        if (_tradePending) return;
         if (Time.time - _lastTradeTime < TRADE_COOLDOWN) return;
 
         if (_showWarehouseTab || _selectedIndex < 0 || currentMarket == null) return;
@@ -834,9 +845,20 @@ public class TradeUI : MonoBehaviour
         var mi = currentMarket.items[_selectedIndex];
         if (mi?.item == null) { ShowMessage("Выберите товар!"); return; }
 
-        Debug.Log($"[TradeUI] Продажа: {mi.item.displayName} x{_buyQuantity} (index={_selectedIndex})");
+        _tradePending = true;
         _lastTradeTime = Time.time;
+        Debug.Log($"[TradeUI] Продажа: {mi.item.displayName} x{_buyQuantity} (index={_selectedIndex})");
+
+        UnityEngine.EventSystems.EventSystem.current?.SetSelectedGameObject(null);
+
         SellItemViaServer(mi.item.itemId, _buyQuantity);
+
+        Invoke(nameof(ResetTradePending), 0.3f);
+    }
+
+    private void ResetTradePending()
+    {
+        _tradePending = false;
     }
 
     private void OnLoadClicked()

@@ -981,11 +981,17 @@ public class TradeUI : MonoBehaviour
             ShowMessage(message);
             if (playerStorage != null)
             {
+                // Сессия 8E: Порядок критично важен!
+                // 1. Загружаем склад (сервер уже сохранил обновлённый warehouse)
+                playerStorage.Load();
+
+                // 2. Переопределяем кредиты значением от сервера
+                // Load() загружает из PlayerPrefs где может быть старое значение credits
+                // Сервер шлёт актуальные newCredits через ClientRpc
                 playerStorage.credits = newCredits;
 
-                // Сессия 8D hotfix: Загружаем актуальные данные склада с сервера
-                // Вместо ручного добавления/удаления — сервер уже сохранил, мы загружаем
-                playerStorage.Load();
+                // 3. Сохраняем чтобы новые creditы не потерялись
+                playerStorage.Save();
             }
         }
         else

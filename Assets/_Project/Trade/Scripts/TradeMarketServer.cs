@@ -371,6 +371,8 @@ public class TradeMarketServer : NetworkBehaviour
             {
                 playerStorage.warehouse.Add(new WarehouseItem { item = itemDef, quantity = quantity });
             }
+            // Сессия 8E: Синхронизируем credits с PlayerCreditsManager перед сохранением
+            playerStorage.credits = creditsManager.Credits;
             playerStorage.Save(); // Сессия 8C: сохраняем чтобы данные не терялись
         }
 
@@ -481,7 +483,6 @@ public class TradeMarketServer : NetworkBehaviour
         {
             playerStorage.warehouse.Remove(warehouseItem);
         }
-        playerStorage.Save(); // Сессия 8C: сохраняем после модификации
 
         // Начисляем кредиты
         var creditsManager = FindPlayerCredits(clientId);
@@ -489,6 +490,10 @@ public class TradeMarketServer : NetworkBehaviour
         {
             creditsManager.Credits += sellPrice;
         }
+
+        // Сессия 8E: Синхронизируем credits с PlayerCreditsManager перед сохранением
+        playerStorage.credits = creditsManager?.Credits ?? playerStorage.credits;
+        playerStorage.Save(); // Сессия 8C: сохраняем после модификации
 
         // Обновляем рынок: supply
         market.UpdateSupply(itemId, quantity * 0.02f);

@@ -35,8 +35,9 @@ namespace ProjectC.Trade
         [Header("Warehouse Content")]
         public List<WarehouseItem> warehouse = new List<WarehouseItem>();
 
-        // Сессия 8F: ClientId для доступа к PlayerDataStore
+        // Сессия 8F: ClientId для доступа к PlayerDataStore. -1 = не установлен.
         private ulong _clientId;
+        private bool _clientIdSet = false;
 
         public float CurrentWeight
         {
@@ -171,12 +172,16 @@ namespace ProjectC.Trade
         public void Save()
         {
             // Убеждаемся что clientId установлен
-            if (_clientId == 0)
+            if (!_clientIdSet)
             {
                 var nm = Unity.Netcode.NetworkManager.Singleton;
-                if (nm != null && nm.IsListening) _clientId = nm.LocalClientId;
+                if (nm != null && nm.IsListening)
+                {
+                    _clientId = nm.LocalClientId;
+                    _clientIdSet = true;
+                }
             }
-            if (_clientId == 0) return; // Не сохраняем без clientId
+            if (!_clientIdSet) return; // Не сохраняем без clientId
 
             string locKey = string.IsNullOrEmpty(currentLocationId) ? "global" : currentLocationId.ToLower();
 
@@ -198,6 +203,7 @@ namespace ProjectC.Trade
         public void LoadFromPlayerDataStore(ulong clientId)
         {
             _clientId = clientId;
+            _clientIdSet = true;
 
             // Кредиты — ОБЩИЕ для всех локаций
             credits = PlayerDataStore.Instance.GetCredits(clientId);

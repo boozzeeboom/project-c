@@ -55,6 +55,21 @@ public class TradeUI : MonoBehaviour
         }
     }
 
+    /// <summary>
+    /// Получить PlayerTradeStorage — берём с NetworkPlayer (тот же что у сервера), а не FindObjectOfType.
+    /// Сессия 8C: клиент и сервер работают с одним и тем же хранилищем.
+    /// </summary>
+    private PlayerTradeStorage GetPlayerStorageFromNetworkPlayer()
+    {
+        if (Player == null) return null;
+        var storage = Player.GetComponent<PlayerTradeStorage>();
+        if (storage == null)
+        {
+            storage = Player.gameObject.AddComponent<PlayerTradeStorage>();
+        }
+        return storage;
+    }
+
     private void Awake()
     {
         if (playerStorage == null)
@@ -294,11 +309,21 @@ public class TradeUI : MonoBehaviour
             BuildUI();
         }
         if (_tradePanel == null) { Debug.LogError("[TradeUI] Не удалось создать UI!"); return; }
-        
+
         currentMarket = market;
         _isOpen = true;
         _showWarehouseTab = false;
         _selectedIndex = -1;
+
+        // Сессия 8C: используем PlayerTradeStorage с NetworkPlayer (тот же что у сервера)
+        // вместо FindObjectOfType — чтобы клиент и сервер работали с одним хранилищем
+        PlayerTradeStorage storage = GetPlayerStorageFromNetworkPlayer();
+        if (storage == null)
+        {
+            // Fallback: ищем в сцене (для совместимости)
+            storage = playerStorage != null ? playerStorage : FindAnyObjectByType<PlayerTradeStorage>();
+        }
+        playerStorage = storage; // Сохраняем ссылку для всего UI
 
         // Устанавливаем локацию склада перед загрузкой
         if (playerStorage != null)

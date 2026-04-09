@@ -274,6 +274,13 @@ public class TradeMarketServer : NetworkBehaviour
             return;
         }
 
+        // === DEBUG: лог состояния товара перед расчётом цены ===
+        Debug.Log($"[TradeMarketServer] DEBUG BUY: itemId={itemId}, item={marketItem.item?.name ?? "NULL"}, basePrice={marketItem.basePrice}, currentPrice={marketItem.currentPrice}, d={marketItem.demandFactor:F3}, s={marketItem.supplyFactor:F3}, event={marketItem.eventMultiplier:F3}");
+
+        // Принудительный пересчёт цены — защита от stale данных
+        marketItem.RecalculatePrice();
+        Debug.Log($"[TradeMarketServer] DEBUG BUY после RecalculatePrice: currentPrice={marketItem.currentPrice}, basePrice={marketItem.basePrice}, item={marketItem.item?.name ?? "NULL"}");
+
         // 4. Проверка кредитов игрока (через PlayerCreditsManager)
         var creditsManager = FindPlayerCredits(clientId);
         if (creditsManager == null)
@@ -412,6 +419,11 @@ public class TradeMarketServer : NetworkBehaviour
             SendTradeResultToClient(clientId, false, "Нет товара на складе!", 0f, 0, 0, 0, 0);
             return;
         }
+
+        // === DEBUG: лог состояния товара перед расчётом цены продажи ===
+        Debug.Log($"[TradeMarketServer] DEBUG SELL: itemId={itemId}, item={marketItem.item?.name ?? "NULL"}, basePrice={marketItem.basePrice}, currentPrice={marketItem.currentPrice}, d={marketItem.demandFactor:F3}, s={marketItem.supplyFactor:F3}, event={marketItem.eventMultiplier:F3}");
+        marketItem.RecalculatePrice();
+        Debug.Log($"[TradeMarketServer] DEBUG SELL после RecalculatePrice: currentPrice={marketItem.currentPrice}");
 
         // === ВСЕ ПРОВЕРКИ ПРОЙДЕНЫ — выполняем сделку ===
         // Продажа по 80% от текущей цены (NPC маржа)

@@ -51,6 +51,10 @@ public class TradeMarketServer : NetworkBehaviour
     // Рынки локаций
     private Dictionary<string, LocationMarket> _markets = new Dictionary<string, LocationMarket>();
 
+    // Сессия 8E: Локальное хранение кредитов — НЕ через NetworkVariable
+    // NetworkVariable не работает для компонентов созданных через AddComponent после спавна
+    private Dictionary<ulong, float> _playerCredits = new Dictionary<ulong, float>();
+
     // Логирование транзакций
     private List<string> _transactionLog = new List<string>();
 
@@ -303,19 +307,13 @@ public class TradeMarketServer : NetworkBehaviour
             return;
         }
 
-        // 4. Проверка кредитов игрока (через PlayerCreditsManager)
-        var creditsManager = FindPlayerCredits(clientId);
-        if (creditsManager == null)
-        {
-            LogTransaction(clientId, "BUY", itemId, quantity, "FAIL", "Менеджер кредитов не найден");
-            SendTradeResultToClient(clientId, false, "Ошибка сервера!", 0f, 0, 0, 0, 0);
-            return;
-        }
+        // 4. Проверка кредитов игрока (локальный Dictionary — авторитетный источник)
+        float playerCredits = GetPlayerCredits(clientId);
 
         float totalCost = marketItem.currentPrice * quantity;
-        if (creditsManager.Credits < totalCost)
+        if (playerCredits < totalCost)
         {
-            LogTransaction(clientId, "BUY", itemId, quantity, "FAIL", $"Нет кредитов! Нужно {totalCost:F0}, есть {creditsManager.Credits:F0}");
+            LogTransaction(clientId, "BUY", itemId, quantity, "FAIL", $"Нет кредитов! Нужно {totalCost:F0}, есть {playerCredits:F0}");
             SendTradeResultToClient(clientId, false, $"Нет кредитов! Нужно {totalCost:F0} CR", 0f, 0, 0, 0, 0);
             return;
         }
@@ -352,8 +350,9 @@ public class TradeMarketServer : NetworkBehaviour
         // === ВСЕ ПРОВЕРКИ ПРОЙДЕНЫ — выполняем сделку ===
 
         // Списываем кредиты
-        creditsManager.Credits -= totalCost;
-        Debug.Log($"[TradeMarketServer] BUY: creditsManager.Credits BEFORE sync={creditsManager.Credits:F0}");
+        SetPlayerCredits(clientId, playerCredits - totalCost);
+        float newCredits = GetPlayerCredits(clientId);
+        Debug.Log($"[TradeMarketServer] BUY: newCredits={newCredits:F0} (was {playerCredits:F0}, cost {totalCost:F0})");
 
         // Обновляем рынок: сток и demand
         marketItem.availableStock -= quantity;
@@ -372,14 +371,9 @@ public class TradeMarketServer : NetworkBehaviour
             {
                 playerStorage.warehouse.Add(new WarehouseItem { item = itemDef, quantity = quantity });
             }
-            // Сессия 8E: Синхронизируем credits с PlayerCreditsManager перед сохранением
-            playerStorage.credits = creditsManager.Credits;
-            Debug.Log($"[TradeMarketServer] BUY sync: creditsManager.Credits={creditsManager.Credits:F0}, playerStorage.credits={playerStorage.credits:F0}");
+            // Сессия 8E: Синхронизируем credits с нашим авторитетным источником
+            playerStorage.credits = newCredits;
             playerStorage.Save(); // Сессия 8C: сохраняем чтобы данные не терялись
-
-            // Сессия 8E: Сохраняем также в PlayerCreditsManager (авторитетный источник)
-            PlayerPrefs.SetFloat($"Credits_{clientId}", creditsManager.Credits);
-            PlayerPrefs.Save();
         }
 
         // Лог
@@ -387,7 +381,7 @@ public class TradeMarketServer : NetworkBehaviour
 
         // Отправляем результат клиенту (Сессия 8C: itemId + quantity для синхронизации склада)
         SendTradeResultToClient(clientId, true, $"Куплено {itemId} x{quantity} за {totalCost:F0} CR",
-            creditsManager.Credits, marketItem.availableStock, 0, 0, 0,
+            newCredits, marketItem.availableStock, 0, 0, 0,
             itemId, quantity, true);
 
         // Обновляем рынок у всех клиентов
@@ -490,23 +484,15 @@ public class TradeMarketServer : NetworkBehaviour
             playerStorage.warehouse.Remove(warehouseItem);
         }
 
-        // Начисляем кредиты
-        var creditsManager = FindPlayerCredits(clientId);
-        if (creditsManager != null)
-        {
-            creditsManager.Credits += sellPrice;
-        }
+        // Начисляем кредиты (локальный Dictionary — авторитетный источник)
+        float playerCredits = GetPlayerCredits(clientId);
+        SetPlayerCredits(clientId, playerCredits + sellPrice);
+        float newCredits = GetPlayerCredits(clientId);
+        Debug.Log($"[TradeMarketServer] SELL: newCredits={newCredits:F0} (was {playerCredits:F0}, earned {sellPrice:F0})");
 
-        // Сессия 8E: Синхронизируем credits с PlayerCreditsManager перед сохранением
-        playerStorage.credits = creditsManager?.Credits ?? playerStorage.credits;
-        playerStorage.Save(); // Сессия 8C: сохраняем после модификации
-
-        // Сессия 8E: Сохраняем также в PlayerCreditsManager (авторитетный источник)
-        if (creditsManager != null)
-        {
-            PlayerPrefs.SetFloat($"Credits_{clientId}", creditsManager.Credits);
-            PlayerPrefs.Save();
-        }
+        // Синхронизируем playerStorage с нашим источником
+        playerStorage.credits = newCredits;
+        playerStorage.Save();
 
         // Обновляем рынок: supply
         market.UpdateSupply(itemId, quantity * 0.02f);
@@ -516,7 +502,7 @@ public class TradeMarketServer : NetworkBehaviour
 
         // Отправляем результат (Сессия 8C: itemId + quantity для синхронизации склада)
         SendTradeResultToClient(clientId, true, $"Продано {itemId} x{quantity} за {sellPrice:F0} CR",
-            creditsManager?.Credits ?? 0f, marketItem.availableStock + quantity, 0, 0, 0,
+            newCredits, marketItem.availableStock + quantity, 0, 0, 0,
             itemId, quantity, false);
 
         // Обновляем рынок у всех
@@ -949,6 +935,31 @@ public class TradeMarketServer : NetworkBehaviour
         {
             _transactionLog.RemoveRange(0, _transactionLog.Count - 1000);
         }
+    }
+
+    /// <summary>
+    /// Получить кредиты игрока (авторитетный источник — локальный Dictionary + PlayerPrefs)
+    /// </summary>
+    private float GetPlayerCredits(ulong clientId)
+    {
+        if (_playerCredits.TryGetValue(clientId, out float credits))
+            return credits;
+
+        // Загружаем из PlayerPrefs если ещё не в кэше
+        credits = PlayerPrefs.GetFloat($"Credits_{clientId}", 1000f);
+        _playerCredits[clientId] = credits;
+        return credits;
+    }
+
+    /// <summary>
+    /// Установить кредиты игрока (сохраняет в Dictionary + PlayerPrefs)
+    /// </summary>
+    private void SetPlayerCredits(ulong clientId, float newCredits)
+    {
+        newCredits = Mathf.Max(0f, newCredits);
+        _playerCredits[clientId] = newCredits;
+        PlayerPrefs.SetFloat($"Credits_{clientId}", newCredits);
+        PlayerPrefs.Save();
     }
 
     private PlayerCreditsManager FindPlayerCredits(ulong clientId)

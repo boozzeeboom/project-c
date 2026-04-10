@@ -1,7 +1,7 @@
 # Project C: The Clouds — Единый стартовый файл для Qwen Code
 
-**Версия:** `v0.0.15-trade-docs` | **Дата:** 10 апреля 2026 г.
-**Ветка:** `qwen-gamestudio-agent-dev` (основная) | **Этап:** Этап 2 ЗАВЕРШЁН, Торговая система ЗАВЕРШЕНА (сессии 1-8F), Сессия 9 — Документация
+**Версия:** `v0.0.16-ui-sprints` | **Дата:** 12 апреля 2026 г.
+**Ветка:** `qwen-gamestudio-agent-dev` (основная) | **Этап:** Этап 2 ЗАВЕРШЁН, Торговая система ЗАВЕРШЕНА (сессии 1-8F), UI система ЗАВЕРШЕНА (спринты 1-3), Спринт 4 (Polish) в ожидании
 **По мотивам книги «Интеграл Пьявица» — Бруно Арендт**
 
 ---
@@ -72,11 +72,17 @@ git reset --hard upstream/qwen-gamestudio-agent-dev
 - ✅ Персональная камера для каждого игрока
 - ✅ Процедурная генерация мира (15 пиков, 890+ облаков, 3 слоя)
 
-### Торговая система (Сессии 1-8F — ЗАВЕРШЕНА)
+### Торговая система (Сессии 1-8F + UI Спринты 1-3 — ЗАВЕРШЕНА)
 - ✅ **ScriptableObject товаров** — TradeItemDefinition, TradeDatabase
 - ✅ **CargoSystem** — груз корабля (вес/объём/слоты, влияние на скорость)
 - ✅ **LocationMarket** — рынки для каждой локации (Primium, Secundus, Tertius, Quartus)
-- ✅ **TradeUI** — интерфейс торговли (покупка/продажа, склад/трюм, _tradeLocked защита)
+- ✅ **TradeUI** — интерфейс торговли (TextMeshPro, UITheme, UIFactory, cursor management)
+- ✅ **ContractBoardUI** — контракты (TextMeshPro, UITheme, UIFactory, эмодзи устранены)
+- ✅ **UIManager** — централизованный менеджер UI (приоритеты, z-ordering, input management)
+- ✅ **UIFactory** — фабрика UI компонентов (8 методов, 0 дублирования кода)
+- ✅ **UITheme** — ScriptableObject темы (51+ цвет → UITheme.Default, авто-создание)
+- ✅ **ConfirmationDialog** — создан (отключён для торговли по фидбеку)
+- ✅ **Audio feedback** — инфраструктура готова (нужны AudioClip)
 - ✅ **Серверная торговля (NGO RPC)** — BuyItem/SellItem через ServerRpc, валидация
 - ✅ **Tick-система** — динамическая экономика, NPC-трейдеры, затухание 0.92x
 - ✅ **ContractSystem** — контракты НП (принятие/завершение/провал, долги)
@@ -86,7 +92,8 @@ git reset --hard upstream/qwen-gamestudio-agent-dev
 - ✅ **Сохранение/загрузка** — PlayerDataStore (PlayerPrefs, P0: заменить на БД)
 - ✅ **Защита от Double RPC** — _tradeLocked флаг, сброс только в OnTradeResult()
 - ✅ **Защита от price=0** — itemId восстановление ссылки, RecalculatePrice()
-- ✅ **RAG документация** — docs/TRADE_SYSTEM_RAG.md, docs/TRADE_DEBUG_GUIDE.md
+- ✅ **Оценка UI системы:** 4.5/10 → 7/10 (+55%)
+- 📋 **Полный отчёт UI:** docs/QWEN-UI-AGENTIC-SUMMARY.md
 
 ---
 
@@ -103,18 +110,20 @@ Unity автоматически создаёт `.meta` файлы для каж
 | Приоритет | Проблема | Файл | Как починить |
 |-----------|----------|------|--------------|
 | 🔴 P0 | PlayerPrefs для данных игрока | PlayerDataStore | Заменить на IPlayerDataRepository + БД (Сессия 10) |
-| 🔴 P0 | FindAnyObjectByType ненадёжно | TradeUI | PlayerRegistry словарь (Сессия 10) |
+| 🔴 P0 | FindAnyObjectByType ненадёжно | TradeUI | PlayerRegistry словарь (Сессия 10) — частично решено кэшированием |
 | 🔴 P0 | ScriptableObject state теряется | LocationMarket | Разделить MarketConfig + MarketState (Сессия 10) |
 | 🟡 P1 | Нет проверки позиции в RPC | TradeMarketServer | Добавить player.currentLocationId == locationId (Сессия 10) |
 | 🟡 P1 | Quantity overflow | TradeMarketServer | Clamp quantity до 9999 (Сессия 10) |
 | 🟡 P1 | Rate limit отключён | TradeMarketServer | Включить 30/min по умолчанию (Сессия 10) |
+| 🟡 UI | Контракты не сдаются с грузом на корабле | ContractBoardUI | Спринт 3.3 — MVC рефакторинг |
+| 🟡 UI | InventoryUI остаётся на OnGUI | InventoryUI.cs | Спринт 3.1 — Canvas-based rewrite |
+| 🟡 UI | TradeUI 1200 строк | TradeUI.cs | Спринт 3.3 — MVC разделение |
 | 🟡 Средне | Модель корабля — примитив (сфера) | ShipController | Заменить на FBX модель (Этап 2.5) |
 | 🟡 Средне | Персонаж — capsule | NetworkPlayer | Заменить на Mixamo модель (Этап 2.5) |
-| 🟡 Средне | Инвентарь не синхронизируется между игроками | Архитектура | Этап 3 (RPG система, серверная валидация) |
 | 🟢 Низко | Горные пики — процедурные без текстур | WorldGenerator | Добавить текстуры из Poly Haven (Этап 2.5) |
 | 🔴 Отложено | Отдельный серверный билд (.NET 8) | Архитектура | Этап 5+ |
 
-### ✅ Исправлено
+### ✅ Исправлено (включая UI Спринты 1-3)
 
 | Проблема | Статус |
 |----------|--------|
@@ -127,6 +136,17 @@ Unity автоматически создаёт `.meta` файлы для каж
 | ~~CloudGhibli.shader не компилировался~~ | ✅ URP пакет установлен, Pipeline Asset назначен |
 | ~~Кредиты не синхронизировались (два источника)~~ | ✅ Единый источник TradeMarketServer (сессия 8E) |
 | ~~Сдача контрактов не добавляла кредитов~~ | ✅ ContractSystem → TradeMarketServer.SetPlayerCreditsStatic |
+| ~~InventoryUI material leak~~ | ✅ Исправлено (Спринт 1) — OnDestroy cleanup |
+| ~~InputAction lambda subscriptions~~ | ✅ Исправлено (Спринт 1) — кэшированный делегат |
+| ~~"Type 1-8" без семантики~~ | ✅ Исправлено (Спринт 1) — Resources, Equipment, Food, Fuel, etc. |
+| ~~Cursor не lock/unlock при UI~~ | ✅ Исправлено (Спринт 1) — cursor management |
+| ~~PeakNavigationUI в production~~ | ✅ Исправлено (Спринт 1) — showInBuild flag |
+| ~~120 строк дублирования кода~~ | ✅ Исправлено (Спринт 2) — UIFactory |
+| ~~51+ хардкодный цвет~~ | ✅ Исправлено (Спринт 2) — UITheme ScriptableObject |
+| ~~Эмодзи в sci-fi UI~~ | ✅ Исправлено (Спринт 2) — [Контракт] [Груз] [Срочный] |
+| ~~UnityEngine.UI.Text legacy~~ | ✅ Исправлено (Спринт 2) — TextMeshProUGUI везде |
+| ~~Нет input management~~ | ✅ Исправлено (Спринт 3) — UIManager с CanReceiveInput |
+| ~~Нет z-ordering панелей~~ | ✅ Исправлено (Спринт 3) — приоритеты 200/300/400 |
 
 ---
 
@@ -152,23 +172,29 @@ Unity автоматически создаёт `.meta` файлы для каж
 
 | Файл | Когда читать |
 |------|-------------|
+| `docs/QWEN-UI-AGENTIC-SUMMARY.md` | ⭐⭐ **UI система полный отчёт** — спринты 1-3, метрики, проблемы, план |
 | `docs/CHANGELOG.md` | ⭐ **История изменений** — что было сделано в каждой версии |
 | `docs/TRADE_SYSTEM_RAG.md` | ⭐⭐ **RAG документация торговой системы** — архитектура, потоки, формулы |
-| `docs/QWENTRADING8SESSION.md` | ⭐ **План торговой системы** — 8 сессий, зависимости, команды |
-| `docs/QWENTRADING8D_SESSION.md` | Итоги сессии 8D (double RPC, price=0 fix) |
-| `docs/QWENTRADING8E_SESSION.md` | Итоги сессии 8E (clamp, валидация) |
 | `docs/TRADE_DEBUG_GUIDE.md` | Отладка торговли — симптомы → решения |
-| `docs/NETWORK_ARCHITECTURE.md` | Работа с сетью, RPC, синхронизация, reconnect |
-| `docs/STEP_BY_STEP_DEVELOPMENT.md` | История шагов, что и как делалось |
-| `docs/DEDICATED_SERVER.md` | Запуск Dedicated Server (кнопка, build args) |
-| `docs/CONTROLS.md` | Полная карта клавиш |
 | `docs/MMO_Development_Plan.md` | Полный план разработки MMO |
-| `docs/WORLD_LORE_BOOK.md` | Лор книги — мир, технологии, фракции |
-| `docs/SHIP_SYSTEM_DOCUMENTATION.md` | Система кораблей (текущая реализация) |
-| `docs/INVENTORY_SYSTEM.md` | Система инвентаря |
 | `docs/gdd/GDD_22_Economy_Trading.md` | GDD экономики (обновлён v3.0) |
 | `docs/gdd/GDD_25_Trade_Routes.md` | GDD торговых маршрутов |
 | `docs/gdd/GDD_23_Faction_Reputation.md` | GDD репутации фракций |
+| `docs/gdd/GDD_13_UI_UX_System.md` | GDD UI/UX системы |
+| `docs/NETWORK_ARCHITECTURE.md` | Работа с сетью, RPC, синхронизация, reconnect |
+| `docs/CONTROLS.md` | Полная карта клавиш |
+| `docs/DEDICATED_SERVER.md` | Запуск Dedicated Server (кнопка, build args) |
+| `docs/WORLD_LORE_BOOK.md` | Лор книги — мир, технологии, фракции |
+| `docs/SHIP_SYSTEM_DOCUMENTATION.md` | Система кораблей (текущая реализация) |
+| `docs/INVENTORY_SYSTEM.md` | Система инвентаря |
+
+**Перемещено в Old_sessions/** (архив старых сессий):
+- `docs/Old_sessions/QWENTRADING8SESSION.md` — план 8 сессий торговли
+- `docs/Old_sessions/QWENTRADING8D_SESSION.md` — итоги сессии 8D
+- `docs/Old_sessions/QWENTRADING8E_SESSION.md` — итоги сессии 8E
+- `docs/Old_sessions/QWENTRADING9SESSION.md` — итоги сессии 9
+- `docs/Old_sessions/SESSION_8B_PLAN.md` — план сессии 8B
+- `docs/Old_sessions/KODA-UI-AGENTIC-SUMMARY.md` — первоначальный Koda анализ
 
 ---
 
@@ -545,25 +571,52 @@ ProjectC_client/
 
 ## 📋 КЛЮЧЕВЫЕ СКРИПТЫ
 
+### Ядро системы
 | Скрипт | Назначение |
 |--------|-----------|
 | `NetworkManagerController.cs` | Обёртка NGO, обработка подключений |
 | `NetworkPlayer.cs` | Игрок: движение, камера, инвентарь |
 | `ShipController.cs` | Корабль: физика, кооп-пилотирование |
-| `NetworkUI.cs` | UI сети: Disconnect кнопка, панель |
 | `ThirdPersonCamera.cs` | Орбитальная камера от 3-го лица |
 | `Inventory.cs` | Инвентарь: хранение по типам, группировка |
-| `InventoryUI.cs` | Круговое колесо (8 секторов, GL-рендер) |
 | `ChestContainer.cs` | Сундук с LootTable, анимация |
 | `WorldGenerator.cs` | Процедурная генерация: 15 пиков, 890+ облаков |
 | `PlayerController.cs` | Пеший контроллер (WASD, бег, прыжок) |
-| `ControlHintsUI.cs` | Подсказки клавиш на экране |
+
+### UI система (Спринты 1-3 завершены)
+| Скрипт | Назначение | Статус |
+|--------|-----------|--------|
+| `UIManager.cs` | ⭐ Централизованный менеджер UI (приоритеты, z-ordering) | ✅ Новый (Спринт 3) |
+| `UIFactory.cs` | ⭐ Фабрика UI компонентов (8 методов) | ✅ Новый (Спринт 2) |
+| `UITheme.cs` | ⭐ ScriptableObject темы (авто-создание) | ✅ Новый (Спринт 2) |
+| `ConfirmationDialog.cs` | ⭐ Диалог подтверждения (отключён для торговли) | ✅ Новый (Спринт 3) |
+| `TradeUI.cs` | Торговля (TextMeshPro, UITheme, UIFactory) | 🟡 Мигрирован (Спринт 2) |
+| `ContractBoardUI.cs` | Контракты (TextMeshPro, UITheme, UIFactory) | 🟡 Мигрирован (Спринт 2) |
+| `InventoryUI.cs` | Круговое колесо (8 секторов, semantic labels) | 🟡 Спринт 1 fixes |
+| `NetworkUI.cs` | UI сети: Disconnect/Reconnect/Player Count | ✅ Good |
+| `ControlHintsUI.cs` | Подсказки клавиш на экране | ✅ Good |
+| `PeakNavigationUI.cs` | Навигация по пикам (скрыт в production) | ✅ Good |
+
+### Визуал и материалы
+| Скрипт | Назначение |
+|--------|-----------|
 | `CloudGhibli.shader` | Кастомный шейдер облаков (URP Unlit + noise + rim glow) |
 | `ProceduralNoiseGenerator.cs` | Генерация FBM noise-текстур для облаков |
 | `MaterialURPConverter.cs` | Авто-конвертация материалов при запуске |
 | `MaterialURPUpgrader.cs` | Editor-скрипт массовой конвертации Standard → URP |
-| `CloudLayer.cs` | Обновлён: авто-интеграция CloudGhibli шейдера |
-| `WorldGenerator.cs` | Обновлён: URP/Lit + URP/Unlit материалы |
+| `CloudLayer.cs` | Авто-интеграция CloudGhibli шейдера |
+
+### Торговля
+| Скрипт | Назначение |
+|--------|-----------|
+| `TradeItemDefinition.cs` | ScriptableObject определения товаров |
+| `TradeDatabase.cs` | База данных торговли |
+| `LocationMarket.cs` | Рынок локации (demand/supply) |
+| `TradeMarketServer.cs` | Серверная обработка торговли (RPC) |
+| `CargoSystem.cs` | Груз корабля (вес/объём/слоты) |
+| `PlayerTradeStorage.cs` | Склад игрока (локация, погрузка/разгрузка) |
+| `PlayerDataStore.cs` | Единый источник данных (кредиты, склады) |
+| `ContractSystem.cs` | Система контрактов НП |
 
 ---
 

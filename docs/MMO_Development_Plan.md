@@ -1,6 +1,6 @@
 # План разработки ММО "Project C: The Clouds" на Unity
 
-**Последнее обновление:** 10 апреля 2026 г. | **Текущая версия:** `v0.0.15-trade-docs`
+**Последнее обновление:** 12 апреля 2026 г. | **Текущая версия:** `v0.0.16-ui-sprints-summary`
 
 ---
 
@@ -72,10 +72,24 @@
 - ✅ **Вспышка секторов** — визуальная обратная связь при получении лута
 - ✅ **Приоритет взаимодействия** — сундук > обычный предмет
 
-### 1.7 UI ✅
+### 1.7 UI ✅ ЗАВЕРШЕНО (Спринты 1-3: 10-12 апреля 2026)
 - ✅ ControlHintsUI — подсказки управления (F1 — скрыть/показать)
-- ✅ PeakNavigationUI — навигация между пиками
-- ✅ InventoryUI — круговое колесо (GL-рендер)
+- ✅ PeakNavigationUI — навигация между пиками (скрыт в production builds)
+- ✅ InventoryUI — круговое колесо (8 секторов, semantic labels: Resources, Equipment, Food, Fuel, Antigrav, Meziy, Medical, Tech)
+- ✅ NetworkUI — подключение/отключение (Disconnect по центру, Reconnect, Player Count)
+- ✅ TradeUI — торговля (TextMeshPro, UITheme, UIFactory)
+- ✅ ContractBoardUI — контракты (TextMeshPro, UITheme, UIFactory)
+- ✅ ⭐ UIManager — централизованный менеджер UI (приоритеты, z-ordering, input management)
+- ✅ ⭐ UIFactory — фабрика UI компонентов (8 методов, устранено 120 строк дублирования)
+- ✅ ⭐ UITheme — ScriptableObject темы (51+ цвет → UITheme.Default, авто-создание)
+- ✅ ⭐ TextMeshPro migration — все UI на TMP (убран legacy UnityEngine.UI.Text)
+- ✅ ⭐ Cursor management — lock/unlock при открытых UI
+- ✅ ⭐ Input priority system — CanReceiveInput, Escape закрывает верхнюю панель
+- ✅ ⭐ ConfirmationDialog — создан (отключён для торговли по фидбеку)
+- ✅ ⭐ Audio feedback infrastructure — готовы методы PlayClick/PlayError/Open/Close
+- 🟡 Эмодзи устранены из TMP UI (📋📦⚡📝📢 → [Контракт] [Груз] [Срочный])
+- 🟡 Оценка UI системы: 4.5/10 → 7/10 (+55%)
+- 📋 Подробный отчёт: docs/QWEN-UI-AGENTIC-SUMMARY.md
 
 ### 1.8 Сетевая инфраструктура (базовая) ✅ ЗАВЕРШЕНО
 - ✅ NetworkManagerController — управление подключениями
@@ -212,25 +226,36 @@
 3. **LocationMarket — рынок локации:** ✅
    - ✅ demand_factor, supply_factor, текущие цены
    - ✅ ScriptableObject с начальными данными
-4. **TradeUI — базовый интерфейс:** ✅
+4. **TradeUI — базовый интерфейс:** ✅ ЗАВЕРШЕНО + UI Спринты 1-3
    - ✅ Отображение цен, покупка, продажа
    - ✅ ServerRpc: BuyItem, SellItem
    - ✅ Защита от двойных RPC (_tradeLocked)
    - ✅ Склад игрока + трюм корабля
+   - ✅ ⭐ Миграция на TextMeshPro (UnityEngine.UI.Text → TextMeshProUGUI)
+   - ✅ ⭐ UITheme интеграция (40+ цветов → UITheme.Default)
+   - ✅ ⭐ UIFactory интеграция (убран boilerplate код)
+   - ✅ ⭐ Semantic labels для типов товаров
+   - ✅ ⭐ Cursor management при открытии/закрытии
 5. **Серверная валидация:** ✅
    - ✅ Все транзакции только на сервере
    - ✅ Валидация: quantity > 0, locationId, currentPrice > 0
    - ✅ Rate limiting (отключён для отладки)
    - ✅ Clamp факторов (0.0 … 1.5)
 
-### 3.3 Контракты НП (Недели 11-13) ✅ ЗАВЕРШЕНО (Сессия 7)
+### 3.3 Контракты НП (Недели 11-13) ✅ ЗАВЕРШЕНО (Сессия 7 + UI Спринты 1-3)
 1. **ContractSystem:** ✅
    - ✅ НП-доставка: взять товар → доставить → получить
    - ✅ Система «под расписку» (туториал-крючок, первые 2 часа)
    - ✅ Долговая система: не доставил = долг × 1.5 + штраф репутации
-2. **NPC-агент НП:** ✅
+2. **NPC-агент НП:** ✅ + UI Спринты 1-3
    - ✅ Доска контрактов в городах
    - ✅ Туториал: первый контракт «под расписку»
+   - ✅ ⭐ ContractBoardUI миграция на TextMeshPro
+   - ✅ ⭐ UITheme интеграция (15+ цветов → UITheme.Default)
+   - ✅ ⭐ UIFactory интеграция (убран boilerplate код)
+   - ✅ ⭐ Эмодзи устранены (📋📦⚡📝 → [Контракт] [Груз] [Срочный])
+   - ✅ ⭐ Cursor management при открытии/закрытии
+   - ✅ ⭐ Input priority через UIManager
 3. **⏳ Серверная база данных:** (Этап 5+)
    - PostgreSQL для хранения аккаунтов, прогресса, инвентаря, долгов
    - Redis для кэширования сессионных данных
@@ -264,14 +289,15 @@
 - [`docs/TRADE_DEBUG_GUIDE.md`](TRADE_DEBUG_GUIDE.md) — отладка (симптомы → решения)
 - [`docs/gdd/GDD_22_Economy_Trading.md`](gdd/GDD_22_Economy_Trading.md) — GDD экономики (v3.0)
 - [`docs/gdd/GDD_25_Trade_Routes.md`](gdd/GDD_25_Trade_Routes.md) — GDD маршрутов
-- [`docs/QWENTRADING8SESSION.md`](QWENTRADING8SESSION.md) — план 8 сессий
+- [`docs/QWEN-UI-AGENTIC-SUMMARY.md`](QWEN-UI-AGENTIC-SUMMARY.md) — ⭐ UI система: полный отчёт спринтов 1-3
 
 **Известные проблемы (P0-P1):**
 - 🔴 P0: PlayerPrefs → заменить на IPlayerDataRepository + БД (Сессия 10)
-- 🔴 P0: FindAnyObjectByType → PlayerRegistry (Сессия 10)
+- 🔴 P0: FindAnyObjectByType → PlayerRegistry (Сессия 10) — частично решено кэшированием в PeakNavigationUI
 - 🔴 P0: ScriptableObject state → MarketConfig + MarketState (Сессия 10)
 - 🟡 P1: Валидация позиции в RPC (Сессия 10)
 - 🟡 P1: Clamp quantity + rate limit (Сессия 10)
+- 🟡 UI: Контракты не сдаются с грузом на корабле (Спринт 3.3 — MVC рефакторинг)
 
 ---
 

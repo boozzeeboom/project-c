@@ -1,26 +1,82 @@
 # GDD-13: UI/UX System — Project C: The Clouds
 
-**Версия:** 1.0 | **Дата:** 6 апреля 2026 г. | **Статус:** ✅ Документировано
-**Автор:** Qwen Code (Game Studio: @ui-programmer + @ux-designer)
+**Версия:** 2.0 | **Дата:** 12 апреля 2026 г. | **Статус:** ✅ Спринты 1-3 завершены, Спринт 4 (Polish) в ожидании
+**Автор:** Qwen Code (Game Studio: @ui-programmer + @ux-designer + @art-director)
 
 ---
 
 ## 1. Overview
 
-UI/UX система Project C: The Clouds включает HUD-элементы, сетевые панели, круговой инвентарь и навигацию по пикам. Визуальный стиль соответствует **Sci-Fi + Ghibli** эстетике — мягкие цвета, градиенты, объёмный свет.
+UI/UX система Project C: The Clouds включает HUD-элементы, сетевые панели, круговой инвентарь, торговлю и навигацию по пикам. Визуальный стиль соответствует **Sci-Fi + Ghibli** эстетике — мягкие цвета, градиенты, объёмный свет.
 
 ### Ключевые особенности
-- **ControlHintsUI** — подсказки управления (левый верхний угол)
-- **NetworkUI** — панель подключения (Disconnect/Reconnect)
-- **InventoryUI** — круговое колесо (8 секторов, GL-рендер)
-- **PeakNavigationUI** — навигация по пикам
-- **Адаптивная камера** — ThirdPersonCamera переключается между режимами
+- **ControlHintsUI** — подсказки управления (левый верхний угол, F1 toggle)
+- **NetworkUI** — панель подключения (Disconnect/Reconnect/Player Count)
+- **InventoryUI** — круговое колесо (8 секторов, semantic labels, GL-рендер)
+- **TradeUI** — торговля (TextMeshPro, UITheme, UIFactory)
+- **ContractBoardUI** — контракты НП (TextMeshPro, UITheme, UIFactory)
+- **PeakNavigationUI** — навигация по пикам (dev tool, скрыт в production)
+- **UIManager** — централизованный менеджер UI (приоритеты, z-ordering, input management)
+- **UIFactory** — фабрика UI компонентов (8 методов, 0 дублирования)
+- **UITheme** — ScriptableObject темы (51+ цвет централизован)
+
+### Метрики качества (после Спринтов 1-3)
+| Метрика | До | После | Улучшение |
+|---------|-----|-------|-----------|
+| Дублирование кода | ~120 строк | 0 | -100% |
+| Хардкодные цвета | 51+ | 0 | -100% |
+| UI frameworks | 2 (Text + TMP) | 1 (TMP) | -50% |
+| Эмодзи в sci-fi UI | 6+ | 0 | -100% |
+| Memory leaks | 3 | 1 | -66% |
+| Общая оценка | 4.5/10 | 7/10 | +55% |
+
+**Полный отчёт:** [`docs/QWEN-UI-AGENTIC-SUMMARY.md`](../QWEN-UI-AGENTIC-SUMMARY.md)
 
 ---
 
 ## 2. UI Architecture
 
-### Canvas структура
+### 2.1 Текущая архитектура (после Спринта 3)
+
+```
+UI System
+├── UIManager (singleton, lifecycle management)
+│   ├── OpenPanel(name, priority, onClose, panelGo)
+│   ├── ClosePanel(name)
+│   ├── CanReceiveInput(name) → bool
+│   ├── PlayClick() / PlayError() / PlayOpen() / PlayClose()
+│   │
+│   └── Панели (стек по priority)
+│       ├── TradeUI (200) — Торговля
+│       ├── ContractBoardUI (300) — Контракты
+│       ├── InventoryUI (400) — Инвентарь
+│       └── ConfirmationDialog (999) — Подтверждения
+│
+├── UIFactory (shared components)
+│   ├── CreatePanel(name, parent, x, y, w, h)
+│   ├── CreateLabel(name, parent, text, fontSize, color)
+│   ├── CreateButton(name, parent, label, onClick)
+│   ├── CreateScrollArea(parent, out content)
+│   ├── CreateDivider(parent, color)
+│   ├── CreateEmptyRow(parent)
+│   ├── CreateListRow(parent, text, index, onClick)
+│   └── CreateRootCanvas(name)
+│
+├── UITheme (ScriptableObject, авто-создание)
+│   ├── ColorPalette (PanelBackground, RowEven/Odd, Button*, Accent*, Text*)
+│   ├── FontSizes (Heading: 22-24px, Body: 14-16px, Caption: 11-13px)
+│   └── Spacing (PaddingSmall/Medium/Large, GapSmall/Medium/Large)
+│
+└── UI Panels
+    ├── TradeUI (~1200 строк) — рынок/склад/трюм (TextMeshPro)
+    ├── ContractBoardUI (~470 строк) — активные/доступные контракты (TextMeshPro)
+    ├── InventoryUI (~280 строк) — круговое колесо (OnGUI + GL, semantic labels)
+    ├── NetworkUI (~210 строк) — подключение/отключение (TextMeshPro)
+    ├── ControlHintsUI (~130 строк) — подсказки клавиш (TextMeshPro)
+    └── PeakNavigationUI (~130 строк) — навигация по пикам (dev, скрыт в builds)
+```
+
+### 2.2 Canvas структура
 
 ```
 Canvas (Screen Space - Overlay)
@@ -194,14 +250,34 @@ Canvas (Screen Space - Overlay)
 
 ## 6. Control Mapping
 
-| Клавиша | UI элемент | Действие |
-|---------|-----------|----------|
-| Tab | InventoryUI | Toggle кругового колеса |
-| Escape | NetworkUI | Toggle Disconnect кнопки |
-| E | ControlHintsUI | Подбор (обновление подсказки) |
-| F | ControlHintsUI | Посадка/выход (обновление подсказки) |
-| N/B | PeakNavigationUI | Prev/Next пик |
-| R | PeakNavigationUI | Random пик |
+| Клавиша | UI элемент | Действие | Приоритет |
+|---------|-----------|----------|-----------|
+| Tab | InventoryUI | Toggle кругового колеса | 400 |
+| Escape | UIManager | Toggle верхней панели | Авто |
+| E | ControlHintsUI / ContractBoardUI | Подбор / Открыть контракты | 300 |
+| F | ControlHintsUI / TradeUI | Посадка/выход / Открыть торговлю | 200 |
+| F1 | ControlHintsUI | Toggle подсказок | Static |
+| N/B | PeakNavigationUI | Prev/Next пик | Dev only |
+| R | PeakNavigationUI | Random пик | Dev only |
+
+### Input Priority System (UIManager)
+
+UIManager использует систему приоритетов для предотвращения конфликтов ввода:
+
+```csharp
+// Пример: если InventoryUI открыт (priority 400), TradeUI (200) не получает ввод
+if (!UIManager.CanReceiveInput("TradeUI")) return;
+
+// Escape автоматически закрывает панель с highest priority
+// Cursor lock/unlock управляется через UIManager
+```
+
+| Панель | Priority | Описание |
+|--------|----------|----------|
+| TradeUI | 200 | Торговля |
+| ContractBoardUI | 300 | Контракты (поверх TradeUI) |
+| InventoryUI | 400 | Инвентарь (поверх контрактов) |
+| ConfirmationDialog | 999 | Диалоги (поверх всего) |
 
 ---
 
@@ -324,17 +400,28 @@ Canvas (Screen Space - Overlay)
 | 1 | ControlHintsUI отображается | Запустить сцену | ✅ |
 | 2 | NetworkUI работает | Connect/Disconnect | ✅ |
 | 3 | Disconnect кнопка по центру | Escape toggle | ✅ |
-| 4 | InventoryUI открывается | Tab, 8 секторов | ✅ |
+| 4 | InventoryUI открывается | Tab, 8 секторов, semantic labels | ✅ |
 | 5 | Hover подсвечивает сектор | Мышь на сектор | ✅ |
 | 6 | Подсписки при >1 предмете | Hover на заполненный | ✅ |
 | 7 | Вспышка при подборе | Подобрать предмет | ✅ |
-| 8 | PeakNavigationUI работает | N/B/R кнопки | ✅ |
+| 8 | PeakNavigationUI работает | N/B/R кнопки (dev only) | ✅ |
 | 9 | Player Count обновляется | Подключить клиента | ✅ |
 | 10 | Reconnect кнопка работает | Обрыв → Reconnect | ✅ |
-| 11 | Звуковая обратная связь | [🔴 Запланировано] | 🔴 |
-| 12 | Главное меню | [🔴 Запланировано] | 🔴 |
-| 13 | Карта мира | [🔴 Запланировано] | 🔴 |
-| 14 | Настройки | [🔴 Запланировано] | 🔴 |
+| 11 | TradeUI открывается | F на торговой локации | ✅ |
+| 12 | TradeUI Buy/Sell работает | Клик по кнопкам, RPC проходит | ✅ |
+| 13 | TradeUI TextMeshPro | Шрифты TMP, не legacy Text | ✅ |
+| 14 | ContractBoardUI открывается | E на NPC агенте | ✅ |
+| 15 | ContractBoardUI Tabs | Active/Available переключение | ✅ |
+| 16 | ContractBoardUI TextMeshPro | Шрифты TMP, не legacy Text | ✅ |
+| 17 | UIManager приоритеты | Открыть TradeUI + InventoryUI | ✅ |
+| 18 | Escape закрывает верхнюю панель | Escape при открытых UI | ✅ |
+| 19 | Cursor lock/unlock | Открыть/закрыть любой UI | ✅ |
+| 20 | UITheme авто-создание | UITheme_Default.asset в Resources | ✅ |
+| 21 | Эмодзи устранены | [Контракт] [Груз] [Срочный] | ✅ |
+| 22 | Звуковая обратная связь | [🔴 Запланировано] | 🔴 Спринт 4 |
+| 23 | Главное меню | [🔴 Запланировано] | 🔴 Этап 2.5 |
+| 24 | Карта мира | [🔴 Запланировано] | 🔴 Этап 4 |
+| 25 | Настройки | [🔴 Запланировано] | 🔴 Этап 3 |
 
 ---
 

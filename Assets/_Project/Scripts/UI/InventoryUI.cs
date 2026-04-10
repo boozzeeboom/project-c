@@ -5,7 +5,7 @@ namespace ProjectC.Items
 {
     /// <summary>
     /// Круговой инвентарь (GTA-стиль).
-    /// 8 секторов = 8 типов предметов.
+    /// 8 секторов = 8 типов предметов (Ресурсы, Оборудование, Еда, Топливо, Антигравий, Мезий, Медикаменты, Техника).
     /// Tab — открыть/закрыть.
     /// Наведение мыши подсвечивает сектор.
     /// При >1 предмете в секторе — подсписок.
@@ -33,6 +33,7 @@ namespace ProjectC.Items
 
         private InputAction _toggleAction;
         private InputAction _mousePosAction;
+        private System.Action<InputAction.CallbackContext> _onTogglePerformed;
 
         // Анимация получения предметов (вспышка секторов)
         private float _flashTimer = 0f;
@@ -42,34 +43,51 @@ namespace ProjectC.Items
         // Углы секторов: index 0 = верх, по часовой стрелке (стандартная математика)
         private static readonly float[] _sectorMidAngles = new float[]
         {
-            90f,    // 0: верх     — Тип 1
-            45f,    // 1: верх-право  — Тип 2
-            0f,     // 2: право    — Тип 3
-            -45f,   // 3: низ-право  — Тип 4
-            -90f,   // 4: низ      — Тип 5
-            -135f,  // 5: низ-лево  — Тип 6
-            180f,   // 6: лево     — Тип 7
-            135f,   // 7: верх-лево  — Тип 8
+            90f,    // 0: верх     — Ресурсы
+            45f,    // 1: верх-право  — Оборудование
+            0f,     // 2: право    — Еда
+            -45f,   // 3: низ-право  — Топливо
+            -90f,   // 4: низ      — Антигравий
+            -135f,  // 5: низ-лево  — Мезий
+            180f,   // 6: лево     — Медикаменты
+            135f,   // 7: верх-лево  — Техника
         };
 
         private void Awake()
         {
             _toggleAction = new InputAction("ToggleInventory", binding: "<Keyboard>/tab", expectedControlType: "Button");
             _mousePosAction = new InputAction("MousePosition", binding: "<Mouse>/position");
+            _onTogglePerformed = _ => ToggleInventory();
         }
 
         private void OnEnable()
         {
             _toggleAction.Enable();
-            _toggleAction.performed += ctx => ToggleInventory();
+            _toggleAction.performed += _onTogglePerformed;
             _mousePosAction.Enable();
         }
 
         private void OnDisable()
         {
             _toggleAction.Disable();
-            _toggleAction.performed -= ctx => ToggleInventory();
+            _toggleAction.performed -= _onTogglePerformed;
             _mousePosAction.Disable();
+        }
+
+        private void OnDestroy()
+        {
+            // Cleanup InputActions
+            _toggleAction.Disable();
+            _toggleAction.performed -= _onTogglePerformed;
+            _toggleAction.Dispose();
+            _mousePosAction.Dispose();
+
+            // Cleanup GL material (prevent leak)
+            if (_glMaterial != null)
+            {
+                Destroy(_glMaterial);
+                _glMaterial = null;
+            }
         }
 
         private void Update()
@@ -93,6 +111,17 @@ namespace ProjectC.Items
         private void ToggleInventory()
         {
             _isOpen = !_isOpen;
+
+            if (_isOpen)
+            {
+                Cursor.lockState = CursorLockMode.None;
+                Cursor.visible = true;
+            }
+            else
+            {
+                Cursor.lockState = CursorLockMode.Locked;
+                Cursor.visible = false;
+            }
         }
 
         /// <summary>
@@ -237,8 +266,8 @@ namespace ProjectC.Items
             float rad = midAngle * Mathf.Deg2Rad;
             Vector2 textPos = center + new Vector2(Mathf.Cos(rad), Mathf.Sin(rad)) * (wheelRadius * 0.65f);
 
-            int displayNum = index + 1;
-            string label = hasItems ? $"Тип {displayNum}\n[{inventory.GetCountByType(type)}]" : $"Тип {displayNum}";
+            string typeName = ItemTypeNames.GetDisplayName(type);
+            string label = hasItems ? $"{typeName}\n[{inventory.GetCountByType(type)}]" : typeName;
 
             GUIStyle style = new GUIStyle();
             style.alignment = TextAnchor.MiddleCenter;
@@ -246,7 +275,7 @@ namespace ProjectC.Items
             style.normal.textColor = Color.white;
 
             GUI.color = new Color(1f, 1f, 1f, 1f);
-            GUI.Label(new Rect(textPos.x - 30, textPos.y - 15, 60, 30), label, style);
+            GUI.Label(new Rect(textPos.x - 50, textPos.y - 15, 100, 30), label, style);
         }
 
         private void DrawSublist(Vector2 center, int index, ItemType type)

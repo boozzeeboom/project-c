@@ -255,6 +255,10 @@ public class ContractBoardUI : MonoBehaviour
         _selectedIndex = -1;
         _currentLocationId = market.locationId;
 
+        // Разблокируем курсор для UI
+        Cursor.lockState = CursorLockMode.None;
+        Cursor.visible = true;
+
         _boardPanel.SetActive(true);
         _boardPanel.transform.SetAsLastSibling();
 
@@ -294,6 +298,11 @@ public class ContractBoardUI : MonoBehaviour
         _isOpen = false;
         _selectedIndex = -1;
         if (_boardPanel != null) _boardPanel.SetActive(false);
+
+        // Блокируем курсор обратно
+        Cursor.lockState = CursorLockMode.Locked;
+        Cursor.visible = false;
+
         ShowMessage("");
     }
 

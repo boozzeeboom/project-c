@@ -1,0 +1,177 @@
+# License Information for Project C: The Clouds
+
+**Copyright (c) 2024-2026 leon7 (Bruno Arendt). All Rights Reserved.**
+
+This repository contains multiple types of content, each governed by its own
+license. See the sections below for details.
+
+---
+
+## Quick Summary
+
+| Component          | License              | Study | Fork | Modify | Use Commercially |
+|--------------------|----------------------|-------|------|--------|------------------|
+| Source Code (.cs)  | MIT                  |   ✅  |  ✅  |   ✅   |        ✅        |
+| Game Assets        | CC BY-NC-ND 4.0      |   ✅  |  ✅  |   ❌   |        ❌        |
+| Narrative / Lore   | All Rights Reserved  |   ✅  |  ❌  |   ❌   |        ❌        |
+| Design Documents   | CC BY-NC 4.0         |   ✅  |  ✅  |   ✅   |        ❌        |
+
+✅ **You CAN:**
+- Read and study the source code
+- Fork the repository and experiment locally
+- Write tutorials, reviews, or analysis of this project
+- Contribute via pull requests
+
+❌ **You CANNOT:**
+- Use game assets (models, textures, shaders, audio) in your own projects
+- Use the story, characters, world-building, or lore in your own work
+- Create a commercial competing game using this repository's content
+- Sell or redistribute any part of this project as your own
+
+---
+
+## 1. Source Code (C# Scripts)
+
+All source code files (`.cs` files under `Assets/` and related directories) are
+licensed under the **MIT License**.
+
+---
+
+### MIT License
+
+Copyright (c) 2024-2026 leon7
+
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the "Software"), to deal
+in the Software without restriction, including without limitation the rights
+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in all
+copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+SOFTWARE.
+
+---
+
+## 2. Game Assets (3D Models, Textures, Shaders, Audio, Animations)
+
+All game assets, including but not limited to 3D models, textures, shaders,
+audio files, animations, prefabs, materials, and visual art assets, are licensed
+under the **Creative Commons Attribution-NonCommercial-NoDerivatives 4.0
+International License (CC BY-NC-ND 4.0)**.
+
+**Summary:** You may share these assets with attribution, but you may NOT use
+them commercially or create derivative works.
+
+Full license text: https://creativecommons.org/licenses/by-nc-nd/4.0/legalcode
+
+### Exceptions — Third-Party Assets
+
+Some assets are sourced from third parties and retain their original licenses:
+
+| Source       | License                | Location                         |
+|--------------|------------------------|----------------------------------|
+| Poly Haven   | CC0 1.0 (Public Domain)| Textures, HDRI (various folders) |
+| Mixamo       | Adobe Mixamo License   | Character animations             |
+| game-icons.net | CC BY 3.0            | UI icons                         |
+
+These third-party assets are governed by their respective licenses, not by
+CC BY-NC-ND 4.0.
+
+---
+
+## 3. Narrative Content (Story, Lore, Characters, Dialogues)
+
+**ALL RIGHTS RESERVED.**
+
+The narrative content, including but not limited to the story, characters,
+dialogues, world-building, factions, and the book **"Integral Pyavitsa"
+(Интеграл Пьявица)** by Bruno Arendt, is protected by copyright law.
+
+No part of this narrative content may be reproduced, distributed, or
+transmitted in any form or by any means, including photocopying, recording,
+or other electronic or mechanical methods, without the prior written permission
+of the copyright holder, except in the case of brief quotations embodied in
+critical reviews and certain other noncommercial uses permitted by copyright law.
+
+### What this means:
+- You may **read** the lore documents in this repository
+- You may **not** use the story, characters, world, or lore in your own projects
+- You may **not** create derivative works based on this universe
+- You may **not** use the names "Project C: The Clouds", "Bruno Arendt",
+  "Integral Pyavitsa", or any faction/character names in your own work
+
+For permissions regarding narrative content usage, contact the copyright holder.
+
+---
+
+## 4. Design Documents (GDD, Art Bible, Development Plans, Technical Docs)
+
+All design documents, including Game Design Documents (GDD), Art Bible,
+development plans, session reports, and technical documentation (files under
+`docs/` excluding narrative/lore), are licensed under the **Creative Commons
+Attribution-NonCommercial 4.0 International License (CC BY-NC 4.0)**.
+
+**Summary:** You may share and adapt these documents with attribution, but NOT
+for commercial purposes.
+
+Full license text: https://creativecommons.org/licenses/by-nc/4.0/legalcode
+
+### What this means:
+- You may **study** our design decisions and architecture
+- You may **reference** these documents in your own projects (with attribution)
+- You may **adapt** ideas for non-commercial projects
+- You may **not** use these documents to create a commercial competing product
+
+---
+
+## 5. Enforcement
+
+If you violate any terms of these licenses, your rights under these licenses
+end automatically. The copyright holder reserves the right to take legal
+action, including but not limited to:
+
+- Filing DMCA takedown notices against unauthorized distributions
+- Pursuing legal action for copyright infringement
+- Requesting removal of infringing content from platforms (GitHub, Steam,
+  itch.io, etc.)
+
+### Reporting Violations
+
+If you believe someone is violating these licenses, please contact the
+copyright holder.
+
+---
+
+## 6. Contact
+
+For licensing inquiries, permissions, collaboration proposals, or commercial
+use requests, contact the copyright holder through the GitHub repository:
+
+**Repository:** https://github.com/boozzeeboom/project-c  
+**Copyright Holder:** leon7 (Bruno Arendt)
+
+---
+
+## 7. License Version
+
+This composite license file was created on 12 April 2026 and applies to
+all content in the Project C: The Clouds repository.
+
+- Source Code: MIT License (standard, OSI-approved)
+- Game Assets: CC BY-NC-ND 4.0 (Creative Commons, standard)
+- Narrative: All Rights Reserved (automatic copyright protection)
+- Design Docs: CC BY-NC 4.0 (Creative Commons, standard)
+
+---
+
+*This license file is not legal advice. For specific legal questions, consult
+an intellectual property attorney.*

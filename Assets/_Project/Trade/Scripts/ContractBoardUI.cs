@@ -151,9 +151,8 @@ public class ContractBoardUI : MonoBehaviour
         _selectedIndex = -1;
         _currentLocationId = market.locationId;
 
-        // Разблокируем курсор для UI
-        Cursor.lockState = CursorLockMode.None;
-        Cursor.visible = true;
+        // Регистрируем в UIManager
+        UIManager.EnsureExists().OpenPanel("ContractBoardUI", 300, OnContractPanelClosed, _boardPanel);
 
         _boardPanel.SetActive(true);
         _boardPanel.transform.SetAsLastSibling();
@@ -195,11 +194,27 @@ public class ContractBoardUI : MonoBehaviour
         _selectedIndex = -1;
         if (_boardPanel != null) _boardPanel.SetActive(false);
 
-        // Блокируем курсор обратно
-        Cursor.lockState = CursorLockMode.Locked;
-        Cursor.visible = false;
+        // Закрываем через UIManager
+        if (UIManager.Instance != null)
+        {
+            UIManager.Instance.ClosePanel("ContractBoardUI");
+        }
+        else
+        {
+            // Fallback если UIManager недоступен
+            Cursor.lockState = CursorLockMode.Locked;
+            Cursor.visible = false;
+        }
 
         ShowMessage("");
+    }
+
+    /// <summary>
+    /// Callback при закрытии панели контрактов (вызывается из UIManager)
+    /// </summary>
+    private void OnContractPanelClosed()
+    {
+        Debug.Log("[ContractBoardUI] Панель контрактов закрыта через UIManager");
     }
 
     // ==================== ПОЛУЧЕНИЕ ДАННЫХ ====================
@@ -438,6 +453,9 @@ public class ContractBoardUI : MonoBehaviour
 
     private void HandleInput()
     {
+        // Проверяем что эта панель может получать ввод (она верхняя)
+        if (!UIManager.EnsureExists().CanReceiveInput("ContractBoardUI")) return;
+
         var kb = Keyboard.current;
         if (kb == null) return;
 

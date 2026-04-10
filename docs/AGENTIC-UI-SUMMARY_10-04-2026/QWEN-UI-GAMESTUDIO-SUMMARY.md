@@ -1088,6 +1088,133 @@ private GameObject CreatePanel(string name, Transform parent, float x, float y, 
 
 ---
 
-**Обновлено:** 11 апреля 2026 (Спринт 2 — тестирование завершено успешно)
+**Обновлено:** 11 апреля 2026 (Спринт 2 — ЗАКОММИЧЕНО И ЗАПУЩЕНО)
 **Версия:** 1.3
-**Статус:** ✅ Sprint 2 Complete — Гото к коммиту
+**Статус:** ✅ Sprint 2 Complete — Pushed to upstream/qwen-gamestudio-agent-dev (03ead42)
+
+---
+
+## 🐛 ИЗВЕСТНЫЕ ПРОБЛЕМЫ (после Спринт 2)
+
+### Pre-existing (НЕ от нас, существовали до Спринт 2 не решаем в рамках этого документа)
+
+| # | Проблема | severity | Возможные причины | Статус |
+|---|----------|----------|-------------------|--------|
+| **1** | Контракты не сдаются с грузом на корабле | 🔴 High | 1) `ContractCompleteServerRpc` проверка `toLocationId == _currentLocationId` не проходит; 2) `_activeContracts` массив не обновляется после погрузки; 3) `_currentLocationId` не совпадает с `toLocationId` контракта | 📋 В списке — Спринт 3 (3.3) |
+| **2** | `WorldGenerator:Start()` — missing script reference | 🟡 Medium | `WorldGenerationSettings` ScriptableObject не найден в Resources | 📋 Pre-existing, не UI |
+| **3** | TMP Importer inconsistency | 🟢 Low | LiberationSans SDF fallback asset inconsistency | 📋 Unity internal, обычно само решается |
+
+### Исправлено в Спринт 2
+
+| # | Было | Стало |
+|---|------|-------|
+| 1 | 14 ошибок компиляции CS1503 | ✅ Исправлено |
+| 2 | Эмодзи в TMP UI (warnings) | ✅ Заменены на [текст] |
+| 3 | 51+ хардкодный цвет | ✅ UITheme ScriptableObject |
+| 4 | 120 строк дублирования | ✅ UIFactory |
+| 5 | Warning PlayerTradeStorage | ✅ Заменён на Log |
+
+---
+
+## 📝 СЕССИЯ 12 АПРЕЛЯ 2026 — СПРИНТ 3: АРХИТЕКТУРА (ЧАСТИЧНО)
+
+**Дата:** 12 апреля 2026
+**Спринт:** 3 из 4 (Архитектура)
+**Статус:** ✅ Частично завершено — ключевые задачи выполнены
+
+### Выполненные задачи
+
+| # | Задача | Файл | Изменения | Статус |
+|---|--------|------|-----------|--------|
+| **3.2** | Создать InputManager с priority system | `UIManager.cs` | ✅ Готово — единый менеджер ввода, приоритеты панелей, Escape закрывает верхнюю |
+| **3.6** | Создать UIOverlayManager для z-ordering | `UIManager.cs` | ✅ Готово — стек панелей, сортировка по priority, CanReceiveInput проверка |
+| **3.4** | Добавить confirmation dialogs | `ConfirmationDialog.cs` | ⏸️ Создан, но отключён для покупки/продажи (мешает по фидбеку). Оставлен для будущих операций |
+| **3.5** | Добавить audio feedback | `UIManager.cs` | ⏳ Встроен (AudioSource + методы PlayClick/PlayError), нужны AudioClip в Inspector |
+| **3.1** | Переписать InventoryUI на Canvas-based | — | 📋 Отложено — требует отдельной сессии |
+| **3.3** | Рефакторинг TradeUI (разделить на MVC) | — | 📋 Отложено — требует отдельной сессии |
+
+### Технические детали
+
+#### 1. UIManager — централизованный менеджер UI
+```csharp
+// Открытие панели с приоритетом
+UIManager.EnsureExists().OpenPanel("TradeUI", 200, OnTradePanelClosed, _tradePanel);
+
+// Проверка может ли панель получать ввод
+if (!UIManager.EnsureExists().CanReceiveInput("TradeUI")) return;
+
+// Escape автоматически закрывает верхнюю панель
+// Курсор lock/unlock автоматически при открытии/закрытии
+```
+
+**Приоритеты панелей:**
+| Панель | Priority | Описание |
+|--------|----------|----------|
+| TradeUI | 200 | Торговля |
+| ContractBoardUI | 300 | Контракты (поверх TradeUI) |
+| InventoryUI | 400 | Инвентарь (поверх контрактов) |
+| ConfirmationDialog | 999 | Диалоги подтверждения (поверх всего) |
+
+#### 2. Интеграция в существующие UI
+- **TradeUI**: OpenPanel/ClosePanel, CanReceiveInput проверка в HandleInput
+- **ContractBoardUI**: OpenPanel/ClosePanel, CanReceiveInput проверка в HandleInput
+- **InventoryUI**: OpenPanel/ClosePanel через ToggleInventory
+
+#### 3. ConfirmationDialog
+```csharp
+// Использование (когда понадобится):
+ConfirmationDialog.Show(
+    title: "Подтверждение",
+    message: "Вы уверены?",
+    onConfirm: () => DoAction()
+);
+```
+**Статус:** Создан и готов к использованию, но отключён для покупки/продажи по фидбеку пользователя.
+
+#### 4. Audio Feedback
+```csharp
+// В UIManager есть поля для AudioClip:
+public AudioClip ClickSound;    // Звук клика
+public AudioClip OpenSound;     // Звук открытия панели
+public AudioClip CloseSound;    // Звук закрытия панели
+public AudioClip ErrorSound;    // Звук ошибки
+
+// Методы:
+UIManager.Instance.PlayClick();
+UIManager.Instance.PlayError();
+```
+**Статус:** Инфраструктура готова, нужно создать/найти звуки и назначить в Inspector.
+
+### Обновлённый чеклист
+
+#### Спринт 3: Архитектура
+- [x] 3.2 Создать InputManager с priority system
+- [x] 3.6 Создать UIOverlayManager для z-ordering
+- [ ] 3.4 Confirmation dialogs (создан, но отключён для торговли)
+- [ ] 3.5 Audio feedback (инфраструктура готова, нужны AudioClip)
+- [ ] 3.1 Переписать InventoryUI на Canvas-based
+- [ ] 3.3 Рефакторинг TradeUI (разделить на MVC)
+
+### Известные проблемы (после Спринт 3)
+
+| # | Проблема | severity | Статус |
+|---|----------|----------|--------|
+| **1** | Контракты не сдаются с грузом на корабле | 🔴 High | 📋 Pre-existing, не от нас |
+| **2** | Confirmation dialog мешает при торговле | 🟡 Medium | ⏸️ Отключён по фидбеку |
+| **3** | Нет звуков UI | 🟢 Low | ⏳ Инфраструктура готова, нужны файлы |
+
+### Метрики Спринт 3
+
+| Метрика | До | После | Изменение |
+|---------|-----|-------|-----------|
+| Централизованный UI менеджмент | Нет | Есть (UIManager) | ✅ |
+| Приоритизация ввода | Нет | Есть (CanReceiveInput) | ✅ |
+| Z-ordering панелей | Ручной | Автоматический | ✅ |
+| Escape для закрытия | В каждом UI | Единый в UIManager | ✅ |
+| Cursor management | В каждом UI | Через UIManager | ✅ |
+
+---
+
+**Обновлено:** 12 апреля 2026 (Спринт 3 — частично завершено)
+**Версия:** 1.4
+**Статус:** ✅ Спринт 3 готов к коммиту — UIManager + интеграция

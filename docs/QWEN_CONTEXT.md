@@ -658,13 +658,41 @@ git status && git log --oneline -3
 **Запомнить:**
 > **Лучше 10 маленьких шагов за день, чем 1 большой за неделю.**
 
-**Последнее обновление:** 5 апреля 2026 г.
-**Версия:** `v0.0.12-stage2-complete`
+**Последнее обновление:** 11 апреля 2026 г.  
+**Версия:** `v0.0.16-ui-sprint1-complete`  
 **Автор документа:** Qwen Code (Game Studio)
 
 ---
 
-## 📝 ИТОГИ СЕССИИ (6 апреля 2026)
+## 📝 ИТОГИ СЕССИИ (11 апреля 2026) — UI Спринт 1
+
+### Спринт 1: Критические фиксы — ЗАВЕРШЁН
+
+| # | Задача | Файл | Изменения |
+|---|--------|------|-----------|
+| **1.1** | InventoryUI material leak | `InventoryUI.cs` | Добавлен `OnDestroy()` — уничтожает `_glMaterial` и вызывает `Dispose()` для InputAction |
+| **1.2** | InputAction lambda subscriptions | `InventoryUI.cs` | Лямбда заменена на кэшированный делегат `_onTogglePerformed` — отписка работает |
+| **1.3** | Null checks в TradeUI | `TradeUI.cs` | Добавлены `Debug.LogWarning` при null Player/PlayerTradeStorage |
+| **1.4** | "Type 1-8" → semantic labels | `ItemType.cs`, `ItemTypeNames.cs`, `InventoryUI.cs` | Enum: Resources, Equipment, Food, Fuel, Antigrav, Meziy, Medical, Tech. UI показывает "Ресурсы", "Топливо" и т.д. |
+| **1.5** | Cursor lock/unlock | `TradeUI.cs`, `ContractBoardUI.cs`, `InventoryUI.cs` | При открытии UI — курсор разблокирован. При закрытии — заблокирован обратно. |
+| **1.6** | PeakNavigationUI debug flag | `PeakNavigationUI.cs` | Скрыт в production build. `_cachedWorldGenerator` добавлен для оптимизации. |
+
+### Метрики после Спринт 1
+
+| Метрика | До | После |
+|---------|-----|-------|
+| Memory leaks | 3 | 1 |
+| FindAnyObjectByType (runtime) | 9+ | 7 |
+| UI labels | "Type 1-8" | Semantic names |
+
+### Что НЕ было сделано (Спринт 2)
+- ❌ UIFactory / BaseUIPanel
+- ❌ Миграция TradeUI/ContractBoardUI на TextMeshPro
+- ❌ UITheme ScriptableObject
+- ❌ Замена эмодзи на sci-fi иконки
+
+### Следующий шаг
+**Спринт 2: Унификация (2-3 недели)** — готов к работе.
 
 ### Что было сделано:
 1. ✅ **URP Pipeline** — установлен пакет 17.4.0, Pipeline Asset создан и назначен

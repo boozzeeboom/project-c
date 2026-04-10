@@ -6,7 +6,8 @@ using TMPro;
 namespace ProjectC.Core
 {
     /// <summary>
-    /// UI панель для навигации по горным пикам
+    /// UI панель для навигации по горным пикам.
+    /// Отладочный инструмент — доступен только в Editor или при включённом debug-флаге.
     /// </summary>
     public class PeakNavigationUI : MonoBehaviour
     {
@@ -19,11 +20,27 @@ namespace ProjectC.Core
         [Header("Настройки")]
         [SerializeField] private bool autoPopulate = true;
 
+        [Header("Debug")]
+        [Tooltip("Показывать ли PeakNavigationUI. В production build — всегда скрыт.")]
+        [SerializeField] private bool showInBuild = false;
+
         private List<Button> peakButtons = new List<Button>();
         private int currentPeakIndex = -1;
+        private WorldGenerator _cachedWorldGenerator;
 
         private void Start()
         {
+            // В production build скрываем, если showInBuild не включён
+            bool isEditor = false;
+#if UNITY_EDITOR
+            isEditor = true;
+#endif
+            if (!isEditor && !showInBuild)
+            {
+                gameObject.SetActive(false);
+                return;
+            }
+
             if (worldCamera == null)
             {
                 worldCamera = FindAnyObjectByType<WorldCamera>();
@@ -141,10 +158,11 @@ namespace ProjectC.Core
         {
             if (currentPeakText != null && currentPeakIndex >= 0)
             {
-                var worldGenerator = FindAnyObjectByType<WorldGenerator>();
-                if (worldGenerator != null)
+                if (_cachedWorldGenerator == null)
+                    _cachedWorldGenerator = FindAnyObjectByType<WorldGenerator>();
+                if (_cachedWorldGenerator != null)
                 {
-                    var peaks = worldGenerator.GetAllPeaks();
+                    var peaks = _cachedWorldGenerator.GetAllPeaks();
                     if (currentPeakIndex < peaks.Count)
                     {
                         currentPeakText.text = $"Текущий: {peaks[currentPeakIndex].name} ({peaks[currentPeakIndex].height:F0}м)";

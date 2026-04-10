@@ -52,6 +52,8 @@ public class TradeUI : MonoBehaviour
         {
             if (_player == null)
                 _player = FindAnyObjectByType<NetworkPlayer>();
+            if (_player == null)
+                Debug.LogWarning("[TradeUI] NetworkPlayer не найден — торговля недоступна");
             return _player;
         }
     }
@@ -66,6 +68,7 @@ public class TradeUI : MonoBehaviour
         var storage = Player.GetComponent<PlayerTradeStorage>();
         if (storage == null)
         {
+            Debug.LogWarning("[TradeUI] PlayerTradeStorage не найден на NetworkPlayer — добавляю");
             storage = Player.gameObject.AddComponent<PlayerTradeStorage>();
         }
         return storage;
@@ -316,6 +319,10 @@ public class TradeUI : MonoBehaviour
         _showWarehouseTab = false;
         _selectedIndex = -1;
 
+        // Разблокируем курсор для UI
+        Cursor.lockState = CursorLockMode.None;
+        Cursor.visible = true;
+
         // Сессия 8C: используем PlayerTradeStorage с NetworkPlayer (тот же что у сервера)
         // вместо FindObjectOfType — чтобы клиент и сервер работали с одним хранилищем
         PlayerTradeStorage storage = GetPlayerStorageFromNetworkPlayer();
@@ -362,6 +369,10 @@ public class TradeUI : MonoBehaviour
         _isOpen = false;
         _selectedIndex = -1;
         if (_tradePanel != null) _tradePanel.SetActive(false);
+
+        // Блокируем курсор обратно
+        Cursor.lockState = CursorLockMode.Locked;
+        Cursor.visible = false;
         // Сессия 8: Убрал Save() из CloseTrade — сохранение происходит при модификации данных (BuyItem, SellItem, LoadToShip, UnloadFromShip)
         // Save() здесь был проблемой: он перезаписывал данные склада пустыми данными при закрытии
 

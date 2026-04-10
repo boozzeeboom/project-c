@@ -4,14 +4,14 @@ namespace ProjectC.Items
 {
     public enum ItemType
     {
-        Type1 = 0,
-        Type2 = 1,
-        Type3 = 2,
-        Type4 = 3,
-        Type5 = 4,
-        Type6 = 5,
-        Type7 = 6,
-        Type8 = 7
+        Resources = 0,
+        Equipment = 1,
+        Food = 2,
+        Fuel = 3,
+        Antigrav = 4,
+        Meziy = 5,
+        Medical = 6,
+        Tech = 7
     }
 
     [CreateAssetMenu(fileName = "NewItem", menuName = "Project C/Item Data", order = 1)]

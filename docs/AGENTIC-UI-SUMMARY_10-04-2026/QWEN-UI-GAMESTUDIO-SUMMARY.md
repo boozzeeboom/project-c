@@ -820,3 +820,92 @@ public class UITheme : ScriptableObject
 - `docs/STEP_1_NETWORKUI_PANEL.md` — NetworkUI build instructions
 - `docs/TRADE_DEBUG_GUIDE.md` — Trade debugging guide
 - `game-studio/QWENCODE.md` — Game Studio Agent Architecture
+
+---
+
+## 📝 СЕССИЯ 11 АПРЕЛЯ 2026 — СПРИНТ 1 ВЫПОЛНЕН
+
+**Дата:** 11 апреля 2026  
+**Спринт:** 1 из 4 (Критические фиксы)  
+**Статус:** ✅ ЗАВЕРШЁН
+
+### Выполненные задачи
+
+| # | Задача | Файл | Изменения |
+|---|--------|------|-----------|
+| **1.1** | InventoryUI material leak | `InventoryUI.cs` | Добавлен `OnDestroy()` — уничтожает `_glMaterial` и вызывает `Dispose()` для InputAction |
+| **1.2** | InputAction lambda subscriptions | `InventoryUI.cs` | Лямбда `ctx => ToggleInventory()` заменена на кэшированный делегат `_onTogglePerformed` — отписка теперь работает корректно |
+| **1.3** | Null checks в TradeUI | `TradeUI.cs` | Добавлен `Debug.LogWarning` в `Player` getter и `GetPlayerStorageFromNetworkPlayer` при null |
+| **1.4** | "Type 1-8" → semantic labels | `ItemType.cs`, `ItemTypeNames.cs`, `InventoryUI.cs` | Enum переименован: `Type1→Resources, Type2→Equipment, Food, Fuel, Antigrav, Meziy, Medical, Tech`. Добавлен `ItemTypeNames.GetDisplayName()` для UI. Сектора колеса теперь показывают "Ресурсы", "Топливо" и т.д. |
+| **1.5** | Cursor lock/unlock | `TradeUI.cs`, `ContractBoardUI.cs`, `InventoryUI.cs` | `OpenTrade/OpenBoard/ToggleInventory` → `Cursor.lockState = None, Cursor.visible = true`. Закрытие → `Locked, visible = false` |
+| **1.6** | PeakNavigationUI debug flag | `PeakNavigationUI.cs` | Добавлен `showInBuild = false` + runtime check — в production build скрыт. `FindAnyObjectByType<WorldGenerator>` кэширован в `_cachedWorldGenerator` |
+
+### Технические детали
+
+#### 1. ItemType Enum Migration
+```csharp
+// Было:
+Type1 = 0, Type2 = 1, ... Type8 = 7
+
+// Стало:
+Resources = 0, Equipment = 1, Food = 2, Fuel = 3, 
+Antigrav = 4, Meziy = 5, Medical = 6, Tech = 7
+```
+**Безопасность:** Unity серизует enum как `int`, переименование не ломает .asset файлы.
+
+#### 2. InputAction Fix
+```csharp
+// Было (баг):
+_toggleAction.performed += ctx => ToggleInventory();
+_toggleAction.performed -= ctx => ToggleInventory(); // НЕ работает!
+
+// Стало (фикс):
+_onTogglePerformed = _ => ToggleInventory();
+_toggleAction.performed += _onTogglePerformed;
+_toggleAction.performed -= _onTogglePerformed; // Работает!
+```
+
+#### 3. Cursor Management
+```csharp
+// При открытии UI:
+Cursor.lockState = CursorLockMode.None;
+Cursor.visible = true;
+
+// При закрытии:
+Cursor.lockState = CursorLockMode.Locked;
+Cursor.visible = false;
+```
+
+### Обновлённый чеклист
+
+#### Критические (Blockers) — ✅ ВСЕ ВЫПОЛНЕНЫ
+- [x] Исправить InventoryUI material leak
+- [x] Исправить InputAction subscriptions
+- [x] Заменить "Type 1-8" на semantic labels
+- [x] Добавить cursor lock/unlock management
+- [ ] Мигрировать на TextMeshPro повсеместно (Спринт 2)
+- [x] Спрятать PeakNavigationUI (debug only)
+
+### Метрики после Спринт 1
+
+| Метрика | До | После |
+|---------|-----|-------|
+| Memory leaks | 3 | 1 (оставшийся — NetworkUI, Спринт 2+) |
+| FindAnyObjectByType в runtime | 9+ | 7 (-22%) |
+| UI labels | "Type 1-8" | Semantic names |
+
+### Следующий шаг
+
+**Спринт 2: Унификация (2-3 недели)**
+- 2.1 Создать UIFactory / BaseUIPanel
+- 2.2 Мигрировать TradeUI/ContractBoardUI на TextMeshPro
+- 2.3 Создать UITheme ScriptableObject
+- 2.4 Добавить OnDestroy cleanup во все UI scripts
+- 2.5 Заменить эмодзи на sci-fi иконки
+- 2.6 Завершить PeakNavigationUI (уже выполнено)
+
+---
+
+**Обновлено:** 11 апреля 2026  
+**Версия:** 1.1  
+**Статус:** ✅ Sprint 1 Complete — Ready for Sprint 2

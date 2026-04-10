@@ -1,5 +1,6 @@
 using UnityEngine;
 using UnityEngine.InputSystem;
+using ProjectC.UI;
 
 namespace ProjectC.Items
 {
@@ -114,14 +115,22 @@ namespace ProjectC.Items
 
             if (_isOpen)
             {
-                Cursor.lockState = CursorLockMode.None;
-                Cursor.visible = true;
+                UIManager.EnsureExists().OpenPanel("InventoryUI", 400, OnInventoryPanelClosed, gameObject);
             }
             else
             {
-                Cursor.lockState = CursorLockMode.Locked;
-                Cursor.visible = false;
+                UIManager.Instance?.ClosePanel("InventoryUI");
             }
+        }
+
+        /// <summary>
+        /// Callback при закрытии панели инвентаря (вызывается из UIManager)
+        /// </summary>
+        private void OnInventoryPanelClosed()
+        {
+            _isOpen = false;
+            _hoveredSector = -1;
+            Debug.Log("[InventoryUI] Панель инвентаря закрыта через UIManager");
         }
 
         /// <summary>

@@ -218,9 +218,8 @@ public class TradeUI : MonoBehaviour
         _showWarehouseTab = false;
         _selectedIndex = -1;
 
-        // Разблокируем курсор для UI
-        Cursor.lockState = CursorLockMode.None;
-        Cursor.visible = true;
+        // Регистрируем в UIManager
+        UIManager.EnsureExists().OpenPanel("TradeUI", 200, OnTradePanelClosed, _tradePanel);
 
         // Сессия 8C: используем PlayerTradeStorage с NetworkPlayer (тот же что у сервера)
         // вместо FindObjectOfType — чтобы клиент и сервер работали с одним хранилищем
@@ -269,9 +268,18 @@ public class TradeUI : MonoBehaviour
         _selectedIndex = -1;
         if (_tradePanel != null) _tradePanel.SetActive(false);
 
-        // Блокируем курсор обратно
-        Cursor.lockState = CursorLockMode.Locked;
-        Cursor.visible = false;
+        // Закрываем через UIManager
+        if (UIManager.Instance != null)
+        {
+            UIManager.Instance.ClosePanel("TradeUI");
+        }
+        else
+        {
+            // Fallback если UIManager недоступен
+            Cursor.lockState = CursorLockMode.Locked;
+            Cursor.visible = false;
+        }
+
         // Сессия 8: Убрал Save() из CloseTrade — сохранение происходит при модификации данных (BuyItem, SellItem, LoadToShip, UnloadFromShip)
         // Save() здесь был проблемой: он перезаписывал данные склада пустыми данными при закрытии
 
@@ -279,6 +287,14 @@ public class TradeUI : MonoBehaviour
         // if (_player != null) _player.InputLocked = false;
 
         ShowMessage("");
+    }
+
+    /// <summary>
+    /// Callback при закрытии торговой панели (вызывается из UIManager)
+    /// </summary>
+    private void OnTradePanelClosed()
+    {
+        Debug.Log("[TradeUI] Панель торговли закрыта через UIManager");
     }
 
     private void CheckNearbyShip()
@@ -586,6 +602,9 @@ public class TradeUI : MonoBehaviour
 
     private void HandleInput()
     {
+        // Проверяем что эта панель может получать ввод (она верхняя)
+        if (!UIManager.EnsureExists().CanReceiveInput("TradeUI")) return;
+
         var kb = Keyboard.current;
         if (kb == null) return;
 

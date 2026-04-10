@@ -1,0 +1,79 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 477015637ba039f4cb2e14a3e02d450f, type: 3}
+  m_Name: UITheme_Default
+  m_EditorClassIdentifier: Assembly-CSharp::ProjectC.UI.UITheme
+  PanelBackground: {r: 0.04, g: 0.04, b: 0.07, a: 0.97}
+  ContractBoardBackground: {r: 0.03, g: 0.05, b: 0.08, a: 0.97}
+  InventoryBackground: {r: 0.1, g: 0.1, b: 0.1, a: 0.92}
+  PanelBorder: {r: 0.12, g: 0.12, b: 0.19, a: 1}
+  MarketRowEven: {r: 0.06, g: 0.06, b: 0.1, a: 1}
+  MarketRowOdd: {r: 0.1, g: 0.1, b: 0.15, a: 1}
+  WarehouseRowEven: {r: 0.06, g: 0.06, b: 0.1, a: 1}
+  WarehouseRowOdd: {r: 0.1, g: 0.1, b: 0.15, a: 1}
+  CargoRowEven: {r: 0.12, g: 0.08, b: 0.04, a: 1}
+  CargoRowOdd: {r: 0.15, g: 0.1, b: 0.06, a: 1}
+  ContractRowEven: {r: 0.06, g: 0.06, b: 0.1, a: 1}
+  ContractRowOdd: {r: 0.1, g: 0.1, b: 0.15, a: 1}
+  ActiveContractRow: {r: 0.15, g: 0.1, b: 0.05, a: 1}
+  SelectedRow: {r: 0.2, g: 0.25, b: 0.15, a: 1}
+  HoverRow: {r: 0.22, g: 0.22, b: 0.15, a: 1}
+  ButtonDefault: {r: 0.15, g: 0.15, b: 0.22, a: 1}
+  ButtonHover: {r: 0.22, g: 0.22, b: 0.3, a: 1}
+  ButtonPressed: {r: 0.28, g: 0.28, b: 0.38, a: 1}
+  ButtonDisabled: {r: 0.1, g: 0.1, b: 0.15, a: 0.5}
+  Accent: {r: 0.3, g: 0.64, b: 1, a: 1}
+  AccentWarning: {r: 1, g: 0.72, b: 0, a: 1}
+  AccentDanger: {r: 1, g: 0.27, b: 0.27, a: 1}
+  AccentSuccess: {r: 0, g: 1, b: 0, a: 1}
+  AccentInfo: {r: 0, g: 1, b: 1, a: 1}
+  TextTitle: {r: 1, g: 0.92156863, b: 0.015686275, a: 1}
+  TextPrimary: {r: 0.91, g: 0.91, b: 0.94, a: 1}
+  TextSecondary: {r: 0.53, g: 0.53, b: 0.63, a: 1}
+  TextMuted: {r: 0.53, g: 0.53, b: 0.53, a: 1}
+  TextCredits: {r: 0, g: 1, b: 0, a: 1}
+  TextMessage: {r: 0.9, g: 0.9, b: 0.4, a: 1}
+  TextCargo: {r: 1, g: 0.85, b: 0.5, a: 1}
+  TextOnButton: {r: 1, g: 1, b: 1, a: 1}
+  FontSizeHeading: 24
+  FontSizeSubheading: 22
+  FontSizeBody: 14
+  FontSizeButton: 13
+  FontSizeList: 13
+  FontSizeInfo: 12
+  FontSizeCaption: 11
+  SpacingSmall: 4
+  SpacingMedium: 8
+  SpacingLarge: 16
+  ListItemSpacing: 2
+  ListItemHeight: 30
+  ContractRowHeight: 50
+  ActiveContractRowHeight: 40
+  ReferenceResolution: {x: 1920, y: 1080}
+  CanvasMatchWidthOrHeight: 0.5
+  TradeUISortingOrder: 5000
+  ContractBoardUISortingOrder: 5100
+  InventoryUISortingOrder: 5200
+  IconContract: "\uE8A5"
+  IconCargo: "\uE8B4"
+  IconUrgent: "\uE7BA"
+  IconConfirm: "\uE73E"
+  IconWarning: "\uE7BA"
+  ContractStandard: {r: 0.3, g: 0.6, b: 1, a: 1}
+  ContractUrgent: {r: 1, g: 0.5, b: 0, a: 1}
+  ContractReceipt: {r: 0.3, g: 1, b: 0.3, a: 1}
+  DebtNone: {r: 0, g: 1, b: 0, a: 1}
+  DebtWarning: {r: 1, g: 0.92156863, b: 0.015686275, a: 1}
+  DebtRestricted: {r: 1, g: 0.5, b: 0, a: 1}
+  DebtHunted: {r: 1, g: 0, b: 0, a: 1}
+  DebtBounty: {r: 0.8, g: 0, b: 0, a: 1}
+  DebtHeadhunt: {r: 0.5, g: 0, b: 0, a: 1}

@@ -2,15 +2,17 @@ using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.InputSystem;
 using UnityEngine.UI;
+using TMPro;
 using Unity.Netcode;
 using ProjectC.Trade;
 using ProjectC.Player;
+using ProjectC.UI;
 
 /// <summary>
 /// Клиентский UI торговли. Сессия 5: Серверная торговля (NGO RPC).
 /// Поток: Рынок <-> Склад игрока <-> Трюм корабля
 ///
-/// Простой UI через UnityEngine.UI.Text (без TMP).
+/// Мигрировано на TextMeshProUGUI (Спринт 2).
 /// Все торговые операции идут через NetworkPlayer → ServerRpc → сервер авторитетен.
 /// </summary>
 public class TradeUI : MonoBehaviour
@@ -24,12 +26,12 @@ public class TradeUI : MonoBehaviour
     private GameObject _rootCanvas;
     private GameObject _tradePanel;
     private Transform _contentPanel;
-    private Text _creditsText;
-    private Text _warehouseInfoText;
-    private Text _shipCargoInfoText;
-    private Text _quantityText;
-    private Text _messageText;
-    private Text _modeText;
+    private TextMeshProUGUI _creditsText;
+    private TextMeshProUGUI _warehouseInfoText;
+    private TextMeshProUGUI _shipCargoInfoText;
+    private TextMeshProUGUI _quantityText;
+    private TextMeshProUGUI _messageText;
+    private TextMeshProUGUI _modeText;
 
     private List<Button> _uiButtons = new List<Button>();
     private List<GameObject> _itemRows = new List<GameObject>();
@@ -68,7 +70,7 @@ public class TradeUI : MonoBehaviour
         var storage = Player.GetComponent<PlayerTradeStorage>();
         if (storage == null)
         {
-            Debug.LogWarning("[TradeUI] PlayerTradeStorage не найден на NetworkPlayer — добавляю");
+            Debug.Log("[TradeUI] PlayerTradeStorage не найден на NetworkPlayer — добавляю (однократно)");
             storage = Player.gameObject.AddComponent<PlayerTradeStorage>();
         }
         return storage;
@@ -107,95 +109,49 @@ public class TradeUI : MonoBehaviour
     {
         try
         {
-        // --- Root Canvas ---
-        _rootCanvas = new GameObject("[TradeUI]_RootCanvas");
-        _rootCanvas.layer = LayerMask.NameToLayer("UI");
+            var theme = UITheme.Default;
 
-        var canvas = _rootCanvas.AddComponent<Canvas>();
-        canvas.renderMode = RenderMode.ScreenSpaceOverlay;
-        canvas.sortingOrder = 5000;
-        canvas.pixelPerfect = false;
+            // --- Root Canvas ---
+            _rootCanvas = UIFactory.CreateRootCanvas("[TradeUI]_RootCanvas", theme.TradeUISortingOrder);
 
-        var scaler = _rootCanvas.AddComponent<CanvasScaler>();
-        scaler.uiScaleMode = CanvasScaler.ScaleMode.ScaleWithScreenSize;
-        scaler.referenceResolution = new Vector2(1920, 1080);
-        scaler.matchWidthOrHeight = 0.5f;
+            // --- Панель ---
+            _tradePanel = UIFactory.CreatePanel("TradePanel", _rootCanvas.transform, 0, 0, 520, 640);
+            _tradePanel.SetActive(false);
 
-        _rootCanvas.AddComponent<GraphicRaycaster>();
+            // --- Заголовок ---
+            MakeLabel("Title", _tradePanel.transform, "ТОРГОВЛЯ", 0, 280, theme.FontSizeSubheading, theme.TextTitle, 480);
+            _modeText = MakeLabel("ModeText", _tradePanel.transform, "[РЫНОК]", 0, 252, theme.FontSizeBody, theme.AccentInfo, 200);
 
-        // --- Панель ---
-        _tradePanel = CreatePanel("TradePanel", _rootCanvas.transform, 0, 0, 520, 640);
-        _tradePanel.SetActive(false);
+            // --- Инфо ---
+            _creditsText = MakeLabel("CreditsText", _tradePanel.transform, "Кредиты: 1000 CR", 0, 220, theme.FontSizeBody, theme.TextCredits, 480);
+            _warehouseInfoText = MakeLabel("WarehouseInfo", _tradePanel.transform, "Склад: 0/10000 кг | 0/200 m3 | 0/50", 0, 196, theme.FontSizeInfo, theme.TextSecondary, 480);
+            _shipCargoInfoText = MakeLabel("ShipCargoInfo", _tradePanel.transform, "Корабль: нет рядом", 0, 176, theme.FontSizeInfo, theme.TextSecondary, 480);
 
-        // --- Заголовок ---
-        MakeLabel("Title", _tradePanel.transform, "ТОРГОВЛЯ", 0, 280, 22, Color.yellow, 480);
-        _modeText = MakeLabel("ModeText", _tradePanel.transform, "[РЫНОК]", 0, 252, 15, Color.cyan, 200);
+            // --- Кол-во ---
+            MakeLabel("QtyLabel", _tradePanel.transform, "Кол-во (< >):", -120, 152, theme.FontSizeButton, theme.TextPrimary, 150);
+            _quantityText = MakeLabel("QuantityText", _tradePanel.transform, "1", 140, 152, theme.FontSizeBody, theme.TextPrimary, 60);
 
-        // --- Инфо ---
-        _creditsText = MakeLabel("CreditsText", _tradePanel.transform, "Кредиты: 1000 CR", 0, 220, 16, Color.green, 480);
-        _warehouseInfoText = MakeLabel("WarehouseInfo", _tradePanel.transform, "Склад: 0/10000 кг | 0/200 m3 | 0/50", 0, 196, 12, Color.grey, 480);
-        _shipCargoInfoText = MakeLabel("ShipCargoInfo", _tradePanel.transform, "Корабль: нет рядом", 0, 176, 12, Color.grey, 480);
+            // --- Scroll-зона ---
+            var scrollArea = UIFactory.CreateScrollArea(_tradePanel.transform, out RectTransform content);
+            var scrollRect2 = scrollArea.GetComponent<RectTransform>();
+            scrollRect2.anchorMin = new Vector2(0.04f, 0.19f);
+            scrollRect2.anchorMax = new Vector2(0.96f, 0.65f);
+            scrollRect2.sizeDelta = new Vector2(0, 0);
+            _contentPanel = content;
 
-        // --- Кол-во ---
-        MakeLabel("QtyLabel", _tradePanel.transform, "Кол-во (< >):", -120, 152, 13, Color.white, 150);
-        _quantityText = MakeLabel("QuantityText", _tradePanel.transform, "1", 140, 152, 14, Color.white, 60);
+            // --- Кнопки (внизу панели) ---
+            _buyBtn = MakeBtn("BuyBtn", _tradePanel.transform, "КУПИТЬ", 0, -80, 240, 36, OnBuyClicked);
+            _uiButtons.Add(_buyBtn);
+            _sellBtn = MakeBtn("SellBtn", _tradePanel.transform, "ПРОДАТЬ", 0, -125, 280, 36, OnSellClicked);
+            _uiButtons.Add(_sellBtn);
+            _uiButtons.Add(MakeBtn("LoadBtn", _tradePanel.transform, "ПОГРУЗИТЬ (L)", -130, -175, 240, 36, OnLoadClicked));
+            _uiButtons.Add(MakeBtn("UnloadBtn", _tradePanel.transform, "РАЗГРУЗИТЬ (U)", 130, -175, 240, 36, OnUnloadClicked));
+            _uiButtons.Add(MakeBtn("CloseBtn", _tradePanel.transform, "ЗАКРЫТЬ (Esc)", 0, -285, 200, 36, OnCloseClicked));
 
-        // --- Scroll-зона ---
-        var scrollGO = new GameObject("ScrollArea");
-        scrollGO.transform.SetParent(_tradePanel.transform, false);
-        var scrollRect2 = scrollGO.AddComponent<RectTransform>();
-        scrollRect2.anchorMin = new Vector2(0.04f, 0.19f);
-        scrollRect2.anchorMax = new Vector2(0.96f, 0.65f);
-        scrollRect2.sizeDelta = Vector2.zero;
-
-        var vpGO = new GameObject("Viewport");
-        vpGO.transform.SetParent(scrollGO.transform, false);
-        var vpRect = vpGO.AddComponent<RectTransform>();
-        vpRect.anchorMin = Vector2.zero;
-        vpRect.anchorMax = Vector2.one;
-        vpRect.offsetMax = new Vector2(-14, 0);
-
-        var contentGO = new GameObject("Content", typeof(RectTransform));
-        contentGO.transform.SetParent(vpGO.transform, false);
-        _contentPanel = contentGO.transform;
-
-        var contentRect = contentGO.GetComponent<RectTransform>();
-        contentRect.anchorMin = new Vector2(0, 1);
-        contentRect.anchorMax = new Vector2(1, 1);
-        contentRect.pivot = new Vector2(0.5f, 1);
-        contentRect.sizeDelta = new Vector2(0, 0);
-
-        var layout = contentGO.AddComponent<VerticalLayoutGroup>();
-        layout.childControlWidth = true;
-        layout.childControlHeight = true;
-        layout.childForceExpandWidth = true;
-        layout.childForceExpandHeight = false;
-        layout.spacing = 2;
-        layout.padding = new RectOffset(4, 4, 4, 4);
-
-        contentGO.AddComponent<ContentSizeFitter>().verticalFit = ContentSizeFitter.FitMode.PreferredSize;
-
-        scrollGO.AddComponent<Mask>().showMaskGraphic = false;
-        var sr = scrollGO.AddComponent<ScrollRect>();
-        sr.content = contentRect;
-        sr.viewport = vpRect;
-        sr.horizontal = false;
-        sr.vertical = true;
-        sr.movementType = ScrollRect.MovementType.Clamped;
-
-        // --- Кнопки (внизу панели) ---
-        _buyBtn = MakeBtn("BuyBtn", _tradePanel.transform, "КУПИТЬ", 0, -80, 240, 36, OnBuyClicked);
-        _uiButtons.Add(_buyBtn);
-        _sellBtn = MakeBtn("SellBtn", _tradePanel.transform, "ПРОДАТЬ", 0, -125, 280, 36, OnSellClicked);
-        _uiButtons.Add(_sellBtn);
-        _uiButtons.Add(MakeBtn("LoadBtn", _tradePanel.transform, "ПОГРУЗИТЬ (L)", -130, -175, 240, 36, OnLoadClicked));
-        _uiButtons.Add(MakeBtn("UnloadBtn", _tradePanel.transform, "РАЗГРУЗИТЬ (U)", 130, -175, 240, 36, OnUnloadClicked));
-        _uiButtons.Add(MakeBtn("CloseBtn", _tradePanel.transform, "ЗАКРЫТЬ (Esc)", 0, -285, 200, 36, OnCloseClicked));
-
-        // --- Сообщение ---
-        _messageText = MakeLabel("MsgText", _tradePanel.transform, "Выберите товар и нажмите КУПИТЬ/ПРОДАТЬ", 0, -230, 13, new Color(0.9f, 0.9f, 0.4f), 480);
-        MakeLabel("Hint1", _tradePanel.transform, "T - склад | Up/Down - выбор | Left/Right - кол-во", 0, -255, 11, Color.grey, 480);
-        MakeLabel("Hint2", _tradePanel.transform, "1-КУПИТЬ 2-ПРОДАТЬ | L/U - погрузить/разгрузить | Esc - закрыть", 0, -272, 11, Color.grey, 480);
+            // --- Сообщение ---
+            _messageText = MakeLabel("MsgText", _tradePanel.transform, "Выберите товар и нажмите КУПИТЬ/ПРОДАТЬ", 0, -230, theme.FontSizeButton, theme.TextMessage, 480);
+            MakeLabel("Hint1", _tradePanel.transform, "T - склад | Up/Down - выбор | Left/Right - кол-во", 0, -255, theme.FontSizeCaption, theme.TextMuted, 480);
+            MakeLabel("Hint2", _tradePanel.transform, "1-КУПИТЬ 2-ПРОДАТЬ | L/U - погрузить/разгрузить | Esc - закрыть", 0, -272, theme.FontSizeCaption, theme.TextMuted, 480);
         }
         catch (System.Exception e)
         {
@@ -218,81 +174,24 @@ public class TradeUI : MonoBehaviour
         _itemRows.Clear();
     }
 
+    // ==================== UI FACTORY WRAPPERS ====================
+
     // --- Панель ---
     private GameObject CreatePanel(string name, Transform parent, float x, float y, float w, float h)
     {
-        var go = new GameObject(name);
-        go.transform.SetParent(parent, false);
-        var rect = go.AddComponent<RectTransform>();
-        rect.anchorMin = new Vector2(0.5f, 0.5f);
-        rect.anchorMax = new Vector2(0.5f, 0.5f);
-        rect.pivot = new Vector2(0.5f, 0.5f);
-        rect.sizeDelta = new Vector2(w, h);
-        rect.anchoredPosition = new Vector2(x, y);
-        var img = go.AddComponent<Image>();
-        img.color = new Color(0.04f, 0.04f, 0.07f, 0.97f);
-        return go;
+        return UIFactory.CreatePanel(name, parent, (int)x, (int)y, (int)w, (int)h);
     }
 
-    // --- Текст ---
-    private Text MakeLabel(string name, Transform parent, string text, float x, float y, int fontSize, Color color, float width)
+    // --- Текст (TextMeshProUGUI) ---
+    private TextMeshProUGUI MakeLabel(string name, Transform parent, string text, float x, float y, int fontSize, Color color, float width)
     {
-        var go = new GameObject(name);
-        go.transform.SetParent(parent, false);
-        var rect = go.AddComponent<RectTransform>();
-        rect.anchorMin = new Vector2(0.5f, 0.5f);
-        rect.anchorMax = new Vector2(0.5f, 0.5f);
-        rect.pivot = new Vector2(0.5f, 0.5f);
-        rect.sizeDelta = new Vector2(width, 24);
-        rect.anchoredPosition = new Vector2(x, y);
-        var txt = go.AddComponent<Text>();
-        txt.text = text;
-        txt.fontSize = fontSize;
-        txt.color = color;
-        txt.alignment = TextAnchor.MiddleCenter;
-        txt.font = Resources.GetBuiltinResource<Font>("LegacyRuntime.ttf");
-        return txt;
+        return UIFactory.CreateLabel(name, parent, text, (int)x, (int)y, fontSize, color, (int)width);
     }
 
-    // --- Кнопка ---
+    // --- Кнопка (TextMeshProUGUI внутри) ---
     private Button MakeBtn(string name, Transform parent, string label, float x, float y, float w, float h, UnityEngine.Events.UnityAction onClick)
     {
-        var go = new GameObject(name);
-        go.transform.SetParent(parent, false);
-        var rect = go.AddComponent<RectTransform>();
-        rect.anchorMin = new Vector2(0.5f, 0.5f);
-        rect.anchorMax = new Vector2(0.5f, 0.5f);
-        rect.pivot = new Vector2(0.5f, 0.5f);
-        rect.sizeDelta = new Vector2(w, h);
-        rect.anchoredPosition = new Vector2(x, y);
-
-        var img = go.AddComponent<Image>();
-        img.color = new Color(0.15f, 0.15f, 0.22f);
-
-        var btn = go.AddComponent<Button>();
-        btn.targetGraphic = img;
-        btn.onClick.AddListener(onClick);
-        var cols = btn.colors;
-        cols.highlightedColor = new Color(0.22f, 0.22f, 0.30f);
-        cols.pressedColor = new Color(0.28f, 0.28f, 0.38f);
-        btn.colors = cols;
-
-        // Текст кнопки — через child Text
-        var tGo = new GameObject("Text");
-        tGo.transform.SetParent(go.transform, false);
-        var tRect = tGo.AddComponent<RectTransform>();
-        tRect.anchorMin = Vector2.zero;
-        tRect.anchorMax = Vector2.one;
-        tRect.offsetMin = Vector2.zero;
-        tRect.offsetMax = Vector2.zero;
-        var t = tGo.AddComponent<Text>();
-        t.text = label;
-        t.fontSize = 13;
-        t.color = Color.white;
-        t.alignment = TextAnchor.MiddleCenter;
-        t.font = Resources.GetBuiltinResource<Font>("LegacyRuntime.ttf");
-
-        return btn;
+        return UIFactory.CreateButton(name, parent, label, onClick, new Vector2((int)w, (int)h), (int)x, (int)y);
     }
 
     // ==================== ОТКРЫТИЕ / ЗАКРЫТИЕ ====================
@@ -477,49 +376,19 @@ public class TradeUI : MonoBehaviour
 
     private void MakeDividerRow(string text)
     {
-        var go = new GameObject("DividerRow");
-        go.transform.SetParent(_contentPanel, false);
-        var r = go.AddComponent<RectTransform>();
-        r.sizeDelta = new Vector2(0, 22);
-        var t = go.AddComponent<Text>();
-        t.text = text;
-        t.fontSize = 11;
-        t.color = Color.cyan;
-        t.alignment = TextAnchor.MiddleCenter;
-        t.font = Resources.GetBuiltinResource<Font>("LegacyRuntime.ttf");
+        var theme = UITheme.Default;
+        UIFactory.CreateDividerRow(_contentPanel, text, theme.FontSizeCaption, theme.AccentInfo);
     }
 
     private void MakeCargoRow(string name, int qty, int index)
     {
-        var rowGO = new GameObject($"CargoRow_{index}");
-        rowGO.transform.SetParent(_contentPanel, false);
-        var rRect = rowGO.AddComponent<RectTransform>();
-        rRect.anchorMin = Vector2.zero;
-        rRect.anchorMax = Vector2.one;
-        rRect.sizeDelta = Vector2.zero;
+        var theme = UITheme.Default;
+        var rowGO = UIFactory.CreateListRow(_contentPanel, $"{name}  -  {qty} ед.", theme.TextCargo, index, isCargo: true);
 
-        var layoutElem = rowGO.AddComponent<UnityEngine.UI.LayoutElement>();
-        layoutElem.preferredHeight = 30f;
-
-        var bg = rowGO.AddComponent<Image>();
-        bg.color = new Color(0.12f, 0.08f, 0.04f);
-
-        var tGO = new GameObject("Text");
-        tGO.transform.SetParent(rowGO.transform, false);
-        var tRect = tGO.AddComponent<RectTransform>();
-        tRect.anchorMin = Vector2.zero;
-        tRect.anchorMax = Vector2.one;
-        tRect.offsetMin = new Vector2(8, 0);
-        tRect.offsetMax = new Vector2(-8, 0);
-        var t = tGO.AddComponent<Text>();
-        t.text = $"{name}  -  {qty} ед.";
-        t.fontSize = 13;
-        t.color = new Color(1f, 0.85f, 0.5f);
-        t.alignment = TextAnchor.MiddleLeft;
-        t.font = Resources.GetBuiltinResource<Font>("LegacyRuntime.ttf");
-
-        var btn = rowGO.AddComponent<Button>();
-        btn.targetGraphic = bg;
+        var btn = rowGO.GetComponent<Button>();
+        if (btn == null) btn = rowGO.AddComponent<Button>();
+        var bg = rowGO.GetComponent<Image>();
+        if (bg != null) btn.targetGraphic = bg;
         int ci = index;
         btn.onClick.AddListener(() => SelectCargoItem(ci));
         _itemRows.Add(rowGO);
@@ -545,39 +414,16 @@ public class TradeUI : MonoBehaviour
 
     private void MakeRow(string name, float price, int qty, int index, bool isMarket, bool isInCargo = false)
     {
-        var rowGO = new GameObject($"Row_{index}");
-        rowGO.transform.SetParent(_contentPanel, false);
-        var rRect = rowGO.AddComponent<RectTransform>();
-        rRect.anchorMin = Vector2.zero;
-        rRect.anchorMax = Vector2.one;
-        rRect.sizeDelta = Vector2.zero;
-        
-        // Явная высота через LayoutElement
-        var layoutElem = rowGO.AddComponent<UnityEngine.UI.LayoutElement>();
-        layoutElem.preferredHeight = 30f;
+        var theme = UITheme.Default;
+        string rowText = isMarket ? $"{name}  -  {price:F0} CR  (сток: {qty})" : $"{name}  -  {qty} ед.";
+        Color textColor = isInCargo ? theme.TextCargo : theme.TextPrimary;
 
-        var bg = rowGO.AddComponent<Image>();
-        if (isInCargo)
-            bg.color = index % 2 == 0 ? new Color(0.12f, 0.08f, 0.04f) : new Color(0.15f, 0.10f, 0.06f);
-        else
-            bg.color = index % 2 == 0 ? new Color(0.06f, 0.06f, 0.10f) : new Color(0.10f, 0.10f, 0.15f);
+        var rowGO = UIFactory.CreateListRow(_contentPanel, rowText, textColor, index, isMarket: isMarket, isCargo: isInCargo);
 
-        var tGO = new GameObject("Text");
-        tGO.transform.SetParent(rowGO.transform, false);
-        var tRect = tGO.AddComponent<RectTransform>();
-        tRect.anchorMin = Vector2.zero;
-        tRect.anchorMax = Vector2.one;
-        tRect.offsetMin = new Vector2(8, 0);
-        tRect.offsetMax = new Vector2(-8, 0);
-        var t = tGO.AddComponent<Text>();
-        t.text = isMarket ? $"{name}  -  {price:F0} CR  (сток: {qty})" : $"{name}  -  {qty} ед.";
-        t.fontSize = 13;
-        t.color = isInCargo ? new Color(1f, 0.85f, 0.5f) : Color.white;
-        t.alignment = TextAnchor.MiddleLeft;
-        t.font = Resources.GetBuiltinResource<Font>("LegacyRuntime.ttf");
-
-        var btn = rowGO.AddComponent<Button>();
-        btn.targetGraphic = bg;
+        var btn = rowGO.GetComponent<Button>();
+        if (btn == null) btn = rowGO.AddComponent<Button>();
+        var bg = rowGO.GetComponent<Image>();
+        if (bg != null) btn.targetGraphic = bg;
         int ci = index;
         bool mkt = isMarket;
         btn.onClick.AddListener(() => SelectItem(ci, mkt));
@@ -586,16 +432,7 @@ public class TradeUI : MonoBehaviour
 
     private void MakeEmptyRow(string msg)
     {
-        var go = new GameObject("EmptyRow");
-        go.transform.SetParent(_contentPanel, false);
-        var r = go.AddComponent<RectTransform>();
-        r.sizeDelta = new Vector2(0, 30);
-        var t = go.AddComponent<Text>();
-        t.text = msg;
-        t.fontSize = 13;
-        t.color = Color.gray;
-        t.alignment = TextAnchor.MiddleCenter;
-        t.font = Resources.GetBuiltinResource<Font>("LegacyRuntime.ttf");
+        UIFactory.CreateEmptyRow(_contentPanel, msg);
     }
 
     private void SelectItem(int index, bool isMarket)
@@ -642,6 +479,7 @@ public class TradeUI : MonoBehaviour
     private void HighlightRow(int index)
     {
         if (_contentPanel == null) return;
+        var theme = UITheme.Default;
         int warehouseCount = playerStorage != null ? playerStorage.warehouse.Count : 0;
         int cargoStartIndex = warehouseCount + 1;
 
@@ -656,15 +494,15 @@ public class TradeUI : MonoBehaviour
 
             if (i == index)
             {
-                bg.color = new Color(0.2f, 0.25f, 0.15f); // selected (green)
+                bg.color = theme.SelectedRow;
             }
             else if (isCargoRow)
             {
-                bg.color = new Color(0.12f, 0.08f, 0.04f); // cargo default
+                bg.color = i % 2 == 0 ? theme.CargoRowEven : theme.CargoRowOdd;
             }
             else if (isWarehouseRow)
             {
-                bg.color = i % 2 == 0 ? new Color(0.06f, 0.06f, 0.10f) : new Color(0.10f, 0.10f, 0.15f);
+                bg.color = theme.GetMarketRowColor(i);
             }
         }
     }
@@ -699,15 +537,16 @@ public class TradeUI : MonoBehaviour
 
         if (_shipCargoInfoText != null)
         {
+            var theme = UITheme.Default;
             if (_nearbyCargo != null)
             {
                 _shipCargoInfoText.text = $"Корабль: {_nearbyCargo.CurrentWeight:F0}/{_nearbyCargo.MaxWeight} кг | {_nearbyCargo.CurrentVolume:F1}/{_nearbyCargo.MaxVolume} m3";
-                _shipCargoInfoText.color = Color.yellow;
+                _shipCargoInfoText.color = theme.TextTitle;
             }
             else
             {
                 _shipCargoInfoText.text = "Корабль: нет рядом";
-                _shipCargoInfoText.color = Color.gray;
+                _shipCargoInfoText.color = theme.TextMuted;
             }
         }
         if (_quantityText != null) _quantityText.text = _buyQuantity.ToString();
@@ -1183,7 +1022,7 @@ public class TradeUI : MonoBehaviour
         _activeEventDisplayNames[eventId] = displayName;
         _activeEventIcons[eventId] = displayIcon;
 
-        ShowMessage($"📢 {displayIcon} {displayName}! Длительность: {durationTicks} тиков");
+        ShowMessage($"[Событие] {displayName}! Длительность: {durationTicks} тиков");
 
         // Перерендерим рынок чтобы показать изменённые цены
         RenderItems();
@@ -1201,7 +1040,7 @@ public class TradeUI : MonoBehaviour
         _activeEventDisplayNames.Remove(eventId);
         _activeEventIcons.Remove(eventId);
 
-        ShowMessage($"📢 Событие '{displayName}' окончилось. Цены возвращаются к норме.");
+        ShowMessage($"[Событие] '{displayName}' окончилось. Цены возвращаются к норме.");
 
         RenderItems();
         UpdateDisplays();

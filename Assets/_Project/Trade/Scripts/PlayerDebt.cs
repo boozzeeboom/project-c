@@ -133,15 +133,15 @@ namespace ProjectC.Trade
                 case DebtLevel.None:
                     return "";
                 case DebtLevel.Warning:
-                    return "⚠ Предупреждение НП";
+                    return "[Предупреждение НП]";
                 case DebtLevel.Restricted:
-                    return "🚫 Ограничение контрактов";
+                    return "[Ограничение контрактов]";
                 case DebtLevel.Hunted:
-                    return "🔴 Патруль НП преследует";
+                    return "[Патруль НП преследует]";
                 case DebtLevel.Bounty:
-                    return "📋 Ордер на арест";
+                    return "[Ордер на арест]";
                 case DebtLevel.Headhunt:
-                    return "💀 Наёмные охотники";
+                    return "[Наёмные охотники]";
                 default:
                     return "";
             }

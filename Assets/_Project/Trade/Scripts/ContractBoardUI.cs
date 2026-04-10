@@ -2,14 +2,17 @@ using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.InputSystem;
 using UnityEngine.UI;
+using TMPro;
 using ProjectC.Trade;
 using ProjectC.Player;
+using ProjectC.UI;
 
 /// <summary>
 /// UI доски контрактов НП — отдельный префаб, открывается у NPC-агента.
 /// GDD_25 секция 6: Контрактная Система.
 /// Утверждено решение 5B: отдельный префаб (не вкладка TradeUI).
 ///
+/// Мигрировано на TextMeshProUGUI (Спринт 2).
 /// Сессия 7: ContractSystem.
 /// Поток: Игрок подходит к NPC-агенту → E → ContractBoardUI → RequestContracts → список → "Взять" → ServerRpc.
 /// </summary>
@@ -20,10 +23,10 @@ public class ContractBoardUI : MonoBehaviour
     private GameObject _rootCanvas;
     private GameObject _boardPanel;
     private Transform _contentPanel;
-    private Text _titleText;
-    private Text _locationText;
-    private Text _debtText;
-    private Text _messageText;
+    private TextMeshProUGUI _titleText;
+    private TextMeshProUGUI _locationText;
+    private TextMeshProUGUI _debtText;
+    private TextMeshProUGUI _messageText;
     private List<GameObject> _contractRows = new List<GameObject>();
     private List<Button> _uiButtons = new List<Button>();
 
@@ -33,9 +36,6 @@ public class ContractBoardUI : MonoBehaviour
     private ContractData[] _activeContracts = new ContractData[0];
     private string _currentLocationId = "";
     private NetworkPlayer _player;
-#pragma warning disable 0414
-    private bool _showActiveTab = false;
-#pragma warning restore 0414
 
     private void Awake()
     {
@@ -67,75 +67,29 @@ public class ContractBoardUI : MonoBehaviour
 
     private void BuildUI()
     {
+        var theme = UITheme.Default;
+
         // --- Root Canvas ---
-        _rootCanvas = new GameObject("[ContractBoard]_RootCanvas");
-        _rootCanvas.layer = LayerMask.NameToLayer("UI");
-
-        var canvas = _rootCanvas.AddComponent<Canvas>();
-        canvas.renderMode = RenderMode.ScreenSpaceOverlay;
-        canvas.sortingOrder = 5100; // Выше TradeUI (5000)
-        canvas.pixelPerfect = false;
-
-        var scaler = _rootCanvas.AddComponent<CanvasScaler>();
-        scaler.uiScaleMode = CanvasScaler.ScaleMode.ScaleWithScreenSize;
-        scaler.referenceResolution = new Vector2(1920, 1080);
-        scaler.matchWidthOrHeight = 0.5f;
-
-        _rootCanvas.AddComponent<GraphicRaycaster>();
+        _rootCanvas = UIFactory.CreateRootCanvas("[ContractBoard]_RootCanvas", theme.ContractBoardUISortingOrder);
 
         // --- Панель ---
-        _boardPanel = CreatePanel("ContractBoardPanel", _rootCanvas.transform, 0, 0, 600, 700);
+        _boardPanel = UIFactory.CreatePanel("ContractBoardPanel", _rootCanvas.transform, 0, 0, 600, 700);
         _boardPanel.SetActive(false);
 
         // --- Заголовок ---
-        _titleText = MakeLabel("Title", _boardPanel.transform, "📋 КОНТРАКТЫ НП", 0, 310, 24, Color.yellow, 560);
-        _locationText = MakeLabel("LocationText", _boardPanel.transform, "[Локация]", 0, 280, 14, Color.cyan, 300);
+        _titleText = MakeLabel("Title", _boardPanel.transform, "КОНТРАКТЫ НП", 0, 310, theme.FontSizeHeading, theme.TextTitle, 560);
+        _locationText = MakeLabel("LocationText", _boardPanel.transform, "[Локация]", 0, 280, theme.FontSizeBody, theme.AccentInfo, 300);
 
         // --- Долг ---
-        _debtText = MakeLabel("DebtText", _boardPanel.transform, "", 0, 256, 12, Color.red, 560);
+        _debtText = MakeLabel("DebtText", _boardPanel.transform, "", 0, 256, theme.FontSizeCaption, theme.AccentDanger, 560);
 
         // --- Scroll-зона ---
-        var scrollGO = new GameObject("ScrollArea");
-        scrollGO.transform.SetParent(_boardPanel.transform, false);
-        var scrollRect = scrollGO.AddComponent<RectTransform>();
+        var scrollArea = UIFactory.CreateScrollArea(_boardPanel.transform, out RectTransform content);
+        var scrollRect = scrollArea.GetComponent<RectTransform>();
         scrollRect.anchorMin = new Vector2(0.04f, 0.22f);
         scrollRect.anchorMax = new Vector2(0.96f, 0.80f);
         scrollRect.sizeDelta = Vector2.zero;
-
-        var vpGO = new GameObject("Viewport");
-        vpGO.transform.SetParent(scrollGO.transform, false);
-        var vpRect = vpGO.AddComponent<RectTransform>();
-        vpRect.anchorMin = Vector2.zero;
-        vpRect.anchorMax = Vector2.one;
-        vpRect.offsetMax = new Vector2(-14, 0);
-
-        var contentGO = new GameObject("Content", typeof(RectTransform));
-        contentGO.transform.SetParent(vpGO.transform, false);
-        _contentPanel = contentGO.transform;
-
-        var contentRect = contentGO.GetComponent<RectTransform>();
-        contentRect.anchorMin = new Vector2(0, 1);
-        contentRect.anchorMax = new Vector2(1, 1);
-        contentRect.pivot = new Vector2(0.5f, 1);
-        contentRect.sizeDelta = new Vector2(0, 0);
-
-        var layout = contentGO.AddComponent<VerticalLayoutGroup>();
-        layout.childControlWidth = true;
-        layout.childControlHeight = true;
-        layout.childForceExpandWidth = true;
-        layout.childForceExpandHeight = false;
-        layout.spacing = 3;
-        layout.padding = new RectOffset(6, 6, 6, 6);
-
-        contentGO.AddComponent<ContentSizeFitter>().verticalFit = ContentSizeFitter.FitMode.PreferredSize;
-
-        scrollGO.AddComponent<Mask>().showMaskGraphic = false;
-        var sr = scrollGO.AddComponent<ScrollRect>();
-        sr.content = contentRect;
-        sr.viewport = vpRect;
-        sr.horizontal = false;
-        sr.vertical = true;
-        sr.movementType = ScrollRect.MovementType.Clamped;
+        _contentPanel = content;
 
         // --- Кнопки ---
         _uiButtons.Add(MakeBtn("AcceptBtn", _boardPanel.transform, "ВЗЯТЬ (Enter)", 0, -190, 260, 36, OnAcceptClicked));
@@ -143,9 +97,9 @@ public class ContractBoardUI : MonoBehaviour
         _uiButtons.Add(MakeBtn("CloseBtn", _boardPanel.transform, "ЗАКРЫТЬ (C)", 0, -280, 200, 36, OnCloseClicked));
 
         // --- Сообщение ---
-        _messageText = MakeLabel("MsgText", _boardPanel.transform, "Выберите контракт и нажмите Enter", 0, -240, 13, new Color(0.9f, 0.9f, 0.4f), 560);
-        MakeLabel("Hint1", _boardPanel.transform, "Up/Down - выбор | Enter - взять | C - закрыть", 0, -262, 11, Color.grey, 560);
-        MakeLabel("Hint2", _boardPanel.transform, "📦 Стандартная | ⚡ Срочная (×1.5) | 📝 Под расписку", 0, -310, 11, Color.grey, 560);
+        _messageText = MakeLabel("MsgText", _boardPanel.transform, "Выберите контракт и нажмите Enter", 0, -240, theme.FontSizeList, theme.TextMessage, 560);
+        MakeLabel("Hint1", _boardPanel.transform, "Up/Down - выбор | Enter - взять | C - закрыть", 0, -262, theme.FontSizeCaption, theme.TextMuted, 560);
+        MakeLabel("Hint2", _boardPanel.transform, "[Стандарт] [Срочный] [Расписка]", 0, -310, theme.FontSizeCaption, theme.TextMuted, 560);
     }
 
     private void DestroyUI()
@@ -161,79 +115,21 @@ public class ContractBoardUI : MonoBehaviour
         _uiButtons.Clear();
     }
 
-    // ==================== UI ХЕЛПЕРЫ ====================
+    // ==================== UI FACTORY WRAPPERS ====================
 
     private GameObject CreatePanel(string name, Transform parent, float x, float y, float w, float h)
     {
-        var go = new GameObject(name);
-        go.transform.SetParent(parent, false);
-        var rect = go.AddComponent<RectTransform>();
-        rect.anchorMin = new Vector2(0.5f, 0.5f);
-        rect.anchorMax = new Vector2(0.5f, 0.5f);
-        rect.pivot = new Vector2(0.5f, 0.5f);
-        rect.sizeDelta = new Vector2(w, h);
-        rect.anchoredPosition = new Vector2(x, y);
-        var img = go.AddComponent<Image>();
-        img.color = new Color(0.03f, 0.05f, 0.08f, 0.97f);
-        return go;
+        return UIFactory.CreatePanel(name, parent, (int)x, (int)y, (int)w, (int)h);
     }
 
-    private Text MakeLabel(string name, Transform parent, string text, float x, float y, int fontSize, Color color, float width)
+    private TextMeshProUGUI MakeLabel(string name, Transform parent, string text, float x, float y, int fontSize, Color color, float width)
     {
-        var go = new GameObject(name);
-        go.transform.SetParent(parent, false);
-        var rect = go.AddComponent<RectTransform>();
-        rect.anchorMin = new Vector2(0.5f, 0.5f);
-        rect.anchorMax = new Vector2(0.5f, 0.5f);
-        rect.pivot = new Vector2(0.5f, 0.5f);
-        rect.sizeDelta = new Vector2(width, 24);
-        rect.anchoredPosition = new Vector2(x, y);
-        var txt = go.AddComponent<Text>();
-        txt.text = text;
-        txt.fontSize = fontSize;
-        txt.color = color;
-        txt.alignment = TextAnchor.MiddleCenter;
-        txt.font = Resources.GetBuiltinResource<Font>("LegacyRuntime.ttf");
-        return txt;
+        return UIFactory.CreateLabel(name, parent, text, (int)x, (int)y, fontSize, color, (int)width);
     }
 
     private Button MakeBtn(string name, Transform parent, string label, float x, float y, float w, float h, UnityEngine.Events.UnityAction onClick)
     {
-        var go = new GameObject(name);
-        go.transform.SetParent(parent, false);
-        var rect = go.AddComponent<RectTransform>();
-        rect.anchorMin = new Vector2(0.5f, 0.5f);
-        rect.anchorMax = new Vector2(0.5f, 0.5f);
-        rect.pivot = new Vector2(0.5f, 0.5f);
-        rect.sizeDelta = new Vector2(w, h);
-        rect.anchoredPosition = new Vector2(x, y);
-
-        var img = go.AddComponent<Image>();
-        img.color = new Color(0.15f, 0.15f, 0.22f);
-
-        var btn = go.AddComponent<Button>();
-        btn.targetGraphic = img;
-        btn.onClick.AddListener(onClick);
-        var cols = btn.colors;
-        cols.highlightedColor = new Color(0.22f, 0.22f, 0.30f);
-        cols.pressedColor = new Color(0.28f, 0.28f, 0.38f);
-        btn.colors = cols;
-
-        var tGo = new GameObject("Text");
-        tGo.transform.SetParent(go.transform, false);
-        var tRect = tGo.AddComponent<RectTransform>();
-        tRect.anchorMin = Vector2.zero;
-        tRect.anchorMax = Vector2.one;
-        tRect.offsetMin = Vector2.zero;
-        tRect.offsetMax = Vector2.zero;
-        var t = tGo.AddComponent<Text>();
-        t.text = label;
-        t.fontSize = 13;
-        t.color = Color.white;
-        t.alignment = TextAnchor.MiddleCenter;
-        t.font = Resources.GetBuiltinResource<Font>("LegacyRuntime.ttf");
-
-        return btn;
+        return UIFactory.CreateButton(name, parent, label, onClick, new Vector2((int)w, (int)h), (int)x, (int)y);
     }
 
     // ==================== ОТКРЫТИЕ / ЗАКРЫТИЕ ====================
@@ -262,7 +158,7 @@ public class ContractBoardUI : MonoBehaviour
         _boardPanel.SetActive(true);
         _boardPanel.transform.SetAsLastSibling();
 
-        if (_titleText != null) _titleText.text = $"📋 КОНТРАКТЫ НП — {market.locationName}";
+        if (_titleText != null) _titleText.text = $"КОНТРАКТЫ НП — {market.locationName}";
         if (_locationText != null) _locationText.text = $"[{market.locationId.ToUpper()}]";
 
         ShowMessage("Загрузка контрактов...");
@@ -433,77 +329,47 @@ public class ContractBoardUI : MonoBehaviour
 
     private void MakeDividerRow(string text)
     {
-        var go = new GameObject("DividerRow");
-        go.transform.SetParent(_contentPanel, false);
-        var r = go.AddComponent<RectTransform>();
-        r.sizeDelta = new Vector2(0, 22);
-        var t = go.AddComponent<Text>();
-        t.text = text;
-        t.fontSize = 11;
-        t.color = Color.cyan;
-        t.alignment = TextAnchor.MiddleCenter;
-        t.font = Resources.GetBuiltinResource<Font>("LegacyRuntime.ttf");
+        var theme = UITheme.Default;
+        UIFactory.CreateDividerRow(_contentPanel, text, theme.FontSizeCaption, theme.AccentInfo);
     }
 
     private void MakeActiveContractRow(ContractData contract, int index)
     {
-        var rowGO = new GameObject($"ActiveRow_{index}");
-        rowGO.transform.SetParent(_contentPanel, false);
-        var rRect = rowGO.AddComponent<RectTransform>();
-        rRect.anchorMin = Vector2.zero;
-        rRect.anchorMax = Vector2.one;
-        rRect.sizeDelta = Vector2.zero;
+        var theme = UITheme.Default;
+        var rowGO = UIFactory.CreateListRow(_contentPanel, $"{contract.itemId} x{contract.quantity}", theme.TextPrimary, index, isActive: true);
+        rowGO.GetComponent<UnityEngine.UI.LayoutElement>().preferredHeight = 40f;
 
-        var layoutElem = rowGO.AddComponent<UnityEngine.UI.LayoutElement>();
-        layoutElem.preferredHeight = 40f;
-
-        var bg = rowGO.AddComponent<Image>();
-        bg.color = new Color(0.15f, 0.10f, 0.05f); // тёплый фон для активных
+        var bg = rowGO.GetComponent<Image>();
+        if (bg != null) bg.color = theme.ActiveContractRow;
 
         // Тип + товар
-        MakeLabel("Type", rowGO.transform, contract.GetTypeDisplayName(), -240, 10, 11, contract.GetTypeColor(), 140);
-        MakeLabel("Item", rowGO.transform, $"{contract.itemId} x{contract.quantity}", -80, 10, 11, Color.white, 180);
+        MakeLabel("Type", rowGO.transform, contract.GetTypeDisplayName(), -240, 10, theme.FontSizeCaption, contract.GetTypeColor(), 140);
 
         // Таймер (красный если мало времени)
-        Color timeColor = contract.GetTimePercent() < 0.3f ? Color.red : Color.yellow;
-        MakeLabel("Time", rowGO.transform, contract.GetTimeRemainingString(), 200, 10, 13, timeColor, 60);
+        Color timeColor = contract.GetTimePercent() < 0.3f ? theme.AccentDanger : theme.AccentWarning;
+        MakeLabel("Time", rowGO.transform, contract.GetTimeRemainingString(), 200, 10, theme.FontSizeList, timeColor, 60);
 
         _contractRows.Add(rowGO);
     }
 
     private void MakeContractRow(ContractData contract, int index)
     {
-        var rowGO = new GameObject($"ContractRow_{index}");
-        rowGO.transform.SetParent(_contentPanel, false);
-        var rRect = rowGO.AddComponent<RectTransform>();
-        rRect.anchorMin = Vector2.zero;
-        rRect.anchorMax = Vector2.one;
-        rRect.sizeDelta = Vector2.zero;
-
-        var layoutElem = rowGO.AddComponent<UnityEngine.UI.LayoutElement>();
-        layoutElem.preferredHeight = 50f;
-
-        var bg = rowGO.AddComponent<Image>();
-        bg.color = index % 2 == 0 ? new Color(0.06f, 0.06f, 0.10f) : new Color(0.10f, 0.10f, 0.15f);
-
-        // Тип + иконка
-        var typeText = MakeLabel("Type", rowGO.transform, contract.GetTypeDisplayName(), -240, 12, 12, contract.GetTypeColor(), 160);
-
-        // Товар + количество
-        var itemText = MakeLabel("Item", rowGO.transform, $"{contract.itemId} x{contract.quantity}", -60, 12, 12, Color.white, 200);
+        var theme = UITheme.Default;
+        string rowText = $"{contract.GetTypeDisplayName()} | {contract.itemId} x{contract.quantity}";
+        var rowGO = UIFactory.CreateListRow(_contentPanel, rowText, theme.TextPrimary, index);
+        rowGO.GetComponent<UnityEngine.UI.LayoutElement>().preferredHeight = 50f;
 
         // Маршрут
-        var routeText = MakeLabel("Route", rowGO.transform, $"{contract.fromLocationId} → {contract.toLocationId}", -60, -6, 11, Color.grey, 260);
+        MakeLabel("Route", rowGO.transform, $"{contract.fromLocationId} → {contract.toLocationId}", -60, -6, theme.FontSizeCaption, theme.TextSecondary, 260);
 
         // Награда
-        var rewardText = MakeLabel("Reward", rowGO.transform, $"{contract.reward:F0} CR", 180, 12, 13, Color.yellow, 100);
-
-        // Таймер
-        var timeText = MakeLabel("Time", rowGO.transform, contract.GetTimeRemainingString(), 240, 12, 11, Color.white, 60);
+        MakeLabel("Reward", rowGO.transform, $"{contract.reward:F0} CR", 180, 12, theme.FontSizeList, theme.TextTitle, 100);
 
         // Кнопка выбора
-        var btn = rowGO.AddComponent<Button>();
-        btn.targetGraphic = bg;
+        var btn = rowGO.GetComponent<Button>();
+        if (btn == null) btn = rowGO.AddComponent<Button>();
+        var bg = rowGO.GetComponent<Image>();
+        if (bg != null) btn.targetGraphic = bg;
         int ci = index;
         btn.onClick.AddListener(() => SelectContract(ci));
 
@@ -512,16 +378,7 @@ public class ContractBoardUI : MonoBehaviour
 
     private void MakeEmptyRow(string msg)
     {
-        var go = new GameObject("EmptyRow");
-        go.transform.SetParent(_contentPanel, false);
-        var r = go.AddComponent<RectTransform>();
-        r.sizeDelta = new Vector2(0, 30);
-        var t = go.AddComponent<Text>();
-        t.text = msg;
-        t.fontSize = 13;
-        t.color = Color.gray;
-        t.alignment = TextAnchor.MiddleCenter;
-        t.font = Resources.GetBuiltinResource<Font>("LegacyRuntime.ttf");
+        UIFactory.CreateEmptyRow(_contentPanel, msg);
     }
 
     private void SelectContract(int index)
@@ -539,13 +396,14 @@ public class ContractBoardUI : MonoBehaviour
     private void HighlightRow(int index)
     {
         if (_contentPanel == null) return;
+        var theme = UITheme.Default;
         for (int i = 0; i < _contentPanel.childCount; i++)
         {
             var child = _contentPanel.GetChild(i);
             var bg = child.GetComponent<Image>();
             if (bg != null)
             {
-                bg.color = (i == index) ? new Color(0.2f, 0.25f, 0.15f) : (i % 2 == 0 ? new Color(0.06f, 0.06f, 0.10f) : new Color(0.10f, 0.10f, 0.15f));
+                bg.color = (i == index) ? theme.SelectedRow : theme.GetContractRowColor(i);
             }
         }
     }
@@ -562,7 +420,7 @@ public class ContractBoardUI : MonoBehaviour
             var debt = _player.GetComponent<PlayerDebt>();
             if (debt != null && debt.CurrentDebt > 0f)
             {
-                _debtText.text = $"⚠ ДОЛГ: {debt.CurrentDebt:F0} CR — {debt.GetDebtPenaltyString()}";
+                _debtText.text = $"[ДОЛГ] {debt.CurrentDebt:F0} CR — {debt.GetDebtPenaltyString()}";
                 _debtText.color = debt.GetDebtColor();
                 return;
             }

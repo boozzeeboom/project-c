@@ -215,9 +215,9 @@ namespace ProjectC.Trade
         {
             switch (type)
             {
-                case ContractType.Standard: return "📦 Стандартная";
-                case ContractType.Urgent: return "⚡ Срочная";
-                case ContractType.Receipt: return "📝 Под расписку";
+                case ContractType.Standard: return "[Стандарт]";
+                case ContractType.Urgent: return "[Срочный]";
+                case ContractType.Receipt: return "[Расписка]";
                 default: return type.ToString();
             }
         }

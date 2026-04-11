@@ -638,6 +638,11 @@ namespace ProjectC.Player
         }
 
         /// <summary>
+        /// Получить количество активных зон ветра (для дебага)
+        /// </summary>
+        public int GetActiveWindZoneCount() => _activeWindZones.Count;
+
+        /// <summary>
         /// Применить силу ветра от всех активных зон.
         /// Ветер суммируется векторно от всех зон, плавный lerp при входе/выходе.
         /// </summary>
@@ -661,6 +666,11 @@ namespace ProjectC.Player
                 }
                 // Lerp к целевой силе (плавный переход между зонами)
                 _currentWindForce = Vector3.Lerp(_currentWindForce, totalWind, dt / windDecayTime);
+
+                // Debug лог
+#if UNITY_EDITOR
+                Debug.Log($"[ShipController] ApplyWind: zones={_activeWindZones.Count}, totalWind={totalWind:F1}, currentWindForce={_currentWindForce:F1}, windEffect={_currentWindForce * windInfluence * windExposure:F1}");
+#endif
             }
 
             // Применить с учётом влияния и экспозиции

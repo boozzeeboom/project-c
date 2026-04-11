@@ -31,19 +31,41 @@ namespace ProjectC.Ship
 
         private void OnTriggerEnter(Collider other)
         {
-            var ship = other.GetComponentInParent<ShipController>();
+            // Ищем ShipController на самом объекте или выше (другой объект вошёл в триггер)
+            var ship = other.GetComponent<ShipController>();
+            if (ship == null)
+                ship = other.GetComponentInParent<ShipController>();
+            if (ship == null)
+                ship = other.GetComponentInChildren<ShipController>();
+
             if (ship != null)
             {
-                _shipsInZone.Add(ship);
+                if (!_shipsInZone.Contains(ship))
+                {
+                    _shipsInZone.Add(ship);
+                    ship.RegisterWindZone(this);
+                    Debug.Log($"[WindZone] Ship entered: {ship.name}, zone: {windData.displayName}, active zones: {ship.GetActiveWindZoneCount()}");
+                }
+            }
+            else
+            {
+                Debug.Log($"[WindZone] OnTriggerEnter: {other.name} — no ShipController found");
             }
         }
 
         private void OnTriggerExit(Collider other)
         {
-            var ship = other.GetComponentInParent<ShipController>();
+            var ship = other.GetComponent<ShipController>();
+            if (ship == null)
+                ship = other.GetComponentInParent<ShipController>();
+            if (ship == null)
+                ship = other.GetComponentInChildren<ShipController>();
+
             if (ship != null)
             {
                 _shipsInZone.Remove(ship);
+                ship.UnregisterWindZone(this);
+                Debug.Log($"[WindZone] Ship exited: {ship.name}, zone: {windData.displayName}, active zones: {ship.GetActiveWindZoneCount()}");
             }
         }
 

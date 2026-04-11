@@ -209,7 +209,7 @@ namespace ProjectC.Player
 
                 bool boost = Keyboard.current.leftShiftKey.isPressed;
 
-                if (_currentShip != null)
+                if (_currentShip != null && NetworkManager.Singleton != null && NetworkManager.Singleton.IsListening)
                     _currentShip.SendShipInput(thrust, yaw, pitch, vertical, boost);
 
                 // E в корабле — пока ничего

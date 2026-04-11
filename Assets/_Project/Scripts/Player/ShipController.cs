@@ -82,6 +82,14 @@ namespace ProjectC.Player
         [Tooltip("Ссылка на систему коридоров (назначить из сцены или оставить null для автопоиска)")]
         [SerializeField] private AltitudeCorridorSystem corridorSystem;
 
+        [Header("Ветер и Окружающая Среда (Сессия 3)")]
+        [Tooltip("Влияние ветра на корабль (1.0 = полный снос, 0.0 = игнор)")]
+        [SerializeField] private float windInfluence = 0.5f;
+        [Tooltip("Экспозиция к ветру (зависит от класса: Light=1.2, Medium=1.0, Heavy=0.7, HeavyII=0.5)")]
+        [SerializeField] private float windExposure = 1.0f;
+        [Tooltip("Время затухания ветра при выходе из зоны")]
+        [SerializeField] private float windDecayTime = 1.5f;
+
         [Header("Cargo (Сессия 2)")]
         [Tooltip("Система груза корабля (влияет на скорость)")]
         [SerializeField] private ProjectC.Player.CargoSystem cargoSystem;
@@ -120,6 +128,10 @@ namespace ProjectC.Player
         // Активный коридор (обновляется каждый кадр)
         private AltitudeCorridorData _activeCorridor;
 
+        // Wind state — зарегистрированные зоны
+        private List<ProjectC.Ship.WindZone> _activeWindZones = new();
+        private Vector3 _currentWindForce;
+
         private void Awake()
         {
             _rb = GetComponent<Rigidbody>();
@@ -136,6 +148,9 @@ namespace ProjectC.Player
 
             // Применить пресет класса корабля
             ApplyShipClass();
+
+            // Инициализация ветра
+            _currentWindForce = Vector3.zero;
         }
 
         /// <summary>
@@ -159,6 +174,7 @@ namespace ProjectC.Player
             if (_rb != null)
             {
                 _turbulence = new TurbulenceEffect(_rb, transform);
+                _turbulence.SetShipClassMultiplier(shipFlightClass);
                 _degradation = new SystemDegradationEffect(_rb, transform);
             }
 
@@ -187,6 +203,7 @@ namespace ProjectC.Player
                     thrustSmoothTime = 0.2f;
                     yawDecayTime = 0.8f;
                     maxSpeed = 50f;
+                    windExposure = 1.2f;
                     if (_rb != null) _rb.mass = 800f;
                     break;
 
@@ -202,6 +219,7 @@ namespace ProjectC.Player
                     thrustSmoothTime = 0.3f;
                     yawDecayTime = 1.0f;
                     maxSpeed = 40f;
+                    windExposure = 1.0f;
                     if (_rb != null) _rb.mass = 1000f;
                     break;
 
@@ -217,6 +235,7 @@ namespace ProjectC.Player
                     thrustSmoothTime = 0.4f;
                     yawDecayTime = 1.5f;
                     maxSpeed = 25f;
+                    windExposure = 0.7f;
                     if (_rb != null) _rb.mass = 1500f;
                     break;
 
@@ -232,6 +251,7 @@ namespace ProjectC.Player
                     thrustSmoothTime = 0.5f;
                     yawDecayTime = 2.0f;
                     maxSpeed = 18f;
+                    windExposure = 0.5f;
                     if (_rb != null) _rb.mass = 2000f;
                     break;
             }
@@ -324,6 +344,9 @@ namespace ProjectC.Player
             // 9. Стабилизация (если нет ввода 0.5s+)
             if (autoStabilize && _noInputTimer > 0.5f)
                 ApplyStabilization();
+
+            // 9.5. Ветер (Сессия 3)
+            ApplyWind(dt);
 
             // 10. Ограничение скорости
             ClampVelocity();
@@ -583,6 +606,69 @@ namespace ProjectC.Player
         {
             _pilots.Remove(clientId);
             if (_pilots.Count == 0) enabled = false;
+        }
+
+        /// <summary>
+        /// Применить внешнюю силу (например, ветер из WindZone).
+        /// Вызывается только на сервере.
+        /// </summary>
+        public void ApplyExternalForce(Vector3 force)
+        {
+            if (!IsServer || _rb == null) return;
+            _rb.AddForce(force, ForceMode.Force);
+        }
+
+        /// <summary>
+        /// Зарегистрировать зону ветра (вызывается из WindZone.OnTriggerEnter)
+        /// </summary>
+        public void RegisterWindZone(ProjectC.Ship.WindZone zone)
+        {
+            if (!_activeWindZones.Contains(zone))
+            {
+                _activeWindZones.Add(zone);
+            }
+        }
+
+        /// <summary>
+        /// Отрегистрировать зону ветра (вызывается из WindZone.OnTriggerExit)
+        /// </summary>
+        public void UnregisterWindZone(ProjectC.Ship.WindZone zone)
+        {
+            _activeWindZones.Remove(zone);
+        }
+
+        /// <summary>
+        /// Применить силу ветра от всех активных зон.
+        /// Ветер суммируется векторно от всех зон, плавный lerp при входе/выходе.
+        /// </summary>
+        private void ApplyWind(float dt)
+        {
+            if (_activeWindZones.Count == 0)
+            {
+                // Затухание к 0 при выходе из всех зон
+                _currentWindForce = Vector3.Lerp(_currentWindForce, Vector3.zero, dt / windDecayTime);
+            }
+            else
+            {
+                // Суммировать ветер от всех активных зон
+                Vector3 totalWind = Vector3.zero;
+                foreach (var zone in _activeWindZones)
+                {
+                    if (zone != null && zone.windData != null)
+                    {
+                        totalWind += zone.GetWindForceAtPosition(transform.position);
+                    }
+                }
+                // Lerp к целевой силе (плавный переход между зонами)
+                _currentWindForce = Vector3.Lerp(_currentWindForce, totalWind, dt / windDecayTime);
+            }
+
+            // Применить с учётом влияния и экспозиции
+            Vector3 windEffect = _currentWindForce * windInfluence * windExposure;
+            if (windEffect.sqrMagnitude > 0.01f)
+            {
+                _rb.AddForce(windEffect, ForceMode.Force);
+            }
         }
     }
 }

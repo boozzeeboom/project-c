@@ -5,8 +5,10 @@ namespace ProjectC.Ship
     /// <summary>
     /// Эффект турбулентности — тряска корабля при выходе за нижнюю границу коридора.
     /// Применяется в Zone DangerLower (ниже minAltitude).
-    /// 
+    ///
     /// Использует случайные силы для имитации турбулентности от Завесы.
+    /// Поддерживает Cinemachine Impulse (если пакет установлен) для тряски камеры.
+    /// Интенсивность зависит от класса корабля (Light трясёт сильнее, Heavy — слабее).
     /// </summary>
     public class TurbulenceEffect
     {
@@ -29,16 +31,54 @@ namespace ProjectC.Ship
         [Tooltip("Дополнительный множитель силы (общий усилитель)")]
         public float forceMultiplier = 50f;
 
+        [Tooltip("Базовая сила турбулентности — зависит от класса корабля")]
+        public float baseForce = 600f;
+
         // Таймер для обновления
         private float _updateTimer;
 
         // Текущая случайная сила
         private Vector3 _currentTurbulenceForce;
 
+        // Cinemachine Impulse (если пакет установлен)
+#pragma warning disable 0414
+        private bool _hasCinemachine;
+#pragma warning restore 0414
+#if CINEMACHINE_6_X_OR_NEWER || CINEMACHINE
+        private Cinemachine.CinemachineImpulseSource _impulseSource;
+#endif
+
         public TurbulenceEffect(Rigidbody rb, Transform transform)
         {
             _rb = rb;
             _transform = transform;
+            _tryInitializeCinemachine();
+        }
+
+        /// <summary>
+        /// Установить множитель силы турбулентности на основе класса корабля.
+        /// Light — трясёт сильнее, HeavyII — очень устойчивый.
+        /// </summary>
+        public void SetShipClassMultiplier(ProjectC.Player.ShipFlightClass shipClass)
+        {
+            switch (shipClass)
+            {
+                case ProjectC.Player.ShipFlightClass.Light:
+                    baseForce = 800f;   // Light трясёт сильнее
+                    break;
+                case ProjectC.Player.ShipFlightClass.Medium:
+                    baseForce = 600f;   // Medium баланс
+                    break;
+                case ProjectC.Player.ShipFlightClass.Heavy:
+                    baseForce = 400f;   // Heavy меньше трясёт
+                    break;
+                case ProjectC.Player.ShipFlightClass.HeavyII:
+                    baseForce = 300f;   // HeavyII очень устойчив
+                    break;
+                default:
+                    baseForce = 600f;   // fallback на Medium
+                    break;
+            }
         }
 
         /// <summary>
@@ -49,6 +89,8 @@ namespace ProjectC.Ship
         public void Update(float severity, float dt)
         {
             if (severity <= 0f) return;
+
+            turbulenceIntensity = Mathf.Clamp01(severity);
 
             _updateTimer += dt;
 
@@ -63,6 +105,12 @@ namespace ProjectC.Ship
             // Применяем силу и момент
             _rb.AddForce(_currentTurbulenceForce, ForceMode.Force);
             _rb.AddTorque(_currentTurbulenceTorque, ForceMode.Force);
+
+            // Cinemachine Impulse при высокой турбулентности
+            if (turbulenceIntensity > 0.3f)
+            {
+                ApplyTurbulenceImpulse(turbulenceIntensity);
+            }
         }
 
         // Текущий момент турбулентности
@@ -124,6 +172,46 @@ namespace ProjectC.Ship
 
             // Линейная интерполяция: 0 на границе, 1 на maxDepth ниже
             return Mathf.Clamp01(depthBelow / maxDepth);
+        }
+
+        // ============================================================
+        // Cinemachine Impulse — тряска камеры при турбулентности
+        // ============================================================
+
+        private void _tryInitializeCinemachine()
+        {
+#if CINEMACHINE_6_X_OR_NEWER || CINEMACHINE
+            _hasCinemachine = true;
+            _impulseSource = _rb.GetComponent<Cinemachine.CinemachineImpulseSource>();
+            if (_impulseSource == null)
+            {
+                // Пытаемся добавить стандартный импульсный источник
+                _impulseSource = _rb.gameObject.AddComponent<Cinemachine.CinemachineDefaultImpulseSource>();
+                if (_impulseSource != null)
+                {
+                    Debug.Log("[TurbulenceEffect] Cinemachine Impulse Source added");
+                }
+            }
+#else
+            _hasCinemachine = false;
+            Debug.Log("[TurbulenceEffect] Cinemachine not detected — impulse disabled (install Cinemachine package for camera shake)");
+#endif
+        }
+
+        private void ApplyTurbulenceImpulse(float severity)
+        {
+#if CINEMACHINE_6_X_OR_NEWER || CINEMACHINE
+            if (_hasCinemachine && _impulseSource != null)
+            {
+                _impulseSource.GenerateImpulse(severity * 2f);
+            }
+#else
+            // Заглушка — логирование для отладки
+            if (severity > 0.5f)
+            {
+                Debug.Log($"[TurbulenceEffect] TURBULENCE IMPULSE (Cinemachine not installed): severity={severity:F2}");
+            }
+#endif
         }
     }
 }

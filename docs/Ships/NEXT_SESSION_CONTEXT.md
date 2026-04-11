@@ -9,9 +9,9 @@
 
 Ты продолжаешь работу над **Project C** — MMO/Co-Op игрой над облаками по книге «Интеграл Пьявица».
 
-**Контекст:**已完成 оркестрация и дизайн новой системы управления кораблями. Все документы созданы и запушены на GitHub.
+**Контекст:** Сессии 1-3 завершены ✅. ShipController v2.2 работает с smooth movement, altitude corridors, wind zones.
 
-**Немедленная задача:** Начать **Сессию 1: Core Smooth Movement** — переписать `ShipController.cs` чтобы корабль ощущался как плавная воздушная баржа, а не аркадный истребитель.
+**Немедленная задача:** Начать **Сессию 4: Module System Foundation** — создать систему модулей для кораблей.
 
 ---
 
@@ -40,99 +40,76 @@
 ### 4. Текущий код:
 | Файл | Путь | Статус |
 |------|------|--------|
-| **ShipController.cs** | `Assets/_Project/Scripts/Player/ShipController.cs` | 🟡 Нужно переписать |
+| **ShipController.cs** | `Assets/_Project/Scripts/Player/ShipController.cs` | ✅ v2.2 — Сессии 1-3 завершены |
+| **WindZone.cs** | `Assets/_Project/Scripts/Ship/WindZone.cs` | ✅ Сессия 3 |
+| **WindZoneData.cs** | `Assets/_Project/Scripts/Ship/WindZoneData.cs` | ✅ Сессия 3 |
+| **TurbulenceEffect.cs** | `Assets/_Project/Scripts/Ship/TurbulenceEffect.cs` | ✅ Улучшена в Сессии 3 |
+| **AltitudeCorridorSystem.cs** | `Assets/_Project/Scripts/Ship/AltitudeCorridorSystem.cs` | ✅ Сессия 2 |
 
 ---
 
-## 🎯 Сессия 1: Core Smooth Movement — ЧТО ДЕЛАТЬ
+## 🎯 Сессия 4: Module System Foundation — ЧТО ДЕЛАТЬ
 
 ### Проблема
-Текущий ShipController.cs имеет **резкое** управление:
-- Yaw (A/D) — мгновенный поворот, нет инерции
-- Pitch (мышь Y) — мгновенный наклон
-- Lift (Q/E) — рывок по вертикали
-- Нет стабилизации — корабль «зависает» в наклоне
-- Нет «чувства баржи»
+Корабли имеют фиксированные характеристики. Нет системы кастомизации через модули.
+В ShipRegistry.md описаны 12 модулей (YAW_ENH, PITCH_ENH, MEZIY_* и т.д.) но они не реализованы.
 
-### Решение (подробно в `SHIP_MOVEMENT_IMPLEMENTATION_PLAN.md` §3)
+### Решение (подробно в `SHIP_MOVEMENT_IMPLEMENTATION_PLAN.md` §Сессия 4)
 
-#### Новые поля ShipController
+#### Новые файлы
+```
+ShipModule.cs (ScriptableObject) — определение модуля
+ModuleSlot.cs (MonoBehaviour) — слот для модуля на корабле
+ShipModuleManager.cs (MonoBehaviour) — менеджер модулей
+```
+
+#### ShipModule поля
 ```csharp
-// Smooth Movement
-float yawSmoothTime = 0.6f;         // Lerp time для yaw
-float pitchSmoothTime = 0.7f;       // Lerp time для pitch
-float liftSmoothTime = 1.0f;        // Lerp time для lift (ОЧЕНЬ медленно)
-float thrustSmoothTime = 0.3f;      // Ramp-up тяги
-float yawDecayTime = 1.0f;          // Затухание yaw без ввода
-float pitchDecayTime = 0.8f;        // Затухание pitch без ввода
-
-// Stabilization
-float pitchStabForce = 2.5f;        // Сила возврата pitch к 0
-float rollStabForce = 4.0f;         // Сила возврата roll к 0
-float maxPitchAngle = 20f;          // ° — ограничение тангажа
-float maxRollAngle = 0f;            // ° (0 = заблокирован)
-
-// Altitude
-float minAltitude = 1200f;          // Глобальный минимум
-float maxAltitude = 4450f;          // Глобальный максимум
-float maxLiftSpeed = 2.5f;          // м/с — макс. скорость лифта
+string moduleId;              // MODULE_YAW_ENH
+string displayName;           // "Улучшенное Рыскание"
+ModuleType type;              // Propulsion, Utility, Special
+int tier;                     // 1-4
+float yawMultiplier = 1f;     // 1.4 для YAW_ENH
+float pitchMultiplier = 1f;   // 1.3 для PITCH_ENH
+float liftMultiplier = 1f;    // 1.5 для LIFT_ENH
+float thrustMultiplier = 1f;
+int powerConsumption = 0;     // 5-8 для тир 1
+List<ShipFlightClass> compatibleClasses;
+List<string> incompatibleModules;
 ```
 
-#### Новые state-переменные (текущие сглаженные значения)
+#### ShipController изменения
 ```csharp
-float _currentYawRate;
-float _currentPitchRate;
-float _currentLiftForce;
-float _currentThrust;
-float _currentRoll;
+// Добавить поля:
+[SerializeField] private ShipModuleManager moduleManager;
+private float _moduleThrustMult = 1f;
+private float _moduleYawMult = 1f;
+private float _modulePitchMult = 1f;
+private float _moduleLiftMult = 1f;
+
+// В FixedUpdate():
+ApplyModuleModifiers();  // после AverageInputs
+
+// Применять в ApplyThrustForce, ApplyRotation и т.д.:
+_rb.AddForce(transform.forward * currentThrust * _moduleThrustMult, ForceMode.Force);
 ```
 
-#### Новый FixedUpdate (псевдокод)
-```
-1. Усреднить ввод от пилотов (AverageInputs)
-2. Smooth thrust: Lerp к целевой тяге (0.3s ramp-up)
-3. Smooth yaw: Lerp к targetYaw, decay к 0 без ввода
-4. Smooth pitch: Lerp к targetPitch, decay к 0, clamp ±20°
-5. Smooth lift: Lerp к targetLift, clamp ±maxLiftSpeed
-6. Smooth roll: Lerp к 0 (заблокирован)
-7. Применить силы: thrust, lift, rotation
-8. Stabilization: если нет ввода — возврат к горизонту
-9. Ветер: ApplyWind() (заглушка для Сессии 3)
-10. Турбулентность: если близко к Завесе (заглушка)
-11. ClampVelocity: ограничить maxSpeed
-12. ValidateAltitude: серверная проверка высоты
-```
+### Тесты (подробно в Implementation Plan §Сессия 4)
+3 Unity теста в `ModuleSystemTests.cs`:
+1. InstallModule_AppliesEffects
+2. IncompatibleModule_BlocksInstallation
+3. RemoveModule_EffectsReturnToBase
 
-#### Изменение параметров (текущие → целевые для LIGHT класса)
-| Параметр | Сейчас | Цель | Изменение |
-|----------|--------|------|-----------|
-| thrustForce | 500 | 350 | ×0.7 |
-| yawForce | 30 | 12 (×0.4) | РЕЗКО медленнее |
-| pitchForce | 40 | 20 (×0.5) | Значительно медленнее |
-| verticalForce | 300 | 120 | ×0.4 |
-| linearDrag | 1.0 | 0.4 | Меньше |
-| angularDrag | 2.0 | 3.5 (×1.75) | Больше — гасит вращение |
-
-### Тесты (подробно в Implementation Plan §4)
-7 Unity тестов в `ShipMovementTests.cs`:
-1. SmoothThrust_RampsUpOverTime
-2. SmoothYaw_SlowTurnWithInertia
-3. YawDecay_ContinuesAfterInputReleased
-4. Stabilization_ReturnsToLevel
-5. SlowLift_VeryGentleAltitudeChange
-6. AltitudeValidation_BelowMin_Turbulence
-7. AutoHover_NoPilots_ShipHovers
-
-### Критерии приёмки (подробно в Implementation Plan §6)
-- [ ] Yaw плавный: < 40°/s, Lerp 0.6s
-- [ ] Pitch плавный: < 30°/s, Lerp 0.7s, clamp ±20°
-- [ ] Lift медленный: < 2.5 м/с, Lerp 1.0s
-- [ ] Thrust ramp-up: 0.3s до полной тяги
-- [ ] Stabilization: возврат к 0° за < 3с
-- [ ] Yaw decay: затухание за ~1с без ввода
-- [ ] Angular drag: вращение гасится
-- [ ] Нет резких стопов: инерция сохраняется
-- [ ] AutoHover: корабль зависает без пилотов
+### Критерии приёмки
+- [ ] ShipModule ScriptableObject создан
+- [ ] ModuleSlot показывает occupied/unoccupied
+- [ ] ShipModuleManager управляет слотами
+- [ ] YAW_ENH модуль ускоряет поворот на 40%
+- [ ] Несовместимые модули блокируются
+- [ ] Снятие модуля возвращает базовые эффекты
+- [ ] Энергия корабля ограничивает установку модулей
+- [ ] 3 теста проходят
+- [ ] Сетевая совместимость сохранена
 
 ---
 
@@ -140,10 +117,10 @@ float _currentRoll;
 
 | # | Сессия | Фокус | Статус |
 |---|--------|-------|--------|
-| **1** | Core Smooth Movement | Переписать ShipController.cs | 🔴 НЕ начата |
-| **2** | Altitude Corridors | Коридоры, серверная валидация | 🔴 НЕ начата |
-| **3** | Wind & Turbulence | Ветер, тряска у Завесы | 🔴 НЕ начата |
-| **4** | Module System | ShipModule SO, тир 1 модули | 🔴 НЕ начата |
+| **1** | Core Smooth Movement | Переписать ShipController.cs | ✅ ЗАВЕРШЕНА |
+| **2** | Altitude Corridors | Коридоры, серверная валидация | ✅ ЗАВЕРШЕНА |
+| **3** | Wind & Turbulence | Ветер, тряска у Завесы | ✅ ЗАВЕРШЕНА |
+| **4** | Module System | ShipModule SO, тир 1 модули | 🔴 СЛЕДУЮЩАЯ |
 | **5** | Meziy Thrust | Burst maneuvers | 🔴 НЕ начата |
 | **6** | Co-Op + KeyRod | Адаптивный Co-Op, ключи | 🔴 НЕ начата |
 | **7** | Docking | Диспетчер, CommPanel | 🔴 НЕ начата |
@@ -220,23 +197,23 @@ private void RemovePilotRpc(ulong clientId, RpcParams rpcParams = default)
 3. **Тестируй в Unity.** Каждый коммит = проверяй в редакторе.
 4. **Пользователь тестирует сам.** Он запускает Unity и проверяет «feel».
 5. **Коммить часто.** Маленькие шаги → фидбек → итерация.
+6. **Конфликт имён с UnityEngine.** Использовать полные имена: `ProjectC.Ship.WindZone` вместо `WindZone`
 
 ---
 
 ## 🔧 Быстрый Старт (Пошагово)
 
 ```
-1. Прочитать: docs/Ships/AGENTS_SHIP_SYSTEM_SUMMARY.md (10 мин)
-2. Прочитать: docs/Ships/SHIP_MOVEMENT_IMPLEMENTATION_PLAN.md §3 (15 мин)
-3. Открыть: Assets/_Project/Scripts/Player/ShipController.cs
-4. Добавить новые поля (smooth times, state variables)
-5. Переписать FixedUpdate с Lerp логикой
-6. Настроить параметры (yawForce ×0.4, angularDrag ×1.75 и т.д.)
-7. Добавить ApplyStabilization() метод
-8. Сохранить → Пользователь тестирует в Unity → фидбек
-9. Итерировать параметры по фидбеку
-10. Создать ShipMovementTests.cs (7 тестов)
-11. Коммит → пуш
+1. Прочитать: docs/Ships/SESSION_3_COMPLETE.md (10 мин) — что готово
+2. Прочитать: docs/Ships/SHIP_MOVEMENT_IMPLEMENTATION_PLAN.md §Сессия 4 (15 мин)
+3. Прочитать: docs/Ships/ShipRegistry.md §3 — каталог модулей
+4. Открыть: Assets/_Project/Scripts/Player/ShipController.cs
+5. Создать: ShipModule.cs, ModuleSlot.cs, ShipModuleManager.cs
+6. Интегрировать модули в ShipController (ApplyModuleModifiers)
+7. Сохранить → Пользователь тестирует в Unity → фидбек
+8. Итерировать параметры по фидбеку
+9. Создать ModuleSystemTests.cs (3 теста)
+10. Коммит → пуш
 ```
 
 ---
@@ -244,7 +221,9 @@ private void RemovePilotRpc(ulong clientId, RpcParams rpcParams = default)
 ## 📊 Статус Репо
 
 - **Ветка:** `qwen-gamestudio-agent-dev`
-- **Последний коммит:** Ship docs reorganized (`docs/Ships/`)
+- **Сессии:** 1-3 ✅ ЗАВЕРШЕНЫ, Сессия 4 🔴 СЛЕДУЮЩАЯ
+- **ShipController:** v2.2 (smooth movement + altitude corridors + wind)
+- **Последний коммит:** Session 3 — Wind & Environmental Forces ✅
 - **Upstream:** GitHub `boozzeeboom/project-c`
 - **Команда пуша:** `git push upstream qwen-gamestudio-agent-dev`
 

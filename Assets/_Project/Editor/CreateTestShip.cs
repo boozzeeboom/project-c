@@ -12,6 +12,8 @@ namespace ProjectC.Editor
     /// </summary>
     public class CreateTestShip : EditorWindow
     {
+        private static ShipClass selectedClass = ShipClass.Medium;
+
         [MenuItem("Tools/Create Test Ship")]
         public static void Create()
         {
@@ -22,8 +24,35 @@ namespace ProjectC.Editor
                 return;
             }
 
+            // Показать окно выбора класса
+            var window = GetWindow<CreateTestShip>("Create Test Ship");
+            window.minSize = new Vector2(300, 150);
+            window.ShowUtility();
+        }
+
+        private void OnGUI()
+        {
+            GUILayout.Label("Выберите класс корабля:", EditorStyles.boldLabel);
+            selectedClass = (ShipClass)EditorGUILayout.EnumPopup("Ship Class:", selectedClass);
+
+            GUILayout.Space(10);
+
+            if (GUILayout.Button("Создать корабль", GUILayout.Height(30)))
+            {
+                CreateShip(selectedClass);
+                Close();
+            }
+
+            if (GUILayout.Button("Отмена"))
+            {
+                Close();
+            }
+        }
+
+        private static void CreateShip(ShipClass shipClass)
+        {
             Undo.IncrementCurrentGroup();
-            Undo.SetCurrentGroupName("Create Test Ship");
+            Undo.SetCurrentGroupName($"Create {shipClass} Ship");
 
             // 1. Создать платформу
             var platform = GameObject.CreatePrimitive(PrimitiveType.Cube);
@@ -31,53 +60,61 @@ namespace ProjectC.Editor
             platform.transform.localScale = new Vector3(20, 0.5f, 20);
             platform.transform.position = Vector3.zero;
             
-            // Удалить стандартный MeshRenderer (платформа не нужна визуалка)
-            // Или оставить — можно настроить материал позже
             var platMat = platform.GetComponent<MeshRenderer>();
             if (platMat != null)
             {
                 platMat.sharedMaterial = new Material(Shader.Find("Universal Render Pipeline/Lit"));
-                platMat.sharedMaterial.color = new Color(0.4f, 0.4f, 0.4f); // серый
+                platMat.sharedMaterial.color = new Color(0.4f, 0.4f, 0.4f);
             }
 
             Undo.RegisterCreatedObjectUndo(platform, "Create Platform");
 
             // 2. Создать корабль
             var ship = GameObject.CreatePrimitive(PrimitiveType.Cube);
-            ship.name = "Ship_Test";
+            ship.name = $"Ship_{shipClass}";
             ship.transform.localScale = new Vector3(8, 1.5f, 4);
             ship.transform.position = new Vector3(0, 1.5f, 0);
 
-            // Назначить тег "Ship"
-            if (!TagExists("Ship"))
-            {
-                UnityEditor.Undo.RegisterCreatedObjectUndo(ship, "Create Ship");
-            }
             ship.tag = "Ship";
 
-            // Настроить материал корабля
             var shipMat = ship.GetComponent<MeshRenderer>();
             if (shipMat != null)
             {
                 shipMat.sharedMaterial = new Material(Shader.Find("Universal Render Pipeline/Lit"));
-                shipMat.sharedMaterial.color = new Color(0.8f, 0.3f, 0.3f); // красноватый
+                // Разные цвета для разных классов
+                shipMat.sharedMaterial.color = shipClass switch
+                {
+                    ShipClass.Light => new Color(0.3f, 0.8f, 0.3f),   // Зелёный
+                    ShipClass.Medium => new Color(0.8f, 0.3f, 0.3f), // Красный
+                    ShipClass.Heavy => new Color(0.3f, 0.3f, 0.8f),  // Синий
+                    ShipClass.HeavyII => new Color(0.8f, 0.8f, 0.3f), // Жёлтый
+                    _ => Color.white
+                };
             }
 
             // 3. Добавить Rigidbody
             var rb = ship.AddComponent<Rigidbody>();
-            rb.mass = 1000f;
-            rb.linearDamping = 0f;
-            rb.angularDamping = 0f; // ShipController сам управляет
+            rb.drag = 0f;
+            rb.angularDrag = 0f;
             rb.useGravity = true;
             rb.interpolation = RigidbodyInterpolation.Interpolate;
             rb.collisionDetectionMode = CollisionDetectionMode.Discrete;
 
             // 4. Добавить ShipController
             var sc = ship.AddComponent<ShipController>();
-            // Параметры уже настроены по умолчанию в ShipController.cs
+            
+            // Установить класс через reflection (поле private)
+            var shipClassField = sc.GetType().GetField("shipClass", 
+                System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
+            shipClassField?.SetValue(sc, shipClass);
+            
+            // Вызвать ApplyShipClass через reflection
+            var applyMethod = sc.GetType().GetMethod("ApplyShipClass", 
+                System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
+            applyMethod?.Invoke(sc, null);
 
             // 5. Добавить NetworkObject
-            var netObj = ship.AddComponent<NetworkObject>();
+            ship.AddComponent<NetworkObject>();
 
             // 6. NetworkTransform — добавить вручную если установлен пакет
             //    В Unity 6 / NGO 2.x может требовать отдельный пакет:
@@ -88,11 +125,12 @@ namespace ProjectC.Editor
             // 7. Выбрать корабль в Hierarchy
             Selection.activeGameObject = ship;
 
-            Debug.Log("✅ Test ship created!");
+            Debug.Log($"✅ Test ship created: {shipClass}");
             Debug.Log($"  - Ship: {ship.name} (Scale: {ship.transform.localScale})");
             Debug.Log($"  - Platform: {platform.name} (Scale: {platform.transform.localScale})");
             Debug.Log($"  - Rigidbody Mass: {rb.mass}");
             Debug.Log($"  - Tag: {ship.tag}");
+            Debug.Log($"  - Class: {shipClass}");
             Debug.Log($"  ⚠️ NetworkTransform нужно добавить вручную (Add Component → NetworkTransform → Server Authority)");
         }
 

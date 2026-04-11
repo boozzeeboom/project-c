@@ -21,7 +21,9 @@ namespace ProjectC.Player
         [SerializeField] private float maxSpeed = 40f;
 
         [Header("Вращение")]
-        [SerializeField] private float yawForce = 12f;
+        [Tooltip("Сила рыскания (курсовой поворот A/D). ~25°/s для лёгкого корабля")]
+        [SerializeField] private float yawForce = 25f;
+        [Tooltip("Сила тангажа (нос вверх/вниз мышь). ~20°/s")]
         [SerializeField] private float pitchForce = 20f;
 
         [Header("Вертикальное движение")]

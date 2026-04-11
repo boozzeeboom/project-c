@@ -4,13 +4,19 @@
 
 ---
 
-## Документы
+## 🚀 Начни отсюда
 
 | Документ | Описание |
 |----------|----------|
-| **[ShipRegistry.md](ShipRegistry.md)** | Единый реестр всех кораблей (10 шт.) и модулей (12 шт.). Матрица совместимости, статистика, pipeline добавления. |
-| **[SHIP_MOVEMENT_IMPLEMENTATION_PLAN.md](SHIP_MOVEMENT_IMPLEMENTATION_PLAN.md)** | План реализации плавного управления по сессиям. Код ShipController v2, Unity тесты, критерии приёмки. |
-| **[AGENTS_SHIP_SYSTEM_SUMMARY.md](AGENTS_SHIP_SYSTEM_SUMMARY.md)** | Summary оркестрации агентов. Проблемы, решение, роли, сессии, следующие шаги. |
+| **[NEXT_SESSION_CONTEXT.md](NEXT_SESSION_CONTEXT.md)** | ⭐ **ЕДИНАЯ ТОЧКА ВХОДА** для новой сессии. Краткая инструкция, что делать, ссылки на все документы, пошаговый план. |
+
+## Основные Документы
+
+| Документ | Описание |
+|----------|----------|
+| **[AGENTS_SHIP_SYSTEM_SUMMARY.md](AGENTS_SHIP_SYSTEM_SUMMARY.md)** | Summary оркестрации агентов. Проблемы, решение, роли, 7 сессий, следующие шаги. |
+| **[SHIP_MOVEMENT_IMPLEMENTATION_PLAN.md](SHIP_MOVEMENT_IMPLEMENTATION_PLAN.md)** | План реализации по сессиям. Код ShipController v2, 7 Unity тестов, критерии приёмки. |
+| **[ShipRegistry.md](ShipRegistry.md)** | Единый реестр: 10 кораблей, 12 модулей, матрица совместимости, статистика. |
 
 ## Связанные Документы (вне папки)
 

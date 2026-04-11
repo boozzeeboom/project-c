@@ -1,6 +1,7 @@
 using UnityEngine;
 using Unity.Netcode;
 using System.Collections.Generic;
+using ProjectC.Ship;
 
 namespace ProjectC.Player
 {
@@ -17,12 +18,13 @@ namespace ProjectC.Player
     }
 
     /// <summary>
-    /// Сетевой контроллер корабля v2.0 — "Живые Баржи"
+    /// Сетевой контроллер корабля v2.1 — "Живые Баржи" + Altitude Corridor System (Сессия 2)
     /// Smooth movement с Mathf.SmoothDamp для frame-rate независимого сглаживания.
     /// Кооп-пилотирование: несколько игроков могут управлять одновременно.
     /// Ввод суммируется на сервере. NetworkTransform(ServerAuthority) реплицирует всем.
-    /// 
+    ///
     /// Сессия 1: Core Smooth Movement — плавные баржи, не истребители.
+    /// Сессия 2: Altitude Corridor System — коридоры высот, турбулентность, деградация.
     /// </summary>
     [RequireComponent(typeof(Rigidbody))]
     [RequireComponent(typeof(NetworkObject))]
@@ -76,13 +78,9 @@ namespace ProjectC.Player
         [Tooltip("Автоматическая стабилизация при отсутствии ввода")]
         [SerializeField] private bool autoStabilize = true;
 
-        [Header("Коридор Высот (Сессия 2 — заглушка)")]
-        [Tooltip("Минимальная высота полёта (м)")]
-        [SerializeField] private float minAltitude = 1200f;
-        [Tooltip("Максимальная высота полёта (м)")]
-        [SerializeField] private float maxAltitude = 4450f;
-        [Tooltip("Максимальная скорость лифта (м/с)")]
-        [SerializeField] private float maxLiftSpeed = 2.5f;
+        [Header("Коридор Высот (Сессия 2)")]
+        [Tooltip("Ссылка на систему коридоров (назначить из сцены или оставить null для автопоиска)")]
+        [SerializeField] private AltitudeCorridorSystem corridorSystem;
 
         [Header("Cargo (Сессия 2)")]
         [Tooltip("Система груза корабля (влияет на скорость)")]
@@ -113,6 +111,15 @@ namespace ProjectC.Player
         // Таймер отсутствия ввода (для стабилизации)
         private float _noInputTimer = 0f;
 
+        // Сессия 2: Система коридоров высот
+        private AltitudeStatus _currentAltitudeStatus = AltitudeStatus.Safe;
+        private TurbulenceEffect _turbulence;
+        private SystemDegradationEffect _degradation;
+        private DegradationModifiers _currentDegradationModifiers;
+
+        // Активный коридор (обновляется каждый кадр)
+        private AltitudeCorridorData _activeCorridor;
+
         private void Awake()
         {
             _rb = GetComponent<Rigidbody>();
@@ -124,8 +131,38 @@ namespace ProjectC.Player
                 _rb.constraints = RigidbodyConstraints.None;
             }
 
+            // Сессия 2: Инициализация системы коридоров
+            InitializeAltitudeSystem();
+
             // Применить пресет класса корабля
             ApplyShipClass();
+        }
+
+        /// <summary>
+        /// Сессия 2: Инициализация системы коридоров высот.
+        /// Находит AltitudeCorridorSystem на сцене или использует fallback.
+        /// </summary>
+        private void InitializeAltitudeSystem()
+        {
+            // Находим систему коридоров
+            if (corridorSystem == null)
+            {
+                corridorSystem = FindAnyObjectByType<AltitudeCorridorSystem>();
+            }
+
+            if (corridorSystem == null && IsServer)
+            {
+                Debug.LogWarning("[ShipController] AltitudeCorridorSystem not found! Corridor validation disabled.");
+            }
+
+            // Создаём эффекты
+            if (_rb != null)
+            {
+                _turbulence = new TurbulenceEffect(_rb, transform);
+                _degradation = new SystemDegradationEffect(_rb, transform);
+            }
+
+            Debug.Log($"[ShipController] Altitude system initialized. CorridorSystem: {(corridorSystem != null ? "Found" : "Not Found")}");
         }
 
         /// <summary>
@@ -259,7 +296,8 @@ namespace ProjectC.Player
             // 5. Smooth lift (очень медленно, 1.0s)
             float targetLift = avgVertical * verticalForce;
             _currentLiftForce = Mathf.SmoothDamp(_currentLiftForce, targetLift, ref _liftVelocitySmooth, liftSmoothTime);
-            // Clamp к максимальной скорости лифта
+            // Clamp к максимальной скорости лифта (Сессия 2: используем активный коридор)
+            float maxLiftSpeed = (_activeCorridor != null && _activeCorridor.corridorId == "global") ? 2.5f : 2.0f;
             float maxLiftForce = maxLiftSpeed * _rb.mass * Mathf.Abs(Physics.gravity.y);
             _currentLiftForce = Mathf.Clamp(_currentLiftForce, -maxLiftForce, maxLiftForce);
 
@@ -274,24 +312,24 @@ namespace ProjectC.Player
                 _noInputTimer += dt;
             }
 
-            // 7. Применяем силы
+            // 7. Сессия 2: Валидация высоты и применение эффектов
+            ValidateAndApplyAltitudeEffects(dt);
+
+            // 8. Применяем силы (с учётом деградации если есть)
             ApplyThrustForce(_currentThrust);
             ApplyAntiGravity();
             ApplyLiftForce(_currentLiftForce);
             ApplyRotation(_currentYawRate, _currentPitchRate);
 
-            // 8. Стабилизация (если нет ввода 0.5s+)
+            // 9. Стабилизация (если нет ввода 0.5s+)
             if (autoStabilize && _noInputTimer > 0.5f)
                 ApplyStabilization();
 
-            // 9. Ограничение скорости
+            // 10. Ограничение скорости
             ClampVelocity();
 
-            // 10. Ограничение угла тангажа
+            // 11. Ограничение угла тангажа
             ClampPitchAngle();
-
-            // 11. Валидация высоты (заглушка для Сессии 2)
-            ValidateAltitude();
 
             // 12. Сброс буфера ввода
             _sumThrust = 0; _sumYaw = 0; _sumPitch = 0; _sumVertical = 0;
@@ -425,33 +463,91 @@ namespace ProjectC.Player
         }
 
         /// <summary>
-        /// Валидация высоты (заглушка для Сессии 2)
+        /// Сессия 2: Валидация высоты и применение эффектов коридоров.
+        /// Определяет активный коридор, проверяет статус и применяет эффекты.
         /// </summary>
-        private void ValidateAltitude()
+        private void ValidateAndApplyAltitudeEffects(float dt)
         {
+            if (corridorSystem == null) return;
+
             float currentAlt = transform.position.y;
 
-            // Заглушка: логируем предупреждения (в будущем — UI warnings)
-            if (currentAlt < minAltitude + 100f)
+            // 1. Определяем активный коридор
+            _activeCorridor = corridorSystem.GetActiveCorridor(transform.position);
+
+            // 2. Получаем статус высоты
+            _currentAltitudeStatus = _activeCorridor.GetStatus(currentAlt);
+
+            // 3. Применяем эффекты в зависимости от статуса
+            switch (_currentAltitudeStatus)
             {
-                // Warning: приближение к нижней границе
-                // TODO: Show UI warning
+                case AltitudeStatus.Safe:
+                    // Всё OK — сбрасываем эффекты
+                    if (_turbulence != null)
+                        _turbulence.turbulenceIntensity = 0f;
+                    _currentDegradationModifiers = new DegradationModifiers { thrust = 1f, yaw = 1f, pitch = 1f, vertical = 1f, extraDrag = 0f };
+                    break;
+
+                case AltitudeStatus.WarningLower:
+                case AltitudeStatus.WarningUpper:
+                    // Warning — показываем предупреждение (будет в UI)
+                    // Эффекты пока не применяем
+                    Debug.LogWarning($"[ShipController] Altitude Warning: {_currentAltitudeStatus} at {currentAlt:F0}m");
+                    break;
+
+                case AltitudeStatus.DangerLower:
+                    // Ниже минимума — турбулентность от Завесы!
+                    ApplyTurbulence(dt, currentAlt);
+                    break;
+
+                case AltitudeStatus.DangerUpper:
+                    // Выше критического порога — деградация систем
+                    ApplySystemDegradation(dt, currentAlt);
+                    break;
             }
-            if (currentAlt < minAltitude)
-            {
-                // Alert: зона Завесы! Турбулентность!
-                // TODO: Apply turbulence, show SOL notification
-            }
-            if (currentAlt > maxAltitude - 100f)
-            {
-                // Warning: приближение к верхней границе
-                // TODO: Show UI warning
-            }
-            if (currentAlt > maxAltitude + 200f)
-            {
-                // Alert: критическая высота!
-                // TODO: Apply system degradation
-            }
+
+            // 4. Логируем для отладки (можно убрать в продакшене)
+#if UNITY_EDITOR
+            Debug.Log($"[ShipController] Alt: {currentAlt:F0}m | Corridor: {_activeCorridor.displayName} | Status: {_currentAltitudeStatus}");
+#endif
+        }
+
+        /// <summary>
+        /// Применить турбулентность при полёте ниже минимальной границы коридора.
+        /// </summary>
+        private void ApplyTurbulence(float dt, float currentAlt)
+        {
+            if (_turbulence == null || _activeCorridor == null) return;
+
+            // Рассчитываем severity: 0 на границе, 1 на 200м ниже
+            float severity = TurbulenceEffect.CalculateSeverity(currentAlt, _activeCorridor.minAltitude, 200f);
+
+            // Применяем турбулентность
+            _turbulence.Update(severity, dt);
+
+            Debug.LogWarning($"[ShipController] TURBULENCE! Alt: {currentAlt:F0}m, Severity: {severity:F2}");
+        }
+
+        /// <summary>
+        /// Применить деградацию систем при полёте выше критической высоты.
+        /// </summary>
+        private void ApplySystemDegradation(float dt, float currentAlt)
+        {
+            if (_degradation == null || _activeCorridor == null) return;
+
+            // Критическая высота = maxAlt + criticalUpperMargin
+            float criticalAlt = _activeCorridor.maxAltitude + _activeCorridor.criticalUpperMargin;
+
+            // Рассчитываем severity: 0 на критической высоте, 1 на 500м выше
+            float severity = SystemDegradationEffect.CalculateSeverity(currentAlt, criticalAlt, 500f);
+
+            // Получаем модификаторы
+            _currentDegradationModifiers = _degradation.GetModifiers(severity);
+
+            // Применяем дополнительное сопротивление
+            _degradation.ApplyExtraDrag(severity);
+
+            Debug.LogWarning($"[ShipController] DEGRADATION! Alt: {currentAlt:F0}m, Severity: {severity:F2}, Thrust: {_currentDegradationModifiers.thrust:F2}");
         }
 
         public float CurrentSpeed => _rb != null ? _rb.linearVelocity.magnitude : 0f;

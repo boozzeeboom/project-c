@@ -475,6 +475,112 @@
     margin: 24px 0;
   }
 
+  /* ===== PHASE CARD CONTENT NORMALIZATION ===== */
+  .phase__result {
+    margin-top: 16px;
+    padding: 12px 16px;
+    background: rgba(74, 222, 128, .06);
+    border-left: 3px solid var(--accent);
+    border-radius: 6px;
+    font-size: .88rem;
+    color: var(--text);
+    line-height: 1.5;
+  }
+  .phase__result strong {
+    color: var(--accent);
+  }
+  .phase__version {
+    margin-top: 10px;
+    font-size: .78rem;
+    font-family: 'Fira Code', 'Consolas', monospace;
+    color: var(--text-dim);
+    background: rgba(56, 189, 248, .06);
+    padding: 6px 12px;
+    border-radius: 6px;
+    display: inline-block;
+  }
+  .phase__deferred {
+    margin-top: 14px;
+    padding: 12px 16px;
+    background: rgba(250, 204, 21, .06);
+    border-left: 3px solid var(--warning);
+    border-radius: 6px;
+    font-size: .85rem;
+    color: var(--text-dim);
+  }
+  .phase__deferred strong {
+    color: var(--warning);
+  }
+  .phase__docs {
+    margin-top: 14px;
+    padding: 12px 16px;
+    background: rgba(56, 189, 248, .04);
+    border-radius: 6px;
+    font-size: .85rem;
+  }
+  .phase__docs summary {
+    cursor: pointer;
+    color: var(--accent2);
+    font-weight: 600;
+    font-size: .82rem;
+    user-select: none;
+  }
+  .phase__docs ul {
+    list-style: none;
+    margin-left: 0;
+    margin-top: 8px;
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+  }
+  .phase__docs ul li {
+    font-size: .82rem;
+    color: var(--text-dim);
+    padding-left: 16px;
+    position: relative;
+  }
+  .phase__docs ul li::before {
+    content: '📄';
+    position: absolute;
+    left: 0;
+    font-size: .75rem;
+  }
+  .phase__issues {
+    margin-top: 14px;
+    padding: 12px 16px;
+    background: rgba(248, 113, 113, .06);
+    border-left: 3px solid #f87171;
+    border-radius: 6px;
+    font-size: .85rem;
+  }
+  .phase__issues summary {
+    cursor: pointer;
+    color: #f87171;
+    font-weight: 600;
+    font-size: .82rem;
+    user-select: none;
+  }
+  .phase__issues ul {
+    list-style: none;
+    margin-left: 0;
+    margin-top: 8px;
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+  }
+  .phase__issues ul li {
+    font-size: .82rem;
+    color: var(--text-dim);
+    padding-left: 16px;
+    position: relative;
+  }
+  .phase__issues ul li::before {
+    content: '🔴';
+    position: absolute;
+    left: 0;
+    font-size: .7rem;
+  }
+
   /* ===== FOOTER ===== */
   .footer {
     text-align: center;
@@ -492,6 +598,7 @@
     justify-content: center;
     gap: 20px;
     flex-wrap: wrap;
+    margin-bottom: 24px;
   }
   .footer__links a {
     color: var(--text);
@@ -501,6 +608,113 @@
     transition: color .2s;
   }
   .footer__links a:hover { color: var(--accent); }
+
+  /* ===== GDD SECTION ===== */
+  .gdd-section {
+    margin-top: 64px;
+    padding-top: 40px;
+    border-top: 1px solid var(--border);
+  }
+  .gdd-section__title {
+    font-size: .85rem;
+    font-weight: 700;
+    letter-spacing: 1.5px;
+    text-transform: uppercase;
+    color: var(--text-dim);
+    margin-bottom: 20px;
+    text-align: center;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+  }
+  .gdd-section__title svg {
+    width: 18px;
+    height: 18px;
+    fill: var(--accent);
+  }
+  .gdd-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+    gap: 12px;
+  }
+  .gdd-card {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    padding: 14px 18px;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    text-decoration: none;
+    color: inherit;
+    transition: all .25s ease;
+  }
+  .gdd-card:hover {
+    border-color: var(--accent);
+    transform: translateY(-2px);
+    box-shadow: 0 8px 24px rgba(74,222,128,.1);
+  }
+  .gdd-card__id {
+    font-size: .7rem;
+    font-weight: 700;
+    color: var(--accent);
+    letter-spacing: 1px;
+  }
+  .gdd-card__name {
+    font-size: .88rem;
+    font-weight: 600;
+    color: #fff;
+    line-height: 1.3;
+  }
+  .gdd-card__desc {
+    font-size: .75rem;
+    color: var(--text-dim);
+    line-height: 1.4;
+  }
+
+  .license-footer {
+    margin-top: 32px;
+    padding-top: 24px;
+    border-top: 1px solid var(--border);
+    text-align: center;
+  }
+  .license-footer__text {
+    font-size: .75rem;
+    color: var(--text-dim);
+    line-height: 1.6;
+    max-width: 600px;
+    margin: 0 auto 12px;
+  }
+  .license-footer__text a {
+    color: var(--accent2);
+    text-decoration: none;
+  }
+  .license-footer__text a:hover {
+    text-decoration: underline;
+  }
+  .license-footer__badges {
+    display: flex;
+    justify-content: center;
+    gap: 10px;
+    flex-wrap: wrap;
+  }
+  .license-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    font-size: .68rem;
+    font-weight: 600;
+    padding: 4px 12px;
+    border-radius: 999px;
+    background: rgba(255,255,255,.03);
+    border: 1px solid var(--border);
+    color: var(--text-dim);
+  }
+  .license-badge--mit { border-color: rgba(74,222,128,.3); color: var(--accent); }
+  .license-badge--cc-nc { border-color: rgba(56,189,248,.3); color: var(--accent2); }
+  .license-badge--nc-nd { border-color: rgba(250,204,21,.3); color: var(--warning); }
+  .license-badge--arr { border-color: rgba(248,113,113,.3); color: #f87171; }
 
   /* ===== LOADING / ERROR ===== */
   .loading-state {
@@ -640,6 +854,279 @@
     .phase__card { padding: 20px 18px 18px; }
     .phase__head { flex-direction: column; align-items: flex-start; }
   }
+
+  /* ===== SUMMARY NAV ===== */
+  .summary-nav {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 24px 28px;
+    margin-bottom: 48px;
+    animation: fadeDown .8s .6s ease both;
+  }
+  .summary-nav__title {
+    font-size: .85rem;
+    font-weight: 700;
+    letter-spacing: 1.5px;
+    text-transform: uppercase;
+    color: var(--text-dim);
+    margin-bottom: 16px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .summary-nav__title svg {
+    width: 18px;
+    height: 18px;
+    fill: var(--accent);
+  }
+
+  /* ===== OVERALL PROGRESS BAR ===== */
+  .summary-overall {
+    margin-bottom: 20px;
+    padding-bottom: 20px;
+    border-bottom: 1px solid var(--border);
+  }
+  .summary-overall__label {
+    font-size: .78rem;
+    font-weight: 600;
+    color: var(--text-dim);
+    margin-bottom: 14px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  }
+  .summary-overall__pct {
+    font-size: 1rem;
+    font-weight: 800;
+    color: #fff;
+  }
+  .summary-overall__track-wrap {
+    position: relative;
+    height: 50px;
+    margin-bottom: 6px;
+  }
+  /* Thin thread-like line */
+  .summary-overall__track {
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    height: 2px;
+    background: rgba(255,255,255,.06);
+    border-radius: 999px;
+  }
+  /* Glow fill */
+  .summary-overall__fill {
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    height: 2px;
+    width: 0;
+    border-radius: 999px;
+    background: linear-gradient(90deg, #22c55e, var(--accent));
+    box-shadow: 0 0 8px rgba(74,222,128,.6), 0 0 20px rgba(74,222,128,.3), 0 0 40px rgba(74,222,128,.15);
+    transition: width 2.5s cubic-bezier(.4,0,.2,1);
+  }
+  /* Ship flying above the line */
+  .summary-overall__ship-wrap {
+    position: absolute;
+    bottom: 8px;
+    left: 0;
+    transform: translateX(-50%);
+    z-index: 2;
+    transition: left 2.5s cubic-bezier(.4,0,.2,1);
+  }
+  .summary-overall__ship {
+    font-size: 22px;
+    line-height: 1;
+    animation: shipFloat 2s ease-in-out infinite, shipGlow 1.5s ease-in-out infinite;
+    filter: drop-shadow(0 0 8px rgba(74,222,128,.8));
+  }
+  /* Engine trail effect behind ship */
+  .summary-overall__trail {
+    position: absolute;
+    bottom: 1px;
+    right: 100%;
+    width: 30px;
+    height: 2px;
+    background: linear-gradient(90deg, transparent, rgba(74,222,128,.6));
+    border-radius: 999px;
+    animation: trailPulse 1s ease-in-out infinite;
+  }
+  /* Percentage markers */
+  .summary-overall__markers {
+    display: flex;
+    justify-content: space-between;
+    font-size: .65rem;
+    color: var(--text-dim);
+    font-weight: 600;
+    margin-top: 4px;
+  }
+  .summary-overall__tasks {
+    font-size: .72rem;
+    color: var(--text-dim);
+    text-align: center;
+    margin-top: 4px;
+  }
+  .summary-overall__tasks span {
+    color: var(--accent);
+    font-weight: 700;
+  }
+
+  @keyframes shipFloat {
+    0%, 100% { transform: translateY(0); }
+    50% { transform: translateY(-4px); }
+  }
+  @keyframes shipGlow {
+    0%, 100% { filter: drop-shadow(0 0 6px rgba(74,222,128,.6)); }
+    50% { filter: drop-shadow(0 0 14px rgba(74,222,128,1)); }
+  }
+  @keyframes trailPulse {
+    0%, 100% { opacity: .4; width: 25px; }
+    50% { opacity: .8; width: 35px; }
+  }
+
+  .summary-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+    gap: 12px;
+  }
+  .summary-item {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 12px 16px;
+    background: rgba(255,255,255,.02);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    cursor: pointer;
+    transition: all .25s ease;
+    text-decoration: none;
+    color: inherit;
+  }
+  .summary-item:hover {
+    border-color: var(--accent);
+    background: rgba(74,222,128,.05);
+    transform: translateY(-2px);
+  }
+  .summary-item__dot {
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+    flex-shrink: 0;
+    background: var(--future);
+  }
+  .summary-item--done .summary-item__dot {
+    background: var(--done);
+    box-shadow: 0 0 8px rgba(74,222,128,.4);
+  }
+  .summary-item--active .summary-item__dot {
+    background: var(--accent);
+    box-shadow: 0 0 8px rgba(74,222,128,.6);
+    animation: pulse 2s ease-in-out infinite;
+  }
+  .summary-item__info {
+    flex: 1;
+    min-width: 0;
+  }
+  .summary-item__label {
+    font-size: .82rem;
+    font-weight: 600;
+    color: #fff;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+  .summary-item__pct {
+    font-size: .72rem;
+    font-weight: 700;
+    color: var(--text-dim);
+  }
+  .summary-item--done .summary-item__pct { color: var(--done); }
+  .summary-item--active .summary-item__pct { color: var(--accent); }
+  .summary-item__bar {
+    width: 40px;
+    height: 4px;
+    background: var(--future);
+    border-radius: 999px;
+    overflow: hidden;
+    flex-shrink: 0;
+  }
+  .summary-item__bar-fill {
+    height: 100%;
+    border-radius: 999px;
+    background: linear-gradient(90deg, var(--accent), var(--accent2));
+    width: 0;
+    transition: width 1s ease;
+  }
+  .summary-item--done .summary-item__bar-fill {
+    background: var(--done);
+  }
+  .summary-item--gdd {
+    border-color: rgba(56,189,248,.3);
+  }
+  .summary-item--gdd:hover {
+    border-color: var(--accent2);
+    background: rgba(56,189,248,.08);
+  }
+
+  /* ===== COLLAPSIBLE PHASES ===== */
+  .phase__card {
+    cursor: pointer;
+    user-select: none;
+  }
+  .phase__toggle {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 28px;
+    height: 28px;
+    border-radius: 6px;
+    background: rgba(255,255,255,.05);
+    border: 1px solid var(--border);
+    transition: all .2s ease;
+    flex-shrink: 0;
+  }
+  .phase__toggle:hover {
+    background: rgba(255,255,255,.1);
+    border-color: var(--text-dim);
+  }
+  .phase__toggle svg {
+    width: 16px;
+    height: 16px;
+    fill: var(--text-dim);
+    transition: transform .3s ease;
+  }
+  .phase--collapsed .phase__toggle svg {
+    transform: rotate(-90deg);
+  }
+  .phase__tasks,
+  .phase__progress,
+  .phase__pct {
+    max-height: 2000px;
+    overflow: hidden;
+    transition: max-height .4s ease, opacity .3s ease, margin .3s ease;
+    opacity: 1;
+  }
+  .phase--collapsed .phase__tasks,
+  .phase--collapsed .phase__progress,
+  .phase--collapsed .phase__pct {
+    max-height: 0;
+    opacity: 0;
+    margin-top: 0;
+    margin-bottom: 0;
+  }
+  .phase--collapsed .phase__card {
+    cursor: pointer;
+  }
+  .phase--collapsed .phase__goal {
+    max-height: 0;
+    opacity: 0;
+    margin-bottom: 0;
+    overflow: hidden;
+    transition: max-height .3s ease, opacity .3s ease, margin .3s ease;
+  }
 </style>
 </head>
 <body>
@@ -668,7 +1155,7 @@
   <header class="header">
     <div id="header-badge" class="header__badge">Pre-Alpha</div>
     <h1 class="header__title">Project <span>C</span> — Roadmap</h1>
-    <p id="header-sub" class="header__sub">Мир над облаками. MMO/Co-Op авиасимулятор по книге «Интеграл Пьявица».</p>
+    <p id="header-sub" class="header__sub">Мир над облаками. MMO/Co-Op игра по книге «Интеграл Пьявица».</p>
 
     <div class="buttons">
       <a href="https://github.com/boozzeeboom/project-c" target="_blank" rel="noopener" class="btn btn--primary">
@@ -681,6 +1168,34 @@
       </a>
     </div>
   </header>
+
+  <!-- SUMMARY NAV -->
+  <nav id="summary-nav" class="summary-nav" style="display:none;">
+    <div class="summary-nav__title">
+      <svg viewBox="0 0 24 24"><path d="M3 13h2v-2H3v2zm0 4h2v-2H3v2zm0-8h2V7H3v2zm4 4h14v-2H7v2zm0 4h14v-2H7v2zM7 7v2h14V7H7z"/></svg>
+      Обзор этапов
+    </div>
+    <div class="summary-overall">
+      <div class="summary-overall__label">
+        <span>Общий прогресс проекта</span>
+        <span id="summary-overall-pct" class="summary-overall__pct">0%</span>
+      </div>
+      <div class="summary-overall__track-wrap">
+        <div class="summary-overall__track"></div>
+        <div id="summary-overall-fill" class="summary-overall__fill"></div>
+        <div id="summary-overall-ship-wrap" class="summary-overall__ship-wrap" style="left:0;">
+          <div class="summary-overall__ship">🛸</div>
+          <div class="summary-overall__trail"></div>
+        </div>
+      </div>
+      <div class="summary-overall__markers">
+        <span>0%</span>
+        <span id="summary-overall-marker-100">100%</span>
+      </div>
+      <div id="summary-overall-tasks" class="summary-overall__tasks"></div>
+    </div>
+    <div id="summary-grid" class="summary-grid"></div>
+  </nav>
 
   <!-- LOADING STATE -->
   <div id="loading-state" class="loading-state">
@@ -701,6 +1216,103 @@
       <a href="https://github.com/boozzeeboom/project-c" target="_blank" rel="noopener">GitHub</a>
       <a href="https://t.me/thegravity_ru" target="_blank" rel="noopener">Telegram</a>
       <a href="mailto:your@email.com">Email</a>
+    </div>
+
+    <!-- GDD Links -->
+    <div id="gdd-section" class="gdd-section">
+      <div class="gdd-section__title">
+        <svg viewBox="0 0 24 24"><path d="M6 2a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8l-6-6H6zm7 1.5L18.5 9H13V3.5zM8 12h8v1.5H8V12zm0 3h8v1.5H8V15zm0 3h5v1.5H8V18z"/></svg>
+        Game Design Documents
+      </div>
+      <div class="gdd-grid">
+        <a href="https://github.com/boozzeeboom/project-c/blob/qwen-gamestudio-agent-dev/docs/gdd/GDD_00_Overview.md" target="_blank" rel="noopener" class="gdd-card">
+          <span class="gdd-card__id">GDD-00</span>
+          <span class="gdd-card__name">Game Overview</span>
+          <span class="gdd-card__desc">Концепция, пиллары, USP, целевая аудитория</span>
+        </a>
+        <a href="https://github.com/boozzeeboom/project-c/blob/qwen-gamestudio-agent-dev/docs/gdd/GDD_01_Core_Gameplay.md" target="_blank" rel="noopener" class="gdd-card">
+          <span class="gdd-card__id">GDD-01</span>
+          <span class="gdd-card__name">Core Gameplay</span>
+          <span class="gdd-card__desc">Core Loop, управление, физика, режимы</span>
+        </a>
+        <a href="https://github.com/boozzeeboom/project-c/blob/qwen-gamestudio-agent-dev/docs/gdd/GDD_02_World_Environment.md" target="_blank" rel="noopener" class="gdd-card">
+          <span class="gdd-card__id">GDD-02</span>
+          <span class="gdd-card__name">World & Environment</span>
+          <span class="gdd-card__desc">Мир, 15 пиков, 4 города, Завеса, погода</span>
+        </a>
+        <a href="https://github.com/boozzeeboom/project-c/blob/qwen-gamestudio-agent-dev/docs/gdd/GDD_10_Ship_System.md" target="_blank" rel="noopener" class="gdd-card">
+          <span class="gdd-card__id">GDD-10</span>
+          <span class="gdd-card__name">Ship System</span>
+          <span class="gdd-card__desc">4 класса кораблей, физика, кооп-пилотирование</span>
+        </a>
+        <a href="https://github.com/boozzeeboom/project-c/blob/qwen-gamestudio-agent-dev/docs/gdd/GDD_11_Inventory_Items.md" target="_blank" rel="noopener" class="gdd-card">
+          <span class="gdd-card__id">GDD-11</span>
+          <span class="gdd-card__name">Inventory & Items</span>
+          <span class="gdd-card__desc">8 типов, круговое колесо, LootTable, сундуки</span>
+        </a>
+        <a href="https://github.com/boozzeeboom/project-c/blob/qwen-gamestudio-agent-dev/docs/gdd/GDD_12_Network_Multiplayer.md" target="_blank" rel="noopener" class="gdd-card">
+          <span class="gdd-card__id">GDD-12</span>
+          <span class="gdd-card__name">Network & Multiplayer</span>
+          <span class="gdd-card__desc">NGO, RPC, реконнект, Dedicated Server</span>
+        </a>
+        <a href="https://github.com/boozzeeboom/project-c/blob/qwen-gamestudio-agent-dev/docs/gdd/GDD_13_UI_UX_System.md" target="_blank" rel="noopener" class="gdd-card">
+          <span class="gdd-card__id">GDD-13</span>
+          <span class="gdd-card__name">UI/UX System</span>
+          <span class="gdd-card__desc">HUD, Ghibli стиль, адаптивность</span>
+        </a>
+        <a href="https://github.com/boozzeeboom/project-c/blob/qwen-gamestudio-agent-dev/docs/gdd/GDD_14_Visual_Art_Pipeline.md" target="_blank" rel="noopener" class="gdd-card">
+          <span class="gdd-card__id">GDD-14</span>
+          <span class="gdd-card__name">Visual & Art Pipeline</span>
+          <span class="gdd-card__desc">URP, CloudGhibli, шейдеры, постобработка</span>
+        </a>
+        <a href="https://github.com/boozzeeboom/project-c/blob/qwen-gamestudio-agent-dev/docs/gdd/GDD_15_Audio_System.md" target="_blank" rel="noopener" class="gdd-card">
+          <span class="gdd-card__id">GDD-15</span>
+          <span class="gdd-card__name">Audio System</span>
+          <span class="gdd-card__desc">AudioMixer, SFX, музыка, 3D звук</span>
+        </a>
+        <a href="https://github.com/boozzeeboom/project-c/blob/qwen-gamestudio-agent-dev/docs/gdd/GDD_20_Progression_RPG.md" target="_blank" rel="noopener" class="gdd-card">
+          <span class="gdd-card__id">GDD-20</span>
+          <span class="gdd-card__name">Progression & RPG</span>
+          <span class="gdd-card__desc">XP, уровни 1-50, деревья навыков</span>
+        </a>
+        <a href="https://github.com/boozzeeboom/project-c/blob/qwen-gamestudio-agent-dev/docs/gdd/GDD_21_Quest_Mission_System.md" target="_blank" rel="noopener" class="gdd-card">
+          <span class="gdd-card__id">GDD-21</span>
+          <span class="gdd-card__name">Quest & Mission System</span>
+          <span class="gdd-card__desc">5 типов квестов, цепочки гильдий</span>
+        </a>
+        <a href="https://github.com/boozzeeboom/project-c/blob/qwen-gamestudio-agent-dev/docs/gdd/GDD_22_Economy_Trading.md" target="_blank" rel="noopener" class="gdd-card">
+          <span class="gdd-card__id">GDD-22</span>
+          <span class="gdd-card__name">Economy & Trading</span>
+          <span class="gdd-card__desc">Кредиты, ресурсы, спрос/предложение</span>
+        </a>
+        <a href="https://github.com/boozzeeboom/project-c/blob/qwen-gamestudio-agent-dev/docs/gdd/GDD_23_Faction_Reputation.md" target="_blank" rel="noopener" class="gdd-card">
+          <span class="gdd-card__id">GDD-23</span>
+          <span class="gdd-card__name">Faction & Reputation</span>
+          <span class="gdd-card__desc">5 Гильдий, подполье, СОЛ, репутация</span>
+        </a>
+        <a href="https://github.com/boozzeeboom/project-c/blob/qwen-gamestudio-agent-dev/docs/gdd/GDD_24_Narrative_World_Lore.md" target="_blank" rel="noopener" class="gdd-card">
+          <span class="gdd-card__id">GDD-24</span>
+          <span class="gdd-card__name">Narrative & World Lore</span>
+          <span class="gdd-card__desc">Хронология, глоссарий, сюжетные арки</span>
+        </a>
+      </div>
+    </div>
+
+    <!-- License Footer -->
+    <div class="license-footer">
+      <p class="license-footer__text">
+        © 2024–2026 leon7 (Bruno Arendt). Все права защищены.<br>
+        Исходный код — <a href="https://github.com/boozzeeboom/project-c/blob/qwen-gamestudio-agent-dev/LICENSE" target="_blank" rel="noopener">MIT License</a> ·
+        Ассеты — <a href="https://creativecommons.org/licenses/by-nc-nd/4.0/" target="_blank" rel="noopener">CC BY-NC-ND 4.0</a> ·
+        Нарратив — All Rights Reserved ·
+        Дизайн-документы — <a href="https://creativecommons.org/licenses/by-nc/4.0/" target="_blank" rel="noopener">CC BY-NC 4.0</a>
+      </p>
+      <div class="license-footer__badges">
+        <span class="license-badge license-badge--mit">📝 Код: MIT</span>
+        <span class="license-badge license-badge--nc-nd">🎨 Ассеты: CC BY-NC-ND</span>
+        <span class="license-badge license-badge--cc-nc">📋 GDD: CC BY-NC</span>
+        <span class="license-badge license-badge--arr">📖 Нарратив: © All Rights Reserved</span>
+      </div>
     </div>
   </footer>
 
@@ -799,7 +1411,7 @@
       badgeEl.textContent = `Pre-Alpha · ${versionMatch[1]}`;
     }
     if (dateMatch) {
-      subEl.textContent = `Мир над облаками. MMO/Co-Op авиасимулятор по книге «Интеграл Пьявица». Обновлено: ${dateMatch[1].trim()}`;
+      subEl.textContent = `Мир над облаками. MMO/Co-Op игра по книге «Интеграл Пьявица». Обновлено: ${dateMatch[1].trim()}`;
     }
     const footerVersion = md.match(/\*\*Версия:\*\*\s*`([^`]+)`/);
     if (footerVersion) {
@@ -813,11 +1425,29 @@
     let extraLines = []; // lines before first H2
     let beforeFirstH2 = true;
 
+    // H2 titles to skip (not development phases)
+    const skipTitles = [
+      'Критические риски и меры:',
+      'Инструменты и зависимости:',
+      '📋 Game Design Documents (GDD)',
+    ];
+
     for (const line of lines) {
       if (line.startsWith('## ')) {
         beforeFirstH2 = false;
-        currentSection = { title: line.replace('## ', '').trim(), lines: [] };
-        sections.push(currentSection);
+        const title = line.replace('## ', '').trim();
+        
+        // Check if this section should be skipped
+        const shouldSkip = skipTitles.some(skipTitle => 
+          title.includes(skipTitle) || title.toLowerCase().includes(skipTitle.toLowerCase())
+        );
+        
+        if (!shouldSkip) {
+          currentSection = { title, lines: [] };
+          sections.push(currentSection);
+        } else {
+          currentSection = null; // Mark as skipped
+        }
       } else if (currentSection) {
         currentSection.lines.push(line);
       } else if (!beforeFirstH2) {
@@ -831,6 +1461,7 @@
       const hasCheck = titleText.includes('✅');
       const hasSpinner = titleText.includes('🔄');
 
+      // Initial status from title (will be recalculated based on task completion)
       let status = 'future';
       let statusLabel = 'Планируется';
       if (hasCheck) { status = 'done'; statusLabel = 'Готово'; }
@@ -900,20 +1531,31 @@
         allTasks.push({ text: cleanText, done: isDone && !isFuture, indent: m[1].length });
       }
 
-      // Count: prefer sub-items if they exist, otherwise top-level bullets
+      // Count: collect all tasks from all levels for progress calculation
+      // But prefer displaying sub-items if they exist for better detail
       const subTasks = allTasks.filter(t => t.indent >= 2);
       const topBullets = allTasks.filter(t => t.indent === 0 && !t.text.match(/^\d+\.\s*\*\*/));
+      const midTasks = allTasks.filter(t => t.indent > 0 && t.indent < 2);
 
-      let totalTasks, doneTasks;
+      let totalTasks, doneTasks, displayTasks;
 
       if (subTasks.length > 0) {
-        // Section has numbered lists with sub-items — count sub-items
-        totalTasks = subTasks.length;
-        doneTasks = subTasks.filter(t => t.done).length;
+        // Section has sub-items — count ALL tasks (top + mid + sub) for progress
+        // but only display sub-level and below for cleanliness
+        const allRelevantTasks = [...topBullets, ...midTasks, ...subTasks];
+        totalTasks = allRelevantTasks.length;
+        doneTasks = allRelevantTasks.filter(t => t.done).length;
+        displayTasks = subTasks.length > midTasks.length ? subTasks : [...midTasks, ...subTasks];
+      } else if (midTasks.length > 0) {
+        // Only mid-level tasks
+        totalTasks = midTasks.length;
+        doneTasks = midTasks.filter(t => t.done).length;
+        displayTasks = midTasks;
       } else {
         // Flat list — count top-level bullets
         totalTasks = topBullets.length;
         doneTasks = topBullets.filter(t => t.done).length;
+        displayTasks = topBullets;
       }
 
       if (totalTasks === 0 && status === 'done') {
@@ -923,9 +1565,19 @@
 
       const pct = totalTasks > 0 ? Math.round((doneTasks / totalTasks) * 100) : 0;
 
-      // Build task HTML — use the same tasks we counted
+      // Auto-update status based on task completion (only if not explicitly marked in title)
+      if (!hasCheck && !hasSpinner) {
+        if (pct >= 90) {
+          status = 'done';
+          statusLabel = 'Готово';
+        } else if (pct > 0) {
+          status = 'active';
+          statusLabel = 'В процессе';
+        }
+      }
+
+      // Build task HTML — use the displayTasks we already determined
       let tasksHtml = '';
-      const displayTasks = subTasks.length > 0 ? subTasks : topBullets;
 
       if (displayTasks.length > 0) {
         tasksHtml = '<ul class="phase__tasks">';
@@ -939,25 +1591,110 @@
       const goalMatch = sectionText.match(/\*\*Цель:\*\*\s*(.+)/);
       const goalHtml = goalMatch ? `<div class="phase__goal">${escHtml(goalMatch[1].replace(/\*\*/g, ''))}</div>` : '';
 
+      // Extract special sections
+      const resultMatch = sectionText.match(/\*\*Результат:\*\*\s*(.+?)(?=\n\n|\*\*Версия:|$)/s);
+      const versionMatch2 = sectionText.match(/\*\*Версия:\*\*\s*`.+`[^\n]*/m);
+      const versionText = versionMatch2 ? versionMatch2[0].match(/\*\*Версия:\*\*\s*`([^`]+)`/) : null;
+      const deferredMatch = sectionText.match(/>\s*⚠️.+/m);
+      
+      // Extract "Что осталось" section
+      const remainingMatch = sectionText.match(/\*\*Что осталось в Этапе \d+:\*\*\n([\s\S]*?)(?=\n\n|$)/);
+      
+      // Extract docs list
+      const docsMatch = sectionText.match(/\*\*Документы:\*\*\n([\s\S]*?)(?=\n\n|$)/);
+      const docsListMatch = sectionText.match(/^- [`\[].+$/gm);
+      
+      // Extract issues
+      const issuesMatch = sectionText.match(/\*\*Известные проблемы[\s\S]*?(?=\n\n|$)/);
+
+      let specialHtml = '';
+      
+      if (resultMatch) {
+        specialHtml += `<div class="phase__result"><strong>Результат:</strong> ${escHtml(resultMatch[1].trim())}</div>`;
+      }
+      
+      if (versionText) {
+        specialHtml += `<div class="phase__version">Версия: ${escHtml(versionText[1])}</div>`;
+      }
+      
+      if (deferredMatch) {
+        const cleanDeferred = deferredMatch[0].replace(/>.*?\*\*/,'').trim();
+        specialHtml += `<details class="phase__deferred"><summary><strong>⚠️ Отложено:</strong></summary>${escHtml(cleanDeferred)}</details>`;
+      }
+      
+      if (docsMatch || docsListMatch) {
+        let docsHtml = '<details class="phase__docs"><summary>📚 Документы</summary><ul>';
+        if (docsListMatch) {
+          docsListMatch.forEach(doc => {
+            const docText = doc.replace(/^[-*]\s+/, '').trim();
+            const linkMatch = docText.match(/\[(.+?)\]\((.+?)\)/);
+            if (linkMatch) {
+              docsHtml += `<li><a href="${escHtml(linkMatch[2])}" target="_blank" rel="noopener" style="color:var(--accent2);text-decoration:none;">${escHtml(linkMatch[1])}</a></li>`;
+            } else {
+              docsHtml += `<li>${escHtml(docText)}</li>`;
+            }
+          });
+        }
+        docsHtml += '</ul></details>';
+        specialHtml += docsHtml;
+      }
+      
+      if (issuesMatch) {
+        const issuesText = issuesMatch[0].replace(/\*\*Известные проблемы[\s\S]*?\*\*/, '').trim();
+        if (issuesText) {
+          let issuesHtml = '<details class="phase__issues"><summary>⚠️ Известные проблемы</summary><ul>';
+          const issueLines = issuesText.split('\n').filter(l => l.trim().match(/^[-*]\s+/));
+          issueLines.forEach(issue => {
+            const issueText = issue.replace(/^[-*]\s+/, '').trim();
+            issuesHtml += `<li>${escHtml(issueText)}</li>`;
+          });
+          issuesHtml += '</ul></details>';
+          specialHtml += issuesHtml;
+        }
+      }
+
       const card = document.createElement('div');
       card.className = `phase phase--${status}`;
       card.dataset.delay = idx * 100;
+      card.dataset.phaseId = `phase-${idx}`;
+      card.id = `phase-${idx}`;
+      
+      const toggleSvg = `<div class="phase__toggle"><svg viewBox="0 0 24 24"><path d="M7 10l5 5 5-5z"/></svg></div>`;
+      
       card.innerHTML = `
         <div class="phase__dot"></div>
         <div class="phase__card">
           <div class="phase__head">
             <span class="phase__tag">${escHtml(tag)}</span>
             <span class="phase__status">${statusLabel}</span>
+            ${toggleSvg}
           </div>
           <h3 class="phase__title">${escHtml(displayTitle)}</h3>
           ${goalHtml}
           ${tasksHtml}
           <div class="phase__progress"><div class="phase__bar" data-width="${pct}"></div></div>
           <div class="phase__pct">${pct}%</div>
+          ${specialHtml}
         </div>
       `;
+      
+      // Toggle click handler
+      card.querySelector('.phase__card').addEventListener('click', (e) => {
+        // Prevent toggling when clicking links
+        if (e.target.closest('a')) return;
+        card.classList.toggle('phase--collapsed');
+      });
+      
+      // Auto-collapse future phases
+      if (status === 'future') {
+        card.classList.add('phase--collapsed');
+      }
+      
       timelineEl.appendChild(card);
     });
+    
+    // Build Summary Navigation
+    buildSummaryNav(sections);
 
     /* -- Extra content (risks, tools, etc.) — split by H2 and make collapsible -- */
     const extraMd = extraLines.join('\n').trim();
@@ -1000,6 +1737,151 @@
   function escHtml(str) {
     if (!str) return '';
     return str.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+  }
+
+  /* -- Build Summary Navigation -- */
+  function buildSummaryNav(sections) {
+    const navEl = document.getElementById('summary-nav');
+    const gridEl = document.getElementById('summary-grid');
+    
+    if (!sections.length) return;
+    
+    navEl.style.display = 'block';
+    
+    // Calculate overall progress across ALL sections
+    let grandTotalTasks = 0;
+    let grandDoneTasks = 0;
+    
+    const html = sections.map((section, idx) => {
+      const titleText = section.title;
+      const hasCheck = titleText.includes('✅');
+      const hasSpinner = titleText.includes('🔄');
+      
+      let status = 'future';
+      if (hasCheck) status = 'done';
+      else if (hasSpinner) status = 'active';
+      
+      let cleanTitle = titleText.replace(/✅|🔄|⏳/g, '').trim();
+      const colonIdx = cleanTitle.indexOf(':');
+      let shortTitle = cleanTitle;
+      if (colonIdx > 0) {
+        shortTitle = cleanTitle.substring(colonIdx + 1).trim();
+      }
+      
+      // Calculate percentage - count ALL tasks from all levels
+      const sectionText = section.lines.join('\n');
+      const allTasks = [];
+      
+      const checkboxRe = /^(\s*)-\s*\[([ x])\]\s*(.+)$/gm;
+      let m;
+      while ((m = checkboxRe.exec(sectionText)) !== null) {
+        allTasks.push({ done: m[2] === 'x' });
+      }
+      
+      const bulletRe = /^[-*]\s+(.+)$/gm;
+      while ((m = bulletRe.exec(sectionText)) !== null) {
+        const raw = m[1].trim();
+        if (raw.startsWith('[')) continue;
+        if (/^(Результат:|Версия:|⏳\s*Отложено)/.test(raw)) continue;
+        const isDone = raw.startsWith('✅');
+        const isFuture = raw.startsWith('⏳');
+        allTasks.push({ done: isDone && !isFuture });
+      }
+      
+      const subBulletRe = /^(\s{2,})[-*]\s+(.+)$/gm;
+      while ((m = subBulletRe.exec(sectionText)) !== null) {
+        const raw = m[2].trim();
+        if (raw.startsWith('[')) continue;
+        if (/^(Результат:|Версия:)/.test(raw)) continue;
+        const isDone = raw.startsWith('✅');
+        const isFuture = raw.startsWith('⏳');
+        allTasks.push({ done: isDone && !isFuture });
+      }
+      
+      // Accumulate grand totals
+      grandTotalTasks += allTasks.length;
+      grandDoneTasks += allTasks.filter(t => t.done).length;
+      
+      const totalTasks = allTasks.length;
+      const doneTasks = allTasks.filter(t => t.done).length;
+      const pct = totalTasks > 0 ? Math.round((doneTasks / totalTasks) * 100) : (status === 'done' ? 100 : 0);
+      
+      const statusClass = status === 'done' ? 'summary-item--done' : status === 'active' ? 'summary-item--active' : '';
+      
+      return `
+        <a href="#phase-${idx}" class="summary-item ${statusClass}" data-phase="${idx}">
+          <div class="summary-item__dot"></div>
+          <div class="summary-item__info">
+            <div class="summary-item__label">${escHtml(shortTitle)}</div>
+            <div class="summary-item__pct">${pct}%</div>
+          </div>
+          <div class="summary-item__bar">
+            <div class="summary-item__bar-fill" data-width="${pct}"></div>
+          </div>
+        </a>
+      `;
+    }).join('');
+    
+    // Add GDD button at the end
+    const gddBtnHtml = `
+      <a href="#gdd-section" class="summary-item summary-item--gdd" data-gdd="true">
+        <div class="summary-item__dot" style="background:var(--accent2);box-shadow:0 0 8px rgba(56,189,248,.5);"></div>
+        <div class="summary-item__info">
+          <div class="summary-item__label">📚 Game Design Documents</div>
+          <div class="summary-item__pct" style="color:var(--accent2);">Все GDD ↓</div>
+        </div>
+        <div class="summary-item__bar" style="background:rgba(56,189,248,.2);">
+          <div class="summary-item__bar-fill" style="background:var(--accent2);width:100%;"></div>
+        </div>
+      </a>
+    `;
+    
+    gridEl.innerHTML = html + gddBtnHtml;
+    
+    // Update overall progress
+    const overallPct = grandTotalTasks > 0 ? Math.round((grandDoneTasks / grandTotalTasks) * 100) : 0;
+    const overallPctEl = document.getElementById('summary-overall-pct');
+    const overallFillEl = document.getElementById('summary-overall-fill');
+    const overallShipWrap = document.getElementById('summary-overall-ship-wrap');
+    const overallTasksEl = document.getElementById('summary-overall-tasks');
+    
+    if (overallPctEl) overallPctEl.textContent = overallPct + '%';
+    if (overallFillEl) overallFillEl.style.width = overallPct + '%';
+    if (overallShipWrap) overallShipWrap.style.left = Math.min(overallPct, 100) + '%';
+    if (overallTasksEl) overallTasksEl.innerHTML = `<span>${grandDoneTasks}</span> из <span>${grandTotalTasks}</span> задач выполнено`;
+    
+    // Animate bars
+    setTimeout(() => {
+      gridEl.querySelectorAll('.summary-item__bar-fill').forEach(bar => {
+        bar.style.width = bar.dataset.width + '%';
+      });
+    }, 800);
+    
+    // Smooth scroll on click
+    gridEl.querySelectorAll('.summary-item').forEach(item => {
+      item.addEventListener('click', (e) => {
+        e.preventDefault();
+        
+        // Check if GDD button
+        if (item.dataset.gdd === 'true') {
+          const gddSection = document.getElementById('gdd-section');
+          if (gddSection) {
+            gddSection.scrollIntoView({ behavior: 'smooth', block: 'center' });
+          }
+          return;
+        }
+        
+        const phaseIdx = item.dataset.phase;
+        const targetPhase = document.getElementById(`phase-${phaseIdx}`);
+        if (targetPhase) {
+          // Expand if collapsed
+          if (targetPhase.classList.contains('phase--collapsed')) {
+            targetPhase.classList.remove('phase--collapsed');
+          }
+          targetPhase.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        }
+      });
+    });
   }
 
   /* -- Scroll animations -- */

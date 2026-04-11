@@ -1,7 +1,7 @@
 # Project C: The Clouds — Единый стартовый файл для Qwen Code
 
-**Версия:** `v0.0.16-ui-sprints` | **Дата:** 12 апреля 2026 г.
-**Ветка:** `qwen-gamestudio-agent-dev` (основная) | **Этап:** Этап 2 ЗАВЕРШЁН, Торговая система ЗАВЕРШЕНА (сессии 1-8F), UI система ЗАВЕРШЕНА (спринты 1-3), Спринт 4 (Polish) в ожидании
+**Версия:** `v0.0.17-altitude-session2` | **Дата:** 12 апреля 2026 г.
+**Ветка:** `qwen-gamestudio-agent-dev` (основная) | **Этап:** Этап 2 ЗАВЕРШЁН, Торговая система ЗАВЕРШЕНА (сессии 1-8F), UI система ЗАВЕРШЕНА (спринты 1-3), **Сессия 2 кораблей ЗАВЕРШЕНА** (Altitude Corridor System), Спринт 4 (Polish) в ожидании
 **По мотивам книги «Интеграл Пьявица» — Бруно Арендт**
 
 ---
@@ -120,6 +120,12 @@ Unity автоматически создаёт `.meta` файлы для каж
 | 🟡 UI | TradeUI 1200 строк | TradeUI.cs | Спринт 3.3 — MVC разделение |
 | 🟡 Средне | Модель корабля — примитив (сфера) | ShipController | Заменить на FBX модель (Этап 2.5) |
 | 🟡 Средне | Персонаж — capsule | NetworkPlayer | Заменить на Mixamo модель (Этап 2.5) |
+| 🔴 P0 | **AltitudeUI HUD не отображается** | AltitudeUI.cs | @unity-ui-specialist: Canvas/RectTransform/Sorting |
+| 🔴 P0 | **Тряска турбулентности слабая** | TurbulenceEffect.cs | Увеличить intensity + Cinemachine Impulse |
+| 🟡 P1 | **Городские коридоры — радиус, не зона** | AltitudeCorridorSystem.cs | BoxCollider-триггеры вокруг городов |
+| 🟡 P1 | **Деградация не применяет модификаторы** | ShipController.cs | Применять к thrustForce/yawForce/etc |
+| 🟡 P1 | **Турбулентность только на сервере** | ShipController.cs | RPC репликация на клиентов |
+| 🟢 P2 | **Console-спам при турбулентности** | ShipController.cs | Rate-limit логи (раз в 1 сек) |
 | 🟢 Низко | Горные пики — процедурные без текстур | WorldGenerator | Добавить текстуры из Poly Haven (Этап 2.5) |
 | 🔴 Отложено | Отдельный серверный билд (.NET 8) | Архитектура | Этап 5+ |
 
@@ -811,3 +817,28 @@ git status && git log --oneline -3
 - Серверная база данных (PostgreSQL)
 - Серверная валидация инвентаря
 - Крафт и торговля
+
+---
+
+## 🚢 СЕССИЯ 2 КОРАБЛЕЙ: Altitude Corridor System (11-12 апреля 2026)
+
+### Реализовано ✅
+- ShipController v2.1 — интеграция системы коридоров высот
+- AltitudeCorridorData (ScriptableObject) — данные коридора
+- AltitudeCorridorSystem (Manager, singleton) — 6 коридоров
+- TurbulenceEffect — случайные силы + torque × масса × forceMultiplier(50)
+- SystemDegradationEffect — модификаторы тяги/маневренности/сопротивления
+- AltitudeUI — HUD (код готов, НЕ отображается)
+- CreateAltitudeCorridorAssets — Editor утилита (Tools → Project C)
+- 6 ScriptableObject ассетов: Global, Primus, Tertius, Quartus, Kilimanjaro, Secundus
+- Теги: `backup-2_session-ship-improved`
+
+### Известные проблемы Сессии 2 🔴
+| Приоритет | Проблема | Описание | Решение |
+|-----------|----------|----------|---------|
+| 🔴 P0 | AltitudeUI HUD не отображается | Программное создание Canvas не работает — элементы создаются но не видны | @unity-ui-specialist: проверить RectTransform, Canvas Scaler, sorting |
+| 🔴 P0 | Тряска турбулентности недостаточная | Силы увеличены (×50, ×масса) но визуально слабые | Увеличить turbulenceIntensity, добавить Cinemachine Impulse |
+| 🟡 P1 | Городские коридоры — радиус, не collider | Проверка IsInCityZone = Vector3.Distance, не триггер-зона | Заменить на BoxCollider-триггер вокруг города для точной формы зоны |
+| 🟡 P1 | Деградация не применяет модификаторы | DegradationModifiers рассчитываются но не применяются к thrustForce/yawForce | Интегрировать в ShipController.ApplyThrustForce/ApplyRotation |
+| 🟡 P1 | Турбулентность только на сервере | ShipController работает только на сервере, клиенты не видят тряску | RPC репликация статуса на клиентов |
+| 🟢 P2 | Console-спам при турбулентности | Debug.Log каждый FixedUpdate при DangerLower | Заменить на rate-limited лог (раз в 1 сек) |

@@ -15,8 +15,8 @@ MonoBehaviour:
   zoneId: gust_test
   displayName: Gust Wind Test
   windDirection: {x: 0, y: 0, z: 1}
-  windForce: 80
-  windVariation: 0.3
+  windForce: 10000
+  windVariation: 1
   profile: 1
-  gustInterval: 2
+  gustInterval: 0.2
   shearGradient: 0.1

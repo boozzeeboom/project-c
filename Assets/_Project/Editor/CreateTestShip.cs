@@ -66,8 +66,8 @@ namespace ProjectC.Editor
             // 3. Добавить Rigidbody
             var rb = ship.AddComponent<Rigidbody>();
             rb.mass = 1000f;
-            rb.drag = 0f;
-            rb.angularDrag = 0f; // ShipController сам управляет
+            rb.linearDamping = 0f;
+            rb.angularDamping = 0f; // ShipController сам управляет
             rb.useGravity = true;
             rb.interpolation = RigidbodyInterpolation.Interpolate;
             rb.collisionDetectionMode = CollisionDetectionMode.Discrete;
@@ -79,13 +79,11 @@ namespace ProjectC.Editor
             // 5. Добавить NetworkObject
             var netObj = ship.AddComponent<NetworkObject>();
 
-            // 6. Добавить NetworkTransform
-            var netTransform = ship.AddComponent<NetworkTransform>();
-            netTransform.SyncMode = NetworkTransform.SyncModeType.Server;
-            netTransform.UseHalfFloatPrecision = false;
-            netTransform.UseUnreliableDeltas = false;
-            netTransform.InLocalSpace = false;
-            netTransform.SlerpPosition = false;
+            // 6. NetworkTransform — добавить вручную если установлен пакет
+            //    В Unity 6 / NGO 2.x может требовать отдельный пакет:
+            //    com.unity.netcode.gameobjects (NetworkTransform компонент)
+            //    Добавить: Add Component → NetworkTransform
+            //    Sync Mode: Server Authority
 
             // 7. Выбрать корабль в Hierarchy
             Selection.activeGameObject = ship;
@@ -95,6 +93,7 @@ namespace ProjectC.Editor
             Debug.Log($"  - Platform: {platform.name} (Scale: {platform.transform.localScale})");
             Debug.Log($"  - Rigidbody Mass: {rb.mass}");
             Debug.Log($"  - Tag: {ship.tag}");
+            Debug.Log($"  ⚠️ NetworkTransform нужно добавить вручную (Add Component → NetworkTransform → Server Authority)");
         }
 
         private static bool TagExists(string tag)

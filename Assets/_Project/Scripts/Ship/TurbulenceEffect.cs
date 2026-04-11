@@ -7,10 +7,9 @@ namespace ProjectC.Ship
     /// Применяется в Zone DangerLower (ниже minAltitude).
     ///
     /// Использует случайные силы для имитации турбулентности от Завесы.
-    /// Поддерживает Cinemachine Impulse (если пакет установлен) для тряски камеры.
     /// Интенсивность зависит от класса корабля (Light трясёт сильнее, Heavy — слабее).
-    /// 
-    /// Cinemachine определяется автоматически через Reflection — никаких define symbol не нужно.
+    ///
+    /// Cinemachine Impulse запланирован на будущую реализацию (требует настройки камеры).
     /// </summary>
     public class TurbulenceEffect
     {
@@ -42,16 +41,13 @@ namespace ProjectC.Ship
         // Текущая случайная сила
         private Vector3 _currentTurbulenceForce;
 
-        // Cinemachine Impulse — определяется через Reflection (runtime, без define symbols)
-        private bool _hasCinemachine;
-        private object _impulseSource; // CinemachineImpulseSource (reflection)
-        private System.Type _impulseSourceType;
+        // Текущий момент турбулентности
+        private Vector3 _currentTurbulenceTorque;
 
         public TurbulenceEffect(Rigidbody rb, Transform transform)
         {
             _rb = rb;
             _transform = transform;
-            _tryInitializeCinemachine();
         }
 
         /// <summary>
@@ -104,16 +100,7 @@ namespace ProjectC.Ship
             // Применяем силу и момент
             _rb.AddForce(_currentTurbulenceForce, ForceMode.Force);
             _rb.AddTorque(_currentTurbulenceTorque, ForceMode.Force);
-
-            // Cinemachine Impulse при высокой турбулентности
-            if (turbulenceIntensity > 0.3f)
-            {
-                ApplyTurbulenceImpulse(turbulenceIntensity);
-            }
         }
-
-        // Текущий момент турбулентности
-        private Vector3 _currentTurbulenceTorque;
 
         /// <summary>
         /// Сгенерировать случайный момент вращения для тряски (крен, тангаж, рыскание).
@@ -171,82 +158,6 @@ namespace ProjectC.Ship
 
             // Линейная интерполяция: 0 на границе, 1 на maxDepth ниже
             return Mathf.Clamp01(depthBelow / maxDepth);
-        }
-
-        // ============================================================
-        // Cinemachine Impulse — тряска камеры при турбулентности
-        // Определяется через Reflection — работает с любой версией Cinemachine
-        // ============================================================
-
-        private void _tryInitializeCinemachine()
-        {
-            // Пытаемся найти тип CinemachineImpulseSource через reflection
-            _impulseSourceType = System.Type.GetType("Cinemachine.CinemachineImpulseSource, Cinemachine");
-            
-            if (_impulseSourceType == null)
-            {
-                // Пробуем альтернативное имя (Cinemachine 3.x)
-                _impulseSourceType = System.Type.GetType("Unity.Cinemachine.CinemachineImpulseSource, Unity.Cinemachine");
-            }
-
-            if (_impulseSourceType == null)
-            {
-                // Cinemachine не установлен
-                _hasCinemachine = false;
-                Debug.Log("[TurbulenceEffect] Cinemachine not detected — impulse disabled (install Cinemachine package for camera shake)");
-                return;
-            }
-
-            _hasCinemachine = true;
-
-            // Пытаемся найти существующий компонент
-            _impulseSource = _rb.GetComponent(_impulseSourceType);
-            
-            if (_impulseSource == null)
-            {
-                // Добавляем CinemachineDefaultImpulseSource
-                var defaultImpulseType = System.Type.GetType("Cinemachine.CinemachineDefaultImpulseSource, Cinemachine");
-                if (defaultImpulseType == null)
-                {
-                    defaultImpulseType = System.Type.GetType("Unity.Cinemachine.CinemachineDefaultImpulseSource, Unity.Cinemachine");
-                }
-
-                if (defaultImpulseType != null)
-                {
-                    _impulseSource = _rb.gameObject.AddComponent(defaultImpulseType);
-                    Debug.Log("[TurbulenceEffect] Cinemachine Impulse Source added (CinemachineDefaultImpulseSource)");
-                }
-                else
-                {
-                    Debug.LogWarning("[TurbulenceEffect] Cinemachine found but CinemachineDefaultImpulseSource not available");
-                }
-            }
-            else
-            {
-                Debug.Log("[TurbulenceEffect] Cinemachine Impulse Source found on ship");
-            }
-        }
-
-        private void ApplyTurbulenceImpulse(float severity)
-        {
-            if (!_hasCinemachine || _impulseSource == null || _impulseSourceType == null)
-                return;
-
-            // Вызываем GenerateImpulse(severity * 2f) через reflection
-            var method = _impulseSourceType.GetMethod("GenerateImpulse", new[] { typeof(float) });
-            if (method != null)
-            {
-                method.Invoke(_impulseSource, new object[] { severity * 2f });
-            }
-            else
-            {
-                // Пробуем GenerateImpulse(Vector3)
-                var methodVec = _impulseSourceType.GetMethod("GenerateImpulse", new[] { typeof(Vector3) });
-                if (methodVec != null)
-                {
-                    methodVec.Invoke(_impulseSource, new object[] { Vector3.up * severity * 2f });
-                }
-            }
         }
     }
 }

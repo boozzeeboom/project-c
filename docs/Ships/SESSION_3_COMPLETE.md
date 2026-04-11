@@ -242,22 +242,33 @@ finalWindForce = windDirection.normalized × windForce × windInfluence × windE
 
 ## 🎯 Cinemachine Impulse
 
-### Если Cinemachine Установлен
-
+### Как установить Cinemachine
 ```
-1. Open Window → Package Manager
-2. Найти "Cinemachine" (Unity 6: version 3.0+)
-3. Install
-4. При турбулентности > 0.3 → камера трясётся
-5. Impulse strength = severity × 2.0
+1. Window → Package Manager
+2. Packages: Unity Registry
+3. Найти "Cinemachine" (версия 2.10+ для Unity 6)
+4. Install
+5. Перезапустить Unity
+```
+
+### Как Проверить Тряску Камеры
+```
+1. Установить пакет Cinemachine (обязательно!)
+2. В сцене создать Cinemachine Virtual Camera:
+   - Right-click Hierarchy → Cinemachine → Virtual Camera
+   - Назначить Follow на корабль
+   - Назначить Look At на корабль
+3. На корабле TurbulenceEffect автоматически добавит CinemachineImpulseSource
+4. Телепортировать корабль ниже 1200м (Position Y = 1100)
+5. Ожидание: камера трясётся при severity > 0.3
+6. В Console: "[TurbulenceEffect] Cinemachine Impulse Source added"
 ```
 
 ### Если Cinemachine НЕ Установлен
-
 ```
-- TurbulenceEffect работает БЕЗ тряски камеры
-- В Console логируется: "[TurbulenceEffect] Cinemachine not detected"
-- При установке пакета Cinemachine — всё заработает автоматически
+- TurbulenceEffect работает БЕЗ тряски камеры (корабль трясётся, камера — нет)
+- В Console логируется: "[TurbulenceEffect] Cinemachine not detected — impulse disabled"
+- При установке пакета Cinemachine — всё заработает автоматически (не нужно менять код)
 ```
 
 ---

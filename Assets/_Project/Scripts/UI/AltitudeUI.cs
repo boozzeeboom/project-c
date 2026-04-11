@@ -47,7 +47,7 @@ namespace ProjectC.UI
         private void Start()
         {
             // Ищем ShipController на сцене
-            _shipController = FindFirstObjectByType<ShipController>();
+            _shipController = FindAnyObjectByType<ShipController>();
             if (_shipController == null)
             {
                 Debug.LogWarning("[AltitudeUI] ShipController not found on scene. HUD will show placeholder data.");
@@ -72,7 +72,7 @@ namespace ProjectC.UI
             _canvas = GetComponentInParent<Canvas>();
             if (_canvas == null)
             {
-                _canvas = FindObjectOfType<Canvas>();
+                _canvas = FindAnyObjectByType<Canvas>();
             }
 
             if (_canvas == null)
@@ -155,7 +155,7 @@ namespace ProjectC.UI
             tmpText.alignment = TextAlignmentOptions.Center;
             tmpText.color = Color.white;
             tmpText.font = GetDefaultTMPFont();
-            tmpText.enableWordWrapping = false;
+            tmpText.textWrappingMode = TextWrappingModes.NoWrap;
             tmpText.overflowMode = TextOverflowModes.Overflow;
 
             return tmpText;
@@ -177,7 +177,7 @@ namespace ProjectC.UI
                 return defaultFont;
 
             // Ищем любой TMP шрифт
-            defaultFont = FindObjectOfType<TMP_FontAsset>();
+            defaultFont = FindAnyObjectByType<TMP_FontAsset>();
             if (defaultFont != null)
             {
                 TMP_Settings.defaultFontAsset = defaultFont;
@@ -237,37 +237,37 @@ namespace ProjectC.UI
             switch (status)
             {
                 case AltitudeStatus.Safe:
-                    icon = "\u{1F7E2}"; // 🟢
+                    icon = "🟢";
                     statusLabel = "SAFE";
                     textColor = safeColor;
                     break;
 
                 case AltitudeStatus.WarningLower:
-                    icon = "\u{1F7E1}"; // 🟡
+                    icon = "🟡";
                     statusLabel = "WARNING: Approaching lower limit";
                     textColor = warningColor;
                     break;
 
                 case AltitudeStatus.WarningUpper:
-                    icon = "\u{1F7E1}"; // 🟡
+                    icon = "🟡";
                     statusLabel = "WARNING: Approaching upper limit";
                     textColor = warningColor;
                     break;
 
                 case AltitudeStatus.DangerLower:
-                    icon = "\u{1F534}"; // 🔴
+                    icon = "🔴";
                     statusLabel = "DANGER: BELOW CORRIDOR! TURBULENCE!";
                     textColor = dangerColor;
                     break;
 
                 case AltitudeStatus.DangerUpper:
-                    icon = "\u{1F534}"; // 🔴
+                    icon = "🔴";
                     statusLabel = "DANGER: ABOVE CRITICAL ALTITUDE!";
                     textColor = dangerColor;
                     break;
 
                 default:
-                    icon = "\u{26AA}"; // ⚪
+                    icon = "⚪";
                     statusLabel = "UNKNOWN";
                     textColor = Color.white;
                     break;

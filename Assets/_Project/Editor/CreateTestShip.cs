@@ -12,7 +12,7 @@ namespace ProjectC.Editor
     /// </summary>
     public class CreateTestShip : EditorWindow
     {
-        private static ShipClass selectedClass = ShipClass.Medium;
+        private static ShipFlightClass selectedClass = ShipFlightClass.Medium;
 
         [MenuItem("Tools/Create Test Ship")]
         public static void Create()
@@ -32,8 +32,14 @@ namespace ProjectC.Editor
 
         private void OnGUI()
         {
-            GUILayout.Label("Выберите класс корабля:", EditorStyles.boldLabel);
-            selectedClass = (ShipClass)EditorGUILayout.EnumPopup("Ship Class:", selectedClass);
+            GUILayout.Label("Выберите класс корабля (физика полёта):", EditorStyles.boldLabel);
+            GUILayout.Label("НЕ путать с ShipClass из CargoSystem (грузовые слоты)", EditorStyles.miniLabel);
+            
+            // Используем Popup с явным выбором индекса чтобы избежать конфликта типов
+            string[] options = System.Enum.GetNames(typeof(ShipFlightClass));
+            int selectedIndex = System.Array.IndexOf(options, selectedClass.ToString());
+            selectedIndex = EditorGUILayout.Popup("Ship Flight Class:", selectedIndex, options);
+            selectedClass = (ShipFlightClass)System.Enum.Parse(typeof(ShipFlightClass), options[selectedIndex]);
 
             GUILayout.Space(10);
 
@@ -49,7 +55,7 @@ namespace ProjectC.Editor
             }
         }
 
-        private static void CreateShip(ShipClass shipClass)
+        private static void CreateShip(ShipFlightClass shipClass)
         {
             Undo.IncrementCurrentGroup();
             Undo.SetCurrentGroupName($"Create {shipClass} Ship");
@@ -84,18 +90,18 @@ namespace ProjectC.Editor
                 // Разные цвета для разных классов
                 shipMat.sharedMaterial.color = shipClass switch
                 {
-                    ShipClass.Light => new Color(0.3f, 0.8f, 0.3f),   // Зелёный
-                    ShipClass.Medium => new Color(0.8f, 0.3f, 0.3f), // Красный
-                    ShipClass.Heavy => new Color(0.3f, 0.3f, 0.8f),  // Синий
-                    ShipClass.HeavyII => new Color(0.8f, 0.8f, 0.3f), // Жёлтый
+                    ShipFlightClass.Light => new Color(0.3f, 0.8f, 0.3f),   // Зелёный
+                    ShipFlightClass.Medium => new Color(0.8f, 0.3f, 0.3f), // Красный
+                    ShipFlightClass.Heavy => new Color(0.3f, 0.3f, 0.8f),  // Синий
+                    ShipFlightClass.HeavyII => new Color(0.8f, 0.8f, 0.3f), // Жёлтый
                     _ => Color.white
                 };
             }
 
             // 3. Добавить Rigidbody
             var rb = ship.AddComponent<Rigidbody>();
-            rb.drag = 0f;
-            rb.angularDrag = 0f;
+            rb.linearDamping = 0f;
+            rb.angularDamping = 0f;
             rb.useGravity = true;
             rb.interpolation = RigidbodyInterpolation.Interpolate;
             rb.collisionDetectionMode = CollisionDetectionMode.Discrete;
@@ -104,7 +110,7 @@ namespace ProjectC.Editor
             var sc = ship.AddComponent<ShipController>();
             
             // Установить класс через reflection (поле private)
-            var shipClassField = sc.GetType().GetField("shipClass", 
+            var shipClassField = sc.GetType().GetField("shipFlightClass", 
                 System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
             shipClassField?.SetValue(sc, shipClass);
             

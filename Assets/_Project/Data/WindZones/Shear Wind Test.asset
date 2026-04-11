@@ -15,7 +15,7 @@ MonoBehaviour:
   zoneId: shear_test
   displayName: Shear Wind Test
   windDirection: {x: 1, y: 0.2, z: 0}
-  windForce: 40
+  windForce: 300
   windVariation: 0.2
   profile: 2
   gustInterval: 2

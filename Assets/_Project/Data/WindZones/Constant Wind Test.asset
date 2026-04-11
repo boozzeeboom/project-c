@@ -15,7 +15,7 @@ MonoBehaviour:
   zoneId: constant_test
   displayName: Constant Wind Test
   windDirection: {x: -1, y: 0, z: 1}
-  windForce: 50
+  windForce: 3000
   windVariation: 0.1
   profile: 0
   gustInterval: 2

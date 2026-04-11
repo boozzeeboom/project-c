@@ -5,9 +5,10 @@ using System.Collections.Generic;
 namespace ProjectC.Player
 {
     /// <summary>
-    /// Классы кораблей — определяют базовые характеристики.
+    /// Классы кораблей для физики полёта — определяют характеристики движения.
+    /// НЕ путать с ProjectC.Player.ShipClass (грузовые характеристики из CargoSystem).
     /// </summary>
-    public enum ShipClass
+    public enum ShipFlightClass
     {
         Light,      // Лёгкий: маневренный, быстрый, слабый
         Medium,     // Средний: баланс (дефолт)
@@ -28,8 +29,8 @@ namespace ProjectC.Player
     public class ShipController : NetworkBehaviour
     {
         [Header("Класс Корабля")]
-        [Tooltip("Класс определяет базовые характеристики. Меняется в Inspector.")]
-        [SerializeField] private ShipClass shipClass = ShipClass.Medium;
+        [Tooltip("Класс определяет характеристики полёта. НЕ путать с грузовым классом (CargoSystem).")]
+        [SerializeField] private ShipFlightClass shipFlightClass = ShipFlightClass.Medium;
 
         [Header("Тяга")]
         [SerializeField] private float thrustForce = 650f;
@@ -135,9 +136,9 @@ namespace ProjectC.Player
         {
             // Пресеты основаны на параметрах пользователя (скриншот 11.04.2026)
             // Medium = текущие значения пользователя (баланс)
-            switch (shipClass)
+            switch (shipFlightClass)
             {
-                case ShipClass.Light:
+                case ShipFlightClass.Light:
                     // Лёгкий: маневренный, быстрый, слабый
                     thrustForce = 500f;
                     yawForce = 3500f;
@@ -152,7 +153,7 @@ namespace ProjectC.Player
                     if (_rb != null) _rb.mass = 800f;
                     break;
 
-                case ShipClass.Medium:
+                case ShipFlightClass.Medium:
                     // Средний: баланс (параметры пользователя)
                     thrustForce = 650f;
                     yawForce = 3000f;
@@ -167,7 +168,7 @@ namespace ProjectC.Player
                     if (_rb != null) _rb.mass = 1000f;
                     break;
 
-                case ShipClass.Heavy:
+                case ShipFlightClass.Heavy:
                     // Тяжёлый: медленный, устойчивый, мощный
                     thrustForce = 800f;
                     yawForce = 2000f;
@@ -182,7 +183,7 @@ namespace ProjectC.Player
                     if (_rb != null) _rb.mass = 1500f;
                     break;
 
-                case ShipClass.HeavyII:
+                case ShipFlightClass.HeavyII:
                     // Тяжёлый II: очень медленный, очень устойчивый
                     thrustForce = 900f;
                     yawForce = 1500f;
@@ -205,7 +206,7 @@ namespace ProjectC.Player
                 _rb.angularDamping = angularDrag;
             }
 
-            Debug.Log($"[ShipController] Applied class: {shipClass}");
+            Debug.Log($"[ShipController] Applied class: {shipFlightClass}");
         }
 
 #if UNITY_EDITOR

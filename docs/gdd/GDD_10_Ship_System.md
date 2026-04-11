@@ -306,7 +306,7 @@ if (meziyPitchActive) {
 }
 ```
 
-Полный каталог кораблей и модулей с таблицами совместимости: **см. `ShipRegistry.md`**
+Полный каталог кораблей и модулей с таблицами совместимости: **см. `../Ships/ShipRegistry.md`**
 
 ---
 
@@ -568,12 +568,13 @@ public struct DispatcherMessage {
 
 | Документ | Путь | Описание |
 |----------|------|----------|
-| **Ship Registry** | `ShipRegistry.md` | Полный каталог кораблей, модулей, совместимость |
+| **Ship Registry** | `../Ships/ShipRegistry.md` | Полный каталог кораблей, модулей, совместимость |
 | **World & Environment** | `gdd/GDD_02_World_Environment.md` | Мир, города, Завеса |
 | **Network** | `gdd/GDD_12_Network_Multiplayer.md` | Сетевая архитектура |
 | **Faction & SOL** | `gdd/GDD_23_Faction_Reputation.md` | СОЛ, фракции |
 | **Core Gameplay** | `gdd/GDD_01_Core_Gameplay.md` | Core Loop, управление |
-| **Implementation Plan** | `SHIP_MOVEMENT_IMPLEMENTATION_PLAN.md` | План тестов и код |
+| **Implementation Plan** | `../Ships/SHIP_MOVEMENT_IMPLEMENTATION_PLAN.md` | План тестов и код |
+| **Agent Summary** | `../Ships/AGENTS_SHIP_SYSTEM_SUMMARY.md` | Оркестрация и roadmap |
 | **Lore Book** | `WORLD_LORE_BOOK.md` | Лор мира из книги |
 | **Ship Lore** | `SHIP_LORE_AND_MECHANICS.md` | Лор кораблей |
 

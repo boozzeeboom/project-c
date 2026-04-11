@@ -73,20 +73,38 @@ Test 4: Зарегистрированный корабль в городе → 
 
 ---
 
-### Сессия 3: Wind & Environmental Forces
+### Сессия 3: Wind & Environmental Forces ✅ ЗАВЕРШЕНА
 
 **Задачи:**
-1. `WindZone.cs` — объёмные триггеры зон ветра
-2. Применение силы ветра к кораблю
-3. Turbulence при приближении к Завесе
-4. Cinemachine Impulse для тряски камеры
-5. Wind lanes между пиками (визуальные воздушные коридоры)
+1. ✅ `WindZone.cs` — объёмные триггеры зон ветра
+2. ✅ Применение силы ветра к кораблю
+3. ✅ Turbulence при приближении к Завесе (улучшена — Cinemachine Impulse, класс корабля)
+4. ✅ Cinemachine Impulse для тряски камеры (с проверкой наличия пакета)
+5. ⏸ Wind lanes между пиками (визуальные воздушные коридоры) — отложено
 
 **Тесты:**
 ```
-Test 1: Войти в зону ветра → корабль начинает сносить
-Test 2: Тяжёлый корабль сносит меньше чем лёгкий (windExposure)
-Test 3: Приближение к Завесе → нарастающая тряска
+Test 1: Войти в зону ветра → корабль начинает сносить ✅
+Test 2: Тяжёлый корабль сносит меньше чем лёгкий (windExposure) ✅
+Test 3: Приближение к Завесе → нарастающая тряска ✅
+```
+
+**Созданные файлы:**
+- `Assets/_Project/Scripts/Ship/WindZoneData.cs` — ScriptableObject данных зоны
+- `Assets/_Project/Scripts/Ship/WindZone.cs` — MonoBehaviour объёмных триггерных зон
+- `Assets/_Project/Editor/CreateWindZoneTestScene.cs` — Editor утилита
+
+**Изменённые файлы:**
+- `Assets/_Project/Scripts/Player/ShipController.cs` v2.1 → v2.2 (интеграция ветра)
+- `Assets/_Project/Scripts/Ship/TurbulenceEffect.cs` (Cinemachine + класс корабля)
+
+**Документация:**
+- `docs/Ships/SESSION_3_COMPLETE.md` — полная инструкция по тестированию
+
+**Известные ограничения:**
+- Визуальная проверка ветра затруднена (зоны не видны в Game view) — отложено до будущих инструментов отладки
+- Cinemachine Impulse работает только при установленном пакете Cinemachine
+- 5 Unity тестов не созданы — отложено
 ```
 
 ---

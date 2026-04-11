@@ -46,13 +46,13 @@ namespace ProjectC.Player
 
         [Header("Аэродинамика")]
         [SerializeField] private float linearDrag = 0.4f;
-        [SerializeField] private float angularDrag = 3.5f;
+        [SerializeField] private float angularDrag = 8.0f;
 
         [Header("Стабилизация")]
         [Tooltip("Сила стабилизации тангажа (возврат к горизонту)")]
-        [SerializeField] private float pitchStabForce = 2.5f;
+        [SerializeField] private float pitchStabForce = 15.0f;
         [Tooltip("Сила стабилизации крена (возврат к 0)")]
-        [SerializeField] private float rollStabForce = 4.0f;
+        [SerializeField] private float rollStabForce = 20.0f;
         [Tooltip("Максимальный угол тангажа (±градусы)")]
         [SerializeField] private float maxPitchAngle = 20f;
         [Tooltip("Автоматическая стабилизация при отсутствии ввода")]

@@ -105,6 +105,12 @@ Test 3: Приближение к Завесе → нарастающая тря
 - Визуальная проверка ветра затруднена (зоны не видны в Game view) — отложено до будущих инструментов отладки
 - Cinemachine Impulse работает только при установленном пакете Cinemachine
 - 5 Unity тестов не созданы — отложено
+
+**Исправленные баги (после тестирования):**
+- WindZone.cs не вызывал `ship.RegisterWindZone(this)` — `_activeWindZones` всегда пустой
+- `GetComponentInParent` искал только на родителе, ShipController на том же объекте → заменён на `GetComponent` → `GetComponentInParent` → `GetComponentInChildren`
+- Добавлен Debug лог при входе/выходе из зоны
+- Добавлен `GetActiveWindZoneCount()` публичный метод
 ```
 
 ---

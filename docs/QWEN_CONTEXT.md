@@ -121,11 +121,6 @@ Unity автоматически создаёт `.meta` файлы для каж
 | 🟡 Средне | Модель корабля — примитив (сфера) | ShipController | Заменить на FBX модель (Этап 2.5) |
 | 🟡 Средне | Персонаж — capsule | NetworkPlayer | Заменить на Mixamo модель (Этап 2.5) |
 | 🔴 P0 | **AltitudeUI HUD не отображается** | AltitudeUI.cs | @unity-ui-specialist: Canvas/RectTransform/Sorting |
-| 🔴 P0 | **Тряска турбулентности слабая** | TurbulenceEffect.cs | Увеличить intensity + Cinemachine Impulse |
-| 🟡 P1 | **Городские коридоры — радиус, не зона** | AltitudeCorridorSystem.cs | BoxCollider-триггеры вокруг городов |
-| 🟡 P1 | **Деградация не применяет модификаторы** | ShipController.cs | Применять к thrustForce/yawForce/etc |
-| 🟡 P1 | **Турбулентность только на сервере** | ShipController.cs | RPC репликация на клиентов |
-| 🟢 P2 | **Console-спам при турбулентности** | ShipController.cs | Rate-limit логи (раз в 1 сек) |
 | 🟢 Низко | Горные пики — процедурные без текстур | WorldGenerator | Добавить текстуры из Poly Haven (Этап 2.5) |
 | 🔴 Отложено | Отдельный серверный билд (.NET 8) | Архитектура | Этап 5+ |
 
@@ -833,12 +828,7 @@ git status && git log --oneline -3
 - 6 ScriptableObject ассетов: Global, Primus, Tertius, Quartus, Kilimanjaro, Secundus
 - Теги: `backup-2_session-ship-improved`
 
-### Известные проблемы Сессии 2 🔴
-| Приоритет | Проблема | Описание | Решение |
-|-----------|----------|----------|---------|
-| 🔴 P0 | AltitudeUI HUD не отображается | Программное создание Canvas не работает — элементы создаются но не видны | @unity-ui-specialist: проверить RectTransform, Canvas Scaler, sorting |
-| 🔴 P0 | Тряска турбулентности недостаточная | Силы увеличены (×50, ×масса) но визуально слабые | Увеличить turbulenceIntensity, добавить Cinemachine Impulse |
-| 🟡 P1 | Городские коридоры — радиус, не collider | Проверка IsInCityZone = Vector3.Distance, не триггер-зона | Заменить на BoxCollider-триггер вокруг города для точной формы зоны |
-| 🟡 P1 | Деградация не применяет модификаторы | DegradationModifiers рассчитываются но не применяются к thrustForce/yawForce | Интегрировать в ShipController.ApplyThrustForce/ApplyRotation |
-| 🟡 P1 | Турбулентность только на сервере | ShipController работает только на сервере, клиенты не видят тряску | RPC репликация статуса на клиентов |
-| 🟢 P2 | Console-спам при турбулентности | Debug.Log каждый FixedUpdate при DangerLower | Заменить на rate-limited лог (раз в 1 сек) |
+### Известные проблемы Сессии 2
+| Приоритет | Проблема | Решение |
+|-----------|----------|---------|
+| 🔴 P0 | AltitudeUI HUD не отображается | @unity-ui-specialist: проверить RectTransform, Canvas Scaler, sorting |

@@ -5,6 +5,17 @@ using System.Collections.Generic;
 namespace ProjectC.Player
 {
     /// <summary>
+    /// Классы кораблей — определяют базовые характеристики.
+    /// </summary>
+    public enum ShipClass
+    {
+        Light,      // Лёгкий: маневренный, быстрый, слабый
+        Medium,     // Средний: баланс (дефолт)
+        Heavy,      // Тяжёлый: медленный, устойчивый, мощный
+        HeavyII     // Тяжёлый II: очень медленный, очень устойчивый
+    }
+
+    /// <summary>
     /// Сетевой контроллер корабля v2.0 — "Живые Баржи"
     /// Smooth movement с Mathf.SmoothDamp для frame-rate независимого сглаживания.
     /// Кооп-пилотирование: несколько игроков могут управлять одновременно.
@@ -16,8 +27,12 @@ namespace ProjectC.Player
     [RequireComponent(typeof(NetworkObject))]
     public class ShipController : NetworkBehaviour
     {
+        [Header("Класс Корабля")]
+        [Tooltip("Класс определяет базовые характеристики. Меняется в Inspector.")]
+        [SerializeField] private ShipClass shipClass = ShipClass.Medium;
+
         [Header("Тяга")]
-        [SerializeField] private float thrustForce = 350f;
+        [SerializeField] private float thrustForce = 650f;
         [SerializeField] private float maxSpeed = 40f;
 
         [Header("Вращение")]
@@ -107,7 +122,105 @@ namespace ProjectC.Player
                 _rb.useGravity = true;
                 _rb.constraints = RigidbodyConstraints.None;
             }
+
+            // Применить пресет класса корабля
+            ApplyShipClass();
         }
+
+        /// <summary>
+        /// Применить пресет параметров в зависимости от класса корабля.
+        /// Вызывается в Awake() и при смене shipClass в Inspector.
+        /// </summary>
+        private void ApplyShipClass()
+        {
+            // Пресеты основаны на параметрах пользователя (скриншот 11.04.2026)
+            // Medium = текущие значения пользователя (баланс)
+            switch (shipClass)
+            {
+                case ShipClass.Light:
+                    // Лёгкий: маневренный, быстрый, слабый
+                    thrustForce = 500f;
+                    yawForce = 3500f;
+                    pitchForce = 25f;
+                    verticalForce = 7000f;
+                    yawSmoothTime = 0.25f;
+                    pitchSmoothTime = 0.6f;
+                    liftSmoothTime = 0.8f;
+                    thrustSmoothTime = 0.2f;
+                    yawDecayTime = 0.8f;
+                    maxSpeed = 50f;
+                    if (_rb != null) _rb.mass = 800f;
+                    break;
+
+                case ShipClass.Medium:
+                    // Средний: баланс (параметры пользователя)
+                    thrustForce = 650f;
+                    yawForce = 3000f;
+                    pitchForce = 20f;
+                    verticalForce = 8000f;
+                    yawSmoothTime = 0.3f;
+                    pitchSmoothTime = 0.7f;
+                    liftSmoothTime = 1.0f;
+                    thrustSmoothTime = 0.3f;
+                    yawDecayTime = 1.0f;
+                    maxSpeed = 40f;
+                    if (_rb != null) _rb.mass = 1000f;
+                    break;
+
+                case ShipClass.Heavy:
+                    // Тяжёлый: медленный, устойчивый, мощный
+                    thrustForce = 800f;
+                    yawForce = 2000f;
+                    pitchForce = 15f;
+                    verticalForce = 6000f;
+                    yawSmoothTime = 0.5f;
+                    pitchSmoothTime = 0.9f;
+                    liftSmoothTime = 1.2f;
+                    thrustSmoothTime = 0.4f;
+                    yawDecayTime = 1.5f;
+                    maxSpeed = 25f;
+                    if (_rb != null) _rb.mass = 1500f;
+                    break;
+
+                case ShipClass.HeavyII:
+                    // Тяжёлый II: очень медленный, очень устойчивый
+                    thrustForce = 900f;
+                    yawForce = 1500f;
+                    pitchForce = 12f;
+                    verticalForce = 5000f;
+                    yawSmoothTime = 0.7f;
+                    pitchSmoothTime = 1.1f;
+                    liftSmoothTime = 1.5f;
+                    thrustSmoothTime = 0.5f;
+                    yawDecayTime = 2.0f;
+                    maxSpeed = 18f;
+                    if (_rb != null) _rb.mass = 2000f;
+                    break;
+            }
+
+            // Обновить Rigidbody если есть
+            if (_rb != null)
+            {
+                _rb.linearDamping = linearDrag;
+                _rb.angularDamping = angularDrag;
+            }
+
+            Debug.Log($"[ShipController] Applied class: {shipClass}");
+        }
+
+#if UNITY_EDITOR
+        /// <summary>
+        /// Вызывается при изменении shipClass в Inspector (Editor only).
+        /// </summary>
+        private void OnValidate()
+        {
+            // Применить пресет только если корабль уже инициализирован
+            if (_rb != null)
+            {
+                ApplyShipClass();
+            }
+        }
+#endif
 
         private void FixedUpdate()
         {

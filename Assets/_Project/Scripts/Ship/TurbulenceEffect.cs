@@ -14,17 +14,20 @@ namespace ProjectC.Ship
         private Transform _transform;
 
         [Header("Параметры Турбулентности")]
-        [Tooltip("Сила турбулентности (масштаб случайных сил)")]
-        public float turbulenceIntensity = 5f;
+        [Tooltip("Базовая сила турбулентности (умножается на массу корабля и severity)")]
+        public float turbulenceIntensity = 15f;
 
-        [Tooltip("Частота обновления турбулентности (раз в секунд)")]
-        public float updateInterval = 0.1f;
+        [Tooltip("Частота обновления турбулентности (раз в секунд). Меньше = более резкая тряска")]
+        public float updateInterval = 0.05f;
 
-        [Tooltip("Масштаб вертикальной тряски (относительно горизонтальной)")]
-        public float verticalMultiplier = 1.5f;
+        [Tooltip("Множитель вертикальной тряски")]
+        public float verticalMultiplier = 2.5f;
 
-        [Tooltip("Масштаб горизонтальной тряски")]
-        public float horizontalMultiplier = 0.8f;
+        [Tooltip("Множитель горизонтальной тряски")]
+        public float horizontalMultiplier = 1.8f;
+
+        [Tooltip("Дополнительный множитель силы (общий усилитель)")]
+        public float forceMultiplier = 50f;
 
         // Таймер для обновления
         private float _updateTimer;
@@ -40,6 +43,7 @@ namespace ProjectC.Ship
 
         /// <summary>
         /// Обновить турбулентность. Вызывать в FixedUpdate.
+        /// Применяет случайные силы И моменты вращения для реалистичной тряски.
         /// </summary>
         /// <param name="severity">Степень турбулентности (0-1, где 1 = максимальная)</param>
         public void Update(float severity, float dt)
@@ -53,15 +57,36 @@ namespace ProjectC.Ship
             {
                 _updateTimer = 0f;
                 GenerateTurbulenceForce(severity);
+                GenerateTurbulenceTorque(severity);
             }
 
-            // Применяем силу
+            // Применяем силу и момент
             _rb.AddForce(_currentTurbulenceForce, ForceMode.Force);
+            _rb.AddTorque(_currentTurbulenceTorque, ForceMode.Force);
+        }
+
+        // Текущий момент турбулентности
+        private Vector3 _currentTurbulenceTorque;
+
+        /// <summary>
+        /// Сгенерировать случайный момент вращения для тряски (крен, тангаж, рыскание).
+        /// </summary>
+        private void GenerateTurbulenceTorque(float severity)
+        {
+            float mass = _rb.mass;
+            float totalTorque = turbulenceIntensity * severity * mass * forceMultiplier * 0.3f;
+
+            // Случайные моменты вращения (крен сильнее, тангаж слабее, рыскание минимальный)
+            _currentTurbulenceTorque = new Vector3(
+                Random.Range(-1f, 1f) * verticalMultiplier * totalTorque,   // крен (roll)
+                Random.Range(-0.3f, 0.3f) * totalTorque,                     // рыскание (yaw)
+                Random.Range(-1f, 1f) * horizontalMultiplier * totalTorque   // тангаж (pitch)
+            );
         }
 
         /// <summary>
         /// Сгенерировать новую случайную силу турбулентности.
-        /// Силы масштабируются на массу корабля чтобы быть значимыми.
+        /// Силы масштабируются на массу корабля и общий множитель чтобы быть ОЧЕНЬ заметными.
         /// </summary>
         private void GenerateTurbulenceForce(float severity)
         {
@@ -70,15 +95,19 @@ namespace ProjectC.Ship
             float horizontalZ = Random.Range(-1f, 1f);
             float verticalY = Random.Range(-1f, 1f);
 
-            // Масштабируем на массу корабля чтобы силы были значимыми
+            // Масштабируем на массу корабля и множители
             float mass = _rb.mass;
+            float totalForce = turbulenceIntensity * severity * mass * forceMultiplier;
 
-            // Применяем множители
+            // Применяем множители по осям
             _currentTurbulenceForce = new Vector3(
-                horizontalX * horizontalMultiplier * turbulenceIntensity * severity * mass,
-                verticalY * verticalMultiplier * turbulenceIntensity * severity * mass,
-                horizontalZ * horizontalMultiplier * turbulenceIntensity * severity * mass
+                horizontalX * horizontalMultiplier * totalForce,
+                verticalY * verticalMultiplier * totalForce,
+                horizontalZ * horizontalMultiplier * totalForce
             );
+
+            // Debug для калибровки
+            Debug.Log($"[Turbulence] Force: {_currentTurbulenceForce.magnitude:F0}N, severity: {severity:F2}, mass: {mass:F0}");
         }
 
         /// <summary>

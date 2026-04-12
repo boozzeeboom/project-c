@@ -199,17 +199,26 @@
 ### ✅ Реализовано
 - Процедурная генерация мира (15 горных пиков + 890+ облаков, 3 слоя)
 - Контроллер персонажа (пеший режим: WASD, бег, прыжок)
-- Контроллер корабля (Rigidbody: тяга, рыскание, тангаж, лифт Q/E, антигравитация)
+- **Корабли (Сессии 1-5_4, ShipController v2.7):**
+  - Smooth movement — Mathf.SmoothDamp, инерция, стабилизация
+  - 4 класса: Light/Medium/Heavy/HeavyII (масса 800-2000кг)
+  - Altitude Corridor System — коридоры высот, турбулентность, деградация
+  - Wind & Environmental Forces — зоны ветра (Constant, Gust, Shear)
+  - Module System — 7 модулей (YAW_ENH, PITCH_ENH, LIFT_ENH, ROLL, MEZIY_*)
+  - Fuel System — расход/регенерация, дозаправка L
+  - Meziy Passive/Active/Overheat — C/V (pitch), Z/X (roll), Shift+A/D (yaw), Shift+W/S (thrust)
+  - Meziy Status HUD (F4) — индикаторы 🟢🔵🔴, прогресс-бары
+  - Co-op пилотирование — несколько игроков, усреднение ввода
 - Переключение режимов F (пеший ↔ корабль, радиус 5м)
 - Third-person камера (адаптивная)
 - WorldCamera (режим свободного полёта для разработки)
 - UI: подсказки управления, навигация по пикам
 - Инвентарь (круговое колесо, 8 типов, сундуки с LootTable, подбор предметов)
 - Сетевой мультиплеер (Host + Client + Dedicated Server)
-- Кооп-корабли (несколько игроков, усреднение ввода)
 - Disconnect/Reconnect UI (авто-реконнект, сохранение инвентаря)
 - Синхронизация подбора (предметы/сундуки исчезают у всех)
 - Player Count (счётчик игроков в реальном времени)
+- Торговля — динамическая экономика, контракты, PlayerDataStore
 - **URP Pipeline** — Universal Render Pipeline 17.4.0
 - **CloudGhibli.shader** — кастомный шейдер облаков (noise + rim glow)
 - **MaterialURPUpgrader** — массовая конвертация Standard → URP
@@ -220,7 +229,7 @@
 - Модель персонажа (Mixamo)
 - Текстуры горных пиков (Poly Haven)
 - Post-Processing (Bloom, Color Grading)
-- Система топлива (мезий)
+- ⏳ Рефакторинг ShipController.cs — разделение на подсистемы
 
 ---
 

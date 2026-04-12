@@ -1,0 +1,33 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 0a2ee72e2ca4c264faa0110acf851850, type: 3}
+  m_Name: MODULE_YAW_ENH
+  m_EditorClassIdentifier: Assembly-CSharp::ProjectC.Ship.ShipModule
+  moduleId: MODULE_YAW_ENH
+  displayName: "\u0423\u043B\u0443\u0447\u0448\u0435\u043D\u043D\u043E\u0435 \u0420\u044B\u0441\u043A\u0430\u043D\u0438\u0435"
+  type: 0
+  tier: 1
+  thrustMultiplier: 1
+  yawMultiplier: 1.4
+  pitchMultiplier: 1
+  liftMultiplier: 1
+  maxSpeedModifier: 0
+  windExposureModifier: 0
+  powerConsumption: 5
+  compatibleClasses: 00000000010000000200000003000000
+  requiredModules: []
+  incompatibleModules: []
+  isMeziyModule: 0
+  meziyForce: 0
+  meziyDuration: 0
+  meziyCooldown: 0
+  meziyFuelCost: 0

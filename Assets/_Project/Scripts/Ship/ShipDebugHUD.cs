@@ -144,15 +144,13 @@ namespace ProjectC.Ship
 
         private MeziyModuleActivator GetMeziyActivator()
         {
-            // Попробуем получить через рефлексию (meziyActivator — private поле)
-            // Или найдём на сцене
-            var activators = FindObjectsByType<MeziyModuleActivator>(FindObjectsSortMode.None);
+            var activators = FindObjectsByType<MeziyModuleActivator>(FindObjectsInactive.Exclude);
             return activators.Length > 0 ? activators[0] : null;
         }
 
         private ShipModuleManager GetModuleManager()
         {
-            var managers = FindObjectsByType<ShipModuleManager>(FindObjectsSortMode.None);
+            var managers = FindObjectsByType<ShipModuleManager>(FindObjectsInactive.Exclude);
             return managers.Length > 0 ? managers[0] : null;
         }
     }

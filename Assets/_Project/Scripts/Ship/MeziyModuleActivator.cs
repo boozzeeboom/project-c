@@ -6,7 +6,7 @@ namespace ProjectC.Ship
     /// <summary>
     /// Ось мезиевого модуля — для запроса пассивных множителей.
     /// </summary>
-    public enum MeziyAxis { Pitch, Roll, Yaw }
+    public enum MeziyAxis { Pitch, Roll, Yaw, Thrust }
 
     /// <summary>
     /// Состояние мезиевого модуля с passive/active/overheat режимами.
@@ -229,6 +229,7 @@ namespace ProjectC.Ship
                 MeziyAxis.Pitch => "MODULE_MEZIY_PITCH",
                 MeziyAxis.Roll => "MODULE_MEZIY_ROLL",
                 MeziyAxis.Yaw => "MODULE_MEZIY_YAW",
+                MeziyAxis.Thrust => "MODULE_MEZIY_THRUST",
                 _ => null
             };
 

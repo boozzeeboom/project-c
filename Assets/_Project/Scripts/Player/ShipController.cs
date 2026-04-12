@@ -431,6 +431,17 @@ namespace ProjectC.Player
                     else
                         meziyActivator.Deactivate("MODULE_MEZIY_YAW");
                 }
+
+                // MODULE_MEZIY_THRUST: Shift+W (ускорение) / Shift+S (торможение)
+                if (meziyActivator.IsModuleInstalled("MODULE_MEZIY_THRUST"))
+                {
+                    if (shiftHeld && IsKeyDown(KeyCode.W))
+                        meziyActivator.TryActivate("MODULE_MEZIY_THRUST", +1f);
+                    else if (shiftHeld && IsKeyDown(KeyCode.S))
+                        meziyActivator.TryActivate("MODULE_MEZIY_THRUST", -1f);
+                    else
+                        meziyActivator.Deactivate("MODULE_MEZIY_THRUST");
+                }
             }
             else if (meziyActivator != null)
             {
@@ -438,6 +449,7 @@ namespace ProjectC.Player
                 meziyActivator.Deactivate("MODULE_MEZIY_PITCH");
                 meziyActivator.Deactivate("MODULE_MEZIY_ROLL");
                 meziyActivator.Deactivate("MODULE_MEZIY_YAW");
+                meziyActivator.Deactivate("MODULE_MEZIY_THRUST");
             }
 
             // 1.9. Определяем hasInput переменные заранее (для fuel check и таймера)
@@ -707,11 +719,13 @@ namespace ProjectC.Player
                 _moduleWindExposureMod = moduleManager.GetWindExposureModifier();
 
                 // Сессия 5_3: пассивные мезиевые эффекты (умножаются поверх обычных модульных множителей)
+                // Сессия 5_4: добавлен Thrust
                 if (meziyActivator != null)
                 {
                     _modulePitchMult *= meziyActivator.GetPassiveModifier(MeziyAxis.Pitch);
                     _moduleRollMult *= meziyActivator.GetPassiveModifier(MeziyAxis.Roll);
                     _moduleYawMult *= meziyActivator.GetPassiveModifier(MeziyAxis.Yaw);
+                    _moduleThrustMult *= meziyActivator.GetPassiveModifier(MeziyAxis.Thrust);
                 }
 
                 // Проверить MODULE_ROLL для разблокировки крена
@@ -915,6 +929,7 @@ namespace ProjectC.Player
 
             _meziyActive = false;
             _activeMeziyTorque = Vector3.zero;
+            float meziyThrustForce = 0f;
 
             var allStates = meziyActivator.GetActiveStates();
 
@@ -946,6 +961,13 @@ namespace ProjectC.Player
                     case "MODULE_MEZIY_YAW":
                         _activeMeziyTorque += Vector3.up * module.meziyForce * dir;
                         break;
+
+                    case "MODULE_MEZIY_THRUST":
+                        // Thrust — не torque, а сила вдоль оси transform.forward
+                        // dir = +1 (вперёд, Shift+W) или -1 (назад/торможение, Shift+S)
+                        meziyThrustForce += module.meziyForce * dir;
+                        _meziyActive = true;
+                        break;
                 }
             }
 
@@ -953,6 +975,12 @@ namespace ProjectC.Player
             if (_activeMeziyTorque.sqrMagnitude > 0.01f)
             {
                 _rb.AddTorque(_activeMeziyTorque, ForceMode.Force);
+            }
+
+            // Применить meziy thrust boost (MODULE_MEZIY_THRUST)
+            if (Mathf.Abs(meziyThrustForce) > 0.01f)
+            {
+                _rb.AddForce(transform.forward * meziyThrustForce * dt, ForceMode.Force);
             }
 
             // Обновить визуал (только при активной тяге, НЕ при перегреве)
@@ -1103,6 +1131,14 @@ namespace ProjectC.Player
                 hud = gameObject.AddComponent<ShipDebugHUD>();
                 Debug.Log("[ShipController] ShipDebugHUD auto-added.");
             }
+
+            // Сессия 5_4: авто-добавление MeziyStatusHUD
+            var meziyHUD = GetComponent<MeziyStatusHUD>();
+            if (meziyHUD == null)
+            {
+                meziyHUD = gameObject.AddComponent<MeziyStatusHUD>();
+                Debug.Log("[ShipController] MeziyStatusHUD auto-added.");
+            }
         }
 
         /// <summary>
@@ -1119,7 +1155,8 @@ namespace ProjectC.Player
                 int pitchFound = meziyActivator.IsModuleInstalled("MODULE_MEZIY_PITCH") ? 1 : 0;
                 int rollFound = meziyActivator.IsModuleInstalled("MODULE_MEZIY_ROLL") ? 1 : 0;
                 int yawFound = meziyActivator.IsModuleInstalled("MODULE_MEZIY_YAW") ? 1 : 0;
-                Debug.Log($"[ShipController] Meziy system initialized. PITCH={pitchFound}, ROLL={rollFound}, YAW={yawFound}");
+                int thrustFound = meziyActivator.IsModuleInstalled("MODULE_MEZIY_THRUST") ? 1 : 0;
+                Debug.Log($"[ShipController] Meziy system initialized. PITCH={pitchFound}, ROLL={rollFound}, YAW={yawFound}, THRUST={thrustFound}");
 
                 if (rollFound == 0 || yawFound == 0)
                 {

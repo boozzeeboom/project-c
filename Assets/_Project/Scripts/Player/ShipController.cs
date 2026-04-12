@@ -35,6 +35,7 @@ namespace ProjectC.Player
         [SerializeField] private ShipFlightClass shipFlightClass = ShipFlightClass.Medium;
 
         [Header("Тяга")]
+#pragma warning disable 0414
         [SerializeField] private float thrustForce = 650f;
         [SerializeField] private float maxSpeed = 40f;
 
@@ -56,6 +57,7 @@ namespace ProjectC.Player
         [SerializeField] private float liftSmoothTime = 1.0f;
         [Tooltip("Время разгона/торможения тяги")]
         [SerializeField] private float thrustSmoothTime = 0.3f;
+#pragma warning restore 0414
         [Tooltip("Время затухания рыскания без ввода (инерция баржи)")]
         [SerializeField] private float yawDecayTime = 1.0f;
         [Tooltip("Время затухания тангажа без ввода")]
@@ -136,12 +138,17 @@ namespace ProjectC.Player
         private float _currentPitchRate;
         private float _currentLiftForce;
         private float _currentThrust;
+        private float _currentRollRate;  // Сессия 5: roll для MODULE_ROLL
 
         // Velocity tracking для SmoothDamp (ref параметры)
         private float _yawVelocitySmooth;
         private float _pitchVelocitySmooth;
         private float _liftVelocitySmooth;
         private float _thrustVelocitySmooth;
+        private float _rollVelocitySmooth;  // Сессия 5: roll smooth
+
+        // Meziy key state — отслеживание нажатий (не зажатий) для 1/2/3
+        private bool _prevMeziyPitch, _prevMeziyRoll, _prevMeziyYaw;
 
         // Таймер отсутствия ввода (для стабилизации)
         private float _noInputTimer = 0f;
@@ -335,12 +342,13 @@ namespace ProjectC.Player
             if (meziyActivator != null)
                 meziyActivator.UpdateCooldowns(dt);
 
-            // 1.7. Проверить топливо — если пусто, отключить все управление (Сессия 5)
+            // 1.7. Проверить топливо — если пусто или ниже порога, отключить управление (Сессия 5)
+            // Порог: корабль заблокирован пока fuel < 10 (≈33 секунды regen для Medium класса)
+            const float controlThreshold = 10f;
             bool engineStalled = false;
-            if (fuelSystem != null && fuelSystem.IsEmpty)
+            if (fuelSystem != null && fuelSystem.CurrentFuel < controlThreshold)
             {
                 engineStalled = true;
-                // При пустом топливе блокируем ВСЕ органы управления
                 avgThrust = 0f;
                 avgYaw = 0f;
                 avgPitch = 0f;
@@ -349,13 +357,23 @@ namespace ProjectC.Player
             }
 
             // 1.8. Атмосферная дозаправка (клавиша L, Сессия 5)
+            // РАБОТАЕТ ТОЛЬКО когда корабль неподвижен (velocity ~ 0, thrust ~ 0)
             bool isRefueling = false;
             if (fuelSystem != null && !engineStalled)
             {
-                if (Input.GetKey(KeyCode.L))
+                bool isStationary = _rb.linearVelocity.magnitude < 1f && Mathf.Abs(_currentThrust) < 1f;
+
+                if (isStationary)
                 {
-                    fuelSystem.RefuelAtmospheric(dt);
-                    isRefueling = true;
+                    if (IsKeyDown(KeyCode.L))
+                    {
+                        fuelSystem.RefuelAtmospheric(dt);
+                        isRefueling = true;
+                    }
+                    else
+                    {
+                        fuelSystem.StopRefueling();
+                    }
                 }
                 else
                 {
@@ -363,25 +381,79 @@ namespace ProjectC.Player
                 }
             }
 
-            // 2. Smooth thrust ramp-up (0.3s)
-            float thrustMult = isRefueling ? fuelSystem.thrustPenaltyMult : 1f;
-            float targetThrust = avgThrust * thrustForce * _moduleThrustMult * thrustMult * (anyBoost ? 2f : 1f);
-            _currentThrust = Mathf.SmoothDamp(_currentThrust, targetThrust, ref _thrustVelocitySmooth, thrustSmoothTime);
+            // 1.85. Активация мезиевых модулей по клавишам (Сессия 5_2)
+            // 1 = MODULE_MEZIY_PITCH, 2 = MODULE_MEZIY_ROLL, 3 = MODULE_MEZIY_YAW
+            // Отслеживаем НАЖАТИЕ (не зажатие) через сравнение с предыдущим кадром
+            if (meziyActivator != null && !engineStalled && fuelSystem != null && fuelSystem.CurrentFuel >= 5f)
+            {
+                bool pitchPressed = IsKeyDown(KeyCode.Alpha1) && !_prevMeziyPitch;
+                bool rollPressed = IsKeyDown(KeyCode.Alpha2) && !_prevMeziyRoll;
+                bool yawPressed = IsKeyDown(KeyCode.Alpha3) && !_prevMeziyYaw;
+
+                if (pitchPressed)
+                {
+                    ActivateMeziyModule("MODULE_MEZIY_PITCH");
+                }
+                if (rollPressed)
+                {
+                    ActivateMeziyModule("MODULE_MEZIY_ROLL");
+                }
+                if (yawPressed)
+                {
+                    ActivateMeziyModule("MODULE_MEZIY_YAW");
+                }
+
+                _prevMeziyPitch = IsKeyDown(KeyCode.Alpha1);
+                _prevMeziyRoll = IsKeyDown(KeyCode.Alpha2);
+                _prevMeziyYaw = IsKeyDown(KeyCode.Alpha3);
+            }
+            else
+            {
+                _prevMeziyPitch = false;
+                _prevMeziyRoll = false;
+                _prevMeziyYaw = false;
+            }
+
+            // 1.9. Определяем hasInput переменные заранее (для fuel check и таймера)
+            bool hasYawInputCheck = Mathf.Abs(avgYaw) > 0.01f;
+            bool hasPitchInputCheck = Mathf.Abs(avgPitch) > 0.01f;
+            bool hasRollInputCheck = false;
+            if (_rollUnlocked && !engineStalled)
+            {
+                float rollInput = GetCurrentRollInput();
+                hasRollInputCheck = Mathf.Abs(rollInput) > 0.01f;
+            }
 
             // Расход/регенерация топлива (Сессия 5)
+            // Топливо тратится от ВСЕХ действий: thrust, yaw, pitch, lift, roll
             if (fuelSystem != null)
             {
-                if (engineStalled || Mathf.Abs(avgThrust) < 0.01f)
+                bool hasAnyAction = Mathf.Abs(avgThrust) > 0.01f
+                    || hasYawInputCheck || hasPitchInputCheck
+                    || Mathf.Abs(avgVertical) > 0.01f
+                    || hasRollInputCheck;
+
+                if (engineStalled || !hasAnyAction)
                 {
-                    // Idle — регенерация (работает даже при fuel=0, см. RegenFuel)
+                    // Нет ввода — регенерация
                     fuelSystem.RegenFuel(dt);
                 }
                 else
                 {
-                    // Двигатель работает — расход
-                    fuelSystem.ConsumeFuelPerSecond(dt, Mathf.Abs(avgThrust));
+                    // Есть ввод — расход (сумма всех действий)
+                    float totalActivity = Mathf.Abs(avgThrust)
+                        + Mathf.Abs(avgYaw) + Mathf.Abs(avgPitch)
+                        + Mathf.Abs(avgVertical);
+                    // Нормализуем: 4 канала → множитель ~0.25 чтобы базовый расход при full thrust
+                    float activityFactor = Mathf.Clamp01(totalActivity * 0.25f);
+                    fuelSystem.ConsumeFuelPerSecond(dt, activityFactor);
                 }
             }
+
+            // 2. Smooth thrust ramp-up (0.3s до полной тяги)
+            // thrustPenalty применяется при дозаправке отдельно в ClampVelocity
+            float targetThrust = avgThrust * thrustForce * _moduleThrustMult;
+            _currentThrust = Mathf.SmoothDamp(_currentThrust, targetThrust, ref _thrustVelocitySmooth, thrustSmoothTime);
 
             // 3. Smooth yaw с затуханием (0.6s smooth, 1.0s decay)
             float targetYawRate = avgYaw * yawForce * _moduleYawMult;
@@ -405,8 +477,27 @@ namespace ProjectC.Player
             float maxLiftForce = maxLiftSpeed * _rb.mass * Mathf.Abs(Physics.gravity.y);
             _currentLiftForce = Mathf.Clamp(_currentLiftForce, -maxLiftForce, maxLiftForce);
 
+            // 5.5. Roll (только если MODULE_ROLL установлен, Z/C клавиши)
+            // Roll force рассчитывается на основе массы корабля (mass * factor)
+            float rollForce = _rb.mass * 0.2f;  // 200 для Medium (1000), 300 для HeavyII (2000)
+            bool hasRollInput = false;
+            if (_rollUnlocked && !engineStalled)
+            {
+                float rollInput = GetCurrentRollInput();
+                hasRollInput = Mathf.Abs(rollInput) > 0.01f;
+                float targetRollRate = rollInput * rollForce;
+                _currentRollRate = hasRollInput
+                    ? Mathf.SmoothDamp(_currentRollRate, targetRollRate, ref _rollVelocitySmooth, 0.4f)
+                    : Mathf.SmoothDamp(_currentRollRate, 0f, ref _rollVelocitySmooth, 0.8f);
+            }
+            else
+            {
+                // Roll заблокирован — затухаем к 0
+                _currentRollRate = Mathf.SmoothDamp(_currentRollRate, 0f, ref _rollVelocitySmooth, 0.5f);
+            }
+
             // 6. Обновляем таймер отсутствия ввода
-            bool hasAnyInput = Mathf.Abs(avgThrust) > 0.01f || hasYawInput || hasPitchInput || Mathf.Abs(avgVertical) > 0.01f;
+            bool hasAnyInput = Mathf.Abs(avgThrust) > 0.01f || hasYawInput || hasPitchInput || Mathf.Abs(avgVertical) > 0.01f || hasRollInput;
             if (hasAnyInput)
             {
                 _noInputTimer = 0f;
@@ -423,7 +514,7 @@ namespace ProjectC.Player
             ApplyThrustForce(_currentThrust);
             ApplyAntiGravity();
             ApplyLiftForce(_currentLiftForce);
-            ApplyRotation(_currentYawRate, _currentPitchRate);
+            ApplyRotation(_currentYawRate, _currentPitchRate, _currentRollRate);
 
             // 9. Стабилизация (если нет ввода 0.5s+)
             if (autoStabilize && _noInputTimer > 0.5f)
@@ -494,13 +585,17 @@ namespace ProjectC.Player
             _rb.AddForce(Vector3.up * currentLiftForce, ForceMode.Force);
         }
 
-        private void ApplyRotation(float yawRate, float pitchRate)
+        private void ApplyRotation(float yawRate, float pitchRate, float rollRate)
         {
             if (Mathf.Abs(yawRate) > 0.01f)
                 _rb.AddTorque(Vector3.up * yawRate, ForceMode.Force);
 
             if (Mathf.Abs(pitchRate) > 0.01f)
                 _rb.AddTorque(transform.right * -pitchRate, ForceMode.Force);
+
+            // Roll: применяем по локальной оси forward
+            if (Mathf.Abs(rollRate) > 0.01f)
+                _rb.AddTorque(transform.forward * rollRate, ForceMode.Force);
         }
 
         private void ApplyStabilization()
@@ -839,13 +934,88 @@ namespace ProjectC.Player
         }
 
         /// <summary>
+        /// Безопасная проверка клавиш (Input Manager vs Input System).
+        /// Возвращает false если Input недоступен.
+        /// </summary>
+        private bool IsKeyDown(KeyCode key)
+        {
+#if ENABLE_INPUT_SYSTEM
+            // Input System пакет
+            try
+            {
+                var keyboard = UnityEngine.InputSystem.Keyboard.current;
+                if (keyboard == null) return false;
+                var keyControl = KeyCodeToKey(key);
+                return keyboard[keyControl].isPressed;
+            }
+            catch
+            {
+                return false;
+            }
+#else
+            // Old Input Manager
+            try
+            {
+                return Input.GetKey(key);
+            }
+            catch (System.InvalidOperationException)
+            {
+                return false;
+            }
+#endif
+        }
+
+#if ENABLE_INPUT_SYSTEM
+        /// <summary>
+        /// Конвертировать KeyCode в Key (Input System).
+        /// </summary>
+        private UnityEngine.InputSystem.Key KeyCodeToKey(KeyCode code)
+        {
+            // Маппинг для используемых клавиш
+            switch (code)
+            {
+                case KeyCode.A: return UnityEngine.InputSystem.Key.A;
+                case KeyCode.B: return UnityEngine.InputSystem.Key.B;
+                case KeyCode.C: return UnityEngine.InputSystem.Key.C;
+                case KeyCode.D: return UnityEngine.InputSystem.Key.D;
+                case KeyCode.E: return UnityEngine.InputSystem.Key.E;
+                case KeyCode.F: return UnityEngine.InputSystem.Key.F;
+                case KeyCode.G: return UnityEngine.InputSystem.Key.G;
+                case KeyCode.H: return UnityEngine.InputSystem.Key.H;
+                case KeyCode.I: return UnityEngine.InputSystem.Key.I;
+                case KeyCode.J: return UnityEngine.InputSystem.Key.J;
+                case KeyCode.K: return UnityEngine.InputSystem.Key.K;
+                case KeyCode.L: return UnityEngine.InputSystem.Key.L;
+                case KeyCode.M: return UnityEngine.InputSystem.Key.M;
+                case KeyCode.N: return UnityEngine.InputSystem.Key.N;
+                case KeyCode.O: return UnityEngine.InputSystem.Key.O;
+                case KeyCode.P: return UnityEngine.InputSystem.Key.P;
+                case KeyCode.Q: return UnityEngine.InputSystem.Key.Q;
+                case KeyCode.R: return UnityEngine.InputSystem.Key.R;
+                case KeyCode.S: return UnityEngine.InputSystem.Key.S;
+                case KeyCode.T: return UnityEngine.InputSystem.Key.T;
+                case KeyCode.U: return UnityEngine.InputSystem.Key.U;
+                case KeyCode.V: return UnityEngine.InputSystem.Key.V;
+                case KeyCode.W: return UnityEngine.InputSystem.Key.W;
+                case KeyCode.X: return UnityEngine.InputSystem.Key.X;
+                case KeyCode.Y: return UnityEngine.InputSystem.Key.Y;
+                case KeyCode.Z: return UnityEngine.InputSystem.Key.Z;
+                case KeyCode.LeftShift: return UnityEngine.InputSystem.Key.LeftShift;
+                case KeyCode.RightShift: return UnityEngine.InputSystem.Key.RightShift;
+                case KeyCode.Space: return UnityEngine.InputSystem.Key.Space;
+                default: return UnityEngine.InputSystem.Key.None;
+            }
+        }
+#endif
+
+        /// <summary>
         /// Получить текущий ввод крена (Z = влево, C = вправо).
         /// Возвращает -1 (влево), 0 (нет), 1 (вправо).
         /// </summary>
         private float GetCurrentRollInput()
         {
-            float z = Input.GetKey(KeyCode.Z) ? -1f : 0f;
-            float c = Input.GetKey(KeyCode.C) ? 1f : 0f;
+            float z = IsKeyDown(KeyCode.Z) ? -1f : 0f;
+            float c = IsKeyDown(KeyCode.C) ? 1f : 0f;
             return z + c;
         }
 
@@ -854,8 +1024,8 @@ namespace ProjectC.Player
         /// </summary>
         private float GetCurrentPitchInput()
         {
-            float w = Input.GetKey(KeyCode.W) ? -1f : 0f;  // W = нос вверх
-            float s = Input.GetKey(KeyCode.S) ? 1f : 0f;   // S = нос вниз
+            float w = IsKeyDown(KeyCode.W) ? -1f : 0f;  // W = нос вверх
+            float s = IsKeyDown(KeyCode.S) ? 1f : 0f;   // S = нос вниз
             return w + s;
         }
 
@@ -864,8 +1034,8 @@ namespace ProjectC.Player
         /// </summary>
         private float GetCurrentYawInput()
         {
-            float a = Input.GetKey(KeyCode.A) ? -1f : 0f;
-            float d = Input.GetKey(KeyCode.D) ? 1f : 0f;
+            float a = IsKeyDown(KeyCode.A) ? -1f : 0f;
+            float d = IsKeyDown(KeyCode.D) ? 1f : 0f;
             return a + d;
         }
 

@@ -1,14 +1,4 @@
 using UnityEngine;
-
-namespace ProjectC.Ship
-{
-    /// <summary>
-    /// MeziyThrusterVisual — визуальный эффект сопел при активации мезиевой тяги.
-    /// Сессия 5: Meziy Thrust & Advanced Modules.
-    ///
-    /// Опциональный компонент. Если ParticleSystem/Light не назначены — они создадутся
-    /// автоматически при первом вызове Activate().
-    /// </summary>
 #if UNITY_EDITOR
 using UnityEditor;
 #endif
@@ -57,6 +47,29 @@ namespace ProjectC.Ship
 
         private bool _isActive = false;
 
+        private void Awake()
+        {
+            // Гарантируем что частицы выключены при старте
+            EnsureDeactivated();
+        }
+
+        /// <summary>
+        /// Убедиться что все частицы выключены (защита от старых объектов в сцене).
+        /// </summary>
+        private void EnsureDeactivated()
+        {
+            if (thrustParticle != null)
+            {
+                thrustParticle.Stop(true, ParticleSystemStopBehavior.StopEmittingAndClear);
+                var renderer = thrustParticle.GetComponent<ParticleSystemRenderer>();
+                if (renderer != null) renderer.enabled = false;
+            }
+            if (glowLight != null)
+            {
+                glowLight.enabled = false;
+            }
+        }
+
         /// <summary>
         /// Включить частицы + свечение.
         /// Если ParticleSystem/Light не назначены — создадутся автоматически.
@@ -72,6 +85,10 @@ namespace ProjectC.Ship
 
             if (thrustParticle != null)
             {
+                // Включить renderer если был выключен
+                var renderer = thrustParticle.GetComponent<ParticleSystemRenderer>();
+                if (renderer != null) renderer.enabled = true;
+
                 var main = thrustParticle.main;
                 main.startColor = new Color(1f, 0.6f, 0.1f, particleIntensity);
                 
@@ -101,9 +118,11 @@ namespace ProjectC.Ship
             if (!_isActive) return;
             _isActive = false;
 
-            if (thrustParticle != null && thrustParticle.isPlaying)
+            if (thrustParticle != null)
             {
-                thrustParticle.Stop();
+                thrustParticle.Stop(true, ParticleSystemStopBehavior.StopEmittingAndClear);
+                var renderer = thrustParticle.GetComponent<ParticleSystemRenderer>();
+                if (renderer != null) renderer.enabled = false; // Renderer выключен
             }
 
             if (glowLight != null)
@@ -132,6 +151,22 @@ namespace ProjectC.Ship
         /// </summary>
         public void AutoCreateParticles()
         {
+            // Если уже есть — не создаём заново
+            if (thrustParticle != null && thrustParticle.gameObject.name == "MeziyThruster")
+            {
+                return; // Уже есть
+            }
+
+            // Удалить старые если есть
+            var old = transform.Find("MeziyThruster");
+            if (old != null)
+            {
+#if UNITY_EDITOR
+                DestroyImmediate(old.gameObject);
+#else
+                Destroy(old.gameObject);
+#endif
+            }
             // Создать дочерний объект
             var go = new GameObject("MeziyThruster");
             go.transform.SetParent(transform);
@@ -145,14 +180,17 @@ namespace ProjectC.Ship
             main.loop = true;
             main.prewarm = false;
             main.startDelay = 0f;
+            main.playOnAwake = false;  // НЕ играть сразу — только при активации
             main.startLifetime = new ParticleSystem.MinMaxCurve(0.3f, 0.8f);
             main.startSpeed = new ParticleSystem.MinMaxCurve(3f, 8f);
             main.startSize = new ParticleSystem.MinMaxCurve(0.2f, 0.5f);
             main.startColor = new Color(1f, 0.6f, 0.1f, particleIntensity);
             main.gravityModifier = 0f;
             main.simulationSpace = ParticleSystemSimulationSpace.Local;
+            main.emitterVelocityMode = ParticleSystemEmitterVelocityMode.Transform;
 
             var emission = thrustParticle.emission;
+            emission.enabled = true;  // включаем emission, но playOnAwake=false — частицы не пойдут до Play()
             emission.rateOverTime = 80f;
             emission.burstCount = 0;
 
@@ -165,6 +203,11 @@ namespace ProjectC.Ship
             var renderer = thrustParticle.GetComponent<ParticleSystemRenderer>();
             renderer.material = GetDefaultParticleMaterial();
 
+            // Явно останавливаем — частицы НЕ должны играть до Activate()
+            thrustParticle.Stop(true, ParticleSystemStopBehavior.StopEmittingAndClear);
+            thrustParticle.Simulate(0f, true, true); // Принудительный сброс
+            renderer.enabled = false; // Renderer выключен до активации
+
             // Создать Light для свечения
             var lightGo = new GameObject("MeziyGlow");
             lightGo.transform.SetParent(go.transform);
@@ -174,8 +217,7 @@ namespace ProjectC.Ship
             glowLight.color = new Color(1f, 0.5f, 0.1f);
             glowLight.intensity = 0f; // Выключен по умолчанию
             glowLight.range = 5f;
-
-            Debug.Log("[MeziyThrusterVisual] Auto-created ParticleSystem + Light on 'MeziyThruster' child object.");
+            glowLight.enabled = false; // Явно выключен
         }
 
         /// <summary>
@@ -183,20 +225,21 @@ namespace ProjectC.Ship
         /// </summary>
         private Material GetDefaultParticleMaterial()
         {
-            // Попробовать стандартный Default-Particle
-            var mat = Resources.GetBuiltinResource<Material>("Default-Particle.mat");
-            if (mat != null) return mat;
+            // URP: Particles/Standard Unlit с режимом Additive
+            Shader particleShader = Shader.Find("Particles/Standard Unlit");
+            if (particleShader == null)
+                particleShader = Shader.Find("Particles/Unlit"); // Built-in fallback
+            if (particleShader == null)
+                particleShader = Shader.Find("Unlit/Color"); // Last resort
 
-            // Фоллбэк: создать свой
-            mat = new Material(Shader.Find("Particles/Standard Unlit"));
-            mat.SetFloat("_Mode", 2); // Transparent
-            mat.SetInt("_SrcBlend", (int)UnityEngine.Rendering.BlendMode.SrcAlpha);
+            var mat = new Material(particleShader);
+
+            // Настроить transparent blending
+            mat.SetInt("_SrcBlend", (int)UnityEngine.Rendering.BlendMode.One);
             mat.SetInt("_DstBlend", (int)UnityEngine.Rendering.BlendMode.One);
             mat.SetInt("_ZWrite", 0);
-            mat.DisableKeyword("_ALPHATEST_ON");
-            mat.EnableKeyword("_ALPHABLEND_ON");
-            mat.DisableKeyword("_ALPHAPREMULTIPLY_ON");
             mat.renderQueue = 3000;
+
             return mat;
         }
     }

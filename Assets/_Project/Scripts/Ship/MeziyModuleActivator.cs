@@ -127,10 +127,10 @@ namespace ProjectC.Ship
 
         /// <summary>
         /// Обновить состояния модулей.
-        /// Вызывается каждый FixedUpdate.
+        /// Вызывается каждый FixedUpdate из ShipController.
         /// Отслеживает перегрев и кулдауны.
         /// </summary>
-        public void Update(float dt)
+        public void Tick(float dt)
         {
             foreach (var kvp in meziyStates)
             {

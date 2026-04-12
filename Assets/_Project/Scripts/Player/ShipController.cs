@@ -98,6 +98,16 @@ namespace ProjectC.Player
         [Tooltip("Менеджер модулей корабля")]
         [SerializeField] private ShipModuleManager moduleManager;
 
+        [Header("Мезиевая Тяга (Сессия 5)")]
+        [Tooltip("Активатор мезиевых модулей")]
+        [SerializeField] private MeziyModuleActivator meziyActivator;
+
+        [Tooltip("Система топлива корабля")]
+        [SerializeField] private ShipFuelSystem fuelSystem;
+
+        [Tooltip("Визуал сопел при мезиевой тяге (опционально)")]
+        [SerializeField] private MeziyThrusterVisual meziyVisual;
+
         // Модификаторы от модулей (применяются в FixedUpdate)
         private float _moduleThrustMult = 1f;
         private float _moduleYawMult = 1f;
@@ -105,6 +115,11 @@ namespace ProjectC.Player
         private float _moduleLiftMult = 1f;
         private float _moduleMaxSpeedMod = 0f;
         private float _moduleWindExposureMod = 0f;
+
+        // Состояние мезиевой тяги
+        private bool _rollUnlocked = false;  // Разблокировка крена через MODULE_ROLL
+        private Vector3 _activeMeziyTorque;  // Применяемый момент от мезиевой тяги
+        private bool _meziyActive = false;    // Флаг активной мезиевой тяги
 
         // Rigidbody
         private Rigidbody _rb;
@@ -163,6 +178,9 @@ namespace ProjectC.Player
 
             // Инициализация модулей (Сессия 4)
             InitializeModules();
+
+            // Инициализация топлива (Сессия 5)
+            InitializeFuelSystem();
 
             // Инициализация ветра
             _currentWindForce = Vector3.zero;
@@ -313,9 +331,35 @@ namespace ProjectC.Player
             // 1.5. Применяем модификаторы модулей (Сессия 4)
             ApplyModuleModifiers();
 
+            // 1.6. Обновить кулдауны мезиевых модулей (Сессия 5)
+            if (meziyActivator != null)
+                meziyActivator.UpdateCooldowns(dt);
+
+            // 1.7. Проверить топливо — если пусто, отключить тягу (Сессия 5)
+            bool engineStalled = false;
+            if (fuelSystem != null && fuelSystem.IsEmpty)
+            {
+                engineStalled = true;
+            }
+
             // 2. Smooth thrust ramp-up (0.3s)
-            float targetThrust = avgThrust * thrustForce * _moduleThrustMult * (anyBoost ? 2f : 1f);
+            float targetThrust = engineStalled ? 0f : avgThrust * thrustForce * _moduleThrustMult * (anyBoost ? 2f : 1f);
             _currentThrust = Mathf.SmoothDamp(_currentThrust, targetThrust, ref _thrustVelocitySmooth, thrustSmoothTime);
+
+            // Расход/регенерация топлива (Сессия 5)
+            if (fuelSystem != null)
+            {
+                if (engineStalled || Mathf.Abs(avgThrust) < 0.01f)
+                {
+                    // Idle — регенерация
+                    fuelSystem.RegenFuel(dt);
+                }
+                else
+                {
+                    // Двигатель работает — расход
+                    fuelSystem.ConsumeFuelPerSecond(dt, Mathf.Abs(avgThrust));
+                }
+            }
 
             // 3. Smooth yaw с затуханием (0.6s smooth, 1.0s decay)
             float targetYawRate = avgYaw * yawForce * _moduleYawMult;
@@ -363,7 +407,10 @@ namespace ProjectC.Player
             if (autoStabilize && _noInputTimer > 0.5f)
                 ApplyStabilization();
 
-            // 9.5. Ветер (Сессия 3)
+            // 9.5. Применить мезиевые эффекты (Сессия 5)
+            ApplyMeziyEffects(dt);
+
+            // 9.6. Ветер (Сессия 3)
             ApplyWind(dt);
 
             // 10. Ограничение скорости
@@ -444,11 +491,14 @@ namespace ProjectC.Player
             float pitchError = currentPitch;  // desired = 0
             float rollError = currentRoll;    // desired = 0
 
+            // MODULE_ROLL: если крен разблокирован, уменьшить стабилизацию крена
+            float effectiveRollStabForce = _rollUnlocked ? rollStabForce * 0.3f : rollStabForce;
+
             // PI-подобный контроллер: возврат к горизонту за ~3с
             Vector3 stabilizationTorque = new Vector3(
                 -pitchError * pitchStabForce,   // pitch к 0
                 0f,                              // yaw НЕ стабилизируется
-                -rollError * rollStabForce      // roll к 0
+                -rollError * effectiveRollStabForce      // roll к 0 (мягче если разблокирован)
             );
 
             _rb.AddTorque(stabilizationTorque, ForceMode.Force);
@@ -497,9 +547,13 @@ namespace ProjectC.Player
         /// <summary>
         /// Сессия 4: Применить модификаторы от установленных модулей.
         /// Вызывается каждый FixedUpdate после AverageInputs.
+        /// Сессия 5: Добавлена проверка MODULE_ROLL для разблокировки крена.
         /// </summary>
         private void ApplyModuleModifiers()
         {
+            // Сбросить roll unlock каждый кадр (пересчитывается из слотов)
+            _rollUnlocked = false;
+
             if (moduleManager != null)
             {
                 _moduleThrustMult = moduleManager.GetThrustMultiplier();
@@ -508,6 +562,9 @@ namespace ProjectC.Player
                 _moduleLiftMult = moduleManager.GetLiftMultiplier();
                 _moduleMaxSpeedMod = moduleManager.GetMaxSpeedModifier();
                 _moduleWindExposureMod = moduleManager.GetWindExposureModifier();
+
+                // Сессия 5: Проверить MODULE_ROLL
+                CheckRollUnlock();
             }
             else
             {
@@ -518,6 +575,24 @@ namespace ProjectC.Player
                 _moduleLiftMult = 1f;
                 _moduleMaxSpeedMod = 0f;
                 _moduleWindExposureMod = 0f;
+            }
+        }
+
+        /// <summary>
+        /// Сессия 5: Проверить установлен ли MODULE_ROLL.
+        /// Если да — разблокировать крен.
+        /// </summary>
+        private void CheckRollUnlock()
+        {
+            if (moduleManager == null) return;
+
+            foreach (var slot in moduleManager.slots)
+            {
+                if (slot != null && slot.isOccupied && slot.installedModule.moduleId == "MODULE_ROLL")
+                {
+                    _rollUnlocked = true;
+                    return;
+                }
             }
         }
 
@@ -592,11 +667,6 @@ namespace ProjectC.Player
                     ApplySystemDegradation(dt, currentAlt);
                     break;
             }
-
-            // 4. Логируем для отладки (можно убрать в продакшене)
-#if UNITY_EDITOR
-            Debug.Log($"[ShipController] Alt: {currentAlt:F0}m | Corridor: {_activeCorridor.displayName} | Status: {_currentAltitudeStatus}");
-#endif
         }
 
         /// <summary>
@@ -673,6 +743,158 @@ namespace ProjectC.Player
         }
 
         /// <summary>
+        /// Сессия 5: Применить мезиевые эффекты к кораблю.
+        /// Вызывается из FixedUpdate после стабилизации.
+        /// </summary>
+        private void ApplyMeziyEffects(float dt)
+        {
+            if (meziyActivator == null) return;
+
+            _meziyActive = false;
+            _activeMeziyTorque = Vector3.zero;
+
+            var activeEffects = meziyActivator.GetActiveEffects();
+
+            foreach (var kvp in activeEffects)
+            {
+                string moduleId = kvp.Key;
+                var state = kvp.Value;
+
+                if (!state.isActive) continue;
+
+                _meziyActive = true;
+
+                // Найти модуль для получения параметров
+                ShipModule module = meziyActivator.FindInstalledMeziyModule(moduleId);
+                if (module == null) continue;
+
+                // Применить torque в зависимости от типа модуля
+                switch (moduleId)
+                {
+                    case "MODULE_MEZIY_ROLL":
+                        // Бросок крена: ±25°
+                        // Определяем направление из текущего ввода
+                        float rollDir = _rollUnlocked ? GetCurrentRollInput() : 0f;
+                        if (rollDir == 0f) rollDir = 1f; // По умолчанию вправо
+                        _activeMeziyTorque += transform.forward * module.meziyForce * rollDir;
+                        break;
+
+                    case "MODULE_MEZIY_PITCH":
+                        // Бросок тангажа: ±10°
+                        float pitchDir = GetCurrentPitchInput();
+                        if (pitchDir == 0f) pitchDir = -1f; // По умолчанию нос вверх
+                        _activeMeziyTorque += transform.right * module.meziyForce * pitchDir;
+                        break;
+
+                    case "MODULE_MEZIY_YAW":
+                        // Резкий поворот рыскания: 30°
+                        float yawDir = GetCurrentYawInput();
+                        if (yawDir == 0f) yawDir = 1f; // По умолчанию вправо
+                        _activeMeziyTorque += Vector3.up * module.meziyForce * yawDir;
+                        break;
+                }
+            }
+
+            // Применить torque к Rigidbody
+            if (_activeMeziyTorque.sqrMagnitude > 0.01f)
+            {
+                _rb.AddTorque(_activeMeziyTorque, ForceMode.Force);
+            }
+
+            // Обновить визуал
+            if (meziyVisual != null)
+            {
+                if (_meziyActive)
+                    meziyVisual.Activate();
+                else
+                    meziyVisual.Deactivate();
+            }
+        }
+
+        /// <summary>
+        /// Получить текущий ввод крена (A/D без Shift = обычный, A/D + Shift = мезиевый).
+        /// Возвращает -1 (влево), 0 (нет), 1 (вправо).
+        /// </summary>
+        private float GetCurrentRollInput()
+        {
+            // Считываем ввод из InputSystem (A = -1, D = 1)
+            float a = Input.GetKey(KeyCode.A) ? -1f : 0f;
+            float d = Input.GetKey(KeyCode.D) ? 1f : 0f;
+            return a + d;
+        }
+
+        /// <summary>
+        /// Получить текущий ввод тангажа для мезиевого модуля.
+        /// </summary>
+        private float GetCurrentPitchInput()
+        {
+            float w = Input.GetKey(KeyCode.W) ? -1f : 0f;  // W = нос вверх
+            float s = Input.GetKey(KeyCode.S) ? 1f : 0f;   // S = нос вниз
+            return w + s;
+        }
+
+        /// <summary>
+        /// Получить текущий ввод рыскания для мезиевого модуля.
+        /// </summary>
+        private float GetCurrentYawInput()
+        {
+            float a = Input.GetKey(KeyCode.A) ? -1f : 0f;
+            float d = Input.GetKey(KeyCode.D) ? 1f : 0f;
+            return a + d;
+        }
+
+        /// <summary>
+        /// Сессия 5: Инициализация системы топлива.
+        /// Вызывается из Awake().
+        /// </summary>
+        private void InitializeFuelSystem()
+        {
+            if (fuelSystem != null)
+            {
+                fuelSystem.Initialize(shipFlightClass);
+                Debug.Log($"[ShipController] Fuel system initialized. Fuel: {fuelSystem.CurrentFuel}/{fuelSystem.MaxFuel}");
+            }
+            else
+            {
+                Debug.Log("[ShipController] No FuelSystem assigned. Fuel disabled.");
+            }
+        }
+
+        /// <summary>
+        /// Сессия 5: RPC для активации мезиевого модуля (сетевая репликация).
+        /// Вызывается клиентом, выполняется на сервере.
+        /// </summary>
+        [Rpc(SendTo.Server)]
+        private void ActivateMeziyModuleRpc(string moduleId, RpcParams rpcParams = default)
+        {
+            if (!_pilots.Contains(rpcParams.Receive.SenderClientId)) return;
+            if (meziyActivator == null) return;
+
+            // Найти модуль среди установленных
+            ShipModule module = meziyActivator.FindInstalledMeziyModule(moduleId);
+            if (module == null)
+            {
+                Debug.LogWarning($"[ShipController] Meziy module '{moduleId}' not found on ship.");
+                return;
+            }
+
+            // Активировать
+            bool success = meziyActivator.ActivateModule(module);
+            if (success)
+            {
+                Debug.Log($"[ShipController] Meziy module '{moduleId}' activated by pilot {rpcParams.Receive.SenderClientId}");
+            }
+        }
+
+        /// <summary>
+        /// Публичный метод для активации мезиевого модуля (вызывать из InputManager).
+        /// </summary>
+        public void ActivateMeziyModule(string moduleId)
+        {
+            ActivateMeziyModuleRpc(moduleId);
+        }
+
+        /// <summary>
         /// Применить внешнюю силу (например, ветер из WindZone).
         /// Вызывается только на сервере.
         /// </summary>
@@ -730,11 +952,6 @@ namespace ProjectC.Player
                 }
                 // Lerp к целевой силе (плавный переход между зонами)
                 _currentWindForce = Vector3.Lerp(_currentWindForce, totalWind, dt / windDecayTime);
-
-                // Debug лог
-#if UNITY_EDITOR
-                Debug.Log($"[ShipController] ApplyWind: zones={_activeWindZones.Count}, totalWind={totalWind:F1}, currentWindForce={_currentWindForce:F1}, windEffect={_currentWindForce * windInfluence * windExposure:F1}");
-#endif
             }
 
             // Применить с учётом влияния и экспозиции (базовая + модификатор модулей)

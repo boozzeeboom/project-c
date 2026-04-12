@@ -385,45 +385,48 @@ namespace ProjectC.Player
                 }
             }
 
-            // 1.85. Между passive/active mode (Сессия 5_3)
+            // 1.85. Между passive/active mode (Сессия 5_3 — обновлённый маппинг)
             // Принцип: модуль установлен = пассивный эффект (бесплатно, без частиц)
             // Клавиша направления зажата = активный выхлоп (расход топлива, частицы, torque)
             // Перегрев после 10 сек непрерывного активного использования → кулдаун 15 сек
             //
-            // Управление (зажатие, БЕЗ LeftShift):
-            //   MODULE_MEZIY_PITCH: W (нос вверх, dir=-1), S (нос вниз, dir=+1)
-            //   MODULE_MEZIY_ROLL:  Z (крен влево, dir=-1), C (крен вправо, dir=+1)
-            //   MODULE_MEZIY_YAW:   A (влево, dir=-1), D (вправо, dir=+1)
+            // Управление (зажатие):
+            //   MODULE_MEZIY_PITCH:  C (нос вверх, dir=-1), V (нос вниз, dir=+1)
+            //   MODULE_MEZIY_ROLL:   Z (крен влево, dir=-1), X (крен вправо, dir=+1)
+            //   MODULE_MEZIY_YAW:    Shift+A (влево), Shift+D (вправо)
+            //   MODULE_MEZIY_THRUST: Shift+W (ускорение), Shift+S (торможение) — если будет добавлен
             if (meziyActivator != null && !engineStalled && fuelSystem != null && fuelSystem.CurrentFuel >= 5f)
             {
-                // MODULE_MEZIY_PITCH: W/S
+                bool shiftHeld = IsKeyDown(KeyCode.LeftShift) || IsKeyDown(KeyCode.RightShift);
+
+                // MODULE_MEZIY_PITCH: C/V
                 if (meziyActivator.IsModuleInstalled("MODULE_MEZIY_PITCH"))
                 {
-                    if (IsKeyDown(KeyCode.W))
+                    if (IsKeyDown(KeyCode.C))
                         meziyActivator.TryActivate("MODULE_MEZIY_PITCH", -1f);
-                    else if (IsKeyDown(KeyCode.S))
+                    else if (IsKeyDown(KeyCode.V))
                         meziyActivator.TryActivate("MODULE_MEZIY_PITCH", +1f);
                     else
                         meziyActivator.Deactivate("MODULE_MEZIY_PITCH");
                 }
 
-                // MODULE_MEZIY_ROLL: Z/C
+                // MODULE_MEZIY_ROLL: Z/X
                 if (meziyActivator.IsModuleInstalled("MODULE_MEZIY_ROLL"))
                 {
                     if (IsKeyDown(KeyCode.Z))
                         meziyActivator.TryActivate("MODULE_MEZIY_ROLL", -1f);
-                    else if (IsKeyDown(KeyCode.C))
+                    else if (IsKeyDown(KeyCode.X))
                         meziyActivator.TryActivate("MODULE_MEZIY_ROLL", +1f);
                     else
                         meziyActivator.Deactivate("MODULE_MEZIY_ROLL");
                 }
 
-                // MODULE_MEZIY_YAW: A/D
+                // MODULE_MEZIY_YAW: Shift+A / Shift+D
                 if (meziyActivator.IsModuleInstalled("MODULE_MEZIY_YAW"))
                 {
-                    if (IsKeyDown(KeyCode.A))
+                    if (shiftHeld && IsKeyDown(KeyCode.A))
                         meziyActivator.TryActivate("MODULE_MEZIY_YAW", -1f);
-                    else if (IsKeyDown(KeyCode.D))
+                    else if (shiftHeld && IsKeyDown(KeyCode.D))
                         meziyActivator.TryActivate("MODULE_MEZIY_YAW", +1f);
                     else
                         meziyActivator.Deactivate("MODULE_MEZIY_YAW");

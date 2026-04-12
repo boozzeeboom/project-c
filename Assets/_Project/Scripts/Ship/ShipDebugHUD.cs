@@ -61,17 +61,25 @@ namespace ProjectC.Ship
 
             string text = BuildDebugText();
 
-            // Фон
+            // Фон -- полупрозрачный чёрный прямоугольник
             var bgRect = _rect;
-            var bgStyle = new GUIStyle(GUI.skin.label);
-            bgStyle.normal.background = MakeTex(2, 2, new Color(0, 0, 0, 0.85f));
-            bgStyle.fontSize = fontSize;
-            bgStyle.padding = new RectOffset(8, 8, 4, 4);
+            bgRect.width = 380;
+            bgRect.height = _style.CalcHeight(new GUIContent(text), 380) + 16;
 
             // Рисуем фон
-            GUI.Label(bgRect, new string(' ', 800), bgStyle);
-            // Рисуем текст
-            GUI.Label(_rect, text, _style);
+            GUI.DrawTexture(bgRect, MakeTex(2, 2, new Color(0, 0, 0, 0.8f)));
+            // Рамка
+            GUI.DrawTexture(new Rect(bgRect.x, bgRect.y, bgRect.width, 2), MakeTex(2, 2, Color.green));
+            GUI.DrawTexture(new Rect(bgRect.x, bgRect.yMax - 2, bgRect.width, 2), MakeTex(2, 2, Color.green));
+            GUI.DrawTexture(new Rect(bgRect.x, bgRect.y, 2, bgRect.height), MakeTex(2, 2, Color.green));
+            GUI.DrawTexture(new Rect(bgRect.xMax - 2, bgRect.y, 2, bgRect.height), MakeTex(2, 2, Color.green));
+
+            // Текст со сдвигом внутрь
+            var textRect = _rect;
+            textRect.x += 10;
+            textRect.y += 6;
+            textRect.width -= 20;
+            GUI.Label(textRect, text, _style);
         }
 
         private Texture2D _bgTex;

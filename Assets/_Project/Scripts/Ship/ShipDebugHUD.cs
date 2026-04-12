@@ -38,8 +38,15 @@ namespace ProjectC.Ship
 
         private void Update()
         {
-            // F3 toggle
-            if (Input.GetKeyDown(KeyCode.F3))
+            // F3 toggle -- поддержка и Input System и Old Input Manager
+            bool f3Pressed = false;
+#if ENABLE_INPUT_SYSTEM
+            if (UnityEngine.InputSystem.Keyboard.current != null)
+                f3Pressed = UnityEngine.InputSystem.Keyboard.current.f3Key.wasPressedThisFrame;
+#else
+            f3Pressed = Input.GetKeyDown(KeyCode.F3);
+#endif
+            if (f3Pressed)
             {
                 _visible = !_visible;
                 Debug.Log($"[ShipDebugHUD] Visible: {_visible}");

@@ -28,7 +28,7 @@ MonoBehaviour:
   requiredModules: []
   incompatibleModules: []
   isMeziyModule: 1
-  meziyForce: 10
+  meziyForce: 500
   meziyDuration: 1.5
   meziyCooldown: 8
   meziyFuelCost: 5

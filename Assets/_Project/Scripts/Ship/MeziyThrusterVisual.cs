@@ -85,20 +85,19 @@ namespace ProjectC.Ship
 
             if (thrustParticle != null)
             {
-                // Включить renderer если был выключен
                 var renderer = thrustParticle.GetComponent<ParticleSystemRenderer>();
                 if (renderer != null) renderer.enabled = true;
 
                 var main = thrustParticle.main;
                 main.startColor = new Color(1f, 0.6f, 0.1f, particleIntensity);
-                
+
                 var emission = thrustParticle.emission;
                 emission.enabled = true;
-                
-                if (!thrustParticle.isPlaying)
-                {
-                    thrustParticle.Play();
-                }
+
+                // Гарантированный перезапуск
+                thrustParticle.Stop(true, ParticleSystemStopBehavior.StopEmitting);
+                thrustParticle.Clear();
+                thrustParticle.Play(true); // restart=true
             }
 
             if (glowLight != null)
@@ -145,6 +144,8 @@ namespace ProjectC.Ship
             }
         }
 
+        private Material _cachedParticleMaterial;
+
         /// <summary>
         /// Автоматически создать дочерний объект с ParticleSystem и Light.
         /// Вызывается из Editor кнопки или при первом Activate().
@@ -188,9 +189,10 @@ namespace ProjectC.Ship
             main.gravityModifier = 0f;
             main.simulationSpace = ParticleSystemSimulationSpace.Local;
             main.emitterVelocityMode = ParticleSystemEmitterVelocityMode.Transform;
+            main.maxParticles = 200;
 
             var emission = thrustParticle.emission;
-            emission.enabled = true;  // включаем emission, но playOnAwake=false — частицы не пойдут до Play()
+            emission.enabled = true;
             emission.rateOverTime = 80f;
             emission.burstCount = 0;
 
@@ -202,10 +204,10 @@ namespace ProjectC.Ship
 
             var renderer = thrustParticle.GetComponent<ParticleSystemRenderer>();
             renderer.material = GetDefaultParticleMaterial();
+            renderer.sortingMode = ParticleSystemSortMode.Distance;
 
             // Явно останавливаем — частицы НЕ должны играть до Activate()
-            thrustParticle.Stop(true, ParticleSystemStopBehavior.StopEmittingAndClear);
-            thrustParticle.Simulate(0f, true, true); // Принудительный сброс
+            thrustParticle.Stop(true, ParticleSystemStopBehavior.StopEmitting);
             renderer.enabled = false; // Renderer выключен до активации
 
             // Создать Light для свечения
@@ -221,26 +223,33 @@ namespace ProjectC.Ship
         }
 
         /// <summary>
-        /// Получить дефолтный материал для частиц (Additive).
+        /// Получить дефолтный материал для частиц (Additive, URP-совместимый).
         /// </summary>
         private Material GetDefaultParticleMaterial()
         {
-            // URP: Particles/Standard Unlit с режимом Additive
-            Shader particleShader = Shader.Find("Particles/Standard Unlit");
+            if (_cachedParticleMaterial != null)
+                return _cachedParticleMaterial;
+
+            // URP: Universal Render Pipeline/Particles/Unlit
+            Shader particleShader = Shader.Find("Universal Render Pipeline/Particles/Unlit");
             if (particleShader == null)
-                particleShader = Shader.Find("Particles/Unlit"); // Built-in fallback
+                particleShader = Shader.Find("Universal Render Pipeline/Particles/Simple Lit");
+            // Built-in fallback
+            if (particleShader == null)
+                particleShader = Shader.Find("Particles/Unlit");
             if (particleShader == null)
                 particleShader = Shader.Find("Unlit/Color"); // Last resort
 
-            var mat = new Material(particleShader);
+            _cachedParticleMaterial = new Material(particleShader);
 
-            // Настроить transparent blending
-            mat.SetInt("_SrcBlend", (int)UnityEngine.Rendering.BlendMode.One);
-            mat.SetInt("_DstBlend", (int)UnityEngine.Rendering.BlendMode.One);
-            mat.SetInt("_ZWrite", 0);
-            mat.renderQueue = 3000;
+            // Настроить additive blending
+            // URP Particles шейдеры используют _SrcBlend/_DstBlend
+            _cachedParticleMaterial.SetInt("_SrcBlend", (int)UnityEngine.Rendering.BlendMode.One);
+            _cachedParticleMaterial.SetInt("_DstBlend", (int)UnityEngine.Rendering.BlendMode.One);
+            _cachedParticleMaterial.SetInt("_ZWrite", 0);
+            _cachedParticleMaterial.renderQueue = 3000;
 
-            return mat;
+            return _cachedParticleMaterial;
         }
     }
 }

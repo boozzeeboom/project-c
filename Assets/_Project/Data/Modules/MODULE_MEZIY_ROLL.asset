@@ -30,5 +30,5 @@ MonoBehaviour:
   isMeziyModule: 1
   meziyForce: 800
   meziyDuration: 2
-  meziyCooldown: 10
+  meziyCooldown: 15
   meziyFuelCost: 5

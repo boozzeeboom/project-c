@@ -1,98 +1,84 @@
-# Сессия 5: Meziy Thrust & Advanced Modules — Fix Round
+# Сессия 5: Meziy Thrust & Advanced Modules — Final
 
-**Дата:** 12 апреля 2026 | **Статус:** ⚠️ Исправлены P1 баги, готовы к тесту | **Ветка:** `qwen-gamestudio-agent-dev`
-**ShipController версия:** v2.4 → v2.4b (fix round)
-
----
-
-## Исправления (Fix Round)
-
-### ✅ Исправлено
-- **P1:** При fuel=0 блокируются yaw/pitch/lift (было: только thrust)
-- **P1:** Fuel regen работает при fuel=0 (было: RegenFuel блокировался при IsEmpty)
-- **P2:** Крен перенесён с A/D на Z/C (было: конфликт с yaw)
-- **P2:** Кнопка L — атмосферная дозаправка (2.0 fuel/s, штраф -50% thrust, -30% speed)
-- **P2:** MeziyThrusterVisual — добавлены Debug.Log для отладки визуала
-
-### ⚠️ Остаётся
-- Визуал сопел не виден в Play Mode — нужна настройка ParticleSystem в Inspector (документировано)
-
-## Таблица багов (актуальная)
-
-| Баг | Статус | Файл |
-|-----|--------|------|
-| Fuel=0 не блокирует yaw/pitch/lift | ✅ Исправлен | `docs/bugs/SESSION5_FUEL_EMPTY_CONTROLS_NOT_BLOCKED.md` |
-| Regen не работает при fuel=0 | ✅ Исправлен | `docs/bugs/SESSION5_FUEL_EMPTY_CONTROLS_NOT_BLOCKED.md` |
-| Визуал сопел не виден | ⚠️ Нужна настройка | `docs/bugs/SESSION5_MEZIY_VISUAL_NOT_VISIBLE.md` |
-| Крен на A/D неудобен | ✅ Исправлен → Z/C | `docs/bugs/SESSION5_ROLL_KEYS_ZC.md` |
-| Кнопка L — дозаправка | ✅ Реализовано | `docs/bugs/SESSION5_REFUEL_KEY_L_FEATURE.md` |
+**Дата:** 12 апреля 2026 | **Статус:** ⚠️ Закрыта (переход в 5_2) | **Ветка:** `qwen-gamestudio-agent-dev`
+**ShipController версия:** v2.4b → v2.4c (multiple fixes)
 
 ---
 
-## Что Реализовано (Технически)
+## Обзор
 
-### 1. ShipFuelSystem.cs
-**Путь:** `Assets/_Project/Scripts/Ship/ShipFuelSystem.cs`
+Сессия 5 добавляла: систему топлива, мезиевые модули (ROLL/PITCH/YAW), визуал сопел, кнопку L дозаправки, крен на Z/C.
 
-**Добавлено в fix round:**
-- `atmosphericRefuelRate = 2.0f` — скорость дозаправки из атмосферы
-- `thrustPenaltyDuringRefuel = 0.5f` — штраф тяги при дозаправке
-- `speedPenaltyDuringRefuel = 0.7f` — штраф скорости при дозаправке
-- `isRefueling` property — идёт ли дозаправка
-- `thrustPenaltyMult` / `speedPenaltyMult` — множители штрафов
-- `StartRefueling()` / `StopRefueling()` / `RefuelAtmospheric(dt)` — методы дозаправки
-- `RegenFuel()` теперь работает при fuel=0 (убрана проверка IsEmpty)
-
-### 2. ShipController.cs v2.4b
-
-**Добавлено в fix round:**
-- engineStalled обнуляет avgYaw, avgPitch, avgVertical (не только thrust)
-- Обработка клавиши L → `fuelSystem.RefuelAtmospheric(dt)`
-- Штраф к тяге при дозаправке: `thrustMult = isRefueling ? fuelSystem.thrustPenaltyMult : 1f`
-- `ClampVelocity(isRefueling)` — штраф к скорости при дозаправке
-- `GetCurrentRollInput()` → KeyCode.Z/C вместо A/D
-- Debug.Log в MeziyThrusterVisual
+**Коммиты:**
+- `37fcf07` — начальные системы (ShipFuelSystem, MeziyModuleActivator, MeziyThrusterVisual, Editor)
+- `2fdfc37` — P1: fuel=0 блокировка, regen fix, Z/C roll, L refuel
+- `3b581fe` — авто-создание ParticleSystem
+- `f7fbad4` — UnityEditor namespace fix
+- Последующие — Input System, fuel from all actions, particles fix, roll system
 
 ---
 
-## Управление (актуальное)
+## ✅ Что работает
 
-| Действие | Клавиша | Условия |
-|----------|---------|---------|
-| Тяга вперёд | W | |
-| Торможение | S | |
-| Рыскание влево | A | |
-| Рыскание вправо | D | |
-| Лифт вверх | Q | |
-| Лифт вниз | E | |
-| Буст | Left Shift | |
-| **Крен влево** | **Z** | MODULE_ROLL установлен |
-| **Крен вправо** | **C** | MODULE_ROLL установлен |
-| **Дозаправка** | **L** | fuel < maxFuel, не engineStalled |
+| Фича | Статус | Детали |
+|------|--------|--------|
+| **Система топлива** | ✅ | Расход от всех действий (thrust/yaw/pitch/lift/roll), regen на idle |
+| **Дозаправка L** | ✅ | Работает когда корабль неподвижен (velocity<1, thrust<1), быстро набирает топливо |
+| **Fuel threshold** | ✅ | Корабль заблокирован пока fuel < 5 (не мгновенная разблокировка) |
+| **Input System** | ✅ | `IsKeyDown()` поддерживает и Input Manager и Input System через `Keyboard.current` |
+| **Editor утилита** | ✅ | "Create Meziy Module Assets" создаёт 4 модуля |
+| **MODULE_ROLL разблокировка** | ✅ | `_rollUnlocked = true` когда модуль установлен |
 
 ---
 
-## Рекомендации по Тестированию (Fix Round)
+## ❌ Что сломалось
 
-### Тест 1: Fuel=0 полная блокировка
-1. Запусти Play Mode
-2. Лети пока fuel=0
-3. Убедись: thrust=0, yaw=0, pitch=0, lift=0 — корабль НЕ управляется
-4. Подожди ~30с (regen 0.3/s) → fuel должен восстановиться
-5. Когда fuel > 0 — управление должно вернуться
-
-### Тест 2: Крен на Z/C
-1. Установи MODULE_ROLL
-2. Z = крен влево, C = крен вправо
-3. A/D = только yaw (крен НЕ влияет)
-
-### Тест 3: Дозаправка (L)
-1. Зажми L
-2. Топливо должно расти быстрее (~2.0/s вместо 0.3/s)
-3. Тяга должна снизиться на 50%
-4. Скорость должна снизиться на 30%
-5. При fuel=max — дозаправка авто-стоп
+| Баг | Приоритет | Описание |
+|-----|-----------|----------|
+| **Корабль не летит вперёд** | 🔴 P0 | При нажатии W (thrust) топливо тратится, но корабль не двигается. Тяга `ApplyThrustForce(_currentThrust)` не работает. Возможная причина: `engineStalled` или `fuelSystem` блокирует thrust. |
+| **Частицы всегда видны** | 🟡 P1 | ParticleSystem рендерится постоянно, а не только при активации мезиевого модуля. `renderer.enabled = false` не помогает — возможно старые объекты из прошлых тестов. |
+| **Lift и A/D работают при низком топливе** | 🟡 P1 | Порог `controlThreshold = 5` — слишком маленький. При ~5 fuel корабль снова управляем. Нужно: полная блокировка до refuel или threshold > 10. |
+| **Z/C не работают** | 🟡 P1 | Roll через Z/C не вращает корабль. `_rollUnlocked` может быть true, но `_currentRollRate` не применяется или недостаточно сильный. |
+| **Мезиевые модули не работают** | 🟡 P1 | MODULE_MEZIY_PITCH, MODULE_MEZIY_ROLL, MODULE_MEZIY_YAW — не активируются. Возможные причины: модули не установлены в слоты, `meziyActivator` не назначен, RPC не работает. |
+| **Нет Debug-вывода** | 🟢 P2 | Нет информации о состоянии топлива/мезиевых модулей в Game View. Сложно отлаживать. |
 
 ---
 
-*Документ обновлён: 12 апреля 2026 | Fix Round*
+## Изменённые файлы (итог)
+
+| Файл | Статус |
+|------|--------|
+| `Assets/_Project/Scripts/Ship/ShipFuelSystem.cs` | ✅ Работает |
+| `Assets/_Project/Scripts/Ship/MeziyModuleActivator.cs` | ⚠️ Не тестирован (модули не активируются) |
+| `Assets/_Project/Scripts/Ship/MeziyThrusterVisual.cs` | ❌ Частицы всегда видны |
+| `Assets/_Project/Scripts/Player/ShipController.cs` | ⚠️ thrust сломан, roll не работает |
+| `Assets/_Project/Scripts/Editor/CreateMeziyModuleAssets.cs` | ✅ Работает |
+| `docs/bugs/SESSION5_*.md` | ✅ Задокументированы |
+
+---
+
+## Параметры по классам (настроено)
+
+| Класс | fuelCapacity | Consumption (fuel/s) | Regen (fuel/s) |
+|-------|-------------|---------------------|----------------|
+| Light | 50 | 0.5 | 0.3 |
+| Medium | 100 | 0.8 | 0.3 |
+| Heavy | 200 | 1.2 | 0.3 |
+| HeavyII | 300 | 1.5 | 0.3 |
+
+L дозаправка: 2.0 fuel/s (только на месте)
+
+---
+
+## Извлечённые уроки
+
+1. **Не коммить без тестирования в Unity** — каждый билд нужно проверять
+2. **Input System требует `Keyboard.current`** — старый `Input.GetKey` не работает
+3. **ParticleSystem нужно явно выключать** — `playOnAwake=false` недостаточно, нужен `Stop()` + `renderer.enabled=false`
+4. **Fuel threshold слишком мал** — при 0.3 fuel/s и пороге 5 = ~17 секунд блокировки, но пользователь замечает "работает" уже при 2-3
+5. **Мезиевые модули требуют настройки в Inspector** — междуyActivator, ModuleSlot, ShipModule — всё нужно назначить вручную
+
+---
+
+*Документ закрыт: 12 апреля 2026*
+*Переход к сессии 5_2: исправление ошибок*

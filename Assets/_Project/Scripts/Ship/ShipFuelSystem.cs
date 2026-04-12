@@ -41,6 +41,16 @@ namespace ProjectC.Ship
         [Tooltip("Скорость восстановления топлива на idle (тяга = 0)")]
         [SerializeField] private float fuelRegenRate = 0.3f;
 
+        [Header("Атмосферная дозаправка (клавиша L)")]
+        [Tooltip("Скорость дозаправки из атмосферы (fuel/s)")]
+        [SerializeField] private float atmosphericRefuelRate = 2.0f;
+
+        [Tooltip("Штраф к тяге во время дозаправки (0.5 = -50%)")]
+        [SerializeField] [Range(0f, 1f)] private float thrustPenaltyDuringRefuel = 0.5f;
+
+        [Tooltip("Штраф к скорости во время дозаправки (0.7 = -30%)")]
+        [SerializeField] [Range(0f, 1f)] private float speedPenaltyDuringRefuel = 0.7f;
+
         /// <summary>
         /// Текущий уровень топлива.
         /// </summary>
@@ -67,6 +77,54 @@ namespace ProjectC.Ship
         public bool IsFull => currentFuel >= maxFuel;
 
         /// <summary>
+        /// Идёт ли сейчас атмосферная дозаправка.
+        /// </summary>
+        public bool isRefueling { get; private set; }
+
+        /// <summary>
+        /// Штраф к тяге во время дозаправки (0..1).
+        /// </summary>
+        public float thrustPenaltyMult => isRefueling ? thrustPenaltyDuringRefuel : 1f;
+
+        /// <summary>
+        /// Штраф к скорости во время дозаправки (0..1).
+        /// </summary>
+        public float speedPenaltyMult => isRefueling ? speedPenaltyDuringRefuel : 1f;
+
+        /// <summary>
+        /// Начать атмосферную дозаправку.
+        /// </summary>
+        public void StartRefueling()
+        {
+            if (!IsFull)
+                isRefueling = true;
+        }
+
+        /// <summary>
+        /// Остановить атмосферную дозаправку.
+        /// </summary>
+        public void StopRefueling()
+        {
+            isRefueling = false;
+        }
+
+        /// <summary>
+        /// Восстановить топливо из атмосферы (быстрее чем idle regen).
+        /// Вызывается каждый FixedUpdate когда зажата L.
+        /// </summary>
+        public void RefuelAtmospheric(float dt)
+        {
+            if (IsFull || maxFuel <= 0)
+            {
+                isRefueling = false;
+                return;
+            }
+
+            isRefueling = true;
+            currentFuel = Mathf.Min(currentFuel + atmosphericRefuelRate * dt, maxFuel);
+        }
+
+        /// <summary>
         /// Потребить указанное количество топлива.
         /// Возвращает false если недостаточно топлива.
         /// </summary>
@@ -87,10 +145,11 @@ namespace ProjectC.Ship
 
         /// <summary>
         /// Восстановить топливо за кадр (regen на idle).
+        /// Работает даже при fuel=0 — корабль восстанавливает топливо.
         /// </summary>
         public void RegenFuel(float dt)
         {
-            if (IsEmpty) return;
+            if (maxFuel <= 0) return;
 
             currentFuel = Mathf.Min(currentFuel + fuelRegenRate * dt, maxFuel);
         }

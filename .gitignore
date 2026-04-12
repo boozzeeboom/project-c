@@ -45,5 +45,5 @@ mono_crash.*
 /[Aa]ssets/Resources/
 /[Aa]ssets/MobileDependencyResolver/
 
-# Qwen Unity Game Studio - junction (each dev creates locally)
-.qwenencode
+# Dev memory (local session state)
+.dev-memory/

@@ -483,11 +483,12 @@ namespace ProjectC.Player
             float maxLiftForce = maxLiftSpeed * _rb.mass * Mathf.Abs(Physics.gravity.y);
             _currentLiftForce = Mathf.Clamp(_currentLiftForce, -maxLiftForce, maxLiftForce);
 
-            // 5.5. Roll (только если MODULE_ROLL установлен, Z/C клавиши)
-            // Roll force рассчитывается на основе массы корабля (mass * factor)
-            float rollForce = _rb.mass * 0.2f;  // 200 для Medium (1000), 300 для HeavyII (2000)
+            // 5.5. Roll (Z/C клавиши) -- непрерывный крен для тестирования
+            // В режиме тестов: roll работает БЕЗ MODULE_ROLL (для отладки)
+            // В production: требуется MODULE_ROLL
+            float rollForce = _rb.mass * 0.2f;  // 200 для Medium, 300 для HeavyII
             bool hasRollInput = false;
-            if (_rollUnlocked && !engineStalled)
+            if (!engineStalled)
             {
                 float rollInput = GetCurrentRollInput();
                 hasRollInput = Mathf.Abs(rollInput) > 0.01f;
@@ -498,7 +499,7 @@ namespace ProjectC.Player
             }
             else
             {
-                // Roll заблокирован — затухаем к 0
+                // Roll заблокирован -- затухаем к 0
                 _currentRollRate = Mathf.SmoothDamp(_currentRollRate, 0f, ref _rollVelocitySmooth, 0.5f);
             }
 

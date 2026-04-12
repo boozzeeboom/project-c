@@ -1,19 +1,24 @@
 # Улучшение: Крен на Z/C вместо A/D
 
-**Сессия:** 5 | **Дата:** 12 апреля 2026 | **Приоритет:** P2
-**Статус:** ✅ Исправлен
+**Сессия:** 5 → 5_2 | **Дата:** 12 апреля 2026 | **Приоритет:** P1
+**Статус:** ✅ Исправлен (roll force увеличена в сессии 5_2)
 
 ## Описание
 Крен раньше работал на A/D (те же клавиши что и yaw). Это было неудобно —
 конфликт с поворотом.
 
-## Изменение
+## Изменение (сессия 5)
 - **Крен влево:** `Z` ✅
 - **Крен вправо:** `C` ✅
 - **Yaw (рыскание):** `A/D` (без изменений)
 
-## Реализация
-В `ShipController.GetCurrentRollInput()` заменено `KeyCode.A/D` на `KeyCode.Z/C`.
+## Исправление (сессия 5_2)
+**Roll force была слишком мала (15) для массы корабля (1000+).**
+Заменена фиксированную силу на динамическую: `rollForce = _rb.mass * 0.2f`
+- Medium (1000): 200 force
+- Heavy (1500): 300 force
+- HeavyII (2000): 400 force
 
 ## Затронутые файлы
-- `Assets/_Project/Scripts/Player/ShipController.cs` (GetCurrentRollInput)
+- `Assets/_Project/Scripts/Player/ShipController.cs` — GetCurrentRollInput (сессия 5)
+- `Assets/_Project/Scripts/Player/ShipController.cs` — rollForce = mass * 0.2 (сессия 5_2)

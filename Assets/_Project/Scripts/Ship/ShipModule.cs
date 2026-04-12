@@ -46,6 +46,9 @@ namespace ProjectC.Ship
         [Tooltip("Множитель скорости тангажа (1.0 = базовый)")]
         public float pitchMultiplier = 1f;
 
+        [Tooltip("Множитель скорости крена (1.0 = базовый)")]
+        public float rollMultiplier = 1f;
+
         [Tooltip("Множитель скорости лифта (1.0 = базовый)")]
         public float liftMultiplier = 1f;
 

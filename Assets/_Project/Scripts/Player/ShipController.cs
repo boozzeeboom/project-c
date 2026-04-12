@@ -343,7 +343,7 @@ namespace ProjectC.Player
 
             // 1.6. Обновить между состояния (Сессия 5_2 -- continuous mode)
             if (meziyActivator != null)
-                meziyActivator.Update(dt);
+                meziyActivator.Tick(dt);
 
             // 1.7. Проверить топливо — если пусто или ниже порога, отключить управление (Сессия 5)
             // Порог: корабль заблокирован пока fuel < 10 (≈33 секунды regen для Medium класса)

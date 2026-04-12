@@ -204,7 +204,6 @@ namespace ProjectC.Ship
 
             var renderer = thrustParticle.GetComponent<ParticleSystemRenderer>();
             renderer.material = GetDefaultParticleMaterial();
-            renderer.sortingMode = ParticleSystemSortMode.Distance;
 
             // Явно останавливаем — частицы НЕ должны играть до Activate()
             thrustParticle.Stop(true, ParticleSystemStopBehavior.StopEmitting);

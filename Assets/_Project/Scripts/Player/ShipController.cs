@@ -717,26 +717,6 @@ namespace ProjectC.Player
                     return;
                 }
             }
-
-            // Debug: если ни один слот не содержит MODULE_ROLL
-            if (Application.isEditor)
-            {
-                bool found = false;
-                foreach (var slot in moduleManager.slots)
-                {
-                    if (slot != null && slot.isOccupied)
-                    {
-                        Debug.Log($"[ShipController] Roll check: Slot has module '{slot.installedModule.moduleId}'");
-                        if (slot.installedModule.moduleId == "MODULE_ROLL") found = true;
-                    }
-                    else
-                    {
-                        Debug.Log($"[ShipController] Roll check: Slot is empty or not occupied");
-                    }
-                }
-                if (!found)
-                    Debug.LogWarning("[ShipController] MODULE_ROLL not found in any slot! Roll (Z/C) will be disabled. Install MODULE_ROLL in a ModuleSlot.");
-            }
         }
 
         private void ClampVelocity(bool isRefueling = false)

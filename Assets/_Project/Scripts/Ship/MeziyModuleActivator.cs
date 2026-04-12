@@ -153,20 +153,16 @@ namespace ProjectC.Ship
                 Debug.Log($"[MeziyModuleActivator] Effect '{key}' expired.");
             }
 
-            // Обновить кулдауны
-            var cooldownsToRemove = new List<string>();
-            foreach (var kvp in cooldowns)
+            // Обновить кулдауны -- НЕЛЬЗЯ менять словарь внутри foreach
+            var activeCooldownKeys = new List<string>(cooldowns.Keys);
+            foreach (var key in activeCooldownKeys)
             {
-                cooldowns[kvp.Key] -= dt;
-                if (cooldowns[kvp.Key] <= 0)
+                cooldowns[key] -= dt;
+                if (cooldowns[key] <= 0)
                 {
-                    cooldownsToRemove.Add(kvp.Key);
+                    cooldowns.Remove(key);
+                    Debug.Log($"[MeziyModuleActivator] Cooldown '{key}' expired. Module ready.");
                 }
-            }
-            foreach (var key in cooldownsToRemove)
-            {
-                cooldowns.Remove(key);
-                Debug.Log($"[MeziyModuleActivator] Cooldown '{key}' expired. Module ready.");
             }
         }
 

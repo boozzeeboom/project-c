@@ -33,17 +33,37 @@ namespace ProjectC.Ship
             if (_isActive) return;
             _isActive = true;
 
-            if (thrustParticle != null && !thrustParticle.isPlaying)
+            if (thrustParticle != null)
             {
+                // Проверить что ParticleSystem настроен
                 var main = thrustParticle.main;
-                main.startColor = new Color(1f, 0.6f, 0.1f, particleIntensity); // Оранжевое пламя
-                thrustParticle.Play();
+                main.startColor = new Color(1f, 0.6f, 0.1f, particleIntensity);
+                
+                // Если emission module отключён — включим
+                var emission = thrustParticle.emission;
+                emission.enabled = true;
+                
+                if (!thrustParticle.isPlaying)
+                {
+                    thrustParticle.Play();
+                    Debug.Log("[MeziyThrusterVisual] ParticleSystem started");
+                }
+            }
+            else
+            {
+                Debug.LogWarning("[MeziyThrusterVisual] thrustParticle is null! Assign a ParticleSystem in Inspector.");
             }
 
             if (glowLight != null)
             {
                 glowLight.enabled = true;
-                glowLight.color = new Color(1f, 0.5f, 0.1f); // Тёплое свечение
+                glowLight.color = new Color(1f, 0.5f, 0.1f);
+                glowLight.intensity = 2f;
+                Debug.Log("[MeziyThrusterVisual] Glow light enabled");
+            }
+            else
+            {
+                Debug.LogWarning("[MeziyThrusterVisual] glowLight is null! Assign a Light in Inspector.");
             }
         }
 

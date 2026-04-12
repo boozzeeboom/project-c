@@ -335,15 +335,37 @@ namespace ProjectC.Player
             if (meziyActivator != null)
                 meziyActivator.UpdateCooldowns(dt);
 
-            // 1.7. Проверить топливо — если пусто, отключить тягу (Сессия 5)
+            // 1.7. Проверить топливо — если пусто, отключить все управление (Сессия 5)
             bool engineStalled = false;
             if (fuelSystem != null && fuelSystem.IsEmpty)
             {
                 engineStalled = true;
+                // При пустом топливе блокируем ВСЕ органы управления
+                avgThrust = 0f;
+                avgYaw = 0f;
+                avgPitch = 0f;
+                avgVertical = 0f;
+                anyBoost = false;
+            }
+
+            // 1.8. Атмосферная дозаправка (клавиша L, Сессия 5)
+            bool isRefueling = false;
+            if (fuelSystem != null && !engineStalled)
+            {
+                if (Input.GetKey(KeyCode.L))
+                {
+                    fuelSystem.RefuelAtmospheric(dt);
+                    isRefueling = true;
+                }
+                else
+                {
+                    fuelSystem.StopRefueling();
+                }
             }
 
             // 2. Smooth thrust ramp-up (0.3s)
-            float targetThrust = engineStalled ? 0f : avgThrust * thrustForce * _moduleThrustMult * (anyBoost ? 2f : 1f);
+            float thrustMult = isRefueling ? fuelSystem.thrustPenaltyMult : 1f;
+            float targetThrust = avgThrust * thrustForce * _moduleThrustMult * thrustMult * (anyBoost ? 2f : 1f);
             _currentThrust = Mathf.SmoothDamp(_currentThrust, targetThrust, ref _thrustVelocitySmooth, thrustSmoothTime);
 
             // Расход/регенерация топлива (Сессия 5)
@@ -351,7 +373,7 @@ namespace ProjectC.Player
             {
                 if (engineStalled || Mathf.Abs(avgThrust) < 0.01f)
                 {
-                    // Idle — регенерация
+                    // Idle — регенерация (работает даже при fuel=0, см. RegenFuel)
                     fuelSystem.RegenFuel(dt);
                 }
                 else
@@ -413,8 +435,8 @@ namespace ProjectC.Player
             // 9.6. Ветер (Сессия 3)
             ApplyWind(dt);
 
-            // 10. Ограничение скорости
-            ClampVelocity();
+            // 10. Ограничение скорости (с учётом штрафа дозаправки)
+            ClampVelocity(isRefueling);
 
             // 11. Ограничение угла тангажа
             ClampPitchAngle();
@@ -596,10 +618,15 @@ namespace ProjectC.Player
             }
         }
 
-        private void ClampVelocity()
+        private void ClampVelocity(bool isRefueling = false)
         {
             // Базовая maxSpeed + модификатор от модулей
             float effectiveMaxSpeed = maxSpeed + _moduleMaxSpeedMod;
+
+            // Штраф к скорости при атмосферной дозаправке
+            if (isRefueling && fuelSystem != null)
+                effectiveMaxSpeed *= fuelSystem.speedPenaltyMult;
+
             if (_rb.linearVelocity.magnitude > effectiveMaxSpeed)
                 _rb.linearVelocity = _rb.linearVelocity.normalized * effectiveMaxSpeed;
         }
@@ -812,15 +839,14 @@ namespace ProjectC.Player
         }
 
         /// <summary>
-        /// Получить текущий ввод крена (A/D без Shift = обычный, A/D + Shift = мезиевый).
+        /// Получить текущий ввод крена (Z = влево, C = вправо).
         /// Возвращает -1 (влево), 0 (нет), 1 (вправо).
         /// </summary>
         private float GetCurrentRollInput()
         {
-            // Считываем ввод из InputSystem (A = -1, D = 1)
-            float a = Input.GetKey(KeyCode.A) ? -1f : 0f;
-            float d = Input.GetKey(KeyCode.D) ? 1f : 0f;
-            return a + d;
+            float z = Input.GetKey(KeyCode.Z) ? -1f : 0f;
+            float c = Input.GetKey(KeyCode.C) ? 1f : 0f;
+            return z + c;
         }
 
         /// <summary>

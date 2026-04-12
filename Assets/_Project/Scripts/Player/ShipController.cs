@@ -94,6 +94,18 @@ namespace ProjectC.Player
         [Tooltip("Система груза корабля (влияет на скорость)")]
         [SerializeField] private ProjectC.Player.CargoSystem cargoSystem;
 
+        [Header("Модули (Сессия 4)")]
+        [Tooltip("Менеджер модулей корабля")]
+        [SerializeField] private ShipModuleManager moduleManager;
+
+        // Модификаторы от модулей (применяются в FixedUpdate)
+        private float _moduleThrustMult = 1f;
+        private float _moduleYawMult = 1f;
+        private float _modulePitchMult = 1f;
+        private float _moduleLiftMult = 1f;
+        private float _moduleMaxSpeedMod = 0f;
+        private float _moduleWindExposureMod = 0f;
+
         // Rigidbody
         private Rigidbody _rb;
 
@@ -148,6 +160,9 @@ namespace ProjectC.Player
 
             // Применить пресет класса корабля
             ApplyShipClass();
+
+            // Инициализация модулей (Сессия 4)
+            InitializeModules();
 
             // Инициализация ветра
             _currentWindForce = Vector3.zero;
@@ -295,26 +310,29 @@ namespace ProjectC.Player
             float avgVertical = _sumVertical / n;
             bool anyBoost = _boostCount > 0;
 
+            // 1.5. Применяем модификаторы модулей (Сессия 4)
+            ApplyModuleModifiers();
+
             // 2. Smooth thrust ramp-up (0.3s)
-            float targetThrust = avgThrust * thrustForce * (anyBoost ? 2f : 1f);
+            float targetThrust = avgThrust * thrustForce * _moduleThrustMult * (anyBoost ? 2f : 1f);
             _currentThrust = Mathf.SmoothDamp(_currentThrust, targetThrust, ref _thrustVelocitySmooth, thrustSmoothTime);
 
             // 3. Smooth yaw с затуханием (0.6s smooth, 1.0s decay)
-            float targetYawRate = avgYaw * yawForce;
+            float targetYawRate = avgYaw * yawForce * _moduleYawMult;
             bool hasYawInput = Mathf.Abs(avgYaw) > 0.01f;
             _currentYawRate = hasYawInput
                 ? Mathf.SmoothDamp(_currentYawRate, targetYawRate, ref _yawVelocitySmooth, yawSmoothTime)
                 : Mathf.SmoothDamp(_currentYawRate, 0f, ref _yawVelocitySmooth, yawDecayTime);
 
             // 4. Smooth pitch с затуханием (0.7s smooth, 0.8s decay)
-            float targetPitchRate = avgPitch * pitchForce;
+            float targetPitchRate = avgPitch * pitchForce * _modulePitchMult;
             bool hasPitchInput = Mathf.Abs(avgPitch) > 0.01f;
             _currentPitchRate = hasPitchInput
                 ? Mathf.SmoothDamp(_currentPitchRate, targetPitchRate, ref _pitchVelocitySmooth, pitchSmoothTime)
                 : Mathf.SmoothDamp(_currentPitchRate, 0f, ref _pitchVelocitySmooth, pitchDecayTime);
 
             // 5. Smooth lift (очень медленно, 1.0s)
-            float targetLift = avgVertical * verticalForce;
+            float targetLift = avgVertical * verticalForce * _moduleLiftMult;
             _currentLiftForce = Mathf.SmoothDamp(_currentLiftForce, targetLift, ref _liftVelocitySmooth, liftSmoothTime);
             // Clamp к максимальной скорости лифта (Сессия 2: используем активный коридор)
             float maxLiftSpeed = (_activeCorridor != null && _activeCorridor.corridorId == "global") ? 2.5f : 2.0f;
@@ -459,10 +477,56 @@ namespace ProjectC.Player
         private bool HasNoInput(float t, float y, float p, float v) =>
             Mathf.Abs(t) < 0.01f && Mathf.Abs(y) < 0.01f && Mathf.Abs(p) < 0.01f && Mathf.Abs(v) < 0.01f;
 
+        /// <summary>
+        /// Сессия 4: Инициализация системы модулей.
+        /// Вызывается из Awake().
+        /// </summary>
+        private void InitializeModules()
+        {
+            if (moduleManager != null)
+            {
+                moduleManager.Initialize(shipFlightClass);
+                Debug.Log($"[ShipController] ModuleManager initialized. Slots: {moduleManager.slots.Count}, Power: {moduleManager.currentPowerUsage}/{moduleManager.availablePower}");
+            }
+            else
+            {
+                Debug.Log("[ShipController] No ModuleManager assigned. Modules disabled.");
+            }
+        }
+
+        /// <summary>
+        /// Сессия 4: Применить модификаторы от установленных модулей.
+        /// Вызывается каждый FixedUpdate после AverageInputs.
+        /// </summary>
+        private void ApplyModuleModifiers()
+        {
+            if (moduleManager != null)
+            {
+                _moduleThrustMult = moduleManager.GetThrustMultiplier();
+                _moduleYawMult = moduleManager.GetYawMultiplier();
+                _modulePitchMult = moduleManager.GetPitchMultiplier();
+                _moduleLiftMult = moduleManager.GetLiftMultiplier();
+                _moduleMaxSpeedMod = moduleManager.GetMaxSpeedModifier();
+                _moduleWindExposureMod = moduleManager.GetWindExposureModifier();
+            }
+            else
+            {
+                // Если менеджера нет — базовые значения
+                _moduleThrustMult = 1f;
+                _moduleYawMult = 1f;
+                _modulePitchMult = 1f;
+                _moduleLiftMult = 1f;
+                _moduleMaxSpeedMod = 0f;
+                _moduleWindExposureMod = 0f;
+            }
+        }
+
         private void ClampVelocity()
         {
-            if (_rb.linearVelocity.magnitude > maxSpeed)
-                _rb.linearVelocity = _rb.linearVelocity.normalized * maxSpeed;
+            // Базовая maxSpeed + модификатор от модулей
+            float effectiveMaxSpeed = maxSpeed + _moduleMaxSpeedMod;
+            if (_rb.linearVelocity.magnitude > effectiveMaxSpeed)
+                _rb.linearVelocity = _rb.linearVelocity.normalized * effectiveMaxSpeed;
         }
 
         /// <summary>
@@ -673,8 +737,9 @@ namespace ProjectC.Player
 #endif
             }
 
-            // Применить с учётом влияния и экспозиции
-            Vector3 windEffect = _currentWindForce * windInfluence * windExposure;
+            // Применить с учётом влияния и экспозиции (базовая + модификатор модулей)
+            float effectiveWindExposure = windExposure + _moduleWindExposureMod;
+            Vector3 windEffect = _currentWindForce * windInfluence * effectiveWindExposure;
             if (windEffect.sqrMagnitude > 0.01f)
             {
                 _rb.AddForce(windEffect, ForceMode.Force);

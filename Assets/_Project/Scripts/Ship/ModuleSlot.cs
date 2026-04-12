@@ -89,5 +89,20 @@ namespace ProjectC.Ship
             // Проверяем соответствие типа слота и типа модуля
             return module.type == (ModuleType)slotType;
         }
+
+#if UNITY_EDITOR
+        /// <summary>
+        /// Editor-валидация: срабатывает при изменении полей в Inspector.
+        /// Предотвращает установку несовместимого модуля через drag-and-drop.
+        /// </summary>
+        private void OnValidate()
+        {
+            if (installedModule != null && !ValidateCompatibility(installedModule))
+            {
+                Debug.LogWarning($"[ModuleSlot] Incompatible module '{installedModule.moduleId}' (type: {installedModule.type}) for slot '{gameObject.name}' (type: {slotType}). Clearing.");
+                installedModule = null;
+            }
+        }
+#endif
     }
 }

@@ -193,6 +193,20 @@ namespace ProjectC.Ship
         }
 
         /// <summary>
+        /// Получить суммарный множитель крена от всех модулей.
+        /// </summary>
+        public float GetRollMultiplier()
+        {
+            float mult = 1f;
+            foreach (var slot in slots)
+            {
+                if (slot.isOccupied)
+                    mult *= slot.installedModule.rollMultiplier;
+            }
+            return mult;
+        }
+
+        /// <summary>
         /// Получить модификатор максимальной скорости от всех модулей.
         /// </summary>
         public float GetMaxSpeedModifier()

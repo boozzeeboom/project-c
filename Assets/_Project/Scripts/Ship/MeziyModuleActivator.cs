@@ -4,34 +4,57 @@ using UnityEngine;
 namespace ProjectC.Ship
 {
     /// <summary>
-    /// Состояние мезиевого модуля в continuous режиме.
+    /// Ось мезиевого модуля — для запроса пассивных множителей.
+    /// </summary>
+    public enum MeziyAxis { Pitch, Roll, Yaw }
+
+    /// <summary>
+    /// Состояние мезиевого модуля с passive/active/overheat режимами.
     /// </summary>
     public class MeziyContinuousState
     {
         public ShipModule module;
-        public bool isActive;
-        public float continuousActiveTime; // Время непрерывного использования (для перегрева)
+
+        // Режимы
+        public bool isPassive;       // модуль установлен — пассивный эффект всегда активен
+        public bool isActive;        // клавиша направления зажата — активный выхлоп
+        public bool isOverheated;    // перегрет — кулдаун
+
+        // Таймеры
+        public float continuousActiveTime; // Время непрерывного активного использования (для перегрева)
         public float cooldownRemaining;    // Оставшийся кулдаун (перегрев)
 
-        public bool isOnCooldown => cooldownRemaining > 0;
+        // Направление активного выхлопа
+        public float activeDirection; // -1, 0, +1
+
+        // Свойства
+        public bool isOnCooldown => cooldownRemaining > 0f;
         public float overheatThreshold = 10f; // Секунд непрерывной работы до перегрева
     }
 
     /// <summary>
-    /// MeziyModuleActivator -- continuous mode (Сессия 5_2).
+    /// MeziyModuleActivator — v2.6: passive/active/overheat архитектура.
     ///
-    /// Новая логика:
-    /// - Модули работают пока зажата клавиша (не one-shot)
-    /// - Топливо расходуется с повышенным rate при активации
-    /// - Перегрев после 10 сек непрерывного использования -> кулдаун на охлаждение
-    /// - При перегреве модуль выключается автоматически
+    /// Принцип:
+    /// - Модуль установлен → пассивный эффект (без расхода топлива, без частиц)
+    ///   Пассивный эффект: небольшое усиление управления (~1.1x множитель)
+    /// - Клавиша направления зажата → активный выхлоп (расход топлива, частицы, сильный torque)
+    /// - Перегрев после 10 сек непрерывного активного использования → кулдаун 15 сек
     ///
-    /// Управление (клавиши зажатия):
-    /// - MODULE_MEZIY_PITCH: W (нос вверх), S (нос вниз)
-    /// - MODULE_MEZIY_ROLL:  Z (крен влево), X (крен вправо) -- Z/C уже используется для обычного roll
-    /// - MODULE_MEZIY_YAW:   A (влево), D (вправо)
+    /// Управление (зажатие клавиш):
+    /// - MODULE_MEZIY_PITCH: W (нос вверх, dir=-1), S (нос вниз, dir=+1)
+    /// - MODULE_MEZIY_ROLL:  Z (крен влево, dir=-1), C (крен вправо, dir=+1)
+    /// - MODULE_MEZIY_YAW:   A (влево, dir=-1), D (вправо, dir=+1)
     ///
-    /// NOTE: Для тестирования кулдаун = 0 (перегрев сразу остывает).
+    /// Расход топлива:
+    /// - Пассивный: 0 fuel/s
+    /// - Активный: meziyFuelCost * 2 * dt fuel/s
+    /// - Перегрев: штраф meziyFuelCost, кулдаун 15 сек
+    ///
+    /// Частицы:
+    /// - Пассивный: НЕ видны
+    /// - Активный: видны (оранжевое пламя)
+    /// - Перегрев: НЕ видны
     /// </summary>
     public class MeziyModuleActivator : MonoBehaviour
     {
@@ -43,11 +66,15 @@ namespace ProjectC.Ship
         [SerializeField] private ShipModuleManager moduleManager;
 
         [Header("Настройки перегрева")]
-        [Tooltip("Время непрерывной работы до перегрева (сек)")]
+        [Tooltip("Время непрерывной активной работы до перегрева (сек)")]
         [SerializeField] private float overheatThreshold = 10f;
 
-        [Tooltip("Время охлаждения после перегрева (сек, 0 = мгновенно для тестов)")]
-        [SerializeField] private float cooldownDuration = 0f;
+        [Tooltip("Время охлаждения после перегрева (сек)")]
+        [SerializeField] private float cooldownDuration = 15f;
+
+        [Header("Пассивный эффект")]
+        [Tooltip("Множитель пассивного усиления управления (1.1 = +10%)")]
+        [SerializeField] private float passiveModifier = 1.1f;
 
         /// <summary>
         /// Состояния всех мезиевых модулей (key = moduleId).
@@ -66,7 +93,7 @@ namespace ProjectC.Ship
             {
                 foreach (var slot in moduleManager.slots)
                 {
-                    if (slot != null && slot.isOccupied && slot.installedModule.isMeziyModule)
+                    if (slot != null && slot.isOccupied && slot.installedModule != null && slot.installedModule.isMeziyModule)
                     {
                         string moduleId = slot.installedModule.moduleId;
                         if (!meziyStates.ContainsKey(moduleId))
@@ -74,36 +101,43 @@ namespace ProjectC.Ship
                             meziyStates[moduleId] = new MeziyContinuousState
                             {
                                 module = slot.installedModule,
+                                isPassive = true,
                                 isActive = false,
+                                isOverheated = false,
                                 continuousActiveTime = 0f,
                                 cooldownRemaining = 0f,
+                                activeDirection = 0f,
                                 overheatThreshold = overheatThreshold
                             };
+                            Debug.Log($"[MeziyModuleActivator] Registered passive meziy module: '{moduleId}' (force={slot.installedModule.meziyForce})");
                         }
                     }
                 }
             }
 
-            Debug.Log($"[MeziyModuleActivator] Initialized {meziyStates.Count} meziy modules.");
+            Debug.Log($"[MeziyModuleActivator] Initialized {meziyStates.Count} meziy modules (passive mode).");
         }
 
         /// <summary>
-        /// Активировать между модуль (вызывается каждый кадр пока клавиша зажата).
+        /// Активировать между модуль с направлением (клавиша зажата).
         /// Возвращает true если модуль активен (не на кулдауне, достаточно топлива).
         /// </summary>
-        public bool TryActivate(string moduleId)
+        /// <param name="moduleId">ID модуля</param>
+        /// <param name="direction">Направление выхлопа: -1 или +1</param>
+        public bool TryActivate(string moduleId, float direction)
         {
-            if (!meziyStates.ContainsKey(moduleId)) return false;
+            if (!meziyStates.ContainsKey(moduleId))
+            {
+                Debug.LogWarning($"[MeziyModuleActivator] Module '{moduleId}' not found! Available: {string.Join(", ", meziyStates.Keys)}");
+                return false;
+            }
 
             var state = meziyStates[moduleId];
 
-            // На кулдауне
+            // На кулдауне — не активируем
             if (state.isOnCooldown) return false;
 
-            // Уже активен -- просто продолжаем
-            if (state.isActive) return true;
-
-            // Достаточно топлива для запуска?
+            // Проверка топлива
             if (fuelSystem != null && fuelSystem.CurrentFuel < state.module.meziyFuelCost)
             {
                 Debug.LogWarning($"[MeziyModuleActivator] Not enough fuel for '{moduleId}'. Need: {state.module.meziyFuelCost}, Have: {fuelSystem.CurrentFuel:F1}");
@@ -111,6 +145,8 @@ namespace ProjectC.Ship
             }
 
             state.isActive = true;
+            state.activeDirection = direction;
+            state.isOverheated = false;
             return true;
         }
 
@@ -122,6 +158,7 @@ namespace ProjectC.Ship
             if (meziyStates.ContainsKey(moduleId))
             {
                 meziyStates[moduleId].isActive = false;
+                meziyStates[moduleId].activeDirection = 0f;
             }
         }
 
@@ -140,12 +177,13 @@ namespace ProjectC.Ship
                 if (state.isOnCooldown)
                 {
                     state.cooldownRemaining -= dt;
-                    if (state.cooldownRemaining <= 0)
+                    if (state.cooldownRemaining <= 0f)
                     {
                         state.cooldownRemaining = 0f;
+                        state.isOverheated = false;
                         Debug.Log($"[MeziyModuleActivator] '{kvp.Key}' cooled down. Ready to use.");
                     }
-                    continue; // На кулдауне -- ничего не делаем
+                    continue; // На кулдауне — ничего не делаем
                 }
 
                 // Обновить время непрерывной активности
@@ -157,7 +195,9 @@ namespace ProjectC.Ship
                     if (state.continuousActiveTime >= state.overheatThreshold)
                     {
                         state.isActive = false;
+                        state.activeDirection = 0f;
                         state.continuousActiveTime = 0f;
+                        state.isOverheated = true;
                         state.cooldownRemaining = cooldownDuration;
                         Debug.LogWarning($"[MeziyModuleActivator] '{kvp.Key}' OVERHEATED! Cooldown: {cooldownDuration:F1}s");
 
@@ -170,15 +210,43 @@ namespace ProjectC.Ship
                 }
                 else
                 {
-                    // Сбросить таймер при отпускании
+                    // Сбросить таймер при отпускании клавиши
                     state.continuousActiveTime = 0f;
+                    state.isOverheated = false;
                 }
             }
         }
 
         /// <summary>
-        /// Расходовать топливо за активный модуль.
+        /// Получить пассивный множитель для оси.
+        /// Вызывается из ShipController.ApplyModuleModifiers().
+        /// Возвращает passiveModifier (1.1) если модуль установлен, иначе 1.0.
+        /// </summary>
+        public float GetPassiveModifier(MeziyAxis axis)
+        {
+            string moduleId = axis switch
+            {
+                MeziyAxis.Pitch => "MODULE_MEZIY_PITCH",
+                MeziyAxis.Roll => "MODULE_MEZIY_ROLL",
+                MeziyAxis.Yaw => "MODULE_MEZIY_YAW",
+                _ => null
+            };
+
+            if (moduleId != null && meziyStates.ContainsKey(moduleId))
+            {
+                var state = meziyStates[moduleId];
+                if (state.isPassive && !state.isOnCooldown)
+                    return passiveModifier;
+            }
+
+            return 1.0f;
+        }
+
+        /// <summary>
+        /// Расходовать топливо за активные модули.
         /// Вызывается из ShipController при расчёте расхода.
+        /// Пассивные модули НЕ расходуют топливо.
+        /// Перегретые модули НЕ расходуют топливо.
         /// </summary>
         public void ConsumeFuelForActiveModules(float dt)
         {
@@ -186,13 +254,34 @@ namespace ProjectC.Ship
 
             foreach (var kvp in meziyStates)
             {
-                if (kvp.Value.isActive)
+                var state = kvp.Value;
+                // Только активные (не пассивные) и не на кулдауне
+                if (state.isActive && !state.isOnCooldown)
                 {
-                    // Повышенный расход: междуyFuelCost * dt * multiplier
-                    float cost = kvp.Value.module.meziyFuelCost * dt * 2f; // x2 multiplier
+                    float cost = state.module.meziyFuelCost * dt * 2f; // x2 multiplier для активного режима
                     fuelSystem.ConsumeFuel(cost);
                 }
             }
+        }
+
+        /// <summary>
+        /// Проверить, перегрет ли модуль (для UI индикации).
+        /// </summary>
+        public bool IsOverheated(string moduleId)
+        {
+            return meziyStates.ContainsKey(moduleId) && meziyStates[moduleId].isOnCooldown;
+        }
+
+        /// <summary>
+        /// Получить прогресс перегрева 0..1 (для UI бара).
+        /// </summary>
+        public float GetOverheatProgress(string moduleId)
+        {
+            if (!meziyStates.ContainsKey(moduleId)) return 0f;
+            var state = meziyStates[moduleId];
+            if (state.isActive)
+                return Mathf.Clamp01(state.continuousActiveTime / state.overheatThreshold);
+            return 0f;
         }
 
         /// <summary>
@@ -204,7 +293,7 @@ namespace ProjectC.Ship
         }
 
         /// <summary>
-        /// Получить все активные модули.
+        /// Получить все состояния модулей.
         /// </summary>
         public Dictionary<string, MeziyContinuousState> GetActiveStates()
         {

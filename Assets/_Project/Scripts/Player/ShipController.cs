@@ -114,6 +114,7 @@ namespace ProjectC.Player
         private float _moduleThrustMult = 1f;
         private float _moduleYawMult = 1f;
         private float _modulePitchMult = 1f;
+        private float _moduleRollMult = 1f;
         private float _moduleLiftMult = 1f;
         private float _moduleMaxSpeedMod = 0f;
         private float _moduleWindExposureMod = 0f;
@@ -384,48 +385,46 @@ namespace ProjectC.Player
                 }
             }
 
-            // 1.85. Между continuous mode (Сессия 5_2)
-            // Модули работают пока зажата клавиша. Кулдаун = перегрев после долгого использования.
+            // 1.85. Между passive/active mode (Сессия 5_3)
+            // Принцип: модуль установлен = пассивный эффект (бесплатно, без частиц)
+            // Клавиша направления зажата = активный выхлоп (расход топлива, частицы, torque)
+            // Перегрев после 10 сек непрерывного активного использования → кулдаун 15 сек
             //
-            // Управление (зажатие):
-            //   MODULE_MEZIY_PITCH: LeftShift+W (нос вверх), LeftShift+S (нос вниз)
-            //   MODULE_MEZIY_ROLL:  LeftShift+Z (крен влево), LeftShift+C (крен вправо)
-            //   MODULE_MEZIY_YAW:   LeftShift+A (влево), LeftShift+D (вправо)
-            //
-            // LeftShift выступает как "meziy mode" -- зажимаешь + направление = между эффект
+            // Управление (зажатие, БЕЗ LeftShift):
+            //   MODULE_MEZIY_PITCH: W (нос вверх, dir=-1), S (нос вниз, dir=+1)
+            //   MODULE_MEZIY_ROLL:  Z (крен влево, dir=-1), C (крен вправо, dir=+1)
+            //   MODULE_MEZIY_YAW:   A (влево, dir=-1), D (вправо, dir=+1)
             if (meziyActivator != null && !engineStalled && fuelSystem != null && fuelSystem.CurrentFuel >= 5f)
             {
-                bool shiftHeld = IsKeyDown(KeyCode.LeftShift);
-
-                // MODULE_MEZIY_PITCH: LeftShift + W/S
+                // MODULE_MEZIY_PITCH: W/S
                 if (meziyActivator.IsModuleInstalled("MODULE_MEZIY_PITCH"))
                 {
-                    if (shiftHeld && IsKeyDown(KeyCode.W))
-                        meziyActivator.TryActivate("MODULE_MEZIY_PITCH");
-                    else if (shiftHeld && IsKeyDown(KeyCode.S))
-                        meziyActivator.TryActivate("MODULE_MEZIY_PITCH");
+                    if (IsKeyDown(KeyCode.W))
+                        meziyActivator.TryActivate("MODULE_MEZIY_PITCH", -1f);
+                    else if (IsKeyDown(KeyCode.S))
+                        meziyActivator.TryActivate("MODULE_MEZIY_PITCH", +1f);
                     else
                         meziyActivator.Deactivate("MODULE_MEZIY_PITCH");
                 }
 
-                // MODULE_MEZIY_ROLL: LeftShift + Z/C
+                // MODULE_MEZIY_ROLL: Z/C
                 if (meziyActivator.IsModuleInstalled("MODULE_MEZIY_ROLL"))
                 {
-                    if (shiftHeld && IsKeyDown(KeyCode.Z))
-                        meziyActivator.TryActivate("MODULE_MEZIY_ROLL");
-                    else if (shiftHeld && IsKeyDown(KeyCode.C))
-                        meziyActivator.TryActivate("MODULE_MEZIY_ROLL");
+                    if (IsKeyDown(KeyCode.Z))
+                        meziyActivator.TryActivate("MODULE_MEZIY_ROLL", -1f);
+                    else if (IsKeyDown(KeyCode.C))
+                        meziyActivator.TryActivate("MODULE_MEZIY_ROLL", +1f);
                     else
                         meziyActivator.Deactivate("MODULE_MEZIY_ROLL");
                 }
 
-                // MODULE_MEZIY_YAW: LeftShift + A/D
+                // MODULE_MEZIY_YAW: A/D
                 if (meziyActivator.IsModuleInstalled("MODULE_MEZIY_YAW"))
                 {
-                    if (shiftHeld && IsKeyDown(KeyCode.A))
-                        meziyActivator.TryActivate("MODULE_MEZIY_YAW");
-                    else if (shiftHeld && IsKeyDown(KeyCode.D))
-                        meziyActivator.TryActivate("MODULE_MEZIY_YAW");
+                    if (IsKeyDown(KeyCode.A))
+                        meziyActivator.TryActivate("MODULE_MEZIY_YAW", -1f);
+                    else if (IsKeyDown(KeyCode.D))
+                        meziyActivator.TryActivate("MODULE_MEZIY_YAW", +1f);
                     else
                         meziyActivator.Deactivate("MODULE_MEZIY_YAW");
                 }
@@ -501,10 +500,8 @@ namespace ProjectC.Player
             float maxLiftForce = maxLiftSpeed * _rb.mass * Mathf.Abs(Physics.gravity.y);
             _currentLiftForce = Mathf.Clamp(_currentLiftForce, -maxLiftForce, maxLiftForce);
 
-            // 5.5. Roll (Z/C клавиши) -- непрерывный крен для тестирования
-            // В режиме тестов: roll работает БЕЗ MODULE_ROLL (для отладки)
-            // В production: требуется MODULE_ROLL
-            float rollForce = _rb.mass * 0.2f;  // 200 для Medium, 300 для HeavyII
+            // 5.5. Roll (Z/C клавиши) -- непрерывный крен
+            float rollForce = _rb.mass * 0.2f * _moduleRollMult;  // 200 для Medium * roll modifier
             bool hasRollInput = false;
             if (!engineStalled)
             {
@@ -689,7 +686,7 @@ namespace ProjectC.Player
         /// <summary>
         /// Сессия 4: Применить модификаторы от установленных модулей.
         /// Вызывается каждый FixedUpdate после AverageInputs.
-        /// Сессия 5: Добавлена проверка MODULE_ROLL для разблокировки крена.
+        /// Сессия 5_3: добавлены пассивные мезиевые эффекты.
         /// </summary>
         private void ApplyModuleModifiers()
         {
@@ -701,11 +698,20 @@ namespace ProjectC.Player
                 _moduleThrustMult = moduleManager.GetThrustMultiplier();
                 _moduleYawMult = moduleManager.GetYawMultiplier();
                 _modulePitchMult = moduleManager.GetPitchMultiplier();
+                _moduleRollMult = moduleManager.GetRollMultiplier();
                 _moduleLiftMult = moduleManager.GetLiftMultiplier();
                 _moduleMaxSpeedMod = moduleManager.GetMaxSpeedModifier();
                 _moduleWindExposureMod = moduleManager.GetWindExposureModifier();
 
-                // Сессия 5: Проверить MODULE_ROLL
+                // Сессия 5_3: пассивные мезиевые эффекты (умножаются поверх обычных модульных множителей)
+                if (meziyActivator != null)
+                {
+                    _modulePitchMult *= meziyActivator.GetPassiveModifier(MeziyAxis.Pitch);
+                    _moduleRollMult *= meziyActivator.GetPassiveModifier(MeziyAxis.Roll);
+                    _moduleYawMult *= meziyActivator.GetPassiveModifier(MeziyAxis.Yaw);
+                }
+
+                // Проверить MODULE_ROLL для разблокировки крена
                 CheckRollUnlock();
             }
             else
@@ -714,6 +720,7 @@ namespace ProjectC.Player
                 _moduleThrustMult = 1f;
                 _moduleYawMult = 1f;
                 _modulePitchMult = 1f;
+                _moduleRollMult = 1f;
                 _moduleLiftMult = 1f;
                 _moduleMaxSpeedMod = 0f;
                 _moduleWindExposureMod = 0f;
@@ -890,15 +897,17 @@ namespace ProjectC.Player
         }
 
         /// <summary>
-        /// Сессия 5_2: Применить continuous между эффекты к кораблю.
+        /// Сессия 5_3: Применить passive/active между эффекты к кораблю.
         /// Вызывается из FixedUpdate после стабилизации.
-        /// Топливо расходуется с повышенным rate при активном между.
+        /// - Пассивный эффект: бесплатный множитель управления (через ApplyModuleModifiers)
+        /// - Активный выхлоп: torque + расход топлива + частицы
+        /// - Перегрев: частицы ВЫКЛ, torque ВЫКЛ, кулдаун
         /// </summary>
         private void ApplyMeziyEffects(float dt)
         {
             if (meziyActivator == null) return;
 
-            // Расход топлива для активных модулей
+            // Расход топлива для активных модулей (пассивные НЕ расходуют)
             meziyActivator.ConsumeFuelForActiveModules(dt);
 
             _meziyActive = false;
@@ -911,33 +920,28 @@ namespace ProjectC.Player
                 string moduleId = kvp.Key;
                 var state = kvp.Value;
 
-                if (!state.isActive) continue;
+                // Пропускаем неактивные и перегретые
+                if (!state.isActive || state.isOnCooldown) continue;
 
                 _meziyActive = true;
                 ShipModule module = state.module;
 
-                // Применить torque в зависимости от типа модуля и направления ввода
+                // Применить torque по направлению из состояния (без повторного IsKeyDown)
+                float dir = state.activeDirection;
+                if (Mathf.Abs(dir) < 0.01f) continue;
+
                 switch (moduleId)
                 {
                     case "MODULE_MEZIY_PITCH":
-                        // LeftShift+W = нос вверх (отрицательный pitch), LeftShift+S = нос вниз (положительный)
-                        float pitchDir = IsKeyDown(KeyCode.W) ? -1f : (IsKeyDown(KeyCode.S) ? 1f : 0f);
-                        if (pitchDir != 0f)
-                            _activeMeziyTorque += transform.right * module.meziyForce * pitchDir;
+                        _activeMeziyTorque += transform.right * module.meziyForce * dir;
                         break;
 
                     case "MODULE_MEZIY_ROLL":
-                        // LeftShift+Z = крен влево, LeftShift+C = крен вправо
-                        float rollDir = IsKeyDown(KeyCode.Z) ? -1f : (IsKeyDown(KeyCode.C) ? 1f : 0f);
-                        if (rollDir != 0f)
-                            _activeMeziyTorque += transform.forward * module.meziyForce * rollDir;
+                        _activeMeziyTorque += transform.forward * module.meziyForce * dir;
                         break;
 
                     case "MODULE_MEZIY_YAW":
-                        // LeftShift+A = влево, LeftShift+D = вправо
-                        float yawDir = IsKeyDown(KeyCode.A) ? -1f : (IsKeyDown(KeyCode.D) ? 1f : 0f);
-                        if (yawDir != 0f)
-                            _activeMeziyTorque += Vector3.up * module.meziyForce * yawDir;
+                        _activeMeziyTorque += Vector3.up * module.meziyForce * dir;
                         break;
                 }
             }
@@ -948,7 +952,7 @@ namespace ProjectC.Player
                 _rb.AddTorque(_activeMeziyTorque, ForceMode.Force);
             }
 
-            // Обновить визуал
+            // Обновить визуал (только при активной тяге, НЕ при перегреве)
             if (meziyVisual != null)
             {
                 if (_meziyActive)
@@ -1099,7 +1103,7 @@ namespace ProjectC.Player
         }
 
         /// <summary>
-        /// Сессия 5_2: Инициализация системы между.
+        /// Сессия 5_3: Инициализация системы между (passive/active режим).
         /// Вызывается из Awake().
         /// </summary>
         private void InitializeMeziySystem()
@@ -1107,7 +1111,33 @@ namespace ProjectC.Player
             if (meziyActivator != null)
             {
                 meziyActivator.Initialize();
-                Debug.Log("[ShipController] Meziy system initialized.");
+
+                // Диагностика: какие мезиевые модули найдены
+                int pitchFound = meziyActivator.IsModuleInstalled("MODULE_MEZIY_PITCH") ? 1 : 0;
+                int rollFound = meziyActivator.IsModuleInstalled("MODULE_MEZIY_ROLL") ? 1 : 0;
+                int yawFound = meziyActivator.IsModuleInstalled("MODULE_MEZIY_YAW") ? 1 : 0;
+                Debug.Log($"[ShipController] Meziy system initialized. PITCH={pitchFound}, ROLL={rollFound}, YAW={yawFound}");
+
+                if (rollFound == 0 || yawFound == 0)
+                {
+                    Debug.LogWarning("[ShipController] Некоторые мезиевые модули НЕ найдены! Проверьте что MODULE_MEZIY_ROLL/YAW установлены в ModuleSlot в Inspector.");
+                    // Детальная диагностика слотов
+                    if (moduleManager != null)
+                    {
+                        for (int i = 0; i < moduleManager.slots.Count; i++)
+                        {
+                            var slot = moduleManager.slots[i];
+                            if (slot == null)
+                                Debug.LogWarning($"[ShipController]   Slot[{i}]: NULL");
+                            else if (!slot.isOccupied)
+                                Debug.LogWarning($"[ShipController]   Slot[{i}]: EMPTY (type={slot.slotType})");
+                            else if (slot.installedModule == null)
+                                Debug.LogWarning($"[ShipController]   Slot[{i}]: installedModule = null");
+                            else
+                                Debug.LogWarning($"[ShipController]   Slot[{i}]: '{slot.installedModule.moduleId}' isMeziy={slot.installedModule.isMeziyModule}");
+                        }
+                    }
+                }
             }
             else
             {

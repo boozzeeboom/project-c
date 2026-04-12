@@ -1,0 +1,34 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 0a2ee72e2ca4c264faa0110acf851850, type: 3}
+  m_Name: MODULE_MEZIY_PITCH
+  m_EditorClassIdentifier: Assembly-CSharp::ProjectC.Ship.ShipModule
+  moduleId: MODULE_MEZIY_PITCH
+  displayName: "\u041C\u0435\u0437\u0438\u0435\u0432\u0430\u044F \u0422\u044F\u0433\u0430
+    (\u0422\u0430\u043D\u0433\u0430\u0436)"
+  type: 0
+  tier: 2
+  thrustMultiplier: 1
+  yawMultiplier: 1
+  pitchMultiplier: 1
+  liftMultiplier: 1
+  maxSpeedModifier: 0
+  windExposureModifier: 0
+  powerConsumption: 15
+  compatibleClasses: 00000000010000000200000003000000
+  requiredModules: []
+  incompatibleModules: []
+  isMeziyModule: 1
+  meziyForce: 10
+  meziyDuration: 1.5
+  meziyCooldown: 8
+  meziyFuelCost: 5

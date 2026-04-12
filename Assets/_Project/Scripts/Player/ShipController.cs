@@ -189,6 +189,9 @@ namespace ProjectC.Player
             // Инициализация топлива (Сессия 5)
             InitializeFuelSystem();
 
+            // Авто-назначение Debug HUD (Сессия 5_2)
+            InitializeDebugHUD();
+
             // Инициализация ветра
             _currentWindForce = Vector3.zero;
         }
@@ -392,14 +395,17 @@ namespace ProjectC.Player
 
                 if (pitchPressed)
                 {
+                    Debug.Log("[ShipController] KEY 1 PRESSED -> MODULE_MEZIY_PITCH");
                     ActivateMeziyModule("MODULE_MEZIY_PITCH");
                 }
                 if (rollPressed)
                 {
+                    Debug.Log("[ShipController] KEY 2 PRESSED -> MODULE_MEZIY_ROLL");
                     ActivateMeziyModule("MODULE_MEZIY_ROLL");
                 }
                 if (yawPressed)
                 {
+                    Debug.Log("[ShipController] KEY 3 PRESSED -> MODULE_MEZIY_YAW");
                     ActivateMeziyModule("MODULE_MEZIY_YAW");
                 }
 
@@ -711,6 +717,26 @@ namespace ProjectC.Player
                     return;
                 }
             }
+
+            // Debug: если ни один слот не содержит MODULE_ROLL
+            if (Application.isEditor)
+            {
+                bool found = false;
+                foreach (var slot in moduleManager.slots)
+                {
+                    if (slot != null && slot.isOccupied)
+                    {
+                        Debug.Log($"[ShipController] Roll check: Slot has module '{slot.installedModule.moduleId}'");
+                        if (slot.installedModule.moduleId == "MODULE_ROLL") found = true;
+                    }
+                    else
+                    {
+                        Debug.Log($"[ShipController] Roll check: Slot is empty or not occupied");
+                    }
+                }
+                if (!found)
+                    Debug.LogWarning("[ShipController] MODULE_ROLL not found in any slot! Roll (Z/C) will be disabled. Install MODULE_ROLL in a ModuleSlot.");
+            }
         }
 
         private void ClampVelocity(bool isRefueling = false)
@@ -1000,6 +1026,9 @@ namespace ProjectC.Player
                 case KeyCode.X: return UnityEngine.InputSystem.Key.X;
                 case KeyCode.Y: return UnityEngine.InputSystem.Key.Y;
                 case KeyCode.Z: return UnityEngine.InputSystem.Key.Z;
+                case KeyCode.Alpha1: return UnityEngine.InputSystem.Key.Digit1;
+                case KeyCode.Alpha2: return UnityEngine.InputSystem.Key.Digit2;
+                case KeyCode.Alpha3: return UnityEngine.InputSystem.Key.Digit3;
                 case KeyCode.LeftShift: return UnityEngine.InputSystem.Key.LeftShift;
                 case KeyCode.RightShift: return UnityEngine.InputSystem.Key.RightShift;
                 case KeyCode.Space: return UnityEngine.InputSystem.Key.Space;
@@ -1053,6 +1082,20 @@ namespace ProjectC.Player
             else
             {
                 Debug.Log("[ShipController] No FuelSystem assigned. Fuel disabled.");
+            }
+        }
+
+        /// <summary>
+        /// Сессия 5_2: Авто-назначение Debug HUD.
+        /// Добавляет ShipDebugHUD если его нет на объекте.
+        /// </summary>
+        private void InitializeDebugHUD()
+        {
+            var hud = GetComponent<ShipDebugHUD>();
+            if (hud == null)
+            {
+                hud = gameObject.AddComponent<ShipDebugHUD>();
+                Debug.Log("[ShipController] ShipDebugHUD auto-added.");
             }
         }
 

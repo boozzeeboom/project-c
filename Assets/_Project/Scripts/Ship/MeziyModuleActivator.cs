@@ -67,9 +67,11 @@ namespace ProjectC.Ship
 
         [Header("Настройки перегрева")]
         [Tooltip("Время непрерывной активной работы до перегрева (сек)")]
+        [Min(1f)]
         [SerializeField] private float overheatThreshold = 10f;
 
         [Tooltip("Время охлаждения после перегрева (сек)")]
+        [Min(1f)]
         [SerializeField] private float cooldownDuration = 15f;
 
         [Header("Пассивный эффект")]
@@ -87,6 +89,18 @@ namespace ProjectC.Ship
         /// </summary>
         public void Initialize()
         {
+            // Защита от 0 кулдауна (сериализованное значение может быть сброшено)
+            if (cooldownDuration < 1f)
+            {
+                Debug.LogWarning("[MeziyModuleActivator] cooldownDuration too low, forcing to 15s.");
+                cooldownDuration = 15f;
+            }
+            if (overheatThreshold < 1f)
+            {
+                Debug.LogWarning("[MeziyModuleActivator] overheatThreshold too low, forcing to 10s.");
+                overheatThreshold = 10f;
+            }
+
             meziyStates.Clear();
 
             if (moduleManager != null)

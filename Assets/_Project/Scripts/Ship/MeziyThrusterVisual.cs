@@ -10,18 +10,31 @@ namespace ProjectC.Ship
     /// автоматически при первом вызове Activate().
     /// </summary>
 #if UNITY_EDITOR
-    [UnityEditor.CanEditMultipleObjects]
-    [UnityEditor.CustomEditor(typeof(MeziyThrusterVisual))]
-    public class MeziyThrusterVisualEditor : UnityEditor.Editor
+using UnityEditor;
+#endif
+
+namespace ProjectC.Ship
+{
+    /// <summary>
+    /// MeziyThrusterVisual — визуальный эффект сопел при активации мезиевой тяги.
+    /// Сессия 5: Meziy Thrust & Advanced Modules.
+    ///
+    /// Опциональный компонент. Если ParticleSystem/Light не назначены — они создадутся
+    /// автоматически при первом вызове Activate().
+    /// </summary>
+#if UNITY_EDITOR
+    [CanEditMultipleObjects]
+    [CustomEditor(typeof(MeziyThrusterVisual))]
+    public class MeziyThrusterVisualEditor : Editor
     {
         public override void OnInspectorGUI()
         {
             DrawDefaultInspector();
 
             var visual = (MeziyThrusterVisual)target;
-            UnityEditor.EditorGUILayout.Space();
+            EditorGUILayout.Space();
 
-            if (UnityEditor.GUILayout.Button("Auto-Create Thruster Particles", UnityEditor.GUILayout.Height(30)))
+            if (GUILayout.Button("Auto-Create Thruster Particles", GUILayout.Height(30)))
             {
                 visual.AutoCreateParticles();
             }

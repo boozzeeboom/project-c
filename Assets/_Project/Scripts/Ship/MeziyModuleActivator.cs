@@ -4,34 +4,34 @@ using UnityEngine;
 namespace ProjectC.Ship
 {
     /// <summary>
-    /// Состояние активного мезиевого эффекта.
+    /// Состояние мезиевого модуля в continuous режиме.
     /// </summary>
-    public class MeziyState
+    public class MeziyContinuousState
     {
-        public string moduleId;
-        public float timeRemaining;       // Оставшееся время эффекта
-        public float cooldownRemaining;   // Оставшийся кулдаун
+        public ShipModule module;
+        public bool isActive;
+        public float continuousActiveTime; // Время непрерывного использования (для перегрева)
+        public float cooldownRemaining;    // Оставшийся кулдаун (перегрев)
 
-        public bool isActive => timeRemaining > 0;
         public bool isOnCooldown => cooldownRemaining > 0;
+        public float overheatThreshold = 10f; // Секунд непрерывной работы до перегрева
     }
 
     /// <summary>
-    /// MeziyModuleActivator — активатор мезиевых модулей.
-    /// Сессия 5: Meziy Thrust & Advanced Modules.
-    /// 
-    /// Логика активации:
-    /// 1. Проверить что модуль установлен в слоте
-    /// 2. Проверить что не на cooldown
-    /// 3. Проверить что достаточно топлива (meziyFuelCost)
-    /// 4. Списать топливо
-    /// 5. Запустить эффект (meziyForce × meziyDuration)
-    /// 6. Запустить cooldown (meziyCooldown)
-    /// 
-    /// Параметры мезиевых модулей (из ShipRegistry):
-    ///   MODULE_MEZIY_ROLL:  force=25, duration=2s,   cooldown=10s,  fuelCost=5
-    ///   MODULE_MEZIY_PITCH: force=10, duration=1.5s, cooldown=8s,   fuelCost=5
-    ///   MODULE_MEZIY_YAW:   force=30, duration=0.5s, cooldown=12s,  fuelCost=5
+    /// MeziyModuleActivator -- continuous mode (Сессия 5_2).
+    ///
+    /// Новая логика:
+    /// - Модули работают пока зажата клавиша (не one-shot)
+    /// - Топливо расходуется с повышенным rate при активации
+    /// - Перегрев после 10 сек непрерывного использования -> кулдаун на охлаждение
+    /// - При перегреве модуль выключается автоматически
+    ///
+    /// Управление (клавиши зажатия):
+    /// - MODULE_MEZIY_PITCH: W (нос вверх), S (нос вниз)
+    /// - MODULE_MEZIY_ROLL:  Z (крен влево), X (крен вправо) -- Z/C уже используется для обычного roll
+    /// - MODULE_MEZIY_YAW:   A (влево), D (вправо)
+    ///
+    /// NOTE: Для тестирования кулдаун = 0 (перегрев сразу остывает).
     /// </summary>
     public class MeziyModuleActivator : MonoBehaviour
     {
@@ -42,179 +42,194 @@ namespace ProjectC.Ship
         [Tooltip("Менеджер модулей корабля")]
         [SerializeField] private ShipModuleManager moduleManager;
 
-        /// <summary>
-        /// Активные мезиевые эффекты (key = moduleId).
-        /// </summary>
-        private Dictionary<string, MeziyState> activeMeziyEffects = new();
+        [Header("Настройки перегрева")]
+        [Tooltip("Время непрерывной работы до перегрева (сек)")]
+        [SerializeField] private float overheatThreshold = 10f;
+
+        [Tooltip("Время охлаждения после перегрева (сек, 0 = мгновенно для тестов)")]
+        [SerializeField] private float cooldownDuration = 0f;
 
         /// <summary>
-        /// Кулдауны модулей (key = moduleId).
+        /// Состояния всех мезиевых модулей (key = moduleId).
         /// </summary>
-        private Dictionary<string, float> cooldowns = new();
+        private Dictionary<string, MeziyContinuousState> meziyStates = new();
 
         /// <summary>
-        /// Активировать мезиевый модуль.
-        /// Возвращает true если активация успешна.
+        /// Инициализировать состояния модулей.
+        /// Вызывается из ShipController при старте.
         /// </summary>
-        public bool ActivateModule(ShipModule meziyModule)
+        public void Initialize()
         {
-            if (meziyModule == null || !meziyModule.isMeziyModule)
-            {
-                Debug.LogWarning("[MeziyModuleActivator] Module is not a meziy module.");
-                return false;
-            }
+            meziyStates.Clear();
 
-            string moduleId = meziyModule.moduleId;
-
-            // 1. Проверить что модуль установлен в слоте
-            if (!IsModuleInstalled(moduleId))
+            if (moduleManager != null)
             {
-                Debug.LogWarning($"[MeziyModuleActivator] Module '{moduleId}' is not installed.");
-                return false;
-            }
-
-            // 2. Проверить что не на cooldown
-            if (IsOnCooldown(moduleId))
-            {
-                Debug.LogWarning($"[MeziyModuleActivator] Module '{moduleId}' is on cooldown ({GetCooldownRemaining(moduleId):F1}s remaining).");
-                return false;
-            }
-
-            // 3. Проверить что достаточно топлива
-            if (fuelSystem != null && fuelSystem.CurrentFuel < meziyModule.meziyFuelCost)
-            {
-                Debug.LogWarning($"[MeziyModuleActivator] Not enough fuel. Need: {meziyModule.meziyFuelCost}, Have: {fuelSystem.CurrentFuel:F1}");
-                return false;
-            }
-
-            // 4. Списать топливо
-            if (fuelSystem != null)
-            {
-                bool success = fuelSystem.ConsumeFuel(meziyModule.meziyFuelCost);
-                if (!success)
+                foreach (var slot in moduleManager.slots)
                 {
-                    Debug.LogWarning($"[MeziyModuleActivator] Failed to consume fuel for '{moduleId}'.");
-                    return false;
+                    if (slot != null && slot.isOccupied && slot.installedModule.isMeziyModule)
+                    {
+                        string moduleId = slot.installedModule.moduleId;
+                        if (!meziyStates.ContainsKey(moduleId))
+                        {
+                            meziyStates[moduleId] = new MeziyContinuousState
+                            {
+                                module = slot.installedModule,
+                                isActive = false,
+                                continuousActiveTime = 0f,
+                                cooldownRemaining = 0f,
+                                overheatThreshold = overheatThreshold
+                            };
+                        }
+                    }
                 }
             }
 
-            // 5. Запустить эффект
-            var state = new MeziyState
+            Debug.Log($"[MeziyModuleActivator] Initialized {meziyStates.Count} meziy modules.");
+        }
+
+        /// <summary>
+        /// Активировать между модуль (вызывается каждый кадр пока клавиша зажата).
+        /// Возвращает true если модуль активен (не на кулдауне, достаточно топлива).
+        /// </summary>
+        public bool TryActivate(string moduleId)
+        {
+            if (!meziyStates.ContainsKey(moduleId)) return false;
+
+            var state = meziyStates[moduleId];
+
+            // На кулдауне
+            if (state.isOnCooldown) return false;
+
+            // Уже активен -- просто продолжаем
+            if (state.isActive) return true;
+
+            // Достаточно топлива для запуска?
+            if (fuelSystem != null && fuelSystem.CurrentFuel < state.module.meziyFuelCost)
             {
-                moduleId = moduleId,
-                timeRemaining = meziyModule.meziyDuration,
-                cooldownRemaining = 0f
-            };
-            activeMeziyEffects[moduleId] = state;
+                Debug.LogWarning($"[MeziyModuleActivator] Not enough fuel for '{moduleId}'. Need: {state.module.meziyFuelCost}, Have: {fuelSystem.CurrentFuel:F1}");
+                return false;
+            }
 
-            // 6. Запустить cooldown
-            cooldowns[moduleId] = meziyModule.meziyCooldown;
-
-            Debug.Log($"[MeziyModuleActivator] Activated '{moduleId}'. Force: {meziyModule.meziyForce}, Duration: {meziyModule.meziyDuration}s, Cooldown: {meziyModule.meziyCooldown}s, Fuel: -{meziyModule.meziyFuelCost}");
+            state.isActive = true;
             return true;
         }
 
         /// <summary>
-        /// Проверить, находится ли модуль на кулдауне.
+        /// Деактивировать между модуль (клавиша отпущена).
         /// </summary>
-        public bool IsOnCooldown(string moduleId)
+        public void Deactivate(string moduleId)
         {
-            return cooldowns.ContainsKey(moduleId) && cooldowns[moduleId] > 0;
+            if (meziyStates.ContainsKey(moduleId))
+            {
+                meziyStates[moduleId].isActive = false;
+            }
         }
 
         /// <summary>
-        /// Получить оставшееся время кулдауна модуля.
-        /// </summary>
-        public float GetCooldownRemaining(string moduleId)
-        {
-            return cooldowns.ContainsKey(moduleId) ? cooldowns[moduleId] : 0f;
-        }
-
-        /// <summary>
-        /// Обновить кулдауны и активные эффекты.
+        /// Обновить состояния модулей.
         /// Вызывается каждый FixedUpdate.
+        /// Отслеживает перегрев и кулдауны.
         /// </summary>
-        public void UpdateCooldowns(float dt)
+        public void Update(float dt)
         {
-            // Обновить активные эффекты
-            var toRemove = new List<string>();
-            foreach (var kvp in activeMeziyEffects)
+            foreach (var kvp in meziyStates)
             {
                 var state = kvp.Value;
-                state.timeRemaining -= dt;
-                if (state.timeRemaining <= 0)
-                {
-                    toRemove.Add(kvp.Key);
-                }
-            }
-            foreach (var key in toRemove)
-            {
-                activeMeziyEffects.Remove(key);
-                Debug.Log($"[MeziyModuleActivator] Effect '{key}' expired.");
-            }
 
-            // Обновить кулдауны -- НЕЛЬЗЯ менять словарь внутри foreach
-            var activeCooldownKeys = new List<string>(cooldowns.Keys);
-            foreach (var key in activeCooldownKeys)
-            {
-                cooldowns[key] -= dt;
-                if (cooldowns[key] <= 0)
+                // Обновить кулдаун
+                if (state.isOnCooldown)
                 {
-                    cooldowns.Remove(key);
-                    Debug.Log($"[MeziyModuleActivator] Cooldown '{key}' expired. Module ready.");
+                    state.cooldownRemaining -= dt;
+                    if (state.cooldownRemaining <= 0)
+                    {
+                        state.cooldownRemaining = 0f;
+                        Debug.Log($"[MeziyModuleActivator] '{kvp.Key}' cooled down. Ready to use.");
+                    }
+                    continue; // На кулдауне -- ничего не делаем
+                }
+
+                // Обновить время непрерывной активности
+                if (state.isActive)
+                {
+                    state.continuousActiveTime += dt;
+
+                    // Проверить перегрев
+                    if (state.continuousActiveTime >= state.overheatThreshold)
+                    {
+                        state.isActive = false;
+                        state.continuousActiveTime = 0f;
+                        state.cooldownRemaining = cooldownDuration;
+                        Debug.LogWarning($"[MeziyModuleActivator] '{kvp.Key}' OVERHEATED! Cooldown: {cooldownDuration:F1}s");
+
+                        // Списать топливо за перегрев (штраф)
+                        if (fuelSystem != null)
+                        {
+                            fuelSystem.ConsumeFuel(state.module.meziyFuelCost);
+                        }
+                    }
+                }
+                else
+                {
+                    // Сбросить таймер при отпускании
+                    state.continuousActiveTime = 0f;
                 }
             }
         }
 
         /// <summary>
-        /// Получить данные активного эффекта по moduleId.
-        /// Возвращает null если эффект не активен.
+        /// Расходовать топливо за активный модуль.
+        /// Вызывается из ShipController при расчёте расхода.
         /// </summary>
-        public MeziyState GetActiveEffect(string moduleId)
+        public void ConsumeFuelForActiveModules(float dt)
         {
-            return activeMeziyEffects.ContainsKey(moduleId) ? activeMeziyEffects[moduleId] : null;
-        }
+            if (fuelSystem == null) return;
 
-        /// <summary>
-        /// Получить все активные эффекты.
-        /// </summary>
-        public Dictionary<string, MeziyState> GetActiveEffects()
-        {
-            return activeMeziyEffects;
-        }
-
-        /// <summary>
-        /// Проверить, установлен ли модуль с данным ID в какой-либо слот.
-        /// </summary>
-        private bool IsModuleInstalled(string moduleId)
-        {
-            if (moduleManager == null) return false;
-
-            foreach (var slot in moduleManager.slots)
+            foreach (var kvp in meziyStates)
             {
-                if (slot != null && slot.isOccupied && slot.installedModule.moduleId == moduleId)
+                if (kvp.Value.isActive)
                 {
-                    return true;
+                    // Повышенный расход: междуyFuelCost * dt * multiplier
+                    float cost = kvp.Value.module.meziyFuelCost * dt * 2f; // x2 multiplier
+                    fuelSystem.ConsumeFuel(cost);
                 }
             }
-            return false;
         }
 
         /// <summary>
-        /// Найти мезиевый модуль по ID среди установленных.
+        /// Получить состояние модуля.
         /// </summary>
-        public ShipModule FindInstalledMeziyModule(string moduleId)
+        public MeziyContinuousState GetState(string moduleId)
         {
-            if (moduleManager == null) return null;
+            return meziyStates.ContainsKey(moduleId) ? meziyStates[moduleId] : null;
+        }
 
-            foreach (var slot in moduleManager.slots)
+        /// <summary>
+        /// Получить все активные модули.
+        /// </summary>
+        public Dictionary<string, MeziyContinuousState> GetActiveStates()
+        {
+            return meziyStates;
+        }
+
+        /// <summary>
+        /// Проверить, установлен ли модуль с данным ID.
+        /// </summary>
+        public bool IsModuleInstalled(string moduleId)
+        {
+            return meziyStates.ContainsKey(moduleId);
+        }
+
+        /// <summary>
+        /// Получить суммарную активность (0 = ничего, 1+ = активны модули).
+        /// </summary>
+        public int GetActiveCount()
+        {
+            int count = 0;
+            foreach (var kvp in meziyStates)
             {
-                if (slot != null && slot.isOccupied && slot.installedModule.moduleId == moduleId)
-                {
-                    return slot.installedModule;
-                }
+                if (kvp.Value.isActive) count++;
             }
-            return null;
+            return count;
         }
     }
 }

@@ -28,6 +28,7 @@ namespace ProjectC.Ship
         // GUI
         private GUIStyle _style;
         private Rect _rect;
+        private Texture2D _bgTex;
 
         private void Awake()
         {
@@ -82,7 +83,6 @@ namespace ProjectC.Ship
             GUI.Label(textRect, text, _style);
         }
 
-        private Texture2D _bgTex;
         private Texture2D MakeTex(int w, int h, Color col)
         {
             if (_bgTex == null)
@@ -108,7 +108,7 @@ namespace ProjectC.Ship
                 _style.richText = true;
             }
 
-            int w = 350, h = 360;
+            int w = 350;
             int x = position switch
             {
                 1 => Screen.width - w - 10,
@@ -118,17 +118,17 @@ namespace ProjectC.Ship
             };
             int y = position switch
             {
-                2 or 3 => Screen.height - h - 10,
+                2 or 3 => Screen.height - 360 - 10,
                 _ => 10
             };
 
-            _rect = new Rect(x, y, w, h);
+            _rect = new Rect(x, y, w, 360);
         }
 
         private string BuildDebugText()
         {
             var sb = new System.Text.StringBuilder();
-            sb.AppendLine("<b>═══ SHIP DEBUG ═══</b>");
+            sb.AppendLine("<b>=== SHIP DEBUG ===</b>");
 
             // Fuel
             if (_fuelSystem != null)
@@ -147,16 +147,21 @@ namespace ProjectC.Ship
             // Module state
             sb.AppendLine($"Roll Unlocked: {IsRollUnlocked()}");
 
-            // Meziy state
+            // Meziy state (continuous mode)
             var activator = GetMeziyActivator();
             if (activator != null)
             {
-                var effects = activator.GetActiveEffects();
-                sb.AppendLine($"Meziy Active: {effects.Count}");
-                foreach (var kvp in effects)
+                var states = activator.GetActiveStates();
+                sb.AppendLine($"Meziy Active: {activator.GetActiveCount()}");
+                foreach (var kvp in states)
                 {
-                    if (kvp.Value.isActive)
-                        sb.AppendLine($"  → {kvp.Key}");
+                    var state = kvp.Value;
+                    string status = state.isActive ? "ACTIVE" : (state.isOnCooldown ? $"COOL({state.cooldownRemaining:F1}s)" : "READY");
+                    sb.AppendLine($"  {kvp.Key}: {status}");
+                    if (state.isActive)
+                    {
+                        sb.AppendLine($"    time: {state.continuousActiveTime:F1}/{state.overheatThreshold:F0}s");
+                    }
                 }
             }
             else
@@ -164,7 +169,7 @@ namespace ProjectC.Ship
                 sb.AppendLine("Meziy Activator: N/A");
             }
 
-            sb.AppendLine($"[F3] Toggle HUD");
+            sb.AppendLine("[F3] Toggle HUD");
 
             return sb.ToString();
         }

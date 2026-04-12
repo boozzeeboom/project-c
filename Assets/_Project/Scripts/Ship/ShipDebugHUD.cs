@@ -60,9 +60,33 @@ namespace ProjectC.Ship
             SetupStyle();
 
             string text = BuildDebugText();
-            GUILayout.BeginArea(_rect);
-            GUILayout.Label(text, _style);
-            GUILayout.EndArea();
+
+            // Фон
+            var bgRect = _rect;
+            var bgStyle = new GUIStyle(GUI.skin.label);
+            bgStyle.normal.background = MakeTex(2, 2, new Color(0, 0, 0, 0.85f));
+            bgStyle.fontSize = fontSize;
+            bgStyle.padding = new RectOffset(8, 8, 4, 4);
+
+            // Рисуем фон
+            GUI.Label(bgRect, new string(' ', 800), bgStyle);
+            // Рисуем текст
+            GUI.Label(_rect, text, _style);
+        }
+
+        private Texture2D _bgTex;
+        private Texture2D MakeTex(int w, int h, Color col)
+        {
+            if (_bgTex == null)
+            {
+                _bgTex = new Texture2D(w, h);
+                _bgTex.hideFlags = HideFlags.HideAndDontSave;
+            }
+            for (int x = 0; x < w; x++)
+                for (int y = 0; y < h; y++)
+                    _bgTex.SetPixel(x, y, col);
+            _bgTex.Apply();
+            return _bgTex;
         }
 
         private void SetupStyle()
@@ -71,11 +95,12 @@ namespace ProjectC.Ship
             {
                 _style = new GUIStyle(GUI.skin.label);
                 _style.fontSize = fontSize;
-                _style.normal.textColor = Color.cyan;
+                _style.normal.textColor = Color.green;
                 _style.fontStyle = FontStyle.Bold;
+                _style.richText = true;
             }
 
-            int w = 320, h = 340;
+            int w = 350, h = 360;
             int x = position switch
             {
                 1 => Screen.width - w - 10,

@@ -1,28 +1,25 @@
 # Баг: Визуал мезиевых сопел не виден в Play Mode
 
 **Сессия:** 5 | **Дата:** 12 апреля 2026 | **Приоритет:** P2
-**Статус:** 🐛 Открыт
+**Статус:** ✅ Исправлен (авто-создание)
 
 ## Описание
 МеziyThrusterVisual настроен в Inspector (ParticleSystem + Directional Light),
-но в Play Mode при активации мезиевых модулей визуал не отображается.
+но в Play Mode при активации мезиевых модулей визуал не отображался.
 
-## Возможные причины
-1. ParticleSystem не настроен (нет материала, emit = 0)
-2. Light слишком слабый / не в той позиции
-3. MeziyThrusterVisual.Activate() вызывается, но ParticleSystem не configured
-4. Масштаб/позиция визуала не совпадает с соплами корабля
+## Причина
+ParticleSystem нужно было вручную создать и назначить в Inspector.
+У пользователя не было возможности добавить его — компонент отсутствовал.
 
-## Текущий код
-`MeziyThrusterVisual.Activate()` вызывает `thrustParticle.Play()` и включает `glowLight`.
-Но ParticleSystem должен быть предварительно настроен в Inspector.
+## Исправление
+Добавлен `AutoCreateParticles()` — автоматическое создание:
+1. Дочерний объект "MeziyThruster" (позиция сопла — сзади корабля)
+2. ParticleSystem с настроенным emission, shape, цветом (оранжевое пламя)
+3. Point Light для свечения
 
-## Предлагаемое решение
-1. Создать префаб с настроенным ParticleSystem (material, emission, shape)
-2. Добавить Debug.Log в Activate/Deactivate для проверки вызова
-3. Проверить что ParticleSystem назначен и имеет материал
-4. Настроить позицию визуала относительно корабля
+**Срабатывает:**
+- Автоматически при первом `Activate()` (если thrustParticle == null)
+- Через кнопку в Inspector: **"Auto-Create Thruster Particles"**
 
 ## Затронутые файлы
-- `Assets/_Project/Scripts/Ship/MeziyThrusterVisual.cs`
-- (Новый) Префаб частиц сопла
+- `Assets/_Project/Scripts/Ship/MeziyThrusterVisual.cs` — AutoCreateParticles(), CustomEditor с кнопкой

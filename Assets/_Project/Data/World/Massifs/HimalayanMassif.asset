@@ -15,8 +15,8 @@ MonoBehaviour:
   massifId: himalayan
   displayName: "\u0413\u0438\u043C\u0430\u043B\u0430\u0439\u0441\u043A\u0438\u0439
     \u043C\u0430\u0441\u0441\u0438\u0432"
-  centerPosition: {x: 0, y: 88.48, z: 0}
-  massifRadius: 2000
+  centerPosition: {x: 0, y: 8848, z: 0}
+  massifRadius: 3000
   biomeProfile: {fileID: 11400000, guid: ba69ccfd2f3706540bcc38dbb1a17d40, type: 2}
   peaks: []
   ridges: []

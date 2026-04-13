@@ -15,8 +15,8 @@ MonoBehaviour:
   massifId: alaskan
   displayName: "\u0410\u043B\u044F\u0441\u043A\u0438\u043D\u0441\u043A\u0438\u0439
     \u043C\u0430\u0441\u0441\u0438\u0432"
-  centerPosition: {x: 1255, y: 61.9, z: 4685}
-  massifRadius: 1000
+  centerPosition: {x: 1255, y: 6190, z: 4685}
+  massifRadius: 1500
   biomeProfile: {fileID: 11400000, guid: 8c24ae72f84ce0e4594f07bc25371115, type: 2}
   peaks: []
   ridges: []

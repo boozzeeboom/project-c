@@ -15,8 +15,8 @@ MonoBehaviour:
   massifId: african
   displayName: "\u0410\u0444\u0440\u0438\u043A\u0430\u043D\u0441\u043A\u0438\u0439
     \u043C\u0430\u0441\u0441\u0438\u0432"
-  centerPosition: {x: -1881, y: 58.95, z: -3010}
-  massifRadius: 800
+  centerPosition: {x: -1881, y: 5895, z: -3010}
+  massifRadius: 1000
   biomeProfile: {fileID: 11400000, guid: d1ce89ee89bdca64293be4b23e185d55, type: 2}
   peaks: []
   ridges: []

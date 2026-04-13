@@ -14,8 +14,8 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::ProjectC.World.Core.MountainMassif
   massifId: andean
   displayName: "\u0410\u043D\u0434\u0438\u0439\u0441\u043A\u0438\u0439 \u043C\u0430\u0441\u0441\u0438\u0432"
-  centerPosition: {x: -4176, y: 69.62, z: -2110}
-  massifRadius: 1500
+  centerPosition: {x: -4176, y: 6962, z: -2110}
+  massifRadius: 2500
   biomeProfile: {fileID: 11400000, guid: 409e7844c0f2ff949891e65eda1f5e69, type: 2}
   peaks: []
   ridges: []

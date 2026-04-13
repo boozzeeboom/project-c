@@ -192,20 +192,23 @@ namespace ProjectC.Editor
             BiomeProfile andeanBio = AssetDatabase.LoadAssetAtPath<BiomeProfile>($"{BIOME_PROFILES_PATH}/Biome_Andean.asset");
             BiomeProfile alaskanBio = AssetDatabase.LoadAssetAtPath<BiomeProfile>($"{BIOME_PROFILES_PATH}/Biome_Alaskan.asset");
 
+            // ⚠️ Y координаты в РЕАЛЬНЫХ МЕТРАХ (НЕ scaled!)
+            // XZ — в игровом масштабе (1:2000)
+            // Радиусы увеличены: покрывают все пики + запас для хребтов
             CreateMountainMassif("HimalayanMassif", "himalayan", "Гималайский массив",
-                new Vector3(0, 88.48f, 0), 2000f, himalayanBio);
+                new Vector3(0, 8848f, 0), 3000f, himalayanBio);
 
             CreateMountainMassif("AlpineMassif", "alpine", "Альпийский массив",
-                new Vector3(-1310, 48.08f, 2810), 1200f, alpineBio);
+                new Vector3(-1310, 4808f, 2810), 1500f, alpineBio);
 
             CreateMountainMassif("AfricanMassif", "african", "Африканский массив",
-                new Vector3(-1881, 58.95f, -3010), 800f, africanBio);
+                new Vector3(-1881, 5895f, -3010), 1000f, africanBio);
 
             CreateMountainMassif("AndeanMassif", "andean", "Андийский массив",
-                new Vector3(-4176, 69.62f, -2110), 1500f, andeanBio);
+                new Vector3(-4176, 6962f, -2110), 2500f, andeanBio);
 
             CreateMountainMassif("AlaskanMassif", "alaskan", "Аляскинский массив",
-                new Vector3(1255, 61.90f, 4685), 1000f, alaskanBio);
+                new Vector3(1255, 6190f, 4685), 1500f, alaskanBio);
 
             Debug.Log("[WorldAssetCreator] 5 MountainMassif ассетов созданы");
         }
@@ -263,7 +266,7 @@ namespace ProjectC.Editor
                 worldData.massifs.Add(AssetDatabase.LoadAssetAtPath<MountainMassif>($"{MASSIFS_PATH}/AlaskanMassif.asset"));
 
                 // Завеса
-                worldData.veilHeight = 12.0f;
+                worldData.veilHeight = 1200f;
                 worldData.veilColor = HexColor("#2d1b4e");
                 worldData.veilFogDensity = 0.003f;
 

@@ -10,9 +10,9 @@ namespace ProjectC.Core
     public class WorldGenerationSettings : ScriptableObject
     {
         [Header("🌍 Масштаб мира")]
-        [Tooltip("Радиус мира (масштаб ~Земли)")]
-        [Range(1000f, 50000f)]
-        public float worldRadius = 10000f;
+        [Tooltip("Радиус мира (масштаб ~Земли, до 350,000 units)")]
+        [Range(1000f, 500000f)]
+        public float worldRadius = 350000f;
         
         [Tooltip("Количество горных пиков (точек интереса)")]
         [Range(5, 50)]

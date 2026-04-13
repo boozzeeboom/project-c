@@ -89,6 +89,7 @@ namespace ProjectC.Editor
             // A3 ФИНАЛ: baseRadius увеличен для нормального h/r
             // meshHeight = baseRadius * 1.5 (Tectonic) * 1.2 (MainCity) = baseRadius * 1.8
             // Для h/r = 1.8: baseRadius = 250 → meshHeight = 450
+            // XZ ×50 для масштабирования к реальным расстояниям
             massif.peaks.Add(CreatePeak(
                 "everest", "Эверест", PeakRole.MainCity, PeakShapeType.Tectonic,
                 new Vector3(0, 88.48f, 0), 8848, 250,
@@ -99,7 +100,7 @@ namespace ProjectC.Editor
             // Лхоцзе
             massif.peaks.Add(CreatePeak(
                 "lhoteze", "Лхоцзе", PeakRole.Military, PeakShapeType.Tectonic,
-                new Vector3(600, 72.00f, -400), 8516, 200,
+                new Vector3(30000, 72.00f, -20000), 8516, 200,
                 hasSnowCap: true, snowLineY: 55.00f, hasCrater: false,
                 rockColor: new Color(0.33f, 0.33f, 0.33f)
             ));
@@ -107,7 +108,7 @@ namespace ProjectC.Editor
             // Макалу
             massif.peaks.Add(CreatePeak(
                 "makalu", "Макалу", PeakRole.Navigation, PeakShapeType.Tectonic,
-                new Vector3(1200, 70.00f, 300), 8485, 180,
+                new Vector3(60000, 70.00f, 15000), 8485, 180,
                 hasSnowCap: true, snowLineY: 55.00f, hasCrater: false,
                 rockColor: new Color(0.34f, 0.34f, 0.34f)
             ));
@@ -115,7 +116,7 @@ namespace ProjectC.Editor
             // Чо-Ойю
             massif.peaks.Add(CreatePeak(
                 "cho_oyu", "Чо-Ойю", PeakRole.Farm, PeakShapeType.Tectonic,
-                new Vector3(-800, 65.00f, 600), 8188, 170,
+                new Vector3(-40000, 65.00f, 30000), 8188, 170,
                 hasSnowCap: true, snowLineY: 55.00f, hasCrater: false,
                 rockColor: new Color(0.36f, 0.36f, 0.36f)
             ));
@@ -123,7 +124,7 @@ namespace ProjectC.Editor
             // Шишапангма
             massif.peaks.Add(CreatePeak(
                 "shishapangma", "Шишапангма", PeakRole.Abandoned, PeakShapeType.Tectonic,
-                new Vector3(-1400, 62.00f, 900), 8027, 160,
+                new Vector3(-70000, 62.00f, 45000), 8027, 160,
                 hasSnowCap: true, snowLineY: 55.00f, hasCrater: false,
                 rockColor: new Color(0.32f, 0.32f, 0.32f)
             ));
@@ -131,7 +132,7 @@ namespace ProjectC.Editor
             // Пик Северный
             massif.peaks.Add(CreatePeak(
                 "peak_north", "Пик Северный", PeakRole.Farm, PeakShapeType.Tectonic,
-                new Vector3(200, 55.00f, 1200), 5500, 130,
+                new Vector3(10000, 55.00f, 60000), 5500, 130,
                 hasSnowCap: false, snowLineY: 50.00f, hasCrater: false,
                 rockColor: new Color(0.38f, 0.38f, 0.38f)
             ));
@@ -139,7 +140,7 @@ namespace ProjectC.Editor
             // Пик Южный
             massif.peaks.Add(CreatePeak(
                 "peak_south", "Пик Южный", PeakRole.Farm, PeakShapeType.Tectonic,
-                new Vector3(-300, 50.00f, -1000), 5000, 100,
+                new Vector3(-15000, 50.00f, -50000), 5000, 100,
                 hasSnowCap: false, snowLineY: 50.00f, hasCrater: false,
                 rockColor: new Color(0.37f, 0.37f, 0.37f)
             ));
@@ -147,12 +148,12 @@ namespace ProjectC.Editor
             // Пик Восточный
             massif.peaks.Add(CreatePeak(
                 "peak_east", "Пик Восточный", PeakRole.Military, PeakShapeType.Tectonic,
-                new Vector3(1500, 45.00f, -200), 4500, 140,
+                new Vector3(75000, 45.00f, -10000), 4500, 140,
                 hasSnowCap: false, snowLineY: 50.00f, hasCrater: false,
                 rockColor: new Color(0.36f, 0.36f, 0.36f)
             ));
 
-            massif.massifRadius = 3000;
+            massif.massifRadius = 150000; // ×50 от 3000
             EditorUtility.SetDirty(massif);
             AssetDatabase.SaveAssets();
 
@@ -173,7 +174,7 @@ namespace ProjectC.Editor
             // Монблан (Главный)
             massif.peaks.Add(CreatePeak(
                 "montblanc", "Монблан", PeakRole.MainCity, PeakShapeType.Tectonic,
-                new Vector3(-1310, 48.08f, 2810), 4808, 180,
+                new Vector3(-65500, 48.08f, 140500), 4808, 180,
                 hasSnowCap: true, snowLineY: 35.00f, hasCrater: false,
                 rockColor: new Color(0.54f, 0.54f, 0.48f)
             ));
@@ -181,7 +182,7 @@ namespace ProjectC.Editor
             // Гранд-Жорасс
             massif.peaks.Add(CreatePeak(
                 "grandes_jorasses", "Гранд-Жорасс", PeakRole.Military, PeakShapeType.Tectonic,
-                new Vector3(-900, 42.00f, 3100), 4208, 130,
+                new Vector3(-45000, 42.00f, 155000), 4208, 130,
                 hasSnowCap: true, snowLineY: 35.00f, hasCrater: false,
                 rockColor: new Color(0.52f, 0.52f, 0.46f)
             ));
@@ -189,7 +190,7 @@ namespace ProjectC.Editor
             // Маттерхорн
             massif.peaks.Add(CreatePeak(
                 "matterhorn", "Маттерхорн", PeakRole.Military, PeakShapeType.Tectonic,
-                new Vector3(-600, 40.00f, 2400), 4478, 140,
+                new Vector3(-30000, 40.00f, 120000), 4478, 140,
                 hasSnowCap: true, snowLineY: 35.00f, hasCrater: false,
                 rockColor: new Color(0.53f, 0.53f, 0.47f)
             ));
@@ -197,7 +198,7 @@ namespace ProjectC.Editor
             // Финстераархорн
             massif.peaks.Add(CreatePeak(
                 "finsteraarhorn", "Финстераархорн", PeakRole.Abandoned, PeakShapeType.Tectonic,
-                new Vector3(-1000, 38.00f, 3500), 4274, 150,
+                new Vector3(-50000, 38.00f, 175000), 4274, 150,
                 hasSnowCap: true, snowLineY: 35.00f, hasCrater: false,
                 rockColor: new Color(0.51f, 0.51f, 0.45f)
             ));
@@ -205,7 +206,7 @@ namespace ProjectC.Editor
             // Вайсхорн
             massif.peaks.Add(CreatePeak(
                 "weisshorn", "Вайсхорн", PeakRole.Farm, PeakShapeType.Tectonic,
-                new Vector3(-1800, 40.00f, 2500), 4506, 120,
+                new Vector3(-90000, 40.00f, 125000), 4506, 120,
                 hasSnowCap: true, snowLineY: 35.00f, hasCrater: false,
                 rockColor: new Color(0.55f, 0.55f, 0.49f)
             ));
@@ -213,12 +214,12 @@ namespace ProjectC.Editor
             // Пик ЮЗ
             massif.peaks.Add(CreatePeak(
                 "peak_sw", "Пик ЮЗ", PeakRole.Abandoned, PeakShapeType.Tectonic,
-                new Vector3(-1700, 35.00f, 2200), 3500, 90,
+                new Vector3(-85000, 35.00f, 110000), 3500, 90,
                 hasSnowCap: false, snowLineY: 30.00f, hasCrater: false,
                 rockColor: new Color(0.50f, 0.50f, 0.44f)
             ));
 
-            massif.massifRadius = 1500;
+            massif.massifRadius = 75000; // ×50 от 1500
             EditorUtility.SetDirty(massif);
             AssetDatabase.SaveAssets();
 
@@ -239,7 +240,7 @@ namespace ProjectC.Editor
             // Кибо (Главный)
             massif.peaks.Add(CreatePeak(
                 "kibo", "Кибо", PeakRole.MainCity, PeakShapeType.Volcanic,
-                new Vector3(-1881, 58.95f, -3010), 5895, 220,
+                new Vector3(-94050, 58.95f, -150500), 5895, 220,
                 hasSnowCap: true, snowLineY: 45.00f, hasCrater: true,
                 rockColor: new Color(0.48f, 0.35f, 0.29f)
             ));
@@ -247,7 +248,7 @@ namespace ProjectC.Editor
             // Мавензи
             massif.peaks.Add(CreatePeak(
                 "mawenzi", "Мавензи", PeakRole.Navigation, PeakShapeType.Volcanic,
-                new Vector3(-1400, 48.00f, -2800), 5149, 160,
+                new Vector3(-70000, 48.00f, -140000), 5149, 160,
                 hasSnowCap: false, snowLineY: 45.00f, hasCrater: false,
                 rockColor: new Color(0.46f, 0.33f, 0.27f)
             ));
@@ -255,7 +256,7 @@ namespace ProjectC.Editor
             // Шира
             massif.peaks.Add(CreatePeak(
                 "shira", "Шира", PeakRole.Farm, PeakShapeType.Volcanic,
-                new Vector3(-2300, 35.00f, -3200), 3962, 120,
+                new Vector3(-115000, 35.00f, -160000), 3962, 120,
                 hasSnowCap: false, snowLineY: 40.00f, hasCrater: false,
                 rockColor: new Color(0.44f, 0.31f, 0.25f)
             ));
@@ -263,12 +264,12 @@ namespace ProjectC.Editor
             // Пик Восточный
             massif.peaks.Add(CreatePeak(
                 "peak_east", "Пик Восточный", PeakRole.Navigation, PeakShapeType.Dome,
-                new Vector3(-1200, 30.00f, -2600), 3000, 100,
+                new Vector3(-60000, 30.00f, -130000), 3000, 100,
                 hasSnowCap: false, snowLineY: 35.00f, hasCrater: false,
                 rockColor: new Color(0.42f, 0.29f, 0.23f)
             ));
 
-            massif.massifRadius = 1000;
+            massif.massifRadius = 50000; // ×50 от 1000
             EditorUtility.SetDirty(massif);
             AssetDatabase.SaveAssets();
 
@@ -289,7 +290,7 @@ namespace ProjectC.Editor
             // Аконкагуа (Главный)
             massif.peaks.Add(CreatePeak(
                 "aconcagua", "Аконкагуа", PeakRole.MainCity, PeakShapeType.Tectonic,
-                new Vector3(-4176, 69.62f, -2110), 6962, 280,
+                new Vector3(-208800, 69.62f, -105500), 6962, 280,
                 hasSnowCap: true, snowLineY: 50.00f, hasCrater: false,
                 rockColor: new Color(0.42f, 0.35f, 0.29f)
             ));
@@ -297,7 +298,7 @@ namespace ProjectC.Editor
             // Охос-дель-Саладо
             massif.peaks.Add(CreatePeak(
                 "ojos_del_salado", "Охос-дель-Саладо", PeakRole.Navigation, PeakShapeType.Tectonic,
-                new Vector3(-3600, 58.00f, -1400), 6893, 180,
+                new Vector3(-180000, 58.00f, -70000), 6893, 180,
                 hasSnowCap: true, snowLineY: 50.00f, hasCrater: false,
                 rockColor: new Color(0.40f, 0.33f, 0.27f)
             ));
@@ -305,7 +306,7 @@ namespace ProjectC.Editor
             // Невадо-Трес-Крусес
             massif.peaks.Add(CreatePeak(
                 "nevado_tres_cruces", "Невадо-Трес-Крусес", PeakRole.Navigation, PeakShapeType.Tectonic,
-                new Vector3(-3400, 52.00f, -1000), 6748, 160,
+                new Vector3(-170000, 52.00f, -50000), 6748, 160,
                 hasSnowCap: true, snowLineY: 50.00f, hasCrater: false,
                 rockColor: new Color(0.41f, 0.34f, 0.28f)
             ));
@@ -313,7 +314,7 @@ namespace ProjectC.Editor
             // Пик Северный
             massif.peaks.Add(CreatePeak(
                 "peak_north", "Пик Северный", PeakRole.Farm, PeakShapeType.Tectonic,
-                new Vector3(-4500, 55.00f, -1200), 5500, 140,
+                new Vector3(-225000, 55.00f, -60000), 5500, 140,
                 hasSnowCap: false, snowLineY: 45.00f, hasCrater: false,
                 rockColor: new Color(0.43f, 0.36f, 0.30f)
             ));
@@ -321,7 +322,7 @@ namespace ProjectC.Editor
             // Пик Южный
             massif.peaks.Add(CreatePeak(
                 "peak_south", "Пик Южный", PeakRole.Navigation, PeakShapeType.Tectonic,
-                new Vector3(-4000, 48.00f, -2800), 4800, 120,
+                new Vector3(-200000, 48.00f, -140000), 4800, 120,
                 hasSnowCap: false, snowLineY: 45.00f, hasCrater: false,
                 rockColor: new Color(0.39f, 0.32f, 0.26f)
             ));
@@ -329,12 +330,12 @@ namespace ProjectC.Editor
             // Пик Западный
             massif.peaks.Add(CreatePeak(
                 "peak_west", "Пик Западный", PeakRole.Abandoned, PeakShapeType.Tectonic,
-                new Vector3(-5200, 42.00f, -2400), 4200, 100,
+                new Vector3(-260000, 42.00f, -120000), 4200, 100,
                 hasSnowCap: false, snowLineY: 40.00f, hasCrater: false,
                 rockColor: new Color(0.38f, 0.31f, 0.25f)
             ));
 
-            massif.massifRadius = 2500;
+            massif.massifRadius = 125000; // ×50 от 2500
             EditorUtility.SetDirty(massif);
             AssetDatabase.SaveAssets();
 
@@ -355,7 +356,7 @@ namespace ProjectC.Editor
             // Денали (Главный)
             massif.peaks.Add(CreatePeak(
                 "denali", "Денали", PeakRole.MainCity, PeakShapeType.Isolated,
-                new Vector3(1255, 61.90f, 4685), 6190, 250,
+                new Vector3(62750, 61.90f, 234250), 6190, 250,
                 hasSnowCap: true, snowLineY: 45.00f, hasCrater: false,
                 rockColor: new Color(0.29f, 0.29f, 0.29f)
             ));
@@ -363,7 +364,7 @@ namespace ProjectC.Editor
             // Форакер
             massif.peaks.Add(CreatePeak(
                 "foraker", "Форакер", PeakRole.Navigation, PeakShapeType.Dome,
-                new Vector3(700, 52.00f, 4200), 5304, 160,
+                new Vector3(35000, 52.00f, 210000), 5304, 160,
                 hasSnowCap: true, snowLineY: 45.00f, hasCrater: false,
                 rockColor: new Color(0.30f, 0.30f, 0.30f)
             ));
@@ -371,7 +372,7 @@ namespace ProjectC.Editor
             // Хантер
             massif.peaks.Add(CreatePeak(
                 "hunter", "Хантер", PeakRole.Navigation, PeakShapeType.Tectonic,
-                new Vector3(1700, 42.00f, 4500), 4442, 120,
+                new Vector3(85000, 42.00f, 225000), 4442, 120,
                 hasSnowCap: true, snowLineY: 40.00f, hasCrater: false,
                 rockColor: new Color(0.28f, 0.28f, 0.28f)
             ));
@@ -379,7 +380,7 @@ namespace ProjectC.Editor
             // Пик СЗ
             massif.peaks.Add(CreatePeak(
                 "peak_nw", "Пик СЗ", PeakRole.Farm, PeakShapeType.Dome,
-                new Vector3(500, 40.00f, 5200), 4000, 100,
+                new Vector3(25000, 40.00f, 260000), 4000, 100,
                 hasSnowCap: false, snowLineY: 35.00f, hasCrater: false,
                 rockColor: new Color(0.31f, 0.31f, 0.31f)
             ));
@@ -387,12 +388,12 @@ namespace ProjectC.Editor
             // Пик Восточный
             massif.peaks.Add(CreatePeak(
                 "peak_east", "Пик Восточный", PeakRole.Navigation, PeakShapeType.Tectonic,
-                new Vector3(2200, 35.00f, 4800), 3500, 110,
+                new Vector3(110000, 35.00f, 240000), 3500, 110,
                 hasSnowCap: false, snowLineY: 35.00f, hasCrater: false,
                 rockColor: new Color(0.27f, 0.27f, 0.27f)
             ));
 
-            massif.massifRadius = 1500;
+            massif.massifRadius = 75000; // ×50 от 1500
             EditorUtility.SetDirty(massif);
             AssetDatabase.SaveAssets();
 

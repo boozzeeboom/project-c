@@ -16,13 +16,13 @@ MonoBehaviour:
   displayName: "\u0410\u0444\u0440\u0438\u043A\u0430\u043D\u0441\u043A\u0438\u0439
     \u043C\u0430\u0441\u0441\u0438\u0432"
   centerPosition: {x: -1881, y: 5895, z: -3010}
-  massifRadius: 1000
+  massifRadius: 50000
   biomeProfile: {fileID: 11400000, guid: d1ce89ee89bdca64293be4b23e185d55, type: 2}
   peaks:
   - peakId: kibo
     displayName: "\u041A\u0438\u0431\u043E"
     role: 0
-    worldPosition: {x: -1881, y: 58.95, z: -3010}
+    worldPosition: {x: -94050, y: 58.95, z: -150500}
     realHeightMeters: 5895
     shapeType: 1
     baseRadius: 220
@@ -116,7 +116,7 @@ MonoBehaviour:
   - peakId: mawenzi
     displayName: "\u041C\u0430\u0432\u0435\u043D\u0437\u0438"
     role: 5
-    worldPosition: {x: -1400, y: 48, z: -2800}
+    worldPosition: {x: -70000, y: 48, z: -140000}
     realHeightMeters: 5149
     shapeType: 1
     baseRadius: 160
@@ -210,7 +210,7 @@ MonoBehaviour:
   - peakId: shira
     displayName: "\u0428\u0438\u0440\u0430"
     role: 2
-    worldPosition: {x: -2300, y: 35, z: -3200}
+    worldPosition: {x: -115000, y: 35, z: -160000}
     realHeightMeters: 3962
     shapeType: 1
     baseRadius: 120
@@ -304,7 +304,7 @@ MonoBehaviour:
   - peakId: peak_east
     displayName: "\u041F\u0438\u043A \u0412\u043E\u0441\u0442\u043E\u0447\u043D\u044B\u0439"
     role: 5
-    worldPosition: {x: -1200, y: 30, z: -2600}
+    worldPosition: {x: -60000, y: 30, z: -130000}
     realHeightMeters: 3000
     shapeType: 2
     baseRadius: 100

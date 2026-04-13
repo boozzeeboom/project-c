@@ -3,6 +3,7 @@ using UnityEngine.InputSystem;
 using UnityEngine.UI;
 using TMPro;
 using ProjectC.UI;
+using ProjectC.World.Core;
 
 namespace ProjectC.Core
 {
@@ -63,6 +64,7 @@ namespace ProjectC.Core
         private bool isTeleporting = false;
         private Vector3 teleportTarget = Vector3.zero;
         private WorldGenerator worldGenerator;
+        private FloatingOrigin floatingOrigin;
 
         // Input System — программно созданные действия
         private InputAction _moveAction;
@@ -81,6 +83,28 @@ namespace ProjectC.Core
 
         private void Awake()
         {
+            // КРИТИЧНО: Far Clip Plane для бесшовного мира 350,000 units
+            Camera cam = GetComponent<Camera>();
+            if (cam != null)
+            {
+                cam.farClipPlane = 1000000f; // 1 million units - covers entire world
+                cam.nearClipPlane = 0.5f; // Slightly increased to reduce z-fighting
+
+                // АВТОМАТИЧЕСКИ добавляем FloatingOrigin если его нет
+                floatingOrigin = GetComponent<FloatingOrigin>();
+                if (floatingOrigin == null)
+                {
+                    floatingOrigin = gameObject.AddComponent<FloatingOrigin>();
+                }
+
+                // Автоматически находим worldRoot при старте
+                floatingOrigin.worldRoot = FindWorldRoot();
+                floatingOrigin.threshold = 100000f;
+                floatingOrigin.showDebugLogs = true; // Включено для отладки телепортации
+
+                Debug.Log($"[WorldCamera] FloatingOrigin initialized. worldRoot={floatingOrigin.worldRoot?.name ?? "NULL"}");
+            }
+
             // Принудительно устанавливаем высоту облаков, если значение слишком большое
             if (startHeight > 1000f)
             {
@@ -196,6 +220,44 @@ namespace ProjectC.Core
 
             // Создаём UI подсказок автоматически, если нет на сцене
             CreateControlHintsUI();
+        }
+
+        /// <summary>
+        /// Найти корневой объект мира для FloatingOrigin.
+        /// Ищет "Mountains" или любой объект с множеством детей.
+        /// </summary>
+        private Transform FindWorldRoot()
+        {
+            // 1. Пробуем найти "Mountains"
+            GameObject mountains = GameObject.Find("Mountains");
+            if (mountains != null && mountains.transform.childCount > 0)
+            {
+                Debug.Log($"[WorldCamera] Found Mountains root with {mountains.transform.childCount} children");
+                return mountains.transform;
+            }
+
+            // 2. Ищем любой объект с большим количеством детей
+            GameObject[] allObjects = FindObjectsByType<GameObject>(FindObjectsInactive.Include);
+            Transform bestRoot = null;
+            int maxChildren = 0;
+
+            foreach (var obj in allObjects)
+            {
+                if (obj.transform.childCount > maxChildren && obj.transform.parent == null)
+                {
+                    maxChildren = obj.transform.childCount;
+                    bestRoot = obj.transform;
+                }
+            }
+
+            if (bestRoot != null && maxChildren > 5)
+            {
+                Debug.Log($"[WorldCamera] Using {bestRoot.name} as world root ({maxChildren} children)");
+                return bestRoot;
+            }
+
+            Debug.LogWarning("[WorldCamera] Cannot find world root! FloatingOrigin may not work properly.");
+            return null;
         }
 
         /// <summary>
@@ -428,6 +490,10 @@ namespace ProjectC.Core
 
         /// <summary>
         /// Телепортация к пику по индексу
+        /// КРИТИЧНО: Правильный порядок для больших миров:
+        /// 1. Телепортировать камеру к пику (в мировые координаты)
+        /// 2. Сдвинуть ВЕСЬ мир так чтобы камера оказалась рядом с origin
+        /// Это предотвращает floating point precision проблемы.
         /// </summary>
         public void TeleportToPeak(int peakIndex)
         {
@@ -441,9 +507,34 @@ namespace ProjectC.Core
             if (peakIndex >= 0 && peakIndex < peaks.Count)
             {
                 var peak = peaks[peakIndex];
-                teleportTarget = peak.position + Vector3.up * (peak.height * 0.5f);
-                transform.position = teleportTarget;
+
+                // Шаг 1: Телепортировать камеру к пику (в абсолютные мировые координаты)
+                Vector3 targetWorldPos = peak.position + Vector3.up * (peak.height * 0.5f);
+                transform.position = targetWorldPos;
+                teleportTarget = targetWorldPos;
                 isTeleporting = false;
+
+                // Шаг 2: Сдвинуть ВЕСЬ мир так чтобы камера оказалась рядом с origin
+                // FloatingOrigin возьмёт текущую позицию камеры и сдвинет мир
+                if (floatingOrigin != null)
+                {
+                    floatingOrigin.ResetOrigin();
+                }
+
+                // Шаг 3: Логирование для отладки
+                if (floatingOrigin != null && floatingOrigin.showDebugLogs)
+                {
+                    float distFromOrigin = transform.position.magnitude;
+                    Debug.Log($"[WorldCamera] Teleported to {peak.name}. " +
+                              $"cameraPos={transform.position:F0}, distFromOrigin={distFromOrigin:F0}");
+
+                    if (distFromOrigin > 100000f)
+                    {
+                        Debug.LogWarning($"[WorldCamera] Camera is still far from origin! " +
+                                        $"FloatingOrigin may not be working correctly. " +
+                                        $"worldRoot={floatingOrigin.worldRoot?.name ?? "NULL"}");
+                    }
+                }
             }
         }
 

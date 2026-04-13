@@ -15,13 +15,13 @@ MonoBehaviour:
   massifId: alpine
   displayName: "\u0410\u043B\u044C\u043F\u0438\u0439\u0441\u043A\u0438\u0439 \u043C\u0430\u0441\u0441\u0438\u0432"
   centerPosition: {x: -1310, y: 4808, z: 2810}
-  massifRadius: 1500
+  massifRadius: 75000
   biomeProfile: {fileID: 11400000, guid: a855fe384e0f56542afeb583f83d7708, type: 2}
   peaks:
   - peakId: montblanc
     displayName: "\u041C\u043E\u043D\u0431\u043B\u0430\u043D"
     role: 0
-    worldPosition: {x: -1310, y: 48.08, z: 2810}
+    worldPosition: {x: -65500, y: 48.08, z: 140500}
     realHeightMeters: 4808
     shapeType: 0
     baseRadius: 180
@@ -115,7 +115,7 @@ MonoBehaviour:
   - peakId: grandes_jorasses
     displayName: "\u0413\u0440\u0430\u043D\u0434-\u0416\u043E\u0440\u0430\u0441\u0441"
     role: 3
-    worldPosition: {x: -900, y: 42, z: 3100}
+    worldPosition: {x: -45000, y: 42, z: 155000}
     realHeightMeters: 4208
     shapeType: 0
     baseRadius: 130
@@ -209,7 +209,7 @@ MonoBehaviour:
   - peakId: matterhorn
     displayName: "\u041C\u0430\u0442\u0442\u0435\u0440\u0445\u043E\u0440\u043D"
     role: 3
-    worldPosition: {x: -600, y: 40, z: 2400}
+    worldPosition: {x: -30000, y: 40, z: 120000}
     realHeightMeters: 4478
     shapeType: 0
     baseRadius: 140
@@ -303,7 +303,7 @@ MonoBehaviour:
   - peakId: finsteraarhorn
     displayName: "\u0424\u0438\u043D\u0441\u0442\u0435\u0440\u0430\u0430\u0440\u0445\u043E\u0440\u043D"
     role: 4
-    worldPosition: {x: -1000, y: 38, z: 3500}
+    worldPosition: {x: -50000, y: 38, z: 175000}
     realHeightMeters: 4274
     shapeType: 0
     baseRadius: 150
@@ -397,7 +397,7 @@ MonoBehaviour:
   - peakId: weisshorn
     displayName: "\u0412\u0430\u0439\u0441\u0445\u043E\u0440\u043D"
     role: 2
-    worldPosition: {x: -1800, y: 40, z: 2500}
+    worldPosition: {x: -90000, y: 40, z: 125000}
     realHeightMeters: 4506
     shapeType: 0
     baseRadius: 120
@@ -491,7 +491,7 @@ MonoBehaviour:
   - peakId: peak_sw
     displayName: "\u041F\u0438\u043A \u042E\u0417"
     role: 4
-    worldPosition: {x: -1700, y: 35, z: 2200}
+    worldPosition: {x: -85000, y: 35, z: 110000}
     realHeightMeters: 3500
     shapeType: 0
     baseRadius: 90

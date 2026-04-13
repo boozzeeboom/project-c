@@ -2,6 +2,7 @@ using UnityEngine;
 using UnityEngine.InputSystem;
 using UnityEngine.UI;
 using TMPro;
+using ProjectC.World.Core;
 
 namespace ProjectC.Core
 {
@@ -77,6 +78,28 @@ namespace ProjectC.Core
 
         private void Awake()
         {
+            // КРИТИЧНО: Far Clip Plane для бесшовного мира 350,000 units
+            Camera cam = GetComponent<Camera>();
+            if (cam != null)
+            {
+                cam.farClipPlane = 1000000f; // 1 million units - covers entire world
+                cam.nearClipPlane = 0.5f; // Slightly increased to reduce z-fighting
+
+                // АВТОМАТИЧЕСКИ добавляем FloatingOrigin если его нет
+                var floatingOrigin = GetComponent<FloatingOrigin>();
+                if (floatingOrigin == null)
+                {
+                    floatingOrigin = gameObject.AddComponent<FloatingOrigin>();
+                }
+
+                // Автоматически находим worldRoot при старте
+                floatingOrigin.worldRoot = FindWorldRoot();
+                floatingOrigin.threshold = 100000f;
+                floatingOrigin.showDebugLogs = false;
+
+                Debug.Log($"[ThirdPersonCamera] FloatingOrigin initialized. worldRoot={floatingOrigin.worldRoot?.name ?? "NULL"}");
+            }
+
             _lookAction = new InputAction("Look", binding: "<Mouse>/delta", expectedControlType: "Vector2");
         }
 
@@ -197,6 +220,40 @@ namespace ProjectC.Core
 
             transform.position = target.position + dir * _currentDistance + Vector3.up * _currentHeight;
             transform.LookAt(target.position + Vector3.up * 1.5f);
+        }
+
+        /// <summary>
+        /// Найти корневой объект мира для FloatingOrigin.
+        /// </summary>
+        private Transform FindWorldRoot()
+        {
+            // 1. Пробуем найти "Mountains"
+            GameObject mountains = GameObject.Find("Mountains");
+            if (mountains != null && mountains.transform.childCount > 0)
+            {
+                return mountains.transform;
+            }
+
+            // 2. Ищем любой объект с большим количеством детей
+            GameObject[] allObjects = FindObjectsByType<GameObject>(FindObjectsInactive.Include);
+            Transform bestRoot = null;
+            int maxChildren = 0;
+
+            foreach (var obj in allObjects)
+            {
+                if (obj.transform.childCount > maxChildren && obj.transform.parent == null)
+                {
+                    maxChildren = obj.transform.childCount;
+                    bestRoot = obj.transform;
+                }
+            }
+
+            if (bestRoot != null && maxChildren > 5)
+            {
+                return bestRoot;
+            }
+
+            return null;
         }
     }
 }

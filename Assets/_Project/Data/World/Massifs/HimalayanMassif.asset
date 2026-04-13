@@ -16,7 +16,7 @@ MonoBehaviour:
   displayName: "\u0413\u0438\u043C\u0430\u043B\u0430\u0439\u0441\u043A\u0438\u0439
     \u043C\u0430\u0441\u0441\u0438\u0432"
   centerPosition: {x: 0, y: 8848, z: 0}
-  massifRadius: 3000
+  massifRadius: 150000
   biomeProfile: {fileID: 11400000, guid: ba69ccfd2f3706540bcc38dbb1a17d40, type: 2}
   peaks:
   - peakId: everest
@@ -116,7 +116,7 @@ MonoBehaviour:
   - peakId: lhoteze
     displayName: "\u041B\u0445\u043E\u0446\u0437\u0435"
     role: 3
-    worldPosition: {x: 600, y: 72, z: -400}
+    worldPosition: {x: 30000, y: 72, z: -20000}
     realHeightMeters: 8516
     shapeType: 0
     baseRadius: 200
@@ -210,7 +210,7 @@ MonoBehaviour:
   - peakId: makalu
     displayName: "\u041C\u0430\u043A\u0430\u043B\u0443"
     role: 5
-    worldPosition: {x: 1200, y: 70, z: 300}
+    worldPosition: {x: 60000, y: 70, z: 15000}
     realHeightMeters: 8485
     shapeType: 0
     baseRadius: 180
@@ -304,7 +304,7 @@ MonoBehaviour:
   - peakId: cho_oyu
     displayName: "\u0427\u043E-\u041E\u0439\u044E"
     role: 2
-    worldPosition: {x: -800, y: 65, z: 600}
+    worldPosition: {x: -40000, y: 65, z: 30000}
     realHeightMeters: 8188
     shapeType: 0
     baseRadius: 170
@@ -398,7 +398,7 @@ MonoBehaviour:
   - peakId: shishapangma
     displayName: "\u0428\u0438\u0448\u0430\u043F\u0430\u043D\u0433\u043C\u0430"
     role: 4
-    worldPosition: {x: -1400, y: 62, z: 900}
+    worldPosition: {x: -70000, y: 62, z: 45000}
     realHeightMeters: 8027
     shapeType: 0
     baseRadius: 160
@@ -492,7 +492,7 @@ MonoBehaviour:
   - peakId: peak_north
     displayName: "\u041F\u0438\u043A \u0421\u0435\u0432\u0435\u0440\u043D\u044B\u0439"
     role: 2
-    worldPosition: {x: 200, y: 55, z: 1200}
+    worldPosition: {x: 10000, y: 55, z: 60000}
     realHeightMeters: 5500
     shapeType: 0
     baseRadius: 130
@@ -586,7 +586,7 @@ MonoBehaviour:
   - peakId: peak_south
     displayName: "\u041F\u0438\u043A \u042E\u0436\u043D\u044B\u0439"
     role: 2
-    worldPosition: {x: -300, y: 50, z: -1000}
+    worldPosition: {x: -15000, y: 50, z: -50000}
     realHeightMeters: 5000
     shapeType: 0
     baseRadius: 100
@@ -680,7 +680,7 @@ MonoBehaviour:
   - peakId: peak_east
     displayName: "\u041F\u0438\u043A \u0412\u043E\u0441\u0442\u043E\u0447\u043D\u044B\u0439"
     role: 3
-    worldPosition: {x: 1500, y: 45, z: -200}
+    worldPosition: {x: 75000, y: 45, z: -10000}
     realHeightMeters: 4500
     shapeType: 0
     baseRadius: 140

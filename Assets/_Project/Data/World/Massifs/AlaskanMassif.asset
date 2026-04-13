@@ -16,13 +16,13 @@ MonoBehaviour:
   displayName: "\u0410\u043B\u044F\u0441\u043A\u0438\u043D\u0441\u043A\u0438\u0439
     \u043C\u0430\u0441\u0441\u0438\u0432"
   centerPosition: {x: 1255, y: 6190, z: 4685}
-  massifRadius: 1500
+  massifRadius: 75000
   biomeProfile: {fileID: 11400000, guid: 8c24ae72f84ce0e4594f07bc25371115, type: 2}
   peaks:
   - peakId: denali
     displayName: "\u0414\u0435\u043D\u0430\u043B\u0438"
     role: 0
-    worldPosition: {x: 1255, y: 61.9, z: 4685}
+    worldPosition: {x: 62750, y: 61.9, z: 234250}
     realHeightMeters: 6190
     shapeType: 3
     baseRadius: 250
@@ -125,7 +125,7 @@ MonoBehaviour:
   - peakId: foraker
     displayName: "\u0424\u043E\u0440\u0430\u043A\u0435\u0440"
     role: 5
-    worldPosition: {x: 700, y: 52, z: 4200}
+    worldPosition: {x: 35000, y: 52, z: 210000}
     realHeightMeters: 5304
     shapeType: 2
     baseRadius: 160
@@ -219,7 +219,7 @@ MonoBehaviour:
   - peakId: hunter
     displayName: "\u0425\u0430\u043D\u0442\u0435\u0440"
     role: 5
-    worldPosition: {x: 1700, y: 42, z: 4500}
+    worldPosition: {x: 85000, y: 42, z: 225000}
     realHeightMeters: 4442
     shapeType: 0
     baseRadius: 120
@@ -313,7 +313,7 @@ MonoBehaviour:
   - peakId: peak_nw
     displayName: "\u041F\u0438\u043A \u0421\u0417"
     role: 2
-    worldPosition: {x: 500, y: 40, z: 5200}
+    worldPosition: {x: 25000, y: 40, z: 260000}
     realHeightMeters: 4000
     shapeType: 2
     baseRadius: 100
@@ -407,7 +407,7 @@ MonoBehaviour:
   - peakId: peak_east
     displayName: "\u041F\u0438\u043A \u0412\u043E\u0441\u0442\u043E\u0447\u043D\u044B\u0439"
     role: 5
-    worldPosition: {x: 2200, y: 35, z: 4800}
+    worldPosition: {x: 110000, y: 35, z: 240000}
     realHeightMeters: 3500
     shapeType: 0
     baseRadius: 110

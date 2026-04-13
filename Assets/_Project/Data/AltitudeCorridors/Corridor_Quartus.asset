@@ -14,8 +14,8 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::ProjectC.Ship.AltitudeCorridorData
   corridorId: Quartus
   displayName: Quartus City
-  minAltitude: 1500
-  maxAltitude: 1850
+  minAltitude: 4000
+  maxAltitude: 7000
   warningMargin: 100
   criticalUpperMargin: 200
   isGlobal: 0

@@ -15,7 +15,7 @@ MonoBehaviour:
   corridorId: Global
   displayName: Global Corridor
   minAltitude: 1200
-  maxAltitude: 4450
+  maxAltitude: 9500
   warningMargin: 100
   criticalUpperMargin: 200
   isGlobal: 1

@@ -15,7 +15,7 @@ MonoBehaviour:
   corridorId: Primus
   displayName: Primus City
   minAltitude: 4100
-  maxAltitude: 4450
+  maxAltitude: 9500
   warningMargin: 100
   criticalUpperMargin: 200
   isGlobal: 0

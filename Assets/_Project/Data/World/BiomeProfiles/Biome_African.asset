@@ -1,0 +1,27 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 78c26ce5f46b8fc49b0f20c42193df26, type: 3}
+  m_Name: Biome_African
+  m_EditorClassIdentifier: Assembly-CSharp::ProjectC.World.Core.BiomeProfile
+  biomeId: african
+  displayName: "\u0410\u0444\u0440\u0438\u043A\u0430\u043D\u0441\u043A\u0438\u0439"
+  skyColor: {r: 0.5411765, g: 0.47843137, b: 0.41568628, a: 1}
+  atmosphereColor: {r: 0.27058825, g: 0.23921569, b: 0.20784314, a: 0.5}
+  rockColor: {r: 0.47843137, g: 0.3529412, b: 0.2901961, a: 1}
+  snowColor: {r: 0.94, g: 0.94, b: 0.96, a: 1}
+  lightIntensity: 1.1
+  lightColor: {r: 0.9411765, g: 0.8156863, b: 0.627451, a: 1}
+  lightAngle: 35
+  atmosphereDescription: "\u042D\u043A\u0437\u043E\u0442\u0438\u0447\u0435\u0441\u043A\u0438\u0439,
+    \u0442\u0451\u043F\u043B\u044B\u0439 \u2014 \u0442\u0451\u043F\u043B\u044B\u0435
+    \u0442\u043E\u043D\u0430, \u0437\u043E\u043B\u043E\u0442\u0438\u0441\u0442\u043E\u0435
+    \u043E\u0441\u0432\u0435\u0449\u0435\u043D\u0438\u0435"

@@ -1,0 +1,32 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: ef4f1b1b2730efd47a5002235d3bad31, type: 3}
+  m_Name: WorldData
+  m_EditorClassIdentifier: Assembly-CSharp::ProjectC.World.Core.WorldData
+  heightScale: 0.01
+  distanceScale: 0.0005
+  worldMinX: -5500
+  worldMaxX: 2500
+  worldMinZ: -3500
+  worldMaxZ: 5500
+  massifs:
+  - {fileID: 11400000, guid: d9c527fd2daae814195b6694ff82f7e8, type: 2}
+  - {fileID: 11400000, guid: e46842fc34c99774e8f0fefc4788e94c, type: 2}
+  - {fileID: 11400000, guid: 49ee73f6b2244aa48a48fb07ccc6e263, type: 2}
+  - {fileID: 11400000, guid: ff78b1e583314ed4f97f90aaf0c957d7, type: 2}
+  - {fileID: 11400000, guid: 40ff1aca329ad4241ac174f7f7a55692, type: 2}
+  veilHeight: 12
+  veilColor: {r: 0.1764706, g: 0.105882354, b: 0.30588236, a: 1}
+  veilFogDensity: 0.003
+  upperLayerConfig: {fileID: 0}
+  middleLayerConfig: {fileID: 0}
+  lowerLayerConfig: {fileID: 0}

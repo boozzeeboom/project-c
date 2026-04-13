@@ -1,0 +1,26 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: ffa8f7ac87ca1a64fa0d2883a3214cf2, type: 3}
+  m_Name: CloudLayerConfig_Lower
+  m_EditorClassIdentifier: Assembly-CSharp::ProjectC.Core.CloudLayerConfig
+  layerType: 2
+  minHeight: 1500
+  maxHeight: 4000
+  density: 0.8
+  cloudSize: 80
+  sizeVariation: 1.5
+  moveSpeed: 2
+  moveDirection: {x: 1, y: 0, z: 0}
+  animateMorph: 0
+  morphSpeed: 0.5
+  cloudMaterial: {fileID: 2100000, guid: 47ed03bb4ba944f499923625ae0b400e, type: 2}
+  use2DPlanes: 0

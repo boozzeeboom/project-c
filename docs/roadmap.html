@@ -276,6 +276,30 @@
     margin-top: 7px;
     background: var(--future);
   }
+  /* Nested subtasks list inside a task li */
+  .phase__tasks li > ul.phase__subtasks {
+    list-style: none;
+    margin: 6px 0 0 0;
+    padding: 0;
+    width: 100%;
+  }
+  .phase__tasks li > ul.phase__subtasks li {
+    font-size: .84rem;
+    color: var(--text-dim);
+    line-height: 1.45;
+    display: flex;
+    align-items: flex-start;
+    gap: 8px;
+    padding: 2px 0;
+  }
+  .phase__tasks li > ul.phase__subtasks li::before {
+    content: '›';
+    flex-shrink: 0;
+    font-weight: 700;
+    color: var(--text-dim);
+    font-size: .9rem;
+    line-height: 1.5;
+  }
   .phase--done .phase__tasks li::before { background: var(--done); }
   .phase--active .phase__tasks li::before { background: var(--accent); }
 
@@ -284,32 +308,6 @@
     color: var(--text-dim) !important;
   }
   .task--done::before { background: var(--done) !important; }
-
-  /* Sub-items (вложенные списки — подзадачи) */
-  .phase__subtasks {
-    list-style: none;
-    margin-left: 16px;
-    margin-top: 4px;
-    display: flex;
-    flex-direction: column;
-    gap: 4px;
-  }
-  .phase__subtasks li {
-    font-size: .84rem;
-    color: var(--text-dim);
-    line-height: 1.45;
-    display: flex;
-    align-items: flex-start;
-    gap: 8px;
-  }
-  .phase__subtasks li::before {
-    content: '›';
-    flex-shrink: 0;
-    font-weight: 700;
-    color: var(--text-dim);
-    font-size: .9rem;
-    line-height: 1.5;
-  }
 
   /* Progress bar */
   .phase__progress {
@@ -474,6 +472,50 @@
     background: var(--border);
     margin: 24px 0;
   }
+  .md-content__body table {
+    width: 100%;
+    border-collapse: collapse;
+    margin: 16px 0;
+    font-size: .84rem;
+  }
+  .md-content__body th {
+    background: rgba(74,222,128,.08);
+    color: var(--accent);
+    font-weight: 700;
+    text-align: left;
+    padding: 8px 12px;
+    border-bottom: 2px solid var(--border);
+  }
+  .md-content__body td {
+    padding: 6px 12px;
+    border-bottom: 1px solid var(--border);
+    color: var(--text);
+  }
+  .md-content__body tr:last-child td {
+    border-bottom: none;
+  }
+  .md-content__body a {
+    color: var(--accent2);
+    text-decoration: none;
+  }
+  .md-content__body a:hover {
+    text-decoration: underline;
+  }
+  .md-content__body pre {
+    background: rgba(0,0,0,.3);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    padding: 14px 18px;
+    overflow-x: auto;
+    margin: 12px 0;
+  }
+  .md-content__body pre code {
+    background: none;
+    padding: 0;
+    color: var(--text);
+    font-size: .8rem;
+    line-height: 1.6;
+  }
 
   /* ===== PHASE CARD CONTENT NORMALIZATION ===== */
   .phase__result {
@@ -485,6 +527,7 @@
     font-size: .88rem;
     color: var(--text);
     line-height: 1.5;
+    transition: max-height .3s ease, opacity .3s ease, margin .3s ease;
   }
   .phase__result strong {
     color: var(--accent);
@@ -498,6 +541,7 @@
     padding: 6px 12px;
     border-radius: 6px;
     display: inline-block;
+    transition: max-height .3s ease, opacity .3s ease, margin .3s ease;
   }
   .phase__deferred {
     margin-top: 14px;
@@ -507,6 +551,7 @@
     border-radius: 6px;
     font-size: .85rem;
     color: var(--text-dim);
+    transition: max-height .3s ease, opacity .3s ease, margin .3s ease;
   }
   .phase__deferred strong {
     color: var(--warning);
@@ -517,6 +562,7 @@
     background: rgba(56, 189, 248, .04);
     border-radius: 6px;
     font-size: .85rem;
+    transition: max-height .3s ease, opacity .3s ease, margin .3s ease;
   }
   .phase__docs summary {
     cursor: pointer;
@@ -552,6 +598,7 @@
     border-left: 3px solid #f87171;
     border-radius: 6px;
     font-size: .85rem;
+    transition: max-height .3s ease, opacity .3s ease, margin .3s ease;
   }
   .phase__issues summary {
     cursor: pointer;
@@ -1127,6 +1174,19 @@
     overflow: hidden;
     transition: max-height .3s ease, opacity .3s ease, margin .3s ease;
   }
+  /* Also hide special sections when collapsed */
+  .phase--collapsed .phase__result,
+  .phase--collapsed .phase__version,
+  .phase--collapsed .phase__deferred,
+  .phase--collapsed .phase__docs,
+  .phase--collapsed .phase__issues {
+    max-height: 0;
+    opacity: 0;
+    overflow: hidden;
+    margin-top: 0;
+    margin-bottom: 0;
+    transition: max-height .3s ease, opacity .3s ease, margin .3s ease;
+  }
 </style>
 </head>
 <body>
@@ -1427,9 +1487,14 @@
 
     // H2 titles to skip (not development phases)
     const skipTitles = [
-      'Критические риски и меры:',
-      'Инструменты и зависимости:',
-      '📋 Game Design Documents (GDD)',
+      '🚢 Система кораблей',
+      '📋 Game Design Documents',
+    ];
+
+    // H2 titles that go into extra collapsible content (not phase cards)
+    const extraContentTitles = [
+      'Критические риски',
+      'Инструменты и зависимости',
     ];
 
     for (const line of lines) {
@@ -1437,12 +1502,21 @@
         beforeFirstH2 = false;
         const title = line.replace('## ', '').trim();
         
-        // Check if this section should be skipped
-        const shouldSkip = skipTitles.some(skipTitle => 
+        // Check if this section should be skipped entirely
+        const shouldSkip = skipTitles.some(skipTitle =>
           title.includes(skipTitle) || title.toLowerCase().includes(skipTitle.toLowerCase())
         );
-        
-        if (!shouldSkip) {
+
+        // Check if this section should go to extra collapsible content
+        const isExtraContent = extraContentTitles.some(extraTitle =>
+          title.includes(extraTitle) || title.toLowerCase().includes(extraTitle.toLowerCase())
+        );
+
+        if (isExtraContent) {
+          // Treat as extra content — collect lines under a faux H2 header
+          currentSection = { title, lines: [], _isExtra: true };
+          sections.push(currentSection);
+        } else if (!shouldSkip) {
           currentSection = { title, lines: [] };
           sections.push(currentSection);
         } else {
@@ -1455,8 +1529,15 @@
       }
     }
 
-    /* -- Process each H2 section as a phase card -- */
+    /* -- Process each H2 section as a phase card (skip _isExtra sections) -- */
+    let phaseCounter = 0;
     sections.forEach((section, idx) => {
+      // Skip extra content sections — they go to collapsible area
+      if (section._isExtra) return;
+
+      const phaseId = phaseCounter;
+      phaseCounter++;
+
       const titleText = section.title;
       const hasCheck = titleText.includes('✅');
       const hasSpinner = titleText.includes('🔄');
@@ -1469,6 +1550,9 @@
 
       // Clean title
       let cleanTitle = titleText.replace(/✅|🔄|⏳/g, '').trim();
+      // Also clean extra status words that sometimes appear in titles
+      cleanTitle = cleanTitle.replace(/\s*ЗАВЕРШЁН\s*/gi, '').trim();
+      cleanTitle = cleanTitle.replace(/\s*В ПРОЦЕССЕ\s*/gi, '').trim();
       // Extract tag (e.g. "Этап 0: Подготовка окружения" → tag="Этап 0", title="Подготовка окружения")
       const colonIdx = cleanTitle.indexOf(':');
       let tag = '';
@@ -1476,6 +1560,11 @@
       if (colonIdx > 0) {
         tag = cleanTitle.substring(0, colonIdx).trim();
         displayTitle = cleanTitle.substring(colonIdx + 1).trim();
+        // Also clean parenthetical weeks from display title if present
+        const parenClean = displayTitle.replace(/\s*\(Недели[\s\w–-]*\)\s*/gi, '').trim();
+        if (parenClean) {
+          displayTitle = parenClean;
+        }
       } else {
         // Try parenthetical like "Этап 2: Сетевой фундамент (Недели 7-10)"
         const parenMatch = cleanTitle.match(/^(.+?)\s*\((.+?)\)/);
@@ -1508,7 +1597,7 @@
 
         const isDone = raw.startsWith('✅');
         const isFuture = raw.startsWith('⏳');
-        const cleanText = raw.replace(/^(✅|⏳)\s*/, '').trim();
+        const cleanText = raw.replace(/^(✅|⏳)\s*/, '').replace(/^⭐\s*/, '').trim();
         if (!cleanText) continue;
         // Skip category headers
         if (/\*\*.*\*\*\s*:/.test(raw) && raw.split(':').length <= 2 && !raw.includes('—') && !raw.includes('(')) continue;
@@ -1525,7 +1614,7 @@
 
         const isDone = raw.startsWith('✅');
         const isFuture = raw.startsWith('⏳');
-        const cleanText = raw.replace(/^(✅|⏳)\s*/, '').trim();
+        const cleanText = raw.replace(/^(✅|⏳)\s*/, '').replace(/^⭐\s*/, '').trim();
         if (!cleanText) continue;
 
         allTasks.push({ text: cleanText, done: isDone && !isFuture, indent: m[1].length });
@@ -1580,11 +1669,46 @@
       let tasksHtml = '';
 
       if (displayTasks.length > 0) {
-        tasksHtml = '<ul class="phase__tasks">';
-        displayTasks.forEach(t => {
-          tasksHtml += `<li class="${t.done ? 'task--done' : ''}">${escHtml(t.text)}</li>`;
-        });
-        tasksHtml += '</ul>';
+        // Check if we have top-level items to anchor sub-items
+        const topLevelItems = displayTasks.filter(t => t.indent < 2);
+        const hasSubItems = displayTasks.some(t => t.indent >= 2);
+
+        if (hasSubItems && topLevelItems.length > 0) {
+          // Build nested list structure — top-level items with sub-items nested inside
+          tasksHtml = '<ul class="phase__tasks">';
+          displayTasks.forEach((t, i) => {
+            if (t.indent < 2) {
+              // Top-level or mid-level item
+              const isDone = t.done ? 'task--done' : '';
+              tasksHtml += `<li class="${isDone}">${escHtml(t.text)}`;
+
+              // Collect sub-items that follow this item
+              const nextSubs = [];
+              let j = i + 1;
+              while (j < displayTasks.length && displayTasks[j].indent >= 2) {
+                nextSubs.push(displayTasks[j]);
+                j++;
+              }
+              if (nextSubs.length > 0) {
+                tasksHtml += '<ul class="phase__subtasks">';
+                nextSubs.forEach(sub => {
+                  const subDone = sub.done ? 'task--done' : '';
+                  tasksHtml += `<li class="${subDone}">${escHtml(sub.text)}</li>`;
+                });
+                tasksHtml += '</ul>';
+              }
+              tasksHtml += '</li>';
+            }
+          });
+          tasksHtml += '</ul>';
+        } else {
+          // No nesting needed — flat list (either all sub-items or all top-level)
+          tasksHtml = '<ul class="phase__tasks">';
+          displayTasks.forEach(t => {
+            tasksHtml += `<li class="${t.done ? 'task--done' : ''}">${escHtml(t.text)}</li>`;
+          });
+          tasksHtml += '</ul>';
+        }
       }
 
       // Goal: first bold paragraph
@@ -1601,11 +1725,11 @@
       const remainingMatch = sectionText.match(/\*\*Что осталось в Этапе \d+:\*\*\n([\s\S]*?)(?=\n\n|$)/);
       
       // Extract docs list
-      const docsMatch = sectionText.match(/\*\*Документы:\*\*\n([\s\S]*?)(?=\n\n|$)/);
+      const docsMatch = sectionText.match(/\*\*(Документы|Документация):\*\*\n([\s\S]*?)(?=\n\n|$)/);
       const docsListMatch = sectionText.match(/^- [`\[].+$/gm);
       
       // Extract issues
-      const issuesMatch = sectionText.match(/\*\*Известные проблемы[\s\S]*?(?=\n\n|$)/);
+      const issuesMatch = sectionText.match(/\*\*Известные проблемы[\s\S]*?\n([\s\S]*?)(?=\n\n|$)/);
 
       let specialHtml = '';
       
@@ -1618,8 +1742,10 @@
       }
       
       if (deferredMatch) {
-        const cleanDeferred = deferredMatch[0].replace(/>.*?\*\*/,'').trim();
-        specialHtml += `<details class="phase__deferred"><summary><strong>⚠️ Отложено:</strong></summary>${escHtml(cleanDeferred)}</details>`;
+        const rawDeferred = deferredMatch[0].replace(/^>\s*⚠️\s*/m, '').trim();
+        // Convert markdown links to HTML links
+        const withLinks = rawDeferred.replace(/\[(.+?)\]\((.+?)\)/g, '<a href="$2" target="_blank" rel="noopener" style="color:var(--accent2);text-decoration:none;">$1</a>');
+        specialHtml += `<details class="phase__deferred"><summary><strong>⚠️ Отложено / Перенесено:</strong></summary>${escHtml(withLinks).replace(/&lt;a /g, '<a ').replace(/&lt;\/a&gt;/g, '</a>').replace(/&amp;/g, '&')}</details>`;
       }
       
       if (docsMatch || docsListMatch) {
@@ -1627,11 +1753,18 @@
         if (docsListMatch) {
           docsListMatch.forEach(doc => {
             const docText = doc.replace(/^[-*]\s+/, '').trim();
+            // Markdown link: [name](url)
             const linkMatch = docText.match(/\[(.+?)\]\((.+?)\)/);
             if (linkMatch) {
               docsHtml += `<li><a href="${escHtml(linkMatch[2])}" target="_blank" rel="noopener" style="color:var(--accent2);text-decoration:none;">${escHtml(linkMatch[1])}</a></li>`;
             } else {
-              docsHtml += `<li>${escHtml(docText)}</li>`;
+              // Inline code: \`path\` — description
+              const codeMatch = docText.match(/`([^`]+)`\s*[-–—:]\s*(.+)/);
+              if (codeMatch) {
+                docsHtml += `<li><code style="font-family:'Fira Code',monospace;font-size:.78rem;background:rgba(56,189,248,.08);color:var(--accent2);padding:2px 6px;border-radius:3px;">${escHtml(codeMatch[1])}</code> — ${escHtml(codeMatch[2])}</li>`;
+              } else {
+                docsHtml += `<li>${escHtml(docText)}</li>`;
+              }
             }
           });
         }
@@ -1655,9 +1788,9 @@
 
       const card = document.createElement('div');
       card.className = `phase phase--${status}`;
-      card.dataset.delay = idx * 100;
-      card.dataset.phaseId = `phase-${idx}`;
-      card.id = `phase-${idx}`;
+      card.dataset.delay = phaseId * 100;
+      card.dataset.phaseId = `phase-${phaseId}`;
+      card.id = `phase-${phaseId}`;
       
       const toggleSvg = `<div class="phase__toggle"><svg viewBox="0 0 24 24"><path d="M7 10l5 5 5-5z"/></svg></div>`;
       
@@ -1685,10 +1818,8 @@
         card.classList.toggle('phase--collapsed');
       });
       
-      // Auto-collapse future phases
-      if (status === 'future') {
-        card.classList.add('phase--collapsed');
-      }
+      // Collapse ALL phases by default — user expands on click
+      card.classList.add('phase--collapsed');
       
       timelineEl.appendChild(card);
     });
@@ -1696,18 +1827,23 @@
     // Build Summary Navigation
     buildSummaryNav(sections);
 
-    /* -- Extra content (risks, tools, etc.) — split by H2 and make collapsible -- */
-    const extraMd = extraLines.join('\n').trim();
-    if (extraMd) {
-      const extraSections = extraMd.split(/^##\s+(.+)$/gm).slice(1); // [title, content, title, content, ...]
-      for (let i = 0; i < extraSections.length; i += 2) {
-        const title = extraSections[i]?.trim();
-        const content = extraSections[i + 1]?.trim();
-        if (!title) continue;
+    /* -- Extra content (risks, tools, etc.) — use _isExtra sections + legacy extraLines -- */
+    const extraSections = sections.filter(s => s._isExtra);
+
+    // Also handle legacy extraLines (content before first H2 or after last skipped H2)
+    if (extraLines.length > 0 && extraLines.join('\n').trim()) {
+      extraSections.push({ title: 'Дополнительная информация', lines: extraLines, _isExtra: true });
+    }
+
+    if (extraSections.length > 0) {
+      extraSections.forEach((section, i) => {
+        const title = section.title;
+        const content = section.lines.join('\n').trim();
+        if (!content) return;
 
         const extraDiv = document.createElement('div');
         extraDiv.className = 'md-content';
-        extraDiv.dataset.delay = (sections.length + 1 + i / 2) * 100;
+        extraDiv.dataset.delay = (sections.filter(s => !s._isExtra).length + 1 + i) * 100;
 
         const arrowSvg = `<svg class="md-content__arrow" viewBox="0 0 24 24"><path d="M7 10l5 5 5-5z"/></svg>`;
 
@@ -1717,7 +1853,7 @@
             ${arrowSvg}
           </div>
           <div class="md-content__body">
-            ${marked.parse(content || '')}
+            ${marked.parse(content)}
           </div>
         `;
 
@@ -1727,6 +1863,39 @@
         });
 
         extraContentEl.appendChild(extraDiv);
+      });
+    } else {
+      // Fallback: legacy extraMd handling
+      const extraMd = extraLines.join('\n').trim();
+      if (extraMd) {
+        const legacySections = extraMd.split(/^##\s+(.+)$/gm).slice(1);
+        for (let i = 0; i < legacySections.length; i += 2) {
+          const title = legacySections[i]?.trim();
+          const content = legacySections[i + 1]?.trim();
+          if (!title) continue;
+
+          const extraDiv = document.createElement('div');
+          extraDiv.className = 'md-content';
+          extraDiv.dataset.delay = (sections.filter(s => !s._isExtra).length + 1 + i) * 100;
+
+          const arrowSvg = `<svg class="md-content__arrow" viewBox="0 0 24 24"><path d="M7 10l5 5 5-5z"/></svg>`;
+
+          extraDiv.innerHTML = `
+            <div class="md-content__toggle">
+              <h2>${escHtml(title)}</h2>
+              ${arrowSvg}
+            </div>
+            <div class="md-content__body">
+              ${marked.parse(content || '')}
+            </div>
+          `;
+
+          extraDiv.querySelector('.md-content__toggle').addEventListener('click', () => {
+            extraDiv.classList.toggle('md-content--open');
+          });
+
+          extraContentEl.appendChild(extraDiv);
+        }
       }
     }
 
@@ -1743,16 +1912,27 @@
   function buildSummaryNav(sections) {
     const navEl = document.getElementById('summary-nav');
     const gridEl = document.getElementById('summary-grid');
-    
-    if (!sections.length) return;
-    
+
+    // Filter out extra content sections (risks, tools, etc.)
+    const phaseSections = sections.filter(s => !s._isExtra);
+
+    if (!phaseSections.length) return;
+
     navEl.style.display = 'block';
-    
-    // Calculate overall progress across ALL sections
+
+    // Calculate overall progress across ALL phase sections
     let grandTotalTasks = 0;
     let grandDoneTasks = 0;
-    
-    const html = sections.map((section, idx) => {
+
+    const html = phaseSections.map((section, sectionIdx) => {
+      const phaseId = sections.indexOf(section); // won't work directly, need counter
+
+      // Recalculate phaseId: count non-_isExtra sections before this one
+      let actualPhaseId = 0;
+      for (let i = 0; i < sections.length; i++) {
+        if (sections[i] === section) break;
+        if (!sections[i]._isExtra) actualPhaseId++;
+      }
       const titleText = section.title;
       const hasCheck = titleText.includes('✅');
       const hasSpinner = titleText.includes('🔄');
@@ -1762,10 +1942,13 @@
       else if (hasSpinner) status = 'active';
       
       let cleanTitle = titleText.replace(/✅|🔄|⏳/g, '').trim();
+      cleanTitle = cleanTitle.replace(/\s*ЗАВЕРШЁН\s*/gi, '').trim();
+      cleanTitle = cleanTitle.replace(/\s*В ПРОЦЕССЕ\s*/gi, '').trim();
       const colonIdx = cleanTitle.indexOf(':');
       let shortTitle = cleanTitle;
       if (colonIdx > 0) {
         shortTitle = cleanTitle.substring(colonIdx + 1).trim();
+        shortTitle = shortTitle.replace(/\s*\(Недели[\s\w–-]*\)\s*/gi, '').trim();
       }
       
       // Calculate percentage - count ALL tasks from all levels
@@ -1809,7 +1992,7 @@
       const statusClass = status === 'done' ? 'summary-item--done' : status === 'active' ? 'summary-item--active' : '';
       
       return `
-        <a href="#phase-${idx}" class="summary-item ${statusClass}" data-phase="${idx}">
+        <a href="#phase-${actualPhaseId}" class="summary-item ${statusClass}" data-phase="${actualPhaseId}">
           <div class="summary-item__dot"></div>
           <div class="summary-item__info">
             <div class="summary-item__label">${escHtml(shortTitle)}</div>

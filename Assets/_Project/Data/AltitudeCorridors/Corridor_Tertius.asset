@@ -14,8 +14,8 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::ProjectC.Ship.AltitudeCorridorData
   corridorId: Tertius
   displayName: Tertius City
-  minAltitude: 2300
-  maxAltitude: 2600
+  minAltitude: 4500
+  maxAltitude: 8000
   warningMargin: 100
   criticalUpperMargin: 200
   isGlobal: 0

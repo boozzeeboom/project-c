@@ -14,8 +14,8 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::ProjectC.Ship.AltitudeCorridorData
   corridorId: Kilimanjaro
   displayName: Kilimanjaro City
-  minAltitude: 1200
-  maxAltitude: 1550
+  minAltitude: 4000
+  maxAltitude: 6500
   warningMargin: 100
   criticalUpperMargin: 200
   isGlobal: 0

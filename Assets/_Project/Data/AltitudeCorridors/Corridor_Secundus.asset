@@ -14,8 +14,8 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::ProjectC.Ship.AltitudeCorridorData
   corridorId: Secundus
   displayName: Secundus City
-  minAltitude: 1000
-  maxAltitude: 1250
+  minAltitude: 3000
+  maxAltitude: 5500
   warningMargin: 100
   criticalUpperMargin: 200
   isGlobal: 0

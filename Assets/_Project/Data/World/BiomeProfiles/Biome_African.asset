@@ -18,7 +18,7 @@ MonoBehaviour:
   atmosphereColor: {r: 0.27058825, g: 0.23921569, b: 0.20784314, a: 0.5}
   rockColor: {r: 0.47843137, g: 0.3529412, b: 0.2901961, a: 1}
   snowColor: {r: 0.94, g: 0.94, b: 0.96, a: 1}
-  lightIntensity: 1.1
+  lightIntensity: 1
   lightColor: {r: 0.9411765, g: 0.8156863, b: 0.627451, a: 1}
   lightAngle: 35
   atmosphereDescription: "\u042D\u043A\u0437\u043E\u0442\u0438\u0447\u0435\u0441\u043A\u0438\u0439,

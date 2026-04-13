@@ -18,7 +18,486 @@ MonoBehaviour:
   centerPosition: {x: 1255, y: 6190, z: 4685}
   massifRadius: 1500
   biomeProfile: {fileID: 11400000, guid: 8c24ae72f84ce0e4594f07bc25371115, type: 2}
-  peaks: []
+  peaks:
+  - peakId: denali
+    displayName: "\u0414\u0435\u043D\u0430\u043B\u0438"
+    role: 0
+    worldPosition: {x: 1255, y: 61.9, z: 4685}
+    realHeightMeters: 6190
+    shapeType: 3
+    baseRadius: 250
+    meshHeight: 600
+    heightProfile:
+      serializedVersion: 2
+      m_Curve:
+      - serializedVersion: 3
+        time: 0
+        value: 0
+        inSlope: 0.6666666
+        outSlope: 0.6666666
+        tangentMode: 0
+        weightedMode: 0
+        inWeight: 0.33333334
+        outWeight: 0.33333334
+      - serializedVersion: 3
+        time: 0.15
+        value: 0.1
+        inSlope: 0.8333333
+        outSlope: 0.8333333
+        tangentMode: 0
+        weightedMode: 0
+        inWeight: 0.33333334
+        outWeight: 0.33333334
+      - serializedVersion: 3
+        time: 0.3
+        value: 0.25
+        inSlope: 1.125
+        outSlope: 1.125
+        tangentMode: 0
+        weightedMode: 0
+        inWeight: 0.33333334
+        outWeight: 0.33333334
+      - serializedVersion: 3
+        time: 0.5
+        value: 0.5
+        inSlope: 1.2500001
+        outSlope: 1.2500001
+        tangentMode: 0
+        weightedMode: 0
+        inWeight: 0.33333334
+        outWeight: 0.33333334
+      - serializedVersion: 3
+        time: 0.7
+        value: 0.75
+        inSlope: 1.125
+        outSlope: 1.125
+        tangentMode: 0
+        weightedMode: 0
+        inWeight: 0.33333334
+        outWeight: 0.33333334
+      - serializedVersion: 3
+        time: 0.9
+        value: 0.95
+        inSlope: 0.75
+        outSlope: 0.75
+        tangentMode: 0
+        weightedMode: 0
+        inWeight: 0.33333334
+        outWeight: 0.33333334
+      - serializedVersion: 3
+        time: 1
+        value: 1
+        inSlope: 0.5
+        outSlope: 0.5
+        tangentMode: 0
+        weightedMode: 0
+        inWeight: 0.33333334
+        outWeight: 0.33333334
+      m_PreInfinity: 2
+      m_PostInfinity: 2
+      m_RotationOrder: 4
+    keypoints:
+    - normalizedRadius: 0
+      normalizedHeight: 1
+      noiseWeight: 0.1
+    - normalizedRadius: 0.1
+      normalizedHeight: 0.95
+      noiseWeight: 0.2
+    - normalizedRadius: 0.25
+      normalizedHeight: 0.8
+      noiseWeight: 0.4
+    - normalizedRadius: 0.4
+      normalizedHeight: 0.6
+      noiseWeight: 0.6
+    - normalizedRadius: 0.6
+      normalizedHeight: 0.35
+      noiseWeight: 0.8
+    - normalizedRadius: 0.8
+      normalizedHeight: 0.15
+      noiseWeight: 0.5
+    - normalizedRadius: 1
+      normalizedHeight: 0
+      noiseWeight: 0.2
+    rockColor: {r: 0.29, g: 0.29, b: 0.29, a: 1}
+    snowLineY: 45
+    hasSnowCap: 1
+    hasCrater: 0
+  - peakId: foraker
+    displayName: "\u0424\u043E\u0440\u0430\u043A\u0435\u0440"
+    role: 5
+    worldPosition: {x: 700, y: 52, z: 4200}
+    realHeightMeters: 5304
+    shapeType: 2
+    baseRadius: 160
+    meshHeight: 600
+    heightProfile:
+      serializedVersion: 2
+      m_Curve:
+      - serializedVersion: 3
+        time: 0
+        value: 0
+        inSlope: 1.5
+        outSlope: 1.5
+        tangentMode: 0
+        weightedMode: 0
+        inWeight: 0.33333334
+        outWeight: 0.33333334
+      - serializedVersion: 3
+        time: 0.2
+        value: 0.3
+        inSlope: 1.375
+        outSlope: 1.375
+        tangentMode: 0
+        weightedMode: 0
+        inWeight: 0.33333334
+        outWeight: 0.33333334
+      - serializedVersion: 3
+        time: 0.4
+        value: 0.55
+        inSlope: 1.125
+        outSlope: 1.125
+        tangentMode: 0
+        weightedMode: 0
+        inWeight: 0.33333334
+        outWeight: 0.33333334
+      - serializedVersion: 3
+        time: 0.6
+        value: 0.75
+        inSlope: 0.8749999
+        outSlope: 0.8749999
+        tangentMode: 0
+        weightedMode: 0
+        inWeight: 0.33333334
+        outWeight: 0.33333334
+      - serializedVersion: 3
+        time: 0.8
+        value: 0.9
+        inSlope: 0.5
+        outSlope: 0.5
+        tangentMode: 0
+        weightedMode: 0
+        inWeight: 0.33333334
+        outWeight: 0.33333334
+      - serializedVersion: 3
+        time: 1
+        value: 0.95
+        inSlope: 0.2500001
+        outSlope: 0.2500001
+        tangentMode: 0
+        weightedMode: 0
+        inWeight: 0.33333334
+        outWeight: 0.33333334
+      m_PreInfinity: 2
+      m_PostInfinity: 2
+      m_RotationOrder: 4
+    keypoints:
+    - normalizedRadius: 0
+      normalizedHeight: 1
+      noiseWeight: 0.1
+    - normalizedRadius: 0.1
+      normalizedHeight: 0.95
+      noiseWeight: 0.2
+    - normalizedRadius: 0.25
+      normalizedHeight: 0.8
+      noiseWeight: 0.4
+    - normalizedRadius: 0.4
+      normalizedHeight: 0.6
+      noiseWeight: 0.6
+    - normalizedRadius: 0.6
+      normalizedHeight: 0.35
+      noiseWeight: 0.8
+    - normalizedRadius: 0.8
+      normalizedHeight: 0.15
+      noiseWeight: 0.5
+    - normalizedRadius: 1
+      normalizedHeight: 0
+      noiseWeight: 0.2
+    rockColor: {r: 0.3, g: 0.3, b: 0.3, a: 1}
+    snowLineY: 45
+    hasSnowCap: 1
+    hasCrater: 0
+  - peakId: hunter
+    displayName: "\u0425\u0430\u043D\u0442\u0435\u0440"
+    role: 5
+    worldPosition: {x: 1700, y: 42, z: 4500}
+    realHeightMeters: 4442
+    shapeType: 0
+    baseRadius: 120
+    meshHeight: 600
+    heightProfile:
+      serializedVersion: 2
+      m_Curve:
+      - serializedVersion: 3
+        time: 0
+        value: 0
+        inSlope: 0.75
+        outSlope: 0.75
+        tangentMode: 0
+        weightedMode: 0
+        inWeight: 0.33333334
+        outWeight: 0.33333334
+      - serializedVersion: 3
+        time: 0.2
+        value: 0.15
+        inSlope: 0.875
+        outSlope: 0.875
+        tangentMode: 0
+        weightedMode: 0
+        inWeight: 0.33333334
+        outWeight: 0.33333334
+      - serializedVersion: 3
+        time: 0.4
+        value: 0.35
+        inSlope: 1.125
+        outSlope: 1.125
+        tangentMode: 0
+        weightedMode: 0
+        inWeight: 0.33333334
+        outWeight: 0.33333334
+      - serializedVersion: 3
+        time: 0.6
+        value: 0.6
+        inSlope: 1.25
+        outSlope: 1.25
+        tangentMode: 0
+        weightedMode: 0
+        inWeight: 0.33333334
+        outWeight: 0.33333334
+      - serializedVersion: 3
+        time: 0.8
+        value: 0.85
+        inSlope: 1
+        outSlope: 1
+        tangentMode: 0
+        weightedMode: 0
+        inWeight: 0.33333334
+        outWeight: 0.33333334
+      - serializedVersion: 3
+        time: 1
+        value: 1
+        inSlope: 0.74999994
+        outSlope: 0.74999994
+        tangentMode: 0
+        weightedMode: 0
+        inWeight: 0.33333334
+        outWeight: 0.33333334
+      m_PreInfinity: 2
+      m_PostInfinity: 2
+      m_RotationOrder: 4
+    keypoints:
+    - normalizedRadius: 0
+      normalizedHeight: 1
+      noiseWeight: 0.1
+    - normalizedRadius: 0.1
+      normalizedHeight: 0.95
+      noiseWeight: 0.2
+    - normalizedRadius: 0.25
+      normalizedHeight: 0.8
+      noiseWeight: 0.4
+    - normalizedRadius: 0.4
+      normalizedHeight: 0.6
+      noiseWeight: 0.6
+    - normalizedRadius: 0.6
+      normalizedHeight: 0.35
+      noiseWeight: 0.8
+    - normalizedRadius: 0.8
+      normalizedHeight: 0.15
+      noiseWeight: 0.5
+    - normalizedRadius: 1
+      normalizedHeight: 0
+      noiseWeight: 0.2
+    rockColor: {r: 0.28, g: 0.28, b: 0.28, a: 1}
+    snowLineY: 40
+    hasSnowCap: 1
+    hasCrater: 0
+  - peakId: peak_nw
+    displayName: "\u041F\u0438\u043A \u0421\u0417"
+    role: 2
+    worldPosition: {x: 500, y: 40, z: 5200}
+    realHeightMeters: 4000
+    shapeType: 2
+    baseRadius: 100
+    meshHeight: 600
+    heightProfile:
+      serializedVersion: 2
+      m_Curve:
+      - serializedVersion: 3
+        time: 0
+        value: 0
+        inSlope: 1.5
+        outSlope: 1.5
+        tangentMode: 0
+        weightedMode: 0
+        inWeight: 0.33333334
+        outWeight: 0.33333334
+      - serializedVersion: 3
+        time: 0.2
+        value: 0.3
+        inSlope: 1.375
+        outSlope: 1.375
+        tangentMode: 0
+        weightedMode: 0
+        inWeight: 0.33333334
+        outWeight: 0.33333334
+      - serializedVersion: 3
+        time: 0.4
+        value: 0.55
+        inSlope: 1.125
+        outSlope: 1.125
+        tangentMode: 0
+        weightedMode: 0
+        inWeight: 0.33333334
+        outWeight: 0.33333334
+      - serializedVersion: 3
+        time: 0.6
+        value: 0.75
+        inSlope: 0.8749999
+        outSlope: 0.8749999
+        tangentMode: 0
+        weightedMode: 0
+        inWeight: 0.33333334
+        outWeight: 0.33333334
+      - serializedVersion: 3
+        time: 0.8
+        value: 0.9
+        inSlope: 0.5
+        outSlope: 0.5
+        tangentMode: 0
+        weightedMode: 0
+        inWeight: 0.33333334
+        outWeight: 0.33333334
+      - serializedVersion: 3
+        time: 1
+        value: 0.95
+        inSlope: 0.2500001
+        outSlope: 0.2500001
+        tangentMode: 0
+        weightedMode: 0
+        inWeight: 0.33333334
+        outWeight: 0.33333334
+      m_PreInfinity: 2
+      m_PostInfinity: 2
+      m_RotationOrder: 4
+    keypoints:
+    - normalizedRadius: 0
+      normalizedHeight: 1
+      noiseWeight: 0.1
+    - normalizedRadius: 0.1
+      normalizedHeight: 0.95
+      noiseWeight: 0.2
+    - normalizedRadius: 0.25
+      normalizedHeight: 0.8
+      noiseWeight: 0.4
+    - normalizedRadius: 0.4
+      normalizedHeight: 0.6
+      noiseWeight: 0.6
+    - normalizedRadius: 0.6
+      normalizedHeight: 0.35
+      noiseWeight: 0.8
+    - normalizedRadius: 0.8
+      normalizedHeight: 0.15
+      noiseWeight: 0.5
+    - normalizedRadius: 1
+      normalizedHeight: 0
+      noiseWeight: 0.2
+    rockColor: {r: 0.31, g: 0.31, b: 0.31, a: 1}
+    snowLineY: 35
+    hasSnowCap: 0
+    hasCrater: 0
+  - peakId: peak_east
+    displayName: "\u041F\u0438\u043A \u0412\u043E\u0441\u0442\u043E\u0447\u043D\u044B\u0439"
+    role: 5
+    worldPosition: {x: 2200, y: 35, z: 4800}
+    realHeightMeters: 3500
+    shapeType: 0
+    baseRadius: 110
+    meshHeight: 600
+    heightProfile:
+      serializedVersion: 2
+      m_Curve:
+      - serializedVersion: 3
+        time: 0
+        value: 0
+        inSlope: 0.75
+        outSlope: 0.75
+        tangentMode: 0
+        weightedMode: 0
+        inWeight: 0.33333334
+        outWeight: 0.33333334
+      - serializedVersion: 3
+        time: 0.2
+        value: 0.15
+        inSlope: 0.875
+        outSlope: 0.875
+        tangentMode: 0
+        weightedMode: 0
+        inWeight: 0.33333334
+        outWeight: 0.33333334
+      - serializedVersion: 3
+        time: 0.4
+        value: 0.35
+        inSlope: 1.125
+        outSlope: 1.125
+        tangentMode: 0
+        weightedMode: 0
+        inWeight: 0.33333334
+        outWeight: 0.33333334
+      - serializedVersion: 3
+        time: 0.6
+        value: 0.6
+        inSlope: 1.25
+        outSlope: 1.25
+        tangentMode: 0
+        weightedMode: 0
+        inWeight: 0.33333334
+        outWeight: 0.33333334
+      - serializedVersion: 3
+        time: 0.8
+        value: 0.85
+        inSlope: 1
+        outSlope: 1
+        tangentMode: 0
+        weightedMode: 0
+        inWeight: 0.33333334
+        outWeight: 0.33333334
+      - serializedVersion: 3
+        time: 1
+        value: 1
+        inSlope: 0.74999994
+        outSlope: 0.74999994
+        tangentMode: 0
+        weightedMode: 0
+        inWeight: 0.33333334
+        outWeight: 0.33333334
+      m_PreInfinity: 2
+      m_PostInfinity: 2
+      m_RotationOrder: 4
+    keypoints:
+    - normalizedRadius: 0
+      normalizedHeight: 1
+      noiseWeight: 0.1
+    - normalizedRadius: 0.1
+      normalizedHeight: 0.95
+      noiseWeight: 0.2
+    - normalizedRadius: 0.25
+      normalizedHeight: 0.8
+      noiseWeight: 0.4
+    - normalizedRadius: 0.4
+      normalizedHeight: 0.6
+      noiseWeight: 0.6
+    - normalizedRadius: 0.6
+      normalizedHeight: 0.35
+      noiseWeight: 0.8
+    - normalizedRadius: 0.8
+      normalizedHeight: 0.15
+      noiseWeight: 0.5
+    - normalizedRadius: 1
+      normalizedHeight: 0
+      noiseWeight: 0.2
+    rockColor: {r: 0.27, g: 0.27, b: 0.27, a: 1}
+    snowLineY: 35
+    hasSnowCap: 0
+    hasCrater: 0
   ridges: []
   farms: []
   cityCorridor: {fileID: 0}

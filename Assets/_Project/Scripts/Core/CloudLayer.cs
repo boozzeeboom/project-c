@@ -1,5 +1,6 @@
 using System.Collections.Generic;
 using UnityEngine;
+using ProjectC.World.Clouds;
 
 namespace ProjectC.Core
 {
@@ -207,6 +208,11 @@ namespace ProjectC.Core
 
             // Имя
             cloud.name = $"Cloud_{clouds.Count}";
+
+            // Добавить CloudClimateTinter для климатического тинта
+            CloudClimateTinter tint = cloud.AddComponent<CloudClimateTinter>();
+            tint.baseColor = config.cloudMaterial != null ? config.cloudMaterial.color : Color.white;
+            tint.layerType = config.layerType;
 
             clouds.Add(cloud);
         }

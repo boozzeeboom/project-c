@@ -1,4 +1,5 @@
 using UnityEngine;
+using ProjectC.World.Clouds;
 
 namespace ProjectC.Core
 {
@@ -11,12 +12,19 @@ namespace ProjectC.Core
         [Header("Конфигурации слоёв")]
         [Tooltip("Конфигурация верхнего слоя (перистые, 6000-8000м)")]
         public CloudLayerConfig upperLayerConfig;
-        
+
         [Tooltip("Конфигурация среднего слоя (высоко-кучевые, 3000-5000м)")]
         public CloudLayerConfig middleLayerConfig;
-        
+
         [Tooltip("Конфигурация нижнего слоя (слоистые, 1500-3000м)")]
         public CloudLayerConfig lowerLayerConfig;
+
+        [Header("Кумуло-дождевые облака")]
+        [Tooltip("Включить кумуло-дождевые облака (4-й слой)")]
+        public bool enableCumulonimbus = true;
+
+        [Tooltip("Конфигурация кумуло-дождевых облаков (Storm слой)")]
+        public CloudLayerConfig cumulonimbusConfig;
 
         [Header("Ссылки")]
         [Tooltip("Родительский объект для всех облаков")]
@@ -26,6 +34,7 @@ namespace ProjectC.Core
         [SerializeField] private CloudLayer upperLayer;
         [SerializeField] private CloudLayer middleLayer;
         [SerializeField] private CloudLayer lowerLayer;
+        [SerializeField] private CumulonimbusManager cumulonimbusManager;
 
         [Header("Цикл дня и ночи")]
         [Tooltip("Включить смену дня и ночи")]
@@ -89,6 +98,11 @@ namespace ProjectC.Core
                 upperObj.transform.SetParent(cloudParent);
                 upperLayer = upperObj.AddComponent<CloudLayer>();
                 upperLayer.config = upperLayerConfig;
+                Debug.Log($"[CloudSystem] Upper слой создан: Y={upperLayerConfig.minHeight}-{upperLayerConfig.maxHeight}м, density={upperLayerConfig.density}");
+            }
+            else
+            {
+                Debug.LogWarning("[CloudSystem] Upper слой не создан — не назначен CloudLayerConfig_Upper");
             }
 
             // Средний слой
@@ -98,6 +112,11 @@ namespace ProjectC.Core
                 middleObj.transform.SetParent(cloudParent);
                 middleLayer = middleObj.AddComponent<CloudLayer>();
                 middleLayer.config = middleLayerConfig;
+                Debug.Log($"[CloudSystem] Middle слой создан: Y={middleLayerConfig.minHeight}-{middleLayerConfig.maxHeight}м, density={middleLayerConfig.density}");
+            }
+            else
+            {
+                Debug.LogWarning("[CloudSystem] Middle слой не создан — не назначен CloudLayerConfig_Middle");
             }
 
             // Нижний слой
@@ -107,6 +126,45 @@ namespace ProjectC.Core
                 lowerObj.transform.SetParent(cloudParent);
                 lowerLayer = lowerObj.AddComponent<CloudLayer>();
                 lowerLayer.config = lowerLayerConfig;
+                Debug.Log($"[CloudSystem] Lower слой создан: Y={lowerLayerConfig.minHeight}-{lowerLayerConfig.maxHeight}м, density={lowerLayerConfig.density}");
+            }
+            else
+            {
+                Debug.LogWarning("[CloudSystem] Lower слой не создан — не назначен CloudLayerConfig_Lower");
+            }
+
+            // Проверка: все ли конфиги назначены
+            int configsAssigned = 0;
+            if (upperLayerConfig != null) configsAssigned++;
+            if (middleLayerConfig != null) configsAssigned++;
+            if (lowerLayerConfig != null) configsAssigned++;
+            
+            if (configsAssigned == 3)
+            {
+                Debug.Log("[CloudSystem] Все 3 слоя облаков настроены ✅");
+            }
+            else
+            {
+                Debug.LogWarning($"[CloudSystem] Настроено {configsAssigned}/3 слоёв. Назначьте оставшиеся CloudLayerConfig в Inspector CloudSystem");
+            }
+
+            // Кумуло-дождевые облака (4-й слой)
+            if (enableCumulonimbus)
+            {
+                GameObject cumulonimbusObj = new GameObject("CumulonimbusManager");
+                cumulonimbusObj.transform.SetParent(cloudParent);
+                cumulonimbusManager = cumulonimbusObj.AddComponent<CumulonimbusManager>();
+
+                // Если есть конфиг — применяем настройки
+                if (cumulonimbusConfig != null)
+                {
+                    cumulonimbusManager.veilHeight = cumulonimbusConfig.minHeight;
+                    cumulonimbusManager.maxHeight = cumulonimbusConfig.maxHeight;
+                    cumulonimbusManager.cloudCount = Mathf.RoundToInt(4f * cumulonimbusConfig.density);
+                    cumulonimbusManager.cloudCount = Mathf.Clamp(cumulonimbusManager.cloudCount, 3, 5);
+                }
+
+                Debug.Log("[CloudSystem] Кумуло-дождевые облака включены");
             }
 
             // Подсчитать облака
@@ -200,6 +258,16 @@ namespace ProjectC.Core
             if (upperLayer != null) totalCloudCount += upperLayer.GetCloudCount();
             if (middleLayer != null) totalCloudCount += middleLayer.GetCloudCount();
             if (lowerLayer != null) totalCloudCount += lowerLayer.GetCloudCount();
+            
+            // Кумуло-дождевые облака
+            if (cumulonimbusManager != null)
+            {
+                var clouds = cumulonimbusManager.GetActiveClouds();
+                if (clouds != null)
+                {
+                    totalCloudCount += clouds.Length;
+                }
+            }
         }
 
         /// <summary>
@@ -211,6 +279,7 @@ namespace ProjectC.Core
             if (upperLayer != null) upperLayer.RegenerateLayer();
             if (middleLayer != null) middleLayer.RegenerateLayer();
             if (lowerLayer != null) lowerLayer.RegenerateLayer();
+            if (cumulonimbusManager != null) cumulonimbusManager.RespawnAllClouds();
             UpdateCloudCount();
         }
 
@@ -223,6 +292,7 @@ namespace ProjectC.Core
             if (upperLayer != null) upperLayer.ClearLayer();
             if (middleLayer != null) middleLayer.ClearLayer();
             if (lowerLayer != null) lowerLayer.ClearLayer();
+            // Кумуло-дождевые не очищаем — они создаются один раз
             UpdateCloudCount();
         }
 

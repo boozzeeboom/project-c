@@ -47,3 +47,13 @@ mono_crash.*
 
 # Dev memory (local session state)
 .dev-memory/
+
+# Cline/MiniMax agent configuration (personal)
+# Most of this is personal, but keep context system:
+
+# Exception: keep AI context system files
+!.cline/CLAUDE.md
+!.cline/session-recovery.md
+!.clinerules/hooks/session-start.sh
+!.clinerules/hooks/session-stop.sh
+!docs/context/

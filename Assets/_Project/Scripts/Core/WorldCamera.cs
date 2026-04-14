@@ -184,9 +184,12 @@ namespace ProjectC.Core
 
         private void Start()
         {
-            // Скрываем курсор
-            Cursor.lockState = CursorLockMode.Locked;
-            Cursor.visible = false;
+            // ИСПРАВЛЕНО: НЕ блокируем курсор при старте — это ломало NetworkUI меню.
+            // Курсор блокируется только когда игрок в игре (ThirdPersonCamera.InitializeCamera()).
+            // WorldCamera получает управление мышью через ПКМ (HandleRotation при зажатой ПКМ).
+            // Стартовое состояние: курсор свободен для UI.
+            Cursor.lockState = CursorLockMode.None;
+            Cursor.visible = true;
 
             // Инициализируем углы
             Vector3 angles = transform.eulerAngles;

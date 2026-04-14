@@ -144,11 +144,18 @@ namespace ProjectC.Player
         {
             if (cameraPrefab != null)
             {
-                var camObj = Instantiate(cameraPrefab.gameObject, transform);
+                // ИСПРАВЛЕНО: камера спавнится как НЕЗАВИСИМЫЙ объект (НЕ дочерний).
+                // Parenting камеры к игроку вызывало конфликт с FloatingOriginMP:
+                // - camera.scene.GetRootGameObjects() захватывало игрока (root-объект)
+                // - FloatingOriginMP пытался рапаренчить игрока под WorldRoot → краш иерархии
+                // - Двойное смещение позиции: из parent и из LateUpdate
+                var camObj = Instantiate(cameraPrefab.gameObject);
+                camObj.name = $"ThirdPersonCamera_{OwnerClientId}";
                 _myCamera = camObj.GetComponent<ThirdPersonCamera>();
                 if (_myCamera != null)
                 {
                     _myCamera.SetTarget(transform);
+                    _myCamera.InitializeCamera();
                 }
             }
             else
@@ -157,6 +164,7 @@ namespace ProjectC.Player
                 if (_myCamera != null)
                 {
                     _myCamera.SetTarget(transform);
+                    _myCamera.InitializeCamera();
                 }
             }
         }

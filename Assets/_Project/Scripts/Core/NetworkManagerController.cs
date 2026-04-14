@@ -188,8 +188,26 @@ namespace ProjectC.Core
 
         public void StartHost()
         {
-            networkManager.StartHost();
-            UpdateStatus("Запуск хоста...");
+            // Защита от конфликта порта - проверяем не слушает ли уже
+            if (networkManager.IsListening)
+            {
+                Debug.LogWarning("[Network] Already listening! Shutting down first...");
+                networkManager.Shutdown();
+                
+                // Небольшая задержка для освобождения порта
+                System.Threading.Thread.Sleep(250);
+            }
+
+            try
+            {
+                networkManager.StartHost();
+                UpdateStatus("Хост запущен");
+            }
+            catch (Exception ex)
+            {
+                Debug.LogError($"[Network] Failed to start host: {ex.Message}");
+                UpdateStatus("Ошибка запуска хоста - порт занят?");
+            }
         }
 
         /// <summary>
@@ -197,8 +215,24 @@ namespace ProjectC.Core
         /// </summary>
         public void StartServer()
         {
-            networkManager.StartServer();
-            UpdateStatus("Запуск сервера...");
+            // Защита от конфликта порта
+            if (networkManager.IsListening)
+            {
+                Debug.LogWarning("[Network] Already listening! Shutting down first...");
+                networkManager.Shutdown();
+                System.Threading.Thread.Sleep(250);
+            }
+
+            try
+            {
+                networkManager.StartServer();
+                UpdateStatus($"Сервер запущен на порту {serverPort}");
+            }
+            catch (Exception ex)
+            {
+                Debug.LogError($"[Network] Failed to start server: {ex.Message}");
+                UpdateStatus("Ошибка запуска сервера - порт занят?");
+            }
         }
 
         /// <summary>
@@ -215,7 +249,15 @@ namespace ProjectC.Core
             _isReconnecting = false;
             _reconnectAttempts = 0;
 
-            Debug.Log($"[Network] ConnectToServer: {targetIp}:{targetPort}, IsListening={networkManager.IsListening}");
+            // Защита от конфликта - если уже слушаем, shutdown
+            if (networkManager.IsListening)
+            {
+                Debug.LogWarning("[Network] Already listening! Shutting down before connect...");
+                networkManager.Shutdown();
+                System.Threading.Thread.Sleep(250);
+            }
+
+            Debug.Log($"[Network] ConnectToServer: {targetIp}:{targetPort}");
 
             var transport = networkManager.NetworkConfig.NetworkTransport;
             if (transport is UnityTransport unityTransport)
@@ -230,7 +272,15 @@ namespace ProjectC.Core
 
             UpdateStatus($"Подключение к {targetIp}:{targetPort}...");
 
-            networkManager.StartClient();
+            try
+            {
+                networkManager.StartClient();
+            }
+            catch (Exception ex)
+            {
+                Debug.LogError($"[Network] Failed to start client: {ex.Message}");
+                UpdateStatus("Ошибка подключения");
+            }
         }
 
         /// <summary>

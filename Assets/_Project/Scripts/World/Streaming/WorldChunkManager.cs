@@ -163,9 +163,23 @@ namespace ProjectC.World.Streaming
 
         private void Awake()
         {
+            // Auto-find WorldData
             if (worldData == null)
             {
-                Debug.LogError("[WorldChunkManager] WorldData не назначена! Задайте WorldData в Inspector.");
+                // Пробуем найти в сцене
+                worldData = FindAnyObjectByType<WorldData>();
+                
+                // Если не нашли — загружаем из Assets
+                if (worldData == null)
+                {
+                    worldData = UnityEditor.AssetDatabase.LoadAssetAtPath<WorldData>(
+                        "Assets/_Project/Data/World/WorldData.asset");
+                }
+            }
+            
+            if (worldData == null)
+            {
+                Debug.LogError("[WorldChunkManager] WorldData не найдена! Streaming disabled.");
                 return;
             }
 

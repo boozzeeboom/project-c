@@ -73,6 +73,9 @@ namespace ProjectC.World.Core
         [Tooltip("Тип формы пика")]
         public PeakShapeType shapeType;
 
+        [Tooltip("Высота меша (units) — V2 параметр")]
+        public float meshHeight;
+
         [Tooltip("Радиус основания (units)")]
         public float baseRadius = 100f;
 

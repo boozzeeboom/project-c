@@ -4,7 +4,8 @@
       "Bash(git commit *)",
       "Bash(\"c:\\program files\\unity\\hub\\editor\\6000.2.0f1\\editor\\unity.exe\" *)",
       "Bash(move *)",
-      "Bash(rmdir *)"
+      "Bash(rmdir *)",
+      "Bash(timeout *)"
     ]
   },
   "$version": 3

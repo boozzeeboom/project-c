@@ -10,10 +10,15 @@
 
 ```
 docs/world/LargeScaleMMO/
-├── README.md                      ← Этот файл (навигация)
-├── 01_Architecture_Plan.md        ← Архитектура и план реализации
-├── 02_Technical_Research.md       ← Техническое исследование
-└── [будущие документы...]
+├── README.md                                           ← Этот файл (навигация)
+├── 01_Architecture_Plan.md                              ← Архитектура и план реализации
+├── 02_Technical_Research.md                            ← Техническое исследование
+├── ADR-0002_WorldStreaming_Architecture.md            ← Architecture Decision Record
+├── SESSION_PROMPT_Phase1_Foundation.md                 ← Промт Фазы 1
+├── SESSION_PROMPT_Phase1_Foundation_STATUS.md         ← Статус Фазы 1
+├── SESSION_PROMPT_Phase2_MultiplayerIntegration.md    ← Промт Фазы 2
+├── SESSION_2026-04-14.md                              ← Summary сессии 14.04.2026
+└── TESTING_INSTRUCTIONS.md                             ← Инструкции по тестированию
 ```
 
 ---
@@ -134,4 +139,5 @@ docs/world/LargeScaleMMO/
 | Дата | Изменение | Автор |
 |------|-----------|-------|
 | 14.04.2026 | Создан каталог и документы | Qwen Code Agent |
+| 14.04.2026 | **Фаза 1 завершена** — World Streaming Foundation | Qwen Code Agent |
 | | | |

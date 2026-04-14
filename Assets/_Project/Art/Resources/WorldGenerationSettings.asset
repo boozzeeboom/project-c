@@ -9,17 +9,24 @@ MonoBehaviour:
   m_GameObject: {fileID: 0}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 0000000000000000d000000000000000, type: 0}
-  m_Name: DefaultWorldSettings
+  m_Script: {fileID: 11500000, guid: 781e0fb7f0af19647bef5b92b46f5368, type: 3}
+  m_Name: WorldGenerationSettings
   m_EditorClassIdentifier: 
-  islandSize: 100
-  islandCount: 10
-  minDistanceBetweenIslands: 200
-  baseHeight: 50
-  maxHeight: 200
-  heightNoiseScale: 0.01
-  shapeNoiseScale: 0.02
-  islandVertices: 20
-  cloudLayerHeight: 300
-  cloudDensity: 0.3
-  cloudSize: 50
+  worldRadius: 350000
+  peakCount: 15
+  minPeakHeight: 1000
+  maxPeakHeight: 8000
+  minPeakRadius: 200
+  maxPeakRadius: 800
+  peakDetail: 64
+  cloudLayerHeight: 1500
+  cloudLayerThickness: 2500
+  cloudDensity: 0.7
+  cloudSize: 100
+  cloudSizeVariation: 2
+  cloudSystemPrefab: {fileID: 0}
+  cloudSystem: {fileID: 0}
+  peakMaterial: {fileID: 0}
+  cloudMaterial: {fileID: 0}
+  addMinorIslands: 1
+  minorIslandCount: 30

@@ -103,8 +103,10 @@ namespace ProjectC.Core
                         // Создаём новый материал с CloudGhibli
                         Material ghibliMat = new Material(ghibliShader);
 
-                        // Копируем базовый цвет из старого материала
-                        Color baseColor = config.cloudMaterial.color;
+                        // Копируем базовый цвет из старого материала (URP использует _BaseColor)
+                        Color baseColor = config.cloudMaterial.HasProperty("_BaseColor")
+                            ? config.cloudMaterial.GetColor("_BaseColor")
+                            : Color.white;
                         ghibliMat.SetColor("_BaseColor", new Color(baseColor.r, baseColor.g, baseColor.b, 0.4f));
 
                         // Настраиваем rim glow (Ghibli signature)
@@ -211,7 +213,12 @@ namespace ProjectC.Core
 
             // Добавить CloudClimateTinter для климатического тинта
             CloudClimateTinter tint = cloud.AddComponent<CloudClimateTinter>();
-            tint.baseColor = config.cloudMaterial != null ? config.cloudMaterial.color : Color.white;
+            // URP использует _BaseColor вместо _Color
+            tint.baseColor = config.cloudMaterial != null
+                ? (config.cloudMaterial.HasProperty("_BaseColor")
+                    ? config.cloudMaterial.GetColor("_BaseColor")
+                    : Color.white)
+                : Color.white;
             tint.layerType = config.layerType;
 
             clouds.Add(cloud);

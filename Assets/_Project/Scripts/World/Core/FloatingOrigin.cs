@@ -54,17 +54,58 @@ namespace ProjectC.World.Core
 
             if (worldRoot == null)
             {
-                Debug.LogWarning("[FloatingOrigin] worldRoot not assigned! Trying to find 'Mountains'...");
+                Debug.LogWarning("[FloatingOrigin] worldRoot not assigned! Trying to find world root...");
+                
+                // 1. Пробуем найти "Mountains"
                 GameObject mountains = GameObject.Find("Mountains");
                 if (mountains != null)
                 {
                     worldRoot = mountains.transform;
+                    Debug.Log($"[FloatingOrigin] Found 'Mountains' as world root");
                 }
                 else
                 {
-                    Debug.LogError("[FloatingOrigin] Cannot find world root. Disabling.");
-                    enabled = false;
-                    return;
+                    // 2. Ищем "World" или "Terrain"
+                    GameObject world = GameObject.Find("World");
+                    if (world == null) world = GameObject.Find("Terrain");
+                    if (world == null) world = GameObject.Find("Peaks");
+                    
+                    if (world != null)
+                    {
+                        worldRoot = world.transform;
+                        Debug.Log($"[FloatingOrigin] Found '{world.name}' as world root");
+                    }
+                    else
+                    {
+                        // 3. Ищем объект с наибольшим количеством детей
+                        GameObject[] allRoots = gameObject.scene.GetRootGameObjects();
+                        GameObject bestRoot = null;
+                        int maxChildren = 0;
+
+                        foreach (var root in allRoots)
+                        {
+                            if (root == gameObject || root.GetComponent<Camera>() != null) continue;
+                            
+                            int childCount = root.transform.childCount;
+                            if (childCount > maxChildren)
+                            {
+                                maxChildren = childCount;
+                                bestRoot = root;
+                            }
+                        }
+
+                        if (bestRoot != null && maxChildren > 0)
+                        {
+                            worldRoot = bestRoot.transform;
+                            Debug.Log($"[FloatingOrigin] Using '{bestRoot.name}' as world root (most children: {maxChildren})");
+                        }
+                        else
+                        {
+                            Debug.LogWarning("[FloatingOrigin] Cannot find world root. Creating 'World' object.");
+                            GameObject worldObj = new GameObject("World");
+                            worldRoot = worldObj.transform;
+                        }
+                    }
                 }
             }
 

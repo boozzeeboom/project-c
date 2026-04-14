@@ -284,17 +284,18 @@ namespace ProjectC.World.Streaming
                 }
             }
 
-            // Если ничего не нашли — создаём "WorldRoot" и перемещаем туда все world objects
+            // ИСПРАВЛЕНО: если корни не найдены — НЕ рапаренчиваем сцену.
+            // CollectWorldObjects() перемещал ВСЕ сцен-объекты под "WorldRoot",
+            // что ломало NetworkManager, NetworkPlayer, CharacterController и всё остальное.
+            // Правильное поведение: логируем warning и отключаем компонент.
+            // Для работы FloatingOriginMP добавьте в сцену GameObject'ы с именами
+            // из списка worldRootNames (например, "WorldRoot"), и FloatingOriginMP найдёт их.
             if (_worldRoots.Count == 0)
             {
-                Debug.LogWarning("[FloatingOriginMP] No world roots found by names. Creating 'WorldRoot' and collecting world objects...");
-
-                GameObject worldRootObj = new GameObject("WorldRoot");
-                Transform worldRoot = worldRootObj.transform;
-                _worldRoots.Add(worldRoot);
-
-                // Собираем все объекты которые похожи на world objects
-                CollectWorldObjects(worldRoot);
+                Debug.LogWarning("[FloatingOriginMP] Не найдено ни одного world root по именам: " +
+                    string.Join(", ", worldRootNames) + ". " +
+                    "FloatingOriginMP отключён. Создайте в сцене пустой GameObject с именем 'WorldRoot' " +
+                    "и поместите под него горы, облака и другие world-объекты.");
             }
         }
 

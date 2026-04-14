@@ -2,7 +2,7 @@ using UnityEngine;
 using UnityEngine.InputSystem;
 using UnityEngine.UI;
 using TMPro;
-using ProjectC.World.Core;
+using Unity.Netcode;
 
 namespace ProjectC.Core
 {
@@ -55,6 +55,9 @@ namespace ProjectC.Core
         private InputAction _lookAction;
         private Vector2 _lookInput;
 
+        // Инициализация
+        private bool _cameraInitialized = false;
+
         /// <summary>
         /// Горизонтальное направление камеры (куда бежит персонаж по W)
         /// </summary>
@@ -85,19 +88,10 @@ namespace ProjectC.Core
                 cam.farClipPlane = 1000000f; // 1 million units - covers entire world
                 cam.nearClipPlane = 0.5f; // Slightly increased to reduce z-fighting
 
-                // АВТОМАТИЧЕСКИ добавляем FloatingOrigin если его нет
-                var floatingOrigin = GetComponent<FloatingOrigin>();
-                if (floatingOrigin == null)
-                {
-                    floatingOrigin = gameObject.AddComponent<FloatingOrigin>();
-                }
-
-                // Автоматически находим worldRoot при старте
-                floatingOrigin.worldRoot = FindWorldRoot();
-                floatingOrigin.threshold = 100000f;
-                floatingOrigin.showDebugLogs = false;
-
-                Debug.Log($"[ThirdPersonCamera] FloatingOrigin initialized. worldRoot={floatingOrigin.worldRoot?.name ?? "NULL"}");
+                // ИСПРАВЛЕНО: FloatingOriginMP НЕ добавляется автоматически на камеру-ребёнка.
+                // FloatingOriginMP должен быть на отдельном объекте в сцене (WorldStreamingManager).
+                // Добавление FloatingOriginMP сюда вызывало CollectWorldObjects() →
+                // рапаренчивание ВСЕХ объектов сцены (включая NetworkManager, игрока) → краш.
             }
 
             _lookAction = new InputAction("Look", binding: "<Mouse>/delta", expectedControlType: "Vector2");
@@ -106,11 +100,37 @@ namespace ProjectC.Core
         private void OnEnable() => _lookAction.Enable();
         private void OnDisable() => _lookAction.Disable();
 
+        private void OnDestroy()
+        {
+            // Разблокируем курсор когда камера уничтожается (игрок отключился → меню снова кликабельно)
+            Cursor.lockState = CursorLockMode.None;
+            Cursor.visible = true;
+        }
+
         private void Start()
         {
+            if (_cameraInitialized) return; // уже инициализирован через InitializeCamera()
+
             if (target == null)
             {
-                // Target будет назначен позже через SetTarget()
+                // Target будет назначен позже через SetTarget() + InitializeCamera()
+                return;
+            }
+
+            InitializeCamera();
+        }
+
+        /// <summary>
+        /// Инициализировать камеру после назначения target.
+        /// Вызывается из NetworkPlayer.SpawnCamera() сразу после SetTarget().
+        /// Безопасно вызывать несколько раз — повторная инициализация игнорируется.
+        /// </summary>
+        public void InitializeCamera()
+        {
+            if (_cameraInitialized) return;
+            if (target == null)
+            {
+                Debug.LogWarning("[ThirdPersonCamera] InitializeCamera вызван до SetTarget! Камера не инициализирована.");
                 return;
             }
 
@@ -119,10 +139,29 @@ namespace ProjectC.Core
             _currentDistance = distance;
             _currentHeight = height;
 
+            // Блокируем курсор ТОЛЬКО если NetworkManager активен (игрок реально в игре).
+            // Если target задан в Inspector вручную (без сети) — меню должно оставаться кликабельным.
+            bool inActiveGame = NetworkManager.Singleton != null && NetworkManager.Singleton.IsListening;
+            if (inActiveGame)
+            {
+                Cursor.lockState = CursorLockMode.Locked;
+                Cursor.visible = false;
+            }
+            else
+            {
+                // Сцена без сети или ещё не подключились — курсор свободен
+                Cursor.lockState = CursorLockMode.None;
+                Cursor.visible = true;
+            }
+
             UpdateCameraPosition();
 
             // Создаём UI подсказок если нет
             CreateControlHintsUI();
+
+            _cameraInitialized = true;
+
+            Debug.Log($"[ThirdPersonCamera] Инициализирована для цели: {target.name}. Cursor locked: {inActiveGame}");
         }
 
         /// <summary>
@@ -220,40 +259,6 @@ namespace ProjectC.Core
 
             transform.position = target.position + dir * _currentDistance + Vector3.up * _currentHeight;
             transform.LookAt(target.position + Vector3.up * 1.5f);
-        }
-
-        /// <summary>
-        /// Найти корневой объект мира для FloatingOrigin.
-        /// </summary>
-        private Transform FindWorldRoot()
-        {
-            // 1. Пробуем найти "Mountains"
-            GameObject mountains = GameObject.Find("Mountains");
-            if (mountains != null && mountains.transform.childCount > 0)
-            {
-                return mountains.transform;
-            }
-
-            // 2. Ищем любой объект с большим количеством детей
-            GameObject[] allObjects = FindObjectsByType<GameObject>(FindObjectsInactive.Include);
-            Transform bestRoot = null;
-            int maxChildren = 0;
-
-            foreach (var obj in allObjects)
-            {
-                if (obj.transform.childCount > maxChildren && obj.transform.parent == null)
-                {
-                    maxChildren = obj.transform.childCount;
-                    bestRoot = obj.transform;
-                }
-            }
-
-            if (bestRoot != null && maxChildren > 5)
-            {
-                return bestRoot;
-            }
-
-            return null;
         }
     }
 }

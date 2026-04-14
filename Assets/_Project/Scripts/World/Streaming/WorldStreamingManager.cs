@@ -266,7 +266,19 @@ namespace ProjectC.World
         {
             if (worldData == null)
             {
+                // Пробуем найти в сцене
                 worldData = FindAnyObjectByType<WorldData>();
+                
+                // Если не нашли — загружаем из Resources или Assets
+                if (worldData == null)
+                {
+                    worldData = Resources.Load<WorldData>("Data/World/WorldData");
+                }
+                if (worldData == null)
+                {
+                    worldData = UnityEditor.AssetDatabase.LoadAssetAtPath<WorldData>(
+                        "Assets/_Project/Data/World/WorldData.asset");
+                }
             }
             
             if (chunkManager == null)

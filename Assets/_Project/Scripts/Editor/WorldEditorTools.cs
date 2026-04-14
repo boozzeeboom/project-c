@@ -1,9 +1,11 @@
 #if UNITY_EDITOR
 using System.Collections.Generic;
 using UnityEditor;
+using UnityEditor.SceneManagement;
 using UnityEngine;
 using ProjectC.World.Core;
 using ProjectC.World.Streaming;
+using ProjectC.World; // Для WorldStreamingManager, StreamingTest
 
 namespace ProjectC.Editor
 {
@@ -549,6 +551,105 @@ namespace ProjectC.Editor
         private void OnDrawGizmosSelected()
         {
             ChunkVisualizer.DrawChunkGrid();
+        }
+    }
+    
+    /// <summary>
+    /// Setup World Streaming System — создаёт все необходимые компоненты в сцене.
+    /// Меню: Tools → Project C → World → Setup Streaming
+    /// Компоненты найдут друг друга через AutoFindComponents() при старте.
+    /// </summary>
+    public static class StreamingSetup
+    {
+        [MenuItem("Tools/Project C/World/Setup Streaming")]
+        public static void SetupStreamingSystem()
+        {
+            // Создаём корневой объект для всей системы стриминга
+            GameObject streamingRoot = GameObject.Find("WorldStreaming");
+            if (streamingRoot == null)
+            {
+                streamingRoot = new GameObject("WorldStreaming");
+                Undo.RegisterCreatedObjectUndo(streamingRoot, "Create WorldStreaming Root");
+                Debug.Log("[StreamingSetup] ✅ Created 'WorldStreaming' root object");
+            }
+            
+            // 1. WorldChunkManager
+            if (streamingRoot.GetComponent<WorldChunkManager>() == null)
+            {
+                streamingRoot.AddComponent<WorldChunkManager>();
+                Debug.Log("[StreamingSetup] ✅ Added WorldChunkManager");
+            }
+            
+            // 2. ProceduralChunkGenerator
+            if (streamingRoot.GetComponent<ProceduralChunkGenerator>() == null)
+            {
+                streamingRoot.AddComponent<ProceduralChunkGenerator>();
+                Debug.Log("[StreamingSetup] ✅ Added ProceduralChunkGenerator");
+            }
+            
+            // 3. ChunkLoader
+            if (streamingRoot.GetComponent<ChunkLoader>() == null)
+            {
+                streamingRoot.AddComponent<ChunkLoader>();
+                Debug.Log("[StreamingSetup] ✅ Added ChunkLoader");
+            }
+            
+            // 4. FloatingOriginMP — оставляем на WorldStreaming root (он найдёт камеру в runtime)
+            if (streamingRoot.GetComponent<FloatingOriginMP>() == null)
+            {
+                streamingRoot.AddComponent<FloatingOriginMP>();
+                Debug.Log("[StreamingSetup] ✅ Added FloatingOriginMP to WorldStreaming root");
+            }
+            
+            // 5. WorldStreamingManager — найти или создать
+            WorldStreamingManager streamingManager = Object.FindAnyObjectByType<WorldStreamingManager>();
+            if (streamingManager == null)
+            {
+                GameObject smObj = new GameObject("WorldStreamingManager");
+                Undo.RegisterCreatedObjectUndo(smObj, "Create WorldStreamingManager");
+                streamingManager = smObj.AddComponent<WorldStreamingManager>();
+                Debug.Log("[StreamingSetup] ✅ Created WorldStreamingManager");
+            }
+            
+            // 6. StreamingTest добавится автоматически через StreamingTestAutoRunner при Play
+            Debug.Log("[StreamingSetup] ℹ️ StreamingTest will be added automatically when Play is pressed");
+            
+            EditorSceneManager.MarkSceneDirty(EditorSceneManager.GetActiveScene());
+            
+            EditorUtility.DisplayDialog("Setup Complete", 
+                "✅ World Streaming System setup complete!\n\nComponents will auto-link on Play.\nPress Play and use F5-F10 to test.", "OK");
+            
+            Selection.activeGameObject = streamingManager != null ? streamingManager.gameObject : streamingRoot;
+        }
+        
+        [MenuItem("Tools/Project C/World/Remove Streaming System")]
+        public static void RemoveStreamingSystem()
+        {
+            if (!EditorUtility.DisplayDialog("Remove", 
+                "Remove all streaming components?", "Yes", "Cancel"))
+            {
+                return;
+            }
+            
+            foreach (var obj in Object.FindObjectsByType<WorldChunkManager>(FindObjectsInactive.Exclude))
+                Undo.DestroyObjectImmediate(obj);
+            foreach (var obj in Object.FindObjectsByType<ProceduralChunkGenerator>(FindObjectsInactive.Exclude))
+                Undo.DestroyObjectImmediate(obj);
+            foreach (var obj in Object.FindObjectsByType<ChunkLoader>(FindObjectsInactive.Exclude))
+                Undo.DestroyObjectImmediate(obj);
+            foreach (var obj in Object.FindObjectsByType<FloatingOriginMP>(FindObjectsInactive.Exclude))
+                Undo.DestroyObjectImmediate(obj);
+            foreach (var obj in Object.FindObjectsByType<StreamingTest>(FindObjectsInactive.Exclude))
+                Undo.DestroyObjectImmediate(obj);
+            foreach (var obj in Object.FindObjectsByType<StreamingTest_AutoRun>(FindObjectsInactive.Exclude))
+                Undo.DestroyObjectImmediate(obj);
+            
+            GameObject root = GameObject.Find("WorldStreaming");
+            if (root != null)
+                Undo.DestroyObjectImmediate(root);
+            
+            EditorSceneManager.MarkSceneDirty(EditorSceneManager.GetActiveScene());
+            Debug.Log("[StreamingSetup] 🗑️ Removed");
         }
     }
 }

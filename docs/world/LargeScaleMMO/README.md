@@ -79,23 +79,23 @@ docs/world/LargeScaleMMO/
 ### Приоритет 1 (Начать СРАЗУ)
 
 1. ✅ **Исследование завершено** — этот документ
-2. ⬜ Создать `WorldChunkManager` — реестр чанков, grid-based lookup
-3. ⬜ Создать `FloatingOriginMP` — мультиплеер-синхронизированный сдвиг
-4. ⬜ Создать Editor Tool для навигации в Scene View
-5. ⬜ Исправить Floating Origin bug — сдвигать ВСЕ объекты, не только Mountains
+2. ✅ **WorldChunkManager** — реестр чанков, grid-based lookup
+3. ✅ **FloatingOriginMP** — мультиплеер-синхронизированный сдвиг
+4. ✅ **Editor Tools** — Scene Navigator + Chunk Visualizer
+5. ✅ **Исправлен Floating Origin bug** — сдвигает ВСЕ объекты
 
 ### Приоритет 2 (После валидации Приоритета 1)
 
-6. ⬜ Создать `ProceduralChunkGenerator` — генерация гор + облаков per chunk
-7. ⬜ Создать `ChunkLoader` — client-side загрузка/выгрузка
-8. ⬜ Интегрировать с NGO — NetworkObject spawn/despawn per chunk
+6. ✅ **ProceduralChunkGenerator** — генерация гор + облаков per chunk
+7. ✅ **ChunkLoader** — client-side загрузка/выгрузка
+8. ⬜ **Интегрировать с NGO** — NetworkObject spawn/despawn per chunk (Фаза 2)
 
 ### Приоритет 3 (Оптимизация)
 
-9. ⬜ Preloading система — загрузка соседних чанков заранее
-10. ⬜ Job System оптимизация — генерация мешей off-main-thread
-11. ⬜ Memory budgeting — мониторинг и контроль памяти
-12. ⬜ Cyclic world support — если потребуется
+9. ⬜ Preloading система — загрузка соседних чанков заранее (Фаза 3)
+10. ⬜ Job System оптимизация — генерация мешей off-main-thread (Фаза 3)
+11. ⬜ Memory budgeting — мониторинг и контроль памяти (Фаза 3)
+12. ⬜ Cyclic world support — если потребуется (Фаза 4)
 
 ---
 
@@ -140,4 +140,5 @@ docs/world/LargeScaleMMO/
 |------|-----------|-------|
 | 14.04.2026 | Создан каталог и документы | Qwen Code Agent |
 | 14.04.2026 | **Фаза 1 завершена** — World Streaming Foundation | Qwen Code Agent |
+| 14.04.2026 | **Фаза 2 начата** — Multiplayer Integration (документация) | Qwen Code Agent |
 | | | |

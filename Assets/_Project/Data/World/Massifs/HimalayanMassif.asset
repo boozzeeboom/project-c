@@ -25,8 +25,8 @@ MonoBehaviour:
     worldPosition: {x: 0, y: 88.48, z: 0}
     realHeightMeters: 8848
     shapeType: 0
+    meshHeight: 716.6881
     baseRadius: 250
-    meshHeight: 600
     heightProfile:
       serializedVersion: 2
       m_Curve:
@@ -119,8 +119,8 @@ MonoBehaviour:
     worldPosition: {x: 30000, y: 72, z: -20000}
     realHeightMeters: 8516
     shapeType: 0
+    meshHeight: 486
     baseRadius: 200
-    meshHeight: 600
     heightProfile:
       serializedVersion: 2
       m_Curve:
@@ -213,8 +213,8 @@ MonoBehaviour:
     worldPosition: {x: 60000, y: 70, z: 15000}
     realHeightMeters: 8485
     shapeType: 0
+    meshHeight: 448.875
     baseRadius: 180
-    meshHeight: 600
     heightProfile:
       serializedVersion: 2
       m_Curve:
@@ -307,8 +307,8 @@ MonoBehaviour:
     worldPosition: {x: -40000, y: 65, z: 30000}
     realHeightMeters: 8188
     shapeType: 0
+    meshHeight: 372.9375
     baseRadius: 170
-    meshHeight: 600
     heightProfile:
       serializedVersion: 2
       m_Curve:
@@ -401,8 +401,8 @@ MonoBehaviour:
     worldPosition: {x: -70000, y: 62, z: 45000}
     realHeightMeters: 8027
     shapeType: 0
+    meshHeight: 376.65
     baseRadius: 160
-    meshHeight: 600
     heightProfile:
       serializedVersion: 2
       m_Curve:
@@ -495,8 +495,8 @@ MonoBehaviour:
     worldPosition: {x: 10000, y: 55, z: 60000}
     realHeightMeters: 5500
     shapeType: 0
+    meshHeight: 350
     baseRadius: 130
-    meshHeight: 600
     heightProfile:
       serializedVersion: 2
       m_Curve:
@@ -589,8 +589,8 @@ MonoBehaviour:
     worldPosition: {x: -15000, y: 50, z: -50000}
     realHeightMeters: 5000
     shapeType: 0
+    meshHeight: 350
     baseRadius: 100
-    meshHeight: 600
     heightProfile:
       serializedVersion: 2
       m_Curve:
@@ -683,8 +683,8 @@ MonoBehaviour:
     worldPosition: {x: 75000, y: 45, z: -10000}
     realHeightMeters: 4500
     shapeType: 0
+    meshHeight: 350
     baseRadius: 140
-    meshHeight: 600
     heightProfile:
       serializedVersion: 2
       m_Curve:

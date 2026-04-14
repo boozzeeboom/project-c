@@ -1,8 +1,9 @@
 # Session Prompt: World Streaming Phase 2 — Multiplayer Integration
 
-**Дата:** 14 апреля 2026 (следующая сессия)  
+**Дата:** 14 апреля 2026 (текущая сессия)  
 **Проект:** ProjectC_client  
-**Предыдущая сессия:** `SESSION_2026-04-14.md`
+**Предыдущая сессия:** `SESSION_2026-04-14.md`  
+**Статус:** 🔄 В РАБОТЕ
 
 ---
 
@@ -10,22 +11,50 @@
 
 Реализовать **Фазу 2: Multiplayer Integration** согласно архитектуре из `01_Architecture_Plan.md`.
 
+**Фаза 1 завершена** ✅ — базовая инфраструктура стриминга работает в одиночном режиме.  
+**Цель Фазы 2** — добавить поддержку мультиплеера (Host + 2+ клиентов).
+
+### Что уже сделано в этой сессии:
+- ✅ Обновлена документация Phase 2 (заголовок, контекст)
+- ✅ Добавлены инструкции по тестированию мультиплеера в TESTING_INSTRUCTIONS.md
+- ✅ Обновлён README.md с актуальным статусом
+
+### Что требуется сделать:
+1. ⬜ Создать `PlayerChunkTracker.cs` (F2.1)
+2. ⬜ Добавить RPC методы в WorldStreamingManager (F2.2)
+3. ⬜ Добавить NetworkObject спавн в ProceduralChunkGenerator (F2.3)
+4. ⬜ Синхронизировать FloatingOriginMP (F2.4)
+5. ⬜ Протестировать с 2+ клиентами (F2.5)
+
 ---
 
 ## 📖 Контекст (прочитать первым)
 
 ### Обязательно прочитать:
 1. ✅ [SESSION_2026-04-14.md](./SESSION_2026-04-14.md) — что было сделано в предыдущей сессии
-2. ✅ [01_Architecture_Plan.md](./01_Architecture_Plan.md) — секции 3.3 (NGO Integration) и 4 (Фаза 2)
-3. ✅ [ADR-0002_WorldStreaming_Architecture.md](./ADR-0002_WorldStreaming_Architecture.md) — полная архитектура
+2. ✅ [SESSION_PROMPT_Phase1_Foundation_STATUS.md](./SESSION_PROMPT_Phase1_Foundation_STATUS.md) — детальный статус Фазы 1
+3. ✅ [01_Architecture_Plan.md](./01_Architecture_Plan.md) — секции 3.3 (NGO Integration) и 4 (Фаза 2)
+4. ✅ [ADR-0002_WorldStreaming_Architecture.md](./ADR-0002_WorldStreaming_Architecture.md) — полная архитектура
 
-### Статус Фазы 1:
-Все 5 задач Фазы 1 **завершены** ✅:
-- WorldChunkManager — реестр чанков
-- ProceduralChunkGenerator — детерминированная генерация
-- ChunkLoader — асинхронная загрузка/выгрузка
-- FloatingOriginMP — сдвиг мира + RPC
-- WorldEditorTools — Chunk Visualizer
+### Существующие компоненты (Фаза 1):
+| Компонент | Строк | Статус | Назначение |
+|----------|-------|--------|------------|
+| `WorldChunkManager.cs` | 294 | ✅ Работает | Реестр чанков с grid-based lookup |
+| `ProceduralChunkGenerator.cs` | 392 | ✅ Работает | Детерминированная генерация гор + облаков |
+| `ChunkLoader.cs` | 398 | ✅ Работает | Асинхронная загрузка с fade-in/out |
+| `FloatingOriginMP.cs` | 398 | ✅ Работает | Сдвиг мира + RPC support |
+| `WorldStreamingManager.cs` | 423 | ✅ Работает | Координатор системы (Singleton) |
+| `StreamingTest.cs` | 322 | ⚠️ Частично | Тестовый компонент (F-клавиши — проблема) |
+| `WorldEditorTools.cs` | 556 | ✅ Работает | Scene Navigator + Chunk Visualizer |
+
+### Архитектура системы:
+```
+WorldStreamingManager (Singleton)
+├── WorldChunkManager → GetChunkAtPosition(), GetChunksInRadius()
+├── ProceduralChunkGenerator → GenerateChunkAsync()
+├── ChunkLoader → LoadChunk/UnloadChunk
+└── FloatingOriginMP → ResetOrigin()
+```
 
 ---
 
@@ -241,24 +270,58 @@ public class FloatingOriginMP : NetworkBehaviour
 
 ## ⚠️ Известные проблемы из Фазы 1
 
-### 1. F-клавиши не работают
+### 1. F-клавиши НЕ работают (КРИТИЧНО — высокий приоритет)
 - **Статус:** ❌ Требуется исправление
-- **Описание:** При старте в консоли есть ошибки
-- **Приоритет:** Высокий — нужно исправить для тестирования
+- **Описание:** 
+  - При нажатии F5-F10 ничего не происходит
+  - Console не показывает логи `[StreamingTest] Camera found`
+  - HUD не отображается
+- **Симптомы:**
+  - `[StreamingTest]` логи НЕ появляются
+  - Телепортация НЕ работает
+  - Chunk Grid не переключается
 
-**План исправления:**
-1. Запустить Unity Editor и получить полный лог ошибок
-2. Проверить `StreamingTest.cs` — убедиться что `Update()` вызывается
-3. Проверить что `WorldStreamingManager.Instance` инициализирован
+**План отладки:**
+1. Проверить что `StreamingTest.cs` КОМПОНЕНТ ДОБАВЛЕН на объект в сцене
+2. Проверить что `StreamingTest` компонент имеет галочку Enabled
+3. Добавить Debug.Log в Start() для проверки инициализации
+4. Проверить что `Camera.main` возвращает камеру
+5. Проверить что `Update()` вызывается (добавить Debug.Log)
 
-### 2. Возможные проблемы:
-- `WorldStreamingManager` не наследует `NetworkBehaviour` (пока)
-- `StreamingTest` должен работать только в одиночном режиме (без сети)
-- `FloatingOriginMP` должен работать и на клиенте для применения сдвига
+**Возможные причины:**
+1. `StreamingTest` компонент не добавлен на объект
+2. `Camera.main` возвращает null (камера создаётся после)
+3. `Update()` не вызывается (скрипт отключен)
+4. Объект с `StreamingTest` уничтожается при старте
+5. Конфликт с другими скриптами управления камерой
+
+**Быстрый тест:**
+```csharp
+// В Start() добавить:
+Debug.Log($"[StreamingTest] Start called! Camera={_mainCamera?.name ?? "NULL"}");
+
+// В Update() добавить:
+if (Input.GetKeyDown(KeyCode.F5)) {
+    Debug.Log("[StreamingTest] F5 pressed!");
+    // ...
+}
+```
+
+### 2. FloatingOriginMP не найден (INFO)
+- **Статус:** ⚠️ Warning, не критично
+- **Описание:** `FloatingOriginMP not found. Large world coordinate support disabled.`
+- **Причина:** FloatingOriginMP не добавлен на сцену или не найден
+- **Решение:** Добавить FloatingOriginMP компонент или игнорировать (опционально)
+
+### 3. ShipModuleManager NullReferenceException (НЕ связано со стримингом)
+- **Статус:** ⚠️ Существующий баг
+- **Описание:** `NullReferenceException: Object reference not set to an instance of an object` в ShipModuleManager.cs:286
+- **Причина:** Слоты модулей не назначены в ShipFlightClass
+- **Решение:** Это отдельный баг, не связан с World Streaming
 
 ---
 
-## 📝 Документация для обновления
+## � Документация для обновления
 
 После завершения Фазы 2 обновить:
 - `docs/world/LargeScaleMMO/SESSION_PROMPT_Phase2_MultiplayerIntegration_STATUS.md` — статус задач
@@ -292,7 +355,7 @@ public class FloatingOriginMP : NetworkBehaviour
 
 ---
 
-## 📁 Структура результата
+## �📁 Структура результата
 
 ```
 Assets/_Project/Scripts/World/Streaming/

@@ -24,8 +24,8 @@ MonoBehaviour:
     worldPosition: {x: -65500, y: 48.08, z: 140500}
     realHeightMeters: 4808
     shapeType: 0
+    meshHeight: 389.44803
     baseRadius: 180
-    meshHeight: 600
     heightProfile:
       serializedVersion: 2
       m_Curve:
@@ -118,8 +118,8 @@ MonoBehaviour:
     worldPosition: {x: -45000, y: 42, z: 155000}
     realHeightMeters: 4208
     shapeType: 0
+    meshHeight: 350
     baseRadius: 130
-    meshHeight: 600
     heightProfile:
       serializedVersion: 2
       m_Curve:
@@ -212,8 +212,8 @@ MonoBehaviour:
     worldPosition: {x: -30000, y: 40, z: 120000}
     realHeightMeters: 4478
     shapeType: 0
+    meshHeight: 350
     baseRadius: 140
-    meshHeight: 600
     heightProfile:
       serializedVersion: 2
       m_Curve:
@@ -306,8 +306,8 @@ MonoBehaviour:
     worldPosition: {x: -50000, y: 38, z: 175000}
     realHeightMeters: 4274
     shapeType: 0
+    meshHeight: 350
     baseRadius: 150
-    meshHeight: 600
     heightProfile:
       serializedVersion: 2
       m_Curve:
@@ -400,8 +400,8 @@ MonoBehaviour:
     worldPosition: {x: -90000, y: 40, z: 125000}
     realHeightMeters: 4506
     shapeType: 0
+    meshHeight: 350
     baseRadius: 120
-    meshHeight: 600
     heightProfile:
       serializedVersion: 2
       m_Curve:
@@ -494,8 +494,8 @@ MonoBehaviour:
     worldPosition: {x: -85000, y: 35, z: 110000}
     realHeightMeters: 3500
     shapeType: 0
+    meshHeight: 350
     baseRadius: 90
-    meshHeight: 600
     heightProfile:
       serializedVersion: 2
       m_Curve:

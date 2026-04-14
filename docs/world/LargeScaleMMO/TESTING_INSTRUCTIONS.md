@@ -13,8 +13,20 @@
 Assets → ProjectC_1.unity
 ```
 
-### Шаг 2: Добавьте компоненты на сцену
+### Шаг 2: Убедитесь что есть Main Camera
 
+В сцене должна быть камера с тегом **MainCamera**:
+1. Выберите камеру в Hierarchy
+2. В Inspector проверьте тег (вверху справа от имени объекта)
+3. Если тег не **MainCamera** — выберите его из выпадающего списка
+
+### Шаг 3: Добавьте компоненты на сцену
+
+**Вариант A (Автоматически):**
+- Запустите Play Mode — компонент `StreamingTest_AutoRun` автоматически добавится на камеру
+- Или: `Tools → Project C → World → Add Test Component to Camera`
+
+**Вариант B (Вручную):**
 1. В Hierarchy создайте пустой объект: **Right Click → Create Empty**
 2. Переименуйте в `WorldStreamingManager`
 3. Добавьте компоненты (Add Component):
@@ -24,15 +36,25 @@ Assets → ProjectC_1.unity
    - `ProjectC.World.Streaming.ChunkLoader`
    - `ProjectC.World.Streaming.FloatingOriginMP` (опционально)
 
-### Шаг 3: Настройте ссылки
+### Шаг 4: Настройте ссылки
 
 В Inspector компонента `WorldStreamingManager`:
 1. Assign **WorldData** (найдите в Assets/_Project/Data/ или создайте новый)
 2. Остальные поля оставьте пустыми — они найдутся автоматически (auto-find)
 
-### Шаг 4: Запустите Play Mode
+### Шаг 5: Запустите Play Mode
 
 Нажмите **Play** (или Ctrl+P)
+
+**В Console вы должны увидеть:**
+```
+[StreamingTest_AutoRun] ✅ Awake called - компонент работает!
+[StreamingTest_AutoRun] ✅ Start() called!
+[StreamingTest_AutoRun] Camera: Main Camera
+[StreamingTest_AutoRun] 🎮 Управление: F5=след.точка, F6=пред.точка...
+```
+
+Если вы видите эти логи — значит всё работает! Теперь нажимайте F-клавиши.
 
 ---
 
@@ -222,7 +244,7 @@ int total = worldChunkManager.TotalChunkCount;
 **Важно:** Используем F-клавиши чтобы НЕ конфликтовать с основным управлением игры (WASD, Space и т.д.)
 
 | Клавиша | Действие |
-|---------|----------|
+|---------|---------|
 | **F5** | Телепортация к следующей точке |
 | **F6** | Телепортация к предыдущей точке |
 | **F7** | Загрузить чанки вокруг позиции |
@@ -230,6 +252,128 @@ int total = worldChunkManager.TotalChunkCount;
 | **F9** | Toggle Chunk Grid визуализация |
 | **F10** | Toggle Debug HUD |
 | **Escape** | Выход из Play Mode |
+
+---
+
+## 🧪 Тестирование мультиплеера (Фаза 2)
+
+### Предварительные требования
+
+1. **Unity 6** с установленным **Netcode for GameObjects** (NGO 2.x)
+2. **ParrelSync** плагин для тестирования нескольких клиентов (опционально)
+3. Все компоненты World Streaming должны быть настроены на сцене
+
+### Настройка для тестирования
+
+1. **NetworkManager настройка:**
+   ```
+   - Transport: Unity Transport
+   - Port: 7777
+   - Server Listen Address: 127.0.0.1
+   ```
+
+2. **WorldStreamingManager настройка (Host):**
+   ```
+   - Убедитесь что WorldStreamingManager имеет NetworkBehaviour
+   - Добавьте NetworkObject компонент
+   - Настройте NetworkPrefab для спавна
+   ```
+
+### Тест 6: Host + 1 клиент (Базовая интеграция)
+
+**Цель:** Проверить что клиент получает команды загрузки чанков от сервера
+
+**Шаги:**
+1. Host запускает игру (Play as Host)
+2. В Console проверяем:
+   ```
+   [WorldStreamingManager] Host mode: streaming enabled
+   [WorldStreamingManager] Waiting for clients...
+   ```
+3. Запускаем второй экземпляр (Play as Client)
+4. Вводим IP: 127.0.0.1
+5. Подключаемся
+6. Host телепортируется (F5/F6)
+7. Наблюдаем в Console клиента:
+   ```
+   [Client] Received LoadChunkRpc for Chunk(1, 0)
+   [Client] Loading chunk Chunk(1, 0)
+   ```
+
+**Ожидаемые результаты:**
+- ✅ Клиент получает RPC от сервера
+- ✅ Чанки загружаются у клиента
+- ✅ Горы и облака идентичны у Host и Client
+- ✅ FloatingOrigin сдвигается синхронно
+
+### Тест 7: FloatingOrigin синхронизация
+
+**Цель:** Проверить что сдвиг мира происходит одновременно на Host и Client
+
+**Шаги:**
+1. Host перемещается к удалённой точке (F5 несколько раз)
+2. Host нажимает F8 для сброса FloatingOrigin
+3. Наблюдаем в Console Host:
+   ```
+   [FloatingOriginMP] Before ResetOrigin: cameraPos=50000, totalOffset=0
+   [FloatingOriginMP] WorldShiftClientRpc sent with offset=(50000, 0, 0)
+   ```
+4. Наблюдаем в Console Client:
+   ```
+   [FloatingOriginMP] ApplyWorldShift (from server): offset=(50000, 0, 0)
+   ```
+
+**Ожидаемые результаты:**
+- ✅ Host инициирует сдвиг
+- ✅ Client получает синхронизацию
+- ✅ Позиции игроков относительно мира синхронизированы
+
+### Тест 8: NetworkObject spawn/despawn
+
+**Цель:** Проверить спавн/деспавн объектов с чанками
+
+**Шаги:**
+1. Host загружает чанк с фермами
+2. Наблюдаем в Network Hierarchy:
+   ```
+   - Spawned
+     - Farm_001 (NetworkObject)
+     - Farm_002 (NetworkObject)
+   ```
+3. Host выходит за пределы радиуса (unloadRadius)
+4. Наблюдаем:
+   ```
+   [ProceduralChunkGenerator] Despawning objects for Chunk(0, 0)
+   [NetworkObject] Farm_001 Despawn()
+   [NetworkObject] Farm_002 Despawn()
+   ```
+
+**Ожидаемые результаты:**
+- ✅ NetworkObjects спавнятся с чанком
+- ✅ NetworkObjects деспавнятся при выгрузке чанка
+- ✅ Client видит те же объекты что Host
+
+---
+
+## 📋 Чеклист тестирования мультиплеера
+
+### Перед тестом:
+- [ ] NetworkManager настроен
+- [ ] WorldStreamingManager имеет NetworkBehaviour
+- [ ] Port открыт (7777)
+- [ ] Firewall не блокирует соединение
+
+### Во время теста:
+- [ ] Host загружается первым
+- [ ] Client подключается успешно
+- [ ] ChunkRpc вызывается
+- [ ] FloatingOrigin синхронизирован
+- [ ] NetworkObjects спавнятся правильно
+
+### После теста:
+- [ ] Нет errors в Console
+- [ ] Нет десинхронизации позиций
+- [ ] Чанки выгружаются корректно
 
 ---
 

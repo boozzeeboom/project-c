@@ -63,7 +63,24 @@ namespace ProjectC.World
         
         private void Start()
         {
+            // Ищем камеру несколькими способами
             _mainCamera = Camera.main;
+            
+            if (_mainCamera == null)
+            {
+                // Пробуем найти камеру по тегу
+                GameObject camObj = GameObject.FindGameObjectWithTag("MainCamera");
+                if (camObj != null)
+                    _mainCamera = camObj.GetComponent<Camera>();
+            }
+            
+            if (_mainCamera == null)
+            {
+                // Берем любую Enabled камеру
+                _mainCamera = FindAnyObjectByType<Camera>();
+            }
+            
+            Debug.Log($"[StreamingTest] Camera found: {(_mainCamera != null ? _mainCamera.name : "NULL")}");
             
             // Auto-find streaming manager
             if (streamingManager == null)
@@ -89,6 +106,8 @@ namespace ProjectC.World
             {
                 _targetPosition = new Vector3(testPositions[0].x, teleportHeight, testPositions[0].y);
             }
+            
+            Debug.Log("[StreamingTest] Test controls: F5=next, F6=prev, F7=load chunks, F8=reset origin, F9=toggle grid, F10=toggle HUD");
         }
         
         private void Update()

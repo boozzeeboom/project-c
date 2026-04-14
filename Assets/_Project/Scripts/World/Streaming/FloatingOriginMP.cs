@@ -360,38 +360,27 @@ namespace ProjectC.World.Streaming
 
         #region Debug HUD
 
-#if UNITY_EDITOR
         void OnGUI()
         {
-            if (!showDebugHUD) return;
+            if (!showDebugHUD || !_initialized) return;
 
-            GUILayout.BeginArea(new Rect(10, 10, 350, 150));
+            // HUD в правом верхнем углу
+            float boxHeight = 100 + (_worldRoots.Count * 18);
+            GUILayout.BeginArea(new Rect(Screen.width - 320, 10, 310, boxHeight));
             GUILayout.BeginVertical("box");
 
-            GUILayout.Label("<b>FloatingOriginMP</b>", UnityEditor.EditorStyles.boldLabel);
-            GUILayout.Label($"Total Offset: {_totalOffset:F0}");
-            GUILayout.Label($"Shift Count: {_shiftCount}");
-            GUILayout.Label($"World Roots: {_worldRoots.Count}");
+            GUI.backgroundColor = new Color(0.1f, 0.3f, 0.6f);
+            GUILayout.Label("🗺️ FloatingOriginMP", GUI.skin.box);
+            GUI.backgroundColor = Color.white;
 
-            if (_worldRoots.Count > 0)
-            {
-                GUILayout.Label("Roots:", UnityEditor.EditorStyles.boldLabel);
-                foreach (var root in _worldRoots)
-                {
-                    if (root != null)
-                    {
-                        GUILayout.Label($"  - {root.name}: {root.position:F0}");
-                    }
-                }
-            }
-
-            GUILayout.Label($"Camera Pos: {_camera.transform.position:F0}");
-            GUILayout.Label($"Threshold: {threshold:N0}");
+            GUILayout.Label($"Offset: {_totalOffset:N0}");
+            GUILayout.Label($"Shifts: {_shiftCount}");
+            GUILayout.Label($"Roots: {_worldRoots.Count}");
+            GUILayout.Label($"Cam: {_camera.transform.position:F0}");
 
             GUILayout.EndVertical();
             GUILayout.EndArea();
         }
-#endif
 
         #endregion
     }

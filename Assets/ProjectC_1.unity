@@ -371,6 +371,10 @@ MonoBehaviour:
   windExposure: 1
   windDecayTime: 1.5
   cargoSystem: {fileID: 0}
+  moduleManager: {fileID: 0}
+  meziyActivator: {fileID: 0}
+  fuelSystem: {fileID: 0}
+  meziyVisual: {fileID: 0}
 --- !u!114 &22305902
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -954,6 +958,10 @@ MonoBehaviour:
   windExposure: 1
   windDecayTime: 1.5
   cargoSystem: {fileID: 0}
+  moduleManager: {fileID: 0}
+  meziyActivator: {fileID: 0}
+  fuelSystem: {fileID: 0}
+  meziyVisual: {fileID: 0}
 --- !u!114 &106174917
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -1029,6 +1037,7 @@ GameObject:
   - component: {fileID: 120067654}
   - component: {fileID: 120067653}
   - component: {fileID: 120067659}
+  - component: {fileID: 120067660}
   m_Layer: 0
   m_Name: Ship_Light
   m_TagString: Ship
@@ -1218,6 +1227,27 @@ MonoBehaviour:
   windExposure: 1
   windDecayTime: 1.5
   cargoSystem: {fileID: 0}
+  moduleManager: {fileID: 120067660}
+  meziyActivator: {fileID: 0}
+  fuelSystem: {fileID: 0}
+  meziyVisual: {fileID: 0}
+--- !u!114 &120067660
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 120067652}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 8c2eae82d165add4c835f8906bf633c8, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::ProjectC.Ship.ShipModuleManager
+  slots:
+  - {fileID: 0}
+  - {fileID: 0}
+  - {fileID: 0}
+  availablePower: 35
 --- !u!1001 &123257142
 PrefabInstance:
   m_ObjectHideFlags: 0
@@ -1284,29 +1314,10 @@ PrefabInstance:
     - targetCorrespondingSourceObject: {fileID: 2910778914681228092, guid: 020b4cd7c3349134b8c1de87bed1f706, type: 3}
       insertIndex: -1
       addedObject: {fileID: 1481840753}
+    - targetCorrespondingSourceObject: {fileID: 2910778914681228092, guid: 020b4cd7c3349134b8c1de87bed1f706, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 1481840757}
   m_SourcePrefab: {fileID: 100100000, guid: 020b4cd7c3349134b8c1de87bed1f706, type: 3}
---- !u!114 &127820020
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 0}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 03cb413ec48f0344a879c437641edd97, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::ProjectC.Ship.AltitudeCorridorData
-  corridorId: Primus
-  displayName: Primus City
-  minAltitude: 4100
-  maxAltitude: 4450
-  warningMargin: 100
-  criticalUpperMargin: 200
-  isGlobal: 0
-  cityCenter: {x: 0, y: 4348, z: 0}
-  cityRadius: 500
-  requiresRegistration: 1
 --- !u!1 &168044035
 GameObject:
   m_ObjectHideFlags: 0
@@ -2008,28 +2019,6 @@ MonoBehaviour:
   statusText: {fileID: 282563845}
   connectionPanel: {fileID: 326357026}
   playerCountText: {fileID: 1074496276}
---- !u!114 &417937869
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 0}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 03cb413ec48f0344a879c437641edd97, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::ProjectC.Ship.AltitudeCorridorData
-  corridorId: Kilimanjaro
-  displayName: Kilimanjaro City
-  minAltitude: 1200
-  maxAltitude: 1550
-  warningMargin: 100
-  criticalUpperMargin: 200
-  isGlobal: 0
-  cityCenter: {x: 500, y: 1395, z: -1000}
-  cityRadius: 500
-  requiresRegistration: 1
 --- !u!1 &422923733
 GameObject:
   m_ObjectHideFlags: 0
@@ -3280,6 +3269,10 @@ MonoBehaviour:
   windExposure: 1
   windDecayTime: 1.5
   cargoSystem: {fileID: 0}
+  moduleManager: {fileID: 0}
+  meziyActivator: {fileID: 0}
+  fuelSystem: {fileID: 0}
+  meziyVisual: {fileID: 0}
 --- !u!1 &723887977
 GameObject:
   m_ObjectHideFlags: 0
@@ -3687,28 +3680,6 @@ Transform:
   m_Children: []
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
---- !u!114 &750761246
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 0}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 03cb413ec48f0344a879c437641edd97, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::ProjectC.Ship.AltitudeCorridorData
-  corridorId: Secundus
-  displayName: Secundus City
-  minAltitude: 1000
-  maxAltitude: 1250
-  warningMargin: 100
-  criticalUpperMargin: 200
-  isGlobal: 0
-  cityCenter: {x: -500, y: 1142, z: -500}
-  cityRadius: 500
-  requiresRegistration: 1
 --- !u!21 &766744362
 Material:
   serializedVersion: 8
@@ -4916,12 +4887,12 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::ProjectC.Ship.AltitudeCorridorSystem
   corridors:
-  - {fileID: 1458050715}
-  - {fileID: 127820020}
-  - {fileID: 1448618084}
-  - {fileID: 1607487319}
-  - {fileID: 417937869}
-  - {fileID: 750761246}
+  - {fileID: 0}
+  - {fileID: 0}
+  - {fileID: 0}
+  - {fileID: 0}
+  - {fileID: 0}
+  - {fileID: 0}
 --- !u!4 &1265130806
 Transform:
   m_ObjectHideFlags: 0
@@ -5660,28 +5631,6 @@ RectTransform:
   m_AnchoredPosition: {x: 0, y: 0}
   m_SizeDelta: {x: 0, y: 0}
   m_Pivot: {x: 0, y: 0}
---- !u!114 &1448618084
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 0}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 03cb413ec48f0344a879c437641edd97, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::ProjectC.Ship.AltitudeCorridorData
-  corridorId: Tertius
-  displayName: Tertius City
-  minAltitude: 2300
-  maxAltitude: 2600
-  warningMargin: 100
-  criticalUpperMargin: 200
-  isGlobal: 0
-  cityCenter: {x: 1000, y: 2462, z: 1000}
-  cityRadius: 500
-  requiresRegistration: 1
 --- !u!1 &1456201360
 GameObject:
   m_ObjectHideFlags: 0
@@ -5819,28 +5768,6 @@ CanvasRenderer:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 1456201360}
   m_CullTransparentMesh: 1
---- !u!114 &1458050715
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 0}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 03cb413ec48f0344a879c437641edd97, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::ProjectC.Ship.AltitudeCorridorData
-  corridorId: Global
-  displayName: Global Corridor
-  minAltitude: 1200
-  maxAltitude: 4450
-  warningMargin: 100
-  criticalUpperMargin: 200
-  isGlobal: 1
-  cityCenter: {x: 0, y: 0, z: 0}
-  cityRadius: 0
-  requiresRegistration: 0
 --- !u!21 &1460065333
 Material:
   serializedVersion: 8
@@ -6044,6 +5971,21 @@ MonoBehaviour:
       m_PostInfinity: 2
       m_RotationOrder: 4
   CustomBlends: {fileID: 0}
+--- !u!114 &1481840757
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1481840748}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 2ef3a54918f33de4bbdac40f2072bfdd, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::ProjectC.World.Core.FloatingOrigin
+  worldRoot: {fileID: 723887982}
+  threshold: 100000
+  showDebugLogs: 0
 --- !u!1 &1514815623
 GameObject:
   m_ObjectHideFlags: 0
@@ -6202,28 +6144,6 @@ Transform:
   m_Children: []
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
---- !u!114 &1607487319
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 0}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 03cb413ec48f0344a879c437641edd97, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::ProjectC.Ship.AltitudeCorridorData
-  corridorId: Quartus
-  displayName: Quartus City
-  minAltitude: 1500
-  maxAltitude: 1850
-  warningMargin: 100
-  criticalUpperMargin: 200
-  isGlobal: 0
-  cityCenter: {x: -1000, y: 1690, z: 500}
-  cityRadius: 500
-  requiresRegistration: 1
 --- !u!1 &1664930645
 GameObject:
   m_ObjectHideFlags: 0
@@ -7626,6 +7546,110 @@ Transform:
   m_Children: []
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!1 &2012654201
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 2012654206}
+  - component: {fileID: 2012654205}
+  - component: {fileID: 2012654204}
+  - component: {fileID: 2012654203}
+  - component: {fileID: 2012654202}
+  m_Layer: 0
+  m_Name: WorldStreamingManager
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!114 &2012654202
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 2012654201}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 6ae94d7261074a94ea1ddc11644ef9af, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::ProjectC.World.Streaming.ChunkLoader
+  chunkManager: {fileID: 0}
+  chunkGenerator: {fileID: 0}
+  chunksParentTransform: {fileID: 0}
+  globalSeed: 0
+  fadeDuration: 1.5
+--- !u!114 &2012654203
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 2012654201}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 60ad3bb4e92361d4cae0eae4b7d3bd49, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::ProjectC.World.Streaming.ProceduralChunkGenerator
+  farmPrefab: {fileID: 0}
+  farmPlaceholderMaterial: {fileID: 0}
+  mountainMaterial: {fileID: 0}
+  globalSeed: 0
+  lodLevel: 0
+--- !u!114 &2012654204
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 2012654201}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 03a71893818d46940b095d2cb3f0cdfa, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::ProjectC.World.Streaming.WorldChunkManager
+  worldData: {fileID: 0}
+--- !u!114 &2012654205
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 2012654201}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 77152cb919f3cdc4bb564552b7acd660, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::ProjectC.World.WorldStreamingManager
+  worldData: {fileID: 11400000, guid: ddacb262ed6e1134b8d4f9eabbb1cbd8, type: 2}
+  chunkManager: {fileID: 0}
+  chunkGenerator: {fileID: 0}
+  chunkLoader: {fileID: 0}
+  floatingOrigin: {fileID: 0}
+  loadRadius: 2
+  unloadRadius: 3
+  updateInterval: 0.5
+  globalSeed: 42
+  showDebugHUD: 0
+--- !u!4 &2012654206
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 2012654201}
+  serializedVersion: 2
+  m_LocalRotation: {x: -0, y: -0, z: -0, w: 1}
+  m_LocalPosition: {x: 0, y: 2.41, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 0}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1 &2015984000
 GameObject:
   m_ObjectHideFlags: 0
@@ -7780,6 +7804,10 @@ MonoBehaviour:
   windExposure: 1
   windDecayTime: 1.5
   cargoSystem: {fileID: 0}
+  moduleManager: {fileID: 0}
+  meziyActivator: {fileID: 0}
+  fuelSystem: {fileID: 0}
+  meziyVisual: {fileID: 0}
 --- !u!54 &2015984006
 Rigidbody:
   m_ObjectHideFlags: 0
@@ -8732,6 +8760,7 @@ SceneRoots:
   - {fileID: 745049055}
   - {fileID: 1983242073}
   - {fileID: 201384790}
+  - {fileID: 2012654206}
   - {fileID: 2116182889}
   - {fileID: 1871544170}
   - {fileID: 1120768819}

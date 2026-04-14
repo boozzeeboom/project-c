@@ -1,0 +1,11 @@
+{
+  "servers": {
+    "devmemory-local": {
+      "type": "stdio",
+      "command": "node",
+      "args": [
+        "c:\\Users\\leon7\\.vscode\\extensions\\abcstark.devmemory-ai-code-recall-1.0.4\\dist\\mcp-server.bundle.js"
+      ]
+    }
+  }
+}

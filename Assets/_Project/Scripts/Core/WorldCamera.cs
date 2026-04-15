@@ -66,6 +66,11 @@ namespace ProjectC.Core
         private WorldGenerator worldGenerator;
         private FloatingOrigin floatingOrigin;
 
+        // REFACTORED: Cache UI and world references instead of FindObjectsByType
+        private ProjectC.UI.ControlHintsUI _cachedControlHintsUI;
+        private Canvas _cachedCanvas;
+        private Transform _cachedWorldRoot;
+
         // Input System — программно созданные действия
         private InputAction _moveAction;
         private InputAction _lookAction;
@@ -228,18 +233,26 @@ namespace ProjectC.Core
         /// <summary>
         /// Найти корневой объект мира для FloatingOrigin.
         /// Ищет "Mountains" или любой объект с множеством детей.
+        /// REFACTORED: Caches result to avoid FindObjectsByType on subsequent calls.
         /// </summary>
         private Transform FindWorldRoot()
         {
+            // Return cached if already found
+            if (_cachedWorldRoot != null)
+            {
+                return _cachedWorldRoot;
+            }
+
             // 1. Пробуем найти "Mountains"
             GameObject mountains = GameObject.Find("Mountains");
             if (mountains != null && mountains.transform.childCount > 0)
             {
                 Debug.Log($"[WorldCamera] Found Mountains root with {mountains.transform.childCount} children");
-                return mountains.transform;
+                _cachedWorldRoot = mountains.transform;
+                return _cachedWorldRoot;
             }
 
-            // 2. Ищем любой объект с большим количеством детей
+            // 2. Ищем любой объект с большим количеством детей (only once, then cache)
             GameObject[] allObjects = FindObjectsByType<GameObject>(FindObjectsInactive.Include);
             Transform bestRoot = null;
             int maxChildren = 0;
@@ -256,7 +269,8 @@ namespace ProjectC.Core
             if (bestRoot != null && maxChildren > 5)
             {
                 Debug.Log($"[WorldCamera] Using {bestRoot.name} as world root ({maxChildren} children)");
-                return bestRoot;
+                _cachedWorldRoot = bestRoot;
+                return _cachedWorldRoot;
             }
 
             Debug.LogWarning("[WorldCamera] Cannot find world root! FloatingOrigin may not work properly.");
@@ -264,31 +278,49 @@ namespace ProjectC.Core
         }
 
         /// <summary>
-        /// Создать UI подсказок автоматически
+        /// Создать UI подсказок автоматически.
+        /// REFACTORED: Uses cached references instead of FindAnyObjectByType.
         /// </summary>
         private void CreateControlHintsUI()
         {
-            // Проверяем, есть ли уже ControlHintsUI на сцене
-            var existingHints = FindAnyObjectByType<ControlHintsUI>();
-            if (existingHints != null)
+            // Check cached reference first
+            if (_cachedControlHintsUI != null)
             {
                 return;
             }
 
-            // Создаём Canvas если нет
-            var canvas = FindAnyObjectByType<Canvas>();
-            if (canvas == null)
+            // Try to find existing UI elements (only once, then cache)
+            if (_cachedControlHintsUI == null)
             {
-                GameObject canvasObj = new GameObject("Canvas");
-                canvas = canvasObj.AddComponent<Canvas>();
-                canvasObj.AddComponent<UnityEngine.UI.CanvasScaler>();
-                canvasObj.AddComponent<UnityEngine.UI.GraphicRaycaster>();
-                canvas.renderMode = RenderMode.ScreenSpaceOverlay;
+                var existingHints = FindObjectsByType<ControlHintsUI>(FindObjectsSortMode.None);
+                if (existingHints != null && existingHints.Length > 0)
+                {
+                    _cachedControlHintsUI = existingHints[0];
+                    return;
+                }
             }
 
-            // Создаём TextMeshPro
+            // Find or create Canvas (only once)
+            if (_cachedCanvas == null)
+            {
+                var existingCanvases = FindObjectsByType<Canvas>(FindObjectsSortMode.None);
+                if (existingCanvases != null && existingCanvases.Length > 0)
+                {
+                    _cachedCanvas = existingCanvases[0];
+                }
+                else
+                {
+                    GameObject canvasObj = new GameObject("Canvas");
+                    _cachedCanvas = canvasObj.AddComponent<Canvas>();
+                    canvasObj.AddComponent<UnityEngine.UI.CanvasScaler>();
+                    canvasObj.AddComponent<UnityEngine.UI.GraphicRaycaster>();
+                    _cachedCanvas.renderMode = RenderMode.ScreenSpaceOverlay;
+                }
+            }
+
+            // TextMeshPro
             var textObj = new GameObject("ControlHintsText");
-            textObj.transform.SetParent(canvas.transform);
+            textObj.transform.SetParent(_cachedCanvas.transform);
             RectTransform rectTransform = textObj.AddComponent<RectTransform>();
             rectTransform.anchorMin = new Vector2(0, 1);
             rectTransform.anchorMax = new Vector2(0, 1);
@@ -301,11 +333,11 @@ namespace ProjectC.Core
             tmpText.color = Color.white;
             tmpText.alignment = TextAlignmentOptions.TopLeft;
 
-            // Создаём ControlHintsUI
+            // ControlHintsUI
             GameObject hintsObj = new GameObject("ControlHintsUI");
-            hintsObj.transform.SetParent(canvas.transform);
-            var controlHints = hintsObj.AddComponent<ControlHintsUI>();
-            controlHints.hintsText = tmpText;
+            hintsObj.transform.SetParent(_cachedCanvas.transform);
+            _cachedControlHintsUI = hintsObj.AddComponent<ControlHintsUI>();
+            _cachedControlHintsUI.hintsText = tmpText;
         }
 
         private void LateUpdate()

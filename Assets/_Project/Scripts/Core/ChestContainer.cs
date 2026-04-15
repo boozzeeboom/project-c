@@ -4,19 +4,20 @@ using UnityEngine;
 namespace ProjectC.Items
 {
     /// <summary>
-    /// Компонент сундука/контейнера с несколькими предметами.
-    /// При нажатии E рядом — открывается, выдаёт все предметы из LootTable в инвентарь.
+    /// Component for chest/container with multiple items.
+    /// Press E when nearby — opens, delivers all items from LootTable to inventory.
+    /// Implements IInteractable for trigger-based caching instead of FindObjectsByType.
     /// </summary>
-    public class ChestContainer : MonoBehaviour
+    public class ChestContainer : MonoBehaviour, Core.IInteractable
     {
-        [Header("Таблица добычи")]
+        [Header("Loot Table")]
         public LootTable lootTable;
 
-        [Header("Настройки")]
+        [Header("Settings")]
         public float openRadius = 3f;
         public bool autoDestroy = true;
 
-        [Header("Анимация")]
+        [Header("Animation")]
         public float openDuration = 0.8f;
         public Vector3 openRotationOffset = new Vector3(0, 0, -45f);
         public Vector3 openScaleOffset = new Vector3(0.1f, 0.1f, 0.1f);
@@ -26,12 +27,18 @@ namespace ProjectC.Items
         private Vector3 _startScale;
         private float _openTimer = 0f;
 
+        // IInteractable implementation
+        public string InstanceId => gameObject.GetInstanceID().ToString();
+        public string DisplayName => "Chest";
+        public float InteractionRadius => openRadius;
+        public Vector3 Position => transform.position;
+
         private void Start()
         {
             _startRotation = transform.eulerAngles;
             _startScale = transform.localScale;
 
-            // Проверка коллайдера
+            // Ensure trigger collider
             var collider = GetComponent<Collider>();
             if (collider == null)
             {
@@ -42,7 +49,7 @@ namespace ProjectC.Items
 
         private void Update()
         {
-            // Анимация открытия
+            // Open animation
             if (_isOpen && _openTimer < openDuration)
             {
                 _openTimer += Time.deltaTime;
@@ -54,19 +61,43 @@ namespace ProjectC.Items
             }
         }
 
+        private void OnTriggerEnter(Collider other)
+        {
+            // Register with InteractableManager when player enters trigger
+            if (other.CompareTag("Player") || other.GetComponent<CharacterController>() != null)
+            {
+                Core.InteractableManager.RegisterChest(this);
+            }
+        }
+
+        private void OnTriggerExit(Collider other)
+        {
+            // Unregister from InteractableManager when player exits trigger
+            if (other.CompareTag("Player") || other.GetComponent<CharacterController>() != null)
+            {
+                Core.InteractableManager.UnregisterChest(this);
+            }
+        }
+
+        private void OnDisable()
+        {
+            // Ensure cleanup when object is disabled
+            Core.InteractableManager.UnregisterChest(this);
+        }
+
         /// <summary>
-        /// Открыть сундук. Запускает ТОЛЬКО анимацию.
-        /// Инвентарь управляется из NetworkPlayer.
+        /// Open the chest. Starts ONLY the animation.
+        /// Inventory is managed separately.
         /// </summary>
         public void Open()
         {
             if (_isOpen) return;
             _isOpen = true;
-            // Только анимация — инвентарь управляется отдельно
+            // Animation only — inventory managed separately
         }
 
         /// <summary>
-        /// Получить список предметов из LootTable (без открытия, для серверной логики).
+        /// Get list of items from LootTable (without opening, for server logic).
         /// </summary>
         public List<ItemData> GetLootItems()
         {
@@ -75,7 +106,7 @@ namespace ProjectC.Items
         }
 
         /// <summary>
-        /// Расстояние взаимодействия.
+        /// Interaction distance.
         /// </summary>
         public float GetOpenRadius()
         {

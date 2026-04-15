@@ -58,6 +58,10 @@ namespace ProjectC.Core
         // Инициализация
         private bool _cameraInitialized = false;
 
+        // REFACTORED: Cache UI references instead of FindAnyObjectByType in CreateControlHintsUI
+        private ProjectC.UI.ControlHintsUI _cachedControlHintsUI;
+        private Canvas _cachedCanvas;
+
         /// <summary>
         /// Горизонтальное направление камеры (куда бежит персонаж по W)
         /// </summary>
@@ -189,30 +193,49 @@ namespace ProjectC.Core
         }
 
         /// <summary>
-        /// Создать UI подсказок автоматически
+        /// Создать UI подсказок автоматически.
+        /// REFACTORED: Uses cached references instead of FindAnyObjectByType.
         /// </summary>
         private void CreateControlHintsUI()
         {
-            var existingHints = FindAnyObjectByType<ProjectC.UI.ControlHintsUI>();
-            if (existingHints != null)
+            // Check cached reference first
+            if (_cachedControlHintsUI != null)
             {
                 return;
             }
 
-            // Создаём Canvas
-            var canvas = FindAnyObjectByType<Canvas>();
-            if (canvas == null)
+            // Try to find existing UI elements (only once, then cache)
+            if (_cachedControlHintsUI == null)
             {
-                GameObject canvasObj = new GameObject("Canvas");
-                canvas = canvasObj.AddComponent<Canvas>();
-                canvasObj.AddComponent<UnityEngine.UI.CanvasScaler>();
-                canvasObj.AddComponent<UnityEngine.UI.GraphicRaycaster>();
-                canvas.renderMode = RenderMode.ScreenSpaceOverlay;
+                var existingHints = FindObjectsByType<ProjectC.UI.ControlHintsUI>(FindObjectsSortMode.None);
+                if (existingHints != null && existingHints.Length > 0)
+                {
+                    _cachedControlHintsUI = existingHints[0];
+                    return;
+                }
+            }
+
+            // Find or create Canvas (only once)
+            if (_cachedCanvas == null)
+            {
+                var existingCanvases = FindObjectsByType<Canvas>(FindObjectsSortMode.None);
+                if (existingCanvases != null && existingCanvases.Length > 0)
+                {
+                    _cachedCanvas = existingCanvases[0];
+                }
+                else
+                {
+                    GameObject canvasObj = new GameObject("Canvas");
+                    _cachedCanvas = canvasObj.AddComponent<Canvas>();
+                    canvasObj.AddComponent<UnityEngine.UI.CanvasScaler>();
+                    canvasObj.AddComponent<UnityEngine.UI.GraphicRaycaster>();
+                    _cachedCanvas.renderMode = RenderMode.ScreenSpaceOverlay;
+                }
             }
 
             // TextMeshPro
             var textObj = new GameObject("ControlHintsText");
-            textObj.transform.SetParent(canvas.transform);
+            textObj.transform.SetParent(_cachedCanvas.transform);
             RectTransform rt = textObj.AddComponent<RectTransform>();
             rt.anchorMin = new Vector2(0, 1);
             rt.anchorMax = new Vector2(0, 1);
@@ -227,9 +250,9 @@ namespace ProjectC.Core
 
             // ControlHintsUI
             GameObject hintsObj = new GameObject("ControlHintsUI");
-            hintsObj.transform.SetParent(canvas.transform);
-            var controlHints = hintsObj.AddComponent<ProjectC.UI.ControlHintsUI>();
-            controlHints.hintsText = tmpText;
+            hintsObj.transform.SetParent(_cachedCanvas.transform);
+            _cachedControlHintsUI = hintsObj.AddComponent<ProjectC.UI.ControlHintsUI>();
+            _cachedControlHintsUI.hintsText = tmpText;
         }
 
         private void LateUpdate()

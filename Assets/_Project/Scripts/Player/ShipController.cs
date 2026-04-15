@@ -193,8 +193,35 @@ namespace ProjectC.Player
             // Авто-назначение Debug HUD (Сессия 5_2)
             InitializeDebugHUD();
 
-            // Инициализация ветра
+        // Инициализация ветра
             _currentWindForce = Vector3.zero;
+
+            // REFACTORED: Register with InteractableManager for trigger-based ship detection
+            Core.InteractableManager.RegisterShip(this);
+        }
+
+        private void OnDestroy()
+        {
+            // Cleanup: unregister from InteractableManager
+            Core.InteractableManager.UnregisterShip(this);
+        }
+
+        private void OnTriggerEnter(Collider other)
+        {
+            // Also register with InteractableManager when player enters trigger
+            if (other.CompareTag("Player") || other.GetComponent<CharacterController>() != null)
+            {
+                Core.InteractableManager.RegisterShip(this);
+            }
+        }
+
+        private void OnTriggerExit(Collider other)
+        {
+            // Unregister when player exits trigger
+            if (other.CompareTag("Player") || other.GetComponent<CharacterController>() != null)
+            {
+                Core.InteractableManager.UnregisterShip(this);
+            }
         }
 
         /// <summary>

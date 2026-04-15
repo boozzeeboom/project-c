@@ -59,6 +59,14 @@ namespace ProjectC.Items
             _toggleAction = new InputAction("ToggleInventory", binding: "<Keyboard>/tab", expectedControlType: "Button");
             _mousePosAction = new InputAction("MousePosition", binding: "<Mouse>/position");
             _onTogglePerformed = _ => ToggleInventory();
+
+            // REFACTORED: Pre-allocate GL material once in Awake instead of lazy creation in Draw methods
+            // This eliminates allocations in hot path (OnGUI)
+            if (_glMaterial == null)
+            {
+                _glMaterial = new Material(Shader.Find("Hidden/Internal-Colored"));
+                _glMaterial.hideFlags = HideFlags.HideAndDontSave;
+            }
         }
 
         private void OnEnable()
@@ -327,12 +335,7 @@ namespace ProjectC.Items
 
         private void DrawFilledFan(Vector3[] vertices, Color color)
         {
-            if (_glMaterial == null)
-            {
-                _glMaterial = new Material(Shader.Find("Hidden/Internal-Colored"));
-                _glMaterial.hideFlags = HideFlags.HideAndDontSave;
-            }
-
+            // REFACTORED: Material is pre-allocated in Awake, no null check needed
             _glMaterial.SetPass(0);
             GL.PushMatrix();
             GL.LoadPixelMatrix();
@@ -352,12 +355,7 @@ namespace ProjectC.Items
 
         private void DrawOutline(Vector3[] vertices)
         {
-            if (_glMaterial == null)
-            {
-                _glMaterial = new Material(Shader.Find("Hidden/Internal-Colored"));
-                _glMaterial.hideFlags = HideFlags.HideAndDontSave;
-            }
-
+            // REFACTORED: Material is pre-allocated in Awake, no null check needed
             _glMaterial.SetPass(0);
             GL.PushMatrix();
             GL.LoadPixelMatrix();

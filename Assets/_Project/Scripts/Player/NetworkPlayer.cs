@@ -355,22 +355,9 @@ namespace ProjectC.Player
 
         private ShipController FindNearestShip()
         {
-            var ships = FindObjectsByType<ShipController>(FindObjectsInactive.Include);
-            ShipController nearest = null;
-            float minDist = float.MaxValue;
-
-            foreach (var ship in ships)
-            {
-                if (!ship.gameObject.activeSelf) continue;
-                float dist = Vector3.Distance(transform.position, ship.transform.position);
-                if (dist < boardDistance && dist < minDist)
-                {
-                    minDist = dist;
-                    nearest = ship;
-                }
-            }
-
-            return nearest;
+            // REFACTORED: Use InteractableManager instead of FindObjectsByType
+            // Zero allocations in hot path
+            return InteractableManager.FindNearestShip(transform.position, boardDistance);
         }
 
         private void ApplyWalkingState()
@@ -395,38 +382,19 @@ namespace ProjectC.Player
 
         private void FindNearestInteractable()
         {
+            // REFACTORED: Use InteractableManager instead of FindObjectsByType
+            // Zero allocations in hot path
+            
             _nearestPickup = null;
             _nearestChest = null;
-            float nearestDist = float.MaxValue;
-            bool foundChest = false;
 
-            var chests = FindObjectsByType<ChestContainer>(FindObjectsInactive.Include);
-            foreach (var chest in chests)
+            // First check chests (higher priority)
+            _nearestChest = InteractableManager.FindNearestChest(transform.position, float.MaxValue);
+            
+            // Then check pickups if no chest nearby
+            if (_nearestChest == null)
             {
-                if (!chest.gameObject.activeSelf) continue;
-                float dist = Vector3.Distance(transform.position, chest.transform.position);
-                if (dist < chest.GetOpenRadius() && dist < nearestDist)
-                {
-                    nearestDist = dist;
-                    _nearestChest = chest;
-                    foundChest = true;
-                }
-            }
-
-            if (!foundChest)
-            {
-                var pickups = FindObjectsByType<PickupItem>(FindObjectsInactive.Include);
-                nearestDist = float.MaxValue;
-                foreach (var pickup in pickups)
-                {
-                    if (!pickup.gameObject.activeSelf) continue;
-                    float dist = Vector3.Distance(transform.position, pickup.transform.position);
-                    if (dist < pickupRange && dist < nearestDist)
-                    {
-                        nearestDist = dist;
-                        _nearestPickup = pickup;
-                    }
-                }
+                _nearestPickup = InteractableManager.FindNearestPickup(transform.position, pickupRange);
             }
         }
 

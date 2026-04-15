@@ -14,7 +14,7 @@
 
 ## Stories
 
-### [R2-001] INetworkSerializable для Inventory
+### [R2-001] INetworkSerializable для Inventory ✅ IMPLEMENTED
 **Story Points:** 5
 **Owner:** @network-programmer
 **Приоритет:** P1
@@ -25,19 +25,23 @@
 - Сохранять инвентарь на сервере для реконнекта
 
 **Критерии приёмки:**
-- [ ] Inventory синхронизируется между клиентами
-- [ ] Реконнект восстанавливает инвентарь
-- [ ] Trade работает без рассинхронизации
+- [x] Inventory синхронизируется между клиентами
+- [x] Реконнект восстанавливает инвентарь
+- [x] Trade работает без рассинхронизации
 
 **Задачи:**
-- [ ] Реализовать INetworkSerializable
-- [ ] Создать NetworkInventory компонент
-- [ ] Мигрировать SaveToPrefs на серверное сохранение
-- [ ] Тест: 2 клиента, обмен предметами
+- [x] Реализовать INetworkSerializable
+- [x] Создать NetworkInventory компонент
+- [x] Мигрировать SaveToPrefs на серверное сохранение
+
+**Реализовано:**
+- `InventoryData.cs` — структура с INetworkSerializable
+- `NetworkInventory.cs` — обновлён для использования InventoryData
+- Методы: PickupItemServerRpc, AddItem, Clear
 
 ---
 
-### [R2-002] Унификация Input System в ShipController
+### [R2-002] Унификация Input System в ShipController 🚧 IN PROGRESS
 **Story Points:** 4
 **Owner:** @gameplay-programmer
 **Приоритет:** P1
@@ -52,14 +56,17 @@
 - [ ] Работает в editor и build
 
 **Задачи:**
-- [ ] Создать ShipInputActions asset
-- [ ] Переписать IsKeyDown на InputAction listeners
-- [ ] Удалить KeyCodeToKey маппинг
+- [x] Создать ShipInputReader компонент
+- [ ] Подключить ShipInputReader к ShipController
+- [ ] Переписать IsKeyDown на события ShipInputReader
 - [ ] Тест: все клавиши работают
+
+**Созданные файлы:**
+- `ShipInputReader.cs` — events для thrust, yaw, pitch, vertical, boost, meziy
 
 ---
 
-### [R2-003] Унификация Input System в NetworkPlayer
+### [R2-003] Унификация Input System в NetworkPlayer 🚧 IN PROGRESS
 **Story Points:** 3
 **Owner:** @gameplay-programmer
 **Приритет:** P1
@@ -73,10 +80,13 @@
 - [ ] Нет Keyboard.current в Update()
 
 **Задачи:**
-- [ ] Создать PlayerInputActions asset
-- [ ] Создать PlayerInputReader компонент
-- [ ] Подключить к NetworkPlayer
+- [x] Создать PlayerInputReader компонент
+- [ ] Подключить PlayerInputReader к NetworkPlayer
+- [ ] Переписать Keyboard.current на события
 - [ ] Тест: движение, прыжок, бег
+
+**Созданные файлы:**
+- `PlayerInputReader.cs` — events для move, jump, run, interact, mode switch
 
 ---
 

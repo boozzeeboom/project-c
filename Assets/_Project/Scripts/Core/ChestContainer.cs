@@ -28,7 +28,7 @@ namespace ProjectC.Items
         private float _openTimer = 0f;
 
         // IInteractable implementation
-        public string InstanceId => gameObject.GetInstanceID().ToString();
+        public string InstanceId => gameObject.name + "_" + GetHashCode();
         public string DisplayName => "Chest";
         public float InteractionRadius => openRadius;
         public Vector3 Position => transform.position;

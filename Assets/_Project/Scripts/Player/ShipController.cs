@@ -200,7 +200,7 @@ namespace ProjectC.Player
             Core.InteractableManager.RegisterShip(this);
         }
 
-        private void OnDestroy()
+        private new void OnDestroy()
         {
             // Cleanup: unregister from InteractableManager
             Core.InteractableManager.UnregisterShip(this);

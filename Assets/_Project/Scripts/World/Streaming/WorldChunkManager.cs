@@ -169,12 +169,14 @@ namespace ProjectC.World.Streaming
                 // Пробуем найти в сцене
                 worldData = FindAnyObjectByType<WorldData>();
                 
+                #if UNITY_EDITOR
                 // Если не нашли — загружаем из Assets
                 if (worldData == null)
                 {
                     worldData = UnityEditor.AssetDatabase.LoadAssetAtPath<WorldData>(
                         "Assets/_Project/Data/World/WorldData.asset");
                 }
+                #endif
             }
             
             if (worldData == null)

@@ -61,7 +61,9 @@ namespace ProjectC.World
         
         [Tooltip("Глобальный seed мира - влияет на генерацию облаков и форму гор")]
         [SerializeField]
+        #pragma warning disable 0414
         private int globalSeed = 42;
+        #pragma warning restore 0414
         
         [Header("Debug")]
         [Tooltip("Показывать debug информацию на экране")]
@@ -274,11 +276,13 @@ namespace ProjectC.World
                 {
                     worldData = Resources.Load<WorldData>("Data/World/WorldData");
                 }
+                #if UNITY_EDITOR
                 if (worldData == null)
                 {
                     worldData = UnityEditor.AssetDatabase.LoadAssetAtPath<WorldData>(
                         "Assets/_Project/Data/World/WorldData.asset");
                 }
+                #endif
             }
             
             if (chunkManager == null)

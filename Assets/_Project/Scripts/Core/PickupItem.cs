@@ -25,7 +25,7 @@ namespace ProjectC.Items
         private bool _isCollected = false;
 
         // IInteractable implementation
-        public string InstanceId => gameObject.GetInstanceID().ToString();
+        public string InstanceId => gameObject.name + "_" + GetHashCode();
         public string DisplayName => itemData != null ? itemData.itemName : "Unknown Item";
         public float InteractionRadius => interactionRadius;
         public Vector3 Position => transform.position;

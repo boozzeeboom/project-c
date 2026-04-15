@@ -8,19 +8,18 @@ namespace ProjectC.Core
 {
     /// <summary>
     /// Сетевая синхронизация инвентаря через NetworkVariable.
+    /// R2-001: Использует InventoryData (INetworkSerializable) для надёжной синхронизации.
     /// Server-authoritative: клиент шлёт RPC → сервер валидирует → обновляет NetworkVariable.
     /// NetworkVariable автоматически реплицирует изменения всем клиентам.
-    /// Использует строку (CSV) для хранения списка ID предметов.
     /// </summary>
     public class NetworkInventory : NetworkBehaviour
     {
         [Header("Настройки")]
         [SerializeField] private int maxSlots = 32;
 
-        // NetworkVariable для синхронизации предметов (CSV строка ID)
-        // Формат: "1,5,3,12" — ID предметов через запятую
-        private NetworkVariable<string> _itemIdsString = new NetworkVariable<string>(
-            "",
+        // R2-001: NetworkVariable с InventoryData (INetworkSerializable)
+        private NetworkVariable<InventoryData> _inventoryData = new NetworkVariable<InventoryData>(
+            new InventoryData(true),
             NetworkVariableReadPermission.Everyone,
             NetworkVariableWritePermission.Server
         );
@@ -49,7 +48,7 @@ namespace ProjectC.Core
             base.OnNetworkSpawn();
 
             // Подписываемся на изменения
-            _itemIdsString.OnValueChanged += OnItemIdsChanged;
+            _inventoryData.OnValueChanged += OnInventoryDataChanged;
 
             // Загружаем предметы из NetworkVariable в локальный кэш
             SyncLocalCache();
@@ -59,35 +58,39 @@ namespace ProjectC.Core
         {
             base.OnNetworkDespawn();
 
-            if (_itemIdsString != null)
+            if (_inventoryData != null)
             {
-                _itemIdsString.OnValueChanged -= OnItemIdsChanged;
+                _inventoryData.OnValueChanged -= OnInventoryDataChanged;
             }
         }
 
         /// <summary>
-        /// Обработка изменения NetworkVariable
+        /// R2-001: Обработка изменения NetworkVariable через InventoryData
         /// </summary>
-        private void OnItemIdsChanged(string previousValue, string newValue)
+        private void OnInventoryDataChanged(InventoryData previousValue, InventoryData newValue)
         {
             SyncLocalCache();
             OnInventoryChanged?.Invoke();
         }
 
         /// <summary>
-        /// Синхронизировать локальный кэш из NetworkVariable
+        /// R2-001: Синхронизировать локальный кэш из InventoryData
         /// </summary>
         private void SyncLocalCache()
         {
             _items.Clear();
 
-            if (string.IsNullOrEmpty(_itemIdsString.Value))
+            var data = _inventoryData.Value;
+            if (data.TotalCount == 0)
                 return;
 
-            string[] ids = _itemIdsString.Value.Split(',');
-            foreach (var idStr in ids)
+            // Проходим по всем типам предметов
+            foreach (ItemType type in System.Enum.GetValues(typeof(ItemType)))
             {
-                if (int.TryParse(idStr, out int itemId))
+                var ids = data.GetIdsForType(type);
+                if (ids == null) continue;
+
+                foreach (int itemId in ids)
                 {
                     if (_itemDatabase.TryGetValue(itemId, out var itemData))
                     {
@@ -98,12 +101,12 @@ namespace ProjectC.Core
         }
 
         /// <summary>
-        /// Клиент запрашивает подбор предмета (server-authoritative)
+        /// R2-001: Клиент запрашивает подбор предмета (server-authoritative)
         /// </summary>
         [Rpc(SendTo.Server)]
-        public void PickupItemServerRpc(int itemId, Vector3 pickupPosition, RpcParams rpcParams = default)
+        public void PickupItemServerRpc(int itemId, ItemType itemType, Vector3 pickupPosition, RpcParams rpcParams = default)
         {
-            Debug.Log($"[NetworkInventory] ServerRpc: itemId={itemId}, from client {OwnerClientId}");
+            Debug.Log($"[NetworkInventory] ServerRpc: itemId={itemId}, type={itemType}, from client {OwnerClientId}");
 
             // Валидация: проверяем дистанцию (анти-чит)
             var serverPlayer = GetComponent<NetworkPlayer>();
@@ -121,26 +124,25 @@ namespace ProjectC.Core
                 return;
             }
 
-            // Валидация: предмет существует (если нет — регистрируем)
+            // Валидация: предмет существует
             if (!_itemDatabase.ContainsKey(itemId))
             {
-                // Сервер не знает этот предмет — клиент мог авто-регистрацию
-                Debug.LogWarning($"[NetworkInventory] Предмет с ID {itemId} не найден на сервере. Клиент авто-регистрацию сделал?");
+                Debug.LogWarning($"[NetworkInventory] Предмет с ID {itemId} не найден на сервере.");
                 return;
             }
 
-            // Проверка места в инвентаре
-            var currentIds = GetCurrentItemIds();
-            if (currentIds.Count >= maxSlots)
+            // R2-001: Проверка места в инвентаре через InventoryData
+            var data = _inventoryData.Value;
+            if (data.TotalCount >= maxSlots)
             {
-                Debug.LogWarning($"[NetworkInventory] Инвентарь игрока {OwnerClientId} полон ({currentIds.Count}/{maxSlots})");
+                Debug.LogWarning($"[NetworkInventory] Инвентарь игрока {OwnerClientId} полон ({data.TotalCount}/{maxSlots})");
                 return;
             }
 
-            // Добавляем предмет
-            currentIds.Add(itemId);
-            _itemIdsString.Value = string.Join(",", currentIds);
-            Debug.Log($"[NetworkInventory] Предмет ID={itemId} добавлен! Всего: {currentIds.Count}");
+            // R2-001: Добавляем предмет через InventoryData
+            data.AddItem(itemType, itemId);
+            _inventoryData.Value = data;
+            Debug.Log($"[NetworkInventory] Предмет ID={itemId} добавлен! Всего: {data.TotalCount}");
 
             // Уведомляем клиента об успехе
             PickupResultClientRpc(itemId, true);
@@ -157,27 +159,9 @@ namespace ProjectC.Core
         }
 
         /// <summary>
-        /// Получить текущие ID предметов из строки
+        /// R2-001: Добавить предмет напрямую (для сервера или тестов)
         /// </summary>
-        private List<int> GetCurrentItemIds()
-        {
-            var ids = new List<int>();
-            if (string.IsNullOrEmpty(_itemIdsString.Value))
-                return ids;
-
-            string[] parts = _itemIdsString.Value.Split(',');
-            foreach (var part in parts)
-            {
-                if (int.TryParse(part, out int id))
-                    ids.Add(id);
-            }
-            return ids;
-        }
-
-        /// <summary>
-        /// Добавить предмет напрямую (для сервера или тестов)
-        /// </summary>
-        public void AddItem(int itemId)
+        public void AddItem(int itemId, ItemType itemType)
         {
             if (!IsServer && !IsHost)
             {
@@ -185,28 +169,31 @@ namespace ProjectC.Core
                 return;
             }
 
-            var currentIds = GetCurrentItemIds();
-            if (currentIds.Count >= maxSlots)
+            var data = _inventoryData.Value;
+            if (data.TotalCount >= maxSlots)
             {
                 Debug.LogWarning($"[NetworkInventory] Инвентарь полон");
                 return;
             }
 
-            currentIds.Add(itemId);
-            _itemIdsString.Value = string.Join(",", currentIds);
+            data.AddItem(itemType, itemId);
+            _inventoryData.Value = data;
         }
 
         /// <summary>
-        /// Добавить несколько предметов
+        /// R2-001: Добавить несколько предметов
         /// </summary>
-        public void AddMultipleItems(List<int> itemIds)
+        public void AddMultipleItems(List<(int itemId, ItemType itemType)> items)
         {
             if (!IsServer && !IsHost) return;
 
-            foreach (var itemId in itemIds)
+            var data = _inventoryData.Value;
+            foreach (var (itemId, itemType) in items)
             {
-                AddItem(itemId);
+                if (data.TotalCount >= maxSlots) break;
+                data.AddItem(itemType, itemId);
             }
+            _inventoryData.Value = data;
         }
 
         /// <summary>
@@ -241,12 +228,12 @@ namespace ProjectC.Core
         }
 
         /// <summary>
-        /// Очистить инвентарь
+        /// R2-001: Очистить инвентарь
         /// </summary>
         public void Clear()
         {
             if (!IsServer && !IsHost) return;
-            _itemIdsString.Value = "";
+            _inventoryData.Value = new InventoryData(true);
         }
     }
 }

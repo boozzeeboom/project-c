@@ -13,6 +13,7 @@ GameObject:
   - component: {fileID: 7392522793937288135}
   - component: {fileID: 1161926159966955946}
   - component: {fileID: -8638653109892984551}
+  - component: {fileID: -2566205779895230594}
   m_Layer: 0
   m_Name: NetworkPlayer
   m_TagString: Player
@@ -155,6 +156,20 @@ CharacterController:
   m_SkinWidth: 0.08
   m_MinMoveDistance: 0.001
   m_Center: {x: 0, y: 1, z: 0}
+--- !u!114 &-2566205779895230594
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 100000}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 08238e40e5e488d43adbcf46b6255767, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::ProjectC.Player.PlayerInputReader
+  mouseSensitivityX: 2
+  mouseSensitivityY: 2
 --- !u!1 &5240685422153753277
 GameObject:
   m_ObjectHideFlags: 0

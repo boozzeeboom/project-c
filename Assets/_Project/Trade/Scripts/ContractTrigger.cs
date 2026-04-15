@@ -73,14 +73,14 @@ public class ContractTrigger : MonoBehaviour
         var kb = UnityEngine.InputSystem.Keyboard.current;
         if (kb != null && kb.cKey.wasPressedThisFrame)
         {
-            OpenContractBoard();
+            OpenContractBoard(_nearbyPlayer);
         }
     }
 
     /// <summary>
     /// Открыть доску контрактов
     /// </summary>
-    public void OpenContractBoard()
+    public void OpenContractBoard(NetworkPlayer player)
     {
         if (market == null)
         {
@@ -90,14 +90,14 @@ public class ContractTrigger : MonoBehaviour
 
         if (ContractBoardUI.Instance != null)
         {
-            ContractBoardUI.Instance.OpenBoard(market);
+            ContractBoardUI.Instance.OpenBoard(market, player);
         }
         else
         {
             // Создать ContractBoardUI динамически
             var go = new GameObject("[ContractBoardUI]");
             var boardUI = go.AddComponent<ContractBoardUI>();
-            boardUI.OpenBoard(market);
+            boardUI.OpenBoard(market, player);
         }
     }
 

@@ -4,6 +4,7 @@ using UnityEngine.InputSystem;
 using ProjectC.Core;
 using ProjectC.Items;
 using ProjectC.Trade;
+using ProjectC.UI;
 using System.Collections.Generic;
 
 namespace ProjectC.Player
@@ -179,9 +180,8 @@ namespace ProjectC.Player
 
             var uiObj = new GameObject("InventoryUI");
             _inventoryUI = uiObj.AddComponent<InventoryUI>();
-            var invField = typeof(InventoryUI).GetField("inventory", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
-            if (invField != null)
-                invField.SetValue(_inventoryUI, _inventory);
+            // REFACTORED (R3-001): Используем SetInventory() вместо reflection
+            _inventoryUI.SetInventory(_inventory);
         }
 
         // ==================== ВВОД ====================
@@ -487,12 +487,13 @@ namespace ProjectC.Player
         /// Купить товар — клиент запрашивает, сервер валидирует
         /// </summary>
         [Rpc(SendTo.Server)]
-        public void TradeBuyServerRpc(string itemId, int quantity, string locationId, RpcParams rpcParams = default)
+        public void TradeBuyServerRpc(string itemId, int quantity, string locationId)
         {
             // Серверная логика в TradeMarketServer
             if (TradeMarketServer.Instance != null)
             {
-                TradeMarketServer.Instance.BuyItemServerRpc(itemId, quantity, locationId);
+                // Передаём свой OwnerClientId
+                TradeMarketServer.Instance.BuyItemServerRpc(itemId, quantity, locationId, OwnerClientId);
             }
             else
             {
@@ -504,11 +505,11 @@ namespace ProjectC.Player
         /// Продать товар — клиент запрашивает, сервер валидирует
         /// </summary>
         [Rpc(SendTo.Server)]
-        public void TradeSellServerRpc(string itemId, int quantity, string locationId, RpcParams rpcParams = default)
+        public void TradeSellServerRpc(string itemId, int quantity, string locationId)
         {
             if (TradeMarketServer.Instance != null)
             {
-                TradeMarketServer.Instance.SellItemServerRpc(itemId, quantity, locationId);
+                TradeMarketServer.Instance.SellItemServerRpc(itemId, quantity, locationId, OwnerClientId);
             }
             else
             {
@@ -517,15 +518,47 @@ namespace ProjectC.Player
         }
 
         /// <summary>
-        /// Результат торговли — сервер отправляет клиенту
-        /// Сессия 8C: добавлены itemId, itemQuantity, isPurchase для синхронизации склада
+        /// Результат торговли — сервер отправляет конкретному клиенту
+        /// 
+        /// СЕССИЯ 8L FIX: Фильтруем по targetClientId вместо IsOwner.
+        /// Это решает проблему когда на хосте IsOwner проверяется относительно локального клиента,
+        /// а не того кому предназначался RPC.
         /// </summary>
-        [Rpc(SendTo.Owner)]
-        public void TradeResultClientRpc(bool success, string message, float newCredits, string itemId = "", int itemQuantity = 0, bool isPurchase = true, RpcParams rpcParams = default)
+        [ClientRpc]
+        public void TradeResultClientRpc(ulong targetClientId, bool success, string message, float newCredits, string itemId = "", int itemQuantity = 0, bool isPurchase = true,
+            ClientRpcParams rpcParams = default)
         {
-            if (TradeUI.Instance != null)
+            // Сессия FIX: Проверяем targetClientId
+            ulong localClientId = NetworkManager.Singleton.LocalClientId;
+            Debug.Log($"[NetworkPlayer] TradeResultClientRpc: targetClientId={targetClientId}, localClientId={localClientId}, success={success}, itemId={itemId}, IsOwner={IsOwner}");
+            
+            // Всегда вызываем OnTradeResult если это для нас (добавил для диагностики)
+            if (localClientId == targetClientId)
             {
-                TradeUI.Instance.OnTradeResult(success, message, newCredits, itemId, itemQuantity, isPurchase);
+                Debug.Log($"[NetworkPlayer] Вызываю OnTradeResult для клиента {targetClientId}");
+                if (TradeUI.Instance != null)
+                {
+                    TradeUI.Instance.OnTradeResult(success, message, newCredits, itemId, itemQuantity, isPurchase);
+                }
+                else
+                {
+                    Debug.LogWarning($"[NetworkPlayer] TradeUI.Instance == null!");
+                }
+                
+                // TradeDebugTools: принудительное обновление UI
+                if (TradeDebugTools.Instance != null)
+                {
+                    Debug.Log($"[NetworkPlayer] Вызываю TradeDebugTools.ForceRefresh()");
+                    TradeDebugTools.Instance.ForceRefresh();
+                }
+                else
+                {
+                    Debug.LogWarning($"[NetworkPlayer] TradeDebugTools.Instance == null!");
+                }
+            }
+            else
+            {
+                Debug.Log($"[NetworkPlayer] Этот клиент ({localClientId}) НЕ целевой ({targetClientId}), пропускаю");
             }
         }
 

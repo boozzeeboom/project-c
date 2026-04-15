@@ -292,7 +292,7 @@ namespace ProjectC.Core
             // Try to find existing UI elements (only once, then cache)
             if (_cachedControlHintsUI == null)
             {
-                var existingHints = FindObjectsByType<ControlHintsUI>(FindObjectsSortMode.None);
+                var existingHints = FindObjectsByType<ControlHintsUI>(FindObjectsInactive.Include);
                 if (existingHints != null && existingHints.Length > 0)
                 {
                     _cachedControlHintsUI = existingHints[0];
@@ -303,7 +303,7 @@ namespace ProjectC.Core
             // Find or create Canvas (only once)
             if (_cachedCanvas == null)
             {
-                var existingCanvases = FindObjectsByType<Canvas>(FindObjectsSortMode.None);
+                var existingCanvases = FindObjectsByType<Canvas>(FindObjectsInactive.Include);
                 if (existingCanvases != null && existingCanvases.Length > 0)
                 {
                     _cachedCanvas = existingCanvases[0];

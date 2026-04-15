@@ -48,6 +48,7 @@ namespace ProjectC.World
         
         [Header("Debug Visualization")]
         [Tooltip("Показывать текущий чанк игрока")]
+        #pragma warning disable 0414
         [SerializeField] private bool showCurrentChunk = true;
         
         [Tooltip("Цвет индикатора текущего чанка")]
@@ -55,6 +56,7 @@ namespace ProjectC.World
         
         [Tooltip("Размер индикатора")]
         [SerializeField] private float indicatorSize = 50f;
+        #pragma warning restore 0414
         
         // Internal state
         private int _currentTargetIndex = 0;

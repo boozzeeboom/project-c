@@ -300,38 +300,10 @@ namespace ProjectC.World.Streaming
         }
 
         /// <summary>
-        /// Собрать world objects (горы, облака, фермы, и т.д.) и переместить под worldRoot.
+        /// REFACTORED (R3-003): CollectWorldObjects() удалён — больше не используется.
+        /// FloatingOriginMP теперь полагается на FindOrCreateWorldRoots() который
+        /// находит объекты по именам из worldRootNames[], без изменения иерархии сцены.
         /// </summary>
-        private void CollectWorldObjects(Transform worldRoot)
-        {
-            // Получаем все root objects в сцене
-            var sceneRoots = gameObject.scene.GetRootGameObjects();
-
-            int movedCount = 0;
-
-            foreach (var rootObj in sceneRoots)
-            {
-                // Пропускаем камеру и сам WorldRoot
-                if (rootObj == gameObject || rootObj == worldRoot.gameObject) continue;
-
-                // Пропускаем UI canvas и другие не-world объекты
-                if (rootObj.CompareTag("UICanvas") || rootObj.CompareTag("EventSystem")) continue;
-
-                // Пропускаем объекты с Camera компонентом
-                if (rootObj.GetComponent<Camera>() != null) continue;
-
-                // Перемещаем под worldRoot
-                rootObj.transform.SetParent(worldRoot, true);
-                movedCount++;
-
-                if (showDebugLogs)
-                {
-                    Debug.Log($"[FloatingOriginMP] Moved '{rootObj.name}' under WorldRoot");
-                }
-            }
-
-            Debug.Log($"[FloatingOriginMP] Collected {movedCount} world objects under 'WorldRoot'");
-        }
 
         /// <summary>
         /// Округлить offset для избежания накопления ошибок floating point.

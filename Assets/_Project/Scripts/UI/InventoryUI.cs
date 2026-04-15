@@ -17,6 +17,15 @@ namespace ProjectC.Items
         [Header("Ссылки")]
         [SerializeField] private Inventory inventory;
 
+        /// <summary>
+        /// REFACTORED (R3-001): Установка инвентаря без reflection.
+        /// Заменяет reflection-код в NetworkPlayer.SpawnInventory().
+        /// </summary>
+        public void SetInventory(Inventory inv)
+        {
+            inventory = inv;
+        }
+
         [Header("Настройки колеса")]
         [SerializeField] private float wheelRadius = 210f;
 

@@ -48,7 +48,8 @@ public class ContractBoardUI : MonoBehaviour
             Destroy(gameObject);
             return;
         }
-        _player = FindAnyObjectByType<ProjectC.Player.NetworkPlayer>();
+        // NOTE: _player теперь устанавливается в OpenBoard(), не здесь
+        // Использование FindAnyObjectByType в Awake могло найти не того игрока на клиенте
     }
 
     private void OnDestroy()
@@ -137,7 +138,9 @@ public class ContractBoardUI : MonoBehaviour
     /// <summary>
     /// Открыть доску контрактов
     /// </summary>
-    public void OpenBoard(LocationMarket market)
+    /// <param name="market">Рынок локации</param>
+    /// <param name="player">NetworkPlayer который открывает доску (опционально)</param>
+    public void OpenBoard(LocationMarket market, NetworkPlayer player = null)
     {
         if (market == null) return;
 
@@ -151,6 +154,9 @@ public class ContractBoardUI : MonoBehaviour
         _selectedIndex = -1;
         _currentLocationId = market.locationId;
 
+        // REFACTORED (R2-BUG-001): Используем переданного игрока вместо FindAnyObjectByType
+        _player = player;
+
         // Регистрируем в UIManager
         UIManager.EnsureExists().OpenPanel("ContractBoardUI", 300, OnContractPanelClosed, _boardPanel);
 
@@ -161,12 +167,6 @@ public class ContractBoardUI : MonoBehaviour
         if (_locationText != null) _locationText.text = $"[{market.locationId.ToUpper()}]";
 
         ShowMessage("Загрузка контрактов...");
-
-        // Найти локального игрока
-        if (_player == null)
-        {
-            _player = FindAnyObjectByType<NetworkPlayer>();
-        }
 
         // Запросить контракты у сервера (только от Owner)
         if (_player != null && _player.IsOwner)

@@ -46,16 +46,28 @@ public class TradeUI : MonoBehaviour
     private NetworkPlayer _player;
 
     /// <summary>
-    /// Получить NetworkPlayer — ленивый поиск, т.к. в Awake() объект ещё не заспавнен сетью
+    /// Получить NetworkPlayer — ищем именно своего (IsOwner), а не любой.
+    /// Сессия 8J FIX: FindAnyObjectByType возвращает первый, а не своего.
     /// </summary>
     private NetworkPlayer Player
     {
         get
         {
-            if (_player == null)
-                _player = FindAnyObjectByType<NetworkPlayer>();
-            if (_player == null)
-                Debug.LogWarning("[TradeUI] NetworkPlayer не найден — торговля недоступна");
+            if (_player == null || !_player.IsOwner)
+            {
+                // Сессия 8J: Ищем именно своего NetworkPlayer
+                var players = FindObjectsByType<NetworkPlayer>(FindObjectsInactive.Exclude);
+                foreach (var p in players)
+                {
+                    if (p.IsOwner)
+                    {
+                        _player = p;
+                        break;
+                    }
+                }
+                if (_player == null)
+                    Debug.LogWarning("[TradeUI] Свой NetworkPlayer не найден — торговля недоступна");
+            }
             return _player;
         }
     }
@@ -202,7 +214,12 @@ public class TradeUI : MonoBehaviour
         else if (currentMarket != null) OpenTrade(currentMarket);
     }
 
-    public void OpenTrade(LocationMarket market)
+    /// <summary>
+    /// Открыть торговый интерфейс
+    /// </summary>
+    /// <param name="market">Рынок локации</param>
+    /// <param name="player">NetworkPlayer который открывает торговлю (опционально)</param>
+    public void OpenTrade(LocationMarket market, ProjectC.Player.NetworkPlayer player = null)
     {
         if (market == null) return;
 
@@ -217,6 +234,12 @@ public class TradeUI : MonoBehaviour
         _isOpen = true;
         _showWarehouseTab = false;
         _selectedIndex = -1;
+
+        // REFACTORED (R2-BUG-002): Используем переданного игрока вместо FindAnyObjectByType
+        if (player != null)
+        {
+            _player = player;
+        }
 
         // Регистрируем в UIManager
         UIManager.EnsureExists().OpenPanel("TradeUI", 200, OnTradePanelClosed, _tradePanel);
@@ -844,29 +867,176 @@ public class TradeUI : MonoBehaviour
 
     private void BuyItemViaServer(string itemId, int quantity)
     {
-        // Отправляем RPC через NetworkPlayer — сервер авторитетен, fallback запрещён
-        if (Player != null)
+        var nm = NetworkManager.Singleton;
+        
+        // Проверяем: сеть инициализирована?
+        bool networkReady = nm != null && (nm.IsServer || nm.IsClient);
+        
+        Debug.Log($"[TradeUI] BuyItemViaServer: networkReady={networkReady}, IsServer={nm?.IsServer}, IsHost={nm?.IsHost}, IsClient={nm?.IsClient}");
+        
+        if (networkReady)
         {
-            Player.TradeBuyServerRpc(itemId, quantity, currentMarket.locationId);
+            // Сеть работает — используем серверную логику
+            if (nm.IsServer)
+            {
+                // Мы на сервере или хосте — вызываем локальные методы
+                if (TradeMarketServer.Instance != null)
+                {
+                    TradeMarketServer.Instance.BuyItemLocal(itemId, quantity, currentMarket.locationId);
+                    return;
+                }
+                else
+                {
+                    ShowMessage("Ошибка: сервер торговли не инициализирован");
+                    _tradeLocked = false;
+                    return;
+                }
+            }
+            
+            // Мы на клиенте — отправляем через RPC
+            if (Player != null && Player.IsOwner)
+            {
+                Player.TradeBuyServerRpc(itemId, quantity, currentMarket.locationId);
+                return;
+            }
+            
+            // Владелец не найден — пробуем без IsOwner
+            if (Player != null)
+            {
+                Player.TradeBuyServerRpc(itemId, quantity, currentMarket.locationId);
+                return;
+            }
+        }
+        
+        // Сеть не инициализирована (offline mode) — вызываем локальные методы напрямую
+        Debug.Log("[TradeUI] BuyItemViaServer: сеть не активна, вызываю локальную покупку");
+        if (TradeMarketServer.Instance != null)
+        {
+            TradeMarketServer.Instance.BuyItemLocal(itemId, quantity, currentMarket.locationId);
         }
         else
         {
-            ShowMessage("ОШИБКА: NetworkPlayer не найден. Попробуйте перезайти.");
-            Debug.LogError("[TradeUI] NetworkPlayer не найден — невозможно выполнить покупку");
+            // Fallback: локальная торговля без сервера
+            Debug.LogWarning("[TradeUI] TradeMarketServer не найден — выполняю локальную покупку");
+            ProcessLocalBuy(itemId, quantity);
         }
+        _tradeLocked = false;
+    }
+    
+    /// <summary>
+    /// Локальная покупка без сервера (offline mode)
+    /// </summary>
+    private void ProcessLocalBuy(string itemId, int quantity)
+    {
+        if (currentMarket == null || playerStorage == null) return;
+        
+        var mi = currentMarket.items.Find(m => m.item?.itemId == itemId);
+        if (mi == null || mi.item == null)
+        {
+            ShowMessage("Товар не найден!");
+            return;
+        }
+        
+        float totalCost = mi.currentPrice * quantity;
+        if (playerStorage.credits < totalCost)
+        {
+            ShowMessage($"Недостаточно кредитов! Нужно: {totalCost:F0}, есть: {playerStorage.credits:F0}");
+            return;
+        }
+        
+        playerStorage.credits -= totalCost;
+        var existing = playerStorage.warehouse.Find(w => w.item?.itemId == itemId);
+        if (existing != null)
+            existing.quantity += quantity;
+        else
+            playerStorage.warehouse.Add(new WarehouseItem { item = mi.item, quantity = quantity });
+        
+        ShowMessage($"КУПЛЕНО: {mi.item.displayName} x{quantity} за {totalCost:F0} CR");
+        playerStorage.Save();
+        UpdateDisplays();
+        RenderItems();
     }
 
     private void SellItemViaServer(string itemId, int quantity)
     {
-        if (Player != null)
+        var nm = NetworkManager.Singleton;
+        
+        // Проверяем: сеть инициализирована?
+        bool networkReady = nm != null && (nm.IsServer || nm.IsClient);
+        
+        if (networkReady)
         {
-            Player.TradeSellServerRpc(itemId, quantity, currentMarket.locationId);
+            // Сеть работает — используем серверную логику
+            if (nm.IsServer)
+            {
+                // Мы на сервере или хосте — вызываем локальные методы
+                if (TradeMarketServer.Instance != null)
+                {
+                    TradeMarketServer.Instance.SellItemLocal(itemId, quantity, currentMarket.locationId);
+                    return;
+                }
+                else
+                {
+                    ShowMessage("Ошибка: сервер торговли не инициализирован");
+                    _tradeLocked = false;
+                    return;
+                }
+            }
+            
+            // Мы на клиенте — отправляем через RPC
+            if (Player != null)
+            {
+                Player.TradeSellServerRpc(itemId, quantity, currentMarket.locationId);
+                return;
+            }
+        }
+        
+        // Сеть не инициализирована (offline mode) — вызываем локальные методы
+        Debug.Log("[TradeUI] SellItemViaServer: сеть не активна, вызываю локальную продажу");
+        if (TradeMarketServer.Instance != null)
+        {
+            TradeMarketServer.Instance.SellItemLocal(itemId, quantity, currentMarket.locationId);
         }
         else
         {
-            ShowMessage("ОШИБКА: NetworkPlayer не найден. Попробуйте перезайти.");
-            Debug.LogError("[TradeUI] NetworkPlayer не найден — невозможно выполнить продажу");
+            // Fallback: локальная торговля без сервера
+            Debug.LogWarning("[TradeUI] TradeMarketServer не найден — выполняю локальную продажу");
+            ProcessLocalSell(itemId, quantity);
         }
+        _tradeLocked = false;
+    }
+    
+    /// <summary>
+    /// Локальная продажа без сервера (offline mode)
+    /// </summary>
+    private void ProcessLocalSell(string itemId, int quantity)
+    {
+        if (currentMarket == null || playerStorage == null) return;
+        
+        var mi = currentMarket.items.Find(m => m.item?.itemId == itemId);
+        if (mi == null || mi.item == null)
+        {
+            ShowMessage("Товар не найден на рынке!");
+            return;
+        }
+        
+        var warehouseItem = playerStorage.warehouse.Find(w => w.item?.itemId == itemId);
+        if (warehouseItem == null || warehouseItem.quantity < quantity)
+        {
+            ShowMessage($"Недостаточно товара на складе! Есть: {warehouseItem?.quantity ?? 0}");
+            return;
+        }
+        
+        float totalEarned = mi.currentPrice * quantity;
+        playerStorage.credits += totalEarned;
+        warehouseItem.quantity -= quantity;
+        if (warehouseItem.quantity <= 0)
+            playerStorage.warehouse.Remove(warehouseItem);
+        
+        ShowMessage($"ПРОДАНО: {mi.item.displayName} x{quantity} за {totalEarned:F0} CR");
+        playerStorage.Save();
+        UpdateDisplays();
+        RenderItems();
     }
 
     /// <summary>
@@ -877,6 +1047,9 @@ public class TradeUI : MonoBehaviour
     /// </summary>
     public void OnTradeResult(bool success, string message, float newCredits, string itemId = "", int itemQuantity = 0, bool isPurchase = true)
     {
+        // СЕССИЯ 8G: Диагностика
+        Debug.Log($"[TradeUI] OnTradeResult: success={success}, newCredits={newCredits}, itemId={itemId}, qty={itemQuantity}, isPurchase={isPurchase}");
+        
         // Сессия 8D: Сброс блокировки — сервер ответил, можно продолжать
         _tradeLocked = false;
 
@@ -884,9 +1057,11 @@ public class TradeUI : MonoBehaviour
         // Гарантируем что playerStorage всегда валиден перед работой с кредитами
         if (playerStorage == null)
         {
+            Debug.LogWarning("[TradeUI] OnTradeResult: playerStorage == null, ищу...");
             playerStorage = GetPlayerStorageFromNetworkPlayer();
             if (playerStorage != null)
             {
+                Debug.Log("[TradeUI] OnTradeResult: playerStorage найден, устанавливаю локацию...");
                 // Устанавливаем локацию перед загрузкой
                 if (currentMarket != null && !string.IsNullOrEmpty(currentMarket.locationId))
                 {
@@ -895,6 +1070,10 @@ public class TradeUI : MonoBehaviour
                 ulong clientId = NetworkManager.Singleton.LocalClientId;
                 playerStorage.LoadFromPlayerDataStore(clientId);
             }
+            else
+            {
+                Debug.LogError("[TradeUI] OnTradeResult: playerStorage НЕ НАЙДЕН!");
+            }
         }
 
         if (success)
@@ -902,20 +1081,51 @@ public class TradeUI : MonoBehaviour
             ShowMessage(message);
             if (playerStorage != null)
             {
-                // Сессия 8F: Загружаем склад из PlayerDataStore
-                ulong clientId = NetworkManager.Singleton.LocalClientId;
-                playerStorage.LoadFromPlayerDataStore(clientId);
-
-                // Переопределяем кредиты значением от сервера
-                // Сервер шлёт актуальные newCredits через ClientRpc
+                Debug.Log($"[TradeUI] OnTradeResult: обновляю кредиты {playerStorage.credits} -> {newCredits}");
+                
+                // СЕССИЯ 8G FIX: НЕ вызываем LoadFromPlayerDataStore()!
+                // PlayerPrefs локальны для каждой машины — сервер пишет в свои, клиент читает из своих.
+                // Сервер уже отправил актуальные newCredits — используем их напрямую.
                 playerStorage.credits = newCredits;
 
-                // Сохраняем чтобы новые кредиты не потерялись
+                // СЕССИЯ 8G FIX: Синхронизируем склад после успешной операции
+                // Сервер прислал itemId и quantity — обновляем локальный склад
+                if (!string.IsNullOrEmpty(itemId) && itemQuantity > 0)
+                {
+                    Debug.Log($"[TradeUI] OnTradeResult: синхронизирую {(isPurchase ? "покупку" : "продажу")}: {itemId} x{itemQuantity}");
+                    if (isPurchase)
+                    {
+                        // Купили — добавляем товар на склад
+                        SyncWarehouseItem(itemId, itemQuantity);
+                    }
+                    else
+                    {
+                        // Продали — удаляем товар со склада
+                        RemoveFromWarehouse(itemId, itemQuantity);
+                    }
+                }
+                else
+                {
+                    Debug.LogWarning($"[TradeUI] OnTradeResult: itemId или itemQuantity пустые! itemId={itemId}, qty={itemQuantity}");
+                }
+
+                // Сохраняем чтобы новые кредиты и склад не потерялись
                 playerStorage.Save();
+                Debug.Log($"[TradeUI] OnTradeResult: после Save(), склад.Count={playerStorage.warehouse.Count}");
 
                 // Обновляем UI — КРИТИЧНО: должен быть после Save()
                 UpdateDisplays();
                 RenderItems();
+
+                // Сессия 8H FIX: Автоматически переключаемся на вкладку СКЛАД после покупки
+                if (isPurchase && !string.IsNullOrEmpty(itemId) && itemQuantity > 0)
+                {
+                    Debug.Log($"[TradeUI] OnTradeResult: покупка успешна! Переключаюсь на склад...");
+                    _showWarehouseTab = true;
+                    RenderItems();
+                    UpdateDisplays();
+                    ShowMessage($"КУПЛЕНО! Нажмите T для просмотра склада");
+                }
             }
             else
             {
@@ -942,12 +1152,16 @@ public class TradeUI : MonoBehaviour
     /// </summary>
     private void SyncWarehouseItem(string itemId, int quantity)
     {
+        Debug.Log($"[TradeUI] SyncWarehouseItem: ВЫЗВАН! itemId={itemId}, qty={quantity}, playerStorage={(playerStorage != null ? "OK" : "NULL")}");
+        
         if (playerStorage == null) return;
 
         var db = FindTradeDatabase();
+        Debug.Log($"[TradeUI] SyncWarehouseItem: db={(db != null ? "OK" : "NULL")}");
         if (db == null) return;
 
         var itemDef = db.GetItemById(itemId);
+        Debug.Log($"[TradeUI] SyncWarehouseItem: itemDef={(itemDef != null ? "OK" : "NULL")}");
         if (itemDef == null)
         {
             Debug.LogWarning($"[TradeUI] Не найден TradeItemDefinition для {itemId}");

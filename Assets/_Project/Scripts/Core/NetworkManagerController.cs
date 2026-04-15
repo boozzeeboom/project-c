@@ -2,6 +2,7 @@ using Unity.Netcode;
 using Unity.Netcode.Transports.UTP;
 using UnityEngine;
 using System;
+using System.Collections;
 using ProjectC.Items;
 using ProjectC.Player;
 
@@ -38,11 +39,46 @@ namespace ProjectC.Core
 
         private void Awake()
         {
+            Debug.Log("[NMC] Awake() called - NetworkManagerController initializing...");
+            
+            // Получаем или создаём NetworkManager
             networkManager = GetComponent<Unity.Netcode.NetworkManager>();
             if (networkManager == null)
+            {
+                Debug.LogWarning("[NMC] NetworkManager component not found on this GameObject. Adding new one...");
                 networkManager = gameObject.AddComponent<Unity.Netcode.NetworkManager>();
+            }
+            else
+            {
+                Debug.Log("[NMC] NetworkManager component found!");
+            }
+            
+            // Проверяем и добавляем UnityTransport если нужно
+            var transport = GetComponent<Unity.Netcode.Transports.UTP.UnityTransport>();
+            if (transport == null)
+            {
+                Debug.LogWarning("[NMC] UnityTransport not found. Adding...");
+                transport = gameObject.AddComponent<Unity.Netcode.Transports.UTP.UnityTransport>();
+            }
+            else
+            {
+                Debug.Log("[NMC] UnityTransport found!");
+            }
+            
+            // Настраиваем NetworkConfig на использование UnityTransport
+            if (networkManager.NetworkConfig.NetworkTransport == null)
+            {
+                Debug.Log("[NMC] Setting NetworkConfig.NetworkTransport to UnityTransport...");
+                networkManager.NetworkConfig.NetworkTransport = transport;
+            }
 
             DontDestroyOnLoad(gameObject);
+            
+            // NetworkManager.Singleton устанавливается после Start(), поэтому проверим позже
+            Debug.Log($"[NMC] Awake complete. NetworkManager.Singleton={(Unity.Netcode.NetworkManager.Singleton != null ? "SET" : "NULL")}");
+
+            // СЕССИЯ DIAGNOSTIC: Создаём TradeDebugTools для отладки
+            CreateTradeDebugTools();
 
             // Автоматический запуск Dedicated Server если передан аргумент -server
             if (IsDedicatedServerMode())
@@ -50,6 +86,32 @@ namespace ProjectC.Core
                 Debug.Log("[Network] Запуск в режиме Dedicated Server");
                 Invoke(nameof(StartServer), 0.5f);
             }
+        }
+        
+        /// <summary>
+        /// Создать TradeDebugTools для диагностики торговли.
+        /// Это позволяет всегда видеть склад клиента на экране.
+        /// </summary>
+        private void CreateTradeDebugTools()
+        {
+            var existing = FindObjectsByType<ProjectC.Trade.TradeDebugTools>(FindObjectsInactive.Include);
+            if (existing.Length > 0)
+            {
+                Debug.Log("[NMC] TradeDebugTools already exists, skipping creation");
+                return;
+            }
+            
+            var debugObj = new GameObject("TradeDebugTools");
+            debugObj.transform.SetParent(transform); // Parent к NMC для сохранения при смене сцены
+            var debugTools = debugObj.AddComponent<ProjectC.Trade.TradeDebugTools>();
+            debugObj.SetActive(true);
+            Debug.Log("[NMC] TradeDebugTools created and added to scene");
+        }
+        
+        private void Start()
+        {
+            // NetworkManager.Singleton устанавливается в Start()
+            Debug.Log($"[NMC] Start() - NetworkManager.Singleton={(Unity.Netcode.NetworkManager.Singleton != null ? "SET" : "NULL")}");
         }
 
         /// <summary>
@@ -90,6 +152,9 @@ namespace ProjectC.Core
 
         private void HandleClientConnected(ulong clientId)
         {
+            Debug.Log($"[NMC] HandleClientConnected: clientId={clientId}, IsServer={networkManager.IsServer}, IsClient={networkManager.IsClient}");
+            Debug.Log($"[NMC] ConnectedClients.Count={networkManager.ConnectedClients.Count}");
+            
             OnPlayerConnected?.Invoke(clientId);
 
             if (IsHost)
@@ -188,19 +253,31 @@ namespace ProjectC.Core
 
         public void StartHost()
         {
+            Debug.Log("[NMC] StartHost() called");
+            StartCoroutine(StartHostCoroutine());
+        }
+
+        public IEnumerator StartHostCoroutine()
+        {
             // Защита от конфликта порта - проверяем не слушает ли уже
             if (networkManager.IsListening)
             {
                 Debug.LogWarning("[Network] Already listening! Shutting down first...");
                 networkManager.Shutdown();
                 
-                // Небольшая задержка для освобождения порта
-                System.Threading.Thread.Sleep(250);
+                // REFACTORED (R3-002): Используем корутину вместо Thread.Sleep
+                // Это не блокирует UI thread
+                yield return new WaitForSecondsRealtime(0.25f);
             }
 
             try
             {
+                Debug.Log("[NMC] StartHost() called, starting host...");
                 networkManager.StartHost();
+                
+                // DIAGNOSTIC: Проверяем состояние сети после StartHost
+                Debug.Log($"[NMC] After StartHost: IsServer={networkManager.IsServer}, IsClient={networkManager.IsClient}, IsHost={networkManager.IsHost}, IsListening={networkManager.IsListening}");
+                
                 UpdateStatus("Хост запущен");
             }
             catch (Exception ex)
@@ -215,12 +292,19 @@ namespace ProjectC.Core
         /// </summary>
         public void StartServer()
         {
+            StartServerCoroutine();
+        }
+
+        private IEnumerator StartServerCoroutine()
+        {
             // Защита от конфликта порта
             if (networkManager.IsListening)
             {
                 Debug.LogWarning("[Network] Already listening! Shutting down first...");
                 networkManager.Shutdown();
-                System.Threading.Thread.Sleep(250);
+                
+                // REFACTORED (R3-002): Используем корутину вместо Thread.Sleep
+                yield return new WaitForSecondsRealtime(0.25f);
             }
 
             try
@@ -240,6 +324,11 @@ namespace ProjectC.Core
         /// </summary>
         public void ConnectToServer(string ipAddress = null, ushort port = 0)
         {
+            StartCoroutine(ConnectToServerCoroutine(ipAddress, port));
+        }
+
+        private IEnumerator ConnectToServerCoroutine(string ipAddress = null, ushort port = 0)
+        {
             string targetIp = string.IsNullOrEmpty(ipAddress) ? serverIp : ipAddress;
             ushort targetPort = port == 0 ? serverPort : port;
 
@@ -254,7 +343,9 @@ namespace ProjectC.Core
             {
                 Debug.LogWarning("[Network] Already listening! Shutting down before connect...");
                 networkManager.Shutdown();
-                System.Threading.Thread.Sleep(250);
+                
+                // REFACTORED (R3-002): Используем корутину вместо Thread.Sleep
+                yield return new WaitForSecondsRealtime(0.25f);
             }
 
             Debug.Log($"[Network] ConnectToServer: {targetIp}:{targetPort}");
@@ -274,7 +365,11 @@ namespace ProjectC.Core
 
             try
             {
+                Debug.Log("[NMC] StartClient() called");
                 networkManager.StartClient();
+                
+                // DIAGNOSTIC: Проверяем состояние сети после StartClient
+                Debug.Log($"[NMC] After StartClient: IsServer={networkManager.IsServer}, IsClient={networkManager.IsClient}, IsListening={networkManager.IsListening}");
             }
             catch (Exception ex)
             {

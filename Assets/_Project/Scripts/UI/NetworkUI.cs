@@ -31,15 +31,25 @@ namespace ProjectC.UI
 
         private void Awake()
         {
+            Debug.Log("[NetworkUI] Awake() called");
+            
             networkManagerController = FindAnyObjectByType<NetworkManagerController>();
             if (networkManagerController == null)
             {
                 Debug.LogError("[NetworkUI] NetworkManagerController не найден!");
                 return;
             }
+            
+            Debug.Log("[NetworkUI] NetworkManagerController found!");
 
             // Кнопки
+            Debug.Log($"[NetworkUI] startHostButton={(startHostButton != null ? startHostButton.name : "NULL")}");
+            Debug.Log($"[NetworkUI] startServerButton={(startServerButton != null ? startServerButton.name : "NULL")}");
+            Debug.Log($"[NetworkUI] startClientButton={(startClientButton != null ? startClientButton.name : "NULL")}");
+            
             if (startHostButton != null) startHostButton.onClick.AddListener(OnStartHostClicked);
+            else Debug.LogWarning("[NetworkUI] startHostButton is NULL! Assign in Inspector.");
+            
             if (startServerButton != null) startServerButton.onClick.AddListener(OnStartServerClicked);
             if (startClientButton != null) startClientButton.onClick.AddListener(OnStartClientClicked);
             if (reconnectButton != null)
@@ -156,9 +166,24 @@ namespace ProjectC.UI
 
         private void OnStartHostClicked()
         {
-            networkManagerController.StartHost();
+            Debug.Log("[NetworkUI] OnStartHostClicked() CALLED!");
+            Debug.Log($"[NetworkUI] networkManagerController={(networkManagerController != null ? "SET" : "NULL")}");
+            
+            if (networkManagerController == null)
+            {
+                Debug.LogError("[NetworkUI] networkManagerController is NULL!");
+                return;
+            }
+            
+            Debug.Log("[NetworkUI] Calling networkManagerController.StartHost()...");
+            
+            // DIAGNOSTIC: Прямой вызов StartHostCoroutine
+            Debug.Log("[NetworkUI] Starting coroutine...");
+            StartCoroutine(networkManagerController.StartHostCoroutine());
+            
+            Debug.Log("[NetworkUI] After StartCoroutine call");
             HideConnectionPanel();
-            UpdateButtons(true); // Мгновенно показываем Disconnect
+            UpdateButtons(true);
             UpdatePlayerCount();
         }
 

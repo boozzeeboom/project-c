@@ -232,14 +232,49 @@ public class TradeMarketServer : NetworkBehaviour
     // ==================== SERVERRPC: ТОРГОВЛЯ ====================
 
     /// <summary>
-    /// Купить товар у NPC рынка
+    /// Локальная покупка — вызывается напрямую на сервере/хосте без RPC
     /// </summary>
-    [ServerRpc]
-    public void BuyItemServerRpc(string itemId, int quantity, string locationId, ServerRpcParams rpcParams = default)
+    public void BuyItemLocal(string itemId, int quantity, string locationId)
     {
-        ulong clientId = rpcParams.Receive.SenderClientId;
+        // Для хоста используем LocalClientId
+        ulong clientId = NetworkManager.Singleton.LocalClientId;
+        ProcessBuyItem(itemId, quantity, locationId, clientId);
+    }
 
-        // Сессия 8E: Валидация quantity > 0 — защита от эксплойта
+    /// <summary>
+    /// Локальная продажа — вызывается напрямую на сервере/хосте без RPC
+    /// </summary>
+    public void SellItemLocal(string itemId, int quantity, string locationId)
+    {
+        // Для хоста используем LocalClientId
+        ulong clientId = NetworkManager.Singleton.LocalClientId;
+        ProcessSellItem(itemId, quantity, locationId, clientId);
+    }
+
+    /// <summary>
+    /// Серверный RPC для покупки — вызывается удалённым клиентом
+    /// </summary>
+    [Rpc(SendTo.Server)]
+    public void BuyItemServerRpc(string itemId, int quantity, string locationId, ulong senderClientId)
+    {
+        // Сторона клиента: передаём свой OwnerClientId
+        // Сторона сервера: используем переданный senderClientId
+        ulong clientId = IsServer ? senderClientId : NetworkManager.Singleton.LocalClientId;
+        
+        Debug.Log($"[TMS] BuyItemServerRpc: clientId={clientId}, IsServer={IsServer}, IsHost={IsHost}");
+        
+        ProcessBuyItem(itemId, quantity, locationId, clientId);
+    }
+
+    /// <summary>
+    /// Обработка покупки — общая логика для хоста и сервера
+    /// </summary>
+    private void ProcessBuyItem(string itemId, int quantity, string locationId, ulong clientId)
+    {
+        Debug.Log($"[TMS] ProcessBuyItem: itemId={itemId}, qty={quantity}, loc={locationId}, client={clientId}");
+        Debug.Log($"[TMS] _markets.Count={_markets.Count}, keys: {string.Join(", ", _markets.Keys)}");
+        
+        // Валидация quantity > 0
         if (quantity <= 0)
         {
             LogTransaction(clientId, "BUY", itemId, quantity, "FAIL", "quantity <= 0");
@@ -247,7 +282,7 @@ public class TradeMarketServer : NetworkBehaviour
             return;
         }
 
-        // Сессия 8E: Валидация locationId — защита от пустого ID
+        // Валидация locationId
         if (string.IsNullOrEmpty(locationId))
         {
             LogTransaction(clientId, "BUY", itemId, quantity, "FAIL", "locationId пустой");
@@ -255,38 +290,41 @@ public class TradeMarketServer : NetworkBehaviour
             return;
         }
 
-        // 1. Rate limiting
+        // Rate limiting
         if (!CheckRateLimit(clientId))
         {
             SendTradeResultToClient(clientId, false, "Слишком много запросов! Подождите.", 0f, 0, 0, 0, 0);
             return;
         }
 
-        // 2. Валидация рынка
+        // Валидация рынка
         if (!_markets.ContainsKey(locationId))
         {
-            LogTransaction(clientId, "BUY", itemId, quantity, "FAIL", "Рынок не найден");
+            Debug.LogWarning($"[TMS] Рынок не найден! locationId='{locationId}', доступные: {string.Join(", ", _markets.Keys)}");
+            LogTransaction(clientId, "BUY", itemId, quantity, "FAIL", $"Рынок не найден: {locationId}");
             SendTradeResultToClient(clientId, false, "Рынок не найден!", 0f, 0, 0, 0, 0);
             return;
         }
 
         var market = _markets[locationId];
+        Debug.Log($"[TMS] Market найден: {locationId}, items count: {market.items.Count}");
         var marketItem = market.GetItem(itemId);
         if (marketItem == null)
         {
+            Debug.LogWarning($"[TMS] MarketItem не найден! itemId='{itemId}', market: {locationId}");
             LogTransaction(clientId, "BUY", itemId, quantity, "FAIL", "Товар не найден");
             SendTradeResultToClient(clientId, false, "Товар не найден!", 0f, 0, 0, 0, 0);
             return;
         }
         if (marketItem.item == null)
         {
-            Debug.LogError($"[TradeMarketServer] MarketItem.item == null для {itemId}! Проверь ScriptableObject рынка {locationId}");
+            Debug.LogError($"[TradeMarketServer] MarketItem.item == null для {itemId}!");
             LogTransaction(clientId, "BUY", itemId, quantity, "FAIL", "MarketItem.item == null!");
             SendTradeResultToClient(clientId, false, "Ошибка товара! (item=null)", 0f, 0, 0, 0, 0);
             return;
         }
 
-        // 3. Проверка стока
+        // Проверка стока
         if (marketItem.availableStock < quantity)
         {
             LogTransaction(clientId, "BUY", itemId, quantity, "FAIL", "Нет в наличии");
@@ -294,21 +332,20 @@ public class TradeMarketServer : NetworkBehaviour
             return;
         }
 
-        // Принудительный пересчёт цены — защита от stale данных
+        // Принудительный пересчёт цены
         marketItem.RecalculatePrice();
 
-        // Сессия 8D: КРИТИЧНО — защита от нулевой цены
+        // Защита от нулевой цены
         if (marketItem.currentPrice <= 0f)
         {
-            Debug.LogError($"[TradeMarketServer] КРИТИЧНО: currentPrice=0 для {itemId}! Отмена транзакции.");
-            LogTransaction(clientId, "BUY", itemId, quantity, "FAIL", "Цена товара = 0!");
+            Debug.LogError($"[TradeMarketServer] currentPrice=0 для {itemId}! Отмена.");
+            LogTransaction(clientId, "BUY", itemId, quantity, "FAIL", "Цена = 0!");
             SendTradeResultToClient(clientId, false, "Ошибка цены товара! (price=0)", 0f, 0, 0, 0, 0);
             return;
         }
 
-        // 4. Проверка кредитов игрока (локальный Dictionary — авторитетный источник)
+        // Проверка кредитов
         float playerCredits = GetPlayerCredits(clientId);
-
         float totalCost = marketItem.currentPrice * quantity;
         if (playerCredits < totalCost)
         {
@@ -317,7 +354,7 @@ public class TradeMarketServer : NetworkBehaviour
             return;
         }
 
-        // 5. Проверка лимитов склада игрока (через PlayerTradeStorage)
+        // Проверка лимитов склада
         var playerStorage = FindPlayerStorage(clientId, locationId);
         if (playerStorage != null)
         {
@@ -327,79 +364,92 @@ public class TradeMarketServer : NetworkBehaviour
 
             if (newWeight > playerStorage.maxWeight)
             {
-                LogTransaction(clientId, "BUY", itemId, quantity, "FAIL", "Превышен лимит веса склада");
+                LogTransaction(clientId, "BUY", itemId, quantity, "FAIL", "Превышен лимит веса");
                 SendTradeResultToClient(clientId, false, "Превышен лимит веса склада!", 0f, 0, 0, 0, 0);
                 return;
             }
             if (newVolume > playerStorage.maxVolume)
             {
-                LogTransaction(clientId, "BUY", itemId, quantity, "FAIL", "Превышен лимит объёма склада");
+                LogTransaction(clientId, "BUY", itemId, quantity, "FAIL", "Превышен лимит объёма");
                 SendTradeResultToClient(clientId, false, "Превышен лимит объёма склада!", 0f, 0, 0, 0, 0);
                 return;
             }
             if (playerStorage.warehouse.Count >= playerStorage.maxItemTypes &&
                 playerStorage.warehouse.Find(w => w.item == itemDef) == null)
             {
-                LogTransaction(clientId, "BUY", itemId, quantity, "FAIL", "Превышен лимит типов предметов");
+                LogTransaction(clientId, "BUY", itemId, quantity, "FAIL", "Превышен лимит типов");
                 SendTradeResultToClient(clientId, false, "Превышен лимит типов предметов!", 0f, 0, 0, 0, 0);
                 return;
             }
         }
 
-        // === ВСЕ ПРОВЕРКИ ПРОЙДЕНЫ — выполняем сделку ===
+        // === ВЫПОЛНЯЕМ СДЕЛКУ ===
 
         // Списываем кредиты
         SetPlayerCredits(clientId, playerCredits - totalCost);
         float newCredits = GetPlayerCredits(clientId);
 
-        // Обновляем рынок: сток и demand
+        // Обновляем рынок
         marketItem.availableStock -= quantity;
         market.UpdateDemand(itemId, quantity * 0.02f);
 
-        // Добавляем товар на склад игрока
+        // Добавляем на склад
         if (playerStorage != null)
         {
             var itemDef = marketItem.item;
             var existing = playerStorage.warehouse.Find(w => w.item == itemDef);
             if (existing != null)
-            {
                 existing.quantity += quantity;
-            }
             else
-            {
                 playerStorage.warehouse.Add(new WarehouseItem { item = itemDef, quantity = quantity });
-            }
-            // Сессия 8F: Сохраняем склад и кредиты
+
             playerStorage.credits = newCredits;
             playerStorage.Save();
         }
-        else
-        {
-            Debug.LogError($"[TradeMarketServer] BUY: playerStorage == null! Куплено но не сохранено!");
-        }
 
-        // Лог
+        // Лог и результат
         LogTransaction(clientId, "BUY", itemId, quantity, "SUCCESS", $"За {totalCost:F0} CR");
-
-        // Отправляем результат клиенту (Сессия 8C: itemId + quantity для синхронизации склада)
-        SendTradeResultToClient(clientId, true, $"Куплено {itemId} x{quantity} за {totalCost:F0} CR",
+        
+        // Проверка: если itemId пустой - это индикатор старой версии билда
+        // Принудительно шлём расширенные параметры для диагностики
+        if (string.IsNullOrEmpty(itemId))
+        {
+            Debug.LogError("[TMS] ВНИМАНИЕ: itemId пустой! Проверьте версию билда.");
+            itemId = marketItem.item?.itemId ?? "unknown_item_id";
+        }
+        
+        // Используем marketItem.item напрямую чтобы избежать проблем с областью видимости
+        string itemName = marketItem.item?.displayName ?? itemId;
+        SendTradeResultToClient(clientId, true, $"Куплено {itemName} x{quantity} за {totalCost:F0} CR",
             newCredits, marketItem.availableStock, 0, 0, 0,
             itemId, quantity, true);
 
-        // Обновляем рынок у всех клиентов
-        var buyData = SerializeMarketData(market);
-        SendMarketUpdateClientRpc(locationId, buyData.itemIds, buyData.prices, buyData.stocks, buyData.demands, buyData.supplies);
+        // Обновляем рынок у клиентов (только если сеть активна)
+        var nm = NetworkManager.Singleton;
+        bool networkReady = nm != null && (nm.IsServer || nm.IsClient);
+        if (networkReady)
+        {
+            var buyData = SerializeMarketData(market);
+            SendMarketUpdateClientRpc(locationId, buyData.itemIds, buyData.prices, buyData.stocks, buyData.demands, buyData.supplies);
+        }
     }
 
     /// <summary>
-    /// Продать товар NPC рынку
+    /// Серверный RPC для продажи — вызывается удалённым клиентом
     /// </summary>
-    [ServerRpc]
-    public void SellItemServerRpc(string itemId, int quantity, string locationId, ServerRpcParams rpcParams = default)
+    [Rpc(SendTo.Server)]
+    public void SellItemServerRpc(string itemId, int quantity, string locationId, ulong senderClientId)
     {
-        ulong clientId = rpcParams.Receive.SenderClientId;
+        ulong clientId = IsServer ? senderClientId : NetworkManager.Singleton.LocalClientId;
+        ProcessSellItem(itemId, quantity, locationId, clientId);
+    }
 
-        // Сессия 8E: Валидация quantity > 0 — защита от эксплойта
+    /// <summary>
+    /// Обработка продажи — общая логика для хоста и сервера
+    /// </summary>
+    private void ProcessSellItem(string itemId, int quantity, string locationId, ulong clientId)
+    {
+        // Валидация quantity > 0
         if (quantity <= 0)
         {
             LogTransaction(clientId, "SELL", itemId, quantity, "FAIL", "quantity <= 0");
@@ -407,7 +457,7 @@ public class TradeMarketServer : NetworkBehaviour
             return;
         }
 
-        // Сессия 8E: Валидация locationId — защита от пустого ID
+        // Валидация locationId
         if (string.IsNullOrEmpty(locationId))
         {
             LogTransaction(clientId, "SELL", itemId, quantity, "FAIL", "locationId пустой");
@@ -415,14 +465,14 @@ public class TradeMarketServer : NetworkBehaviour
             return;
         }
 
-        // 1. Rate limiting
+        // Rate limiting
         if (!CheckRateLimit(clientId))
         {
             SendTradeResultToClient(clientId, false, "Слишком много запросов! Подождите.", 0f, 0, 0, 0, 0);
             return;
         }
 
-        // 2. Валидация рынка
+        // Валидация рынка
         if (!_markets.ContainsKey(locationId))
         {
             LogTransaction(clientId, "SELL", itemId, quantity, "FAIL", "Рынок не найден");
@@ -440,13 +490,13 @@ public class TradeMarketServer : NetworkBehaviour
         }
         if (marketItem.item == null)
         {
-            Debug.LogError($"[TradeMarketServer] MarketItem.item == null для {itemId} при продаже! Проверь ScriptableObject рынка {locationId}");
+            Debug.LogError($"[TradeMarketServer] MarketItem.item == null для {itemId}!");
             LogTransaction(clientId, "SELL", itemId, quantity, "FAIL", "MarketItem.item == null!");
             SendTradeResultToClient(clientId, false, "Ошибка товара! (item=null)", 0f, 0, 0, 0, 0);
             return;
         }
 
-        // 3. Проверка наличия у игрока
+        // Проверка наличия у игрока
         var playerStorage = FindPlayerStorage(clientId, locationId);
         if (playerStorage == null)
         {
@@ -463,74 +513,132 @@ public class TradeMarketServer : NetworkBehaviour
             return;
         }
 
-        // Принудительный пересчёт цены — защита от stale данных
+        // Принудительный пересчёт цены
         marketItem.RecalculatePrice();
 
-        // Сессия 8D: КРИТИЧНО — защита от нулевой цены
+        // Защита от нулевой цены
         if (marketItem.currentPrice <= 0f)
         {
-            Debug.LogError($"[TradeMarketServer] КРИТИЧНО: currentPrice=0 при продаже {itemId}! Отмена транзакции.");
-            LogTransaction(clientId, "SELL", itemId, quantity, "FAIL", "Цена товара = 0!");
+            Debug.LogError($"[TradeMarketServer] currentPrice=0 при продаже {itemId}!");
+            LogTransaction(clientId, "SELL", itemId, quantity, "FAIL", "Цена = 0!");
             SendTradeResultToClient(clientId, false, "Ошибка цены товара! (price=0)", 0f, 0, 0, 0, 0);
             return;
         }
 
-        // === ВСЕ ПРОВЕРКИ ПРОЙДЕНЫ — выполняем сделку ===
-        // Продажа по 80% от текущей цены (NPC маржа)
-        float sellPrice = marketItem.currentPrice * quantity * 0.8f;
+        // === ВЫПОЛНЯЕМ СДЕЛКУ ===
+        float sellPrice = marketItem.currentPrice * quantity * 0.8f; // 80% от цены (NPC маржа)
 
         // Убираем товар со склада
         warehouseItem.quantity -= quantity;
         if (warehouseItem.quantity <= 0)
-        {
             playerStorage.warehouse.Remove(warehouseItem);
-        }
 
-        // Начисляем кредиты (локальный Dictionary — авторитетный источник)
+        // Начисляем кредиты
         float playerCredits = GetPlayerCredits(clientId);
         SetPlayerCredits(clientId, playerCredits + sellPrice);
         float newCredits = GetPlayerCredits(clientId);
 
-        // Синхронизируем playerStorage с нашим источником
         playerStorage.credits = newCredits;
         playerStorage.Save();
 
-        // Обновляем рынок: supply
+        // Обновляем рынок
         market.UpdateSupply(itemId, quantity * 0.02f);
 
-        // Лог
+        // Лог и результат
         LogTransaction(clientId, "SELL", itemId, quantity, "SUCCESS", $"За {sellPrice:F0} CR");
-
-        // Отправляем результат (Сессия 8C: itemId + quantity для синхронизации склада)
         SendTradeResultToClient(clientId, true, $"Продано {itemId} x{quantity} за {sellPrice:F0} CR",
             newCredits, marketItem.availableStock + quantity, 0, 0, 0,
             itemId, quantity, false);
 
-        // Обновляем рынок у всех
-        var sellData = SerializeMarketData(market);
-        SendMarketUpdateClientRpc(locationId, sellData.itemIds, sellData.prices, sellData.stocks, sellData.demands, sellData.supplies);
+        // Обновляем рынок у клиентов (только если сеть активна)
+        var nm = NetworkManager.Singleton;
+        bool networkReady = nm != null && (nm.IsServer || nm.IsClient);
+        if (networkReady)
+        {
+            var sellData = SerializeMarketData(market);
+            SendMarketUpdateClientRpc(locationId, sellData.itemIds, sellData.prices, sellData.stocks, sellData.demands, sellData.supplies);
+        }
     }
 
     // ==================== CLIENTRPC: ОБНОВЛЕНИЯ ====================
 
     /// <summary>
-    /// Отправить результат торговли конкретному клиенту
-    /// Используем примитивные типы — NGO не умеет сериализовать кастомные структуры
-    /// Сессия 8C: добавлены itemId и itemQuantity для синхронизации склада на клиенте
+    /// Отправить результат торговли конкретному клиенту.
+    /// 
+    /// СЕССИЯ FIX: Используем ClientRpcParams для явного таргетинга клиента.
+    /// Это решает проблему когда хост не получает RPC — теперь мы явно указываем
+    /// кому отправлять через TargetClientIds.
     /// </summary>
     private void SendTradeResultToClient(ulong clientId, bool success, string message,
         float newCredits, int newStock, int newCargoWeight, int newCargoVolume, int newCargoSlots,
         string itemId = "", int itemQuantity = 0, bool isPurchase = true)
     {
-        // Находим NetworkPlayer клиента и отправляем результат через него
-        var player = FindPlayerNetworkPlayer(clientId);
-        if (player != null)
+        // Проверяем: сеть инициализирована?
+        var nm = NetworkManager.Singleton;
+        bool networkReady = nm != null && (nm.IsServer || nm.IsClient);
+        
+        if (!networkReady)
         {
-            player.TradeResultClientRpc(success, message, newCredits, itemId, itemQuantity, isPurchase);
+            // Сеть не активна — обновляем TradeUI напрямую без RPC
+            Debug.Log($"[TMS] SendTradeResultToClient: сеть неактивна, обновляю TradeUI напрямую");
+            if (TradeUI.Instance != null)
+            {
+                TradeUI.Instance.OnTradeResult(success, message, newCredits, itemId, itemQuantity, isPurchase);
+            }
+            return;
+        }
+        
+        // Сеть работает — отправляем через RPC
+        Debug.Log($"[TMS] SendTradeResult: clientId={clientId}, success={success}, newCredits={newCredits}, itemId={itemId}, qty={itemQuantity}, isPurchase={isPurchase}");
+        
+        // СЕССИЯ FIX: Используем ClientRpcParams с TargetClientIds для надёжной доставки
+        var rpcParams = new ClientRpcParams
+        {
+            Send = new ClientRpcSendParams
+            {
+                TargetClientIds = new ulong[] { clientId }
+            }
+        };
+        
+        Debug.Log($"[TMS] Отправляю TradeResultClientRpc клиенту {clientId} с TargetClientIds");
+        
+        // СЕССИЯ FIX: Если клиент локальный (на хосте) - вызываем напрямую
+        // Это обходит проблему маршрутизации RPC
+        if (clientId == nm.LocalClientId && TradeUI.Instance != null)
+        {
+            Debug.Log($"[TMS] Локальный клиент - вызываю OnTradeResult напрямую");
+            TradeUI.Instance.OnTradeResult(success, message, newCredits, itemId, itemQuantity, isPurchase);
+            return;
+        }
+        
+        // СЕССИЯ FIX: Вызываем через NetworkObject для правильной маршрутизации
+        // ClientRpc должен вызываться на NetworkObject того, кому предназначается
+        if (NetworkManager.Singleton != null && 
+            NetworkManager.Singleton.ConnectedClients.TryGetValue(clientId, out var client))
+        {
+            var playerNetObj = client.PlayerObject;
+            if (playerNetObj != null)
+            {
+                var np = playerNetObj.GetComponent<NetworkPlayer>();
+                if (np != null)
+                {
+                    // Используем playerNetObj для вызова RPC - это гарантирует маршрутизацию
+                    np.TradeResultClientRpc(clientId, success, message, newCredits, itemId, itemQuantity, isPurchase, rpcParams);
+                    Debug.Log($"[TMS] TradeResultClientRpc отправлен клиенту {clientId} через NetworkObject клиента");
+                }
+                else
+                {
+                    Debug.LogError($"[TMS] NetworkPlayer компонент не найден на PlayerObject клиента {clientId}");
+                }
+            }
+            else
+            {
+                Debug.LogError($"[TMS] PlayerObject клиента {clientId} == null!");
+            }
         }
         else
         {
-            Debug.LogWarning($"[TradeMarketServer] Не удалось найти NetworkPlayer для клиента {clientId}");
+            Debug.LogError($"[TMS] Клиент {clientId} не найден в ConnectedClients!");
         }
     }
 
@@ -941,12 +1049,25 @@ public class TradeMarketServer : NetworkBehaviour
     /// </summary>
     public static float GetPlayerCreditsStatic(ulong clientId)
     {
+        if (PlayerDataStore.Instance == null)
+        {
+            Debug.LogError($"[TMS] GetPlayerCreditsStatic: PlayerDataStore.Instance is NULL! clientId={clientId}");
+            return 0f;
+        }
         return PlayerDataStore.Instance.GetCredits(clientId);
     }
 
     private float GetPlayerCredits(ulong clientId)
     {
-        return PlayerDataStore.Instance.GetCredits(clientId);
+        if (PlayerDataStore.Instance == null)
+        {
+            Debug.LogError($"[TMS] GetPlayerCredits: PlayerDataStore.Instance is NULL! clientId={clientId}");
+            return 0f;
+        }
+        
+        float credits = PlayerDataStore.Instance.GetCredits(clientId);
+        Debug.Log($"[TMS] GetPlayerCredits: clientId={clientId}, credits={credits}");
+        return credits;
     }
 
     /// <summary>
@@ -989,12 +1110,31 @@ public class TradeMarketServer : NetworkBehaviour
 
     private NetworkPlayer FindPlayerNetworkPlayer(ulong clientId)
     {
+        // Сессия 8K FIX: используем NetworkManager.ConnectedClients для надёжного поиска
+        // FindObjectsByType может находить объекты в неправильном контексте на хосте
+        var nm = NetworkManager.Singleton;
+        if (nm != null && nm.ConnectedClients.TryGetValue(clientId, out var client))
+        {
+            var np = client.PlayerObject?.GetComponent<NetworkPlayer>();
+            if (np != null)
+            {
+                Debug.Log($"[TMS] FindPlayerNetworkPlayer({clientId}): найден через ConnectedClients, OwnerClientId={np.OwnerClientId}");
+                return np;
+            }
+        }
+        
+        // Fallback: ищем вручную
         var players = FindObjectsByType<NetworkPlayer>(FindObjectsInactive.Exclude);
         foreach (var player in players)
         {
             if (player.OwnerClientId == clientId)
+            {
+                Debug.Log($"[TMS] FindPlayerNetworkPlayer({clientId}): найден через FindObjectsByType, OwnerClientId={player.OwnerClientId}");
                 return player;
+            }
         }
+        
+        Debug.LogWarning($"[TMS] FindPlayerNetworkPlayer({clientId}): НЕ НАЙДЕН! ConnectedClients={nm?.ConnectedClients.Count}");
         return null;
     }
 }

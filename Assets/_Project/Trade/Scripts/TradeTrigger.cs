@@ -87,7 +87,8 @@ namespace ProjectC.Trade
 
                 if (market == null) { Debug.LogError("[TradeTrigger] Market не назначен!"); return; }
 
-                TradeUI.OpenTrade(market);
+                // REFACTORED (R2-BUG-002): Передаём _player чтобы TradeUI не использовал FindAnyObjectByType
+                TradeUI.OpenTrade(market, _player);
             }
         }
 

@@ -3,28 +3,38 @@ using UnityEngine;
 namespace ProjectC.Items
 {
     /// <summary>
-    /// Компонент подбираемого предмета в мире.
-    /// Навесить на GameObject с триггер-коллайдером.
-    /// При нажатии E рядом — предмет подбирается и попадает в Inventory.
-    /// Работает с NetworkInventory (синхронизация) и legacy Inventory (локальный).
+    /// Component for pickup items in the world.
+    /// Attach to GameObject with trigger collider.
+    /// Press E when nearby — item is picked up and added to Inventory.
+    /// Implements IInteractable for trigger-based caching instead of FindObjectsByType.
     /// </summary>
-    public class PickupItem : MonoBehaviour
+    public class PickupItem : MonoBehaviour, Core.IInteractable
     {
-        [Header("Данные предмета")]
+        [Header("Item Data")]
         public ItemData itemData;
 
-        [Header("Настройки")]
+        [Header("Settings")]
         public float floatSpeed = 1f;
         public float floatAmplitude = 0.2f;
 
+        [Header("Interaction")]
+        [Tooltip("Radius for interaction (used by IInteractable)")]
+        public float interactionRadius = 3f;
+
         private Vector3 _startPosition;
         private bool _isCollected = false;
+
+        // IInteractable implementation
+        public string InstanceId => gameObject.GetInstanceID().ToString();
+        public string DisplayName => itemData != null ? itemData.itemName : "Unknown Item";
+        public float InteractionRadius => interactionRadius;
+        public Vector3 Position => transform.position;
 
         private void Start()
         {
             _startPosition = transform.position;
 
-            // Проверка что есть коллайдер-триггер
+            // Ensure trigger collider exists
             var collider = GetComponent<Collider>();
             if (collider == null)
             {
@@ -35,7 +45,7 @@ namespace ProjectC.Items
 
         private void Update()
         {
-            // Визуальное покачивание
+            // Visual bobbing
             if (!_isCollected)
             {
                 transform.position = _startPosition + Vector3.up * Mathf.Sin(Time.time * floatSpeed) * floatAmplitude;
@@ -43,22 +53,49 @@ namespace ProjectC.Items
             }
         }
 
+        private void OnTriggerEnter(Collider other)
+        {
+            // Register with InteractableManager when player enters trigger
+            if (other.CompareTag("Player") || other.GetComponent<CharacterController>() != null)
+            {
+                Core.InteractableManager.RegisterPickup(this);
+            }
+        }
+
+        private void OnTriggerExit(Collider other)
+        {
+            // Unregister from InteractableManager when player exits trigger
+            if (other.CompareTag("Player") || other.GetComponent<CharacterController>() != null)
+            {
+                Core.InteractableManager.UnregisterPickup(this);
+            }
+        }
+
+        private void OnDisable()
+        {
+            // Ensure cleanup when object is disabled
+            Core.InteractableManager.UnregisterPickup(this);
+        }
+
         /// <summary>
-        /// Подобрать предмет. Вызывается из NetworkPlayer.TryPickup().
+        /// Pick up the item. Called from NetworkPlayer.TryPickup().
         /// </summary>
         public void Collect()
         {
             if (_isCollected || itemData == null) return;
             _isCollected = true;
 
-            // Скрыть предмет
+            // Hide the item
             gameObject.SetActive(false);
+            
+            // Unregister from manager
+            Core.InteractableManager.UnregisterPickup(this);
         }
 
         private void OnDrawGizmosSelected()
         {
             Gizmos.color = Color.yellow;
-            Gizmos.DrawWireSphere(transform.position, 1.5f);
+            Gizmos.DrawWireSphere(transform.position, interactionRadius);
         }
     }
 }

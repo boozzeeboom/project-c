@@ -250,11 +250,18 @@ namespace ProjectC.World.Streaming
 
                 foreach (var renderer in renderers)
                 {
-                    if (renderer.material != null)
+                    if (renderer != null && renderer.gameObject != null)
                     {
-                        Color color = renderer.material.color;
-                        color.a = alpha;
-                        renderer.material.color = color;
+                        try
+                        {
+                            Color color = renderer.material.color;
+                            color.a = alpha;
+                            renderer.material.color = color;
+                        }
+                        catch (MissingReferenceException)
+                        {
+                            // Renderer уничтожен, пропускаем
+                        }
                     }
                 }
 
@@ -264,11 +271,18 @@ namespace ProjectC.World.Streaming
             // Убеждаемся что alpha = 1
             foreach (var renderer in renderers)
             {
-                if (renderer.material != null)
+                if (renderer != null && renderer.gameObject != null)
                 {
-                    Color color = renderer.material.color;
-                    color.a = 1f;
-                    renderer.material.color = color;
+                    try
+                    {
+                        Color color = renderer.material.color;
+                        color.a = 1f;
+                        renderer.material.color = color;
+                    }
+                    catch (MissingReferenceException)
+                    {
+                        // Renderer уничтожен, пропускаем
+                    }
                 }
             }
         }

@@ -662,5 +662,65 @@ namespace ProjectC.Player
                 TradeUI.Instance.OnContractResult(success, message, reward);
             }
         }
+
+        // ==================== TELEPORT RPC (Phase 2) ====================
+
+        /// <summary>
+        /// Телепортировать игрока — вызывается с клиента (любой клиент может телепортировать)
+        /// </summary>
+        [Rpc(SendTo.Server, InvokePermission = RpcInvokePermission.Everyone)]
+        public void TeleportServerRpc(Vector3 position)
+        {
+            TeleportToPosition(position);
+        }
+
+        /// <summary>
+        /// Телепортировать всех на позицию — вызывается с сервера
+        /// </summary>
+        [Rpc(SendTo.Everyone)]
+        public void TeleportAllClientRpc(Vector3 position, RpcParams rpcParams = default)
+        {
+            // Для non-owned объектов просто устанавливаем позицию
+            if (!IsOwner)
+            {
+                _controller.enabled = false;
+                transform.position = position;
+                _controller.enabled = true;
+            }
+        }
+
+        /// <summary>
+        /// Телепортировать на позицию (серверная логика)
+        /// </summary>
+        public void TeleportToPosition(Vector3 position)
+        {
+            Debug.Log($"[NetworkPlayer] Teleport to {position}");
+            
+            // Отключаем CharacterController чтобы избежать коллизий
+            _controller.enabled = false;
+            transform.position = position;
+            _controller.enabled = true;
+            
+            // Сбрасываем velocity
+            _velocity = Vector3.zero;
+            
+            // Сбрасываем серверную позицию для коррекции
+            _serverPosition = position;
+            _hasServerPosition = true;
+            
+            // Оповещаем всех клиентов
+            TeleportAllClientRpc(position);
+        }
+
+        /// <summary>
+        /// Телепортировать локального игрока (вызов с владельца)
+        /// </summary>
+        public void TeleportLocal(Vector3 position)
+        {
+            if (IsOwner)
+            {
+                TeleportServerRpc(position);
+            }
+        }
     }
 }

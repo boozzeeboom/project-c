@@ -255,6 +255,100 @@ int total = worldChunkManager.TotalChunkCount;
 
 ---
 
+## 🖥️ Network Test Menu (Тестирование мультиплеера)
+
+### Обзор
+
+Сессия 16.04.2026 добавила **NetworkTestMenu** — простое UI меню для тестирования мультиплеера без отдельного UI.
+
+### Компоненты
+
+| Файл | Назначение |
+|------|------------|
+| `Assets/_Project/Scripts/UI/NetworkTestMenu.cs` | UI компонент меню |
+| `Assets/_Project/Scripts/Editor/PrepareTestScene.cs` | Editor скрипт для создания тестовой сцены |
+| `Assets/_Project/Scripts/Network/NetworkPlayerSpawner.cs` | Спавн игроков при подключении |
+
+### Использование PrepareTestScene
+
+1. **Unity → ProjectC → Prepare Test Scene (Phase 2)**
+2. Включите опции:
+   - ✅ Network Manager
+   - ✅ Network Test Menu (Host/Client)
+   - ✅ Test Player (опционально)
+3. Нажмите **Create Test Scene**
+4. Сцена создастся в `Assets/_Project/Scenes/Test/`
+
+### Создаваемые объекты
+
+```
+NetworkTestCanvas (Canvas)
+├── NetworkTestMenu
+│   └── MenuPanel
+│       ├── Title ("Network Test Menu")
+│       ├── Status (TextMeshProUGUI)
+│       ├── HostButton
+│       ├── ClientButton
+│       └── ServerButton
+
+EventSystem (EventSystem + InputModule)
+
+NetworkManagerController (dont destroy on load)
+
+TestPlayer (опционально)
+├── CharacterController
+├── NetworkObject
+├── NetworkPlayerSpawner
+├── PlayerController
+└── Body (placeholder mesh)
+```
+
+### Кнопки меню
+
+| Кнопка | Действие |
+|--------|----------|
+| **Host** | Запускает игру как хост (сервер + клиент) |
+| **Client** | Подключается к localhost:7777 |
+| **Server** | Запускает выделенный сервер |
+
+### Важные замечания
+
+1. **Используйте NetworkManagerController** — не прямой NetworkManager
+2. **Основная сцена** — для полной синхронизации игроков используйте `ProjectC_1.unity`
+3. **Тестовая сцена** — для базового тестирования сети
+
+### Ограничения тестовой сцены
+
+- Нет настоящего NetworkPlayer префаба
+- Для синхронизации игроков нужен PlayerPrefab в NetworkConfig
+- Рекомендуется: основная сцена + добавление NetworkTestMenu
+
+### Добавление в существующую сцену
+
+```csharp
+// В PrepareTestScene.CreateNetworkTestMenu()
+var nmc = FindAnyObjectByType<NetworkManagerController>();
+CreateButton(panel, "Host", new Vector2(0, -20), () => {
+    nmc?.StartHost();
+    menuObj.SetActive(false);
+});
+```
+
+### Известные проблемы
+
+1. **NullReferenceException в NMC** — если NetworkManager не инициализирован
+2. **Игроки не видят друг друга** — тестовая сцена не имеет NetworkPlayer префаба
+3. **Используйте основную сцену** — `ProjectC_1.unity` для полной синхронизации
+
+### Быстрое тестирование
+
+1. Откройте `ProjectC_1.unity`
+2. Запустите Host
+3. Запустите Client в другом окне
+4. Оба должны видеть одинаковый мир
+
+---
+
 ## 🧪 Тестирование мультиплеера (Фаза 2)
 
 ### Предварительные требования

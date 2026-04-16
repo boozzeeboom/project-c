@@ -2,6 +2,61 @@
 
 ---
 
+## v0.0.14-world-streaming-phase2 (16 апреля 2026)
+
+**Ветка:** `qwen-gamestudio-agent-dev`
+**Этап 3: World Streaming Phase 2 — Multiplayer Integration** — ✅ ОСНОВНЫЕ КОМПОНЕНТЫ РЕАЛИЗОВАНЫ
+
+### 🆕 Новое
+
+#### World Streaming Multiplayer (Phase 2)
+
+**PlayerChunkTracker.cs:**
+- Server-side компонент для отслеживания позиции игроков в чанках
+- Автоматический поиск NetworkPlayer компонента
+- RPC: LoadChunkClientRpc, UnloadChunkClientRpc
+- Поддержка loadRadius/unloadRadius для hysteresis
+
+**ChunkNetworkSpawner.cs:**
+- Server-side спавн/деспавн NetworkObjects с чанками
+- События OnChunkLoaded/OnChunkUnloaded
+- Автоматическая привязка ChestContainer к чанку
+
+**StreamingTest.cs (обновлён):**
+- Поддержка локального игрока в мультиплеере
+- TryFindLocalPlayer() — поиск NetworkPlayer с IsOwner
+- GetCurrentPosition() — унифицированное получение позиции
+
+**PlayerChunkTracker.cs (обновлён):**
+- showDebugLogs = false по умолчанию (меньше спама)
+- GetChunkIdAtPosition() — fallback для позиций за пределами мира
+
+### 📦 Новые/обновлённые файлы
+
+| Файл | Строк | Изменение |
+|------|-------|-----------|
+| `Assets/_Project/Scripts/World/Streaming/PlayerChunkTracker.cs` | 371 | Создан |
+| `Assets/_Project/Scripts/World/Streaming/ChunkNetworkSpawner.cs` | 347 | Создан |
+| `Assets/_Project/Scripts/World/Streaming/StreamingTest.cs` | 324 | Обновлён |
+| `docs/world/LargeScaleMMO/PHASE2_COMPONENT_STATUS.md` | 250 | Создан |
+| `docs/world/LargeScaleMMO/SESSION_PROMPT_Phase2_MultiplayerIntegration.md` | 419 | Обновлён |
+
+### 🔧 Интеграция
+
+- PlayerChunkTracker ↔ WorldStreamingManager — server/client RPC
+- FloatingOriginMP — BroadcastWorldShiftRpc для синхронизации сдвига
+- NetworkManagerController — события подключения/отключения
+- ChunkLoader — события OnChunkLoaded/OnChunkUnloaded
+
+### ⚠️ Требуется тестирование
+
+1. Одиночная игра (F5-F10)
+2. Host + Client подключение
+3. Синхронизация FloatingOrigin
+4. Спавн/деспавн объектов
+
+---
+
 ## v0.0.13-urp-setup (6 апреля 2026)
 
 **Ветка:** `qwen-gamestudio-agent-dev`

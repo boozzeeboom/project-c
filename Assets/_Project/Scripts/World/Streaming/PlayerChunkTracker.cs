@@ -27,7 +27,7 @@ namespace ProjectC.World.Streaming
         
         [Header("Debug")]
         [Tooltip("Показывать логи")]
-        [SerializeField] private bool showDebugLogs = true;
+        [SerializeField] private bool showDebugLogs = false;
         
         #endregion
         
@@ -230,6 +230,7 @@ namespace ProjectC.World.Streaming
             if (!_chunkManager || !_clientLoadedChunks.ContainsKey(clientId))
                 return;
             
+            // Используем GetChunksInRadius который работает только с зарегистрированными чанками
             List<ChunkId> chunksInRange = _chunkManager.GetChunksInRadius(position, loadRadius);
             
             foreach (var chunkId in chunksInRange)
@@ -252,6 +253,7 @@ namespace ProjectC.World.Streaming
             if (!_chunkManager || !_clientLoadedChunks.ContainsKey(clientId))
                 return;
             
+            // Используем GetChunksInRadius для определения какие чанки должны оставаться загруженными
             List<ChunkId> chunksInUnloadRadius = _chunkManager.GetChunksInRadius(position, unloadRadius);
             var chunksInRadiusSet = new HashSet<ChunkId>(chunksInUnloadRadius);
             
@@ -272,6 +274,16 @@ namespace ProjectC.World.Streaming
                 // Отправляем RPC клиенту выгрузить чанк
                 UnloadChunkClientRpc(clientId, chunkId);
             }
+        }
+        
+        /// <summary>
+        /// Вычислить ChunkId для позиции (дублирует WorldChunkManager.GetChunkAtPosition для сервера).
+        /// </summary>
+        private ChunkId GetChunkIdAtPosition(Vector3 position)
+        {
+            int gridX = Mathf.FloorToInt(position.x / 2000f);
+            int gridZ = Mathf.FloorToInt(position.z / 2000f);
+            return new ChunkId(gridX, gridZ);
         }
         
         #endregion

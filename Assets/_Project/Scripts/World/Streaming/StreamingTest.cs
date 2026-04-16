@@ -1,5 +1,8 @@
+using Unity.Netcode;
 using UnityEngine;
+using UnityEngine.InputSystem;
 using ProjectC.World.Streaming;
+using ProjectC.Player;
 
 namespace ProjectC.World
 {
@@ -42,6 +45,13 @@ namespace ProjectC.World
         [Tooltip("Скорость плавного перемещения")]
         [SerializeField] private float teleportSpeed = 100f;
         
+        [Header("Multiplayer Settings")]
+        [Tooltip("Использовать позицию локального игрока вместо камеры")]
+        [SerializeField] private bool useLocalPlayerPosition = true;
+        
+        [Tooltip("Teleport игрока напрямую (вместо камеры)")]
+        [SerializeField] private bool teleportPlayer = true;
+        
         [Header("Debug Visualization")]
         [Tooltip("Показывать текущий чанк игрока")]
         #pragma warning disable 0414
@@ -62,9 +72,13 @@ namespace ProjectC.World
         
         // Cached components
         private Camera _mainCamera;
+        private Transform _trackedTransform;
+        private NetworkPlayer _localPlayer;
         
         private void Start()
         {
+            Debug.Log("[StreamingTest] Initializing...");
+            
             // Ищем камеру несколькими способами
             _mainCamera = Camera.main;
             
@@ -82,7 +96,13 @@ namespace ProjectC.World
                 _mainCamera = FindAnyObjectByType<Camera>();
             }
             
-            Debug.Log($"[StreamingTest] Camera found: {(_mainCamera != null ? _mainCamera.name : "NULL")}");
+            Debug.Log($"[StreamingTest] Camera: {(_mainCamera != null ? _mainCamera.name : "NULL")}");
+            
+            // В мультиплеере ищем локального игрока
+            if (useLocalPlayerPosition)
+            {
+                TryFindLocalPlayer();
+            }
             
             // Auto-find streaming manager
             if (streamingManager == null)
@@ -110,6 +130,79 @@ namespace ProjectC.World
             }
             
             Debug.Log("[StreamingTest] Test controls: F5=next, F6=prev, F7=load chunks, F8=reset origin, F9=toggle grid, F10=toggle HUD");
+            
+            // Определяем что отслеживать
+            UpdateTrackedTransform();
+        }
+        
+        /// <summary>
+        /// Попытка найти локального игрока в мультиплеере.
+        /// </summary>
+        private void TryFindLocalPlayer()
+        {
+            // Проверяем NetworkManager
+            if (NetworkManager.Singleton != null)
+            {
+                // Ищем локального игрока
+                var networkObjects = FindObjectsByType<NetworkObject>();
+                foreach (var netObj in networkObjects)
+                {
+                    if (netObj.IsOwner)
+                    {
+                        var player = netObj.GetComponent<NetworkPlayer>();
+                        if (player != null)
+                        {
+                            _localPlayer = player;
+                            Debug.Log($"[StreamingTest] Found local player: {netObj.name}");
+                            return;
+                        }
+                    }
+                }
+            }
+            
+            Debug.Log("[StreamingTest] Local player not found (singleplayer mode)");
+        }
+        
+        /// <summary>
+        /// Обновить трансформ для отслеживания.
+        /// </summary>
+        private void UpdateTrackedTransform()
+        {
+            // Приоритет: локальный игрок > камера
+            if (useLocalPlayerPosition && _localPlayer != null)
+            {
+                _trackedTransform = _localPlayer.transform;
+                Debug.Log("[StreamingTest] Tracking local player transform");
+            }
+            else if (_mainCamera != null)
+            {
+                _trackedTransform = _mainCamera.transform;
+                Debug.Log("[StreamingTest] Tracking camera transform");
+            }
+            else
+            {
+                _trackedTransform = null;
+                Debug.LogWarning("[StreamingTest] No transform to track!");
+            }
+        }
+        
+        /// <summary>
+        /// Получить текущую позицию для отслеживания/стриминга.
+        /// </summary>
+        private Vector3 GetCurrentPosition()
+        {
+            if (_trackedTransform != null)
+            {
+                return _trackedTransform.position;
+            }
+            
+            // Fallback на камеру
+            if (_mainCamera != null)
+            {
+                return _mainCamera.transform.position;
+            }
+            
+            return Vector3.zero;
         }
         
         private void Update()
@@ -153,31 +246,45 @@ namespace ProjectC.World
         private void HandleKeyboardInput()
         {
             // F5 - следующая позиция (не конфликтует с управлением)
-            if (Input.GetKeyDown(KeyCode.F5))
+            if (Keyboard.current.f5Key.wasPressedThisFrame)
             {
                 _currentTargetIndex = (_currentTargetIndex + 1) % testPositions.Length;
                 TeleportToTestPosition(_currentTargetIndex);
             }
             
             // F6 - предыдущая позиция
-            if (Input.GetKeyDown(KeyCode.F6))
+            if (Keyboard.current.f6Key.wasPressedThisFrame)
             {
                 _currentTargetIndex = (_currentTargetIndex - 1 + testPositions.Length) % testPositions.Length;
                 TeleportToTestPosition(_currentTargetIndex);
             }
             
             // F7 - загрузить чанки вокруг текущей позиции
-            if (Input.GetKeyDown(KeyCode.F7))
+            if (Keyboard.current.f7Key.wasPressedThisFrame)
             {
-                if (streamingManager != null && _mainCamera != null)
+                if (streamingManager != null)
                 {
-                    streamingManager.LoadChunksAroundPlayer(_mainCamera.transform.position);
-                    Debug.Log("[StreamingTest] Чанки загружены вокруг текущей позиции");
+                    // Используем GetCurrentPosition() которое работает с игроком или камерой
+                    Vector3 position = GetCurrentPosition();
+                    
+                    if (position != Vector3.zero || _trackedTransform != null)
+                    {
+                        streamingManager.LoadChunksAroundPlayer(position);
+                        Debug.Log($"[StreamingTest] F7: Loading chunks around position {position} (tracked: {_trackedTransform?.name ?? "NULL"})");
+                    }
+                    else
+                    {
+                        Debug.LogWarning("[StreamingTest] F7: No position for chunk loading!");
+                    }
+                }
+                else
+                {
+                    Debug.LogWarning("[StreamingTest] F7: StreamingManager не найден!");
                 }
             }
             
             // F8 - Toggle FloatingOrigin
-            if (Input.GetKeyDown(KeyCode.F8))
+            if (Keyboard.current.f8Key.wasPressedThisFrame)
             {
                 var fo = FindAnyObjectByType<ProjectC.World.Streaming.FloatingOriginMP>();
                 if (fo != null)
@@ -188,7 +295,7 @@ namespace ProjectC.World
             }
             
             // F9 - Toggle Grid visualization
-            if (Input.GetKeyDown(KeyCode.F9))
+            if (Keyboard.current.f9Key.wasPressedThisFrame)
             {
 #if UNITY_EDITOR
                 var chunkVizType = System.Type.GetType("ProjectC.Editor.ChunkVisualizer, Assembly-CSharp");
@@ -202,7 +309,7 @@ namespace ProjectC.World
             }
             
             // F10 - Toggle debug HUD
-            if (Input.GetKeyDown(KeyCode.F10))
+            if (Keyboard.current.f10Key.wasPressedThisFrame)
             {
                 _debugHUDVisible = !_debugHUDVisible;
                 if (streamingManager != null)
@@ -228,19 +335,30 @@ namespace ProjectC.World
             Vector2 pos2D = testPositions[index];
             _targetPosition = new Vector3(pos2D.x, teleportHeight, pos2D.y);
             
-            if (smoothTeleport && _mainCamera != null)
+            Debug.Log($"[StreamingTest] Teleport to position {index}: ({pos2D.x}, {pos2D.y}), teleportPlayer={teleportPlayer}, player={_localPlayer?.name ?? "NULL"}");
+            
+            // Если включен телепорт игрока и игрок найден
+            if (teleportPlayer && _localPlayer != null)
+            {
+                _localPlayer.transform.position = _targetPosition;
+                Debug.Log($"[StreamingTest] Teleported player to {_targetPosition}");
+                OnTeleportComplete();
+            }
+            else if (smoothTeleport && _mainCamera != null)
             {
                 _isMoving = true;
-                Debug.Log($"[StreamingTest] Moving to test position {index}: ({pos2D.x}, {pos2D.y})");
+                Debug.Log($"[StreamingTest] Smooth camera move to test position {index}: ({pos2D.x}, {pos2D.y})");
+            }
+            else if (_mainCamera != null)
+            {
+                // Instant teleport
+                _mainCamera.transform.position = _targetPosition;
+                Debug.Log($"[StreamingTest] Instant camera teleport to {_targetPosition}");
+                OnTeleportComplete();
             }
             else
             {
-                // Instant teleport
-                if (_mainCamera != null)
-                {
-                    _mainCamera.transform.position = _targetPosition;
-                }
-                OnTeleportComplete();
+                Debug.LogWarning($"[StreamingTest] Cannot teleport: no camera and no player!");
             }
         }
         

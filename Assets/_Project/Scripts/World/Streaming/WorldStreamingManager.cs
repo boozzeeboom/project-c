@@ -1,5 +1,6 @@
 using System.Collections;
 using System.Collections.Generic;
+using Unity.Netcode;
 using UnityEngine;
 using ProjectC.World.Core;
 using ProjectC.World.Streaming;
@@ -69,6 +70,23 @@ namespace ProjectC.World
         [Tooltip("Показывать debug информацию на экране")]
         [SerializeField] private bool showDebugHUD = false;
         
+        [Header("Preload Settings")]
+        [Tooltip("Preload: количество слоев соседних чанков для загрузки заранее")]
+        [SerializeField, Range(0, 3)]
+        private int preloadLayers = 1;
+        
+        [Tooltip("Preload: задержка после входа в новый чанк перед началом preloading (секунды)")]
+        [SerializeField, Range(0f, 5f)]
+        private float preloadDelay = 1f;
+        
+        [Tooltip("Preload: интервал между загрузкой каждого preloaded чанка (секунды)")]
+        [SerializeField, Range(0.1f, 2f)]
+        private float preloadChunkInterval = 0.3f;
+        
+        [Tooltip("Memory Budget: максимальное количество загруженных чанков (0 = без ограничений)")]
+        [SerializeField, Range(0, 50)]
+        private int maxLoadedChunks = 0;
+        
         #endregion
         
         #region Private State
@@ -77,6 +95,16 @@ namespace ProjectC.World
         private ChunkId _currentCenterChunk;
         private float _lastUpdateTime = 0f;
         private bool _initialized = false;
+        
+        // Preload system
+        private ChunkId _lastPreloadChunk;
+        private float _lastPreloadTime = 0f;
+        private List<ChunkId> _preloadQueue = new List<ChunkId>();
+        private float _lastPreloadChunkTime = 0f;
+        private bool _preloadInProgress = false;
+        
+        // Memory budget tracking
+        private int _peakLoadedChunks = 0;
         
         #endregion
         
@@ -201,6 +229,56 @@ namespace ProjectC.World
                     Debug.Log($"[WorldStreamingManager] Unloading chunk {chunkId}");
                 }
             }
+        }
+        
+        /// <summary>
+        /// Загрузить чанк по команде сервера (для multiplayer).
+        /// Вызывается из PlayerChunkTracker.LoadChunkClientRpc().
+        /// КЛИЕНТ НЕ ДОЛЖЕН вызывать этот метод самостоятельно!
+        /// </summary>
+        /// <param name="chunkId">ID чанка для загрузки</param>
+        public void LoadChunkByServerCommand(ChunkId chunkId)
+        {
+            if (_loadedChunks.Contains(chunkId))
+            {
+                Debug.Log($"[WorldStreamingManager] Chunk {chunkId} already loaded, skipping.");
+                return;
+            }
+            
+            if (chunkLoader == null)
+            {
+                Debug.LogError("[WorldStreamingManager] ChunkLoader not initialized!");
+                return;
+            }
+            
+            Debug.Log($"[WorldStreamingManager] Loading chunk {chunkId} by server command");
+            chunkLoader.LoadChunk(chunkId);
+            _loadedChunks.Add(chunkId);
+        }
+        
+        /// <summary>
+        /// Выгрузить чанк по команде сервера (для multiplayer).
+        /// Вызывается из PlayerChunkTracker.UnloadChunkClientRpc().
+        /// КЛИЕНТ НЕ ДОЛЖЕН вызывать этот метод самостоятельно!
+        /// </summary>
+        /// <param name="chunkId">ID чанка для выгрузки</param>
+        public void UnloadChunkByServerCommand(ChunkId chunkId)
+        {
+            if (!_loadedChunks.Contains(chunkId))
+            {
+                Debug.Log($"[WorldStreamingManager] Chunk {chunkId} not loaded, skipping unload.");
+                return;
+            }
+            
+            if (chunkLoader == null)
+            {
+                Debug.LogError("[WorldStreamingManager] ChunkLoader not initialized!");
+                return;
+            }
+            
+            Debug.Log($"[WorldStreamingManager] Unloading chunk {chunkId} by server command");
+            chunkLoader.UnloadChunk(chunkId);
+            _loadedChunks.Remove(chunkId);
         }
         
         /// <summary>
@@ -388,6 +466,152 @@ namespace ProjectC.World
             {
                 LoadChunksAroundPlayer(mainCamera.transform.position);
             }
+            
+            // Обновляем preload систему
+            UpdatePreload();
+        }
+        
+        #endregion
+        
+        #region Preload System
+        
+        /// <summary>
+        /// Обновление preload системы — загрузка соседних чанков заранее.
+        /// </summary>
+        private void UpdatePreload()
+        {
+            if (preloadLayers <= 0) return;
+            
+            Camera mainCamera = Camera.main;
+            if (mainCamera == null || chunkManager == null) return;
+            
+            Vector3 playerPos = mainCamera.transform.position;
+            ChunkId currentChunk = chunkManager.GetChunkAtPosition(playerPos);
+            
+            // Проверяем изменился ли центральный чанк
+            if (!currentChunk.Equals(_lastPreloadChunk))
+            {
+                _lastPreloadChunk = currentChunk;
+                _lastPreloadTime = Time.time;
+                
+                // Формируем очередь preload
+                BuildPreloadQueue(currentChunk);
+                _preloadInProgress = true;
+            }
+            
+            // Обрабатываем preload очередь
+            if (_preloadInProgress && Time.time - _lastPreloadTime >= preloadDelay)
+            {
+                ProcessPreloadQueue();
+            }
+        }
+        
+        /// <summary>
+        /// Построить очередь чанков для preloading.
+        /// </summary>
+        private void BuildPreloadQueue(ChunkId centerChunk)
+        {
+            _preloadQueue.Clear();
+            
+            if (chunkManager == null) return;
+            
+            // Загружаем чанки дальше чем loadRadius но в пределах preloadRadius
+            int preloadRadius = loadRadius + preloadLayers;
+            List<ChunkId> preloadCandidates = chunkManager.GetChunksInRadius(
+                new Vector3(centerChunk.GridX * WorldChunkManager.ChunkSize, 0, 
+                           centerChunk.GridZ * WorldChunkManager.ChunkSize), 
+                preloadRadius
+            );
+            
+            foreach (var chunkId in preloadCandidates)
+            {
+                // Добавляем только те чанки которые ещё не загружены
+                if (!_loadedChunks.Contains(chunkId))
+                {
+                    // Вычисляем расстояние до центра — ближайшие загружаем первыми
+                    int distance = Mathf.Abs(chunkId.GridX - centerChunk.GridX) + 
+                                   Mathf.Abs(chunkId.GridZ - centerChunk.GridZ);
+                    
+                    // Вставляем в очередь по приоритету (расстоянию)
+                    int insertIndex = _preloadQueue.Count;
+                    for (int i = 0; i < _preloadQueue.Count; i++)
+                    {
+                        var existingChunk = _preloadQueue[i];
+                        int existingDist = Mathf.Abs(existingChunk.GridX - centerChunk.GridX) + 
+                                          Mathf.Abs(existingChunk.GridZ - centerChunk.GridZ);
+                        if (distance < existingDist)
+                        {
+                            insertIndex = i;
+                            break;
+                        }
+                    }
+                    _preloadQueue.Insert(insertIndex, chunkId);
+                }
+            }
+            
+            if (showDebugHUD && _preloadQueue.Count > 0)
+            {
+                Debug.Log($"[WorldStreamingManager] Preload queue built: {_preloadQueue.Count} chunks");
+            }
+        }
+        
+        /// <summary>
+        /// Обработать очередь preload — загружаем по одному чанку за интервал.
+        /// </summary>
+        private void ProcessPreloadQueue()
+        {
+            if (_preloadQueue.Count == 0)
+            {
+                _preloadInProgress = false;
+                return;
+            }
+            
+            if (Time.time - _lastPreloadChunkTime < preloadChunkInterval)
+                return;
+            
+            // Проверяем memory budget
+            if (maxLoadedChunks > 0 && _loadedChunks.Count >= maxLoadedChunks)
+            {
+                if (showDebugHUD)
+                {
+                    Debug.Log($"[WorldStreamingManager] Memory budget reached: {_loadedChunks.Count}/{maxLoadedChunks}");
+                }
+                return;
+            }
+            
+            // Загружаем следующий чанк из очереди
+            ChunkId chunkToLoad = _preloadQueue[0];
+            _preloadQueue.RemoveAt(0);
+            _lastPreloadChunkTime = Time.time;
+            
+            if (!_loadedChunks.Contains(chunkToLoad) && chunkLoader != null)
+            {
+                chunkLoader.LoadChunk(chunkToLoad);
+                _loadedChunks.Add(chunkToLoad);
+                
+                if (showDebugHUD)
+                {
+                    Debug.Log($"[WorldStreamingManager] Preloading chunk {chunkToLoad}");
+                }
+            }
+        }
+        
+        /// <summary>
+        /// Получить количество чанков в preload очереди.
+        /// </summary>
+        public int PreloadQueueCount => _preloadQueue.Count;
+        
+        /// <summary>
+        /// Получить пиковое количество загруженных чанков.
+        /// </summary>
+        public int PeakLoadedChunks => _peakLoadedChunks;
+        
+        /// <summary>
+        /// Сбросить пиковое значение загруженных чанков.
+        /// </summary>
+        public void ResetPeakChunks()
+        {
+            _peakLoadedChunks = _loadedChunks.Count;
         }
         
         #endregion

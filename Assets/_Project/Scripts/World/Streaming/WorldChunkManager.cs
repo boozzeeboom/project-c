@@ -1,4 +1,6 @@
+using System;
 using System.Collections.Generic;
+using Unity.Netcode;
 using UnityEngine;
 using ProjectC.World.Core;
 
@@ -6,8 +8,10 @@ namespace ProjectC.World.Streaming
 {
     /// <summary>
     /// Идентификатор чанка в grid-системе мира.
+    /// Реализует INetworkSerializable для передачи через RPC.
     /// </summary>
-    public struct ChunkId : System.IEquatable<ChunkId>
+    [Serializable]
+    public struct ChunkId : System.IEquatable<ChunkId>, INetworkSerializable
     {
         public int GridX;
         public int GridZ;
@@ -34,6 +38,15 @@ namespace ProjectC.World.Streaming
         }
 
         public override string ToString() => $"Chunk({GridX}, {GridZ})";
+
+        /// <summary>
+        /// Реализация INetworkSerializable для передачи через RPC.
+        /// </summary>
+        public void NetworkSerialize<T>(BufferSerializer<T> serializer) where T : IReaderWriter
+        {
+            serializer.SerializeValue(ref GridX);
+            serializer.SerializeValue(ref GridZ);
+        }
     }
 
     /// <summary>

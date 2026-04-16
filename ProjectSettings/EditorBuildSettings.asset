@@ -8,4 +8,7 @@ EditorBuildSettings:
   - enabled: 1
     path: Assets/ProjectC_1.unity
     guid: 5ff33c603e1fd764d9e830128d542b6b
+  - enabled: 1
+    path: Assets/_Project/Scenes/Test/ProjectC_ChunkTest_1.unity
+    guid: 4e99ac7975c57b144a521c89ccfabb58
   m_configObjects: {}

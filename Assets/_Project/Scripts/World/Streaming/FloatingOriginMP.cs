@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using Unity.Netcode;
 using UnityEngine;
 
 namespace ProjectC.World.Streaming
@@ -45,6 +46,23 @@ namespace ProjectC.World.Streaming
         #endregion
 
         #region Configuration
+        
+        /// <summary>
+        /// Режим работы FloatingOriginMP.
+        /// </summary>
+        public enum OriginMode
+        {
+            /// <summary>Локальный сдвиг (singleplayer)</summary>
+            Local,
+            /// <summary>Сдвиг от сервера (multiplayer client)</summary>
+            ServerSynced,
+            /// <summary>Сервер инициирует сдвиг (multiplayer host/server)</summary>
+            ServerAuthority
+        }
+        
+        [Header("Mode")]
+        [Tooltip("Режим работы: Local (singleplayer), ServerSynced (client), ServerAuthority (host/server)")]
+        public OriginMode mode = OriginMode.Local;
 
         [Header("Threshold")]
         [Tooltip("Расстояние от origin после которого сдвигаем мир (units)")]
@@ -63,7 +81,8 @@ namespace ProjectC.World.Streaming
             "Farms",
             "TradeZones",
             "World",
-            "WorldRoot"
+            "WorldRoot",
+            "ChunksContainer"  // Добавлен для чанков
         };
 
         [Header("Debug")]
@@ -82,6 +101,17 @@ namespace ProjectC.World.Streaming
         private Vector3 _totalOffset = Vector3.zero;
         private int _shiftCount = 0;
         private bool _initialized = false;
+        
+        /// <summary>
+        /// Timestamp последнего сдвига (для защиты от спама).
+        /// После ResetOrigin/ApplyWorldShift включаем cooldown чтобы LateUpdate не спамил.
+        /// </summary>
+        private float _lastShiftTime = -100f;
+        
+        /// <summary>
+        /// Cooldown в секундах после сдвига — чтобы LateUpdate не добавлял новые сдвиги.
+        /// </summary>
+        private const float SHIFT_COOLDOWN = 0.5f;
 
         #endregion
 
@@ -141,6 +171,22 @@ namespace ProjectC.World.Streaming
         {
             if (!_initialized || _worldRoots.Count == 0) return;
 
+            // Only process in Local or ServerAuthority mode
+            if (mode == OriginMode.ServerSynced) return;
+            
+            // ServerSynced режим — только принимаем сдвиг от сервера, не вычисляем сами
+            if (mode == OriginMode.ServerSynced)
+            {
+                return;
+            }
+            
+            // ЗАЩИТА ОТ СПАМА: проверяем cooldown
+            if (Time.time - _lastShiftTime < SHIFT_COOLDOWN)
+            {
+                return;
+            }
+            
+            // Local и ServerAuthority режимы — вычисляем и применяем сдвиг
             Vector3 cameraWorldPos = _camera.transform.position;
 
             // Проверяем нужно ли сдвигать
@@ -157,9 +203,18 @@ namespace ProjectC.World.Streaming
                 // Сохраняем total offset для отладки
                 _totalOffset += offset;
                 _shiftCount++;
+                
+                // Запоминаем время сдвига для cooldown
+                _lastShiftTime = Time.time;
 
                 // Уведомляем подписчиков
                 OnWorldShifted?.Invoke(offset);
+                
+                // ServerAuthority — рассылаем сдвиг всем клиентам
+                if (mode == OriginMode.ServerAuthority && IsServer)
+                {
+                    BroadcastWorldShiftRpc(offset);
+                }
 
                 if (showDebugLogs)
                 {
@@ -167,6 +222,54 @@ namespace ProjectC.World.Streaming
                               $"cameraPos={cameraWorldPos} → newCameraPos={_camera.transform.position}, " +
                               $"totalOffset={_totalOffset}, shiftCount={_shiftCount}");
                 }
+            }
+        }
+
+        #endregion
+        
+        #region Network RPCs (Multiplayer)
+
+        /// <summary>
+        /// RPC: Сервер → Все клиенты: сдвиг мира.
+        /// Вызывается из ServerAuthority режима когда сервер сдвигает мир.
+        /// </summary>
+        [ClientRpc]
+        private void BroadcastWorldShiftRpc(Vector3 offset, ClientRpcParams rpcParams = default)
+        {
+            if (mode == OriginMode.ServerSynced)
+            {
+                // Клиент в ServerSynced режиме — принимаем сдвиг
+                ApplyWorldShift(offset);
+                
+                if (showDebugLogs)
+                {
+                    Debug.Log($"[FloatingOriginMP] Received world shift from server: offset={offset}, " +
+                              $"totalOffset={_totalOffset}, shiftCount={_shiftCount}");
+                }
+            }
+        }
+        
+        /// <summary>
+        /// Проверить является ли текущий экземпляр сервером.
+        /// </summary>
+        private bool IsServer
+        {
+            get
+            {
+                return NetworkManager.Singleton != null && 
+                       NetworkManager.Singleton.IsServer;
+            }
+        }
+        
+        /// <summary>
+        /// Проверить является ли текущий экземпляр хостом.
+        /// </summary>
+        private bool IsHost
+        {
+            get
+            {
+                return NetworkManager.Singleton != null && 
+                       NetworkManager.Singleton.IsHost;
             }
         }
 
@@ -200,6 +303,9 @@ namespace ProjectC.World.Streaming
 
             _totalOffset += offset;
             _shiftCount++;
+            
+            // Запоминаем время сдвига для cooldown
+            _lastShiftTime = Time.time;
 
             // Уведомляем подписчиков
             OnWorldShifted?.Invoke(offset);
@@ -248,6 +354,9 @@ namespace ProjectC.World.Streaming
 
             _totalOffset += offset;
             _shiftCount++;
+            
+            // Запоминаем время сдвига для cooldown
+            _lastShiftTime = Time.time;
 
             // Уведомляем подписчиков
             OnWorldShifted?.Invoke(offset);

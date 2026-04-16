@@ -32,6 +32,18 @@ namespace ProjectC.Items
         public string DisplayName => "Chest";
         public float InteractionRadius => openRadius;
         public Vector3 Position => transform.position;
+        
+        // Chunk binding for streaming system
+        private World.Streaming.ChunkId _owningChunkId;
+        public World.Streaming.ChunkId OwningChunkId => _owningChunkId;
+        
+        /// <summary>
+        /// Привязать сундук к чанку (вызывается из ChunkNetworkSpawner).
+        /// </summary>
+        public void SetChunk(World.Streaming.ChunkId chunkId)
+        {
+            _owningChunkId = chunkId;
+        }
 
         private void Start()
         {

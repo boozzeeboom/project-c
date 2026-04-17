@@ -573,6 +573,9 @@ PrefabInstance:
     - targetCorrespondingSourceObject: {fileID: 100000, guid: ccd263fac50a9834b9bc6e7c158e9da2, type: 3}
       insertIndex: -1
       addedObject: {fileID: 1082633607}
+    - targetCorrespondingSourceObject: {fileID: 100000, guid: ccd263fac50a9834b9bc6e7c158e9da2, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 1082633611}
   m_SourcePrefab: {fileID: 100100000, guid: ccd263fac50a9834b9bc6e7c158e9da2, type: 3}
 --- !u!1 &79331567
 GameObject:
@@ -1386,9 +1389,6 @@ PrefabInstance:
     - targetCorrespondingSourceObject: {fileID: 2910778914681228092, guid: 020b4cd7c3349134b8c1de87bed1f706, type: 3}
       insertIndex: -1
       addedObject: {fileID: 1481840753}
-    - targetCorrespondingSourceObject: {fileID: 2910778914681228092, guid: 020b4cd7c3349134b8c1de87bed1f706, type: 3}
-      insertIndex: -1
-      addedObject: {fileID: 1481840757}
   m_SourcePrefab: {fileID: 100100000, guid: 020b4cd7c3349134b8c1de87bed1f706, type: 3}
 --- !u!1001 &136258863
 PrefabInstance:
@@ -1506,7 +1506,8 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 6b2530f236752e748b9b4a3951c057cd, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::ProjectC.World.Streaming.FloatingOriginMP
-  mode: 0
+  mode: 1
+  positionSource: {fileID: 0}
   threshold: 100000
   shiftRounding: 10000
   worldRootNames:
@@ -2527,7 +2528,7 @@ Transform:
   m_GameObject: {fileID: 427299406}
   serializedVersion: 2
   m_LocalRotation: {x: -0, y: -0, z: -0, w: 1}
-  m_LocalPosition: {x: 23.00607, y: 450.95792, z: 20.63465}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []
@@ -5102,6 +5103,48 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::ProjectC.Core.ItemDatabaseInitializer
   itemsResourcePath: Items
   startItemId: 1
+--- !u!114 &1082633611
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1082633602}
+  m_Enabled: 0
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 6b2530f236752e748b9b4a3951c057cd, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::ProjectC.World.Streaming.FloatingOriginMP
+  mode: 0
+  positionSource: {fileID: 0}
+  threshold: 1000000
+  shiftRounding: 100000
+  worldRootNames:
+  - WorldRoot
+  - Mountains
+  - Clouds
+  - farms
+  - TradeZones
+  - World
+  - ChunksContainer
+  - Platforms
+  - CloudLayer
+  - Massif
+  - Peak
+  - Farm
+  - TradeZone
+  excludeFromShift:
+  - Player
+  - NetworkPlayer
+  - ThirdPersonCamera
+  - Main Camera
+  - Camera
+  - EventSystem
+  - NetworkManager
+  - StreamingTest
+  - NetworkManagerController
+  showDebugLogs: 1
+  showDebugHUD: 1
 --- !u!1 &1090729367
 GameObject:
   m_ObjectHideFlags: 0
@@ -6453,21 +6496,6 @@ MonoBehaviour:
       m_PostInfinity: 2
       m_RotationOrder: 4
   CustomBlends: {fileID: 0}
---- !u!114 &1481840757
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1481840748}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 2ef3a54918f33de4bbdac40f2072bfdd, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::ProjectC.World.Core.FloatingOrigin
-  worldRoot: {fileID: 0}
-  threshold: 100000
-  showDebugLogs: 0
 --- !u!114 &1481840759 stripped
 MonoBehaviour:
   m_CorrespondingSourceObject: {fileID: 5405426399639928988, guid: 020b4cd7c3349134b8c1de87bed1f706, type: 3}
@@ -9135,15 +9163,15 @@ PrefabInstance:
     m_Modifications:
     - target: {fileID: 1286886651360650815, guid: 86686af57342aeb4692300ac2a46beec, type: 3}
       propertyPath: m_LocalPosition.x
-      value: 23.00607
+      value: 0
       objectReference: {fileID: 0}
     - target: {fileID: 1286886651360650815, guid: 86686af57342aeb4692300ac2a46beec, type: 3}
       propertyPath: m_LocalPosition.y
-      value: 450.95792
+      value: 0
       objectReference: {fileID: 0}
     - target: {fileID: 1286886651360650815, guid: 86686af57342aeb4692300ac2a46beec, type: 3}
       propertyPath: m_LocalPosition.z
-      value: 20.63465
+      value: 0
       objectReference: {fileID: 0}
     - target: {fileID: 1286886651360650815, guid: 86686af57342aeb4692300ac2a46beec, type: 3}
       propertyPath: m_LocalRotation.w

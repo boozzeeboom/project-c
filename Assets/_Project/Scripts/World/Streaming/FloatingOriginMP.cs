@@ -182,6 +182,16 @@ namespace ProjectC.World.Streaming
         /// Список найденных world root трансформов.
         /// </summary>
         public IReadOnlyList<Transform> WorldRoots => _worldRoots.AsReadOnly();
+        
+        /// <summary>
+        /// ПРИНУДИТЕЛЬНО обнулить totalOffset (для ResetOrigin после телепорта).
+        /// </summary>
+        public void ResetOffset()
+        {
+            Debug.Log($"[FloatingOriginMP] ResetOffset: was totalOffset={_totalOffset}");
+            _totalOffset = Vector3.zero;
+            Debug.Log($"[FloatingOriginMP] ResetOffset: now totalOffset={_totalOffset}");
+        }
 
         #endregion
 

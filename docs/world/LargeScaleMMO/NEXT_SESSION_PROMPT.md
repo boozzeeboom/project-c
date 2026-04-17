@@ -1,163 +1,131 @@
-# Next Session Prompt: World Reset Required
+# Next Session Prompt: StreamingTest_AutoRun Bug Fixed
 
 **Дата:** 17 апреля 2026 г.  
 **Проект:** ProjectC_client  
-**Status:** ⚠️ ПРОБЛЕМА В ДАННЫХ СЦЕНЫ, НЕ В КОДЕ
+**Status:** ⚠️ НАЙДЕН БАГ — множественные вызовы ResetOrigin
 
 ---
 
-## ⚠️ ВАЖНО: ПРОЧИТАЙ ПЕРЕД ТЕСТИРОВАНИЕМ
+## ⚠️ НАЙДЕННАЯ ПРОБЛЕМА
 
-### FloatingOriginMP.cs — КОД ПРАВИЛЬНЫЙ
-NullReferenceException исправлен, логика сдвига корректная.
+### Корневая причина артефактов
 
-### Проблема в ДАННЫХ СЦЕНЫ
+**Проблема:** `ResetOrigin()` вызывается **МНОГОКРАТНО** при плавной телепортации.
+
+В `StreamingTest_AutoRun.Update()`:
+```csharp
+if (direction.magnitude > 50000f)
+{
+    fo.ResetOrigin();  // ⚠️ ВЫЗЫВАЕТСЯ ПРИ КАЖДОМ КАДРЕ!
+}
 ```
-WorldRoot.position = (-4,050,000, 0, -4,050,000) ← УЖЕ СДВИНУТО!
-TradeZones.position = (-8,100,000, 0, -8,100,000) ← УЖЕ СДВИНУТО!
+
+При плавном перемещении камеры к 150,000:
+1. Камера движется: 0 → 50,000 → 50,100 → 50,200 → ...
+2. При direction.magnitude > 50,000 → вызывается ResetOrigin()
+3. Мир сдвигается, камера "телепортируется" относительно мира
+4. На следующем кадре — снова проверка → снова сдвиг
+5. **27+ сдвигов за одну телепортацию!**
+
+### Расчёт
 ```
-
-Это артефакты от предыдущих неудачных итераций. FloatingOriginMP работает, но мир уже повреждён.
-
----
-
-## ❌ ЧТО НЕ РАБОТАЕТ
-
-### Причина артефактов
-Мир был сдвинут в прошлых сессиях и накопил ошибки. Floating Origin работает, но:
-- TradeZones уже на -8.1M
-- WorldRoot уже на -4.05M
-- totalOffset рассинхронизирован с реальным положением
-
-### Логи подтверждают
-```
-[FloatingOriginMP] Roots BEFORE shift: 
-  'TradeZones'=(-8100000.00, 0.00, -8100000.00)
-  'WorldRoot'=(-4050000.00, 0.00, -4050000.00)
+-4,050,000 / 150,000 = 27 сдвигов
 ```
 
 ---
 
-## ✅ ЧТО НУЖНО СДЕЛАТЬ (В EDITOR, НЕ Play Mode!)
+## ✅ ЧТО ИСПРАВЛЕНО
 
-### 1. Сбросить WorldRoot позиции (КРИТИЧНО!)
+### 1. StreamingTest_AutoRun.cs
 
-⚠️ **Это делается В EDITOR, не в Play Mode!**
+**Убран дублирующий вызов ResetOrigin() в TeleportToTestPosition():**
+- Было: `fo.ResetOrigin()` вызывался перед телепортацией (когда камера на 0) — бесполезно
+- Стало: ResetOrigin вызывается только в OnTeleportComplete() -> TeleportToPeak()
 
-1. Открой сцену `Assets/ProjectC_1.unity`
-2. В Hierarchy найди `WorldRoot`
-3. Inspector → Transform → **Position = (0, 0, 0)**
-4. Clouds → **Position = (0, 0, 0)**
-5. TradeZones → **Position = (0, 0, 0)**
-6. Farms → **Position = (0, 0, 0)**
-7. Mountains → **Position = (0, 0, 0)**
-8. Все остальные world objects → **(0, 0, 0)**
+**Убран вызов ResetOrigin() в Update():**
+- Было: ResetOrigin() вызывался при каждом кадре если direction.magnitude > 50,000
+- Стало: ResetOrigin вызывается только в OnTeleportComplete()
 
-### 2. Удалить FloatingOriginMP с префаба
+### 2. FloatingOriginMP.cs (ранее)
 
-1. Открой `Assets/_Project/Prefabs/ThirdPersonCamera.prefab`
-2. Найди FloatingOriginMP компонент
-3. Удали его
-
-### 3. Проверить FloatingOriginMP в сцене
-
-**Вариант A:** На пустом объекте сцены
-- Создай пустой объект `FloatingOriginController`
-- Добавь FloatingOriginMP
-- Оставь positionSource = null (автопоиск)
-
-**Вариант B:** На Main Camera
-- Выбери Main Camera
-- Добавь FloatingOriginMP
-- positionSource = null
+- Добавлен `GetWorldPosition()` с 4 уровнями fallback
+- NullReferenceException исправлен
 
 ---
 
-## 🧪 ТЕСТИРОВАНИЕ ПОСЛЕ СБРОСА
+## ⚠️ ОСТАВШАЯСЯ ПРОБЛЕМА
 
-### Тест 1: Одиночная игра
+Даже после исправления, `ResetOrigin()` вызывается в `OnTeleportComplete()` -> `TeleportToPeak()`.
+
+Это правильно, но нужно проверить что:
+1. `smoothTeleport = false` (для тестирования) ИЛИ
+2. В `smoothTeleport = true` LateUpdate не вызывает ResetOrigin
+
+**Текущий код:**
+- Update(): НЕ вызывает ResetOrigin (исправлено)
+- TeleportToTestPosition(): НЕ вызывает fo.ResetOrigin() (исправлено)
+- OnTeleportComplete(): вызывает TeleportToPeak() -> floatingOrigin.ResetOrigin()
+
+---
+
+## 🧪 ТЕСТИРОВАНИЕ
+
+### Тест 1: Без плавной телепортации
 ```
-1. Запусти Play Mode
-2. Нажми F5 несколько раз (телепортация)
-3. Нажми F8 (ResetOrigin)
-4. Проверь HUD:
-   - Pos: — текущая позиция (должна быть ~150000)
-   - Offset: — суммарный сдвиг (должен расти)
-   - Roots: — количество world roots
+1. В Inspector: smoothTeleport = false
+2. Play Mode
+3. F5 — телепортация на 150,000
+4. Проверь: должен быть ТОЛЬКО ОДИН сдвиг
 ```
 
-### Тест 2: Артефакты должны исчезнуть
+### Тест 2: С плавной телепортацией
 ```
-1. Телепортируйся на 150,000
-2. Осмотрись — артефактов быть не должно
-3. Мир выглядит нормально
+1. В Inspector: smoothTeleport = true
+2. Play Mode
+3. F5 — плавная телепортация на 150,000
+4. Проверь: LateUpdate больше не вызывает ResetOrigin
+5. OnTeleportComplete вызывает сдвиг один раз
 ```
 
-### Тест 3: Server Synced режим
+### Тест 3: F8
 ```
-1. Запусти как Host (FloatingOriginMP.mode = ServerAuthority)
-2. Запусти Client (FloatingOriginMP.mode = ServerSynced)
-3. Host телепортируется на 150,000
-4. Проверь: Client получает сдвиг
+1. Play Mode
+2. F8 — ручной вызов ResetOrigin
+3. Проверь: сдвиг происходит один раз
 ```
 
 ---
 
-## Документы для изучения
+## ОЖИДАЕМЫЕ ЛОГИ ПОСЛЕ ИСПРАВЛЕНИЯ
+
+```
+[FloatingOriginMP] CRITICAL SHIFT: offset=(150000.00, 0.00, 150000.00), roots=2
+[FloatingOriginMP] Roots BEFORE shift: 'WorldRoot'=(0.00, 0.00, 0.00)  ← БЫЛО 0,0,0!
+[FloatingOriginMP] After shift: totalOffset=(150000.00, 0.00, 150000.00)
+```
+
+WorldRoot ДОЛЖЕН начинаться с (0, 0, 0), не с (-4,050,000)!
+
+---
+
+## Документы
 
 | Документ | Описание |
 |----------|----------|
-| `ARTIFACT_ANALYSIS_2026-04-17.md` | Полный анализ почему артефакты появляются |
-| `LARGE_WORLD_SOLUTIONS.md` | Сравнение подходов к большим мирам |
-| `SESSION_2026-04-17_FIXED.md` | Результаты исправления NullReferenceException |
-| `NGO_BEST_PRACTICES.md` | Best practices для Unity NGO |
+| `ARTIFACT_ANALYSIS_2026-04-17.md` | Анализ артефактов |
+| `LARGE_WORLD_SOLUTIONS.md` | Large world solutions |
+| `SESSION_2026-04-17_FIXED.md` | Ранние исправления |
 
 ---
 
-## Команды Git
+## Следующие шаги
 
-**Перед началом:**
-```bash
-git pull origin develop
-```
-
-**После завершения:**
-```bash
-git add -A
-git commit -m "fix(world): reset world positions in editor - floating origin artifacts resolved"
-git push origin develop
-```
-
----
-
-## Критерии успеха
-
-- [ ] WorldRoot позиция сброшена на (0,0,0) в Editor
-- [ ] Clouds позиция сброшена на (0,0,0) в Editor
-- [ ] TradeZones позиция сброшена на (0,0,0) в Editor
-- [ ] FloatingOriginMP удалён с префаба
-- [ ] Тестирование: артефакты исчезли
-- [ ] Git commit и push сделаны
-
----
-
-## Расчёт повреждения мира
-
-```
-WorldRoot сдвинулся на -4,050,000
-TradeZones сдвинулся на -8,100,000
-
--4,050,000 / 150,000 = 27 сдвигов по 150,000
--8,100,000 / 150,000 = 54 сдвига по 150,000
-
-totalOffset показывает только 4,200,000!
-4,200,000 / 150,000 = 28 сдвигов
-
-Вывод: totalOffset рассинхронизирован с реальным положением мира.
-Это нельзя исправить кодом — нужен ручной сброс в Editor.
-```
+1. [ ] Протестировать с smoothTeleport = false
+2. [ ] Протестировать с smoothTeleport = true
+3. [ ] Проверить что WorldRoot начинается с (0,0,0)
+4. [ ] Проверить что артефакты исчезли
 
 ---
 
 **Автор:** Claude Code  
-**Дата:** 17.04.2026, 17:54 MSK
+**Дата:** 17.04.2026, 18:01 MSK

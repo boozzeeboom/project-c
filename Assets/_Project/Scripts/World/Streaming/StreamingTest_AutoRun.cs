@@ -134,12 +134,8 @@ namespace ProjectC.World
                         teleportSpeed * Time.deltaTime
                     );
                     
-                    // Reset origin if needed
-                    var fo = FindAnyObjectByType<FloatingOriginMP>();
-                    if (fo != null && direction.magnitude > 50000f)
-                    {
-                        fo.ResetOrigin();
-                    }
+                    // НЕ вызываем ResetOrigin() здесь — это вызовет множественные сдвиги!
+                    // ResetOrigin вызывается в OnTeleportComplete() -> TeleportToPeak()
                 }
                 else
                 {
@@ -273,14 +269,11 @@ namespace ProjectC.World
             _targetPosition = new Vector3(pos2D.x, teleportHeight, pos2D.y);
             
             Debug.Log($"[StreamingTest_AutoRun] 📍 Телепортация к точке {index}: ({pos2D.x}, {pos2D.y})");
-            
-            // Сначала сбрасываем FloatingOrigin чтобы избежать двойного сдвига
-            var fo = FindAnyObjectByType<FloatingOriginMP>();
-            if (fo != null)
-            {
-                fo.ResetOrigin();
-                Debug.Log("[StreamingTest_AutoRun] ✅ FloatingOrigin reset before teleport");
-            }
+
+            // Ищем персонажа для телепортации
+            // ПРИМЕЧАНИЕ: ResetOrigin вызывается в TeleportToPeak() — не нужно вызывать здесь!
+            // Вызов ResetOrigin до телепортации (когда камера на 0) не имеет смысла
+            // и может нарушить cooldown.
             
             // Ищем персонажа для телепортации
             var networkObjects = FindObjectsByType<Unity.Netcode.NetworkObject>();

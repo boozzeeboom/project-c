@@ -514,7 +514,7 @@ namespace ProjectC.World.Streaming
         /// RPC: Клиент → Сервер: запрос на сдвиг мира.
         /// Сервер проверяет threshold, применяет сдвиг и рассылает всем клиентам.
         /// </summary>
-        [ServerRpc(RequireOwnership = false)]
+        [Rpc(SendTo.Server, InvokePermission = RpcInvokePermission.Everyone)]
         public void RequestWorldShiftRpc(Vector3 cameraPos, ServerRpcParams rpcParams = default)
         {
             // Только сервер может обрабатывать запрос

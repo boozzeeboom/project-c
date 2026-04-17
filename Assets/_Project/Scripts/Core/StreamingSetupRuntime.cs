@@ -188,7 +188,8 @@ namespace ProjectC.Core
                 Debug.Log("[StreamingSetupRuntime] FloatingOriginMP already exists on Main Camera");
             }
             
-            // Настроить properties через reflection
+            // Настроить properties через reflection (только в Editor)
+            #if UNITY_EDITOR
             var so = new UnityEditor.SerializedObject(fo);
             
             var thresholdProp = so.FindProperty("threshold");
@@ -222,6 +223,7 @@ namespace ProjectC.Core
                 showDebugHUDProp.boolValue = true;
             
             so.ApplyModifiedProperties();
+            #endif
             
             Debug.Log($"[StreamingSetupRuntime] FloatingOriginMP configured: threshold={threshold}, worldRootNames={worldObjectNames.Length + 1}");
         }
@@ -254,7 +256,8 @@ namespace ProjectC.Core
                 Debug.Log("[StreamingSetupRuntime] Added StreamingTest component");
             }
             
-            // Настроить
+            // Настроить (только в Editor)
+            #if UNITY_EDITOR
             var so = new UnityEditor.SerializedObject(test);
             
             var useLocalPlayerProp = so.FindProperty("useLocalPlayerPosition");
@@ -283,6 +286,7 @@ namespace ProjectC.Core
             }
             
             so.ApplyModifiedProperties();
+            #endif
             
             Debug.Log("[StreamingSetupRuntime] StreamingTest configured");
         }

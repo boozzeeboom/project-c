@@ -1,128 +1,110 @@
-# Next Session Prompt: FloatingOriginMP — Игрок vs Камера
+# Next Session Prompt: NetworkTransform + FloatingOriginMP — Артефакты синхронизации
 
 **Дата:** 17 апреля 2026 г.  
 **Проект:** ProjectC_client  
-**Status:** ✅ КОРНЕВАЯ ПРИЧИНА НАЙДЕНА
+**Status:** ⚠️ ПРОБЛЕМА АНАЛИЗИРОВАНА — ТРЕБУЕТСЯ РУЧНОЕ ИСПРАВЛЕНИЕ
 
 ---
 
-## 🔴 КОРНЕВАЯ ПРИЧИНА
+## 🔴 КОРНЕВАЯ ПРИЧИНА АРТЕФАКТОВ
 
-Debug лог показал:
+### Конфликт двух систем
+
 ```
-cameraWorldPos=(0, 0, 0)  ← КАМЕРА НА (0,0,0)!
+FloatingOriginMP (LateUpdate):
+  - Сдвигает WorldRoot на ±100,000 единиц
+  - Работает независимо
+
+NetworkTransform (FixedUpdate/Interpolation):
+  - Интерполирует позицию
+  - Видит огромную дельту после сдвига
+  - Запускает "correction" (рывок назад)
 ```
 
-**Камера НЕ двигается!** Она остаётся на (0,0,0) потому что:
-- Камера — отдельный объект, не child игрока
-- Игрок бежит на 150,000+, но камера стоит на месте
-- FloatingOriginMP отслеживал позицию КАМЕРЫ, а не ИГРОКА!
+### Почему cooldown не работает
+
+1. **Нет координации** — FloatingOriginMP не сообщает NetworkTransform о сдвиге
+2. **Интерполяция продолжается** — клиент двигается к старой позиции
+3. **Race condition** — LateUpdate vs FixedUpdate непредсказуемы
 
 ---
 
-## ✅ ИСПРАВЛЕНИЕ
+## ✅ РЕШЕНИЕ: Отключить интерполяцию NetworkTransform
 
-### Было:
-```csharp
-// GetWorldPosition() искал: камеру
-if (_camera != null) return _camera.transform.position;
-if (Camera.main != null) return Camera.main.transform.position;
-```
+### Ручное действие в Unity Editor:
 
-### Стало:
-```csharp
-// GetWorldPosition() ищет: ИГРОКА ПЕРВЫМ!
-// 1. positionSource (явный)
-// 2. NetworkManager.Singleton.LocalClient.PlayerObject (ПРИОРИТЕТ!)
-// 3. FindObjectsByType<NetworkObject>() → IsOwner
-// 4. _camera
-// 5. Camera.main
-// 6. Vector3.zero
-```
+1. **Откройте Prefab игрока:** `Assets/_Project/Prefabs/Player.prefab`
+2. **Найдите компонент NetworkTransform**
+3. **Установите:**
+   - `Interpolate Position` = **0**
+   - `Interpolate Rotation` = **0**  
+   - `Interpolate Scale` = **0**
+
+### Ожидаемый результат:
+- Артефакты должны исчезнуть
+- Возможны небольшие "прыжки" вместо плавного движения
 
 ---
 
-## НОВЫЙ DEBUG ЛОГ
+## 📋 ПОДРОБНЫЙ АНАЛИЗ
 
-После исправления лог покажет:
-```
-[FloatingOriginMP] Debug: playerPos=150000, _totalOffset=0, adjustedPos=150000, dist=150000, threshold=150000
-```
-
-Это означает:
-- `playerPos` — позиция ИГРОКА (не камеры!)
-- `dist = 150000` — игрок ушёл на 150k от мира
-- `dist > threshold (150000)` — сдвиг должен произойти!
+См. документ: `docs/world/LargeScaleMMO/ARTIFACT_DEEP_ANALYSIS_2026-04-17.md`
 
 ---
 
-## 🧪 ТЕСТИРОВАНИЕ
+## 🧪 ТЕСТИРОВАНИЕ ПОСЛЕ ИСПРАВЛЕНИЯ
 
-### Тест 1: Local режим + ручной бег
+### Тест 1: Хост-Клиент
 ```
-1. FloatingOriginMP.mode = Local
-2. Play Mode
-3. Ручной бег на 150,000+
-4. Ожидаемый лог:
-   [FloatingOriginMP] Debug: playerPos=150000, _totalOffset=0, dist=150000, threshold=150000
-   [FloatingOriginMP] CRITICAL SHIFT: ...
+1. Запустите хост (Host mode)
+2. Подключите клиента
+3. Оба игрока видны
+4. Бегают без артефактов
 ```
 
-### Тест 2: Проверка сдвига
+### Тест 2: Удалённый игрок
 ```
-После сдвига:
-[FloatingOriginMP] Debug: playerPos=160000, _totalOffset=150000, adjustedPos=10000, dist=10000, threshold=150000
+1. Хост бежит на 150,000+
+2. Клиент наблюдает — нет рывков
+3. Сдвиг мира происходит
+4. Клиент продолжает видеть хост без проблем
 ```
-- `adjustedPos = 160000 - 150000 = 10000`
-- `dist = 10000 < 150000` — сдвиг НЕ нужен!
 
-### Тест 3: ServerSynced
+### Тест 3: После сдвига
 ```
-1. FloatingOriginMP.mode = ServerSynced
-2. LateUpdate пропускает (ждём сервер)
-3. F8 — ручной ResetOrigin
-4. Ожидаемый лог:
-   [FloatingOriginMP] Before ResetOrigin: playerPos=150000, ...
-   [FloatingOriginMP] After ResetOrigin: ...
+1. Оба игрока на 150,000+
+2. Сдвиг на 100,000
+3. Проверить: нет артефактов
 ```
 
 ---
 
-## АРХИТЕКТУРА
-
-### Проблема Floating Origin
-```
-Игрок бежит:   0 → 50,000 → 100,000 → 150,000
-Камера:        0 → 0      → 0       → 0  (не двигается!)
-
-Floating Origin проверял КАМЕРУ → сдвиг не происходил
-```
-
-### Решение
-```
-Игрок бежит:   0 → 50,000 → 100,000 → 150,000
-Floating Origin проверяет ИГРОКА → сдвиг на 150,000
-```
-
----
-
-## ДОКУМЕНТЫ
+## 📁 ДОКУМЕНТАЦИЯ
 
 | Документ | Описание |
 |----------|----------|
-| `SESSION_2026-04-17_FINAL_REPORT.md` | Итоговый отчёт |
-| `SESSION_2026-04-17_ANALYSIS.md` | Анализ subagents |
+| `ARTIFACT_DEEP_ANALYSIS_2026-04-17.md` | Глубокий анализ subagent |
+| `FLOATING_ORIGIN_ISSUE_2026-04-17.md` | История проблем |
+| `CHANGELOG.md` | Общая история изменений |
 
 ---
 
-## КРИТЕРИИ УСПЕХА
+## ✅ КРИТЕРИИ УСПЕХА
 
-- [ ] Debug лог показывает позицию ИГРОКА (playerPos), не камеры
-- [ ] При беге на 150k+ происходит сдвиг
-- [ ] Артефакты не появляются
-- [ ] После сдвига playerPos - _totalOffset < threshold
+- [ ] NetworkTransform: Interpolate = 0 (руками в Editor)
+- [ ] Оба игрока видны без артефактов
+- [ ] После сдвига мира — нет рывков
+- [ ] Хост и клиент синхронизированы
+
+---
+
+## 🔮 ДОЛГОСРОЧНЫЕ РЕШЕНИЯ
+
+1. **WorldAwareNetworkTransform.cs** — кастомный NetworkTransform с учётом сдвигов
+2. **NetworkRigidbody** — если перейдём на физику
+3. **Серверная авторитивность** — кастомные RPC для позиции
 
 ---
 
 **Автор:** Claude Code  
-**Дата:** 17.04.2026, 18:39 MSK
+**Дата:** 17.04.2026, 23:39 MSK

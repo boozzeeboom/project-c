@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Generic;
 using Unity.Netcode;
 using UnityEngine;
@@ -65,7 +66,7 @@ namespace ProjectC.World.Streaming
     public OriginMode mode = OriginMode.Local;
 
         [Header("Position Source")]
-        [Tooltip("Transform для отслеживания позиции. Null = автопоиск. Приоритет: positionSource > ThirdPersonCamera > Camera.main > _camera")]
+        [Tooltip("Transform для отслеживания позиции. Null = автопоиск NetworkPlayer. КРИТИЧНО: должен быть НЕ дочерний TradeZones!")]
         public Transform positionSource;
         
         [Header("Camera Names")]
@@ -87,7 +88,7 @@ namespace ProjectC.World.Streaming
     public float shiftRounding = 10000f;  // Округляем до 10k для точности
 
         [Header("World Root Names")]
-        [Tooltip("TradeZones НЕ включен! TradeZones — корень сцены с камерой. Сдвигаем ТОЛЬКО WorldRoot и его children!")]
+        [Tooltip("TradeZones ИСКЛЮЧЁН! TradeZones — корень сцены с камерой. Сдвигаем ТОЛЬКО WorldRoot и его children!")]
         public string[] worldRootNames = new string[]
         {
             "WorldRoot",         // Основной контейнер (СДВИГАЕТСЯ)
@@ -102,6 +103,16 @@ namespace ProjectC.World.Streaming
             "Peak",
             "Farm"
             // TradeZones ИСКЛЮЧЁН — там камера, она не должна сдвигаться!
+        };
+        
+        [Header("Exclude From WorldRoots")]
+        [Tooltip("Эти объекты НИКОГДА не сдвигаются, даже если найдены в сцене.")]
+        public string[] excludeFromWorldRoots = new string[]
+        {
+            "TradeZones",
+            "TradeZone",
+            "Player",
+            "NetworkPlayer"
         };
         
         [Header("Exclude From Shift")]
@@ -552,6 +563,20 @@ namespace ProjectC.World.Streaming
             // Ищем по каждому имени
             foreach (var rootName in worldRootNames)
             {
+                // Пропускаем объекты из excludeFromWorldRoots
+                bool isExcluded = false;
+                foreach (var excludeName in excludeFromWorldRoots)
+                {
+                    if (rootName.Equals(excludeName, StringComparison.OrdinalIgnoreCase))
+                    {
+                        isExcluded = true;
+                        if (showDebugLogs)
+                            Debug.Log($"[FloatingOriginMP] Skipping excluded root: '{rootName}'");
+                        break;
+                    }
+                }
+                if (isExcluded) continue;
+                
                 GameObject rootObj = GameObject.Find(rootName);
                 if (rootObj != null)
                 {
@@ -657,13 +682,74 @@ namespace ProjectC.World.Streaming
 
         /// <summary>
         /// Применить сдвиг ко всем world roots.
+        /// КРИТИЧНО: Не сдвигаем TradeZones даже если он глубокий дочерний WorldRoot!
         /// </summary>
         private void ApplyShiftToAllRoots(Vector3 offset)
         {
+            // СНАЧАЛА найдём ВСЕ TradeZones в сцене (где бы они ни были)
+            List<Transform> allTradeZones = new List<Transform>();
+            var allObjects = FindObjectsOfType<Transform>();
+            foreach (var obj in allObjects)
+            {
+                if (obj.name == "TradeZones" || obj.name == "TradeZone")
+                {
+                    allTradeZones.Add(obj);
+                }
+            }
+            
+            if (showDebugLogs)
+                Debug.Log($"[FloatingOriginMP] Found {allTradeZones.Count} TradeZones in scene: " + 
+                          string.Join(", ", allTradeZones.ConvertAll(t => $"{t.name}@{t.position:F0}")));
+            
+            // Запоминаем позиции ДО сдвига
+            Dictionary<Transform, Vector3> tradeZonesPositions = new Dictionary<Transform, Vector3>();
+            foreach (var tz in allTradeZones)
+            {
+                tradeZonesPositions[tz] = tz.position;
+            }
+            
+            // Сдвигаем world roots
             foreach (var root in _worldRoots)
             {
                 if (root == null) continue;
                 root.position -= offset;
+            }
+            
+            // ВОССТАНАВЛИВАЕМ TradeZones на их оригинальные позиции
+            int restored = 0;
+            foreach (var tz in allTradeZones)
+            {
+                if (tradeZonesPositions.TryGetValue(tz, out Vector3 originalPos))
+                {
+                    tz.position = originalPos;
+                    restored++;
+                }
+            }
+            
+            // ПРОВЕРКА: проверяем TradeZones, камеру и _camera ПОСЛЕ восстановления
+            if (showDebugLogs)
+            {
+                Debug.Log($"[FloatingOriginMP] === POST-SHIFT CHECK ===");
+                Debug.Log($"[FloatingOriginMP] TradeZones restored: {restored}/{allTradeZones.Count}");
+                
+                // Проверяем TradeZones
+                foreach (var tz in allTradeZones)
+                {
+                    Debug.Log($"[FloatingOriginMP] TradeZones NOW at: {tz.position:F0}");
+                    
+                    // Проверяем _camera
+                    if (_camera != null)
+                    {
+                        Debug.Log($"[FloatingOriginMP] _camera ({_camera.name}) NOW at: {_camera.transform.position:F0}");
+                    }
+                }
+                
+                // Проверяем WorldRoot
+                foreach (var root in _worldRoots)
+                {
+                    if (root != null)
+                        Debug.Log($"[FloatingOriginMP] WorldRoot NOW at: {root.position:F0}");
+                }
             }
         }
 

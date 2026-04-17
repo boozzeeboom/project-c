@@ -601,7 +601,7 @@ Transform:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 79331567}
   serializedVersion: 2
-  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalRotation: {x: -0, y: -0, z: -0, w: 1}
   m_LocalPosition: {x: 0, y: 0, z: 0}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
@@ -615,7 +615,7 @@ Transform:
   - {fileID: 1710000124}
   - {fileID: 898820584}
   - {fileID: 1612205718}
-  m_Father: {fileID: 1168766511}
+  m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1 &95505089
 GameObject:
@@ -1523,6 +1523,11 @@ MonoBehaviour:
   - World
   - WorldRoot
   - ChunksContainer
+  excludeFromWorldRoots:
+  - TradeZones
+  - TradeZone
+  - Player
+  - NetworkPlayer
   excludeFromShift:
   - Player
   - NetworkPlayer
@@ -1975,7 +1980,7 @@ Transform:
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []
-  m_Father: {fileID: 1168766511}
+  m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1 &251719329
 GameObject:
@@ -5143,6 +5148,11 @@ MonoBehaviour:
   - Peak
   - Farm
   - TradeZone
+  excludeFromWorldRoots:
+  - TradeZones
+  - TradeZone
+  - Player
+  - NetworkPlayer
   excludeFromShift:
   - Player
   - NetworkPlayer
@@ -5299,7 +5309,7 @@ Transform:
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []
-  m_Father: {fileID: 1168766511}
+  m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1 &1168766510
 GameObject:
@@ -5336,14 +5346,11 @@ Transform:
   - {fileID: 723887982}
   - {fileID: 745049055}
   - {fileID: 1983242073}
-  - {fileID: 201384790}
-  - {fileID: 1120768819}
   - {fileID: 1052809033}
   - {fileID: 868046958}
   - {fileID: 1534439778}
   - {fileID: 1988119022}
   - {fileID: 1977810773}
-  - {fileID: 79331568}
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1 &1192462176
@@ -9242,4 +9249,7 @@ SceneRoots:
   - {fileID: 1051144409}
   - {fileID: 731317820}
   - {fileID: 136258863}
+  - {fileID: 1120768819}
+  - {fileID: 79331568}
+  - {fileID: 201384790}
   - {fileID: 1168766511}

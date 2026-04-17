@@ -87,22 +87,21 @@ namespace ProjectC.World.Streaming
     public float shiftRounding = 10000f;  // Округляем до 10k для точности
 
         [Header("World Root Names")]
-        [Tooltip("Имена world root объектов для автопоиска. Пусто = искать все.")]
+        [Tooltip("TradeZones НЕ включен! TradeZones — корень сцены с камерой. Сдвигаем ТОЛЬКО WorldRoot и его children!")]
         public string[] worldRootNames = new string[]
         {
-            "WorldRoot",         // Основной контейнер
+            "WorldRoot",         // Основной контейнер (СДВИГАЕТСЯ)
             "Mountains",
             "Clouds",
             "farms",
-            "TradeZones",
             "World",
             "ChunksContainer",
             "Platforms",
             "CloudLayer",
             "Massif",
             "Peak",
-            "Farm",
-            "TradeZone"
+            "Farm"
+            // TradeZones ИСКЛЮЧЁН — там камера, она не должна сдвигаться!
         };
         
         [Header("Exclude From Shift")]
@@ -198,19 +197,30 @@ namespace ProjectC.World.Streaming
             }
 
             // 2. NetworkPlayer — ПРИОРИТЕТ! (показывает правильную позицию)
+            // ВАЖНО: NetworkPlayer(Clone) рядом с origin — это НЕ настоящий игрок!
+            // Настоящий игрок найден через Player tag!
             var networkPlayers = FindObjectsByType<Unity.Netcode.NetworkObject>();
             foreach (var netObj in networkPlayers)
             {
+                // Ищем NetworkPlayer с IsOwner=true И позицией далеко от origin (>10000)
+                // NetworkPlayer(Clone) рядом с origin (<100) — это не настоящий игрок!
                 if (netObj.name.Contains("NetworkPlayer") && netObj.IsOwner)
                 {
                     Vector3 pos = netObj.transform.position;
-                    if (showDebugLogs)
-                        Debug.Log($"[FloatingOriginMP] GetWorldPosition: using NetworkPlayer={pos:F0}, name={netObj.name}");
-                    return pos;
+                    if (pos.magnitude > 10000) // Только если далеко от origin!
+                    {
+                        if (showDebugLogs)
+                            Debug.Log($"[FloatingOriginMP] GetWorldPosition: using NetworkPlayer IsOwner={pos:F0}, name={netObj.name}");
+                        return pos;
+                    }
+                    else if (showDebugLogs)
+                    {
+                        Debug.LogWarning($"[FloatingOriginMP] NetworkPlayer(Clone) at {pos:F0} is too close to origin - SKIPPING!");
+                    }
                 }
             }
             
-            // 3. Объект с тегом "Player"
+            // 3. Объект с тегом "Player" — это настоящий игрок!
             GameObject playerByTag = GameObject.FindGameObjectWithTag("Player");
             if (playerByTag != null)
             {

@@ -1506,8 +1506,13 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 6b2530f236752e748b9b4a3951c057cd, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::ProjectC.World.Streaming.FloatingOriginMP
-  mode: 0
+  mode: 2
   positionSource: {fileID: 0}
+  cameraNames:
+  - ThirdPersonCamera
+  - Main Camera
+  - Camera
+  - PlayerCamera
   threshold: 100000
   shiftRounding: 10000
   worldRootNames:
@@ -5117,6 +5122,11 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::ProjectC.World.Streaming.FloatingOriginMP
   mode: 0
   positionSource: {fileID: 0}
+  cameraNames:
+  - ThirdPersonCamera
+  - Main Camera
+  - Camera
+  - PlayerCamera
   threshold: 1000000
   shiftRounding: 100000
   worldRootNames:

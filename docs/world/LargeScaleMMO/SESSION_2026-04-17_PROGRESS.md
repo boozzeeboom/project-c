@@ -1,147 +1,116 @@
-# FloatingOriginMP — Progress Report — 17.04.2026
+# FloatingOriginMP — Progress Report — 17.04.2026 (UPDATED)
 
-**Дата:** 17.04.2026, 19:30  
+**Дата:** 17.04.2026, 19:36  
 **Проект:** ProjectC_client  
 **Status:** 🔄 В РАБОТЕ
 
 ---
 
-## ✅ ДОСТИГНУТО
+## ✅ ДОСТИГНУТО (19:36)
 
-### 1. NetworkPlayer — правильный источник позиции!
+### 1. СДВИГ РАБОТАЕТ! ✅
 
 ```
-NetworkPlayer=(-41310, 1, 761468)
-Player tag=(-41310, 1, 761468)
+CRITICAL SHIFT: offset=(-250000.00, 0.00, 650000.00)
+Roots BEFORE shift: 'TradeZones'=(36920000.00, ...), 'WorldRoot'=(18460000.00, ...)
 ```
 
-**magnitude ≈ 762,568** — это правильная позиция игрока!
+Сдвиг происходит! TradeZones и WorldRoot уже сдвинуты на 18-37 миллионов!
 
-### 2. Приоритет источников изменён
+### 2. TradeZones ИСКЛЮЧЁН из сдвига
 
-**Новый порядок:**
-1. `positionSource` (явный)
-2. `NetworkPlayer` (ПРИОРИТЕТ!) ← ИЗМЕНЕНО
-3. `Player tag`
-4. `ThirdPersonCamera` (fallback)
-5. `Camera.main` (fallback)
+**Было:** TradeZones в worldRootNames → сдвигался неправильно  
+**Стало:** TradeZones исключён
 
-### 3. HUD показывает правильную позицию
+```csharp
+worldRootNames = new string[]
+{
+    "WorldRoot",         // Основной контейнер (СДВИГАЕТСЯ)
+    "Mountains",
+    "Clouds",
+    "farms",
+    "World",
+    // TradeZones ИСКЛЮЧЁН — там камера!
+}
+```
 
-HUD Debug теперь показывает корректные данные.
+### 3. Приоритет источников: NetworkPlayer ПЕРВЫЙ
+
+```csharp
+// 1. NetworkPlayer — ПРИОРИТЕТ!
+foreach (var netObj in networkPlayers)
+{
+    if (netObj.name.Contains("NetworkPlayer") && netObj.IsOwner)
+    {
+        return netObj.transform.position;  // (-253098, 1, 654872) ✓
+    }
+}
+```
+
+---
+
+## ⚠️ ПРОБЛЕМА: TradeZones и WorldRoot уже сдвинуты на 18-37 миллионов!
+
+### Лог:
+```
+Roots BEFORE shift: 
+'TradeZones'=(36920000.00, 0.00, -95860000.00)
+'WorldRoot'=(18460000.00, 0.00, -47930000.00)
+```
+
+**Это было сделано ДО изменения!** Нужно ПЕРЕЗАПУСТИТЬ сцену!
+
+---
+
+## 📋 ТЕКУЩАЯ АРХИТЕКТУРА
+
+### Что сдвигается (worldRootNames)
+
+| Объект | Сдвигается? | Статус |
+|--------|-------------|--------|
+| WorldRoot | ДА ✓ | Сдвигается |
+| Mountains | ДА ✓ | Как child WorldRoot |
+| Clouds | ДА ✓ | Как child WorldRoot |
+| TradeZones | НЕТ ✓ | Исключён |
+
+### Что НЕ сдвигается
+
+| Объект | Не сдвигается? | Причина |
+|--------|----------------|---------|
+| TradeZones | ✓ | Исключён |
+| Camera (TradeZones) | ✓ | На TradeZones |
+| NetworkPlayer | ✓ | На верхнем уровне |
+| ThirdPersonCamera | ✓ | На NetworkPlayer |
 
 ---
 
 ## ⚠️ ОСТАВШИЕСЯ ПРОБЛЕМЫ
 
-### 1. Артефакты появляются
+### 1. ⚠️ TradeZones и WorldRoot уже сдвинуты на 18-37M
 
-**Описание:** При движении появляются визуальные артефакты.
+**Решение:** Перезапустить сцену!
 
-**Возможные причины:**
-- TradeZones сдвигается, но TradeMarketServer остаётся на месте
-- NetworkTransform не корректируется после сдвига
-- Floating Origin сдвигает мир, но не корректирует сетевые объекты
+### 2. ⚠️ Offset продолжает расти когда игрок стоит
 
-### 2. Offset "тикает" (колеблется)
-
-**Описание:** Значение offset в HUD прыгает/колеблется.
-
-**Логи:**
 ```
-GetWorldPosition: using NetworkPlayer=(-41310, 1, 761468)
-...
-GetWorldPosition: using NetworkPlayer=(-41310, 1, 761468)  // та же позиция
-...
-GetWorldPosition: using NetworkPlayer=(-41310, 1, 761468)  // та же позиция
+playerPos=650000, offset=0 → offset растёт → shift срабатывает медленно
 ```
 
-**Возможные причины:**
-- NetworkPlayer позиция стабильна, но offset всё равно "тикает"
-- Возможно это визуальный баг HUD
-- Или проблема с синхронизацией
+**Причина:** Threshold срабатывает, но сдвиг округляется до 10k. Игрок продолжает двигаться.
 
-### 3. CRITICAL SHIFT не происходит во время игры
+### 3. ⚠️ Артефакты
 
-**Описание:** Сдвиг происходит только на паузе, не во время игры.
-
-**Ожидаемое поведение:**
-```
-dist=762568 > threshold=100000 → CRITICAL SHIFT
-```
-
-**Возможные причины:**
-- Threshold не срабатывает правильно
-- LateUpdate не вызывается или пропускается
-- Cooldown блокирует сдвиг
+Возможно из-за накопления сдвигов TradeZones.
 
 ---
 
-## АНАЛИЗ
+## ✅ СЛЕДУЮЩИЕ ШАГИ
 
-### Структура сцены
-
-```
-TradeZones (КОРЕНЬ СЦЕНЫ — НЕ СДВИГАЕТСЯ!)
-├── Camera (сдвигается с TradeZones, но позиция = (0,0,0))
-└── WorldRoot (СДВИГАЕТСЯ!)
-    ├── Mountains
-    ├── Clouds
-    └── ...
-
-NetworkPlayer_* (НА ВЕРХНЕМ УРОВНЕ СЦЕНЫ)
-├── NetworkPlayer (правильная позиция!)
-└── ThirdPersonCamera (неправильная позиция во время игры)
-```
-
-### Что сдвигается
-
-| Объект | Сдвигается? | Позиция |
-|--------|-------------|---------|
-| TradeZones | НЕТ | (0,0,0) |
-| WorldRoot | ДА | сдвигается |
-| Mountains | ДА (как child WorldRoot) | сдвигается |
-| NetworkPlayer | НЕТ | (-41310, 1, 761468) ✓ |
-| Camera (TradeZones) | ДА | (0,0,0) |
-| ThirdPersonCamera | НЕТ | (-64, 4, -24) ✗ |
-
-### Что НЕПРАВИЛЬНО
-
-1. **TradeZones не сдвигается** — он корень сцены
-2. **Camera на TradeZones** — тоже не сдвигается, позиция = (0,0,0)
-3. **ThirdPersonCamera** — показывает неправильную позицию
-
----
-
-## СЛЕДУЮЩИЕ ШАГИ
-
-### 1. Проверить threshold
-
-Убедиться что `dist > threshold` срабатывает.
-
-### 2. Проверить LateUpdate
-
-Добавить лог в LateUpdate чтобы убедиться что он вызывается.
-
-### 3. Проверить WorldRootNames
-
-Добавить TradeZones в список сдвигаемых объектов?
-
-### 4. Решить проблему с артефактами
-
-Возможно нужно корректировать NetworkTransform после сдвига.
-
----
-
-## ЛОГИ ДЛЯ ОТЛАДКИ
-
-```
-[FloatingOriginMP] Debug: cameraWorldPos=(-41310, 1, 761468), _totalOffset=(0, 0, 0), adjustedPos=(-41310, 1, 761468), dist=762568, threshold=100000
-```
-
-Если `dist=762568 > threshold=100000`, то сдвиг ДОЛЖЕН произойти!
+1. **ПЕРЕЗАПУСТИТЬ СЦЕНУ** — TradeZones больше не должен сдвигаться
+2. Проверить что WorldRoot сдвигается правильно
+3. Проверить артефакты
 
 ---
 
 **Автор:** Claude Code  
-**Дата:** 17.04.2026, 19:30 MSK
+**Дата:** 17.04.2026, 19:36 MSK

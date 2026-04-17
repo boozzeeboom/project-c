@@ -33,15 +33,17 @@ namespace ProjectC.Editor
         private bool _addDebugSettings = true;
 
         // WorldRoot settings
+        // TradeZones ИСКЛЮЧЁН — там камера игрока!
         private string[] _worldRootNames = new string[]
         {
+            "WorldRoot",
             "Mountains",
             "Clouds",
             "Farms",
-            "TradeZones",
             "World",
-            "WorldRoot",
-            "ChunksContainer"
+            "ChunksContainer",
+            "Platforms",
+            "CloudLayer"
         };
 
         private void OnGUI()

@@ -237,10 +237,12 @@ namespace ProjectC.World.Streaming
                 {
                     Vector3 pos = netObj.transform.position;
                     
-                    // ДОПОЛНИТЕЛЬНАЯ ПРОВЕРКА: если позиция > 500000 — это явно НЕ игрок!
-                    if (pos.magnitude > 500000)
+                    // ДОПОЛНИТЕЛЬНАЯ ПРОВЕРКА: если позиция > 500000 — проверяем тег!
+                    // Если это НАСТОЯЩИЙ игрок (тег "Player") — используем его позицию!
+                    // Только для объектов БЕЗ тега "Player" пропускаем большие позиции
+                    if (pos.magnitude > 500000 && !netObj.CompareTag("Player"))
                     {
-                        Debug.LogWarning($"[FloatingOriginMP] GetWorldPosition: NetworkPlayer at {pos:F0} (>{500000}) is too far - SKIPPING! This looks like WorldRoot!");
+                        Debug.LogWarning($"[FloatingOriginMP] GetWorldPosition: Object at {pos:F0} (>{500000}) is too far - SKIPPING! This looks like WorldRoot!");
                         continue;
                     }
                     

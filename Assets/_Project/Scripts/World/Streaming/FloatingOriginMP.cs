@@ -163,19 +163,25 @@ namespace ProjectC.World.Streaming
 
         /// <summary>
         /// Получить текущую мировую позицию для проверки threshold.
+        /// 
+        /// ВАЖНО: Изначально использовали LocalClient.PlayerObject, но это НЕПРАВИЛЬНО!
+        /// LocalClient.PlayerObject.transform.position — это ИНТЕРПОЛИРОВАННАЯ позиция,
+        /// которую NGO показывает для визуализации. Она НЕ соответствует реальной позиции.
+        /// 
+        /// На паузе интерполяция останавливается и показывает реальную позицию.
+        /// 
+        /// РЕШЕНИЕ: Используем Camera.main.transform.position — камера движется правильно
+        /// за игроком (third person camera), поэтому её позиция — правильная!
+        /// 
         /// Приоритет источников:
         /// 1. positionSource (явно назначенный Transform)
-        /// 2. Локальный игрок (NetworkManager) — ПРИОРИТЕТ!
+        /// 2. Camera.main — ИСПОЛЬЗУЕМ КАМЕРУ! (камера движется правильно)
         /// 3. _camera на этом объекте
-        /// 4. Camera.main
-        /// 5. Vector3.zero (fallback)
-        /// 
-        /// ВАЖНО: Игрок движется, камера может оставаться на месте!
-        /// Поэтому проверяем позицию ИГРОКА, а не камеры.
+        /// 4. Vector3.zero (fallback)
         /// </summary>
         private Vector3 GetWorldPosition()
         {
-            // 1. Явный источник
+            // 1. Явный источник (самый приоритетный)
             if (positionSource != null)
             {
                 if (showDebugLogs && Time.frameCount % 120 == 0)
@@ -183,32 +189,23 @@ namespace ProjectC.World.Streaming
                 return positionSource.position;
             }
 
-            // 2. Локальный игрок в мультиплеере — ПРИОРИТЕТ!
-            // Игрок двигается, камера может оставаться на (0,0,0)
-            if (NetworkManager.Singleton?.LocalClient?.PlayerObject != null)
+            // 2. Camera.main — ИСПОЛЬЗУЕМ КАМЕРУ!
+            // Камера движется правильно за игроком (third person),
+            // поэтому её позиция — это правильная позиция в мире!
+            if (Camera.main != null)
             {
-                // ИСПРАВЛЕНИЕ: Используем transform.position напрямую
-                // На паузе это работает! transform.position даёт правильную позицию
-                var playerObj = NetworkManager.Singleton.LocalClient.PlayerObject;
-                Vector3 pos = playerObj.transform.position;
-                
-                // Дополнительно: проверим children для поиска визуального игрока
-                // Ищем дочерний объект с компонентом CharacterController или Renderer
-                foreach (Transform child in playerObj.transform)
-                {
-                    if (child.GetComponent<CharacterController>() != null || 
-                        child.GetComponent<UnityEngine.Camera>() != null)
-                    {
-                        pos = child.position;
-                        if (showDebugLogs && Time.frameCount % 120 == 0)
-                            Debug.Log($"[FloatingOriginMP] GetWorldPosition: using child {child.name}={pos:F0}");
-                        return pos;
-                    }
-                }
-                
+                Vector3 pos = Camera.main.transform.position;
                 if (showDebugLogs && Time.frameCount % 120 == 0)
-                    Debug.Log($"[FloatingOriginMP] GetWorldPosition: using LocalClient.PlayerObject={pos:F0}");
+                    Debug.Log($"[FloatingOriginMP] GetWorldPosition: using Camera.main={pos:F0}");
                 return pos;
+            }
+
+            // 3. _camera на этом объекте (fallback)
+            if (_camera != null)
+            {
+                if (showDebugLogs && Time.frameCount % 120 == 0)
+                    Debug.Log($"[FloatingOriginMP] GetWorldPosition: using _camera={_camera.transform.position:F0}");
+                return _camera.transform.position;
             }
             
             // 2b. Ищем NetworkPlayer по сцене (для игнорируемых объектов)

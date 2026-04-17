@@ -69,11 +69,11 @@ namespace ProjectC.Player
         // ==================== CLIENT-SIDE PREDICTION ====================
 
         [Header("Коррекция позиции (prediction)")]
-        [Tooltip("Порог рассинхронизации для коррекции (м)")]
-        [SerializeField] private float positionCorrectionThreshold = 0.5f;
+        [Tooltip("Порог рассинхронизации для коррекции (м). Больше = меньше jitter")]
+        [SerializeField] private float positionCorrectionThreshold = 2f;
 
         [Tooltip("Скорость плавной коррекции позиции")]
-        [SerializeField] private float positionCorrectionSpeed = 10f;
+        [SerializeField] private float positionCorrectionSpeed = 5f;
 
         // Серверная позиция для коррекции
         private Vector3 _serverPosition;
@@ -94,6 +94,18 @@ namespace ProjectC.Player
 
             networkObject = GetComponent<NetworkObject>();
             _controller = GetComponent<CharacterController>();
+
+            // ОТКЛЮЧАЕМ ИНТЕРПОЛЯЦИЮ NETWORKTRANSFORM (artifact fix)
+            // FloatingOriginMP сдвигает мир на ±100k, а NetworkTransform интерполирует позицию
+            // → это вызывает артефакты. Отключение интерполяции решает проблему.
+            var networkTransform = GetComponent<Unity.Netcode.Components.NetworkTransform>();
+            if (networkTransform != null)
+            {
+                networkTransform.InterpolatePosition = 0;
+                networkTransform.InterpolateRotation = 0;
+                networkTransform.InterpolateScale = 0;
+                Debug.Log("[NetworkPlayer] NetworkTransform interpolation DISABLED (artifact fix)");
+            }
 
             // Находим ВСЕ Renderer и Collider на объекте (включая дочерние)
             GetComponentsInChildren(true, _playerRenderers);

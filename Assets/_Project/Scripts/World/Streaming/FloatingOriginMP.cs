@@ -64,9 +64,19 @@ namespace ProjectC.World.Streaming
     [Tooltip("Режим работы: Local (singleplayer), ServerSynced (client), ServerAuthority (host/server)")]
     public OriginMode mode = OriginMode.Local;
 
-    [Header("Position Source")]
-    [Tooltip("Transform для отслеживания позиции. Null = автопоиск. Приоритет: positionSource > _camera > Camera.main > LocalPlayer")]
-    public Transform positionSource;
+        [Header("Position Source")]
+        [Tooltip("Transform для отслеживания позиции. Null = автопоиск. Приоритет: positionSource > ThirdPersonCamera > Camera.main > _camera")]
+        public Transform positionSource;
+        
+        [Header("Camera Names")]
+        [Tooltip("Имена камер для поиска (ThirdPersonCamera имеет приоритет над обычной Camera)")]
+        public string[] cameraNames = new string[]
+        {
+            "ThirdPersonCamera",
+            "Main Camera",
+            "Camera",
+            "PlayerCamera"
+        };
 
     [Header("Threshold")]
     [Tooltip("Расстояние от origin после которого сдвигаем мир (units)")]
@@ -164,19 +174,18 @@ namespace ProjectC.World.Streaming
         /// <summary>
         /// Получить текущую мировую позицию для проверки threshold.
         /// 
-        /// ВАЖНО: Изначально использовали LocalClient.PlayerObject, но это НЕПРАВИЛЬНО!
-        /// LocalClient.PlayerObject.transform.position — это ИНТЕРПОЛИРОВАННАЯ позиция,
-        /// которую NGO показывает для визуализации. Она НЕ соответствует реальной позиции.
+        /// ИСТОРИЯ ПРОБЛЕМ:
+        /// 1. LocalClient.PlayerObject — ИНТЕРПОЛИРОВАННАЯ позиция (NGO smoothing)
+        /// 2. Camera.main — камера на TradeZones (тоже сдвигается) = (0,0,0)
+        /// 3. _camera на TradeZones — тоже сдвигается = (0,0,0)
         /// 
-        /// На паузе интерполяция останавливается и показывает реальную позицию.
-        /// 
-        /// РЕШЕНИЕ: Используем Camera.main.transform.position — камера движется правильно
-        /// за игроком (third person camera), поэтому её позиция — правильная!
+        /// РЕШЕНИЕ: Ищем ThirdPersonCamera по имени (НЕ через Camera.main!)
+        /// ThirdPersonCamera — это правильная камера которая НЕ сдвигается!
         /// 
         /// Приоритет источников:
         /// 1. positionSource (явно назначенный Transform)
-        /// 2. Camera.main — ИСПОЛЬЗУЕМ КАМЕРУ! (камера движется правильно)
-        /// 3. _camera на этом объекте
+        /// 2. ThirdPersonCamera (ищем по имени)
+        /// 3. Camera.main (fallback)
         /// 4. Vector3.zero (fallback)
         /// </summary>
         private Vector3 GetWorldPosition()
@@ -189,23 +198,23 @@ namespace ProjectC.World.Streaming
                 return positionSource.position;
             }
 
-            // 2. Camera.main — ИСПОЛЬЗУЕМ КАМЕРУ!
-            // Камера движется правильно за игроком (third person),
-            // поэтому её позиция — это правильная позиция в мире!
+            // 2. Ищем ThirdPersonCamera по имени — это правильная камера!
+            Transform thirdPersonCam = FindThirdPersonCamera();
+            if (thirdPersonCam != null)
+            {
+                Vector3 pos = thirdPersonCam.position;
+                if (showDebugLogs && Time.frameCount % 120 == 0)
+                    Debug.Log($"[FloatingOriginMP] GetWorldPosition: using ThirdPersonCamera={pos:F0}, parent={thirdPersonCam.parent?.name}");
+                return pos;
+            }
+
+            // 3. Camera.main (fallback — но может быть камерой на TradeZones!)
             if (Camera.main != null)
             {
                 Vector3 pos = Camera.main.transform.position;
                 if (showDebugLogs && Time.frameCount % 120 == 0)
-                    Debug.Log($"[FloatingOriginMP] GetWorldPosition: using Camera.main={pos:F0}");
+                    Debug.Log($"[FloatingOriginMP] GetWorldPosition: using Camera.main={pos:F0} (WARNING: may be TradeZones camera!)");
                 return pos;
-            }
-
-            // 3. _camera на этом объекте (fallback)
-            if (_camera != null)
-            {
-                if (showDebugLogs && Time.frameCount % 120 == 0)
-                    Debug.Log($"[FloatingOriginMP] GetWorldPosition: using _camera={_camera.transform.position:F0}");
-                return _camera.transform.position;
             }
             
             // 2b. Ищем NetworkPlayer по сцене (для игнорируемых объектов)
@@ -607,6 +616,65 @@ namespace ProjectC.World.Streaming
         /// FloatingOriginMP теперь полагается на FindOrCreateWorldRoots() который
         /// находит объекты по именам из worldRootNames[], без изменения иерархии сцены.
         /// </summary>
+
+        /// <summary>
+        /// Найти ThirdPersonCamera по именам из списка cameraNames.
+        /// 
+        /// ВАЖНО: Мы НЕ используем Camera.main потому что на TradeZones может быть
+        /// своя камера которая ТОЖЕ сдвигается! ThirdPersonCamera — это правильная камера.
+        /// </summary>
+        private Transform FindThirdPersonCamera()
+        {
+            // Ищем по именам из списка cameraNames
+            foreach (var camName in cameraNames)
+            {
+                GameObject camObj = GameObject.Find(camName);
+                if (camObj != null)
+                {
+                    // Проверяем что это Transform с Camera компонентом
+                    Camera cam = camObj.GetComponent<Camera>();
+                    if (cam != null)
+                    {
+                        // Проверяем что камера НЕ является child TradeZones/WorldRoot
+                        // (потому что такие камеры тоже сдвигаются!)
+                        bool isUnderWorldRoot = false;
+                        Transform parent = camObj.transform.parent;
+                        while (parent != null)
+                        {
+                            foreach (var rootName in worldRootNames)
+                            {
+                                if (parent.name == rootName)
+                                {
+                                    isUnderWorldRoot = true;
+                                    break;
+                                }
+                            }
+                            if (isUnderWorldRoot) break;
+                            parent = parent.parent;
+                        }
+                        
+                        if (!isUnderWorldRoot)
+                        {
+                            if (showDebugLogs)
+                            {
+                                Debug.Log($"[FloatingOriginMP] FindThirdPersonCamera: found '{camName}' at {camObj.transform.position:F0} (NOT under world root)");
+                            }
+                            return camObj.transform;
+                        }
+                        else if (showDebugLogs)
+                        {
+                            Debug.Log($"[FloatingOriginMP] FindThirdPersonCamera: '{camName}' is UNDER world root - SKIPPING!");
+                        }
+                    }
+                }
+            }
+            
+            if (showDebugLogs)
+            {
+                Debug.LogWarning($"[FloatingOriginMP] FindThirdPersonCamera: No valid camera found! Tried: {string.Join(", ", cameraNames)}");
+            }
+            return null;
+        }
 
         /// <summary>
         /// Округлить offset для избежания накопления ошибок floating point.

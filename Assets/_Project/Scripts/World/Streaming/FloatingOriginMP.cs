@@ -177,16 +177,15 @@ namespace ProjectC.World.Streaming
         /// ИСТОРИЯ ПРОБЛЕМ:
         /// 1. LocalClient.PlayerObject — ИНТЕРПОЛИРОВАННАЯ позиция (NGO smoothing)
         /// 2. Camera.main — камера на TradeZones (тоже сдвигается) = (0,0,0)
-        /// 3. _camera на TradeZones — тоже сдвигается = (0,0,0)
+        /// 3. ThirdPersonCamera — близко к origin во время игры, неправильная
         /// 
-        /// РЕШЕНИЕ: Ищем ThirdPersonCamera по имени (НЕ через Camera.main!)
-        /// ThirdPersonCamera — это правильная камера которая НЕ сдвигается!
+        /// РЕШЕНИЕ: NetworkPlayer — правильная позиция!
         /// 
         /// Приоритет источников:
         /// 1. positionSource (явно назначенный Transform)
-        /// 2. ThirdPersonCamera (ищем по имени)
-        /// 3. Camera.main (fallback)
-        /// 4. Vector3.zero (fallback)
+        /// 2. NetworkPlayer (ПРИОРИТЕТ — показывает правильную позицию!)
+        /// 3. ThirdPersonCamera (fallback — может быть неправильной)
+        /// 4. Camera.main (fallback — обычно (0,0,0))
         /// </summary>
         private Vector3 GetWorldPosition()
         {
@@ -198,44 +197,10 @@ namespace ProjectC.World.Streaming
                 return positionSource.position;
             }
 
-            // 2. Ищем ThirdPersonCamera по имени
-            Transform thirdPersonCam = FindThirdPersonCamera();
-            if (thirdPersonCam != null)
-            {
-                Vector3 pos = thirdPersonCam.position;
-                // Проверяем что позиция "разумная" (не near origin когда должна быть далеко)
-                // Если позиция близка к origin (< 1000) но игрок должен быть далеко — это неправильная позиция!
-                if (pos.magnitude > 1000 || mode == OriginMode.Local)
-                {
-                    if (showDebugLogs && Time.frameCount % 120 == 0)
-                        Debug.Log($"[FloatingOriginMP] GetWorldPosition: using ThirdPersonCamera={pos:F0}");
-                    return pos;
-                }
-                else
-                {
-                    // ThirdPersonCamera показывает неправильную позицию!
-                    // Используем Camera.main которая на TradeZones
-                    if (showDebugLogs)
-                        Debug.LogWarning($"[FloatingOriginMP] ThirdPersonCamera at {pos:F0} is too close to origin! Using Camera.main instead.");
-                }
-            }
-
-            // 3. Camera.main — используем её как fallback!
-            // TradeZones.camera показывает правильную позицию (которая "раскрывается" на паузе)
-            if (Camera.main != null)
-            {
-                Vector3 pos = Camera.main.transform.position;
-                if (showDebugLogs && Time.frameCount % 120 == 0)
-                    Debug.Log($"[FloatingOriginMP] GetWorldPosition: using Camera.main={pos:F0}");
-                return pos;
-            }
-            
-            // 2b. Ищем NetworkPlayer (НЕ любой IsOwner объект!)
-            // TradeMarketServer — это IsOwner, но это НЕ игрок!
+            // 2. NetworkPlayer — ПРИОРИТЕТ! (показывает правильную позицию)
             var networkPlayers = FindObjectsByType<Unity.Netcode.NetworkObject>();
             foreach (var netObj in networkPlayers)
             {
-                // Ищем конкретно NetworkPlayer по имени!
                 if (netObj.name.Contains("NetworkPlayer") && netObj.IsOwner)
                 {
                     Vector3 pos = netObj.transform.position;
@@ -245,8 +210,7 @@ namespace ProjectC.World.Streaming
                 }
             }
             
-            // 2c. Ищем объект с тегом "Player"
-            // Ищем только объекты с тегом Player (не любой объект!)
+            // 3. Объект с тегом "Player"
             GameObject playerByTag = GameObject.FindGameObjectWithTag("Player");
             if (playerByTag != null)
             {
@@ -256,45 +220,26 @@ namespace ProjectC.World.Streaming
                 return pos;
             }
             
-            // 2d. Ищем объект с именем содержащим "NetworkPlayer" (без фильтра "Network")
-            foreach (var t in FindObjectsByType<Transform>())
+            // 4. ThirdPersonCamera — fallback (может быть неправильной)
+            Transform thirdPersonCam = FindThirdPersonCamera();
+            if (thirdPersonCam != null)
             {
-                if (t.name.Contains("NetworkPlayer"))
-                {
-                    Vector3 pos = t.position;
-                    if (showDebugLogs)
-                        Debug.Log($"[FloatingOriginMP] GetWorldPosition: using NetworkPlayer name={pos:F0}, name={t.name}");
-                    return pos;
-                }
-            }
-            
-            // 2e. DEBUG: ищем ВСЕ NetworkObject для отладки
-            {
-                string debugInfo = "";
-                foreach (var netObj in networkPlayers)
-                {
-                    debugInfo += $"[{netObj.name}:{netObj.transform.position:F0} owner={netObj.IsOwner}] ";
-                }
-                Debug.LogWarning($"[FloatingOriginMP] GetWorldPosition: No player found! All NetworkObjects: {debugInfo}");
+                Vector3 pos = thirdPersonCam.position;
+                if (showDebugLogs)
+                    Debug.LogWarning($"[FloatingOriginMP] GetWorldPosition: using ThirdPersonCamera={pos:F0} (may be wrong!)");
+                return pos;
             }
 
-            // 3. Камера на этом объекте
-            if (_camera != null)
-            {
-                if (showDebugLogs && Time.frameCount % 120 == 0)
-                    Debug.Log($"[FloatingOriginMP] GetWorldPosition: using _camera={_camera.transform.position:F0}");
-                return _camera.transform.position;
-            }
-
-            // 4. Camera.main
+            // 5. Camera.main — fallback (обычно (0,0,0))
             if (Camera.main != null)
             {
-                if (showDebugLogs && Time.frameCount % 120 == 0)
-                    Debug.Log($"[FloatingOriginMP] GetWorldPosition: using Camera.main={Camera.main.transform.position:F0}");
-                return Camera.main.transform.position;
+                Vector3 pos = Camera.main.transform.position;
+                if (showDebugLogs)
+                    Debug.LogWarning($"[FloatingOriginMP] GetWorldPosition: using Camera.main={pos:F0} (WARNING: likely wrong!)");
+                return pos;
             }
 
-            // 5. Fallback - не должно происходить в нормальных условиях
+            // 6. Fallback - не должно происходить
             if (showDebugLogs)
             {
                 Debug.LogWarning("[FloatingOriginMP] GetWorldPosition: No position source found! Using Vector3.zero");

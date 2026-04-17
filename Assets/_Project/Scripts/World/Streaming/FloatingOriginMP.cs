@@ -200,11 +200,14 @@ namespace ProjectC.World.Streaming
         private Vector3 GetWorldPosition()
         {
             // 1. Явный источник (самый приоритетный)
+            // ВАЖНО: Если positionSource сдвигается вместе с миром,
+            // нужно вычитать totalOffset чтобы получить "истинную" позицию
             if (positionSource != null)
             {
+                Vector3 truePos = positionSource.position - _totalOffset;
                 if (showDebugLogs && Time.frameCount % 120 == 0)
-                    Debug.Log($"[FloatingOriginMP] GetWorldPosition: using positionSource={positionSource.position:F0}");
-                return positionSource.position;
+                    Debug.Log($"[FloatingOriginMP] GetWorldPosition: positionSource={positionSource.position:F0}, totalOffset={_totalOffset:F0}, truePos={truePos:F0}");
+                return truePos;
             }
 
             // 2. NetworkPlayer — ПРИОРИТЕТ! (показывает правильную позицию)
@@ -275,17 +278,29 @@ namespace ProjectC.World.Streaming
         void Awake()
         {
             Debug.Log("[FloatingOriginMP] ============= AWOKE CALLED =============");
+            
+            // Проверяем: если мы на TradeZones — логируем!
+            Transform parent = transform.parent;
+            if (parent != null)
+            {
+                Debug.Log($"[FloatingOriginMP] Parent of FloatingOriginMP: '{parent.name}'");
+            }
+            else
+            {
+                Debug.Log("[FloatingOriginMP] FloatingOriginMP has NO parent (root level)");
+            }
 
             // Пытаемся найти камеру на этом объекте
             _camera = GetComponent<Camera>();
-
+            
             // Если камеры нет — пробуем найти Main Camera
             if (_camera == null)
             {
                 _camera = Camera.main;
                 if (_camera != null)
                 {
-                    Debug.LogWarning("[FloatingOriginMP] No Camera on this GameObject, using Camera.main");
+                    Debug.LogWarning($"[FloatingOriginMP] No Camera on this GameObject, using Camera.main ({_camera.name})");
+                    Debug.LogWarning($"[FloatingOriginMP] WARNING: Camera.main is under parent: {_camera.transform.parent?.name ?? "NONE"}");
                 }
                 else
                 {
@@ -295,12 +310,20 @@ namespace ProjectC.World.Streaming
             }
             else
             {
-                Debug.Log($"[FloatingOriginMP] Camera found: {_camera.name}");
+                Debug.Log($"[FloatingOriginMP] Camera found: {_camera.name} at {_camera.transform.position:F0}");
+                Debug.Log($"[FloatingOriginMP] Camera parent: {_camera.transform.parent?.name ?? "NONE"}");
             }
 
             FindOrCreateWorldRoots();
 
             Debug.Log($"[FloatingOriginMP] After FindOrCreateWorldRoots: roots={_worldRoots.Count}");
+            
+            // Проверяем TradeZones позицию
+            GameObject tz = GameObject.Find("TradeZones");
+            if (tz != null)
+            {
+                Debug.Log($"[FloatingOriginMP] TradeZones at: {tz.transform.position:F0}");
+            }
 
             // НЕ отключаем компонент если roots не найдены — запускаем в режиме диагностики
             _initialized = true;

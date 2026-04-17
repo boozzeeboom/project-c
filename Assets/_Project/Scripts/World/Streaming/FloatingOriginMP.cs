@@ -198,72 +198,84 @@ namespace ProjectC.World.Streaming
                 return positionSource.position;
             }
 
-            // 2. Ищем ThirdPersonCamera по имени — это правильная камера!
+            // 2. Ищем ThirdPersonCamera по имени
             Transform thirdPersonCam = FindThirdPersonCamera();
             if (thirdPersonCam != null)
             {
                 Vector3 pos = thirdPersonCam.position;
-                if (showDebugLogs && Time.frameCount % 120 == 0)
-                    Debug.Log($"[FloatingOriginMP] GetWorldPosition: using ThirdPersonCamera={pos:F0}, parent={thirdPersonCam.parent?.name}");
-                return pos;
+                // Проверяем что позиция "разумная" (не near origin когда должна быть далеко)
+                // Если позиция близка к origin (< 1000) но игрок должен быть далеко — это неправильная позиция!
+                if (pos.magnitude > 1000 || mode == OriginMode.Local)
+                {
+                    if (showDebugLogs && Time.frameCount % 120 == 0)
+                        Debug.Log($"[FloatingOriginMP] GetWorldPosition: using ThirdPersonCamera={pos:F0}");
+                    return pos;
+                }
+                else
+                {
+                    // ThirdPersonCamera показывает неправильную позицию!
+                    // Используем Camera.main которая на TradeZones
+                    if (showDebugLogs)
+                        Debug.LogWarning($"[FloatingOriginMP] ThirdPersonCamera at {pos:F0} is too close to origin! Using Camera.main instead.");
+                }
             }
 
-            // 3. Camera.main (fallback — но может быть камерой на TradeZones!)
+            // 3. Camera.main — используем её как fallback!
+            // TradeZones.camera показывает правильную позицию (которая "раскрывается" на паузе)
             if (Camera.main != null)
             {
                 Vector3 pos = Camera.main.transform.position;
                 if (showDebugLogs && Time.frameCount % 120 == 0)
-                    Debug.Log($"[FloatingOriginMP] GetWorldPosition: using Camera.main={pos:F0} (WARNING: may be TradeZones camera!)");
+                    Debug.Log($"[FloatingOriginMP] GetWorldPosition: using Camera.main={pos:F0}");
                 return pos;
             }
             
-            // 2b. Ищем NetworkPlayer по сцене (для игнорируемых объектов)
+            // 2b. Ищем NetworkPlayer (НЕ любой IsOwner объект!)
+            // TradeMarketServer — это IsOwner, но это НЕ игрок!
             var networkPlayers = FindObjectsByType<Unity.Netcode.NetworkObject>();
             foreach (var netObj in networkPlayers)
             {
-                if (netObj.IsOwner)
+                // Ищем конкретно NetworkPlayer по имени!
+                if (netObj.name.Contains("NetworkPlayer") && netObj.IsOwner)
                 {
                     Vector3 pos = netObj.transform.position;
-                    if (showDebugLogs && Time.frameCount % 120 == 0)
-                        Debug.Log($"[FloatingOriginMP] GetWorldPosition: using IsOwner NetworkObject={pos:F0}, name={netObj.name}");
+                    if (showDebugLogs)
+                        Debug.Log($"[FloatingOriginMP] GetWorldPosition: using NetworkPlayer={pos:F0}, name={netObj.name}");
                     return pos;
                 }
             }
             
-            // 2c. Ищем ВИЗУАЛЬНЫЙ объект игрока (не сетевой representation)
-            // В NGO LocalClient.PlayerObject — это сетевой объект, НЕ визуальный!
-            // Ищем по тегу "Player"
+            // 2c. Ищем объект с тегом "Player"
+            // Ищем только объекты с тегом Player (не любой объект!)
             GameObject playerByTag = GameObject.FindGameObjectWithTag("Player");
             if (playerByTag != null)
             {
                 Vector3 pos = playerByTag.transform.position;
-                if (showDebugLogs && Time.frameCount % 120 == 0)
+                if (showDebugLogs)
                     Debug.Log($"[FloatingOriginMP] GetWorldPosition: using Player tag={pos:F0}, name={playerByTag.name}");
                 return pos;
             }
             
-            // 2d. Ищем объект с именем содержащим "Player"
-            var allObjects = FindObjectsByType<Transform>();
-            foreach (var t in allObjects)
+            // 2d. Ищем объект с именем содержащим "NetworkPlayer" (без фильтра "Network")
+            foreach (var t in FindObjectsByType<Transform>())
             {
-                if (t.name.Contains("Player") && !t.name.Contains("Network"))
+                if (t.name.Contains("NetworkPlayer"))
                 {
                     Vector3 pos = t.position;
-                    if (showDebugLogs && Time.frameCount % 120 == 0)
-                        Debug.Log($"[FloatingOriginMP] GetWorldPosition: using name contains Player={pos:F0}, name={t.name}");
+                    if (showDebugLogs)
+                        Debug.Log($"[FloatingOriginMP] GetWorldPosition: using NetworkPlayer name={pos:F0}, name={t.name}");
                     return pos;
                 }
             }
             
             // 2e. DEBUG: ищем ВСЕ NetworkObject для отладки
-            if (showDebugLogs && Time.frameCount % 120 == 0)
             {
                 string debugInfo = "";
                 foreach (var netObj in networkPlayers)
                 {
                     debugInfo += $"[{netObj.name}:{netObj.transform.position:F0} owner={netObj.IsOwner}] ";
                 }
-                Debug.Log($"[FloatingOriginMP] GetWorldPosition: No visual player found! All NetworkObjects: {debugInfo}");
+                Debug.LogWarning($"[FloatingOriginMP] GetWorldPosition: No player found! All NetworkObjects: {debugInfo}");
             }
 
             // 3. Камера на этом объекте

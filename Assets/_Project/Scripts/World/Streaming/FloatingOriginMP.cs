@@ -178,6 +178,8 @@ namespace ProjectC.World.Streaming
             // 1. Явный источник
             if (positionSource != null)
             {
+                if (showDebugLogs && Time.frameCount % 120 == 0)
+                    Debug.Log($"[FloatingOriginMP] GetWorldPosition: using positionSource={positionSource.position:F0}");
                 return positionSource.position;
             }
 
@@ -185,7 +187,28 @@ namespace ProjectC.World.Streaming
             // Игрок двигается, камера может оставаться на (0,0,0)
             if (NetworkManager.Singleton?.LocalClient?.PlayerObject != null)
             {
-                return NetworkManager.Singleton.LocalClient.PlayerObject.transform.position;
+                // ИСПРАВЛЕНИЕ: Используем transform.position напрямую
+                // На паузе это работает! transform.position даёт правильную позицию
+                var playerObj = NetworkManager.Singleton.LocalClient.PlayerObject;
+                Vector3 pos = playerObj.transform.position;
+                
+                // Дополнительно: проверим children для поиска визуального игрока
+                // Ищем дочерний объект с компонентом CharacterController или Renderer
+                foreach (Transform child in playerObj.transform)
+                {
+                    if (child.GetComponent<CharacterController>() != null || 
+                        child.GetComponent<UnityEngine.Camera>() != null)
+                    {
+                        pos = child.position;
+                        if (showDebugLogs && Time.frameCount % 120 == 0)
+                            Debug.Log($"[FloatingOriginMP] GetWorldPosition: using child {child.name}={pos:F0}");
+                        return pos;
+                    }
+                }
+                
+                if (showDebugLogs && Time.frameCount % 120 == 0)
+                    Debug.Log($"[FloatingOriginMP] GetWorldPosition: using LocalClient.PlayerObject={pos:F0}");
+                return pos;
             }
             
             // 2b. Ищем NetworkPlayer по сцене (для игнорируемых объектов)
@@ -194,19 +217,62 @@ namespace ProjectC.World.Streaming
             {
                 if (netObj.IsOwner)
                 {
-                    return netObj.transform.position;
+                    Vector3 pos = netObj.transform.position;
+                    if (showDebugLogs && Time.frameCount % 120 == 0)
+                        Debug.Log($"[FloatingOriginMP] GetWorldPosition: using IsOwner NetworkObject={pos:F0}, name={netObj.name}");
+                    return pos;
                 }
+            }
+            
+            // 2c. Ищем ВИЗУАЛЬНЫЙ объект игрока (не сетевой representation)
+            // В NGO LocalClient.PlayerObject — это сетевой объект, НЕ визуальный!
+            // Ищем по тегу "Player"
+            GameObject playerByTag = GameObject.FindGameObjectWithTag("Player");
+            if (playerByTag != null)
+            {
+                Vector3 pos = playerByTag.transform.position;
+                if (showDebugLogs && Time.frameCount % 120 == 0)
+                    Debug.Log($"[FloatingOriginMP] GetWorldPosition: using Player tag={pos:F0}, name={playerByTag.name}");
+                return pos;
+            }
+            
+            // 2d. Ищем объект с именем содержащим "Player"
+            var allObjects = FindObjectsByType<Transform>();
+            foreach (var t in allObjects)
+            {
+                if (t.name.Contains("Player") && !t.name.Contains("Network"))
+                {
+                    Vector3 pos = t.position;
+                    if (showDebugLogs && Time.frameCount % 120 == 0)
+                        Debug.Log($"[FloatingOriginMP] GetWorldPosition: using name contains Player={pos:F0}, name={t.name}");
+                    return pos;
+                }
+            }
+            
+            // 2e. DEBUG: ищем ВСЕ NetworkObject для отладки
+            if (showDebugLogs && Time.frameCount % 120 == 0)
+            {
+                string debugInfo = "";
+                foreach (var netObj in networkPlayers)
+                {
+                    debugInfo += $"[{netObj.name}:{netObj.transform.position:F0} owner={netObj.IsOwner}] ";
+                }
+                Debug.Log($"[FloatingOriginMP] GetWorldPosition: No visual player found! All NetworkObjects: {debugInfo}");
             }
 
             // 3. Камера на этом объекте
             if (_camera != null)
             {
+                if (showDebugLogs && Time.frameCount % 120 == 0)
+                    Debug.Log($"[FloatingOriginMP] GetWorldPosition: using _camera={_camera.transform.position:F0}");
                 return _camera.transform.position;
             }
 
             // 4. Camera.main
             if (Camera.main != null)
             {
+                if (showDebugLogs && Time.frameCount % 120 == 0)
+                    Debug.Log($"[FloatingOriginMP] GetWorldPosition: using Camera.main={Camera.main.transform.position:F0}");
                 return Camera.main.transform.position;
             }
 

@@ -95,17 +95,9 @@ namespace ProjectC.Player
             networkObject = GetComponent<NetworkObject>();
             _controller = GetComponent<CharacterController>();
 
-            // ОТКЛЮЧАЕМ ИНТЕРПОЛЯЦИЮ NETWORKTRANSFORM (artifact fix)
-            // FloatingOriginMP сдвигает мир на ±100k, а NetworkTransform интерполирует позицию
-            // → это вызывает артефакты. Отключение интерполяции решает проблему.
-            var networkTransform = GetComponent<Unity.Netcode.Components.NetworkTransform>();
-            if (networkTransform != null)
-            {
-                networkTransform.InterpolatePosition = 0;
-                networkTransform.InterpolateRotation = 0;
-                networkTransform.InterpolateScale = 0;
-                Debug.Log("[NetworkPlayer] NetworkTransform interpolation DISABLED (artifact fix)");
-            }
+            // ПРИМЕЧАНИЕ: NetworkTransform.InterpolatePosition/Rotation/Scale 
+            // отключаются ВРУЧНУЮ в Unity Editor на префабе Player.prefab
+            // (API отличается в разных версиях Unity/NGO)
 
             // Находим ВСЕ Renderer и Collider на объекте (включая дочерние)
             GetComponentsInChildren(true, _playerRenderers);

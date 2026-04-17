@@ -411,63 +411,46 @@ namespace ProjectC.World.Streaming
                 return;
             }
             
-            // Local и ServerAuthority режимы — вычисляем и применяем сдвиг
+            // Вычисляем позицию для проверки threshold
             Vector3 cameraWorldPos = GetWorldPosition();
-
-            // Проверяем нужно ли сдвигать
-            // ВАЖНО: GetWorldPosition() уже возвращает скорректированную позицию (positionSource - _totalOffset)
-            // Поэтому для distance от origin просто используем cameraWorldPos.magnitude
             float distFromOrigin = cameraWorldPos.magnitude;
             
             // DEBUG: Логируем каждые 60 кадров чтобы видеть что происходит
             if (showDebugLogs && Time.frameCount % 120 == 0)
             {
-                Debug.Log($"[FloatingOriginMP] Debug: cameraWorldPos={cameraWorldPos:F0}, _totalOffset={_totalOffset:F0}, dist={distFromOrigin:F0}, threshold={threshold:F0}");
+                Debug.Log($"[FloatingOriginMP] Debug: mode={mode}, cameraWorldPos={cameraWorldPos:F0}, dist={distFromOrigin:F0}, threshold={threshold:F0}");
             }
             
-            // threshold определяет "когда камера далеко от мира — сдвигаем мир"
-            // Мы используем magnitude (общее расстояние) вместо component-wise проверки
+            // Проверяем нужно ли сдвигать
             if (distFromOrigin > threshold)
             {
-                // Вычисляем offset с округлением для избежания accumulation errors
-                Vector3 offset = RoundShift(cameraWorldPos);
-
-                // Логируем позиции WorldRoots ДО сдвига
-                string rootsBefore = "";
-                foreach (var root in _worldRoots)
+                if (mode == OriginMode.ServerAuthority)
                 {
-                    if (root != null) rootsBefore += $"'{root.name}'={root.position}, ";
+                    // ServerAuthority: отправляем RPC серверу (сервер применит сдвиг и разошлёт всем)
+                    if (IsServer)
+                    {
+                        // Мы на сервере — применяем сдвиг напрямую
+                        ApplyServerShift(cameraWorldPos);
+                    }
+                    else
+                    {
+                        // Мы на клиенте — отправляем запрос серверу
+                        if (showDebugLogs)
+                        {
+                            Debug.Log($"[FloatingOriginMP] LateUpdate: CLIENT sending RequestWorldShiftRpc, cameraWorldPos={cameraWorldPos:F0}");
+                        }
+                        RequestWorldShiftRpc(cameraWorldPos);
+                    }
+                    
+                    // Cooldown чтобы не спамить RPC
+                    _lastShiftTime = Time.time;
                 }
-
-                Debug.Log($"[FloatingOriginMP] CRITICAL SHIFT: offset={offset}, cameraPos={cameraWorldPos}, roots={_worldRoots.Count}");
-                Debug.Log($"[FloatingOriginMP] Roots BEFORE shift: {rootsBefore}");
-
-                // Применяем сдвиг ко всем world roots
-                ApplyShiftToAllRoots(offset);
-
-                // ПРИМЕЧАНИЕ: Мы НЕ сдвигаем камеру/player — только мир.
-                // Если камера — child Player (который тоже не сдвигается), 
-                // то камера уже остаётся на месте.
-                // Если камера на верхнем уровне — она тоже остаётся на месте.
-                // Визуально мир "уезжает" от игрока — это ожидаемое поведение.
-
-                // Сохраняем total offset для отладки
-                _totalOffset += offset;
-                _shiftCount++;
-
-                // Запоминаем время сдвига для cooldown
-                _lastShiftTime = Time.time;
-
-                // Уведомляем подписчиков
-                OnWorldShifted?.Invoke(offset);
-
-                // ServerAuthority — рассылаем сдвиг всем клиентам
-                if (mode == OriginMode.ServerAuthority && IsServer)
+                else if (mode == OriginMode.Local)
                 {
-                    BroadcastWorldShiftRpc(offset);
+                    // Local: применяем сдвиг локально
+                    ApplyLocalShift(cameraWorldPos);
                 }
-
-                Debug.Log($"[FloatingOriginMP] After shift: cameraPos={_camera.transform.position}, totalOffset={_totalOffset}");
+                // ServerSynced: ждём сдвига от сервера через RPC
             }
         }
 
@@ -524,6 +507,65 @@ namespace ProjectC.World.Streaming
             {
                 return NetworkManager.Singleton != null && 
                        NetworkManager.Singleton.IsHost;
+            }
+        }
+
+        /// <summary>
+        /// RPC: Клиент → Сервер: запрос на сдвиг мира.
+        /// Сервер проверяет threshold, применяет сдвиг и рассылает всем клиентам.
+        /// </summary>
+        [ServerRpc(RequireOwnership = false)]
+        public void RequestWorldShiftRpc(Vector3 cameraPos, ServerRpcParams rpcParams = default)
+        {
+            // Только сервер может обрабатывать запрос
+            if (!IsServer)
+            {
+                Debug.LogWarning("[FloatingOriginMP] RequestWorldShiftRpc: called on client - ignoring!");
+                return;
+            }
+            
+            // Проверяем cooldown
+            if (Time.time - _lastShiftTime < SHIFT_COOLDOWN)
+            {
+                Debug.Log($"[FloatingOriginMP] RequestWorldShiftRpc: cooldown active, ignoring");
+                return;
+            }
+            
+            // Проверяем threshold
+            float dist = cameraPos.magnitude;
+            if (dist <= threshold)
+            {
+                Debug.Log($"[FloatingOriginMP] RequestWorldShiftRpc: dist={dist:F0} <= threshold={threshold:F0}, ignoring");
+                return;
+            }
+            
+            // Вычисляем offset с округлением
+            Vector3 offset = RoundShift(cameraPos);
+            
+            if (showDebugLogs)
+            {
+                Debug.Log($"[FloatingOriginMP] RequestWorldShiftRpc: SERVER processing - cameraPos={cameraPos:F0}, offset={offset:F0}");
+            }
+            
+            // Применяем сдвиг на сервере
+            ApplyShiftToAllRoots(offset);
+            
+            // Обновляем total offset
+            _totalOffset += offset;
+            _shiftCount++;
+            
+            // Запоминаем время сдвига для cooldown
+            _lastShiftTime = Time.time;
+            
+            // Уведомляем подписчиков на сервере
+            OnWorldShifted?.Invoke(offset);
+            
+            // Рассылаем сдвиг всем клиентам (включая отправителя)
+            BroadcastWorldShiftRpc(offset);
+            
+            if (showDebugLogs)
+            {
+                Debug.Log($"[FloatingOriginMP] RequestWorldShiftRpc: BroadcastWorldShiftRpc sent to all clients");
             }
         }
 
@@ -620,6 +662,93 @@ namespace ProjectC.World.Streaming
             {
                 Debug.Log($"[FloatingOriginMP] ApplyWorldShift (from server): offset={offset}, " +
                           $"totalOffset={_totalOffset}, shiftCount={_shiftCount}");
+            }
+        }
+
+        #endregion
+
+        #region Shift Application Methods
+
+        /// <summary>
+        /// Применить сдвиг на СЕРВЕРЕ (ServerAuthority режим).
+        /// Вызывается из LateUpdate когда IsServer = true.
+        /// </summary>
+        private void ApplyServerShift(Vector3 cameraWorldPos)
+        {
+            // Вычисляем offset с округлением для избежания accumulation errors
+            Vector3 offset = RoundShift(cameraWorldPos);
+
+            if (showDebugLogs)
+            {
+                // Логируем позиции WorldRoots ДО сдвига
+                string rootsBefore = "";
+                foreach (var root in _worldRoots)
+                {
+                    if (root != null) rootsBefore += $"'{root.name}'={root.position}, ";
+                }
+                Debug.Log($"[FloatingOriginMP] SERVER SHIFT: offset={offset}, cameraPos={cameraWorldPos}");
+                Debug.Log($"[FloatingOriginMP] Roots BEFORE shift: {rootsBefore}");
+            }
+
+            // Применяем сдвиг ко всем world roots
+            ApplyShiftToAllRoots(offset);
+
+            // Сохраняем total offset
+            _totalOffset += offset;
+            _shiftCount++;
+
+            // Запоминаем время сдвига для cooldown
+            _lastShiftTime = Time.time;
+
+            // Уведомляем подписчиков
+            OnWorldShifted?.Invoke(offset);
+
+            // Рассылаем сдвиг всем клиентам
+            BroadcastWorldShiftRpc(offset);
+
+            if (showDebugLogs)
+            {
+                Debug.Log($"[FloatingOriginMP] SERVER SHIFT complete: totalOffset={_totalOffset}");
+            }
+        }
+
+        /// <summary>
+        /// Применить сдвиг ЛОКАЛЬНО (Local режим).
+        /// Вызывается из LateUpdate.
+        /// </summary>
+        private void ApplyLocalShift(Vector3 cameraWorldPos)
+        {
+            // Вычисляем offset с округлением для избежания accumulation errors
+            Vector3 offset = RoundShift(cameraWorldPos);
+
+            if (showDebugLogs)
+            {
+                // Логируем позиции WorldRoots ДО сдвига
+                string rootsBefore = "";
+                foreach (var root in _worldRoots)
+                {
+                    if (root != null) rootsBefore += $"'{root.name}'={root.position}, ";
+                }
+                Debug.Log($"[FloatingOriginMP] LOCAL SHIFT: offset={offset}, cameraPos={cameraWorldPos}");
+                Debug.Log($"[FloatingOriginMP] Roots BEFORE shift: {rootsBefore}");
+            }
+
+            // Применяем сдвиг ко всем world roots
+            ApplyShiftToAllRoots(offset);
+
+            // Сохраняем total offset
+            _totalOffset += offset;
+            _shiftCount++;
+
+            // Запоминаем время сдвига для cooldown
+            _lastShiftTime = Time.time;
+
+            // Уведомляем подписчиков
+            OnWorldShifted?.Invoke(offset);
+
+            if (showDebugLogs)
+            {
+                Debug.Log($"[FloatingOriginMP] LOCAL SHIFT complete: totalOffset={_totalOffset}");
             }
         }
 

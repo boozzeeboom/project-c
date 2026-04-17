@@ -78,6 +78,12 @@ namespace ProjectC.Player
         // Серверная позиция для коррекции
         private Vector3 _serverPosition;
         private bool _hasServerPosition = false;
+        
+        /// <summary>
+        /// Cooldown после сдвига мира — игнорируем серверную коррекцию пока мира не устаканится.
+        /// </summary>
+        private float _worldShiftCooldown = 0f;
+        private const float WORLD_SHIFT_COOLDOWN_DURATION = 1f;
 
         public bool IsInShip => _inShip;
         public ShipController CurrentShip => _currentShip;
@@ -180,10 +186,13 @@ namespace ProjectC.Player
             // Это предотвращает артефакты которые возникают из-за рассинхронизации после сдвига
             _hasServerPosition = false;
             
+            // Запускаем cooldown — игнорируем серверную коррекцию 1 секунду пока мир устаканится
+            _worldShiftCooldown = WORLD_SHIFT_COOLDOWN_DURATION;
+            
             // Сбрасываем velocity чтобы избежать рывков после сдвига
             _velocity = Vector3.zero;
             
-            Debug.Log($"[NetworkPlayer] OnWorldShifted: коррекция сброшена, позиция={transform.position}");
+            Debug.Log($"[NetworkPlayer] OnWorldShifted: коррекция сброшена, позиция={transform.position}, cooldown={_worldShiftCooldown}s");
         }
 
         // ==================== КАМЕРА ====================
@@ -303,6 +312,14 @@ namespace ProjectC.Player
         {
             // Плавная коррекция позиции только для локального игрока (Owner)
             if (!IsOwner || _inShip) return;
+            
+            // Уменьшаем cooldown
+            if (_worldShiftCooldown > 0)
+            {
+                _worldShiftCooldown -= Time.fixedDeltaTime;
+                // Игнорируем серверную коррекцию пока cooldown активен
+                return;
+            }
 
             if (_hasServerPosition)
             {
@@ -524,6 +541,13 @@ namespace ProjectC.Player
         [Rpc(SendTo.Owner)]
         public void ApplyServerPositionRpc(Vector3 serverPosition, RpcParams rpcParams = default)
         {
+            // Игнорируем серверную коррекцию если cooldown после сдвига мира активен
+            if (_worldShiftCooldown > 0)
+            {
+                Debug.Log($"[NetworkPlayer] ApplyServerPositionRpc: игнорируем (cooldown={_worldShiftCooldown:F2}s)");
+                return;
+            }
+            
             _serverPosition = serverPosition;
             _hasServerPosition = true;
         }

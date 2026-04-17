@@ -159,16 +159,22 @@ namespace ProjectC.Player
         /// </summary>
         private void OnWorldShifted(Vector3 offset)
         {
-            // ВАЖНО: Обрабатываем сдвиг только для ЛОКАЛЬНОГО игрока
-            // IsOwner проверяется относительно владельца NetworkBehaviour, а не локального клиента!
-            // На хосте ОБА игрока имеют IsOwner=true (каждый для своего клиента).
-            // Правильно: сравниваем OwnerClientId с NetworkManager.Singleton.LocalClientId
-            bool isLocalPlayer = NetworkManager.Singleton != null && 
-                                  OwnerClientId == NetworkManager.Singleton.LocalClientId;
+            // ЗАЩИТА: проверяем IsOwner — только владелец должен обрабатывать сдвиг
+            // На хосте могут быть ДВА NetworkPlayer с одинаковым OwnerClientId=0
+            // (свой игрок + ghost/clone). IsOwner гарантирует что это НАШ игрок.
+            if (!IsOwner)
+            {
+                return;
+            }
             
-            if (!isLocalPlayer) return;
+            // ДОПОЛНИТЕЛЬНАЯ ЗАЩИТА: проверяем что позиция НЕ огромная (артефакт WorldRoot)
+            if (transform.position.magnitude > 500000)
+            {
+                Debug.LogWarning($"[NetworkPlayer] OnWorldShifted: позиция={transform.position:F0} слишком большая — пропускаем! Это WorldRoot!");
+                return;
+            }
             
-            Debug.Log($"[NetworkPlayer] OnWorldShifted: offset={offset}, transform.position={transform.position}, OwnerClientId={OwnerClientId}, LocalClientId={NetworkManager.Singleton.LocalClientId}");
+            Debug.Log($"[NetworkPlayer] OnWorldShifted: offset={offset}, transform.position={transform.position}, IsOwner={IsOwner}");
             
             // Сбрасываем клиентскую коррекцию позиции
             // Это предотвращает артефакты которые возникают из-за рассинхронизации после сдвига

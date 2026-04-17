@@ -146,10 +146,11 @@ namespace ProjectC.Player
             ProjectC.World.Streaming.FloatingOriginMP.OnWorldShifted -= OnWorldShifted;
         }
         
-        private void OnDestroy()
+        public override void OnDestroy()
         {
             // Отписываемся от события сдвига мира (для безопасности)
             ProjectC.World.Streaming.FloatingOriginMP.OnWorldShifted -= OnWorldShifted;
+            base.OnDestroy();
         }
         
         /// <summary>
@@ -158,7 +159,16 @@ namespace ProjectC.Player
         /// </summary>
         private void OnWorldShifted(Vector3 offset)
         {
-            Debug.Log($"[NetworkPlayer] OnWorldShifted: offset={offset}, transform.position={transform.position}");
+            // ВАЖНО: Обрабатываем сдвиг только для ЛОКАЛЬНОГО игрока
+            // IsOwner проверяется относительно владельца NetworkBehaviour, а не локального клиента!
+            // На хосте ОБА игрока имеют IsOwner=true (каждый для своего клиента).
+            // Правильно: сравниваем OwnerClientId с NetworkManager.Singleton.LocalClientId
+            bool isLocalPlayer = NetworkManager.Singleton != null && 
+                                  OwnerClientId == NetworkManager.Singleton.LocalClientId;
+            
+            if (!isLocalPlayer) return;
+            
+            Debug.Log($"[NetworkPlayer] OnWorldShifted: offset={offset}, transform.position={transform.position}, OwnerClientId={OwnerClientId}, LocalClientId={NetworkManager.Singleton.LocalClientId}");
             
             // Сбрасываем клиентскую коррекцию позиции
             // Это предотвращает артефакты которые возникают из-за рассинхронизации после сдвига

@@ -43,6 +43,12 @@ namespace ProjectC.World.Streaming
         /// physics sync, и т.д.) могут использовать offset для коррекции своих систем.
         /// </summary>
         public static System.Action<Vector3> OnWorldShifted;
+        
+        /// <summary>
+        /// Ссылка на единственный экземпляр (синглтон).
+        /// </summary>
+        private static FloatingOriginMP _instance;
+        public static FloatingOriginMP Instance => _instance;
 
         #endregion
 
@@ -204,6 +210,15 @@ namespace ProjectC.World.Streaming
             // нужно вычитать totalOffset чтобы получить "истинную" позицию
             if (positionSource != null)
             {
+                // ПРОВЕРКА: positionSource должен быть НЕ дочерним WorldRoot!
+                // Если он дочерний — его позиция уже включает _totalOffset!
+                bool isUnderWorldRoot = IsUnderWorldRoot(positionSource);
+                if (isUnderWorldRoot)
+                {
+                    Debug.LogError($"[FloatingOriginMP] GetWorldPosition: positionSource '{positionSource.name}' IS UNDER WorldRoot! Using raw position!");
+                    return positionSource.position;
+                }
+                
                 Vector3 truePos = positionSource.position - _totalOffset;
                 if (showDebugLogs && Time.frameCount % 120 == 0)
                     Debug.Log($"[FloatingOriginMP] GetWorldPosition: positionSource={positionSource.position:F0}, totalOffset={_totalOffset:F0}, truePos={truePos:F0}");
@@ -221,6 +236,14 @@ namespace ProjectC.World.Streaming
                 if (netObj.name.Contains("NetworkPlayer") && netObj.IsOwner)
                 {
                     Vector3 pos = netObj.transform.position;
+                    
+                    // ДОПОЛНИТЕЛЬНАЯ ПРОВЕРКА: если позиция > 500000 — это явно НЕ игрок!
+                    if (pos.magnitude > 500000)
+                    {
+                        Debug.LogWarning($"[FloatingOriginMP] GetWorldPosition: NetworkPlayer at {pos:F0} (>{500000}) is too far - SKIPPING! This looks like WorldRoot!");
+                        continue;
+                    }
+                    
                     if (pos.magnitude > 10000) // Только если далеко от origin!
                     {
                         if (showDebugLogs)
@@ -277,6 +300,15 @@ namespace ProjectC.World.Streaming
 
         void Awake()
         {
+            // СИНГЛТОН: уничтожаем дубликаты
+            if (_instance != null && _instance != this)
+            {
+                Debug.LogWarning($"[FloatingOriginMP] DUPLICATE INSTANCE on '{gameObject.name}'! Destroying. Existing instance on '{_instance.gameObject.name}'");
+                Destroy(this);
+                return;
+            }
+            _instance = this;
+            
             Debug.Log("[FloatingOriginMP] ============= AWOKE CALLED =============");
             
             // Проверяем: если мы на TradeZones — логируем!
@@ -438,6 +470,14 @@ namespace ProjectC.World.Streaming
         [ClientRpc]
         private void BroadcastWorldShiftRpc(Vector3 offset, ClientRpcParams rpcParams = default)
         {
+            // ЗАЩИТА ОТ LOOP: если это ServerAuthority — НЕ принимаем свой же RPC
+            // RPC приходит обратно на сервер, и ApplyWorldShift вызовет OnWorldShifted снова
+            if (mode == OriginMode.ServerAuthority)
+            {
+                Debug.Log($"[FloatingOriginMP] BroadcastWorldShiftRpc: ServerAuthority mode - IGNORING RPC (would cause loop!)");
+                return;
+            }
+            
             if (mode == OriginMode.ServerSynced)
             {
                 // Клиент в ServerSynced режиме — принимаем сдвиг
@@ -632,6 +672,29 @@ namespace ProjectC.World.Streaming
         /// </summary>
 
         /// <summary>
+        /// Проверить, является ли transform дочерним WorldRoot.
+        /// Если да — его позиция уже включает сдвиг и не подходит для определения позиции игрока.
+        /// </summary>
+        private bool IsUnderWorldRoot(Transform transform)
+        {
+            if (transform == null) return false;
+            
+            Transform parent = transform.parent;
+            while (parent != null)
+            {
+                foreach (var rootName in worldRootNames)
+                {
+                    if (parent.name == rootName)
+                    {
+                        return true;
+                    }
+                }
+                parent = parent.parent;
+            }
+            return false;
+        }
+
+        /// <summary>
         /// Найти ThirdPersonCamera по именам из списка cameraNames.
         /// 
         /// ВАЖНО: Мы НЕ используем Camera.main потому что на TradeZones может быть
@@ -710,7 +773,7 @@ namespace ProjectC.World.Streaming
         {
             // СНАЧАЛА найдём ВСЕ TradeZones в сцене (где бы они ни были)
             List<Transform> allTradeZones = new List<Transform>();
-            var allObjects = FindObjectsOfType<Transform>();
+            var allObjects = FindObjectsByType<Transform>();
             foreach (var obj in allObjects)
             {
                 if (obj.name == "TradeZones" || obj.name == "TradeZone")

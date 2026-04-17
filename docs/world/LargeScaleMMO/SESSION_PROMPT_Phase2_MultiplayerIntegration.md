@@ -1,9 +1,52 @@
 # Session Prompt: World Streaming Phase 2 — Multiplayer Integration
 
-**Дата:** 16 апреля 2026 (обновлено 16.04.2026 23:32)  
+**Дата:** 16 апреля 2026 (обновлено 17.04.2026 16:02)  
 **Проект:** ProjectC_client  
 **Предыдущая сессия:** `SESSION_2026-04-14.md`  
 **Статус:** ✅ ОСНОВНЫЕ КОМПОНЕНТЫ РЕАЛИЗОВАНЫ
+
+---
+
+## ⚠️ КРИТИЧЕСКИЕ ПРОБЛЕМЫ (17.04.2026)
+
+### 1. HUD FloatingOriginMP НЕ показывает offset/shift в основной сцене
+
+**Симптомы:**
+- В тестовой сцене: HUD показывает Offset, Shifts — работает ✅
+- В основной сцене: HUD НЕ показывает ничего ❌
+- Shift counts растёт даже когда игрок стоит на месте
+
+**Причина:**
+- FloatingOriginMP не находит world roots в основной сцене
+- `_worldRoots.Count == 0` → LateUpdate() сразу return
+- HUD не показывается т.к. `_initialized = false` или `_worldRoots.Count == 0`
+
+**Исправлено:**
+- Добавлен `NetworkManagerController` в `excludeFromShift`
+- FloatingOriginMP запускается в диагностическом режиме даже если roots не найдены
+- Улучшены debug логи
+
+### 2. Игрок ВНУТРИ WorldRoot — мир прыгает с игроком
+
+**Симптомы:**
+- При перемещении персонажа все world objects прыгают за ним
+- HUD показывает Offset и Shifts но они продолжают расти даже когда стоишь
+
+**Причина:**
+- NetworkPlayer находится ВНУТРИ WorldRoot
+- FloatingOriginMP сдвигает ВСЕ объекты внутри WorldRoot
+- Игрок тоже сдвигается → получается что игрок и горы движутся вместе
+
+**Решение:**
+1. Player должен быть на верхнем уровне сцены (НЕ дочерним WorldRoot)
+2. FloatingOriginMP исключает объекты по именам из `excludeFromShift`
+
+### 3. FloatingOriginMP не инициализируется в основной сцене
+
+**Проверьте:**
+1. `Main Camera` имеет компонент `FloatingOriginMP`
+2. `worldRootNames` включает имена объектов сцены (WorldRoot, Mountains, Clouds, etc.)
+3. `showDebugLogs: true` для диагностики
 
 ---
 

@@ -2,6 +2,59 @@
 
 ---
 
+## v0.0.15-world-streaming-fix (17 апреля 2026)
+
+**Ветка:** `qwen-gamestudio-agent-dev`
+**Этап 3: World Streaming Phase 2 — FloatingOrigin Fix** — 🔄 В ПРОЦЕССЕ
+
+### 🐛 Исправленные проблемы
+
+#### 1. HUD FloatingOriginMP не показывает в основной сцене
+- **Проблема:** `_worldRoots.Count == 0` → LateUpdate() сразу return
+- **Исправление:**
+  - FloatingOriginMP запускается в диагностическом режиме даже если roots не найдены
+  - Добавлен `NetworkManagerController` в `excludeFromShift`
+  - Улучшены debug логи в Awake()
+
+#### 2. Shift counts растёт когда игрок стоит
+- **Проблема:** Игрок ВНУТРИ WorldRoot — сдвигается вместе с миром
+- **Исправление:**
+  - FloatingOriginMP исключает объекты по именам из `excludeFromShift`
+  - НЕ сдвигает: Player, NetworkPlayer, ThirdPersonCamera, Camera, NetworkManager, и т.д.
+
+#### 3. Input System errors
+- **Проблема:** `Input.GetKeyDown(KeyCode.F5)` не работает с новым Input System
+- **Исправление:** Изменено на `Keyboard.current.f5Key.wasPressedThisFrame`
+
+#### 4. MissingReferenceException в ChunkLoader
+- **Проблема:** Renderer уничтожается во время FadeInClouds coroutine
+- **Исправление:** Добавлен try-catch с проверкой null
+
+### 📦 Изменённые файлы
+
+| Файл | Изменение |
+|------|-----------|
+| `Assets/_Project/Scripts/World/Streaming/FloatingOriginMP.cs` | Добавлен NetworkManagerController в excludeFromShift, улучшены логи |
+| `Assets/_Project/Scripts/World/Streaming/StreamingTest_AutoRun.cs` | Input System (Keyboard.current), ResetOrigin() перед телепортом |
+| `Assets/_Project/Scripts/World/Streaming/ChunkLoader.cs` | try-catch для MissingReferenceException |
+| `docs/world/LargeScaleMMO/TELEPORT_FIX.md` | Документация по проблеме игрока внутри WorldRoot |
+| `docs/world/LargeScaleMMO/SESSION_PROMPT_Phase2_MultiplayerIntegration.md` | Добавлены критические проблемы |
+
+### ⚠️ Требуется тестирование
+
+1. ✅ FloatingOriginMP запускается с HUD в основной сцене
+2. ✅ Shift counts НЕ растёт когда игрок стоит
+3. ⬜ Телепорт работает в обоих сценах (F5/F6)
+4. ⬜ Чанки загружаются вокруг игрока (F7)
+
+### 📝 Следующие шаги
+
+1. Проверить иерархию сцены — Player должен быть ВНЕ WorldRoot
+2. Протестировать телепорт F5/F6
+3. Протестировать с 2+ клиентами
+
+---
+
 ## v0.0.14-world-streaming-phase2 (16 апреля 2026)
 
 **Ветка:** `qwen-gamestudio-agent-dev`

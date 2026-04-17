@@ -26,15 +26,21 @@ namespace ProjectC.World
         [SerializeField] private WorldStreamingManager streamingManager;
         
         [Header("Test Settings")]
-        [Tooltip("Список тестовых точек телепортации (XZ координаты)")]
+        [Tooltip("Test teleport positions (XZ coordinates) - including large coordinates for artifact testing")]
         [SerializeField] private Vector2[] testPositions = new Vector2[]
         {
+            // Small positions (near origin)
             new Vector2(0, 0),
             new Vector2(500, 300),
             new Vector2(-300, -500),
-            new Vector2(200, -200),
-            new Vector2(-400, 400),
-            new Vector2(600, -100)
+            // Large positions (>100k - triggers FloatingOrigin shift)
+            new Vector2(150000, 150000),
+            new Vector2(-150000, 150000),
+            new Vector2(150000, -150000),
+            new Vector2(-150000, -150000),
+            // Very large positions (>200k)
+            new Vector2(250000, 250000),
+            new Vector2(-250000, -250000)
         };
         
         [Tooltip("Высота Y для телепортации")]
@@ -268,19 +274,36 @@ namespace ProjectC.World
             
             Debug.Log($"[StreamingTest_AutoRun] 📍 Телепортация к точке {index}: ({pos2D.x}, {pos2D.y})");
             
-            if (smoothTeleport && _mainCamera != null)
+            // Сначала сбрасываем FloatingOrigin чтобы избежать двойного сдвига
+            var fo = FindAnyObjectByType<FloatingOriginMP>();
+            if (fo != null)
             {
-                _isMoving = true;
+                fo.ResetOrigin();
+                Debug.Log("[StreamingTest_AutoRun] ✅ FloatingOrigin reset before teleport");
             }
-            else
+            
+            // Ищем персонажа для телепортации
+            var networkObjects = FindObjectsByType<Unity.Netcode.NetworkObject>();
+            foreach (var netObj in networkObjects)
             {
-                // Instant teleport
-                if (_mainCamera != null)
+                if (netObj.IsOwner)
                 {
-                    _mainCamera.transform.position = _targetPosition;
+                    var player = netObj.GetComponent<UnityEngine.Transform>();
+                    if (player != null)
+                    {
+                        player.position = _targetPosition;
+                        Debug.Log($"[StreamingTest_AutoRun] ✅ Телепортирован игрок к {_targetPosition}");
+                    }
                 }
-                OnTeleportComplete();
             }
+            
+            // Также телепортируем камеру для плавности
+            if (_mainCamera != null)
+            {
+                _mainCamera.transform.position = _targetPosition;
+            }
+            
+            OnTeleportComplete();
         }
         
         /// <summary>

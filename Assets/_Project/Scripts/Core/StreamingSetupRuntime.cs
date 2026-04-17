@@ -22,19 +22,20 @@ namespace ProjectC.Core
         [SerializeField] private bool autoOrganizeWorldRoot = true;
         
         [Header("World Object Names")]
-        [Tooltip("Имена объектов мира для поиска")]
+        [Tooltip("TradeZones НЕ включен! TradeZones — корень сцены с камерой игрока.")]
         [SerializeField] private string[] worldObjectNames = new string[]
         {
             "Mountains",
             "Clouds",
             "Farms",
-            "TradeZones",
             "World",
             "Massif",
             "Peak",
             "CloudLayer",
             "Farm",
-            "TradeZone"
+            "ChunksContainer",
+            "Platforms"
+            // TradeZones ИСКЛЮЧЁН — там камера!
         };
         
         [Header("FloatingOriginMP")]

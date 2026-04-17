@@ -165,10 +165,13 @@ namespace ProjectC.World.Streaming
         /// Получить текущую мировую позицию для проверки threshold.
         /// Приоритет источников:
         /// 1. positionSource (явно назначенный Transform)
-        /// 2. _camera на этом объекте
-        /// 3. Camera.main
-        /// 4. NetworkManager.Singleton.LocalClient.PlayerObject (мультиплеер)
+        /// 2. Локальный игрок (NetworkManager) — ПРИОРИТЕТ!
+        /// 3. _camera на этом объекте
+        /// 4. Camera.main
         /// 5. Vector3.zero (fallback)
+        /// 
+        /// ВАЖНО: Игрок движется, камера может оставаться на месте!
+        /// Поэтому проверяем позицию ИГРОКА, а не камеры.
         /// </summary>
         private Vector3 GetWorldPosition()
         {
@@ -178,22 +181,33 @@ namespace ProjectC.World.Streaming
                 return positionSource.position;
             }
 
-            // 2. Камера на этом объекте
+            // 2. Локальный игрок в мультиплеере — ПРИОРИТЕТ!
+            // Игрок двигается, камера может оставаться на (0,0,0)
+            if (NetworkManager.Singleton?.LocalClient?.PlayerObject != null)
+            {
+                return NetworkManager.Singleton.LocalClient.PlayerObject.transform.position;
+            }
+            
+            // 2b. Ищем NetworkPlayer по сцене (для игнорируемых объектов)
+            var networkPlayers = FindObjectsByType<Unity.Netcode.NetworkObject>();
+            foreach (var netObj in networkPlayers)
+            {
+                if (netObj.IsOwner)
+                {
+                    return netObj.transform.position;
+                }
+            }
+
+            // 3. Камера на этом объекте
             if (_camera != null)
             {
                 return _camera.transform.position;
             }
 
-            // 3. Camera.main
+            // 4. Camera.main
             if (Camera.main != null)
             {
                 return Camera.main.transform.position;
-            }
-
-            // 4. Локальный игрок в мультиплеере
-            if (NetworkManager.Singleton?.LocalClient?.PlayerObject != null)
-            {
-                return NetworkManager.Singleton.LocalClient.PlayerObject.transform.position;
             }
 
             // 5. Fallback - не должно происходить в нормальных условиях
@@ -266,7 +280,12 @@ namespace ProjectC.World.Streaming
                 return;
             }
 
-            // Only process in Local or ServerAuthority mode
+            // В Local режиме — работаем. В ServerSynced — пропускаем (ждём сервер).
+            // ДЛЯ ОТЛАДКИ: Временно отключим ServerSynced чтобы проверить работает ли Local
+            #if UNITY_EDITOR
+            // РАСКОММЕНТИРУЙТЕ следющую строку для отладки Local режима:
+            // if (mode == OriginMode.ServerSynced) return;
+            #endif
             if (mode == OriginMode.ServerSynced) return;
             
             // ЗАЩИТА ОТ СПАМА: проверяем cooldown
@@ -276,22 +295,23 @@ namespace ProjectC.World.Streaming
             }
             
             // Local и ServerAuthority режимы — вычисляем и применяем сдвиг
-            // ИСПРАВЛЕНО: используем GetWorldPosition() вместо _camera напрямую
             Vector3 cameraWorldPos = GetWorldPosition();
 
             // Проверяем нужно ли сдвигать
-            // ВАЖНО: Проверяем позицию ОТНОСИТЕЛЬНО мира (cameraWorldPos - _totalOffset)
-            // Это позволяет понять "далеко ли камера от сдвинутого мира"
-            // Если _totalOffset = 250,000 (мир сдвинут на -250k), 
-            // а камера на 250,000, то adjustedPos = 0 — близко к миру, НЕ нужен сдвиг!
+            // ВАЖНО: threshold работает как "буфер" — мы сдвигаем когда камера уходит
+            // на расстояние > threshold от мира (который уже сдвинут)
             Vector3 adjustedPos = cameraWorldPos - _totalOffset;
             float distFromOrigin = adjustedPos.magnitude;
             
-            // Для проверки используем adjusted позицию (близость к миру)
+            // DEBUG: Логируем каждые 60 кадров чтобы видеть что происходит
+            if (showDebugLogs && Time.frameCount % 120 == 0)
+            {
+                Debug.Log($"[FloatingOriginMP] Debug: cameraWorldPos={cameraWorldPos:F0}, _totalOffset={_totalOffset:F0}, adjustedPos={adjustedPos:F0}, dist={distFromOrigin:F0}, threshold={threshold:F0}");
+            }
+            
             // threshold определяет "когда камера далеко от мира — сдвигаем мир"
-            if (Mathf.Abs(adjustedPos.x) > threshold ||
-                Mathf.Abs(adjustedPos.y) > threshold ||
-                Mathf.Abs(adjustedPos.z) > threshold)
+            // Мы используем magnitude (общее расстояние) вместо component-wise проверки
+            if (distFromOrigin > threshold)
             {
                 // Вычисляем offset с округлением для избежания accumulation errors
                 Vector3 offset = RoundShift(cameraWorldPos);

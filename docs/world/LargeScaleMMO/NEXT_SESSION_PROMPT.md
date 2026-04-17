@@ -1,67 +1,58 @@
-# Next Session Prompt: FloatingOriginMP — Final Fix
+# Next Session Prompt: FloatingOriginMP — Игрок vs Камера
 
 **Дата:** 17 апреля 2026 г.  
 **Проект:** ProjectC_client  
-**Status:** ✅ ИСПРАВЛЕНО — спам сдвигов остановлен
+**Status:** ✅ КОРНЕВАЯ ПРИЧИНА НАЙДЕНА
 
 ---
 
-## ✅ ЧТО ИСПРАВЛЕНО
+## 🔴 КОРНЕВАЯ ПРИЧИНА
 
-### 1. NullReferenceException (FloatingOriginMP.cs)
-- Добавлен `GetWorldPosition()` с 4 уровнями fallback
-
-### 2. Множественные вызовы ResetOrigin() (StreamingTest_AutoRun.cs)
-- Убран вызов из Update()
-- Убран дублирующий вызов из TeleportToTestPosition()
-
-### 3. СПАМ СДВИГОВ В LateUpdate — **КЛЮЧЕВОЕ ИСПРАВЛЕНИЕ**
-
-**БЫЛО:**
-```csharp
-Vector3 cameraWorldPos = GetWorldPosition();
-if (Mathf.Abs(cameraWorldPos.x) > threshold) // 250000 > 150000 = TRUE!
+Debug лог показал:
+```
+cameraWorldPos=(0, 0, 0)  ← КАМЕРА НА (0,0,0)!
 ```
 
-После сдвига камера остаётся на 250,000. Threshold=150,000. Значит `250,000 > 150,000` — **следующий LateUpdate СНОВА вызывает сдвиг!**
-
-**СТАЛО:**
-```csharp
-Vector3 adjustedPos = cameraWorldPos - _totalOffset;
-if (Mathf.Abs(adjustedPos.x) > threshold)
-```
-
-Теперь проверяем позицию **относительно мира**:
-- `_totalOffset` = 250,000 (мир сдвинут на -250k)
-- `cameraWorldPos` = 250,000
-- `adjustedPos` = 250,000 - 250,000 = 0
-- `0 > 150,000` = **FALSE** — сдвиг НЕ нужен!
+**Камера НЕ двигается!** Она остаётся на (0,0,0) потому что:
+- Камера — отдельный объект, не child игрока
+- Игрок бежит на 150,000+, но камера стоит на месте
+- FloatingOriginMP отслеживал позицию КАМЕРЫ, а не ИГРОКА!
 
 ---
 
-## ТЕКУЩИЙ КОД LateUpdate()
+## ✅ ИСПРАВЛЕНИЕ
 
+### Было:
 ```csharp
-void LateUpdate() {
-    // ...
-    Vector3 cameraWorldPos = GetWorldPosition();
-    
-    // ВАЖНО: Проверяем позицию ОТНОСИТЕЛЬНО мира
-    Vector3 adjustedPos = cameraWorldPos - _totalOffset;
-    
-    if (Mathf.Abs(adjustedPos.x) > threshold ||
-        Mathf.Abs(adjustedPos.y) > threshold ||
-        Mathf.Abs(adjustedPos.z) > threshold)
-    {
-        // Сдвигаем мир
-        Vector3 offset = RoundShift(cameraWorldPos);
-        ApplyShiftToAllRoots(offset);
-        _totalOffset += offset;
-        _shiftCount++;
-        _lastShiftTime = Time.time;
-    }
-}
+// GetWorldPosition() искал: камеру
+if (_camera != null) return _camera.transform.position;
+if (Camera.main != null) return Camera.main.transform.position;
 ```
+
+### Стало:
+```csharp
+// GetWorldPosition() ищет: ИГРОКА ПЕРВЫМ!
+// 1. positionSource (явный)
+// 2. NetworkManager.Singleton.LocalClient.PlayerObject (ПРИОРИТЕТ!)
+// 3. FindObjectsByType<NetworkObject>() → IsOwner
+// 4. _camera
+// 5. Camera.main
+// 6. Vector3.zero
+```
+
+---
+
+## НОВЫЙ DEBUG ЛОГ
+
+После исправления лог покажет:
+```
+[FloatingOriginMP] Debug: playerPos=150000, _totalOffset=0, adjustedPos=150000, dist=150000, threshold=150000
+```
+
+Это означает:
+- `playerPos` — позиция ИГРОКА (не камеры!)
+- `dist = 150000` — игрок ушёл на 150k от мира
+- `dist > threshold (150000)` — сдвиг должен произойти!
 
 ---
 
@@ -72,28 +63,45 @@ void LateUpdate() {
 1. FloatingOriginMP.mode = Local
 2. Play Mode
 3. Ручной бег на 150,000+
-4. Проверить:
-   - LateUpdate НЕ спамит
-   - Один сдвиг на каждые ~150k пройденного расстояния
+4. Ожидаемый лог:
+   [FloatingOriginMP] Debug: playerPos=150000, _totalOffset=0, dist=150000, threshold=150000
+   [FloatingOriginMP] CRITICAL SHIFT: ...
 ```
 
-### Тест 2: F5 телепортация
+### Тест 2: Проверка сдвига
 ```
-1. Play Mode
-2. F5 — телепортация на 250,000
-3. Проверить:
-   - Артефактов нет
-   - Сдвиг один раз
-   - LateUpdate не спамит
+После сдвига:
+[FloatingOriginMP] Debug: playerPos=160000, _totalOffset=150000, adjustedPos=10000, dist=10000, threshold=150000
 ```
+- `adjustedPos = 160000 - 150000 = 10000`
+- `dist = 10000 < 150000` — сдвиг НЕ нужен!
 
 ### Тест 3: ServerSynced
 ```
 1. FloatingOriginMP.mode = ServerSynced
-2. Play Mode
-3. LateUpdate пропускает (режим ожидает от сервера)
-4. F8 — ручной ResetOrigin
-5. Проверить что работает
+2. LateUpdate пропускает (ждём сервер)
+3. F8 — ручной ResetOrigin
+4. Ожидаемый лог:
+   [FloatingOriginMP] Before ResetOrigin: playerPos=150000, ...
+   [FloatingOriginMP] After ResetOrigin: ...
+```
+
+---
+
+## АРХИТЕКТУРА
+
+### Проблема Floating Origin
+```
+Игрок бежит:   0 → 50,000 → 100,000 → 150,000
+Камера:        0 → 0      → 0       → 0  (не двигается!)
+
+Floating Origin проверял КАМЕРУ → сдвиг не происходил
+```
+
+### Решение
+```
+Игрок бежит:   0 → 50,000 → 100,000 → 150,000
+Floating Origin проверяет ИГРОКА → сдвиг на 150,000
 ```
 
 ---
@@ -103,19 +111,18 @@ void LateUpdate() {
 | Документ | Описание |
 |----------|----------|
 | `SESSION_2026-04-17_FINAL_REPORT.md` | Итоговый отчёт |
-| `ARTIFACT_ANALYSIS_2026-04-17.md` | Анализ артефактов |
 | `SESSION_2026-04-17_ANALYSIS.md` | Анализ subagents |
 
 ---
 
 ## КРИТЕРИИ УСПЕХА
 
-- [ ] LateUpdate НЕ спамит после телепортации
-- [ ] Ручной бег вызывает ровно 1 сдвиг на каждые ~150k
+- [ ] Debug лог показывает позицию ИГРОКА (playerPos), не камеры
+- [ ] При беге на 150k+ происходит сдвиг
 - [ ] Артефакты не появляются
-- [ ] F5 телепортация работает корректно
+- [ ] После сдвига playerPos - _totalOffset < threshold
 
 ---
 
 **Автор:** Claude Code  
-**Дата:** 17.04.2026, 18:27 MSK
+**Дата:** 17.04.2026, 18:39 MSK

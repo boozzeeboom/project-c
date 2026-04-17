@@ -280,18 +280,10 @@ namespace ProjectC.World.Streaming
             Vector3 cameraWorldPos = GetWorldPosition();
 
             // Проверяем нужно ли сдвигать
-            // ВАЖНО: Проверяем позицию ОТНОСИТЕЛЬНО мира (cameraWorldPos - _totalOffset)
-            // Это позволяет понять "далеко ли камера от сдвинутого мира"
-            // Если _totalOffset = 250,000 (мир сдвинут на -250k), 
-            // а камера на 250,000, то adjustedPos = 0 — близко к миру, НЕ нужен сдвиг!
-            Vector3 adjustedPos = cameraWorldPos - _totalOffset;
-            float distFromOrigin = adjustedPos.magnitude;
-            
-            // Для проверки используем adjusted позицию (близость к миру)
-            // threshold определяет "когда камера далеко от мира — сдвигаем мир"
-            if (Mathf.Abs(adjustedPos.x) > threshold ||
-                Mathf.Abs(adjustedPos.y) > threshold ||
-                Mathf.Abs(adjustedPos.z) > threshold)
+            float distFromOrigin = cameraWorldPos.magnitude;
+            if (Mathf.Abs(cameraWorldPos.x) > threshold ||
+                Mathf.Abs(cameraWorldPos.y) > threshold ||
+                Mathf.Abs(cameraWorldPos.z) > threshold)
             {
                 // Вычисляем offset с округлением для избежания accumulation errors
                 Vector3 offset = RoundShift(cameraWorldPos);
@@ -309,22 +301,16 @@ namespace ProjectC.World.Streaming
                 // Применяем сдвиг ко всем world roots
                 ApplyShiftToAllRoots(offset);
 
-                // ПРИМЕЧАНИЕ: Мы НЕ сдвигаем камеру/player — только мир.
-                // Если камера — child Player (который тоже не сдвигается), 
-                // то камера уже остаётся на месте.
-                // Если камера на верхнем уровне — она тоже остаётся на месте.
-                // Визуально мир "уезжает" от игрока — это ожидаемое поведение.
-
                 // Сохраняем total offset для отладки
                 _totalOffset += offset;
                 _shiftCount++;
-
+                
                 // Запоминаем время сдвига для cooldown
                 _lastShiftTime = Time.time;
 
                 // Уведомляем подписчиков
                 OnWorldShifted?.Invoke(offset);
-
+                
                 // ServerAuthority — рассылаем сдвиг всем клиентам
                 if (mode == OriginMode.ServerAuthority && IsServer)
                 {

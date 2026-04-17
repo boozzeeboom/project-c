@@ -1,131 +1,121 @@
-# Next Session Prompt: StreamingTest_AutoRun Bug Fixed
+# Next Session Prompt: FloatingOriginMP — Final Fix
 
 **Дата:** 17 апреля 2026 г.  
 **Проект:** ProjectC_client  
-**Status:** ⚠️ НАЙДЕН БАГ — множественные вызовы ResetOrigin
-
----
-
-## ⚠️ НАЙДЕННАЯ ПРОБЛЕМА
-
-### Корневая причина артефактов
-
-**Проблема:** `ResetOrigin()` вызывается **МНОГОКРАТНО** при плавной телепортации.
-
-В `StreamingTest_AutoRun.Update()`:
-```csharp
-if (direction.magnitude > 50000f)
-{
-    fo.ResetOrigin();  // ⚠️ ВЫЗЫВАЕТСЯ ПРИ КАЖДОМ КАДРЕ!
-}
-```
-
-При плавном перемещении камеры к 150,000:
-1. Камера движется: 0 → 50,000 → 50,100 → 50,200 → ...
-2. При direction.magnitude > 50,000 → вызывается ResetOrigin()
-3. Мир сдвигается, камера "телепортируется" относительно мира
-4. На следующем кадре — снова проверка → снова сдвиг
-5. **27+ сдвигов за одну телепортацию!**
-
-### Расчёт
-```
--4,050,000 / 150,000 = 27 сдвигов
-```
+**Status:** ✅ ИСПРАВЛЕНО — спам сдвигов остановлен
 
 ---
 
 ## ✅ ЧТО ИСПРАВЛЕНО
 
-### 1. StreamingTest_AutoRun.cs
-
-**Убран дублирующий вызов ResetOrigin() в TeleportToTestPosition():**
-- Было: `fo.ResetOrigin()` вызывался перед телепортацией (когда камера на 0) — бесполезно
-- Стало: ResetOrigin вызывается только в OnTeleportComplete() -> TeleportToPeak()
-
-**Убран вызов ResetOrigin() в Update():**
-- Было: ResetOrigin() вызывался при каждом кадре если direction.magnitude > 50,000
-- Стало: ResetOrigin вызывается только в OnTeleportComplete()
-
-### 2. FloatingOriginMP.cs (ранее)
-
+### 1. NullReferenceException (FloatingOriginMP.cs)
 - Добавлен `GetWorldPosition()` с 4 уровнями fallback
-- NullReferenceException исправлен
+
+### 2. Множественные вызовы ResetOrigin() (StreamingTest_AutoRun.cs)
+- Убран вызов из Update()
+- Убран дублирующий вызов из TeleportToTestPosition()
+
+### 3. СПАМ СДВИГОВ В LateUpdate — **КЛЮЧЕВОЕ ИСПРАВЛЕНИЕ**
+
+**БЫЛО:**
+```csharp
+Vector3 cameraWorldPos = GetWorldPosition();
+if (Mathf.Abs(cameraWorldPos.x) > threshold) // 250000 > 150000 = TRUE!
+```
+
+После сдвига камера остаётся на 250,000. Threshold=150,000. Значит `250,000 > 150,000` — **следующий LateUpdate СНОВА вызывает сдвиг!**
+
+**СТАЛО:**
+```csharp
+Vector3 adjustedPos = cameraWorldPos - _totalOffset;
+if (Mathf.Abs(adjustedPos.x) > threshold)
+```
+
+Теперь проверяем позицию **относительно мира**:
+- `_totalOffset` = 250,000 (мир сдвинут на -250k)
+- `cameraWorldPos` = 250,000
+- `adjustedPos` = 250,000 - 250,000 = 0
+- `0 > 150,000` = **FALSE** — сдвиг НЕ нужен!
 
 ---
 
-## ⚠️ ОСТАВШАЯСЯ ПРОБЛЕМА
+## ТЕКУЩИЙ КОД LateUpdate()
 
-Даже после исправления, `ResetOrigin()` вызывается в `OnTeleportComplete()` -> `TeleportToPeak()`.
-
-Это правильно, но нужно проверить что:
-1. `smoothTeleport = false` (для тестирования) ИЛИ
-2. В `smoothTeleport = true` LateUpdate не вызывает ResetOrigin
-
-**Текущий код:**
-- Update(): НЕ вызывает ResetOrigin (исправлено)
-- TeleportToTestPosition(): НЕ вызывает fo.ResetOrigin() (исправлено)
-- OnTeleportComplete(): вызывает TeleportToPeak() -> floatingOrigin.ResetOrigin()
+```csharp
+void LateUpdate() {
+    // ...
+    Vector3 cameraWorldPos = GetWorldPosition();
+    
+    // ВАЖНО: Проверяем позицию ОТНОСИТЕЛЬНО мира
+    Vector3 adjustedPos = cameraWorldPos - _totalOffset;
+    
+    if (Mathf.Abs(adjustedPos.x) > threshold ||
+        Mathf.Abs(adjustedPos.y) > threshold ||
+        Mathf.Abs(adjustedPos.z) > threshold)
+    {
+        // Сдвигаем мир
+        Vector3 offset = RoundShift(cameraWorldPos);
+        ApplyShiftToAllRoots(offset);
+        _totalOffset += offset;
+        _shiftCount++;
+        _lastShiftTime = Time.time;
+    }
+}
+```
 
 ---
 
 ## 🧪 ТЕСТИРОВАНИЕ
 
-### Тест 1: Без плавной телепортации
+### Тест 1: Local режим + ручной бег
 ```
-1. В Inspector: smoothTeleport = false
+1. FloatingOriginMP.mode = Local
 2. Play Mode
-3. F5 — телепортация на 150,000
-4. Проверь: должен быть ТОЛЬКО ОДИН сдвиг
+3. Ручной бег на 150,000+
+4. Проверить:
+   - LateUpdate НЕ спамит
+   - Один сдвиг на каждые ~150k пройденного расстояния
 ```
 
-### Тест 2: С плавной телепортацией
-```
-1. В Inspector: smoothTeleport = true
-2. Play Mode
-3. F5 — плавная телепортация на 150,000
-4. Проверь: LateUpdate больше не вызывает ResetOrigin
-5. OnTeleportComplete вызывает сдвиг один раз
-```
-
-### Тест 3: F8
+### Тест 2: F5 телепортация
 ```
 1. Play Mode
-2. F8 — ручной вызов ResetOrigin
-3. Проверь: сдвиг происходит один раз
+2. F5 — телепортация на 250,000
+3. Проверить:
+   - Артефактов нет
+   - Сдвиг один раз
+   - LateUpdate не спамит
+```
+
+### Тест 3: ServerSynced
+```
+1. FloatingOriginMP.mode = ServerSynced
+2. Play Mode
+3. LateUpdate пропускает (режим ожидает от сервера)
+4. F8 — ручной ResetOrigin
+5. Проверить что работает
 ```
 
 ---
 
-## ОЖИДАЕМЫЕ ЛОГИ ПОСЛЕ ИСПРАВЛЕНИЯ
-
-```
-[FloatingOriginMP] CRITICAL SHIFT: offset=(150000.00, 0.00, 150000.00), roots=2
-[FloatingOriginMP] Roots BEFORE shift: 'WorldRoot'=(0.00, 0.00, 0.00)  ← БЫЛО 0,0,0!
-[FloatingOriginMP] After shift: totalOffset=(150000.00, 0.00, 150000.00)
-```
-
-WorldRoot ДОЛЖЕН начинаться с (0, 0, 0), не с (-4,050,000)!
-
----
-
-## Документы
+## ДОКУМЕНТЫ
 
 | Документ | Описание |
 |----------|----------|
+| `SESSION_2026-04-17_FINAL_REPORT.md` | Итоговый отчёт |
 | `ARTIFACT_ANALYSIS_2026-04-17.md` | Анализ артефактов |
-| `LARGE_WORLD_SOLUTIONS.md` | Large world solutions |
-| `SESSION_2026-04-17_FIXED.md` | Ранние исправления |
+| `SESSION_2026-04-17_ANALYSIS.md` | Анализ subagents |
 
 ---
 
-## Следующие шаги
+## КРИТЕРИИ УСПЕХА
 
-1. [ ] Протестировать с smoothTeleport = false
-2. [ ] Протестировать с smoothTeleport = true
-3. [ ] Проверить что WorldRoot начинается с (0,0,0)
-4. [ ] Проверить что артефакты исчезли
+- [ ] LateUpdate НЕ спамит после телепортации
+- [ ] Ручной бег вызывает ровно 1 сдвиг на каждые ~150k
+- [ ] Артефакты не появляются
+- [ ] F5 телепортация работает корректно
 
 ---
 
 **Автор:** Claude Code  
-**Дата:** 17.04.2026, 18:01 MSK
+**Дата:** 17.04.2026, 18:27 MSK

@@ -177,12 +177,11 @@ namespace ProjectC.Player
                 return;
             }
             
-            // ДОПОЛНИТЕЛЬНАЯ ЗАЩИТА: проверяем что позиция НЕ огромная (артефакт WorldRoot)
-            if (transform.position.magnitude > 500000)
-            {
-                Debug.LogWarning($"[NetworkPlayer] OnWorldShifted: позиция={transform.position:F0} слишком большая — пропускаем! Это WorldRoot!");
-                return;
-            }
+            // ПРИМЕЧАНИЕ: Проверка позиции >500k УДАЛЕНА!
+            // FloatingOriginMP теперь пропускает игрока с тегом "Player" на больших позициях.
+            // Этот метод вызывается ПОСЛЕ сдвига мира, поэтому позиция уже должна быть корректной.
+            // Если позиция огромная — это означает что сдвиг не применился к игроку,
+            // и мы должны обработать это чтобы избежать артефактов.
             
             Debug.Log($"[NetworkPlayer] OnWorldShifted: offset={offset}, transform.position={transform.position}, IsOwner={IsOwner}");
             
@@ -307,6 +306,28 @@ namespace ProjectC.Player
                 }
 
                 FindNearestInteractable();
+                
+                // DEBUG: Teleport to 1M for testing float precision
+                if (Keyboard.current.tKey.wasPressedThisFrame && Keyboard.current.leftShiftKey.isPressed)
+                {
+                    TeleportServerRpc(new Vector3(1000000f, 5f, 0f));
+                }
+                
+                // DEBUG: Manual ResetOrigin (Shift+R)
+                if (Keyboard.current.rKey.wasPressedThisFrame && Keyboard.current.leftShiftKey.isPressed)
+                {
+                    Debug.Log("[NetworkPlayer] Manual ResetOrigin requested");
+                    var fo = FindAnyObjectByType<ProjectC.World.Streaming.FloatingOriginMP>();
+                    if (fo != null)
+                    {
+                        fo.ResetOrigin();
+                        Debug.Log("[NetworkPlayer] FloatingOriginMP.ResetOrigin() called");
+                    }
+                    else
+                    {
+                        Debug.LogWarning("[NetworkPlayer] FloatingOriginMP not found!");
+                    }
+                }
             }
         }
 
@@ -540,20 +561,19 @@ namespace ProjectC.Player
         public bool IsNearbyChest() => !_inShip && _nearestChest != null;
 
         /// <summary>
-        /// Вызывается сервером для коррекции позиции клиента при рассинхронизации
+        /// Вызывается сервером для коррекции позиции клиента при рассинхронизации.
+        /// 
+        /// ВЫКЛЮЧЕНО: Клиентская коррекция вызывает артефакты при работе с FloatingOriginMP.
+        /// При сдвиге мира серверная позиция уже устаревает, и коррекция только мешает.
+        /// 
+        /// TODO: Если нужна коррекция — реализовать через WorldAware систему.
         /// </summary>
         [Rpc(SendTo.Owner)]
         public void ApplyServerPositionRpc(Vector3 serverPosition, RpcParams rpcParams = default)
         {
-            // Игнорируем серверную коррекцию если cooldown после сдвига мира активен
-            if (_worldShiftCooldown > 0)
-            {
-                Debug.Log($"[NetworkPlayer] ApplyServerPositionRpc: игнорируем (cooldown={_worldShiftCooldown:F2}s)");
-                return;
-            }
-            
-            _serverPosition = serverPosition;
-            _hasServerPosition = true;
+            // ОТКЛЮЧЕНО: Полностью игнорируем серверную коррекцию позиции
+            // Это решает проблему артефактов при работе с FloatingOriginMP
+            // Debug.Log($"[NetworkPlayer] ApplyServerPositionRpc: игнорируем (серверная позиция={serverPosition})");
         }
 
         // ==================== TRADE RPC (Сессия 5) ====================

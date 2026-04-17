@@ -310,18 +310,40 @@ namespace ProjectC.Player
                 // DEBUG: Teleport to 1M for testing float precision
                 if (Keyboard.current.tKey.wasPressedThisFrame && Keyboard.current.leftShiftKey.isPressed)
                 {
-                    TeleportServerRpc(new Vector3(1000000f, 5f, 0f));
+                    TeleportToPosition(new Vector3(1000000f, 5f, 0f));
+                    // После телепорта вызываем ResetOrigin с задержкой (ждём синхронизации)
+                    Invoke(nameof(AutoResetOriginAfterTeleport), 0.5f);
                 }
                 
-                // DEBUG: Manual ResetOrigin (Shift+R)
+                // DEBUG: Manual ResetOrigin (Shift+R) — принудительный сброс
                 if (Keyboard.current.rKey.wasPressedThisFrame && Keyboard.current.leftShiftKey.isPressed)
                 {
                     Debug.Log("[NetworkPlayer] Manual ResetOrigin requested");
                     var fo = FindAnyObjectByType<ProjectC.World.Streaming.FloatingOriginMP>();
                     if (fo != null)
                     {
+                        // КРИТИЧНО: запоминаем текущую позицию, обнуляем offset, затем телепортируем на локальную позицию
+                        Vector3 worldPos = transform.position;
+                        Debug.Log($"[NetworkPlayer] Current world position: {worldPos}");
+                        
+                        // Обнуляем totalOffset
+                        fo.ResetOffset();
+                        
+                        // Телепортируем на локальную позицию (5, 5, 0) — рядом с origin
+                        // Это "локальная" позиция относительно TradeZones
+                        Vector3 localPos = new Vector3(5f, 5f, 0f);
+                        Debug.Log($"[NetworkPlayer] Teleporting to local position: {localPos}");
+                        
+                        // Отключаем на мгновение CC чтобы избежать коллизий
+                        _controller.enabled = false;
+                        transform.position = localPos;
+                        _controller.enabled = true;
+                        _velocity = Vector3.zero;
+                        
+                        // После телепорта вызываем ResetOrigin для сдвига мира
                         fo.ResetOrigin();
-                        Debug.Log("[NetworkPlayer] FloatingOriginMP.ResetOrigin() called");
+                        
+                        Debug.Log($"[NetworkPlayer] After ResetOrigin: player at {transform.position}, world shifted");
                     }
                     else
                     {
@@ -816,6 +838,48 @@ namespace ProjectC.Player
             {
                 TeleportServerRpc(position);
             }
+        }
+
+        // ==================== FLOATING ORIGIN AUTO-FIX ====================
+
+        /// <summary>
+        /// Автоматический ResetOrigin после телепорта.
+        /// Вызывается с задержкой через Invoke() чтобы дождаться синхронизации NGO.
+        /// </summary>
+        private void AutoResetOriginAfterTeleport()
+        {
+            if (!IsOwner) return;
+            
+            var fo = FindAnyObjectByType<ProjectC.World.Streaming.FloatingOriginMP>();
+            if (fo == null)
+            {
+                Debug.LogWarning("[NetworkPlayer] AutoResetOriginAfterTeleport: FloatingOriginMP not found!");
+                return;
+            }
+            
+            // Проверяем что игрок далеко от origin
+            float dist = transform.position.magnitude;
+            if (dist < 500000f)
+            {
+                Debug.Log($"[NetworkPlayer] AutoResetOriginAfterTeleport: dist={dist} < 500k, skip");
+                return;
+            }
+            
+            Debug.Log($"[NetworkPlayer] AutoResetOriginAfterTeleport: dist={dist}, triggering ResetOrigin");
+            
+            // Обнуляем totalOffset
+            fo.ResetOffset();
+            
+            // Телепортируем на локальную позицию рядом с origin
+            _controller.enabled = false;
+            transform.position = new Vector3(5f, 5f, 0f);
+            _controller.enabled = true;
+            _velocity = Vector3.zero;
+            
+            // Сдвигаем мир
+            fo.ResetOrigin();
+            
+            Debug.Log($"[NetworkPlayer] AutoResetOriginAfterTeleport: player at {transform.position}, world shifted");
         }
     }
 }

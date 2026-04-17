@@ -100,6 +100,10 @@ namespace ProjectC.Player
             // Отключаем старый PlayerController (если остался от legacy)
             var legacyController = GetComponent<PlayerController>();
             if (legacyController != null) legacyController.enabled = false;
+            
+            // Подписываемся на событие сдвига мира (для FloatingOriginMP)
+            // После сдвига мира нужно сбросить клиентскую коррекцию чтобы избежать артефактов
+            ProjectC.World.Streaming.FloatingOriginMP.OnWorldShifted += OnWorldShifted;
 
             if (IsOwner)
             {
@@ -137,6 +141,33 @@ namespace ProjectC.Player
             if (_myCamera != null) Destroy(_myCamera.gameObject);
             if (_inventoryUI != null) Destroy(_inventoryUI.gameObject);
             if (_inShip && _currentShip != null) _currentShip.RemovePilot(OwnerClientId);
+            
+            // Отписываемся от события сдвига мира
+            ProjectC.World.Streaming.FloatingOriginMP.OnWorldShifted -= OnWorldShifted;
+        }
+        
+        private void OnDestroy()
+        {
+            // Отписываемся от события сдвига мира (для безопасности)
+            ProjectC.World.Streaming.FloatingOriginMP.OnWorldShifted -= OnWorldShifted;
+        }
+        
+        /// <summary>
+        /// Обработчик события сдвига мира от FloatingOriginMP.
+        /// После сдвига мира сбрасываем клиентскую коррекцию позиции чтобы избежать артефактов.
+        /// </summary>
+        private void OnWorldShifted(Vector3 offset)
+        {
+            Debug.Log($"[NetworkPlayer] OnWorldShifted: offset={offset}, transform.position={transform.position}");
+            
+            // Сбрасываем клиентскую коррекцию позиции
+            // Это предотвращает артефакты которые возникают из-за рассинхронизации после сдвига
+            _hasServerPosition = false;
+            
+            // Сбрасываем velocity чтобы избежать рывков после сдвига
+            _velocity = Vector3.zero;
+            
+            Debug.Log($"[NetworkPlayer] OnWorldShifted: коррекция сброшена, позиция={transform.position}");
         }
 
         // ==================== КАМЕРА ====================

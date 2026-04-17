@@ -371,15 +371,14 @@ namespace ProjectC.World.Streaming
             Vector3 cameraWorldPos = GetWorldPosition();
 
             // Проверяем нужно ли сдвигать
-            // ВАЖНО: threshold работает как "буфер" — мы сдвигаем когда камера уходит
-            // на расстояние > threshold от мира (который уже сдвинут)
-            Vector3 adjustedPos = cameraWorldPos - _totalOffset;
-            float distFromOrigin = adjustedPos.magnitude;
+            // ВАЖНО: GetWorldPosition() уже возвращает скорректированную позицию (positionSource - _totalOffset)
+            // Поэтому для distance от origin просто используем cameraWorldPos.magnitude
+            float distFromOrigin = cameraWorldPos.magnitude;
             
             // DEBUG: Логируем каждые 60 кадров чтобы видеть что происходит
             if (showDebugLogs && Time.frameCount % 120 == 0)
             {
-                Debug.Log($"[FloatingOriginMP] Debug: cameraWorldPos={cameraWorldPos:F0}, _totalOffset={_totalOffset:F0}, adjustedPos={adjustedPos:F0}, dist={distFromOrigin:F0}, threshold={threshold:F0}");
+                Debug.Log($"[FloatingOriginMP] Debug: cameraWorldPos={cameraWorldPos:F0}, _totalOffset={_totalOffset:F0}, dist={distFromOrigin:F0}, threshold={threshold:F0}");
             }
             
             // threshold определяет "когда камера далеко от мира — сдвигаем мир"

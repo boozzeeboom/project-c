@@ -45,52 +45,77 @@ namespace ProjectC.World.Streaming
 
         #endregion
 
-        #region Configuration
-        
-        /// <summary>
-        /// Режим работы FloatingOriginMP.
-        /// </summary>
-        public enum OriginMode
-        {
-            /// <summary>Локальный сдвиг (singleplayer)</summary>
-            Local,
-            /// <summary>Сдвиг от сервера (multiplayer client)</summary>
-            ServerSynced,
-            /// <summary>Сервер инициирует сдвиг (multiplayer host/server)</summary>
-            ServerAuthority
-        }
-        
-        [Header("Mode")]
-        [Tooltip("Режим работы: Local (singleplayer), ServerSynced (client), ServerAuthority (host/server)")]
-        public OriginMode mode = OriginMode.Local;
+    #region Configuration
 
-        [Header("Threshold")]
-        [Tooltip("Расстояние от origin после которого сдвигаем мир (units)")]
-        public float threshold = 100000f;
+    /// <summary>
+    /// Режим работы FloatingOriginMP.
+    /// </summary>
+    public enum OriginMode
+    {
+        /// <summary>Локальный сдвиг (singleplayer)</summary>
+        Local,
+        /// <summary>Сдвиг от сервера (multiplayer client)</summary>
+        ServerSynced,
+        /// <summary>Сервер инициирует сдвиг (multiplayer host/server)</summary>
+        ServerAuthority
+    }
 
-        [Header("Shift Rounding")]
-        [Tooltip("Округление сдвига для избежания накопления ошибок (units)")]
-        public float shiftRounding = 10000f;
+    [Header("Mode")]
+    [Tooltip("Режим работы: Local (singleplayer), ServerSynced (client), ServerAuthority (host/server)")]
+    public OriginMode mode = OriginMode.Local;
+
+    [Header("Position Source")]
+    [Tooltip("Transform для отслеживания позиции. Null = автопоиск. Приоритет: positionSource > _camera > Camera.main > LocalPlayer")]
+    public Transform positionSource;
+
+    [Header("Threshold")]
+    [Tooltip("Расстояние от origin после которого сдвигаем мир (units)")]
+    public float threshold = 150000f;  // Сдвигаем когда игрок дальше 150k
+
+    [Header("Shift Rounding")]
+    [Tooltip("Округление сдвига для избежания накопления ошибок (units)")]
+    public float shiftRounding = 10000f;  // Округляем до 10k для точности
 
         [Header("World Root Names")]
         [Tooltip("Имена world root объектов для автопоиска. Пусто = искать все.")]
         public string[] worldRootNames = new string[]
         {
+            "WorldRoot",         // Основной контейнер
             "Mountains",
             "Clouds",
-            "Farms",
+            "farms",
             "TradeZones",
             "World",
-            "WorldRoot",
-            "ChunksContainer"  // Добавлен для чанков
+            "ChunksContainer",
+            "Platforms",
+            "CloudLayer",
+            "Massif",
+            "Peak",
+            "Farm",
+            "TradeZone"
+        };
+        
+        [Header("Exclude From Shift")]
+        [Tooltip("Object names that do NOT shift (player, camera, UI). Also excludes all children of these objects.")]
+        public string[] excludeFromShift = new string[]
+        {
+            "Player",
+            "NetworkPlayer",
+            "ThirdPersonCamera",
+            "Main Camera",
+            "Camera",
+            "EventSystem",
+            "NetworkManager",
+            "StreamingTest",
+            "NetworkManagerController"
         };
 
         [Header("Debug")]
-        [Tooltip("Показать debug логи")]
-        public bool showDebugLogs = false;
+        [Tooltip("Показать debug логи (ВКЛЮЧИ ДЛЯ ОТЛАДКИ!)")]
+        public bool showDebugLogs = true;  // TRUE by default for debugging
 
         [Tooltip("Показывать debug HUD на экране")]
-        public bool showDebugHUD = false;
+        public bool showDebugHUD = true;  // TRUE by default for debugging
 
         #endregion
 
@@ -134,51 +159,115 @@ namespace ProjectC.World.Streaming
 
         #endregion
 
+        #region Position Source (Null-Safe)
+
+        /// <summary>
+        /// Получить текущую мировую позицию для проверки threshold.
+        /// Приоритет источников:
+        /// 1. positionSource (явно назначенный Transform)
+        /// 2. _camera на этом объекте
+        /// 3. Camera.main
+        /// 4. NetworkManager.Singleton.LocalClient.PlayerObject (мультиплеер)
+        /// 5. Vector3.zero (fallback)
+        /// </summary>
+        private Vector3 GetWorldPosition()
+        {
+            // 1. Явный источник
+            if (positionSource != null)
+            {
+                return positionSource.position;
+            }
+
+            // 2. Камера на этом объекте
+            if (_camera != null)
+            {
+                return _camera.transform.position;
+            }
+
+            // 3. Camera.main
+            if (Camera.main != null)
+            {
+                return Camera.main.transform.position;
+            }
+
+            // 4. Локальный игрок в мультиплеере
+            if (NetworkManager.Singleton?.LocalClient?.PlayerObject != null)
+            {
+                return NetworkManager.Singleton.LocalClient.PlayerObject.transform.position;
+            }
+
+            // 5. Fallback - не должно происходить в нормальных условиях
+            if (showDebugLogs)
+            {
+                Debug.LogWarning("[FloatingOriginMP] GetWorldPosition: No position source found! Using Vector3.zero");
+            }
+            return Vector3.zero;
+        }
+
+        #endregion
+
         #region Unity Lifecycle
 
         void Awake()
         {
+            Debug.Log("[FloatingOriginMP] ============= AWOKE CALLED =============");
+
+            // Пытаемся найти камеру на этом объекте
             _camera = GetComponent<Camera>();
+
+            // Если камеры нет — пробуем найти Main Camera
             if (_camera == null)
             {
-                Debug.LogError("[FloatingOriginMP] Camera not found on this GameObject! Этот компонент должен быть на объекте с Camera.");
-                enabled = false;
-                return;
+                _camera = Camera.main;
+                if (_camera != null)
+                {
+                    Debug.LogWarning("[FloatingOriginMP] No Camera on this GameObject, using Camera.main");
+                }
+                else
+                {
+                    Debug.LogWarning("[FloatingOriginMP] No Camera found! Using fallback position tracking.");
+                    // БУДЕМ отслеживать позицию игрока напрямую
+                }
+            }
+            else
+            {
+                Debug.Log($"[FloatingOriginMP] Camera found: {_camera.name}");
             }
 
             FindOrCreateWorldRoots();
 
-            if (_worldRoots.Count == 0)
-            {
-                Debug.LogError("[FloatingOriginMP] Не найдено ни одного world root! Floating origin не будет работать.");
-                enabled = false;
-                return;
-            }
+            Debug.Log($"[FloatingOriginMP] After FindOrCreateWorldRoots: roots={_worldRoots.Count}");
 
+            // НЕ отключаем компонент если roots не найдены — запускаем в режиме диагностики
             _initialized = true;
 
-            if (showDebugLogs)
+            if (showDebugHUD)
             {
-                Debug.Log($"[FloatingOriginMP] Initialized. threshold={threshold:N0}, shiftRounding={shiftRounding:N0}, roots found: {_worldRoots.Count}");
-                foreach (var root in _worldRoots)
-                {
-                    Debug.Log($"[FloatingOriginMP]   - World root: '{root.name}'");
-                }
+                Debug.Log("[FloatingOriginMP] HUD enabled");
             }
+
+            if (_worldRoots.Count == 0)
+            {
+                Debug.LogError("[FloatingOriginMP] CRITICAL: No world roots found! Searching: " + string.Join(", ", worldRootNames));
+            }
+
+            Debug.Log($"[FloatingOriginMP] Initialized. threshold={threshold:N0}, roots={_worldRoots.Count}");
         }
 
         void LateUpdate()
         {
-            if (!_initialized || _worldRoots.Count == 0) return;
+            // Если roots не найдены - НЕ сдвигаем!
+            if (!_initialized || _worldRoots.Count == 0)
+            {
+                if (showDebugLogs && Time.frameCount % 60 == 0) // Каждую секунду
+                {
+                    Debug.LogWarning($"[FloatingOriginMP] LateUpdate skipped: initialized={_initialized}, roots={_worldRoots.Count}");
+                }
+                return;
+            }
 
             // Only process in Local or ServerAuthority mode
             if (mode == OriginMode.ServerSynced) return;
-            
-            // ServerSynced режим — только принимаем сдвиг от сервера, не вычисляем сами
-            if (mode == OriginMode.ServerSynced)
-            {
-                return;
-            }
             
             // ЗАЩИТА ОТ СПАМА: проверяем cooldown
             if (Time.time - _lastShiftTime < SHIFT_COOLDOWN)
@@ -187,15 +276,27 @@ namespace ProjectC.World.Streaming
             }
             
             // Local и ServerAuthority режимы — вычисляем и применяем сдвиг
-            Vector3 cameraWorldPos = _camera.transform.position;
+            // ИСПРАВЛЕНО: используем GetWorldPosition() вместо _camera напрямую
+            Vector3 cameraWorldPos = GetWorldPosition();
 
             // Проверяем нужно ли сдвигать
+            float distFromOrigin = cameraWorldPos.magnitude;
             if (Mathf.Abs(cameraWorldPos.x) > threshold ||
                 Mathf.Abs(cameraWorldPos.y) > threshold ||
                 Mathf.Abs(cameraWorldPos.z) > threshold)
             {
                 // Вычисляем offset с округлением для избежания accumulation errors
                 Vector3 offset = RoundShift(cameraWorldPos);
+
+                // Логируем позиции WorldRoots ДО сдвига
+                string rootsBefore = "";
+                foreach (var root in _worldRoots)
+                {
+                    if (root != null) rootsBefore += $"'{root.name}'={root.position}, ";
+                }
+
+                Debug.Log($"[FloatingOriginMP] CRITICAL SHIFT: offset={offset}, cameraPos={cameraWorldPos}, roots={_worldRoots.Count}");
+                Debug.Log($"[FloatingOriginMP] Roots BEFORE shift: {rootsBefore}");
 
                 // Применяем сдвиг ко всем world roots
                 ApplyShiftToAllRoots(offset);
@@ -216,12 +317,7 @@ namespace ProjectC.World.Streaming
                     BroadcastWorldShiftRpc(offset);
                 }
 
-                if (showDebugLogs)
-                {
-                    Debug.Log($"[FloatingOriginMP] Shifted world by offset={offset}, " +
-                              $"cameraPos={cameraWorldPos} → newCameraPos={_camera.transform.position}, " +
-                              $"totalOffset={_totalOffset}, shiftCount={_shiftCount}");
-                }
+                Debug.Log($"[FloatingOriginMP] After shift: cameraPos={_camera.transform.position}, totalOffset={_totalOffset}");
             }
         }
 
@@ -290,13 +386,14 @@ namespace ProjectC.World.Streaming
                 return;
             }
 
-            Vector3 cameraPos = _camera.transform.position;
-            Vector3 offset = RoundShift(cameraPos);
+            // ИСПРАВЛЕНО: используем GetWorldPosition() вместо _camera напрямую
+            Vector3 worldPos = GetWorldPosition();
+            Vector3 offset = RoundShift(worldPos);
 
             if (showDebugLogs)
             {
                 Debug.Log($"[FloatingOriginMP] Before ResetOrigin: " +
-                          $"cameraPos={cameraPos:F0}, totalOffset={_totalOffset:F0}, offset={offset:F0}");
+                          $"worldPos={worldPos:F0}, totalOffset={_totalOffset:F0}, offset={offset:F0}");
             }
 
             ApplyShiftToAllRoots(offset);
@@ -310,20 +407,20 @@ namespace ProjectC.World.Streaming
             // Уведомляем подписчиков
             OnWorldShifted?.Invoke(offset);
 
-            // Проверяем что камера теперь близко к origin
-            Vector3 newCameraPos = _camera.transform.position;
-            float distFromOrigin = newCameraPos.magnitude;
+            // Проверяем что позиция теперь близко к origin
+            Vector3 newWorldPos = GetWorldPosition();
+            float distFromOrigin = newWorldPos.magnitude;
 
             if (showDebugLogs)
             {
                 Debug.Log($"[FloatingOriginMP] After ResetOrigin: " +
-                          $"newCameraPos={newCameraPos:F0}, distFromOrigin={distFromOrigin:F0}, " +
+                          $"newWorldPos={newWorldPos:F0}, distFromOrigin={distFromOrigin:F0}, " +
                           $"totalOffset={_totalOffset:F0}, shiftCount={_shiftCount}");
             }
 
             if (distFromOrigin > threshold)
             {
-                Debug.LogWarning($"[FloatingOriginMP] Camera still far from origin after reset! " +
+                Debug.LogWarning($"[FloatingOriginMP] World position still far from origin after reset! " +
                                  $"distFromOrigin={distFromOrigin:F0} > threshold={threshold:F0}. " +
                                  $"This may cause rendering issues.");
             }
@@ -444,21 +541,31 @@ namespace ProjectC.World.Streaming
 
         void OnGUI()
         {
-            if (!showDebugHUD || !_initialized) return;
+            if (!showDebugHUD) return;
 
             // HUD в правом верхнем углу
-            float boxHeight = 100 + (_worldRoots.Count * 18);
+            float boxHeight = 120 + (_worldRoots.Count * 18);
             GUILayout.BeginArea(new Rect(Screen.width - 320, 10, 310, boxHeight));
             GUILayout.BeginVertical("box");
 
             GUI.backgroundColor = new Color(0.1f, 0.3f, 0.6f);
-            GUILayout.Label("🗺️ FloatingOriginMP", GUI.skin.box);
+            GUILayout.Label("FloatingOriginMP", GUI.skin.box);
             GUI.backgroundColor = Color.white;
 
             GUILayout.Label($"Offset: {_totalOffset:N0}");
             GUILayout.Label($"Shifts: {_shiftCount}");
             GUILayout.Label($"Roots: {_worldRoots.Count}");
-            GUILayout.Label($"Cam: {_camera.transform.position:F0}");
+            // ИСПРАВЛЕНО: используем GetWorldPosition() для безопасного отображения
+            GUILayout.Label($"Pos: {GetWorldPosition():F0}");
+            GUILayout.Label($"Init: {_initialized}");
+
+            // Показываем warning если roots не найдены
+            if (_worldRoots.Count == 0)
+            {
+                GUI.backgroundColor = Color.yellow;
+                GUILayout.Label("WARNING: No roots found!", GUI.skin.box);
+                GUI.backgroundColor = Color.white;
+            }
 
             GUILayout.EndVertical();
             GUILayout.EndArea();

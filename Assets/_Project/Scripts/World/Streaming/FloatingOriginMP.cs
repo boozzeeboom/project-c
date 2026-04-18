@@ -282,14 +282,15 @@ namespace ProjectC.World.Streaming
                 if (distToOrigin < threshold * 0.5f)
                 {
                     // Близко к origin — используем позицию напрямую
-                    if (showDebugLogs && Time.frameCount % 120 == 0)
+                    // QUIET: только раз в 10 секунд при showDebugLogs
+                    if (showDebugLogs && Time.frameCount % 600 == 0)
                         Debug.Log($"[FloatingOriginMP] GetWorldPosition: close to origin ({distToOrigin:F0}), using raw position");
                     return positionSource.position;
                 }
                 
                 // Далеко от origin — вычитаем накопленный offset
                 Vector3 truePos = positionSource.position - _totalOffset;
-                if (showDebugLogs && Time.frameCount % 120 == 0)
+                if (showDebugLogs && Time.frameCount % 600 == 0)
                     Debug.Log($"[FloatingOriginMP] GetWorldPosition: far from origin ({distToOrigin:F0}), truePos={truePos:F0}");
                 return truePos;
             }
@@ -474,8 +475,8 @@ namespace ProjectC.World.Streaming
             Vector3 cameraWorldPos = GetWorldPosition();
             float distFromOrigin = cameraWorldPos.magnitude;
             
-            // DEBUG: Логируем каждые 60 кадров чтобы видеть что происходит
-            if (showDebugLogs && Time.frameCount % 120 == 0)
+            // DEBUG: Логируем только при реальном сдвиге или раз в 10 секунд
+            if (showDebugLogs && Time.frameCount % 600 == 0)
             {
                 Debug.Log($"[FloatingOriginMP] Debug: mode={mode}, cameraWorldPos={cameraWorldPos:F0}, dist={distFromOrigin:F0}, threshold={threshold:F0}");
             }
@@ -1042,9 +1043,16 @@ namespace ProjectC.World.Streaming
 
         #region Debug HUD
 
+        // QUIET: счётчик для ограничения логов в OnGUI
+        private int _lastGuiFrame = -1;
+        
         void OnGUI()
         {
             if (!showDebugHUD) return;
+            
+            // Ограничиваем логирование до 1 раза в 30 кадров
+            if (Time.frameCount - _lastGuiFrame < 30) return;
+            _lastGuiFrame = Time.frameCount;
 
             // HUD в правом верхнем углу
             float boxHeight = 120 + (_worldRoots.Count * 18);

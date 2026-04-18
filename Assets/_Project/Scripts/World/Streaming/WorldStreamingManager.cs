@@ -147,6 +147,7 @@ namespace ProjectC.World
         /// </summary>
         private void OnChunkLoadedHandler(ChunkId chunkId)
         {
+            // IMPORTANT: всегда логируем - это ключевое событие для отладки
             Debug.Log($"[WorldStreamingManager] Chunk loaded: {chunkId.GridX},{chunkId.GridZ}");
             
             // Обновляем пиковую статистику
@@ -162,6 +163,7 @@ namespace ProjectC.World
         /// </summary>
         private void OnChunkUnloadedHandler(ChunkId chunkId)
         {
+            // IMPORTANT: всегда логируем - это ключевое событие для отладки
             Debug.Log($"[WorldStreamingManager] Chunk unloaded: {chunkId.GridX},{chunkId.GridZ}");
         }
         

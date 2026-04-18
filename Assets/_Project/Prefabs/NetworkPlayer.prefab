@@ -121,7 +121,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::ProjectC.Player.NetworkPlayer
   ShowTopMostFoldoutHeaderGroup: 1
-  walkSpeed: 50000
+  walkSpeed: 5
   runSpeed: 10
   rotationSpeed: 12
   jumpForce: 8
@@ -129,6 +129,8 @@ MonoBehaviour:
   cameraPrefab: {fileID: 0}
   boardDistance: 5
   pickupRange: 3
+  _playerChunkTracker: {fileID: 0}
+  chunkTrackerUpdateInterval: 0.25
   positionCorrectionThreshold: 0.5
   positionCorrectionSpeed: 10
 --- !u!143 &-8638653109892984551

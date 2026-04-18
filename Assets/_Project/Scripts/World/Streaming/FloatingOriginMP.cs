@@ -326,8 +326,22 @@ namespace ProjectC.World.Streaming
             // FIX (I1-001 REVISED): Проверка близости к origin
             // Если positionSource близко к origin (< threshold * 0.5), 
             // значит он уже локальный и НЕ включает _totalOffset
+            // 
+            // ITERATION 3.6 FIX: В режиме ServerAuthority positionSource.position УЖЕ
+            // смещён (через ApplyServerShift), поэтому используем positionSource.position
+            // напрямую как "истинную" позицию без вычитания _totalOffset.
+            // В режиме Local/ServerSynced вычитаем _totalOffset.
             if (positionSource != null)
             {
+                if (mode == OriginMode.ServerAuthority)
+                {
+                    // ServerAuthority: positionSource уже смещён, используем напрямую
+                    if (showDebugLogs && Time.frameCount % 600 == 0)
+                        Debug.Log($"[FloatingOriginMP] GetWorldPosition: ServerAuthority, using positionSource.position={positionSource.position:F0}");
+                    return positionSource.position;
+                }
+                
+                // Local/ServerSynced: positionSource может содержать накопленное смещение
                 float distToOrigin = positionSource.position.magnitude;
                 if (distToOrigin < threshold * 0.5f)
                 {
@@ -497,6 +511,18 @@ namespace ProjectC.World.Streaming
 
         void LateUpdate()
         {
+            // ITERATION 3.7 FIX: Полностью пропускаем LateUpdate в ServerAuthority режиме!
+            // В ServerAuthority управление сдвигом осуществляется из:
+            // 1. PlayerChunkTracker.FixedUpdate() — вызывает OnWorldShifted event
+            // 2. FloatingOriginMP.RequestWorldShiftRpc() — серверный RPC
+            // LateUpdate НЕ должен проверять threshold и вызывать ApplyServerShift(),
+            // потому что positionSource (камера на TradeZones) НЕ сдвигается и остаётся
+            // на (150000, 500, 150000), что вызывает бесконечный цикл сдвигов!
+            if (mode == OriginMode.ServerAuthority)
+            {
+                return;
+            }
+            
             // Если roots не найдены - НЕ сдвигаем!
             if (!_initialized || _worldRoots.Count == 0)
             {

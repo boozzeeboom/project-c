@@ -1182,7 +1182,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 1161926159966955946, guid: 224427a7f796e5b448f07ed8c2a1469b, type: 3}
       propertyPath: walkSpeed
-      value: 50000
+      value: 5
       objectReference: {fileID: 0}
     - target: {fileID: 1161926159966955946, guid: 224427a7f796e5b448f07ed8c2a1469b, type: 3}
       propertyPath: cameraPrefab

@@ -212,19 +212,41 @@ namespace ProjectC.World.Streaming
         /// - < threshold * 0.5: ChunkLoader управляет (local coordinates)
         /// - > threshold: FloatingOrigin управляет (world shift)
         /// 
-        /// Используется другими системами (например, ChunkLoader) для определения
-        /// когда нужно передать управление FloatingOriginMP.
+        /// Используется другими системами (например, NetworkPlayer.UpdatePlayerChunkTracker()) 
+        /// для определения когда нужно запросить сдвиг мира.
+        /// 
+        /// ВАЖНО: ИСПОЛЬЗУЕМ transform.position напрямую!
+        /// ПРОБЛЕМА: GetWorldPosition() возвращает позицию камеры на TradeZones, которая НЕ сдвигается.
+        /// В ServerAuthority режиме камера остаётся на (150000, 500, 150000) даже после сдвига мира!
+        /// РЕШЕНИЕ: NetworkPlayer.transform.position — это правильная позиция потому что 
+        /// игрок — дочерний TradeZones, и его позиция смещается вместе с TradeZones.parent.
         /// </summary>
-        public bool ShouldUseFloatingOrigin()
+        public bool ShouldUseFloatingOrigin(Vector3 playerPosition)
         {
-            if (positionSource == null)
+            // ITERATION 3.9 FIX: Используем РАССТОЯНИЕ ОТ TRADEZONES вместо magnitude!
+            // После сдвига мира TradeZones находится на (0,0,0), 
+            // поэтому magnitude будет ~= позиции игрока.
+            // НО если TradeZones был на большой позиции — magnitude будет неправильным!
+            
+            // Находим TradeZones для расчёта расстояния
+            GameObject tradeZones = GameObject.Find("TradeZones");
+            if (tradeZones != null)
             {
-                // Fallback: ищем любую позицию игрока
-                Vector3 pos = GetWorldPosition();
-                return pos.magnitude > threshold;
+                float distance = Vector3.Distance(playerPosition, tradeZones.transform.position);
+                return distance > threshold;
             }
             
-            return positionSource.position.magnitude > threshold;
+            // Fallback: используем magnitude если TradeZones не найден
+            return playerPosition.magnitude > threshold;
+        }
+        
+        /// <summary>
+        /// Получить threshold для проверки расстояния.
+        /// Используется NetworkPlayer для локальной проверки.
+        /// </summary>
+        public float GetDistanceThreshold()
+        {
+            return threshold;
         }
 
         /// <summary>
@@ -322,24 +344,59 @@ namespace ProjectC.World.Streaming
                 }
             }
 
+            // ITERATION 3.9 FIX: В ServerAuthority режиме выбираем игрока ближе всего к TradeZones
+            // После сдвига TradeZones находится на (0,0,0), поэтому это правильный референс
+            if (mode == OriginMode.ServerAuthority)
+            {
+                // Находим TradeZones для расчёта расстояния
+                GameObject tradeZones = GameObject.Find("TradeZones");
+                Vector3 tradeZonesPos = tradeZones != null ? tradeZones.transform.position : Vector3.zero;
+                
+                var serverAuthPlayers = FindObjectsByType<Unity.Netcode.NetworkObject>();
+                Transform bestPlayer = null;
+                float bestDistance = float.MaxValue;
+                
+                foreach (var netObj in serverAuthPlayers)
+                {
+                    if (netObj.name.Contains("NetworkPlayer") && netObj.IsOwner)
+                    {
+                        Vector3 pos = netObj.transform.position;
+                        
+                        // Вычисляем расстояние от TradeZones
+                        float distance = Vector3.Distance(pos, tradeZonesPos);
+                        
+                        // Выбираем игрока который ближе всего к TradeZones
+                        if (distance < bestDistance)
+                        {
+                            bestDistance = distance;
+                            bestPlayer = netObj.transform;
+                        }
+                    }
+                }
+                
+                if (bestPlayer != null)
+                {
+                    if (showDebugLogs && Time.frameCount % 600 == 0)
+                        Debug.Log($"[FloatingOriginMP] GetWorldPosition: ServerAuthority, using player near TZ dist={bestDistance:F0}, pos={bestPlayer.position:F0}");
+                    return bestPlayer.position;
+                }
+                
+                // Fallback: тег Player
+                GameObject authPlayerByTag = GameObject.FindGameObjectWithTag("Player");
+                if (authPlayerByTag != null)
+                {
+                    if (showDebugLogs && Time.frameCount % 600 == 0)
+                        Debug.Log($"[FloatingOriginMP] GetWorldPosition: ServerAuthority, using Player tag={authPlayerByTag.transform.position:F0}");
+                    return authPlayerByTag.transform.position;
+                }
+            }
+            
             // 1. Явный источник (самый приоритетный)
             // FIX (I1-001 REVISED): Проверка близости к origin
             // Если positionSource близко к origin (< threshold * 0.5), 
             // значит он уже локальный и НЕ включает _totalOffset
-            // 
-            // ITERATION 3.6 FIX: В режиме ServerAuthority positionSource.position УЖЕ
-            // смещён (через ApplyServerShift), поэтому используем positionSource.position
-            // напрямую как "истинную" позицию без вычитания _totalOffset.
-            // В режиме Local/ServerSynced вычитаем _totalOffset.
             if (positionSource != null)
             {
-                if (mode == OriginMode.ServerAuthority)
-                {
-                    // ServerAuthority: positionSource уже смещён, используем напрямую
-                    if (showDebugLogs && Time.frameCount % 600 == 0)
-                        Debug.Log($"[FloatingOriginMP] GetWorldPosition: ServerAuthority, using positionSource.position={positionSource.position:F0}");
-                    return positionSource.position;
-                }
                 
                 // Local/ServerSynced: positionSource может содержать накопленное смещение
                 float distToOrigin = positionSource.position.magnitude;
@@ -560,33 +617,13 @@ namespace ProjectC.World.Streaming
             // Проверяем нужно ли сдвигать
             if (distFromOrigin > threshold)
             {
-                if (mode == OriginMode.ServerAuthority)
-                {
-                    // ServerAuthority: отправляем RPC серверу (сервер применит сдвиг и разошлёт всем)
-                    if (IsServer)
-                    {
-                        // Мы на сервере — применяем сдвиг напрямую
-                        ApplyServerShift(cameraWorldPos);
-                    }
-                    else
-                    {
-                        // Мы на клиенте — отправляем запрос серверу
-                        if (showDebugLogs)
-                        {
-                            Debug.Log($"[FloatingOriginMP] LateUpdate: CLIENT sending RequestWorldShiftRpc, cameraWorldPos={cameraWorldPos:F0}");
-                        }
-                        RequestWorldShiftRpc(cameraWorldPos);
-                    }
-                    
-                    // Cooldown чтобы не спамить RPC
-                    _lastShiftTime = Time.time;
-                }
-                else if (mode == OriginMode.Local)
+                if (mode == OriginMode.Local)
                 {
                     // Local: применяем сдвиг локально
                     ApplyLocalShift(cameraWorldPos);
                 }
-                // ServerSynced: ждём сдвига от сервера через RPC
+                // ServerAuthority и ServerSynced: сдвиг управляется из NetworkPlayer.UpdatePlayerChunkTracker()
+                // через RequestWorldShiftRpc() — это исключает бесконечный рост offset
             }
         }
 
@@ -667,8 +704,20 @@ namespace ProjectC.World.Streaming
                 return;
             }
             
-            // Проверяем threshold
-            float dist = cameraPos.magnitude;
+            // ITERATION 3.9 FIX: Используем РАССТОЯНИЕ ОТ TRADEZONES вместо magnitude
+            GameObject tradeZones = GameObject.Find("TradeZones");
+            float dist;
+            if (tradeZones != null)
+            {
+                dist = Vector3.Distance(cameraPos, tradeZones.transform.position);
+                if (showDebugLogs)
+                    Debug.Log($"[FloatingOriginMP] RequestWorldShiftRpc: TradeZones at {tradeZones.transform.position:F0}, dist from TZ={dist:F0}");
+            }
+            else
+            {
+                dist = cameraPos.magnitude;
+            }
+            
             if (dist <= threshold)
             {
                 Debug.Log($"[FloatingOriginMP] RequestWorldShiftRpc: dist={dist:F0} <= threshold={threshold:F0}, ignoring");

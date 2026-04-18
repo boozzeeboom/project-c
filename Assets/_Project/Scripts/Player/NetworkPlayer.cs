@@ -464,6 +464,23 @@ namespace ProjectC.Player
             // Вызываем обновление позиции в PlayerChunkTracker
             // OwnerClientId — это ID клиента который владеет этим NetworkPlayer
             _playerChunkTracker.ForceUpdatePlayerChunk(OwnerClientId, worldPosition);
+            
+            // ITERATION 3.8 FIX: Проверяем необходимость сдвига мира используя transform.position напрямую
+            // ПРОБЛЕМА: GetWorldPosition() возвращает неправильную позицию (камера на TradeZones)
+            // РЕШЕНИЕ: Используем transform.position игрока напрямую — это "локальная" позиция
+            // которая уже правильно смещается вместе с TradeZones.parent.position
+            if (floatingOrigin != null)
+            {
+                // Используем transform.position напрямую — это позиция игрока относительно TradeZones
+                // Она уже "локальная" потому что игрок — дочерний TradeZones
+                // ShouldUseFloatingOrigin() теперь принимает playerPosition как параметр
+                if (floatingOrigin.ShouldUseFloatingOrigin(transform.position))
+                {
+                    // ITERATION 3.8 FIX: Вызываем RequestWorldShiftRpc с transform.position
+                    // Это правильная позиция — игрок сдвигается вместе с TradeZones
+                    floatingOrigin.RequestWorldShiftRpc(transform.position);
+                }
+            }
         }
 
         private void ProcessMovement(Vector2 moveInput, bool jump, bool run)

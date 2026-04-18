@@ -123,6 +123,46 @@ namespace ProjectC.World
             
             // Auto-find компоненты если не назначены
             AutoFindComponents();
+            
+            // FIX I2-001: Подписка на ChunkLoader events
+            SubscribeToChunkLoaderEvents();
+        }
+        
+        /// <summary>
+        /// FIX I2-001: Подписаться на события ChunkLoader для получения обратной связи.
+        /// </summary>
+        private void SubscribeToChunkLoaderEvents()
+        {
+            if (chunkLoader != null)
+            {
+                chunkLoader.OnChunkLoaded += OnChunkLoadedHandler;
+                chunkLoader.OnChunkUnloaded += OnChunkUnloadedHandler;
+                Debug.Log("[WorldStreamingManager] Subscribed to ChunkLoader events");
+            }
+        }
+        
+        /// <summary>
+        /// FIX I2-001: Обработчик события загрузки чанка.
+        /// Вызывается ChunkLoader после завершения загрузки чанка.
+        /// </summary>
+        private void OnChunkLoadedHandler(ChunkId chunkId)
+        {
+            Debug.Log($"[WorldStreamingManager] Chunk loaded: {chunkId.GridX},{chunkId.GridZ}");
+            
+            // Обновляем пиковую статистику
+            if (_loadedChunks.Count > _peakLoadedChunks)
+            {
+                _peakLoadedChunks = _loadedChunks.Count;
+            }
+        }
+        
+        /// <summary>
+        /// FIX I2-001: Обработчик события выгрузки чанка.
+        /// Вызывается ChunkLoader после завершения выгрузки чанка.
+        /// </summary>
+        private void OnChunkUnloadedHandler(ChunkId chunkId)
+        {
+            Debug.Log($"[WorldStreamingManager] Chunk unloaded: {chunkId.GridX},{chunkId.GridZ}");
         }
         
         private void Start()
@@ -151,9 +191,24 @@ namespace ProjectC.World
         
         private void OnDestroy()
         {
+            // FIX I2-001: Отписываемся от событий ChunkLoader
+            UnsubscribeFromChunkLoaderEvents();
+            
             if (_instance == this)
             {
                 _instance = null;
+            }
+        }
+        
+        /// <summary>
+        /// FIX I2-001: Отписаться от событий ChunkLoader при уничтожении.
+        /// </summary>
+        private void UnsubscribeFromChunkLoaderEvents()
+        {
+            if (chunkLoader != null)
+            {
+                chunkLoader.OnChunkLoaded -= OnChunkLoadedHandler;
+                chunkLoader.OnChunkUnloaded -= OnChunkUnloadedHandler;
             }
         }
         

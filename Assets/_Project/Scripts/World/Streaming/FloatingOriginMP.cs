@@ -195,6 +195,63 @@ namespace ProjectC.World.Streaming
 
         #endregion
 
+        #region Zone Responsibility Methods (FIX I1-002)
+
+        /// <summary>
+        /// FIX (I1-002): Определяет должен ли использоваться FloatingOrigin.
+        /// 
+        /// ЗОНЫ ОТВЕТСТВЕННОСТИ:
+        /// - < threshold * 0.5: ChunkLoader управляет (local coordinates)
+        /// - > threshold: FloatingOrigin управляет (world shift)
+        /// 
+        /// Используется другими системами (например, ChunkLoader) для определения
+        /// когда нужно передать управление FloatingOriginMP.
+        /// </summary>
+        public bool ShouldUseFloatingOrigin()
+        {
+            if (positionSource == null)
+            {
+                // Fallback: ищем любую позицию игрока
+                Vector3 pos = GetWorldPosition();
+                return pos.magnitude > threshold;
+            }
+            
+            return positionSource.position.magnitude > threshold;
+        }
+
+        /// <summary>
+        /// FIX (I1-003): Проверяет что positionSource теперь близко к origin
+        /// после сдвига мира. Используется для определения что сдвиг сработал корректно.
+        /// </summary>
+        public bool IsNearOrigin()
+        {
+            Vector3 pos = GetWorldPosition();
+            return pos.magnitude < threshold * 0.5f;
+        }
+
+        #endregion
+
+        #region Synchronization Events (FIX I1-003)
+
+        /// <summary>
+        /// FIX (I1-003): Событие вызывается КОГДА Floating Origin НАЧИНАЕТ сдвиг мира.
+        /// Подписчики (например, ChunkLoader) могут приостановить свою работу во время сдвига.
+        /// </summary>
+        public System.Action<Vector3> OnFloatingOriginTriggered;
+
+        /// <summary>
+        /// FIX (I1-003): Событие вызывается КОГДА Floating Origin ЗАКАНЧИВАЕТ сдвиг мира.
+        /// После этого подписчики (например, ChunkLoader) могут продолжить работу.
+        /// </summary>
+        public System.Action OnFloatingOriginCleared;
+
+        /// <summary>
+        /// FIX (I1-003): Проверяет активно ли сейчас Floating Origin (мир сдвинут).
+        /// </summary>
+        public bool IsFloatingOriginActive => _totalOffset.magnitude > 100f;
+
+        #endregion
+
         #region Position Source (Null-Safe)
 
         /// <summary>
@@ -216,22 +273,24 @@ namespace ProjectC.World.Streaming
         private Vector3 GetWorldPosition()
         {
             // 1. Явный источник (самый приоритетный)
-            // ВАЖНО: Если positionSource сдвигается вместе с миром,
-            // нужно вычитать totalOffset чтобы получить "истинную" позицию
+            // FIX (I1-001 REVISED): Проверка близости к origin
+            // Если positionSource близко к origin (< threshold * 0.5), 
+            // значит он уже локальный и НЕ включает _totalOffset
             if (positionSource != null)
             {
-                // ПРОВЕРКА: positionSource должен быть НЕ дочерним WorldRoot!
-                // Если он дочерний — его позиция уже включает _totalOffset!
-                bool isUnderWorldRoot = IsUnderWorldRoot(positionSource);
-                if (isUnderWorldRoot)
+                float distToOrigin = positionSource.position.magnitude;
+                if (distToOrigin < threshold * 0.5f)
                 {
-                    Debug.LogError($"[FloatingOriginMP] GetWorldPosition: positionSource '{positionSource.name}' IS UNDER WorldRoot! Using raw position!");
+                    // Близко к origin — используем позицию напрямую
+                    if (showDebugLogs && Time.frameCount % 120 == 0)
+                        Debug.Log($"[FloatingOriginMP] GetWorldPosition: close to origin ({distToOrigin:F0}), using raw position");
                     return positionSource.position;
                 }
                 
+                // Далеко от origin — вычитаем накопленный offset
                 Vector3 truePos = positionSource.position - _totalOffset;
                 if (showDebugLogs && Time.frameCount % 120 == 0)
-                    Debug.Log($"[FloatingOriginMP] GetWorldPosition: positionSource={positionSource.position:F0}, totalOffset={_totalOffset:F0}, truePos={truePos:F0}");
+                    Debug.Log($"[FloatingOriginMP] GetWorldPosition: far from origin ({distToOrigin:F0}), truePos={truePos:F0}");
                 return truePos;
             }
 

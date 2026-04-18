@@ -336,6 +336,9 @@ namespace ProjectC.World.Streaming
         /// </summary>
         public void ForceUpdatePlayerChunk(ulong clientId, Vector3 position)
         {
+            // I3.14 DEBUG: Логируем входные данные
+            Debug.Log($"[PlayerChunkTracker] ForceUpdatePlayerChunk: clientId={clientId}, position={position}");
+            
             // ITERATION 3 FIX: Hysteresis для предотвращения oscillation
             // Проверяем близость к границе чанка
             float boundaryProximityThreshold = 50f; // units от границы

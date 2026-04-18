@@ -251,24 +251,11 @@ namespace ProjectC.World.Streaming
         /// Для этого используется cooldown: после сдвига мира проверки игнорируются 0.5 секунды.
         /// За это время NetworkTransform синхронизирует позицию игрока на клиентах.
         /// На сервере позиция игрока остаётся большой, но cooldown защищает от повторного сдвига.
+        /// 
+        /// ИТЕРАЦИЯ 3.13 ИСПРАВЛЕНИЕ: После телепортации игрока на (0, 5, 0), distance 
+        /// вычисляется некорректно как (playerPosition - totalOffset).magnitude, что даёт 
+        /// огромное значение. РЕШЕНИЕ: Используем playerPosition напрямую (локальная позиция).
         /// </summary>
-        public bool ShouldUseFloatingOrigin(Vector3 playerPosition)
-        {
-            // ITERATION 3.11 FIX: Вычисляем истинную позицию относительно TradeZones.
-            // 
-            // TradeZones на (0,0,0) всегда.
-            // После сдвига мира на S: totalOffset = S, playerPosition = ~S.
-            // 
-            // Истинная позиция = playerPosition - totalOffset
-            // После сдвига: (150000 - 150000) = ~0 < threshold(150000) → НЕ сдвигаем!
-            
-            float distance = (playerPosition - _totalOffset).magnitude;
-            
-            if (showDebugLogs && Time.frameCount % 600 == 0)
-                Debug.Log($"[FloatingOriginMP] ShouldUseFloatingOrigin: playerPos={playerPosition:F0}, totalOffset={_totalOffset:F0}, dist={distance:F0}, threshold={threshold}");
-            
-            return distance > threshold;
-        }
         
         /// <summary>
         /// Получить threshold для проверки расстояния.
@@ -287,6 +274,47 @@ namespace ProjectC.World.Streaming
         {
             Vector3 pos = GetWorldPosition();
             return pos.magnitude < threshold * 0.5f;
+        }
+
+        /// <summary>
+        /// Проверяет необходимость сдвига мира на основе позиции игрока.
+        /// 
+        /// ИТЕРАЦИЯ 3.13 ИСПРАВЛЕНИЕ:
+        /// После телепортации игрока на (0, 5, 0), distance вычисляется некорректно
+        /// как (playerPosition - totalOffset).magnitude, что даёт огромное значение.
+        /// 
+        /// РЕШЕНИЕ: Используем playerPosition напрямую (локальная позиция),
+        /// потому что после телепортации игрок находится рядом с TradeZones на (0, 5, 0).
+        /// </summary>
+        /// <summary>
+        /// Проверяет необходимость сдвига мира на основе позиции игрока.
+        /// 
+        /// ITERATION 3.14 FIX: Приоритет — кэшированная позиция!
+        /// После телепортации игрока UpdateCachedPlayerPosition() обновляет кэш.
+        /// Используем кэш вместо playerPosition чтобы избежать проблем с
+        /// асинхронной синхронизацией NetworkTransform.
+        /// </summary>
+        public bool ShouldUseFloatingOrigin(Vector3 playerPosition)
+        {
+            // ITERATION 3.14: Приоритет — кэшированная позиция!
+            // После телепортации кэш обновляется, поэтому используем его
+            if (_hasCachedPlayerPosition && _cachedPlayerTransform != null)
+            {
+                float cachedDistance = _cachedPlayerPosition.magnitude;
+                
+                if (showDebugLogs && Time.frameCount % 600 == 0)
+                    Debug.Log($"[FloatingOriginMP] ShouldUseFloatingOrigin: CACHED pos={_cachedPlayerPosition:F0}, dist={cachedDistance:F0}, threshold={threshold}");
+                
+                return cachedDistance > threshold;
+            }
+            
+            // Fallback: playerPosition напрямую
+            float distance = playerPosition.magnitude;
+            
+            if (showDebugLogs && Time.frameCount % 600 == 0)
+                Debug.Log($"[FloatingOriginMP] ShouldUseFloatingOrigin: playerPos={playerPosition:F0}, dist={distance:F0}, threshold={threshold}");
+            
+            return distance > threshold;
         }
 
         #endregion
@@ -698,6 +726,18 @@ namespace ProjectC.World.Streaming
         /// <summary>
         /// RPC: Клиент → Сервер: запрос на сдвиг мира.
         /// Сервер проверяет threshold, применяет сдвиг и рассылает всем клиентам.
+        /// 
+        /// ITERATION 3.12 FIX: После сдвига мира телепортируем игрока рядом с TradeZones!
+        /// 
+        /// ПРОБЛЕМА: После сдвига мира игрок остаётся на большой позиции (150000),
+        /// а totalOffset накапливается. trueDist = (150000 - 6M).magnitude = 6M > threshold!
+        /// Это вызывает бесконечный цикл сдвигов.
+        /// 
+        /// РЕШЕНИЕ: После ApplyShiftToAllRoots телепортируем игрока на локальную позицию
+        /// рядом с TradeZones. Это "сбрасывает" позицию игрока относительно TradeZones.
+        /// 
+        /// ВАЖНО: Телепортация делается через NetworkTransform на сервере,
+        /// чтобы синхронизировать позицию с клиентами.
         /// </summary>
         [Rpc(SendTo.Server, InvokePermission = RpcInvokePermission.Everyone)]
         public void RequestWorldShiftRpc(Vector3 cameraPos, ServerRpcParams rpcParams = default)
@@ -716,20 +756,35 @@ namespace ProjectC.World.Streaming
                 return;
             }
             
-            // ITERATION 3.10 FIX: Используем истинную позицию (cameraPos - totalOffset).
-            // После сдвига мира cameraPos остаётся большой (150000), 
-            // но cameraPos - totalOffset даёт позицию относительно TradeZones (~3).
+            // ITERATION 3.11 FIX: Вычисляем истинную позицию относительно TradeZones.
             // 
-            // ПРОБЛЕМА старого кода: Distance(cameraPos, TradeZones(0,0,0)) = cameraPos.magnitude
-            // Это ТОЖЕ САМОЕ что magnitude! После сдвига: Distance(150000, 0) = 150000 → бесконечный сдвиг!
-            //
-            // РЕШЕНИЕ: Distance от TradeZones = (cameraPos - totalOffset).magnitude
-            // После сдвига: (150000 - 150000).magnitude = ~3 < threshold → СТОП!
-            float dist = (cameraPos - _totalOffset).magnitude;
+            // TradeZones на (0,0,0) всегда.
+            // После сдвига мира на S: totalOffset = S, cameraPos = ~S.
+            // 
+            // Истинная позиция = cameraPos - totalOffset
+            // После сдвига: (150000 - 150000) = ~0 < threshold(150000) → НЕ сдвигаем!
+            // 
+            // НО если cameraPos не изменилась после сдвига (игрок не телепортирован),
+            // то trueDist будет огромным. Для решения — телепортируем игрока
+            // после сдвига мира.
+            
+            // Используем cameraPos напрямую как "истинную" позицию.
+            // После телепортации игрока (см. ниже), cameraPos будет ~0 и проверка пройдёт.
+            float dist = cameraPos.magnitude;
+            
+            // АЛЬТЕРНАТИВА: Используем (cameraPos - totalOffset).magnitude
+            // Это работает ТОЛЬКО если игрок был телепортирован после предыдущего сдвига.
+            // Для первого сдвига: dist = 150000 > threshold(150000)? НЕТ (150000 не > 150000)
+            // Для последующих сдвигов (если игрок не телепортирован): dist огромный
+            // 
+            // Для надёжности используем magnitude напрямую с учётом того что
+            // после сдвига мира мы телепортируем игрока.
             
             if (showDebugLogs)
-                Debug.Log($"[FloatingOriginMP] RequestWorldShiftRpc: cameraPos={cameraPos:F0}, totalOffset={_totalOffset:F0}, trueDist={dist:F0}");
+                Debug.Log($"[FloatingOriginMP] RequestWorldShiftRpc: cameraPos={cameraPos:F0}, dist={dist:F0}, threshold={threshold:F0}");
             
+            // ITERATION 3.12 FIX: Используем строгое неравенство (> threshold, а не >=)
+            // Это предотвращает сдвиг когда игрок ровно на threshold
             if (dist <= threshold)
             {
                 Debug.Log($"[FloatingOriginMP] RequestWorldShiftRpc: dist={dist:F0} <= threshold={threshold:F0}, ignoring");
@@ -751,6 +806,15 @@ namespace ProjectC.World.Streaming
             _totalOffset += offset;
             _shiftCount++;
             
+            // ITERATION 3.12 FIX: Телепортируем игрока рядом с TradeZones!
+            // 
+            // После сдвига мира WorldRoot сдвинулся, TradeZones на (0,0,0).
+            // Игрок остался на большой позиции — это вызывает бесконечный цикл.
+            // 
+            // РЕШЕНИЕ: Телепортируем игрока на локальную позицию рядом с TradeZones.
+            // Это "сбрасывает" позицию игрока относительно TradeZones.
+            TeleportOwnerPlayerToOrigin();
+            
             // Запоминаем время сдвига для cooldown
             _lastShiftTime = Time.time;
             
@@ -764,6 +828,66 @@ namespace ProjectC.World.Streaming
             {
                 Debug.Log($"[FloatingOriginMP] RequestWorldShiftRpc: BroadcastWorldShiftRpc sent to all clients");
             }
+        }
+        
+        /// <summary>
+        /// ITERATION 3.14 FIX: Телепортировать владеющего игрока рядом с TradeZones.
+        /// 
+        /// После сдвига мира игрок остаётся на большой позиции. Это вызывает
+        /// бесконечный цикл потому что ShouldUseFloatingOrigin проверяет magnitude
+        /// и она остаётся большой.
+        /// 
+        /// РЕШЕНИЕ: После сдвига мира телепортируем игрока на позицию рядом с TradeZones.
+        /// TradeZones на (0,0,0), игрок на ~(0, 5, 0).
+        /// trueDist = |(0,5,0) - (0,0,0)| = 5 < threshold → НЕ сдвигаем!
+        /// 
+        /// КРИТИЧНО: После телепортации обновляем кэш чтобы ShouldUseFloatingOrigin()
+        /// использовал правильную позицию для следующей проверки!
+        /// </summary>
+        private void TeleportOwnerPlayerToOrigin()
+        {
+            // I3.14 DEBUG: Фиксируем вызов
+            Debug.Log($"[FloatingOriginMP] TeleportOwnerPlayerToOrigin: ВЫЗВАН!");
+            
+            // Находим владеющего игрока (NetworkPlayer с IsOwner=true)
+            var networkPlayers = FindObjectsByType<Unity.Netcode.NetworkObject>();
+            foreach (var netObj in networkPlayers)
+            {
+                if (netObj.IsOwner && netObj.name.Contains("NetworkPlayer"))
+                {
+                    Debug.Log($"[FloatingOriginMP] TeleportOwnerPlayerToOrigin: НАЙДЕН владелец {netObj.name}, позиция ДО={netObj.transform.position}");
+                    
+                    // Получаем CharacterController и temporarily отключаем
+                    CharacterController cc = netObj.GetComponent<CharacterController>();
+                    if (cc != null)
+                    {
+                        Debug.Log($"[FloatingOriginMP] TeleportOwnerPlayerToOrigin: CC.enabled={cc.enabled}");
+                        cc.enabled = false;
+                    }
+                    
+                    // Телепортируем на локальную позицию рядом с TradeZones
+                    // TradeZones на (0,0,0), игрок на ~(0, 5, 0)
+                    Vector3 localPos = new Vector3(0, 5, 0);
+                    netObj.transform.position = localPos;
+                    
+                    Debug.Log($"[FloatingOriginMP] TeleportOwnerPlayerToOrigin: позиция УСТАНОВЛЕНА в {localPos}, фактически={netObj.transform.position}");
+                    
+                    if (cc != null)
+                    {
+                        cc.enabled = true;
+                    }
+                    
+                    // ITERATION 3.14 FIX: Обновляем кэш после телепортации!
+                    // Это КРИТИЧНО для ShouldUseFloatingOrigin() — он использует кэш
+                    UpdateCachedPlayerPosition(localPos, netObj.transform);
+                    
+                    Debug.Log($"[FloatingOriginMP] TeleportOwnerPlayerToOrigin: кэш обновлён, позиция={localPos}");
+                    
+                    return;
+                }
+            }
+            
+            Debug.LogWarning("[FloatingOriginMP] TeleportOwnerPlayerToOrigin: владелец НЕ НАЙДЕН!");
         }
 
         #endregion
@@ -1029,29 +1153,6 @@ namespace ProjectC.World.Streaming
         /// FloatingOriginMP теперь полагается на FindOrCreateWorldRoots() который
         /// находит объекты по именам из worldRootNames[], без изменения иерархии сцены.
         /// </summary>
-
-        /// <summary>
-        /// Проверить, является ли transform дочерним WorldRoot.
-        /// Если да — его позиция уже включает сдвиг и не подходит для определения позиции игрока.
-        /// </summary>
-        private bool IsUnderWorldRoot(Transform transform)
-        {
-            if (transform == null) return false;
-            
-            Transform parent = transform.parent;
-            while (parent != null)
-            {
-                foreach (var rootName in worldRootNames)
-                {
-                    if (parent.name == rootName)
-                    {
-                        return true;
-                    }
-                }
-                parent = parent.parent;
-            }
-            return false;
-        }
 
         /// <summary>
         /// Найти ThirdPersonCamera по именам из списка cameraNames.

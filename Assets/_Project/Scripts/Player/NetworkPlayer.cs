@@ -378,6 +378,12 @@ namespace ProjectC.Player
             // Плавная коррекция позиции только для локального игрока (Owner)
             if (!IsOwner || _inShip) return;
             
+            // I3.14 DEBUG: Проверяем _hasServerPosition
+            if (_hasServerPosition)
+            {
+                Debug.Log($"[NetworkPlayer] FixedUpdate: _hasServerPosition=TRUE, serverPos={_serverPosition}, transform.pos={transform.position}");
+            }
+            
             // Уменьшаем cooldown
             if (_worldShiftCooldown > 0)
             {
@@ -463,6 +469,9 @@ namespace ProjectC.Player
             
             // Вызываем обновление позиции в PlayerChunkTracker
             // OwnerClientId — это ID клиента который владеет этим NetworkPlayer
+            
+            // I3.14 DEBUG: Логируем позицию перед вызовом ForceUpdatePlayerChunk
+            Debug.Log($"[NetworkPlayer] ForceUpdatePlayerChunk: worldPosition={worldPosition}, transform.position={transform.position}");
             _playerChunkTracker.ForceUpdatePlayerChunk(OwnerClientId, worldPosition);
             
             // ITERATION 3.8 FIX: Проверяем необходимость сдвига мира используя transform.position напрямую

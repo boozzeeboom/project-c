@@ -302,18 +302,23 @@ namespace ProjectC.World.Streaming
         /// </summary>
         public Vector3 GetWorldPosition()
         {
-            // 0. ITERATION 3.1 FIX: Используем кэшированную позицию если доступна
-            // Это самый надёжный источник — передаётся напрямую из NetworkPlayer
-            if (_hasCachedPlayerPosition && _cachedPlayerTransform != null)
+            // ITERATION 3.5 FIX: В ServerAuthority режиме НЕ используем кэш — он устаревает после сдвига
+            // positionSource уже содержит правильную позицию без необходимости кэширования
+            if (mode != OriginMode.ServerAuthority)
             {
-                // Проверяем что Transform всё ещё валиден
-                if (_cachedPlayerTransform != null)
+                // 0. ITERATION 3.1 FIX: Используем кэшированную позицию если доступна
+                // Это самый надёжный источник — передаётся напрямую из NetworkPlayer
+                if (_hasCachedPlayerPosition && _cachedPlayerTransform != null)
                 {
-                    return _cachedPlayerPosition;
-                }
-                else
-                {
-                    _hasCachedPlayerPosition = false;
+                    // Проверяем что Transform всё ещё валиден
+                    if (_cachedPlayerTransform != null)
+                    {
+                        return _cachedPlayerPosition;
+                    }
+                    else
+                    {
+                        _hasCachedPlayerPosition = false;
+                    }
                 }
             }
 
@@ -691,6 +696,11 @@ namespace ProjectC.World.Streaming
                 return;
             }
 
+            // ITERATION 3.5 FIX: Сбросить кэш позиции
+            _hasCachedPlayerPosition = false;
+            _cachedPlayerPosition = Vector3.zero;
+            _cachedPlayerTransform = null;
+
             // ИСПРАВЛЕНО: используем GetWorldPosition() вместо _camera напрямую
             Vector3 worldPos = GetWorldPosition();
             Vector3 offset = RoundShift(worldPos);
@@ -752,6 +762,12 @@ namespace ProjectC.World.Streaming
                 return;
             }
 
+            // ITERATION 3.5 FIX: Сбросить кэш позиции после сдвига мира
+            // Кэш устаревает потому что мир сдвинулся, а позиция игрока в кэше старая
+            _hasCachedPlayerPosition = false;
+            _cachedPlayerPosition = Vector3.zero;
+            _cachedPlayerTransform = null;
+
             ApplyShiftToAllRoots(offset);
 
             _totalOffset += offset;
@@ -780,6 +796,11 @@ namespace ProjectC.World.Streaming
         /// </summary>
         private void ApplyServerShift(Vector3 cameraWorldPos)
         {
+            // ITERATION 3.5 FIX: Сбросить кэш позиции
+            _hasCachedPlayerPosition = false;
+            _cachedPlayerPosition = Vector3.zero;
+            _cachedPlayerTransform = null;
+
             // Вычисляем offset с округлением для избежания accumulation errors
             Vector3 offset = RoundShift(cameraWorldPos);
 
@@ -823,6 +844,11 @@ namespace ProjectC.World.Streaming
         /// </summary>
         private void ApplyLocalShift(Vector3 cameraWorldPos)
         {
+            // ITERATION 3.5 FIX: Сбросить кэш позиции
+            _hasCachedPlayerPosition = false;
+            _cachedPlayerPosition = Vector3.zero;
+            _cachedPlayerTransform = null;
+
             // Вычисляем offset с округлением для избежания accumulation errors
             Vector3 offset = RoundShift(cameraWorldPos);
 

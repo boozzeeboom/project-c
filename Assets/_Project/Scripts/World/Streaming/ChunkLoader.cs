@@ -111,10 +111,10 @@ namespace ProjectC.World.Streaming
                 return;
             }
 
-            // Проверка: чанк в процессе fade-out — отменяем выгрузку
+            // Check: chunk in fade-out — cancel unload
             if (chunkFadeTimes.ContainsKey(chunkId))
             {
-                Debug.Log($"[ChunkLoader] Чанк {chunkId} в процессе fade-out, отмена выгрузки.");
+                Debug.Log($"[ChunkLoader] Chunk {chunkId} in fade-out, cancelling unload.");
                 CancelFadeOut(chunkId);
                 return;
             }
@@ -145,7 +145,7 @@ namespace ProjectC.World.Streaming
         {
             if (!loadedChunks.ContainsKey(chunkId))
             {
-                Debug.LogWarning($"[ChunkLoader] Чанк {chunkId} не загружен, невозможно выгрузить.");
+                Debug.Log($"[ChunkLoader] Chunk {chunkId} not loaded, skipping.");
                 return;
             }
 

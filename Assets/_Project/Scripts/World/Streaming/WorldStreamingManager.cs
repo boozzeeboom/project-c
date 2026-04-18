@@ -317,13 +317,36 @@ namespace ProjectC.World
         /// Выгрузить чанк по команде сервера (для multiplayer).
         /// Вызывается из PlayerChunkTracker.UnloadChunkClientRpc().
         /// КЛИЕНТ НЕ ДОЛЖЕН вызывать этот метод самостоятельно!
+        /// 
+        /// I3.4 FIX: Добавлена проверка chunkLoader.IsChunkLoaded() для защиты от RPC reorder.
+        /// Unload RPC может прийти раньше Load RPC по сети.
         /// </summary>
         /// <param name="chunkId">ID чанка для выгрузки</param>
         public void UnloadChunkByServerCommand(ChunkId chunkId)
         {
+            // I3.4 FIX: RPC Reorder protection
+            // Проверяем chunkLoader чтобы избежать выгрузки чанка который ещё загружается
+            // или никогда не был загружен (RPC reorder)
+            if (chunkLoader != null && !chunkLoader.IsChunkLoaded(chunkId))
+            {
+                // Чанк либо ещё загружается, либо никогда не был загружен
+                // В любом случае — пропускаем без ошибки
+                if (_loadedChunks.Contains(chunkId))
+                {
+                    // Мы думали что загружен, но реально нет — RPC reorder
+                    _loadedChunks.Remove(chunkId);
+                    Debug.Log($"[WorldStreamingManager] Chunk {chunkId} RPC reorder detected (Unload before Load).");
+                }
+                else
+                {
+                    Debug.Log($"[WorldStreamingManager] Chunk {chunkId} not loaded, skipping unload (RPC reorder).");
+                }
+                return;
+            }
+            
             if (!_loadedChunks.Contains(chunkId))
             {
-                Debug.Log($"[WorldStreamingManager] Chunk {chunkId} not loaded, skipping unload.");
+                Debug.Log($"[WorldStreamingManager] Chunk {chunkId} not tracked, skipping unload.");
                 return;
             }
             

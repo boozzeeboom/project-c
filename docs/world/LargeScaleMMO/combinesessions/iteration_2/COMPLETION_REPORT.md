@@ -144,11 +144,33 @@ ChunkLoader уже вызывал `OnChunkLoaded?.Invoke()` и `OnChunkUnloaded?
 |----------|--------|
 | WorldStreamingManager подписан на OnChunkLoaded | ✅ |
 | WorldStreamingManager подписан на OnChunkUnloaded | ✅ |
-| Console показывает "Chunk loaded: X,Y" | ⏳ Требует теста |
-| Console показывает "Chunk unloaded: X,Y" | ⏳ Требует теста |
+| Console показывает "Chunk loaded: X,Y" | ✅ Подтверждено (18.04.2026) |
+| Console показывает "Chunk unloaded: X,Y" | ✅ Подтверждено (18.04.2026) |
 | Правильная отписка в OnDestroy() | ✅ |
+| Cloud generation (CumulonimbusCloud) работает | ✅ |
+| Network spawner вызывается | ✅ |
+
+---
+
+## 🧪 Результаты тестирования (18.04.2026, 17:00)
+
+### Play Mode Test:
+```
+[WorldStreamingManager] Subscribed to ChunkLoader events ✅
+[ProceduralChunkGenerator] Завершена генерация Chunk(-2, -2) ✅
+[CumulonimbusCloud] Создан столб в (3291, 9999), высота 1200-9000м ✅
+[ChunkLoader] Чанк Chunk(-2, -2) полностью загружен ✅
+[WorldStreamingManager] Chunk loaded: -2,-2 ✅
+[ChunkNetworkSpawner] Spawned 0 network objects ✅
+```
+
+### FloatingOriginMP Integration:
+- FloatingOriginMP логи уменьшены (throttled to 600 frames)
+- HUD обновляется 1 раз в 30 кадров
+- WorldStreamingManager events логируют всегда (ключевые события)
 
 ---
 
 **Автор:** Claude Code  
-**Дата завершения:** 18.04.2026, 16:35
+**Дата завершения:** 18.04.2026, 17:00
+**Финальный статус:** ✅ ЗАВЕРШЕНО И ПРОТЕСТИРОВАНО

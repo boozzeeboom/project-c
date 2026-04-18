@@ -22,7 +22,7 @@
 | # | Файл | Цель | Длительность | Статус |
 |---|------|------|--------------|--------|
 | 1 | `ITERATION_1_SESSION.md` | Fix FloatingOriginMP Jitter & Integration | 1-2 сессии | ✅ Завершено (jitter отложен) |
-| 2 | `ITERATION_2_SESSION.md` | Fix WorldStreamingManager Integration | 1 сессия | ✅ Завершено |
+| 2 | `ITERATION_2_SESSION.md` | Fix WorldStreamingManager Integration | 1 сессия | ✅ Завершено и протестировано |
 | 3 | `ITERATION_3_SESSION.md` | Fix PlayerChunkTracker Integration | 1-2 сессии | ⏳ После Iter 2 |
 | 4 | `ITERATION_4_SESSION.md` | Setup & Test | 1-2 сессии | ⏳ После Iter 3 |
 | 5 | `ITERATION_5_SESSION.md` | Multiplayer Test | 1-2 сессии | ⏳ После Iter 4 |

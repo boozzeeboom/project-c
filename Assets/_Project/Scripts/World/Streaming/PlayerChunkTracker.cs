@@ -96,53 +96,19 @@ namespace ProjectC.World.Streaming
             base.OnNetworkDespawn();
         }
         
+        // ITERATION 3.3 FIX: УДАЛЕН дублирующий Update() цикл.
+        // PlayerChunkTracker теперь обновляется ТОЛЬКО через вызовы из NetworkPlayer.UpdatePlayerChunkTracker()
+        // Это устраняет race condition между двумя источниками обновления чанков.
+        //
+        // ПРОБЛЕМА: PlayerChunkTracker.Update() и NetworkPlayer.FixedUpdate() оба вызывали
+        // ForceUpdatePlayerChunk(), создавая race condition и oscillation.
+        //
+        // РЕШЕНИЕ: NetworkPlayer вызывает PlayerChunkTracker.ForceUpdatePlayerChunk() напрямую
+        // со стабильной позицией. PlayerChunkTracker.Update() удалён.
         private void Update()
         {
-            if (!IsServer || _chunkManager == null) return;
-            
-            float currentTime = Time.time;
-            
-            // Обновляем позицию каждого игрока
-            foreach (var kvp in _playerTransforms)
-            {
-                ulong clientId = kvp.Key;
-                Transform playerTransform = kvp.Value;
-                
-                // Проверяем интервал обновления
-                if (!_lastUpdateTimes.TryGetValue(clientId, out float lastTime) ||
-                    currentTime - lastTime < updateInterval)
-                {
-                    continue;
-                }
-                
-                _lastUpdateTimes[clientId] = currentTime;
-                
-                // ITERATION 3.2 FIX: Используем кэшированную позицию из FloatingOriginMP
-                // вместо playerTransform.position напрямую.
-                // ЭТО ИСПРАВЛЯЕТ OSCILLATION который вызывался параллельным использованием
-                // двух источников позиции.
-                Vector3 worldPosition = playerTransform.position;
-                
-                // Проверяем валидность трансформа
-                if (playerTransform == null)
-                {
-                    LogDebug($"Client {clientId}: transform is null, skipping update");
-                    continue;
-                }
-                
-                // Используем кэшированную позицию из FloatingOriginMP если доступна
-                var floatingOrigin = FloatingOriginMP.Instance;
-                if (floatingOrigin != null)
-                {
-                    // FloatingOriginMP.GetWorldPosition() возвращает стабильную позицию
-                    // которая НЕ oscills между ghost и real объектами
-                    worldPosition = floatingOrigin.GetWorldPosition();
-                }
-                
-                // Используем ForceUpdatePlayerChunk для hysteresis защиты
-                // Вместо UpdatePlayerChunk напрямую
-                ForceUpdatePlayerChunk(clientId, worldPosition);
-            }
+            // REMOVED: Update() больше не обновляет чанки!
+            // Это делается из NetworkPlayer.UpdatePlayerChunkTracker() для избежания race condition.
         }
         
         #endregion

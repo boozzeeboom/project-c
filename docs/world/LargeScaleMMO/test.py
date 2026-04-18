@@ -1,1 +1,0 @@
-print(open(r"c:\\UNITY_PROJECTS\\ProjectC_client\\docs\\world\\LargeScaleMMO\\DEEP_ANALYSIS.md").read()[:100])

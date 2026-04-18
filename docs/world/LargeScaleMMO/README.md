@@ -1,144 +1,177 @@
-# Large-Scale MMO World Streaming — Index
+# Large Scale MMO — Streaming System
 
 **Проект:** ProjectC_client  
-**Unity версия:** Unity 6 (6000.x LTS), URP  
-**Дата создания:** 14 апреля 2026
+**Unity:** 6.0.0+ с URP  
+**Сеть:** Netcode for GameObjects (NGO)  
+**Дата:** 18.04.2026  
+**Версия:** `v0.0.18-deep-analysis`
 
 ---
 
-## 📁 Структура каталога
+## 📁 Структура документов
 
 ```
 docs/world/LargeScaleMMO/
-├── README.md                                           ← Этот файл (навигация)
-├── 01_Architecture_Plan.md                              ← Архитектура и план реализации
-├── 02_Technical_Research.md                            ← Техническое исследование
-├── ADR-0002_WorldStreaming_Architecture.md            ← Architecture Decision Record
-├── SESSION_PROMPT_Phase1_Foundation.md                 ← Промт Фазы 1
-├── SESSION_PROMPT_Phase1_Foundation_STATUS.md         ← Статус Фазы 1
-├── SESSION_PROMPT_Phase2_MultiplayerIntegration.md    ← Промт Фазы 2
-├── SESSION_2026-04-14.md                              ← Summary сессии 14.04.2026
-└── TESTING_INSTRUCTIONS.md                             ← Инструкции по тестированию
+├── README.md                    ← Этот файл: навигация
+├── CURRENT_STATE.md              ← Глубокий анализ (результат 3 subagents)
+├── ITERATION_PLAN.md             ← План итераций с exact кодом
+├── 01_Architecture_Plan.md       ← Полная архитектура
+├── combinesessions/              ← Промпты для запуска итераций
+│   ├── INDEX.md                 ← Оглавление
+│   ├── ITERATION_1_SESSION.md   ← FloatingOriginMP Jitter Fix
+│   ├── ITERATION_2_SESSION.md   ← WorldStreamingManager Integration
+│   ├── ITERATION_3_SESSION.md   ← PlayerChunkTracker Integration
+│   ├── ITERATION_4_SESSION.md   ← Setup & Test
+│   └── ITERATION_5_SESSION.md   ← Multiplayer Test
+├── old_sessions/                 ← Архив прошлых сессий
+│   ├── README.md
+│   ├── SESSION_2026-04-17_*.md   ← 17 файлов анализа
+│   ├── SESSION_2026-04-18_*.md
+│   ├── FLOATING_ORIGIN_*.md
+│   ├── ARTIFACT_*.md
+│   └── TESTING_*.md
+└── [вспомогательные файлы]
+    ├── AGENTS_PROMPTS.md
+    ├── FLOAT_PRECISION_ISSUE.md
+    ├── SOLUTION_OPTIONS.md
+    ├── MAIN_SCENE_SETUP.md
+    └── SESSION_PROMPT_*.md
 ```
 
 ---
 
-## 📄 Документы
+## 🎯 Quick Start
 
-### 01_Architecture_Plan.md
-**Полный путь:** [01_Architecture_Plan.md](./01_Architecture_Plan.md)
+### Хочешь узнать состояние?
+→ `CURRENT_STATE.md` — **6 проблем интеграции**, диаграмма связей
 
-**Содержание:**
-- Резюме проблемы и текущее состояние проекта
-- Сравнительный анализ трёх решений (World Streamer 2, Custom Streaming, Separate Scenes)
-- **Рекомендуемая архитектура:** Кастомная система стриминга
-- Детальное описание компонентов:
-  - WorldChunkManager (Server-Authoritative)
-  - ChunkLoader (Client-Side)
-  - ProceduralChunkGenerator
-  - FloatingOriginMP (Multiplayer-Synced)
-- Интеграция с NGO (Netcode for GameObjects)
-- Риски и стратегии смягчения
-- **4 фазы реализации** с детальными задачами и критериями приёмки
-- Editor Navigation Solutions
-- Технические ограничения и Best Practices
-- Итоговые рекомендации
+### Хочешь понять что делать дальше?
+→ `ITERATION_PLAN.md` — **5 итераций**, exact код для каждого исправления
 
-**Ключевой вывод:** Выбрана кастомная система стриминга (Вариант B) как единственная, полностью решающая требования MMO проекта.
+### Хочешь понять архитектуру?
+→ `01_Architecture_Plan.md` — полная архитектура с фазами
 
 ---
 
-### 02_Technical_Research.md
-**Полный путь:** [02_Technical_Research.md](./02_Technical_Research.md)
+## 📊 Текущий статус (Deep Analysis: 3 Subagents)
 
-**Содержание:**
-- Floating Point Precision Problem (официальная позиция Unity, технические ограничения)
-- Unity 6 Scene Management (Additive Loading, NGO Synchronization, Server Validation)
-- Addressables for Dynamic Content (CDN, Best Practices)
-- ECS SubScene & Scene Sections (готовность к продакшену, ограничения для NGO проектов)
-- World Partition — есть ли аналог в Unity?
-- Dedicated Server Build
-- **Детальное сравнение 7 Asset Store решений:**
-  - World Streamer 2
-  - SECTR Complete
-  - BigWorldStreamer
-  - MapMagic 2
-  - Gaia Pro 2023
-  - RTP v3.3
-  - Custom (Addressables)
-- MMO Architecture: Area-Based Sharding
-- Reference: Megacity Metro (Unity Demo)
-- Итоговые рекомендации
-
-**Ключевой вывод:** Ни один готовый ассет не решает задачу MMO-стриминга "из коробки". Кастомная система — единственный путь.
+| # | Проблема | Серьёзность | Итерация |
+|---|----------|-------------|----------|
+| 1 | FloatingOriginMP конфликтует с ChunkLoader | 🔴 Critical | 1 |
+| 2 | FloatingOriginMP jitter после телепорта | 🔴 Critical | 1 |
+| 3 | WorldStreamingManager не получает события | 🟡 Medium | 2 |
+| 4 | PlayerChunkTracker слабо связан с NetworkPlayer | 🟡 Medium | 3 |
+| 5 | ChunkNetworkSpawner prefabs = null | 🟡 Medium | 4 |
+| 6 | StreamingTest компоненты не подключены | 🟡 Medium | 4 |
 
 ---
 
-## 🚀 Следующие шаги
+## 🔧 Компоненты кода
 
-### Приоритет 1 (Начать СРАЗУ)
+```
+Assets/_Project/Scripts/World/Streaming/
+├── FloatingOriginMP.cs          ← 1020 строк, MP-synced
+│   └── ПРОБЛЕМА: jitter + конфликт с ChunkLoader
+├── WorldStreamingManager.cs      ← 651 строка, координатор
+│   └── ПРОБЛЕМА: нет обратной связи от ChunkLoader
+├── WorldChunkManager.cs          ← 323 строки, реестр чанков
+├── ProceduralChunkGenerator.cs   ← 392 строки, генерация
+├── ChunkLoader.cs                ← 412 строк, load/unload
+│   └── ПРОБЛЕМА: события не подключены
+├── PlayerChunkTracker.cs         ← 383 строки, server-side
+│   └── ПРОБЛЕМА: слабая связь с NetworkPlayer
+├── ChunkNetworkSpawner.cs        ← 347 строк, spawn/despawn
+│   └── ПРОБЛЕМА: prefabs = null
+├── StreamingTest.cs              ← F5/F6/F7/F8/F9/F10
+└── StreamingTest_AutoRun.cs
+```
 
-1. ✅ **Исследование завершено** — этот документ
-2. ✅ **WorldChunkManager** — реестр чанков, grid-based lookup
-3. ✅ **FloatingOriginMP** — мультиплеер-синхронизированный сдвиг
-4. ✅ **Editor Tools** — Scene Navigator + Chunk Visualizer
-5. ✅ **Исправлен Floating Origin bug** — сдвигает ВСЕ объекты
-
-### Приоритет 2 (После валидации Приоритета 1)
-
-6. ✅ **ProceduralChunkGenerator** — генерация гор + облаков per chunk
-7. ✅ **ChunkLoader** — client-side загрузка/выгрузка
-8. ⬜ **Интегрировать с NGO** — NetworkObject spawn/despawn per chunk (Фаза 2)
-
-### Приоритет 3 (Оптимизация)
-
-9. ⬜ Preloading система — загрузка соседних чанков заранее (Фаза 3)
-10. ⬜ Job System оптимизация — генерация мешей off-main-thread (Фаза 3)
-11. ⬜ Memory budgeting — мониторинг и контроль памяти (Фаза 3)
-12. ⬜ Cyclic world support — если потребуется (Фаза 4)
-
----
-
-## 📊 Сводная информация о проекте
-
-### Текущее состояние
-| Параметр | Значение |
-|----------|----------|
-| Мир | Радиус ~350,000 units |
-| Горные массивы | 5 (Himalayan, Alpine, African, Andean, Alaskan) |
-| Пику | 29 |
-| Облака | 890+ процедурных мешей |
-| Сцена | Одна (ProjectC_1.unity) |
-| Стриминг | Отсутствует |
-| Floating Origin | Реализован, но buggy |
-| Мультиплеер | NGO (Netcode for GameObjects) |
-
-### Выбранная архитектура
-| Компонент | Решение |
-|-----------|---------|
-| Стриминг мира | Кастомная chunk-based система |
-| Загрузка контента | Addressables + procedural generation |
-| Floating Point fix | FloatingOriginMP (server-synced) |
-| Мультиплеер | Server-authoritative chunk management |
-| Сцены | Subscenes для дизайна, runtime streaming кастомный |
+**Также:**
+```
+Assets/_Project/Scripts/Player/
+└── NetworkPlayer.cs              ← 600+ строк
+    └── ПРОБЛЕМА: не обновляет PlayerChunkTracker
+```
 
 ---
 
-## 🔗 Связанные документы
+## 📋 5 Итераций для исправления
 
-- [Prompt: Editor навигация для больших миров](../prompt_editor_navigation_large_world.md)
-- [SCALE_ANALYSIS.md](../SCALE_ANALYSIS.md)
-- [MASTER_PLAN_WorldPrototype.md](../MASTER_PLAN_WorldPrototype.md)
-- [NETWORK_ARCHITECTURE.md](../../NETWORK_ARCHITECTURE.md) (если существует)
-- [QWEN.md](../../../QWEN.md) — контекст проекта
+| # | Итерация | Длительность | Критерий приёмки |
+|---|----------|--------------|------------------|
+| 1 | Fix FloatingOriginMP Jitter & Integration | 1-2 сессии | F6 без jitter |
+| 2 | Fix WorldStreamingManager Integration | 1 сессия | Console "Chunk loaded" |
+| 3 | Fix PlayerChunkTracker Integration | 1-2 сессии | RPC отправляется |
+| 4 | Setup & Test | 1-2 сессии | F5/F6/F7/F8 работают |
+| 5 | Multiplayer Test | 1-2 сессии | Host + Client синхронизированы |
 
 ---
 
-## 📝 История изменений
+## 📊 Component Integration Map
 
-| Дата | Изменение | Автор |
-|------|-----------|-------|
-| 14.04.2026 | Создан каталог и документы | Qwen Code Agent |
-| 14.04.2026 | **Фаза 1 завершена** — World Streaming Foundation | Qwen Code Agent |
-| 14.04.2026 | **Фаза 2 начата** — Multiplayer Integration (документация) | Qwen Code Agent |
-| | | |
+```
+┌─────────────────────────────────────────────────────────────────────┐
+│                         CLIENT SIDE                                  │
+├─────────────────────────────────────────────────────────────────────┤
+│                                                                     │
+│  ┌──────────────┐     ┌─────────────────────────┐                   │
+│  │ NetworkPlayer │────▶│ FloatingOriginMP        │                  │
+│  │ (transform)   │     │ positionSource          │                  │
+│  └──────────────┘     │ OnWorldShifted +=       │                  │
+│         │              └─────────────────────────┘                  │
+│         ▼                      │                                     │
+│  ┌──────────────┐             │                                     │
+│  │WorldStreaming │◀────────────┘                                     │
+│  │  Manager      │     ⚠️ НЕТ ОБРАТНОЙ СВЯЗИ                        │
+│  │ (координатор) │     ┌─────────────────────────┐                  │
+│  └───────┬───────┘     │ ChunkLoader              │                  │
+│          │             │ OnChunkLoaded +=        │  ← НЕ ПОДКЛЮЧЕНО │
+│          ▼             │ OnChunkUnloaded +=       │  ← НЕ ПОДКЛЮЧЕНО │
+│  ┌──────────────┐     └─────────────────────────┘                  │
+│  │WorldChunk     │                                                  │
+│  │  Manager      │     ┌─────────────────────────┐                  │
+│  │ (реестр)      │     │ ProceduralChunkGenerator │                  │
+│  └──────────────┘     └─────────────────────────┘                  │
+│          │                      │                                    │
+│          ▼             ┌─────────────────────────┐                  │
+│  ┌──────────────┐     │ ChunkNetworkSpawner     │                  │
+│  │ FloatingOrigin│     │ ⚠️ prefabs = null       │                  │
+│  │ MP             │     └─────────────────────────┘                  │
+│  └──────────────┘                                                  │
+│                                                                     │
+└─────────────────────────────────────────────────────────────────────┘
+
+┌─────────────────────────────────────────────────────────────────────┐
+│                         SERVER SIDE                                  │
+├─────────────────────────────────────────────────────────────────────┤
+│                                                                     │
+│  ┌──────────────┐     ┌─────────────────────────┐                  │
+│  │ NetworkManager│────▶│ PlayerChunkTracker       │                  │
+│  │              │     │ LoadChunkClientRpc()      │                  │
+│  └──────────────┘     │ ⚠️ НЕ получает позицию  │                  │
+│         │             │    от NetworkPlayer      │                  │
+│         ▼             └─────────────────────────┘                  │
+│  ┌──────────────┐                                                  │
+│  │ NetworkPlayer │                                                 │
+│  │ (Owned)       │────⚠️──▶ PlayerChunkTracker.UpdatePosition()    │
+│  └──────────────┘       НУЖНО ДОБАВИТЬ                             │
+│                                                                     │
+└─────────────────────────────────────────────────────────────────────┘
+```
+
+---
+
+## 🚀 Начать с Iteration 1
+
+**Файл:** `ITERATION_PLAN.md` → Section "Iteration 1: Fix FloatingOriginMP Jitter & Integration"
+
+**Код для исправления уже предоставлен:**
+- 1.1 GetWorldPosition() fix (строки ~500-600)
+- 1.2 ShouldUseFloatingOrigin() для зон ответственности
+- 1.3 События синхронизации
+
+---
+
+**Автор:** Claude Code + 3 Subagents  
+**Анализ:** 44.9% context usage  
+**Дата:** 18.04.2026

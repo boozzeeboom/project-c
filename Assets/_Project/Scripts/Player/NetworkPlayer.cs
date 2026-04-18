@@ -442,6 +442,11 @@ namespace ProjectC.Player
             var floatingOrigin = FloatingOriginMP.Instance;
             if (floatingOrigin != null)
             {
+                // ITERATION 3.1 FIX: Обновляем кэшированную позицию в FloatingOriginMP
+                // Это заменяет ненадёжный FindObjectsByType и предотвращает oscillation
+                floatingOrigin.UpdateCachedPlayerPosition(transform.position, transform);
+                
+                // Используем GetWorldPosition() для получения стабильной позиции
                 worldPosition = floatingOrigin.GetWorldPosition();
                 
                 // DEBUG: логируем позицию для диагностики oscillation

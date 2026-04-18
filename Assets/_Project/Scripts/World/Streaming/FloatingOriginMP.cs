@@ -163,6 +163,14 @@ namespace ProjectC.World.Streaming
         /// Cooldown в секундах после сдвига — чтобы LateUpdate не добавлял новые сдвиги.
         /// </summary>
         private const float SHIFT_COOLDOWN = 0.5f;
+        
+        /// <summary>
+        /// ITERATION 3.1 FIX: Кэшированная позиция игрока для предотвращения oscillation.
+        /// Вместо FindObjectsByType используем кэшированную позицию которую обновляет NetworkPlayer.
+        /// </summary>
+        private Vector3 _cachedPlayerPosition = Vector3.zero;
+        private bool _hasCachedPlayerPosition = false;
+        private Transform _cachedPlayerTransform;
 
         #endregion
 
@@ -252,6 +260,26 @@ namespace ProjectC.World.Streaming
 
         #endregion
 
+        #region Position Caching (ITERATION 3.1 FIX)
+        
+        /// <summary>
+        /// ITERATION 3.1 FIX: Обновить кэшированную позицию игрока.
+        /// Вызывается из NetworkPlayer.UpdatePlayerChunkTracker() на СЕРВЕРЕ.
+        /// Это заменяет ненадёжный FindObjectsByType который мог выбрать неправильный объект.
+        /// 
+        /// ПРИМЕЧАНИЕ: Этот метод должен вызываться каждый кадр или с нужным интервалом.
+        /// </summary>
+        /// <param name="playerPosition">Текущая позиция игрока (transform.position)</param>
+        /// <param name="playerTransform">Transform игрока (для валидации)</param>
+        public void UpdateCachedPlayerPosition(Vector3 playerPosition, Transform playerTransform)
+        {
+            _cachedPlayerPosition = playerPosition;
+            _cachedPlayerTransform = playerTransform;
+            _hasCachedPlayerPosition = true;
+        }
+
+        #endregion
+
         #region Position Source (Null-Safe)
 
         /// <summary>
@@ -274,6 +302,21 @@ namespace ProjectC.World.Streaming
         /// </summary>
         public Vector3 GetWorldPosition()
         {
+            // 0. ITERATION 3.1 FIX: Используем кэшированную позицию если доступна
+            // Это самый надёжный источник — передаётся напрямую из NetworkPlayer
+            if (_hasCachedPlayerPosition && _cachedPlayerTransform != null)
+            {
+                // Проверяем что Transform всё ещё валиден
+                if (_cachedPlayerTransform != null)
+                {
+                    return _cachedPlayerPosition;
+                }
+                else
+                {
+                    _hasCachedPlayerPosition = false;
+                }
+            }
+
             // 1. Явный источник (самый приоритетный)
             // FIX (I1-001 REVISED): Проверка близости к origin
             // Если positionSource близко к origin (< threshold * 0.5), 

@@ -117,8 +117,31 @@ namespace ProjectC.World.Streaming
                 
                 _lastUpdateTimes[clientId] = currentTime;
                 
-                // Обновляем чанк игрока
-                UpdatePlayerChunk(clientId, playerTransform.position);
+                // ITERATION 3.2 FIX: Используем кэшированную позицию из FloatingOriginMP
+                // вместо playerTransform.position напрямую.
+                // ЭТО ИСПРАВЛЯЕТ OSCILLATION который вызывался параллельным использованием
+                // двух источников позиции.
+                Vector3 worldPosition = playerTransform.position;
+                
+                // Проверяем валидность трансформа
+                if (playerTransform == null)
+                {
+                    LogDebug($"Client {clientId}: transform is null, skipping update");
+                    continue;
+                }
+                
+                // Используем кэшированную позицию из FloatingOriginMP если доступна
+                var floatingOrigin = FloatingOriginMP.Instance;
+                if (floatingOrigin != null)
+                {
+                    // FloatingOriginMP.GetWorldPosition() возвращает стабильную позицию
+                    // которая НЕ oscills между ghost и real объектами
+                    worldPosition = floatingOrigin.GetWorldPosition();
+                }
+                
+                // Используем ForceUpdatePlayerChunk для hysteresis защиты
+                // Вместо UpdatePlayerChunk напрямую
+                ForceUpdatePlayerChunk(clientId, worldPosition);
             }
         }
         

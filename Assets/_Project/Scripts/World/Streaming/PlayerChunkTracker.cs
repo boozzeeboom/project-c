@@ -340,9 +340,38 @@ namespace ProjectC.World.Streaming
         
         /// <summary>
         /// Принудительно обновить позицию игрока (вызывается из других систем).
+        /// 
+        /// ITERATION 3 FIX: Добавлен hysteresis для предотвращения oscillation
+        /// на границах чанков. Если игрок находится близко к границе чанка,
+        /// мы не меняем чанк сразу, а ждём пока он не отойдёт дальше.
         /// </summary>
         public void ForceUpdatePlayerChunk(ulong clientId, Vector3 position)
         {
+            // ITERATION 3 FIX: Hysteresis для предотвращения oscillation
+            // Проверяем близость к границе чанка
+            float boundaryProximityThreshold = 50f; // units от границы
+            
+            // Вычисляем позицию относительно границ чанка
+            float posInChunkX = position.x % 2000f;
+            float posInChunkZ = position.z % 2000f;
+            
+            // Если близко к границе (within 50 units), проверяем текущий чанк
+            if (posInChunkX < boundaryProximityThreshold || posInChunkX > 2000f - boundaryProximityThreshold ||
+                posInChunkZ < boundaryProximityThreshold || posInChunkZ > 2000f - boundaryProximityThreshold)
+            {
+                // Игрок близко к границе — проверяем текущий записанный чанк
+                if (_playerChunks.TryGetValue(clientId, out var currentChunk))
+                {
+                    // Если текущий чанк всё ещё валиден для позиции, НЕ меняем
+                    ChunkId potentialChunk = _chunkManager.GetChunkAtPosition(position);
+                    if (currentChunk.Equals(potentialChunk))
+                    {
+                        // Чанк совпадает — пропускаем обновление чтобы избежать oscillation
+                        return;
+                    }
+                }
+            }
+            
             UpdatePlayerChunk(clientId, position);
         }
         

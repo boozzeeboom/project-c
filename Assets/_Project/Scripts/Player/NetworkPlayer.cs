@@ -5,6 +5,7 @@ using ProjectC.Core;
 using ProjectC.Items;
 using ProjectC.Trade;
 using ProjectC.UI;
+using ProjectC.World.Streaming;
 using System.Collections.Generic;
 
 namespace ProjectC.Player
@@ -46,6 +47,16 @@ namespace ProjectC.Player
         private ThirdPersonCamera _myCamera;
         private Inventory _inventory;
         private InventoryUI _inventoryUI;
+
+        // ==================== PLAYER CHUNK TRACKER (Iteration 3) ====================
+        [Header("Chunk Streaming (Iteration 3)")]
+        [Tooltip("PlayerChunkTracker для обновления позиции в серверном трекинге чанков")]
+        [SerializeField] private ProjectC.World.Streaming.PlayerChunkTracker _playerChunkTracker;
+        
+        [Tooltip("Интервал обновления PlayerChunkTracker (секунды)")]
+        [SerializeField] private float chunkTrackerUpdateInterval = 0.25f;
+        
+        private float _lastChunkTrackerUpdate = 0f;
 
         // Состояние
         private bool _inShip = false;
@@ -357,6 +368,13 @@ namespace ProjectC.Player
 
         private void FixedUpdate()
         {
+            // ITERATION 3 FIX: Обновление PlayerChunkTracker на сервере
+            // Это связывает NetworkPlayer с серверным трекингом чанков
+            if (IsServer)
+            {
+                UpdatePlayerChunkTracker();
+            }
+            
             // Плавная коррекция позиции только для локального игрока (Owner)
             if (!IsOwner || _inShip) return;
             
@@ -382,6 +400,65 @@ namespace ProjectC.Player
                     _hasServerPosition = false;
                 }
             }
+        }
+        
+        // ==================== PLAYER CHUNK TRACKER (Iteration 3) ====================
+        
+        /// <summary>
+        /// Обновить PlayerChunkTracker с текущей позицией игрока.
+        /// Вызывается из FixedUpdate() на сервере.
+        /// 
+        /// ITERATION 3 FIX: Раньше PlayerChunkTracker использовал корутину для поиска
+        /// NetworkPlayer и обновления позиции через FindObjectsByType.
+        /// Теперь NetworkPlayer напрямую вызывает этот метод — это надёжнее.
+        /// </summary>
+        private void UpdatePlayerChunkTracker()
+        {
+            // Находим PlayerChunkTracker если не назначен в инспекторе
+            if (_playerChunkTracker == null)
+            {
+                _playerChunkTracker = FindAnyObjectByType<ProjectC.World.Streaming.PlayerChunkTracker>();
+                if (_playerChunkTracker == null)
+                {
+                    return;
+                }
+            }
+            
+            // Проверяем интервал обновления (throttling)
+            float currentTime = Time.time;
+            if (currentTime - _lastChunkTrackerUpdate < chunkTrackerUpdateInterval)
+            {
+                return;
+            }
+            _lastChunkTrackerUpdate = currentTime;
+            
+            // ITERATION 3 FIX v2: Используем FloatingOriginMP.GetWorldPosition() для стабильных координат.
+            // ПРОБЛЕМА: transform.position oscills между чанками из-за того что серверный 
+            // FloatingOriginMP управляет сдвигом мира и позиция игрока может быть нестабильной.
+            // РЕШЕНИЕ: Используем FloatingOriginMP.GetWorldPosition() который возвращает 
+            // "истинную" мировую позицию с учетом всех сдвигов мира.
+            Vector3 worldPosition;
+            
+            var floatingOrigin = FloatingOriginMP.Instance;
+            if (floatingOrigin != null)
+            {
+                worldPosition = floatingOrigin.GetWorldPosition();
+                
+                // DEBUG: логируем позицию для диагностики oscillation
+                if (Time.frameCount % 240 == 0) // раз в 4 секунды
+                {
+                    Debug.Log($"[NetworkPlayer] UpdatePlayerChunkTracker: transform.pos={transform.position:F0}, GetWorldPos={worldPosition:F0}");
+                }
+            }
+            else
+            {
+                // Fallback: используем transform.position если FloatingOriginMP не найден
+                worldPosition = transform.position;
+            }
+            
+            // Вызываем обновление позиции в PlayerChunkTracker
+            // OwnerClientId — это ID клиента который владеет этим NetworkPlayer
+            _playerChunkTracker.ForceUpdatePlayerChunk(OwnerClientId, worldPosition);
         }
 
         private void ProcessMovement(Vector2 moveInput, bool jump, bool run)

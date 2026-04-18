@@ -269,8 +269,10 @@ namespace ProjectC.World.Streaming
         /// 2. NetworkPlayer (ПРИОРИТЕТ — показывает правильную позицию!)
         /// 3. ThirdPersonCamera (fallback — может быть неправильной)
         /// 4. Camera.main (fallback — обычно (0,0,0))
+        /// 
+        /// ITERATION 3 FIX v2: Сделан public для использования в NetworkPlayer.UpdatePlayerChunkTracker()
         /// </summary>
-        private Vector3 GetWorldPosition()
+        public Vector3 GetWorldPosition()
         {
             // 1. Явный источник (самый приоритетный)
             // FIX (I1-001 REVISED): Проверка близости к origin

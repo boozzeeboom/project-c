@@ -217,27 +217,57 @@ namespace ProjectC.World.Streaming
         /// 
         /// ВАЖНО: ИСПОЛЬЗУЕМ transform.position напрямую!
         /// ПРОБЛЕМА: GetWorldPosition() возвращает позицию камеры на TradeZones, которая НЕ сдвигается.
-        /// В ServerAuthority режиме камера остаётся на (150000, 500, 150000) даже после сдвига мира!
-        /// РЕШЕНИЕ: NetworkPlayer.transform.position — это правильная позиция потому что 
-        /// игрок — дочерний TradeZones, и его позиция смещается вместе с TradeZones.parent.
+        /// Проверить, нужно ли использовать Floating Origin.
+        /// 
+        /// В режиме ServerAuthority после сдвига мира:
+        /// - TradeZones остаётся на (0,0,0) — это точка отсчёта!
+        /// - Игрок остаётся на большой позиции (150000) — это ПРАВИЛЬНО для ServerAuthority!
+        /// 
+        /// TradeZones.position = (0,0,0) всегда
+        /// playerPosition = Distance от TradeZones (в ServerAuthority)
+        /// 
+        /// Поэтому: Distance = playerPosition.magnitude
+        /// После сдвига: magnitude = 150000 > threshold(150000)? ДА → сдвиг продолжается!
+        /// 
+        /// РЕШЕНИЕ: TradeZones остаётся на (0,0,0), игрок остаётся на большой позиции.
+        /// Это означает что magnitude = позиция игрока = 150000.
+        /// Проверка threshold сработает и сдвиг продолжится — БЕСКОНЕЧНЫЙ ЦИКЛ!
+        /// 
+        /// ДЛЯ ОСТАНОВКИ ЦИКЛА: после сдвига мира TradeZones восстанавливается на (0,0,0).
+        /// Игрок остаётся на позиции S. TradeZones на 0.
+        /// Distance(S, 0) = S = magnitude.
+        /// 
+        /// В режиме ServerAuthority игрок НЕ сдвигается вместе с миром!
+        /// Его позиция остаётся S. Это значит что Distance = S всегда > threshold.
+        /// 
+        /// ПРАВИЛЬНОЕ РЕШЕНИЕ: В ServerAuthority после сдвига мира игрок должен остаться рядом с TradeZones!
+        /// Для этого TradeZones.position должен быть равен позиции игрока, а не 0!
+        /// 
+        /// НО TradeZones — это корень сцены. Мы НЕ можем двигать TradeZones.
+        /// 
+        /// АЛЬТЕРНАТИВНОЕ РЕШЕНИЕ: После сдвига мира на сервере, телепортировать игрока
+        /// на малую позицию (рядом с TradeZones).
+        /// 
+        /// Для этого используется cooldown: после сдвига мира проверки игнорируются 0.5 секунды.
+        /// За это время NetworkTransform синхронизирует позицию игрока на клиентах.
+        /// На сервере позиция игрока остаётся большой, но cooldown защищает от повторного сдвига.
         /// </summary>
         public bool ShouldUseFloatingOrigin(Vector3 playerPosition)
         {
-            // ITERATION 3.9 FIX: Используем РАССТОЯНИЕ ОТ TRADEZONES вместо magnitude!
-            // После сдвига мира TradeZones находится на (0,0,0), 
-            // поэтому magnitude будет ~= позиции игрока.
-            // НО если TradeZones был на большой позиции — magnitude будет неправильным!
+            // ITERATION 3.11 FIX: Вычисляем истинную позицию относительно TradeZones.
+            // 
+            // TradeZones на (0,0,0) всегда.
+            // После сдвига мира на S: totalOffset = S, playerPosition = ~S.
+            // 
+            // Истинная позиция = playerPosition - totalOffset
+            // После сдвига: (150000 - 150000) = ~0 < threshold(150000) → НЕ сдвигаем!
             
-            // Находим TradeZones для расчёта расстояния
-            GameObject tradeZones = GameObject.Find("TradeZones");
-            if (tradeZones != null)
-            {
-                float distance = Vector3.Distance(playerPosition, tradeZones.transform.position);
-                return distance > threshold;
-            }
+            float distance = (playerPosition - _totalOffset).magnitude;
             
-            // Fallback: используем magnitude если TradeZones не найден
-            return playerPosition.magnitude > threshold;
+            if (showDebugLogs && Time.frameCount % 600 == 0)
+                Debug.Log($"[FloatingOriginMP] ShouldUseFloatingOrigin: playerPos={playerPosition:F0}, totalOffset={_totalOffset:F0}, dist={distance:F0}, threshold={threshold}");
+            
+            return distance > threshold;
         }
         
         /// <summary>
@@ -344,49 +374,31 @@ namespace ProjectC.World.Streaming
                 }
             }
 
-            // ITERATION 3.9 FIX: В ServerAuthority режиме выбираем игрока ближе всего к TradeZones
-            // После сдвига TradeZones находится на (0,0,0), поэтому это правильный референс
+            // ITERATION 3.10 FIX: В ServerAuthority режиме используем playerPosition без изменений.
+            // После сдвига мира позиция игрока остаётся большой, но это корректно
+            // для ServerAuthority потому что сдвиг управляется через ShouldUseFloatingOrigin().
             if (mode == OriginMode.ServerAuthority)
             {
-                // Находим TradeZones для расчёта расстояния
-                GameObject tradeZones = GameObject.Find("TradeZones");
-                Vector3 tradeZonesPos = tradeZones != null ? tradeZones.transform.position : Vector3.zero;
+                // Используем кэшированную позицию если доступна (самый надёжный источник!)
+                if (_hasCachedPlayerPosition && _cachedPlayerTransform != null)
+                {
+                    return _cachedPlayerPosition;
+                }
                 
+                // Fallback: ищем NetworkPlayer с IsOwner
                 var serverAuthPlayers = FindObjectsByType<Unity.Netcode.NetworkObject>();
-                Transform bestPlayer = null;
-                float bestDistance = float.MaxValue;
-                
                 foreach (var netObj in serverAuthPlayers)
                 {
                     if (netObj.name.Contains("NetworkPlayer") && netObj.IsOwner)
                     {
-                        Vector3 pos = netObj.transform.position;
-                        
-                        // Вычисляем расстояние от TradeZones
-                        float distance = Vector3.Distance(pos, tradeZonesPos);
-                        
-                        // Выбираем игрока который ближе всего к TradeZones
-                        if (distance < bestDistance)
-                        {
-                            bestDistance = distance;
-                            bestPlayer = netObj.transform;
-                        }
+                        return netObj.transform.position;
                     }
-                }
-                
-                if (bestPlayer != null)
-                {
-                    if (showDebugLogs && Time.frameCount % 600 == 0)
-                        Debug.Log($"[FloatingOriginMP] GetWorldPosition: ServerAuthority, using player near TZ dist={bestDistance:F0}, pos={bestPlayer.position:F0}");
-                    return bestPlayer.position;
                 }
                 
                 // Fallback: тег Player
                 GameObject authPlayerByTag = GameObject.FindGameObjectWithTag("Player");
                 if (authPlayerByTag != null)
                 {
-                    if (showDebugLogs && Time.frameCount % 600 == 0)
-                        Debug.Log($"[FloatingOriginMP] GetWorldPosition: ServerAuthority, using Player tag={authPlayerByTag.transform.position:F0}");
                     return authPlayerByTag.transform.position;
                 }
             }
@@ -704,19 +716,19 @@ namespace ProjectC.World.Streaming
                 return;
             }
             
-            // ITERATION 3.9 FIX: Используем РАССТОЯНИЕ ОТ TRADEZONES вместо magnitude
-            GameObject tradeZones = GameObject.Find("TradeZones");
-            float dist;
-            if (tradeZones != null)
-            {
-                dist = Vector3.Distance(cameraPos, tradeZones.transform.position);
-                if (showDebugLogs)
-                    Debug.Log($"[FloatingOriginMP] RequestWorldShiftRpc: TradeZones at {tradeZones.transform.position:F0}, dist from TZ={dist:F0}");
-            }
-            else
-            {
-                dist = cameraPos.magnitude;
-            }
+            // ITERATION 3.10 FIX: Используем истинную позицию (cameraPos - totalOffset).
+            // После сдвига мира cameraPos остаётся большой (150000), 
+            // но cameraPos - totalOffset даёт позицию относительно TradeZones (~3).
+            // 
+            // ПРОБЛЕМА старого кода: Distance(cameraPos, TradeZones(0,0,0)) = cameraPos.magnitude
+            // Это ТОЖЕ САМОЕ что magnitude! После сдвига: Distance(150000, 0) = 150000 → бесконечный сдвиг!
+            //
+            // РЕШЕНИЕ: Distance от TradeZones = (cameraPos - totalOffset).magnitude
+            // После сдвига: (150000 - 150000).magnitude = ~3 < threshold → СТОП!
+            float dist = (cameraPos - _totalOffset).magnitude;
+            
+            if (showDebugLogs)
+                Debug.Log($"[FloatingOriginMP] RequestWorldShiftRpc: cameraPos={cameraPos:F0}, totalOffset={_totalOffset:F0}, trueDist={dist:F0}");
             
             if (dist <= threshold)
             {

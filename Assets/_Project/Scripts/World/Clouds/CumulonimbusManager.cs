@@ -55,7 +55,6 @@ namespace ProjectC.World.Clouds
             // Создать массив
             activeClouds = new CumulonimbusCloud[cloudCount];
 
-            Debug.Log($"[CumulonimbusManager] Спавн {cloudCount} грозовых столбов в радиусе {spawnRadius:F0}м");
 
             // Создать каждое облако
             for (int i = 0; i < cloudCount; i++)
@@ -88,7 +87,6 @@ namespace ProjectC.World.Clouds
                 activeClouds[i] = cloud;
             }
 
-            Debug.Log($"[CumulonimbusManager] Создано {activeClouds.Length} грозовых столбов");
         }
 
         /// <summary>

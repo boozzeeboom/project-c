@@ -166,22 +166,13 @@ namespace ProjectC.UI
 
         private void OnStartHostClicked()
         {
-            Debug.Log("[NetworkUI] OnStartHostClicked() CALLED!");
-            Debug.Log($"[NetworkUI] networkManagerController={(networkManagerController != null ? "SET" : "NULL")}");
-            
             if (networkManagerController == null)
             {
                 Debug.LogError("[NetworkUI] networkManagerController is NULL!");
                 return;
             }
             
-            Debug.Log("[NetworkUI] Calling networkManagerController.StartHost()...");
-            
-            // DIAGNOSTIC: Прямой вызов StartHostCoroutine
-            Debug.Log("[NetworkUI] Starting coroutine...");
             StartCoroutine(networkManagerController.StartHostCoroutine());
-            
-            Debug.Log("[NetworkUI] After StartCoroutine call");
             HideConnectionPanel();
             UpdateButtons(true);
             UpdatePlayerCount();

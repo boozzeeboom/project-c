@@ -138,8 +138,6 @@ namespace ProjectC.World.Streaming
                 };
             }
 
-            Debug.Log($"[ChunkLoader] Начало загрузки {chunkId}");
-
             // Создаём root-объект для чанка
             GameObject chunkRoot = CreateChunkRoot(chunkId);
             loadedChunks[chunkId] = chunkRoot;
@@ -167,8 +165,6 @@ namespace ProjectC.World.Streaming
                 Debug.LogWarning($"[ChunkLoader] Чанк {chunkId} уже в процессе fade-out.");
                 return;
             }
-
-            Debug.Log($"[ChunkLoader] Начало выгрузки {chunkId}");
 
             GameObject chunkRoot = loadedChunks[chunkId];
             loadedChunks.Remove(chunkId);
@@ -222,7 +218,6 @@ namespace ProjectC.World.Streaming
             yield return FadeInClouds(chunkRoot);
 
             chunk.State = ChunkState.Loaded;
-            Debug.Log($"[ChunkLoader] Чанк {chunkId} полностью загружен");
 
             // Вызываем событие
             OnChunkLoaded?.Invoke(chunkId);
@@ -336,8 +331,6 @@ namespace ProjectC.World.Streaming
 
             // Уничтожаем объект чанка
             Destroy(chunkRoot);
-
-            Debug.Log($"[ChunkLoader] Чанк {chunkId} выгружен");
 
             // Вызываем событие
             OnChunkUnloaded?.Invoke(chunkId);

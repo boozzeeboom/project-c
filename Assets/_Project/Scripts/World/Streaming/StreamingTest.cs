@@ -77,8 +77,6 @@ namespace ProjectC.World
         
         private void Start()
         {
-            Debug.Log("[StreamingTest] Initializing...");
-            
             // Ищем камеру несколькими способами
             _mainCamera = Camera.main;
             
@@ -96,7 +94,6 @@ namespace ProjectC.World
                 _mainCamera = FindAnyObjectByType<Camera>();
             }
             
-            Debug.Log($"[StreamingTest] Camera: {(_mainCamera != null ? _mainCamera.name : "NULL")}");
             
             // В мультиплеере ищем локального игрока
             if (useLocalPlayerPosition)
@@ -116,7 +113,6 @@ namespace ProjectC.World
             
             if (streamingManager != null)
             {
-                Debug.Log("[StreamingTest] StreamingManager found. Streaming system is ready.");
             }
             else
             {
@@ -129,7 +125,6 @@ namespace ProjectC.World
                 _targetPosition = new Vector3(testPositions[0].x, teleportHeight, testPositions[0].y);
             }
             
-            Debug.Log("[StreamingTest] Test controls: F5=next, F6=prev, F7=load chunks, F8=reset origin, F9=toggle grid, F10=toggle HUD");
             
             // Определяем что отслеживать
             UpdateTrackedTransform();
@@ -160,7 +155,7 @@ namespace ProjectC.World
                 }
             }
             
-            Debug.Log("[StreamingTest] Local player not found (singleplayer mode)");
+            // Local player not found (singleplayer mode)
         }
         
         /// <summary>
@@ -177,7 +172,6 @@ namespace ProjectC.World
             else if (_mainCamera != null)
             {
                 _trackedTransform = _mainCamera.transform;
-                Debug.Log("[StreamingTest] Tracking camera transform");
             }
             else
             {

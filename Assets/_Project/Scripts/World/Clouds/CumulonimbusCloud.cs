@@ -58,8 +58,6 @@ namespace ProjectC.World.Clouds
             {
                 SetupLightning();
             }
-
-            Debug.Log($"[CumulonimbusCloud] Создан столб в ({xPos:F0}, {zPos:F0}), высота {veilHeight:F0}-{maxHeight:F0}м, радиус {actualBaseRadius:F0}-{actualTopRadius:F0}м");
         }
 
         /// <summary>

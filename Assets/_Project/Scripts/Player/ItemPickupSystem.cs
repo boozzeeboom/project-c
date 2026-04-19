@@ -24,6 +24,9 @@ namespace ProjectC.Player
         [Tooltip("Визуализация радиуса в редакторе")]
         [SerializeField] private bool showPickupRadius = true;
 
+        [Header("Debug")]
+        [SerializeField] private bool debugMode = true;
+
         private PlayerStateMachine _stateMachine;
         private InputAction _pickupAction;
 
@@ -31,36 +34,68 @@ namespace ProjectC.Player
         private PickupItem _nearestPickup;
         private NetworkChestContainer _nearestChest;
 
+        // Debug info
+        private float _lastDebugTime = 0f;
+        private const float DEBUG_INTERVAL = 0.5f;
+
         private void Awake()
         {
             _stateMachine = GetComponent<PlayerStateMachine>();
+            if (_stateMachine == null)
+            {
+                Debug.LogError("[ItemPickupSystem] PlayerStateMachine not found!");
+                return;
+            }
 
             _pickupAction = new InputAction("Pickup", binding: "<Keyboard>/e", expectedControlType: "Button");
+            
+            if (debugMode)
+                Debug.Log($"[ItemPickupSystem] Awake, IsWalking = {_stateMachine.IsWalking}");
         }
 
         private void OnEnable()
         {
             _pickupAction.Enable();
-            _pickupAction.performed += ctx => TryPickup();
+            _pickupAction.performed += ctx => OnPickupPressed();
+            
+            if (debugMode)
+                Debug.Log("[ItemPickupSystem] OnEnable - Input subscribed");
         }
 
         private void OnDisable()
         {
             _pickupAction.Disable();
-            _pickupAction.performed -= ctx => TryPickup();
+            _pickupAction.performed -= ctx => OnPickupPressed();
         }
 
         private void Update()
         {
             // Работает только в пешем режиме
-            if (!_stateMachine.IsWalking)
+            if (_stateMachine == null || !_stateMachine.IsWalking)
             {
-                _nearestPickup = null;
-                _nearestChest = null;
+                if (_nearestPickup != null || _nearestChest != null)
+                {
+                    if (debugMode)
+                        Debug.Log($"[ItemPickupSystem] Not walking, clearing nearest. IsWalking={_stateMachine?.IsWalking}");
+                    _nearestPickup = null;
+                    _nearestChest = null;
+                }
                 return;
             }
 
             FindNearestInteractable();
+
+            // Debug output every interval
+            if (debugMode && Time.time - _lastDebugTime > DEBUG_INTERVAL)
+            {
+                _lastDebugTime = Time.time;
+                if (_nearestChest != null)
+                    Debug.Log($"[ItemPickupSystem] Nearest chest: {_nearestChest.name} at {_nearestChest.transform.position}");
+                else if (_nearestPickup != null)
+                    Debug.Log($"[ItemPickupSystem] Nearest pickup: {_nearestPickup.name}");
+                else
+                    Debug.Log("[ItemPickupSystem] No interactables in range");
+            }
         }
 
         /// <summary>
@@ -75,12 +110,20 @@ namespace ProjectC.Player
 
             // Ищем сундуки (NetworkChestContainer)
             var chests = FindObjectsByType<NetworkChestContainer>(FindObjectsInactive.Include);
+            if (debugMode && chests.Length > 0)
+                Debug.Log($"[ItemPickupSystem] Found {chests.Length} chests");
+                
             foreach (var chest in chests)
             {
                 if (chest == null || !chest.gameObject.activeSelf) continue;
 
                 float dist = Vector3.Distance(transform.position, chest.transform.position);
-                if (dist < chest.GetOpenRadius() && dist < nearestDist)
+                float openRadius = chest.GetOpenRadius();
+                
+                if (debugMode)
+                    Debug.Log($"[ItemPickupSystem] Chest {chest.name}: dist={dist:F1}, radius={openRadius:F1}");
+
+                if (dist < openRadius && dist < nearestDist)
                 {
                     nearestDist = dist;
                     _nearestChest = chest;
@@ -109,15 +152,25 @@ namespace ProjectC.Player
         }
 
         /// <summary>
-        /// Попытка взаимодействия по нажатию E
+        /// Called when E is pressed
         /// </summary>
-        private void TryPickup()
+        private void OnPickupPressed()
         {
-            if (!_stateMachine.IsWalking) return;
+            if (debugMode)
+                Debug.Log($"[ItemPickupSystem] E pressed! Walking={_stateMachine?.IsWalking}, Chest={_nearestChest != null}, Pickup={_nearestPickup != null}");
+
+            if (_stateMachine == null || !_stateMachine.IsWalking)
+            {
+                if (debugMode)
+                    Debug.Log("[ItemPickupSystem] Cannot interact - not walking");
+                return;
+            }
 
             // Приоритет: сундук
             if (_nearestChest != null)
             {
+                if (debugMode)
+                    Debug.Log($"[ItemPickupSystem] Opening chest: {_nearestChest.name}");
                 _nearestChest.TryOpen();
                 _nearestChest = null;
                 return;
@@ -126,6 +179,8 @@ namespace ProjectC.Player
             // Обычный предмет
             if (_nearestPickup != null)
             {
+                if (debugMode)
+                    Debug.Log($"[ItemPickupSystem] Collecting pickup: {_nearestPickup.name}");
                 _nearestPickup.Collect();
                 _nearestPickup = null;
             }
@@ -136,7 +191,7 @@ namespace ProjectC.Player
         /// </summary>
         public bool HasNearbyPickup()
         {
-            return (_nearestPickup != null || _nearestChest != null) && _stateMachine.IsWalking;
+            return (_nearestPickup != null || _nearestChest != null) && (_stateMachine != null && _stateMachine.IsWalking);
         }
 
         /// <summary>
@@ -158,7 +213,7 @@ namespace ProjectC.Player
         /// </summary>
         public bool IsNearbyChest()
         {
-            return _nearestChest != null && _stateMachine.IsWalking;
+            return _nearestChest != null && _stateMachine != null && _stateMachine.IsWalking;
         }
 
         private void OnDrawGizmosSelected()

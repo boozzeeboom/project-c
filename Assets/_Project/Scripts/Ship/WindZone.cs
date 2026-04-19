@@ -44,12 +44,10 @@ namespace ProjectC.Ship
                 {
                     _shipsInZone.Add(ship);
                     ship.RegisterWindZone(this);
-                    Debug.Log($"[WindZone] Ship entered: {ship.name}, zone: {windData.displayName}, active zones: {ship.GetActiveWindZoneCount()}");
                 }
             }
             else
             {
-                Debug.Log($"[WindZone] OnTriggerEnter: {other.name} — no ShipController found");
             }
         }
 
@@ -65,7 +63,6 @@ namespace ProjectC.Ship
             {
                 _shipsInZone.Remove(ship);
                 ship.UnregisterWindZone(this);
-                Debug.Log($"[WindZone] Ship exited: {ship.name}, zone: {windData.displayName}, active zones: {ship.GetActiveWindZoneCount()}");
             }
         }
 

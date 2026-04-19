@@ -111,7 +111,6 @@ namespace ProjectC.Core
         private void Start()
         {
             // NetworkManager.Singleton устанавливается в Start()
-            Debug.Log($"[NMC] Start() - NetworkManager.Singleton={(Unity.Netcode.NetworkManager.Singleton != null ? "SET" : "NULL")}");
         }
 
         /// <summary>
@@ -272,12 +271,7 @@ namespace ProjectC.Core
 
             try
             {
-                Debug.Log("[NMC] StartHost() called, starting host...");
                 networkManager.StartHost();
-                
-                // DIAGNOSTIC: Проверяем состояние сети после StartHost
-                Debug.Log($"[NMC] After StartHost: IsServer={networkManager.IsServer}, IsClient={networkManager.IsClient}, IsHost={networkManager.IsHost}, IsListening={networkManager.IsListening}");
-                
                 UpdateStatus("Хост запущен");
             }
             catch (Exception ex)

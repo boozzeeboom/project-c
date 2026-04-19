@@ -184,7 +184,6 @@ public class TradeDebugTools : MonoBehaviour
         debugRect.offsetMin = Vector2.zero;
         debugRect.offsetMax = Vector2.zero;
 
-        Debug.Log("[TradeDebugTools] UI created successfully");
     }
 
     private GameObject CreateTextObject(string name, Transform parent, string text, int fontSize, TextAlignmentOptions alignment)

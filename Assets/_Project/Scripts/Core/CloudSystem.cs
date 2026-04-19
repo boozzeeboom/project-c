@@ -98,7 +98,6 @@ namespace ProjectC.Core
                 upperObj.transform.SetParent(cloudParent);
                 upperLayer = upperObj.AddComponent<CloudLayer>();
                 upperLayer.config = upperLayerConfig;
-                Debug.Log($"[CloudSystem] Upper слой создан: Y={upperLayerConfig.minHeight}-{upperLayerConfig.maxHeight}м, density={upperLayerConfig.density}");
             }
             else
             {
@@ -112,7 +111,6 @@ namespace ProjectC.Core
                 middleObj.transform.SetParent(cloudParent);
                 middleLayer = middleObj.AddComponent<CloudLayer>();
                 middleLayer.config = middleLayerConfig;
-                Debug.Log($"[CloudSystem] Middle слой создан: Y={middleLayerConfig.minHeight}-{middleLayerConfig.maxHeight}м, density={middleLayerConfig.density}");
             }
             else
             {
@@ -126,7 +124,6 @@ namespace ProjectC.Core
                 lowerObj.transform.SetParent(cloudParent);
                 lowerLayer = lowerObj.AddComponent<CloudLayer>();
                 lowerLayer.config = lowerLayerConfig;
-                Debug.Log($"[CloudSystem] Lower слой создан: Y={lowerLayerConfig.minHeight}-{lowerLayerConfig.maxHeight}м, density={lowerLayerConfig.density}");
             }
             else
             {
@@ -141,7 +138,7 @@ namespace ProjectC.Core
             
             if (configsAssigned == 3)
             {
-                Debug.Log("[CloudSystem] Все 3 слоя облаков настроены ✅");
+                // All layers configured
             }
             else
             {
@@ -164,7 +161,6 @@ namespace ProjectC.Core
                     cumulonimbusManager.cloudCount = Mathf.Clamp(cumulonimbusManager.cloudCount, 3, 5);
                 }
 
-                Debug.Log("[CloudSystem] Кумуло-дождевые облака включены");
             }
 
             // Подсчитать облака

@@ -121,11 +121,11 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::ProjectC.Player.NetworkPlayer
   ShowTopMostFoldoutHeaderGroup: 1
-  walkSpeed: 50000
+  walkSpeed: 5
   runSpeed: 10
   rotationSpeed: 12
   jumpForce: 8
-  gravity: 0
+  gravity: -20
   cameraPrefab: {fileID: 0}
   boardDistance: 5
   pickupRange: 3

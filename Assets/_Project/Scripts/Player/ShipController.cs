@@ -249,7 +249,6 @@ namespace ProjectC.Player
                 _degradation = new SystemDegradationEffect(_rb, transform);
             }
 
-            Debug.Log($"[ShipController] Altitude system initialized. CorridorSystem: {(corridorSystem != null ? "Found" : "Not Found")}");
         }
 
         /// <summary>
@@ -334,7 +333,6 @@ namespace ProjectC.Player
                 _rb.angularDamping = angularDrag;
             }
 
-            Debug.Log($"[ShipController] Applied class: {shipFlightClass}");
         }
 
 #if UNITY_EDITOR
@@ -721,7 +719,6 @@ namespace ProjectC.Player
             }
             else
             {
-                Debug.Log("[ShipController] No ModuleManager assigned. Modules disabled.");
             }
         }
 
@@ -1142,7 +1139,6 @@ namespace ProjectC.Player
             }
             else
             {
-                Debug.Log("[ShipController] No FuelSystem assigned. Fuel disabled.");
             }
         }
 
@@ -1156,7 +1152,6 @@ namespace ProjectC.Player
             if (hud == null)
             {
                 hud = gameObject.AddComponent<ShipDebugHUD>();
-                Debug.Log("[ShipController] ShipDebugHUD auto-added.");
             }
 
             // Сессия 5_4: авто-добавление MeziyStatusHUD
@@ -1164,7 +1159,6 @@ namespace ProjectC.Player
             if (meziyHUD == null)
             {
                 meziyHUD = gameObject.AddComponent<MeziyStatusHUD>();
-                Debug.Log("[ShipController] MeziyStatusHUD auto-added.");
             }
         }
 
@@ -1178,37 +1172,16 @@ namespace ProjectC.Player
             {
                 meziyActivator.Initialize();
 
-                // Диагностика: какие мезиевые модули найдены
+                // Diagnostic: which meziy modules found
                 int pitchFound = meziyActivator.IsModuleInstalled("MODULE_MEZIY_PITCH") ? 1 : 0;
                 int rollFound = meziyActivator.IsModuleInstalled("MODULE_MEZIY_ROLL") ? 1 : 0;
                 int yawFound = meziyActivator.IsModuleInstalled("MODULE_MEZIY_YAW") ? 1 : 0;
                 int thrustFound = meziyActivator.IsModuleInstalled("MODULE_MEZIY_THRUST") ? 1 : 0;
-                Debug.Log($"[ShipController] Meziy system initialized. PITCH={pitchFound}, ROLL={rollFound}, YAW={yawFound}, THRUST={thrustFound}");
 
                 if (rollFound == 0 || yawFound == 0)
                 {
-                    Debug.LogWarning("[ShipController] Некоторые мезиевые модули НЕ найдены! Проверьте что MODULE_MEZIY_ROLL/YAW установлены в ModuleSlot в Inspector.");
-                    // Детальная диагностика слотов
-                    if (moduleManager != null)
-                    {
-                        for (int i = 0; i < moduleManager.slots.Count; i++)
-                        {
-                            var slot = moduleManager.slots[i];
-                            if (slot == null)
-                                Debug.LogWarning($"[ShipController]   Slot[{i}]: NULL");
-                            else if (!slot.isOccupied)
-                                Debug.LogWarning($"[ShipController]   Slot[{i}]: EMPTY (type={slot.slotType})");
-                            else if (slot.installedModule == null)
-                                Debug.LogWarning($"[ShipController]   Slot[{i}]: installedModule = null");
-                            else
-                                Debug.LogWarning($"[ShipController]   Slot[{i}]: '{slot.installedModule.moduleId}' isMeziy={slot.installedModule.isMeziyModule}");
-                        }
-                    }
+                    Debug.LogWarning("[ShipController] Some meziy modules NOT found!");
                 }
-            }
-            else
-            {
-                Debug.Log("[ShipController] No MeziyModuleActivator assigned. Meziy disabled.");
             }
         }
 

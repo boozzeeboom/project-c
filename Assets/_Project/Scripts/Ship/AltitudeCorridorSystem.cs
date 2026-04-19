@@ -54,12 +54,9 @@ namespace ProjectC.Ship
                 if (corridor != null && corridor.isGlobal)
                 {
                     _globalCorridor = corridor;
-                    Debug.Log($"[AltitudeCorridorSystem] Global corridor found: {corridor.displayName}");
                     return;
                 }
             }
-
-            Debug.LogWarning("[AltitudeCorridorSystem] Global corridor not found in list! Creating fallback...");
             CreateFallbackGlobalCorridor();
         }
 

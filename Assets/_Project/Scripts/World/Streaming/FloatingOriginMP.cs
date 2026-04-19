@@ -388,69 +388,25 @@ namespace ProjectC.World.Streaming
                 return;
             }
             _instance = this;
-            
-            Debug.Log("[FloatingOriginMP] ============= AWOKE CALLED =============");
-            
-            // Проверяем: если мы на TradeZones — логируем!
-            Transform parent = transform.parent;
-            if (parent != null)
-            {
-                Debug.Log($"[FloatingOriginMP] Parent of FloatingOriginMP: '{parent.name}'");
-            }
-            else
-            {
-                Debug.Log("[FloatingOriginMP] FloatingOriginMP has NO parent (root level)");
-            }
 
             // Пытаемся найти камеру на этом объекте
             _camera = GetComponent<Camera>();
-            
+
             // Если камеры нет — пробуем найти Main Camera
             if (_camera == null)
             {
                 _camera = Camera.main;
-                if (_camera != null)
-                {
-                    Debug.LogWarning($"[FloatingOriginMP] No Camera on this GameObject, using Camera.main ({_camera.name})");
-                    Debug.LogWarning($"[FloatingOriginMP] WARNING: Camera.main is under parent: {_camera.transform.parent?.name ?? "NONE"}");
-                }
-                else
-                {
-                    Debug.LogWarning("[FloatingOriginMP] No Camera found! Using fallback position tracking.");
-                    // БУДЕМ отслеживать позицию игрока напрямую
-                }
-            }
-            else
-            {
-                Debug.Log($"[FloatingOriginMP] Camera found: {_camera.name} at {_camera.transform.position:F0}");
-                Debug.Log($"[FloatingOriginMP] Camera parent: {_camera.transform.parent?.name ?? "NONE"}");
             }
 
             FindOrCreateWorldRoots();
 
-            Debug.Log($"[FloatingOriginMP] After FindOrCreateWorldRoots: roots={_worldRoots.Count}");
-            
-            // Проверяем TradeZones позицию
-            GameObject tz = GameObject.Find("TradeZones");
-            if (tz != null)
-            {
-                Debug.Log($"[FloatingOriginMP] TradeZones at: {tz.transform.position:F0}");
-            }
-
             // НЕ отключаем компонент если roots не найдены — запускаем в режиме диагностики
             _initialized = true;
-
-            if (showDebugHUD)
-            {
-                Debug.Log("[FloatingOriginMP] HUD enabled");
-            }
 
             if (_worldRoots.Count == 0)
             {
                 Debug.LogError("[FloatingOriginMP] CRITICAL: No world roots found! Searching: " + string.Join(", ", worldRootNames));
             }
-
-            Debug.Log($"[FloatingOriginMP] Initialized. threshold={threshold:N0}, roots={_worldRoots.Count}");
         }
 
         void LateUpdate()

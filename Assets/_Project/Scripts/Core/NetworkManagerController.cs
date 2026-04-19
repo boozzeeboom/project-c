@@ -39,43 +39,27 @@ namespace ProjectC.Core
 
         private void Awake()
         {
-            Debug.Log("[NMC] Awake() called - NetworkManagerController initializing...");
-            
             // Получаем или создаём NetworkManager
             networkManager = GetComponent<Unity.Netcode.NetworkManager>();
             if (networkManager == null)
             {
-                Debug.LogWarning("[NMC] NetworkManager component not found on this GameObject. Adding new one...");
                 networkManager = gameObject.AddComponent<Unity.Netcode.NetworkManager>();
             }
-            else
-            {
-                Debug.Log("[NMC] NetworkManager component found!");
-            }
-            
+
             // Проверяем и добавляем UnityTransport если нужно
             var transport = GetComponent<Unity.Netcode.Transports.UTP.UnityTransport>();
             if (transport == null)
             {
-                Debug.LogWarning("[NMC] UnityTransport not found. Adding...");
                 transport = gameObject.AddComponent<Unity.Netcode.Transports.UTP.UnityTransport>();
             }
-            else
-            {
-                Debug.Log("[NMC] UnityTransport found!");
-            }
-            
+
             // Настраиваем NetworkConfig на использование UnityTransport
             if (networkManager.NetworkConfig.NetworkTransport == null)
             {
-                Debug.Log("[NMC] Setting NetworkConfig.NetworkTransport to UnityTransport...");
                 networkManager.NetworkConfig.NetworkTransport = transport;
             }
 
             DontDestroyOnLoad(gameObject);
-            
-            // NetworkManager.Singleton устанавливается после Start(), поэтому проверим позже
-            Debug.Log($"[NMC] Awake complete. NetworkManager.Singleton={(Unity.Netcode.NetworkManager.Singleton != null ? "SET" : "NULL")}");
 
             // СЕССИЯ DIAGNOSTIC: Создаём TradeDebugTools для отладки
             CreateTradeDebugTools();
@@ -105,7 +89,6 @@ namespace ProjectC.Core
             debugObj.transform.SetParent(transform); // Parent к NMC для сохранения при смене сцены
             var debugTools = debugObj.AddComponent<ProjectC.Trade.TradeDebugTools>();
             debugObj.SetActive(true);
-            Debug.Log("[NMC] TradeDebugTools created and added to scene");
         }
         
         private void Start()

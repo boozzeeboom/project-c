@@ -80,7 +80,6 @@ namespace ProjectC.Core
                 id++;
             }
 
-            Debug.Log($"[ItemDatabase] Всего зарегистрировано: {allItems.Count}");
         }
     }
 }

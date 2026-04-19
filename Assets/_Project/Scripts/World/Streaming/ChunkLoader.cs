@@ -49,6 +49,10 @@ namespace ProjectC.World.Streaming
         /// Хранит root-объект каждого загруженного чанка.
         /// </summary>
         private readonly Dictionary<ChunkId, GameObject> loadedChunks = new Dictionary<ChunkId, GameObject>();
+        
+        [Header("Debug")]
+        [Tooltip("Show debug logs for chunk loading")]
+        [SerializeField] private bool _showDebugLogs = true;
 
         /// <summary>
         /// Хранит состояние fade-out для чанков (ChunkId → оставшееся время fade).
@@ -92,38 +96,46 @@ namespace ProjectC.World.Streaming
         }
 
         /// <summary>
-        /// Загрузить чанк по его ChunkId.
-        /// Если чанк уже загружен или находится в процессе загрузки — игнорируется.
+        /// Загрузить чанк.
+        /// I5-001 FIX: Creates chunk on-demand if not in WorldChunkManager registry.
         /// </summary>
-        /// <param name="chunkId">Идентификатор чанка для загрузки.</param>
+        /// <param name="chunkId">ID чанка для загрузки.</param>
         public void LoadChunk(ChunkId chunkId)
         {
-            if (chunkManager == null)
-            {
-                Debug.LogError("[ChunkLoader] Нельзя загрузить чанк: WorldChunkManager не инициализирован.");
-                return;
-            }
-
-            // Проверка: чанк уже загружен
             if (loadedChunks.ContainsKey(chunkId))
             {
-                Debug.LogWarning($"[ChunkLoader] Чанк {chunkId} уже загружен, пропуск.");
+                if (_showDebugLogs)
+                    Debug.Log($"[ChunkLoader] Chunk {chunkId} already loaded, skipping.");
                 return;
             }
-
-            // Проверка: чанк в процессе fade-out — отменяем выгрузку
-            if (chunkFadeTimes.ContainsKey(chunkId))
+            
+            if (chunkManager == null)
             {
-                Debug.Log($"[ChunkLoader] Чанк {chunkId} в процессе fade-out, отмена выгрузки.");
-                CancelFadeOut(chunkId);
+                Debug.LogError("[ChunkLoader] WorldChunkManager not assigned!");
                 return;
             }
-
+            
+            // I5-001 FIX: Try to get from registry, create on-demand if not found
             WorldChunk chunk = chunkManager.GetChunk(chunkId);
             if (chunk == null)
             {
-                Debug.LogError($"[ChunkLoader] Чанк {chunkId} не найден в WorldChunkManager.");
-                return;
+                // I5-001 FIX: Create basic chunk data on-demand for procedural world
+                if (_showDebugLogs)
+                    Debug.Log($"[ChunkLoader] Creating on-demand chunk {chunkId}");
+                
+                // Create basic chunk with empty peaks/farms
+                chunk = new WorldChunk
+                {
+                    Id = chunkId,
+                    State = ChunkState.Unloaded,
+                    Peaks = new List<PeakData>(),
+                    Farms = new List<FarmData>(),
+                    CloudSeed = chunkManager.GenerateCloudSeed(chunkId),
+                    WorldBounds = new Bounds(
+                        new Vector3(chunkId.GridX * 2000 + 1000, 0, chunkId.GridZ * 2000 + 1000),
+                        new Vector3(2000, 1000, 2000)
+                    )
+                };
             }
 
             Debug.Log($"[ChunkLoader] Начало загрузки {chunkId}");

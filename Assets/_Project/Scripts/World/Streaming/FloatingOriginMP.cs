@@ -318,9 +318,13 @@ namespace ProjectC.World.Streaming
                     
                     if (pos.magnitude > 10000) // Только если далеко от origin!
                     {
+                        // FIX (I3-001): Subtract _totalOffset to get TRUE world position
+                        // After world shift, player position already includes the shift
+                        // We need the position RELATIVE TO ORIGIN for threshold check
+                        Vector3 truePos = pos - _totalOffset;
                         if (showDebugLogs)
-                            Debug.Log($"[FloatingOriginMP] GetWorldPosition: using NetworkPlayer IsOwner={pos:F0}, name={netObj.name}");
-                        return pos;
+                            Debug.Log($"[FloatingOriginMP] GetWorldPosition: using NetworkPlayer IsOwner, rawPos={pos:F0}, _totalOffset={_totalOffset:F0}, truePos={truePos:F0}, name={netObj.name}");
+                        return truePos;
                     }
                     else if (showDebugLogs)
                     {

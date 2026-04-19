@@ -16,6 +16,7 @@ namespace ProjectC.Core
         private static readonly List<PickupItem> _pickups = new List<PickupItem>(32);
         private static readonly List<ChestContainer> _chests = new List<ChestContainer>(16);
         private static readonly List<ShipController> _ships = new List<ShipController>(8);
+        private static readonly List<object> _npcs = new List<object>(16);
 
         /// <summary>
         /// Register a pickup item when it enters player's trigger.
@@ -84,6 +85,28 @@ namespace ProjectC.Core
         }
 
         /// <summary>
+        /// Register an NPC when it enters player's trigger.
+        /// </summary>
+        public static void RegisterNpc(World.Npc.NpcInteraction npc)
+        {
+            if (npc != null && !_npcs.Contains(npc))
+            {
+                _npcs.Add(npc);
+            }
+        }
+
+        /// <summary>
+        /// Unregister an NPC when it exits player's trigger.
+        /// </summary>
+        public static void UnregisterNpc(World.Npc.NpcInteraction npc)
+        {
+            if (npc != null)
+            {
+                _npcs.Remove(npc);
+            }
+        }
+
+        /// <summary>
         /// Get cached list of pickups. DO NOT modify this list.
         /// </summary>
         public static List<PickupItem> GetPickups() => _pickups;
@@ -99,6 +122,11 @@ namespace ProjectC.Core
         public static List<ShipController> GetShips() => _ships;
 
         /// <summary>
+        /// Get cached list of NPCs. DO NOT modify this list.
+        /// </summary>
+        public static IReadOnlyList<object> GetNpcs() => _npcs;
+
+        /// <summary>
         /// Clear all cached references. Call when scene changes.
         /// </summary>
         public static void ClearAll()
@@ -106,6 +134,7 @@ namespace ProjectC.Core
             _pickups.Clear();
             _chests.Clear();
             _ships.Clear();
+            _npcs.Clear();
         }
 
         /// <summary>
@@ -174,6 +203,30 @@ namespace ProjectC.Core
                 {
                     minDist = dist;
                     nearest = ship;
+                }
+            }
+
+            return nearest;
+        }
+
+        /// <summary>
+        /// Find nearest NPC within range. Zero allocations.
+        /// </summary>
+        public static World.Npc.NpcInteraction FindNearestNpc(Vector3 position, float range)
+        {
+            World.Npc.NpcInteraction nearest = null;
+            float minDist = float.MaxValue;
+
+            for (int i = 0; i < _npcs.Count; i++)
+            {
+                var npc = _npcs[i] as World.Npc.NpcInteraction;
+                if (npc == null || !npc.gameObject.activeSelf) continue;
+                
+                float dist = Vector3.Distance(position, npc.transform.position);
+                if (dist < range && dist < minDist)
+                {
+                    minDist = dist;
+                    nearest = npc;
                 }
             }
 

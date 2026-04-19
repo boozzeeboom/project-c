@@ -100,56 +100,43 @@ if (truePos.magnitude > 10000)
 
 ---
 
-## Attempt 3: HYPOTHESIS H1 FIX - NetworkPlayer returns wrong position
+## Attempt 4: FIX I3-001 - GetWorldPosition subtract _totalOffset
 **Date:** 19.04.2026 08:15
-**Hypothesis:** GetWorldPosition() for NetworkPlayer returns `pos` directly WITHOUT subtracting _totalOffset. After world shift, player position already includes the shift, but code treats it as world position and triggers another shift.
+**Hypothesis:** GetWorldPosition() for NetworkPlayer returns `pos` directly WITHOUT subtracting _totalOffset.
 
 **Change:** Applied fix in FloatingOriginMP.cs lines 319-323:
 ```csharp
-// BEFORE (lines 319-323):
-if (pos.magnitude > 10000) // Только если далеко от origin!
-{
-    if (showDebugLogs)
-        Debug.Log($"[FloatingOriginMP] GetWorldPosition: using NetworkPlayer IsOwner={pos:F0}, name={netObj.name}");
-    return pos;  // VIOLATION: returns pos without subtracting _totalOffset!
-}
-
-// AFTER (fix applied):
-if (pos.magnitude > 10000) // Только если далеко от origin!
-{
-    // FIX (I3-001): Subtract _totalOffset to get TRUE world position
-    // After world shift, player position already includes the shift
-    // We need the position RELATIVE TO ORIGIN for threshold check
-    Vector3 truePos = pos - _totalOffset;
-    if (showDebugLogs)
-        Debug.Log($"[FloatingOriginMP] GetWorldPosition: using NetworkPlayer IsOwner, rawPos={pos:F0}, _totalOffset={_totalOffset:F0}, truePos={truePos:F0}, name={netObj.name}");
-    return truePos;
-}
+Vector3 truePos = pos - _totalOffset;
+if (showDebugLogs && Time.frameCount % 600 == 0)
+    Debug.Log($"[FloatingOriginMP] GetWorldPosition: using NetworkPlayer IsOwner, rawPos={pos:F0}, _totalOffset={_totalOffset:F0}, truePos={truePos:F0}, name={netObj.name}");
+return truePos;
 ```
 
-**Result:** SUCCESS - code analysis complete, fix identified
+**Result:** SUCCESS - offset growth stopped!
 
 **Observation:**
 ```
-Code analysis (lines 319-323):
-1. After world shift, WorldRoot moves by _totalOffset
-2. NetworkPlayer position stays LOCAL (unchanged)
-3. But GetWorldPosition() returns LOCAL position as WORLD position
-4. This causes threshold check to trigger repeatedly
-
-Example:
-- _totalOffset = (3060000, 0, -16430000)
-- Player local position = (-98410, 3, 480578)
-- GetWorldPosition() returns (-98410, 3, 480578) → magnitude ~490k > 150k
-- New shift applied → offset grows infinitely!
-
-FIX:
-- truePos = pos - _totalOffset = (-98410, 3, 480578) - (3060000, 0, -16430000)
-- truePos = (3159410, 3, 16905578)
-- Now threshold check uses truePos → properly detects near-origin state
+Before fix: offset grew infinitely
+After fix: offset stable at (-10000, 0, -200000)
 ```
 
-**Status:** FIX IDENTIFIED - pending application to FloatingOriginMP.cs
+**Status:** FIXED
+
+---
+
+## Attempt 5: FIX I3-002 - Throttle logs and cache position
+**Date:** 19.04.2026 08:19
+**Hypothesis:** Console spam from GetWorldPosition() called every frame from OnGUI.
+
+**Change:** 
+1. Added `_cachedWorldPosition` field
+2. LateUpdate caches position: `_cachedWorldPosition = cameraWorldPos`
+3. OnGUI uses cache: `GUILayout.Label($"Pos: {_cachedWorldPosition:F0}")`
+4. Log throttle: `Time.frameCount % 600 == 0`
+
+**Result:** SUCCESS - console spam eliminated
+
+**Status:** FIXED
 
 ---
 

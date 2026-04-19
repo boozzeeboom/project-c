@@ -164,8 +164,6 @@ namespace ProjectC.Core
             CreateControlHintsUI();
 
             _cameraInitialized = true;
-
-            Debug.Log($"[ThirdPersonCamera] Инициализирована для цели: {target.name}. Cursor locked: {inActiveGame}");
         }
 
         /// <summary>

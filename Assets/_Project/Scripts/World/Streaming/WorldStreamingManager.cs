@@ -233,7 +233,6 @@ namespace ProjectC.World
             {
                 chunkLoader.OnChunkLoaded += OnChunkLoadedHandler;
                 chunkLoader.OnChunkUnloaded += OnChunkUnloadedHandler;
-                Debug.Log("[WorldStreamingManager] Subscribed to ChunkLoader events");
             }
         }
         
@@ -243,9 +242,6 @@ namespace ProjectC.World
         /// </summary>
         private void OnChunkLoadedHandler(ChunkId chunkId)
         {
-            // IMPORTANT: always log - this is a key event for debugging
-            Debug.Log($"[WorldStreamingManager] Chunk loaded: {chunkId.GridX},{chunkId.GridZ}");
-            
             // Update peak statistics
             if (_loadedChunks.Count > _peakLoadedChunks)
             {
@@ -259,8 +255,6 @@ namespace ProjectC.World
         /// </summary>
         private void OnChunkUnloadedHandler(ChunkId chunkId)
         {
-            // IMPORTANT: always log - this is a key event for debugging
-            Debug.Log($"[WorldStreamingManager] Chunk unloaded: {chunkId.GridX},{chunkId.GridZ}");
         }
         
         private void Start()
@@ -334,24 +328,13 @@ namespace ProjectC.World
             // Если центр не изменился - пропускаем
             if (centerChunk.Equals(_currentCenterChunk) && _loadedChunks.Count > 0)
             {
-                if (showDebugHUD)
-                    Debug.Log($"[WorldStreamingManager] Skipping: center chunk unchanged {centerChunk}");
                 return;
-            }
-            
-            // I5-001 DEBUG: подробный лог
-            if (showDebugHUD)
-            {
-                Debug.Log($"[WorldStreamingManager] Loading around {playerPosition}, centerChunk={centerChunk}, radius={effectiveRadius}");
             }
             
             _currentCenterChunk = centerChunk;
             
             // Get chunks in radius
             List<ChunkId> chunksInRange = chunkManager.GetChunksInRadius(playerPosition, effectiveRadius);
-            
-            // I5-001 DEBUG: Check how many chunks are in range
-            Debug.Log($"[WorldStreamingManager] DEBUG: chunksInRange count = {chunksInRange.Count}, _loadedChunks count = {_loadedChunks.Count}");
             
             // Load new chunks
             foreach (var chunkId in chunksInRange)
@@ -360,11 +343,6 @@ namespace ProjectC.World
                 {
                     chunkLoader.LoadChunk(chunkId);
                     _loadedChunks.Add(chunkId);
-                    
-                    if (showDebugHUD)
-                    {
-                        Debug.Log($"[WorldStreamingManager] Loading chunk {chunkId}");
-                    }
                 }
             }
             
@@ -387,11 +365,6 @@ namespace ProjectC.World
             {
                 chunkLoader.UnloadChunk(chunkId);
                 _loadedChunks.Remove(chunkId);
-                
-                if (showDebugHUD)
-                {
-                    Debug.Log($"[WorldStreamingManager] Unloading chunk {chunkId}");
-                }
             }
         }
         
@@ -405,7 +378,6 @@ namespace ProjectC.World
         {
             if (_loadedChunks.Contains(chunkId))
             {
-                Debug.Log($"[WorldStreamingManager] Chunk {chunkId} already loaded, skipping.");
                 return;
             }
             
@@ -415,7 +387,6 @@ namespace ProjectC.World
                 return;
             }
             
-            Debug.Log($"[WorldStreamingManager] Loading chunk {chunkId} by server command");
             chunkLoader.LoadChunk(chunkId);
             _loadedChunks.Add(chunkId);
         }
@@ -440,7 +411,6 @@ namespace ProjectC.World
                 return;
             }
             
-            Debug.Log($"[WorldStreamingManager] Unloading chunk {chunkId} by server command");
             chunkLoader.UnloadChunk(chunkId);
             _loadedChunks.Remove(chunkId);
         }
@@ -601,22 +571,7 @@ namespace ProjectC.World
         /// </summary>
         private void InitializeStreaming()
         {
-            Debug.Log("[WorldStreamingManager] Initializing streaming system...");
-            Debug.Log($"[WorldStreamingManager] WorldData: {(worldData != null ? "OK" : "NULL")}");
-            Debug.Log($"[WorldStreamingManager] ChunkManager: {(chunkManager != null ? $"OK ({chunkManager.TotalChunkCount} chunks)" : "NULL")}");
-            Debug.Log($"[WorldStreamingManager] ChunkGenerator: {(chunkGenerator != null ? "OK" : "NULL")}");
-            Debug.Log($"[WorldStreamingManager] ChunkLoader: {(chunkLoader != null ? "OK" : "NULL")}");
-            Debug.Log($"[WorldStreamingManager] FloatingOrigin: {(floatingOrigin != null ? "OK" : "NULL")}");
-            
-            // Configure ChunkLoader with seed
-            if (chunkLoader != null && chunkGenerator != null)
-            {
-                // ChunkLoader should use the same seed
-                // This is configured via Inspector or here
-            }
-            
             _initialized = true;
-            Debug.Log("[WorldStreamingManager] Streaming system initialized.");
         }
         
         /// <summary>
@@ -717,11 +672,6 @@ namespace ProjectC.World
                     _preloadQueue.Insert(insertIndex, chunkId);
                 }
             }
-            
-            if (showDebugHUD && _preloadQueue.Count > 0)
-            {
-                Debug.Log($"[WorldStreamingManager] Preload queue built: {_preloadQueue.Count} chunks");
-            }
         }
         
         /// <summary>
@@ -757,11 +707,6 @@ namespace ProjectC.World
             {
                 chunkLoader.LoadChunk(chunkToLoad);
                 _loadedChunks.Add(chunkToLoad);
-                
-                if (showDebugHUD)
-                {
-                    Debug.Log($"[WorldStreamingManager] Preloading chunk {chunkToLoad}");
-                }
             }
         }
         

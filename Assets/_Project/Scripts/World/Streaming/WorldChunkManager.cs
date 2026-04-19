@@ -74,7 +74,7 @@ namespace ProjectC.World.Streaming
     }
 
     /// <summary>
-    /// Менеджер чанков мира — строит реестр всех чанков на основе WorldData,
+    /// Менеджер чанков мира - строит реестр всех чанков на основе WorldData,
     /// обеспечивает grid-based lookup и определение содержимого каждого чанка.
     /// </summary>
     public class WorldChunkManager : MonoBehaviour
@@ -86,7 +86,7 @@ namespace ProjectC.World.Streaming
         [Tooltip("ScriptableObject с данными мира (massifs, worldMinX/Z, worldMaxX/Z)")]
         private WorldData worldData;
 
-        /// <summary>Реестр всех чанков мира: ChunkId → WorldChunk.</summary>
+        /// <summary>Реестр всех чанков мира: ChunkId -> WorldChunk.</summary>
         private readonly Dictionary<ChunkId, WorldChunk> _chunkRegistry = new Dictionary<ChunkId, WorldChunk>();
 
         /// <summary>Минимальный GridX в мире.</summary>
@@ -100,6 +100,10 @@ namespace ProjectC.World.Streaming
 
         /// <summary>Максимальный GridZ в мире.</summary>
         private int _maxGridZ;
+
+        [Header("Debug")]
+        [Tooltip("Show debug logs for chunk generation")]
+        [SerializeField] private bool showDebugLogs = true;
 
         /// <summary>Всего чанков в реестре.</summary>
         public int TotalChunkCount => _chunkRegistry.Count;
@@ -143,20 +147,12 @@ namespace ProjectC.World.Streaming
             var result = new List<ChunkId>();
             ChunkId centerChunk = GetChunkAtPosition(centerPos);
 
-            // I5-001 DEBUG: Log world bounds vs requested position
-            float worldMinX = worldData != null ? worldData.worldMinX : 0;
-            float worldMaxX = worldData != null ? worldData.worldMaxX : 0;
-            float worldMinZ = worldData != null ? worldData.worldMinZ : 0;
-            float worldMaxZ = worldData != null ? worldData.worldMaxZ : 0;
-            Debug.Log($"[WorldChunkManager] GetChunksInRadius: center={centerPos:F0}, centerChunk={centerChunk}, radius={radiusInChunks}");
-            Debug.Log($"[WorldChunkManager] World bounds: X[{worldMinX}..{worldMaxX}], Z[{worldMinZ}..{worldMaxZ}], GridX[{_minGridX}..{_maxGridX}]");
-
             for (int x = centerChunk.GridX - radiusInChunks; x <= centerChunk.GridX + radiusInChunks; x++)
             {
                 for (int z = centerChunk.GridZ - radiusInChunks; z <= centerChunk.GridZ + radiusInChunks; z++)
                 {
                     ChunkId candidate = new ChunkId(x, z);
-                    
+
                     // I5-001 FIX: First check if chunk exists in registry
                     if (_chunkRegistry.TryGetValue(candidate, out var existingChunk))
                     {
@@ -165,9 +161,8 @@ namespace ProjectC.World.Streaming
                     else
                     {
                         // I5-001 FIX: Create on-demand for procedurally generated world
-                        // This allows streaming even if WorldData bounds are smaller than the actual world
                         result.Add(candidate);
-                        
+
                         if (showDebugLogs)
                         {
                             Debug.Log($"[WorldChunkManager] Creating on-demand chunk {candidate} (not in registry)");
@@ -176,13 +171,8 @@ namespace ProjectC.World.Streaming
                 }
             }
 
-            Debug.Log($"[WorldChunkManager] GetChunksInRadius result: {result.Count} chunks (registry had {_chunkRegistry.Count})");
             return result;
         }
-        
-        [Header("Debug")]
-        [Tooltip("Show debug logs for chunk generation")]
-        [SerializeField] private bool showDebugLogs = true;
 
         /// <summary>
         /// Вычислить детерминированный CloudSeed для чанка на основе его координат.
@@ -207,9 +197,9 @@ namespace ProjectC.World.Streaming
             {
                 // Пробуем найти в сцене
                 worldData = FindAnyObjectByType<WorldData>();
-                
+
                 #if UNITY_EDITOR
-                // Если не нашли — загружаем из Assets
+                // Если не нашли - загружаем из Assets
                 if (worldData == null)
                 {
                     worldData = UnityEditor.AssetDatabase.LoadAssetAtPath<WorldData>(
@@ -217,7 +207,7 @@ namespace ProjectC.World.Streaming
                 }
                 #endif
             }
-            
+
             if (worldData == null)
             {
                 Debug.LogError("[WorldChunkManager] WorldData не найдена! Streaming disabled.");
@@ -233,8 +223,6 @@ namespace ProjectC.World.Streaming
         /// </summary>
         private void BuildChunkRegistry()
         {
-            Debug.Log("[WorldChunkManager] Начало построения реестра чанков...");
-
             _chunkRegistry.Clear();
 
             // Определяем границы мира
@@ -248,9 +236,6 @@ namespace ProjectC.World.Streaming
             _maxGridX = Mathf.FloorToInt(maxX / ChunkSize);
             _minGridZ = Mathf.FloorToInt(minZ / ChunkSize);
             _maxGridZ = Mathf.FloorToInt(maxZ / ChunkSize);
-
-            Debug.Log($"[WorldChunkManager] Границы мира: X[{minX}..{maxX}], Z[{minZ}..{maxZ}]");
-            Debug.Log($"[WorldChunkManager] Диапазон чанков: X[{_minGridX}..{_maxGridX}], Z[{_minGridZ}..{_maxGridZ}]");
 
             // Собираем все пики и фермы из всех массивов
             var allPeaks = new List<PeakData>();
@@ -267,10 +252,6 @@ namespace ProjectC.World.Streaming
                     allFarms.AddRange(massif.farms);
             }
 
-            Debug.Log($"[WorldChunkManager] Найдено пиков: {allPeaks.Count}, ферм: {allFarms.Count}");
-
-            int chunkCount = 0;
-
             // Создаём чанк для каждой ячейки grid
             for (int gx = _minGridX; gx <= _maxGridX; gx++)
             {
@@ -279,11 +260,8 @@ namespace ProjectC.World.Streaming
                     ChunkId chunkId = new ChunkId(gx, gz);
                     WorldChunk chunk = CreateChunk(chunkId, allPeaks, allFarms);
                     _chunkRegistry[chunkId] = chunk;
-                    chunkCount++;
                 }
             }
-
-            Debug.Log($"[WorldChunkManager] Реестр построен: {chunkCount} чанков");
         }
 
         /// <summary>

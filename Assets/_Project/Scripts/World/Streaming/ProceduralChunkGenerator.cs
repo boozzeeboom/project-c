@@ -83,7 +83,6 @@ namespace ProjectC.World.Streaming
             }
 
             int chunkSeed = GenerateChunkSeed(chunk.Id, globalSeed);
-            Debug.Log($"[ProceduralChunkGenerator] Начало генерации {chunk.Id} (chunkSeed={chunkSeed})");
 
             chunk.State = ChunkState.Loading;
 
@@ -97,7 +96,6 @@ namespace ProjectC.World.Streaming
             yield return GenerateFarmsAsync(chunk, parentTransform, chunkSeed);
 
             chunk.State = ChunkState.Loaded;
-            Debug.Log($"[ProceduralChunkGenerator] Завершена генерация {chunk.Id}");
         }
 
         /// <summary>
@@ -108,11 +106,8 @@ namespace ProjectC.World.Streaming
         {
             if (chunk.Peaks == null || chunk.Peaks.Count == 0)
             {
-                Debug.Log($"[ProceduralChunkGenerator] {chunk.Id} — нет пиков, пропуск генерации гор");
                 yield break;
             }
-
-            Debug.Log($"[ProceduralChunkGenerator] {chunk.Id} — генерация {chunk.Peaks.Count} гор");
 
             for (int i = 0; i < chunk.Peaks.Count; i++)
             {
@@ -127,8 +122,6 @@ namespace ProjectC.World.Streaming
                     yield return null;
                 }
             }
-
-            Debug.Log($"[ProceduralChunkGenerator] {chunk.Id} — генерация гор завершена");
         }
 
         /// <summary>
@@ -208,8 +201,6 @@ namespace ProjectC.World.Streaming
             // Детерминированное количество облаков: 1-3 на чанк
             int cloudCount = rng.Next(1, 4);
 
-            Debug.Log($"[ProceduralChunkGenerator] {chunk.Id} — генерация {cloudCount} облаков (cloudSeed={cloudSeed})");
-
             // Создаём контейнер для облаков чанка
             GameObject cloudContainer = new GameObject($"Clouds_{chunk.Id}");
             cloudContainer.transform.SetParent(parentTransform);
@@ -247,8 +238,6 @@ namespace ProjectC.World.Streaming
                     yield return null;
                 }
             }
-
-            Debug.Log($"[ProceduralChunkGenerator] {chunk.Id} — генерация облаков завершена");
         }
 
         /// <summary>
@@ -259,11 +248,8 @@ namespace ProjectC.World.Streaming
         {
             if (chunk.Farms == null || chunk.Farms.Count == 0)
             {
-                Debug.Log($"[ProceduralChunkGenerator] {chunk.Id} — нет ферм, пропуск генерации");
                 yield break;
             }
-
-            Debug.Log($"[ProceduralChunkGenerator] {chunk.Id} — генерация {chunk.Farms.Count} ферм");
 
             for (int i = 0; i < chunk.Farms.Count; i++)
             {
@@ -278,8 +264,6 @@ namespace ProjectC.World.Streaming
                     yield return null;
                 }
             }
-
-            Debug.Log($"[ProceduralChunkGenerator] {chunk.Id} — генерация ферм завершена");
         }
 
         /// <summary>

@@ -153,6 +153,9 @@ namespace ProjectC.World.Streaming
         private int _shiftCount = 0;
         private bool _initialized = false;
         
+        // CACHED position for HUD (updated once per frame in LateUpdate)
+        private Vector3 _cachedWorldPosition = Vector3.zero;
+        
         /// <summary>
         /// Timestamp последнего сдвига (для защиты от спама).
         /// После ResetOrigin/ApplyWorldShift включаем cooldown чтобы LateUpdate не спамил.
@@ -322,7 +325,8 @@ namespace ProjectC.World.Streaming
                         // After world shift, player position already includes the shift
                         // We need the position RELATIVE TO ORIGIN for threshold check
                         Vector3 truePos = pos - _totalOffset;
-                        if (showDebugLogs)
+                        // THROTTLE: log once per 10 seconds (600 frames) to avoid spam
+                        if (showDebugLogs && Time.frameCount % 600 == 0)
                             Debug.Log($"[FloatingOriginMP] GetWorldPosition: using NetworkPlayer IsOwner, rawPos={pos:F0}, _totalOffset={_totalOffset:F0}, truePos={truePos:F0}, name={netObj.name}");
                         return truePos;
                     }
@@ -477,6 +481,10 @@ namespace ProjectC.World.Streaming
             
             // Вычисляем позицию для проверки threshold
             Vector3 cameraWorldPos = GetWorldPosition();
+            
+            // CACHE: сохраняем для OnGUI чтобы избежать повторных вызовов
+            _cachedWorldPosition = cameraWorldPos;
+            
             float distFromOrigin = cameraWorldPos.magnitude;
             
             // DEBUG: Логируем только при реальном сдвиге или раз в 10 секунд
@@ -1070,8 +1078,9 @@ namespace ProjectC.World.Streaming
             GUILayout.Label($"Offset: {_totalOffset:N0}");
             GUILayout.Label($"Shifts: {_shiftCount}");
             GUILayout.Label($"Roots: {_worldRoots.Count}");
-            // ИСПРАВЛЕНО: используем GetWorldPosition() для безопасного отображения
-            GUILayout.Label($"Pos: {GetWorldPosition():F0}");
+            // FIX (I3-002): используем кешированную позицию вместо GetWorldPosition()
+            // чтобы избежать спама от повторных вызовов
+            GUILayout.Label($"Pos: {_cachedWorldPosition:F0}");
             GUILayout.Label($"Init: {_initialized}");
 
             // Показываем warning если roots не найдены

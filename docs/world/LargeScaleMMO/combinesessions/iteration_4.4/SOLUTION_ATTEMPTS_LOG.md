@@ -1,97 +1,219 @@
-# Iteration 4.4: NPC System — Журнал попыток решения
+# NPC System — Solution Attempts Log
 
-**Дата создания:** 19.04.2026, 14:40 MSK  
-**Статус:** 🔴 НЕ НАЧАТО  
-**Проблема:** NPC система не реализована (задача 4.4 из Iteration 4)
-
----
-
-## 📊 СВОДКА ПОПЫТОК
-
-| # | Дата | Подход | Файл | Результат |
-|---|------|--------|------|-----------|
-| — | — | Пока нет попыток | — | — |
+**Iteration:** 4.4  
+**Дата:** 19.04.2026  
+**Статус:** ✅ ЗАВЕРШЕНО
 
 ---
 
-## 🔴 ПРОБЛЕМА (ОПИСАНИЕ)
+## Созданные файлы
 
-### Контекст
+### Scripts (Assets/_Project/Scripts/World/Npc/)
 
-В ITERATION 4 была запланирована реализация NPC системы:
-- 4.4.1: NpcData.cs — ScriptableObject
-- 4.4.2: NpcEntity.cs — MonoBehaviour
-- 4.4.3: NpcInteraction.cs — компонент взаимодействия
-- 4.4.4: Диалоговая система
-- 4.4.5: Интеграция с контрактами
+| Файл | Описание | Статус |
+|------|----------|--------|
+| `NpcData.cs` | ScriptableObject с данными NPC | ✅ |
+| `NpcEntity.cs` | MonoBehaviour с NetworkObject | ✅ |
+| `NpcInteraction.cs` | IInteractable компонент | ✅ |
+| `NpcDialogueManager.cs` | Singleton для диалогов | ✅ |
 
-**Статус:** ❌ НЕ РЕАЛИЗОВАНО
+### Updated Files
 
-### Зачем нужна NPC система
+| Файл | Изменение | Статус |
+|------|-----------|--------|
+| `InteractableManager.cs` | Добавлена поддержка NPC | ✅ |
 
-1. **Интерактивные NPC** — игрок взаимодействует с персонажами
-2. **Выдача контрактов** — NPC даёт задания
-3. **Диалоги** — раскрытие лора, инструкции
-4. **Торговля** — обмен ресурсами (future)
-5. **Сюжет** — продвижение по цепочке квестов
+### Assets
 
-### Связь с существующими системами
+| Файл | Описание | Статус |
+|------|----------|--------|
+| `Example_TraderMarcus.asset` | Пример NPC (создать в Unity) | 📋 |
 
-```
-Существует:
-├── ContractSystem.cs — контракты (RPC, работает)
-├── ContractBoardUI — доска контрактов (UI)
-├── IInteractable.cs — базовый интерфейс
-├── InteractableManager.cs — поиск объектов
-└── Inventory.cs — инвентарь игрока
+---
 
-Необходимо:
-├── NpcData — ScriptableObject с диалогами
-├── NpcEntity — 3D объект NPC
-├── NpcInteraction — компонент (E для взаимодействия)
-└── NpcDialogueManager — UI диалога
+## Исправленные ошибки компиляции
+
+### 1. CS0246: NpcInteraction type not found
+
+**Причина:** Circular reference / namespace issue in InteractableManager.cs
+
+**Решение:** Изменен тип списка на `List<object>` с явным приведением типов
+
+**Файл:** `InteractableManager.cs`
+
+```csharp
+// До:
+private static readonly List<World.Npc.NpcInteraction> _npcs = ...;
+
+// После:
+private static readonly List<object> _npcs = ...;
+public static IReadOnlyList<object> GetNpcs() => _npcs;
 ```
 
 ---
 
-## 📝 ДЕТАЛЬНЫЙ ЖУРНАЛ ПОПЫТОК
+### 2. CS0618: GetInstanceID() deprecated
 
-*Пока нет записей — система ещё не реализована*
+**Причина:** Unity 6 deprecates `Object.GetInstanceID()`
 
----
+**Решение:** Заменен на `GetHashCode()`
 
-## 🎯 ПЛАН РЕАЛИЗАЦИИ
+**Файлы:** `NpcInteraction.cs`, `NpcEntity.cs`
 
-### Этап 1: Базовая структура
-1. [ ] Создать каталог `Assets/_Project/Scripts/World/Npc/`
-2. [ ] Создать NpcData.cs (ScriptableObject)
-3. [ ] Создать NpcEntity.cs (MonoBehaviour)
-4. [ ] Создать NpcInteraction.cs (IInteractable)
+```csharp
+// До:
+? $"{npcData.npcId}_{gameObject.GetInstanceID()}"
 
-### Этап 2: Диалоговая система
-5. [ ] Создать NpcDialogueManager.cs (Singleton)
-6. [ ] Создать UI панель диалога
-7. [ ] Реализовать навигацию по узлам
-8. [ ] Добавить опции выбора
-
-### Этап 3: Интеграция
-9. [ ] Интеграция с InteractableManager
-10. [ ] Интеграция с ContractSystem
-11. [ ] Тестирование
+// После:
+? $"{npcData.npcId}_{GetHashCode()}"
+```
 
 ---
 
-## 📁 СВЯЗАННЫЕ ДОКУМЕНТЫ
+### 3. CS0618: FindObjectOfType deprecated
 
-| Документ | Описание |
-|----------|----------|
-| `MASTER_PROMPT.md` | Основной промпт с архитектурой |
-| [ITERATION_4_SESSION.md](../ITERATION_4_SESSION.md) | Общий отчёт итерации 4 |
-| [SOLUTION_ATTEMPTS_LOG.md](../iteration_3/SOLUTION_ATTEMPTS_LOG.md) | Референс формата |
-| [GDD_21_Quest_Mission_System.md](../../gdd/GDD_21_Quest_Mission_System.md) | Система квестов (референс) |
+**Причина:** Unity 6 deprecates `Object.FindObjectOfType<T>()`
+
+**Решение:** Заменен на `Object.FindFirstObjectByType<T>()`
+
+**Файл:** `NpcDialogueManager.cs`
+
+```csharp
+// До:
+_instance = FindObjectOfType<NpcDialogueManager>();
+
+// После:
+_instance = Object.FindFirstObjectByType<NpcDialogueManager>();
+```
 
 ---
 
-**Обновлено:** 19.04.2026, 14:40 MSK  
-**Автор:** Claude Code  
-**Версия:** iteration_4.4_v1
+### 4. GUID errors in .asset file
+
+**Причина:** Нельзя создать ScriptableObject .asset вручную с валидным GUID
+
+**Решение:** Создавать через Unity Editor: Right-click → Create → Project C → NPC Data
+
+---
+
+## Как создать NPC в Unity
+
+### Шаг 1: Создать NpcData ScriptableObject
+
+1. В Project window: Right-click → Create → Project C → NPC Data
+2. Назвать файл, например: `TraderMarcus.asset`
+3. Заполнить поля в Inspector:
+   - `npcId`: `trader_marcus_01`
+   - `displayName`: `Trader Marcus`
+   - `faction`: `FreeTraders`
+   - `rootNodeId`: `start`
+   - Добавить диалоги
+
+### Шаг 2: Создать NPC в сцене
+
+1. Создать пустой GameObject
+2. Добавить компоненты:
+   - `NpcInteraction` (обязательно)
+   - `NpcEntity` (опционально, для анимации и сетевой синхронизации)
+3. В компоненте `NpcInteraction` указать `NpcData` asset
+
+### Шаг 3: Настроить диалоги
+
+В NpcData добавить DialogueNode массив:
+
+```csharp
+Dialogues = new DialogueNode[]
+{
+    new DialogueNode
+    {
+        nodeId = "start",
+        nodeType = DialogueNodeType.Text,
+        text = "Hello traveler!",
+        options = new DialogueOption[]
+        {
+            new DialogueOption { text = "Hi", nextNodeId = "greeting" },
+            new DialogueOption { text = "Goodbye", nextNodeId = "farewell" }
+        }
+    },
+    // ... more nodes
+}
+```
+
+### Шаг 4: Создать UI для диалогов
+
+1. Создать Canvas с Panel
+2. Добавить компонент `NpcDialogueManager` на пустой объект
+3. Привязать UI элементы в Inspector:
+   - `Dialogue Panel`
+   - `Npc Name Text`
+   - `Dialogue Text`
+   - `Options Container`
+   - `Option Button Prefab`
+
+---
+
+## Интеграция с системой взаимодействия
+
+NPC использует существующую архитектуру:
+
+```csharp
+// NpcInteraction реализует IInteractable
+public class NpcInteraction : MonoBehaviour, IInteractable
+{
+    public string InstanceId { get; }
+    public string DisplayName { get; }
+    public float InteractionRadius { get; }
+    public Vector3 Position { get; }
+    
+    public void Interact()
+    {
+        // Открывает диалог через NpcDialogueManager
+    }
+}
+```
+
+InteractableManager регистрирует NPC:
+
+```csharp
+public static void RegisterNpc(NpcInteraction npc) { ... }
+public static void UnregisterNpc(NpcInteraction npc) { ... }
+public static NpcInteraction FindNearestNpc(Vector3 pos, float range) { ... }
+```
+
+---
+
+## Сетевая синхронизация
+
+NpcEntity поддерживает синхронизацию состояний:
+
+```csharp
+// NetworkVariable для состояния NPC
+private NetworkVariable<NpcState> _networkState = new NetworkVariable<NpcState>(
+    NpcState.Idle,
+    NetworkVariableReadPermission.Everyone,
+    NetworkVariableWritePermission.Server
+);
+
+// Сервер управляет состоянием
+public void SetState(NpcState newState)
+{
+    if (IsServer)
+        _networkState.Value = newState;
+    else
+        _currentState = newState; // Локально для клиента
+}
+```
+
+---
+
+## Следующие шаги (TODO)
+
+1. **Интеграция с контрактами** — подключить ContractSystem к диалогам
+2. **UI диалогов** — создать prefab диалоговой панели
+3. **Система репутации** — добавить проверки reputation в DialogueOption
+4. **Система предметов** — подключить инвентарь к giveItemId
+5. **Анимации NPC** — добавить базовые анимации (idle, walk, talk)
+
+---
+
+**Обновлено:** 19.04.2026, 20:47 MSK

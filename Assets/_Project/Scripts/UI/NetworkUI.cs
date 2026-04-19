@@ -31,21 +31,12 @@ namespace ProjectC.UI
 
         private void Awake()
         {
-            Debug.Log("[NetworkUI] Awake() called");
-            
             networkManagerController = FindAnyObjectByType<NetworkManagerController>();
             if (networkManagerController == null)
             {
                 Debug.LogError("[NetworkUI] NetworkManagerController не найден!");
                 return;
             }
-            
-            Debug.Log("[NetworkUI] NetworkManagerController found!");
-
-            // Кнопки
-            Debug.Log($"[NetworkUI] startHostButton={(startHostButton != null ? startHostButton.name : "NULL")}");
-            Debug.Log($"[NetworkUI] startServerButton={(startServerButton != null ? startServerButton.name : "NULL")}");
-            Debug.Log($"[NetworkUI] startClientButton={(startClientButton != null ? startClientButton.name : "NULL")}");
             
             if (startHostButton != null) startHostButton.onClick.AddListener(OnStartHostClicked);
             else Debug.LogWarning("[NetworkUI] startHostButton is NULL! Assign in Inspector.");

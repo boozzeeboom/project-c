@@ -715,10 +715,6 @@ namespace ProjectC.Player
             if (moduleManager != null)
             {
                 moduleManager.Initialize(shipFlightClass);
-                Debug.Log($"[ShipController] ModuleManager initialized. Slots: {moduleManager.slots.Count}, Power: {moduleManager.currentPowerUsage}/{moduleManager.availablePower}");
-            }
-            else
-            {
             }
         }
 

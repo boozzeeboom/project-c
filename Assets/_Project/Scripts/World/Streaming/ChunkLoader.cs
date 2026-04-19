@@ -89,10 +89,6 @@ namespace ProjectC.World.Streaming
                 }
             }
 
-            if (chunksParentTransform == null)
-            {
-                Debug.LogWarning("[ChunkLoader] chunksParentTransform не назначен, будет создан автоматически.");
-            }
         }
 
         /// <summary>

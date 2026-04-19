@@ -43,29 +43,10 @@ namespace ProjectC.Ship
             if (discoveredSlots.Count > 0)
             {
                 slots = discoveredSlots;
-                Debug.Log($"[ShipModuleManager] Discovered {slots.Count} module slots from hierarchy.");
             }
             else if (slots == null || slots.Count == 0)
             {
                 Debug.LogWarning("[ShipModuleManager] No module slots found! Check hierarchy.");
-            }
-
-            // Логируем содержимое каждого слота
-            for (int i = 0; i < slots.Count; i++)
-            {
-                var slot = slots[i];
-                if (slot != null && slot.isOccupied && slot.installedModule != null)
-                {
-                    Debug.Log($"[ShipModuleManager] Slot[{i}]: '{slot.installedModule.moduleId}' (type={slot.slotType})");
-                }
-                else if (slot != null)
-                {
-                    Debug.Log($"[ShipModuleManager] Slot[{i}]: EMPTY");
-                }
-                else
-                {
-                    Debug.LogWarning($"[ShipModuleManager] Slot[{i}]: NULL reference!");
-                }
             }
 
             // Рассчитываем текущее потребление

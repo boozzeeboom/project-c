@@ -10,6 +10,8 @@ namespace ProjectC.World.Streaming
     /// 
     /// ВАЖНО: Все NetworkObject должны спавниться/деспавниться на СЕРВЕРЕ.
     /// Клиенты получают уже синхронизированные объекты через NGO.
+    /// 
+    /// Iteration 4: Обновлён для использования NetworkChestContainer.
     /// </summary>
     public class ChunkNetworkSpawner : NetworkBehaviour
     {
@@ -164,11 +166,20 @@ namespace ProjectC.World.Streaming
                             spawnedIds.Add(networkObj.NetworkObjectId);
                         }
                         
-                        // Привязываем сундук к чанку
-                        var chestContainer = chest.GetComponent<Items.ChestContainer>();
-                        if (chestContainer != null)
+                        // Привязываем сундук к чанку (поддержка обоих типов)
+                        var networkChest = chest.GetComponent<Chest.NetworkChestContainer>();
+                        if (networkChest != null)
                         {
-                            chestContainer.SetChunk(chunkId);
+                            networkChest.SetChunk(chunkId);
+                        }
+                        else
+                        {
+                            // Fallback для старого типа
+                            var chestContainer = chest.GetComponent<Items.ChestContainer>();
+                            if (chestContainer != null)
+                            {
+                                chestContainer.SetChunk(chunkId);
+                            }
                         }
                     }
                 }

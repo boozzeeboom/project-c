@@ -3,6 +3,7 @@ using UnityEngine.InputSystem;
 using System.Collections.Generic;
 using ProjectC.Core;
 using ProjectC.Items;
+using ProjectC.World.Chest;
 
 namespace ProjectC.Player
 {
@@ -10,6 +11,8 @@ namespace ProjectC.Player
     /// Система подбора предметов.
     /// Вешается на игрока. Клавиша E — подобрать ближайший предмет.
     /// Работает только в пешем режиме (проверяет PlayerStateMachine).
+    /// 
+    /// Iteration 4: Оптимизировано для работы с NetworkChestContainer.
     /// </summary>
     [RequireComponent(typeof(PlayerStateMachine))]
     public class ItemPickupSystem : MonoBehaviour
@@ -26,7 +29,7 @@ namespace ProjectC.Player
 
         // Для индикации: ближайший доступный предмет или сундук
         private PickupItem _nearestPickup;
-        private ChestContainer _nearestChest;
+        private NetworkChestContainer _nearestChest;
 
         private void Awake()
         {
@@ -61,7 +64,7 @@ namespace ProjectC.Player
         }
 
         /// <summary>
-        /// Найти ближайший подбираемый предмет или сундук в радиусе
+        /// Найти ближайший подбираемый предмет или сундук в радиусе.
         /// </summary>
         private void FindNearestInteractable()
         {
@@ -70,11 +73,11 @@ namespace ProjectC.Player
             float nearestDist = float.MaxValue;
             bool foundChest = false;
 
-            // Ищем сундуки
-            var chests = FindObjectsByType<ChestContainer>(FindObjectsInactive.Include);
+            // Ищем сундуки (NetworkChestContainer)
+            var chests = FindObjectsByType<NetworkChestContainer>(FindObjectsInactive.Include);
             foreach (var chest in chests)
             {
-                if (!chest.gameObject.activeSelf) continue;
+                if (chest == null || !chest.gameObject.activeSelf) continue;
 
                 float dist = Vector3.Distance(transform.position, chest.transform.position);
                 if (dist < chest.GetOpenRadius() && dist < nearestDist)
@@ -90,11 +93,10 @@ namespace ProjectC.Player
             if (!foundChest)
             {
                 var pickups = FindObjectsByType<PickupItem>(FindObjectsInactive.Include);
-                nearestDist = float.MaxValue;
 
                 foreach (var pickup in pickups)
                 {
-                    if (!pickup.gameObject.activeSelf) continue;
+                    if (pickup == null || !pickup.gameObject.activeSelf) continue;
 
                     float dist = Vector3.Distance(transform.position, pickup.transform.position);
                     if (dist < pickupRange && dist < nearestDist)
@@ -116,7 +118,7 @@ namespace ProjectC.Player
             // Приоритет: сундук
             if (_nearestChest != null)
             {
-                _nearestChest.Open();
+                _nearestChest.TryOpen();
                 _nearestChest = null;
                 return;
             }

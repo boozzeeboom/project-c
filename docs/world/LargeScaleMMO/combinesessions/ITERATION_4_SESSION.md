@@ -1,118 +1,201 @@
-# Iteration 4 Session Prompt: Setup & Test
+# Iteration 4 Session Prompt: Chests, Items, NPCs
 
-**Цель:** Настроить компоненты в сцене и протестировать F-клавиши.
+**Версия документа:** 2.0 (обновлён 19.04.2026)  
+**Папка документации:** `docs/world/LargeScaleMMO/combinesessions/iteration_4/`
 
-**Длительность:** 1-2 сессии
+**Цель:** Реализовать интерактивные объекты мира — сундуки, предметы, NPC.
+
+**Длительность:** 2-4 сессии
 
 **Критерий приёмки:** 
-> F5 → телепортация работает
-> F6 → телепортация на Far Peak работает без jitter
-> F7 → загрузка чанков работает
-> F8 → сброс origin работает
+> Сундук открывается по нажатию E
+> Предметы добавляются в инвентарь
+> NPC показывает диалог по нажатию E
+
+**ДОКУМЕНТАЦИЯ ИТЕРАЦИИ 4:**
+| Документ | Описание |
+|----------|----------|
+| `iteration_4/MASTER_PROMPT.md` | Мастер-промпт для перезапуска итерации |
+| `iteration_4/SOLUTION_ATTEMPTS_LOG.md` | Журнал попыток и результатов |
+
+**ВНИМАНИЕ:** Телепорты и F5-F10 НЕ входят в эту итерацию — это задача для другой итерации.
 
 ---
 
-## 📋 Задачи
+## 📋 ЗАДАЧИ ITERATION 4
 
-### 4.1 Назначить prefabs для ChunkNetworkSpawner
-**Файл:** `ChunkNetworkSpawner.cs`
+### 4.1 Система взаимодействия (Core)
 
-1. Создать prefab для сундука с NetworkObject
-2. Создать prefab для NPC с NetworkObject
-3. Назначить в инспекторе
+1. Создать `IInteractable.cs` — базовый интерфейс
+2. Создать `IUsable.cs` — интерфейс для используемых объектов
+3. Создать `InteractionManager.cs` — централизованное управление
+4. Создать `InteractionDetector.cs` — компонент на игроке для обнаружения
 
-### 4.2 Подключить StreamingTest
-**Файл:** `StreamingTest.cs`
+### 4.2 Система предметов (Item)
 
-1. Назначить `positionSource` = NetworkPlayer
-2. Назначить `worldStreamingManager` = WorldStreamingManager
+1. Создать `ItemType.cs` — enum с 8 типами предметов
+2. Создать `Rarity.cs` — enum редкости (Common, Rare, Epic, Legendary)
+3. Создать `ItemData.cs` — ScriptableObject базового предмета
+4. Создать `ItemDatabase.cs` — база данных всех предметов
 
-### 4.3 Тест F-клавиш
+### 4.3 Сундуки (Chest)
 
-| Клавиша | Действие | Ожидаемый результат |
-|---------|----------|-------------------|
-| F5 | Телепорт на ближний пик | Телепортация, чанки загружаются |
-| F6 | Телепорт на Far Peak | Без jitter, правильная позиция |
-| F7 | Загрузка чанков | Console: "Chunk loaded: X,Y" |
-| F8 | Сброс FloatingOrigin | Origin сбрасывается |
-| F9 | Toggle grid | Grid визуализируется |
-| F10 | Toggle debug HUD | HUD показывает |
+1. Создать `ChestData.cs` — ScriptableObject с содержимым
+2. Создать `ChestEntity.cs` — MonoBehaviour сундука
+3. Создать `ChestInteraction.cs` — компонент взаимодействия
+4. Добавить анимацию открытия
+5. Добавить Network синхронизацию
+
+### 4.4 NPC система
+
+1. Создать `NpcData.cs` — ScriptableObject с информацией
+2. Создать `NpcEntity.cs` — MonoBehaviour NPC
+3. Создать `NpcInteraction.cs` — компонент взаимодействия
+4. Реализовать простой диалог
+
+### 4.5 Интеграция с инвентарём
+
+1. Подключить сундук к `InventoryManager`
+2. Добавить UI уведомление о получении предмета
+3. Обработать случай полного инвентаря
 
 ---
 
 ## 🔍 Перед началом
 
-Прочитать:
-- `docs/world/LargeScaleMMO/CURRENT_STATE.md` — секции "Prefabs не назначены" и "StreamingTest не подключен"
-- `docs/world/LargeScaleMMO/ITERATION_PLAN.md` — Iteration 4
+Прочитать (обязательно):
+1. `docs/world/LargeScaleMMO/combinesessions/iteration_4/MASTER_PROMPT.md` — полный план работ
+2. `docs/world/LargeScaleMMO/combinesessions/iteration_4/SOLUTION_ATTEMPTS_LOG.md` — текущий статус
 
 ---
 
 ## 📝 Шаги выполнения
 
-#### 4.1 Prefabs
+### Шаг 1: Система взаимодействия
 
-1. Открыть сцену `ProjectC_1.unity`
-2. Найти объект с `ChunkNetworkSpawner`
-3. Создать prefab для сундука (или использовать существующий)
-4. Создать prefab для NPC
-5. Назначить в инспекторе ChunkNetworkSpawner
+```
+1. Создать папку Assets/_Project/Scripts/Core/Interfaces/
+2. Создать IInteractable.cs
+3. Создать IUsable.cs
+4. Создать папку Assets/_Project/Scripts/Core/Interaction/
+5. Создать InteractionManager.cs
+6. Создать папку Assets/_Project/Scripts/Player/
+7. Создать InteractionDetector.cs (компонент на игроке)
+```
 
-#### 4.2 StreamingTest
+### Шаг 2: Система предметов
 
-1. Найти объект с `StreamingTest`
-2. Назначить `positionSource` = NetworkPlayer
-3. Назначить `worldStreamingManager` = WorldStreamingManager
+```
+1. Создать папку Assets/_Project/Scripts/World/Items/
+2. Создать ItemType.cs
+3. Создать Rarity.cs
+4. Создать ItemData.cs (ScriptableObject)
+5. Создать ItemDatabase.cs
+6. Создать тестовые предметы в Resources/
+```
 
-#### 4.3 Тестирование
+### Шаг 3: Сундуки
 
-1. Запустить Play Mode
-2. Последовательно нажать F5, F6, F7, F8, F9, F10
-3. Проверить Console на каждом шаге
+```
+1. Создать папку Assets/_Project/Scripts/World/Chest/
+2. Создать ChestData.cs
+3. Создать ChestEntity.cs
+4. Создать ChestInteraction.cs
+5. Создать тестовый prefab в Assets/_Project/Prefabs/World/
+6. Протестировать в сцене
+```
+
+### Шаг 4: NPC
+
+```
+1. Создать папку Assets/_Project/Scripts/World/NPC/
+2. Создать NpcData.cs
+3. Создать NpcEntity.cs
+4. Создать NpcInteraction.cs
+5. Создать тестовый prefab
+```
 
 ---
 
-## ✅ Тестирование
+## ✅ Критерии завершения
 
-```
-Шаг 1: F5
-  → Телепортация
-  → Console: "Teleporting to..."
-  
-Шаг 2: F6
-  → Телепортация на Far Peak
-  → Console: "Teleporting to (-250000, ...)"
-  → Нет jitter в движении
-  
-Шаг 3: F7
-  → Загрузка чанков
-  → Console: "Chunk loaded: X,Y"
-  
-Шаг 4: F8
-  → Сброс origin
-  → Console: "Origin reset"
-  
-Шаг 5: F9
-  → Grid визуализируется
-  
-Шаг 6: F10
-  → Debug HUD показывает
-```
+### Система взаимодействия:
+- [ ] Нажатие E рядом с сундуком/NPC показывает prompt
+- [ ] InteractionManager обрабатывает взаимодействие
+- [ ] Работает с Network объектами
+
+### Сундуки:
+- [ ] Сундук открывается по нажатию E
+- [ ] Предметы из сундука добавляются в инвентарь
+- [ ] Сундук нельзя открыть повторно (одноразовый)
+- [ ] Network синхронизация работает
+
+### Предметы:
+- [ ] ItemData создаются как ScriptableObject
+- [ ] ItemDatabase содержит ссылки на все предметы
+- [ ] Предметы с разными типами (Resource, Equipment, etc.)
+
+### NPC:
+- [ ] NPC показывает диалог по нажатию E
+- [ ] NPC может иметь имя и описание
 
 ---
 
 ## 📊 Ожидаемые результаты
 
-| Клавиша | До | После |
+| Система | До | После |
 |---------|-----|-------|
-| F5 | Может не работать | Телепортация работает |
-| F6 | Jitter | Без jitter |
-| F7 | Нет чанков | Чанки загружаются |
-| F8 | Origin не сбрасывается | Сбрасывается |
-| F9/F10 | Не работает | Работает |
+| Взаимодействие | Нет | Работает с E |
+| Сундуки | Нет | Открываются, дают лут |
+| Предметы | Нет | Система работает |
+| NPC | Нет | Показывают диалог |
+
+---
+
+## 📁 Ключевые файлы для создания
+
+### Core (всегда первыми):
+```
+Assets/_Project/Scripts/Core/Interfaces/IInteractable.cs
+Assets/_Project/Scripts/Core/Interfaces/IUsable.cs
+Assets/_Project/Scripts/Core/Interaction/InteractionManager.cs
+Assets/_Project/Scripts/Player/InteractionDetector.cs
+```
+
+### Items:
+```
+Assets/_Project/Scripts/World/Items/ItemType.cs
+Assets/_Project/Scripts/World/Items/Rarity.cs
+Assets/_Project/Scripts/World/Items/ItemData.cs
+Assets/_Project/Scripts/World/Items/ItemDatabase.cs
+```
+
+### Chest:
+```
+Assets/_Project/Scripts/World/Chest/ChestData.cs
+Assets/_Project/Scripts/World/Chest/ChestEntity.cs
+Assets/_Project/Scripts/World/Chest/ChestInteraction.cs
+```
+
+### NPC:
+```
+Assets/_Project/Scripts/World/NPC/NpcData.cs
+Assets/_Project/Scripts/World/NPC/NpcEntity.cs
+Assets/_Project/Scripts/World/NPC/NpcInteraction.cs
+```
+
+---
+
+## 🚨 ВАЖНО
+
+1. **Всегда документируй попытки** — записывай в `SOLUTION_ATTEMPTS_LOG.md`
+2. **Тестируй после каждого изменения** — Play Mode, проверяй логи
+3. **Не бойся пересмотреть план** — если что-то не работает, ищи альтернативу
+4. **Используй существующие системы** — наследуйся от них
 
 ---
 
 **Автор:** Claude Code  
-**Дата:** 18.04.2026  
-**Статус:** Нужно выполнить (после Iteration 3)
+**Дата:** 19.04.2026  
+**Статус:** АКТИВНАЯ ИТЕРАЦИЯ  
+**Версия:** iteration_4_v1

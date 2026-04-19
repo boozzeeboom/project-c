@@ -6,6 +6,7 @@ using ProjectC.Items;
 using ProjectC.Trade;
 using ProjectC.UI;
 using ProjectC.World.Streaming;
+using ProjectC.World.Chest;
 using System.Collections.Generic;
 
 namespace ProjectC.Player
@@ -62,6 +63,7 @@ namespace ProjectC.Player
         // Поиск ближайшего объекта
         private PickupItem _nearestPickup;
         private ChestContainer _nearestChest;
+        private NetworkChestContainer _nearestNetworkChest;
         private ShipController _nearestShip;
 
         // NetworkObject
@@ -514,13 +516,27 @@ namespace ProjectC.Player
 
         private void FindNearestInteractable()
         {
-            // REFACTORED: Use InteractableManager instead of FindObjectsByType
-            // Zero allocations in hot path
-            
             _nearestPickup = null;
             _nearestChest = null;
+            _nearestNetworkChest = null;
 
-            // First check chests (higher priority)
+            // First check NEW NetworkChestContainer (higher priority)
+            var networkChests = FindObjectsByType<NetworkChestContainer>(FindObjectsInactive.Include);
+            foreach (var chest in networkChests)
+            {
+                if (chest == null || !chest.gameObject.activeSelf || !chest.IsSpawned) continue;
+                
+                float dist = Vector3.Distance(transform.position, chest.transform.position);
+                float openRadius = chest.GetOpenRadius();
+                
+                if (dist < openRadius)
+                {
+                    _nearestNetworkChest = chest;
+                    return;
+                }
+            }
+
+            // Fallback: check old ChestContainer
             _nearestChest = InteractableManager.FindNearestChest(transform.position, float.MaxValue);
             
             // Then check pickups if no chest nearby
@@ -534,6 +550,15 @@ namespace ProjectC.Player
         {
             if (_inShip) return;
 
+            // NEW: NetworkChestContainer (priority)
+            if (_nearestNetworkChest != null)
+            {
+                _nearestNetworkChest.TryOpen();
+                _nearestNetworkChest = null;
+                return;
+            }
+
+            // Old ChestContainer
             if (_nearestChest != null)
             {
                 var loot = _nearestChest.GetLootItems();
@@ -547,6 +572,7 @@ namespace ProjectC.Player
                 return;
             }
 
+            // PickupItem
             if (_nearestPickup != null)
             {
                 if (_inventory != null)

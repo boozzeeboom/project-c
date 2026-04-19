@@ -70,6 +70,25 @@ namespace ProjectC.Player
 
         private void Update()
         {
+            // Debug: показать состояние каждый кадр если debugMode
+            if (debugMode && Time.time - _lastDebugTime > DEBUG_INTERVAL)
+            {
+                _lastDebugTime = Time.time;
+                
+                bool isWalking = _stateMachine != null && _stateMachine.IsWalking;
+                Debug.Log($"[ItemPickupSystem] Update: Walking={isWalking}, Chest={_nearestChest != null}, Pickup={_nearestPickup != null}");
+                
+                // Проверяем все NetworkChestContainer на сцене
+                var allChests = FindObjectsByType<NetworkChestContainer>(FindObjectsInactive.Include);
+                Debug.Log($"[ItemPickupSystem] Total NetworkChestContainers on scene: {allChests.Length}");
+                
+                foreach (var chest in allChests)
+                {
+                    float dist = Vector3.Distance(transform.position, chest.transform.position);
+                    Debug.Log($"[ItemPickupSystem]   - {chest.name} at {chest.transform.position}, dist={dist:F1}, spawned={chest.IsSpawned}");
+                }
+            }
+
             // Работает только в пешем режиме
             if (_stateMachine == null || !_stateMachine.IsWalking)
             {
@@ -84,18 +103,6 @@ namespace ProjectC.Player
             }
 
             FindNearestInteractable();
-
-            // Debug output every interval
-            if (debugMode && Time.time - _lastDebugTime > DEBUG_INTERVAL)
-            {
-                _lastDebugTime = Time.time;
-                if (_nearestChest != null)
-                    Debug.Log($"[ItemPickupSystem] Nearest chest: {_nearestChest.name} at {_nearestChest.transform.position}");
-                else if (_nearestPickup != null)
-                    Debug.Log($"[ItemPickupSystem] Nearest pickup: {_nearestPickup.name}");
-                else
-                    Debug.Log("[ItemPickupSystem] No interactables in range");
-            }
         }
 
         /// <summary>
@@ -108,27 +115,31 @@ namespace ProjectC.Player
             float nearestDist = float.MaxValue;
             bool foundChest = false;
 
-            // Ищем сундуки (NetworkChestContainer)
+            // Сначала ищем все NetworkChestContainer на сцене
             var chests = FindObjectsByType<NetworkChestContainer>(FindObjectsInactive.Include);
-            if (debugMode && chests.Length > 0)
-                Debug.Log($"[ItemPickupSystem] Found {chests.Length} chests");
-                
+            
+            if (debugMode)
+                Debug.Log($"[ItemPickupSystem] FindObjectsByType found {chests.Length} chests");
+
             foreach (var chest in chests)
             {
                 if (chest == null || !chest.gameObject.activeSelf) continue;
 
                 float dist = Vector3.Distance(transform.position, chest.transform.position);
                 float openRadius = chest.GetOpenRadius();
-                
+
                 if (debugMode)
-                    Debug.Log($"[ItemPickupSystem] Chest {chest.name}: dist={dist:F1}, radius={openRadius:F1}");
+                    Debug.Log($"[ItemPickupSystem] Chest {chest.name}: dist={dist:F1}, radius={openRadius:F1}, IsSpawned={chest.IsSpawned}");
 
                 if (dist < openRadius && dist < nearestDist)
                 {
                     nearestDist = dist;
                     _nearestChest = chest;
                     foundChest = true;
-                    _nearestPickup = null; // Приоритет сундуку
+                    _nearestPickup = null;
+                    
+                    if (debugMode)
+                        Debug.Log($"[ItemPickupSystem] >>> SELECTED as nearest chest!");
                 }
             }
 

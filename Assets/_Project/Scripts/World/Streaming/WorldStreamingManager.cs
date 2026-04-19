@@ -8,17 +8,17 @@ using ProjectC.World.Streaming;
 namespace ProjectC.World
 {
     /// <summary>
-    /// Главный менеджер World Streaming системы.
-    /// Координирует WorldChunkManager, ChunkLoader, FloatingOriginMP
-    /// для обеспечения бесшовного стриминга мира в MMO-стиле.
+    /// Main manager of World Streaming system.
+    /// Coordinates WorldChunkManager, ChunkLoader, FloatingOriginMP
+    /// for seamless MMO-style world streaming.
     /// 
-    /// Использование:
-    /// 1. Добавить на Empty GameObject в сцене
-    /// 2. Назначить ссылки на компоненты (или оставить auto-find)
-    /// 3. В Play Mode вызывать LoadChunksAroundPlayer() с позицией игрока
+    /// Usage:
+    /// 1. Add to Empty GameObject in scene
+    /// 2. Assign component references (or leave auto-find)
+    /// 3. In Play Mode call LoadChunksAroundPlayer() with player position
     /// 
-    /// Для мультиплеера: управление происходит на сервере,
-    /// клиенты получают команды через RPC.
+    /// For multiplayer: management happens on server,
+    /// clients receive commands via RPC.
     /// </summary>
     public class WorldStreamingManager : MonoBehaviour
     {
@@ -32,58 +32,58 @@ namespace ProjectC.World
         #region Configuration
         
         [Header("References")]
-        [Tooltip("WorldData ScriptableObject с данными о массивах, пиках, фермах")]
+        [Tooltip("WorldData ScriptableObject with arrays, peaks, farms data")]
         [SerializeField] private WorldData worldData;
         
-        [Tooltip("WorldChunkManager - реестр чанков")]
+        [Tooltip("WorldChunkManager - chunk registry")]
         [SerializeField] private WorldChunkManager chunkManager;
         
-        [Tooltip("ProceduralChunkGenerator - генерация содержимого чанков")]
+        [Tooltip("ProceduralChunkGenerator - chunk content generation")]
         [SerializeField] private ProceduralChunkGenerator chunkGenerator;
         
-        [Tooltip("ChunkLoader - загрузка/выгрузка чанков")]
+        [Tooltip("ChunkLoader - chunk loading/unloading")]
         [SerializeField] private ChunkLoader chunkLoader;
         
-        [Tooltip("FloatingOriginMP - для больших координат")]
+        [Tooltip("FloatingOriginMP - for large coordinates")]
         [SerializeField] private FloatingOriginMP floatingOrigin;
         
         [Header("Streaming Settings")]
-        [Tooltip("Радиус загрузки чанков вокруг игрока (в чанках)")]
+        [Tooltip("Chunk loading radius around player (in chunks)")]
         [SerializeField, Range(1, 5)]
         private int loadRadius = 2;
         
-        [Tooltip("Радиус выгрузки чанков (в чанках) - за пределами этого радиуса чанки выгружаются")]
+        [Tooltip("Chunk unloading radius (in chunks) - outside this radius chunks are unloaded")]
         [SerializeField, Range(2, 10)]
         private int unloadRadius = 3;
         
-        [Tooltip("Интервал проверки загрузки/выгрузки чанков (секунды)")]
+        [Tooltip("Chunk loading/unloading check interval (seconds)")]
         [SerializeField, Range(0.1f, 2f)]
         private float updateInterval = 0.5f;
         
-        [Tooltip("Глобальный seed мира - влияет на генерацию облаков и форму гор")]
+        [Tooltip("Global world seed - affects cloud generation and mountain shape")]
         [SerializeField]
         #pragma warning disable 0414
         private int globalSeed = 42;
         #pragma warning restore 0414
         
         [Header("Debug")]
-        [Tooltip("Показывать debug информацию на экране")]
+        [Tooltip("Show debug info on screen")]
         [SerializeField] private bool showDebugHUD = false;
         
         [Header("Preload Settings")]
-        [Tooltip("Preload: количество слоев соседних чанков для загрузки заранее")]
+        [Tooltip("Preload: number of adjacent chunk layers to load in advance")]
         [SerializeField, Range(0, 3)]
         private int preloadLayers = 1;
         
-        [Tooltip("Preload: задержка после входа в новый чанк перед началом preloading (секунды)")]
+        [Tooltip("Preload: delay after entering new chunk before starting preload (seconds)")]
         [SerializeField, Range(0f, 5f)]
         private float preloadDelay = 1f;
         
-        [Tooltip("Preload: интервал между загрузкой каждого preloaded чанка (секунды)")]
+        [Tooltip("Preload: interval between loading each preloaded chunk (seconds)")]
         [SerializeField, Range(0.1f, 2f)]
         private float preloadChunkInterval = 0.3f;
         
-        [Tooltip("Memory Budget: максимальное количество загруженных чанков (0 = без ограничений)")]
+        [Tooltip("Memory Budget: max loaded chunks (0 = unlimited)")]
         [SerializeField, Range(0, 50)]
         private int maxLoadedChunks = 0;
         
@@ -106,6 +106,102 @@ namespace ProjectC.World
         // Memory budget tracking
         private int _peakLoadedChunks = 0;
         
+        // Player tracking for chunk loading (I5-001 Fix)
+        private Transform _cachedLocalPlayerTransform;
+        private float _lastPlayerSearchTime = 0f;
+        private const float PLAYER_SEARCH_INTERVAL = 1f;
+        
+        #endregion
+        
+        #region Player Position Methods (I5-001)
+        
+        /// <summary>
+        /// I5-001 FIX: Get local player position for chunk streaming.
+        /// Uses priority chain:
+        /// 1. NetworkPlayer with IsOwner (multiplayer)
+        /// 2. Object with "Player" tag
+        /// 3. Camera.main (fallback - may be near origin!)
+        /// 
+        /// IMPORTANT: Camera.main is under TradeZones which is EXCLUDED from world shift.
+        /// After FloatingOriginMP shifts the world, Camera.main returns position near (0,0,0).
+        /// This is why chunks loaded around spawn instead of around player!
+        /// </summary>
+        private Vector3 GetLocalPlayerPosition()
+        {
+            // Try to use cached transform if still valid
+            if (_cachedLocalPlayerTransform != null)
+            {
+                float timeSinceSearch = Time.time - _lastPlayerSearchTime;
+                if (timeSinceSearch < PLAYER_SEARCH_INTERVAL)
+                {
+                    return _cachedLocalPlayerTransform.position;
+                }
+            }
+            
+            Vector3 position = Vector3.zero;
+            bool found = false;
+            
+            // Priority 1: NetworkPlayer with IsOwner (multiplayer)
+            if (NetworkManager.Singleton != null && NetworkManager.Singleton.IsListening)
+            {
+                var networkObjects = FindObjectsByType<Unity.Netcode.NetworkObject>();
+                foreach (var netObj in networkObjects)
+                {
+                    if (netObj.IsOwner && netObj.name.Contains("NetworkPlayer"))
+                    {
+                        _cachedLocalPlayerTransform = netObj.transform;
+                        _lastPlayerSearchTime = Time.time;
+                        position = netObj.transform.position;
+                        found = true;
+                        
+                        if (showDebugHUD && Time.frameCount % 120 == 0)
+                        {
+                            Debug.Log($"[WorldStreamingManager] Using NetworkPlayer IsOwner: {netObj.name} at {position:F0}");
+                        }
+                        break;
+                    }
+                }
+            }
+            
+            // Priority 2: Object with "Player" tag
+            if (!found)
+            {
+                GameObject playerByTag = GameObject.FindGameObjectWithTag("Player");
+                if (playerByTag != null)
+                {
+                    _cachedLocalPlayerTransform = playerByTag.transform;
+                    _lastPlayerSearchTime = Time.time;
+                    position = playerByTag.transform.position;
+                    found = true;
+                    
+                    if (showDebugHUD && Time.frameCount % 120 == 0)
+                    {
+                        Debug.Log($"[WorldStreamingManager] Using Player tag: {playerByTag.name} at {position:F0}");
+                    }
+                }
+            }
+            
+            // Priority 3: Camera.main fallback (may be wrong!)
+            if (!found)
+            {
+                Camera mainCam = Camera.main;
+                if (mainCam != null)
+                {
+                    _cachedLocalPlayerTransform = mainCam.transform;
+                    _lastPlayerSearchTime = Time.time;
+                    position = mainCam.transform.position;
+                    found = true;
+                    
+                    if (showDebugHUD && Time.frameCount % 120 == 0)
+                    {
+                        Debug.LogWarning($"[WorldStreamingManager] WARNING: Using Camera.main fallback at {position:F0}. Chunks may load around origin!");
+                    }
+                }
+            }
+            
+            return position;
+        }
+        
         #endregion
         
         #region Unity Lifecycle
@@ -121,15 +217,15 @@ namespace ProjectC.World
             
             _instance = this;
             
-            // Auto-find компоненты если не назначены
+            // Auto-find components if not assigned
             AutoFindComponents();
             
-            // FIX I2-001: Подписка на ChunkLoader events
+            // FIX I2-001: Subscribe to ChunkLoader events
             SubscribeToChunkLoaderEvents();
         }
         
         /// <summary>
-        /// FIX I2-001: Подписаться на события ChunkLoader для получения обратной связи.
+        /// FIX I2-001: Subscribe to ChunkLoader events for feedback.
         /// </summary>
         private void SubscribeToChunkLoaderEvents()
         {
@@ -142,15 +238,15 @@ namespace ProjectC.World
         }
         
         /// <summary>
-        /// FIX I2-001: Обработчик события загрузки чанка.
-        /// Вызывается ChunkLoader после завершения загрузки чанка.
+        /// FIX I2-001: Chunk load event handler.
+        /// Called by ChunkLoader after chunk load completes.
         /// </summary>
         private void OnChunkLoadedHandler(ChunkId chunkId)
         {
-            // IMPORTANT: всегда логируем - это ключевое событие для отладки
+            // IMPORTANT: always log - this is a key event for debugging
             Debug.Log($"[WorldStreamingManager] Chunk loaded: {chunkId.GridX},{chunkId.GridZ}");
             
-            // Обновляем пиковую статистику
+            // Update peak statistics
             if (_loadedChunks.Count > _peakLoadedChunks)
             {
                 _peakLoadedChunks = _loadedChunks.Count;
@@ -158,12 +254,12 @@ namespace ProjectC.World
         }
         
         /// <summary>
-        /// FIX I2-001: Обработчик события выгрузки чанка.
-        /// Вызывается ChunkLoader после завершения выгрузки чанка.
+        /// FIX I2-001: Chunk unload event handler.
+        /// Called by ChunkLoader after chunk unload completes.
         /// </summary>
         private void OnChunkUnloadedHandler(ChunkId chunkId)
         {
-            // IMPORTANT: всегда логируем - это ключевое событие для отладки
+            // IMPORTANT: always log - this is a key event for debugging
             Debug.Log($"[WorldStreamingManager] Chunk unloaded: {chunkId.GridX},{chunkId.GridZ}");
         }
         
@@ -183,7 +279,7 @@ namespace ProjectC.World
         {
             if (!_initialized) return;
             
-            // Периодическая проверка загрузки/выгрузки
+            // Periodic chunk loading/unloading check
             if (Time.time - _lastUpdateTime >= updateInterval)
             {
                 _lastUpdateTime = Time.time;
@@ -193,7 +289,7 @@ namespace ProjectC.World
         
         private void OnDestroy()
         {
-            // FIX I2-001: Отписываемся от событий ChunkLoader
+            // FIX I2-001: Unsubscribe from ChunkLoader events
             UnsubscribeFromChunkLoaderEvents();
             
             if (_instance == this)
@@ -203,7 +299,7 @@ namespace ProjectC.World
         }
         
         /// <summary>
-        /// FIX I2-001: Отписаться от событий ChunkLoader при уничтожении.
+        /// FIX I2-001: Unsubscribe from ChunkLoader events on destroy.
         /// </summary>
         private void UnsubscribeFromChunkLoaderEvents()
         {
@@ -219,16 +315,16 @@ namespace ProjectC.World
         #region Public API
         
         /// <summary>
-        /// Загрузить чанки вокруг позиции игрока.
-        /// Вызывается автоматически из Update, но можно вызвать вручную после телепортации.
+        /// Load chunks around player position.
+        /// Called automatically from Update, but can be called manually after teleport.
         /// </summary>
-        /// <param name="playerPosition">Позиция игрока в мировых координатах</param>
-        /// <param name="radius">Радиус загрузки (по умолчанию из настроек)</param>
+        /// <param name="playerPosition">Player position in world coordinates</param>
+        /// <param name="radius">Load radius (default from settings)</param>
         public void LoadChunksAroundPlayer(Vector3 playerPosition, int? radius = null)
         {
             if (chunkManager == null || chunkLoader == null)
             {
-                Debug.LogError("[WorldStreamingManager] Cannot load chunks: managers not initialized.");
+                Debug.LogError($"[WorldStreamingManager] Cannot load chunks: chunkManager={chunkManager}, chunkLoader={chunkLoader}");
                 return;
             }
             
@@ -238,15 +334,26 @@ namespace ProjectC.World
             // Если центр не изменился - пропускаем
             if (centerChunk.Equals(_currentCenterChunk) && _loadedChunks.Count > 0)
             {
+                if (showDebugHUD)
+                    Debug.Log($"[WorldStreamingManager] Skipping: center chunk unchanged {centerChunk}");
                 return;
+            }
+            
+            // I5-001 DEBUG: подробный лог
+            if (showDebugHUD)
+            {
+                Debug.Log($"[WorldStreamingManager] Loading around {playerPosition}, centerChunk={centerChunk}, radius={effectiveRadius}");
             }
             
             _currentCenterChunk = centerChunk;
             
-            // Получаем чанки в радиусе
+            // Get chunks in radius
             List<ChunkId> chunksInRange = chunkManager.GetChunksInRadius(playerPosition, effectiveRadius);
             
-            // Загружаем новые чанки
+            // I5-001 DEBUG: Check how many chunks are in range
+            Debug.Log($"[WorldStreamingManager] DEBUG: chunksInRange count = {chunksInRange.Count}, _loadedChunks count = {_loadedChunks.Count}");
+            
+            // Load new chunks
             foreach (var chunkId in chunksInRange)
             {
                 if (!_loadedChunks.Contains(chunkId))
@@ -261,7 +368,7 @@ namespace ProjectC.World
                 }
             }
             
-            // Выгружаем дальние чанки
+            // Unload distant chunks
             int effectiveUnloadRadius = unloadRadius > effectiveRadius ? unloadRadius : effectiveRadius + 1;
             List<ChunkId> unloadChunks = chunkManager.GetChunksInRadius(playerPosition, effectiveUnloadRadius);
             
@@ -289,11 +396,11 @@ namespace ProjectC.World
         }
         
         /// <summary>
-        /// Загрузить чанк по команде сервера (для multiplayer).
-        /// Вызывается из PlayerChunkTracker.LoadChunkClientRpc().
-        /// КЛИЕНТ НЕ ДОЛЖЕН вызывать этот метод самостоятельно!
+        /// Load chunk by server command (for multiplayer).
+        /// Called from PlayerChunkTracker.LoadChunkClientRpc().
+        /// CLIENT SHOULD NOT call this method itself!
         /// </summary>
-        /// <param name="chunkId">ID чанка для загрузки</param>
+        /// <param name="chunkId">Chunk ID to load</param>
         public void LoadChunkByServerCommand(ChunkId chunkId)
         {
             if (_loadedChunks.Contains(chunkId))
@@ -314,11 +421,11 @@ namespace ProjectC.World
         }
         
         /// <summary>
-        /// Выгрузить чанк по команде сервера (для multiplayer).
-        /// Вызывается из PlayerChunkTracker.UnloadChunkClientRpc().
-        /// КЛИЕНТ НЕ ДОЛЖЕН вызывать этот метод самостоятельно!
+        /// Unload chunk by server command (for multiplayer).
+        /// Called from PlayerChunkTracker.UnloadChunkClientRpc().
+        /// CLIENT SHOULD NOT call this method itself!
         /// </summary>
-        /// <param name="chunkId">ID чанка для выгрузки</param>
+        /// <param name="chunkId">Chunk ID to unload</param>
         public void UnloadChunkByServerCommand(ChunkId chunkId)
         {
             if (!_loadedChunks.Contains(chunkId))
@@ -339,37 +446,37 @@ namespace ProjectC.World
         }
         
         /// <summary>
-        /// Телепортировать игрока к пику.
-        /// Комбинирует ResetOrigin (чтобы избежать floating point проблем)
-        /// и загрузку чанков вокруг новой позиции.
+        /// Teleport player to peak.
+        /// Combines ResetOrigin (to avoid floating point issues)
+        /// and chunk loading around new position.
         /// </summary>
-        /// <param name="peakPosition">Позиция пика для телепортации</param>
+        /// <param name="peakPosition">Peak position for teleportation</param>
         public void TeleportToPeak(Vector3 peakPosition)
         {
             if (floatingOrigin != null)
             {
-                // Сдвигаем мир так чтобы камера осталась близко к origin
+                // Shift world so camera stays close to origin
                 floatingOrigin.ResetOrigin();
             }
             
-            // Загружаем чанки вокруг новой позиции
+            // Load chunks around new position
             LoadChunksAroundPlayer(peakPosition, loadRadius);
             
             Debug.Log($"[WorldStreamingManager] Teleported to {peakPosition}");
         }
         
         /// <summary>
-        /// Получить количество загруженных чанков.
+        /// Get loaded chunk count.
         /// </summary>
         public int LoadedChunkCount => _loadedChunks.Count;
         
         /// <summary>
-        /// Получить текущий центральный чанк.
+        /// Get current center chunk.
         /// </summary>
         public ChunkId CurrentCenterChunk => _currentCenterChunk;
         
         /// <summary>
-        /// Проверить загружен ли чанк.
+        /// Check if chunk is loaded.
         /// </summary>
         public bool IsChunkLoaded(ChunkId chunkId)
         {
@@ -377,7 +484,7 @@ namespace ProjectC.World
         }
         
         /// <summary>
-        /// Выгрузить все чанки (например, при смене сцены).
+        /// Unload all chunks (e.g., on scene change).
         /// </summary>
         public void UnloadAllChunks()
         {
@@ -397,16 +504,16 @@ namespace ProjectC.World
         #region Private Methods
         
         /// <summary>
-        /// Автоматически найти необходимые компоненты на сцене.
+        /// Auto-find necessary components in scene.
         /// </summary>
         private void AutoFindComponents()
         {
             if (worldData == null)
             {
-                // Пробуем найти в сцене
+                // Try to find in scene
                 worldData = FindAnyObjectByType<WorldData>();
                 
-                // Если не нашли — загружаем из Resources или Assets
+                // If not found - load from Resources or Assets
                 if (worldData == null)
                 {
                     worldData = Resources.Load<WorldData>("Data/World/WorldData");
@@ -450,7 +557,7 @@ namespace ProjectC.World
         }
         
         /// <summary>
-        /// Проверить корректность настроек.
+        /// Validate setup correctness.
         /// </summary>
         private bool ValidateSetup()
         {
@@ -480,7 +587,7 @@ namespace ProjectC.World
                 valid = false;
             }
             
-            // FloatingOrigin опционально (может не быть в одиночном режиме)
+            // FloatingOrigin is optional (may not be in single player mode)
             if (floatingOrigin == null)
             {
                 Debug.LogWarning("[WorldStreamingManager] FloatingOriginMP not found. Large world coordinate support disabled.");
@@ -490,7 +597,7 @@ namespace ProjectC.World
         }
         
         /// <summary>
-        /// Инициализировать стриминг при старте.
+        /// Initialize streaming on start.
         /// </summary>
         private void InitializeStreaming()
         {
@@ -501,11 +608,11 @@ namespace ProjectC.World
             Debug.Log($"[WorldStreamingManager] ChunkLoader: {(chunkLoader != null ? "OK" : "NULL")}");
             Debug.Log($"[WorldStreamingManager] FloatingOrigin: {(floatingOrigin != null ? "OK" : "NULL")}");
             
-            // Настраиваем ChunkLoader с seed
+            // Configure ChunkLoader with seed
             if (chunkLoader != null && chunkGenerator != null)
             {
-                // ChunkLoader должен использовать тот же seed
-                // Это настраивается через Inspector или здесь
+                // ChunkLoader should use the same seed
+                // This is configured via Inspector or here
             }
             
             _initialized = true;
@@ -513,18 +620,22 @@ namespace ProjectC.World
         }
         
         /// <summary>
-        /// Периодическое обновление загрузки/выгрузки чанков.
+        /// Periodic chunk loading/unloading update.
+        /// I5-001 FIX: Now uses GetLocalPlayerPosition() instead of Camera.main
         /// </summary>
         private void UpdateStreaming()
         {
-            // Находим позицию камеры или игрока
-            Camera mainCamera = Camera.main;
-            if (mainCamera != null)
+            // I5-001 FIX: Use player position, not camera position
+            // Camera.main is under TradeZones which is EXCLUDED from world shift
+            // After FloatingOriginMP shifts the world, Camera.main returns position near (0,0,0)
+            Vector3 playerPosition = GetLocalPlayerPosition();
+            
+            if (playerPosition != Vector3.zero || _cachedLocalPlayerTransform != null)
             {
-                LoadChunksAroundPlayer(mainCamera.transform.position);
+                LoadChunksAroundPlayer(playerPosition);
             }
             
-            // Обновляем preload систему
+            // Update preload system
             UpdatePreload();
         }
         
@@ -533,30 +644,31 @@ namespace ProjectC.World
         #region Preload System
         
         /// <summary>
-        /// Обновление preload системы — загрузка соседних чанков заранее.
+        /// Preload system update - loading adjacent chunks in advance.
+        /// I5-001 FIX: Now uses GetLocalPlayerPosition() instead of Camera.main
         /// </summary>
         private void UpdatePreload()
         {
             if (preloadLayers <= 0) return;
             
-            Camera mainCamera = Camera.main;
-            if (mainCamera == null || chunkManager == null) return;
+            // I5-001 FIX: Use player position, not camera position
+            Vector3 playerPos = GetLocalPlayerPosition();
+            if (playerPos == Vector3.zero || chunkManager == null) return;
             
-            Vector3 playerPos = mainCamera.transform.position;
             ChunkId currentChunk = chunkManager.GetChunkAtPosition(playerPos);
             
-            // Проверяем изменился ли центральный чанк
+            // Check if center chunk changed
             if (!currentChunk.Equals(_lastPreloadChunk))
             {
                 _lastPreloadChunk = currentChunk;
                 _lastPreloadTime = Time.time;
                 
-                // Формируем очередь preload
+                // Build preload queue
                 BuildPreloadQueue(currentChunk);
                 _preloadInProgress = true;
             }
             
-            // Обрабатываем preload очередь
+            // Process preload queue
             if (_preloadInProgress && Time.time - _lastPreloadTime >= preloadDelay)
             {
                 ProcessPreloadQueue();
@@ -564,7 +676,7 @@ namespace ProjectC.World
         }
         
         /// <summary>
-        /// Построить очередь чанков для preloading.
+        /// Build queue of chunks for preloading.
         /// </summary>
         private void BuildPreloadQueue(ChunkId centerChunk)
         {
@@ -572,7 +684,7 @@ namespace ProjectC.World
             
             if (chunkManager == null) return;
             
-            // Загружаем чанки дальше чем loadRadius но в пределах preloadRadius
+            // Load chunks further than loadRadius but within preloadRadius
             int preloadRadius = loadRadius + preloadLayers;
             List<ChunkId> preloadCandidates = chunkManager.GetChunksInRadius(
                 new Vector3(centerChunk.GridX * WorldChunkManager.ChunkSize, 0, 
@@ -582,14 +694,14 @@ namespace ProjectC.World
             
             foreach (var chunkId in preloadCandidates)
             {
-                // Добавляем только те чанки которые ещё не загружены
+                // Add only chunks that are not yet loaded
                 if (!_loadedChunks.Contains(chunkId))
                 {
-                    // Вычисляем расстояние до центра — ближайшие загружаем первыми
+                    // Calculate distance to center - load nearest first
                     int distance = Mathf.Abs(chunkId.GridX - centerChunk.GridX) + 
                                    Mathf.Abs(chunkId.GridZ - centerChunk.GridZ);
                     
-                    // Вставляем в очередь по приоритету (расстоянию)
+                    // Insert into queue by priority (distance)
                     int insertIndex = _preloadQueue.Count;
                     for (int i = 0; i < _preloadQueue.Count; i++)
                     {
@@ -613,7 +725,7 @@ namespace ProjectC.World
         }
         
         /// <summary>
-        /// Обработать очередь preload — загружаем по одному чанку за интервал.
+        /// Process preload queue - load one chunk per interval.
         /// </summary>
         private void ProcessPreloadQueue()
         {
@@ -626,7 +738,7 @@ namespace ProjectC.World
             if (Time.time - _lastPreloadChunkTime < preloadChunkInterval)
                 return;
             
-            // Проверяем memory budget
+            // Check memory budget
             if (maxLoadedChunks > 0 && _loadedChunks.Count >= maxLoadedChunks)
             {
                 if (showDebugHUD)
@@ -636,7 +748,7 @@ namespace ProjectC.World
                 return;
             }
             
-            // Загружаем следующий чанк из очереди
+            // Load next chunk from queue
             ChunkId chunkToLoad = _preloadQueue[0];
             _preloadQueue.RemoveAt(0);
             _lastPreloadChunkTime = Time.time;
@@ -654,17 +766,17 @@ namespace ProjectC.World
         }
         
         /// <summary>
-        /// Получить количество чанков в preload очереди.
+        /// Get preload queue count.
         /// </summary>
         public int PreloadQueueCount => _preloadQueue.Count;
         
         /// <summary>
-        /// Получить пиковое количество загруженных чанков.
+        /// Get peak loaded chunk count.
         /// </summary>
         public int PeakLoadedChunks => _peakLoadedChunks;
         
         /// <summary>
-        /// Сбросить пиковое значение загруженных чанков.
+        /// Reset peak loaded chunk value.
         /// </summary>
         public void ResetPeakChunks()
         {
@@ -680,7 +792,7 @@ namespace ProjectC.World
         {
             if (!showDebugHUD || !_initialized) return;
             
-            GUILayout.BeginArea(new Rect(10, 10, 400, 200));
+            GUILayout.BeginArea(new Rect(10, 10, 450, 250));
             GUILayout.BeginVertical("box");
             
             GUILayout.Label("<b>World Streaming Manager</b>", UnityEditor.EditorStyles.boldLabel);
@@ -689,6 +801,12 @@ namespace ProjectC.World
             GUILayout.Label($"Load Radius: {loadRadius}");
             GUILayout.Label($"Unload Radius: {unloadRadius}");
             GUILayout.Label($"Global Seed: {globalSeed}");
+            
+            // I5-001: Show player tracking info
+            GUILayout.Space(5);
+            GUILayout.Label("<b>Player Tracking (I5-001)</b>", UnityEditor.EditorStyles.boldLabel);
+            GUILayout.Label($"Cached Player: {(_cachedLocalPlayerTransform != null ? _cachedLocalPlayerTransform.name : "NULL")}");
+            GUILayout.Label($"Player Pos: {(_cachedLocalPlayerTransform != null ? _cachedLocalPlayerTransform.position.ToString("F0") : "N/A")}");
             
             if (floatingOrigin != null)
             {

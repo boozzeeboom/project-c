@@ -1,3 +1,4 @@
+using Unity.Netcode;
 using UnityEngine;
 using ProjectC.World.Streaming;
 
@@ -193,14 +194,22 @@ namespace ProjectC.World
                 TeleportToTestPosition(_currentTargetIndex);
             }
             
-            // F7 - загрузить чанки вокруг текущей позиции
+            // F7 - загрузить чанки вокруг позиции ИГРОКА (не камеры!)
             if (f7Pressed)
             {
-                Debug.Log("[StreamingTest_AutoRun] 🎮 F7 нажата - загрузить чанки");
-                if (streamingManager != null && _mainCamera != null)
+                Debug.Log("[StreamingTest_AutoRun] 🎮 F7 нажата - загрузить чанки вокруг игрока");
+                
+                // I5-001 FIX: Используем позицию игрока, а не камеры
+                Vector3 playerPosition = GetPlayerPosition();
+                
+                if (streamingManager != null)
                 {
-                    streamingManager.LoadChunksAroundPlayer(_mainCamera.transform.position);
-                    Debug.Log("[StreamingTest_AutoRun] ✅ Чанки загружены вокруг текущей позиции");
+                    streamingManager.LoadChunksAroundPlayer(playerPosition);
+                    Debug.Log($"[StreamingTest_AutoRun] ✅ Чанки загружены вокруг игрока: {playerPosition}");
+                }
+                else
+                {
+                    Debug.LogWarning("[StreamingTest_AutoRun] ⚠️ StreamingManager не найден!");
                 }
             }
             
@@ -366,6 +375,44 @@ namespace ProjectC.World
             {
                 Instance = null;
             }
+        }
+        
+        /// <summary>
+        /// I5-001 FIX: Получить позицию локального игрока.
+        /// Использует приоритет:
+        /// 1. NetworkPlayer с IsOwner
+        /// 2. Object с тегом "Player"
+        /// 3. Camera (fallback)
+        /// </summary>
+        private Vector3 GetPlayerPosition()
+        {
+            // Priority 1: NetworkPlayer с IsOwner
+            var networkObjects = FindObjectsByType<Unity.Netcode.NetworkObject>();
+            foreach (var netObj in networkObjects)
+            {
+                if (netObj.IsOwner && netObj.name.Contains("NetworkPlayer"))
+                {
+                    Debug.Log($"[StreamingTest_AutoRun] Using NetworkPlayer IsOwner: {netObj.transform.position}");
+                    return netObj.transform.position;
+                }
+            }
+            
+            // Priority 2: Object с тегом "Player"
+            GameObject playerByTag = GameObject.FindGameObjectWithTag("Player");
+            if (playerByTag != null)
+            {
+                Debug.Log($"[StreamingTest_AutoRun] Using Player tag: {playerByTag.transform.position}");
+                return playerByTag.transform.position;
+            }
+            
+            // Priority 3: Camera fallback
+            if (_mainCamera != null)
+            {
+                Debug.LogWarning($"[StreamingTest_AutoRun] WARNING: Using Camera fallback: {_mainCamera.transform.position}");
+                return _mainCamera.transform.position;
+            }
+            
+            return Vector3.zero;
         }
     }
 }

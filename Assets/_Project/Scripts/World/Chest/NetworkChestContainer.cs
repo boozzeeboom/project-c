@@ -28,6 +28,9 @@ namespace ProjectC.World.Chest
         [SerializeField] private Vector3 openRotationOffset = new Vector3(0, 0, -45f);
         [SerializeField] private Vector3 openScaleOffset = new Vector3(0.1f, 0.1f, 0.1f);
 
+        [Header("Debug")]
+        [SerializeField] private bool debugMode = true;
+
         // Network state
         private NetworkVariable<bool> _isOpen = new NetworkVariable<bool>(
             false,
@@ -63,6 +66,9 @@ namespace ProjectC.World.Chest
             _startRotation = transform.eulerAngles;
             _startScale = transform.localScale;
 
+            if (debugMode)
+                Debug.Log($"[NetworkChestContainer] OnNetworkSpawn - IsServer={IsServer}, OwnerClientId={OwnerClientId}");
+
             // Subscribe to network state changes
             _isOpen.OnValueChanged += OnOpenStateChanged;
 
@@ -90,6 +96,9 @@ namespace ProjectC.World.Chest
 
         private void OnOpenStateChanged(bool previousValue, bool newValue)
         {
+            if (debugMode)
+                Debug.Log($"[NetworkChestContainer] OnOpenStateChanged: {previousValue} -> {newValue}");
+                
             if (newValue && !_animationPlayed)
             {
                 PlayOpenAnimationInstant();
@@ -123,7 +132,37 @@ namespace ProjectC.World.Chest
         /// </summary>
         public void TryOpen()
         {
-            if (_isOpen.Value) return;
+            if (debugMode)
+            {
+                bool isNetworkSpawned = IsSpawned;
+                bool isServer = IsServer;
+                bool isHost = IsHost;
+                Debug.Log($"[NetworkChestContainer] TryOpen - Spawned={isNetworkSpawned}, IsServer={isServer}, IsHost={isHost}, IsOpen={_isOpen.Value}");
+            }
+
+            // Проверка: объект должен быть сетевым и не открыт
+            if (!IsSpawned)
+            {
+                if (debugMode)
+                    Debug.LogWarning("[NetworkChestContainer] TryOpen FAILED: Not spawned (no NetworkObject?)");
+                return;
+            }
+
+            if (_isOpen.Value)
+            {
+                if (debugMode)
+                    Debug.Log("[NetworkChestContainer] TryOpen SKIPPED: Already open");
+                return;
+            }
+
+            // Проверка: нужен либо сервер, либо хост (для отправки ServerRpc)
+            if (!IsServer && !IsHost)
+            {
+                if (debugMode)
+                    Debug.LogWarning("[NetworkChestContainer] TryOpen FAILED: Not server/host (client cannot send ServerRpc)");
+                return;
+            }
+
             RequestOpenChestServerRpc();
         }
 
@@ -134,19 +173,37 @@ namespace ProjectC.World.Chest
         [Rpc(SendTo.Server)]
         private void RequestOpenChestServerRpc()
         {
+            if (debugMode)
+                Debug.Log($"[NetworkChestContainer] RequestOpenChestServerRpc received from client");
+
             // Already opened check
-            if (_isOpen.Value) return;
+            if (_isOpen.Value)
+            {
+                if (debugMode)
+                    Debug.Log("[NetworkChestContainer] ServerRpc: Already open, skipping");
+                return;
+            }
 
             // Get the client who requested (new NGO API)
             ulong clientId = NetworkManager.Singleton.LocalClientId;
 
             // Find the player object
             var networkManager = NetworkManager.Singleton;
-            if (networkManager == null) return;
+            if (networkManager == null)
+            {
+                if (debugMode)
+                    Debug.LogError("[NetworkChestContainer] ServerRpc: NetworkManager.Singleton is null!");
+                return;
+            }
 
             // Get player position for distance validation
             var playerObject = networkManager.SpawnManager.GetPlayerNetworkObject(clientId);
-            if (playerObject == null) return;
+            if (playerObject == null)
+            {
+                if (debugMode)
+                    Debug.LogError($"[NetworkChestContainer] ServerRpc: Player object not found for client {clientId}");
+                return;
+            }
 
             float dist = Vector3.Distance(playerObject.transform.position, transform.position);
             
@@ -159,6 +216,9 @@ namespace ProjectC.World.Chest
 
             // Generate loot from LootTable
             var lootItems = GenerateLoot();
+            
+            if (debugMode)
+                Debug.Log($"[NetworkChestContainer] Generated {lootItems.Count} loot items");
 
             // Add items to player's NetworkInventory
             var networkInventory = playerObject.GetComponent<NetworkInventory>();
@@ -171,6 +231,11 @@ namespace ProjectC.World.Chest
                 }
                 
                 Debug.Log($"[NetworkChestContainer] Added {lootItems.Count} items to player {clientId}");
+            }
+            else
+            {
+                if (debugMode)
+                    Debug.LogWarning("[NetworkChestContainer] NetworkInventory not found on player!");
             }
 
             // Set open state (server authoritative)
@@ -192,6 +257,9 @@ namespace ProjectC.World.Chest
         [Rpc(SendTo.Everyone)]
         private void OpenChestClientRpc()
         {
+            if (debugMode)
+                Debug.Log("[NetworkChestContainer] OpenChestClientRpc received");
+                
             _animationPlayed = true;
             _openTimer = openDuration; // Skip to end for instant feel
             transform.eulerAngles = _startRotation + openRotationOffset;
@@ -216,7 +284,8 @@ namespace ProjectC.World.Chest
         {
             if (lootTable == null)
             {
-                Debug.LogWarning($"[NetworkChestContainer] LootTable not assigned for {gameObject.name}");
+                if (debugMode)
+                    Debug.LogWarning($"[NetworkChestContainer] LootTable not assigned for {gameObject.name}");
                 return new List<ItemData>();
             }
             return lootTable.GenerateLoot();

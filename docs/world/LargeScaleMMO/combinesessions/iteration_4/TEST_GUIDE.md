@@ -17,127 +17,125 @@
 
 ---
 
-## 🧪 ТЕСТ 1: Одиночная игра (Play Mode)
+## ⚠️ КЛЮЧЕВЫЕ ПРИЧИНЫ НЕРАБОТЫ
 
-### Цель: Проверить базовое открытие сундука
+### 1. NetworkObject НЕ добавлен на префаб!
+Это ГЛАВНАЯ причина. Без NetworkObject сундук не работает.
 
-### Шаги:
+**Проверка:**
+- Выбрать префаб сундука в Project
+- В Inspector: должен быть компонент `NetworkObject`
+- Если нет → добавить: `Add Component → NetworkObject`
 
-1. **Создать тестовый префаб сундука:**
-   - Создать пустой GameObject
-   - Добавить компоненты:
-     - `NetworkObject`
-     - `NetworkChestContainer`
-   - Перетащить в папку Prefabs
-   - Добавить на сцену
+### 2. Префаб НЕ зарегистрирован в NetworkManager
 
-2. **Настроить LootTable:**
-   - Создать `LootTable` (ScriptableObject) если нет
-   - Привязать к NetworkChestContainer в Inspector
+**Проверка:**
+- Edit → Project Settings → Netcode → Network Prefabs
+- Добавить префаб в список
 
-3. **Запустить Play Mode:**
-   - Нажать Play в Unity
-   - Видеть сундук на сцене
+### 3. Нужен режим HOST (не чистый клиент)
 
-4. **Взаимодействие:**
-   - Подойти к сундуку (нужно Player с ItemPickupSystem)
-   - Нажать E
-   - Сундук должен открыться (анимация поворота/масштаба)
+ServerRpc работает ТОЛЬКО когда есть сервер.
 
-5. **Проверить:**
-   - Существует ли Player с ItemPickupSystem на сцене?
-   - Работает ли проверка `IsWalking`?
+**Проверка:**
+- `Multiplayer > Start New Session > Play as Host`
+- Или использовать ParrelSync для второго клиента + запустить как Host
 
----
+### 4. Player не в пешем режиме
 
-## 🧪 ТЕСТ 2: Локальный мультиплеер (Host)
+ItemPickupSystem работает только когда `IsWalking = true`.
 
-### Цель: Проверить сетевую синхронизацию
-
-### Шаги:
-
-1. **Подготовить NetworkManager:**
-   - Проверить настройки `NetworkManager` на сцене
-   - Убедиться что сундук зарегистрирован в `NetworkPrefabs`
-
-2. **Запустить как Host:**
-   - В Unity: `Multiplayer > Start New Session > Play as Host`
-   - Или использовать ParrelSync для второго клиента
-
-3. **Подойти к сундуку:**
-   - Host нажимает E рядом с сундуком
-   - Наблюдать: сундук открывается анимация
-
-4. **Проверить синхронизацию:**
-   - Client видит открытие сундука?
-   - _isOpen синхронизируется на все клиенты?
+**Проверка:**
+- Игрок должен быть пешком (не на корабле/глайдере)
+- PlayerStateMachine.IsWalking должен возвращать true
 
 ---
 
-## 🧪 ТЕСТ 3: ChunkNetworkSpawner
+## 🧪 ТЕСТ 1: Одиночная игра (Play Mode) — НЕ РАБОТАЕТ
 
-### Цель: Проверить спавн сундуков через систему чанков
+### Если не работает, проверить по порядку:
 
-### Шаги:
+#### Шаг 1: Создать правильный префаб
 
-1. **Найти ChunkNetworkSpawner:**
-   - На сцене или в сцене должен быть GameObject с `ChunkNetworkSpawner`
+```
+1. Создать пустой GameObject
+2. Добавить компоненты:
+   - NetworkObject            ← ОБЯЗАТЕЛЬНО!
+   - BoxCollider (isTrigger = true)
+   - NetworkChestContainer
+3. Перетащить в папку Prefabs
+4. Добавить на сцену
+```
 
-2. **Проверить настройки:**
-   - В Inspector должен быть `chestPrefab` — префаб сундука
+#### Шаг 2: Включить Debug режим
 
-3. **Запустить игру:**
-   - ChunkNetworkSpawner должен автоматически спавнить сундуки
-   - Проверить в Hierarchy: появляются ли NetworkObject сундуков
+В Inspector NetworkChestContainer:
+- Поставить галочку `Debug Mode = true`
 
-4. **Открыть консоль:**
-   - Должны быть логи:
-     - `[ChunkNetworkSpawner] Spawning network objects for chunk X`
-     - `[NetworkChestContainer] Added N items to player X`
+#### Шаг 3: Запустить как Host
+
+```
+В Unity: Multiplayer > Start New Session > Play as Host
+```
+
+#### Шаг 4: Смотреть логи консоли
+
+**При спавне (OnNetworkSpawn):**
+```
+[NetworkChestContainer] OnNetworkSpawn - IsServer=True, OwnerClientId=X
+```
+
+**При нажатии E (TryOpen):**
+```
+[NetworkChestContainer] TryOpen - Spawned=True, IsServer=True, IsHost=True, IsOpen=False
+[NetworkChestContainer] RequestOpenChestServerRpc received from client
+```
+
+**Если видишь это — значит работает:**
+```
+[NetworkChestContainer] TryOpen FAILED: Not spawned (no NetworkObject?)
+                          ↑↑↑ ЭТО ГЛАВНАЯ ПРИЧИНА
+```
+
+---
+
+## 🧪 ТЕСТ 2: Проверка ItemPickupSystem
+
+Включить `debugMode = true` в ItemPickupSystem.
+
+**Ожидаемые логи:**
+```
+[ItemPickupSystem] Found 1 chests
+[ItemPickupSystem] Chest ChestPrefab: dist=2.5, radius=3.0
+[ItemPickupSystem] Nearest chest: ChestPrefab at (X,Y,Z)
+[ItemPickupSystem] E pressed! Walking=True, Chest=True, Pickup=False
+[ItemPickupSystem] Opening chest: ChestPrefab
+```
 
 ---
 
 ## 📊 ЧЕКЛИСТ ПРОВЕРКИ
 
-| # | Проверка | Статус |
-|---|----------|--------|
-| 1 | Код компилируется | ☐ |
-| 2 | NetworkChestContainer на префабе | ☐ |
-| 3 | NetworkObject компонент добавлен | ☐ |
-| 4 | LootTable привязан | ☐ |
-| 5 | ItemPickupSystem на игроке | ☐ |
-| 6 | PlayerStateMachine доступен | ☐ |
-| 7 | ChunkNetworkSpawner на сцене | ☐ |
-| 8 | chestPrefab настроен | ☐ |
+| # | Проверка | Где | Статус |
+|---|----------|-----|--------|
+| 1 | NetworkObject на префабе | Inspector | ☐ |
+| 2 | NetworkChestContainer на префабе | Inspector | ☐ |
+| 3 | LootTable привязан | Inspector | ☐ |
+| 4 | Debug Mode включён | Inspector | ☐ |
+| 5 | Запуск как Host | Unity Menu | ☐ |
+| 6 | IsWalking = true | Debug log | ☐ |
 
 ---
 
-## 🔍 ОЖИДАЕМЫЕ ЛОГИ В КОНСОЛИ
+## 🔍 РАСШИФРОВКА ЛОГОВ
 
-### При открытии сундука:
+### NetworkChestContainer.TryOpen():
+- `Spawned=False` → Нет NetworkObject на префабе!
+- `IsServer=False` → Нужно запустить как Host
+- `IsHost=False` → Нужно запустить как Host
 
-```
-[NetworkChestContainer] Client 0 too far: 4.2m (max: 3.0m)  ← клиент далеко
-[NetworkChestContainer] Added 2 items to player 0             ← успех
-```
-
-### При спавне ChunkNetworkSpawner:
-
-```
-[ChunkNetworkSpawner] Spawning network objects for chunk (0,0,0)
-[ChunkNetworkSpawner] Spawned 1 network objects for chunk (0,0,0)
-```
-
----
-
-## ⚠️ ВОЗМОЖНЫЕ ПРОБЛЕМЫ И РЕШЕНИЯ
-
-| Проблема | Решение |
-|----------|---------|
-| Сундук не открывается | Проверить IsWalking = true у Player |
-| Клиент не видит открытие | Проверить NetworkObject на префабе |
-| Нет предметов в инвентаре | Проверить LootTable, NetworkInventory |
-| ChunkNetworkSpawner не работает | Проверить chestPrefab, WorldChunkManager |
+### ItemPickupSystem.OnPickupPressed():
+- `Walking=False` → Игрок не в пешем режиме
 
 ---
 
@@ -147,19 +145,18 @@
 Дата: _______
 Тестировщик: _______
 
+Проверка NetworkObject: ☐ Есть / ☐ Нет
+Проверка Debug Mode: ☐ Включён / ☐ Выключен
+
+Лог OnNetworkSpawn: _____________________
+Лог TryOpen: _____________________________
+
 Тест 1: ☐ Успешно / ☐ Неудачно
 Заметки: 
-
-Тест 2: ☐ Успешно / ☐ Неудачно  
-Заметки:
-
-Тест 3: ☐ Успешно / ☐ Неудачно
-Заметки:
-
-Общие замечания:
 ```
 
 ---
 
 **Автор:** Claude Code  
-**Дата создания:** 19.04.2026, 13:10 MSK
+**Дата создания:** 19.04.2026, 14:20 MSK  
+**Версия:** v2 — Добавлена диагностика проблем

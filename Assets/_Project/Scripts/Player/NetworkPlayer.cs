@@ -5,6 +5,7 @@ using ProjectC.Core;
 using ProjectC.Items;
 using ProjectC.Trade;
 using ProjectC.UI;
+using ProjectC.World.Streaming;
 using System.Collections.Generic;
 
 namespace ProjectC.Player
@@ -65,6 +66,11 @@ namespace ProjectC.Player
 
         // NetworkObject
         private NetworkObject networkObject;
+
+        // Chunk tracking
+        private PlayerChunkTracker _playerChunkTracker;
+
+
 
         // ==================== CLIENT-SIDE PREDICTION ====================
 
@@ -131,6 +137,14 @@ namespace ProjectC.Player
                 }
                 
                 ApplyWalkingState();
+
+                // Find PlayerChunkTracker for chunk streaming
+                var chunkTrackers = FindObjectsByType<PlayerChunkTracker>();
+                if (chunkTrackers.Length > 0)
+                {
+                    _playerChunkTracker = chunkTrackers[0];
+                }
+            
             }
             else
             {
@@ -248,6 +262,13 @@ namespace ProjectC.Player
         private void Update()
         {
             if (!IsOwner) return;
+
+            // Update PlayerChunkTracker for server-side chunk streaming
+            if (_playerChunkTracker != null)
+            {
+                _playerChunkTracker.ForceUpdatePlayerChunk(OwnerClientId, transform.position);
+            }
+            
 
             // F — переключение режимов
             if (Keyboard.current.fKey.wasPressedThisFrame)

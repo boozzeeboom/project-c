@@ -199,7 +199,24 @@ namespace ProjectC.World.Streaming
         #endregion
         
         #region Core Logic
-        
+
+        /// <summary>
+        /// Get ChunkId at world position.
+        /// Uses WorldChunkManager if available, otherwise calculates manually.
+        /// </summary>
+        private ChunkId GetChunkAtPosition(Vector3 position)
+        {
+            if (_chunkManager != null)
+            {
+                return _chunkManager.GetChunkAtPosition(position);
+            }
+            
+            // Fallback: manual calculation
+            int gridX = Mathf.FloorToInt(position.x / 2000f);
+            int gridZ = Mathf.FloorToInt(position.z / 2000f);
+            return new ChunkId(gridX, gridZ);
+        }
+
         /// <summary>
         /// Обновить чанк игрока при изменении позиции.
         /// </summary>
@@ -337,7 +354,35 @@ namespace ProjectC.World.Streaming
         #endregion
         
         #region Public API
-        
+
+        /// <summary>
+        /// Update player position for chunk tracking.
+        /// Called from NetworkPlayer.
+        /// </summary>
+        public void UpdatePlayerPosition(ulong clientId, Vector3 worldPosition)
+        {
+            if (!IsServer) return;
+            
+            var chunkId = GetChunkAtPosition(worldPosition);
+            
+            if (_playerChunks.TryGetValue(clientId, out var currentChunk))
+            {
+                if (!currentChunk.Equals(chunkId))
+                {
+                    Debug.Log($"[PlayerChunkTracker] Player {clientId} moved from {currentChunk} to {chunkId}");
+                    UnloadChunkClientRpc(clientId, currentChunk);
+                    LoadChunkClientRpc(clientId, chunkId);
+                }
+            }
+            else
+            {
+                LoadChunkClientRpc(clientId, chunkId);
+                _clientLoadedChunks[clientId] = new HashSet<ChunkId>();
+            }
+            
+            _playerChunks[clientId] = chunkId;
+        }
+
         /// <summary>
         /// Принудительно обновить позицию игрока (вызывается из других систем).
         /// </summary>

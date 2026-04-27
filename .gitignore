@@ -55,8 +55,13 @@ mono_crash.*
 .qwen/
 .agents/           # Personal agent configs and skills
 .cline/            # Cline agent files
-.clinerules/ 
-.vscode/      # Cline rules and hooks
+.clinerules/       # Cline rules and hooks
+.vscode/            # VSCode settings
+
+# Graphify output (generated, per-session)
+graphify-out/
+.graphify_*
+graphify_*.py
 
 # Temporary files
 *.tmp

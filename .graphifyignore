@@ -1,0 +1,39 @@
+# Graphify ignore for Unity/ProjectC
+
+# Unity generated folders
+Library/
+Temp/
+Obj/
+Logs/
+UserSettings/
+Builds/
+Build/
+
+# Version control
+.vs/
+.vscode/
+
+# Addressables
+ServerData/
+Assets/StreamingAssets/aa*
+
+# Visual Scripting
+Assets/Unity.VisualScripting.Generated/
+
+# Package Manager
+Assets/Resources/
+Assets/MobileDependencyResolver/
+
+# Graphify outputs (don't re-extract your own output)
+graphify-out/
+*.generated.*
+
+# Documentation translations (generated)
+docs/translations/
+
+# Archive
+docs/archive/
+
+# Large binary files
+*.unitypackage.meta
+*.asset.meta

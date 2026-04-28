@@ -55,6 +55,8 @@ namespace ProjectC.World.Scene
 
         private void Awake()
         {
+            DontDestroyOnLoad(gameObject);
+
             if (sceneRegistry == null)
             {
                 sceneRegistry = Resources.Load<SceneRegistry>("SceneRegistry");
@@ -190,6 +192,16 @@ namespace ProjectC.World.Scene
         public bool IsSceneLoaded(SceneID scene) => _loadedScenes.Contains(scene);
 
         public IEnumerable<SceneID> GetLoadedScenes() => _loadedScenes;
+
+        public void LoadSceneOnly(SceneID scene)
+        {
+            StartCoroutine(LoadSceneAsync(scene));
+        }
+
+        public void LoadInitialScene(SceneID scene)
+        {
+            StartCoroutine(LoadSceneWithNeighborsCoroutine(scene));
+        }
 
         #endregion
 

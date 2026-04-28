@@ -13,9 +13,9 @@ namespace ProjectC.UI
     {
         [Header("UI References")]
         [SerializeField] private GameObject menuPanel;
-        [SerializeField] private Button hostButton;
-        [SerializeField] private Button clientButton;
-        [SerializeField] private Button serverButton;
+        [SerializeField] public Button hostButton;
+        [SerializeField] public Button clientButton;
+        [SerializeField] public Button serverButton;
         
         [Header("Status")]
         [SerializeField] private TextMeshProUGUI statusText;

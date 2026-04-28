@@ -1,5 +1,7 @@
 #if UNITY_EDITOR
+using System;
 using System.Collections.Generic;
+using System.Reflection;
 using UnityEditor;
 using UnityEditor.SceneManagement;
 using Unity.Netcode;
@@ -48,7 +50,7 @@ namespace ProjectC.Editor
                 AssetDatabase.CreateFolder("Assets/_Project/Scenes", "Test");
             }
 
-            Scene scene = EditorSceneManager.NewScene(NewSceneSetup.DefaultGameObjects, NewSceneMode.Additive);
+            Scene scene = EditorSceneManager.NewScene(NewSceneSetup.EmptyScene, NewSceneMode.Additive);
 
             CreateTestSceneContent();
 
@@ -67,9 +69,9 @@ namespace ProjectC.Editor
             CreateClientSceneLoader();
             CreateServerSceneManager();
             CreateSceneTransitionCoordinator();
-            CreateWorldStreamingManager();
+            // REMOVED: CreateWorldStreamingManager() - chunk system deprecated in scene-based architecture
             CreateMainCamera();
-            CreateFloatingOriginMP();
+            // REMOVED: CreateFloatingOriginMP() - scenes don't need it per SCENE_ARCHITECTURE_DECISION.md
             CreateAltitudeCorridorSystem();
             CreateCloudSystem();
             CreatePlayerSpawnPoint();
@@ -78,9 +80,38 @@ namespace ProjectC.Editor
 
         private void CreateEventSystem()
         {
+            // FIX: Check if EventSystem already exists to avoid duplicates
+            var existingEventSystem = UnityEngine.EventSystems.EventSystem.FindAnyObjectByType<UnityEngine.EventSystems.EventSystem>();
+            if (existingEventSystem != null)
+            {
+                Debug.LogWarning("[TestSceneGenerator] EventSystem already exists, skipping creation");
+                return;
+            }
+
             GameObject eventSystem = new GameObject("EventSystem");
             eventSystem.AddComponent<UnityEngine.EventSystems.EventSystem>();
-            eventSystem.AddComponent<UnityEngine.EventSystems.StandaloneInputModule>();
+
+            // FIX: Use reflection to add InputSystemUIInputModule from Unity.InputSystem.UI assembly
+            var inputModuleType = GetTypeByName("UnityEngine.InputSystem.UI.InputSystemUIInputModule");
+            if (inputModuleType != null)
+            {
+                eventSystem.AddComponent(inputModuleType);
+            }
+            else
+            {
+                Debug.LogWarning("[TestSceneGenerator] InputSystemUIInputModule not found, using StandaloneInputModule as fallback");
+                eventSystem.AddComponent<UnityEngine.EventSystems.StandaloneInputModule>();
+            }
+        }
+
+        private static Type GetTypeByName(string typeName)
+        {
+            foreach (var assembly in System.AppDomain.CurrentDomain.GetAssemblies())
+            {
+                var type = assembly.GetType(typeName, false);
+                if (type != null) return type;
+            }
+            return null;
         }
 
         private void CreateWorldData()

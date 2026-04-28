@@ -1,5 +1,7 @@
 #if UNITY_EDITOR
+using System;
 using System.Collections.Generic;
+using System.Reflection;
 using UnityEditor;
 using UnityEditor.SceneManagement;
 using Unity.Netcode;
@@ -13,6 +15,8 @@ using ProjectC.World;
 using ProjectC.Ship;
 using ProjectC.Core;
 using ProjectC.UI;
+using ProjectC.Network;
+using ProjectC.Player;
 
 namespace ProjectC.Editor
 {
@@ -75,10 +79,11 @@ namespace ProjectC.Editor
                 AssetDatabase.CreateFolder("Assets/_Project/Scenes", "Bootstrap");
             }
 
-            Scene scene = EditorSceneManager.NewScene(NewSceneSetup.DefaultGameObjects, NewSceneMode.Single);
+            Scene scene = EditorSceneManager.NewScene(NewSceneSetup.EmptyScene, NewSceneMode.Single);
 
             CreateEventSystem();
             CreateNetworkManager();
+            CreatePlayerSpawner();
             CreateSceneManagement();
             CreateCameraSystem();
             CreateWorldSystems();
@@ -99,9 +104,39 @@ namespace ProjectC.Editor
 
         private void CreateEventSystem()
         {
+            // FIX: Check if EventSystem already exists to avoid duplicates
+            var existingEventSystem = UnityEngine.EventSystems.EventSystem.FindAnyObjectByType<UnityEngine.EventSystems.EventSystem>();
+            if (existingEventSystem != null)
+            {
+                Debug.LogWarning("[BootstrapSceneGenerator] EventSystem already exists, skipping creation");
+                return;
+            }
+
             GameObject eventSystem = new GameObject("EventSystem");
             eventSystem.AddComponent<UnityEngine.EventSystems.EventSystem>();
-            eventSystem.AddComponent<UnityEngine.EventSystems.StandaloneInputModule>();
+
+            // FIX: Use reflection to add InputSystemUIInputModule from Unity.InputSystem.UI assembly
+            // This resolves "InvalidOperationException: You are trying to read Input using UnityEngine.Input class"
+            var inputModuleType = GetTypeByName("UnityEngine.InputSystem.UI.InputSystemUIInputModule");
+            if (inputModuleType != null)
+            {
+                eventSystem.AddComponent(inputModuleType);
+            }
+            else
+            {
+                Debug.LogWarning("[BootstrapSceneGenerator] InputSystemUIInputModule not found, using StandaloneInputModule as fallback");
+                eventSystem.AddComponent<UnityEngine.EventSystems.StandaloneInputModule>();
+            }
+        }
+
+        private static Type GetTypeByName(string typeName)
+        {
+            foreach (var assembly in System.AppDomain.CurrentDomain.GetAssemblies())
+            {
+                var type = assembly.GetType(typeName, false);
+                if (type != null) return type;
+            }
+            return null;
         }
 
         private void CreateNetworkManager()
@@ -115,6 +150,28 @@ namespace ProjectC.Editor
             transport.SetConnectionData("127.0.0.1", 7777);
 
             var nmc = networkObj.AddComponent<NetworkManagerController>();
+        }
+
+private void CreatePlayerSpawner()
+        {
+            GameObject spawnerObj = new GameObject("PlayerSpawner");
+            spawnerObj.transform.position = new Vector3(COLS * SCENE_SIZE / 2f, 3000f, ROWS * SCENE_SIZE / 2f);
+
+            var networkObject = spawnerObj.AddComponent<NetworkObject>();
+            var spawner = spawnerObj.AddComponent<NetworkPlayerSpawner>();
+
+            var characterController = spawnerObj.AddComponent<CharacterController>();
+            characterController.center = new Vector3(0, 1, 0);
+            characterController.radius = 0.5f;
+            characterController.height = 2f;
+
+            spawnerObj.AddComponent<NetworkPlayer>();
+
+            GameObject cameraObj = new GameObject("PlayerCamera");
+            cameraObj.transform.SetParent(spawnerObj.transform);
+            cameraObj.transform.localPosition = new Vector3(0, 1.5f, 0);
+            cameraObj.AddComponent<Camera>();
+            cameraObj.AddComponent<AudioListener>();
         }
 
         private void CreateSceneManagement()
@@ -149,36 +206,25 @@ namespace ProjectC.Editor
 
             cameraObj.AddComponent<AudioListener>();
 
-            var fo = cameraObj.AddComponent<FloatingOriginMP>();
-            var so = new SerializedObject(fo);
-            so.FindProperty("threshold").floatValue = 150000f;
-            so.FindProperty("shiftRounding").floatValue = 10000f;
-            so.FindProperty("showDebugLogs").boolValue = true;
-            so.FindProperty("showDebugHUD").boolValue = true;
-
-            var worldRootNamesProp = so.FindProperty("worldRootNames");
-            if (worldRootNamesProp != null)
-            {
-                worldRootNamesProp.ClearArray();
-                string[] names = { "WorldRoot", "Mountains", "Clouds", "Ground", "Boundaries", "Runtime" };
-                for (int i = 0; i < names.Length; i++)
-                {
-                    worldRootNamesProp.InsertArrayElementAtIndex(i);
-                    worldRootNamesProp.GetArrayElementAtIndex(i).stringValue = names[i];
-                }
-            }
-            so.ApplyModifiedProperties();
+            // NOTE: FloatingOriginMP REMOVED - scene-based architecture doesn't need it
+            // Per SCENE_ARCHITECTURE_DECISION.md: "Сцены 79,999 не требуют FloatingOriginMP внутри"
         }
 
         private void CreateWorldSystems()
         {
-            CreateWorldStreamingManager();
+            // REMOVED: CreateWorldStreamingManager() - old chunk-based system
+            // WorldChunkManager, ChunkLoader, ProceduralChunkGenerator, PlayerChunkTracker,
+            // ChunkNetworkSpawner, WorldStreamingManager are DEPRECATED in scene-based architecture
             CreateAltitudeCorridorSystem();
             CreateCloudSystem();
             CreateWorldRoot();
         }
 
-        private void CreateWorldStreamingManager()
+        // DEPRECATED: Scene-based architecture doesn't use chunk system
+        // REMOVED: WorldChunkManager, ChunkLoader, ProceduralChunkGenerator,
+        //          PlayerChunkTracker, ChunkNetworkSpawner, WorldStreamingManager
+        // Kept for reference - delete after confirming scene-based system works
+        private void CreateWorldStreamingManager_DELETED()
         {
             GameObject obj = new GameObject("WorldStreamingManager");
             obj.transform.position = Vector3.zero;
@@ -288,7 +334,7 @@ namespace ProjectC.Editor
             GameObject worldRoot = new GameObject("WorldRoot");
             worldRoot.transform.position = Vector3.zero;
 
-            string[] subRoots = { "Mountains", "Clouds", "Farms", "TradeZones", "ChunksContainer" };
+            string[] subRoots = { "Mountains", "Clouds", "Farms", "TradeZones" }; // ChunksContainer REMOVED - chunk system deprecated
             foreach (var name in subRoots)
             {
                 GameObject subRoot = new GameObject(name);
@@ -300,7 +346,12 @@ namespace ProjectC.Editor
         private void CreateNetworkTestMenu()
         {
             Canvas canvasObj = CreateNetworkTestCanvas();
-            CreateNetworkTestMenuContent(canvasObj.transform);
+
+            // FIX: Create NetworkTestMenu component on canvas instead of using lambdas
+            // Lambda listeners don't persist to scene files
+            var menuHandler = canvasObj.gameObject.AddComponent<NetworkTestMenu>();
+
+            CreateNetworkTestMenuContent(canvasObj.transform, menuHandler);
         }
 
         private Canvas CreateNetworkTestCanvas()
@@ -311,14 +362,13 @@ namespace ProjectC.Editor
             canvasObj.AddComponent<CanvasScaler>();
             canvasObj.AddComponent<GraphicRaycaster>();
 
-            GameObject eventSystemObj = new GameObject("EventSystem");
-            eventSystemObj.AddComponent<UnityEngine.EventSystems.EventSystem>();
-            eventSystemObj.AddComponent<UnityEngine.EventSystems.StandaloneInputModule>();
+            // FIX: EventSystem already created by CreateEventSystem() - do NOT create duplicate
+            // Previously created duplicate EventSystem here causing "2 event systems" error
 
             return canvas;
         }
 
-        private void CreateNetworkTestMenuContent(Transform canvasTransform)
+        private void CreateNetworkTestMenuContent(Transform canvasTransform, NetworkTestMenu menuHandler)
         {
             GameObject menuObj = new GameObject("NetworkTestMenu");
             menuObj.transform.SetParent(canvasTransform);
@@ -326,35 +376,24 @@ namespace ProjectC.Editor
 
             var menuPanel = CreateMenuPanel(menuObj.transform);
 
-            var nmc = Object.FindFirstObjectByType<NetworkManagerController>();
+            // FIX: NetworkTestMenu component handles button binding via Inspector references
+            // Assign button references for serialization
+            var nmc = UnityEngine.Object.FindAnyObjectByType<NetworkManagerController>();
             if (nmc == null)
             {
                 Debug.LogWarning("[BootstrapSceneGenerator] NetworkManagerController not found in scene");
             }
 
-            CreateButton(menuPanel.transform, "Host", new Vector2(0, -20), () => {
-                if (nmc != null) nmc.StartHost();
-                menuObj.SetActive(false);
-            });
+            // Create buttons with proper persistent OnClick handlers via NetworkTestMenu
+            var hostBtnObj = CreateButtonObject(menuPanel.transform, "Host", new Vector2(0, -20));
+            var clientBtnObj = CreateButtonObject(menuPanel.transform, "Client", new Vector2(0, -70));
+            var serverBtnObj = CreateButtonObject(menuPanel.transform, "Server", new Vector2(0, -120));
+            var loadWorldBtnObj = CreateButtonObject(menuPanel.transform, "Load World [0,0]", new Vector2(0, -180));
 
-            CreateButton(menuPanel.transform, "Client", new Vector2(0, -70), () => {
-                if (nmc != null) nmc.ConnectToServer("127.0.0.1", 7777);
-                menuObj.SetActive(false);
-            });
-
-            CreateButton(menuPanel.transform, "Server", new Vector2(0, -120), () => {
-                if (nmc != null) nmc.StartServer();
-                menuObj.SetActive(false);
-            });
-
-            CreateButton(menuPanel.transform, "Load World [0,0]", new Vector2(0, -180), () => {
-                var loader = Object.FindFirstObjectByType<ClientSceneLoader>();
-                if (loader != null)
-                {
-                    loader.LoadInitialScene(new SceneID(0, 0));
-                }
-                menuObj.SetActive(false);
-            });
+            // FIX: Assign button references to NetworkTestMenu so Start() can wire up listeners
+            menuHandler.hostButton = hostBtnObj.GetComponent<Button>();
+            menuHandler.clientButton = clientBtnObj.GetComponent<Button>();
+            menuHandler.serverButton = serverBtnObj.GetComponent<Button>();
         }
 
         private GameObject CreateMenuPanel(Transform parent)
@@ -418,6 +457,39 @@ namespace ProjectC.Editor
             textComp.fontSize = 14;
             textComp.alignment = TMPro.TextAlignmentOptions.Center;
             textComp.color = Color.white;
+        }
+
+        private GameObject CreateButtonObject(Transform parent, string text, Vector2 position)
+        {
+            GameObject btnObj = new GameObject(text);
+            btnObj.transform.SetParent(parent);
+            var rect = btnObj.AddComponent<RectTransform>();
+            rect.anchorMin = new Vector2(0.5f, 0.5f);
+            rect.anchorMax = new Vector2(0.5f, 0.5f);
+            rect.pivot = new Vector2(0.5f, 0.5f);
+            rect.anchoredPosition = position;
+            rect.sizeDelta = new Vector2(180, 40);
+
+            var image = btnObj.AddComponent<Image>();
+            image.color = new Color(0.2f, 0.4f, 0.8f, 1f);
+
+            var button = btnObj.AddComponent<Button>();
+
+            GameObject textObj = new GameObject("Text");
+            textObj.transform.SetParent(btnObj.transform);
+            var textRect = textObj.AddComponent<RectTransform>();
+            textRect.anchorMin = Vector2.zero;
+            textRect.anchorMax = Vector2.one;
+            textRect.sizeDelta = Vector2.zero;
+            textRect.anchoredPosition = Vector2.zero;
+
+            var textComp = textObj.AddComponent<TMPro.TextMeshProUGUI>();
+            textComp.text = text;
+            textComp.fontSize = 14;
+            textComp.alignment = TMPro.TextAlignmentOptions.Center;
+            textComp.color = Color.white;
+
+            return btnObj;
         }
 
         private void AddToBuildSettings()

@@ -16,17 +16,27 @@ namespace ProjectC.Network
             if (NetworkManager.Singleton != null)
             {
                 NetworkManager.Singleton.OnClientConnectedCallback += OnClientConnected;
-                
-                // If we're host, spawn local player
-                if (useScenePlayerAsHost && (NetworkManager.Singleton.IsHost || NetworkManager.Singleton.IsServer))
+
+                // If we're host/server, spawn local player
+                // Use IsHost check at runtime since Start() runs before StartHost()
+                if (useScenePlayerAsHost && NetworkManager.Singleton.IsHost)
                 {
-                    var networkObject = GetComponent<NetworkObject>();
-                    if (networkObject != null && !networkObject.IsSpawned)
-                    {
-                        networkObject.SpawnAsPlayerObject(NetworkManager.Singleton.LocalClientId);
-                        Debug.Log("[NetworkPlayerSpawner] Host/Server player spawned");
-                    }
+                    SpawnLocalPlayer();
                 }
+                else if (useScenePlayerAsHost && NetworkManager.Singleton.IsServer)
+                {
+                    SpawnLocalPlayer();
+                }
+            }
+        }
+
+        private void SpawnLocalPlayer()
+        {
+            var networkObject = GetComponent<NetworkObject>();
+            if (networkObject != null && !networkObject.IsSpawned)
+            {
+                networkObject.SpawnAsPlayerObject(NetworkManager.Singleton.LocalClientId);
+                Debug.Log("[NetworkPlayerSpawner] Host/Server player spawned");
             }
         }
 

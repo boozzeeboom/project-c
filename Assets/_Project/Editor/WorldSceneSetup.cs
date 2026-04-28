@@ -173,6 +173,13 @@ namespace ProjectC.Editor
                 cameraObj.AddComponent<Camera>();
                 cameraObj.tag = "MainCamera";
             }
+            // FIX: Only add AudioListener in Bootstrap scene, NOT in world scenes
+            // World scenes are additive-loaded; AudioListener should only be in Bootstrap
+            if (cameraObj.GetComponent<AudioListener>() == null)
+            {
+                // AudioListener intentionally NOT added here to prevent "2 audio listeners" error
+                Debug.LogWarning("[WorldSceneSetup] AudioListener not added to world scene camera to avoid duplicate audio listener error");
+            }
             cameraObj.transform.SetParent(parent);
             cameraObj.transform.localPosition = new Vector3(0, 3000, 0);
         }

@@ -1,4 +1,6 @@
 #if UNITY_EDITOR
+using System;
+using System.Reflection;
 using UnityEditor;
 using UnityEditor.SceneManagement;
 using Unity.Netcode;
@@ -41,7 +43,7 @@ namespace ProjectC.Editor
                 AssetDatabase.CreateFolder("Assets/_Project/Scenes", "MainMenu");
             }
 
-            Scene existingScene = EditorSceneManager.NewScene(NewSceneSetup.DefaultGameObjects, NewSceneMode.Additive);
+            Scene existingScene = EditorSceneManager.NewScene(NewSceneSetup.EmptyScene, NewSceneMode.Additive);
 
             CreateBootstrapObjects();
 
@@ -63,9 +65,38 @@ namespace ProjectC.Editor
 
         private void CreateEventSystem()
         {
+            // FIX: Check if EventSystem already exists to avoid duplicates
+            var existingEventSystem = UnityEngine.EventSystems.EventSystem.FindAnyObjectByType<UnityEngine.EventSystems.EventSystem>();
+            if (existingEventSystem != null)
+            {
+                Debug.LogWarning("[MainMenuSceneGenerator] EventSystem already exists, skipping creation");
+                return;
+            }
+
             GameObject eventSystem = new GameObject("EventSystem");
             eventSystem.AddComponent<UnityEngine.EventSystems.EventSystem>();
-            eventSystem.AddComponent<UnityEngine.EventSystems.StandaloneInputModule>();
+
+            // FIX: Use reflection to add InputSystemUIInputModule from Unity.InputSystem.UI assembly
+            var inputModuleType = GetTypeByName("UnityEngine.InputSystem.UI.InputSystemUIInputModule");
+            if (inputModuleType != null)
+            {
+                eventSystem.AddComponent(inputModuleType);
+            }
+            else
+            {
+                Debug.LogWarning("[MainMenuSceneGenerator] InputSystemUIInputModule not found, using StandaloneInputModule as fallback");
+                eventSystem.AddComponent<UnityEngine.EventSystems.StandaloneInputModule>();
+            }
+        }
+
+        private static Type GetTypeByName(string typeName)
+        {
+            foreach (var assembly in System.AppDomain.CurrentDomain.GetAssemblies())
+            {
+                var type = assembly.GetType(typeName, false);
+                if (type != null) return type;
+            }
+            return null;
         }
 
         private void CreateCanvas()

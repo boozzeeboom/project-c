@@ -4,14 +4,10 @@ using UnityEditor;
 using UnityEditor.SceneManagement;
 using UnityEngine;
 using UnityEngine.SceneManagement;
+using ProjectC.World.Scene;
 
 namespace ProjectC.Editor
 {
-    /// <summary>
-    /// Editor script для генерации 24 сцен мира в сетке 4x6 (меридианы x параллели).
-    /// Горизонтальный wrap (параллели) - как Земля.
-    /// Вертикальная блокировка - полюса непроходимы.
-    /// </summary>
     public class WorldSceneGenerator : EditorWindow
     {
         private const int ROWS = 4;
@@ -33,7 +29,7 @@ namespace ProjectC.Editor
         public static void ShowWindow()
         {
             var window = GetWindow<WorldSceneGenerator>("World Scene Generator");
-            window.minSize = new Vector2(400, 300);
+            window.minSize = new Vector2(500, 500);
         }
 
         public void OnGUI()
@@ -41,7 +37,6 @@ namespace ProjectC.Editor
             GUILayout.Label("World Scene Generator (4x6 Grid)", EditorStyles.boldLabel);
             EditorGUILayout.Space();
 
-            GUILayout.Label("Output Settings:", EditorStyles.boldLabel);
             _outputPath = EditorGUILayout.TextField("Output Path", _outputPath);
 
             EditorGUILayout.Space();
@@ -56,7 +51,7 @@ namespace ProjectC.Editor
             _addToBuildSettings = EditorGUILayout.Toggle("Add to Build Settings", _addToBuildSettings);
 
             EditorGUILayout.Space();
-            GUILayout.Label("Grid Layout (6 columns x 4 rows):", EditorStyles.helpBox);
+            GUILayout.Label("Flight Altitude Range: Y = 1000 to 6500", EditorStyles.helpBox);
             EditorGUILayout.LabelField("Row 0: Equator (wraps left-right)");
             EditorGUILayout.LabelField("Row 1-2: Temperate bands");
             EditorGUILayout.LabelField("Row 3: Poles (blocked from row 0)");
@@ -68,9 +63,10 @@ namespace ProjectC.Editor
                 GenerateAllScenes();
             }
 
-            if (GUILayout.Button("Generate Material Asset", GUILayout.Height(30)))
+            if (GUILayout.Button("Generate SceneRegistry Only", GUILayout.Height(25)))
             {
-                CreateGroundMaterial();
+                CreateSceneRegistry();
+                EditorUtility.DisplayDialog("Complete", "SceneRegistry created.", "OK");
             }
         }
 
@@ -85,6 +81,7 @@ namespace ProjectC.Editor
 
             CreateOutputDirectory();
             CreateGroundMaterial();
+            CreateSceneRegistry();
 
             List<string> scenePaths = new List<string>();
 
@@ -201,7 +198,7 @@ namespace ProjectC.Editor
             if (_groundMaterial != null)
             {
                 Renderer renderer = ground.GetComponent<Renderer>();
-                renderer.material = _groundMaterial;
+                renderer.sharedMaterial = _groundMaterial;
             }
 
             Object.DestroyImmediate(ground.GetComponent<Collider>());
@@ -370,6 +367,33 @@ namespace ProjectC.Editor
             Object.DestroyImmediate(vizObj.GetComponent<Collider>());
         }
 
+        private void CreateSceneRegistry()
+        {
+            string registryPath = "Assets/_Project/Data/Scene/SceneRegistry.asset";
+            string registryDir = System.IO.Path.GetDirectoryName(registryPath);
+
+            if (!AssetDatabase.IsValidFolder(registryDir))
+            {
+                AssetDatabase.CreateFolder("Assets/_Project/Data", "Scene");
+            }
+
+            SceneRegistry registry = AssetDatabase.LoadAssetAtPath<SceneRegistry>(registryPath);
+
+            if (registry == null)
+            {
+                registry = ScriptableObject.CreateInstance<SceneRegistry>();
+                AssetDatabase.CreateAsset(registry, registryPath);
+            }
+
+            registry.GridRows = ROWS;
+            registry.GridColumns = COLS;
+
+            EditorUtility.SetDirty(registry);
+            AssetDatabase.SaveAssets();
+
+            Debug.Log($"[WorldSceneGenerator] SceneRegistry created at {registryPath}");
+        }
+
         private void AddScenesToBuildSettings(List<string> scenePaths)
         {
             EditorBuildSettingsScene[] existingScenes = EditorBuildSettings.scenes;
@@ -402,11 +426,17 @@ namespace ProjectC.Editor
             }
             CreateGroundMaterial();
         }
+
+        [ContextMenu("Regenerate All")]
+        public void RegenerateAll()
+        {
+            GenerateAllScenes();
+        }
     }
 
     public class PoleBlockerComponent : MonoBehaviour
     {
-        [Tooltip("Если true, игрок не сможет перейти через эту границу")]
+        [Tooltip("If true, player cannot cross this boundary")]
         public bool blocksTransition = true;
     }
 }

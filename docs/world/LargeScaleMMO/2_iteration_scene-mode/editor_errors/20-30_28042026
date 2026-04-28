@@ -1,0 +1,375 @@
+There can be only one active Event System.
+UnityEngine.EventSystems.EventSystem:OnEnable () (at ./Library/PackageCache/com.unity.ugui@d8a2716f3013/Runtime/UGUI/EventSystem/EventSystem.cs:425)
+
+[FloatingOriginMP] Found world root: 'WorldRoot'
+UnityEngine.Debug:Log (object)
+ProjectC.World.Streaming.FloatingOriginMP:FindOrCreateWorldRoots () (at Assets/_Project/Scripts/World/Streaming/FloatingOriginMP.cs:817)
+ProjectC.World.Streaming.FloatingOriginMP:Awake () (at Assets/_Project/Scripts/World/Streaming/FloatingOriginMP.cs:401)
+
+[FloatingOriginMP] Found world root: 'Mountains'
+UnityEngine.Debug:Log (object)
+ProjectC.World.Streaming.FloatingOriginMP:FindOrCreateWorldRoots () (at Assets/_Project/Scripts/World/Streaming/FloatingOriginMP.cs:817)
+ProjectC.World.Streaming.FloatingOriginMP:Awake () (at Assets/_Project/Scripts/World/Streaming/FloatingOriginMP.cs:401)
+
+[FloatingOriginMP] Found world root: 'Clouds'
+UnityEngine.Debug:Log (object)
+ProjectC.World.Streaming.FloatingOriginMP:FindOrCreateWorldRoots () (at Assets/_Project/Scripts/World/Streaming/FloatingOriginMP.cs:817)
+ProjectC.World.Streaming.FloatingOriginMP:Awake () (at Assets/_Project/Scripts/World/Streaming/FloatingOriginMP.cs:401)
+
+[FloatingOriginMP] Found world root: 'Runtime'
+UnityEngine.Debug:Log (object)
+ProjectC.World.Streaming.FloatingOriginMP:FindOrCreateWorldRoots () (at Assets/_Project/Scripts/World/Streaming/FloatingOriginMP.cs:817)
+ProjectC.World.Streaming.FloatingOriginMP:Awake () (at Assets/_Project/Scripts/World/Streaming/FloatingOriginMP.cs:401)
+
+DontDestroyOnLoad only works for root GameObjects or components on root GameObjects.
+UnityEngine.Object:DontDestroyOnLoad (UnityEngine.Object)
+ProjectC.Trade.TradeDebugTools:Awake () (at Assets/_Project/Trade/Scripts/TradeDebugTools.cs:55)
+UnityEngine.GameObject:AddComponent<ProjectC.Trade.TradeDebugTools> ()
+ProjectC.Core.NetworkManagerController:CreateTradeDebugTools () (at Assets/_Project/Scripts/Core/NetworkManagerController.cs:90)
+ProjectC.Core.NetworkManagerController:Awake () (at Assets/_Project/Scripts/Core/NetworkManagerController.cs:65)
+
+[Netcode] NetworkPrefab cannot be null (NetworkPrefab at index: -1)
+UnityEngine.Debug:LogWarning (object)
+Unity.Netcode.NetworkLog:LogWarning (string) (at ./Library/PackageCache/com.unity.netcode.gameobjects@60c1d83693e8/Runtime/Logging/NetworkLog.cs:28)
+Unity.Netcode.NetworkPrefab:Validate (int) (at ./Library/PackageCache/com.unity.netcode.gameobjects@60c1d83693e8/Runtime/Configuration/NetworkPrefab.cs:154)
+Unity.Netcode.NetworkPrefabs:AddPrefabRegistration (Unity.Netcode.NetworkPrefab) (at ./Library/PackageCache/com.unity.netcode.gameobjects@60c1d83693e8/Runtime/Configuration/NetworkPrefabs.cs:290)
+Unity.Netcode.NetworkPrefabs:Initialize (bool) (at ./Library/PackageCache/com.unity.netcode.gameobjects@60c1d83693e8/Runtime/Configuration/NetworkPrefabs.cs:127)
+Unity.Netcode.NetworkConfig:InitializePrefabs () (at ./Library/PackageCache/com.unity.netcode.gameobjects@60c1d83693e8/Runtime/Configuration/NetworkConfig.cs:388)
+Unity.Netcode.NetworkManager:Awake () (at ./Library/PackageCache/com.unity.netcode.gameobjects@60c1d83693e8/Runtime/Core/NetworkManager.cs:1035)
+
+[Netcode] Removing invalid prefabs from Network Prefab registration: {SourceHash: 0, TargetHash: 0}
+UnityEngine.Debug:LogWarning (object)
+Unity.Netcode.NetworkLog:LogWarning (string) (at ./Library/PackageCache/com.unity.netcode.gameobjects@60c1d83693e8/Runtime/Logging/NetworkLog.cs:28)
+Unity.Netcode.NetworkPrefabs:Initialize (bool) (at ./Library/PackageCache/com.unity.netcode.gameobjects@60c1d83693e8/Runtime/Configuration/NetworkPrefabs.cs:156)
+Unity.Netcode.NetworkConfig:InitializePrefabs () (at ./Library/PackageCache/com.unity.netcode.gameobjects@60c1d83693e8/Runtime/Configuration/NetworkConfig.cs:388)
+Unity.Netcode.NetworkManager:Awake () (at ./Library/PackageCache/com.unity.netcode.gameobjects@60c1d83693e8/Runtime/Core/NetworkManager.cs:1035)
+
+[CloudLayer] Конфигурация не назначена на UpperCloudLayer
+UnityEngine.Debug:LogWarning (object)
+ProjectC.Core.CloudLayer:Start () (at Assets/_Project/Scripts/Core/CloudLayer.cs:35)
+
+[CloudLayer] Конфигурация не назначена на LowerCloudLayer
+UnityEngine.Debug:LogWarning (object)
+ProjectC.Core.CloudLayer:Start () (at Assets/_Project/Scripts/Core/CloudLayer.cs:35)
+
+[CloudSystem] Upper слой не создан — не назначен CloudLayerConfig_Upper
+UnityEngine.Debug:LogWarning (object)
+ProjectC.Core.CloudSystem:CreateLayers () (at Assets/_Project/Scripts/Core/CloudSystem.cs:104)
+ProjectC.Core.CloudSystem:Start () (at Assets/_Project/Scripts/Core/CloudSystem.cs:69)
+
+[CloudSystem] Middle слой не создан — не назначен CloudLayerConfig_Middle
+UnityEngine.Debug:LogWarning (object)
+ProjectC.Core.CloudSystem:CreateLayers () (at Assets/_Project/Scripts/Core/CloudSystem.cs:117)
+ProjectC.Core.CloudSystem:Start () (at Assets/_Project/Scripts/Core/CloudSystem.cs:69)
+
+[CloudSystem] Lower слой не создан — не назначен CloudLayerConfig_Lower
+UnityEngine.Debug:LogWarning (object)
+ProjectC.Core.CloudSystem:CreateLayers () (at Assets/_Project/Scripts/Core/CloudSystem.cs:130)
+ProjectC.Core.CloudSystem:Start () (at Assets/_Project/Scripts/Core/CloudSystem.cs:69)
+
+[CloudSystem] Настроено 0/3 слоёв. Назначьте оставшиеся CloudLayerConfig в Inspector CloudSystem
+UnityEngine.Debug:LogWarning (object)
+ProjectC.Core.CloudSystem:CreateLayers () (at Assets/_Project/Scripts/Core/CloudSystem.cs:145)
+ProjectC.Core.CloudSystem:Start () (at Assets/_Project/Scripts/Core/CloudSystem.cs:69)
+
+There are 2 audio listeners in the scene. Please ensure there is always exactly one audio listener in the scene.
+
+InvalidOperationException: You are trying to read Input using the UnityEngine.Input class, but you have switched active Input handling to Input System package in Player Settings.
+UnityEngine.Input.get_mousePosition () (at <7961dea4e37d439abcbb2c89f602a607>:0)
+UnityEngine.EventSystems.BaseInput.get_mousePosition () (at ./Library/PackageCache/com.unity.ugui@d8a2716f3013/Runtime/UGUI/EventSystem/InputModules/BaseInput.cs:75)
+UnityEngine.EventSystems.StandaloneInputModule.UpdateModule () (at ./Library/PackageCache/com.unity.ugui@d8a2716f3013/Runtime/UGUI/EventSystem/InputModules/StandaloneInputModule.cs:176)
+UnityEngine.EventSystems.EventSystem.TickModules () (at ./Library/PackageCache/com.unity.ugui@d8a2716f3013/Runtime/UGUI/EventSystem/EventSystem.cs:461)
+UnityEngine.EventSystems.EventSystem.Update () (at ./Library/PackageCache/com.unity.ugui@d8a2716f3013/Runtime/UGUI/EventSystem/EventSystem.cs:481)
+
+[FloatingOriginMP] FindThirdPersonCamera: found 'Main Camera' at (0, 1, -10) (NOT under world root)
+UnityEngine.Debug:Log (object)
+ProjectC.World.Streaming.FloatingOriginMP:FindThirdPersonCamera () (at Assets/_Project/Scripts/World/Streaming/FloatingOriginMP.cs:906)
+ProjectC.World.Streaming.FloatingOriginMP:GetWorldPosition () (at Assets/_Project/Scripts/World/Streaming/FloatingOriginMP.cs:351)
+ProjectC.World.Streaming.FloatingOriginMP:LateUpdate () (at Assets/_Project/Scripts/World/Streaming/FloatingOriginMP.cs:439)
+
+[FloatingOriginMP] GetWorldPosition: using ThirdPersonCamera=(0, 1, -10) (may be wrong!)
+UnityEngine.Debug:LogWarning (object)
+ProjectC.World.Streaming.FloatingOriginMP:GetWorldPosition () (at Assets/_Project/Scripts/World/Streaming/FloatingOriginMP.cs:356)
+ProjectC.World.Streaming.FloatingOriginMP:LateUpdate () (at Assets/_Project/Scripts/World/Streaming/FloatingOriginMP.cs:439)
+
+There are 2 audio listeners in the scene. Please ensure there is always exactly one audio listener in the scene.
+
+[StreamingTest_AutoRun] ✅ Awake called - компонент работает!
+UnityEngine.Debug:Log (object)
+ProjectC.World.StreamingTest_AutoRun:Awake () (at Assets/_Project/Scripts/World/Streaming/StreamingTest_AutoRun.cs:80)
+UnityEngine.GameObject:AddComponent<ProjectC.World.StreamingTest_AutoRun> ()
+ProjectC.Editor.StreamingTestAutoRunner:AddComponentToMainCamera () (at Assets/_Project/Scripts/Editor/StreamingTestAutoRunner.cs:80)
+ProjectC.Editor.StreamingTestAutoRunner:OnPlayModeChanged (UnityEditor.PlayModeStateChange) (at Assets/_Project/Scripts/Editor/StreamingTestAutoRunner.cs:32)
+UnityEditor.EditorApplication:Internal_PlayModeStateChanged (UnityEditor.PlayModeStateChange)
+
+[StreamingTestAutoRunner] ✅ StreamingTest_AutoRun добавлен на MainCamera!
+UnityEngine.Debug:Log (object)
+ProjectC.Editor.StreamingTestAutoRunner:AddComponentToMainCamera () (at Assets/_Project/Scripts/Editor/StreamingTestAutoRunner.cs:88)
+ProjectC.Editor.StreamingTestAutoRunner:OnPlayModeChanged (UnityEditor.PlayModeStateChange) (at Assets/_Project/Scripts/Editor/StreamingTestAutoRunner.cs:32)
+UnityEditor.EditorApplication:Internal_PlayModeStateChanged (UnityEditor.PlayModeStateChange)
+
+[StreamingTestAutoRunner] 🎮 Управление: F5=след.точка, F6=пред.точка, F7=загрузить чанки, F8=сбросить FloatingOrigin, F9=ChunkGrid(меню), F10=HUD
+UnityEngine.Debug:Log (object)
+ProjectC.Editor.StreamingTestAutoRunner:AddComponentToMainCamera () (at Assets/_Project/Scripts/Editor/StreamingTestAutoRunner.cs:89)
+ProjectC.Editor.StreamingTestAutoRunner:OnPlayModeChanged (UnityEditor.PlayModeStateChange) (at Assets/_Project/Scripts/Editor/StreamingTestAutoRunner.cs:32)
+UnityEditor.EditorApplication:Internal_PlayModeStateChanged (UnityEditor.PlayModeStateChange)
+
+[StreamingTest_AutoRun] ✅ Start() called!
+UnityEngine.Debug:Log (object)
+ProjectC.World.StreamingTest_AutoRun:Start () (at Assets/_Project/Scripts/World/Streaming/StreamingTest_AutoRun.cs:88)
+
+[StreamingTest_AutoRun] Camera: MainCamera
+UnityEngine.Debug:Log (object)
+ProjectC.World.StreamingTest_AutoRun:Start () (at Assets/_Project/Scripts/World/Streaming/StreamingTest_AutoRun.cs:89)
+
+[StreamingTest_AutoRun] ✅ StreamingManager found. Streaming system is ready.
+UnityEngine.Debug:Log (object)
+ProjectC.World.StreamingTest_AutoRun:Start () (at Assets/_Project/Scripts/World/Streaming/StreamingTest_AutoRun.cs:103)
+
+[StreamingTest_AutoRun] 🎮 Управление: F5=след.точка, F6=пред.точка, F7=загрузить чанки, F8=сбросить FloatingOrigin, F9=ChunkGrid(меню), F10=HUD
+UnityEngine.Debug:Log (object)
+ProjectC.World.StreamingTest_AutoRun:Start () (at Assets/_Project/Scripts/World/Streaming/StreamingTest_AutoRun.cs:116)
+
+There are 2 audio listeners in the scene. Please ensure there is always exactly one audio listener in the scene.
+
+InvalidOperationException: You are trying to read Input using the UnityEngine.Input class, but you have switched active Input handling to Input System package in Player Settings.
+UnityEngine.Input.get_mousePosition () (at <7961dea4e37d439abcbb2c89f602a607>:0)
+UnityEngine.EventSystems.BaseInput.get_mousePosition () (at ./Library/PackageCache/com.unity.ugui@d8a2716f3013/Runtime/UGUI/EventSystem/InputModules/BaseInput.cs:75)
+UnityEngine.EventSystems.StandaloneInputModule.UpdateModule () (at ./Library/PackageCache/com.unity.ugui@d8a2716f3013/Runtime/UGUI/EventSystem/InputModules/StandaloneInputModule.cs:176)
+UnityEngine.EventSystems.EventSystem.TickModules () (at ./Library/PackageCache/com.unity.ugui@d8a2716f3013/Runtime/UGUI/EventSystem/EventSystem.cs:461)
+UnityEngine.EventSystems.EventSystem.Update () (at ./Library/PackageCache/com.unity.ugui@d8a2716f3013/Runtime/UGUI/EventSystem/EventSystem.cs:481)
+
+[FloatingOriginMP] FindThirdPersonCamera: found 'Main Camera' at (0, 1, -10) (NOT under world root)
+UnityEngine.Debug:Log (object)
+ProjectC.World.Streaming.FloatingOriginMP:FindThirdPersonCamera () (at Assets/_Project/Scripts/World/Streaming/FloatingOriginMP.cs:906)
+ProjectC.World.Streaming.FloatingOriginMP:GetWorldPosition () (at Assets/_Project/Scripts/World/Streaming/FloatingOriginMP.cs:351)
+ProjectC.World.Streaming.FloatingOriginMP:LateUpdate () (at Assets/_Project/Scripts/World/Streaming/FloatingOriginMP.cs:439)
+
+[FloatingOriginMP] GetWorldPosition: using ThirdPersonCamera=(0, 1, -10) (may be wrong!)
+UnityEngine.Debug:LogWarning (object)
+ProjectC.World.Streaming.FloatingOriginMP:GetWorldPosition () (at Assets/_Project/Scripts/World/Streaming/FloatingOriginMP.cs:356)
+ProjectC.World.Streaming.FloatingOriginMP:LateUpdate () (at Assets/_Project/Scripts/World/Streaming/FloatingOriginMP.cs:439)
+
+There are 2 audio listeners in the scene. Please ensure there is always exactly one audio listener in the scene.
+
+There are 2 audio listeners in the scene. Please ensure there is always exactly one audio listener in the scene.
+
+There are 2 audio listeners in the scene. Please ensure there is always exactly one audio listener in the scene.
+
+There are 2 audio listeners in the scene. Please ensure there is always exactly one audio listener in the scene.
+
+There are 2 audio listeners in the scene. Please ensure there is always exactly one audio listener in the scene.
+
+There are 2 audio listeners in the scene. Please ensure there is always exactly one audio listener in the scene.
+
+There are 2 audio listeners in the scene. Please ensure there is always exactly one audio listener in the scene.
+
+There are 2 audio listeners in the scene. Please ensure there is always exactly one audio listener in the scene.
+
+There are 2 audio listeners in the scene. Please ensure there is always exactly one audio listener in the scene.
+
+There are 2 audio listeners in the scene. Please ensure there is always exactly one audio listener in the scene.
+
+There are 2 audio listeners in the scene. Please ensure there is always exactly one audio listener in the scene.
+
+There are 2 audio listeners in the scene. Please ensure there is always exactly one audio listener in the scene.
+
+There are 2 audio listeners in the scene. Please ensure there is always exactly one audio listener in the scene.
+
+InvalidOperationException: You are trying to read Input using the UnityEngine.Input class, but you have switched active Input handling to Input System package in Player Settings.
+UnityEngine.Input.get_mousePosition () (at <7961dea4e37d439abcbb2c89f602a607>:0)
+UnityEngine.EventSystems.BaseInput.get_mousePosition () (at ./Library/PackageCache/com.unity.ugui@d8a2716f3013/Runtime/UGUI/EventSystem/InputModules/BaseInput.cs:75)
+UnityEngine.EventSystems.StandaloneInputModule.UpdateModule () (at ./Library/PackageCache/com.unity.ugui@d8a2716f3013/Runtime/UGUI/EventSystem/InputModules/StandaloneInputModule.cs:176)
+UnityEngine.EventSystems.EventSystem.TickModules () (at ./Library/PackageCache/com.unity.ugui@d8a2716f3013/Runtime/UGUI/EventSystem/EventSystem.cs:461)
+UnityEngine.EventSystems.EventSystem.Update () (at ./Library/PackageCache/com.unity.ugui@d8a2716f3013/Runtime/UGUI/EventSystem/EventSystem.cs:481)
+
+[FloatingOriginMP] FindThirdPersonCamera: found 'Main Camera' at (0, 1, -10) (NOT under world root)
+UnityEngine.Debug:Log (object)
+ProjectC.World.Streaming.FloatingOriginMP:FindThirdPersonCamera () (at Assets/_Project/Scripts/World/Streaming/FloatingOriginMP.cs:906)
+ProjectC.World.Streaming.FloatingOriginMP:GetWorldPosition () (at Assets/_Project/Scripts/World/Streaming/FloatingOriginMP.cs:351)
+ProjectC.World.Streaming.FloatingOriginMP:LateUpdate () (at Assets/_Project/Scripts/World/Streaming/FloatingOriginMP.cs:439)
+
+[FloatingOriginMP] GetWorldPosition: using ThirdPersonCamera=(0, 1, -10) (may be wrong!)
+UnityEngine.Debug:LogWarning (object)
+ProjectC.World.Streaming.FloatingOriginMP:GetWorldPosition () (at Assets/_Project/Scripts/World/Streaming/FloatingOriginMP.cs:356)
+ProjectC.World.Streaming.FloatingOriginMP:LateUpdate () (at Assets/_Project/Scripts/World/Streaming/FloatingOriginMP.cs:439)
+
+There are 2 audio listeners in the scene. Please ensure there is always exactly one audio listener in the scene.
+
+There are 2 audio listeners in the scene. Please ensure there is always exactly one audio listener in the scene.
+
+There are 2 audio listeners in the scene. Please ensure there is always exactly one audio listener in the scene.
+
+InvalidOperationException: You are trying to read Input using the UnityEngine.Input class, but you have switched active Input handling to Input System package in Player Settings.
+UnityEngine.Input.get_mousePosition () (at <7961dea4e37d439abcbb2c89f602a607>:0)
+UnityEngine.EventSystems.BaseInput.get_mousePosition () (at ./Library/PackageCache/com.unity.ugui@d8a2716f3013/Runtime/UGUI/EventSystem/InputModules/BaseInput.cs:75)
+UnityEngine.EventSystems.StandaloneInputModule.UpdateModule () (at ./Library/PackageCache/com.unity.ugui@d8a2716f3013/Runtime/UGUI/EventSystem/InputModules/StandaloneInputModule.cs:176)
+UnityEngine.EventSystems.EventSystem.TickModules () (at ./Library/PackageCache/com.unity.ugui@d8a2716f3013/Runtime/UGUI/EventSystem/EventSystem.cs:461)
+UnityEngine.EventSystems.EventSystem.Update () (at ./Library/PackageCache/com.unity.ugui@d8a2716f3013/Runtime/UGUI/EventSystem/EventSystem.cs:481)
+
+[FloatingOriginMP] FindThirdPersonCamera: found 'Main Camera' at (0, 1, -10) (NOT under world root)
+UnityEngine.Debug:Log (object)
+ProjectC.World.Streaming.FloatingOriginMP:FindThirdPersonCamera () (at Assets/_Project/Scripts/World/Streaming/FloatingOriginMP.cs:906)
+ProjectC.World.Streaming.FloatingOriginMP:GetWorldPosition () (at Assets/_Project/Scripts/World/Streaming/FloatingOriginMP.cs:351)
+ProjectC.World.Streaming.FloatingOriginMP:LateUpdate () (at Assets/_Project/Scripts/World/Streaming/FloatingOriginMP.cs:439)
+
+[FloatingOriginMP] GetWorldPosition: using ThirdPersonCamera=(0, 1, -10) (may be wrong!)
+UnityEngine.Debug:LogWarning (object)
+ProjectC.World.Streaming.FloatingOriginMP:GetWorldPosition () (at Assets/_Project/Scripts/World/Streaming/FloatingOriginMP.cs:356)
+ProjectC.World.Streaming.FloatingOriginMP:LateUpdate () (at Assets/_Project/Scripts/World/Streaming/FloatingOriginMP.cs:439)
+
+There are 2 audio listeners in the scene. Please ensure there is always exactly one audio listener in the scene.
+
+There are 2 audio listeners in the scene. Please ensure there is always exactly one audio listener in the scene.
+
+InvalidOperationException: You are trying to read Input using the UnityEngine.Input class, but you have switched active Input handling to Input System package in Player Settings.
+UnityEngine.Input.get_mousePosition () (at <7961dea4e37d439abcbb2c89f602a607>:0)
+UnityEngine.EventSystems.BaseInput.get_mousePosition () (at ./Library/PackageCache/com.unity.ugui@d8a2716f3013/Runtime/UGUI/EventSystem/InputModules/BaseInput.cs:75)
+UnityEngine.EventSystems.StandaloneInputModule.UpdateModule () (at ./Library/PackageCache/com.unity.ugui@d8a2716f3013/Runtime/UGUI/EventSystem/InputModules/StandaloneInputModule.cs:176)
+UnityEngine.EventSystems.EventSystem.TickModules () (at ./Library/PackageCache/com.unity.ugui@d8a2716f3013/Runtime/UGUI/EventSystem/EventSystem.cs:461)
+UnityEngine.EventSystems.EventSystem.Update () (at ./Library/PackageCache/com.unity.ugui@d8a2716f3013/Runtime/UGUI/EventSystem/EventSystem.cs:481)
+
+[FloatingOriginMP] FindThirdPersonCamera: found 'Main Camera' at (0, 1, -10) (NOT under world root)
+UnityEngine.Debug:Log (object)
+ProjectC.World.Streaming.FloatingOriginMP:FindThirdPersonCamera () (at Assets/_Project/Scripts/World/Streaming/FloatingOriginMP.cs:906)
+ProjectC.World.Streaming.FloatingOriginMP:GetWorldPosition () (at Assets/_Project/Scripts/World/Streaming/FloatingOriginMP.cs:351)
+ProjectC.World.Streaming.FloatingOriginMP:LateUpdate () (at Assets/_Project/Scripts/World/Streaming/FloatingOriginMP.cs:439)
+
+[FloatingOriginMP] GetWorldPosition: using ThirdPersonCamera=(0, 1, -10) (may be wrong!)
+UnityEngine.Debug:LogWarning (object)
+ProjectC.World.Streaming.FloatingOriginMP:GetWorldPosition () (at Assets/_Project/Scripts/World/Streaming/FloatingOriginMP.cs:356)
+ProjectC.World.Streaming.FloatingOriginMP:LateUpdate () (at Assets/_Project/Scripts/World/Streaming/FloatingOriginMP.cs:439)
+
+There are 2 audio listeners in the scene. Please ensure there is always exactly one audio listener in the scene.
+
+InvalidOperationException: You are trying to read Input using the UnityEngine.Input class, but you have switched active Input handling to Input System package in Player Settings.
+UnityEngine.Input.get_mousePosition () (at <7961dea4e37d439abcbb2c89f602a607>:0)
+UnityEngine.EventSystems.BaseInput.get_mousePosition () (at ./Library/PackageCache/com.unity.ugui@d8a2716f3013/Runtime/UGUI/EventSystem/InputModules/BaseInput.cs:75)
+UnityEngine.EventSystems.StandaloneInputModule.UpdateModule () (at ./Library/PackageCache/com.unity.ugui@d8a2716f3013/Runtime/UGUI/EventSystem/InputModules/StandaloneInputModule.cs:176)
+UnityEngine.EventSystems.EventSystem.TickModules () (at ./Library/PackageCache/com.unity.ugui@d8a2716f3013/Runtime/UGUI/EventSystem/EventSystem.cs:461)
+UnityEngine.EventSystems.EventSystem.Update () (at ./Library/PackageCache/com.unity.ugui@d8a2716f3013/Runtime/UGUI/EventSystem/EventSystem.cs:481)
+
+[FloatingOriginMP] FindThirdPersonCamera: found 'Main Camera' at (0, 1, -10) (NOT under world root)
+UnityEngine.Debug:Log (object)
+ProjectC.World.Streaming.FloatingOriginMP:FindThirdPersonCamera () (at Assets/_Project/Scripts/World/Streaming/FloatingOriginMP.cs:906)
+ProjectC.World.Streaming.FloatingOriginMP:GetWorldPosition () (at Assets/_Project/Scripts/World/Streaming/FloatingOriginMP.cs:351)
+ProjectC.World.Streaming.FloatingOriginMP:LateUpdate () (at Assets/_Project/Scripts/World/Streaming/FloatingOriginMP.cs:439)
+
+[FloatingOriginMP] GetWorldPosition: using ThirdPersonCamera=(0, 1, -10) (may be wrong!)
+UnityEngine.Debug:LogWarning (object)
+ProjectC.World.Streaming.FloatingOriginMP:GetWorldPosition () (at Assets/_Project/Scripts/World/Streaming/FloatingOriginMP.cs:356)
+ProjectC.World.Streaming.FloatingOriginMP:LateUpdate () (at Assets/_Project/Scripts/World/Streaming/FloatingOriginMP.cs:439)
+
+There are 2 audio listeners in the scene. Please ensure there is always exactly one audio listener in the scene.
+
+There are 2 audio listeners in the scene. Please ensure there is always exactly one audio listener in the scene.
+
+InvalidOperationException: You are trying to read Input using the UnityEngine.Input class, but you have switched active Input handling to Input System package in Player Settings.
+UnityEngine.Input.get_mousePosition () (at <7961dea4e37d439abcbb2c89f602a607>:0)
+UnityEngine.EventSystems.BaseInput.get_mousePosition () (at ./Library/PackageCache/com.unity.ugui@d8a2716f3013/Runtime/UGUI/EventSystem/InputModules/BaseInput.cs:75)
+UnityEngine.EventSystems.StandaloneInputModule.UpdateModule () (at ./Library/PackageCache/com.unity.ugui@d8a2716f3013/Runtime/UGUI/EventSystem/InputModules/StandaloneInputModule.cs:176)
+UnityEngine.EventSystems.EventSystem.TickModules () (at ./Library/PackageCache/com.unity.ugui@d8a2716f3013/Runtime/UGUI/EventSystem/EventSystem.cs:461)
+UnityEngine.EventSystems.EventSystem.Update () (at ./Library/PackageCache/com.unity.ugui@d8a2716f3013/Runtime/UGUI/EventSystem/EventSystem.cs:481)
+
+[FloatingOriginMP] FindThirdPersonCamera: found 'Main Camera' at (0, 1, -10) (NOT under world root)
+UnityEngine.Debug:Log (object)
+ProjectC.World.Streaming.FloatingOriginMP:FindThirdPersonCamera () (at Assets/_Project/Scripts/World/Streaming/FloatingOriginMP.cs:906)
+ProjectC.World.Streaming.FloatingOriginMP:GetWorldPosition () (at Assets/_Project/Scripts/World/Streaming/FloatingOriginMP.cs:351)
+ProjectC.World.Streaming.FloatingOriginMP:LateUpdate () (at Assets/_Project/Scripts/World/Streaming/FloatingOriginMP.cs:439)
+
+[FloatingOriginMP] GetWorldPosition: using ThirdPersonCamera=(0, 1, -10) (may be wrong!)
+UnityEngine.Debug:LogWarning (object)
+ProjectC.World.Streaming.FloatingOriginMP:GetWorldPosition () (at Assets/_Project/Scripts/World/Streaming/FloatingOriginMP.cs:356)
+ProjectC.World.Streaming.FloatingOriginMP:LateUpdate () (at Assets/_Project/Scripts/World/Streaming/FloatingOriginMP.cs:439)
+
+There are 2 audio listeners in the scene. Please ensure there is always exactly one audio listener in the scene.
+
+InvalidOperationException: You are trying to read Input using the UnityEngine.Input class, but you have switched active Input handling to Input System package in Player Settings.
+UnityEngine.Input.get_mousePosition () (at <7961dea4e37d439abcbb2c89f602a607>:0)
+UnityEngine.EventSystems.BaseInput.get_mousePosition () (at ./Library/PackageCache/com.unity.ugui@d8a2716f3013/Runtime/UGUI/EventSystem/InputModules/BaseInput.cs:75)
+UnityEngine.EventSystems.StandaloneInputModule.UpdateModule () (at ./Library/PackageCache/com.unity.ugui@d8a2716f3013/Runtime/UGUI/EventSystem/InputModules/StandaloneInputModule.cs:176)
+UnityEngine.EventSystems.EventSystem.TickModules () (at ./Library/PackageCache/com.unity.ugui@d8a2716f3013/Runtime/UGUI/EventSystem/EventSystem.cs:461)
+UnityEngine.EventSystems.EventSystem.Update () (at ./Library/PackageCache/com.unity.ugui@d8a2716f3013/Runtime/UGUI/EventSystem/EventSystem.cs:481)
+
+[FloatingOriginMP] FindThirdPersonCamera: found 'Main Camera' at (0, 1, -10) (NOT under world root)
+UnityEngine.Debug:Log (object)
+ProjectC.World.Streaming.FloatingOriginMP:FindThirdPersonCamera () (at Assets/_Project/Scripts/World/Streaming/FloatingOriginMP.cs:906)
+ProjectC.World.Streaming.FloatingOriginMP:GetWorldPosition () (at Assets/_Project/Scripts/World/Streaming/FloatingOriginMP.cs:351)
+ProjectC.World.Streaming.FloatingOriginMP:LateUpdate () (at Assets/_Project/Scripts/World/Streaming/FloatingOriginMP.cs:439)
+
+[FloatingOriginMP] GetWorldPosition: using ThirdPersonCamera=(0, 1, -10) (may be wrong!)
+UnityEngine.Debug:LogWarning (object)
+ProjectC.World.Streaming.FloatingOriginMP:GetWorldPosition () (at Assets/_Project/Scripts/World/Streaming/FloatingOriginMP.cs:356)
+ProjectC.World.Streaming.FloatingOriginMP:LateUpdate () (at Assets/_Project/Scripts/World/Streaming/FloatingOriginMP.cs:439)
+
+There are 2 audio listeners in the scene. Please ensure there is always exactly one audio listener in the scene.
+
+InvalidOperationException: You are trying to read Input using the UnityEngine.Input class, but you have switched active Input handling to Input System package in Player Settings.
+UnityEngine.Input.get_mousePosition () (at <7961dea4e37d439abcbb2c89f602a607>:0)
+UnityEngine.EventSystems.BaseInput.get_mousePosition () (at ./Library/PackageCache/com.unity.ugui@d8a2716f3013/Runtime/UGUI/EventSystem/InputModules/BaseInput.cs:75)
+UnityEngine.EventSystems.StandaloneInputModule.UpdateModule () (at ./Library/PackageCache/com.unity.ugui@d8a2716f3013/Runtime/UGUI/EventSystem/InputModules/StandaloneInputModule.cs:176)
+UnityEngine.EventSystems.EventSystem.TickModules () (at ./Library/PackageCache/com.unity.ugui@d8a2716f3013/Runtime/UGUI/EventSystem/EventSystem.cs:461)
+UnityEngine.EventSystems.EventSystem.Update () (at ./Library/PackageCache/com.unity.ugui@d8a2716f3013/Runtime/UGUI/EventSystem/EventSystem.cs:481)
+
+[FloatingOriginMP] FindThirdPersonCamera: found 'Main Camera' at (0, 1, -10) (NOT under world root)
+UnityEngine.Debug:Log (object)
+ProjectC.World.Streaming.FloatingOriginMP:FindThirdPersonCamera () (at Assets/_Project/Scripts/World/Streaming/FloatingOriginMP.cs:906)
+ProjectC.World.Streaming.FloatingOriginMP:GetWorldPosition () (at Assets/_Project/Scripts/World/Streaming/FloatingOriginMP.cs:351)
+ProjectC.World.Streaming.FloatingOriginMP:LateUpdate () (at Assets/_Project/Scripts/World/Streaming/FloatingOriginMP.cs:439)
+
+[FloatingOriginMP] GetWorldPosition: using ThirdPersonCamera=(0, 1, -10) (may be wrong!)
+UnityEngine.Debug:LogWarning (object)
+ProjectC.World.Streaming.FloatingOriginMP:GetWorldPosition () (at Assets/_Project/Scripts/World/Streaming/FloatingOriginMP.cs:356)
+ProjectC.World.Streaming.FloatingOriginMP:LateUpdate () (at Assets/_Project/Scripts/World/Streaming/FloatingOriginMP.cs:439)
+
+There are 2 audio listeners in the scene. Please ensure there is always exactly one audio listener in the scene.
+
+InvalidOperationException: You are trying to read Input using the UnityEngine.Input class, but you have switched active Input handling to Input System package in Player Settings.
+UnityEngine.Input.get_mousePosition () (at <7961dea4e37d439abcbb2c89f602a607>:0)
+UnityEngine.EventSystems.BaseInput.get_mousePosition () (at ./Library/PackageCache/com.unity.ugui@d8a2716f3013/Runtime/UGUI/EventSystem/InputModules/BaseInput.cs:75)
+UnityEngine.EventSystems.StandaloneInputModule.UpdateModule () (at ./Library/PackageCache/com.unity.ugui@d8a2716f3013/Runtime/UGUI/EventSystem/InputModules/StandaloneInputModule.cs:176)
+UnityEngine.EventSystems.EventSystem.TickModules () (at ./Library/PackageCache/com.unity.ugui@d8a2716f3013/Runtime/UGUI/EventSystem/EventSystem.cs:461)
+UnityEngine.EventSystems.EventSystem.Update () (at ./Library/PackageCache/com.unity.ugui@d8a2716f3013/Runtime/UGUI/EventSystem/EventSystem.cs:481)
+
+[FloatingOriginMP] FindThirdPersonCamera: found 'Main Camera' at (0, 1, -10) (NOT under world root)
+UnityEngine.Debug:Log (object)
+ProjectC.World.Streaming.FloatingOriginMP:FindThirdPersonCamera () (at Assets/_Project/Scripts/World/Streaming/FloatingOriginMP.cs:906)
+ProjectC.World.Streaming.FloatingOriginMP:GetWorldPosition () (at Assets/_Project/Scripts/World/Streaming/FloatingOriginMP.cs:351)
+ProjectC.World.Streaming.FloatingOriginMP:LateUpdate () (at Assets/_Project/Scripts/World/Streaming/FloatingOriginMP.cs:439)
+
+[FloatingOriginMP] GetWorldPosition: using ThirdPersonCamera=(0, 1, -10) (may be wrong!)
+UnityEngine.Debug:LogWarning (object)
+ProjectC.World.Streaming.FloatingOriginMP:GetWorldPosition () (at Assets/_Project/Scripts/World/Streaming/FloatingOriginMP.cs:356)
+ProjectC.World.Streaming.FloatingOriginMP:LateUpdate () (at Assets/_Project/Scripts/World/Streaming/FloatingOriginMP.cs:439)
+
+There are 2 audio listeners in the scene. Please ensure there is always exactly one audio listener in the scene.
+
+There are 2 audio listeners in the scene. Please ensure there is always exactly one audio listener in the scene.
+
+InvalidOperationException: You are trying to read Input using the UnityEngine.Input class, but you have switched active Input handling to Input System package in Player Settings.
+UnityEngine.Input.get_mousePosition () (at <7961dea4e37d439abcbb2c89f602a607>:0)
+UnityEngine.EventSystems.BaseInput.get_mousePosition () (at ./Library/PackageCache/com.unity.ugui@d8a2716f3013/Runtime/UGUI/EventSystem/InputModules/BaseInput.cs:75)
+UnityEngine.EventSystems.StandaloneInputModule.UpdateModule () (at ./Library/PackageCache/com.unity.ugui@d8a2716f3013/Runtime/UGUI/EventSystem/InputModules/StandaloneInputModule.cs:176)
+UnityEngine.EventSystems.EventSystem.TickModules () (at ./Library/PackageCache/com.unity.ugui@d8a2716f3013/Runtime/UGUI/EventSystem/EventSystem.cs:461)
+UnityEngine.EventSystems.EventSystem.Update () (at ./Library/PackageCache/com.unity.ugui@d8a2716f3013/Runtime/UGUI/EventSystem/EventSystem.cs:481)
+
+[FloatingOriginMP] FindThirdPersonCamera: found 'Main Camera' at (0, 1, -10) (NOT under world root)
+UnityEngine.Debug:Log (object)
+ProjectC.World.Streaming.FloatingOriginMP:FindThirdPersonCamera () (at Assets/_Project/Scripts/World/Streaming/FloatingOriginMP.cs:906)
+ProjectC.World.Streaming.FloatingOriginMP:GetWorldPosition () (at Assets/_Project/Scripts/World/Streaming/FloatingOriginMP.cs:351)
+ProjectC.World.Streaming.FloatingOriginMP:LateUpdate () (at Assets/_Project/Scripts/World/Streaming/FloatingOriginMP.cs:439)
+
+[FloatingOriginMP] GetWorldPosition: using ThirdPersonCamera=(0, 1, -10) (may be wrong!)
+UnityEngine.Debug:LogWarning (object)
+ProjectC.World.Streaming.FloatingOriginMP:GetWorldPosition () (at Assets/_Project/Scripts/World/Streaming/FloatingOriginMP.cs:356)
+ProjectC.World.Streaming.FloatingOriginMP:LateUpdate () (at Assets/_Project/Scripts/World/Streaming/FloatingOriginMP.cs:439)
+
+There are 2 audio listeners in the scene. Please ensure there is always exactly one audio listener in the scene.
+
+InvalidOperationException: You are trying to read Input using the UnityEngine.Input class, but you have switched active Input handling to Input System package in Player Settings.
+UnityEngine.Input.get_mousePosition () (at <7961dea4e37d439abcbb2c89f602a607>:0)
+UnityEngine.EventSystems.BaseInput.get_mousePosition () (at ./Library/PackageCache/com.unity.ugui@d8a2716f3013/Runtime/UGUI/EventSystem/InputModules/BaseInput.cs:75)
+UnityEngine.EventSystems.StandaloneInputModule.UpdateModule () (at ./Library/PackageCache/com.unity.ugui@d8a2716f3013/Runtime/UGUI/EventSystem/InputModules/StandaloneInputModule.cs:176)
+UnityEngine.EventSystems.EventSystem.TickModules () (at ./Library/PackageCache/com.unity.ugui@d8a2716f3013/Runtime/UGUI/EventSystem/EventSystem.cs:461)
+UnityEngine.EventSystems.EventSystem.Update () (at ./Library/PackageCache/com.unity.ugui@d8a2716f3013/Runtime/UGUI/EventSystem/EventSystem.cs:481)
+

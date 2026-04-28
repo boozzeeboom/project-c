@@ -1,4 +1,5 @@
 #if UNITY_EDITOR
+using System;
 using System.Collections.Generic;
 using UnityEditor;
 using UnityEditor.SceneManagement;
@@ -201,7 +202,7 @@ namespace ProjectC.Editor
                 renderer.sharedMaterial = _groundMaterial;
             }
 
-            Object.DestroyImmediate(ground.GetComponent<Collider>());
+            UnityEngine.Object.DestroyImmediate(ground.GetComponent<Collider>());
         }
 
         private void CreateGroundMaterial()
@@ -364,7 +365,7 @@ namespace ProjectC.Editor
             mat.color = c;
             renderer.sharedMaterial = mat;
 
-            Object.DestroyImmediate(vizObj.GetComponent<Collider>());
+            UnityEngine.Object.DestroyImmediate(vizObj.GetComponent<Collider>());
         }
 
         private void CreateSceneRegistry()

@@ -84,10 +84,11 @@ namespace ProjectC.Core
                 Debug.Log("[NMC] TradeDebugTools already exists, skipping creation");
                 return;
             }
-            
+
             var debugObj = new GameObject("TradeDebugTools");
-            debugObj.transform.SetParent(transform); // Parent к NMC для сохранения при смене сцены
             var debugTools = debugObj.AddComponent<ProjectC.Trade.TradeDebugTools>();
+            // Parenting AFTER DontDestroyOnLoad to ensure debugObj is a root GameObject
+            debugObj.transform.SetParent(transform);
             debugObj.SetActive(true);
         }
         

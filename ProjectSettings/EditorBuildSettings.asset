@@ -5,10 +5,82 @@ EditorBuildSettings:
   m_ObjectHideFlags: 0
   serializedVersion: 2
   m_Scenes:
-  - enabled: 1
+  - enabled: 0
     path: Assets/ProjectC_1.unity
     guid: 5ff33c603e1fd764d9e830128d542b6b
   - enabled: 0
     path: Assets/_Project/Scenes/Test/ProjectC_ChunkTest_1.unity
     guid: 4e99ac7975c57b144a521c89ccfabb58
+  - enabled: 1
+    path: Assets/_Project/Scenes/World/WorldScene_0_0.unity
+    guid: 837a3910185f2b9478ce71df025ccc7c
+  - enabled: 1
+    path: Assets/_Project/Scenes/World/WorldScene_0_1.unity
+    guid: 7250b8eaaaa2e4943a13d9bace99c824
+  - enabled: 1
+    path: Assets/_Project/Scenes/World/WorldScene_0_2.unity
+    guid: 96fef5d9be741c640a5ca489972cdb85
+  - enabled: 1
+    path: Assets/_Project/Scenes/World/WorldScene_0_3.unity
+    guid: c9c53520017f06e42bec2cf8612b2506
+  - enabled: 1
+    path: Assets/_Project/Scenes/World/WorldScene_0_4.unity
+    guid: eccc7a022534ad743a68d19539495f65
+  - enabled: 1
+    path: Assets/_Project/Scenes/World/WorldScene_0_5.unity
+    guid: 18f1e9b7642845b4586137210cf72634
+  - enabled: 1
+    path: Assets/_Project/Scenes/World/WorldScene_1_0.unity
+    guid: bb9e9b97bdbe13940ad8a64ba7b84975
+  - enabled: 1
+    path: Assets/_Project/Scenes/World/WorldScene_1_1.unity
+    guid: 44e8d678970139b4fa3c453ee43100ad
+  - enabled: 1
+    path: Assets/_Project/Scenes/World/WorldScene_1_2.unity
+    guid: c7856d25781937e4489f18149aafe7ee
+  - enabled: 1
+    path: Assets/_Project/Scenes/World/WorldScene_1_3.unity
+    guid: 2a20d4dd8d6b1e849bd3d23cb6c06955
+  - enabled: 1
+    path: Assets/_Project/Scenes/World/WorldScene_1_4.unity
+    guid: 87158885556b9aa45a0df95aaf7cf3b4
+  - enabled: 1
+    path: Assets/_Project/Scenes/World/WorldScene_1_5.unity
+    guid: 796096081a83f3948bf1095899a0a337
+  - enabled: 1
+    path: Assets/_Project/Scenes/World/WorldScene_2_0.unity
+    guid: 0c4869cee3f8eca4e940714e4c7296ee
+  - enabled: 1
+    path: Assets/_Project/Scenes/World/WorldScene_2_1.unity
+    guid: cdca512b3b65648459c919561c3c2d02
+  - enabled: 1
+    path: Assets/_Project/Scenes/World/WorldScene_2_2.unity
+    guid: e9b4310239d1b384db3d05f187617014
+  - enabled: 1
+    path: Assets/_Project/Scenes/World/WorldScene_2_3.unity
+    guid: 404e89122169ce34783228d2f6ee4d97
+  - enabled: 1
+    path: Assets/_Project/Scenes/World/WorldScene_2_4.unity
+    guid: 61290524b9999e24088b982d8c485d2a
+  - enabled: 1
+    path: Assets/_Project/Scenes/World/WorldScene_2_5.unity
+    guid: f278c61e181bd834180761b9a6e420d5
+  - enabled: 1
+    path: Assets/_Project/Scenes/World/WorldScene_3_0.unity
+    guid: 1157e3f67490ea141aeb64b391f7c57e
+  - enabled: 1
+    path: Assets/_Project/Scenes/World/WorldScene_3_1.unity
+    guid: 98e86cd99ba36d349979337df201267f
+  - enabled: 1
+    path: Assets/_Project/Scenes/World/WorldScene_3_2.unity
+    guid: 1a012ac305c02a243b7fadf24c4e63eb
+  - enabled: 1
+    path: Assets/_Project/Scenes/World/WorldScene_3_3.unity
+    guid: f76f287a208cf4842811cb2aebfef69d
+  - enabled: 1
+    path: Assets/_Project/Scenes/World/WorldScene_3_4.unity
+    guid: f0c0f3da68bdd684d8e84548153f1c12
+  - enabled: 1
+    path: Assets/_Project/Scenes/World/WorldScene_3_5.unity
+    guid: cf0e42f869b35974995f0411a1fadf30
   m_configObjects: {}

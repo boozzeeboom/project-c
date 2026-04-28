@@ -1,6 +1,8 @@
 using System.Collections.Generic;
 using Unity.Netcode;
 using UnityEngine;
+using ProjectC.World.Scene;
+using ProjectC.Player;
 
 namespace ProjectC.World.Streaming
 {
@@ -42,6 +44,12 @@ namespace ProjectC.World.Streaming
         /// ClientId → загруженные для него чанки
         /// </summary>
         private readonly Dictionary<ulong, HashSet<ChunkId>> _clientLoadedChunks = new Dictionary<ulong, HashSet<ChunkId>>();
+
+        /// <summary>
+        /// ClientId → текущая сцена игрока (SceneID, derived from world position).
+        /// Обновляется вместе с ChunkId для других систем (ServerSceneManager).
+        /// </summary>
+        private readonly Dictionary<ulong, SceneID> _playerScenes = new Dictionary<ulong, SceneID>();
         
         /// <summary>
         /// Кэш NetworkPlayer компонентов
@@ -163,7 +171,11 @@ namespace ProjectC.World.Streaming
                 Vector3 position = playerObject.transform.position;
                 ChunkId initialChunk = _chunkManager.GetChunkAtPosition(position);
                 _playerChunks[clientId] = initialChunk;
-                
+
+                // Инициализируем SceneID для клиента
+                SceneID initialScene = SceneID.FromWorldPosition(position);
+                _playerScenes[clientId] = initialScene;
+
                 LoadChunksForClient(clientId, position);
                 
                 LogDebug($"Client {clientId} connected at chunk {initialChunk}");
@@ -192,6 +204,7 @@ namespace ProjectC.World.Streaming
             _clientLoadedChunks.Remove(clientId);
             _playerTransforms.Remove(clientId);
             _lastUpdateTimes.Remove(clientId);
+            _playerScenes.Remove(clientId);
             
             LogDebug($"Client {clientId} disconnected, chunks unloaded.");
         }
@@ -223,19 +236,27 @@ namespace ProjectC.World.Streaming
         private void UpdatePlayerChunk(ulong clientId, Vector3 position)
         {
             if (!_chunkManager) return;
-            
+
             ChunkId newChunk = _chunkManager.GetChunkAtPosition(position);
-            
+
             // Проверяем изменился ли чанк
             if (!_playerChunks.TryGetValue(clientId, out var oldChunk) || !oldChunk.Equals(newChunk))
             {
                 _playerChunks[clientId] = newChunk;
-                
+
                 LogDebug($"Player {clientId} moved from {oldChunk} to {newChunk}");
-                
+
                 // Обновляем загруженные чанки
                 LoadChunksForClient(clientId, position);
                 UnloadChunksForClient(clientId, position);
+            }
+
+            // Обновляем SceneID (lightweight check - только вычисление позиции)
+            SceneID newScene = SceneID.FromWorldPosition(position);
+            if (!_playerScenes.TryGetValue(clientId, out var oldScene) || !oldScene.Equals(newScene))
+            {
+                _playerScenes[clientId] = newScene;
+                LogDebug($"Player {clientId} scene changed from {oldScene} to {newScene}");
             }
         }
         
@@ -399,6 +420,16 @@ namespace ProjectC.World.Streaming
             if (_playerChunks.TryGetValue(clientId, out var chunk))
                 return chunk;
             return new ChunkId(0, 0);
+        }
+
+        /// <summary>
+        /// Получить текущую сцену игрока (SceneID, derived from world position).
+        /// </summary>
+        public SceneID GetPlayerScene(ulong clientId)
+        {
+            if (_playerScenes.TryGetValue(clientId, out var scene))
+                return scene;
+            return default;
         }
         
         /// <summary>

@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using Unity.Netcode;
 using UnityEngine;
 using ProjectC.World.Core;
+using ProjectC.World.Scene;
 using ProjectC.World.Streaming;
 
 namespace ProjectC.World
@@ -110,7 +111,10 @@ namespace ProjectC.World
         private Transform _cachedLocalPlayerTransform;
         private float _lastPlayerSearchTime = 0f;
         private const float PLAYER_SEARCH_INTERVAL = 1f;
-        
+
+        // Scene-aware loading (Phase 2: Scene System Integration)
+        private HashSet<SceneID> _loadedScenesFilter;
+
         #endregion
         
         #region Player Position Methods (I5-001)
@@ -380,13 +384,18 @@ namespace ProjectC.World
             {
                 return;
             }
-            
+
             if (chunkLoader == null)
             {
                 Debug.LogError("[WorldStreamingManager] ChunkLoader not initialized!");
                 return;
             }
-            
+
+            if (!CanLoadChunk(chunkId))
+            {
+                return;
+            }
+
             chunkLoader.LoadChunk(chunkId);
             _loadedChunks.Add(chunkId);
         }
@@ -462,13 +471,64 @@ namespace ProjectC.World
             {
                 chunkLoader.UnloadAllChunks();
             }
-            
+
             _loadedChunks.Clear();
             _currentCenterChunk = new ChunkId(0, 0);
-            
+
             Debug.Log("[WorldStreamingManager] All chunks unloaded.");
         }
-        
+
+        #endregion
+
+        #region Scene-Aware Loading (Phase 2)
+
+        /// <summary>
+        /// Set the filter for which scenes are loaded.
+        /// Chunks will only load if they belong to one of these scenes.
+        /// Pass null or empty to disable filtering (load all chunks).
+        /// Called by WorldSceneManager.
+        /// </summary>
+        public void SetLoadedScenesFilter(HashSet<SceneID> loadedScenes)
+        {
+            _loadedScenesFilter = loadedScenes;
+
+            if (showDebugHUD)
+            {
+                Debug.Log($"[WorldStreamingManager] Scene filter updated: {(loadedScenes?.Count ?? 0)} scenes");
+            }
+        }
+
+        /// <summary>
+        /// Check if a chunk can be loaded based on scene filter.
+        /// Returns true if no filter is active or if chunk's scene is in filter.
+        /// </summary>
+        private bool CanLoadChunk(ChunkId chunkId)
+        {
+            if (_loadedScenesFilter == null || _loadedScenesFilter.Count == 0)
+                return true;
+
+            Vector3 chunkWorldPos = new Vector3(
+                chunkId.GridX * WorldChunkManager.ChunkSize,
+                0,
+                chunkId.GridZ * WorldChunkManager.ChunkSize);
+
+            SceneID chunkScene = SceneID.FromWorldPosition(chunkWorldPos);
+
+            bool canLoad = _loadedScenesFilter.Contains(chunkScene);
+
+            if (showDebugHUD && !canLoad && Time.frameCount % 300 == 0)
+            {
+                Debug.Log($"[WorldStreamingManager] Chunk {chunkId} blocked - scene {chunkScene} not loaded");
+            }
+
+            return canLoad;
+        }
+
+        /// <summary>
+        /// Check if scene filter is active.
+        /// </summary>
+        public bool HasSceneFilter => _loadedScenesFilter != null && _loadedScenesFilter.Count > 0;
+
         #endregion
         
         #region Private Methods

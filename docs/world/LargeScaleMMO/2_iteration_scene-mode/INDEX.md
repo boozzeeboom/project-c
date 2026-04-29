@@ -1,7 +1,7 @@
 # Large Scale MMO: Scene-Based Architecture (Iteration 2)
 
-**Статус:** РЕАЛИЗОВАНО
-**Дата:** 28.04.2026
+**Статус:** ИСПРАВЛЕНО (29.04.2026)
+**Дата:** 28.04.2026 (создано), 29.04.2026 (исправлено)
 
 ---
 
@@ -21,9 +21,37 @@
 ## Документы
 
 | Документ | Описание |
-|----------|----------|
+|----------|---------|
 | [SCENE_ARCHITECTURE_DECISION.md](./SCENE_ARCHITECTURE_DECISION.md) | Архитектурное решение: почему 4×6 с overlap |
 | [IMPLEMENTATION_PLAN.md](./IMPLEMENTATION_PLAN.md) | Детальный план реализации по фазам |
+| [INTEGRATION_FIX_PLAN.md](./INTEGRATION_FIX_PLAN.md) | **НОВОЕ:** Детальный план исправлений (29.04.2026) |
+| [CORRECTED_ARCHITECTURE.md](./CORRECTED_ARCHITECTURE.md) | **НОВОЕ:** Исправленная архитектура после интеграции |
+| [ARCHITECTURE_GRAPH.html](./ARCHITECTURE_GRAPH.html) | **НОВОЕ:** Визуальная диаграмма архитектуры |
+| [NEXT_SESSION_PROMPT.md](./NEXT_SESSION_PROMPT.md) | **НОВОЕ:** Промпт для новой сессии |
+
+---
+
+## Исправления 29.04.2026
+
+### Проблема
+Интеграция scene-based системы сломала network architecture:
+- Player не появлялся при старте хоста
+- Ошибки "SceneTransitionCoordinator not found"
+- ClientSceneLoader не загружал начальную сцену
+
+### Причина
+`SceneTransitionCoordinator` был лишним посредником между ServerSceneManager и ClientSceneLoader. Он искался на NetworkManager.GameObject, а находился на "Runtime".
+
+### Исправления
+
+| Файл | Изменение |
+|------|-----------|
+| `ServerSceneManager.cs` | Direct RPC в ClientSceneLoader (без Coordinator) |
+| `ClientSceneLoader.cs` | Автозагрузка сцены при подключении хоста |
+| `NetworkPlayerSpawner.cs` | Spawn в Update() для решения timing issue |
+| `BootstrapSceneGenerator.cs` | Не создаёт SceneTransitionCoordinator |
+| `WorldSceneSetup.cs` | Удалён метод AddSceneTransitionCoordinator |
+| `SceneTransitionCoordinator.cs` | **УДАЛЁН** |
 
 ---
 
@@ -71,33 +99,15 @@
 
 ---
 
-## Исправленные ошибки
-
-### CS1061: WorldData.WorldName (TestSceneGenerator.cs:100)
-
-**Каскад:** Generator предполагал что WorldData содержит `WorldName`, `WorldSize`, `SectorSize`, `ChunksPerSector`.
-**Реальность:** WorldData содержит: `heightScale`, `distanceScale`, `worldMinX`, `worldMaxX`, `worldMinZ`, `worldMaxZ`, `massifs`, `veilHeight`, `veilColor`, `veilFogDensity`, `upperLayerConfig`, `middleLayerConfig`, `lowerLayerConfig`.
-
-**Исправление:** Заменены на корректные поля WorldData.
-
-### CS0117: CloudLayer.* (CloudSystem.*) — CloudLayerConfig fields
-
-**Каскад:** Генераторы пытались установить `LayerType`, `BaseHeight`, `Thickness`, `Density`, `ScrollSpeed`, `ScrollDirection` напрямую на CloudLayer.
-**Реальность:** CloudLayer имеет только `config: CloudLayerConfig`. Все параметры задаются через config ScriptableObject.
-
-**Исправление:** Удалены прямые присваивания. CloudLayer теперь создаётся пустым, конфигурация назначается через Inspector или runtime.
-
----
-
 ## Вердикт
 
-**✅ РЕАЛИЗУЕМО**
+**✅ ИСПРАВЛЕНО И ГОТОВО К ТЕСТИРОВАНИЮ**
 
 Основные компоненты:
-- Фаза 1-2: SceneID, ServerSceneManager, ClientSceneLoader ✅
-- Фаза 3: Тестирование с 2 клиентами (в процессе)
-- Фаза 4: Preload система
-- Фаза 5: Terrain overlap (ОТЛОЖЕНО)
+- SceneID, ServerSceneManager, ClientSceneLoader ✅
+- SceneTransitionCoordinator УДАЛЁН (не нужен) ✅
+- Автозагрузка сцены при старте ✅
+- Тестирование с 2 клиентами (следующий шаг)
 
 ---
 

@@ -190,8 +190,7 @@ private void CreatePlayerSpawner()
             so.FindProperty("updateInterval").floatValue = 0.5f;
             so.ApplyModifiedProperties();
 
-            var coordinator = runtimeObj.AddComponent<SceneTransitionCoordinator>();
-            var networkObject = runtimeObj.AddComponent<NetworkObject>();
+            // SceneTransitionCoordinator removed - ServerSceneManager sends RPCs directly to ClientSceneLoader
         }
 
         private void CreateCameraSystem()

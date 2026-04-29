@@ -245,16 +245,11 @@ namespace ProjectC.Core
         {
             Debug.Log("[NMC] StartHost() called");
 
-            // Используем Singleton если доступно
-            if (Unity.Netcode.NetworkManager.Singleton != null)
-            {
-                networkManager = Unity.Netcode.NetworkManager.Singleton;
-                Debug.Log($"[NMC] Using Singleton: {networkManager}");
-            }
-            else if (networkManager == null)
+            // НЕ используем Singleton - он устанавливается ПОСЛЕ StartHost самим Netcode
+            // Всегда используем локальный компонент
+            if (networkManager == null)
             {
                 networkManager = GetComponent<Unity.Netcode.NetworkManager>();
-                Debug.Log($"[NMC] Got NM from GetComponent: {networkManager}");
             }
 
             if (networkManager == null)
@@ -263,35 +258,56 @@ namespace ProjectC.Core
                 return;
             }
 
-            // Проверяем NetworkConfig
+            Debug.Log($"[NMC] Using local NM: {networkManager}, IsListening: {networkManager.IsListening}");
+
             var netConfig = networkManager.NetworkConfig;
-            Debug.Log($"[NMC] NM IsListening: {networkManager.IsListening}, NetConfig: {netConfig}");
+            Debug.Log($"[NMC] NetConfig: {netConfig}");
 
             if (netConfig == null)
             {
-                Debug.LogError("[NMC] NetworkConfig is NULL!");
-                return;
+                Debug.LogWarning("[NMC] NetConfig is NULL - creating NetworkConfig manually");
+
+                // Создаем NetworkConfig через reflection
+                var configProp = typeof(Unity.Netcode.NetworkManager).GetProperty("NetworkConfig",
+                    System.Reflection.BindingFlags.Public | System.Reflection.BindingFlags.Instance);
+                if (configProp != null)
+                {
+                    // Создаем новый NetworkConfig через конструктор
+                    var configType = typeof(Unity.Netcode.NetworkConfig);
+                    var newConfig = System.Activator.CreateInstance(configType) as Unity.Netcode.NetworkConfig;
+                    if (newConfig != null)
+                    {
+                        configProp.SetValue(networkManager, newConfig);
+                        netConfig = newConfig;
+                        Debug.Log($"[NMC] Created new NetworkConfig: {netConfig}");
+                    }
+                }
+
+                if (netConfig == null)
+                {
+                    Debug.LogError("[NMC] Failed to create NetworkConfig!");
+                    return;
+                }
             }
 
             var transport = GetComponent<Unity.Netcode.Transports.UTP.UnityTransport>();
             if (transport == null)
             {
-                Debug.Log("[NMC] Creating new UnityTransport");
                 transport = gameObject.AddComponent<Unity.Netcode.Transports.UTP.UnityTransport>();
             }
 
             if (netConfig.NetworkTransport == null)
             {
-                Debug.Log("[NMC] Setting transport to NetworkConfig");
                 netConfig.NetworkTransport = transport;
             }
 
-            Debug.Log($"[NMC] NetTransport now: {netConfig.NetworkTransport}");
+            Debug.Log($"[NMC] Config ready: NetTransport={netConfig.NetworkTransport}");
 
             if (!networkManager.IsListening)
             {
-                Debug.Log("[NMC] Calling networkManager.StartHost()");
+                Debug.Log("[NMC] Calling StartHost()...");
                 networkManager.StartHost();
+                Debug.Log("[NMC] StartHost() completed");
             }
         }
 

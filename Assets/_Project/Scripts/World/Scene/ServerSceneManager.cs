@@ -261,14 +261,15 @@ namespace ProjectC.World.Scene
 
             LogDebug($"[Client] Received initial scene: {scene}");
 
-            var coordinator = NetworkManager.Singleton.GetComponent<SceneTransitionCoordinator>();
-            if (coordinator != null)
+            var loader = FindAnyObjectByType<ClientSceneLoader>();
+            if (loader != null)
             {
-                coordinator.HandleInitialScene(scene);
+                Vector3 localSpawn = new Vector3(SceneID.SCENE_SIZE / 2f, 0, SceneID.SCENE_SIZE / 2f);
+                loader.LoadScene(scene, localSpawn);
             }
             else
             {
-                Debug.LogWarning("[ServerSceneManager] SceneTransitionCoordinator not found on NetworkManager!");
+                Debug.LogWarning("[ServerSceneManager] ClientSceneLoader not found!");
             }
         }
 
@@ -296,14 +297,14 @@ namespace ProjectC.World.Scene
 
             LogDebug($"[Client] LoadSceneTransitionClientRpc received for scene {transitionData.TargetScene}");
 
-            var coordinator = NetworkManager.Singleton.GetComponent<SceneTransitionCoordinator>();
-            if (coordinator != null)
+            var loader = FindAnyObjectByType<ClientSceneLoader>();
+            if (loader != null)
             {
-                coordinator.HandleSceneTransition(transitionData);
+                loader.LoadScene(transitionData.TargetScene, transitionData.LocalPosition);
             }
             else
             {
-                Debug.LogWarning("[ServerSceneManager] SceneTransitionCoordinator not found on NetworkManager!");
+                Debug.LogWarning("[ServerSceneManager] ClientSceneLoader not found!");
             }
         }
 
@@ -331,10 +332,10 @@ namespace ProjectC.World.Scene
 
             LogDebug($"[Client] UnloadSceneClientRpc for scene {scene}");
 
-            var coordinator = NetworkManager.Singleton.GetComponent<SceneTransitionCoordinator>();
-            if (coordinator != null)
+            var loader = FindAnyObjectByType<ClientSceneLoader>();
+            if (loader != null)
             {
-                coordinator.HandleSceneUnload(scene);
+                loader.UnloadScene(scene);
             }
         }
 

@@ -3,30 +3,28 @@ using Unity.Netcode;
 
 namespace ProjectC.Network
 {
-    /// <summary>
-    /// Simple player spawner for scene-based testing.
-    /// Uses scene objects, no prefab needed.
-    /// </summary>
     public class NetworkPlayerSpawner : MonoBehaviour
     {
         [SerializeField] private bool useScenePlayerAsHost = true;
         
+        private bool _hasSpawnedHostPlayer = false;
+
         private void Start()
         {
             if (NetworkManager.Singleton != null)
             {
                 NetworkManager.Singleton.OnClientConnectedCallback += OnClientConnected;
+            }
+        }
 
-                // If we're host/server, spawn local player
-                // Use IsHost check at runtime since Start() runs before StartHost()
-                if (useScenePlayerAsHost && NetworkManager.Singleton.IsHost)
-                {
-                    SpawnLocalPlayer();
-                }
-                else if (useScenePlayerAsHost && NetworkManager.Singleton.IsServer)
-                {
-                    SpawnLocalPlayer();
-                }
+        private void Update()
+        {
+            if (useScenePlayerAsHost && !_hasSpawnedHostPlayer &&
+                NetworkManager.Singleton != null &&
+                (NetworkManager.Singleton.IsHost || NetworkManager.Singleton.IsServer))
+            {
+                _hasSpawnedHostPlayer = true;
+                SpawnLocalPlayer();
             }
         }
 

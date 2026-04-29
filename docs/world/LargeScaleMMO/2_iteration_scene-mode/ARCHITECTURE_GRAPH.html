@@ -1,0 +1,153 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Scene Architecture - CORRECTED</title>
+    <style>
+        body { font-family: 'Segoe UI', sans-serif; background: #1a1a2e; color: #eee; margin: 20px; }
+        h1 { color: #00d4ff; border-bottom: 2px solid #00d4ff; padding-bottom: 10px; }
+        h2 { color: #ff6b6b; margin-top: 30px; }
+        h3 { color: #ffd93d; }
+        .component { background: #16213e; padding: 15px; margin: 10px 0; border-radius: 8px; border-left: 4px solid #00d4ff; }
+        .flow { background: #0f3460; padding: 10px; margin: 5px 0; border-radius: 4px; font-family: monospace; }
+        .code { background: #0d1b2a; padding: 10px; border-radius: 4px; font-family: 'Consolas', monospace; font-size: 13px; overflow-x: auto; }
+        .removed { text-decoration: line-through; color: #ff6b6b; }
+        .added { color: #4ecdc4; font-weight: bold; }
+        .fix { background: #2d4a22; padding: 8px; margin: 5px 0; border-radius: 4px; border-left: 3px solid #4ecdc4; }
+        .diagram { background: #0d1b2a; padding: 20px; border-radius: 8px; font-family: monospace; white-space: pre; margin: 15px 0; }
+        table { border-collapse: collapse; width: 100%; margin: 15px 0; }
+        th, td { border: 1px solid #333; padding: 10px; text-align: left; }
+        th { background: #16213e; color: #00d4ff; }
+        tr:nth-child(even) { background: #1a1a2e; }
+        .status-box { background: #00d4ff; color: #000; padding: 10px 20px; border-radius: 4px; font-weight: bold; display: inline-block; margin: 10px 0; }
+        .warning { background: #ff6b6b; color: #000; padding: 10px 20px; border-radius: 4px; font-weight: bold; display: inline-block; margin: 10px 0; }
+    </style>
+</head>
+<body>
+    <h1>Scene System Architecture - CORRECTED</h1>
+    <p><strong>Date:</strong> 29.04.2026 | <strong>Status:</strong> <span class="status-box">ARCHITECTURE FIXED</span></p>
+
+    <h2>Problem Summary</h2>
+    <div class="warning">Scene system integration failed - player didn't spawn, errors about missing SceneTransitionCoordinator</div>
+
+    <h2>Root Cause: Unnecessary Middle Layer</h2>
+    <div class="diagram">
+BEFORE (Broken):
+ServerSceneManager → ClientRpc → SceneTransitionCoordinator → ClientSceneLoader
+
+AFTER (Fixed):
+ServerSceneManager → ClientRpc → ClientSceneLoader (direct)
+    </div>
+
+    <h2>Architecture Diagram</h2>
+    <div class="diagram">
+┌─────────────────────────────────────────────────────────────┐
+│ BootstrapScene.unity                                        │
+│                                                             │
+│ NetworkManager (GameObject "NetworkManager")                 │
+│ ├── Unity.Netcode.NetworkManager                            │
+│ └── NetworkManagerController                                │
+│                                                             │
+│ Runtime (GameObject "Runtime")                              │
+│ ├── ClientSceneLoader (DontDestroyOnLoad)                   │
+│ │   └── OnClientConnectedCallback → AutoLoadScene()        │
+│ │                                                          │
+│ └── ServerSceneManager (NetworkBehaviour)                  │
+│     └── OnClientConnected → FindPlayer + SendInitialScene    │
+│     └── Direct ClientRpc to ClientSceneLoader              │
+│                                                             │
+│ PlayerSpawner (GameObject "PlayerSpawner")                  │
+│ ├── NetworkObject                                          │
+│ ├── NetworkPlayerSpawner (MonoBehaviour)                   │
+│ └── NetworkPlayer                                          │
+│                                                             │
+└─────────────────────────────────────────────────────────────┘
+
+┌─────────────────────────────────────────────────────────────┐
+│ WorldScene_X_Y.unity (additive loaded)                       │
+│                                                             │
+│ WorldRoot_X_Y                                              │
+│ ├── DirectionalLight                                        │
+│ ├── GroundPlane_X_Y                                         │
+│ └── Boundaries_X_Y                                          │
+└─────────────────────────────────────────────────────────────┘
+    </div>
+
+    <h2>Host Start Flow</h2>
+    <div class="flow">1. User clicks "Host" → NetworkManagerController.StartHost()
+2. NetworkManager.StartHost() fires OnClientConnectedCallback(0)
+3. NetworkPlayerSpawner.Update() → SpawnLocalPlayer()
+4. NetworkObject.SpawnAsPlayerObject(0) → NetworkPlayer.OnNetworkSpawn()
+5. ClientSceneLoader.OnClientConnectedCallback(0) → AutoLoadInitialScene()
+6. LoadSceneWithNeighbors(SceneID(0,0))
+7. Player appears in world</div>
+
+    <h2>Fixes Applied</h2>
+
+    <h3>FIX-001: ServerSceneManager - Direct RPC</h3>
+    <div class="fix">
+<span class="removed">var coordinator = NetworkManager.Singleton.GetComponent<SceneTransitionCoordinator>();
+if (coordinator != null) coordinator.HandleInitialScene(scene);</span>
+<span class="added">var loader = FindAnyObjectByType<ClientSceneLoader>();
+if (loader != null) loader.LoadScene(scene, spawnPosition);</span>
+    </div>
+
+    <h3>FIX-002: ClientSceneLoader - Auto-load</h3>
+    <div class="code">private void OnEnable()
+{
+    NetworkManager.Singleton.OnClientConnectedCallback += OnClientConnectedCallback;
+}
+
+private void OnClientConnectedCallback(ulong clientId)
+{
+    if (clientId == NetworkManager.Singleton.LocalClientId && _currentScene.Equals(default))
+    {
+        StartCoroutine(AutoLoadInitialSceneCoroutine());
+    }
+}</div>
+
+    <h3>FIX-003: NetworkPlayerSpawner - Update timing</h3>
+    <div class="code">private bool _hasSpawnedHostPlayer = false;
+
+private void Update()
+{
+    if (useScenePlayerAsHost && !_hasSpawnedHostPlayer &&
+        NetworkManager.Singleton != null &&
+        (NetworkManager.Singleton.IsHost || NetworkManager.Singleton.IsServer))
+    {
+        _hasSpawnedHostPlayer = true;
+        SpawnLocalPlayer();
+    }
+}</div>
+
+    <h2>Files Changed</h2>
+    <table>
+        <tr><th>File</th><th>Change</th></tr>
+        <tr><td>ServerSceneManager.cs</td><td>Direct RPC to ClientSceneLoader</td></tr>
+        <tr><td>ClientSceneLoader.cs</td><td>Auto-load on Host connect</td></tr>
+        <tr><td>NetworkPlayerSpawner.cs</td><td>Update-based spawn timing</td></tr>
+        <tr><td>BootstrapSceneGenerator.cs</td><td>No Coordinator created</td></tr>
+        <tr><td>WorldSceneSetup.cs</td><td>No Coordinator method</td></tr>
+        <tr><td>SceneTransitionCoordinator.cs</td><td class="removed">DELETED</td></tr>
+    </table>
+
+    <h2>Expected Console Output</h2>
+    <div class="code">[NetworkTestMenu] User clicks Host
+[ServerSceneManager] ServerSceneManager initialized on server
+[NetworkPlayerSpawner] Client connected: 0
+[NetworkPlayerSpawner] Host/Server player spawned
+[ClientSceneLoader] Client connected: 0
+[ClientSceneLoader] Auto-loading initial scene for Host: Scene(0, 0)
+[ClientSceneLoader] Loading scene: WorldScene_0_0
+[SceneManager] Scene loaded: WorldScene_0_0
+[ClientSceneLoader] Scene loaded: WorldScene_0_0</div>
+
+    <h2>Related Documents</h2>
+    <ul>
+        <li><a href="INTEGRATION_FIX_PLAN.md">INTEGRATION_FIX_PLAN.md</a> - Full fix plan</li>
+        <li><a href="SCENE_ARCHITECTURE_DECISION.md">SCENE_ARCHITECTURE_DECISION.md</a> - Original decision</li>
+        <li><a href="CORRECTED_ARCHITECTURE.md">CORRECTED_ARCHITECTURE.md</a> - This document (detailed)</li>
+    </ul>
+</body>
+</html>

@@ -63,9 +63,50 @@ namespace ProjectC.World.Scene
             }
         }
 
+        private void OnEnable()
+        {
+            if (NetworkManager.Singleton != null)
+            {
+                NetworkManager.Singleton.OnClientConnectedCallback += OnClientConnectedCallback;
+            }
+        }
+
+        private void OnDisable()
+        {
+            if (NetworkManager.Singleton != null)
+            {
+                NetworkManager.Singleton.OnClientConnectedCallback -= OnClientConnectedCallback;
+            }
+        }
+
         private void Start()
         {
             FindLocalPlayer();
+        }
+
+        private void OnClientConnectedCallback(ulong clientId)
+        {
+            if (clientId == NetworkManager.Singleton.LocalClientId && _currentScene.Equals(default))
+            {
+                StartCoroutine(AutoLoadInitialSceneCoroutine());
+            }
+        }
+
+        private IEnumerator AutoLoadInitialSceneCoroutine()
+        {
+            yield return new WaitForSeconds(1f);
+
+            if (!_currentScene.Equals(default))
+            {
+                yield break;
+            }
+
+            if (NetworkManager.Singleton != null && NetworkManager.Singleton.IsHost)
+            {
+                SceneID initialScene = new SceneID(0, 0);
+                Debug.Log($"[ClientSceneLoader] Auto-loading initial scene for Host: {initialScene}");
+                yield return LoadSceneWithNeighborsCoroutine(initialScene);
+            }
         }
 
         private void FindLocalPlayer()

@@ -68,7 +68,7 @@ namespace ProjectC.Editor
             CreateWorldSceneManager();
             CreateClientSceneLoader();
             CreateServerSceneManager();
-            CreateSceneTransitionCoordinator();
+            // SceneTransitionCoordinator REMOVED - ServerSceneManager sends RPCs directly to ClientSceneLoader
             // REMOVED: CreateWorldStreamingManager() - chunk system deprecated in scene-based architecture
             CreateMainCamera();
             // REMOVED: CreateFloatingOriginMP() - scenes don't need it per SCENE_ARCHITECTURE_DECISION.md
@@ -196,14 +196,7 @@ namespace ProjectC.Editor
             so.ApplyModifiedProperties();
         }
 
-        private void CreateSceneTransitionCoordinator()
-        {
-            GameObject obj = new GameObject("SceneTransitionCoordinator");
-            obj.transform.position = Vector3.zero;
-
-            obj.AddComponent<SceneTransitionCoordinator>();
-            var networkObject = obj.AddComponent<NetworkObject>();
-        }
+        // SceneTransitionCoordinator REMOVED - ServerSceneManager sends RPCs directly to ClientSceneLoader
 
         private void CreateWorldStreamingManager()
         {

@@ -1,7 +1,7 @@
-# Graph Report - docs\world\LargeScaleMMO\2_iteration_scene-mode  (2026-04-28)
+# Graph Report - docs\world\LargeScaleMMO\2_iteration_scene-mode  (2026-04-29)
 
 ## Corpus Check
-- Corpus is ~38,163 words - fits in a single context window. You may not need a graph.
+- Corpus is ~40,873 words - fits in a single context window. You may not need a graph.
 
 ## Summary
 - 0 nodes · 0 edges · 0 communities detected

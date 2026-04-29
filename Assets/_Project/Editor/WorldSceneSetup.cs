@@ -95,7 +95,6 @@ namespace ProjectC.Editor
             AddWorldSceneManager(runtimeObj.transform);
             AddClientSceneLoader(runtimeObj.transform);
             AddServerSceneManager(runtimeObj.transform);
-            AddSceneTransitionCoordinator(runtimeObj.transform);
             AddWorldStreamingManager(runtimeObj.transform);
             AddMainCamera(runtimeObj.transform);
             AddFloatingOriginMP(runtimeObj.transform);
@@ -137,16 +136,6 @@ namespace ProjectC.Editor
             SerializedObject so = new SerializedObject(ssm);
             so.FindProperty("updateInterval").floatValue = 0.5f;
             so.ApplyModifiedProperties();
-        }
-
-        private void AddSceneTransitionCoordinator(Transform parent)
-        {
-            GameObject obj = new GameObject("SceneTransitionCoordinator");
-            obj.transform.SetParent(parent);
-            obj.transform.localPosition = Vector3.zero;
-
-            obj.AddComponent<SceneTransitionCoordinator>();
-            obj.AddComponent<NetworkObject>();
         }
 
         private void AddWorldStreamingManager(Transform parent)

@@ -59,16 +59,14 @@ namespace ProjectC.World.Scene
 
             if (sceneRegistry == null)
             {
-                sceneRegistry = Resources.Load<SceneRegistry>("SceneRegistry");
+                sceneRegistry = Resources.Load<SceneRegistry>("Scene/SceneRegistry");
+                if (sceneRegistry == null)
+                    sceneRegistry = Resources.Load<SceneRegistry>("SceneRegistry");
             }
         }
 
         private void OnEnable()
         {
-            if (NetworkManager.Singleton != null)
-            {
-                NetworkManager.Singleton.OnClientConnectedCallback += OnClientConnectedCallback;
-            }
         }
 
         private void OnDisable()
@@ -82,6 +80,11 @@ namespace ProjectC.World.Scene
         private void Start()
         {
             FindLocalPlayer();
+
+            if (NetworkManager.Singleton != null)
+            {
+                NetworkManager.Singleton.OnClientConnectedCallback += OnClientConnectedCallback;
+            }
         }
 
         private void OnClientConnectedCallback(ulong clientId)
@@ -124,15 +127,6 @@ namespace ProjectC.World.Scene
                         return;
                     }
                 }
-            }
-
-            var playerByTag = GameObject.FindGameObjectWithTag("Player");
-            if (playerByTag != null)
-            {
-                playerTransform = playerByTag.transform;
-                _isInitialized = true;
-                LogDebug($"Found player by tag: {playerByTag.name}");
-                return;
             }
 
             StartCoroutine(WaitForPlayer());
@@ -258,8 +252,11 @@ namespace ProjectC.World.Scene
 
             if (!sceneRegistry.IsValid(targetScene))
             {
-                Debug.LogWarning($"[ClientSceneLoader] Invalid target scene: {targetScene}");
-                yield break;
+                Debug.LogWarning($"[ClientSceneLoader] Invalid target scene: {targetScene}, clamping to valid range");
+                targetScene = new SceneID(
+                    Mathf.Clamp(targetScene.GridX, 0, Mathf.Max(0, sceneRegistry.GridColumns - 1)),
+                    Mathf.Clamp(targetScene.GridZ, 0, Mathf.Max(0, sceneRegistry.GridRows - 1))
+                );
             }
 
             _loadingScenes.Add(targetScene);

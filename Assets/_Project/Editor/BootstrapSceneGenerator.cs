@@ -144,50 +144,149 @@ namespace ProjectC.Editor
             GameObject networkObj = new GameObject("NetworkManager");
             networkObj.transform.position = Vector3.zero;
 
+            // NetworkObject required for ServerSceneManager (NetworkBehaviour) to work
+            var networkObject = networkObj.AddComponent<Unity.Netcode.NetworkObject>();
+
             var networkManager = networkObj.AddComponent<Unity.Netcode.NetworkManager>();
 
             var transport = networkObj.AddComponent<UnityTransport>();
             transport.SetConnectionData("127.0.0.1", 7777);
 
+            // Force UnityTransport into NetworkConfig to avoid "No transport selected" error
+            var nmConfig = new SerializedObject(networkManager);
+            nmConfig.FindProperty("NetworkConfig.NetworkTransport").objectReferenceValue = transport;
+            nmConfig.ApplyModifiedProperties();
+
             var nmc = networkObj.AddComponent<NetworkManagerController>();
+
+            // ServerSceneManager MUST be on NetworkManager GameObject (not Runtime!)
+            // It's a NetworkBehaviour that needs proper NGO spawning
+            var ssm = networkObj.AddComponent<ServerSceneManager>();
+            var so = new SerializedObject(ssm);
+            so.FindProperty("updateInterval").floatValue = 0.5f;
+            so.FindProperty("showDebugLogs").boolValue = true;
+
+            // Assign SceneRegistry to ServerSceneManager
+            string sceneRegPath = "Assets/_Project/Resources/Scene/SceneRegistry.asset";
+            SceneRegistry registry = AssetDatabase.LoadAssetAtPath<SceneRegistry>(sceneRegPath);
+            if (registry != null)
+            {
+                so.FindProperty("sceneRegistry").objectReferenceValue = registry;
+            }
+            else
+            {
+                Debug.LogWarning($"[BootstrapSceneGenerator] SceneRegistry not found at {sceneRegPath}");
+            }
+
+            so.ApplyModifiedProperties();
         }
 
 private void CreatePlayerSpawner()
         {
-            GameObject spawnerObj = new GameObject("PlayerSpawner");
-            spawnerObj.transform.position = new Vector3(COLS * SCENE_SIZE / 2f, 3000f, ROWS * SCENE_SIZE / 2f);
+// IMPORTANT: Use existing NetworkPlayer.prefab instead of creating components
+            // The prefab at Assets/_Project/Prefabs/NetworkPlayer.prefab has:
+            // - NetworkObject, NetworkTransform (OwnerAuthority), NetworkPlayer, CharacterController, PlayerInputReader
+            string prefabPath = "Assets/_Project/Prefabs/NetworkPlayer.prefab";
+            var prefab = AssetDatabase.LoadAssetAtPath<GameObject>(prefabPath);
 
-            var networkObject = spawnerObj.AddComponent<NetworkObject>();
+            if (prefab == null)
+            {
+                Debug.LogError($"[BootstrapSceneGenerator] NetworkPlayer.prefab not found at {prefabPath}!");
+                return;
+            }
+
+            // SPAWN POSITION: Scene (0,0) center, NOT world center
+            // Spawning at (COLS * SCENE_SIZE, ...) was placing player at WRONG coordinates
+            // Scene (0,0) center = (0 * 79999 + 39999.5, ...) = (39999.5, ...)
+            float spawnX = SCENE_SIZE / 2f; // 39999.5
+            float spawnZ = SCENE_SIZE / 2f; // 39999.5
+            Vector3 spawnPos = new Vector3(spawnX, 3000f, spawnZ);
+
+            GameObject spawnerObj = (GameObject)PrefabUtility.InstantiatePrefab(prefab);
+            spawnerObj.name = "PlayerSpawner";
+            spawnerObj.transform.position = spawnPos;
+            spawnerObj.tag = "Player";
+
+            // NOTE: DontDestroyOnLoad CANNOT be called in editor scripts!
+            // When scenes are loaded additively, objects in BootstrapScene persist naturally.
+            // PlayerSpawner will remain in BootstrapScene's hierarchy when WorldScene loads.
+
+            // Add NetworkPlayerSpawner component for host spawning logic
             var spawner = spawnerObj.AddComponent<NetworkPlayerSpawner>();
 
-            var characterController = spawnerObj.AddComponent<CharacterController>();
-            characterController.center = new Vector3(0, 1, 0);
-            characterController.radius = 0.5f;
-            characterController.height = 2f;
+            // Set this prefab as the default PlayerPrefab in NetworkManager
+            var nm = UnityEngine.Object.FindAnyObjectByType<Unity.Netcode.NetworkManager>();
+            if (nm != null)
+            {
+                var prefabProp = new SerializedObject(nm).FindProperty("PlayerPrefab");
+                if (prefabProp != null)
+                {
+                    var networkObject = spawnerObj.GetComponent<NetworkObject>();
+                    prefabProp.objectReferenceValue = networkObject;
+                    new SerializedObject(nm).ApplyModifiedProperties();
+                }
+            }
 
-            spawnerObj.AddComponent<NetworkPlayer>();
-
-            GameObject cameraObj = new GameObject("PlayerCamera");
-            cameraObj.transform.SetParent(spawnerObj.transform);
-            cameraObj.transform.localPosition = new Vector3(0, 1.5f, 0);
-            cameraObj.AddComponent<Camera>();
-            cameraObj.AddComponent<AudioListener>();
+            Debug.Log($"[BootstrapSceneGenerator] PlayerSpawner created at scene(0,0) center: {spawnPos}");
         }
 
         private void CreateSceneManagement()
         {
             GameObject runtimeObj = new GameObject("Runtime");
             runtimeObj.transform.position = Vector3.zero;
-
+            // NOTE: ServerSceneManager is now on NetworkManager GameObject (CreateNetworkManager)
+            // ClientSceneLoader needs to be in Bootstrap for proper lifecycle
             var clientLoader = runtimeObj.AddComponent<ClientSceneLoader>();
             var so = new SerializedObject(clientLoader);
             so.FindProperty("loadNeighbors").boolValue = true;
             so.FindProperty("unloadDistantScenes").boolValue = true;
-            so.ApplyModifiedProperties();
+            so.FindProperty("showDebugLogs").boolValue = true;
 
-            var serverSceneManager = runtimeObj.AddComponent<ServerSceneManager>();
-            so = new SerializedObject(serverSceneManager);
-            so.FindProperty("updateInterval").floatValue = 0.5f;
+            // CRITICAL: SceneRegistry must be in a Resources folder for Resources.Load to work
+            // The asset is at Assets/_Project/Data/Scene/SceneRegistry.asset which is NOT a Resources folder
+            // Create or find SceneRegistry in proper location
+            string sceneRegPath = "Assets/_Project/Resources/Scene/SceneRegistry.asset";
+            string sceneRegDir = System.IO.Path.GetDirectoryName(sceneRegPath);
+
+            if (!AssetDatabase.IsValidFolder(sceneRegDir))
+            {
+                AssetDatabase.CreateFolder("Assets/_Project/Resources", "Scene");
+            }
+
+            // Check if SceneRegistry exists in Data/Scene (old location)
+            string oldPath = "Assets/_Project/Data/Scene/SceneRegistry.asset";
+            SceneRegistry existingReg = AssetDatabase.LoadAssetAtPath<SceneRegistry>(oldPath);
+
+            if (existingReg != null)
+            {
+                // Copy or move to new location
+                AssetDatabase.CopyAsset(oldPath, sceneRegPath);
+                Debug.Log($"[BootstrapSceneGenerator] Copied SceneRegistry to Resources folder");
+            }
+            else
+            {
+                // Create new SceneRegistry
+                var newReg = ScriptableObject.CreateInstance<SceneRegistry>();
+                newReg.GridColumns = COLS;
+                newReg.GridRows = ROWS;
+                newReg.SceneNamePrefix = "WorldScene_";
+                AssetDatabase.CreateAsset(newReg, sceneRegPath);
+                Debug.Log($"[BootstrapSceneGenerator] Created new SceneRegistry at {sceneRegPath}");
+            }
+
+            AssetDatabase.SaveAssets();
+
+            // Load the asset and assign to ClientSceneLoader
+            SceneRegistry registry = AssetDatabase.LoadAssetAtPath<SceneRegistry>(sceneRegPath);
+            if (registry != null)
+            {
+                so.FindProperty("sceneRegistry").objectReferenceValue = registry;
+            }
+            else
+            {
+                Debug.LogError($"[BootstrapSceneGenerator] Failed to load SceneRegistry from {sceneRegPath}");
+            }
+
             so.ApplyModifiedProperties();
 
             // SceneTransitionCoordinator removed - ServerSceneManager sends RPCs directly to ClientSceneLoader
@@ -387,12 +486,12 @@ private void CreatePlayerSpawner()
             var hostBtnObj = CreateButtonObject(menuPanel.transform, "Host", new Vector2(0, -20));
             var clientBtnObj = CreateButtonObject(menuPanel.transform, "Client", new Vector2(0, -70));
             var serverBtnObj = CreateButtonObject(menuPanel.transform, "Server", new Vector2(0, -120));
-            var loadWorldBtnObj = CreateButtonObject(menuPanel.transform, "Load World [0,0]", new Vector2(0, -180));
+            var loadWorldBtnObj = CreateButtonObject(menuPanel.transform, "Load World [0,0]", new Vector2(0, -170));
 
-            // FIX: Assign button references to NetworkTestMenu so Start() can wire up listeners
             menuHandler.hostButton = hostBtnObj.GetComponent<Button>();
             menuHandler.clientButton = clientBtnObj.GetComponent<Button>();
             menuHandler.serverButton = serverBtnObj.GetComponent<Button>();
+            menuHandler.loadWorldButton = loadWorldBtnObj.GetComponent<Button>();
         }
 
         private GameObject CreateMenuPanel(Transform parent)
@@ -404,7 +503,7 @@ private void CreatePlayerSpawner()
             panelRect.anchorMax = new Vector2(0.5f, 0.5f);
             panelRect.pivot = new Vector2(0.5f, 0.5f);
             panelRect.anchoredPosition = Vector2.zero;
-            panelRect.sizeDelta = new Vector2(300, 250);
+            panelRect.sizeDelta = new Vector2(300, 310);
             panel.AddComponent<CanvasRenderer>();
             var panelImage = panel.AddComponent<Image>();
             panelImage.color = new Color(0.1f, 0.1f, 0.2f, 0.95f);
@@ -493,20 +592,29 @@ private void CreatePlayerSpawner()
 
         private void AddToBuildSettings()
         {
+            // Add all World scenes to build settings so LoadSceneAsync works at runtime
             EditorBuildSettingsScene[] existingScenes = EditorBuildSettings.scenes;
-            List<EditorBuildSettingsScene> allScenes = new List<EditorBuildSettingsScene> { new EditorBuildSettingsScene(BOOTSTRAP_SCENE_PATH, true) };
-
             HashSet<string> existingPaths = new HashSet<string>();
             foreach (var s in existingScenes)
             {
                 existingPaths.Add(s.path);
             }
 
-            foreach (var s in existingScenes)
+            // Add Bootstrap first
+            List<EditorBuildSettingsScene> allScenes = new List<EditorBuildSettingsScene>
             {
-                if (!existingPaths.Contains(s.path))
+                new EditorBuildSettingsScene(BOOTSTRAP_SCENE_PATH, true)
+            };
+
+            // Add all World scenes (they're already generated)
+            string worldScenesPath = "Assets/_Project/Scenes/World";
+            string[] worldSceneGuids = AssetDatabase.FindAssets("t:Scene", new[] { worldScenesPath });
+            foreach (var guid in worldSceneGuids)
+            {
+                string scenePath = AssetDatabase.GUIDToAssetPath(guid);
+                if (!existingPaths.Contains(scenePath))
                 {
-                    allScenes.Add(s);
+                    allScenes.Add(new EditorBuildSettingsScene(scenePath, true));
                 }
             }
 

@@ -90,8 +90,9 @@ namespace ProjectC.Player
         /// <summary>
         /// Cooldown после сдвига мира — игнорируем серверную коррекцию пока мира не устаканится.
         /// </summary>
-        private float _worldShiftCooldown = 0f;
-        private const float WORLD_SHIFT_COOLDOWN_DURATION = 1f;
+        // NOTE: FloatingOriginMP cooldown removed - scene-based architecture doesn't use world shifting
+
+        // ==================== КАМЕРА ====================
 
         public bool IsInShip => _inShip;
         public ShipController CurrentShip => _currentShip;
@@ -118,10 +119,9 @@ namespace ProjectC.Player
             // Отключаем старый PlayerController (если остался от legacy)
             var legacyController = GetComponent<PlayerController>();
             if (legacyController != null) legacyController.enabled = false;
-            
-            // Подписываемся на событие сдвига мира (для FloatingOriginMP)
-            // После сдвига мира нужно сбросить клиентскую коррекцию чтобы избежать артефактов
-            ProjectC.World.Streaming.FloatingOriginMP.OnWorldShifted += OnWorldShifted;
+
+            // NOTE: FloatingOriginMP subscriptions removed - scene-based architecture doesn't use world shifting
+            // Each scene has its own local origin, no need for FloatingOriginMP
 
             if (IsOwner)
             {
@@ -167,52 +167,9 @@ namespace ProjectC.Player
             if (_myCamera != null) Destroy(_myCamera.gameObject);
             if (_inventoryUI != null) Destroy(_inventoryUI.gameObject);
             if (_inShip && _currentShip != null) _currentShip.RemovePilot(OwnerClientId);
-            
-            // Отписываемся от события сдвига мира
-            ProjectC.World.Streaming.FloatingOriginMP.OnWorldShifted -= OnWorldShifted;
         }
         
-        public override void OnDestroy()
-        {
-            // Отписываемся от события сдвига мира (для безопасности)
-            ProjectC.World.Streaming.FloatingOriginMP.OnWorldShifted -= OnWorldShifted;
-            base.OnDestroy();
-        }
-        
-        /// <summary>
-        /// Обработчик события сдвига мира от FloatingOriginMP.
-        /// После сдвига мира сбрасываем клиентскую коррекцию позиции чтобы избежать артефактов.
-        /// </summary>
-        private void OnWorldShifted(Vector3 offset)
-        {
-            // ЗАЩИТА: проверяем IsOwner — только владелец должен обрабатывать сдвиг
-            // На хосте могут быть ДВА NetworkPlayer с одинаковым OwnerClientId=0
-            // (свой игрок + ghost/clone). IsOwner гарантирует что это НАШ игрок.
-            if (!IsOwner)
-            {
-                return;
-            }
-            
-            // ПРИМЕЧАНИЕ: Проверка позиции >500k УДАЛЕНА!
-            // FloatingOriginMP теперь пропускает игрока с тегом "Player" на больших позициях.
-            // Этот метод вызывается ПОСЛЕ сдвига мира, поэтому позиция уже должна быть корректной.
-            // Если позиция огромная — это означает что сдвиг не применился к игроку,
-            // и мы должны обработать это чтобы избежать артефактов.
-            
-            Debug.Log($"[NetworkPlayer] OnWorldShifted: offset={offset}, transform.position={transform.position}, IsOwner={IsOwner}");
-            
-            // Сбрасываем клиентскую коррекцию позиции
-            // Это предотвращает артефакты которые возникают из-за рассинхронизации после сдвига
-            _hasServerPosition = false;
-            
-            // Запускаем cooldown — игнорируем серверную коррекцию 1 секунду пока мир устаканится
-            _worldShiftCooldown = WORLD_SHIFT_COOLDOWN_DURATION;
-            
-            // Сбрасываем velocity чтобы избежать рывков после сдвига
-            _velocity = Vector3.zero;
-            
-            Debug.Log($"[NetworkPlayer] OnWorldShifted: коррекция сброшена, позиция={transform.position}, cooldown={_worldShiftCooldown}s");
-        }
+        // NOTE: FloatingOriginMP event handling removed - scene-based doesn't use world shifting
 
         // ==================== КАМЕРА ====================
 
@@ -331,48 +288,9 @@ namespace ProjectC.Player
                 FindNearestInteractable();
                 
                 // DEBUG: Teleport to 1M for testing float precision
-                if (Keyboard.current.tKey.wasPressedThisFrame && Keyboard.current.leftShiftKey.isPressed)
-                {
-                    TeleportToPosition(new Vector3(1000000f, 5f, 0f));
-                    // После телепорта вызываем ResetOrigin с задержкой (ждём синхронизации)
-                    Invoke(nameof(AutoResetOriginAfterTeleport), 0.5f);
-                }
+                // REMOVED: Shift+T teleport to 1M - not needed in scene-based architecture
                 
-                // DEBUG: Manual ResetOrigin (Shift+R) — принудительный сброс
-                if (Keyboard.current.rKey.wasPressedThisFrame && Keyboard.current.leftShiftKey.isPressed)
-                {
-                    Debug.Log("[NetworkPlayer] Manual ResetOrigin requested");
-                    var fo = FindAnyObjectByType<ProjectC.World.Streaming.FloatingOriginMP>();
-                    if (fo != null)
-                    {
-                        // КРИТИЧНО: запоминаем текущую позицию, обнуляем offset, затем телепортируем на локальную позицию
-                        Vector3 worldPos = transform.position;
-                        Debug.Log($"[NetworkPlayer] Current world position: {worldPos}");
-                        
-                        // Обнуляем totalOffset
-                        fo.ResetOffset();
-                        
-                        // Телепортируем на локальную позицию (5, 5, 0) — рядом с origin
-                        // Это "локальная" позиция относительно TradeZones
-                        Vector3 localPos = new Vector3(5f, 5f, 0f);
-                        Debug.Log($"[NetworkPlayer] Teleporting to local position: {localPos}");
-                        
-                        // Отключаем на мгновение CC чтобы избежать коллизий
-                        _controller.enabled = false;
-                        transform.position = localPos;
-                        _controller.enabled = true;
-                        _velocity = Vector3.zero;
-                        
-                        // После телепорта вызываем ResetOrigin для сдвига мира
-                        fo.ResetOrigin();
-                        
-                        Debug.Log($"[NetworkPlayer] After ResetOrigin: player at {transform.position}, world shifted");
-                    }
-                    else
-                    {
-                        Debug.LogWarning("[NetworkPlayer] FloatingOriginMP not found!");
-                    }
-                }
+                // DEBUG: Manual ResetOrigin (Shift+R) — removed, scene-based doesn't need FloatingOriginMP
             }
         }
 
@@ -382,14 +300,6 @@ namespace ProjectC.Player
         {
             // Плавная коррекция позиции только для локального игрока (Owner)
             if (!IsOwner || _inShip) return;
-            
-            // Уменьшаем cooldown
-            if (_worldShiftCooldown > 0)
-            {
-                _worldShiftCooldown -= Time.fixedDeltaTime;
-                // Игнорируем серверную коррекцию пока cooldown активен
-                return;
-            }
 
             if (_hasServerPosition)
             {
@@ -885,48 +795,6 @@ namespace ProjectC.Player
             {
                 TeleportServerRpc(position);
             }
-        }
-
-        // ==================== FLOATING ORIGIN AUTO-FIX ====================
-
-        /// <summary>
-        /// Автоматический ResetOrigin после телепорта.
-        /// Вызывается с задержкой через Invoke() чтобы дождаться синхронизации NGO.
-        /// </summary>
-        private void AutoResetOriginAfterTeleport()
-        {
-            if (!IsOwner) return;
-            
-            var fo = FindAnyObjectByType<ProjectC.World.Streaming.FloatingOriginMP>();
-            if (fo == null)
-            {
-                Debug.LogWarning("[NetworkPlayer] AutoResetOriginAfterTeleport: FloatingOriginMP not found!");
-                return;
-            }
-            
-            // Проверяем что игрок далеко от origin
-            float dist = transform.position.magnitude;
-            if (dist < 500000f)
-            {
-                Debug.Log($"[NetworkPlayer] AutoResetOriginAfterTeleport: dist={dist} < 500k, skip");
-                return;
-            }
-            
-            Debug.Log($"[NetworkPlayer] AutoResetOriginAfterTeleport: dist={dist}, triggering ResetOrigin");
-            
-            // Обнуляем totalOffset
-            fo.ResetOffset();
-            
-            // Телепортируем на локальную позицию рядом с origin
-            _controller.enabled = false;
-            transform.position = new Vector3(5f, 5f, 0f);
-            _controller.enabled = true;
-            _velocity = Vector3.zero;
-            
-            // Сдвигаем мир
-            fo.ResetOrigin();
-            
-            Debug.Log($"[NetworkPlayer] AutoResetOriginAfterTeleport: player at {transform.position}, world shifted");
         }
     }
 }

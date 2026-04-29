@@ -43,20 +43,27 @@ namespace ProjectC.Core
             networkManager = GetComponent<Unity.Netcode.NetworkManager>();
             if (networkManager == null)
             {
+                Debug.Log("[NMC] Creating new NetworkManager component");
                 networkManager = gameObject.AddComponent<Unity.Netcode.NetworkManager>();
             }
+
+            // Принудительная инициализация NetworkConfig через создание свойства
+            var netConfig = networkManager.NetworkConfig;
+            Debug.Log($"[NMC] Awake: NM={networkManager}, NetConfig={netConfig}");
 
             // Проверяем и добавляем UnityTransport если нужно
             var transport = GetComponent<Unity.Netcode.Transports.UTP.UnityTransport>();
             if (transport == null)
             {
+                Debug.Log("[NMC] Creating UnityTransport in Awake");
                 transport = gameObject.AddComponent<Unity.Netcode.Transports.UTP.UnityTransport>();
             }
 
             // Настраиваем NetworkConfig на использование UnityTransport
-            if (networkManager.NetworkConfig.NetworkTransport == null)
+            if (netConfig != null && netConfig.NetworkTransport == null)
             {
-                networkManager.NetworkConfig.NetworkTransport = transport;
+                Debug.Log("[NMC] Setting transport in NetworkConfig");
+                netConfig.NetworkTransport = transport;
             }
 
             DontDestroyOnLoad(gameObject);
@@ -237,25 +244,107 @@ namespace ProjectC.Core
         public void StartHost()
         {
             Debug.Log("[NMC] StartHost() called");
-            StartCoroutine(StartHostCoroutine());
+
+            // Используем Singleton если доступно
+            if (Unity.Netcode.NetworkManager.Singleton != null)
+            {
+                networkManager = Unity.Netcode.NetworkManager.Singleton;
+                Debug.Log($"[NMC] Using Singleton: {networkManager}");
+            }
+            else if (networkManager == null)
+            {
+                networkManager = GetComponent<Unity.Netcode.NetworkManager>();
+                Debug.Log($"[NMC] Got NM from GetComponent: {networkManager}");
+            }
+
+            if (networkManager == null)
+            {
+                Debug.LogError("[NMC] NetworkManager component not found!");
+                return;
+            }
+
+            // Проверяем NetworkConfig
+            var netConfig = networkManager.NetworkConfig;
+            Debug.Log($"[NMC] NM IsListening: {networkManager.IsListening}, NetConfig: {netConfig}");
+
+            if (netConfig == null)
+            {
+                Debug.LogError("[NMC] NetworkConfig is NULL!");
+                return;
+            }
+
+            var transport = GetComponent<Unity.Netcode.Transports.UTP.UnityTransport>();
+            if (transport == null)
+            {
+                Debug.Log("[NMC] Creating new UnityTransport");
+                transport = gameObject.AddComponent<Unity.Netcode.Transports.UTP.UnityTransport>();
+            }
+
+            if (netConfig.NetworkTransport == null)
+            {
+                Debug.Log("[NMC] Setting transport to NetworkConfig");
+                netConfig.NetworkTransport = transport;
+            }
+
+            Debug.Log($"[NMC] NetTransport now: {netConfig.NetworkTransport}");
+
+            if (!networkManager.IsListening)
+            {
+                Debug.Log("[NMC] Calling networkManager.StartHost()");
+                networkManager.StartHost();
+            }
         }
 
         public IEnumerator StartHostCoroutine()
         {
-            // Защита от конфликта порта - проверяем не слушает ли уже
+            if (networkManager == null)
+            {
+                networkManager = GetComponent<Unity.Netcode.NetworkManager>();
+            }
+
+            if (networkManager == null)
+            {
+                Debug.LogError("[Network] NetworkManager is null!");
+                yield break;
+            }
+
+            if (networkManager.NetworkConfig == null)
+            {
+                Debug.LogError("[Network] NetworkConfig is null!");
+                yield break;
+            }
+
+            if (networkManager.NetworkConfig.NetworkTransport == null)
+            {
+                var transport = GetComponent<Unity.Netcode.Transports.UTP.UnityTransport>();
+                if (transport == null)
+                {
+                    transport = gameObject.AddComponent<Unity.Netcode.Transports.UTP.UnityTransport>();
+                }
+                networkManager.NetworkConfig.NetworkTransport = transport;
+            }
+
             if (networkManager.IsListening)
             {
-                Debug.LogWarning("[Network] Already listening! Shutting down first...");
+                Debug.Log("[Network] Already listening! Shutting down first...");
                 networkManager.Shutdown();
-                
-                // REFACTORED (R3-002): Используем корутину вместо Thread.Sleep
-                // Это не блокирует UI thread
-                yield return new WaitForSecondsRealtime(0.25f);
+
+                yield return new WaitForSecondsRealtime(0.5f);
+            }
+
+            var currentTransport = networkManager.NetworkConfig?.NetworkTransport;
+            if (currentTransport == null)
+            {
+                Debug.LogError("[Network] Transport is null! Cannot start host.");
+                UpdateStatus("Ошибка: транспорт не настроен");
+                yield break;
             }
 
             try
             {
+                Debug.Log("[Network] Attempting networkManager.StartHost()...");
                 networkManager.StartHost();
+                Debug.Log("[Network] StartHost() completed");
                 UpdateStatus("Хост запущен");
             }
             catch (Exception ex)
@@ -275,19 +364,27 @@ namespace ProjectC.Core
 
         private IEnumerator StartServerCoroutine()
         {
-            // Защита от конфликта порта
             if (networkManager.IsListening)
             {
                 Debug.LogWarning("[Network] Already listening! Shutting down first...");
                 networkManager.Shutdown();
-                
-                // REFACTORED (R3-002): Используем корутину вместо Thread.Sleep
-                yield return new WaitForSecondsRealtime(0.25f);
+
+                yield return new WaitForSecondsRealtime(0.5f);
+            }
+
+            var transport = networkManager.NetworkConfig?.NetworkTransport;
+            if (transport == null)
+            {
+                Debug.LogError("[Network] Transport is null! Cannot start server.");
+                UpdateStatus("Ошибка: транспорт не настроен");
+                yield break;
             }
 
             try
             {
+                Debug.Log("[Network] Attempting networkManager.StartServer()...");
                 networkManager.StartServer();
+                Debug.Log("[Network] StartServer() completed");
                 UpdateStatus($"Сервер запущен на порту {serverPort}");
             }
             catch (Exception ex)
@@ -328,7 +425,7 @@ namespace ProjectC.Core
 
             Debug.Log($"[Network] ConnectToServer: {targetIp}:{targetPort}");
 
-            var transport = networkManager.NetworkConfig.NetworkTransport;
+            var transport = networkManager.NetworkConfig?.NetworkTransport;
             if (transport is UnityTransport unityTransport)
             {
                 unityTransport.SetConnectionData(targetIp, targetPort);

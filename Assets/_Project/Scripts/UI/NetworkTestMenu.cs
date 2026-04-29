@@ -16,6 +16,7 @@ namespace ProjectC.UI
         [SerializeField] public Button hostButton;
         [SerializeField] public Button clientButton;
         [SerializeField] public Button serverButton;
+        [SerializeField] public Button loadWorldButton;
         
         [Header("Status")]
         [SerializeField] private TextMeshProUGUI statusText;
@@ -44,6 +45,9 @@ namespace ProjectC.UI
             
             if (serverButton != null)
                 serverButton.onClick.AddListener(() => StartAsServer());
+
+            if (loadWorldButton != null)
+                loadWorldButton.onClick.AddListener(() => LoadWorldScene());
 
             // Subscribe to NMC events
             if (_nmc != null)
@@ -118,6 +122,20 @@ namespace ProjectC.UI
             else
             {
                 UpdateStatus("Error: NetworkManagerController not found!");
+            }
+        }
+
+        private void LoadWorldScene()
+        {
+            var loader = FindAnyObjectByType<ProjectC.World.Scene.ClientSceneLoader>();
+            if (loader != null)
+            {
+                loader.LoadInitialScene(new ProjectC.World.Scene.SceneID(0, 0));
+                UpdateStatus("Loading World Scene [0,0]...");
+            }
+            else
+            {
+                UpdateStatus("Error: ClientSceneLoader not found!");
             }
         }
 

@@ -64,7 +64,9 @@ namespace ProjectC.World.Scene
 
             if (sceneRegistry == null)
             {
-                sceneRegistry = Resources.Load<SceneRegistry>("SceneRegistry");
+                sceneRegistry = Resources.Load<SceneRegistry>("Scene/SceneRegistry");
+                if (sceneRegistry == null)
+                    sceneRegistry = Resources.Load<SceneRegistry>("SceneRegistry");
                 if (sceneRegistry == null)
                 {
                     Debug.LogError("[ServerSceneManager] SceneRegistry not found! Please assign or create.");
@@ -179,6 +181,15 @@ namespace ProjectC.World.Scene
 
             var targetScene = SceneID.FromWorldPosition(worldPosition);
 
+            if (sceneRegistry != null && !sceneRegistry.IsValid(targetScene))
+            {
+                LogDebug($"Client {clientId} world position {worldPosition} maps to invalid scene {targetScene}, clamping to valid range");
+                targetScene = new SceneID(
+                    Mathf.Clamp(targetScene.GridX, 0, Mathf.Max(0, sceneRegistry.GridColumns - 1)),
+                    Mathf.Clamp(targetScene.GridZ, 0, Mathf.Max(0, sceneRegistry.GridRows - 1))
+                );
+            }
+
             if (!targetScene.Equals(currentScene))
             {
                 TransitionClient(clientId, currentScene, targetScene);
@@ -194,18 +205,19 @@ namespace ProjectC.World.Scene
                 HideSceneObjectsFromClient(clientId, from);
             }
 
-            SceneID oldScene = _clientSceneMap[clientId];
+            SceneID oldScene = from;
             _clientSceneMap[clientId] = to;
 
             RemoveClientFromScene(clientId, oldScene);
             AddClientToScene(clientId, to);
 
-            Vector3 localSpawnPos = to.ToLocalPosition(_playerTransforms[clientId].position);
-            var transitionData = new SceneTransitionData(to, localSpawnPos);
-
-            SendSceneTransitionToClient(clientId, transitionData);
-
-            StartCoroutine(ShowSceneObjectsAfterLoad(clientId, to));
+            if (_playerTransforms.TryGetValue(clientId, out var playerTransform))
+            {
+                Vector3 localSpawnPos = to.ToLocalPosition(playerTransform.position);
+                var transitionData = new SceneTransitionData(to, localSpawnPos);
+                SendSceneTransitionToClient(clientId, transitionData);
+                StartCoroutine(ShowSceneObjectsAfterLoad(clientId, to));
+            }
 
             OnClientSceneTransition?.Invoke(clientId, oldScene, to);
         }

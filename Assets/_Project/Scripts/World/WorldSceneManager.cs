@@ -301,7 +301,11 @@ namespace ProjectC.World
                 floatingOriginMP = FindAnyObjectByType<FloatingOriginMP>();
 
             if (sceneRegistry == null)
-                sceneRegistry = Resources.Load<SceneRegistry>("SceneRegistry");
+            {
+                sceneRegistry = Resources.Load<SceneRegistry>("Scene/SceneRegistry");
+                if (sceneRegistry == null)
+                    sceneRegistry = Resources.Load<SceneRegistry>("SceneRegistry");
+            }
         }
 
         private void FindPlayer()

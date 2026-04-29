@@ -313,16 +313,29 @@ namespace ProjectC.World.Scene
 
             var asyncOp = SceneManager.LoadSceneAsync(sceneName, LoadSceneMode.Additive);
 
+            if (asyncOp == null)
+            {
+                Debug.LogError($"[ClientSceneLoader] Failed to start load for scene: {sceneName}");
+                _loadingScenes.Remove(sceneId);
+                yield break;
+            }
+
             while (!asyncOp.isDone)
             {
                 yield return null;
             }
 
-            _loadedScenes.Add(sceneId);
-            _loadingScenes.Remove(sceneId);
-
-            LogDebug($"Scene loaded: {sceneName}");
-            OnSceneLoaded?.Invoke(sceneId);
+            if (_loadingScenes.Contains(sceneId))
+            {
+                _loadedScenes.Add(sceneId);
+                _loadingScenes.Remove(sceneId);
+                LogDebug($"Scene loaded: {sceneName}");
+                OnSceneLoaded?.Invoke(sceneId);
+            }
+            else
+            {
+                Debug.LogWarning($"[ClientSceneLoader] Scene {sceneName} was already unloading during load");
+            }
         }
 
         private IEnumerator UnloadSceneCoroutine(SceneID scene)

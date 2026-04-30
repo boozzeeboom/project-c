@@ -308,28 +308,6 @@ private void CreatePlayerSpawner()
             // Per SCENE_ARCHITECTURE_DECISION.md: "Сцены 79,999 не требуют FloatingOriginMP внутри"
         }
 
-        private void CreateCloudSystem()
-        {
-            GameObject obj = new GameObject("CloudSystem");
-            obj.transform.position = Vector3.zero;
-
-            var cloudSystem = obj.AddComponent<CloudSystem>();
-
-            // FIX-4: Position clouds at Scene(0,0) center (where player spawns)
-            // NOT at world center (239997, 3000, 159998)
-            GameObject layer1 = new GameObject("LowerCloudLayer");
-            layer1.transform.SetParent(obj.transform);
-            layer1.transform.localPosition = new Vector3(SCENE_SIZE / 2f, 1500f, SCENE_SIZE / 2f);
-
-            var layer1Comp = layer1.AddComponent<CloudLayer>();
-
-            GameObject layer2 = new GameObject("UpperCloudLayer");
-            layer2.transform.SetParent(obj.transform);
-            layer2.transform.localPosition = new Vector3(SCENE_SIZE / 2f, 3000f, SCENE_SIZE / 2f);
-
-            var layer2Comp = layer2.AddComponent<CloudLayer>();
-        }
-
         private void CreateWorldSystems()
         {
             // REMOVED: CreateWorldStreamingManager() - old chunk-based system
@@ -427,6 +405,26 @@ private void CreatePlayerSpawner()
                 corridorsProp.GetArrayElementAtIndex(i).objectReferenceValue = corridorAssets[i];
             }
             so.ApplyModifiedProperties();
+        }
+
+        private void CreateCloudSystem()
+        {
+            GameObject obj = new GameObject("CloudSystem");
+            obj.transform.position = Vector3.zero;
+
+            var cloudSystem = obj.AddComponent<CloudSystem>();
+
+            GameObject layer1 = new GameObject("LowerCloudLayer");
+            layer1.transform.SetParent(obj.transform);
+            layer1.transform.localPosition = new Vector3(COLS * SCENE_SIZE / 2f, 1500f, ROWS * SCENE_SIZE / 2f);
+
+            var layer1Comp = layer1.AddComponent<CloudLayer>();
+
+            GameObject layer2 = new GameObject("UpperCloudLayer");
+            layer2.transform.SetParent(obj.transform);
+            layer2.transform.localPosition = new Vector3(COLS * SCENE_SIZE / 2f, 3000f, ROWS * SCENE_SIZE / 2f);
+
+            var layer2Comp = layer2.AddComponent<CloudLayer>();
         }
 
         private void CreateWorldRoot()

@@ -41,6 +41,12 @@ namespace ProjectC.World.Scene
         /// </summary>
         private readonly Dictionary<SceneID, HashSet<NetworkObject>> _sceneObjectRegistry = new Dictionary<SceneID, HashSet<NetworkObject>>();
 
+        /// <summary>
+        /// FIX-2: Track last transition times to prevent rapid re-transitions.
+        /// </summary>
+        private readonly Dictionary<ulong, float> _lastTransitionTimes = new Dictionary<ulong, float>();
+        private const float MIN_TRANSITION_INTERVAL = 1.0f;
+
         #endregion
 
         #region Events
@@ -198,6 +204,16 @@ namespace ProjectC.World.Scene
 
         private void TransitionClient(ulong clientId, SceneID from, SceneID to)
         {
+            // FIX-2: Prevent rapid re-transitions
+            if (_lastTransitionTimes.TryGetValue(clientId, out float lastTime))
+            {
+                if (Time.time - lastTime < MIN_TRANSITION_INTERVAL)
+                {
+                    LogDebug($"Skipping rapid transition for client {clientId} (time since last: {Time.time - lastTime:F2}s)");
+                    return;
+                }
+            }
+
             LogDebug($"Client {clientId} transitioning from {from} to {to}");
 
             if (!from.Equals(default))
@@ -207,6 +223,7 @@ namespace ProjectC.World.Scene
 
             SceneID oldScene = from;
             _clientSceneMap[clientId] = to;
+            _lastTransitionTimes[clientId] = Time.time;
 
             RemoveClientFromScene(clientId, oldScene);
             AddClientToScene(clientId, to);
@@ -271,12 +288,14 @@ namespace ProjectC.World.Scene
             if (targetClientId != NetworkManager.Singleton.LocalClientId)
                 return;
 
+            Debug.Log($"[SSM] InitializeSceneClientRpc: targetClientId={targetClientId}, LocalClientId={NetworkManager.Singleton.LocalClientId}, scene={scene}");
             LogDebug($"[Client] Received initial scene: {scene}");
 
             var loader = FindAnyObjectByType<ClientSceneLoader>();
             if (loader != null)
             {
                 Vector3 localSpawn = new Vector3(SceneID.SCENE_SIZE / 2f, 0, SceneID.SCENE_SIZE / 2f);
+                Debug.Log($"[SSM] Calling loader.LoadScene({scene}, {localSpawn})");
                 loader.LoadScene(scene, localSpawn);
             }
             else
@@ -307,11 +326,13 @@ namespace ProjectC.World.Scene
             if (targetClientId != NetworkManager.Singleton.LocalClientId)
                 return;
 
+            Debug.Log($"[SSM] LoadSceneTransitionClientRpc: scene={transitionData.TargetScene}, localPos={transitionData.LocalPosition}");
             LogDebug($"[Client] LoadSceneTransitionClientRpc received for scene {transitionData.TargetScene}");
 
             var loader = FindAnyObjectByType<ClientSceneLoader>();
             if (loader != null)
             {
+                Debug.Log($"[SSM] Calling loader.LoadScene({transitionData.TargetScene}, {transitionData.LocalPosition})");
                 loader.LoadScene(transitionData.TargetScene, transitionData.LocalPosition);
             }
             else

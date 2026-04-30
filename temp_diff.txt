@@ -1,0 +1,150 @@
+diff --git a/Assets/_Project/Scenes/BootstrapScene.unity b/Assets/_Project/Scenes/BootstrapScene.unity
+index e616cb5..e9b123f 100644
+--- a/Assets/_Project/Scenes/BootstrapScene.unity
++++ b/Assets/_Project/Scenes/BootstrapScene.unity
+@@ -521,6 +521,26 @@ PrefabInstance:
+       propertyPath: m_LocalEulerAnglesHint.z
+       value: 0
+       objectReference: {fileID: 0}
++    - target: {fileID: 1161926159966955946, guid: 224427a7f796e5b448f07ed8c2a1469b, type: 3}
++      propertyPath: cameraPrefab
++      value: 
++      objectReference: {fileID: 5405426399639928988, guid: 020b4cd7c3349134b8c1de87bed1f706, type: 3}
++    - target: {fileID: 7392522793937288135, guid: 224427a7f796e5b448f07ed8c2a1469b, type: 3}
++      propertyPath: AuthorityMode
++      value: 0
++      objectReference: {fileID: 0}
++    - target: {fileID: 8667465565190019241, guid: 224427a7f796e5b448f07ed8c2a1469b, type: 3}
++      propertyPath: GlobalObjectIdHash
++      value: 4031772320
++      objectReference: {fileID: 0}
++    - target: {fileID: 8667465565190019241, guid: 224427a7f796e5b448f07ed8c2a1469b, type: 3}
++      propertyPath: SceneMigrationSynchronization
++      value: 0
++      objectReference: {fileID: 0}
++    - target: {fileID: 8667465565190019241, guid: 224427a7f796e5b448f07ed8c2a1469b, type: 3}
++      propertyPath: InScenePlacedSourceGlobalObjectIdHash
++      value: 186599647
++      objectReference: {fileID: 0}
+     m_RemovedComponents: []
+     m_RemovedGameObjects: []
+     m_AddedGameObjects: []
+@@ -528,6 +548,9 @@ PrefabInstance:
+     - targetCorrespondingSourceObject: {fileID: 100000, guid: 224427a7f796e5b448f07ed8c2a1469b, type: 3}
+       insertIndex: -1
+       addedObject: {fileID: 225029753}
++    - targetCorrespondingSourceObject: {fileID: 100000, guid: 224427a7f796e5b448f07ed8c2a1469b, type: 3}
++      insertIndex: -1
++      addedObject: {fileID: 225029754}
+   m_SourcePrefab: {fileID: 100100000, guid: 224427a7f796e5b448f07ed8c2a1469b, type: 3}
+ --- !u!1 &225029752 stripped
+ GameObject:
+@@ -547,6 +570,28 @@ MonoBehaviour:
+   m_Name: 
+   m_EditorClassIdentifier: Assembly-CSharp::ProjectC.Network.NetworkPlayerSpawner
+   useScenePlayerAsHost: 1
++--- !u!114 &225029754
++MonoBehaviour:
++  m_ObjectHideFlags: 0
++  m_CorrespondingSourceObject: {fileID: 0}
++  m_PrefabInstance: {fileID: 0}
++  m_PrefabAsset: {fileID: 0}
++  m_GameObject: {fileID: 225029752}
++  m_Enabled: 1
++  m_EditorHideFlags: 0
++  m_Script: {fileID: 11500000, guid: 94bef0df13deb964dad9288317e26b23, type: 3}
++  m_Name: 
++  m_EditorClassIdentifier: Assembly-CSharp::ProjectC.World.WorldSceneManager
++  clientSceneLoader: {fileID: 1806778347}
++  worldStreamingManager: {fileID: 0}
++  floatingOriginMP: {fileID: 0}
++  sceneRegistry: {fileID: 11400000, guid: 3f2348cbbea03124eb8043c3dd937dbf, type: 2}
++  preloadTriggerDistance: 10000
++  enableSceneAwareChunkLoading: 1
++  controlFloatingOrigin: 1
++  floatingOriginEnableThreshold: 90000
++  floatingOriginDisableThreshold: 70000
++  showDebugLogs: 1
+ --- !u!1 &496518944
+ GameObject:
+   m_ObjectHideFlags: 0
+@@ -810,8 +855,8 @@ GameObject:
+   - component: {fileID: 806533544}
+   - component: {fileID: 806533541}
+   - component: {fileID: 806533540}
+-  - component: {fileID: 806533539}
+   - component: {fileID: 806533545}
++  - component: {fileID: 806533539}
+   m_Layer: 0
+   m_Name: NetworkManager
+   m_TagString: Untagged
+@@ -832,7 +877,7 @@ MonoBehaviour:
+   m_Name: 
+   m_EditorClassIdentifier: Assembly-CSharp::ProjectC.World.Scene.ServerSceneManager
+   ShowTopMostFoldoutHeaderGroup: 1
+-  sceneRegistry: {fileID: 11400000, guid: 09237ab65c79b9a46a87bfc97eba6ac6, type: 2}
++  sceneRegistry: {fileID: 11400000, guid: d7d1501dd754f0c4ba3c14a380b414b5, type: 2}
+   updateInterval: 0.5
+   showDebugLogs: 1
+ --- !u!114 &806533540
+@@ -2169,6 +2214,55 @@ Transform:
+   m_Children: []
+   m_Father: {fileID: 615750427}
+   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
++--- !u!1 &2048684215
++GameObject:
++  m_ObjectHideFlags: 0
++  m_CorrespondingSourceObject: {fileID: 0}
++  m_PrefabInstance: {fileID: 0}
++  m_PrefabAsset: {fileID: 0}
++  serializedVersion: 6
++  m_Component:
++  - component: {fileID: 2048684217}
++  - component: {fileID: 2048684216}
++  m_Layer: 0
++  m_Name: SceneDebugHUD
++  m_TagString: Untagged
++  m_Icon: {fileID: 0}
++  m_NavMeshLayer: 0
++  m_StaticEditorFlags: 0
++  m_IsActive: 1
++--- !u!114 &2048684216
++MonoBehaviour:
++  m_ObjectHideFlags: 0
++  m_CorrespondingSourceObject: {fileID: 0}
++  m_PrefabInstance: {fileID: 0}
++  m_PrefabAsset: {fileID: 0}
++  m_GameObject: {fileID: 2048684215}
++  m_Enabled: 1
++  m_EditorHideFlags: 0
++  m_Script: {fileID: 11500000, guid: b60fb5629cd324a478d24f4193912161, type: 3}
++  m_Name: 
++  m_EditorClassIdentifier: Assembly-CSharp::ProjectC.UI.SceneDebugHUD
++  gridText: {fileID: 0}
++  playerInfoText: {fileID: 0}
++  statsText: {fileID: 0}
++  showGridOnUpdate: 1
++  updateIntervalMs: 200
++--- !u!4 &2048684217
++Transform:
++  m_ObjectHideFlags: 0
++  m_CorrespondingSourceObject: {fileID: 0}
++  m_PrefabInstance: {fileID: 0}
++  m_PrefabAsset: {fileID: 0}
++  m_GameObject: {fileID: 2048684215}
++  serializedVersion: 2
++  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
++  m_LocalPosition: {x: 2.98187, y: -0.00001, z: 3115.0889}
++  m_LocalScale: {x: 1, y: 1, z: 1}
++  m_ConstrainProportionsScale: 0
++  m_Children: []
++  m_Father: {fileID: 0}
++  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+ --- !u!1 &2055665011
+ GameObject:
+   m_ObjectHideFlags: 0
+@@ -2319,3 +2413,4 @@ SceneRoots:
+   - {fileID: 981417089}
+   - {fileID: 615750427}
+   - {fileID: 1181656593}
++  - {fileID: 2048684217}

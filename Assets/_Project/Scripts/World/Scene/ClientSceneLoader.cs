@@ -40,6 +40,8 @@ namespace ProjectC.World.Scene
         private readonly HashSet<SceneID> _loadingScenes = new HashSet<SceneID>();
         private SceneID _currentScene;
         private bool _isInitialized = false;
+        private bool _isLoadingInitialScene = false;
+        private bool _isTransitioning = false;
 
         #endregion
 
@@ -89,8 +91,12 @@ namespace ProjectC.World.Scene
 
         private void OnClientConnectedCallback(ulong clientId)
         {
-            if (clientId == NetworkManager.Singleton.LocalClientId && _currentScene.Equals(default))
+            // FIX-3: Only load if this is local client, no scene loaded, and not already loading
+            if (clientId == NetworkManager.Singleton.LocalClientId && 
+                _currentScene.Equals(default) &&
+                !_isLoadingInitialScene)
             {
+                _isLoadingInitialScene = true;
                 StartCoroutine(AutoLoadInitialSceneCoroutine());
             }
         }
@@ -101,6 +107,7 @@ namespace ProjectC.World.Scene
 
             if (!_currentScene.Equals(default))
             {
+                _isLoadingInitialScene = false;
                 yield break;
             }
 
@@ -110,6 +117,8 @@ namespace ProjectC.World.Scene
                 Debug.Log($"[ClientSceneLoader] Auto-loading initial scene for Host: {initialScene}");
                 yield return LoadSceneWithNeighborsCoroutine(initialScene);
             }
+            
+            _isLoadingInitialScene = false;
         }
 
         private void FindLocalPlayer()
@@ -282,34 +291,102 @@ namespace ProjectC.World.Scene
 
         private IEnumerator LoadSceneWithNeighborsCoroutine(SceneID center)
         {
+            _isTransitioning = true;
+            Debug.Log($"[CSL] LoadSceneWithNeighborsCoroutine START: center={center}, loadedScenes={_loadedScenes.Count}");
+            
             var scenesToLoad = sceneRegistry.GetSceneGrid3x3(center);
             var loadTasks = new List<Coroutine>();
 
             foreach (var sceneId in scenesToLoad)
             {
+                Debug.Log($"[CSL] Queuing load for {sceneId}, _loadedScenes.Contains={_loadedScenes.Contains(sceneId)}, _loadingScenes.Contains={_loadingScenes.Contains(sceneId)}");
                 if (!_loadedScenes.Contains(sceneId) && !_loadingScenes.Contains(sceneId))
                 {
                     if (sceneRegistry.IsValid(sceneId))
                     {
+                        Debug.Log($"[CSL] Starting LoadSceneAsync for {sceneId}");
                         loadTasks.Add(StartCoroutine(LoadSceneAsync(sceneId)));
                     }
                 }
+                else
+                {
+                    Debug.Log($"[CSL] SKIPPING {sceneId} - already in _loadedScenes or _loadingScenes");
+                }
             }
 
+            Debug.Log($"[CSL] Waiting for {loadTasks.Count} loads to complete...");
             foreach (var task in loadTasks)
             {
                 yield return task;
             }
+            Debug.Log($"[CSL] All loads complete. loadedScenes now={_loadedScenes.Count}");
 
+            // FIX-1: Unload AFTER all loads complete - use coroutine to ensure sequential execution
             if (unloadDistantScenes)
             {
-                UnloadDistantScenes(center);
+                Debug.Log($"[CSL] Calling UnloadDistantScenesCoroutine...");
+                yield return StartCoroutine(UnloadDistantScenesCoroutine(center));
+                Debug.Log($"[CSL] UnloadDistantScenesCoroutine complete. loadedScenes now={_loadedScenes.Count}");
             }
+
+            _isTransitioning = false;
+            Debug.Log($"[CSL] LoadSceneWithNeighborsCoroutine END. Final loadedScenes={_loadedScenes.Count}");
+        }
+
+        private IEnumerator UnloadDistantScenesCoroutine(SceneID center)
+        {
+            var keepScenes = sceneRegistry.GetSceneGrid5x5(center);
+            Debug.Log($"[CSL] UnloadDistantScenesCoroutine: center={center}, keepScenes={keepScenes.Count}, current loaded={_loadedScenes.Count}");
+            
+            var unloadTasks = new List<Coroutine>();
+
+            foreach (var loaded in _loadedScenes.ToList())
+            {
+                bool shouldKeep = false;
+                foreach (var keep in keepScenes)
+                {
+                    if (loaded.Equals(keep))
+                    {
+                        shouldKeep = true;
+                        break;
+                    }
+                }
+
+                if (!shouldKeep)
+                {
+                    Debug.Log($"[CSL] Queuing unload for distant scene {loaded}");
+                    // Queue unload coroutine - do not start immediately to avoid race with loading
+                    unloadTasks.Add(StartCoroutine(UnloadSceneCoroutine(loaded)));
+                }
+                else
+                {
+                    Debug.Log($"[CSL] Keeping scene {loaded} (in keepScenes)");
+                }
+            }
+
+            Debug.Log($"[CSL] Waiting for {unloadTasks.Count} unloads to complete...");
+            // Wait for all unloads to complete
+            foreach (var task in unloadTasks)
+            {
+                yield return task;
+            }
+            Debug.Log($"[CSL] All unloads complete. loadedScenes={_loadedScenes.Count}");
         }
 
         private IEnumerator LoadSceneAsync(SceneID sceneId)
         {
             string sceneName = sceneRegistry.GetSceneName(sceneId);
+            Debug.Log($"[CSL] LoadSceneAsync START: {sceneName} (id={sceneId})");
+            
+            // CRITICAL FIX: Add to _loadingScenes FIRST to prevent race condition
+            if (_loadingScenes.Contains(sceneId))
+            {
+                Debug.Log($"[CSL] LoadSceneAsync SKIP: {sceneId} already in _loadingScenes");
+                yield break;
+            }
+            
+            _loadingScenes.Add(sceneId);
+            Debug.Log($"[CSL] Added {sceneId} to _loadingScenes. Count: {_loadingScenes.Count}");
 
             var asyncOp = SceneManager.LoadSceneAsync(sceneName, LoadSceneMode.Additive);
 
@@ -325,40 +402,55 @@ namespace ProjectC.World.Scene
                 yield return null;
             }
 
+            Debug.Log($"[CSL] LoadSceneAsync COMPLETE: {sceneName}, _loadedScenes.Contains={_loadedScenes.Contains(sceneId)}");
+            
             if (_loadingScenes.Contains(sceneId))
             {
                 _loadedScenes.Add(sceneId);
                 _loadingScenes.Remove(sceneId);
-                LogDebug($"Scene loaded: {sceneName}");
+                Debug.Log($"[CSL] SUCCESS: Added {sceneId} to _loadedScenes. Total loaded: {_loadedScenes.Count}");
                 OnSceneLoaded?.Invoke(sceneId);
             }
             else
             {
-                Debug.LogWarning($"[ClientSceneLoader] Scene {sceneName} was already unloading during load");
+                Debug.LogWarning($"[ClientSceneLoader] FAILURE: Scene {sceneName} was already unloading during load");
             }
         }
 
         private IEnumerator UnloadSceneCoroutine(SceneID scene)
         {
             string sceneName = sceneRegistry.GetSceneName(scene);
+            Debug.Log($"[CSL] UnloadSceneCoroutine START: {sceneName} (id={scene}), _loadedScenes before={_loadedScenes.Contains(scene)}");
 
             if (!_loadedScenes.Contains(scene))
             {
+                Debug.Log($"[CSL] UnloadSceneCoroutine SKIP: {scene} not in _loadedScenes");
                 yield break;
             }
 
-            LogDebug($"Unloading scene: {sceneName}");
+            // IMPORTANT: Remove from _loadedScenes BEFORE starting async op
+            // This prevents race condition where LoadSceneAsync checks _loadingScenes
+            // but scene was removed from _loadedScenes already
+            Debug.Log($"[CSL] Removing {scene} from _loadedScenes BEFORE unload");
+            _loadedScenes.Remove(scene);
+            Debug.Log($"[CSL] After remove: _loadedScenes.Contains={_loadedScenes.Contains(scene)}");
 
             var asyncOp = SceneManager.UnloadSceneAsync(sceneName);
 
-            while (!asyncOp.isDone)
+            // FIX-1: Check for null asyncOp (scene might not be loaded)
+            if (asyncOp == null)
             {
-                yield return null;
+                Debug.LogWarning($"[CSL] UnloadSceneAsync returned null for {sceneName}");
+            }
+            else
+            {
+                while (!asyncOp.isDone)
+                {
+                    yield return null;
+                }
             }
 
-            _loadedScenes.Remove(scene);
-
-            LogDebug($"Scene unloaded: {sceneName}");
+            Debug.Log($"[CSL] UnloadSceneCoroutine COMPLETE: {scene}");
             OnSceneUnloaded?.Invoke(scene);
         }
 

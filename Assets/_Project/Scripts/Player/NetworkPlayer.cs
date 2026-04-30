@@ -294,27 +294,26 @@ namespace ProjectC.Player
             }
         }
 
-        // ==================== ДВИЖЕНИЕ ====================
+// ==================== ДВИЖЕНИЕ ====================
 
         private void FixedUpdate()
         {
-            // Плавная коррекция позиции только для локального игрока (Owner)
-            if (!IsOwner || _inShip) return;
+            if (!IsOwner) return;
 
             if (_hasServerPosition)
             {
                 float dist = Vector3.Distance(transform.position, _serverPosition);
                 if (dist > positionCorrectionThreshold)
                 {
-                    // Рассинхронизация — плавно возвращаем к серверной позиции
+                    if (Time.frameCount % 60 == 0)
+                    {
+                        Debug.LogWarning($"[NetworkPlayer] CORRECTING position! dist={dist:F2}, transform.pos={transform.position}, _serverPos={_serverPosition}");
+                    }
                     transform.position = Vector3.Lerp(transform.position, _serverPosition, positionCorrectionSpeed * Time.fixedDeltaTime);
                 }
-                else
-                {
-                    // Позиция синхронизирована — отключаем коррекцию
-                    _hasServerPosition = false;
-                }
             }
+
+            transform.rotation = Quaternion.Slerp(transform.rotation, transform.rotation, rotationSpeed * Time.fixedDeltaTime);
         }
 
         private void ProcessMovement(Vector2 moveInput, bool jump, bool run)

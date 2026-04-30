@@ -73,29 +73,123 @@ namespace ProjectC.World.Scene
 
         private void OnDisable()
         {
-            if (NetworkManager.Singleton != null)
-            {
-                NetworkManager.Singleton.OnClientConnectedCallback -= OnClientConnectedCallback;
-            }
+            // FIX: Remove OnClientConnectedCallback unsubscribe (we never subscribed)
         }
 
         private void Start()
         {
-            FindLocalPlayer();
-
-            if (NetworkManager.Singleton != null)
+            // FIX: Subscribe to NMC events for reliable client connection handling
+            var nmc = FindAnyObjectByType<ProjectC.Core.NetworkManagerController>();
+            if (nmc != null)
             {
-                NetworkManager.Singleton.OnClientConnectedCallback += OnClientConnectedCallback;
+                nmc.OnPlayerConnected += OnPlayerConnected;
+                Debug.Log("[CSL] Subscribed to NMC.OnPlayerConnected");
             }
+            else
+            {
+                Debug.LogWarning("[CSL] NetworkManagerController not found, using fallback");
+            }
+            
+            if (NetworkManager.Singleton != null && NetworkManager.Singleton.IsListening)
+            {
+                FindLocalPlayer();
+            }
+            else
+            {
+                StartCoroutine(WaitForNetworkAndPlayer());
+            }
+        }
+
+        private void OnDestroy()
+        {
+            // Unsubscribe from NMC events
+            var nmc = FindAnyObjectByType<ProjectC.Core.NetworkManagerController>();
+            if (nmc != null)
+            {
+                nmc.OnPlayerConnected -= OnPlayerConnected;
+            }
+        }
+
+        private void OnPlayerConnected(ulong clientId)
+        {
+            Debug.Log($"[CSL] OnPlayerConnected: clientId={clientId}");
+            
+            // FIX: Update playerTransform when player spawns
+            // The player might not be spawned yet, so wait a bit
+            StartCoroutine(UpdatePlayerTransformAfterSpawn(clientId));
+            
+            OnClientConnectedCallback(clientId);
+        }
+
+        private IEnumerator UpdatePlayerTransformAfterSpawn(ulong clientId)
+        {
+            // Wait for NetworkPlayer to spawn
+            for (int i = 0; i < 20; i++)
+            {
+                yield return new WaitForSeconds(0.5f);
+                
+                if (NetworkManager.Singleton != null && clientId == NetworkManager.Singleton.LocalClientId)
+                {
+                    var networkObjects = FindObjectsByType<NetworkObject>();
+                    
+                    if (i % 4 == 0)
+                    {
+                        Debug.Log($"[CSL] UpdatePlayerTransform: searching {networkObjects.Length} objects");
+                    }
+                    
+                    foreach (var netObj in networkObjects)
+                    {
+                        // Skip PlayerSpawner
+                        if (netObj.name.Contains("PlayerSpawner") || netObj.name.Contains("Spawner"))
+                        {
+                            if (i % 4 == 0) Debug.Log($"[CSL] Skipping: {netObj.name}");
+                            continue;
+                        }
+                        
+                        if (netObj.IsOwner)
+                        {
+                            var networkPlayer = netObj.GetComponent<ProjectC.Player.NetworkPlayer>();
+                            if (networkPlayer != null)
+                            {
+                                playerTransform = netObj.transform;
+                                _isInitialized = true;
+                                Debug.Log($"[CSL] ★ SUCCESS: playerTransform = {netObj.name} at {netObj.transform.position}");
+                                yield break;
+                            }
+                            else
+                            {
+                                Debug.Log($"[CSL] Found owner but no NetworkPlayer component: {netObj.name}");
+                            }
+                        }
+                    }
+                }
+                
+                if (i % 4 == 0)
+                {
+                    Debug.Log($"[CSL] Waiting for NetworkPlayer spawn... attempt {i}/20");
+                }
+            }
+            
+            Debug.LogWarning("[CSL] Could not find NetworkPlayer to update playerTransform");
+        }
+
+        private IEnumerator WaitForNetworkAndPlayer()
+        {
+            yield return new WaitUntil(() => NetworkManager.Singleton != null && NetworkManager.Singleton.IsListening);
+            FindLocalPlayer();
         }
 
         private void OnClientConnectedCallback(ulong clientId)
         {
-            // FIX-3: Only load if this is local client, no scene loaded, and not already loading
-            if (clientId == NetworkManager.Singleton.LocalClientId && 
+            Debug.Log($"[CSL] OnClientConnectedCallback: clientId={clientId}, LocalClientId={NetworkManager.Singleton?.LocalClientId}");
+            
+            // Only load if this is our local client, no scene loaded, and not already loading
+            if (NetworkManager.Singleton != null && 
+                clientId == NetworkManager.Singleton.LocalClientId && 
                 _currentScene.Equals(default) &&
                 !_isLoadingInitialScene)
             {
+                Debug.Log($"[CSL] Triggering auto-load for client {clientId}");
                 _isLoadingInitialScene = true;
                 StartCoroutine(AutoLoadInitialSceneCoroutine());
             }
@@ -115,7 +209,25 @@ namespace ProjectC.World.Scene
             {
                 SceneID initialScene = new SceneID(0, 0);
                 Debug.Log($"[ClientSceneLoader] Auto-loading initial scene for Host: {initialScene}");
+                
+                // Load scenes first
                 yield return LoadSceneWithNeighborsCoroutine(initialScene);
+                
+                // FIX: Teleport player to world position AFTER scenes are loaded
+                // Player starts at (0, 3, 0) in BootstrapScene - we need to move to world
+                if (playerTransform != null)
+                {
+                    Vector3 worldSpawnPos = initialScene.WorldCenter + new Vector3(0, 3, 0);
+                    Debug.Log($"[CSL] Teleporting player from {playerTransform.position} to {worldSpawnPos}");
+                    
+                    // Simple position assignment - NetworkObject will sync via NetworkTransform
+                    playerTransform.position = worldSpawnPos;
+                    Debug.Log($"[CSL] Player position set to {worldSpawnPos}");
+                }
+                else
+                {
+                    Debug.LogWarning("[CSL] Cannot teleport - playerTransform is null!");
+                }
             }
             
             _isLoadingInitialScene = false;
@@ -123,67 +235,146 @@ namespace ProjectC.World.Scene
 
         private void FindLocalPlayer()
         {
+            Debug.Log("[CSL] FindLocalPlayer() called");
+            
+            // FIX: We must find the actual NetworkPlayer, NOT the PlayerSpawner
+            // PlayerSpawner is just for spawning, NetworkPlayer is the actual player
             if (NetworkManager.Singleton != null && NetworkManager.Singleton.IsListening)
             {
                 var networkObjects = FindObjectsByType<NetworkObject>();
+                Debug.Log($"[CSL] FindLocalPlayer: searching {networkObjects.Length} NetworkObjects");
+                
                 foreach (var netObj in networkObjects)
                 {
-                    if (netObj.IsOwner && netObj.GetComponent<ProjectC.Player.NetworkPlayer>() != null)
+                    // Skip PlayerSpawner - it's just for spawning, not the actual player
+                    if (netObj.name.Contains("PlayerSpawner") || netObj.name.Contains("Spawner"))
                     {
-                        playerTransform = netObj.transform;
-                        _isInitialized = true;
-                        LogDebug($"Found local player: {netObj.name}");
-                        return;
+                        Debug.Log($"[CSL] Skipping spawner object: {netObj.name}");
+                        continue;
                     }
+                    
+                    // Look for NetworkPlayer with IsOwner=true
+                    if (netObj.IsOwner)
+                    {
+                        var networkPlayer = netObj.GetComponent<ProjectC.Player.NetworkPlayer>();
+                        if (networkPlayer != null)
+                        {
+                            playerTransform = netObj.transform;
+                            _isInitialized = true;
+                            Debug.Log($"[CSL] Found NetworkPlayer: {netObj.name} at {netObj.transform.position}");
+                            return;
+                        }
+                    }
+                }
+                
+                // Debug what we found
+                foreach (var netObj in networkObjects)
+                {
+                    Debug.Log($"[CSL] NetworkObject: {netObj.name}, IsOwner={netObj.IsOwner}, HasNetworkPlayer={netObj.GetComponent<ProjectC.Player.NetworkPlayer>() != null}");
                 }
             }
 
+            // Start waiting for player if not found yet
+            Debug.Log("[CSL] NetworkPlayer not found in FindLocalPlayer, starting WaitForPlayer coroutine");
             StartCoroutine(WaitForPlayer());
         }
 
         private IEnumerator WaitForPlayer()
         {
-            yield return new WaitForSeconds(1f);
-
-            if (NetworkManager.Singleton != null && NetworkManager.Singleton.IsListening)
+            for (int retry = 0; retry < 20; retry++) // Max 10 seconds
             {
-                var networkObjects = FindObjectsByType<NetworkObject>();
-                foreach (var netObj in networkObjects)
+                yield return new WaitForSeconds(0.5f);
+
+                if (playerTransform != null && _isInitialized)
                 {
-                    if (netObj.IsOwner && netObj.GetComponent<ProjectC.Player.NetworkPlayer>() != null)
+                    yield break;
+                }
+                
+                if (NetworkManager.Singleton != null && NetworkManager.Singleton.IsListening)
+                {
+                    var networkObjects = FindObjectsByType<NetworkObject>();
+                    foreach (var netObj in networkObjects)
                     {
-                        playerTransform = netObj.transform;
-                        _isInitialized = true;
-                        LogDebug($"Found local player after wait: {netObj.name}");
-                        yield break;
+                        // Skip PlayerSpawner
+                        if (netObj.name.Contains("PlayerSpawner") || netObj.name.Contains("Spawner"))
+                        {
+                            continue;
+                        }
+                        
+                        if (netObj.IsOwner)
+                        {
+                            var networkPlayer = netObj.GetComponent<ProjectC.Player.NetworkPlayer>();
+                            if (networkPlayer != null)
+                            {
+                                playerTransform = netObj.transform;
+                                _isInitialized = true;
+                                Debug.Log($"[CSL] ★ WaitForPlayer SUCCESS: {netObj.name} at {netObj.transform.position}");
+                                yield break;
+                            }
+                        }
                     }
                 }
-            }
 
-            var playerByTag = GameObject.FindGameObjectWithTag("Player");
-            if (playerByTag != null)
-            {
-                playerTransform = playerByTag.transform;
-                _isInitialized = true;
-                LogDebug($"Found player by tag after wait: {playerByTag.name}");
-                yield break;
+                if (retry % 4 == 0) // Log every 2 seconds
+                {
+                    Debug.Log($"[CSL] WaitForPlayer: attempt {retry}/20");
+                }
             }
-
-            Debug.LogWarning("[ClientSceneLoader] NetworkPlayer not found after waiting. Will retry...");
-            StartCoroutine(WaitForPlayer());
+            
+            Debug.LogError("[CSL] Failed to find NetworkPlayer after 10 seconds!");
         }
 
         private void Update()
         {
-            if (!_isInitialized || playerTransform == null) return;
+            if (playerTransform == null)
+            {
+                if (_isInitialized) Debug.Log("[CSL] Update: playerTransform is NULL!");
+                return;
+            }
+            
+            if (!_isInitialized)
+            {
+                // Try to re-initialize
+                if (NetworkManager.Singleton != null && NetworkManager.Singleton.IsListening)
+                {
+                    Debug.Log("[CSL] Update: not initialized, trying FindLocalPlayer");
+                    FindLocalPlayer();
+                }
+                return;
+            }
+            
+            if (_isTransitioning)
+            {
+                // Don't check while transitioning
+                return;
+            }
 
             SceneID playerScene = SceneID.FromWorldPosition(playerTransform.position);
-
-            if (!_currentScene.Equals(default) && !playerScene.Equals(_currentScene))
+            Vector3 pos = playerTransform.position;
+            
+            // Debug every ~60 frames to see what's happening
+            if (Time.frameCount % 120 == 0)
             {
-                LogDebug($"Player crossed scene boundary: {_currentScene} -> {playerScene}");
+                Debug.Log($"[CSL] Update: playerPos={pos}, playerScene={playerScene}, _currentScene={_currentScene}, _isTransitioning={_isTransitioning}");
+            }
+
+            if (_currentScene.Equals(default))
+            {
+                Debug.Log("[CSL] Update: _currentScene is default, returning");
+                return;
+            }
+
+            // FIX: ALWAYS log when scenes don't match
+            if (!playerScene.Equals(_currentScene))
+            {
+                Debug.Log($"[CSL] ★ SCENE MISMATCH! Player crossed scene boundary: {_currentScene} -> {playerScene} at pos {pos}");
+                
+                // FIX: Actually load the new scene when player crosses boundary!
+                // This is client-side scene loading when player moves
+                StartCoroutine(LoadSceneWithNeighborsCoroutine(playerScene));
+                
                 OnSceneTransition?.Invoke(_currentScene, playerScene);
-                _currentScene = playerScene;
+                // Don't set _currentScene here - it will be set after loading completes
             }
         }
 
@@ -321,6 +512,10 @@ namespace ProjectC.World.Scene
             }
             Debug.Log($"[CSL] All loads complete. loadedScenes now={_loadedScenes.Count}");
 
+            // FIX: Set _currentScene to center - THIS WAS MISSING!
+            _currentScene = center;
+            Debug.Log($"[CSL] Set _currentScene = {center}");
+
             // FIX-1: Unload AFTER all loads complete - use coroutine to ensure sequential execution
             if (unloadDistantScenes)
             {
@@ -392,7 +587,7 @@ namespace ProjectC.World.Scene
 
             if (asyncOp == null)
             {
-                Debug.LogError($"[ClientSceneLoader] Failed to start load for scene: {sceneName}");
+                Debug.LogError($"[ClientSceneLoader] FAILED to load scene: {sceneName} - scene NOT in Build Settings!");
                 _loadingScenes.Remove(sceneId);
                 yield break;
             }
@@ -403,6 +598,17 @@ namespace ProjectC.World.Scene
             }
 
             Debug.Log($"[CSL] LoadSceneAsync COMPLETE: {sceneName}, _loadedScenes.Contains={_loadedScenes.Contains(sceneId)}");
+            
+            // FIX: Verify scene is actually loaded in SceneManager
+            var loadedScene = UnityEngine.SceneManagement.SceneManager.GetSceneByName(sceneName);
+            if (loadedScene.isLoaded)
+            {
+                Debug.Log($"[CSL] VERIFIED: Scene {sceneName} isLoaded=true, handle={loadedScene.handle}");
+            }
+            else
+            {
+                Debug.LogError($"[CSL] VERIFY FAILED: Scene {sceneName} isLoaded=false!");
+            }
             
             if (_loadingScenes.Contains(sceneId))
             {

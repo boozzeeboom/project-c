@@ -245,10 +245,16 @@ namespace ProjectC.Core
         {
             Debug.Log("[NMC] StartHost() called");
 
-            // Get NetworkManager
-            if (networkManager == null)
+            // Используем Singleton если доступно
+            if (Unity.Netcode.NetworkManager.Singleton != null)
+            {
+                networkManager = Unity.Netcode.NetworkManager.Singleton;
+                Debug.Log($"[NMC] Using Singleton: {networkManager}");
+            }
+            else if (networkManager == null)
             {
                 networkManager = GetComponent<Unity.Netcode.NetworkManager>();
+                Debug.Log($"[NMC] Got NM from GetComponent: {networkManager}");
             }
 
             if (networkManager == null)
@@ -257,77 +263,135 @@ namespace ProjectC.Core
                 return;
             }
 
-            Debug.Log($"[NMC] Using local NM: {networkManager}, IsListening: {networkManager.IsListening}");
+            // Проверяем NetworkConfig
+            var netConfig = networkManager.NetworkConfig;
+            Debug.Log($"[NMC] NM IsListening: {networkManager.IsListening}, NetConfig: {netConfig}");
 
-            // Get or create UnityTransport on THIS GameObject
+            if (netConfig == null)
+            {
+                Debug.LogError("[NMC] NetworkConfig is NULL!");
+                return;
+            }
+
             var transport = GetComponent<Unity.Netcode.Transports.UTP.UnityTransport>();
             if (transport == null)
             {
-                Debug.Log("[NMC] Creating UnityTransport component");
+                Debug.Log("[NMC] Creating new UnityTransport");
                 transport = gameObject.AddComponent<Unity.Netcode.Transports.UTP.UnityTransport>();
             }
 
-            // Configure transport connection data
-            transport.SetConnectionData("127.0.0.1", serverPort);
-            Debug.Log($"[NMC] Transport configured: {serverIp}:{serverPort}");
-
-            // Check if already listening
-            if (networkManager.IsListening)
+            if (netConfig.NetworkTransport == null)
             {
-                Debug.LogWarning("[NMC] Already listening! Shutting down first...");
-                networkManager.Shutdown();
+                Debug.Log("[NMC] Setting transport to NetworkConfig");
+                netConfig.NetworkTransport = transport;
             }
 
-            // Start host - NGO handles NetworkConfig internally
-            Debug.Log("[NMC] Calling StartHost()...");
-            networkManager.StartHost();
-            Debug.Log($"[NMC] StartHost() completed. IsHost={networkManager.IsHost}, IsServer={networkManager.IsServer}");
+            Debug.Log($"[NMC] NetTransport now: {netConfig.NetworkTransport}");
+
+            if (!networkManager.IsListening)
+            {
+                Debug.Log("[NMC] Calling networkManager.StartHost()");
+                networkManager.StartHost();
+            }
         }
 
+        public IEnumerator StartHostCoroutine()
+        {
+            if (networkManager == null)
+            {
+                networkManager = GetComponent<Unity.Netcode.NetworkManager>();
+            }
+
+            if (networkManager == null)
+            {
+                Debug.LogError("[Network] NetworkManager is null!");
+                yield break;
+            }
+
+            if (networkManager.NetworkConfig == null)
+            {
+                Debug.LogError("[Network] NetworkConfig is null!");
+                yield break;
+            }
+
+            if (networkManager.NetworkConfig.NetworkTransport == null)
+            {
+                var transport = GetComponent<Unity.Netcode.Transports.UTP.UnityTransport>();
+                if (transport == null)
+                {
+                    transport = gameObject.AddComponent<Unity.Netcode.Transports.UTP.UnityTransport>();
+                }
+                networkManager.NetworkConfig.NetworkTransport = transport;
+            }
+
+            if (networkManager.IsListening)
+            {
+                Debug.Log("[Network] Already listening! Shutting down first...");
+                networkManager.Shutdown();
+
+                yield return new WaitForSecondsRealtime(0.5f);
+            }
+
+            var currentTransport = networkManager.NetworkConfig?.NetworkTransport;
+            if (currentTransport == null)
+            {
+                Debug.LogError("[Network] Transport is null! Cannot start host.");
+                UpdateStatus("Ошибка: транспорт не настроен");
+                yield break;
+            }
+
+            try
+            {
+                Debug.Log("[Network] Attempting networkManager.StartHost()...");
+                networkManager.StartHost();
+                Debug.Log("[Network] StartHost() completed");
+                UpdateStatus("Хост запущен");
+            }
+            catch (Exception ex)
+            {
+                Debug.LogError($"[Network] Failed to start host: {ex.Message}");
+                UpdateStatus("Ошибка запуска хоста - порт занят?");
+            }
+        }
 
         /// <summary>
         /// Запустить сервер (dedicated, без клиента)
         /// </summary>
         public void StartServer()
         {
-            Debug.Log("[NMC] StartServer() called");
+            StartServerCoroutine();
+        }
 
-            // Get NetworkManager
-            if (networkManager == null)
-            {
-                networkManager = GetComponent<Unity.Netcode.NetworkManager>();
-            }
-
-            if (networkManager == null)
-            {
-                Debug.LogError("[NMC] NetworkManager component not found!");
-                return;
-            }
-
-            // Get or create UnityTransport
-            var transport = GetComponent<Unity.Netcode.Transports.UTP.UnityTransport>();
-            if (transport == null)
-            {
-                Debug.Log("[NMC] Creating UnityTransport component");
-                transport = gameObject.AddComponent<Unity.Netcode.Transports.UTP.UnityTransport>();
-            }
-
-            // Configure transport - server listens on all interfaces
-            transport.SetConnectionData("0.0.0.0", serverPort);
-            Debug.Log($"[NMC] Transport configured for server: 0.0.0.0:{serverPort}");
-
-            // Check if already listening
+        private IEnumerator StartServerCoroutine()
+        {
             if (networkManager.IsListening)
             {
-                Debug.LogWarning("[NMC] Already listening! Shutting down first...");
+                Debug.LogWarning("[Network] Already listening! Shutting down first...");
                 networkManager.Shutdown();
+
+                yield return new WaitForSecondsRealtime(0.5f);
             }
 
-            // Start server - NGO handles NetworkConfig internally
-            Debug.Log("[NMC] Calling StartServer()...");
-            networkManager.StartServer();
-            Debug.Log($"[NMC] StartServer() completed. IsServer={networkManager.IsServer}");
-            UpdateStatus($"Сервер запущен на порту {serverPort}");
+            var transport = networkManager.NetworkConfig?.NetworkTransport;
+            if (transport == null)
+            {
+                Debug.LogError("[Network] Transport is null! Cannot start server.");
+                UpdateStatus("Ошибка: транспорт не настроен");
+                yield break;
+            }
+
+            try
+            {
+                Debug.Log("[Network] Attempting networkManager.StartServer()...");
+                networkManager.StartServer();
+                Debug.Log("[Network] StartServer() completed");
+                UpdateStatus($"Сервер запущен на порту {serverPort}");
+            }
+            catch (Exception ex)
+            {
+                Debug.LogError($"[Network] Failed to start server: {ex.Message}");
+                UpdateStatus("Ошибка запуска сервера - порт занят?");
+            }
         }
 
         /// <summary>
@@ -343,43 +407,48 @@ namespace ProjectC.Core
             string targetIp = string.IsNullOrEmpty(ipAddress) ? serverIp : ipAddress;
             ushort targetPort = port == 0 ? serverPort : port;
 
-            // Save for reconnect
+            // Сохраняем для реконнекта
             _lastServerIp = targetIp;
             _lastServerPort = targetPort;
             _isReconnecting = false;
             _reconnectAttempts = 0;
 
-            // If already listening, shutdown first
+            // Защита от конфликта - если уже слушаем, shutdown
             if (networkManager.IsListening)
             {
-                Debug.LogWarning("[NMC] Already listening! Shutting down before connect...");
+                Debug.LogWarning("[Network] Already listening! Shutting down before connect...");
                 networkManager.Shutdown();
+                
+                // REFACTORED (R3-002): Используем корутину вместо Thread.Sleep
                 yield return new WaitForSecondsRealtime(0.25f);
             }
 
-            // Get or create UnityTransport
-            var transport = GetComponent<UnityTransport>();
-            if (transport == null)
-            {
-                Debug.LogWarning("[NMC] Creating UnityTransport for client");
-                transport = gameObject.AddComponent<UnityTransport>();
-            }
+            Debug.Log($"[Network] ConnectToServer: {targetIp}:{targetPort}");
 
-            // Configure transport with server address
-            transport.SetConnectionData(targetIp, targetPort);
-            Debug.Log($"[NMC] Client transport configured: {targetIp}:{targetPort}");
+            var transport = networkManager.NetworkConfig?.NetworkTransport;
+            if (transport is UnityTransport unityTransport)
+            {
+                unityTransport.SetConnectionData(targetIp, targetPort);
+                Debug.Log($"[Network] Transport настроен на {targetIp}:{targetPort}");
+            }
+            else
+            {
+                Debug.LogError("[Network] UnityTransport не найден в NetworkConfig!");
+            }
 
             UpdateStatus($"Подключение к {targetIp}:{targetPort}...");
 
             try
             {
-                Debug.Log("[NMC] Starting client...");
+                Debug.Log("[NMC] StartClient() called");
                 networkManager.StartClient();
-                Debug.Log($"[NMC] StartClient() completed. IsClient={networkManager.IsClient}, IsListening={networkManager.IsListening}");
+                
+                // DIAGNOSTIC: Проверяем состояние сети после StartClient
+                Debug.Log($"[NMC] After StartClient: IsServer={networkManager.IsServer}, IsClient={networkManager.IsClient}, IsListening={networkManager.IsListening}");
             }
             catch (Exception ex)
             {
-                Debug.LogError($"[NMC] Failed to start client: {ex.Message}");
+                Debug.LogError($"[Network] Failed to start client: {ex.Message}");
                 UpdateStatus("Ошибка подключения");
             }
         }

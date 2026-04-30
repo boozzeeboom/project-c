@@ -163,7 +163,7 @@ namespace ProjectC.UI
                 return;
             }
             
-            StartCoroutine(networkManagerController.StartHostCoroutine());
+            networkManagerController.StartHost();
             HideConnectionPanel();
             UpdateButtons(true);
             UpdatePlayerCount();

@@ -521,10 +521,6 @@ PrefabInstance:
       propertyPath: m_LocalEulerAnglesHint.z
       value: 0
       objectReference: {fileID: 0}
-    - target: {fileID: 1161926159966955946, guid: 224427a7f796e5b448f07ed8c2a1469b, type: 3}
-      propertyPath: cameraPrefab
-      value: 
-      objectReference: {fileID: 5405426399639928988, guid: 020b4cd7c3349134b8c1de87bed1f706, type: 3}
     m_RemovedComponents: []
     m_RemovedGameObjects: []
     m_AddedGameObjects: []
@@ -812,11 +808,10 @@ GameObject:
   serializedVersion: 6
   m_Component:
   - component: {fileID: 806533544}
-  - component: {fileID: 806533546}
   - component: {fileID: 806533541}
   - component: {fileID: 806533540}
-  - component: {fileID: 806533545}
   - component: {fileID: 806533539}
+  - component: {fileID: 806533545}
   m_Layer: 0
   m_Name: NetworkManager
   m_TagString: Untagged
@@ -840,47 +835,6 @@ MonoBehaviour:
   sceneRegistry: {fileID: 11400000, guid: 09237ab65c79b9a46a87bfc97eba6ac6, type: 2}
   updateInterval: 0.5
   showDebugLogs: 1
---- !u!114 &806533546
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 806533538}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 593a2fe42fa9d37498c96f9a383b6521, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  NetworkManagerExpanded: 0
-  NetworkConfig:
-    ProtocolVersion: 0
-    NetworkTransport: {fileID: 806533541}
-    PlayerPrefab: {fileID: 100000, guid: 224427a7f796e5b448f07ed8c2a1469b, type: 3}
-    Prefabs:
-      NetworkPrefabsLists: []
-    TickRate: 30
-    ClientConnectionBufferTimeout: 10
-    ConnectionApproval: 0
-    ConnectionData: 
-    EnableTimeResync: 0
-    TimeResyncInterval: 30
-    EnsureNetworkVariableLengthSafety: 0
-    EnableSceneManagement: 1
-    ForceSamePrefabs: 1
-    RecycleNetworkIds: 1
-    NetworkIdRecycleDelay: 120
-    RpcHashSize: 0
-    LoadSceneTimeOut: 120
-    SpawnTimeout: 10
-    EnableNetworkLogs: 1
-    NetworkTopology: 0
-    UseCMBService: 0
-    AutoSpawnPlayerPrefabClientSide: 1
-    NetworkProfilingMetrics: 1
-    OldPrefabList: []
-  RunInBackground: 1
-  LogLevel: 1
 --- !u!114 &806533540
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -2164,7 +2118,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 07da6250968b485419c84aa06059e61b, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::ProjectC.World.Scene.ClientSceneLoader
-  playerTransform: {fileID: 400000, guid: 224427a7f796e5b448f07ed8c2a1469b, type: 3}
+  playerTransform: {fileID: 0}
   sceneRegistry: {fileID: 11400000, guid: d7d1501dd754f0c4ba3c14a380b414b5, type: 2}
   loadNeighbors: 1
   unloadDistantScenes: 1

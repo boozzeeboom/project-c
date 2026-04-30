@@ -102,14 +102,14 @@ namespace ProjectC.World.Scene
                 Debug.Log($"[CSL] Update: this={gameObject.GetInstanceID()}, _instance={_instance?.gameObject?.GetInstanceID()}, _currentScene={_currentScene}");
             }
 
-            if (playerTransform == null)
+if (playerTransform == null)
             {
                 if (_isInitialized && Time.frameCount % 120 == 0)
                     Debug.Log("[CSL] Update: playerTransform is NULL!");
                 return;
             }
 
-            if (!_isInitialized)
+if (!_isInitialized)
             {
                 if (NetworkManager.Singleton != null && NetworkManager.Singleton.IsListening)
                 {

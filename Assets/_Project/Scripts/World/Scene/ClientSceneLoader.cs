@@ -167,6 +167,7 @@ namespace ProjectC.World.Scene
 
                 if (sceneRegistry != null && sceneRegistry.IsValid(playerScene))
                 {
+                    Debug.Log($"[CSL] Loading new scene area around {playerScene}...");
                     StartCoroutine(LoadSceneWithNeighborsCoroutine(playerScene));
                     OnSceneTransition?.Invoke(_currentScene, playerScene);
                 }
@@ -303,8 +304,22 @@ namespace ProjectC.World.Scene
 
             if (NetworkManager.Singleton != null && NetworkManager.Singleton.IsListening)
             {
+                var networkPlayers = FindObjectsByType<ProjectC.Player.NetworkPlayer>();
+                Debug.Log($"[CSL] FindLocalPlayer: searching {networkPlayers.Length} NetworkPlayers");
+
+                foreach (var networkPlayer in networkPlayers)
+                {
+                    if (networkPlayer.IsOwner)
+                    {
+                        playerTransform = networkPlayer.transform;
+                        _isInitialized = true;
+                        Debug.Log($"[CSL] Found OWNER NetworkPlayer: {networkPlayer.name} at {networkPlayer.transform.position}");
+                        return;
+                    }
+                }
+
                 var networkObjects = FindObjectsByType<NetworkObject>();
-                Debug.Log($"[CSL] FindLocalPlayer: searching {networkObjects.Length} NetworkObjects");
+                Debug.Log($"[CSL] FindLocalPlayer: searching {networkObjects.Length} NetworkObjects (NetworkPlayer search failed)");
 
                 foreach (var netObj in networkObjects)
                 {
@@ -318,7 +333,7 @@ namespace ProjectC.World.Scene
                         {
                             playerTransform = netObj.transform;
                             _isInitialized = true;
-                            Debug.Log($"[CSL] Found NetworkPlayer: {netObj.name} at {netObj.transform.position}");
+                            Debug.Log($"[CSL] Found NetworkPlayer (via NetworkObject): {netObj.name} at {netObj.transform.position}");
                             return;
                         }
                     }
@@ -339,6 +354,18 @@ namespace ProjectC.World.Scene
 
                 if (NetworkManager.Singleton != null && NetworkManager.Singleton.IsListening)
                 {
+                    var networkPlayers = FindObjectsByType<ProjectC.Player.NetworkPlayer>();
+                    foreach (var networkPlayer in networkPlayers)
+                    {
+                        if (networkPlayer.IsOwner)
+                        {
+                            playerTransform = networkPlayer.transform;
+                            _isInitialized = true;
+                            Debug.Log($"[CSL] ★ WaitForPlayer SUCCESS: {networkPlayer.name}");
+                            yield break;
+                        }
+                    }
+
                     var networkObjects = FindObjectsByType<NetworkObject>();
                     foreach (var netObj in networkObjects)
                     {
@@ -352,12 +379,15 @@ namespace ProjectC.World.Scene
                             {
                                 playerTransform = netObj.transform;
                                 _isInitialized = true;
-                                Debug.Log($"[CSL] ★ WaitForPlayer SUCCESS: {netObj.name}");
+                                Debug.Log($"[CSL] ★ WaitForPlayer SUCCESS (via NetObj): {netObj.name}");
                                 yield break;
                             }
                         }
                     }
                 }
+
+                if (retry % 4 == 0)
+                    Debug.Log($"[CSL] WaitForPlayer: attempt {retry}/20");
             }
 
             Debug.LogError("[CSL] Failed to find NetworkPlayer after 10 seconds!");
@@ -481,14 +511,31 @@ namespace ProjectC.World.Scene
                 yield return StartCoroutine(UnloadDistantScenesCoroutine(center));
             }
 
-            _isTransitioning = false;
+_isTransitioning = false;
             _isLoadingInitialScene = false;
-            Debug.Log($"[CSL] LoadSceneWithNeighborsCoroutine END. Final loadedScenes={_loadedScenes.Count}, _currentScene={_currentScene}");
+            Debug.Log($"[CSL] LoadSceneWithNeighborsCoroutine END. Final loadedScenes={_loadedScenes.Count}");
+
+            var loadedInSceneManager = UnityEngine.SceneManagement.SceneManager.GetSceneByName("WorldScene_0_0");
+            if (loadedInSceneManager.isLoaded)
+            {
+                var roots = loadedInSceneManager.GetRootGameObjects();
+                Debug.Log($"[CSL] WorldScene_0_0 has {roots.Length} root objects:");
+                foreach (var r in roots)
+                {
+                    Debug.Log($"[CSL]   - {r.name}, active={r.activeSelf}, pos={r.transform.position}");
+                }
+            }
+            else
+            {
+                Debug.LogWarning("[CSL] WorldScene_0_0 is NOT loaded in SceneManager!");
+            }
         }
 
         private IEnumerator UnloadDistantScenesCoroutine(SceneID center)
         {
             var keepScenes = sceneRegistry.GetSceneGrid5x5(center);
+            Debug.Log($"[CSL] UnloadDistantScenesCoroutine: center={center}, keepScenes={keepScenes.Count}, loaded={_loadedScenes.Count}");
+
             var unloadTasks = new List<Coroutine>();
 
             foreach (var loaded in _loadedScenes.ToList())
@@ -508,8 +555,13 @@ namespace ProjectC.World.Scene
                     Debug.Log($"[CSL] Queuing unload for distant scene {loaded}");
                     unloadTasks.Add(StartCoroutine(UnloadSceneCoroutine(loaded)));
                 }
+                else
+                {
+                    Debug.Log($"[CSL] Keeping scene {loaded} (within 5x5)");
+                }
             }
 
+            Debug.Log($"[CSL] UnloadDistantScenesCoroutine: waiting for {unloadTasks.Count} unloads...");
             foreach (var task in unloadTasks)
                 yield return task;
 

@@ -62,9 +62,20 @@ docs/archive/
 .vscode/            # VSCode settings
 
 # Graphify output (generated, per-session)
-graphify-out/
-.graphify_*
-graphify_*.py
+# Root output with exceptions for git tracking
+graphify-out/**
+!/graphify-out/graph.json
+!/graphify-out/GRAPH_REPORT.md
+
+# All graphify subdirs (nested in Assets, docs, etc.)
+**/graphify-out/
+
+# Graphify temp files (per-session extracted data — root + all subdirs)
+**/.graphify_*
+**/graphify_*.py
+
+# Agent configs (generated, per-user)
+AGENTS.md
 
 # Temporary files
 *.tmp

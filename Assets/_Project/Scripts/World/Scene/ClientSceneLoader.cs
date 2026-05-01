@@ -180,10 +180,18 @@ if (!_isInitialized)
                 }
                 else
                 {
-                    if (sceneRegistry == null)
+                    if (pos.z > (sceneRegistry.GridRows * 79999f) || pos.x > (sceneRegistry.GridColumns * 79999f))
+                    {
+                        Debug.LogWarning($"[CSL] Player is OUTSIDE world bounds! pos={pos}, maxZ={sceneRegistry.GridRows * 79999f}, maxX={sceneRegistry.GridColumns * 79999f}");
+                    }
+                    else if (sceneRegistry == null)
+                    {
                         Debug.LogError($"[CSL] Target scene {playerScene} is INVALID because sceneRegistry is NULL!");
+                    }
                     else
+                    {
                         Debug.LogError($"[CSL] Target scene {playerScene} is INVALID! GridZ={playerScene.GridZ}, valid range 0-{sceneRegistry.GridRows-1}");
+                    }
                 }
             }
         }
@@ -285,7 +293,7 @@ if (!_isInitialized)
 
                 if (playerTransform != null)
                 {
-                    Vector3 worldSpawnPos = initialScene.WorldCenter + new Vector3(0, 3000, 0);
+                    Vector3 worldSpawnPos = initialScene.WorldCenter + new Vector3(0, 300, 0);
                     _teleportTarget = worldSpawnPos;
                     _lastTeleportTime = Time.time;
                     Debug.Log($"[CSL] Teleporting player from {playerTransform.position} to {worldSpawnPos}");

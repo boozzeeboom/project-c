@@ -78,7 +78,7 @@ namespace ProjectC.Player
 
         [Header("Коррекция позиции (prediction)")]
         [Tooltip("Порог рассинхронизации для коррекции (м). Больше = меньше jitter")]
-        [SerializeField] private float positionCorrectionThreshold = 2f;
+        [SerializeField] private float positionCorrectionThreshold = 99999f;
 
         [Tooltip("Скорость плавной коррекции позиции")]
         [SerializeField] private float positionCorrectionSpeed = 5f;
@@ -91,6 +91,8 @@ namespace ProjectC.Player
         /// Cooldown после сдвига мира — игнорируем серверную коррекцию пока мира не устаканится.
         /// </summary>
         // NOTE: FloatingOriginMP cooldown removed - scene-based architecture doesn't use world shifting
+
+        // ==================== КАМЕРА ====================
 
         // ==================== КАМЕРА ====================
 
@@ -768,21 +770,25 @@ namespace ProjectC.Player
         public void TeleportToPosition(Vector3 position)
         {
             Debug.Log($"[NetworkPlayer] Teleport to {position}");
-            
+
             // Отключаем CharacterController чтобы избежать коллизий
             _controller.enabled = false;
             transform.position = position;
             _controller.enabled = true;
-            
+
             // Сбрасываем velocity
             _velocity = Vector3.zero;
-            
+
             // Сбрасываем серверную позицию для коррекции
             _serverPosition = position;
             _hasServerPosition = true;
-            
+
             // Оповещаем всех клиентов
             TeleportAllClientRpc(position);
+
+            // Immediately reset _hasServerPosition to prevent position correction
+            // from dragging player back to old position during scene transitions
+            _hasServerPosition = false;
         }
 
         /// <summary>

@@ -140,11 +140,15 @@ if (!_isInitialized)
                     Debug.LogWarning($"[CSL] DETECTED MOVEMENT: delta.z={delta.z} NOT during teleport! Something is moving player!");
                 }
 
-                Debug.Log($"[CSL] Update: rawPos={rawPos}, pos={pos}, playerScene={playerScene}, _currentScene={_currentScene}");
+                Debug.Log($"[CSL] Update: rawPos={rawPos}, pos={pos}, playerScene={playerScene}, _currentScene={_currentScene}, playerTransform={playerTransform.name}#{playerTransform.GetInstanceID()}");
                 Debug.Log($"[CSL] Update: pos.z={pos.z}, SCENE_SIZE={79999f}, gridZ={Mathf.FloorToInt(pos.z / 79999f)}");
                 Debug.Log($"[CSL] Update: isMoving={isMoving}, isTeleportFrame={isTeleportFrame}, delta={delta}");
 
                 _lastPlayerPos = posNow;
+            }
+            else if (pos.z > 80000 && _currentScene.GridZ == 0)
+            {
+                Debug.LogError($"[CSL] ★★★ CRITICAL: pos.z={pos.z} (>80000) but _currentScene.GridZ=0! playerTransform={playerTransform.name}#{playerTransform.GetInstanceID()}");
             }
 
             if (_currentScene.GridX < 0)

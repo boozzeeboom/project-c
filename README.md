@@ -1,5 +1,5 @@
 # Project C: The Clouds
-**Version:** 0.0.13 | **Stage:** Этап 2.5 В ПРОЦЕССЕ (Визуальный прототип)
+**Version:** 0.0.17 | **Stage:** Этап 2.1 ЗАВЕРШЁН · Этап 2.5 В ПРОЦЕССЕ (Визуальный прототип)
 **По мотивам книги «Интеграл Пьявица» — Бруно Арендт**
 ## Весь проект: [TheGravity](https://thegravity.ru) & [TheClouds](https://thegravity.ru/project-c/)
 
@@ -23,6 +23,7 @@
 | 10 | [GDD_10: Ship System](docs/gdd/GDD_10_Ship_System.md) | 4 класса кораблей, физика, кооп-пилотирование |
 | 11 | [GDD_11: Inventory & Items](docs/gdd/GDD_11_Inventory_Items.md) | 8 типов, круговое колесо, LootTable, сундуки |
 | 12 | [GDD_12: Network & Multiplayer](docs/gdd/GDD_12_Network_Multiplayer.md) | NGO, RPC, реконнект, Dedicated Server |
+| 12.1 | [GDD_12.1: Scene World Streaming](docs/gdd/GDD_12_1_Scene_World_Streaming.md) | 24 сцены, 4×6 grid, boundary-based loading |
 | 13 | [GDD_13: UI/UX System](docs/gdd/GDD_13_UI_UX_System.md) | HUD, Ghibli стиль, адаптивность, доступность |
 | 14 | [GDD_14: Visual & Art Pipeline](docs/gdd/GDD_14_Visual_Art_Pipeline.md) | URP, CloudGhibli, шейдеры, постобработка |
 | 15 | [GDD_15: Audio System](docs/gdd/GDD_15_Audio_System.md) | AudioMixer, SFX, музыка, 3D звук |
@@ -39,12 +40,13 @@
 | Файл | Описание |
 |------|----------|
 | [`docs/WORLD_LORE_BOOK.md`](docs/WORLD_LORE_BOOK.md) | **Полный лор книги** — мир, технологии, гильдии, персонажи, сюжет |
+| [`docs/MMO_Development_Plan.md`](docs/MMO_Development_Plan.md) | **Полный план разработки** MMO игры (v0.0.17) |
 | [`docs/QWEN_CONTEXT.md`](docs/QWEN_CONTEXT.md) | **Текущий контекст** — что сделано, какие задачи в работе |
-| [`docs/MMO_Development_Plan.md`](docs/MMO_Development_Plan.md) | **Полный план разработки** MMO игры |
 | [`docs/STEP_BY_STEP_DEVELOPMENT.md`](docs/STEP_BY_STEP_DEVELOPMENT.md) | **Пошаговая разработка** |
 | [`docs/CONTROLS.md`](docs/CONTROLS.md) | Документация по управлению |
 | [`docs/SHIP_SYSTEM_DOCUMENTATION.md`](docs/SHIP_SYSTEM_DOCUMENTATION.md) | Система кораблей (текущая реализация) |
 | [`docs/ART_BIBLE.md`](docs/ART_BIBLE.md) | Визуальная спецификация |
+| [`docs/world/LargeScaleMMO/2_iteration_scene-mode/SYSTEM_OVERVIEW.md`](docs/world/LargeScaleMMO/2_iteration_scene-mode/SYSTEM_OVERVIEW.md) | **24+1 Scene World System** — documentation |
 | [`docs/GIT_WORKFLOW.md`](docs/GIT_WORKFLOW.md) | Шпаргалка Git команд |
 | [`docs/GIT_WORKFLOW_ADVANCED.md`](docs/GIT_WORKFLOW_ADVANCED.md) | Продвинутый Git workflow |
 | [`docs/QUICK_GIT_COMMANDS.md`](docs/QUICK_GIT_COMMANDS.md) | Быстрые команды Git |
@@ -122,6 +124,13 @@
 | Q/E | Подъём/спуск (лифт) |
 | Мышь Y | Тангаж (нос вверх/вниз) |
 | Left Shift | Ускорение |
+| Z/X | Крен (требует MODULE_ROLL) |
+| C/V | Мезиевый тангаж (требует MODULE_MEZIY_PITCH) |
+| Shift+A/D | Мезиевое рыскание (требует MODULE_MEZIY_YAW) |
+| Shift+W/S | Мезиевый рывок/торможение (требует MODULE_MEZIY_THRUST) |
+| L | Дозаправка (stationary) |
+| F3 | Debug HUD |
+| F4 | Meziy Status HUD |
 | **F** | Выйти из корабля |
 
 **Полная карта:** [`docs/CONTROLS.md`](docs/CONTROLS.md)
@@ -194,7 +203,7 @@
 
 ## 8. Текущий статус
 
-**Ветка:** `qwen-gamestudio-agent-dev` | **Версия:** `v0.0.13-urp-setup`
+**Ветка:** `main` | **Версия:** `v0.0.17-scene-world-complete`
 
 ### ✅ Реализовано
 - Процедурная генерация мира (15 горных пиков + 890+ облаков, 3 слоя)
@@ -207,7 +216,7 @@
   - Module System — 7 модулей (YAW_ENH, PITCH_ENH, LIFT_ENH, ROLL, MEZIY_*)
   - Fuel System — расход/регенерация, дозаправка L
   - Meziy Passive/Active/Overheat — C/V (pitch), Z/X (roll), Shift+A/D (yaw), Shift+W/S (thrust)
-  - Meziy Status HUD (F4) — индикаторы 🟢🔵🔴, прогресс-бары
+  - Meziy Status HUD (F4) — индикаторы, прогресс-бары
   - Co-op пилотирование — несколько игроков, усреднение ввода
 - Переключение режимов F (пеший ↔ корабль, радиус 5м)
 - Third-person камера (адаптивная)
@@ -219,12 +228,18 @@
 - Синхронизация подбора (предметы/сундуки исчезают у всех)
 - Player Count (счётчик игроков в реальном времени)
 - Торговля — динамическая экономика, контракты, PlayerDataStore
+- **24+1 Scene World System (Этап 2.1):**
+  - 24 сцены в сетке 4×6 (79,999×79,999 units каждая)
+  - ClientSceneLoader, ServerSceneManager, SceneID, SceneRegistry
+  - Стратегия "1+1": текущая + 1 предзагруженная соседняя
+  - Предзагрузка при приближении к границе (10,000 units)
+  - Интеграция с FloatingOriginMP, RPC для переходов
 - **URP Pipeline** — Universal Render Pipeline 17.4.0
 - **CloudGhibli.shader** — кастомный шейдер облаков (noise + rim glow)
 - **MaterialURPUpgrader** — массовая конвертация Standard → URP
 - **docs/ART_BIBLE.md** — полная визуальная спецификация
 
-### 🔜 Следующие задачи
+### 🔄 В процессе (Этап 2.5)
 - Модель корабля (Blender → FBX, замена примитива)
 - Модель персонажа (Mixamo)
 - Текстуры горных пиков (Poly Haven)

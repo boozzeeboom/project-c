@@ -48,6 +48,9 @@ mono_crash.*
 # Dev memory (local session state)
 .dev-memory/
 
+# Archive folder (development artifacts, old sessions)
+docs/archive/
+
 # OpenCode Game Studio configuration (per-user)
 .opencode/
 

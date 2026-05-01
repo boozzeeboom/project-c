@@ -1,6 +1,6 @@
 # План разработки ММО "Project C: The Clouds" на Unity
 
-**Последнее обновление:** 12 апреля 2026 г. | **Текущая версия:** `v0.0.16-ui-sprints-summary`
+**Последнее обновление:** 1 мая 2026 г. | **Текущая версия:** `v0.0.17-scene-world-complete`
 
 ---
 
@@ -269,6 +269,64 @@ FixedUpdate (сервер):
 - Отдельный серверный билд (.NET 8 / Master-сервер)
 - Система лобби/комнат
 - Полная серверная валидация инвентаря (anti-cheat)
+
+---
+
+## Этап 2.1: Масштабный мир (24 сцены) ✅ ЗАВЕРШЁН (1 мая 2026)
+**Цель:** Реализовать распределённый мир на основе 24 сцен для поддержки MMO-масштаба.
+
+### Задачи:
+
+1. **Архитектура мира:** ✅
+   - ✅ **24 сцены в сетке 4×6** (GridColumns=6, GridRows=4)
+   - ✅ Размер каждой сцены: **79,999 × 79,999 units**
+   - ✅ Общий размер мира: ~480,000 × ~320,000 units
+   - ✅ Именование: `WorldScene_{GridX}_{GridZ}` (e.g., `WorldScene_0_0`)
+
+2. **Система загрузки сцен:** ✅
+   - ✅ **ClientSceneLoader** — загрузка/выгрузка сцен на клиенте
+   - ✅ **ServerSceneManager** — отслеживание позиций клиентов на сервере
+   - ✅ **SceneID** — структура координат (GridX, GridZ)
+   - ✅ **SceneRegistry** — ScriptableObject с метаданными сцен
+   - ✅ Стратегия **"1+1"**: текущая сцена + 1 предзагруженная соседняя
+   - ✅ Предзагрузка при приближении к границе (10,000 units)
+   - ✅ Выгрузка при удалении >10,000 units
+   - ✅ Максимум 4 загруженные сцены одновременно
+
+3. **Интеграция с сетевой подсистемой:** ✅
+   - ✅ Синхронизация позиции через **FloatingOriginMP**
+   - ✅ **PlayerSpawner** отслеживает мировую позицию
+   - ✅ **NetworkPlayer** отслеживает локальную позицию
+   - ✅ RPC для перехода между сценами (`LoadSceneTransitionClientRpc`)
+   - ✅ Корректная работы с кораблём и персонажем
+
+4. **Фиксы и стабилизация:** ✅
+   - ✅ Singleton для ClientSceneLoader (предотвращение дубликатов)
+   - ✅ Sentinel значение `-1,-1` вместо `0,0` для определения текущей сцены
+   - ✅ Поиск Player через тег "Player" (PlayerSpawner)
+   - ✅ Отключена коррекция позиции (порог 99,999 units)
+   - ✅ Исправлена X/Z оси в именах сцен
+
+### Ключевые компоненты:
+
+| Компонент | Файл | Назначение |
+|-----------|------|------------|
+| `ClientSceneLoader` | `Scripts/World/Scene/ClientSceneLoader.cs` | Основной загрузчик сцен |
+| `ServerSceneManager` | `Scripts/World/Scene/ServerSceneManager.cs` | Серверное отслеживание |
+| `SceneID` | `Scripts/World/Scene/SceneID.cs` | Координаты сцены |
+| `SceneRegistry` | `Scripts/World/Scene/SceneRegistry.cs` | Метаданные сцен |
+| `WorldSceneManager` | `Scripts/World/WorldSceneManager.cs` | Центральный координатор |
+
+### Документация:
+- [`docs/world/LargeScaleMMO/2_iteration_scene-mode/SYSTEM_OVERVIEW.md`](world/LargeScaleMMO/2_iteration_scene-mode/SYSTEM_OVERVIEW.md) — Overview системы
+- [`docs/world/LargeScaleMMO/2_iteration_scene-mode/INDEX.md`](world/LargeScaleMMO/2_iteration_scene-mode/INDEX.md) — Навигация по документации
+- [`docs/world/LargeScaleMMO/2_iteration_scene-mode/COMPLETION_REPORT.md`](world/LargeScaleMMO/2_iteration_scene-mode/COMPLETION_REPORT.md) — Полный отчёт
+- [`docs/world/LargeScaleMMO/2_iteration_scene-mode/SCENE_ARCHITECTURE_DECISION.md`](world/LargeScaleMMO/2_iteration_scene-mode/SCENE_ARCHITECTURE_DECISION.md) — ADR
+
+### Известные ограничения (pending):
+- ⏳ Визуальная задержка загрузки чанков в новых сценах
+- ⏳ Коррекция позиции отключена — требует полноценной реализации для мультиплеера
+- ⏳ Y спавна = 3000 (для тестирования) — вернуть к нормальному значению
 
 ---
 
@@ -624,10 +682,11 @@ FixedUpdate (сервер):
 
 ### Systems — Технические системы
 | Документ | Описание |
-|----------|----------|
+|----------|---------|
 | [GDD_10: Ship System](gdd/GDD_10_Ship_System.md) | 4 класса кораблей, физика, кооп-пилотирование |
 | [GDD_11: Inventory & Items](gdd/GDD_11_Inventory_Items.md) | 8 типов, круговое колесо, LootTable, сундуки |
 | [GDD_12: Network & Multiplayer](gdd/GDD_12_Network_Multiplayer.md) | NGO, RPC, реконнект, Dedicated Server |
+| [GDD_12.1: Scene-Based World Streaming](gdd/GDD_12_1_Scene_World_Streaming.md) | 24 сцены, 4×6 grid, boundary-based loading |
 | [GDD_13: UI/UX System](gdd/GDD_13_UI_UX_System.md) | HUD, Ghibli стиль, адаптивность |
 | [GDD_14: Visual & Art Pipeline](gdd/GDD_14_Visual_Art_Pipeline.md) | URP, CloudGhibli, шейдеры, постобработка |
 | [GDD_15: Audio System](gdd/GDD_15_Audio_System.md) | AudioMixer, SFX, музыка, 3D звук |
@@ -648,7 +707,8 @@ FixedUpdate (сервер):
 | Этап | Связанные GDD |
 |------|--------------|
 | Этап 1 (Прототип ядра) | GDD_01, GDD_10, GDD_11 |
-| Этап 2 (Сетевой фундамент) | GDD_12, GDD_13 |
+| Этап 2 (Сетевой фундамент) | GDD_12, GDD_12.1, GDD_13 |
+| Этап 2.1 (Масштабный мир) | GDD_12.1, GDD_02 |
 | Этап 2.5 (Визуальный прототип) | GDD_02, GDD_14, GDD_15 |
 | Этап 3 (RPG + Базовая торговля) | GDD_20, GDD_22, GDD_25 |
 | Этап 3.5 (Торговые фракции) | GDD_22, GDD_23, GDD_25 |

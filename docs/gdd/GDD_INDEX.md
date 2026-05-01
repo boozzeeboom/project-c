@@ -31,6 +31,7 @@
 | 10 | [GDD_10_Ship_System.md](GDD_10_Ship_System.md) | Корабли: классы, физика, управление, кооп-пилотирование | ✅ Готово |
 | 11 | [GDD_11_Inventory_Items.md](GDD_11_Inventory_Items.md) | Инвентарь: предметы, сундуки, подбор, круговое колесо | ✅ Готово |
 | 12 | [GDD_12_Network_Multiplayer.md](GDD_12_Network_Multiplayer.md) | Сеть: архитектура, синхронизация, реконнект, сервер | ✅ Готово |
+| 12.1 | [GDD_12_1_Scene_World_Streaming.md](GDD_12_1_Scene_World_Streaming.md) | Мир: 24 сцены, 4×6 grid, boundary-based loading | ✅ Готово |
 | 13 | [GDD_13_UI_UX_System.md](GDD_13_UI_UX_System.md) | UI/UX: HUD, меню, навигация, подсказки, стиль | ✅ Готово |
 | 14 | [GDD_14_Visual_Art_Pipeline.md](GDD_14_Visual_Art_Pipeline.md) | Визуал: URP, шейдеры, постобработка, арт-пайплайн | ✅ Готово |
 | 15 | [GDD_15_Audio_System.md](GDD_15_Audio_System.md) | Аудио: SFX, музыка, эмбиент, позиционный звук | ✅ Готово |

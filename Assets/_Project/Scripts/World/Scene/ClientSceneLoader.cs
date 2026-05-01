@@ -205,6 +205,15 @@ if (!_isInitialized)
 
                 if (NetworkManager.Singleton != null && clientId == NetworkManager.Singleton.LocalClientId)
                 {
+                    var playerByTag = GameObject.FindGameObjectWithTag("Player");
+                    if (playerByTag != null)
+                    {
+                        playerTransform = playerByTag.transform;
+                        _isInitialized = true;
+                        Debug.Log($"[CSL] ★ UpdatePlayerTransform SUCCESS (PlayerTag): {playerByTag.name} at {playerByTag.transform.position}");
+                        yield break;
+                    }
+
                     var networkObjects = FindObjectsByType<NetworkObject>();
 
                     foreach (var netObj in networkObjects)
@@ -219,14 +228,14 @@ if (!_isInitialized)
                             {
                                 playerTransform = netObj.transform;
                                 _isInitialized = true;
-                                Debug.Log($"[CSL] ★ SUCCESS: playerTransform = {netObj.name} at {netObj.transform.position}");
+                                Debug.Log($"[CSL] ★ UpdatePlayerTransform SUCCESS (NetworkPlayer): {netObj.name} at {netObj.transform.position}");
                                 yield break;
                             }
                         }
                     }
                 }
             }
-            Debug.LogWarning("[CSL] Could not find NetworkPlayer to update playerTransform");
+            Debug.LogWarning("[CSL] Could not find player to update playerTransform");
         }
 
         private IEnumerator WaitForNetworkAndPlayer()

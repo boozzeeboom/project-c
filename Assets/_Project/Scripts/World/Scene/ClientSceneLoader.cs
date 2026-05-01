@@ -550,9 +550,6 @@ private void Update()
 
             yield return LoadSceneAsync(targetScene);
 
-            if (loadNeighbors)
-                yield return LoadSceneWithNeighborsCoroutine(targetScene);
-
             _currentScene = targetScene;
 
             if (playerTransform != null)

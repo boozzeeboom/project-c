@@ -148,7 +148,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 07da6250968b485419c84aa06059e61b, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::ProjectC.World.Scene.ClientSceneLoader
-  playerTransform: {fileID: 0}
+  playerTransform: {fileID: 400000, guid: 224427a7f796e5b448f07ed8c2a1469b, type: 3}
   sceneRegistry: {fileID: 11400000, guid: fb9dfe5043617cb4eadb533b56ed9522, type: 2}
   loadNeighbors: 1
   unloadDistantScenes: 1
@@ -247,7 +247,7 @@ MonoBehaviour:
   m_spriteAsset: {fileID: 0}
   m_tintAllSprites: 0
   m_StyleSheet: {fileID: 0}
-  m_TextStyleHashCode: 0
+  m_TextStyleHashCode: -1183493901
   m_overrideHtmlColors: 0
   m_faceColor:
     serializedVersion: 2
@@ -384,7 +384,7 @@ MonoBehaviour:
   m_spriteAsset: {fileID: 0}
   m_tintAllSprites: 0
   m_StyleSheet: {fileID: 0}
-  m_TextStyleHashCode: 0
+  m_TextStyleHashCode: -1183493901
   m_overrideHtmlColors: 0
   m_faceColor:
     serializedVersion: 2
@@ -887,6 +887,55 @@ MonoBehaviour:
   m_OnClick:
     m_PersistentCalls:
       m_Calls: []
+--- !u!1 &762248320
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 762248322}
+  - component: {fileID: 762248321}
+  m_Layer: 0
+  m_Name: HUDdebug
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!114 &762248321
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 762248320}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: b60fb5629cd324a478d24f4193912161, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::ProjectC.UI.SceneDebugHUD
+  gridText: {fileID: 0}
+  playerInfoText: {fileID: 0}
+  statsText: {fileID: 0}
+  showGridOnUpdate: 1
+  updateIntervalMs: 200
+--- !u!4 &762248322
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 762248320}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: -3.64873, y: 8.20597, z: -1.33399}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 0}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1 &880940880
 GameObject:
   m_ObjectHideFlags: 0
@@ -1119,11 +1168,9 @@ GameObject:
   serializedVersion: 6
   m_Component:
   - component: {fileID: 1151906023}
-  - component: {fileID: 1151906022}
   - component: {fileID: 1151906021}
   - component: {fileID: 1151906020}
   - component: {fileID: 1151906019}
-  - component: {fileID: 1151906018}
   m_Layer: 0
   m_Name: NetworkManager
   m_TagString: Untagged
@@ -1131,22 +1178,6 @@ GameObject:
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
   m_IsActive: 1
---- !u!114 &1151906018
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1151906017}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 10a3aae11eecc114ba47567142322d33, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::ProjectC.World.Scene.ServerSceneManager
-  ShowTopMostFoldoutHeaderGroup: 1
-  sceneRegistry: {fileID: 11400000, guid: d7d1501dd754f0c4ba3c14a380b414b5, type: 2}
-  updateInterval: 0.5
-  showDebugLogs: 1
 --- !u!114 &1151906019
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -1211,7 +1242,7 @@ MonoBehaviour:
   NetworkConfig:
     ProtocolVersion: 0
     NetworkTransport: {fileID: 1151906020}
-    PlayerPrefab: {fileID: 0}
+    PlayerPrefab: {fileID: 100000, guid: 224427a7f796e5b448f07ed8c2a1469b, type: 3}
     Prefabs:
       NetworkPrefabsLists:
       - {fileID: 11400000, guid: 47e0edea8caccef4a9991014881e9d20, type: 2}
@@ -1237,31 +1268,6 @@ MonoBehaviour:
     OldPrefabList: []
   RunInBackground: 1
   LogLevel: 1
---- !u!114 &1151906022
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1151906017}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: d5a57f767e5e46a458fc5d3c628d0cbb, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: Unity.Netcode.Runtime::Unity.Netcode.NetworkObject
-  GlobalObjectIdHash: 0
-  InScenePlacedSourceGlobalObjectIdHash: 0
-  DeferredDespawnTick: 0
-  Ownership: 1
-  AlwaysReplicateAsRoot: 0
-  SynchronizeTransform: 1
-  ActiveSceneSynchronization: 0
-  SceneMigrationSynchronization: 1
-  SpawnWithObservers: 1
-  DontDestroyWithOwner: 0
-  AutoObjectParentSync: 1
-  SyncOwnerTransformWhenParented: 1
-  AllowOwnerToParent: 0
 --- !u!4 &1151906023
 Transform:
   m_ObjectHideFlags: 0
@@ -1754,7 +1760,7 @@ MonoBehaviour:
   m_spriteAsset: {fileID: 0}
   m_tintAllSprites: 0
   m_StyleSheet: {fileID: 0}
-  m_TextStyleHashCode: 0
+  m_TextStyleHashCode: -1183493901
   m_overrideHtmlColors: 0
   m_faceColor:
     serializedVersion: 2
@@ -1864,6 +1870,22 @@ PrefabInstance:
       propertyPath: m_LocalEulerAnglesHint.z
       value: 0
       objectReference: {fileID: 0}
+    - target: {fileID: 1161926159966955946, guid: 224427a7f796e5b448f07ed8c2a1469b, type: 3}
+      propertyPath: cameraPrefab
+      value: 
+      objectReference: {fileID: 5405426399639928988, guid: 020b4cd7c3349134b8c1de87bed1f706, type: 3}
+    - target: {fileID: 8667465565190019241, guid: 224427a7f796e5b448f07ed8c2a1469b, type: 3}
+      propertyPath: GlobalObjectIdHash
+      value: 862294727
+      objectReference: {fileID: 0}
+    - target: {fileID: 8667465565190019241, guid: 224427a7f796e5b448f07ed8c2a1469b, type: 3}
+      propertyPath: SceneMigrationSynchronization
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 8667465565190019241, guid: 224427a7f796e5b448f07ed8c2a1469b, type: 3}
+      propertyPath: InScenePlacedSourceGlobalObjectIdHash
+      value: 186599647
+      objectReference: {fileID: 0}
     m_RemovedComponents: []
     m_RemovedGameObjects: []
     m_AddedGameObjects: []
@@ -1946,7 +1968,7 @@ Transform:
   m_GameObject: {fileID: 1876363072}
   serializedVersion: 2
   m_LocalRotation: {x: -0, y: -0, z: -0, w: 1}
-  m_LocalPosition: {x: -731, y: -294, z: 0}
+  m_LocalPosition: {x: 71, y: 75, z: 0}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children:
@@ -2032,7 +2054,7 @@ MonoBehaviour:
   m_spriteAsset: {fileID: 0}
   m_tintAllSprites: 0
   m_StyleSheet: {fileID: 0}
-  m_TextStyleHashCode: 0
+  m_TextStyleHashCode: -1183493901
   m_overrideHtmlColors: 0
   m_faceColor:
     serializedVersion: 2
@@ -2187,7 +2209,7 @@ Canvas:
   m_SortingBucketNormalizedSize: 0
   m_VertexColorAlwaysGammaSpace: 0
   m_UseReflectionProbes: 0
-  m_AdditionalShaderChannelsFlag: 0
+  m_AdditionalShaderChannelsFlag: 25
   m_UpdateRectTransformForStandalone: 0
   m_SortingLayerID: 0
   m_SortingOrder: 0
@@ -2291,7 +2313,7 @@ MonoBehaviour:
   m_spriteAsset: {fileID: 0}
   m_tintAllSprites: 0
   m_StyleSheet: {fileID: 0}
-  m_TextStyleHashCode: 0
+  m_TextStyleHashCode: -1183493901
   m_overrideHtmlColors: 0
   m_faceColor:
     serializedVersion: 2
@@ -2362,3 +2384,4 @@ SceneRoots:
   - {fileID: 984776409}
   - {fileID: 1149404329}
   - {fileID: 1932759460}
+  - {fileID: 762248322}

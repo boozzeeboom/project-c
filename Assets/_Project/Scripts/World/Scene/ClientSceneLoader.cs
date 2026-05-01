@@ -140,7 +140,9 @@ if (!_isInitialized)
                     Debug.LogWarning($"[CSL] DETECTED MOVEMENT: delta.z={delta.z} NOT during teleport! Something is moving player!");
                 }
 
-                Debug.Log($"[CSL] Update: rawPos={rawPos}, pos={pos}, playerScene={playerScene}, _currentScene={_currentScene}, playerTransform={playerTransform.name}#{playerTransform.GetInstanceID()}");
+                var playerByTagNow = GameObject.FindGameObjectWithTag("Player");
+                Debug.Log($"[CSL] Update: playerTransform={playerTransform.name}#{playerTransform.GetInstanceID()}, PlayerTagObj={playerByTagNow?.name ?? "NULL"}");
+                Debug.Log($"[CSL] Update: rawPos={rawPos}, pos={pos}, playerScene={playerScene}, _currentScene={_currentScene}");
                 Debug.Log($"[CSL] Update: pos.z={pos.z}, SCENE_SIZE={79999f}, gridZ={Mathf.FloorToInt(pos.z / 79999f)}");
                 Debug.Log($"[CSL] Update: isMoving={isMoving}, isTeleportFrame={isTeleportFrame}, delta={delta}");
                 Debug.Log($"[CSL] Update: ACTUAL Transform.worldPosition={playerTransform.position}, ACTUAL Transform.worldToLocalMatrix.m03={playerTransform.worldToLocalMatrix.m03}");

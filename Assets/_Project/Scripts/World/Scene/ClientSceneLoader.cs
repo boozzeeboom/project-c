@@ -143,6 +143,7 @@ if (!_isInitialized)
                 Debug.Log($"[CSL] Update: rawPos={rawPos}, pos={pos}, playerScene={playerScene}, _currentScene={_currentScene}, playerTransform={playerTransform.name}#{playerTransform.GetInstanceID()}");
                 Debug.Log($"[CSL] Update: pos.z={pos.z}, SCENE_SIZE={79999f}, gridZ={Mathf.FloorToInt(pos.z / 79999f)}");
                 Debug.Log($"[CSL] Update: isMoving={isMoving}, isTeleportFrame={isTeleportFrame}, delta={delta}");
+                Debug.Log($"[CSL] Update: ACTUAL Transform.worldPosition={playerTransform.position}, ACTUAL Transform.worldToLocalMatrix.m03={playerTransform.worldToLocalMatrix.m03}");
 
                 _lastPlayerPos = posNow;
             }
@@ -306,6 +307,15 @@ if (!_isInitialized)
         {
             Debug.Log("[CSL] FindLocalPlayer() called");
 
+            var playerByTag = GameObject.FindGameObjectWithTag("Player");
+            if (playerByTag != null)
+            {
+                playerTransform = playerByTag.transform;
+                _isInitialized = true;
+                Debug.Log($"[CSL] Found PLAYER by tag: {playerByTag.name} at {playerByTag.transform.position}");
+                return;
+            }
+
             if (NetworkManager.Singleton != null && NetworkManager.Singleton.IsListening)
             {
                 var networkPlayers = FindObjectsByType<ProjectC.Player.NetworkPlayer>();
@@ -323,7 +333,7 @@ if (!_isInitialized)
                 }
 
                 var networkObjects = FindObjectsByType<NetworkObject>();
-                Debug.Log($"[CSL] FindLocalPlayer: searching {networkObjects.Length} NetworkObjects (NetworkPlayer search failed)");
+                Debug.Log($"[CSL] FindLocalPlayer: searching {networkObjects.Length} NetworkObjects (Player tag and NetworkPlayer failed)");
 
                 foreach (var netObj in networkObjects)
                 {
@@ -355,6 +365,15 @@ if (!_isInitialized)
 
                 if (playerTransform != null && _isInitialized)
                     yield break;
+
+                var playerByTag = GameObject.FindGameObjectWithTag("Player");
+                if (playerByTag != null)
+                {
+                    playerTransform = playerByTag.transform;
+                    _isInitialized = true;
+                    Debug.Log($"[CSL] ★ WaitForPlayer SUCCESS (via Player tag): {playerByTag.name}");
+                    yield break;
+                }
 
                 if (NetworkManager.Singleton != null && NetworkManager.Singleton.IsListening)
                 {

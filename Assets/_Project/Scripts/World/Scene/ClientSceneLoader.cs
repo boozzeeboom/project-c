@@ -285,7 +285,7 @@ if (!_isInitialized)
 
                 if (playerTransform != null)
                 {
-                    Vector3 worldSpawnPos = initialScene.WorldCenter + new Vector3(0, 3, 0);
+                    Vector3 worldSpawnPos = initialScene.WorldCenter + new Vector3(0, 3000, 0);
                     _teleportTarget = worldSpawnPos;
                     _lastTeleportTime = Time.time;
                     Debug.Log($"[CSL] Teleporting player from {playerTransform.position} to {worldSpawnPos}");

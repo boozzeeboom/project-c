@@ -26,6 +26,43 @@
 
   html { scroll-behavior: smooth; }
 
+  /* ===== ANCHOR NAV ===== */
+  .anchor-nav {
+    position: sticky;
+    top: 0;
+    z-index: 100;
+    background: var(--bg);
+    border-bottom: 1px solid var(--border);
+    padding: 0 24px;
+    overflow-x: auto;
+    scrollbar-width: none;
+  }
+  .anchor-nav::-webkit-scrollbar { display: none; }
+  .anchor-nav__list {
+    display: flex;
+    gap: 0;
+    list-style: none;
+    white-space: nowrap;
+    margin: 0 auto;
+    max-width: 900px;
+  }
+  .anchor-nav__link {
+    display: block;
+    padding: 10px 16px;
+    font-size: 13px;
+    font-weight: 500;
+    color: var(--text-dim);
+    text-decoration: none;
+    border-bottom: 2px solid transparent;
+    transition: color .2s, border-color .2s;
+  }
+  .anchor-nav__link:hover { color: var(--text); }
+  .anchor-nav__link.active { color: var(--accent); border-bottom-color: var(--accent); }
+  .anchor-nav__link--main {
+    color: var(--text);
+    font-weight: 600;
+  }
+
   body {
     font-family: 'Inter', 'Segoe UI', system-ui, -apple-system, sans-serif;
     background: var(--bg);
@@ -1576,7 +1613,7 @@
   </div>
 
   <!-- HEADER -->
-  <header class="header">
+  <header id="header" class="header">
     <div id="header-badge" class="header__badge">Pre-Alpha</div>
     <h1 class="header__title">Project <span>C</span> — Roadmap</h1>
     <p id="header-sub" class="header__sub">Мир над облаками. MMO/Co-Op игра по книге «Интеграл Пьявица».</p>
@@ -1592,6 +1629,16 @@
       </a>
     </div>
   </header>
+
+  <nav class="anchor-nav">
+  <ul class="anchor-nav__list">
+    <li><a href="#header" class="anchor-nav__link anchor-nav__link--main">🏠 Roadmap</a></li>
+    <li><a href="#timeline" class="anchor-nav__link">Этапы</a></li>
+    <li><a href="#graph-section" class="anchor-nav__link">🕸️ Graph</a></li>
+    <li><a href="#cloudengine-section" class="anchor-nav__link">☁️ CloudEngine</a></li>
+    <li><a href="#extra-content" class="anchor-nav__link">ℹ️ Extra</a></li>
+  </ul>
+</nav>
 
   <!-- SUMMARY NAV -->
   <nav id="summary-nav" class="summary-nav" style="display:none;">
@@ -2665,6 +2712,45 @@
     }
   };
 })();
+
+  /* ===== ANCHOR NAV SCROLL SPY ===== */
+  (function() {
+    var nav = document.querySelector('.anchor-nav__list');
+    if (!nav) return;
+    var links = nav.querySelectorAll('.anchor-nav__link');
+    var sections = [
+      { id: 'header', link: links[0] },
+      { id: 'timeline', link: links[1] },
+      { id: 'graph-section', link: links[2] },
+      { id: 'cloudengine-section', link: links[3] },
+      { id: 'extra-content', link: links[4] },
+    ];
+
+    function onScroll() {
+      var scrollY = window.scrollY || window.pageYOffset;
+      var winH = window.innerHeight;
+      var docH = document.body.scrollHeight;
+      var atBottom = scrollY + winH >= docH - 50;
+
+      var active = sections[sections.length - 1];
+      for (var i = 0; i < sections.length; i++) {
+        var el = document.getElementById(sections[i].id);
+        if (!el) continue;
+        var top = el.getBoundingClientRect().top + scrollY;
+        if (scrollY >= top - 120) {
+          active = sections[i];
+        }
+      }
+      if (atBottom) active = sections[sections.length - 1];
+
+      for (var j = 0; j < links.length; j++) {
+        links[j].classList.toggle('active', links[j] === active.link);
+      }
+    }
+
+    window.addEventListener('scroll', onScroll, { passive: true });
+    onScroll();
+  })();
 </script>
 
 </body>

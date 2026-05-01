@@ -725,13 +725,15 @@
     border-radius: 0 0 var(--radius) var(--radius);
   }
   .graph-section--open .graph-section__body {
-    max-height: 800px;
+    max-height: 100vh;
+    overflow: hidden;
   }
   .graph-section__embed {
     width: 100%;
-    height: 600px;
+    height: calc(100vh - 80px);
     border: none;
     display: block;
+    overflow: hidden;
   }
   .graph-section__loading {
     text-align: center;
@@ -2657,8 +2659,8 @@
   window.toggleGraph = function() {
     const isOpen = SECTION.classList.contains('graph-section--open');
     if (!isOpen && !IFRAME.src) {
-      LOADING.style.display = '';
-      IFRAME.style.display  = 'none';
+      LOADING.style.display = 'none';
+      IFRAME.style.display  = '';
       ERROR.style.display   = 'none';
       RAW_LINK.href = GRAPH_RAW_URL.replace('/main/', '/main/');
 
@@ -2744,6 +2746,7 @@ body{background:#0f0f1a;color:#e0e0e0;font-family:-apple-system,BlinkMacSystemFo
   <div id="stats"></div>
 </div>
 <script>
+function initGraph() {
 var nodes=new vis.DataSet(NODES_PLACEHOLDER);
 var edges=new vis.DataSet(EDGES_PLACEHOLDER);
 var container=document.getElementById('graph');
@@ -2793,6 +2796,10 @@ document.getElementById('stats').textContent=nodes.length+' nodes · '+edges.len
     }
     SECTION.classList.toggle('graph-section--open');
   };
+  // Call initGraph when srcdoc finishes loading
+  IFRAME.onload = function() { initGraph(); };
+  // Fallback: call immediately if already loaded
+  setTimeout(initGraph, 100);
 })();
 </script>
 

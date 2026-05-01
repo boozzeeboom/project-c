@@ -213,6 +213,19 @@ ManageLoadedScenesCount();
             }
         }
 
+        private SceneID CalculatePreloadScene(SceneID current, Vector3 localPos)
+        {
+            if (localPos.x > SCENE_SIZE - preloadDistance && current.GridX < sceneRegistry.GridColumns - 1)
+                return current.GetNeighbor(Direction.X_plus);
+            if (localPos.x < preloadDistance && current.GridX > 0)
+                return current.GetNeighbor(Direction.X_minus);
+            if (localPos.z > SCENE_SIZE - preloadDistance && current.GridZ < sceneRegistry.GridRows - 1)
+                return current.GetNeighbor(Direction.Z_plus);
+            if (localPos.z < preloadDistance && current.GridZ > 0)
+                return current.GetNeighbor(Direction.Z_minus);
+            return current;
+        }
+
         private void ManageLoadedScenesCount()
         {
             if (_loadedScenes.Count <= maxLoadedScenes)

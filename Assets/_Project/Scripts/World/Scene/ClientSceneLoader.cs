@@ -52,9 +52,15 @@ namespace ProjectC.World.Scene
         #region Configuration
         [SerializeField] private Transform playerTransform;
         [SerializeField] private SceneRegistry sceneRegistry;
-        [SerializeField] private bool loadNeighbors = true;
-        [SerializeField] private bool unloadDistantScenes = true;
         [SerializeField] private bool showDebugLogs = false;
+
+        [Header("Boundary-based Loading")]
+        [Tooltip("Distance from boundary before preloading next scene")]
+        [SerializeField] private float preloadDistance = 10000f;
+        [Tooltip("Distance from boundary before unloading distant scenes")]
+        [SerializeField] private float unloadDistance = 10000f;
+        [Tooltip("Maximum scenes to keep loaded at once")]
+        [SerializeField] private int maxLoadedScenes = 4;
         #endregion
 
         #region Private State
@@ -68,6 +74,8 @@ namespace ProjectC.World.Scene
         private Vector3 _teleportTarget;
         private float _lastTeleportTime;
         private bool _initialLoadHadNoSceneLoadedYet = false;
+
+        private const float SCENE_SIZE = 79999f;
         #endregion
 
         #region Events
@@ -95,21 +103,21 @@ namespace ProjectC.World.Scene
             }
         }
 
-        private void Update()
+private void Update()
         {
             if (Time.frameCount % 120 == 0)
             {
-                Debug.Log($"[CSL] Update: this={gameObject.GetInstanceID()}, _instance={_instance?.gameObject?.GetInstanceID()}, _currentScene={_currentScene}");
+                Debug.Log($"[CSL] Update: this={gameObject.GetInstanceID()}, _instance={_instance?.gameObject?.GetInstanceID()}, _currentScene={_currentScene}, loaded={_loadedScenes.Count}");
             }
 
-if (playerTransform == null)
+            if (playerTransform == null)
             {
                 if (_isInitialized && Time.frameCount % 120 == 0)
                     Debug.Log("[CSL] Update: playerTransform is NULL!");
                 return;
             }
 
-if (!_isInitialized)
+            if (!_isInitialized)
             {
                 if (NetworkManager.Singleton != null && NetworkManager.Singleton.IsListening)
                 {
@@ -124,74 +132,98 @@ if (!_isInitialized)
             }
 
             Vector3 pos = playerTransform.position;
-            Vector3 rawPos = pos;
-
             SceneID playerScene = SceneID.FromWorldPosition(pos);
-
-            if (Time.frameCount % 60 == 0)
-            {
-                Vector3 posNow = playerTransform.position;
-                Vector3 delta = posNow - _lastPlayerPos;
-                bool isMoving = delta.magnitude > 0.001f;
-                bool isTeleportFrame = Time.time - _lastTeleportTime < 1f;
-
-                if (isMoving && !isTeleportFrame)
-                {
-                    Debug.LogWarning($"[CSL] DETECTED MOVEMENT: delta.z={delta.z} NOT during teleport! Something is moving player!");
-                }
-
-                var playerByTagNow = GameObject.FindGameObjectWithTag("Player");
-                Debug.Log($"[CSL] Update: playerTransform={playerTransform.name}#{playerTransform.GetInstanceID()}, PlayerTagObj={playerByTagNow?.name ?? "NULL"}");
-                Debug.Log($"[CSL] Update: rawPos={rawPos}, pos={pos}, playerScene={playerScene}, _currentScene={_currentScene}");
-                Debug.Log($"[CSL] Update: pos.z={pos.z}, SCENE_SIZE={79999f}, gridZ={Mathf.FloorToInt(pos.z / 79999f)}");
-                Debug.Log($"[CSL] Update: isMoving={isMoving}, isTeleportFrame={isTeleportFrame}, delta={delta}");
-                Debug.Log($"[CSL] Update: ACTUAL Transform.worldPosition={playerTransform.position}, ACTUAL Transform.worldToLocalMatrix.m03={playerTransform.worldToLocalMatrix.m03}");
-
-                _lastPlayerPos = posNow;
-            }
-            else if (pos.z > 80000 && _currentScene.GridZ == 0)
-            {
-                Debug.LogError($"[CSL] ★★★ CRITICAL: pos.z={pos.z} (>80000) but _currentScene.GridZ=0! playerTransform={playerTransform.name}#{playerTransform.GetInstanceID()}");
-            }
 
             if (_currentScene.GridX < 0)
             {
                 if (_isLoadingInitialScene)
                 {
                     if (Time.frameCount % 120 == 0)
-                        Debug.Log($"[CSL] Update: _currentScene.GridX < 0, _isLoadingInitialScene={_isLoadingInitialScene}, waiting...");
+                        Debug.Log($"[CSL] Update: _currentScene.GridX < 0, waiting...");
                     return;
                 }
-                Debug.LogWarning($"[CSL] Update: _currentScene.GridX < 0, _isLoadingInitialScene={_isLoadingInitialScene}! Triggering emergency load...");
+                Debug.LogWarning($"[CSL] Update: _currentScene.GridX < 0! Triggering emergency load...");
                 _isLoadingInitialScene = true;
-                StartCoroutine(LoadSceneWithNeighborsCoroutine(new SceneID(0, 0)));
+                StartCoroutine(LoadSceneBoundaryBased(playerScene));
                 return;
             }
 
             if (!playerScene.Equals(_currentScene))
             {
                 Debug.Log($"[CSL] ★ SCENE MISMATCH! {_currentScene} -> {playerScene} at pos {pos}");
-
                 if (sceneRegistry != null && sceneRegistry.IsValid(playerScene))
                 {
-                    Debug.Log($"[CSL] Loading new scene area around {playerScene}...");
-                    StartCoroutine(LoadSceneWithNeighborsCoroutine(playerScene));
+                    StartCoroutine(LoadSceneBoundaryBased(playerScene));
                     OnSceneTransition?.Invoke(_currentScene, playerScene);
                 }
                 else
                 {
-                    if (pos.z > (sceneRegistry.GridRows * 79999f) || pos.x > (sceneRegistry.GridColumns * 79999f))
+                    if (pos.z >= sceneRegistry.GridRows * SCENE_SIZE || pos.x >= sceneRegistry.GridColumns * SCENE_SIZE)
                     {
-                        Debug.LogWarning($"[CSL] Player is OUTSIDE world bounds! pos={pos}, maxZ={sceneRegistry.GridRows * 79999f}, maxX={sceneRegistry.GridColumns * 79999f}");
-                    }
-                    else if (sceneRegistry == null)
-                    {
-                        Debug.LogError($"[CSL] Target scene {playerScene} is INVALID because sceneRegistry is NULL!");
+                        Debug.LogWarning($"[CSL] Player is OUTSIDE world bounds! pos={pos}");
                     }
                     else
                     {
-                        Debug.LogError($"[CSL] Target scene {playerScene} is INVALID! GridZ={playerScene.GridZ}, valid range 0-{sceneRegistry.GridRows-1}");
+                        Debug.LogError($"[CSL] Target scene {playerScene} is INVALID!");
                     }
+                }
+                return;
+            }
+
+            Vector3 localPos = playerScene.ToLocalPosition(pos);
+            bool approachingBoundaryX = localPos.x > (SCENE_SIZE - preloadDistance) || localPos.x < preloadDistance;
+            bool approachingBoundaryZ = localPos.z > (SCENE_SIZE - preloadDistance) || localPos.z < preloadDistance;
+
+            if (approachingBoundaryX || approachingBoundaryZ)
+            {
+                SceneID preloadScene = CalculatePreloadScene(playerScene, localPos);
+                if (preloadScene.IsValid && !_loadedScenes.Contains(preloadScene) && !_loadingScenes.Contains(preloadScene))
+                {
+                    Debug.Log($"[CSL] Approaching boundary, preloading {preloadScene}...");
+                    StartCoroutine(LoadSceneAsync(preloadScene));
+                }
+            }
+
+            ManageLoadedScenesCount();
+        }
+
+        private SceneID CalculatePreloadScene(SceneID current, Vector3 localPos)
+        {
+            if (localPos.x > SCENE_SIZE - preloadDistance && current.GridX < sceneRegistry.GridColumns - 1)
+                return current.GetNeighbor(Direction.X_plus);
+            if (localPos.x < preloadDistance && current.GridX > 0)
+                return current.GetNeighbor(Direction.X_minus);
+            if (localPos.z > SCENE_SIZE - preloadDistance && current.GridZ < sceneRegistry.GridRows - 1)
+                return current.GetNeighbor(Direction.Z_plus);
+            if (localPos.z < preloadDistance && current.GridZ > 0)
+                return current.GetNeighbor(Direction.Z_minus);
+            return current;
+        }
+
+        private void ManageLoadedScenesCount()
+        {
+            if (_loadedScenes.Count <= maxLoadedScenes)
+                return;
+
+            var toUnload = new List<SceneID>();
+            foreach (var scene in _loadedScenes)
+            {
+                if (scene.Equals(_currentScene))
+                    continue;
+
+                int distance = Mathf.Abs(scene.GridX - _currentScene.GridX) + Mathf.Abs(scene.GridZ - _currentScene.GridZ);
+                if (distance > 2)
+                    toUnload.Add(scene);
+            }
+
+            while (_loadedScenes.Count > maxLoadedScenes && toUnload.Count > 0)
+            {
+                var sceneToRemove = toUnload[0];
+                toUnload.RemoveAt(0);
+                if (_loadedScenes.Contains(sceneToRemove))
+                {
+                    Debug.Log($"[CSL] Unloading {sceneToRemove} (over max {maxLoadedScenes})");
+                    StartCoroutine(UnloadSceneCoroutine(sceneToRemove));
                 }
             }
         }
@@ -530,6 +562,46 @@ if (!_isInitialized)
             }
         }
 
+        private IEnumerator LoadSceneBoundaryBased(SceneID playerScene)
+        {
+            _isTransitioning = true;
+            Debug.Log($"[CSL] LoadSceneBoundaryBased START: playerScene={playerScene}, _currentScene={_currentScene}");
+
+            if (!_loadedScenes.Contains(playerScene))
+            {
+                yield return LoadSceneAsync(playerScene);
+            }
+
+            _currentScene = playerScene;
+            Debug.Log($"[CSL] Set _currentScene = {playerScene}");
+
+            UnloadDistantScenes(playerScene);
+
+            _isTransitioning = false;
+            _isLoadingInitialScene = false;
+            Debug.Log($"[CSL] LoadSceneBoundaryBased END. loaded={_loadedScenes.Count}");
+        }
+
+        private void UnloadDistantScenes(SceneID current)
+        {
+            var toUnload = new List<SceneID>();
+            foreach (var scene in _loadedScenes)
+            {
+                if (scene.Equals(current))
+                    continue;
+
+                int distance = Mathf.Abs(scene.GridX - current.GridX) + Mathf.Abs(scene.GridZ - current.GridZ);
+                if (distance > 2)
+                    toUnload.Add(scene);
+            }
+
+            foreach (var scene in toUnload)
+            {
+                Debug.Log($"[CSL] Unloading distant {scene}");
+                StartCoroutine(UnloadSceneCoroutine(scene));
+            }
+        }
+
         private IEnumerator LoadSceneWithNeighborsCoroutine(SceneID center)
         {
             Debug.Log($"[CSL] LoadSceneWithNeighborsCoroutine START: center={center}, _isLoadingInitialScene={_isLoadingInitialScene}, _currentScene={_currentScene}");
@@ -570,12 +642,7 @@ if (!_isInitialized)
             _currentScene = center;
             Debug.Log($"[CSL] Set _currentScene = {center}");
 
-            if (unloadDistantScenes)
-            {
-                yield return StartCoroutine(UnloadDistantScenesCoroutine(center));
-            }
-
-_isTransitioning = false;
+            _isTransitioning = false;
             _isLoadingInitialScene = false;
             Debug.Log($"[CSL] LoadSceneWithNeighborsCoroutine END. Final loadedScenes={_loadedScenes.Count}");
 

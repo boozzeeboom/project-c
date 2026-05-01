@@ -1187,6 +1187,264 @@
     margin-bottom: 0;
     transition: max-height .3s ease, opacity .3s ease, margin .3s ease;
   }
+
+  /* ===== CLOUDENGINE SECTION ===== */
+  .cloudengine-section {
+    margin-top: 64px;
+    padding-top: 40px;
+    border-top: 1px solid var(--border);
+  }
+
+  .cloudengine-header {
+    text-align: center;
+    margin-bottom: 32px;
+  }
+
+  .cloudengine-badge {
+    display: inline-block;
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    color: var(--accent2);
+    border: 1px solid var(--accent2);
+    border-radius: 999px;
+    padding: 4px 14px;
+    margin-bottom: 14px;
+    opacity: .8;
+  }
+
+  .cloudengine-title {
+    font-size: 2rem;
+    font-weight: 800;
+    color: #fff;
+    letter-spacing: -1px;
+    margin-bottom: 8px;
+  }
+
+  .cloudengine-subtitle {
+    font-size: .95rem;
+    color: var(--text-dim);
+    margin-bottom: 20px;
+  }
+
+  .cloudengine-links {
+    display: flex;
+    justify-content: center;
+    gap: 12px;
+    flex-wrap: wrap;
+  }
+
+  .cloudengine-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+    gap: 14px;
+    margin-bottom: 28px;
+  }
+
+  .cloudengine-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 16px 18px;
+    text-align: center;
+    transition: border-color .25s ease, transform .25s ease;
+  }
+
+  .cloudengine-card:hover {
+    border-color: var(--accent2);
+    transform: translateY(-2px);
+  }
+
+  .cloudengine-card__status {
+    font-size: 1.1rem;
+    font-weight: 800;
+    margin-bottom: 8px;
+  }
+
+  .cloudengine-card__status--done { color: var(--done); }
+  .cloudengine-card__status--active { color: var(--accent2); }
+  .cloudengine-card__status--progress { color: var(--warning); }
+
+  .cloudengine-card__title {
+    font-size: .85rem;
+    font-weight: 700;
+    color: #fff;
+    margin-bottom: 4px;
+  }
+
+  .cloudengine-card__desc {
+    font-size: .75rem;
+    color: var(--text-dim);
+    line-height: 1.4;
+  }
+
+  .cloudengine-features {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 20px 24px;
+    margin-bottom: 20px;
+  }
+
+  .cloudengine-features__title {
+    font-size: 1rem;
+    font-weight: 700;
+    color: var(--accent);
+    margin-bottom: 14px;
+  }
+
+  .cloudengine-features__grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+    gap: 8px;
+  }
+
+  .cloudengine-feature {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    font-size: .85rem;
+    color: var(--text);
+  }
+
+  .cloudengine-feature__check {
+    color: var(--done);
+    font-weight: 700;
+    flex-shrink: 0;
+  }
+
+  .cloudengine-stack {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 16px 20px;
+    margin-bottom: 20px;
+  }
+
+  .cloudengine-stack__title {
+    font-size: .9rem;
+    font-weight: 600;
+    color: var(--accent2);
+    margin-bottom: 12px;
+  }
+
+  .cloudengine-stack__chips {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+
+  .chip {
+    font-size: .72rem;
+    font-weight: 600;
+    padding: 4px 12px;
+    border-radius: 6px;
+    background: rgba(56,189,248,.1);
+    color: var(--accent2);
+    border: 1px solid rgba(56,189,248,.2);
+  }
+
+  .cloudengine-migration {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 16px 20px;
+    margin-bottom: 20px;
+  }
+
+  .cloudengine-migration__title {
+    font-size: .9rem;
+    font-weight: 600;
+    color: var(--accent);
+    margin-bottom: 12px;
+  }
+
+  .cloudengine-migration__table {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+  }
+
+  .migration-row {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    font-size: .82rem;
+    flex-wrap: wrap;
+  }
+
+  .migration-from {
+    color: var(--text);
+    background: rgba(255,255,255,.05);
+    padding: 3px 10px;
+    border-radius: 4px;
+    border: 1px solid var(--border);
+  }
+
+  .migration-arrow {
+    color: var(--text-dim);
+    font-weight: 700;
+  }
+
+  .migration-to {
+    color: var(--accent2);
+  }
+
+  .cloudengine-roadmap {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 16px 20px;
+  }
+
+  .cloudengine-roadmap__title {
+    font-size: .9rem;
+    font-weight: 600;
+    color: var(--warning);
+    margin-bottom: 14px;
+  }
+
+  .cloudengine-roadmap__items {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+  }
+
+  .roadmap-item {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    font-size: .88rem;
+    color: var(--text);
+  }
+
+  .roadmap-item__dot {
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+    flex-shrink: 0;
+  }
+
+  .roadmap-item--done .roadmap-item__dot {
+    background: var(--done);
+    box-shadow: 0 0 8px rgba(74,222,128,.5);
+  }
+
+  .roadmap-item--active .roadmap-item__dot {
+    background: var(--accent);
+    box-shadow: 0 0 8px rgba(74,222,128,.6);
+    animation: pulse 2s ease-in-out infinite;
+  }
+
+  .roadmap-item--future .roadmap-item__dot {
+    background: var(--future);
+  }
+
+  .roadmap-item--active .roadmap-item__text {
+    color: var(--accent);
+    font-weight: 600;
+  }
 </style>
 </head>
 <body>
@@ -1269,6 +1527,151 @@
   <!-- EXTRA CONTENT (риски, инструменты и т.д.) -->
   <div id="extra-content"></div>
 
+  <!-- CLOUDENGINE SECTION -->
+  <div id="cloudengine-section" class="cloudengine-section">
+    <div class="cloudengine-header">
+      <div class="cloudengine-badge">Параллельный проект</div>
+      <h2 class="cloudengine-title">CLOUDENGINE</h2>
+      <p class="cloudengine-subtitle">Собственный легковесный игровой движок · ECS-архитектура · OpenGL 4.6</p>
+      <div class="cloudengine-links">
+        <a href="https://github.com/boozzeeboom/CLOUDENGINE" target="_blank" rel="noopener" class="btn btn--primary">
+          <svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 .5C5.37.5 0 5.78 0 12.29c0 5.21 3.43 9.64 8.2 11.21.6.11.82-.26.82-.57v-2.01c-3.34.72-4.04-1.61-4.04-1.61-.55-1.37-1.33-1.74-1.33-1.74-1.09-.73.08-.72.08-.72 1.2.09 1.84 1.22 1.84 1.22 1.07 1.8 2.8 1.28 3.49.98.1-.76.42-1.28.76-1.57-2.67-.3-5.47-1.31-5.47-5.84 0-1.29.47-2.34 1.23-3.17-.12-.3-.53-1.5.12-3.12 0 0 1-.32 3.3 1.21a11.5 11.5 0 0 1 6.02 0c2.28-1.53 3.29-1.21 3.29-1.21.66 1.62.25 2.82.12 3.12.77.83 1.23 1.88 1.23 3.17 0 4.54-2.81 5.53-5.48 5.83.43.37.82 1.1.82 2.22v3.29c0 .31.21.69.83.57C20.57 21.92 24 17.5 24 12.29 24 5.78 18.63.5 12 .5z"/></svg>
+          GitHub
+        </a>
+        <a href="https://github.com/boozzeeboom/CLOUDENGINE/blob/main/README.md" target="_blank" rel="noopener" class="btn btn--ghost">
+          README.md
+        </a>
+      </div>
+    </div>
+
+    <div class="cloudengine-grid">
+      <div class="cloudengine-card">
+        <div class="cloudengine-card__status cloudengine-card__status--done">v0.6</div>
+        <h3 class="cloudengine-card__title">Статус</h3>
+        <p class="cloudengine-card__desc">Pre-alpha · Airship Physics MVP</p>
+      </div>
+      <div class="cloudengine-card">
+        <div class="cloudengine-card__status cloudengine-card__status--active">ECS</div>
+        <h3 class="cloudengine-card__title">Архитектура</h3>
+        <p class="cloudengine-card__desc">flecs ECS · OpenGL 4.6 · ENet</p>
+      </div>
+      <div class="cloudengine-card">
+        <div class="cloudengine-card__status cloudengine-card__status--progress">~350k</div>
+        <h3 class="cloudengine-card__title">Мир</h3>
+        <p class="cloudengine-card__desc">Circular world radius (chunk streaming)</p>
+      </div>
+      <div class="cloudengine-card">
+        <div class="cloudengine-card__status cloudengine-card__status--progress">4.3</div>
+        <h3 class="cloudengine-card__title">Итерации</h3>
+        <p class="cloudengine-card__desc">Build → Core → Render → World → Network → Ships</p>
+      </div>
+    </div>
+
+    <div class="cloudengine-features">
+      <h3 class="cloudengine-features__title">Реализованные системы</h3>
+      <div class="cloudengine-features__grid">
+        <div class="cloudengine-feature">
+          <span class="cloudengine-feature__check">✓</span>
+          <span>Volumetric cloud rendering (raymarch, Ghibli style)</span>
+        </div>
+        <div class="cloudengine-feature">
+          <span class="cloudengine-feature__check">✓</span>
+          <span>Window + Input (GLFW 3.4)</span>
+        </div>
+        <div class="cloudengine-feature">
+          <span class="cloudengine-feature__check">✓</span>
+          <span>Logger (spdlog), Config system</span>
+        </div>
+        <div class="cloudengine-feature">
+          <span class="cloudengine-feature__check">✓</span>
+          <span>ChunkManager, CircularWorld (350k radius)</span>
+        </div>
+        <div class="cloudengine-feature">
+          <span class="cloudengine-feature__check">✓</span>
+          <span>Network: Host/Client via ENet</span>
+        </div>
+        <div class="cloudengine-feature">
+          <span class="cloudengine-feature__check">✓</span>
+          <span>Player sync (position interpolation)</span>
+        </div>
+        <div class="cloudengine-feature">
+          <span class="cloudengine-feature__check">✓</span>
+          <span>Ship controls: W/S/A/D/Q/E/Z/X/C/V</span>
+        </div>
+        <div class="cloudengine-feature">
+          <span class="cloudengine-feature__check">✓</span>
+          <span>Jolt Physics integration</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="cloudengine-stack">
+      <h3 class="cloudengine-stack__title">Стек технологий</h3>
+      <div class="cloudengine-stack__chips">
+        <span class="chip">GLFW 3.4</span>
+        <span class="chip">flecs ECS</span>
+        <span class="chip">OpenGL 4.6</span>
+        <span class="chip">ENet 1.3.18</span>
+        <span class="chip">GLM</span>
+        <span class="chip">spdlog</span>
+        <span class="chip">Jolt Physics</span>
+        <span class="chip">CMake</span>
+      </div>
+    </div>
+
+    <div class="cloudengine-migration">
+      <h3 class="cloudengine-migration__title">Миграция Unity → CLOUDENGINE</h3>
+      <div class="cloudengine-migration__table">
+        <div class="migration-row">
+          <span class="migration-from">Unity MonoBehaviour</span>
+          <span class="migration-arrow">→</span>
+          <span class="migration-to">ECS System + Component</span>
+        </div>
+        <div class="migration-row">
+          <span class="migration-from">ScriptableObject</span>
+          <span class="migration-arrow">→</span>
+          <span class="migration-to">ECS Archetype / Data Asset</span>
+        </div>
+        <div class="migration-row">
+          <span class="migration-from">NetworkVariable</span>
+          <span class="migration-arrow">→</span>
+          <span class="migration-to">NetworkTransform + serialization</span>
+        </div>
+        <div class="migration-row">
+          <span class="migration-from">ServerRpc/ClientRpc</span>
+          <span class="migration-arrow">→</span>
+          <span class="migration-to">Custom Rpc system</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="cloudengine-roadmap">
+      <h3 class="cloudengine-roadmap__title"> Roadmap</h3>
+      <div class="cloudengine-roadmap__items">
+        <div class="roadmap-item roadmap-item--done">
+          <span class="roadmap-item__dot"></span>
+          <span class="roadmap-item__text">Phase 1: Tech Debt Fix</span>
+        </div>
+        <div class="roadmap-item roadmap-item--active">
+          <span class="roadmap-item__dot"></span>
+          <span class="roadmap-item__text">Phase 2: Ship Physics MVP</span>
+        </div>
+        <div class="roadmap-item roadmap-item--future">
+          <span class="roadmap-item__dot"></span>
+          <span class="roadmap-item__text">Phase 3: Asset System (glTF loader)</span>
+        </div>
+        <div class="roadmap-item roadmap-item--future">
+          <span class="roadmap-item__dot"></span>
+          <span class="roadmap-item__text">Phase 4: UI System (OpenGL HUD)</span>
+        </div>
+        <div class="roadmap-item roadmap-item--future">
+          <span class="roadmap-item__dot"></span>
+          <span class="roadmap-item__text">Phase 5: Polish & Optimization</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
   <!-- FOOTER -->
   <footer class="footer">
     <p id="footer-text" class="footer__text">Открытая разработка · Все коммиты на GitHub</p>
@@ -1285,72 +1688,77 @@
         Game Design Documents
       </div>
       <div class="gdd-grid">
-        <a href="https://github.com/boozzeeboom/project-c/blob/qwen-gamestudio-agent-dev/docs/gdd/GDD_00_Overview.md" target="_blank" rel="noopener" class="gdd-card">
+        <a href="https://github.com/boozzeeboom/project-c/blob/main/docs/gdd/GDD_00_Overview.md" target="_blank" rel="noopener" class="gdd-card">
           <span class="gdd-card__id">GDD-00</span>
           <span class="gdd-card__name">Game Overview</span>
           <span class="gdd-card__desc">Концепция, пиллары, USP, целевая аудитория</span>
         </a>
-        <a href="https://github.com/boozzeeboom/project-c/blob/qwen-gamestudio-agent-dev/docs/gdd/GDD_01_Core_Gameplay.md" target="_blank" rel="noopener" class="gdd-card">
+        <a href="https://github.com/boozzeeboom/project-c/blob/main/docs/gdd/GDD_01_Core_Gameplay.md" target="_blank" rel="noopener" class="gdd-card">
           <span class="gdd-card__id">GDD-01</span>
           <span class="gdd-card__name">Core Gameplay</span>
           <span class="gdd-card__desc">Core Loop, управление, физика, режимы</span>
         </a>
-        <a href="https://github.com/boozzeeboom/project-c/blob/qwen-gamestudio-agent-dev/docs/gdd/GDD_02_World_Environment.md" target="_blank" rel="noopener" class="gdd-card">
+        <a href="https://github.com/boozzeeboom/project-c/blob/main/docs/gdd/GDD_02_World_Environment.md" target="_blank" rel="noopener" class="gdd-card">
           <span class="gdd-card__id">GDD-02</span>
           <span class="gdd-card__name">World & Environment</span>
           <span class="gdd-card__desc">Мир, 15 пиков, 4 города, Завеса, погода</span>
         </a>
-        <a href="https://github.com/boozzeeboom/project-c/blob/qwen-gamestudio-agent-dev/docs/gdd/GDD_10_Ship_System.md" target="_blank" rel="noopener" class="gdd-card">
+        <a href="https://github.com/boozzeeboom/project-c/blob/main/docs/gdd/GDD_10_Ship_System.md" target="_blank" rel="noopener" class="gdd-card">
           <span class="gdd-card__id">GDD-10</span>
           <span class="gdd-card__name">Ship System</span>
           <span class="gdd-card__desc">4 класса кораблей, физика, кооп-пилотирование</span>
         </a>
-        <a href="https://github.com/boozzeeboom/project-c/blob/qwen-gamestudio-agent-dev/docs/gdd/GDD_11_Inventory_Items.md" target="_blank" rel="noopener" class="gdd-card">
+        <a href="https://github.com/boozzeeboom/project-c/blob/main/docs/gdd/GDD_11_Inventory_Items.md" target="_blank" rel="noopener" class="gdd-card">
           <span class="gdd-card__id">GDD-11</span>
           <span class="gdd-card__name">Inventory & Items</span>
           <span class="gdd-card__desc">8 типов, круговое колесо, LootTable, сундуки</span>
         </a>
-        <a href="https://github.com/boozzeeboom/project-c/blob/qwen-gamestudio-agent-dev/docs/gdd/GDD_12_Network_Multiplayer.md" target="_blank" rel="noopener" class="gdd-card">
+        <a href="https://github.com/boozzeeboom/project-c/blob/main/docs/gdd/GDD_12_Network_Multiplayer.md" target="_blank" rel="noopener" class="gdd-card">
           <span class="gdd-card__id">GDD-12</span>
           <span class="gdd-card__name">Network & Multiplayer</span>
           <span class="gdd-card__desc">NGO, RPC, реконнект, Dedicated Server</span>
         </a>
-        <a href="https://github.com/boozzeeboom/project-c/blob/qwen-gamestudio-agent-dev/docs/gdd/GDD_13_UI_UX_System.md" target="_blank" rel="noopener" class="gdd-card">
+        <a href="https://github.com/boozzeeboom/project-c/blob/main/docs/gdd/GDD_12_1_Scene_World_Streaming.md" target="_blank" rel="noopener" class="gdd-card">
+          <span class="gdd-card__id">GDD-12.1</span>
+          <span class="gdd-card__name">Scene World Streaming</span>
+          <span class="gdd-card__desc">24 сцены, 4×6 grid, boundary-based loading</span>
+        </a>
+        <a href="https://github.com/boozzeeboom/project-c/blob/main/docs/gdd/GDD_13_UI_UX_System.md" target="_blank" rel="noopener" class="gdd-card">
           <span class="gdd-card__id">GDD-13</span>
           <span class="gdd-card__name">UI/UX System</span>
           <span class="gdd-card__desc">HUD, Ghibli стиль, адаптивность</span>
         </a>
-        <a href="https://github.com/boozzeeboom/project-c/blob/qwen-gamestudio-agent-dev/docs/gdd/GDD_14_Visual_Art_Pipeline.md" target="_blank" rel="noopener" class="gdd-card">
+        <a href="https://github.com/boozzeeboom/project-c/blob/main/docs/gdd/GDD_14_Visual_Art_Pipeline.md" target="_blank" rel="noopener" class="gdd-card">
           <span class="gdd-card__id">GDD-14</span>
           <span class="gdd-card__name">Visual & Art Pipeline</span>
           <span class="gdd-card__desc">URP, CloudGhibli, шейдеры, постобработка</span>
         </a>
-        <a href="https://github.com/boozzeeboom/project-c/blob/qwen-gamestudio-agent-dev/docs/gdd/GDD_15_Audio_System.md" target="_blank" rel="noopener" class="gdd-card">
+        <a href="https://github.com/boozzeeboom/project-c/blob/main/docs/gdd/GDD_15_Audio_System.md" target="_blank" rel="noopener" class="gdd-card">
           <span class="gdd-card__id">GDD-15</span>
           <span class="gdd-card__name">Audio System</span>
           <span class="gdd-card__desc">AudioMixer, SFX, музыка, 3D звук</span>
         </a>
-        <a href="https://github.com/boozzeeboom/project-c/blob/qwen-gamestudio-agent-dev/docs/gdd/GDD_20_Progression_RPG.md" target="_blank" rel="noopener" class="gdd-card">
+        <a href="https://github.com/boozzeeboom/project-c/blob/main/docs/gdd/GDD_20_Progression_RPG.md" target="_blank" rel="noopener" class="gdd-card">
           <span class="gdd-card__id">GDD-20</span>
           <span class="gdd-card__name">Progression & RPG</span>
           <span class="gdd-card__desc">XP, уровни 1-50, деревья навыков</span>
         </a>
-        <a href="https://github.com/boozzeeboom/project-c/blob/qwen-gamestudio-agent-dev/docs/gdd/GDD_21_Quest_Mission_System.md" target="_blank" rel="noopener" class="gdd-card">
+        <a href="https://github.com/boozzeeboom/project-c/blob/main/docs/gdd/GDD_21_Quest_Mission_System.md" target="_blank" rel="noopener" class="gdd-card">
           <span class="gdd-card__id">GDD-21</span>
           <span class="gdd-card__name">Quest & Mission System</span>
           <span class="gdd-card__desc">5 типов квестов, цепочки гильдий</span>
         </a>
-        <a href="https://github.com/boozzeeboom/project-c/blob/qwen-gamestudio-agent-dev/docs/gdd/GDD_22_Economy_Trading.md" target="_blank" rel="noopener" class="gdd-card">
+        <a href="https://github.com/boozzeeboom/project-c/blob/main/docs/gdd/GDD_22_Economy_Trading.md" target="_blank" rel="noopener" class="gdd-card">
           <span class="gdd-card__id">GDD-22</span>
           <span class="gdd-card__name">Economy & Trading</span>
           <span class="gdd-card__desc">Кредиты, ресурсы, спрос/предложение</span>
         </a>
-        <a href="https://github.com/boozzeeboom/project-c/blob/qwen-gamestudio-agent-dev/docs/gdd/GDD_23_Faction_Reputation.md" target="_blank" rel="noopener" class="gdd-card">
+        <a href="https://github.com/boozzeeboom/project-c/blob/main/docs/gdd/GDD_23_Faction_Reputation.md" target="_blank" rel="noopener" class="gdd-card">
           <span class="gdd-card__id">GDD-23</span>
           <span class="gdd-card__name">Faction & Reputation</span>
           <span class="gdd-card__desc">5 Гильдий, подполье, СОЛ, репутация</span>
         </a>
-        <a href="https://github.com/boozzeeboom/project-c/blob/qwen-gamestudio-agent-dev/docs/gdd/GDD_24_Narrative_World_Lore.md" target="_blank" rel="noopener" class="gdd-card">
+        <a href="https://github.com/boozzeeboom/project-c/blob/main/docs/gdd/GDD_24_Narrative_World_Lore.md" target="_blank" rel="noopener" class="gdd-card">
           <span class="gdd-card__id">GDD-24</span>
           <span class="gdd-card__name">Narrative & World Lore</span>
           <span class="gdd-card__desc">Хронология, глоссарий, сюжетные арки</span>
@@ -1362,7 +1770,7 @@
     <div class="license-footer">
       <p class="license-footer__text">
         © 2024–2026 leon7 (Bruno Arendt). Все права защищены.<br>
-        Исходный код — <a href="https://github.com/boozzeeboom/project-c/blob/qwen-gamestudio-agent-dev/LICENSE" target="_blank" rel="noopener">MIT License</a> ·
+        Исходный код — <a href="https://github.com/boozzeeboom/project-c/blob/main/LICENSE" target="_blank" rel="noopener">MIT License</a> ·
         Ассеты — <a href="https://creativecommons.org/licenses/by-nc-nd/4.0/" target="_blank" rel="noopener">CC BY-NC-ND 4.0</a> ·
         Нарратив — All Rights Reserved ·
         Дизайн-документы — <a href="https://creativecommons.org/licenses/by-nc/4.0/" target="_blank" rel="noopener">CC BY-NC 4.0</a>
@@ -1384,7 +1792,7 @@
    ================================================================ */
 (function loadCommits() {
   const commitsContainer = document.getElementById('commits-container');
-  const REPO_URL = 'https://api.github.com/repos/boozzeeboom/project-c/commits?per_page=3&sha=qwen-gamestudio-agent-dev';
+  const REPO_URL = 'https://api.github.com/repos/boozzeeboom/project-c/commits?per_page=3&sha=main';
   const REPO_URL_NOCACHE = () => `${REPO_URL}&_=${Date.now()}`;
 
   function timeAgo(dateStr) {
@@ -1444,7 +1852,7 @@
    2. LOAD & PARSE MARKDOWN FROM GitHub
    ================================================================ */
 (function loadRoadmap() {
-  const MD_URL = 'https://raw.githubusercontent.com/boozzeeboom/project-c/qwen-gamestudio-agent-dev/docs/MMO_Development_Plan.md?_=' + Date.now();
+  const MD_URL = 'https://raw.githubusercontent.com/boozzeeboom/project-c/main/docs/MMO_Development_Plan.md?_=' + Date.now();
   const loadingEl = document.getElementById('loading-state');
   const timelineEl = document.getElementById('timeline');
   const extraContentEl = document.getElementById('extra-content');
@@ -1460,7 +1868,7 @@
     })
     .catch(err => {
       console.error('MD load error:', err);
-      loadingEl.innerHTML = `<div class="commits-error">Не удалось загрузить план разработки.<br><a href="https://github.com/boozzeeboom/project-c/blob/qwen-gamestudio-agent-dev/docs/MMO_Development_Plan.md" target="_blank" rel="noopener">Открыть на GitHub →</a></div>`;
+      loadingEl.innerHTML = `<div class="commits-error">Не удалось загрузить план разработки.<br><a href="https://github.com/boozzeeboom/project-c/blob/main/docs/MMO_Development_Plan.md" target="_blank" rel="noopener">Открыть на GitHub →</a></div>`;
     });
 
   function parseAndRender(md) {

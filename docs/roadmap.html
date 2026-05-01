@@ -2642,164 +2642,28 @@
 })();
 
 /* ================================================================
-   5. KNOWLEDGE GRAPH (fetch graph.json → inject into sandboxed iframe)
+   5. KNOWLEDGE GRAPH (simple iframe to graph.html)
    ================================================================ */
-(function initGraph() {
-  const GRAPH_RAW_URL = 'https://boozzeeboom.github.io/project-c/graph.json';
-  const SECTION = document.getElementById('graph-section');
-  const IFRAME  = document.getElementById('graph-iframe');
-  const LOADING = document.getElementById('graph-loading');
-  const ERROR   = document.getElementById('graph-error');
-  const META    = document.getElementById('graph-meta');
-  const RAW_LINK = document.getElementById('graph-raw-link');
-
+(function() {
+  var SECTION = document.getElementById('graph-section');
+  var IFRAME  = document.getElementById('graph-iframe');
+  var LOADING = document.getElementById('graph-loading');
   if (!SECTION) return;
   SECTION.style.display = '';
 
   window.toggleGraph = function() {
-    const isOpen = SECTION.classList.contains('graph-section--open');
+    var isOpen = SECTION.classList.contains('graph-section--open');
     if (!isOpen && !IFRAME.src) {
-      LOADING.style.display = 'none';
-      IFRAME.style.display  = '';
-      ERROR.style.display   = 'none';
-      RAW_LINK.href = GRAPH_RAW_URL.replace('/main/', '/main/');
-
-      fetch(GRAPH_RAW_URL, { cache: 'no-store' })
-        .then(r => {
-          if (!r.ok) throw new Error(`HTTP ${r.status}`);
-          return r.json();
-        })
-        .then(data => {
-          const nodes = data.nodes || [];
-          const edges = data.edges || [];
-          const communities = data.communities || {};
-          const nodeCount = nodes.length;
-          const edgeCount = edges.length;
-          const commCount = Object.keys(communities).length;
-          META.textContent = `${nodeCount} nodes · ${edgeCount} edges · ${commCount} communities`;
-
-          const colors = [
-            '#4ade80','#38bdf8','#a78bfa','#fb923c',
-            '#f472b6','#34d399','#60a5fa','#f87171',
-            '#fbbf24','#2dd4bf','#c084fc','#22d3ee'
-          ];
-          const labelColors = {};
-          Object.entries(communities).forEach(([cid, members], i) => {
-            members.forEach(n => { labelColors[n] = colors[i % colors.length]; });
-          });
-
-          const visNodes = new vis.DataSet(nodes.map(n => ({
-            id: n.id,
-            label: (n.label || n.id).replace(/_/g, ' ').replace(/\n/g, ' '),
-            color: { background: labelColors[n.id] || '#555', border: labelColors[n.id] || '#555', highlight: { background: '#fff', border: labelColors[n.id] || '#fff' } },
-            title: `${n.id}\n${n.file_type || ''}\n${n.source_file || ''}`,
-            font: { color: '#e0e0e0', size: 11 },
-            borderWidth: 1.5
-          })));
-
-          const visEdges = new vis.DataSet(edges.map(e => ({
-            from: e.source,
-            to:   e.target,
-            arrows: 'to',
-            color: { color: 'rgba(100,100,150,0.4)', highlight: '#4ade80' },
-            title: `${e.relation} [${e.confidence}]`,
-            font: { color: 'rgba(150,150,180,0.6)', size: 9 }
-          })));
-
-          const html = `<!DOCTYPE html><html lang="en"><head><meta charset="UTF-8">
-<style>
-*{box-sizing:border-box;margin:0;padding:0;}
-body{background:#0f0f1a;color:#e0e0e0;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;display:flex;height:100vh;overflow:hidden;}
-#graph{flex:1;}
-#sidebar{width:260px;background:#1a1a2e;border-left:1px solid #2a2a4e;display:flex;flex-direction:column;overflow:hidden;}
-#search-wrap{padding:10px;border-bottom:1px solid #2a2a4e;}
-#search{width:100%;background:#0f0f1a;border:1px solid #3a3a5e;color:#e0e0e0;padding:6px 10px;border-radius:5px;font-size:12px;outline:none;}
-#search:focus{border-color:#4E79A7;}
-#search-results{max-height:120px;overflow-y:auto;padding:4px 12px;border-bottom:1px solid #2a2a4e;display:none;}
-.search-item{padding:4px 6px;cursor:pointer;border-radius:4px;font-size:12px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
-.search-item:hover{background:#2a2a4e;}
-#info-panel{padding:12px;border-bottom:1px solid #2a2a4e;min-height:120px;}
-#info-panel h3{font-size:11px;color:#888;margin-bottom:6px;text-transform:uppercase;letter-spacing:.05em;}
-#info-content{font-size:12px;color:#bbb;line-height:1.5;}
-#info-content .field{margin-bottom:4px;}
-#info-content .field b{color:#ddd;}
-#neighbors-list{max-height:140px;overflow-y:auto;margin-top:4px;}
-.neighbor-link{display:block;padding:2px 6px;margin:2px 0;border-radius:3px;cursor:pointer;font-size:11px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;border-left:3px solid #333;}
-.neighbor-link:hover{background:#2a2a4e;}
-#legend-wrap{flex:1;overflow-y:auto;padding:10px;}
-#legend-wrap h3{font-size:11px;color:#888;margin-bottom:8px;text-transform:uppercase;letter-spacing:.05em;}
-.legend-item{display:flex;align-items:center;gap:6px;padding:3px 0;cursor:pointer;border-radius:4px;font-size:11px;}
-.legend-item:hover{background:#2a2a4e;padding-left:4px;}
-.legend-item.dimmed{opacity:.3;}
-.legend-dot{width:10px;height:10px;border-radius:50%;flex-shrink:0;}
-.legend-label{flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
-.legend-count{color:#555;font-size:10px;}
-#stats{padding:8px 12px;border-top:1px solid #2a2a4e;font-size:10px;color:#444;}
-</style>
-<script src="https://boozzeeboom.github.io/project-c/vis-network.min.js"></script>
-</head><body>
-<div id="graph"></div>
-<div id="sidebar">
-  <div id="search-wrap"><input id="search" type="text" placeholder="Search nodes..." autocomplete="off"><div id="search-results"></div></div>
-  <div id="info-panel"><h3>Node Info</h3><div id="info-content"><span style="color:#555;font-style:italic">Click a node to inspect it</span></div></div>
-  <div id="legend-wrap"><h3>Communities</h3><div id="legend"></div></div>
-  <div id="stats"></div>
-</div>
-<script>
-function initGraph() {
-var nodes=new vis.DataSet(NODES_PLACEHOLDER);
-var edges=new vis.DataSet(EDGES_PLACEHOLDER);
-var container=document.getElementById('graph');
-var data={nodes:nodes,edges:edges};
-var options={
-  nodes:{shape:'dot',size:12,scaling:{min:8,max:30}},
-  edges:{smooth:{type:'continuous'}},
-  physics:{stabilization:{iterations:150},barnesHut:{gravitationalConstant:-8000,springConstant:0.04,centralGravity:0.3}},
-  interaction:{hover:true,tooltipDelay:100,zoomView:true,dragView:true},
-  layout:{improvedLayout:true}
-};
-var network=new vis.Network(container,data,options);
-var commColors=COLORS_PLACEHOLDER;
-var commLabels=LABELS_PLACEHOLDER;
-var legend=document.getElementById('legend');
-Object.entries(commLabels).forEach(function(c){var cnode=document.createElement('div');cnode.className='legend-item';cnode.innerHTML='<div class="legend-dot" style="background:'+commColors[c[0]]+'"></div><span class="legend-label">'+c[1]+'</span>';cnode.onclick=function(){nodes.forEach(function(n){n.color={background:n.color.background,border:n.color.border}});network.redraw();};legend.appendChild(cnode);});
-network.on('click',function(e){if(e.nodes.length){var n=nodes.get(e.nodes[0]);var neigh=network.getConnectedNodes(e.nodes[0]);var info='<div class="field"><b>'+n.label+'</b></div><div class="field">'+n.title.replace(/\n/g,'<br>')+'</div><div class="field" style="margin-top:6px"><b>Connections:</b> '+neigh.length+'</div>';document.getElementById('info-content').innerHTML=info;}});
-var search=document.getElementById('search');
-var sres=document.getElementById('search-results');
-search.oninput=function(){var q=search.value.toLowerCase();sres.innerHTML='';if(!q){sres.style.display='none';return;}var found=nodes.get().filter(function(n){return n.label.toLowerCase().includes(q)||n.id.toLowerCase().includes(q);}).slice(0,8);found.forEach(function(n){var item=document.createElement('div');item.className='search-item';item.textContent=n.label;item.onclick=function(){network.selectNodes([n.id]);network.focus(n.id,{scale:1.5,animation:true});search.value=n.label;sres.style.display='none';};sres.appendChild(item);});sres.style.display=found.length?'block':'none';};
-document.getElementById('stats').textContent=nodes.length+' nodes · '+edges.length+' edges · '+Object.keys(commLabels).length+' communities';
-<\/script></body></html>`;
-
-          IFRAME.srcdoc = html
-            .replace('NODES_PLACEHOLDER', JSON.stringify(nodes.map(n => ({
-              id: n.id,
-              label: n.label,
-              color: n.color,
-              title: n.title
-            }))))
-            .replace('EDGES_PLACEHOLDER', JSON.stringify(edges.map(e => ({
-              from: e.from, to: e.to, arrows: e.arrows, color: e.color, title: e.title, font: e.font
-            }))))
-            .replace('COLORS_PLACEHOLDER', JSON.stringify(colors))
-            .replace('LABELS_PLACEHOLDER', JSON.stringify(
-              Object.fromEntries(Object.entries(communities).map(([k, v]) => [k, 'Community ' + k]))
-            ));
-
-          LOADING.style.display = 'none';
-          IFRAME.style.display  = '';
-        })
-        .catch(err => {
-          LOADING.style.display = 'none';
-          ERROR.style.display   = '';
-          ERROR.textContent    = 'Не удалось загрузить graph.json: ' + err.message;
-        });
+      IFRAME.src = 'graph.html';
     }
     SECTION.classList.toggle('graph-section--open');
+    if (SECTION.classList.contains('graph-section--open')) {
+      LOADING.style.display = 'none';
+      IFRAME.style.display = '';
+    } else {
+      IFRAME.style.display = 'none';
+    }
   };
-  // Call initGraph when srcdoc finishes loading
-  IFRAME.onload = function() { initGraph(); };
-  // Fallback: call immediately if already loaded
-  setTimeout(initGraph, 100);
 })();
 </script>
 

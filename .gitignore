@@ -77,6 +77,7 @@ graphify-out/**
 # Local graph data for WordPress iframe embedding
 docs/graph.json
 docs/vis-network.min.js
+docs/graph.html
 
 # Agent configs (generated, per-user)
 AGENTS.md

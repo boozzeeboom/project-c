@@ -290,15 +290,32 @@ if (!_isInitialized)
                     _lastTeleportTime = Time.time;
                     Debug.Log($"[CSL] Teleporting player from {playerTransform.position} to {worldSpawnPos}");
 
-                    var networkPlayer = playerTransform.GetComponent<ProjectC.Player.NetworkPlayer>();
-                    if (networkPlayer != null)
+                    if (playerTransform.name.Contains("PlayerSpawner"))
                     {
-                        Debug.Log("[CSL] Using NetworkPlayer.TeleportServerRpc for proper network sync");
-                        networkPlayer.TeleportServerRpc(worldSpawnPos);
+                        Debug.Log("[CSL] PlayerSpawner detected - finding actual NetworkPlayer for teleport");
+                        var networkPlayers = FindObjectsByType<ProjectC.Player.NetworkPlayer>();
+                        foreach (var np in networkPlayers)
+                        {
+                            if (np.IsOwner)
+                            {
+                                np.TeleportServerRpc(worldSpawnPos);
+                                Debug.Log($"[CSL] Teleported via NetworkPlayer: {np.name} to {worldSpawnPos}");
+                                break;
+                            }
+                        }
                     }
                     else
                     {
-                        playerTransform.position = worldSpawnPos;
+                        var networkPlayer = playerTransform.GetComponent<ProjectC.Player.NetworkPlayer>();
+                        if (networkPlayer != null)
+                        {
+                            Debug.Log("[CSL] Using NetworkPlayer.TeleportServerRpc for proper network sync");
+                            networkPlayer.TeleportServerRpc(worldSpawnPos);
+                        }
+                        else
+                        {
+                            playerTransform.position = worldSpawnPos;
+                        }
                     }
 
                     _lastPlayerPos = playerTransform.position;

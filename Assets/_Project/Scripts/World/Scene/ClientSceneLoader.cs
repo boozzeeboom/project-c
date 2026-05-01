@@ -184,20 +184,33 @@ private void Update()
                 }
             }
 
-            ManageLoadedScenesCount();
+ManageLoadedScenesCount();
+            CheckDistanceBasedUnload(playerScene, pos);
         }
 
-        private SceneID CalculatePreloadScene(SceneID current, Vector3 localPos)
+        private void CheckDistanceBasedUnload(SceneID playerScene, Vector3 playerPos)
         {
-            if (localPos.x > SCENE_SIZE - preloadDistance && current.GridX < sceneRegistry.GridColumns - 1)
-                return current.GetNeighbor(Direction.X_plus);
-            if (localPos.x < preloadDistance && current.GridX > 0)
-                return current.GetNeighbor(Direction.X_minus);
-            if (localPos.z > SCENE_SIZE - preloadDistance && current.GridZ < sceneRegistry.GridRows - 1)
-                return current.GetNeighbor(Direction.Z_plus);
-            if (localPos.z < preloadDistance && current.GridZ > 0)
-                return current.GetNeighbor(Direction.Z_minus);
-            return current;
+            var toUnload = new List<SceneID>();
+
+            foreach (var scene in _loadedScenes)
+            {
+                if (scene.Equals(playerScene))
+                    continue;
+
+                Vector3 sceneCenter = scene.WorldCenter;
+                float dist = Vector3.Distance(new Vector3(playerPos.x, 0, playerPos.z), new Vector3(sceneCenter.x, 0, sceneCenter.z));
+
+                if (dist > unloadDistance)
+                {
+                    toUnload.Add(scene);
+                }
+            }
+
+            foreach (var scene in toUnload)
+            {
+                Debug.Log($"[CSL] Distance-based unload: {scene} (dist > {unloadDistance})");
+                StartCoroutine(UnloadSceneCoroutine(scene));
+            }
         }
 
         private void ManageLoadedScenesCount()

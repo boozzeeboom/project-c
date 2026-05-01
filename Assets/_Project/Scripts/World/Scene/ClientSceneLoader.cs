@@ -308,12 +308,17 @@ if (!_isInitialized)
             Debug.Log("[CSL] FindLocalPlayer() called");
 
             var playerByTag = GameObject.FindGameObjectWithTag("Player");
+            Debug.Log($"[CSL] FindGameObjectWithTag('Player') = {playerByTag?.name ?? "NULL"}");
             if (playerByTag != null)
             {
                 playerTransform = playerByTag.transform;
                 _isInitialized = true;
                 Debug.Log($"[CSL] Found PLAYER by tag: {playerByTag.name} at {playerByTag.transform.position}");
                 return;
+            }
+            else
+            {
+                Debug.LogWarning("[CSL] FindGameObjectWithTag('Player') returned NULL! Searching alternatives...");
             }
 
             if (NetworkManager.Singleton != null && NetworkManager.Singleton.IsListening)

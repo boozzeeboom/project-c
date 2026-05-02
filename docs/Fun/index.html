@@ -362,32 +362,101 @@
 
         /* Mobile Responsive Styles */
         @media (max-width: 600px) {
+            /* Hide map on mobile - not needed for core gameplay */
+            #map-area {
+                display: none;
+            }
+
+            /* Compact HUD */
+            #hud {
+                padding: 6px 10px;
+                flex-wrap: wrap;
+                gap: 2px;
+                position: relative;
+                z-index: 100;
+            }
+            #credits {
+                font-size: 14px;
+            }
+            #location-info {
+                font-size: 10px;
+            }
+            #tick-timer, #ship-status {
+                font-size: 9px;
+            }
+            #hud button {
+                padding: 3px 6px;
+                font-size: 8px;
+            }
+
+            /* Mobile tab navigation */
+            #mobile-tabs {
+                display: flex;
+                background: var(--ui-bg);
+                border-top: 2px solid var(--ui-accent);
+                border-bottom: 1px solid rgba(79, 195, 247, 0.3);
+            }
+            .mobile-tab {
+                flex: 1;
+                padding: 10px 5px;
+                background: transparent;
+                border: none;
+                border-bottom: 3px solid transparent;
+                color: var(--text-secondary);
+                font-family: 'Orbitron', monospace;
+                font-size: 9px;
+                font-weight: 700;
+                cursor: pointer;
+                text-align: center;
+                min-height: 44px;
+                transition: all 0.2s;
+            }
+            .mobile-tab.active {
+                color: var(--ui-accent);
+                border-bottom-color: var(--ui-accent);
+                background: rgba(79, 195, 247, 0.1);
+            }
+            .mobile-tab .tab-icon {
+                display: block;
+                font-size: 16px;
+                margin-bottom: 2px;
+            }
+
+            /* Bottom panels - single column, tabbed */
             #bottom-panels {
+                display: none;
                 grid-template-columns: 1fr;
-                grid-template-rows: auto;
                 max-height: none;
-                gap: 8px;
-                padding: 8px;
+                height: calc(100vh - 90px);
                 overflow-y: auto;
+                gap: 0;
+                padding: 0;
+            }
+            #bottom-panels.mobile-visible {
+                display: grid;
             }
             .panel {
                 padding: 10px;
-                max-height: 200px;
+                max-height: none;
+                border-radius: 0;
+                display: none;
             }
-            .panel:nth-child(2) {
-                max-height: 250px;
+            .panel.mobile-active {
+                display: block;
             }
             .panel-title {
                 font-size: 11px;
                 margin-bottom: 6px;
             }
+
+            /* Market tab adjustments */
             .market-tabs {
                 gap: 2px;
             }
             .market-tab {
                 padding: 8px 4px;
                 font-size: 9px;
-                min-height: 36px;
+                min-height: 44px;
             }
             .market-item {
                 grid-template-columns: 1fr 50px 40px 50px;
@@ -396,26 +465,33 @@
                 gap: 4px;
             }
             .qty-btn {
-                width: 28px;
-                height: 28px;
-                font-size: 12px;
+                width: 44px;
+                height: 44px;
+                font-size: 16px;
             }
             .trade-btn {
-                padding: 6px 8px;
-                font-size: 9px;
-                min-height: 32px;
+                padding: 8px 10px;
+                font-size: 10px;
+                min-height: 44px;
             }
+
+            /* Ship panel buttons */
             button[id="fuel-btn"],
             button[id="repair-btn-hud"],
             button[id="bar-btn"] {
-                padding: 10px 6px;
+                padding: 12px 8px;
                 font-size: 11px;
-                min-height: 44px;
+                min-height: 48px;
+                margin-bottom: 6px;
             }
+
+            /* Route/Launch */
             #launch-btn {
-                padding: 12px;
-                font-size: 11px;
-                min-height: 44px;
+                padding: 14px;
+                font-size: 12px;
+                min-height: 50px;
+                position: sticky;
+                bottom: 0;
             }
             #cargo-text, .cargo-item {
                 font-size: 10px;
@@ -432,16 +508,12 @@
             .profit-estimate {
                 font-size: 10px;
             }
-            #credits {
-                font-size: 16px;
-            }
-            #location-info, #tick-timer, #ship-status {
-                font-size: 11px;
-            }
-            #hud {
-                padding: 8px 10px;
-                flex-wrap: wrap;
-                gap: 4px;
+        }
+
+        /* Desktop keeps original layout */
+        @media (min-width: 601px) {
+            #mobile-tabs {
+                display: none;
             }
         }
     </style>
@@ -460,8 +532,20 @@
         <div id="map-area">
             <canvas id="map-canvas"></canvas>
         </div>
+        <!-- Mobile Tab Navigation -->
+        <div id="mobile-tabs" style="display:none;">
+            <button class="mobile-tab active" data-panel="ship-panel" onclick="switchMobileTab('ship-panel')">
+                <span class="tab-icon">🚀</span>КОРАБЛЬ
+            </button>
+            <button class="mobile-tab" data-panel="market-panel" onclick="switchMobileTab('market-panel')">
+                <span class="tab-icon">💰</span>РЫНОК
+            </button>
+            <button class="mobile-tab" data-panel="route-panel" onclick="switchMobileTab('route-panel')">
+                <span class="tab-icon">🗺️</span>МАРШРУТ
+            </button>
+        </div>
         <div id="bottom-panels">
-            <div class="panel">
+            <div class="panel" id="ship-panel">
                 <div class="panel-title" id="ship-title">КОРАБЛЬ: Шлюпка</div>
                 <div style="margin-bottom:8px;">
                     <div style="display:flex;align-items:center;gap:6px;margin-bottom:6px;">
@@ -488,7 +572,7 @@
                 <div id="cargo-text">0 кг</div>
                 <div id="cargo-items"></div>
             </div>
-            <div class="panel">
+            <div class="panel" id="market-panel">
                 <div class="panel-title">РЫНОК: <span id="market-city">Примум</span></div>
                 <div class="market-tabs">
                     <button class="market-tab active" data-tab="buy">КУПИТЬ</button>
@@ -499,8 +583,12 @@
                 </div>
                 <div id="market-items"></div>
             </div>
-            <div class="panel">
+            <div class="panel" id="route-panel">
                 <div class="panel-title">МАРШРУТ</div>
+                <!-- Mobile city selection list -->
+                <div id="mobile-city-list" style="display:none; margin-bottom:10px;">
+                    <div style="font-size:10px;color:var(--text-secondary);margin-bottom:6px;">ВЫБЕРИТЕ ГОРОД:</div>
+                </div>
                 <div class="route-destination" id="route-dest">Выберите город</div>
                 <div class="route-stats" id="route-stats"></div>
                 <div class="profit-estimate" id="profit-estimate"></div>
@@ -1201,6 +1289,7 @@ class Game {
     }
     bindEvents() {
         this.canvas.addEventListener('click', (e) => this.handleMapClick(e));
+        this.setupMobileCityList();
         document.querySelectorAll('.market-tab').forEach(tab => {
             tab.addEventListener('click', () => {
                 document.querySelectorAll('.market-tab').forEach(t => t.classList.remove('active'));
@@ -1218,6 +1307,35 @@ class Game {
         document.getElementById('bar-btn').addEventListener('click', () => this.enterBar());
         document.getElementById('prison-continue-btn').addEventListener('click', () => this.continueAfterPrison());
         document.getElementById('bar-back-btn').addEventListener('click', () => this.barExit());
+    }
+    setupMobileCityList() {
+        let container = document.getElementById('mobile-city-list');
+        if (!container) return;
+        let html = '';
+        for (let cityId in CITIES) {
+            if (cityId === this.state.currentCity) continue;
+            let city = CITIES[cityId];
+            html += '<button class="mobile-city-btn" data-city="' + cityId + '" style="display:block;width:100%;padding:8px;margin-bottom:4px;background:rgba(79,195,247,0.1);border:1px solid rgba(79,195,247,0.3);border-radius:6px;color:var(--text-primary);font-family:Orbitron,monospace;font-size:10px;cursor:pointer;text-align:left;min-height:44px;">' +
+                '<span style="color:' + city.color + ';">●</span> ' + city.name + ' <span style="color:var(--text-secondary);">(' + city.distance + ' уд)</span>' +
+                '</button>';
+        }
+        container.innerHTML = html;
+        // Add event listeners
+        let self = this;
+        container.querySelectorAll('.mobile-city-btn').forEach(function(btn) {
+            btn.addEventListener('click', function() { self.selectCity(btn.dataset.city); });
+        });
+        // Show on mobile
+        if (window.innerWidth <= 600) {
+            container.style.display = 'block';
+        }
+    }
+    selectCity(cityId) {
+        if (this.state.ship.traveling) return;
+        this.selectedCity = cityId;
+        this.renderRoute();
+        document.getElementById('launch-btn').disabled = false;
+        this.notify('Выбран город: ' + CITIES[cityId].name, 'success');
     }
     handleMapClick(e) {
         if (this.state.ship.traveling) return;
@@ -2177,6 +2295,47 @@ class Game {
         this.renderAll();
     }
 }
+
+// Mobile tab switching
+function switchMobileTab(panelId) {
+    // Update tab buttons
+    document.querySelectorAll('.mobile-tab').forEach(tab => {
+        tab.classList.remove('active');
+        if (tab.dataset.panel === panelId) tab.classList.add('active');
+    });
+    // Update panels
+    document.querySelectorAll('#bottom-panels .panel').forEach(panel => {
+        panel.classList.remove('mobile-active');
+    });
+    let targetPanel = document.getElementById(panelId);
+    if (targetPanel) {
+        targetPanel.classList.add('mobile-active');
+    }
+    // Show bottom panels on mobile
+    let bottomPanels = document.getElementById('bottom-panels');
+    if (window.innerWidth <= 600) {
+        bottomPanels.classList.add('mobile-visible');
+    }
+}
+
+// Show mobile tabs on small screens
+if (window.innerWidth <= 600) {
+    document.getElementById('mobile-tabs').style.display = 'flex';
+    document.getElementById('bottom-panels').classList.add('mobile-visible');
+    // Show default panel (ship-panel)
+    document.getElementById('ship-panel').classList.add('mobile-active');
+}
+
+window.addEventListener('resize', function() {
+    let mobileTabs = document.getElementById('mobile-tabs');
+    if (window.innerWidth <= 600) {
+        mobileTabs.style.display = 'flex';
+        document.getElementById('bottom-panels').classList.add('mobile-visible');
+    } else {
+        mobileTabs.style.display = 'none';
+        document.getElementById('bottom-panels').classList.remove('mobile-visible');
+    }
+});
 
 let game = new Game();
     </script>

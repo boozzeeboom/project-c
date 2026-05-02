@@ -443,6 +443,49 @@
             margin-bottom: 25px;
             text-shadow: 0 0 10px var(--bar-glow);
         }
+
+        /* Port System Styles - Ghibli Treatment */
+        .port-item {
+            transition: all 0.3s ease;
+        }
+        .port-item:hover {
+            background: rgba(255, 255, 255, 0.08) !important;
+            transform: translateX(3px);
+        }
+        .port-item .trade-btn {
+            font-size: 9px !important;
+            padding: 8px 12px !important;
+            min-height: 36px;
+        }
+        #port-content {
+            max-height: 400px;
+            overflow-y: auto;
+        }
+
+        /* Mobile port tab icon */
+        .mobile-tab[data-panel="ports-panel"] .tab-icon {
+            font-size: 18px;
+            margin-bottom: 3px;
+        }
+
+        @media (max-width: 600px) {
+            #ports-panel {
+                padding: 12px;
+                max-height: none;
+                border-radius: 0;
+                display: none;
+                border-left: none;
+                border-right: none;
+                border-top: none;
+                box-shadow: none;
+            }
+            #ports-panel.mobile-active {
+                display: block;
+            }
+            .port-item {
+                margin-bottom: 8px;
+            }
+        }
         .bar-back-btn {
             position: absolute;
             top: 20px;
@@ -737,6 +780,9 @@
             <button class="mobile-tab" data-panel="route-panel" onclick="switchMobileTab('route-panel')">
                 <span class="tab-icon">🗺️</span>МАРШРУТ
             </button>
+            <button class="mobile-tab" data-panel="ports-panel" onclick="switchMobileTab('ports-panel')">
+                <span class="tab-icon">🏗️</span>ПОРТЫ
+            </button>
             <button class="mobile-tab" data-panel="log-panel" onclick="switchMobileTab('log-panel')">
                 <span class="tab-icon">📋</span>ЖУРНАЛ
             </button>
@@ -777,6 +823,7 @@
                     <button class="market-tab" data-tab="contracts">КОНТРАКТЫ</button>
                     <button class="market-tab" data-tab="ships">КОРАБЛИ</button>
                     <button class="market-tab" data-tab="modules">МОДУЛИ</button>
+                    <button class="market-tab" data-tab="ports">ПОРТЫ</button>
                 </div>
                 <div id="market-items"></div>
             </div>
@@ -795,7 +842,12 @@
                     <div class="panel-title">📋 ЖУРНАЛ СОБЫТИЙ</div>
                     <div id="log-panel-entries" style="max-height:300px; overflow-y:auto; padding:4px;"></div>
                 </div>
-        </div>
+                <div class="panel" id="ports-panel" style="display:none;">
+                    <div class="panel-title">🏗️ ПОРТЫ</div>
+                    <div id="total-passive-income" style="font-size:11px;color:var(--positive);margin-bottom:10px;text-align:center;text-shadow:0 0 10px rgba(129,199,132,0.3);">Пассивный доход: 0 CR/тик</div>
+                    <div id="port-content"></div>
+                </div>
+            </div>
     </div>
     <div id="notifications"></div>
     <div id="win-screen">
@@ -965,6 +1017,16 @@ const MODULE_CHANCES = { primum: { C: 40, B: 30, A: 20, S: 10 }, secundus: { C: 
 
 // Contraband items - items that trigger arrest chance when sold
 const CONTRABAND_ITEMS = ['errey_drug', 'encrypted_doc', 'jewelry', 'antique', 'stimulant'];
+
+// Port System Configuration
+const PORT_CONFIG = {
+    primum: { name: "Примум", maxLevel: 10, baseIncome: 1 },
+    secundus: { name: "Секунд", maxLevel: 5, baseIncome: 1 },
+    tertius: { name: "Тертиус", maxLevel: 8, baseIncome: 2 },
+    quartus: { name: "Квартус", maxLevel: 7, baseIncome: 3 },
+    kibwe: { name: "Кибо", maxLevel: 5, baseIncome: 1 },
+    elbrus: { name: "Эльбрус", maxLevel: 10, baseIncome: 2 }
+};
 
 // Random Events System - 10 events
 const EVENTS = [
@@ -1480,6 +1542,10 @@ class GameState {
         this.shipModules = [];
         this.activeEvents = [];
         this.eventLog = [];
+        this.portLevels = {};
+        for (let cityId in PORT_CONFIG) {
+            this.portLevels[cityId] = 0;
+        }
         this.initMarkets();
     }
     initMarkets() {
@@ -1570,6 +1636,33 @@ class GameState {
         }
         return modifier;
     }
+    // ==================== PORT SYSTEM METHODS ====================
+    getPortLevel(cityId) {
+        return this.portLevels[cityId] || 0;
+    }
+    getPortMaxLevel(cityId) {
+        return PORT_CONFIG[cityId] ? PORT_CONFIG[cityId].maxLevel : 0;
+    }
+    getPortUpgradeCost(cityId) {
+        let level = this.getPortLevel(cityId);
+        return (level + 1) * (level + 1) * 500;
+    }
+    getPortFuelDiscount(cityId) {
+        let level = this.getPortLevel(cityId);
+        return level * 0.10; // 10% per level, 100% at level 10
+    }
+    getPortPassiveIncome(cityId) {
+        let level = this.getPortLevel(cityId);
+        return level * (level + 1) / 2;
+    }
+    getTotalPassiveIncome() {
+        let total = 0;
+        for (let cityId in this.portLevels) {
+            total += this.getPortPassiveIncome(cityId);
+        }
+        return total;
+    }
+    // ==================== END PORT METHODS ====================
     addEventToLog(event, action) {
         this.eventLog.unshift({
             tick: this.tick,
@@ -2184,7 +2277,7 @@ class Game {
             let curContract = this.state.contracts.find(c => c.destination === this.state.currentCity && c.accepted && ITEMS[c.itemId] && CITIES[c.destination]);
             if (curContract) {
                 let hasItem = this.state.cargo[curContract.itemId] && this.state.cargo[curContract.itemId] >= curContract.quantity;
-                html += '<div class="contract-item"><div class="contract-header">АКТИВНЫЙ КОНТРАКТ</div><div class="contract-details">' + ITEMS[curContract.itemId].name + ' x' + curContract.quantity + ' &rarr; ' + CITIES[curContract.destination].name + '</div><div class="contract-reward">+' + curContract.reward + ' CR</div><button class="trade-btn" onclick="game.completeContract()" ' + (hasItem ? '' : 'disabled') + '>ВЫПОЛНИТЬ</button></div>';
+                html += '<div class="contract-item"><div class="contract-header">АКТИВНЫЙ КОНТРАКТ</div><div class="contract-details">' + ITEMS[curContract.itemId].name + ' x' + curContract.quantity + ' → ' + CITIES[curContract.destination].name + '</div><div class="contract-reward">+' + curContract.reward + ' CR</div><button class="trade-btn" onclick="game.completeContract()" ' + (hasItem ? '' : 'disabled') + '>ВЫПОЛНИТЬ</button></div>';
             }
             this.state.contracts.filter(c => !c.accepted && ITEMS[c.itemId] && CITIES[c.destination]).forEach(c => {
                 html += '<div class="contract-item"><div class="contract-header">' + CITIES[c.destination].name + '</div><div class="contract-details">' + ITEMS[c.itemId].name + ' x' + c.quantity + '</div><div class="contract-reward">+' + c.reward + ' CR</div><button class="trade-btn" onclick="game.acceptContract(' + c.id + ')">ПРИНЯТЬ</button></div>';
@@ -2210,6 +2303,10 @@ class Game {
                 let canAdd = this.state.canAddModule() && mod.price <= this.state.credits;
                 html += '<div class="contract-item"><div class="contract-header" style="color:' + tierColor + '">' + mod.name + '</div><div class="contract-details">' + (mod.type === 'cargo' ? '+' + mod.cargoBonus + ' кг груза | -' + Math.round((1-mod.speedMod)*100) + '% скор' : '+' + Math.round(mod.speedBonus*100) + '% скор | +' + mod.cargoMod + ' кг') + '</div><div class="contract-reward">' + mod.price + ' CR</div><button class="trade-btn" onclick="game.buyModule(\'' + modId + '\')" ' + (canAdd ? '' : 'disabled') + '>' + (this.state.shipModules.includes(modId) ? 'УЖЕ ЕСТЬ' : 'КУПИТЬ') + '</button></div>';
             }
+        } else if (this.marketTab === 'ports') {
+            // Render ports panel content
+            this.renderPortPanel();
+            html = document.getElementById('port-content').innerHTML;
         } else {
             let cityItems = CITIES[this.state.currentCity].items;
             let itemsToShow = this.marketTab === 'sell'
@@ -2452,6 +2549,373 @@ class Game {
         this.render();
         this.renderHUD();
         requestAnimationFrame(() => this.gameLoop());
+    }
+
+    // ==================== PORT SYSTEM METHODS ====================
+
+    buyPortUpgrade(cityId) {
+        if (!PORT_CONFIG[cityId]) { this.notify('Ошибка города!', 'error'); return false; }
+        if (this.state.ship.traveling) { this.notify('Нельзя улучшить порт в пути!', 'error'); return false; }
+        
+        let currentLevel = this.state.getPortLevel(cityId);
+        let maxLevel = this.state.getPortMaxLevel(cityId);
+        
+        if (currentLevel >= maxLevel) { this.notify('Порт уже максимального уровня!', 'error'); return false; }
+        
+        let cost = this.state.getPortUpgradeCost(cityId);
+        if (this.state.credits < cost) { this.notify('Недостаточно CR! Нужно: ' + cost, 'error'); return false; }
+        
+        this.state.credits -= cost;
+        this.state.portLevels[cityId] = currentLevel + 1;
+        
+        this.notify('Порт ' + PORT_CONFIG[cityId].name + ' улучшен до уровня ' + (currentLevel + 1) + '!', 'success');
+        this.state.save();
+        this.renderAll();
+        this.renderPortPanel();
+        return true;
+    }
+
+    refuel() {
+        if (this.state.ship.traveling) return;
+        let cost = Math.round(20 * this.state.getFuelCostModifier());
+        
+        // Apply port fuel discount for current city
+        let portDiscount = this.state.getPortFuelDiscount(this.state.currentCity);
+        if (portDiscount > 0) {
+            cost = Math.round(cost * (1 - portDiscount));
+        }
+        
+        if (this.state.credits < cost) { this.notify('Недостаточно CR!', 'error'); return; }
+        if (this.state.shipFuel >= 100) { this.notify('Бак полон!', 'error'); return; }
+        this.state.credits -= cost;
+        this.state.shipFuel = Math.min(100, this.state.shipFuel + 30);
+        
+        let discountText = portDiscount > 0 ? ' (скидка порта ' + Math.round(portDiscount * 100) + '%)' : '';
+        this.notify('Заправка +30 (-' + cost + ' CR)' + discountText, 'success');
+        this.state.save();
+        this.renderHUD();
+    }
+
+    updateShip(dt) {
+        if (!this.state.ship.traveling) return;
+        this.state.ship.travelProgress += dt;
+        if (this.state.ship.travelProgress >= this.state.ship.travelDuration) {
+            let destId = this.state.ship.destination;
+            this.state.currentCity = destId;
+
+            // Apply force land damage if applicable
+            if (this._forceLandDamage) {
+                this.state.shipCondition = Math.max(0, this.state.shipCondition - this._forceLandDamage);
+                this.notify('Принудительная посадка! Урон: -' + this._forceLandDamage + ' HP', 'error');
+                this._forceLandDamage = null;
+                if (this.state.shipCondition <= 0) {
+                    this.state.ship.broken = true;
+                    document.getElementById('repair-screen').style.display = 'flex';
+                    document.getElementById('repair-cost').textContent = 'Ремонт: ' + this.calculateRepairCost() + ' CR';
+                }
+            }
+
+            if (Math.random() < this.state.ship.breakageChance) {
+                this.state.ship.broken = true;
+                let damage = 20 + Math.random() * 40;
+                this.state.shipCondition = Math.max(0, this.state.shipCondition - damage);
+                document.getElementById('repair-screen').style.display = 'flex';
+                document.getElementById('repair-cost').textContent = 'Ремонт: ' + this.calculateRepairCost() + ' CR';
+            } else {
+                let healBonus = Math.round(this.state.ship.travelDuration / 30);
+                this.state.shipCondition = Math.min(100, this.state.shipCondition + healBonus);
+                this.notify('Прибыли в ' + CITIES[destId].name + '. Корабль: ' + this.state.shipCondition + '%', 'success');
+            }
+            this.state.ship = { docked: true, traveling: false, destination: null, travelProgress: 0, travelDuration: 0, broken: false };
+            this.state.tick++;
+            this.decayFactors();
+            this.refreshCityStock(destId);
+            if (this.state.tick % 2 === 0) this.generateContract();
+
+             // Process event tick and check for new random events after arrival
+             this.processEventTick();
+             this.checkRandomEvent();
+
+             // Check for skip events (player waits in current city for a tick)
+             let skipEvent = this.state.activeEvents.find(e => e.skip);
+             if (skipEvent) {
+                 this.state.tick++;
+                 this.notify('Вы ждёте в ' + CITIES[destId].name + ' (скип тика из-за события)', 'warning');
+             }
+
+             // Add passive income from ports on tick increment (arrival in new city)
+             let passiveIncome = this.state.getTotalPassiveIncome();
+             if (passiveIncome > 0) {
+                 this.state.credits += passiveIncome;
+                 this.notify('Пассивный доход от портов: +' + passiveIncome + ' CR', 'success');
+             }
+
+            let btn = document.getElementById('launch-btn');
+            btn.textContent = 'ВЫБЕРИТЕ ГОРОД';
+            btn.classList.remove('traveling');
+            btn.disabled = true;
+            this.checkWin();
+        }
+    }
+
+    renderPortRings() {
+        let ctx = this.ctx;
+        for (let cityId in CITIES) {
+            let city = CITIES[cityId];
+            let portLevel = this.state.getPortLevel(cityId);
+            let maxLevel = this.state.getPortMaxLevel(cityId);
+            
+            if (portLevel <= 0) continue;
+            
+            let x = city.x * this.canvas.width;
+            let y = city.y * this.canvas.height;
+            let ringRadius = 45; // Slightly larger than city glow
+            let segmentAngle = (Math.PI * 2) / maxLevel;
+            
+            // Draw empty ring outline
+            ctx.beginPath();
+            ctx.arc(x, y, ringRadius, 0, Math.PI * 2);
+            ctx.strokeStyle = city.color + '30';
+            ctx.lineWidth = 3;
+            ctx.stroke();
+            
+            // Draw filled segments proportional to level/max
+            for (let i = 0; i < portLevel; i++) {
+                let startAngle = i * segmentAngle - Math.PI / 2;
+                let endAngle = startAngle + segmentAngle;
+                
+                ctx.beginPath();
+                ctx.arc(x, y, ringRadius, startAngle, endAngle);
+                ctx.arc(x, y, ringRadius - 4, endAngle, startAngle, true);
+                ctx.closePath();
+                
+                ctx.fillStyle = city.color + 'AA';
+                ctx.fill();
+                
+                // Glowing effect
+                ctx.shadowColor = city.color;
+                ctx.shadowBlur = 10;
+                ctx.fill();
+                ctx.shadowBlur = 0;
+            }
+        }
+    }
+
+    renderPortPanel() {
+        // This will be called to update the ports tab content
+        let portContent = document.getElementById('port-content');
+        if (!portContent) return;
+        
+        let html = '';
+        for (let cityId in PORT_CONFIG) {
+            let config = PORT_CONFIG[cityId];
+            let level = this.state.getPortLevel(cityId);
+            let maxLevel = config.maxLevel;
+            let upgradeCost = this.state.getPortUpgradeCost(cityId);
+            let fuelDiscount = this.state.getPortFuelDiscount(cityId);
+            let passiveIncome = this.state.getPortPassiveIncome(cityId);
+            let isCurrentCity = cityId === this.state.currentCity;
+            let canUpgrade = level < maxLevel && this.state.credits >= upgradeCost && !this.state.ship.traveling;
+            
+            let city = CITIES[cityId];
+            html += '<div class="port-item" style="background:rgba(255,255,255,0.05);border-radius:10px;padding:12px;margin-bottom:10px;border-left:3px solid ' + city.color + ';">' +
+                '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;">' +
+                    '<div style="font-size:12px;color:' + city.color + ';font-weight:700;">' + config.name + (isCurrentCity ? ' ★' : '') + '</div>' +
+                    '<div style="font-size:10px;color:var(--text-secondary);">Уровень ' + level + '/' + maxLevel + '</div>' +
+                '</div>' +
+                '<div style="display:flex;gap:8px;margin-bottom:8px;align-items:center;">';
+            
+            // Progress bar for mobile
+            html += '<div style="flex:1;height:12px;background:rgba(255,248,231,0.08);border-radius:8px;overflow:hidden;">' +
+                        '<div style="width:' + (level/maxLevel*100) + '%;height:100%;background:' + city.color + ';border-radius:8px;transition:width 0.3s ease;"></div>' +
+                    '</div>';
+            
+            html += '</div>' +
+                '<div style="font-size:9px;color:var(--text-secondary);margin-bottom:6px;">' +
+                    'Топливо: -' + Math.round(fuelDiscount * 100) + '% | Доход: ' + passiveIncome + ' CR/тик' +
+                '</div>';
+            
+            if (level < maxLevel) {
+                html += '<button class="trade-btn" onclick="game.buyPortUpgrade(\'' + cityId + '\')" ' + (canUpgrade ? '' : 'disabled') + ' style="width:100%;font-size:9px;">' +
+                    'УЛУЧШИТЬ (' + upgradeCost + ' CR)' +
+                '</button>';
+            } else {
+                html += '<div style="font-size:9px;color:var(--positive);text-align:center;">МАКСИМАЛЬНЫЙ УРОВЕНЬ</div>';
+            }
+            
+            html += '</div>';
+        }
+        
+        portContent.innerHTML = html;
+        
+        // Update total passive income display if exists
+        let totalIncomeEl = document.getElementById('total-passive-income');
+        if (totalIncomeEl) {
+            totalIncomeEl.textContent = 'Пассивный доход: ' + this.state.getTotalPassiveIncome() + ' CR/тик';
+        }
+    }
+
+    // Call renderPortRings in the render method
+    render() {
+        let ctx = this.ctx;
+        ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);
+
+        let gradient = ctx.createLinearGradient(0, 0, 0, this.canvas.height);
+        gradient.addColorStop(0, '#2D1B4E');
+        gradient.addColorStop(0.3, '#6B5B95');
+        gradient.addColorStop(0.6, '#9B8FC4');
+        gradient.addColorStop(0.8, '#E8A87C');
+        gradient.addColorStop(1, '#FFB74D');
+        ctx.fillStyle = gradient;
+        ctx.fillRect(0, 0, this.canvas.width, this.canvas.height);
+
+        if (this.lightningFlash > 0) {
+            ctx.fillStyle = 'rgba(107, 91, 149, ' + (this.lightningFlash * 0.15) + ')';
+            ctx.fillRect(0, 0, this.canvas.width, this.canvas.height);
+            this.lightningFlash -= 0.05;
+        }
+
+        for (let i = 0; i < this.clouds.length; i++) {
+            let cloud = this.clouds[i];
+            cloud.x += cloud.speed;
+            if (cloud.x > this.canvas.width + cloud.size) {
+                cloud.x = -cloud.size;
+                cloud.y = Math.random() * this.canvas.height;
+            }
+            let grad = ctx.createRadialGradient(cloud.x, cloud.y, 0, cloud.x, cloud.y, cloud.size);
+            grad.addColorStop(0, 'rgba(60, 60, 80, ' + cloud.opacity + ')');
+            grad.addColorStop(0.5, 'rgba(40, 40, 60, ' + (cloud.opacity * 0.6) + ')');
+            grad.addColorStop(1, 'transparent');
+            ctx.beginPath();
+            ctx.ellipse(cloud.x, cloud.y, cloud.size, cloud.size * 0.4, 0, 0, Math.PI * 2);
+            ctx.fillStyle = grad;
+            ctx.fill();
+        }
+
+        this.lightningTimer++;
+        if (this.lightningTimer > 360 + Math.random() * 540) {
+            this.lightningFlash = 0.7;
+            this.lightningTimer = 0;
+            this.drawLightning(ctx);
+        }
+
+        for (let cityId in CITIES) {
+            let city = CITIES[cityId];
+            let x = city.x * this.canvas.width;
+            let y = city.y * this.canvas.height;
+            let isCurrent = cityId === this.state.currentCity;
+            let isSelected = this.selectedCity === cityId;
+
+            let glowGradient = ctx.createRadialGradient(x, y, 0, x, y, isSelected ? 70 : 50);
+            glowGradient.addColorStop(0, city.color + (isCurrent || isSelected ? '60' : '30'));
+            glowGradient.addColorStop(0.5, city.color + '20');
+            glowGradient.addColorStop(1, 'transparent');
+            ctx.beginPath();
+            ctx.arc(x, y, isSelected ? 70 : 50, 0, Math.PI * 2);
+            ctx.fillStyle = glowGradient;
+            ctx.fill();
+
+            ctx.beginPath();
+            ctx.arc(x, y, 28, 0, Math.PI * 2);
+            ctx.fillStyle = 'rgba(30, 25, 40, 0.9)';
+            ctx.fill();
+            ctx.strokeStyle = city.color + 'CC';
+            ctx.lineWidth = 2;
+            ctx.stroke();
+
+            ctx.beginPath();
+            ctx.arc(x, y, 20, 0, Math.PI * 2);
+            ctx.fillStyle = 'rgba(40, 35, 55, 0.8)';
+            ctx.fill();
+            ctx.strokeStyle = city.color + '99';
+            ctx.lineWidth = 1.5;
+            ctx.stroke();
+
+            ctx.beginPath();
+            ctx.arc(x, y, 10, 0, Math.PI * 2);
+            ctx.fillStyle = isCurrent ? city.color : '#2a2a45';
+            ctx.fill();
+
+            ctx.beginPath();
+            ctx.moveTo(x, y - 28);
+            ctx.lineTo(x - 10, y - 42);
+            ctx.lineTo(x + 10, y - 42);
+            ctx.closePath();
+            ctx.fillStyle = city.color;
+            ctx.fill();
+
+            ctx.fillStyle = '#FFE082';
+            ctx.beginPath();
+            ctx.arc(x - 5, y - 35, 2, 0, Math.PI * 2);
+            ctx.arc(x + 5, y - 35, 2, 0, Math.PI * 2);
+            ctx.fill();
+
+            if (isCurrent) {
+                ctx.beginPath();
+                ctx.arc(x, y, 32, 0, Math.PI * 2);
+                ctx.strokeStyle = city.color + 'AA';
+                ctx.lineWidth = 2;
+                ctx.setLineDash([5, 3]);
+                ctx.stroke();
+                ctx.setLineDash([]);
+            }
+            if (isSelected) {
+                ctx.beginPath();
+                ctx.arc(x, y, 35, 0, Math.PI * 2);
+                ctx.strokeStyle = '#FFFFFF';
+                ctx.lineWidth = 2;
+                ctx.stroke();
+            }
+
+            ctx.fillStyle = '#FFF8E7';
+            ctx.font = 'bold 11px Segoe UI, Tahoma, sans-serif';
+            ctx.textAlign = 'center';
+            ctx.fillText(city.name, x, y + 45);
+            ctx.fillStyle = '#B8B0C8';
+            ctx.font = '9px Segoe UI, Tahoma, sans-serif';
+            ctx.fillText('Уд:' + city.distance, x, y + 56);
+        }
+
+        // Render port rings on canvas
+        this.renderPortRings();
+
+        if (this.state.ship.traveling) {
+            let progress = this.state.ship.travelProgress / this.state.ship.travelDuration;
+            let startX = this.state.ship.startPos.x * this.canvas.width;
+            let startY = this.state.ship.startPos.y * this.canvas.height;
+            let endX = this.state.ship.endPos.x * this.canvas.width;
+            let endY = this.state.ship.endPos.y * this.canvas.height;
+            let x = startX + (endX - startX) * progress;
+            let y = startY + (endY - startY) * progress;
+
+            ctx.beginPath();
+            ctx.moveTo(startX, startY);
+            ctx.lineTo(x, y);
+            ctx.strokeStyle = 'rgba(127, 219, 218, 0.4)';
+            ctx.lineWidth = 3;
+            ctx.stroke();
+
+            ctx.beginPath();
+            ctx.arc(x, y, 14, 0, Math.PI * 2);
+            ctx.fillStyle = 'rgba(40, 35, 55, 0.9)';
+            ctx.fill();
+            ctx.strokeStyle = '#7FDBDA';
+            ctx.lineWidth = 2;
+            ctx.stroke();
+
+            ctx.fillStyle = '#FFF8E7';
+            ctx.font = '14px Arial';
+            ctx.textAlign = 'center';
+            ctx.fillText(String.fromCodePoint(0x1F681), x - 8, y + 4);
+        } else if (!this.state.ship.broken) {
+            let city = CITIES[this.state.currentCity];
+            let x = city.x * this.canvas.width;
+            let y = city.y * this.canvas.height - 40;
+            ctx.fillStyle = '#7FDBDA';
+            ctx.font = '20px Arial';
+            ctx.textAlign = 'center';
+            ctx.fillText(String.fromCodePoint(0x1F681), x, y);
+        }
     }
 
     // ==================== PRISON SYSTEM ====================

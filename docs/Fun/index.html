@@ -24,6 +24,11 @@
             --soft-cyan: #80DEEA;
             --warm-amber: #FFCC80;
             --cream: #FFF8E7;
+            /* Day/Night cycle colors - dynamically updated */
+            --sky-top: #2D1B4E;
+            --sky-bottom: #FFB74D;
+            --cloud-color: rgba(255, 248, 231, 0.5);
+            --star-alpha: 0;
             /* Prison - softer Ghibli treatment */
             --prison-bg: linear-gradient(180deg, rgba(45, 27, 78, 0.96) 0%, rgba(30, 20, 50, 0.98) 100%);
             --prison-accent: #CE93D8;
@@ -35,16 +40,20 @@
             --bar-text: #FFE0B2;
             --bar-glow: rgba(255, 183, 77, 0.3);
         }
+        body, #hud, .panel, .notification, button, .market-tab, .bar-back-btn, .prison-choice, .bar-choice {
+            transition: background 2s ease, color 2s ease, border-color 2s ease, box-shadow 2s ease;
+        }
         body {
             font-family: 'M PLUS Rounded', 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            background: linear-gradient(180deg, #2D1B4E 0%, #5C6BC0 20%, #7986CB 35%, #FFB74D 55%, #FFCC80 75%, #FFF8E7 100%);
+            background: linear-gradient(180deg, var(--sky-top) 0%, var(--sky-bottom) 100%);
             min-height: 100vh;
             color: var(--text-primary);
             overflow: hidden;
             background-attachment: fixed;
+            transition: background 2s ease, color 2s ease;
         }
         #game-container { display: flex; flex-direction: column; height: 100vh; max-width: 1400px; margin: 0 auto; }
-        #hud { display: flex; justify-content: space-between; align-items: center; padding: 12px 20px; background: var(--ui-bg); border-bottom: 2px solid rgba(127, 219, 218, 0.4); border-bottom-left-radius: 0; border-bottom-right-radius: 0; box-shadow: 0 4px 20px rgba(127, 219, 218, 0.15), inset 0 -2px 15px rgba(255, 248, 231, 0.05); z-index: 100; backdrop-filter: blur(10px); }
+        #hud { display: flex; justify-content: space-between; align-items: center; padding: 12px 20px; background: var(--ui-bg); border-bottom: 2px solid rgba(127, 219, 218, 0.4); border-bottom-left-radius: 0; border-bottom-right-radius: 0; box-shadow: 0 4px 20px rgba(127, 219, 218, 0.15), inset 0 -2px 15px rgba(255, 248, 231, 0.05); z-index: 100; backdrop-filter: blur(10px); transition: background 2s ease; }
         #credits { font-size: 20px; font-weight: 700; color: var(--city-glow); text-shadow: 0 0 12px rgba(255, 213, 79, 0.4), 0 2px 4px rgba(0,0,0,0.3); }
         #credits span { color: var(--text-secondary); font-size: 12px; text-shadow: none; }
         #location-info { font-size: 14px; color: var(--ui-accent); text-shadow: 0 0 8px rgba(127, 219, 218, 0.3); }
@@ -55,7 +64,7 @@
         .cloud { position: absolute; background: radial-gradient(ellipse, rgba(255, 248, 231, 0.35) 0%, rgba(255, 204, 128, 0.15) 50%, transparent 70%); border-radius: 50%; filter: blur(60px); pointer-events: none; opacity: 0.7; }
         @keyframes drift { from { transform: translateX(-300px); } to { transform: translateX(calc(100vw + 300px)); } }
         #bottom-panels { display: grid; grid-template-columns: 1fr 2fr 1fr; gap: 12px; padding: 12px; background: var(--ui-bg); border-top: 2px solid rgba(127, 219, 218, 0.3); border-top-left-radius: 16px; border-top-right-radius: 16px; max-height: 280px; box-shadow: 0 -4px 25px rgba(127, 219, 218, 0.12), inset 0 2px 20px rgba(255, 248, 231, 0.03); backdrop-filter: blur(12px); }
-        .panel { background: linear-gradient(145deg, rgba(121, 134, 203, 0.2) 0%, rgba(255, 248, 231, 0.08) 100%); border-radius: 14px; padding: 12px; overflow-y: auto; border: 1px solid rgba(127, 219, 218, 0.25); box-shadow: 0 6px 20px rgba(45, 27, 78, 0.25), inset 0 1px 0 rgba(255, 248, 231, 0.12), inset 0 -1px 0 rgba(127, 219, 218, 0.1); transition: box-shadow 0.3s ease; }
+        .panel { background: linear-gradient(145deg, rgba(121, 134, 203, 0.2) 0%, rgba(255, 248, 231, 0.08) 100%); border-radius: 14px; padding: 12px; overflow-y: auto; border: 1px solid rgba(127, 219, 218, 0.25); box-shadow: 0 6px 20px rgba(45, 27, 78, 0.25), inset 0 1px 0 rgba(255, 248, 231, 0.12), inset 0 -1px 0 rgba(127, 219, 218, 0.1); transition: box-shadow 0.3s ease, background 2s ease; }
         .panel:hover { box-shadow: 0 8px 25px rgba(127, 219, 218, 0.18), inset 0 1px 0 rgba(255, 248, 231, 0.15), inset 0 -1px 0 rgba(127, 219, 218, 0.15); }
         .panel-title { font-size: 12px; color: var(--soft-cyan); margin-bottom: 8px; border-bottom: 1px solid rgba(127, 219, 218, 0.35); padding-bottom: 5px; text-transform: uppercase; text-shadow: 0 0 12px rgba(128, 222, 234, 0.4); letter-spacing: 1.5px; font-weight: 700; }
         #cargo-bar { width: 100%; height: 16px; background: rgba(255, 248, 231, 0.08); border-radius: 10px; overflow: hidden; margin-bottom: 8px; box-shadow: inset 0 2px 4px rgba(0,0,0,0.2), 0 1px 0 rgba(255, 248, 231, 0.05); }
@@ -1029,6 +1038,53 @@ const PORT_CONFIG = {
 };
 
 // Random Events System - 10 events
+const TIME_PHASES = {
+    0: { // Dawn
+        name: "Рассвет",
+        skyTop: "#2D1B4E",
+        skyBottom: "#FFB74D",
+        uiBg: "rgba(45, 27, 78, 0.88)",
+        textPrimary: "#FFF8E7",
+        textSecondary: "#E0B4D4",
+        cityGlow: "#FFD54F",
+        cloudColor: "255, 183, 77",
+        starAlpha: 0.3
+    },
+    1: { // Day
+        name: "День",
+        skyTop: "#5C6BC0",
+        skyBottom: "#FFE082",
+        uiBg: "rgba(60, 50, 80, 0.85)",
+        textPrimary: "#FFF8E7",
+        textSecondary: "#B39DDB",
+        cityGlow: "#FFD54F",
+        cloudColor: "255, 248, 231",
+        starAlpha: 0
+    },
+    2: { // Sunset
+        name: "Закат",
+        skyTop: "#1A237E",
+        skyBottom: "#FF6F00",
+        uiBg: "rgba(40, 25, 50, 0.90)",
+        textPrimary: "#FFE0B2",
+        textSecondary: "#CE93D8",
+        cityGlow: "#FFAB91",
+        cloudColor: "255, 111, 0",
+        starAlpha: 0.2
+    },
+    3: { // Night
+        name: "Ночь",
+        skyTop: "#0D0D1A",
+        skyBottom: "#1A1A3E",
+        uiBg: "rgba(15, 12, 30, 0.92)",
+        textPrimary: "#E0E0E0",
+        textSecondary: "#7986CB",
+        cityGlow: "#7986CB",
+        cloudColor: "30, 30, 60",
+        starAlpha: 0.8
+    }
+};
+
 const EVENTS = [
     {
         id: 'price_surge',
@@ -1534,6 +1590,7 @@ class GameState {
         this.cargo = {};
         this.markets = {};
         this.tick = 0;
+        this.timePhase = 0;
         this.shipCondition = 100;
         this.shipFuel = 100;
         this.shipType = 'dinghy';
@@ -1673,7 +1730,7 @@ class GameState {
         if (this.eventLog.length > 10) this.eventLog.pop();
     }
     save() {
-        let data = { credits: this.credits, currentCity: this.currentCity, cargo: this.cargo, markets: this.markets, tick: this.tick, shipCondition: this.shipCondition, shipFuel: this.shipFuel, ship: this.ship, contracts: this.contracts, shipType: this.shipType, shipModules: this.shipModules };
+        let data = { credits: this.credits, currentCity: this.currentCity, cargo: this.cargo, markets: this.markets, tick: this.tick, timePhase: this.timePhase, shipCondition: this.shipCondition, shipFuel: this.shipFuel, ship: this.ship, contracts: this.contracts, shipType: this.shipType, shipModules: this.shipModules };
         localStorage.setItem('cloudtrader_save', JSON.stringify(data));
     }
     load() {
@@ -1685,6 +1742,7 @@ class GameState {
             if (!this.markets || Object.keys(this.markets).length === 0) { this.initMarkets(); }
             if (!this.contracts) this.contracts = [];
             if (this.tick === undefined) this.tick = 0;
+            if (this.timePhase === undefined) this.timePhase = 0;
             if (this.shipCondition === undefined) this.shipCondition = 100;
             if (!this.ship) { this.ship = { docked: true, traveling: false, destination: null, travelProgress: 0, travelDuration: 0, broken: false }; }
             if (this.shipFuel === undefined) this.shipFuel = 100;
@@ -1715,6 +1773,9 @@ class Game {
             this.generateContract();
         }
         this.setupClouds();
+        this.initStars();
+        // Initialize time phase CSS
+        this.updateTimePhaseCSS();
         this.gameLoop();
     }
     setupCanvas() {
@@ -2373,12 +2434,11 @@ class Game {
         let ctx = this.ctx;
         ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);
 
+        // Use TIME_PHASES colors for sky gradient
+        let phase = TIME_PHASES[this.state.timePhase];
         let gradient = ctx.createLinearGradient(0, 0, 0, this.canvas.height);
-        gradient.addColorStop(0, '#2D1B4E');
-        gradient.addColorStop(0.3, '#6B5B95');
-        gradient.addColorStop(0.6, '#9B8FC4');
-        gradient.addColorStop(0.8, '#E8A87C');
-        gradient.addColorStop(1, '#FFB74D');
+        gradient.addColorStop(0, phase.skyTop);
+        gradient.addColorStop(1, phase.skyBottom);
         ctx.fillStyle = gradient;
         ctx.fillRect(0, 0, this.canvas.width, this.canvas.height);
 
@@ -2396,13 +2456,29 @@ class Game {
                 cloud.y = Math.random() * this.canvas.height;
             }
             let grad = ctx.createRadialGradient(cloud.x, cloud.y, 0, cloud.x, cloud.y, cloud.size);
-            grad.addColorStop(0, 'rgba(60, 60, 80, ' + cloud.opacity + ')');
+            // Use time-based cloud color
+            let cloudColor = 'rgba(' + phase.cloudColor + ', ' + cloud.opacity + ')';
+            grad.addColorStop(0, cloudColor);
             grad.addColorStop(0.5, 'rgba(40, 40, 60, ' + (cloud.opacity * 0.6) + ')');
             grad.addColorStop(1, 'transparent');
             ctx.beginPath();
             ctx.ellipse(cloud.x, cloud.y, cloud.size, cloud.size * 0.4, 0, 0, Math.PI * 2);
             ctx.fillStyle = grad;
             ctx.fill();
+        }
+
+        // Draw stars at night for first render method
+        if (phase.starAlpha > 0) {
+            if (!this.stars || this.stars.length === 0) this.initStars();
+            ctx.save();
+            for (let star of this.stars) {
+                let alpha = phase.starAlpha * (0.5 + 0.5 * Math.sin(Date.now() * 0.001 + star.twinkle));
+                ctx.beginPath();
+                ctx.arc(star.x * this.canvas.width, star.y * this.canvas.height, star.size, 0, Math.PI * 2);
+                ctx.fillStyle = 'rgba(255, 255, 255, ' + alpha + ')';
+                ctx.fill();
+            }
+            ctx.restore();
         }
 
         this.lightningTimer++;
@@ -2419,9 +2495,10 @@ class Game {
             let isCurrent = cityId === this.state.currentCity;
             let isSelected = this.selectedCity === cityId;
 
+            // Use time-based city glow color
             let glowGradient = ctx.createRadialGradient(x, y, 0, x, y, isSelected ? 70 : 50);
-            glowGradient.addColorStop(0, city.color + (isCurrent || isSelected ? '60' : '30'));
-            glowGradient.addColorStop(0.5, city.color + '20');
+            glowGradient.addColorStop(0, phase.cityGlow + (isCurrent || isSelected ? '60' : '30'));
+            glowGradient.addColorStop(0.5, phase.cityGlow + '20');
             glowGradient.addColorStop(1, 'transparent');
             ctx.beginPath();
             ctx.arc(x, y, isSelected ? 70 : 50, 0, Math.PI * 2);
@@ -2526,7 +2603,22 @@ class Game {
             ctx.textAlign = 'center';
             ctx.fillText(String.fromCodePoint(0x1F681), x, y);
         }
+
+        // Draw stars if night time
+        if (phase.starAlpha > 0) {
+            if (!this.stars || this.stars.length === 0) this.initStars();
+            ctx.save();
+            for (let star of this.stars) {
+                let alpha = phase.starAlpha * (0.5 + 0.5 * Math.sin(Date.now() * 0.001 + star.twinkle));
+                ctx.beginPath();
+                ctx.arc(star.x * this.canvas.width, star.y * this.canvas.height, star.size, 0, Math.PI * 2);
+                ctx.fillStyle = 'rgba(255, 255, 255, ' + alpha + ')';
+                ctx.fill();
+            }
+            ctx.restore();
+        }
     }
+
     drawLightning(ctx) {
         let x = Math.random() * this.canvas.width;
         let y = 0;
@@ -2552,6 +2644,20 @@ class Game {
     }
 
     // ==================== PORT SYSTEM METHODS ====================
+    
+    // Stars array for night sky
+    stars = [];
+    initStars() {
+        this.stars = [];
+        for (let i = 0; i < 150; i++) {
+            this.stars.push({
+                x: Math.random(),
+                y: Math.random() * 0.7, // Stars only in upper part of sky
+                size: 0.5 + Math.random() * 1.5,
+                twinkle: Math.random() * Math.PI * 2
+            });
+        }
+    }
 
     buyPortUpgrade(cityId) {
         if (!PORT_CONFIG[cityId]) { this.notify('Ошибка города!', 'error'); return false; }
@@ -2628,6 +2734,14 @@ class Game {
             }
             this.state.ship = { docked: true, traveling: false, destination: null, travelProgress: 0, travelDuration: 0, broken: false };
             this.state.tick++;
+
+            // Advance time phase every 3 ticks (full day cycle = 12 ticks)
+            if (this.state.tick % 3 === 0) {
+                this.state.timePhase = (this.state.timePhase + 1) % 4;
+                this.updateTimePhaseCSS();
+                this.notify('Время суток: ' + TIME_PHASES[this.state.timePhase].name, 'warning');
+            }
+
             this.decayFactors();
             this.refreshCityStock(destId);
             if (this.state.tick % 2 === 0) this.generateContract();
@@ -2640,6 +2754,13 @@ class Game {
              let skipEvent = this.state.activeEvents.find(e => e.skip);
              if (skipEvent) {
                  this.state.tick++;
+
+                 // Also advance time phase on skip tick
+                 if (this.state.tick % 3 === 0) {
+                     this.state.timePhase = (this.state.timePhase + 1) % 4;
+                     this.updateTimePhaseCSS();
+                 }
+
                  this.notify('Вы ждёте в ' + CITIES[destId].name + ' (скип тика из-за события)', 'warning');
              }
 
@@ -2756,166 +2877,16 @@ class Game {
     }
 
     // Call renderPortRings in the render method
-    render() {
-        let ctx = this.ctx;
-        ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);
-
-        let gradient = ctx.createLinearGradient(0, 0, 0, this.canvas.height);
-        gradient.addColorStop(0, '#2D1B4E');
-        gradient.addColorStop(0.3, '#6B5B95');
-        gradient.addColorStop(0.6, '#9B8FC4');
-        gradient.addColorStop(0.8, '#E8A87C');
-        gradient.addColorStop(1, '#FFB74D');
-        ctx.fillStyle = gradient;
-        ctx.fillRect(0, 0, this.canvas.width, this.canvas.height);
-
-        if (this.lightningFlash > 0) {
-            ctx.fillStyle = 'rgba(107, 91, 149, ' + (this.lightningFlash * 0.15) + ')';
-            ctx.fillRect(0, 0, this.canvas.width, this.canvas.height);
-            this.lightningFlash -= 0.05;
-        }
-
-        for (let i = 0; i < this.clouds.length; i++) {
-            let cloud = this.clouds[i];
-            cloud.x += cloud.speed;
-            if (cloud.x > this.canvas.width + cloud.size) {
-                cloud.x = -cloud.size;
-                cloud.y = Math.random() * this.canvas.height;
-            }
-            let grad = ctx.createRadialGradient(cloud.x, cloud.y, 0, cloud.x, cloud.y, cloud.size);
-            grad.addColorStop(0, 'rgba(60, 60, 80, ' + cloud.opacity + ')');
-            grad.addColorStop(0.5, 'rgba(40, 40, 60, ' + (cloud.opacity * 0.6) + ')');
-            grad.addColorStop(1, 'transparent');
-            ctx.beginPath();
-            ctx.ellipse(cloud.x, cloud.y, cloud.size, cloud.size * 0.4, 0, 0, Math.PI * 2);
-            ctx.fillStyle = grad;
-            ctx.fill();
-        }
-
-        this.lightningTimer++;
-        if (this.lightningTimer > 360 + Math.random() * 540) {
-            this.lightningFlash = 0.7;
-            this.lightningTimer = 0;
-            this.drawLightning(ctx);
-        }
-
-        for (let cityId in CITIES) {
-            let city = CITIES[cityId];
-            let x = city.x * this.canvas.width;
-            let y = city.y * this.canvas.height;
-            let isCurrent = cityId === this.state.currentCity;
-            let isSelected = this.selectedCity === cityId;
-
-            let glowGradient = ctx.createRadialGradient(x, y, 0, x, y, isSelected ? 70 : 50);
-            glowGradient.addColorStop(0, city.color + (isCurrent || isSelected ? '60' : '30'));
-            glowGradient.addColorStop(0.5, city.color + '20');
-            glowGradient.addColorStop(1, 'transparent');
-            ctx.beginPath();
-            ctx.arc(x, y, isSelected ? 70 : 50, 0, Math.PI * 2);
-            ctx.fillStyle = glowGradient;
-            ctx.fill();
-
-            ctx.beginPath();
-            ctx.arc(x, y, 28, 0, Math.PI * 2);
-            ctx.fillStyle = 'rgba(30, 25, 40, 0.9)';
-            ctx.fill();
-            ctx.strokeStyle = city.color + 'CC';
-            ctx.lineWidth = 2;
-            ctx.stroke();
-
-            ctx.beginPath();
-            ctx.arc(x, y, 20, 0, Math.PI * 2);
-            ctx.fillStyle = 'rgba(40, 35, 55, 0.8)';
-            ctx.fill();
-            ctx.strokeStyle = city.color + '99';
-            ctx.lineWidth = 1.5;
-            ctx.stroke();
-
-            ctx.beginPath();
-            ctx.arc(x, y, 10, 0, Math.PI * 2);
-            ctx.fillStyle = isCurrent ? city.color : '#2a2a45';
-            ctx.fill();
-
-            ctx.beginPath();
-            ctx.moveTo(x, y - 28);
-            ctx.lineTo(x - 10, y - 42);
-            ctx.lineTo(x + 10, y - 42);
-            ctx.closePath();
-            ctx.fillStyle = city.color;
-            ctx.fill();
-
-            ctx.fillStyle = '#FFE082';
-            ctx.beginPath();
-            ctx.arc(x - 5, y - 35, 2, 0, Math.PI * 2);
-            ctx.arc(x + 5, y - 35, 2, 0, Math.PI * 2);
-            ctx.fill();
-
-            if (isCurrent) {
-                ctx.beginPath();
-                ctx.arc(x, y, 32, 0, Math.PI * 2);
-                ctx.strokeStyle = city.color + 'AA';
-                ctx.lineWidth = 2;
-                ctx.setLineDash([5, 3]);
-                ctx.stroke();
-                ctx.setLineDash([]);
-            }
-            if (isSelected) {
-                ctx.beginPath();
-                ctx.arc(x, y, 35, 0, Math.PI * 2);
-                ctx.strokeStyle = '#FFFFFF';
-                ctx.lineWidth = 2;
-                ctx.stroke();
-            }
-
-            ctx.fillStyle = '#FFF8E7';
-            ctx.font = 'bold 11px Segoe UI, Tahoma, sans-serif';
-            ctx.textAlign = 'center';
-            ctx.fillText(city.name, x, y + 45);
-            ctx.fillStyle = '#B8B0C8';
-            ctx.font = '9px Segoe UI, Tahoma, sans-serif';
-            ctx.fillText('Уд:' + city.distance, x, y + 56);
-        }
-
-        // Render port rings on canvas
-        this.renderPortRings();
-
-        if (this.state.ship.traveling) {
-            let progress = this.state.ship.travelProgress / this.state.ship.travelDuration;
-            let startX = this.state.ship.startPos.x * this.canvas.width;
-            let startY = this.state.ship.startPos.y * this.canvas.height;
-            let endX = this.state.ship.endPos.x * this.canvas.width;
-            let endY = this.state.ship.endPos.y * this.canvas.height;
-            let x = startX + (endX - startX) * progress;
-            let y = startY + (endY - startY) * progress;
-
-            ctx.beginPath();
-            ctx.moveTo(startX, startY);
-            ctx.lineTo(x, y);
-            ctx.strokeStyle = 'rgba(127, 219, 218, 0.4)';
-            ctx.lineWidth = 3;
-            ctx.stroke();
-
-            ctx.beginPath();
-            ctx.arc(x, y, 14, 0, Math.PI * 2);
-            ctx.fillStyle = 'rgba(40, 35, 55, 0.9)';
-            ctx.fill();
-            ctx.strokeStyle = '#7FDBDA';
-            ctx.lineWidth = 2;
-            ctx.stroke();
-
-            ctx.fillStyle = '#FFF8E7';
-            ctx.font = '14px Arial';
-            ctx.textAlign = 'center';
-            ctx.fillText(String.fromCodePoint(0x1F681), x - 8, y + 4);
-        } else if (!this.state.ship.broken) {
-            let city = CITIES[this.state.currentCity];
-            let x = city.x * this.canvas.width;
-            let y = city.y * this.canvas.height - 40;
-            ctx.fillStyle = '#7FDBDA';
-            ctx.font = '20px Arial';
-            ctx.textAlign = 'center';
-            ctx.fillText(String.fromCodePoint(0x1F681), x, y);
-        }
+    updateTimePhaseCSS() {
+        let phase = TIME_PHASES[this.state.timePhase];
+        document.body.style.setProperty('--ui-bg', phase.uiBg);
+        document.body.style.setProperty('--text-primary', phase.textPrimary);
+        document.body.style.setProperty('--text-secondary', phase.textSecondary);
+        document.body.style.setProperty('--city-glow', phase.cityGlow);
+        document.body.style.setProperty('--sky-top', phase.skyTop);
+        document.body.style.setProperty('--sky-bottom', phase.skyBottom);
+        document.body.style.setProperty('--cloud-color', phase.cloudColor);
+        document.body.style.setProperty('--star-alpha', phase.starAlpha);
     }
 
     // ==================== PRISON SYSTEM ====================

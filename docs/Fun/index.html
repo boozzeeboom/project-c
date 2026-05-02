@@ -453,6 +453,56 @@
             text-shadow: 0 0 10px var(--bar-glow);
         }
 
+        /* Pirate Combat Screen Styles */
+        #pirate-screen {
+            display: none;
+            position: fixed;
+            top: 0; left: 0; right: 0; bottom: 0;
+            background: linear-gradient(180deg, rgba(20, 0, 0, 0.97) 0%, rgba(40, 10, 10, 0.98) 100%);
+            z-index: 3500;
+            justify-content: center;
+            align-items: center;
+            flex-direction: column;
+            font-family: 'M PLUS Rounded', 'Segoe UI', sans-serif;
+            box-shadow: inset 0 0 100px rgba(139, 0, 0, 0.5);
+        }
+        #pirate-screen.active { display: flex; }
+        .pirate-header {
+            font-size: 36px;
+            color: #E57373;
+            margin-bottom: 15px;
+            text-transform: uppercase;
+            letter-spacing: 3px;
+            text-shadow: 0 0 20px rgba(229, 115, 115, 0.5), 0 2px 4px rgba(0,0,0,0.5);
+            animation: piratePulse 2s ease-in-out infinite;
+        }
+        @keyframes piratePulse {
+            0%, 100% { opacity: 1; transform: scale(1); }
+            50% { opacity: 0.8; transform: scale(1.05); }
+        }
+        #pirate-canvas {
+            border: 2px solid rgba(229, 115, 115, 0.4);
+            border-radius: 8px;
+            box-shadow: 0 0 30px rgba(229, 115, 115, 0.3);
+        }
+        #pirate-hud {
+            position: absolute;
+            top: 20px;
+            left: 20px;
+            display: flex;
+            gap: 30px;
+            font-size: 14px;
+            color: #E57373;
+            text-shadow: 0 0 10px rgba(229, 115, 115, 0.4);
+            z-index: 10;
+        }
+        #pirate-health, #pirate-enemies {
+            background: rgba(40, 10, 10, 0.8);
+            padding: 10px 15px;
+            border-radius: 8px;
+            border: 1px solid rgba(229, 115, 115, 0.3);
+        }
+
         /* Port System Styles - Ghibli Treatment */
         .port-item {
             transition: all 0.3s ease;
@@ -936,6 +986,16 @@
             <div class="bar-outcome-text" id="bar-outcome-text">Что-то произошло...</div>
             <div class="bar-outcome-stats" id="bar-outcome-stats"></div>
             <button class="btn" id="bar-continue-btn" style="background: var(--ui-accent);">ПОНЯТНО</button>
+        </div>
+    </div>
+
+    <!-- Pirate Combat Screen -->
+    <div id="pirate-screen" style="display:none;">
+        <div class="pirate-header">☠ ПИРАТЫ!</div>
+        <canvas id="pirate-canvas" width="800" height="600"></canvas>
+        <div id="pirate-hud">
+            <div id="pirate-health">HP: 3/3</div>
+            <div id="pirate-enemies">Врагов: 3</div>
         </div>
     </div>
 
@@ -1603,6 +1663,22 @@ class GameState {
         for (let cityId in PORT_CONFIG) {
             this.portLevels[cityId] = 0;
         }
+        this.pirateCombat = {
+            active: false,
+            playerHP: 3,
+            enemies: [],
+            bullets: [],
+            score: 0,
+            keys: {},
+            mouse: { x: 0, y: 0, pressed: false },
+            touch: { active: false, x: 0, y: 0, shooting: false },
+            playerX: 400,
+            playerY: 300,
+            playerAngle: 0,
+            lastShot: 0,
+            enemyBullets: [],
+            nearestCity: null
+        };
         this.initMarkets();
     }
     initMarkets() {
@@ -1822,6 +1898,7 @@ class Game {
         document.getElementById('log-back-btn').addEventListener('click', () => this.hideLog());
         document.getElementById('prison-continue-btn').addEventListener('click', () => this.continueAfterPrison());
         document.getElementById('bar-back-btn').addEventListener('click', () => this.barExit());
+        this.bindPirateControls();
     }
     setupMobileCityList() {
         let container = document.getElementById('mobile-city-list');
@@ -1925,6 +2002,14 @@ class Game {
         if (this.state.shipFuel < fuelNeeded) {
             this.notify('Недостаточно топлива! Заправьте корабль', 'error'); return;
         }
+
+        // Roll for pirate attack based on distance
+        let attackChance = 0.13 + (stats.dist * 0.02);
+        if (Math.random() < attackChance) {
+            this.startPirateCombat(stats.dist);
+            return; // Don't launch until combat ends
+        }
+
         this.state.shipFuel -= fuelNeeded;
         this.state.ship = {
             docked: false, traveling: true, destination: this.selectedCity,
@@ -3221,6 +3306,516 @@ class Game {
         document.getElementById('bar-screen').classList.remove('active');
         this.barState = null;
         this.renderAll();
+    }
+
+    // ==================== PIRATE COMBAT SYSTEM ====================
+
+    startPirateCombat(distance) {
+        let isBoss = distance >= 4 && Math.random() < 0.05;
+        let enemyCount = isBoss ? 1 : Math.floor(2 + Math.random() * 3);
+
+        let pc = this.state.pirateCombat;
+        pc.active = true;
+        pc.playerHP = 3;
+        pc.enemies = [];
+        pc.bullets = [];
+        pc.enemyBullets = [];
+        pc.score = 0;
+        pc.playerX = 400;
+        pc.playerY = 500;
+        pc.playerAngle = -Math.PI / 2;
+        pc.lastShot = 0;
+        pc.isBoss = isBoss;
+        pc.nearestCity = this.state.currentCity;
+        pc.gameLoopId = null;
+        pc.lastTime = 0;
+        pc.keys = {};
+        pc.mouse = { x: 400, y: 500, pressed: false };
+        pc.phase = 'countdown';
+        pc.countdown = 5;
+
+        this.initPirateEnemies(enemyCount, isBoss);
+
+        let screen = document.getElementById('pirate-screen');
+        screen.style.display = 'flex';
+        screen.classList.add('active');
+
+        let canvas = document.getElementById('pirate-canvas');
+        canvas.width = 800;
+        canvas.height = 600;
+        let ctx = canvas.getContext('2d');
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+        this.updatePirateHUD();
+        this.bindPirateControls();
+
+        this.notify('☠ ПИРАТЫ АТАКУЮТ!', 'error');
+
+        this.pirateCountdownInterval = setInterval(() => {
+            pc.countdown--;
+            this.renderPirateCombat();
+            if (pc.countdown <= 0) {
+                clearInterval(this.pirateCountdownInterval);
+                this.pirateCountdownInterval = null;
+                pc.phase = 'combat';
+                pc.lastTime = 0;
+                pc.gameLoopId = requestAnimationFrame((t) => this.pirateGameLoop(t));
+            }
+        }, 1000);
+    }
+
+    pirateGameLoop(timestamp) {
+        let pc = this.state.pirateCombat;
+        if (!pc.active) return;
+
+        if (pc.lastTime === 0) pc.lastTime = timestamp;
+        let dt = Math.min((timestamp - pc.lastTime) / 1000, 0.1);
+        pc.lastTime = timestamp;
+
+        if (pc.phase === 'countdown') {
+            this.renderPirateCombat();
+            pc.gameLoopId = requestAnimationFrame((t) => this.pirateGameLoop(t));
+            return;
+        }
+
+        this.updatePirateCombat(dt);
+        this.renderPirateCombat();
+
+        pc.gameLoopId = requestAnimationFrame((t) => this.pirateGameLoop(t));
+    }
+
+    initPirateEnemies(count, isBoss) {
+        let pc = this.state.pirateCombat;
+        let canvas = document.getElementById('pirate-canvas');
+
+        if (isBoss) {
+            pc.enemies.push({
+                x: canvas.width / 2,
+                y: 100,
+                vx: 1.5,
+                vy: 0.5,
+                hp: 10,
+                maxHP: 10,
+                size: 35,
+                isBoss: true,
+                shootTimer: 0,
+                speed: 1.2
+            });
+        } else {
+            for (let i = 0; i < count; i++) {
+                pc.enemies.push({
+                    x: 100 + Math.random() * (canvas.width - 200),
+                    y: 50 + Math.random() * 150,
+                    vx: 1 + Math.random() * 2,
+                    vy: 0.5 + Math.random() * 1,
+                    hp: 2,
+                    maxHP: 2,
+                    size: 20,
+                    isBoss: false,
+                    shootTimer: Math.random() * 2,
+                    speed: 0.8 + Math.random() * 1.2
+                });
+            }
+        }
+    }
+
+    updatePirateCombat(dt) {
+        let pc = this.state.pirateCombat;
+        let canvas = document.getElementById('pirate-canvas');
+
+        if (pc.phase !== 'combat') return;
+
+        let moveSpeed = 200;
+        if (pc.keys['w'] || pc.keys['W'] || pc.keys['ArrowUp']) pc.playerY -= moveSpeed * dt;
+        if (pc.keys['s'] || pc.keys['S'] || pc.keys['ArrowDown']) pc.playerY += moveSpeed * dt;
+        if (pc.keys['a'] || pc.keys['A'] || pc.keys['ArrowLeft']) pc.playerX -= moveSpeed * dt;
+        if (pc.keys['d'] || pc.keys['D'] || pc.keys['ArrowRight']) pc.playerX += moveSpeed * dt;
+
+        pc.playerX = Math.max(20, Math.min(canvas.width - 20, pc.playerX));
+        pc.playerY = Math.max(20, Math.min(canvas.height - 20, pc.playerY));
+
+        let targetX = pc.mouse.x || pc.playerX;
+        let targetY = pc.mouse.y || pc.playerY;
+        pc.playerAngle = Math.atan2(targetY - pc.playerY, targetX - pc.playerX);
+
+        pc.lastShot += dt;
+        let shooting = pc.keys[' '] || pc.mouse.pressed || pc.keys['Space'];
+        if (shooting && pc.lastShot > 0.2) {
+            this.shootBullet(pc.playerX, pc.playerY, pc.playerAngle, true);
+            pc.lastShot = 0;
+        }
+
+        for (let i = pc.bullets.length - 1; i >= 0; i--) {
+            let b = pc.bullets[i];
+            b.x += Math.cos(b.angle) * b.speed * dt;
+            b.y += Math.sin(b.angle) * b.speed * dt;
+            if (b.x < 0 || b.x > canvas.width || b.y < 0 || b.y > canvas.height) {
+                pc.bullets.splice(i, 1);
+            }
+        }
+
+        for (let i = pc.enemyBullets.length - 1; i >= 0; i--) {
+            let b = pc.enemyBullets[i];
+            b.x += Math.cos(b.angle) * b.speed * dt;
+            b.y += Math.sin(b.angle) * b.speed * dt;
+            if (b.x < 0 || b.x > canvas.width || b.y < 0 || b.y > canvas.height) {
+                pc.enemyBullets.splice(i, 1);
+            }
+        }
+
+        for (let i = pc.enemies.length - 1; i >= 0; i--) {
+            let e = pc.enemies[i];
+
+            let dx = pc.playerX - e.x;
+            let dy = pc.playerY - e.y;
+            let dist = Math.sqrt(dx * dx + dy * dy);
+            if (dist > 0) {
+                e.x += (dx / dist) * e.speed;
+                e.y += (dy / dist) * e.speed;
+            }
+
+            if (e.x < 30) e.x = 30;
+            if (e.x > canvas.width - 30) e.x = canvas.width - 30;
+            if (e.y < 30) e.y = 30;
+            if (e.y > canvas.height - 100) e.y = canvas.height - 100;
+
+            e.shootTimer += dt;
+            if (dist < 300 && e.shootTimer > (e.isBoss ? 0.8 : 1.8)) {
+                let angle = Math.atan2(dy, dx);
+                this.shootBullet(e.x, e.y, angle, false);
+                e.shootTimer = 0;
+            }
+
+            for (let j = pc.bullets.length - 1; j >= 0; j--) {
+                let b = pc.bullets[j];
+                let bdx = b.x - e.x;
+                let bdy = b.y - e.y;
+                if (Math.sqrt(bdx * bdx + bdy * bdy) < e.size) {
+                    e.hp--;
+                    pc.bullets.splice(j, 1);
+                    if (e.hp <= 0) {
+                        pc.score += e.isBoss ? 100 : 20;
+                        pc.enemies.splice(i, 1);
+                    }
+                    break;
+                }
+            }
+        }
+
+        for (let i = pc.enemyBullets.length - 1; i >= 0; i--) {
+            let b = pc.enemyBullets[i];
+            let dx = b.x - pc.playerX;
+            let dy = b.y - pc.playerY;
+            if (Math.sqrt(dx * dx + dy * dy) < 15) {
+                pc.playerHP--;
+                pc.enemyBullets.splice(i, 1);
+                this.updatePirateHUD();
+                if (pc.playerHP <= 0) {
+                    this.endPirateCombat(false);
+                    return;
+                }
+            }
+        }
+
+        if (pc.enemies.length === 0) {
+            this.endPirateCombat(true);
+            return;
+        }
+
+        this.updatePirateHUD();
+    }
+
+    renderPirateCombat() {
+        let pc = this.state.pirateCombat;
+        let canvas = document.getElementById('pirate-canvas');
+        let ctx = canvas.getContext('2d');
+
+        ctx.fillStyle = '#0a0000';
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+        ctx.strokeStyle = 'rgba(229, 115, 115, 0.08)';
+        ctx.lineWidth = 1;
+        for (let x = 0; x < canvas.width; x += 40) {
+            ctx.beginPath();
+            ctx.moveTo(x, 0);
+            ctx.lineTo(x, canvas.height);
+            ctx.stroke();
+        }
+        for (let y = 0; y < canvas.height; y += 40) {
+            ctx.beginPath();
+            ctx.moveTo(0, y);
+            ctx.lineTo(canvas.width, y);
+            ctx.stroke();
+        }
+
+        ctx.save();
+        ctx.translate(pc.playerX, pc.playerY);
+        ctx.rotate(pc.playerAngle);
+        ctx.fillStyle = '#7FDBDA';
+        ctx.beginPath();
+        ctx.moveTo(18, 0);
+        ctx.lineTo(-12, -10);
+        ctx.lineTo(-6, 0);
+        ctx.lineTo(-12, 10);
+        ctx.closePath();
+        ctx.fill();
+        ctx.strokeStyle = '#FFF8E7';
+        ctx.lineWidth = 2;
+        ctx.stroke();
+        ctx.restore();
+
+        ctx.fillStyle = '#80DEEA';
+        ctx.shadowColor = '#80DEEA';
+        ctx.shadowBlur = 8;
+        for (let b of pc.bullets) {
+            ctx.beginPath();
+            ctx.arc(b.x, b.y, 5, 0, Math.PI * 2);
+            ctx.fill();
+        }
+        ctx.shadowBlur = 0;
+
+        ctx.fillStyle = '#FFB74D';
+        ctx.shadowColor = '#FFB74D';
+        ctx.shadowBlur = 6;
+        for (let b of pc.enemyBullets) {
+            ctx.beginPath();
+            ctx.arc(b.x, b.y, 6, 0, Math.PI * 2);
+            ctx.fill();
+        }
+        ctx.shadowBlur = 0;
+
+        for (let e of pc.enemies) {
+            ctx.fillStyle = e.isBoss ? '#E57373' : '#FF6F00';
+            ctx.beginPath();
+            ctx.arc(e.x, e.y, e.size, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.strokeStyle = '#FFF';
+            ctx.lineWidth = 2;
+            ctx.stroke();
+
+            if (e.isBoss) {
+                ctx.fillStyle = 'rgba(229, 115, 115, 0.3)';
+                ctx.beginPath();
+                ctx.arc(e.x, e.y, e.size + 8, 0, Math.PI * 2);
+                ctx.fill();
+            }
+
+            let barWidth = e.size * 2;
+            let barHeight = 5;
+            ctx.fillStyle = 'rgba(0,0,0,0.6)';
+            ctx.fillRect(e.x - barWidth / 2, e.y - e.size - 12, barWidth, barHeight);
+            ctx.fillStyle = e.hp > e.maxHP * 0.5 ? '#81C784' : '#E57373';
+            ctx.fillRect(e.x - barWidth / 2, e.y - e.size - 12, barWidth * (e.hp / e.maxHP), barHeight);
+        }
+
+        ctx.fillStyle = '#FFF8E7';
+        ctx.font = 'bold 18px Orbitron, monospace';
+        ctx.textAlign = 'right';
+        ctx.fillText('СЧЁТ: ' + pc.score, canvas.width - 20, 30);
+
+        if (pc.phase === 'countdown') {
+            ctx.fillStyle = '#E57373';
+            ctx.font = 'bold 72px Orbitron, monospace';
+            ctx.textAlign = 'center';
+            ctx.fillText(pc.countdown.toString(), canvas.width / 2, canvas.height / 2);
+            ctx.font = 'bold 24px Orbitron, monospace';
+            ctx.fillText('ПРИГОТОВЬТЕСЬ!', canvas.width / 2, canvas.height / 2 - 80);
+        } else {
+            ctx.font = '14px Orbitron, monospace';
+            ctx.textAlign = 'left';
+            ctx.fillText('WASD - движение', 20, canvas.height - 20);
+            ctx.fillText('МЫШЬ/КЛИК - прицел и стрельба', 20, canvas.height - 40);
+        }
+    }
+
+    endPirateCombat(victory) {
+        let pc = this.state.pirateCombat;
+        pc.active = false;
+
+        if (this.pirateCountdownInterval) {
+            clearInterval(this.pirateCountdownInterval);
+            this.pirateCountdownInterval = null;
+        }
+
+        if (pc.gameLoopId) {
+            cancelAnimationFrame(pc.gameLoopId);
+            pc.gameLoopId = null;
+        }
+
+        pc.lastTime = 0;
+        pc.keys = {};
+        pc.mouse = { x: 0, y: 0, pressed: false };
+
+        let screen = document.getElementById('pirate-screen');
+        screen.classList.remove('active');
+        screen.style.display = 'none';
+
+        if (victory) {
+            let reward = 50 + pc.score;
+            this.state.credits += reward;
+            this.notify('☠ ПИРАТЫ ПОБЕЖДЕНЫ! +' + reward + ' CR', 'success');
+
+            let dest = this.selectedCity || this.state.ship.destination;
+            let stats = this.calculateFlightStats(this.state.currentCity, dest);
+            this.state.shipFuel -= stats.fuelCost;
+            this.state.ship = {
+                docked: false, traveling: true, destination: dest,
+                travelProgress: 0, travelDuration: stats.duration,
+                startPos: { x: CITIES[this.state.currentCity].x, y: CITIES[this.state.currentCity].y },
+                endPos: { x: CITIES[dest].x, y: CITIES[dest].y },
+                breakageChance: stats.breakageChance
+            };
+            this.selectedCity = null;
+            let btn = document.getElementById('launch-btn');
+            btn.textContent = 'В ПУТИ... ' + stats.duration + 'с';
+            btn.classList.add('traveling');
+            btn.disabled = true;
+            this.state.save();
+            this.renderAll();
+        } else {
+            let hasCargo = Object.keys(this.state.cargo).length > 0;
+            if (hasCargo) {
+                this.state.cargo = {};
+                this.state.shipCondition = Math.max(0, this.state.shipCondition - 30);
+                this.notify('☠ КОРАБЛЬ ЗАХВАЧЕН! Груз потерян, -30 HP', 'error');
+            } else {
+                this.state.shipType = 'dinghy';
+                this.state.shipModules = [];
+                this.state.credits = Math.max(500, this.state.credits);
+                this.state.shipCondition = 100;
+                this.state.shipFuel = 100;
+                this.notify('☠ КОРАБЛЬ ПОТЕРЯН! Возрождение в ' + CITIES[pc.nearestCity].name + ' с 500 CR', 'error');
+            }
+
+            this.state.ship = { docked: true, traveling: false, destination: null, travelProgress: 0, travelDuration: 0, broken: false };
+            this.state.currentCity = pc.nearestCity;
+
+            let btn = document.getElementById('launch-btn');
+            btn.textContent = 'ВЫБЕРИТЕ ГОРОД';
+            btn.classList.remove('traveling');
+            btn.disabled = true;
+
+            this.state.save();
+            this.renderAll();
+        }
+    }
+
+    shootBullet(x, y, angle, isPlayer) {
+        let bullet = {
+            x: x,
+            y: y,
+            angle: angle,
+            speed: isPlayer ? 450 : 220
+        };
+
+        if (isPlayer) {
+            this.state.pirateCombat.bullets.push(bullet);
+        } else {
+            this.state.pirateCombat.enemyBullets.push(bullet);
+        }
+    }
+
+    updatePirateHUD() {
+        let pc = this.state.pirateCombat;
+        let healthEl = document.getElementById('pirate-health');
+        let enemiesEl = document.getElementById('pirate-enemies');
+        if (healthEl) healthEl.textContent = 'HP: ' + pc.playerHP + '/3';
+        if (enemiesEl) enemiesEl.textContent = 'Врагов: ' + pc.enemies.length;
+    }
+
+    bindPirateControls() {
+        let canvas = document.getElementById('pirate-canvas');
+        let pc = this.state.pirateCombat;
+
+        let keyHandler = (e) => {
+            if (!pc.active) return;
+            let key = e.key.length === 1 ? e.key.toLowerCase() : e.key;
+            if (e.type === 'keydown') {
+                pc.keys[key] = true;
+            } else {
+                pc.keys[key] = false;
+            }
+        };
+
+        let mouseMoveHandler = (e) => {
+            if (!pc.active) return;
+            let rect = canvas.getBoundingClientRect();
+            pc.mouse.x = e.clientX - rect.left;
+            pc.mouse.y = e.clientY - rect.top;
+        };
+
+        let mouseDownHandler = (e) => {
+            if (!pc.active) return;
+            pc.mouse.pressed = true;
+        };
+
+        let mouseUpHandler = (e) => {
+            if (!pc.active) return;
+            pc.mouse.pressed = false;
+        };
+
+        let touchStartHandler = (e) => {
+            if (!pc.active) return;
+            e.preventDefault();
+            let rect = canvas.getBoundingClientRect();
+            let touch = e.touches[0];
+            let touchX = touch.clientX - rect.left;
+            let touchY = touch.clientY - rect.top;
+
+            if (touchX < canvas.width / 2) {
+                pc.touch.active = true;
+                pc.touch.x = touchX;
+                pc.touch.y = touchY;
+                pc.mouse.x = touchX;
+                pc.mouse.y = touchY;
+            } else {
+                pc.touch.shooting = true;
+                pc.mouse.pressed = true;
+            }
+        };
+
+        let touchMoveHandler = (e) => {
+            if (!pc.active) return;
+            e.preventDefault();
+            let rect = canvas.getBoundingClientRect();
+            let touch = e.touches[0];
+            let touchX = touch.clientX - rect.left;
+            let touchY = touch.clientY - rect.top;
+
+            if (pc.touch.active) {
+                pc.touch.x = touchX;
+                pc.touch.y = touchY;
+                pc.mouse.x = touchX;
+                pc.mouse.y = touchY;
+            }
+        };
+
+        let touchEndHandler = (e) => {
+            if (!pc.active) return;
+            pc.touch.active = false;
+            pc.touch.shooting = false;
+            pc.mouse.pressed = false;
+        };
+
+        document.addEventListener('keydown', keyHandler);
+        document.addEventListener('keyup', keyHandler);
+        canvas.addEventListener('mousemove', mouseMoveHandler);
+        canvas.addEventListener('mousedown', mouseDownHandler);
+        canvas.addEventListener('mouseup', mouseUpHandler);
+        canvas.addEventListener('touchstart', touchStartHandler);
+        canvas.addEventListener('touchmove', touchMoveHandler);
+        canvas.addEventListener('touchend', touchEndHandler);
+
+        pc._cleanup = () => {
+            document.removeEventListener('keydown', keyHandler);
+            document.removeEventListener('keyup', keyHandler);
+            canvas.removeEventListener('mousemove', mouseMoveHandler);
+            canvas.removeEventListener('mousedown', mouseDownHandler);
+            canvas.removeEventListener('mouseup', mouseUpHandler);
+            canvas.removeEventListener('touchstart', touchStartHandler);
+            canvas.removeEventListener('touchmove', touchMoveHandler);
+            canvas.removeEventListener('touchend', touchEndHandler);
+        };
     }
 }
 

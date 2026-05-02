@@ -508,6 +508,12 @@
             .profit-estimate {
                 font-size: 10px;
             }
+            .mobile-active {
+                display: block !important;
+            }
+            #log-panel {
+                font-size: 10px;
+            }
         }
 
         /* Desktop keeps original layout */
@@ -515,6 +521,40 @@
             #mobile-tabs {
                 display: none;
             }
+        }
+
+        /* Log Screen Styles */
+        #log-screen {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.95);
+            z-index: 1000;
+            padding: 20px;
+            overflow-y: auto;
+        }
+        #log-screen .bar-header {
+            font-size: 18px;
+            text-align: center;
+            margin-bottom: 20px;
+            color: var(--ui-accent);
+        }
+        #log-screen .bar-back-btn {
+            position: sticky;
+            top: 0;
+            z-index: 10;
+            background: var(--ui-accent);
+            border: none;
+            border-radius: 4px;
+            color: #000;
+            font-family: 'Orbitron', monospace;
+            font-size: 11px;
+            padding: 8px 12px;
+            cursor: pointer;
+            margin-bottom: 10px;
         }
     </style>
 </head>
@@ -528,6 +568,7 @@
             </div>
             <div id="tick-timer">Тик: 0</div>
             <button id="reset-btn" style="background:#E57373;border:none;border-radius:4px;color:#fff;font-family:'Orbitron',monospace;font-size:9px;padding:4px 8px;cursor:pointer;">СБРОС</button>
+            <button id="log-btn" style="background:#4FC3F7;border:none;border-radius:4px;color:#000;font-family:'Orbitron',monospace;font-size:9px;padding:4px 8px;cursor:pointer;">ЖУРНАЛ</button>
         </div>
         <div id="map-area">
             <canvas id="map-canvas"></canvas>
@@ -542,6 +583,9 @@
             </button>
             <button class="mobile-tab" data-panel="route-panel" onclick="switchMobileTab('route-panel')">
                 <span class="tab-icon">🗺️</span>МАРШРУТ
+            </button>
+            <button class="mobile-tab" data-panel="log-panel" onclick="switchMobileTab('log-panel')">
+                <span class="tab-icon">📋</span>ЖУРНАЛ
             </button>
         </div>
         <div id="bottom-panels">
@@ -593,6 +637,10 @@
                 <div class="route-stats" id="route-stats"></div>
                 <div class="profit-estimate" id="profit-estimate"></div>
                 <button id="launch-btn" disabled>ВЫБЕРИТЕ ГОРОД</button>
+            </div>
+            <div class="panel" id="log-panel" style="display:none;">
+                <div class="panel-title">📋 ЖУРНАЛ СОБЫТИЙ</div>
+                <div id="log-panel-entries" style="max-height:300px; overflow-y:auto;"></div>
             </div>
         </div>
     </div>
@@ -667,6 +715,13 @@
             <div class="bar-outcome-stats" id="bar-outcome-stats"></div>
             <button class="btn" id="bar-continue-btn" style="background: var(--ui-accent);">ПОНЯТНО</button>
         </div>
+    </div>
+
+    <!-- Event Log Screen -->
+    <div id="log-screen" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.95); z-index:1000; padding:20px; overflow-y:auto;">
+        <button class="bar-back-btn" id="log-back-btn" style="position:sticky; top:0; z-index:10;">← НАЗАД</button>
+        <div class="bar-header">📋 ЖУРНАЛ СОБЫТИЙ</div>
+        <div id="log-entries" style="margin-top:20px;"></div>
     </div>
 
     <script>
@@ -749,6 +804,95 @@ const MODULE_CHANCES = { primum: { C: 40, B: 30, A: 20, S: 10 }, secundus: { C: 
 
 // Contraband items - items that trigger arrest chance when sold
 const CONTRABAND_ITEMS = ['errey_drug', 'encrypted_doc', 'jewelry', 'antique', 'stimulant'];
+
+// Random Events System - 10 events
+const EVENTS = [
+    {
+        id: 'price_surge',
+        name: 'Всплеск цен',
+        description: 'Торговцы скупают товары! Цены на продажу выросли на 30%.',
+        duration: 3,
+        priceModifier: 1.3,
+        type: 'price',
+        effect: 'up'
+    },
+    {
+        id: 'price_crash',
+        name: 'Обвал цен',
+        description: 'Рынок перенасыщен! Цены на покупку упали на 25%.',
+        duration: 3,
+        priceModifier: 0.75,
+        type: 'price',
+        effect: 'down'
+    },
+    {
+        id: 'fuel_shortage',
+        name: 'Дефицит топлива',
+        description: 'Синтез-банки подорожали на 50%. Заправка обойдётся дороже.',
+        duration: 4,
+        fuelCostModifier: 1.5,
+        type: 'fuel'
+    },
+    {
+        id: 'repair_sale',
+        name: 'Скидки на ремонт',
+        description: 'Доки предлагают ремонт со скидкой 40%.',
+        duration: 3,
+        repairCostModifier: 0.6,
+        type: 'repair'
+    },
+    {
+        id: 'storm_warning',
+        name: 'Шторм над Завесой',
+        description: 'Ядовитые молнии усилились. Некоторые маршруты заблокированы!',
+        duration: 4,
+        blockedRoutes: ['primum-secundus', 'quartus-kibwe'],
+        type: 'route_block'
+    },
+    {
+        id: 'city_quarantine',
+        name: 'Карантин',
+        description: 'Город закрыт на карантин. Посадка возможна только с повреждениями.',
+        duration: 3,
+        blockedCity: 'kibwe',
+        forceLandDamage: 15,
+        type: 'city_block'
+    },
+    {
+        id: 'customs_raid',
+        name: 'Рейд таможни',
+        description: 'Таможня усилила проверки. Контрабанда под запретом, но можно заплатить пошлину.',
+        duration: 3,
+        bypassCost: 100,
+        type: 'customs'
+    },
+    {
+        id: 'trader_convoy',
+        name: 'Караван торговцев',
+        description: 'Проходит караван! Цены стабильны, но спрос вырос на 20%. Караван задерживает вас на день.',
+        duration: 3,
+        priceModifier: 1.2,
+        type: 'price',
+        effect: 'up',
+        skip: true
+    },
+    {
+        id: 'engine_trouble',
+        name: 'Поломка двигателя',
+        description: 'Ваш корабль требует ремонта. Ремонт дороже на 80%.',
+        duration: 3,
+        repairCostModifier: 1.8,
+        type: 'repair'
+    },
+    {
+        id: 'smugglers_path',
+        name: 'Путь контрабандистов',
+        description: 'Открыт тайный путь! Можно пройти мимо блокпостов за взятку.',
+        duration: 2,
+        bypassCost: 50,
+        type: 'customs'
+    }
+];
 
 // Prison system data
 const PRISON_SCENARIOS = [
@@ -1173,6 +1317,8 @@ class GameState {
         this.ship = { docked: true, traveling: false, destination: null, travelProgress: 0, travelDuration: 0, broken: false };
         this.contracts = [];
         this.shipModules = [];
+        this.activeEvents = [];
+        this.eventLog = [];
         this.initMarkets();
     }
     initMarkets() {
@@ -1217,9 +1363,61 @@ class GameState {
         if (!item || !this.markets[cityId] || !this.markets[cityId][itemId]) return item ? item.basePrice : 0;
         let market = this.markets[cityId][itemId];
         let price = item.basePrice * (1 + market.demandFactor - market.supplyFactor);
-        return Math.max(1, Math.round(price));
+        price *= this.getPriceModifier();
+        return Math.max(1, Math.round(price));;
     }
     hasContrabandModule() { return this.shipModules.includes('contraband_sol'); }
+    hasActiveEvent(eventId) {
+        return this.activeEvents.some(e => e.id === eventId);
+    }
+    isCityBlocked(cityId) {
+        return this.activeEvents.some(e => e.type === 'city_block' && e.blockedCity === cityId);
+    }
+    isRouteBlocked(routeKey) {
+        return this.activeEvents.some(e => e.type === 'route_block' && e.blockedRoutes && e.blockedRoutes.includes(routeKey));
+    }
+    getPriceModifier() {
+        let modifier = 1.0;
+        for (let event of this.activeEvents) {
+            if (event.priceModifier) {
+                if (event.effect === 'up') {
+                    modifier = Math.max(modifier, event.priceModifier);
+                } else if (event.effect === 'down') {
+                    modifier = Math.min(modifier, event.priceModifier);
+                } else {
+                    modifier *= event.priceModifier;
+                }
+            }
+        }
+        return modifier;
+    }
+    getRepairCostModifier() {
+        let modifier = 1.0;
+        for (let event of this.activeEvents) {
+            if (event.repairCostModifier) {
+                modifier *= event.repairCostModifier;
+            }
+        }
+        return modifier;
+    }
+    getFuelCostModifier() {
+        let modifier = 1.0;
+        for (let event of this.activeEvents) {
+            if (event.fuelCostModifier) {
+                modifier *= event.fuelCostModifier;
+            }
+        }
+        return modifier;
+    }
+    addEventToLog(event, action) {
+        this.eventLog.unshift({
+            tick: this.tick,
+            eventName: event.name,
+            action: action,
+            description: event.description
+        });
+        if (this.eventLog.length > 10) this.eventLog.pop();
+    }
     save() {
         let data = { credits: this.credits, currentCity: this.currentCity, cargo: this.cargo, markets: this.markets, tick: this.tick, shipCondition: this.shipCondition, shipFuel: this.shipFuel, ship: this.ship, contracts: this.contracts, shipType: this.shipType, shipModules: this.shipModules };
         localStorage.setItem('cloudtrader_save', JSON.stringify(data));
@@ -1305,6 +1503,8 @@ class Game {
         document.getElementById('fuel-btn').addEventListener('click', () => this.refuel());
         document.getElementById('repair-btn-hud').addEventListener('click', () => this.repairShip());
         document.getElementById('bar-btn').addEventListener('click', () => this.enterBar());
+        document.getElementById('log-btn').addEventListener('click', () => this.showLog());
+        document.getElementById('log-back-btn').addEventListener('click', () => this.hideLog());
         document.getElementById('prison-continue-btn').addEventListener('click', () => this.continueAfterPrison());
         document.getElementById('bar-back-btn').addEventListener('click', () => this.barExit());
     }
@@ -1368,6 +1568,43 @@ class Game {
     }
     launchShip() {
         if (!this.selectedCity || this.state.ship.traveling || this.state.ship.broken) return;
+
+        // Check if route is blocked by events
+        let routeKey = this._getRouteKey(this.state.currentCity, this.selectedCity);
+        if (this.state.isRouteBlocked(routeKey)) {
+            this.notify('Маршрут заблокирован событием!', 'error'); return;
+        }
+
+        // Check if destination city is blocked
+        if (this.state.isCityBlocked(this.selectedCity)) {
+            // Check if player has bypass option
+            let bypassEvent = this.state.activeEvents.find(e => e.type === 'city_block' && e.blockedCity === this.selectedCity);
+            if (bypassEvent && bypassEvent.bypassCost) {
+                if (this.state.credits >= bypassEvent.bypassCost) {
+                    // Offer bypass option
+                    if (confirm('Город на карантине! Заплатить ' + bypassEvent.bypassCost + ' CR для прохода?')) {
+                        this.state.credits -= bypassEvent.bypassCost;
+                        this.state.addEventToLog(bypassEvent, 'bypass');
+                        this.notify('Вы заплатили пошлину: ' + bypassEvent.bypassCost + ' CR', 'warning');
+                    } else {
+                        this.notify('Полёт отменён', 'error'); return;
+                    }
+                } else {
+                    this.notify('Город заблокирован! Нужно ' + bypassEvent.bypassCost + ' CR для прохода', 'error'); return;
+                }
+            } else if (bypassEvent && bypassEvent.forceLandDamage) {
+                // Force land with damage
+                if (confirm('Город на карантине! Приземлиться с повреждениями (-' + bypassEvent.forceLandDamage + ' HP)?')) {
+                    // Continue with flight, will apply damage on arrival
+                    this._forceLandDamage = bypassEvent.forceLandDamage;
+                } else {
+                    this.notify('Полёт отменён', 'error'); return;
+                }
+            } else {
+                this.notify('Город заблокирован событием!', 'error'); return;
+            }
+        }
+
         let stats = this.calculateFlightStats(this.state.currentCity, this.selectedCity);
         let fuelNeeded = stats.fuelCost;
         if (this.state.shipFuel < fuelNeeded) {
@@ -1390,14 +1627,54 @@ class Game {
         this.state.save();
         this.renderAll();
     }
+    _getRouteKey(city1, city2) {
+        return [city1, city2].sort().join('-');
+    }
+    checkRandomEvent() {
+        // Events do NOT trigger if player is in bar or prison
+        if (document.getElementById('bar-screen').style.display === 'flex' ||
+            document.getElementById('prison-screen').style.display === 'flex') {
+            return;
+        }
+        if (Math.random() < 0.15) {
+            let availableEvents = EVENTS.filter(e => !this.state.hasActiveEvent(e.id));
+            if (availableEvents.length > 0) {
+                let event = availableEvents[Math.floor(Math.random() * availableEvents.length)];
+                this.activateEvent(event);
+            }
+        }
+    }
+    activateEvent(event) {
+        let activeEvent = Object.assign({}, event, { remaining: event.duration });
+        this.state.activeEvents.push(activeEvent);
+        this.state.addEventToLog(event, 'started');
+        this.notify('СОБЫТИЕ: ' + event.name, 'warning');
+        this.renderAll();
+    }
+    processEventTick() {
+        for (let i = this.state.activeEvents.length - 1; i >= 0; i--) {
+            let event = this.state.activeEvents[i];
+            event.remaining--;
+            if (event.remaining <= 0) {
+                this.expireEvent(i);
+            }
+        }
+    }
+    expireEvent(index) {
+        let event = this.state.activeEvents[index];
+        this.state.activeEvents.splice(index, 1);
+        this.state.addEventToLog(event, 'expired');
+        this.notify('Событие завершено: ' + event.name, 'success');
+        this.renderAll();
+    }
     refuel() {
         if (this.state.ship.traveling) return;
-        let cost = 20;
+        let cost = Math.round(20 * this.state.getFuelCostModifier());
         if (this.state.credits < cost) { this.notify('Недостаточно CR!', 'error'); return; }
         if (this.state.shipFuel >= 100) { this.notify('Бак полон!', 'error'); return; }
         this.state.credits -= cost;
         this.state.shipFuel = Math.min(100, this.state.shipFuel + 30);
-        this.notify('Заправка +30', 'success');
+        this.notify('Заправка +30 (-' + cost + ' CR)', 'success');
         this.state.save();
         this.renderHUD();
     }
@@ -1420,6 +1697,19 @@ class Game {
         if (this.state.ship.travelProgress >= this.state.ship.travelDuration) {
             let destId = this.state.ship.destination;
             this.state.currentCity = destId;
+
+            // Apply force land damage if applicable
+            if (this._forceLandDamage) {
+                this.state.shipCondition = Math.max(0, this.state.shipCondition - this._forceLandDamage);
+                this.notify('Принудительная посадка! Урон: -' + this._forceLandDamage + ' HP', 'error');
+                this._forceLandDamage = null;
+                if (this.state.shipCondition <= 0) {
+                    this.state.ship.broken = true;
+                    document.getElementById('repair-screen').style.display = 'flex';
+                    document.getElementById('repair-cost').textContent = 'Ремонт: ' + this.calculateRepairCost() + ' CR';
+                }
+            }
+
             if (Math.random() < this.state.ship.breakageChance) {
                 this.state.ship.broken = true;
                 let damage = 20 + Math.random() * 40;
@@ -1436,6 +1726,18 @@ class Game {
             this.decayFactors();
             this.refreshCityStock(destId);
             if (this.state.tick % 2 === 0) this.generateContract();
+
+             // Process event tick and check for new random events after arrival
+             this.processEventTick();
+             this.checkRandomEvent();
+
+             // Check for skip events (player waits in current city for a tick)
+             let skipEvent = this.state.activeEvents.find(e => e.skip);
+             if (skipEvent) {
+                 this.state.tick++;
+                 this.notify('Вы ждёте в ' + CITIES[destId].name + ' (скип тика из-за события)', 'warning');
+             }
+
             let btn = document.getElementById('launch-btn');
             btn.textContent = 'ВЫБЕРИТЕ ГОРОД';
             btn.classList.remove('traveling');
@@ -1443,7 +1745,7 @@ class Game {
             this.checkWin();
         }
     }
-    calculateRepairCost() { return Math.round(100 * (1 + (100 - this.state.shipCondition) / 50) * 2); }
+    calculateRepairCost() { return Math.round(100 * (1 + (100 - this.state.shipCondition) / 50) * 2 * this.state.getRepairCostModifier()); }
     payRepairs() {
         let cost = this.calculateRepairCost();
         if (this.state.credits < cost) { this.notify('Недостаточно CR!', 'error'); return; }
@@ -1636,9 +1938,36 @@ class Game {
         div.className = 'notification ' + type;
         div.textContent = message;
         container.appendChild(div);
-        setTimeout(() => div.remove(), 3000);
+        setTimeout(() => div.remove(),3000);
     }
-    renderAll() { this.renderHUD(); this.renderCargo(); this.renderModules(); this.renderMarket(); this.renderRoute(); }
+    showLog() {
+        this.renderLog();
+        document.getElementById('log-screen').style.display = 'block';
+    }
+    hideLog() {
+        document.getElementById('log-screen').style.display = 'none';
+    }
+    renderLog() {
+        let logEntries = document.getElementById('log-entries');
+        let panelEntries = document.getElementById('log-panel-entries');
+        let html = '';
+        if (this.state.eventLog.length === 0) {
+            html = '<div style="color:var(--text-secondary);font-size:11px;text-align:center;padding:20px;">Журнал пуст</div>';
+        } else {
+            for (let entry of this.state.eventLog) {
+                let actionText = { 'started': '▶ НАЧАЛОСЬ', 'expired': '■ ЗАВЕРШЕНО', 'bypass': '⚡ ПРОХОД', 'forceLand': '💥 ПРИНУДИТЕЛЬНАЯ ПОСАДКА' }[entry.action] || entry.action;
+                html += '<div style="background:rgba(255,255,255,0.05);border-radius:6px;padding:10px;margin-bottom:8px;border-left:3px solid var(--ui-accent);">' +
+                    '<div style="font-size:10px;color:var(--text-secondary);">Тик ' + entry.tick + '</div>' +
+                    '<div style="font-size:12px;color:var(--text-primary);margin:4px 0;">' + entry.eventName + '</div>' +
+                    '<div style="font-size:9px;color:var(--ui-accent);">' + actionText + '</div>' +
+                    '<div style="font-size:10px;color:var(--text-secondary);margin-top:4px;">' + entry.description + '</div>' +
+                '</div>';
+            }
+        }
+        if (logEntries) logEntries.innerHTML = html;
+        if (panelEntries) panelEntries.innerHTML = html;
+    }
+    renderAll() { this.renderHUD(); this.renderCargo(); this.renderModules(); this.renderMarket(); this.renderRoute(); this.renderLog(); }
     renderModules() {
         let container = document.getElementById('modules-display');
         let slots = this.state.getAvailableSlots();
@@ -2306,10 +2635,12 @@ function switchMobileTab(panelId) {
     // Update panels
     document.querySelectorAll('#bottom-panels .panel').forEach(panel => {
         panel.classList.remove('mobile-active');
+        panel.style.display = 'none';
     });
     let targetPanel = document.getElementById(panelId);
     if (targetPanel) {
         targetPanel.classList.add('mobile-active');
+        targetPanel.style.display = 'block';
     }
     // Show bottom panels on mobile
     let bottomPanels = document.getElementById('bottom-panels');

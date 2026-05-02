@@ -3331,6 +3331,7 @@ class Game {
         pc.lastTime = 0;
         pc.keys = {};
         pc.mouse = { x: 400, y: 500, pressed: false };
+        pc.touch = { active: false, x: 400, y: 500, shooting: false, touchStartX: 100, touchStartY: 500 };
         pc.phase = 'countdown';
         pc.countdown = 5;
 
@@ -3343,6 +3344,7 @@ class Game {
         let canvas = document.getElementById('pirate-canvas');
         canvas.width = 800;
         canvas.height = 600;
+        pc.touch.touchStartY = canvas.height - 100;
         let ctx = canvas.getContext('2d');
         ctx.clearRect(0, 0, canvas.width, canvas.height);
 
@@ -3426,6 +3428,16 @@ class Game {
         if (pc.phase !== 'combat') return;
 
         let moveSpeed = 200;
+
+        if (pc.touch.active) {
+            let joyX = (pc.touch.x - pc.touchStartX) / 50;
+            let joyY = (pc.touch.y - pc.touchStartY) / 50;
+            joyX = Math.max(-1, Math.min(1, joyX));
+            joyY = Math.max(-1, Math.min(1, joyY));
+            pc.playerX += joyX * moveSpeed * dt;
+            pc.playerY += joyY * moveSpeed * dt;
+        }
+
         if (pc.keys['w'] || pc.keys['W'] || pc.keys['ArrowUp']) pc.playerY -= moveSpeed * dt;
         if (pc.keys['s'] || pc.keys['S'] || pc.keys['ArrowDown']) pc.playerY += moveSpeed * dt;
         if (pc.keys['a'] || pc.keys['A'] || pc.keys['ArrowLeft']) pc.playerX -= moveSpeed * dt;
@@ -3625,6 +3637,52 @@ class Game {
             ctx.textAlign = 'left';
             ctx.fillText('WASD - движение', 20, canvas.height - 20);
             ctx.fillText('МЫШЬ/КЛИК - прицел и стрельба', 20, canvas.height - 40);
+
+            if (pc.touch.active) {
+                let jx = pc.touch.x;
+                let jy = pc.touch.y;
+                ctx.strokeStyle = 'rgba(127, 219, 218, 0.5)';
+                ctx.lineWidth = 2;
+                ctx.beginPath();
+                ctx.arc(jx, jy, 50, 0, Math.PI * 2);
+                ctx.stroke();
+                ctx.fillStyle = 'rgba(127, 219, 218, 0.3)';
+                ctx.beginPath();
+                ctx.arc(jx, jy, 30, 0, Math.PI * 2);
+                ctx.fill();
+                ctx.fillStyle = '#7FDBDA';
+                ctx.beginPath();
+                ctx.arc(jx, jy, 15, 0, Math.PI * 2);
+                ctx.fill();
+            } else {
+                ctx.strokeStyle = 'rgba(127, 219, 218, 0.3)';
+                ctx.lineWidth = 2;
+                ctx.setLineDash([5, 5]);
+                ctx.beginPath();
+                ctx.arc(100, canvas.height - 100, 50, 0, Math.PI * 2);
+                ctx.stroke();
+                ctx.setLineDash([]);
+                ctx.fillStyle = 'rgba(127, 219, 218, 0.2)';
+                ctx.beginPath();
+                ctx.arc(100, canvas.height - 100, 30, 0, Math.PI * 2);
+                ctx.fill();
+                ctx.fillStyle = 'rgba(127, 219, 218, 0.5)';
+                ctx.font = '12px Orbitron';
+                ctx.textAlign = 'center';
+                ctx.fillText('←', 70, canvas.height - 95);
+                ctx.fillText('→', 130, canvas.height - 95);
+                ctx.fillText('↑', 100, canvas.height - 125);
+                ctx.fillText('↓', 100, canvas.height - 65);
+            }
+
+            ctx.fillStyle = 'rgba(229, 115, 115, 0.5)';
+            ctx.beginPath();
+            ctx.arc(canvas.width - 100, canvas.height - 100, 40, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.fillStyle = '#FFF';
+            ctx.font = 'bold 12px Orbitron';
+            ctx.textAlign = 'center';
+            ctx.fillText('ОГОНЬ', canvas.width - 100, canvas.height - 95);
         }
     }
 
@@ -3766,6 +3824,8 @@ class Game {
                 pc.touch.active = true;
                 pc.touch.x = touchX;
                 pc.touch.y = touchY;
+                pc.touchStartX = touchX;
+                pc.touchStartY = touchY;
                 pc.mouse.x = touchX;
                 pc.mouse.y = touchY;
             } else {

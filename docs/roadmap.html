@@ -800,99 +800,52 @@
   }
 
   /* ===== FLOATING FUN BUTTON ===== */
-  .fun-promo {
-    position: fixed;
-    bottom: 20px;
-    right: 20px;
-    z-index: 999;
-    display: flex;
-    align-items: center;
-    gap: 8px;
-  }
-  .fun-promo__label {
-    font-family: 'Inter', sans-serif;
-    font-size: 11px;
-    font-weight: 700;
-    color: #fff;
-    background: linear-gradient(135deg, #ff6b6b 0%, #feca57 100%);
-    padding: 6px 12px;
-    border-radius: 20px;
-    letter-spacing: 1px;
-    text-transform: uppercase;
-    animation: pulse-label 1.5s ease-in-out infinite;
-    box-shadow: 0 4px 15px rgba(255, 107, 107, 0.4);
-  }
   .fun-btn {
+    position: fixed;
+    top: 12px;
+    right: 12px;
+    z-index: 1000;
     display: flex;
     align-items: center;
     gap: 8px;
-    padding: 14px 24px;
+    padding: 10px 18px;
     background: linear-gradient(135deg, #1a1a3e 0%, #2d2d5a 100%);
-    border: 2px solid rgba(79, 195, 247, 0.5);
+    border: 2px solid rgba(79, 195, 247, 0.6);
     border-radius: 50px;
     color: #4FC3F7;
     text-decoration: none;
     font-family: 'Inter', sans-serif;
-    font-size: 15px;
+    font-size: 13px;
     font-weight: 700;
-    box-shadow: 0 4px 25px rgba(79, 195, 247, 0.25), 0 0 50px rgba(79, 195, 247, 0.15);
+    box-shadow: 0 4px 20px rgba(79, 195, 247, 0.2);
     transition: all .3s ease;
-    backdrop-filter: blur(10px);
+    backdrop-filter: blur(8px);
   }
   .fun-btn:hover {
-    transform: translateY(-4px) scale(1.05);
-    box-shadow: 0 10px 40px rgba(79, 195, 247, 0.4), 0 0 70px rgba(79, 195, 247, 0.25);
+    transform: scale(1.08);
+    box-shadow: 0 6px 30px rgba(79, 195, 247, 0.35);
     border-color: #4FC3F7;
-    color: #81D4FA;
+    color: #fff;
   }
   .fun-btn__icon {
-    font-size: 20px;
+    font-size: 18px;
     animation: float 2s ease-in-out infinite;
   }
   .fun-btn__text {
     letter-spacing: 0.5px;
   }
-  .fun-promo__arrow {
-    font-size: 24px;
-    color: #feca57;
-    animation: bounce-arrow 0.8s ease-in-out infinite;
-    text-shadow: 0 0 10px rgba(254, 202, 87, 0.6);
-  }
   @keyframes float {
     0%, 100% { transform: translateY(0); }
-    50% { transform: translateY(-6px); }
+    50% { transform: translateY(-5px); }
   }
-  @keyframes pulse-label {
-    0%, 100% { transform: scale(1); opacity: 1; }
-    50% { transform: scale(1.05); opacity: 0.9; }
-  }
-  @keyframes bounce-arrow {
-    0%, 100% { transform: translateX(0); }
-    50% { transform: translateX(-8px); }
-  }
-  @media (max-width: 768px) {
-    .fun-promo {
-      top: 0;
-      bottom: auto;
-      right: 0;
-      left: 0;
-      justify-content: center;
-      gap: 10px;
-      padding: 10px;
-      border-radius: 0;
-      background: rgba(10, 10, 15, 0.95);
-      border-bottom: 1px solid var(--border);
-    }
-    .fun-promo__label {
-      font-size: 12px;
-      padding: 6px 14px;
-    }
+  @media (max-width: 600px) {
     .fun-btn {
-      padding: 12px 18px;
-      font-size: 13px;
+      top: 8px;
+      right: 8px;
+      padding: 8px 14px;
+      font-size: 11px;
     }
     .fun-btn__text { display: none; }
-    .fun-promo__arrow { display: none; }
   }
 
   /* ===== GDD SECTION ===== */
@@ -1696,14 +1649,10 @@
 </div>
 
 <!-- FLOATING GAME BUTTON -->
-<div class="fun-promo">
-  <span class="fun-promo__label">ПОИГРАЙ</span>
-  <a href="Fun/index.html" target="_top" class="fun-btn" title="Мини-игра: Грузоперевозки над облаками">
-    <span class="fun-btn__icon">🚀</span>
-    <span class="fun-btn__text">CloudTrader</span>
-  </a>
-  <span class="fun-promo__arrow">←</span>
-</div>
+<a href="Fun/index.html" target="_top" class="fun-btn" title="Мини-игра: Грузоперевозки над облаками">
+  <span class="fun-btn__icon">🚀</span>
+  <span class="fun-btn__text">CloudTrader</span>
+</a>
 
 <div class="wrapper">
 

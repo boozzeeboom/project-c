@@ -359,6 +359,91 @@
         .bar-back-btn:hover {
             background: rgba(255, 183, 77, 0.4);
         }
+
+        /* Mobile Responsive Styles */
+        @media (max-width: 600px) {
+            #bottom-panels {
+                grid-template-columns: 1fr;
+                grid-template-rows: auto;
+                max-height: none;
+                gap: 8px;
+                padding: 8px;
+                overflow-y: auto;
+            }
+            .panel {
+                padding: 10px;
+                max-height: 200px;
+            }
+            .panel:nth-child(2) {
+                max-height: 250px;
+            }
+            .panel-title {
+                font-size: 11px;
+                margin-bottom: 6px;
+            }
+            .market-tabs {
+                gap: 2px;
+            }
+            .market-tab {
+                padding: 8px 4px;
+                font-size: 9px;
+                min-height: 36px;
+            }
+            .market-item {
+                grid-template-columns: 1fr 50px 40px 50px;
+                font-size: 9px;
+                padding: 8px 4px;
+                gap: 4px;
+            }
+            .qty-btn {
+                width: 28px;
+                height: 28px;
+                font-size: 12px;
+            }
+            .trade-btn {
+                padding: 6px 8px;
+                font-size: 9px;
+                min-height: 32px;
+            }
+            button[id="fuel-btn"],
+            button[id="repair-btn-hud"],
+            button[id="bar-btn"] {
+                padding: 10px 6px;
+                font-size: 11px;
+                min-height: 44px;
+            }
+            #launch-btn {
+                padding: 12px;
+                font-size: 11px;
+                min-height: 44px;
+            }
+            #cargo-text, .cargo-item {
+                font-size: 10px;
+            }
+            #cargo-bar {
+                height: 14px;
+            }
+            .route-destination {
+                font-size: 12px;
+            }
+            .route-stats {
+                font-size: 9px;
+            }
+            .profit-estimate {
+                font-size: 10px;
+            }
+            #credits {
+                font-size: 16px;
+            }
+            #location-info, #tick-timer, #ship-status {
+                font-size: 11px;
+            }
+            #hud {
+                padding: 8px 10px;
+                flex-wrap: wrap;
+                gap: 4px;
+            }
+        }
     </style>
 </head>
 <body>

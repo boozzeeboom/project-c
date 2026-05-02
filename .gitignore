@@ -86,3 +86,11 @@ AGENTS.md
 *.tmp
 *.temp
 ~*
+
+# Node.js
+node_modules/
+package.json
+package-lock.json
+
+# Test files
+test-pirate.js

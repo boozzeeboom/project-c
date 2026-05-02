@@ -992,7 +992,7 @@
     <!-- Pirate Combat Screen -->
     <div id="pirate-screen" style="display:none;">
         <div class="pirate-header">☠ ПИРАТЫ!</div>
-        <canvas id="pirate-canvas" width="800" height="600"></canvas>
+        <canvas id="pirate-canvas" width="800" height="600" tabindex="0"></canvas>
         <div id="pirate-hud">
             <div id="pirate-health">HP: 3/3</div>
             <div id="pirate-enemies">Врагов: 3</div>
@@ -3430,12 +3430,16 @@ class Game {
         let moveSpeed = 200;
 
         if (pc.touch.active) {
-            let joyX = (pc.touch.x - pc.touchStartX) / 50;
-            let joyY = (pc.touch.y - pc.touchStartY) / 50;
-            joyX = Math.max(-1, Math.min(1, joyX));
-            joyY = Math.max(-1, Math.min(1, joyY));
-            pc.playerX += joyX * moveSpeed * dt;
-            pc.playerY += joyY * moveSpeed * dt;
+            let dirX = pc.touch.x - pc.touchStartX;
+            let dirY = pc.touch.y - pc.touchStartY;
+            let dist = Math.sqrt(dirX * dirX + dirY * dirY);
+            if (dist > 10) {
+                dirX /= dist;
+                dirY /= dist;
+                let speed = Math.min(dist / 50, 1) * moveSpeed;
+                pc.playerX += dirX * speed * dt;
+                pc.playerY += dirY * speed * dt;
+            }
         }
 
         if (pc.keys['w'] || pc.keys['W'] || pc.keys['ArrowUp']) pc.playerY -= moveSpeed * dt;
@@ -3446,8 +3450,12 @@ class Game {
         pc.playerX = Math.max(20, Math.min(canvas.width - 20, pc.playerX));
         pc.playerY = Math.max(20, Math.min(canvas.height - 20, pc.playerY));
 
-        let targetX = pc.mouse.x || pc.playerX;
-        let targetY = pc.mouse.y || pc.playerY;
+        let targetX = pc.playerX;
+        let targetY = pc.playerY;
+        if (!pc.touch.active && (pc.mouse.x !== 0 || pc.mouse.y !== 0)) {
+            targetX = pc.mouse.x;
+            targetY = pc.mouse.y;
+        }
         pc.playerAngle = Math.atan2(targetY - pc.playerY, targetX - pc.playerX);
 
         pc.lastShot += dt;
@@ -3654,25 +3662,6 @@ class Game {
                 ctx.beginPath();
                 ctx.arc(jx, jy, 15, 0, Math.PI * 2);
                 ctx.fill();
-            } else {
-                ctx.strokeStyle = 'rgba(127, 219, 218, 0.3)';
-                ctx.lineWidth = 2;
-                ctx.setLineDash([5, 5]);
-                ctx.beginPath();
-                ctx.arc(100, canvas.height - 100, 50, 0, Math.PI * 2);
-                ctx.stroke();
-                ctx.setLineDash([]);
-                ctx.fillStyle = 'rgba(127, 219, 218, 0.2)';
-                ctx.beginPath();
-                ctx.arc(100, canvas.height - 100, 30, 0, Math.PI * 2);
-                ctx.fill();
-                ctx.fillStyle = 'rgba(127, 219, 218, 0.5)';
-                ctx.font = '12px Orbitron';
-                ctx.textAlign = 'center';
-                ctx.fillText('←', 70, canvas.height - 95);
-                ctx.fillText('→', 130, canvas.height - 95);
-                ctx.fillText('↑', 100, canvas.height - 125);
-                ctx.fillText('↓', 100, canvas.height - 65);
             }
 
             ctx.fillStyle = 'rgba(229, 115, 115, 0.5)';
@@ -3796,6 +3785,7 @@ class Game {
         };
 
         let mouseMoveHandler = (e) => {
+            let pc = this.state.pirateCombat;
             if (!pc.active) return;
             let rect = canvas.getBoundingClientRect();
             pc.mouse.x = e.clientX - rect.left;
@@ -3803,16 +3793,19 @@ class Game {
         };
 
         let mouseDownHandler = (e) => {
+            let pc = this.state.pirateCombat;
             if (!pc.active) return;
             pc.mouse.pressed = true;
         };
 
         let mouseUpHandler = (e) => {
+            let pc = this.state.pirateCombat;
             if (!pc.active) return;
             pc.mouse.pressed = false;
         };
 
         let touchStartHandler = (e) => {
+            let pc = this.state.pirateCombat;
             if (!pc.active) return;
             e.preventDefault();
             let rect = canvas.getBoundingClientRect();
@@ -3835,6 +3828,7 @@ class Game {
         };
 
         let touchMoveHandler = (e) => {
+            let pc = this.state.pirateCombat;
             if (!pc.active) return;
             e.preventDefault();
             let rect = canvas.getBoundingClientRect();
@@ -3851,6 +3845,7 @@ class Game {
         };
 
         let touchEndHandler = (e) => {
+            let pc = this.state.pirateCombat;
             if (!pc.active) return;
             pc.touch.active = false;
             pc.touch.shooting = false;
@@ -3865,17 +3860,6 @@ class Game {
         canvas.addEventListener('touchstart', touchStartHandler);
         canvas.addEventListener('touchmove', touchMoveHandler);
         canvas.addEventListener('touchend', touchEndHandler);
-
-        pc._cleanup = () => {
-            document.removeEventListener('keydown', keyHandler);
-            document.removeEventListener('keyup', keyHandler);
-            canvas.removeEventListener('mousemove', mouseMoveHandler);
-            canvas.removeEventListener('mousedown', mouseDownHandler);
-            canvas.removeEventListener('mouseup', mouseUpHandler);
-            canvas.removeEventListener('touchstart', touchStartHandler);
-            canvas.removeEventListener('touchmove', touchMoveHandler);
-            canvas.removeEventListener('touchend', touchEndHandler);
-        };
     }
 }
 

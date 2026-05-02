@@ -1605,7 +1605,7 @@
   <div class="commits-block">
     <div class="commits-block__title">
       <svg viewBox="0 0 24 24"><path d="M12 .5C5.37.5 0 5.78 0 12.29c0 5.21 3.43 9.64 8.2 11.21.6.11.82-.26.82-.57v-2.01c-3.34.72-4.04-1.61-4.04-1.61-.55-1.37-1.33-1.74-1.33-1.74-1.09-.73.08-.72.08-.72 1.2.09 1.84 1.22 1.84 1.22 1.07 1.8 2.8 1.28 3.49.98.1-.76.42-1.28.76-1.57-2.67-.3-5.47-1.31-5.47-5.84 0-1.29.47-2.34 1.23-3.17-.12-.3-.53-1.5.12-3.12 0 0 1-.32 3.3 1.21a11.5 11.5 0 0 1 6.02 0c2.28-1.53 3.29-1.21 3.29-1.21.66 1.62.25 2.82.12 3.12.77.83 1.23 1.88 1.23 3.17 0 4.54-2.81 5.53-5.48 5.83.43.37.82 1.1.82 2.22v3.29c0 .31.21.69.83.57C20.57 21.92 24 17.5 24 12.29 24 5.78 18.63.5 12 .5z"/></svg>
-      Последние коммиты
+      Последний коммит
     </div>
     <div id="commits-container" class="commits-loading">
       Загрузка...
@@ -1971,7 +1971,7 @@
    ================================================================ */
 (function loadCommits() {
   const commitsContainer = document.getElementById('commits-container');
-  const REPO_URL = 'https://api.github.com/repos/boozzeeboom/project-c/commits?per_page=3&sha=main';
+  const REPO_URL = 'https://api.github.com/repos/boozzeeboom/project-c/commits?per_page=1&sha=main';
   const REPO_URL_NOCACHE = () => `${REPO_URL}&_=${Date.now()}`;
 
   function timeAgo(dateStr) {
@@ -1996,30 +1996,28 @@
     .then(res => { if (!res.ok) throw new Error(`HTTP ${res.status}`); return res.json(); })
     .then(commits => {
       if (!commits.length) { commitsContainer.innerHTML = '<div class="commits-loading">Нет коммитов</div>'; return; }
-      const html = commits.map(commit => {
-        const sha = commit.sha.substring(0, 7);
-        const message = commit.commit.message.split('\n')[0];
-        const author = commit.commit.author.name;
-        const avatarUrl = commit.author?.avatar_url || '';
-        const date = commit.commit.author.date;
-        const commitUrl = commit.html_url;
-        const esc = str => str.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
-        return `
-          <a href="${commitUrl}" target="_blank" rel="noopener" class="commit-item">
-            <span class="commit-hash">${esc(sha)}</span>
-            <div class="commit-info">
-              <div class="commit-message">${esc(message)}</div>
-              <div class="commit-meta">
-                <span class="commit-author">
-                  ${avatarUrl ? `<img src="${avatarUrl}" alt="" class="commit-avatar">` : ''}
-                  ${esc(author)}
-                </span>
-                <span class="commit-date">${timeAgo(date)}</span>
-              </div>
+      const commit = commits[0];
+      const sha = commit.sha.substring(0, 7);
+      const message = commit.commit.message.split('\n')[0];
+      const author = commit.commit.author.name;
+      const avatarUrl = commit.author?.avatar_url || '';
+      const date = commit.commit.author.date;
+      const commitUrl = commit.html_url;
+      const esc = str => str.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+      commitsContainer.innerHTML = `
+        <a href="${commitUrl}" target="_blank" rel="noopener" class="commit-item">
+          <span class="commit-hash">${esc(sha)}</span>
+          <div class="commit-info">
+            <div class="commit-message">${esc(message)}</div>
+            <div class="commit-meta">
+              <span class="commit-author">
+                ${avatarUrl ? `<img src="${avatarUrl}" alt="" class="commit-avatar">` : ''}
+                ${esc(author)}
+              </span>
+              <span class="commit-date">${timeAgo(date)}</span>
             </div>
-          </a>`;
-      }).join('');
-      commitsContainer.innerHTML = `<div class="commits-list">${html}</div>`;
+          </div>
+        </a>`;
     })
     .catch(err => {
       console.error('GitHub API error:', err);

@@ -1,0 +1,2099 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CloudTrader — Грузоперевозки над облаками</title>
+    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700&display=swap" rel="stylesheet">
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        :root {
+            --ui-bg: rgba(20, 20, 35, 0.95);
+            --ui-accent: #4FC3F7;
+            --text-primary: #E0E0E0;
+            --text-secondary: #888;
+            --positive: #4CAF50;
+            --negative: #E57373;
+            --warning: #FFB74D;
+            --city-glow: #FFE082;
+            --prison-bg: rgba(10, 5, 20, 0.97);
+            --prison-accent: #ff4444;
+            --prison-text: #ccc;
+        }
+        body {
+            font-family: 'Orbitron', monospace;
+            background: linear-gradient(180deg, #1a1a3e 0%, #0f0f2a 50%, #050510 100%);
+            min-height: 100vh;
+            color: var(--text-primary);
+            overflow: hidden;
+        }
+        #game-container { display: flex; flex-direction: column; height: 100vh; max-width: 1400px; margin: 0 auto; }
+        #hud { display: flex; justify-content: space-between; align-items: center; padding: 12px 20px; background: var(--ui-bg); border-bottom: 2px solid var(--ui-accent); z-index: 100; }
+        #credits { font-size: 20px; font-weight: 700; color: var(--city-glow); }
+        #credits span { color: var(--text-secondary); font-size: 12px; }
+        #location-info { font-size: 14px; color: var(--ui-accent); }
+        #tick-timer { font-size: 12px; color: var(--text-secondary); }
+        #ship-status { font-size: 12px; }
+        #map-area { flex: 1; position: relative; overflow: hidden; background: #0a0a14; min-height: 400px; }
+        #map-canvas { width: 100%; height: 100%; display: block; }
+        .cloud { position: absolute; background: radial-gradient(ellipse, rgba(80,80,100,0.3) 0%, transparent 70%); border-radius: 50%; filter: blur(40px); pointer-events: none; }
+        @keyframes drift { from { transform: translateX(-300px); } to { transform: translateX(calc(100vw + 300px)); } }
+        #bottom-panels { display: grid; grid-template-columns: 1fr 2fr 1fr; gap: 10px; padding: 10px; background: var(--ui-bg); border-top: 2px solid var(--ui-accent); max-height: 280px; }
+        .panel { background: rgba(0, 0, 0, 0.4); border-radius: 10px; padding: 12px; overflow-y: auto; }
+        .panel-title { font-size: 12px; color: var(--ui-accent); margin-bottom: 8px; border-bottom: 1px solid var(--ui-accent); padding-bottom: 5px; text-transform: uppercase; }
+        #cargo-bar { width: 100%; height: 16px; background: rgba(255,255,255,0.1); border-radius: 8px; overflow: hidden; margin-bottom: 8px; }
+        #cargo-fill { height: 100%; background: linear-gradient(90deg, var(--ui-accent), var(--positive)); transition: width 0.3s; }
+        #cargo-text { font-size: 11px; color: var(--text-secondary); margin-bottom: 8px; }
+        .cargo-item { display: flex; justify-content: space-between; padding: 4px 0; border-bottom: 1px solid rgba(255,255,255,0.05); font-size: 11px; }
+        .market-tabs { display: flex; gap: 4px; margin-bottom: 8px; }
+        .market-tab { flex: 1; padding: 6px; background: rgba(255,255,255,0.1); border: none; border-radius: 5px; color: var(--text-primary); cursor: pointer; font-family: 'Orbitron', monospace; font-size: 10px; }
+        .market-tab.active { background: var(--ui-accent); color: var(--ui-bg); }
+        .market-item { display: grid; grid-template-columns: 1fr 60px 50px 60px; gap: 6px; align-items: center; padding: 6px; border-bottom: 1px solid rgba(255,255,255,0.05); font-size: 10px; }
+        .item-name { font-weight: 700; }
+        .item-price { text-align: right; font-weight: 700; }
+        .price-up { color: var(--negative); }
+        .price-down { color: var(--positive); }
+        .qty-controls { display: flex; gap: 2px; justify-content: center; }
+        .qty-btn { width: 20px; height: 20px; background: var(--ui-accent); border: none; border-radius: 4px; color: var(--ui-bg); cursor: pointer; font-weight: 700; font-size: 10px; }
+        .trade-btn { padding: 4px 8px; background: var(--ui-accent); border: none; border-radius: 4px; color: var(--ui-bg); cursor: pointer; font-family: 'Orbitron', monospace; font-weight: 700; font-size: 9px; }
+        .trade-btn:hover { background: var(--positive); }
+        .trade-btn:disabled { background: rgba(255,255,255,0.1); cursor: not-allowed; }
+        .route-destination { font-size: 14px; color: var(--city-glow); margin-bottom: 8px; }
+        .route-stats { font-size: 10px; color: var(--text-secondary); margin-bottom: 8px; line-height: 1.5; }
+        .profit-estimate { font-size: 11px; margin-bottom: 10px; }
+        .profit-positive { color: var(--positive); }
+        .profit-negative { color: var(--negative); }
+        #launch-btn { width: 100%; padding: 10px; background: linear-gradient(135deg, var(--ui-accent), var(--positive)); border: none; border-radius: 8px; color: var(--ui-bg); font-family: 'Orbitron', monospace; font-size: 12px; font-weight: 700; cursor: pointer; }
+        #launch-btn:disabled { background: rgba(255,255,255,0.1); cursor: not-allowed; color: var(--text-secondary); }
+        #launch-btn.traveling { background: linear-gradient(135deg, var(--negative), #c0392b); }
+        #bar-btn:disabled { background: rgba(171, 71, 188, 0.3); cursor: not-allowed; color: rgba(255,255,255,0.5); }
+        #notifications { position: fixed; top: 70px; right: 15px; display: flex; flex-direction: column; gap: 8px; z-index: 1000; pointer-events: none; }
+        .notification { padding: 8px 12px; background: var(--ui-bg); border-left: 3px solid var(--ui-accent); border-radius: 5px; animation: slideIn 0.3s ease; font-size: 11px; }
+        .notification.success { border-left-color: var(--positive); }
+        .notification.error { border-left-color: var(--negative); }
+        .notification.warning { border-left-color: var(--warning); }
+        @keyframes slideIn { from { transform: translateX(100px); opacity: 0; } to { transform: translateX(0); opacity: 1; } }
+        .contract-item { padding: 8px; background: rgba(255,255,255,0.05); border-radius: 6px; margin-bottom: 8px; border-left: 3px solid var(--warning); }
+        .contract-header { font-size: 11px; color: var(--city-glow); margin-bottom: 4px; }
+        .contract-details { font-size: 10px; color: var(--text-secondary); }
+        .contract-reward { color: var(--positive); font-weight: 700; font-size: 11px; }
+        #win-screen, #repair-screen { display: none; position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.9); z-index: 2000; justify-content: center; align-items: center; flex-direction: column; }
+        #win-screen h1, #repair-screen h1 { font-size: 32px; color: var(--city-glow); margin-bottom: 15px; }
+        #win-screen p, #repair-screen p { font-size: 14px; margin-bottom: 20px; }
+        .btn { padding: 10px 20px; background: var(--ui-accent); border: none; border-radius: 8px; color: var(--ui-bg); font-family: 'Orbitron', monospace; font-size: 14px; cursor: pointer; }
+        .btn:hover { background: var(--positive); }
+
+        /* Prison System Styles */
+        #prison-screen {
+            display: none;
+            position: fixed;
+            top: 0; left: 0; right: 0; bottom: 0;
+            background: var(--prison-bg);
+            z-index: 3000;
+            justify-content: center;
+            align-items: center;
+            flex-direction: column;
+            font-family: 'Orbitron', monospace;
+        }
+        #prison-screen.active { display: flex; }
+        .prison-header {
+            font-size: 28px;
+            color: var(--prison-accent);
+            margin-bottom: 10px;
+            text-transform: uppercase;
+            letter-spacing: 3px;
+            text-shadow: 0 0 20px rgba(255, 68, 68, 0.5);
+            animation: prisonPulse 2s ease-in-out infinite;
+        }
+        @keyframes prisonPulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.7; }
+        }
+        .prison-subheader {
+            font-size: 14px;
+            color: var(--prison-text);
+            margin-bottom: 30px;
+            opacity: 0.8;
+        }
+        .prison-stats {
+            display: flex;
+            gap: 30px;
+            margin-bottom: 30px;
+            font-size: 12px;
+            color: var(--prison-text);
+        }
+        .prison-stat {
+            text-align: center;
+        }
+        .prison-stat-value {
+            font-size: 24px;
+            color: var(--warning);
+            font-weight: 700;
+        }
+        .prison-scenario {
+            background: rgba(30, 15, 40, 0.9);
+            border: 2px solid rgba(255, 68, 68, 0.3);
+            border-radius: 12px;
+            padding: 25px;
+            max-width: 600px;
+            width: 90%;
+            margin-bottom: 20px;
+        }
+        .prison-day {
+            font-size: 11px;
+            color: var(--prison-accent);
+            margin-bottom: 10px;
+            text-transform: uppercase;
+        }
+        .prison-scenario-text {
+            font-size: 14px;
+            color: var(--prison-text);
+            line-height: 1.6;
+            margin-bottom: 20px;
+            text-align: center;
+        }
+        .prison-choices {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+        .prison-choice {
+            padding: 12px 20px;
+            background: rgba(255, 68, 68, 0.15);
+            border: 1px solid rgba(255, 68, 68, 0.4);
+            border-radius: 8px;
+            color: var(--prison-text);
+            cursor: pointer;
+            font-family: 'Orbitron', monospace;
+            font-size: 11px;
+            transition: all 0.3s;
+            text-align: left;
+        }
+        .prison-choice:hover {
+            background: rgba(255, 68, 68, 0.3);
+            border-color: var(--prison-accent);
+            transform: translateX(5px);
+        }
+        .prison-choice-outcome {
+            font-size: 9px;
+            color: var(--text-secondary);
+            margin-top: 5px;
+        }
+        .prison-outcome-screen {
+            display: none;
+            text-align: center;
+            animation: fadeIn 0.5s ease;
+        }
+        .prison-outcome-screen.active { display: block; }
+        .prison-outcome-title {
+            font-size: 32px;
+            margin-bottom: 15px;
+            text-transform: uppercase;
+        }
+        .prison-outcome-title.release { color: var(--positive); }
+        .prison-outcome-title.death { color: var(--negative); }
+        .prison-outcome-text {
+            font-size: 14px;
+            color: var(--prison-text);
+            margin-bottom: 25px;
+            line-height: 1.6;
+            max-width: 500px;
+        }
+        .prison-outcome-stats {
+            font-size: 12px;
+            color: var(--warning);
+            margin-bottom: 25px;
+        }
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        /* Contraband highlighting */
+        .contraband-item {
+            color: var(--prison-accent) !important;
+            position: relative;
+        }
+        .contraband-item::before {
+            content: '⚠ ';
+            font-size: 10px;
+        }
+        .contraband-item::after {
+            content: '';
+            position: absolute;
+            left: 0; right: 0; bottom: -2px;
+            height: 1px;
+            background: linear-gradient(90deg, transparent, var(--prison-accent), transparent);
+        }
+
+        /* Bar System Styles */
+        #bar-screen {
+            display: none;
+            position: fixed;
+            top: 0; left: 0; right: 0; bottom: 0;
+            background: rgba(20, 10, 5, 0.97);
+            z-index: 3000;
+            justify-content: center;
+            align-items: center;
+            flex-direction: column;
+            font-family: 'Orbitron', monospace;
+        }
+        #bar-screen.active { display: flex; }
+        .bar-header {
+            font-size: 28px;
+            color: #FFB74D;
+            margin-bottom: 10px;
+            text-transform: uppercase;
+            letter-spacing: 3px;
+            text-shadow: 0 0 20px rgba(255, 183, 77, 0.5);
+        }
+        .bar-subheader {
+            font-size: 14px;
+            color: #D7CCC8;
+            margin-bottom: 30px;
+            opacity: 0.8;
+        }
+        .bar-stats {
+            display: flex;
+            gap: 30px;
+            margin-bottom: 30px;
+            font-size: 12px;
+            color: #D7CCC8;
+        }
+        .bar-stat {
+            text-align: center;
+        }
+        .bar-stat-value {
+            font-size: 24px;
+            color: #FFB74D;
+            font-weight: 700;
+        }
+        .bar-scenario {
+            background: rgba(40, 25, 15, 0.9);
+            border: 2px solid rgba(255, 183, 77, 0.3);
+            border-radius: 12px;
+            padding: 25px;
+            max-width: 600px;
+            width: 90%;
+            margin-bottom: 20px;
+        }
+        .bar-title {
+            font-size: 14px;
+            color: #FFB74D;
+            margin-bottom: 10px;
+            text-transform: uppercase;
+        }
+        .bar-scenario-text {
+            font-size: 14px;
+            color: #D7CCC8;
+            line-height: 1.6;
+            margin-bottom: 20px;
+            text-align: center;
+        }
+        .bar-choices {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+        .bar-choice {
+            padding: 12px 20px;
+            background: rgba(255, 183, 77, 0.15);
+            border: 1px solid rgba(255, 183, 77, 0.4);
+            border-radius: 8px;
+            color: #D7CCC8;
+            cursor: pointer;
+            font-family: 'Orbitron', monospace;
+            font-size: 11px;
+            transition: all 0.3s;
+            text-align: left;
+        }
+        .bar-choice:hover {
+            background: rgba(255, 183, 77, 0.3);
+            border-color: #FFB74D;
+            transform: translateX(5px);
+        }
+        .bar-choice-outcome {
+            font-size: 9px;
+            color: var(--text-secondary);
+            margin-top: 5px;
+        }
+        .bar-outcome-screen {
+            display: none;
+            text-align: center;
+            animation: fadeIn 0.5s ease;
+        }
+        .bar-outcome-screen.active { display: block; }
+        .bar-outcome-title {
+            font-size: 28px;
+            margin-bottom: 15px;
+            text-transform: uppercase;
+        }
+        .bar-outcome-title.success { color: var(--positive); }
+        .bar-outcome-title.neutral { color: #FFB74D; }
+        .bar-outcome-title.failure { color: var(--negative); }
+        .bar-outcome-text {
+            font-size: 14px;
+            color: #D7CCC8;
+            margin-bottom: 25px;
+            line-height: 1.6;
+            max-width: 500px;
+        }
+        .bar-outcome-stats {
+            font-size: 12px;
+            color: #FFB74D;
+            margin-bottom: 25px;
+        }
+        .bar-back-btn {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            padding: 8px 16px;
+            background: rgba(255, 183, 77, 0.2);
+            border: 1px solid rgba(255, 183, 77, 0.5);
+            border-radius: 6px;
+            color: #FFB74D;
+            cursor: pointer;
+            font-family: 'Orbitron', monospace;
+            font-size: 11px;
+        }
+        .bar-back-btn:hover {
+            background: rgba(255, 183, 77, 0.4);
+        }
+    </style>
+</head>
+<body>
+    <div id="game-container">
+        <div id="hud">
+            <div id="credits">0 <span>CR</span></div>
+            <div>
+                <div id="location-info">Примум</div>
+                <div id="ship-status">Исправен</div>
+            </div>
+            <div id="tick-timer">Тик: 0</div>
+            <button id="reset-btn" style="background:#E57373;border:none;border-radius:4px;color:#fff;font-family:'Orbitron',monospace;font-size:9px;padding:4px 8px;cursor:pointer;">СБРОС</button>
+        </div>
+        <div id="map-area">
+            <canvas id="map-canvas"></canvas>
+        </div>
+        <div id="bottom-panels">
+            <div class="panel">
+                <div class="panel-title" id="ship-title">КОРАБЛЬ: Шлюпка</div>
+                <div style="margin-bottom:8px;">
+                    <div style="display:flex;align-items:center;gap:6px;margin-bottom:6px;">
+                        <span style="font-size:10px;color:#FFB74D;width:70px;">ТОПЛИВО</span>
+                        <div style="flex:1;height:10px;background:rgba(255,255,255,0.1);border-radius:5px;overflow:hidden;"><div id="fuel-fill" style="width:100%;height:100%;background:#FFB74D;"></div></div>
+                        <span id="fuel-text" style="font-size:10px;color:#FFB74D;width:35px;text-align:right;">100%</span>
+                    </div>
+                    <div style="display:flex;align-items:center;gap:6px;">
+                        <span style="font-size:10px;color:#78909C;width:70px;">ПРОЧНОСТЬ</span>
+                        <div style="flex:1;height:10px;background:rgba(255,255,255,0.1);border-radius:5px;overflow:hidden;"><div id="condition-fill" style="width:100%;height:100%;background:#78909C;"></div></div>
+                        <span id="condition-text" style="font-size:10px;color:#78909C;width:35px;text-align:right;">100%</span>
+                    </div>
+                </div>
+                <div style="display:flex;gap:6px;margin-bottom:8px;">
+                    <button id="fuel-btn" style="flex:1;background:#FFB74D;border:none;border-radius:4px;color:#000;font-family:'Orbitron',monospace;font-size:10px;padding:6px;cursor:pointer;">ЗАПРАВИТЬ +30</button>
+                    <button id="repair-btn-hud" style="flex:1;background:#78909C;border:none;border-radius:4px;color:#fff;font-family:'Orbitron',monospace;font-size:10px;padding:6px;cursor:pointer;">РЕМОНТ</button>
+                </div>
+                <div style="display:flex;gap:6px;margin-bottom:8px;">
+                    <button id="bar-btn" style="flex:1;background:#AB47BC;border:none;border-radius:4px;color:#fff;font-family:'Orbitron',monospace;font-size:10px;padding:6px;cursor:pointer;">🍸 БАР</button>
+                </div>
+                <div id="modules-display" style="margin-bottom:8px;"></div>
+                <div class="panel-title">ГРУЗ</div>
+                <div id="cargo-bar"><div id="cargo-fill"></div></div>
+                <div id="cargo-text">0 кг</div>
+                <div id="cargo-items"></div>
+            </div>
+            <div class="panel">
+                <div class="panel-title">РЫНОК: <span id="market-city">Примум</span></div>
+                <div class="market-tabs">
+                    <button class="market-tab active" data-tab="buy">КУПИТЬ</button>
+                    <button class="market-tab" data-tab="sell">ПРОДАТЬ</button>
+                    <button class="market-tab" data-tab="contracts">КОНТРАКТЫ</button>
+                    <button class="market-tab" data-tab="ships">КОРАБЛИ</button>
+                    <button class="market-tab" data-tab="modules">МОДУЛИ</button>
+                </div>
+                <div id="market-items"></div>
+            </div>
+            <div class="panel">
+                <div class="panel-title">МАРШРУТ</div>
+                <div class="route-destination" id="route-dest">Выберите город</div>
+                <div class="route-stats" id="route-stats"></div>
+                <div class="profit-estimate" id="profit-estimate"></div>
+                <button id="launch-btn" disabled>ВЫБЕРИТЕ ГОРОД</button>
+            </div>
+        </div>
+    </div>
+    <div id="notifications"></div>
+    <div id="win-screen"><h1>ПОБЕДА!</h1><p>Накопили 50,000 CR!</p><button class="btn" id="restart-btn">ИГРАТЬ СНОВА</button></div>
+    <div id="repair-screen"><h1>ПОЛЕТКА!</h1><p id="repair-cost">Ремонт: 100 CR</p><button class="btn" id="repair-btn">ОПЛАТИТЬ</button></div>
+
+    <!-- Prison System Overlay -->
+    <div id="prison-screen">
+        <div class="prison-header">⛓ ТЮРЬМА ⛓</div>
+        <div class="prison-subheader" id="prison-location">Облачная тюрьма "Небесная Утроба"</div>
+
+        <div class="prison-stats">
+            <div class="prison-stat">
+                <div class="prison-stat-value" id="prison-days-left">5</div>
+                <div>ДНЕЙ ОСТАЛОСЬ</div>
+            </div>
+            <div class="prison-stat">
+                <div class="prison-stat-value" id="prison-health">100</div>
+                <div>ЗДОРОВЬЕ</div>
+            </div>
+            <div class="prison-stat">
+                <div class="prison-stat-value" id="prison-money">0</div>
+                <div>ДЕНЬГИ В ТЮРЬМЕ</div>
+            </div>
+        </div>
+
+        <!-- Scenario View -->
+        <div class="prison-scenario" id="prison-scenario-view">
+            <div class="prison-day" id="prison-day-text">ДЕНЬ 1</div>
+            <div class="prison-scenario-text" id="prison-scenario-text">Описание сценария...</div>
+            <div class="prison-choices" id="prison-choices"></div>
+        </div>
+
+        <!-- Outcome View -->
+        <div class="prison-outcome-screen" id="prison-outcome-view">
+            <div class="prison-outcome-title" id="prison-outcome-title">ОСВОБОЖДЕН</div>
+            <div class="prison-outcome-text" id="prison-outcome-text">Вы вышли на свободу...</div>
+            <div class="prison-outcome-stats" id="prison-outcome-stats"></div>
+            <button class="btn" id="prison-continue-btn" style="background: var(--positive);">ПРОДОЛЖИТЬ ИГРУ</button>
+        </div>
+    </div>
+
+    <!-- Bar System Overlay -->
+    <div id="bar-screen">
+        <button class="bar-back-btn" id="bar-back-btn">← НАЗАД В ДОКИ</button>
+        <div class="bar-header">🍸 БАР</div>
+        <div class="bar-subheader" id="bar-location">"Облачный Покоц" — Примум</div>
+
+        <div class="bar-stats">
+            <div class="bar-stat">
+                <div class="bar-stat-value" id="bar-health">100</div>
+                <div>ЗДОРОВЬЕ</div>
+            </div>
+            <div class="bar-stat">
+                <div class="bar-stat-value" id="bar-money">0</div>
+                <div>В БАРЕ</div>
+            </div>
+        </div>
+
+        <!-- Scenario View -->
+        <div class="bar-scenario" id="bar-scenario-view">
+            <div class="bar-title" id="bar-title-text">Добро пожаловать</div>
+            <div class="bar-scenario-text" id="bar-scenario-text">Вы зашли в бар. Здесь пахнет брагой и табаком. За столиками сидят пилоты, торговцы, и всякий сброд.</div>
+            <div class="bar-choices" id="bar-choices"></div>
+        </div>
+
+        <!-- Outcome View -->
+        <div class="bar-outcome-screen" id="bar-outcome-view">
+            <div class="bar-outcome-title" id="bar-outcome-title">РЕЗУЛЬТАТ</div>
+            <div class="bar-outcome-text" id="bar-outcome-text">Что-то произошло...</div>
+            <div class="bar-outcome-stats" id="bar-outcome-stats"></div>
+            <button class="btn" id="bar-continue-btn" style="background: var(--ui-accent);">ПОНЯТНО</button>
+        </div>
+    </div>
+
+    <script>
+const CITIES = {
+    primum: { name: "Примум", x: 0.5, y: 0.15, color: "#FFE082", distance: 0, items: ['mezium','antigrav','mag_core','latex_raw','mnp_dose','food_ration','food_braga','water_purified','spare_parts','hull_plate','wire_copper','generator_mag','rotor_assembly','compass','sol_tracker','armor_plate','medical_kit','stimulant','crop_harvest','grain','tools_wrench','tools_drill','rope','lantern','clothing_warm','book','encrypted_doc','jewelry','antique','fuel_cell','battery_antigrav','gas_filter','control_unit'], ships: ['dinghy','hauler','freighter','cargoliner'] },
+    secundus: { name: "Секунд", x: 0.15, y: 0.45, color: "#EF5350", distance: 3, items: ['latex_raw','food_braga','water_purified','tools_wrench','rope','lantern','crop_harvest','grain'], ships: ['dinghy','hauler'] },
+    tertius: { name: "Тертиус", x: 0.85, y: 0.45, color: "#66BB6A", distance: 3, items: ['antigrav','mnp_dose','errey_drug','medical_kit','stimulant','encrypted_doc','jewelry','antique','fuel_cell','battery_antigrav','control_unit'], ships: ['dinghy','hauler','freighter'] },
+    quartus: { name: "Квартус", x: 0.5, y: 0.85, color: "#AB47BC", distance: 5, items: ['mag_core','generator_mag','rotor_assembly','compass','sol_tracker','armor_plate','spare_parts','hull_plate'], ships: ['hauler','freighter','cargoliner'] },
+    kibwe: { name: "Кибо", x: 0.25, y: 0.65, color: "#26A69A", distance: 4, items: ['food_ration','water_purified','tools_drill','clothing_warm','book','fuel_cell','gas_filter'], ships: ['dinghy','hauler'] },
+    elbrus: { name: "Эльбрус", x: 0.75, y: 0.65, color: "#5C6BC0", distance: 4, items: ['mezium','antigrav','errey_drug','stimulant','encrypted_doc','jewelry','antique','battery_antigrav','control_unit','sol_tracker'], ships: ['hauler','freighter','cargoliner'] }
+};
+
+const ITEMS = {
+    mezium: { name: "Мезий", basePrice: 15, weight: 12 },
+    antigrav: { name: "Антигравий", basePrice: 80, weight: 6 },
+    mag_core: { name: "МАГ-сердечник", basePrice: 120, weight: 8 },
+    latex_raw: { name: "Латекс-сырец", basePrice: 8, weight: 10 },
+    mnp_dose: { name: "МНП-препарат", basePrice: 45, weight: 2 },
+    errey_drug: { name: "Препарат Эррея", basePrice: 200, weight: 1 },
+    food_ration: { name: "Рацион", basePrice: 10, weight: 8 },
+    food_braga: { name: "Брага", basePrice: 5, weight: 6 },
+    water_purified: { name: "Вода", basePrice: 6, weight: 5 },
+    spare_parts: { name: "Запчасти", basePrice: 30, weight: 7 },
+    hull_plate: { name: "Обшивка", basePrice: 40, weight: 15 },
+    wire_copper: { name: "Провод медный", basePrice: 15, weight: 4 },
+    generator_mag: { name: "Генератор МАГ", basePrice: 150, weight: 20 },
+    rotor_assembly: { name: "Ротор", basePrice: 90, weight: 12 },
+    compass: { name: "ГРАДАР", basePrice: 50, weight: 2 },
+    sol_tracker: { name: "СОЛ-трекер", basePrice: 100, weight: 1 },
+    armor_plate: { name: "Бронепластина", basePrice: 80, weight: 18 },
+    medical_kit: { name: "Аптечка", basePrice: 35, weight: 3 },
+    stimulant: { name: "Стимулятор", basePrice: 55, weight: 1 },
+    crop_harvest: { name: "Урожай", basePrice: 15, weight: 12 },
+    grain: { name: "Зерно", basePrice: 10, weight: 10 },
+    tools_wrench: { name: "Гаечный ключ", basePrice: 10, weight: 3 },
+    tools_drill: { name: "Дрель", basePrice: 25, weight: 6 },
+    rope: { name: "Веревка", basePrice: 5, weight: 4 },
+    lantern: { name: "Фонарь", basePrice: 15, weight: 3 },
+    clothing_warm: { name: "Тёплая одежда", basePrice: 20, weight: 5 },
+    book: { name: "Книга", basePrice: 30, weight: 3 },
+    encrypted_doc: { name: "Шифровка", basePrice: 80, weight: 1 },
+    jewelry: { name: "Бижутерия", basePrice: 40, weight: 1 },
+    antique: { name: "Антиквариат", basePrice: 100, weight: 3 },
+    fuel_cell: { name: "Топливная ячейка", basePrice: 50, weight: 4 },
+    battery_antigrav: { name: "Антиграв. батарея", basePrice: 70, weight: 5 },
+    gas_filter: { name: "Газовый фильтр", basePrice: 25, weight: 4 },
+    control_unit: { name: "Блок управления", basePrice: 80, weight: 4 }
+};
+
+const CARGO_LIMIT = 100;
+const WIN_AMOUNT = 50000;
+const TRADE_TAX = 0.05;
+const CONTRACT_REWARD_RATE = 0.3;
+const BASE_FLIGHT_TIME = 20;
+const FUEL_COST_PER_KM = 0.5;
+const BREAKAGE_BASE_CHANCE = 0.03;
+
+const SHIPS = {
+    dinghy: { name: "Шлюпка", cargo: 40, speed: 1.4, price: 0, color: '#78909C', slots: 1 },
+    hauler: { name: "Хаулер", cargo: 80, speed: 1.0, price: 2000, color: '#66BB6A', slots: 2 },
+    freighter: { name: "Фрахтовик", cargo: 150, speed: 0.75, price: 6000, color: '#EF5350', slots: 3 },
+    cargoliner: { name: "Карго-лайнер", cargo: 300, speed: 0.5, price: 15000, color: '#AB47BC', slots: 5 }
+};
+
+const MODULES = {
+    cargo_c: { name: "Груз. контейнер C", type: 'cargo', tier: 'C', cargoBonus: 15, speedMod: 0.92, price: 500 },
+    cargo_b: { name: "Груз. контейнер B", type: 'cargo', tier: 'B', cargoBonus: 25, speedMod: 0.88, price: 1200 },
+    cargo_a: { name: "Груз. контейнер A", type: 'cargo', tier: 'A', cargoBonus: 40, speedMod: 0.85, price: 3000 },
+    cargo_s: { name: "Груз. контейнер S", type: 'cargo', tier: 'S', cargoBonus: 60, speedMod: 0.80, price: 8000 },
+    speed_c: { name: "Ускоритель C", type: 'speed', tier: 'C', speedBonus: 0.2, cargoMod: 5, price: 500 },
+    speed_b: { name: "Ускоритель B", type: 'speed', tier: 'B', speedBonus: 0.35, cargoMod: 10, price: 1200 },
+    speed_a: { name: "Ускоритель A", type: 'speed', tier: 'A', speedBonus: 0.5, cargoMod: 15, price: 3000 },
+    speed_s: { name: "Ускоритель S", type: 'speed', tier: 'S', speedBonus: 0.7, cargoMod: 20, price: 8000 },
+    contraband_sol: { name: "ОБХОД СОЛ", type: 'special', tier: 'S', price: 500, description: "Контрабандный сканер. Выделяет запрещённые товары красным на рынке. Риск ареста при продаже: 13%." }
+};
+
+const MODULE_TIERS = ['C', 'B', 'A', 'S'];
+const MODULE_PRICES = { C: 500, B: 1200, A: 3000, S: 8000 };
+const MODULE_CHANCES = { primum: { C: 40, B: 30, A: 20, S: 10 }, secundus: { C: 60, B: 30, A: 8, S: 2 }, tertius: { C: 50, B: 30, A: 15, S: 5 }, quartus: { C: 40, B: 35, A: 20, S: 5 }, kibwe: { C: 55, B: 30, A: 12, S: 3 }, elbrus: { C: 30, B: 30, A: 25, S: 15 } };
+
+// Contraband items - items that trigger arrest chance when sold
+const CONTRABAND_ITEMS = ['errey_drug', 'encrypted_doc', 'jewelry', 'antique', 'stimulant'];
+
+// Prison system data
+const PRISON_SCENARIOS = [
+    {
+        day: 1,
+        title: "Тренажёрный зал",
+        text: "Вы пришли в тюремный спортзал. Здесь пахнет потом и ржавчиной. Барсук, местный авторитет, предлагает вам 'пожать железо' за его честь. Ваши мышцы ноют от антигравитационной болезни.",
+        choices: [
+            { text: "🏋️ Пожать штангу (риск травмы)", outcome: { days_lost: 1, health: -10, money: 0, death_chance: 0 }, result: "Вы подняли 80 кг! Барсук уважительно кивает." },
+            { text: "🤸 Отжаться от пола", outcome: { days_lost: 1, health: 5, money: 0, death_chance: 0 }, result: "50 отжиманий! Вы чувствуете себя сильнее." },
+            { text: "😴 Поспать на скамье", outcome: { days_lost: 1, health: 15, money: 0, death_chance: 0 }, result: "Сон на жёсткой скамье освежил вас." }
+        ]
+    },
+    {
+        day: 2,
+        title: "Шахматы с Барсуком",
+        text: "Барсук достал самодельные шахматы из хлеба и крошек. Он жульничает, но вы не можете доказать. Вокруг собрались зеки, они делают ставки сигаретами.",
+        choices: [
+            { text: "♟️ Играть честно (проигрыш)", outcome: { days_lost: 1, health: 0, money: -20, death_chance: 0 }, result: "Вы проиграли. Барсук забрал ваши сигареты." },
+            { text: "🎭 Обвинить в жульничестве", outcome: { days_lost: 2, health: -15, money: 0, death_chance: 5 }, result: "Барсук ударил вас. Вы проведёте лишний день в карцере." },
+            { text: "🤝 Сдаться и стать 'падалой'", outcome: { days_lost: 1, health: -5, money: 10, death_chance: 0 }, result: "Вы стали кем-то вроде слуги. Но зато есть еда." }
+        ]
+    },
+    {
+        day: 3,
+        title: "Баня по праздникам",
+        text: "Сегодня 'банный день'. Пар с крыс и мезия обжигает лёгкие. В тумане кто-то крадёт мыло. Вы стоите голышом, чувствуя себя уязвимым.",
+        choices: [
+            { text: "🧼 Искать своё мыло", outcome: { days_lost: 1, health: -5, money: 0, death_chance: 0 }, result: "Вы нашли мыло, но получили пинок от охранника." },
+            { text: "♨️ Париться до упаду", outcome: { days_lost: 1, health: 10, money: 0, death_chance: 0 }, result: "Жара ослабила ваши мышцы, но душа очистилась." },
+            { text: "💧 Спрятаться в холодной воде", outcome: { days_lost: 1, health: -10, money: 0, death_chance: 2 }, result: "Вы простудились. Но зато вас не трогали." }
+        ]
+    },
+    {
+        day: 4,
+        title: "Работа на кухне",
+        text: "Надзиратель велел вам чистить картошку для 500 зеков. Картошка странная, фиолетовая — с Завесы. Рядом работает старик, который утверждает, что был пилотом 'Интеграла'.",
+        choices: [
+            { text: "🥔 Чистить быстро (качество ↓)", outcome: { days_lost: 1, health: 0, money: 15, death_chance: 0 }, result: "Вы заработали 15 CR. Картошка мыта плохо, но кто заметит?" },
+            { text: "🍳 Украсть еду для себя", outcome: { days_lost: 2, health: 5, money: 0, death_chance: 5 }, result: "Вас поймали. Лишний день карцера, но вы сыты." },
+            { text: "👂 Слушать истории старика", outcome: { days_lost: 1, health: 0, money: 0, death_chance: 0 }, result: "Старик рассказал координаты тайного рынка. Полезно!" }
+        ]
+    },
+    {
+        day: 5,
+        title: "Драка в камере",
+        text: "В камере напряжение. Кто-то украл чей-то паёк. Вспыхнула драка. Вы зажаты в углу — двое зеков требуют 'отдать должок'. Ваши рёбра всё ещё болят после падения с баржи.",
+        choices: [
+            { text: "👊 Драться (риск травмы)", outcome: { days_lost: 1, health: -20, money: 0, death_chance: 10 }, result: "Вы победили, но сломали палец. Уважение +10." },
+            { text: "🛡️ Защищаться и отступить", outcome: { days_lost: 1, health: -5, money: 0, death_chance: 0 }, result: "Вы увернулись, но получили пару синяков." },
+            { text: "💰 Отдать деньги", outcome: { days_lost: 1, health: 0, money: -30, death_chance: 0 }, result: "Вы отдали 30 CR. Мир в камере восстановлен." }
+        ]
+    },
+    {
+        day: 6,
+        title: "Смена охраны",
+        text: "Новый надзиратель — молодой парень, явно первый день. Он забыл заблокировать терминал. Вы видите, как он вводит код от склада: 1-2-3-4. Старый зек шепчет: 'Сваливай, пока не поздно'.",
+        choices: [
+            { text: "🏃 Сбежать через склад", outcome: { days_lost: 0, health: 0, money: 0, death_chance: 0 }, result: "ПОБЕГ УДАЛСЯ! Вы на свободе, но без вещей.", escape: true },
+            { text: "📦 Украсть что-то со склада", outcome: { days_lost: 1, health: 0, money: 50, death_chance: 15 }, result: "Вы украли запчасти на 50 CR, но чуть не попались." },
+            { text: "🤐 Остаться и молчать", outcome: { days_lost: 1, health: 0, money: 0, death_chance: 0 }, result: "Благоразумие победило. Вы остались в тюрьме." }
+        ]
+    },
+    {
+        day: 7,
+        title: "Бунт в столовой",
+        text: "В меню снова 'брага-суррогат' и 'хлеб из опилок'. Кто-то кинул тарелку в надзирателя. Начался бунт! Зеки громят столовую. Вы можете присоединиться или спрятаться.",
+        choices: [
+            { text: "🔥 Жечь мебель (бунт)", outcome: { days_lost: 3, health: -10, money: 0, death_chance: 20 }, result: "Вас жестоко избили дубинками. 3 дня карцера." },
+            { text: "🍞 Украсть еду в суматохе", outcome: { days_lost: 1, health: 0, money: 25, death_chance: 5 }, result: "Вы набили карманы едой. Еды хватит надолго." },
+            { text: "🙈 Спрятаться под столом", outcome: { days_lost: 1, health: 5, money: 0, death_chance: 0 }, result: "Вы переждали бунт под столом. Мудрое решение." }
+        ]
+    },
+    {
+        day: 8,
+        title: "Медосмотр",
+        text: "Тюремный врач, похожий на скелет в халате, осматривает вас. У вас кашель — наверное, лёгкие пострадали от Завесы. Он предлагает 'экспериментальное лекарство' сомнительного вида.",
+        choices: [
+            { text: "💊 Выпить лекарство", outcome: { days_lost: 1, health: 20, money: -10, death_chance: 10 }, result: "Вы чувствуете себя на 20 лет моложе! Или это галлюцинация?" },
+            { text: "🏃 Убежать от врача", outcome: { days_lost: 1, health: -5, money: 0, death_chance: 0 }, result: "Охранник поймал вас. Удар дубинкой по спине." },
+            { text: "🗣️ Жаловаться на боли", outcome: { days_lost: 1, health: 10, money: 0, death_chance: 0 }, result: "Вас положили в 'лазарет'. Там кормят лучше." }
+        ]
+    },
+    {
+        day: 9,
+        title: "Одиночная камера",
+        text: "За нарушение режима вас кинули в 'одиночку'. Тесная клетка, свет только из коридора. Стены покрыты надписями. Вы нашли царапину: 'Интеграл вернётся'. Крысы смотрят на вас с надеждой.",
+        choices: [
+            { text: "🧘 Медитировать (сохранение рассудка)", outcome: { days_lost: 1, health: 5, money: 0, death_chance: 0 }, result: "Вы обрели внутренний покой. Почти как в гхибли-храме." },
+            { text: "🐀 Кормить крыс", outcome: { days_lost: 1, health: -5, money: 0, death_chance: 0 }, result: "Крысы стали вашими друзьями. Они хотят вашу руку." },
+            { text: "🔨 Соскоблить надпись", outcome: { days_lost: 1, health: -10, money: 0, death_chance: 5 }, result: "Вы соскоблили 'Интеграл'. Стражник ударил вас за порчу имущества." }
+        ]
+    },
+    {
+        day: 10,
+        title: "Суд и освобождение",
+        text: "Ваш последний день. Судья в мантии из облачного шёлка смотрит на вас с высоты. 'Вы обвиняетесь в контрабанде мезия и антигравия. Но тюрьма вас исправила, верно?' Вы смотрите на свои дрожащие руки.",
+        choices: [
+            { text: "🙏 Покаяться и обещать исправиться", outcome: { days_lost: 0, health: 0, money: 0, death_chance: 0 }, result: "Судья смягчился. ВЫ СВОБОДНЫ! Но без имущества.", release: true },
+            { text: "💼 Сказать, что у вас есть деньги для взятки", outcome: { days_lost: 0, health: 0, money: -100, death_chance: 0 }, result: "Судья взял взятку. Вы свободны и можете купить новый корабль!" },
+            { text: "😤 Кричать о несправедливости", outcome: { days_lost: 5, health: -20, money: 0, death_chance: 25 }, result: "Судья в ярости. 5 лет дополнительно! Вы умрёте здесь..." }
+        ]
+    }
+];
+
+// Bar system data - 10 branching scenarios
+const BAR_SCENARIOS = [
+    {
+        id: 'dice_game',
+        title: "Игра в кости",
+        text: "За столиком в углу сидит человек в потёртой куртке. Он щелкает двумя костями по столу. 'Хочешь попробовать удачу, пилот? Ставка 50 CR. Может, сегодня твой день.'",
+        choices: [
+            { text: "🎲 Играть честно (ставка 50 CR)", outcome: { health: 0, money: 0 }, next: 'dice_fair' },
+            { text: "🕵️ Подглядеть его кости (риск разоблачения)", outcome: { health: 0, money: 0 }, next: 'dice_cheat' },
+            { text: "🚪 Отказаться и уйти", outcome: { health: 0, money: 0 }, next: null, exit: true, result: { type: 'neutral', title: 'УШЛИ', text: 'Вы решаете не рисковать. Человек пожимает плечами.' } }
+        ]
+    },
+    {
+        id: 'dice_fair',
+        title: "Игра в кости — Честная игра",
+        text: "Вы садитесь. Кости щелкают по столу. Ваши: [4, 3] = 7. Его: [5, 2] = 7. Ничья! 'Хорошая игра, пилот. Ещё раз?'",
+        choices: [
+            { text: "🎲 Ещё раунд (ставка 50 CR)", outcome: { health: 0, money: 0 }, next: 'dice_fair2' },
+            { text: "📋 Повысить ставку до 100 CR", outcome: { health: 0, money: 0 }, next: 'dice_high' },
+            { text: "🚪 Выйти из игры", outcome: { health: 0, money: 0 }, next: null, exit: true, result: { type: 'neutral', title: 'КОНЕЦ ИГРЫ', text: 'Вы уходите с пустыми руками, но и без потерь.' } }
+        ]
+    },
+    {
+        id: 'dice_fair2',
+        title: "Игра в кости — Второй раунд",
+        text: "Новое броскание. Ваши кости: [2, 6] = 8. Его кости: [3, 6] = 9. Вы проиграли 50 CR. 'Ха! Сегодня не твой день, пилот.'",
+        choices: [
+            { text: "😤 Потребовать реванш на 100 CR", outcome: { health: 0, money: -100 }, next: 'dice_revenge' },
+            { text: "😓 Смириться и уйти", outcome: { health: 0, money: -50 }, next: null, exit: true, result: { type: 'failure', title: 'ПРОИГРЫШ', text: 'Вы потеряли 50 CR. Человек ухмыляется.' } }
+        ]
+    },
+    {
+        id: 'dice_high',
+        title: "Игра в кости — Высокие ставки",
+        text: "Ставки повышены до 100 CR! Базовый инстинкт кричит 'играй', но здравый смысл советует уйти. 'Ну что, пилот? Бросаем?'",
+        choices: [
+            { text: "🎲 Бросить кости", outcome: { health: 0, money: 0 }, next: 'dice_high_result' },
+            { text: "🚪 Передумать и уйти (-50 CR)", outcome: { health: 0, money: -50 }, next: null, exit: true, result: { type: 'failure', title: 'ОТСТУПИЛИ', text: 'Вы теряете 50 CR за трусость и уходите.' } }
+        ]
+    },
+    {
+        id: 'dice_high_result',
+        title: "Игра в кости — Решающий бросок",
+        text: "Кости взлетают в воздух... Вы卖了 все. Ваши: [6, 6] = 12! Критический успех! Человек бледнеет: 'Как... Ты мухлевал!'",
+        choices: [
+            { text: "😈 Забрать выигрыш (200 CR)", outcome: { health: 0, money: 200 }, next: null, exit: true, result: { type: 'success', title: 'ПОБЕДА!', text: 'Вы уходите с 200 CR. Человек смотрит вам в спину с ненавистью.' } }
+        ]
+    },
+    {
+        id: 'dice_cheat',
+        title: "Игра в кости — Попытка мухлежа",
+        text: "Вы пытаетесь подсмотреть его кости в отражении стакана. Но человек заметил! 'Эй! Ты что делаешь, пилот?!'",
+        choices: [
+            { text: "🤥 Притвориться пьяным", outcome: { health: 0, money: 0 }, next: 'dice_cheat_deny' },
+            { text: "🏃 Бежать со стулом", outcome: { health: -10, money: 0 }, next: null, exit: true, result: { type: 'failure', title: 'ПОБЕГ', text: 'Вы опрокинули стул и сбежали. Человек кричит вдогонку. -10 HP от удара об угол.' } }
+        ]
+    },
+    {
+        id: 'dice_cheat_deny',
+        title: "Игра в кости — Отрицание",
+        text: "'Я... просто смотрел на стену за тобой, приятель. Ты что, параноик?' Человек щурится, но его друзья смеются: 'Да ладно, отпусти его, Грон.' Он неохотно кивает.",
+        choices: [
+            { text: "🍺 Предложить угостить его пивом", outcome: { health: 0, money: -20 }, next: null, exit: true, result: { type: 'neutral', title: 'МИр', text: 'Вы помирились. Грон рассказал, что на Кибо можно купить контрабанду втридорога.' } },
+            { text: "🚶 Просто уйти", outcome: { health: 0, money: 0 }, next: null, exit: true, result: { type: 'neutral', title: 'УШЛИ', text: 'Вы решаете не испытывать удачу. Человек качает головой.' } }
+        ]
+    },
+    {
+        id: 'dice_revenge',
+        title: "Игра в кости — Реванш",
+        text: "'Хочешь отыграться? Ну давай!' Вы бросаете все в бой. Ваши кости: [1, 1] = 2. Его кости: [4, 4] = 8. Разгром! Ваши 100 CR ушли в его карман.",
+        choices: [
+            { text: "😡 Обвинить в жульничестве", outcome: { health: -15, money: 0 }, next: null, exit: true, result: { type: 'failure', title: 'ПОБОЙ', text: "Грон ударил вас в лицо. '-100 CR и фонарь под глазом. Не обвиняй честных игроков, пилот.'" } },
+            { text: "😭 Уйти с оставшимся достоинством", outcome: { health: 0, money: -100 }, next: null, exit: true, result: { type: 'failure', title: 'ПОТЕРЯ', text: "Вы уходите с пустым кошельком. Грон машет вам рукой: 'Возвращайся, когда будут деньги!'" } }
+        ]
+    },
+    {
+        id: 'drunk_bartender',
+        title: "Пьяный бармен",
+        text: "Бармен, на вид ветеран Завесы, наливает себе браги прямо из бочки. 'Садись, пилот. Расскажу кое-что... даром.' Он хихикает. 'Ты знаешь, что на Секунде цены на латекс падают каждую вторую луну?'",
+        choices: [
+            { text: "🍺 Выпить с барменом", outcome: { health: -5, money: 0 }, next: 'drunk_bartender_drink' },
+            { text: "👂 Слушать внимательно", outcome: { health: 0, money: 0 }, next: 'drunk_bartender_info' },
+            { text: "🚶 Уйти", outcome: { health: 0, money: 0 }, next: null, exit: true, result: { type: 'neutral', title: 'УШЛИ', text: 'Бармен пожимает плечами и допивает свою брагу.' } }
+        ]
+    },
+    {
+        id: 'drunk_bartender_drink',
+        title: "Пьяный бармен — Угощение",
+        text: "Бармен наливает вам стакана три 'Облачной браги'. Мир плывёт перед глазами. 'Так вот, пилот... Третий город, Квартус... Там делают лучшие моторы. Но у них вечно не хватает маг-сердечников.'",
+        choices: [
+            { text: "😵 Поблагодарить и уйти (опьянение)", outcome: { health: -15, money: 0 }, next: null, exit: true, result: { type: 'neutral', title: 'ОПЬЯНЕНИЕ', text: "Вы выходите, покачиваясь. На стене написано: 'Маг-сердечники = прибыль на Квартусе'." } }
+        ]
+    },
+    {
+        id: 'drunk_bartender_info',
+        title: "Пьяный бармен — Информация",
+        text: "'Слушай сюда!' Бармен понижает голос. 'Торговец по имени Рашид на Эльбрусе... Он покупает украшения за двойную цену. Но только если они 'с историей'. Понимаешь?' Он подмигивает.",
+        choices: [
+            { text: "👍 Понял, спасибо!", outcome: { health: 0, money: 0 }, next: null, exit: true, result: { type: 'success', title: 'ПОДСКАЗКА', text: 'Бармен кивает и возвращается к своей браге. Вы узнали: на Эльбрусе украшения стоят дорого!' } }
+        ]
+    },
+    {
+        id: 'bar_fight',
+        title: "Драка в баре",
+        text: "Какой-то здоровяк в кожаной куртке задевает вас плечом. 'Эй ты, мелкий торгаш! Ты на моей летательной траектории!' Его кулачище размером с вашу голову.",
+        choices: [
+            { text: "👊 Вмазать ему первому", outcome: { health: -20, money: 0 }, next: 'bar_fight_start' },
+            { text: "😰 Попытаться договориться", outcome: { health: 0, money: -30 }, next: null, exit: true, result: { type: 'neutral', title: 'МШАНИЕ', text: "'Вот 30 CR, приятель. Купи себе пива.' Здоровяк хмыкает и отступает." } },
+            { text: "🏃 Отступить к выходу", outcome: { health: 0, money: 0 }, next: null, exit: true, result: { type: 'neutral', title: 'ОТСТУПЛЕНИЕ', text: 'Вы решаете не связываться. Здоровяк смеётся вам вслед.' } }
+        ]
+    },
+    {
+        id: 'bar_fight_start',
+        title: "Драка — Начало",
+        text: "Вы бьёте первым! Удар попадает ему в челюсть. Но он даже не шатается. 'Хороший удар, мелкий. Дай-ка я тебе отвечу...'",
+        choices: [
+            { text: "🛡️ Защищаться (блок)", outcome: { health: -10, money: 0 }, next: 'bar_fight_block' },
+            { text: "⚡ Атаковать снова!", outcome: { health: -25, money: 0 }, next: 'bar_fight_attack' },
+            { text: "🏃 Бежать!", outcome: { health: -5, money: 0 }, next: null, exit: true, result: { type: 'failure', title: 'ПОБЕГ', text: 'Вы бежите, но он догоняет и бьёт в спину. -5 HP.' } }
+        ]
+    },
+    {
+        id: 'bar_fight_block',
+        title: "Драка — Блок",
+        text: "Вы подставляете руку. Его удар обрушивается на ваш предплечье. Больно, но вы устояли! 'Ещё раунд?'",
+        choices: [
+            { text: "👊 Финальный удар!", outcome: { health: -15, money: 50 }, next: null, exit: true, result: { type: 'success', title: 'ПОБЕДА!', text: "Вы делаете подсечку! Здоровяк падает. Бармен выдаёт вам 50 CR: 'За зрелищность!'" } },
+            { text: "🤝 Протянуть руку", outcome: { health: -10, money: 0 }, next: null, exit: true, result: { type: 'neutral', title: 'МИР', text: "'Неплохо, мелкий.' Он пожимает вам руку. Вы подружились. '-10 HP, но без денежных потерь.'" } }
+        ]
+    },
+    {
+        id: 'bar_fight_attack',
+        title: "Драка — Атака",
+        text: "Вы бросаетесь в атаку! Но он ловит вас за горло и поднимает в воздух. 'Ты что, самоубийца?'",
+        choices: [
+            { text: "😵 Сдаться", outcome: { health: -25, money: 0 }, next: null, exit: true, result: { type: 'failure', title: 'ПОРАЖЕНИЕ', text: "'Умный выбор.' Он бросает вас на пол. '-25 HP, но выжили.'" } },
+            { text: "🦵 Ударить ногой в пах", outcome: { health: -15, money: 100 }, next: null, exit: true, result: { type: 'success', title: 'ПОБЕДА!', text: "Он согнулся пополам. Бармен даёт вам 100 CR: 'Грязный приём, но рабочий!'" } }
+        ]
+    },
+    {
+        id: 'black_market',
+        title: "Странный торговец",
+        text: "К вам подходит человек в капюшоне. 'Тсс... Ты ведь торгуешь, пилот? У меня есть кое-что для настоящих дельцов. Модуль 'Туман' называется. Позволяет проходить таможню без осмотра. 300 CR. Гарантия на слово.'",
+        choices: [
+            { text: "💰 Купить модуль", outcome: { health: 0, money: -300 }, next: 'blackmarket_buy' },
+            { text: "🔍 Потребовать показать товар", outcome: { health: 0, money: 0 }, next: 'blackmarket_check' },
+            { text: "🚓 Вызвать охрану", outcome: { health: 0, money: 0 }, next: null, exit: true, result: { type: 'neutral', title: 'ОТКАЗ', text: "'Охрана? Ха! Ты ещё об этом пожалеешь, пилот.' Человек исчезает в толпе." } }
+        ]
+    },
+    {
+        id: 'blackmarket_buy',
+        title: "Странный торговец — Покупка",
+        text: "Вы отдаёте 300 CR. Торговец вкладывает вам в руку маленькую коробку. 'Установи на корабль. И помни: никто не должен знать, откуда это.'",
+        choices: [
+            { text: "👍 Принять", outcome: { health: 0, money: -300 }, next: null, exit: true, result: { type: 'success', title: 'ПРИОБРЕТЕНО', text: "Вы получили 'Туман' (модуль контрабанды)! +13% шанс избежать ареста." } }
+        ]
+    },
+    {
+        id: 'blackmarket_check',
+        title: "Странный торговец — Проверка",
+        text: "'Товар покажешь? А то мало ли...' Торговец оскаливается: 'Ты что, не доверяешь Рашиду? Ну и иди к чертям!'",
+        choices: [
+            { text: "😠 Извиниться и купить", outcome: { health: 0, money: -300 }, next: 'blackmarket_buy' },
+            { text: "🚶 Уйти", outcome: { health: 0, money: 0 }, next: null, exit: true, result: { type: 'neutral', title: 'УШЛИ', text: "'Рашид' исчезает. Вы так и не узнали, был ли это настоящий модуль." } }
+        ]
+    },
+    {
+        id: 'old_pilot',
+        title: "Старый пилот",
+        text: "За стойкой сидит седой человек с протезом руки. Когда-то он вёл грузовой корабль. 'Сядешь, пилот? Помню твой тип... Такие раньше вёз мне 'Интеграл'.'",
+        choices: [
+            { text: "🍺 Угостить ветерана", outcome: { health: 0, money: -15 }, next: 'oldpilot_stories' },
+            { text: "👂 Спросить о Завесе", outcome: { health: 0, money: 0 }, next: 'oldpilot_veil' },
+            { text: "🚶 Уйти", outcome: { health: 0, money: 0 }, next: null, exit: true, result: { type: 'neutral', title: 'УШЛИ', text: "Ветеран качает головой: 'Молодёжь...'" } }
+        ]
+    },
+    {
+        id: 'oldpilot_stories',
+        title: "Старый пилот — Истории",
+        text: "'Хороший из тебя пилот, коли угощаешь.' Он смеётся. 'Знаешь, где я спрятал свою пенсию? В заброшенном доке на Кибо. Там ящик с маг-сердечниками. Забирай, если найдёшь.'",
+        choices: [
+            { text: "🙏 Спасибо за наводку!", outcome: { health: 0, money: 0 }, next: null, exit: true, result: { type: 'success', title: 'ПОДСКАЗКА', text: 'Старый пилот дал вам координаты тайника на Кибо! (+маг-сердечники)' } }
+        ]
+    },
+    {
+        id: 'oldpilot_veil',
+        title: "Старый пилот — Завеса",
+        text: "'Завеса? Опасное место. Но я там бывал.' Он понижает голос. 'Один совет: никогда не верь торговцам на Тертиусе. Они продают воду как антигравий, если понимаешь о чём я.'",
+        choices: [
+            { text: "👍 Запомню", outcome: { health: 0, money: 0 }, next: null, exit: true, result: { type: 'success', title: 'ПОДСКАЗКА', text: 'Вы узнали: на Тертиусе разводняют антигравий! Проверяйте товар перед покупкой.' } }
+        ]
+    },
+    {
+        id: 'manager_job',
+        title: "Бар-менеджер",
+        text: "Хозяин бара, важный человек в костюме, подходит к вам. 'Пилот! Слышал, ты надёжный. Мне нужна доставка: 5 единиц медикаментов в Квартус. Заплачу 200 CR. Но если попадёшься с этим на таможне — я знать тебя не знаю.'",
+        choices: [
+            { text: "📦 Взять контракт", outcome: { health: 0, money: 0 }, next: null, exit: true, result: { type: 'success', title: 'КОНТРАКТ', text: 'Вы приняли контракт: доставить медикаменты в Квартус. Внимание: это контрабанда!' } },
+            { text: "🤔 Потребовать больше", outcome: { health: 0, money: 0 }, next: 'manager_negotiate' },
+            { text: "🚫 Отказаться", outcome: { health: 0, money: 0 }, next: null, exit: true, result: { type: 'neutral', title: 'ОТКАЗ', text: "'Ну и ладно. Найду другого дурака.' Менеджер уходит." } }
+        ]
+    },
+    {
+        id: 'manager_negotiate',
+        title: "Бар-менеджер — Торг",
+        text: "'Больше? Ха! Хорошо, 250 CR. Но медикаменты ты берёшь у меня. Это тебе скидка.'",
+        choices: [
+            { text: "👍 Договорились!", outcome: { health: 0, money: 0 }, next: null, exit: true, result: { type: 'success', title: 'КОНТРАКТ', text: 'Вы приняли контракт: доставить медикаменты в Квартус за 250 CR.' } },
+            { text: "🚪 Выйти", outcome: { health: 0, money: 0 }, next: null, exit: true, result: { type: 'neutral', title: 'УШЛИ', text: 'Вы уходите. Менеджер пожимает плечами.' } }
+        ]
+    },
+    {
+        id: 'thugs',
+        title: "Хулиганы",
+        text: "Трое здоровых парней围着 ваш столик. 'Деньги, пилот. Или мы тебя из окна.' Бармен делает вид, что не замечает. Похоже, никто вам не поможет.",
+        choices: [
+            { text: "💵 Отдать деньги (50 CR)", outcome: { health: 0, money: -50 }, next: null, exit: true, result: { type: 'failure', title: 'ОГРАБЛЕНИЕ', text: "'Умный выбор.' Они забирают 50 CR и уходят." } },
+            { text: "🍺 Бросить стакан в главаря", outcome: { health: -15, money: 0 }, next: 'thugs_fight' },
+            { text: "🗣️ Попытаться договориться", outcome: { health: 0, money: -20 }, next: null, exit: true, result: { type: 'neutral', title: 'СДЕЛКА', text: "'Ладно, 20 CR и мы в расчёте.' Вы платите и решаете уйти." } }
+        ]
+    },
+    {
+        id: 'thugs_fight',
+        title: "Хулиганы — Битва",
+        text: "Стакан разбивается о голову главаря. Он взвыл! 'Убейте его!' Двое бросаются на вас. Но бармен неожиданно грохает об стену одного из них: 'Никакого насилия в моём баре!'",
+        choices: [
+            { text: "🏆 Помочь бармену", outcome: { health: -10, money: 30 }, next: null, exit: true, result: { type: 'success', title: 'ПОБЕДА!', text: "'Спасибо, приятель!' Бармен даёт вам 30 CR и бесплатную выпивку." } },
+            { text: "🏃 Бежать!", outcome: { health: -5, money: 0 }, next: null, exit: true, result: { type: 'failure', title: 'ПОБЕГ', text: "Вы бежите, но один успевает ударить вас в спину. '-5 HP.'" } }
+        ]
+    },
+    {
+        id: 'musician',
+        title: "Музыкант",
+        text: "В углу бара сидит слепой музыкант с гитарой. Он играет старую песню про 'Интеграл'. В баре становится тихо. 'Это для тебя, пилот.'",
+        choices: [
+            { text: "💰 Бросить монету (10 CR)", outcome: { health: 0, money: -10 }, next: 'musician_tip' },
+            { text: "🎵 Попросить другую песню", outcome: { health: 0, money: 0 }, next: 'musician_song' },
+            { text: "🚶 Просто уйти", outcome: { health: 0, money: 0 }, next: null, exit: true, result: { type: 'neutral', title: 'УШЛИ', text: 'Музыкант продолжает играть, но вы уходите.' } }
+        ]
+    },
+    {
+        id: 'musician_tip',
+        title: "Музыкант — Чаевые",
+        text: "'Спасибо, добрый пилот!' Музыкант улыбается. 'Знаешь, что самое ценное в этом мире? Не деньги. Информация. А она часто прячется в книгах.'",
+        choices: [
+            { text: "👂 Продолжать слушать", outcome: { health: 0, money: 0 }, next: null, exit: true, result: { type: 'success', title: 'ПОДСКАЗКА', text: "'Книги на Кибо стоят дёшево. Но те, что с Эльбруса — там секреты торговцев.' Вы узнали что-то полезное." } }
+        ]
+    },
+    {
+        id: 'musician_song',
+        title: "Музыкант — Другая песня",
+        text: "'Хочешь другую? Могу спеть про любовь, про войну... или про то, как один пилот обманул всю таможню Завесы.'",
+        choices: [
+            { text: "🎶 Спой про таможню", outcome: { health: 0, money: 0 }, next: null, exit: true, result: { type: 'success', title: 'СЕКРЕТ', text: "'Жил пилот хитрый, знал он путь — где туман гуще, там заблудишься...'Музыкант поёт о тайных маршрутах. Вы узнали о 'Туманном пути' через Эльбрус." } },
+            { text: "💔 Спой про любовь", outcome: { health: 5, money: 0 }, next: null, exit: true, result: { type: 'neutral', title: 'БАЛЛАДА', text: "'Любовь прошла, как облако, — и ты остался один...' От этой песни стало тепло на душе. +5 HP." } }
+        ]
+    },
+    {
+        id: 'missing_package',
+        title: "Пропавшая посылка",
+        text: "К вам подбегает женщина в слезах. 'Вы пилот! Вы должны мне помочь! Моя посылка с украшениями пропала! Говорят, это вы её украли!' Охрана бара смотрит в вашу сторону.",
+        choices: [
+            { text: "😠 Это не я! Давайте разберёмся", outcome: { health: 0, money: 0 }, next: 'package_innocent' },
+            { text: "💰 Предложить 50 CR за молчание", outcome: { health: 0, money: -50 }, next: null, exit: true, result: { type: 'neutral', title: 'ВЗЯТКА', text: "'Думаешь, деньги решат всё?' Но она берёт 50 CR и уходит. Вы вне подозрений." } },
+            { text: "🏃 Бежать!", outcome: { health: -10, money: 0 }, next: null, exit: true, result: { type: 'failure', title: 'ПОБЕГ', text: "Охрана ловит вас и избивает. '-10 HP. Вас все ещё подозревают.'" } }
+        ]
+    },
+    {
+        id: 'package_innocent',
+        title: "Пропавшая посылка — Невиновность",
+        text: "'Я не брал никаких посылок! Давайте проверим мои вещи.' Охрана обыскивает вас — ничего нет. Женщина бледнеет: 'Тогда кто...? Ой...'",
+        choices: [
+            { text: "👀 Кто-то другой!", outcome: { health: 0, money: 0 }, next: null, exit: true, result: { type: 'success', title: 'НЕВИНОВЕН', text: "'Это был... нет, не скажу.' Женщина убегает. Охрана извиняется. Вы стали популярнее в баре за честность." } },
+            { text: "🔍 Помочь найти виновного", outcome: { health: 0, money: 75 }, next: null, exit: true, result: { type: 'success', title: 'РАССЛЕДОВАНИЕ', text: "'Я видел, как кто-то в сером выходил через заднюю дверь...' Охрана ловит вора. Вам дают 75 CR за помощь." } }
+        ]
+    },
+    {
+        id: 'drunk_arguments',
+        title: "Пьяные споры",
+        text: "За соседним столиком двое пьяных торговцев громко спорят. 'На Эльбрусе цены на украшения упадут через неделю!' — 'Глупости! Рашид скупает всё подряд!'",
+        choices: [
+            { text: "👂 Внимательно слушать", outcome: { health: 0, money: 0 }, next: 'drunk_listen' },
+            { text: "🍺 Присоединиться к спору", outcome: { health: -5, money: 0 }, next: 'drunk_join' },
+            { text: "🚶 Игнорировать", outcome: { health: 0, money: 0 }, next: null, exit: true, result: { type: 'neutral', title: 'УШЛИ', text: 'Вы не обращаете внимания на пьяниц. Напрасно — информация была ценной.' } }
+        ]
+    },
+    {
+        id: 'drunk_listen',
+        title: "Пьяные споры — Подслушанное",
+        text: "Один торговец спотыкается и падает. Другой смеётся: 'Рашид — жмот! Я сам продал ему украшений на 500 CR по дешёвке!' Вы усвоили: на Эльбрусе Рашид — ключевой покупатель.",
+        choices: [
+            { text: "👍 Полезно", outcome: { health: 0, money: 0 }, next: null, exit: true, result: { type: 'success', title: 'ПОДСКАЗКА', text: 'Вы узнали: Рашид на Эльбрусе скупает украшения оптом. Прибыльная цель!' } }
+        ]
+    },
+    {
+        id: 'drunk_join',
+        title: "Пьяные споры — Участие",
+        text: "'Эй, вы чушь несёте!' Оба торговца поворачиваются к вам. 'А ты откуда знаешь, мелкий?' Начинается спор... который переходит в драку.",
+        choices: [
+            { text: "🍻 Выпить с ними и помириться", outcome: { health: -10, money: -20 }, next: null, exit: true, result: { type: 'neutral', title: 'МИР', text: "'Ладно, милый пилот, садись!' Вы пьёте вместе. Они раскрывают секрет: 'Квартус закупает запчасти у всех, но платит в 2 раза больше.' '-20 CR и -10 HP, но ценная информация.'" } },
+            { text: "🏃 Уйти пока цел", outcome: { health: -5, money: 0 }, next: null, exit: true, result: { type: 'failure', title: 'ПОБЕГ', text: "Вы уходите, но один успел бросить в вас кружкой. '-5 HP.'" } }
+        ]
+    }
+];
+
+class GameState {
+    constructor() { this.reset(); }
+    reset() {
+        this.credits = 800;
+        this.currentCity = 'primum';
+        this.cargo = {};
+        this.markets = {};
+        this.tick = 0;
+        this.shipCondition = 100;
+        this.shipFuel = 100;
+        this.shipType = 'dinghy';
+        this.ship = { docked: true, traveling: false, destination: null, travelProgress: 0, travelDuration: 0, broken: false };
+        this.contracts = [];
+        this.shipModules = [];
+        this.initMarkets();
+    }
+    initMarkets() {
+        for (let cityId in CITIES) {
+            this.markets[cityId] = {};
+            for (let itemId in ITEMS) {
+                this.markets[cityId][itemId] = {
+                    demandFactor: 0.1 + Math.random() * 0.3,
+                    supplyFactor: Math.random() * 0.3
+};
+            }
+        }
+    }
+    getTotalCargoWeight() {
+        let weight = 0;
+        for (let itemId in this.cargo) weight += (this.cargo[itemId] || 0) * ITEMS[itemId].weight;
+        return weight;
+    }
+    getTotalCargoBonus() {
+        let bonus = 0;
+        for (let mod of this.shipModules) { if (MODULES[mod]) bonus += MODULES[mod].cargoBonus || 0; }
+        return bonus;
+    }
+    getTotalSpeedBonus() {
+        let bonus = 0;
+        for (let mod of this.shipModules) { if (MODULES[mod]) bonus += MODULES[mod].speedBonus || 0; }
+        return bonus;
+    }
+    getExtraCargoPenalty() {
+        let penalty = 0;
+        for (let mod of this.shipModules) { if (MODULES[mod]) penalty += MODULES[mod].cargoMod || 0; }
+        return penalty;
+    }
+    getEffectiveCargo() { return SHIPS[this.shipType].cargo + this.getTotalCargoBonus(); }
+    getEffectiveSpeed() { return SHIPS[this.shipType].speed * (1 + this.getTotalSpeedBonus()); }
+    getEffectiveCargoLimit() { return this.getEffectiveCargo() + this.getExtraCargoPenalty(); }
+    getAvailableSlots() { return SHIPS[this.shipType].slots; }
+    getUsedSlots() { return this.shipModules.length; }
+    canAddModule() { return this.getUsedSlots() < this.getAvailableSlots(); }
+    calculatePrice(cityId, itemId) {
+        let item = ITEMS[itemId];
+        if (!item || !this.markets[cityId] || !this.markets[cityId][itemId]) return item ? item.basePrice : 0;
+        let market = this.markets[cityId][itemId];
+        let price = item.basePrice * (1 + market.demandFactor - market.supplyFactor);
+        return Math.max(1, Math.round(price));
+    }
+    hasContrabandModule() { return this.shipModules.includes('contraband_sol'); }
+    save() {
+        let data = { credits: this.credits, currentCity: this.currentCity, cargo: this.cargo, markets: this.markets, tick: this.tick, shipCondition: this.shipCondition, shipFuel: this.shipFuel, ship: this.ship, contracts: this.contracts, shipType: this.shipType, shipModules: this.shipModules };
+        localStorage.setItem('cloudtrader_save', JSON.stringify(data));
+    }
+    load() {
+        let data = localStorage.getItem('cloudtrader_save');
+        if (data) {
+            let saved = JSON.parse(data);
+            Object.assign(this, saved);
+            this.shipModules = this.shipModules || [];
+            if (!this.markets || Object.keys(this.markets).length === 0) { this.initMarkets(); }
+            if (!this.contracts) this.contracts = [];
+            if (this.tick === undefined) this.tick = 0;
+            if (this.shipCondition === undefined) this.shipCondition = 100;
+            if (!this.ship) { this.ship = { docked: true, traveling: false, destination: null, travelProgress: 0, travelDuration: 0, broken: false }; }
+            if (this.shipFuel === undefined) this.shipFuel = 100;
+            if (!this.shipType) this.shipType = 'dinghy';
+            return true;
+        }
+        return false;
+    }
+}
+
+class Game {
+    constructor() {
+        this.state = new GameState();
+        this.canvas = document.getElementById('map-canvas');
+        this.ctx = this.canvas.getContext('2d');
+        this.selectedCity = null;
+        this.marketTab = 'buy';
+        this.qtyValues = {};
+        this.qtyMax = {};
+        this.setupCanvas();
+        this.bindEvents();
+        let loaded = this.state.load();
+        if (!loaded) {
+            this.generateContract();
+            this.generateContract();
+        }
+        if (loaded && this.state.contracts.length === 0) {
+            this.generateContract();
+        }
+        this.setupClouds();
+        this.gameLoop();
+    }
+    setupCanvas() {
+        let resize = () => {
+            this.canvas.width = this.canvas.parentElement.clientWidth;
+            this.canvas.height = this.canvas.parentElement.clientHeight;
+        };
+        resize();
+        window.addEventListener('resize', resize);
+    }
+    setupClouds() {
+        this.clouds = [];
+        this.lightningTimer = 0;
+        this.lightningFlash = 0;
+        for (let i = 0; i < 12; i++) {
+            this.clouds.push({
+                x: Math.random() * this.canvas.width,
+                y: Math.random() * this.canvas.height,
+                size: 80 + Math.random() * 150,
+                speed: 0.2 + Math.random() * 0.4,
+                opacity: 0.15 + Math.random() * 0.2
+            });
+        }
+    }
+    bindEvents() {
+        this.canvas.addEventListener('click', (e) => this.handleMapClick(e));
+        document.querySelectorAll('.market-tab').forEach(tab => {
+            tab.addEventListener('click', () => {
+                document.querySelectorAll('.market-tab').forEach(t => t.classList.remove('active'));
+                tab.classList.add('active');
+                this.marketTab = tab.dataset.tab;
+                this.renderMarket();
+            });
+        });
+        document.getElementById('launch-btn').addEventListener('click', () => this.launchShip());
+        document.getElementById('restart-btn').addEventListener('click', () => this.restartGame());
+        document.getElementById('repair-btn').addEventListener('click', () => this.payRepairs());
+        document.getElementById('reset-btn').addEventListener('click', () => this.confirmReset());
+        document.getElementById('fuel-btn').addEventListener('click', () => this.refuel());
+        document.getElementById('repair-btn-hud').addEventListener('click', () => this.repairShip());
+        document.getElementById('bar-btn').addEventListener('click', () => this.enterBar());
+        document.getElementById('prison-continue-btn').addEventListener('click', () => this.continueAfterPrison());
+        document.getElementById('bar-back-btn').addEventListener('click', () => this.barExit());
+    }
+    handleMapClick(e) {
+        if (this.state.ship.traveling) return;
+        let rect = this.canvas.getBoundingClientRect();
+        let x = (e.clientX - rect.left) / this.canvas.width;
+        let y = (e.clientY - rect.top) / this.canvas.height;
+        let closest = null;
+        let minDist = 0.1;
+        for (let cityId in CITIES) {
+            let city = CITIES[cityId];
+            let dist = Math.sqrt(Math.pow(x - city.x, 2) + Math.pow(y - city.y, 2));
+            if (dist < minDist) { minDist = dist; closest = cityId; }
+        }
+        if (closest && closest !== this.state.currentCity) {
+            this.selectedCity = closest;
+            this.renderRoute();
+            document.getElementById('launch-btn').disabled = false;
+        }
+    }
+    calculateFlightStats(fromId, toId) {
+        let dist = Math.abs(CITIES[fromId].distance - CITIES[toId].distance) || 1;
+        let cargoWeight = this.state.getTotalCargoWeight();
+        let cargoLimit = this.state.getEffectiveCargoLimit();
+        let speedMod = 1 - (cargoWeight / cargoLimit) * 0.4;
+        speedMod *= this.state.getEffectiveSpeed();
+        let duration = Math.round(BASE_FLIGHT_TIME * dist / speedMod);
+        let fuelCost = Math.round(dist * dist * FUEL_COST_PER_KM * 10);
+        let breakageChance = BREAKAGE_BASE_CHANCE * (dist / 3) * (1 + (100 - this.state.shipCondition) / 100);
+        return { dist, duration, fuelCost, breakageChance };
+    }
+    launchShip() {
+        if (!this.selectedCity || this.state.ship.traveling || this.state.ship.broken) return;
+        let stats = this.calculateFlightStats(this.state.currentCity, this.selectedCity);
+        let fuelNeeded = stats.fuelCost;
+        if (this.state.shipFuel < fuelNeeded) {
+            this.notify('Недостаточно топлива! Заправьте корабль', 'error'); return;
+        }
+        this.state.shipFuel -= fuelNeeded;
+        this.state.ship = {
+            docked: false, traveling: true, destination: this.selectedCity,
+            travelProgress: 0, travelDuration: stats.duration,
+            startPos: { x: CITIES[this.state.currentCity].x, y: CITIES[this.state.currentCity].y },
+            endPos: { x: CITIES[this.selectedCity].x, y: CITIES[this.selectedCity].y },
+            breakageChance: stats.breakageChance
+        };
+        this.selectedCity = null;
+        let btn = document.getElementById('launch-btn');
+        btn.textContent = 'В ПУТИ... ' + stats.duration + 'с';
+        btn.classList.add('traveling');
+        btn.disabled = true;
+        this.notify('Взлёт! Топливо: -' + fuelNeeded, 'warning');
+        this.state.save();
+        this.renderAll();
+    }
+    refuel() {
+        if (this.state.ship.traveling) return;
+        let cost = 20;
+        if (this.state.credits < cost) { this.notify('Недостаточно CR!', 'error'); return; }
+        if (this.state.shipFuel >= 100) { this.notify('Бак полон!', 'error'); return; }
+        this.state.credits -= cost;
+        this.state.shipFuel = Math.min(100, this.state.shipFuel + 30);
+        this.notify('Заправка +30', 'success');
+        this.state.save();
+        this.renderHUD();
+    }
+    repairShip() {
+        if (this.state.ship.traveling) return;
+        let cost = this.calculateRepairCost();
+        if (this.state.credits < cost) { this.notify('Недостаточно CR!', 'error'); return; }
+        if (this.state.shipCondition >= 100) { this.notify('Не требуется ремонт!', 'error'); return; }
+        this.state.credits -= cost;
+        this.state.shipCondition = 100;
+        this.state.ship.broken = false;
+        document.getElementById('repair-screen').style.display = 'none';
+        this.notify('Ремонт завершён: ' + cost + ' CR', 'success');
+        this.state.save();
+        this.renderAll();
+    }
+    updateShip(dt) {
+        if (!this.state.ship.traveling) return;
+        this.state.ship.travelProgress += dt;
+        if (this.state.ship.travelProgress >= this.state.ship.travelDuration) {
+            let destId = this.state.ship.destination;
+            this.state.currentCity = destId;
+            if (Math.random() < this.state.ship.breakageChance) {
+                this.state.ship.broken = true;
+                let damage = 20 + Math.random() * 40;
+                this.state.shipCondition = Math.max(0, this.state.shipCondition - damage);
+                document.getElementById('repair-screen').style.display = 'flex';
+                document.getElementById('repair-cost').textContent = 'Ремонт: ' + this.calculateRepairCost() + ' CR';
+            } else {
+                let healBonus = Math.round(this.state.ship.travelDuration / 30);
+                this.state.shipCondition = Math.min(100, this.state.shipCondition + healBonus);
+                this.notify('Прибыли в ' + CITIES[destId].name + '. Корабль: ' + this.state.shipCondition + '%', 'success');
+            }
+            this.state.ship = { docked: true, traveling: false, destination: null, travelProgress: 0, travelDuration: 0, broken: false };
+            this.state.tick++;
+            this.decayFactors();
+            this.refreshCityStock(destId);
+            if (this.state.tick % 2 === 0) this.generateContract();
+            let btn = document.getElementById('launch-btn');
+            btn.textContent = 'ВЫБЕРИТЕ ГОРОД';
+            btn.classList.remove('traveling');
+            btn.disabled = true;
+            this.checkWin();
+        }
+    }
+    calculateRepairCost() { return Math.round(100 * (1 + (100 - this.state.shipCondition) / 50) * 2); }
+    payRepairs() {
+        let cost = this.calculateRepairCost();
+        if (this.state.credits < cost) { this.notify('Недостаточно CR!', 'error'); return; }
+        this.state.credits -= cost;
+        this.state.shipCondition = 100;
+        this.state.ship.broken = false;
+        document.getElementById('repair-screen').style.display = 'none';
+        this.notify('Ремонт завершён: ' + cost + ' CR', 'success');
+        this.state.save();
+        this.renderAll();
+    }
+    decayFactors() {
+        for (let cityId in this.state.markets) {
+            for (let itemId in this.state.markets[cityId]) {
+                this.state.markets[cityId][itemId].demandFactor *= 0.95;
+                this.state.markets[cityId][itemId].supplyFactor *= 0.95;
+            }
+        }
+    }
+    refreshCityStock(cityId) {
+        if (Math.random() < 0.4) {
+            let city = CITIES[cityId];
+            let allItems = Object.keys(ITEMS);
+            let available = allItems.filter(id => city.items.includes(id));
+            let missing = allItems.filter(id => !city.items.includes(id));
+            if (available.length > 3 && missing.length > 0) {
+                let removeIdx = Math.floor(Math.random() * available.length);
+                let addIdx = Math.floor(Math.random() * missing.length);
+                city.items = city.items.filter(i => i !== available[removeIdx]);
+                city.items.push(missing[addIdx]);
+                this.notify('В ' + city.name + ' товар "' + ITEMS[missing[addIdx]].name + '" появился в продаже', 'warning');
+            }
+        }
+        if (Math.random() < 0.3) {
+            let city = CITIES[cityId];
+            let allShips = Object.keys(SHIPS);
+            let available = city.ships.filter(id => SHIPS[id]);
+            let missing = allShips.filter(id => !city.ships.includes(id));
+            if (available.length > 1 && missing.length > 0) {
+                let removeIdx = Math.floor(Math.random() * available.length);
+                let addIdx = Math.floor(Math.random() * missing.length);
+                city.ships = city.ships.filter(i => i !== available[removeIdx]);
+                city.ships.push(missing[addIdx]);
+                this.notify('В ' + city.name + ' появился корабль "' + SHIPS[missing[addIdx]].name + '"', 'warning');
+            }
+        }
+    }
+    getTotalCargoWeight() {
+        let weight = 0;
+        for (let itemId in this.state.cargo) weight += (this.state.cargo[itemId] || 0) * ITEMS[itemId].weight;
+        return weight;
+    }
+    generateContract() {
+        if (this.state.contracts.length >= 2) return;
+        let cities = Object.keys(CITIES).filter(c => c !== this.state.currentCity);
+        if (cities.length === 0) return;
+        let destination = cities[Math.floor(Math.random() * cities.length)];
+        let itemIds = Object.keys(ITEMS);
+        let itemId = itemIds[Math.floor(Math.random() * itemIds.length)];
+        let quantity = Math.floor(Math.random() * 5) + 2;
+        let reward = Math.round(ITEMS[itemId].basePrice * quantity * CONTRACT_REWARD_RATE * (1 + CITIES[destination].distance / 5));
+        this.state.contracts.push({ id: Date.now(), itemId, quantity, destination, reward });
+    }
+    buyItem(itemId) {
+        if (!ITEMS[itemId]) { this.notify('Ошибка товара!', 'error'); return false; }
+        let quantity = this.qtyValues[itemId] || 1;
+        let price = this.state.calculatePrice(this.state.currentCity, itemId);
+        let totalCost = price * quantity;
+        let weight = quantity * ITEMS[itemId].weight;
+        if (totalCost > this.state.credits) { this.notify('Недостаточно CR!', 'error'); return false; }
+        if (this.state.getTotalCargoWeight() + weight > this.state.getEffectiveCargoLimit()) { this.notify('Недостаточно места!', 'error'); return false; }
+        let cityMarket = this.state.markets[this.state.currentCity];
+        if (!cityMarket || !cityMarket[itemId]) { this.notify('Ошибка рынка!', 'error'); return false; }
+        this.state.credits -= totalCost;
+        this.state.cargo[itemId] = (this.state.cargo[itemId] || 0) + quantity;
+        this.state.markets[this.state.currentCity][itemId].demandFactor += quantity * 0.03;
+        this.notify('Куплено ' + ITEMS[itemId].name + ' x' + quantity, 'success');
+        this.state.save();
+        this.renderHUD();
+        this.renderCargo();
+        this.renderRoute();
+        return true;
+    }
+    sellItem(itemId) {
+        let quantity = this.qtyValues[itemId] || 1;
+        if (!this.state.cargo[itemId] || this.state.cargo[itemId] < quantity) { this.notify('Недостаточно товара!', 'error'); return false; }
+        if (!ITEMS[itemId]) { this.notify('Ошибка товара!', 'error'); return false; }
+        let cityMarket = this.state.markets[this.state.currentCity];
+        if (!cityMarket || !cityMarket[itemId]) { this.notify('Ошибка рынка!', 'error'); return false; }
+
+        // Check for contraband arrest
+        if (CONTRABAND_ITEMS.includes(itemId)) {
+            if (Math.random() < 0.13) {
+                // ARRESTED!
+                this.notify('⛓ ВАС АРЕСТОВАЛИ ЗА КОНТРАБАНДУ!', 'error');
+                this.arrestPlayer();
+                return false;
+            }
+        }
+
+        let price = this.state.calculatePrice(this.state.currentCity, itemId);
+        let totalSell = price * quantity * (1 - TRADE_TAX);
+        this.state.credits += totalSell;
+        this.state.cargo[itemId] -= quantity;
+        if (this.state.cargo[itemId] === 0) delete this.state.cargo[itemId];
+        this.state.markets[this.state.currentCity][itemId].supplyFactor += quantity * 0.03;
+        this.notify('Продано x' + quantity + ' за ' + Math.round(totalSell) + ' CR', 'success');
+        this.state.save();
+        this.checkWin();
+        this.renderHUD();
+        this.renderCargo();
+        this.renderRoute();
+        return true;
+    }
+    buyShip(shipId) {
+        let ship = SHIPS[shipId];
+        if (!ship || shipId === this.state.shipType) return;
+        if (ship.price > this.state.credits) { this.notify('Недостаточно CR!', 'error'); return; }
+        if (ship.slots < this.state.shipModules.length) { this.notify('Не хватает слотов! Снимите модули', 'error'); return; }
+        this.state.credits -= ship.price;
+        this.state.shipType = shipId;
+        this.state.cargo = {};
+        this.notify('Куплен ' + ship.name + '! Груз: ' + ship.cargo + ' кг', 'success');
+        this.state.save();
+        this.renderAll();
+    }
+    buyModule(modId) {
+        let mod = MODULES[modId];
+        if (!mod) return;
+        if (this.state.shipModules.includes(modId)) { this.notify('Модуль уже установлен!', 'error'); return; }
+        if (!this.state.canAddModule()) { this.notify('Нет свободных слотов!', 'error'); return; }
+        if (mod.price > this.state.credits) { this.notify('Недостаточно CR!', 'error'); return; }
+        this.state.credits -= mod.price;
+        this.state.shipModules.push(modId);
+        this.notify('Установлен ' + mod.name + ' [' + mod.tier + ']', 'success');
+        this.state.save();
+        this.renderAll();
+    }
+    acceptContract(contractId) {
+        let contract = this.state.contracts.find(c => c.id === contractId);
+        if (!contract) return;
+        let requiredWeight = contract.quantity * ITEMS[contract.itemId].weight;
+        if (this.state.getTotalCargoWeight() + requiredWeight > this.state.getEffectiveCargoLimit()) { this.notify('Недостаточно места!', 'error'); return; }
+        this.state.cargo[contract.itemId] = (this.state.cargo[contract.itemId] || 0) + contract.quantity;
+        contract.accepted = true;
+        this.selectedCity = contract.destination;
+        this.state.save();
+        this.renderAll();
+        this.renderRoute();
+        this.notify('Контракт: доставить ' + ITEMS[contract.itemId].name + ' x' + contract.quantity + ' в ' + CITIES[contract.destination].name, 'success');
+    }
+    completeContract() {
+        let contract = this.state.contracts.find(c => c.destination === this.state.currentCity && c.accepted);
+        if (!contract) { this.notify('Нет активного контракта!', 'error'); return; }
+        if (!this.state.cargo[contract.itemId] || this.state.cargo[contract.itemId] < contract.quantity) { this.notify('Нет нужного товара!', 'error'); return; }
+        this.state.cargo[contract.itemId] -= contract.quantity;
+        if (this.state.cargo[contract.itemId] === 0) delete this.state.cargo[contract.itemId];
+        this.state.credits += contract.reward;
+        this.notify('Контракт выполнен! +' + contract.reward + ' CR', 'success');
+        this.state.contracts = this.state.contracts.filter(c => c.id !== contract.id);
+        this.state.save();
+        this.checkWin();
+        this.renderAll();
+    }
+    checkWin() { if (this.state.credits >= WIN_AMOUNT) document.getElementById('win-screen').style.display = 'flex'; }
+    confirmReset() {
+        if (confirm('Сбросить игру? Весь прогресс будет потерян.')) {
+            this.state.reset();
+            localStorage.removeItem('cloudtrader_save');
+            document.getElementById('win-screen').style.display = 'none';
+            document.getElementById('repair-screen').style.display = 'none';
+            this.selectedCity = null;
+            this.generateContract();
+            this.generateContract();
+            this.renderAll();
+            this.notify('Игра сброшена', 'warning');
+        }
+    }
+    restartGame() {
+        this.state.reset();
+        localStorage.removeItem('cloudtrader_save');
+        document.getElementById('win-screen').style.display = 'none';
+        document.getElementById('repair-screen').style.display = 'none';
+        this.selectedCity = null;
+        this.renderAll();
+    }
+    notify(message, type) {
+        let container = document.getElementById('notifications');
+        let div = document.createElement('div');
+        div.className = 'notification ' + type;
+        div.textContent = message;
+        container.appendChild(div);
+        setTimeout(() => div.remove(), 3000);
+    }
+    renderAll() { this.renderHUD(); this.renderCargo(); this.renderModules(); this.renderMarket(); this.renderRoute(); }
+    renderModules() {
+        let container = document.getElementById('modules-display');
+        let slots = this.state.getAvailableSlots();
+        let used = this.state.getUsedSlots();
+        let html = '<div style="font-size:9px;color:#888;margin-bottom:4px;">СЛОТЫ: ' + used + '/' + slots + '</div>';
+        for (let modId of this.state.shipModules) {
+            let mod = MODULES[modId];
+            let tierColor = { C: '#888', B: '#4FC3F7', A: '#FFB74D', S: '#AB47BC' }[mod.tier];
+            let bgColor = mod.type === 'cargo' ? 'rgba(79,195,247,0.2)' : 'rgba(255,183,77,0.2)';
+            html += '<div style="display:inline-block;background:' + bgColor + ';border-radius:3px;padding:2px 5px;margin:2px;font-size:9px;color:' + tierColor + ';">' + mod.name + '</div>';
+        }
+        container.innerHTML = html;
+    }
+    renderHUD() {
+        document.getElementById('credits').innerHTML = this.state.credits.toLocaleString() + ' <span>CR</span>';
+        document.getElementById('location-info').textContent = CITIES[this.state.currentCity].name;
+        document.getElementById('tick-timer').textContent = 'Тик: ' + this.state.tick;
+        let shipName = SHIPS[this.state.shipType].name;
+        let condPct = Math.round(this.state.shipCondition);
+        let condColor = this.state.ship.broken ? '#E57373' : this.state.shipCondition < 50 ? '#FFB74D' : '#78909C';
+        document.getElementById('ship-title').textContent = 'КОРАБЛЬ: ' + shipName;
+        document.getElementById('ship-status').textContent = this.state.ship.broken ? 'ПОЛОМКА!' : condPct + '%';
+        document.getElementById('ship-status').style.color = this.state.ship.broken ? 'var(--negative)' : condColor;
+        document.getElementById('fuel-fill').style.width = this.state.shipFuel + '%';
+        document.getElementById('fuel-text').textContent = Math.round(this.state.shipFuel) + '%';
+        document.getElementById('fuel-btn').disabled = this.state.ship.traveling || this.state.shipFuel >= 100;
+        document.getElementById('condition-fill').style.width = this.state.shipCondition + '%';
+        document.getElementById('condition-fill').style.background = condColor;
+        document.getElementById('condition-text').textContent = condPct + '%';
+        document.getElementById('condition-text').style.color = condColor;
+        document.getElementById('repair-btn-hud').style.background = condColor;
+        document.getElementById('repair-btn-hud').disabled = this.state.ship.traveling || this.state.shipCondition >= 100;
+        document.getElementById('bar-btn').disabled = this.state.ship.traveling;
+    }
+    renderCargo() {
+        let weight = this.state.getTotalCargoWeight();
+        let limit = this.state.getEffectiveCargoLimit();
+        document.getElementById('cargo-fill').style.width = (weight / limit * 100) + '%';
+        document.getElementById('cargo-text').textContent = weight + ' кг / ' + limit + ' кг';
+        let html = '';
+        for (let itemId in this.state.cargo) {
+            let qty = this.state.cargo[itemId];
+            if (qty > 0) html += '<div class="cargo-item"><span>' + ITEMS[itemId].name + '</span><span>x' + qty + '</span></div>';
+        }
+        if (html === '') html = '<div style="color:var(--text-secondary);font-size:11px;">Пусто</div>';
+        document.getElementById('cargo-items').innerHTML = html;
+    }
+    renderMarket() {
+        document.getElementById('market-city').textContent = CITIES[this.state.currentCity].name;
+        let container = document.getElementById('market-items');
+        let html = '';
+        if (this.marketTab === 'contracts') {
+            let curContract = this.state.contracts.find(c => c.destination === this.state.currentCity && c.accepted && ITEMS[c.itemId] && CITIES[c.destination]);
+            if (curContract) {
+                let hasItem = this.state.cargo[curContract.itemId] && this.state.cargo[curContract.itemId] >= curContract.quantity;
+                html += '<div class="contract-item"><div class="contract-header">АКТИВНЫЙ КОНТРАКТ</div><div class="contract-details">' + ITEMS[curContract.itemId].name + ' x' + curContract.quantity + ' &rarr; ' + CITIES[curContract.destination].name + '</div><div class="contract-reward">+' + curContract.reward + ' CR</div><button class="trade-btn" onclick="game.completeContract()" ' + (hasItem ? '' : 'disabled') + '>ВЫПОЛНИТЬ</button></div>';
+            }
+            this.state.contracts.filter(c => !c.accepted && ITEMS[c.itemId] && CITIES[c.destination]).forEach(c => {
+                html += '<div class="contract-item"><div class="contract-header">' + CITIES[c.destination].name + '</div><div class="contract-details">' + ITEMS[c.itemId].name + ' x' + c.quantity + '</div><div class="contract-reward">+' + c.reward + ' CR</div><button class="trade-btn" onclick="game.acceptContract(' + c.id + ')">ПРИНЯТЬ</button></div>';
+            });
+            if (html === '') html = '<div style="color:var(--text-secondary);font-size:11px;">Нет контрактов</div>';
+        } else if (this.marketTab === 'ships') {
+            let cityShips = CITIES[this.state.currentCity].ships;
+            let currentShip = SHIPS[this.state.shipType];
+            html += '<div style="color:var(--text-secondary);font-size:10px;margin-bottom:8px;">ТЕКУЩИЙ: ' + currentShip.name + ' (' + currentShip.cargo + ' кг груза, скорость x' + currentShip.speed + ')</div>';
+            for (let shipId of cityShips) {
+                let ship = SHIPS[shipId];
+                let isCurrent = shipId === this.state.shipType;
+                html += '<div class="contract-item"><div class="contract-header">' + ship.name + '</div><div class="contract-details">Груз: ' + ship.cargo + ' кг | Скор: x' + ship.speed + '</div><div class="contract-reward">' + (ship.price === 0 ? 'Стартовый' : ship.price + ' CR') + '</div><button class="trade-btn" onclick="game.buyShip(\'' + shipId + '\')" ' + (isCurrent || ship.price > this.state.credits ? 'disabled' : '') + '>' + (isCurrent ? 'ТЕКУЩИЙ' : (ship.price === 0 ? 'БЕСПЛАТНО' : 'КУПИТЬ')) + '</button></div>';
+            }
+            if (cityShips.length === 0) html += '<div style="color:var(--text-secondary);font-size:11px;">Нет кораблей в продаже</div>';
+        } else if (this.marketTab === 'modules') {
+            let slots = this.state.getAvailableSlots();
+            let used = this.state.getUsedSlots();
+            html += '<div style="color:var(--text-secondary);font-size:10px;margin-bottom:8px;">СЛОТЫ: ' + used + '/' + slots + ' | ГРУЗ: ' + this.state.getEffectiveCargoLimit() + ' кг | СКОР: x' + this.state.getEffectiveSpeed().toFixed(2) + '</div>';
+            for (let modId in MODULES) {
+                let mod = MODULES[modId];
+                let tierColor = { C: '#888', B: '#4FC3F7', A: '#FFB74D', S: '#AB47BC' }[mod.tier];
+                let canAdd = this.state.canAddModule() && mod.price <= this.state.credits;
+                html += '<div class="contract-item"><div class="contract-header" style="color:' + tierColor + '">' + mod.name + '</div><div class="contract-details">' + (mod.type === 'cargo' ? '+' + mod.cargoBonus + ' кг груза | -' + Math.round((1-mod.speedMod)*100) + '% скор' : '+' + Math.round(mod.speedBonus*100) + '% скор | +' + mod.cargoMod + ' кг') + '</div><div class="contract-reward">' + mod.price + ' CR</div><button class="trade-btn" onclick="game.buyModule(\'' + modId + '\')" ' + (canAdd ? '' : 'disabled') + '>' + (this.state.shipModules.includes(modId) ? 'УЖЕ ЕСТЬ' : 'КУПИТЬ') + '</button></div>';
+            }
+        } else {
+            let cityItems = CITIES[this.state.currentCity].items;
+            let itemsToShow = this.marketTab === 'sell'
+                ? Object.keys(this.state.cargo).filter(id => this.state.cargo[id] > 0)
+                : cityItems;
+            let hasContrabandModule = this.state.hasContrabandModule();
+            for (let itemId of itemsToShow) {
+                let item = ITEMS[itemId];
+                let price = this.state.calculatePrice(this.state.currentCity, itemId);
+                let maxQty = this.marketTab === 'sell' ? (this.state.cargo[itemId] || 0) : 20;
+                this.qtyMax[itemId] = maxQty;
+                if (!this.qtyValues[itemId] || this.qtyValues[itemId] > maxQty) this.qtyValues[itemId] = 1;
+                // Highlight contraband items if module is installed
+                let isContraband = hasContrabandModule && CONTRABAND_ITEMS.includes(itemId);
+                let itemNameClass = 'item-name' + (isContraband ? ' contraband-item' : '');
+                html += '<div class="market-item"><div class="' + itemNameClass + '">' + item.name + '</div><div class="item-price">' + price + '</div><div class="qty-controls"><button class="qty-btn" onclick="game.changeQty(\'' + itemId + '\',-1)">-</button><span class="qty-value" id="qty-' + itemId + '">' + this.qtyValues[itemId] + '</span><button class="qty-btn" onclick="game.changeQty(\'' + itemId + '\',1)">+</button></div><button class="trade-btn" onclick="game.' + (this.marketTab === 'buy' ? 'buyItem' : 'sellItem') + '(\'' + itemId + '\')">' + (this.marketTab === 'buy' ? 'КУПИТЬ' : 'ПРОДАТЬ') + '</button></div>';
+            }
+            if (html === '') html = '<div style="color:var(--text-secondary);font-size:11px;">' + (this.marketTab === 'sell' ? 'Нет товаров для продажи' : 'Нет товаров') + '</div>';
+        }
+        container.innerHTML = html;
+    }
+    changeQty(itemId, delta) {
+        let max = this.qtyMax[itemId] || 20;
+        this.qtyValues[itemId] = Math.max(1, Math.min(max, (this.qtyValues[itemId] || 1) + delta));
+        document.getElementById('qty-' + itemId).textContent = this.qtyValues[itemId];
+    }
+    renderRoute() {
+        let destEl = document.getElementById('route-dest');
+        let statsEl = document.getElementById('route-stats');
+        let profitEl = document.getElementById('profit-estimate');
+        if (this.state.ship.traveling) {
+            destEl.textContent = '-> ' + CITIES[this.state.ship.destination].name;
+            statsEl.textContent = 'В пути... ' + Math.ceil(this.state.ship.travelDuration - this.state.ship.travelProgress) + 'с';
+            profitEl.textContent = '';
+            return;
+        }
+        if (!this.selectedCity) {
+            destEl.textContent = 'Выберите город';
+            statsEl.textContent = '';
+            profitEl.textContent = '';
+            return;
+        }
+        let stats = this.calculateFlightStats(this.state.currentCity, this.selectedCity);
+        destEl.textContent = CITIES[this.selectedCity].name + ' (уд: ' + CITIES[this.selectedCity].distance + ')';
+        let fuelOk = this.state.shipFuel >= stats.fuelCost;
+        statsEl.innerHTML = 'Расстояние: ' + stats.dist + ' | Топливо: <span style="color:' + (fuelOk ? 'var(--positive)' : 'var(--negative)') + '">' + stats.fuelCost + '% бака</span> | Время: ' + stats.duration + 'с<br>Риск поломки: ' + Math.round(stats.breakageChance * 100) + '%';
+        if (Object.keys(this.state.cargo).length > 0) {
+            let profit = 0;
+            for (let itemId in this.state.cargo) {
+                let qty = this.state.cargo[itemId];
+                if (qty > 0) {
+                    let buyPrice = this.state.calculatePrice(this.state.currentCity, itemId);
+                    let sellPrice = this.state.calculatePrice(this.selectedCity, itemId);
+                    profit += (sellPrice - buyPrice) * qty * (1 - TRADE_TAX);
+                }
+            }
+            profit -= stats.fuelCost * 0.5;
+            profitEl.innerHTML = '<span class="' + (profit > 0 ? 'profit-positive' : 'profit-negative') + '">Прибыль: ' + Math.round(profit) + ' CR</span>';
+        } else {
+            profitEl.textContent = '';
+        }
+    }
+    render() {
+        let ctx = this.ctx;
+        ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);
+
+        let gradient = ctx.createLinearGradient(0, 0, 0, this.canvas.height);
+        gradient.addColorStop(0, '#0a0a14');
+        gradient.addColorStop(0.5, '#0d0d1a');
+        gradient.addColorStop(1, '#080810');
+        ctx.fillStyle = gradient;
+        ctx.fillRect(0, 0, this.canvas.width, this.canvas.height);
+
+        if (this.lightningFlash > 0) {
+            ctx.fillStyle = 'rgba(200, 200, 255, ' + (this.lightningFlash * 0.3) + ')';
+            ctx.fillRect(0, 0, this.canvas.width, this.canvas.height);
+            this.lightningFlash -= 0.1;
+        }
+
+        for (let i = 0; i < this.clouds.length; i++) {
+            let cloud = this.clouds[i];
+            cloud.x += cloud.speed;
+            if (cloud.x > this.canvas.width + cloud.size) {
+                cloud.x = -cloud.size;
+                cloud.y = Math.random() * this.canvas.height;
+            }
+            let grad = ctx.createRadialGradient(cloud.x, cloud.y, 0, cloud.x, cloud.y, cloud.size);
+            grad.addColorStop(0, 'rgba(60, 60, 80, ' + cloud.opacity + ')');
+            grad.addColorStop(0.5, 'rgba(40, 40, 60, ' + (cloud.opacity * 0.6) + ')');
+            grad.addColorStop(1, 'transparent');
+            ctx.beginPath();
+            ctx.ellipse(cloud.x, cloud.y, cloud.size, cloud.size * 0.4, 0, 0, Math.PI * 2);
+            ctx.fillStyle = grad;
+            ctx.fill();
+        }
+
+        this.lightningTimer++;
+        if (this.lightningTimer > 120 + Math.random() * 180) {
+            this.lightningFlash = 1;
+            this.lightningTimer = 0;
+            this.drawLightning(ctx);
+        }
+
+        for (let cityId in CITIES) {
+            let city = CITIES[cityId];
+            let x = city.x * this.canvas.width;
+            let y = city.y * this.canvas.height;
+            let isCurrent = cityId === this.state.currentCity;
+            let isSelected = this.selectedCity === cityId;
+
+            let glowGradient = ctx.createRadialGradient(x, y, 0, x, y, isSelected ? 60 : 45);
+            glowGradient.addColorStop(0, city.color + (isCurrent || isSelected ? '80' : '40'));
+            glowGradient.addColorStop(1, 'transparent');
+            ctx.beginPath();
+            ctx.arc(x, y, isSelected ? 60 : 45, 0, Math.PI * 2);
+            ctx.fillStyle = glowGradient;
+            ctx.fill();
+
+            ctx.beginPath();
+            ctx.arc(x, y, 28, 0, Math.PI * 2);
+            ctx.fillStyle = '#151525';
+            ctx.fill();
+            ctx.strokeStyle = city.color;
+            ctx.lineWidth = 3;
+            ctx.stroke();
+
+            ctx.beginPath();
+            ctx.arc(x, y, 20, 0, Math.PI * 2);
+            ctx.fillStyle = '#1e1e35';
+            ctx.fill();
+            ctx.strokeStyle = city.color;
+            ctx.lineWidth = 2;
+            ctx.stroke();
+
+            ctx.beginPath();
+            ctx.arc(x, y, 10, 0, Math.PI * 2);
+            ctx.fillStyle = isCurrent ? city.color : '#2a2a45';
+            ctx.fill();
+
+            ctx.beginPath();
+            ctx.moveTo(x, y - 28);
+            ctx.lineTo(x - 10, y - 42);
+            ctx.lineTo(x + 10, y - 42);
+            ctx.closePath();
+            ctx.fillStyle = city.color;
+            ctx.fill();
+
+            ctx.fillStyle = '#FFE082';
+            ctx.beginPath();
+            ctx.arc(x - 5, y - 35, 2, 0, Math.PI * 2);
+            ctx.arc(x + 5, y - 35, 2, 0, Math.PI * 2);
+            ctx.fill();
+
+            if (isCurrent) {
+                ctx.beginPath();
+                ctx.arc(x, y, 32, 0, Math.PI * 2);
+                ctx.strokeStyle = city.color + 'AA';
+                ctx.lineWidth = 2;
+                ctx.setLineDash([5, 3]);
+                ctx.stroke();
+                ctx.setLineDash([]);
+            }
+            if (isSelected) {
+                ctx.beginPath();
+                ctx.arc(x, y, 35, 0, Math.PI * 2);
+                ctx.strokeStyle = '#FFFFFF';
+                ctx.lineWidth = 2;
+                ctx.stroke();
+            }
+
+            ctx.fillStyle = '#E0E0E0';
+            ctx.font = 'bold 11px Orbitron';
+            ctx.textAlign = 'center';
+            ctx.fillText(city.name, x, y + 45);
+            ctx.fillStyle = '#888';
+            ctx.font = '9px Orbitron';
+            ctx.fillText('Уд:' + city.distance, x, y + 56);
+        }
+
+        if (this.state.ship.traveling) {
+            let progress = this.state.ship.travelProgress / this.state.ship.travelDuration;
+            let startX = this.state.ship.startPos.x * this.canvas.width;
+            let startY = this.state.ship.startPos.y * this.canvas.height;
+            let endX = this.state.ship.endPos.x * this.canvas.width;
+            let endY = this.state.ship.endPos.y * this.canvas.height;
+            let x = startX + (endX - startX) * progress;
+            let y = startY + (endY - startY) * progress;
+
+            ctx.beginPath();
+            ctx.moveTo(startX, startY);
+            ctx.lineTo(x, y);
+            ctx.strokeStyle = 'rgba(79, 195, 247, 0.3)';
+            ctx.lineWidth = 2;
+            ctx.stroke();
+
+            ctx.beginPath();
+            ctx.arc(x, y, 14, 0, Math.PI * 2);
+            ctx.fillStyle = 'rgba(50, 50, 80, 0.8)';
+            ctx.fill();
+            ctx.strokeStyle = '#4FC3F7';
+            ctx.lineWidth = 2;
+            ctx.stroke();
+
+            ctx.fillStyle = '#FFF';
+            ctx.font = '14px Arial';
+            ctx.textAlign = 'center';
+            ctx.fillText(String.fromCodePoint(0x1F681), x - 8, y + 4);
+        } else if (!this.state.ship.broken) {
+            let city = CITIES[this.state.currentCity];
+            let x = city.x * this.canvas.width;
+            let y = city.y * this.canvas.height - 40;
+            ctx.fillStyle = '#78909C';
+            ctx.font = '20px Arial';
+            ctx.textAlign = 'center';
+            ctx.fillText(String.fromCodePoint(0x1F681), x, y);
+        }
+    }
+    drawLightning(ctx) {
+        let x = Math.random() * this.canvas.width;
+        let y = 0;
+        ctx.beginPath();
+        ctx.moveTo(x, y);
+        while (y < this.canvas.height * 0.7) {
+            x += (Math.random() - 0.5) * 40;
+            y += 15 + Math.random() * 20;
+            ctx.lineTo(x, y);
+        }
+        ctx.strokeStyle = 'rgba(180, 180, 255, 0.8)';
+        ctx.lineWidth = 2;
+        ctx.stroke();
+        ctx.strokeStyle = 'rgba(255, 255, 255, 0.9)';
+        ctx.lineWidth = 1;
+        ctx.stroke();
+    }
+    gameLoop() {
+        this.updateShip(0.1);
+        this.render();
+        this.renderHUD();
+        requestAnimationFrame(() => this.gameLoop());
+    }
+
+    // ==================== PRISON SYSTEM ====================
+
+    arrestPlayer() {
+        // Initialize prison state
+        this.prisonState = {
+            daysLeft: 3 + Math.floor(Math.random() * 8), // 3-10 days
+            currentDay: 0,
+            health: 100,
+            moneyEarned: 0,
+            scenarioIndex: 0
+        };
+
+        // Confiscate all contraband items
+        let confiscatedItems = [];
+        for (let itemId in this.state.cargo) {
+            if (CONTRABAND_ITEMS.includes(itemId)) {
+                confiscatedItems.push(ITEMS[itemId].name + ' x' + this.state.cargo[itemId]);
+                delete this.state.cargo[itemId];
+            }
+        }
+
+        if (confiscatedItems.length > 0) {
+            this.notify('Конфисковано: ' + confiscatedItems.join(', '), 'error');
+        }
+
+        // Remove contraband module if installed
+        if (this.state.shipModules.includes('contraband_sol')) {
+            this.state.shipModules = this.state.shipModules.filter(m => m !== 'contraband_sol');
+            this.notify('Модуль "ОБХОД СОЛ" конфискован!', 'error');
+        }
+
+        // Show prison screen
+        document.getElementById('prison-screen').classList.add('active');
+        this.renderPrisonUI();
+    }
+
+    renderPrisonUI() {
+        if (!this.prisonState) return;
+
+        let ps = this.prisonState;
+        document.getElementById('prison-days-left').textContent = ps.daysLeft;
+        document.getElementById('prison-health').textContent = ps.health;
+        document.getElementById('prison-money').textContent = ps.moneyEarned;
+
+        // Hide outcome, show scenario
+        document.getElementById('prison-scenario-view').style.display = 'block';
+        document.getElementById('prison-outcome-view').classList.remove('active');
+
+        // Get current scenario
+        let scenario;
+        if (ps.scenarioIndex < PRISON_SCENARIOS.length) {
+            scenario = PRISON_SCENARIOS[ps.scenarioIndex];
+        } else {
+            // Random scenario if we've gone through all
+            scenario = PRISON_SCENARIOS[Math.floor(Math.random() * PRISON_SCENARIOS.length)];
+        }
+
+        document.getElementById('prison-day-text').textContent = 'ДЕНЬ ' + (ps.currentDay + 1);
+        document.getElementById('prison-scenario-text').textContent = scenario.text;
+
+        // Render choices
+        let choicesHTML = '';
+        for (let i = 0; i < scenario.choices.length; i++) {
+            let choice = scenario.choices[i];
+            let outcomeText = '';
+            if (choice.outcome.days_lost) outcomeText += ' -' + choice.outcome.days_lost + ' дн';
+            if (choice.outcome.health) outcomeText += ' ' + (choice.outcome.health > 0 ? '+' : '') + choice.outcome.health + ' HP';
+            if (choice.outcome.money) outcomeText += ' ' + (choice.outcome.money > 0 ? '+' : '') + choice.outcome.money + ' CR';
+            if (choice.outcome.death_chance > 0) outcomeText += ' 💀' + choice.outcome.death_chance + '%';
+
+            choicesHTML += '<button class="prison-choice" onclick="game.prisonChoice(' + i + ')">' +
+                '<div>' + choice.text + '</div>' +
+                '<div class="prison-choice-outcome">' + outcomeText + '</div>' +
+                '</button>';
+        }
+        document.getElementById('prison-choices').innerHTML = choicesHTML;
+    }
+
+    prisonChoice(choiceIndex) {
+        if (!this.prisonState) return;
+
+        let ps = this.prisonState;
+        let scenario = PRISON_SCENARIOS[ps.scenarioIndex] || PRISON_SCENARIOS[Math.floor(Math.random() * PRISON_SCENARIOS.length)];
+        let choice = scenario.choices[choiceIndex];
+        let outcome = choice.outcome;
+
+        // Apply outcome
+        ps.currentDay++;
+        ps.daysLeft -= outcome.days_lost || 1;
+        ps.health += outcome.health || 0;
+        ps.moneyEarned += outcome.money || 0;
+        ps.health = Math.max(0, Math.min(100, ps.health));
+
+        // Check for death
+        if (outcome.death_chance && Math.random() * 100 < outcome.death_chance) {
+            this.prisonOutcome('death', choice.result);
+            return;
+        }
+
+        // Check for escape
+        if (outcome.escape) {
+            this.prisonOutcome('escape', choice.result);
+            return;
+        }
+
+        // Check for release (days over or release choice)
+        if (ps.daysLeft <= 0 || outcome.release) {
+            this.prisonOutcome('release', choice.result);
+            return;
+        }
+
+        // Next scenario
+        ps.scenarioIndex++;
+        if (ps.scenarioIndex >= PRISON_SCENARIOS.length) {
+            ps.scenarioIndex = Math.floor(Math.random() * PRISON_SCENARIOS.length);
+        }
+
+        this.renderPrisonUI();
+    }
+
+    prisonOutcome(type, message) {
+        let outcomeView = document.getElementById('prison-outcome-view');
+        let scenarioView = document.getElementById('prison-scenario-view');
+        let titleEl = document.getElementById('prison-outcome-title');
+        let textEl = document.getElementById('prison-outcome-text');
+        let statsEl = document.getElementById('prison-outcome-stats');
+        let continueBtn = document.getElementById('prison-continue-btn');
+
+        scenarioView.style.display = 'none';
+        outcomeView.classList.add('active');
+
+        if (type === 'death') {
+            titleEl.textContent = '☠ СМЕРТЬ';
+            titleEl.className = 'prison-outcome-title death';
+            textEl.textContent = message + '\n\nВаше тело осталось в тюрьме. Игра окончена.';
+            statsEl.textContent = '';
+            continueBtn.style.display = 'none';
+
+            // Add game over logic - reset after delay
+            setTimeout(() => {
+                if (confirm('Вы умерли в тюрьме! Начать заново?')) {
+                    this.state.reset();
+                    localStorage.removeItem('cloudtrader_save');
+                    location.reload();
+                }
+            }, 2000);
+
+        } else if (type === 'escape') {
+            titleEl.textContent = '🏃 ПОБЕГ!';
+            titleEl.className = 'prison-outcome-title release';
+            textEl.textContent = message;
+            statsEl.textContent = 'Вы сбежали из тюрьмы! Статус: ОСВОБОЖДЁН';
+            continueBtn.style.display = 'inline-block';
+            continueBtn.textContent = 'ПРОДОЛЖИТЬ ИГРУ';
+
+            // Lose all cargo on escape
+            this.state.cargo = {};
+
+        } else {
+            // Release
+            titleEl.textContent = '✓ ОСВОБОЖДЁН';
+            titleEl.className = 'prison-outcome-title release';
+            textEl.textContent = message;
+
+            let statsText = '';
+            if (this.prisonState.moneyEarned > 0) {
+                statsText += 'Заработано в тюрьме: +' + this.prisonState.moneyEarned + ' CR. ';
+                this.state.credits += this.prisonState.moneyEarned;
+            }
+            statsText += 'Дней проведено: ' + this.prisonState.currentDay;
+            statsEl.textContent = statsText;
+            continueBtn.style.display = 'inline-block';
+            continueBtn.textContent = 'ПРОДОЛЖИТЬ ИГРУ';
+        }
+
+        this.state.save();
+    }
+
+    continueAfterPrison() {
+        // Hide prison screen
+        document.getElementById('prison-screen').classList.remove('active');
+
+        // Clear prison state
+        this.prisonState = null;
+
+        // Re-render game
+        this.renderAll();
+        this.notify('Вы вышли на свободу!', 'success');
+    }
+
+    // ==================== BAR SYSTEM ====================
+
+    enterBar() {
+        if (!CITIES[this.state.currentCity]) return;
+
+        this.barState = {
+            currentScenario: null,
+            health: this.state.shipCondition,
+            moneyEarned: 0,
+            flags: {}
+        };
+
+        let cityName = CITIES[this.state.currentCity].name;
+        let barNames = {
+            primum: '"Облачный Покоц"',
+            secundus: '"У Барсука"',
+            tertius: '"Туманная Капля"',
+            quartus: '"Гхали-бар"',
+            kibwe: '"Кривой Гикори"',
+            elbrus: '"Вершина"'
+        };
+        document.getElementById('bar-location').textContent = barNames[this.state.currentCity] + ' — ' + cityName;
+
+        document.getElementById('bar-screen').classList.add('active');
+        this.barShowScenario();
+    }
+
+    barShowScenario() {
+        if (!this.barState) return;
+
+        let bs = this.barState;
+        document.getElementById('bar-health').textContent = bs.health;
+        document.getElementById('bar-money').textContent = bs.moneyEarned;
+
+        if (!bs.currentScenario) {
+            let randomScenario = BAR_SCENARIOS[Math.floor(Math.random() * BAR_SCENARIOS.length)];
+            bs.currentScenario = randomScenario;
+        }
+
+        let scenario = bs.currentScenario;
+
+        document.getElementById('bar-scenario-view').style.display = 'block';
+        document.getElementById('bar-outcome-view').classList.remove('active');
+
+        document.getElementById('bar-title-text').textContent = scenario.title;
+        document.getElementById('bar-scenario-text').textContent = scenario.text;
+
+        let choicesHTML = '';
+        for (let i = 0; i < scenario.choices.length; i++) {
+            let choice = scenario.choices[i];
+            let outcomeText = '';
+            if (choice.outcome.health) outcomeText += (choice.outcome.health > 0 ? '+' : '') + choice.outcome.health + ' HP';
+            if (choice.outcome.money) outcomeText += (choice.outcome.money > 0 ? '+' : '') + choice.outcome.money + ' CR';
+
+            choicesHTML += '<button class="bar-choice" onclick="game.barChoice(' + i + ')">' +
+                '<div>' + choice.text + '</div>' +
+                (outcomeText ? '<div class="bar-choice-outcome">' + outcomeText + '</div>' : '') +
+                '</button>';
+        }
+        document.getElementById('bar-choices').innerHTML = choicesHTML;
+    }
+
+    barChoice(choiceIndex) {
+        if (!this.barState) return;
+
+        let bs = this.barState;
+        let scenario = bs.currentScenario;
+        let choice = scenario.choices[choiceIndex];
+        let outcome = choice.outcome;
+
+        bs.health += outcome.health || 0;
+        bs.health = Math.max(0, Math.min(100, bs.health));
+        bs.moneyEarned += outcome.money || 0;
+
+        if (choice.exit) {
+            this.barOutcome(choice.result, outcome);
+            return;
+        }
+
+        if (choice.next) {
+            let nextScenario = BAR_SCENARIOS.find(s => s.id === choice.next);
+            if (nextScenario) {
+                bs.currentScenario = nextScenario;
+                this.barShowScenario();
+            } else {
+                this.barExit();
+            }
+            return;
+        }
+
+        this.barExit();
+    }
+
+    barOutcome(result, outcome) {
+        let outcomeView = document.getElementById('bar-outcome-view');
+        let scenarioView = document.getElementById('bar-scenario-view');
+
+        scenarioView.style.display = 'none';
+        outcomeView.classList.add('active');
+
+        let titleEl = document.getElementById('bar-outcome-title');
+        let textEl = document.getElementById('bar-outcome-text');
+        let statsEl = document.getElementById('bar-outcome-stats');
+
+        titleEl.textContent = result.title;
+        titleEl.className = 'bar-outcome-title ' + result.type;
+        textEl.textContent = result.text;
+
+        let statsText = '';
+        if (outcome.health) statsText += (outcome.health > 0 ? '+' : '') + outcome.health + ' HP. ';
+        if (outcome.money) {
+            let moneyChange = outcome.money;
+            if (moneyChange > 0) {
+                this.state.credits += moneyChange;
+                this.barState.moneyEarned += moneyChange;
+            } else {
+                this.state.credits = Math.max(0, this.state.credits + moneyChange);
+            }
+            statsText += (moneyChange > 0 ? '+' : '') + moneyChange + ' CR. ';
+        }
+        if (this.state.shipCondition !== this.barState.health) {
+            this.state.shipCondition = this.barState.health;
+        }
+        statsEl.textContent = statsText || 'Без изменений';
+
+        let continueBtn = document.getElementById('bar-continue-btn');
+        continueBtn.onclick = () => this.barExit();
+    }
+
+    barExit() {
+        if (this.barState) {
+            if (this.state.shipCondition !== this.barState.health) {
+                this.state.shipCondition = this.barState.health;
+            }
+            if (this.barState.moneyEarned > 0) {
+                this.state.credits += this.barState.moneyEarned;
+                this.notify('Заработано в баре: +' + this.barState.moneyEarned + ' CR', 'success');
+            }
+        }
+        document.getElementById('bar-screen').classList.remove('active');
+        this.barState = null;
+        this.renderAll();
+    }
+}
+
+let game = new Game();
+    </script>
+</body>
+</html>

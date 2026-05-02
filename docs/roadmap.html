@@ -799,6 +799,55 @@
     text-decoration: underline;
   }
 
+  /* ===== FLOATING FUN BUTTON ===== */
+  .fun-btn {
+    position: fixed;
+    bottom: 24px;
+    right: 24px;
+    z-index: 999;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 12px 20px;
+    background: linear-gradient(135deg, #1a1a3e 0%, #2d2d5a 100%);
+    border: 1px solid rgba(79, 195, 247, 0.3);
+    border-radius: 50px;
+    color: #4FC3F7;
+    text-decoration: none;
+    font-family: 'Inter', sans-serif;
+    font-size: 14px;
+    font-weight: 600;
+    box-shadow: 0 4px 20px rgba(79, 195, 247, 0.15), 0 0 40px rgba(79, 195, 247, 0.1);
+    transition: all .3s ease;
+    backdrop-filter: blur(10px);
+  }
+  .fun-btn:hover {
+    transform: translateY(-3px) scale(1.05);
+    box-shadow: 0 8px 30px rgba(79, 195, 247, 0.3), 0 0 60px rgba(79, 195, 247, 0.2);
+    border-color: rgba(79, 195, 247, 0.6);
+    color: #81D4FA;
+  }
+  .fun-btn__icon {
+    font-size: 18px;
+    animation: float 3s ease-in-out infinite;
+  }
+  .fun-btn__text {
+    letter-spacing: 0.5px;
+  }
+  @keyframes float {
+    0%, 100% { transform: translateY(0); }
+    50% { transform: translateY(-5px); }
+  }
+  @media (max-width: 600px) {
+    .fun-btn {
+      bottom: 16px;
+      right: 16px;
+      padding: 10px 16px;
+      font-size: 12px;
+    }
+    .fun-btn__text { display: none; }
+  }
+
   /* ===== GDD SECTION ===== */
   .gdd-section {
     margin-top: 64px;
@@ -1598,6 +1647,12 @@
   <div class="cloud"></div>
   <div class="cloud"></div>
 </div>
+
+<!-- FLOATING GAME BUTTON -->
+<a href="Fun/index.html" target="_top" class="fun-btn" title="Мини-игра: Грузоперевозки над облаками">
+  <span class="fun-btn__icon">🚀</span>
+  <span class="fun-btn__text">CloudTrader</span>
+</a>
 
 <div class="wrapper">
 

@@ -480,10 +480,14 @@
             0%, 100% { opacity: 1; transform: scale(1); }
             50% { opacity: 0.8; transform: scale(1.05); }
         }
-        #pirate-canvas {
+#pirate-canvas {
             border: 2px solid rgba(229, 115, 115, 0.4);
             border-radius: 8px;
             box-shadow: 0 0 30px rgba(229, 115, 115, 0.3);
+            max-width: 95vw;
+            max-height: 70vh;
+            width: auto;
+            height: auto;
         }
         #pirate-hud {
             position: absolute;
@@ -3342,8 +3346,16 @@ class Game {
         screen.classList.add('active');
 
         let canvas = document.getElementById('pirate-canvas');
-        canvas.width = 800;
-        canvas.height = 600;
+        let isMobile = window.innerWidth < 800 || 'ontouchstart' in window;
+        if (isMobile) {
+            canvas.width = Math.min(window.innerWidth * 0.95, 800);
+            canvas.height = Math.min(window.innerHeight * 0.6, 500);
+            pc.scale = 0.8;
+        } else {
+            canvas.width = 800;
+            canvas.height = 600;
+            pc.scale = 1;
+        }
         pc.touch.touchStartY = canvas.height - 100;
         let ctx = canvas.getContext('2d');
         ctx.clearRect(0, 0, canvas.width, canvas.height);
@@ -3427,7 +3439,8 @@ class Game {
 
         if (pc.phase !== 'combat') return;
 
-        let moveSpeed = 200;
+        let scale = pc.scale || 1;
+        let moveSpeed = 200 * scale;
 
         if (pc.touch.active) {
             let dirX = pc.touch.x - pc.touchStartX;
@@ -3447,8 +3460,9 @@ class Game {
         if (pc.keys['a'] || pc.keys['A'] || pc.keys['ArrowLeft']) pc.playerX -= moveSpeed * dt;
         if (pc.keys['d'] || pc.keys['D'] || pc.keys['ArrowRight']) pc.playerX += moveSpeed * dt;
 
-        pc.playerX = Math.max(20, Math.min(canvas.width - 20, pc.playerX));
-        pc.playerY = Math.max(20, Math.min(canvas.height - 20, pc.playerY));
+        let margin = 20 * scale;
+        pc.playerX = Math.max(margin, Math.min(canvas.width - margin, pc.playerX));
+        pc.playerY = Math.max(margin, Math.min(canvas.height - margin, pc.playerY));
 
         let targetX = pc.playerX;
         let targetY = pc.playerY;
@@ -3549,19 +3563,20 @@ class Game {
         let pc = this.state.pirateCombat;
         let canvas = document.getElementById('pirate-canvas');
         let ctx = canvas.getContext('2d');
+        let scale = pc.scale || 1;
 
         ctx.fillStyle = '#0a0000';
         ctx.fillRect(0, 0, canvas.width, canvas.height);
 
         ctx.strokeStyle = 'rgba(229, 115, 115, 0.08)';
         ctx.lineWidth = 1;
-        for (let x = 0; x < canvas.width; x += 40) {
+        for (let x = 0; x < canvas.width; x += 40 * scale) {
             ctx.beginPath();
             ctx.moveTo(x, 0);
             ctx.lineTo(x, canvas.height);
             ctx.stroke();
         }
-        for (let y = 0; y < canvas.height; y += 40) {
+        for (let y = 0; y < canvas.height; y += 40 * scale) {
             ctx.beginPath();
             ctx.moveTo(0, y);
             ctx.lineTo(canvas.width, y);
@@ -3571,6 +3586,7 @@ class Game {
         ctx.save();
         ctx.translate(pc.playerX, pc.playerY);
         ctx.rotate(pc.playerAngle);
+        ctx.scale(scale, scale);
         ctx.fillStyle = '#7FDBDA';
         ctx.beginPath();
         ctx.moveTo(18, 0);
@@ -3586,20 +3602,20 @@ class Game {
 
         ctx.fillStyle = '#80DEEA';
         ctx.shadowColor = '#80DEEA';
-        ctx.shadowBlur = 8;
+        ctx.shadowBlur = 8 * scale;
         for (let b of pc.bullets) {
             ctx.beginPath();
-            ctx.arc(b.x, b.y, 5, 0, Math.PI * 2);
+            ctx.arc(b.x, b.y, 5 * scale, 0, Math.PI * 2);
             ctx.fill();
         }
         ctx.shadowBlur = 0;
 
         ctx.fillStyle = '#FFB74D';
         ctx.shadowColor = '#FFB74D';
-        ctx.shadowBlur = 6;
+        ctx.shadowBlur = 6 * scale;
         for (let b of pc.enemyBullets) {
             ctx.beginPath();
-            ctx.arc(b.x, b.y, 6, 0, Math.PI * 2);
+            ctx.arc(b.x, b.y, 6 * scale, 0, Math.PI * 2);
             ctx.fill();
         }
         ctx.shadowBlur = 0;
@@ -3607,44 +3623,44 @@ class Game {
         for (let e of pc.enemies) {
             ctx.fillStyle = e.isBoss ? '#E57373' : '#FF6F00';
             ctx.beginPath();
-            ctx.arc(e.x, e.y, e.size, 0, Math.PI * 2);
+            ctx.arc(e.x, e.y, e.size * scale, 0, Math.PI * 2);
             ctx.fill();
             ctx.strokeStyle = '#FFF';
-            ctx.lineWidth = 2;
+            ctx.lineWidth = 2 * scale;
             ctx.stroke();
 
             if (e.isBoss) {
                 ctx.fillStyle = 'rgba(229, 115, 115, 0.3)';
                 ctx.beginPath();
-                ctx.arc(e.x, e.y, e.size + 8, 0, Math.PI * 2);
+                ctx.arc(e.x, e.y, (e.size + 8) * scale, 0, Math.PI * 2);
                 ctx.fill();
             }
 
-            let barWidth = e.size * 2;
-            let barHeight = 5;
+            let barWidth = e.size * 2 * scale;
+            let barHeight = 5 * scale;
             ctx.fillStyle = 'rgba(0,0,0,0.6)';
-            ctx.fillRect(e.x - barWidth / 2, e.y - e.size - 12, barWidth, barHeight);
+            ctx.fillRect(e.x - barWidth / 2, e.y - e.size * scale - 12 * scale, barWidth, barHeight);
             ctx.fillStyle = e.hp > e.maxHP * 0.5 ? '#81C784' : '#E57373';
-            ctx.fillRect(e.x - barWidth / 2, e.y - e.size - 12, barWidth * (e.hp / e.maxHP), barHeight);
+            ctx.fillRect(e.x - barWidth / 2, e.y - e.size * scale - 12 * scale, barWidth * (e.hp / e.maxHP), barHeight);
         }
 
         ctx.fillStyle = '#FFF8E7';
-        ctx.font = 'bold 18px Orbitron, monospace';
+        ctx.font = 'bold ' + (18 * scale) + 'px Orbitron, monospace';
         ctx.textAlign = 'right';
-        ctx.fillText('СЧЁТ: ' + pc.score, canvas.width - 20, 30);
+        ctx.fillText('СЧЁТ: ' + pc.score, canvas.width - 20 * scale, 30 * scale);
 
-        if (pc.phase === 'countdown') {
+if (pc.phase === 'countdown') {
             ctx.fillStyle = '#E57373';
-            ctx.font = 'bold 72px Orbitron, monospace';
+            ctx.font = 'bold ' + (72 * scale) + 'px Orbitron, monospace';
             ctx.textAlign = 'center';
             ctx.fillText(pc.countdown.toString(), canvas.width / 2, canvas.height / 2);
-            ctx.font = 'bold 24px Orbitron, monospace';
-            ctx.fillText('ПРИГОТОВЬТЕСЬ!', canvas.width / 2, canvas.height / 2 - 80);
+            ctx.font = 'bold ' + (24 * scale) + 'px Orbitron, monospace';
+            ctx.fillText('ПРИГОТОВЬТЕСЬ!', canvas.width / 2, canvas.height / 2 - 80 * scale);
         } else {
-            ctx.font = '14px Orbitron, monospace';
+            ctx.font = Math.round(14 * scale) + 'px Orbitron, monospace';
             ctx.textAlign = 'left';
-            ctx.fillText('WASD - движение', 20, canvas.height - 20);
-            ctx.fillText('МЫШЬ/КЛИК - прицел и стрельба', 20, canvas.height - 40);
+            ctx.fillText('СТРЕЛКИ - движение', 20 * scale, canvas.height - 20 * scale);
+            ctx.fillText('МЫШЬ/КЛИК - прицел и стрельба', 20 * scale, canvas.height - 40 * scale);
 
             if (pc.touch.active) {
                 let jx = pc.touch.x;
@@ -3652,26 +3668,26 @@ class Game {
                 ctx.strokeStyle = 'rgba(127, 219, 218, 0.5)';
                 ctx.lineWidth = 2;
                 ctx.beginPath();
-                ctx.arc(jx, jy, 50, 0, Math.PI * 2);
+                ctx.arc(jx, jy, 50 * scale, 0, Math.PI * 2);
                 ctx.stroke();
                 ctx.fillStyle = 'rgba(127, 219, 218, 0.3)';
                 ctx.beginPath();
-                ctx.arc(jx, jy, 30, 0, Math.PI * 2);
+                ctx.arc(jx, jy, 30 * scale, 0, Math.PI * 2);
                 ctx.fill();
                 ctx.fillStyle = '#7FDBDA';
                 ctx.beginPath();
-                ctx.arc(jx, jy, 15, 0, Math.PI * 2);
+                ctx.arc(jx, jy, 15 * scale, 0, Math.PI * 2);
                 ctx.fill();
             }
 
             ctx.fillStyle = 'rgba(229, 115, 115, 0.5)';
             ctx.beginPath();
-            ctx.arc(canvas.width - 100, canvas.height - 100, 40, 0, Math.PI * 2);
+            ctx.arc(canvas.width - 100 * scale, canvas.height - 100 * scale, 40 * scale, 0, Math.PI * 2);
             ctx.fill();
             ctx.fillStyle = '#FFF';
-            ctx.font = 'bold 12px Orbitron';
+            ctx.font = 'bold ' + (12 * scale) + 'px Orbitron';
             ctx.textAlign = 'center';
-            ctx.fillText('ОГОНЬ', canvas.width - 100, canvas.height - 95);
+ctx.fillText('ОГОНЬ', canvas.width - 100 * scale, canvas.height - 95 * scale);
         }
     }
 

@@ -4,86 +4,149 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>CloudTrader — Грузоперевозки над облаками</title>
-    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=M+PLUS+Rounded+1c:wght@400;500;700&family=Orbitron:wght@400;700&display=swap" rel="stylesheet">
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
         :root {
-            --ui-bg: rgba(20, 20, 35, 0.95);
-            --ui-accent: #4FC3F7;
-            --text-primary: #E0E0E0;
-            --text-secondary: #888;
-            --positive: #4CAF50;
+            /* Ghibli-inspired palette - soft, dreamy, warm */
+            --ui-bg: rgba(35, 28, 48, 0.88);
+            --ui-bg-blur: rgba(40, 32, 55, 0.82);
+            --ui-accent: #7FDBDA;
+            --ui-accent-glow: rgba(127, 219, 218, 0.25);
+            --text-primary: #FFF8E7;
+            --text-secondary: #C5BFD5;
+            --positive: #81C784;
             --negative: #E57373;
             --warning: #FFB74D;
-            --city-glow: #FFE082;
-            --prison-bg: rgba(10, 5, 20, 0.97);
-            --prison-accent: #ff4444;
-            --prison-text: #ccc;
+            --city-glow: #FFD54F;
+            --sunset-orange: #FFAB91;
+            --twilight-purple: #7986CB;
+            --soft-cyan: #80DEEA;
+            --warm-amber: #FFCC80;
+            --cream: #FFF8E7;
+            /* Prison - softer Ghibli treatment */
+            --prison-bg: linear-gradient(180deg, rgba(45, 27, 78, 0.96) 0%, rgba(30, 20, 50, 0.98) 100%);
+            --prison-accent: #CE93D8;
+            --prison-text: #D1C4E9;
+            --prison-glow: rgba(206, 147, 216, 0.3);
+            /* Bar - warm Ghibli tones */
+            --bar-bg: linear-gradient(180deg, rgba(60, 35, 20, 0.95) 0%, rgba(40, 25, 15, 0.97) 100%);
+            --bar-accent: #FFB74D;
+            --bar-text: #FFE0B2;
+            --bar-glow: rgba(255, 183, 77, 0.3);
         }
         body {
-            font-family: 'Orbitron', monospace;
-            background: linear-gradient(180deg, #1a1a3e 0%, #0f0f2a 50%, #050510 100%);
+            font-family: 'M PLUS Rounded', 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(180deg, #2D1B4E 0%, #5C6BC0 20%, #7986CB 35%, #FFB74D 55%, #FFCC80 75%, #FFF8E7 100%);
             min-height: 100vh;
             color: var(--text-primary);
             overflow: hidden;
+            background-attachment: fixed;
         }
         #game-container { display: flex; flex-direction: column; height: 100vh; max-width: 1400px; margin: 0 auto; }
-        #hud { display: flex; justify-content: space-between; align-items: center; padding: 12px 20px; background: var(--ui-bg); border-bottom: 2px solid var(--ui-accent); z-index: 100; }
-        #credits { font-size: 20px; font-weight: 700; color: var(--city-glow); }
-        #credits span { color: var(--text-secondary); font-size: 12px; }
-        #location-info { font-size: 14px; color: var(--ui-accent); }
-        #tick-timer { font-size: 12px; color: var(--text-secondary); }
-        #ship-status { font-size: 12px; }
-        #map-area { flex: 1; position: relative; overflow: hidden; background: #0a0a14; min-height: 400px; }
+        #hud { display: flex; justify-content: space-between; align-items: center; padding: 12px 20px; background: var(--ui-bg); border-bottom: 2px solid rgba(127, 219, 218, 0.4); border-bottom-left-radius: 0; border-bottom-right-radius: 0; box-shadow: 0 4px 20px rgba(127, 219, 218, 0.15), inset 0 -2px 15px rgba(255, 248, 231, 0.05); z-index: 100; backdrop-filter: blur(10px); }
+        #credits { font-size: 20px; font-weight: 700; color: var(--city-glow); text-shadow: 0 0 12px rgba(255, 213, 79, 0.4), 0 2px 4px rgba(0,0,0,0.3); }
+        #credits span { color: var(--text-secondary); font-size: 12px; text-shadow: none; }
+        #location-info { font-size: 14px; color: var(--ui-accent); text-shadow: 0 0 8px rgba(127, 219, 218, 0.3); }
+        #tick-timer { font-size: 12px; color: var(--text-secondary); text-shadow: 0 0 6px rgba(197, 191, 213, 0.2); }
+        #ship-status { font-size: 12px; text-shadow: 0 0 6px rgba(197, 191, 213, 0.2); }
+        #map-area { flex: 1; position: relative; overflow: hidden; background: linear-gradient(180deg, #2D1B4E 0%, #5C6BC0 25%, #7986CB 45%, #B39DDB 60%, #FFB74D 75%, #FFCC80 90%, #FFF8E7 100%); min-height: 400px; box-shadow: inset 0 0 80px rgba(121, 134, 203, 0.3), inset 0 -20px 60px rgba(255, 248, 231, 0.2); }
         #map-canvas { width: 100%; height: 100%; display: block; }
-        .cloud { position: absolute; background: radial-gradient(ellipse, rgba(80,80,100,0.3) 0%, transparent 70%); border-radius: 50%; filter: blur(40px); pointer-events: none; }
+        .cloud { position: absolute; background: radial-gradient(ellipse, rgba(255, 248, 231, 0.35) 0%, rgba(255, 204, 128, 0.15) 50%, transparent 70%); border-radius: 50%; filter: blur(60px); pointer-events: none; opacity: 0.7; }
         @keyframes drift { from { transform: translateX(-300px); } to { transform: translateX(calc(100vw + 300px)); } }
-        #bottom-panels { display: grid; grid-template-columns: 1fr 2fr 1fr; gap: 10px; padding: 10px; background: var(--ui-bg); border-top: 2px solid var(--ui-accent); max-height: 280px; }
-        .panel { background: rgba(0, 0, 0, 0.4); border-radius: 10px; padding: 12px; overflow-y: auto; }
-        .panel-title { font-size: 12px; color: var(--ui-accent); margin-bottom: 8px; border-bottom: 1px solid var(--ui-accent); padding-bottom: 5px; text-transform: uppercase; }
-        #cargo-bar { width: 100%; height: 16px; background: rgba(255,255,255,0.1); border-radius: 8px; overflow: hidden; margin-bottom: 8px; }
-        #cargo-fill { height: 100%; background: linear-gradient(90deg, var(--ui-accent), var(--positive)); transition: width 0.3s; }
-        #cargo-text { font-size: 11px; color: var(--text-secondary); margin-bottom: 8px; }
-        .cargo-item { display: flex; justify-content: space-between; padding: 4px 0; border-bottom: 1px solid rgba(255,255,255,0.05); font-size: 11px; }
-        .market-tabs { display: flex; gap: 4px; margin-bottom: 8px; }
-        .market-tab { flex: 1; padding: 6px; background: rgba(255,255,255,0.1); border: none; border-radius: 5px; color: var(--text-primary); cursor: pointer; font-family: 'Orbitron', monospace; font-size: 10px; }
-        .market-tab.active { background: var(--ui-accent); color: var(--ui-bg); }
-        .market-item { display: grid; grid-template-columns: 1fr 60px 50px 60px; gap: 6px; align-items: center; padding: 6px; border-bottom: 1px solid rgba(255,255,255,0.05); font-size: 10px; }
-        .item-name { font-weight: 700; }
-        .item-price { text-align: right; font-weight: 700; }
-        .price-up { color: var(--negative); }
-        .price-down { color: var(--positive); }
-        .qty-controls { display: flex; gap: 2px; justify-content: center; }
-        .qty-btn { width: 20px; height: 20px; background: var(--ui-accent); border: none; border-radius: 4px; color: var(--ui-bg); cursor: pointer; font-weight: 700; font-size: 10px; }
-        .trade-btn { padding: 4px 8px; background: var(--ui-accent); border: none; border-radius: 4px; color: var(--ui-bg); cursor: pointer; font-family: 'Orbitron', monospace; font-weight: 700; font-size: 9px; }
-        .trade-btn:hover { background: var(--positive); }
-        .trade-btn:disabled { background: rgba(255,255,255,0.1); cursor: not-allowed; }
-        .route-destination { font-size: 14px; color: var(--city-glow); margin-bottom: 8px; }
-        .route-stats { font-size: 10px; color: var(--text-secondary); margin-bottom: 8px; line-height: 1.5; }
-        .profit-estimate { font-size: 11px; margin-bottom: 10px; }
-        .profit-positive { color: var(--positive); }
-        .profit-negative { color: var(--negative); }
-        #launch-btn { width: 100%; padding: 10px; background: linear-gradient(135deg, var(--ui-accent), var(--positive)); border: none; border-radius: 8px; color: var(--ui-bg); font-family: 'Orbitron', monospace; font-size: 12px; font-weight: 700; cursor: pointer; }
-        #launch-btn:disabled { background: rgba(255,255,255,0.1); cursor: not-allowed; color: var(--text-secondary); }
-        #launch-btn.traveling { background: linear-gradient(135deg, var(--negative), #c0392b); }
-        #bar-btn:disabled { background: rgba(171, 71, 188, 0.3); cursor: not-allowed; color: rgba(255,255,255,0.5); }
-        #notifications { position: fixed; top: 70px; right: 15px; display: flex; flex-direction: column; gap: 8px; z-index: 1000; pointer-events: none; }
-        .notification { padding: 8px 12px; background: var(--ui-bg); border-left: 3px solid var(--ui-accent); border-radius: 5px; animation: slideIn 0.3s ease; font-size: 11px; }
-        .notification.success { border-left-color: var(--positive); }
-        .notification.error { border-left-color: var(--negative); }
-        .notification.warning { border-left-color: var(--warning); }
+        #bottom-panels { display: grid; grid-template-columns: 1fr 2fr 1fr; gap: 12px; padding: 12px; background: var(--ui-bg); border-top: 2px solid rgba(127, 219, 218, 0.3); border-top-left-radius: 16px; border-top-right-radius: 16px; max-height: 280px; box-shadow: 0 -4px 25px rgba(127, 219, 218, 0.12), inset 0 2px 20px rgba(255, 248, 231, 0.03); backdrop-filter: blur(12px); }
+        .panel { background: linear-gradient(145deg, rgba(121, 134, 203, 0.2) 0%, rgba(255, 248, 231, 0.08) 100%); border-radius: 14px; padding: 12px; overflow-y: auto; border: 1px solid rgba(127, 219, 218, 0.25); box-shadow: 0 6px 20px rgba(45, 27, 78, 0.25), inset 0 1px 0 rgba(255, 248, 231, 0.12), inset 0 -1px 0 rgba(127, 219, 218, 0.1); transition: box-shadow 0.3s ease; }
+        .panel:hover { box-shadow: 0 8px 25px rgba(127, 219, 218, 0.18), inset 0 1px 0 rgba(255, 248, 231, 0.15), inset 0 -1px 0 rgba(127, 219, 218, 0.15); }
+        .panel-title { font-size: 12px; color: var(--soft-cyan); margin-bottom: 8px; border-bottom: 1px solid rgba(127, 219, 218, 0.35); padding-bottom: 5px; text-transform: uppercase; text-shadow: 0 0 12px rgba(128, 222, 234, 0.4); letter-spacing: 1.5px; font-weight: 700; }
+        #cargo-bar { width: 100%; height: 16px; background: rgba(255, 248, 231, 0.08); border-radius: 10px; overflow: hidden; margin-bottom: 8px; box-shadow: inset 0 2px 4px rgba(0,0,0,0.2), 0 1px 0 rgba(255, 248, 231, 0.05); }
+        #cargo-fill { height: 100%; background: linear-gradient(90deg, var(--soft-cyan), var(--positive)); transition: width 0.3s ease; box-shadow: 0 0 12px rgba(128, 222, 234, 0.4); border-radius: 10px; }
+        #cargo-text { font-size: 11px; color: var(--text-secondary); margin-bottom: 8px; text-shadow: 0 0 6px rgba(197, 191, 213, 0.2); }
+        .cargo-item { display: flex; justify-content: space-between; padding: 5px 8px; border-bottom: 1px solid rgba(255, 248, 231, 0.06); font-size: 11px; border-radius: 6px; transition: background 0.2s ease; }
+        .cargo-item:hover { background: rgba(127, 219, 218, 0.06); }
+        .market-tabs { display: flex; gap: 6px; margin-bottom: 10px; }
+        .market-tab { flex:1; padding: 8px 6px; background: linear-gradient(145deg, rgba(121, 134, 203, 0.25) 0%, rgba(128, 222, 234, 0.15) 100%); border: 1px solid rgba(127, 219, 218, 0.25); border-radius: 10px; color: var(--text-secondary); cursor: pointer; font-family: 'M PLUS Rounded', 'Segoe UI', Tahoma, sans-serif; font-size: 10px; transition: all 0.3s ease; letter-spacing: 0.5px; }
+        .market-tab:hover { background: linear-gradient(145deg, rgba(121, 134, 203, 0.35) 0%, rgba(128, 222, 234, 0.25) 100%); border-color: rgba(127, 219, 218, 0.4); box-shadow: 0 2px 8px rgba(127, 219, 218, 0.15); transform: translateY(-1px); }
+        .market-tab.active { background: linear-gradient(145deg, var(--soft-cyan) 0%, var(--twilight-purple) 100%); color: var(--ui-bg); box-shadow: 0 3px 12px rgba(128, 222, 234, 0.35), inset 0 1px 0 rgba(255, 248, 231, 0.2); transform: translateY(-1px); }
+        .market-item { display: grid; grid-template-columns: 1fr 60px 50px 60px; gap: 8px; align-items: center; padding: 10px 8px; border-bottom: 1px solid rgba(255, 248, 231, 0.06); font-size: 10px; transition: background 0.2s ease, transform 0.2s ease; border-radius: 8px; }
+        .market-item:hover { background: rgba(127, 219, 218, 0.06); transform: translateX(2px); }
+        .item-name { font-weight: 700; color: var(--cream); text-shadow: 0 0 8px rgba(255, 248, 231, 0.2); }
+        .item-price { text-align: right; font-weight: 700; color: var(--warm-amber); text-shadow: 0 0 8px rgba(255, 204, 128, 0.3); }
+        .price-up { color: var(--negative); text-shadow: 0 0 6px rgba(229, 115, 115, 0.3); }
+        .price-down { color: var(--positive); text-shadow: 0 0 6px rgba(129, 199, 132, 0.3); }
+        .qty-controls { display: flex; gap: 4px; justify-content: center; }
+        .qty-btn { width: 28px; height: 28px; background: linear-gradient(145deg, rgba(121, 134, 203, 0.35) 0%, rgba(128, 222, 234, 0.25) 100%); border: 1px solid rgba(127, 219, 218, 0.3); border-radius: 8px; color: var(--soft-cyan); cursor: pointer; font-weight: 700; font-size: 14px; transition: all 0.25s ease; box-shadow: 0 2px 6px rgba(45, 27, 78, 0.2); }
+        .qty-btn:hover { background: linear-gradient(145deg, var(--soft-cyan) 0%, var(--twilight-purple) 100%); color: var(--ui-bg); box-shadow: 0 3px 10px rgba(128, 222, 234, 0.35); transform: translateY(-2px); }
+        .trade-btn { padding: 6px 12px; background: linear-gradient(145deg, rgba(128, 222, 234, 0.5) 0%, rgba(121, 134, 203, 0.5) 100%); border: 1px solid rgba(127, 219, 218, 0.35); border-radius: 8px; color: var(--cream); cursor: pointer; font-family: 'M PLUS Rounded', 'Segoe UI', Tahoma, sans-serif; font-weight: 700; font-size: 10px; transition: all 0.3s ease; text-shadow: 0 1px 3px rgba(0,0,0,0.25); letter-spacing: 0.3px; }
+        .trade-btn:hover { background: linear-gradient(145deg, var(--positive) 0%, var(--soft-cyan) 100%); box-shadow: 0 4px 14px rgba(129, 199, 132, 0.35); transform: translateY(-2px); }
+        .trade-btn:disabled { background: rgba(255, 248, 231, 0.08); border-color: rgba(255, 248, 231, 0.15); color: rgba(255, 248, 231, 0.25); cursor: not-allowed; transform: none; box-shadow: none; }
+        .trade-btn:disabled { background: rgba(255, 248, 231, 0.1); border-color: rgba(255, 248, 231, 0.2); color: rgba(255, 248, 231, 0.3); cursor: not-allowed; transform: none; box-shadow: none; }
+        .route-destination { font-size: 14px; color: var(--city-glow); margin-bottom: 8px; text-shadow: 0 0 12px rgba(255, 213, 79, 0.35); font-weight: 700; }
+        .route-stats { font-size: 10px; color: var(--text-secondary); margin-bottom: 8px; line-height: 1.6; text-shadow: 0 0 6px rgba(197, 191, 213, 0.15); }
+        .profit-estimate { font-size: 11px; margin-bottom: 10px; padding: 6px 10px; background: rgba(255, 248, 231, 0.05); border-radius: 8px; }
+        .profit-positive { color: var(--positive); text-shadow: 0 0 10px rgba(129, 199, 132, 0.35); font-weight: 700; }
+        .profit-negative { color: var(--negative); text-shadow: 0 0 8px rgba(229, 115, 115, 0.25); }
+        #launch-btn { width: 100%; padding: 14px; background: linear-gradient(145deg, var(--soft-cyan) 0%, var(--positive) 100%); border: 1px solid rgba(127, 219, 218, 0.35); border-radius: 12px; color: var(--ui-bg); font-family: 'M PLUS Rounded', 'Segoe UI', sans-serif; font-size: 12px; font-weight: 700; cursor: pointer; box-shadow: 0 4px 18px rgba(128, 222, 234, 0.25), inset 0 1px 0 rgba(255, 248, 231, 0.2); transition: all 0.3s ease; letter-spacing: 1px; }
+        #launch-btn:hover:not(:disabled) { transform: translateY(-2px); box-shadow: 0 6px 24px rgba(128, 222, 234, 0.35), inset 0 1px 0 rgba(255, 248, 231, 0.25); background: linear-gradient(145deg, #80DEEA 0%, #81C784 100%); }
+        #launch-btn:disabled { background: rgba(255, 248, 231, 0.06); border-color: rgba(255, 248, 231, 0.12); cursor: not-allowed; color: rgba(255, 248, 231, 0.25); box-shadow: none; }
+        #launch-btn.traveling { background: linear-gradient(145deg, var(--negative) 0%, #c0392b 100%); box-shadow: 0 4px 15px rgba(229, 115, 115, 0.25); }
+        #bar-btn:disabled { background: rgba(171, 71, 188, 0.3); border: 1px solid rgba(171, 71, 188, 0.4); cursor: not-allowed; color: rgba(255,255,255,0.5); }
+        #notifications { position: fixed; top: 70px; right: 15px; display: flex; flex-direction: column; gap: 10px; z-index: 1000; pointer-events: none; }
+        .notification { padding: 12px 16px; background: var(--ui-bg-blur); border-left: 4px solid var(--soft-cyan); border-radius: 10px; backdrop-filter: blur(12px); box-shadow: 0 6px 20px rgba(45, 27, 78, 0.25), inset 0 1px 0 rgba(255, 248, 231, 0.08); animation: slideIn 0.3s ease; font-size: 11px; font-family: 'M PLUS Rounded', 'Segoe UI', sans-serif; text-shadow: 0 0 8px rgba(255, 248, 231, 0.15); transition: opacity 0.3s ease; }
+        .notification.success { border-left-color: var(--positive); box-shadow: 0 6px 20px rgba(129, 199, 132, 0.2), inset 0 1px 0 rgba(255, 248, 231, 0.08); }
+        .notification.error { border-left-color: var(--negative); box-shadow: 0 6px 20px rgba(229, 115, 115, 0.2), inset 0 1px 0 rgba(255, 248, 231, 0.08); }
+        .notification.warning { border-left-color: var(--warning); box-shadow: 0 6px 20px rgba(255, 183, 77, 0.2), inset 0 1px 0 rgba(255, 248, 231, 0.08); }
         @keyframes slideIn { from { transform: translateX(100px); opacity: 0; } to { transform: translateX(0); opacity: 1; } }
-        .contract-item { padding: 8px; background: rgba(255,255,255,0.05); border-radius: 6px; margin-bottom: 8px; border-left: 3px solid var(--warning); }
-        .contract-header { font-size: 11px; color: var(--city-glow); margin-bottom: 4px; }
-        .contract-details { font-size: 10px; color: var(--text-secondary); }
-        .contract-reward { color: var(--positive); font-weight: 700; font-size: 11px; }
-        #win-screen, #repair-screen { display: none; position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.9); z-index: 2000; justify-content: center; align-items: center; flex-direction: column; }
-        #win-screen h1, #repair-screen h1 { font-size: 32px; color: var(--city-glow); margin-bottom: 15px; }
-        #win-screen p, #repair-screen p { font-size: 14px; margin-bottom: 20px; }
-        .btn { padding: 10px 20px; background: var(--ui-accent); border: none; border-radius: 8px; color: var(--ui-bg); font-family: 'Orbitron', monospace; font-size: 14px; cursor: pointer; }
-        .btn:hover { background: var(--positive); }
+        .contract-item { padding: 10px 12px; background: linear-gradient(145deg, rgba(255, 183, 77, 0.08) 0%, rgba(255, 248, 231, 0.05) 100%); border-radius: 10px; margin-bottom: 10px; border-left: 4px solid var(--warning); box-shadow: 0 3px 12px rgba(45, 27, 78, 0.2), inset 0 1px 0 rgba(255, 248, 231, 0.06); transition: all 0.3s ease; }
+        .contract-item:hover { background: linear-gradient(145deg, rgba(255, 183, 77, 0.12) 0%, rgba(255, 248, 231, 0.08) 100%); box-shadow: 0 4px 16px rgba(45, 27, 78, 0.25), inset 0 1px 0 rgba(255, 248, 231, 0.08); transform: translateX(3px); }
+        .contract-header { font-size: 11px; color: var(--city-glow); margin-bottom: 4px; text-shadow: 0 0 8px rgba(255, 213, 79, 0.3); font-weight: 700; }
+        .contract-details { font-size: 10px; color: var(--text-secondary); line-height: 1.5; }
+        .contract-reward { color: var(--positive); font-weight: 700; font-size: 11px; text-shadow: 0 0 8px rgba(129, 199, 132, 0.3); }
+        /* Win & Repair Screens - Ghibli Treatment */
+        #win-screen, #repair-screen { 
+            display: none; 
+            position: fixed; 
+            top: 0; left: 0; right: 0; bottom: 0; 
+            background: linear-gradient(180deg, rgba(45, 27, 78, 0.97) 0%, rgba(30, 20, 50, 0.98) 100%); 
+            z-index: 2000; 
+            justify-content: center; 
+            align-items: center; 
+            flex-direction: column; 
+            box-shadow: inset 0 0 100px rgba(45, 27, 78, 0.6);
+        }
+        #win-screen h1, #repair-screen h1 { 
+            font-size: 36px; 
+            color: var(--city-glow); 
+            margin-bottom: 15px; 
+            text-shadow: 0 0 20px rgba(255, 213, 79, 0.4), 0 2px 4px rgba(0,0,0,0.3); 
+            letter-spacing: 2px;
+        }
+        #win-screen p, #repair-screen p { 
+            font-size: 16px; 
+            margin-bottom: 25px; 
+            color: var(--text-secondary); 
+            text-shadow: 0 0 8px rgba(197, 191, 213, 0.2); 
+        }
+        .btn { 
+            padding: 12px 24px; 
+            background: linear-gradient(145deg, var(--soft-cyan) 0%, var(--twilight-purple) 100%); 
+            border: 1px solid rgba(127, 219, 218, 0.4); 
+            border-radius: 12px; 
+            color: var(--ui-bg); 
+            font-family: 'M PLUS Rounded', 'Segoe UI', sans-serif; 
+            font-size: 14px; 
+            font-weight: 700;
+            cursor: pointer; 
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 15px rgba(128, 222, 234, 0.25), inset 0 1px 0 rgba(255, 248, 231, 0.15);
+            letter-spacing: 1px;
+        }
+        .btn:hover { 
+            background: linear-gradient(145deg, var(--positive) 0%, var(--soft-cyan) 100%); 
+            transform: translateY(-2px); 
+            box-shadow: 0 6px 20px rgba(129, 199, 132, 0.3), inset 0 1px 0 rgba(255, 248, 231, 0.2); 
+        }
 
-        /* Prison System Styles */
+        /* Prison System Styles - Ghibli Treatment */
         #prison-screen {
             display: none;
             position: fixed;
@@ -93,7 +156,8 @@
             justify-content: center;
             align-items: center;
             flex-direction: column;
-            font-family: 'Orbitron', monospace;
+            font-family: 'M PLUS Rounded', 'Segoe UI', sans-serif;
+            box-shadow: inset 0 0 100px rgba(45, 27, 78, 0.5);
         }
         #prison-screen.active { display: flex; }
         .prison-header {
@@ -102,18 +166,19 @@
             margin-bottom: 10px;
             text-transform: uppercase;
             letter-spacing: 3px;
-            text-shadow: 0 0 20px rgba(255, 68, 68, 0.5);
-            animation: prisonPulse 2s ease-in-out infinite;
+            text-shadow: 0 0 20px var(--prison-glow), 0 2px 4px rgba(0,0,0,0.3);
+            animation: prisonPulse 3s ease-in-out infinite;
         }
         @keyframes prisonPulse {
-            0%, 100% { opacity: 1; }
-            50% { opacity: 0.7; }
+            0%, 100% { opacity: 1; transform: scale(1); }
+            50% { opacity: 0.75; transform: scale(1.02); }
         }
         .prison-subheader {
             font-size: 14px;
             color: var(--prison-text);
             margin-bottom: 30px;
-            opacity: 0.8;
+            opacity: 0.85;
+            text-shadow: 0 0 10px rgba(209, 196, 233, 0.2);
         }
         .prison-stats {
             display: flex;
@@ -124,33 +189,42 @@
         }
         .prison-stat {
             text-align: center;
+            padding: 10px 15px;
+            background: rgba(206, 147, 216, 0.08);
+            border-radius: 10px;
+            border: 1px solid rgba(206, 147, 216, 0.2);
         }
         .prison-stat-value {
             font-size: 24px;
             color: var(--warning);
             font-weight: 700;
+            text-shadow: 0 0 12px rgba(255, 183, 77, 0.3);
         }
         .prison-scenario {
-            background: rgba(30, 15, 40, 0.9);
-            border: 2px solid rgba(255, 68, 68, 0.3);
-            border-radius: 12px;
+            background: linear-gradient(145deg, rgba(45, 27, 78, 0.85) 0%, rgba(30, 20, 50, 0.9) 100%);
+            border: 2px solid rgba(206, 147, 216, 0.25);
+            border-radius: 16px;
             padding: 25px;
             max-width: 600px;
             width: 90%;
             margin-bottom: 20px;
+            box-shadow: 0 8px 30px rgba(45, 27, 78, 0.4), inset 0 1px 0 rgba(255, 248, 231, 0.06);
         }
         .prison-day {
             font-size: 11px;
             color: var(--prison-accent);
             margin-bottom: 10px;
             text-transform: uppercase;
+            letter-spacing: 1.5px;
+            text-shadow: 0 0 10px var(--prison-glow);
         }
         .prison-scenario-text {
             font-size: 14px;
             color: var(--prison-text);
-            line-height: 1.6;
+            line-height: 1.7;
             margin-bottom: 20px;
             text-align: center;
+            text-shadow: 0 0 8px rgba(209, 196, 233, 0.15);
         }
         .prison-choices {
             display: flex;
@@ -158,26 +232,29 @@
             gap: 10px;
         }
         .prison-choice {
-            padding: 12px 20px;
-            background: rgba(255, 68, 68, 0.15);
-            border: 1px solid rgba(255, 68, 68, 0.4);
-            border-radius: 8px;
+            padding: 14px 20px;
+            background: linear-gradient(145deg, rgba(206, 147, 216, 0.12) 0%, rgba(45, 27, 78, 0.2) 100%);
+            border: 1px solid rgba(206, 147, 216, 0.3);
+            border-radius: 12px;
             color: var(--prison-text);
             cursor: pointer;
-            font-family: 'Orbitron', monospace;
+            font-family: 'M PLUS Rounded', 'Segoe UI', sans-serif;
             font-size: 11px;
-            transition: all 0.3s;
+            transition: all 0.3s ease;
             text-align: left;
+            box-shadow: 0 3px 10px rgba(45, 27, 78, 0.2);
         }
         .prison-choice:hover {
-            background: rgba(255, 68, 68, 0.3);
+            background: linear-gradient(145deg, rgba(206, 147, 216, 0.25) 0%, rgba(45, 27, 78, 0.35) 100%);
             border-color: var(--prison-accent);
-            transform: translateX(5px);
+            transform: translateX(6px);
+            box-shadow: 0 4px 14px rgba(206, 147, 216, 0.2);
         }
         .prison-choice-outcome {
             font-size: 9px;
             color: var(--text-secondary);
             margin-top: 5px;
+            opacity: 0.8;
         }
         .prison-outcome-screen {
             display: none;
@@ -189,34 +266,39 @@
             font-size: 32px;
             margin-bottom: 15px;
             text-transform: uppercase;
+            text-shadow: 0 0 15px rgba(0,0,0,0.3);
         }
-        .prison-outcome-title.release { color: var(--positive); }
-        .prison-outcome-title.death { color: var(--negative); }
+        .prison-outcome-title.release { color: var(--positive); text-shadow: 0 0 15px rgba(129, 199, 132, 0.4); }
+        .prison-outcome-title.death { color: var(--negative); text-shadow: 0 0 15px rgba(229, 115, 115, 0.4); }
         .prison-outcome-text {
             font-size: 14px;
             color: var(--prison-text);
             margin-bottom: 25px;
-            line-height: 1.6;
+            line-height: 1.7;
             max-width: 500px;
+            text-shadow: 0 0 8px rgba(209, 196, 233, 0.15);
         }
         .prison-outcome-stats {
             font-size: 12px;
             color: var(--warning);
             margin-bottom: 25px;
+            text-shadow: 0 0 10px rgba(255, 183, 77, 0.3);
         }
         @keyframes fadeIn {
             from { opacity: 0; transform: translateY(20px); }
             to { opacity: 1; transform: translateY(0); }
         }
 
-        /* Contraband highlighting */
+        /* Contraband highlighting - Ghibli softer treatment */
         .contraband-item {
             color: var(--prison-accent) !important;
             position: relative;
+            text-shadow: 0 0 8px rgba(206, 147, 216, 0.4);
         }
         .contraband-item::before {
             content: '⚠ ';
             font-size: 10px;
+            opacity: 0.8;
         }
         .contraband-item::after {
             content: '';
@@ -224,71 +306,83 @@
             left: 0; right: 0; bottom: -2px;
             height: 1px;
             background: linear-gradient(90deg, transparent, var(--prison-accent), transparent);
+            opacity: 0.6;
         }
 
-        /* Bar System Styles */
+        /* Bar System Styles - Ghibli Treatment */
         #bar-screen {
             display: none;
             position: fixed;
             top: 0; left: 0; right: 0; bottom: 0;
-            background: rgba(20, 10, 5, 0.97);
+            background: var(--bar-bg);
             z-index: 3000;
             justify-content: center;
             align-items: center;
             flex-direction: column;
-            font-family: 'Orbitron', monospace;
+            font-family: 'M PLUS Rounded', 'Segoe UI', sans-serif;
+            box-shadow: inset 0 0 100px rgba(60, 35, 20, 0.4);
         }
         #bar-screen.active { display: flex; }
         .bar-header {
             font-size: 28px;
-            color: #FFB74D;
+            color: var(--bar-accent);
             margin-bottom: 10px;
             text-transform: uppercase;
             letter-spacing: 3px;
-            text-shadow: 0 0 20px rgba(255, 183, 77, 0.5);
+            text-shadow: 0 0 20px var(--bar-glow), 0 2px 4px rgba(0,0,0,0.3);
         }
         .bar-subheader {
             font-size: 14px;
-            color: #D7CCC8;
+            color: var(--bar-text);
             margin-bottom: 30px;
-            opacity: 0.8;
+            opacity: 0.85;
+            text-shadow: 0 0 10px rgba(255, 224, 178, 0.2);
         }
         .bar-stats {
             display: flex;
             gap: 30px;
             margin-bottom: 30px;
             font-size: 12px;
-            color: #D7CCC8;
+            color: var(--bar-text);
         }
         .bar-stat {
             text-align: center;
+            padding: 10px 15px;
+            background: rgba(255, 183, 77, 0.08);
+            border-radius: 10px;
+            border: 1px solid rgba(255, 183, 77, 0.2);
         }
         .bar-stat-value {
             font-size: 24px;
-            color: #FFB74D;
+            color: var(--bar-accent);
             font-weight: 700;
+            text-shadow: 0 0 12px var(--bar-glow);
         }
         .bar-scenario {
-            background: rgba(40, 25, 15, 0.9);
-            border: 2px solid rgba(255, 183, 77, 0.3);
-            border-radius: 12px;
+            background: linear-gradient(145deg, rgba(60, 35, 20, 0.85) 0%, rgba(40, 25, 15, 0.9) 100%);
+            border: 2px solid rgba(255, 183, 77, 0.25);
+            border-radius: 16px;
             padding: 25px;
             max-width: 600px;
             width: 90%;
             margin-bottom: 20px;
+            box-shadow: 0 8px 30px rgba(40, 25, 15, 0.4), inset 0 1px 0 rgba(255, 248, 231, 0.08);
         }
         .bar-title {
             font-size: 14px;
-            color: #FFB74D;
+            color: var(--bar-accent);
             margin-bottom: 10px;
             text-transform: uppercase;
+            letter-spacing: 1.5px;
+            text-shadow: 0 0 10px var(--bar-glow);
         }
         .bar-scenario-text {
             font-size: 14px;
-            color: #D7CCC8;
-            line-height: 1.6;
+            color: var(--bar-text);
+            line-height: 1.7;
             margin-bottom: 20px;
             text-align: center;
+            text-shadow: 0 0 8px rgba(255, 224, 178, 0.15);
         }
         .bar-choices {
             display: flex;
@@ -296,26 +390,29 @@
             gap: 10px;
         }
         .bar-choice {
-            padding: 12px 20px;
-            background: rgba(255, 183, 77, 0.15);
-            border: 1px solid rgba(255, 183, 77, 0.4);
-            border-radius: 8px;
-            color: #D7CCC8;
+            padding: 14px 20px;
+            background: linear-gradient(145deg, rgba(255, 183, 77, 0.12) 0%, rgba(60, 35, 20, 0.2) 100%);
+            border: 1px solid rgba(255, 183, 77, 0.3);
+            border-radius: 12px;
+            color: var(--bar-text);
             cursor: pointer;
-            font-family: 'Orbitron', monospace;
+            font-family: 'M PLUS Rounded', 'Segoe UI', sans-serif;
             font-size: 11px;
-            transition: all 0.3s;
+            transition: all 0.3s ease;
             text-align: left;
+            box-shadow: 0 3px 10px rgba(40, 25, 15, 0.2);
         }
         .bar-choice:hover {
-            background: rgba(255, 183, 77, 0.3);
-            border-color: #FFB74D;
-            transform: translateX(5px);
+            background: linear-gradient(145deg, rgba(255, 183, 77, 0.25) 0%, rgba(60, 35, 20, 0.35) 100%);
+            border-color: var(--bar-accent);
+            transform: translateX(6px);
+            box-shadow: 0 4px 14px rgba(255, 183, 77, 0.2);
         }
         .bar-choice-outcome {
             font-size: 9px;
             color: var(--text-secondary);
             margin-top: 5px;
+            opacity: 0.8;
         }
         .bar-outcome-screen {
             display: none;
@@ -327,99 +424,117 @@
             font-size: 28px;
             margin-bottom: 15px;
             text-transform: uppercase;
+            text-shadow: 0 0 15px rgba(0,0,0,0.3);
         }
-        .bar-outcome-title.success { color: var(--positive); }
-        .bar-outcome-title.neutral { color: #FFB74D; }
-        .bar-outcome-title.failure { color: var(--negative); }
+        .bar-outcome-title.success { color: var(--positive); text-shadow: 0 0 15px rgba(129, 199, 132, 0.4); }
+        .bar-outcome-title.neutral { color: #FFB74D; text-shadow: 0 0 15px var(--bar-glow); }
+        .bar-outcome-title.failure { color: var(--negative); text-shadow: 0 0 15px rgba(229, 115, 115, 0.4); }
         .bar-outcome-text {
             font-size: 14px;
-            color: #D7CCC8;
+            color: var(--bar-text);
             margin-bottom: 25px;
-            line-height: 1.6;
+            line-height: 1.7;
             max-width: 500px;
+            text-shadow: 0 0 8px rgba(255, 224, 178, 0.15);
         }
         .bar-outcome-stats {
             font-size: 12px;
-            color: #FFB74D;
+            color: var(--bar-accent);
             margin-bottom: 25px;
+            text-shadow: 0 0 10px var(--bar-glow);
         }
         .bar-back-btn {
             position: absolute;
             top: 20px;
             right: 20px;
-            padding: 8px 16px;
-            background: rgba(255, 183, 77, 0.2);
-            border: 1px solid rgba(255, 183, 77, 0.5);
-            border-radius: 6px;
-            color: #FFB74D;
+            padding: 10px 18px;
+            background: rgba(255, 183, 77, 0.15);
+            border: 1px solid rgba(255, 183, 77, 0.4);
+            border-radius: 10px;
+            color: var(--bar-accent);
             cursor: pointer;
-            font-family: 'Orbitron', monospace;
+            font-family: 'M PLUS Rounded', 'Segoe UI', sans-serif;
             font-size: 11px;
+            transition: all 0.3s ease;
+            box-shadow: 0 2px 8px rgba(40, 25, 15, 0.2);
         }
         .bar-back-btn:hover {
-            background: rgba(255, 183, 77, 0.4);
+            background: rgba(255, 183, 77, 0.3);
+            transform: translateY(-1px);
+            box-shadow: 0 3px 12px rgba(255, 183, 77, 0.2);
         }
 
-        /* Mobile Responsive Styles */
+        /* Mobile Responsive Styles - Ghibli Palette */
         @media (max-width: 600px) {
             /* Hide map on mobile - not needed for core gameplay */
             #map-area {
                 display: none;
             }
 
-            /* Compact HUD */
+            /* Compact HUD with Ghibli styling */
             #hud {
-                padding: 6px 10px;
+                padding: 8px 10px;
                 flex-wrap: wrap;
-                gap: 2px;
+                gap: 3px;
                 position: relative;
                 z-index: 100;
+                background: var(--ui-bg);
+                border-bottom: 2px solid rgba(127, 219, 218, 0.3);
+                box-shadow: 0 2px 15px rgba(127, 219, 218, 0.1);
             }
             #credits {
-                font-size: 14px;
+                font-size: 16px;
+                text-shadow: 0 0 10px rgba(255, 213, 79, 0.35);
             }
             #location-info {
-                font-size: 10px;
+                font-size: 11px;
+                text-shadow: 0 0 8px rgba(128, 222, 234, 0.25);
             }
             #tick-timer, #ship-status {
-                font-size: 9px;
+                font-size: 10px;
+                text-shadow: 0 0 6px rgba(197, 191, 213, 0.15);
             }
             #hud button {
-                padding: 3px 6px;
-                font-size: 8px;
+                padding: 5px 8px;
+                font-size: 9px;
+                border-radius: 6px;
+                min-height: 44px;
             }
 
-            /* Mobile tab navigation */
+            /* Mobile tab navigation - Ghibli style */
             #mobile-tabs {
                 display: flex;
                 background: var(--ui-bg);
-                border-top: 2px solid var(--ui-accent);
-                border-bottom: 1px solid rgba(79, 195, 247, 0.3);
+                border-top: 2px solid rgba(127, 219, 218, 0.25);
+                border-bottom: 1px solid rgba(127, 219, 218, 0.2);
+                box-shadow: 0 2px 10px rgba(45, 27, 78, 0.2);
             }
             .mobile-tab {
                 flex: 1;
-                padding: 10px 5px;
+                padding: 12px 5px;
                 background: transparent;
                 border: none;
                 border-bottom: 3px solid transparent;
                 color: var(--text-secondary);
-                font-family: 'Orbitron', monospace;
+                font-family: 'M PLUS Rounded', 'Segoe UI', sans-serif;
                 font-size: 9px;
                 font-weight: 700;
                 cursor: pointer;
                 text-align: center;
-                min-height: 44px;
-                transition: all 0.2s;
+                min-height: 54px;
+                transition: all 0.25s ease;
+                letter-spacing: 0.5px;
             }
             .mobile-tab.active {
-                color: var(--ui-accent);
-                border-bottom-color: var(--ui-accent);
-                background: rgba(79, 195, 247, 0.1);
+                color: var(--soft-cyan);
+                border-bottom-color: var(--soft-cyan);
+                background: rgba(128, 222, 234, 0.08);
+                text-shadow: 0 0 8px rgba(128, 222, 234, 0.3);
             }
             .mobile-tab .tab-icon {
                 display: block;
-                font-size: 16px;
-                margin-bottom: 2px;
+                font-size: 18px;
+                margin-bottom: 3px;
             }
 
             /* Bottom panels - single column, tabbed */
@@ -427,92 +542,105 @@
                 display: none;
                 grid-template-columns: 1fr;
                 max-height: none;
-                height: calc(100vh - 90px);
+                height: calc(100vh - 110px);
                 overflow-y: auto;
                 gap: 0;
                 padding: 0;
+                border-top-left-radius: 0;
+                border-top-right-radius: 0;
             }
             #bottom-panels.mobile-visible {
                 display: grid;
             }
             .panel {
-                padding: 10px;
+                padding: 12px;
                 max-height: none;
                 border-radius: 0;
                 display: none;
+                border-left: none;
+                border-right: none;
+                border-top: none;
+                box-shadow: none;
             }
             .panel.mobile-active {
                 display: block;
             }
             .panel-title {
-                font-size: 11px;
-                margin-bottom: 6px;
+                font-size: 12px;
+                margin-bottom: 8px;
+                text-shadow: 0 0 10px rgba(128, 222, 234, 0.35);
             }
 
             /* Market tab adjustments */
             .market-tabs {
-                gap: 2px;
+                gap: 4px;
             }
             .market-tab {
-                padding: 8px 4px;
+                padding: 10px 4px;
                 font-size: 9px;
-                min-height: 44px;
+                min-height: 48px;
+                border-radius: 8px;
             }
             .market-item {
                 grid-template-columns: 1fr 50px 40px 50px;
                 font-size: 9px;
-                padding: 8px 4px;
-                gap: 4px;
+                padding: 10px 6px;
+                gap: 6px;
+                border-radius: 6px;
             }
             .qty-btn {
-                width: 44px;
-                height: 44px;
-                font-size: 16px;
+                width: 48px;
+                height: 48px;
+                font-size: 18px;
+                border-radius: 10px;
             }
             .trade-btn {
-                padding: 8px 10px;
+                padding: 10px 12px;
                 font-size: 10px;
-                min-height: 44px;
+                min-height: 48px;
+                border-radius: 10px;
             }
 
             /* Ship panel buttons */
             button[id="fuel-btn"],
             button[id="repair-btn-hud"],
             button[id="bar-btn"] {
-                padding: 12px 8px;
+                padding: 14px 10px;
                 font-size: 11px;
-                min-height: 48px;
-                margin-bottom: 6px;
+                min-height: 52px;
+                margin-bottom: 8px;
+                border-radius: 10px;
             }
 
             /* Route/Launch */
             #launch-btn {
-                padding: 14px;
-                font-size: 12px;
-                min-height: 50px;
+                padding: 16px;
+                font-size: 13px;
+                min-height: 56px;
                 position: sticky;
                 bottom: 0;
+                border-radius: 14px;
+                margin: 8px;
+                width: calc(100% - 16px);
             }
             #cargo-text, .cargo-item {
                 font-size: 10px;
             }
             #cargo-bar {
-                height: 14px;
+                height: 16px;
+                border-radius: 10px;
             }
             .route-destination {
-                font-size: 12px;
+                font-size: 13px;
             }
             .route-stats {
-                font-size: 9px;
+                font-size: 10px;
             }
             .profit-estimate {
-                font-size: 10px;
-            }
-            .mobile-active {
-                display: block !important;
+                font-size: 11px;
             }
             #log-panel {
-                font-size: 10px;
+                font-size: 11px;
             }
         }
 
@@ -523,7 +651,7 @@
             }
         }
 
-        /* Log Screen Styles */
+        /* Log Screen Styles - Ghibli Treatment */
         #log-screen {
             display: none;
             position: fixed;
@@ -531,30 +659,55 @@
             left: 0;
             width: 100%;
             height: 100%;
-            background: rgba(0,0,0,0.95);
+            background: linear-gradient(180deg, rgba(45, 27, 78, 0.97) 0%, rgba(30, 20, 50, 0.98) 100%);
             z-index: 1000;
             padding: 20px;
             overflow-y: auto;
+            box-shadow: inset 0 0 80px rgba(45, 27, 78, 0.5);
         }
-        #log-screen .bar-header {
+        #log-screen .panel-title {
             font-size: 18px;
             text-align: center;
             margin-bottom: 20px;
             color: var(--ui-accent);
+            text-shadow: 0 0 15px rgba(128, 222, 234, 0.35);
+            border-bottom: 1px solid rgba(127, 219, 218, 0.3);
+            padding-bottom: 10px;
         }
         #log-screen .bar-back-btn {
             position: sticky;
             top: 0;
             z-index: 10;
-            background: var(--ui-accent);
-            border: none;
-            border-radius: 4px;
-            color: #000;
-            font-family: 'Orbitron', monospace;
+            background: rgba(128, 222, 234, 0.2);
+            border: 1px solid rgba(127, 219, 218, 0.4);
+            border-radius: 10px;
+            color: var(--soft-cyan);
+            font-family: 'M PLUS Rounded', 'Segoe UI', sans-serif;
             font-size: 11px;
-            padding: 8px 12px;
+            padding: 10px 16px;
             cursor: pointer;
-            margin-bottom: 10px;
+            margin-bottom: 15px;
+            transition: all 0.3s ease;
+            box-shadow: 0 2px 8px rgba(45, 27, 78, 0.3);
+        }
+        #log-screen .bar-back-btn:hover {
+            background: rgba(128, 222, 234, 0.35);
+            transform: translateY(-1px);
+            box-shadow: 0 3px 12px rgba(128, 222, 234, 0.2);
+        }
+        #log-entries .log-entry {
+            padding: 10px 12px;
+            margin-bottom: 8px;
+            background: rgba(255, 248, 231, 0.04);
+            border-radius: 8px;
+            border-left: 3px solid rgba(127, 219, 218, 0.3);
+            font-size: 11px;
+            line-height: 1.5;
+            transition: all 0.2s ease;
+        }
+        #log-entries .log-entry:hover {
+            background: rgba(255, 248, 231, 0.06);
+            border-left-color: rgba(127, 219, 218, 0.5);
         }
     </style>
 </head>
@@ -567,8 +720,8 @@
                 <div id="ship-status">Исправен</div>
             </div>
             <div id="tick-timer">Тик: 0</div>
-            <button id="reset-btn" style="background:#E57373;border:none;border-radius:4px;color:#fff;font-family:'Orbitron',monospace;font-size:9px;padding:4px 8px;cursor:pointer;">СБРОС</button>
-            <button id="log-btn" style="background:#4FC3F7;border:none;border-radius:4px;color:#000;font-family:'Orbitron',monospace;font-size:9px;padding:4px 8px;cursor:pointer;">ЖУРНАЛ</button>
+            <button id="reset-btn" style="background:var(--negative);border:none;border-radius:8px;color:#fff;font-family:'M PLUS Rounded', 'Segoe UI', sans-serif;font-size:10px;padding:6px 10px;cursor:pointer;transition:all 0.3s ease;box-shadow:0 2px 8px rgba(229, 115, 115, 0.3);">СБРОС</button>
+            <button id="log-btn" style="background:var(--soft-cyan);border:none;border-radius:8px;color:var(--ui-bg);font-family:'M PLUS Rounded', 'Segoe UI', sans-serif;font-size:10px;padding:6px 10px;cursor:pointer;transition:all 0.3s ease;box-shadow:0 2px 8px rgba(128, 222, 234, 0.3);">ЖУРНАЛ</button>
         </div>
         <div id="map-area">
             <canvas id="map-canvas"></canvas>
@@ -591,24 +744,24 @@
         <div id="bottom-panels">
             <div class="panel" id="ship-panel">
                 <div class="panel-title" id="ship-title">КОРАБЛЬ: Шлюпка</div>
-                <div style="margin-bottom:8px;">
-                    <div style="display:flex;align-items:center;gap:6px;margin-bottom:6px;">
-                        <span style="font-size:10px;color:#FFB74D;width:70px;">ТОПЛИВО</span>
-                        <div style="flex:1;height:10px;background:rgba(255,255,255,0.1);border-radius:5px;overflow:hidden;"><div id="fuel-fill" style="width:100%;height:100%;background:#FFB74D;"></div></div>
-                        <span id="fuel-text" style="font-size:10px;color:#FFB74D;width:35px;text-align:right;">100%</span>
+                <div style="margin-bottom:10px;">
+                    <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px;">
+                        <span style="font-size:10px;color:var(--warm-amber);width:70px;text-shadow:0 0 8px rgba(255, 204, 128, 0.3);">ТОПЛИВО</span>
+                        <div style="flex:1;height:12px;background:rgba(255,248,231,0.08);border-radius:8px;overflow:hidden;box-shadow:inset 0 1px 3px rgba(0,0,0,0.2);"><div id="fuel-fill" style="width:100%;height:100%;background:var(--warm-amber);border-radius:8px;box-shadow:0 0 10px rgba(255, 183, 77, 0.4);transition:width 0.3s ease;"></div></div>
+                        <span id="fuel-text" style="font-size:10px;color:var(--warm-amber);width:35px;text-align:right;text-shadow:0 0 6px rgba(255, 204, 128, 0.25);">100%</span>
                     </div>
-                    <div style="display:flex;align-items:center;gap:6px;">
-                        <span style="font-size:10px;color:#78909C;width:70px;">ПРОЧНОСТЬ</span>
-                        <div style="flex:1;height:10px;background:rgba(255,255,255,0.1);border-radius:5px;overflow:hidden;"><div id="condition-fill" style="width:100%;height:100%;background:#78909C;"></div></div>
-                        <span id="condition-text" style="font-size:10px;color:#78909C;width:35px;text-align:right;">100%</span>
+                    <div style="display:flex;align-items:center;gap:8px;">
+                        <span style="font-size:10px;color:#90A4AE;width:70px;text-shadow:0 0 8px rgba(144, 164, 174, 0.3);">ПРОЧНОСТЬ</span>
+                        <div style="flex:1;height:12px;background:rgba(255,248,231,0.08);border-radius:8px;overflow:hidden;box-shadow:inset 0 1px 3px rgba(0,0,0,0.2);"><div id="condition-fill" style="width:100%;height:100%;background:#90A4AE;border-radius:8px;box-shadow:0 0 10px rgba(144, 164, 174, 0.4);transition:width 0.3s ease;"></div></div>
+                        <span id="condition-text" style="font-size:10px;color:#90A4AE;width:35px;text-align:right;text-shadow:0 0 6px rgba(144, 164, 174, 0.25);">100%</span>
                     </div>
                 </div>
-                <div style="display:flex;gap:6px;margin-bottom:8px;">
-                    <button id="fuel-btn" style="flex:1;background:#FFB74D;border:none;border-radius:4px;color:#000;font-family:'Orbitron',monospace;font-size:10px;padding:6px;cursor:pointer;">ЗАПРАВИТЬ +30</button>
-                    <button id="repair-btn-hud" style="flex:1;background:#78909C;border:none;border-radius:4px;color:#fff;font-family:'Orbitron',monospace;font-size:10px;padding:6px;cursor:pointer;">РЕМОНТ</button>
+                <div style="display:flex;gap:8px;margin-bottom:10px;">
+                    <button id="fuel-btn" style="flex:1;background:var(--warm-amber);border:none;border-radius:10px;color:var(--ui-bg);font-family:'M PLUS Rounded', 'Segoe UI', sans-serif;font-size:11px;padding:8px 10px;cursor:pointer;transition:all 0.3s ease;box-shadow:0 3px 10px rgba(255, 183, 77, 0.25);font-weight:700;">ЗАПРАВИТЬ +30</button>
+                    <button id="repair-btn-hud" style="flex:1;background:#90A4AE;border:none;border-radius:10px;color:#fff;font-family:'M PLUS Rounded', 'Segoe UI', sans-serif;font-size:11px;padding:8px 10px;cursor:pointer;transition:all 0.3s ease;box-shadow:0 3px 10px rgba(144, 164, 174, 0.25);font-weight:700;">РЕМОНТ</button>
                 </div>
-                <div style="display:flex;gap:6px;margin-bottom:8px;">
-                    <button id="bar-btn" style="flex:1;background:#AB47BC;border:none;border-radius:4px;color:#fff;font-family:'Orbitron',monospace;font-size:10px;padding:6px;cursor:pointer;">🍸 БАР</button>
+                <div style="display:flex;gap:8px;margin-bottom:10px;">
+                    <button id="bar-btn" style="flex:1;background:linear-gradient(145deg, #AB47BC 0%, #7B1FA2 100%);border:none;border-radius:10px;color:#fff;font-family:'M PLUS Rounded', 'Segoe UI', sans-serif;font-size:11px;padding:8px 10px;cursor:pointer;transition:all 0.3s ease;box-shadow:0 3px 10px rgba(171, 71, 188, 0.3);font-weight:700;text-shadow:0 0 8px rgba(171, 71, 188, 0.4);">🍸 БАР</button>
                 </div>
                 <div id="modules-display" style="margin-bottom:8px;"></div>
                 <div class="panel-title">ГРУЗ</div>
@@ -638,15 +791,23 @@
                 <div class="profit-estimate" id="profit-estimate"></div>
                 <button id="launch-btn" disabled>ВЫБЕРИТЕ ГОРОД</button>
             </div>
-            <div class="panel" id="log-panel" style="display:none;">
-                <div class="panel-title">📋 ЖУРНАЛ СОБЫТИЙ</div>
-                <div id="log-panel-entries" style="max-height:300px; overflow-y:auto;"></div>
-            </div>
+                <div class="panel" id="log-panel" style="display:none;">
+                    <div class="panel-title">📋 ЖУРНАЛ СОБЫТИЙ</div>
+                    <div id="log-panel-entries" style="max-height:300px; overflow-y:auto; padding:4px;"></div>
+                </div>
         </div>
     </div>
     <div id="notifications"></div>
-    <div id="win-screen"><h1>ПОБЕДА!</h1><p>Накопили 50,000 CR!</p><button class="btn" id="restart-btn">ИГРАТЬ СНОВА</button></div>
-    <div id="repair-screen"><h1>ПОЛЕТКА!</h1><p id="repair-cost">Ремонт: 100 CR</p><button class="btn" id="repair-btn">ОПЛАТИТЬ</button></div>
+    <div id="win-screen">
+        <h1>ПОБЕДА!</h1>
+        <p>Накопили 50,000 CR!</p>
+        <button class="btn" id="restart-btn">ИГРАТЬ СНОВА</button>
+    </div>
+    <div id="repair-screen">
+        <h1>ПОЛЕТКА!</h1>
+        <p id="repair-cost">Ремонт: 100 CR</p>
+        <button class="btn" id="repair-btn">ОПЛАТИТЬ</button>
+    </div>
 
     <!-- Prison System Overlay -->
     <div id="prison-screen">
@@ -718,9 +879,9 @@
     </div>
 
     <!-- Event Log Screen -->
-    <div id="log-screen" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.95); z-index:1000; padding:20px; overflow-y:auto;">
-        <button class="bar-back-btn" id="log-back-btn" style="position:sticky; top:0; z-index:10;">← НАЗАД</button>
-        <div class="bar-header">📋 ЖУРНАЛ СОБЫТИЙ</div>
+    <div id="log-screen" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:linear-gradient(180deg, rgba(45,27,78,0.97) 0%, rgba(30,20,50,0.98) 100%); z-index:1000; padding:20px; overflow-y:auto; box-shadow:inset 0 0 80px rgba(45,27,78,0.5);">
+        <button class="bar-back-btn" id="log-back-btn" style="position:sticky; top:0; z-index:10; background:rgba(128,222,234,0.2); border:1px solid rgba(127,219,218,0.4); border-radius:10px; color:var(--soft-cyan); font-family:'M PLUS Rounded', 'Segoe UI', sans-serif; font-size:11px; padding:10px 16px; cursor:pointer; margin-bottom:15px; transition:all 0.3s ease; box-shadow:0 2px 8px rgba(45,27,78,0.3);">← НАЗАД</button>
+        <div class="panel-title" style="font-size:18px; text-align:center; margin-bottom:20px; color:var(--ui-accent); text-shadow:0 0 15px rgba(128,222,234,0.35); border-bottom:1px solid rgba(127,219,218,0.3); padding-bottom:10px;">📋 ЖУРНАЛ СОБЫТИЙ</div>
         <div id="log-entries" style="margin-top:20px;"></div>
     </div>
 
@@ -2116,16 +2277,18 @@ class Game {
         ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);
 
         let gradient = ctx.createLinearGradient(0, 0, 0, this.canvas.height);
-        gradient.addColorStop(0, '#0a0a14');
-        gradient.addColorStop(0.5, '#0d0d1a');
-        gradient.addColorStop(1, '#080810');
+        gradient.addColorStop(0, '#2D1B4E');
+        gradient.addColorStop(0.3, '#6B5B95');
+        gradient.addColorStop(0.6, '#9B8FC4');
+        gradient.addColorStop(0.8, '#E8A87C');
+        gradient.addColorStop(1, '#FFB74D');
         ctx.fillStyle = gradient;
         ctx.fillRect(0, 0, this.canvas.width, this.canvas.height);
 
         if (this.lightningFlash > 0) {
-            ctx.fillStyle = 'rgba(200, 200, 255, ' + (this.lightningFlash * 0.3) + ')';
+            ctx.fillStyle = 'rgba(107, 91, 149, ' + (this.lightningFlash * 0.15) + ')';
             ctx.fillRect(0, 0, this.canvas.width, this.canvas.height);
-            this.lightningFlash -= 0.1;
+            this.lightningFlash -= 0.05;
         }
 
         for (let i = 0; i < this.clouds.length; i++) {
@@ -2146,8 +2309,8 @@ class Game {
         }
 
         this.lightningTimer++;
-        if (this.lightningTimer > 120 + Math.random() * 180) {
-            this.lightningFlash = 1;
+        if (this.lightningTimer > 360 + Math.random() * 540) {
+            this.lightningFlash = 0.7;
             this.lightningTimer = 0;
             this.drawLightning(ctx);
         }
@@ -2159,28 +2322,29 @@ class Game {
             let isCurrent = cityId === this.state.currentCity;
             let isSelected = this.selectedCity === cityId;
 
-            let glowGradient = ctx.createRadialGradient(x, y, 0, x, y, isSelected ? 60 : 45);
-            glowGradient.addColorStop(0, city.color + (isCurrent || isSelected ? '80' : '40'));
+            let glowGradient = ctx.createRadialGradient(x, y, 0, x, y, isSelected ? 70 : 50);
+            glowGradient.addColorStop(0, city.color + (isCurrent || isSelected ? '60' : '30'));
+            glowGradient.addColorStop(0.5, city.color + '20');
             glowGradient.addColorStop(1, 'transparent');
             ctx.beginPath();
-            ctx.arc(x, y, isSelected ? 60 : 45, 0, Math.PI * 2);
+            ctx.arc(x, y, isSelected ? 70 : 50, 0, Math.PI * 2);
             ctx.fillStyle = glowGradient;
             ctx.fill();
 
             ctx.beginPath();
             ctx.arc(x, y, 28, 0, Math.PI * 2);
-            ctx.fillStyle = '#151525';
+            ctx.fillStyle = 'rgba(30, 25, 40, 0.9)';
             ctx.fill();
-            ctx.strokeStyle = city.color;
-            ctx.lineWidth = 3;
+            ctx.strokeStyle = city.color + 'CC';
+            ctx.lineWidth = 2;
             ctx.stroke();
 
             ctx.beginPath();
             ctx.arc(x, y, 20, 0, Math.PI * 2);
-            ctx.fillStyle = '#1e1e35';
+            ctx.fillStyle = 'rgba(40, 35, 55, 0.8)';
             ctx.fill();
-            ctx.strokeStyle = city.color;
-            ctx.lineWidth = 2;
+            ctx.strokeStyle = city.color + '99';
+            ctx.lineWidth = 1.5;
             ctx.stroke();
 
             ctx.beginPath();
@@ -2219,12 +2383,12 @@ class Game {
                 ctx.stroke();
             }
 
-            ctx.fillStyle = '#E0E0E0';
-            ctx.font = 'bold 11px Orbitron';
+            ctx.fillStyle = '#FFF8E7';
+            ctx.font = 'bold 11px Segoe UI, Tahoma, sans-serif';
             ctx.textAlign = 'center';
             ctx.fillText(city.name, x, y + 45);
-            ctx.fillStyle = '#888';
-            ctx.font = '9px Orbitron';
+            ctx.fillStyle = '#B8B0C8';
+            ctx.font = '9px Segoe UI, Tahoma, sans-serif';
             ctx.fillText('Уд:' + city.distance, x, y + 56);
         }
 
@@ -2240,19 +2404,19 @@ class Game {
             ctx.beginPath();
             ctx.moveTo(startX, startY);
             ctx.lineTo(x, y);
-            ctx.strokeStyle = 'rgba(79, 195, 247, 0.3)';
-            ctx.lineWidth = 2;
+            ctx.strokeStyle = 'rgba(127, 219, 218, 0.4)';
+            ctx.lineWidth = 3;
             ctx.stroke();
 
             ctx.beginPath();
             ctx.arc(x, y, 14, 0, Math.PI * 2);
-            ctx.fillStyle = 'rgba(50, 50, 80, 0.8)';
+            ctx.fillStyle = 'rgba(40, 35, 55, 0.9)';
             ctx.fill();
-            ctx.strokeStyle = '#4FC3F7';
+            ctx.strokeStyle = '#7FDBDA';
             ctx.lineWidth = 2;
             ctx.stroke();
 
-            ctx.fillStyle = '#FFF';
+            ctx.fillStyle = '#FFF8E7';
             ctx.font = '14px Arial';
             ctx.textAlign = 'center';
             ctx.fillText(String.fromCodePoint(0x1F681), x - 8, y + 4);
@@ -2260,7 +2424,7 @@ class Game {
             let city = CITIES[this.state.currentCity];
             let x = city.x * this.canvas.width;
             let y = city.y * this.canvas.height - 40;
-            ctx.fillStyle = '#78909C';
+            ctx.fillStyle = '#7FDBDA';
             ctx.font = '20px Arial';
             ctx.textAlign = 'center';
             ctx.fillText(String.fromCodePoint(0x1F681), x, y);
@@ -2272,15 +2436,15 @@ class Game {
         ctx.beginPath();
         ctx.moveTo(x, y);
         while (y < this.canvas.height * 0.7) {
-            x += (Math.random() - 0.5) * 40;
+            x += (Math.random() - 0.5) * 30;
             y += 15 + Math.random() * 20;
             ctx.lineTo(x, y);
         }
-        ctx.strokeStyle = 'rgba(180, 180, 255, 0.8)';
-        ctx.lineWidth = 2;
+        ctx.strokeStyle = 'rgba(107, 91, 149, 0.6)';
+        ctx.lineWidth = 3;
         ctx.stroke();
-        ctx.strokeStyle = 'rgba(255, 255, 255, 0.9)';
-        ctx.lineWidth = 1;
+        ctx.strokeStyle = 'rgba(127, 219, 218, 0.7)';
+        ctx.lineWidth = 1.5;
         ctx.stroke();
     }
     gameLoop() {

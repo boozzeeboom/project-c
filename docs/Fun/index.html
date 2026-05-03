@@ -3922,6 +3922,7 @@ endPirateCombat(victory) {
             pc.touch.aiming = true;
             pc.touchAimX = touch.clientX;
             pc.touchAimY = touch.clientY;
+            pc.mouse.pressed = true;
             aimZone.classList.add('aiming');
         };
 
@@ -3946,6 +3947,7 @@ endPirateCombat(victory) {
                 if (touch.identifier === aimTouchId) {
                     aimTouchId = null;
                     pc.touch.aiming = false;
+                    pc.mouse.pressed = false;
                     aimZone.classList.remove('aiming');
                     break;
                 }

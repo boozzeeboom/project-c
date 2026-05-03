@@ -717,4 +717,117 @@ FixedUpdate (сервер):
 
 ---
 
+## Мини-игры CloudTrader (docs/Fun/index.html)
+
+**Версия:** v1.1.11 | **Файл:** `docs/Fun/index.html` (~4,034 строк) | **Стек:** Чистый HTML/JS/CSS, Canvas API, Google Fonts
+
+> В рамках прототипирования MMO "Project C: The Clouds" параллельно разработана полноценная standalone HTML-игра **CloudTrader** — trading/adventure в стиле Ghibli над облаками. Цель: накопить **50,000 CR** через торговлю, контракты и управление кораблём.
+
+### Системы мини-игр
+
+| # | Система | Описание |
+|---|---------|----------|
+| 1 | **Торговля** | 34 товара, динамические цены (спрос/предложение), 6 городов, 5% налог на продажу |
+| 2 | **Корабли** | 4 класса (Шлюпка→Карго-лайнер), модули C/B/A/S-tier (груз/скорость) |
+| 3 | **Топливо и прочность** | Ремонт, заправка, деградация при полёте |
+| 4 | **Контракты** | Доставка груза, награда × расстояние, долг при провале |
+| 5 | **Контрабанда** | 5 запрещённых товаров, 13% шанс ареста |
+| 6 | **Бар** | 15 ветвящихся сценариев (кости, драки, чёрный рынок, истории) |
+| 7 | **Тюрьма** | 10 сценариев, 3 исхода (освобождение/побег/смерть) |
+| 8 | **Пираты** | Top-down shooter на Canvas (800×600), волны врагов, boss fights |
+| 9 | **Случайные события** | 10 ивентов (штормы, дефицит, рейды, караваны) |
+| 10 | **День/ночь** | 4 фазы, CSS-переходы, молнии ночью |
+| 11 | **Владение портами** | Апгрейд городов (1-10 ур.), пассивный доход, скидка на топливо |
+| 12 | **Журнал** | Последние 10 событий, полный log |
+
+### Пиратский Комбат (подробно)
+
+**Механика:**
+- Trigger: 13% базовый + 2% за каждую единицу расстояния
+- Boss chance: 5% при distance ≥ 4
+- Countdown: 5-4-3-2-1 перед боем
+- Враги спавнятся сверху (y: -50 to -100) и летят к игроку
+
+**Управление:**
+| Платформа | Движение | Прицеливание | Стрельба |
+|-----------|----------|--------------|----------|
+| PC | WASD / Стрелки | Мышь | Клик / Пробел |
+| Mobile | D-pad кнопки | Drag по aim-зоне | Автовыстрел при aim |
+
+**Враги:**
+- Обычные: 2 HP, 0.8-2.0 speed, 1.8s shoot interval
+- Boss: 10 HP, 1.2 speed, 0.8s shoot interval, ×5 награда
+
+**Награда:** `50 + score` CR при победе
+
+### Архитектура
+
+```
+docs/Fun/index.html (4,034 строк)
+├── HTML/CSS (~300 строк)
+│   ├── CSS Variables (Ghibli palette)
+│   ├── Mobile responsive
+│   └── All screens/menus
+├── Game State (~100 строк init)
+│   └── state object (credits, cargo, ship, cities, etc.)
+├── Core Loop (~200 строк)
+│   ├── update() — tick system
+│   ├── renderMap() — Canvas sky/clouds/cities
+│   └── renderAll() — UI sync
+├── Trading System (~300 строк)
+│   ├── buyItem() / sellItem()
+│   ├── calculatePrice()
+│   └── MarketState per city
+├── Ship System (~200 строк)
+│   ├── refuel() / repair()
+│   ├── upgradeShip() / equipModule()
+│   └── travel() with damage calculation
+├── Events (~150 строк)
+│   ├── triggerRandomEvent()
+│   ├── 10 event handlers
+│   └── applyEventEffect()
+├── Bar System (~400 строк)
+│   └── 15 scenarios with choices
+├── Prison System (~350 строк)
+│   └── 10 scenarios, 3 outcomes
+├── Pirate Combat (~600 строк)
+│   ├── pirateGameLoop() — RAF
+│   ├── updatePirateCombat() — movement/shooting
+│   ├── renderPirateCombat() — Canvas draw
+│   ├── bindPirateControls() — PC + Mobile handlers
+│   └── enemy AI (chase + shoot)
+└── Utils (~200 строк)
+    ├── localStorage save/load
+    ├── notify() — toast messages
+    └── logEvent()
+```
+
+### Что реализовано
+
+- ✅ Полный торговый цикл (6 городов, 34 товара, динамика)
+- ✅ 4 корабли + 8 модулей
+- ✅ Система топлива/урон/ремонт
+- ✅ Контракты с долгами
+- ✅ Контрабанда + тюрьма
+- ✅ Бар (15 сценариев)
+- ✅ Пиратский комбат (PC + Mobile)
+- ✅ Случайные события (10)
+- ✅ День/ночь с молниями
+- ✅ 6 городов с уникальным товарами
+- ✅ Порты с апгрейдом (1-10)
+- ✅ Журнал событий
+- ✅ localStorage save/load
+- ✅ Mobile D-pad controls
+- ✅ v1.1.11 version tag
+
+### Ключевые решения
+
+- **Single HTML file** — zero dependencies, portable
+- **Canvas API** — map + combat (no WebGL)
+- **CSS Variables** — theming + day/night cycle
+- **Mobile-first responsive** — D-pad + aim zone for touch
+- **Ghibli palette** — cream/amber/soft-cyan/purple
+
+---
+
 *Примечание: План ориентировочный. Длительность этапов может меняться в зависимости от размера команды, фидбека и технических сложностей. Рекомендуется использовать спринты по 2 недели с демонстрацией результатов.*

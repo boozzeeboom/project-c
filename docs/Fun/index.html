@@ -502,6 +502,8 @@
             color: rgba(127, 219, 218, 0.7);
             font-size: 24px;
             font-family: Orbitron, monospace;
+            user-select: none;
+            touch-action: none;
         }
         .pirate-fire-btn {
             width: 120px;
@@ -516,6 +518,8 @@
             font-weight: bold;
             font-family: Orbitron, monospace;
             text-shadow: 0 1px 3px rgba(0,0,0,0.5);
+            user-select: none;
+            touch-action: none;
         }
 #pirate-canvas {
             border: 2px solid rgba(229, 115, 115, 0.4);
@@ -1036,8 +1040,8 @@
         <div class="pirate-header">☠ ПИРАТЫ!</div>
         <canvas id="pirate-canvas" width="800" height="600" tabindex="0"></canvas>
         <div class="pirate-controls-mobile" id="pirate-mobile-controls">
-            <div class="pirate-joystick-area" id="pirate-joystick">↑↓←→</div>
-            <div class="pirate-fire-btn" id="pirate-fire">FIRE</div>
+            <div class="pirate-joystick-area" id="pirate-joystick">MOVE</div>
+            <div class="pirate-fire-btn" id="pirate-aim">AIM<br>+ FIRE</div>
         </div>
         <div id="pirate-hud">
             <div id="pirate-health">HP: 3/3</div>
@@ -3377,7 +3381,7 @@ class Game {
         pc.lastTime = 0;
         pc.keys = {};
         pc.mouse = { x: 400, y: 500, pressed: false };
-        pc.touch = { active: false, x: 400, y: 500, shooting: false, touchStartX: 100, touchStartY: 500 };
+        pc.touch = { active: false, x: 0, y: 0, shooting: false, aiming: false, touchStartX: 100, touchStartY: 500, touchAimX: 0, touchAimY: 0 };
         pc.phase = 'countdown';
         pc.countdown = 5;
 
@@ -3502,8 +3506,8 @@ class Game {
         let moveSpeed = 180 * scale;
 
         if (pc.touch.active) {
-            let jx = 80 * scale;
-            let jy = canvas.height - 80 * scale;
+            let jx = pc.touchStartX;
+            let jy = pc.touchStartY;
             let dirX = pc.touch.x - jx;
             let dirY = pc.touch.y - jy;
             let dist = Math.sqrt(dirX * dirX + dirY * dirY);
@@ -3524,13 +3528,17 @@ class Game {
         pc.playerX = Math.max(margin, Math.min(canvas.width - margin, pc.playerX));
         pc.playerY = Math.max(margin, Math.min(canvas.height - margin, pc.playerY));
 
-        let targetX = pc.playerX;
-        let targetY = pc.playerY;
-        if (!pc.touch.active && (pc.mouse.x !== 0 || pc.mouse.y !== 0)) {
-            targetX = pc.mouse.x;
-            targetY = pc.mouse.y;
+        if (pc.touch.aiming) {
+            let rect = canvas.getBoundingClientRect();
+            let aimX = pc.touchAimX - rect.left;
+            let aimY = pc.touchAimY - rect.top;
+            pc.playerAngle = Math.atan2(aimY - pc.playerY, aimX - pc.playerX);
+            pc.mouse.pressed = true;
+        } else {
+            let targetX = pc.mouse.x || pc.playerX;
+            let targetY = pc.mouse.y || pc.playerY;
+            pc.playerAngle = Math.atan2(targetY - pc.playerY, targetX - pc.playerX);
         }
-        pc.playerAngle = Math.atan2(targetY - pc.playerY, targetX - pc.playerX);
 
         pc.lastShot += dt;
         let shooting = pc.keys[' '] || pc.mouse.pressed || pc.keys['Space'];
@@ -3859,32 +3867,17 @@ class Game {
             e.preventDefault();
 
             let touch = e.touches[0];
-            let target = document.elementFromPoint(touch.clientX, touch.clientY);
+            let touchX = touch.clientX;
+            let touchY = touch.clientY;
 
-            if (target && target.id === 'pirate-fire') {
-                pc.touch.shooting = true;
-                pc.mouse.pressed = true;
-                return;
-            }
-
-            if (target && target.id === 'pirate-joystick') {
+            if (touchX < window.innerWidth / 2) {
                 pc.touch.active = true;
-                return;
-            }
-
-            let rect = canvas.getBoundingClientRect();
-            let touchX = touch.clientX - rect.left;
-            let touchY = touch.clientY - rect.top;
-
-            if (touchX < canvas.width / 2) {
-                pc.touch.active = true;
-                pc.touch.x = touchX;
-                pc.touch.y = touchY;
-                pc.touchStartX = 80 * (pc.scale || 1);
-                pc.touchStartY = canvas.height - 80 * (pc.scale || 1);
+                pc.touchStartX = touchX;
+                pc.touchStartY = touchY;
             } else {
-                pc.touch.shooting = true;
-                pc.mouse.pressed = true;
+                pc.touch.aiming = true;
+                pc.touchAimX = touchX;
+                pc.touchAimY = touchY;
             }
         };
 
@@ -3894,38 +3887,29 @@ class Game {
             e.preventDefault();
 
             let touch = e.touches[0];
-            let target = document.elementFromPoint(touch.clientX, touch.clientY);
+            let touchX = touch.clientX;
+            let touchY = touch.clientY;
 
-            if (target && (target.id === 'pirate-fire' || target.id === 'pirate-joystick')) {
-                return;
+            if (touchX < window.innerWidth / 2 && pc.touch.active) {
+                pc.touch.x = touchX;
+                pc.touch.y = touchY;
+            } else if (touchX >= window.innerWidth / 2) {
+                pc.touchAimX = touchX;
+                pc.touchAimY = touchY;
             }
-
-            if (!pc.touch.active) return;
-
-            let rect = canvas.getBoundingClientRect();
-            let touchX = touch.clientX - rect.left;
-            let touchY = touch.clientY - rect.top;
-
-            pc.touch.x = touchX;
-            pc.touch.y = touchY;
         };
 
         let touchEndHandler = (e) => {
             let pc = this.state.pirateCombat;
             if (!pc.active) return;
             let touch = e.changedTouches[0];
-            let target = document.elementFromPoint(touch.clientX, touch.clientY);
+            let touchX = touch.clientX;
 
-            if (target && (target.id === 'pirate-fire' || target.id === 'pirate-joystick')) {
-                pc.touch.shooting = false;
+            if (touchX < window.innerWidth / 2) {
                 pc.touch.active = false;
-                pc.mouse.pressed = false;
-                return;
+            } else {
+                pc.touch.aiming = false;
             }
-
-            pc.touch.active = false;
-            pc.touch.shooting = false;
-            pc.mouse.pressed = false;
         };
 
         document.addEventListener('keydown', keyHandler);

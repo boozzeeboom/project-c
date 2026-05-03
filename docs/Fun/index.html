@@ -52,7 +52,8 @@
             background-attachment: fixed;
             transition: background 2s ease, color 2s ease;
         }
-        #game-container { display: flex; flex-direction: column; height: 100vh; max-width: 1400px; margin: 0 auto; }
+        #game-container { display: flex; flex-direction: column; height: 100vh; max-width: 1400px; margin: 0 auto; position: relative; }
+        #version-tag { position: absolute; top: 4px; left: 8px; font-size: 9px; color: var(--text-secondary); font-family: 'Courier New', monospace; opacity: 0.5; z-index: 101; }
         #hud { display: flex; justify-content: space-between; align-items: center; padding: 12px 20px; background: var(--ui-bg); border-bottom: 2px solid rgba(127, 219, 218, 0.4); border-bottom-left-radius: 0; border-bottom-right-radius: 0; box-shadow: 0 4px 20px rgba(127, 219, 218, 0.15), inset 0 -2px 15px rgba(255, 248, 231, 0.05); z-index: 100; backdrop-filter: blur(10px); transition: background 2s ease; }
         #credits { font-size: 20px; font-weight: 700; color: var(--city-glow); text-shadow: 0 0 12px rgba(255, 213, 79, 0.4), 0 2px 4px rgba(0,0,0,0.3); }
         #credits span { color: var(--text-secondary); font-size: 12px; text-shadow: none; }
@@ -888,6 +889,7 @@
 </head>
 <body>
     <div id="game-container">
+        <div id="version-tag">v1.1.11</div>
         <div id="hud">
             <div id="credits">0 <span>CR</span></div>
             <div>

@@ -465,6 +465,8 @@
             flex-direction: column;
             font-family: 'M PLUS Rounded', 'Segoe UI', sans-serif;
             box-shadow: inset 0 0 100px rgba(139, 0, 0, 0.5);
+            padding: 20px;
+            padding-bottom: 30px;
         }
         #pirate-screen.active { display: flex; }
         .pirate-header {
@@ -479,6 +481,41 @@
         @keyframes piratePulse {
             0%, 100% { opacity: 1; transform: scale(1); }
             50% { opacity: 0.8; transform: scale(1.05); }
+        }
+        .pirate-controls-mobile {
+            display: none;
+            width: 100%;
+            justify-content: space-between;
+            padding: 10px 20px;
+            margin-top: 10px;
+        }
+        .pirate-controls-mobile.active { display: flex; }
+        .pirate-joystick-area {
+            width: 120px;
+            height: 120px;
+            border: 3px solid rgba(127, 219, 218, 0.5);
+            border-radius: 50%;
+            background: rgba(127, 219, 218, 0.1);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: rgba(127, 219, 218, 0.7);
+            font-size: 24px;
+            font-family: Orbitron, monospace;
+        }
+        .pirate-fire-btn {
+            width: 120px;
+            height: 120px;
+            border-radius: 50%;
+            background: rgba(229, 115, 115, 0.7);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #FFF;
+            font-size: 16px;
+            font-weight: bold;
+            font-family: Orbitron, monospace;
+            text-shadow: 0 1px 3px rgba(0,0,0,0.5);
         }
 #pirate-canvas {
             border: 2px solid rgba(229, 115, 115, 0.4);
@@ -998,6 +1035,10 @@
     <div id="pirate-screen" style="display:none;">
         <div class="pirate-header">☠ ПИРАТЫ!</div>
         <canvas id="pirate-canvas" width="800" height="600" tabindex="0"></canvas>
+        <div class="pirate-controls-mobile" id="pirate-mobile-controls">
+            <div class="pirate-joystick-area" id="pirate-joystick">↑↓←→</div>
+            <div class="pirate-fire-btn" id="pirate-fire">FIRE</div>
+        </div>
         <div id="pirate-hud">
             <div id="pirate-health">HP: 3/3</div>
             <div id="pirate-enemies">Врагов: 3</div>
@@ -3348,6 +3389,14 @@ class Game {
 
         let canvas = document.getElementById('pirate-canvas');
         let isMobile = window.innerWidth < 800 || ('ontouchstart' in window && window.innerWidth < 1024);
+
+        let mobileControls = document.getElementById('pirate-mobile-controls');
+        if (isMobile) {
+            mobileControls.classList.add('active');
+        } else {
+            mobileControls.classList.remove('active');
+        }
+
         if (isMobile) {
             let availW = window.innerWidth * 0.98;
             let availH = window.innerHeight * 0.55;
@@ -3669,39 +3718,6 @@ class Game {
             ctx.fillText(pc.countdown.toString(), canvas.width / 2, canvas.height / 2);
             ctx.font = 'bold ' + (24 * scale) + 'px Orbitron, monospace';
             ctx.fillText('ПРИГОТОВЬТЕСЬ!', canvas.width / 2, canvas.height / 2 - 80 * scale);
-        } else {
-            let isMobile = (pc.scale && pc.scale < 1);
-            if (isMobile) {
-                let jx = 80 * scale;
-                let jy = canvas.height - 80 * scale;
-                ctx.strokeStyle = 'rgba(127, 219, 218, 0.6)';
-                ctx.lineWidth = 3;
-                ctx.beginPath();
-                ctx.arc(jx, jy, 45 * scale, 0, Math.PI * 2);
-                ctx.stroke();
-                ctx.fillStyle = 'rgba(127, 219, 218, 0.3)';
-                ctx.beginPath();
-                ctx.arc(jx, jy, 35 * scale, 0, Math.PI * 2);
-                ctx.fill();
-                ctx.fillStyle = '#FFF';
-                ctx.font = 'bold ' + (10 * scale) + 'px Orbitron';
-                ctx.textAlign = 'center';
-                ctx.fillText('↑', jx, jy - 20 * scale);
-                ctx.fillText('↓', jx, jy + 25 * scale);
-                ctx.fillText('←', jx - 25 * scale, jy + 5 * scale);
-                ctx.fillText('→', jx + 25 * scale, jy + 5 * scale);
-
-                let fx = canvas.width - 70 * scale;
-                let fy = canvas.height - 80 * scale;
-                ctx.fillStyle = 'rgba(229, 115, 115, 0.7)';
-                ctx.beginPath();
-                ctx.arc(fx, fy, 45 * scale, 0, Math.PI * 2);
-                ctx.fill();
-                ctx.fillStyle = '#FFF';
-                ctx.font = 'bold ' + (12 * scale) + 'px Orbitron';
-                ctx.textAlign = 'center';
-                ctx.fillText('FIRE', fx, fy + 4 * scale);
-            }
         }
     }
 
@@ -3726,6 +3742,9 @@ class Game {
         let screen = document.getElementById('pirate-screen');
         screen.classList.remove('active');
         screen.style.display = 'none';
+
+        let mobileControls = document.getElementById('pirate-mobile-controls');
+        mobileControls.classList.remove('active');
 
         if (victory) {
             let reward = 50 + pc.score;
@@ -3838,61 +3857,72 @@ class Game {
             let pc = this.state.pirateCombat;
             if (!pc.active) return;
             e.preventDefault();
-            let rect = canvas.getBoundingClientRect();
+
             let touch = e.touches[0];
-            let touchX = touch.clientX - rect.left;
-            let touchY = touch.clientY - rect.top;
+            let target = document.elementFromPoint(touch.clientX, touch.clientY);
 
-            let jx = 80 * (pc.scale || 1);
-            let jy = canvas.height - 80 * (pc.scale || 1);
-            let fx = canvas.width - 70 * (pc.scale || 1);
-            let fy = canvas.height - 80 * (pc.scale || 1);
-
-            let dFire = Math.sqrt((touchX - fx) ** 2 + (touchY - fy) ** 2);
-            if (dFire < 60 * (pc.scale || 1)) {
+            if (target && target.id === 'pirate-fire') {
                 pc.touch.shooting = true;
                 pc.mouse.pressed = true;
                 return;
             }
 
-            pc.touch.active = true;
-            pc.touch.x = touchX;
-            pc.touch.y = touchY;
-            pc.touchStartX = jx;
-            pc.touchStartY = jy;
-            pc.mouse.x = touchX;
-            pc.mouse.y = touchY;
+            if (target && target.id === 'pirate-joystick') {
+                pc.touch.active = true;
+                return;
+            }
+
+            let rect = canvas.getBoundingClientRect();
+            let touchX = touch.clientX - rect.left;
+            let touchY = touch.clientY - rect.top;
+
+            if (touchX < canvas.width / 2) {
+                pc.touch.active = true;
+                pc.touch.x = touchX;
+                pc.touch.y = touchY;
+                pc.touchStartX = 80 * (pc.scale || 1);
+                pc.touchStartY = canvas.height - 80 * (pc.scale || 1);
+            } else {
+                pc.touch.shooting = true;
+                pc.mouse.pressed = true;
+            }
         };
 
         let touchMoveHandler = (e) => {
             let pc = this.state.pirateCombat;
             if (!pc.active) return;
             e.preventDefault();
-            let rect = canvas.getBoundingClientRect();
-            let touch = e.touches[0];
-            let touchX = touch.clientX - rect.left;
-            let touchY = touch.clientY - rect.top;
 
-            let fx = canvas.width - 70 * (pc.scale || 1);
-            let fy = canvas.height - 80 * (pc.scale || 1);
-            let dFire = Math.sqrt((touchX - fx) ** 2 + (touchY - fy) ** 2);
-            if (dFire < 60 * (pc.scale || 1)) {
-                pc.touch.active = false;
-                pc.touch.shooting = true;
+            let touch = e.touches[0];
+            let target = document.elementFromPoint(touch.clientX, touch.clientY);
+
+            if (target && (target.id === 'pirate-fire' || target.id === 'pirate-joystick')) {
                 return;
             }
 
-            if (pc.touch.active) {
-                pc.touch.x = touchX;
-                pc.touch.y = touchY;
-                pc.mouse.x = touchX;
-                pc.mouse.y = touchY;
-            }
+            if (!pc.touch.active) return;
+
+            let rect = canvas.getBoundingClientRect();
+            let touchX = touch.clientX - rect.left;
+            let touchY = touch.clientY - rect.top;
+
+            pc.touch.x = touchX;
+            pc.touch.y = touchY;
         };
 
         let touchEndHandler = (e) => {
             let pc = this.state.pirateCombat;
             if (!pc.active) return;
+            let touch = e.changedTouches[0];
+            let target = document.elementFromPoint(touch.clientX, touch.clientY);
+
+            if (target && (target.id === 'pirate-fire' || target.id === 'pirate-joystick')) {
+                pc.touch.shooting = false;
+                pc.touch.active = false;
+                pc.mouse.pressed = false;
+                return;
+            }
+
             pc.touch.active = false;
             pc.touch.shooting = false;
             pc.mouse.pressed = false;

@@ -484,10 +484,11 @@
             border: 2px solid rgba(229, 115, 115, 0.4);
             border-radius: 8px;
             box-shadow: 0 0 30px rgba(229, 115, 115, 0.3);
-            max-width: 95vw;
-            max-height: 70vh;
+            max-width: 98vw;
+            max-height: 58vh;
             width: auto;
             height: auto;
+            touch-action: none;
         }
         #pirate-hud {
             position: absolute;
@@ -3346,17 +3347,24 @@ class Game {
         screen.classList.add('active');
 
         let canvas = document.getElementById('pirate-canvas');
-        let isMobile = window.innerWidth < 800 || 'ontouchstart' in window;
+        let isMobile = window.innerWidth < 800 || ('ontouchstart' in window && window.innerWidth < 1024);
         if (isMobile) {
-            canvas.width = Math.min(window.innerWidth * 0.95, 800);
-            canvas.height = Math.min(window.innerHeight * 0.6, 500);
-            pc.scale = 0.8;
+            let availW = window.innerWidth * 0.98;
+            let availH = window.innerHeight * 0.55;
+            let aspect = 800 / 600;
+            let w = availW;
+            let h = w / aspect;
+            if (h > availH) { h = availH; w = h * aspect; }
+            canvas.width = Math.floor(w);
+            canvas.height = Math.floor(h);
+            pc.scale = 0.6;
         } else {
             canvas.width = 800;
             canvas.height = 600;
             pc.scale = 1;
         }
-        pc.touch.touchStartY = canvas.height - 100;
+        pc.touch.touchStartX = 100 * pc.scale;
+        pc.touch.touchStartY = canvas.height - 100 * pc.scale;
         let ctx = canvas.getContext('2d');
         ctx.clearRect(0, 0, canvas.width, canvas.height);
 
@@ -3401,11 +3409,12 @@ class Game {
     initPirateEnemies(count, isBoss) {
         let pc = this.state.pirateCombat;
         let canvas = document.getElementById('pirate-canvas');
+        let scale = pc.scale || 1;
 
         if (isBoss) {
             pc.enemies.push({
                 x: canvas.width / 2,
-                y: 100,
+                y: 80 * scale,
                 vx: 1.5,
                 vy: 0.5,
                 hp: 10,
@@ -3417,9 +3426,10 @@ class Game {
             });
         } else {
             for (let i = 0; i < count; i++) {
+                let margin = 80 * scale;
                 pc.enemies.push({
-                    x: 100 + Math.random() * (canvas.width - 200),
-                    y: 50 + Math.random() * 150,
+                    x: margin + Math.random() * (canvas.width - margin * 2),
+                    y: margin + Math.random() * (canvas.height * 0.4),
                     vx: 1 + Math.random() * 2,
                     vy: 0.5 + Math.random() * 1,
                     hp: 2,
@@ -3440,27 +3450,28 @@ class Game {
         if (pc.phase !== 'combat') return;
 
         let scale = pc.scale || 1;
-        let moveSpeed = 200 * scale;
+        let moveSpeed = 180 * scale;
 
         if (pc.touch.active) {
-            let dirX = pc.touch.x - pc.touchStartX;
-            let dirY = pc.touch.y - pc.touchStartY;
+            let jx = 80 * scale;
+            let jy = canvas.height - 80 * scale;
+            let dirX = pc.touch.x - jx;
+            let dirY = pc.touch.y - jy;
             let dist = Math.sqrt(dirX * dirX + dirY * dirY);
-            if (dist > 10) {
+            if (dist > 15 * scale) {
                 dirX /= dist;
                 dirY /= dist;
-                let speed = Math.min(dist / 50, 1) * moveSpeed;
-                pc.playerX += dirX * speed * dt;
-                pc.playerY += dirY * speed * dt;
+                pc.playerX += dirX * moveSpeed * dt;
+                pc.playerY += dirY * moveSpeed * dt;
             }
         }
 
-        if (pc.keys['w'] || pc.keys['W'] || pc.keys['ArrowUp']) pc.playerY -= moveSpeed * dt;
-        if (pc.keys['s'] || pc.keys['S'] || pc.keys['ArrowDown']) pc.playerY += moveSpeed * dt;
-        if (pc.keys['a'] || pc.keys['A'] || pc.keys['ArrowLeft']) pc.playerX -= moveSpeed * dt;
-        if (pc.keys['d'] || pc.keys['D'] || pc.keys['ArrowRight']) pc.playerX += moveSpeed * dt;
+        if (pc.keys['ArrowUp']) pc.playerY -= moveSpeed * dt;
+        if (pc.keys['ArrowDown']) pc.playerY += moveSpeed * dt;
+        if (pc.keys['ArrowLeft']) pc.playerX -= moveSpeed * dt;
+        if (pc.keys['ArrowRight']) pc.playerX += moveSpeed * dt;
 
-        let margin = 20 * scale;
+        let margin = 25 * scale;
         pc.playerX = Math.max(margin, Math.min(canvas.width - margin, pc.playerX));
         pc.playerY = Math.max(margin, Math.min(canvas.height - margin, pc.playerY));
 
@@ -3499,19 +3510,21 @@ class Game {
 
         for (let i = pc.enemies.length - 1; i >= 0; i--) {
             let e = pc.enemies[i];
+            let scale = pc.scale || 1;
+            let border = 30 * scale;
 
             let dx = pc.playerX - e.x;
             let dy = pc.playerY - e.y;
             let dist = Math.sqrt(dx * dx + dy * dy);
             if (dist > 0) {
-                e.x += (dx / dist) * e.speed;
-                e.y += (dy / dist) * e.speed;
+                e.x += (dx / dist) * e.speed * scale;
+                e.y += (dy / dist) * e.speed * scale;
             }
 
-            if (e.x < 30) e.x = 30;
-            if (e.x > canvas.width - 30) e.x = canvas.width - 30;
-            if (e.y < 30) e.y = 30;
-            if (e.y > canvas.height - 100) e.y = canvas.height - 100;
+            if (e.x < border) e.x = border;
+            if (e.x > canvas.width - border) e.x = canvas.width - border;
+            if (e.y < border) e.y = border;
+            if (e.y > canvas.height - border * 3) e.y = canvas.height - border * 3;
 
             e.shootTimer += dt;
             if (dist < 300 && e.shootTimer > (e.isBoss ? 0.8 : 1.8)) {
@@ -3649,7 +3662,7 @@ class Game {
         ctx.textAlign = 'right';
         ctx.fillText('СЧЁТ: ' + pc.score, canvas.width - 20 * scale, 30 * scale);
 
-if (pc.phase === 'countdown') {
+        if (pc.phase === 'countdown') {
             ctx.fillStyle = '#E57373';
             ctx.font = 'bold ' + (72 * scale) + 'px Orbitron, monospace';
             ctx.textAlign = 'center';
@@ -3657,37 +3670,38 @@ if (pc.phase === 'countdown') {
             ctx.font = 'bold ' + (24 * scale) + 'px Orbitron, monospace';
             ctx.fillText('ПРИГОТОВЬТЕСЬ!', canvas.width / 2, canvas.height / 2 - 80 * scale);
         } else {
-            ctx.font = Math.round(14 * scale) + 'px Orbitron, monospace';
-            ctx.textAlign = 'left';
-            ctx.fillText('СТРЕЛКИ - движение', 20 * scale, canvas.height - 20 * scale);
-            ctx.fillText('МЫШЬ/КЛИК - прицел и стрельба', 20 * scale, canvas.height - 40 * scale);
-
-            if (pc.touch.active) {
-                let jx = pc.touch.x;
-                let jy = pc.touch.y;
-                ctx.strokeStyle = 'rgba(127, 219, 218, 0.5)';
-                ctx.lineWidth = 2;
+            let isMobile = (pc.scale && pc.scale < 1);
+            if (isMobile) {
+                let jx = 80 * scale;
+                let jy = canvas.height - 80 * scale;
+                ctx.strokeStyle = 'rgba(127, 219, 218, 0.6)';
+                ctx.lineWidth = 3;
                 ctx.beginPath();
-                ctx.arc(jx, jy, 50 * scale, 0, Math.PI * 2);
+                ctx.arc(jx, jy, 45 * scale, 0, Math.PI * 2);
                 ctx.stroke();
                 ctx.fillStyle = 'rgba(127, 219, 218, 0.3)';
                 ctx.beginPath();
-                ctx.arc(jx, jy, 30 * scale, 0, Math.PI * 2);
+                ctx.arc(jx, jy, 35 * scale, 0, Math.PI * 2);
                 ctx.fill();
-                ctx.fillStyle = '#7FDBDA';
-                ctx.beginPath();
-                ctx.arc(jx, jy, 15 * scale, 0, Math.PI * 2);
-                ctx.fill();
-            }
+                ctx.fillStyle = '#FFF';
+                ctx.font = 'bold ' + (10 * scale) + 'px Orbitron';
+                ctx.textAlign = 'center';
+                ctx.fillText('↑', jx, jy - 20 * scale);
+                ctx.fillText('↓', jx, jy + 25 * scale);
+                ctx.fillText('←', jx - 25 * scale, jy + 5 * scale);
+                ctx.fillText('→', jx + 25 * scale, jy + 5 * scale);
 
-            ctx.fillStyle = 'rgba(229, 115, 115, 0.5)';
-            ctx.beginPath();
-            ctx.arc(canvas.width - 100 * scale, canvas.height - 100 * scale, 40 * scale, 0, Math.PI * 2);
-            ctx.fill();
-            ctx.fillStyle = '#FFF';
-            ctx.font = 'bold ' + (12 * scale) + 'px Orbitron';
-            ctx.textAlign = 'center';
-ctx.fillText('ОГОНЬ', canvas.width - 100 * scale, canvas.height - 95 * scale);
+                let fx = canvas.width - 70 * scale;
+                let fy = canvas.height - 80 * scale;
+                ctx.fillStyle = 'rgba(229, 115, 115, 0.7)';
+                ctx.beginPath();
+                ctx.arc(fx, fy, 45 * scale, 0, Math.PI * 2);
+                ctx.fill();
+                ctx.fillStyle = '#FFF';
+                ctx.font = 'bold ' + (12 * scale) + 'px Orbitron';
+                ctx.textAlign = 'center';
+                ctx.fillText('FIRE', fx, fy + 4 * scale);
+            }
         }
     }
 
@@ -3829,18 +3843,25 @@ ctx.fillText('ОГОНЬ', canvas.width - 100 * scale, canvas.height - 95 * scal
             let touchX = touch.clientX - rect.left;
             let touchY = touch.clientY - rect.top;
 
-            if (touchX < canvas.width / 2) {
-                pc.touch.active = true;
-                pc.touch.x = touchX;
-                pc.touch.y = touchY;
-                pc.touchStartX = touchX;
-                pc.touchStartY = touchY;
-                pc.mouse.x = touchX;
-                pc.mouse.y = touchY;
-            } else {
+            let jx = 80 * (pc.scale || 1);
+            let jy = canvas.height - 80 * (pc.scale || 1);
+            let fx = canvas.width - 70 * (pc.scale || 1);
+            let fy = canvas.height - 80 * (pc.scale || 1);
+
+            let dFire = Math.sqrt((touchX - fx) ** 2 + (touchY - fy) ** 2);
+            if (dFire < 60 * (pc.scale || 1)) {
                 pc.touch.shooting = true;
                 pc.mouse.pressed = true;
+                return;
             }
+
+            pc.touch.active = true;
+            pc.touch.x = touchX;
+            pc.touch.y = touchY;
+            pc.touchStartX = jx;
+            pc.touchStartY = jy;
+            pc.mouse.x = touchX;
+            pc.mouse.y = touchY;
         };
 
         let touchMoveHandler = (e) => {
@@ -3851,6 +3872,15 @@ ctx.fillText('ОГОНЬ', canvas.width - 100 * scale, canvas.height - 95 * scal
             let touch = e.touches[0];
             let touchX = touch.clientX - rect.left;
             let touchY = touch.clientY - rect.top;
+
+            let fx = canvas.width - 70 * (pc.scale || 1);
+            let fy = canvas.height - 80 * (pc.scale || 1);
+            let dFire = Math.sqrt((touchX - fx) ** 2 + (touchY - fy) ** 2);
+            if (dFire < 60 * (pc.scale || 1)) {
+                pc.touch.active = false;
+                pc.touch.shooting = true;
+                return;
+            }
 
             if (pc.touch.active) {
                 pc.touch.x = touchX;

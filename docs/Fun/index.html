@@ -489,37 +489,64 @@
             padding: 10px 20px;
             margin-top: 10px;
         }
-        .pirate-controls-mobile.active { display: flex; }
-        .pirate-joystick-area {
-            width: 120px;
-            height: 120px;
-            border: 3px solid rgba(127, 219, 218, 0.5);
-            border-radius: 50%;
-            background: rgba(127, 219, 218, 0.1);
+        .pirate-controls-mobile.active { display: flex; gap: 15px; padding: 10px; }
+        .pirate-dpad-area {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 4px;
+            touch-action: none;
+        }
+        .pirate-dpad-row {
+            display: flex;
+            gap: 4px;
+        }
+        .pirate-dpad-btn {
+            width: 56px;
+            height: 56px;
+            border: 2px solid rgba(127, 219, 218, 0.6);
+            border-radius: 12px;
+            background: rgba(127, 219, 218, 0.15);
+            color: rgba(127, 219, 218, 0.9);
+            font-size: 22px;
             display: flex;
             align-items: center;
             justify-content: center;
-            color: rgba(127, 219, 218, 0.7);
-            font-size: 24px;
+            cursor: pointer;
+            user-select: none;
+            touch-action: none;
+            transition: background 0.1s;
+        }
+        .pirate-dpad-btn.pressed {
+            background: rgba(127, 219, 218, 0.5);
+            box-shadow: 0 0 12px rgba(127, 219, 218, 0.6);
+        }
+        .pirate-aim-zone {
+            flex: 1;
+            min-width: 140px;
+            height: 130px;
+            border: 2px solid rgba(229, 115, 115, 0.5);
+            border-radius: 16px;
+            background: rgba(229, 115, 115, 0.15);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            color: rgba(229, 115, 115, 0.8);
+            font-size: 14px;
             font-family: Orbitron, monospace;
+            gap: 6px;
             user-select: none;
             touch-action: none;
         }
-        .pirate-fire-btn {
-            width: 120px;
-            height: 120px;
-            border-radius: 50%;
-            background: rgba(229, 115, 115, 0.7);
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            color: #FFF;
-            font-size: 16px;
-            font-weight: bold;
-            font-family: Orbitron, monospace;
-            text-shadow: 0 1px 3px rgba(0,0,0,0.5);
-            user-select: none;
-            touch-action: none;
+        .pirate-aim-zone.aiming {
+            background: rgba(229, 115, 115, 0.35);
+            border-color: rgba(229, 115, 115, 0.8);
+            box-shadow: 0 0 15px rgba(229, 115, 115, 0.5);
+        }
+        .pirate-aim-hint {
+            font-size: 10px;
+            opacity: 0.6;
         }
 #pirate-canvas {
             border: 2px solid rgba(229, 115, 115, 0.4);
@@ -1040,8 +1067,20 @@
         <div class="pirate-header">☠ ПИРАТЫ!</div>
         <canvas id="pirate-canvas" width="800" height="600" tabindex="0"></canvas>
         <div class="pirate-controls-mobile" id="pirate-mobile-controls">
-            <div class="pirate-joystick-area" id="pirate-joystick">MOVE</div>
-            <div class="pirate-fire-btn" id="pirate-aim">AIM<br>+ FIRE</div>
+            <div class="pirate-dpad-area" id="pirate-dpad">
+                <div class="pirate-dpad-row">
+                    <button class="pirate-dpad-btn" data-dir="up">▲</button>
+                </div>
+                <div class="pirate-dpad-row">
+                    <button class="pirate-dpad-btn" data-dir="left">◄</button>
+                    <button class="pirate-dpad-btn" data-dir="down">▼</button>
+                    <button class="pirate-dpad-btn" data-dir="right">►</button>
+                </div>
+            </div>
+            <div class="pirate-aim-zone" id="pirate-aim">
+                <span>DRAG TO AIM</span>
+                <span class="pirate-aim-hint">Auto-fires while aiming</span>
+            </div>
         </div>
         <div id="pirate-hud">
             <div id="pirate-health">HP: 3/3</div>
@@ -3381,7 +3420,7 @@ class Game {
         pc.lastTime = 0;
         pc.keys = {};
         pc.mouse = { x: 400, y: 500, pressed: false };
-        pc.touch = { active: false, x: 0, y: 0, shooting: false, aiming: false, touchStartX: 100, touchStartY: 500, touchAimX: 0, touchAimY: 0 };
+        pc.touch = { aiming: false, touchAimX: 0, touchAimY: 0 };
         pc.phase = 'countdown';
         pc.countdown = 5;
 
@@ -3467,7 +3506,7 @@ class Game {
         if (isBoss) {
             pc.enemies.push({
                 x: canvas.width / 2,
-                y: 80 * scale,
+                y: -50 * scale,
                 vx: 1.5,
                 vy: 0.5,
                 hp: 10,
@@ -3482,7 +3521,7 @@ class Game {
                 let margin = 80 * scale;
                 pc.enemies.push({
                     x: margin + Math.random() * (canvas.width - margin * 2),
-                    y: margin + Math.random() * (canvas.height * 0.4),
+                    y: -50 - Math.random() * 50,
                     vx: 1 + Math.random() * 2,
                     vy: 0.5 + Math.random() * 1,
                     hp: 2,
@@ -3502,38 +3541,21 @@ class Game {
 
         if (pc.phase !== 'combat') return;
 
-        let scale = pc.scale || 1;
-        let moveSpeed = 180 * scale;
+        let moveSpeed = 200;
 
-        if (pc.touch.active) {
-            let jx = pc.touchStartX;
-            let jy = pc.touchStartY;
-            let dirX = pc.touch.x - jx;
-            let dirY = pc.touch.y - jy;
-            let dist = Math.sqrt(dirX * dirX + dirY * dirY);
-            if (dist > 15 * scale) {
-                dirX /= dist;
-                dirY /= dist;
-                pc.playerX += dirX * moveSpeed * dt;
-                pc.playerY += dirY * moveSpeed * dt;
-            }
-        }
+        if (pc.keys['w'] || pc.keys['W'] || pc.keys['ArrowUp']) pc.playerY -= moveSpeed * dt;
+        if (pc.keys['s'] || pc.keys['S'] || pc.keys['ArrowDown']) pc.playerY += moveSpeed * dt;
+        if (pc.keys['a'] || pc.keys['A'] || pc.keys['ArrowLeft']) pc.playerX -= moveSpeed * dt;
+        if (pc.keys['d'] || pc.keys['D'] || pc.keys['ArrowRight']) pc.playerX += moveSpeed * dt;
 
-        if (pc.keys['ArrowUp']) pc.playerY -= moveSpeed * dt;
-        if (pc.keys['ArrowDown']) pc.playerY += moveSpeed * dt;
-        if (pc.keys['ArrowLeft']) pc.playerX -= moveSpeed * dt;
-        if (pc.keys['ArrowRight']) pc.playerX += moveSpeed * dt;
-
-        let margin = 25 * scale;
-        pc.playerX = Math.max(margin, Math.min(canvas.width - margin, pc.playerX));
-        pc.playerY = Math.max(margin, Math.min(canvas.height - margin, pc.playerY));
+        pc.playerX = Math.max(20, Math.min(canvas.width - 20, pc.playerX));
+        pc.playerY = Math.max(20, Math.min(canvas.height - 20, pc.playerY));
 
         if (pc.touch.aiming) {
             let rect = canvas.getBoundingClientRect();
             let aimX = pc.touchAimX - rect.left;
             let aimY = pc.touchAimY - rect.top;
             pc.playerAngle = Math.atan2(aimY - pc.playerY, aimX - pc.playerX);
-            pc.mouse.pressed = true;
         } else {
             let targetX = pc.mouse.x || pc.playerX;
             let targetY = pc.mouse.y || pc.playerY;
@@ -3541,8 +3563,8 @@ class Game {
         }
 
         pc.lastShot += dt;
-        let shooting = pc.keys[' '] || pc.mouse.pressed || pc.keys['Space'];
-        if (shooting && pc.lastShot > 0.2) {
+        let shootRequested = pc.keys[' '] || pc.mouse.pressed;
+        if (shootRequested && pc.lastShot > 0.2) {
             this.shootBullet(pc.playerX, pc.playerY, pc.playerAngle, true);
             pc.lastShot = 0;
         }
@@ -3729,7 +3751,7 @@ class Game {
         }
     }
 
-    endPirateCombat(victory) {
+endPirateCombat(victory) {
         let pc = this.state.pirateCombat;
         pc.active = false;
 
@@ -3742,6 +3764,8 @@ class Game {
             cancelAnimationFrame(pc.gameLoopId);
             pc.gameLoopId = null;
         }
+
+        if (pc._cleanup) pc._cleanup();
 
         pc.lastTime = 0;
         pc.keys = {};
@@ -3833,16 +3857,12 @@ class Game {
 
         let keyHandler = (e) => {
             if (!pc.active) return;
-            let key = e.key.length === 1 ? e.key.toLowerCase() : e.key;
-            if (e.type === 'keydown') {
-                pc.keys[key] = true;
-            } else {
-                pc.keys[key] = false;
-            }
+            let key = e.key;
+            if (e.key.length === 1) key = e.key.toLowerCase();
+            pc.keys[key] = e.type === 'keydown';
         };
 
         let mouseMoveHandler = (e) => {
-            let pc = this.state.pirateCombat;
             if (!pc.active) return;
             let rect = canvas.getBoundingClientRect();
             pc.mouse.x = e.clientX - rect.left;
@@ -3850,67 +3870,13 @@ class Game {
         };
 
         let mouseDownHandler = (e) => {
-            let pc = this.state.pirateCombat;
             if (!pc.active) return;
             pc.mouse.pressed = true;
         };
 
         let mouseUpHandler = (e) => {
-            let pc = this.state.pirateCombat;
             if (!pc.active) return;
             pc.mouse.pressed = false;
-        };
-
-        let touchStartHandler = (e) => {
-            let pc = this.state.pirateCombat;
-            if (!pc.active) return;
-            e.preventDefault();
-
-            let touch = e.touches[0];
-            let touchX = touch.clientX;
-            let touchY = touch.clientY;
-
-            if (touchX < window.innerWidth / 2) {
-                pc.touch.active = true;
-                pc.touch.x = touchX;
-                pc.touch.y = touchY;
-                pc.touchStartX = touchX;
-                pc.touchStartY = touchY;
-            } else {
-                pc.touch.aiming = true;
-                pc.touchAimX = touchX;
-                pc.touchAimY = touchY;
-            }
-        };
-
-        let touchMoveHandler = (e) => {
-            let pc = this.state.pirateCombat;
-            if (!pc.active) return;
-            e.preventDefault();
-
-            if (!pc.touch.active && !pc.touch.aiming) return;
-
-            let touch = e.touches[0];
-            let touchX = touch.clientX;
-            let touchY = touch.clientY;
-
-            if (pc.touch.active) {
-                pc.touch.x = touchX;
-                pc.touch.y = touchY;
-            }
-            if (pc.touch.aiming) {
-                pc.touchAimX = touchX;
-                pc.touchAimY = touchY;
-            }
-        };
-
-        let touchEndHandler = (e) => {
-            let pc = this.state.pirateCombat;
-            if (!pc.active) return;
-            e.preventDefault();
-
-            pc.touch.active = false;
-            pc.touch.aiming = false;
         };
 
         document.addEventListener('keydown', keyHandler);
@@ -3918,20 +3884,100 @@ class Game {
         canvas.addEventListener('mousemove', mouseMoveHandler);
         canvas.addEventListener('mousedown', mouseDownHandler);
         canvas.addEventListener('mouseup', mouseUpHandler);
-        document.addEventListener('touchstart', touchStartHandler, { passive: false });
-        document.addEventListener('touchmove', touchMoveHandler, { passive: false });
-        document.addEventListener('touchend', touchEndHandler, { passive: false });
 
-        let joystickEl = document.getElementById('pirate-joystick');
-        let aimEl = document.getElementById('pirate-aim');
-        if (joystickEl) {
-            joystickEl.addEventListener('touchstart', (e) => { e.preventDefault(); e.stopPropagation(); pc.touch.active = true; }, { passive: false });
-            joystickEl.addEventListener('touchend', (e) => { e.preventDefault(); e.stopPropagation(); pc.touch.active = false; }, { passive: false });
-        }
-        if (aimEl) {
-            aimEl.addEventListener('touchstart', (e) => { e.preventDefault(); e.stopPropagation(); pc.touch.aiming = true; }, { passive: false });
-            aimEl.addEventListener('touchend', (e) => { e.preventDefault(); e.stopPropagation(); pc.touch.aiming = false; }, { passive: false });
-        }
+        document.querySelectorAll('.pirate-dpad-btn').forEach(btn => {
+            let dir = btn.dataset.dir;
+            let key = dir === 'up' ? 'ArrowUp' : dir === 'down' ? 'ArrowDown' : dir === 'left' ? 'ArrowLeft' : 'ArrowRight';
+
+            let pressHandler = (e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                pc.keys[key] = true;
+                btn.classList.add('pressed');
+            };
+
+            let releaseHandler = (e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                pc.keys[key] = false;
+                btn.classList.remove('pressed');
+            };
+
+            btn.addEventListener('touchstart', pressHandler, { passive: false });
+            btn.addEventListener('touchend', releaseHandler, { passive: false });
+            btn.addEventListener('touchcancel', releaseHandler, { passive: false });
+            btn.addEventListener('mousedown', pressHandler);
+            btn.addEventListener('mouseup', releaseHandler);
+            btn.addEventListener('mouseleave', releaseHandler);
+        });
+
+        let aimZone = document.getElementById('pirate-aim');
+        let aimTouchId = null;
+
+        let aimStartHandler = (e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            let touch = e.changedTouches[0];
+            aimTouchId = touch.identifier;
+            pc.touch.aiming = true;
+            pc.touchAimX = touch.clientX;
+            pc.touchAimY = touch.clientY;
+            aimZone.classList.add('aiming');
+        };
+
+        let aimMoveHandler = (e) => {
+            if (aimTouchId === null) return;
+            e.preventDefault();
+            for (let i = 0; i < e.changedTouches.length; i++) {
+                let touch = e.changedTouches[i];
+                if (touch.identifier === aimTouchId) {
+                    pc.touchAimX = touch.clientX;
+                    pc.touchAimY = touch.clientY;
+                    break;
+                }
+            }
+        };
+
+        let aimEndHandler = (e) => {
+            if (aimTouchId === null) return;
+            e.preventDefault();
+            for (let i = 0; i < e.changedTouches.length; i++) {
+                let touch = e.changedTouches[i];
+                if (touch.identifier === aimTouchId) {
+                    aimTouchId = null;
+                    pc.touch.aiming = false;
+                    aimZone.classList.remove('aiming');
+                    break;
+                }
+            }
+        };
+
+        aimZone.addEventListener('touchstart', aimStartHandler, { passive: false });
+        aimZone.addEventListener('touchmove', aimMoveHandler, { passive: false });
+        aimZone.addEventListener('touchend', aimEndHandler, { passive: false });
+        aimZone.addEventListener('touchcancel', aimEndHandler, { passive: false });
+
+        pc._cleanup = () => {
+            document.removeEventListener('keydown', keyHandler);
+            document.removeEventListener('keyup', keyHandler);
+            canvas.removeEventListener('mousemove', mouseMoveHandler);
+            canvas.removeEventListener('mousedown', mouseDownHandler);
+            canvas.removeEventListener('mouseup', mouseUpHandler);
+            document.querySelectorAll('.pirate-dpad-btn').forEach(btn => {
+                let dir = btn.dataset.dir;
+                let key = dir === 'up' ? 'ArrowUp' : dir === 'down' ? 'ArrowDown' : dir === 'left' ? 'ArrowLeft' : 'ArrowRight';
+                pc.keys[key] = false;
+            });
+            aimZone.removeEventListener('touchstart', aimStartHandler);
+            aimZone.removeEventListener('touchmove', aimMoveHandler);
+            aimZone.removeEventListener('touchend', aimEndHandler);
+            aimZone.removeEventListener('touchcancel', aimEndHandler);
+        };
+    }
+
+    unbindPirateControls() {
+        let pc = this.state.pirateCombat;
+        if (pc._cleanup) pc._cleanup();
     }
 }
 

@@ -3869,23 +3869,6 @@ class Game {
             let touch = e.touches[0];
             let touchX = touch.clientX;
             let touchY = touch.clientY;
-            let target = document.elementFromPoint(touchX, touchY);
-
-            if (target && (target.id === 'pirate-joystick' || target.classList.contains('pirate-joystick-area'))) {
-                pc.touch.active = true;
-                pc.touch.x = touchX;
-                pc.touch.y = touchY;
-                pc.touchStartX = touchX;
-                pc.touchStartY = touchY;
-                return;
-            }
-
-            if (target && (target.id === 'pirate-aim' || target.classList.contains('pirate-fire-btn'))) {
-                pc.touch.aiming = true;
-                pc.touchAimX = touchX;
-                pc.touchAimY = touchY;
-                return;
-            }
 
             if (touchX < window.innerWidth / 2) {
                 pc.touch.active = true;
@@ -3905,22 +3888,17 @@ class Game {
             if (!pc.active) return;
             e.preventDefault();
 
+            if (!pc.touch.active && !pc.touch.aiming) return;
+
             let touch = e.touches[0];
             let touchX = touch.clientX;
             let touchY = touch.clientY;
-            let target = document.elementFromPoint(touchX, touchY);
-
-            if (target && (target.id === 'pirate-aim' || target.classList.contains('pirate-fire-btn'))) {
-                pc.touch.aiming = true;
-                pc.touchAimX = touchX;
-                pc.touchAimY = touchY;
-                return;
-            }
 
             if (pc.touch.active) {
                 pc.touch.x = touchX;
                 pc.touch.y = touchY;
-            } else if (touchX >= window.innerWidth / 2) {
+            }
+            if (pc.touch.aiming) {
                 pc.touchAimX = touchX;
                 pc.touchAimY = touchY;
             }
@@ -3929,19 +3907,7 @@ class Game {
         let touchEndHandler = (e) => {
             let pc = this.state.pirateCombat;
             if (!pc.active) return;
-            let touch = e.changedTouches[0];
-            let touchX = touch.clientX;
-            let target = document.elementFromPoint(touchX, touch.clientY);
-
-            if (target && (target.id === 'pirate-joystick' || target.classList.contains('pirate-joystick-area'))) {
-                pc.touch.active = false;
-                return;
-            }
-
-            if (target && (target.id === 'pirate-aim' || target.classList.contains('pirate-fire-btn'))) {
-                pc.touch.aiming = false;
-                return;
-            }
+            e.preventDefault();
 
             pc.touch.active = false;
             pc.touch.aiming = false;
@@ -3952,9 +3918,20 @@ class Game {
         canvas.addEventListener('mousemove', mouseMoveHandler);
         canvas.addEventListener('mousedown', mouseDownHandler);
         canvas.addEventListener('mouseup', mouseUpHandler);
-        canvas.addEventListener('touchstart', touchStartHandler);
-        canvas.addEventListener('touchmove', touchMoveHandler);
-        canvas.addEventListener('touchend', touchEndHandler);
+        document.addEventListener('touchstart', touchStartHandler, { passive: false });
+        document.addEventListener('touchmove', touchMoveHandler, { passive: false });
+        document.addEventListener('touchend', touchEndHandler, { passive: false });
+
+        let joystickEl = document.getElementById('pirate-joystick');
+        let aimEl = document.getElementById('pirate-aim');
+        if (joystickEl) {
+            joystickEl.addEventListener('touchstart', (e) => { e.preventDefault(); e.stopPropagation(); pc.touch.active = true; }, { passive: false });
+            joystickEl.addEventListener('touchend', (e) => { e.preventDefault(); e.stopPropagation(); pc.touch.active = false; }, { passive: false });
+        }
+        if (aimEl) {
+            aimEl.addEventListener('touchstart', (e) => { e.preventDefault(); e.stopPropagation(); pc.touch.aiming = true; }, { passive: false });
+            aimEl.addEventListener('touchend', (e) => { e.preventDefault(); e.stopPropagation(); pc.touch.aiming = false; }, { passive: false });
+        }
     }
 }
 

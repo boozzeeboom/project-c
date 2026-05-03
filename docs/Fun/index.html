@@ -3869,9 +3869,28 @@ class Game {
             let touch = e.touches[0];
             let touchX = touch.clientX;
             let touchY = touch.clientY;
+            let target = document.elementFromPoint(touchX, touchY);
+
+            if (target && (target.id === 'pirate-joystick' || target.classList.contains('pirate-joystick-area'))) {
+                pc.touch.active = true;
+                pc.touch.x = touchX;
+                pc.touch.y = touchY;
+                pc.touchStartX = touchX;
+                pc.touchStartY = touchY;
+                return;
+            }
+
+            if (target && (target.id === 'pirate-aim' || target.classList.contains('pirate-fire-btn'))) {
+                pc.touch.aiming = true;
+                pc.touchAimX = touchX;
+                pc.touchAimY = touchY;
+                return;
+            }
 
             if (touchX < window.innerWidth / 2) {
                 pc.touch.active = true;
+                pc.touch.x = touchX;
+                pc.touch.y = touchY;
                 pc.touchStartX = touchX;
                 pc.touchStartY = touchY;
             } else {
@@ -3889,8 +3908,16 @@ class Game {
             let touch = e.touches[0];
             let touchX = touch.clientX;
             let touchY = touch.clientY;
+            let target = document.elementFromPoint(touchX, touchY);
 
-            if (touchX < window.innerWidth / 2 && pc.touch.active) {
+            if (target && (target.id === 'pirate-aim' || target.classList.contains('pirate-fire-btn'))) {
+                pc.touch.aiming = true;
+                pc.touchAimX = touchX;
+                pc.touchAimY = touchY;
+                return;
+            }
+
+            if (pc.touch.active) {
                 pc.touch.x = touchX;
                 pc.touch.y = touchY;
             } else if (touchX >= window.innerWidth / 2) {
@@ -3904,12 +3931,20 @@ class Game {
             if (!pc.active) return;
             let touch = e.changedTouches[0];
             let touchX = touch.clientX;
+            let target = document.elementFromPoint(touchX, touch.clientY);
 
-            if (touchX < window.innerWidth / 2) {
+            if (target && (target.id === 'pirate-joystick' || target.classList.contains('pirate-joystick-area'))) {
                 pc.touch.active = false;
-            } else {
-                pc.touch.aiming = false;
+                return;
             }
+
+            if (target && (target.id === 'pirate-aim' || target.classList.contains('pirate-fire-btn'))) {
+                pc.touch.aiming = false;
+                return;
+            }
+
+            pc.touch.active = false;
+            pc.touch.aiming = false;
         };
 
         document.addEventListener('keydown', keyHandler);

@@ -10,11 +10,27 @@ namespace ProjectC.Core
         public float MaxDistance = 15000f;
         public float MinSize = 500f;
         public float MaxSize = 2000f;
+
+        [Header("Textures")]
+        public Texture2D[] Textures;
+
+        [Header("Y Rotation Range (degrees around vertical axis)")]
+        public Vector2 RotationRangeY = new Vector2(0f, 360f);
+
+        [Header("Material")]
         public Material ImpostorMaterial;
 
-        private Matrix4x4[] _matrices;
+        private struct ImpostorData
+        {
+            public Matrix4x4 Matrix;
+            public Vector3 Scale;
+            public int TextureIndex;
+        }
+
+        private ImpostorData[] _impostors;
         private Mesh _mesh;
-        private Material _instMaterial;
+        private Material[] _instMaterials;
+        private int _textureCount = 0;
         private int _currentCount = 0;
         private System.Random _rng;
 
@@ -26,22 +42,39 @@ namespace ProjectC.Core
         public void Initialize()
         {
             _rng = new System.Random(54321);
-            _matrices = new Matrix4x4[ImpostorCount];
 
             _mesh = CreateQuadMesh();
 
-            if (ImpostorMaterial != null)
+            _textureCount = Textures != null && Textures.Length > 0 ? Textures.Length : 1;
+            _instMaterials = new Material[_textureCount];
+
+            for (int i = 0; i < _textureCount; i++)
             {
-                _instMaterial = new Material(ImpostorMaterial);
-                _instMaterial.enableInstancing = true;
+                if (ImpostorMaterial != null)
+                {
+                    _instMaterials[i] = new Material(ImpostorMaterial);
+                    _instMaterials[i].enableInstancing = true;
+
+                    if (i < Textures.Length && Textures[i] != null)
+                    {
+                        _instMaterials[i].mainTexture = Textures[i];
+                        Debug.Log($"[DistantCloud] Set texture {i}: {_instMaterials[i].mainTexture} (size: {Textures[i].width}x{Textures[i].height}, format: {Textures[i].format})");
+                    }
+                }
+                else
+                {
+                    Debug.LogWarning($"[DistantCloud] ImpostorMaterial is null at index {i}");
+                }
             }
 
-            Debug.Log($"[{name}] Initialized: impostors={ImpostorCount}");
+            _impostors = new ImpostorData[ImpostorCount];
+
+            Debug.Log($"[{name}] Initialized: impostors={ImpostorCount}, textures={_textureCount}");
         }
 
         public void Generate(Vector3 playerPos)
         {
-            if (_matrices == null || _instMaterial == null) return;
+            if (_impostors == null || _instMaterials == null) return;
 
             for (int i = 0; i < ImpostorCount; i++)
             {
@@ -53,16 +86,24 @@ namespace ProjectC.Core
                 float y = playerPos.y + (float)(_rng.NextDouble() * 4000f + 2000f);
 
                 Vector3 pos = new Vector3(x, y, z);
+
                 float scaleX = (float)(_rng.NextDouble() * (MaxSize - MinSize) + MinSize);
                 float scaleY = scaleX * (float)(_rng.NextDouble() * 0.5f + 0.3f);
 
-                Quaternion rot = Quaternion.Euler(-90, 0, 0);
+                float rotY = Mathf.Lerp(RotationRangeY.x, RotationRangeY.y, (float)_rng.NextDouble());
+                Quaternion rot = Quaternion.Euler(-90, rotY, 0);
 
-                _matrices[i] = Matrix4x4.TRS(pos, rot, new Vector3(scaleX, scaleY, 1f));
+                int texIndex = _textureCount > 1 ? _rng.Next(_textureCount) : 0;
+
+                _impostors[i] = new ImpostorData
+                {
+                    Matrix = Matrix4x4.TRS(pos, rot, new Vector3(scaleX, scaleY, 1f)),
+                    Scale = new Vector3(scaleX, scaleY, 1f),
+                    TextureIndex = texIndex
+                };
             }
 
             _currentCount = ImpostorCount;
-            Debug.Log($"[{name}] Generated {_currentCount} impostors around player");
         }
 
         private void Update()
@@ -76,7 +117,7 @@ namespace ProjectC.Core
 
             for (int i = 0; i < _currentCount; i++)
             {
-                Vector3 pos = _matrices[i].GetColumn(3);
+                Vector3 pos = _impostors[i].Matrix.GetColumn(3);
                 pos += offset;
 
                 float distFromPlayer = Vector3.Distance(pos, playerPos);
@@ -89,23 +130,54 @@ namespace ProjectC.Core
                         (float)(_rng.NextDouble() * 4000f + 2000f),
                         Mathf.Sin(angle) * newDist
                     );
-                }
 
-                _matrices[i].SetColumn(3, pos);
+                    float rotY = Mathf.Lerp(RotationRangeY.x, RotationRangeY.y, (float)_rng.NextDouble());
+                    Quaternion rot = Quaternion.Euler(-90, rotY, 0);
+
+                    _impostors[i] = new ImpostorData
+                    {
+                        Matrix = Matrix4x4.TRS(pos, rot, _impostors[i].Scale),
+                        Scale = _impostors[i].Scale,
+                        TextureIndex = _impostors[i].TextureIndex
+                    };
+                }
+                else
+                {
+                    var m = _impostors[i].Matrix;
+                    m.SetColumn(3, pos);
+                    _impostors[i] = new ImpostorData { Matrix = m, Scale = _impostors[i].Scale, TextureIndex = _impostors[i].TextureIndex };
+                }
             }
         }
 
         private void LateUpdate()
         {
-            if (_currentCount == 0 || _instMaterial == null || _mesh == null) return;
+            if (_currentCount == 0) return;
 
-            Graphics.DrawMeshInstanced(
-                _mesh, 0, _instMaterial,
-                _matrices, _currentCount,
-                null,
-                UnityEngine.Rendering.ShadowCastingMode.Off,
-                false
-            );
+            for (int t = 0; t < _textureCount; t++)
+            {
+                int count = 0;
+                Matrix4x4[] matrices = new Matrix4x4[_currentCount];
+
+                for (int i = 0; i < _currentCount; i++)
+                {
+                    if (_impostors[i].TextureIndex == t)
+                    {
+                        matrices[count++] = _impostors[i].Matrix;
+                    }
+                }
+
+                if (count > 0 && _instMaterials[t] != null && _mesh != null)
+                {
+                    Graphics.DrawMeshInstanced(
+                        _mesh, 0, _instMaterials[t],
+                        matrices, count,
+                        null,
+                        UnityEngine.Rendering.ShadowCastingMode.Off,
+                        false
+                    );
+                }
+            }
         }
 
         public void SetWind(Vector3 dir, float speed)
@@ -127,6 +199,14 @@ namespace ProjectC.Core
                 new Vector3(-0.5f, 0.5f, 0)
             };
 
+            mesh.uv = new Vector2[]
+            {
+                new Vector2(0, 0),
+                new Vector2(1, 0),
+                new Vector2(1, 1),
+                new Vector2(0, 1)
+            };
+
             mesh.triangles = new int[] { 0, 2, 1, 0, 3, 2 };
             mesh.RecalculateNormals();
 
@@ -143,7 +223,13 @@ namespace ProjectC.Core
 
         private void OnDestroy()
         {
-            if (_instMaterial != null) Destroy(_instMaterial);
+            if (_instMaterials != null)
+            {
+                foreach (var mat in _instMaterials)
+                {
+                    if (mat != null) Destroy(mat);
+                }
+            }
         }
     }
 }

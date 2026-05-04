@@ -13,6 +13,9 @@
 /[Uu]ser[Ss]ettings/
 *.log
 
+#assets
+*[Tt]extures
+
 # MemoryCaptures
 /[Mm]emoryCaptures/
 

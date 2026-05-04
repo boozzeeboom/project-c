@@ -353,7 +353,30 @@ MonoBehaviour:
   ImpostorCount: 140
   MinDistance: 5000
   MaxDistance: 15000
-  ImpostorMaterial: {fileID: 2100000, guid: 1113070119fa4ec4f93620807a2d0511, type: 2}
+  MinSize: 500
+  MaxSize: 2000
+  Textures:
+  - {fileID: 2800000, guid: 4394fc7a59d741842b2df27e073822da, type: 3}
+  - {fileID: 2800000, guid: 6287093d420ed8c44bf2ae8203e59923, type: 3}
+  - {fileID: 2800000, guid: 9f51ffe17079f4c4bac874fe362b903f, type: 3}
+  - {fileID: 2800000, guid: 6a298e8dfab5cfb4fb7b8bb16b346d74, type: 3}
+  - {fileID: 2800000, guid: 98fef01b69a896841a79f3d862fe43ec, type: 3}
+  - {fileID: 2800000, guid: 49677842919755440a957df4e217a07b, type: 3}
+  - {fileID: 2800000, guid: 90863c57801ddf843ab29126781295bf, type: 3}
+  - {fileID: 2800000, guid: 30db88d9c5781bb4896fbe3bd99c3c03, type: 3}
+  - {fileID: 2800000, guid: 705557d9aa590874e9bb76b8a9ed4cc1, type: 3}
+  - {fileID: 2800000, guid: bee02400ba431664eac3d5047985348f, type: 3}
+  - {fileID: 2800000, guid: 5037b44a8d9e8494e9e55318412a9ac2, type: 3}
+  - {fileID: 2800000, guid: 04874f31cc60a604283130287467626e, type: 3}
+  - {fileID: 2800000, guid: 9639dd0954d658944aee9794bf37d408, type: 3}
+  - {fileID: 2800000, guid: 012f80f8a542d984e9978b208b8fb939, type: 3}
+  - {fileID: 2800000, guid: aeecf1738d480f74fa562bb414bab689, type: 3}
+  - {fileID: 2800000, guid: c3f67db08894d064092f3a1f18278aa4, type: 3}
+  - {fileID: 2800000, guid: 77a2563c50c059745b3952e4f07a92e1, type: 3}
+  - {fileID: 2800000, guid: 0ff946af0fee98448b3ece8c865c1c8f, type: 3}
+  - {fileID: 2800000, guid: b0d214ebcdf32cf49a74287879cef43a, type: 3}
+  RotationRangeY: {x: 0, y: 360}
+  ImpostorMaterial: {fileID: 2100000, guid: cd7464249ee8ca246b66dd9eb35bbb1d, type: 2}
 --- !u!1 &446055738
 GameObject:
   m_ObjectHideFlags: 0
@@ -1015,6 +1038,14 @@ MonoBehaviour:
   MaxAltitude: 3000
   CloudSize: 100
   CloudMaterial: {fileID: 2100000, guid: 1113070119fa4ec4f93620807a2d0511, type: 2}
+  MeshEntries:
+  - Mesh: {fileID: 10207, guid: 0000000000000000e000000000000000, type: 0}
+    Weight: 0
+  - Mesh: {fileID: 10202, guid: 0000000000000000e000000000000000, type: 0}
+    Weight: 82
+  RotationX: {x: 360, y: 0}
+  RotationY: {x: 0, y: 360}
+  RotationZ: {x: 0, y: 0}
 --- !u!4 &748166804
 Transform:
   m_ObjectHideFlags: 0
@@ -1174,7 +1205,10 @@ MonoBehaviour:
   DistantCount: 140
   DistantMinDist: 5000
   DistantMaxDist: 15000
+  DistantMinSize: 2000
+  DistantMaxSize: 20000
   CloudMaterial: {fileID: 2100000, guid: 1113070119fa4ec4f93620807a2d0511, type: 2}
+  DistantMaterial: {fileID: 2100000, guid: cd7464249ee8ca246b66dd9eb35bbb1d, type: 2}
   GenerationRadius: 5000
 --- !u!4 &909089446
 Transform:
@@ -1692,6 +1726,12 @@ MonoBehaviour:
   MaxAltitude: 8000
   CloudSize: 100
   CloudMaterial: {fileID: 2100000, guid: 1113070119fa4ec4f93620807a2d0511, type: 2}
+  MeshEntries:
+  - Mesh: {fileID: 10207, guid: 0000000000000000e000000000000000, type: 0}
+    Weight: 0
+  RotationX: {x: 0, y: 0}
+  RotationY: {x: 0, y: 360}
+  RotationZ: {x: 0, y: 0}
 --- !u!4 &1392657049
 Transform:
   m_ObjectHideFlags: 0
@@ -1868,6 +1908,12 @@ MonoBehaviour:
   MaxAltitude: 5000
   CloudSize: 100
   CloudMaterial: {fileID: 2100000, guid: 1113070119fa4ec4f93620807a2d0511, type: 2}
+  MeshEntries:
+  - Mesh: {fileID: 10207, guid: 0000000000000000e000000000000000, type: 0}
+    Weight: 0
+  RotationX: {x: 0, y: 0}
+  RotationY: {x: 0, y: 360}
+  RotationZ: {x: 0, y: 0}
 --- !u!4 &1624092370
 Transform:
   m_ObjectHideFlags: 0

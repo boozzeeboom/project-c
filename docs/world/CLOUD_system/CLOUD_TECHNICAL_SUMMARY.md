@@ -1,6 +1,6 @@
-# CLOUD_system — Summary v0.3
+# CLOUD_system — Summary v0.4
 
-**Version:** 0.3 | **Date:** 3 мая 2026 | **Status:** 🔴 Critical Corrections Applied
+**Version:** 0.4 | **Date:** 4 мая 2026 | **Status:** 🟡 Phase 4a Planning
 
 ---
 
@@ -94,7 +94,7 @@ BootstrapScene.unity (Never unloaded)
 
 ---
 
-## Why NOT Full Raymarch
+## Why NOT Full Raymarch (Original Analysis)
 
 User mentioned "raymarch from another engine" as reference. Subagent analysis clarified:
 
@@ -107,29 +107,55 @@ User mentioned "raymarch from another engine" as reference. Subagent analysis cl
 
 ---
 
-## Key Differences: v0.2 → v0.3
+## HorizonVeil Decision (2026-05-04)
 
-| Aspect | v0.2 (WRONG) | v0.3 (CORRECT) |
-|--------|-------------|----------------|
-| Sky Dome | As cloud layer | Sky renderer only |
-| Distant impostors | Follow camera | Fixed world positions |
-| Near cloud count | 150 total | 280 total |
-| Generation | Per-scene | Player-centered recycling |
-| Layer type | Distance-based | Altitude-based |
-| Impostor positions | Camera-relative | World-relative |
+### CLOUDENGINE Analysis
+
+Analyzed C:\CLOUDPROJECT\CLOUDENGINE for raymarch implementation:
+
+| File | Approach | GPU Cost |
+|------|----------|----------|
+| cloud_advanced.frag | Full volumetric raymarch (64 steps, 6 octaves FBM) | ~3ms |
+| VeilShader.shader | Flat plane + noise + depth fade (NOT volumetric) | ~0.2ms |
+
+**Key Finding:** VeilShader is NOT volumetric — just smoke on a flat plane. Cannot create " клубящаяся завеса со своими впадинами каньонами" (boiling curtain with valleys/canyons).
+
+### Why Raymarch Was Rejected (Reconsidered)
+
+Original rejection based on: "Full raymarch 64-128 steps = 4-20ms GPU"
+
+But CLOUDENGINE shows:
+- 64 steps = ~3ms (reasonable)
+- 32 steps = ~2ms
+- **16 steps = ~1ms**
+
+The cost is manageable if we use fewer steps (8-16) and half-resolution rendering.
+
+### Decision: HorizonVeil with Simplified Raymarch
+
+**Approved approach:**
+- 8-16 raymarch steps (not 64-128)
+- FBM noise (value noise as in CLOUDENGINE — fast)
+- Height gradient for "curtain layer"
+- Single scatter directional light
+- Half-resolution render target + upscale
+- Result: ~1-1.5ms GPU, volumetric quality
+
+**Existing distant impostors remain** — they handle mid-sky clouds. HorizonVeil adds the bottom-horizon volumetric layer.
+
+### Architecture Integration
+
+```
+Phase 4a: HorizonVeil (NEW)
+├── HorizonVeilRenderer.cs — half-res volumetric
+├── VeilRaymarch.shader — 8-16 steps, FBM noise
+└── Render to RT, blur, composite
+
+Phase 4b: Storm Authority (existing)
+├── ServerStormManager (5 storms)
+└── StormController visuals
+```
 
 ---
 
-## Documents Updated
-
-| Document | Status |
-|----------|--------|
-| `CLOUD_ARCHITECTURE.md` | ✅ v0.3 with critical corrections |
-| `CLOUD_IMPLEMENTATION_PLAN.md` | ✅ v0.3 with Phase 1-6 |
-| `CLOUD_TECHNICAL_SUMMARY.md` | ✅ (will be regenerated) |
-| `CLOUD_VISUAL_DESIGN.md` | ⚠️ Still relevant, shader improvements listed |
-| `CLOUD_ONBOARDING.md` | ⚠️ Needs update for v0.3 |
-
----
-
-**Status:** 🔴 v0.3 — Critical corrections applied, architecture validated against requirements
+**Status:** 🟡 v0.4 — HorizonVeil with simplified raymarch approved for Phase 4a

@@ -1,6 +1,6 @@
-# CLOUD_system — Implementation Plan v0.3
+# CLOUD_system — Implementation Plan v0.4
 
-**Версия:** 0.3 (Critical Corrections) | **Дата:** 3 мая 2026 | **Status:** 🔴 Planning
+**Версия:** 0.4 (HorizonVeil Added) | **Дата:** 4 мая 2026 | **Status:** 🟡 Phase 4a Planning
 
 ---
 
@@ -492,7 +492,156 @@ TEST 3: All Players See Same Clouds
 
 ---
 
-## Phase 4: Storm Authority
+## Phase 4a: HorizonVeil — Volumetric Curtain
+
+**Duration:** Week 2-3 (before Storm Authority)
+**Goal:** Volumetric curtain at horizon with "клубящаяся завеса со своими впадинами каньонами"
+**Test:** Visual quality, GPU budget
+
+### 4a.1 Why We Need HorizonVeil
+
+Current systems:
+- **Near clouds (0-5km)** — individual puffy clouds, NO curtain effect
+- **Distant impostors (5-15km)** — individual blobs, gaps between them
+- **Neither creates "завеса"** — continuous cloud layer at horizon
+
+User requirement: "Горизонт затянут облаками"
+
+### 4a.2 CLOUDENGINE Analysis
+
+Analyzed C:\CLOUDPROJECT\CLOUDENGINE:
+- `cloud_advanced.frag`: Full volumetric (64 steps, ~3ms)
+- `VeilShader.shader`: Flat plane + noise (NOT volumetric, ~0.2ms)
+
+Key finding: VeilShader cannot create "клубящаяся завеса" — it's just smoke on a flat plane.
+
+### 4a.3 Decision: Simplified Raymarch
+
+Based on analysis:
+- Full raymarch (64-128 steps) = 4-20ms — TOO EXPENSIVE
+- **Simplified (8-16 steps) = ~1-1.5ms** — ACCEPTABLE
+- Half-resolution (0.5x) = additional 4x speedup
+
+### 4a.4 Implementation
+
+```csharp
+// HorizonVeilRenderer.cs
+public class HorizonVeilRenderer : MonoBehaviour
+{
+    [Header("Render Settings")]
+    [SerializeField] private int _renderWidth = 512;
+    [SerializeField] private int _renderHeight = 288;
+    [SerializeField] private Material _veilMaterial;
+
+    [Header("Raymarch Settings")]
+    [SerializeField] private int _steps = 12;
+    [SerializeField] private float _layerBottom = 1000f;
+    [SerializeField] private float _layerTop = 3000f;
+
+    [Header("Noise")]
+    [SerializeField] private float _noiseScale = 0.002f;
+    [SerializeField] private int _noiseOctaves = 2;
+    [SerializeField] private float _noiseSpeed = 0.01f;
+
+    private RenderTexture _veilRT;
+    private Camera _veilCamera;
+
+    void Start()
+    {
+        _veilRT = new RenderTexture(_renderWidth, _renderHeight, 0, RenderTextureFormat.ARGB32);
+        _veilCamera = GetComponent<Camera>();
+    }
+
+    void OnPreRender()
+    {
+        // Render veil at half-res
+        _veilCamera.targetTexture = _veilRT;
+        Shader.SetGlobalFloat("_VeilTime", Time.time);
+    }
+
+    void OnPostRender()
+    {
+        // Blit to screen (or composite)
+        Graphics.Blit(_veilRT, null, _veilMaterial);
+    }
+}
+```
+
+### 4a.5 VeilRaymarch.shader
+
+```hlsl
+// Simplified volumetric raymarch — 8-16 steps
+// Based on CLOUDENGINE cloud_advanced.frag
+
+float cloudDensity(vec3 pos)
+{
+    // Height gradient (smoothstep)
+    float h = 1.0 - abs(pos.y - 2000.0) / 1000.0;
+    h = max(0.0, smoothstep(0.0, 0.3, h));
+
+    // FBM noise (value noise, 2 octaves)
+    float windX = _Time.y * _NoiseSpeed;
+    float shape = fbm(vec2(pos.x + windX, pos.z) * _NoiseScale, 2);
+    float detail = fbm(vec2(pos.x + windX, pos.z) * _NoiseScale * 4.0, 1) * 0.3;
+
+    return (shape + detail) * h;
+}
+
+void main()
+{
+    // Raymarch with 12 steps
+    float stepSize = (tMax - tMin) / float(_Steps);
+    vec4 color = vec4(0.0);
+
+    for (int i = 0; i < _Steps && color.a < 0.99; i++)
+    {
+        float t = tMin + (float(i) + 0.5) * stepSize;
+        vec3 pos = uCameraPos + rayDir * t;
+
+        float density = cloudDensity(pos);
+
+        if (density > 0.01)
+        {
+            // Beer-Lambert absorption
+            float absorption = density * 0.05;
+            color.rgb += _VeilColor * (1.0 - color.a) * absorption * stepSize;
+            color.a += absorption * stepSize * 0.5;
+        }
+    }
+}
+```
+
+### 4a.6 Test Plan
+
+```
+TEST 1: Visual Quality
+1. Run scene with HorizonVeil active
+2. Observe horizon — should see "клубящаяся завеса"
+3. Expected: Boiling curtain with valleys/canyons (not flat smoke)
+
+TEST 2: GPU Budget
+1. Profile GPU with RenderDoc
+2. Expected: <1.5ms for veil rendering
+
+TEST 3: Wind Integration
+1. Change wind direction
+2. Expected: Veil animates with wind (noise offset)
+
+TEST 4: Altitude Range
+1. Fly player up/down
+2. Expected: Veil visible at all altitudes (1000-3000m range)
+```
+
+### 4a.7 Success Criteria
+
+- [ ] "Клубящаяся завеса со своими впадинами каньонами" visible
+- [ ] GPU <1.5ms for veil
+- [ ] Wind affects veil animation
+- [ ] Works with existing near/distant clouds
+
+---
+
+## Phase 4b: Storm Authority
 
 **Duration:** Week 2-3
 **Goal:** 5 server-authoritative storms at world positions
@@ -814,7 +963,8 @@ TEST 3: Multi-Client Full Test
 ```
 Week 1:   Phase 1 (Wind + CloudManager) + Phase 2 start
 Week 2:   Phase 2 complete + Phase 3 (Distant Impostors)
-Week 3:   Phase 4 (Storms) + Phase 5 (Shader)
+Week 2-3: Phase 4a (HorizonVeil) ← NEW
+Week 3:   Phase 4b (Storms) + Phase 5 (Shader)
 Week 4:   Phase 6 (Polish)
 Week 5+:  Iteration, optimization
 ```

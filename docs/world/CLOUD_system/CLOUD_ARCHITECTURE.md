@@ -1,6 +1,6 @@
-# CLOUD_system — Architecture v0.3 (CRITICAL CORRECTIONS)
+# CLOUD_system — Architecture v0.4 (HorizonVeil Added)
 
-**Версия:** 0.3 (Critical Corrections) | **Дата:** 3 мая 2026 | **Статус:** 🔴 Planning
+**Версия:** 0.4 (HorizonVeil Added) | **Дата:** 4 мая 2026 | **Status:** 🟡 Phase 4a Planning
 **Автор:** Technical Director + Subagent Analysis
 
 ---
@@ -345,7 +345,90 @@ Why? Because clouds are player-centered, not scene-bound. No regeneration needed
 
 ---
 
-## 6. Sky Dome — NOT a Cloud Layer
+## 7. HorizonVeil — Volumetric Curtain for Horizon (v0.4)
+
+### 7.1 Why We Need It
+
+User requirement: "Горизонт затянут облаками" — horizon filled with clouds
+
+But existing systems:
+- **Near clouds (0-5km)** — individual puffy clouds, no curtain effect
+- **Distant impostors (5-15km)** — individual blobs, gaps between them
+- **Neither creates "завеса" (curtain)** — continuous cloud layer at horizon
+
+CLOUDENGINE VeilShader analysis confirmed: flat plane + noise = NOT volumetric. Cannot create "клубящаяся завеса со своими впадинами каньонами" (boiling curtain with valleys/canyons).
+
+### 7.2 Decision: Simplified Volumetric Raymarch
+
+Based on CLOUDENGINE raymarch analysis (cloud_advanced.frag):
+- 64 steps = ~3ms (too high combined with other systems)
+- **16 steps = ~1ms** (acceptable)
+- 8 steps = ~0.5ms (good for half-res)
+
+**HorizonVeil approach:**
+- 8-16 raymarch steps (NOT 64-128)
+- FBM noise with 2-3 octaves (value noise, fast)
+- Height gradient: Y=1000-3000m (curtain layer)
+- Single scatter directional light (Beer-Lambert)
+- **Half-resolution render target** (512x288) + upscale
+- Result: ~1-1.5ms GPU
+
+### 7.3 Architecture
+
+```
+HorizonVeilRenderer.cs (component in CloudManager)
+├── Render at half-resolution (0.5x)
+├── VeilRaymarch.shader (8-16 steps)
+│   ├── FBM noise for density
+│   ├── Height gradient (smoothstep)
+│   ├── Beer-Lambert absorption
+│   └── Single directional light
+├── Blur pass (optional)
+└── Composite to screen
+
+Integration with existing:
+├── CloudManager owns HorizonVeilRenderer
+├── Wind affects veil movement (via shader uniform)
+├── Phase 4a (before Storm Authority)
+```
+
+### 7.4 Shader Parameters
+
+```hlsl
+// VeilRaymarch.shader properties
+_VeilColor              // Base color
+_FogDensity             // Density multiplier
+_LightDir               // Sun direction
+_DayFactor              // Day/night blend
+_NoiseScale             // FBM scale
+_NoiseSpeed             // Wind animation speed
+_LightningIntensity     // Storm lightning (from ServerStormManager)
+```
+
+### 7.5 Performance Budget
+
+| Metric | Value | Notes |
+|--------|-------|-------|
+| Resolution | 512x288 (half-res) | Upscale to screen |
+| Raymarch Steps | 12 | Balance quality/cost |
+| FBM Octaves | 2 | Fast noise |
+| GPU | ~1-1.5ms | With half-res |
+| Draw calls | 2 (RT write + blit) | Separate from cloud draws |
+
+### 7.6 Relationship with DistantImpostors
+
+| System | Distance | Purpose |
+|--------|----------|---------|
+| Near clouds | 0-5km | Individual puffy clouds |
+| HorizonVeil | 1-5km | Volumetric curtain at horizon |
+| Distant impostors | 5-15km | Individual clouds at mid-sky |
+| Sky dome | background | Sky renderer only |
+
+**Note:** HorizonVeil covers 1-5km horizon area (LOW altitude). Distant impostors cover 5-15km (MID altitude). They complement each other.
+
+---
+
+## 8. Sky Dome — NOT a Cloud Layer
 
 ### 6.1 Correct Understanding
 
@@ -366,7 +449,7 @@ These create continuous cloud coverage at all distances.
 
 ---
 
-## 7. Performance Budget (v0.3)
+## 9. Performance Budget (v0.3)
 
 ### 7.1 Cloud Count
 
@@ -400,7 +483,7 @@ vs Current: 890+ draw calls
 
 ---
 
-## 8. Shader Improvements Required
+## 10. Shader Improvements Required
 
 ### 8.1 CloudGhibli.shader — Must Add
 
@@ -433,7 +516,7 @@ _LightningFlash    // Float — for storm lightning effect
 
 ---
 
-## 9. Implementation Phases (Testing-Based)
+## 11. Implementation Phases (Testing-Based)
 
 ### Phase 1: Wind System + CloudManager
 - [ ] WindManager (central wind)
@@ -452,7 +535,14 @@ _LightningFlash    // Float — for storm lightning effect
 - [ ] GPU instancing for 140 impostors
 - [ ] Test: Same impostors visible to all clients
 
-### Phase 4: Storm Authority
+### Phase 4a: HorizonVeil — Volumetric Curtain (NEW)
+- [ ] HorizonVeilRenderer.cs (half-res volumetric)
+- [ ] VeilRaymarch.shader (8-16 steps, FBM noise)
+- [ ] Render target setup (512x288)
+- [ ] Wind integration (shader uniform)
+- [ ] Test: "Клубящаяся завеса со своими впадинами каньонами"
+
+### Phase 4b: Storm Authority
 - [ ] ServerStormManager
 - [ ] StormController visual
 - [ ] Test: Storms at same positions for all clients
@@ -470,7 +560,7 @@ _LightningFlash    // Float — for storm lightning effect
 
 ---
 
-## 10. Summary: Why v0.3 is Correct
+## 12. Summary: Why v0.4 is Correct
 
 ### Correct vs v0.2:
 

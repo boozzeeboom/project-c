@@ -34,6 +34,7 @@ namespace ProjectC.Core
 
         [Header("Material")]
         public Material CloudMaterial;
+        public Material DistantMaterial;
 
         [Header("Generation")]
         public float GenerationRadius = 5000f;
@@ -98,7 +99,7 @@ namespace ProjectC.Core
                 DistantManager.MaxDistance = DistantMaxDist;
                 DistantManager.MinSize = DistantMinSize;
                 DistantManager.MaxSize = DistantMaxSize;
-                DistantManager.ImpostorMaterial = CloudMaterial;
+                DistantManager.ImpostorMaterial = DistantMaterial != null ? DistantMaterial : CloudMaterial;
                 DistantManager.Initialize();
                 DistantManager.Generate(playerPos);
             }

@@ -59,15 +59,26 @@ CloudManager children/
 | `MaxAltitude` | 5000m | Layer max height |
 | `CloudSize` | 100f | Base cloud size |
 | `CloudMaterial` | null | Material for rendering |
+| `MeshEntries` | [] | Array of mesh variants with weights |
 
-**Behavior:**
-- Generates clouds in radius 5000m around player
-- Wind moves clouds each frame
-- Recycles clouds when >10000m from player (regenerates within 1000-5000m radius)
-- Uses seeded RNG (seed = 12345 + name hash) for consistent positions across clients
+**MeshEntries format:**
+```
+Element 0: Mesh=[sphere], Weight=10
+Element 1: Mesh=[cube], Weight=5
+```
+Total=16. For 80 clouds: ~50 of mesh0, ~25 of mesh1, ~5 of mesh2.
+
+**Rotation Range:**
+| Field | Default | Description |
+|-------|---------|-------------|
+| `RotationX` | (0, 0) | Min/Max rotation around X axis |
+| `RotationY` | (0, 360) | Min/Max rotation around Y axis |
+| `RotationZ` | (0, 0) | Min/Max rotation around Z axis |
+
+Example: RotationY=(0,360) + RotationZ=(0,30) = clouds rotated randomly on Y and slightly on Z.
 
 **Public methods:**
-- `Initialize()` — Creates mesh and material
+- `Initialize()` — Creates meshes and materials
 - `Generate(playerPos)` — Generates cloud positions around player
 - `SetWind(dir, speed)` — Sets wind direction and speed
 
@@ -82,17 +93,17 @@ CloudManager children/
 | `MaxDistance` | 15000m | Max spawn distance |
 | `MinSize` | 500f | Min impostor scale |
 | `MaxSize` | 2000f | Max impostor scale |
-| `ImpostorMaterial` | null | Material for rendering |
+| `Textures` | [] | Array of PNG textures (random per impostor) |
+| `RotationRangeY` | (0, 360) | Y-axis rotation variability |
+| `ImpostorMaterial` | null | Base material for rendering |
 
-**Behavior:**
-- Horizontal quad planes (rotated -90° on X)
-- Generated around player with seeded RNG
-- Move with wind
-- Recycle when >18000m from player
-- Uses seeded RNG (seed = 54321) for consistency across clients
+**Texture System:**
+- Add PNG textures to `Textures` array
+- Each impostor gets random texture on generation
+- Uses separate draw call per texture (instancing preserved per texture group)
 
 **Public methods:**
-- `Initialize()` — Creates quad mesh and material
+- `Initialize()` — Creates quad mesh and materials
 - `Generate(playerPos)` — Generates impostors around player
 - `SetWind(dir, speed)` — Sets wind direction and speed
 

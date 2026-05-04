@@ -803,6 +803,59 @@ MonoBehaviour:
   m_OnClick:
     m_PersistentCalls:
       m_Calls: []
+--- !u!1 &519093359
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 519093360}
+  - component: {fileID: 519093361}
+  m_Layer: 0
+  m_Name: AdditionalVeilManager
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &519093360
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 519093359}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 909089446}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &519093361
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 519093359}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 830e935cadfa99f47a8342bef8e76e5c, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::ProjectC.World.Clouds.AdditionalVeilModule
+  ModuleId: 0
+  IsActive: 1
+  WorldPosition: {x: 0, y: 0, z: 0}
+  ModuleRadius: 5000
+  AltitudeOffset: 0
+  ModuleColor: {r: 0.1, g: 0.08, b: 0.2, a: 0.9}
+  DensityMultiplier: 1.5
+  LightningChance: 0.1
+  _moduleMaterial: {fileID: 2100000, guid: d72d2448e7953684dbb4fece4eac8892, type: 2}
 --- !u!1 &606144531
 GameObject:
   m_ObjectHideFlags: 0
@@ -1170,6 +1223,7 @@ GameObject:
   m_Component:
   - component: {fileID: 909089446}
   - component: {fileID: 909089445}
+  - component: {fileID: 909089447}
   m_Layer: 0
   m_Name: CloudManager
   m_TagString: Untagged
@@ -1207,6 +1261,11 @@ MonoBehaviour:
   DistantMaxDist: 15000
   DistantMinSize: 2000
   DistantMaxSize: 20000
+  HorizonVeil: {fileID: 975710309}
+  BaseVeilHeight: 1200
+  VeilThickness: 400
+  AdditionalVeilMgr: {fileID: 0}
+  MaxAdditionalVeils: 10
   CloudMaterial: {fileID: 2100000, guid: 1113070119fa4ec4f93620807a2d0511, type: 2}
   DistantMaterial: {fileID: 2100000, guid: cd7464249ee8ca246b66dd9eb35bbb1d, type: 2}
   GenerationRadius: 5000
@@ -1227,8 +1286,99 @@ Transform:
   - {fileID: 1624092370}
   - {fileID: 748166804}
   - {fileID: 422709482}
+  - {fileID: 519093360}
+  - {fileID: 975710308}
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &909089447
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 909089444}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 0d05d9d7316bf1a46b21b8959467a9a9, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::ProjectC.World.Clouds.VeilRaymarchMeshController
+  VeilMaterial: {fileID: 2100000, guid: 94d1c69c14b2fb04aa8abad851a8b995, type: 2}
+  BaseVeilHeight: 1200
+  GlobalAltitudeOffset: 0
+  PlaneSize: 200000
+  RaymarchSteps: 24
+  MaxDistance: 8000
+  NoiseScale: 0.002
+  NoiseSpeed: 0.01
+  NoiseOctaves: 3
+  DensityMultiplier: 1
+  WindX: 0.01
+  WindZ: 0.003
+  DayFactor: 0.5
+  RimPower: 3
+  RimIntensity: 0.5
+  VeilColor: {r: 0.176, g: 0.106, b: 0.306, a: 1}
+  LightningColor: {r: 0.7, g: 0.4, b: 1, a: 1}
+  DebugLog: 0
+--- !u!1 &975710306
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 975710308}
+  - component: {fileID: 975710309}
+  m_Layer: 0
+  m_Name: Veil
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 0
+--- !u!4 &975710308
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 975710306}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 909089446}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &975710309
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 975710306}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 2345f6102e6d1c747874338d6c3e398a, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::ProjectC.World.Clouds.HorizonVeilRenderer
+  VeilMaterial: {fileID: 2100000, guid: d72d2448e7953684dbb4fece4eac8892, type: 2}
+  BaseVeilHeight: 1200
+  VeilSize: 200000
+  GlobalAltitudeOffset: 0
+  CurtainBottom: 800
+  CurtainTop: 1200
+  CurtainDensity: 1
+  NoiseScale: 0.001
+  NoiseSpeed: 0.05
+  NoiseOctaves: 4
+  VeilColor: {r: 0.08, g: 0.06, b: 0.15, a: 0.95}
+  LightningColor: {r: 0.7, g: 0.4, b: 1, a: 1}
+  FadeStart: 1000
+  FadeEnd: 8000
+  DebugLog: 1
 --- !u!1 &1149404328
 GameObject:
   m_ObjectHideFlags: 0

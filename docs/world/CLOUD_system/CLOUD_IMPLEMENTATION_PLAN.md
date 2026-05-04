@@ -634,10 +634,30 @@ TEST 4: Altitude Range
 
 ### 4a.7 Success Criteria
 
-- [ ] "Клубящаяся завеса со своими впадинами каньонами" visible
-- [ ] GPU <1.5ms for veil
-- [ ] Wind affects veil animation
-- [ ] Works with existing near/distant clouds
+- [x] "Клубящаяся завеса со своими впадинами каньонами" visible (VeilRaymarchMesh.shader)
+- [x] GPU <1.5ms for veil (24 steps, plane-based raymarch)
+- [x] Wind affects veil animation (via _WindX/_WindZ uniforms)
+- [x] Works with existing near/distant clouds (CloudManager integration)
+- [x] Volumetric depth via CLOUDENGINE-style lighting (normals, rim, cel-shade)
+
+### 4a.8 ⚠️ KNOWN LIMITATION: No Diving Under Veil
+
+Current plane-based implementation ONLY works when player is ABOVE veil (Y > 1200).
+
+When player goes BELOW veil (Y < 800):
+- Player is INSIDE the volumetric layer
+- Plane mesh is above player at Y=1200
+- No inner surface to display
+- Result: empty space, no veil visible
+
+**User requirement:** "若玩家在云层下方，就看不到内部的云壁" — must see inner veil wall when diving under.
+
+**Solution (Future Work — Phase 4c):**
+- Cylinder approach: cylinder around player, inner surface visible from inside
+- Alternative: Multiple planes (1 horizontal + 4 vertical)
+- Alternative: True volumetric rendering around player position
+
+**Current status:** Phase 4a is PARTIALLY COMPLETE. Diving under veil requires separate implementation.
 
 ---
 

@@ -1,4 +1,5 @@
 using UnityEngine;
+using ProjectC.World.Clouds;
 
 namespace ProjectC.Core
 {
@@ -32,6 +33,15 @@ namespace ProjectC.Core
         public float DistantMinSize = 500f;
         public float DistantMaxSize = 2000f;
 
+        [Header("HorizonVeil (Phase 4a)")]
+        public HorizonVeilRenderer HorizonVeil;
+        public float BaseVeilHeight = 1200f;
+        public float VeilThickness = 400f;
+
+        [Header("Additional Veils (Server-controlled)")]
+        public AdditionalVeilManager AdditionalVeilMgr;
+        public int MaxAdditionalVeils = 10;
+
         [Header("Material")]
         public Material CloudMaterial;
         public Material DistantMaterial;
@@ -40,6 +50,7 @@ namespace ProjectC.Core
         public float GenerationRadius = 5000f;
 
         private bool _initialized = false;
+        private float _globalAltitudeOffset = 0f;
 
         private void Awake()
         {
@@ -104,8 +115,27 @@ namespace ProjectC.Core
                 DistantManager.Generate(playerPos);
             }
 
+            if (HorizonVeil != null)
+            {
+                HorizonVeil.BaseVeilHeight = BaseVeilHeight;
+                HorizonVeil.Initialize();
+            }
+
+            if (AdditionalVeilMgr == null)
+            {
+                var existing = GetComponent<AdditionalVeilManager>();
+                if (existing == null)
+                {
+                    AdditionalVeilMgr = gameObject.AddComponent<AdditionalVeilManager>();
+                }
+                else
+                {
+                    AdditionalVeilMgr = existing;
+                }
+            }
+
             _initialized = true;
-            Debug.Log($"[CloudManager] Init complete. Upper={UpperCount}, Middle={MiddleCount}, Lower={LowerCount}, Distant={DistantCount}");
+            Debug.Log($"[CloudManager] Init complete. Upper={UpperCount}, Middle={MiddleCount}, Lower={LowerCount}, Distant={DistantCount}, HorizonVeil={HorizonVeil != null}");
         }
 
         private void Update()
@@ -121,6 +151,24 @@ namespace ProjectC.Core
                 if (MiddleLayer != null) MiddleLayer.SetWind(dir, speed);
                 if (LowerLayer != null) LowerLayer.SetWind(dir, speed);
                 if (DistantManager != null) DistantManager.SetWind(dir, speed);
+            }
+        }
+
+        public void SetGlobalAltitudeOffset(float offset)
+        {
+            _globalAltitudeOffset = offset;
+            if (HorizonVeil != null)
+            {
+                HorizonVeil.SetGlobalAltitudeOffset(offset);
+            }
+            Debug.Log($"[CloudManager] Global altitude offset set to {offset}");
+        }
+
+        public void TriggerVeilLightning()
+        {
+            if (HorizonVeil != null)
+            {
+                HorizonVeil.TriggerLightning();
             }
         }
 

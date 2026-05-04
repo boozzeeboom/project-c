@@ -1,20 +1,20 @@
 // VeilShader.shader — Шейдер завесы для Project C
-// Отличается от CloudGhibli: плоский, непрозрачный, с молниями и depth fade
-// URP Unlit, Exponential Fog эмуляция, Lightning overlay, Depth Fade на горизонте
+// Key fix: Depth fade affects COLOR (fog blend), NOT alpha
+// This ensures veil is visible at ALL distances, including near player
+// Based on CLOUDENGINE approach: noise creates texture, fog at distance
 
 Shader "Project C/Clouds/VeilShader"
 {
     Properties
     {
         _VeilColor ("Цвет завесы", Color) = (0.176, 0.106, 0.306, 1.0)
-        _FogDensity ("Плотность тумана", Float) = 0.003
         _LightningColor ("Цвет молний", Color) = (0.7, 0.4, 1.0, 1.0)
         _LightningIntensity ("Интенсивность молний", Range(0, 1)) = 0.0
-        _DepthFadeStart ("Начало растворения", Float) = 100.0
-        _DepthFadeEnd ("Конец растворения", Float) = 500.0
-        _NoiseTex ("Текстура шума", 2D) = "white" {}
-        _NoiseScale ("Масштаб шума", Float) = 10.0
-        _NoiseSpeed ("Скорость шума", Float) = 0.1
+        _FogDistance ("Дистанция тумана", Float) = 3000.0
+        _FogColor ("Цвет тумана", Color) = (0.05, 0.05, 0.08, 1.0)
+        _NoiseScale ("Масштаб шума", Float) = 0.002
+        _NoiseSpeed ("Скорость шума", Float) = 0.01
+        _NoiseOctaves ("Октавы шума", Range(1, 6)) = 3
     }
 
     SubShader
@@ -34,32 +34,27 @@ Shader "Project C/Clouds/VeilShader"
             Name "VeilPass"
             Blend SrcAlpha OneMinusSrcAlpha
             ZWrite Off
+            ZTest LEqual
             Cull Off
 
             HLSLPROGRAM
             #pragma vertex vert
             #pragma fragment frag
-            #pragma multi_compile_instancing
 
             #include "Packages/com.unity.render-pipelines.universal/ShaderLibrary/Core.hlsl"
 
-            // ---- Properties ----
-            UNITY_INSTANCING_BUFFER_START(Props)
-            UNITY_DEFINE_INSTANCED_PROP(half4, _VeilColor)
-            UNITY_DEFINE_INSTANCED_PROP(half4, _LightningColor)
-            UNITY_INSTANCING_BUFFER_END(Props)
+            CBUFFER_START(UnityPerMaterial)
+                half4 _VeilColor;
+                half4 _LightningColor;
+                half _LightningIntensity;
+                half _FogDistance;
+                half4 _FogColor;
+                half _NoiseScale;
+                half _NoiseSpeed;
+                int _NoiseOctaves;
+            CBUFFER_END
 
-            half _FogDensity;
-            half _LightningIntensity;
-            half _DepthFadeStart;
-            half _DepthFadeEnd;
-            half _NoiseScale;
-            half _NoiseSpeed;
-
-            TEXTURE2D(_NoiseTex);
-            SAMPLER(sampler_NoiseTex);
-
-            // ---- Simplex-like 2D noise (для автономной работы без текстур) ----
+            // ---- Hash Functions ----
             half Hash21(half2 p)
             {
                 p = frac(p * half2(123.34, 456.21));
@@ -67,100 +62,137 @@ Shader "Project C/Clouds/VeilShader"
                 return frac(p.x * p.y);
             }
 
-            half Noise(half2 uv)
+            half Hash31(half3 p)
             {
-                // Простой value noise с 2 октавами
-                half2 id = floor(uv);
-                half2 lf = frac(uv) * 2.0 - 1.0;
-                lf = lf * lf * (3.0 - 2.0 * lf); // smoothstep
+                p = frac(p * half3(123.34, 456.21, 789.87));
+                p += dot(p, p.yzx + half3(45.32, 78.91, 34.56));
+                return frac(p.x * p.y * p.z);
+            }
 
-                half tl = Hash21(id);
-                half tr = Hash21(id + half2(1, 0));
-                half bl = Hash21(id + half2(0, 1));
-                half br = Hash21(id + half2(1, 1));
+            // ---- 3D Value Noise (for volumetric effect) ----
+            half Noise3D(half3 p)
+            {
+                half3 id = floor(p);
+                half3 lf = frac(p);
+                lf = lf * lf * (3.0 - 2.0 * lf);
+
+                half tl = Hash31(id);
+                half tr = Hash31(id + half3(1, 0, 0));
+                half bl = Hash31(id + half3(0, 1, 0));
+                half br = Hash31(id + half3(1, 1, 0));
+                half tlf = Hash31(id + half3(0, 0, 1));
+                half trf = Hash31(id + half3(1, 0, 1));
+                half blf = Hash31(id + half3(0, 1, 1));
+                half brf = Hash31(id + half3(1, 1, 1));
 
                 half top = lerp(tl, tr, lf.x);
                 half bot = lerp(bl, br, lf.x);
-                return lerp(top, bot, lf.y);
+                half topF = lerp(tlf, trf, lf.x);
+                half botF = lerp(blf, brf, lf.x);
+
+                return lerp(lerp(top, bot, lf.y), lerp(topF, botF, lf.y), lf.z);
             }
 
-            half FBNoise(half2 uv, int octaves)
+            // ---- 3D FBM for "клубящаяся завеса со своими впадинами каньонами" ----
+            half FBm3D(half3 p, int octaves)
             {
                 half val = 0.0;
                 half amp = 0.5;
                 half freq = 1.0;
-                for (int i = 0; i < octaves; i++)
+                half norm = 0.0;
+
+                for (int i = 0; i < 6; i++)
                 {
-                    val += amp * Noise(uv * freq);
+                    if (i >= octaves) break;
+                    val += amp * Noise3D(p * freq);
+                    norm += amp;
                     freq *= 2.0;
                     amp *= 0.5;
                 }
-                return val;
+
+                return val / norm;
             }
 
             // ---- Vertex Input/Output ----
             struct Attributes
             {
                 float4 positionOS : POSITION;
-                UNITY_VERTEX_INPUT_INSTANCE_ID
+                float2 uv : TEXCOORD0;
             };
 
             struct Varyings
             {
                 float4 positionHCS : SV_POSITION;
                 float3 worldPos : TEXCOORD0;
-                float2 uv : TEXCOORD1;
-                UNITY_VERTEX_INPUT_INSTANCE_ID
+                float3 uv : TEXCOORD1;
             };
 
             Varyings vert(Attributes input)
             {
                 Varyings output;
-                UNITY_SETUP_INSTANCE_ID(input);
-                UNITY_TRANSFER_INSTANCE_ID(input, output);
 
                 VertexPositionInputs vertexInput = GetVertexPositionInputs(input.positionOS.xyz);
                 output.positionHCS = vertexInput.positionCS;
                 output.worldPos = vertexInput.positionWS;
-                output.uv = input.positionOS.xz * 0.001; // Масштаб для UV
+                output.uv = float3(input.uv * 0.001, 0); // Scale UVs for world-scale noise
+
                 return output;
             }
 
             half4 frag(Varyings input) : SV_Target
             {
-                UNITY_SETUP_INSTANCE_ID(input);
+                // ---- Animated wind offset ----
+                half time = _Time.y;
+                half3 windOffset = half3(time * _NoiseSpeed, 0.0, time * _NoiseSpeed * 0.3);
 
-                // ---- Depth Fade (растворение на горизонте) ----
-                float dist = length(_WorldSpaceCameraPos.xz - input.worldPos.xz);
-                half depthFade = saturate((dist - _DepthFadeStart) / (_DepthFadeEnd - _DepthFadeStart));
+                // ---- Sample 3D FBM for volumetric density ----
+                // This creates "клубящаяся завеса со своими впадинами каньонами"
+                half3 samplePos = input.worldPos * _NoiseScale + windOffset;
 
-                // ---- Noise анимация ----
-                half2 noiseUV = input.uv * _NoiseScale + _Time.y * _NoiseSpeed * half2(1.0, 0.3);
-                half noiseVal = FBNoise(noiseUV, 3);
+                // Large-scale shape (canyon valleys)
+                half shape = FBm3D(samplePos, 2);
 
-                // ---- Базовый цвет завесы ----
-                half4 veilColor = UNITY_ACCESS_INSTANCED_PROP(Props, _VeilColor);
+                // Medium-scale detail (boiling effect)
+                half detail = FBm3D(samplePos * 4.0 + half3(100.0, 0.0, 50.0), 2);
 
-                // Добавляем шум к альфе — создаём "дымовую" поверхность
-                half alpha = veilColor.a * (0.85 + noiseVal * 0.15);
-                alpha *= depthFade; // Применяем depth fade
+                // Fine turbulence
+                half turbulence = FBm3D(samplePos * 8.0 + half3(200.0, 100.0, 0.0), 1) * 0.3;
 
-                // ---- Молнии ----
-                half lightning = 0.0;
+                // Combine: 60% shape, 30% detail, 10% turbulence
+                half density = shape * 0.6 + detail * 0.3 + turbulence * 0.1;
+
+                // Non-linear remap for more defined valleys
+                density = smoothstep(0.15, 0.85, density);
+
+                // ---- Base alpha from noise (always visible where noise > 0) ----
+                half alpha = density * _VeilColor.a;
+
+                // ---- Distance-based fog (blends COLOR, not alpha!) ----
+                // This ensures veil is visible at all distances
+                float dist = length(_WorldSpaceCameraPos - input.worldPos);
+                half fogFactor = saturate(dist / _FogDistance);
+                half fogAmount = smoothstep(0.0, 1.0, fogFactor);
+
+                // ---- Base color ----
+                half3 finalColor = _VeilColor.rgb;
+
+                // ---- Lightning ----
                 if (_LightningIntensity > 0.01)
                 {
-                    // Молнии — яркие линии с случайной позицией
-                    half2 lightningUV = input.uv * _NoiseScale * 2.0;
-                    half lightningNoise = FBNoise(lightningUV + _Time.yy * 50.0, 2);
-                    lightning = smoothstep(0.7, 0.95, lightningNoise) * _LightningIntensity;
+                    // Animated lightning noise
+                    half3 lightningPos = samplePos * 2.0 + half3(0, time * 5.0, 0);
+                    half lightningNoise = FBm3D(lightningPos, 1);
+
+                    // Threshold for bright streaks
+                    half lightning = smoothstep(0.7, 0.9, lightningNoise) * _LightningIntensity;
+
+                    // Add lightning glow to color
+                    finalColor += _LightningColor.rgb * lightning * 2.0;
                 }
 
-                // Комбинируем
-                half3 finalColor = veilColor.rgb;
-                finalColor = lerp(finalColor, UNITY_ACCESS_INSTANCED_PROP(Props, _LightningColor).rgb, lightning);
-
-                // Добавляем яркость молний
-                finalColor += UNITY_ACCESS_INSTANCED_PROP(Props, _LightningColor).rgb * lightning * 2.0;
+                // ---- Apply fog (blend with fog color, not alpha!) ----
+                // This is the KEY fix: fog affects color, alpha stays noise-based
+                finalColor = lerp(finalColor, _FogColor.rgb, fogAmount * 0.7);
 
                 return half4(finalColor, alpha);
             }

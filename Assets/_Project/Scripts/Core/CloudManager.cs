@@ -184,10 +184,18 @@ namespace ProjectC.Core
             if (!_initialized) return;
             Vector3 pos = GetPlayerPosition();
 
-            if (UpperLayer != null) UpperLayer.Generate(pos);
-            if (MiddleLayer != null) MiddleLayer.Generate(pos);
-            if (LowerLayer != null) LowerLayer.Generate(pos);
-            if (DistantManager != null) DistantManager.Generate(pos);
+            Vector3 dir = Vector3.right;
+            float speed = 0f;
+            if (WindManager.Instance != null)
+            {
+                dir = WindManager.Instance.CurrentWindDirection;
+                speed = WindManager.Instance.CurrentWindSpeed;
+            }
+
+            if (UpperLayer != null) { UpperLayer.Generate(pos); UpperLayer.SetWind(dir, speed); }
+            if (MiddleLayer != null) { MiddleLayer.Generate(pos); MiddleLayer.SetWind(dir, speed); }
+            if (LowerLayer != null) { LowerLayer.Generate(pos); LowerLayer.SetWind(dir, speed); }
+            if (DistantManager != null) { DistantManager.Generate(pos); DistantManager.SetWind(dir, speed); }
 
             Debug.Log("[CloudManager] Regenerated all clouds");
         }

@@ -18,7 +18,7 @@ namespace ProjectC.Core
         [SerializeField] private float _broadcastInterval = 2f;
 
         [Header("Variation")]
-        [SerializeField] private bool _enableWindVariation = false;
+        [SerializeField] private bool _enableWindVariation = true;
         [SerializeField] private float _directionVariationAngle = 15f;
         [SerializeField] private float _speedVariationPercent = 0.2f;
 
@@ -32,6 +32,7 @@ namespace ProjectC.Core
                 return;
             }
 
+            ApplyWindToLocal(_windDirection, _windSpeed);
             Debug.Log("[ServerWeatherController] Server started, will broadcast wind at 0.5 Hz");
         }
 
@@ -52,6 +53,18 @@ namespace ProjectC.Core
             }
         }
 
+        private void ApplyWindToLocal(Vector3 direction, float speed)
+        {
+            if (WindManager.Instance != null)
+            {
+                WindManager.Instance.ApplyWindUpdate(direction, speed);
+            }
+            else
+            {
+                Debug.LogError("[ServerWeatherController] WindManager.Instance is NULL on server! Check script execution order.");
+            }
+        }
+
         private void ApplyWindVariation()
         {
             float angleOffset = Mathf.Sin(Time.time * 0.1f) * _directionVariationAngle;
@@ -61,7 +74,9 @@ namespace ProjectC.Core
             float speedMod = 1f + Mathf.Sin(Time.time * 0.15f) * _speedVariationPercent;
             float newSpeed = _windSpeed * speedMod;
 
-            _windSpeed = Mathf.Clamp(newSpeed, 0f, 100f);
+            _windSpeed = Mathf.Clamp(newSpeed, 1f, 100f);
+
+            ApplyWindToLocal(_windDirection, _windSpeed);
         }
 
         [ClientRpc]
@@ -85,6 +100,7 @@ namespace ProjectC.Core
             if (!IsServer) return;
             _windDirection = direction.normalized;
             _windSpeed = Mathf.Max(0f, speed);
+            ApplyWindToLocal(_windDirection, _windSpeed);
         }
 
         /// <summary>
@@ -113,11 +129,14 @@ namespace ProjectC.Core
                 _windDirection = Vector3.Lerp(startDir, targetDirection, smoothT).normalized;
                 _windSpeed = Mathf.Lerp(startSpeed, targetSpeed, smoothT);
 
+                ApplyWindToLocal(_windDirection, _windSpeed);
+
                 yield return null;
             }
 
             _windDirection = targetDirection.normalized;
             _windSpeed = Mathf.Max(0f, targetSpeed);
+            ApplyWindToLocal(_windDirection, _windSpeed);
         }
     }
 }

@@ -73,8 +73,8 @@ namespace ProjectC.Core
                 CurrentWindDirection = Vector3.Lerp(CurrentWindDirection, _targetDirection, _interpolationSpeed * Time.deltaTime);
             }
 
-            if (CurrentWindSpeed < 0.01f)
-                CurrentWindSpeed = 0f;
+            if (CurrentWindSpeed < 1f)
+                CurrentWindSpeed = 1f;
 
             if (_logWindChanges &&
                 (CurrentWindDirection != _lastLoggedDirection || Mathf.Abs(CurrentWindSpeed - _lastLoggedSpeed) > 0.5f))

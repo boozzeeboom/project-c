@@ -1,0 +1,575 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Cloud Generator 3D</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  
+  body {
+    font-family: system-ui, -apple-system, sans-serif;
+    background: #0a0a1a;
+    color: #e0e0e0;
+    overflow: hidden;
+    height: 100vh;
+  }
+  
+  header {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    background: rgba(22, 33, 62, 0.9);
+    backdrop-filter: blur(8px);
+    padding: 12px 20px;
+    display: flex;
+    align-items: center;
+    gap: 20px;
+    z-index: 10;
+    border-bottom: 1px solid #0f3460;
+  }
+  
+  header h1 {
+    color: #00d9ff;
+    font-size: 15px;
+    font-weight: 600;
+  }
+  
+  .stats {
+    font-size: 12px;
+    color: #888;
+  }
+  
+  .controls {
+    position: absolute;
+    left: 0;
+    top: 60px;
+    bottom: 0;
+    width: 280px;
+    padding: 16px;
+    background: rgba(22, 33, 62, 0.85);
+    backdrop-filter: blur(8px);
+    overflow-y: auto;
+    z-index: 10;
+    border-right: 1px solid #0f3460;
+  }
+
+  /* Mobile: controls go to top */
+  @media (max-width: 767px) {
+    .controls {
+      position: fixed;
+      top: 52px;
+      left: 0;
+      right: 0;
+      bottom: auto;
+      width: 100%;
+      height: auto;
+      max-height: 40vh;
+      overflow-y: auto;
+      border-right: none;
+      border-bottom: 1px solid #0f3460;
+      padding: 10px 12px;
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      align-items: flex-start;
+    }
+
+    .controls h2 {
+      width: 100%;
+      margin-bottom: 6px;
+      padding-bottom: 4px;
+    }
+
+    .control-group {
+      flex: 1 1 calc(50% - 4px);
+      min-width: 120px;
+      margin-bottom: 0;
+    }
+
+    .control-group label {
+      font-size: 9px;
+    }
+
+    .control-group .value {
+      font-size: 9px;
+    }
+
+    .control-group input[type="range"] {
+      height: 4px;
+    }
+
+    .buttons {
+      flex: 1 1 100%;
+      margin-top: 6px;
+    }
+
+    button {
+      padding: 7px;
+      font-size: 10px;
+    }
+
+    .info {
+      display: none;
+    }
+
+    .hint {
+      bottom: 8px;
+      font-size: 9px;
+    }
+  }
+  
+  .controls h2 {
+    color: #00d9ff;
+    font-size: 11px;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    margin-bottom: 14px;
+    padding-bottom: 8px;
+    border-bottom: 1px solid #0f3460;
+  }
+  
+  .control-group {
+    margin-bottom: 12px;
+  }
+  
+  .control-group label {
+    display: flex;
+    justify-content: space-between;
+    font-size: 11px;
+    color: #aaa;
+    margin-bottom: 5px;
+  }
+  
+  .control-group .value {
+    color: #00d9ff;
+    font-weight: 600;
+    font-variant-numeric: tabular-nums;
+  }
+  
+  .control-group input[type="range"] {
+    width: 100%;
+    height: 5px;
+    -webkit-appearance: none;
+    background: #0f3460;
+    border-radius: 3px;
+  }
+  
+  .control-group input[type="range"]::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    width: 14px;
+    height: 14px;
+    background: #00d9ff;
+    border-radius: 50%;
+    cursor: pointer;
+  }
+  
+  .buttons {
+    display: flex;
+    gap: 8px;
+    margin-top: 16px;
+  }
+  
+  button {
+    flex: 1;
+    padding: 9px;
+    background: #0f3460;
+    color: #00d9ff;
+    border: 1px solid #00d9ff;
+    border-radius: 5px;
+    cursor: pointer;
+    font-size: 11px;
+    font-weight: 600;
+    text-transform: uppercase;
+  }
+  
+  button:hover { background: #00d9ff; color: #0a0a1a; }
+  
+  .info {
+    margin-top: 16px;
+    padding-top: 12px;
+    border-top: 1px solid #0f3460;
+    font-size: 10px;
+    color: #666;
+    line-height: 1.5;
+  }
+  
+  canvas { 
+    display: block;
+    width: 100%;
+    height: 100%;
+  }
+  
+  .hint {
+    position: absolute;
+    bottom: 16px;
+    left: 50%;
+    transform: translateX(-50%);
+    font-size: 11px;
+    color: #555;
+    pointer-events: none;
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <h1>CLOUD GENERATOR 3D</h1>
+  <span class="stats" id="stats">0 spheres</span>
+</header>
+
+<div class="controls">
+  <h2>Parameters</h2>
+  
+  <div class="control-group">
+    <label>Cloud Size <span class="value" id="cloudSizeVal">100</span></label>
+    <input type="range" id="cloudSize" min="20" max="200" value="80">
+  </div>
+  
+  <div class="control-group">
+    <label>Density <span class="value" id="densityVal">0.60</span></label>
+    <input type="range" id="density" min="10" max="95" value="60">
+  </div>
+  
+  <div class="control-group">
+    <label>Turbulence <span class="value" id="turbulenceVal">0.40</span></label>
+    <input type="range" id="turbulence" min="0" max="100" value="40">
+  </div>
+  
+  <div class="control-group">
+    <label>Humidity <span class="value" id="humidityVal">0.70</span></label>
+    <input type="range" id="humidity" min="10" max="100" value="70">
+  </div>
+  
+  <div class="control-group">
+    <label>Storm <span class="value" id="stormVal">0.00</span></label>
+    <input type="range" id="storm" min="0" max="100" value="0">
+  </div>
+  
+  <div class="control-group">
+    <label>Seed <span class="value" id="seedVal">42</span></label>
+    <input type="range" id="seed" min="0" max="999" value="42">
+  </div>
+  
+  <div class="buttons">
+    <button onclick="generate()">Generate</button>
+    <button onclick="exportCode()">Export</button>
+  </div>
+  
+  <div class="info">
+    Drag to rotate. Scroll to zoom.<br>
+    Spheres colored by density.<br>
+    Blue = dense, white = wispy.
+  </div>
+</div>
+
+<div class="hint">Drag to orbit | Scroll to zoom</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<script>
+// ============================================================
+// CloudMath JS — FBM + Perlin
+// ============================================================
+
+const lerp = (a, b, t) => a + (b - a) * t;
+const fade = t => t * t * t * (t * (t * 6 - 15) + 10);
+
+const hash = (x, y) => {
+  let n = (x | 0) + ((y | 0) * 57) | 0;
+  n = (n << 13) ^ n;
+  return (n * (n * n * 15731 + 789221) + 1376312589) & 0xFF;
+};
+
+const grad = (h, x, y) => {
+  const u = h < 2 ? x : y;
+  const v = h < 2 ? y : x;
+  return ((h & 1) ? -u : u) + ((h & 2) ? -v : v);
+};
+
+const perlin2D = (x, y, seed) => {
+  x += seed * 127.1;
+  y += seed * 311.7;
+  const xi = Math.floor(x) & 0xFF;
+  const yi = Math.floor(y) & 0xFF;
+  const xf = x - Math.floor(x);
+  const yf = y - Math.floor(y);
+  const u = fade(xf), v = fade(yf);
+  const aa = hash(xi, yi), ab = hash(xi, yi + 1);
+  const ba = hash(xi + 1, yi), bb = hash(xi + 1, yi + 1);
+  const x1 = lerp(grad(aa, xf, yf), grad(ba, xf - 1, yf), u);
+  const x2 = lerp(grad(ab, xf, yf - 1), grad(bb, xf - 1, yf - 1), u);
+  return lerp(x1, x2, v);
+};
+
+const fbm = (x, y, octaves = 4, persistence = 0.5, lacunarity = 2.0, seed = 0) => {
+  let value = 0, amplitude = 1, frequency = 1, maxValue = 0;
+  for (let i = 0; i < octaves; i++) {
+    value += amplitude * perlin2D(x * frequency, y * frequency, seed + i);
+    maxValue += amplitude;
+    amplitude *= persistence;
+    frequency *= lacunarity;
+  }
+  return value / maxValue;
+};
+
+function generateCloud(cloudSize, density, turbulence, seed, humidity, stormIntensity) {
+  const spheres = [];
+  const cellSize = cloudSize * 0.22;
+  const gridSize = Math.ceil(cloudSize / cellSize) + 1;
+  const halfGrid = Math.floor(gridSize / 2);
+
+  for (let ix = -halfGrid; ix < halfGrid; ix++) {
+    for (let iy = -halfGrid / 2; iy < halfGrid / 2; iy++) {
+      for (let iz = -halfGrid; iz < halfGrid; iz++) {
+        const cx = (ix + 0.5) * cellSize;
+        const cy = (iy + 0.5) * cellSize * 0.5;
+        const cz = (iz + 0.5) * cellSize;
+
+        const nx = cx / cloudSize;
+        const ny = cy / cloudSize;
+        const nz = cz / cloudSize;
+
+        let shapeNoise = fbm(nx * 2, nz * 2, 4, 0.5, 2.0, seed);
+        shapeNoise = (shapeNoise + 1) * 0.5;
+
+        const heightFactor = 1 - Math.pow(Math.abs(ny + 0.2), 2) * 0.6;
+        shapeNoise *= heightFactor;
+
+        const threshold = 1 - density;
+        if (shapeNoise < threshold) continue;
+
+        const stormFactor = 1 + stormIntensity * 0.5;
+        const stormDensityMod = 1 - stormIntensity * 0.3;
+
+        const baseRadius = cellSize * 0.55 * (humidity * 0.7 + 0.3);
+        const radiusNoise = perlin2D(nx * 4, nz * 4, seed + 50) * 0.3 + 0.85;
+        const radius = baseRadius * radiusNoise * stormFactor;
+
+        let localDensity = (shapeNoise - threshold) / (1 - threshold);
+        localDensity *= stormDensityMod;
+        localDensity *= 0.5 + (ny + 0.5) * 0.5;
+
+        if (localDensity < 0.05) continue;
+
+        spheres.push({
+          x: cx, y: cy, z: cz,
+          radius,
+          density: Math.min(Math.max(localDensity, 0), 1)
+        });
+      }
+    }
+  }
+
+  return spheres;
+}
+
+// ============================================================
+// THREE.JS SCENE
+// ============================================================
+
+let scene, camera, renderer, controls;
+let cloudMeshes = [];
+let currentSpheres = [];
+
+function init() {
+  // Scene
+  scene = new THREE.Scene();
+  scene.background = new THREE.Color(0x0a0a1a);
+  
+  // Camera
+  camera = new THREE.PerspectiveCamera(60, window.innerWidth / window.innerHeight, 0.1, 10000);
+  camera.position.set(80, 60, 120);
+  
+  // Renderer
+  renderer = new THREE.WebGLRenderer({ antialias: true });
+  renderer.setSize(window.innerWidth, window.innerHeight);
+  renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+  document.body.appendChild(renderer.domElement);
+  
+  // Lights
+  const ambient = new THREE.AmbientLight(0xffffff, 0.4);
+  scene.add(ambient);
+  
+  const dirLight = new THREE.DirectionalLight(0xffffff, 0.8);
+  dirLight.position.set(50, 100, 50);
+  scene.add(dirLight);
+  
+  const backLight = new THREE.DirectionalLight(0x4488ff, 0.3);
+  backLight.position.set(-50, -30, -50);
+  scene.add(backLight);
+  
+  // Orbit controls (simple manual implementation)
+  setupControls();
+  
+  // Grid helper
+  const grid = new THREE.GridHelper(200, 20, 0x1a1a3a, 0x1a1a3a);
+  grid.position.y = -10;
+  scene.add(grid);
+  
+  // Axis helper
+  const axes = new THREE.AxesHelper(30);
+  scene.add(axes);
+  
+  window.addEventListener('resize', onResize);
+  
+  // Slider listeners
+  ['cloudSize', 'density', 'turbulence', 'humidity', 'storm', 'seed'].forEach(id => {
+    document.getElementById(id).addEventListener('input', function() {
+      const v = this.value;
+      const isPercent = ['density', 'humidity', 'storm'].includes(id);
+      document.getElementById(id + 'Val').textContent = 
+        id === 'seed' ? v : (v / (isPercent ? 100 : 1)).toFixed(2);
+    });
+  });
+  
+  generate();
+  animate();
+}
+
+function setupControls() {
+  let isDragging = false;
+  let prevX = 0, prevY = 0;
+  let theta = Math.PI / 4;
+  let phi = Math.PI / 4;
+  let radius = 150;
+  const target = new THREE.Vector3(0, 0, 0);
+  
+  const canvas = renderer.domElement;
+  
+  const updateCamera = () => {
+    camera.position.x = target.x + radius * Math.sin(phi) * Math.cos(theta);
+    camera.position.y = target.y + radius * Math.cos(phi);
+    camera.position.z = target.z + radius * Math.sin(phi) * Math.sin(theta);
+    camera.lookAt(target);
+  };
+  
+  canvas.addEventListener('mousedown', e => {
+    isDragging = true;
+    prevX = e.clientX;
+    prevY = e.clientY;
+    canvas.style.cursor = 'grabbing';
+  });
+  
+  canvas.addEventListener('mousemove', e => {
+    if (!isDragging) return;
+    const dx = e.clientX - prevX;
+    const dy = e.clientY - prevY;
+    theta -= dx * 0.01;
+    phi -= dy * 0.01;
+    phi = Math.max(0.1, Math.min(Math.PI - 0.1, phi));
+    prevX = e.clientX;
+    prevY = e.clientY;
+    updateCamera();
+  });
+  
+  canvas.addEventListener('mouseup', () => {
+    isDragging = false;
+    canvas.style.cursor = 'grab';
+  });
+  
+  canvas.addEventListener('mouseleave', () => {
+    isDragging = false;
+    canvas.style.cursor = 'grab';
+  });
+  
+  canvas.addEventListener('wheel', e => {
+    e.preventDefault();
+    radius += e.deltaY * 0.5;
+    radius = Math.max(30, Math.min(500, radius));
+    updateCamera();
+  }, { passive: false });
+  
+  canvas.style.cursor = 'grab';
+  updateCamera();
+  
+  window._orbitUpdate = updateCamera;
+}
+
+function onResize() {
+  camera.aspect = window.innerWidth / window.innerHeight;
+  camera.updateProjectionMatrix();
+  renderer.setSize(window.innerWidth, window.innerHeight);
+}
+
+function generate() {
+  const cloudSize = parseFloat(document.getElementById('cloudSize').value);
+  const density = parseFloat(document.getElementById('density').value) / 100;
+  const turbulence = parseFloat(document.getElementById('turbulence').value) / 100;
+  const humidity = parseFloat(document.getElementById('humidity').value) / 100;
+  const storm = parseFloat(document.getElementById('storm').value) / 100;
+  const seed = parseInt(document.getElementById('seed').value);
+
+  currentSpheres = generateCloud(cloudSize, density, turbulence, seed, humidity, storm);
+  document.getElementById('stats').textContent = `${currentSpheres.length} spheres`;
+  
+  rebuildMesh();
+}
+
+function rebuildMesh() {
+  // Remove old meshes
+  cloudMeshes.forEach(m => scene.remove(m));
+  cloudMeshes = [];
+  
+  const geometry = new THREE.SphereGeometry(1, 12, 8);
+  
+  currentSpheres.forEach(s => {
+    // Color based on density
+    const d = s.density;
+    const r = 0.2 + d * 0.6;
+    const g = 0.4 + d * 0.4;
+    const b = 1.0;
+    const color = new THREE.Color(r, g, b);
+    
+    const material = new THREE.MeshLambertMaterial({
+      color,
+      transparent: true,
+      opacity: 0.3 + d * 0.5,
+      depthWrite: false
+    });
+    
+    const mesh = new THREE.Mesh(geometry, material);
+    mesh.position.set(s.x, s.y, s.z);
+    mesh.scale.setScalar(s.radius);
+    scene.add(mesh);
+    cloudMeshes.push(mesh);
+  });
+}
+
+function animate() {
+  requestAnimationFrame(animate);
+  renderer.render(scene, camera);
+}
+
+function exportCode() {
+  const cloudSize = parseFloat(document.getElementById('cloudSize').value);
+  const density = parseFloat(document.getElementById('density').value) / 100;
+  const turbulence = parseFloat(document.getElementById('turbulence').value) / 100;
+  const humidity = parseFloat(document.getElementById('humidity').value) / 100;
+  const storm = parseFloat(document.getElementById('storm').value) / 100;
+  const seed = parseInt(document.getElementById('seed').value);
+  
+  const code = `// CloudMath C# — Generated from visualizer
+List<CloudSphere> spheres = CloudMath.GenerateCloud(
+    cloudSize: ${cloudSize}f,
+    density: ${density}f,
+    turbulence: ${turbulence}f,
+    seed: ${seed},
+    humidity: ${humidity}f,
+    windX: 0f,
+    windZ: 0f,
+    stormIntensity: ${storm}f
+);
+// ${currentSpheres.length} spheres`;
+
+  const blob = new Blob([code], { type: 'text/plain' });
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = 'CloudMath_Export.cs';
+  a.click();
+}
+
+init();
+</script>
+</body>
+</html>

@@ -55,18 +55,15 @@
     border-right: 1px solid #0f3460;
   }
 
-  /* Mobile: controls go to top */
+  /* Mobile: controls go to top, collapsible */
   @media (max-width: 767px) {
     .controls {
       position: fixed;
       top: 52px;
       left: 0;
       right: 0;
-      bottom: auto;
       width: 100%;
-      height: auto;
       max-height: 40vh;
-      overflow-y: auto;
       border-right: none;
       border-bottom: 1px solid #0f3460;
       padding: 10px 12px;
@@ -74,6 +71,17 @@
       flex-wrap: wrap;
       gap: 8px;
       align-items: flex-start;
+      transition: max-height 0.3s ease, padding 0.3s ease, opacity 0.3s ease;
+      overflow: hidden;
+      max-height: 500px;
+      opacity: 1;
+    }
+
+    .controls.collapsed {
+      max-height: 0;
+      padding-top: 0;
+      padding-bottom: 0;
+      opacity: 0;
     }
 
     .controls h2 {
@@ -117,6 +125,32 @@
     .hint {
       bottom: 8px;
       font-size: 9px;
+    }
+  }
+
+  .toggle-btn {
+    display: none;
+  }
+
+  @media (max-width: 767px) {
+    .toggle-btn {
+      display: block;
+      position: fixed;
+      top: 52px;
+      right: 8px;
+      z-index: 20;
+      background: rgba(22, 33, 62, 0.95);
+      border: 1px solid #0f3460;
+      color: #00d9ff;
+      padding: 6px 10px;
+      border-radius: 4px;
+      font-size: 11px;
+      cursor: pointer;
+    }
+
+    .toggle-btn:hover {
+      background: #00d9ff;
+      color: #0a0a1a;
     }
   }
   
@@ -218,6 +252,8 @@
   <h1>CLOUD GENERATOR 3D</h1>
   <span class="stats" id="stats">0 spheres</span>
 </header>
+
+<button class="toggle-btn" onclick="toggleControls()">Parameters</button>
 
 <div class="controls">
   <h2>Parameters</h2>
@@ -628,6 +664,13 @@ List<CloudSphere> spheres = CloudMath.GenerateCloud(
   a.href = URL.createObjectURL(blob);
   a.download = 'CloudMath_Export.cs';
   a.click();
+}
+
+function toggleControls() {
+  const controls = document.querySelector('.controls');
+  const btn = document.querySelector('.toggle-btn');
+  controls.classList.toggle('collapsed');
+  btn.textContent = controls.classList.contains('collapsed') ? 'Parameters' : 'Hide';
 }
 
 init();

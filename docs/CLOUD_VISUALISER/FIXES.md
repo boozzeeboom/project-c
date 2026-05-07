@@ -334,3 +334,142 @@ const treeOx = (treePosNoiseX - 0.5) * 4 * childRadius * posVariation;
 ```javascript
 positionVariation: 0.5
 ```
+
+---
+
+## v5.7 — Random Seed on Generate
+
+### Problem: Seed parameter lost across updates, no way to quickly explore variations
+
+**Symptom:**
+- Each archetype had its own seed handling that got lost during refactoring
+- Pressing Generate repeatedly produced identical results
+- No easy way to "shuffle" and explore different random variations of the same settings
+
+### Fix: Auto-randomize seed on each Generate press
+
+```javascript
+function generate() {
+  const randomSeed = Math.floor(Math.random() * 999999);
+  for (const layer of layers) {
+    layer.seed = randomSeed;
+  }
+  // ... rest of generation
+}
+```
+
+### Behavior:
+- Every press of Generate button → new random seed (0–999999)
+- All layers share the same seed for that generation
+- All other settings (sizeRange, positionVariation, jitter, etc.) preserved
+- Only randomness regenerated, not configuration
+
+### Effect:
+- Click Generate multiple times to cycle through different arrangements
+- Same settings → many different valid clouds
+- Quick exploration of design space without manual slider fiddling
+
+---
+
+## v5.7b — Integer Inputs to Perlin Noise Causing Silent Failure
+
+### Problem: Visualizer showed nothing (no children of any type) with no console errors
+
+**Symptom:**
+- Platform archetype produced no visible spheres
+- Column archetype showed nothing
+- Tree archetype invisible
+- Sphere archetype children absent
+- Generate button appeared to do nothing
+
+**Root Cause: Integer inputs to perlin3D cause fade() = 0, preventing interpolation**
+
+In classic Perlin noise, the `fade()` function produces smoothstep values:
+```javascript
+fade(t) = 6t^5 - 15t^4 + 10t^3
+```
+
+When `t` is an integer (0 or 1), `fade(0) = 0` and `fade(1) = 0`. This means:
+- Integer lattice coordinates return 0 from fade()
+- Gradient dot products computed but multiplied by 0
+- Result: ALL lattice points return identical noise value regardless of position
+
+**Locations with integer-only inputs (15 total):**
+
+| Archetype | Line | Problem Code | Fixed Code |
+|-----------|------|--------------|------------|
+| Sphere child | 732-733 | `perlin3D(jpt.x * noiseScale * 2, ...)` with jpt.x as integer | Added 0.5 offsets |
+| Column | 788-790 | `perlin3D(floor + 0.5, r + 0.5, ...)` | Already had 0.1 offsets |
+| Platform | 879-880 | `perlin3D(px * 0.5, pz * 0.5, spiralIdx, ...)` | `+ spiralIdx + 0.5` |
+| Tree | 981-983 | `perlin3D(depth, pathId, seed + 80, 0)` | `seed` param fixed |
+| Lateral | 1006 | `perlin3D(pathId * 10, i * 5, seed, seed)` | Now uses proper seeds |
+
+**Also Fixed:**
+- `worley3D` and `invertedWorley` functions missing seed parameter
+- All perlin3D calls with 4th arg = 0 were ignoring seed (should pass layer.seed or layer.noiseSalt)
+
+### Fix Applied:
+
+```javascript
+// Before (platform) — spiralIdx was integer, seed was 0
+const rNoiseBase = Math.pow((perlin3D(px * 0.5, pz * 0.5, layer.seed + 600 + spiralIdx, 0) + 1) * 0.5, 1.8);
+
+// After — add 0.5 fractional offset, proper seed
+const rNoiseBase = Math.pow((perlin3D(px * 0.5, pz * 0.5, layer.seed + 600 + spiralIdx, layer.seed) + 1) * 0.5, 1.8);
+```
+
+All 15 perlin noise sampling locations now use proper seeds and fractional inputs.
+
+---
+
+## v5.7b — Position Variation: Math.random() вместо Perlin
+
+### Problem: Position variation produced diagonal stretching, not 3D scatter
+
+**Symptom:**
+- Setting positionVariation slider had minimal effect
+- When it did work, children stretched along diagonal (x=y=z correlation)
+- All three axes used similar noise values (correlated)
+- Platform "jumped" but didn't truly vary
+
+**Root Cause: Correlated Perlin noise across axes**
+
+```javascript
+// Before — all axes sample similar spatial regions
+const posNoiseX = perlin3D(id * 1000, 0, 0, seed);
+const posNoiseY = perlin3D(0, id * 1000, 0, seed + 1);
+const posNoiseZ = perlin3D(0, 0, id * 1000, seed + 2);
+// X, Y, Z still correlated because all use same id*1000 magnitude
+```
+
+### Fix: Use Math.random() for independent per-axis offsets
+
+```javascript
+// After — each axis independent, no correlation
+const posVariation = layer.positionVariation !== undefined ? layer.positionVariation : 0.5;
+const ox = (Math.random() - 0.5) * 12 * parent.radius * posVariation;
+const oy = (Math.random() - 0.5) * 12 * parent.radius * posVariation;
+const oz = (Math.random() - 0.5) * 12 * parent.radius * posVariation;
+```
+
+### Applied To All 5 Archetypes:
+
+| Archetype | Offset Variables | Base Radius Used |
+|-----------|------------------|------------------|
+| Sphere child | ox, oy, oz | parent.radius |
+| Column | colOx, colOy, colOz | sphereRadius |
+| Platform | platOx, platOy, platOz | radius |
+| Tree main | treeOx, treeOy, treeOz | childRadius |
+| Tree lateral | latOx, latOy, latOz | lateralRadius |
+
+### Key Changes:
+1. **Removed perlin3D noise sampling** for position offsets — replaced with `Math.random()`
+2. **Added posVariation definition** at top of each generator function (was missing in tree/lateral)
+3. **Multiplier**: `12 × radius × positionVariation` (was 4× in v5.6)
+4. **UI slider max**: 200 → 500
+
+### Result:
+- Each Generate press produces completely different child positions
+- No diagonal stretching — axes fully independent
+- Chaotic 3D scatter matches expected behavior of "variation"
+- Same settings → visually distinct clouds on each press

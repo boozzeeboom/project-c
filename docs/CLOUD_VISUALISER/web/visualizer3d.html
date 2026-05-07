@@ -40,7 +40,14 @@
     font-size: 12px;
     color: #888;
   }
-  
+
+  .version {
+    position: absolute;
+    right: 12px;
+    bottom: 4px;
+    font-size: 10px;
+    color: #555;
+  }
   .controls {
     position: absolute;
     left: 0;
@@ -65,8 +72,6 @@
       border-right: none;
       border-bottom: 1px solid #0f3460;
       padding: 0;
-      display: flex;
-      flex-direction: column;
       transition: max-height 0.3s ease, opacity 0.3s ease;
       overflow: hidden;
       max-height: 500px;
@@ -79,41 +84,10 @@
       pointer-events: none;
     }
 
-    .tab-bar {
-      display: flex;
-      border-bottom: 1px solid #0f3460;
-      flex-shrink: 0;
-    }
-
-    .tab-btn {
-      flex: 1;
-      padding: 8px 4px;
-      background: transparent;
-      border: none;
-      border-bottom: 2px solid transparent;
-      color: #888;
-      font-size: 10px;
-      cursor: pointer;
-      text-transform: uppercase;
-    }
-
-    .tab-btn.active {
-      color: #00d9ff;
-      border-bottom-color: #00d9ff;
-    }
-
-    .tab-content {
+    #tab-layers {
       flex: 1;
       overflow-y: auto;
       padding: 10px 12px;
-      display: none;
-      flex-wrap: wrap;
-      gap: 6px;
-      align-content: flex-start;
-    }
-
-    .tab-content.active {
-      display: flex;
     }
 
     .tab-section-title {
@@ -122,14 +96,14 @@
       font-size: 9px;
       text-transform: uppercase;
       letter-spacing: 1px;
-      margin: 4px 0 2px 0;
+      margin: 4px 0 8px 0;
       padding-bottom: 2px;
       border-bottom: 1px solid #0f3460;
     }
 
     .control-group {
-      flex: 1 1 calc(50% - 4px);
-      min-width: 120px;
+      flex: 1 1 100%;
+      min-width: 100%;
     }
 
     .control-group label {
@@ -157,16 +131,6 @@
     button {
       padding: 7px;
       font-size: 10px;
-    }
-
-    .tab-btn {
-      background: transparent;
-      border: none;
-      color: #888;
-    }
-
-    .tab-btn.active {
-      color: #00d9ff;
     }
 
     .buttons button {
@@ -305,6 +269,142 @@
     pointer-events: none;
     z-index: 5;
   }
+
+  .layer-item {
+    background: rgba(15, 52, 96, 0.5);
+    border: 1px solid #0f3460;
+    border-radius: 4px;
+    margin-bottom: 8px;
+    cursor: pointer;
+  }
+
+  .layer-header {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 8px;
+    background: rgba(15, 52, 96, 0.7);
+    cursor: pointer;
+  }
+
+  .expand-arrow {
+    font-size: 10px;
+    color: #00d9ff;
+    transition: transform 0.2s ease;
+    flex-shrink: 0;
+  }
+
+  .layer-item.expanded .expand-arrow {
+    transform: rotate(90deg);
+  }
+
+  .layer-header:hover {
+    background: rgba(0, 217, 255, 0.1);
+  }
+
+  .layer-archetype-select {
+    flex: 1;
+    background: transparent;
+    border: 1px solid #0f3460;
+    color: #00d9ff;
+    padding: 4px 6px;
+    border-radius: 3px;
+    font-size: 10px;
+    cursor: pointer;
+  }
+
+  .layer-archetype-select option {
+    background: #16233e;
+    color: #e0e0e0;
+  }
+
+  .layer-yoffset {
+    width: 60px;
+    background: transparent;
+    border: 1px solid #0f3460;
+    color: #00d9ff;
+    padding: 4px 4px;
+    border-radius: 3px;
+    font-size: 10px;
+    text-align: center;
+  }
+
+  .layer-remove-btn {
+    background: transparent;
+    border: 1px solid #ff4466;
+    color: #ff4466;
+    padding: 4px 8px;
+    border-radius: 3px;
+    font-size: 10px;
+    cursor: pointer;
+    flex: 0 0 auto;
+  }
+
+  .layer-remove-btn:hover {
+    background: #ff4466;
+    color: #0a0a1a;
+  }
+
+  .layer-params {
+    padding: 8px;
+    display: none;
+  }
+
+  .layer-item.expanded .layer-params {
+    display: block;
+  }
+
+  .layer-params .control-group {
+    margin-bottom: 6px;
+  }
+
+  .layer-params .control-group label {
+    font-size: 9px;
+    margin-bottom: 2px;
+  }
+
+  .layer-params .control-group input[type="range"] {
+    height: 3px;
+  }
+
+  .add-layer-btn {
+    width: 100%;
+    padding: 8px;
+    background: transparent;
+    border: 1px dashed #00d9ff;
+    color: #00d9ff;
+    border-radius: 4px;
+    font-size: 10px;
+    cursor: pointer;
+    text-transform: uppercase;
+  }
+
+  .add-layer-btn:hover {
+    background: rgba(0, 217, 255, 0.1);
+  }
+
+  .archetype-params {
+    margin-top: 8px;
+    padding-top: 8px;
+    border-top: 1px solid rgba(15, 52, 96, 0.5);
+  }
+
+  .archetype-params-title {
+    font-size: 9px;
+    color: #888;
+    text-transform: uppercase;
+    margin-bottom: 6px;
+  }
+
+  .section-title {
+    font-size: 9px;
+    color: #00d9ff;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    margin: 8px 0 4px 0;
+    padding-bottom: 2px;
+    border-bottom: 1px solid rgba(15, 52, 96, 0.5);
+  }
 </style>
 </head>
 <body>
@@ -312,87 +412,16 @@
 <header>
   <h1>CLOUD GENERATOR 3D</h1>
   <span class="stats" id="stats">0 spheres</span>
+  <span class="version">v5.1</span>
 </header>
 
 <button class="toggle-btn" onclick="toggleControls()">Parameters</button>
 
 <div class="controls">
-  <div class="tab-bar">
-    <button class="tab-btn active" data-tab="shape" onclick="switchTab('shape')">Shape</button>
-    <button class="tab-btn" data-tab="cascade" onclick="switchTab('cascade')">Cascade</button>
-    <button class="tab-btn" data-tab="chaos" onclick="switchTab('chaos')">Chaos</button>
-  </div>
-
-  <div id="tab-shape" class="tab-content active">
-    <h2 class="tab-section-title">Cloud Shape</h2>
-    
-    <div class="control-group">
-      <label>Cloud Size <span class="value" id="cloudSizeVal">100</span></label>
-      <input type="range" id="cloudSize" min="20" max="200" value="80">
-    </div>
-    
-    <div class="control-group">
-      <label>Seed <span class="value" id="seedVal">42</span></label>
-      <input type="range" id="seed" min="0" max="999" value="42">
-    </div>
-
-    <div class="control-group">
-      <label>Parent Count <span class="value" id="parentCountVal">1</span></label>
-      <input type="range" id="parentCount" min="1" max="12" value="1">
-    </div>
-
-    <div class="control-group">
-      <label>Ellipsoid Y <span class="value" id="ellipsoidYVal">0.50</span></label>
-      <input type="range" id="ellipsoidY" min="20" max="150" value="50">
-    </div>
-
-    <div class="control-group">
-      <label>Ellipsoid XZ <span class="value" id="ellipsoidXZVal">1.00</span></label>
-      <input type="range" id="ellipsoidXZ" min="50" max="150" value="100">
-    </div>
-  </div>
-
-  <div id="tab-cascade" class="tab-content">
-    <h2 class="tab-section-title">Cascade</h2>
-    
-    <div class="control-group">
-      <label>Cascade Depth <span class="value" id="cascadeDepthVal">3</span></label>
-      <input type="range" id="cascadeDepth" min="1" max="5" value="3">
-    </div>
-
-    <div class="control-group">
-      <label>Bumps per Level <span class="value" id="bumpsPerLevelVal">48</span></label>
-      <input type="range" id="bumpsPerLevel" min="12" max="128" value="48">
-    </div>
-
-    <div class="control-group">
-      <label>Child Ratio <span class="value" id="childRatioVal">30</span></label>
-      <input type="range" id="childRatio" min="10" max="200" value="30">
-    </div>
-
-    <div class="control-group">
-      <label>Size Variation <span class="value" id="sizeVariationVal">0.50</span></label>
-      <input type="range" id="sizeVariation" min="0" max="100" value="50">
-    </div>
-  </div>
-
-  <div id="tab-chaos" class="tab-content">
-    <h2 class="tab-section-title">Chaos</h2>
-
-    <div class="control-group">
-      <label>Jitter <span class="value" id="jitterVal">0.30</span></label>
-      <input type="range" id="jitter" min="0" max="50" value="30">
-    </div>
-
-    <div class="control-group">
-      <label>Clustering <span class="value" id="clusteringVal">0.50</span></label>
-      <input type="range" id="clustering" min="0" max="100" value="50">
-    </div>
-
-    <div class="control-group">
-      <label>Density <span class="value" id="densityVal">0.60</span></label>
-      <input type="range" id="density" min="5" max="95" value="60">
-    </div>
+  <div id="tab-layers" class="tab-content active">
+    <h2 class="tab-section-title">Layer Stack</h2>
+    <div id="layer-list"></div>
+    <button class="add-layer-btn" onclick="addLayer()">+ Add Layer</button>
   </div>
 
   <div class="buttons">
@@ -495,7 +524,7 @@ const worley3D = (x, y, z, freq) => {
 const invertedWorley = (x, y, z, freq) => 1.0 - Math.min(worley3D(x, y, z, freq), 1.0);
 
 // ============================================================
-// CASCADE CLOUD GENERATOR v4 — All 4 fixes applied
+// MULTI-LAYER CLOUD GENERATOR v5 — Archetype Dispatcher
 // ============================================================
 
 // Fibonacci sphere — uniform surface sampling
@@ -534,10 +563,26 @@ const perturbDir = (nx, ny, nz, px, py, pz, strength, seed) => {
   return { x: nx3/len, y: ny3/len, z: nz3/len };
 };
 
+// 2D Fibonacci spiral for platform interior
+const fibonacciSpiral2D = (count) => {
+  const points = [];
+  const angleInc = Math.PI * 2 * PHI;
+  for (let i = 0; i < count; i++) {
+    const r = Math.sqrt(i / count);
+    const theta = angleInc * i;
+    points.push({ x: r * Math.cos(theta), z: r * Math.sin(theta) });
+  }
+  return points;
+};
+
 // Global unique ID for per-child noise seeding
 let globalUniqueId = 0;
 
-const generateCascadeCloud = (params) => {
+// ============================================================
+// SPHERE ARCHETYPE — existing cascade algorithm, refactored
+// ============================================================
+
+const generateSphereLayer = (layer) => {
   const spheres = [];
   globalUniqueId = 0;
 
@@ -545,17 +590,15 @@ const generateCascadeCloud = (params) => {
     cloudSize, density, seed,
     cascadeDepth, bumpsPerLevel, childRatio, sizeVariation,
     jitter, clustering, parentCount, ellipsoidY, ellipsoidXZ
-  } = params;
+  } = layer;
 
   const minRadius = 0.5;
   const baseRadius = cloudSize * 0.5;
 
-  // Effective radii with ellipsoid scaling
   const rx = baseRadius * (ellipsoidXZ / 100);
   const ry = baseRadius * (ellipsoidY / 100);
   const rz = baseRadius * (ellipsoidXZ / 100);
 
-  // Create multiple parent spheres
   const parents = [];
   for (let p = 0; p < parentCount; p++) {
     const offsetAngle = (p / parentCount) * Math.PI * 2;
@@ -563,27 +606,25 @@ const generateCascadeCloud = (params) => {
     const px = Math.cos(offsetAngle) * rx * spread;
     const py = (p % 2 === 0 ? 1 : -1) * ry * 0.1 * spread;
     const pz = Math.sin(offsetAngle) * rz * spread;
-    parents.push({ x: px, y: py, z: pz, radius: baseRadius, depth: 0, density: 1.0 });
-    spheres.push(parents[parents.length - 1]);
+    const sphere = { x: px, y: py, z: pz, radius: baseRadius, depth: 0, density: 1.0, archetype: 'sphere' };
+    parents.push(sphere);
+    spheres.push(sphere);
   }
 
   const generateBumpsOnSphere = (parent) => {
     if (parent.depth >= cascadeDepth) return;
     if (parent.radius < minRadius * 1.5) return;
 
-    // FIX 4C: Variable bumps per sphere — each sphere gets different count
     const noiseForBumpCount = (perlin3D(parent.x * 0.5, parent.y * 0.5, parent.z * 0.5, seed + parent.depth * 7) + 1) * 0.5;
     const actualBumps = Math.floor(bumpsPerLevel * (0.4 + noiseForBumpCount * 0.8));
 
     const surfacePoints = fibonacciSphere(parent.x, parent.y, parent.z, parent.radius, parent.radius, parent.radius, actualBumps);
 
     for (const pt of surfacePoints) {
-      // Normal from center to surface point (in ellipsoid space)
       const nx = (pt.x - parent.x) / parent.radius;
       const ny = (pt.y - parent.y) / parent.radius;
       const nz = (pt.z - parent.z) / parent.radius;
 
-      // FIX 4A: Jitter the surface point
       const jitterStrength = jitter / 100;
       const jitX = perlin3D(pt.x * 15 + seed, pt.y * 15, pt.z * 15, 0) * jitterStrength;
       const jitY = perlin3D(pt.x * 15, pt.y * 15 + seed + 1, pt.z * 15, 0) * jitterStrength;
@@ -592,29 +633,23 @@ const generateCascadeCloud = (params) => {
 
       const noiseScale = 3.0 / parent.radius;
 
-      // FIX 4B: Worley clustering — creates clumping
       const worleyVal = invertedWorley(jpt.x * noiseScale * 2, jpt.y * noiseScale * 2, jpt.z * noiseScale * 2, 1.0);
       const clusterStrength = clustering / 100;
 
-      // FBM for bump existence
       const fbmVal = (fbm(jpt.x * noiseScale, jpt.y * noiseScale, jpt.z * noiseScale, 4, 0.5, 2.0, seed + parent.depth * 10) + 1) * 0.5;
       const bumpIntensity = fbmVal * (1 - clusterStrength * 0.5) + worleyVal * clusterStrength * 0.5;
 
       const threshold = 1 - density;
       if (bumpIntensity < threshold) {
-        // Low bump area: only occasionally create sparse bump
         if (worleyVal > 0.75 && Math.random() < 0.15) {
-          // occasional sparse bump between clusters
         } else {
           continue;
         }
       }
 
-      // FIX 2: No cap on ratio — use phi modulation
       const phiNoise = (perlin3D(jpt.x * noiseScale, jpt.y * noiseScale, jpt.z * noiseScale, seed + 100) + 1) * 0.5;
       const effectiveRatio = (PHI + (phiNoise - 0.5) * 0.6) * (childRatio / 100) * 0.4;
 
-      // FIX 1: Per-child independent size noise (size variation)
       const childUniqueId = globalUniqueId++;
       const sizeNoise = (perlin3D(jpt.x * noiseScale * 2, jpt.y * noiseScale * 2, jpt.z * noiseScale * 2, seed + childUniqueId) + 1) * 0.5;
       const sizeMult = 0.2 + sizeNoise * sizeVariation + effectiveRatio;
@@ -622,7 +657,6 @@ const generateCascadeCloud = (params) => {
 
       if (childRadius < minRadius) continue;
 
-      // Perturb direction for organic variation
       const perturbed = perturbDir(nx, ny, nz, jpt.x, jpt.y, jpt.z, 0.25, seed + parent.depth);
 
       const child = {
@@ -631,12 +665,12 @@ const generateCascadeCloud = (params) => {
         z: jpt.z + perturbed.z * parent.radius * 0.02,
         radius: childRadius,
         depth: parent.depth + 1,
-        density: bumpIntensity
+        density: bumpIntensity,
+        archetype: 'sphere'
       };
 
       spheres.push(child);
 
-      // Probabilistic cascade continuation
       const continueChance = Math.max(0.15, 0.8 - parent.depth * 0.2);
       if (Math.random() < continueChance || parent.depth < 2) {
         generateBumpsOnSphere(child);
@@ -644,12 +678,379 @@ const generateCascadeCloud = (params) => {
     }
   };
 
-  // Generate bumps starting from all parents
   for (const parent of parents) {
     generateBumpsOnSphere(parent);
   }
 
   return spheres;
+};
+
+// ============================================================
+// COLUMN ARCHETYPE — vertical stacking
+// ============================================================
+
+const generateColumnLayer = (layer) => {
+  const spheres = [];
+  const p = layer.columnParams || {};
+
+  const height = p.height || 30;
+  const baseRadius = p.baseRadius || 8;
+  const topRadius = p.topRadius || 2;
+  const floors = p.floors || 8;
+  const ringsPerFloor = p.ringsPerFloor || 5;
+  const wobble = (p.wobble || 0.3) / 100;
+  const floorSpacing = height / floors;
+
+  for (let floor = 0; floor < floors; floor++) {
+    const t = floor / (floors - 1 || 1);
+    const floorRadius = baseRadius + (topRadius - baseRadius) * t;
+
+    const y = floor * floorSpacing;
+    const wobbleX = perlin3D(floor * 0.7, layer.seed, 0, layer.seed) * wobble * floorRadius;
+    const wobbleZ = perlin3D(floor * 0.7, layer.seed + 100, 0, layer.seed) * wobble * floorRadius;
+
+    for (let r = 0; r < ringsPerFloor; r++) {
+      const angle = (r / ringsPerFloor) * Math.PI * 2 + perlin3D(floor * 0.3, r * 0.5, layer.seed, layer.seed) * 0.3;
+      const distFromCenter = floorRadius * (0.3 + (perlin3D(floor * 0.5, r * 0.7, layer.seed + 50, layer.seed) + 1) * 0.5 * 0.7 + 0.5) * 0.5;
+      const jitR = perlin3D(floor, r, layer.seed, layer.seed) * 0.1;
+      const sphereRadius = (floorRadius / floors) * (0.4 + (perlin3D(floor, r, layer.seed + 200, layer.seed) + 1) * 0.5 * 0.6);
+
+      spheres.push({
+        x: Math.cos(angle) * distFromCenter + wobbleX,
+        y: y + jitR * 0.3,
+        z: Math.sin(angle) * distFromCenter + wobbleZ,
+        radius: Math.max(sphereRadius, 0.5),
+        depth: 0,
+        density: 0.6 + (1 - t) * 0.3,
+        archetype: 'column'
+      });
+    }
+
+    if (floor % 2 === 0) {
+      spheres.push({
+        x: wobbleX,
+        y: y,
+        z: wobbleZ,
+        radius: floorRadius * 0.3,
+        depth: 0,
+        density: 0.8,
+        archetype: 'column'
+      });
+    }
+  }
+
+  return spheres;
+};
+
+// ============================================================
+// PLATFORM ARCHETYPE — flat horizontal spread
+// ============================================================
+
+const generatePlatformLayer = (layer) => {
+  const spheres = [];
+  const p = layer.platformParams || {};
+
+  const width = p.width || 40;
+  const depth = p.depth || 40;
+  const centerThickness = p.centerThickness || 3;
+  const edgeThickness = p.edgeThickness || 0.5;
+  const interiorDensity = p.interiorDensity || 40;
+  const edgeRings = p.edgeRings || 3;
+  const baseRadius = layer.sizeRange?.min || 4;
+
+  spheres.push({
+    x: 0, y: 0, z: 0,
+    radius: baseRadius,
+    depth: 0, density: 1.0,
+    archetype: 'platform'
+  });
+
+  const interiorPoints = fibonacciSpiral2D(interiorDensity);
+
+  for (const pt of interiorPoints) {
+    const px = pt.x * width * 0.5;
+    const pz = pt.z * depth * 0.5;
+    const dist = Math.sqrt((px * px) / (width * width * 0.25) + (pz * pz) / (depth * depth * 0.25));
+    const thickness = centerThickness * Math.exp(-dist * dist * 3) + edgeThickness * dist;
+    if (thickness < 0.2) continue;
+
+    const yNoise = perlin3D(px * 0.3, pz * 0.3, layer.seed + 500, 0);
+    const y = yNoise * thickness * 0.5;
+    const rNoise = (perlin3D(px * 0.5, pz * 0.5, layer.seed + 600, 0) + 1) * 0.5;
+    const radius = baseRadius * (0.3 + 0.7 * (1 - dist * 0.8)) * (0.5 + rNoise * 0.5);
+    const density = 0.3 + 0.7 * (1 - dist);
+
+    if (density < 0.1 || radius < 0.3) continue;
+
+    spheres.push({
+      x: px, y: y, z: pz,
+      radius, depth: 0, density,
+      archetype: 'platform'
+    });
+  }
+
+  for (let ring = 1; ring <= edgeRings; ring++) {
+    const ringT = ring / edgeRings;
+    const ringCount = Math.floor(20 * ringT + 8);
+    for (let i = 0; i < ringCount; i++) {
+      const angle = (i / ringCount) * Math.PI * 2;
+      const ex = Math.cos(angle) * ringT * width * 0.5;
+      const ez = Math.sin(angle) * ringT * depth * 0.5;
+      const ey = perlin3D(ex, ez, layer.seed + 700, 0) * edgeThickness * 0.5;
+
+      spheres.push({
+        x: ex, y: ey, z: ez,
+        radius: baseRadius * 0.4 * (1 - ringT * 0.3),
+        depth: 0, density: 0.5 + 0.3 * (1 - ringT),
+        archetype: 'platform'
+      });
+    }
+  }
+
+  return spheres;
+};
+
+// ============================================================
+// TREE ARCHETYPE — directional branching
+// ============================================================
+
+const generateTreeLayer = (layer) => {
+  const spheres = [];
+  const p = layer.treeParams || {};
+  const seed = layer.seed;
+
+  const baseRadius = p.baseRadius || 8;
+  const maxDepth = p.maxDepth || 5;
+  const branchElongation = p.branchElongation || 1.5;
+  const taperRatio = p.taperRatio || 0.75;
+  const branchAngle = ((p.branchAngle || 35) * Math.PI) / 180;
+  const branchProbability = p.branchProbability || 0.4;
+  const trunkUpBias = p.trunkUpBias || 0.3;
+  const lengthFalloff = p.lengthFalloff || 0.7;
+  const thicknessFalloff = p.thicknessFalloff || 0.7;
+
+  const root = {
+    x: 0, y: 0, z: 0,
+    radius: baseRadius,
+    depth: 0, density: 1.0,
+    archetype: 'tree'
+  };
+  spheres.push(root);
+
+  const perturbDirDeterministic = (dir, px, py, pz, maxAngle, seedVal) => {
+    const a1 = perlin3D(px * 3 + seedVal * 0.1, py * 3, pz * 3, 0) * maxAngle;
+    const a2 = perlin3D(px * 3, py * 3 + seedVal * 0.1, pz * 3 + 50, 0) * maxAngle;
+    const cos1 = Math.cos(a1), sin1 = Math.sin(a1);
+    const cos2 = Math.cos(a2), sin2 = Math.sin(a2);
+    const nx2 = dir.x * cos1 - dir.y * sin1;
+    const ny2 = dir.x * sin1 + dir.y * cos1;
+    const nz2 = dir.z;
+    const nx3 = nx2 * cos2 + nz2 * sin2;
+    const ny3 = ny2;
+    const nz3 = -nx2 * sin2 + nz2 * cos2;
+    const len = Math.sqrt(nx3 * nx3 + ny3 * ny3 + nz3 * nz3) || 1;
+    return { x: nx3 / len, y: ny3 / len, z: nz3 / len };
+  };
+
+  const sampleLateralCount = (parent, pathId) => {
+    const val = (perlin3D(parent.x * 2, parent.y * 2, parent.z * 2, seed + pathId) + 1) * 0.5;
+    if (val < 0.4) return 0;
+    if (val < 0.75) return 1;
+    if (val < 0.95) return 2;
+    return 3;
+  };
+
+  let globalPathId = 0;
+
+  const growBranch = (parent, dir, pathId, depth, lengthMult) => {
+    if (depth >= maxDepth) return;
+    if (parent.radius < 0.5) return;
+
+    const effectiveLengthMult = lengthMult || 1;
+    const extension = parent.radius * branchElongation * effectiveLengthMult;
+
+    const perturbedDir = perturbDirDeterministic(dir, parent.x, parent.y, parent.z, branchAngle, seed + pathId);
+
+    const childPos = {
+      x: parent.x + perturbedDir.x * extension,
+      y: parent.y + perturbedDir.y * extension,
+      z: parent.z + perturbedDir.z * extension
+    };
+
+    const childRadius = parent.radius * taperRatio * thicknessFalloff;
+    const childDensity = 1.0 - (depth / maxDepth) * 0.3;
+
+    const child = {
+      x: childPos.x, y: childPos.y, z: childPos.z,
+      radius: childRadius,
+      depth: depth + 1,
+      density: childDensity,
+      archetype: 'tree'
+    };
+    spheres.push(child);
+
+    growBranch(child, perturbedDir, pathId, depth + 1, effectiveLengthMult * lengthFalloff);
+
+    const lateralCount = sampleLateralCount(parent, pathId);
+    for (let i = 0; i < lateralCount; i++) {
+      const lateralPathId = ++globalPathId;
+      const lateralAngle = ((i / Math.max(lateralCount, 1)) * Math.PI * 2) + perlin3D(pathId * 10, i * 5, seed, 0) * 0.5;
+      const perpX = -dir.z;
+      const perpZ = dir.x;
+      const lateralDir = {
+        x: dir.x * Math.cos(branchAngle) + perpX * Math.sin(lateralAngle) * Math.sin(branchAngle),
+        y: dir.y * Math.cos(branchAngle) + Math.sin(branchAngle) * 0.5,
+        z: dir.z * Math.cos(branchAngle) + perpZ * Math.sin(lateralAngle) * Math.sin(branchAngle)
+      };
+      const len = Math.sqrt(lateralDir.x * lateralDir.x + lateralDir.y * lateralDir.y + lateralDir.z * lateralDir.z) || 1;
+      lateralDir.x /= len;
+      lateralDir.y /= len;
+      lateralDir.z /= len;
+
+      const lateralRadius = childRadius * 0.7;
+      if (lateralRadius < 0.5) continue;
+
+      const lateralPos = {
+        x: parent.x + lateralDir.x * extension * 0.8,
+        y: parent.y + lateralDir.y * extension * 0.8,
+        z: parent.z + lateralDir.z * extension * 0.8
+      };
+
+      const lateralChild = {
+        x: lateralPos.x, y: lateralPos.y, z: lateralPos.z,
+        radius: lateralRadius,
+        depth: depth + 1,
+        density: childDensity * 0.8,
+        archetype: 'tree'
+      };
+      spheres.push(lateralChild);
+      if (depth + 1 < maxDepth - 1) {
+        growBranch(lateralChild, lateralDir, lateralPathId, depth + 2, effectiveLengthMult * lengthFalloff * 0.8);
+      }
+    }
+  };
+
+  const seedAngle = perlin3D(0, 0, 0, seed) * Math.PI * 2;
+  const rootDir = {
+    x: Math.sin(seedAngle) * (1 - trunkUpBias),
+    y: 0.8 + trunkUpBias * 0.2,
+    z: Math.cos(seedAngle) * (1 - trunkUpBias)
+  };
+  const len = Math.sqrt(rootDir.x * rootDir.x + rootDir.y * rootDir.y + rootDir.z * rootDir.z);
+  rootDir.x /= len;
+  rootDir.y /= len;
+  rootDir.z /= len;
+
+  growBranch(root, rootDir, ++globalPathId, 0, 1);
+
+  return spheres;
+};
+
+// ============================================================
+// ARCHETYPE DISPATCHER
+// ============================================================
+
+const getArchetypeGenerator = (archetype) => {
+  switch (archetype) {
+    case 'sphere': return generateSphereLayer;
+    case 'column': return generateColumnLayer;
+    case 'platform': return generatePlatformLayer;
+    case 'tree': return generateTreeLayer;
+    default: return generateSphereLayer;
+  }
+};
+
+// ============================================================
+// MAIN CLOUD GENERATOR — Layer Stacking
+// ============================================================
+
+const generateCloud = (layers) => {
+  const allSpheres = [];
+  let cumulativeY = 0;
+
+  for (let i = 0; i < layers.length; i++) {
+    const layer = layers[i];
+    if (!layer.enabled) continue;
+
+    const generator = getArchetypeGenerator(layer.archetype);
+    const rawSpheres = generator(layer);
+
+    let minY = Infinity, maxY = -Infinity;
+    for (const s of rawSpheres) {
+      if (s.y - s.radius < minY) minY = s.y - s.radius;
+      if (s.y + s.radius > maxY) maxY = s.y + s.radius;
+    }
+
+    const layerHeight = maxY - minY;
+    const gap = 2;
+    const yOffset = layer.yOffset !== undefined ? layer.yOffset : cumulativeY - minY + gap;
+
+    for (const s of rawSpheres) {
+      s.y += yOffset;
+      s.layerIndex = i;
+    }
+
+    cumulativeY = yOffset + maxY + gap;
+    allSpheres.push(...rawSpheres);
+  }
+
+  return allSpheres;
+};
+
+// ============================================================
+// LAYER CONFIG BUILDER — backward compatibility
+// ============================================================
+
+const resolveLayers = () => {
+  if (window._advancedLayers && window._advancedLayers.length > 0) {
+    return window._advancedLayers;
+  }
+
+  return [{
+    archetype: 'sphere',
+    enabled: true,
+    yOffset: 0,
+    seed: 42,
+    density: 0.6,
+    cloudSize: 80,
+    cascadeDepth: 3,
+    bumpsPerLevel: 48,
+    childRatio: 30,
+    sizeVariation: 0.5,
+    jitter: 0.3,
+    clustering: 0.5,
+    parentCount: 1,
+    ellipsoidY: 50,
+    ellipsoidXZ: 100,
+    sizeRange: { min: 5, max: 20 },
+    columnParams: {
+      height: 30,
+      baseRadius: 8,
+      topRadius: 2,
+      floors: 8,
+      ringsPerFloor: 5,
+      wobble: 0.3
+    },
+    platformParams: {
+      width: 40,
+      depth: 40,
+      centerThickness: 3,
+      edgeThickness: 0.5,
+      interiorDensity: 40,
+      edgeRings: 3
+    },
+    treeParams: {
+      baseRadius: 8,
+      maxDepth: 5,
+      branchElongation: 1.5,
+      taperRatio: 0.75,
+      branchAngle: 35,
+      branchProbability: 0.4,
+      trunkUpBias: 0.3,
+      lengthFalloff: 0.7,
+      thicknessFalloff: 0.7
+    }
+  }];
 };
 
 // ============================================================
@@ -694,25 +1095,6 @@ function init() {
   
   window.addEventListener('resize', onResize);
   
-  ['cloudSize', 'seed', 'parentCount', 'ellipsoidY', 'ellipsoidXZ', 'cascadeDepth', 'bumpsPerLevel', 'childRatio', 'sizeVariation', 'jitter', 'clustering', 'density'].forEach(id => {
-    document.getElementById(id).addEventListener('input', function() {
-      const v = parseFloat(this.value);
-      const intParams = ['cloudSize', 'seed', 'parentCount', 'cascadeDepth', 'bumpsPerLevel'];
-      const percentParams = ['childRatio', 'sizeVariation', 'jitter', 'clustering', 'density'];
-      const floatParams = ['ellipsoidY', 'ellipsoidXZ'];
-      if (intParams.includes(id)) {
-        document.getElementById(id + 'Val').textContent = v;
-      } else if (percentParams.includes(id)) {
-        document.getElementById(id + 'Val').textContent = (v / 100).toFixed(2);
-      } else if (floatParams.includes(id)) {
-        document.getElementById(id + 'Val').textContent = (v / 100).toFixed(2);
-      } else {
-        document.getElementById(id + 'Val').textContent = v;
-      }
-    });
-  });
-  
-  generate();
   animate();
 }
 
@@ -852,24 +1234,10 @@ function onResize() {
 }
 
 function generate() {
-  const p = {
-    cloudSize: parseFloat(document.getElementById('cloudSize').value),
-    seed: parseInt(document.getElementById('seed').value),
-    parentCount: parseInt(document.getElementById('parentCount').value),
-    ellipsoidY: parseFloat(document.getElementById('ellipsoidY').value),
-    ellipsoidXZ: parseFloat(document.getElementById('ellipsoidXZ').value),
-    cascadeDepth: parseInt(document.getElementById('cascadeDepth').value),
-    bumpsPerLevel: parseInt(document.getElementById('bumpsPerLevel').value),
-childRatio: parseFloat(document.getElementById('childRatio').value),
-    sizeVariation: parseFloat(document.getElementById('sizeVariation').value) / 100,
-    jitter: parseFloat(document.getElementById('jitter').value),
-    clustering: parseFloat(document.getElementById('clustering').value),
-    density: parseFloat(document.getElementById('density').value) / 100
-  };
+  const layers = resolveLayers();
+  currentSpheres = generateCloud(layers);
+  document.getElementById('stats').textContent = `${currentSpheres.length} spheres (${layers.length} layer${layers.length !== 1 ? 's' : ''})`;
 
-  currentSpheres = generateCascadeCloud(p);
-  document.getElementById('stats').textContent = `${currentSpheres.length} spheres`;
-  
   rebuildMesh();
 }
 
@@ -907,38 +1275,60 @@ function animate() {
 }
 
 function exportCode() {
-  const p = {
-    cloudSize: parseFloat(document.getElementById('cloudSize').value),
-    seed: parseInt(document.getElementById('seed').value),
-    parentCount: parseInt(document.getElementById('parentCount').value),
-    ellipsoidY: parseFloat(document.getElementById('ellipsoidY').value),
-    ellipsoidXZ: parseFloat(document.getElementById('ellipsoidXZ').value),
-    cascadeDepth: parseInt(document.getElementById('cascadeDepth').value),
-    bumpsPerLevel: parseInt(document.getElementById('bumpsPerLevel').value),
-    childRatio: parseFloat(document.getElementById('childRatio').value),
-    sizeVariation: parseFloat(document.getElementById('sizeVariation').value) / 100,
-    jitter: parseFloat(document.getElementById('jitter').value),
-    clustering: parseFloat(document.getElementById('clustering').value),
-    density: parseFloat(document.getElementById('density').value) / 100
-  };
+  const layers = resolveLayers();
   
-  const code = `// CloudMath C# v4 — Cascade with all fixes
-// ${currentSpheres.length} spheres
+  let code = `// CloudMath v5 — Multi-layer export
+// ${currentSpheres.length} spheres, ${layers.length} layer(s)
 
-List<CloudSphere> spheres = GenerateCascadeCloud(
-    cloudSize: ${p.cloudSize}f,
-    density: ${p.density}f,
-    seed: ${p.seed},
-    cascadeDepth: ${p.cascadeDepth},
-    bumpsPerLevel: ${p.bumpsPerLevel},
-    childRatio: ${p.childRatio}f,
-    sizeVariation: ${p.sizeVariation}f,
-    jitter: ${p.jitter}f,
-    clustering: ${p.clustering}f,
-    parentCount: ${p.parentCount},
-    ellipsoidY: ${p.ellipsoidY}f,
-    ellipsoidXZ: ${p.ellipsoidXZ}f
-);`;
+List<CloudLayerConfig> layers = new List<CloudLayerConfig> {
+`;
+
+  layers.forEach((layer, i) => {
+    code += `    new CloudLayerConfig {\n`;
+    code += `        Archetype = CloudArchetype.${layer.archetype.charAt(0).toUpperCase() + layer.archetype.slice(1)},\n`;
+    code += `        YOffset = ${layer.yOffset}f,\n`;
+    code += `        Seed = ${layer.seed},\n`;
+    code += `        Density = ${layer.density}f,\n`;
+    code += `        Jitter = ${layer.jitter}f,\n`;
+    code += `        Clustering = ${layer.clustering}f,\n`;
+    
+    if (layer.archetype === 'sphere') {
+      code += `        CloudSize = ${layer.cloudSize}f,\n`;
+      code += `        CascadeDepth = ${layer.cascadeDepth},\n`;
+      code += `        BumpsPerLevel = ${layer.bumpsPerLevel},\n`;
+      code += `        ChildRatio = ${layer.childRatio}f,\n`;
+      code += `        SizeVariation = ${layer.sizeVariation}f,\n`;
+      code += `        ParentCount = ${layer.parentCount},\n`;
+      code += `        EllipsoidY = ${layer.ellipsoidY}f,\n`;
+      code += `        EllipsoidXZ = ${layer.ellipsoidXZ}f,\n`;
+    } else if (layer.archetype === 'column') {
+      const p = layer.columnParams;
+      code += `        ColumnParams = new ColumnParams {\n`;
+      code += `            Height = ${p.height}f, BaseRadius = ${p.baseRadius}f,\n`;
+      code += `            TopRadius = ${p.topRadius}f, Floors = ${p.floors},\n`;
+      code += `            RingsPerFloor = ${p.ringsPerFloor}, Wobble = ${p.wobble}f\n`;
+      code += `        },\n`;
+    } else if (layer.archetype === 'platform') {
+      const p = layer.platformParams;
+      code += `        PlatformParams = new PlatformParams {\n`;
+      code += `            Width = ${p.width}f, Depth = ${p.depth}f,\n`;
+      code += `            CenterThickness = ${p.centerThickness}f, InteriorDensity = ${p.interiorDensity}\n`;
+      code += `        },\n`;
+    } else if (layer.archetype === 'tree') {
+      const p = layer.treeParams;
+      code += `        TreeParams = new TreeParams {\n`;
+      code += `            MaxDepth = ${p.maxDepth}, BranchElongation = ${p.branchElongation}f,\n`;
+      code += `            BranchAngle = ${p.branchAngle}f, BranchProbability = ${p.branchProbability}f,\n`;
+      code += `            TrunkUpBias = ${p.trunkUpBias}f\n`;
+      code += `        },\n`;
+    }
+    
+    code += `    },\n`;
+  });
+
+  code += `};
+
+var spheres = CloudGenerator.Generate(layers);\n`;
 
   const blob = new Blob([code], { type: 'text/plain' });
   const a = document.createElement('a');
@@ -960,6 +1350,283 @@ function toggleControls() {
   const btn = document.querySelector('.toggle-btn');
   controls.classList.toggle('collapsed');
   btn.textContent = controls.classList.contains('collapsed') ? 'Parameters' : 'Hide';
+}
+
+window._advancedLayers = [];
+
+function getDefaultLayer(archetype) {
+  const base = {
+    archetype: archetype || 'sphere',
+    enabled: true,
+    yOffset: 0,
+    seed: 42,
+    density: 0.6,
+    jitter: 0.3,
+    clustering: 0.5
+  };
+
+  if (archetype === 'column') {
+    base.columnParams = {
+      height: 30,
+      baseRadius: 8,
+      topRadius: 2,
+      floors: 8,
+      ringsPerFloor: 5,
+      wobble: 0.3
+    };
+  } else if (archetype === 'platform') {
+    base.platformParams = {
+      width: 40,
+      depth: 40,
+      centerThickness: 3,
+      edgeThickness: 0.5,
+      interiorDensity: 40,
+      edgeRings: 3
+    };
+  } else if (archetype === 'tree') {
+    base.treeParams = {
+      baseRadius: 8,
+      maxDepth: 5,
+      branchElongation: 1.5,
+      taperRatio: 0.75,
+      branchAngle: 35,
+      branchProbability: 0.4,
+      trunkUpBias: 0.3,
+      lengthFalloff: 0.7,
+      thicknessFalloff: 0.7
+    };
+  } else {
+    base.cloudSize = 80;
+    base.cascadeDepth = 3;
+    base.bumpsPerLevel = 48;
+    base.childRatio = 30;
+    base.sizeVariation = 0.5;
+    base.parentCount = 1;
+    base.ellipsoidY = 50;
+    base.ellipsoidXZ = 100;
+  }
+
+  return base;
+}
+
+function addLayer(archetype) {
+  const layer = getDefaultLayer(archetype || 'sphere');
+  window._advancedLayers.push(layer);
+  renderLayerList();
+  const idx = window._advancedLayers.length - 1;
+  const item = document.getElementById('layer-item-' + idx);
+  if (item) item.classList.add('expanded');
+  generate();
+}
+
+function removeLayer(index) {
+  window._advancedLayers.splice(index, 1);
+  renderLayerList();
+  generate();
+}
+
+function toggleLayerExpanded(index) {
+  const item = document.getElementById('layer-item-' + index);
+  if (item) {
+    item.classList.toggle('expanded');
+  }
+}
+
+function updateLayerArchetype(index, value) {
+  const oldLayer = window._advancedLayers[index];
+  const newLayer = getDefaultLayer(value);
+  newLayer.enabled = oldLayer.enabled;
+  newLayer.yOffset = oldLayer.yOffset;
+  newLayer.seed = oldLayer.seed;
+  newLayer.density = oldLayer.density;
+  newLayer.jitter = oldLayer.jitter;
+  newLayer.clustering = oldLayer.clustering;
+  window._advancedLayers[index] = newLayer;
+  renderLayerList();
+  generate();
+}
+
+function updateLayerField(index, field, value) {
+  const layer = window._advancedLayers[index];
+  if (field.startsWith('columnParams.') || field.startsWith('platformParams.') || field.startsWith('treeParams.')) {
+    const [parent, key] = field.split('.');
+    if (!layer[parent]) layer[parent] = {};
+    layer[parent][key] = parseFloat(value);
+  } else {
+    layer[field] = parseFloat(value);
+  }
+  generate();
+}
+
+function renderLayerList() {
+  const container = document.getElementById('layer-list');
+  if (!container) return;
+
+  container.innerHTML = '';
+
+  window._advancedLayers.forEach((layer, index) => {
+    const item = document.createElement('div');
+    item.className = 'layer-item';
+    item.onclick = function(e) {
+      if (e.target.tagName !== 'SELECT' && e.target.tagName !== 'INPUT' && e.target.tagName !== 'BUTTON') {
+        toggleLayerExpanded(index);
+      }
+    };
+    item.id = 'layer-item-' + index;
+
+    const archetypeNames = { sphere: 'Sphere', column: 'Column', platform: 'Platform', tree: 'Tree' };
+
+    let shapeSection = '';
+    let cascadeSection = '';
+    let chaosSection = '';
+    let archetypeSection = '';
+
+    if (layer.archetype === 'sphere') {
+      shapeSection = `
+        <div class="section-title">Shape</div>
+        <div class="control-group">
+          <label>Cloud Size <span class="value">${layer.cloudSize || 80}</span></label>
+          <input type="range" min="20" max="200" value="${layer.cloudSize || 80}" onchange="updateLayerField(${index}, 'cloudSize', this.value); this.previousElementSibling.querySelector('.value').textContent = this.value">
+        </div>
+        <div class="control-group">
+          <label>Parent Count <span class="value">${layer.parentCount || 1}</span></label>
+          <input type="range" min="1" max="12" value="${layer.parentCount || 1}" onchange="updateLayerField(${index}, 'parentCount', this.value); this.previousElementSibling.querySelector('.value').textContent = this.value">
+        </div>
+        <div class="control-group">
+          <label>Ellipsoid Y <span class="value">${((layer.ellipsoidY || 50) / 100).toFixed(2)}</span></label>
+          <input type="range" min="20" max="150" value="${layer.ellipsoidY || 50}" onchange="updateLayerField(${index}, 'ellipsoidY', this.value); this.previousElementSibling.querySelector('.value').textContent = (this.value / 100).toFixed(2)">
+        </div>
+        <div class="control-group">
+          <label>Ellipsoid XZ <span class="value">${((layer.ellipsoidXZ || 100) / 100).toFixed(2)}</span></label>
+          <input type="range" min="50" max="150" value="${layer.ellipsoidXZ || 100}" onchange="updateLayerField(${index}, 'ellipsoidXZ', this.value); this.previousElementSibling.querySelector('.value').textContent = (this.value / 100).toFixed(2)">
+        </div>
+      `;
+      cascadeSection = `
+        <div class="section-title">Cascade</div>
+        <div class="control-group">
+          <label>Cascade Depth <span class="value">${layer.cascadeDepth || 3}</span></label>
+          <input type="range" min="1" max="5" value="${layer.cascadeDepth || 3}" onchange="updateLayerField(${index}, 'cascadeDepth', this.value); this.previousElementSibling.querySelector('.value').textContent = this.value">
+        </div>
+        <div class="control-group">
+          <label>Bumps/Level <span class="value">${layer.bumpsPerLevel || 48}</span></label>
+          <input type="range" min="12" max="128" value="${layer.bumpsPerLevel || 48}" onchange="updateLayerField(${index}, 'bumpsPerLevel', this.value); this.previousElementSibling.querySelector('.value').textContent = this.value">
+        </div>
+        <div class="control-group">
+          <label>Child Ratio <span class="value">${layer.childRatio || 30}</span></label>
+          <input type="range" min="10" max="200" value="${layer.childRatio || 30}" onchange="updateLayerField(${index}, 'childRatio', this.value); this.previousElementSibling.querySelector('.value').textContent = this.value">
+        </div>
+        <div class="control-group">
+          <label>Size Variation <span class="value">${(layer.sizeVariation || 0.5).toFixed(2)}</span></label>
+          <input type="range" min="0" max="100" value="${(layer.sizeVariation || 0.5) * 100}" onchange="updateLayerField(${index}, 'sizeVariation', this.value / 100); this.previousElementSibling.querySelector('.value').textContent = (this.value / 100).toFixed(2)">
+        </div>
+      `;
+    } else if (layer.archetype === 'column') {
+      const p = layer.columnParams || {};
+      archetypeSection = `
+        <div class="section-title">Column</div>
+        <div class="control-group">
+          <label>Height <span class="value">${p.height || 30}</span></label>
+          <input type="range" min="10" max="100" value="${p.height || 30}" onchange="updateLayerField(${index}, 'columnParams.height', this.value); this.previousElementSibling.querySelector('.value').textContent = this.value">
+        </div>
+        <div class="control-group">
+          <label>Base Radius <span class="value">${p.baseRadius || 8}</span></label>
+          <input type="range" min="3" max="30" value="${p.baseRadius || 8}" onchange="updateLayerField(${index}, 'columnParams.baseRadius', this.value); this.previousElementSibling.querySelector('.value').textContent = this.value">
+        </div>
+        <div class="control-group">
+          <label>Top Radius <span class="value">${p.topRadius || 2}</span></label>
+          <input type="range" min="0" max="15" value="${p.topRadius || 2}" onchange="updateLayerField(${index}, 'columnParams.topRadius', this.value); this.previousElementSibling.querySelector('.value').textContent = this.value">
+        </div>
+        <div class="control-group">
+          <label>Floors <span class="value">${p.floors || 8}</span></label>
+          <input type="range" min="3" max="20" value="${p.floors || 8}" onchange="updateLayerField(${index}, 'columnParams.floors', this.value); this.previousElementSibling.querySelector('.value').textContent = this.value">
+        </div>
+        <div class="control-group">
+          <label>Rings/Floor <span class="value">${p.ringsPerFloor || 5}</span></label>
+          <input type="range" min="3" max="12" value="${p.ringsPerFloor || 5}" onchange="updateLayerField(${index}, 'columnParams.ringsPerFloor', this.value); this.previousElementSibling.querySelector('.value').textContent = this.value">
+        </div>
+      `;
+    } else if (layer.archetype === 'platform') {
+      const p = layer.platformParams || {};
+      archetypeSection = `
+        <div class="section-title">Platform</div>
+        <div class="control-group">
+          <label>Width <span class="value">${p.width || 40}</span></label>
+          <input type="range" min="20" max="200" value="${p.width || 40}" onchange="updateLayerField(${index}, 'platformParams.width', this.value); this.previousElementSibling.querySelector('.value').textContent = this.value">
+        </div>
+        <div class="control-group">
+          <label>Depth <span class="value">${p.depth || 40}</span></label>
+          <input type="range" min="20" max="200" value="${p.depth || 40}" onchange="updateLayerField(${index}, 'platformParams.depth', this.value); this.previousElementSibling.querySelector('.value').textContent = this.value">
+        </div>
+        <div class="control-group">
+          <label>Center Thickness <span class="value">${p.centerThickness || 3}</span></label>
+          <input type="range" min="1" max="10" value="${p.centerThickness || 3}" onchange="updateLayerField(${index}, 'platformParams.centerThickness', this.value); this.previousElementSibling.querySelector('.value').textContent = this.value">
+        </div>
+        <div class="control-group">
+          <label>Interior Density <span class="value">${p.interiorDensity || 40}</span></label>
+          <input type="range" min="10" max="100" value="${p.interiorDensity || 40}" onchange="updateLayerField(${index}, 'platformParams.interiorDensity', this.value); this.previousElementSibling.querySelector('.value').textContent = this.value">
+        </div>
+      `;
+    } else if (layer.archetype === 'tree') {
+      const p = layer.treeParams || {};
+      archetypeSection = `
+        <div class="section-title">Tree</div>
+        <div class="control-group">
+          <label>Max Depth <span class="value">${p.maxDepth || 5}</span></label>
+          <input type="range" min="2" max="8" value="${p.maxDepth || 5}" onchange="updateLayerField(${index}, 'treeParams.maxDepth', this.value); this.previousElementSibling.querySelector('.value').textContent = this.value">
+        </div>
+        <div class="control-group">
+          <label>Branch Elongation <span class="value">${(p.branchElongation || 1.5).toFixed(2)}</span></label>
+          <input type="range" min="50" max="300" value="${(p.branchElongation || 1.5) * 100}" onchange="updateLayerField(${index}, 'treeParams.branchElongation', this.value / 100); this.previousElementSibling.querySelector('.value').textContent = (this.value / 100).toFixed(2)">
+        </div>
+        <div class="control-group">
+          <label>Branch Angle <span class="value">${p.branchAngle || 35}°</span></label>
+          <input type="range" min="15" max="60" value="${p.branchAngle || 35}" onchange="updateLayerField(${index}, 'treeParams.branchAngle', this.value); this.previousElementSibling.querySelector('.value').textContent = this.value + '°'">
+        </div>
+        <div class="control-group">
+          <label>Branch Probability <span class="value">${(p.branchProbability || 0.4).toFixed(2)}</span></label>
+          <input type="range" min="20" max="80" value="${(p.branchProbability || 0.4) * 100}" onchange="updateLayerField(${index}, 'treeParams.branchProbability', this.value / 100); this.previousElementSibling.querySelector('.value').textContent = (this.value / 100).toFixed(2)">
+        </div>
+        <div class="control-group">
+          <label>Trunk Up Bias <span class="value">${(p.trunkUpBias || 0.3).toFixed(2)}</span></label>
+          <input type="range" min="0" max="100" value="${(p.trunkUpBias || 0.3) * 100}" onchange="updateLayerField(${index}, 'treeParams.trunkUpBias', this.value / 100); this.previousElementSibling.querySelector('.value').textContent = (this.value / 100).toFixed(2)">
+        </div>
+      `;
+    }
+
+    chaosSection = `
+      <div class="section-title">Chaos</div>
+      <div class="control-group">
+        <label>Jitter <span class="value">${((layer.jitter || 0.3)).toFixed(2)}</span></label>
+        <input type="range" min="0" max="50" value="${(layer.jitter || 0.3) * 100}" onchange="updateLayerField(${index}, 'jitter', this.value / 100); this.previousElementSibling.querySelector('.value').textContent = (this.value / 100).toFixed(2)">
+      </div>
+      <div class="control-group">
+        <label>Clustering <span class="value">${(layer.clustering || 0.5).toFixed(2)}</span></label>
+        <input type="range" min="0" max="100" value="${(layer.clustering || 0.5) * 100}" onchange="updateLayerField(${index}, 'clustering', this.value / 100); this.previousElementSibling.querySelector('.value').textContent = (this.value / 100).toFixed(2)">
+      </div>
+    `;
+
+    item.innerHTML = `
+      <div class="layer-header">
+        <span class="expand-arrow">&#9658;</span>
+        <select class="layer-archetype-select" onchange="updateLayerArchetype(${index}, this.value)">
+          <option value="sphere" ${layer.archetype === 'sphere' ? 'selected' : ''}>Sphere</option>
+          <option value="column" ${layer.archetype === 'column' ? 'selected' : ''}>Column</option>
+          <option value="platform" ${layer.archetype === 'platform' ? 'selected' : ''}>Platform</option>
+          <option value="tree" ${layer.archetype === 'tree' ? 'selected' : ''}>Tree</option>
+        </select>
+        <input type="number" class="layer-yoffset" value="${layer.yOffset || 0}" placeholder="Y" onchange="updateLayerField(${index}, 'yOffset', this.value)" onclick="event.stopPropagation()">
+        <button class="layer-remove-btn" onclick="event.stopPropagation(); removeLayer(${index})">X</button>
+      </div>
+      <div class="layer-params">
+        ${shapeSection}
+        ${cascadeSection}
+        ${archetypeSection}
+        ${chaosSection}
+      </div>
+    `;
+
+    container.appendChild(item);
+  });
 }
 
 init();

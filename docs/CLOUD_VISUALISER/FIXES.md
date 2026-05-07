@@ -261,3 +261,76 @@ const childRadius = sizeBase * taperRatio * thicknessFalloff * (0.1 + sizeNoiseM
 - Extreme sizes (very small × very large) now possible in same generation
 - Power curve (`Math.pow`) pushes values toward extremes (0 or 1) while maintaining smooth interpolation
 - All archetypes respond properly to `jitter` and `clustering` controls
+
+---
+
+## v5.6 — Position Variation ("Per-child chaos")
+
+### Problem: Children locked to archetype shape, appear as regular polyhedra
+
+**Symptom:**
+- Sphere children form dodecahedron-like patterns — too regular, no randomness in direction
+- All archetypes constrained to their native growth pattern
+- `jitter` and `clustering` parameters had minimal effect on child positioning
+- No way to create truly chaotic cloud formations
+
+**Root Cause:**
+Each child received the same directional displacement calculated from parent's surface normal. No per-child randomization of position.
+
+### Fix: Add `positionVariation` — per-child independent noise offset
+
+Each child sphere now receives an independent random offset scaled by its own radius:
+
+```javascript
+// SPHERE archetype
+const posNoiseX = (perlin3D(jpt.x, jpt.y, jpt.z, seed + childUniqueId * 200) + 1) * 0.5;
+const posNoiseY = (perlin3D(jpt.x + 53, jpt.y, jpt.z, seed + childUniqueId * 200 + 1) + 1) * 0.5;
+const posNoiseZ = (perlin3D(jpt.x, jpt.y + 53, jpt.z, seed + childUniqueId * 200 + 2) + 1) * 0.5;
+const ox = (posNoiseX - 0.5) * 4 * parent.radius * posVariation;
+const oy = (posNoiseY - 0.5) * 4 * parent.radius * posVariation;
+const oz = (posNoiseZ - 0.5) * 4 * parent.radius * posVariation;
+
+// COLUMN archetype
+const colPosNoiseX = (perlin3D(cos(angle)*dist + wobbleX, y, sin(angle)*dist + wobbleZ, seed + floor*300 + r*17) + 1) * 0.5;
+// ... Y/Z with offsets +83, +83
+const colOx = (colPosNoiseX - 0.5) * 4 * sphereRadius * posVariation;
+
+// PLATFORM archetype
+const platPosNoiseX = (perlin3D(px, y, pz, seed + spiralIdx * 200) + 1) * 0.5;
+// ... Y/Z with offsets +41
+const platOx = (platPosNoiseX - 0.5) * 4 * radius * posVariation;
+
+// TREE archetype (main + lateral children)
+const treePosNoiseX = (perlin3D(childPos.x, childPos.y, childPos.z, seed + pathId * 200) + 1) * 0.5;
+// ... Y/Z with offsets +71
+const treeOx = (treePosNoiseX - 0.5) * 4 * childRadius * posVariation;
+```
+
+### New Parameter:
+
+| Param | Purpose | Range |
+|-------|---------|-------|
+| `positionVariation` | Strength of per-child position randomization | 0.0 to 2.0 |
+
+- `0.0` = no change, identical to v5.5
+- `0.5` = moderate chaos
+- `1.0+` = strong chaotic displacement
+
+### Key Implementation Details:
+
+1. **Multiplier**: `4 × radius × positionVariation` (doubled from initial 2×)
+2. **Perlin inputs**: Real world coordinates (not abstract indices) for better independence
+3. **Axis separation**: Each axis uses different offset (+53, +71, +83, +91, +41) in perlin inputs
+4. **Unique seeds**: `childUniqueId * 200`, `floor * 300 + r * 17`, `spiralIdx * 200`, `pathId * 200`
+
+### Where Applied:
+
+**SPHERE:** Children after `perturbed` displacement
+**COLUMN:** Ring spheres after wobble (uses real position coords)
+**PLATFORM:** Interior spiral points after y-noise (uses px, y, pz)
+**TREE:** Main children AND lateral children (uses childPos/lateralPos)
+
+### Default:
+```javascript
+positionVariation: 0.5
+```

@@ -3,10 +3,6 @@ using System.Collections.Generic;
 
 namespace ProjectC.Core
 {
-    /// <summary>
-    /// Client-side storm visual controller.
-    /// Receives state updates from ServerStormManager and renders storm visuals.
-    /// </summary>
     public class StormController : MonoBehaviour
     {
         public ushort StormId { get; private set; }
@@ -18,36 +14,53 @@ namespace ProjectC.Core
         [Header("Visual Settings")]
         [SerializeField] private Material _stormMaterial;
         [SerializeField] private ParticleSystem _lightningVFX;
-        [SerializeField] private float _stormScale = 500f;
+
+        [Header("Storm Generator")]
+        [SerializeField] private StormCloudGenerator _cloudGenerator;
 
         [Header("Visibility")]
         [SerializeField] private float _visibilityDistance = 50000f;
 
-        private Renderer _stormRenderer;
         private static readonly int LightningFlashProperty = Shader.PropertyToID("_LightningFlash");
 
         public static Dictionary<ushort, StormController> ClientControllers { get; } = new Dictionary<ushort, StormController>();
 
         private void Awake()
         {
-            _stormRenderer = GetComponent<Renderer>();
+            Debug.Log($"[StormController] Awake on {gameObject.name}");
 
-            var meshFilter = GetComponent<MeshFilter>();
-            if (meshFilter == null)
+            if (_stormMaterial == null)
             {
-                meshFilter = gameObject.AddComponent<MeshFilter>();
-            }
-            meshFilter.sharedMesh = Resources.GetBuiltinResource<Mesh>("Sphere.fbx");
-
-            var meshRenderer = GetComponent<MeshRenderer>();
-            if (meshRenderer == null)
-            {
-                meshRenderer = gameObject.AddComponent<MeshRenderer>();
+                var renderer = GetComponent<Renderer>();
+                if (renderer != null && renderer.material != null)
+                {
+                    _stormMaterial = renderer.material;
+                    Debug.Log($"[StormController] Got material from renderer: {_stormMaterial.name}");
+                }
             }
 
-            if (_stormMaterial == null && _stormRenderer != null)
+            if (_cloudGenerator == null)
             {
-                _stormMaterial = _stormRenderer.material;
+                _cloudGenerator = GetComponent<StormCloudGenerator>();
+                Debug.Log($"[StormController] Found generator: {_cloudGenerator}");
+            }
+
+            if (_cloudGenerator != null && _stormMaterial != null)
+            {
+                Debug.Log($"[StormController] Calling Initialize on {_cloudGenerator.name}");
+                try
+                {
+                    _cloudGenerator.Initialize(_stormMaterial);
+                    Debug.Log($"[StormController] Initialize completed");
+                }
+                catch (System.Exception e)
+                {
+                    Debug.LogError($"[StormController] Initialize failed: {e}");
+                }
+            }
+            else
+            {
+                Debug.LogWarning($"[StormController] Missing: generator={_cloudGenerator != null}, material={_stormMaterial != null}");
             }
 
             if (gameObject.name.StartsWith("Storm_"))
@@ -85,7 +98,6 @@ namespace ProjectC.Core
             ClientControllers[id] = this;
 
             gameObject.name = $"Storm_{id}";
-            transform.localScale = Vector3.one * _stormScale * intensity;
 
             Debug.Log($"[StormController] Initialized storm {id} at {worldPos}");
         }
@@ -122,7 +134,6 @@ namespace ProjectC.Core
         private void Update()
         {
             transform.position = Vector3.Lerp(transform.position, _targetPosition, 0.1f);
-            transform.localScale = Vector3.one * _stormScale * _intensity;
 
             float dist = Vector3.Distance(transform.position, GetPlayerPosition());
             gameObject.SetActive(dist < _visibilityDistance);

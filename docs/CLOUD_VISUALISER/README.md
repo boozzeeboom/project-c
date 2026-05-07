@@ -41,13 +41,12 @@
 
 ## История изменений
 
-### v1.1 — Mobile refinements
-- Сворачиваемая панель параметров на мобильных
-- Свайп, пинч, двойной тап
-- Исправлен баг с zoom при множественных жестах
-
-### v1.0 — Initial release
-- 3D-визуализация облаков
-- Orbit controls, зум
-- Экспорт в C# код
-- Адаптивная вёрстка (desktop/mobile)
+### v2.0 — Math rewrite (FBM + Worley + Domain Warping)
+- **Ellipsoid boundary** instead of cubic grid — smooth convex cloud shape
+- **Flat bottom profile** — sharp condensation level (cumulus style)
+- **Worley noise** — cauliflower surface detail (Phase 2)
+- **Domain warping** — organic, non-uniform shapes (Phase 2)
+- **Cumulonimbus** — storm clouds: column + anvil top + scud base
+- New params: Flat Bottom (stratus vs cumulus), Worley Detail (cauliflower intensity)
+- 3D Perlin noise + 3D Worley noise + FBM + domain warping
+- All algorithm math documented in `RESEARCH_MATH.md`

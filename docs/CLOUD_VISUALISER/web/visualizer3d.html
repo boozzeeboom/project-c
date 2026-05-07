@@ -55,7 +55,6 @@
     border-right: 1px solid #0f3460;
   }
 
-  /* Mobile: controls go to top, collapsible */
   @media (max-width: 767px) {
     .controls {
       position: fixed;
@@ -265,12 +264,12 @@
   
   <div class="control-group">
     <label>Density <span class="value" id="densityVal">0.60</span></label>
-    <input type="range" id="density" min="10" max="95" value="60">
+    <input type="range" id="density" min="5" max="95" value="60">
   </div>
   
   <div class="control-group">
-    <label>Turbulence <span class="value" id="turbulenceVal">0.40</span></label>
-    <input type="range" id="turbulence" min="0" max="100" value="40">
+    <label>Turbulence <span class="value" id="turbulenceVal">0.50</span></label>
+    <input type="range" id="turbulence" min="0" max="100" value="50">
   </div>
   
   <div class="control-group">
@@ -287,6 +286,16 @@
     <label>Seed <span class="value" id="seedVal">42</span></label>
     <input type="range" id="seed" min="0" max="999" value="42">
   </div>
+
+  <div class="control-group">
+    <label>Flat Bottom <span class="value" id="flatBottomVal">1.00</span></label>
+    <input type="range" id="flatBottom" min="0" max="100" value="100">
+  </div>
+
+  <div class="control-group">
+    <label>Worley Detail <span class="value" id="worleyDetailVal">0.50</span></label>
+    <input type="range" id="worleyDetail" min="0" max="100" value="50">
+  </div>
   
   <div class="buttons">
     <button onclick="generate()">Generate</button>
@@ -294,9 +303,9 @@
   </div>
   
   <div class="info">
-    Drag to rotate. Scroll to zoom.<br>
-    Spheres colored by density.<br>
-    Blue = dense, white = wispy.
+    Clouds: FBM + Worley + Domain Warping<br>
+    Blue = dense, white = wispy<br>
+    Storm: tall column + anvil top
   </div>
 </div>
 
@@ -305,43 +314,58 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
 <script>
 // ============================================================
-// CloudMath JS — FBM + Perlin
+// NOISE UTILITIES — 3D Perlin + Worley + Domain Warping
 // ============================================================
 
-const lerp = (a, b, t) => a + (b - a) * t;
-const fade = t => t * t * t * (t * (t * 6 - 15) + 10);
-
-const hash = (x, y) => {
-  let n = (x | 0) + ((y | 0) * 57) | 0;
+// --- 3D Perlin Noise ---
+const hash3 = (x, y, z, seed) => {
+  let n = (((x | 0) + ((y | 0) * 57) | 0) + ((z | 0) * 131) | 0) + ((seed | 0) * 123456789) | 0;
   n = (n << 13) ^ n;
-  return (n * (n * n * 15731 + 789221) + 1376312589) & 0xFF;
+  return (n * (n * n * 15731 + 789221) + 1376312589) & 0x7FFFFFFF;
 };
 
-const grad = (h, x, y) => {
-  const u = h < 2 ? x : y;
-  const v = h < 2 ? y : x;
-  return ((h & 1) ? -u : u) + ((h & 2) ? -v : v);
+const fade3 = t => t * t * t * (t * (t * 6 - 15) + 10);
+
+const lerp3 = (a, b, t) => a + (b - a) * t;
+
+const grad3 = (h, x, y, z) => {
+  const g = h & 15;
+  const u = g < 8 ? x : y;
+  const v = g < 4 ? y : (g === 12 || g === 14 ? x : z);
+  return ((g & 1) ? -u : u) + ((g & 2) ? -v : v);
 };
 
-const perlin2D = (x, y, seed) => {
-  x += seed * 127.1;
-  y += seed * 311.7;
+// Seeded 3D Perlin noise, returns value in [-1, 1]
+const perlin3D = (x, y, z, seed) => {
   const xi = Math.floor(x) & 0xFF;
   const yi = Math.floor(y) & 0xFF;
+  const zi = Math.floor(z) & 0xFF;
   const xf = x - Math.floor(x);
   const yf = y - Math.floor(y);
-  const u = fade(xf), v = fade(yf);
-  const aa = hash(xi, yi), ab = hash(xi, yi + 1);
-  const ba = hash(xi + 1, yi), bb = hash(xi + 1, yi + 1);
-  const x1 = lerp(grad(aa, xf, yf), grad(ba, xf - 1, yf), u);
-  const x2 = lerp(grad(ab, xf, yf - 1), grad(bb, xf - 1, yf - 1), u);
-  return lerp(x1, x2, v);
+  const zf = z - Math.floor(z);
+  const u = fade3(xf), v = fade3(yf), w = fade3(zf);
+  const aaa = hash3(xi, yi, zi, seed) % 12;
+  const aba = hash3(xi, yi + 1, zi, seed) % 12;
+  const aab = hash3(xi, yi, zi + 1, seed) % 12;
+  const abb = hash3(xi, yi + 1, zi + 1, seed) % 12;
+  const baa = hash3(xi + 1, yi, zi, seed) % 12;
+  const bba = hash3(xi + 1, yi + 1, zi, seed) % 12;
+  const bab = hash3(xi + 1, yi, zi + 1, seed) % 12;
+  const bbb = hash3(xi + 1, yi + 1, zi + 1, seed) % 12;
+  const x1 = lerp3(grad3(aaa, xf, yf, zf), grad3(baa, xf - 1, yf, zf), u);
+  const x2 = lerp3(grad3(aba, xf, yf - 1, zf), grad3(bba, xf - 1, yf - 1, zf), u);
+  const y1 = lerp3(x1, x2, v);
+  const x3 = lerp3(grad3(aab, xf, yf, zf - 1), grad3(bab, xf - 1, yf, zf - 1), u);
+  const x4 = lerp3(grad3(abb, xf, yf - 1, zf - 1), grad3(bbb, xf - 1, yf - 1, zf - 1), u);
+  const y2 = lerp3(x3, x4, v);
+  return lerp3(y1, y2, w);
 };
 
-const fbm = (x, y, octaves = 4, persistence = 0.5, lacunarity = 2.0, seed = 0) => {
+// FBM — fractional Brownian motion
+const fbm = (x, y, z, octaves = 5, persistence = 0.5, lacunarity = 2.0, seed = 0) => {
   let value = 0, amplitude = 1, frequency = 1, maxValue = 0;
   for (let i = 0; i < octaves; i++) {
-    value += amplitude * perlin2D(x * frequency, y * frequency, seed + i);
+    value += amplitude * perlin3D(x * frequency, y * frequency, z * frequency, seed + i);
     maxValue += amplitude;
     amplitude *= persistence;
     frequency *= lacunarity;
@@ -349,48 +373,253 @@ const fbm = (x, y, octaves = 4, persistence = 0.5, lacunarity = 2.0, seed = 0) =
   return value / maxValue;
 };
 
-function generateCloud(cloudSize, density, turbulence, seed, humidity, stormIntensity) {
+// --- 3D Worley (Cellular) Noise ---
+// Returns distance to nearest cell seed point
+const worley3D = (x, y, z, freq) => {
+  const ix = Math.floor(x * freq);
+  const iy = Math.floor(y * freq);
+  const iz = Math.floor(z * freq);
+  let minDist = 1e9;
+  for (let dx = -1; dx <= 1; dx++) {
+    for (let dy = -1; dy <= 1; dy++) {
+      for (let dz = -1; dz <= 1; dz++) {
+        const cx = ix + dx;
+        const cy = iy + dy;
+        const cz = iz + dz;
+        // Pseudo-random point in this cell (deterministic)
+        const h = (((cx * 12345 ^ cy * 67890 ^ cz * 13579)) & 0x7FFFFFFF);
+        const sx = (h % 1000) / 1000;
+        const sy = ((h / 1000) % 1000) / 1000;
+        const sz = ((h / 1000000) % 1000) / 1000;
+        const dx2 = x * freq - (cx + sx);
+        const dy2 = y * freq - (cy + sy);
+        const dz2 = z * freq - (cz + sz);
+        const dist = Math.sqrt(dx2 * dx2 + dy2 * dy2 + dz2 * dz2);
+        if (dist < minDist) minDist = dist;
+      }
+    }
+  }
+  return minDist;
+};
+
+// Inverted Worley: high at cell centers, low at edges
+const invertedWorley = (x, y, z, freq) => 1.0 - Math.min(worley3D(x, y, z, freq), 1.0);
+
+// --- Domain Warping ---
+// Warp coordinates using fbm displacement for organic shapes
+const warpedFbm = (x, y, z, seed, warpStrength = 4.0) => {
+  const wx = fbm(x + 0.0, y + 1.7, z + 9.2, 3, 0.5, 2.0, seed + 10) * warpStrength;
+  const wy = fbm(x + 3.1, y + 2.7, z + 8.4, 3, 0.5, 2.0, seed + 20) * warpStrength;
+  const wz = fbm(x + 7.2, y + 1.3, z + 4.6, 3, 0.5, 2.0, seed + 30) * warpStrength;
+  return fbm(x + wx, y + wy, z + wz, 5, 0.5, 2.0, seed);
+};
+
+// ============================================================
+// CLOUD DENSITY FUNCTION
+// Phase 1: Ellipsoid boundary + FBM + flat bottom
+// Phase 2: Worley detail + domain warping
+// Phase 3: Cloud type variations (stratus/cumulus/cumulonimbus)
+// ============================================================
+
+// Smooth ellipsoid boundary: returns 1 inside, 0 at edge, negative outside
+const ellipsoidBoundary = (px, py, pz, cx, cy, cz, rx, ry, rz) => {
+  const dx = (px - cx) / rx;
+  const dy = (py - cy) / ry;
+  const dz = (pz - cz) / rz;
+  const d = dx * dx + dy * dy + dz * dz;
+  return 1.0 - d;
+};
+
+// Flat bottom height profile (condensation level = sharp horizontal boundary)
+const flatBottomProfile = (y, baseY, turbulenceH, flatBottomStrength) => {
+  // Hard cutoff at condensation level
+  const bottomMask = smoothstep(baseY - 5, baseY + 5, y);
+  // Noisy top — density decreases with height using noise
+  const normalizedY = Math.max(0, (y - baseY) / turbulenceH);
+  const topNoise = 1.0 - normalizedY + (Math.random() * 0.0); // noise added separately
+  return bottomMask * topNoise;
+};
+
+// Gaussian height profile (for stratus / softer clouds)
+const gaussianProfile = (y, baseY, topY, centerBias = 0.5) => {
+  const center = baseY + (topY - baseY) * centerBias;
+  const sigma = (topY - baseY) * 0.35;
+  return Math.exp(-Math.pow(y - center, 2) / (2 * sigma * sigma));
+};
+
+// Smoothstep helper
+const smoothstep = (a, b, x) => {
+  const t = Math.max(0, Math.min(1, (x - a) / (b - a)));
+  return t * t * (3 - 2 * t);
+};
+
+// CUMULONIMBUS (storm): column + anvil
+const cumulonimbusDensity = (px, py, pz, cx, cy, cz, rx, ry, rz, 
+                              columnH, anvilY, anvilRx, anvilRz, anvilH,
+                              largeFbm, worleyD, warpAmt, seed) => {
+  // --- Column (tall ellipsoid) ---
+  const colDx = (px - cx) / rx;
+  const colDy = (py - cy - columnH * 0.5) / (columnH * 0.5);
+  const colDz = (pz - cz) / rz;
+  const colDist = colDx * colDx + colDy * colDy + colDz * colDz;
+  let columnDensity = Math.max(0, 1.0 - colDist);
+  columnDensity = smoothstep(0, 0.25, columnDensity);
+  // Height mask for column
+  const colHeightMask = smoothstep(cy, cy + 2, py) * smoothstep(cy + columnH + 2, cy + columnH - 2, py);
+  columnDensity *= colHeightMask;
+
+  // --- Anvil (flat ellipsoid at top) ---
+  const anvilDy = (py - anvilY) / (anvilH * 0.5);
+  const anvilDx = (px - cx) / anvilRx;
+  const anvilDz = (pz - cz) / anvilRz;
+  const anvilDist = anvilDx * anvilDx + anvilDy * anvilDy + anvilDz * anvilDz;
+  let anvilDensity = Math.max(0, 1.0 - anvilDist);
+  anvilDensity = smoothstep(0, 0.4, anvilDensity) * 0.6;
+
+  // --- Scud (wispy base) ---
+  const scudDensity = largeFbm * 0.3 * smoothstep(cy + 2, cy - 1, py);
+
+  return columnDensity + anvilDensity + scudDensity;
+};
+
+// Main cloud density function — returns value in [0, 1]
+const cloudDensity = (px, py, pz, params) => {
+  const {
+    cx, cy, cz, rx, ry, rz,    // cloud center and radius
+    baseY,                        // condensation level (flat bottom y)
+    turbulenceH,                  // height of fluffy top
+    largeFreq, detailFreq,        // noise frequencies
+    worleyDetailAmt,              // how much Worley affects density
+    warpStrength,                 // domain warping strength
+    seed, turbulence,             // turbulence = overall noisiness
+    flatBottomStrength,           // 0 = stratus, 1 = cumulus
+    densityThreshold,             // threshold for sphere placement
+    isStorm                      // cumulonimbus mode
+  } = params;
+
+  // Cumulonimbus uses different geometry
+  if (isStorm) {
+    return cumulonimbusDensity(
+      px, py, pz, cx, cy, cz, rx, ry, rz,
+      turbulenceH * 1.5,           // column height
+      cy + turbulenceH * 1.4,      // anvil y
+      rx * 3.0, rz * 3.0, 0.4,    // anvil size
+      fbm(px * 0.5, py * 0.5, pz * 0.5, 3, 0.5, 2.0, seed), // largeFbm placeholder
+      worleyDetailAmt,
+      warpStrength,
+      seed
+    );
+  }
+
+  // --- 1. Ellipsoid boundary ---
+  let density = ellipsoidBoundary(px, py, pz, cx, cy, cz, rx, ry, rz);
+  if (density <= 0) return 0;
+
+  // --- 2. Large-scale FBM shape ---
+  const largeShape = fbm(px * largeFreq, py * largeFreq * 0.3, pz * largeFreq, 3, 0.5, 2.0, seed);
+  density += largeShape * 0.4 * turbulence;
+
+  // --- 3. Domain warping for organic look ---
+  const warpedVal = warpedFbm(px, py, pz, seed, warpStrength);
+  density += warpedVal * warpStrength * 0.05 * turbulence;
+
+  // --- 4. Worley detail (cauliflower) ---
+  const worleyVal = invertedWorley(px * detailFreq, py * detailFreq * 0.3, pz * detailFreq, 1.0);
+  density += (worleyVal - 0.5) * worleyDetailAmt * turbulence;
+
+  // --- 5. Height profile ---
+  const normalizedY = Math.max(0, (py - baseY) / turbulenceH);
+  let heightProfile;
+
+  if (flatBottomStrength > 0.1) {
+    // Cumulus-style: flat bottom + noisy top
+    const bottomMask = smoothstep(baseY - 3, baseY + 3, py);
+    // Top is noisy: use FBM to make fluffy
+    const topNoise = 1.0 - normalizedY + fbm(px * 2.0, py * 0.8, pz * 2.0, 3, 0.5, 2.0, seed) * 0.5;
+    heightProfile = bottomMask * Math.max(0.05, topNoise);
+  } else {
+    // Stratus-style: smooth Gaussian layer
+    heightProfile = gaussianProfile(py, baseY, baseY + turbulenceH, 0.4);
+  }
+
+  density *= heightProfile;
+
+  return Math.max(0, density);
+};
+
+// ============================================================
+// CLOUD GENERATION — place spheres where density > threshold
+// ============================================================
+
+function generateCloud(params) {
   const spheres = [];
-  const cellSize = cloudSize * 0.22;
-  const gridSize = Math.ceil(cloudSize / cellSize) + 1;
-  const halfGrid = Math.floor(gridSize / 2);
+  const {
+    cloudSize, density: fillDensity, turbulence, seed, humidity, stormIntensity
+  } = params;
 
-  for (let ix = -halfGrid; ix < halfGrid; ix++) {
-    for (let iy = -halfGrid / 2; iy < halfGrid / 2; iy++) {
-      for (let iz = -halfGrid; iz < halfGrid; iz++) {
-        const cx = (ix + 0.5) * cellSize;
-        const cy = (iy + 0.5) * cellSize * 0.5;
-        const cz = (iz + 0.5) * cellSize;
+  // Cloud volume: ellipsoid centered at origin
+  // For storm, taller ellipsoid; for normal, more spherical
+  const rx = stormIntensity > 0.5 ? cloudSize * 0.45 : cloudSize * 0.55;
+  const ry = stormIntensity > 0.5 ? cloudSize * 0.9 : cloudSize * 0.5;
+  const rz = stormIntensity > 0.5 ? cloudSize * 0.45 : cloudSize * 0.55;
+  const baseY = -ry * 0.25; // condensation level = 25% up from bottom
+  const turbulenceH = ry * (stormIntensity > 0.5 ? 1.0 : 0.7);
 
-        const nx = cx / cloudSize;
-        const ny = cy / cloudSize;
-        const nz = cz / cloudSize;
+  const densityParams = {
+    cx: 0, cy: 0, cz: 0,
+    rx, ry, rz,
+    baseY,
+    turbulenceH,
+    largeFreq: 0.5 / cloudSize * 50,
+    detailFreq: 4.0 / cloudSize * 50,
+    worleyDetailAmt: params.worleyDetail,
+    warpStrength: 4.0,
+    seed,
+    turbulence,
+    flatBottomStrength: params.flatBottom,
+    densityThreshold: 1 - fillDensity,
+    isStorm: stormIntensity > 0.5
+  };
 
-        let shapeNoise = fbm(nx * 2, nz * 2, 4, 0.5, 2.0, seed);
-        shapeNoise = (shapeNoise + 1) * 0.5;
+  // Sampling: iterate in world space, not grid
+  const step = cloudSize * 0.18; // sphere spacing
 
-        const heightFactor = 1 - Math.pow(Math.abs(ny + 0.2), 2) * 0.6;
-        shapeNoise *= heightFactor;
+  const xMin = -rx - step;
+  const xMax = rx + step;
+  const yMin = baseY - step;
+  const yMax = ry * 1.5 + step;
+  const zMin = -rz - step;
+  const zMax = rz + step;
 
-        const threshold = 1 - density;
-        if (shapeNoise < threshold) continue;
+  // Worley cells per unit (deterministic, seeded per cell)
+  const worleyFreq = 1.0 / step;
 
-        const stormFactor = 1 + stormIntensity * 0.5;
-        const stormDensityMod = 1 - stormIntensity * 0.3;
+  for (let x = xMin; x <= xMax; x += step) {
+    for (let y = yMin; y <= yMax; y += step) {
+      for (let z = zMin; z <= zMax; z += step) {
+        const d = cloudDensity(x, y, z, densityParams);
+        if (d < densityParams.densityThreshold) continue;
 
-        const baseRadius = cellSize * 0.55 * (humidity * 0.7 + 0.3);
-        const radiusNoise = perlin2D(nx * 4, nz * 4, seed + 50) * 0.3 + 0.85;
-        const radius = baseRadius * radiusNoise * stormFactor;
+        // Base radius from humidity
+        const baseRadius = step * 0.55 * (humidity * 0.6 + 0.4);
 
-        let localDensity = (shapeNoise - threshold) / (1 - threshold);
-        localDensity *= stormDensityMod;
-        localDensity *= 0.5 + (ny + 0.5) * 0.5;
+        // Worley-based local radius variation (cauliflower bumps)
+        const worleyR = invertedWorley(x * worleyFreq, y * worleyFreq * 0.3, z * worleyFreq, 1.0);
+        const radiusNoise = perlin3D(x * 3, y * 3, z * 3, seed + 50) * 0.3 + 0.85;
+        const radius = baseRadius * radiusNoise * (0.6 + worleyR * 0.4);
+
+        // Storm: column is denser at bottom, anvil is larger at top
+        let localDensity = d;
+        if (stormIntensity > 0.5) {
+          const columnMask = smoothstep(baseY, baseY + turbulenceH * 1.5, y);
+          localDensity = d * columnMask * 1.2;
+        }
 
         if (localDensity < 0.05) continue;
 
         spheres.push({
-          x: cx, y: cy, z: cz,
-          radius,
+          x, y, z,
+          radius: Math.max(0.1, radius),
           density: Math.min(Math.max(localDensity, 0), 1)
         });
       }
@@ -404,26 +633,22 @@ function generateCloud(cloudSize, density, turbulence, seed, humidity, stormInte
 // THREE.JS SCENE
 // ============================================================
 
-let scene, camera, renderer, controls;
+let scene, camera, renderer;
 let cloudMeshes = [];
 let currentSpheres = [];
 
 function init() {
-  // Scene
   scene = new THREE.Scene();
   scene.background = new THREE.Color(0x0a0a1a);
   
-  // Camera
   camera = new THREE.PerspectiveCamera(60, window.innerWidth / window.innerHeight, 0.1, 10000);
   camera.position.set(80, 60, 120);
   
-  // Renderer
   renderer = new THREE.WebGLRenderer({ antialias: true });
   renderer.setSize(window.innerWidth, window.innerHeight);
   renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
   document.body.appendChild(renderer.domElement);
   
-  // Lights
   const ambient = new THREE.AmbientLight(0xffffff, 0.4);
   scene.add(ambient);
   
@@ -435,25 +660,21 @@ function init() {
   backLight.position.set(-50, -30, -50);
   scene.add(backLight);
   
-  // Orbit controls (simple manual implementation)
   setupControls();
   
-  // Grid helper
   const grid = new THREE.GridHelper(200, 20, 0x1a1a3a, 0x1a1a3a);
   grid.position.y = -10;
   scene.add(grid);
   
-  // Axis helper
   const axes = new THREE.AxesHelper(30);
   scene.add(axes);
   
   window.addEventListener('resize', onResize);
   
-  // Slider listeners
-  ['cloudSize', 'density', 'turbulence', 'humidity', 'storm', 'seed'].forEach(id => {
+  ['cloudSize', 'density', 'turbulence', 'humidity', 'storm', 'seed', 'flatBottom', 'worleyDetail'].forEach(id => {
     document.getElementById(id).addEventListener('input', function() {
-      const v = this.value;
-      const isPercent = ['density', 'humidity', 'storm'].includes(id);
+      const v = parseFloat(this.value);
+      const isPercent = ['density', 'humidity', 'storm', 'flatBottom', 'worleyDetail'].includes(id);
       document.getElementById(id + 'Val').textContent = 
         id === 'seed' ? v : (v / (isPercent ? 100 : 1)).toFixed(2);
     });
@@ -516,7 +737,6 @@ function setupControls() {
     updateCamera();
   }, { passive: false });
 
-  // --- Touch controls ---
   let touchPrevDist = 0;
   let isPinching = false;
   let pinchOccurred = false;
@@ -549,7 +769,6 @@ function setupControls() {
       prevY = e.touches[0].clientY;
       updateCamera();
     } else if (e.touches.length === 2) {
-      // Start pinch tracking on first 2-finger move
       if (!isPinching) {
         isPinching = true;
         const dx = e.touches[0].clientX - e.touches[1].clientX;
@@ -568,17 +787,14 @@ function setupControls() {
     }
   }, { passive: false });
 
-  // --- Double tap to reset camera (only if no pinch occurred) ---
   let lastTap = 0;
   canvas.addEventListener('touchend', e => {
-    // Transitioning from 2-finger pinch to 1-finger drag: update prev to avoid jump
     if (isPinching && e.touches.length === 1) {
       prevX = e.touches[0].clientX;
       prevY = e.touches[0].clientY;
     }
     isPinching = false;
 
-    // Double-tap reset: only if all fingers lifted and no pinch occurred
     if (e.touches.length === 0 && !pinchOccurred) {
       const now = Date.now();
       if (now - lastTap < 300) {
@@ -604,28 +820,30 @@ function onResize() {
 }
 
 function generate() {
-  const cloudSize = parseFloat(document.getElementById('cloudSize').value);
-  const density = parseFloat(document.getElementById('density').value) / 100;
-  const turbulence = parseFloat(document.getElementById('turbulence').value) / 100;
-  const humidity = parseFloat(document.getElementById('humidity').value) / 100;
-  const storm = parseFloat(document.getElementById('storm').value) / 100;
-  const seed = parseInt(document.getElementById('seed').value);
+  const params = {
+    cloudSize: parseFloat(document.getElementById('cloudSize').value),
+    density: parseFloat(document.getElementById('density').value) / 100,
+    turbulence: parseFloat(document.getElementById('turbulence').value) / 100,
+    humidity: parseFloat(document.getElementById('humidity').value) / 100,
+    stormIntensity: parseFloat(document.getElementById('storm').value) / 100,
+    seed: parseInt(document.getElementById('seed').value),
+    flatBottom: parseFloat(document.getElementById('flatBottom').value) / 100,
+    worleyDetail: parseFloat(document.getElementById('worleyDetail').value) / 100
+  };
 
-  currentSpheres = generateCloud(cloudSize, density, turbulence, seed, humidity, storm);
+  currentSpheres = generateCloud(params);
   document.getElementById('stats').textContent = `${currentSpheres.length} spheres`;
   
   rebuildMesh();
 }
 
 function rebuildMesh() {
-  // Remove old meshes
   cloudMeshes.forEach(m => scene.remove(m));
   cloudMeshes = [];
   
   const geometry = new THREE.SphereGeometry(1, 12, 8);
   
   currentSpheres.forEach(s => {
-    // Color based on density
     const d = s.density;
     const r = 0.2 + d * 0.6;
     const g = 0.4 + d * 0.4;
@@ -653,25 +871,31 @@ function animate() {
 }
 
 function exportCode() {
-  const cloudSize = parseFloat(document.getElementById('cloudSize').value);
-  const density = parseFloat(document.getElementById('density').value) / 100;
-  const turbulence = parseFloat(document.getElementById('turbulence').value) / 100;
-  const humidity = parseFloat(document.getElementById('humidity').value) / 100;
-  const storm = parseFloat(document.getElementById('storm').value) / 100;
-  const seed = parseInt(document.getElementById('seed').value);
+  const params = {
+    cloudSize: parseFloat(document.getElementById('cloudSize').value),
+    density: parseFloat(document.getElementById('density').value) / 100,
+    turbulence: parseFloat(document.getElementById('turbulence').value) / 100,
+    humidity: parseFloat(document.getElementById('humidity').value) / 100,
+    stormIntensity: parseFloat(document.getElementById('storm').value) / 100,
+    seed: parseInt(document.getElementById('seed').value),
+    flatBottom: parseFloat(document.getElementById('flatBottom').value) / 100,
+    worleyDetail: parseFloat(document.getElementById('worleyDetail').value) / 100
+  };
   
-  const code = `// CloudMath C# — Generated from visualizer
-List<CloudSphere> spheres = CloudMath.GenerateCloud(
-    cloudSize: ${cloudSize}f,
-    density: ${density}f,
-    turbulence: ${turbulence}f,
-    seed: ${seed},
-    humidity: ${humidity}f,
-    windX: 0f,
-    windZ: 0f,
-    stormIntensity: ${storm}f
-);
-// ${currentSpheres.length} spheres`;
+  const code = `// CloudMath C# — Generated from visualizer v2
+// Sphere-based cloud generator: Ellipsoid + FBM + Worley + Domain Warping
+// ${currentSpheres.length} spheres
+
+List<CloudSphere> spheres = GenerateCloud(
+    cloudSize: ${params.cloudSize}f,
+    density: ${params.density}f,
+    turbulence: ${params.turbulence}f,
+    humidity: ${params.humidity}f,
+    seed: ${params.seed},
+    flatBottom: ${params.flatBottom}f,
+    worleyDetail: ${params.worleyDetail}f,
+    stormIntensity: ${params.stormIntensity}f
+);`;
 
   const blob = new Blob([code], { type: 'text/plain' });
   const a = document.createElement('a');

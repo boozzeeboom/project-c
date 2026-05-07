@@ -1,4 +1,4 @@
-# Cloud Generator v5.1 — Multi-Layer Architecture
+# Cloud Generator v5.4 — Multi-Layer Architecture
 
 ## Концепция
 
@@ -48,7 +48,9 @@ generateCloud(layers[])
 
 Дочерние элементы равномерно обрастают поверхность родителя во всех направлениях. Итоговая форма — сферический/блибовидный комок.
 
-**Параметры:** все текущие (cloudSize, cascadeDepth, bumpsPerLevel, childRatio, sizeVariation, jitter, clustering, parentCount, ellipsoidY, ellipsoidXZ)
+**Параметры:** cloudSize, cascadeDepth, bumpsPerLevel, childRatio, sizeVariation, jitter, clustering, parentCount, ellipsoidY, ellipsoidXZ, **sizeRange**
+
+**sizeRange:** `{ min, max }` — минимальный и максимальный радиус сфер в каскаде. Дочерние сферы получают размер через `sizeBase = minRadius + noise * (sizeMax - minRadius)`.
 
 **Алгоритм:** текущий `generateCascadeCloud`, переупакованный в `generateSphereLayer()`
 
@@ -65,7 +67,7 @@ Root ──► Branch ──► SubBranch ──► ...
 **Параметры:**
 
 | Параметр | Описание | Диапазон |
-|----------|----------|----------|
+|----------|---------|----------|
 | `branchElongation` | Во сколько раз child дальше от parent по направлению | 0.5–3.0 |
 | `branchAngle` | Макс. угол отклонения ветки от родителя (градусы) | 15–60° |
 | `maxDepth` | Глубина рекурсии ветвления | 2–8 |
@@ -73,7 +75,7 @@ Root ──► Branch ──► SubBranch ──► ...
 | `trunkUpBias` | Насколько ствол стремится вверх (0=случайно, 1=всегда вверх) | 0.0–1.0 |
 | `lengthFalloff` | Уменьшение длины на каждом уровне | 0.5–0.9 |
 | `thicknessFalloff` | Уменьшение толщины (radius) на уровне | 0.4–0.8 |
-| `leafDensity` | Плотность "листьев" — поверхностных шишек на ветках | 0.0–1.0 |
+| **sizeRange** | **Минимальный и максимальный радиус сфер** | **min: 1–20, max: 5–40** |
 
 **Алгоритм:**
 1. Seed направление (с учётом trunkUpBias)
@@ -97,14 +99,14 @@ Floor 1:   ○ ○ ○ ○ ○     ← широкий низ
 **Параметры:**
 
 | Параметр | Описание | Диапазон |
-|----------|----------|----------|
+|----------|---------|----------|
 | `height` | Общая высота колонны | 10–100 |
 | `baseRadius` | Радиус нижнего этажа | 5–30 |
 | `topRadius` | Радиус верхнего этажа (0 = игла) | 0–baseRadius |
 | `floors` | Количество этажей | 3–20 |
 | `ringsPerFloor` | Сфер на этаже | 3–12 |
 | `wobble` | Горизонтальное смещение этажа | 0.0–1.0 |
-| `taperCurve` | Как radius уменьшается с высотой: `linear` \| `exponential` \| `smooth` | — |
+| **sizeRange** | **Минимальный и максимальный радиус сфер** | **min: 1–20, max: 5–40** |
 
 **Алгоритм:**
 1. Для каждого floor: вычислить Y = floor * floorHeight
@@ -130,14 +132,14 @@ Floor 1:   ○ ○ ○ ○ ○     ← широкий низ
 **Параметры:**
 
 | Параметр | Описание | Диапазон |
-|----------|----------|----------|
+|----------|---------|----------|
 | `width` | Горизонтальный размер X | 20–200 |
 | `depth` | Горизонтальный размер Z | 20–200 |
 | `centerThickness` | Толщина в центре (Y) | 1–10 |
 | `edgeThickness` | Толщина на краю | 0.1–2 |
-| `falloffCurve` | Как плотность падает от центра: `gaussian` \| `linear` \| `step` | — |
 | `interiorDensity` | Целевое количество сфер внутри | 20–100 |
 | `edgeRings` | Количество граничных колец | 1–5 |
+| **sizeRange** | **Минимальный и максимальный радиус сфер** | **min: 1–20, max: 5–40** |
 
 **Алгоритм:**
 1. Anchor сфера в центре (0,0,0)
@@ -334,10 +336,15 @@ public static class CloudGenerator
 | 5 | Реализовать `generateTreeLayer()` | ✅ Готово (v5.0) |
 | 6 | Добавить UI layer editor | ✅ Готово (v5.1) |
 | 7 | C# parity — CloudArchetype enum + CloudGenerator refactor | ✅ Готово (v5.1) |
+| 8 | **Size Min/Max controls (sizeRange) для всех архетипов** | ✅ **Готово (v5.4)** |
+| 9 | **Исправить updateLayerField для nested paths** | ✅ **Готово (v5.4)** |
+| 10 | **Jitter/Clustering работают во всех архетипах** | ✅ **Готово (v5.4)** |
 
 ## Known Issues / TODO
 
 - [x] Flat bottom profile (condensation level) — ✅ Готово (v5.2)
+- [x] Size Min/Max controls — ✅ Готово (v5.4)
+- [x] Jitter/Clustering visibility — ✅ Готово (v5.4)
 - [ ] Storm mode (cumulonimbus: column + anvil) — archetype stacking решает
 - [ ] Wind animation (curl noise для анимации) — для будущего
 - [ ] Layer preview in Scene View — требует Unity-side реализации

@@ -89,23 +89,79 @@ const rotAngle = perlin3D(childX * freq, seed) * Math.PI * 2;
 
 ---
 
-## Summary: New Parameters Needed
+## Fix 5 (v5.4): Size Min/Max Controls Broken for Non-Sphere Archetypes
 
-| Param | Purpose | Range |
-|-------|---------|-------|
-| `sizeVariation` | How much siblings differ in size | 0.0–1.0 |
-| `childRatioMax` | Upper bound of child/parent ratio | 10%–200% |
-| `parentCount` | Number of root spheres | 1–20 |
-| `ellipsoidX/Y/Z` | Shape scaling per axis | 0.3–2.0 |
-| `jitterStrength` | Jitter amount on surface points | 0.0–0.5 |
-| `clusterStrength` | Worley clustering (0=none, 1=strong) | 0.0–1.0 |
-| `variableBumps` | Randomize bumps count per sphere | 0.0–1.0 |
+**Symptom:**
+- Column: spheres too large to fit in viewport; Size Min/Max sliders did nothing
+- Platform: Size Min worked but Size Max had no effect; overall sizes unpredictable
+- Tree: size controls completely absent; children too small
+- Sphere: no size range controls at all
+- Jitter and Clustering sliders had no visible effect on any archetype
+- Generate button appeared to do nothing when sliders changed
+
+**Root Causes:**
+
+1. **`updateLayerField` didn't handle nested paths** — the condition only checked for `columnParams.`, `platformParams.`, `treeParams.` prefixes. Fields like `sizeRange.min` fell through to `layer[field] = parseFloat(value)`, creating flat keys like `layer['sizeRange.min'] = 5` instead of `layer.sizeRange = {min: 5}`.
+
+2. **`sizeRange` not set in `getDefaultLayer()`** — new layers created via Add Layer didn't have `sizeRange` at all.
+
+3. **`updateLayerArchetype` didn't preserve `sizeRange`** — switching archetype reset the size controls.
+
+4. **Generators didn't use `layer.sizeRange`** — Column/Platform formulas used `baseRadius` from `columnParams`/`platformParams`, not `layer.sizeRange`.
+
+5. **Jitter values too small** — multipliers like `jitter * baseRadius * perlin3D(...)` were too weak to create visible displacement.
+
+**Fixes Applied:**
+
+1. Rewrote `updateLayerField()` to handle any dot-notation path:
+```javascript
+function updateLayerField(index, field, value) {
+  const layer = window._advancedLayers[index];
+  if (field.includes('.')) {
+    const parts = field.split('.');
+    let obj = layer;
+    for (let i = 0; i < parts.length - 1; i++) {
+      if (!obj[parts[i]]) obj[parts[i]] = {};
+      obj = obj[parts[i]];
+    }
+    obj[parts[parts.length - 1]] = parseFloat(value);
+  } else {
+    layer[field] = parseFloat(value);
+  }
+  generate();
+}
+```
+
+2. Added `sizeRange` to `getDefaultLayer()` for all archetypes:
+```javascript
+base.sizeRange = { min: 3, max: 10 }; // column, platform, tree
+base.sizeRange = { min: 5, max: 20 }; // sphere
+```
+
+3. Preserve `sizeRange` in `updateLayerArchetype()`:
+```javascript
+newLayer.sizeRange = oldLayer.sizeRange;
+```
+
+4. **Column sphere radius** — `baseRadius * sizeBase * 0.08 * (0.5 + rNoise * 0.5)` where `sizeBase = sizeRange.min + rNoise * (sizeRange.max - sizeRange.min)`
+
+5. **Platform sphere radius** — `sizeBase * (0.3 + 0.7*(1-dist*0.8)) * jitterFactor`
+
+6. **Sphere child radius** — `sizeBase * sizeMult` where `sizeBase = minRadius + sizeNoise * (sizeMax - minRadius)`
+
+7. **Tree radii** — root: `sizeRange.min`; children: `sizeBase * taperRatio * thicknessFalloff * (0.5 + sizeNoise*0.5) * (0.6 + radiusNoise*0.4)`
+
+8. **Jitter amplification** — column/angle noise ×2, position wobble ×2; tree lateral angles ×(1 + jitter*2)
+
+9. Added try-catch to `generate()` with alert on error for debugging.
 
 ---
 
-## Implementation Order
+## Summary: v5.4 New Parameters
 
-1. **Fix 1** — per-child size noise
-2. **Fix 2** — uncap ratio, φ-modulation
-3. **Fix 3** — parentCount + ellipsoidXYZ
-4. **Fix 4** — jitter + cluster + variable bumps
+| Param | Purpose | Range |
+|-------|---------|-------|
+| `sizeRange.min` | Minimum sphere radius for layer | 1–30 |
+| `sizeRange.max` | Maximum sphere radius for layer | 5–60 |
+| `jitter` | Position noise amplitude (amplified ×2 in v5.4) | 0.0–0.5 |
+| `clustering` | Worley clustering strength (affects density in Platform, jitterFactor) | 0.0–1.0 |

@@ -41,6 +41,16 @@
 
 ## История изменений
 
+### v3.0 — Cascade (hierarchical sphere placement)
+- **Fibonacci sphere sampling** — uniformly distributed points on sphere surface
+- **Noise-driven bump generation** — FBM + Worley determine bump size/existence
+- **Recursive cascade** — bumps on parent surface → sub-bumps on children
+- **NOT volume fill** — spheres are "bumps" on surface, not fill
+- **Child/parent ratio** controls fluffiness (~25-40% = fluffy cauliflower)
+- **Cascade Depth** — how many levels of recursive detail
+- **Bumps per Level** — how many child spheres per parent (12-128)
+- Math documented in `RESEARCH_CASCADE.md`
+
 ### v2.0 — Math rewrite (FBM + Worley + Domain Warping)
 - **Ellipsoid boundary** instead of cubic grid — smooth convex cloud shape
 - **Flat bottom profile** — sharp condensation level (cumulus style)

@@ -273,28 +273,23 @@
   </div>
   
   <div class="control-group">
-    <label>Humidity <span class="value" id="humidityVal">0.70</span></label>
-    <input type="range" id="humidity" min="10" max="100" value="70">
-  </div>
-  
-  <div class="control-group">
-    <label>Storm <span class="value" id="stormVal">0.00</span></label>
-    <input type="range" id="storm" min="0" max="100" value="0">
-  </div>
-  
-  <div class="control-group">
     <label>Seed <span class="value" id="seedVal">42</span></label>
     <input type="range" id="seed" min="0" max="999" value="42">
   </div>
 
   <div class="control-group">
-    <label>Flat Bottom <span class="value" id="flatBottomVal">1.00</span></label>
-    <input type="range" id="flatBottom" min="0" max="100" value="100">
+    <label>Cascade Depth <span class="value" id="cascadeDepthVal">3</span></label>
+    <input type="range" id="cascadeDepth" min="1" max="5" value="3">
   </div>
 
   <div class="control-group">
-    <label>Worley Detail <span class="value" id="worleyDetailVal">0.50</span></label>
-    <input type="range" id="worleyDetail" min="0" max="100" value="50">
+    <label>Bumps per Level <span class="value" id="bumpsPerLevelVal">48</span></label>
+    <input type="range" id="bumpsPerLevel" min="12" max="128" value="48">
+  </div>
+
+  <div class="control-group">
+    <label>Child Ratio <span class="value" id="childRatioVal">0.30</span></label>
+    <input type="range" id="childRatio" min="15" max="45" value="30">
   </div>
   
   <div class="buttons">
@@ -303,9 +298,9 @@
   </div>
   
   <div class="info">
-    Clouds: FBM + Worley + Domain Warping<br>
+    Cascade: ellipsoid → bumps on surface → sub-bumps<br>
     Blue = dense, white = wispy<br>
-    Storm: tall column + anvil top
+    Fibonacci sphere sampling + FBM
   </div>
 </div>
 
@@ -314,10 +309,9 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
 <script>
 // ============================================================
-// NOISE UTILITIES — 3D Perlin + Worley + Domain Warping
+// NOISE UTILITIES — 3D Perlin + FBM + Worley + Domain Warping
 // ============================================================
 
-// --- 3D Perlin Noise ---
 const hash3 = (x, y, z, seed) => {
   let n = (((x | 0) + ((y | 0) * 57) | 0) + ((z | 0) * 131) | 0) + ((seed | 0) * 123456789) | 0;
   n = (n << 13) ^ n;
@@ -335,7 +329,6 @@ const grad3 = (h, x, y, z) => {
   return ((g & 1) ? -u : u) + ((g & 2) ? -v : v);
 };
 
-// Seeded 3D Perlin noise, returns value in [-1, 1]
 const perlin3D = (x, y, z, seed) => {
   const xi = Math.floor(x) & 0xFF;
   const yi = Math.floor(y) & 0xFF;
@@ -374,7 +367,6 @@ const fbm = (x, y, z, octaves = 5, persistence = 0.5, lacunarity = 2.0, seed = 0
 };
 
 // --- 3D Worley (Cellular) Noise ---
-// Returns distance to nearest cell seed point
 const worley3D = (x, y, z, freq) => {
   const ix = Math.floor(x * freq);
   const iy = Math.floor(y * freq);
@@ -386,7 +378,6 @@ const worley3D = (x, y, z, freq) => {
         const cx = ix + dx;
         const cy = iy + dy;
         const cz = iz + dz;
-        // Pseudo-random point in this cell (deterministic)
         const h = (((cx * 12345 ^ cy * 67890 ^ cz * 13579)) & 0x7FFFFFFF);
         const sx = (h % 1000) / 1000;
         const sy = ((h / 1000) % 1000) / 1000;
@@ -405,229 +396,136 @@ const worley3D = (x, y, z, freq) => {
 // Inverted Worley: high at cell centers, low at edges
 const invertedWorley = (x, y, z, freq) => 1.0 - Math.min(worley3D(x, y, z, freq), 1.0);
 
-// --- Domain Warping ---
-// Warp coordinates using fbm displacement for organic shapes
-const warpedFbm = (x, y, z, seed, warpStrength = 4.0) => {
-  const wx = fbm(x + 0.0, y + 1.7, z + 9.2, 3, 0.5, 2.0, seed + 10) * warpStrength;
-  const wy = fbm(x + 3.1, y + 2.7, z + 8.4, 3, 0.5, 2.0, seed + 20) * warpStrength;
-  const wz = fbm(x + 7.2, y + 1.3, z + 4.6, 3, 0.5, 2.0, seed + 30) * warpStrength;
-  return fbm(x + wx, y + wy, z + wz, 5, 0.5, 2.0, seed);
-};
-
 // ============================================================
-// CLOUD DENSITY FUNCTION
-// Phase 1: Ellipsoid boundary + FBM + flat bottom
-// Phase 2: Worley detail + domain warping
-// Phase 3: Cloud type variations (stratus/cumulus/cumulonimbus)
+// CASCADE CLOUD GENERATOR — Hierarchical Sphere Placement
+// Algorithm: Fibonacci sphere sampling → noise-driven bump placement → recursive cascade
 // ============================================================
 
-// Smooth ellipsoid boundary: returns 1 inside, 0 at edge, negative outside
-const ellipsoidBoundary = (px, py, pz, cx, cy, cz, rx, ry, rz) => {
-  const dx = (px - cx) / rx;
-  const dy = (py - cy) / ry;
-  const dz = (pz - cz) / rz;
-  const d = dx * dx + dy * dy + dz * dz;
-  return 1.0 - d;
+// Fibonacci sphere points — uniform distribution on sphere surface
+const fibonacciSphere = (cx, cy, cz, radius, numPoints) => {
+  const points = [];
+  const goldenRatio = (1 + Math.sqrt(5)) / 2;
+  const angleInc = Math.PI * 2 * goldenRatio;
+  for (let i = 0; i < numPoints; i++) {
+    const t = i / numPoints;
+    const inclination = Math.acos(1 - 2 * t);
+    const azimuth = angleInc * i;
+    const x = Math.sin(inclination) * Math.cos(azimuth);
+    const y = Math.sin(inclination) * Math.sin(azimuth);
+    const z = Math.cos(inclination);
+    points.push({
+      x: cx + x * radius,
+      y: cy + y * radius,
+      z: cz + z * radius
+    });
+  }
+  return points;
 };
 
-// Flat bottom height profile (condensation level = sharp horizontal boundary)
-const flatBottomProfile = (y, baseY, turbulenceH, flatBottomStrength) => {
-  // Hard cutoff at condensation level
-  const bottomMask = smoothstep(baseY - 5, baseY + 5, y);
-  // Noisy top — density decreases with height using noise
-  const normalizedY = Math.max(0, (y - baseY) / turbulenceH);
-  const topNoise = 1.0 - normalizedY + (Math.random() * 0.0); // noise added separately
-  return bottomMask * topNoise;
+// Perturb direction using noise (for organic variation)
+const perturbDirection = (nx, ny, nz, px, py, pz, strength, seed) => {
+  const angleA = perlin3D(px * 10 + seed, py * 10, pz * 10, 0) * strength;
+  const angleB = perlin3D(px * 10, py * 10 + seed, pz * 10 + 50, 0) * strength;
+  
+  // Rotate around an arbitrary axis
+  const cosA = Math.cos(angleA), sinA = Math.sin(angleA);
+  const cosB = Math.cos(angleB), sinB = Math.sin(angleB);
+  
+  // Simplified perturbation: tilt x and y components
+  const nx2 = nx * cosA - ny * sinA;
+  const ny2 = nx * sinA + ny * cosA;
+  const nz2 = nz;
+  
+  const nx3 = nx2 * cosB + nz2 * sinB;
+  const ny3 = ny2;
+  const nz3 = -nx2 * sinB + nz2 * cosB;
+  
+  const len = Math.sqrt(nx3*nx3 + ny3*ny3 + nz3*nz3);
+  return { x: nx3/len, y: ny3/len, z: nz3/len };
 };
 
-// Gaussian height profile (for stratus / softer clouds)
-const gaussianProfile = (y, baseY, topY, centerBias = 0.5) => {
-  const center = baseY + (topY - baseY) * centerBias;
-  const sigma = (topY - baseY) * 0.35;
-  return Math.exp(-Math.pow(y - center, 2) / (2 * sigma * sigma));
-};
-
-// Smoothstep helper
-const smoothstep = (a, b, x) => {
-  const t = Math.max(0, Math.min(1, (x - a) / (b - a)));
-  return t * t * (3 - 2 * t);
-};
-
-// CUMULONIMBUS (storm): column + anvil
-const cumulonimbusDensity = (px, py, pz, cx, cy, cz, rx, ry, rz, 
-                              columnH, anvilY, anvilRx, anvilRz, anvilH,
-                              largeFbm, worleyD, warpAmt, seed) => {
-  // --- Column (tall ellipsoid) ---
-  const colDx = (px - cx) / rx;
-  const colDy = (py - cy - columnH * 0.5) / (columnH * 0.5);
-  const colDz = (pz - cz) / rz;
-  const colDist = colDx * colDx + colDy * colDy + colDz * colDz;
-  let columnDensity = Math.max(0, 1.0 - colDist);
-  columnDensity = smoothstep(0, 0.25, columnDensity);
-  // Height mask for column
-  const colHeightMask = smoothstep(cy, cy + 2, py) * smoothstep(cy + columnH + 2, cy + columnH - 2, py);
-  columnDensity *= colHeightMask;
-
-  // --- Anvil (flat ellipsoid at top) ---
-  const anvilDy = (py - anvilY) / (anvilH * 0.5);
-  const anvilDx = (px - cx) / anvilRx;
-  const anvilDz = (pz - cz) / anvilRz;
-  const anvilDist = anvilDx * anvilDx + anvilDy * anvilDy + anvilDz * anvilDz;
-  let anvilDensity = Math.max(0, 1.0 - anvilDist);
-  anvilDensity = smoothstep(0, 0.4, anvilDensity) * 0.6;
-
-  // --- Scud (wispy base) ---
-  const scudDensity = largeFbm * 0.3 * smoothstep(cy + 2, cy - 1, py);
-
-  return columnDensity + anvilDensity + scudDensity;
-};
-
-// Main cloud density function — returns value in [0, 1]
-const cloudDensity = (px, py, pz, params) => {
+// Main cascade cloud generator
+const generateCascadeCloud = (params) => {
   const {
-    cx, cy, cz, rx, ry, rz,    // cloud center and radius
-    baseY,                        // condensation level (flat bottom y)
-    turbulenceH,                  // height of fluffy top
-    largeFreq, detailFreq,        // noise frequencies
-    worleyDetailAmt,              // how much Worley affects density
-    warpStrength,                 // domain warping strength
-    seed, turbulence,             // turbulence = overall noisiness
-    flatBottomStrength,           // 0 = stratus, 1 = cumulus
-    densityThreshold,             // threshold for sphere placement
-    isStorm                      // cumulonimbus mode
+    cloudSize, density, turbulence, seed,
+    cascadeDepth, bumpsPerLevel, childRatio
   } = params;
 
-  // Cumulonimbus uses different geometry
-  if (isStorm) {
-    return cumulonimbusDensity(
-      px, py, pz, cx, cy, cz, rx, ry, rz,
-      turbulenceH * 1.5,           // column height
-      cy + turbulenceH * 1.4,      // anvil y
-      rx * 3.0, rz * 3.0, 0.4,    // anvil size
-      fbm(px * 0.5, py * 0.5, pz * 0.5, 3, 0.5, 2.0, seed), // largeFbm placeholder
-      worleyDetailAmt,
-      warpStrength,
-      seed
-    );
-  }
-
-  // --- 1. Ellipsoid boundary ---
-  let density = ellipsoidBoundary(px, py, pz, cx, cy, cz, rx, ry, rz);
-  if (density <= 0) return 0;
-
-  // --- 2. Large-scale FBM shape ---
-  const largeShape = fbm(px * largeFreq, py * largeFreq * 0.3, pz * largeFreq, 3, 0.5, 2.0, seed);
-  density += largeShape * 0.4 * turbulence;
-
-  // --- 3. Domain warping for organic look ---
-  const warpedVal = warpedFbm(px, py, pz, seed, warpStrength);
-  density += warpedVal * warpStrength * 0.05 * turbulence;
-
-  // --- 4. Worley detail (cauliflower) ---
-  const worleyVal = invertedWorley(px * detailFreq, py * detailFreq * 0.3, pz * detailFreq, 1.0);
-  density += (worleyVal - 0.5) * worleyDetailAmt * turbulence;
-
-  // --- 5. Height profile ---
-  const normalizedY = Math.max(0, (py - baseY) / turbulenceH);
-  let heightProfile;
-
-  if (flatBottomStrength > 0.1) {
-    // Cumulus-style: flat bottom + noisy top
-    const bottomMask = smoothstep(baseY - 3, baseY + 3, py);
-    // Top is noisy: use FBM to make fluffy
-    const topNoise = 1.0 - normalizedY + fbm(px * 2.0, py * 0.8, pz * 2.0, 3, 0.5, 2.0, seed) * 0.5;
-    heightProfile = bottomMask * Math.max(0.05, topNoise);
-  } else {
-    // Stratus-style: smooth Gaussian layer
-    heightProfile = gaussianProfile(py, baseY, baseY + turbulenceH, 0.4);
-  }
-
-  density *= heightProfile;
-
-  return Math.max(0, density);
-};
-
-// ============================================================
-// CLOUD GENERATION — place spheres where density > threshold
-// ============================================================
-
-function generateCloud(params) {
   const spheres = [];
-  const {
-    cloudSize, density: fillDensity, turbulence, seed, humidity, stormIntensity
-  } = params;
+  const minRadius = 0.5;
+  const baseRadius = cloudSize * 0.5;
+  
+  // Start with one root ellipsoid
+  const rootSpheres = [
+    { x: 0, y: 0, z: 0, radius: baseRadius, depth: 0, density: 1.0 }
+  ];
+  spheres.push(rootSpheres[0]);
 
-  // Cloud volume: ellipsoid centered at origin
-  // For storm, taller ellipsoid; for normal, more spherical
-  const rx = stormIntensity > 0.5 ? cloudSize * 0.45 : cloudSize * 0.55;
-  const ry = stormIntensity > 0.5 ? cloudSize * 0.9 : cloudSize * 0.5;
-  const rz = stormIntensity > 0.5 ? cloudSize * 0.45 : cloudSize * 0.55;
-  const baseY = -ry * 0.25; // condensation level = 25% up from bottom
-  const turbulenceH = ry * (stormIntensity > 0.5 ? 1.0 : 0.7);
+  // Ellipsoid ratios for cloud shape (flatter at bottom for cumulus look)
+  const ellipsoidY = cloudSize * 0.45; // shorter Y axis
 
-  const densityParams = {
-    cx: 0, cy: 0, cz: 0,
-    rx, ry, rz,
-    baseY,
-    turbulenceH,
-    largeFreq: 0.5 / cloudSize * 50,
-    detailFreq: 4.0 / cloudSize * 50,
-    worleyDetailAmt: params.worleyDetail,
-    warpStrength: 4.0,
-    seed,
-    turbulence,
-    flatBottomStrength: params.flatBottom,
-    densityThreshold: 1 - fillDensity,
-    isStorm: stormIntensity > 0.5
-  };
+  // Recursive cascade
+  const generateBumpsOnSphere = (parent) => {
+    if (parent.depth >= cascadeDepth) return;
+    if (parent.radius < minRadius * 2) return;
 
-  // Sampling: iterate in world space, not grid
-  const step = cloudSize * 0.18; // sphere spacing
+    // Sample points on parent sphere surface
+    const numPoints = bumpsPerLevel;
+    const surfacePoints = fibonacciSphere(parent.x, parent.y, parent.z, parent.radius, numPoints);
 
-  const xMin = -rx - step;
-  const xMax = rx + step;
-  const yMin = baseY - step;
-  const yMax = ry * 1.5 + step;
-  const zMin = -rz - step;
-  const zMax = rz + step;
+    for (const pt of surfacePoints) {
+      // Normal from center to this surface point
+      const nx = (pt.x - parent.x) / parent.radius;
+      const ny = (pt.y - parent.y) / parent.radius;
+      const nz = (pt.z - parent.z) / parent.radius;
 
-  // Worley cells per unit (deterministic, seeded per cell)
-  const worleyFreq = 1.0 / step;
+      // Noise at this surface point — determines bump size
+      // Use FBM for organic cauliflower-like distribution
+      const noiseScale = 3.0 / parent.radius;
+      const noiseVal = (fbm(pt.x * noiseScale, pt.y * noiseScale, pt.z * noiseScale, 4, 0.5, 2.0, seed + parent.depth * 10) + 1) * 0.5;
 
-  for (let x = xMin; x <= xMax; x += step) {
-    for (let y = yMin; y <= yMax; y += step) {
-      for (let z = zMin; z <= zMax; z += step) {
-        const d = cloudDensity(x, y, z, densityParams);
-        if (d < densityParams.densityThreshold) continue;
+      // Worley adds cellular detail for cauliflower look
+      const worleyVal = invertedWorley(pt.x * noiseScale * 2, pt.y * noiseScale * 2, pt.z * noiseScale * 2, 1.0);
 
-        // Base radius from humidity
-        const baseRadius = step * 0.55 * (humidity * 0.6 + 0.4);
+      // Combined: noise decides bump existence and size
+      const threshold = 1 - density;
+      const bumpIntensity = noiseVal * 0.7 + worleyVal * 0.3;
+      
+      if (bumpIntensity < threshold) continue;
 
-        // Worley-based local radius variation (cauliflower bumps)
-        const worleyR = invertedWorley(x * worleyFreq, y * worleyFreq * 0.3, z * worleyFreq, 1.0);
-        const radiusNoise = perlin3D(x * 3, y * 3, z * 3, seed + 50) * 0.3 + 0.85;
-        const radius = baseRadius * radiusNoise * (0.6 + worleyR * 0.4);
+      // Child radius: proportional to parent, modulated by noise
+      const childRadius = parent.radius * childRatio * (0.5 + bumpIntensity * 0.8);
+      if (childRadius < minRadius) continue;
 
-        // Storm: column is denser at bottom, anvil is larger at top
-        let localDensity = d;
-        if (stormIntensity > 0.5) {
-          const columnMask = smoothstep(baseY, baseY + turbulenceH * 1.5, y);
-          localDensity = d * columnMask * 1.2;
-        }
+      // Perturb direction for organic feel
+      const perturbed = perturbDirection(nx, ny, nz, pt.x, pt.y, pt.z, 0.2, seed + parent.depth);
 
-        if (localDensity < 0.05) continue;
+      // Child position: slightly outside parent surface
+      const offset = parent.radius * 0.02;
+      const child = {
+        x: pt.x + perturbed.x * offset,
+        y: pt.y + perturbed.y * offset,
+        z: pt.z + perturbed.z * offset,
+        radius: childRadius,
+        depth: parent.depth + 1,
+        density: bumpIntensity
+      };
 
-        spheres.push({
-          x, y, z,
-          radius: Math.max(0.1, radius),
-          density: Math.min(Math.max(localDensity, 0), 1)
-        });
+      spheres.push(child);
+
+      // Recurse — but with decreasing probability
+      const continueChance = Math.max(0.2, 1 - parent.depth * 0.25);
+      if (Math.random() < continueChance || parent.depth < 2) {
+        generateBumpsOnSphere(child);
       }
     }
-  }
+  };
+
+  // Generate bumps starting from root sphere
+  generateBumpsOnSphere(rootSpheres[0]);
 
   return spheres;
-}
+};
 
 // ============================================================
 // THREE.JS SCENE
@@ -671,12 +569,13 @@ function init() {
   
   window.addEventListener('resize', onResize);
   
-  ['cloudSize', 'density', 'turbulence', 'humidity', 'storm', 'seed', 'flatBottom', 'worleyDetail'].forEach(id => {
+  ['cloudSize', 'density', 'turbulence', 'seed', 'cascadeDepth', 'bumpsPerLevel', 'childRatio'].forEach(id => {
     document.getElementById(id).addEventListener('input', function() {
       const v = parseFloat(this.value);
-      const isPercent = ['density', 'humidity', 'storm', 'flatBottom', 'worleyDetail'].includes(id);
+      const isPercent = ['density', 'turbulence'].includes(id);
+      const isInt = ['seed', 'cascadeDepth', 'bumpsPerLevel'].includes(id);
       document.getElementById(id + 'Val').textContent = 
-        id === 'seed' ? v : (v / (isPercent ? 100 : 1)).toFixed(2);
+        isInt ? v : (v / (isPercent ? 100 : 1)).toFixed(id === 'childRatio' ? 2 : 2);
     });
   });
   
@@ -824,14 +723,13 @@ function generate() {
     cloudSize: parseFloat(document.getElementById('cloudSize').value),
     density: parseFloat(document.getElementById('density').value) / 100,
     turbulence: parseFloat(document.getElementById('turbulence').value) / 100,
-    humidity: parseFloat(document.getElementById('humidity').value) / 100,
-    stormIntensity: parseFloat(document.getElementById('storm').value) / 100,
     seed: parseInt(document.getElementById('seed').value),
-    flatBottom: parseFloat(document.getElementById('flatBottom').value) / 100,
-    worleyDetail: parseFloat(document.getElementById('worleyDetail').value) / 100
+    cascadeDepth: parseInt(document.getElementById('cascadeDepth').value),
+    bumpsPerLevel: parseInt(document.getElementById('bumpsPerLevel').value),
+    childRatio: parseFloat(document.getElementById('childRatio').value) / 100
   };
 
-  currentSpheres = generateCloud(params);
+  currentSpheres = generateCascadeCloud(params);
   document.getElementById('stats').textContent = `${currentSpheres.length} spheres`;
   
   rebuildMesh();
@@ -875,26 +773,24 @@ function exportCode() {
     cloudSize: parseFloat(document.getElementById('cloudSize').value),
     density: parseFloat(document.getElementById('density').value) / 100,
     turbulence: parseFloat(document.getElementById('turbulence').value) / 100,
-    humidity: parseFloat(document.getElementById('humidity').value) / 100,
-    stormIntensity: parseFloat(document.getElementById('storm').value) / 100,
     seed: parseInt(document.getElementById('seed').value),
-    flatBottom: parseFloat(document.getElementById('flatBottom').value) / 100,
-    worleyDetail: parseFloat(document.getElementById('worleyDetail').value) / 100
+    cascadeDepth: parseInt(document.getElementById('cascadeDepth').value),
+    bumpsPerLevel: parseInt(document.getElementById('bumpsPerLevel').value),
+    childRatio: parseFloat(document.getElementById('childRatio').value) / 100
   };
   
-  const code = `// CloudMath C# — Generated from visualizer v2
-// Sphere-based cloud generator: Ellipsoid + FBM + Worley + Domain Warping
+  const code = `// CloudMath C# — Generated from visualizer v3 (Cascade)
+// Sphere-based cloud generator: Fibonacci + FBM + Worley cascade
 // ${currentSpheres.length} spheres
 
-List<CloudSphere> spheres = GenerateCloud(
+List<CloudSphere> spheres = GenerateCascadeCloud(
     cloudSize: ${params.cloudSize}f,
     density: ${params.density}f,
     turbulence: ${params.turbulence}f,
-    humidity: ${params.humidity}f,
     seed: ${params.seed},
-    flatBottom: ${params.flatBottom}f,
-    worleyDetail: ${params.worleyDetail}f,
-    stormIntensity: ${params.stormIntensity}f
+    cascadeDepth: ${params.cascadeDepth},
+    bumpsPerLevel: ${params.bumpsPerLevel},
+    childRatio: ${params.childRatio}f
 );`;
 
   const blob = new Blob([code], { type: 'text/plain' });

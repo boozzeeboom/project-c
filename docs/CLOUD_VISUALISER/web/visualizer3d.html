@@ -517,23 +517,23 @@ function setupControls() {
   }, { passive: false });
 
   // --- Touch controls ---
-  let touchStartX = 0, touchStartY = 0;
-  let touchStartDist = 0;
+  let touchPrevDist = 0;
   let isPinching = false;
+  let pinchOccurred = false;
 
   canvas.addEventListener('touchstart', e => {
     e.preventDefault();
     if (e.touches.length === 1) {
       isPinching = false;
-      touchStartX = e.touches[0].clientX;
-      touchStartY = e.touches[0].clientY;
-      prevX = touchStartX;
-      prevY = touchStartY;
+      pinchOccurred = false;
+      prevX = e.touches[0].clientX;
+      prevY = e.touches[0].clientY;
     } else if (e.touches.length === 2) {
       isPinching = true;
+      pinchOccurred = false;
       const dx = e.touches[0].clientX - e.touches[1].clientX;
       const dy = e.touches[0].clientY - e.touches[1].clientY;
-      touchStartDist = Math.sqrt(dx * dx + dy * dy);
+      touchPrevDist = Math.sqrt(dx * dx + dy * dy);
     }
   }, { passive: false });
 
@@ -548,34 +548,48 @@ function setupControls() {
       prevX = e.touches[0].clientX;
       prevY = e.touches[0].clientY;
       updateCamera();
-    } else if (e.touches.length === 2 && isPinching) {
+    } else if (e.touches.length === 2) {
+      // Start pinch tracking on first 2-finger move
+      if (!isPinching) {
+        isPinching = true;
+        const dx = e.touches[0].clientX - e.touches[1].clientX;
+        const dy = e.touches[0].clientY - e.touches[1].clientY;
+        touchPrevDist = Math.sqrt(dx * dx + dy * dy);
+      }
       const dx = e.touches[0].clientX - e.touches[1].clientX;
       const dy = e.touches[0].clientY - e.touches[1].clientY;
       const dist = Math.sqrt(dx * dx + dy * dy);
-      const delta = touchStartDist - dist;
-      radius += delta * 0.5;
+      const delta = dist - touchPrevDist;
+      radius += delta * 0.8;
       radius = Math.max(30, Math.min(500, radius));
-      touchStartDist = dist;
+      touchPrevDist = dist;
+      if (Math.abs(delta) > 1) pinchOccurred = true;
       updateCamera();
     }
   }, { passive: false });
 
-  canvas.addEventListener('touchend', e => {
-    isPinching = false;
-  }, { passive: false });
-
-  // --- Double tap to reset camera ---
+  // --- Double tap to reset camera (only if no pinch occurred) ---
   let lastTap = 0;
   canvas.addEventListener('touchend', e => {
-    const now = Date.now();
-    if (now - lastTap < 300) {
-      theta = Math.PI / 4;
-      phi = Math.PI / 4;
-      radius = 150;
-      updateCamera();
+    // Transitioning from 2-finger pinch to 1-finger drag: update prev to avoid jump
+    if (isPinching && e.touches.length === 1) {
+      prevX = e.touches[0].clientX;
+      prevY = e.touches[0].clientY;
     }
-    lastTap = now;
-  });
+    isPinching = false;
+
+    // Double-tap reset: only if all fingers lifted and no pinch occurred
+    if (e.touches.length === 0 && !pinchOccurred) {
+      const now = Date.now();
+      if (now - lastTap < 300) {
+        theta = Math.PI / 4;
+        phi = Math.PI / 4;
+        radius = 150;
+        updateCamera();
+      }
+      lastTap = now;
+    }
+  }, { passive: false });
 
   canvas.style.cursor = 'grab';
   updateCamera();

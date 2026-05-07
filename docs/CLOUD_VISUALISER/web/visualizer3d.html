@@ -1,0 +1,965 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Cloud Generator 3D</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  
+  body {
+    font-family: system-ui, -apple-system, sans-serif;
+    background: #0a0a1a;
+    color: #e0e0e0;
+    overflow: hidden;
+    height: 100vh;
+  }
+  
+  header {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    background: rgba(22, 33, 62, 0.9);
+    backdrop-filter: blur(8px);
+    padding: 12px 20px;
+    display: flex;
+    align-items: center;
+    gap: 20px;
+    z-index: 10;
+    border-bottom: 1px solid #0f3460;
+  }
+  
+  header h1 {
+    color: #00d9ff;
+    font-size: 15px;
+    font-weight: 600;
+  }
+  
+  .stats {
+    font-size: 12px;
+    color: #888;
+  }
+  
+  .controls {
+    position: absolute;
+    left: 0;
+    top: 60px;
+    bottom: 0;
+    width: 280px;
+    padding: 16px;
+    background: rgba(22, 33, 62, 0.85);
+    backdrop-filter: blur(8px);
+    overflow-y: auto;
+    z-index: 10;
+    border-right: 1px solid #0f3460;
+  }
+
+  @media (max-width: 767px) {
+    .controls {
+      position: fixed;
+      top: 52px;
+      left: 0;
+      right: 0;
+      width: 100%;
+      border-right: none;
+      border-bottom: 1px solid #0f3460;
+      padding: 0;
+      display: flex;
+      flex-direction: column;
+      transition: max-height 0.3s ease, opacity 0.3s ease;
+      overflow: hidden;
+      max-height: 500px;
+      opacity: 1;
+    }
+
+    .controls.collapsed {
+      max-height: 0;
+      opacity: 0;
+    }
+
+    .tab-bar {
+      display: flex;
+      border-bottom: 1px solid #0f3460;
+      flex-shrink: 0;
+    }
+
+    .tab-btn {
+      flex: 1;
+      padding: 8px 4px;
+      background: transparent;
+      border: none;
+      border-bottom: 2px solid transparent;
+      color: #888;
+      font-size: 10px;
+      cursor: pointer;
+      text-transform: uppercase;
+    }
+
+    .tab-btn.active {
+      color: #00d9ff;
+      border-bottom-color: #00d9ff;
+    }
+
+    .tab-content {
+      flex: 1;
+      overflow-y: auto;
+      padding: 10px 12px;
+      display: none;
+      flex-wrap: wrap;
+      gap: 6px;
+      align-content: flex-start;
+    }
+
+    .tab-content.active {
+      display: flex;
+    }
+
+    .tab-section-title {
+      width: 100%;
+      color: #00d9ff;
+      font-size: 9px;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      margin: 4px 0 2px 0;
+      padding-bottom: 2px;
+      border-bottom: 1px solid #0f3460;
+    }
+
+    .control-group {
+      flex: 1 1 calc(50% - 4px);
+      min-width: 120px;
+    }
+
+    .control-group label {
+      font-size: 9px;
+    }
+
+    .control-group .value {
+      font-size: 9px;
+    }
+
+    .control-group input[type="range"] {
+      height: 4px;
+    }
+
+    .buttons {
+      flex: 1 1 100%;
+      display: flex;
+      gap: 8px;
+      padding: 8px 12px;
+      border-top: 1px solid #0f3460;
+      margin-top: 0;
+    }
+
+    button {
+      padding: 7px;
+      font-size: 10px;
+    }
+
+    .tab-btn {
+      background: transparent;
+      border: none;
+      color: #888;
+    }
+
+    .tab-btn.active {
+      color: #00d9ff;
+    }
+
+    .buttons button {
+      background: #0f3460;
+      color: #00d9ff;
+      border: 1px solid #00d9ff;
+      border-radius: 5px;
+    }
+
+    .info {
+      display: none;
+    }
+
+    .hint {
+      bottom: 8px;
+      font-size: 9px;
+    }
+  }
+
+  .toggle-btn {
+    display: none;
+  }
+
+  @media (max-width: 767px) {
+    .toggle-btn {
+      display: block;
+      position: fixed;
+      top: 52px;
+      right: 8px;
+      z-index: 20;
+      background: rgba(22, 33, 62, 0.95);
+      border: 1px solid #0f3460;
+      color: #00d9ff;
+      padding: 6px 10px;
+      border-radius: 4px;
+      font-size: 11px;
+      cursor: pointer;
+    }
+
+    .toggle-btn:hover {
+      background: #00d9ff;
+      color: #0a0a1a;
+    }
+  }
+  
+  .controls h2 {
+    color: #00d9ff;
+    font-size: 11px;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    margin-bottom: 14px;
+    padding-bottom: 8px;
+    border-bottom: 1px solid #0f3460;
+  }
+  
+  .control-group {
+    margin-bottom: 12px;
+  }
+  
+  .control-group label {
+    display: flex;
+    justify-content: space-between;
+    font-size: 11px;
+    color: #aaa;
+    margin-bottom: 5px;
+  }
+  
+  .control-group .value {
+    color: #00d9ff;
+    font-weight: 600;
+    font-variant-numeric: tabular-nums;
+  }
+  
+  .control-group input[type="range"] {
+    width: 100%;
+    height: 5px;
+    -webkit-appearance: none;
+    background: #0f3460;
+    border-radius: 3px;
+  }
+  
+  .control-group input[type="range"]::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    width: 14px;
+    height: 14px;
+    background: #00d9ff;
+    border-radius: 50%;
+    cursor: pointer;
+  }
+  
+  .buttons {
+    display: flex;
+    gap: 8px;
+    margin-top: 16px;
+    width: 248px;
+    flex-shrink: 0;
+  }
+  
+  button {
+    flex: 1;
+    padding: 9px;
+    background: #0f3460;
+    color: #00d9ff;
+    border: 1px solid #00d9ff;
+    border-radius: 5px;
+    cursor: pointer;
+    font-size: 11px;
+    font-weight: 600;
+    text-transform: uppercase;
+  }
+  
+  button:hover { background: #00d9ff; color: #0a0a1a; }
+  
+  .info {
+    margin-top: 8px;
+    padding-top: 8px;
+    border-top: 1px solid #0f3460;
+    font-size: 10px;
+    color: #666;
+    line-height: 1.5;
+  }
+  
+  canvas { 
+    display: block;
+    width: 100%;
+    height: 100%;
+  }
+  
+  .hint {
+    position: absolute;
+    bottom: 16px;
+    left: 50%;
+    transform: translateX(-50%);
+    font-size: 11px;
+    color: #555;
+    pointer-events: none;
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <h1>CLOUD GENERATOR 3D</h1>
+  <span class="stats" id="stats">0 spheres</span>
+</header>
+
+<button class="toggle-btn" onclick="toggleControls()">Parameters</button>
+
+<div class="controls">
+  <div class="tab-bar">
+    <button class="tab-btn active" data-tab="shape" onclick="switchTab('shape')">Shape</button>
+    <button class="tab-btn" data-tab="cascade" onclick="switchTab('cascade')">Cascade</button>
+    <button class="tab-btn" data-tab="chaos" onclick="switchTab('chaos')">Chaos</button>
+  </div>
+
+  <div id="tab-shape" class="tab-content active">
+    <h2 class="tab-section-title">Cloud Shape</h2>
+    
+    <div class="control-group">
+      <label>Cloud Size <span class="value" id="cloudSizeVal">100</span></label>
+      <input type="range" id="cloudSize" min="20" max="200" value="80">
+    </div>
+    
+    <div class="control-group">
+      <label>Seed <span class="value" id="seedVal">42</span></label>
+      <input type="range" id="seed" min="0" max="999" value="42">
+    </div>
+
+    <div class="control-group">
+      <label>Parent Count <span class="value" id="parentCountVal">1</span></label>
+      <input type="range" id="parentCount" min="1" max="12" value="1">
+    </div>
+
+    <div class="control-group">
+      <label>Ellipsoid Y <span class="value" id="ellipsoidYVal">0.50</span></label>
+      <input type="range" id="ellipsoidY" min="20" max="150" value="50">
+    </div>
+
+    <div class="control-group">
+      <label>Ellipsoid XZ <span class="value" id="ellipsoidXZVal">1.00</span></label>
+      <input type="range" id="ellipsoidXZ" min="50" max="150" value="100">
+    </div>
+  </div>
+
+  <div id="tab-cascade" class="tab-content">
+    <h2 class="tab-section-title">Cascade</h2>
+    
+    <div class="control-group">
+      <label>Cascade Depth <span class="value" id="cascadeDepthVal">3</span></label>
+      <input type="range" id="cascadeDepth" min="1" max="5" value="3">
+    </div>
+
+    <div class="control-group">
+      <label>Bumps per Level <span class="value" id="bumpsPerLevelVal">48</span></label>
+      <input type="range" id="bumpsPerLevel" min="12" max="128" value="48">
+    </div>
+
+    <div class="control-group">
+      <label>Child Ratio <span class="value" id="childRatioVal">30</span></label>
+      <input type="range" id="childRatio" min="10" max="200" value="30">
+    </div>
+
+    <div class="control-group">
+      <label>Size Variation <span class="value" id="sizeVariationVal">0.50</span></label>
+      <input type="range" id="sizeVariation" min="0" max="100" value="50">
+    </div>
+  </div>
+
+  <div id="tab-chaos" class="tab-content">
+    <h2 class="tab-section-title">Chaos</h2>
+
+    <div class="control-group">
+      <label>Jitter <span class="value" id="jitterVal">0.30</span></label>
+      <input type="range" id="jitter" min="0" max="50" value="30">
+    </div>
+
+    <div class="control-group">
+      <label>Clustering <span class="value" id="clusteringVal">0.50</span></label>
+      <input type="range" id="clustering" min="0" max="100" value="50">
+    </div>
+
+    <div class="control-group">
+      <label>Density <span class="value" id="densityVal">0.60</span></label>
+      <input type="range" id="density" min="5" max="95" value="60">
+    </div>
+  </div>
+
+  <div class="buttons">
+    <button onclick="generate()">Generate</button>
+    <button onclick="exportCode()">Export</button>
+  </div>
+</div>
+<div class="hint">Drag / swipe to orbit | Pinch to zoom | Double-tap to reset</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<script>
+// ============================================================
+// NOISE UTILITIES
+// ============================================================
+
+const PHI = (1 + Math.sqrt(5)) / 2; // 1.618...
+
+const hash3 = (x, y, z, seed) => {
+  let n = (((x | 0) + ((y | 0) * 57) | 0) + ((z | 0) * 131) | 0) + ((seed | 0) * 123456789) | 0;
+  n = (n << 13) ^ n;
+  return (n * (n * n * 15731 + 789221) + 1376312589) & 0x7FFFFFFF;
+};
+
+const fade3 = t => t * t * t * (t * (t * 6 - 15) + 10);
+
+const lerp3 = (a, b, t) => a + (b - a) * t;
+
+const grad3 = (h, x, y, z) => {
+  const g = h & 15;
+  const u = g < 8 ? x : y;
+  const v = g < 4 ? y : (g === 12 || g === 14 ? x : z);
+  return ((g & 1) ? -u : u) + ((g & 2) ? -v : v);
+};
+
+const perlin3D = (x, y, z, seed) => {
+  const xi = Math.floor(x) & 0xFF;
+  const yi = Math.floor(y) & 0xFF;
+  const zi = Math.floor(z) & 0xFF;
+  const xf = x - Math.floor(x);
+  const yf = y - Math.floor(y);
+  const zf = z - Math.floor(z);
+  const u = fade3(xf), v = fade3(yf), w = fade3(zf);
+  const aaa = hash3(xi, yi, zi, seed) % 12;
+  const aba = hash3(xi, yi + 1, zi, seed) % 12;
+  const aab = hash3(xi, yi, zi + 1, seed) % 12;
+  const abb = hash3(xi, yi + 1, zi + 1, seed) % 12;
+  const baa = hash3(xi + 1, yi, zi, seed) % 12;
+  const bba = hash3(xi + 1, yi + 1, zi, seed) % 12;
+  const bab = hash3(xi + 1, yi, zi + 1, seed) % 12;
+  const bbb = hash3(xi + 1, yi + 1, zi + 1, seed) % 12;
+  const x1 = lerp3(grad3(aaa, xf, yf, zf), grad3(baa, xf - 1, yf, zf), u);
+  const x2 = lerp3(grad3(aba, xf, yf - 1, zf), grad3(bba, xf - 1, yf - 1, zf), u);
+  const y1 = lerp3(x1, x2, v);
+  const x3 = lerp3(grad3(aab, xf, yf, zf - 1), grad3(bab, xf - 1, yf, zf - 1), u);
+  const x4 = lerp3(grad3(abb, xf, yf - 1, zf - 1), grad3(bbb, xf - 1, yf - 1, zf - 1), u);
+  const y2 = lerp3(x3, x4, v);
+  return lerp3(y1, y2, w);
+};
+
+// FBM
+const fbm = (x, y, z, octaves = 5, persistence = 0.5, lacunarity = 2.0, seed = 0) => {
+  let value = 0, amplitude = 1, frequency = 1, maxValue = 0;
+  for (let i = 0; i < octaves; i++) {
+    value += amplitude * perlin3D(x * frequency, y * frequency, z * frequency, seed + i);
+    maxValue += amplitude;
+    amplitude *= persistence;
+    frequency *= lacunarity;
+  }
+  return value / maxValue;
+};
+
+// Worley 3D
+const worley3D = (x, y, z, freq) => {
+  const ix = Math.floor(x * freq);
+  const iy = Math.floor(y * freq);
+  const iz = Math.floor(z * freq);
+  let minDist = 1e9;
+  for (let dx = -1; dx <= 1; dx++) {
+    for (let dy = -1; dy <= 1; dy++) {
+      for (let dz = -1; dz <= 1; dz++) {
+        const cx = ix + dx;
+        const cy = iy + dy;
+        const cz = iz + dz;
+        const h = (((cx * 12345 ^ cy * 67890 ^ cz * 13579)) & 0x7FFFFFFF);
+        const sx = (h % 1000) / 1000;
+        const sy = ((h / 1000) % 1000) / 1000;
+        const sz = ((h / 1000000) % 1000) / 1000;
+        const dx2 = x * freq - (cx + sx);
+        const dy2 = y * freq - (cy + sy);
+        const dz2 = z * freq - (cz + sz);
+        const dist = Math.sqrt(dx2 * dx2 + dy2 * dy2 + dz2 * dz2);
+        if (dist < minDist) minDist = dist;
+      }
+    }
+  }
+  return minDist;
+};
+
+// Inverted Worley
+const invertedWorley = (x, y, z, freq) => 1.0 - Math.min(worley3D(x, y, z, freq), 1.0);
+
+// ============================================================
+// CASCADE CLOUD GENERATOR v4 — All 4 fixes applied
+// ============================================================
+
+// Fibonacci sphere — uniform surface sampling
+const fibonacciSphere = (cx, cy, cz, rx, ry, rz, numPoints) => {
+  const points = [];
+  const angleInc = Math.PI * 2 * PHI;
+  for (let i = 0; i < numPoints; i++) {
+    const t = i / numPoints;
+    const inclination = Math.acos(1 - 2 * t);
+    const azimuth = angleInc * i;
+    const sx = Math.sin(inclination) * Math.cos(azimuth);
+    const sy = Math.sin(inclination) * Math.sin(azimuth);
+    const sz = Math.cos(inclination);
+    points.push({
+      x: cx + sx * rx,
+      y: cy + sy * ry,
+      z: cz + sz * rz
+    });
+  }
+  return points;
+};
+
+// Perturb direction using noise
+const perturbDir = (nx, ny, nz, px, py, pz, strength, seed) => {
+  const a1 = perlin3D(px * 10 + seed, py * 10, pz * 10, 0) * strength;
+  const a2 = perlin3D(px * 10, py * 10 + seed, pz * 10 + 50, 0) * strength;
+  const cos1 = Math.cos(a1), sin1 = Math.sin(a1);
+  const cos2 = Math.cos(a2), sin2 = Math.sin(a2);
+  const nx2 = nx * cos1 - ny * sin1;
+  const ny2 = nx * sin1 + ny * cos1;
+  const nz2 = nz;
+  const nx3 = nx2 * cos2 + nz2 * sin2;
+  const ny3 = ny2;
+  const nz3 = -nx2 * sin2 + nz2 * cos2;
+  const len = Math.sqrt(nx3*nx3 + ny3*ny3 + nz3*nz3) || 1;
+  return { x: nx3/len, y: ny3/len, z: nz3/len };
+};
+
+// Global unique ID for per-child noise seeding
+let globalUniqueId = 0;
+
+const generateCascadeCloud = (params) => {
+  const spheres = [];
+  globalUniqueId = 0;
+
+  const {
+    cloudSize, density, seed,
+    cascadeDepth, bumpsPerLevel, childRatio, sizeVariation,
+    jitter, clustering, parentCount, ellipsoidY, ellipsoidXZ
+  } = params;
+
+  const minRadius = 0.5;
+  const baseRadius = cloudSize * 0.5;
+
+  // Effective radii with ellipsoid scaling
+  const rx = baseRadius * (ellipsoidXZ / 100);
+  const ry = baseRadius * (ellipsoidY / 100);
+  const rz = baseRadius * (ellipsoidXZ / 100);
+
+  // Create multiple parent spheres
+  const parents = [];
+  for (let p = 0; p < parentCount; p++) {
+    const offsetAngle = (p / parentCount) * Math.PI * 2;
+    const spread = parentCount > 1 ? (p % 3) * 0.15 : 0;
+    const px = Math.cos(offsetAngle) * rx * spread;
+    const py = (p % 2 === 0 ? 1 : -1) * ry * 0.1 * spread;
+    const pz = Math.sin(offsetAngle) * rz * spread;
+    parents.push({ x: px, y: py, z: pz, radius: baseRadius, depth: 0, density: 1.0 });
+    spheres.push(parents[parents.length - 1]);
+  }
+
+  const generateBumpsOnSphere = (parent) => {
+    if (parent.depth >= cascadeDepth) return;
+    if (parent.radius < minRadius * 1.5) return;
+
+    // FIX 4C: Variable bumps per sphere — each sphere gets different count
+    const noiseForBumpCount = (perlin3D(parent.x * 0.5, parent.y * 0.5, parent.z * 0.5, seed + parent.depth * 7) + 1) * 0.5;
+    const actualBumps = Math.floor(bumpsPerLevel * (0.4 + noiseForBumpCount * 0.8));
+
+    const surfacePoints = fibonacciSphere(parent.x, parent.y, parent.z, parent.radius, parent.radius, parent.radius, actualBumps);
+
+    for (const pt of surfacePoints) {
+      // Normal from center to surface point (in ellipsoid space)
+      const nx = (pt.x - parent.x) / parent.radius;
+      const ny = (pt.y - parent.y) / parent.radius;
+      const nz = (pt.z - parent.z) / parent.radius;
+
+      // FIX 4A: Jitter the surface point
+      const jitterStrength = jitter / 100;
+      const jitX = perlin3D(pt.x * 15 + seed, pt.y * 15, pt.z * 15, 0) * jitterStrength;
+      const jitY = perlin3D(pt.x * 15, pt.y * 15 + seed + 1, pt.z * 15, 0) * jitterStrength;
+      const jitZ = perlin3D(pt.x * 15, pt.y * 15, pt.z * 15 + seed + 2, 0) * jitterStrength;
+      const jpt = { x: pt.x + jitX * parent.radius, y: pt.y + jitY * parent.radius, z: pt.z + jitZ * parent.radius };
+
+      const noiseScale = 3.0 / parent.radius;
+
+      // FIX 4B: Worley clustering — creates clumping
+      const worleyVal = invertedWorley(jpt.x * noiseScale * 2, jpt.y * noiseScale * 2, jpt.z * noiseScale * 2, 1.0);
+      const clusterStrength = clustering / 100;
+
+      // FBM for bump existence
+      const fbmVal = (fbm(jpt.x * noiseScale, jpt.y * noiseScale, jpt.z * noiseScale, 4, 0.5, 2.0, seed + parent.depth * 10) + 1) * 0.5;
+      const bumpIntensity = fbmVal * (1 - clusterStrength * 0.5) + worleyVal * clusterStrength * 0.5;
+
+      const threshold = 1 - density;
+      if (bumpIntensity < threshold) {
+        // Low bump area: only occasionally create sparse bump
+        if (worleyVal > 0.75 && Math.random() < 0.15) {
+          // occasional sparse bump between clusters
+        } else {
+          continue;
+        }
+      }
+
+      // FIX 2: No cap on ratio — use phi modulation
+      const phiNoise = (perlin3D(jpt.x * noiseScale, jpt.y * noiseScale, jpt.z * noiseScale, seed + 100) + 1) * 0.5;
+      const effectiveRatio = (PHI + (phiNoise - 0.5) * 0.6) * (childRatio / 100) * 0.4;
+
+      // FIX 1: Per-child independent size noise (size variation)
+      const childUniqueId = globalUniqueId++;
+      const sizeNoise = (perlin3D(jpt.x * noiseScale * 2, jpt.y * noiseScale * 2, jpt.z * noiseScale * 2, seed + childUniqueId) + 1) * 0.5;
+      const sizeMult = 0.2 + sizeNoise * sizeVariation + effectiveRatio;
+      const childRadius = parent.radius * sizeMult;
+
+      if (childRadius < minRadius) continue;
+
+      // Perturb direction for organic variation
+      const perturbed = perturbDir(nx, ny, nz, jpt.x, jpt.y, jpt.z, 0.25, seed + parent.depth);
+
+      const child = {
+        x: jpt.x + perturbed.x * parent.radius * 0.02,
+        y: jpt.y + perturbed.y * parent.radius * 0.02,
+        z: jpt.z + perturbed.z * parent.radius * 0.02,
+        radius: childRadius,
+        depth: parent.depth + 1,
+        density: bumpIntensity
+      };
+
+      spheres.push(child);
+
+      // Probabilistic cascade continuation
+      const continueChance = Math.max(0.15, 0.8 - parent.depth * 0.2);
+      if (Math.random() < continueChance || parent.depth < 2) {
+        generateBumpsOnSphere(child);
+      }
+    }
+  };
+
+  // Generate bumps starting from all parents
+  for (const parent of parents) {
+    generateBumpsOnSphere(parent);
+  }
+
+  return spheres;
+};
+
+// ============================================================
+// THREE.JS SCENE
+// ============================================================
+
+let scene, camera, renderer;
+let cloudMeshes = [];
+let currentSpheres = [];
+
+function init() {
+  scene = new THREE.Scene();
+  scene.background = new THREE.Color(0x0a0a1a);
+  
+  camera = new THREE.PerspectiveCamera(60, window.innerWidth / window.innerHeight, 0.1, 10000);
+  camera.position.set(80, 60, 120);
+  
+  renderer = new THREE.WebGLRenderer({ antialias: true });
+  renderer.setSize(window.innerWidth, window.innerHeight);
+  renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+  document.body.appendChild(renderer.domElement);
+  
+  const ambient = new THREE.AmbientLight(0xffffff, 0.4);
+  scene.add(ambient);
+  
+  const dirLight = new THREE.DirectionalLight(0xffffff, 0.8);
+  dirLight.position.set(50, 100, 50);
+  scene.add(dirLight);
+  
+  const backLight = new THREE.DirectionalLight(0x4488ff, 0.3);
+  backLight.position.set(-50, -30, -50);
+  scene.add(backLight);
+  
+  setupControls();
+  
+  const grid = new THREE.GridHelper(200, 20, 0x1a1a3a, 0x1a1a3a);
+  grid.position.y = -10;
+  scene.add(grid);
+  
+  const axes = new THREE.AxesHelper(30);
+  scene.add(axes);
+  
+  window.addEventListener('resize', onResize);
+  
+  ['cloudSize', 'seed', 'parentCount', 'ellipsoidY', 'ellipsoidXZ', 'cascadeDepth', 'bumpsPerLevel', 'childRatio', 'sizeVariation', 'jitter', 'clustering', 'density'].forEach(id => {
+    document.getElementById(id).addEventListener('input', function() {
+      const v = parseFloat(this.value);
+      const intParams = ['cloudSize', 'seed', 'parentCount', 'cascadeDepth', 'bumpsPerLevel'];
+      const percentParams = ['childRatio', 'sizeVariation', 'jitter', 'clustering', 'density'];
+      const floatParams = ['ellipsoidY', 'ellipsoidXZ'];
+      if (intParams.includes(id)) {
+        document.getElementById(id + 'Val').textContent = v;
+      } else if (percentParams.includes(id)) {
+        document.getElementById(id + 'Val').textContent = (v / 100).toFixed(2);
+      } else if (floatParams.includes(id)) {
+        document.getElementById(id + 'Val').textContent = (v / 100).toFixed(2);
+      } else {
+        document.getElementById(id + 'Val').textContent = v;
+      }
+    });
+  });
+  
+  generate();
+  animate();
+}
+
+function setupControls() {
+  let isDragging = false;
+  let prevX = 0, prevY = 0;
+  let theta = Math.PI / 4;
+  let phi = Math.PI / 4;
+  let radius = 150;
+  const target = new THREE.Vector3(0, 0, 0);
+  
+  const canvas = renderer.domElement;
+  
+  const updateCamera = () => {
+    camera.position.x = target.x + radius * Math.sin(phi) * Math.cos(theta);
+    camera.position.y = target.y + radius * Math.cos(phi);
+    camera.position.z = target.z + radius * Math.sin(phi) * Math.sin(theta);
+    camera.lookAt(target);
+  };
+  
+  canvas.addEventListener('mousedown', e => {
+    isDragging = true;
+    prevX = e.clientX;
+    prevY = e.clientY;
+    canvas.style.cursor = 'grabbing';
+  });
+  
+  canvas.addEventListener('mousemove', e => {
+    if (!isDragging) return;
+    const dx = e.clientX - prevX;
+    const dy = e.clientY - prevY;
+    theta -= dx * 0.01;
+    phi -= dy * 0.01;
+    phi = Math.max(0.1, Math.min(Math.PI - 0.1, phi));
+    prevX = e.clientX;
+    prevY = e.clientY;
+    updateCamera();
+  });
+  
+  canvas.addEventListener('mouseup', () => {
+    isDragging = false;
+    canvas.style.cursor = 'grab';
+  });
+  
+  canvas.addEventListener('mouseleave', () => {
+    isDragging = false;
+    canvas.style.cursor = 'grab';
+  });
+  
+  canvas.addEventListener('wheel', e => {
+    e.preventDefault();
+    radius += e.deltaY * 0.5;
+    radius = Math.max(30, Math.min(500, radius));
+    updateCamera();
+  }, { passive: false });
+
+  let touchPrevDist = 0;
+  let isPinching = false;
+  let pinchOccurred = false;
+
+  canvas.addEventListener('touchstart', e => {
+    e.preventDefault();
+    if (e.touches.length === 1) {
+      isPinching = false;
+      pinchOccurred = false;
+      prevX = e.touches[0].clientX;
+      prevY = e.touches[0].clientY;
+    } else if (e.touches.length === 2) {
+      isPinching = true;
+      pinchOccurred = false;
+      const dx = e.touches[0].clientX - e.touches[1].clientX;
+      const dy = e.touches[0].clientY - e.touches[1].clientY;
+      touchPrevDist = Math.sqrt(dx * dx + dy * dy);
+    }
+  }, { passive: false });
+
+  canvas.addEventListener('touchmove', e => {
+    e.preventDefault();
+    if (e.touches.length === 1 && !isPinching) {
+      const dx = e.touches[0].clientX - prevX;
+      const dy = e.touches[0].clientY - prevY;
+      theta -= dx * 0.01;
+      phi -= dy * 0.01;
+      phi = Math.max(0.1, Math.min(Math.PI - 0.1, phi));
+      prevX = e.touches[0].clientX;
+      prevY = e.touches[0].clientY;
+      updateCamera();
+    } else if (e.touches.length === 2) {
+      if (!isPinching) {
+        isPinching = true;
+        const dx = e.touches[0].clientX - e.touches[1].clientX;
+        const dy = e.touches[0].clientY - e.touches[1].clientY;
+        touchPrevDist = Math.sqrt(dx * dx + dy * dy);
+      }
+      const dx = e.touches[0].clientX - e.touches[1].clientX;
+      const dy = e.touches[0].clientY - e.touches[1].clientY;
+      const dist = Math.sqrt(dx * dx + dy * dy);
+      const delta = dist - touchPrevDist;
+      radius += delta * 0.8;
+      radius = Math.max(30, Math.min(500, radius));
+      touchPrevDist = dist;
+      if (Math.abs(delta) > 1) pinchOccurred = true;
+      updateCamera();
+    }
+  }, { passive: false });
+
+  let lastTap = 0;
+  canvas.addEventListener('touchend', e => {
+    if (isPinching && e.touches.length === 1) {
+      prevX = e.touches[0].clientX;
+      prevY = e.touches[0].clientY;
+    }
+    isPinching = false;
+
+    if (e.touches.length === 0 && !pinchOccurred) {
+      const now = Date.now();
+      if (now - lastTap < 300) {
+        theta = Math.PI / 4;
+        phi = Math.PI / 4;
+        radius = 150;
+        updateCamera();
+      }
+      lastTap = now;
+    }
+  }, { passive: false });
+
+  canvas.style.cursor = 'grab';
+  updateCamera();
+
+  window._orbitUpdate = updateCamera;
+}
+
+function onResize() {
+  camera.aspect = window.innerWidth / window.innerHeight;
+  camera.updateProjectionMatrix();
+  renderer.setSize(window.innerWidth, window.innerHeight);
+}
+
+function generate() {
+  const p = {
+    cloudSize: parseFloat(document.getElementById('cloudSize').value),
+    seed: parseInt(document.getElementById('seed').value),
+    parentCount: parseInt(document.getElementById('parentCount').value),
+    ellipsoidY: parseFloat(document.getElementById('ellipsoidY').value),
+    ellipsoidXZ: parseFloat(document.getElementById('ellipsoidXZ').value),
+    cascadeDepth: parseInt(document.getElementById('cascadeDepth').value),
+    bumpsPerLevel: parseInt(document.getElementById('bumpsPerLevel').value),
+    childRatio: parseFloat(document.getElementById('childRatio').value),
+    sizeVariation: parseFloat(document.getElementById('sizeVariation').value),
+    jitter: parseFloat(document.getElementById('jitter').value),
+    clustering: parseFloat(document.getElementById('clustering').value),
+    density: parseFloat(document.getElementById('density').value) / 100
+  };
+
+  currentSpheres = generateCascadeCloud(p);
+  document.getElementById('stats').textContent = `${currentSpheres.length} spheres`;
+  
+  rebuildMesh();
+}
+
+function rebuildMesh() {
+  cloudMeshes.forEach(m => scene.remove(m));
+  cloudMeshes = [];
+  
+  const geometry = new THREE.SphereGeometry(1, 12, 8);
+  
+  currentSpheres.forEach(s => {
+    const d = Math.min(Math.max(s.density, 0), 1);
+    const r = 0.2 + d * 0.6;
+    const g = 0.4 + d * 0.4;
+    const b = 1.0;
+    const color = new THREE.Color(r, g, b);
+    
+    const material = new THREE.MeshLambertMaterial({
+      color,
+      transparent: true,
+      opacity: 0.3 + d * 0.5,
+      depthWrite: false
+    });
+    
+    const mesh = new THREE.Mesh(geometry, material);
+    mesh.position.set(s.x, s.y, s.z);
+    mesh.scale.setScalar(s.radius);
+    scene.add(mesh);
+    cloudMeshes.push(mesh);
+  });
+}
+
+function animate() {
+  requestAnimationFrame(animate);
+  renderer.render(scene, camera);
+}
+
+function exportCode() {
+  const p = {
+    cloudSize: parseFloat(document.getElementById('cloudSize').value),
+    seed: parseInt(document.getElementById('seed').value),
+    parentCount: parseInt(document.getElementById('parentCount').value),
+    ellipsoidY: parseFloat(document.getElementById('ellipsoidY').value),
+    ellipsoidXZ: parseFloat(document.getElementById('ellipsoidXZ').value),
+    cascadeDepth: parseInt(document.getElementById('cascadeDepth').value),
+    bumpsPerLevel: parseInt(document.getElementById('bumpsPerLevel').value),
+    childRatio: parseFloat(document.getElementById('childRatio').value),
+    sizeVariation: parseFloat(document.getElementById('sizeVariation').value),
+    jitter: parseFloat(document.getElementById('jitter').value),
+    clustering: parseFloat(document.getElementById('clustering').value),
+    density: parseFloat(document.getElementById('density').value) / 100
+  };
+  
+  const code = `// CloudMath C# v4 — Cascade with all fixes
+// ${currentSpheres.length} spheres
+
+List<CloudSphere> spheres = GenerateCascadeCloud(
+    cloudSize: ${p.cloudSize}f,
+    density: ${p.density}f,
+    seed: ${p.seed},
+    cascadeDepth: ${p.cascadeDepth},
+    bumpsPerLevel: ${p.bumpsPerLevel},
+    childRatio: ${p.childRatio}f,
+    sizeVariation: ${p.sizeVariation}f,
+    jitter: ${p.jitter}f,
+    clustering: ${p.clustering}f,
+    parentCount: ${p.parentCount},
+    ellipsoidY: ${p.ellipsoidY}f,
+    ellipsoidXZ: ${p.ellipsoidXZ}f
+);`;
+
+  const blob = new Blob([code], { type: 'text/plain' });
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = 'CloudMath_Export.cs';
+  a.click();
+}
+
+function switchTab(name) {
+  document.querySelectorAll(".tab-btn").forEach(function(b) { b.classList.remove("active"); });
+  document.querySelectorAll(".tab-content").forEach(function(c) { c.classList.remove("active"); });
+  var btn = document.querySelector('[data-tab="' + name + '"]');
+  if (btn) btn.classList.add("active");
+  document.getElementById("tab-" + name).classList.add("active");
+}
+
+function toggleControls() {
+  const controls = document.querySelector('.controls');
+  const btn = document.querySelector('.toggle-btn');
+  controls.classList.toggle('collapsed');
+  btn.textContent = controls.classList.contains('collapsed') ? 'Parameters' : 'Hide';
+}
+
+init();
+</script>
+</body>
+</html>

@@ -31,12 +31,12 @@
 
 | Архетип | Описание | Параметры |
 |---------|----------|-----------|
-| **Sphere** | Каскадная сфера — равномерное обрастание | Cloud Size, Parent Count, Ellipsoid Y/XZ, Cascade Depth, Bumps/Level, Child Ratio, Size Variation |
-| **Column** | Вертикальная башня — этажи сфер | Height, Base/Top Radius, Floors, Rings/Floor, Wobble |
-| **Platform** | Плоский диск — XZ распространение | Width, Depth, Center Thickness, Interior Density |
-| **Tree** | Древовидная структура — ветвление | Max Depth, Branch Elongation, Angle, Probability, Trunk Up Bias |
+| **Sphere** | Каскадная сфера — равномерное обрастание | Cloud Size, Parent Count, Ellipsoid Y/XZ, Cascade Depth, Bumps/Level, Child Ratio, Size Variation, **Size Min/Max** |
+| **Column** | Вертикальная башня — этажи сфер | Height, Base/Top Radius, Floors, Rings/Floor, Wobble, **Size Min/Max** |
+| **Platform** | Плоский диск — XZ распространение | Width, Depth, Center Thickness, Interior Density, **Size Min/Max** |
+| **Tree** | Древовидная структура — ветвление | Max Depth, Branch Elongation, Angle, Probability, Trunk Up Bias, **Size Min/Max** |
 
-**Общие параметры для всех:** Seed, Density, Jitter, Clustering, Y Offset
+**Общие параметры для всех:** Seed, Density, Jitter, Clustering, Y Offset, Size Min/Max
 
 ## Структура слоёв
 
@@ -66,6 +66,25 @@
 - `FIXES.md` — история исправлений
 
 ## История изменений
+
+### v5.4 — Size Controls (Size Min/Max, Jitter, Clustering)
+- **Size Min / Size Max** — унифицированная система контроля размера сфер для всех архетипов
+  - Параметр `sizeRange: { min, max }` добавлен в `getDefaultLayer()` для всех архетипов
+  - UI: слайдеры Size Min / Size Max в панели каждого архетипа
+  - Column: `baseRadius * sizeBase * 0.08` — напрямую управляет радиусом сфер
+  - Platform: `sizeBase * (0.3 + 0.7*(1-dist*0.8)) * jitterFactor`
+  - Sphere: `sizeBase * sizeMult` где `sizeBase = minRadius + noise * (sizeMax - minRadius)`
+  - Tree: `sizeBase * taperRatio * thicknessFalloff` для детей, `sizeRange.min` для корня
+- **Исправлен `updateLayerField`** — переписан для поддержки любой вложенности через точку (`sizeRange.min`, `columnParams.height` и т.д.)
+- **`updateLayerArchetype`** — сохранение `sizeRange` при смене архетипа
+- **`generate()`** — добавлен try-catch с alert для видимости ошибок
+- **Jitter** усилен во всех архетипах (множитель ×2 на position offsets)
+- **Tree jitter** — применяется к углам веток (`lateralAngle`) и позиции детей
+- **Clustering** — используется в Platform для jitterFactor и density calculation
+
+### v5.3 — Size Controls Fix
+- Возврат к версии 5.3 как baseline
+- Начальное исправление багов с size controls
 
 ### v5.2 — Flat Bottom, Clone, Drag & Drop, Undo/Redo
 - **Flat bottom profile** — Condensation Level: сферы ниже заданного Y cutoff удаляются (полезно для кучевых облаков с плоским низом)

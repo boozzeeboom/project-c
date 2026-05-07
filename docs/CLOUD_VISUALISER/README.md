@@ -41,6 +41,13 @@
 
 ## История изменений
 
+### v4.0 — Cascade all fixes applied
+- **Per-child size noise** — siblings at same level have different sizes (Fix 1)
+- **Phi-modulation** — child ratio uses golden ratio, no 45% cap (Fix 2)
+- **Parent count + ellipsoidXYZ** — multiple parents, shape control (Fix 3)
+- **Jitter + Worley clustering + variable bumps** — no more virus pattern (Fix 4)
+- All fixes documented in `FIXES.md`, algorithm in `ALGORITHM.md`
+
 ### v3.0 — Cascade (hierarchical sphere placement)
 - **Fibonacci sphere sampling** — uniformly distributed points on sphere surface
 - **Noise-driven bump generation** — FBM + Worley determine bump size/existence
@@ -50,13 +57,3 @@
 - **Cascade Depth** — how many levels of recursive detail
 - **Bumps per Level** — how many child spheres per parent (12-128)
 - Math documented in `RESEARCH_CASCADE.md`
-
-### v2.0 — Math rewrite (FBM + Worley + Domain Warping)
-- **Ellipsoid boundary** instead of cubic grid — smooth convex cloud shape
-- **Flat bottom profile** — sharp condensation level (cumulus style)
-- **Worley noise** — cauliflower surface detail (Phase 2)
-- **Domain warping** — organic, non-uniform shapes (Phase 2)
-- **Cumulonimbus** — storm clouds: column + anvil top + scud base
-- New params: Flat Bottom (stratus vs cumulus), Worley Detail (cauliflower intensity)
-- 3D Perlin noise + 3D Worley noise + FBM + domain warping
-- All algorithm math documented in `RESEARCH_MATH.md`

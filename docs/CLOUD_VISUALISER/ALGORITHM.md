@@ -1,101 +1,145 @@
-# Cloud Generator v3.0 — Cascade Algorithm
+# Cloud Generator v4.0 — Cascade with All Fixes
 
 ## Концепция
 
-Не заполнение объёма сферами, а **иерархическое дерево сфер** где каждая сфера — "шишка" на поверхности родителя.
+Не заполнение объёма сферами, а **иерархическое дерево сфер** где каждая сфера — "шишка" на поверхности родителя. Финальный результат: cauliflower-like cloud structure.
 
 ```
-Корневая сфера
-  └── Шишки на её поверхности (child spheres)
-        └── Шишки на поверхности каждой шишки (grandchild spheres)
-              └── ...и так каскадом
+Корневая сфера (-ы)
+  └── Шишки на её поверхности (child spheres) ← РАЗНЫЕ размеры благодаря per-child noise
+        └── Шишки на поверхности каждой шишки (grandchild spheres) ← фи-подобное масштабирование
+              └── ...каскад с jitter и clustering
 ```
 
-## Ключевое отличие от v2.0
+## Ключевые отличия от v3.0
 
-| v2.0 (volume fill) | v3.0 (cascade) |
-|---|---|
-| Сферы равномерно заполняют куб | Сферы крепятся К поверхности родителя |
-| Результат: "слои пузырей" | Результат: "цветная капуста" |
-| O(n³) — решётка | O(n × branch^depth) — каскад |
+| v3.0 | v4.0 |
+|------|------|
+| Все дети на уровне N одинаковые | Каждый ребёнок получает уникальный noise → разный размер |
+| Ratio залочен на 45% | Ratio до 200%, φ-модуляция |
+| 1 родительская сфера | parentCount (1-12) + ellipsoidXYZ |
+| Fibonacci даёт "вирус"-паттерн | Jitter + Worley clustering + variable bumps |
 
 ## Алгоритм
 
-### Шаг 1 — Корневая сфера
-Одна большая сфера в центре. Это "облако" — эллипсоид по форме.
+### Шаг 1 — Родительские сферы
+- `parentCount` сфер в центре
+- Каждая масштабируется через `ellipsoidX/Y/Z`
+- Для cumulus: `ellipsoidY=0.50` (плоское дно), `ellipsoidXZ=1.20` (широкое)
 
-### Шаг 2 — Fibonacci sphere sampling
-На поверхности родительской сферы семплируем N точек через **Fibonacci / Golden Spiral** — даёт равномерное распределение точек без кластеризации на полюсах.
-
-```
-numPoints = 48 (по умолчанию)
-```
-
-### Шаг 3 — Noise-driven bump placement
-Для каждой точки на поверхности:
-1. Семплируем **FBM + Worley** noise
-2. Если `noise > threshold` → создаём дочернюю сферу
-3. Размер дочерней сферы = `parent.radius × childRatio × (0.5 + noise)`
-
-```
-childRadius = parent.radius × 0.30 × bumpIntensity
+### Шаг 2 — Fibonacci ellipsoid surface sampling
+Для каждой родительской сферы семплируем точки на её поверхности (включая ellipsoid scaling):
+```javascript
+const surfacePoints = fibonacciSphere(cx, cy, cz, rx, ry, rz, numPoints);
 ```
 
-### Шаг 4 — Perturb direction
-Нормаль слегка поворачиваем через noise → organic variation, шишки не строго перпендикулярны.
+### Шаг 3 — Jitter (chaos source #1)
+Каждая surface point получает случайное смещение через noise → разрушает идеальную регулярность:
+```javascript
+jitX = perlin3D(pt.x*15, seed) × jitterStrength
+jitteredPt = { x: pt.x + jitX×radius, ... }
+```
 
-### Шаг 5 — Рекурсия (cascade)
-Повторяем шаги 2-4 для каждой дочерней сферы, пока:
-- `depth < maxCascadeDepth` (5 max)
-- `radius > minRadius` (0.5 units)
+### Шаг 4 — Worley clustering (chaos source #2)
+Worley noise определяет КЛАСТЕРЫ — внутри кластера плотность высокая, между кластерами — sparse:
+```javascript
+worleyVal = invertedWorley(jitteredPt × freq);
+if (worleyVal > threshold) createBump(); // dense cluster
+else if (worleyVal > 0.75) createBump() with 15% chance; // sparse between
+```
 
-### Шаг 6 — Probabilistic termination
-С кажд level probability продолжения падает → не все шишки получают детей → меньше density = более пушистый вид.
+### Шаг 5 — Bump size (Fix 1: per-child size variation)
+Каждая дочерняя сфера получает собственный noise размера:
+```javascript
+sizeNoise = perlin3D(childPos × freq, seed + uniqueId); // независимый noise
+sizeMult = 0.2 + sizeNoise × sizeVariation + effectiveRatio;
+childRadius = parent.radius × sizeMult;
+// Sibling-сферы на одном уровне имеют РАЗНЫЕ размеры
+```
+
+### Шаг 6 — Phi-ratio scaling (Fix 2)
+```javascript
+phiNoise = perlin3D(childPos × freq, seed + 100); // возмущение φ
+effectiveRatio = (PHI + (phiNoise - 0.5) × 0.6) × (childRatio / 100) × 0.4;
+// Некоторые дети будут больше родителя (следуя φ-прогрессии)
+```
+
+### Шаг 7 — Variable bumps (chaos source #3)
+Каждая родительская сфера получает РАЗНОЕ количество точек для семплирования:
+```javascript
+actualBumps = bumpsPerLevel × (0.4 + noiseForThisSphere × 0.8);
+// Некоторые сферы получат 20 шишек, другие 80
+```
+
+### Шаг 8 — Рекурсия с probabilistic termination
+```javascript
+continueChance = max(0.15, 0.8 - depth × 0.2);
+if (random < continueChance || depth < 2) generateBumpsOnSphere(child);
+```
 
 ## Параметры
 
+### Cloud Shape
 | Параметр | Что делает | Диапазон |
-|----------|------------|----------|
-| **Cascade Depth** | Глубина каскада — сколько уровней "шишек" | 1–5 |
-| **Bumps per Level** | Сколько точек семплируется на поверхности каждой сферы | 12–128 |
-| **Child Ratio** | Размер ребёнка относительно родителя (25-40% = cauliflower look) | 15–45% |
-| **Density** | Порог noise — какая доля точек становится шишками | 5–95% |
-| **Seed** | Сид генерации | 0–999 |
+|----------|-------------|----------|
+| Cloud Size | Размер облака | 20–200 |
+| Parent Count | Кол-во родительских сфер | 1–12 |
+| Ellipsoid Y | Вертикальное масштабирование (меньше = плоское дно) | 20–150 (×0.01) |
+| Ellipsoid XZ | Горизонтальное масштабирование | 50–150 (×0.01) |
 
-## Почему это облака, а не дерево
+### Cascade
+| Параметр | Что делает | Диапазон |
+|----------|-------------|----------|
+| Cascade Depth | Глубина каскада | 1–5 |
+| Bumps per Level | Базовое кол-во шишек на сферу | 12–128 |
+| Child Ratio | Базовое соотношение размера ребёнка к родителю | 10–200% |
+| Size Variation | Насколько siblings различаются по размеру | 0.0–1.0 |
 
-**Дерево (octree/BSP):** каждое деление создаёт тонкие ветки, углубляясь в пространство.
+### Chaos
+| Параметр | Что делает | Диапазон |
+|----------|-------------|----------|
+| Jitter | Смещение точек семплирования на поверхности | 0–50 (×0.01) |
+| Clustering | Worley clustering — создаёт кластеры шишек | 0–100% |
+| Density | Порог noise — какая доля точек становится шишками | 5–95% |
 
-**Наш каскад:** 
-- Дочерние сферы **прикреплены к поверхности** родителя
-- Сохраняют **сферическую пропорцию** (25-40% от родителя)
-- НЕ тянутся тонкими ветками вдаль
-- Много маленьких шишек на many шишках = **пушистый cauliflower-эффект**
+## Что получилось vs v3.0
+
+**Было (v3.0):**
+- Все дочки 2го уровня одинаковые (линейный cascade)
+- Ratio залочен на 45%
+- 1 сфера-родитель, форма не контролируется
+- Легко получить "вирус" — математически правильный Fibonacci pattern
+
+**Стало (v4.0):**
+- Per-child size noise → siblings разные
+- Ratio до 200% + φ-модуляция
+- parentCount (1-12) + ellipsoidXYZ shape control
+- Jitter + clustering + variable bumps → organic cauliflower look
+
+## Математика размеров
 
 ```
-Tree:        Our cascade:
-    ○              ○
-   /|\            /|\
-  ○ ○ ○    ≠     ● ● ●
-  | | |         ● ● ● ●
-  ○ ○ ○         ● ● ●
-```
-
-## Каскад на практике
-
-```
-Depth 0:  1 сфера (root, radius = cloudSize × 0.5)
-Depth 1:  ~48 × density = ~24 сферы (radius × 0.30)
-Depth 2:  ~24 × 48 × density = ~500 сферы (radius × 0.09)
-Depth 3:  ~500 × 48 × density = ~10,000 сферы (radius × 0.03)
+Depth 0:  N_parent spheres (radius = baseRadius)
+Depth 1:  ~N_parent × actualBumps × density = X spheres
+          each: parent.radius × (0.2 + perChildNoise × SV + φ × ratio × 0.4)
+Depth 2:  X × actualBumps × density = ~Y spheres
+          each: depth1.radius × (same formula)
 ...
 ```
 
-Итого 10,000+ сфер на 3-4 уровнях — визуально пушистая cauliflower-структура.
-
 ## C#-экспорт
 
-При экспорте получаем C# код с параметрами для Unity:
-- `GenerateCascadeCloud(cloudSize, density, seed, cascadeDepth, bumpsPerLevel, childRatio)`
-- Возвращает `List<CloudSphere>` — {x, y, z, radius, density}
-- Готово для MeshGenerator в Unity
+```csharp
+List<CloudSphere> spheres = GenerateCascadeCloud(
+    cloudSize, density, seed,
+    cascadeDepth, bumpsPerLevel, childRatio, sizeVariation,
+    jitter, clustering,
+    parentCount, ellipsoidY, ellipsoidXZ
+);
+```
+
+## Known issues / TODO
+
+- [ ] Flat bottom profile (condensation level) — пока не реализовано
+- [ ] Storm mode (cumulonimbus: column + anvil) — нужно добавить
+- [ ] Wind animation (curl noise для анимации) — для будущего

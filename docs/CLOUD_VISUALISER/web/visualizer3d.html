@@ -255,7 +255,7 @@
 <button class="toggle-btn" onclick="toggleControls()">Parameters</button>
 
 <div class="controls">
-  <h2>Parameters</h2>
+  <h2>Cloud Shape</h2>
   
   <div class="control-group">
     <label>Cloud Size <span class="value" id="cloudSizeVal">100</span></label>
@@ -263,20 +263,27 @@
   </div>
   
   <div class="control-group">
-    <label>Density <span class="value" id="densityVal">0.60</span></label>
-    <input type="range" id="density" min="5" max="95" value="60">
-  </div>
-  
-  <div class="control-group">
-    <label>Turbulence <span class="value" id="turbulenceVal">0.50</span></label>
-    <input type="range" id="turbulence" min="0" max="100" value="50">
-  </div>
-  
-  <div class="control-group">
     <label>Seed <span class="value" id="seedVal">42</span></label>
     <input type="range" id="seed" min="0" max="999" value="42">
   </div>
 
+  <div class="control-group">
+    <label>Parent Count <span class="value" id="parentCountVal">1</span></label>
+    <input type="range" id="parentCount" min="1" max="12" value="1">
+  </div>
+
+  <div class="control-group">
+    <label>Ellipsoid Y <span class="value" id="ellipsoidYVal">0.50</span></label>
+    <input type="range" id="ellipsoidY" min="20" max="150" value="50">
+  </div>
+
+  <div class="control-group">
+    <label>Ellipsoid XZ <span class="value" id="ellipsoidXZVal">1.00</span></label>
+    <input type="range" id="ellipsoidXZ" min="50" max="150" value="100">
+  </div>
+
+  <h2>Cascade</h2>
+  
   <div class="control-group">
     <label>Cascade Depth <span class="value" id="cascadeDepthVal">3</span></label>
     <input type="range" id="cascadeDepth" min="1" max="5" value="3">
@@ -288,8 +295,30 @@
   </div>
 
   <div class="control-group">
-    <label>Child Ratio <span class="value" id="childRatioVal">0.30</span></label>
-    <input type="range" id="childRatio" min="15" max="45" value="30">
+    <label>Child Ratio <span class="value" id="childRatioVal">30</span></label>
+    <input type="range" id="childRatio" min="10" max="200" value="30">
+  </div>
+
+  <div class="control-group">
+    <label>Size Variation <span class="value" id="sizeVariationVal">0.50</span></label>
+    <input type="range" id="sizeVariation" min="0" max="100" value="50">
+  </div>
+
+  <h2>Chaos</h2>
+
+  <div class="control-group">
+    <label>Jitter <span class="value" id="jitterVal">0.30</span></label>
+    <input type="range" id="jitter" min="0" max="50" value="30">
+  </div>
+
+  <div class="control-group">
+    <label>Clustering <span class="value" id="clusteringVal">0.50</span></label>
+    <input type="range" id="clustering" min="0" max="100" value="50">
+  </div>
+
+  <div class="control-group">
+    <label>Density <span class="value" id="densityVal">0.60</span></label>
+    <input type="range" id="density" min="5" max="95" value="60">
   </div>
   
   <div class="buttons">
@@ -298,9 +327,8 @@
   </div>
   
   <div class="info">
-    Cascade: ellipsoid → bumps on surface → sub-bumps<br>
-    Blue = dense, white = wispy<br>
-    Fibonacci sphere sampling + FBM
+    Cascade: Fibonacci + FBM/Worley + phi-ratio<br>
+    Blue = dense, white = wispy
   </div>
 </div>
 
@@ -309,8 +337,10 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
 <script>
 // ============================================================
-// NOISE UTILITIES — 3D Perlin + FBM + Worley + Domain Warping
+// NOISE UTILITIES
 // ============================================================
+
+const PHI = (1 + Math.sqrt(5)) / 2; // 1.618...
 
 const hash3 = (x, y, z, seed) => {
   let n = (((x | 0) + ((y | 0) * 57) | 0) + ((z | 0) * 131) | 0) + ((seed | 0) * 123456789) | 0;
@@ -354,7 +384,7 @@ const perlin3D = (x, y, z, seed) => {
   return lerp3(y1, y2, w);
 };
 
-// FBM — fractional Brownian motion
+// FBM
 const fbm = (x, y, z, octaves = 5, persistence = 0.5, lacunarity = 2.0, seed = 0) => {
   let value = 0, amplitude = 1, frequency = 1, maxValue = 0;
   for (let i = 0; i < octaves; i++) {
@@ -366,7 +396,7 @@ const fbm = (x, y, z, octaves = 5, persistence = 0.5, lacunarity = 2.0, seed = 0
   return value / maxValue;
 };
 
-// --- 3D Worley (Cellular) Noise ---
+// Worley 3D
 const worley3D = (x, y, z, freq) => {
   const ix = Math.floor(x * freq);
   const iy = Math.floor(y * freq);
@@ -393,119 +423,144 @@ const worley3D = (x, y, z, freq) => {
   return minDist;
 };
 
-// Inverted Worley: high at cell centers, low at edges
+// Inverted Worley
 const invertedWorley = (x, y, z, freq) => 1.0 - Math.min(worley3D(x, y, z, freq), 1.0);
 
 // ============================================================
-// CASCADE CLOUD GENERATOR — Hierarchical Sphere Placement
-// Algorithm: Fibonacci sphere sampling → noise-driven bump placement → recursive cascade
+// CASCADE CLOUD GENERATOR v4 — All 4 fixes applied
 // ============================================================
 
-// Fibonacci sphere points — uniform distribution on sphere surface
-const fibonacciSphere = (cx, cy, cz, radius, numPoints) => {
+// Fibonacci sphere — uniform surface sampling
+const fibonacciSphere = (cx, cy, cz, rx, ry, rz, numPoints) => {
   const points = [];
-  const goldenRatio = (1 + Math.sqrt(5)) / 2;
-  const angleInc = Math.PI * 2 * goldenRatio;
+  const angleInc = Math.PI * 2 * PHI;
   for (let i = 0; i < numPoints; i++) {
     const t = i / numPoints;
     const inclination = Math.acos(1 - 2 * t);
     const azimuth = angleInc * i;
-    const x = Math.sin(inclination) * Math.cos(azimuth);
-    const y = Math.sin(inclination) * Math.sin(azimuth);
-    const z = Math.cos(inclination);
+    const sx = Math.sin(inclination) * Math.cos(azimuth);
+    const sy = Math.sin(inclination) * Math.sin(azimuth);
+    const sz = Math.cos(inclination);
     points.push({
-      x: cx + x * radius,
-      y: cy + y * radius,
-      z: cz + z * radius
+      x: cx + sx * rx,
+      y: cy + sy * ry,
+      z: cz + sz * rz
     });
   }
   return points;
 };
 
-// Perturb direction using noise (for organic variation)
-const perturbDirection = (nx, ny, nz, px, py, pz, strength, seed) => {
-  const angleA = perlin3D(px * 10 + seed, py * 10, pz * 10, 0) * strength;
-  const angleB = perlin3D(px * 10, py * 10 + seed, pz * 10 + 50, 0) * strength;
-  
-  // Rotate around an arbitrary axis
-  const cosA = Math.cos(angleA), sinA = Math.sin(angleA);
-  const cosB = Math.cos(angleB), sinB = Math.sin(angleB);
-  
-  // Simplified perturbation: tilt x and y components
-  const nx2 = nx * cosA - ny * sinA;
-  const ny2 = nx * sinA + ny * cosA;
+// Perturb direction using noise
+const perturbDir = (nx, ny, nz, px, py, pz, strength, seed) => {
+  const a1 = perlin3D(px * 10 + seed, py * 10, pz * 10, 0) * strength;
+  const a2 = perlin3D(px * 10, py * 10 + seed, pz * 10 + 50, 0) * strength;
+  const cos1 = Math.cos(a1), sin1 = Math.sin(a1);
+  const cos2 = Math.cos(a2), sin2 = Math.sin(a2);
+  const nx2 = nx * cos1 - ny * sin1;
+  const ny2 = nx * sin1 + ny * cos1;
   const nz2 = nz;
-  
-  const nx3 = nx2 * cosB + nz2 * sinB;
+  const nx3 = nx2 * cos2 + nz2 * sin2;
   const ny3 = ny2;
-  const nz3 = -nx2 * sinB + nz2 * cosB;
-  
-  const len = Math.sqrt(nx3*nx3 + ny3*ny3 + nz3*nz3);
+  const nz3 = -nx2 * sin2 + nz2 * cos2;
+  const len = Math.sqrt(nx3*nx3 + ny3*ny3 + nz3*nz3) || 1;
   return { x: nx3/len, y: ny3/len, z: nz3/len };
 };
 
-// Main cascade cloud generator
+// Global unique ID for per-child noise seeding
+let globalUniqueId = 0;
+
 const generateCascadeCloud = (params) => {
+  const spheres = [];
+  globalUniqueId = 0;
+
   const {
-    cloudSize, density, turbulence, seed,
-    cascadeDepth, bumpsPerLevel, childRatio
+    cloudSize, density, seed,
+    cascadeDepth, bumpsPerLevel, childRatio, sizeVariation,
+    jitter, clustering, parentCount, ellipsoidY, ellipsoidXZ
   } = params;
 
-  const spheres = [];
   const minRadius = 0.5;
   const baseRadius = cloudSize * 0.5;
-  
-  // Start with one root ellipsoid
-  const rootSpheres = [
-    { x: 0, y: 0, z: 0, radius: baseRadius, depth: 0, density: 1.0 }
-  ];
-  spheres.push(rootSpheres[0]);
 
-  // Ellipsoid ratios for cloud shape (flatter at bottom for cumulus look)
-  const ellipsoidY = cloudSize * 0.45; // shorter Y axis
+  // Effective radii with ellipsoid scaling
+  const rx = baseRadius * (ellipsoidXZ / 100);
+  const ry = baseRadius * (ellipsoidY / 100);
+  const rz = baseRadius * (ellipsoidXZ / 100);
 
-  // Recursive cascade
+  // Create multiple parent spheres
+  const parents = [];
+  for (let p = 0; p < parentCount; p++) {
+    const offsetAngle = (p / parentCount) * Math.PI * 2;
+    const spread = parentCount > 1 ? (p % 3) * 0.15 : 0;
+    const px = Math.cos(offsetAngle) * rx * spread;
+    const py = (p % 2 === 0 ? 1 : -1) * ry * 0.1 * spread;
+    const pz = Math.sin(offsetAngle) * rz * spread;
+    parents.push({ x: px, y: py, z: pz, radius: baseRadius, depth: 0, density: 1.0 });
+    spheres.push(parents[parents.length - 1]);
+  }
+
   const generateBumpsOnSphere = (parent) => {
     if (parent.depth >= cascadeDepth) return;
-    if (parent.radius < minRadius * 2) return;
+    if (parent.radius < minRadius * 1.5) return;
 
-    // Sample points on parent sphere surface
-    const numPoints = bumpsPerLevel;
-    const surfacePoints = fibonacciSphere(parent.x, parent.y, parent.z, parent.radius, numPoints);
+    // FIX 4C: Variable bumps per sphere — each sphere gets different count
+    const noiseForBumpCount = (perlin3D(parent.x * 0.5, parent.y * 0.5, parent.z * 0.5, seed + parent.depth * 7) + 1) * 0.5;
+    const actualBumps = Math.floor(bumpsPerLevel * (0.4 + noiseForBumpCount * 0.8));
+
+    const surfacePoints = fibonacciSphere(parent.x, parent.y, parent.z, parent.radius, parent.radius, parent.radius, actualBumps);
 
     for (const pt of surfacePoints) {
-      // Normal from center to this surface point
+      // Normal from center to surface point (in ellipsoid space)
       const nx = (pt.x - parent.x) / parent.radius;
       const ny = (pt.y - parent.y) / parent.radius;
       const nz = (pt.z - parent.z) / parent.radius;
 
-      // Noise at this surface point — determines bump size
-      // Use FBM for organic cauliflower-like distribution
+      // FIX 4A: Jitter the surface point
+      const jitterStrength = jitter / 100;
+      const jitX = perlin3D(pt.x * 15 + seed, pt.y * 15, pt.z * 15, 0) * jitterStrength;
+      const jitY = perlin3D(pt.x * 15, pt.y * 15 + seed + 1, pt.z * 15, 0) * jitterStrength;
+      const jitZ = perlin3D(pt.x * 15, pt.y * 15, pt.z * 15 + seed + 2, 0) * jitterStrength;
+      const jpt = { x: pt.x + jitX * parent.radius, y: pt.y + jitY * parent.radius, z: pt.z + jitZ * parent.radius };
+
       const noiseScale = 3.0 / parent.radius;
-      const noiseVal = (fbm(pt.x * noiseScale, pt.y * noiseScale, pt.z * noiseScale, 4, 0.5, 2.0, seed + parent.depth * 10) + 1) * 0.5;
 
-      // Worley adds cellular detail for cauliflower look
-      const worleyVal = invertedWorley(pt.x * noiseScale * 2, pt.y * noiseScale * 2, pt.z * noiseScale * 2, 1.0);
+      // FIX 4B: Worley clustering — creates clumping
+      const worleyVal = invertedWorley(jpt.x * noiseScale * 2, jpt.y * noiseScale * 2, jpt.z * noiseScale * 2, 1.0);
+      const clusterStrength = clustering / 100;
 
-      // Combined: noise decides bump existence and size
+      // FBM for bump existence
+      const fbmVal = (fbm(jpt.x * noiseScale, jpt.y * noiseScale, jpt.z * noiseScale, 4, 0.5, 2.0, seed + parent.depth * 10) + 1) * 0.5;
+      const bumpIntensity = fbmVal * (1 - clusterStrength * 0.5) + worleyVal * clusterStrength * 0.5;
+
       const threshold = 1 - density;
-      const bumpIntensity = noiseVal * 0.7 + worleyVal * 0.3;
-      
-      if (bumpIntensity < threshold) continue;
+      if (bumpIntensity < threshold) {
+        // Low bump area: only occasionally create sparse bump
+        if (worleyVal > 0.75 && Math.random() < 0.15) {
+          // occasional sparse bump between clusters
+        } else {
+          continue;
+        }
+      }
 
-      // Child radius: proportional to parent, modulated by noise
-      const childRadius = parent.radius * childRatio * (0.5 + bumpIntensity * 0.8);
+      // FIX 2: No cap on ratio — use phi modulation
+      const phiNoise = (perlin3D(jpt.x * noiseScale, jpt.y * noiseScale, jpt.z * noiseScale, seed + 100) + 1) * 0.5;
+      const effectiveRatio = (PHI + (phiNoise - 0.5) * 0.6) * (childRatio / 100) * 0.4;
+
+      // FIX 1: Per-child independent size noise (size variation)
+      const childUniqueId = globalUniqueId++;
+      const sizeNoise = (perlin3D(jpt.x * noiseScale * 2, jpt.y * noiseScale * 2, jpt.z * noiseScale * 2, seed + childUniqueId) + 1) * 0.5;
+      const sizeMult = 0.2 + sizeNoise * sizeVariation + effectiveRatio;
+      const childRadius = parent.radius * sizeMult;
+
       if (childRadius < minRadius) continue;
 
-      // Perturb direction for organic feel
-      const perturbed = perturbDirection(nx, ny, nz, pt.x, pt.y, pt.z, 0.2, seed + parent.depth);
+      // Perturb direction for organic variation
+      const perturbed = perturbDir(nx, ny, nz, jpt.x, jpt.y, jpt.z, 0.25, seed + parent.depth);
 
-      // Child position: slightly outside parent surface
-      const offset = parent.radius * 0.02;
       const child = {
-        x: pt.x + perturbed.x * offset,
-        y: pt.y + perturbed.y * offset,
-        z: pt.z + perturbed.z * offset,
+        x: jpt.x + perturbed.x * parent.radius * 0.02,
+        y: jpt.y + perturbed.y * parent.radius * 0.02,
+        z: jpt.z + perturbed.z * parent.radius * 0.02,
         radius: childRadius,
         depth: parent.depth + 1,
         density: bumpIntensity
@@ -513,16 +568,18 @@ const generateCascadeCloud = (params) => {
 
       spheres.push(child);
 
-      // Recurse — but with decreasing probability
-      const continueChance = Math.max(0.2, 1 - parent.depth * 0.25);
+      // Probabilistic cascade continuation
+      const continueChance = Math.max(0.15, 0.8 - parent.depth * 0.2);
       if (Math.random() < continueChance || parent.depth < 2) {
         generateBumpsOnSphere(child);
       }
     }
   };
 
-  // Generate bumps starting from root sphere
-  generateBumpsOnSphere(rootSpheres[0]);
+  // Generate bumps starting from all parents
+  for (const parent of parents) {
+    generateBumpsOnSphere(parent);
+  }
 
   return spheres;
 };
@@ -569,13 +626,21 @@ function init() {
   
   window.addEventListener('resize', onResize);
   
-  ['cloudSize', 'density', 'turbulence', 'seed', 'cascadeDepth', 'bumpsPerLevel', 'childRatio'].forEach(id => {
+  ['cloudSize', 'seed', 'parentCount', 'ellipsoidY', 'ellipsoidXZ', 'cascadeDepth', 'bumpsPerLevel', 'childRatio', 'sizeVariation', 'jitter', 'clustering', 'density'].forEach(id => {
     document.getElementById(id).addEventListener('input', function() {
       const v = parseFloat(this.value);
-      const isPercent = ['density', 'turbulence'].includes(id);
-      const isInt = ['seed', 'cascadeDepth', 'bumpsPerLevel'].includes(id);
-      document.getElementById(id + 'Val').textContent = 
-        isInt ? v : (v / (isPercent ? 100 : 1)).toFixed(id === 'childRatio' ? 2 : 2);
+      const intParams = ['cloudSize', 'seed', 'parentCount', 'cascadeDepth', 'bumpsPerLevel'];
+      const percentParams = ['childRatio', 'sizeVariation', 'jitter', 'clustering', 'density'];
+      const floatParams = ['ellipsoidY', 'ellipsoidXZ'];
+      if (intParams.includes(id)) {
+        document.getElementById(id + 'Val').textContent = v;
+      } else if (percentParams.includes(id)) {
+        document.getElementById(id + 'Val').textContent = (v / 100).toFixed(2);
+      } else if (floatParams.includes(id)) {
+        document.getElementById(id + 'Val').textContent = (v / 100).toFixed(2);
+      } else {
+        document.getElementById(id + 'Val').textContent = v;
+      }
     });
   });
   
@@ -719,17 +784,22 @@ function onResize() {
 }
 
 function generate() {
-  const params = {
+  const p = {
     cloudSize: parseFloat(document.getElementById('cloudSize').value),
-    density: parseFloat(document.getElementById('density').value) / 100,
-    turbulence: parseFloat(document.getElementById('turbulence').value) / 100,
     seed: parseInt(document.getElementById('seed').value),
+    parentCount: parseInt(document.getElementById('parentCount').value),
+    ellipsoidY: parseFloat(document.getElementById('ellipsoidY').value),
+    ellipsoidXZ: parseFloat(document.getElementById('ellipsoidXZ').value),
     cascadeDepth: parseInt(document.getElementById('cascadeDepth').value),
     bumpsPerLevel: parseInt(document.getElementById('bumpsPerLevel').value),
-    childRatio: parseFloat(document.getElementById('childRatio').value) / 100
+    childRatio: parseFloat(document.getElementById('childRatio').value),
+    sizeVariation: parseFloat(document.getElementById('sizeVariation').value),
+    jitter: parseFloat(document.getElementById('jitter').value),
+    clustering: parseFloat(document.getElementById('clustering').value),
+    density: parseFloat(document.getElementById('density').value) / 100
   };
 
-  currentSpheres = generateCascadeCloud(params);
+  currentSpheres = generateCascadeCloud(p);
   document.getElementById('stats').textContent = `${currentSpheres.length} spheres`;
   
   rebuildMesh();
@@ -742,7 +812,7 @@ function rebuildMesh() {
   const geometry = new THREE.SphereGeometry(1, 12, 8);
   
   currentSpheres.forEach(s => {
-    const d = s.density;
+    const d = Math.min(Math.max(s.density, 0), 1);
     const r = 0.2 + d * 0.6;
     const g = 0.4 + d * 0.4;
     const b = 1.0;
@@ -769,28 +839,37 @@ function animate() {
 }
 
 function exportCode() {
-  const params = {
+  const p = {
     cloudSize: parseFloat(document.getElementById('cloudSize').value),
-    density: parseFloat(document.getElementById('density').value) / 100,
-    turbulence: parseFloat(document.getElementById('turbulence').value) / 100,
     seed: parseInt(document.getElementById('seed').value),
+    parentCount: parseInt(document.getElementById('parentCount').value),
+    ellipsoidY: parseFloat(document.getElementById('ellipsoidY').value),
+    ellipsoidXZ: parseFloat(document.getElementById('ellipsoidXZ').value),
     cascadeDepth: parseInt(document.getElementById('cascadeDepth').value),
     bumpsPerLevel: parseInt(document.getElementById('bumpsPerLevel').value),
-    childRatio: parseFloat(document.getElementById('childRatio').value) / 100
+    childRatio: parseFloat(document.getElementById('childRatio').value),
+    sizeVariation: parseFloat(document.getElementById('sizeVariation').value),
+    jitter: parseFloat(document.getElementById('jitter').value),
+    clustering: parseFloat(document.getElementById('clustering').value),
+    density: parseFloat(document.getElementById('density').value) / 100
   };
   
-  const code = `// CloudMath C# — Generated from visualizer v3 (Cascade)
-// Sphere-based cloud generator: Fibonacci + FBM + Worley cascade
+  const code = `// CloudMath C# v4 — Cascade with all fixes
 // ${currentSpheres.length} spheres
 
 List<CloudSphere> spheres = GenerateCascadeCloud(
-    cloudSize: ${params.cloudSize}f,
-    density: ${params.density}f,
-    turbulence: ${params.turbulence}f,
-    seed: ${params.seed},
-    cascadeDepth: ${params.cascadeDepth},
-    bumpsPerLevel: ${params.bumpsPerLevel},
-    childRatio: ${params.childRatio}f
+    cloudSize: ${p.cloudSize}f,
+    density: ${p.density}f,
+    seed: ${p.seed},
+    cascadeDepth: ${p.cascadeDepth},
+    bumpsPerLevel: ${p.bumpsPerLevel},
+    childRatio: ${p.childRatio}f,
+    sizeVariation: ${p.sizeVariation}f,
+    jitter: ${p.jitter}f,
+    clustering: ${p.clustering}f,
+    parentCount: ${p.parentCount},
+    ellipsoidY: ${p.ellipsoidY}f,
+    ellipsoidXZ: ${p.ellipsoidXZ}f
 );`;
 
   const blob = new Blob([code], { type: 'text/plain' });

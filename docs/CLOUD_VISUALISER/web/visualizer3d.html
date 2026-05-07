@@ -317,88 +317,84 @@
     <button class="tab-btn" data-tab="cascade" onclick="switchTab('cascade')">Cascade</button>
     <button class="tab-btn" data-tab="chaos" onclick="switchTab('chaos')">Chaos</button>
   </div>
+
   <div id="tab-shape" class="tab-content active">
     <h2 class="tab-section-title">Cloud Shape</h2>
-  
-  <div class="control-group">
-    <label>Cloud Size <span class="value" id="cloudSizeVal">100</span></label>
-    <input type="range" id="cloudSize" min="20" max="200" value="80">
-  </div>
-  
-  <div class="control-group">
-    <label>Seed <span class="value" id="seedVal">42</span></label>
-    <input type="range" id="seed" min="0" max="999" value="42">
-  </div>
+    
+    <div class="control-group">
+      <label>Cloud Size <span class="value" id="cloudSizeVal">100</span></label>
+      <input type="range" id="cloudSize" min="20" max="200" value="80">
+    </div>
+    
+    <div class="control-group">
+      <label>Seed <span class="value" id="seedVal">42</span></label>
+      <input type="range" id="seed" min="0" max="999" value="42">
+    </div>
 
-  <div class="control-group">
-    <label>Parent Count <span class="value" id="parentCountVal">1</span></label>
-    <input type="range" id="parentCount" min="1" max="12" value="1">
-  </div>
+    <div class="control-group">
+      <label>Parent Count <span class="value" id="parentCountVal">1</span></label>
+      <input type="range" id="parentCount" min="1" max="12" value="1">
+    </div>
 
-  <div class="control-group">
-    <label>Ellipsoid Y <span class="value" id="ellipsoidYVal">0.50</span></label>
-    <input type="range" id="ellipsoidY" min="20" max="150" value="50">
-  </div>
+    <div class="control-group">
+      <label>Ellipsoid Y <span class="value" id="ellipsoidYVal">0.50</span></label>
+      <input type="range" id="ellipsoidY" min="20" max="150" value="50">
+    </div>
 
-  <div class="control-group">
-    <label>Ellipsoid XZ <span class="value" id="ellipsoidXZVal">1.00</span></label>
-    <input type="range" id="ellipsoidXZ" min="50" max="150" value="100">
+    <div class="control-group">
+      <label>Ellipsoid XZ <span class="value" id="ellipsoidXZVal">1.00</span></label>
+      <input type="range" id="ellipsoidXZ" min="50" max="150" value="100">
+    </div>
   </div>
 
   <div id="tab-cascade" class="tab-content">
     <h2 class="tab-section-title">Cascade</h2>
-  
-  <div class="control-group">
-    <label>Cascade Depth <span class="value" id="cascadeDepthVal">3</span></label>
-    <input type="range" id="cascadeDepth" min="1" max="5" value="3">
-  </div>
+    
+    <div class="control-group">
+      <label>Cascade Depth <span class="value" id="cascadeDepthVal">3</span></label>
+      <input type="range" id="cascadeDepth" min="1" max="5" value="3">
+    </div>
 
-  <div class="control-group">
-    <label>Bumps per Level <span class="value" id="bumpsPerLevelVal">48</span></label>
-    <input type="range" id="bumpsPerLevel" min="12" max="128" value="48">
-  </div>
+    <div class="control-group">
+      <label>Bumps per Level <span class="value" id="bumpsPerLevelVal">48</span></label>
+      <input type="range" id="bumpsPerLevel" min="12" max="128" value="48">
+    </div>
 
-  <div class="control-group">
-    <label>Child Ratio <span class="value" id="childRatioVal">30</span></label>
-    <input type="range" id="childRatio" min="10" max="200" value="30">
-  </div>
+    <div class="control-group">
+      <label>Child Ratio <span class="value" id="childRatioVal">30</span></label>
+      <input type="range" id="childRatio" min="10" max="200" value="30">
+    </div>
 
-  <div class="control-group">
-    <label>Size Variation <span class="value" id="sizeVariationVal">0.50</span></label>
-    <input type="range" id="sizeVariation" min="0" max="100" value="50">
+    <div class="control-group">
+      <label>Size Variation <span class="value" id="sizeVariationVal">0.50</span></label>
+      <input type="range" id="sizeVariation" min="0" max="100" value="50">
+    </div>
   </div>
 
   <div id="tab-chaos" class="tab-content">
     <h2 class="tab-section-title">Chaos</h2>
 
-  <div class="control-group">
-    <label>Jitter <span class="value" id="jitterVal">0.30</span></label>
-    <input type="range" id="jitter" min="0" max="50" value="30">
+    <div class="control-group">
+      <label>Jitter <span class="value" id="jitterVal">0.30</span></label>
+      <input type="range" id="jitter" min="0" max="50" value="30">
+    </div>
+
+    <div class="control-group">
+      <label>Clustering <span class="value" id="clusteringVal">0.50</span></label>
+      <input type="range" id="clustering" min="0" max="100" value="50">
+    </div>
+
+    <div class="control-group">
+      <label>Density <span class="value" id="densityVal">0.60</span></label>
+      <input type="range" id="density" min="5" max="95" value="60">
+    </div>
   </div>
 
-  <div class="control-group">
-    <label>Clustering <span class="value" id="clusteringVal">0.50</span></label>
-    <input type="range" id="clustering" min="0" max="100" value="50">
-  </div>
-
-  <div class="control-group">
-    <label>Density <span class="value" id="densityVal">0.60</span></label>
-    <input type="range" id="density" min="5" max="95" value="60">
-  </div>
-  
   <div class="buttons">
     <button onclick="generate()">Generate</button>
     <button onclick="exportCode()">Export</button>
   </div>
-  </div>
 </div>
-  
-  <div class="info">
-    Cascade: Fibonacci + FBM/Worley + phi-ratio<br>
-    Blue = dense, white = wispy
-  </div>
-</div>
-
 <div class="hint">Drag / swipe to orbit | Pinch to zoom | Double-tap to reset</div>
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>

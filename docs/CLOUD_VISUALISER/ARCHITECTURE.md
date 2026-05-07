@@ -337,10 +337,12 @@ public static class CloudGenerator
 
 ## Known Issues / TODO
 
-- [ ] Flat bottom profile (condensation level) — пока не реализовано
+- [x] Flat bottom profile (condensation level) — ✅ Готово (v5.2)
 - [ ] Storm mode (cumulonimbus: column + anvil) — archetype stacking решает
 - [ ] Wind animation (curl noise для анимации) — для будущего
 - [ ] Layer preview in Scene View — требует Unity-side реализации
-- [ ] Reorder layers (drag & drop) — для управления порядком слоёв
-- [ ] Clone/copy layer — для быстрого создания вариаций
-- [ ] Undo/redo для изменений параметров
+- [x] Reorder layers (drag & drop) — ✅ Готово (v5.2)
+- [x] Clone/copy layer — ✅ Готово (v5.2)
+- [x] Undo/redo для изменений параметров — ✅ Готово (v5.2)
+- [ ] Preset save/load layer configurations
+- [ ] Layer visibility toggle (enabled checkbox)

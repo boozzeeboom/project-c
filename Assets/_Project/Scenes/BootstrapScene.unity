@@ -1444,6 +1444,7 @@ GameObject:
   - component: {fileID: 994883117}
   - component: {fileID: 994883116}
   - component: {fileID: 994883115}
+  - component: {fileID: 994883118}
   m_Layer: 0
   m_Name: Storm_3
   m_TagString: Untagged
@@ -1537,8 +1538,36 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::ProjectC.Core.StormController
   _stormMaterial: {fileID: 0}
   _lightningVFX: {fileID: 0}
-  _stormScale: 500
+  _cloudGenerator: {fileID: 0}
   _visibilityDistance: 50000
+--- !u!114 &994883118
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 994883113}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 9633ccf3978d0114494e818affb25da7, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::ProjectC.Core.StormCloudGenerator
+  MinHeight: 400
+  MaxHeight: 3000
+  LayerCount: 5
+  ColumnRadius: 200
+  PuffSpread: 1.5
+  MainMeshes:
+  - Mesh: {fileID: 10206, guid: 0000000000000000e000000000000000, type: 0}
+    Weight: 0
+  MainPuffsPerLayer: {x: 3, y: 6}
+  OffshootMeshes: []
+  OffshootPuffsPerLayer: {x: 2, y: 5}
+  OffshootScale: 0.4
+  RotationX: {x: 0, y: 30}
+  RotationY: {x: 0, y: 360}
+  RotationZ: {x: 0, y: 30}
+  WindInfluence: 0.3
 --- !u!1 &1149404328
 GameObject:
   m_ObjectHideFlags: 0
@@ -2069,6 +2098,7 @@ GameObject:
   - component: {fileID: 1400429365}
   - component: {fileID: 1400429364}
   - component: {fileID: 1400429363}
+  - component: {fileID: 1400429366}
   m_Layer: 0
   m_Name: Storm_0
   m_TagString: Untagged
@@ -2162,8 +2192,38 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::ProjectC.Core.StormController
   _stormMaterial: {fileID: 2100000, guid: 1113070119fa4ec4f93620807a2d0511, type: 2}
   _lightningVFX: {fileID: 0}
-  _stormScale: 500
+  _cloudGenerator: {fileID: 1400429366}
   _visibilityDistance: 50000
+--- !u!114 &1400429366
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1400429361}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 9633ccf3978d0114494e818affb25da7, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::ProjectC.Core.StormCloudGenerator
+  MinHeight: 400
+  MaxHeight: 3000
+  LayerCount: 5
+  ColumnRadius: 200
+  PuffSpread: 1.5
+  MainMeshes:
+  - Mesh: {fileID: 10207, guid: 0000000000000000e000000000000000, type: 0}
+    Weight: 100
+  MainPuffsPerLayer: {x: 3, y: 6}
+  OffshootMeshes:
+  - Mesh: {fileID: 10207, guid: 0000000000000000e000000000000000, type: 0}
+    Weight: 0
+  OffshootPuffsPerLayer: {x: 2, y: 5}
+  OffshootScale: 0.4
+  RotationX: {x: 0, y: 30}
+  RotationY: {x: 0, y: 360}
+  RotationZ: {x: 0, y: 30}
+  WindInfluence: 0.3
 --- !u!1 &1471737520
 GameObject:
   m_ObjectHideFlags: 0
@@ -2224,6 +2284,7 @@ GameObject:
   - component: {fileID: 1497996362}
   - component: {fileID: 1497996361}
   - component: {fileID: 1497996360}
+  - component: {fileID: 1497996363}
   m_Layer: 0
   m_Name: Storm_2
   m_TagString: Untagged
@@ -2317,8 +2378,36 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::ProjectC.Core.StormController
   _stormMaterial: {fileID: 0}
   _lightningVFX: {fileID: 0}
-  _stormScale: 500
+  _cloudGenerator: {fileID: 0}
   _visibilityDistance: 50000
+--- !u!114 &1497996363
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1497996358}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 9633ccf3978d0114494e818affb25da7, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::ProjectC.Core.StormCloudGenerator
+  MinHeight: 400
+  MaxHeight: 3000
+  LayerCount: 5
+  ColumnRadius: 200
+  PuffSpread: 1.5
+  MainMeshes:
+  - Mesh: {fileID: 10202, guid: 0000000000000000e000000000000000, type: 0}
+    Weight: 0
+  MainPuffsPerLayer: {x: 3, y: 6}
+  OffshootMeshes: []
+  OffshootPuffsPerLayer: {x: 2, y: 5}
+  OffshootScale: 0.4
+  RotationX: {x: 0, y: 30}
+  RotationY: {x: 0, y: 360}
+  RotationZ: {x: 0, y: 30}
+  WindInfluence: 0.3
 --- !u!1 &1614026675
 GameObject:
   m_ObjectHideFlags: 0
@@ -2896,6 +2985,7 @@ GameObject:
   - component: {fileID: 1922052649}
   - component: {fileID: 1922052648}
   - component: {fileID: 1922052647}
+  - component: {fileID: 1922052650}
   m_Layer: 0
   m_Name: Storm_1
   m_TagString: Untagged
@@ -2989,8 +3079,40 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::ProjectC.Core.StormController
   _stormMaterial: {fileID: 2100000, guid: 1113070119fa4ec4f93620807a2d0511, type: 2}
   _lightningVFX: {fileID: 0}
-  _stormScale: 500
+  _cloudGenerator: {fileID: 0}
   _visibilityDistance: 50000
+--- !u!114 &1922052650
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1922052645}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 9633ccf3978d0114494e818affb25da7, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::ProjectC.Core.StormCloudGenerator
+  MinHeight: 400
+  MaxHeight: 3000
+  LayerCount: 5
+  ColumnRadius: 200
+  PuffSpread: 1.5
+  MainMeshes:
+  - Mesh: {fileID: 10207, guid: 0000000000000000e000000000000000, type: 0}
+    Weight: 0
+  MainPuffsPerLayer: {x: 3, y: 6}
+  OffshootMeshes:
+  - Mesh: {fileID: 10202, guid: 0000000000000000e000000000000000, type: 0}
+    Weight: 0
+  - Mesh: {fileID: 10206, guid: 0000000000000000e000000000000000, type: 0}
+    Weight: 0
+  OffshootPuffsPerLayer: {x: 2, y: 5}
+  OffshootScale: 0.4
+  RotationX: {x: 0, y: 30}
+  RotationY: {x: 0, y: 360}
+  RotationZ: {x: 0, y: 30}
+  WindInfluence: 0.3
 --- !u!21 &1924820584
 Material:
   serializedVersion: 8
@@ -3461,6 +3583,7 @@ GameObject:
   - component: {fileID: 2114633505}
   - component: {fileID: 2114633504}
   - component: {fileID: 2114633503}
+  - component: {fileID: 2114633506}
   m_Layer: 0
   m_Name: Storm_4
   m_TagString: Untagged
@@ -3554,8 +3677,36 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::ProjectC.Core.StormController
   _stormMaterial: {fileID: 0}
   _lightningVFX: {fileID: 0}
-  _stormScale: 500
+  _cloudGenerator: {fileID: 0}
   _visibilityDistance: 50000
+--- !u!114 &2114633506
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 2114633501}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 9633ccf3978d0114494e818affb25da7, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::ProjectC.Core.StormCloudGenerator
+  MinHeight: 400
+  MaxHeight: 3000
+  LayerCount: 5
+  ColumnRadius: 200
+  PuffSpread: 1.5
+  MainMeshes:
+  - Mesh: {fileID: 10208, guid: 0000000000000000e000000000000000, type: 0}
+    Weight: 0
+  MainPuffsPerLayer: {x: 3, y: 6}
+  OffshootMeshes: []
+  OffshootPuffsPerLayer: {x: 2, y: 5}
+  OffshootScale: 0.4
+  RotationX: {x: 0, y: 30}
+  RotationY: {x: 0, y: 360}
+  RotationZ: {x: 0, y: 30}
+  WindInfluence: 0.3
 --- !u!1660057539 &9223372036854775807
 SceneRoots:
   m_ObjectHideFlags: 0

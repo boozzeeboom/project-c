@@ -599,10 +599,10 @@ const worley3D = (x, y, z, freq) => {
 const invertedWorley = (x, y, z, freq) => 1.0 - Math.min(worley3D(x, y, z, freq), 1.0);
 
 // ============================================================
-// MULTI-LAYER CLOUD GENERATOR v5 — Archetype Dispatcher
+// MULTI-LAYER CLOUD GENERATOR v5 тАФ Archetype Dispatcher
 // ============================================================
 
-// Fibonacci sphere — uniform surface sampling
+// Fibonacci sphere тАФ uniform surface sampling
 const fibonacciSphere = (cx, cy, cz, rx, ry, rz, numPoints) => {
   const points = [];
   const angleInc = Math.PI * 2 * PHI;
@@ -654,7 +654,7 @@ const fibonacciSpiral2D = (count) => {
 let globalUniqueId = 0;
 
 // ============================================================
-// SPHERE ARCHETYPE — existing cascade algorithm, refactored
+// SPHERE ARCHETYPE тАФ existing cascade algorithm, refactored
 // ============================================================
 
 const generateSphereLayer = (layer) => {
@@ -666,10 +666,11 @@ const generateSphereLayer = (layer) => {
   const {
     cloudSize, density, seed,
     cascadeDepth, bumpsPerLevel, childRatio, sizeVariation,
-    jitter, clustering, parentCount, ellipsoidY, ellipsoidXZ
+    jitter, clustering, parentCount, ellipsoidY, ellipsoidXZ, sizeRange
   } = layer;
 
-  const minRadius = 0.5;
+  const minRadius = sizeRange?.min || 0.5;
+  const sizeMax = sizeRange?.max || 20;
   const baseRadius = cloudSize * 0.5;
 
   const rx = baseRadius * (ellipsoidXZ / 100);
@@ -729,8 +730,9 @@ const generateSphereLayer = (layer) => {
 
       const childUniqueId = globalUniqueId++;
       const sizeNoise = (perlin3D(jpt.x * noiseScale * 2, jpt.y * noiseScale * 2, jpt.z * noiseScale * 2, seed + childUniqueId) + 1) * 0.5;
-      const sizeMult = 0.2 + sizeNoise * sizeVariation + effectiveRatio;
-      const childRadius = parent.radius * sizeMult;
+      const sizeBase = minRadius + sizeNoise * (sizeMax - minRadius);
+      const sizeMult = (0.2 + sizeNoise * sizeVariation + effectiveRatio) * 0.3;
+      const childRadius = sizeBase * sizeMult;
 
       if (childRadius < minRadius) continue;
 
@@ -764,7 +766,7 @@ const generateSphereLayer = (layer) => {
 };
 
 // ============================================================
-// COLUMN ARCHETYPE — vertical stacking
+// COLUMN ARCHETYPE тАФ vertical stacking
 // ============================================================
 
 const generateColumnLayer = (layer) => {
@@ -778,20 +780,26 @@ const generateColumnLayer = (layer) => {
   const ringsPerFloor = p.ringsPerFloor || 5;
   const wobble = (p.wobble || 0.3) / 100;
   const floorSpacing = height / floors;
+  const sizeRange = layer.sizeRange || { min: 3, max: 10 };
+  const jitter = layer.jitter !== undefined ? layer.jitter : 0.3;
+  const clustering = layer.clustering !== undefined ? layer.clustering : 0.5;
 
   for (let floor = 0; floor < floors; floor++) {
     const t = floor / (floors - 1 || 1);
     const floorRadius = baseRadius + (topRadius - baseRadius) * t;
 
     const y = floor * floorSpacing;
-    const wobbleX = perlin3D(floor * 0.7, layer.seed, 0, layer.seed) * wobble * floorRadius;
-    const wobbleZ = perlin3D(floor * 0.7, layer.seed + 100, 0, layer.seed) * wobble * floorRadius;
+    const wobbleX = perlin3D(floor * 0.7, layer.seed, 0, layer.seed) * wobble * floorRadius + jitter * baseRadius * 2 * perlin3D(floor, 0, layer.seed, 0);
+    const wobbleZ = perlin3D(floor * 0.7, layer.seed + 100, 0, layer.seed) * wobble * floorRadius + jitter * baseRadius * 2 * perlin3D(floor, 0, layer.seed + 1, 0);
 
     for (let r = 0; r < ringsPerFloor; r++) {
-      const angle = (r / ringsPerFloor) * Math.PI * 2 + perlin3D(floor * 0.3, r * 0.5, layer.seed, layer.seed) * 0.3;
-      const distFromCenter = floorRadius * (0.3 + (perlin3D(floor * 0.5, r * 0.7, layer.seed + 50, layer.seed) + 1) * 0.5 * 0.7 + 0.5) * 0.5;
-      const jitR = perlin3D(floor, r, layer.seed, layer.seed) * 0.1;
-      const sphereRadius = (floorRadius / floors) * (0.4 + (perlin3D(floor, r, layer.seed + 200, layer.seed) + 1) * 0.5 * 0.6);
+      const angle = (r / ringsPerFloor) * Math.PI * 2 + perlin3D(floor * 0.3, r * 0.5, layer.seed, layer.seed) * 0.5 * (1 + jitter * 2);
+      const distNoise = perlin3D(floor * 0.5, r * 0.7, layer.seed + 50, layer.seed);
+      const distFromCenter = floorRadius * (0.3 + (distNoise + 1) * 0.5 * 0.7 + 0.5) * 0.5;
+      const jitR = perlin3D(floor, r, layer.seed, layer.seed) * jitter * 0.5;
+      const rNoise = (perlin3D(floor, r, layer.seed + 200, layer.seed) + 1) * 0.5;
+      const sizeBase = sizeRange.min + rNoise * (sizeRange.max - sizeRange.min);
+      const sphereRadius = baseRadius * sizeBase * 0.08 * (0.5 + rNoise * 0.5);
 
       spheres.push({
         x: Math.cos(angle) * distFromCenter + wobbleX,
@@ -821,7 +829,7 @@ const generateColumnLayer = (layer) => {
 };
 
 // ============================================================
-// PLATFORM ARCHETYPE — flat horizontal spread
+// PLATFORM ARCHETYPE тАФ flat horizontal spread
 // ============================================================
 
 const generatePlatformLayer = (layer) => {
@@ -834,7 +842,10 @@ const generatePlatformLayer = (layer) => {
   const edgeThickness = p.edgeThickness || 0.5;
   const interiorDensity = p.interiorDensity || 40;
   const edgeRings = p.edgeRings || 3;
-  const baseRadius = layer.sizeRange?.min || 4;
+  const sizeRange = layer.sizeRange || { min: 3, max: 10 };
+  const baseRadius = sizeRange.min;
+  const jitter = layer.jitter !== undefined ? layer.jitter : 0.3;
+  const clustering = layer.clustering !== undefined ? layer.clustering : 0.5;
 
   spheres.push({
     x: 0, y: 0, z: 0,
@@ -853,10 +864,12 @@ const generatePlatformLayer = (layer) => {
     if (thickness < 0.2) continue;
 
     const yNoise = perlin3D(px * 0.3, pz * 0.3, layer.seed + 500, 0);
-    const y = yNoise * thickness * 0.5;
+    const y = yNoise * thickness * 0.5 + jitter * baseRadius * perlin3D(px, pz, layer.seed, 0);
     const rNoise = (perlin3D(px * 0.5, pz * 0.5, layer.seed + 600, 0) + 1) * 0.5;
-    const radius = baseRadius * (0.3 + 0.7 * (1 - dist * 0.8)) * (0.5 + rNoise * 0.5);
-    const density = 0.3 + 0.7 * (1 - dist);
+    const sizeBase = sizeRange.min + rNoise * (sizeRange.max - sizeRange.min);
+    const jitterFactor = 1 + jitter * (1 - clustering);
+    const radius = sizeBase * (0.3 + 0.7 * (1 - dist * 0.8)) * (0.5 + rNoise * 0.5) * jitterFactor;
+    const density = (0.3 + 0.7 * (1 - dist)) * (clustering > 0.5 ? (0.7 + rNoise * 0.3) : 1);
 
     if (density < 0.1 || radius < 0.3) continue;
 
@@ -889,7 +902,7 @@ const generatePlatformLayer = (layer) => {
 };
 
 // ============================================================
-// TREE ARCHETYPE — directional branching
+// TREE ARCHETYPE тАФ directional branching
 // ============================================================
 
 const generateTreeLayer = (layer) => {
@@ -906,10 +919,13 @@ const generateTreeLayer = (layer) => {
   const trunkUpBias = p.trunkUpBias || 0.3;
   const lengthFalloff = p.lengthFalloff || 0.7;
   const thicknessFalloff = p.thicknessFalloff || 0.7;
+  const jitter = layer.jitter !== undefined ? layer.jitter : 0.3;
+  const clustering = layer.clustering !== undefined ? layer.clustering : 0.5;
+  const sizeRange = layer.sizeRange || { min: 3, max: 10 };
 
   const root = {
     x: 0, y: 0, z: 0,
-    radius: baseRadius,
+    radius: sizeRange.min,
     depth: 0, density: 1.0,
     archetype: 'tree'
   };
@@ -952,13 +968,21 @@ let globalPathId = 0;
 
     const perturbedDir = perturbDirDeterministic(dir, parent.x, parent.y, parent.z, branchAngle, seed + pathId);
 
+    const jitterAngle = jitter * Math.PI * perlin3D(parent.x, parent.y, pathId, seed);
+    const jx = Math.cos(jitterAngle) * perturbedDir.x - Math.sin(jitterAngle) * perturbedDir.y;
+    const jy = Math.cos(jitterAngle) * perturbedDir.y + Math.sin(jitterAngle) * perturbedDir.x;
+    const jDir = { x: jx, y: jy, z: perturbedDir.z };
+
     const childPos = {
-      x: parent.x + perturbedDir.x * extension,
-      y: parent.y + perturbedDir.y * extension,
-      z: parent.z + perturbedDir.z * extension
+      x: parent.x + jDir.x * extension + jitter * baseRadius * perlin3D(depth, pathId, seed + 50, 0),
+      y: parent.y + jDir.y * extension + jitter * baseRadius * perlin3D(depth, pathId, seed + 60, 0),
+      z: parent.z + jDir.z * extension + jitter * baseRadius * perlin3D(depth, pathId, seed + 70, 0)
     };
 
-    const childRadius = parent.radius * taperRatio * thicknessFalloff;
+    const sizeNoise = (perlin3D(depth, pathId, seed + 80, 0) + 1) * 0.5;
+    const radiusNoise = (perlin3D(depth, pathId, seed + 81, 0) + 1) * 0.5;
+    const sizeBase = sizeRange.min + sizeNoise * (sizeRange.max - sizeRange.min);
+    const childRadius = sizeBase * taperRatio * thicknessFalloff * (0.5 + sizeNoise * 0.5) * (0.6 + radiusNoise * 0.4);
     const childDensity = 1.0 - (depth / maxDepth) * 0.3;
 
     const child = {
@@ -975,7 +999,7 @@ let globalPathId = 0;
     const lateralCount = sampleLateralCount(parent, pathId);
     for (let i = 0; i < lateralCount; i++) {
       const lateralPathId = ++globalPathId;
-      const lateralAngle = ((i / Math.max(lateralCount, 1)) * Math.PI * 2) + perlin3D(pathId * 10, i * 5, seed, 0) * 0.5;
+      const lateralAngle = ((i / Math.max(lateralCount, 1)) * Math.PI * 2) + perlin3D(pathId * 10, i * 5, seed, 0) * 0.5 * (1 + jitter);
       const perpX = -dir.z;
       const perpZ = dir.x;
       const lateralDir = {
@@ -1029,7 +1053,7 @@ const getArchetypeGenerator = (archetype) => {
 };
 
 // ============================================================
-// MAIN CLOUD GENERATOR — Layer Stacking
+// MAIN CLOUD GENERATOR тАФ Layer Stacking
 // ============================================================
 
 const generateCloud = (layers) => {
@@ -1074,7 +1098,7 @@ const generateCloud = (layers) => {
 };
 
 // ============================================================
-// LAYER CONFIG BUILDER — backward compatibility
+// LAYER CONFIG BUILDER тАФ backward compatibility
 // ============================================================
 
 const resolveLayers = () => {
@@ -1102,8 +1126,8 @@ const resolveLayers = () => {
     maxSphereCount: 5000,
     columnParams: {
       height: 40,
-      baseRadius: 15,
-      topRadius: 5,
+      baseRadius: 8,
+      topRadius: 3,
       floors: 12,
       ringsPerFloor: 8,
       wobble: 0.3
@@ -1117,7 +1141,7 @@ const resolveLayers = () => {
       edgeRings: 4
     },
     treeParams: {
-      baseRadius: 15,
+      baseRadius: 8,
       maxDepth: 5,
       branchElongation: 1.8,
       taperRatio: 0.8,
@@ -1311,12 +1335,16 @@ function onResize() {
 }
 
 function generate() {
-  const layers = resolveLayers();
-  console.log('generate called, layers count:', layers.length);
-  currentSpheres = generateCloud(layers);
-  document.getElementById('stats').textContent = `${currentSpheres.length} spheres (${layers.length} layer${layers.length !== 1 ? 's' : ''})`;
-
-  rebuildMesh();
+  try {
+    const layers = resolveLayers();
+    console.log('generate called, layers count:', layers.length, 'first layer archetype:', layers[0]?.archetype);
+    currentSpheres = generateCloud(layers);
+    document.getElementById('stats').textContent = `${currentSpheres.length} spheres (${layers.length} layer${layers.length !== 1 ? 's' : ''})`;
+    rebuildMesh();
+  } catch (e) {
+    console.error('Generate error:', e);
+    alert('Generate error: ' + e.message);
+  }
 }
 
 function rebuildMesh() {
@@ -1355,7 +1383,7 @@ function animate() {
 function exportCode() {
   const layers = resolveLayers();
   
-  let code = `// CloudMath v5 — Multi-layer export
+  let code = `// CloudMath v5 тАФ Multi-layer export
 // ${currentSpheres.length} spheres, ${layers.length} layer(s)
 
 List<CloudLayerConfig> layers = new List<CloudLayerConfig> {
@@ -1490,19 +1518,22 @@ function getDefaultLayer(archetype) {
     density: 0.6,
     jitter: 0.3,
     clustering: 0.5,
+    sizeRange: { min: 5, max: 20 },
     condensationLevel: -999
   };
 
   if (archetype === 'column') {
+    base.sizeRange = { min: 3, max: 10 };
     base.columnParams = {
       height: 40,
-      baseRadius: 15,
-      topRadius: 5,
+      baseRadius: 8,
+      topRadius: 3,
       floors: 12,
       ringsPerFloor: 8,
       wobble: 0.3
     };
   } else if (archetype === 'platform') {
+    base.sizeRange = { min: 3, max: 10 };
     base.platformParams = {
       width: 50,
       depth: 50,
@@ -1512,8 +1543,9 @@ function getDefaultLayer(archetype) {
       edgeRings: 4
     };
   } else if (archetype === 'tree') {
+    base.sizeRange = { min: 3, max: 10 };
     base.treeParams = {
-      baseRadius: 15,
+      baseRadius: 8,
       maxDepth: 5,
       branchElongation: 1.8,
       taperRatio: 0.8,
@@ -1586,6 +1618,7 @@ function updateLayerArchetype(index, value) {
   newLayer.density = oldLayer.density;
   newLayer.jitter = oldLayer.jitter;
   newLayer.clustering = oldLayer.clustering;
+  newLayer.sizeRange = oldLayer.sizeRange;
   newLayer.condensationLevel = oldLayer.condensationLevel;
   window._advancedLayers[index] = newLayer;
   renderLayerList();
@@ -1595,10 +1628,14 @@ function updateLayerArchetype(index, value) {
 function updateLayerField(index, field, value) {
   saveHistory();
   const layer = window._advancedLayers[index];
-  if (field.startsWith('columnParams.') || field.startsWith('platformParams.') || field.startsWith('treeParams.')) {
-    const [parent, key] = field.split('.');
-    if (!layer[parent]) layer[parent] = {};
-    layer[parent][key] = parseFloat(value);
+  if (field.includes('.')) {
+    const parts = field.split('.');
+    let obj = layer;
+    for (let i = 0; i < parts.length - 1; i++) {
+      if (!obj[parts[i]]) obj[parts[i]] = {};
+      obj = obj[parts[i]];
+    }
+    obj[parts[parts.length - 1]] = parseFloat(value);
   } else {
     layer[field] = parseFloat(value);
   }
@@ -1656,6 +1693,14 @@ function renderLayerList() {
           <label>Ellipsoid XZ <span class="value">${((layer.ellipsoidXZ || 100) / 100).toFixed(2)}</span></label>
           <input type="range" min="50" max="150" value="${layer.ellipsoidXZ || 100}" onchange="updateLayerField(${index}, 'ellipsoidXZ', this.value); this.previousElementSibling.querySelector('.value').textContent = (this.value / 100).toFixed(2)">
         </div>
+        <div class="control-group">
+          <label>Size Min <span class="value">${layer.sizeRange?.min || 5}</span></label>
+          <input type="range" min="1" max="30" value="${layer.sizeRange?.min || 5}" onchange="updateLayerField(${index}, 'sizeRange.min', parseInt(this.value)); this.previousElementSibling.querySelector('.value').textContent = this.value">
+        </div>
+        <div class="control-group">
+          <label>Size Max <span class="value">${layer.sizeRange?.max || 20}</span></label>
+          <input type="range" min="5" max="60" value="${layer.sizeRange?.max || 20}" onchange="updateLayerField(${index}, 'sizeRange.max', parseInt(this.value)); this.previousElementSibling.querySelector('.value').textContent = this.value">
+        </div>
       `;
       cascadeSection = `
         <div class="section-title">Cascade</div>
@@ -1700,6 +1745,14 @@ function renderLayerList() {
           <label>Rings/Floor <span class="value">${p.ringsPerFloor || 5}</span></label>
           <input type="range" min="3" max="12" value="${p.ringsPerFloor || 5}" onchange="updateLayerField(${index}, 'columnParams.ringsPerFloor', this.value); this.previousElementSibling.querySelector('.value').textContent = this.value">
         </div>
+        <div class="control-group">
+          <label>Size Min <span class="value">${layer.sizeRange?.min || 3}</span></label>
+          <input type="range" min="1" max="20" value="${layer.sizeRange?.min || 3}" onchange="updateLayerField(${index}, 'sizeRange.min', parseInt(this.value)); this.previousElementSibling.querySelector('.value').textContent = this.value">
+        </div>
+        <div class="control-group">
+          <label>Size Max <span class="value">${layer.sizeRange?.max || 10}</span></label>
+          <input type="range" min="5" max="40" value="${layer.sizeRange?.max || 10}" onchange="updateLayerField(${index}, 'sizeRange.max', parseInt(this.value)); this.previousElementSibling.querySelector('.value').textContent = this.value">
+        </div>
       `;
     } else if (layer.archetype === 'platform') {
       const p = layer.platformParams || {};
@@ -1721,6 +1774,14 @@ function renderLayerList() {
           <label>Interior Density <span class="value">${p.interiorDensity || 40}</span></label>
           <input type="range" min="10" max="100" value="${p.interiorDensity || 40}" onchange="updateLayerField(${index}, 'platformParams.interiorDensity', this.value); this.previousElementSibling.querySelector('.value').textContent = this.value">
         </div>
+        <div class="control-group">
+          <label>Size Min <span class="value">${layer.sizeRange?.min || 3}</span></label>
+          <input type="range" min="1" max="20" value="${layer.sizeRange?.min || 3}" onchange="updateLayerField(${index}, 'sizeRange.min', parseInt(this.value)); this.previousElementSibling.querySelector('.value').textContent = this.value">
+        </div>
+        <div class="control-group">
+          <label>Size Max <span class="value">${layer.sizeRange?.max || 10}</span></label>
+          <input type="range" min="5" max="40" value="${layer.sizeRange?.max || 10}" onchange="updateLayerField(${index}, 'sizeRange.max', parseInt(this.value)); this.previousElementSibling.querySelector('.value').textContent = this.value">
+        </div>
       `;
     } else if (layer.archetype === 'tree') {
       const p = layer.treeParams || {};
@@ -1735,8 +1796,8 @@ function renderLayerList() {
           <input type="range" min="50" max="300" value="${(p.branchElongation || 1.5) * 100}" onchange="updateLayerField(${index}, 'treeParams.branchElongation', this.value / 100); this.previousElementSibling.querySelector('.value').textContent = (this.value / 100).toFixed(2)">
         </div>
         <div class="control-group">
-          <label>Branch Angle <span class="value">${p.branchAngle || 35}°</span></label>
-          <input type="range" min="15" max="60" value="${p.branchAngle || 35}" onchange="updateLayerField(${index}, 'treeParams.branchAngle', this.value); this.previousElementSibling.querySelector('.value').textContent = this.value + '°'">
+          <label>Branch Angle <span class="value">${p.branchAngle || 35}┬░</span></label>
+          <input type="range" min="15" max="60" value="${p.branchAngle || 35}" onchange="updateLayerField(${index}, 'treeParams.branchAngle', this.value); this.previousElementSibling.querySelector('.value').textContent = this.value + '┬░'">
         </div>
         <div class="control-group">
           <label>Branch Probability <span class="value">${(p.branchProbability || 0.4).toFixed(2)}</span></label>
@@ -1745,6 +1806,14 @@ function renderLayerList() {
         <div class="control-group">
           <label>Trunk Up Bias <span class="value">${(p.trunkUpBias || 0.3).toFixed(2)}</span></label>
           <input type="range" min="0" max="100" value="${(p.trunkUpBias || 0.3) * 100}" onchange="updateLayerField(${index}, 'treeParams.trunkUpBias', this.value / 100); this.previousElementSibling.querySelector('.value').textContent = (this.value / 100).toFixed(2)">
+        </div>
+        <div class="control-group">
+          <label>Size Min <span class="value">${layer.sizeRange?.min || 3}</span></label>
+          <input type="range" min="1" max="20" value="${layer.sizeRange?.min || 3}" onchange="updateLayerField(${index}, 'sizeRange.min', parseInt(this.value)); this.previousElementSibling.querySelector('.value').textContent = this.value">
+        </div>
+        <div class="control-group">
+          <label>Size Max <span class="value">${layer.sizeRange?.max || 10}</span></label>
+          <input type="range" min="5" max="40" value="${layer.sizeRange?.max || 10}" onchange="updateLayerField(${index}, 'sizeRange.max', parseInt(this.value)); this.previousElementSibling.querySelector('.value').textContent = this.value">
         </div>
       `;
     }

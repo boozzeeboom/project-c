@@ -1,0 +1,508 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Cloud Generator Visualizer</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  
+  body {
+    font-family: system-ui, -apple-system, sans-serif;
+    background: #1a1a2e;
+    color: #e0e0e0;
+    display: flex;
+    flex-direction: column;
+    height: 100vh;
+    overflow: hidden;
+  }
+  
+  header {
+    background: #16213e;
+    padding: 12px 20px;
+    border-bottom: 1px solid #0f3460;
+    display: flex;
+    align-items: center;
+    gap: 20px;
+  }
+  
+  header h1 {
+    color: #00d9ff;
+    font-size: 16px;
+    font-weight: 600;
+    letter-spacing: 0.5px;
+  }
+  
+  header .stats {
+    font-size: 12px;
+    color: #888;
+  }
+  
+  .main {
+    display: flex;
+    flex: 1;
+    overflow: hidden;
+  }
+  
+  .controls {
+    width: 300px;
+    padding: 16px;
+    background: #16213e;
+    overflow-y: auto;
+    flex-shrink: 0;
+    border-right: 1px solid #0f3460;
+  }
+  
+  .controls h2 {
+    color: #00d9ff;
+    font-size: 13px;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    margin-bottom: 16px;
+    padding-bottom: 8px;
+    border-bottom: 1px solid #0f3460;
+  }
+  
+  .control-group {
+    margin-bottom: 14px;
+  }
+  
+  .control-group label {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-size: 12px;
+    color: #aaa;
+    margin-bottom: 6px;
+  }
+  
+  .control-group .value {
+    font-size: 13px;
+    color: #00d9ff;
+    font-weight: 600;
+    font-variant-numeric: tabular-nums;
+    min-width: 45px;
+    text-align: right;
+  }
+  
+  .control-group input[type="range"] {
+    width: 100%;
+    height: 6px;
+    -webkit-appearance: none;
+    appearance: none;
+    background: #0f3460;
+    border-radius: 3px;
+    outline: none;
+  }
+  
+  .control-group input[type="range"]::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    appearance: none;
+    width: 16px;
+    height: 16px;
+    background: #00d9ff;
+    border-radius: 50%;
+    cursor: pointer;
+  }
+  
+  .control-group input[type="range"]::-moz-range-thumb {
+    width: 16px;
+    height: 16px;
+    background: #00d9ff;
+    border-radius: 50%;
+    cursor: pointer;
+    border: none;
+  }
+  
+  .buttons {
+    display: flex;
+    gap: 8px;
+    margin-top: 20px;
+  }
+  
+  button {
+    flex: 1;
+    padding: 10px 16px;
+    background: #0f3460;
+    color: #00d9ff;
+    border: 1px solid #00d9ff;
+    border-radius: 6px;
+    cursor: pointer;
+    font-size: 12px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    transition: all 0.2s;
+  }
+  
+  button:hover {
+    background: #00d9ff;
+    color: #1a1a2e;
+  }
+  
+  button.secondary {
+    background: transparent;
+    border-color: #0f3460;
+    color: #888;
+  }
+  
+  button.secondary:hover {
+    background: #0f3460;
+    color: #e0e0e0;
+  }
+  
+  .info {
+    margin-top: 20px;
+    padding-top: 16px;
+    border-top: 1px solid #0f3460;
+    font-size: 11px;
+    color: #666;
+    line-height: 1.5;
+  }
+  
+  .canvas-container {
+    flex: 1;
+    position: relative;
+    background: #0a0a1a;
+    overflow: hidden;
+  }
+  
+  canvas {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+  }
+  
+  .view-toggle {
+    display: flex;
+    gap: 4px;
+    margin-left: auto;
+  }
+  
+  .view-toggle button {
+    padding: 6px 12px;
+    font-size: 11px;
+    min-width: 50px;
+  }
+  
+  .view-toggle button.active {
+    background: #00d9ff;
+    color: #1a1a2e;
+  }
+  
+  @media (max-width: 600px) {
+    .main { flex-direction: column; }
+    .controls { width: 100%; max-height: 40vh; }
+    .canvas-container { min-height: 300px; }
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <h1>CLOUD GENERATOR</h1>
+  <span class="stats" id="stats">0 spheres</span>
+  <div class="view-toggle">
+    <button class="active" onclick="setView('top')">Top</button>
+    <button onclick="setView('side')">Side</button>
+  </div>
+</header>
+
+<div class="main">
+  <div class="controls">
+    <h2>Parameters</h2>
+    
+    <div class="control-group">
+      <label>Cloud Size <span class="value" id="cloudSizeVal">100</span></label>
+      <input type="range" id="cloudSize" min="20" max="300" value="100">
+    </div>
+    
+    <div class="control-group">
+      <label>Density <span class="value" id="densityVal">0.60</span></label>
+      <input type="range" id="density" min="10" max="95" value="60">
+    </div>
+    
+    <div class="control-group">
+      <label>Turbulence <span class="value" id="turbulenceVal">0.40</span></label>
+      <input type="range" id="turbulence" min="0" max="100" value="40">
+    </div>
+    
+    <div class="control-group">
+      <label>Humidity <span class="value" id="humidityVal">0.70</span></label>
+      <input type="range" id="humidity" min="10" max="100" value="70">
+    </div>
+    
+    <div class="control-group">
+      <label>Storm Intensity <span class="value" id="stormVal">0.00</span></label>
+      <input type="range" id="storm" min="0" max="100" value="0">
+    </div>
+    
+    <div class="control-group">
+      <label>Seed <span class="value" id="seedVal">42</span></label>
+      <input type="range" id="seed" min="0" max="999" value="42">
+    </div>
+    
+    <div class="buttons">
+      <button onclick="generate()">Generate</button>
+      <button class="secondary" onclick="exportCode()">Export</button>
+    </div>
+    
+    <div class="info">
+      Top-down view of sphere packing.<br>
+      Each circle = sphere. Size = radius.<br>
+      Color = density (bright = opaque).
+    </div>
+  </div>
+  
+  <div class="canvas-container">
+    <canvas id="canvas"></canvas>
+  </div>
+</div>
+
+<script>
+// ============================================================
+// CloudMath JS — FBM + Perlin approach
+// ============================================================
+
+const lerp = (a, b, t) => a + (b - a) * t;
+const fade = t => t * t * t * (t * (t * 6 - 15) + 10);
+
+const hash = (x, y) => {
+  let n = (x | 0) + ((y | 0) * 57) | 0;
+  n = (n << 13) ^ n;
+  return (n * (n * n * 15731 + 789221) + 1376312589) & 0xFF;
+};
+
+const grad = (hash, x, y) => {
+  const h = hash & 3;
+  const u = h < 2 ? x : y;
+  const v = h < 2 ? y : x;
+  return ((h & 1) ? -u : u) + ((h & 2) ? -v : v);
+};
+
+const perlin2D = (x, y, seed) => {
+  x += seed * 127.1;
+  y += seed * 311.7;
+  const xi = Math.floor(x) & 0xFF;
+  const yi = Math.floor(y) & 0xFF;
+  const xf = x - Math.floor(x);
+  const yf = y - Math.floor(y);
+  const u = fade(xf), v = fade(yf);
+  const aa = hash(xi, yi), ab = hash(xi, yi + 1);
+  const ba = hash(xi + 1, yi), bb = hash(xi + 1, yi + 1);
+  const x1 = lerp(grad(aa, xf, yf), grad(ba, xf - 1, yf), u);
+  const x2 = lerp(grad(ab, xf, yf - 1), grad(bb, xf - 1, yf - 1), u);
+  return lerp(x1, x2, v);
+};
+
+const fbm = (x, y, octaves = 4, persistence = 0.5, lacunarity = 2.0, seed = 0) => {
+  let value = 0, amplitude = 1, frequency = 1, maxValue = 0;
+  for (let i = 0; i < octaves; i++) {
+    value += amplitude * perlin2D(x * frequency, y * frequency, seed + i);
+    maxValue += amplitude;
+    amplitude *= persistence;
+    frequency *= lacunarity;
+  }
+  return value / maxValue;
+};
+
+function generateCloud(cloudSize, density, turbulence, seed, humidity, windX, windZ, stormIntensity) {
+  const spheres = [];
+  const cellSize = cloudSize * 0.25;
+  const gridSize = Math.ceil(cloudSize / cellSize) + 1;
+  const halfGrid = Math.floor(gridSize / 2);
+
+  for (let ix = -halfGrid; ix < halfGrid; ix++) {
+    for (let iy = -halfGrid; iy < halfGrid; iy++) {
+      for (let iz = -halfGrid; iz < halfGrid; iz++) {
+        let cx = (ix + 0.5) * cellSize;
+        let cy = (iy + 0.5) * cellSize;
+        let cz = (iz + 0.5) * cellSize;
+
+        const nx = cx / cloudSize;
+        const ny = cy / cloudSize;
+        const nz = cz / cloudSize;
+
+        let shapeNoise = fbm(nx * 2, nz * 2, 4, 0.5, 2.0, seed);
+        shapeNoise = (shapeNoise + 1) * 0.5;
+
+        const heightFactor = 1 - (ny + 0.5) * (ny + 0.5) * 0.5;
+        shapeNoise *= heightFactor;
+
+        const threshold = 1 - density;
+        if (shapeNoise < threshold) continue;
+
+        const distX = cx + windX * shapeNoise * turbulence * 10;
+        const distZ = cz + windZ * shapeNoise * turbulence * 10;
+
+        const stormFactor = 1 + stormIntensity * 0.5;
+        const stormDensityMod = 1 - stormIntensity * 0.3;
+
+        const baseRadius = cellSize * 0.6 * (humidity * 0.7 + 0.3);
+        const radiusNoise = perlin2D(nx * 4, nz * 4, seed + 50) * 0.3 + 0.85;
+        const radius = baseRadius * radiusNoise * stormFactor;
+
+        let localDensity = (shapeNoise - threshold) / (1 - threshold);
+        localDensity *= stormDensityMod;
+        localDensity *= (0.5 + ny * 0.5);
+
+        spheres.push({
+          x: distX,
+          y: cy,
+          z: distZ,
+          radius,
+          density: Math.min(Math.max(localDensity, 0), 1)
+        });
+      }
+    }
+  }
+
+  return spheres;
+}
+
+// ============================================================
+// VISUALIZATION
+// ============================================================
+
+let spheres = [];
+let canvas, ctx;
+let currentView = 'top';
+
+function init() {
+  canvas = document.getElementById('canvas');
+  ctx = canvas.getContext('2d');
+  
+  window.addEventListener('resize', resize);
+  
+  ['cloudSize', 'density', 'turbulence', 'humidity', 'storm', 'seed'].forEach(id => {
+    document.getElementById(id).addEventListener('input', function() {
+      const v = this.value;
+      const isPercent = ['density', 'humidity', 'storm'].includes(id);
+      document.getElementById(id + 'Val').textContent = 
+        id === 'seed' ? v : (v / (isPercent ? 100 : 1)).toFixed(2);
+    });
+  });
+  
+  generate();
+}
+
+function resize() {
+  const container = canvas.parentElement;
+  const rect = container.getBoundingClientRect();
+  canvas.width = rect.width;
+  canvas.height = rect.height;
+  if (spheres.length) draw();
+}
+
+function generate() {
+  resize();
+  
+  const cloudSize = parseFloat(document.getElementById('cloudSize').value);
+  const density = parseFloat(document.getElementById('density').value) / 100;
+  const turbulence = parseFloat(document.getElementById('turbulence').value) / 100;
+  const humidity = parseFloat(document.getElementById('humidity').value) / 100;
+  const storm = parseFloat(document.getElementById('storm').value) / 100;
+  const seed = parseInt(document.getElementById('seed').value);
+
+  spheres = generateCloud(cloudSize, density, turbulence, seed, humidity, 0, 0, storm);
+  document.getElementById('stats').textContent = `${spheres.length} spheres`;
+  
+  draw();
+}
+
+function setView(view) {
+  currentView = view;
+  document.querySelectorAll('.view-toggle button').forEach(btn => {
+    btn.classList.toggle('active', btn.textContent.toLowerCase() === view);
+  });
+  if (spheres.length) draw();
+}
+
+function draw() {
+  const w = canvas.width, h = canvas.height;
+  ctx.clearRect(0, 0, w, h);
+  
+  // Grid
+  ctx.strokeStyle = '#222';
+  ctx.lineWidth = 0.5;
+  const gridSize = 50;
+  for (let x = 0; x < w; x += gridSize) {
+    ctx.beginPath(); ctx.moveTo(x, 0); ctx.lineTo(x, h); ctx.stroke();
+  }
+  for (let y = 0; y < h; y += gridSize) {
+    ctx.beginPath(); ctx.moveTo(0, y); ctx.lineTo(w, y); ctx.stroke();
+  }
+  
+  if (!spheres.length) return;
+  
+  // Fit spheres to view
+  const cloudSize = parseFloat(document.getElementById('cloudSize').value);
+  const padding = 0.85;
+  const scale = Math.min(w, h) / (cloudSize * padding);
+  const cx = w / 2, cy = h / 2;
+  
+  // Draw spheres
+  spheres.forEach(s => {
+    let sx, sy;
+    if (currentView === 'top') {
+      sx = cx + s.x * scale;
+      sy = cy + s.z * scale;
+    } else {
+      sx = cx + s.x * scale;
+      sy = cy - s.y * scale * 0.6; // invert Y, flatten
+    }
+    
+    const sr = Math.max(s.radius * scale, 2);
+    
+    const alpha = 0.3 + s.density * 0.7;
+    const r = Math.floor(200 * (1 - s.density * 0.5));
+    const g = Math.floor(220 * (1 - s.density * 0.2));
+    const b = 255;
+    
+    ctx.beginPath();
+    ctx.arc(sx, sy, sr, 0, Math.PI * 2);
+    ctx.fillStyle = `rgba(${r},${g},${b},${alpha * 0.5})`;
+    ctx.fill();
+    ctx.strokeStyle = `rgba(${r},${g},${b},${alpha})`;
+    ctx.lineWidth = 0.5;
+    ctx.stroke();
+  });
+}
+
+function exportCode() {
+  const cloudSize = parseFloat(document.getElementById('cloudSize').value);
+  const density = parseFloat(document.getElementById('density').value) / 100;
+  const turbulence = parseFloat(document.getElementById('turbulence').value) / 100;
+  const humidity = parseFloat(document.getElementById('humidity').value) / 100;
+  const storm = parseFloat(document.getElementById('storm').value) / 100;
+  const seed = parseInt(document.getElementById('seed').value);
+  
+  const code = `// CloudMath C# — Generated from visualizer
+List<CloudSphere> spheres = CloudMath.GenerateCloud(
+    cloudSize: ${cloudSize}f,
+    density: ${density}f,
+    turbulence: ${turbulence}f,
+    seed: ${seed},
+    humidity: ${humidity}f,
+    windX: 0f,
+    windZ: 0f,
+    stormIntensity: ${storm}f
+);
+// ${spheres.length} spheres
+foreach (var s in spheres) {
+    Debug.Log($"({s.x:F1}, {s.y:F1}, {s.z:F1}) r={s.radius:F1} d={s.density:F2}");
+}`;
+
+  const blob = new Blob([code], { type: 'text/plain' });
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = 'CloudMath_Export.cs';
+  a.click();
+}
+
+init();
+</script>
+</body>
+</html>

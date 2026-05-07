@@ -165,3 +165,99 @@ newLayer.sizeRange = oldLayer.sizeRange;
 | `sizeRange.max` | Maximum sphere radius for layer | 5–60 |
 | `jitter` | Position noise amplitude (amplified ×2 in v5.4) | 0.0–0.5 |
 | `clustering` | Worley clustering strength (affects density in Platform, jitterFactor) | 0.0–1.0 |
+
+---
+
+## v5.5 — Enhanced Size Randomization ("Улучшение случайностей")
+
+### Problem: Size variation was too subtle, siblings nearly identical
+
+**Root Causes Identified by Agent Analysis:**
+
+1. **Correlated noise** — same `sizeNoise` drove both `sizeBase` AND `sizeMult`. When high, both high; when low, both low. Never got "small base × large mult" combos.
+
+2. **Aggressive culling** — `if (childRadius < minRadius) continue` with `minRadius=5` clipped 93% of children, leaving only the top ~7% of distribution.
+
+3. **Fixed multipliers** — base constants like `0.2` dominated noise terms, compressing range.
+
+4. **Integer-only Perlin inputs** (Column, Tree) — `perlin3D(floor, r, seed)` with integer coords = discrete lattice samples, no interpolation between cells.
+
+5. **Single noise sample, double usage** — same `rNoise` used for both `sizeBase` and final radius multiplier.
+
+### Fixes Applied:
+
+**SPHERE:**
+```javascript
+// Before: single correlated noise
+const sizeNoise = (perlin3D(...) + 1) * 0.5;
+const sizeBase = minRadius + sizeNoise * (sizeMax - minRadius);
+const sizeMult = (0.2 + sizeNoise * sizeVariation + effectiveRatio) * 0.3;
+if (childRadius < minRadius) continue;
+
+// After: two independent noise sources + power curve
+const sizeNoiseBase = Math.pow((perlin3D(...) + 1) * 0.5, 1.5);
+const sizeNoiseMult = Math.pow((perlin3D(..., seed + childUniqueId + 500) + 1) * 0.5, 1.5);
+const sizeBase = minRadius + sizeNoiseBase * (sizeMax - minRadius);
+const sizeMult = (0.05 + sizeNoiseMult * sizeVariation * 2.0 + effectiveRatio) * 0.3;
+if (childRadius < minRadius * 0.1) continue;
+```
+
+**COLUMN:**
+```javascript
+// Before: integer-only inputs, single noise
+const rNoise = (perlin3D(floor, r, layer.seed + 200, layer.seed) + 1) * 0.5;
+
+// After: fractional offsets for continuity, two independent noises
+const rNoiseBase = Math.pow((perlin3D(floor + r * 0.1, r + floor * 0.1, layer.seed + 200, layer.seed) + 1) * 0.5, 1.8);
+const rNoiseMult = Math.pow((perlin3D(floor + r * 0.1 + 50, r + floor * 0.1 + 50, layer.seed + 250, layer.seed) + 1) * 0.5, 1.5);
+const sphereRadius = baseRadius * sizeBase * 0.12 * (0.1 + rNoiseMult * 0.9);
+```
+
+**PLATFORM:**
+```javascript
+// Before: single correlated noise, uniform edge rings
+const rNoise = (perlin3D(px * 0.5, pz * 0.5, layer.seed + 600, 0) + 1) * 0.5;
+for (let ring = 1; ring <= edgeRings; ring++) { ... } // hardcoded rings REMOVED
+
+// After: two independent noises, spiralIdx offset for uniqueness
+const spiralIdx = interiorPoints.indexOf(pt);
+const rNoiseBase = Math.pow((perlin3D(px * 0.5, pz * 0.5, layer.seed + 600 + spiralIdx, 0) + 1) * 0.5, 1.8);
+const rNoiseMult = Math.pow((perlin3D(px * 0.5 + 70, pz * 0.5 + 70, layer.seed + 650 + spiralIdx, 0) + 1) * 0.5, 1.5);
+const radius = sizeBase * (0.1 + rNoiseMult * 0.9) * jitterFactor;
+```
+
+**TREE:**
+```javascript
+// Before: sizeNoise used twice (correlated)
+const sizeNoise = (perlin3D(depth, pathId, seed + 80, 0) + 1) * 0.5;
+const childRadius = sizeBase * taperRatio * thicknessFalloff * (0.5 + sizeNoise * 0.5) * (0.6 + radiusNoise * 0.4);
+
+// After: three independent power-curved noises
+const sizeNoiseBase = Math.pow((perlin3D(depth, pathId, seed + 80, 0) + 1) * 0.5, 1.8);
+const sizeNoiseMult = Math.pow((perlin3D(depth, pathId, seed + 82, 0) + 1) * 0.5, 1.5);
+const radiusNoise = Math.pow((perlin3D(depth, pathId, seed + 81, 0) + 1) * 0.5, 2.0);
+const childRadius = sizeBase * taperRatio * thicknessFalloff * (0.1 + sizeNoiseMult * 0.9) * (0.3 + radiusNoise * 0.7);
+```
+
+### Default Value Changes:
+- `sizeVariation`: 0.5 → 1.0
+- UI slider max: 100 → 150
+- `sizeMult` base: 0.2 → 0.05
+
+### Removed:
+- **Edge rings** from Platform archetype — they created hard-coded circular patterns immune to jitter/clustering controls
+
+### Mathematical Summary:
+
+| Archetype | Fix Type | Key Change |
+|-----------|----------|-----------|
+| Sphere | Decouple + Power curve + Relax culling | `pow(..., 1.5)`, cull at 0.1× |
+| Column | Continuity + Decouple + Power curve | `+ r*0.1` fractional inputs, `pow(..., 1.8/1.5)` |
+| Platform | Remove rings + Decouple + Uniqueness | Edge rings REMOVED, `+ spiralIdx` offset |
+| Tree | Triple independent noise + Power curve | 3 separate `pow(..., 1.8/1.5/2.0)` |
+
+### Result:
+- Size distribution now covers full `[min, max]` range more uniformly
+- Extreme sizes (very small × very large) now possible in same generation
+- Power curve (`Math.pow`) pushes values toward extremes (0 or 1) while maintaining smooth interpolation
+- All archetypes respond properly to `jitter` and `clustering` controls

@@ -264,7 +264,7 @@
   </div>
 </div>
 
-<div class="hint">Drag to orbit | Scroll to zoom</div>
+<div class="hint">Drag / swipe to orbit | Pinch to zoom | Double-tap to reset</div>
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
 <script>
@@ -479,10 +479,71 @@ function setupControls() {
     radius = Math.max(30, Math.min(500, radius));
     updateCamera();
   }, { passive: false });
-  
+
+  // --- Touch controls ---
+  let touchStartX = 0, touchStartY = 0;
+  let touchStartDist = 0;
+  let isPinching = false;
+
+  canvas.addEventListener('touchstart', e => {
+    e.preventDefault();
+    if (e.touches.length === 1) {
+      isPinching = false;
+      touchStartX = e.touches[0].clientX;
+      touchStartY = e.touches[0].clientY;
+      prevX = touchStartX;
+      prevY = touchStartY;
+    } else if (e.touches.length === 2) {
+      isPinching = true;
+      const dx = e.touches[0].clientX - e.touches[1].clientX;
+      const dy = e.touches[0].clientY - e.touches[1].clientY;
+      touchStartDist = Math.sqrt(dx * dx + dy * dy);
+    }
+  }, { passive: false });
+
+  canvas.addEventListener('touchmove', e => {
+    e.preventDefault();
+    if (e.touches.length === 1 && !isPinching) {
+      const dx = e.touches[0].clientX - prevX;
+      const dy = e.touches[0].clientY - prevY;
+      theta -= dx * 0.01;
+      phi -= dy * 0.01;
+      phi = Math.max(0.1, Math.min(Math.PI - 0.1, phi));
+      prevX = e.touches[0].clientX;
+      prevY = e.touches[0].clientY;
+      updateCamera();
+    } else if (e.touches.length === 2 && isPinching) {
+      const dx = e.touches[0].clientX - e.touches[1].clientX;
+      const dy = e.touches[0].clientY - e.touches[1].clientY;
+      const dist = Math.sqrt(dx * dx + dy * dy);
+      const delta = touchStartDist - dist;
+      radius += delta * 0.5;
+      radius = Math.max(30, Math.min(500, radius));
+      touchStartDist = dist;
+      updateCamera();
+    }
+  }, { passive: false });
+
+  canvas.addEventListener('touchend', e => {
+    isPinching = false;
+  }, { passive: false });
+
+  // --- Double tap to reset camera ---
+  let lastTap = 0;
+  canvas.addEventListener('touchend', e => {
+    const now = Date.now();
+    if (now - lastTap < 300) {
+      theta = Math.PI / 4;
+      phi = Math.PI / 4;
+      radius = 150;
+      updateCamera();
+    }
+    lastTap = now;
+  });
+
   canvas.style.cursor = 'grab';
   updateCamera();
-  
+
   window._orbitUpdate = updateCamera;
 }
 

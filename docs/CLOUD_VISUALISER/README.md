@@ -67,6 +67,13 @@
 
 ## История изменений
 
+### v5.2 — Flat Bottom, Clone, Drag & Drop, Undo/Redo
+- **Flat bottom profile** — Condensation Level: сферы ниже заданного Y cutoff удаляются (полезно для кучевых облаков с плоским низом)
+- **Clone/copy layer** — кнопка &#10697; рядом с X клонирует слой со всеми параметрами (+10 к Y offset)
+- **Drag & drop reorder** — перетаскивание слоёв за &#9776; меняет порядок в стеке
+- **Undo/redo** — история до 20 шагов, кнопки &#8630; / &#8631; в панели слоёв
+- **Condensation control** — слайдер в секции Chaos каждого слоя
+
 ### v5.1 — UI Layer Editor
 - **Убран старый UI** — табы Shape/Cascade/Chaos удалены
 - **Layer-based UI** — каждый слой имеет свои настройки

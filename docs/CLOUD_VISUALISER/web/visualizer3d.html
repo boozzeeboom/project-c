@@ -383,6 +383,76 @@
     background: rgba(0, 217, 255, 0.1);
   }
 
+  .undo-redo-bar {
+    display: flex;
+    gap: 4px;
+    margin-bottom: 8px;
+    align-items: center;
+  }
+
+  .undo-redo-btn {
+    padding: 4px 8px;
+    font-size: 14px;
+    background: transparent;
+    border: 1px solid #0f3460;
+    color: #00d9ff;
+    border-radius: 3px;
+    cursor: pointer;
+  }
+
+  .undo-redo-btn:hover:not(:disabled) {
+    background: rgba(0, 217, 255, 0.1);
+  }
+
+  .undo-redo-btn:disabled {
+    color: #444;
+    border-color: #222;
+    cursor: not-allowed;
+  }
+
+  .history-info {
+    font-size: 9px;
+    color: #555;
+    margin-left: auto;
+  }
+
+  .drag-handle {
+    cursor: grab;
+    color: #888;
+    font-size: 12px;
+    padding: 0 4px;
+    user-select: none;
+  }
+
+  .drag-handle:active {
+    cursor: grabbing;
+  }
+
+  .layer-item.dragging {
+    opacity: 0.5;
+    border-style: dashed;
+  }
+
+  .layer-item.drag-over {
+    border-color: #00d9ff;
+    border-style: solid;
+  }
+
+  .clone-btn {
+    background: transparent;
+    border: 1px solid #00d9ff;
+    color: #00d9ff;
+    padding: 2px 6px;
+    border-radius: 3px;
+    font-size: 10px;
+    cursor: pointer;
+    flex: 0 0 auto;
+  }
+
+  .clone-btn:hover {
+    background: rgba(0, 217, 255, 0.1);
+  }
+
   .archetype-params {
     margin-top: 8px;
     padding-top: 8px;
@@ -412,7 +482,7 @@
 <header>
   <h1>CLOUD GENERATOR 3D</h1>
   <span class="stats" id="stats">0 spheres</span>
-  <span class="version">v5.1</span>
+  <span class="version">v5.2</span>
 </header>
 
 <button class="toggle-btn" onclick="toggleControls()">Parameters</button>
@@ -420,6 +490,11 @@
 <div class="controls">
   <div id="tab-layers" class="tab-content active">
     <h2 class="tab-section-title">Layer Stack</h2>
+    <div class="undo-redo-bar">
+      <button id="undo-btn" class="undo-redo-btn" onclick="undo()" disabled>&#8630;</button>
+      <button id="redo-btn" class="undo-redo-btn" onclick="redo()" disabled>&#8631;</button>
+      <span class="history-info" id="history-info"></span>
+    </div>
     <div id="layer-list"></div>
     <button class="add-layer-btn" onclick="addLayer()">+ Add Layer</button>
   </div>
@@ -985,16 +1060,24 @@ const generateCloud = (layers) => {
     const gap = 2;
     const yOffset = layer.yOffset !== undefined ? layer.yOffset : cumulativeY - minY + gap;
 
+    const condensationLevel = layer.condensationLevel;
+    const hasCondensation = condensationLevel !== undefined && condensationLevel !== -999;
+
     for (const s of rawSpheres) {
       s.y += yOffset;
       s.layerIndex = i;
+      if (hasCondensation && s.y - s.radius < condensationLevel) {
+        s.cutByCondensation = true;
+      } else {
+        s.cutByCondensation = false;
+      }
     }
 
     cumulativeY = yOffset + maxY + gap;
     allSpheres.push(...rawSpheres);
   }
 
-  return allSpheres;
+  return allSpheres.filter(s => !s.cutByCondensation);
 };
 
 // ============================================================
@@ -1353,6 +1436,55 @@ function toggleControls() {
 }
 
 window._advancedLayers = [];
+window._history = [];
+window._historyIndex = -1;
+const MAX_HISTORY = 20;
+
+function saveHistory() {
+  const snapshot = JSON.parse(JSON.stringify(window._advancedLayers));
+  window._history = window._history.slice(0, window._historyIndex + 1);
+  window._history.push(snapshot);
+  if (window._history.length > MAX_HISTORY) {
+    window._history.shift();
+  }
+  window._historyIndex = window._history.length - 1;
+  updateUndoRedoButtons();
+}
+
+function undo() {
+  if (window._historyIndex > 0) {
+    window._historyIndex--;
+    window._advancedLayers = JSON.parse(JSON.stringify(window._history[window._historyIndex]));
+    renderLayerList();
+    generate();
+    updateUndoRedoButtons();
+  }
+}
+
+function redo() {
+  if (window._historyIndex < window._history.length - 1) {
+    window._historyIndex++;
+    window._advancedLayers = JSON.parse(JSON.stringify(window._history[window._historyIndex]));
+    renderLayerList();
+    generate();
+    updateUndoRedoButtons();
+  }
+}
+
+function updateUndoRedoButtons() {
+  const undoBtn = document.getElementById('undo-btn');
+  const redoBtn = document.getElementById('redo-btn');
+  const historyInfo = document.getElementById('history-info');
+  if (undoBtn) undoBtn.disabled = window._historyIndex <= 0;
+  if (redoBtn) redoBtn.disabled = window._historyIndex >= window._history.length - 1;
+  if (historyInfo) {
+    if (window._history.length > 0) {
+      historyInfo.textContent = `${window._historyIndex + 1}/${window._history.length}`;
+    } else {
+      historyInfo.textContent = '';
+    }
+  }
+}
 
 function getDefaultLayer(archetype) {
   const base = {
@@ -1362,7 +1494,8 @@ function getDefaultLayer(archetype) {
     seed: 42,
     density: 0.6,
     jitter: 0.3,
-    clustering: 0.5
+    clustering: 0.5,
+    condensationLevel: -999
   };
 
   if (archetype === 'column') {
@@ -1409,7 +1542,21 @@ function getDefaultLayer(archetype) {
   return base;
 }
 
+function cloneLayer(index) {
+  const original = window._advancedLayers[index];
+  const clone = JSON.parse(JSON.stringify(original));
+  clone.yOffset = original.yOffset + 10;
+  saveHistory();
+  window._advancedLayers.push(clone);
+  renderLayerList();
+  const idx = window._advancedLayers.length - 1;
+  const item = document.getElementById('layer-item-' + idx);
+  if (item) item.classList.add('expanded');
+  generate();
+}
+
 function addLayer(archetype) {
+  saveHistory();
   const layer = getDefaultLayer(archetype || 'sphere');
   window._advancedLayers.push(layer);
   renderLayerList();
@@ -1420,6 +1567,7 @@ function addLayer(archetype) {
 }
 
 function removeLayer(index) {
+  saveHistory();
   window._advancedLayers.splice(index, 1);
   renderLayerList();
   generate();
@@ -1433,6 +1581,7 @@ function toggleLayerExpanded(index) {
 }
 
 function updateLayerArchetype(index, value) {
+  saveHistory();
   const oldLayer = window._advancedLayers[index];
   const newLayer = getDefaultLayer(value);
   newLayer.enabled = oldLayer.enabled;
@@ -1441,12 +1590,14 @@ function updateLayerArchetype(index, value) {
   newLayer.density = oldLayer.density;
   newLayer.jitter = oldLayer.jitter;
   newLayer.clustering = oldLayer.clustering;
+  newLayer.condensationLevel = oldLayer.condensationLevel;
   window._advancedLayers[index] = newLayer;
   renderLayerList();
   generate();
 }
 
 function updateLayerField(index, field, value) {
+  saveHistory();
   const layer = window._advancedLayers[index];
   if (field.startsWith('columnParams.') || field.startsWith('platformParams.') || field.startsWith('treeParams.')) {
     const [parent, key] = field.split('.');
@@ -1455,6 +1606,15 @@ function updateLayerField(index, field, value) {
   } else {
     layer[field] = parseFloat(value);
   }
+  generate();
+}
+
+function moveLayer(fromIndex, toIndex) {
+  if (fromIndex === toIndex) return;
+  saveHistory();
+  const [moved] = window._advancedLayers.splice(fromIndex, 1);
+  window._advancedLayers.splice(toIndex, 0, moved);
+  renderLayerList();
   generate();
 }
 
@@ -1603,10 +1763,16 @@ function renderLayerList() {
         <label>Clustering <span class="value">${(layer.clustering || 0.5).toFixed(2)}</span></label>
         <input type="range" min="0" max="100" value="${(layer.clustering || 0.5) * 100}" onchange="updateLayerField(${index}, 'clustering', this.value / 100); this.previousElementSibling.querySelector('.value').textContent = (this.value / 100).toFixed(2)">
       </div>
+      <div class="section-title" style="margin-top:12px;">Condensation</div>
+      <div class="control-group">
+        <label>Flat Bottom Y <span class="value">${layer.condensationLevel === undefined || layer.condensationLevel === -999 ? 'Off' : layer.condensationLevel}</span></label>
+        <input type="range" min="-50" max="100" value="${layer.condensationLevel === undefined || layer.condensationLevel === -999 ? -50 : layer.condensationLevel}" onchange="updateLayerField(${index}, 'condensationLevel', this.value); this.previousElementSibling.querySelector('.value').textContent = (parseInt(this.value) === -50 ? 'Off' : this.value)">
+      </div>
     `;
 
     item.innerHTML = `
-      <div class="layer-header">
+      <div class="layer-header" draggable="true" data-index="${index}">
+        <span class="drag-handle" title="Drag to reorder">&#9776;</span>
         <span class="expand-arrow">&#9658;</span>
         <select class="layer-archetype-select" onchange="updateLayerArchetype(${index}, this.value)">
           <option value="sphere" ${layer.archetype === 'sphere' ? 'selected' : ''}>Sphere</option>
@@ -1615,6 +1781,7 @@ function renderLayerList() {
           <option value="tree" ${layer.archetype === 'tree' ? 'selected' : ''}>Tree</option>
         </select>
         <input type="number" class="layer-yoffset" value="${layer.yOffset || 0}" placeholder="Y" onchange="updateLayerField(${index}, 'yOffset', this.value)" onclick="event.stopPropagation()">
+        <button class="clone-btn" onclick="event.stopPropagation(); cloneLayer(${index})" title="Clone">&#10697;</button>
         <button class="layer-remove-btn" onclick="event.stopPropagation(); removeLayer(${index})">X</button>
       </div>
       <div class="layer-params">
@@ -1626,6 +1793,37 @@ function renderLayerList() {
     `;
 
     container.appendChild(item);
+
+    item.addEventListener('dragstart', function(e) {
+      e.dataTransfer.setData('text/plain', index);
+      item.classList.add('dragging');
+    });
+
+    item.addEventListener('dragend', function(e) {
+      item.classList.remove('dragging');
+      document.querySelectorAll('.layer-item').forEach(el => el.classList.remove('drag-over'));
+    });
+
+    item.addEventListener('dragover', function(e) {
+      e.preventDefault();
+      if (!item.classList.contains('dragging')) {
+        item.classList.add('drag-over');
+      }
+    });
+
+    item.addEventListener('dragleave', function(e) {
+      item.classList.remove('drag-over');
+    });
+
+    item.addEventListener('drop', function(e) {
+      e.preventDefault();
+      item.classList.remove('drag-over');
+      const fromIndex = parseInt(e.dataTransfer.getData('text/plain'));
+      const toIndex = index;
+      if (!isNaN(fromIndex) && fromIndex !== toIndex) {
+        moveLayer(fromIndex, toIndex);
+      }
+    });
   });
 }
 

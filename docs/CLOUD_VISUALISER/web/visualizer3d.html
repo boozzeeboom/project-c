@@ -482,7 +482,7 @@
 <header>
   <h1>CLOUD GENERATOR 3D</h1>
   <span class="stats" id="stats">0 spheres</span>
-  <span class="version">v5.2</span>
+  <span class="version">v5.4</span>
 </header>
 
 <button class="toggle-btn" onclick="toggleControls()">Parameters</button>
@@ -661,6 +661,8 @@ const generateSphereLayer = (layer) => {
   const spheres = [];
   globalUniqueId = 0;
 
+  const maxSphereCount = layer.maxSphereCount !== undefined ? layer.maxSphereCount : 5000;
+
   const {
     cloudSize, density, seed,
     cascadeDepth, bumpsPerLevel, childRatio, sizeVariation,
@@ -745,9 +747,10 @@ const generateSphereLayer = (layer) => {
       };
 
       spheres.push(child);
+      if (spheres.length >= maxSphereCount) return;
 
       const continueChance = Math.max(0.15, 0.8 - parent.depth * 0.2);
-      if (Math.random() < continueChance || parent.depth < 2) {
+      if ((Math.random() < continueChance || parent.depth < 2) && spheres.length < maxSphereCount) {
         generateBumpsOnSphere(child);
       }
     }
@@ -935,11 +938,14 @@ const generateTreeLayer = (layer) => {
     return 3;
   };
 
-  let globalPathId = 0;
+let globalPathId = 0;
 
-  const growBranch = (parent, dir, pathId, depth, lengthMult) => {
-    if (depth >= maxDepth) return;
-    if (parent.radius < 0.5) return;
+  const stack = [{ parent: root, dir: { x: 0, y: 1, z: 0 }, pathId: 0, depth: 0, lengthMult: 1 }];
+
+  while (stack.length > 0) {
+    const { parent, dir, pathId, depth, lengthMult } = stack.pop();
+    if (depth >= maxDepth) continue;
+    if (parent.radius < 0.5) continue;
 
     const effectiveLengthMult = lengthMult || 1;
     const extension = parent.radius * branchElongation * effectiveLengthMult;
@@ -964,7 +970,7 @@ const generateTreeLayer = (layer) => {
     };
     spheres.push(child);
 
-    growBranch(child, perturbedDir, pathId, depth + 1, effectiveLengthMult * lengthFalloff);
+    stack.push({ parent: child, dir: perturbedDir, pathId, depth: depth + 1, lengthMult: effectiveLengthMult * lengthFalloff });
 
     const lateralCount = sampleLateralCount(parent, pathId);
     for (let i = 0; i < lateralCount; i++) {
@@ -1000,28 +1006,15 @@ const generateTreeLayer = (layer) => {
       };
       spheres.push(lateralChild);
       if (depth + 1 < maxDepth - 1) {
-        growBranch(lateralChild, lateralDir, lateralPathId, depth + 2, effectiveLengthMult * lengthFalloff * 0.8);
+        stack.push({ parent: lateralChild, dir: lateralDir, pathId: lateralPathId, depth: depth + 2, lengthMult: effectiveLengthMult * lengthFalloff * 0.8 });
       }
     }
-  };
-
-  const seedAngle = perlin3D(0, 0, 0, seed) * Math.PI * 2;
-  const rootDir = {
-    x: Math.sin(seedAngle) * (1 - trunkUpBias),
-    y: 0.8 + trunkUpBias * 0.2,
-    z: Math.cos(seedAngle) * (1 - trunkUpBias)
-  };
-  const len = Math.sqrt(rootDir.x * rootDir.x + rootDir.y * rootDir.y + rootDir.z * rootDir.z);
-  rootDir.x /= len;
-  rootDir.y /= len;
-  rootDir.z /= len;
-
-  growBranch(root, rootDir, ++globalPathId, 0, 1);
+  }
 
   return spheres;
 };
 
-// ============================================================
+// ====================================
 // ARCHETYPE DISPATCHER
 // ============================================================
 
@@ -1097,7 +1090,7 @@ const resolveLayers = () => {
     density: 0.6,
     cloudSize: 80,
     cascadeDepth: 3,
-    bumpsPerLevel: 48,
+    bumpsPerLevel: 24,
     childRatio: 30,
     sizeVariation: 0.5,
     jitter: 0.3,
@@ -1106,32 +1099,33 @@ const resolveLayers = () => {
     ellipsoidY: 50,
     ellipsoidXZ: 100,
     sizeRange: { min: 5, max: 20 },
+    maxSphereCount: 5000,
     columnParams: {
-      height: 30,
-      baseRadius: 8,
-      topRadius: 2,
-      floors: 8,
-      ringsPerFloor: 5,
+      height: 40,
+      baseRadius: 15,
+      topRadius: 5,
+      floors: 12,
+      ringsPerFloor: 8,
       wobble: 0.3
     },
     platformParams: {
-      width: 40,
-      depth: 40,
-      centerThickness: 3,
-      edgeThickness: 0.5,
-      interiorDensity: 40,
-      edgeRings: 3
+      width: 50,
+      depth: 50,
+      centerThickness: 5,
+      edgeThickness: 1,
+      interiorDensity: 120,
+      edgeRings: 4
     },
     treeParams: {
-      baseRadius: 8,
+      baseRadius: 15,
       maxDepth: 5,
-      branchElongation: 1.5,
-      taperRatio: 0.75,
-      branchAngle: 35,
-      branchProbability: 0.4,
-      trunkUpBias: 0.3,
-      lengthFalloff: 0.7,
-      thicknessFalloff: 0.7
+      branchElongation: 1.8,
+      taperRatio: 0.8,
+      branchAngle: 40,
+      branchProbability: 0.5,
+      trunkUpBias: 0.4,
+      lengthFalloff: 0.75,
+      thicknessFalloff: 0.85
     }
   }];
 };
@@ -1318,6 +1312,7 @@ function onResize() {
 
 function generate() {
   const layers = resolveLayers();
+  console.log('generate called, layers count:', layers.length);
   currentSpheres = generateCloud(layers);
   document.getElementById('stats').textContent = `${currentSpheres.length} spheres (${layers.length} layer${layers.length !== 1 ? 's' : ''})`;
 
@@ -1500,38 +1495,39 @@ function getDefaultLayer(archetype) {
 
   if (archetype === 'column') {
     base.columnParams = {
-      height: 30,
-      baseRadius: 8,
-      topRadius: 2,
-      floors: 8,
-      ringsPerFloor: 5,
+      height: 40,
+      baseRadius: 15,
+      topRadius: 5,
+      floors: 12,
+      ringsPerFloor: 8,
       wobble: 0.3
     };
   } else if (archetype === 'platform') {
     base.platformParams = {
-      width: 40,
-      depth: 40,
-      centerThickness: 3,
-      edgeThickness: 0.5,
-      interiorDensity: 40,
-      edgeRings: 3
+      width: 50,
+      depth: 50,
+      centerThickness: 5,
+      edgeThickness: 1,
+      interiorDensity: 120,
+      edgeRings: 4
     };
   } else if (archetype === 'tree') {
     base.treeParams = {
-      baseRadius: 8,
+      baseRadius: 15,
       maxDepth: 5,
-      branchElongation: 1.5,
-      taperRatio: 0.75,
-      branchAngle: 35,
-      branchProbability: 0.4,
-      trunkUpBias: 0.3,
-      lengthFalloff: 0.7,
-      thicknessFalloff: 0.7
+      branchElongation: 1.8,
+      taperRatio: 0.8,
+      branchAngle: 40,
+      branchProbability: 0.5,
+      trunkUpBias: 0.4,
+      lengthFalloff: 0.75,
+      thicknessFalloff: 0.85
     };
   } else {
     base.cloudSize = 80;
     base.cascadeDepth = 3;
-    base.bumpsPerLevel = 48;
+    base.bumpsPerLevel = 24;
+    base.maxSphereCount = 5000;
     base.childRatio = 30;
     base.sizeVariation = 0.5;
     base.parentCount = 1;
@@ -1668,8 +1664,8 @@ function renderLayerList() {
           <input type="range" min="1" max="5" value="${layer.cascadeDepth || 3}" onchange="updateLayerField(${index}, 'cascadeDepth', this.value); this.previousElementSibling.querySelector('.value').textContent = this.value">
         </div>
         <div class="control-group">
-          <label>Bumps/Level <span class="value">${layer.bumpsPerLevel || 48}</span></label>
-          <input type="range" min="12" max="128" value="${layer.bumpsPerLevel || 48}" onchange="updateLayerField(${index}, 'bumpsPerLevel', this.value); this.previousElementSibling.querySelector('.value').textContent = this.value">
+          <label>Bumps/Level <span class="value">${layer.bumpsPerLevel || 24}</span></label>
+          <input type="range" min="12" max="128" value="${layer.bumpsPerLevel || 24}" onchange="updateLayerField(${index}, 'bumpsPerLevel', this.value); this.previousElementSibling.querySelector('.value').textContent = this.value">
         </div>
         <div class="control-group">
           <label>Child Ratio <span class="value">${layer.childRatio || 30}</span></label>

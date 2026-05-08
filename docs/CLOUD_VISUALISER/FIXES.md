@@ -473,3 +473,26 @@ const oz = (Math.random() - 0.5) * 12 * parent.radius * posVariation;
 - No diagonal stretching — axes fully independent
 - Chaotic 3D scatter matches expected behavior of "variation"
 - Same settings → visually distinct clouds on each press
+
+---
+
+## v5.7c — Mobile Layout Fix
+
+### Problem: Layer params panel not scrollable on mobile
+
+**Symptom:**
+- When layer expanded on mobile, params went off-screen
+- Couldn't scroll to see Position Variation, Condensation controls
+- UI was unusable on small screens with many layers
+
+**Fix:**
+```css
+.layer-params {
+  max-height: 55vh;
+  overflow-y: auto;
+  scrollbar-width: thin;
+  scrollbar-color: #00d9ff #1a1a3a;
+}
+```
+
+Added thin custom scrollbar with cyan accent for mobile visibility.

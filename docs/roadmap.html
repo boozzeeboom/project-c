@@ -848,6 +848,55 @@
     .fun-btn__text { display: none; }
   }
 
+  /* ===== FLOATING CLOUD GENERATOR BUTTON ===== */
+  .cloud-btn {
+    position: fixed;
+    top: 80px;
+    right: 12px;
+    z-index: 1001;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 10px 18px;
+    background: linear-gradient(135deg, #12121a 0%, #1e1e2e 100%);
+    border: 2px solid rgba(74, 222, 128, 0.6);
+    border-radius: 50px;
+    color: #4ade80;
+    text-decoration: none;
+    font-family: 'Inter', sans-serif;
+    font-size: 13px;
+    font-weight: 700;
+    box-shadow: 0 4px 20px rgba(74, 222, 128, 0.15);
+    transition: all .3s ease;
+    backdrop-filter: blur(8px);
+  }
+  .cloud-btn:hover {
+    transform: scale(1.08);
+    box-shadow: 0 6px 30px rgba(74, 222, 128, 0.3);
+    border-color: #4ade80;
+    color: #fff;
+  }
+  .cloud-btn__icon {
+    font-size: 18px;
+    animation: float 2s ease-in-out infinite;
+  }
+  .cloud-btn__text {
+    letter-spacing: 0.5px;
+  }
+  @keyframes float {
+    0%, 100% { transform: translateY(0); }
+    50% { transform: translateY(-5px); }
+  }
+  @media (max-width: 600px) {
+    .cloud-btn {
+      top: 80px;
+      right: 8px;
+      padding: 8px 14px;
+      font-size: 11px;
+    }
+    .cloud-btn__text { display: none; }
+  }
+
   /* ===== GDD SECTION ===== */
   .gdd-section {
     margin-top: 64px;
@@ -1652,6 +1701,12 @@
 <a href="Fun/index.html" target="_top" class="fun-btn" title="Мини-игра: Грузоперевозки над облаками">
   <span class="fun-btn__icon">🚀</span>
   <span class="fun-btn__text">CloudTrader</span>
+</a>
+
+<!-- FLOATING CLOUD GENERATOR BUTTON -->
+<a href="https://boozzeeboom.github.io/project-c/CLOUD_VISUALISER/web/visualizer3d.html" target="_blank" class="cloud-btn" title="3D Cloud Generator — визуализатор облаков">
+  <span class="cloud-btn__icon">☁️</span>
+  <span class="cloud-btn__text">CloudGen</span>
 </a>
 
 <div class="wrapper">

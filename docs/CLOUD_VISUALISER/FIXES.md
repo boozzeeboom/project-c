@@ -476,14 +476,57 @@ const oz = (Math.random() - 0.5) * 12 * parent.radius * posVariation;
 
 ---
 
-## v5.7c — Mobile Layout Fix
+## v5.9 — Color Scheme Alignment + Mobile Fix + Math.random() Position Offsets
 
-### Problem: Layer params panel not scrollable on mobile
+### Changes in this session:
 
-**Symptom:**
-- When layer expanded on mobile, params went off-screen
-- Couldn't scroll to see Position Variation, Condensation controls
-- UI was unusable on small screens with many layers
+#### 1. Position Variation: Replace Perlin noise with Math.random()
+
+**Problem:** Position variation produced diagonal stretching, not 3D scatter.
+
+**Fix:** Used `Math.random()` for independent per-axis offsets:
+```javascript
+const ox = (Math.random() - 0.5) * 12 * parent.radius * posVariation;
+const oy = (Math.random() - 0.5) * 12 * parent.radius * posVariation;
+const oz = (Math.random() - 0.5) * 12 * parent.radius * posVariation;
+```
+
+**Applied to all 5 archetypes:**
+
+| Archetype | Offset Variables | Base Radius Used |
+|-----------|------------------|------------------|
+| Sphere child | ox, oy, oz | parent.radius |
+| Column | colOx, colOy, colOz | sphereRadius |
+| Platform | platOx, platOy, platOz | radius |
+| Tree main | treeOx, treeOy, treeOz | childRadius |
+| Tree lateral | latOx, latOy, latOz | lateralRadius |
+
+#### 2. Color Scheme Alignment with roadmap.html
+
+Updated visualizer colors to match roadmap design language:
+
+| Element | Old Color | New Color |
+|---------|-----------|----------|
+| Background | #0a0a1a | #0a0a0f |
+| Surface | #16233e | #12121a |
+| Border | #0f3460 | #1e1e2e |
+| Text | #e0e0e0 | #c8c8d4 |
+| Text-dim | #888 | #6e6e82 |
+| Accent (primary) | #00d9ff | #4ade80 |
+| Accent2 | — | #38bdf8 |
+| Danger | #ff4466 | #f87171 |
+
+Applied to:
+- Header, buttons, layer headers
+- Input range sliders (thumb + track)
+- Layer items (border, hover, expanded state)
+- Section titles, remove button, clone button
+- Scrollbars throughout
+- 3D scene background and grid helper
+
+#### 3. Mobile Layout Fix
+
+**Problem:** Layer params panel not scrollable on mobile.
 
 **Fix:**
 ```css
@@ -491,8 +534,17 @@ const oz = (Math.random() - 0.5) * 12 * parent.radius * posVariation;
   max-height: 55vh;
   overflow-y: auto;
   scrollbar-width: thin;
-  scrollbar-color: #00d9ff #1a1a3a;
+  scrollbar-color: #4ade80 #1e1e2e;
 }
 ```
 
-Added thin custom scrollbar with cyan accent for mobile visibility.
+Also fixed:
+- Layer header background: `rgba(15, 52, 96, 0.7)` → `rgba(18, 18, 26, 0.95)`
+- Layer header hover effect consistent with new scheme
+
+### Result:
+- Each Generate press produces completely different child positions
+- No diagonal stretching — axes fully independent
+- Chaotic 3D scatter matches expected behavior
+- UI consistent with roadmap.html color scheme
+- Mobile-friendly scrolling for layer params

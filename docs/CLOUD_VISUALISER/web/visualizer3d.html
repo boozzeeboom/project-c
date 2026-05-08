@@ -348,6 +348,24 @@
   .layer-params {
     padding: 8px;
     display: none;
+    max-height: 55vh;
+    overflow-y: auto;
+    scrollbar-width: thin;
+    scrollbar-color: #00d9ff #1a1a3a;
+  }
+
+  .layer-params::-webkit-scrollbar {
+    width: 4px;
+  }
+
+  .layer-params::-webkit-scrollbar-track {
+    background: #1a1a3a;
+    border-radius: 2px;
+  }
+
+  .layer-params::-webkit-scrollbar-thumb {
+    background: #00d9ff;
+    border-radius: 2px;
   }
 
   .layer-item.expanded .layer-params {

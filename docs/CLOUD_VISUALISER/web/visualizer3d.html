@@ -1952,6 +1952,11 @@ function showExportDialog() {
         Mesh Positions
         <div style="font-size: 10px; font-weight: normal; opacity: 0.7; margin-top: 2px;">C# Array</div>
       </button>
+      <button id="btn-ue-plugin" style="flex: 1; padding: 10px 8px; background: rgba(249,115,22,0.1);
+             color: #f97316; border: 1px solid #f97316; border-radius: 6px; cursor: pointer; font-weight: bold;">
+        UE Plugin
+        <div style="font-size: 10px; font-weight: normal; opacity: 0.7; margin-top: 2px;">Unreal Engine</div>
+      </button>
     </div>
 
     <div id="export-status" style="color: #6e6e82; font-size: 12px; margin-bottom: 12px;"></div>
@@ -1988,6 +1993,11 @@ function showExportDialog() {
   // Mesh Positions C# button
   document.getElementById('btn-mesh-cs').onclick = () => {
     exportMeshPositions();
+  };
+
+  // UE Plugin button
+  document.getElementById('btn-ue-plugin').onclick = () => {
+    exportUEPlugin();
   };
 }
 
@@ -2473,6 +2483,588 @@ function exportMeshPositions() {
       const modal = document.querySelector('div[style*="z-index: 1000"]');
       if (modal) modal.remove();
     }, 1500);
+  } catch (e) {
+    status.textContent = 'Error: ' + e.message;
+  }
+}
+
+// Export UE Plugin as ZIP
+async function exportUEPlugin() {
+  const status = document.getElementById('export-status');
+  if (!status) { alert('Open export dialog first'); return; }
+  status.textContent = 'Creating UE Plugin ZIP...';
+
+  try {
+    const layers = window._advancedLayers && window._advancedLayers.length > 0
+      ? window._advancedLayers
+      : resolveLayers();
+
+    const zip = new JSZip();
+    const baseName = `CloudGenerator_v${EXPORT_VERSION}`;
+
+    // .uplugin file
+    const upluginContent = JSON.stringify({
+      FileVersion: 3,
+      Version: 1,
+      VersionName: `${EXPORT_VERSION}`,
+      FriendlyName: "Cloud Generator",
+      Description: "Procedural cloud generation. Import JSON or use Blueprint API.",
+      Category: "Gameplay",
+      CreatedBy: "ProjectC",
+      Modules: [{ Name: "CloudGenerator", Type: "Runtime", LoadingPhase: "Default" }]
+    }, null, 2);
+
+    // Build.cs
+    const buildCs = `using UnrealBuildTool;
+
+public class CloudGenerator : ModuleRules
+{
+    public CloudGenerator(ReadOnlyTargetRules Target) : base(Target)
+    {
+        PCHUsage = ModuleRules.PCHUsageMode.UseExplicitOrSharedPCHs;
+        bUseUnity = false;
+        PublicDependencyModuleNames.AddRange(new string[] { "Core", "CoreUObject", "Engine", "Json", "JsonUtilities" });
+    }
+}
+`;
+
+    // CloudMath.h
+    const cloudMathH = `// CloudMath.h
+#pragma once
+#include "CoreMinimal.h"
+
+namespace CloudMathUE
+{
+    constexpr double PHI = 1.6180339887498948482;
+
+    CLOUDGENERATOR_API int32 Hash3(int32 x, int32 y, int32 z, int32 seed);
+    CLOUDGENERATOR_API double Fade3(double t);
+    CLOUDGENERATOR_API double Lerp3(double a, double b, double t);
+    CLOUDGENERATOR_API double Grad3(int32 h, double x, double y, double z);
+    CLOUDGENERATOR_API double Perlin3D(double x, double y, double z, int32 seed);
+    CLOUDGENERATOR_API double Fbm(double x, double y, double z, int32 octaves = 5, double persistence = 0.5, double lacunarity = 2.0, int32 seed = 0);
+    CLOUDGENERATOR_API double Worley3D(double x, double y, double z, double freq, int32 seed = 0);
+    CLOUDGENERATOR_API double InvertedWorley(double x, double y, double z, double freq, int32 seed = 0);
+
+    struct FVec3 { double X, Y, Z; };
+
+    CLOUDGENERATOR_API TArray<FVec3> FibonacciSphere(double cx, double cy, double cz, double rx, double ry, double rz, int32 numPoints);
+    CLOUDGENERATOR_API TArray<FVec3> FibonacciSpiral2D(int32 count);
+    CLOUDGENERATOR_API FVec3 PerturbDir(double nx, double ny, double nz, double px, double py, double pz, double strength, int32 seed);
+}
+`;
+
+    // CloudMath.cpp
+    const cloudMathCpp = `// CloudMath.cpp
+#include "CloudMath.h"
+#include "Math/UnrealMathUtility.h"
+
+namespace CloudMathUE
+{
+    int32 Hash3(int32 x, int32 y, int32 z, int32 seed)
+    {
+        int64 n64 = x + y * 57LL + z * 131LL + (int64)seed * 123456789LL;
+        int32 n = (int32)n64;
+        n = (n << 13) ^ n;
+        double dn = n;
+        double d = dn * (dn * dn * 15731.0 + 789221.0) + 1376312589.0;
+        const double two32 = 4294967296.0;
+        double mod = d - two32 * FMath::FloorToDouble(d / two32);
+        if (mod >= 2147483648.0) mod -= two32;
+        return ((int32)mod) & 0x7FFFFFFF;
+    }
+
+    double Fade3(double t) { return t * t * t * (t * (t * 6 - 15) + 10); }
+    double Lerp3(double a, double b, double t) { return a + (b - a) * t; }
+
+    double Grad3(int32 h, double x, double y, double z)
+    {
+        int32 g = h & 15;
+        double u = g < 8 ? x : y;
+        double v = g < 4 ? y : (g == 12 || g == 14 ? x : z);
+        return ((g & 1) != 0 ? -u : u) + ((g & 2) != 0 ? -v : v);
+    }
+
+    double Perlin3D(double x, double y, double z, int32 seed)
+    {
+        int32 xi = (int32)FMath::FloorToDouble(x) & 0xFF;
+        int32 yi = (int32)FMath::FloorToDouble(y) & 0xFF;
+        int32 zi = (int32)FMath::FloorToDouble(z) & 0xFF;
+        double xf = x - FMath::FloorToDouble(x);
+        double yf = y - FMath::FloorToDouble(y);
+        double zf = z - FMath::FloorToDouble(z);
+        double u = Fade3(xf), v = Fade3(yf), w = Fade3(zf);
+
+        int32 aaa = Hash3(xi, yi, zi, seed) % 12;
+        int32 aba = Hash3(xi, yi + 1, zi, seed) % 12;
+        int32 aab = Hash3(xi, yi, zi + 1, seed) % 12;
+        int32 abb = Hash3(xi, yi + 1, zi + 1, seed) % 12;
+        int32 baa = Hash3(xi + 1, yi, zi, seed) % 12;
+        int32 bba = Hash3(xi + 1, yi + 1, zi, seed) % 12;
+        int32 bab = Hash3(xi + 1, yi, zi + 1, seed) % 12;
+        int32 bbb = Hash3(xi + 1, yi + 1, zi + 1, seed) % 12;
+
+        double x1 = Lerp3(Grad3(aaa, xf, yf, zf), Grad3(baa, xf - 1, yf, zf), u);
+        double x2 = Lerp3(Grad3(aba, xf, yf - 1, zf), Grad3(bba, xf - 1, yf - 1, zf), u);
+        double y1 = Lerp3(x1, x2, v);
+        double x3 = Lerp3(Grad3(aab, xf, yf, zf - 1), Grad3(bab, xf - 1, yf, zf - 1), u);
+        double x4 = Lerp3(Grad3(abb, xf, yf - 1, zf - 1), Grad3(bbb, xf - 1, yf - 1, zf - 1), u);
+        double y2 = Lerp3(x3, x4, v);
+        return Lerp3(y1, y2, w);
+    }
+
+    double Fbm(double x, double y, double z, int32 octaves, double persistence, double lacunarity, int32 seed)
+    {
+        double value = 0, amplitude = 1, frequency = 1, maxValue = 0;
+        for (int32 i = 0; i < octaves; i++)
+        {
+            value += amplitude * Perlin3D(x * frequency, y * frequency, z * frequency, seed + i);
+            maxValue += amplitude;
+            amplitude *= persistence;
+            frequency *= lacunarity;
+        }
+        return value / maxValue;
+    }
+
+    double Worley3D(double x, double y, double z, double freq, int32 seed)
+    {
+        int32 ix = (int32)FMath::FloorToDouble(x * freq);
+        int32 iy = (int32)FMath::FloorToDouble(y * freq);
+        int32 iz = (int32)FMath::FloorToDouble(z * freq);
+        double minDist = 1e9;
+        for (int32 dx = -1; dx <= 1; dx++)
+        {
+            for (int32 dy = -1; dy <= 1; dy++)
+            {
+                for (int32 dz = -1; dz <= 1; dz++)
+                {
+                    int32 cx = ix + dx;
+                    int32 cy = iy + dy;
+                    int32 cz = iz + dz;
+                    int32 h = ((cx * 12345) ^ (cy * 67890) ^ (cz * 13579)) & 0x7FFFFFFF;
+                    h += (int32)((int64)seed * 123456789);
+                    double sx = (h % 1000) / 1000.0;
+                    double sy = ((h / 1000) % 1000) / 1000.0;
+                    double sz = ((h / 1000000) % 1000) / 1000.0;
+                    double dx2 = x * freq - (cx + sx);
+                    double dy2 = y * freq - (cy + sy);
+                    double dz2 = z * freq - (cz + sz);
+                    double dist = FMath::Sqrt(dx2 * dx2 + dy2 * dy2 + dz2 * dz2);
+                    if (dist < minDist) minDist = dist;
+                }
+            }
+        }
+        return minDist;
+    }
+
+    double InvertedWorley(double x, double y, double z, double freq, int32 seed)
+    {
+        return 1.0 - FMath::Min(Worley3D(x, y, z, freq, seed), 1.0);
+    }
+
+    TArray<FVec3> FibonacciSphere(double cx, double cy, double cz, double rx, double ry, double rz, int32 numPoints)
+    {
+        TArray<FVec3> pts;
+        pts.Reserve(numPoints);
+        double angleInc = UE_DOUBLE_PI * 2.0 * PHI;
+        for (int32 i = 0; i < numPoints; i++)
+        {
+            double t = i / (double)numPoints;
+            double inclination = FMath::Acos(1.0 - 2.0 * t);
+            double azimuth = angleInc * i;
+            double sx = FMath::Sin(inclination) * FMath::Cos(azimuth);
+            double sy = FMath::Sin(inclination) * FMath::Sin(azimuth);
+            double sz = FMath::Cos(inclination);
+            pts.Add({ cx + sx * rx, cy + sy * ry, cz + sz * rz });
+        }
+        return pts;
+    }
+
+    TArray<FVec3> FibonacciSpiral2D(int32 count)
+    {
+        TArray<FVec3> pts;
+        pts.Reserve(count);
+        double angleInc = UE_DOUBLE_PI * 2.0 * PHI;
+        for (int32 i = 0; i < count; i++)
+        {
+            double r = FMath::Sqrt(i / (double)count);
+            double theta = angleInc * i;
+            pts.Add({ r * FMath::Cos(theta), 0, r * FMath::Sin(theta) });
+        }
+        return pts;
+    }
+
+    FVec3 PerturbDir(double nx, double ny, double nz, double px, double py, double pz, double strength, int32 seed)
+    {
+        double a1 = Perlin3D(px * 10, py * 10, pz * 10, seed) * strength;
+        double a2 = Perlin3D(px * 10, py * 10, pz * 10 + 50, seed + 1) * strength;
+        double cos1 = FMath::Cos(a1), sin1 = FMath::Sin(a1);
+        double cos2 = FMath::Cos(a2), sin2 = FMath::Sin(a2);
+        double nx2 = nx * cos1 - ny * sin1;
+        double ny2 = nx * sin1 + ny * cos1;
+        double nz2 = nz;
+        double nx3 = nx2 * cos2 + nz2 * sin2;
+        double ny3 = ny2;
+        double nz3 = -nx2 * sin2 + nz2 * cos2;
+        double len = FMath::Sqrt(nx3 * nx3 + ny3 * ny3 + nz3 * nz3);
+        if (len == 0) len = 1;
+        return { nx3 / len, ny3 / len, nz3 / len };
+    }
+}
+`;
+
+    // CloudGeneratorBPLibrary.h
+    const cloudBPLibH = `// CloudGeneratorBPLibrary.h
+#pragma once
+#include "CoreMinimal.h"
+#include "Kismet/BlueprintFunctionLibrary.h"
+#include "CloudGeneratorBPLibrary.generated.h"
+
+USTRUCT(BlueprintType)
+struct FCloudSphereBP {
+    GENERATED_BODY()
+    UPROPERTY(EditAnywhere, BlueprintReadWrite) FVector Location;
+    UPROPERTY(EditAnywhere, BlueprintReadWrite) float Radius;
+    UPROPERTY(EditAnywhere, BlueprintReadWrite) float Density;
+    UPROPERTY(EditAnywhere, BlueprintReadWrite) int32 Archetype;
+};
+
+USTRUCT(BlueprintType)
+struct FCloudSizeRangeBP {
+    GENERATED_BODY()
+    UPROPERTY(EditAnywhere, BlueprintReadWrite) int32 Min;
+    UPROPERTY(EditAnywhere, BlueprintReadWrite) int32 Max;
+};
+
+USTRUCT(BlueprintType)
+struct FColumnParamsBP {
+    GENERATED_BODY()
+    UPROPERTY(EditAnywhere, BlueprintReadWrite) float Height;
+    UPROPERTY(EditAnywhere, BlueprintReadWrite) float BaseRadius;
+    UPROPERTY(EditAnywhere, BlueprintReadWrite) float TopRadius;
+    UPROPERTY(EditAnywhere, BlueprintReadWrite) int32 Floors;
+    UPROPERTY(EditAnywhere, BlueprintReadWrite) int32 RingsPerFloor;
+    UPROPERTY(EditAnywhere, BlueprintReadWrite) float Wobble;
+};
+
+USTRUCT(BlueprintType)
+struct FPlatformParamsBP {
+    GENERATED_BODY()
+    UPROPERTY(EditAnywhere, BlueprintReadWrite) float Width;
+    UPROPERTY(EditAnywhere, BlueprintReadWrite) float Depth;
+    UPROPERTY(EditAnywhere, BlueprintReadWrite) float CenterThickness;
+    UPROPERTY(EditAnywhere, BlueprintReadWrite) float EdgeThickness;
+    UPROPERTY(EditAnywhere, BlueprintReadWrite) int32 InteriorDensity;
+    UPROPERTY(EditAnywhere, BlueprintReadWrite) int32 EdgeRings;
+};
+
+USTRUCT(BlueprintType)
+struct FTreeParamsBP {
+    GENERATED_BODY()
+    UPROPERTY(EditAnywhere, BlueprintReadWrite) float BaseRadius;
+    UPROPERTY(EditAnywhere, BlueprintReadWrite) int32 MaxDepth;
+    UPROPERTY(EditAnywhere, BlueprintReadWrite) float BranchElongation;
+    UPROPERTY(EditAnywhere, BlueprintReadWrite) float TaperRatio;
+    UPROPERTY(EditAnywhere, BlueprintReadWrite) float BranchAngle;
+    UPROPERTY(EditAnywhere, BlueprintReadWrite) float BranchProbability;
+};
+
+USTRUCT(BlueprintType)
+struct FCloudLayerConfigBP {
+    GENERATED_BODY()
+    UPROPERTY(EditAnywhere, BlueprintReadWrite) bool Enabled;
+    UPROPERTY(EditAnywhere, BlueprintReadWrite) float YOffset;
+    UPROPERTY(EditAnywhere, BlueprintReadWrite) int32 Seed;
+    UPROPERTY(EditAnywhere, BlueprintReadWrite) float Density;
+    UPROPERTY(EditAnywhere, BlueprintReadWrite) float Jitter;
+    UPROPERTY(EditAnywhere, BlueprintReadWrite) float Clustering;
+    UPROPERTY(EditAnywhere, BlueprintReadWrite) float PositionVariation;
+    UPROPERTY(EditAnywhere, BlueprintReadWrite) int32 Archetype;
+    UPROPERTY(EditAnywhere, BlueprintReadWrite) float CloudSize;
+    UPROPERTY(EditAnywhere, BlueprintReadWrite) int32 CascadeDepth;
+    UPROPERTY(EditAnywhere, BlueprintReadWrite) int32 BumpsPerLevel;
+    UPROPERTY(EditAnywhere, BlueprintReadWrite) float ChildRatio;
+    UPROPERTY(EditAnywhere, BlueprintReadWrite) float SizeVariation;
+    UPROPERTY(EditAnywhere, BlueprintReadWrite) int32 ParentCount;
+    UPROPERTY(EditAnywhere, BlueprintReadWrite) float EllipsoidY;
+    UPROPERTY(EditAnywhere, BlueprintReadWrite) float EllipsoidXZ;
+    UPROPERTY(EditAnywhere, BlueprintReadWrite) int32 MaxSphereCount;
+    UPROPERTY(EditAnywhere, BlueprintReadWrite) FCloudSizeRangeBP SizeRange;
+    UPROPERTY(EditAnywhere, BlueprintReadWrite) FColumnParamsBP ColumnParams;
+    UPROPERTY(EditAnywhere, BlueprintReadWrite) FPlatformParamsBP PlatformParams;
+    UPROPERTY(EditAnywhere, BlueprintReadWrite) FTreeParamsBP TreeParams;
+};
+
+UCLASS()
+class CLOUDGENERATOR_API UCloudGeneratorBPLibrary : public UBlueprintFunctionLibrary {
+    GENERATED_BODY()
+public:
+    UFUNCTION(BlueprintCallable, Category="Cloud Generator")
+    static TArray<FCloudSphereBP> GenerateFromJSON(const FString& JSONString);
+
+    UFUNCTION(BlueprintCallable, Category="Cloud Generator")
+    static TArray<FCloudSphereBP> GenerateFromConfig(const FCloudLayerConfigBP& Config);
+
+    UFUNCTION(BlueprintCallable, Category="Cloud Generator")
+    static FString ConfigToJSON(const FCloudLayerConfigBP& Config);
+
+    UFUNCTION(BlueprintCallable, Category="Cloud Generator")
+    static bool JSONToConfig(const FString& JSONString, FCloudLayerConfigBP& OutConfig);
+
+    UFUNCTION(BlueprintPure, Category="Cloud Generator")
+    static FString GetVersion() { return TEXT("${EXPORT_VERSION}"); }
+};
+`;
+
+    // CloudGeneratorBPLibrary.cpp
+    const cloudBPLibCpp = `// CloudGeneratorBPLibrary.cpp
+#include "CloudGeneratorBPLibrary.h"
+#include "CloudMath.h"
+#include "Json.h"
+#include "JsonUtilities.h"
+#include "Math/UnrealMathUtility.h"
+
+using namespace CloudMathUE;
+
+struct FDeterministicRandom {
+    uint32 State;
+    FDeterministicRandom(int32 seed) {
+        State = (uint32)(seed != 0 ? seed : 1);
+        for (int32 i = 0; i < 10; i++) {
+            State ^= State << 13; State ^= State >> 17; State ^= State << 5;
+        }
+    }
+    double Next() { State ^= State << 13; State ^= State >> 17; State ^= State << 5; return State / (double)UINT32_MAX; }
+};
+
+TArray<FCloudSphereBP> GenerateLayerSpheres(const FCloudLayerConfigBP& Config) {
+    TArray<FCloudSphereBP> Result;
+    if (!Config.Enabled) return Result;
+
+    int32 Seed = Config.Seed > 0 ? Config.Seed : 42;
+    FDeterministicRandom RNG(Seed);
+    double YOffset = Config.YOffset;
+    float Jitter = Config.Jitter;
+    float PositionVariation = Config.PositionVariation;
+    int32 Archetype = Config.Archetype;
+    int32 SizeMin = Config.SizeRange.Min > 0 ? Config.SizeRange.Min : 5;
+    int32 SizeMax = Config.SizeRange.Max > SizeMin ? Config.SizeRange.Max : 20;
+
+    if (Archetype == 0) { // Sphere
+        double BaseR = Config.CloudSize * 0.5;
+        TArray<TTuple<FVector, double>> Stack;
+        Stack.Add(TTuple<FVector, double>(FVector::ZeroVector, BaseR));
+
+        while (Stack.Num() > 0 && Result.Num() < Config.MaxSphereCount) {
+            auto [Pos, Radius] = Stack.Last();
+            Stack.Pop();
+            if (Radius < SizeMin * 1.5) continue;
+
+            auto Points = FibonacciSphere(Pos.X, Pos.Y, Pos.Z, Radius, Radius, Radius, Config.BumpsPerLevel);
+            for (int32 i = 0; i < Points.Num() && Result.Num() < Config.MaxSphereCount; i++) {
+                auto& P = Points[i];
+                double DistN = Perlin3D(P.X * 0.1, P.Y * 0.1, P.Z * 0.1, Seed + i + 100);
+                if ((DistN + 1) * 0.5 < Config.ChildRatio / 100.0f * (1 - Jitter * 0.5f)) continue;
+                double SizeN = FMath::Pow((Perlin3D(P.X * 0.2, P.Y * 0.2, P.Z * 0.2, Seed + 200 + i) + 1) * 0.5, 1.8);
+                double NewR = SizeMin + SizeN * (SizeMax - SizeMin);
+                Result.Add(FCloudSphereBP{ FVector(P.X, P.Y + YOffset, P.Z), (float)NewR, Config.Density, 0 });
+                Stack.Add(TTuple<FVector, double>(FVector(P.X, P.Y, P.Z), NewR));
+            }
+        }
+    }
+    else if (Archetype == 1) { // Column
+        double H = Config.ColumnParams.Height;
+        double BR = Config.ColumnParams.BaseRadius;
+        double TR = Config.ColumnParams.TopRadius;
+        int32 Floors = FMath::Max(Config.ColumnParams.Floors, 1);
+        int32 RPF = FMath::Max(Config.ColumnParams.RingsPerFloor, 1);
+        double FloorSpacing = H / FMath::Max(Floors - 1, 1);
+
+        for (int32 Floor = 0; Floor < Floors; Floor++) {
+            double T = Floor / (double)FMath::Max(Floors - 1, 1);
+            double FR = BR + (TR - BR) * T;
+            double Y = Floor * FloorSpacing;
+
+            for (int32 R = 0; R < RPF; R++) {
+                double Angle = (R / (double)RPF) * UE_DOUBLE_PI * 2 + Perlin3D(Floor * 0.3, R * 0.5, Seed, Seed) * 0.5 * (1 + Jitter * 2);
+                double Dist = FR * (0.3 + (Perlin3D(Floor * 0.5, R * 0.7, Seed + 50, Seed) + 1) * 0.35);
+                double jitR = Perlin3D(Floor, R, Seed, Seed) * Jitter * 0.5;
+                double SizeN = FMath::Pow((Perlin3D(Floor + R * 0.1, R + Floor * 0.1, Seed + 200, Seed) + 1) * 0.5, 1.8);
+                double SphereR = BR * (SizeMin + SizeN * (SizeMax - SizeMin)) * 0.12 * (0.1 + 0.9 * SizeN);
+                double OX = (RNG.Next() - 0.5) * 12 * SphereR * PositionVariation;
+                double OY = (RNG.Next() - 0.5) * 12 * SphereR * PositionVariation;
+                double OZ = (RNG.Next() - 0.5) * 12 * SphereR * PositionVariation;
+                Result.Add(FCloudSphereBP{ FVector(FMath::Cos(Angle) * Dist + OX, Y + jitR * 0.3 + OY + YOffset, FMath::Sin(Angle) * Dist + OZ), (float)SphereR, Config.Density, 1 });
+            }
+        }
+    }
+    else if (Archetype == 2) { // Platform
+        Result.Add(FCloudSphereBP{ FVector(0, YOffset, 0), (float)SizeMin, 1.0f, 2 });
+        auto Points = FibonacciSpiral2D(Config.PlatformParams.InteriorDensity);
+        for (int32 i = 0; i < Points.Num(); i++) {
+            auto& P = Points[i];
+            double PX = P.X * Config.PlatformParams.Width * 0.5;
+            double PZ = P.Z * Config.PlatformParams.Depth * 0.5;
+            double Dist = FMath::Sqrt((PX * PX) / (Config.PlatformParams.Width * Config.PlatformParams.Width * 0.25) + (PZ * PZ) / (Config.PlatformParams.Depth * Config.PlatformParams.Depth * 0.25));
+            double Thick = Config.PlatformParams.CenterThickness * FMath::Exp(-Dist * Dist * 3) + Config.PlatformParams.EdgeThickness * Dist;
+            if (Thick < 0.2) continue;
+            double YN = Perlin3D(PX * 0.3, PZ * 0.3, Seed + 500, Seed);
+            double Y = YN * Thick * 0.5 + Jitter * SizeMin * Perlin3D(PX, PZ, Seed, Seed + 1);
+            double SizeN = FMath::Pow((Perlin3D(PX * 0.5, PZ * 0.5, Seed + 600 + i, Seed) + 1) * 0.5, 1.8);
+            double R = (SizeMin + SizeN * (SizeMax - SizeMin)) * (0.1 + 0.9 * SizeN) * (1 + Jitter);
+            double OX = (RNG.Next() - 0.5) * 12 * R * PositionVariation;
+            double OY = (RNG.Next() - 0.5) * 12 * R * PositionVariation;
+            double OZ = (RNG.Next() - 0.5) * 12 * R * PositionVariation;
+            Result.Add(FCloudSphereBP{ FVector(PX + OX, Y + OY + YOffset, PZ + OZ), (float)R, Config.Density, 2 });
+        }
+    }
+    else { // Tree
+        TArray<TTuple<FVector, FVector, double, int32>> Stack;
+        Stack.Add(TTuple<FVector, FVector, double, int32>(FVector::ZeroVector, FVector(0, 1, 0), SizeMin, 0));
+        double BAngle = Config.TreeParams.BranchAngle * UE_DOUBLE_PI / 180.0;
+        double BranchProb = Config.TreeParams.BranchProbability;
+        double BranchElong = Config.TreeParams.BranchElongation;
+
+        while (Stack.Num() > 0 && Result.Num() < 2000) {
+            auto [Pos, Dir, Radius, Depth] = Stack.Last();
+            Stack.Pop();
+            Result.Add(FCloudSphereBP{ FVector(Pos.X, Pos.Y + YOffset, Pos.Z), (float)Radius, Config.Density, 3 });
+            if (Depth >= Config.TreeParams.MaxDepth || Radius < 0.5) continue;
+
+            for (int32 B = 0; B < 3; B++) {
+                if (RNG.Next() > BranchProb) continue;
+                double AX = (RNG.Next() - 0.5) * BAngle * 2;
+                FVector NewDir = Dir;
+                NewDir = NewDir.RotateAngleAxis(AX * 180 / UE_DOUBLE_PI, FVector::CrossProduct(Dir, FVector::UpVector).GetSafeNormal());
+                NewDir.Z += 0.1f * BranchElong;
+                NewDir.Normalize();
+                double NewRadius = Radius * Config.TreeParams.TaperRatio;
+                FVector NewPos = Pos + NewDir * Radius * BranchElong;
+                Stack.Add(TTuple<FVector, FVector, double, int32>(NewPos, NewDir, NewRadius, Depth + 1));
+            }
+        }
+    }
+    return Result;
+}
+
+TArray<FCloudSphereBP> UCloudGeneratorBPLibrary::GenerateFromJSON(const FString& JSONString) {
+    FCloudLayerConfigBP Config;
+    if (!JSONToConfig(JSONString, Config)) return TArray<FCloudSphereBP>();
+    return GenerateLayerSpheres(Config);
+}
+
+TArray<FCloudSphereBP> UCloudGeneratorBPLibrary::GenerateFromConfig(const FCloudLayerConfigBP& Config) {
+    return GenerateLayerSpheres(Config);
+}
+
+FString UCloudGeneratorBPLibrary::ConfigToJSON(const FCloudLayerConfigBP& Config) {
+    TSharedPtr<FJsonObject> Obj = MakeShared<FJsonObject>();
+    Obj->SetBoolField(TEXT("Enabled"), Config.Enabled);
+    Obj->SetNumberField(TEXT("YOffset"), Config.YOffset);
+    Obj->SetNumberField(TEXT("Seed"), Config.Seed);
+    Obj->SetNumberField(TEXT("Density"), Config.Density);
+    Obj->SetNumberField(TEXT("Jitter"), Config.Jitter);
+    Obj->SetNumberField(TEXT("Clustering"), Config.Clustering);
+    Obj->SetNumberField(TEXT("PositionVariation"), Config.PositionVariation);
+    Obj->SetNumberField(TEXT("Archetype"), Config.Archetype);
+    Obj->SetNumberField(TEXT("CloudSize"), Config.CloudSize);
+    Obj->SetNumberField(TEXT("CascadeDepth"), Config.CascadeDepth);
+    Obj->SetNumberField(TEXT("BumpsPerLevel"), Config.BumpsPerLevel);
+    Obj->SetNumberField(TEXT("ChildRatio"), Config.ChildRatio);
+    Obj->SetNumberField(TEXT("SizeVariation"), Config.SizeVariation);
+    Obj->SetNumberField(TEXT("ParentCount"), Config.ParentCount);
+    Obj->SetNumberField(TEXT("EllipsoidY"), Config.EllipsoidY);
+    Obj->SetNumberField(TEXT("EllipsoidXZ"), Config.EllipsoidXZ);
+
+    TSharedPtr<FJsonObject> SR = MakeShared<FJsonObject>();
+    SR->SetNumberField(TEXT("Min"), Config.SizeRange.Min);
+    SR->SetNumberField(TEXT("Max"), Config.SizeRange.Max);
+    Obj->SetObjectField(TEXT("SizeRange"), SR);
+
+    TSharedPtr<FJsonObject> CP = MakeShared<FJsonObject>();
+    CP->SetNumberField(TEXT("Height"), Config.ColumnParams.Height);
+    CP->SetNumberField(TEXT("BaseRadius"), Config.ColumnParams.BaseRadius);
+    CP->SetNumberField(TEXT("TopRadius"), Config.ColumnParams.TopRadius);
+    CP->SetNumberField(TEXT("Floors"), Config.ColumnParams.Floors);
+    CP->SetNumberField(TEXT("RingsPerFloor"), Config.ColumnParams.RingsPerFloor);
+    CP->SetNumberField(TEXT("Wobble"), Config.ColumnParams.Wobble);
+    Obj->SetObjectField(TEXT("ColumnParams"), CP);
+
+    TSharedPtr<FJsonObject> PP = MakeShared<FJsonObject>();
+    PP->SetNumberField(TEXT("Width"), Config.PlatformParams.Width);
+    PP->SetNumberField(TEXT("Depth"), Config.PlatformParams.Depth);
+    PP->SetNumberField(TEXT("CenterThickness"), Config.PlatformParams.CenterThickness);
+    PP->SetNumberField(TEXT("EdgeThickness"), Config.PlatformParams.EdgeThickness);
+    PP->SetNumberField(TEXT("InteriorDensity"), Config.PlatformParams.InteriorDensity);
+    Obj->SetObjectField(TEXT("PlatformParams"), PP);
+
+    FString Output;
+    FJsonSerializer::Serialize(Obj, TJsonWriterFactory<TCHAR, TPrettyJsonPrintPolicy<TCHAR>>::Create(&Output));
+    return Output;
+}
+
+bool UCloudGeneratorBPLibrary::JSONToConfig(const FString& JSONString, FCloudLayerConfigBP& OutConfig) {
+    TSharedPtr<FJsonObject> Obj;
+    TSharedRef<TJsonReader<>> Reader = TJsonReaderFactory<>::Create(JSONString);
+    if (!FJsonSerializer::Deserialize(Reader, Obj)) return false;
+
+    OutConfig.Enabled = Obj->GetBoolField(TEXT("Enabled"));
+    OutConfig.YOffset = Obj->GetNumberField(TEXT("YOffset"));
+    OutConfig.Seed = Obj->GetNumberField(TEXT("Seed"));
+    OutConfig.Density = Obj->GetNumberField(TEXT("Density"));
+    OutConfig.Jitter = Obj->GetNumberField(TEXT("Jitter"));
+    OutConfig.Clustering = Obj->GetNumberField(TEXT("Clustering"));
+    OutConfig.PositionVariation = Obj->GetNumberField(TEXT("PositionVariation"));
+    OutConfig.Archetype = Obj->GetNumberField(TEXT("Archetype"));
+    OutConfig.CloudSize = Obj->GetNumberField(TEXT("CloudSize"));
+    OutConfig.CascadeDepth = Obj->GetNumberField(TEXT("CascadeDepth"));
+    OutConfig.BumpsPerLevel = Obj->GetNumberField(TEXT("BumpsPerLevel"));
+    OutConfig.ChildRatio = Obj->GetNumberField(TEXT("ChildRatio"));
+    OutConfig.SizeVariation = Obj->GetNumberField(TEXT("SizeVariation"));
+    OutConfig.ParentCount = Obj->GetNumberField(TEXT("ParentCount"));
+    OutConfig.EllipsoidY = Obj->GetNumberField(TEXT("EllipsoidY"));
+    OutConfig.EllipsoidXZ = Obj->GetNumberField(TEXT("EllipsoidXZ"));
+
+    if (TSharedPtr<FJsonObject> SR = Obj->GetObjectField(TEXT("SizeRange"))) {
+        OutConfig.SizeRange.Min = SR->GetNumberField(TEXT("Min"));
+        OutConfig.SizeRange.Max = SR->GetNumberField(TEXT("Max"));
+    }
+    if (TSharedPtr<FJsonObject> CP = Obj->GetObjectField(TEXT("ColumnParams"))) {
+        OutConfig.ColumnParams.Height = CP->GetNumberField(TEXT("Height"));
+        OutConfig.ColumnParams.BaseRadius = CP->GetNumberField(TEXT("BaseRadius"));
+        OutConfig.ColumnParams.TopRadius = CP->GetNumberField(TEXT("TopRadius"));
+        OutConfig.ColumnParams.Floors = CP->GetNumberField(TEXT("Floors"));
+        OutConfig.ColumnParams.RingsPerFloor = CP->GetNumberField(TEXT("RingsPerFloor"));
+        OutConfig.ColumnParams.Wobble = CP->GetNumberField(TEXT("Wobble"));
+    }
+    if (TSharedPtr<FJsonObject> PP = Obj->GetObjectField(TEXT("PlatformParams"))) {
+        OutConfig.PlatformParams.Width = PP->GetNumberField(TEXT("Width"));
+        OutConfig.PlatformParams.Depth = PP->GetNumberField(TEXT("Depth"));
+        OutConfig.PlatformParams.CenterThickness = PP->GetNumberField(TEXT("CenterThickness"));
+        OutConfig.PlatformParams.EdgeThickness = PP->GetNumberField(TEXT("EdgeThickness"));
+        OutConfig.PlatformParams.InteriorDensity = PP->GetNumberField(TEXT("InteriorDensity"));
+    }
+    return true;
+}
+`;
+
+    // Add files to ZIP
+    const srcFolder = `${baseName}/Source/CloudGenerator`;
+    zip.file(`${baseName}/${baseName}.uplugin`, upluginContent);
+    zip.file(`${srcFolder}/CloudGenerator.Build.cs`, buildCs);
+    zip.file(`${srcFolder}/Public/CloudMath.h`, cloudMathH);
+    zip.file(`${srcFolder}/Private/CloudMath.cpp`, cloudMathCpp);
+    zip.file(`${srcFolder}/Public/CloudGeneratorBPLibrary.h`, cloudBPLibH);
+    zip.file(`${srcFolder}/Private/CloudGeneratorBPLibrary.cpp`, cloudBPLibCpp);
+
+    const content = await zip.generateAsync({ type: 'blob' });
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(content);
+    a.download = `${baseName}.zip`;
+    a.click();
+    URL.revokeObjectURL(a.href);
+
+    status.textContent = `Downloaded ${baseName}.zip`;
   } catch (e) {
     status.textContent = 'Error: ' + e.message;
   }

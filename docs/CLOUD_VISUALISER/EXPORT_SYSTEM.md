@@ -377,3 +377,96 @@ namespace ProjectC.CloudGenerator
 - Two export modes: Full Generator (ZIP) and Config Only (JSON)
 - Added CloudConfigExport class for Unity JSON serialization
 - Added Tools/Cloud Generator menu integration
+
+---
+
+## UE Plugin Export (v6.0+) - EXPERIMENTAL/UNSTABLE
+
+### Overview
+
+UE Plugin export generates a complete Unreal Engine 5 plugin with Blueprint API for procedural cloud generation.
+
+### Usage
+
+1. Click **UE Plugin** button in export dialog
+2. ZIP file `CloudGenerator_v6.0.zip` downloads
+3. Extract to `YourProject/Plugins/CloudGenerator_v6.0/`
+4. Regenerate VS project files
+5. Build in UE Editor
+
+### Plugin Structure
+
+```
+CloudGenerator_v6.0/
+├── CloudGenerator_v6.0.uplugin
+└── Source/
+    └── CloudGenerator/
+        ├── CloudGenerator.Build.cs
+        ├── Public/
+        │   ├── CloudMath.h
+        │   └── CloudGeneratorBPLibrary.h
+        └── Private/
+            ├── CloudMath.cpp
+            └── CloudGeneratorBPLibrary.cpp
+```
+
+### Features
+
+- `UCloudGeneratorBPLibrary` BlueprintFunctionLibrary
+- `GenerateFromJSON(const FString&)` - Generate spheres from JSON
+- `GenerateFromConfig(const FCloudLayerConfigBP&)` - Generate from struct
+- `ConfigToJSON(const FCloudLayerConfigBP&)` - Struct to JSON
+- `JSONToConfig(const FString&, FCloudLayerConfigBP&)` - JSON to struct
+- `GetVersion()` - Returns plugin version
+
+### USTRUCT Types
+
+- `FCloudSphereBP` - Output: Location, Radius, Density, Archetype
+- `FCloudSizeRangeBP` - Min, Max
+- `FColumnParamsBP` - Height, BaseRadius, TopRadius, Floors, RingsPerFloor, Wobble
+- `FPlatformParamsBP` - Width, Depth, CenterThickness, EdgeThickness, InteriorDensity, EdgeRings
+- `FTreeParamsBP` - BaseRadius, MaxDepth, BranchElongation, TaperRatio, BranchAngle, BranchProbability
+- `FCloudLayerConfigBP` - Full layer config with nested structs
+
+### KNOWN ISSUES - CRASHES ON LOAD
+
+**Status: DISABLED due to crashes. UE 5.7 build fails with EXCEPTION_ACCESS_VIOLATION.**
+
+The generated plugin causes UE Editor to crash on startup with:
+```
+Plugin 'CloudGenerator_v6.0' failed to load because module 'CloudGenerator' 
+could not be initialized successfully after it was loaded.
+```
+
+**Crash Details:**
+- Exception: `EXCEPTION_ACCESS_VIOLATION reading address 0x0000...`
+- Stack: CoreUObject → registration code
+- Timing: Module initialization (SecondsSinceStart: 0)
+
+**Attempted Fixes (all failed):**
+1. Removed in-class default initializers from UPROPERTY members
+2. Removed invalid include paths from Build.cs
+3. Added `bUseUnity = false` to Build.cs
+4. Cleaned Intermediate/Binaries folders
+5. Changed PI constants to UE_DOUBLE_PI
+6. Fixed TJsonWriterFactory API usage
+
+**Root Cause (suspected):**
+- Visual Studio 2026 (14.50) not supported by UE 5.7 (prefers VS2022 14.44)
+- Compiler version mismatch causes ABI issues with generated struct layout
+
+### Forcing UE Plugin Export (NOT RECOMMENDED)
+
+To enable the UE Plugin button despite crashes, search for:
+```javascript
+// TODO: UE Plugin crashes on load - disabled
+```
+
+And comment out the early return. Be aware crashes will occur.
+
+### Recommendation
+
+Use Unity export instead. UE plugin export requires:
+1. VS2022 v14.44 installed (not VS2026)
+2. OR manual fixes to generated code
+3. OR wait for UE version that supports VS2026

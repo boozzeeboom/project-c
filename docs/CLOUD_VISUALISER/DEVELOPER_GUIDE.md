@@ -352,6 +352,54 @@ public enum CloudArchetype { Sphere, Column, Platform, Tree, MyNew }
 
 ---
 
+## Export Functions Reference
+
+| Line | Function | Purpose |
+|------|----------|---------|
+| 685 | `EXPORT_SCHEMA` | Field definitions per archetype |
+| 715 | `FIELD_TYPES` | JavaScript → C# type mapping |
+| 761 | `TEMPLATES` | Code generation templates |
+| 1780 | `genericExport()` | Export format dispatcher |
+| 1820 | `convertLayer()` | JSON key transformation |
+| 1902 | `showExportDialog()` | Export UI HTML |
+| 1971 | `exportFullGenerator()` | ZIP creation (Full Generator) |
+| 2287 | `exportConfigOnly()` | JSON export (Config Only) |
+| 2318 | `exportMeshOBJ()` | OBJ mesh file export (v6.1+) |
+| 2401 | `exportMeshPositions()` | C# static class export (v6.1+) |
+| 3249 | `getDefaultLayer()` | Default values per archetype |
+| 3393 | `renderLayerList()` | UI rendering |
+
+---
+
+## Adding New Export Format
+
+To add a new export format (like mesh exports in v6.1):
+
+### 1. Add button in showExportDialog() HTML
+```javascript
+<button id="btn-myformat" style="...">My Format</button>
+```
+
+### 2. Add click handler after existing handlers
+```javascript
+document.getElementById('btn-myformat').onclick = () => {
+  exportMyFormat();
+};
+```
+
+### 3. Create export function
+```javascript
+function exportMyFormat() {
+  const spheres = currentSpheres.length > 0 ? currentSpheres : generateCloud(resolveLayers());
+  // ... generate content ...
+  downloadFile('output.ext', content);
+}
+```
+
+### 4. Do NOT modify genericExport() - it's only for layer config JSON
+
+---
+
 ## When to Increment Version
 
 Increment `EXPORT_VERSION` when:
@@ -385,3 +433,27 @@ Do NOT increment for:
 **Problem: New field not appearing in export**
 → Forgot to add to EXPORT_SCHEMA
 → Check both archetype section AND FIELD_TYPES
+
+**Problem: Mesh export gives empty file**
+→ Need to click Generate first to populate currentSpheres
+→ Or the function will auto-generate from current layers
+
+---
+
+## v6.1 Mesh Exports
+
+### OBJ Export (exportMeshOBJ)
+- Generates `.obj` file with real sphere geometry
+- Each sphere = UV sphere mesh (lat/lon segments proportional to radius)
+- Format: vertices + face indices
+- Can be imported into Unity, Blender, or any 3D software
+
+### C# Positions Export (exportMeshPositions)
+- Generates static class `CloudMeshPositions`
+- Contains: `Positions[]`, `Radii[]`, `Densities[]` arrays
+- Bonus method `CreateMesh()` creates Unity Mesh from point cloud
+- Direct integration into Unity projects
+
+### When to use which
+- **OBJ**: When you need the actual 3D model file (exchange format)
+- **C# Positions**: When you want to integrate sphere data directly in code

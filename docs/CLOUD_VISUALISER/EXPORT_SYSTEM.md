@@ -321,13 +321,56 @@ const archMap = { sphere: 0, column: 1, platform: 2, tree: 3 };
 
 ---
 
+## Mesh Export (v6.1+)
+
+Two mesh export options added for exporting generated cloud geometry.
+
+### Mesh OBJ Export
+
+Exports spheres as `.obj` file with real UV sphere geometry.
+
+**Usage:** Click "Mesh OBJ" button in export dialog
+**Output file:** `cloud_mesh_YYYY-MM-DD.obj`
+
+**Format:**
+- Each sphere converted to UV sphere (lat/lon segments based on radius)
+- Vertex coordinates + face indices
+- Comment headers with position/radius info
+
+**Unity import:** Use ObjImporter or assimp pipeline
+
+### Mesh Positions C# Export
+
+Exports sphere data as static C# class for direct Unity integration.
+
+**Usage:** Click "Mesh Positions" button in export dialog
+**Output file:** `CloudMeshPositions_YYYY-MM-DD.cs`
+
+**Generated class:**
+```csharp
+namespace ProjectC.CloudGenerator
+{
+    public static class CloudMeshPositions
+    {
+        public const int SphereCount = N;
+        public static readonly Vector3[] Positions;
+        public static readonly float[] Radii;
+        public static readonly float[] Densities;
+        public static Mesh CreateMesh(); // Bonus: creates Unity Mesh
+    }
+}
+```
+
+---
+
 ## Changelog
 
 ### v6.1 (2026-05-09)
-- Fixed archetype serialization: string → integer for Unity JsonUtility compatibility
+- Added Mesh OBJ export (real 3D geometry file)
+- Added Mesh Positions C# export (static class with arrays)
+- Fixed archetype serialization: string → integer for Unity JsonUtility
 - Added Debug.Log after Load Config to confirm layer count
 - OnEnable() now starts with empty layers list (user must Load Config)
-- Full Generator export: clean generator with Load Config workflow
 
 ### v6.0 (2026-05-09)
 - Initial data-driven export system with schema, Editor integration

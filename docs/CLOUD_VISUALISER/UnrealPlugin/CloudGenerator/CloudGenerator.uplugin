@@ -1,0 +1,32 @@
+{
+	"FileVersion": 3,
+	"Version": 1,
+	"VersionName": "1.0",
+	"FriendlyName": "Cloud Generator",
+	"Description": "Procedural cloud generation system with multi-archetype support (Sphere, Column, Platform, Tree). Import JSON configs or use Blueprint API.",
+	"Category": "Gameplay",
+	"CreatedBy": "ProjectC",
+	"CreatedByURL": "",
+	"DocsURL": "",
+	"MarketplaceURL": "",
+	"SupportURL": "",
+	"IconPath": "",
+	"EnabledByDefault": true,
+	"AllowLoaded": true,
+	"CanContainContent": false,
+	"IsBetaVersion": false,
+	"IsExperimentalVersion": false,
+	"Installed": false,
+	"Modules": [
+		{
+			"Name": "CloudGenerator",
+			"Type": "Runtime",
+			"LoadingPhase": "Default"
+		},
+		{
+			"Name": "CloudGeneratorEditor",
+			"Type": "Editor",
+			"LoadingPhase": "PostEngineInit"
+		}
+	]
+}

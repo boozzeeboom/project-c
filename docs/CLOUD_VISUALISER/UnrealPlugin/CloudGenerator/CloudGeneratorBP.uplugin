@@ -1,0 +1,28 @@
+{
+	"FileVersion": 3,
+	"Version": 1,
+	"VersionName": "6.1",
+	"FriendlyName": "Cloud Generator BP",
+	"Description": "Procedural cloud generation. Pure Blueprint API - no C++ needed. Import JSON or use nodes.",
+	"Category": "Gameplay",
+	"CreatedBy": "ProjectC",
+	"CreatedByURL": "",
+	"DocsURL": "",
+	"MarketplaceURL": "",
+	"SupportURL": "",
+	"IconPath": "",
+	"EnabledByDefault": true,
+	"AllowLoaded": true,
+	"CanContainContent": true,
+	"IsBetaVersion": false,
+	"IsExperimentalVersion": false,
+	"Installed": false,
+	"Modules": [
+		{
+			"Name": "CloudGenerator",
+			"Type": "Runtime",
+			"LoadingPhase": "Default",
+			"AdditionalDependencies": ["Engine", "CoreUObject", "Json", "JsonUtilities"]
+		}
+	]
+}

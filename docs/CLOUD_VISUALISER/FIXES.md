@@ -548,3 +548,54 @@ Also fixed:
 - Chaotic 3D scatter matches expected behavior
 - UI consistent with roadmap.html color scheme
 - Mobile-friendly scrolling for layer params
+
+---
+
+## v7.5 — PARENT Layer Feature
+
+### Feature: Generate Children on Parent Sphere Surface
+
+**Concept:**
+- Any layer (even merged) can be designated as "parent" (основа)
+- The next layer AFTER a parent layer generates children ON THE SURFACE of parent spheres
+- Parent spheres serve as the "ground" for the next layer's generation
+- Only Sphere archetype supports parent mode (other archetypes use normal generation)
+
+### How It Works:
+
+1. **Mark a layer as Parent** — Click PARENT button, select target layer (or last layer if only one)
+2. **Layer turns red with "P" badge** — Visual indication of parent status
+3. **Add next layer** — This layer will generate on parent's surface
+4. **Generate** — Parent layer generates normally; next layer generates children on parent's spheres
+
+**Technical Logic:**
+```javascript
+const useParentMode = prevWasParent && parentSpheres.length > 0 && generatorSupportsParent(layer.archetype);
+```
+
+A layer uses parent mode when:
+- Previous layer was marked as isParent
+- There are parent spheres available
+- The archetype supports parent mode (only Sphere)
+
+### UI Changes:
+
+1. **PARENT button** added between "Add Layer" and "Merge Layers"
+2. **Layer selection dialog** appears if multiple layers exist
+3. **Red styling** for parent layers (`#f87171` border + background tint)
+4. **"P" badge** displayed in layer header
+5. **Unmerge button removed** from merged layers
+
+### Parent Mode Generator (Sphere only):
+
+When parent mode is active, `generateSphereLayer(layer, parentSpheres)`:
+- Iterates over all parent spheres
+- Uses Fibonacci sphere to sample surface points
+- Creates children on those surface points using standard noise/clustering
+- Children inherit parent's position and radius for surface normal calculation
+
+### TODO v7.6:
+- [ ] Allow Merged Layer to be designated as Parent for generating on its surface
+- [ ] Currently merged layers are skipped in generateCloud() — need to store merged spheres and pass to parent mode
+
+---

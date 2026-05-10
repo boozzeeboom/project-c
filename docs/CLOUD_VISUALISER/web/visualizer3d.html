@@ -54,29 +54,8 @@
     left: 0;
     top: 60px;
     bottom: 0;
-    width: 280px;
-    padding: 16px;
-    background: rgba(18, 18, 26, 0.92);
-    backdrop-filter: blur(8px);
-    overflow-y: auto;
-    z-index: 10;
-    border-right: 1px solid #1e1e2e;
-  }
-
-  .version {
-    position: absolute;
-    right: 12px;
-    bottom: 4px;
-    font-size: 10px;
-    color: #555;
-  }
-  .controls {
-    position: absolute;
-    left: 0;
-    top: 60px;
-    bottom: 0;
-    width: 280px;
-    padding: 16px;
+    width: 320px;
+    padding: 12px;
     background: rgba(18, 18, 26, 0.92);
     backdrop-filter: blur(8px);
     overflow-y: auto;
@@ -321,23 +300,14 @@
   .layer-header {
     display: flex;
     align-items: center;
-    gap: 8px;
-    padding: 10px 12px;
+    gap: 4px;
+    padding: 6px 8px;
+    background: rgba(18, 18, 26, 0.95);
     cursor: pointer;
-    user-select: none;
   }
 
   .layer-header:active {
     background: rgba(74, 222, 128, 0.08);
-  }
-
-  .layer-header {
-    display: flex;
-    align-items: center;
-    gap: 6px;
-    padding: 8px;
-    background: rgba(18, 18, 26, 0.95);
-    cursor: pointer;
   }
 
 .expand-arrow {
@@ -357,12 +327,13 @@
 
   .layer-archetype-select {
     flex: 1;
+    min-width: 0;
     background: transparent;
     border: 1px solid #1e1e2e;
     color: #4ade80;
-    padding: 4px 6px;
-    border-radius: 4px;
-    font-size: 10px;
+    padding: 2px 4px;
+    border-radius: 3px;
+    font-size: 9px;
     cursor: pointer;
   }
 
@@ -372,13 +343,13 @@
   }
 
   .layer-yoffset {
-    width: 60px;
+    width: 50px;
     background: transparent;
     border: 1px solid #1e1e2e;
     color: #38bdf8;
-    padding: 4px 4px;
-    border-radius: 4px;
-    font-size: 10px;
+    padding: 2px 3px;
+    border-radius: 3px;
+    font-size: 9px;
     text-align: center;
   }
 
@@ -386,9 +357,9 @@
     background: transparent;
     border: 1px solid #f87171;
     color: #f87171;
-    padding: 4px 8px;
-    border-radius: 4px;
-    font-size: 10px;
+    padding: 1px 5px;
+    border-radius: 3px;
+    font-size: 9px;
     cursor: pointer;
     flex: 0 0 auto;
   }
@@ -566,9 +537,9 @@
     background: transparent;
     border: 1px solid #38bdf8;
     color: #38bdf8;
-    padding: 2px 6px;
-    border-radius: 4px;
-    font-size: 10px;
+    padding: 1px 4px;
+    border-radius: 3px;
+    font-size: 9px;
     cursor: pointer;
     flex: 0 0 auto;
   }
@@ -620,6 +591,39 @@
     font-weight: 700;
     margin-right: 4px;
   }
+
+  .visibility-btn {
+    background: transparent;
+    border: 1px solid #4ade80;
+    color: #4ade80;
+    padding: 1px 4px;
+    border-radius: 3px;
+    font-size: 10px;
+    cursor: pointer;
+    flex: 0 0 auto;
+    line-height: 1;
+  }
+
+  .visibility-btn.hidden {
+    border-color: #6e6e82;
+    color: #6e6e82;
+  }
+
+  .visibility-btn:hover {
+    background: rgba(74, 222, 128, 0.1);
+  }
+
+  .visibility-btn.hidden:hover {
+    background: rgba(110, 110, 130, 0.1);
+  }
+
+  .layer-item.dimmed {
+    opacity: 0.5;
+  }
+
+  .layer-item.dimmed .layer-header {
+    background: rgba(30, 30, 46, 0.5) !important;
+  }
 </style>
 </head>
 <body>
@@ -627,7 +631,7 @@
 <header>
   <h1>CLOUD GENERATOR 3D</h1>
   <span class="stats" id="stats">0 spheres</span>
-  <span class="version">v7.6</span>
+  <span class="version">v7.7</span>
 </header>
 
 <button class="toggle-btn" onclick="toggleControls()">Parameters</button>
@@ -2418,16 +2422,11 @@ function exportMeshOBJ() {
   status.textContent = 'Generating OBJ mesh...';
 
   try {
-    let spheres = _isRemeshed && _visibleSpheres.length > 0
-      ? _visibleSpheres
-      : (currentSpheres.length > 0 ? currentSpheres : generateCloud(resolveLayers()));
-
-    if (_isMerged && _mergedSpheres.length > 0 && !_isRemeshed) {
-      const transformedMerged = applyMergedTransform(_mergedSpheres);
-      const editableSpheres = currentSpheres.filter(s =>
-        !_mergedSpheres.some(ms => ms.x === s.x && ms.y === s.y && ms.z === s.z && ms.radius === s.radius)
-      );
-      spheres = [...transformedMerged, ...editableSpheres];
+    let spheres;
+    if (_isRemeshed && _visibleSpheres.length > 0) {
+      spheres = _visibleSpheres;
+    } else {
+      spheres = getVisibleSpheresForExport();
     }
 
     let obj = '# Cloud Mesh OBJ Export\n';
@@ -2496,16 +2495,11 @@ function exportMeshPositions() {
   status.textContent = 'Generating C# positions...';
 
   try {
-    let spheres = _isRemeshed && _visibleSpheres.length > 0
-      ? _visibleSpheres
-      : (currentSpheres.length > 0 ? currentSpheres : generateCloud(resolveLayers()));
-
-    if (_isMerged && _mergedSpheres.length > 0 && !_isRemeshed) {
-      const transformedMerged = applyMergedTransform(_mergedSpheres);
-      const editableSpheres = currentSpheres.filter(s =>
-        !_mergedSpheres.some(ms => ms.x === s.x && ms.y === s.y && ms.z === s.z && ms.radius === s.radius)
-      );
-      spheres = [...transformedMerged, ...editableSpheres];
+    let spheres;
+    if (_isRemeshed && _visibleSpheres.length > 0) {
+      spheres = _visibleSpheres;
+    } else {
+      spheres = getVisibleSpheresForExport();
     }
 
     const ns = document.getElementById('export-namespace')?.value.trim() || 'ProjectC';
@@ -3719,20 +3713,15 @@ const generateCloud = (layers) => {
     let rawSpheres;
 
     if (layer.isMerged) {
-      console.log('layer', i, 'isMerged, isParent:', layer.isParent, '_mergedSpheres:', _mergedSpheres.length);
       if (layer.isParent && _mergedSpheres.length > 0) {
         const transformedMerged = applyMergedTransform(_mergedSpheres);
-        console.log('  -> isParent=true, adding', transformedMerged.length, 'merged spheres to parentSpheres');
         parentSpheres = [...parentSpheres, ...transformedMerged];
       }
       prevWasParent = layer.isParent;
       continue;
     }
 
-    console.log('layer', i, 'archetype:', layer.archetype, 'isParent:', layer.isParent, 'prevWasParent:', prevWasParent, 'parentSpheres:', parentSpheres.length);
-
     if (prevWasParent && parentSpheres.length > 0 && generatorSupportsParent(layer.archetype)) {
-      console.log('layer', i, '-> USING PARENT MODE with', parentSpheres.length, 'parent spheres');
       const generator = getArchetypeGenerator(layer.archetype);
       rawSpheres = generator(layer, parentSpheres);
     } else {
@@ -3785,6 +3774,7 @@ const resolveLayers = () => {
   return [{
     archetype: 'sphere',
     enabled: true,
+    visible: true,
     yOffset: 0,
     seed: 42,
     density: 0.6,
@@ -3854,45 +3844,52 @@ function performMerge() {
     return;
   }
 
-  // Собираем сферы из НЕ-merged слоёв (редактируемых)
-  const newSpheres = [];
-  for (const layer of window._advancedLayers) {
-    if (!layer.isMerged && layer.enabled) {
-      // Эти сферы уже в currentSpheres от generate()
-    }
-  }
+  const previousLayerData = _isMerged ? _mergedLayerData : null;
+  const newLayersBeforeMerge = _isMerged ? window._advancedLayers.filter(l => !l.isMerged) : null;
 
-  // Получаем сферы из редактируемых слоёв (те что не merged)
-  // Они уже в currentSpheres, нужно отфильтровать _mergedSpheres
-  let editableSpheres = [];
-  if (_isMerged && _mergedSpheres.length > 0) {
-    editableSpheres = currentSpheres.filter(s => {
-      // sphere не из merged
-      return !_mergedSpheres.some(ms =>
-        ms.x === s.x && ms.y === s.y && ms.z === s.z && ms.radius === s.radius
-      );
-    });
-  } else {
-    editableSpheres = [...currentSpheres];
-  }
+  const visibleSpheres = currentSpheres
+    .filter(s => {
+      if (s._isNewLayer) {
+        const newLayerIdx = s.layerIndex - 1;
+        const layer = newLayersBeforeMerge && newLayersBeforeMerge[newLayerIdx]
+          ? newLayersBeforeMerge[newLayerIdx]
+          : window._advancedLayers[s.layerIndex];
+        if (!layer || layer.isMerged) return false;
+        if (layer.visible === false) return false;
+        return true;
+      } else if (_isMerged && previousLayerData) {
+        const originalIdx = s._originalLayerIndex !== undefined ? s._originalLayerIndex : s.layerIndex;
+        const layer = previousLayerData[originalIdx];
+        if (!layer) return false;
+        if (layer.isMerged) return false;
+        if (layer.visible === false) return false;
+        return true;
+      } else {
+        const layer = window._advancedLayers[s.layerIndex];
+        if (!layer) return false;
+        if (layer.isMerged) return false;
+        if (layer.visible === false) return false;
+        return true;
+      }
+    })
+    .map(s => ({
+      ...s,
+      _originalLayerIndex: s._originalLayerIndex !== undefined ? s._originalLayerIndex : s.layerIndex
+    }));
 
-  if (editableSpheres.length === 0) {
-    alert('No editable layers to merge');
+  if (visibleSpheres.length === 0) {
+    alert('No visible layers to merge');
     return;
   }
 
-  if (_isMerged) {
-    _mergedSpheres = [..._mergedSpheres, ...editableSpheres];
-  } else {
-    _mergedSpheres = editableSpheres;
-    _mergedLayerData = JSON.parse(JSON.stringify(window._advancedLayers));
-  }
+  _mergedSpheres = visibleSpheres;
+  _mergedLayerData = JSON.parse(JSON.stringify(window._advancedLayers));
 
   window._advancedLayers = [{
     name: 'Merged Layer',
     isMerged: true,
     enabled: true,
-
+    visible: true,
     offsetX: 0,
     offsetY: 0,
     offsetZ: 0,
@@ -3961,66 +3958,110 @@ function unmergeLayers() {
   if (!_isMerged) return;
 
   const mergedSpheresCopy = [..._mergedSpheres];
-
-  window._advancedLayers = [{
-    archetype: 'sphere',
-    enabled: true,
-    yOffset: 0,
-    seed: 42,
-    density: 0.6,
-    cloudSize: 80,
-    cascadeDepth: 3,
-    bumpsPerLevel: 24,
-    childRatio: 30,
-    sizeVariation: 1.0,
-    jitter: 0.3,
-    clustering: 0.5,
-    parentCount: 1,
-    ellipsoidY: 50,
-    ellipsoidXZ: 100,
-    sizeRange: { min: 5, max: 20 },
-    maxSphereCount: 5000,
-    positionVariation: 0.5,
-    noiseSalt: 0,
-    columnParams: {
-      height: 40,
-      baseRadius: 8,
-      topRadius: 3,
-      floors: 12,
-      ringsPerFloor: 8,
-      wobble: 0.3
-    },
-    platformParams: {
-      width: 50,
-      depth: 50,
-      centerThickness: 5,
-      edgeThickness: 1,
-      interiorDensity: 120,
-      edgeRings: 4
-    },
-    treeParams: {
-      baseRadius: 8,
-      maxDepth: 5,
-      branchElongation: 1.8,
-      taperRatio: 0.8,
-      branchAngle: 40,
-      branchProbability: 0.5,
-      trunkUpBias: 0.4,
-      lengthFalloff: 0.75,
-      thicknessFalloff: 0.85
-    }
-  }];
+  const newSpheres = currentSpheres.filter(s => s._isNewLayer);
+  const savedLayerData = _mergedLayerData;
 
   _isMerged = false;
   _mergedSpheres = [];
-  _mergedLayerData = null;
 
+  if (savedLayerData && Array.isArray(savedLayerData) && savedLayerData.length > 0) {
+    window._advancedLayers = JSON.parse(JSON.stringify(savedLayerData));
+    mergedSpheresCopy.forEach(s => {
+      s.layerIndex = s._originalLayerIndex !== undefined ? s._originalLayerIndex : 0;
+      delete s._originalLayerIndex;
+    });
+    if (newSpheres.length > 0) {
+      const newLayer = {
+        archetype: 'sphere',
+        enabled: true,
+        visible: true,
+        yOffset: 0,
+        seed: 42,
+        density: 0.6,
+        cloudSize: 80,
+        cascadeDepth: 3,
+        bumpsPerLevel: 24,
+        childRatio: 30,
+        sizeVariation: 1.0,
+        jitter: 0.3,
+        clustering: 0.5,
+        parentCount: 1,
+        ellipsoidY: 50,
+        ellipsoidXZ: 100,
+        sizeRange: { min: 5, max: 20 },
+        maxSphereCount: 5000,
+        positionVariation: 0.5,
+        noiseSalt: 0,
+        columnParams: { height: 40, baseRadius: 8, topRadius: 3, floors: 12, ringsPerFloor: 8, wobble: 0.3 },
+        platformParams: { width: 50, depth: 50, centerThickness: 5, edgeThickness: 1, interiorDensity: 120, edgeRings: 4 },
+        treeParams: { baseRadius: 8, maxDepth: 5, branchElongation: 1.8, taperRatio: 0.8, branchAngle: 40, branchProbability: 0.5, trunkUpBias: 0.4, lengthFalloff: 0.75, thicknessFalloff: 0.85 }
+      };
+      window._advancedLayers.push(newLayer);
+      newSpheres.forEach(s => {
+        s.layerIndex = window._advancedLayers.length - 1;
+        delete s._isNewLayer;
+      });
+    }
+  } else {
+    window._advancedLayers = [{
+      archetype: 'sphere',
+      enabled: true,
+      visible: true,
+      yOffset: 0,
+      seed: 42,
+      density: 0.6,
+      cloudSize: 80,
+      cascadeDepth: 3,
+      bumpsPerLevel: 24,
+      childRatio: 30,
+      sizeVariation: 1.0,
+      jitter: 0.3,
+      clustering: 0.5,
+      parentCount: 1,
+      ellipsoidY: 50,
+      ellipsoidXZ: 100,
+      sizeRange: { min: 5, max: 20 },
+      maxSphereCount: 5000,
+      positionVariation: 0.5,
+      noiseSalt: 0,
+      columnParams: {
+        height: 40,
+        baseRadius: 8,
+        topRadius: 3,
+        floors: 12,
+        ringsPerFloor: 8,
+        wobble: 0.3
+      },
+      platformParams: {
+        width: 50,
+        depth: 50,
+        centerThickness: 5,
+        edgeThickness: 1,
+        interiorDensity: 120,
+        edgeRings: 4
+      },
+      treeParams: {
+        baseRadius: 8,
+        maxDepth: 5,
+        branchElongation: 1.8,
+        taperRatio: 0.8,
+        branchAngle: 40,
+        branchProbability: 0.5,
+        trunkUpBias: 0.4,
+        lengthFalloff: 0.75,
+        thicknessFalloff: 0.85
+      }
+    }];
+    mergedSpheresCopy.forEach(s => { s.layerIndex = 0; });
+  }
+
+  _mergedLayerData = null;
   currentSpheres = mergedSpheresCopy;
 
   renderLayerList();
   rebuildMesh();
 
-  document.getElementById('stats').textContent = `${currentSpheres.length} spheres (1 layer)`;
+  document.getElementById('stats').textContent = `${currentSpheres.length} spheres (${window._advancedLayers.length} layer${window._advancedLayers.length !== 1 ? 's' : ''})`;
 }
 
 function updateMergedLayerField(field, value) {
@@ -4280,13 +4321,32 @@ function generate() {
       layers = layers.filter(l => !l.isMerged);
     }
 
+    if (layers.length === 0) {
+      return;
+    }
+
     const randomSeed = Math.floor(Math.random() * 999999);
     const epoch = Math.floor(Math.random() * 99999999);
     for (const layer of layers) {
       layer.seed = randomSeed;
       layer.noiseSalt = randomSeed * 1000000 + epoch;
     }
-    currentSpheres = generateCloud(layers);
+
+    const newSpheres = generateCloud(layers);
+
+    if (_isMerged && !hasParentMerged) {
+      newSpheres.forEach(s => {
+        if (s.layerIndex !== undefined) {
+          s.layerIndex += 1;
+        }
+      });
+    }
+
+    if (_isMerged && _mergedSpheres.length > 0) {
+      currentSpheres = [..._mergedSpheres, ...newSpheres.map(s => ({ ...s, _isNewLayer: true }))];
+    } else {
+      currentSpheres = newSpheres;
+    }
 
     _isRemeshed = false;
     _remeshedGeometry = null;
@@ -4304,47 +4364,15 @@ function rebuildMesh() {
   cloudMeshes = [];
 
   if (_isRemeshed && _remeshedGeometry) {
-    const material = new THREE.MeshLambertMaterial({
-      vertexColors: true,
-      transparent: true,
-      opacity: 0.85,
-      side: THREE.DoubleSide
-    });
-    const mesh = new THREE.Mesh(_remeshedGeometry, material);
-    scene.add(mesh);
-    cloudMeshes.push(mesh);
+    _rebuildRemeshedMesh();
     return;
   }
 
-  if (_isMerged && _mergedSpheres.length > 0) {
-    const transformed = applyMergedTransform(_mergedSpheres);
-    const geometry = new THREE.SphereGeometry(1, 12, 8);
-
-    transformed.forEach(s => {
-      const d = Math.min(Math.max(s.density, 0), 1);
-      const r = 0.2 + d * 0.6;
-      const g = 0.4 + d * 0.4;
-      const b = 1.0;
-      const color = new THREE.Color(r, g, b);
-
-      const material = new THREE.MeshLambertMaterial({
-        color,
-        transparent: true,
-        opacity: 0.3 + d * 0.5,
-        depthWrite: false
-      });
-
-      const mesh = new THREE.Mesh(geometry, material);
-      mesh.position.set(s.x, s.y, s.z);
-      mesh.scale.setScalar(s.radius);
-      scene.add(mesh);
-      cloudMeshes.push(mesh);
-    });
-  }
+  const visibleSpheres = getVisibleSpheresForRender();
 
   const geometry = new THREE.SphereGeometry(1, 12, 8);
 
-  currentSpheres.forEach(s => {
+  visibleSpheres.forEach(s => {
     const d = Math.min(Math.max(s.density, 0), 1);
     const r = 0.2 + d * 0.6;
     const g = 0.4 + d * 0.4;
@@ -4364,6 +4392,49 @@ function rebuildMesh() {
     scene.add(mesh);
     cloudMeshes.push(mesh);
   });
+}
+
+function getVisibleSpheresForRender() {
+  if (_isMerged && _mergedSpheres.length > 0) {
+    const mergedLayer = window._advancedLayers[0];
+    const mergedVisible = mergedLayer && mergedLayer.visible !== false;
+
+    const newLayerSpheres = currentSpheres.filter(s => s._isNewLayer);
+    const newLayerVisible = newLayerSpheres.filter(s => {
+      const layerIdx = s.layerIndex;
+      const layer = layerIdx < window._advancedLayers.length ? window._advancedLayers[layerIdx] : null;
+      return layer && layer.visible !== false;
+    });
+
+    if (!mergedVisible) {
+      return newLayerVisible;
+    }
+
+    const transformedMerged = applyMergedTransform(_mergedSpheres);
+    return [...transformedMerged, ...newLayerVisible];
+  }
+
+  return currentSpheres.filter(s => {
+    const layerConfig = s._originalLayerIndex !== undefined && _mergedLayerData
+      ? _mergedLayerData[s._originalLayerIndex]
+      : window._advancedLayers[s.layerIndex];
+    if (!layerConfig) return false;
+    if (layerConfig.visible === false) return false;
+    if (layerConfig.isMerged) return false;
+    return true;
+  });
+}
+
+function _rebuildRemeshedMesh() {
+  const material = new THREE.MeshLambertMaterial({
+    vertexColors: true,
+    transparent: true,
+    opacity: 0.85,
+    side: THREE.DoubleSide
+  });
+  const mesh = new THREE.Mesh(_remeshedGeometry, material);
+  scene.add(mesh);
+  cloudMeshes.push(mesh);
 }
 
 function isSphereFullyInternal(sphere, allSpheres, epsilon = 0.1) {
@@ -4405,6 +4476,26 @@ function computeCloudDensity(x, y, z, spheres) {
   return maxDensity;
 }
 
+function getVisibleSpheresForExport() {
+  if (_isMerged && _mergedSpheres.length > 0) {
+    const mergedLayer = window._advancedLayers[0];
+    if (!mergedLayer || mergedLayer.visible === false) {
+      return [];
+    }
+    return applyMergedTransform(_mergedSpheres);
+  }
+
+  return currentSpheres.filter(s => {
+    const layerConfig = s._originalLayerIndex !== undefined && _mergedLayerData
+      ? _mergedLayerData[s._originalLayerIndex]
+      : window._advancedLayers[s.layerIndex];
+    if (!layerConfig) return false;
+    if (layerConfig.visible === false) return false;
+    if (layerConfig.isMerged) return false;
+    return true;
+  });
+}
+
 function performRemesh() {
   if (currentSpheres.length === 0) {
     alert('Generate clouds first');
@@ -4413,15 +4504,36 @@ function performRemesh() {
 
   const startTime = performance.now();
 
-  // Применяем transform к merged сферам если есть
-  let spheresToRemesh = currentSpheres;
+  let spheresToRemesh = [];
+
   if (_isMerged && _mergedSpheres.length > 0) {
-    const transformedMerged = applyMergedTransform(_mergedSpheres);
+    const mergedLayer = window._advancedLayers[0];
+    if (mergedLayer && mergedLayer.visible !== false) {
+      const transformedMerged = applyMergedTransform(_mergedSpheres);
+      transformedMerged.forEach(s => { s._isMergedSphere = true; });
+      spheresToRemesh = [...spheresToRemesh, ...transformedMerged];
+    }
     const editableSpheres = currentSpheres.filter(s =>
-      !_mergedSpheres.some(ms => ms.x === s.x && ms.y === s.y && ms.z === s.z && ms.radius === s.radius)
+      !_mergedSpheres.some(ms =>
+        ms.x === s.x && ms.y === s.y && ms.z === s.z && ms.radius === s.radius
+      )
     );
-    spheresToRemesh = [...transformedMerged, ...editableSpheres];
+    spheresToRemesh = [...spheresToRemesh, ...editableSpheres];
+  } else {
+    spheresToRemesh = [...currentSpheres];
   }
+
+  spheresToRemesh = spheresToRemesh.filter(s => {
+    if (s._isMergedSphere) {
+      return true;
+    }
+    const layerConfig = s._originalLayerIndex !== undefined && _mergedLayerData
+      ? _mergedLayerData[s._originalLayerIndex]
+      : window._advancedLayers[s.layerIndex];
+    if (!layerConfig) return false;
+    if (layerConfig.visible === false) return false;
+    return true;
+  });
 
   const visibleSpheres = getVisibleSpheres(spheresToRemesh);
 
@@ -4620,6 +4732,7 @@ function getDefaultLayer(archetype) {
   const base = {
     archetype: archetype || 'sphere',
     enabled: true,
+    visible: true,
     yOffset: 0,
     seed: 42,
     density: 0.6,
@@ -4772,6 +4885,32 @@ function setParentLayer() {
   });
 }
 
+function toggleLayerVisibility(index) {
+  saveHistory();
+
+  if (_isMerged) {
+    const mergedLayer = window._advancedLayers[0];
+    if (index === 0) {
+      mergedLayer.visible = mergedLayer.visible === false ? true : false;
+    } else if (index > 0) {
+      const layer = window._advancedLayers[index];
+      if (layer && !layer.isMerged) {
+        layer.visible = layer.visible === false ? true : false;
+      }
+    }
+  } else {
+    const layer = window._advancedLayers[index];
+    if (layer) {
+      layer.visible = layer.visible === false ? true : false;
+    }
+  }
+
+  renderLayerList();
+  rebuildMesh();
+  const visibleCount = getVisibleSpheresForRender().length;
+  document.getElementById('stats').textContent = `${visibleCount} spheres visible`;
+}
+
 function addLayer(archetype) {
   saveHistory();
   const layer = getDefaultLayer(archetype || 'sphere');
@@ -4913,6 +5052,7 @@ function renderLayerList() {
       item.innerHTML = `
         <div class="layer-header" style="${mergedHeaderStyle}">
           ${layer.isParent ? '<span class="parent-badge">P</span>' : ''}
+          <button class="visibility-btn ${layer.visible !== false ? 'visible' : 'hidden'}" onclick="event.stopPropagation(); toggleLayerVisibility(${index})" title="${layer.visible !== false ? 'Hide' : 'Show'}">${layer.visible !== false ? '&#128065;' : '&#128064;'}</button>
           <span class="expand-arrow" style="color:${layer.isParent ? '#f87171' : '#4ade80'};">&#9658;</span>
           <span style="color:${layer.isParent ? '#f87171' : '#4ade80'};font-weight:bold;flex:1;">${layer.name || 'Merged Layer'}${layer.isParent ? ' (P)' : ''}</span>
         </div>
@@ -5109,6 +5249,7 @@ function renderLayerList() {
     item.innerHTML = `
       <div class="layer-header" draggable="true" data-index="${index}">
         ${layer.isParent ? '<span class="parent-badge">P</span>' : ''}
+        <button class="visibility-btn ${layer.visible !== false ? 'visible' : 'hidden'}" onclick="event.stopPropagation(); toggleLayerVisibility(${index})" title="${layer.visible !== false ? 'Hide' : 'Show'}">${layer.visible !== false ? '&#128065;' : '&#128064;'}</button>
         <span class="drag-handle" title="Drag to reorder">&#9776;</span>
         <span class="expand-arrow">&#9658;</span>
         <select class="layer-archetype-select" onchange="updateLayerArchetype(${index}, this.value)">

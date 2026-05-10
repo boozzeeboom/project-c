@@ -1,10 +1,12 @@
-# Cloud Generator Export System v6.0
+# Cloud Generator Export System v7.0
 
 ## Overview
 
 The export system allows users to extract either:
 1. **Full Generator** — Complete math library + types + generator implementation for Unity/C#/other projects
 2. **Config Only** — Just the parameters, for use with an already-connected generator
+3. **Mesh Export** — Export geometry as OBJ or C# mesh data (supports remeshed output)
+4. **Unity Mesh Merge** (roadmap) — Consolidate spheres into single mesh in Unity
 
 ## Architecture
 
@@ -218,6 +220,7 @@ document.getElementById('btn-myformat').onclick = () => {
 
 | Version | Date | Changes |
 |---------|------|---------|
+| 7.0 | 2026-05-10 | Remesh feature, merged geometry export |
 | 6.0 | 2026-05-09 | Initial data-driven export system with schema, Editor integration |
 | 5.x | prior | Hardcoded C# export |
 
@@ -346,6 +349,8 @@ Exports sphere data as static C# class for direct Unity integration.
 **Usage:** Click "Mesh Positions" button in export dialog
 **Output file:** `CloudMeshPositions_YYYY-MM-DD.cs`
 
+**Remesh support:** When remesh is active, exports only visible spheres.
+
 **Generated class:**
 ```csharp
 namespace ProjectC.CloudGenerator
@@ -361,9 +366,99 @@ namespace ProjectC.CloudGenerator
 }
 ```
 
+**Note on Remesh:** The remesh operation filters internal spheres for visualization and export. The `CloudGenerator.Generate()` function in C# still generates all spheres. To get remeshed geometry in Unity:
+
+1. **For merged mesh**: Export as OBJ → import into Unity as model
+2. **For sphere data**: Export as Mesh Positions → use arrays directly (still individual spheres)
+
+---
+
+## Remesh (v7.0)
+
+### Overview
+
+Remesh consolidates multiple layer spheres into a single unified mesh, removing internal (occluded) spheres and creating one visual object.
+
+### How It Works
+
+1. **Generate** → creates all spheres from layers
+2. **Remesh** → filters visible spheres, creates merged geometry
+3. **Export** → exports remeshed geometry (if remesh was performed)
+
+### Algorithm
+
+```
+1. For each sphere S:
+   - Check if S is fully inside any other sphere
+   - If YES → S is internal, mark for removal
+   - If NO → S is visible, keep
+
+2. For each visible sphere:
+   - Generate UV sphere geometry (16 lat × 16 lon segments)
+   - Add vertices and colors to merged BufferGeometry
+   - Build triangle indices
+
+3. Result: single mesh with all visible spheres merged
+```
+
+### Visibility Check (isSphereFullyInternal)
+
+```javascript
+function isSphereFullyInternal(sphere, allSpheres, epsilon = 0.1) {
+  for (const other of allSpheres) {
+    if (other === sphere) continue;
+    const dist = distance(sphere, other);
+    if (dist + sphere.radius <= other.radius + epsilon) {
+      return true; // fully inside
+    }
+  }
+  return false;
+}
+```
+
+### State Variables
+
+| Variable | Type | Description |
+|----------|------|-------------|
+| `_isRemeshed` | bool | True if remesh has been performed |
+| `_remeshedGeometry` | THREE.BufferGeometry | Merged geometry (or null) |
+| `_visibleSpheres` | array | Array of visible sphere objects |
+
+### Export Behavior
+
+When remesh is active, Mesh OBJ and Mesh Positions exports use `_visibleSpheres` instead of `currentSpheres`:
+
+```javascript
+const spheres = _isRemeshed && _visibleSpheres.length > 0
+  ? _visibleSpheres
+  : (currentSpheres.length > 0 ? currentSpheres : generateCloud(resolveLayers()));
+```
+
+### Limitations
+
+- **O(n²) visibility check** — may be slow for 5000+ spheres
+- **Spheres remain separate** — not a true hull union, just merged vertices
+- **No mesh simplification** — vertex count can be high
+
+### Future Improvements (Roadmap)
+
+1. Spatial hashing for O(n log n) visibility
+2. True convex hull or marching cubes for smooth surface
+3. Mesh decimation after merge
+4. Configurable segment count for remesh
+
 ---
 
 ## Changelog
+
+### v7.0 (2026-05-10)
+- Added **Remesh** button for mesh consolidation
+- Added `isSphereFullyInternal()` — visibility check
+- Added `getVisibleSpheres()` — filters internal spheres
+- Added `performRemesh()` — creates merged geometry
+- Modified `rebuildMesh()` — renders remeshed mesh
+- Modified `exportMeshOBJ()` / `exportMeshPositions()` — support remeshed output
+- Export version bumped to 7.0
 
 ### v6.1 (2026-05-09)
 - Added Mesh OBJ export (real 3D geometry file)
@@ -377,6 +472,121 @@ namespace ProjectC.CloudGenerator
 - Two export modes: Full Generator (ZIP) and Config Only (JSON)
 - Added CloudConfigExport class for Unity JSON serialization
 - Added Tools/Cloud Generator menu integration
+
+---
+
+## Unity Mesh Merge / Remesh (Roadmap)
+
+### Overview
+
+Currently the Unity export generates individual sphere GameObjects (one per sphere) which is expensive. A mesh merge feature would consolidate spheres into a single mesh.
+
+### Architecture
+
+```
+CloudGenerator.Generate(layers)
+    │
+    ▼
+List<CloudSphere> (1000-5000+ spheres)
+    │
+    ├──► [Current]  → CreatePrimitive per sphere (N draw calls)
+    │
+    └──► [New]  CloudMeshMerger.FilterInternalSpheres()
+                        │
+                        ▼
+                List<CloudSphere> (visible, ~30-60% removed)
+                        │
+                        ▼
+                CloudMeshMerger.MergeToMesh()
+                        │
+                        ▼
+                UnityEngine.Mesh (1 draw call)
+```
+
+### New File: CloudMeshMerger.cs
+
+```csharp
+namespace {{NAMESPACE}}.CloudGenerator
+{
+    public static class CloudMeshMerger
+    {
+        public static List<CloudSphere> FilterInternalSpheres(
+            List<CloudSphere> spheres,
+            float epsilon = 0.1f
+        );
+
+        public static Mesh MergeToMesh(
+            List<CloudSphere> spheres,
+            bool filterInternal = true,
+            int latSegments = 16,
+            int lonSegments = 16,
+            bool vertexColors = true
+        );
+
+        public static Mesh MergeToMeshAdaptive(
+            List<CloudSphere> spheres,
+            bool filterInternal = true,
+            int minSegments = 8,
+            int maxSegments = 24,
+            float segmentsPerUnit = 0.5f
+        );
+    }
+}
+```
+
+### Modified File: CloudGeneratorWindow.cs
+
+Add "Generate & Remesh" button:
+```csharp
+if (GUILayout.Button("Generate & Remesh", GUILayout.Height(30)))
+{
+    lastResult = CloudGenerator.Generate(layers);
+    var visible = CloudMeshMerger.FilterInternalSpheres(lastResult);
+    var mesh = CloudMeshMerger.MergeToMesh(visible);
+
+    GameObject go = new GameObject("CloudMesh_Merged");
+    go.AddComponent<MeshFilter>().mesh = mesh;
+    go.AddComponent<MeshRenderer>().material = new Material(Shader.Find("Standard"));
+}
+```
+
+### Algorithm Options
+
+| Option | Quality | Performance | Days | Notes |
+|--------|---------|-------------|------|-------|
+| **A. UV Sphere Merge** | Good | ~0.5-2s bake | 2-3 | Matches JS visualizer output |
+| **B. Adaptive UV Sphere** | Better | ~0.5-2s bake | 2.5 | Radius-based segment count |
+| **C. Marching Cubes** | Best (smooth surface) | ~5-10 days | 3-4 weeks | True iso-surface, not individual spheres |
+| **D. GPU Instancing** | Same as A | Real-time | 1 day | No merge, 1 draw call via instancing |
+
+**Recommendation:**
+- **Baking/Export** → Option A or B (fast, matches visualizer)
+- **Runtime in-game** → Option D (GPU Instancing, no merge needed)
+
+### Implementation Checklist
+
+- [ ] Create `CloudMeshMerger.cs` with `FilterInternalSpheres()`
+- [ ] Add `MergeToMesh()` with UV sphere tessellation
+- [ ] Add `MergeToMeshAdaptive()` for quality improvement
+- [ ] Modify `CloudGeneratorWindow.cs` — add "Generate & Remesh" button
+- [ ] Add mesh save to `.asset` via `AssetDatabase.CreateAsset()`
+- [ ] Update EXPORT_VERSION to 8.0
+
+### Notes
+
+- Use `IndexFormat.UInt32` for >64K vertices
+- Vertex colors map density: R=0.2+d*0.6, G=0.4+d*0.4, B=1.0
+- Memory: 5000 spheres × 24×24 seg × 32 bytes ≈ 100MB — acceptable for baked assets
+
+### Files Summary
+
+| File | Action | Changes |
+|------|--------|---------|
+| `CloudMeshMerger.cs` | **New** | 4 static methods |
+| `CloudGeneratorWindow.cs` | Modify | +1 button, mesh handling |
+| `CloudMath.cs` | No change | — |
+| `CloudTypes.cs` | No change | — |
+| `CloudGenerator.cs` | No change | — |
 
 ---
 

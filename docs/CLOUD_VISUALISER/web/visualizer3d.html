@@ -456,6 +456,34 @@
     background: rgba(74, 222, 128, 0.1);
   }
 
+  .add-layer-buttons {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 6px;
+  }
+
+  .merge-layer-btn {
+    padding: 8px;
+    background: transparent;
+    border: 1px solid #38bdf8;
+    color: #38bdf8;
+    border-radius: 6px;
+    font-size: 10px;
+    cursor: pointer;
+    text-transform: uppercase;
+    font-weight: 600;
+    letter-spacing: 1px;
+  }
+
+  .merge-layer-btn:hover {
+    background: rgba(56, 189, 248, 0.1);
+  }
+
+  .merge-layer-btn:disabled {
+    opacity: 0.4;
+    cursor: not-allowed;
+  }
+
   .undo-redo-bar {
     display: flex;
     gap: 4px;
@@ -556,7 +584,7 @@
 <header>
   <h1>CLOUD GENERATOR 3D</h1>
   <span class="stats" id="stats">0 spheres</span>
-  <span class="version">v7.0</span>
+  <span class="version">v7.4</span>
 </header>
 
 <button class="toggle-btn" onclick="toggleControls()">Parameters</button>
@@ -570,7 +598,10 @@
       <span class="history-info" id="history-info"></span>
     </div>
     <div id="layer-list"></div>
-    <button class="add-layer-btn" onclick="addLayer()">+ Add Layer</button>
+    <div class="add-layer-buttons">
+      <button class="add-layer-btn" onclick="addLayer()">+ Add Layer</button>
+      <button class="merge-layer-btn" onclick="performMerge()" id="btn-merge">Merge Layers</button>
+    </div>
   </div>
 
   <div class="buttons">
@@ -2343,9 +2374,18 @@ function exportMeshOBJ() {
   status.textContent = 'Generating OBJ mesh...';
 
   try {
-    const spheres = _isRemeshed && _visibleSpheres.length > 0
+    let spheres = _isRemeshed && _visibleSpheres.length > 0
       ? _visibleSpheres
       : (currentSpheres.length > 0 ? currentSpheres : generateCloud(resolveLayers()));
+
+    if (_isMerged && _mergedSpheres.length > 0 && !_isRemeshed) {
+      const transformedMerged = applyMergedTransform(_mergedSpheres);
+      const editableSpheres = currentSpheres.filter(s =>
+        !_mergedSpheres.some(ms => ms.x === s.x && ms.y === s.y && ms.z === s.z && ms.radius === s.radius)
+      );
+      spheres = [...transformedMerged, ...editableSpheres];
+    }
+
     let obj = '# Cloud Mesh OBJ Export\n';
     obj += `# ${spheres.length} spheres`;
     obj += _isRemeshed ? ' (remeshed)\n' : '\n';
@@ -2412,9 +2452,18 @@ function exportMeshPositions() {
   status.textContent = 'Generating C# positions...';
 
   try {
-    const spheres = _isRemeshed && _visibleSpheres.length > 0
+    let spheres = _isRemeshed && _visibleSpheres.length > 0
       ? _visibleSpheres
       : (currentSpheres.length > 0 ? currentSpheres : generateCloud(resolveLayers()));
+
+    if (_isMerged && _mergedSpheres.length > 0 && !_isRemeshed) {
+      const transformedMerged = applyMergedTransform(_mergedSpheres);
+      const editableSpheres = currentSpheres.filter(s =>
+        !_mergedSpheres.some(ms => ms.x === s.x && ms.y === s.y && ms.z === s.z && ms.radius === s.radius)
+      );
+      spheres = [...transformedMerged, ...editableSpheres];
+    }
+
     const ns = document.getElementById('export-namespace')?.value.trim() || 'ProjectC';
 
     let code = `// CloudMeshPositions.cs v${EXPORT_VERSION}\n`;
@@ -3654,6 +3703,262 @@ let _isRemeshed = false;
 let _remeshedGeometry = null;
 let _visibleSpheres = [];
 
+// MERGE state - объединённый слой (frozen)
+let _isMerged = false;
+let _mergedSpheres = []; // сферы до transform
+let _mergedLayerData = null; // сохранённые данные для unmerge
+
+function performMerge() {
+  if (currentSpheres.length === 0) {
+    alert('Generate clouds first');
+    return;
+  }
+
+  // Собираем сферы из НЕ-merged слоёв (редактируемых)
+  const newSpheres = [];
+  for (const layer of window._advancedLayers) {
+    if (!layer.isMerged && layer.enabled) {
+      // Эти сферы уже в currentSpheres от generate()
+    }
+  }
+
+  // Получаем сферы из редактируемых слоёв (те что не merged)
+  // Они уже в currentSpheres, нужно отфильтровать _mergedSpheres
+  let editableSpheres = [];
+  if (_isMerged && _mergedSpheres.length > 0) {
+    editableSpheres = currentSpheres.filter(s => {
+      // sphere не из merged
+      return !_mergedSpheres.some(ms =>
+        ms.x === s.x && ms.y === s.y && ms.z === s.z && ms.radius === s.radius
+      );
+    });
+  } else {
+    editableSpheres = [...currentSpheres];
+  }
+
+  if (editableSpheres.length === 0) {
+    alert('No editable layers to merge');
+    return;
+  }
+
+  if (_isMerged) {
+    _mergedSpheres = [..._mergedSpheres, ...editableSpheres];
+  } else {
+    _mergedSpheres = editableSpheres;
+    _mergedLayerData = JSON.parse(JSON.stringify(window._advancedLayers));
+  }
+
+  window._advancedLayers = [{
+    name: 'Merged Layer',
+    isMerged: true,
+    enabled: true,
+
+    offsetX: 0,
+    offsetY: 0,
+    offsetZ: 0,
+    sizeX: 1.0,
+    sizeY: 1.0,
+    sizeZ: 1.0,
+    rotationX: 0,
+    rotationY: 0,
+    rotationZ: 0
+  }];
+
+  _isMerged = true;
+  _isRemeshed = false;
+
+  renderLayerList();
+  rebuildMesh();
+
+  document.getElementById('stats').textContent = `${_mergedSpheres.length} spheres (merged)`;
+}
+
+function applyMergedTransform(spheres) {
+  if (!_isMerged || !spheres || spheres.length === 0) return spheres;
+
+  const layer = window._advancedLayers[0];
+  if (!layer || !layer.isMerged) return spheres;
+
+  return spheres.map(s => {
+    // Apply scale
+    let x = s.x * layer.sizeX;
+    let y = s.y * layer.sizeY;
+    let z = s.z * layer.sizeZ;
+
+    // Apply rotation (simple Euler, Z->Y->X order)
+    const rx = (layer.rotationX || 0) * Math.PI / 180;
+    const ry = (layer.rotationY || 0) * Math.PI / 180;
+    const rz = (layer.rotationZ || 0) * Math.PI / 180;
+
+    // Rotate around Z
+    const cosZ = Math.cos(rz), sinZ = Math.sin(rz);
+    let x2 = x * cosZ - y * sinZ;
+    let y2 = x * sinZ + y * cosZ;
+    let z2 = z;
+
+    // Rotate around Y
+    const cosY = Math.cos(ry), sinY = Math.sin(ry);
+    let x3 = x2 * cosY + z2 * sinY;
+    let y3 = y2;
+    let z3 = -x2 * sinY + z2 * cosY;
+
+    // Rotate around X
+    const cosX = Math.cos(rx), sinX = Math.sin(rx);
+    let x4 = x3;
+    let y4 = y3 * cosX - z3 * sinX;
+    let z4 = y3 * sinX + z3 * cosX;
+
+    return {
+      ...s,
+      x: x4 + (layer.offsetX || 0),
+      y: y4 + (layer.offsetY || 0),
+      z: z4 + (layer.offsetZ || 0)
+    };
+  });
+}
+
+function unmergeLayers() {
+  if (!_isMerged) return;
+
+  const mergedSpheresCopy = [..._mergedSpheres];
+
+  window._advancedLayers = [{
+    archetype: 'sphere',
+    enabled: true,
+    yOffset: 0,
+    seed: 42,
+    density: 0.6,
+    cloudSize: 80,
+    cascadeDepth: 3,
+    bumpsPerLevel: 24,
+    childRatio: 30,
+    sizeVariation: 1.0,
+    jitter: 0.3,
+    clustering: 0.5,
+    parentCount: 1,
+    ellipsoidY: 50,
+    ellipsoidXZ: 100,
+    sizeRange: { min: 5, max: 20 },
+    maxSphereCount: 5000,
+    positionVariation: 0.5,
+    noiseSalt: 0,
+    columnParams: {
+      height: 40,
+      baseRadius: 8,
+      topRadius: 3,
+      floors: 12,
+      ringsPerFloor: 8,
+      wobble: 0.3
+    },
+    platformParams: {
+      width: 50,
+      depth: 50,
+      centerThickness: 5,
+      edgeThickness: 1,
+      interiorDensity: 120,
+      edgeRings: 4
+    },
+    treeParams: {
+      baseRadius: 8,
+      maxDepth: 5,
+      branchElongation: 1.8,
+      taperRatio: 0.8,
+      branchAngle: 40,
+      branchProbability: 0.5,
+      trunkUpBias: 0.4,
+      lengthFalloff: 0.75,
+      thicknessFalloff: 0.85
+    }
+  }];
+
+  _isMerged = false;
+  _mergedSpheres = [];
+  _mergedLayerData = null;
+
+  currentSpheres = mergedSpheresCopy;
+
+  renderLayerList();
+  rebuildMesh();
+
+  document.getElementById('stats').textContent = `${currentSpheres.length} spheres (1 layer)`;
+}
+
+function updateMergedLayerField(field, value) {
+  if (!_isMerged) return;
+
+  saveHistory();
+  const layer = window._advancedLayers[0];
+  layer[field] = parseFloat(value);
+
+  // Применяем transform и рендерим
+  const transformed = applyMergedTransform(_mergedSpheres);
+
+  // Пересоздаём geometry с transformed positions
+  const positions = [];
+  const colors = [];
+  const indices = [];
+
+  transformed.forEach((s, idx) => {
+    const latSegments = 16;
+    const lonSegments = 16;
+
+    const d = Math.min(Math.max(s.density, 0), 1);
+    const r = 0.2 + d * 0.6;
+    const g = 0.4 + d * 0.4;
+    const b = 1.0;
+
+    const baseVertex = positions.length / 3;
+
+    for (let lat = 0; lat <= latSegments; lat++) {
+      const theta = (lat * Math.PI) / latSegments;
+      const sinTheta = Math.sin(theta);
+      const cosTheta = Math.cos(theta);
+
+      for (let lon = 0; lon <= lonSegments; lon++) {
+        const phi = (lon * 2 * Math.PI) / lonSegments;
+        const x = s.x + s.radius * sinTheta * Math.cos(phi);
+        const y = s.y + s.radius * cosTheta;
+        const z = s.z + s.radius * sinTheta * Math.sin(phi);
+        positions.push(x, y, z);
+        colors.push(r, g, b);
+      }
+    }
+
+    for (let lat = 0; lat < latSegments; lat++) {
+      for (let lon = 0; lon < lonSegments; lon++) {
+        const p1 = baseVertex + lat * (lonSegments + 1) + lon;
+        const p2 = p1 + lonSegments + 1;
+        const p3 = p2 + 1;
+        const p4 = p1 + 1;
+        indices.push(p1, p2, p3);
+        indices.push(p1, p3, p4);
+      }
+    }
+  });
+
+  const mergedGeometry = new THREE.BufferGeometry();
+  mergedGeometry.setAttribute('position', new THREE.Float32BufferAttribute(positions, 3));
+  mergedGeometry.setAttribute('color', new THREE.Float32BufferAttribute(colors, 3));
+  mergedGeometry.setIndex(indices);
+  mergedGeometry.computeVertexNormals();
+
+  // Обновляем рендеринг
+  const material = new THREE.MeshLambertMaterial({
+    vertexColors: true,
+    transparent: true,
+    opacity: 0.85,
+    side: THREE.DoubleSide
+  });
+
+  cloudMeshes.forEach(m => scene.remove(m));
+  cloudMeshes = [];
+  const mesh = new THREE.Mesh(mergedGeometry, material);
+  scene.add(mesh);
+  cloudMeshes.push(mesh);
+
+  document.getElementById('stats').textContent = `${_mergedSpheres.length} spheres (merged)`;
+}
+
 function init() {
   scene = new THREE.Scene();
   scene.background = new THREE.Color(0x0a0a0f);
@@ -3828,7 +4133,12 @@ function onResize() {
 
 function generate() {
   try {
-    const layers = resolveLayers();
+    let layers = resolveLayers();
+
+    if (_isMerged) {
+      layers = layers.filter(l => !l.isMerged);
+    }
+
     const randomSeed = Math.floor(Math.random() * 999999);
     const epoch = Math.floor(Math.random() * 99999999);
     for (const layer of layers) {
@@ -3837,10 +4147,11 @@ function generate() {
     }
     console.log('generate called, layers count:', layers.length, 'first layer archetype:', layers[0]?.archetype, 'seed:', randomSeed, 'epoch:', epoch);
     currentSpheres = generateCloud(layers);
+
     _isRemeshed = false;
     _remeshedGeometry = null;
     _visibleSpheres = [];
-    document.getElementById('stats').textContent = `${currentSpheres.length} spheres (${layers.length} layer${layers.length !== 1 ? 's' : ''})`;
+    document.getElementById('stats').textContent = `${currentSpheres.length} spheres (${layers.length + (_isMerged ? 1 : 0)} layer${layers.length + (_isMerged ? 1 : 0) !== 1 ? 's' : ''})`;
     rebuildMesh();
   } catch (e) {
     console.error('Generate error:', e);
@@ -3863,6 +4174,32 @@ function rebuildMesh() {
     scene.add(mesh);
     cloudMeshes.push(mesh);
     return;
+  }
+
+  if (_isMerged && _mergedSpheres.length > 0) {
+    const transformed = applyMergedTransform(_mergedSpheres);
+    const geometry = new THREE.SphereGeometry(1, 12, 8);
+
+    transformed.forEach(s => {
+      const d = Math.min(Math.max(s.density, 0), 1);
+      const r = 0.2 + d * 0.6;
+      const g = 0.4 + d * 0.4;
+      const b = 1.0;
+      const color = new THREE.Color(r, g, b);
+
+      const material = new THREE.MeshLambertMaterial({
+        color,
+        transparent: true,
+        opacity: 0.3 + d * 0.5,
+        depthWrite: false
+      });
+
+      const mesh = new THREE.Mesh(geometry, material);
+      mesh.position.set(s.x, s.y, s.z);
+      mesh.scale.setScalar(s.radius);
+      scene.add(mesh);
+      cloudMeshes.push(mesh);
+    });
   }
 
   const geometry = new THREE.SphereGeometry(1, 12, 8);
@@ -3936,7 +4273,17 @@ function performRemesh() {
 
   const startTime = performance.now();
 
-  const visibleSpheres = getVisibleSpheres(currentSpheres);
+  // Применяем transform к merged сферам если есть
+  let spheresToRemesh = currentSpheres;
+  if (_isMerged && _mergedSpheres.length > 0) {
+    const transformedMerged = applyMergedTransform(_mergedSpheres);
+    const editableSpheres = currentSpheres.filter(s =>
+      !_mergedSpheres.some(ms => ms.x === s.x && ms.y === s.y && ms.z === s.z && ms.radius === s.radius)
+    );
+    spheresToRemesh = [...transformedMerged, ...editableSpheres];
+  }
+
+  const visibleSpheres = getVisibleSpheres(spheresToRemesh);
 
   const positions = [];
   const colors = [];
@@ -4219,6 +4566,12 @@ function addLayer(archetype) {
 function removeLayer(index) {
   saveHistory();
   window._advancedLayers.splice(index, 1);
+
+  if (_isMerged && window._advancedLayers.length === 1 && window._advancedLayers[0].isMerged) {
+    unmergeLayers();
+    return;
+  }
+
   renderLayerList();
   generate();
 }
@@ -4280,6 +4633,74 @@ function renderLayerList() {
   container.innerHTML = '';
 
   window._advancedLayers.forEach((layer, index) => {
+    // MERGED LAYER - special UI with only transform controls
+    if (layer.isMerged) {
+      const item = document.createElement('div');
+      item.className = 'layer-item expanded';
+      item.onclick = function(e) {
+        if (e.target.tagName !== 'INPUT' && e.target.tagName !== 'BUTTON') {
+          toggleLayerExpanded(index);
+        }
+      };
+      item.id = 'layer-item-' + index;
+
+      const transformSection = `
+        <div class="section-title">Transform (Merged)</div>
+        <div class="control-group">
+          <label>Offset X <span class="value">${layer.offsetX || 0}</span></label>
+          <input type="range" min="-200" max="200" value="${layer.offsetX || 0}" onchange="updateMergedLayerField('offsetX', this.value); this.previousElementSibling.querySelector('.value').textContent = this.value">
+        </div>
+        <div class="control-group">
+          <label>Offset Y <span class="value">${layer.offsetY || 0}</span></label>
+          <input type="range" min="-200" max="200" value="${layer.offsetY || 0}" onchange="updateMergedLayerField('offsetY', this.value); this.previousElementSibling.querySelector('.value').textContent = this.value">
+        </div>
+        <div class="control-group">
+          <label>Offset Z <span class="value">${layer.offsetZ || 0}</span></label>
+          <input type="range" min="-200" max="200" value="${layer.offsetZ || 0}" onchange="updateMergedLayerField('offsetZ', this.value); this.previousElementSibling.querySelector('.value').textContent = this.value">
+        </div>
+        <div class="section-title">Scale</div>
+        <div class="control-group">
+          <label>Size X <span class="value">${(layer.sizeX || 1.0).toFixed(2)}</span></label>
+          <input type="range" min="10" max="300" value="${(layer.sizeX || 1.0) * 100}" onchange="updateMergedLayerField('sizeX', this.value / 100); this.previousElementSibling.querySelector('.value').textContent = (this.value / 100).toFixed(2)">
+        </div>
+        <div class="control-group">
+          <label>Size Y <span class="value">${(layer.sizeY || 1.0).toFixed(2)}</span></label>
+          <input type="range" min="10" max="300" value="${(layer.sizeY || 1.0) * 100}" onchange="updateMergedLayerField('sizeY', this.value / 100); this.previousElementSibling.querySelector('.value').textContent = (this.value / 100).toFixed(2)">
+        </div>
+        <div class="control-group">
+          <label>Size Z <span class="value">${(layer.sizeZ || 1.0).toFixed(2)}</span></label>
+          <input type="range" min="10" max="300" value="${(layer.sizeZ || 1.0) * 100}" onchange="updateMergedLayerField('sizeZ', this.value / 100); this.previousElementSibling.querySelector('.value').textContent = (this.value / 100).toFixed(2)">
+        </div>
+        <div class="section-title">Rotation</div>
+        <div class="control-group">
+          <label>Rot X <span class="value">${layer.rotationX || 0}°</span></label>
+          <input type="range" min="0" max="360" value="${layer.rotationX || 0}" onchange="updateMergedLayerField('rotationX', this.value); this.previousElementSibling.querySelector('.value').textContent = this.value + '°'">
+        </div>
+        <div class="control-group">
+          <label>Rot Y <span class="value">${layer.rotationY || 0}°</span></label>
+          <input type="range" min="0" max="360" value="${layer.rotationY || 0}" onchange="updateMergedLayerField('rotationY', this.value); this.previousElementSibling.querySelector('.value').textContent = this.value + '°'">
+        </div>
+        <div class="control-group">
+          <label>Rot Z <span class="value">${layer.rotationZ || 0}°</span></label>
+          <input type="range" min="0" max="360" value="${layer.rotationZ || 0}" onchange="updateMergedLayerField('rotationZ', this.value); this.previousElementSibling.querySelector('.value').textContent = this.value + '°'">
+        </div>
+      `;
+
+      item.innerHTML = `
+        <div class="layer-header" style="background: rgba(74, 222, 128, 0.1);">
+          <span class="expand-arrow" style="color:#4ade80;">&#9658;</span>
+          <span style="color:#4ade80;font-weight:bold;flex:1;">${layer.name || 'Merged Layer'}</span>
+          <button class="clone-btn" onclick="event.stopPropagation(); unmergeLayers()" style="border-color:#4ade80;color:#4ade80;">Unmerge</button>
+        </div>
+        <div class="layer-params">
+          ${transformSection}
+        </div>
+      `;
+
+      container.appendChild(item);
+      return;
+    }
+
     const item = document.createElement('div');
     item.className = 'layer-item';
     item.onclick = function(e) {

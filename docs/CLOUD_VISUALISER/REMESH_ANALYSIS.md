@@ -1,8 +1,8 @@
 # REMESH FEATURE ANALYSIS
 
 **Дата:** 2026-05-10
-**Документ:** Технический анализ реализации Remesh для Cloud Generator
-**Статус:** РЕАЛИЗОВАНО v7.0 (финальный)
+**Документ:** Технический анализ реализации Remesh и Merge для Cloud Generator
+**Статус:** REMESH реализован v7.0, MERGE реализован v7.4
 
 ---
 
@@ -402,3 +402,94 @@ let _visibleSpheres = [];
 | rebuildMesh (mod) | ~3851-3890 |
 | exportMeshOBJ (mod) | ~2346-2352 |
 | exportMeshPositions (mod) | ~2415-2421 |
+
+---
+
+## 14. MERGE FEATURE (v7.1)
+
+### 14.1 Концепция
+
+**MERGE** объединяет все видимые слои в один "запечённый" (frozen) слой, который:
+- **НЕ редактируется** — параметры генерации скрыты
+- **ПОДДЕРЖИВАЕТ transform** — offset, size, rotation
+
+### 14.2 Отличие от Remesh
+
+| | Remesh | MERGE |
+|---|---|---|
+| **Цель** | Удалить внутренние сферы | Объединить слои |
+| **Результат** | BufferGeometry | Merged слой |
+| **Transform** | Нет | Да |
+| **Редактирование** | Нет | Нет (запечён) |
+| **Unmerge** | Нет | Да (восстанавливает слои) |
+
+### 14.3 State переменные
+
+```javascript
+let _isMerged = false;
+let _mergedSpheres = []; // сферы до transform
+let _mergedLayerData = null; // для unmerge
+
+// merged layer structure
+{
+  name: 'Merged Layer',
+  isMerged: true,
+  enabled: true,
+  // Transform - ЕДИНСТВЕННОЕ что можно менять
+  offsetX: 0, offsetY: 0, offsetZ: 0,
+  sizeX: 1.0, sizeY: 1.0, sizeZ: 1.0,
+  rotationX: 0, rotationY: 0, rotationZ: 0
+}
+```
+
+### 14.4 Новые функции
+
+| Функция | Описание |
+|---------|----------|
+| `performMerge()` | Объединяет все слои в один frozen слой |
+| `applyMergedTransform()` | Применяет transform к сферам |
+| `updateMergedLayerField()` | Обновляет transform и перерендеривает |
+| `unmergeLayers()` | Восстанавливает сферы как 1 базовый слой |
+
+### 14.5 UI
+
+- **Кнопка Merge Layers** — рядом с Add Layer (2 колонки)
+- **Merged слой** — special UI с только Transform секцией
+- **Кнопка Unmerge** — разворачивает обратно
+
+### 14.6 Реализация
+
+1. При MERGE:
+   - Если уже есть merged → добавляем новые сферы к существующему
+   - Если новый merge → собираем все редактируемые сферы в `_mergedSpheres`
+   - Создаём merged слой в `window._advancedLayers`
+   - Рендерим: merged + editable сферы через `rebuildMesh()`
+
+2. При изменении transform:
+   - `applyMergedTransform(_mergedSpheres)` → transformed spheres
+   - Обновляем mesh напрямую
+
+3. При Unmerge (НЕ РАБОТАЕТ корректно):
+   - Создаёт 1 базовый sphere слой
+   - Возвращает сферы в `currentSpheres`
+   - **TODO**: восстанавливает реальную структуру слоёв вместо базовой
+
+### 14.7 Workflow
+
+```
+1. Добавили 1,2...n слоёв → Generate → сферы сгенерированы
+2. Merge → все сферы в _mergedSpheres, 1 merged слой в UI
+3. Добавили новый слой → generate() делает merge невидимым → рендерит все сферы
+4. Ещё Merge → старый merge + новые сферы → в один merged
+5. Remesh → работает с transformed merged + editable сферами
+```
+
+### 14.8 Известные проблемы
+
+| Проблема | Статус |
+|----------|--------|
+| Unmerge возвращает 1 базовый sphere слой | **НЕ РАБОТАЕТ** — нужно исправить |
+| Remesh при наличии merge | Работает |
+| Export при merge | Работает (OBJ, C# positions) |
+| Добавление слоёв при active merge | Работает |
+| Transform controls | Работает |

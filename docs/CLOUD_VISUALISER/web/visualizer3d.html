@@ -458,8 +458,30 @@
 
   .add-layer-buttons {
     display: grid;
-    grid-template-columns: 1fr 1fr;
+    grid-template-columns: 1fr 1fr 1fr;
     gap: 6px;
+  }
+
+  .parent-layer-btn {
+    padding: 8px;
+    background: transparent;
+    border: 1px solid #f87171;
+    color: #f87171;
+    border-radius: 6px;
+    font-size: 10px;
+    cursor: pointer;
+    text-transform: uppercase;
+    font-weight: 600;
+    letter-spacing: 1px;
+  }
+
+  .parent-layer-btn:hover {
+    background: rgba(248, 113, 113, 0.1);
+  }
+
+  .parent-layer-btn:disabled {
+    opacity: 0.4;
+    cursor: not-allowed;
   }
 
   .merge-layer-btn {
@@ -605,7 +627,7 @@
 <header>
   <h1>CLOUD GENERATOR 3D</h1>
   <span class="stats" id="stats">0 spheres</span>
-  <span class="version">v7.5</span>
+  <span class="version">v7.6</span>
 </header>
 
 <button class="toggle-btn" onclick="toggleControls()">Parameters</button>
@@ -3697,11 +3719,20 @@ const generateCloud = (layers) => {
     let rawSpheres;
 
     if (layer.isMerged) {
-      prevWasParent = false;
+      console.log('layer', i, 'isMerged, isParent:', layer.isParent, '_mergedSpheres:', _mergedSpheres.length);
+      if (layer.isParent && _mergedSpheres.length > 0) {
+        const transformedMerged = applyMergedTransform(_mergedSpheres);
+        console.log('  -> isParent=true, adding', transformedMerged.length, 'merged spheres to parentSpheres');
+        parentSpheres = [...parentSpheres, ...transformedMerged];
+      }
+      prevWasParent = layer.isParent;
       continue;
     }
 
+    console.log('layer', i, 'archetype:', layer.archetype, 'isParent:', layer.isParent, 'prevWasParent:', prevWasParent, 'parentSpheres:', parentSpheres.length);
+
     if (prevWasParent && parentSpheres.length > 0 && generatorSupportsParent(layer.archetype)) {
+      console.log('layer', i, '-> USING PARENT MODE with', parentSpheres.length, 'parent spheres');
       const generator = getArchetypeGenerator(layer.archetype);
       rawSpheres = generator(layer, parentSpheres);
     } else {
@@ -4244,7 +4275,8 @@ function generate() {
   try {
     let layers = resolveLayers();
 
-    if (_isMerged) {
+    const hasParentMerged = _isMerged && window._advancedLayers.some(l => l.isMerged && l.isParent);
+    if (_isMerged && !hasParentMerged) {
       layers = layers.filter(l => !l.isMerged);
     }
 
@@ -4661,7 +4693,18 @@ function cloneLayer(index) {
 }
 
 function setParentLayer() {
-  const layers = window._advancedLayers.filter(l => !l.isMerged);
+  const mergedLayer = window._advancedLayers.find(l => l.isMerged);
+  const hasRegularLayers = window._advancedLayers.some(l => !l.isMerged);
+
+  if (mergedLayer && !hasRegularLayers) {
+    saveHistory();
+    mergedLayer.isParent = !mergedLayer.isParent;
+    renderLayerList();
+    generate();
+    return;
+  }
+
+  const layers = window._advancedLayers;
   if (layers.length === 0) {
     alert('No layers to set as parent');
     return;
@@ -4691,7 +4734,7 @@ function setParentLayer() {
   `;
 
   dialog.innerHTML = `
-    <h2 style="color: #f87171; margin: 0 0 16px 0; font-size: 14px;">Select Layer as Parent</h2>
+    <h2 style="color: #f87171; margin: 0 0 16px 0; font-size: 14px;">Select Parent Layer</h2>
     <div id="parent-layer-list" style="display: flex; flex-direction: column; gap: 8px; margin-bottom: 16px;"></div>
     <button onclick="this.parentElement.parentElement.remove()" style="width: 100%; padding: 8px;
            background: #333; color: #888; border: none; border-radius: 6px; cursor: pointer;">
@@ -4706,15 +4749,17 @@ function setParentLayer() {
   layers.forEach((layer, idx) => {
     const actualIdx = window._advancedLayers.indexOf(layer);
     const btn = document.createElement('button');
+    const isMerged = layer.isMerged;
+    const layerType = isMerged ? 'merged' : layer.archetype;
     btn.style.cssText = `
       padding: 10px 12px; background: rgba(248,113,113,0.1); border: 1px solid #f87171;
       color: #f87171; border-radius: 6px; cursor: pointer; text-align: left; font-size: 12px;
     `;
     if (layer.isParent) {
       btn.style.background = 'rgba(248,113,113,0.3)';
-      btn.innerHTML = `<span style="color:#f87171;font-weight:bold;">P</span> Layer ${actualIdx} (${layer.archetype}) - Click to remove parent`;
+      btn.innerHTML = `<span style="color:#f87171;font-weight:bold;">P</span> Layer ${actualIdx} (${layerType}) - Click to remove parent`;
     } else {
-      btn.innerHTML = `Layer ${actualIdx} (${layer.archetype}) - Click to set as parent`;
+      btn.innerHTML = `Layer ${actualIdx} (${layerType}) - Click to set as parent`;
     }
     btn.onclick = () => {
       saveHistory();
@@ -4811,7 +4856,7 @@ function renderLayerList() {
     // MERGED LAYER - special UI with only transform controls
     if (layer.isMerged) {
       const item = document.createElement('div');
-      item.className = 'layer-item expanded';
+      item.className = 'layer-item' + (layer.isParent ? ' is-parent expanded' : ' expanded');
       item.onclick = function(e) {
         if (e.target.tagName !== 'INPUT' && e.target.tagName !== 'BUTTON') {
           toggleLayerExpanded(index);
@@ -4861,10 +4906,15 @@ function renderLayerList() {
         </div>
       `;
 
+      const mergedHeaderStyle = layer.isParent
+        ? 'background: rgba(248, 113, 113, 0.15);'
+        : 'background: rgba(74, 222, 128, 0.1);';
+
       item.innerHTML = `
-        <div class="layer-header" style="background: rgba(74, 222, 128, 0.1);">
-          <span class="expand-arrow" style="color:#4ade80;">&#9658;</span>
-          <span style="color:#4ade80;font-weight:bold;flex:1;">${layer.name || 'Merged Layer'}</span>
+        <div class="layer-header" style="${mergedHeaderStyle}">
+          ${layer.isParent ? '<span class="parent-badge">P</span>' : ''}
+          <span class="expand-arrow" style="color:${layer.isParent ? '#f87171' : '#4ade80'};">&#9658;</span>
+          <span style="color:${layer.isParent ? '#f87171' : '#4ade80'};font-weight:bold;flex:1;">${layer.name || 'Merged Layer'}${layer.isParent ? ' (P)' : ''}</span>
         </div>
         <div class="layer-params">
           ${transformSection}

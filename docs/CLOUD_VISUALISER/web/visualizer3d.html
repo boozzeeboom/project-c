@@ -577,6 +577,27 @@
     padding-bottom: 4px;
     border-bottom: 1px solid rgba(30, 30, 46, 0.8);
   }
+.layer-item.is-parent {
+    border-color: #f87171;
+  }
+
+  .layer-item.is-parent .layer-header {
+    background: rgba(248, 113, 113, 0.15);
+  }
+
+  .parent-badge {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 18px;
+    height: 18px;
+    background: #f87171;
+    color: #0a0a0f;
+    border-radius: 4px;
+    font-size: 10px;
+    font-weight: 700;
+    margin-right: 4px;
+  }
 </style>
 </head>
 <body>
@@ -584,7 +605,7 @@
 <header>
   <h1>CLOUD GENERATOR 3D</h1>
   <span class="stats" id="stats">0 spheres</span>
-  <span class="version">v7.4</span>
+  <span class="version">v7.5</span>
 </header>
 
 <button class="toggle-btn" onclick="toggleControls()">Parameters</button>
@@ -600,6 +621,7 @@
     <div id="layer-list"></div>
     <div class="add-layer-buttons">
       <button class="add-layer-btn" onclick="addLayer()">+ Add Layer</button>
+      <button class="parent-layer-btn" onclick="setParentLayer()" id="btn-parent" style="background:transparent;border:1px solid #f87171;color:#f87171;padding:8px;font-size:10px;cursor:pointer;text-transform:uppercase;font-weight:600;letter-spacing:1px;border-radius:6px;">PARENT</button>
       <button class="merge-layer-btn" onclick="performMerge()" id="btn-merge">Merge Layers</button>
     </div>
   </div>
@@ -3184,7 +3206,7 @@ let globalUniqueId = 0;
 // SPHERE ARCHETYPE тАФ existing cascade algorithm, refactored
 // ============================================================
 
-const generateSphereLayer = (layer) => {
+const generateSphereLayer = (layer, parentSpheres) => {
   const spheres = [];
   globalUniqueId = 0;
 
@@ -3198,6 +3220,71 @@ const generateSphereLayer = (layer) => {
 
   const minRadius = sizeRange?.min || 0.5;
   const sizeMax = sizeRange?.max || 20;
+
+  if (parentSpheres && parentSpheres.length > 0) {
+    for (const parentSphere of parentSpheres) {
+      const actualBumps = Math.floor(bumpsPerLevel * (0.4 + (perlin3D(parentSphere.x * 0.5, parentSphere.y * 0.5, parentSphere.z * 0.5, seed) + 1) * 0.5 * 0.8));
+      const surfacePoints = fibonacciSphere(parentSphere.x, parentSphere.y, parentSphere.z, parentSphere.radius, parentSphere.radius, parentSphere.radius, actualBumps);
+
+      for (const pt of surfacePoints) {
+        const nx = (pt.x - parentSphere.x) / parentSphere.radius;
+        const ny = (pt.y - parentSphere.y) / parentSphere.radius;
+        const nz = (pt.z - parentSphere.z) / parentSphere.radius;
+
+        const jitterStrength = jitter / 100;
+        const jitX = perlin3D(pt.x * 15, pt.y * 15, pt.z * 15, seed) * jitterStrength;
+        const jitY = perlin3D(pt.x * 15, pt.y * 15, pt.z * 15, seed + 1) * jitterStrength;
+        const jitZ = perlin3D(pt.x * 15, pt.y * 15, pt.z * 15, seed + 2) * jitterStrength;
+        const jpt = { x: pt.x + jitX * parentSphere.radius, y: pt.y + jitY * parentSphere.radius, z: pt.z + jitZ * parentSphere.radius };
+
+        const noiseScale = 3.0 / parentSphere.radius;
+        const worleyVal = invertedWorley(jpt.x * noiseScale * 2, jpt.y * noiseScale * 2, jpt.z * noiseScale * 2, 1.0, layer.noiseSalt);
+        const clusterStrength = clustering / 100;
+        const fbmVal = (fbm(jpt.x * noiseScale, jpt.y * noiseScale, jpt.z * noiseScale, 4, 0.5, 2.0, seed) + 1) * 0.5;
+        const bumpIntensity = fbmVal * (1 - clusterStrength * 0.5) + worleyVal * clusterStrength * 0.5;
+
+        const threshold = 1 - density;
+        if (bumpIntensity < threshold) {
+          if (!(worleyVal > 0.75 && Math.random() < 0.15)) {
+            continue;
+          }
+        }
+
+        const phiNoise = (perlin3D(jpt.x * noiseScale, jpt.y * noiseScale, jpt.z * noiseScale, seed + 100) + 1) * 0.5;
+        const effectiveRatio = (PHI + (phiNoise - 0.5) * 0.6) * (childRatio / 100) * 0.4;
+
+        const childUniqueId = globalUniqueId++;
+        const sizeNoiseBase = Math.pow((perlin3D(jpt.x * noiseScale * 2, jpt.y * noiseScale * 2, jpt.z * noiseScale * 2, seed + childUniqueId) + 1) * 0.5, 1.5);
+        const sizeNoiseMult = Math.pow((perlin3D(jpt.x * noiseScale * 2 + 100, jpt.y * noiseScale * 2 + 100, jpt.z * noiseScale * 2 + 100, seed + childUniqueId + 500) + 1) * 0.5, 1.5);
+        const sizeBase = minRadius + sizeNoiseBase * (sizeMax - minRadius);
+        const sizeMult = (0.05 + sizeNoiseMult * sizeVariation * 2.0 + effectiveRatio) * 0.3;
+        const childRadius = sizeBase * sizeMult;
+
+        if (childRadius < minRadius * 0.1) continue;
+
+        const perturbed = perturbDir(nx, ny, nz, jpt.x, jpt.y, jpt.z, 0.25, seed);
+        const posVariation = layer.positionVariation !== undefined ? layer.positionVariation : 0.5;
+        const ox = (Math.random() - 0.5) * 12 * parentSphere.radius * posVariation;
+        const oy = (Math.random() - 0.5) * 12 * parentSphere.radius * posVariation;
+        const oz = (Math.random() - 0.5) * 12 * parentSphere.radius * posVariation;
+
+        spheres.push({
+          x: jpt.x + perturbed.x * parentSphere.radius * 0.02 + ox,
+          y: jpt.y + perturbed.y * parentSphere.radius * 0.02 + oy,
+          z: jpt.z + perturbed.z * parentSphere.radius * 0.02 + oz,
+          radius: childRadius,
+          depth: 0,
+          density: bumpIntensity,
+          archetype: 'sphere'
+        });
+
+        if (spheres.length >= maxSphereCount) break;
+      }
+      if (spheres.length >= maxSphereCount) break;
+    }
+    return spheres;
+  }
+
   const baseRadius = cloudSize * 0.5;
 
   const rx = baseRadius * (ellipsoidXZ / 100);
@@ -3588,6 +3675,11 @@ const getArchetypeGenerator = (archetype) => {
   }
 };
 
+// Check if generator supports parent mode
+const generatorSupportsParent = (archetype) => {
+  return archetype === 'sphere';
+};
+
 // ============================================================
 // MAIN CLOUD GENERATOR тАФ Layer Stacking
 // ============================================================
@@ -3595,13 +3687,30 @@ const getArchetypeGenerator = (archetype) => {
 const generateCloud = (layers) => {
   const allSpheres = [];
   let cumulativeY = 0;
+  let parentSpheres = [];
+  let prevWasParent = false;
 
   for (let i = 0; i < layers.length; i++) {
     const layer = layers[i];
     if (!layer.enabled) continue;
 
-    const generator = getArchetypeGenerator(layer.archetype);
-    const rawSpheres = generator(layer);
+    let rawSpheres;
+
+    if (layer.isMerged) {
+      prevWasParent = false;
+      continue;
+    }
+
+    if (prevWasParent && parentSpheres.length > 0 && generatorSupportsParent(layer.archetype)) {
+      const generator = getArchetypeGenerator(layer.archetype);
+      rawSpheres = generator(layer, parentSpheres);
+    } else {
+      const generator = getArchetypeGenerator(layer.archetype);
+      rawSpheres = generator(layer);
+    }
+
+    prevWasParent = layer.isParent;
+    parentSpheres = [...parentSpheres, ...rawSpheres];
 
     let minY = Infinity, maxY = -Infinity;
     for (const s of rawSpheres) {
@@ -4145,7 +4254,6 @@ function generate() {
       layer.seed = randomSeed;
       layer.noiseSalt = randomSeed * 1000000 + epoch;
     }
-    console.log('generate called, layers count:', layers.length, 'first layer archetype:', layers[0]?.archetype, 'seed:', randomSeed, 'epoch:', epoch);
     currentSpheres = generateCloud(layers);
 
     _isRemeshed = false;
@@ -4552,6 +4660,73 @@ function cloneLayer(index) {
   generate();
 }
 
+function setParentLayer() {
+  const layers = window._advancedLayers.filter(l => !l.isMerged);
+  if (layers.length === 0) {
+    alert('No layers to set as parent');
+    return;
+  }
+
+  if (layers.length === 1) {
+    saveHistory();
+    layers[0].isParent = !layers[0].isParent;
+    renderLayerList();
+    generate();
+    return;
+  }
+
+  const modal = document.createElement('div');
+  modal.style.cssText = `
+    position: fixed; top: 0; left: 0; right: 0; bottom: 0;
+    background: rgba(0,0,0,0.8); z-index: 1000;
+    display: flex; align-items: center; justify-content: center;
+  `;
+  modal.onclick = (e) => { if (e.target === modal) document.body.removeChild(modal); };
+
+  const dialog = document.createElement('div');
+  dialog.style.cssText = `
+    background: #12121a; border: 1px solid #1e1e2e;
+    border-radius: 12px; padding: 24px; min-width: 300px;
+    color: #c8c8d4; font-family: 'Inter', sans-serif;
+  `;
+
+  dialog.innerHTML = `
+    <h2 style="color: #f87171; margin: 0 0 16px 0; font-size: 14px;">Select Layer as Parent</h2>
+    <div id="parent-layer-list" style="display: flex; flex-direction: column; gap: 8px; margin-bottom: 16px;"></div>
+    <button onclick="this.parentElement.parentElement.remove()" style="width: 100%; padding: 8px;
+           background: #333; color: #888; border: none; border-radius: 6px; cursor: pointer;">
+      Cancel
+    </button>
+  `;
+
+  modal.appendChild(dialog);
+  document.body.appendChild(modal);
+
+  const list = document.getElementById('parent-layer-list');
+  layers.forEach((layer, idx) => {
+    const actualIdx = window._advancedLayers.indexOf(layer);
+    const btn = document.createElement('button');
+    btn.style.cssText = `
+      padding: 10px 12px; background: rgba(248,113,113,0.1); border: 1px solid #f87171;
+      color: #f87171; border-radius: 6px; cursor: pointer; text-align: left; font-size: 12px;
+    `;
+    if (layer.isParent) {
+      btn.style.background = 'rgba(248,113,113,0.3)';
+      btn.innerHTML = `<span style="color:#f87171;font-weight:bold;">P</span> Layer ${actualIdx} (${layer.archetype}) - Click to remove parent`;
+    } else {
+      btn.innerHTML = `Layer ${actualIdx} (${layer.archetype}) - Click to set as parent`;
+    }
+    btn.onclick = () => {
+      saveHistory();
+      layer.isParent = !layer.isParent;
+      document.body.removeChild(modal);
+      renderLayerList();
+      generate();
+    };
+    list.appendChild(btn);
+  });
+}
+
 function addLayer(archetype) {
   saveHistory();
   const layer = getDefaultLayer(archetype || 'sphere');
@@ -4690,7 +4865,6 @@ function renderLayerList() {
         <div class="layer-header" style="background: rgba(74, 222, 128, 0.1);">
           <span class="expand-arrow" style="color:#4ade80;">&#9658;</span>
           <span style="color:#4ade80;font-weight:bold;flex:1;">${layer.name || 'Merged Layer'}</span>
-          <button class="clone-btn" onclick="event.stopPropagation(); unmergeLayers()" style="border-color:#4ade80;color:#4ade80;">Unmerge</button>
         </div>
         <div class="layer-params">
           ${transformSection}
@@ -4702,7 +4876,7 @@ function renderLayerList() {
     }
 
     const item = document.createElement('div');
-    item.className = 'layer-item';
+    item.className = 'layer-item' + (layer.isParent ? ' is-parent' : '');
     item.onclick = function(e) {
       if (e.target.tagName !== 'SELECT' && e.target.tagName !== 'INPUT' && e.target.tagName !== 'BUTTON') {
         toggleLayerExpanded(index);
@@ -4884,6 +5058,7 @@ function renderLayerList() {
 
     item.innerHTML = `
       <div class="layer-header" draggable="true" data-index="${index}">
+        ${layer.isParent ? '<span class="parent-badge">P</span>' : ''}
         <span class="drag-handle" title="Drag to reorder">&#9776;</span>
         <span class="expand-arrow">&#9658;</span>
         <select class="layer-archetype-select" onchange="updateLayerArchetype(${index}, this.value)">

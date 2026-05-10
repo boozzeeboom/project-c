@@ -594,8 +594,64 @@ When parent mode is active, `generateSphereLayer(layer, parentSpheres)`:
 - Creates children on those surface points using standard noise/clustering
 - Children inherit parent's position and radius for surface normal calculation
 
-### TODO v7.6:
-- [ ] Allow Merged Layer to be designated as Parent for generating on its surface
-- [ ] Currently merged layers are skipped in generateCloud() — need to store merged spheres and pass to parent mode
+## v7.6 — Merged Layer as Parent
+
+### Feature: Use Merged Layer Spheres as Parent Surface
+
+**Concept:**
+- Merged Layer can be designated as Parent (основа)
+- When a merged layer is marked as isParent, its spheres are used as the surface for the next layer's generation
+- This allows generating children on previously merged/frozen cloud formations
+
+### How It Works:
+
+1. **Mark Merged Layer as Parent** — Click PARENT button, select merged layer from dialog
+2. **Merged Layer turns red with "P" badge** — Visual indication of parent status
+3. **Add next layer** — This layer will generate children ON the merged spheres' surface
+4. **Generate** — Merged spheres transformed and used as parent surface
+
+### Technical Implementation:
+
+**generateCloud changes:**
+```javascript
+if (layer.isMerged) {
+  if (layer.isParent && _mergedSpheres.length > 0) {
+    // Transform merged spheres (apply scale/rotation/offset) and add to parentSpheres
+    const transformedMerged = applyMergedTransform(_mergedSpheres);
+    parentSpheres = [...parentSpheres, ...transformedMerged];
+  }
+  prevWasParent = layer.isParent;
+  continue;
+}
+```
+
+**generate() changes:**
+```javascript
+// Only filter merged layer if it's NOT the parent
+const hasParentMerged = _isMerged && window._advancedLayers.some(l => l.isMerged && l.isParent);
+if (_isMerged && !hasParentMerged) {
+  layers = layers.filter(l => !l.isMerged);
+}
+```
+
+### UI Changes:
+
+1. **PARENT dialog shows all layers** — including merged layer with "(merged)" label
+2. **Merged layer UI turns red** — when isParent is true
+3. **3-column grid for buttons** — Add, Parent, Merge in one row
+
+### Workflow:
+
+1. Create sphere layers → Generate
+2. Merge → Merged Layer appears
+3. PARENT → dialog shows "Layer 0 (merged)"
+4. Select merged as parent → turns red with P badge
+5. Add new sphere layer → Generate
+6. New layer generates children on merged sphere surface
+
+### TODO v7.7:
+- [ ] Visual feedback when parent mode is active (highlight next layer?)
+- [ ] Support multiple merged layers as parents
+- [ ] Allow unmerge to restore individual layers
 
 ---

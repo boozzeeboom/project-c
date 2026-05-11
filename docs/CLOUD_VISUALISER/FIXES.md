@@ -790,3 +790,408 @@ function sampleMeshSurface(vertices, indices, numPoints) {
 - [ ] Multiple parent meshes support
 
 ---
+
+## v8.1 — Sphere Count Slider, Button Width Fix, Layer Expand Fix
+
+### Changes
+- **Button Width**: GENERATE/REMESH/EXPORT buttons now use `width: 100%` (were 248px fixed)
+- **Sphere Count Control**: Slider 1%-400%, multiplies maxSphereCount (5000) by scale factor
+  - New field `sphereCountScale` (float, 0.01-4.0, default 1.0)
+  - Added to EXPORT_SCHEMA and FIELD_TYPES
+- **Layer Expand**: Only `.layer-header` or `.expand-arrow` toggles expand, not entire item
+
+### BUG: sphereCountScale not applied in C# export
+The JS `generateCloud()` correctly uses `sphereCountScale` (line 3260-3261), but C# template uses `MaxSphereCount` directly without scaling.
+
+---
+
+## v8.2 Analysis — Feature Architecture Deep Dive
+
+### 1. Parent Mesh System (v8.0)
+
+```
+User clicks "Load Parent Mesh"
+  → loadParentMesh()
+    → OBJ parsing (manual, v/f commands only)
+    → Three.js mesh creation + scene add (0x8866aa, opacity 0.4)
+    → sampleMeshSurface(vertices, indices, 2000)
+      → Triangle extraction + area calculation
+      → Monte Carlo weighted sampling (area-weighted)
+      → Barycentric uniform distribution
+    → Store in _parentMeshPointsRaw + _parentMeshPoints
+    → Mark/create layer with parentMeshFileName
+    → generate()
+      → generateCloud() detects parentMeshFileName
+      → Passes _parentMeshPoints to generateSphereLayer()
+      → Each mesh point acts as "parent sphere"
+      → Fibonacci surface sampling + noise evaluation
+      → Child spheres on mesh surface
+
+Transform updates: updateParentMeshTransform() → recomputes _parentMeshPoints → regenerate
+```
+
+**State Variables:**
+| Variable | Type | Purpose |
+|---|---|---|
+| `_parentMeshObject` | THREE.Mesh | Visual mesh (purple, 40% opacity) |
+| `_parentMeshPointsRaw` | Array<{x,y,z,radius}> | Original sampled points (never mutated after load) |
+| `_parentMeshPoints` | Array<{x,y,z,radius}> | Transformed points (recomputed on transform change) |
+| `_parentMeshFileName` | string | Display name |
+| `_parentMeshTransform` | {offsetX/Y/Z, sizeX/Y/Z, rotationX/Y/Z} | 9-DOF transform |
+
+**Transform applies: scale → rotation(ZYX) → translate**  
+**Radius scaled by average of sizeX/Y/Z**
+
+**Only sphere archetype supports parent mesh** (generatorSupportsParent returns true only for 'sphere')
+
+---
+
+### 2. Layer Merge System (v7.4-v7.6)
+
+```
+performMerge()
+  → Filters visible spheres (respects layer visibility)
+  → Stores filtered spheres into _mergedSpheres (frozen snapshot)
+  → Stores deep copy of _advancedLayers into _mergedLayerData (for unmerge)
+  → Replaces ALL layers with single merged layer (transform-only config)
+  → Sets _isMerged = true
+
+Merged layer UI:
+  - Header: visibility toggle, expand arrow, name + (P) if parent
+  - Body (layer-params): Offset X/Y/Z (-200..200), Size X/Y/Z (10..300%), Rot X/Y/Z (0..360°)
+  - NO archetype selector, NO generation params — frozen geometry only
+
+setParentLayer()
+  → Toggles isParent flag on selected layer
+  → Cannot toggle OFF if layer has parentMeshFileName loaded
+
+In generateCloud():
+  - Layer with isMerged flag: skips generation, injects applyMergedTransform(_mergedSpheres) into parentSpheres
+  - parentSpheres accumulates across layers (every layer's output adds to it)
+  - Next layer with isParent=true receives parentSpheres in generateSphereLayer(layer, parentSpheres)
+  - Child spheres grow on parent sphere surfaces
+
+applyMergedTransform():
+  → Scale (x*sizeX, y*sizeY, z*sizeZ)
+  → Rotation ZYX
+  → Offset (x+offsetX, y+offsetY, z+offsetZ)
+  → Radius NOT scaled (only position)
+
+unmergeLayers():
+  → Restores _advancedLayers from _mergedLayerData
+  → Restores sphere layerIndex from _originalLayerIndex
+  → Clears _isMerged, _mergedSpheres, _mergedLayerData
+```
+
+**Key State:**
+| Variable | Type | Purpose |
+|---|---|---|
+| `_isMerged` | bool | Global merged mode flag |
+| `_mergedSpheres` | Sphere[] | Frozen sphere positions at merge time |
+| `_mergedLayerData` | Layer[] | Deep copy of layers for unmerge |
+| `isMerged` (layer field) | bool | Marks the merged layer in _advancedLayers[0] |
+| `isParent` (layer field) | bool | Layer's output feeds into next layer |
+| `parentSpheres` | Sphere[] (local) | Accumulated spheres passed to next generator |
+
+**Two parent sources converge in same pipeline:**
+- Merged spheres → applyMergedTransform(_mergedSpheres)
+- Custom mesh points → applyParentMeshTransform(_parentMeshPointsRaw)
+
+Both go through `generateSphereLayer(layer, parentSpheres)` — same output path.
+
+---
+
+### 3. Export System (v6.0-v7.0)
+
+**EXPORT_VERSION: '7.0'**
+
+**EXPORT_SCHEMA fields:**
+```
+common: enabled, yOffset, seed, density, jitter, clustering, sizeRange,
+        positionVariation, condensationLevel, noiseSalt
+
+sphere: cloudSize, cascadeDepth, bumpsPerLevel, childRatio, sizeVariation,
+        parentCount, ellipsoidY, ellipsoidXZ, maxSphereCount, sphereCountScale
+
+column: height, baseRadius, topRadius, floors, ringsPerFloor, wobble
+platform: width, depth, centerThickness, edgeThickness, interiorDensity, edgeRings
+tree: baseRadius, maxDepth, branchElongation, taperRatio, branchAngle,
+      branchProbability, trunkUpBias, lengthFalloff, thicknessFalloff
+```
+
+**Generated C# files (from templates):**
+- `CloudMath.cs` — noise library (Hash3, Perlin3D, Fbm, Worley3D, FibonacciSphere, PerturbDir)
+- `CloudTypes.cs` — CloudArchetype enum, SizeRange, ColumnParams, PlatformParams, TreeParams, CloudLayerConfig, CloudSphere
+- `CloudGenerator.cs` — full generator implementation (Generate, GenerateSphereLayer, GenerateColumnLayer, GeneratePlatformLayer, GenerateTreeLayer)
+- `CloudGeneratorWindow.cs` — Unity Editor window (layer list, sliders, load/save config, generate button)
+- `CloudMeshMerger.cs` — **NOT YET IMPLEMENTED** (roadmap only: FilterInternalSpheres, MergeToMesh, MergeToMeshAdaptive)
+
+**JS vs C# generation differences:**
+| Aspect | JS | C# |
+|---|---|---|
+| Random | Math.random() with noiseSalt | DeterministicRandom (Xorshift) |
+| sphereCountScale | ✅ Applied (maxSphereCount * sphereCountScale) | ❌ Ignored (uses MaxSphereCount directly) |
+| Parent mesh | ✅ _parentMeshPoints pipeline | ❌ Not exported |
+| Merge | ✅ _mergedSpheres pipeline | ❌ Not exported |
+| Remesh | ✅ visibility-based filtering | ❌ Not exported |
+
+---
+
+### 4. Unity Plugin — Gap Analysis
+
+**CRITICAL: No Unity C# files exist in repo.** The web visualizer generates them on-the-fly via "Full Generator" export. There is NO committed Unity plugin.
+
+**Existing plugin is Unreal Engine 5 C++:**
+| File | Status | Purpose |
+|---|---|---|
+| CloudGenerator.uplugin | Experimental/disabled | UE plugin manifest (crashes on load) |
+| CloudMath.h/cpp | ✅ Working | Perlin, FBM, Worley, Fibonacci sphere, perturbation |
+| CloudGeneratorLibrary.cpp | ✅ v6.1 (441 lines) | Full generation — all 4 archetypes, all params |
+| CloudGeneratorBPLibrary.cpp | ⚠️ v6.0 (262 lines) | Stripped BP variant — missing 6 params |
+| CloudTypes.h | ✅ | FCloudLayerConfig, FCloudSphere, archetypes |
+
+**Unreal C++ vs Web Visualizer feature gaps:**
+
+| Feature | Web v8.0 | UE C++ | UE BP | Unity |
+|---|---|---|---|---|
+| All 4 archetypes | ✅ | ✅ | ✅ | ✅ |
+| sphereCountScale | ✅ | ❌ | ❌ | ❌ |
+| NoiseSalt | ✅ | ✅ | ❌ | ❓ |
+| CondensationLevel | ✅ | ✅ | ❌ | ❓ |
+| Remesh (visibility filter) | ✅ | ❌ | ❌ | ❌ |
+| Merge layers (frozen) | ✅ | ❌ | ❌ | ❌ |
+| Parent layer mode | ✅ | ❌ | ❌ | ❌ |
+| Merged as parent | ✅ | ❌ | ❌ | ❌ |
+| OBJ parent mesh | ✅ | ❌ | ❌ | ❌ |
+| Layer clone/copy | ✅ | ❌ | ❌ | ❓ |
+| Drag & drop reorder | ✅ | ❌ | ❌ | ❌ |
+| Undo/redo | ✅ | ❌ | ❌ | ❌ |
+| OBJ export | ✅ | ❌ | ❌ | ❌ |
+| Config JSON | ✅ | ❌ | ❌ | ❌ |
+
+**UE plugin crash issue:** VS 2026 (v14.50) not supported by UE 5.7 — plugin crashes on module init.
+
+---
+
+### 5. Unity Port Architecture (Recommended)
+
+To bring full visualizer feature parity to Unity:
+
+**Phase 1 — Core Generation (parity with current C# export)**
+- `CloudMath.cs` — noise library (already in template)
+- `CloudTypes.cs` — types (already in template)
+- `CloudGenerator.cs` — generation (add sphereCountScale support)
+
+**Phase 2 — Visualizer Workflow Features**
+- `CloudMeshMerger.cs` — implement FilterInternalSpheres, MergeToMesh, MergeToMeshAdaptive
+- `CloudParentMeshSystem.cs` — OBJ loading, surface sampling, transform pipeline
+- `CloudLayerMergeSystem.cs` — merge/unmerge, applyMergedTransform, parentSpheres conduit
+- `CloudVisualizerWindow.cs` — add undo/redo, clone, drag-reorder
+
+**Data model for merged layer (Unity):**
+```csharp
+[Serializable]
+public class MergedLayerData {
+    public List<CloudSphere> spheres;  // frozen snapshot
+    public Vector3 offset;
+    public Vector3 scale;
+    public Vector3 rotation;
+    public bool isParent;
+}
+```
+
+**Data model for parent mesh (Unity):**
+```csharp
+[Serializable]
+public class ParentMeshData {
+    public string meshFilePath;       // path to OBJ
+    public List<Vector3> surfacePoints;  // sampled positions
+    public Vector3 offset;
+    public Vector3 scale;
+    public Vector3 rotation;
+}
+```
+
+**Key decision points:**
+1. Unity uses `JsonUtility` — PascalCase, no $type fields
+2. Parent mesh: store sampled points in config JSON OR reload OBJ at runtime
+3. Merge: freeze spheres as positions/radii OR as mesh reference
+4. Remesh: apply visibility filter in Unity editor OR keep spheres and use mesh for display
+
+---
+
+### TODO v8.2:
+- [ ] Implement sphereCountScale in C# CloudGenerator.cs
+- [ ] Create CloudMeshMerger.cs (FilterInternalSpheres, MergeToMesh, MergeToMeshAdaptive)
+- [ ] Design ParentMeshData serialization for JSON config
+- [ ] Design MergedLayerData serialization for JSON config
+- [ ] Unity project setup with committed .cs files (not just export-generated)
+
+---
+
+## v8.2 Analysis — Corrected
+
+### Ключевой факт: Export Full Unity C# работает
+
+Экспорт генерирует 4 файла:
+- `CloudMath.cs` — математика (Perlin, FBM, Worley, Fibonacci)
+- `CloudTypes.cs` — типы и конфиги
+- `CloudGenerator.cs` — генерация сфер
+- `CloudGeneratorWindow.cs` — Unity Editor window
+
+Эти файлы были сделаны в коммите `7ebfe2b5` (v6.1) и работают корректно.
+
+---
+
+### Фичи v7 и v8 НЕ включены в экспорт
+
+При экспорте передаются только **параметры слоёв** (конфиг JSON). Следующие фичи — это **runtime состояние**, которое не экспортируется:
+
+| Фича | Что в JS | Что экспортируется | Что нужно для Unity |
+|------|----------|-------------------|---------------------|
+| **Remesh** (v7.0) | `_isRemeshed`, `_visibleSpheres`, `_remeshedGeometry` | ❌ Ничего | Реализовать `CloudMeshMerger.cs` |
+| **Merge** (v7.4) | `_mergedSpheres` (массив позиций), `_isMerged` | ❌ Ничего | Экспортировать как `CloudMeshPositions.cs` + transform |
+| **Parent mode** (v7.5) | `isParent` флаг на слое | ✅ `isParent: bool` в JSON | Уже в конфиге |
+| **Merged as parent** (v7.6) | `_mergedSpheres` → `parentSpheres` | ❌ Не экспортируется | Нужна логика в C# генераторе |
+| **Parent mesh OBJ** (v8.0) | `_parentMeshPoints` (2000 точек), `_parentMeshTransform` | ❌ Не экспортируется | Либо путь к OBJ, либо точки в JSON |
+| **sphereCountScale** (v8.1) | Слайдер 1-400% | ✅ В схеме, но **баг: не применяется в C# шаблоне** | Исправить шаблон |
+
+---
+
+### Подробный разбор каждой фичи
+
+#### 1. sphereCountScale — БАГ В ШАБЛОНЕ
+
+**JS** (`generateCloud()`, строка 3260):
+```javascript
+const sphereCountScale = layer.sphereCountScale !== undefined ? layer.sphereCountScale : 1.0;
+const maxSphereCount = Math.floor((layer.maxSphereCount !== undefined ? layer.maxSphereCount : 5000) * sphereCountScale);
+```
+✅ Применяется корректно.
+
+**C# шаблон** (`CloudGenerator.cs`, строка 1260):
+```csharp
+int maxSphereCount = layer.MaxSphereCount;
+```
+❌ `SphereCountScale` не используется. Шаблон игнорирует поле.
+
+**Исправление:** Добавить `SphereCountScale` в `CloudGenerator.cs` шаблон.
+
+---
+
+#### 2. Remesh — CloudMeshMerger.cs не существует
+
+В JS это работает так:
+1. `performRemesh()` → `isSphereFullyInternal()` проверяет каждую сферу
+2. Внутренние сферы удаляются
+3. Оставшиеся объединяются в один `BufferGeometry`
+
+В Unity **этого нет**. `CloudMeshMerger.cs` описан в EXPORT_SYSTEM.md как roadmap, но **не реализован**.
+
+**Что нужно:** Реализовать в C#:
+```csharp
+public static class CloudMeshMerger {
+    public static List<CloudSphere> FilterInternalSpheres(List<CloudSphere> spheres, float epsilon = 0.1f);
+    public static Mesh MergeToMesh(List<CloudSphere> spheres, int latSegments = 16, int lonSegments = 16);
+    public static Mesh MergeToMeshAdaptive(List<CloudSphere> spheres, float segmentsPerUnit = 0.5f);
+}
+```
+
+---
+
+#### 3. Merge Layers — данные не экспортируются
+
+**В JS:**
+- `performMerge()` сохраняет сферы в `_mergedSpheres` (массив позиций/радиусов)
+- Создаётся один слой с `isMerged: true` и трансформом (offset/size/rotation)
+- Исходные параметры слоёв теряются
+
+**Проблема экспорта:**
+- `_mergedSpheres` содержит тысячи записей `{x, y, z, radius}` — слишком много для JSON конфига
+- Можно экспортировать как `CloudMeshPositions.cs` (статический класс с массивами)
+- Но трансформ (Size X/Y/Z, Rotation X/Y/Z) нужно сохранить
+
+**Вариант решения:**
+```
+Merged Layer экспортируется как:
+1. CloudMeshPositions.cs — позиции всех сфер
+2. JSON конфиг с доп. полями:
+   {
+     "isMerged": true,
+     "mergedSphereCount": 1234,
+     "offsetX": 0, "offsetY": 0, "offsetZ": 0,
+     "sizeX": 1.0, "sizeY": 1.0, "sizeZ": 1.0,
+     "rotationX": 0, "rotationY": 0, "rotationZ": 0
+   }
+3. CloudGeneratorWindow читает mergedSphereCount и подгружает CloudMeshPositions
+```
+
+---
+
+#### 4. Parent Mesh OBJ — не экспортируется
+
+**В JS:**
+- `loadParentMesh()` парсит OBJ, семплирует 2000 точек на поверхности
+- Точки хранятся в `_parentMeshPointsRaw` и `_parentMeshPoints`
+- Трансформ применяется при изменении
+
+**При экспорте:** ничего не экспортируется. OBJ файл остаётся на диске пользователя.
+
+**Варианты для Unity:**
+1. **Хранить путь к OBJ** — при загрузке конфига пересэмплировать точки
+2. **Хранить точки в JSON** — 2000 Vector3 это ~24KB, приемлемо
+3. **Хранить только трансформы** — а пользователь сам загружает OBJ в Unity
+
+**Рекомендация:** Вариант 1 — путь к OBJ + трансформ. При загрузке в Unity пересоздавать меш и сэмплировать точки.
+
+---
+
+#### 5. Merged как parent для следующего слоя
+
+**В JS это работает так:**
+```
+Layer 0 (merged, isParent=true)
+  → _mergedSpheres трансформируются
+  → transform в parentSpheres
+
+Layer 1 (sphere)
+  → получает parentSpheres
+  → generateSphereLayer(layer, parentSpheres)
+  → сферы генерируются НА поверхности merged сферы
+```
+
+**В C#:** Такая логика не реализована. `CloudGenerator.Generate()` обрабатывает слои последовательно, но **не накапливает parentSpheres** между слоями.
+
+**Нужно:** Модифицировать `CloudGenerator.Generate()` чтобы он передавал выходные сферы одного слоя как parentSpheres для следующего, если у слоя `isParent = true`.
+
+---
+
+### Итог: что нужно сделать для Unity
+
+| Приоритет | Задача | Файлы |
+|-----------|--------|-------|
+| 🔴 Срочно | Исправить sphereCountScale в C# шаблоне | CloudGenerator.cs template |
+| 🟡 Важно | Реализовать CloudMeshMerger.cs | CloudMeshMerger.cs |
+| 🟡 Важно | Добавить логику merged-as-parent в CloudGenerator.Generate() | CloudGenerator.cs |
+| 🟡 Важно | Экспорт merged layer как CloudMeshPositions + JSON metadata | Export system |
+| 🟢 Доп | Поддержка parent mesh OBJ (путь или точки в JSON) | CloudParentMeshSystem.cs |
+
+### Какие файлы уже экспортируются и работают
+
+| Файл | Статус | Примечание |
+|------|--------|-----------|
+| CloudMath.cs | ✅ Работает | Perlin, FBM, Worley, Fibonacci — всё ок |
+| CloudTypes.cs | ✅ Работает | Enum, SizeRange, ColumnParams, PlatformParams, TreeParams, CloudLayerConfig |
+| CloudGenerator.cs | ⚠️ Частично | sphereCountScale игнорируется |
+| CloudGeneratorWindow.cs | ✅ Работает | Layer editor, sliders, load/save, generate |
+
+### Файлы которых нет (roadmap)
+
+| Файл | Статус | Номер версии когда появится |
+|------|--------|----------------------------|
+| CloudMeshMerger.cs | ❌ Не существует | Планировался для v7.0, не реализован |
+| CloudParentMeshSystem.cs | ❌ Не существует | v8.0 — не был в планах экспорта |
+
+---
+
+---

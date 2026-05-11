@@ -228,7 +228,7 @@
     display: flex;
     gap: 8px;
     margin-top: 16px;
-    width: 248px;
+    width: 100%;
     flex-shrink: 0;
   }
 
@@ -631,7 +631,7 @@
 <header>
   <h1>CLOUD GENERATOR 3D</h1>
   <span class="stats" id="stats">0 spheres</span>
-  <span class="version">v8.0</span>
+  <span class="version">v8.1</span>
 </header>
 
 <button class="toggle-btn" onclick="toggleControls()">Parameters</button>
@@ -800,7 +800,8 @@ const EXPORT_SCHEMA = {
   // Sphere-specific fields
   sphere: [
     'cloudSize', 'cascadeDepth', 'bumpsPerLevel', 'childRatio',
-    'sizeVariation', 'parentCount', 'ellipsoidY', 'ellipsoidXZ', 'maxSphereCount'
+    'sizeVariation', 'parentCount', 'ellipsoidY', 'ellipsoidXZ', 'maxSphereCount',
+    'sphereCountScale'
   ],
   // Column params (nested)
   column: {
@@ -840,6 +841,7 @@ const FIELD_TYPES = {
   ellipsoidY: 'float',
   ellipsoidXZ: 'float',
   maxSphereCount: 'int',
+  sphereCountScale: 'float',
   'columnParams.height': 'float',
   'columnParams.baseRadius': 'float',
   'columnParams.topRadius': 'float',
@@ -3255,7 +3257,8 @@ const generateSphereLayer = (layer, parentSpheres) => {
   const spheres = [];
   globalUniqueId = 0;
 
-  const maxSphereCount = layer.maxSphereCount !== undefined ? layer.maxSphereCount : 5000;
+  const sphereCountScale = layer.sphereCountScale !== undefined ? layer.sphereCountScale : 1.0;
+  const maxSphereCount = Math.floor((layer.maxSphereCount !== undefined ? layer.maxSphereCount : 5000) * sphereCountScale);
 
   const {
     cloudSize, density, seed,
@@ -5128,6 +5131,7 @@ function getDefaultLayer(archetype) {
     base.cascadeDepth = 3;
     base.bumpsPerLevel = 24;
     base.maxSphereCount = 5000;
+    base.sphereCountScale = 1.0;
     base.childRatio = 30;
     base.sizeVariation = 0.5;
     base.parentCount = 1;
@@ -5353,7 +5357,9 @@ function renderLayerList() {
       const item = document.createElement('div');
       item.className = 'layer-item' + (layer.isParent ? ' is-parent expanded' : ' expanded');
       item.onclick = function(e) {
-        if (e.target.tagName !== 'INPUT' && e.target.tagName !== 'BUTTON') {
+        const header = item.querySelector('.layer-header');
+        const arrow = item.querySelector('.expand-arrow');
+        if (header && (header.contains(e.target) || arrow === e.target)) {
           toggleLayerExpanded(index);
         }
       };
@@ -5424,10 +5430,12 @@ function renderLayerList() {
     const item = document.createElement('div');
     item.className = 'layer-item' + (layer.isParent ? ' is-parent' : '');
     item.onclick = function(e) {
-      if (e.target.tagName !== 'SELECT' && e.target.tagName !== 'INPUT' && e.target.tagName !== 'BUTTON') {
-        toggleLayerExpanded(index);
-      }
-    };
+        const header = item.querySelector('.layer-header');
+        const arrow = item.querySelector('.expand-arrow');
+        if (header && (header.contains(e.target) || arrow === e.target)) {
+          toggleLayerExpanded(index);
+        }
+      };
     item.id = 'layer-item-' + index;
 
     const archetypeNames = { sphere: 'Sphere', column: 'Column', platform: 'Platform', tree: 'Tree' };
@@ -5438,11 +5446,17 @@ function renderLayerList() {
     let archetypeSection = '';
 
     if (layer.archetype === 'sphere') {
+      const countScale = layer.sphereCountScale || 1.0;
+      const countScalePct = Math.round((layer.sphereCountScale || 1.0) * 100);
       shapeSection = `
         <div class="section-title">Shape</div>
         <div class="control-group">
           <label>Cloud Size <span class="value">${layer.cloudSize || 80}</span></label>
           <input type="range" min="20" max="200" value="${layer.cloudSize || 80}" onchange="updateLayerField(${index}, 'cloudSize', this.value); this.previousElementSibling.querySelector('.value').textContent = this.value">
+        </div>
+        <div class="control-group">
+          <label>Sphere Count <span class="value">${countScalePct}%</span></label>
+          <input type="range" min="1" max="400" value="${countScalePct}" onchange="updateLayerField(${index}, 'sphereCountScale', this.value / 100); this.previousElementSibling.querySelector('.value').textContent = this.value + '%'">
         </div>
         <div class="control-group">
           <label>Parent Count <span class="value">${layer.parentCount || 1}</span></label>

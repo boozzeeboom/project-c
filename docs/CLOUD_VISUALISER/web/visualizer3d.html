@@ -631,7 +631,7 @@
 <header>
   <h1>CLOUD GENERATOR 3D</h1>
   <span class="stats" id="stats">0 spheres</span>
-  <span class="version">v7.7</span>
+  <span class="version">v8.0</span>
 </header>
 
 <button class="toggle-btn" onclick="toggleControls()">Parameters</button>
@@ -643,6 +643,35 @@
       <button id="undo-btn" class="undo-redo-btn" onclick="undo()" disabled>&#8630;</button>
       <button id="redo-btn" class="undo-redo-btn" onclick="redo()" disabled>&#8631;</button>
       <span class="history-info" id="history-info"></span>
+    </div>
+    <button onclick="loadParentMesh()" style="width:100%;margin-bottom:8px;padding:8px;background:rgba(192,132,252,0.15);border:1px solid #c084fc;color:#c084fc;border-radius:6px;font-size:10px;cursor:pointer;text-transform:uppercase;font-weight:600;">Load Parent Mesh</button>
+    <div id="parent-mesh-section" style="margin-bottom:8px;padding:8px;background:rgba(192,132,252,0.1);border:1px solid #c084fc;border-radius:6px;display:none;">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;">
+        <span style="font-size:10px;color:#c084fc;font-weight:bold;">Parent Mesh</span>
+        <div style="display:flex;gap:4px;">
+          <button onclick="toggleParentMeshVisibility()" id="btn-toggle-parent-mesh" style="padding:3px 8px;background:transparent;border:1px solid #6e6e82;color:#6e6e82;border-radius:4px;font-size:9px;cursor:pointer;">Toggle</button>
+          <button onclick="clearParentMesh()" id="btn-clear-parent-mesh" style="padding:3px 8px;background:transparent;border:1px solid #f87171;color:#f87171;border-radius:4px;font-size:9px;cursor:pointer;">Clear</button>
+        </div>
+      </div>
+      <div style="font-size:9px;color:#c084fc;margin-bottom:6px;">File: <span id="parent-mesh-name"></span></div>
+      <div style="display:flex;gap:4px;align-items:center;">
+        <span style="font-size:9px;color:#6e6e82;width:40px;">Offset</span>
+        <input type="number" id="pm-offset-x" value="0" style="width:50px;background:#1e1e2e;border:1px solid #333;color:#38bdf8;padding:2px;font-size:9px;border-radius:3px;" onchange="updateParentMeshTransform('offsetX', this.value)">
+        <input type="number" id="pm-offset-y" value="0" style="width:50px;background:#1e1e2e;border:1px solid #333;color:#38bdf8;padding:2px;font-size:9px;border-radius:3px;" onchange="updateParentMeshTransform('offsetY', this.value)">
+        <input type="number" id="pm-offset-z" value="0" style="width:50px;background:#1e1e2e;border:1px solid #333;color:#38bdf8;padding:2px;font-size:9px;border-radius:3px;" onchange="updateParentMeshTransform('offsetZ', this.value)">
+      </div>
+      <div style="display:flex;gap:4px;align-items:center;margin-top:4px;">
+        <span style="font-size:9px;color:#6e6e82;width:40px;">Scale</span>
+        <input type="number" id="pm-size-x" value="1" step="0.1" style="width:50px;background:#1e1e2e;border:1px solid #333;color:#38bdf8;padding:2px;font-size:9px;border-radius:3px;" onchange="updateParentMeshTransform('sizeX', this.value)">
+        <input type="number" id="pm-size-y" value="1" step="0.1" style="width:50px;background:#1e1e2e;border:1px solid #333;color:#38bdf8;padding:2px;font-size:9px;border-radius:3px;" onchange="updateParentMeshTransform('sizeY', this.value)">
+        <input type="number" id="pm-size-z" value="1" step="0.1" style="width:50px;background:#1e1e2e;border:1px solid #333;color:#38bdf8;padding:2px;font-size:9px;border-radius:3px;" onchange="updateParentMeshTransform('sizeZ', this.value)">
+      </div>
+      <div style="display:flex;gap:4px;align-items:center;margin-top:4px;">
+        <span style="font-size:9px;color:#6e6e82;width:40px;">Rot</span>
+        <input type="number" id="pm-rot-x" value="0" style="width:50px;background:#1e1e2e;border:1px solid #333;color:#38bdf8;padding:2px;font-size:9px;border-radius:3px;" onchange="updateParentMeshTransform('rotationX', this.value)">
+        <input type="number" id="pm-rot-y" value="0" style="width:50px;background:#1e1e2e;border:1px solid #333;color:#38bdf8;padding:2px;font-size:9px;border-radius:3px;" onchange="updateParentMeshTransform('rotationY', this.value)">
+        <input type="number" id="pm-rot-z" value="0" style="width:50px;background:#1e1e2e;border:1px solid #333;color:#38bdf8;padding:2px;font-size:9px;border-radius:3px;" onchange="updateParentMeshTransform('rotationZ', this.value)">
+      </div>
     </div>
     <div id="layer-list"></div>
     <div class="add-layer-buttons">
@@ -1440,7 +1469,7 @@ namespace {{NAMESPACE}}.CloudGenerator
 
                 double y = floor * floorSpacing;
 
-                double wobbleX = CloudMath.Perlin3D(floor * 0.7, 0, 0, seed)
+                double wobbleX = CloudMath.Perlin3D(floor * 0. 0, 0, seed)
                                  * wobble * floorRadius
                                  + jitter * baseRadius * 2.0
                                    * CloudMath.Perlin3D(floor, 0, 0, seed + 1);
@@ -3721,9 +3750,24 @@ const generateCloud = (layers) => {
       continue;
     }
 
-    if (prevWasParent && parentSpheres.length > 0 && generatorSupportsParent(layer.archetype)) {
+    const prevLayer = layers[i - 1];
+    const hasCustomParentMesh = prevLayer && prevLayer.parentMeshFileName && _parentMeshPoints.length > 0;
+    const hasParentSpheres = parentSpheres.length > 0;
+    const isItselfAParentMeshCarrier = layer.parentMeshFileName && _parentMeshPoints.length > 0;
+
+    // If this layer is a parent mesh carrier, skip sphere generation and store mesh points as parentSpheres
+    if (isItselfAParentMeshCarrier) {
+      rawSpheres = [];
+      // _parentMeshPoints are already transformed by updateParentMeshTransform
+      parentSpheres = [..._parentMeshPoints];
+    } else if (prevWasParent && (hasCustomParentMesh || hasParentSpheres) && generatorSupportsParent(layer.archetype)) {
       const generator = getArchetypeGenerator(layer.archetype);
-      rawSpheres = generator(layer, parentSpheres);
+      if (hasCustomParentMesh) {
+        // _parentMeshPoints are already transformed
+        rawSpheres = generator(layer, _parentMeshPoints);
+      } else {
+        rawSpheres = generator(layer, parentSpheres);
+      }
     } else {
       const generator = getArchetypeGenerator(layer.archetype);
       rawSpheres = generator(layer);
@@ -3838,6 +3882,17 @@ let _isMerged = false;
 let _mergedSpheres = []; // сферы до transform
 let _mergedLayerData = null; // сохранённые данные для unmerge
 
+// CUSTOM PARENT MESH state
+let _parentMeshObject = null; // THREE.Mesh загруженный для parent mode
+let _parentMeshPointsRaw = []; // оригинальные семплированные точки (не трансформированные)
+let _parentMeshPoints = []; // трансформированные точки для использования
+let _parentMeshFileName = ''; // имя файла для отображения
+let _parentMeshTransform = {
+  offsetX: 0, offsetY: 0, offsetZ: 0,
+  sizeX: 1.0, sizeY: 1.0, sizeZ: 1.0,
+  rotationX: 0, rotationY: 0, rotationZ: 0
+};
+
 function performMerge() {
   if (currentSpheres.length === 0) {
     alert('Generate clouds first');
@@ -3913,14 +3968,14 @@ function performMerge() {
 function applyMergedTransform(spheres) {
   if (!_isMerged || !spheres || spheres.length === 0) return spheres;
 
-  const layer = window._advancedLayers[0];
+const layer = window._advancedLayers[0];
   if (!layer || !layer.isMerged) return spheres;
 
   return spheres.map(s => {
     // Apply scale
-    let x = s.x * layer.sizeX;
-    let y = s.y * layer.sizeY;
-    let z = s.z * layer.sizeZ;
+    let x = s.x * (layer.sizeX || 1);
+    let y = s.y * (layer.sizeY || 1);
+    let z = s.z * (layer.sizeZ || 1);
 
     // Apply rotation (simple Euler, Z->Y->X order)
     const rx = (layer.rotationX || 0) * Math.PI / 180;
@@ -3952,6 +4007,297 @@ function applyMergedTransform(spheres) {
       z: z4 + (layer.offsetZ || 0)
     };
   });
+}
+
+// ============================================================
+// CUSTOM PARENT MESH - Load external mesh as parent surface
+// ============================================================
+
+function loadParentMesh() {
+  const input = document.createElement('input');
+  input.type = 'file';
+  input.accept = '.obj';
+  input.onchange = async (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+
+    const reader = new FileReader();
+    reader.onload = async (event) => {
+      const contents = event.target.result;
+
+      // Remove old parent mesh if exists
+      if (_parentMeshObject) {
+        scene.remove(_parentMeshObject);
+        _parentMeshObject = null;
+      }
+
+      // Parse OBJ manually (simple parser for vertices and faces)
+      const vertices = [];
+      const indices = [];
+      const lines = contents.split('\n');
+
+      for (const line of lines) {
+        const trimmed = line.trim();
+        if (trimmed.startsWith('v ')) {
+          const parts = trimmed.split(/\s+/);
+          vertices.push({
+            x: parseFloat(parts[1]),
+            y: parseFloat(parts[2]),
+            z: parseFloat(parts[3])
+          });
+        } else if (trimmed.startsWith('f ')) {
+          const parts = trimmed.split(/\s+/);
+          // OBJ faces can be v/vt/vn or just v
+          const faceIndices = [];
+          for (let i = 1; i < parts.length; i++) {
+            const idx = parseInt(parts[i].split('/')[0]) - 1;
+            if (idx >= 0) faceIndices.push(idx);
+          }
+          // Triangulate (assuming convex polygons)
+          for (let i = 1; i < faceIndices.length - 1; i++) {
+            indices.push(faceIndices[0], faceIndices[i], faceIndices[i + 1]);
+          }
+        }
+      }
+
+      if (vertices.length === 0) {
+        alert('No vertices found in OBJ file');
+        return;
+      }
+
+      // Create Three.js geometry
+      const geometry = new THREE.BufferGeometry();
+      const positionArray = new Float32Array(vertices.length * 3);
+      for (let i = 0; i < vertices.length; i++) {
+        positionArray[i * 3] = vertices[i].x;
+        positionArray[i * 3 + 1] = vertices[i].y;
+        positionArray[i * 3 + 2] = vertices[i].z;
+      }
+      geometry.setAttribute('position', new THREE.Float32BufferAttribute(positionArray, 3));
+      geometry.setIndex(indices);
+      geometry.computeVertexNormals();
+
+      // Create mesh for rendering
+      const material = new THREE.MeshLambertMaterial({
+        color: 0x8866aa,
+        transparent: true,
+        opacity: 0.4,
+        wireframe: false,
+        side: THREE.DoubleSide
+      });
+      _parentMeshObject = new THREE.Mesh(geometry, material);
+      _parentMeshObject.visible = true; // starts visible
+      scene.add(_parentMeshObject);
+
+      // Sample surface points using Monte Carlo on triangles
+      _parentMeshPointsRaw = sampleMeshSurface(vertices, indices, 2000);
+      _parentMeshPoints = [..._parentMeshPointsRaw]; // copy for transformation
+      _parentMeshFileName = file.name;
+
+      // Reset transform
+      _parentMeshTransform = {
+        offsetX: 0, offsetY: 0, offsetZ: 0,
+        sizeX: 1.0, sizeY: 1.0, sizeZ: 1.0,
+        rotationX: 0, rotationY: 0, rotationZ: 0
+      };
+
+      // Create layer if none exist, or mark existing as parent
+      if (window._advancedLayers.length === 0) {
+        // Create a new layer for the parent mesh
+        const newLayer = getDefaultLayer('sphere');
+        newLayer.isParent = true;
+        newLayer.parentMeshFileName = file.name;
+        newLayer.enabled = true;
+        newLayer.visible = true;
+        window._advancedLayers = [newLayer];
+        saveHistory();
+        renderLayerList();
+        generate();
+      } else {
+        // Mark existing layer as parent
+        const targetIdx = window._advancedLayers.findIndex(l => !l.isMerged);
+        if (targetIdx >= 0) {
+          saveHistory();
+          window._advancedLayers[targetIdx].isParent = true;
+          window._advancedLayers[targetIdx].parentMeshFileName = file.name;
+          renderLayerList();
+          generate();
+        }
+      }
+
+      // Show parent mesh section
+      document.getElementById('parent-mesh-section').style.display = 'block';
+      document.getElementById('parent-mesh-name').textContent = file.name;
+
+      // Reset transform inputs
+      document.getElementById('pm-offset-x').value = 0;
+      document.getElementById('pm-offset-y').value = 0;
+      document.getElementById('pm-offset-z').value = 0;
+      document.getElementById('pm-size-x').value = 1;
+      document.getElementById('pm-size-y').value = 1;
+      document.getElementById('pm-size-z').value = 1;
+      document.getElementById('pm-rot-x').value = 0;
+      document.getElementById('pm-rot-y').value = 0;
+      document.getElementById('pm-rot-z').value = 0;
+
+      alert(`Loaded parent mesh: ${file.name}\n${vertices.length} vertices, ${indices.length / 3} triangles\n${_parentMeshPoints.length} surface points sampled`);
+    };
+    reader.readAsText(file);
+  };
+  input.click();
+}
+
+function sampleMeshSurface(vertices, indices, numPoints) {
+  const points = [];
+
+  // Group vertices by triangle
+  const triangles = [];
+  for (let i = 0; i < indices.length; i += 3) {
+    const i0 = indices[i];
+    const i1 = indices[i + 1];
+    const i2 = indices[i + 2];
+    const v0 = vertices[i0];
+    const v1 = vertices[i1];
+    const v2 = vertices[i2];
+    // Calculate triangle area using cross product
+    const ax = v1.x - v0.x, ay = v1.y - v0.y, az = v1.z - v0.z;
+    const bx = v2.x - v0.x, by = v2.y - v0.y, bz = v2.z - v0.z;
+    const cx = ay * bz - az * by;
+    const cy = az * bx - ax * bz;
+    const cz = ax * by - ay * bx;
+    const area = Math.sqrt(cx * cx + cy * cy + cz * cz) * 0.5;
+    if (area > 0.001) { // filter degenerate triangles
+      triangles.push({ v0, v1, v2, area });
+    }
+  }
+
+  if (triangles.length === 0) return points;
+
+  // Calculate total area for weighted random selection
+  let totalArea = 0;
+  for (const tri of triangles) {
+    totalArea += tri.area;
+  }
+
+  // Monte Carlo sampling
+  for (let i = 0; i < numPoints; i++) {
+    // Weighted random triangle selection
+    let r = Math.random() * totalArea;
+    let tri = triangles[0];
+    for (const t of triangles) {
+      r -= t.area;
+      if (r <= 0) {
+        tri = t;
+        break;
+      }
+    }
+
+    // Barycentric coordinates
+    const u = Math.random();
+    const v = Math.random();
+    const w = 1 - u - v;
+    const sqrtW = Math.sqrt(w);
+
+    // Use sqrt for uniform distribution on triangle surface
+    const a = 1 - Math.sqrt(u);
+    const b = Math.sqrt(u) * (1 - v);
+    const c = Math.sqrt(u) * v;
+
+    points.push({
+      x: tri.v0.x * a + tri.v1.x * b + tri.v2.x * c,
+      y: tri.v0.y * a + tri.v1.y * b + tri.v2.y * c,
+      z: tri.v0.z * a + tri.v1.z * b + tri.v2.z * c,
+      radius: 1.0 // placeholder, will be scaled during generation
+    });
+  }
+
+  return points;
+}
+
+function toggleParentMeshVisibility() {
+  if (_parentMeshObject) {
+    _parentMeshObject.visible = !_parentMeshObject.visible;
+    const layer = window._advancedLayers.find(l => l.isParent && l.parentMeshFileName);
+    if (layer) {
+      layer.parentMeshVisible = _parentMeshObject.visible;
+    }
+    renderLayerList();
+    rebuildMesh();
+  }
+}
+
+function clearParentMesh() {
+  if (_parentMeshObject) {
+    scene.remove(_parentMeshObject);
+    _parentMeshObject = null;
+  }
+  _parentMeshPointsRaw = [];
+  _parentMeshPoints = [];
+  _parentMeshFileName = '';
+
+  const parentLayer = window._advancedLayers.find(l => l.isParent && l.parentMeshFileName);
+  if (parentLayer) {
+    parentLayer.parentMeshFileName = null;
+  }
+
+  document.getElementById('parent-mesh-section').style.display = 'none';
+
+  renderLayerList();
+  generate();
+}
+
+function applyParentMeshTransform(point) {
+  let x = point.x * _parentMeshTransform.sizeX;
+  let y = point.y * _parentMeshTransform.sizeY;
+  let z = point.z * _parentMeshTransform.sizeZ;
+
+  const rx = (_parentMeshTransform.rotationX || 0) * Math.PI / 180;
+  const ry = (_parentMeshTransform.rotationY || 0) * Math.PI / 180;
+  const rz = (_parentMeshTransform.rotationZ || 0) * Math.PI / 180;
+
+  const cosZ = Math.cos(rz), sinZ = Math.sin(rz);
+  let x2 = x * cosZ - y * sinZ;
+  let y2 = x * sinZ + y * cosZ;
+  let z2 = z;
+
+  const cosY = Math.cos(ry), sinY = Math.sin(ry);
+  let x3 = x2 * cosY + z2 * sinY;
+  let y3 = y2;
+  let z3 = -x2 * sinY + z2 * cosY;
+
+  const cosX = Math.cos(rx), sinX = Math.sin(rx);
+  let x4 = x3;
+  let y4 = y3 * cosX - z3 * sinX;
+  let z4 = y3 * sinX + z3 * cosX;
+
+  return {
+    x: x4 + _parentMeshTransform.offsetX,
+    y: y4 + _parentMeshTransform.offsetY,
+    z: z4 + _parentMeshTransform.offsetZ,
+    radius: point.radius * ((_parentMeshTransform.sizeX + _parentMeshTransform.sizeY + _parentMeshTransform.sizeZ) / 3)
+  };
+}
+
+function updateParentMeshTransform(field, value) {
+  _parentMeshTransform[field] = parseFloat(value);
+
+  if (_parentMeshObject) {
+    _parentMeshObject.position.set(_parentMeshTransform.offsetX, _parentMeshTransform.offsetY, _parentMeshTransform.offsetZ);
+    _parentMeshObject.scale.set(_parentMeshTransform.sizeX, _parentMeshTransform.sizeY, _parentMeshTransform.sizeZ);
+    _parentMeshObject.rotation.set(
+      _parentMeshTransform.rotationX * Math.PI / 180,
+      _parentMeshTransform.rotationY * Math.PI / 180,
+      _parentMeshTransform.rotationZ * Math.PI / 180
+    );
+  }
+
+  // Re-calculate transformed points from original raw points
+  if (_parentMeshPointsRaw.length > 0) {
+    _parentMeshPoints = _parentMeshPointsRaw.map(p => applyParentMeshTransform(p));
+  }
+
+  renderLayerList();
+  generate();
 }
 
 function unmergeLayers() {
@@ -4825,7 +5171,12 @@ function setParentLayer() {
 
   if (layers.length === 1) {
     saveHistory();
-    layers[0].isParent = !layers[0].isParent;
+    // Don't toggle OFF if this layer has a custom parent mesh loaded
+    if (layers[0].isParent && layers[0].parentMeshFileName) {
+      // Keep parent mode ON, just regenerate
+    } else {
+      layers[0].isParent = !layers[0].isParent;
+    }
     renderLayerList();
     generate();
     return;
@@ -4876,7 +5227,12 @@ function setParentLayer() {
     }
     btn.onclick = () => {
       saveHistory();
-      layer.isParent = !layer.isParent;
+      // Don't toggle OFF if this layer has a custom parent mesh loaded
+      if (layer.isParent && layer.parentMeshFileName) {
+        // Keep parent mode ON
+      } else {
+        layer.isParent = !layer.isParent;
+      }
       document.body.removeChild(modal);
       renderLayerList();
       generate();

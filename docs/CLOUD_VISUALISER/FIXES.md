@@ -655,3 +655,138 @@ if (_isMerged && !hasParentMerged) {
 - [ ] Allow unmerge to restore individual layers
 
 ---
+
+## v8.0 — Load Parent Mesh (Custom OBJ as Parent Surface)
+
+### Feature: Load External OBJ Mesh as Parent for Generation
+
+Позволяет загрузить любой OBJ меш (например череп) и использовать его поверхность как родителя для генерации сфер следующего слоя.
+
+### Concept
+
+```
+┌─────────────────────────────────────────────────────────────┐
+│  Load Parent Mesh (OBJ file)                                │
+│  → Mesh отображается в 3D сцене                            │
+│  → Точки на поверхности семплируются (2000 точек)         │
+│  → Следующий слой генерирует сферы на этих точках         │
+│  → Меш можно скрыть/показать (Toggle)                      │
+│  → Меш можно трансформировать (Offset/Scale/Rotation)    │
+└─────────────────────────────────────────────────────────────┘
+```
+
+### How It Works
+
+1. **Load Parent Mesh** — пользователь выбирает OBJ файл
+2. **OBJ Parser** — парсит вершины и грани из OBJ
+3. **Surface Sampling** — Monte Carlo семплирование на треугольниках (2000 точек)
+4. **Parent Mode** — при генерации следующего слоя используются точки меша вместо сфер
+5. **Transform** — Offset/Scale/Rotation применяются к точкам и к визуальному мешу
+6. **Visibility** — меш можно скрыть через Toggle (не экспортируется)
+
+### UI Changes
+
+```
+┌─────────────────────────────────────────────────────────────┐
+│  [Undo] [Redo] [Load Parent Mesh]  ← новая кнопка         │
+├─────────────────────────────────────────────────────────────┤
+│  [Parent Mesh Section] — появляется после загрузки:         │
+│  File: skull.obj                                          │
+│  Offset: [X] [Y] [Z]                                     │
+│  Scale:  [X] [Y] [Z]                                     │
+│  Rot:    [X] [Y] [Z]                                     │
+│  [Toggle] [Clear]                                         │
+├─────────────────────────────────────────────────────────────┤
+│  Layer 0 (sphere, isParent=true, parentMeshFile=skull)   │
+│  Layer 1 (sphere) — генерирует на поверхности черепа      │
+└─────────────────────────────────────────────────────────────┘
+```
+
+### Technical Implementation
+
+**State Variables:**
+```javascript
+let _parentMeshObject = null;      // THREE.Mesh для рендера
+let _parentMeshPointsRaw = [];      // Оригинальные семплированные точки
+let _parentMeshPoints = [];         // Трансформированные точки для генерации
+let _parentMeshFileName = '';       // Имя файла
+let _parentMeshTransform = {       // Трансформ
+  offsetX, offsetY, offsetZ,
+  sizeX, sizeY, sizeZ,
+  rotationX, rotationY, rotationZ
+};
+```
+
+**OBJ Parser:**
+- Поддерживает `v` (вершины) и `f` (грани)
+- Грани триангулируются (поддержка polygon faces)
+- Фильтрует вырожденные треугольники (area < 0.001)
+
+**Surface Sampling (Monte Carlo):**
+```javascript
+function sampleMeshSurface(vertices, indices, numPoints) {
+  // 1. Построить список треугольников с площадями
+  // 2. Weighted random selection по площади
+  // 3. Barycentric coordinates для равномерного распределения
+  // 4. 2000 точек по умолчанию
+}
+```
+
+**Transform Integration:**
+```javascript
+// applyParentMeshTransform() — трансформирует точку:
+// 1. Scale (X, Y, Z независимо)
+// 2. Rotation (X → Y → Z, как Three.js)
+// 3. Offset (сложение)
+
+// updateParentMeshTransform() — применяет трансформ:
+// 1. Обновляет _parentMeshTransform
+// 2. Применяет к визуальному _parentMeshObject
+// 3. Пересчитывает _parentMeshPoints из _parentMeshPointsRaw
+// 4. Regenerate
+```
+
+**generateCloud() Logic:**
+```javascript
+// 1. Если слой имеет parentMeshFileName → это carrier
+//    → пропускаем генерацию сфер
+//    → сохраняем _parentMeshPoints как parentSpheres для следующего
+
+// 2. Если prevWasParent && hasCustomParentMesh
+//    → используем _parentMeshPoints для генерации
+```
+
+### Workflow
+
+```
+1. Load Parent Mesh → выбрать OBJ (например череп)
+2. Меш отображается, семплируются 2000 точек
+3. Parent Mesh Section показывает трансформ контролы
+4. Add Layer → сферы/колоны и т.д.
+5. Generate → новый слой генерирует на поверхности меша
+6. Adjust Transform → Offset/Scale/Rotation
+7. Toggle → скрыть/показать меш
+8. Export → экспортирует только видимое
+```
+
+### Export Behavior
+
+- Parent mesh **не экспортируется** (это reference geometry)
+- Экспортируются только сгенерированные сферы
+- Сферы генерируются на трансформированных позициях меша
+
+### Limitations
+
+- Только OBJ формат (no GLTF/GLB)
+- no materials/textures from OBJ
+- no vertex normals preservation
+- Fixed 2000 sampling points
+
+### TODO v8.0:
+- [ ] Support GLTF/GLB loading
+- [ ] Configurable sample point count
+- [ ] Wireframe mode for parent mesh
+- [ ] Save/load parent mesh reference in config
+- [ ] Multiple parent meshes support
+
+---

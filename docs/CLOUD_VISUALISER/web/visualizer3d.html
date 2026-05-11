@@ -631,7 +631,7 @@
 <header>
   <h1>CLOUD GENERATOR 3D</h1>
   <span class="stats" id="stats">0 spheres</span>
-  <span class="version">v8.1</span>
+  <span class="version">v8.2</span>
 </header>
 
 <button class="toggle-btn" onclick="toggleControls()">Parameters</button>
@@ -683,7 +683,7 @@
 
   <div class="buttons">
     <button onclick="generate()">Generate</button>
-    <button onclick="performRemesh()" id="btn-remesh">Remesh</button>
+    <button onclick="showRemeshDialog()" id="btn-remesh">Remesh</button>
     <button onclick="showExportDialog()">Export</button>
   </div>
 </div>
@@ -4845,7 +4845,41 @@ function getVisibleSpheresForExport() {
   });
 }
 
-function performRemesh() {
+function showRemeshDialog() {
+  if (currentSpheres.length === 0) {
+    alert('Generate clouds first');
+    return;
+  }
+  const existing = document.getElementById('remesh-dialog');
+  if (existing) existing.remove();
+  const dialog = document.createElement('div');
+  dialog.id = 'remesh-dialog';
+  dialog.style.cssText = 'position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);background:#12121a;border:1px solid #4ade80;border-radius:10px;padding:24px;z-index:1000;color:#c8c8d4;font-family:inherit;min-width:280px;';
+  dialog.innerHTML = `
+    <h3 style="color:#4ade80;margin:0 0 16px 0;font-size:14px;text-transform:uppercase;letter-spacing:1px;">Remesh Options</h3>
+    <div style="margin-bottom:16px;">
+      <label style="display:block;font-size:11px;color:#6e6e82;margin-bottom:6px;">Sphere Quality (segments)</label>
+      <input type="number" id="remesh-segments" value="16" min="4" max="64" style="width:100%;padding:10px;background:#1e1e2e;border:1px solid #333;color:#4ade80;border-radius:6px;font-size:13px;text-align:center;">
+    </div>
+    <p style="font-size:10px;color:#6e6e82;margin:0 0 16px 0;line-height:1.5;">Low=8, Medium=16, High=32<br>Higher = smoother spheres but more vertices</p>
+    <div style="display:flex;gap:10px;">
+      <button onclick="performRemeshWithSegments()" style="flex:1;padding:10px;background:#4ade80;color:#0a0a0f;border:none;border-radius:6px;font-size:11px;font-weight:700;cursor:pointer;text-transform:uppercase;">Apply</button>
+      <button onclick="document.getElementById('remesh-dialog').remove()" style="flex:1;padding:10px;background:transparent;color:#6e6e82;border:1px solid #333;border-radius:6px;font-size:11px;cursor:pointer;">Cancel</button>
+    </div>
+  `;
+  document.body.appendChild(dialog);
+  document.getElementById('remesh-segments').focus();
+}
+
+function performRemeshWithSegments() {
+  const input = document.getElementById('remesh-segments');
+  const segments = parseInt(input.value) || 16;
+  const dialog = document.getElementById('remesh-dialog');
+  if (dialog) dialog.remove();
+  performRemesh(segments);
+}
+
+function performRemesh(segments = 16) {
   if (currentSpheres.length === 0) {
     alert('Generate clouds first');
     return;
@@ -4891,8 +4925,8 @@ function performRemesh() {
   const indices = [];
 
   visibleSpheres.forEach(s => {
-    const latSegments = 16;
-    const lonSegments = 16;
+    const latSegments = segments;
+    const lonSegments = segments;
 
     const d = Math.min(Math.max(s.density, 0), 1);
     const r = 0.2 + d * 0.6;

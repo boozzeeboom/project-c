@@ -1302,18 +1302,21 @@ namespace {{NAMESPACE}}.CloudGenerator
 
             if (parentMeshPoints != null)
             {
-                foreach (var mp in parentMeshPoints)
+                int meshPointCount = parentMeshPoints.Count;
+                int parentLimit = (int)Math.Min(maxSphereCount, meshPointCount);
+                for (int i = 0; i < parentLimit; i++)
                 {
+                    var mp = parentMeshPoints[i];
                     spheres.Add(new CloudSphere
                     {
                         X = mp.x, Y = mp.y, Z = mp.z,
-                        Radius = (float)baseRadius, Depth = 0, Density = 1.0f,
+                        Radius = (float)(baseRadius * 0.3), Depth = 0, Density = 1.0f,
                         Archetype = CloudArchetype.Sphere
                     });
 
                     stack.Push(new SphereGenFrame
                     {
-                        X = mp.x, Y = mp.y, Z = mp.z, Radius = baseRadius,
+                        X = mp.x, Y = mp.y, Z = mp.z, Radius = baseRadius * 0.3,
                         Depth = 0, Density = 1.0,
                         NextPointIdx = -1, BumpCount = 0, SurfacePoints = null
                     });
@@ -1526,7 +1529,8 @@ namespace {{NAMESPACE}}.CloudGenerator
 
             if (totalArea <= 0f) return null;
 
-            int sampleCount = 2000;
+            int targetCount = layer.MaxSphereCount > 0 ? layer.MaxSphereCount : 2000;
+            int sampleCount = Math.Min(targetCount, 2000);
             for (int p = 0; p < sampleCount; p++)
             {
                 double r = rng.NextDouble() * totalArea;
@@ -2452,9 +2456,9 @@ namespace ${namespace}.CloudGenerator.Editor
             layer.Archetype = (CloudArchetype)EditorGUILayout.EnumPopup("Archetype", layer.Archetype);
             layer.Seed = EditorGUILayout.IntField("Seed", layer.Seed);
             layer.Density = EditorGUILayout.Slider("Density", layer.Density, 0f, 1f);
-            layer.Jitter = EditorGUILayout.Slider("Jitter", layer.Jitter, 0f, 0.5f);
+            layer.Jitter = EditorGUILayout.Slider("Jitter", layer.Jitter, 0f, 1f);
             layer.Clustering = EditorGUILayout.Slider("Clustering", layer.Clustering, 0f, 1f);
-            layer.PositionVariation = EditorGUILayout.Slider("Position Variation", layer.PositionVariation, 0f, 1f);
+            layer.PositionVariation = EditorGUILayout.Slider("Position Variation", layer.PositionVariation, 0f, 2f);
             layer.YOffset = EditorGUILayout.FloatField("Y Offset", layer.YOffset);
 
             if (layer.Archetype == CloudArchetype.Sphere)
@@ -2462,16 +2466,22 @@ namespace ${namespace}.CloudGenerator.Editor
                 EditorGUILayout.LabelField("Sphere Settings", EditorStyles.boldLabel);
                 layer.CloudSize = EditorGUILayout.Slider("Cloud Size", layer.CloudSize, 20f, 200f);
                 layer.CascadeDepth = EditorGUILayout.IntSlider("Cascade Depth", layer.CascadeDepth, 1, 5);
-                layer.BumpsPerLevel = EditorGUILayout.IntSlider("Bumps/Level", layer.BumpsPerLevel, 12, 128);
+                layer.BumpsPerLevel = EditorGUILayout.IntSlider("Bumps/Level", layer.BumpsPerLevel, 2, 128);
                 layer.ChildRatio = EditorGUILayout.Slider("Child Ratio", layer.ChildRatio, 10f, 200f);
                 layer.SizeVariation = EditorGUILayout.Slider("Size Variation", layer.SizeVariation, 0f, 1.5f);
                 layer.ParentCount = EditorGUILayout.IntSlider("Parent Count", layer.ParentCount, 1, 12);
                 layer.EllipsoidY = EditorGUILayout.Slider("Ellipsoid Y", layer.EllipsoidY, 20f, 150f);
                 layer.EllipsoidXZ = EditorGUILayout.Slider("Ellipsoid XZ", layer.EllipsoidXZ, 50f, 150f);
-                layer.MaxSphereCount = EditorGUILayout.IntSlider("Max Sphere Count", layer.MaxSphereCount, 100, 10000);
+                layer.MaxSphereCount = EditorGUILayout.IntSlider("Max Sphere Count", layer.MaxSphereCount, 5, 10000);
                 layer.SphereCountScale = EditorGUILayout.Slider("Sphere Count Scale %", layer.SphereCountScale * 100f, 1f, 400f) * 0.01f;
 
                 EditorGUILayout.LabelField("Parent Mesh", EditorStyles.boldLabel);
+                var meshObj = EditorGUILayout.ObjectField("Mesh Asset", null, typeof(UnityEngine.Mesh), false);
+                if (meshObj != null)
+                {
+                    string assetPath = UnityEditor.AssetDatabase.GetAssetPath(meshObj);
+                    if (!string.IsNullOrEmpty(assetPath)) layer.ParentMeshPath = assetPath;
+                }
                 layer.ParentMeshPath = EditorGUILayout.TextField("Mesh Path", layer.ParentMeshPath);
                 if (!string.IsNullOrEmpty(layer.ParentMeshPath))
                 {
@@ -2481,9 +2491,9 @@ namespace ${namespace}.CloudGenerator.Editor
                     layer.ParentMeshScaleZ = EditorGUILayout.Slider("Scale Z", layer.ParentMeshScaleZ, 0.1f, 3f);
                     EditorGUILayout.EndHorizontal();
                     EditorGUILayout.BeginHorizontal();
-                    layer.ParentMeshRotX = EditorGUILayout.Slider("Rot X", layer.ParentMeshRotX, 0f, 360f);
-                    layer.ParentMeshRotY = EditorGUILayout.Slider("Rot Y", layer.ParentMeshRotY, 0f, 360f);
-                    layer.ParentMeshRotZ = EditorGUILayout.Slider("Rot Z", layer.ParentMeshRotZ, 0f, 360f);
+                    layer.ParentMeshRotX = EditorGUILayout.Slider("Rot X", layer.ParentMeshRotX, -180f, 180f);
+                    layer.ParentMeshRotY = EditorGUILayout.Slider("Rot Y", layer.ParentMeshRotY, -180f, 180f);
+                    layer.ParentMeshRotZ = EditorGUILayout.Slider("Rot Z", layer.ParentMeshRotZ, -180f, 180f);
                     EditorGUILayout.EndHorizontal();
                     EditorGUILayout.BeginHorizontal();
                     layer.ParentMeshOffsetX = EditorGUILayout.Slider("Offset X", layer.ParentMeshOffsetX, -50f, 50f);

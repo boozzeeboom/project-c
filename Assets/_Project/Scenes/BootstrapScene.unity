@@ -1092,10 +1092,8 @@ MonoBehaviour:
   CloudSize: 100
   CloudMaterial: {fileID: 2100000, guid: 1113070119fa4ec4f93620807a2d0511, type: 2}
   MeshEntries:
-  - Mesh: {fileID: 10207, guid: 0000000000000000e000000000000000, type: 0}
-    Weight: 0
   - Mesh: {fileID: 10202, guid: 0000000000000000e000000000000000, type: 0}
-    Weight: 82
+    Weight: 0
   RotationX: {x: 360, y: 0}
   RotationY: {x: 0, y: 360}
   RotationZ: {x: 0, y: 0}
@@ -2066,7 +2064,7 @@ MonoBehaviour:
   CloudSize: 100
   CloudMaterial: {fileID: 2100000, guid: 1113070119fa4ec4f93620807a2d0511, type: 2}
   MeshEntries:
-  - Mesh: {fileID: 10207, guid: 0000000000000000e000000000000000, type: 0}
+  - Mesh: {fileID: 10206, guid: 0000000000000000e000000000000000, type: 0}
     Weight: 0
   RotationX: {x: 0, y: 0}
   RotationY: {x: 0, y: 360}

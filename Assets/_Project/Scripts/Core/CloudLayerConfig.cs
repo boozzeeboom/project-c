@@ -1,4 +1,5 @@
 using UnityEngine;
+using ProjectC.CloudGenerator;
 
 namespace ProjectC.Core
 {
@@ -65,5 +66,53 @@ namespace ProjectC.Core
         
         [Tooltip("Использовать 2D planes вместо сфер (для верхнего слоя)")]
         public bool use2DPlanes = false;
+
+        [Header("Generator v7.0 Fields")]
+        [Tooltip("Archetype for generator7.0")]
+        public CloudArchetype archetype = CloudArchetype.Sphere;
+        [Tooltip("Seed for deterministic generation")]
+        public int generatorSeed = 42;
+        [Tooltip("Jitter for position variation")]
+        [Range(0f, 1f)]
+        public float jitter = 0.3f;
+        [Tooltip("Clustering strength")]
+        [Range(0f, 1f)]
+        public float clustering = 0.5f;
+        [Tooltip("Additional position variation")]
+        [Range(0f, 2f)]
+        public float positionVariation = 0.5f;
+
+        [Header("Sphere Archetype")]
+        public int cascadeDepth = 3;
+        public int bumpsPerLevel = 24;
+        public float childRatio = 30f;
+        public float sizeVariationGen = 1.0f;
+        public int parentCount = 1;
+        public float ellipsoidY = 50f;
+        public float ellipsoidXZ = 100f;
+        public int maxSphereCount = 5000;
+        public float sphereCountScale = 1f;
+        public ProjectC.CloudGenerator.SizeRange sizeRange = new ProjectC.CloudGenerator.SizeRange();
+
+        [Header("Column Archetype")]
+        public ProjectC.CloudGenerator.ColumnParams columnParams = new ProjectC.CloudGenerator.ColumnParams();
+
+        [Header("Platform Archetype")]
+        public ProjectC.CloudGenerator.PlatformParams platformParams = new ProjectC.CloudGenerator.PlatformParams();
+
+        [Header("Tree Archetype")]
+        public ProjectC.CloudGenerator.TreeParams treeParams = new ProjectC.CloudGenerator.TreeParams();
+
+        [Header("Parent Mesh (EventCloud)")]
+        public string parentMeshPath = "";
+        public float parentMeshScaleX = 1f;
+        public float parentMeshScaleY = 1f;
+        public float parentMeshScaleZ = 1f;
+        public float parentMeshRotX = 0f;
+        public float parentMeshRotY = 0f;
+        public float parentMeshRotZ = 0f;
+        public float parentMeshOffsetX = 0f;
+        public float parentMeshOffsetY = 0f;
+        public float parentMeshOffsetZ = 0f;
     }
 }

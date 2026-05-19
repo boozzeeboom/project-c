@@ -29,6 +29,12 @@ namespace ProjectC.Core
         {
             Debug.Log($"[StormController] Awake on {gameObject.name}");
 
+            if (_cloudGenerator == null)
+            {
+                _cloudGenerator = FindAnyObjectByType<StormCloudGenerator>();
+                Debug.Log($"[StormController] Found generator: {_cloudGenerator}");
+            }
+
             if (_stormMaterial == null)
             {
                 var renderer = GetComponent<Renderer>();
@@ -37,30 +43,6 @@ namespace ProjectC.Core
                     _stormMaterial = renderer.material;
                     Debug.Log($"[StormController] Got material from renderer: {_stormMaterial.name}");
                 }
-            }
-
-            if (_cloudGenerator == null)
-            {
-                _cloudGenerator = GetComponent<StormCloudGenerator>();
-                Debug.Log($"[StormController] Found generator: {_cloudGenerator}");
-            }
-
-            if (_cloudGenerator != null && _stormMaterial != null)
-            {
-                Debug.Log($"[StormController] Calling Initialize on {_cloudGenerator.name}");
-                try
-                {
-                    _cloudGenerator.Initialize(_stormMaterial);
-                    Debug.Log($"[StormController] Initialize completed");
-                }
-                catch (System.Exception e)
-                {
-                    Debug.LogError($"[StormController] Initialize failed: {e}");
-                }
-            }
-            else
-            {
-                Debug.LogWarning($"[StormController] Missing: generator={_cloudGenerator != null}, material={_stormMaterial != null}");
             }
 
             if (gameObject.name.StartsWith("Storm_"))
@@ -98,6 +80,15 @@ namespace ProjectC.Core
             ClientControllers[id] = this;
 
             gameObject.name = $"Storm_{id}";
+
+            if (_cloudGenerator != null)
+            {
+                var pattern = _cloudGenerator.defaultStormPattern;
+                if (pattern != null)
+                {
+                    _cloudGenerator.SpawnStorm(id, worldPos, pattern, intensity);
+                }
+            }
 
             Debug.Log($"[StormController] Initialized storm {id} at {worldPos}");
         }

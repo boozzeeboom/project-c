@@ -38,9 +38,9 @@ namespace ProjectC.Core
             if (_stormMaterial == null)
             {
                 var renderer = GetComponent<Renderer>();
-                if (renderer != null && renderer.material != null)
+                if (renderer != null && renderer.sharedMaterial != null)
                 {
-                    _stormMaterial = renderer.material;
+                    _stormMaterial = renderer.sharedMaterial;
                     Debug.Log($"[StormController] Got material from renderer: {_stormMaterial.name}");
                 }
             }

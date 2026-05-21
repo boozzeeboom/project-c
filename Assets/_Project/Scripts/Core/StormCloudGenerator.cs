@@ -21,10 +21,13 @@ namespace ProjectC.Core
         public void Awake()
         {
             _sphereMesh = CreateDefaultSphereMesh();
+            Debug.Log($"[StormCloudGenerator] Awake. Sphere mesh: {_sphereMesh.name}, defaultStormPattern: {defaultStormPattern}");
         }
 
         public void SpawnStorm(uint stormId, Vector3 position, CloudLayerConfig pattern, float intensity)
         {
+            Debug.Log($"[StormCloudGenerator] SpawnStorm called: id={stormId}, pos={position}, pattern={pattern?.name}, intensity={intensity}");
+
             if (_activeStorms.Count >= MaxActiveStorms)
             {
                 uint oldestId = 0;
@@ -43,11 +46,20 @@ namespace ProjectC.Core
 
             GameObject stormRoot = new GameObject($"Storm_{stormId}");
             stormRoot.transform.position = position;
+            Debug.Log($"[StormCloudGenerator] Created root at {position}");
 
             var sphereContainer = new GameObject("SphereContainer");
             sphereContainer.transform.SetParent(stormRoot.transform);
 
             var spheres = GenerateStormSpheres(pattern, Vector3.zero);
+            Debug.Log($"[StormCloudGenerator] Generated {spheres?.Count ?? 0} spheres for storm {stormId}");
+
+            if (spheres == null || spheres.Count == 0)
+            {
+                Debug.LogError($"[StormCloudGenerator] No spheres generated! Pattern: {pattern?.name}, Archetype: {pattern?.archetype}");
+                Destroy(stormRoot);
+                return;
+            }
 
             foreach (var sphere in spheres)
             {
@@ -64,6 +76,7 @@ namespace ProjectC.Core
             };
 
             _activeStorms[stormId] = storm;
+            Debug.Log($"[StormCloudGenerator] Storm {stormId} spawned successfully with {spheres.Count} spheres");
         }
 
         public void DespawnStorm(uint stormId)
@@ -92,6 +105,9 @@ namespace ProjectC.Core
 
         private List<CloudSphere> GenerateStormSpheres(CloudLayerConfig config, Vector3 offset)
         {
+            Debug.Log($"[StormCloudGenerator] GenerateStormSpheres: config={config?.name}, archetype={config?.archetype}, seed={config?.generatorSeed}");
+            Debug.Log($"[StormCloudGenerator]   density={config?.density}, cloudSize={config?.cloudSize}");
+
             var layerConfig = new ProjectC.CloudGenerator.CloudLayerConfig
             {
                 Archetype = config.archetype,
@@ -186,10 +202,11 @@ namespace ProjectC.Core
             go.AddComponent<MeshFilter>().mesh = _sphereMesh;
 
             var renderer = go.AddComponent<MeshRenderer>();
-            renderer.material = cloudMaterial != null ? cloudMaterial : CreateDefaultMaterial();
+            var mat = cloudMaterial != null ? cloudMaterial : CreateDefaultMaterial();
+            renderer.sharedMaterial = mat;
             renderer.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;
 
-            float scale = sphere.Radius * 2f * intensity;
+            float scale = sphere.Radius * 2f * intensity * 30f;
             go.transform.localScale = new Vector3(scale, scale, scale);
 
             var rb = go.AddComponent<Rigidbody>();
@@ -213,8 +230,8 @@ namespace ProjectC.Core
 
         private Material CreateDefaultMaterial()
         {
-            var mat = new Material(Shader.Find("Universal Render Pipeline/Lit"));
-            mat.color = Color.white;
+            var mat = new Material(Shader.Find("Universal Render Pipeline/Unlit"));
+            mat.color = new Color(1f, 1f, 1f, 0.9f);
             return mat;
         }
 

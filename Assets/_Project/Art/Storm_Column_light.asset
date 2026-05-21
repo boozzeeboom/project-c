@@ -10,25 +10,25 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: ffa8f7ac87ca1a64fa0d2883a3214cf2, type: 3}
-  m_Name: TestMiddleLayer
+  m_Name: Storm_Column_light
   m_EditorClassIdentifier: Assembly-CSharp::ProjectC.Core.CloudLayerConfig
-  layerType: 1
+  layerType: 3
   minHeight: 3000
   maxHeight: 5000
-  density: 0.6
-  cloudSize: 100
-  sizeVariation: 2
-  moveSpeed: 5
+  density: 0.62
+  cloudSize: 152.2
+  sizeVariation: 2.295
+  moveSpeed: 10.44
   moveDirection: {x: 1, y: 0, z: 0}
   animateMorph: 1
-  morphSpeed: 0.5
+  morphSpeed: 1.16
   cloudMaterial: {fileID: 2100000, guid: 1113070119fa4ec4f93620807a2d0511, type: 2}
   use2DPlanes: 0
-  archetype: 0
+  archetype: 1
   generatorSeed: 42
-  jitter: 0.3
+  jitter: 0.45
   clustering: 0.5
-  positionVariation: 0.5
+  positionVariation: 0.351
   cascadeDepth: 3
   bumpsPerLevel: 24
   childRatio: 30
@@ -37,16 +37,16 @@ MonoBehaviour:
   ellipsoidY: 50
   ellipsoidXZ: 100
   maxSphereCount: 5000
-  sphereCountScale: 1
+  sphereCountScale: 153.42
   sizeRange:
     Min: 5
     Max: 20
   columnParams:
-    Height: 40
-    BaseRadius: 8
-    TopRadius: 3
-    Floors: 12
-    RingsPerFloor: 8
+    Height: 4000
+    BaseRadius: 1500
+    TopRadius: 2500
+    Floors: 80
+    RingsPerFloor: 30
     Wobble: 0.3
   platformParams:
     Width: 50

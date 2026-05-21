@@ -197,7 +197,7 @@ namespace ProjectC.Core
                 Renderer renderer = cloud.GetComponent<Renderer>();
                 if (renderer != null)
                 {
-                    renderer.material = config.cloudMaterial;
+                    renderer.sharedMaterial = config.cloudMaterial;
                 }
             }
 

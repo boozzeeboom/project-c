@@ -1,4 +1,7 @@
 using UnityEngine;
+#if UNITY_EDITOR
+using UnityEditor;
+#endif
 using System.Collections.Generic;
 
 namespace ProjectC.Core
@@ -10,6 +13,7 @@ namespace ProjectC.Core
         private Vector3 _targetPosition;
         private float _intensity;
         private bool _lightningActive;
+        private string _currentPatternGUID;
 
         [Header("Visual Settings")]
         [SerializeField] private Material _stormMaterial;
@@ -17,6 +21,9 @@ namespace ProjectC.Core
 
         [Header("Storm Generator")]
         [SerializeField] private StormCloudGenerator _cloudGenerator;
+
+        [Header("Pattern Assets")]
+        [SerializeField] private CloudLayerConfig[] _availablePatterns = new CloudLayerConfig[0];
 
         [Header("Visibility")]
         [SerializeField] private float _visibilityDistance = 50000f;
@@ -65,7 +72,7 @@ namespace ProjectC.Core
             ClientControllers.Remove(StormId);
         }
 
-        public void Initialize(ushort id, Vector3 worldPos, float intensity)
+        public void Initialize(ushort id, Vector3 worldPos, float intensity, string patternGUID = "")
         {
             if (StormId != 0 && StormId != id)
             {
@@ -75,22 +82,39 @@ namespace ProjectC.Core
             StormId = id;
             _targetPosition = worldPos;
             _intensity = intensity;
+            _currentPatternGUID = patternGUID;
             transform.position = worldPos;
 
             ClientControllers[id] = this;
 
             gameObject.name = $"Storm_{id}";
 
-            if (_cloudGenerator != null)
+            var pattern = LoadPatternByGUID(patternGUID);
+            if (pattern == null)
             {
-                var pattern = _cloudGenerator.defaultStormPattern;
-                if (pattern != null)
-                {
-                    _cloudGenerator.SpawnStorm(id, worldPos, pattern, intensity);
-                }
+                pattern = _cloudGenerator != null ? _cloudGenerator.defaultStormPattern : null;
             }
 
-            Debug.Log($"[StormController] Initialized storm {id} at {worldPos}");
+            if (_cloudGenerator != null && pattern != null)
+            {
+                _cloudGenerator.SpawnStorm(id, worldPos, pattern, intensity);
+            }
+
+            Debug.Log($"[StormController] Initialized storm {id} at {worldPos}, pattern={pattern?.name ?? "NULL"}");
+        }
+
+        private CloudLayerConfig LoadPatternByGUID(string guid)
+        {
+            if (string.IsNullOrEmpty(guid)) return null;
+
+#if UNITY_EDITOR
+            string path = AssetDatabase.GUIDToAssetPath(guid);
+            if (string.IsNullOrEmpty(path)) return null;
+            var asset = AssetDatabase.LoadAssetAtPath<CloudLayerConfig>(path);
+            return asset;
+#else
+            return null;
+#endif
         }
 
         public void UpdateState(Vector3 worldPos, float intensity)

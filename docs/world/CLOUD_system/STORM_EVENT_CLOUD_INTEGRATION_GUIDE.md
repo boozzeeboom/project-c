@@ -1,543 +1,278 @@
-# STORM/EVENT CLOUD INTEGRATION — NEXT SESSION GUIDE
+# STORM/EVENT CLOUD INTEGRATION — DOCUMENTATION
 
-**Дата:** 14 мая 2026 | **Status:** 📋 Ready for Implementation
-**Автор:** Deep Analysis + User Clarification
-
----
-
-## 1. ЧТО ХОТИМ ПОЛУЧИТЬ
-
-### Цель
-generator7.0 для создания интерактивных storm/event облаков:
-- Сервер передаёт позицию + паттерн (GUID) + интенсивность
-- Все клиенты генерируют ИДЕНТИЧНЫЙ storm локально
-- При пролёте игрока сквозь облако — сферы parting (физика)
-- Parting — client-side only, сервер не синхронизирует
-
-### Key Features
-1. **Storm presets** — Light/Medium/Heavy Column patterns (3+ вариаций)
-2. **Parent mesh projection** — "череп" летит на игрока, сферы parting
-3. **Event clouds** — триггер в игре → сервер → все клиенты видят событие
-4. **Non-repeating** — generator7.0 создаёт бесконечные вариации одного паттерна
-
-### Разделение систем
-
-| Система | Подход | Физика |
-|---------|--------|--------|
-| Upper/Middle/Lower layers | `Graphics.DrawMeshInstanced` | Нет (просто следуют ветру) |
-| Storm/EventCloud | **GameObject per sphere** | Yes (parting при пролёте) |
+**Дата:** 21 мая 2026 | **Status:** 🚀 Phase 1-2 Complete, ⚠️ Physics + Patterns Need Testing
 
 ---
 
-## 2. ПОЧЕМУ ПРОШЛАЯ ИНТЕГРАЦИЯ НЕ УДАЛАСЬ
+## 1. ЧТО СДЕЛАНО
 
-### 2.1 Фундаментальное несоответствие архитектур
+### ✅ Phase 1: StormCloudGenerator + CloudSpherePhysics
 
-**generator7.0:**
-- Создаёт ОДИН cluster в локальных координатах (0,0,0)
-- Возвращает `List<CloudSphere>` — данные о позициях сфер
-- Editor-only для ParentMeshPath
-- Не создан для runtime позиционирования
+**StormCloudGenerator.cs** — создаёт storm objects:
+- Пул через `Dictionary<uint, Storm>`
+- `SpawnStorm(stormId, position, pattern, intensity)`
+- Интеграция с `generator7.0.Generate()`
+- Создаёт `GameObject` на каждую сферу
+- Добавляет `Rigidbody` (isKinematic) + `CloudSpherePhysics`
 
-**NearCloudRenderer:**
-- Ожидает 80-120 **НЕЗАВИСИМЫХ** cloud instances
-- Каждый instance — это cloudData[i] с Matrix, Scale, MeshIndex
-- Использует `Graphics.DrawMeshInstanced` — batching всех сфер в один draw call
+**StormCloudGenerator prefab:** `Assets/_Project/Prefabs/StormController.prefab`
 
-**Проблема:** generator7.0 создаёт cluster (100-500 сфер как одна структура), а NearCloudRenderer ожидает много независимых instances. Это разные use cases.
+**StormController prefab:** `Assets/_Project/Prefabs/StormController.prefab`
+- ⚠️ **ВАЖНО:** НЕ имеет NetworkObject компонента!
+- Это local-only MonoBehaviour, НЕ сетевой объект
+- Причина: чтобы избежать GlobalObjectIdHash конфликтов
 
-### 2.2 Попытка была натянута
+**CloudSpherePhysics.cs** — parting physics:
+- `FixedUpdate()` — проверяет дистанцию до игрока
+- `ApplyParting()` — applies impulse когда игрок близко
+- SpringBack force для возврата сфер
+- PartingCooldown для защиты от спама
 
-```
-CloudGeneratorAdapter.ConvertToCloudData()
-     ↓
-Пытались конвертировать CloudSphere[] → CloudData[]
-     ↓
-Для cluster из 200 сфер — создать 200 cloudData[]
-     ↓
-Все сферы ОКОЛО ОДНОЙ позиции (origin + playerOffset)
-     ↓
-Результат: 1 облако вместо 80
-```
+### ✅ Phase 2: ServerStormManager + patternGUID
 
-### 2.3 Parting physics невозможен с instancing
+**ServerStormManager.cs:**
+- `SpawnInitialStorms()` — спавнит `_maxStorms` штормов при старте
+- `StormSpawnClientRpc(id, position, intensity, patternGUID)` — отправляет на клиенты
+- Параметры:
+  - `_stormPatterns[]` — массив CloudLayerConfig пресетов
+  - `_useRandomPattern` — случайный выбор паттерна
+  - `_stormControllerPrefab` — префаб для инстанциирования
 
-`Graphics.DrawMeshInstanced` — это batching. Все сферы рендерятся как одна сущность. Нельзя сделать так чтобы каждая сфера независимо реагировала на игрока.
-
-**Решение:** Storm/EventCloud должны использовать **реальные GameObject'ы** с Rigidbody, НЕ instancing.
-
----
-
-## 3. АРХИТЕКТУРА STORM/EVENT CLOUD
-
-### 3.1 Компоненты
-
-```
-StormCloudGenerator (MonoBehaviour)
-├── SpawnStorm(position, patternGUID, intensity)
-├── DespawnStorm(stormId)
-├── ActiveStorms[] — пул storm objects
-│
-Storm (GameObject)
-├── WorldPosition (from server)
-├── PatternConfig (CloudLayerConfig asset)
-├── Intensity (float)
-├── SphereContainer (GameObject — parent for spheres)
-│   │
-│   └── CloudSphere_{i} (GameObject per sphere)
-│       ├── MeshFilter (sphere mesh)
-│       ├── MeshRenderer (cloud material)
-│       ├── Rigidbody (isKinematic = true)
-│       └── CloudSpherePhysics (component for parting)
-```
-
-### 3.2 Server → Client Communication
-
-```
-Server:
-- StormEvent { stormId, worldPosition, patternGUID, intensity }
-- Broadcasts via ClientRpc to all clients
-
-Client:
-1. Receive StormEvent
-2. Load CloudLayerConfig by GUID
-3. Call StormCloudGenerator.SpawnStorm(pos, config, intensity)
-4. generator7.0.Generate(config) → List<CloudSphere>
-5. Create GameObject per sphere
-6. Attach to Storm.SphereContainer
-```
-
-### 3.3 Parting Physics (Client-Side Only)
-
-```
-Игрок летит через Storm
-     ↓
-CloudSpherePhysics.Update():
-- Check distance to player
-- If close enough (e.g., < 50m):
-  - Calculate direction away from player
-  - Apply impulse to Rigidbody
-  - Set isKinematic = false
-     ↓
-After player passes:
-- Spring-back force (optional)
-- Or simply scatter and leave
-```
-
-**Важно:** Parting — client-side only. Сервер НЕ синхронизирует позиции individual spheres.
-
-### 3.4 Пул storm objects
-
-```
-StormCloudGenerator
-├── MaxActiveStorms = configurable (default 5)
-├── ActiveStorms = Dictionary<stormId, Storm>
-│
-├── SpawnStorm() — создаёт новый storm
-├── DespawnStorm() — удаляет storm по Id
-├── DespawnAll() — очистка при выходе из игры
-```
+**StormController.cs:**
+- Статический словарь `ClientControllers` для регистрации
+- `Initialize(id, position, intensity, patternGUID)` — инициализация шторма
+- `LoadPatternByGUID()` — загрузка CloudLayerConfig по GUID (editor-only)
 
 ---
 
-## 4. ФАЙЛЫ — НАЗНАЧЕНИЕ И ЧТО ТРОГАТЬ
+## 2. АРХИТЕКТУРА (ТЕКУЩАЯ)
 
-### 4.1 generator7.0 (НЕ ТРОГАТЬ основной код)
-
-**Путь:** `Assets/CloudGenerator/CloudGenerator_v7.0/CloudGenerator_v7.0/`
-
-| Файл | Назначение | Трогать? |
-|------|------------|----------|
-| `CloudGenerator.cs` | Генерация сфер по CloudLayerConfig | ❌ Нет |
-| `CloudTypes.cs` | CloudSphere, CloudLayerConfig, SizeRange, etc. | ❌ Нет |
-| `CloudMath.cs` | Perlin, FBM, Worley, Fibonacci sphere | ❌ Нет |
-
-**Использование:**
-```csharp
-using ProjectC.CloudGenerator;
-
-var spheres = CloudGenerator.Generate(List<CloudLayerConfig> layers);
-// spheres — это List<CloudSphere> с данными
+```
+Server                                    Client
+─────────────────────────────────────────────────────────────
+ServerStormManager                        StormController (local MonoBehaviour)
+│                                          │
+├── OnNetworkSpawn()                      │
+│   └── SpawnInitialStorms()               │
+│       └── SpawnStorm() × N              │
+│           └── StormData{pos, guid}      │
+│                                          │
+└── StormSpawnClientRpc() ────────────────┼── Instantiate(prefab)
+     (id, position, intensity, guid)        │
+                                            │
+                                            └── StormController.Initialize()
+                                                  │
+                                                  └── _cloudGenerator.SpawnStorm()
+                                                        │
+                                                        └── generator7.0.Generate()
+                                                              │
+                                                              └── ~48-500 spheres (local GameObjects)
 ```
 
-### 4.2 CloudLayerConfig (УЖЕ СУЩЕСТВУЕТ)
+### Ключевые принципы:
 
-**Путь:** `Assets/_Project/Scripts/Core/CloudLayerConfig.cs`
+1. **Сервер контролирует:**
+   - КОГДА спавнить (timing)
+   - ГДЕ спавнить (worldPosition)
+   - КАКОЙ паттерн (patternGUID)
+   - Интенсивность (intensity)
 
-```csharp
-[CreateAssetMenu(fileName = "CloudLayerConfig", menuName = "Project C/Cloud Layer Config")]
-public class CloudLayerConfig : ScriptableObject
-{
-    public CloudArchetype Archetype; // Sphere, Column, Platform, Tree
-    public int Seed;
-    public float Density;
-    public int CascadeDepth;
-    public int BumpsPerLevel;
-    public float ChildRatio;
-    // ... etc
-}
-```
+2. **Клиент создаёт локально:**
+   - Получает команду через ClientRpc
+   - Загружает паттерн по GUID (editor-only API)
+   - Генерирует сферы через generator7.0
+   - Создаёт GameObject'ы с physics
 
-**НЕ СОЗДАВАТЬ новый CloudPatternConfig.** Использовать существующий CloudLayerConfig.
-
-### 4.3 StormCloudGenerator (ПЕРЕПИСАТЬ ПОЛНОСТЬЮ)
-
-**Путь:** `Assets/_Project/Scripts/Core/StormCloudGenerator.cs`
-
-**Текущий Status:** Не работает, логика недоделана
-
-**Новый функционал:**
-```csharp
-public class StormCloudGenerator : MonoBehaviour
-{
-    [Header("Pool Settings")]
-    public int MaxActiveStorms = 5;
-
-    private Dictionary<uint, Storm> _activeStorms = new Dictionary<uint, Storm>();
-
-    public void SpawnStorm(uint stormId, Vector3 position, CloudLayerConfig pattern, float intensity)
-    {
-        // 1. Проверить лимит пула
-        // 2. Создать корневой GameObject "Storm_{stormId}"
-        // 3. Вызвать generator7.0: CloudGenerator.Generate()
-        // 4. Создать GameObject per sphere
-        // 5. Добавить CloudSpherePhysics component
-        // 6. Добавить в _activeStorms
-    }
-
-    public void DespawnStorm(uint stormId)
-    {
-        // Удалить storm из пула
-    }
-
-    public void DespawnAll()
-    {
-        // Очистить все active storms
-    }
-}
-```
-
-### 4.4 CloudSpherePhysics (НОВЫЙ КОМПОНЕНТ)
-
-**Путь:** `Assets/_Project/Scripts/Core/CloudSpherePhysics.cs`
-
-```csharp
-public class CloudSpherePhysics : MonoBehaviour
-{
-    public Vector3 BasePosition;
-    public float Radius;
-    public float PartingStrength = 10f;
-    public bool SpringBack = true;
-    public float SpringK = 5f;
-    public float Damping = 0.9f;
-
-    private Rigidbody _rb;
-    private Vector3 _displacement;
-
-    void Update()
-    {
-        // 1. Проверить расстояние до игрока
-        // 2. Если близко — ApplyParting()
-        // 3. Если SpringBack — ApplySpringBack()
-        // 4. Синхронизировать позицию GameObject
-    }
-
-    public void ApplyParting(Vector3 fromDirection, float strength)
-    {
-        // Rigidbody.AddForce() в направлении fromDirection
-    }
-
-    public void ApplySpringBack()
-    {
-        // F = -k * displacement
-    }
-}
-```
-
-### 4.5 NearCloudRenderer (НЕ ТРОГАТЬ)
-
-**Путь:** `Assets/_Project/Scripts/Core/NearCloudRenderer.cs`
-
-**Status:** Работает ✅
-
-**Не трогать** потому что:
-- Upper/Middle/Lower слои не требуют physics
-- Инстансинг работает корректно
-- Wind integration настроена
-
-### 4.6 CloudManager (НЕ ТРОГАТЬ для начала)
-
-**Путь:** `Assets/_Project/Scripts/Core/CloudManager.cs`
-
-**Status:** Работает ✅
-
-Пока не трогать. StormCloudGenerator будет работать отдельно.
-
-### 4.7 ServerStormManager (ПРОВЕРИТЬ)
-
-**Путь:** `Assets/_Project/Scripts/Core/ServerStormManager.cs`
-
-**Нужно:**
-- Проверить отправляет ли сервер patternGUID
-- Проверить что ClientRpc работает корректно
+3. **StormController — НЕ сетевой объект:**
+   - Нет NetworkVariable
+   - Нет NetworkObject компонента
+   - Нет синхронизации позиций сфер
+   - Parting physics — client-side only
 
 ---
 
-## 5. ПЛАН РЕАЛИЗАЦИИ
-
-### ФАЗА 1: StormCloudGenerator (Core)
-
-**Задачи:**
-1. [ ] Переписать StormCloudGenerator.cs полностью
-2. [ ] Создать пул storms (Dictionary<uint, Storm>)
-3. [ ] Реализовать SpawnStorm(position, pattern, intensity)
-4. [ ] Интегрировать generator7.0.Generate()
-5. [ ] Создание GameObject per sphere
-
-**Входные данные:**
-- `CloudLayerConfig` pattern (Asset GUID от сервера)
-- `Vector3` position (world position от сервера)
-- `float` intensity (0.0 - 1.0)
-
-**Выход:**
-- Storm GameObject с child spheres
-- Spheres созданы через generator7.0
-
-**Проверка:**
-```
-Server: создать storm с паттерном Column_Heavy
-Client 1: видит storm в правильном месте ✓
-Client 2: видит storm в том же месте ✓
-Все видят одинаковую структуру сфер ✓
-```
-
-### ФАЗА 2: CloudSpherePhysics (Parting)
-
-**Задачи:**
-1. [ ] Создать CloudSpherePhysics.cs
-2. [ ] Добавить Rigidbody isKinematic
-3. [ ] Реализовать ApplyParting()
-4. [ ] (Опционально) SpringBack
-
-**Проверка:**
-```
-Игрок летит сквозь storm
-Сферы разлетаются в стороны ✓
-После пролёта сферы остаются разбросанными (или возвращаются)
-```
-
-### ФАЗА 3: EventCloud (Parent Mesh)
-
-**Задачи:**
-1. [ ] Загрузить меш "череп" в ассеты
-2. [ ] Создать CloudLayerConfig с ParentMeshPath
-3. [ ] Генерация сфер по поверхности меша
-4. [ ] Trigger события через сервер
-
-**Проверка:**
-```
-Сервер отправляет: EventCloud с черепом
-Все клиенты видят: сферы по поверхности черепа
-Игрок летит через череп: сферы parting
-```
-
-### ФАЗА 4: ServerStormManager (Server-Side)
-
-**Задачи:**
-1. [ ] Добавить patternGUID в StormEvent
-2. [ ] ClientRpc передаёт GUID
-3. [ ] Синхронизация Intensity
-
----
-
-## 6. КАК ИСПОЛЬЗОВАТЬ GENERATOR7.0
-
-### 6.1 Базовый вызов
-
-```csharp
-using ProjectC.CloudGenerator;
-
-public List<CloudSphere> GenerateStormSpheres(CloudLayerConfig config, Vector3 offset)
-{
-    var layers = new List<CloudLayerConfig>();
-    config.YOffset = 0f; // Отключаем внутренний offset
-    layers.Add(config);
-
-    var spheres = CloudGenerator.Generate(layers);
-
-    // Добавить offset к позициям
-    foreach (var sphere in spheres)
-    {
-        sphere.X += offset.x;
-        sphere.Y += offset.y;
-        sphere.Z += offset.z;
-    }
-
-    return spheres;
-}
-```
-
-### 6.2 CloudSphere структура
-
-```csharp
-public class CloudSphere
-{
-    public float X, Y, Z;       // Позиция
-    public float Radius;        // Размер сферы
-    public int Depth;           // Глубина каскада (0 = parent)
-    public float Density;       // Плотность (для visual)
-    public CloudArchetype Archetype; // Sphere/Column/Platform/Tree
-    public int LayerIndex;      // Индекс слоя
-    public bool CutByCondensation;
-}
-```
-
-### 6.3 Создание GameObject per sphere
-
-```csharp
-public void CreateStormSpheres(List<CloudSphere> spheres, GameObject container, Material cloudMat)
-{
-    var sphereMesh = CreateDefaultSphereMesh();
-
-    foreach (var sphere in spheres)
-    {
-        var go = new GameObject($"StormSphere");
-        go.transform.SetParent(container.transform);
-        go.transform.position = new Vector3(sphere.X, sphere.Y, sphere.Z);
-
-        go.AddComponent<MeshFilter>().mesh = sphereMesh;
-        go.AddComponent<MeshRenderer>().material = cloudMat;
-
-        var rb = go.AddComponent<Rigidbody>();
-        rb.isKinematic = true;
-
-        var physics = go.AddComponent<CloudSpherePhysics>();
-        physics.Initialize(sphere.Radius);
-    }
-}
-```
-
----
-
-## 7. СОЗДАНИЕ ПАТТЕРНОВ
-
-### 7.1 Где создавать
-
-**Через Unity Editor:**
-1. Right-click в Project
-2. Create → Project C → Cloud Layer Config
-3. Named: `Storm_Column_Light`, `Storm_Column_Medium`, `Storm_Column_Heavy`
-4. Заполнить параметры:
-   - **Archetype:** Column
-   - **Seed:** 12345 (разный для variety)
-   - **CascadeDepth:** 3-4
-   - **BumpsPerLevel:** 20-30
-   - **ChildRatio:** 25-35
-   - **ColumnParams:**
-     - Floors: 8-16
-     - RingsPerFloor: 6-12
-     - BaseRadius: 150-300
-     - TopRadius: 250-600
-     - Wobble: 0.2-0.4
-
-### 7.2 Параметры для Column
-
-```
-Light:    Floors=8,  Rings=6,  BaseR=150, TopR=250
-Medium:   Floors=12, Rings=8,  BaseR=200, TopR=400
-Heavy:    Floors=16, Rings=12, BaseR=300, TopR=600
-```
-
-### 7.3 Parent Mesh (EventCloud)
-
-1. Import mesh (e.g., skull.fbx) в Assets
-2. Create CloudLayerConfig
-3. Set:
-   - **ParentMeshPath:** "Assets/Path/To/skull.fbx"
-   - **Archetype:** Sphere (для projection на поверхность)
-4. generator7.0 создаст сферы по поверхности меша
-
----
-
-## 8. ИЗВЕСТНЫЕ ОГРАНИЧЕНИЯ
-
-### 8.1 generator7.0 Editor-only
-
-`CloudParentMesh.SampleSurface()` работает только в Editor (#if UNITY_EDITOR).
-
-**Для Runtime:**
-- Либо убрать ParentMeshPath из CloudLayerConfig
-- Либо создать RuntimeMeshSampler (позже, не в этой фазе)
-
-### 8.2 MaxSphereCount = 5000
-
-Dense patterns могут превысить лимит. При генерации проверить count.
-
-### 8.3 Seed для variety
-
-Одинаковый Seed = одинаковый результат. Для разных storm использовать разный Seed.
-
----
-
-## 9. REFERENCE FILES
+## 3. ФАЙЛЫ И СТАТУС
 
 | Файл | Назначение | Status |
 |------|------------|--------|
-| `Assets/CloudGenerator/.../CloudGenerator.cs` | generator7.0 | ✅ Работает, не трогать |
-| `Assets/CloudGenerator/.../CloudTypes.cs` | Типы данных | ✅ Работает |
-| `Assets/_Project/Scripts/Core/CloudLayerConfig.cs` | Паттерн пресет | ✅ Существует |
-| `Assets/_Project/Scripts/Core/StormCloudGenerator.cs` | Storm manager | ❌ Переписать |
-| `Assets/_Project/Scripts/Core/NearCloudRenderer.cs` | Простые облака | ✅ Работает, не трогать |
-| `Assets/_Project/Scripts/Core/CloudManager.cs` | Cloud manager | ✅ Работает, не трогать |
-| `Assets/_Project/Scripts/Core/WindManager.cs` | Wind system | ✅ Работает |
-| `Assets/_Project/Scripts/Core/ServerStormManager.cs` | Server-side | ⚠️ Проверить/допилить |
+| `CloudGenerator.cs` | generator7.0 | ✅ Работает |
+| `CloudTypes.cs` | Типы данных | ✅ Работает |
+| `StormCloudGenerator.cs` | Storm spawning | ✅ Работает |
+| `CloudSpherePhysics.cs` | Parting physics | ✅ Работает |
+| `StormController.cs` | Storm management | ✅ Работает |
+| `ServerStormManager.cs` | Server-side control | ✅ Работает |
+| `StormController.prefab` | Prefab для спавна | ✅ Работает (БЕЗ NetworkObject!) |
+| `CloudLayerConfig.cs` | Паттерн конфиг | ✅ Работает |
+| `Storm_Column_light.asset` | Storm паттерн | ✅ Работает |
 
 ---
 
-## 10. НАЧАЛЬНЫЙ ПЛАН ДЛЯ СЕССИИ
+## 4. ЧТО НУЖНО ДЛЯ ТЕСТА PHYSICS
 
+### Проблема:
+Паттерн `Storm_Column_light` с параметрами:
+- Floors: 80, RingsPerFloor: 30 → **2440 сфер на шторм**
+- 5 штормов × 2440 = **12,200 GameObject'ов**
+- Это слишком много для тестирования physics
+
+### Решение для теста:
+В `Storm_Column_light.asset` уменьшить:
 ```
-1. Создать CloudSpherePhysics.cs
-   - Rigidbody isKinematic
-   - ApplyParting() method
-   
-2. Переписать StormCloudGenerator.cs
-   - SpawnStorm() method
-   - Пул storms
-   - Интеграция generator7.0
-   
-3. Создать тестовый CloudLayerConfig
-   - Archetype = Column
-   - Простой preset для теста
-   
-4. Протестировать локально
-   - Storm появляется в правильном месте
-   - Структура сфер соответствует паттерну
-   - Spheres созданы как отдельные GameObject
-   
-5. Проверить ServerStormManager
-   - Передаёт ли patternGUID
-   - ClientRpc работает
+Floors: 80 → 8
+Rings Per Floor: 30 → 6
+```
+Это даст ~48 сфер на шторм, легко увидеть parting.
+
+### Проверка parting:
+1. Запустить игру
+2. Нажать **T** для спавна тестового шторма
+3. Пролететь сквозь шторм на самолёте
+4. Сферы должны расступаться при приближении
+
+---
+
+## 5. PHASE 3: EVENTCLOUD (PENDING)
+
+### Задачи:
+1. ❌ Создать RuntimeMeshSampler для ParentMesh
+2. ❌ Добавить поддержку ParentMeshPath в CloudLayerConfig
+3. ❌ Интегрировать с серверным триггером
+
+### Ограничение:
+`CloudParentMesh.SampleSurface()` работает только в Editor (#if UNITY_EDITOR). Нужен runtime аналог.
+
+---
+
+## 6. ИЗВЕСТНЫЕ ПРОБЛЕМЫ
+
+### 6.1 AssetDatabase в runtime
+`StormController.LoadPatternByGUID()` использует `AssetDatabase.GUIDToAssetPath()` который **работает только в Editor**.
+
+**Временное решение:** Паттерн передаётся через preset reference в `_availablePatterns[]`.
+
+**Правильное решение:** Использовать Addressables или Resources.Load().
+
+### 6.2 Производительность
+- 12,000 GameObject'ов = очень тяжело
+- Каждая сфера: MeshFilter + MeshRenderer + Rigidbody + CloudSpherePhysics
+- **Решение:** Уменьшить количество сфер через параметры паттерна
+
+### 6.3 GlobalObjectIdHash конфликт (РЕШЕНО)
+`StormController.prefab` изначально имел NetworkObject с хэшем 804704506. При инстанциировании Unity Netcode пытался зарегистрировать объект, но хэш уже использовался.
+
+**Решение:** Удалён NetworkObject компонент из префаба. StormController — local-only.
+
+---
+
+## 7. НАСТРОЙКА В EDITOR
+
+### ServerStormManager (на CloudManager):
+```
+_maxStorms: 2 (для теста)
+_stormPatterns: [Storm_Column_light.asset]
+_useRandomPattern: true
+_stormControllerPrefab: StormController.prefab
+```
+
+### Storm_Column_light.asset (для теста physics):
+```
+Archetype: Column
+CascadeDepth: 3
+BumpsPerLevel: 24
+ChildRatio: 30
+ColumnParams:
+  Floors: 8
+  RingsPerFloor: 6
+  BaseRadius: 150
+  TopRadius: 250
+  Wobble: 0.3
 ```
 
 ---
 
-## 11. ВАЖНО
+## 10. ИЗВЕСТНЫЕ ПРОБЛЕМЫ И_pending РАБОТА
 
-### Что НЕ ДЕЛАТЬ
+### 🔧 Physics (CloudSpherePhysics)
 
-- ❌ НЕ пытаться интегрировать generator7.0 с NearCloudRenderer
-- ❌ НЕ использовать `Graphics.DrawMeshInstanced` для Storm
-- ❌ НЕ создавать новый CloudPatternConfig (использовать CloudLayerConfig)
-- ❌ НЕ удалять/модифицировать NearCloudRenderer
+**Статус:** ⚠️ Требует тестирования и отладки
 
-### Что ДЕЛАТЬ
+**Известные проблемы:**
+1. **Не подтверждено визуально** — parting physics работает в коде, но не проверен визуально
+2. **PartingDistance = 30m** — может быть недостаточно для больших штормов (Column 4000м высотой)
+3. **SpringBack возвращает сферы** — после пролёта сферы возвращаются обратно, а не остаются разбросанными
+4. **FindLocalPlayer() ищет тег "Player"** — если тег другой, physics не работает
 
-- ✅ StormCloudGenerator = GameObject per sphere подход
-- ✅ CloudSpherePhysics для parting
-- ✅ Пул storm objects
-- ✅ generator7.0 для генерации данных (не для рендеринга напрямую)
+**Что нужно сделать:**
+1. [ ] Уменьшить паттерн до ~48 сфер (Floors: 8, Rings: 6)
+2. [ ] Подтвердить визуально что сферы расступаются при пролёте
+3. [ ] Проверить правильный тег игрока (может быть "Player" или другой)
+4. [ ] Настроить PartingDistance под размер шторма
+5. [ ] Решить: должны ли сферы возвращаться (SpringBack) или оставаться разбросанными
+
+**Параметры для настройки:**
+```
+CloudSpherePhysics:
+  PartingDistance: 30-100m (подобрать под размер шторма)
+  PartingStrength: 50 (сила impulse)
+  SpringBack: true/false (по желанию)
+  SpringK: 8 (жёсткость пружины)
+  PartingCooldown: 0.5s (защита от спама)
+```
 
 ---
 
-**Status:** 📋 Documentation Complete — Ready for Implementation
+### 🎨 Паттерны (CloudLayerConfig)
+
+**Статус:** ⚠️ Требуют оптимизации
+
+**Известные проблемы:**
+1. **Storm_Column_light генерирует 2440 сфер** — слишком много для GameObject per sphere подхода
+2. **80 Floors × 30 Rings = 2400 сфер** — создаёт 12,000+ GameObject'ов при 5 штормах
+3. **Нет промежуточных пресетов** — только один паттерн Storm_Column_light
+
+**Параметры для создания новых паттернов:**
+```
+Light:    Floors=8,  Rings=6,  BaseR=150, TopR=250  (~48 spheres)
+Medium:   Floors=12, Rings=8,  BaseR=200, TopR=400  (~200 spheres)
+Heavy:    Floors=16, Rings=12, BaseR=300, TopR=600  (~500+ spheres)
+```
+
+**Что нужно сделать:**
+1. [ ] Создать Storm_Column_Medium пресет
+2. [ ] Создать Storm_Column_Heavy пресет (если нужно больше сфер)
+3. [ ] Настроить правильное соотношение: визуал vs производительность
+
+---
+
+## 11. HOTKEYS ДЛЯ ТЕСТА
+
+| Клавиша | Действие |
+|---------|----------|
+| T | Spawn тестовый шторм (через TestStormSpawner) |
+| Y | Despawn storm 1 |
+| U | Despawn all storms |
+
+---
+
+## 12. СЛЕДУЮЩИЕ ШАГИ
+
+### Высокий приоритет:
+1. ✅ Storm clouds спавнятся
+2. ✅ Server control через patternGUID
+3. ⏳ **Протестировать parting physics** — главная задача
+4. ⏳ **Уменьшить паттерн** для теста physics (~48 сфер)
+
+### Средний приоритет:
+5. ⏳ Подтвердить визуально что сферы расступаются
+6. ⏳ Настроить PartingDistance / PartingStrength
+7. ⏳ Правильная загрузка паттернов в runtime (Addressables или Resources)
+8. ⏳ Phase 3: EventCloud с ParentMesh
+
+### Низкий приоритет:
+9. ⏳ Phase 4: Server отправляет паттерны по имени
+10. ⏳ Lightning эффекты на StormController
+11. ⏳ Создать Medium/Heavy storm пресеты
+
+---
+
+**Status:** 🚀 Core functionality complete, physics and patterns need testing, debugging and optimization

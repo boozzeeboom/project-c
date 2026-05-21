@@ -45,8 +45,8 @@ MonoBehaviour:
     Height: 4000
     BaseRadius: 1500
     TopRadius: 2500
-    Floors: 80
-    RingsPerFloor: 30
+    Floors: 8
+    RingsPerFloor: 6
     Wobble: 0.3
   platformParams:
     Width: 50

@@ -40,6 +40,11 @@ namespace ProjectC.Core
         {
             if (!IsServer) return;
 
+            if (NetworkManager.Singleton == null || !NetworkManager.Singleton.IsListening)
+            {
+                return;
+            }
+
             _timer += Time.deltaTime;
             if (_timer >= _broadcastInterval)
             {

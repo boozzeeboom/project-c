@@ -10,11 +10,16 @@ namespace ProjectC.Core
         public bool SpringBack = true;
         public float SpringK = 8f;
         public float Damping = 0.92f;
+        public float PartingCooldown = 0.5f;
 
         private Rigidbody _rb;
         private Vector3 _basePosition;
         private Vector3 _displacement;
         private bool _isParting;
+        private float _partingCooldownTimer;
+        private Transform _cachedPlayer;
+        private float _playerSearchInterval = 1f;
+        private float _playerSearchTimer;
 
         public void Initialize(float radius)
         {
@@ -29,10 +34,13 @@ namespace ProjectC.Core
             _rb.linearDamping = 2f;
             _rb.angularDamping = 2f;
             _basePosition = transform.position;
+            _cachedPlayer = null;
         }
 
         public void ApplyParting(Vector3 fromDirection)
         {
+            if (_partingCooldownTimer > 0f) return;
+
             if (!_isParting)
             {
                 _isParting = true;
@@ -41,17 +49,29 @@ namespace ProjectC.Core
 
             Vector3 dir = (transform.position - fromDirection).normalized;
             _rb.AddForce(dir * PartingStrength, ForceMode.Impulse);
+            _partingCooldownTimer = PartingCooldown;
         }
 
-        private void Update()
+        private void FixedUpdate()
         {
-            Transform player = FindLocalPlayer();
-            if (player != null)
+            if (_partingCooldownTimer > 0f)
             {
-                float dist = Vector3.Distance(transform.position, player.position);
+                _partingCooldownTimer -= Time.fixedDeltaTime;
+            }
+
+            _playerSearchTimer -= Time.fixedDeltaTime;
+            if (_playerSearchTimer <= 0f || _cachedPlayer == null)
+            {
+                _cachedPlayer = FindLocalPlayer();
+                _playerSearchTimer = _playerSearchInterval;
+            }
+
+            if (_cachedPlayer != null)
+            {
+                float dist = Vector3.Distance(transform.position, _cachedPlayer.position);
                 if (dist < PartingDistance)
                 {
-                    ApplyParting(player.position);
+                    ApplyParting(_cachedPlayer.position);
                 }
             }
 

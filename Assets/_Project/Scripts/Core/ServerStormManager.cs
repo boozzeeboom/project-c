@@ -1,5 +1,6 @@
 using Unity.Netcode;
 using UnityEngine;
+using UnityEditor;
 using System.Collections.Generic;
 using System.Linq;
 
@@ -28,6 +29,13 @@ namespace ProjectC.Core
         [Header("Sync")]
         [SerializeField] private float _syncInterval = 2f;
 
+        [Header("Storm Patterns")]
+        [SerializeField] private CloudLayerConfig[] _stormPatterns = new CloudLayerConfig[0];
+        [SerializeField] private bool _useRandomPattern = true;
+
+        [Header("Spawn Prefab")]
+        [SerializeField] private GameObject _stormControllerPrefab;
+
         private struct StormData
         {
             public ushort Id;
@@ -35,6 +43,7 @@ namespace ProjectC.Core
             public float Intensity;
             public bool LightningActive;
             public float TimeSinceLightning;
+            public string PatternGUID;
         }
 
         private List<StormData> _activeStorms = new List<StormData>();
@@ -84,18 +93,36 @@ namespace ProjectC.Core
                 Mathf.Sin(angle) * dist
             );
 
+            string patternGuid = "";
+            if (_stormPatterns != null && _stormPatterns.Length > 0)
+            {
+                int patternIndex = _useRandomPattern ? Random.Range(0, _stormPatterns.Length) : 0;
+                var pattern = _stormPatterns[patternIndex];
+                patternGuid = GetAssetGuid(pattern);
+            }
+
             StormData storm = new StormData
             {
                 Id = _nextId++,
                 WorldPosition = pos,
                 Intensity = Random.Range(0.7f, 1f),
                 LightningActive = false,
-                TimeSinceLightning = Random.Range(0f, _lightningIntervalMax)
+                TimeSinceLightning = Random.Range(0f, _lightningIntervalMax),
+                PatternGUID = patternGuid
             };
 
             _activeStorms.Add(storm);
 
-            StormSpawnClientRpc(storm.Id, storm.WorldPosition, storm.Intensity);
+            StormSpawnClientRpc(storm.Id, storm.WorldPosition, storm.Intensity, storm.PatternGUID);
+        }
+
+        private string GetAssetGuid(UnityEngine.Object asset)
+        {
+            if (asset == null) return "";
+            string path = UnityEditor.AssetDatabase.GetAssetPath(asset);
+            if (string.IsNullOrEmpty(path)) return "";
+            var guid = UnityEditor.AssetDatabase.AssetPathToGUID(path);
+            return guid;
         }
 
         private void Update()
@@ -157,22 +184,27 @@ namespace ProjectC.Core
         }
 
         [ClientRpc]
-        private void StormSpawnClientRpc(ushort id, Vector3 worldPosition, float intensity)
+        private void StormSpawnClientRpc(ushort id, Vector3 worldPosition, float intensity, string patternGUID)
         {
-            Debug.Log($"[StormSpawnClientRpc] id={id}, worldPos={worldPosition}, intensity={intensity}");
+            Debug.Log($"[StormSpawnClientRpc] id={id}, worldPos={worldPosition}, intensity={intensity}, patternGUID={patternGUID}");
 
             if (StormController.ClientControllers.TryGetValue(id, out var controller))
             {
                 Debug.Log($"[StormSpawnClientRpc] Found controller {controller.gameObject.name}, calling Initialize");
-                controller.Initialize(id, worldPosition, intensity);
+                controller.Initialize(id, worldPosition, intensity, patternGUID);
+            }
+            else if (_stormControllerPrefab != null)
+            {
+                var go = Instantiate(_stormControllerPrefab, worldPosition, Quaternion.identity);
+                if (go.TryGetComponent<StormController>(out var newController))
+                {
+                    newController.Initialize(id, worldPosition, intensity, patternGUID);
+                }
+                Debug.Log($"[StormSpawnClientRpc] Spawned new controller for storm {id}");
             }
             else
             {
-                Debug.LogWarning($"[StormSpawnClientRpc] No controller found for id={id}. Registered: {StormController.ClientControllers.Count}");
-                foreach (var kvp in StormController.ClientControllers)
-                {
-                    Debug.Log($"  {kvp.Key}: {kvp.Value.gameObject.name}");
-                }
+                Debug.LogWarning($"[StormSpawnClientRpc] No controller found for id={id} and no prefab set. Registered: {StormController.ClientControllers.Count}");
             }
         }
 

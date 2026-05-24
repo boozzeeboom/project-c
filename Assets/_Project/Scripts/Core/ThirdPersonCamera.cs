@@ -42,7 +42,7 @@ namespace ProjectC.Core
         [SerializeField] private float mouseSensitivityY = 3f;
 
         [Tooltip("Минимальный угол обзора")]
-        [SerializeField] private float minVerticalAngle = 0f;
+        [SerializeField] private float minVerticalAngle = -80f;
 
         [Tooltip("Максимальный угол обзора")]
         [SerializeField] private float maxVerticalAngle = 80f;

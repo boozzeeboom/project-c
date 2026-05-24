@@ -53,7 +53,7 @@ MonoBehaviour:
   shipHeight: 6
   mouseSensitivityX: 3
   mouseSensitivityY: 3
-  minVerticalAngle: 0
+  minVerticalAngle: -80
   maxVerticalAngle: 80
 --- !u!20 &4403773355142508220
 Camera:

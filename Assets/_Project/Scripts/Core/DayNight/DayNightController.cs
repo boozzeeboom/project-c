@@ -36,11 +36,22 @@ namespace ProjectC.Core
         public bool updateVeilShader = true;
         public VeilRaymarchMeshController veilController;
 
+        [Header("Moon")]
+        public MoonController moonController;
+
         private float _serverTimeOfDay = 12f;
         private int _currentPhaseIndex = -1;
         private float _phaseBlend = 0f;
         private float _daySeed = 0f;
         private float _stormIntensity = 0f;
+
+        private float _smoothTimeOfDay = 12f;
+        private float _smoothDayFactor = 0.5f;
+        private float _smoothFogDensity = 0.0003f;
+        private Color _smoothAmbientSky = Color.gray;
+        private Color _smoothFogColor = Color.gray;
+
+        private const float SMOOTH_LERP_SPEED = 2f;
 
         void Start()
         {
@@ -48,11 +59,19 @@ namespace ProjectC.Core
             {
                 ServerWeatherController.Instance.OnTimeOfDayChanged += HandleTimeOfDayChanged;
                 ServerWeatherController.Instance.OnTemperatureChanged += HandleTemperatureChanged;
+                _serverTimeOfDay = ServerWeatherController.Instance.TimeOfDay;
+            }
+            else
+            {
+                Debug.Log("[DayNightController] No ServerWeatherController.Instance - using local time for testing");
             }
 
             GlobalStormEvents.Subscribe(HandleStormIntensityChanged);
 
-            ApplyAll();
+            _smoothTimeOfDay = _serverTimeOfDay;
+            _smoothDayFactor = 0.5f;
+
+            UpdateLighting();
         }
 
         void OnDestroy()
@@ -73,16 +92,39 @@ namespace ProjectC.Core
 
         void Update()
         {
-            if (ServerWeatherController.Instance != null && _serverTimeOfDay != ServerWeatherController.Instance.TimeOfDay)
+            if (ServerWeatherController.Instance != null)
             {
-                _serverTimeOfDay = ServerWeatherController.Instance.TimeOfDay;
+                bool timeChanged = Mathf.Abs(_serverTimeOfDay - ServerWeatherController.Instance.TimeOfDay) > 0.01f;
+                if (timeChanged)
+                {
+                    _serverTimeOfDay = ServerWeatherController.Instance.TimeOfDay;
+                }
+
+                if (timeChanged)
+                {
+                    UpdateLighting();
+                }
+            }
+            else
+            {
+                float gameHoursPerRealSecond = 24f / 3600f;
+                _serverTimeOfDay = Mathf.Repeat(_serverTimeOfDay + gameHoursPerRealSecond * Time.deltaTime, 24f);
                 UpdateLighting();
             }
+
+            _smoothTimeOfDay = Mathf.Lerp(_smoothTimeOfDay, _serverTimeOfDay, Time.deltaTime * SMOOTH_LERP_SPEED * 2f);
+
+            ApplySkybox();
+            ApplyVolumeBlend();
+            ApplyAmbient();
+            ApplyFog();
+            ApplyTemperatureFilter();
         }
 
         public void SetTimeOfDay(float time)
         {
             _serverTimeOfDay = Mathf.Repeat(time, 24f);
+            _smoothTimeOfDay = _serverTimeOfDay;
             UpdateLighting();
         }
 
@@ -113,7 +155,6 @@ namespace ProjectC.Core
 
             float time = _serverTimeOfDay;
             int phaseIdx = GetCurrentPhaseIndex(time);
-            float blend = GetPhaseBlend(time, phaseIdx);
 
             if (phaseIdx != _currentPhaseIndex)
             {
@@ -121,15 +162,9 @@ namespace ProjectC.Core
                 _daySeed = Mathf.Floor(_serverTimeOfDay / 24f);
             }
 
-            _phaseBlend = blend;
-
             ApplySun();
-            ApplyAmbient();
-            ApplyFog();
-            ApplySkybox();
-            ApplyVolumeBlend();
-            ApplyTemperatureFilter();
             ApplyVeilShader();
+            ApplyMoon();
         }
 
         private int GetCurrentPhaseIndex(float time)
@@ -176,17 +211,25 @@ namespace ProjectC.Core
             var phase = profile.phases[_currentPhaseIndex];
             if (phase == null) return;
 
-            // Rotate sun around X axis: 360° over 24h, offset so midnight is at -90°
-            float angle = (_serverTimeOfDay / 24f) * 360f - 90f;
-            sunLight.transform.rotation = Quaternion.Euler(angle, -30f, 0f);
+            float dayProgress = (_smoothTimeOfDay - 6f) / 14f;
+            float angle = dayProgress * 180f;
+
+            Quaternion targetRotation = Quaternion.Euler(angle, -30f, 0f);
+            sunLight.transform.rotation = Quaternion.Lerp(sunLight.transform.rotation, targetRotation, Time.deltaTime * SMOOTH_LERP_SPEED);
 
             Color sunColor = ApplyVariability(phase.sunColor, _currentPhaseIndex);
             sunColor = AdjustColorForStorm(sunColor, _stormIntensity);
 
-            sunLight.color = sunColor;
-            sunLight.intensity = phase.sunIntensity * (phase.sunIntensity * 0.5f + 0.5f);
+            sunLight.color = Color.Lerp(sunLight.color, sunColor, Time.deltaTime * SMOOTH_LERP_SPEED);
+
+            float baseIntensity = phase.sunIntensity;
+            if (_currentPhaseIndex == 4)
+            {
+                baseIntensity = 0.15f;
+            }
+            sunLight.intensity = baseIntensity;
             sunLight.intensity = AdjustIntensityForStorm(sunLight.intensity, _stormIntensity);
-            sunLight.shadowStrength = 1f;
+            sunLight.shadowStrength = phase.castShadows ? 1f : 0f;
             sunLight.shadows = phase.castShadows ? LightShadows.Soft : LightShadows.None;
         }
 
@@ -197,9 +240,12 @@ namespace ProjectC.Core
             var phase = profile.phases[_currentPhaseIndex];
             if (phase == null) return;
 
-            RenderSettings.ambientSkyColor = ApplyVariability(phase.ambientSkyColor, _currentPhaseIndex);
-            RenderSettings.ambientEquatorColor = phase.ambientEquatorColor;
-            RenderSettings.ambientGroundColor = phase.ambientGroundColor;
+            Color targetAmbient = ApplyVariability(phase.ambientSkyColor, _currentPhaseIndex);
+            _smoothAmbientSky = Color.Lerp(_smoothAmbientSky, targetAmbient, Time.deltaTime * SMOOTH_LERP_SPEED);
+
+            RenderSettings.ambientSkyColor = _smoothAmbientSky;
+            RenderSettings.ambientEquatorColor = Color.Lerp(RenderSettings.ambientEquatorColor, phase.ambientEquatorColor, Time.deltaTime * SMOOTH_LERP_SPEED);
+            RenderSettings.ambientGroundColor = Color.Lerp(RenderSettings.ambientGroundColor, phase.ambientGroundColor, Time.deltaTime * SMOOTH_LERP_SPEED);
             RenderSettings.ambientIntensity = phase.ambientIntensity * (1f - _stormIntensity * 0.4f);
         }
 
@@ -210,17 +256,30 @@ namespace ProjectC.Core
             var phase = profile.phases[_currentPhaseIndex];
             if (phase == null) return;
 
-            float stormFogMod = 1f + _stormIntensity * 1f; // ×2.0 at full storm
-            RenderSettings.fogColor = phase.fogColor;
-            RenderSettings.fogDensity = phase.fogDensity * stormFogMod;
+            float stormFogMod = 1f + _stormIntensity * 1f;
+            float targetFogDensity = phase.fogDensity * stormFogMod;
+            _smoothFogDensity = Mathf.Lerp(_smoothFogDensity, targetFogDensity, Time.deltaTime * SMOOTH_LERP_SPEED);
+
+            Color targetFogColor = AdjustColorForStorm(phase.fogColor, _stormIntensity);
+            _smoothFogColor = Color.Lerp(_smoothFogColor, targetFogColor, Time.deltaTime * SMOOTH_LERP_SPEED);
+
+            RenderSettings.fogColor = _smoothFogColor;
+            RenderSettings.fogDensity = _smoothFogDensity;
             RenderSettings.fogMode = FogMode.Exponential;
         }
 
         private void ApplySkybox()
         {
-            float dayFactor = GetDayFactor();
-            Material targetSkybox = dayFactor > 0.5f ? skyboxDayMaterial : skyboxNightMaterial;
-            if (targetSkybox != null)
+            float t = _smoothTimeOfDay;
+            Material targetSkybox = (t >= 6f && t < 20f) ? skyboxDayMaterial : skyboxNightMaterial;
+
+            if (targetSkybox == null)
+            {
+                if (skyboxDayMaterial != null) targetSkybox = skyboxDayMaterial;
+                else if (skyboxNightMaterial != null) targetSkybox = skyboxNightMaterial;
+            }
+
+            if (targetSkybox != null && RenderSettings.skybox != targetSkybox)
             {
                 RenderSettings.skybox = targetSkybox;
             }
@@ -242,12 +301,9 @@ namespace ProjectC.Core
 
         private void ApplyTemperatureFilter()
         {
-            if (temperatureFilter != null && temperatureFilter.config != null)
+            if (temperatureFilter != null && temperatureConfig != null)
             {
-                // TemperatureFilter handles its own overlay blending internally
-                // The currentTemperature value is already updated via HandleTemperatureChanged
-                // This method exists for future expansion (e.g., driving post-processing
-                // or material parameters from temperature)
+                temperatureFilter.Apply(currentTemperature);
             }
         }
 
@@ -260,6 +316,13 @@ namespace ProjectC.Core
 
             veilController.SetLightDirection(sunDir);
             veilController.SetDayNightFactor(dayFactor);
+        }
+
+        private void ApplyMoon()
+        {
+            if (moonController == null) return;
+            float dayNumber = Time.realtimeSinceStartup / 86400f;
+            moonController.UpdateMoon(_serverTimeOfDay, dayNumber);
         }
 
         private Color ApplyVariability(Color baseColor, int phaseIdx)
@@ -291,9 +354,18 @@ namespace ProjectC.Core
         private float GetDayFactor()
         {
             float t = _serverTimeOfDay;
-            if (t >= 6f && t < 20f) return Mathf.InverseLerp(6f, 20f, t);
-            if (t >= 20f) return 0f;
-            return 1f;
+            if (t >= 6f && t < 20f)
+            {
+                return Mathf.InverseLerp(6f, 20f, t);
+            }
+            else if (t >= 20f)
+            {
+                return 0f;
+            }
+            else
+            {
+                return 1f;
+            }
         }
 
         private Color AdjustColorForStorm(Color color, float storm)
@@ -312,13 +384,7 @@ namespace ProjectC.Core
 
         private void ApplyAll()
         {
-            ApplySun();
-            ApplyAmbient();
-            ApplyFog();
-            ApplySkybox();
-            ApplyVolumeBlend();
-            ApplyTemperatureFilter();
-            ApplyVeilShader();
+            UpdateLighting();
         }
     }
 }

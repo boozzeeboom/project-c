@@ -317,3 +317,16 @@ Update():
 ---
 
 **Status:** Ready for Testing
+
+---
+
+## 9. PENDING — FUTURE WORK
+
+| Задача | Описание | Status |
+|--------|----------|--------|
+| Parent mesh pattern | Генерация сфер по поверхности меша | ⏳ Deferred |
+| Advanced physics | Collision между сферами, развитие parting | ⏳ Deferred |
+| Lightning VFX | ParticleSystem в StormController | ⏳ Deferred |
+| Runtime loading | Addressables для CloudLayerConfig | ⏳ Deferred |
+
+**Last Updated:** 24 May 2026

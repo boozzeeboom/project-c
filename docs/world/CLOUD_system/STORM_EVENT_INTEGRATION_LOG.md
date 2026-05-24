@@ -395,4 +395,55 @@ void StormSpawnClientRpc(ushort id, Vector3 worldPos, float intensity, string pa
 
 ---
 
-**Status:** ✅ Phase 1 Complete — Ready for Testing
+**Status:** ✅ Phase 1-4 Complete + Session Fix
+
+---
+
+## 7. SESSION FIXES (24 May 2026)
+
+### 7.1 CreateStormSphere transform fix
+
+**Файл:** `StormCloudGenerator.cs:209`
+
+**Проблема:** При setParent + localPosition могли возникать ошибки позиционирования в локальном пространстве.
+
+**Исправление:**
+```csharp
+// БЫЛО:
+go.transform.SetParent(container);
+go.transform.localPosition = new Vector3(sphere.X, sphere.Y, sphere.Z);
+
+// СТАЛО:
+go.transform.SetParent(container, false);
+go.transform.SetLocalPositionAndRotation(
+    new Vector3(sphere.X, sphere.Y, sphere.Z),
+    Quaternion.identity
+);
+```
+
+---
+
+## 8. PENDING — FUTURE WORK
+
+### 8.1 Parent Mesh Pattern
+- Форма облака генерируется по поверхности меша ("череп")
+- Требует RuntimeMeshSampler интеграцию в генерацию
+- **Status:** ⏳ Deferred
+
+### 8.2 Advanced Physics
+- Развитие parting beyond basic impulse
+- Collision между сферами
+- **Status:** ⏳ Deferred
+
+### 8.3 Lightning VFX
+- Подключение ParticleSystem к StormController
+- **Status:** ⏳ Deferred
+
+### 8.4 Runtime Pattern Loading
+- Addressables для загрузки CloudLayerConfig по адресу
+- Замена Editor-only AssetDatabase GUID loading
+- **Status:** ⏳ Deferred
+
+---
+
+**Last Updated:** 24 May 2026

@@ -24,8 +24,34 @@ namespace ProjectC.Core
 
         private float _timer = 0f;
 
+        public static ServerWeatherController Instance { get; private set; }
+
+        [Header("Time of Day")]
+        [SerializeField] private float _timeOfDay = 12f;
+        [SerializeField] private float _dayCycleRealHours = 1f;
+        [SerializeField] private bool _enableTimeAutoAdvance = true;
+        [SerializeField] private float _timeBroadcastInterval = 5f;
+        private float _timeTimer = 0f;
+
+        [Header("Temperature")]
+        [SerializeField] private float _temperature = 20f;
+        [SerializeField] private float _tempBroadcastInterval = 10f;
+        private float _tempTimer = 0f;
+
+        // Events for clients to subscribe
+        public event System.Action<float> OnTimeOfDayChanged;
+        public event System.Action<float> OnTemperatureChanged;
+
+        public float TimeOfDay => _timeOfDay;
+        public float Temperature => _temperature;
+
         public override void OnNetworkSpawn()
         {
+            if (IsServer)
+            {
+                Instance = this;
+            }
+
             if (!IsServer)
             {
                 enabled = false;
@@ -33,7 +59,17 @@ namespace ProjectC.Core
             }
 
             ApplyWindToLocal(_windDirection, _windSpeed);
+            BroadcastTimeOfDayClientRpc(_timeOfDay);
+            BroadcastTemperatureClientRpc(_temperature);
             Debug.Log("[ServerWeatherController] Server started, will broadcast wind at 0.5 Hz");
+        }
+
+        public override void OnNetworkDespawn()
+        {
+            if (IsServer)
+            {
+                Instance = null;
+            }
         }
 
         private void Update()
@@ -55,6 +91,27 @@ namespace ProjectC.Core
             if (_enableWindVariation)
             {
                 ApplyWindVariation();
+            }
+
+            if (_enableTimeAutoAdvance && IsServer)
+            {
+                float gameHoursPerRealSecond = 24f / (_dayCycleRealHours * 3600f);
+                _timeOfDay += gameHoursPerRealSecond * Time.deltaTime;
+                if (_timeOfDay >= 24f) _timeOfDay -= 24f;
+            }
+
+            _timeTimer += Time.deltaTime;
+            if (_timeTimer >= _timeBroadcastInterval)
+            {
+                BroadcastTimeOfDayClientRpc(_timeOfDay);
+                _timeTimer = 0f;
+            }
+
+            _tempTimer += Time.deltaTime;
+            if (_tempTimer >= _tempBroadcastInterval)
+            {
+                BroadcastTemperatureClientRpc(_temperature);
+                _tempTimer = 0f;
             }
         }
 
@@ -142,6 +199,40 @@ namespace ProjectC.Core
             _windDirection = targetDirection.normalized;
             _windSpeed = Mathf.Max(0f, targetSpeed);
             ApplyWindToLocal(_windDirection, _windSpeed);
+        }
+
+        [ClientRpc]
+        private void BroadcastTimeOfDayClientRpc(float time)
+        {
+            _timeOfDay = time;
+            OnTimeOfDayChanged?.Invoke(time);
+        }
+
+        [ClientRpc]
+        private void BroadcastTemperatureClientRpc(float temp)
+        {
+            _temperature = temp;
+            OnTemperatureChanged?.Invoke(temp);
+        }
+
+        [ServerRpc(RequireOwnership = false)]
+        public void SetTimeOfDayServerRpc(float time)
+        {
+            _timeOfDay = Mathf.Repeat(time, 24f);
+            BroadcastTimeOfDayClientRpc(_timeOfDay);
+        }
+
+        [ServerRpc(RequireOwnership = false)]
+        public void SetTemperatureServerRpc(float temp)
+        {
+            _temperature = temp;
+            BroadcastTemperatureClientRpc(_temperature);
+        }
+
+        [ServerRpc(RequireOwnership = false)]
+        public void SetDayCycleSpeedServerRpc(float realHoursForFullCycle)
+        {
+            _dayCycleRealHours = realHoursForFullCycle;
         }
     }
 }

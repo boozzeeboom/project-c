@@ -51,11 +51,13 @@ namespace ProjectC.Core
         private List<StormData> _activeStorms = new List<StormData>();
         private ushort _nextId = 0;
         private float _syncTimer = 0f;
+        private float _globalStormIntensity = 0f;
 
         public static ServerStormManager Instance { get; private set; }
 
         public event System.Action<ushort, Vector3, float, string> OnEventCloudSpawnRequested;
         public event System.Action<ushort> OnEventCloudRemoveRequested;
+        public event System.Action<float> OnGlobalStormIntensityChanged;
 
         public override void OnNetworkSpawn()
         {
@@ -179,6 +181,9 @@ namespace ProjectC.Core
 
             if (_syncTimer >= _syncInterval)
             {
+                _globalStormIntensity = CalculateGlobalStormIntensity();
+                OnGlobalStormIntensityChanged?.Invoke(_globalStormIntensity);
+
                 SyncStormStatesClientRpc(
                     _activeStorms.Select(s => s.Id).ToArray(),
                     _activeStorms.Select(s => s.WorldPosition).ToArray(),
@@ -186,6 +191,20 @@ namespace ProjectC.Core
                 );
                 _syncTimer = 0f;
             }
+        }
+
+        private float CalculateGlobalStormIntensity()
+        {
+            if (_activeStorms.Count == 0) return 0f;
+
+            float totalIntensity = 0f;
+            foreach (var storm in _activeStorms)
+            {
+                totalIntensity += storm.Intensity;
+            }
+
+            float avgIntensity = totalIntensity / _maxStorms;
+            return Mathf.Clamp01(avgIntensity);
         }
 
         [ClientRpc]
@@ -236,6 +255,9 @@ namespace ProjectC.Core
                     controller.UpdateState(positions[i], intensities[i]);
                 }
             }
+
+            _globalStormIntensity = CalculateGlobalStormIntensity();
+            GlobalStormEvents.BroadcastStormIntensity(_globalStormIntensity);
         }
 
         public void TriggerEventCloud(Vector3 position, CloudLayerConfig pattern, float intensity, string eventId)
@@ -301,5 +323,28 @@ namespace ProjectC.Core
                 controller.Despawn();
             }
         }
+
+        public float GetStormIntensityAtPosition(Vector3 playerPosition)
+        {
+            if (_activeStorms.Count == 0) return 0f;
+
+            float maxIntensity = 0f;
+            float proximityRadius = 5000f;
+
+            foreach (var storm in _activeStorms)
+            {
+                float dist = Vector3.Distance(playerPosition, storm.WorldPosition);
+                if (dist < proximityRadius)
+                {
+                    float proximityFactor = 1f - (dist / proximityRadius);
+                    float effectiveIntensity = storm.Intensity * proximityFactor;
+                    maxIntensity = Mathf.Max(maxIntensity, effectiveIntensity);
+                }
+            }
+
+            return Mathf.Clamp01(maxIntensity);
+        }
+
+        public float GlobalStormIntensity => _globalStormIntensity;
     }
 }

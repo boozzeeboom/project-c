@@ -26,7 +26,8 @@ namespace ProjectC.Core
         [SerializeField] private CloudLayerConfig[] _availablePatterns = new CloudLayerConfig[0];
 
         [Header("Visibility")]
-        [SerializeField] private float _visibilityDistance = 50000f;
+        [Tooltip("Storm is hidden if player is further than this distance")]
+        [SerializeField] private float _visibilityDistance = 100000f;
 
         private static readonly int LightningFlashProperty = Shader.PropertyToID("_LightningFlash");
 
@@ -83,7 +84,11 @@ namespace ProjectC.Core
             _targetPosition = worldPos;
             _intensity = intensity;
             _currentPatternGUID = patternGUID;
-            transform.position = worldPos;
+
+            if (transform.position != worldPos)
+            {
+                transform.position = worldPos;
+            }
 
             ClientControllers[id] = this;
 
@@ -97,7 +102,7 @@ namespace ProjectC.Core
 
             if (_cloudGenerator != null && pattern != null)
             {
-                _cloudGenerator.SpawnStorm(id, worldPos, pattern, intensity);
+                _cloudGenerator.SpawnStorm(id, worldPos, pattern, intensity, gameObject);
             }
 
             Debug.Log($"[StormController] Initialized storm {id} at {worldPos}, pattern={pattern?.name ?? "NULL"}");
@@ -133,6 +138,15 @@ namespace ProjectC.Core
             }
 
             StartCoroutine(LightningFlashEffect());
+        }
+
+        public void Despawn()
+        {
+            if (_cloudGenerator != null)
+            {
+                _cloudGenerator.DespawnStorm(StormId);
+            }
+            Destroy(gameObject);
         }
 
         private System.Collections.IEnumerator LightningFlashEffect()

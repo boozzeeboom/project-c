@@ -339,124 +339,24 @@ namespace ProjectC.CloudGenerator
             return spheres;
         }
 
-#if UNITY_EDITOR
         private static List<Vector3> SampleMeshPoints(CloudLayerConfig layer, ref DeterministicRandom rng)
         {
-            var meshAsset = UnityEditor.AssetDatabase.LoadAssetAtPath<UnityEngine.Mesh>(layer.ParentMeshPath);
-            if (meshAsset == null) return null;
-
-            var points = new List<Vector3>();
-            var vertices = meshAsset.vertices;
-            var triangles = meshAsset.triangles;
-
-            int triCount = triangles.Length / 3;
-            var triAreas = new float[triCount];
-            var cumAreas = new float[triCount];
-
-            float totalArea = 0f;
-            for (int i = 0; i < triCount; i++)
+            if (string.IsNullOrEmpty(layer.ParentMeshPath))
             {
-                int i0 = triangles[i * 3];
-                int i1 = triangles[i * 3 + 1];
-                int i2 = triangles[i * 3 + 2];
-
-                Vector3 v0 = vertices[i0];
-                Vector3 v1 = vertices[i1];
-                Vector3 v2 = vertices[i2];
-
-                Vector3 e1 = v1 - v0;
-                Vector3 e2 = v2 - v0;
-                float area = Vector3.Cross(e1, e2).magnitude * 0.5f;
-
-                if (area > 0.0001f)
-                {
-                    triAreas[i] = area;
-                    totalArea += area;
-                    cumAreas[i] = totalArea;
-                }
-                else
-                {
-                    triAreas[i] = 0f;
-                    cumAreas[i] = totalArea;
-                }
+                return null;
             }
-
-            if (totalArea <= 0f) return null;
 
             int targetCount = layer.MaxSphereCount > 0 ? layer.MaxSphereCount : 2000;
             int sampleCount = Math.Min(targetCount, 2000);
-            for (int p = 0; p < sampleCount; p++)
-            {
-                double r = rng.NextDouble() * totalArea;
 
-                int triIdx = Array.BinarySearch(cumAreas, (float)r);
-                if (triIdx < 0) triIdx = ~triIdx;
-                if (triIdx >= triCount) triIdx = triCount - 1;
-
-                int j0 = triangles[triIdx * 3];
-                int j1 = triangles[triIdx * 3 + 1];
-                int j2 = triangles[triIdx * 3 + 2];
-
-                Vector3 w0 = vertices[j0];
-                Vector3 w1 = vertices[j1];
-                Vector3 w2 = vertices[j2];
-
-                double u = rng.NextDouble();
-                double v = rng.NextDouble();
-                double sqrtU = Math.Sqrt(u);
-
-                double a = 1.0 - sqrtU;
-                double b = sqrtU * (1.0 - v);
-                double c = sqrtU * v;
-
-                points.Add(new Vector3(
-                    (float)(a * w0.x + b * w1.x + c * w2.x),
-                    (float)(a * w0.y + b * w1.y + c * w2.y),
-                    (float)(a * w0.z + b * w1.z + c * w2.z)
-                ));
-            }
-
-            if (points.Count == 0) return null;
-
-            float sx = layer.ParentMeshScaleX;
-            float sy = layer.ParentMeshScaleY;
-            float sz = layer.ParentMeshScaleZ;
-            float rx = layer.ParentMeshRotX * (float)(Math.PI / 180.0);
-            float ry = layer.ParentMeshRotY * (float)(Math.PI / 180.0);
-            float rz = layer.ParentMeshRotZ * (float)(Math.PI / 180.0);
-            float ox = layer.ParentMeshOffsetX;
-            float oy = layer.ParentMeshOffsetY;
-            float oz = layer.ParentMeshOffsetZ;
-
-            float cosZ = (float)Math.Cos(rz), sinZ = (float)Math.Sin(rz);
-            float cosY = (float)Math.Cos(ry), sinY = (float)Math.Sin(ry);
-            float cosX = (float)Math.Cos(rx), sinX = (float)Math.Sin(rx);
-
-            var result = new List<Vector3>(points.Count);
-            foreach (var pt in points)
-            {
-                float tsx = pt.x * sx;
-                float tsy = pt.y * sy;
-                float tsz = pt.z * sz;
-
-                float rx2 = tsx * cosZ - tsy * sinZ;
-                float ry2 = tsx * sinZ + tsy * cosZ;
-                float rz2 = tsz;
-
-                float rx3 = rx2 * cosY + rz2 * sinY;
-                float ry3 = ry2;
-                float rz3 = -rx2 * sinY + rz2 * cosY;
-
-                float rx4 = rx3;
-                float ry4 = ry3 * cosX - rz3 * sinX;
-                float rz4 = ry3 * sinX + rz3 * cosX;
-
-                result.Add(new Vector3(rx4 + ox, ry4 + oy, rz4 + oz));
-            }
-
-            return result;
+            return RuntimeMeshSampler.SampleMeshFromResources(
+                layer.ParentMeshPath,
+                sampleCount,
+                new Vector3(layer.ParentMeshScaleX, layer.ParentMeshScaleY, layer.ParentMeshScaleZ),
+                new Vector3(layer.ParentMeshRotX, layer.ParentMeshRotY, layer.ParentMeshRotZ),
+                new Vector3(layer.ParentMeshOffsetX, layer.ParentMeshOffsetY, layer.ParentMeshOffsetZ)
+            );
         }
-#endif
 
         private static List<CloudSphere> GenerateColumnLayer(CloudLayerConfig layer, ref DeterministicRandom rng)
         {

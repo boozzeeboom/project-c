@@ -24,7 +24,7 @@ namespace ProjectC.Core
             Debug.Log($"[StormCloudGenerator] Awake. Sphere mesh: {_sphereMesh.name}, defaultStormPattern: {defaultStormPattern}");
         }
 
-        public void SpawnStorm(uint stormId, Vector3 position, CloudLayerConfig pattern, float intensity)
+        public void SpawnStorm(uint stormId, Vector3 position, CloudLayerConfig pattern, float intensity, GameObject existingRoot = null)
         {
             Debug.Log($"[StormCloudGenerator] SpawnStorm called: id={stormId}, pos={position}, pattern={pattern?.name}, intensity={intensity}");
 
@@ -44,12 +44,23 @@ namespace ProjectC.Core
                 DespawnStorm(stormId);
             }
 
-            GameObject stormRoot = new GameObject($"Storm_{stormId}");
-            stormRoot.transform.position = position;
-            Debug.Log($"[StormCloudGenerator] Created root at {position}");
+            GameObject stormRoot = existingRoot != null
+                ? existingRoot
+                : new GameObject($"Storm_{stormId}");
+
+            if (existingRoot == null)
+            {
+                stormRoot.transform.position = position;
+            }
+            else
+            {
+                Debug.Log($"[StormCloudGenerator] Using existing root at world pos {stormRoot.transform.position}");
+            }
 
             var sphereContainer = new GameObject("SphereContainer");
             sphereContainer.transform.SetParent(stormRoot.transform);
+            sphereContainer.transform.localPosition = Vector3.zero;
+            Debug.Log($"[StormCloudGenerator] SphereContainer local pos: {sphereContainer.transform.localPosition}, world pos: {sphereContainer.transform.position}");
 
             var spheres = GenerateStormSpheres(pattern, Vector3.zero);
             Debug.Log($"[StormCloudGenerator] Generated {spheres?.Count ?? 0} spheres for storm {stormId}");
@@ -57,7 +68,7 @@ namespace ProjectC.Core
             if (spheres == null || spheres.Count == 0)
             {
                 Debug.LogError($"[StormCloudGenerator] No spheres generated! Pattern: {pattern?.name}, Archetype: {pattern?.archetype}");
-                Destroy(stormRoot);
+                if (existingRoot == null) Destroy(stormRoot);
                 return;
             }
 
@@ -183,6 +194,8 @@ namespace ProjectC.Core
             var layers = new List<ProjectC.CloudGenerator.CloudLayerConfig> { layerConfig };
             var spheres = ProjectC.CloudGenerator.CloudGenerator.Generate(layers);
 
+            Debug.Log($"[StormCloudGenerator] GenerateStormSpheres: {spheres.Count} spheres generated for pattern {config?.name}");
+
             foreach (var sphere in spheres)
             {
                 sphere.X += offset.x;
@@ -196,8 +209,11 @@ namespace ProjectC.Core
         private void CreateStormSphere(CloudSphere sphere, Transform container, float intensity)
         {
             var go = new GameObject($"StormSphere_{sphere.Depth}");
-            go.transform.SetParent(container);
-            go.transform.position = new Vector3(sphere.X, sphere.Y, sphere.Z);
+            go.transform.SetParent(container, false);
+            go.transform.SetLocalPositionAndRotation(
+                new Vector3(sphere.X, sphere.Y, sphere.Z),
+                Quaternion.identity
+            );
 
             go.AddComponent<MeshFilter>().mesh = _sphereMesh;
 

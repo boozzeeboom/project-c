@@ -15,8 +15,10 @@ namespace ProjectC.Core
     {
         [Header("Settings")]
         [SerializeField] private int _maxStorms = 5;
+        [Tooltip("Minimum distance from center to spawn storm (units)")]
         [SerializeField] private float _spawnMinDistance = 5000f;
-        [SerializeField] private float _spawnMaxDistance = 20000f;
+        [Tooltip("Maximum distance from center to spawn storm (units)")]
+        [SerializeField] private float _spawnMaxDistance = 35000f;
 
         [Header("Movement")]
         [SerializeField] private float _baseAltitude = 1200f;
@@ -51,6 +53,9 @@ namespace ProjectC.Core
         private float _syncTimer = 0f;
 
         public static ServerStormManager Instance { get; private set; }
+
+        public event System.Action<ushort, Vector3, float, string> OnEventCloudSpawnRequested;
+        public event System.Action<ushort> OnEventCloudRemoveRequested;
 
         public override void OnNetworkSpawn()
         {
@@ -230,6 +235,70 @@ namespace ProjectC.Core
                 {
                     controller.UpdateState(positions[i], intensities[i]);
                 }
+            }
+        }
+
+        public void TriggerEventCloud(Vector3 position, CloudLayerConfig pattern, float intensity, string eventId)
+        {
+            if (!IsServer) return;
+
+            string patternGuid = GetAssetGuid(pattern);
+
+            StormData storm = new StormData
+            {
+                Id = _nextId++,
+                WorldPosition = position,
+                Intensity = intensity,
+                LightningActive = false,
+                TimeSinceLightning = 0f,
+                PatternGUID = patternGuid
+            };
+
+            _activeStorms.Add(storm);
+
+            EventCloudSpawnClientRpc(storm.Id, storm.WorldPosition, storm.Intensity, storm.PatternGUID, eventId);
+
+            OnEventCloudSpawnRequested?.Invoke(storm.Id, position, intensity, patternGuid);
+        }
+
+        [ClientRpc]
+        private void EventCloudSpawnClientRpc(ushort id, Vector3 worldPosition, float intensity, string patternGUID, string eventId)
+        {
+            Debug.Log($"[EventCloudSpawnClientRpc] id={id}, eventId={eventId}, pos={worldPosition}");
+
+            if (StormController.ClientControllers.TryGetValue(id, out var controller))
+            {
+                controller.Initialize(id, worldPosition, intensity, patternGUID);
+            }
+            else if (_stormControllerPrefab != null)
+            {
+                var go = Instantiate(_stormControllerPrefab, worldPosition, Quaternion.identity);
+                if (go.TryGetComponent<StormController>(out var newController))
+                {
+                    newController.Initialize(id, worldPosition, intensity, patternGUID);
+                }
+            }
+        }
+
+        public void RemoveEventCloud(ushort stormId)
+        {
+            if (!IsServer) return;
+
+            int index = _activeStorms.FindIndex(s => s.Id == stormId);
+            if (index >= 0)
+            {
+                _activeStorms.RemoveAt(index);
+                EventCloudRemoveClientRpc(stormId);
+                OnEventCloudRemoveRequested?.Invoke(stormId);
+            }
+        }
+
+        [ClientRpc]
+        private void EventCloudRemoveClientRpc(ushort stormId)
+        {
+            if (StormController.ClientControllers.TryGetValue(stormId, out var controller))
+            {
+                controller.Despawn();
             }
         }
     }

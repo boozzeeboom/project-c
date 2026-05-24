@@ -8,6 +8,17 @@ public class TestStormSpawner : MonoBehaviour
     public uint testStormId = 1;
     public Vector3 testPosition = new Vector3(0, 1200, 0);
 
+    [Header("Random Spawn Settings")]
+    public bool useRandomPosition = true;
+    [Tooltip("Minimum distance from center to spawn storm (units)")]
+    [SerializeField] private float spawnMinDistance = 5000f;
+    [Tooltip("Maximum distance from center to spawn storm (units)")]
+    [SerializeField] private float spawnMaxDistance = 35000f;
+    [Tooltip("Base altitude for storm spawning")]
+    [SerializeField] private float baseAltitude = 1200f;
+    [Tooltip("Altitude variation (+/-)")]
+    [SerializeField] private float altitudeVariation = 500f;
+
     private Keyboard _keyboard;
 
     void Awake()
@@ -27,9 +38,13 @@ public class TestStormSpawner : MonoBehaviour
                 var pattern = testPattern != null ? testPattern : generator.defaultStormPattern;
                 if (pattern != null)
                 {
+                    Vector3 spawnPos = useRandomPosition
+                        ? GetRandomStormPosition()
+                        : testPosition;
+
                     Debug.Log($"[Test] Using pattern: {pattern.name}, archetype={pattern.archetype}");
-                    generator.SpawnStorm(testStormId, testPosition, pattern, 1f);
-                    Debug.Log($"[Test] SpawnStorm called for storm {testStormId}");
+                    generator.SpawnStorm(testStormId, spawnPos, pattern, 1f);
+                    Debug.Log($"[Test] SpawnStorm called for storm {testStormId} at {spawnPos}");
                 }
                 else
                 {
@@ -63,9 +78,21 @@ public class TestStormSpawner : MonoBehaviour
         }
     }
 
+    private Vector3 GetRandomStormPosition()
+    {
+        float angle = Random.value * Mathf.PI * 2f;
+        float dist = Random.Range(spawnMinDistance, spawnMaxDistance);
+
+        float x = Mathf.Cos(angle) * dist;
+        float y = baseAltitude + Random.Range(-altitudeVariation, altitudeVariation);
+        float z = Mathf.Sin(angle) * dist;
+
+        return new Vector3(x, y, z);
+    }
+
     void OnGUI()
     {
-        GUI.Label(new Rect(10, 10, 300, 80),
-            "T - Spawn Storm\nY - Despawn Storm\nU - Despawn All");
+        GUI.Label(new Rect(10, 10, 300, 100),
+            "T - Spawn Storm\nY - Despawn Storm\nU - Despawn All\nRandom: " + useRandomPosition);
     }
 }

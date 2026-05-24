@@ -1185,7 +1185,7 @@ GameObject:
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
-  m_IsActive: 1
+  m_IsActive: 0
 --- !u!4 &638669568
 Transform:
   m_ObjectHideFlags: 0
@@ -1216,6 +1216,11 @@ MonoBehaviour:
   testPattern: {fileID: 11400000, guid: b8c171e4b6cd60a4abf08a4fb1833b72, type: 2}
   testStormId: 1
   testPosition: {x: 0, y: 3000, z: 0}
+  useRandomPosition: 1
+  spawnMinDistance: 5000
+  spawnMaxDistance: 80000
+  baseAltitude: 1500
+  altitudeVariation: 2000
 --- !u!21 &695692881
 Material:
   serializedVersion: 8
@@ -2046,9 +2051,9 @@ MonoBehaviour:
   ShowTopMostFoldoutHeaderGroup: 1
   _maxStorms: 5
   _spawnMinDistance: 5000
-  _spawnMaxDistance: 20000
-  _baseAltitude: 1200
-  _altitudeVariation: 500
+  _spawnMaxDistance: 80000
+  _baseAltitude: 2000
+  _altitudeVariation: 2000
   _lightningIntervalMin: 10
   _lightningIntervalMax: 30
   _syncInterval: 2

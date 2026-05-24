@@ -47,5 +47,6 @@ MonoBehaviour:
   _stormMaterial: {fileID: 2100000, guid: 1113070119fa4ec4f93620807a2d0511, type: 2}
   _lightningVFX: {fileID: 0}
   _cloudGenerator: {fileID: 0}
-  _availablePatterns: []
-  _visibilityDistance: 50000
+  _availablePatterns:
+  - {fileID: 11400000, guid: b8c171e4b6cd60a4abf08a4fb1833b72, type: 2}
+  _visibilityDistance: 100000

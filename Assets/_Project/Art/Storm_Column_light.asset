@@ -42,9 +42,9 @@ MonoBehaviour:
     Min: 5
     Max: 20
   columnParams:
-    Height: 4000
-    BaseRadius: 1500
-    TopRadius: 2500
+    Height: 3000
+    BaseRadius: 150
+    TopRadius: 250
     Floors: 8
     RingsPerFloor: 6
     Wobble: 0.3

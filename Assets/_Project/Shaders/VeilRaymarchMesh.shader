@@ -291,8 +291,8 @@ Shader "Project C/Clouds/VeilRaymarchMesh"
                 half4 accumulatedColor = half4(0, 0, 0, 0);
                 float3 viewDir = -rayDir;
 
-                // Light direction (normalized)
-                half3 lightDir = normalize(half3(-0.5, 0.5, -0.3));
+                // Light direction (normalized) — from DayNightController via _LightDir uniform
+                half3 lightDir = normalize(_LightDir.xyz);
 
                 for (int i = 0; i < _RaymarchSteps && accumulatedColor.a < 0.99; i++)
                 {

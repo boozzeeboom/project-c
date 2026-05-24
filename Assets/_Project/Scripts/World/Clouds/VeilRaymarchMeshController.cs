@@ -68,6 +68,7 @@ namespace ProjectC.World.Clouds
         private static readonly int Property_WindZ = Shader.PropertyToID("_WindZ");
         private static readonly int Property_DensityMultiplier = Shader.PropertyToID("_DensityMultiplier");
         private static readonly int Property_DayFactor = Shader.PropertyToID("_DayFactor");
+        private static readonly int Property_LightDir = Shader.PropertyToID("_LightDir");
         private static readonly int Property_RimPower = Shader.PropertyToID("_RimPower");
         private static readonly int Property_RimIntensity = Shader.PropertyToID("_RimIntensity");
 
@@ -260,6 +261,22 @@ namespace ProjectC.World.Clouds
         {
             _lightningIntensity = 1f;
             _lightningTimer = 0f;
+        }
+
+        public void SetLightDirection(Vector3 direction)
+        {
+            if (_instanceMaterial == null) return;
+            Vector3 normalized = direction.normalized;
+            _instanceMaterial.SetVector(Property_LightDir, new Vector4(normalized.x, normalized.y, normalized.z, 0f));
+        }
+
+        public void SetDayNightFactor(float dayFactor)
+        {
+            DayFactor = Mathf.Clamp01(dayFactor);
+            if (_instanceMaterial != null)
+            {
+                _instanceMaterial.SetFloat(Property_DayFactor, DayFactor);
+            }
         }
 
         void OnDestroy()

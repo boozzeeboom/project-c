@@ -1,5 +1,5 @@
 # Project C: The Clouds
-**Version:** 0.0.17 | **Stage:** Этап 2.1 ЗАВЕРШЁН · Этап 2.5 В ПРОЦЕССЕ (Визуальный прототип)
+**Version:** 0.0.18 | **Stage:** Этап 2.1 ЗАВЕРШЁН · Этап 2.5 В ПРОЦЕССЕ (Визуальный прототип)
 **По мотивам книги «Интеграл Пьявица» — Бруно Арендт**
 ## Весь проект: [TheGravity](https://thegravity.ru) & [TheClouds](https://thegravity.ru/project-c/)
 
@@ -46,6 +46,8 @@
 | [`docs/CONTROLS.md`](docs/CONTROLS.md) | Документация по управлению |
 | [`docs/SHIP_SYSTEM_DOCUMENTATION.md`](docs/SHIP_SYSTEM_DOCUMENTATION.md) | Система кораблей (текущая реализация) |
 | [`docs/ART_BIBLE.md`](docs/ART_BIBLE.md) | Визуальная спецификация |
+| [`docs/world/CLOUD_system/STORM_EVENT_INTEGRATION_LOG.md`](docs/world/CLOUD_system/STORM_EVENT_INTEGRATION_LOG.md) | Storm Cloud System — implementation log |
+| [`docs/world/CLOUD_system/STORM_SETUP_GUIDE.md`](docs/world/CLOUD_system/STORM_SETUP_GUIDE.md) | Storm setup & testing guide |
 | [`docs/world/LargeScaleMMO/2_iteration_scene-mode/SYSTEM_OVERVIEW.md`](docs/world/LargeScaleMMO/2_iteration_scene-mode/SYSTEM_OVERVIEW.md) | **24+1 Scene World System** — documentation |
 | [`docs/GIT_WORKFLOW.md`](docs/GIT_WORKFLOW.md) | Шпаргалка Git команд |
 | [`docs/GIT_WORKFLOW_ADVANCED.md`](docs/GIT_WORKFLOW_ADVANCED.md) | Продвинутый Git workflow |
@@ -203,10 +205,17 @@
 
 ## 8. Текущий статус
 
-**Ветка:** `main` | **Версия:** `v0.0.17-scene-world-complete`
+**Ветка:** `main` | **Версия:** `v0.0.18-storm-cloud-complete`
 
 ### ✅ Реализовано
 - Процедурная генерация мира (15 горных пиков + 890+ облаков, 3 слоя)
+- **Система штормов (Storm Cloud System):**
+  - StormCloudGenerator — пул штормов (max 5), спавн по паттерну
+  - CloudSpherePhysics — parting physics (сферы разлетаются при пролёте игрока)
+  - EventCloud — event-driven шторма через ServerStormManager
+  - CloudLayerConfig — ScriptableObject с generator7.0 параметрами
+  - RuntimeMeshSampler — runtime sampling меша для ParentMeshPath
+  - ⏳ Parent mesh pattern, Lightning VFX, Runtime loading (отложено)
 - Контроллер персонажа (пеший режим: WASD, бег, прыжок)
 - **Корабли (Сессии 1-5_4, ShipController v2.7):**
   - Smooth movement — Mathf.SmoothDamp, инерция, стабилизация

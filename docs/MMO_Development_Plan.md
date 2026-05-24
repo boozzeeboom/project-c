@@ -35,6 +35,16 @@
 - ✅ Мелкие острова между пиками
 - ✅ Система облаков: 3 слоя, 890+ облаков, движение, анимация формы
 - ✅ Интеграция с WorldGenerator
+- ✅ **Система штормов (Storm Cloud System):**
+  - ✅ StormCloudGenerator — пул штормов (max 5), спавн по паттерну
+  - ✅ CloudSpherePhysics — parting physics (сферы разлетаются при пролёте)
+  - ✅ EventCloud — event-driven шторма через ServerStormManager
+  - ✅ CloudLayerConfig — ScriptableObject с generator7.0 параметрами
+  - ✅ RuntimeMeshSampler — runtime sampling меша для ParentMeshPath
+  - ⏳ **Parent mesh pattern** — генерация сфер по поверхности меша (отложено)
+  - ⏳ **Advanced physics** — collision между сферами (отложено)
+  - ⏳ **Lightning VFX** — ParticleSystem для молний (отложено)
+  - ⏳ **Runtime pattern loading** — Addressables для CloudLayerConfig (отложено)
 
 ### 1.2 Камера ✅
 - ✅ WorldCamera — свободный полёт, телепортация к пикам (N/B/R/H)

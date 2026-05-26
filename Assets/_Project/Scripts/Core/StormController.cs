@@ -9,6 +9,7 @@ namespace ProjectC.Core
     public class StormController : MonoBehaviour
     {
         public ushort StormId { get; private set; }
+        public bool IsLightningActive => _lightningActive;
 
         private Vector3 _targetPosition;
         private float _intensity;

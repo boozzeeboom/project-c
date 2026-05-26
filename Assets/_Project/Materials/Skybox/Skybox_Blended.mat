@@ -25,7 +25,7 @@ Material:
     m_TexEnvs: []
     m_Ints: []
     m_Floats:
-    - _Blend: 0.9998983
+    - _Blend: 0
     - _DayExposure: 1
     - _NightExposure: 0.3
     - _SunDisk: 1

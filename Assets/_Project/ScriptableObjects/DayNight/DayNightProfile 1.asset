@@ -13,8 +13,8 @@ MonoBehaviour:
   m_Name: DayNightProfile 1
   m_EditorClassIdentifier: Assembly-CSharp::ProjectC.Core.DayNightProfile
   phases:
-  - {fileID: 0}
-  - {fileID: 0}
-  - {fileID: 0}
-  - {fileID: 0}
-  - {fileID: 0}
+  - {fileID: 11400000, guid: 3f54e5a96faf10e4594ccb3f52024167, type: 2}
+  - {fileID: 11400000, guid: a2fb72cc0f374ac48a5fab9b5a9d175d, type: 2}
+  - {fileID: 11400000, guid: dd2225dba25f03e4cb1b843e4f91b93a, type: 2}
+  - {fileID: 11400000, guid: f83f0fd166dc1804f8648aaa1db6fd3f, type: 2}
+  - {fileID: 11400000, guid: 61e515d84d0417b49b8bf2be6cf0442e, type: 2}

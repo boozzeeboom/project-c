@@ -44,6 +44,7 @@ namespace ProjectC.Core
 
         public float TimeOfDay => _timeOfDay;
         public float Temperature => _temperature;
+        public float TotalGameDays { get; private set; }
 
         public override void OnNetworkSpawn()
         {
@@ -96,8 +97,13 @@ namespace ProjectC.Core
             if (_enableTimeAutoAdvance && IsServer)
             {
                 float gameHoursPerRealSecond = 24f / (_dayCycleRealHours * 3600f);
+                float prevTimeOfDay = _timeOfDay;
                 _timeOfDay += gameHoursPerRealSecond * Time.deltaTime;
-                if (_timeOfDay >= 24f) _timeOfDay -= 24f;
+                if (_timeOfDay >= 24f)
+                {
+                    _timeOfDay -= 24f;
+                    TotalGameDays++;
+                }
             }
 
             _timeTimer += Time.deltaTime;
@@ -215,21 +221,21 @@ namespace ProjectC.Core
             OnTemperatureChanged?.Invoke(temp);
         }
 
-        [ServerRpc(RequireOwnership = false)]
+        [Rpc(SendTo.Server, InvokePermission = RpcInvokePermission.Everyone)]
         public void SetTimeOfDayServerRpc(float time)
         {
             _timeOfDay = Mathf.Repeat(time, 24f);
             BroadcastTimeOfDayClientRpc(_timeOfDay);
         }
 
-        [ServerRpc(RequireOwnership = false)]
+        [Rpc(SendTo.Server, InvokePermission = RpcInvokePermission.Everyone)]
         public void SetTemperatureServerRpc(float temp)
         {
             _temperature = temp;
             BroadcastTemperatureClientRpc(_temperature);
         }
 
-        [ServerRpc(RequireOwnership = false)]
+        [Rpc(SendTo.Server, InvokePermission = RpcInvokePermission.Everyone)]
         public void SetDayCycleSpeedServerRpc(float realHoursForFullCycle)
         {
             _dayCycleRealHours = realHoursForFullCycle;

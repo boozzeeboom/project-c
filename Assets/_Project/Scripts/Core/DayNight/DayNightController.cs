@@ -39,19 +39,27 @@ namespace ProjectC.Core
         [Header("Moon")]
         public MoonController moonController;
 
+        // SERVER TIME - authoritative source
         private float _serverTimeOfDay = 12f;
+
+        // Phase tracking
         private int _currentPhaseIndex = -1;
-        private float _phaseBlend = 0f;
         private float _daySeed = 0f;
         private float _stormIntensity = 0f;
 
-        private float _smoothTimeOfDay = 12f;
-        private float _smoothDayFactor = 0.5f;
-        private float _smoothFogDensity = 0.0003f;
+        // Smoothing
+        private const float SMOOTH_SPEED = 3f;
+        private float _smoothSunIntensity = 1f;
         private Color _smoothAmbientSky = Color.gray;
         private Color _smoothFogColor = Color.gray;
 
-        private const float SMOOTH_LERP_SPEED = 2f;
+        // Skybox transition smoothing
+        private Material _currentSkyboxMaterial = null;
+        private float _skyboxBlend = 0f; // 0 = night, 1 = day
+
+        // Unified time boundaries (used by ALL systems)
+        private const float DAY_START = 6f;
+        private const float DAY_END = 20f;
 
         void Start()
         {
@@ -63,14 +71,10 @@ namespace ProjectC.Core
             }
             else
             {
-                Debug.Log("[DayNightController] No ServerWeatherController.Instance - using local time for testing");
+                Debug.Log("[DayNightController] No ServerWeatherController.Instance - using local time");
             }
 
             GlobalStormEvents.Subscribe(HandleStormIntensityChanged);
-
-            _smoothTimeOfDay = _serverTimeOfDay;
-            _smoothDayFactor = 0.5f;
-
             UpdateLighting();
         }
 
@@ -92,16 +96,13 @@ namespace ProjectC.Core
 
         void Update()
         {
+            // Sync with server time
             if (ServerWeatherController.Instance != null)
             {
-                bool timeChanged = Mathf.Abs(_serverTimeOfDay - ServerWeatherController.Instance.TimeOfDay) > 0.01f;
-                if (timeChanged)
+                float newTime = ServerWeatherController.Instance.TimeOfDay;
+                if (Mathf.Abs(_serverTimeOfDay - newTime) > 0.01f)
                 {
-                    _serverTimeOfDay = ServerWeatherController.Instance.TimeOfDay;
-                }
-
-                if (timeChanged)
-                {
+                    _serverTimeOfDay = newTime;
                     UpdateLighting();
                 }
             }
@@ -112,9 +113,7 @@ namespace ProjectC.Core
                 UpdateLighting();
             }
 
-            _smoothTimeOfDay = Mathf.Lerp(_smoothTimeOfDay, _serverTimeOfDay, Time.deltaTime * SMOOTH_LERP_SPEED * 2f);
-
-            ApplySkybox();
+            ApplySkyboxBlended();
             ApplyVolumeBlend();
             ApplyAmbient();
             ApplyFog();
@@ -124,7 +123,6 @@ namespace ProjectC.Core
         public void SetTimeOfDay(float time)
         {
             _serverTimeOfDay = Mathf.Repeat(time, 24f);
-            _smoothTimeOfDay = _serverTimeOfDay;
             UpdateLighting();
         }
 
@@ -153,8 +151,7 @@ namespace ProjectC.Core
         {
             if (profile == null || profile.phases == null || profile.phases.Length == 0) return;
 
-            float time = _serverTimeOfDay;
-            int phaseIdx = GetCurrentPhaseIndex(time);
+            int phaseIdx = GetCurrentPhaseIndex(_serverTimeOfDay);
 
             if (phaseIdx != _currentPhaseIndex)
             {
@@ -188,22 +185,6 @@ namespace ProjectC.Core
             return 0;
         }
 
-        private float GetPhaseBlend(float time, int phaseIdx)
-        {
-            if (profile?.phases == null || phaseIdx < 0 || phaseIdx >= profile.phases.Length) return 0f;
-            var phase = profile.phases[phaseIdx];
-            if (phase == null) return 0f;
-
-            float duration = phase.endHour - phase.startHour;
-            if (duration <= 0f) duration += 24f;
-
-            float elapsed = time - phase.startHour;
-            if (elapsed < 0f) elapsed += 24f;
-
-            float t = Mathf.Clamp01(elapsed / duration);
-            return phase.transitionCurve.Evaluate(t);
-        }
-
         private void ApplySun()
         {
             if (sunLight == null || profile?.phases == null || _currentPhaseIndex < 0) return;
@@ -211,24 +192,46 @@ namespace ProjectC.Core
             var phase = profile.phases[_currentPhaseIndex];
             if (phase == null) return;
 
-            float dayProgress = (_smoothTimeOfDay - 6f) / 14f;
-            float angle = dayProgress * 180f;
+            // SUN POSITION: 06:00 = East, 20:00 = West
+            // In Unity: 0° = East, 90° = South, 180° = West, 270° = North
+            float t = _serverTimeOfDay;
+            float angle;
+
+            if (t >= DAY_START && t < DAY_END)
+            {
+                // Day: 06:00 to 20:00 - sun moves from East to West
+                float dayProgress = (t - DAY_START) / (DAY_END - DAY_START); // 0 to 1
+                angle = dayProgress * 180f; // 0° (East) to 180° (West)
+            }
+            else if (t >= DAY_END)
+            {
+                // Evening: 20:00 to 24:00 - continue to western horizon
+                float eveningProgress = (t - DAY_END) / (24f - DAY_END);
+                angle = 180f + eveningProgress * 90f; // 180° to 270°
+            }
+            else
+            {
+                // Night/Early morning: 00:00 to 06:00 - below horizon
+                float nightProgress = t / DAY_START;
+                angle = 270f + nightProgress * 90f; // 270° to 360° (0°)
+            }
 
             Quaternion targetRotation = Quaternion.Euler(angle, -30f, 0f);
-            sunLight.transform.rotation = Quaternion.Lerp(sunLight.transform.rotation, targetRotation, Time.deltaTime * SMOOTH_LERP_SPEED);
+            sunLight.transform.rotation = Quaternion.Slerp(sunLight.transform.rotation, targetRotation, Time.deltaTime * SMOOTH_SPEED);
 
-            Color sunColor = ApplyVariability(phase.sunColor, _currentPhaseIndex);
-            sunColor = AdjustColorForStorm(sunColor, _stormIntensity);
+            // SUN COLOR
+            Color targetSunColor = ApplyVariability(phase.sunColor, _currentPhaseIndex);
+            targetSunColor = AdjustColorForStorm(targetSunColor, _stormIntensity);
+            sunLight.color = Color.Lerp(sunLight.color, targetSunColor, Time.deltaTime * SMOOTH_SPEED);
 
-            sunLight.color = Color.Lerp(sunLight.color, sunColor, Time.deltaTime * SMOOTH_LERP_SPEED);
-
+            // SUN INTENSITY
             float baseIntensity = phase.sunIntensity;
-            if (_currentPhaseIndex == 4)
-            {
-                baseIntensity = 0.15f;
-            }
-            sunLight.intensity = baseIntensity;
-            sunLight.intensity = AdjustIntensityForStorm(sunLight.intensity, _stormIntensity);
+            if (_currentPhaseIndex == 4) baseIntensity = 0.15f;
+
+            _smoothSunIntensity = Mathf.Lerp(_smoothSunIntensity, baseIntensity, Time.deltaTime * SMOOTH_SPEED);
+            _smoothSunIntensity = AdjustIntensityForStorm(_smoothSunIntensity, _stormIntensity);
+            sunLight.intensity = _smoothSunIntensity;
+
             sunLight.shadowStrength = phase.castShadows ? 1f : 0f;
             sunLight.shadows = phase.castShadows ? LightShadows.Soft : LightShadows.None;
         }
@@ -241,11 +244,11 @@ namespace ProjectC.Core
             if (phase == null) return;
 
             Color targetAmbient = ApplyVariability(phase.ambientSkyColor, _currentPhaseIndex);
-            _smoothAmbientSky = Color.Lerp(_smoothAmbientSky, targetAmbient, Time.deltaTime * SMOOTH_LERP_SPEED);
+            _smoothAmbientSky = Color.Lerp(_smoothAmbientSky, targetAmbient, Time.deltaTime * SMOOTH_SPEED);
 
             RenderSettings.ambientSkyColor = _smoothAmbientSky;
-            RenderSettings.ambientEquatorColor = Color.Lerp(RenderSettings.ambientEquatorColor, phase.ambientEquatorColor, Time.deltaTime * SMOOTH_LERP_SPEED);
-            RenderSettings.ambientGroundColor = Color.Lerp(RenderSettings.ambientGroundColor, phase.ambientGroundColor, Time.deltaTime * SMOOTH_LERP_SPEED);
+            RenderSettings.ambientEquatorColor = Color.Lerp(RenderSettings.ambientEquatorColor, phase.ambientEquatorColor, Time.deltaTime * SMOOTH_SPEED);
+            RenderSettings.ambientGroundColor = Color.Lerp(RenderSettings.ambientGroundColor, phase.ambientGroundColor, Time.deltaTime * SMOOTH_SPEED);
             RenderSettings.ambientIntensity = phase.ambientIntensity * (1f - _stormIntensity * 0.4f);
         }
 
@@ -258,45 +261,77 @@ namespace ProjectC.Core
 
             float stormFogMod = 1f + _stormIntensity * 1f;
             float targetFogDensity = phase.fogDensity * stormFogMod;
-            _smoothFogDensity = Mathf.Lerp(_smoothFogDensity, targetFogDensity, Time.deltaTime * SMOOTH_LERP_SPEED);
 
             Color targetFogColor = AdjustColorForStorm(phase.fogColor, _stormIntensity);
-            _smoothFogColor = Color.Lerp(_smoothFogColor, targetFogColor, Time.deltaTime * SMOOTH_LERP_SPEED);
+            _smoothFogColor = Color.Lerp(_smoothFogColor, targetFogColor, Time.deltaTime * SMOOTH_SPEED);
 
             RenderSettings.fogColor = _smoothFogColor;
-            RenderSettings.fogDensity = _smoothFogDensity;
+            RenderSettings.fogDensity = targetFogDensity;
             RenderSettings.fogMode = FogMode.Exponential;
         }
 
-        private void ApplySkybox()
+        // ========================================================================
+        // SKYBOX WITH SMOOTH BLEND TRANSITION
+        // Day: 06:00-20:00, Night: 20:00-06:00
+        // ========================================================================
+        private void ApplySkyboxBlended()
         {
-            float t = _smoothTimeOfDay;
-            Material targetSkybox = (t >= 6f && t < 20f) ? skyboxDayMaterial : skyboxNightMaterial;
+            float t = _serverTimeOfDay;
 
-            if (targetSkybox == null)
+            // Calculate target blend: 0 = night, 1 = day
+            float targetBlend;
+            if (t >= DAY_START && t < DAY_END)
             {
-                if (skyboxDayMaterial != null) targetSkybox = skyboxDayMaterial;
-                else if (skyboxNightMaterial != null) targetSkybox = skyboxNightMaterial;
+                targetBlend = 1f;
+            }
+            else
+            {
+                targetBlend = 0f;
             }
 
-            if (targetSkybox != null && RenderSettings.skybox != targetSkybox)
+            // Smooth transition over 2 seconds
+            _skyboxBlend = Mathf.Lerp(_skyboxBlend, targetBlend, Time.deltaTime * 0.5f);
+
+            // Determine which material to use based on blend
+            Material targetMaterial;
+            if (_skyboxBlend > 0.5f)
             {
-                RenderSettings.skybox = targetSkybox;
+                targetMaterial = skyboxDayMaterial;
+            }
+            else
+            {
+                targetMaterial = skyboxNightMaterial;
+            }
+
+            // Only switch when fully transitioned (hysteresis)
+            if (targetMaterial != null && RenderSettings.skybox != targetMaterial)
+            {
+                if (Mathf.Abs(_skyboxBlend - 0f) < 0.05f || Mathf.Abs(_skyboxBlend - 1f) < 0.05f)
+                {
+                    RenderSettings.skybox = targetMaterial;
+                    _currentSkyboxMaterial = targetMaterial;
+                }
             }
         }
 
+        // ========================================================================
+        // VOLUME BLEND - matches skybox boundaries exactly
+        // ========================================================================
         private void ApplyVolumeBlend()
         {
             if (globalVolume == null) return;
 
-            float weight = GetDayFactor();
+            float t = _serverTimeOfDay;
+            bool isNight = t >= DAY_END || t < DAY_START;
+            VolumeProfile targetProfile = isNight ? nightVolumeProfile : dayVolumeProfile;
 
-            if (globalVolume.profile == null || globalVolume.profile != dayVolumeProfile)
+            if (globalVolume.profile != targetProfile)
             {
-                globalVolume.profile = dayVolumeProfile;
+                globalVolume.profile = targetProfile;
             }
 
-            globalVolume.weight = weight;
+            float targetWeight = isNight ? 1f : GetDayFactor();
+            globalVolume.weight = Mathf.Lerp(globalVolume.weight, targetWeight, Time.deltaTime * SMOOTH_SPEED);
         }
 
         private void ApplyTemperatureFilter()
@@ -320,9 +355,6 @@ namespace ProjectC.Core
 
         private void ApplyMoon()
         {
-            if (moonController == null) return;
-            float dayNumber = Time.realtimeSinceStartup / 86400f;
-            moonController.UpdateMoon(_serverTimeOfDay, dayNumber);
         }
 
         private Color ApplyVariability(Color baseColor, int phaseIdx)
@@ -332,7 +364,6 @@ namespace ProjectC.Core
             var phase = profile.phases[phaseIdx];
             if (phase == null) return baseColor;
 
-            // Seeded deterministic randomness per day per phase
             int seed = Mathf.FloorToInt(_daySeed * 100 + phaseIdx);
             UnityEngine.Random.InitState(seed);
 
@@ -340,7 +371,6 @@ namespace ProjectC.Core
             float satVar = UnityEngine.Random.Range(phase.saturationRange.x, phase.saturationRange.y);
             float valVar = UnityEngine.Random.Range(phase.intensityRange.x, phase.intensityRange.y);
 
-            // Restore global randomness state
             UnityEngine.Random.InitState((int)System.DateTimeOffset.Now.Ticks);
 
             Color.RGBToHSV(baseColor, out float h, out float s, out float v);
@@ -354,11 +384,11 @@ namespace ProjectC.Core
         private float GetDayFactor()
         {
             float t = _serverTimeOfDay;
-            if (t >= 6f && t < 20f)
+            if (t >= DAY_START && t < DAY_END)
             {
-                return Mathf.InverseLerp(6f, 20f, t);
+                return Mathf.InverseLerp(DAY_START, DAY_END, t);
             }
-            else if (t >= 20f)
+            else if (t >= DAY_END)
             {
                 return 0f;
             }

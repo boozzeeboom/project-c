@@ -85,7 +85,8 @@ namespace ProjectC.Core
 
             if (_stormId == 0)
             {
-                _stormId = (uint)gameObject.GetInstanceID();
+                var networkObject = GetComponent<Unity.Netcode.NetworkObject>();
+                _stormId = networkObject != null ? (uint)networkObject.NetworkObjectId : (uint)GetHashCode();
             }
 
             if (_stormId == 0)

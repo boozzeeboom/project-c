@@ -230,8 +230,8 @@ Light:
   m_Enabled: 1
   serializedVersion: 13
   m_Type: 1
-  m_Color: {r: 1, g: 0.033248197, b: 0.023584902, a: 1}
-  m_Intensity: 10
+  m_Color: {r: 0.68485224, g: 0.8490566, b: 0.83567286, a: 1}
+  m_Intensity: 1
   m_Range: 10
   m_SpotAngle: 30
   m_InnerSpotAngle: 21.80208
@@ -273,7 +273,7 @@ Light:
   m_Lightmapping: 4
   m_LightShadowCasterMode: 0
   m_AreaSize: {x: 1, y: 1}
-  m_BounceIntensity: 9.94
+  m_BounceIntensity: 0.5
   m_ColorTemperature: 6570
   m_UseColorTemperature: 0
   m_BoundingSphereOverride: {x: 0, y: 0, z: 0, w: 0}
@@ -299,7 +299,8 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::ProjectC.Core.MoonController
   moonOrbitRadius: 400000
   moonOrbitSpeed: 5
-  moonPhase: 0.5
+  lunarCycleGameDays: 29.5
+  moonAge: 0
   moonLight: {fileID: 168637387}
   moonMeshRenderer: {fileID: 168637390}
   moonMaterial: {fileID: 2100000, guid: 319b3ec5ec3d825418b9e99ce5ccdd91, type: 2}
@@ -691,20 +692,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: d7c83fc4036202041a52eb9e24b3ac2a, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::ProjectC.Core.DayNightController
-  profile: {fileID: 11400000, guid: 98e948618705e494abcaabd93cf4ceaa, type: 2}
   sunLight: {fileID: 180883750}
-  controlAmbient: 1
-  controlFog: 1
-  globalVolume: {fileID: 302907659}
-  dayVolumeProfile: {fileID: 0}
-  nightVolumeProfile: {fileID: 0}
-  temperatureConfig: {fileID: 11400000, guid: 776fafc21913afa4999bdb5d216a96db, type: 2}
-  temperatureFilter: {fileID: 302907658}
-  currentTemperature: 20
-  skyboxDayMaterial: {fileID: 2100000, guid: 2832015f45a230243aabbff66f6ac768, type: 2}
-  skyboxNightMaterial: {fileID: 2100000, guid: 93e20995f0b3c954387749bbec25edbe, type: 2}
-  updateVeilShader: 1
-  veilController: {fileID: 909089447}
   moonController: {fileID: 168637388}
 --- !u!4 &302907657
 Transform:
@@ -728,7 +716,7 @@ MonoBehaviour:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 302907655}
-  m_Enabled: 1
+  m_Enabled: 0
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 10ab4104d91c2d3459393b1a26620d54, type: 3}
   m_Name: 
@@ -741,7 +729,7 @@ MonoBehaviour:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 302907655}
-  m_Enabled: 1
+  m_Enabled: 0
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 172515602e62fb746b5d573b38a5fe58, type: 3}
   m_Name: 
@@ -1980,7 +1968,7 @@ MonoBehaviour:
   WindX: 0.01
   WindZ: 0.003
   DayFactor: 1
-  RimPower: 30
+  RimPower: 3
   RimIntensity: 1
   VeilColor: {r: 0.38274294, g: 0.4433962, b: 0.38274297, a: 1}
   LightningColor: {r: 0.5726043, g: 0.45803666, b: 0.6886792, a: 1}

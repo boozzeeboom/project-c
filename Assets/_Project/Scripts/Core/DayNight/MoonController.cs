@@ -4,9 +4,10 @@ namespace ProjectC.Core
 {
     public class MoonController : MonoBehaviour
     {
-        [Header("Moon Settings")]
-        public float moonOrbitRadius = 80000f;
-        public float moonOrbitSpeed = 1f;
+    [Header("Moon Settings")]
+    public float moonOrbitRadius = 80000f;
+    [Tooltip("1.0 = same speed as sun. >1 = slower, <1 = faster")]
+    public float moonOrbitSpeed = 1f;
 
         [Header("Phase Settings")]
         [Tooltip("How many game days for full lunar cycle")]
@@ -43,12 +44,19 @@ namespace ProjectC.Core
             SyncMoonAgeFromGameTime();
         }
 
-        void Update()
-        {
-            float orbitDegreesPerSecond = 360f / 60f * moonOrbitSpeed;
-            _moonOrbitAngle = Mathf.Repeat(_moonOrbitAngle + orbitDegreesPerSecond * Time.deltaTime, 360f);
+    void Update()
+    {
+        // Synced with ServerWeatherController._dayCycleRealHours
+        // Moon orbits at same angular speed as sun (moonOrbitSpeed = 1.0 default)
+        // Sun: 360° per game day
+        // Moon: 360° * moonOrbitSpeed per game day
+        float dayCycleRealHours = GetDayCycleRealHours();
+        float realSecondsPerGameDay = dayCycleRealHours * 3600f;
+        float orbitDegreesPerSecond = (360f / realSecondsPerGameDay) * moonOrbitSpeed;
+        
+        _moonOrbitAngle = Mathf.Repeat(_moonOrbitAngle + orbitDegreesPerSecond * Time.deltaTime, 360f);
 
-            SyncMoonAgeFromGameTime();
+        SyncMoonAgeFromGameTime();
 
             bool isNight = IsNightTime();
             float nightVisibility = CalculateNightVisibility();
@@ -99,6 +107,15 @@ namespace ProjectC.Core
                 return ServerWeatherController.Instance.TimeOfDay;
             }
             return 12f;
+        }
+
+        private float GetDayCycleRealHours()
+        {
+            if (ServerWeatherController.Instance != null)
+            {
+                return ServerWeatherController.Instance.DayCycleRealHours;
+            }
+            return 1f; // Default fallback
         }
 
         private void UpdateMoonPosition()

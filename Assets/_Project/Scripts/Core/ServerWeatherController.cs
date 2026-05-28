@@ -45,6 +45,7 @@ namespace ProjectC.Core
         public float TimeOfDay => _timeOfDay;
         public float Temperature => _temperature;
         public float TotalGameDays { get; private set; }
+        public float DayCycleRealHours => _dayCycleRealHours;
 
         public override void OnNetworkSpawn()
         {

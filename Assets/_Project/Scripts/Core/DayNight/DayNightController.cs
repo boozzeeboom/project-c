@@ -7,7 +7,14 @@ namespace ProjectC.Core
         [Header("Sun Light")]
         public Light sunLight;
 
+        [Header("Skybox")]
+        public Material daySkyboxMaterial;
+        public Material nightSkyboxMaterial;
+
+        private const float DAY_START = 6f;
+        private const float DAY_END = 20f;
         private float _serverTimeOfDay = 12f;
+        private Material _currentSkybox;
 
         void Start()
         {
@@ -40,6 +47,7 @@ namespace ProjectC.Core
             }
 
             UpdateSunOnly();
+            UpdateSkybox();
         }
 
         private void UpdateSunOnly()
@@ -68,6 +76,20 @@ namespace ProjectC.Core
 
             // Sun color
             sunLight.color = (t >= 6f && t < 20f) ? Color.white : new Color(0.4f, 0.4f, 0.6f);
+        }
+
+        private void UpdateSkybox()
+        {
+            if (daySkyboxMaterial == null || nightSkyboxMaterial == null) return;
+
+            bool isDay = _serverTimeOfDay >= DAY_START && _serverTimeOfDay < DAY_END;
+            Material targetSkybox = isDay ? daySkyboxMaterial : nightSkyboxMaterial;
+
+            if (_currentSkybox != targetSkybox)
+            {
+                _currentSkybox = targetSkybox;
+                RenderSettings.skybox = targetSkybox;
+            }
         }
     }
 }

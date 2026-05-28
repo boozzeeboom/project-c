@@ -693,6 +693,8 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::ProjectC.Core.DayNightController
   sunLight: {fileID: 180883750}
+  daySkyboxMaterial: {fileID: 2100000, guid: 2832015f45a230243aabbff66f6ac768, type: 2}
+  nightSkyboxMaterial: {fileID: 2100000, guid: 93e20995f0b3c954387749bbec25edbe, type: 2}
 --- !u!4 &302907657
 Transform:
   m_ObjectHideFlags: 0

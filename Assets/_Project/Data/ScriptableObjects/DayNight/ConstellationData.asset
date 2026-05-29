@@ -1,0 +1,57 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: e9c2e0cad1a0fec4797378b6b8dfd991, type: 3}
+  m_Name: ConstellationData
+  m_EditorClassIdentifier: Assembly-CSharp::ProjectC.Core.ConstellationData
+  constellations:
+  - constellationName: Orion
+    localizedName: Ori
+    stars:
+    - name: Betelgeuse
+      sphericalPosition: {x: 84.1, y: 7.4}
+      magnitude: 0.5
+      temperature: 3500
+    - name: Bellatrix
+      sphericalPosition: {x: 85.1, y: 8.4}
+      magnitude: 1.6
+      temperature: 20000
+    - name: Mintaka
+      sphericalPosition: {x: 83.9, y: -1}
+      magnitude: 2.1
+      temperature: 30000
+    - name: Alnilam
+      sphericalPosition: {x: 84.1, y: -1.2}
+      magnitude: 1.7
+      temperature: 25000
+    - name: Alnitak
+      sphericalPosition: {x: 84.3, y: -1.9}
+      magnitude: 1.9
+      temperature: 28000
+    - name: Rigel
+      sphericalPosition: {x: 84.5, y: -8.2}
+      magnitude: 0.1
+      temperature: 12000
+    - name: Saiph
+      sphericalPosition: {x: 84, y: -9.6}
+      magnitude: 2.3
+      temperature: 26000
+    - name: Meissa
+      sphericalPosition: {x: 83.9, y: 6.3}
+      magnitude: 2.8
+      temperature: 10000
+    - name: Heka
+      sphericalPosition: {x: 84.2, y: -5.4}
+      magnitude: 4.2
+      temperature: 18000
+    linePairs: 000000000100000001000000020000000200000003000000030000000400000004000000050000000500000006000000060000000000000007000000080000000700000006000000
+    isNavigable: 1
+    hemisphere: Equatorial

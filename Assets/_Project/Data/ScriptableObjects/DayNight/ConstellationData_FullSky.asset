@@ -1,0 +1,967 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: e9c2e0cad1a0fec4797378b6b8dfd991, type: 3}
+  m_Name: ConstellationData_FullSky
+  m_EditorClassIdentifier: Assembly-CSharp::ProjectC.Core.ConstellationData
+  constellations:
+  - constellationName: UrsaMajor
+    localizedName: Big Dipper
+    stars:
+    - name: Dubhe
+      sphericalPosition: {x: 165.5, y: 54.9}
+      magnitude: 1.8
+      temperature: 4500
+    - name: Merak
+      sphericalPosition: {x: 178.2, y: 56.4}
+      magnitude: 2.4
+      temperature: 12000
+    - name: Phecda
+      sphericalPosition: {x: 183.5, y: 54.2}
+      magnitude: 2.4
+      temperature: 9500
+    - name: Megrez
+      sphericalPosition: {x: 191.1, y: 57.1}
+      magnitude: 3.3
+      temperature: 8500
+    - name: Alioth
+      sphericalPosition: {x: 192.8, y: 55.4}
+      magnitude: 1.8
+      temperature: 9500
+    - name: Mizar
+      sphericalPosition: {x: 197.6, y: 54.6}
+      magnitude: 2.3
+      temperature: 9000
+    - name: Alkaid
+      sphericalPosition: {x: 205.4, y: 51.5}
+      magnitude: 1.9
+      temperature: 20000
+    linePairs: 000000000100000001000000020000000200000003000000030000000400000004000000050000000500000006000000060000000
+  - constellationName: UrsaMinor
+    localizedName: Little Dipper
+    stars:
+    - name: Polaris
+      sphericalPosition: {x: 2.5, y: 89.3}
+      magnitude: 2.0
+      temperature: 6000
+    - name: Kochab
+      sphericalPosition: {x: 33.2, y: 74.2}
+      magnitude: 2.1
+      temperature: 4000
+    - name: Yildun
+      sphericalPosition: {x: 15.3, y: 77.5}
+      magnitude: 4.3
+      temperature: 7500
+    - name: EpsilonUMi
+      sphericalPosition: {x: 27.8, y: 76.1}
+      magnitude: 4.2
+      temperature: 7000
+    - name: ZetaUMi
+      sphericalPosition: {x: 22.5, y: 77.8}
+      magnitude: 4.3
+      temperature: 6500
+    - name: EtaUMi
+      sphericalPosition: {x: 38.2, y: 75.4}
+      magnitude: 5.0
+      temperature: 6000
+    - name: GammaUMi
+      sphericalPosition: {x: 45.3, y: 72.1}
+      magnitude: 3.0
+      temperature: 8500
+    linePairs: 000000000100000001000000020000000200000003000000030000000400000004000000050000000500000006000000
+  - constellationName: Orion
+    localizedName: Hunter
+    stars:
+    - name: Betelgeuse
+      sphericalPosition: {x: 84.1, y: 7.4}
+      magnitude: 0.5
+      temperature: 3500
+    - name: Rigel
+      sphericalPosition: {x: 84.5, y: -8.2}
+      magnitude: 0.1
+      temperature: 12000
+    - name: Bellatrix
+      sphericalPosition: {x: 85.1, y: 8.4}
+      magnitude: 1.6
+      temperature: 20000
+    - name: Mintaka
+      sphericalPosition: {x: 83.9, y: -1}
+      magnitude: 2.1
+      temperature: 30000
+    - name: Alnilam
+      sphericalPosition: {x: 84.1, y: -1.2}
+      magnitude: 1.7
+      temperature: 25000
+    - name: Alnitak
+      sphericalPosition: {x: 84.3, y: -1.9}
+      magnitude: 1.9
+      temperature: 28000
+    - name: Saiph
+      sphericalPosition: {x: 84.0, y: -9.6}
+      magnitude: 2.3
+      temperature: 26000
+    linePairs: 000000000100000001000000020000000200000003000000030000000400000004000000050000000500000006000000060000000
+  - constellationName: Cassiopeia
+    localizedName: Queen
+    stars:
+    - name: Schedar
+      sphericalPosition: {x: 10.3, y: 60.7}
+      magnitude: 2.2
+      temperature: 4500
+    - name: Caph
+      sphericalPosition: {x: 2.1, y: 63.4}
+      magnitude: 2.3
+      temperature: 6000
+    - name: GammaCas
+      sphericalPosition: {x: 15.8, y: 61.2}
+      magnitude: 2.5
+      temperature: 9500
+    - name: Ruchbah
+      sphericalPosition: {x: 21.4, y: 62.5}
+      magnitude: 2.7
+      temperature: 8500
+    - name: Segin
+      sphericalPosition: {x: 28.3, y: 64.1}
+      magnitude: 3.4
+      temperature: 12000
+    linePairs: 0000000001000000010000000200000002000000030000000300000004000000
+  - constellationName: Cygnus
+    localizedName: Northern Cross
+    stars:
+    - name: Deneb
+      sphericalPosition: {x: 310.4, y: 45.3}
+      magnitude: 1.3
+      temperature: 9500
+    - name: Sadr
+      sphericalPosition: {x: 305.6, y: 40.2}
+      magnitude: 2.2
+      temperature: 8500
+    - name: Gienah
+      sphericalPosition: {x: 302.1, y: 34.1}
+      magnitude: 2.5
+      temperature: 9000
+    - name: DeltaCyg
+      sphericalPosition: {x: 296.2, y: 40.5}
+      magnitude: 2.9
+      temperature: 8000
+    - name: Albireo
+      sphericalPosition: {x: 292.3, y: 28.1}
+      magnitude: 3.1
+      temperature: 4000
+    linePairs: 0000000001000000010000000200000002000000030000000300000004000000
+  - constellationName: Lyra
+    localizedName: Harp
+    stars:
+    - name: Vega
+      sphericalPosition: {x: 279.2, y: 38.8}
+      magnitude: 0.0
+      temperature: 9500
+    - name: Sheliak
+      sphericalPosition: {x: 281.5, y: 37.2}
+      magnitude: 3.5
+      temperature: 8500
+    - name: Sulafat
+      sphericalPosition: {x: 284.6, y: 36.8}
+      magnitude: 3.2
+      temperature: 9000
+    - name: Delta1Lyr
+      sphericalPosition: {x: 278.1, y: 37.1}
+      magnitude: 5.6
+      temperature: 7500
+    - name: Delta2Lyr
+      sphericalPosition: {x: 278.3, y: 36.9}
+      magnitude: 4.3
+      temperature: 8000
+    linePairs: 0000000001000000010000000200000002000000030000000300000004000000
+  - constellationName: Scorpius
+    localizedName: Scorpion
+    stars:
+    - name: Antares
+      sphericalPosition: {x: 247.5, y: -26.4}
+      magnitude: 1.0
+      temperature: 3500
+    - name: Shaula
+      sphericalPosition: {x: 263.4, y: -37.1}
+      magnitude: 1.6
+      temperature: 25000
+    - name: Sargas
+      sphericalPosition: {x: 261.2, y: -43.2}
+      magnitude: 1.9
+      temperature: 7000
+    - name: Dschubba
+      sphericalPosition: {x: 240.1, y: -22.6}
+      magnitude: 2.3
+      temperature: 20000
+    - name: Graffias
+      sphericalPosition: {x: 237.2, y: -24.3}
+      magnitude: 2.6
+      temperature: 15000
+    - name: Lesath
+      sphericalPosition: {x: 263.8, y: -37.3}
+      magnitude: 2.7
+      temperature: 28000
+    linePairs: 00000000010000000100000002000000020000000300000003000000040000000400000005000000050000000000000006000000
+  - constellationName: Leo
+    localizedName: Lion
+    stars:
+    - name: Regulus
+      sphericalPosition: {x: 152.1, y: 11.9}
+      magnitude: 1.4
+      temperature: 12000
+    - name: Denebola
+      sphericalPosition: {x: 176.9, y: 14.6}
+      magnitude: 2.1
+      temperature: 8500
+    - name: Algieba
+      sphericalPosition: {x: 146.5, y: 19.8}
+      magnitude: 2.2
+      temperature: 4500
+    - name: Zosma
+      sphericalPosition: {x: 168.5, y: 16.5}
+      magnitude: 2.6
+      temperature: 9000
+    - name: Chertan
+      sphericalPosition: {x: 172.3, y: 15.4}
+      magnitude: 3.3
+      temperature: 9500
+    - name: EtaLeo
+      sphericalPosition: {x: 141.2, y: 17.1}
+      magnitude: 3.5
+      temperature: 8000
+    linePairs: 00000000010000000100000002000000020000000300000003000000040000000400000005000000
+  - constellationName: Gemini
+    localizedName: Twins
+    stars:
+    - name: Castor
+      sphericalPosition: {x: 113.6, y: 33.1}
+      magnitude: 1.6
+      temperature: 9500
+    - name: Pollux
+      sphericalPosition: {x: 116.2, y: 28.1}
+      magnitude: 1.2
+      temperature: 4500
+    - name: Alhena
+      sphericalPosition: {x: 99.4, y: 16.5}
+      magnitude: 1.9
+      temperature: 9000
+    - name: Wasat
+      sphericalPosition: {x: 110.3, y: 21.6}
+      magnitude: 3.5
+      temperature: 7500
+    - name: Mebsuta
+      sphericalPosition: {x: 101.2, y: 26.9}
+      magnitude: 2.9
+      temperature: 4000
+    - name: Mekbuda
+      sphericalPosition: {x: 105.6, y: 21.4}
+      magnitude: 3.6
+      temperature: 7000
+    linePairs: 00000000010000000100000002000000020000000300000003000000040000000400000005000000
+  - constellationName: Taurus
+    localizedName: Bull
+    stars:
+    - name: Aldebaran
+      sphericalPosition: {x: 68.5, y: -16.5}
+      magnitude: 0.9
+      temperature: 4000
+    - name: Elnath
+      sphericalPosition: {x: 81.6, y: 28.6}
+      magnitude: 1.7
+      temperature: 12000
+    - name: Alcyone
+      sphericalPosition: {x: 56.9, y: 24.1}
+      magnitude: 2.9
+      temperature: 9500
+    - name: ZetaTau
+      sphericalPosition: {x: 84.4, y: 21.2}
+      magnitude: 3.0
+      temperature: 8000
+    - name: ThetaTau
+      sphericalPosition: {x: 67.2, y: 15.8}
+      magnitude: 3.8
+      temperature: 8500
+    - name: LambdaTau
+      sphericalPosition: {x: 81.1, y: 18.4}
+      magnitude: 3.7
+      temperature: 7500
+    linePairs: 0000000001000000010000000200000002000000030000000300000004000000
+  - constellationName: Aquila
+    localizedName: Eagle
+    stars:
+    - name: Altair
+      sphericalPosition: {x: 297.7, y: 8.9}
+      magnitude: 0.8
+      temperature: 7500
+    - name: Tarazed
+      sphericalPosition: {x: 296.5, y: 10.6}
+      magnitude: 2.7
+      temperature: 4000
+    - name: Alshain
+      sphericalPosition: {x: 298.8, y: 6.4}
+      magnitude: 3.7
+      temperature: 8500
+    - name: DeltaAql
+      sphericalPosition: {x: 304.2, y: 3.1}
+      magnitude: 3.4
+      temperature: 9000
+    - name: ZetaAql
+      sphericalPosition: {x: 299.6, y: 13.9}
+      magnitude: 3.0
+      temperature: 8000
+    linePairs: 0000000001000000010000000200000002000000030000000300000004000000
+  - constellationName: CanisMajor
+    localizedName: Big Dog
+    stars:
+    - name: Sirius
+      sphericalPosition: {x: 101.3, y: -16.7}
+      magnitude: -1.5
+      temperature: 9500
+    - name: Adhara
+      sphericalPosition: {x: 104.6, y: -26.4}
+      magnitude: 1.5
+      temperature: 25000
+    - name: Wezen
+      sphericalPosition: {x: 107.1, y: -26.4}
+      magnitude: 1.8
+      temperature: 4000
+    - name: Mirzam
+      sphericalPosition: {x: 95.2, y: -18.4}
+      magnitude: 1.9
+      temperature: 20000
+    - name: Aludra
+      sphericalPosition: {x: 110.3, y: -29.3}
+      magnitude: 2.5
+      temperature: 12000
+    - name: Muliphein
+      sphericalPosition: {x: 108.9, y: -24.8}
+      magnitude: 3.9
+      temperature: 8500
+    linePairs: 0000000001000000010000000200000002000000030000000300000004000000040000000500000005000000
+  - constellationName: CanisMinor
+    localizedName: Little Dog
+    stars:
+    - name: Procyon
+      sphericalPosition: {x: 114.6, y: 5.6}
+      magnitude: 0.4
+      temperature: 6500
+    - name: Gomeisa
+      sphericalPosition: {x: 111.3, y: 6.8}
+      magnitude: 2.9
+      temperature: 12000
+    linePairs: 0000000001000000
+  - constellationName: Virgo
+    localizedName: Maiden
+    stars:
+    - name: Spica
+      sphericalPosition: {x: 201.3, y: -11.2}
+      magnitude: 1.0
+      temperature: 25000
+    - name: Porrima
+      sphericalPosition: {x: 187.4, y: -1.5}
+      magnitude: 2.7
+      temperature: 8500
+    - name: Vindemiatrix
+      sphericalPosition: {x: 195.6, y: 10.9}
+      magnitude: 2.8
+      temperature: 6500
+    - name: Heze
+      sphericalPosition: {x: 199.2, y: 3.6}
+      magnitude: 3.4
+      temperature: 9000
+    - name: Zaniah
+      sphericalPosition: {x: 189.6, y: -0.3}
+      magnitude: 3.7
+      temperature: 9500
+    - name: Tyana
+      sphericalPosition: {x: 191.5, y: 3.8}
+      magnitude: 3.8
+      temperature: 7500
+    linePairs: 0000000001000000010000000200000002000000030000000300000004000000040000000500000005000000
+  - constellationName: Bootes
+    localizedName: Herdsman
+    stars:
+    - name: Arcturus
+      sphericalPosition: {x: 213.7, y: 19.5}
+      magnitude: -0.1
+      temperature: 4000
+    - name: Izar
+      sphericalPosition: {x: 221.6, y: 27.4}
+      magnitude: 2.4
+      temperature: 5000
+    - name: Seginus
+      sphericalPosition: {x: 213.1, y: 30.2}
+      magnitude: 3.0
+      temperature: 8500
+    - name: Nekkar
+      sphericalPosition: {x: 206.8, y: 29.1}
+      magnitude: 3.5
+      temperature: 6000
+    - name: Princeps
+      sphericalPosition: {x: 210.3, y: 24.6}
+      magnitude: 4.5
+      temperature: 7500
+    linePairs: 0000000001000000010000000200000002000000030000000300000004000000
+  - constellationName: Perseus
+    localizedName: Hero
+    stars:
+    - name: Mirfak
+      sphericalPosition: {x: 51.1, y: 49.9}
+      magnitude: 1.8
+      temperature: 6000
+    - name: Algol
+      sphericalPosition: {x: 47.1, y: 40.9}
+      magnitude: 2.1
+      temperature: 12000
+    - name: ZetaPer
+      sphericalPosition: {x: 54.2, y: 51.3}
+      magnitude: 3.4
+      temperature: 8500
+    - name: EpsilonPer
+      sphericalPosition: {x: 54.8, y: 56.1}
+      magnitude: 3.9
+      temperature: 9500
+    - name: GammaPer
+      sphericalPosition: {x: 55.2, y: 53.5}
+      magnitude: 2.9
+      temperature: 7000
+    linePairs: 0000000001000000010000000200000002000000030000000300000004000000
+  - constellationName: Auriga
+    localizedName: Charioteer
+    stars:
+    - name: Capella
+      sphericalPosition: {x: 79.2, y: 46.0}
+      magnitude: 0.1
+      temperature: 5000
+    - name: Menkalinan
+      sphericalPosition: {x: 89.9, y: 44.9}
+      magnitude: 1.9
+      temperature: 9000
+    - name: Elnath
+      sphericalPosition: {x: 81.6, y: 28.6}
+      magnitude: 1.7
+      temperature: 12000
+    - name: Mahasim
+      sphericalPosition: {x: 86.1, y: 40.4}
+      magnitude: 3.9
+      temperature: 8500
+    - name: DeltaAur
+      sphericalPosition: {x: 95.2, y: 47.2}
+      magnitude: 3.7
+      temperature: 7500
+    linePairs: 0000000001000000010000000200000002000000030000000300000004000000
+  - constellationName: Ophiuchus
+    localizedName: Serpent Bearer
+    stars:
+    - name: Rasalhague
+      sphericalPosition: {x: 265.9, y: 12.6}
+      magnitude: 2.1
+      temperature: 8000
+    - name: Cebalrai
+      sphericalPosition: {x: 265.1, y: 4.6}
+      magnitude: 2.7
+      temperature: 6000
+    - name: YedPrior
+      sphericalPosition: {x: 263.2, y: -3.7}
+      magnitude: 2.8
+      temperature: 4500
+    - name: YedPosterior
+      sphericalPosition: {x: 262.8, y: -4.5}
+      magnitude: 3.3
+      temperature: 5000
+    - name: Sabik
+      sphericalPosition: {x: 257.6, y: -8.2}
+      magnitude: 2.4
+      temperature: 9000
+    linePairs: 0000000001000000010000000200000002000000030000000300000004000000
+  - constellationName: Pegasus
+    localizedName: Winged Horse
+    stars:
+    - name: Enif
+      sphericalPosition: {x: 313.2, y: 9.9}
+      magnitude: 2.4
+      temperature: 4500
+    - name: Scheat
+      sphericalPosition: {x: 345.1, y: 28.1}
+      magnitude: 2.4
+      temperature: 4000
+    - name: Markab
+      sphericalPosition: {x: 341.5, y: 15.4}
+      magnitude: 2.5
+      temperature: 8500
+    - name: Algenib
+      sphericalPosition: {x: 2.1, y: 15.2}
+      magnitude: 2.8
+      temperature: 9500
+    - name: Homam
+      sphericalPosition: {x: 330.8, y: 24.6}
+      magnitude: 3.5
+      temperature: 9000
+    linePairs: 0000000001000000010000000200000002000000030000000300000004000000
+  - constellationName: Andromeda
+    localizedName: Princess
+    stars:
+    - name: Alpheratz
+      sphericalPosition: {x: 2.1, y: 29.1}
+      magnitude: 2.1
+      temperature: 9500
+    - name: Mirach
+      sphericalPosition: {x: 17.1, y: 35.6}
+      magnitude: 2.1
+      temperature: 4500
+    - name: Almach
+      sphericalPosition: {x: 30.8, y: 42.3}
+      magnitude: 2.3
+      temperature: 8500
+    - name: DeltaAnd
+      sphericalPosition: {x: 23.4, y: 38.5}
+      magnitude: 3.3
+      temperature: 8000
+    - name: Nembus
+      sphericalPosition: {x: 8.4, y: 34.2}
+      magnitude: 4.5
+      temperature: 7500
+    linePairs: 0000000001000000010000000200000002000000030000000300000004000000
+  - constellationName: Draco
+    localizedName: Dragon
+    stars:
+    - name: Eltanin
+      sphericalPosition: {x: 268.9, y: 51.5}
+      magnitude: 2.2
+      temperature: 4000
+    - name: Rastaban
+      sphericalPosition: {x: 262.5, y: 52.3}
+      magnitude: 2.8
+      temperature: 4500
+    - name: Grumium
+      sphericalPosition: {x: 271.2, y: 56.4}
+      magnitude: 3.8
+      temperature: 5000
+    - name: Thuban
+      sphericalPosition: {x: 276.8, y: 64.4}
+      magnitude: 3.7
+      temperature: 9500
+    - name: Aldhibah
+      sphericalPosition: {x: 267.6, y: 65.7}
+      magnitude: 3.8
+      temperature: 9000
+    - name: Nodus III
+      sphericalPosition: {x: 273.4, y: 60.2}
+      magnitude: 3.9
+      temperature: 8500
+    linePairs: 0000000001000000010000000200000002000000030000000300000004000000040000000500000005000000
+  - constellationName: BackgroundStars
+    localizedName: Random Sky
+    stars:
+    - name: BG001
+      sphericalPosition: {x: 5.3, y: 15.2}
+      magnitude: 4.5
+      temperature: 7500
+    - name: BG002
+      sphericalPosition: {x: 12.8, y: 42.1}
+      magnitude: 3.8
+      temperature: 8500
+    - name: BG003
+      sphericalPosition: {x: 18.5, y: -8.3}
+      magnitude: 4.2
+      temperature: 7000
+    - name: BG004
+      sphericalPosition: {x: 25.3, y: 72.4}
+      magnitude: 3.5
+      temperature: 9000
+    - name: BG005
+      sphericalPosition: {x: 32.1, y: 18.9}
+      magnitude: 4.8
+      temperature: 6500
+    - name: BG006
+      sphericalPosition: {x: 38.7, y: 55.2}
+      magnitude: 3.9
+      temperature: 8000
+    - name: BG007
+      sphericalPosition: {x: 42.3, y: -22.1}
+      magnitude: 4.1
+      temperature: 7500
+    - name: BG008
+      sphericalPosition: {x: 48.5, y: 38.6}
+      magnitude: 4.4
+      temperature: 8500
+    - name: BG009
+      sphericalPosition: {x: 55.2, y: -35.4}
+      magnitude: 3.7
+      temperature: 9500
+    - name: BG010
+      sphericalPosition: {x: 62.8, y: 62.1}
+      magnitude: 4.3
+      temperature: 7000
+    - name: BG011
+      sphericalPosition: {x: 68.4, y: 5.8}
+      magnitude: 4.6
+      temperature: 8000
+    - name: BG012
+      sphericalPosition: {x: 75.2, y: -45.2}
+      magnitude: 3.8
+      temperature: 7500
+    - name: BG013
+      sphericalPosition: {x: 82.3, y: 35.6}
+      magnitude: 4.5
+      temperature: 8500
+    - name: BG014
+      sphericalPosition: {x: 88.7, y: -52.1}
+      magnitude: 3.6
+      temperature: 9000
+    - name: BG015
+      sphericalPosition: {x: 95.4, y: 48.2}
+      magnitude: 4.2
+      temperature: 7000
+    - name: BG016
+      sphericalPosition: {x: 102.3, y: -28.5}
+      magnitude: 4.7
+      temperature: 6500
+    - name: BG017
+      sphericalPosition: {x: 108.9, y: 68.4}
+      magnitude: 3.9
+      temperature: 8000
+    - name: BG018
+      sphericalPosition: {x: 115.6, y: 12.3}
+      magnitude: 4.4
+      temperature: 7500
+    - name: BG019
+      sphericalPosition: {x: 122.3, y: -62.1}
+      magnitude: 3.5
+      temperature: 9500
+    - name: BG020
+      sphericalPosition: {x: 128.7, y: 42.8}
+      magnitude: 4.8
+      temperature: 7000
+    - name: BG021
+      sphericalPosition: {x: 135.2, y: -15.4}
+      magnitude: 4.1
+      temperature: 8500
+    - name: BG022
+      sphericalPosition: {x: 142.8, y: 75.2}
+      magnitude: 3.7
+      temperature: 8000
+    - name: BG023
+      sphericalPosition: {x: 148.3, y: 5.6}
+      magnitude: 4.6
+      temperature: 7500
+    - name: BG024
+      sphericalPosition: {x: 155.6, y: -42.5}
+      magnitude: 4.0
+      temperature: 9000
+    - name: BG025
+      sphericalPosition: {x: 162.4, y: 55.8}
+      magnitude: 3.8
+      temperature: 7000
+    - name: BG026
+      sphericalPosition: {x: 168.9, y: -72.1}
+      magnitude: 4.5
+      temperature: 8500
+    - name: BG027
+      sphericalPosition: {x: 175.3, y: 25.4}
+      magnitude: 4.2
+      temperature: 8000
+    - name: BG028
+      sphericalPosition: {x: 182.7, y: -55.2}
+      magnitude: 3.6
+      temperature: 9500
+    - name: BG029
+      sphericalPosition: {x: 188.4, y: 68.5}
+      magnitude: 4.4
+      temperature: 7000
+    - name: BG030
+      sphericalPosition: {x: 195.8, y: 8.7}
+      magnitude: 4.7
+      temperature: 7500
+    - name: BG031
+      sphericalPosition: {x: 202.3, y: -38.4}
+      magnitude: 3.9
+      temperature: 8500
+    - name: BG032
+      sphericalPosition: {x: 208.9, y: 58.2}
+      magnitude: 4.3
+      temperature: 8000
+    - name: BG033
+      sphericalPosition: {x: 215.4, y: -68.5}
+      magnitude: 3.5
+      temperature: 9000
+    - name: BG034
+      sphericalPosition: {x: 222.8, y: 15.6}
+      magnitude: 4.8
+      temperature: 7000
+    - name: BG035
+      sphericalPosition: {x: 228.3, y: -48.2}
+      magnitude: 4.0
+      temperature: 7500
+    - name: BG036
+      sphericalPosition: {x: 235.6, y: 72.4}
+      magnitude: 4.2
+      temperature: 8500
+    - name: BG037
+      sphericalPosition: {x: 242.3, y: -22.8}
+      magnitude: 3.8
+      temperature: 8000
+    - name: BG038
+      sphericalPosition: {x: 248.9, y: 42.5}
+      magnitude: 4.5
+      temperature: 9500
+    - name: BG039
+      sphericalPosition: {x: 255.4, y: -58.6}
+      magnitude: 4.1
+      temperature: 7000
+    - name: BG040
+      sphericalPosition: {x: 262.8, y: 18.4}
+      magnitude: 3.7
+      temperature: 7500
+    - name: BG041
+      sphericalPosition: {x: 269.3, y: -35.2}
+      magnitude: 4.6
+      temperature: 8500
+    - name: BG042
+      sphericalPosition: {x: 275.6, y: 62.8}
+      magnitude: 3.9
+      temperature: 8000
+    - name: BG043
+      sphericalPosition: {x: 282.3, y: -78.4}
+      magnitude: 4.4
+      temperature: 9000
+    - name: BG044
+      sphericalPosition: {x: 288.9, y: 32.6}
+      magnitude: 4.0
+      temperature: 7500
+    - name: BG045
+      sphericalPosition: {x: 295.4, y: -12.5}
+      magnitude: 3.6
+      temperature: 8500
+    - name: BG046
+      sphericalPosition: {x: 302.8, y: 52.4}
+      magnitude: 4.7
+      temperature: 7000
+    - name: BG047
+      sphericalPosition: {x: 308.3, y: -42.8}
+      magnitude: 4.2
+      temperature: 8000
+    - name: BG048
+      sphericalPosition: {x: 315.6, y: 75.6}
+      magnitude: 3.8
+      temperature: 9500
+    - name: BG049
+      sphericalPosition: {x: 322.3, y: -18.2}
+      magnitude: 4.5
+      temperature: 7500
+    - name: BG050
+      sphericalPosition: {x: 328.9, y: 45.8}
+      magnitude: 4.1
+      temperature: 8500
+    - name: BG051
+      sphericalPosition: {x: 335.4, y: -62.4}
+      magnitude: 3.7
+      temperature: 8000
+    - name: BG052
+      sphericalPosition: {x: 342.8, y: 22.6}
+      magnitude: 4.8
+      temperature: 9000
+    - name: BG053
+      sphericalPosition: {x: 348.3, y: -52.8}
+      magnitude: 3.9
+      temperature: 7000
+    - name: BG054
+      sphericalPosition: {x: 355.6, y: 68.2}
+      magnitude: 4.4
+      temperature: 7500
+    - name: BG055
+      sphericalPosition: {x: 357.8, y: -28.4}
+      magnitude: 4.0
+      temperature: 8500
+    linePairs: []
+  - constellationName: BackgroundStars2
+    localizedName: Random Sky 2
+    stars:
+    - name: BG101
+      sphericalPosition: {x: 8.4, y: 82.3}
+      magnitude: 4.2
+      temperature: 7500
+    - name: BG102
+      sphericalPosition: {x: 22.5, y: 78.4}
+      magnitude: 3.9
+      temperature: 8000
+    - name: BG103
+      sphericalPosition: {x: 35.8, y: 85.2}
+      magnitude: 4.5
+      temperature: 7000
+    - name: BG104
+      sphericalPosition: {x: 48.2, y: 80.6}
+      magnitude: 4.0
+      temperature: 8500
+    - name: BG105
+      sphericalPosition: {x: 62.4, y: 83.5}
+      magnitude: 3.7
+      temperature: 9000
+    - name: BG106
+      sphericalPosition: {x: 78.5, y: 79.2}
+      magnitude: 4.4
+      temperature: 7500
+    - name: BG107
+      sphericalPosition: {x: 92.3, y: 84.8}
+      magnitude: 4.1
+      temperature: 8000
+    - name: BG108
+      sphericalPosition: {x: 108.6, y: 81.4}
+      magnitude: 3.8
+      temperature: 8500
+    - name: BG109
+      sphericalPosition: {x: 125.2, y: 85.6}
+      magnitude: 4.6
+      temperature: 7000
+    - name: BG110
+      sphericalPosition: {x: 142.5, y: 78.9}
+      magnitude: 4.3
+      temperature: 9500
+    - name: BG111
+      sphericalPosition: {x: 158.8, y: 83.2}
+      magnitude: 3.9
+      temperature: 8000
+    - name: BG112
+      sphericalPosition: {x: 175.3, y: 79.5}
+      magnitude: 4.7
+      temperature: 7500
+    - name: BG113
+      sphericalPosition: {x: 192.6, y: 84.1}
+      magnitude: 4.0
+      temperature: 8500
+    - name: BG114
+      sphericalPosition: {x: 208.2, y: 80.8}
+      magnitude: 3.6
+      temperature: 9000
+    - name: BG115
+      sphericalPosition: {x: 225.4, y: 82.6}
+      magnitude: 4.5
+      temperature: 7000
+    - name: BG116
+      sphericalPosition: {x: 242.8, y: 79.1}
+      magnitude: 4.2
+      temperature: 8000
+    - name: BG117
+      sphericalPosition: {x: 258.3, y: 85.4}
+      magnitude: 3.8
+      temperature: 7500
+    - name: BG118
+      sphericalPosition: {x: 275.6, y: 81.2}
+      magnitude: 4.8
+      temperature: 8500
+    - name: BG119
+      sphericalPosition: {x: 292.4, y: 84.6}
+      magnitude: 4.1
+      temperature: 9000
+    - name: BG120
+      sphericalPosition: {x: 308.8, y: 78.5}
+      magnitude: 3.7
+      temperature: 8000
+    - name: BG121
+      sphericalPosition: {x: 325.2, y: 83.8}
+      magnitude: 4.4
+      temperature: 7500
+    - name: BG122
+      sphericalPosition: {x: 342.5, y: 80.2}
+      magnitude: 4.0
+      temperature: 8500
+    - name: BG123
+      sphericalPosition: {x: 350.8, y: 82.5}
+      magnitude: 3.9
+      temperature: 9500
+    - name: BG124
+      sphericalPosition: {x: 15.3, y: -75.2}
+      magnitude: 4.3
+      temperature: 7000
+    - name: BG125
+      sphericalPosition: {x: 28.6, y: -82.4}
+      magnitude: 3.8
+      temperature: 8000
+    - name: BG126
+      sphericalPosition: {x: 45.2, y: -78.6}
+      magnitude: 4.6
+      temperature: 7500
+    - name: BG127
+      sphericalPosition: {x: 58.8, y: -84.1}
+      magnitude: 4.0
+      temperature: 8500
+    - name: BG128
+      sphericalPosition: {x: 72.3, y: -79.5}
+      magnitude: 3.7
+      temperature: 9000
+    - name: BG129
+      sphericalPosition: {x: 88.5, y: -83.2}
+      magnitude: 4.5
+      temperature: 7000
+    - name: BG130
+      sphericalPosition: {x: 102.4, y: -80.8}
+      magnitude: 4.2
+      temperature: 8000
+    - name: BG131
+      sphericalPosition: {x: 118.6, y: -84.5}
+      magnitude: 3.9
+      temperature: 7500
+    - name: BG132
+      sphericalPosition: {x: 135.2, y: -78.2}
+      magnitude: 4.7
+      temperature: 8500
+    - name: BG133
+      sphericalPosition: {x: 152.5, y: -82.8}
+      magnitude: 4.1
+      temperature: 9000
+    - name: BG134
+      sphericalPosition: {x: 168.8, y: -79.4}
+      magnitude: 3.6
+      temperature: 8000
+    - name: BG135
+      sphericalPosition: {x: 185.3, y: -84.6}
+      magnitude: 4.4
+      temperature: 7500
+    - name: BG136
+      sphericalPosition: {x: 202.6, y: -81.2}
+      magnitude: 4.0
+      temperature: 8500
+    - name: BG137
+      sphericalPosition: {x: 218.4, y: -78.8}
+      magnitude: 3.9
+      temperature: 9500
+    - name: BG138
+      sphericalPosition: {x: 235.8, y: -83.5}
+      magnitude: 4.5
+      temperature: 7000
+    - name: BG139
+      sphericalPosition: {x: 252.3, y: -80.4}
+      magnitude: 4.2
+      temperature: 8000
+    - name: BG140
+      sphericalPosition: {x: 268.6, y: -84.2}
+      magnitude: 3.8
+      temperature: 7500
+    - name: BG141
+      sphericalPosition: {x: 285.2, y: -79.6}
+      magnitude: 4.6
+      temperature: 8500
+    - name: BG142
+      sphericalPosition: {x: 302.5, y: -83.8}
+      magnitude: 4.1
+      temperature: 9000
+    - name: BG143
+      sphericalPosition: {x: 318.8, y: -78.3}
+      magnitude: 3.7
+      temperature: 8000
+    - name: BG144
+      sphericalPosition: {x: 335.4, y: -84.4}
+      magnitude: 4.3
+      temperature: 7500
+    - name: BG145
+      sphericalPosition: {x: 348.6, y: -80.6}
+      magnitude: 4.0
+      temperature: 8500
+    linePairs: []

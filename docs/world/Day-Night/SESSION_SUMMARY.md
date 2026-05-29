@@ -106,3 +106,86 @@
 | 2 | **Star click interaction?** — Players click stars for navigation info? |
 | 3 | **Zone-based eternal day/night** — Separate biome zones with permanent twilight etc? |
 | 4 | **How many constellations?** — 5 minimum, recommend 8-12 |
+
+---
+
+## Session 2026-05-29 — Constellation Debug
+
+### Что сделано:
+
+1. **ConstellationController.cs** — переработана архитектура:
+   - `[ExecuteInEditMode]` — работает в Edit Mode
+   - `OnEnable()` вместо `Start()` — инициализация сразу
+   - Sky Dome подход — звезды на сфере вокруг камеры
+   - Pre-allocated buffers — zero allocations
+   - `_starVisibility = 1f` — принудительная видимость для теста
+
+2. **ConstellationData.cs** — ScriptableObject для данных созвездий:
+   - `ConstellationData` — SO с массивом созвездий
+   - `Constellation` — имя + звезды + линии
+   - `StarData` — имя + позиция (azimuth, altitude) + магнитуда
+
+3. **Editor/StarFieldTest.cs** — тестовый скрипт для Edit Mode
+
+### Логи (Play Mode):
+```
+[ConstellationController] OnEnable - Initializing sky dome star system...
+[ConstellationController] Building sky dome with 9 stars from 1 constellations
+[ConstellationController] BuildSkyDome: START
+[ConstellationController] BuildSkyDome: Created GameObject, parent=null
+[ConstellationController] BuildSkyDome: Set position to (239997.00, 3100.00, 159998.00)
+[ConstellationController] Built sky dome with 9 stars, 36 vertices
+[ConstellationController] Using assigned star material
+[ConstellationController] Created 9 constellation lines
+[ConstellationController] Time=19,73318 Visibility=0,1088187
+```
+
+### Проблема — ЗВЕЗДЫ НЕ ВИДНЫ:
+
+- Visibility вычисляется ~0.1 (не 1.0 как должно быть)
+- Mesh создается (36 vertices = 9 stars × 4 vertices)
+- Линии создаются (9 lines)
+- Позиция SkyDome: (239997, 3100, 159998) — далеко от камеры
+- Материал назначается
+
+### Возможные причины:
+1. **Triangle winding** — quads созданы для outside rendering, но смотрим изнутри
+2. **Layer** — SkyDome на "Ignore Raycast", но это не влияет на rendering
+3. **Z-fighting** — слишком близко/далеко от камеры
+4. **Material** — используется Unlit/Transparent, но alpha может не работать
+5. **Skybox override** — другой rendering pipeline
+
+### Что нужно проверить:
+- [ ] Переключить на `MeshTopology.Quads` или исправить triangle order
+- [ ] Добавить debug sphere чтобы визуально видеть SkyDome
+- [ ] Проверить material rendering queue
+- [ ] Проверить z-buffer depth
+- [ ] Добавить визуальный маркер на позиции звезд
+
+### Следующие шаги:
+1. Добавить Debug.DrawRay для визуализации позиций звезд
+2. Попробовать Point cloud вместо Quad mesh
+3. Проверить Scene view — видны ли звезды там?
+4. Добавить простой sphere на позицию SkyDome для ориентира
+
+---
+
+## Дополнительные изменения 2026-05-29 (продолжение):
+
+### Исправления в ConstellationController.cs:
+
+1. **Visibility всегда 1.0** — убран вызов `CalculateStarVisibility()`, теперь `_starVisibility = 1f` напрямую в Update()
+
+2. **Gizmos для отладки** — добавлен `OnDrawGizmosSelected()`:
+   - Желтая сфера — центр SkyDome
+   - Белые сферы — позиции звезд
+   - Голубая линия — от камеры к SkyDome
+
+3. **CacheStarPositions()** — кэширование позиций звезд для Gizmos
+
+4. **Расширенный debug лог** — теперь показывает Distance, MeshActive, Layer
+
+### Что проверить в Unity:
+1. В Scene View выбрать ConstellationController — должны появиться Gizmos
+2. В Game View должны быть видны звезды
+3. Лог должен показывать Visibility=1.0

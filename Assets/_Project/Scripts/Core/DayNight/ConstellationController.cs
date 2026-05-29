@@ -10,6 +10,11 @@ namespace ProjectC.Core
     /// 
     /// IMPORTANT: Star positions are stored in LOCAL coordinates relative to SkyDome center.
     /// When SkyDome moves, the mesh moves and stars move with it.
+    /// 
+    /// WORKING PARAMETERS for MMO:
+    /// - skyDomeRadius: 900000 (creates proper scale for large world)
+    /// - baseStarSize: 3000
+    /// - starSizeMagnitudeScale: 1500
     /// </summary>
     public class ConstellationController : MonoBehaviour
     {
@@ -22,17 +27,34 @@ namespace ProjectC.Core
         
         [Header("Sky Dome Settings")]
         [Tooltip("Radius of the sky dome sphere around the player")]
-        public float skyDomeRadius = 900f;
+        public float skyDomeRadius = 900000f;
         
         [Tooltip("Height offset above camera for sky dome center")]
         public float skyDomeHeightOffset = 100f;
 
         [Header("Star Settings")]
-        [Tooltip("Base size of star quads in world units")]
-        public float baseStarSize = 3f;
+        [Tooltip("Base size of star quads in world units. Working value for MMO: 3000")]
+        public float baseStarSize = 3000f;
         
-        [Tooltip("Size variation based on magnitude")]
-        public float starSizeMagnitudeScale = 1.5f;
+        [Tooltip("Size variation based on magnitude. Working value for MMO: 1500")]
+        public float starSizeMagnitudeScale = 1500f;
+        
+        [Header("Sky Dome Rotation")]
+        [Tooltip("Enable sky dome rotation over time (Earth rotation simulation)")]
+        public bool enableRotation = true;
+        
+        [Tooltip("Rotation speed multiplier. 1.0 = full Earth rotation (24h sidereal). Adjust for game pacing")]
+        public float rotationSpeedMultiplier = 1.0f;
+        
+        [Tooltip("Server time of day reference for rotation. Set by ServerWeatherController")]
+        public float serverTimeOfDay = 12f;
+
+        [Header("Constellation Lines")]
+        [Tooltip("Enable or disable constellation connection lines")]
+        public bool showConstellationLines = true;
+        
+        [Tooltip("Width of constellation lines")]
+        public float constellationLineWidth = 1.5f;
 
         [Header("Debug")]
         public bool forceFullVisibility = true;
@@ -49,11 +71,11 @@ namespace ProjectC.Core
         private const float NIGHT_START_HOUR = 21f;
         private const float NIGHT_END_HOUR = 5f;
         private const float TWILIGHT_DURATION_HOURS = 1.5f;
+        
+        private const float EARTH_ROTATION_DEGREES_PER_GAME_HOUR = 15f; // 360 / 24
 
         void Awake()
         {
-            Debug.Log("[ConstellationController] Awake called");
-            
             // CRITICAL: Make this object persist across scene loads
             // This ensures stars remain visible when loading world scenes
             DontDestroyOnLoad(gameObject);
@@ -67,20 +89,42 @@ namespace ProjectC.Core
 
         void OnEnable()
         {
-            Debug.Log("[ConstellationController] OnEnable - Initializing...");
             Initialize();
+            
+            // Subscribe to server time updates
+            if (ServerWeatherController.Instance != null)
+            {
+                ServerWeatherController.Instance.OnTimeOfDayChanged += OnServerTimeChanged;
+                // Get initial time
+                SetServerTimeOfDay(ServerWeatherController.Instance.TimeOfDay);
+            }
         }
 
         void OnDisable()
         {
-            Debug.Log("[ConstellationController] OnDisable - Cleaning up...");
+            // Unsubscribe from server time updates
+            if (ServerWeatherController.Instance != null)
+            {
+                ServerWeatherController.Instance.OnTimeOfDayChanged -= OnServerTimeChanged;
+            }
+            
             Cleanup();
         }
 
         void OnDestroy()
         {
-            Debug.Log("[ConstellationController] OnDestroy - Cleaning up...");
+            // Unsubscribe from server time updates
+            if (ServerWeatherController.Instance != null)
+            {
+                ServerWeatherController.Instance.OnTimeOfDayChanged -= OnServerTimeChanged;
+            }
+            
             Cleanup();
+        }
+        
+        private void OnServerTimeChanged(float time)
+        {
+            SetServerTimeOfDay(time);
         }
 
         private void Initialize()
@@ -93,8 +137,6 @@ namespace ProjectC.Core
                 return;
             }
 
-            Debug.Log("[ConstellationController] Building sky dome...");
-            
             CreateSkyDome();
             BuildStarMesh();
             CreateConstellationLines();
@@ -109,22 +151,15 @@ namespace ProjectC.Core
 
         private void CreateSkyDome()
         {
-            // Create sky dome container - ALWAYS at origin in world space, we use local coordinates
             _skyDomeObject = new GameObject("SkyDome_Stars");
             _skyDomeObject.transform.SetParent(transform);
             _skyDomeObject.transform.localPosition = Vector3.zero;
             _skyDomeObject.transform.localRotation = Quaternion.identity;
             
-            // Set layer to avoid lighting/raycast issues
             _skyDomeObject.layer = LayerMask.NameToLayer("Ignore Raycast");
-            
-            Debug.Log("[ConstellationController] SkyDome created at local position (0,0,0)");
+            DontDestroyOnLoad(_skyDomeObject);
         }
 
-        /// <summary>
-        /// Converts spherical coordinates (azimuth, altitude) to a LOCAL direction vector.
-        /// The LOCAL coordinate system is relative to SkyDome center.
-        /// </summary>
         private Vector3 SphericalToLocalDirection(float azimuthDeg, float altitudeDeg)
         {
             float azRad = azimuthDeg * Mathf.Deg2Rad;
@@ -132,7 +167,6 @@ namespace ProjectC.Core
             
             float cosAlt = Mathf.Cos(altRad);
             
-            // Local direction from center of dome outward
             return new Vector3(
                 cosAlt * Mathf.Cos(azRad),
                 Mathf.Sin(altRad),
@@ -140,11 +174,6 @@ namespace ProjectC.Core
             ).normalized;
         }
 
-        /// <summary>
-        /// Builds the star mesh using LOCAL coordinates.
-        /// Stars are positioned at skyDomeRadius distance from center in LOCAL space.
-        /// When SkyDome moves, the mesh moves and stars move with it.
-        /// </summary>
         private void BuildStarMesh()
         {
             List<Vector3> vertices = new List<Vector3>();
@@ -153,8 +182,6 @@ namespace ProjectC.Core
 
             int starIndex = 0;
             int totalStars = GetTotalStarCount();
-            
-            Debug.Log("[ConstellationController] Building mesh for " + totalStars + " stars...");
 
             foreach (var constellation in constellationData.constellations)
             {
@@ -162,17 +189,12 @@ namespace ProjectC.Core
                 
                 foreach (var star in constellation.stars)
                 {
-                    // Get LOCAL position on sky dome surface
-                    // The direction is local, multiplied by radius gives local position
                     Vector3 localDir = SphericalToLocalDirection(star.sphericalPosition.x, star.sphericalPosition.y);
                     Vector3 localStarPos = localDir * skyDomeRadius;
                     
-                    // Calculate star size based on magnitude
                     float starSize = baseStarSize + (2f - star.magnitude) * starSizeMagnitudeScale;
                     float halfSize = starSize * 0.5f;
                     
-                    // Create quad perpendicular to the direction from dome center to star
-                    // Use local "up" and "right" vectors for the quad
                     Vector3 right = Vector3.Cross(Vector3.up, localDir);
                     if (right.sqrMagnitude < 0.001f)
                     {
@@ -181,7 +203,6 @@ namespace ProjectC.Core
                     right.Normalize();
                     Vector3 up = Vector3.Cross(localDir, right);
                     
-                    // Create 4 corners of the star quad in LOCAL coordinates
                     Vector3 p0 = localStarPos + (-right - up) * halfSize;
                     Vector3 p1 = localStarPos + ( right - up) * halfSize;
                     Vector3 p2 = localStarPos + ( right + up) * halfSize;
@@ -192,7 +213,6 @@ namespace ProjectC.Core
                     vertices.Add(p2);
                     vertices.Add(p3);
                     
-                    // Star color with twinkle
                     float twinkle = Mathf.Sin(Time.time * (1f + star.magnitude * 0.5f) + starIndex * 0.1f) * 0.15f + 0.85f;
                     Color starColor = new Color(1f, 1f, 1f, twinkle);
                     colors.Add(starColor);
@@ -200,9 +220,6 @@ namespace ProjectC.Core
                     colors.Add(starColor);
                     colors.Add(starColor);
                     
-                    // Two triangles for quad (standard CCW order)
-                    // When viewed from INSIDE the sphere, we need to reverse winding
-                    // Actually: from inside, the face normal points outward, so standard order works
                     int baseIdx = starIndex * 4;
                     indices.Add(baseIdx + 0);
                     indices.Add(baseIdx + 1);
@@ -214,10 +231,7 @@ namespace ProjectC.Core
                     starIndex++;
                 }
             }
-            
-            Debug.Log("[ConstellationController] Built mesh: " + starIndex + " stars, " + vertices.Count + " vertices");
 
-            // Create mesh
             Mesh mesh = new Mesh();
             mesh.name = "SkyDomeStars";
             mesh.SetVertices(vertices);
@@ -226,11 +240,9 @@ namespace ProjectC.Core
             mesh.RecalculateBounds();
             mesh.UploadMeshData(false);
 
-            // Create mesh filter
             _skyDomeMeshFilter = _skyDomeObject.AddComponent<MeshFilter>();
             _skyDomeMeshFilter.sharedMesh = mesh;
 
-            // Create mesh renderer
             _skyDomeMeshRenderer = _skyDomeObject.AddComponent<MeshRenderer>();
             _skyDomeMeshRenderer.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;
             _skyDomeMeshRenderer.receiveShadows = false;
@@ -238,7 +250,6 @@ namespace ProjectC.Core
             _skyDomeMeshRenderer.lightmapIndex = -1;
             _skyDomeMeshRenderer.realtimeLightmapIndex = -1;
 
-            // Setup material
             SetupMaterial();
         }
 
@@ -252,11 +263,9 @@ namespace ProjectC.Core
             }
             else
             {
-                // Try to load from resources
                 matToUse = Resources.Load<Material>("Materials/Stars/StarMaterial");
                 if (matToUse == null)
                 {
-                    // Fallback to sprites default
                     Shader fallbackShader = Shader.Find("Sprites/Default");
                     if (fallbackShader != null)
                     {
@@ -264,10 +273,8 @@ namespace ProjectC.Core
                     }
                     else
                     {
-                        // Last resort
                         matToUse = new Material(Shader.Find("Unlit/Color"));
                     }
-                    Debug.LogWarning("[ConstellationController] Using fallback material with shader: " + matToUse.shader.name);
                 }
             }
             
@@ -277,15 +284,9 @@ namespace ProjectC.Core
             {
                 _skyDomeMeshRenderer.sharedMaterial.doubleSidedGI = true;
                 _skyDomeMeshRenderer.sharedMaterial.renderQueue = 3000;
-                
-                Debug.Log("[ConstellationController] Material set: " + _skyDomeMeshRenderer.sharedMaterial.shader.name);
             }
         }
 
-        /// <summary>
-        /// Creates line renderers for constellation connections.
-        /// Lines use LOCAL coordinates and will move with SkyDome.
-        /// </summary>
         private void CreateConstellationLines()
         {
             if (constellationData == null || constellationData.constellations == null) return;
@@ -308,13 +309,11 @@ namespace ProjectC.Core
                     var star1 = constellation.stars[starA];
                     var star2 = constellation.stars[starB];
                     
-                    // Get LOCAL positions on sky dome
                     Vector3 localDir1 = SphericalToLocalDirection(star1.sphericalPosition.x, star1.sphericalPosition.y);
                     Vector3 localDir2 = SphericalToLocalDirection(star2.sphericalPosition.x, star2.sphericalPosition.y);
                     Vector3 pos1 = localDir1 * skyDomeRadius;
                     Vector3 pos2 = localDir2 * skyDomeRadius;
                     
-                    // Create line object as child of SkyDome
                     GameObject lineObj = new GameObject(constellation.constellationName + "_Line");
                     lineObj.transform.SetParent(_skyDomeObject.transform);
                     lineObj.transform.localPosition = Vector3.zero;
@@ -324,11 +323,12 @@ namespace ProjectC.Core
                     lr.positionCount = 2;
                     lr.SetPosition(0, pos1);
                     lr.SetPosition(1, pos2);
-                    lr.startWidth = 1.5f;
-                    lr.endWidth = 1.5f;
+                    lr.startWidth = constellationLineWidth;
+                    lr.endWidth = constellationLineWidth;
                     lr.startColor = new Color(0.6f, 0.7f, 1f, 0.4f);
                     lr.endColor = new Color(0.6f, 0.7f, 1f, 0.4f);
-                    lr.useWorldSpace = false; // CRITICAL: local coordinates
+                    lr.useWorldSpace = false;
+                    lr.enabled = showConstellationLines;
                     
                     if (constellationLineMaterial != null)
                     {
@@ -344,34 +344,29 @@ namespace ProjectC.Core
             }
             
             _constellationLines = lines.ToArray();
-            Debug.Log("[ConstellationController] Created " + lines.Count + " constellation lines");
         }
 
         void Update()
         {
             if (!_isInitialized) return;
             
-            // Update sky dome position to follow camera
             UpdateSkyDomePosition();
             
-            // Force visibility for testing if enabled
+            // Update time from ServerWeatherController if available
+            if (ServerWeatherController.Instance != null)
+            {
+                serverTimeOfDay = ServerWeatherController.Instance.TimeOfDay;
+            }
+            
+            UpdateSkyDomeRotation();
+            
             if (forceFullVisibility)
             {
                 _starVisibility = 1f;
                 UpdateStarVisibility();
             }
-            
-            // Debug log every 5 seconds
-            if (Time.frameCount % 300 == 0)
-            {
-                LogDebugInfo();
-            }
         }
 
-        /// <summary>
-        /// Updates sky dome world position to follow the camera.
-        /// The mesh uses LOCAL coordinates, so moving SkyDome moves all stars.
-        /// </summary>
         private void UpdateSkyDomePosition()
         {
             if (Camera.main == null || _skyDomeObject == null) return;
@@ -383,27 +378,76 @@ namespace ProjectC.Core
                 cameraPos.z
             );
             
-            // Move SkyDome to camera position in WORLD space
-            // Since stars are in LOCAL coordinates, they move with it
             _skyDomeObject.transform.position = domeWorldPos;
+            
+            // After setting position, apply rotation
+            // Rotation is around the SkyDome's own center (since localPosition is 0,0,0)
+            if (enableRotation)
+            {
+                float rotationPerGameHour = EARTH_ROTATION_DEGREES_PER_GAME_HOUR * rotationSpeedMultiplier;
+                float currentRotation = serverTimeOfDay * rotationPerGameHour;
+                _skyDomeObject.transform.rotation = Quaternion.Euler(0f, currentRotation, 0f);
+            }
         }
 
-        private void LogDebugInfo()
+        private void UpdateSkyDomeRotation()
         {
-            if (_skyDomeObject == null || _skyDomeMeshRenderer == null) return;
+            if (!enableRotation) return;
+            if (_skyDomeObject == null) return;
             
-            Vector3 camPos = Camera.main != null ? Camera.main.transform.position : Vector3.zero;
-            Vector3 domePos = _skyDomeObject.transform.position;
-            float dist = Vector3.Distance(camPos, domePos);
+            float rotationPerGameHour = EARTH_ROTATION_DEGREES_PER_GAME_HOUR * rotationSpeedMultiplier;
+            float currentRotation = serverTimeOfDay * rotationPerGameHour;
             
-            Debug.Log("[ConstellationController] DEBUG: " +
-                      "Camera=" + camPos +
-                      " | SkyDome=" + domePos +
-                      " | Dist=" + dist.ToString("F1") +
-                      " | Visibility=" + _starVisibility +
-                      " | MeshEnabled=" + _skyDomeMeshRenderer.enabled +
-                      " | Active=" + _skyDomeObject.activeSelf +
-                      " | Shader=" + (_skyDomeMeshRenderer.sharedMaterial?.shader?.name ?? "NULL"));
+            _skyDomeObject.transform.rotation = Quaternion.Euler(0f, currentRotation, 0f);
+        }
+
+        /// <summary>
+        /// Called by ServerWeatherController to update the server time.
+        /// This drives the sky dome rotation.
+        /// </summary>
+        public void SetServerTimeOfDay(float time)
+        {
+            serverTimeOfDay = time;
+        }
+
+        /// <summary>
+        /// Enable or disable constellation lines.
+        /// Can be called from gameplay systems (e.g., character perks).
+        /// </summary>
+        public void SetConstellationLinesVisible(bool visible)
+        {
+            showConstellationLines = visible;
+            
+            if (_constellationLines != null)
+            {
+                foreach (var line in _constellationLines)
+                {
+                    if (line != null)
+                    {
+                        line.enabled = visible;
+                    }
+                }
+            }
+        }
+
+        /// <summary>
+        /// Set the width of constellation lines.
+        /// </summary>
+        public void SetConstellationLineWidth(float width)
+        {
+            constellationLineWidth = width;
+            
+            if (_constellationLines != null)
+            {
+                foreach (var line in _constellationLines)
+                {
+                    if (line != null)
+                    {
+                        line.startWidth = width;
+                        line.endWidth = width;
+                    }
+                }
+            }
         }
 
         private int GetTotalStarCount()
@@ -419,12 +463,9 @@ namespace ProjectC.Core
             return count;
         }
 
-        /// <summary>
-        /// Updates star visibility based on time of day.
-        /// </summary>
         public void SetStarVisibility(float timeOfDay)
         {
-            if (forceFullVisibility) return; // Override for testing
+            if (forceFullVisibility) return;
             
             _starVisibility = CalculateStarVisibility(timeOfDay);
             UpdateStarVisibility();
@@ -462,7 +503,6 @@ namespace ProjectC.Core
                 
                 if (_skyDomeMeshRenderer.sharedMaterial != null)
                 {
-                    // Handle both custom _StarColor and standard _Color
                     Color color = new Color(1f, 1f, 1f, _starVisibility);
                     _skyDomeMeshRenderer.sharedMaterial.color = color;
                     
@@ -472,22 +512,8 @@ namespace ProjectC.Core
                     }
                 }
             }
-            
-            if (_constellationLines != null)
-            {
-                foreach (var line in _constellationLines)
-                {
-                    if (line != null)
-                    {
-                        line.enabled = _starVisibility > 0.01f;
-                    }
-                }
-            }
         }
 
-        /// <summary>
-        /// Rebuilds the sky dome (call if constellation data changes).
-        /// </summary>
         public void RebuildSkyDome()
         {
             Cleanup();
@@ -513,7 +539,6 @@ namespace ProjectC.Core
         {
             if (!showDebugGizmos) return;
             
-            // Draw sky dome wire sphere at current position
             Vector3 domePos = _skyDomeObject != null 
                 ? _skyDomeObject.transform.position 
                 : (Camera.main != null ? Camera.main.transform.position + Vector3.up * skyDomeHeightOffset : Vector3.zero);
@@ -521,7 +546,6 @@ namespace ProjectC.Core
             Gizmos.color = Color.yellow;
             Gizmos.DrawWireSphere(domePos, skyDomeRadius);
             
-            // Draw line from camera to sky dome center
             if (Camera.main != null)
             {
                 Gizmos.color = Color.cyan;

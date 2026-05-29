@@ -351,4 +351,59 @@ Call from `DayNightController` when time changes.
 - [ ] Create phase profile documents (5 files)
 - [ ] Verify Unity version and URP version compatibility
 - [ ] Confirm "Moon" requirement (light only? mesh?)
-- [ ] Confirm star field requirement
+- [x] Confirm star field requirement ✅ **IMPLEMENTED**
+
+---
+
+## 12. Star Sky System (ConstellationController) — IMPLEMENTED
+
+**Status:** ✅ COMPLETED
+
+### Files
+| File | Action |
+|------|--------|
+| `Assets/_Project/Scripts/Core/DayNight/ConstellationController.cs` | Created |
+| `Assets/_Project/Data/ScriptableObjects/DayNight/ConstellationData_FullSky.asset` | Created |
+
+### Working Parameters (Tested)
+| Parameter | Value | Description |
+|-----------|-------|-------------|
+| `skyDomeRadius` | 900000 | Sky dome radius around player |
+| `baseStarSize` | 3000 | Base star quad size |
+| `starSizeMagnitudeScale` | 1500 | Magnitude-based size variation |
+| `skyDomeHeightOffset` | 100 | Height offset above camera |
+| `constellationLineWidth` | 1.5 | Constellation line width |
+
+### Features Implemented
+1. **Sky Dome Rendering** - Stars rendered as quads on inside of sphere
+2. **DontDestroyOnLoad** - Survives scene loading (Bootstrap → DDOL)
+3. **Constellation Lines** - Toggle via `showConstellationLines`, width via `constellationLineWidth`
+4. **Sky Dome Rotation** - Driven by `ServerWeatherController.TimeOfDay`, speed via `rotationSpeedMultiplier`
+5. **Visibility System** - `forceFullVisibility` for testing, real system tied to time
+
+### API Methods
+```csharp
+// Toggle constellation lines (for character perks)
+SetConstellationLinesVisible(bool visible)
+
+// Change line width
+SetConstellationLineWidth(float width)
+
+// Server time drives rotation automatically
+```
+
+### Data
+- **215 stars** across **24 constellations** in `ConstellationData_FullSky.asset`
+- Includes real star names: Sirius, Vega, Arcturus, Polaris, Betelgeuse, Rigel, etc.
+
+### Integration
+- Auto-subscribes to `ServerWeatherController.OnTimeOfDayChanged`
+- Rotation: 15° per game hour × `rotationSpeedMultiplier`
+
+---
+
+## 13. Session Log
+
+| Date | Summary |
+|------|---------|
+| 2026-05-30 | Initial implementation - 200+ stars with working parameters for MMO large world. Added constellation lines toggle, line width control, sky dome rotation driven by server time. Debug logs removed after verification.

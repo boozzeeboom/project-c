@@ -5165,13 +5165,18 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::ProjectC.Core.ConstellationController
   constellationData: {fileID: 11400000, guid: f8b94cddad9fed249ace66037a050766, type: 2}
   starMaterial: {fileID: 2100000, guid: f884f5db3f403534cbdfecee590d9474, type: 2}
-  constellationLineMaterial: {fileID: 2100000, guid: 1113070119fa4ec4f93620807a2d0511, type: 2}
-  skyDomeRadius: 900
-  skyDomeHeightOffset: 100
-  baseStarSize: 3
-  starSizeMagnitudeScale: 1.5
+  constellationLineMaterial: {fileID: 2100000, guid: f884f5db3f403534cbdfecee590d9474, type: 2}
+  skyDomeRadius: 900000
+  skyDomeHeightOffset: 3000
+  baseStarSize: 3000
+  starSizeMagnitudeScale: 1500
+  enableRotation: 1
+  rotationSpeedMultiplier: 1
+  serverTimeOfDay: 12
+  showConstellationLines: 1
+  constellationLineWidth: 1000
   forceFullVisibility: 1
-  showDebugGizmos: 1
+  showDebugGizmos: 0
 --- !u!4 &462870029
 Transform:
   m_ObjectHideFlags: 0

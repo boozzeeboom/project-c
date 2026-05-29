@@ -9,9 +9,20 @@ namespace ProjectC.Core
     [Tooltip("1.0 = same speed as sun. >1 = slower, <1 = faster")]
     public float moonOrbitSpeed = 1f;
 
+        [Header("Visibility")]
+        [Tooltip("If true, moon is always visible regardless of time")]
+        public bool alwaysVisible = false;
+
         [Header("Phase Settings")]
         [Tooltip("How many game days for full lunar cycle")]
         public float lunarCycleGameDays = 29.5f;
+        [Tooltip("Moon phase visual rotation offset in degrees")]
+        public float moonPhaseRotation = 90f;
+        [Tooltip("Self rotation axis (normalized) - controls which side of moon faces Earth")]
+        public Vector3 selfRotationAxis = Vector3.up;
+        [Tooltip("Self rotation speed multiplier - tune to match phase to real lunar cycle")]
+        [Range(0.1f, 3f)]
+        public float selfRotationSpeed = 1f;
         [Tooltip("Current moon age in game days (0-29.5)")]
         public float moonAge = 0f;
 
@@ -21,6 +32,7 @@ namespace ProjectC.Core
         public Material moonMaterial;
 
         private float _moonOrbitAngle = 0f;
+        private float _moonSelfRotation = 0f;
         private const float NIGHT_START_HOUR = 21f;
         private const float NIGHT_END_HOUR = 5f;
         private const float TWILIGHT_DURATION_HOURS = 1.5f;
@@ -44,31 +56,38 @@ namespace ProjectC.Core
             SyncMoonAgeFromGameTime();
         }
 
-    void Update()
-    {
-        // Synced with ServerWeatherController._dayCycleRealHours
-        // Moon orbits at same angular speed as sun (moonOrbitSpeed = 1.0 default)
-        // Sun: 360° per game day
-        // Moon: 360° * moonOrbitSpeed per game day
-        float dayCycleRealHours = GetDayCycleRealHours();
-        float realSecondsPerGameDay = dayCycleRealHours * 3600f;
-        float orbitDegreesPerSecond = (360f / realSecondsPerGameDay) * moonOrbitSpeed;
-        
-        _moonOrbitAngle = Mathf.Repeat(_moonOrbitAngle + orbitDegreesPerSecond * Time.deltaTime, 360f);
+        void Update()
+        {
+            // Synced with ServerWeatherController._dayCycleRealHours
+            // Moon orbits at same angular speed as sun (moonOrbitSpeed = 1.0 default)
+            // Sun: 360° per game day
+            // Moon: 360° * moonOrbitSpeed per game day
+            float dayCycleRealHours = GetDayCycleRealHours();
+            float realSecondsPerGameDay = dayCycleRealHours * 3600f;
+            float orbitDegreesPerSecond = (360f / realSecondsPerGameDay) * moonOrbitSpeed;
+
+            float orbitDelta = orbitDegreesPerSecond * Time.deltaTime;
+            _moonOrbitAngle = Mathf.Repeat(_moonOrbitAngle + orbitDelta, 360f);
+
+            // Moon is tidally locked - same face always toward Earth
+            // As it orbits, it must rotate around its own axis to compensate
+            float selfRotationDelta = orbitDelta * selfRotationSpeed;
+            _moonSelfRotation = Mathf.Repeat(_moonSelfRotation + selfRotationDelta, 360f);
 
         SyncMoonAgeFromGameTime();
 
             bool isNight = IsNightTime();
             float nightVisibility = CalculateNightVisibility();
+            bool showMoon = alwaysVisible || isNight;
 
             if (moonMeshRenderer != null)
             {
-                moonMeshRenderer.enabled = isNight;
+                moonMeshRenderer.enabled = showMoon;
             }
 
             if (moonLight != null)
             {
-                moonLight.enabled = isNight;
+                moonLight.enabled = showMoon;
                 moonLight.intensity = nightVisibility * 0.4f;
             }
 
@@ -129,9 +148,13 @@ namespace ProjectC.Core
 
             transform.position = new Vector3(x, y, z);
 
+            // Tidal locking: moon rotates to keep same face toward Earth
+            // Apply self-rotation on top of orbital orientation
             float tiltAngle = _moonOrbitAngle - 90f;
             float pitchAngle = -30f + Mathf.Sin(rad) * 40f;
-            transform.rotation = Quaternion.Euler(tiltAngle, 0f, pitchAngle);
+            Quaternion orbitalRotation = Quaternion.Euler(tiltAngle, 0f, pitchAngle);
+            Quaternion selfRotation = Quaternion.AngleAxis(_moonSelfRotation, selfRotationAxis.normalized);
+            transform.rotation = orbitalRotation * selfRotation;
 
             if (moonLight != null)
             {
@@ -145,7 +168,8 @@ namespace ProjectC.Core
             if (moonMaterial == null || moonMeshRenderer == null) return;
 
             moonMaterial.SetFloat("_MoonPhase", MoonPhase);
-            moonMaterial.SetFloat("_NightVisibility", IsNightTime() ? 1f : 0f);
+            moonMaterial.SetFloat("_PhaseRotation", moonPhaseRotation);
+            moonMaterial.SetFloat("_NightVisibility", alwaysVisible || IsNightTime() ? 1f : 0f);
         }
 
         private float CalculateNightVisibility()

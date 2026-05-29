@@ -7,6 +7,7 @@ Shader "Project C/Moon/MoonLunarPhase"
         _CraterScale ("Crater Scale", Float) = 8.0
         _CraterContrast ("Crater Contrast", Float) = 0.3
         _MoonPhase ("Moon Phase (0-1)", Range(0, 1)) = 0.5
+        _PhaseRotation ("Phase Rotation (degrees)", Float) = 90
         _LitFraction ("Lit Fraction", Range(0, 1)) = 0.5
         _RimPower ("Rim Power", Float) = 3.0
         _RimIntensity ("Rim Intensity", Float) = 0.2
@@ -47,6 +48,7 @@ Shader "Project C/Moon/MoonLunarPhase"
             float _CraterScale;
             float _CraterContrast;
             float _MoonPhase;
+            float _PhaseRotation;
             float _LitFraction;
             float _RimPower;
             float _RimIntensity;
@@ -90,7 +92,7 @@ Shader "Project C/Moon/MoonLunarPhase"
 
             fixed4 frag(v2f i) : SV_Target
             {
-                float phaseAngle = _MoonPhase * 6.28318;
+                float phaseAngle = _MoonPhase * 6.28318 + _PhaseRotation * 0.0174533;
                 float2 moonUV = i.uv - 0.5;
 
                 float phaseShift = cos(phaseAngle);

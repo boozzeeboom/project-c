@@ -1935,8 +1935,12 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::ProjectC.Core.MoonController
   moonOrbitRadius: 400000
   moonOrbitSpeed: 1
+  alwaysVisible: 1
   lunarCycleGameDays: 29.5
-  moonAge: 0
+  moonPhaseRotation: 0
+  selfRotationAxis: {x: 0, y: 1, z: 0}
+  selfRotationSpeed: 1
+  moonAge: 3
   moonLight: {fileID: 168637387}
   moonMeshRenderer: {fileID: 168637390}
   moonMaterial: {fileID: 2100000, guid: 319b3ec5ec3d825418b9e99ce5ccdd91, type: 2}
@@ -10431,7 +10435,7 @@ GameObject:
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
-  m_IsActive: 0
+  m_IsActive: 1
 --- !u!114 &909089445
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -22868,7 +22872,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::ProjectC.Core.ServerWeatherController
   ShowTopMostFoldoutHeaderGroup: 1
   _windDirection: {x: 1, y: 0, z: 0}
-  _windSpeed: 5
+  _windSpeed: 50
   _broadcastInterval: 2
   _enableWindVariation: 1
   _directionVariationAngle: 15

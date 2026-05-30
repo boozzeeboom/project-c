@@ -40,7 +40,7 @@ namespace ProjectC.UI
             if (Instance == null)
             {
                 Instance = this;
-                DontDestroyOnLoad(gameObject);
+                
                 InitializeCanvas();
             }
             else
@@ -57,11 +57,14 @@ namespace ProjectC.UI
         /// <summary>
         /// Инициализировать HUD Canvas если его ещё нет.
         /// </summary>
+        /// <summary>
+        /// Инициализировать HUD Canvas если его ещё нет.
+        /// </summary>
         private void InitializeCanvas()
         {
             if (_hudCanvas != null) return;
 
-            // Ищем существующий или создаём новый
+            // Ищем существующий Canvas с тегом HUDCanvas
             var existingCanvases = FindObjectsByType<Canvas>(FindObjectsInactive.Include);
             foreach (var canvas in existingCanvases)
             {
@@ -72,7 +75,48 @@ namespace ProjectC.UI
                 }
             }
 
+            // Если не нашли — ищем дочерний объект HUD_Canvas
             if (_hudCanvas == null)
+            {
+                var childCanvas = transform.Find("HUD_Canvas")?.GetComponent<Canvas>();
+                if (childCanvas != null)
+                {
+                    _hudCanvas = childCanvas;
+                }
+            }
+
+            if (_hudCanvas != null)
+            {
+                // Восстанавливаем ссылки
+                _canvasScaler = _hudCanvas.GetComponent<CanvasScaler>();
+                _graphicRaycaster = _hudCanvas.GetComponent<GraphicRaycaster>();
+
+                // Убеждаемся что настройки правильные
+                if (_hudCanvas.renderMode != RenderMode.ScreenSpaceOverlay)
+                {
+                    _hudCanvas.renderMode = RenderMode.ScreenSpaceOverlay;
+                }
+                if (_hudCanvas.sortingOrder != canvasSortOrder)
+                {
+                    _hudCanvas.sortingOrder = canvasSortOrder;
+                }
+
+                if (_canvasScaler == null)
+                {
+                    _canvasScaler = _hudCanvas.gameObject.AddComponent<CanvasScaler>();
+                    _canvasScaler.uiScaleMode = CanvasScaler.ScaleMode.ScaleWithScreenSize;
+                    _canvasScaler.referenceResolution = referenceResolution;
+                    _canvasScaler.matchWidthOrHeight = uiScaleMatch;
+                }
+
+                if (_graphicRaycaster == null)
+                {
+                    _graphicRaycaster = _hudCanvas.gameObject.AddComponent<GraphicRaycaster>();
+                }
+
+                Debug.Log($"[HUDManager] Using existing Canvas: {_hudCanvas.name}");
+            }
+            else
             {
                 // Создаём новый Canvas
                 var canvasObj = new GameObject("HUD_Canvas");
@@ -91,28 +135,9 @@ namespace ProjectC.UI
                 _graphicRaycaster = canvasObj.AddComponent<GraphicRaycaster>();
                 _graphicRaycaster.blockingMask = LayerMask.GetMask("Default");
                 _graphicRaycaster.blockingObjects = GraphicRaycaster.BlockingObjects.All;
+
+                Debug.Log($"[HUDManager] Created new Canvas: sortOrder={canvasSortOrder}");
             }
-            else
-            {
-                // Восстанавливаем ссылки
-                _canvasScaler = _hudCanvas.GetComponent<CanvasScaler>();
-                _graphicRaycaster = _hudCanvas.GetComponent<GraphicRaycaster>();
-
-                if (_canvasScaler == null)
-                {
-                    _canvasScaler = _hudCanvas.gameObject.AddComponent<CanvasScaler>();
-                    _canvasScaler.uiScaleMode = CanvasScaler.ScaleMode.ScaleWithScreenSize;
-                    _canvasScaler.referenceResolution = referenceResolution;
-                    _canvasScaler.matchWidthOrHeight = uiScaleMatch;
-                }
-
-                if (_graphicRaycaster == null)
-                {
-                    _graphicRaycaster = _hudCanvas.gameObject.AddComponent<GraphicRaycaster>();
-                }
-            }
-
-            Debug.Log($"[HUDManager] Canvas initialized: sortOrder={canvasSortOrder}");
         }
 
         /// <summary>

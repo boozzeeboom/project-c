@@ -20,6 +20,9 @@ namespace ProjectC.Core
         [Header("Material")]
         public Material ImpostorMaterial;
 
+        [Header("Debug Logging")]
+        public bool logInitialization = false;
+
         private struct ImpostorData
         {
             public Matrix4x4 Matrix;
@@ -58,18 +61,18 @@ namespace ProjectC.Core
                     if (i < Textures.Length && Textures[i] != null)
                     {
                         _instMaterials[i].mainTexture = Textures[i];
-                        Debug.Log($"[DistantCloud] Set texture {i}: {_instMaterials[i].mainTexture} (size: {Textures[i].width}x{Textures[i].height}, format: {Textures[i].format})");
+                        if (logInitialization) Debug.Log($"[DistantCloud] Set texture {i}: {_instMaterials[i].mainTexture} (size: {Textures[i].width}x{Textures[i].height}, format: {Textures[i].format})");
                     }
                 }
                 else
                 {
-                    Debug.LogWarning($"[DistantCloud] ImpostorMaterial is null at index {i}");
+                    if (logInitialization) Debug.LogWarning($"[DistantCloud] ImpostorMaterial is null at index {i}");
                 }
             }
 
             _impostors = new ImpostorData[ImpostorCount];
 
-            Debug.Log($"[{name}] Initialized: impostors={ImpostorCount}, textures={_textureCount}");
+            if (logInitialization) Debug.Log($"[{name}] Initialized: impostors={ImpostorCount}, textures={_textureCount}");
         }
 
         public void Generate(Vector3 playerPos)

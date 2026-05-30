@@ -49,6 +49,12 @@ namespace ProjectC.Core
         [Header("Generation")]
         public float GenerationRadius = 5000f;
 
+        [Header("Debug Logging")]
+        public bool logInitialization = false;
+        public bool logAltitudeOffset = false;
+        public bool logRegeneration = false;
+        public bool logCloudCount = false;
+
         private bool _initialized = false;
         private float _globalAltitudeOffset = 0f;
 
@@ -71,7 +77,7 @@ namespace ProjectC.Core
         private void Initialize()
         {
             Vector3 playerPos = GetPlayerPosition();
-            Debug.Log($"[CloudManager] Init at playerPos={playerPos}");
+            if (logInitialization) Debug.Log($"[CloudManager] Init at playerPos={playerPos}");
 
             if (UpperLayer != null)
             {
@@ -135,7 +141,7 @@ namespace ProjectC.Core
             }
 
             _initialized = true;
-            Debug.Log($"[CloudManager] Init complete. Upper={UpperCount}, Middle={MiddleCount}, Lower={LowerCount}, Distant={DistantCount}, HorizonVeil={HorizonVeil != null}");
+            if (logInitialization) Debug.Log($"[CloudManager] Init complete. Upper={UpperCount}, Middle={MiddleCount}, Lower={LowerCount}, Distant={DistantCount}, HorizonVeil={HorizonVeil != null}");
         }
 
         private void Update()
@@ -161,7 +167,7 @@ namespace ProjectC.Core
             {
                 HorizonVeil.SetGlobalAltitudeOffset(offset);
             }
-            Debug.Log($"[CloudManager] Global altitude offset set to {offset}");
+            if (logAltitudeOffset) Debug.Log($"[CloudManager] Global altitude offset set to {offset}");
         }
 
         public void TriggerVeilLightning()
@@ -197,7 +203,7 @@ namespace ProjectC.Core
             if (LowerLayer != null) { LowerLayer.Generate(pos); LowerLayer.SetWind(dir, speed); }
             if (DistantManager != null) { DistantManager.Generate(pos); DistantManager.SetWind(dir, speed); }
 
-            Debug.Log("[CloudManager] Regenerated all clouds");
+            if (logRegeneration) Debug.Log("[CloudManager] Regenerated all clouds");
         }
 
         public int GetTotalCloudCount()
@@ -213,7 +219,7 @@ namespace ProjectC.Core
         [ContextMenu("Log Cloud Count")]
         private void LogCloudCount()
         {
-            Debug.Log($"[CloudManager] Total: {GetTotalCloudCount()} (U={UpperLayer?.ActiveCount ?? 0}, M={MiddleLayer?.ActiveCount ?? 0}, L={LowerLayer?.ActiveCount ?? 0}, D={DistantManager?.ActiveCount ?? 0})");
+            if (logCloudCount) Debug.Log($"[CloudManager] Total: {GetTotalCloudCount()} (U={UpperLayer?.ActiveCount ?? 0}, M={MiddleLayer?.ActiveCount ?? 0}, L={LowerLayer?.ActiveCount ?? 0}, D={DistantManager?.ActiveCount ?? 0})");
         }
     }
 }

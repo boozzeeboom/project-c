@@ -35,6 +35,9 @@ namespace ProjectC.Core
 
         [Header("Debug")]
         public bool showDebugOverlay = true;
+        public bool logInitialization = false;
+        public bool logVolumeBlend = false;
+        public bool logWarnings = false;
 
         // Cached state - no allocations in Update
         private float _serverTimeOfDay = 12f;
@@ -102,7 +105,7 @@ namespace ProjectC.Core
         {
             if (_dayVolumeProfileInstance == null || _nightVolumeProfileInstance == null || _twilightVolumeProfileInstance == null)
             {
-                Debug.LogWarning("[DayNightController] Profile instances were lost (possible domain reload). Re-initializing...");
+                if (logWarnings) Debug.LogWarning("[DayNightController] Profile instances were lost (possible domain reload). Re-initializing...");
                 InitializeVolumeProfileInstances();
             }
         }
@@ -154,7 +157,7 @@ namespace ProjectC.Core
             _nightVolumeProfileInstance = nightVolumeProfile != null ? Instantiate(nightVolumeProfile) : null;
             _twilightVolumeProfileInstance = twilightVolumeProfile != null ? Instantiate(twilightVolumeProfile) : null;
 
-            Debug.Log($"[DayNightController] Created runtime profile instances: Day={_dayVolumeProfileInstance != null}, Night={_nightVolumeProfileInstance != null}, Twilight={_twilightVolumeProfileInstance != null}");
+            if (logInitialization) Debug.Log($"[DayNightController] Created runtime profile instances: Day={_dayVolumeProfileInstance != null}, Night={_nightVolumeProfileInstance != null}, Twilight={_twilightVolumeProfileInstance != null}");
         }
 
         private void InitializeVolumeComponents()
@@ -218,7 +221,7 @@ namespace ProjectC.Core
             _temperatureColorAdjustments.postExposure.Override(0f);
             _temperatureColorAdjustments.contrast.Override(0f);
 
-            Debug.Log("[DayNightController] Temperature volume initialized (separate child object)");
+            if (logInitialization) Debug.Log("[DayNightController] Temperature volume initialized (separate child object)");
         }
 
         private void SubscribeToServerEvents()
@@ -520,7 +523,7 @@ namespace ProjectC.Core
         {
             if (globalVolume == null)
             {
-                Debug.LogWarning("[VolumeBlend] globalVolume is NULL!");
+                if (logVolumeBlend || logWarnings) Debug.LogWarning("[VolumeBlend] globalVolume is NULL!");
                 return;
             }
 
@@ -556,13 +559,13 @@ namespace ProjectC.Core
             {
                 globalVolume.profile = targetProfile;
                 profileChanged = true;
-                Debug.Log($"[VolumeBlend] Switched to {profileName} profile (runtime instance)");
+                if (logVolumeBlend) Debug.Log($"[VolumeBlend] Switched to {profileName} profile (runtime instance)");
             }
 
             // Re-cache components if profile changed (CRITICAL: components are profile-specific!)
             if (profileChanged)
             {
-                Debug.Log("[VolumeBlend] Profile changed, re-initializing volume components...");
+                if (logVolumeBlend) Debug.Log("[VolumeBlend] Profile changed, re-initializing volume components...");
                 InitializeVolumeComponents();
             }
 
@@ -572,8 +575,8 @@ namespace ProjectC.Core
             // Debug: Check volume state
             if (showDebugOverlay)
             {
-                bool volActive = globalVolume != null && globalVolume.isActiveAndEnabled;
-                Debug.Log($"[VolumeBlend] Time={t:F1}h, Profile={profileName}, VolumeActive={volActive}");
+                // bool volActive = globalVolume != null && globalVolume.isActiveAndEnabled;
+                // Debug.Log($"[VolumeBlend] Time={t:F1}h, Profile={profileName}, VolumeActive={volActive}");
             }
         }
 
@@ -630,8 +633,9 @@ namespace ProjectC.Core
                 float contrast = Mathf.Lerp(35f, -15f, tempFactor);
                 _temperatureColorAdjustments.contrast.Override(contrast);
 
-                Debug.Log($"[TempFilter] Temp={temperature:F1}C, Factor={tempFactor:F2}, " +
-                          $"Sat={sat:F0}, Exp={exp:F2}");
+                // Debug: Log temperature filter values when debugging
+                // Debug.Log($"[TempFilter] Temp={temperature:F1}C, Factor={tempFactor:F2}, " +
+                //           $"Sat={sat:F0}, Exp={exp:F2}");
             }
 
             // Also apply non-volume effects

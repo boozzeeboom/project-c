@@ -15,18 +15,23 @@ namespace ProjectC.Core
         [Header("Default Storm Pattern")]
         public CloudLayerConfig defaultStormPattern;
 
+        [Header("Debug Logging")]
+        public bool logSpawning = false;
+        public bool logGeneration = false;
+        public bool logGeneral = false;
+
         private Dictionary<uint, Storm> _activeStorms = new Dictionary<uint, Storm>();
         private Mesh _sphereMesh;
 
         public void Awake()
         {
             _sphereMesh = CreateDefaultSphereMesh();
-            Debug.Log($"[StormCloudGenerator] Awake. Sphere mesh: {_sphereMesh.name}, defaultStormPattern: {defaultStormPattern}");
+            if (logGeneral) Debug.Log($"[StormCloudGenerator] Awake. Sphere mesh: {_sphereMesh.name}, defaultStormPattern: {defaultStormPattern}");
         }
 
         public void SpawnStorm(uint stormId, Vector3 position, CloudLayerConfig pattern, float intensity, GameObject existingRoot = null)
         {
-            Debug.Log($"[StormCloudGenerator] SpawnStorm called: id={stormId}, pos={position}, pattern={pattern?.name}, intensity={intensity}");
+            if (logSpawning) Debug.Log($"[StormCloudGenerator] SpawnStorm called: id={stormId}, pos={position}, pattern={pattern?.name}, intensity={intensity}");
 
             if (_activeStorms.Count >= MaxActiveStorms)
             {
@@ -54,20 +59,20 @@ namespace ProjectC.Core
             }
             else
             {
-                Debug.Log($"[StormCloudGenerator] Using existing root at world pos {stormRoot.transform.position}");
+                if (logSpawning) Debug.Log($"[StormCloudGenerator] Using existing root at world pos {stormRoot.transform.position}");
             }
 
             var sphereContainer = new GameObject("SphereContainer");
             sphereContainer.transform.SetParent(stormRoot.transform);
             sphereContainer.transform.localPosition = Vector3.zero;
-            Debug.Log($"[StormCloudGenerator] SphereContainer local pos: {sphereContainer.transform.localPosition}, world pos: {sphereContainer.transform.position}");
+            if (logSpawning) Debug.Log($"[StormCloudGenerator] SphereContainer local pos: {sphereContainer.transform.localPosition}, world pos: {sphereContainer.transform.position}");
 
             var spheres = GenerateStormSpheres(pattern, Vector3.zero);
-            Debug.Log($"[StormCloudGenerator] Generated {spheres?.Count ?? 0} spheres for storm {stormId}");
+            if (logSpawning) Debug.Log($"[StormCloudGenerator] Generated {spheres?.Count ?? 0} spheres for storm {stormId}");
 
             if (spheres == null || spheres.Count == 0)
             {
-                Debug.LogError($"[StormCloudGenerator] No spheres generated! Pattern: {pattern?.name}, Archetype: {pattern?.archetype}");
+                if (logGeneration && pattern != null) Debug.LogError($"[StormCloudGenerator] No spheres generated! Pattern: {pattern.name}, Archetype: {pattern.archetype}");
                 if (existingRoot == null) Destroy(stormRoot);
                 return;
             }
@@ -87,7 +92,7 @@ namespace ProjectC.Core
             };
 
             _activeStorms[stormId] = storm;
-            Debug.Log($"[StormCloudGenerator] Storm {stormId} spawned successfully with {spheres.Count} spheres");
+            if (logSpawning) Debug.Log($"[StormCloudGenerator] Storm {stormId} spawned successfully with {spheres.Count} spheres");
         }
 
         public void DespawnStorm(uint stormId)
@@ -116,8 +121,8 @@ namespace ProjectC.Core
 
         private List<CloudSphere> GenerateStormSpheres(CloudLayerConfig config, Vector3 offset)
         {
-            Debug.Log($"[StormCloudGenerator] GenerateStormSpheres: config={config?.name}, archetype={config?.archetype}, seed={config?.generatorSeed}");
-            Debug.Log($"[StormCloudGenerator]   density={config?.density}, cloudSize={config?.cloudSize}");
+            if (logGeneration) Debug.Log($"[StormCloudGenerator] GenerateStormSpheres: config={config?.name}, archetype={config?.archetype}, seed={config?.generatorSeed}");
+            if (logGeneration) Debug.Log($"[StormCloudGenerator]   density={config?.density}, cloudSize={config?.cloudSize}");
 
             var layerConfig = new ProjectC.CloudGenerator.CloudLayerConfig
             {
@@ -194,7 +199,7 @@ namespace ProjectC.Core
             var layers = new List<ProjectC.CloudGenerator.CloudLayerConfig> { layerConfig };
             var spheres = ProjectC.CloudGenerator.CloudGenerator.Generate(layers);
 
-            Debug.Log($"[StormCloudGenerator] GenerateStormSpheres: {spheres.Count} spheres generated for pattern {config?.name}");
+            if (logGeneration) Debug.Log($"[StormCloudGenerator] GenerateStormSpheres: {spheres.Count} spheres generated for pattern {config?.name}");
 
             foreach (var sphere in spheres)
             {

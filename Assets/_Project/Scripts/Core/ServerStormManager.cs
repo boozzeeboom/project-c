@@ -38,6 +38,11 @@ namespace ProjectC.Core
         [Header("Spawn Prefab")]
         [SerializeField] private GameObject _stormControllerPrefab;
 
+        [Header("Debug Logging")]
+        [SerializeField] private bool _logSpawn = false;
+        [SerializeField] private bool _logStormSpawn = false;
+        [SerializeField] private bool _logEventCloud = false;
+
         private struct StormData
         {
             public ushort Id;
@@ -65,7 +70,7 @@ namespace ProjectC.Core
             {
                 Instance = this;
                 SpawnInitialStorms();
-                Debug.Log($"[ServerStormManager] Server spawned, {Instance._maxStorms} storms active");
+                if (_logSpawn) Debug.Log($"[ServerStormManager] Server spawned, {Instance._maxStorms} storms active");
             }
             else
             {
@@ -210,11 +215,11 @@ namespace ProjectC.Core
         [ClientRpc]
         private void StormSpawnClientRpc(ushort id, Vector3 worldPosition, float intensity, string patternGUID)
         {
-            Debug.Log($"[StormSpawnClientRpc] id={id}, worldPos={worldPosition}, intensity={intensity}, patternGUID={patternGUID}");
+            if (_logStormSpawn) Debug.Log($"[StormSpawnClientRpc] id={id}, worldPos={worldPosition}, intensity={intensity}, patternGUID={patternGUID}");
 
             if (StormController.ClientControllers.TryGetValue(id, out var controller))
             {
-                Debug.Log($"[StormSpawnClientRpc] Found controller {controller.gameObject.name}, calling Initialize");
+                if (_logStormSpawn) Debug.Log($"[StormSpawnClientRpc] Found controller {controller.gameObject.name}, calling Initialize");
                 controller.Initialize(id, worldPosition, intensity, patternGUID);
             }
             else if (_stormControllerPrefab != null)
@@ -224,11 +229,11 @@ namespace ProjectC.Core
                 {
                     newController.Initialize(id, worldPosition, intensity, patternGUID);
                 }
-                Debug.Log($"[StormSpawnClientRpc] Spawned new controller for storm {id}");
+                if (_logStormSpawn) Debug.Log($"[StormSpawnClientRpc] Spawned new controller for storm {id}");
             }
             else
             {
-                Debug.LogWarning($"[StormSpawnClientRpc] No controller found for id={id} and no prefab set. Registered: {StormController.ClientControllers.Count}");
+                if (_logStormSpawn) Debug.LogWarning($"[StormSpawnClientRpc] No controller found for id={id} and no prefab set. Registered: {StormController.ClientControllers.Count}");
             }
         }
 
@@ -286,7 +291,7 @@ namespace ProjectC.Core
         [ClientRpc]
         private void EventCloudSpawnClientRpc(ushort id, Vector3 worldPosition, float intensity, string patternGUID, string eventId)
         {
-            Debug.Log($"[EventCloudSpawnClientRpc] id={id}, eventId={eventId}, pos={worldPosition}");
+            if (_logEventCloud) Debug.Log($"[EventCloudSpawnClientRpc] id={id}, eventId={eventId}, pos={worldPosition}");
 
             if (StormController.ClientControllers.TryGetValue(id, out var controller))
             {

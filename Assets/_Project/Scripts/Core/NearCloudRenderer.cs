@@ -22,6 +22,9 @@ namespace ProjectC.Core
         [Header("Mesh Variants")]
         public MeshEntry[] MeshEntries;
 
+        [Header("Debug Logging")]
+        public bool logInitialization = false;
+
         [Header("Rotation Range (degrees)")]
         public Vector2 RotationX = new Vector2(0f, 0f);
         public Vector2 RotationY = new Vector2(0f, 360f);
@@ -87,7 +90,7 @@ namespace ProjectC.Core
 
             _clouds = new CloudData[CloudCount];
 
-            Debug.Log($"[{name}] Initialized: count={CloudCount}, meshes={_meshCount}, alt={MinAltitude}-{MaxAltitude}");
+            if (logInitialization) Debug.Log($"[{name}] Initialized: count={CloudCount}, meshes={_meshCount}, alt={MinAltitude}-{MaxAltitude}");
         }
 
         public void Generate(Vector3 playerPos)

@@ -30,18 +30,21 @@ namespace ProjectC.Core
         [Tooltip("Storm is hidden if player is further than this distance")]
         [SerializeField] private float _visibilityDistance = 100000f;
 
+        [Header("Debug Logging")]
+        [SerializeField] private bool _logDebug = false;
+
         private static readonly int LightningFlashProperty = Shader.PropertyToID("_LightningFlash");
 
         public static Dictionary<ushort, StormController> ClientControllers { get; } = new Dictionary<ushort, StormController>();
 
         private void Awake()
         {
-            Debug.Log($"[StormController] Awake on {gameObject.name}");
+            if (_logDebug) Debug.Log($"[StormController] Awake on {gameObject.name}");
 
             if (_cloudGenerator == null)
             {
                 _cloudGenerator = FindAnyObjectByType<StormCloudGenerator>();
-                Debug.Log($"[StormController] Found generator: {_cloudGenerator}");
+                if (_logDebug) Debug.Log($"[StormController] Found generator: {_cloudGenerator}");
             }
 
             if (_stormMaterial == null)
@@ -50,7 +53,7 @@ namespace ProjectC.Core
                 if (renderer != null && renderer.sharedMaterial != null)
                 {
                     _stormMaterial = renderer.sharedMaterial;
-                    Debug.Log($"[StormController] Got material from renderer: {_stormMaterial.name}");
+                    if (_logDebug) Debug.Log($"[StormController] Got material from renderer: {_stormMaterial.name}");
                 }
             }
 
@@ -106,7 +109,7 @@ namespace ProjectC.Core
                 _cloudGenerator.SpawnStorm(id, worldPos, pattern, intensity, gameObject);
             }
 
-            Debug.Log($"[StormController] Initialized storm {id} at {worldPos}, pattern={pattern?.name ?? "NULL"}");
+            if (_logDebug) Debug.Log($"[StormController] Initialized storm {id} at {worldPos}, pattern={pattern?.name ?? "NULL"}");
         }
 
         private CloudLayerConfig LoadPatternByGUID(string guid)

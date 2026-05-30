@@ -15,22 +15,22 @@ namespace ProjectC.World.Scene
 
         private void Awake()
         {
-            Debug.Log($"[CSL] Awake: START, _instance={(object)(_instance != null ? _instance.gameObject : null)?.GetInstanceID()}, this={gameObject.GetInstanceID()}");
+            if (logSingleton) Debug.Log($"[CSL] Awake: START, _instance={(object)(_instance != null ? _instance.gameObject : null)?.GetInstanceID()}, this={gameObject.GetInstanceID()}");
 
             if (_instance != null && _instance != this)
             {
-                Debug.LogWarning($"[CSL] DUPLICATE! Destroying this={gameObject.GetInstanceID()}, keeping instance={_instance.gameObject.GetInstanceID()}");
+                if (logSingleton) Debug.LogWarning($"[CSL] DUPLICATE! Destroying this={gameObject.GetInstanceID()}, keeping instance={_instance.gameObject.GetInstanceID()}");
                 Destroy(gameObject);
                 return;
             }
 
             if (_instance == this)
             {
-                Debug.Log($"[CSL] Awake: ALREADY SET, possible duplicate OnDestroy issue! _instance={_instance?.gameObject?.GetInstanceID()}");
+                if (logSingleton) Debug.Log($"[CSL] Awake: ALREADY SET, possible duplicate OnDestroy issue! _instance={_instance?.gameObject?.GetInstanceID()}");
             }
 
             _instance = this;
-            Debug.Log($"[CSL] Awake: Singleton set, instanceId={gameObject.GetInstanceID()}");
+            if (logSingleton) Debug.Log($"[CSL] Awake: Singleton set, instanceId={gameObject.GetInstanceID()}");
             DontDestroyOnLoad(gameObject);
 
             if (sceneRegistry == null)
@@ -43,7 +43,7 @@ namespace ProjectC.World.Scene
 
         private void OnDestroy()
         {
-            Debug.Log($"[CSL] OnDestroy: instanceId={gameObject.GetInstanceID()}, _instance==this: {_instance == this}");
+            if (logSingleton) Debug.Log($"[CSL] OnDestroy: instanceId={gameObject.GetInstanceID()}, _instance==this: {_instance == this}");
             if (_instance == this)
                 _instance = null;
         }
@@ -53,6 +53,12 @@ namespace ProjectC.World.Scene
         [SerializeField] private Transform playerTransform;
         [SerializeField] private SceneRegistry sceneRegistry;
         [SerializeField] private bool showDebugLogs = false;
+
+        [Header("Debug Logging")]
+        [SerializeField] private bool logSingleton = false;
+        [SerializeField] private bool logUpdate = false;
+        [SerializeField] private bool logPlayerFinding = false;
+        [SerializeField] private bool logSceneLoading = false;
 
         [Header("Boundary-based Loading")]
         [Tooltip("Distance from boundary before preloading next scene")]
@@ -105,14 +111,14 @@ namespace ProjectC.World.Scene
 
 private void Update()
         {
-            if (Time.frameCount % 120 == 0)
+            if (Time.frameCount % 120 == 0 && logUpdate)
             {
                 Debug.Log($"[CSL] Update: this={gameObject.GetInstanceID()}, _instance={_instance?.gameObject?.GetInstanceID()}, _currentScene={_currentScene}, loaded={_loadedScenes.Count}");
             }
 
             if (playerTransform == null)
             {
-                if (_isInitialized && Time.frameCount % 120 == 0)
+                if (_isInitialized && Time.frameCount % 120 == 0 && logUpdate)
                     Debug.Log("[CSL] Update: playerTransform is NULL!");
                 return;
             }
@@ -138,11 +144,11 @@ private void Update()
             {
                 if (_isLoadingInitialScene)
                 {
-                    if (Time.frameCount % 120 == 0)
+                    if (Time.frameCount % 120 == 0 && logUpdate)
                         Debug.Log($"[CSL] Update: _currentScene.GridX < 0, waiting...");
                     return;
                 }
-                Debug.LogWarning($"[CSL] Update: _currentScene.GridX < 0! Triggering emergency load...");
+                if (logSingleton) Debug.LogWarning($"[CSL] Update: _currentScene.GridX < 0! Triggering emergency load...");
                 _isLoadingInitialScene = true;
                 StartCoroutine(LoadSceneBoundaryBased(playerScene));
                 return;
@@ -150,7 +156,7 @@ private void Update()
 
             if (!playerScene.Equals(_currentScene))
             {
-                Debug.Log($"[CSL] ★ SCENE MISMATCH! {_currentScene} -> {playerScene} at pos {pos}");
+                if (logUpdate) Debug.Log($"[CSL] ★ SCENE MISMATCH! {_currentScene} -> {playerScene} at pos {pos}");
                 if (sceneRegistry != null && sceneRegistry.IsValid(playerScene))
                 {
                     StartCoroutine(LoadSceneBoundaryBased(playerScene));
@@ -160,11 +166,11 @@ private void Update()
                 {
                     if (pos.z >= sceneRegistry.GridRows * SCENE_SIZE || pos.x >= sceneRegistry.GridColumns * SCENE_SIZE)
                     {
-                        Debug.LogWarning($"[CSL] Player is OUTSIDE world bounds! pos={pos}");
+                        if (logUpdate) Debug.LogWarning($"[CSL] Player is OUTSIDE world bounds! pos={pos}");
                     }
                     else
                     {
-                        Debug.LogError($"[CSL] Target scene {playerScene} is INVALID!");
+                        if (logUpdate) Debug.LogError($"[CSL] Target scene {playerScene} is INVALID!");
                     }
                 }
                 return;
@@ -179,7 +185,7 @@ private void Update()
                 SceneID preloadScene = CalculatePreloadScene(playerScene, localPos);
                 if (preloadScene.IsValid && !_loadedScenes.Contains(preloadScene) && !_loadingScenes.Contains(preloadScene))
                 {
-                    Debug.Log($"[CSL] Approaching boundary, preloading {preloadScene}...");
+                    if (logUpdate) Debug.Log($"[CSL] Approaching boundary, preloading {preloadScene}...");
                     StartCoroutine(LoadSceneAsync(preloadScene));
                 }
             }
@@ -208,7 +214,7 @@ ManageLoadedScenesCount();
 
             foreach (var scene in toUnload)
             {
-                Debug.Log($"[CSL] Distance-based unload: {scene} (dist > {unloadDistance})");
+                if (logUpdate) Debug.Log($"[CSL] Distance-based unload: {scene} (dist > {unloadDistance})");
                 StartCoroutine(UnloadSceneCoroutine(scene));
             }
         }
@@ -248,7 +254,7 @@ ManageLoadedScenesCount();
                 toUnload.RemoveAt(0);
                 if (_loadedScenes.Contains(sceneToRemove))
                 {
-                    Debug.Log($"[CSL] Unloading {sceneToRemove} (over max {maxLoadedScenes})");
+                    if (logUpdate) Debug.Log($"[CSL] Unloading {sceneToRemove} (over max {maxLoadedScenes})");
                     StartCoroutine(UnloadSceneCoroutine(sceneToRemove));
                 }
             }
@@ -258,7 +264,7 @@ ManageLoadedScenesCount();
         #region Private Methods
         private void OnPlayerConnected(ulong clientId)
         {
-            Debug.Log($"[CSL] OnPlayerConnected: clientId={clientId}");
+            if (logPlayerFinding) Debug.Log($"[CSL] OnPlayerConnected: clientId={clientId}");
             StartCoroutine(UpdatePlayerTransformAfterSpawn(clientId));
             OnClientConnectedCallback(clientId);
         }
@@ -276,7 +282,7 @@ ManageLoadedScenesCount();
                     {
                         playerTransform = playerByTag.transform;
                         _isInitialized = true;
-                        Debug.Log($"[CSL] ★ UpdatePlayerTransform SUCCESS (PlayerTag): {playerByTag.name} at {playerByTag.transform.position}");
+                        if (logPlayerFinding) Debug.Log($"[CSL] ★ UpdatePlayerTransform SUCCESS (PlayerTag): {playerByTag.name} at {playerByTag.transform.position}");
                         yield break;
                     }
 
@@ -294,14 +300,14 @@ ManageLoadedScenesCount();
                             {
                                 playerTransform = netObj.transform;
                                 _isInitialized = true;
-                                Debug.Log($"[CSL] ★ UpdatePlayerTransform SUCCESS (NetworkPlayer): {netObj.name} at {netObj.transform.position}");
+                                if (logPlayerFinding) Debug.Log($"[CSL] ★ UpdatePlayerTransform SUCCESS (NetworkPlayer): {netObj.name} at {netObj.transform.position}");
                                 yield break;
                             }
                         }
                     }
                 }
             }
-            Debug.LogWarning("[CSL] Could not find player to update playerTransform");
+            if (logPlayerFinding) Debug.LogWarning("[CSL] Could not find player to update playerTransform");
         }
 
         private IEnumerator WaitForNetworkAndPlayer()
@@ -312,14 +318,14 @@ ManageLoadedScenesCount();
 
         private void OnClientConnectedCallback(ulong clientId)
         {
-            Debug.Log($"[CSL] OnClientConnectedCallback: clientId={clientId}");
+            if (logPlayerFinding) Debug.Log($"[CSL] OnClientConnectedCallback: clientId={clientId}");
 
             if (NetworkManager.Singleton != null &&
                 clientId == NetworkManager.Singleton.LocalClientId &&
                 _currentScene.GridX < 0 &&
                 !_isLoadingInitialScene)
             {
-                Debug.Log($"[CSL] Triggering auto-load for client {clientId}");
+                if (logPlayerFinding) Debug.Log($"[CSL] Triggering auto-load for client {clientId}");
                 _isLoadingInitialScene = true;
                 StartCoroutine(AutoLoadInitialSceneCoroutine());
             }
@@ -327,15 +333,15 @@ ManageLoadedScenesCount();
 
         private IEnumerator AutoLoadInitialSceneCoroutine()
         {
-            Debug.Log("[CSL] AutoLoadInitialSceneCoroutine STARTING...");
-            Debug.Log($"[CSL] AutoLoadInitialSceneCoroutine: _currentScene={_currentScene}, _isLoadingInitialScene={_isLoadingInitialScene}");
+            if (logPlayerFinding) Debug.Log("[CSL] AutoLoadInitialSceneCoroutine STARTING...");
+            if (logPlayerFinding) Debug.Log($"[CSL] AutoLoadInitialSceneCoroutine: _currentScene={_currentScene}, _isLoadingInitialScene={_isLoadingInitialScene}");
             yield return new WaitForSeconds(0.5f);
 
-            Debug.Log($"[CSL] AutoLoadInitialSceneCoroutine: AFTER WAIT _currentScene={_currentScene}, _isLoadingInitialScene={_isLoadingInitialScene}");
+            if (logPlayerFinding) Debug.Log($"[CSL] AutoLoadInitialSceneCoroutine: AFTER WAIT _currentScene={_currentScene}, _isLoadingInitialScene={_isLoadingInitialScene}");
 
             if (_currentScene.GridX >= 0)
             {
-                Debug.Log($"[CSL] _currentScene already set to {_currentScene}, skipping");
+                if (logPlayerFinding) Debug.Log($"[CSL] _currentScene already set to {_currentScene}, skipping");
                 _isLoadingInitialScene = false;
                 yield break;
             }
@@ -343,29 +349,29 @@ ManageLoadedScenesCount();
             if (NetworkManager.Singleton != null && NetworkManager.Singleton.IsHost)
             {
                 SceneID initialScene = new SceneID(0, 0);
-                Debug.Log($"[CSL] AutoLoadInitialSceneCoroutine: Loading initial scene {initialScene}");
+                if (logPlayerFinding) Debug.Log($"[CSL] AutoLoadInitialSceneCoroutine: Loading initial scene {initialScene}");
 
                 yield return LoadSceneWithNeighborsCoroutine(initialScene);
 
-                Debug.Log($"[CSL] AutoLoadInitialSceneCoroutine: Load complete, _currentScene={_currentScene}");
+                if (logPlayerFinding) Debug.Log($"[CSL] AutoLoadInitialSceneCoroutine: Load complete, _currentScene={_currentScene}");
 
                 if (playerTransform != null)
                 {
                     Vector3 worldSpawnPos = initialScene.WorldCenter + new Vector3(0, 3000, 0);
                     _teleportTarget = worldSpawnPos;
                     _lastTeleportTime = Time.time;
-                    Debug.Log($"[CSL] Teleporting player from {playerTransform.position} to {worldSpawnPos}");
+                    if (logPlayerFinding) Debug.Log($"[CSL] Teleporting player from {playerTransform.position} to {worldSpawnPos}");
 
                     if (playerTransform.name.Contains("PlayerSpawner"))
                     {
-                        Debug.Log("[CSL] PlayerSpawner detected - finding actual NetworkPlayer for teleport");
+                        if (logPlayerFinding) Debug.Log("[CSL] PlayerSpawner detected - finding actual NetworkPlayer for teleport");
                         var networkPlayers = FindObjectsByType<ProjectC.Player.NetworkPlayer>();
                         foreach (var np in networkPlayers)
                         {
                             if (np.IsOwner)
                             {
                                 np.TeleportServerRpc(worldSpawnPos);
-                                Debug.Log($"[CSL] Teleported via NetworkPlayer: {np.name} to {worldSpawnPos}");
+                                if (logPlayerFinding) Debug.Log($"[CSL] Teleported via NetworkPlayer: {np.name} to {worldSpawnPos}");
                                 break;
                             }
                         }
@@ -375,7 +381,7 @@ ManageLoadedScenesCount();
                         var networkPlayer = playerTransform.GetComponent<ProjectC.Player.NetworkPlayer>();
                         if (networkPlayer != null)
                         {
-                            Debug.Log("[CSL] Using NetworkPlayer.TeleportServerRpc for proper network sync");
+                            if (logPlayerFinding) Debug.Log("[CSL] Using NetworkPlayer.TeleportServerRpc for proper network sync");
                             networkPlayer.TeleportServerRpc(worldSpawnPos);
                         }
                         else
@@ -385,40 +391,40 @@ ManageLoadedScenesCount();
                     }
 
                     _lastPlayerPos = playerTransform.position;
-                    Debug.Log($"[CSL] AFTER TELEPORT: playerTransform.position.z={playerTransform.position.z}, expected z={worldSpawnPos.z}");
+                    if (logPlayerFinding) Debug.Log($"[CSL] AFTER TELEPORT: playerTransform.position.z={playerTransform.position.z}, expected z={worldSpawnPos.z}");
                 }
                 else
                 {
-                    Debug.LogError("[CSL] CRITICAL: playerTransform is NULL! Cannot teleport!");
+                    if (logPlayerFinding) Debug.LogError("[CSL] CRITICAL: playerTransform is NULL! Cannot teleport!");
                 }
             }
 
             _isLoadingInitialScene = false;
-            Debug.Log("[CSL] AutoLoadInitialSceneCoroutine COMPLETE");
+            if (logPlayerFinding) Debug.Log("[CSL] AutoLoadInitialSceneCoroutine COMPLETE");
         }
 
         private void FindLocalPlayer()
         {
-            Debug.Log("[CSL] FindLocalPlayer() called");
+            if (logPlayerFinding) Debug.Log("[CSL] FindLocalPlayer() called");
 
             var playerByTag = GameObject.FindGameObjectWithTag("Player");
-            Debug.Log($"[CSL] FindGameObjectWithTag('Player') = {playerByTag?.name ?? "NULL"}");
+            if (logPlayerFinding) Debug.Log($"[CSL] FindGameObjectWithTag('Player') = {playerByTag?.name ?? "NULL"}");
             if (playerByTag != null)
             {
                 playerTransform = playerByTag.transform;
                 _isInitialized = true;
-                Debug.Log($"[CSL] Found PLAYER by tag: {playerByTag.name} at {playerByTag.transform.position}");
+                if (logPlayerFinding) Debug.Log($"[CSL] Found PLAYER by tag: {playerByTag.name} at {playerByTag.transform.position}");
                 return;
             }
             else
             {
-                Debug.LogWarning("[CSL] FindGameObjectWithTag('Player') returned NULL! Searching alternatives...");
+                if (logPlayerFinding) Debug.LogWarning("[CSL] FindGameObjectWithTag('Player') returned NULL! Searching alternatives...");
             }
 
             if (NetworkManager.Singleton != null && NetworkManager.Singleton.IsListening)
             {
                 var networkPlayers = FindObjectsByType<ProjectC.Player.NetworkPlayer>();
-                Debug.Log($"[CSL] FindLocalPlayer: searching {networkPlayers.Length} NetworkPlayers");
+                if (logPlayerFinding) Debug.Log($"[CSL] FindLocalPlayer: searching {networkPlayers.Length} NetworkPlayers");
 
                 foreach (var networkPlayer in networkPlayers)
                 {
@@ -426,13 +432,13 @@ ManageLoadedScenesCount();
                     {
                         playerTransform = networkPlayer.transform;
                         _isInitialized = true;
-                        Debug.Log($"[CSL] Found OWNER NetworkPlayer: {networkPlayer.name} at {networkPlayer.transform.position}");
+                        if (logPlayerFinding) Debug.Log($"[CSL] Found OWNER NetworkPlayer: {networkPlayer.name} at {networkPlayer.transform.position}");
                         return;
                     }
                 }
 
                 var networkObjects = FindObjectsByType<NetworkObject>();
-                Debug.Log($"[CSL] FindLocalPlayer: searching {networkObjects.Length} NetworkObjects (Player tag and NetworkPlayer failed)");
+                if (logPlayerFinding) Debug.Log($"[CSL] FindLocalPlayer: searching {networkObjects.Length} NetworkObjects (Player tag and NetworkPlayer failed)");
 
                 foreach (var netObj in networkObjects)
                 {
@@ -446,7 +452,7 @@ ManageLoadedScenesCount();
                         {
                             playerTransform = netObj.transform;
                             _isInitialized = true;
-                            Debug.Log($"[CSL] Found NetworkPlayer (via NetworkObject): {netObj.name} at {netObj.transform.position}");
+                            if (logPlayerFinding) Debug.Log($"[CSL] Found NetworkPlayer (via NetworkObject): {netObj.name} at {netObj.transform.position}");
                             return;
                         }
                     }
@@ -470,7 +476,7 @@ ManageLoadedScenesCount();
                 {
                     playerTransform = playerByTag.transform;
                     _isInitialized = true;
-                    Debug.Log($"[CSL] ★ WaitForPlayer SUCCESS (via Player tag): {playerByTag.name}");
+                    if (logPlayerFinding) Debug.Log($"[CSL] ★ WaitForPlayer SUCCESS (via Player tag): {playerByTag.name}");
                     yield break;
                 }
 
@@ -483,7 +489,7 @@ ManageLoadedScenesCount();
                         {
                             playerTransform = networkPlayer.transform;
                             _isInitialized = true;
-                            Debug.Log($"[CSL] ★ WaitForPlayer SUCCESS: {networkPlayer.name}");
+                            if (logPlayerFinding) Debug.Log($"[CSL] ★ WaitForPlayer SUCCESS: {networkPlayer.name}");
                             yield break;
                         }
                     }
@@ -501,18 +507,18 @@ ManageLoadedScenesCount();
                             {
                                 playerTransform = netObj.transform;
                                 _isInitialized = true;
-                                Debug.Log($"[CSL] ★ WaitForPlayer SUCCESS (via NetObj): {netObj.name}");
+                                if (logPlayerFinding) Debug.Log($"[CSL] ★ WaitForPlayer SUCCESS (via NetObj): {netObj.name}");
                                 yield break;
                             }
                         }
                     }
                 }
 
-                if (retry % 4 == 0)
+                if (retry % 4 == 0 && logPlayerFinding)
                     Debug.Log($"[CSL] WaitForPlayer: attempt {retry}/20");
             }
 
-            Debug.LogError("[CSL] Failed to find NetworkPlayer after 10 seconds!");
+            if (logPlayerFinding) Debug.LogError("[CSL] Failed to find NetworkPlayer after 10 seconds!");
         }
         #endregion
 
@@ -552,17 +558,17 @@ ManageLoadedScenesCount();
         #region Scene Loading Coroutines
         private IEnumerator LoadSceneCoroutine(SceneID targetScene, Vector3 localSpawnPos)
         {
-            Debug.Log($"[CSL] LoadSceneCoroutine({targetScene}) called");
+            if (logSceneLoading) Debug.Log($"[CSL] LoadSceneCoroutine({targetScene}) called");
 
             if (_loadedScenes.Contains(targetScene) || _loadingScenes.Contains(targetScene))
             {
-                Debug.Log($"[CSL] Scene {targetScene} already loaded or loading, skipping");
+                if (logSceneLoading) Debug.Log($"[CSL] Scene {targetScene} already loaded or loading, skipping");
                 yield break;
             }
 
             if (sceneRegistry != null && !sceneRegistry.IsValid(targetScene))
             {
-                Debug.LogWarning($"[CSL] Invalid target scene: {targetScene}, clamping");
+                if (logSceneLoading) Debug.LogWarning($"[CSL] Invalid target scene: {targetScene}, clamping");
                 targetScene = new SceneID(
                     Mathf.Clamp(targetScene.GridX, 0, Mathf.Max(0, sceneRegistry.GridColumns - 1)),
                     Mathf.Clamp(targetScene.GridZ, 0, Mathf.Max(0, sceneRegistry.GridRows - 1))
@@ -572,7 +578,7 @@ ManageLoadedScenesCount();
             _loadingScenes.Add(targetScene);
 
             string sceneName = sceneRegistry != null ? sceneRegistry.GetSceneName(targetScene) : $"WorldScene_{targetScene.GridX}_{targetScene.GridZ}";
-            Debug.Log($"[CSL] LoadSceneCoroutine: Loading {sceneName}");
+            if (logSceneLoading) Debug.Log($"[CSL] LoadSceneCoroutine: Loading {sceneName}");
 
             yield return LoadSceneAsync(targetScene);
 
@@ -588,7 +594,7 @@ ManageLoadedScenesCount();
         private IEnumerator LoadSceneBoundaryBased(SceneID playerScene)
         {
             _isTransitioning = true;
-            Debug.Log($"[CSL] LoadSceneBoundaryBased START: playerScene={playerScene}, _currentScene={_currentScene}");
+            if (logSceneLoading) Debug.Log($"[CSL] LoadSceneBoundaryBased START: playerScene={playerScene}, _currentScene={_currentScene}");
 
             if (!_loadedScenes.Contains(playerScene))
             {
@@ -596,13 +602,13 @@ ManageLoadedScenesCount();
             }
 
             _currentScene = playerScene;
-            Debug.Log($"[CSL] Set _currentScene = {playerScene}");
+            if (logSceneLoading) Debug.Log($"[CSL] Set _currentScene = {playerScene}");
 
             UnloadDistantScenes(playerScene);
 
             _isTransitioning = false;
             _isLoadingInitialScene = false;
-            Debug.Log($"[CSL] LoadSceneBoundaryBased END. loaded={_loadedScenes.Count}");
+            if (logSceneLoading) Debug.Log($"[CSL] LoadSceneBoundaryBased END. loaded={_loadedScenes.Count}");
         }
 
         private void UnloadDistantScenes(SceneID current)
@@ -620,19 +626,19 @@ ManageLoadedScenesCount();
 
             foreach (var scene in toUnload)
             {
-                Debug.Log($"[CSL] Unloading distant {scene}");
+                if (logSceneLoading) Debug.Log($"[CSL] Unloading distant {scene}");
                 StartCoroutine(UnloadSceneCoroutine(scene));
             }
         }
 
         private IEnumerator LoadSceneWithNeighborsCoroutine(SceneID center)
         {
-            Debug.Log($"[CSL] LoadSceneWithNeighborsCoroutine START: center={center}, _isLoadingInitialScene={_isLoadingInitialScene}, _currentScene={_currentScene}");
+            if (logSceneLoading) Debug.Log($"[CSL] LoadSceneWithNeighborsCoroutine START: center={center}, _isLoadingInitialScene={_isLoadingInitialScene}, _currentScene={_currentScene}");
             _isTransitioning = true;
 
             if (sceneRegistry == null)
             {
-                Debug.LogError("[CSL] sceneRegistry is NULL!");
+                if (logSceneLoading) Debug.LogError("[CSL] sceneRegistry is NULL!");
                 _isTransitioning = false;
                 yield break;
             }
@@ -646,49 +652,49 @@ ManageLoadedScenesCount();
                 {
                     if (sceneRegistry.IsValid(sceneId))
                     {
-                        Debug.Log($"[CSL] Starting LoadSceneAsync for {sceneId}");
+                        if (logSceneLoading) Debug.Log($"[CSL] Starting LoadSceneAsync for {sceneId}");
                         loadTasks.Add(StartCoroutine(LoadSceneAsync(sceneId)));
                     }
                 }
                 else
                 {
-                    Debug.Log($"[CSL] SKIPPING {sceneId} - already in _loadedScenes or _loadingScenes");
+                    if (logSceneLoading) Debug.Log($"[CSL] SKIPPING {sceneId} - already in _loadedScenes or _loadingScenes");
                 }
             }
 
-            Debug.Log($"[CSL] Waiting for {loadTasks.Count} loads to complete...");
+            if (logSceneLoading) Debug.Log($"[CSL] Waiting for {loadTasks.Count} loads to complete...");
             foreach (var task in loadTasks)
                 yield return task;
 
-            Debug.Log($"[CSL] All loads complete. loadedScenes={_loadedScenes.Count}");
+            if (logSceneLoading) Debug.Log($"[CSL] All loads complete. loadedScenes={_loadedScenes.Count}");
 
             _currentScene = center;
-            Debug.Log($"[CSL] Set _currentScene = {center}");
+            if (logSceneLoading) Debug.Log($"[CSL] Set _currentScene = {center}");
 
             _isTransitioning = false;
             _isLoadingInitialScene = false;
-            Debug.Log($"[CSL] LoadSceneWithNeighborsCoroutine END. Final loadedScenes={_loadedScenes.Count}");
+            if (logSceneLoading) Debug.Log($"[CSL] LoadSceneWithNeighborsCoroutine END. Final loadedScenes={_loadedScenes.Count}");
 
             var loadedInSceneManager = UnityEngine.SceneManagement.SceneManager.GetSceneByName("WorldScene_0_0");
             if (loadedInSceneManager.isLoaded)
             {
                 var roots = loadedInSceneManager.GetRootGameObjects();
-                Debug.Log($"[CSL] WorldScene_0_0 has {roots.Length} root objects:");
+                if (logSceneLoading) Debug.Log($"[CSL] WorldScene_0_0 has {roots.Length} root objects:");
                 foreach (var r in roots)
                 {
-                    Debug.Log($"[CSL]   - {r.name}, active={r.activeSelf}, pos={r.transform.position}");
+                    if (logSceneLoading) Debug.Log($"[CSL]   - {r.name}, active={r.activeSelf}, pos={r.transform.position}");
                 }
             }
             else
             {
-                Debug.LogWarning("[CSL] WorldScene_0_0 is NOT loaded in SceneManager!");
+                if (logSceneLoading) Debug.LogWarning("[CSL] WorldScene_0_0 is NOT loaded in SceneManager!");
             }
         }
 
         private IEnumerator UnloadDistantScenesCoroutine(SceneID center)
         {
             var keepScenes = sceneRegistry.GetSceneGrid5x5(center);
-            Debug.Log($"[CSL] UnloadDistantScenesCoroutine: center={center}, keepScenes={keepScenes.Count}, loaded={_loadedScenes.Count}");
+            if (logSceneLoading) Debug.Log($"[CSL] UnloadDistantScenesCoroutine: center={center}, keepScenes={keepScenes.Count}, loaded={_loadedScenes.Count}");
 
             var unloadTasks = new List<Coroutine>();
 
@@ -706,30 +712,30 @@ ManageLoadedScenesCount();
 
                 if (!shouldKeep)
                 {
-                    Debug.Log($"[CSL] Queuing unload for distant scene {loaded}");
+                    if (logSceneLoading) Debug.Log($"[CSL] Queuing unload for distant scene {loaded}");
                     unloadTasks.Add(StartCoroutine(UnloadSceneCoroutine(loaded)));
                 }
                 else
                 {
-                    Debug.Log($"[CSL] Keeping scene {loaded} (within 5x5)");
+                    if (logSceneLoading) Debug.Log($"[CSL] Keeping scene {loaded} (within 5x5)");
                 }
             }
 
-            Debug.Log($"[CSL] UnloadDistantScenesCoroutine: waiting for {unloadTasks.Count} unloads...");
+            if (logSceneLoading) Debug.Log($"[CSL] UnloadDistantScenesCoroutine: waiting for {unloadTasks.Count} unloads...");
             foreach (var task in unloadTasks)
                 yield return task;
 
-            Debug.Log($"[CSL] All unloads complete. loadedScenes={_loadedScenes.Count}");
+            if (logSceneLoading) Debug.Log($"[CSL] All unloads complete. loadedScenes={_loadedScenes.Count}");
         }
 
         private IEnumerator LoadSceneAsync(SceneID sceneId)
         {
             string sceneName = sceneRegistry != null ? sceneRegistry.GetSceneName(sceneId) : $"WorldScene_{sceneId.GridX}_{sceneId.GridZ}";
-            Debug.Log($"[CSL] LoadSceneAsync START: {sceneName}");
+            if (logSceneLoading) Debug.Log($"[CSL] LoadSceneAsync START: {sceneName}");
 
             if (_loadingScenes.Contains(sceneId))
             {
-                Debug.Log($"[CSL] LoadSceneAsync SKIP: {sceneId} already in _loadingScenes");
+                if (logSceneLoading) Debug.Log($"[CSL] LoadSceneAsync SKIP: {sceneId} already in _loadingScenes");
                 yield break;
             }
 
@@ -739,7 +745,7 @@ ManageLoadedScenesCount();
 
             if (asyncOp == null)
             {
-                Debug.LogError($"[CSL] FAILED to load scene: {sceneName} - NOT in Build Settings!");
+                if (logSceneLoading) Debug.LogError($"[CSL] FAILED to load scene: {sceneName} - NOT in Build Settings!");
                 _loadingScenes.Remove(sceneId);
                 yield break;
             }
@@ -750,11 +756,11 @@ ManageLoadedScenesCount();
             var loadedScene = UnityEngine.SceneManagement.SceneManager.GetSceneByName(sceneName);
             if (loadedScene.isLoaded)
             {
-                Debug.Log($"[CSL] LoadSceneAsync COMPLETE: {sceneName}");
+                if (logSceneLoading) Debug.Log($"[CSL] LoadSceneAsync COMPLETE: {sceneName}");
             }
             else
             {
-                Debug.LogError($"[CSL] VERIFY FAILED: Scene {sceneName} isLoaded=false!");
+                if (logSceneLoading) Debug.LogError($"[CSL] VERIFY FAILED: Scene {sceneName} isLoaded=false!");
             }
 
             if (_loadingScenes.Contains(sceneId))
@@ -768,11 +774,11 @@ ManageLoadedScenesCount();
         private IEnumerator UnloadSceneCoroutine(SceneID scene)
         {
             string sceneName = sceneRegistry != null ? sceneRegistry.GetSceneName(scene) : $"WorldScene_{scene.GridX}_{scene.GridZ}";
-            Debug.Log($"[CSL] UnloadSceneCoroutine START: {sceneName}");
+            if (logSceneLoading) Debug.Log($"[CSL] UnloadSceneCoroutine START: {sceneName}");
 
             if (!_loadedScenes.Contains(scene))
             {
-                Debug.Log($"[CSL] UnloadSceneCoroutine SKIP: {scene} not in _loadedScenes");
+                if (logSceneLoading) Debug.Log($"[CSL] UnloadSceneCoroutine SKIP: {scene} not in _loadedScenes");
                 yield break;
             }
 
@@ -782,7 +788,7 @@ ManageLoadedScenesCount();
 
             if (asyncOp == null)
             {
-                Debug.LogWarning($"[CSL] UnloadSceneAsync returned null for {sceneName}");
+                if (logSceneLoading) Debug.LogWarning($"[CSL] UnloadSceneAsync returned null for {sceneName}");
             }
             else
             {
@@ -790,7 +796,7 @@ ManageLoadedScenesCount();
                     yield return null;
             }
 
-            Debug.Log($"[CSL] UnloadSceneCoroutine COMPLETE: {scene}");
+            if (logSceneLoading) Debug.Log($"[CSL] UnloadSceneCoroutine COMPLETE: {scene}");
             OnSceneUnloaded?.Invoke(scene);
         }
         #endregion

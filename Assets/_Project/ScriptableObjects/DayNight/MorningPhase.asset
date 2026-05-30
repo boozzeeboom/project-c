@@ -12,17 +12,19 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 240f3ac9df87d4d4888a4173ab63ae84, type: 3}
   m_Name: MorningPhase
   m_EditorClassIdentifier: Assembly-CSharp::ProjectC.Core.TimeOfDayPhase
-  phaseName: Morning
+  phaseName: Morning (Utro)
   startHour: 5
   endHour: 8
-  sunColor: {r: 1, g: 0.9, b: 0.9, a: 1}
-  sunIntensity: 1
+  priority: 0
+  sunColor: {r: 1, g: 0.71, b: 0.47, a: 1}
+  sunIntensity: 0.8
   sunTemperature: 5500
   castShadows: 1
-  ambientSkyColor: {r: 0.8, g: 0.8, b: 0.8, a: 1}
-  ambientEquatorColor: {r: 0.7, g: 0.7, b: 0.7, a: 1}
-  ambientGroundColor: {r: 0.5, g: 0.5, b: 0.5, a: 1}
-  ambientIntensity: 0.8
+  sunRotationOffset: {x: 0, y: 0, z: 0}
+  ambientSkyColor: {r: 0.71, g: 0.63, b: 0.78, a: 1}
+  ambientEquatorColor: {r: 1, g: 0.78, b: 0.59, a: 1}
+  ambientGroundColor: {r: 0.39, g: 0.31, b: 0.24, a: 1}
+  ambientIntensity: 0.4
   skyHorizonGradient:
     serializedVersion: 2
     key0: {r: 1, g: 1, b: 1, a: 1}
@@ -55,8 +57,20 @@ MonoBehaviour:
     m_NumAlphaKeys: 2
   skyboxExposure: 1
   skyboxTint: {r: 1, g: 1, b: 1, a: 1}
-  fogColor: {r: 0.7, g: 0.7, b: 0.7, a: 1}
-  fogDensity: 0.0003
+  skyboxMaterial: {fileID: 0}
+  fogColor: {r: 0.78, g: 0.71, b: 0.63, a: 1}
+  fogDensity: 0.0005
+  fogEnabled: 1
+  volumeProfile: {fileID: 0}
+  useCustomBloom: 0
+  bloomIntensity: 0.3
+  bloomThreshold: 0.8
+  saturationOffset: 10
+  exposureOffset: 0.1
+  contrastOffset: 0
+  colorTintOverlay: {r: 0, g: 0, b: 0, a: 0}
+  useTemperatureFilter: 1
+  temperatureFilterStrength: 1
   hueShiftRange: {x: -0.05, y: 0.05}
   saturationRange: {x: 0.8, y: 1.2}
   intensityRange: {x: 0.85, y: 1.15}
@@ -84,3 +98,8 @@ MonoBehaviour:
     m_PreInfinity: 2
     m_PostInfinity: 2
     m_RotationOrder: 4
+  blendDuration: 0.5
+  starsVisible: 0
+  starVisibility: 0
+  moonVisible: 1
+  moonIntensityMultiplier: 1

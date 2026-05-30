@@ -18,3 +18,24 @@ MonoBehaviour:
   - {fileID: 11400000, guid: dd2225dba25f03e4cb1b843e4f91b93a, type: 2}
   - {fileID: 11400000, guid: f83f0fd166dc1804f8648aaa1db6fd3f, type: 2}
   - {fileID: 11400000, guid: 61e515d84d0417b49b8bf2be6cf0442e, type: 2}
+  enableAutoPhaseDetection: 1
+  fallbackPhase: {fileID: 0}
+  enableSkyDome: 1
+  enableMoon: 1
+  enableTemperatureFilter: 1
+  enableFog: 1
+  daySkyboxMaterial: {fileID: 2100000, guid: 2832015f45a230243aabbff66f6ac768, type: 2}
+  nightSkyboxMaterial: {fileID: 2100000, guid: 93e20995f0b3c954387749bbec25edbe, type: 2}
+  enableSkyboxBlending: 1
+  dayVolumeProfile: {fileID: 11400000, guid: 600d71eb97e9b904bb1e13277f3f496c, type: 2}
+  nightVolumeProfile: {fileID: 11400000, guid: 4733f38b0fefd3a4188ecb38a07b0db9, type: 2}
+  twilightVolumeProfile: {fileID: 11400000, guid: 3ebb78acd0a0ebb4a856178f3390439b, type: 2}
+  useVolumeBlending: 1
+  temperatureConfig: {fileID: 11400000, guid: 776fafc21913afa4999bdb5d216a96db, type: 2}
+  globalSaturationOffset: 0.058
+  globalExposureOffset: 0.12
+  globalContrastOffset: 0.08
+  constellationController: {fileID: 0}
+  moonController: {fileID: 0}
+  showDebugInfo: 0
+  forceAllStarsVisible: 0

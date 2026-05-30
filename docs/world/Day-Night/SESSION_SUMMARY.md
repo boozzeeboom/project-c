@@ -1,191 +1,158 @@
-# Day-Night Cycle — Session Summary
+# Day-Night Cycle — Session Summary 2026-05-30
 
-## Analysis Complete ✅
+## Current State - Known Issues
 
-### Old Integration Status
+### What WORKS:
+- ✅ Sun/Directional Light rotates based on time
+- ✅ MoonController visible and working
+- ✅ ConstellationController visible
+- ✅ Skybox materials switch day/night
+- ✅ Phase transitions are smooth (lerp-based)
 
-| Component | Status |
-|-----------|--------|
-| `CloudSystem.cs` `enableDayNightCycle` | **Already disabled** (`= 0` in prefab). Old sun/color logic at lines 173–246 will NOT run. No action needed. |
-| `VeilRaymarchMesh.shader` line 295 | **Hardcoded `_LightDir`** — needs fix: replace `normalize(half3(-0.5, 0.5, -0.3))` with `normalize(_LightDir.xyz)`. This is the ONLY hardcoded light direction in any shader. |
-| `VeilRaymarchMeshController.cs` | Does NOT push `_LightDir` to shader — needs `SetLightDir()` method added. |
+### What DOES NOT WORK (Needs Fix):
 
-### What's Active Now
+#### 1. URP Volume Post-Processing NOT VISIBLE
+**Problem**: VolumeProfiles exist but post-processing effects don't show
+**Cause**: When switching VolumeProfile, components (ColorAdjustments, Bloom) need re-caching
+**Fix Applied**: `ApplyVolumeBlend()` now re-calls `InitializeVolumeComponents()` when profile changes
 
-| System | Status |
-|--------|--------|
-| `CloudManager` + `NearCloudRenderer` | Active (cloud geometry, NOT day-night lighting) |
-| `ServerWeatherController` | Active (wind only) |
-| `WindManager` | Active (singleton) |
-| `VeilRaymarchMesh` | Active (poison fog) — but `_DayFactor = 0.5` static, not driven |
-| Directional "Sun" light | **Missing from scene** — created only via `ProjectCSceneSetup.cs` tool |
+#### 2. Temperature Filter NOT VISIBLE
+**Problem**: Player cannot "feel" hot/cold
+**Cause**: Color adjustments too subtle or not applied
+**Fix Applied**: 
+- Aggressive ColorFilter: Cold=blue tint, Hot=orange tint
+- Saturation: -20 (cold) to +15 (hot)
+- Contrast: +25 (crisp cold) to -10 (hazy hot)
+- Fog color shift
+- Ambient color shift
+- Debug logging added
 
-### What's NOT Active
-
-- No day-night lighting (sun/moon/ambient/skybox)
-- No TimeOfDay synchronization
-- No temperature-based post-filter
-- No moon mesh
-- No constellations
-
----
-
-## Requirements Locked
-
-1. **Moon mesh** — physical moon geometry in sky
-2. **Constellations** — named star patterns for navigation (procedural)
-3. **Time cycle speed** — server-configurable, default 24h / 30s
-4. **Storm → darker lighting** — storms affect ambient/fog/sun intensity
+#### 3. Saturation/Exposure Changes NOT VISIBLE
+**Problem**: Changing saturation offset doesn't change visuals
+**Cause**: Volume components not properly cached or profile missing effects
+**Fix Applied**: Check VolumeProfiles have ColorAdjustments component
 
 ---
 
-## Documentation Created
+## Changes Made Today
 
-| Doc | Path |
-|-----|------|
-| Main spec | `docs/world/Day-Night/SPEC.md` |
-| Implementation plan | `docs/world/Day-Night/PLAN.md` |
-| Requirements | `docs/world/Day-Night/REQUIREMENTS.md` |
-| Shader fix notes | `docs/world/Day-Night/SHADER_FIX.md` |
+### DayNightController.cs - Temperature Filter FIX
 
----
+**New `ApplyTemperatureFilter()` method** (AGGRESSIVE):
+```csharp
+// Cold: Blue tint (0.7, 0.85, 1.0) + desaturated (-20)
+// Hot: Orange tint (1.0, 0.85, 0.6) + vivid (+15)
+Color filterColor = Color.Lerp(coldColor, hotColor, tempFactor);
+_colorAdjustments.colorFilter.Override(filterColor);
 
-## Implementation Order (Next Session)
-
-### Step 1: Infrastructure
-- [ ] Create folder `Scripts/Core/DayNight/`
-- [ ] Create `TimeOfDayPhase.cs` (ScriptableObject)
-- [ ] Create `DayNightProfile.cs` (ScriptableObject)
-- [ ] Create `TemperatureFilterConfig.cs` (ScriptableObject)
-- [ ] Create `TemperatureFilter.cs` (component)
-
-### Step 2: Server Authority
-- [ ] Extend `ServerWeatherController` with TOD + temperature fields + RPCs
-- [ ] Add `SetTimeOfDayServerRpc` + `SetTemperatureServerRpc` handlers
-- [ ] Add `BroadcastTimeOfDayClientRpc` + `BroadcastTemperatureClientRpc`
-
-### Step 3: Client Lighting Controller
-- [ ] Create `DayNightController.cs`
-- [ ] Phase detection + interpolation with variability
-- [ ] Sun directional light control
-- [ ] Ambient light control
-- [ ] Fog control
-- [ ] URP Volume blend (day/night profiles)
-
-### Step 4: Skybox + Moon + Stars
-- [ ] Create `Skybox_Day.mat` + `Skybox_Night.mat`
-- [ ] Create `MoonController.cs` (moon mesh + orbit)
-- [ ] Create `ConstellationData.cs` (SO with star patterns)
-- [ ] Create `ConstellationController.cs` (render stars + lines)
-- [ ] Create `Stars.shader` (point stars with twinkle)
-
-### Step 5: Shader Integration
-- [ ] Fix `VeilRaymarchMesh.shader` line 295: use `_LightDir` uniform
-- [ ] Add `SetDayNight()` to `VeilRaymarchMeshController`
-- [ ] Call `SetDayNight()` from `DayNightController`
-
-### Step 6: Storm Integration
-- [ ] Add `OnStormIntensityChanged` event to `ServerStormManager`
-- [ ] Subscribe `DayNightController` to storm intensity
-- [ ] Apply darker ambient + denser fog during storms
-
-### Step 7: Verification
-- [ ] Verify server→client TOD sync
-- [ ] Verify all 5 phases visually
-- [ ] Verify temperature filter at thresholds
-- [ ] Verify constellation visibility by phase
-- [ ] Performance profiling
-
----
-
-## Open Questions (Action Needed)
-
-| # | Question |
-|---|----------|
-| 1 | **Lunar phases?** — Full cycle (new→full→new) or always full moon? |
-| 2 | **Star click interaction?** — Players click stars for navigation info? |
-| 3 | **Zone-based eternal day/night** — Separate biome zones with permanent twilight etc? |
-| 4 | **How many constellations?** — 5 minimum, recommend 8-12 |
-
----
-
-## Session 2026-05-29 — Constellation Debug
-
-### Что сделано:
-
-1. **ConstellationController.cs** — переработана архитектура:
-   - `[ExecuteInEditMode]` — работает в Edit Mode
-   - `OnEnable()` вместо `Start()` — инициализация сразу
-   - Sky Dome подход — звезды на сфере вокруг камеры
-   - Pre-allocated buffers — zero allocations
-   - `_starVisibility = 1f` — принудительная видимость для теста
-
-2. **ConstellationData.cs** — ScriptableObject для данных созвездий:
-   - `ConstellationData` — SO с массивом созвездий
-   - `Constellation` — имя + звезды + линии
-   - `StarData` — имя + позиция (azimuth, altitude) + магнитуда
-
-3. **Editor/StarFieldTest.cs** — тестовый скрипт для Edit Mode
-
-### Логи (Play Mode):
-```
-[ConstellationController] OnEnable - Initializing sky dome star system...
-[ConstellationController] Building sky dome with 9 stars from 1 constellations
-[ConstellationController] BuildSkyDome: START
-[ConstellationController] BuildSkyDome: Created GameObject, parent=null
-[ConstellationController] BuildSkyDome: Set position to (239997.00, 3100.00, 159998.00)
-[ConstellationController] Built sky dome with 9 stars, 36 vertices
-[ConstellationController] Using assigned star material
-[ConstellationController] Created 9 constellation lines
-[ConstellationController] Time=19,73318 Visibility=0,1088187
+// Saturation: -20 to +15
+// Exposure: -0.3 to +0.2
+// Contrast: +25 to -10
 ```
 
-### Проблема — ЗВЕЗДЫ НЕ ВИДНЫ:
+**Added temperature logging**:
+```csharp
+Debug.Log($"[TemperatureFilter] Temp={temperature:F1}C, Factor={tempFactor:F2}, 
+          Sat={Mathf.Lerp(-20f, 15f, tempFactor):F0}, Filter={(tempFactor > 0.5f ? "HOT" : "COLD")}");
+```
 
-- Visibility вычисляется ~0.1 (не 1.0 как должно быть)
-- Mesh создается (36 vertices = 9 stars × 4 vertices)
-- Линии создаются (9 lines)
-- Позиция SkyDome: (239997, 3100, 159998) — далеко от камеры
-- Материал назначается
+**Debug Overlay Enhanced**:
+```csharp
+// Shows: Temperature, State (HOT/COLD/NEUTRAL), TempFactor, Fog status, VolBlend status
+```
 
-### Возможные причины:
-1. **Triangle winding** — quads созданы для outside rendering, но смотрим изнутри
-2. **Layer** — SkyDome на "Ignore Raycast", но это не влияет на rendering
-3. **Z-fighting** — слишком близко/далеко от камеры
-4. **Material** — используется Unlit/Transparent, но alpha может не работать
-5. **Skybox override** — другой rendering pipeline
+### Volume Profile Re-caching FIX
+```csharp
+bool profileChanged = false;
+if (targetProfile != null && globalVolume.profile != targetProfile)
+{
+    globalVolume.profile = targetProfile;
+    profileChanged = true;
+}
 
-### Что нужно проверить:
-- [ ] Переключить на `MeshTopology.Quads` или исправить triangle order
-- [ ] Добавить debug sphere чтобы визуально видеть SkyDome
-- [ ] Проверить material rendering queue
-- [ ] Проверить z-buffer depth
-- [ ] Добавить визуальный маркер на позиции звезд
-
-### Следующие шаги:
-1. Добавить Debug.DrawRay для визуализации позиций звезд
-2. Попробовать Point cloud вместо Quad mesh
-3. Проверить Scene view — видны ли звезды там?
-4. Добавить простой sphere на позицию SkyDome для ориентира
+// CRITICAL: Re-cache components if profile changed
+if (profileChanged)
+{
+    InitializeVolumeComponents();
+}
+```
 
 ---
 
-## Дополнительные изменения 2026-05-29 (продолжение):
+## What Player Should Feel
 
-### Исправления в ConstellationController.cs:
+### HOT Weather (tempFactor > 0.7):
+- **Screen**: Orange/amber tint overlay
+- **Colors**: Vivid, saturated (+15)
+- **Contrast**: Hazy, low (-10)
+- **Fog**: Warm amber color
+- **Ambient**: Warm golden light
 
-1. **Visibility всегда 1.0** — убран вызов `CalculateStarVisibility()`, теперь `_starVisibility = 1f` напрямую в Update()
+### COLD Weather (tempFactor < 0.3):
+- **Screen**: Blue tint overlay
+- **Colors**: Faded, desaturated (-20)
+- **Contrast**: Crisp, high (+25)
+- **Fog**: Misty blue color
+- **Ambient**: Cold blue light
 
-2. **Gizmos для отладки** — добавлен `OnDrawGizmosSelected()`:
-   - Желтая сфера — центр SkyDome
-   - Белые сферы — позиции звезд
-   - Голубая линия — от камеры к SkyDome
+---
 
-3. **CacheStarPositions()** — кэширование позиций звезд для Gizmos
+## Manual Setup Required in Unity
 
-4. **Расширенный debug лог** — теперь показывает Distance, MeshActive, Layer
+### 1. Check VolumeProfile has Effects
+Open each VolumeProfile in Inspector:
+- `Assets/_Project/ScriptableObjects/DayNight/Volumes/DayVolumeProfile.asset`
+- `Assets/_Project/ScriptableObjects/DayNight/Volumes/NightVolumeProfile.asset`  
+- `Assets/_Project/ScriptableObjects/DayNight/Volumes/TwilightVolumeProfile.asset`
 
-### Что проверить в Unity:
-1. В Scene View выбрать ConstellationController — должны появиться Gizmos
-2. В Game View должны быть видны звезды
-3. Лог должен показывать Visibility=1.0
+Each should have:
+- ✅ ColorAdjustments
+- ✅ Vignette
+- ✅ Bloom (optional)
+
+### 2. Enable Temperature Filter in Profile
+Select `DayNightProfile.asset`:
+- ✅ `enableTemperatureFilter` = true
+- `temperatureConfig` needs TemperatureFilterConfig SO
+
+### 3. Create TemperatureFilterConfig
+If missing, create `TemperatureFilterConfig.asset`:
+- `coldThreshold` = 10
+- `hotThreshold` = 35
+- `coldOverlayColor` = (0.7, 0.85, 1.0, 1.0)
+- `hotOverlayColor` = (1.0, 0.85, 0.6, 1.0)
+
+---
+
+## Debug in Play Mode
+
+Look for Console log:
+```
+[TemperatureFilter] Temp=35.0C, Factor=1.00, Sat=15, Filter=HOT
+[TemperatureFilter] Temp=5.0C, Factor=0.00, Sat=-20, Filter=COLD
+```
+
+Check Debug Overlay shows:
+- State: `<color=red>HOT</color>` or `<color=cyan>COLD</color>`
+- TempFactor: 0.00 to 1.00
+
+---
+
+## Previous Session Summary (Reference)
+
+### Phase System
+- 5 phases: Morning(5-8h), Midday(8-17h), Evening(17-19.5h), Twilight(19.5-21h), Night(21-5h)
+- Each phase: sun color/intensity, ambient, fog, post-processing, stars/moon visibility
+
+### DayNightProfile
+- Array of 5 phases
+- Server filters: enableSkyDome, enableMoon, enableTemperatureFilter, enableFog
+- Volume profiles: day/night/twilight
+- References to ConstellationController, MoonController
+
+### Working Systems (DO NOT MODIFY)
+- ServerWeatherController
+- MoonController
+- ConstellationController
+- Sun Directional Light
+- Skybox materials

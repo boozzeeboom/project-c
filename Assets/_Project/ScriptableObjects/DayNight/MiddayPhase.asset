@@ -12,17 +12,17 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 240f3ac9df87d4d4888a4173ab63ae84, type: 3}
   m_Name: MiddayPhase
   m_EditorClassIdentifier: Assembly-CSharp::ProjectC.Core.TimeOfDayPhase
-  phaseName: Midday
+  phaseName: Midday (Polden)
   startHour: 8
   endHour: 17
-  sunColor: {r: 1, g: 0.95, b: 0.95, a: 1}
-  sunIntensity: 1.2
+  sunColor: {r: 1, g: 0.98, b: 0.94, a: 1}
+  sunIntensity: 1
   sunTemperature: 5500
   castShadows: 1
-  ambientSkyColor: {r: 0.8, g: 0.85, b: 0.85, a: 1}
-  ambientEquatorColor: {r: 0.75, g: 0.8, b: 0.8, a: 1}
-  ambientGroundColor: {r: 0.45, g: 0.5, b: 0.5, a: 1}
-  ambientIntensity: 1
+  ambientSkyColor: {r: 0.55, g: 0.67, b: 0.82, a: 1}
+  ambientEquatorColor: {r: 0.71, g: 0.78, b: 0.86, a: 1}
+  ambientGroundColor: {r: 0.31, g: 0.35, b: 0.39, a: 1}
+  ambientIntensity: 0.6
   skyHorizonGradient:
     serializedVersion: 2
     key0: {r: 1, g: 1, b: 1, a: 1}
@@ -55,7 +55,7 @@ MonoBehaviour:
     m_NumAlphaKeys: 2
   skyboxExposure: 1
   skyboxTint: {r: 1, g: 1, b: 1, a: 1}
-  fogColor: {r: 0.8, g: 0.85, b: 0.85, a: 1}
+  fogColor: {r: 0.71, g: 0.78, b: 0.86, a: 1}
   fogDensity: 0.0002
   hueShiftRange: {x: -0.05, y: 0.05}
   saturationRange: {x: 0.8, y: 1.2}

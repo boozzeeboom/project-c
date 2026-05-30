@@ -8,8 +8,12 @@ enableDayNightCycle: false  # Already false but set explicitly
 ```
 Edit prefab or CloudSystem.cs line 41: ensure `enableDayNightCycle = false` is the default and cannot be changed via Inspector without warning.
 
+- [x] CloudSystem.prefab — `enableDayNightCycle = false` confirmed
+
 ### 1.2 VeilRaymarchMesh.shader — remove hardcoded light
 Remove or comment hardcoded `half3 lightDir = normalize(half3(-0.5, 0.5, -0.3));` at shader line 295. Replace with uniform `_LightDir`.
+
+- [x] VeilRaymarchMesh.shader — hardcoded light removed, integrated with DayNightController
 
 ---
 
@@ -17,6 +21,8 @@ Remove or comment hardcoded `half3 lightDir = normalize(half3(-0.5, 0.5, -0.3));
 
 ### 2.1 `TimeOfDayPhase.cs`
 Path: `Assets/_Project/Scripts/Core/DayNight/TimeOfDayPhase.cs`
+
+- [x] Created with full fields: Identity, Sun Light, Ambient Light, Skybox, Fog, Variability, Transition, Bloom, Color Grading, Temperature Filter, Additional Effects (stars, moon)
 
 ```csharp
 using UnityEngine;
@@ -65,45 +71,12 @@ namespace ProjectC.Core
 ### 2.2 `DayNightProfile.cs`
 Path: `Assets/_Project/Scripts/Core/DayNight/DayNightProfile.cs`
 
-```csharp
-using UnityEngine;
-namespace ProjectC.Core
-{
-    [CreateAssetMenu(fileName = "NewDayNightProfile", menuName = "ProjectC/DayNight/DayNightProfile")]
-    public class DayNightProfile : ScriptableObject
-    {
-        public TimeOfDayPhase[] phases = new TimeOfDayPhase[5];
-    }
-}
-```
+- [x] Created with phases array, server sync settings, global settings (sky dome, moon, temperature, fog), volume profiles (day/night/twilight), color grading offsets, reference controllers
 
 ### 2.3 `TemperatureFilterConfig.cs`
 Path: `Assets/_Project/Scripts/Core/DayNight/TemperatureFilterConfig.cs`
 
-```csharp
-using UnityEngine;
-namespace ProjectC.Core
-{
-    [CreateAssetMenu(fileName = "NewTempFilterConfig", menuName = "ProjectC/DayNight/TemperatureFilterConfig")]
-    public class TemperatureFilterConfig : ScriptableObject
-    {
-        [Header("Cold (<= coldThreshold)")]
-        public float coldThreshold = 0f;
-        public Color coldOverlayColor = new Color(0.3f, 0.4f, 0.6f);
-        public float coldSaturationBoost = 0.1f;
-        public float coldValueOffset = -0.1f;
-
-        [Header("Hot (>= hotThreshold)")]
-        public float hotThreshold = 25f;
-        public Color hotOverlayColor = new Color(0.6f, 0.3f, 0.1f);
-        public float hotSaturationBoost = 0.1f;
-        public float hotValueOffset = 0.05f;
-
-        [Header("Blending")]
-        public AnimationCurve blendCurve = AnimationCurve.Linear(0, 0, 1, 1);
-    }
-}
-```
+- [x] Created with cold/hot thresholds, overlay colors, saturation/value boosts, blend curve
 
 ---
 
@@ -113,29 +86,14 @@ namespace ProjectC.Core
 
 Add after existing `[Header("Variation")]` section:
 
-```csharp
-[Header("Time of Day")]
-[SerializeField] private float _timeOfDay = 12f;
-[SerializeField] private float _dayCycleRealHours = 1f;  // 1 real hour = 24 game hours
-[SerializeField] private bool _enableTimeAutoAdvance = true;
-[SerializeField] private float _timeBroadcastInterval = 5f;
-private float _timeTimer = 0f;
-
-[Header("Temperature")]
-[SerializeField] private float _temperature = 20f;
-[SerializeField] private float _tempBroadcastInterval = 10f;
-private float _tempTimer = 0f;
-
-// Properties
-public float TimeOfDay => _timeOfDay;
-public float Temperature => _temperature;
-
-// new Update() logic additions
-// new ClientRpc: BroadcastTimeOfDayClientRpc(float time)
-// new ClientRpc: BroadcastTemperatureClientRpc(float temp)
-// new ServerRpc: SetTimeOfDayServerRpc(float time)
-// new ServerRpc: SetTemperatureServerRpc(float temp)
-```
+- [x] TimeOfDay field added (`_timeOfDay`)
+- [x] Temperature field added (`_temperature`)
+- [x] Auto-advance time in Update() (when server)
+- [x] ClientRpc `BroadcastTimeOfDayClientRpc(float time)`
+- [x] ClientRpc `BroadcastTemperatureClientRpc(float temp)`
+- [x] ServerRpc `SetTimeOfDayServerRpc(float time)` — for GM tools
+- [x] ServerRpc `SetTemperatureServerRpc(float temp)` — for GM tools
+- [x] Events `OnTimeOfDayChanged` and `OnTemperatureChanged` for subscriber pattern
 
 ---
 

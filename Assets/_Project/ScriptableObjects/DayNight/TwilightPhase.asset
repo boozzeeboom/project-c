@@ -12,17 +12,19 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 240f3ac9df87d4d4888a4173ab63ae84, type: 3}
   m_Name: TwilightPhase
   m_EditorClassIdentifier: Assembly-CSharp::ProjectC.Core.TimeOfDayPhase
-  phaseName: Twilight
+  phaseName: Twilight (Sumerki)
   startHour: 19.5
   endHour: 21
-  sunColor: {r: 0.5, g: 0.3, b: 0.4, a: 1}
-  sunIntensity: 0.4
+  priority: 0
+  sunColor: {r: 0.31, g: 0.23, b: 0.47, a: 1}
+  sunIntensity: 0.3
   sunTemperature: 5500
   castShadows: 0
-  ambientSkyColor: {r: 0.25, g: 0.2, b: 0.3, a: 1}
-  ambientEquatorColor: {r: 0.2, g: 0.15, b: 0.25, a: 1}
-  ambientGroundColor: {r: 0.12, g: 0.1, b: 0.15, a: 1}
-  ambientIntensity: 0.3
+  sunRotationOffset: {x: 0, y: 0, z: 0}
+  ambientSkyColor: {r: 0.16, g: 0.12, b: 0.31, a: 1}
+  ambientEquatorColor: {r: 0.31, g: 0.23, b: 0.39, a: 1}
+  ambientGroundColor: {r: 0.08, g: 0.06, b: 0.12, a: 1}
+  ambientIntensity: 0.25
   skyHorizonGradient:
     serializedVersion: 2
     key0: {r: 1, g: 1, b: 1, a: 1}
@@ -55,8 +57,20 @@ MonoBehaviour:
     m_NumAlphaKeys: 2
   skyboxExposure: 1
   skyboxTint: {r: 1, g: 1, b: 1, a: 1}
-  fogColor: {r: 0.2, g: 0.15, b: 0.25, a: 1}
-  fogDensity: 0.0005
+  skyboxMaterial: {fileID: 0}
+  fogColor: {r: 0.16, g: 0.12, b: 0.31, a: 1}
+  fogDensity: 0.001
+  fogEnabled: 1
+  volumeProfile: {fileID: 0}
+  useCustomBloom: 0
+  bloomIntensity: 0.3
+  bloomThreshold: 0.8
+  saturationOffset: -15
+  exposureOffset: -0.2
+  contrastOffset: 0
+  colorTintOverlay: {r: 0, g: 0, b: 0, a: 0}
+  useTemperatureFilter: 1
+  temperatureFilterStrength: 1
   hueShiftRange: {x: -0.05, y: 0.05}
   saturationRange: {x: 0.8, y: 1.2}
   intensityRange: {x: 0.85, y: 1.15}
@@ -84,3 +98,8 @@ MonoBehaviour:
     m_PreInfinity: 2
     m_PostInfinity: 2
     m_RotationOrder: 4
+  blendDuration: 0.5
+  starsVisible: 0
+  starVisibility: 0
+  moonVisible: 1
+  moonIntensityMultiplier: 1

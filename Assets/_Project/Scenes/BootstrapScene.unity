@@ -1938,8 +1938,8 @@ MonoBehaviour:
   alwaysVisible: 1
   lunarCycleGameDays: 29.5
   moonPhaseRotation: 0
-  selfRotationAxis: {x: 0, y: 1, z: 0}
-  selfRotationSpeed: 1
+  selfRotationAxis: {x: 0, y: 1, z: 3}
+  selfRotationSpeed: 0.3
   moonAge: 3
   moonLight: {fileID: 168637387}
   moonMeshRenderer: {fileID: 168637390}
@@ -3856,8 +3856,8 @@ GameObject:
   m_Component:
   - component: {fileID: 302907657}
   - component: {fileID: 302907656}
-  - component: {fileID: 302907658}
-  - component: {fileID: 302907659}
+  - component: {fileID: 302907661}
+  - component: {fileID: 302907662}
   m_Layer: 0
   m_Name: DayNightController
   m_TagString: Untagged
@@ -3877,9 +3877,17 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: d7c83fc4036202041a52eb9e24b3ac2a, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::ProjectC.Core.DayNightController
+  profile: {fileID: 11400000, guid: 1651e9759ba4e3447891a87be95dd267, type: 2}
   sunLight: {fileID: 180883750}
   daySkyboxMaterial: {fileID: 2100000, guid: 2832015f45a230243aabbff66f6ac768, type: 2}
   nightSkyboxMaterial: {fileID: 2100000, guid: 93e20995f0b3c954387749bbec25edbe, type: 2}
+  temperatureFilter: {fileID: 302907661}
+  currentTemperature: 20
+  globalVolume: {fileID: 302907662}
+  dayVolumeProfile: {fileID: 11400000, guid: 600d71eb97e9b904bb1e13277f3f496c, type: 2}
+  nightVolumeProfile: {fileID: 11400000, guid: 4733f38b0fefd3a4188ecb38a07b0db9, type: 2}
+  twilightVolumeProfile: {fileID: 11400000, guid: 3ebb78acd0a0ebb4a856178f3390439b, type: 2}
+  showDebugOverlay: 1
 --- !u!4 &302907657
 Transform:
   m_ObjectHideFlags: 0
@@ -3895,27 +3903,27 @@ Transform:
   m_Children: []
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
---- !u!114 &302907658
+--- !u!114 &302907661
 MonoBehaviour:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 302907655}
-  m_Enabled: 0
+  m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 10ab4104d91c2d3459393b1a26620d54, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::ProjectC.Core.TemperatureFilter
   config: {fileID: 11400000, guid: 776fafc21913afa4999bdb5d216a96db, type: 2}
---- !u!114 &302907659
+--- !u!114 &302907662
 MonoBehaviour:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 302907655}
-  m_Enabled: 0
+  m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 172515602e62fb746b5d573b38a5fe58, type: 3}
   m_Name: 
@@ -5986,7 +5994,7 @@ MonoBehaviour:
     m_Bits: 1
   m_VolumeTrigger: {fileID: 0}
   m_VolumeFrameworkUpdateModeOption: 2
-  m_RenderPostProcessing: 0
+  m_RenderPostProcessing: 1
   m_Antialiasing: 0
   m_AntialiasingQuality: 2
   m_StopNaN: 0
@@ -22881,7 +22889,7 @@ MonoBehaviour:
   _dayCycleRealHours: 0.005
   _enableTimeAutoAdvance: 1
   _timeBroadcastInterval: 5
-  _temperature: 20
+  _temperature: 40
   _tempBroadcastInterval: 10
 --- !u!1 &2085018708
 GameObject:

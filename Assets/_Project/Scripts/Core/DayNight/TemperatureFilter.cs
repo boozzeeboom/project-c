@@ -17,7 +17,7 @@ namespace ProjectC.Core
             InitializeTemperatureVolume();
         }
 
-        private void InitializeTemperatureVolume()
+        public void InitializeTemperatureVolume()
         {
             _temperatureVolume = gameObject.GetComponent<Volume>();
             if (_temperatureVolume == null)

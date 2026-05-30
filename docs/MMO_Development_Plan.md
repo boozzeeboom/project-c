@@ -383,10 +383,19 @@ FixedUpdate (сервер):
    - ⏳ 3D модель сундука (low-poly, анимация открытия)
    - ⏳ Модели ресурсов (мезий, антигравий, МНП)
 
-8. **Post-Processing:** ⏳
-   - ⏳ URP Volume: Bloom, Tonemapping (ACE), Color Adjustments
-   - ⏳ Vignette (лёгкий), Film Grain (минимальный)
-   - ⏳ Атмосферный туман (URP Fog)
+8. **Post-Processing + Day-Night Cycle:** ✅ ЗАВЕРШЕНО
+   - ✅ URP Volume: Bloom, ColorAdjustments, Vignette
+   - ✅ 3 VolumeProfiles: DayVolumeProfile, NightVolumeProfile, TwilightVolumeProfile
+   - ✅ ServerWeatherController — timeOfDay + temperature sync
+   - ✅ DayNightController — 5 phases (Morning/Midday/Evening/Twilight/Night), smooth transitions
+   - ✅ Temperature filter via dedicated Volume (priority 200, aggressive color grading)
+   - ✅ Fog + Ambient lighting per phase
+   - ✅ Skybox materials: Day/Night/Twilight (material swap)
+   - ✅ Sun directional light animation (position follows server time)
+   - ✅ Moon mesh + phase material (MoonController)
+   - ✅ ConstellationController (215 stars, 24 constellations, sky dome radius 900000)
+   - ✅ Runtime profile instantiation (prevents asset reset on play/stop)
+   - ⏳ Moon orbit angle fine-tuning (low priority — mesh visible, phases work)
 
 **Результат:** Визуально различимый прототип — корабли, облака, пики, персонаж с анимациями.
 

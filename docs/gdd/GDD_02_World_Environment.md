@@ -210,24 +210,95 @@
 
 ---
 
-## 8. Day/Night Cycle
+## 8. Day/Night Cycle — IMPLEMENTED ✅
 
-### Реализованный цикл
+### Реализованная система
 
-| Фаза | Солнце | Окраска облаков | Освещение |
-|------|--------|-----------------|-----------|
-| **Рассвет** | Горизонт, тёплый | Розово-оранжевая | Мягкий свет |
-| **День** | Зенит | Белая | Яркий свет |
-| **Закат** | Горизонт, тёплый | Розово-фиолетовая | Мягкий свет |
-| **Ночь** | Ниже горизонта | Тёмно-синяя | Лунный свет |
+| Компонент | Статус | Описание |
+|-----------|--------|---------|
+| **ServerWeatherController** | ✅ | timeOfDay (0-24h), temperature, ClientRpc broadcasting, events |
+| **DayNightController** | ✅ | 5 фаз, smooth transitions, seeded variability per game day |
+| **Volume Profiles** | ✅ | Day/Night/Twilight (Bloom, Vignette, ColorAdjustments) |
+| **Temperature Filter** | ✅ | Dedicated Volume (priority 200), aggressive color grading |
+| **Fog + Ambient** | ✅ | Per-phase color and density control |
+| **Skybox** | ✅ | Material swap (Day/Night/Twilight) |
+| **Sun Animation** | ✅ | Directional light follows server time |
+| **Moon** | ✅ | Mesh at 400000 distance, phase material (MoonController) |
+| **Constellations** | ✅ | 215 stars, 24 constellations, sky dome radius 900000 |
 
-### Параметры
+### 5 Фаз дня
+
+| Фаза | Время | Описание |
+|------|-------|----------|
+| **Morning** | 5:00–8:00 | Солнце восходит, тёплый оранжево-розовый свет |
+| **Midday** | 8:00–17:00 | Солнце в зените, нейтральный белый свет |
+| **Evening** | 17:00–19:30 | Солнце садится, тёплый янтарный свет |
+| **Twilight** | 19:30–21:00 | Глубокий сине-фиолетовый, послесвечение |
+| **Night** | 21:00–5:00 | Луна + звёзды, глубокий тёмно-синий |
+
+### Post-Processing параметры
+
+| Effect | Day | Night | Twilight |
+|--------|-----|-------|----------|
+| Bloom threshold | 0.8 | 0.6 | 0.7 |
+| Bloom intensity | 0.3 | 0.8 | 0.5 |
+| Vignette intensity | 0.2 | 0.4 | 0.3 |
+| ColorAdjustments exposure | 0 | -0.3 | -0.1 |
+| ColorAdjustments saturation | 0 | -10 | -5 |
+
+### Temperature Filter
+
+| Temperature | Effect |
+|-------------|--------|
+| ≤10°C (Cold) | Blue tint, desaturated (-30 saturation), crisp contrast (+25) |
+| 10-30°C (Neutral) | No filter |
+| ≥30°C (Hot) | Orange tint, vivid (+25 saturation), hazy contrast (-10) |
+
+### Moon System
+
+- **Mesh**: Visible at ~400000 distance
+- **Material**: Phase-based texture (full moon, crescent, etc.)
+- **Orbit**: Rises when sun sets (opposite schedule)
+- **Фазы**: Tied to server time, rotation speed
+
+### Star System (ConstellationController)
+
+| Parameter | Value |
+|-----------|-------|
+| Sky dome radius | 900000 |
+| Stars count | 215 |
+| Constellations | 24 |
+| Base star size | 3000 |
+| Constellation line width | 1.5 |
+
+### Known Limitations
+
+| # | Issue | Priority | Notes |
+|---|-------|----------|-------|
+| 1 | Moon orbit angle fine-tuning | LOW | Mesh visible, phases work, angle may need adjustment |
+| 2 | Bloom/Vignette intensity | MEDIUM | May need visual tuning in Editor |
+
+---
+
+## 8.5 Atmosphere System
+
+### Завеса (Veil) — Реализовано
 
 | Параметр | Значение |
 |----------|----------|
-| Длительность цикла | [настраивается] |
-| Солнце | Directional Light, orbit |
-| Цвет неба | `#87CEEB` (день) → `#1a1a2e` (ночь) |
+| Цвет | `#2d1b4e` (тёмно-фиолетовый) |
+| Высота | Ниже самого низкого пика (~1200м) |
+| Опасность | Смертельна (пары мезия) |
+| Молнии | Фиолетовые (Particle System) |
+
+### CloudGhibli Shader
+
+| Feature | Status |
+|---------|--------|
+| FBM Noise | ✅ 512×512 procedural textures |
+| Rim Glow | ✅ Configurable per cloud layer |
+| Vertex Displacement | ✅ Morphing forms |
+| URP Compatible | ✅ Unlit shader |
 
 ---
 

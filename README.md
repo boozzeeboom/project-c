@@ -205,7 +205,7 @@
 
 ## 8. Текущий статус
 
-**Ветка:** `main` | **Версия:** `v0.0.18-storm-cloud-complete`
+**Ветка:** `main` | **Версия:** `v0.0.19-day-night-cycle-complete`
 
 ### ✅ Реализовано
 - Процедурная генерация мира (15 горных пиков + 890+ облаков, 3 слоя)
@@ -247,12 +247,24 @@
 - **CloudGhibli.shader** — кастомный шейдер облаков (noise + rim glow)
 - **MaterialURPUpgrader** — массовая конвертация Standard → URP
 - **docs/ART_BIBLE.md** — полная визуальная спецификация
+- **Day-Night Cycle System (Этап 2.5):**
+  - ServerWeatherController — timeOfDay + temperature, ClientRpc broadcasting
+  - DayNightController — 5 фаз (Morning/Midday/Evening/Twilight/Night), smooth transitions
+  - 3 VolumeProfiles: Day/Night/Twilight (Bloom, Vignette, ColorAdjustments)
+  - Temperature filter via dedicated Volume (priority 200, aggressive color grading)
+  - Fog + Ambient lighting per phase
+  - Skybox materials: Day/Night/Twilight (material swap)
+  - Sun directional light animation (position follows server time)
+  - Moon mesh + phase material (MoonController) at 400000 distance
+  - ConstellationController — 215 stars, 24 constellations, sky dome radius 900000
+  - Runtime profile instantiation (prevents asset reset on play/stop)
 
 ### 🔄 В процессе (Этап 2.5)
 - Модель корабля (Blender → FBX, замена примитива)
 - Модель персонажа (Mixamo)
 - Текстуры горных пиков (Poly Haven)
-- Post-Processing (Bloom, Color Grading)
+- Post-Processing — ✅ ЗАВЕРШЕНО (Bloom, ColorAdjustments, Vignette работают)
+- ⏳ Moon orbit angle fine-tuning (mesh visible, phases work)
 - ⏳ Рефакторинг ShipController.cs — разделение на подсистемы
 
 ---

@@ -39,27 +39,30 @@ namespace ProjectC.UI
             DontDestroyOnLoad(gameObject);
         }
 
+        /// <summary>
+        /// Создать UI элементы.
+        /// REFACTORED (5_3): Использует HUDManager вместо создания своего Canvas.
+        /// </summary>
         private void CreateUI()
         {
-            var canvasObj = new GameObject("SceneDebugCanvas");
-            _canvas = canvasObj.AddComponent<Canvas>();
-            _canvas.renderMode = RenderMode.ScreenSpaceOverlay;
-            _canvas.sortingOrder = 999;
-            canvasObj.AddComponent<CanvasScaler>();
-            canvasObj.AddComponent<GraphicRaycaster>();
+            // Используем HUDManager для получения Canvas
+            var hudManager = HUDManager.EnsureExists();
+            _canvas = hudManager.GetOrCreateHUDCanvas();
 
-            var panelObj = new GameObject("DebugPanel");
-            panelObj.transform.SetParent(canvasObj.transform);
-            _panel = panelObj.AddComponent<RectTransform>();
-            _panel.anchorMin = new Vector2(0, 1);
-            _panel.anchorMax = new Vector2(0, 1);
-            _panel.pivot = new Vector2(0, 1);
-            _panel.anchoredPosition = new Vector2(10, -10);
-            _panel.sizeDelta = new Vector2(350, 400);
+            // Создаём панель
+            var (panelObj, panelRect, panelImage) = hudManager.CreateHUDPanel(
+                "SceneDebug_Panel",
+                null,
+                anchorMin: new Vector2(0, 1f),
+                anchorMax: new Vector2(0, 1f),
+                anchoredPosition: new Vector2(10, -10),
+                sizeDelta: new Vector2(350, 400),
+                backgroundColor: new Color(0, 0, 0, 0.7f)
+            );
 
-            var panelImage = panelObj.AddComponent<Image>();
-            panelImage.color = new Color(0, 0, 0, 0.7f);
+            _panel = panelRect;
 
+            // Grid Text
             var gridObj = new GameObject("GridText");
             gridObj.transform.SetParent(_panel);
             var gridRt = gridObj.AddComponent<RectTransform>();
@@ -74,6 +77,7 @@ namespace ProjectC.UI
             gridText.color = Color.white;
             gridText.text = "Scene Grid:\nInitializing...";
 
+            // Player Info Text
             var playerObj = new GameObject("PlayerInfoText");
             playerObj.transform.SetParent(_panel);
             var playerRt = playerObj.AddComponent<RectTransform>();
@@ -87,6 +91,7 @@ namespace ProjectC.UI
             playerInfoText.color = Color.cyan;
             playerInfoText.text = "Player: --";
 
+            // Stats Text
             var statsObj = new GameObject("StatsText");
             statsObj.transform.SetParent(_panel);
             var statsRt = statsObj.AddComponent<RectTransform>();
@@ -100,8 +105,8 @@ namespace ProjectC.UI
             statsText.color = Color.yellow;
             statsText.text = "Loaded: 0\nLoading: 0";
 
-            _panel.SetParent(_canvas.transform, false);
-            canvasObj.transform.SetParent(transform);
+            // Parent к HUD Manager
+            _panel.SetParent(hudManager.transform, false);
         }
 
         private void Update()

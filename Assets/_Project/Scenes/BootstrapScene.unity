@@ -1124,6 +1124,55 @@ LineRenderer:
   m_UseWorldSpace: 1
   m_Loop: 0
   m_ApplyActiveColorSpace: 1
+--- !u!1 &124043118
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 124043120}
+  - component: {fileID: 124043119}
+  m_Layer: 0
+  m_Name: DEBUG_UI_MANAGER
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!114 &124043119
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 124043118}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 7c8c709cae773814f9b7af3703402be0, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::ProjectC.Trade.TradeDebugTools
+  showOnScreen: 0
+  panelWidth: 350
+  panelHeight: 500
+  padding: 20
+  updateInterval: 0.5
+--- !u!4 &124043120
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 124043118}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 0}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1 &125745127
 GameObject:
   m_ObjectHideFlags: 0
@@ -1609,6 +1658,10 @@ MonoBehaviour:
   playerTransform: {fileID: 400000, guid: 224427a7f796e5b448f07ed8c2a1469b, type: 3}
   sceneRegistry: {fileID: 11400000, guid: fb9dfe5043617cb4eadb533b56ed9522, type: 2}
   showDebugLogs: 0
+  logSingleton: 0
+  logUpdate: 0
+  logPlayerFinding: 0
+  logSceneLoading: 0
   preloadDistance: 10000
   unloadDistance: 10000
   maxLoadedScenes: 4
@@ -3887,7 +3940,10 @@ MonoBehaviour:
   dayVolumeProfile: {fileID: 11400000, guid: 600d71eb97e9b904bb1e13277f3f496c, type: 2}
   nightVolumeProfile: {fileID: 11400000, guid: 4733f38b0fefd3a4188ecb38a07b0db9, type: 2}
   twilightVolumeProfile: {fileID: 11400000, guid: 3ebb78acd0a0ebb4a856178f3390439b, type: 2}
-  showDebugOverlay: 1
+  showDebugOverlay: 0
+  logInitialization: 0
+  logVolumeBlend: 0
+  logWarnings: 0
 --- !u!4 &302907657
 Transform:
   m_ObjectHideFlags: 0
@@ -4803,7 +4859,7 @@ GameObject:
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
-  m_IsActive: 0
+  m_IsActive: 1
 --- !u!4 &422709482
 Transform:
   m_ObjectHideFlags: 0
@@ -4858,6 +4914,7 @@ MonoBehaviour:
   - {fileID: 2800000, guid: b0d214ebcdf32cf49a74287879cef43a, type: 3}
   RotationRangeY: {x: 0, y: 360}
   ImpostorMaterial: {fileID: 2100000, guid: cd7464249ee8ca246b66dd9eb35bbb1d, type: 2}
+  logInitialization: 0
 --- !u!1 &446055738
 GameObject:
   m_ObjectHideFlags: 0
@@ -8969,6 +9026,7 @@ MonoBehaviour:
   MeshEntries:
   - Mesh: {fileID: 10202, guid: 0000000000000000e000000000000000, type: 0}
     Weight: 0
+  logInitialization: 0
   RotationX: {x: 360, y: 0}
   RotationY: {x: 0, y: 360}
   RotationZ: {x: 0, y: 0}
@@ -10482,6 +10540,10 @@ MonoBehaviour:
   CloudMaterial: {fileID: 2100000, guid: 1113070119fa4ec4f93620807a2d0511, type: 2}
   DistantMaterial: {fileID: 2100000, guid: cd7464249ee8ca246b66dd9eb35bbb1d, type: 2}
   GenerationRadius: 5000
+  logInitialization: 0
+  logAltitudeOffset: 0
+  logRegeneration: 0
+  logCloudCount: 0
 --- !u!4 &909089446
 Transform:
   m_ObjectHideFlags: 0
@@ -13077,6 +13139,9 @@ MonoBehaviour:
   MaxActiveStorms: 5
   cloudMaterial: {fileID: 2100000, guid: 1113070119fa4ec4f93620807a2d0511, type: 2}
   defaultStormPattern: {fileID: 11400000, guid: b8c171e4b6cd60a4abf08a4fb1833b72, type: 2}
+  logSpawning: 0
+  logGeneration: 0
+  logGeneral: 0
 --- !u!114 &1247757283
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -13102,6 +13167,9 @@ MonoBehaviour:
   - {fileID: 11400000, guid: b8c171e4b6cd60a4abf08a4fb1833b72, type: 2}
   _useRandomPattern: 1
   _stormControllerPrefab: {fileID: 7115881474995121590, guid: 944f2105824a0fb48bb9816551cfd081, type: 3}
+  _logSpawn: 0
+  _logStormSpawn: 0
+  _logEventCloud: 0
 --- !u!1 &1250143042
 GameObject:
   m_ObjectHideFlags: 0
@@ -14375,6 +14443,7 @@ MonoBehaviour:
   MeshEntries:
   - Mesh: {fileID: 10206, guid: 0000000000000000e000000000000000, type: 0}
     Weight: 0
+  logInitialization: 0
   RotationX: {x: 0, y: 0}
   RotationY: {x: 0, y: 360}
   RotationZ: {x: 0, y: 0}
@@ -17108,6 +17177,7 @@ MonoBehaviour:
   MeshEntries:
   - Mesh: {fileID: 10207, guid: 0000000000000000e000000000000000, type: 0}
     Weight: 0
+  logInitialization: 0
   RotationX: {x: 0, y: 0}
   RotationY: {x: 0, y: 360}
   RotationZ: {x: 0, y: 0}
@@ -24197,3 +24267,4 @@ SceneRoots:
   - {fileID: 168637392}
   - {fileID: 1622157772}
   - {fileID: 462870029}
+  - {fileID: 124043120}

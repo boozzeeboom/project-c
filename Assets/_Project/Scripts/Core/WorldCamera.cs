@@ -281,6 +281,10 @@ namespace ProjectC.Core
         /// Создать UI подсказок автоматически.
         /// REFACTORED: Uses cached references instead of FindAnyObjectByType.
         /// </summary>
+        /// <summary>
+        /// Создать UI подсказок автоматически.
+        /// REFACTORED (5_3): Использует HUDManager вместо создания своего Canvas.
+        /// </summary>
         private void CreateControlHintsUI()
         {
             // Check cached reference first
@@ -289,7 +293,7 @@ namespace ProjectC.Core
                 return;
             }
 
-            // Try to find existing UI elements (only once, then cache)
+            // Try to find existing ControlHintsUI (only once, then cache)
             if (_cachedControlHintsUI == null)
             {
                 var existingHints = FindObjectsByType<ControlHintsUI>(FindObjectsInactive.Include);
@@ -300,40 +304,22 @@ namespace ProjectC.Core
                 }
             }
 
-            // Find or create Canvas (only once)
-            if (_cachedCanvas == null)
-            {
-                var existingCanvases = FindObjectsByType<Canvas>(FindObjectsInactive.Include);
-                if (existingCanvases != null && existingCanvases.Length > 0)
-                {
-                    _cachedCanvas = existingCanvases[0];
-                }
-                else
-                {
-                    GameObject canvasObj = new GameObject("Canvas");
-                    _cachedCanvas = canvasObj.AddComponent<Canvas>();
-                    canvasObj.AddComponent<UnityEngine.UI.CanvasScaler>();
-                    canvasObj.AddComponent<UnityEngine.UI.GraphicRaycaster>();
-                    _cachedCanvas.renderMode = RenderMode.ScreenSpaceOverlay;
-                }
-            }
+            // Ensure HUDManager exists and get its Canvas
+            var hudManager = ProjectC.UI.HUDManager.EnsureExists();
+            _cachedCanvas = hudManager.GetOrCreateHUDCanvas();
 
-            // TextMeshPro
-            var textObj = new GameObject("ControlHintsText");
-            textObj.transform.SetParent(_cachedCanvas.transform);
-            RectTransform rectTransform = textObj.AddComponent<RectTransform>();
-            rectTransform.anchorMin = new Vector2(0, 1);
-            rectTransform.anchorMax = new Vector2(0, 1);
-            rectTransform.pivot = new Vector2(0, 1);
-            rectTransform.anchoredPosition = new Vector2(20, -20);
-            rectTransform.sizeDelta = new Vector2(300, 400);
+            // Create TextMeshPro element using HUDManager
+            var (textObj, textRect, tmpText) = hudManager.CreateHUDText(
+                "ControlHintsText",
+                null,
+                fontSize: 14,
+                color: Color.white,
+                alignment: TextAlignmentOptions.TopLeft,
+                anchoredPosition: new Vector2(20, -20),
+                sizeDelta: new Vector2(300, 400)
+            );
 
-            var tmpText = textObj.AddComponent<TextMeshProUGUI>();
-            tmpText.fontSize = 14;
-            tmpText.color = Color.white;
-            tmpText.alignment = TextAlignmentOptions.TopLeft;
-
-            // ControlHintsUI
+            // Create ControlHintsUI component
             GameObject hintsObj = new GameObject("ControlHintsUI");
             hintsObj.transform.SetParent(_cachedCanvas.transform);
             _cachedControlHintsUI = hintsObj.AddComponent<ControlHintsUI>();

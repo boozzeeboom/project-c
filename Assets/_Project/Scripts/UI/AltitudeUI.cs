@@ -66,54 +66,31 @@ namespace ProjectC.UI
         /// <summary>
         /// Создать всю иерархию UI программно.
         /// </summary>
+        /// <summary>
+        /// Создать всю иерархию UI программно.
+        /// REFACTORED (5_3): Использует HUDManager вместо создания своего Canvas.
+        /// </summary>
         private void SetupUI()
         {
-            // 1. Найти или создать Canvas
-            _canvas = GetComponentInParent<Canvas>();
-            if (_canvas == null)
-            {
-                _canvas = FindAnyObjectByType<Canvas>();
-            }
+            // 1. Используем HUDManager для получения Canvas
+            var hudManager = HUDManager.EnsureExists();
+            _canvas = hudManager.GetOrCreateHUDCanvas();
 
-            if (_canvas == null)
-            {
-                GameObject canvasGo = new GameObject("HUD_Canvas");
-                _canvas = canvasGo.AddComponent<Canvas>();
-                _canvas.renderMode = RenderMode.ScreenSpaceOverlay;
-                canvasGo.AddComponent<CanvasScaler>();
-                canvasGo.AddComponent<GraphicRaycaster>();
-            }
+            // 2. Создать панель HUD используя HUDManager
+            var (panelGo, panelRect, bgImg) = hudManager.CreateHUDPanel(
+                "AltitudeHUD_Panel",
+                null,
+                anchorMin: new Vector2(0.5f, 1f),
+                anchorMax: new Vector2(0.5f, 1f),
+                anchoredPosition: new Vector2(0f, -20f),
+                sizeDelta: new Vector2(400f, 120f),
+                backgroundColor: new Color(0f, 0f, 0f, 0.5f)
+            );
 
-            // Убедиться что Canvas в Screen Space Overlay
-            if (_canvas.renderMode != RenderMode.ScreenSpaceOverlay)
-            {
-                _canvas.renderMode = RenderMode.ScreenSpaceOverlay;
-            }
+            _panelRect = panelRect;
+            _background = bgImg;
 
-            // 2. Создать панель HUD
-            GameObject panelGo = new GameObject("AltitudeHUD_Panel");
-            panelGo.transform.SetParent(_canvas.transform, false);
-            _panelRect = panelGo.GetComponent<RectTransform>();
-            if (_panelRect == null)
-            {
-                _panelRect = panelGo.AddComponent<RectTransform>();
-            }
-
-            // Позиция: верхний центр
-            _panelRect.anchorMin = new Vector2(0.5f, 1f);
-            _panelRect.anchorMax = new Vector2(0.5f, 1f);
-            _panelRect.pivot = new Vector2(0.5f, 1f);
-            _panelRect.anchoredPosition = new Vector2(0f, -20f);
-            _panelRect.sizeDelta = new Vector2(400f, 120f);
-
-            // 3. Фон панели
-            _background = panelGo.AddComponent<Image>();
-            _background.color = new Color(0f, 0f, 0f, 0.5f);
-
-            // Скруглённые углы (если есть компонент)
-            // Примечание: Requires additional component, skip for simplicity
-
-            // 4. Создать текстовые элементы
+            // 3. Создать текстовые элементы
             float yPos = -10f;
             float lineHeight = 28f;
 
@@ -132,7 +109,7 @@ namespace ProjectC.UI
             // Corridor Text
             _corridorText = CreateTextElement(panelGo.transform, "CorridorText", fontSize: 14, yPos: yPos);
 
-            Debug.Log("[AltitudeUI] UI created programmatically at top-center of screen.");
+            Debug.Log("[AltitudeUI] UI created using HUDManager.");
         }
 
         /// <summary>

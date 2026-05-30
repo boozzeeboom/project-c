@@ -4,9 +4,8 @@ using UnityEngine.InputSystem;
 using TMPro;
 using ProjectC.Trade;
 using ProjectC.Player;
+using ProjectC.UI; // HUDManager
 using System.Collections.Generic;
-
-// PlayerDataStore в namespace ProjectC.Trade
 
 namespace ProjectC.Trade
 {
@@ -65,6 +64,7 @@ public class TradeDebugTools : MonoBehaviour
     {
         CreateUI();
         _isInitialized = true;
+        _panel?.gameObject?.SetActive(showOnScreen);
     }
 
     private void Update()
@@ -91,37 +91,35 @@ public class TradeDebugTools : MonoBehaviour
         }
     }
 
+    /// <summary>
+    /// Создать UI элементы.
+    /// REFACTORED (5_3): Использует HUDManager вместо создания своего Canvas.
+    /// </summary>
     private void CreateUI()
     {
-        var canvasObj = new GameObject("TradeDebugCanvas");
-        canvasObj.transform.SetParent(transform);
-        _canvas = canvasObj.AddComponent<Canvas>();
-        _canvas.renderMode = RenderMode.ScreenSpaceOverlay;
-        _canvas.sortingOrder = 9999;
+        // Используем HUDManager для получения Canvas
+        var hudManager = HUDManager.EnsureExists();
+        _canvas = hudManager.GetOrCreateHUDCanvas();
 
-        var canvasScaler = canvasObj.AddComponent<CanvasScaler>();
-        canvasScaler.uiScaleMode = CanvasScaler.ScaleMode.ScaleWithScreenSize;
-        canvasScaler.referenceResolution = new Vector2(1920, 1080);
+        // Создаём панель (правая сторона экрана)
+        var (panelObj, panelRect, panelImage) = hudManager.CreateHUDPanel(
+            "TradeDebug_Panel",
+            null,
+            anchorMin: new Vector2(1f, 0.5f),
+            anchorMax: new Vector2(1f, 0.5f),
+            anchoredPosition: new Vector2(-panelWidth / 2f - padding, 0f),
+            sizeDelta: new Vector2(panelWidth, panelHeight),
+            backgroundColor: new Color(0.1f, 0.1f, 0.2f, 0.95f)
+        );
 
-        canvasObj.AddComponent<GraphicRaycaster>();
+        _panel = panelRect;
 
-        var panelObj = new GameObject("DebugPanel");
-        panelObj.transform.SetParent(_canvas.transform);
-        _panel = panelObj.AddComponent<RectTransform>();
-
-        _panel.anchorMin = new Vector2(1f, 0.5f);
-        _panel.anchorMax = new Vector2(1f, 0.5f);
-        _panel.pivot = new Vector2(0.5f, 0.5f);
-        _panel.anchoredPosition = new Vector2(-panelWidth / 2f - padding, 0f);
-        _panel.sizeDelta = new Vector2(panelWidth, panelHeight);
-
-        var panelImage = panelObj.AddComponent<Image>();
-        panelImage.color = new Color(0.1f, 0.1f, 0.2f, 0.95f);
-
+        // Outline effect
         var outline = panelObj.AddComponent<Outline>();
         outline.effectColor = new Color(0.3f, 0.6f, 1f);
         outline.effectDistance = new Vector2(3f, 3f);
 
+        // Content container
         var contentObj = new GameObject("Content");
         contentObj.transform.SetParent(_panel);
         var content = contentObj.AddComponent<RectTransform>();
@@ -130,6 +128,7 @@ public class TradeDebugTools : MonoBehaviour
         content.offsetMin = new Vector2(15f, 15f);
         content.offsetMax = new Vector2(-15f, -15f);
 
+        // Title
         var titleObj = CreateTextObject("Title", content, "СКЛАД КЛИЕНТА", 24, TextAlignmentOptions.Center);
         _titleText = titleObj.GetComponent<TextMeshProUGUI>();
         _titleText.color = new Color(0.3f, 0.8f, 1f);
@@ -139,6 +138,7 @@ public class TradeDebugTools : MonoBehaviour
         titleRect.offsetMin = new Vector2(0f, -50f);
         titleRect.offsetMax = new Vector2(0f, 0f);
 
+        // Credits
         var creditsObj = CreateTextObject("Credits", content, "Кредиты: ---", 20, TextAlignmentOptions.Left);
         _creditsText = creditsObj.GetComponent<TextMeshProUGUI>();
         _creditsText.color = new Color(1f, 0.8f, 0.2f);
@@ -148,6 +148,7 @@ public class TradeDebugTools : MonoBehaviour
         creditsRect.offsetMin = Vector2.zero;
         creditsRect.offsetMax = Vector2.zero;
 
+        // Update indicator
         var updateObj = CreateTextObject("UpdateIndicator", content, "●", 16, TextAlignmentOptions.Right);
         var updateText = updateObj.GetComponent<TextMeshProUGUI>();
         updateText.color = new Color(0.2f, 1f, 0.2f);
@@ -157,6 +158,7 @@ public class TradeDebugTools : MonoBehaviour
         updateRect.offsetMin = Vector2.zero;
         updateRect.offsetMax = Vector2.zero;
 
+        // Warehouse label
         var warehouseLabelObj = CreateTextObject("WarehouseLabel", content, "═══ СКЛАД ═══", 18, TextAlignmentOptions.Center);
         var warehouseLabelText = warehouseLabelObj.GetComponent<TextMeshProUGUI>();
         warehouseLabelText.color = new Color(0.6f, 0.6f, 1f);
@@ -166,6 +168,7 @@ public class TradeDebugTools : MonoBehaviour
         warehouseLabelRect.offsetMin = Vector2.zero;
         warehouseLabelRect.offsetMax = Vector2.zero;
 
+        // Warehouse content
         var warehouseObj = CreateTextObject("Warehouse", content, "Пусто", 16, TextAlignmentOptions.Left);
         _warehouseText = warehouseObj.GetComponent<TextMeshProUGUI>();
         _warehouseText.color = new Color(0.9f, 0.9f, 0.9f);
@@ -175,6 +178,7 @@ public class TradeDebugTools : MonoBehaviour
         warehouseRect.offsetMin = Vector2.zero;
         warehouseRect.offsetMax = Vector2.zero;
 
+        // Debug info
         var debugObj = CreateTextObject("Debug", content, "Статус: ---", 14, TextAlignmentOptions.Left);
         _debugText = debugObj.GetComponent<TextMeshProUGUI>();
         _debugText.color = new Color(0.5f, 0.5f, 0.5f);
@@ -184,6 +188,7 @@ public class TradeDebugTools : MonoBehaviour
         debugRect.offsetMin = Vector2.zero;
         debugRect.offsetMax = Vector2.zero;
 
+        Debug.Log("[TradeDebugTools] UI created using HUDManager.");
     }
 
     private GameObject CreateTextObject(string name, Transform parent, string text, int fontSize, TextAlignmentOptions alignment)

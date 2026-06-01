@@ -12,18 +12,27 @@ namespace ProjectC.Core
         public int UpperCount = 80;
         public float UpperMinAlt = 6000f;
         public float UpperMaxAlt = 8000f;
+        public float UpperMinCloudSize = 80f;
+        public float UpperMaxCloudSize = 150f;
+        public float UpperSizeRandomCoeff = 0.3f;
 
         [Header("Middle Layer (3000-5000m)")]
         public NearCloudRenderer MiddleLayer;
         public int MiddleCount = 120;
         public float MiddleMinAlt = 3000f;
         public float MiddleMaxAlt = 5000f;
+        public float MiddleMinCloudSize = 100f;
+        public float MiddleMaxCloudSize = 200f;
+        public float MiddleSizeRandomCoeff = 0.5f;
 
         [Header("Lower Layer (1500-3000m)")]
         public NearCloudRenderer LowerLayer;
         public int LowerCount = 80;
         public float LowerMinAlt = 1500f;
         public float LowerMaxAlt = 3000f;
+        public float LowerMinCloudSize = 150f;
+        public float LowerMaxCloudSize = 300f;
+        public float LowerSizeRandomCoeff = 0.4f;
 
         [Header("Distant (5000-15000m)")]
         public DistantCloudManager DistantManager;
@@ -85,6 +94,9 @@ namespace ProjectC.Core
                 UpperLayer.MinAltitude = UpperMinAlt;
                 UpperLayer.MaxAltitude = UpperMaxAlt;
                 UpperLayer.CloudMaterial = CloudMaterial;
+                UpperLayer.MinCloudSize = UpperMinCloudSize;
+                UpperLayer.MaxCloudSize = UpperMaxCloudSize;
+                UpperLayer.SizeRandomCoefficient = UpperSizeRandomCoeff;
                 UpperLayer.Initialize();
                 UpperLayer.Generate(playerPos);
             }
@@ -95,6 +107,9 @@ namespace ProjectC.Core
                 MiddleLayer.MinAltitude = MiddleMinAlt;
                 MiddleLayer.MaxAltitude = MiddleMaxAlt;
                 MiddleLayer.CloudMaterial = CloudMaterial;
+                MiddleLayer.MinCloudSize = MiddleMinCloudSize;
+                MiddleLayer.MaxCloudSize = MiddleMaxCloudSize;
+                MiddleLayer.SizeRandomCoefficient = MiddleSizeRandomCoeff;
                 MiddleLayer.Initialize();
                 MiddleLayer.Generate(playerPos);
             }
@@ -105,6 +120,9 @@ namespace ProjectC.Core
                 LowerLayer.MinAltitude = LowerMinAlt;
                 LowerLayer.MaxAltitude = LowerMaxAlt;
                 LowerLayer.CloudMaterial = CloudMaterial;
+                LowerLayer.MinCloudSize = LowerMinCloudSize;
+                LowerLayer.MaxCloudSize = LowerMaxCloudSize;
+                LowerLayer.SizeRandomCoefficient = LowerSizeRandomCoeff;
                 LowerLayer.Initialize();
                 LowerLayer.Generate(playerPos);
             }

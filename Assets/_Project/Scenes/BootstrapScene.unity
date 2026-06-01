@@ -9190,7 +9190,10 @@ MonoBehaviour:
   MinAltitude: 1500
   MaxAltitude: 3000
   CloudSize: 100
-  CloudMaterial: {fileID: 2100000, guid: 47ed03bb4ba944f499923625ae0b400e, type: 2}
+  CloudMaterial: {fileID: 2100000, guid: 1113070119fa4ec4f93620807a2d0511, type: 2}
+  MinCloudSize: 50
+  MaxCloudSize: 150
+  SizeRandomCoefficient: 0
   MeshEntries:
   - Mesh: {fileID: 10202, guid: 0000000000000000e000000000000000, type: 0}
     Weight: 0
@@ -10686,14 +10689,23 @@ MonoBehaviour:
   UpperCount: 80
   UpperMinAlt: 6000
   UpperMaxAlt: 8000
+  UpperMinCloudSize: 80
+  UpperMaxCloudSize: 150
+  UpperSizeRandomCoeff: 0.3
   MiddleLayer: {fileID: 1624092369}
   MiddleCount: 80
-  MiddleMinAlt: 3000
+  MiddleMinAlt: 2000
   MiddleMaxAlt: 5000
+  MiddleMinCloudSize: 100
+  MiddleMaxCloudSize: 2000
+  MiddleSizeRandomCoeff: 0.5
   LowerLayer: {fileID: 748166803}
   LowerCount: 80
-  LowerMinAlt: 1500
-  LowerMaxAlt: 3000
+  LowerMinAlt: 1200
+  LowerMaxAlt: 2000
+  LowerMinCloudSize: 1000
+  LowerMaxCloudSize: 3000
+  LowerSizeRandomCoeff: 1
   DistantManager: {fileID: 422709483}
   DistantCount: 4
   DistantMinDist: 10000
@@ -10705,7 +10717,7 @@ MonoBehaviour:
   VeilThickness: 400
   AdditionalVeilMgr: {fileID: 0}
   MaxAdditionalVeils: 10
-  CloudMaterial: {fileID: 2100000, guid: c14586ce79d2bc54699674e55b7e5154, type: 2}
+  CloudMaterial: {fileID: 0}
   DistantMaterial: {fileID: 2100000, guid: 49fe824310a649546b85b3e4ec808143, type: 2}
   GenerationRadius: 5000
   logInitialization: 0
@@ -14831,7 +14843,10 @@ MonoBehaviour:
   MinAltitude: 5000
   MaxAltitude: 8000
   CloudSize: 100
-  CloudMaterial: {fileID: 0}
+  CloudMaterial: {fileID: 2100000, guid: c14586ce79d2bc54699674e55b7e5154, type: 2}
+  MinCloudSize: 50
+  MaxCloudSize: 150
+  SizeRandomCoefficient: 0.605
   MeshEntries:
   - Mesh: {fileID: 10206, guid: 0000000000000000e000000000000000, type: 0}
     Weight: 0
@@ -17647,7 +17662,10 @@ MonoBehaviour:
   MinAltitude: 3000
   MaxAltitude: 5000
   CloudSize: 100
-  CloudMaterial: {fileID: 2100000, guid: 8e8a8a3361c70734c84d2858211567aa, type: 2}
+  CloudMaterial: {fileID: 2100000, guid: c14586ce79d2bc54699674e55b7e5154, type: 2}
+  MinCloudSize: 50
+  MaxCloudSize: 150
+  SizeRandomCoefficient: 0
   MeshEntries:
   - Mesh: {fileID: 10207, guid: 0000000000000000e000000000000000, type: 0}
     Weight: 0

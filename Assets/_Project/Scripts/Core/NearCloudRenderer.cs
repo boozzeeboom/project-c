@@ -19,6 +19,17 @@ namespace ProjectC.Core
         public float CloudSize = 100f;
         public Material CloudMaterial;
 
+        [Header("Size Variation")]
+        [Tooltip("Minimum cloud size in meters. Combined with MaxCloudSize defines the uniform range used in Generate(). Replaces the hard-coded 0.5*CloudSize floor.")]
+        public float MinCloudSize = 50f;
+
+        [Tooltip("Maximum cloud size in meters. Combined with MinCloudSize defines the uniform range used in Generate(). Replaces the hard-coded 1.5*CloudSize ceiling.")]
+        public float MaxCloudSize = 150f;
+
+        [Tooltip("Extra randomness multiplier on top of [MinCloudSize, MaxCloudSize]. 0 = uniform within range (default, matches legacy behavior), 1 = up to ±100% extra spread (may exceed bounds), 2 = up to ±200% (heavy chaos).")]
+        [Range(0f, 2f)]
+        public float SizeRandomCoefficient = 0f;
+
         [Header("Mesh Variants")]
         public MeshEntry[] MeshEntries;
 
@@ -113,7 +124,15 @@ namespace ProjectC.Core
                 float y = (float)(_rng.NextDouble() * (MaxAltitude - MinAltitude) + MinAltitude);
 
                 Vector3 pos = new Vector3(x, y, z);
-                float scale = CloudSize * (float)(_rng.NextDouble() * 1.0 + 0.5f);
+                // Size variation: uniform lerp in [MinCloudSize, MaxCloudSize] + optional jitter
+                float t = (float)_rng.NextDouble();
+                float scale = Mathf.Lerp(MinCloudSize, MaxCloudSize, t);
+                if (SizeRandomCoefficient > 0f)
+                {
+                    float range = MaxCloudSize - MinCloudSize;
+                    float jitter = (float)(_rng.NextDouble() - 0.5f) * 2f * range * SizeRandomCoefficient;
+                    scale = Mathf.Max(MinCloudSize * 0.1f, scale + jitter);
+                }
 
                 float rotX = Mathf.Lerp(RotationX.x, RotationX.y, (float)_rng.NextDouble());
                 float rotY = Mathf.Lerp(RotationY.x, RotationY.y, (float)_rng.NextDouble());

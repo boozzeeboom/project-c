@@ -10692,6 +10692,7 @@ MonoBehaviour:
   UpperMinCloudSize: 80
   UpperMaxCloudSize: 150
   UpperSizeRandomCoeff: 0.3
+  UpperCloudMaterial: {fileID: 2100000, guid: c14586ce79d2bc54699674e55b7e5154, type: 2}
   MiddleLayer: {fileID: 1624092369}
   MiddleCount: 80
   MiddleMinAlt: 2000
@@ -10699,6 +10700,7 @@ MonoBehaviour:
   MiddleMinCloudSize: 100
   MiddleMaxCloudSize: 2000
   MiddleSizeRandomCoeff: 0.5
+  MiddleCloudMaterial: {fileID: 2100000, guid: c14586ce79d2bc54699674e55b7e5154, type: 2}
   LowerLayer: {fileID: 748166803}
   LowerCount: 80
   LowerMinAlt: 1200
@@ -10706,6 +10708,7 @@ MonoBehaviour:
   LowerMinCloudSize: 1000
   LowerMaxCloudSize: 3000
   LowerSizeRandomCoeff: 1
+  LowerCloudMaterial: {fileID: 2100000, guid: 1113070119fa4ec4f93620807a2d0511, type: 2}
   DistantManager: {fileID: 422709483}
   DistantCount: 4
   DistantMinDist: 10000

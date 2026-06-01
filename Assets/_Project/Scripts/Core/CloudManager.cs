@@ -15,6 +15,8 @@ namespace ProjectC.Core
         public float UpperMinCloudSize = 80f;
         public float UpperMaxCloudSize = 150f;
         public float UpperSizeRandomCoeff = 0.3f;
+        [Tooltip("Per-layer material override. If null, falls back to CloudMaterial below. Use this to give each layer a distinct look (e.g. wispy cirrus up top, dense stratus below).")]
+        public Material UpperCloudMaterial;
 
         [Header("Middle Layer (3000-5000m)")]
         public NearCloudRenderer MiddleLayer;
@@ -24,6 +26,8 @@ namespace ProjectC.Core
         public float MiddleMinCloudSize = 100f;
         public float MiddleMaxCloudSize = 200f;
         public float MiddleSizeRandomCoeff = 0.5f;
+        [Tooltip("Per-layer material override. If null, falls back to CloudMaterial below.")]
+        public Material MiddleCloudMaterial;
 
         [Header("Lower Layer (1500-3000m)")]
         public NearCloudRenderer LowerLayer;
@@ -33,6 +37,8 @@ namespace ProjectC.Core
         public float LowerMinCloudSize = 150f;
         public float LowerMaxCloudSize = 300f;
         public float LowerSizeRandomCoeff = 0.4f;
+        [Tooltip("Per-layer material override. If null, falls back to CloudMaterial below.")]
+        public Material LowerCloudMaterial;
 
         [Header("Distant (5000-15000m)")]
         public DistantCloudManager DistantManager;
@@ -93,7 +99,7 @@ namespace ProjectC.Core
                 UpperLayer.CloudCount = UpperCount;
                 UpperLayer.MinAltitude = UpperMinAlt;
                 UpperLayer.MaxAltitude = UpperMaxAlt;
-                UpperLayer.CloudMaterial = CloudMaterial;
+                UpperLayer.CloudMaterial = UpperCloudMaterial != null ? UpperCloudMaterial : CloudMaterial;
                 UpperLayer.MinCloudSize = UpperMinCloudSize;
                 UpperLayer.MaxCloudSize = UpperMaxCloudSize;
                 UpperLayer.SizeRandomCoefficient = UpperSizeRandomCoeff;
@@ -106,7 +112,7 @@ namespace ProjectC.Core
                 MiddleLayer.CloudCount = MiddleCount;
                 MiddleLayer.MinAltitude = MiddleMinAlt;
                 MiddleLayer.MaxAltitude = MiddleMaxAlt;
-                MiddleLayer.CloudMaterial = CloudMaterial;
+                MiddleLayer.CloudMaterial = MiddleCloudMaterial != null ? MiddleCloudMaterial : CloudMaterial;
                 MiddleLayer.MinCloudSize = MiddleMinCloudSize;
                 MiddleLayer.MaxCloudSize = MiddleMaxCloudSize;
                 MiddleLayer.SizeRandomCoefficient = MiddleSizeRandomCoeff;
@@ -119,7 +125,7 @@ namespace ProjectC.Core
                 LowerLayer.CloudCount = LowerCount;
                 LowerLayer.MinAltitude = LowerMinAlt;
                 LowerLayer.MaxAltitude = LowerMaxAlt;
-                LowerLayer.CloudMaterial = CloudMaterial;
+                LowerLayer.CloudMaterial = LowerCloudMaterial != null ? LowerCloudMaterial : CloudMaterial;
                 LowerLayer.MinCloudSize = LowerMinCloudSize;
                 LowerLayer.MaxCloudSize = LowerMaxCloudSize;
                 LowerLayer.SizeRandomCoefficient = LowerSizeRandomCoeff;

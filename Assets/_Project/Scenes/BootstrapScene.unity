@@ -4074,7 +4074,6 @@ GameObject:
   m_Component:
   - component: {fileID: 302907657}
   - component: {fileID: 302907656}
-  - component: {fileID: 302907661}
   - component: {fileID: 302907662}
   m_Layer: 0
   m_Name: DayNightController
@@ -4099,7 +4098,6 @@ MonoBehaviour:
   sunLight: {fileID: 180883750}
   daySkyboxMaterial: {fileID: 2100000, guid: 2832015f45a230243aabbff66f6ac768, type: 2}
   nightSkyboxMaterial: {fileID: 2100000, guid: 93e20995f0b3c954387749bbec25edbe, type: 2}
-  temperatureFilter: {fileID: 302907661}
   currentTemperature: 20
   globalVolume: {fileID: 302907662}
   dayVolumeProfile: {fileID: 11400000, guid: 600d71eb97e9b904bb1e13277f3f496c, type: 2}
@@ -4124,19 +4122,6 @@ Transform:
   m_Children: []
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
---- !u!114 &302907661
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 302907655}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 10ab4104d91c2d3459393b1a26620d54, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::ProjectC.Core.TemperatureFilter
-  config: {fileID: 11400000, guid: 776fafc21913afa4999bdb5d216a96db, type: 2}
 --- !u!114 &302907662
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -9195,7 +9180,7 @@ MonoBehaviour:
   MaxCloudSize: 150
   SizeRandomCoefficient: 0
   MeshEntries:
-  - Mesh: {fileID: 10202, guid: 0000000000000000e000000000000000, type: 0}
+  - Mesh: {fileID: 10207, guid: 0000000000000000e000000000000000, type: 0}
     Weight: 0
   logInitialization: 0
   RotationX: {x: 360, y: 0}
@@ -10703,10 +10688,10 @@ MonoBehaviour:
   MiddleCloudMaterial: {fileID: 2100000, guid: c14586ce79d2bc54699674e55b7e5154, type: 2}
   LowerLayer: {fileID: 748166803}
   LowerCount: 80
-  LowerMinAlt: 1200
-  LowerMaxAlt: 2000
-  LowerMinCloudSize: 1000
-  LowerMaxCloudSize: 3000
+  LowerMinAlt: 800
+  LowerMaxAlt: 1800
+  LowerMinCloudSize: 500
+  LowerMaxCloudSize: 1000
   LowerSizeRandomCoeff: 1
   LowerCloudMaterial: {fileID: 2100000, guid: 1113070119fa4ec4f93620807a2d0511, type: 2}
   DistantManager: {fileID: 422709483}
@@ -23564,10 +23549,10 @@ MonoBehaviour:
   _directionVariationAngle: 15
   _speedVariationPercent: 0.2
   _timeOfDay: 12
-  _dayCycleRealHours: 0.005
+  _dayCycleRealHours: 0.01
   _enableTimeAutoAdvance: 1
   _timeBroadcastInterval: 5
-  _temperature: 40
+  _temperature: 20
   _tempBroadcastInterval: 10
 --- !u!1 &2085018708
 GameObject:
@@ -24867,9 +24852,9 @@ SceneRoots:
   - {fileID: 1149404329}
   - {fileID: 1932759460}
   - {fileID: 1471737522}
-  - {fileID: 2074923229}
   - {fileID: 909089446}
   - {fileID: 180883752}
+  - {fileID: 2074923229}
   - {fileID: 302907657}
   - {fileID: 168637392}
   - {fileID: 1622157772}

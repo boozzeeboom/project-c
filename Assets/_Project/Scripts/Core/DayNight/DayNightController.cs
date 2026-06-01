@@ -63,11 +63,6 @@ namespace ProjectC.Core
         private float _smoothedSunIntensity = 1f;
         private float _smoothedAmbientIntensity = 0.5f;
 
-        // ColorGrading component for temperature filter
-        private ColorAdjustments _colorAdjustments;
-        private Vignette _vignette;
-        private Bloom _bloom;
-
         // Runtime copies of volume profiles (CRITICAL: prevents external modifications!)
         // Original assets should never be modified at runtime
         private VolumeProfile _dayVolumeProfileInstance;
@@ -90,6 +85,14 @@ namespace ProjectC.Core
         private ColorAdjustmentsBaseline _nightBaseline;
         private ColorAdjustmentsBaseline _twilightBaseline;
         private ColorAdjustmentsBaseline _currentBaseline;
+
+        // Blend volumes: 3 child GameObjects, each with a Volume component bound to one
+        // of the runtime profile instances. ApplyVolumeBlend sets their `weight` each
+        // frame to create cross-fades between phases. priority=100, isGlobal=true.
+        // globalVolume (priority=0) is left alone in the inspector and never used here.
+        private Volume _dayBlendVolume;
+        private Volume _twilightBlendVolume;
+        private Volume _nightBlendVolume;
 
         // Events for other systems to subscribe
         public event System.Action<TimeOfDayPhase, float> OnPhaseChanged;
@@ -114,13 +117,21 @@ namespace ProjectC.Core
 
         private void ValidateProfileInstances()
         {
-            if (_dayVolumeProfileInstance == null || _nightVolumeProfileInstance == null || _twilightVolumeProfileInstance == null)
+            bool profilesLost = _dayVolumeProfileInstance == null || _nightVolumeProfileInstance == null || _twilightVolumeProfileInstance == null;
+            bool blendVolumesLost = _dayBlendVolume == null || _twilightBlendVolume == null || _nightBlendVolume == null;
+
+            if (profilesLost)
             {
                 if (logWarnings) Debug.LogWarning("[DayNightController] Profile instances were lost (possible domain reload). Re-initializing...");
                 InitializeVolumeProfileInstances();
                 // Re-capture baselines — the new instances start with the .asset values
                 // which are exactly what we want as the clean baseline.
                 CaptureColorAdjustmentsBaselines();
+            }
+            if (blendVolumesLost)
+            {
+                if (logWarnings) Debug.LogWarning("[DayNightController] Blend volume references lost (possible domain reload). Re-initializing...");
+                InitializeBlendVolumes();
             }
         }
 
@@ -143,8 +154,9 @@ namespace ProjectC.Core
             // any temperature overlay is applied. This is what temperature blends on top of.
             CaptureColorAdjustmentsBaselines();
 
-            // Initialize volume components
-            InitializeVolumeComponents();
+            // Create 3 child blend volumes (one per phase profile). Their `weight` is
+            // driven by ApplyVolumeBlend each frame for smooth phase cross-fades.
+            InitializeBlendVolumes();
 
             // Load initial server time
             if (ServerWeatherController.Instance != null)
@@ -202,24 +214,43 @@ namespace ProjectC.Core
         }
 
         /// <summary>
-        /// Select which pre-captured baseline corresponds to the active runtime profile.
-        /// Called whenever globalVolume.profile changes (Day/Night/Twilight).
+        /// Create the 3 child GameObjects with Volume components used for cross-fading
+        /// between phases. Each is bound to one of the runtime profile instances and
+        /// starts with weight=0 (ApplyVolumeBlend drives weights each frame).
         /// </summary>
-        private void UpdateActiveBaseline(VolumeProfile activeProfile)
+        private void InitializeBlendVolumes()
         {
-            if (activeProfile == _dayVolumeProfileInstance) _currentBaseline = _dayBaseline;
-            else if (activeProfile == _nightVolumeProfileInstance) _currentBaseline = _nightBaseline;
-            else if (activeProfile == _twilightVolumeProfileInstance) _currentBaseline = _twilightBaseline;
+            _dayBlendVolume = CreateOrGetBlendVolume("DayBlendVolume", _dayVolumeProfileInstance);
+            _twilightBlendVolume = CreateOrGetBlendVolume("TwilightBlendVolume", _twilightVolumeProfileInstance);
+            _nightBlendVolume = CreateOrGetBlendVolume("NightBlendVolume", _nightVolumeProfileInstance);
+
+            if (logInitialization) Debug.Log("[DayNightController] Blend volumes created (Day/Twilight/Night), priority=100, weight=0 — driven by ApplyVolumeBlend");
         }
 
-        private void InitializeVolumeComponents()
+        private Volume CreateOrGetBlendVolume(string goName, VolumeProfile profile)
         {
-            if (globalVolume != null && globalVolume.profile != null)
+            Transform child = transform.Find(goName);
+            GameObject go;
+            if (child == null)
             {
-                globalVolume.profile.TryGet(out _colorAdjustments);
-                globalVolume.profile.TryGet(out _vignette);
-                globalVolume.profile.TryGet(out _bloom);
+                go = new GameObject(goName);
+                go.transform.SetParent(transform, false);
+                go.transform.localPosition = Vector3.zero;
+                go.transform.localRotation = Quaternion.identity;
             }
+            else
+            {
+                go = child.gameObject;
+            }
+
+            var vol = go.GetComponent<Volume>();
+            if (vol == null) vol = go.AddComponent<Volume>();
+
+            vol.priority = 100; // above the inspector's globalVolume (priority 0) so this system wins
+            vol.isGlobal = true;
+            vol.weight = 0f; // off until ApplyVolumeBlend sets it
+            vol.profile = profile;
+            return vol;
         }
 
         private void SubscribeToServerEvents()
@@ -421,6 +452,29 @@ namespace ProjectC.Core
         // ========================
 
         /// <summary>
+        /// Lerp two colors in HSV space, taking the shortest path on the hue circle.
+        /// Use this instead of Color.Lerp when interpolating between two colors with
+        /// different hues (e.g. warm fog -> cool fog, orange sun -> blueish sun):
+        /// RGB lerp in that case passes through a desaturated gray/white "muddy" middle.
+        /// </summary>
+        private static Color LerpHSV(Color a, Color b, float t)
+        {
+            t = Mathf.Clamp01(t);
+            Color.RGBToHSV(a, out float ah, out float as_, out float av);
+            Color.RGBToHSV(b, out float bh, out float bs, out float bv);
+
+            // Shortest-path hue lerp (h is on a 0..1 ring)
+            float hDiff = bh - ah;
+            if (hDiff > 0.5f) hDiff -= 1f;
+            else if (hDiff < -0.5f) hDiff += 1f;
+            float h = Mathf.Repeat(ah + hDiff * t, 1f);
+
+            float s = Mathf.Lerp(as_, bs, t);
+            float v = Mathf.Lerp(av, bv, t);
+            return Color.HSVToRGB(h, s, v);
+        }
+
+        /// <summary>
         /// Apply sun lighting with smooth interpolation between phases.
         /// </summary>
         private void ApplySunLightingSmooth()
@@ -439,7 +493,10 @@ namespace ProjectC.Core
 
             // Smooth interpolation
             float smoothFactor = GetSmoothFactor();
-            _smoothedSunColor = Color.Lerp(_smoothedSunColor, targetSunColor, smoothFactor * Time.deltaTime * 3f);
+            // Use HSV lerp for sun color: a warm orange sun to a near-white midday sun would
+            // otherwise pass through a desaturated gray in RGB lerp, which looks like a
+            // "white flash" mid-transition.
+            _smoothedSunColor = LerpHSV(_smoothedSunColor, targetSunColor, smoothFactor * Time.deltaTime * 3f);
             _smoothedSunIntensity = Mathf.Lerp(_smoothedSunIntensity, targetSunIntensity, smoothFactor * Time.deltaTime * 3f);
 
             // Apply to light
@@ -464,15 +521,16 @@ namespace ProjectC.Core
             Color targetGround = ApplyVariability(_currentPhase.ambientGroundColor);
             float targetIntensity = _currentPhase.ambientIntensity * ApplyVariabilityIntensity();
 
-            // Smooth interpolation
+            // Smooth interpolation. Use HSV lerp for ambient colors so hue transitions
+            // (e.g. cool blue -> warm orange at dusk) don't pass through desaturated gray.
             float smoothFactor = GetSmoothFactor();
-            _smoothedAmbientSky = Color.Lerp(_smoothedAmbientSky, targetSky, smoothFactor * Time.deltaTime * 2f);
+            _smoothedAmbientSky = LerpHSV(_smoothedAmbientSky, targetSky, smoothFactor * Time.deltaTime * 2f);
             _smoothedAmbientIntensity = Mathf.Lerp(_smoothedAmbientIntensity, targetIntensity, smoothFactor * Time.deltaTime * 2f);
 
             // Apply to render settings
             RenderSettings.ambientSkyColor = _smoothedAmbientSky;
-            RenderSettings.ambientEquatorColor = Color.Lerp(RenderSettings.ambientEquatorColor, targetEquator, smoothFactor * Time.deltaTime * 2f);
-            RenderSettings.ambientGroundColor = Color.Lerp(RenderSettings.ambientGroundColor, targetGround, smoothFactor * Time.deltaTime * 2f);
+            RenderSettings.ambientEquatorColor = LerpHSV(RenderSettings.ambientEquatorColor, targetEquator, smoothFactor * Time.deltaTime * 2f);
+            RenderSettings.ambientGroundColor = LerpHSV(RenderSettings.ambientGroundColor, targetGround, smoothFactor * Time.deltaTime * 2f);
             RenderSettings.ambientIntensity = _smoothedAmbientIntensity;
         }
 
@@ -495,13 +553,16 @@ namespace ProjectC.Core
                 Color targetFogColor = ApplyVariability(_currentPhase.fogColor);
                 float targetFogDensity = _currentPhase.fogDensity;
 
-                // Smooth interpolation for fog
+                // Smooth interpolation for fog. We use:
+                //  - HSV lerp for color (avoids the gray/white "muddy" middle when hue changes)
+                //  - gentler lerp speed for density (was 2f, Evening's 4x density jump from Midday
+                //    used to whiten the screen briefly as fog ramped up)
                 float smoothFactor = GetSmoothFactor();
-                _smoothedFogColor = Color.Lerp(_smoothedFogColor, targetFogColor, smoothFactor * Time.deltaTime * 2f);
+                _smoothedFogColor = LerpHSV(_smoothedFogColor, targetFogColor, smoothFactor * Time.deltaTime * 1.5f);
 
                 // Apply
                 RenderSettings.fogColor = _smoothedFogColor;
-                RenderSettings.fogDensity = Mathf.Lerp(RenderSettings.fogDensity, targetFogDensity, smoothFactor * Time.deltaTime * 2f);
+                RenderSettings.fogDensity = Mathf.Lerp(RenderSettings.fogDensity, targetFogDensity, smoothFactor * Time.deltaTime * 1.5f);
                 RenderSettings.fogMode = FogMode.Exponential;
             }
         }
@@ -519,83 +580,131 @@ namespace ProjectC.Core
 
         private void ApplyVolumeBlend()
         {
-            if (globalVolume == null)
+            if (profile == null) return;
+
+            // Determine which phases we are between, based on server time
+            TimeOfDayPhase currentPhase = profile.GetPhaseForHour(_serverTimeOfDay);
+            if (currentPhase == null)
             {
-                if (logVolumeBlend || logWarnings) Debug.LogWarning("[VolumeBlend] globalVolume is NULL!");
+                if (logVolumeBlend || logWarnings) Debug.LogWarning("[VolumeBlend] No phase matches current hour!");
+                return;
+            }
+            TimeOfDayPhase nextPhase = profile.GetNextPhase(_serverTimeOfDay);
+            if (nextPhase == null) nextPhase = currentPhase; // single-phase fallback
+
+            // Calculate blend factor t (0..1): 0 = full current, 1 = full next
+            float t = CalculateTransitionBlend(currentPhase, _serverTimeOfDay);
+
+            // Set weights on the 3 blend volumes. The volume whose profile matches
+            // the current phase gets (1-t), the one matching the next phase gets t,
+            // the third gets 0 (off).
+            SetBlendVolumeWeights(currentPhase, nextPhase, t);
+
+            // Apply per-phase overrides (e.g. useCustomBloom) on top of the active blend volumes
+            ApplyPostProcessing();
+        }
+
+        /// <summary>
+        /// Calculate the cross-fade factor (0..1) between the current phase and the next one.
+        /// t = 0 when far from the end of the current phase; t climbs to 1 over the last
+        /// `phaseTransitionRatio` fraction of the phase's duration.
+        /// </summary>
+        private float CalculateTransitionBlend(TimeOfDayPhase currentPhase, float hour)
+        {
+            float ratio = Mathf.Clamp(profile != null ? profile.phaseTransitionRatio : 0f, 0f, 0.5f);
+            if (ratio <= 0f) return 0f;
+
+            float currentDuration = GetPhaseDurationHours(currentPhase);
+            if (currentDuration <= 0f) return 0f;
+
+            float transitionWindow = currentDuration * ratio;
+            float hoursUntilEnd = HoursUntil(hour, currentPhase.endHour);
+            return 1f - Mathf.Clamp01(hoursUntilEnd / transitionWindow);
+        }
+
+        private float GetPhaseDurationHours(TimeOfDayPhase phase)
+        {
+            if (phase.startHour <= phase.endHour) return phase.endHour - phase.startHour;
+            return (24f - phase.startHour) + phase.endHour;
+        }
+
+        private float HoursUntil(float fromHour, float toHour)
+        {
+            float diff = toHour - fromHour;
+            if (diff < 0f) diff += 24f;
+            return diff;
+        }
+
+        /// <summary>
+        /// Map a phase to one of the 3 runtime profile instances by inspecting its name.
+        /// Day phases (Morning, Midday, Evening) -> day; Twilight -> twilight; Night -> night.
+        /// </summary>
+        private VolumeProfile GetProfileForPhase(TimeOfDayPhase phase)
+        {
+            if (phase == null) return null;
+            string name = phase.phaseName ?? string.Empty;
+            if (name.IndexOf("Night", System.StringComparison.OrdinalIgnoreCase) >= 0) return _nightVolumeProfileInstance;
+            if (name.IndexOf("Twilight", System.StringComparison.OrdinalIgnoreCase) >= 0) return _twilightVolumeProfileInstance;
+            return _dayVolumeProfileInstance;
+        }
+
+        private void SetBlendVolumeWeights(TimeOfDayPhase currentPhase, TimeOfDayPhase nextPhase, float t)
+        {
+            VolumeProfile currentProf = GetProfileForPhase(currentPhase);
+            VolumeProfile nextProf = GetProfileForPhase(nextPhase);
+
+            ApplyVolumeWeight(_dayBlendVolume, currentProf, nextProf, t);
+            ApplyVolumeWeight(_twilightBlendVolume, currentProf, nextProf, t);
+            ApplyVolumeWeight(_nightBlendVolume, currentProf, nextProf, t);
+        }
+
+        private void ApplyVolumeWeight(Volume vol, VolumeProfile currentProf, VolumeProfile nextProf, float t)
+        {
+            if (vol == null) return;
+
+            // Special case: both neighbouring phases resolve to the same profile
+            // (e.g. Midday -> Evening are both "day" phases). There is nothing to
+            // cross-fade, so do NOT dim the volume as t rises. If we did, URP would
+            // average the volume with the default (no-color-grading) state during
+            // the transition window, producing a visible "white flash" on screen.
+            if (currentProf == nextProf)
+            {
+                vol.weight = (vol.profile == currentProf) ? 1f : 0f;
                 return;
             }
 
-            // Determine target volume profile based on time (using runtime instances!)
-            VolumeProfile targetProfile = null;
-            string profileName = "NONE";
-
-            float t = _serverTimeOfDay;
-
-            // Determine which profile to use based on time (using runtime copies)
-            if (t >= 5f && t < 19.5f)
-            {
-                // Day phases (Morning, Midday, Evening)
-                targetProfile = _dayVolumeProfileInstance;
-                profileName = _dayVolumeProfileInstance != null ? "Day" : "NULL";
-            }
-            else if (t >= 19.5f && t < 21f || t >= 5f && t < 6f)
-            {
-                // Twilight
-                targetProfile = _twilightVolumeProfileInstance ?? _nightVolumeProfileInstance;
-                profileName = _twilightVolumeProfileInstance != null ? "Twilight" : "Night";
-            }
-            else
-            {
-                // Night phases
-                targetProfile = _nightVolumeProfileInstance;
-                profileName = _nightVolumeProfileInstance != null ? "Night" : "NULL";
-            }
-
-            // Switch profile if different
-            bool profileChanged = false;
-            if (targetProfile != null && globalVolume.profile != targetProfile)
-            {
-                globalVolume.profile = targetProfile;
-                profileChanged = true;
-                if (logVolumeBlend) Debug.Log($"[VolumeBlend] Switched to {profileName} profile (runtime instance)");
-            }
-
-            // Re-cache components if profile changed (CRITICAL: components are profile-specific!)
-            if (profileChanged)
-            {
-                if (logVolumeBlend) Debug.Log("[VolumeBlend] Profile changed, re-initializing volume components...");
-                InitializeVolumeComponents();
-                // Update baseline to match the newly active profile, so temperature
-                // overlay blends on top of the correct day/night/twilight values.
-                UpdateActiveBaseline(targetProfile);
-            }
-
-            // Always apply phase-specific post effects (even without volume switching)
-            ApplyPostProcessing();
-
-            // Debug: Check volume state
-            if (showDebugOverlay)
-            {
-                // bool volActive = globalVolume != null && globalVolume.isActiveAndEnabled;
-                // Debug.Log($"[VolumeBlend] Time={t:F1}h, Profile={profileName}, VolumeActive={volActive}");
-            }
+            if (vol.profile == currentProf) vol.weight = 1f - t;
+            else if (vol.profile == nextProf) vol.weight = t;
+            else vol.weight = 0f;
         }
 
         private void ApplyPostProcessing()
         {
-            // DO NOT modify VolumeProfile ColorAdjustments here!
-            // The VolumeProfiles (Day/Night/Twilight) already have ColorAdjustments set
-            // They control saturation, contrast, exposure from the VolumeProfile itself
-            
-            // Only apply bloom/vignette overrides if explicitly set in phase
-            // This avoids resetting the ColorAdjustments from the profile
-            
-            // For bloom - only override if phase explicitly wants custom bloom
-            if (_bloom != null && _currentPhase.useCustomBloom)
+            // Only apply bloom overrides if the current phase explicitly wants custom bloom.
+            // We apply to the ColorAdjustments of each ACTIVE blend volume (weight > 0)
+            // so the override participates in the cross-fade correctly.
+            if (_currentPhase != null && _currentPhase.useCustomBloom)
             {
-                _bloom.intensity.Override(_currentPhase.bloomIntensity);
-                _bloom.threshold.Override(_currentPhase.bloomThreshold);
+                ApplyToActiveBlendVolumes<Bloom>(b =>
+                {
+                    b.intensity.Override(_currentPhase.bloomIntensity);
+                    b.threshold.Override(_currentPhase.bloomThreshold);
+                });
             }
+        }
+
+        /// <summary>
+        /// Run `apply` on the requested VolumeComponent for every blend volume that
+        /// currently contributes to URP (weight > 0). Volumes with weight == 0 are skipped.
+        /// </summary>
+        private void ApplyToActiveBlendVolumes<T>(System.Action<T> apply) where T : VolumeComponent
+        {
+            if (_dayBlendVolume != null && _dayBlendVolume.weight > 0f &&
+                _dayBlendVolume.profile != null && _dayBlendVolume.profile.TryGet<T>(out var d)) apply(d);
+            if (_twilightBlendVolume != null && _twilightBlendVolume.weight > 0f &&
+                _twilightBlendVolume.profile != null && _twilightBlendVolume.profile.TryGet<T>(out var tw)) apply(tw);
+            if (_nightBlendVolume != null && _nightBlendVolume.weight > 0f &&
+                _nightBlendVolume.profile != null && _nightBlendVolume.profile.TryGet<T>(out var n)) apply(n);
         }
 
         private void ApplyTemperatureFilter(float temperature)
@@ -606,38 +715,26 @@ namespace ProjectC.Core
             // Calculate temperature factor (0 = cold, 1 = hot)
             float coldThreshold = profile.temperatureConfig?.coldThreshold ?? 10f;
             float hotThreshold = profile.temperatureConfig?.hotThreshold ?? 30f;
-
             float tempFactor = Mathf.Clamp01(Mathf.InverseLerp(coldThreshold, hotThreshold, temperature));
 
-            // === TEMPERATURE OVERLAY ===
-            // Temperature is a SUBTLE layer on top of the active day/night/twilight
-            // ColorAdjustments baseline. We never overwrite the baseline directly —
-            // we Lerp toward a "temperature target" with weight = tempFactor * strength.
-            // At tempFactor=0 (neutral temp) the final values == baseline exactly.
-            // At tempFactor=1 (extreme) the final values drift toward the temperature
-            // target by `temperatureEffectStrength` (0 = no effect, 1 = full override).
+            float strength = profile.temperatureEffectStrength;
+            float blend = Mathf.Clamp01(tempFactor * strength);
 
-            if (_colorAdjustments != null)
-            {
-                float strength = profile.temperatureEffectStrength;
-                float blend = Mathf.Clamp01(tempFactor * strength);
+            // --- Compute "temperature target" values (what 100% cold/hot would look like) ---
+            Color coldColor = new Color(0.6f, 0.8f, 1f, 1f);   // Blue-ish
+            Color hotColor = new Color(1f, 0.8f, 0.5f, 1f);    // Orange-ish
+            Color targetFilter = Color.Lerp(coldColor, hotColor, tempFactor);
+            float targetSat = Mathf.Lerp(-30f, 25f, tempFactor);
+            float targetExp = Mathf.Lerp(-0.5f, 0.4f, tempFactor);
+            float targetContrast = Mathf.Lerp(35f, -15f, tempFactor);
+            float targetHueShift = 0f; // temperature doesn't drive hue
 
-                // --- Compute "temperature target" values (what 100% cold/hot would look like) ---
-                Color coldColor = new Color(0.6f, 0.8f, 1f, 1f);   // Blue-ish
-                Color hotColor = new Color(1f, 0.8f, 0.5f, 1f);    // Orange-ish
-                Color targetFilter = Color.Lerp(coldColor, hotColor, tempFactor);
-                float targetSat = Mathf.Lerp(-30f, 25f, tempFactor);
-                float targetExp = Mathf.Lerp(-0.5f, 0.4f, tempFactor);
-                float targetContrast = Mathf.Lerp(35f, -15f, tempFactor);
-                float targetHueShift = 0f; // temperature doesn't drive hue
-
-                // --- Lerp from baseline toward target by `blend` ---
-                _colorAdjustments.postExposure.Override(Mathf.Lerp(_currentBaseline.postExposure, targetExp, blend));
-                _colorAdjustments.contrast.Override(Mathf.Lerp(_currentBaseline.contrast, targetContrast, blend));
-                _colorAdjustments.saturation.Override(Mathf.Lerp(_currentBaseline.saturation, targetSat, blend));
-                _colorAdjustments.hueShift.Override(Mathf.Lerp(_currentBaseline.hueShift, targetHueShift, blend));
-                _colorAdjustments.colorFilter.Override(Color.Lerp(_currentBaseline.colorFilter, targetFilter, blend));
-            }
+            // --- Apply delta to each active blend volume using its own baseline ---
+            // (volume.weight > 0 means it contributes to the final URP mix, so the
+            // Lerp-based delta survives the cross-fade correctly when summed.)
+            ApplyTemperatureToBlendVolume(_dayBlendVolume, _dayBaseline, blend, targetFilter, targetExp, targetContrast, targetSat, targetHueShift);
+            ApplyTemperatureToBlendVolume(_twilightBlendVolume, _twilightBaseline, blend, targetFilter, targetExp, targetContrast, targetSat, targetHueShift);
+            ApplyTemperatureToBlendVolume(_nightBlendVolume, _nightBaseline, blend, targetFilter, targetExp, targetContrast, targetSat, targetHueShift);
 
             // Non-volume effects: fog + ambient. These don't interfere with the
             // day/night/twilight ColorAdjustments and remain as-is.
@@ -652,6 +749,26 @@ namespace ProjectC.Core
             Color coldAmbient = new Color(0.25f, 0.3f, 0.45f);
             Color hotAmbient = new Color(0.55f, 0.45f, 0.3f);
             RenderSettings.ambientSkyColor = Color.Lerp(coldAmbient, hotAmbient, tempFactor);
+        }
+
+        private void ApplyTemperatureToBlendVolume(
+            Volume vol,
+            ColorAdjustmentsBaseline baseline,
+            float blend,
+            Color targetFilter,
+            float targetExp,
+            float targetContrast,
+            float targetSat,
+            float targetHue)
+        {
+            if (vol == null || vol.weight <= 0f) return; // skip inactive (no contribution to URP mix)
+            if (vol.profile == null || !vol.profile.TryGet<ColorAdjustments>(out var ca)) return;
+
+            ca.postExposure.Override(Mathf.Lerp(baseline.postExposure, targetExp, blend));
+            ca.contrast.Override(Mathf.Lerp(baseline.contrast, targetContrast, blend));
+            ca.saturation.Override(Mathf.Lerp(baseline.saturation, targetSat, blend));
+            ca.hueShift.Override(Mathf.Lerp(baseline.hueShift, targetHue, blend));
+            ca.colorFilter.Override(Color.Lerp(baseline.colorFilter, targetFilter, blend));
         }
 
         private void UpdateExternalControllers()
@@ -790,7 +907,7 @@ namespace ProjectC.Core
         {
             if (!showDebugOverlay || profile == null || profile.showDebugInfo == false) return;
 
-            GUILayout.BeginArea(new Rect(10, 10, 350, 250));
+            GUILayout.BeginArea(new Rect(10, 10, 380, 290));
             GUILayout.BeginVertical("box");
 
             GUILayout.Label($"<color=white><b>Day/Night Debug</b></color>");
@@ -817,6 +934,13 @@ namespace ProjectC.Core
             GUILayout.Label($"<color=white>TempFactor: {tempFactor:F2}</color>");
             GUILayout.Label($"<color=white>Fog: {(profile.enableFog ? "ON" : "OFF")}</color>");
             GUILayout.Label($"<color=white>VolBlend: {(profile.useVolumeBlending ? "ON" : "OFF")}</color>");
+            GUILayout.Label($"<color=white>TransitionRatio: {(profile != null ? profile.phaseTransitionRatio : 0f):F2}</color>");
+
+            // Blend volume weights (Day / Twilight / Night)
+            float dayW = _dayBlendVolume != null ? _dayBlendVolume.weight : 0f;
+            float twW = _twilightBlendVolume != null ? _twilightBlendVolume.weight : 0f;
+            float nightW = _nightBlendVolume != null ? _nightBlendVolume.weight : 0f;
+            GUILayout.Label($"<color=yellow>Blend  Day:{dayW:F2}  Tw:{twW:F2}  Night:{nightW:F2}</color>");
 
             GUILayout.Label($"<color=white>Stars: {_starVisibility:F2}</color>");
 

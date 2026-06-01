@@ -48,6 +48,9 @@ namespace ProjectC.Core
         public VolumeProfile twilightVolumeProfile;
         [Tooltip("Use volume blending based on blend factor")]
         public bool useVolumeBlending = true;
+        [Tooltip("Fraction of each phase's duration at the END of the phase that should be a smooth cross-fade into the next phase. 0.2 = last 20% of phase length is a transition. Set 0 to disable blending. Range 0..0.5.")]
+        [Range(0f, 0.5f)]
+        public float phaseTransitionRatio = 0.2f;
 
         [Header("Color Grading")]
         [Tooltip("Reference to temperature filter configuration")]

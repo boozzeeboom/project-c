@@ -52,6 +52,9 @@ namespace ProjectC.Core
         [Header("Color Grading")]
         [Tooltip("Reference to temperature filter configuration")]
         public TemperatureFilterConfig temperatureConfig;
+        [Tooltip("How strongly temperature overlay blends on top of the active day/night/twilight ColorAdjustments baseline. 0 = no temperature effect, 1 = full replacement of baseline by temperature. Recommended: 0.2 - 0.4 for a subtle overlay.")]
+        [Range(0f, 1f)]
+        public float temperatureEffectStrength = 0.3f;
         [Tooltip("Global saturation multiplier")]
         [Range(-1f, 1f)]
         public float globalSaturationOffset = 0f;

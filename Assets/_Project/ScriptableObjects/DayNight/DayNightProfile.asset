@@ -32,7 +32,7 @@ MonoBehaviour:
   twilightVolumeProfile: {fileID: 11400000, guid: 3ebb78acd0a0ebb4a856178f3390439b, type: 2}
   useVolumeBlending: 1
   temperatureConfig: {fileID: 11400000, guid: 776fafc21913afa4999bdb5d216a96db, type: 2}
-  globalSaturationOffset: 0.058
+  globalSaturationOffset: 0.041
   globalExposureOffset: 0.12
   globalContrastOffset: 0.08
   constellationController: {fileID: 0}

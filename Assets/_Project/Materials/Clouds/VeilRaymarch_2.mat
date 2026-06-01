@@ -126,8 +126,8 @@ Material:
     - _RaymarchMaxDist: 8000
     - _RaymarchSteps: 24
     - _ReceiveShadows: 1
-    - _RimIntensity: 0.5
-    - _RimPower: 3
+    - _RimIntensity: 0.1
+    - _RimPower: 0.5
     - _Smoothness: 0.5
     - _SmoothnessTextureChannel: 0
     - _SpecularHighlights: 1

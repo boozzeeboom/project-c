@@ -7,7 +7,7 @@ Material:
   m_CorrespondingSourceObject: {fileID: 0}
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
-  m_Name: Material_Cloud_Lower
+  m_Name: TestMat_GhibliRim
   m_Shader: {fileID: 4800000, guid: c231ae37c24590540916d83ae93dfa38, type: 3}
   m_Parent: {fileID: 0}
   m_ModifiedSerializedProperties: 0
@@ -17,7 +17,8 @@ Material:
   m_EnableInstancingVariants: 0
   m_DoubleSidedGI: 0
   m_CustomRenderQueue: -1
-  stringTagMap: {}
+  stringTagMap:
+    RenderType: Transparent
   disabledShaderPasses: []
   m_LockedProperties: 
   m_SavedProperties:
@@ -33,15 +34,15 @@ Material:
         m_Offset: {x: 0, y: 0}
     m_Ints: []
     m_Floats:
-    - _AlphaBase: 0.8
-    - _NoiseScale: 1
+    - _AlphaBase: 0.6
+    - _NoiseScale: 1.5
     - _RimPower: 2
-    - _Softness: 0.5
+    - _Softness: 0.4
     - _VertexDisplacement: 0.3
     - _VertexSpeed: 0.3
     m_Colors:
     - _BaseColor: {r: 1, g: 1, b: 1, a: 0.5}
     - _NoiseScrollSpeed: {r: 0.02, g: 0.01, b: 0.03, a: 0.015}
-    - _RimColor: {r: 1, g: 0.85, b: 0.6, a: 0.6}
+    - _RimColor: {r: 1, g: 0.85, b: 0.6, a: 0.8}
   m_BuildTextureStacks: []
   m_AllowLocking: 1

@@ -20,6 +20,14 @@ namespace ProjectC.Core
         [Header("Material")]
         public Material ImpostorMaterial;
 
+        [Header("HSV Color Correction")]
+        [Range(-1f, 1f)]
+        public float Hue = 0f;
+        [Range(-1f, 1f)]
+        public float Saturation = 0f;
+        [Range(-1f, 1f)]
+        public float Value = 0f;
+
         [Header("Debug Logging")]
         public bool logInitialization = false;
 
@@ -70,6 +78,8 @@ namespace ProjectC.Core
                 }
             }
 
+            ApplyHSVToMaterials();
+
             _impostors = new ImpostorData[ImpostorCount];
 
             if (logInitialization) Debug.Log($"[{name}] Initialized: impostors={ImpostorCount}, textures={_textureCount}");
@@ -111,6 +121,7 @@ namespace ProjectC.Core
 
         private void Update()
         {
+            ApplyHSVToMaterials();
             if (_currentCount == 0) return;
 
             Vector3 playerPos = GetPlayerPosition();
@@ -187,6 +198,31 @@ namespace ProjectC.Core
         {
             _windDir = dir;
             _windSpeed = speed;
+        }
+
+        public void SetHSV(float hue, float saturation, float value)
+        {
+            Hue = hue;
+            Saturation = saturation;
+            Value = value;
+            ApplyHSVToMaterials();
+        }
+
+        private void ApplyHSVToMaterials()
+        {
+            if (_instMaterials == null) return;
+
+            for (int i = 0; i < _instMaterials.Length; i++)
+            {
+                if (_instMaterials[i] != null)
+                {
+                    // Shader uses global properties, not instanced
+                    _instMaterials[i].SetFloat("_Hue", Hue);
+                    _instMaterials[i].SetFloat("_Saturation", Saturation);
+                    _instMaterials[i].SetFloat("_Value", Value);
+                    _instMaterials[i].SetColor("_TintColor", UnityEngine.Color.white);
+                }
+            }
         }
 
         private Mesh CreateQuadMesh()

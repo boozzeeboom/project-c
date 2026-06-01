@@ -7,8 +7,8 @@ Material:
   m_CorrespondingSourceObject: {fileID: 0}
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
-  m_Name: Material_Cloud_Lower
-  m_Shader: {fileID: 4800000, guid: c231ae37c24590540916d83ae93dfa38, type: 3}
+  m_Name: TestMat_OutlineV2
+  m_Shader: {fileID: 4800000, guid: 24ded29ee3f5fbe4d881202d610833ab, type: 3}
   m_Parent: {fileID: 0}
   m_ModifiedSerializedProperties: 0
   m_ValidKeywords: []
@@ -33,15 +33,25 @@ Material:
         m_Offset: {x: 0, y: 0}
     m_Ints: []
     m_Floats:
-    - _AlphaBase: 0.8
-    - _NoiseScale: 1
-    - _RimPower: 2
-    - _Softness: 0.5
-    - _VertexDisplacement: 0.3
-    - _VertexSpeed: 0.3
+    - _AlphaBase: 0.907
+    - _GradientIntensity: 0.6
+    - _NoiseScale: 1.5
+    - _OutlineStart: 0
+    - _OutlineThickness: 1
+    - _OutlineThreshold: 0.01
+    - _OutlineWidth: 0.5
+    - _RimIntensity: 2
+    - _RimPower: 0.81
+    - _Softness: 0.118
+    - _VertexDisplacement: 2.5
+    - _VertexSpeed: 0.08
     m_Colors:
-    - _BaseColor: {r: 1, g: 1, b: 1, a: 0.5}
+    - _BaseColor: {r: 0.2894441, g: 0, b: 1, a: 1}
+    - _BottomLightColor: {r: 0.31, g: 0.76, b: 0.97, a: 1}
     - _NoiseScrollSpeed: {r: 0.02, g: 0.01, b: 0.03, a: 0.015}
-    - _RimColor: {r: 1, g: 0.85, b: 0.6, a: 0.6}
+    - _OutlineColor: {r: 0.9607844, g: 0.94117653, b: 0.909804, a: 1}
+    - _RimColor: {r: 0.94, g: 0.76, b: 0.48, a: 0.8}
+    - _ShadowColor: {r: 0.18, g: 0.11, b: 0.31, a: 0.8}
+    - _TopLightColor: {r: 0.33232224, g: 0, b: 1, a: 1}
   m_BuildTextureStacks: []
   m_AllowLocking: 1

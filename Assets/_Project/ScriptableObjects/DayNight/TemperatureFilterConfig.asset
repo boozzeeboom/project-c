@@ -14,11 +14,11 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::ProjectC.Core.TemperatureFilterConfig
   coldThreshold: 0
   coldOverlayColor: {r: 0.3, g: 0.4, b: 0.6, a: 1}
-  coldSaturationBoost: 10
+  coldSaturationBoost: 2
   coldValueOffset: -0.1
   hotThreshold: 25
   hotOverlayColor: {r: 0.6, g: 0.3, b: 0.1, a: 1}
-  hotSaturationBoost: 10
+  hotSaturationBoost: 2
   hotValueOffset: 0.1
   blendCurve:
     serializedVersion: 2

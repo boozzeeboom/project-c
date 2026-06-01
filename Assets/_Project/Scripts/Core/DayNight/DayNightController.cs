@@ -70,22 +70,6 @@ namespace ProjectC.Core
         private VolumeProfile _twilightVolumeProfileInstance;
         private VolumeProfile _currentProfileInstance;
 
-        // Cached baseline values of ColorAdjustments per profile (Day/Night/Twilight).
-        // Captured once at runtime from the .asset values, before any temperature overlay
-        // is applied. Used as the "base" that temperature blends on top of.
-        private struct ColorAdjustmentsBaseline
-        {
-            public float postExposure;
-            public float contrast;
-            public float hueShift;
-            public float saturation;
-            public Color colorFilter;
-        }
-        private ColorAdjustmentsBaseline _dayBaseline;
-        private ColorAdjustmentsBaseline _nightBaseline;
-        private ColorAdjustmentsBaseline _twilightBaseline;
-        private ColorAdjustmentsBaseline _currentBaseline;
-
         // Blend volumes: 3 child GameObjects, each with a Volume component bound to one
         // of the runtime profile instances. ApplyVolumeBlend sets their `weight` each
         // frame to create cross-fades between phases. priority=100, isGlobal=true.
@@ -93,6 +77,14 @@ namespace ProjectC.Core
         private Volume _dayBlendVolume;
         private Volume _twilightBlendVolume;
         private Volume _nightBlendVolume;
+
+        // Temperature overlay volume: a SEPARATE 4th blend volume with priority=200
+        // (above day/twilight/night = 100). It owns its OWN ColorAdjustments profile
+        // and is the ONLY place ApplyTemperatureFilter writes to. This means
+        // day/twilight/night volume profiles stay immutable at runtime — whatever you
+        // set in their .asset files is what URP uses, period.
+        private Volume _temperatureBlendVolume;
+        private VolumeProfile _temperatureColorProfile;
 
         // Events for other systems to subscribe
         public event System.Action<TimeOfDayPhase, float> OnPhaseChanged;
@@ -119,19 +111,22 @@ namespace ProjectC.Core
         {
             bool profilesLost = _dayVolumeProfileInstance == null || _nightVolumeProfileInstance == null || _twilightVolumeProfileInstance == null;
             bool blendVolumesLost = _dayBlendVolume == null || _twilightBlendVolume == null || _nightBlendVolume == null;
+            bool tempVolLost = _temperatureBlendVolume == null || _temperatureColorProfile == null;
 
             if (profilesLost)
             {
                 if (logWarnings) Debug.LogWarning("[DayNightController] Profile instances were lost (possible domain reload). Re-initializing...");
                 InitializeVolumeProfileInstances();
-                // Re-capture baselines — the new instances start with the .asset values
-                // which are exactly what we want as the clean baseline.
-                CaptureColorAdjustmentsBaselines();
             }
             if (blendVolumesLost)
             {
                 if (logWarnings) Debug.LogWarning("[DayNightController] Blend volume references lost (possible domain reload). Re-initializing...");
                 InitializeBlendVolumes();
+            }
+            if (tempVolLost)
+            {
+                if (logWarnings) Debug.LogWarning("[DayNightController] Temperature blend volume reference lost (possible domain reload). Re-initializing...");
+                InitializeTemperatureVolume();
             }
         }
 
@@ -150,13 +145,14 @@ namespace ProjectC.Core
             // Create runtime copies of volume profiles (CRITICAL: prevents external modifications!)
             InitializeVolumeProfileInstances();
 
-            // Capture baseline ColorAdjustments values from the .asset files BEFORE
-            // any temperature overlay is applied. This is what temperature blends on top of.
-            CaptureColorAdjustmentsBaselines();
-
             // Create 3 child blend volumes (one per phase profile). Their `weight` is
             // driven by ApplyVolumeBlend each frame for smooth phase cross-fades.
             InitializeBlendVolumes();
+
+            // Create the temperature overlay volume (4th, priority=200, separate profile).
+            // This is the ONLY thing ApplyTemperatureFilter writes to — day/twilight/night
+            // profiles stay immutable so values you set in the .asset files are final.
+            InitializeTemperatureVolume();
 
             // Load initial server time
             if (ServerWeatherController.Instance != null)
@@ -185,35 +181,6 @@ namespace ProjectC.Core
         }
 
         /// <summary>
-        /// Capture baseline ColorAdjustments values from each runtime profile instance.
-        /// These are the "clean" values authored in the .asset files, used as the base
-        /// for temperature blending. Captured once after Instantiate; never mutated.
-        /// </summary>
-        private void CaptureColorAdjustmentsBaselines()
-        {
-            _dayBaseline = CaptureBaseline(_dayVolumeProfileInstance);
-            _nightBaseline = CaptureBaseline(_nightVolumeProfileInstance);
-            _twilightBaseline = CaptureBaseline(_twilightVolumeProfileInstance);
-            _currentBaseline = _dayBaseline; // initial fallback, will be updated on first volume switch
-
-            if (logInitialization) Debug.Log("[DayNightController] Captured ColorAdjustments baselines (Day/Night/Twilight)");
-        }
-
-        private ColorAdjustmentsBaseline CaptureBaseline(VolumeProfile p)
-        {
-            var b = new ColorAdjustmentsBaseline();
-            if (p == null) return b;
-            if (!p.TryGet<ColorAdjustments>(out var ca)) return b;
-
-            b.postExposure = ca.postExposure.value;
-            b.contrast = ca.contrast.value;
-            b.hueShift = ca.hueShift.value;
-            b.saturation = ca.saturation.value;
-            b.colorFilter = ca.colorFilter.value;
-            return b;
-        }
-
-        /// <summary>
         /// Create the 3 child GameObjects with Volume components used for cross-fading
         /// between phases. Each is bound to one of the runtime profile instances and
         /// starts with weight=0 (ApplyVolumeBlend drives weights each frame).
@@ -225,6 +192,53 @@ namespace ProjectC.Core
             _nightBlendVolume = CreateOrGetBlendVolume("NightBlendVolume", _nightVolumeProfileInstance);
 
             if (logInitialization) Debug.Log("[DayNightController] Blend volumes created (Day/Twilight/Night), priority=100, weight=0 — driven by ApplyVolumeBlend");
+        }
+
+        /// <summary>
+        /// Create a SEPARATE 4th volume (priority=200) that owns its own ColorAdjustments
+        /// profile. ApplyTemperatureFilter writes ONLY to this profile's ColorAdjustments,
+        /// so day/twilight/night profiles are never mutated — the values you set in those
+        /// .asset files are exactly what URP applies at runtime.
+        /// </summary>
+        private void InitializeTemperatureVolume()
+        {
+            // Use an existing child if it survived a domain reload; otherwise create one.
+            Transform child = transform.Find("TemperatureBlendVolume");
+            GameObject go;
+            if (child == null)
+            {
+                go = new GameObject("TemperatureBlendVolume");
+                go.transform.SetParent(transform, false);
+                go.transform.localPosition = Vector3.zero;
+                go.transform.localRotation = Quaternion.identity;
+            }
+            else
+            {
+                go = child.gameObject;
+            }
+
+            var vol = go.GetComponent<Volume>();
+            if (vol == null) vol = go.AddComponent<Volume>();
+            vol.priority = 200; // above day/twilight/night (100)
+            vol.isGlobal = true;
+            vol.weight = 0f; // off by default — ApplyTemperatureFilter sets it each frame
+
+            // Always create a fresh in-memory profile (we own and mutate it).
+            _temperatureColorProfile = ScriptableObject.CreateInstance<VolumeProfile>();
+            vol.profile = _temperatureColorProfile;
+
+            // Add ColorAdjustments and start with neutral values. The state is set to
+            // "overriding" so even at neutral temperature the volume "tells" URP
+            // "no effect" only by being weight=0 (not by inactive override).
+            var ca = _temperatureColorProfile.Add<ColorAdjustments>(true);
+            ca.colorFilter.Override(Color.white);
+            ca.saturation.Override(0f);
+            ca.postExposure.Override(0f);
+            ca.contrast.Override(0f);
+            ca.hueShift.Override(0f);
+
+            _temperatureBlendVolume = vol;
+            if (logInitialization) Debug.Log("[DayNightController] Temperature blend volume created (priority=200, owns its own ColorAdjustments profile)");
         }
 
         private Volume CreateOrGetBlendVolume(string goName, VolumeProfile profile)
@@ -711,30 +725,40 @@ namespace ProjectC.Core
         {
             // Always apply temperature effect if we have a profile
             if (profile == null || !profile.enableTemperatureFilter) return;
+            if (_temperatureBlendVolume == null || _temperatureColorProfile == null) return;
+            if (!_temperatureColorProfile.TryGet<ColorAdjustments>(out var ca)) return;
 
             // Calculate temperature factor (0 = cold, 1 = hot)
             float coldThreshold = profile.temperatureConfig?.coldThreshold ?? 10f;
             float hotThreshold = profile.temperatureConfig?.hotThreshold ?? 30f;
             float tempFactor = Mathf.Clamp01(Mathf.InverseLerp(coldThreshold, hotThreshold, temperature));
 
+            // Volume weight acts as the master "how much temperature" knob.
+            // At neutral temp (tempFactor=0) the volume is OFF — day/twilight/night
+            // profiles pass through URP untouched, exactly as authored in the .asset.
+            // At extreme temp, weight ramps up to `temperatureEffectStrength` (capped 0..1).
             float strength = profile.temperatureEffectStrength;
-            float blend = Mathf.Clamp01(tempFactor * strength);
+            _temperatureBlendVolume.weight = Mathf.Clamp01(tempFactor * strength);
 
             // --- Compute "temperature target" values (what 100% cold/hot would look like) ---
+            // These are written into the temperature volume's OWN profile. They will be
+            // applied by URP ON TOP of the day/twilight/night mix (priority 200 > 100).
+            // Since URP's per-override blending takes the highest-priority value when
+            // an override is active in both, the temperature volume replaces the
+            // base values (color filter, exposure, etc.) for its active parameters.
             Color coldColor = new Color(0.6f, 0.8f, 1f, 1f);   // Blue-ish
             Color hotColor = new Color(1f, 0.8f, 0.5f, 1f);    // Orange-ish
             Color targetFilter = Color.Lerp(coldColor, hotColor, tempFactor);
             float targetSat = Mathf.Lerp(-30f, 25f, tempFactor);
             float targetExp = Mathf.Lerp(-0.5f, 0.4f, tempFactor);
             float targetContrast = Mathf.Lerp(35f, -15f, tempFactor);
-            float targetHueShift = 0f; // temperature doesn't drive hue
+            // No hue shift: temperature doesn't drive hue
 
-            // --- Apply delta to each active blend volume using its own baseline ---
-            // (volume.weight > 0 means it contributes to the final URP mix, so the
-            // Lerp-based delta survives the cross-fade correctly when summed.)
-            ApplyTemperatureToBlendVolume(_dayBlendVolume, _dayBaseline, blend, targetFilter, targetExp, targetContrast, targetSat, targetHueShift);
-            ApplyTemperatureToBlendVolume(_twilightBlendVolume, _twilightBaseline, blend, targetFilter, targetExp, targetContrast, targetSat, targetHueShift);
-            ApplyTemperatureToBlendVolume(_nightBlendVolume, _nightBaseline, blend, targetFilter, targetExp, targetContrast, targetSat, targetHueShift);
+            ca.colorFilter.Override(targetFilter);
+            ca.saturation.Override(targetSat);
+            ca.postExposure.Override(targetExp);
+            ca.contrast.Override(targetContrast);
+            ca.hueShift.Override(0f);
 
             // Non-volume effects: fog + ambient. These don't interfere with the
             // day/night/twilight ColorAdjustments and remain as-is.
@@ -749,26 +773,6 @@ namespace ProjectC.Core
             Color coldAmbient = new Color(0.25f, 0.3f, 0.45f);
             Color hotAmbient = new Color(0.55f, 0.45f, 0.3f);
             RenderSettings.ambientSkyColor = Color.Lerp(coldAmbient, hotAmbient, tempFactor);
-        }
-
-        private void ApplyTemperatureToBlendVolume(
-            Volume vol,
-            ColorAdjustmentsBaseline baseline,
-            float blend,
-            Color targetFilter,
-            float targetExp,
-            float targetContrast,
-            float targetSat,
-            float targetHue)
-        {
-            if (vol == null || vol.weight <= 0f) return; // skip inactive (no contribution to URP mix)
-            if (vol.profile == null || !vol.profile.TryGet<ColorAdjustments>(out var ca)) return;
-
-            ca.postExposure.Override(Mathf.Lerp(baseline.postExposure, targetExp, blend));
-            ca.contrast.Override(Mathf.Lerp(baseline.contrast, targetContrast, blend));
-            ca.saturation.Override(Mathf.Lerp(baseline.saturation, targetSat, blend));
-            ca.hueShift.Override(Mathf.Lerp(baseline.hueShift, targetHue, blend));
-            ca.colorFilter.Override(Color.Lerp(baseline.colorFilter, targetFilter, blend));
         }
 
         private void UpdateExternalControllers()
@@ -940,7 +944,8 @@ namespace ProjectC.Core
             float dayW = _dayBlendVolume != null ? _dayBlendVolume.weight : 0f;
             float twW = _twilightBlendVolume != null ? _twilightBlendVolume.weight : 0f;
             float nightW = _nightBlendVolume != null ? _nightBlendVolume.weight : 0f;
-            GUILayout.Label($"<color=yellow>Blend  Day:{dayW:F2}  Tw:{twW:F2}  Night:{nightW:F2}</color>");
+            float tempW = _temperatureBlendVolume != null ? _temperatureBlendVolume.weight : 0f;
+            GUILayout.Label($"<color=yellow>Blend  Day:{dayW:F2}  Tw:{twW:F2}  Night:{nightW:F2}  Temp:{tempW:F2}</color>");
 
             GUILayout.Label($"<color=white>Stars: {_starVisibility:F2}</color>");
 

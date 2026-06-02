@@ -187,6 +187,9 @@ namespace ProjectC.Core
 
         /// <summary>
         /// Find nearest ship within range. Zero allocations.
+        /// Учитывает размер корабля: если у корабля есть Collider, используем Bounds.ClosestPoint
+        /// (иначе дистанция считается от центра transform.position и для больших кораблей
+        /// игрок не может "подойти" в зону посадки у края).
         /// </summary>
         public static ShipController FindNearestShip(Vector3 position, float range)
         {
@@ -197,8 +200,22 @@ namespace ProjectC.Core
             {
                 var ship = _ships[i];
                 if (ship == null || !ship.gameObject.activeSelf) continue;
-                
-                float dist = Vector3.Distance(position, ship.transform.position);
+
+                float dist;
+                // Ищем ближайший Collider — учитываем ВСЕ коллайдеры (включая дочерние)
+                // чтобы визуально увеличенные корабли (transform.localScale > 1) корректно
+                // определяли свою "зону посадки"
+                var collider = ship.GetComponentInChildren<Collider>();
+                if (collider != null)
+                {
+                    Vector3 closest = collider.bounds.ClosestPoint(position);
+                    dist = Vector3.Distance(position, closest);
+                }
+                else
+                {
+                    dist = Vector3.Distance(position, ship.transform.position);
+                }
+
                 if (dist < range && dist < minDist)
                 {
                     minDist = dist;

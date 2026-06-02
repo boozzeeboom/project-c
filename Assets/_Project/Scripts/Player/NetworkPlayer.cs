@@ -232,7 +232,11 @@ namespace ProjectC.Player
             
 
             // F — переключение режимов
-            if (Keyboard.current.fKey.wasPressedThisFrame)
+            // Guard: пропускаем RPC если NGO не готов или игрок не спавнен
+            // (защита от NRE в __endSendRpc при scene transition / domain reload / shutdown)
+            if (Keyboard.current.fKey.wasPressedThisFrame
+                && NetworkManager.Singleton != null
+                && IsSpawned)
             {
                 SubmitSwitchModeRpc();
             }
@@ -258,8 +262,15 @@ namespace ProjectC.Player
 
                 bool boost = Keyboard.current.leftShiftKey.isPressed;
 
-                if (_currentShip != null && NetworkManager.Singleton != null && NetworkManager.Singleton.IsListening)
+                // Guard: пропускаем ship input если NGO/корабль не готовы
+                // (защита от NRE в __endSendRpc при scene transition / shutdown)
+                if (_currentShip != null
+                    && _currentShip.IsSpawned
+                    && NetworkManager.Singleton != null
+                    && NetworkManager.Singleton.IsListening)
+                {
                     _currentShip.SendShipInput(thrust, yaw, pitch, vertical, boost);
+                }
 
                 // E в корабле — пока ничего
                 if (Keyboard.current.eKey.wasPressedThisFrame && Keyboard.current.qKey.isPressed == false)

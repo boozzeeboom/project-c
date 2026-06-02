@@ -617,6 +617,9 @@ namespace ProjectC.Player
 
         public void SendShipInput(float thrust, float yaw, float pitch, float vertical, bool boost)
         {
+            // Guard: не отправляем RPC если NGO не готов или корабль не spawned
+            // (защита от NRE в __endSendRpc при scene transition / shutdown)
+            if (NetworkManager.Singleton == null || !IsSpawned) return;
             SubmitShipInputRpc(thrust, yaw, pitch, vertical, boost);
         }
 
@@ -908,6 +911,9 @@ namespace ProjectC.Player
         /// </summary>
         public void AddPilot(NetworkPlayer pilot)
         {
+            // Guard: не отправляем RPC если NGO не готов или корабль не spawned
+            // (защита от NRE в __endSendRpc при scene transition / shutdown)
+            if (NetworkManager.Singleton == null || !IsSpawned) return;
             AddPilotRpc(pilot.OwnerClientId);
         }
 
@@ -923,6 +929,9 @@ namespace ProjectC.Player
         /// </summary>
         public void RemovePilot(ulong clientId)
         {
+            // Guard: не отправляем RPC если NGO не готов или корабль не spawned
+            // (защита от NRE в __endSendRpc при scene transition / shutdown)
+            if (NetworkManager.Singleton == null || !IsSpawned) return;
             RemovePilotRpc(clientId);
         }
 

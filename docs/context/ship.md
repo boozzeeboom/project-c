@@ -1,6 +1,6 @@
 # Ship Context — Project C
 
-**Теги:** `ship`, `shipcontroller`, `modules`, `fuel`, `altitude`, `wind`, `turbulence`
+**Теги:** `ship`, `shipcontroller`, `modules`, `fuel`, `altitude`, `wind`, `turbulence`, `networktransform`, `scene-placed`
 
 ---
 
@@ -21,12 +21,37 @@ ShipController (основной контроллер)
 
 | Файл | Назначение |
 |------|------------|
-| `Player/ShipController.cs` | Физика корабля, ввод |
+| `Player/ShipController.cs` | Физика корабля, ввод, RPC |
 | `Ship/ShipFuelSystem.cs` | Расход мезия, управление |
 | `Ship/ShipModuleManager.cs` | Модули (Slot + Module) |
 | `Ship/TurbulenceEffect.cs` | Случайные силы + torque |
 | `Ship/WindZone.cs` | Ветровые зоны |
 | `Ship/AltitudeCorridorSystem.cs` | 6 коридоров высот |
+
+### Сетевые компоненты на префабе/GameObject корабля
+
+| Компонент | Обязательно | Зачем |
+|---|---|---|
+| `Rigidbody` | ✅ | Физика полёта |
+| `NetworkObject` | ✅ (RequireComponent) | Сетевая идентификация. У scene-placed объектов `IsSceneObject=true` |
+| `NetworkTransform` | ✅ **(Authority: Server)** | Репликация позиции/поворота от сервера к клиентам. Без этого клиенты видят корабль неподвижно в стартовой точке |
+| `ShipController.cs` | ✅ | Сетевой контроллер (NetworkBehaviour) |
+| `SceneBoundNetworkObject` | ⏳ TODO | Per-scene фильтрация видимости через `ServerSceneManager.HideSceneObjectsFromClient`. **Не добавлен** на текущей фазе — нужен, когда стриминг мира будет доведён |
+
+> **См. также:** `docs/dev/INTEGRATION_SHIPS_TO_WORLD_0_0.md` — диагноз, фикс, что не делаем и почему.
+
+### Scene-placed корабли (текущая фаза)
+
+Корабли размещаются прямо в сцене (`WorldScene_0_0` — три тестовых: `Ship_Light`, `Ship_Medium`, `Ship_Heavy`). При запуске через `BootstrapScene → StartHost()`:
+
+1. NGO через `NetworkSceneManager` с `EnableSceneManagement=1` загружает ВСЕ 24 сцены из Build Settings
+2. **НО:** у scene-placed `NetworkObject`, добавленных вручную (не через префаб), `InScenePlacedSourceGlobalObjectIdHash == 0` — NGO **не считает** их scene-placed и **не спавнит автоматически**
+3. `ScenePlacedObjectSpawner` (компонент в `BootstrapScene`) подписан на `ClientSceneLoader.OnSceneLoaded` — на сервере при загрузке сцены находит все `NetworkObject` с `!IsSpawned` и вызывает `Spawn(destroyWithScene: true)` вручную
+4. После этого `ShipController.IsSpawned == true`, RPC (`AddPilot`, `SubmitShipInput`) работают
+
+**Альтернатива (если `InScenePlacedSourceGlobalObjectIdHash != 0`):** NGO спавнит scene-placed автоматически, `ScenePlacedObjectSpawner` скипает их (видит `IsSpawned == true`). Спавнер — идемпотентный, безопасен в обоих случаях.
+
+**Если `IsSpawned == false` в Play Mode:** в Console должно быть `[ScenePlacedObjectSpawner] Scene (0,0): spawned=N, already=M, failed=K` (для 0_0 ожидаемо `N=3, M=0, K=0`). Если 0, 0, 3 — смотри warning'и `Failed to spawn {name}`.
 
 ---
 
@@ -41,6 +66,8 @@ ShipController (основной контроллер)
 | **F** | Выйти из корабля |
 | **Мышь** | Тангаж (нос вверх/вниз) |
 
+> **TODO:** в `NetworkPlayer.Update` ввод читается через `Keyboard.current.*.isPressed` напрямую, в обход `PlayerInputReader` (см. AGENTS.md). Отдельный рефактор, не блокер.
+
 ---
 
 ## ⛽ Система Топлива (Мезій)
@@ -52,7 +79,7 @@ public class ShipFuelSystem : MonoBehaviour
     public float currentFuel;      // Текущий мезий
     public float maxFuel = 100f;  // Максимум
     public float consumptionRate;  // Расход в секунду
-    
+
     public void ConsumeFuel(float amount);
     public void Refuel(float amount);
     public bool HasFuel();        // Проверка для boost
@@ -107,7 +134,7 @@ public class ModuleSlot : MonoBehaviour
 {
     public ModuleType acceptedType;
     public ShipModule equippedModule;
-    
+
     public bool ValidateModule(ShipModule module);
     public void EquipModule(ShipModule module);
 }
@@ -129,7 +156,7 @@ public class WindZone : MonoBehaviour
     public Vector3 windDirection;
     public float windStrength;
     public float radius;
-    
+
     private void OnTriggerStay(Collider other)
     {
         // Применяет силу ветра к кораблю
@@ -149,11 +176,15 @@ public class WindZone : MonoBehaviour
 |-----------|----------|--------|
 | UI | AltitudeUI HUD не отображается | Требует @unity-ui-specialist |
 | Модель | Корабль — примитив (сфера) | Заменить на FBX |
+| Network | `SceneBoundNetworkObject` не добавлен на корабли | TODO: когда стриминг мира будет доведён |
+| Network | `DefaultNetworkPrefabs.asset` пуст и не присвоен | Known issue, отдельный тикет (см. `INTEGRATION_SHIPS_TO_WORLD_0_0.md` §6) |
+| Network | `NetworkPlayer.Update` использует `Keyboard.current.*` напрямую вместо `PlayerInputReader` | TODO: отдельный рефактор, не блокер |
 
 ---
 
 ## 📖 Подробнее
 
+- `docs/dev/INTEGRATION_SHIPS_TO_WORLD_0_0.md` — **полный разбор интеграции кораблей в 0_0, диагноз NRE, фикс**
 - `docs/SHIP_SYSTEM_DOCUMENTATION.md` — текущая реализация
 - `docs/SHIP_LORE_AND_MECHANICS.md` — механики из лора
 - `docs/SHIP_CONTROLLER_PLAN.md` — план разработки
@@ -161,4 +192,4 @@ public class WindZone : MonoBehaviour
 
 ---
 
-**Обновлено:** 2026-04-15
+**Обновлено:** 2026-06-02 (добавлен раздел про NetworkTransform, scene-placed, ссылки на INTEGRATION_SHIPS_TO_WORLD_0_0.md)

@@ -19023,7 +19023,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 1161926159966955946, guid: 224427a7f796e5b448f07ed8c2a1469b, type: 3}
       propertyPath: gravity
-      value: 0
+      value: -20
       objectReference: {fileID: 0}
     - target: {fileID: 1161926159966955946, guid: 224427a7f796e5b448f07ed8c2a1469b, type: 3}
       propertyPath: walkSpeed
@@ -23549,7 +23549,7 @@ MonoBehaviour:
   _directionVariationAngle: 15
   _speedVariationPercent: 0.2
   _timeOfDay: 12
-  _dayCycleRealHours: 0.01
+  _dayCycleRealHours: 0.1
   _enableTimeAutoAdvance: 1
   _timeBroadcastInterval: 5
   _temperature: 20

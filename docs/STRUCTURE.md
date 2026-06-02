@@ -19,6 +19,7 @@
 | Файл | Описание |
 |------|----------|
 | [`STEP_BY_STEP_DEVELOPMENT.md`](STEP_BY_STEP_DEVELOPMENT.md) | **Пошаговая разработка** — принцип "Медленнее = Быстрее", правила, НЕ ТРОГАТЬ .meta |
+| [`world/COMBINE_MESHES_TO_COLLIDER.md`](world/COMBINE_MESHES_TO_COLLIDER.md) | **Импорт Blender-схем в Unity** — Editor-скрипт склеивает меши городов в один MeshCollider (Primum/gorod port: 143 объекта → 1) |
 | [`MMO_Development_Plan.md`](MMO_Development_Plan.md) | Полный план разработки MMO (7 этапов, от прототипа до раннего доступа) |
 | [`SHIP_CONTROLLER_PLAN.md`](SHIP_CONTROLLER_PLAN.md) | План разработки контроллера корабля (шаги 1-5) |
 | [`SHIP_SYSTEM_DOCUMENTATION.md`](SHIP_SYSTEM_DOCUMENTATION.md) | Текущая реализация системы кораблей (архитектура, управление, известные проблемы) |

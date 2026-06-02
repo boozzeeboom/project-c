@@ -17,6 +17,14 @@
 
 ---
 
+## 🧰 Editor Tools / Пайплайны импорта
+
+| Файл | Описание |
+|------|----------|
+| [world/COMBINE_MESHES_TO_COLLIDER.md](world/COMBINE_MESHES_TO_COLLIDER.md) | **Импорт Blender-схем городов** — Editor-скрипт `CombineMeshesToCollider` склеивает 100+ дочерних мешей в один MeshCollider на корне |
+
+---
+
 ## 🎮 Геймдизайн
 
 | Файл | Описание |

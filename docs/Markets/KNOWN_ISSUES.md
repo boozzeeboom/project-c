@@ -1,6 +1,6 @@
 # Markets — Known Issues
 
-Мелкие недочёты, оставленные на точечную правку. **Не блокеры** — полный цикл BUY/LOAD/UNLOAD/SELL работает. Подтверждено пользователем 2026-06-04: "сейчас верстка работает рынок открывается товары покупаются и продаются".
+Мелкие недочёты, оставленные на точечную правку. **Не блокеры** — полный цикл BUY/LOAD/UNLOAD/SELL работает + per-ship cargo cache. Подтверждено пользователем 2026-06-05: cargo не теряется при переключении между кораблями, multi-ship сценарий стабилен.
 
 ---
 
@@ -204,6 +204,41 @@ if (_mainContainer != null) {
 
 ---
 
+## 14. ~~OPEN~~ RESOLVED 2026-06-05: cargo теряется при переключении корабля в UI
+
+**Симптом был (из юзерского репорта):**
+> «Загружаю товар на ship_light. Переключаюсь на ship_medium, загружаю туда. Переключаюсь обратно на ship_light — cargo пустой. Потеряно.»
+
+**Корневая причина:** `MarketClientState` хранил **только** `WarehouseEntryDto[] _cargoCache` для текущего выбранного корабля. Сервер рассылал cargo **только одного** корабля (`cargo` поле). При переключении dropdown'а snapshot не приходил (тик раз в ~5 мин) → `_cargoCache` показывал stale/чужой cargo. Серверный слой (`TradeWorld._cargoCache[shipId]`, persistent в `PlayerPrefs` под `cargo:{shipNetworkObjectId}`) был корректен — баг был только в **клиентской проекции**.
+
+**Фикс:** в `MarketSnapshotDto` добавлено поле `shipCargos[]` (cargo ВСЕХ nearby ships). `MarketClientState` хранит `CurrentShipCargos: IReadOnlyDictionary<ulong, WarehouseEntryDto[]>`. Ship-selector callback переключает UI мгновенно из локального кэша. `HandleTradeResult` обновляет кэш точечно для затронутого корабля. `SetSelectedShipRpc` отправляет свежий snapshot как safety net.
+
+**Подробности:** [FIXES_HISTORY.md → "2026-06-05 — FIX: потеря cargo при переключении между кораблями"](FIXES_HISTORY.md).
+
+**Приоритет:** RESOLVED 2026-06-05. UI переключение мгновенное, cargo всех кораблей в зоне кэшируется на клиенте, мульти-корабельный сценарий работает.
+
+---
+
+## 15. OPEN: нет ownership-проверки для Load/Unload/View cargo
+
+**Симптом:** Любой клиент в зоне может вызвать `Load/Unload` для **любого** корабля (`TradeWorld.SetCargo(shipId, ...)` не проверяет, что `shipId` принадлежит `clientId`). Через `shipCargos[]` в snapshot чужой клиент видит чужой cargo.
+
+**План:** ввести `ShipOwnershipService: Dictionary<ulong /*shipId*/, ulong /*ownerClientId*/>`. Валидация в `Load/Unload/SetSelectedShip` RPC. Фильтрация `shipCargos[]` в snapshot — отдавать cargo только владельцу, остальным `ShipSummaryDto` с обезличенным `cargoUsed` (без состава). Подробности и P1..P4 в [FIXES_HISTORY.md → "Архитектурный план для будущего расширения"](FIXES_HISTORY.md).
+
+**Приоритет:** P1 для MMO-сценария. Для текущего host-only прототипа не блокирует (single-player в dedicated server режиме ещё не тестировался).
+
+---
+
+## 16. OPEN: persistence `cargo:{shipId}` в PlayerPrefs не работает на dedicated server
+
+**Симптом:** `PlayerPrefsRepository` хранит cargo в `PlayerPrefs` — это **локально на клиенте**. На dedicated server `PlayerPrefs` относится к серверному процессу, а не к клиенту → cargo "забывается" при перезапуске dedicated server.
+
+**План:** ввести `IServerCargoRepository` (SQLite / `Application.persistentDataPath/shipCargo.json`). `TradeWorld` при `IsServer==true` использует server-репозиторий, при `IsClient==true` — PlayerPrefs (или оба: клиент кэширует, сервер истина). Stub `ServerFileRepository` уже в `Assets/_Project/Trade/Scripts/Repository/` — см. issue §5.
+
+**Приоритет:** P1 для dedicated server. Сейчас тестируется только host (server+client в одном процессе) — PlayerPrefs работает.
+
+---
+
 ## Резюме приоритетов
 
 | # | Issue | Priority | Блокирует Stage 2.5? |
@@ -221,3 +256,6 @@ if (_mainContainer != null) {
 | 11 | Хоткеи | Low | No |
 | 12 | TradeDebug* tools → старый API | Medium (cleanup) | No |
 | 13 | ~~E не открывает рынок после E вне зоны~~ RESOLVED 2026-06-04 (ghost PlayerSpawner в FindLocalPlayer) | — | No |
+| 14 | ~~Cargo теряется при переключении корабля~~ RESOLVED 2026-06-05 (per-ship client cache + shipCargos[] DTO) | — | No |
+| 15 | Нет ownership-проверки Load/Unload + утечка cargo чужим игрокам в snapshot | P1 | No (single-player only) |
+| 16 | Cargo persistence в PlayerPrefs не работает на dedicated server | P1 | No (host only) |

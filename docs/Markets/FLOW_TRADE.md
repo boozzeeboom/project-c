@@ -123,6 +123,8 @@ private void SendSnapshotToClient(ulong clientId, MarketZone zone) {
         warehouseMaxVolume = Warehouse.DEFAULT_MAX_VOLUME,
         warehouseMaxTypes = Warehouse.DEFAULT_MAX_ITEM_TYPES,
         nearbyShips = zone.BuildNearbyShipsDtos().ToArray(),  // 3 корабля
+        cargo = BuildCargoDtosOfSelectedShip(clientId, zone),  // legacy: cargo только выбранного корабля
+        shipCargos = BuildShipCargosForAllNearbyShips(zone),  // NEW (2026-06-05): cargo ВСЕХ nearby ships
         marketTimeMultiplier = 1f,
         secondsUntilNextTick = 300f,
     };
@@ -145,8 +147,10 @@ public void ReceiveMarketSnapshotTargetRpc(MarketSnapshotDto snapshot, RpcParams
 ```csharp
 // MarketClientState.cs:56-61
 public void OnSnapshotReceived(MarketSnapshotDto snapshot) {
-    Debug.Log($"[MarketClientState] OnSnapshotReceived: loc=primium items=2 wh=0 ships=3 credits=1000");
+    Debug.Log($"[MarketClientState] OnSnapshotReceived: loc=primium items=2 wh=0 ships=3 shipCargos=3 credits=1000");
     CurrentSnapshot = snapshot;
+    // NEW (2026-06-05): заполняем per-ship кэш из shipCargos[]
+    CurrentShipCargos = BuildDict(snapshot.shipCargos);  // Dictionary<ulong, WarehouseEntryDto[]>
     OnSnapshotUpdated?.Invoke(snapshot);
 }
 ```
@@ -166,6 +170,20 @@ _shipSelector.choices = ["Корабль #6", "Корабль #7", "Корабл
 _shipSelectorContainer.style.display = (snap.nearbyShips.Length > 1) ? Flex : None;  // = Flex
 // _selectedMarketItem = -1 (player не выбрал)
 ```
+
+### 7.1. Переключение корабля в dropdown (с 2026-06-05)
+
+```csharp
+// MarketWindow.OnShipSelectorChanged(newIndex)
+ulong newShipId = _state.CurrentSnapshot.nearbyShips[newIndex].shipNetworkObjectId;
+_state.SetSelectedShip(locationId, newShipId);  // SetSelectedShipRpc на сервер
+ApplySelectedShipCargoFromCache(newShipId);     // МГНОВЕННО из локального кэша
+   └─ _cargoCache = _state.CurrentShipCargos[newShipId] ?? []
+   └─ _cargoList.itemsSource = _cargoCache
+   └─ _cargoList.Rebuild()
+```
+
+Сервер параллельно шлёт `SendSnapshotToClient` с обновлённым `shipCargos[]` (safety net для нового корабля), но UI уже отобразил cargo из кэша — roundtrip НЕ блокирует.
 
 Игрок видит окно: "Рынок: Примум | 1000 CR | 2 товара (мезий 10 CR, антигравий 50 CR) | 3 корабля в зоне".
 

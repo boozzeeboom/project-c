@@ -31,6 +31,16 @@ namespace ProjectC.Trade.Client
         // Последний результат (для UI feedback)
         public TradeResultDto? LastResult { get; private set; }
 
+        // FIX (2026-06-05): Per-ship клиентский кэш cargo всех кораблей в зоне.
+        // Сервер шлёт shipCargos[] в каждом MarketSnapshotDto; здесь собираем
+        // Dictionary<shipId, cargo[]> для мгновенного переключения в ship-selector
+        // (без ожидания следующего snapshot / RPC roundtrip). Ключ — shipNetworkObjectId,
+        // значение — копия массива WarehouseEntryDto (immutable с точки зрения клиента).
+        // Если корабль отсутствует в кэше — cargo трактуется как пустой массив.
+        // См. docs/Markets/FIXES_HISTORY.md 2026-06-05.
+        public IReadOnlyDictionary<ulong, WarehouseEntryDto[]> CurrentShipCargos { get; private set; }
+            = new Dictionary<ulong, WarehouseEntryDto[]>();
+
         // Подписки
         public event Action<MarketSnapshotDto> OnSnapshotUpdated;
         public event Action<TradeResultDto> OnTradeResult;
@@ -55,8 +65,26 @@ namespace ProjectC.Trade.Client
 
         public void OnSnapshotReceived(MarketSnapshotDto snapshot)
         {
-            Debug.Log($"[MarketClientState] OnSnapshotReceived: loc={snapshot.locationId} items={(snapshot.items?.Length ?? 0)} wh={(snapshot.warehouse?.Length ?? 0)} ships={(snapshot.nearbyShips?.Length ?? 0)} credits={snapshot.credits:F0}");
+            Debug.Log($"[MarketClientState] OnSnapshotReceived: loc={snapshot.locationId} items={(snapshot.items?.Length ?? 0)} wh={(snapshot.warehouse?.Length ?? 0)} ships={(snapshot.nearbyShips?.Length ?? 0)} shipCargos={(snapshot.shipCargos?.Length ?? 0)} credits={snapshot.credits:F0}");
             CurrentSnapshot = snapshot;
+
+            // FIX (2026-06-05): собрать per-ship кэш cargo из snapshot.shipCargos.
+            // Копируем массивы (immutable view для подписчиков) — чтобы UI случайно
+            // не мутировал серверные данные и не возникло рассинхрона с будущим snapshot.
+            var newShipCargos = new Dictionary<ulong, WarehouseEntryDto[]>();
+            if (snapshot.shipCargos != null)
+            {
+                for (int i = 0; i < snapshot.shipCargos.Length; i++)
+                {
+                    var sc = snapshot.shipCargos[i];
+                    if (sc.shipNetworkObjectId == 0) continue;
+                    newShipCargos[sc.shipNetworkObjectId] = sc.cargo != null
+                        ? (WarehouseEntryDto[])sc.cargo.Clone()
+                        : Array.Empty<WarehouseEntryDto>();
+                }
+            }
+            CurrentShipCargos = newShipCargos;
+
             OnSnapshotUpdated?.Invoke(snapshot);
         }
 
@@ -64,6 +92,22 @@ namespace ProjectC.Trade.Client
         {
             LastResult = result;
             OnTradeResult?.Invoke(result);
+        }
+
+        /// <summary>
+        /// FIX (2026-06-05): обновить per-ship кэш cargo для одного корабля
+        /// (например, после успешного Load/Unload — TradeResultDto.updatedCargoSnapshot).
+        /// UI вызывает это в MarketWindow.HandleTradeResult, чтобы при следующем
+        /// переключении на этот корабль cargo был корректен без ожидания snapshot.
+        /// </summary>
+        public void UpdateShipCargo(ulong shipNetworkObjectId, WarehouseEntryDto[] cargo)
+        {
+            if (shipNetworkObjectId == 0) return;
+            var newCache = new Dictionary<ulong, WarehouseEntryDto[]>(CurrentShipCargos);
+            newCache[shipNetworkObjectId] = cargo != null
+                ? (WarehouseEntryDto[])cargo.Clone()
+                : Array.Empty<WarehouseEntryDto>();
+            CurrentShipCargos = newCache;
         }
 
         // ========================================================

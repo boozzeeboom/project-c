@@ -65,7 +65,7 @@
 
 | Файл | Назначение |
 |------|------------|
-| `MarketClientState.cs` | singleton MonoBehaviour, держит `CurrentSnapshot` (MarketSnapshotDto?) + `LastResult` (TradeResultDto?); `OnSnapshotUpdated`/`OnTradeResult` events; convenience API `RequestBuy/Sell/Load/Unload/Subscribe/SetTimeMultiplier`; static `LocalizeResultCode` |
+| `MarketClientState.cs` | singleton MonoBehaviour, держит `CurrentSnapshot` (MarketSnapshotDto?) + `LastResult` (TradeResultDto?) + **`CurrentShipCargos` (Dictionary<ulong, WarehouseEntryDto[]>) с 2026-06-05**; `OnSnapshotUpdated`/`OnTradeResult` events; convenience API `RequestBuy/Sell/Load/Unload/Subscribe/SetTimeMultiplier` + `SetSelectedShip` + `UpdateShipCargo`; static `LocalizeResultCode` |
 | `MarketInteractor.cs` | static helper; `TryOpenMarket()` (E-handler) — `MarketZoneRegistry.LocalPlayerZone` + fallback `FindNearestZone`; `AutoSubscribeIfInZone()` |
 | `MarketWindow.cs` | UI Toolkit контроллер; UIDocument + UXML/USS; ListView для item/warehouse/cargo; dropdown `ship-selector`; методы Show/Hide/Toggle; idempotent EnsureBuilt(); pickingMode Ignore по умолчанию, Position когда открыт |
 
@@ -73,9 +73,10 @@
 
 | Файл | Назначение |
 |------|------------|
-| `MarketSnapshotDto.cs` | RPC payload: locationId, displayName, items[], warehouse[], credits, warehouseMaxWeight/Volume/Types, nearbyShips[], marketTimeMultiplier, secondsUntilNextTick, marketVersion |
+| `MarketSnapshotDto.cs` | RPC payload: locationId, displayName, items[], warehouse[], credits, warehouseMaxWeight/Volume/Types, nearbyShips[], marketTimeMultiplier, secondsUntilNextTick, marketVersion, `cargo[]` (legacy, cargo только выбранного корабля) + **`shipCargos[]` (NEW 2026-06-05, cargo ВСЕХ nearby ships через `ShipCargoDto`)** |
 | `TradeResultDto.cs` | RPC payload: code, op, locationId, itemId, quantity, newCredits, newStock, shipNetworkObjectId, updatedWarehouseSnapshot, updatedCargoSnapshot |
 | `ShipSummaryDto.cs` | shipNetworkObjectId, displayName, shipClassName, currentWeight/maxWeight, currentVolume/maxVolume, currentSlots/maxSlots, uniqueItemCount |
+| `ShipCargoDto.cs` | **NEW 2026-06-05**: shipNetworkObjectId + cargo[]. Используется в `MarketSnapshotDto.shipCargos[]` для передачи cargo ВСЕХ nearby ships (per-ship client cache) |
 | `TradeResultCode.cs` | enum: Ok, InvalidArgs, InternalError, NotInZone, RateLimited, MarketNotFound, ItemNotInMarket, InsufficientStock, ItemBuyDisabled, ItemSellDisabled, PriceInvalid, FactionRestricted, ItemNotInWarehouse, WarehouseFullWeight/Volume/Types, ShipNotFound, ShipNotInZone, ItemNotInCargo, CargoFullWeight/Volume/Slots, InsufficientCredits |
 | `ItemPriceDto.cs` | itemId, displayName, currentPrice, availableStock, version |
 | `WarehouseEntryDto.cs` | itemId, displayName, quantity |

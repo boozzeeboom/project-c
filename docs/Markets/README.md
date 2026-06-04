@@ -11,7 +11,7 @@
 | [ARCHITECTURE.md](ARCHITECTURE.md) | Слои системы, диаграммы server↔client, потоки данных, ownership-границы |
 | [FILES_INDEX.md](FILES_INDEX.md) | Каталог всех 53 .cs файлов (Scripts/Core/Network/Client/Config/Service/Repository/Dto + Editor) с кратким описанием |
 | [FLOW_TRADE.md](FLOW_TRADE.md) | Полный путь операции: zone enter → E → subscribe → snapshot → buy → load → unload → sell |
-| [FIXES_HISTORY.md](FIXES_HISTORY.md) | 4 фикса верстки 2026-06-04 (MarketWindow) + 1 фикс жизненного цикла (NetworkManagerController) |
+| [FIXES_HISTORY.md](FIXES_HISTORY.md) | 4 фикса верстки 2026-06-04 (MarketWindow) + 1 фикс жизненного цикла (NetworkManagerController) + 1 фикс 2026-06-05 (per-ship cargo cache) |
 | [KNOWN_ISSUES.md](KNOWN_ISSUES.md) | Мелкие недочёты, оставленные на точечную правку |
 | [INTEGRATION.md](INTEGRATION.md) | Связи с остальным проектом: NetworkPlayer, NetworkManagerController, BootstrapScene, WorldScene_0_0 |
 
@@ -24,7 +24,7 @@
 - Server MonoBehaviour: `MarketServer` (NetworkBehaviour, RPC hub), `MarketTimeService` (tick loop), `MarketZone` (scene-placed).
 - Client: `MarketClientState` (singleton, projection) → `MarketWindow` (UI Toolkit) → `MarketInteractor` (E-handler helper).
 
-**Multi-ship.** `MarketZone` имеет два радиуса — `tradeRadius` (5-30м, по инспектору; в `WorldScene_0_0` для Primium = 30м) для игрока и `shipDockRadius` (30м) для кораблей. Корабли в радиусе попадают в `nearbyShips[]` снапшота; UI показывает dropdown выбора корабля только если их 2+.
+**Multi-ship.** `MarketZone` имеет два радиуса — `tradeRadius` (5-30м, по инспектору; в `WorldScene_0_0` для Primium = 30м) для игрока и `shipDockRadius` (30м) для кораблей. Корабли в радиусе попадают в `nearbyShips[]` снапшота + `shipCargos[]` (cargo ВСЕХ nearby ships, с 2026-06-05); UI показывает dropdown выбора корабля только если их 2+. Per-ship client cache в `MarketClientState.CurrentShipCargos` — мгновенное переключение между кораблями без roundtrip.
 
 **Time-based экономика.** `MarketTimeService.MarketTimeMultiplier` (0.1x..100x) управляет частотой тика. Затухание спроса/предложения — half-life в секундах (time-based, не tick-based), одинаково ведёт себя при любом multiplier.
 
@@ -32,7 +32,7 @@
 
 **UI.** UI Toolkit (UXML + USS). `MarketWindow` — единственный контроллер, читает `MarketClientState.CurrentSnapshot`, шлёт команды через `MarketClientState.RequestXxx()`.
 
-**Текущий статус (2026-06-04).** Полный цикл работает: zone enter → E → snapshot → BUY/LOAD/UNLOAD/SELL → credits/warehouse обновляются. Подтверждено пользователем. 4 версточных фикса применены, компиляция чистая.
+**Текущий статус (2026-06-05).** Полный цикл работает: zone enter → E → snapshot → BUY/LOAD/UNLOAD/SELL → credits/warehouse обновляются. **Per-ship cargo cache** (cargo всех кораблей в зоне кэшируется на клиенте, переключение мгновенное). Подтверждено пользователем. 4 версточных фикса + per-ship cargo fix применены, компиляция чистая.
 
 ## Что НЕ задокументировано здесь (но относится к трейду)
 

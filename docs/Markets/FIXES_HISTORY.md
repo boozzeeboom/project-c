@@ -1,5 +1,163 @@
 # Markets — Fixes History
-Хронология багов, диагнозов и фиксов рыночной подсистемы. Текущая версия (2026-06-04) — стабильная: полный цикл BUY/LOAD/UNLOAD/SELL работает.
+Хронология багов, диагнозов и фиксов рыночной подсистемы. Текущая версия (2026-06-05) — стабильная: полный цикл BUY/LOAD/UNLOAD/SELL работает + per-ship cargo cache (мгновенное переключение между кораблями без потери данных).
+
+## 2026-06-05 — FIX: потеря cargo при переключении между кораблями на рынке
+
+### Симптом (из юзерского репорта)
+
+> «Загружаю товар на ship_light. Переключаюсь на ship_medium, загружаю туда. Переключаюсь обратно на ship_light — cargo пустой. Потеряно.»
+
+**Цепочка:** BUY 1 mesium → SELECT ship_light → LOAD 1 (TradeResult обновляет `_cargoCache`, в snapshot есть `ship_light.cargo=1`) → SELECT ship_medium в dropdown (snapshot НЕ приходит, `_cargoCache` остаётся старым) → LOAD 1 на ship_medium (TradeResult обновляет `_cargoCache` до `ship_medium.cargo=1`, теряя ship_light) → SELECT ship_light обратно (snapshot НЕ приходит, `_cargoCache` отражает ship_medium) → UI показывает чужой cargo либо пустой.
+
+### Что было до фикса
+
+`MarketClientState` хранил **только** `WarehouseEntryDto[] _cargoCache` для **текущего выбранного корабля**. Обновления приходили только:
+- в `OnSnapshotReceived` — раз в ~5 мин (тик)
+- в `HandleTradeResult` — для **одного** (затронутого) корабля
+
+При переключении dropdown'а **никакого нового snapshot не приходило** → `_cargoCache` оставался вчерашним. Если TradeResult после переключения обновлял его на cargo другого корабля — клиент считал это cargo нового выбора.
+
+`MarketServer.SendSnapshotToClient` рассылал `cargo = cargoOf(selectedShip)` — **только одного** корабля. Остальные `nearbyShips` шли без cargo.
+
+### Корневая причина
+
+Серверная модель (`TradeWorld._cargoCache[shipId]`, персистенция в `PlayerPrefs` под ключом `cargo:{shipNetworkObjectId}`) была **уже корректна** — cargo каждого корабля живёт независимо. Баг был только в **клиентской проекции**: один общий `_cargoCache` не отражал мульти-корабельную реальность.
+
+Это **регрессия от FIX 2026-06-04** (см. ниже § "Что не делали" — там прямо сказано, что cargo per-ship на клиенте не реализовано).
+
+### Фикс (4 файла, additive — не сломал ничего)
+
+**1. `Assets/_Project/Trade/Scripts/Dto/MarketSnapshotDto.cs`** — добавлен новый тип `ShipCargoDto` + поле `shipCargos[]`. **Старое поле `cargo` оставлено** (backward compat для существующих клиентов и для UI fallback'а).
+
+```csharp
+[Serializable]
+public struct ShipCargoDto
+{
+    public ulong shipNetworkObjectId;
+    public WarehouseEntryDto[] cargo;
+}
+
+public struct MarketSnapshotDto
+{
+    // ... существующие поля ...
+    public WarehouseEntryDto[] cargo;          // legacy: cargo выбранного корабля
+    public ShipCargoDto[] shipCargos;          // NEW: cargo ВСЕХ nearby ships
+    // ...
+}
+```
+
+**2. `Assets/_Project/Trade/Scripts/Network/MarketServer.cs:SendSnapshotToClient`** — в дополнение к старому `cargo = cargoOf(selectedShip)` собираем `shipCargos[]` для всех nearby ships:
+
+```csharp
+// FIX (2026-06-05): cargo ВСЕХ кораблей в зоне
+var shipCargosList = new List<ShipCargoDto>(ships.Count);
+for (int i = 0; i < ships.Count; i++)
+{
+    var shipDto = ships[i];
+    var shipCls = ResolveShipClass(shipDto.shipNetworkObjectId);
+    var shipCargo = TradeWorld.Instance.GetOrLoadCargo(shipDto.shipNetworkObjectId, shipCls);
+    shipCargosList.Add(new ShipCargoDto {
+        shipNetworkObjectId = shipDto.shipNetworkObjectId,
+        cargo = BuildCargoDtos(shipCargo != null ? shipCargo.SaveToList() : new List<WarehouseEntry>())
+    });
+}
+```
+
+**3. `Assets/_Project/Trade/Scripts/Network/MarketServer.cs:SetSelectedShipRpc`** — после обновления `_clientSelectedShip` сразу вызывает `SendSnapshotToClient(clientId, zone)` (safety net для случая, когда игрок впервые подошёл к рынку и выбрал корабль — следующий тик может быть через 5 минут).
+
+**4. `Assets/_Project/Trade/Scripts/Client/MarketClientState.cs`** — добавлен per-ship кэш:
+
+```csharp
+public IReadOnlyDictionary<ulong, WarehouseEntryDto[]> CurrentShipCargos { get; private set; }
+public void UpdateShipCargo(ulong shipId, WarehouseEntryDto[] cargo) { /* merge */ }
+```
+
+`OnSnapshotReceived` заполняет `CurrentShipCargos` из нового `shipCargos[]`. `UpdateShipCargo` дёргается из `MarketWindow.HandleTradeResult` при Load/Unload.
+
+**5. `Assets/_Project/Trade/Scripts/Client/MarketWindow.cs`** — три точки:
+
+- **Ship-selector callback** (dropdown изменён): `ApplySelectedShipCargoFromCache(newShipId)` — мгновенное переключение cargo из локального кэша, без roundtrip.
+- **HandleSnapshot** — приоритет у `CurrentShipCargos[GetSelectedShipId()]`, fallback на `snap.cargo` (если вдруг новый кэш не пришёл, например snapshot со старого сервера).
+- **HandleTradeResult** — при Load/Unload вызывает `_state.UpdateShipCargo(result.shipNetworkObjectId, _cargoCache)`, чтобы кэш для конкретного корабля обновился до прихода следующего snapshot.
+
+### Поток данных после фикса
+
+```
+[Server] TradeWorld._cargoCache[shipId] (single source of truth, persistent)
+        ↓ SendSnapshotToClient (каждые ~5 мин тик)
+[Client] MarketClientState.CurrentShipCargos[shipId] (projection cache)
+        ↓ ship-selector onChange
+[UI]     MarketWindow._cargoList (instant from cache, no roundtrip)
+        ↓ LOAD/UNLOAD
+[Server] TradeResult с обновлённым cargo затронутого корабля
+        ↓ HandleTradeResult
+[Client] UpdateShipCargo(shipId, _cargoCache) — точечный апдейт до прихода snapshot
+```
+
+### Что не делали (по AGENTS.md — минимальный фикс)
+
+- ❌ **Не удаляли** legacy-поле `cargo` из `MarketSnapshotDto` — additive change, старые клиенты ещё могут его читать. Полный переход на `shipCargos` — отдельный тикет.
+- ❌ **Не вводили** ownership/access-control (чужой игрок видит чужой cargo) — `TradeWorld` отдаёт cargo по `shipNetworkObjectId` независимо от владельца. Это by design для текущего прототипа, но для MMO-сценария нужна авторизация (см. **Архитектурный план** ниже).
+- ❌ **Не рефакторили** `MarketZone.BuildNearbyShipsDtos()` — DTO-контракт не изменился.
+- ❌ **Не трогали** `CargoSystem` / `Warehouse` / `IPlayerDataRepository` — серверный слой уже корректен (cargo keyed by shipNetworkObjectId).
+- ❌ **Не убирали** diagnostic-логи.
+
+### Архитектурный план для будущего расширения (multi-ship inventory как first-class)
+
+Текущий фикс закрывает **минимум**: cargo per-ship на клиенте, без потерь при переключении. Следующие шаги (P1..P3) превращают это в полноценную MMO-фичу «корабль = инвентарь, видимый другим игрокам»:
+
+#### P1 — Ownership model (кто может грузить/выгружать)
+
+Сейчас: `TradeWorld.SetCargo(shipId, ...)` принимает любой `(clientId, shipId)`. Нет проверки, что `shipId` принадлежит `clientId`.
+
+Нужно:
+- Ввести `ShipOwnership` маппинг: `Dictionary<ulong /*shipId*/, ulong /*ownerClientId*/>` в `ShipRegistry` или новом `ShipOwnershipService`.
+- При `Load` / `Unload` проверять `shipOwnership[shipId] == clientId` (либо allow crew/guild — это уже GDD).
+- При `Buy` / `Sell` — без изменений (это `warehouse[clientId][locationId]`, не зависит от корабля).
+- Server-Rpc: `SetSelectedShip` — тоже валидировать ownership, иначе чужой игрок может подсмотреть cargo через snapshot (см. P2).
+
+#### P2 — Privacy: cargo чужих кораблей в snapshot
+
+Сейчас: `SendSnapshotToClient` отдаёт `shipCargos[]` **всех** nearby ships всем клиентам в зоне. Это утечка: другой игрок видит твой cargo.
+
+Нужно:
+- На сервере фильтровать `shipCargos` по `shipOwnership[shipId] == clientId` ИЛИ public-flag (товарный корабль, таможня).
+- Альтернатива: `shipCargos` отдавать **только владельцу** + выдавать `ShipSummaryDto` остальным с `cargo: []` (но с `cargoSlots`, `cargoUsed` — обезличено).
+- Сейчас: пусть будет утечка (текущий прототип — single-player сценарий на dedicated server). **Документируем как known issue** [KNOWN_ISSUES.md](KNOWN_ISSUES.md).
+
+#### P3 — Persistence beyond PlayerPrefs
+
+Сейчас: `PlayerPrefsRepository` хранит `cargo:{shipId}` в `PlayerPrefs` — это **локально на клиенте**. На dedicated server это не сработает (PlayerPrefs на сервере != клиент).
+
+Нужно:
+- Ввести `IServerCargoRepository` (SQLite, JSON-файл под `ServerData/`, или просто `Application.persistentDataPath/shipCargo.json`).
+- `TradeWorld` при `IsServer == true` использует server-репозиторий, при `IsClient == true` — PlayerPrefs (или оба: клиент кэширует, сервер истина).
+- Сейчас: тестируем только host (server+client в одном процессе) — PlayerPrefs работает. Для dedicated server — отдельный тикет (см. [KNOWN_ISSUES.md](KNOWN_ISSUES.md)).
+
+#### P4 — UI: cargo left by previous owner (rescue/recovery)
+
+Из GDD: «Если предыдущий владелец покинул корабль, новый владелец видит оставшийся cargo (для лута/спасения)».
+
+Нужно:
+- При смене ownership (`ShipOwnershipService.Transfer(shipId, newOwner)`) cargo **не очищается** — новый владелец наследует.
+- В UI пометить cargo как «inherited» (tooltip с датой, прошлым владельцем).
+- Сейчас: корабли не передаются между игроками, фича отложена.
+
+### Подтверждение фикса
+
+- **Compile:** `validate_script` × 4 файла + `read_console` → 0 errors (1 pre-existing unrelated warning "string concat in Update" в MarketWindow — косметика, не блокер).
+- **Smoke test (live host, `unityMCP_execute_code`):**  
+  - snapshot = "primium"  
+  - `MarketClientState._cargoCache` items=1, itemsSource ships=3, **shipCargos=3, CurrentShipCargos cacheKeys=3** — все три корабля имеют cargo в кэше, переключение мгновенное. ✓
+- **End-to-end (юзер гоняет руками в Play mode):** `BUY → LOAD ship_light → SELECT ship_medium → LOAD → SELECT ship_light → cargo сохранён, LOAD инвентарь не теряется`. Тест принят юзером.
+
+**См. также:**
+- [ARCHITECTURE.md § "Поток данных"](../Markets/ARCHITECTURE.md) — обновлён per-ship cache
+- [FLOW_TRADE.md § "Переключение корабля"](../Markets/FLOW_TRADE.md) — обновлён мгновенный UI flow
+- [FILES_INDEX.md § "Per-ship cargo"](../Markets/FILES_INDEX.md) — новые поля/методы
+- [KNOWN_ISSUES.md § "Cargo privacy / ownership"](../Markets/KNOWN_ISSUES.md) — P1..P4 из плана
+
+---
 
 ## 2026-06-04 — FIX: «продажа вслепую» — на вкладке РЫНОК не видно сколько у игрока на складе
 

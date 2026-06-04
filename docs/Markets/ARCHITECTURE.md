@@ -186,8 +186,36 @@ MarketWindow.OnLoadClicked
   │         │
   │         ├─ SendTradeResultToOwner → MarketWindow видит updatedCargoSnapshot
   │         │   └─ MarketWindow._cargoCache = updatedCargoSnapshot → cargo list перерисовывается
+  │         │     └─ MarketWindow также зовёт _state.UpdateShipCargo(shipId, _cargoCache) → кэш для ЭТОГО корабля обновлён до прихода snapshot
   │         └─ SendSnapshotToClient → склад обновился в UI
 ```
+
+### Поток данных: переключение корабля в UI (с 2026-06-05)
+
+```
+[игрок на вкладке ГРУЗ, меняет выбор в Ship dropdown]
+  │
+  ▼
+MarketWindow.OnShipSelectorChanged(newShipId)
+  │ 1. _state.SetSelectedShip(...) → SetSelectedShipRpc на сервер
+  │ 2. ApplySelectedShipCargoFromCache(newShipId) ← МГНОВЕННО из локального кэша
+  │    └─ _cargoList.itemsSource = _state.CurrentShipCargos[newShipId] ?? пустой массив
+  │    └─ _cargoList.Rebuild() — UI перерисовывается без roundtrip
+  │
+  │ (параллельно)
+  ▼
+MarketServer.SetSelectedShipRpc
+  │ 3. _clientSelectedShip[client, location] = newShipId
+  │ 4. SendSnapshotToClient(clientId, zone) ← SAFETY NET для нового корабля
+  │    └─ shipCargos[] = cargo ВСЕХ nearby ships (включая только что выбранный)
+  │    └─ MarketClientState.OnSnapshotReceived → CurrentShipCargos[shipId] = fresh cargo
+  │
+  ▼
+Результат: UI мгновенно показывает cargo нового корабля, потом обновляется по snapshot
+           (если данные совпадают — UI не дёргается; если различаются — UI обновляется)
+```
+
+**Ключевая инвариантность:** `MarketClientState.CurrentShipCargos[shipId]` — проекция серверного `TradeWorld._cargoCache[shipId]`. Клиент НЕ авторитетен. Источник истины — сервер.
 
 ## Поток данных: тик рынка (server)
 
@@ -245,7 +273,8 @@ MarketTimeService.onMarketTick event
 | `MarketState` (цены, сток, factors) | `TradeWorld.TryXxx()` (server) | `MarketServer.SendSnapshotToClient` (server) |
 | `MarketSnapshotDto` | `MarketServer` (server) | `MarketClientState` (client) |
 | `Warehouse` (per clientId, locationId) | `TradeWorld.TryBuy/TryLoad/TryUnload` (server) | `MarketServer` (server) для снапшота |
-| `CargoData` (per shipNetworkObjectId) | `TradeWorld.TryLoadToShip/TryUnloadFromShip` (server) | `MarketServer.SendSnapshotToClient` (через ShipSummaryDto) + `MarketZone.BuildNearbyShipsDtos` |
+| `CargoData` (per shipNetworkObjectId) | `TradeWorld.TryLoadToShip/TryUnloadFromShip` (server) | `MarketServer.SendSnapshotToClient` (через `ShipSummaryDto` + `ShipCargoDto[] shipCargos[]` — cargo ВСЕХ nearby ships с 2026-06-05) + `MarketZone.BuildNearbyShipsDtos` |
+| `CurrentShipCargos` (per shipNetworkObjectId, client cache) | `MarketClientState.OnSnapshotReceived` (projected from `shipCargos[]`) + `UpdateShipCargo` (точечный апдейт от TradeResult) | `MarketWindow.ApplySelectedShipCargoFromCache` (мгновенное переключение корабля в UI) |
 | `TradeResultDto` | `MarketServer` (server) | `MarketClientState` (client) |
 | `credits` | `Repository.TryModifyCredits` (server) | `MarketServer` для снапшота |
 | `currentCredits` на клиенте | ТОЛЬКО из `MarketSnapshotDto.credits` (не из DTO) | `MarketWindow._creditsLabel` |
@@ -269,7 +298,7 @@ MarketTimeService.onMarketTick event
 - `MarketZone` (MonoBehaviour, scene-placed × N) — триггер, _playersInZone, _shipsInZone
 
 **Client-only** (MonoBehaviour, singleton, DontDestroyOnLoad):
-- `MarketClientState` (MonoBehaviour) — projection layer
+- `MarketClientState` (MonoBehaviour) — projection layer (`_cargoCache` для выбранного корабля + `CurrentShipCargos` per-ship с 2026-06-05)
 - `MarketWindow` (MonoBehaviour) — UI Toolkit контроллер
 
 **Static helpers** (используются на обеих сторонах):

@@ -201,20 +201,29 @@ namespace ProjectC.Trade.Network
         // (ship-selector или дефолтный). Сервер кладёт это в _clientSelectedShip
         // и включает cargo этого корабля в следующий snapshot. Без этого UI не
         // знал реальный cargo (получал только updatedCargoSnapshot после Load/Unload).
+        //
+        // FIX (2026-06-05): Дополнительно сразу шлём новый snapshot — safety net
+        // для случая, когда в зону только что вошёл новый корабль (не было в
+        // предыдущем snapshot, client-кэш MarketClientState.CurrentShipCargos
+        // для него пуст). После смены выбора клиент мгновенно увидит cargo
+        // нового корабля без ожидания 5-минутного тика.
         [Rpc(SendTo.Server, InvokePermission = RpcInvokePermission.Owner)]
         public void SetSelectedShipRpc(string locationId, ulong shipNetworkObjectId, RpcParams rpcParams = default)
         {
             ulong clientId = rpcParams.Receive.SenderClientId;
             if (string.IsNullOrEmpty(locationId)) return;
+            var zone = MarketZoneRegistry.Get(locationId);
+            if (zone == null) return;
             if (shipNetworkObjectId == 0)
             {
                 _clientSelectedShip.Remove(SelectedShipKey(clientId, locationId));
+                SendSnapshotToClient(clientId, zone);
                 return;
             }
             // Доп. валидация: корабль должен быть в той же зоне
-            var zone = MarketZoneRegistry.Get(locationId);
-            if (zone == null || !zone.IsShipInZone(shipNetworkObjectId)) return;
+            if (!zone.IsShipInZone(shipNetworkObjectId)) return;
             _clientSelectedShip[SelectedShipKey(clientId, locationId)] = shipNetworkObjectId;
+            SendSnapshotToClient(clientId, zone);
         }
 
         [Rpc(SendTo.Server, InvokePermission = RpcInvokePermission.Owner)]
@@ -308,6 +317,27 @@ namespace ProjectC.Trade.Network
                 if (cargo != null) cargoDtos = BuildCargoDtos(cargo.SaveToList());
             }
 
+            // FIX (2026-06-05): cargo ВСЕХ кораблей в зоне (см. ShipCargoDto + DTO).
+            // Раньше клиент знал cargo только выбранного корабля и ждал следующего
+            // snapshot (тик раз в ~5 мин) при переключении — отсюда баг: при
+            // switch ship_light → ship_medium → ship_light второй ship_light
+            // показывал stale/пустой cargo. Теперь клиент получает cargo ВСЕХ
+            // nearby ships, кэширует в MarketClientState.CurrentShipCargos и
+            // переключает мгновенно (без roundtrip). Сервер — single source of
+            // truth (TradeWorld._cargoCache[shipId], persistent в PlayerPrefs).
+            var shipCargosList = new List<ShipCargoDto>(ships.Count);
+            for (int i = 0; i < ships.Count; i++)
+            {
+                var shipDto = ships[i];
+                var shipCls = ResolveShipClass(shipDto.shipNetworkObjectId);
+                var shipCargo = TradeWorld.Instance.GetOrLoadCargo(shipDto.shipNetworkObjectId, shipCls);
+                shipCargosList.Add(new ShipCargoDto
+                {
+                    shipNetworkObjectId = shipDto.shipNetworkObjectId,
+                    cargo = BuildCargoDtos(shipCargo != null ? shipCargo.SaveToList() : new List<WarehouseEntry>())
+                });
+            }
+
             var snapshot = new MarketSnapshotDto
             {
                 locationId = zone.LocationId,
@@ -321,6 +351,7 @@ namespace ProjectC.Trade.Network
                 warehouseMaxTypes = Warehouse.DEFAULT_MAX_ITEM_TYPES,
                 nearbyShips = ships.ToArray(),
                 cargo = cargoDtos,
+                shipCargos = shipCargosList.ToArray(),
                 marketTimeMultiplier = _timeService != null ? _timeService.MarketTimeMultiplier : 1f,
                 secondsUntilNextTick = _timeService != null ? _timeService.SecondsUntilNextTick : 0f
             };

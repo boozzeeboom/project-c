@@ -239,11 +239,21 @@ namespace ProjectC.Trade.Client
                         if (ships[i].displayName == evt.newValue)
                         {
                             _selectedShipIndex = i;
-                            // FIX (2026-06-04): Сообщить серверу о смене корабля, чтобы
-                            // следующий snapshot содержал cargo нового корабля. Без
-                            // этого UI продолжал показывать cargo старого корабля
-                            // (stale из _cargoCache) и игрок не знал реальный груз.
-                            _state?.RequestSetSelectedShip(snap.Value.locationId, ships[i].shipNetworkObjectId);
+                            ulong newShipId = ships[i].shipNetworkObjectId;
+
+                            // FIX (2026-06-05): мгновенное переключение cargo из
+                            // per-ship клиентского кэша MarketClientState.CurrentShipCargos.
+                            // Раньше _cargoCache обновлялся ТОЛЬКО по приходу snapshot
+                            // (каждые ~5 мин тика) или по TradeResult.updatedCargoSnapshot
+                            // (после успешной операции). При простом переключении
+                            // ship-selector без других действий — кэш оставался
+                            // cargo предыдущего корабля → баг "switch light→medium→light
+                            // показывает пусто". Теперь: мгновенный UI-апдейт из
+                            // локального кэша + отправка RPC (safety net: сервер
+                            // пришлёт свежий snapshot, если корабль не был в кэше).
+                            ApplySelectedShipCargoFromCache(newShipId);
+
+                            _state?.RequestSetSelectedShip(snap.Value.locationId, newShipId);
                             return;
                         }
                     }
@@ -409,7 +419,24 @@ namespace ProjectC.Trade.Client
             // в каждом snapshot — UI всегда видит реальный груз. TradeResult продолжает
             // обновлять _cargoCache мгновенно после операции, snapshot-обновление придёт
             // следом и перезапишет то же значение (идемпотентно).
-            _cargoCache = snap.cargo ?? Array.Empty<WarehouseEntryDto>();
+            //
+            // FIX (2026-06-05): Per-ship кэш MarketClientState.CurrentShipCargos
+            // уже обновлён в OnSnapshotReceived (до того, как мы сюда пришли через
+            // event). Используем его как single source of truth — чтобы UI cargo
+            // для ТЕКУЩЕГО выбранного корабля всегда соответствовал per-ship
+            // кэшу. Если в кэше есть запись для выбранного корабля — берём её;
+            // иначе fallback на snap.cargo (старое поле, обратная совместимость).
+            ulong currentShipId = GetSelectedShipId();
+            if (_state != null && _state.CurrentShipCargos != null
+                && currentShipId != 0
+                && _state.CurrentShipCargos.TryGetValue(currentShipId, out var cachedCargo))
+            {
+                _cargoCache = cachedCargo ?? Array.Empty<WarehouseEntryDto>();
+            }
+            else
+            {
+                _cargoCache = snap.cargo ?? Array.Empty<WarehouseEntryDto>();
+            }
             // Списки — назначаем itemsSource (массивы DTO).
             // Без этого ListView знает callbacks (makeItem/bindItem), но не знает сколько элементов.
             if (_itemList != null) _itemList.itemsSource = snap.items;
@@ -466,6 +493,14 @@ namespace ProjectC.Trade.Client
             // и в UI оставалась "призрачная" строка товара, которого фактически нет
             // (повторный Unload падал, потому что на сервере груз уже пуст).
             // Теперь трактуем null как "груз пуст" и безусловно обновляем кэш на успешной операции.
+            //
+            // FIX (2026-06-05): дополнительно обновляем per-ship клиентский кэш
+            // MarketClientState.CurrentShipCargos[shipId] = updatedCargoSnapshot.
+            // Без этого при последующем переключении на другой корабль и обратно
+            // UI показал бы stale cargo (из старого snapshot), а не реальный
+            // после Load/Unload. TradeResult всегда приходит сразу после операции,
+            // а snapshot может прийти через ~5 мин (тик) — нельзя полагаться только
+            // на snapshot для поддержания per-ship кэша в актуальном состоянии.
             if (result.IsSuccess && (result.op == TradeOp.LoadToShip || result.op == TradeOp.UnloadFromShip))
             {
                 _cargoCache = result.updatedCargoSnapshot ?? Array.Empty<WarehouseEntryDto>();
@@ -475,6 +510,10 @@ namespace ProjectC.Trade.Client
                     _selectedCargoItem = -1;
                     _cargoList.selectedIndex = -1;
                     _cargoList.Rebuild();
+                }
+                if (result.shipNetworkObjectId != 0 && _state != null)
+                {
+                    _state.UpdateShipCargo(result.shipNetworkObjectId, _cargoCache);
                 }
             }
         }
@@ -757,6 +796,34 @@ namespace ProjectC.Trade.Client
             // Cargo не входит в MarketSnapshotDto (слишком жирно слать груз на каждый tick).
             // Возвращаем локальный кэш, обновляемый из TradeResultDto (Load/Unload).
             return _cargoCache != null ? new List<WarehouseEntryDto>(_cargoCache) : new List<WarehouseEntryDto>();
+        }
+
+        /// <summary>
+        /// FIX (2026-06-05): мгновенно подменить UI cargo на cargo выбранного корабля
+        /// из per-ship клиентского кэша <see cref="MarketClientState.CurrentShipCargos"/>.
+        /// Вызывается из ship-selector callback (мгновенный отклик UI) и из
+        /// <see cref="HandleSnapshot"/> (синхронизация с сервером, если сервер
+        /// прислал cargo для текущего выбора — например, после SetSelectedShipRpc
+        /// safety net).
+        /// Если корабля нет в кэше — показываем пустой cargo (новый корабль, ещё
+        /// не было snapshot с ним; следующий snapshot/TradeResult обновит).
+        /// </summary>
+        private void ApplySelectedShipCargoFromCache(ulong shipNetworkObjectId)
+        {
+            WarehouseEntryDto[] newCargo = Array.Empty<WarehouseEntryDto>();
+            if (_state != null && _state.CurrentShipCargos != null
+                && _state.CurrentShipCargos.TryGetValue(shipNetworkObjectId, out var cached))
+            {
+                newCargo = cached ?? Array.Empty<WarehouseEntryDto>();
+            }
+            _cargoCache = newCargo;
+            if (_cargoList != null)
+            {
+                _cargoList.itemsSource = _cargoCache;
+                _selectedCargoItem = -1;
+                _cargoList.selectedIndex = -1;
+                _cargoList.Rebuild();
+            }
         }
 
         private static string LocalizeOp(TradeOp op)

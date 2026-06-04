@@ -328,3 +328,51 @@
 - §2 Initial `wh=0` → `wh=1` warning в `[MarketWindow] Show(): main w=0 h=0` — косметика
 - §3 Старая v1 архитектура (`TradeUI`, `TradeMarketServer`, `PlayerTradeStorage`, ...) не удалена
 - §4 NetworkPlayer.TradeBuyServerRpc/SellServerRpc (lines 588-617) — dead code, не вызывается
+
+---
+
+## 2026-06-04 — FIX: ghost PlayerSpawner маскирует реального игрока в MarketZone.FindLocalPlayer
+
+**Файлы:**
+- `Assets/_Project/Trade/Scripts/Client/MarketInteractor.cs:110-129` — `FindLocalPlayer` skip'ит GameObject с компонентом `NetworkPlayerSpawner`
+- `Assets/_Project/Trade/Scripts/Network/MarketZone.cs:198-219` — `FindLocalPlayer` тот же guard
+
+**Симптом (из юзерского репорта + live play mode через `unityMCP_execute_code`):**
+> "рынок просто при каком-то старте - не открывается вообще. персонаж в зоне действия а рынок не открывается"
+
+Live state до фикса (host, `BootstrapScene` + `WorldScene_0_0`):
+```
+All NetworkPlayers: 2
+  'PlayerSpawner'         IsOwner=True IsSpawned=True HasNetworkPlayerSpawner=True  pos=(39999.50, 2510.00, 39999.50)
+  'NetworkPlayer(Clone)'  IsOwner=True IsSpawned=True HasNetworkPlayerSpawner=False pos=(40092.28, 2501.32, 40138.48)
+MarketZones: 2
+  'primium'  pos=(40096.50, 2510.00, 40140.60)  tradeR=36
+  'TEST_1'   pos=(39874.10, 2510.00, 39970.00)  tradeR=30
+MarketZoneRegistry.LocalPlayerZone=null
+```
+
+`FindLocalPlayer` в обоих файлах итерировал `FindObjectsByType<NetworkPlayer>` и возвращал первого с `IsOwner=True` — а это `PlayerSpawner` ghost (его InstanceID ниже, чем у свежеспавненного `NetworkPlayer(Clone)`). `GetEffectivePosition()` ghost'а → `(39999.50, 2510, 39999.50)`. Дистанция до `primium` = 171м > tradeRadius=36 → `PollLocalPlayerZone` всегда "outside zone" → `LocalPlayerZone=null` → `TryOpenMarket` → `FindNearestZone` → `best=null` → рынок не открывается.
+
+При этом реальный `NetworkPlayer(Clone)` стоял в ~5м от центра `primium` (внутри `tradeRadius=36`) — он мог нажать E 100 раз, но ghost-ссылка ломала весь pipeline.
+
+**Корневая причина:** scene-placed `PlayerSpawner` GameObject в `BootstrapScene` имеет компоненты `NetworkPlayerSpawner` (маркер) + `NetworkPlayer`. NGO 2.x на хосте даёт `OwnerClientId=0` (server-owned) и scene-placed NetworkObject'ам → `IsOwner==true` для ghost'а (footgun, см. `NetworkPlayer.cs:130-147` — то же самое для camera/inventory init).
+
+**Почему "intermittent" в логах прошлых попыток:** в INVESTIGATION OPEN §13 логе игрок **падал с платформы** (Y 3000→1903) и не доходил до зоны, поэтому dist=5238..10308м > tradeRadius у обоих зон. Реальная причина (ghost-ссылка) была замаскирована тем, что "игрок в любом случае не в зоне" — после падения. Но даже когда игрок стоял на платформе, ghost-ссылка ломала open — просто у пользователя в тестовом сценарии этого не случилось.
+
+**Фикс (1 guard, 2 файла):** в обеих `FindLocalPlayer` пропускаем `NetworkPlayer`, если на его GameObject есть `NetworkPlayerSpawner` (тот же discriminator, что в `NetworkPlayer.OnNetworkSpawn:148`). Реальный `NetworkPlayer(Clone)` из `PlayerPrefab` этого компонента не имеет — значит он единственный кандидат.
+
+**Что не делали (по AGENTS.md — минимальный фикс):**
+- ❌ Не удаляли scene-placed `PlayerSpawner` GameObject — на нём висят `NetworkPlayerSpawner`, `CharacterController`, `PlayerInputReader`, `NetworkObject` с референсами из других систем. Удаление — отдельная задача (см. `NetworkPlayerSpawner.cs:14-26`).
+- ❌ Не трогали `NetworkPlayer.cs` / E-handler / `InteractableManager` — гипотеза A из INVESTIGATION OPEN §13 отвергнута, корень был в `FindLocalPlayer`.
+- ❌ Не рефакторили `MarketInteractor.TryOpenMarket`/`FindNearestZone` — fallback-логика корректна, проблема была только в `FindLocalPlayer`.
+- ❌ Не убирали diagnostic-логи — оставлены на случай следующих регрессий (KNOWN_ISSUES §1).
+
+**Подтверждение фикса (через `unityMCP_execute_code` после фикса, host):**
+```
+1) E OUTSIDE (500м от primium):  TryOpenMarket=False  ✓
+2) E INSIDE  (0м от primium):    TryOpenMarket=True   ✓
+   LocalPlayerZone=primium
+   MarketWindow.IsVisible=True
+```
+
+**См. также:** [KNOWN_ISSUES.md §13 RESOLVED](KNOWN_ISSUES.md#13-investigation-open-e-не-открывает-рынок-после-e-вне-зоны-intermittent).

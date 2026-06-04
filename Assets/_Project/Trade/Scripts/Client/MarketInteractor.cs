@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using ProjectC.Network;
 using ProjectC.Player;
 using ProjectC.Trade.Network;
 using UnityEngine;
@@ -111,7 +112,18 @@ namespace ProjectC.Trade.Client
             var players = Object.FindObjectsByType<ProjectC.Player.NetworkPlayer>(FindObjectsInactive.Exclude, FindObjectsSortMode.None);
             for (int i = 0; i < players.Length; i++)
             {
-                if (players[i] != null && players[i].IsOwner) return players[i];
+                if (players[i] == null || !players[i].IsOwner) continue;
+                // FIX (2026-06-04): skip scene-placed `PlayerSpawner` ghost.
+                // NGO 2.x на хосте даёт OwnerClientId=0 (server-owned) и scene-placed
+                // NetworkObject'ам — на таком GO `IsOwner==true` (footgun). Ghost сидит
+                // в точке спавна (~80 000 ед. от любой MarketZone) → GetEffectivePosition()
+                // возвращает спавн → dist=128..171м → рынок «не в зоне» → окно не открывается,
+                // хотя реальный NetworkPlayer(Clone) уже внутри tradeRadius.
+                // Дискриминатор: наличие `NetworkPlayerSpawner` маркера на GameObject
+                // (см. NetworkPlayer.OnNetworkSpawn). Реальный player из PlayerPrefab
+                // этого компонента НЕ имеет.
+                if (players[i].GetComponent<NetworkPlayerSpawner>() != null) continue;
+                return players[i];
             }
             return null;
         }

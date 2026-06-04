@@ -172,27 +172,35 @@ if (_mainContainer != null) {
 
 ---
 
-## 13. INVESTIGATION OPEN: E не открывает рынок после E вне зоны (intermittent)
+## 13. ~~INVESTIGATION OPEN~~ RESOLVED 2026-06-04: E не открывает рынок (ghost PlayerSpawner)
 
-**Где:** вероятно `Assets/_Project/Scripts/Player/NetworkPlayer.cs:280-499` (E-handler) или `Assets/_Project/Trade/Scripts/Client/MarketInteractor.cs:50-60` (TryOpenMarket кеш). Точное место не подтверждено — нет воспроизведения.
+**Корневая причина:** scene-placed `PlayerSpawner` GameObject в `BootstrapScene` имеет компонент `NetworkPlayerSpawner` и `NetworkPlayer` с `IsOwner=True` (NGO 2.x footgun: `OwnerClientId=0` ставится на все scene-placed NetworkObject'ы на хосте, и `IsOwner==true` совпадает с локальным клиентом). Методы `MarketInteractor.FindLocalPlayer` и `MarketZone.FindLocalPlayer` итерировали все `NetworkPlayer` через `FindObjectsByType` и возвращали ПЕРВОГО с `IsOwner=True` — этим первым оказывался ghost (его InstanceID ниже, чем у свежеспавненного `NetworkPlayer(Clone)`). Ghost сидит в точке спавна (39999.5, 2510, 39999.5) в 100+ метрах от ближайшей `MarketZone`. Все distance-check'и (`GetEffectivePosition` → `PollLocalPlayerZone`, `FindNearestZone`) мерили от позиции ghost → dist=128..171м > tradeRadius → `LocalPlayerZone` всегда null → `TryOpenMarket` → `FindNearestZone` → best=null → рынок не открывается. При этом реальный `NetworkPlayer(Clone)` может стоять в 5м от центра зоны.
 
-**Симптом (из репорта пользователя, 2026-06-04):**
-> "если нажать E сразу после спавна (вне зоны), а потом войти в зону и нажать E — окно не открывается. Без предварительного E вне зоны — работает."
+**Воспроизводимость:** "intermittent" — на самом деле воспроизводится на каждом запуске в `BootstrapScene`+`WorldScene_0_0`, но из-за предыдущей FIX 2026-06-04 (`GetEffectivePosition` для подлета на корабле) и характерной ошибки "игрок не дошёл до зоны" в логах сцена не доходила до воспроизведения.
 
-**Воспроизводимость:** ⚠️ **Intermittent.** Не на каждом запуске. В единственном логе, который удалось снять (`$LOCALAPPDATA/Unity/Editor/Editor.log`), баг **не воспроизвёлся** — игрок упал с платформы и не дошёл до зоны (8 нажатий E, все dist 5238..10308м, `LocalPlayerZone=null`). Сервер один раз увидел игрока в зоне через `OverlapSphere` (известный client/server desync на хосте с замороженным `transform.position`), но клиент — нет.
+**Где зафиксировано:**
+- `Assets/_Project/Trade/Scripts/Client/MarketInteractor.cs:110-129` — `FindLocalPlayer` теперь skip'ит GameObject с компонентом `NetworkPlayerSpawner` (discriminator из `NetworkPlayer.OnNetworkSpawn:148`).
+- `Assets/_Project/Trade/Scripts/Network/MarketZone.cs:198-219` — `FindLocalPlayer` тот же guard.
 
-**Что нужно для подтверждения и фикса (см. полный разбор в [FIXES_HISTORY.md](FIXES_HISTORY.md) → "INVESTIGATION OPEN: E не открывает рынок..."):**
-1. Свежий лог с полным циклом: spawn → E (вне зоны) → вход в зону → E → нет окна.
-2. Текущий `NetworkPlayer.cs` E-handler целиком.
-3. `InteractableManager.cs` — подтвердить `FindNearestChest(pos, float.MaxValue)`.
+**Симптом был:**
+> "если нажать E сразу после спавна (вне зоны), а потом войти в зону и нажать E — окно не открывается. Без предварительного E вне зоны — работает." (позже уточнено: "рынок просто при каком-то старте - не открывается вообще. персонаж в зоне действия а рынок не открывается")
 
-**Гипотезы (не фиксили вслепую):**
-- **A:** `NetworkPlayer` E-handler делает `TryPickup()` fallback после `!TryOpenMarket()`, а `InteractableManager.FindNearestChest` с глобальным радиусом подхватывает далёкий chest → второй E уходит в chest вместо market. *Фикс:* поменять порядок в E-handler.
-- **B:** `MarketInteractor.TryOpenMarket` использует кеш `MarketZoneRegistry.LocalPlayerZone`, stale-ссылка после `GetEffectivePosition` fix ведёт к открытию старой зоны → `NotInZone`. *Фикс:* всегда вызывать `FindNearestZone()` заново.
+**Подтверждение фикса (через `unityMCP_execute_code` после фикса, host):**
+```
+1) E OUTSIDE (500м от primium):  TryOpenMarket=False  ✓
+2) E INSIDE  (0м от primium):    TryOpenMarket=True   ✓
+   LocalPlayerZone=primium
+   MarketWindow.IsVisible=True
+```
 
-**Почему не зафиксили:** AGENTS.md — "минимальный фикс, не ломая остальное". Без воспроизведения обе гипотезы могут сломать chest pickup или regressить `GetEffectivePosition` fix.
+**Что не делали:**
+- ❌ Не трогали `NetworkPlayer.cs` / E-handler / `InteractableManager` — гипотеза A отвергнута, корень был в `FindLocalPlayer`.
+- ❌ Не удаляли scene-placed `PlayerSpawner` GameObject — на нём висят `NetworkPlayerSpawner` (маркер), `CharacterController`, `PlayerInputReader`, `NetworkObject` с референсами из других систем (см. `NetworkPlayerSpawner.cs:1-26`).
+- ❌ Не рефакторили `MarketInteractor.TryOpenMarket`/`FindNearestZone` — fallback-логика корректна, проблема была только в `FindLocalPlayer`.
 
-**Приоритет:** Medium-Low. Баг intermittent, **полный цикл BUY/LOAD/UNLOAD/SELL работает** в нормальном сценарии (подтверждено пользователем 2026-06-04). Не блокирует Stage 2.5.
+**См. также:** [FIXES_HISTORY.md → "2026-06-04 — FIX: ghost PlayerSpawner маскирует реального игрока в MarketZone.FindLocalPlayer"](FIXES_HISTORY.md).
+
+**Приоритет:** RESOLVED 2026-06-04. Полный цикл BUY/LOAD/UNLOAD/SELL работает, рынок открывается в зоне.
 
 ---
 
@@ -212,4 +220,4 @@ if (_mainContainer != null) {
 | 10 | Cargo visual | Stage 4 | No |
 | 11 | Хоткеи | Low | No |
 | 12 | TradeDebug* tools → старый API | Medium (cleanup) | No |
-| 13 | E не открывает рынок после E вне зоны (intermittent) | Medium-Low | No |
+| 13 | ~~E не открывает рынок после E вне зоны~~ RESOLVED 2026-06-04 (ghost PlayerSpawner в FindLocalPlayer) | — | No |

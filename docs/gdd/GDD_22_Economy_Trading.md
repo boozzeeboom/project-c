@@ -1,7 +1,7 @@
 # GDD-22: Economy & Trading — Project C: The Clouds
 
-**Версия:** 3.0 | **Дата:** 10 апреля 2026 г. | **Статус:** ✅ Базовая торговля реализована (Сессии 1-8F)
-**Автор:** Qwen Code (Game Studio: @economy-designer + @systems-designer + @game-designer + @network-programmer + @technical-director)
+**Версия:** 4.0 | **Дата:** 02 июня 2026 г. | **Статус:** 🟡 V2 в разработке (полный рефакторинг серверного слоя, time-multiplier, multi-ship selection)
+**Автор:** Qwen Code (3.0) + Mavis (4.0 — рефакторинг под bootstrap+24 сцены)
 
 ---
 
@@ -18,6 +18,7 @@
 - **Серверная авторитетность:** Вся экономика — на сервере
 
 **Этап реализации:** Этап 3-4
+**Архитектура (v4.0):** Bootstrap + 24 World-сцены, server-authoritative, UI Toolkit, см. [docs/dev/TRADE_V2_DESIGN.md](../dev/TRADE_V2_DESIGN.md) и [docs/dev/TRADE_V2_INTEGRATION.md](../dev/TRADE_V2_INTEGRATION.md)
 
 **Связанный документ:** [GDD_25_Trade_Routes.md](GDD_25_Trade_Routes.md) — полные спецификации маршрутов, логистики, контрактов
 
@@ -124,15 +125,45 @@ price(location, item) = base_price(item)
 |----------|-------------------|-------------------|------------------|
 | Частота тика | 5 мин | 3 мин | 2 мин |
 | NPC-трейдеров | 4 | 6 | 8 |
-| Затухание спроса/предложения | -5% в тик | -5% в тик | -5% в тик |
+| Затухание спроса/предложения | time-based (half-life 30 мин) | time-based | time-based |
 
 **Каждый тик сервер:**
 1. NPC-трейдеры перемещают товары между точками
-2. Спрос/предложение затухают к базовым (-5%)
+2. Спрос/предложение затухают к базовым (time-based, half-life 30 мин — одинаково при любом multiplier)
 3. Глобальные события обновляются
 4. Статус маршрутов обновляется
 5. Цены пересчитываются
-6. Обновление отправляется клиентам (ClientRpc)
+6. Обновление отправляется клиентам (ClientRpc) только подписчикам зон (не всем)
+
+### 4.5. Time-based Economy (v4.0)
+
+В v4.0 частота тиков управляется **множителем** `marketTimeMultiplier` (см. <see cref="MarketTimeService"/>).
+
+```
+tickIntervalSeconds = baseIntervalSeconds / marketTimeMultiplier
+```
+
+| Множитель | Скорость тика (5 мин base) | Назначение |
+|-----------|----------------------------|------------|
+| 0.1x | 50 мин | Замедление для долгих сессий |
+| 1.0x | 5 мин | Production default |
+| 5.0x | 1 мин | Быстрая проверка баланса |
+| 10.0x | 30 сек | Отладка / демо |
+| 100.0x | 3 сек | «Мгновенный» режим |
+
+**Time-based decay:** скорость затухания спроса/предложения описывается half-life в секундах (по умолчанию 1800 с = 30 мин), а не в процентах за тик. Это значит:
+
+```
+factor(t) = factor(t0) * exp(-k * (t - t0)),  k = ln(2) / halfLifeSeconds
+```
+
+При multiplier=10x тики случаются чаще, но `dt` каждого тика меньше — затухание идёт с той же скоростью по реальному времени. Ускорение multiplier означает «движение цен в единицу времени», а не «то же движение чаще».
+
+**Опциональная подписка на `ServerWeatherController`:**
+- `useWeatherFactor = true` (off по умолчанию) — multiplier умножается на weather-фактор (день 1.0, ночь 0.5, плавно между).
+- Позволяет в будущем ввести «ночью рынки спят» без переписывания.
+
+**RPC для отладки:** клиент может запросить `RequestSetTimeMultiplierRpc(multiplier)` (любой клиент; в будущем — admin-only). Сервер применяет и бродкастит обновлённый snapshot.
 
 ### Влияние игроков на рынок
 
@@ -145,6 +176,7 @@ supply_factor += N × 0.02
 
 # Максимальное накопление: ±1.5
 # Максимальная цена: ×5 от базовой (cap)
+# Затухание: time-based, half-life 30 мин (НЕ tick-based, как было в v1-v3)
 ```
 
 ---
@@ -177,6 +209,34 @@ supply_factor += N × 0.02
 3. При успехе: 30% стоимости + XP + репутация
 4. При провале: **долг = стоимость × 1.5**, -30 репутации НП
 5. Долг **не списывается** — НП присылает патрули при приближении
+
+### 5.5 Multi-ship trading (v4.0)
+
+В v4.0 игрок может владеть **несколькими кораблями** в одной зоне рынка. Торговля с конкретным кораблём требует выбора.
+
+**Архитектура:**
+- `MarketZone` (scene-placed компонент) имеет два радиуса:
+  - `tradeRadius` (по умолчанию 5 м) — игрок должен быть в этой зоне, чтобы открыть рынок
+  - `shipDockRadius` (по умолчанию 30 м) — корабли в этой зоне считаются «у причала» и доступны для Load/Unload
+- SphereCollider (trigger) детектит NetworkPlayer и ShipController, попадающие в зону
+- `MarketZoneRegistry` (server + client) — реестр всех зон по `locationId`
+- На сервере: `MarketZone._shipsInZone` (HashSet<ulong>) — NetworkObjectId кораблей
+- На клиенте: `MarketZoneRegistry.LocalPlayerZone` — для UI prompt'а
+
+**UI (MarketWindow):**
+- Если в зоне 1 корабль — `ship-selector-container` скрыт, Load/Unload идут в этот корабль
+- Если в зоне 2+ корабля — виден `DropdownField` со списком «{name} ({shipClass})», выбор запоминается
+- Имя корабля = `GameObject.name` префаба (например «Корабль #3» или «Primium Trader»)
+- Переключение корабля НЕ обнуляет склад (только выбор целевого трюма)
+
+**Валидация на сервере:**
+- Любой RPC (buy/sell/load/unload) проверяет, что clientId игрока в `_playersInZone[locationId]`
+- Для load/unload дополнительно: `shipNetworkObjectId` в `_shipsInZone[locationId]`
+- Если проверка не прошла — `TradeResultCode.NotInZone` / `ShipNotInZone`, операция не выполняется
+
+**Edge case — ни одного корабля в зоне:**
+- Buy/Sell работают (товар попадает на склад игрока на этой локации, можно позже забрать кораблём)
+- Load/Unload возвращают `ShipNotInZone` — UI показывает сообщение «Нет корабля у причала»
 
 ### 5.3 P2P торговля между игроками
 
@@ -490,14 +550,16 @@ PD_Warehouse_{clientId}_{locationId}  — склад (привязан к лок
 | Формула | Описание |
 |---------|----------|
 | `price = base × (1 + demand - supply) × rep × event × route` | Цена товара |
-| `profit = sell_price - buy_price - tax` | Прибыль от торговли |
-| `tax = sell_price × 0.05` | Налог на сделку (5%) |
+| `profit = sell_price × 0.8 - buy_price - tax` | Прибыль от торговли (sell = 80% цены, NPC-маржа) |
+| `tax = sell_price × 0.05` | Налог на сделку (5%, v2+) |
 | `contract_reward = base_price × quantity × 0.3 × distance × rep_bonus` | Награда за контракт |
 | `debt = cargo_value × 1.5` | Долг при провале «под расписку» |
 | `speed_penalty = 1.0 - (cargo_weight / max_capacity) × penalty_factor` | Влияние груза на скорость |
 | `demand_change = quantity × 0.02` | Влияние покупки на спрос |
 | `supply_change = quantity × 0.02` | Влияние продажи на предложение |
-| `decay_per_tick = factor × 0.95` | Затухание спроса/предложения |
+| `decay(t) = factor × exp(-ln(2) × dt / halfLife)` | Time-based затухание (v4.0) |
+| `tickInterval = baseInterval / marketTimeMultiplier` | Частота тика (v4.0) |
+| `clamp price ∈ [base × 0.5, base × 5.0]` | Защита от runaway-цен |
 
 ---
 
@@ -512,9 +574,12 @@ PD_Warehouse_{clientId}_{locationId}  — склад (привязан к лок
 | `max_price_multiplier` | 3.0 | 10.0 | 5.0 | Макс. множитель цены |
 | `debt_multiplier` | 1.0 | 3.0 | 1.5 | Множитель долга |
 | `contraband_detect_base` | 0.05 | 0.30 | 0.15 | Базовый шанс обнаружения |
-| `tick_interval_host` | 120 | 600 | 300 | Частота тика (Host, сек) |
-| `tick_interval_dedicated` | 60 | 300 | 120 | Частота тика (Dedicated, сек) |
+| `base_tick_interval_seconds` | 30 | 3600 | 300 | Базовый интервал тика (сек) |
+| `market_time_multiplier` | 0.1 | 100 | 1.0 | Множитель скорости (v4.0) |
+| `demand_decay_half_life_seconds` | 60 | 86400 | 1800 | Half-life спроса (v4.0) |
+| `use_weather_factor` | bool | — | false | Включить time-of-day модуляцию (v4.0) |
 | `npc_trader_count` | 2 | 20 | 8 | Количество NPC-трейдеров |
+| `max_ops_per_minute` | 0 | 200 | 30 | Rate limit (0 = off) |
 
 ---
 
@@ -536,6 +601,12 @@ PD_Warehouse_{clientId}_{locationId}  — склад (привязан к лок
 | 12 | Серверная валидация | Попытка чита → отклонение | ✅ |
 | 13 | События рынка работают | Создать событие → цены изменились | ✅ |
 | 14 | Маршрут блокируется | Событие → маршрут закрыт | 🔴 (Этап 5) |
+| 15 | (v4.0) Time multiplier ускоряет/замедляет рынок | Inspector → MarketTimeService → multiplier 10x → цены реально двигаются за секунды | 🟡 (v4.0) |
+| 16 | (v4.0) При multiplier=10x цены не скатываются в 0 | Time-based decay (half-life 30 мин) не зависит от частоты тиков | 🟡 (v4.0) |
+| 17 | (v4.0) Multi-ship: 2 корабля в зоне → UI dropdown | Поставить 2 ShipController в trigger MarketZone | 🟡 (v4.0) |
+| 18 | (v4.0) Multi-ship: 1 корабль в зоне → dropdown скрыт | Убрать второй корабль | 🟡 (v4.0) |
+| 19 | (v4.0) Игрок вне MarketZone → RPC отклоняется с NotInZone | Сесть в корабль, уплыть далеко, попробовать купить | 🟡 (v4.0) |
+| 20 | (v4.0) Корабль вне MarketZone → Load/Unload отклоняется с ShipNotInZone | Уплыть корабль далеко, попробовать погрузить | 🟡 (v4.0) |
 
 ---
 

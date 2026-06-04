@@ -101,6 +101,20 @@ namespace ProjectC.Player
         public bool IsInShip => _inShip;
         public ShipController CurrentShip => _currentShip;
 
+        /// <summary>
+        /// Реальная мировая позиция игрока. Если пилот сидит в корабле — это
+        /// позиция корабля (CharacterController отключён в ApplyShipState и
+        /// transform.position игрока заморожен на точке посадки, пока корабль
+        /// летит). Использовать вместо transform.position в любых дистанционных
+        /// проверках (рынок, триггеры зон, диалоги), иначе игрок «вне зоны» в
+        /// клиентской логике, хотя визуально он прилетел.
+        /// </summary>
+        public Vector3 GetEffectivePosition()
+        {
+            if (_inShip && _currentShip != null) return _currentShip.transform.position;
+            return transform.position;
+        }
+
         public override void OnNetworkSpawn()
         {
             base.OnNetworkSpawn();

@@ -1,6 +1,44 @@
 # Markets — Fixes History
-
 Хронология багов, диагнозов и фиксов рыночной подсистемы. Текущая версия (2026-06-04) — стабильная: полный цикл BUY/LOAD/UNLOAD/SELL работает.
+
+## 2026-06-04 — FIX: рынок не открывается, если игрок подлетел на корабле (GetEffectivePosition)
+
+**Файлы:**
+- `Assets/_Project/Scripts/Player/NetworkPlayer.cs:104-116` — новый helper `GetEffectivePosition()`
+- `Assets/_Project/Trade/Scripts/Network/MarketZone.cs:169, 287` — использовать effective position в `PollLocalPlayerZone` и `OnTriggerEnter`
+- `Assets/_Project/Trade/Scripts/Client/MarketInteractor.cs:2, 83` — `using ProjectC.Player;` + использовать effective position в `FindNearestZone`
+
+**Симптом (из лога теста, см. unity-mcp):**
+```
+[MarketZone:primium] server detected player in zone: clientId=0
+[MarketZone:primium] DIAG PollLocalPlayerZone: outside zone, dist=4045,9, tradeRadius=36,0, localPlayerPos=(39820.91, -1128.69, 41888.07), zonePos=(40096.50, 2510.00, 40140.60)
+```
+Сервер видит игрока в зоне (через OverlapSphere — попадает в коллайдер корабля), клиент упорно сообщает дистанцию 1600–4000м. `MarketInteractor.TryOpenMarket` уходит в `FindNearestZone`, который тоже мерит от `localPlayer.transform.position` — получает best=null → возвращает false → окно рынка не открывается. UI выглядит зависшим.
+
+**Сценарий:** игрок сидит в корабле и подлетает к причалу рынка. Если до посадки/входа в зону нажать E (выход из зоны → `LocalPlayerZone` сбрасывается), а потом залететь в зону, E перестаёт открывать рынок. Пешком — работает, потому что `CharacterController` обновляет `transform.position` каждый кадр.
+
+**Корневая причина:** в `ApplyShipState` (`NetworkPlayer.cs:441-448`) `_controller.enabled = false` — игрок больше не двигается через `CharacterController`, его `transform.position` заморожен на точке посадки. Реально в мире летит корабль, а пилот «висит» в воздухе в исходной точке. Все клиентские дистанционные проверки (рынок, OnTriggerEnter) брали `localPlayer.transform.position` напрямую — получали замороженную позицию, хотя сервер через `Physics.OverlapSphere` корректно детектил коллайдер корабля внутри `tradeRadius`.
+
+**Фикс (один helper, 3 точки использования):**
+- В `NetworkPlayer` добавлен публичный `GetEffectivePosition()`: возвращает `_currentShip.transform.position` если `_inShip && _currentShip != null`, иначе `transform.position`.
+- `MarketZone.PollLocalPlayerZone` (client-side, обновление `LocalPlayerZone`): `Vector3.Distance(zone, localPlayer.GetEffectivePosition())`
+- `MarketZone.OnTriggerEnter` (client-side, ранняя установка `LocalPlayerZone` при срабатывании SphereCollider): `Vector3.Distance(zone, np.GetEffectivePosition())`
+- `MarketInteractor.FindNearestZone` (fallback, когда `LocalPlayerZone == null`): использует тот же `GetEffectivePosition()`
+
+**Что не делали (важно):**
+- ❌ Не рефакторили `ApplyShipState` чтобы «правильно» парентить игрока к кораблю или двигать `transform.position` — это сломало бы `NetworkTransform` репликацию, камеру и CharacterController при выходе.
+- ❌ Не трогали `MarketZone.PollPlayersInRadius` (server-side) — там `OverlapSphere` уже корректно находит коллайдер корабля и через `GetComponentInParent<NetworkPlayer>` матчит пилота.
+- ❌ Не убирали diagnostic-логи из `MarketInteractor`/`MarketZone` — оставлены на случай следующих регрессий (KNOWN_ISSUES §1).
+- ❌ Не рефакторили legacy `TradeTrigger` / `AutoTradeZone` / `TradeUI` (KNOWN_ISSUES §3) — отдельный cleanup.
+
+**Что проверить вручную (в Play Mode, host):**
+1. Сесть в корабль (F) → улететь за пределы зоны рынка (X<40000, Y<2000) → нажать E в полёте → должна быть `[MarketInteractor] LocalPlayerZone is null and no zone in range`.
+2. Залететь в зону на корабле → в консоли появится `[MarketZone:primium] client: local player entered zone (dist=~0..36)`.
+3. Нажать E → откроется окно рынка, в консоли `[MarketInteractor] TryOpenMarket: zone='primium'`.
+4. Сойти с корабля (F) на палубе внутри зоны → `LocalPlayerZone` остаётся `this` (расстояние меряется так же — от корабля, но корабль в той же точке, что игрок).
+5. Обычный сценарий (пешком) — регрессий быть не должно.
+
+---
 
 ## 2026-06-04 — UI верстка (4 фикса + 1 fix жизненного цикла + 3 диагностических лога)
 

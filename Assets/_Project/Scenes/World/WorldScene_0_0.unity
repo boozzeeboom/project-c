@@ -1891,7 +1891,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::ProjectC.Trade.Network.MarketZone
   locationId: primium
   displayName: "\u041F\u0440\u0438\u043C\u0443\u043C"
-  tradeRadius: 30
+  tradeRadius: 36
   shipDockRadius: 591.1
   drawGizmos: 1
 --- !u!135 &969825631

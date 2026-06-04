@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using ProjectC.Player;
 using ProjectC.Trade.Network;
 using UnityEngine;
 using UnityEngine.InputSystem;
@@ -79,7 +80,7 @@ namespace ProjectC.Trade.Client
                 Debug.LogWarning($"[MarketInteractor] FindNearestZone: FindLocalPlayer=null (total NetworkPlayers={total}, IsSpawned={spawned}, IsOwner={owners})");
                 return null;
             }
-            var lpPos = localPlayer.transform.position;
+            var lpPos = localPlayer.GetEffectivePosition();
 
             MarketZone best = null;
             float bestSqr = float.MaxValue;

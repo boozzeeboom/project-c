@@ -166,7 +166,7 @@ namespace ProjectC.Trade.Network
                 }
                 return;
             }
-            float dist = Vector3.Distance(transform.position, localPlayer.transform.position);
+            float dist = Vector3.Distance(transform.position, localPlayer.GetEffectivePosition());
             // FIX: раньше guard `if (LocalPlayerZone == this) return;` отключал
             // любую проверку после установки — игрок мог уйти за tradeRadius
             // (например, в 100м от зоны), а LocalPlayerZone оставался this.
@@ -284,7 +284,7 @@ namespace ProjectC.Trade.Network
                 // реальной tradeRadius. Теперь radius = tradeRadius (см. Awake), но
                 // проверка остаётся как defense in depth на случай если кто-то изменит
                 // radius в инспекторе.
-                float dist = Vector3.Distance(transform.position, np.transform.position);
+                float dist = Vector3.Distance(transform.position, np.GetEffectivePosition());
                 if (dist <= tradeRadius)
                 {
                     if (_isServer) _playersInZone.Add(np.OwnerClientId);

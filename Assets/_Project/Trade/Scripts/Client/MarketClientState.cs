@@ -114,6 +114,15 @@ namespace ProjectC.Trade.Client
             MarketServer.Instance.RequestUnloadFromShipRpc(locationId, itemId, quantity, shipNetworkObjectId);
         }
 
+        // FIX (2026-06-04): Сообщить серверу, какой корабль сейчас выбран в UI
+        // (ship-selector). Сервер будет включать cargo этого корабля в snapshot,
+        // иначе UI не знал реальный cargo и показывал stale из _cargoCache.
+        public void RequestSetSelectedShip(string locationId, ulong shipNetworkObjectId)
+        {
+            if (MarketServer.Instance == null) return;
+            MarketServer.Instance.SetSelectedShipRpc(locationId, shipNetworkObjectId);
+        }
+
         public void RequestSetTimeMultiplier(float multiplier)
         {
             if (MarketServer.Instance == null) return;

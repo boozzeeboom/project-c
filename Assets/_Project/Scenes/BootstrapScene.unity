@@ -17720,6 +17720,7 @@ Transform:
   - {fileID: 576996028}
   - {fileID: 1858011060}
   - {fileID: 1449379030}
+  - {fileID: 1932759460}
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1 &1624092368
@@ -19179,6 +19180,8 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 10d1b7f30c0aa4d40992bccd46cb3540, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::ProjectC.Network.NetworkPlayerSpawner
+  logAutoSpawn: 1
+  warnIfNoPlayerObject: 1
   useScenePlayerAsHost: 1
 --- !u!1 &1760152536
 GameObject:
@@ -21502,7 +21505,7 @@ RectTransform:
   m_ConstrainProportionsScale: 0
   m_Children:
   - {fileID: 1876363073}
-  m_Father: {fileID: 0}
+  m_Father: {fileID: 1622157772}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0, y: 0}
   m_AnchorMax: {x: 0, y: 0}
@@ -25153,7 +25156,6 @@ SceneRoots:
   - {fileID: 502236116}
   - {fileID: 880940882}
   - {fileID: 1149404329}
-  - {fileID: 1932759460}
   - {fileID: 1471737522}
   - {fileID: 909089446}
   - {fileID: 180883752}

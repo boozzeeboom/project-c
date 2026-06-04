@@ -3,6 +3,7 @@ using UnityEngine;
 using UnityEngine.InputSystem;
 using ProjectC.Core;
 using ProjectC.Items;
+using ProjectC.Network;
 using ProjectC.Trade;
 using ProjectC.Trade.Dto;
 using ProjectC.Trade.Network;
@@ -122,9 +123,36 @@ namespace ProjectC.Player
             networkObject = GetComponent<NetworkObject>();
             _controller = GetComponent<CharacterController>();
 
-            // ПРИМЕЧАНИЕ: NetworkTransform.InterpolatePosition/Rotation/Scale 
+            // ПРИМЕЧАНИЕ: NetworkTransform.InterpolatePosition/Rotation/Scale
             // отключаются ВРУЧНУЮ в Unity Editor на префабе Player.prefab
             // (API отличается в разных версиях Unity/NGO)
+
+            // FIX (2026-06-04, INVESTIGATION_GHOST_PLAYER_CLONE.md, "second layer"):
+            //   На хосте NGO 2.x авто-спавнит scene-placed NetworkObject'ы из BootstrapScene
+            //   (включая scene-placed `PlayerSpawner`) как ОБЫЧНЫЕ NetworkObject'ы, не PlayerObject'ы.
+            //   При этом OwnerClientId = ServerClientId = 0, а LocalClientId на хосте = 0,
+            //   поэтому `IsOwner == true` даже для НЕ-PlayerObject'ов — это известный footgun NGO.
+            //   Без guard'а scene-placed `PlayerSpawner` запускал SpawnCamera() + SpawnInventory()
+            //   → второй призрак-клон + дубль InventoryUI.
+            //
+            //   ДИСКРИМИНАТОР (надёжный): наличие компонента `NetworkPlayerSpawner` на GameObject.
+            //   • Scene-placed `PlayerSpawner` в BootstrapScene — ЕСТЬ (по дизайну: компонент был
+            //     частью спавнера ещё до появления PlayerPrefab).
+            //   • Auto-spawned `NetworkPlayer(Clone)` из PlayerPrefab — НЕТ (подтверждено живой
+            //     иерархией 2026-06-04, см. INVESTIGATION_GHOST_PLAYER_CLONE.md).
+            //
+            //   ПРЕДЫДУЩАЯ ВЕРСИЯ использовала `!networkObject.IsPlayerObject` — НЕ надёжно,
+            //   потому что NGO 2.x может НЕ установить IsPlayerObject до момента OnNetworkSpawn
+            //   для auto-spawned префаба (timing race), и тогда guard ошибочно отключал
+            //   настоящего игрока. Это давало симптом "после play host ничего не грузит".
+            if (GetComponent<NetworkPlayerSpawner>() != null)
+            {
+                // Это scene-placed PlayerSpawner-пустышка, не настоящий игрок.
+                if (_controller != null) _controller.enabled = false;
+                enabled = false; // Update/FixedUpdate тоже не должны крутиться
+                Debug.Log($"[NetworkPlayer] Skipping player init for scene-placed 'PlayerSpawner' GameObject (has NetworkPlayerSpawner marker, IsOwner={IsOwner}, IsPlayerObject={networkObject.IsPlayerObject}). См. INVESTIGATION_GHOST_PLAYER_CLONE.md.");
+                return;
+            }
 
             // Находим ВСЕ Renderer и Collider на объекте (включая дочерние)
             GetComponentsInChildren(true, _playerRenderers);
@@ -145,7 +173,7 @@ namespace ProjectC.Player
             {
                 SpawnCamera();
                 SpawnInventory();
-                
+
                 // Загружаем инвентарь из сохранения (после реконнекта)
                 if (_inventory != null)
                 {
@@ -155,7 +183,7 @@ namespace ProjectC.Player
                         _inventoryUI.TriggerSectorFlash();
                     }
                 }
-                
+
                 ApplyWalkingState();
 
                 // Find PlayerChunkTracker for chunk streaming
@@ -164,7 +192,7 @@ namespace ProjectC.Player
                 {
                     _playerChunkTracker = chunkTrackers[0];
                 }
-            
+
             }
             else
             {
@@ -175,6 +203,16 @@ namespace ProjectC.Player
         public override void OnNetworkDespawn()
         {
             base.OnNetworkDespawn();
+
+            // FIX (2026-06-04, см. OnNetworkSpawn): для scene-placed non-player
+            // NetworkObject'ов у нас нет ни camera, ни inventory, ни ship state —
+            // вся cleanup-логика ниже player-specific и должна быть пропущена.
+            // Тот же надёжный дискриминатор, что и в OnNetworkSpawn: наличие
+            // компонента NetworkPlayerSpawner на GameObject.
+            if (GetComponent<NetworkPlayerSpawner>() != null)
+            {
+                return;
+            }
 
             // Сохраняем инвентарь перед отключением
             if (_inventory != null && _inventory.GetTotalItemCount() > 0)

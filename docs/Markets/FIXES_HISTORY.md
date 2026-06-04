@@ -1,6 +1,64 @@
 # Markets — Fixes History
 Хронология багов, диагнозов и фиксов рыночной подсистемы. Текущая версия (2026-06-04) — стабильная: полный цикл BUY/LOAD/UNLOAD/SELL работает.
 
+## 2026-06-04 — FIX: «LOAD 1 → 2 в корабле, UNLOAD 2 → на складе +1 бесплатный товар» (stale cargo в UI)
+
+**Файлы:**
+- `Assets/_Project/Trade/Scripts/Dto/MarketSnapshotDto.cs` — добавлено поле `WarehouseEntryDto[] cargo` + сериализация.
+- `Assets/_Project/Trade/Scripts/Network/MarketServer.cs` — добавлены `_clientSelectedShip` map, `SetSelectedShipRpc`, `SelectedShipKey`; `SendSnapshotToClient` теперь включает cargo выбранного корабля.
+- `Assets/_Project/Trade/Scripts/Client/MarketClientState.cs` — добавлен `RequestSetSelectedShip(locationId, shipId)`.
+- `Assets/_Project/Trade/Scripts/Client/MarketWindow.cs` — `_cargoCache` синхронизируется из `snapshot.cargo`; `RequestSetSelectedShip` вызывается при смене корабля и на первом show.
+
+**Симптом (из репорта пользователя):**
+> "если я купил 5 товаров к примеру выбрал корабль нужный и нажал погрузить: то сразу пишется 2 товара в корабле, и выгрузить можно 2, на складе будет 6 (эксплойт)"
+
+**Сценарий:** host-only, `BootstrapScene` + `WorldScene_0_0`, игрок спавнится с двумя-тремя кораблями в зоне (есть stale cargo с прошлой сессии). `PlayerPrefs.DeleteAll()` НЕ делался.
+
+**Что показал лог (`Editor.log`):**
+- `[TradeWorld] BUY ... qty=1` x5 → склад = 5 mesium
+- `[TradeWorld] LOAD ship=6 qty=1` → склад = 4, **cargo ship 6 = 2** (была 1 stale с прошлой сессии)
+- `[TradeWorld] UNLOAD ship=6 qty=1` → склад = 5, cargo = 1
+- `[TradeWorld] UNLOAD ship=6 qty=1` → склад = 6, cargo = 0
+- `PlayerPrefs`: `PD2_Warehouse_0_primium = mesium x6`, `PD2_Cargo_7 = mesium x1` (тоже stale)
+
+**Корневая причина:** `MarketSnapshotDto` НЕ содержал cargo выбранного корабля (комментарий в `MarketWindow.cs:718` явно: "Cargo не входит в MarketSnapshotDto (слишком жирно слать груз на каждый tick)"). Клиент узнавал cargo **только** из `TradeResultDto.updatedCargoSnapshot`, который приходит **после** успешного Load/Unload. До первой операции (или после смены корабля) UI показывал cargo из локального `_cargoCache` — а там stale или пусто. Игрок не знал, что в трюме уже лежат предметы с прошлой сессии → жал LOAD qty=1, на сервере cargo=1+1=2, потом UNLOAD qty=2 (или дважды UNLOAD qty=1) → склад получал +2 «лишних» единицы. **Серверная логика `TradeWorld.TryLoadToShip/TryUnloadFromShip` была полностью корректна** — баг был исключительно в проекции cargo в UI.
+
+**Фикс (4 точки):**
+1. `MarketSnapshotDto.cargo` — новый `WarehouseEntryDto[]` (nullable). Сервер заполняет его cargo выбранного клиентом корабля. При пустом трюме = `null`/`[]`.
+2. `MarketServer.SetSelectedShipRpc(locationId, shipId)` — клиент сообщает, какой корабль сейчас выбран. Сервер валидирует (`zone.IsShipInZone(shipId)`) и сохраняет в `_clientSelectedShip: Dictionary<(clientId, locationId) → shipId>`. Если клиент не прислал — fallback на первый корабль в зоне (старое поведение UI: дефолтный `ships[0]`).
+3. `MarketClientState.RequestSetSelectedShip(locationId, shipId)` — обёртка над RPC.
+4. `MarketWindow.HandleSnapshot` — `_cargoCache = snap.cargo ?? Array.Empty<WarehouseEntryDto>()` (теперь это source of truth, не stale). `MarketWindow` зовёт `RequestSetSelectedShip` при (а) смене корабля через ship-selector, (б) первом auto-select первого корабля на show. `HandleTradeResult` продолжает обновлять `_cargoCache` мгновенно после успешной операции — snapshot-обновление придёт следом и перезапишет то же значение (идемпотентно, без визуального мерцания).
+
+**Что не делали (по AGENTS.md, минимальный фикс):**
+- ❌ Не очищали `PD2_Cargo_*`/`PD2_Warehouse_*` при старте — сломало бы legitimate persistence между сессиями.
+- ❌ Не делали «сброс cargo при выходе из зоны» — это была бы потеря данных при вылете из игры в трюме.
+- ❌ Не трогали `TradeWorld.TryLoadToShip` / `TryUnloadFromShip` / `CargoData.TryAdd` / `TryRemove` / `Warehouse.TryAdd` / `TryRemove` — всё это было корректно (см. изолированный repro через `unityMCP_execute_code` ниже в FIXES_HISTORY).
+- ❌ Не ломали существующий поток `TradeResultDto.updatedCargoSnapshot` — оставлен для мгновенного feedback после операции.
+- ❌ Не включали cargo ВСЕХ кораблей в snapshot (тяжело для сцен с 5+ кораблями) — только выбранного.
+
+**Изолированная проверка серверной логики (через `unityMCP_execute_code`):**
+```
+=== Buy 5x mesium ===
+  buy 1..5: ok=True, credits: 1000→948
+  warehouse: mesium x5
+=== Load qty=1 to ship 6 ===
+  warehouse: mesium x4, cargo 6: mesium x1
+=== Unload qty=1 from ship 6 ===
+  warehouse: mesium x5, cargo 6: <empty>
+=== Unload qty=1 from ship 6 (AGAIN, should fail) ===
+  unload: ok=False, code=ItemNotInCargo
+  warehouse: mesium x5, cargo 6: <empty>
+```
+Сервер **отвергает** попытку UNLOAD из пустого трюма с `ItemNotInCargo`. Никакого дублирования нет.
+
+**Что проверить вручную (Play Mode, host):**
+1. В чистом `PlayerPrefs.DeleteAll()` → BUY 5 mesium → LOAD qty=1 на ship X → UI должен показать cargo = 1 ед. (а не 2).
+2. UNLOAD qty=1 → cargo = 0, склад = 5. Повторный UNLOAD → красное сообщение «Товара нет в трюме», склад остаётся 5.
+3. С преднамеренно stale cargo (`TradeDebugTools` или ручной PlayerPrefs с `PD2_Cargo_X = {"items":[{"itemId":"mesium_canister_v01","quantity":1}]}`): открыть рынок → UI cargo должен **сразу** показать «1 ед.» (а не 0 как раньше). LOAD qty=1 → cargo = 2, UNLOAD qty=2 → cargo = 0, склад = X-1+2 = X+1 (это **корректно**: 1 stale + 1 новый уехал в склад, плюс честный возврат).
+4. Сцена с >1 кораблём в зоне: переключить ship через ship-selector → cargo мгновенно подменяется на cargo нового корабля в следующем snapshot (в консоли `[MarketClientState] OnSnapshotReceived: ... cargo=N`).
+
+---
+
 ## 2026-06-04 — INVESTIGATION OPEN: E не открывает рынок после E вне зоны (intermittent)
 
 **Статус:** ⚠️ OPEN. Баг не воспроизводится на каждом запуске — нужен свежий лог от пользователя с подтверждённым сценарием. Не фиксили вслепую (по AGENTS.md — "минимальный фикс, не ломая остальное").

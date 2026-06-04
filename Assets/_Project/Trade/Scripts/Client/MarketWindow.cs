@@ -239,6 +239,11 @@ namespace ProjectC.Trade.Client
                         if (ships[i].displayName == evt.newValue)
                         {
                             _selectedShipIndex = i;
+                            // FIX (2026-06-04): Сообщить серверу о смене корабля, чтобы
+                            // следующий snapshot содержал cargo нового корабля. Без
+                            // этого UI продолжал показывать cargo старого корабля
+                            // (stale из _cargoCache) и игрок не знал реальный груз.
+                            _state?.RequestSetSelectedShip(snap.Value.locationId, ships[i].shipNetworkObjectId);
                             return;
                         }
                     }
@@ -375,6 +380,14 @@ namespace ProjectC.Trade.Client
                 int seconds = Mathf.CeilToInt(snap.secondsUntilNextTick);
                 _timeInfoLabel.text = $"Скорость рынка: x{snap.marketTimeMultiplier:F1} | Тик через: {seconds}с";
             }
+            // FIX (2026-06-04): Синхронизировать _cargoCache с серверным cargo из snapshot.
+            // До этого UI cargo обновлялся ТОЛЬКО из TradeResultDto.updatedCargoSnapshot
+            // (после успешного Load/Unload). При открытии рынка / смене корабля UI
+            // показывал stale _cargoCache. Теперь сервер шлёт cargo выбранного корабля
+            // в каждом snapshot — UI всегда видит реальный груз. TradeResult продолжает
+            // обновлять _cargoCache мгновенно после операции, snapshot-обновление придёт
+            // следом и перезапишет то же значение (идемпотентно).
+            _cargoCache = snap.cargo ?? Array.Empty<WarehouseEntryDto>();
             // Списки — назначаем itemsSource (массивы DTO).
             // Без этого ListView знает callbacks (makeItem/bindItem), но не знает сколько элементов.
             if (_itemList != null) _itemList.itemsSource = snap.items;
@@ -394,6 +407,10 @@ namespace ProjectC.Trade.Client
                 {
                     _shipSelector.value = choices[0];
                     _selectedShipIndex = 0;
+                    // FIX (2026-06-04): Сообщить серверу о начальном выборе корабля, чтобы
+                    // он включил cargo этого корабля в следующий snapshot (на случай,
+                    // если сервер не выбрал дефолт сам).
+                    _state?.RequestSetSelectedShip(snap.locationId, snap.nearbyShips[0].shipNetworkObjectId);
                 }
                 // Показываем селектор только если кораблей > 1
                 if (_shipSelectorContainer != null)

@@ -277,9 +277,24 @@ ManageLoadedScenesCount();
 
                 if (NetworkManager.Singleton != null && clientId == NetworkManager.Singleton.LocalClientId)
                 {
-                    var playerByTag = GameObject.FindGameObjectWithTag("Player");
-                    if (playerByTag != null)
+                    // FIX (2026-06-04, INVESTIGATION_GHOST_PLAYER_CLONE.md): сначала проверяем
+                    // НАСТОЯЩЕГО локального игрока (NGO PlayerObject). Иначе tag-based поиск ниже
+                    // первым матчит scene-placed PlayerSpawner (тоже имеет tag "Player") →
+                    // телепортируем не того → реальный NetworkPlayer(Clone) остаётся на (0,3,0) и падает.
+                    var realPlayer = FindRealLocalPlayerGameObject();
+                    if (realPlayer != null)
                     {
+                        playerTransform = realPlayer.transform;
+                        _isInitialized = true;
+                        if (logPlayerFinding) Debug.Log($"[CSL] ★ UpdatePlayerTransform SUCCESS (RealPlayer/PlayerObject): {realPlayer.name} at {realPlayer.transform.position}");
+                        yield break;
+                    }
+
+                    var playerByTag = GameObject.FindGameObjectWithTag("Player");
+                    if (playerByTag != null && playerByTag.name.Contains("PlayerSpawner") == false)
+                    {
+                        // FIX: tag-based поиск может вернуть scene-placed PlayerSpawner-пустышку
+                        // (она тоже имеет tag "Player"). Проверяем имя и пропускаем.
                         playerTransform = playerByTag.transform;
                         _isInitialized = true;
                         if (logPlayerFinding) Debug.Log($"[CSL] ★ UpdatePlayerTransform SUCCESS (PlayerTag): {playerByTag.name} at {playerByTag.transform.position}");
@@ -293,7 +308,7 @@ ManageLoadedScenesCount();
                         if (netObj.name.Contains("PlayerSpawner") || netObj.name.Contains("Spawner"))
                             continue;
 
-                        if (netObj.IsOwner)
+                        if (netObj.IsOwner && netObj.IsPlayerObject) // FIX: добавил IsPlayerObject, см. doc
                         {
                             var networkPlayer = netObj.GetComponent<ProjectC.Player.NetworkPlayer>();
                             if (networkPlayer != null)
@@ -364,11 +379,17 @@ ManageLoadedScenesCount();
 
                     if (playerTransform.name.Contains("PlayerSpawner"))
                     {
+                        // FIX (2026-06-04, INVESTIGATION_GHOST_PLAYER_CLONE.md):
+                        // С этой правкой playerTransform НЕ должен указывать на scene-placed
+                        // PlayerSpawner (UpdatePlayerTransformAfterSpawn теперь предпочитает
+                        // NGO PlayerObject). Но оставляем branch как defense-in-depth —
+                        // с усиленным фильтром IsPlayerObject во внутреннем цикле, чтобы
+                        // даже в race condition телепорт уходил на НАСТОЯЩЕГО игрока.
                         if (logPlayerFinding) Debug.Log("[CSL] PlayerSpawner detected - finding actual NetworkPlayer for teleport");
                         var networkPlayers = FindObjectsByType<ProjectC.Player.NetworkPlayer>();
                         foreach (var np in networkPlayers)
                         {
-                            if (np.IsOwner)
+                            if (np.IsOwner && np.GetComponent<NetworkObject>()?.IsPlayerObject == true) // FIX
                             {
                                 np.TeleportServerRpc(worldSpawnPos);
                                 if (logPlayerFinding) Debug.Log($"[CSL] Teleported via NetworkPlayer: {np.name} to {worldSpawnPos}");
@@ -407,14 +428,31 @@ ManageLoadedScenesCount();
         {
             if (logPlayerFinding) Debug.Log("[CSL] FindLocalPlayer() called");
 
+            // FIX (2026-06-04): сначала пробуем source of truth — NGO PlayerObject.
+            // Иначе tag-based поиск ниже первым матчит scene-placed PlayerSpawner
+            // (тоже имеет tag "Player") → "фантом-клон" (см. INVESTIGATION_GHOST_PLAYER_CLONE.md).
+            var realPlayer = FindRealLocalPlayerGameObject();
+            if (realPlayer != null)
+            {
+                playerTransform = realPlayer.transform;
+                _isInitialized = true;
+                if (logPlayerFinding) Debug.Log($"[CSL] Found REAL player (NGO PlayerObject): {realPlayer.name} at {realPlayer.transform.position}");
+                return;
+            }
+
             var playerByTag = GameObject.FindGameObjectWithTag("Player");
             if (logPlayerFinding) Debug.Log($"[CSL] FindGameObjectWithTag('Player') = {playerByTag?.name ?? "NULL"}");
-            if (playerByTag != null)
+            if (playerByTag != null && playerByTag.name.Contains("PlayerSpawner") == false)
             {
+                // FIX: пропускаем scene-placed PlayerSpawner, у него тоже tag "Player".
                 playerTransform = playerByTag.transform;
                 _isInitialized = true;
                 if (logPlayerFinding) Debug.Log($"[CSL] Found PLAYER by tag: {playerByTag.name} at {playerByTag.transform.position}");
                 return;
+            }
+            else if (playerByTag != null)
+            {
+                if (logPlayerFinding) Debug.LogWarning($"[CSL] FindGameObjectWithTag('Player') matched scene-placed '{playerByTag.name}' — skipping, NGO PlayerObject not yet available, will retry in WaitForPlayer");
             }
             else
             {
@@ -428,7 +466,9 @@ ManageLoadedScenesCount();
 
                 foreach (var networkPlayer in networkPlayers)
                 {
-                    if (networkPlayer.IsOwner)
+                    // FIX: фильтр IsPlayerObject обязателен, иначе первым в списке
+                    // (по instanceID) идёт scene-placed PlayerSpawner-пустышка.
+                    if (networkPlayer.IsOwner && networkPlayer.GetComponent<NetworkObject>()?.IsPlayerObject == true)
                     {
                         playerTransform = networkPlayer.transform;
                         _isInitialized = true;
@@ -445,7 +485,7 @@ ManageLoadedScenesCount();
                     if (netObj.name.Contains("PlayerSpawner") || netObj.name.Contains("Spawner"))
                         continue;
 
-                    if (netObj.IsOwner)
+                    if (netObj.IsOwner && netObj.IsPlayerObject) // FIX: добавил IsPlayerObject
                     {
                         var networkPlayer = netObj.GetComponent<ProjectC.Player.NetworkPlayer>();
                         if (networkPlayer != null)
@@ -471,8 +511,18 @@ ManageLoadedScenesCount();
                 if (playerTransform != null && _isInitialized)
                     yield break;
 
+                // FIX: предпочитаем NGO PlayerObject (real player), не scene-placed.
+                var realPlayer = FindRealLocalPlayerGameObject();
+                if (realPlayer != null)
+                {
+                    playerTransform = realPlayer.transform;
+                    _isInitialized = true;
+                    if (logPlayerFinding) Debug.Log($"[CSL] ★ WaitForPlayer SUCCESS (via NGO PlayerObject): {realPlayer.name}");
+                    yield break;
+                }
+
                 var playerByTag = GameObject.FindGameObjectWithTag("Player");
-                if (playerByTag != null)
+                if (playerByTag != null && playerByTag.name.Contains("PlayerSpawner") == false)
                 {
                     playerTransform = playerByTag.transform;
                     _isInitialized = true;
@@ -485,7 +535,7 @@ ManageLoadedScenesCount();
                     var networkPlayers = FindObjectsByType<ProjectC.Player.NetworkPlayer>();
                     foreach (var networkPlayer in networkPlayers)
                     {
-                        if (networkPlayer.IsOwner)
+                        if (networkPlayer.IsOwner && networkPlayer.GetComponent<NetworkObject>()?.IsPlayerObject == true) // FIX
                         {
                             playerTransform = networkPlayer.transform;
                             _isInitialized = true;
@@ -500,7 +550,7 @@ ManageLoadedScenesCount();
                         if (netObj.name.Contains("PlayerSpawner") || netObj.name.Contains("Spawner"))
                             continue;
 
-                        if (netObj.IsOwner)
+                        if (netObj.IsOwner && netObj.IsPlayerObject) // FIX
                         {
                             var networkPlayer = netObj.GetComponent<ProjectC.Player.NetworkPlayer>();
                             if (networkPlayer != null)
@@ -523,6 +573,32 @@ ManageLoadedScenesCount();
         #endregion
 
         #region Public API
+        /// <summary>
+        /// Возвращает GameObject НАСТОЯЩЕГО локального игрока (auto-spawned NetworkPlayer(Clone)
+        /// из <c>NetworkConfig.PlayerPrefab</c>), или null если ещё не заспавнен.
+        ///
+        /// НЕ возвращает scene-placed не-player NetworkObject'ы (например <c>PlayerSpawner</c> в
+        /// BootstrapScene), у которых на хосте <c>IsOwner==true</c> (server-owned, OwnerClientId=0
+        /// = LocalClientId) — это footgun NGO 2.x, приводящий к "фантом-клонам" и телепорту
+        /// не того объекта. Подробнее см. <c>docs/dev/INVESTIGATION_GHOST_PLAYER_CLONE.md</c>.
+        ///
+        /// Использует source of truth: <c>NetworkManager.ConnectedClients[LocalClientId].PlayerObject</c>.
+        /// </summary>
+        private GameObject FindRealLocalPlayerGameObject()
+        {
+            if (NetworkManager.Singleton == null || !NetworkManager.Singleton.IsListening) return null;
+
+            var localClientId = NetworkManager.Singleton.LocalClientId;
+            if (NetworkManager.Singleton.ConnectedClients.TryGetValue(localClientId, out var cc)
+                && cc?.PlayerObject != null
+                && cc.PlayerObject.IsSpawned
+                && cc.PlayerObject.IsPlayerObject)
+            {
+                return cc.PlayerObject.gameObject;
+            }
+            return null;
+        }
+
         public void LoadScene(SceneID targetScene, Vector3 localSpawnPos)
         {
             StartCoroutine(LoadSceneCoroutine(targetScene, localSpawnPos));

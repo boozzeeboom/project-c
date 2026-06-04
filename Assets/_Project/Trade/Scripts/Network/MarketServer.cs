@@ -58,6 +58,16 @@ namespace ProjectC.Trade.Network
         // Per-client rate limiting
         private readonly Dictionary<ulong, List<float>> _opTimestamps = new Dictionary<ulong, List<float>>();
 
+        // FIX (2026-06-04): Какой корабль клиент сейчас выбрал в UI.
+        // Нужен, чтобы включить cargo этого корабля в MarketSnapshotDto.cargo
+        // (см. FIX в MarketSnapshotDto). Без этого UI видел cargo только из
+        // TradeResultDto.updatedCargoSnapshot, что давало stale-данные.
+        // Хранится по (clientId, locationId), т.к. в разных зонах могут быть
+        // разные наборы кораблей и разные выборы.
+        private readonly Dictionary<string, ulong> _clientSelectedShip = new Dictionary<string, ulong>();
+        private string SelectedShipKey(ulong clientId, string locationId)
+            => $"{clientId}:{(locationId ?? "").ToLowerInvariant()}";
+
         public override void OnNetworkSpawn()
         {
             base.OnNetworkSpawn();
@@ -187,6 +197,26 @@ namespace ProjectC.Trade.Network
             if (r.IsSuccess) SendSnapshotToClient(clientId, zone);
         }
 
+        // FIX (2026-06-04): Клиент сообщает, какой корабль сейчас выбран в UI
+        // (ship-selector или дефолтный). Сервер кладёт это в _clientSelectedShip
+        // и включает cargo этого корабля в следующий snapshot. Без этого UI не
+        // знал реальный cargo (получал только updatedCargoSnapshot после Load/Unload).
+        [Rpc(SendTo.Server, InvokePermission = RpcInvokePermission.Owner)]
+        public void SetSelectedShipRpc(string locationId, ulong shipNetworkObjectId, RpcParams rpcParams = default)
+        {
+            ulong clientId = rpcParams.Receive.SenderClientId;
+            if (string.IsNullOrEmpty(locationId)) return;
+            if (shipNetworkObjectId == 0)
+            {
+                _clientSelectedShip.Remove(SelectedShipKey(clientId, locationId));
+                return;
+            }
+            // Доп. валидация: корабль должен быть в той же зоне
+            var zone = MarketZoneRegistry.Get(locationId);
+            if (zone == null || !zone.IsShipInZone(shipNetworkObjectId)) return;
+            _clientSelectedShip[SelectedShipKey(clientId, locationId)] = shipNetworkObjectId;
+        }
+
         [Rpc(SendTo.Server, InvokePermission = RpcInvokePermission.Owner)]
         public void SubscribeMarketRpc(string locationId, RpcParams rpcParams = default)
         {
@@ -263,6 +293,21 @@ namespace ProjectC.Trade.Network
             var itemDtos = BuildItemPriceDtos(market);
             Debug.Log($"[MarketServer] SendSnapshotToClient: client={clientId} loc={zone.LocationId} items={itemDtos.Length}");
 
+            // FIX (2026-06-04): вычислить cargo выбранного клиентом корабля (см. FIX в DTO).
+            // Если клиент ещё не прислал SetSelectedShipRpc, fallback на первый корабль в зоне
+            // (старое поведение UI: дефолтный корабль — ships[0]).
+            ulong selectedShipId = 0;
+            _clientSelectedShip.TryGetValue(SelectedShipKey(clientId, zone.LocationId), out selectedShipId);
+            var ships = zone.BuildNearbyShipsDtos();
+            if (selectedShipId == 0 && ships.Count > 0) selectedShipId = ships[0].shipNetworkObjectId;
+            WarehouseEntryDto[] cargoDtos = null;
+            if (selectedShipId != 0)
+            {
+                var shipClass = ResolveShipClass(selectedShipId);
+                var cargo = TradeWorld.Instance.GetOrLoadCargo(selectedShipId, shipClass);
+                if (cargo != null) cargoDtos = BuildCargoDtos(cargo.SaveToList());
+            }
+
             var snapshot = new MarketSnapshotDto
             {
                 locationId = zone.LocationId,
@@ -274,7 +319,8 @@ namespace ProjectC.Trade.Network
                 warehouseMaxWeight = Warehouse.DEFAULT_MAX_WEIGHT,
                 warehouseMaxVolume = Warehouse.DEFAULT_MAX_VOLUME,
                 warehouseMaxTypes = Warehouse.DEFAULT_MAX_ITEM_TYPES,
-                nearbyShips = zone.BuildNearbyShipsDtos().ToArray(),
+                nearbyShips = ships.ToArray(),
+                cargo = cargoDtos,
                 marketTimeMultiplier = _timeService != null ? _timeService.MarketTimeMultiplier : 1f,
                 secondsUntilNextTick = _timeService != null ? _timeService.SecondsUntilNextTick : 0f
             };

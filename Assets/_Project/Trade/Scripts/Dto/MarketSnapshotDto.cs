@@ -29,6 +29,18 @@ namespace ProjectC.Trade.Dto
         // Корабли в зоне (для multi-ship)
         public ShipSummaryDto[] nearbyShips;
 
+        // FIX (2026-06-04): Груз ВЫБРАННОГО корабля. Раньше cargo не входил в snapshot
+        // (комментарий "слишком жирно слать"), и клиент видел cargo только из
+        // updatedCargoSnapshot TradeResultDto. Результат: при открытии рынка / смене
+        // корабля UI показывал СТАРЫЙ cargo из локального _cargoCache — игрок не знал,
+        // что в трюме уже лежат предметы с прошлой сессии. Жал LOAD qty=1, а на сервере
+        // cargo было уже 1 → получилось 2. UNLOAD 2 → на склад вернулось 2 шт. при том,
+        // что куплено было 5: "эксплойт +1 бесплатный товар". Серверная логика
+        // TradeWorld была корректной — баг был в UI-проекции.
+        // Решение: сервер знает выбранный клиентом корабль (SetSelectedShipRpc) и
+        // включает его cargo в snapshot. null/empty = трюм пуст.
+        public WarehouseEntryDto[] cargo;
+
         // Time info
         public float marketTimeMultiplier;
         public float secondsUntilNextTick;
@@ -49,6 +61,7 @@ namespace ProjectC.Trade.Dto
             SerializeArray<T, ItemPriceDto>(ref items, serializer);
             SerializeArray<T, WarehouseEntryDto>(ref warehouse, serializer);
             SerializeArray<T, ShipSummaryDto>(ref nearbyShips, serializer);
+            SerializeArray<T, WarehouseEntryDto>(ref cargo, serializer);
         }
 
         private static void SerializeArray<T, TItem>(ref TItem[] arr, BufferSerializer<T> s)

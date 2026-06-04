@@ -419,17 +419,23 @@ namespace ProjectC.Trade.Client
                 }
             }
 
-            // Обновляем кэш cargo при Load/Unload (сервер присылает updatedCargoSnapshot)
+            // Обновляем кэш cargo при Load/Unload (сервер присылает updatedCargoSnapshot).
+            // FIX (2026-06-04): MarketServer.BuildWarehouseDtos/BuildCargoDtos возвращает null
+            // когда коллекция пуста (Count == 0). После Unload последней единицы товара cargo
+            // становится пустым, dto.updatedCargoSnapshot == null. Старое условие
+            // `if (... != null)` пропускало этот случай — _cargoCache не очищался,
+            // и в UI оставалась "призрачная" строка товара, которого фактически нет
+            // (повторный Unload падал, потому что на сервере груз уже пуст).
+            // Теперь трактуем null как "груз пуст" и безусловно обновляем кэш на успешной операции.
             if (result.IsSuccess && (result.op == TradeOp.LoadToShip || result.op == TradeOp.UnloadFromShip))
             {
-                if (result.updatedCargoSnapshot != null)
+                _cargoCache = result.updatedCargoSnapshot ?? Array.Empty<WarehouseEntryDto>();
+                if (_cargoList != null)
                 {
-                    _cargoCache = result.updatedCargoSnapshot;
-                    if (_cargoList != null)
-                    {
-                        _cargoList.itemsSource = _cargoCache;
-                        _cargoList.Rebuild();
-                    }
+                    _cargoList.itemsSource = _cargoCache;
+                    _selectedCargoItem = -1;
+                    _cargoList.selectedIndex = -1;
+                    _cargoList.Rebuild();
                 }
             }
         }

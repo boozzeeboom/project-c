@@ -319,8 +319,30 @@ namespace ProjectC.Trade.Client
             var items = snap.Value.items;
             if (index < 0 || index >= items.Length) return;
             var it = items[index];
-            row.Q<Label>("row-label").text = $"{it.displayName}  —  {it.currentPrice:F0} CR  (сток: {it.availableStock})";
+            // FIX (2026-06-04): На вкладке «РЫНОК» показываем не только рыночный сток
+            // (сколько можно КУПИТЬ), но и количество на складе игрока (сколько можно
+            // ПРОДАТЬ). Раньше это было видно только после переключения на вкладку
+            // «СКЛАД / ТРЮМ» — продажа шла «вслепую», игрок вводил qty наугад и
+            // получал ошибку NotEnoughInWarehouse от сервера.
+            int whQty = FindWarehouseQty(snap.Value.warehouse, it.itemId);
+            row.Q<Label>("row-label").text =
+                $"{it.displayName}  —  {it.currentPrice:F0} CR  (сток: {it.availableStock})  (у вас: {whQty})";
             row.style.backgroundColor = (index == _selectedMarketItem) ? new StyleColor(new Color(0.4f, 0.6f, 0.9f, 0.4f)) : StyleKeyword.Null;
+        }
+
+        /// <summary>
+        /// FIX (2026-06-04): Линейный поиск количества товара на складе игрока.
+        /// Warehouse — это плоский массив (≤ warehouseMaxTypes типов), не Dictionary;
+        /// линейный поиск приемлем (типов товаров в игре единицы, не сотни).
+        /// </summary>
+        private static int FindWarehouseQty(WarehouseEntryDto[] warehouse, string itemId)
+        {
+            if (warehouse == null || string.IsNullOrEmpty(itemId)) return 0;
+            for (int i = 0; i < warehouse.Length; i++)
+            {
+                if (warehouse[i].itemId == itemId) return warehouse[i].quantity;
+            }
+            return 0;
         }
 
         private VisualElement MakeWarehouseRow()

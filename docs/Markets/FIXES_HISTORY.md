@@ -1,6 +1,52 @@
 # Markets — Fixes History
 Хронология багов, диагнозов и фиксов рыночной подсистемы. Текущая версия (2026-06-04) — стабильная: полный цикл BUY/LOAD/UNLOAD/SELL работает.
 
+## 2026-06-04 — INVESTIGATION OPEN: E не открывает рынок после E вне зоны (intermittent)
+
+**Статус:** ⚠️ OPEN. Баг не воспроизводится на каждом запуске — нужен свежий лог от пользователя с подтверждённым сценарием. Не фиксили вслепую (по AGENTS.md — "минимальный фикс, не ломая остальное").
+
+**Симптом (из репорта пользователя):**
+> "если нажать E сразу после спавна (вне зоны), а потом войти в зону и нажать E — окно не открывается. Без предварительного E вне зоны — работает."
+
+**Сценарий:** host-only, `BootstrapScene` + `WorldScene_0_0`, `MarketZone_Primium` (tradeRadius=36, shipDockRadius=30), spawn игрока `(39999.50, 3000.00, 39999.50)`, зона `(40096.50, 2510.00, 40140.60)`, dist ~196м, **вне** зоны.
+
+**Что было прочитано в рамках анализа:**
+- `Assets/_Project/Trade/Scripts/Client/MarketInteractor.cs` (130+ строк): `TryOpenMarket`, `FindNearestZone`, `OpenNearest`. Поведение: сначала `MarketZoneRegistry.LocalPlayerZone`, если null — fallback `FindNearestZone` по `localPlayer.GetEffectivePosition()`.
+- `Assets/_Project/Trade/Scripts/Network/MarketZone.cs`: `PollLocalPlayerZone` (throttled 0.25с) и `OnTriggerEnter` обновляют `LocalPlayerZone` строго по дистанции (FIX 2026-06-04 убрал `if (LocalPlayerZone == this) return;`).
+- `Assets/_Project/Trade/Scripts/Network/MarketZoneRegistry.cs`: static `LocalPlayerZone`, `Registry.All` dictionary.
+- `Assets/_Project/Scripts/Player/NetworkPlayer.cs:55-116, 280-499`: `GetEffectivePosition()` (effective = корабль если `_inShip`), E-handler — если `_inShip` E резерв, иначе `FindNearestInteractable()` → `TryPickup()` (chest) **ИЛИ** `TryOpenMarket()` **else** → `TryPickup()` fallback.
+- `Assets/_Project/Trade/Scripts/Client/MarketWindow.cs:1-95, 270-369, 620-720`: `Show/Hide/Toggle/EnsureBuilt/IsLayoutValid`, E-handler в `Update` **убран** (FIX 2026-06-04 UI — был дубликат).
+
+**Что показал лог текущего запуска (не воспроизвёл баг):**
+- 8 нажатий E подряд, все **вне зоны** (dist 5238..10308м, `X=33252.68` константа, `Y` упал 3000→1903 — игрок упал с платформы).
+- `MarketZoneRegistry.LocalPlayerZone = null` все 8 раз. `Registry.All.Count = 1` (только `primium`).
+- `MarketInteractor.FindNearestZone: localPlayerPos=(33252.68, ...) ... primium(d=7258/r=36) => best=null`.
+- `MarketZone:primium DIAG PollLocalPlayerZone: outside zone, dist=7258,6` — клиент ни разу не вошёл в зону.
+- **Сервер один раз** детектил игрока в зоне (`[MarketZone:primium] server detected player in zone: clientId=0`) — это известный client/server desync на хосте: `transform.position` заморожен `ApplyShipState`-ом (`_controller.enabled = false`), а `Physics.OverlapSphere` на сервере находит коллайдер корабля.
+- Игрок в итоге **дисконнектнулся** (`[NetworkTestMenu] Player disconnected: 0`) — тест не прошёл до конца, **баг не воспроизведён**.
+
+**Гипотезы (без подтверждения, не фиксили):**
+
+**Гипотеза A** — `NetworkPlayer.cs:280-499` E-handler после `!TryOpenMarket()` делает `TryPickup()` fallback. `InteractableManager.FindNearestChest(pos, float.MaxValue)` использует **глобальный** радиус → при повторном E внутри зоны сначала идёт `TryPickup()` (на далёкий сундук) вместо `TryOpenMarket()`. Тогда "первый E вне зоны" мог установить какой-то side-effect (открыть chest-инвентарь), а второй E внутри зоны уходит в chest-pickup.  
+*Кандидатный фикс:* в E-handler поменять порядок — `TryOpenMarket()` сначала, `TryPickup()` только если зона рынка не в радиусе. **Не применён** — без подтверждения может сломать chest pickup.
+
+**Гипотеза B** — `MarketInteractor.TryOpenMarket` кеширует `MarketZoneRegistry.LocalPlayerZone`. Если `OnTriggerEnter` или `PollLocalPlayerZone` оставил stale-ссылку (например, после FIX 2026-06-04 с `GetEffectivePosition` — позиция корабля отличается от `transform.position` игрока), повторный E открывает **старую** зону, и если игрок визуально не в ней — `MarketServer` отвечает `NotInZone`.  
+*Кандидатный фикс:* в `TryOpenMarket` всегда вызывать `FindNearestZone()` заново, не полагаясь на кеш `LocalPlayerZone`. **Не применён** — потенциально лишний `OverlapSphere` каждый E.
+
+**Что нужно для подтверждения и фикса:**
+1. Свежий кусок `Editor.log` где **видно** весь цикл: spawn → E (вне зоны, dist>X) → игрок входит в зону (dist<36) → E → окно НЕ открылось. Строки `MarketInteractor/MarketZone/MarketWindow` вокруг второго E.
+2. Текущий `Assets/_Project/Scripts/Player/NetworkPlayer.cs` E-handler целиком (особенно порядок `TryOpenMarket` vs `TryPickup`).
+3. `Assets/_Project/Scripts/Player/InteractableManager.cs` — подтвердить `FindNearestChest(pos, float.MaxValue)` или найти реальный радиус.
+
+**Что не делали (по AGENTS.md, минимальный фикс без воспроизведения):**
+- ❌ Не применяли фикс ни по гипотезе A, ни по B — обе требуют ручной верификации, иначе рискуем сломать chest pickup или regressить `GetEffectivePosition` fix.
+- ❌ Не добавляли новые диагностические логи — `MarketInteractor/MarketZone` уже логируют (KNOWN_ISSUES §1) и в воспроизведённом логе не хватило **самого факта входа в зону** (игрок туда не дошёл).
+- ❌ Не трогали `NetworkPlayer.E`-handler и `MarketInteractor.TryOpenMarket`.
+
+**См. также:** [KNOWN_ISSUES.md §13](KNOWN_ISSUES.md#13-investigation-open-e-не-открывает-рынок-после-e-вне-зоны-intermittent).
+
+---
+
 ## 2026-06-04 — FIX: рынок не открывается, если игрок подлетел на корабле (GetEffectivePosition)
 
 **Файлы:**

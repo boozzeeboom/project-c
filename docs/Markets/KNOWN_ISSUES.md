@@ -172,6 +172,30 @@ if (_mainContainer != null) {
 
 ---
 
+## 13. INVESTIGATION OPEN: E не открывает рынок после E вне зоны (intermittent)
+
+**Где:** вероятно `Assets/_Project/Scripts/Player/NetworkPlayer.cs:280-499` (E-handler) или `Assets/_Project/Trade/Scripts/Client/MarketInteractor.cs:50-60` (TryOpenMarket кеш). Точное место не подтверждено — нет воспроизведения.
+
+**Симптом (из репорта пользователя, 2026-06-04):**
+> "если нажать E сразу после спавна (вне зоны), а потом войти в зону и нажать E — окно не открывается. Без предварительного E вне зоны — работает."
+
+**Воспроизводимость:** ⚠️ **Intermittent.** Не на каждом запуске. В единственном логе, который удалось снять (`$LOCALAPPDATA/Unity/Editor/Editor.log`), баг **не воспроизвёлся** — игрок упал с платформы и не дошёл до зоны (8 нажатий E, все dist 5238..10308м, `LocalPlayerZone=null`). Сервер один раз увидел игрока в зоне через `OverlapSphere` (известный client/server desync на хосте с замороженным `transform.position`), но клиент — нет.
+
+**Что нужно для подтверждения и фикса (см. полный разбор в [FIXES_HISTORY.md](FIXES_HISTORY.md) → "INVESTIGATION OPEN: E не открывает рынок..."):**
+1. Свежий лог с полным циклом: spawn → E (вне зоны) → вход в зону → E → нет окна.
+2. Текущий `NetworkPlayer.cs` E-handler целиком.
+3. `InteractableManager.cs` — подтвердить `FindNearestChest(pos, float.MaxValue)`.
+
+**Гипотезы (не фиксили вслепую):**
+- **A:** `NetworkPlayer` E-handler делает `TryPickup()` fallback после `!TryOpenMarket()`, а `InteractableManager.FindNearestChest` с глобальным радиусом подхватывает далёкий chest → второй E уходит в chest вместо market. *Фикс:* поменять порядок в E-handler.
+- **B:** `MarketInteractor.TryOpenMarket` использует кеш `MarketZoneRegistry.LocalPlayerZone`, stale-ссылка после `GetEffectivePosition` fix ведёт к открытию старой зоны → `NotInZone`. *Фикс:* всегда вызывать `FindNearestZone()` заново.
+
+**Почему не зафиксили:** AGENTS.md — "минимальный фикс, не ломая остальное". Без воспроизведения обе гипотезы могут сломать chest pickup или regressить `GetEffectivePosition` fix.
+
+**Приоритет:** Medium-Low. Баг intermittent, **полный цикл BUY/LOAD/UNLOAD/SELL работает** в нормальном сценарии (подтверждено пользователем 2026-06-04). Не блокирует Stage 2.5.
+
+---
+
 ## Резюме приоритетов
 
 | # | Issue | Priority | Блокирует Stage 2.5? |
@@ -188,3 +212,4 @@ if (_mainContainer != null) {
 | 10 | Cargo visual | Stage 4 | No |
 | 11 | Хоткеи | Low | No |
 | 12 | TradeDebug* tools → старый API | Medium (cleanup) | No |
+| 13 | E не открывает рынок после E вне зоны (intermittent) | Medium-Low | No |

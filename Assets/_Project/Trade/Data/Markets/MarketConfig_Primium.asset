@@ -1,0 +1,36 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: b1b184806d4ed8043b23acec74cb92fb, type: 3}
+  m_Name: MarketConfig_Primium
+  m_EditorClassIdentifier: Assembly-CSharp::ProjectC.Trade.Config.MarketConfig
+  locationId: primium
+  displayName: "\u041F\u0440\u0438\u043C\u0443\u043C"
+  description: "\u0421\u0442\u043E\u043B\u0438\u0446\u0430 \u043C\u0430\u043D\u0443\u0444\u0430\u043A\u0442\u0443\u0440,
+    \u0438\u0441\u0442\u043E\u0447\u043D\u0438\u043A \u043C\u0435\u0437\u0438\u044F
+    \u0438 \u0430\u043D\u0442\u0438\u0433\u0440\u0430\u0432\u0438\u044F."
+  items:
+  - itemId: mesium_canister_v01
+    definition: {fileID: 11400000, guid: ed66825e934a87a43b520aee290591a8, type: 2}
+    basePrice: 10
+    initialStock: 80
+    regenPerTick: 0.04
+    factionRestriction: 0
+    allowBuy: 1
+    allowSell: 1
+  - itemId: antigrav_ingot_v01
+    definition: {fileID: 11400000, guid: a42e66c79c7d213499b91953538249f3, type: 2}
+    basePrice: 50
+    initialStock: 40
+    regenPerTick: 0.04
+    factionRestriction: 0
+    allowBuy: 1
+    allowSell: 1

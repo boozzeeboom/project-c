@@ -40,6 +40,32 @@
 
 ---
 
+## 2026-06-04 — INVESTIGATION CLOSED: «покупаешь 1 → на склад попадает 2»
+
+**Симптом (из репорта):** при первой покупке `qty=1` на склад игрока приходит `2 ед.`. Подозрение на двойное добавление в `Warehouse.TryAdd` или двойной RPC.
+
+**Диагностика:**
+- Прочитан `MarketWindow.OnBuyClicked` → `MarketClientState.RequestBuy` → `MarketServer.RequestBuyRpc` → `TradeWorld.TryBuy` → `Warehouse.TryAdd` — единственный путь, дублей вызовов не найдено.
+- Из unity-mcp лога: на каждое нажатие ровно один `[TradeWorld] BUY ... qty=1`, кредиты списываются один раз (цена растёт по инфляции: 10→11→…).
+- Поле `wh` в `[MarketClientState] OnSnapshotReceived: ... wh=1` — это `snapshot.warehouse.Length` (число **типов**, не единиц). Прямого `e.quantity` в логах нет.
+- Через `unityMCP_execute_code` проверены PlayerPrefs: ключ `PD2_Warehouse_0_primium` отсутствовал, `PD2_Credits_0 = 891.32`. До этого в логе `wh=1` уже на подписке — склад был непустой, что объясняется остатками из прошлой сессии.
+
+**Воспроизведение:** пользователь запустил тест на чистом PlayerPrefs, склад пуст → купил 1 → на UI отобразилось «1 ед.». Баг не воспроизводится.
+
+**Заключение:** исходное наблюдение «покупаешь 1 → попадает 2» объясняется остатками `PD2_Warehouse_*` из прошлой сессии: на складе уже было `mesium, qty=1` (видно как `wh=1` ещё на subscribe), покупка `+1` давала `mesium, qty=2` — это корректное сложение с остатком, не дублирование. Код покупки не виноват.
+
+**Что не делали (по AGENTS.md, минимальный фикс):**
+- ❌ Не добавляли диагностические логи в `Warehouse.TryAdd` / `TradeWorld.TryBuy` — после подтверждения от пользователя они не нужны.
+- ❌ Не правили `Warehouse.TryAdd` (там `e.quantity += quantity` с правильной работой со struct-копией) и `MarketClientState.RequestBuy` — оба корректны.
+- ❌ Не вводили авто-сброс `PD2_*` ключей на старте — это сломало бы legitimate use case (persistence между сессиями).
+
+**Рекомендация на будущее (если репорт повторится):**
+1. Перед диагностикой «удвоения при покупке» просить пользователя сбросить `PD2_Warehouse_*` и `PD2_Cargo_*` (через `PlayerPrefs.DeleteAll()` или временную кнопку в `TradeDebugTools`).
+2. Добавить в `MarketClientState.OnSnapshotReceived` рядом с `wh=` ещё и `whQty=` — сумму `e.quantity` по `snapshot.warehouse`, чтобы сразу было видно «до и после покупки».
+3. Если и на чистом PlayerPrefs воспроизводится — добавить одноразовый `Debug.Log` в `Warehouse.TryAdd` с `itemId, qty, existingQtyBefore, existingQtyAfter`.
+
+---
+
 ## 2026-06-04 — UI верстка (4 фикса + 1 fix жизненного цикла + 3 диагностических лога)
 
 ### FIX 1 — ListView selection не обновлял `_selectedMarketItem`

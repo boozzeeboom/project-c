@@ -1,0 +1,209 @@
+/* ============================================
+   MarketWindow.uss — стили окна рынка
+   Меняй под свой проект / тему
+
+   ТЮНИНГ РАЗМЕРА:
+   • .market-window: width / max-height — общие габариты
+   • .item-list: min-height / max-height — высота списков
+   • 90% — процент от родителя (rootVisualElement = весь экран)
+
+   ВАЖНО — единицы длины в Unity UI Toolkit:
+   ✅ px       — пиксели
+   ✅ %        — процент от родителя
+   ❌ vw / vh  — НЕ поддерживается (это CSS web-юниты)
+   ❌ em / rem — НЕ поддерживается
+   Для "от высоты экрана" используйте % от rootVisualElement.
+   ============================================ */
+
+.market-window {
+    /* Растягиваем на весь экран и центрируем содержимое флексом —
+       так окно не уезжает за пределы экрана при любом разрешении. */
+    position: absolute;
+    top: 5%;
+    left: 50%;
+    translate: -50% 0;
+    width: 640px;
+    max-width: 90%;   /* UI Toolkit НЕ поддерживает vw/vh — только px и % */
+    max-height: 90%;  /* max-height от родителя (rootVisualElement = весь экран) */
+    background-color: rgba(20, 25, 35, 0.95);
+    border-width: 2px;
+    border-color: rgba(120, 150, 200, 0.8);
+    border-radius: 8px;
+    padding: 12px;
+    color: rgb(220, 220, 230);
+    font-size: 14px;
+    /* FIX: flex-direction работает только при display: flex */
+    display: flex;
+    flex-direction: column;
+    align-items: stretch;   /* дети заполняют всю ширину колонки */
+}
+
+/* --- Header --- */
+.header {
+    flex-direction: row;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 8px;
+}
+.location-label {
+    font-size: 20px;
+    color: rgb(255, 220, 130);
+    -unity-font-style: bold;
+}
+.time-label {
+    font-size: 12px;
+    color: rgb(180, 180, 200);
+}
+
+/* --- Info bar --- */
+.info-bar {
+    flex-direction: row;
+    justify-content: space-between;
+    margin-bottom: 12px;
+    padding: 6px 0;
+    border-top-width: 1px;
+    border-bottom-width: 1px;
+    border-color: rgba(120, 150, 200, 0.3);
+}
+.credits-label {
+    color: rgb(255, 230, 150);
+    -unity-font-style: bold;
+}
+.warehouse-info {
+    color: rgb(180, 200, 220);
+    font-size: 12px;
+}
+
+/* --- Tabs --- */
+.tabs {
+    flex-direction: row;
+    margin-bottom: 8px;
+}
+.tab-btn {
+    flex-grow: 1;
+    height: 30px;
+    background-color: rgba(60, 80, 120, 0.4);
+    color: rgb(220, 220, 230);
+    border-width: 0;
+    border-bottom-width: 2px;
+    border-color: transparent;
+    -unity-font-style: bold;
+}
+.tab-btn:hover {
+    background-color: rgba(80, 100, 140, 0.6);
+}
+
+/* --- Qty --- */
+.qty-row {
+    flex-direction: row;
+    align-items: center;
+    margin-bottom: 8px;
+}
+.qty-label {
+    width: 60px;
+    color: rgb(200, 200, 220);
+}
+.qty-field {
+    width: 80px;
+    color: rgb(240, 240, 240);
+    background-color: rgba(40, 50, 70, 0.6);
+}
+
+/* --- Lists --- */
+.list-section {
+    margin-bottom: 6px;
+    /* FIX (2026-06-04): убраны flex-shrink: 1 и min-height: 0 — UI Toolkit иногда
+       считает resolvedStyle = NaN на .list-section при таких правилах, из-за чего
+       MarketWindow.IsLayoutValid() возвращал false и UI пересобирался на каждом E. */
+    min-height: 90px;
+}
+.section-title {
+    color: rgb(180, 200, 220);
+    font-size: 12px;
+    margin-bottom: 4px;
+}
+.item-list {
+    min-height: 80px;
+    max-height: 180px;
+    background-color: rgba(30, 40, 60, 0.4);
+    border-width: 1px;
+    border-color: rgba(80, 100, 130, 0.4);
+    border-radius: 4px;
+}
+
+/* --- Ship selector --- */
+.ship-selector-container {
+    flex-direction: row;
+    align-items: center;
+    margin-bottom: 8px;
+    padding: 6px 8px;
+    background-color: rgba(40, 60, 90, 0.4);
+    border-radius: 4px;
+}
+.ship-selector-label {
+    width: 60px;
+    color: rgb(200, 220, 255);
+    -unity-font-style: bold;
+}
+.ship-selector {
+    flex-grow: 1;
+}
+
+/* --- Actions --- */
+.actions {
+    flex-direction: row;
+    flex-wrap: wrap;
+    margin-top: 8px;
+    min-height: 40px;   /* FIX: 36px кнопки + 2px margin сверху/снизу */
+}
+.action-btn {
+    flex-grow: 1;
+    height: 36px;
+    margin: 2px;
+    color: rgb(240, 240, 240);
+    -unity-font-style: bold;
+    border-width: 0;
+    border-radius: 4px;
+}
+.action-btn.buy {
+    background-color: rgba(80, 180, 80, 0.7);
+}
+.action-btn.sell {
+    background-color: rgba(180, 140, 80, 0.7);
+}
+.action-btn.load {
+    background-color: rgba(80, 130, 200, 0.7);
+}
+.action-btn.unload {
+    background-color: rgba(200, 130, 80, 0.7);
+}
+.action-btn.close {
+    background-color: rgba(120, 80, 80, 0.7);
+}
+.action-btn:hover {
+    scale: 1.05 1.05;
+}
+
+/* --- Message --- */
+.message-label {
+    margin-top: 8px;
+    padding: 6px;
+    color: rgb(220, 220, 230);
+    font-size: 12px;
+    background-color: rgba(0, 0, 0, 0.3);
+    border-radius: 4px;
+    -unity-text-align: middle-center;
+}
+
+/* --- Row states --- */
+.market-row, .warehouse-row, .cargo-row {
+    flex-direction: row;
+    align-items: center;
+    height: 30px;
+    padding: 0 8px;
+    border-bottom-width: 1px;
+    border-color: rgba(80, 100, 130, 0.2);
+}
+.market-row:hover, .warehouse-row:hover, .cargo-row:hover {
+    background-color: rgba(100, 130, 180, 0.3);
+}

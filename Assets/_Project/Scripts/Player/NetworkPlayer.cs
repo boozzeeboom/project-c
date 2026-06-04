@@ -4,6 +4,8 @@ using UnityEngine.InputSystem;
 using ProjectC.Core;
 using ProjectC.Items;
 using ProjectC.Trade;
+using ProjectC.Trade.Dto;
+using ProjectC.Trade.Network;
 using ProjectC.UI;
 using ProjectC.World.Streaming;
 using ProjectC.World.Chest;
@@ -291,11 +293,22 @@ namespace ProjectC.Player
 
                 ProcessMovement(_moveInput, _jumpPressed, _runPressed);
 
-                // E — подбор
+                // E — подбор ИЛИ открыть рынок (если в MarketZone и рядом нет сундука)
                 if (Keyboard.current.eKey.wasPressedThisFrame)
                 {
                     FindNearestInteractable();
-                    TryPickup();
+                    if (_nearestChest != null || _nearestNetworkChest != null)
+                    {
+                        TryPickup();
+                    }
+                    else
+                    {
+                        // Сначала пробуем открыть рынок; если не в зоне — TryPickup
+                        if (!ProjectC.Trade.Client.MarketInteractor.TryOpenMarket())
+                        {
+                            TryPickup();
+                        }
+                    }
                 }
 
                 FindNearestInteractable();
@@ -810,6 +823,36 @@ namespace ProjectC.Player
             if (IsOwner)
             {
                 TeleportServerRpc(position);
+            }
+        }
+
+        // ==================== TRADE V2 RPC TARGETS ====================
+        // MarketServer (server-only singleton) вызывает эти методы НА конкретном
+        // NetworkPlayer, чтобы доставить snapshot / trade result именно этому
+        // клиенту. NGO 2.x нативно поддерживает SendTo.Owner — нужно лишь
+        // вызвать метод на player-owned NetworkObject с сервера.
+
+        [Rpc(SendTo.Owner)]
+        public void ReceiveMarketSnapshotTargetRpc(MarketSnapshotDto snapshot, RpcParams rpcParams = default)
+        {
+            Debug.Log($"[NetworkPlayer:{OwnerClientId}] ReceiveMarketSnapshotTargetRpc: loc={snapshot.locationId} items={(snapshot.items?.Length ?? 0)}");
+            ProjectC.Trade.Client.MarketClientState.Instance?.OnSnapshotReceived(snapshot);
+        }
+
+        [Rpc(SendTo.Owner)]
+        public void ReceiveTradeResultTargetRpc(TradeResultDto result, RpcParams rpcParams = default)
+        {
+            ProjectC.Trade.Client.MarketClientState.Instance?.OnTradeResultReceived(result);
+        }
+
+        /// <summary>
+        /// Клиентский вызов — попросить сервер установить множитель времени рынка.
+        /// </summary>
+        public void RequestSetMarketTimeMultiplier(float multiplier)
+        {
+            if (MarketServer.Instance != null)
+            {
+                MarketServer.Instance.RequestSetTimeMultiplierRpc(multiplier);
             }
         }
     }

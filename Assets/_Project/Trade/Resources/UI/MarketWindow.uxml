@@ -1,0 +1,64 @@
+<?xml version="1.0" encoding="utf-8"?>
+<ui:UXML xmlns:ui="UnityEngine.UIElements" xmlns:uie="UnityEditor.UIElements">
+    <ui:VisualElement name="main-container" class="market-window">
+        <!-- Заголовок -->
+        <ui:VisualElement class="header">
+            <ui:Label name="location-label" text="Рынок" class="location-label" />
+            <ui:Label name="time-info-label" text="Скорость рынка: x1.0 | Тик: —" class="time-label" />
+        </ui:VisualElement>
+
+        <!-- Информация -->
+        <ui:VisualElement class="info-bar">
+            <ui:Label name="credits-label" text="Кредиты: 0 CR" class="credits-label" />
+            <ui:Label name="warehouse-info-label" text="Склад: 0/0 типов" class="warehouse-info" />
+        </ui:VisualElement>
+
+        <!-- Вкладки -->
+        <ui:VisualElement class="tabs">
+            <ui:Button name="tab-market" text="РЫНОК" class="tab-btn" />
+            <ui:Button name="tab-warehouse" text="СКЛАД / ТРЮМ" class="tab-btn" />
+        </ui:VisualElement>
+
+        <!-- Количество -->
+        <ui:VisualElement class="qty-row">
+            <ui:Label text="Кол-во:" class="qty-label" />
+            <ui:TextField name="qty-field" value="1" class="qty-field" />
+        </ui:VisualElement>
+
+        <!-- Список товаров рынка (показывается на вкладке РЫНОК) -->
+        <ui:VisualElement name="item-section" class="list-section">
+            <ui:Label text="Товары на рынке" class="section-title" />
+            <ui:ListView name="item-list" class="item-list" />
+        </ui:VisualElement>
+
+        <!-- Список склада (показывается на вкладке СКЛАД / ТРЮМ) -->
+        <ui:VisualElement name="warehouse-section" class="list-section">
+            <ui:Label text="Ваш склад" class="section-title" />
+            <ui:ListView name="warehouse-list" class="item-list" />
+        </ui:VisualElement>
+
+        <!-- Список груза (показывается на вкладке СКЛАД / ТРЮМ) -->
+        <ui:VisualElement name="cargo-section" class="list-section">
+            <ui:Label text="Груз корабля" class="section-title" />
+            <ui:ListView name="cargo-list" class="item-list" />
+        </ui:VisualElement>
+
+        <!-- Multi-ship selector (виден только когда > 1 корабля) — display:none по умолчанию -->
+        <ui:VisualElement name="ship-selector-container" class="ship-selector-container" style="display: none;">
+            <ui:Label text="Корабль:" class="ship-selector-label" />
+            <ui:DropdownField name="ship-selector" class="ship-selector" />
+        </ui:VisualElement>
+
+        <!-- Кнопки действий -->
+        <ui:VisualElement class="actions">
+            <ui:Button name="buy-btn" text="КУПИТЬ" class="action-btn buy" />
+            <ui:Button name="sell-btn" text="ПРОДАТЬ" class="action-btn sell" />
+            <ui:Button name="load-btn" text="ПОГРУЗИТЬ" class="action-btn load" />
+            <ui:Button name="unload-btn" text="РАЗГРУЗИТЬ" class="action-btn unload" />
+            <ui:Button name="close-btn" text="ЗАКРЫТЬ" class="action-btn close" />
+        </ui:VisualElement>
+
+        <!-- Сообщение -->
+        <ui:Label name="message-label" text="Откройте рынок, чтобы торговать" class="message-label" />
+    </ui:VisualElement>
+</ui:UXML>

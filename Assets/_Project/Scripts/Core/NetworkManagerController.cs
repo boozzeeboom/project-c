@@ -71,6 +71,13 @@ namespace ProjectC.Core
             // СЕССИЯ DIAGNOSTIC: Создаём TradeDebugTools для отладки
             CreateTradeDebugTools();
 
+            // FIX (2026-06-04): Создаём MarketClientState программно как root GO —
+            // иначе DontDestroyOnLoad в нём падает ("only works for root GameObjects"),
+            // и singleton теряется при выгрузке Bootstrap. Раньше [MarketClientState] в
+            // BootstrapScene был child'ом, DontDestroyOnLoad не срабатывал, Instance
+            // становился dangling ref при смене сцены.
+            CreateMarketClientState();
+
             // Автоматический запуск Dedicated Server если передан аргумент -server
             if (IsDedicatedServerMode())
             {
@@ -97,6 +104,35 @@ namespace ProjectC.Core
             // Parenting AFTER DontDestroyOnLoad to ensure debugObj is a root GameObject
             debugObj.transform.SetParent(transform);
             debugObj.SetActive(true);
+        }
+
+        /// <summary>
+        /// FIX (2026-06-04): Создать MarketClientState как root GameObject.
+        /// AddComponent запускает MarketClientState.Awake, который делает
+        /// DontDestroyOnLoad(gameObject) — это работает ТОЛЬКО если GO root.
+        /// Если в сцене уже есть root-инстанс — ничего не делаем.
+        /// Если в сцене есть child-инстанс — создаём root (DontDestroyOnLoad
+        /// на child упадёт), старый child в сцене остаётся как «мёртвый» компонент
+        /// (MarketClientState.Instance = null в нём, т.к. Instance уже занят нашим root).
+        /// </summary>
+        private void CreateMarketClientState()
+        {
+            var existing = FindObjectsByType<ProjectC.Trade.Client.MarketClientState>(FindObjectsInactive.Include);
+            foreach (var inst in existing)
+            {
+                if (inst != null && inst.transform.parent == null)
+                {
+                    Debug.Log("[NMC] MarketClientState already root, skipping creation");
+                    return;
+                }
+            }
+            if (existing.Length > 0)
+            {
+                Debug.LogWarning($"[NMC] Found {existing.Length} non-root MarketClientState in scene — DontDestroyOnLoad would fail. Creating root replacement.");
+            }
+            var go = new GameObject("[MarketClientState]");
+            go.AddComponent<ProjectC.Trade.Client.MarketClientState>();
+            Debug.Log("[NMC] Created [MarketClientState] as root GameObject");
         }
         
         private void Start()

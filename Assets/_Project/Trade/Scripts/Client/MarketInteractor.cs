@@ -52,6 +52,13 @@ namespace ProjectC.Trade.Client
             Debug.Log($"[MarketInteractor] TryOpenMarket: zone='{zone.LocationId}'");
             state.RequestSubscribeMarket(zone.LocationId);
 
+            // C2-refactor: подписка на контракты для этой же локации (таб КОНТРАКТЫ внутри MarketWindow).
+            // Контракты живут в отдельном singleton-проекции ContractClientState.
+            // Без этого таб "КОНТРАКТЫ" будет пустой (CurrentSnapshot == null).
+            var contractState = ProjectC.Trade.Client.ContractClientState.Instance;
+            if (contractState != null) contractState.RequestList(zone.LocationId);
+            else Debug.LogWarning("[MarketInteractor] TryOpenMarket: ContractClientState.Instance is null (контракты не будут загружены)");
+
             // FIX: подписка на снапшот — это полдела. UI ещё надо ПОКАЗАТЬ.
             // Раньше это делал MarketWindow.Update по E — но он не проверял зону,
             // и окно открывалось даже когда игрок вне маркета. Теперь MarketWindow

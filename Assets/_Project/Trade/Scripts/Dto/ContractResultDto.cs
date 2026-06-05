@@ -57,13 +57,36 @@ namespace ProjectC.Trade.Dto
             serializer.SerializeValue(ref newDebt);
 
             // nullable updatedContract — флаг + значение
-            bool hasContract = updatedContract.HasValue;
-            serializer.SerializeValue(ref hasContract);
-            if (hasContract)
+            // FIX (2026-06-05): на reader-пути updatedContract == default (null),
+            // и вызов .Value на нём бросает InvalidOperationException.
+            // Решение: на writer-пути читаем через .Value (там оно точно есть);
+            // на reader-пути — используем локальную переменную c = default, без
+            // обращения к .Value. Запись обратно в updatedContract — только после
+            // успешной десериализации.
+            if (serializer.IsWriter)
             {
-                var c = updatedContract.Value;
-                c.NetworkSerialize(serializer);
-                if (serializer.IsReader) updatedContract = c;
+                bool hasContract = updatedContract.HasValue;
+                serializer.SerializeValue(ref hasContract);
+                if (hasContract)
+                {
+                    var c = updatedContract.Value;
+                    c.NetworkSerialize(serializer);
+                }
+            }
+            else
+            {
+                bool hasContract = false;
+                serializer.SerializeValue(ref hasContract);
+                if (hasContract)
+                {
+                    var c = default(ContractDto);
+                    c.NetworkSerialize(serializer);
+                    updatedContract = c;
+                }
+                else
+                {
+                    updatedContract = null;
+                }
             }
         }
 

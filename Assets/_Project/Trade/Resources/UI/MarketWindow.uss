@@ -184,6 +184,85 @@
     scale: 1.05 1.05;
 }
 
+/* --- Contract action buttons (C2-refactor: tab КОНТРАКТЫ) --- */
+.action-btn.accept {
+    background-color: rgba(80, 160, 80, 0.7);
+}
+.action-btn.complete {
+    background-color: rgba(80, 130, 200, 0.7);
+}
+.action-btn.fail {
+    background-color: rgba(200, 80, 60, 0.7);
+}
+
+/* --- Contract row classes (для row-label внутри ListView; см. MarketWindow.MakeContractRow) --- */
+.contract-row {
+    flex-direction: row;
+    align-items: center;
+    height: 30px;
+    padding: 0 8px;
+    border-bottom-width: 1px;
+    border-color: rgba(80, 100, 130, 0.2);
+}
+.contract-row:hover {
+    background-color: rgba(100, 130, 180, 0.3);
+}
+.contract-type {
+    width: 90px;
+    font-size: 12px;
+}
+.contract-item {
+    flex-grow: 1;
+    font-size: 12px;
+}
+.contract-reward {
+    width: 80px;
+    font-size: 12px;
+    -unity-text-align: middle-right;
+}
+.contract-timer {
+    width: 50px;
+    font-size: 12px;
+    -unity-text-align: middle-right;
+}
+.type-standard {
+    color: rgb(80, 150, 255);
+}
+.type-urgent {
+    color: rgb(255, 130, 50);
+    -unity-font-style: bold;
+}
+.type-receipt {
+    color: rgb(80, 255, 100);
+}
+
+/* C2-refactor (2026-06-05): Active контракт — зелёный фон, "ВЗЯТ" маркер.
+   ВАЖНО: класс добавляется на row (.contract-row), не на .contract-type —
+   иначе перебьёт .type-urgent/.type-receipt цвета. */
+.contract-row-active {
+    background-color: rgba(80, 200, 100, 0.25);
+    border-left-width: 3px;
+    border-left-color: rgb(80, 220, 100);
+}
+/* Pulse-эффект "только что взят" — добавляется на 1.5с после accept */
+.contract-row-just-taken {
+    background-color: rgba(120, 255, 140, 0.5);
+    border-left-width: 3px;
+    border-left-color: rgb(160, 255, 180);
+    transition-property: background-color, border-left-color;
+    transition-duration: 1.5s;
+}
+.timer-warn {
+    color: rgb(255, 220, 100);
+}
+.timer-danger {
+    color: rgb(255, 80, 80);
+    -unity-font-style: bold;
+}
+.timer-ok {
+    color: rgb(180, 220, 255);
+}
+
 /* --- Message --- */
 .message-label {
     margin-top: 8px;

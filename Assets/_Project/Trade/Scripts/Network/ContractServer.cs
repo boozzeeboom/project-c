@@ -90,7 +90,8 @@ namespace ProjectC.Trade.Network
             if (IsServer)
             {
                 if (ContractWorld.Instance != null) ContractWorld.Instance.Shutdown();
-                ContractZoneRegistry.Clear();
+                // C2-refactor: ContractZoneRegistry удалён — теперь используется MarketZoneRegistry.
+                MarketZoneRegistry.Clear();
             }
             if (Instance == this) Instance = null;
         }
@@ -200,7 +201,7 @@ namespace ProjectC.Trade.Network
             // Re-snapshot
             if (r.IsSuccess)
             {
-                var zone = ContractZoneRegistry.Get(contract.toLocationId);
+                var zone = MarketZoneRegistry.Get(contract.toLocationId);
                 var snap = ContractWorld.Instance.BuildSnapshot(clientId, contract.toLocationId,
                     zone != null ? zone.DisplayName : contract.toLocationId, 1f, 0f);
                 SendSnapshotToClient(clientId, snap);
@@ -221,7 +222,7 @@ namespace ProjectC.Trade.Network
             // Re-snapshot с локации, на которой был контракт
             if (r.Contract != null)
             {
-                var zone = ContractZoneRegistry.Get(r.Contract.fromLocationId);
+                var zone = MarketZoneRegistry.Get(r.Contract.fromLocationId);
                 var snap = ContractWorld.Instance.BuildSnapshot(clientId, r.Contract.fromLocationId,
                     zone != null ? zone.DisplayName : r.Contract.fromLocationId, 1f, 0f);
                 SendSnapshotToClient(clientId, snap);
@@ -271,7 +272,7 @@ namespace ProjectC.Trade.Network
                 SendResultToOwner(playerId, dto);
 
                 // Re-snapshot с локации отправления (где была доска)
-                var zone = ContractZoneRegistry.Get(contract.fromLocationId);
+                var zone = MarketZoneRegistry.Get(contract.fromLocationId);
                 if (zone != null)
                 {
                     var snap = ContractWorld.Instance.BuildSnapshot(playerId, contract.fromLocationId,
@@ -372,9 +373,11 @@ namespace ProjectC.Trade.Network
         // UTILS
         // ========================================================
 
-        private bool ValidateInZone(ulong clientId, string locationId, out ContractZone zone)
+        private bool ValidateInZone(ulong clientId, string locationId, out MarketZone zone)
         {
-            zone = ContractZoneRegistry.Get(locationId);
+            // C2-refactor: используем MarketZone вместо ContractZone (ContractZone удалён).
+            // MarketZone уже знает игроков в зоне (PlayersInZone) — ContractZone теперь не нужен.
+            zone = MarketZoneRegistry.Get(locationId);
             if (zone == null) return false;
             return zone.IsPlayerInZone(clientId);
         }

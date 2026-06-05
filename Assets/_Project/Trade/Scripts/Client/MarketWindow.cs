@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using ProjectC.Trade;
 using ProjectC.Trade.Dto;
 using UnityEngine;
 using UnityEngine.UIElements;
@@ -46,9 +47,12 @@ namespace ProjectC.Trade.Client
         private ListView _itemList;
         private ListView _warehouseList;
         private ListView _cargoList;
+        // C2-refactor: 3-й таб КОНТРАКТЫ (CONTRACTS_AS_MARKET_TAB_REFACTOR.md)
+        private ListView _contractsList;
         private VisualElement _itemSection;        // FIX: wrapper вокруг item-list + title
         private VisualElement _warehouseSection;   // FIX: wrapper вокруг warehouse-list + title
         private VisualElement _cargoSection;       // FIX: wrapper вокруг cargo-list + title
+        private VisualElement _contractsSection;   // C2-refactor
         private VisualElement _shipSelectorContainer;
         private DropdownField _shipSelector;
         private Button _buyBtn;
@@ -56,6 +60,10 @@ namespace ProjectC.Trade.Client
         private Button _loadBtn;
         private Button _unloadBtn;
         private Button _closeBtn;
+        // C2-refactor: 3 кнопки для таба КОНТРАКТЫ
+        private Button _acceptBtn;
+        private Button _completeBtn;
+        private Button _failBtn;
         private Label _messageLabel;
         private TextField _qtyField;
 
@@ -63,13 +71,18 @@ namespace ProjectC.Trade.Client
         private int _selectedMarketItem = -1;
         private int _selectedWarehouseItem = -1;
         private int _selectedCargoItem = -1;
+        private int _selectedContractItem = -1;     // C2-refactor
         private int _selectedShipIndex = 0;
-        private string _activeTab = "market"; // "market" / "warehouse"
+        private string _activeTab = "market"; // "market" / "warehouse" / "contracts"
 
         // Локальный кэш cargo выбранного корабля (обновляется из TradeResultDto).
         // В snapshot cargo не входит (слишком жирно слать весь груз на каждый tick),
         // но после каждой операции (Load/Unload) сервер присылает updatedCargoSnapshot.
         private WarehouseEntryDto[] _cargoCache = Array.Empty<WarehouseEntryDto>();
+
+        // C2-refactor: кэш контрактов (active+available текущей локации).
+        // Заполняется из HandleContractSnapshot (подписка на ContractClientState).
+        private ContractDto[] _contractsCache = Array.Empty<ContractDto>();
 
         private bool _built = false;
 
@@ -156,9 +169,13 @@ namespace ProjectC.Trade.Client
             _itemList = _root.Q<ListView>("item-list");
             _warehouseList = _root.Q<ListView>("warehouse-list");
             _cargoList = _root.Q<ListView>("cargo-list");
+            // C2-refactor: contracts list (3-й таб)
+            _contractsList = _root.Q<ListView>("contracts-list");
             _itemSection = _root.Q<VisualElement>("item-section");
             _warehouseSection = _root.Q<VisualElement>("warehouse-section");
             _cargoSection = _root.Q<VisualElement>("cargo-section");
+            // C2-refactor: contracts section
+            _contractsSection = _root.Q<VisualElement>("contracts-section");
             _shipSelectorContainer = _root.Q<VisualElement>("ship-selector-container");
             _shipSelector = _root.Q<DropdownField>("ship-selector");
             _buyBtn = _root.Q<Button>("buy-btn");
@@ -166,6 +183,10 @@ namespace ProjectC.Trade.Client
             _loadBtn = _root.Q<Button>("load-btn");
             _unloadBtn = _root.Q<Button>("unload-btn");
             _closeBtn = _root.Q<Button>("close-btn");
+            // C2-refactor: contract action buttons
+            _acceptBtn = _root.Q<Button>("accept-btn");
+            _completeBtn = _root.Q<Button>("complete-btn");
+            _failBtn = _root.Q<Button>("fail-btn");
             _messageLabel = _root.Q<Label>("message-label");
             _qtyField = _root.Q<TextField>("qty-field");
 
@@ -215,17 +236,40 @@ namespace ProjectC.Trade.Client
                     _cargoList.Rebuild();
                 };
             }
+            // C2-refactor: contracts ListView — row factory MakeContractRow / binder BindContractRow.
+            // По выбору пользователя «по зоне (fromLocationId)» в _contractsCache лежат
+            // только те контракты, у которых fromLocationId == текущая локация (см. HandleContractSnapshot).
+            if (_contractsList != null)
+            {
+                _contractsList.makeItem = MakeContractRow;
+                _contractsList.bindItem = BindContractRow;
+                _contractsList.fixedItemHeight = 32;
+                _contractsList.selectionType = SelectionType.Single;
+                _contractsList.selectedIndex = -1;
+                _contractsList.selectionChanged += selectedItems =>
+                {
+                    _selectedContractItem = FindSelectedItemIndex<ContractDto>(_contractsList, selectedItems);
+                    _contractsList.Rebuild();
+                };
+            }
 
             var marketTabBtn = _root.Q<Button>("tab-market");
             var warehouseTabBtn = _root.Q<Button>("tab-warehouse");
+            // C2-refactor: 3-й таб КОНТРАКТЫ
+            var contractsTabBtn = _root.Q<Button>("tab-contracts");
             if (marketTabBtn != null) marketTabBtn.clicked += () => SwitchTab("market");
             if (warehouseTabBtn != null) warehouseTabBtn.clicked += () => SwitchTab("warehouse");
+            if (contractsTabBtn != null) contractsTabBtn.clicked += () => SwitchTab("contracts");
 
             if (_buyBtn != null) _buyBtn.clicked += OnBuyClicked;
             if (_sellBtn != null) _sellBtn.clicked += OnSellClicked;
             if (_loadBtn != null) _loadBtn.clicked += OnLoadClicked;
             if (_unloadBtn != null) _unloadBtn.clicked += OnUnloadClicked;
             if (_closeBtn != null) _closeBtn.clicked += OnCloseClicked;
+            // C2-refactor: contract action handlers
+            if (_acceptBtn != null) _acceptBtn.clicked += OnAcceptContractClicked;
+            if (_completeBtn != null) _completeBtn.clicked += OnCompleteContractClicked;
+            if (_failBtn != null) _failBtn.clicked += OnFailContractClicked;
 
             if (_shipSelector != null)
             {
@@ -270,6 +314,20 @@ namespace ProjectC.Trade.Client
                 _state.OnSnapshotUpdated += HandleSnapshot;
                 _state.OnTradeResult += HandleTradeResult;
             }
+
+            // C2-refactor: подписка на ContractClientState для таба КОНТРАКТЫ.
+            // Контракты живут в отдельном singleton-проекции, как и рынок.
+            var contractState = ProjectC.Trade.Client.ContractClientState.Instance;
+            if (contractState == null)
+            {
+                Debug.LogWarning("[MarketWindow] ContractClientState.Instance == null, контракты UI не будут обновляться");
+            }
+            else
+            {
+                contractState.OnSnapshotUpdated += HandleContractSnapshot;
+                contractState.OnContractResult += HandleContractResult;
+            }
+
             SwitchTab("market");
             SetVisible(visibleOnStart);
             _doc.rootVisualElement.MarkDirtyRepaint();
@@ -288,6 +346,13 @@ namespace ProjectC.Trade.Client
             {
                 _state.OnSnapshotUpdated -= HandleSnapshot;
                 _state.OnTradeResult -= HandleTradeResult;
+            }
+            // C2-refactor: отписка от ContractClientState
+            var contractState = ProjectC.Trade.Client.ContractClientState.Instance;
+            if (contractState != null)
+            {
+                contractState.OnSnapshotUpdated -= HandleContractSnapshot;
+                contractState.OnContractResult -= HandleContractResult;
             }
         }
 
@@ -519,6 +584,240 @@ namespace ProjectC.Trade.Client
         }
 
         // ========================================================
+        // CONTRACT ROW TEMPLATES (C2-refactor)
+        // ========================================================
+
+        /// <summary>
+        /// C2-refactor: row factory для таба КОНТРАКТЫ.
+        /// Создаёт 4 Label'а (type / item / reward / timer), заполняется в BindContractRow.
+        /// Размеры/цвета — из .contract-row/.contract-type/.contract-item/etc. в MarketWindow.uss.
+        /// </summary>
+        private static VisualElement MakeContractRow()
+        {
+            var row = new VisualElement();
+            row.AddToClassList("contract-row");
+            var typeLabel = new Label { name = "type" };
+            typeLabel.AddToClassList("contract-type");
+            row.Add(typeLabel);
+            var itemLabel = new Label { name = "item" };
+            itemLabel.AddToClassList("contract-item");
+            row.Add(itemLabel);
+            var rewardLabel = new Label { name = "reward" };
+            rewardLabel.AddToClassList("contract-reward");
+            row.Add(rewardLabel);
+            var timerLabel = new Label { name = "timer" };
+            timerLabel.AddToClassList("contract-timer");
+            row.Add(timerLabel);
+            return row;
+        }
+
+        /// <summary>
+        /// C2-refactor: binder для строки контракта. Заполняет 4 Label'а данными из ContractDto.
+        /// Цвет type и timer берём из .type-* / .timer-* классов (MarketWindow.uss).
+        /// </summary>
+        private void BindContractRow(VisualElement row, int index)
+        {
+            if (index < 0 || index >= _contractsCache.Length) return;
+            var c = _contractsCache[index];
+            var typeLabel = row.Q<Label>("type");
+            var itemLabel = row.Q<Label>("item");
+            var rewardLabel = row.Q<Label>("reward");
+            var timerLabel = row.Q<Label>("timer");
+
+            // FIX (2026-06-05): визуальное отличие Active vs Pending.
+            // Active → " [ВЗЯТ]" префикс в typeLabel + зелёный класс на row.
+            // Pending → обычный вид, без класса.
+            bool isActive = c.state == (byte)ContractState.Active;
+            if (isActive)
+            {
+                row.AddToClassList("contract-row-active");
+            }
+            else
+            {
+                row.RemoveFromClassList("contract-row-active");
+            }
+
+            if (typeLabel != null)
+            {
+                string typeName = GetContractTypeDisplayName((ContractType)c.type);
+                typeLabel.text = isActive ? $"{typeName} [ВЗЯТ]" : typeName;
+                typeLabel.RemoveFromClassList("type-standard");
+                typeLabel.RemoveFromClassList("type-urgent");
+                typeLabel.RemoveFromClassList("type-receipt");
+                typeLabel.AddToClassList(GetContractTypeClass((ContractType)c.type));
+            }
+            if (itemLabel != null) itemLabel.text = $"{c.displayName} x{c.quantity}  ({c.fromLocationId}→{c.toLocationId})";
+            // Для active не показываем reward (он уже "твой" — игрок помнит).
+            if (rewardLabel != null) rewardLabel.text = isActive ? "" : $"{c.reward:F0} CR";
+            if (timerLabel != null)
+            {
+                timerLabel.text = GetContractTimeRemainingString(c);
+                timerLabel.RemoveFromClassList("timer-ok");
+                timerLabel.RemoveFromClassList("timer-warn");
+                timerLabel.RemoveFromClassList("timer-danger");
+                timerLabel.AddToClassList(GetContractTimerClass(c));
+            }
+            // Highlight selected (поверх active-подсветки)
+            row.style.backgroundColor = (index == _selectedContractItem)
+                ? new StyleColor(new Color(0.4f, 0.6f, 0.9f, 0.4f))
+                : StyleKeyword.Null;
+        }
+
+        /// <summary>
+        /// C2-refactor: обновление списка контрактов из snapshot'а ContractClientState.
+        /// По выбору пользователя «по зоне (fromLocationId)» фильтруем available по текущей
+        /// локации (используем CurrentSnapshot рынка как источник locationId — мы в той же зоне).
+        /// active показываем ВСЕ активные контракты игрока (state==Active), независимо от локации —
+        /// потому что игрок должен видеть свои задачи даже если зашёл в рынок не на fromLocationId.
+        /// </summary>
+        private void HandleContractSnapshot(ContractSnapshotDto snapshot)
+        {
+            if (_contractsList == null) return;
+
+            string currentLocationId = _state?.CurrentSnapshot.HasValue == true
+                ? _state.CurrentSnapshot.Value.locationId
+                : null;
+
+            // FIX (2026-06-05): фильтруем available по двум критериям:
+            //   1) fromLocationId == currentLocationId (только для текущей локации)
+            //   2) state == Pending (защита от случайных дублей; на сервере уже фильтруется)
+            // Без #2: после accept сервер отдаёт в available[] контракты, которые уже
+            // Active (если фильтр сломался), и они дублируются в active[].
+            ContractDto[] available = Array.Empty<ContractDto>();
+            if (!string.IsNullOrEmpty(currentLocationId) && snapshot.available != null)
+            {
+                var list = new List<ContractDto>();
+                for (int i = 0; i < snapshot.available.Length; i++)
+                {
+                    var c = snapshot.available[i];
+                    if (c.state != (byte)ContractState.Pending) continue;
+                    if (!string.Equals(c.fromLocationId, currentLocationId, StringComparison.OrdinalIgnoreCase)) continue;
+                    list.Add(c);
+                }
+                available = list.ToArray();
+            }
+
+            // Active: все активные контракты игрока (без фильтра по локации — игрок
+            // должен видеть свои задачи даже если зашёл в рынок не на fromLocationId).
+            // FIX: фильтр state==Active для защиты (на сервере уже фильтруется).
+            ContractDto[] activeAll = snapshot.active ?? Array.Empty<ContractDto>();
+            var activeList = new List<ContractDto>(activeAll.Length);
+            for (int i = 0; i < activeAll.Length; i++)
+            {
+                if (activeAll[i].state == (byte)ContractState.Active)
+                {
+                    activeList.Add(activeAll[i]);
+                }
+            }
+            ContractDto[] active = activeList.ToArray();
+
+            // Показываем: сначала active (свои задачи), потом available (новые)
+            var combined = new List<ContractDto>(active.Length + available.Length);
+            combined.AddRange(active);
+            combined.AddRange(available);
+            _contractsCache = combined.ToArray();
+
+            _contractsList.itemsSource = _contractsCache;
+            _selectedContractItem = -1;
+            _contractsList.selectedIndex = -1;
+            _contractsList.Rebuild();
+
+            // Message feedback
+            if (_messageLabel != null && IsVisible() && _activeTab == "contracts")
+            {
+                _messageLabel.text = active.Length == 0 && available.Length == 0
+                    ? "Нет контрактов на этой локации"
+                    : $"Активных: {active.Length} | Доступно: {available.Length}";
+                _messageLabel.style.color = new StyleColor(new Color(0.9f, 0.9f, 0.9f));
+            }
+        }
+
+        /// <summary>
+        /// C2-refactor: обновление message после операции accept/complete/fail.
+        /// Сервер сам шлёт новый snapshot (ContractServer.RequestXxxRpc) — HandleContractSnapshot
+        /// обновит UI автоматически.
+        /// </summary>
+        private void HandleContractResult(ContractResultDto result)
+        {
+            if (_messageLabel == null) return;
+            // ContractResultDto — struct, поэтому проверка на null не нужна.
+
+            // FIX (2026-06-05): обновляем кредиты/долг из result.newCredits/newDebt
+            // независимо от таба — игрок должен видеть наградy в HUD сразу, даже если
+            // он не в табе КОНТРАКТЫ (например, сидит на вкладке РЫНОК).
+            // _creditsLabel общий для всех табов (лежит в шапке окна).
+            if (_creditsLabel != null && result.newCredits > 0f)
+            {
+                _creditsLabel.text = $"Кредиты: {result.newCredits:F0} CR";
+            }
+
+            // FIX (2026-06-05): попросить сервер прислать свежий market snapshot чтобы
+            // синхронизировать _state.CurrentSnapshot.credits. Без этого MarketClientState
+            // показывает старые кредиты (его _currentSnapshot не обновляется при
+            // контрактных операциях), и при следующем открытии вкладки РЫНОК игрок видит
+            // несоответствие: HUD говорит 1500 CR, а _creditsLabel в шапке — 1000.
+            if (result.IsSuccess && _state != null && _state.CurrentSnapshot.HasValue)
+            {
+                _state.RequestSubscribeMarket(_state.CurrentSnapshot.Value.locationId);
+            }
+
+            // FIX (2026-06-05): message показываем ВСЕГДА (любой таб), а не только в
+            // "contracts". Иначе игрок жмёт ВЗЯТЬ в табе РЫНОК и не получает обратной
+            // связи — думает что кнопка сломана. Message-label общий для всех табов.
+            if (!IsVisible()) return;
+            if (result.IsSuccess)
+            {
+                _messageLabel.text = result.message ?? "OK";
+                _messageLabel.style.color = new StyleColor(new Color(0.4f, 0.95f, 0.4f));
+            }
+            else
+            {
+                _messageLabel.text = result.message ?? ProjectC.Trade.Client.ContractClientState.LocalizeResultCode((ContractResultCode)result.code);
+                _messageLabel.style.color = new StyleColor(new Color(0.95f, 0.4f, 0.4f));
+            }
+        }
+
+        // C2-refactor: static helpers (port from ContractBoardWindow.cs)
+        public static string GetContractTypeDisplayName(ContractType type)
+        {
+            switch (type)
+            {
+                case ContractType.Standard: return "[Стандарт]";
+                case ContractType.Urgent: return "[Срочный]";
+                case ContractType.Receipt: return "[Расписка]";
+                default: return type.ToString();
+            }
+        }
+
+        public static string GetContractTypeClass(ContractType type)
+        {
+            switch (type)
+            {
+                case ContractType.Standard: return "type-standard";
+                case ContractType.Urgent: return "type-urgent";
+                case ContractType.Receipt: return "type-receipt";
+                default: return "type-standard";
+            }
+        }
+
+        public static string GetContractTimeRemainingString(ContractDto c)
+        {
+            if (c.timeLimit <= 0f) return "∞";
+            int minutes = Mathf.FloorToInt(c.timeRemaining / 60f);
+            int seconds = Mathf.FloorToInt(c.timeRemaining % 60f);
+            return $"{minutes}:{seconds:D2}";
+        }
+
+        public static string GetContractTimerClass(ContractDto c)
+        {
+            if (c.timeLimit <= 0f) return "timer-ok";
+            float pct = c.timeRemaining / c.timeLimit;
+            if (pct < 0.1f) return "timer-danger";
+            if (pct < 0.3f) return "timer-warn";
+            return "timer-ok";
+        }
+
+        // ========================================================
         // ACTIONS
         // ========================================================
 
@@ -569,20 +868,150 @@ namespace ProjectC.Trade.Client
 
         private void OnCloseClicked() => SetVisible(false);
 
+        // C2-refactor: contract action handlers
+        private void OnAcceptContractClicked()
+        {
+            if (_selectedContractItem < 0 || _selectedContractItem >= _contractsCache.Length)
+            {
+                SetMessage("Выберите контракт для принятия");
+                return;
+            }
+            var c = _contractsCache[_selectedContractItem];
+            if (c.state != (byte)ContractState.Pending)
+            {
+                SetMessage("Этот контракт уже не доступен для принятия");
+                return;
+            }
+            var contractState = ProjectC.Trade.Client.ContractClientState.Instance;
+            if (contractState == null) return;
+
+            // FIX (2026-06-05): optimistic update — мгновенный визуальный feedback
+            // игроку ДО прихода RPC. Контракт сразу помечается как Active в локальном
+            // _contractsCache, и строка перекрашивается в зелёный + [ВЗЯТ].
+            // Через ~1.5с придёт серверный snapshot, который заменит эту запись на
+            // настоящую (но визуально будет то же самое — state=Active).
+            var cLocal = c;
+            cLocal.state = (byte)ContractState.Active;
+            // Сохраняем копию как value-type (struct) → меняется элемент массива.
+            _contractsCache[_selectedContractItem] = cLocal;
+            _contractsList?.Rebuild();
+
+            // Pulse-эффект на 1.5с (визуально подтверждает "только что взят")
+            StartCoroutine(JustTakenPulse(_selectedContractItem));
+
+            contractState.RequestAccept(c.contractId);
+            SetMessage("Запрос отправлен...");
+        }
+
+        /// <summary>
+        /// FIX (2026-06-05): на 1.5с добавляет класс contract-row-just-taken на
+        /// указанный row (по индексу в ListView). При смене snapshot класс уйдёт
+        /// сам (CSS transition-duration 1.5s вернёт фон в норму).
+        /// </summary>
+        private System.Collections.IEnumerator JustTakenPulse(int rowIndex)
+        {
+            if (_contractsList == null) yield break;
+            // Ждём один frame — Rebuild() асинхронен.
+            yield return null;
+            var row = _contractsList.ElementAt(rowIndex) as VisualElement;
+            if (row == null) yield break;
+            row.AddToClassList("contract-row-just-taken");
+            yield return new WaitForSeconds(1.6f);
+            if (row != null) row.RemoveFromClassList("contract-row-just-taken");
+        }
+
+        private void OnCompleteContractClicked()
+        {
+            if (_selectedContractItem < 0 || _selectedContractItem >= _contractsCache.Length)
+            {
+                SetMessage("Выберите активный контракт для сдачи");
+                return;
+            }
+            var c = _contractsCache[_selectedContractItem];
+            if (c.state != (byte)ContractState.Active)
+            {
+                SetMessage("Этот контракт не активен");
+                return;
+            }
+            // Сервер сам валидирует что игрок в toLocationId (см. ContractServer.RequestCompleteRpc).
+            // Если нет — вернёт WrongDestination.
+            var contractState = ProjectC.Trade.Client.ContractClientState.Instance;
+            if (contractState == null) return;
+            contractState.RequestComplete(c.contractId);
+            SetMessage("Запрос отправлен...");
+        }
+
+        private void OnFailContractClicked()
+        {
+            if (_selectedContractItem < 0 || _selectedContractItem >= _contractsCache.Length)
+            {
+                SetMessage("Выберите активный контракт");
+                return;
+            }
+            var c = _contractsCache[_selectedContractItem];
+            if (c.state != (byte)ContractState.Active)
+            {
+                SetMessage("Этот контракт не активен");
+                return;
+            }
+            var contractState = ProjectC.Trade.Client.ContractClientState.Instance;
+            if (contractState == null) return;
+            contractState.RequestFail(c.contractId);
+            SetMessage("Запрос отправлен...");
+        }
+
         private void SwitchTab(string tab)
         {
             _activeTab = tab;
+            // C2-refactor: 3 таба — market / warehouse / contracts
             bool isMarket = tab == "market";
+            bool isWarehouse = tab == "warehouse";
+            bool isContracts = tab == "contracts";
+
             // FIX: прячем ВСЮ секцию (заголовок + список), а не только ListView —
             // иначе 3 заголовка "Товары на рынке / Ваш склад / Груз корабля" висят одновременно
             // и контейнер сжимается через flex-shrink, ломая layout.
             if (_itemSection != null) _itemSection.style.display = isMarket ? DisplayStyle.Flex : DisplayStyle.None;
-            if (_warehouseSection != null) _warehouseSection.style.display = isMarket ? DisplayStyle.None : DisplayStyle.Flex;
-            if (_cargoSection != null) _cargoSection.style.display = isMarket ? DisplayStyle.None : DisplayStyle.Flex;
+            if (_warehouseSection != null) _warehouseSection.style.display = isWarehouse ? DisplayStyle.Flex : DisplayStyle.None;
+            if (_cargoSection != null) _cargoSection.style.display = isWarehouse ? DisplayStyle.Flex : DisplayStyle.None;
+            // C2-refactor: contracts section
+            if (_contractsSection != null) _contractsSection.style.display = isContracts ? DisplayStyle.Flex : DisplayStyle.None;
+
+            // Кнопки — набор меняется по табу
             if (_buyBtn != null) _buyBtn.style.display = isMarket ? DisplayStyle.Flex : DisplayStyle.None;
             if (_sellBtn != null) _sellBtn.style.display = isMarket ? DisplayStyle.Flex : DisplayStyle.None;
-            if (_loadBtn != null) _loadBtn.style.display = isMarket ? DisplayStyle.None : DisplayStyle.Flex;
-            if (_unloadBtn != null) _unloadBtn.style.display = isMarket ? DisplayStyle.None : DisplayStyle.Flex;
+            if (_loadBtn != null) _loadBtn.style.display = isWarehouse ? DisplayStyle.Flex : DisplayStyle.None;
+            if (_unloadBtn != null) _unloadBtn.style.display = isWarehouse ? DisplayStyle.Flex : DisplayStyle.None;
+            // C2-refactor: contract action buttons — только в табе contracts
+            if (_acceptBtn != null) _acceptBtn.style.display = isContracts ? DisplayStyle.Flex : DisplayStyle.None;
+            if (_completeBtn != null) _completeBtn.style.display = isContracts ? DisplayStyle.Flex : DisplayStyle.None;
+            if (_failBtn != null) _failBtn.style.display = isContracts ? DisplayStyle.Flex : DisplayStyle.None;
+
+            // Ship selector виден только в табе СКЛАД (multi-ship load/unload)
+            if (_shipSelectorContainer != null)
+            {
+                bool isWarehouseShowShip = isWarehouse && IsShipSelectorVisible();
+                _shipSelectorContainer.style.display = isWarehouseShowShip ? DisplayStyle.Flex : DisplayStyle.None;
+            }
+
+            // C2-refactor: qty row виден только в табе РЫНОК (qty не используется для контрактов)
+            // ИСПРАВЛЕНО: раньше qty был показан в обоих market/warehouse, но в warehouse qty
+            // уже парсится из _qtyField без изменений. В contracts qty не имеет смысла.
+            if (_qtyField != null && _qtyField.parent != null)
+            {
+                _qtyField.parent.style.display = isMarket ? DisplayStyle.Flex : DisplayStyle.None;
+            }
+        }
+
+        /// <summary>
+        /// C2-refactor: вспомогательный метод для SwitchTab — определяет, нужно ли показывать
+        /// ship selector. Использует текущий snapshot (если есть), иначе false.
+        /// </summary>
+        private bool IsShipSelectorVisible()
+        {
+            var snap = _state?.CurrentSnapshot;
+            if (!snap.HasValue) return false;
+            return snap.Value.nearbyShips != null && snap.Value.nearbyShips.Length > 1;
         }
 
         // ========================================================

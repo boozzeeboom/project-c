@@ -17,9 +17,10 @@
         <ui:VisualElement class="tabs">
             <ui:Button name="tab-market" text="РЫНОК" class="tab-btn" />
             <ui:Button name="tab-warehouse" text="СКЛАД / ТРЮМ" class="tab-btn" />
+            <ui:Button name="tab-contracts" text="КОНТРАКТЫ" class="tab-btn" />
         </ui:VisualElement>
 
-        <!-- Количество -->
+        <!-- Количество (только в табе РЫНОК) -->
         <ui:VisualElement class="qty-row">
             <ui:Label text="Кол-во:" class="qty-label" />
             <ui:TextField name="qty-field" value="1" class="qty-field" />
@@ -43,18 +44,28 @@
             <ui:ListView name="cargo-list" class="item-list" />
         </ui:VisualElement>
 
-        <!-- Multi-ship selector (виден только когда > 1 корабля) — display:none по умолчанию -->
+        <!-- C2-refactor: вкладка КОНТРАКТЫ — список pending+active для текущей локации.
+             Доступ к контрактам через таб рынка (см. CONTRACTS_AS_MARKET_TAB_REFACTOR.md). -->
+        <ui:VisualElement name="contracts-section" class="list-section" style="display: none;">
+            <ui:Label text="Контракты НП" class="section-title" />
+            <ui:ListView name="contracts-list" class="item-list" />
+        </ui:VisualElement>
+
+        <!-- Multi-ship selector (виден только когда > 1 корабля и таб СКЛАД) — display:none по умолчанию -->
         <ui:VisualElement name="ship-selector-container" class="ship-selector-container" style="display: none;">
             <ui:Label text="Корабль:" class="ship-selector-label" />
             <ui:DropdownField name="ship-selector" class="ship-selector" />
         </ui:VisualElement>
 
-        <!-- Кнопки действий -->
+        <!-- Кнопки действий (набор меняется в зависимости от таба) -->
         <ui:VisualElement class="actions">
             <ui:Button name="buy-btn" text="КУПИТЬ" class="action-btn buy" />
             <ui:Button name="sell-btn" text="ПРОДАТЬ" class="action-btn sell" />
             <ui:Button name="load-btn" text="ПОГРУЗИТЬ" class="action-btn load" />
             <ui:Button name="unload-btn" text="РАЗГРУЗИТЬ" class="action-btn unload" />
+            <ui:Button name="accept-btn" text="ВЗЯТЬ" class="action-btn accept" style="display: none;" />
+            <ui:Button name="complete-btn" text="СДАТЬ" class="action-btn complete" style="display: none;" />
+            <ui:Button name="fail-btn" text="ПРОВАЛИТЬ" class="action-btn fail" style="display: none;" />
             <ui:Button name="close-btn" text="ЗАКРЫТЬ" class="action-btn close" />
         </ui:VisualElement>
 

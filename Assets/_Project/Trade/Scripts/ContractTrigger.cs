@@ -1,21 +1,19 @@
 using UnityEngine;
-using ProjectC.Trade;
-using ProjectC.Trade.Client;
-using ProjectC.Trade.Network;
 using ProjectC.Player;
 
 /// <summary>
 /// Триггер-зона NPC-агента НП (доска контрактов).
 /// GDD_25 секция 6: Контрактная Система.
-/// Утверждено решение 2A: игрок подходит к NPC-агенту в целевой локации → нажимает C.
-/// Утверждено решение 5B: отдельный префаб ContractBoardWindow.
+/// Решение 2A: игрок подходит к NPC-агенту → нажимает C.
 ///
-/// Сессия 7: ContractSystem.
-/// Поток: Игрок входит в триггер → нажимает C → открывается ContractBoardWindow.
+/// C2-refactor: контракты теперь живут как 3-й таб внутри MarketWindow
+/// (см. docs/dev/CONTRACTS_AS_MARKET_TAB_REFACTOR.md). ContractTrigger остаётся
+/// как scene-marker (для UI hint и как будущая точка спавна NPC), но больше
+/// не открывает отдельное окно контрактов — вызывает MarketInteractor.TryOpenMarket,
+/// который открывает MarketWindow с активной подпиской на контракты.
 ///
-/// C2-этап миграции контрактов: scene-marker остался (для UI hint), но вместо
-/// legacy ContractBoardUI → ContractInteractor.TryOpenContractBoard() (новый UI Toolkit).
-/// legacy ContractSystem и ContractBoardUI продолжают работать параллельно (для регресса).
+/// Legacy ContractBoardUI и ContractBoardWindow удалены. ContractSystem остаётся
+/// для регресса (тоже удалится в C1-cleanup).
 /// </summary>
 public class ContractTrigger : MonoBehaviour
 {
@@ -64,10 +62,11 @@ public class ContractTrigger : MonoBehaviour
         {
             _nearbyPlayer = null;
 
-            // Закрыть UI окно контрактов при выходе из зоны (v2)
-            if (ContractBoardWindow.Instance != null)
+            // C2-refactor: контракты в табе MarketWindow, а не в отдельном окне.
+            // Закрываем MarketWindow при выходе из зоны.
+            if (ProjectC.Trade.Client.MarketWindow.Instance != null)
             {
-                ContractBoardWindow.Instance.Hide();
+                ProjectC.Trade.Client.MarketWindow.Instance.Hide();
             }
         }
     }
@@ -77,7 +76,7 @@ public class ContractTrigger : MonoBehaviour
         if (_nearbyPlayer == null) return;
 
         var kb = UnityEngine.InputSystem.Keyboard.current;
-        // C2-этап: ключ C для контрактов (раньше был тот же C, теперь не конфликтует с E-рынок)
+        // C2-refactor: ключ C — открыть рынок (включая вкладку КОНТРАКТЫ)
         if (kb != null && kb.cKey.wasPressedThisFrame)
         {
             OpenContractBoard(_nearbyPlayer);
@@ -85,7 +84,7 @@ public class ContractTrigger : MonoBehaviour
     }
 
     /// <summary>
-    /// Открыть доску контрактов (v2 — UI Toolkit).
+    /// Открыть рынок с активной подпиской на контракты для этой локации.
     /// </summary>
     public void OpenContractBoard(NetworkPlayer player)
     {
@@ -95,21 +94,10 @@ public class ContractTrigger : MonoBehaviour
             return;
         }
 
-        // FIX (C2-этап): Вместо legacy ContractBoardUI используем ContractInteractor.
-        // ContractInteractor сам найдёт ContractZone, запросит snapshot и откроет окно.
-        if (!ContractInteractor.TryOpenContractBoard())
-        {
-            // Fallback на legacy ContractBoardUI (если v2-зона не найдена, но v1-маркер есть)
-            if (ContractBoardUI.Instance != null)
-            {
-                Debug.LogWarning("[ContractTrigger] v2 ContractInteractor не нашёл зону, fallback на legacy ContractBoardUI");
-                ContractBoardUI.Instance.OpenBoard(null, player);
-            }
-            else
-            {
-                Debug.LogWarning($"[ContractTrigger] Не удалось открыть доску контрактов для {npcAgentName} (нет v2-зоны и v1-UI)");
-            }
-        }
+        // C2-refactor: Открываем MarketWindow (вместо ContractBoardWindow).
+        // MarketInteractor.TryOpenMarket() сам подпишется на ContractClientState.RequestList(locationId)
+        // и откроет MarketWindow. Таб "КОНТРАКТЫ" внутри покажет pending+active для этой локации.
+        ProjectC.Trade.Client.MarketInteractor.TryOpenMarket();
     }
 
     private void OnDrawGizmosSelected()

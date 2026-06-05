@@ -72,11 +72,15 @@ namespace ProjectC.Core
             CreateTradeDebugTools();
 
             // FIX (2026-06-04): Создаём MarketClientState программно как root GO —
-            // иначе DontDestroyOnLoad в нём падает ("only works for root GameObjects"),
+            // см. подробности в docs/Markets/FIXES_HISTORY.md 2026-06-04
             // и singleton теряется при выгрузке Bootstrap. Раньше [MarketClientState] в
-            // BootstrapScene был child'ом, DontDestroyOnLoad не срабатывал, Instance
-            // становился dangling ref при смене сцены.
+            // BootstrapScene был child — DontDestroyOnLoad на child упадёт, singleton
+            // теряется при выгрузке Bootstrap. Программный root гарантирует переживание стриминга.
             CreateMarketClientState();
+
+            // C2-этап миграции контрактов: ContractClientState тоже auto-spawn
+            // (аналогично MarketClientState, чтобы выживал при стриминге сцен).
+            CreateContractClientState();
 
             // Автоматический запуск Dedicated Server если передан аргумент -server
             if (IsDedicatedServerMode())
@@ -133,6 +137,30 @@ namespace ProjectC.Core
             var go = new GameObject("[MarketClientState]");
             go.AddComponent<ProjectC.Trade.Client.MarketClientState>();
             Debug.Log("[NMC] Created [MarketClientState] as root GameObject");
+        }
+
+        /// <summary>
+        /// FIX (C2-этап миграции контрактов): Создать ContractClientState как root GameObject.
+        /// Паттерн идентичен CreateMarketClientState — см. FIX 2026-06-04 в MarketClientState.
+        /// </summary>
+        private void CreateContractClientState()
+        {
+            var existing = FindObjectsByType<ProjectC.Trade.Client.ContractClientState>(FindObjectsInactive.Include);
+            foreach (var inst in existing)
+            {
+                if (inst != null && inst.transform.parent == null)
+                {
+                    Debug.Log("[NMC] ContractClientState already root, skipping creation");
+                    return;
+                }
+            }
+            if (existing.Length > 0)
+            {
+                Debug.LogWarning($"[NMC] Found {existing.Length} non-root ContractClientState in scene — DontDestroyOnLoad would fail. Creating root replacement.");
+            }
+            var go = new GameObject("[ContractClientState]");
+            go.AddComponent<ProjectC.Trade.Client.ContractClientState>();
+            Debug.Log("[NMC] Created [ContractClientState] as root GameObject");
         }
         
         private void Start()

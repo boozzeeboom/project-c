@@ -1,21 +1,27 @@
 using UnityEngine;
 using ProjectC.Trade;
+using ProjectC.Trade.Client;
+using ProjectC.Trade.Network;
 using ProjectC.Player;
 
 /// <summary>
 /// Триггер-зона NPC-агента НП (доска контрактов).
 /// GDD_25 секция 6: Контрактная Система.
-/// Утверждено решение 2A: игрок подходит к NPC-агенту в целевой локации → нажимает E.
-/// Утверждено решение 5B: отдельный префаб ContractBoardUI.
+/// Утверждено решение 2A: игрок подходит к NPC-агенту в целевой локации → нажимает C.
+/// Утверждено решение 5B: отдельный префаб ContractBoardWindow.
 ///
 /// Сессия 7: ContractSystem.
-/// Поток: Игрок входит в триггер → нажимает E → открывается ContractBoardUI.
+/// Поток: Игрок входит в триггер → нажимает C → открывается ContractBoardWindow.
+///
+/// C2-этап миграции контрактов: scene-marker остался (для UI hint), но вместо
+/// legacy ContractBoardUI → ContractInteractor.TryOpenContractBoard() (новый UI Toolkit).
+/// legacy ContractSystem и ContractBoardUI продолжают работать параллельно (для регресса).
 /// </summary>
 public class ContractTrigger : MonoBehaviour
 {
     [Header("NPC Agent Info")]
-    [Tooltip("Рынок локации, к которой привязан агент")]
-    public LocationMarket market;
+    [Tooltip("ID локации, к которой привязан NPC-агент (primium/secundus/tertius/quartus)")]
+    [SerializeField] private string locationId = "primium";
 
     [Tooltip("Имя NPC-агента")]
     public string npcAgentName = "Агент НП";
@@ -58,10 +64,10 @@ public class ContractTrigger : MonoBehaviour
         {
             _nearbyPlayer = null;
 
-            // Закрыть доску контрактов при выходе из зоны
-            if (ContractBoardUI.Instance != null)
+            // Закрыть UI окно контрактов при выходе из зоны (v2)
+            if (ContractBoardWindow.Instance != null)
             {
-                ContractBoardUI.Instance.CloseBoard();
+                ContractBoardWindow.Instance.Hide();
             }
         }
     }
@@ -71,6 +77,7 @@ public class ContractTrigger : MonoBehaviour
         if (_nearbyPlayer == null) return;
 
         var kb = UnityEngine.InputSystem.Keyboard.current;
+        // C2-этап: ключ C для контрактов (раньше был тот же C, теперь не конфликтует с E-рынок)
         if (kb != null && kb.cKey.wasPressedThisFrame)
         {
             OpenContractBoard(_nearbyPlayer);
@@ -78,39 +85,30 @@ public class ContractTrigger : MonoBehaviour
     }
 
     /// <summary>
-    /// Открыть доску контрактов
+    /// Открыть доску контрактов (v2 — UI Toolkit).
     /// </summary>
     public void OpenContractBoard(NetworkPlayer player)
     {
-        if (market == null)
+        if (string.IsNullOrEmpty(locationId))
         {
-            Debug.LogWarning($"[ContractTrigger] Рынок не назначен для {npcAgentName}!");
+            Debug.LogWarning($"[ContractTrigger] locationId не задан для {npcAgentName}!");
             return;
         }
 
-        if (ContractBoardUI.Instance != null)
+        // FIX (C2-этап): Вместо legacy ContractBoardUI используем ContractInteractor.
+        // ContractInteractor сам найдёт ContractZone, запросит snapshot и откроет окно.
+        if (!ContractInteractor.TryOpenContractBoard())
         {
-            ContractBoardUI.Instance.OpenBoard(market, player);
-        }
-        else
-        {
-            // Создать ContractBoardUI динамически
-            var go = new GameObject("[ContractBoardUI]");
-            var boardUI = go.AddComponent<ContractBoardUI>();
-            boardUI.OpenBoard(market, player);
-        }
-    }
-
-    /// <summary>
-    /// Завершить активный контракт у NPC-агента (целевая локация)
-    /// </summary>
-    public void CompleteContractAtAgent(string contractId)
-    {
-        if (market == null) return;
-
-        if (_nearbyPlayer != null && _nearbyPlayer.IsOwner)
-        {
-            _nearbyPlayer.ContractCompleteServerRpc(contractId, market.locationId);
+            // Fallback на legacy ContractBoardUI (если v2-зона не найдена, но v1-маркер есть)
+            if (ContractBoardUI.Instance != null)
+            {
+                Debug.LogWarning("[ContractTrigger] v2 ContractInteractor не нашёл зону, fallback на legacy ContractBoardUI");
+                ContractBoardUI.Instance.OpenBoard(null, player);
+            }
+            else
+            {
+                Debug.LogWarning($"[ContractTrigger] Не удалось открыть доску контрактов для {npcAgentName} (нет v2-зоны и v1-UI)");
+            }
         }
     }
 

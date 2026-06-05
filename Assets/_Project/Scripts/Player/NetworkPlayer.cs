@@ -907,5 +907,25 @@ namespace ProjectC.Player
                 MarketServer.Instance.RequestSetTimeMultiplierRpc(multiplier);
             }
         }
+
+        // ==================== CONTRACT V2 RPC TARGETS ====================
+        // ContractServer (server-only singleton) вызывает эти методы НА конкретном
+        // NetworkPlayer, чтобы доставить snapshot / result именно этому клиенту.
+        // Аналог ReceiveMarketSnapshotTargetRpc / ReceiveTradeResultTargetRpc.
+        // Добавлено в C2-этапе миграции контрактов на v2-архитектуру.
+        // Legacy RPC ContractListClientRpc / ContractResultClientRpc (lines 788, 804)
+        // продолжают работать параллельно для регресса v1-подсистемы; удаляются в C5.
+
+        [Rpc(SendTo.Owner)]
+        public void ReceiveContractSnapshotTargetRpc(ProjectC.Trade.Dto.ContractSnapshotDto snapshot, RpcParams rpcParams = default)
+        {
+            ProjectC.Trade.Client.ContractClientState.Instance?.OnSnapshotReceived(snapshot);
+        }
+
+        [Rpc(SendTo.Owner)]
+        public void ReceiveContractResultTargetRpc(ProjectC.Trade.Dto.ContractResultDto result, RpcParams rpcParams = default)
+        {
+            ProjectC.Trade.Client.ContractClientState.Instance?.OnTradeResultReceived(result);
+        }
     }
 }

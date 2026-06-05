@@ -257,6 +257,9 @@ namespace ProjectC.UI.Client
             _root.pickingMode = PickingMode.Ignore;
             _doc.rootVisualElement.Add(_root);
 
+            // DIAG снят в v2: USS подключён корректно через Inspector (см. refactor_log_2026-06-05.md).
+            Debug.Log("[CharacterWindow] Built");
+
             // ---- Element refs ----
             _mainContainer         = _root.Q<VisualElement>("main-container");
             _characterNameLabel    = _root.Q<Label>("character-name-label");
@@ -378,6 +381,8 @@ namespace ProjectC.UI.Client
 
             // ---- Initial state ----
             SwitchTab(_activeTab);
+            // REFACTOR 2026-06-05 v2: USS с !important перебивает UnityDefaultRuntimeTheme,
+            // поэтому отдельная программная стилизация больше не нужна.
             SetVisible(visibleOnStart);
             _doc.rootVisualElement.MarkDirtyRepaint();
             if (_doc.rootVisualElement != null)
@@ -385,7 +390,6 @@ namespace ProjectC.UI.Client
                 _doc.rootVisualElement.schedule.Execute(() => _doc.rootVisualElement.MarkDirtyRepaint()).StartingIn(50);
             }
             _built = true;
-            Debug.Log($"[CharacterWindow] Built: root.children={_doc.rootVisualElement.childCount}, styleSheets={_doc.rootVisualElement.styleSheets.count}");
         }
 
         // ============================================================
@@ -1088,32 +1092,17 @@ namespace ProjectC.UI.Client
 
         private static void ApplyInlineFallbackStyles(VisualElement main)
         {
-            // FIX: дублируем ключевые правила из .character-window inline.
-            // resolvedStyle=initial на 1-м кадре — USS не успел примениться.
+            // FIX: на 1-м кадре resolvedStyle=initial (USS не успел примениться) — задаём
+            // только позиционирование и размеры inline. Всё остальное (фон, рамка, шрифт,
+            // padding, цвет) теперь в CharacterWindow.uss с !important, который перебивает
+            // UnityDefaultRuntimeTheme. Дублировать эти свойства inline больше не нужно.
             main.style.position = Position.Absolute;
-            main.style.top    = new Length(5,  LengthUnit.Percent);
+            main.style.top    = new Length(4,  LengthUnit.Percent);
             main.style.left   = new Length(50, LengthUnit.Percent);
             main.style.translate = new StyleTranslate(new Translate(new Length(-50, LengthUnit.Percent), 0));
             main.style.width      = 720;
             main.style.maxWidth   = new Length(90, LengthUnit.Percent);
-            main.style.maxHeight  = new Length(90, LengthUnit.Percent);
-            main.style.backgroundColor = new Color(0.078f, 0.098f, 0.137f, 0.95f);
-            main.style.borderTopWidth = 2;    main.style.borderRightWidth = 2;
-            main.style.borderBottomWidth = 2; main.style.borderLeftWidth = 2;
-            main.style.borderTopColor    = new Color(0.471f, 0.588f, 0.784f, 0.8f);
-            main.style.borderRightColor  = new Color(0.471f, 0.588f, 0.784f, 0.8f);
-            main.style.borderBottomColor = new Color(0.471f, 0.588f, 0.784f, 0.8f);
-            main.style.borderLeftColor   = new Color(0.471f, 0.588f, 0.784f, 0.8f);
-            main.style.borderTopLeftRadius     = 8;
-            main.style.borderTopRightRadius    = 8;
-            main.style.borderBottomLeftRadius  = 8;
-            main.style.borderBottomRightRadius = 8;
-            main.style.paddingTop = 12;    main.style.paddingRight = 12;
-            main.style.paddingBottom = 12; main.style.paddingLeft = 12;
-            main.style.color = new Color(0.863f, 0.863f, 0.902f);
-            main.style.fontSize = 14;
-            main.style.flexDirection = FlexDirection.Column;
-            main.style.alignItems = Align.Stretch;
+            main.style.maxHeight  = new Length(92, LengthUnit.Percent);
         }
 
         // ============================================================

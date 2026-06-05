@@ -9729,8 +9729,8 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 38c291de9b8f35449810564cc2e394d3, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::ProjectC.UI.Client.CharacterWindow
-  characterWindowUxml: {fileID: 0}
-  characterWindowUss: {fileID: 0}
+  characterWindowUxml: {fileID: 9197481963319205126, guid: 5b6cefe52dd49b141ba40a4bc8aab6d5, type: 3}
+  characterWindowUss: {fileID: 7433441132597879392, guid: 0152bc2f8c55a274ba15fbf4c4416511, type: 3}
   visibleOnStart: 0
 --- !u!114 &785754310
 MonoBehaviour:
@@ -9744,7 +9744,7 @@ MonoBehaviour:
   m_Script: {fileID: 19102, guid: 0000000000000000e000000000000000, type: 0}
   m_Name: 
   m_EditorClassIdentifier: UnityEngine.dll::UnityEngine.UIElements.UIDocument
-  m_PanelSettings: {fileID: 11400000, guid: d0d15554a479f5c4585863a4e544e5c1, type: 2}
+  m_PanelSettings: {fileID: 11400000, guid: e5027d1a8b910914cb228b7de7ee673c, type: 2}
   m_ParentUI: {fileID: 0}
   sourceAsset: {fileID: 9197481963319205126, guid: 5b6cefe52dd49b141ba40a4bc8aab6d5, type: 3}
   m_SortingOrder: 0
@@ -25309,6 +25309,7 @@ SceneRoots:
   m_ObjectHideFlags: 0
   m_Roots:
   - {fileID: 1614026678}
+  - {fileID: 785754311}
   - {fileID: 1151906023}
   - {fileID: 639769240}
   - {fileID: 267643487}
@@ -25327,4 +25328,3 @@ SceneRoots:
   - {fileID: 1622157772}
   - {fileID: 462870029}
   - {fileID: 124043120}
-  - {fileID: 785754311}

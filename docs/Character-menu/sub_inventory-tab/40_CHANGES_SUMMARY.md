@@ -594,20 +594,20 @@ public class ItemData : ScriptableObject
 
 ---
 
-### 2.6 `Assets/_Project/Scenes/BootstrapScene.unity`
+### 2.6 `BootstrapScene.unity`
 
-**Изменения через MCP:**
+**Изменения через MCP (Phases 2 + 4):**
 
 **A. Создан `[InventoryWheel]` GameObject:**
 ```yaml
 [InventoryWheel]  (root GO, без transform)
   ├── Transform
   ├── UIDocument
-  │     panelSettings: MarketPanelSettings.asset
+  │     panelSettings: InventoryPanelSettings.asset  ← ОТДЕЛЬНЫЙ (НЕ MarketPanelSettings)
   │     sourceAsset:    InventoryWheel.uxml
   └── InventoryUI
-        inventoryWheelUxml: null (fallback to Resources.Load)
-        inventoryWheelUss:  null (fallback to Resources.Load)
+        inventoryWheelUxml: InventoryWheel.uxml  ← сериализован через SerializedObject
+        inventoryWheelUss:  InventoryWheel.uss   ← сериализован через SerializedObject
         visibleOnStart: false
 ```
 

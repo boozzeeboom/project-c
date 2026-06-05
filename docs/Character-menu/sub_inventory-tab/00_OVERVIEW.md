@@ -105,7 +105,8 @@ InventoryUI (TAB-колесо) ⊂ CharacterWindow.tab-inventory ⊂ InventoryCl
 | 9 | `Assets/_Project/UI/Resources/UI/InventoryWheel.uxml` | 5.2 KB | Структура TAB-колеса |
 | 10 | `Assets/_Project/UI/Resources/UI/InventoryWheel.uss` | 8.7 KB | Стили (radial layout) |
 | 11 | `Assets/_Project/UI/Client/InventoryUI.cs` | 20 KB | UI Toolkit TAB-колесо (переписан с IMGUI) |
-| 12 | (24 .asset) | — | Тестовый датасет (8 типов × 3) |
+| 12 | `Assets/_Project/UI/Resources/UI/InventoryPanelSettings.asset` | 1.9 KB | **Отдельный PanelSettings** для `[InventoryWheel]` (Phase 7.5 fix) |
+| 13 | (24 .asset) | — | Тестовый датасет (8 типов × 3) |
 
 ### Изменено (5 файлов)
 | # | Файл | Diff |
@@ -173,3 +174,58 @@ InventoryUI (TAB-колесо) ⊂ CharacterWindow.tab-inventory ⊂ InventoryCl
 - `docs/gdd/GDD_11_Inventory_Items.md` — game design
 - `AGENTS.md` — hard rules проекта
 - `unity-v2-subsystem-migration` skill — методология v2-миграции
+
+---
+
+## 10. Визуальный фикс стилей (Phase 7.5 — 2026-06-05)
+
+**Симптом (от пользователя):** "tab выдает также без стилей только куски слов и кнопок".
+
+**Корневая причина:** привязки в сцене BootstrapScene неполные:
+- `UIDocument.panelSettings = MarketPanelSettings` (общий с MarketWindow) — не выделенный
+- `InventoryUI.inventoryWheelUxml = null` (только `Resources.Load` fallback)
+- `InventoryUI.inventoryWheelUss  = null` (только `Resources.Load` fallback)
+
+Это pitfall #26 (UnityDefaultRuntimeTheme) + pitfall #30 (Inspector-поля null) из `unity-mcp-orchestrator` skill.
+
+**Фикс (через MCP):**
+
+1. **Создан `InventoryPanelSettings.asset`** (отдельный, не общий с MarketWindow):
+   ```bash
+   python mcp_unity_client.py tool manage_ui '{
+     "action": "create_panel_settings",
+     "path": "Assets/_Project/UI/Resources/UI/InventoryPanelSettings.asset",
+     "scale_mode": "ScaleWithScreenSize",
+     "reference_resolution": {"width": 1200, "height": 800}
+   }'
+   ```
+
+2. **Сериализован UXML/USS в `[InventoryWheel]`** через SerializedObject:
+   ```csharp
+   var go = GameObject.Find("[InventoryWheel]");
+   var ui = go.GetComponent<ProjectC.UI.Client.InventoryUI>();
+   var so = new UnityEditor.SerializedObject(ui);
+   so.FindProperty("inventoryWheelUss").objectReferenceValue  = AssetDatabase.LoadAssetAtPath<StyleSheet>("Assets/_Project/UI/Resources/UI/InventoryWheel.uss");
+   so.FindProperty("inventoryWheelUxml").objectReferenceValue = AssetDatabase.LoadAssetAtPath<VisualTreeAsset>("Assets/_Project/UI/Resources/UI/InventoryWheel.uxml");
+   so.ApplyModifiedPropertiesWithoutUndo();
+   UnityEditor.EditorUtility.SetDirty(ui);
+   UnityEditor.SceneManagement.EditorSceneManager.MarkSceneDirty(go.scene);
+   UnityEditor.SceneManagement.EditorSceneManager.SaveScene(go.scene);
+   ```
+
+3. **Привязан `InventoryPanelSettings`** к `UIDocument.panelSettings` (аналогично через SerializedObject).
+
+**Финальное состояние `[InventoryWheel]`:**
+```
+panelSettings=InventoryPanelSettings
+sourceAsset=InventoryWheel
+uiUxml=InventoryWheel
+uiUss=InventoryWheel
+uiVisibleOnStart=False
+```
+
+**Compile state:** 0 errors.
+
+**Skill updated:** добавлены pitfalls #29 (dedicated PanelSettings per window) и #30 (always serialize UXML/USS via SerializedObject) в `unity-mcp-orchestrator` SKILL.md.
+
+**См. также:** `docs/Character-menu/refactor_log_2026-06-05.md` §1.2 (создание `CharacterPanelSettings`) — аналогичный фикс.

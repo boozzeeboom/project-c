@@ -1,5 +1,5 @@
 # Markets — Fixes History
-Хронология багов, диагнозов и фиксов рыночной подсистемы. Текущая версия (2026-06-05) — стабильная: полный цикл BUY/LOAD/UNLOAD/SELL работает + per-ship cargo cache (мгновенное переключение между кораблями без потери данных).
+Хронология багов, диагнозов и фиксов рыночной подсистемы. Текущая версия (2026-06-05) — стабильная: полный цикл BUY/LOAD/UNLOAD/SELL работает + per-ship cargo cache (мгновенное переключение между кораблями без потери данных) + контракты как 3-й таб `MarketWindow` (accept/complete/fail, награды, активные, таймеры, визуальное отличие Active vs Pending).
 
 ## 2026-06-05 — FIX: потеря cargo при переключении между кораблями на рынке
 
@@ -534,3 +534,252 @@ MarketZoneRegistry.LocalPlayerZone=null
 ```
 
 **См. также:** [KNOWN_ISSUES.md §13 RESOLVED](KNOWN_ISSUES.md#13-investigation-open-e-не-открывает-рынок-после-e-вне-зоны-intermittent).
+
+---
+
+## 2026-06-05 — C2-этап: контракты как 3-й таб рынка + 4 bug-фикса
+
+**Контекст:** после успешной миграции `Markets` v2 (commit `3395d8e`) и per-ship cargo cache (commit `3395d8e`) приоритетом стала миграция контрактов с v1-инфраструктуры (`ContractSystem.cs` + `ContractBoardUI.cs` UGUI + `ContractZone.cs` + `ContractZoneRegistry.cs`) на v2-архитектуру (`ContractServer` + `ContractClientState` + DTO). См. аудит `docs/Markets/MARKETS_V2_AUDIT_2026-06-05.md` (этап 1, C2).
+
+### Шаг 1 — коммит `первичная интеграция контрактов`: v2-архитектура
+
+Создана полная цепочка v2-контрактов:
+
+**Серверная сторона:**
+- `Assets/_Project/Trade/Scripts/Network/ContractServer.cs` (19 КБ) — `NetworkBehaviour`, RPC hub, ставится в `BootstrapScene` рядом с `MarketServer`. Методы: `RequestListRpc`, `RequestAcceptRpc`, `RequestCompleteRpc`, `RequestFailRpc`, `ReceiveContractSnapshotClientRpc` (server→owner), `ReceiveContractResultClientRpc`. `FixedUpdate` тикает таймеры активных контрактов + авто-fail по `TimerExpired`. `MaxActiveContractsPerPlayer=3` + rate limit `30 ops/min` (FIX F2).
+- `Assets/_Project/Trade/Scripts/Core/ContractWorld.cs` (28 КБ) — POCO singleton, бизнес-логика (`GetAvailableForLocation`, `GetActiveForPlayer`, `TryAccept`, `TryComplete`, `TryFail`, `HandleFailedContract`, `Tick`, `BuildSnapshot`). Хранит `_availableContracts: Dictionary<string, ContractData>`, `_locationContracts: Dictionary<string, List<string>>`, `_playerContracts: Dictionary<ulong, List<string>>`, `_playerDebts`. Реюз `IPlayerDataRepository` из `TradeWorld` (если есть) или `PlayerPrefsRepository`.
+- `Assets/_Project/Trade/Scripts/Core/ContractDebt.cs` (5.8 КБ) — POCO долга. `CurrentDebt`, `Level` (`None/Warning/Restricted/Hunted/Bounty/Headhunt`), `AddDebt`, `PayDebt`, `DecayRate`, `CanAcceptContracts` (false при `Level >= Restricted`).
+- `Assets/_Project/Trade/Scripts/Core/ContractWorldItemResolver.cs` (4.3 КБ) — мини-резолвер товаров, не зависит от `TradeDatabase` (есть `CreateWithDefaults` с 7 items).
+
+**Клиентская сторона:**
+- `Assets/_Project/Trade/Scripts/Client/ContractClientState.cs` (6.5 КБ) — singleton-проекция, аналог `MarketClientState`. `CurrentSnapshot`, `LastResult`, события `OnSnapshotUpdated`, `OnContractResult`. Convenience API: `RequestList`, `RequestAccept`, `RequestComplete`, `RequestFail` + `LocalizeResultCode(ContractResultCode)`.
+- `Assets/_Project/Trade/Scripts/Client/ContractBoardWindow.cs` (21.8 КБ) — UI Toolkit контроллер (временное отдельное окно, см. шаг 2 — удалено).
+- `Assets/_Project/Trade/Scripts/Client/ContractInteractor.cs` (4.5 КБ) — E-handler (временный, удалено в шаге 2).
+- `Assets/_Project/Trade/Resources/UI/ContractBoardWindow.uxml` + `.uss` (2.8+4.3 КБ) — UI Toolkit assets (удалено в шаге 2).
+
+**Сетевой слой:**
+- `Assets/_Project/Trade/Scripts/Dto/ContractDto.cs` (3.7 КБ) — `struct INetworkSerializable`, поля: `contractId, type, state, itemId, displayName, quantity, fromLocationId, toLocationId, reward, cargoValue, timeLimit, timeRemaining, isReceiptContract`.
+- `Assets/_Project/Trade/Scripts/Dto/ContractSnapshotDto.cs` (3.8 КБ) — `struct INetworkSerializable`, поля: `locationId, displayName, available[], active[], debtAmount, debtLevel, canAcceptContracts, marketTimeMultiplier, secondsUntilNextTick`.
+- `Assets/_Project/Trade/Scripts/Dto/ContractResultDto.cs` (3.7 КБ) — `struct INetworkSerializable`, поля: `code, contractId, success, message, reward, newCredits, newDebt, updatedContract: ContractDto?`.
+- `Assets/_Project/Trade/Scripts/Dto/ContractResultCode.cs` (3.1 КБ) — enum: `Ok, NotInZone, ContractNotFound, ContractNotPending, ContractNotActive, ContractNotAssigned, MaxActiveReached, TooMuchDebt, TimerExpired, WrongDestination, CargoMissing, WarehouseFull, ItemNotFound, RateLimited, InternalError`.
+
+**NetworkPlayer.cs** — добавлены 2 TargetRpc (вызываются сервером на owner'е):
+- `ReceiveContractSnapshotTargetRpc(ContractSnapshotDto)` — обновляет `ContractClientState.CurrentSnapshot`
+- `ReceiveContractResultTargetRpc(ContractResultDto)` — обновляет `LastResult`
+
+**NetworkManagerController.cs** — auto-spawn `[ContractClientState]` (паттерн FIX 2026-06-04 для `MarketClientState`):
+```csharp
+var go = new GameObject("[ContractClientState]");
+go.AddComponent<ProjectC.Trade.Client.ContractClientState>();
+```
+
+**Scene setup (MCP):**
+- Создан GO `[ContractServer]` в `BootstrapScene` с `NetworkObject` + `ContractServer` + опционально `TradeItemDatabase` в инспекторе.
+- Создан GO `[ContractBoardWindow]` в `BootstrapScene` с `UIDocument` (`MarketPanelSettings` + `ContractBoardWindow.uxml`) + `ContractBoardWindow` component.
+- Создан GO `[NPCAgent_Primium]` в `WorldScene_0_0` рядом с `MarketZone_Primium` (`SphereCollider` isTrigger r=5 + `ContractZone` с `locationId="primium"`).
+- (Позже в шаге 2 — оба UI/Zone GO удалены как дублирующая инфраструктура.)
+
+**Design notes:**
+- `docs/dev/CONTRACT_V2_MIGRATION.md` (36 КБ) — полная архитектура, файлы, риски, verification.
+- `docs/dev/CONTRACTS_AS_MARKET_TAB_REFACTOR.md` (28 КБ) — план рефакторинга UI в 3-й таб.
+
+### Шаг 2 — коммит `контракты отладка и работа`: рефакторинг + 4 bug-фикса
+
+После smoke-test'а пользователь пожаловался: **"меню контрактов сразу перекрывает стартовый UI (host\server)"** + **"новое UI контрактов может содержать прошлые баги что были исправлены в рынке"**. Решение: **контракты → 3-й таб** в `MarketWindow`. Один UI-стек, одни FIX'ы, `MarketZone` остаётся единственной зоной.
+
+#### 2.1 Рефакторинг: контракты в таб рынка
+
+**Удалено 6 файлов** (v2-дубликаты, см. шаг 1):
+- `ContractBoardWindow.cs` + .meta
+- `ContractInteractor.cs` + .meta
+- `ContractZone.cs` + .meta
+- `ContractZoneRegistry.cs` + .meta
+- `ContractBoardWindow.uxml` + .meta
+- `ContractBoardWindow.uss` + .meta
+
+**Удалено 2 GO из сцен** (через MCP):
+- `[ContractBoardWindow]` в `BootstrapScene`
+- `[NPCAgent_Primium]` в `WorldScene_0_0`
+
+**Осталось (серверная часть v2, не тронута):**
+- `ContractServer.cs`, `ContractWorld.cs`, `ContractWorldItemResolver.cs`, `ContractDebt.cs`, `ContractClientState.cs`
+- 4 DTO (`ContractDto`, `ContractSnapshotDto`, `ContractResultDto`, `ContractResultCode`)
+- RPC в `NetworkPlayer.cs`
+- `[ContractServer]` GO в `BootstrapScene` (нужен — единственный RPC hub)
+- `[ContractClientState]` auto-spawn в `NetworkManagerController`
+- Дизайн-ноты (CONTRACT_V2_MIGRATION + CONTRACTS_AS_MARKET_TAB_REFACTOR)
+
+**Legacy v1-стек** (оставлен как регресс-сетка, удалится в C1-cleanup):
+- `ContractSystem.cs` (838 строк), `ContractBoardUI.cs` (549 строк, UGUI), `ContractData.cs` (223 строки), `ContractTrigger.cs` (теперь — scene-marker для NPC-агента, вызывает `MarketInteractor.TryOpenMarket` вместо legacy UI), `PlayerTradeStorage` (storage игрока).
+
+**Modified файлы (7):**
+- `MarketWindow.uxml` — +1 таб `tab-contracts` + `contracts-section` с `ListView` + 3 кнопки (`accept-btn`/`complete-btn`/`fail-btn`).
+- `MarketWindow.uss` — +9 классов: 3 action-btn цвета (`.accept` зелёный, `.complete` синий, `.fail` красный) + 7 стилей для `.contract-row`/`.contract-type`/`.contract-item`/`.contract-reward`/`.contract-timer`/`.type-standard`/`.type-urgent`/`.type-receipt`/`.timer-warn`/`.timer-danger`/`.timer-ok`.
+- `MarketWindow.cs` — +260 строк:
+  - **Поля**: `_contractsList`, `_contractsSection`, `_acceptBtn`, `_completeBtn`, `_failBtn`, `_selectedContractItem`, `_contractsCache`, `IsShipSelectorVisible()`.
+  - **`EnsureBuilt`**: инициализация ListView (makeItem=`MakeContractRow`, bindItem=`BindContractRow`, selectionType=Single, selectionChanged) + кнопки + `tab-contracts` handler + **подписка на `ContractClientState`**.
+  - **`OnEnable`/`OnDisable`**: подписка/отписка от `ContractClientState.OnSnapshotUpdated`/`OnContractResult`.
+  - **`MakeContractRow`/`BindContractRow`**: 4 Label'а (type/item/reward/timer) с CSS-классами. Highlight selected.
+  - **`HandleContractSnapshot`**: фильтр available по `fromLocationId == currentLocationId` + `state == Pending` (защита), active без фильтра локации, фильтр `state == Active`. Combined list: active first, then available.
+  - **`HandleContractResult`**: message feedback, `IsVisible()` check.
+  - **`OnAcceptContractClicked`/`OnCompleteContractClicked`/`OnFailContractClicked`**: проверка `_selectedContractItem` + `state` + `ContractClientState.RequestXxx(contractId)`. Кнопка СДАТЬ требует чтобы игрок был в `toLocationId` (валидация на сервере).
+  - **`SwitchTab`**: 3 таба — `isMarket`/`isWarehouse`/`isContracts`. Sections + кнопки видимы только в своём табе. qty row виден только в РЫНОК.
+  - **Static helpers** (портированы из `ContractBoardWindow.cs`): `GetContractTypeDisplayName`, `GetContractTypeClass`, `GetContractTimeRemainingString`, `GetContractTimerClass`.
+- `MarketInteractor.cs` — +5 строк: после `RequestSubscribeMarket` вызывает `ContractClientState.RequestList(locationId)` (синхронизация таба "КОНТРАКТЫ" с текущей зоной).
+- `ContractServer.cs` — 5 замен `ContractZoneRegistry.Get` → `MarketZoneRegistry.Get`. Сигнатура `ValidateInZone(out ContractZone)` → `out MarketZone` (использует `MarketZone.IsPlayerInZone`).
+- `ContractTrigger.cs` — переписан: scene-marker, OnTriggerEnter/Exit обновляет `_nearbyPlayer`. По `C` → `MarketInteractor.TryOpenMarket()`. OnTriggerExit → `MarketWindow.Hide()`. DrawGizmosSelected для визуализации.
+- `NetworkManagerController.cs` — auto-spawn `[ContractClientState]` (без изменений от шага 1).
+
+#### 2.2 Bug #1: `ContractResultDto.NetworkSerialize` — `InvalidOperationException: Nullable object must have a value`
+
+**Симптом (юзерский репорт):**
+> "после того как открываю контракты и беру контракт: `InvalidOperationException: Nullable object must have a value. System.Nullable\`1[T].get_Value ()` ... `at Assets/_Project/Trade/Scripts/Dto/ContractResultDto.cs:64`"
+
+**Корневая причина:** NGO 2.x не сериализует `Nullable<T>` (`ContractDto? updatedContract`). Старая логика на reader-пути:
+```csharp
+bool hasContract = updatedContract.HasValue;  // default-инициализирован в null → false
+serializer.SerializeValue(ref hasContract);    // читаем из буфера: true
+if (hasContract) {
+    var c = updatedContract.Value;  // 💥 Value на null
+    c.NetworkSerialize(serializer);
+}
+```
+На reader-пути `updatedContract` уже дефолт-инициализирован в `null` NGO'ом, и попытка `.Value` бросает `InvalidOperationException`.
+
+**Фикс** (явно разделил writer/reader ветки):
+```csharp
+if (serializer.IsWriter) {
+    bool hasContract = updatedContract.HasValue;  // OK — значение есть
+    serializer.SerializeValue(ref hasContract);
+    if (hasContract) { var c = updatedContract.Value; c.NetworkSerialize(serializer); }
+} else {
+    bool hasContract = false;
+    serializer.SerializeValue(ref hasContract);
+    if (hasContract) {
+        var c = default(ContractDto);  // локальная переменная, не .Value!
+        c.NetworkSerialize(serializer);
+        updatedContract = c;  // присваиваем в конце
+    } else {
+        updatedContract = null;
+    }
+}
+```
+
+**Smoke test:** `RequestListRpc` → snapshot доходит → UI обновляется. RPC без exception.
+
+#### 2.3 Bug #2: награда не отображается в UI
+
+**Симптом (юзерский репорт):**
+> "когда сдается - нужно поправить выдачу наград"
+
+**Корневая причина:** `HandleContractResult` обновлял **только** `_messageLabel.text` после RPC. Сервер начислял reward в `_repository.SetCredits(clientId, current + contract.reward)` (`ContractWorld.TryComplete:417`), возвращал `result.newCredits` в DTO, **но** клиент игнорировал это поле. `_creditsLabel` оставался прежним, `MarketClientState._currentSnapshot.credits` тоже.
+
+**Фикс (2 места):**
+```csharp
+private void HandleContractResult(ContractResultDto result) {
+    // ...
+    if (_creditsLabel != null && result.newCredits > 0f)
+        _creditsLabel.text = $"Кредиты: {result.newCredits:F0} CR";
+    
+    // Синхронизировать MarketClientState snapshot
+    if (result.IsSuccess && _state != null && _state.CurrentSnapshot.HasValue)
+        _state.RequestSubscribeMarket(_state.CurrentSnapshot.Value.locationId);
+    // ...
+}
+```
+
+**Smoke test:** "награда выдается" (подтверждено юзером). Кредиты видны сразу в `_creditsLabel`, при следующем snapshot — в `MarketClientState`.
+
+#### 2.4 Bug #3: message не показывается вне таба КОНТРАКТЫ
+
+**Симптом (юзерский репорт):**
+> "когда беру контракт до сих пор в UI нигде не отмечается"
+
+**Корневая причина:** `HandleContractResult` имел `if (!IsVisible() || _activeTab != "contracts") return;` — игрок жмёт ВЗЯТЬ в табе РЫНОК, RPC доходит, message игнорируется.
+
+**Фикс:**
+```csharp
+- if (!IsVisible() || _activeTab != "contracts") return;
++ if (!IsVisible()) return;  // message показываем в любом табе
+```
+
+#### 2.5 Bug #4: взятый контракт визуально не отличается от pending
+
+**Симптом (юзерский репорт):**
+> "когда берем контракт до сих пор в UI нигде не отмечается что контракт взят. его нужно может красить в зеленый и писать что взят или он должен сразу при взятии скрываться из списка контрактов чтобы не путать"
+
+**Корневая причина:** после accept сервер переводит контракт в `state=Active`, но визуально строка в `ListView` выглядела так же (тот же текст, тот же фон, то же reward). Игрок не понимал, что c1 уже "его".
+
+**Фикс (3 уровня):**
+
+**1. Защита от дублей в фильтре** (`HandleContractSnapshot`):
+```csharp
+// Available: фильтр по state == Pending И fromLocationId == currentLocationId
+if (c.state != (byte)ContractState.Pending) continue;
+if (!string.Equals(c.fromLocationId, currentLocationId, ...)) continue;
+
+// Active: фильтр по state == Active (защита)
+if (activeAll[i].state == (byte)ContractState.Active) activeList.Add(...);
+```
+
+**2. Визуальное отличие Active в `BindContractRow`:**
+```csharp
+bool isActive = c.state == (byte)ContractState.Active;
+if (isActive) row.AddToClassList("contract-row-active");
+typeLabel.text = isActive ? $"{typeName} [ВЗЯТ]" : typeName;
+rewardLabel.text = isActive ? "" : $"{c.reward:F0} CR";  // reward не показываем
+```
+
+**3. CSS** (`MarketWindow.uss`):
+```css
+.contract-row-active {
+    background-color: rgba(80, 200, 100, 0.25);
+    border-left-width: 3px;
+    border-left-color: rgb(80, 220, 100);
+}
+.contract-row-just-taken {  /* pulse 1.5с после accept */
+    background-color: rgba(120, 255, 140, 0.5);
+    border-left-width: 3px;
+    border-left-color: rgb(160, 255, 180);
+    transition-property: background-color, border-left-color;
+    transition-duration: 1.5s;
+}
+```
+
+**4. Optimistic update + pulse** (`OnAcceptContractClicked`):
+```csharp
+// Сразу после нажатия ВЗЯТЬ:
+var cLocal = c;
+cLocal.state = (byte)ContractState.Active;
+_contractsCache[_selectedContractItem] = cLocal;
+_contractsList?.Rebuild();  // мгновенная перерисовка
+StartCoroutine(JustTakenPulse(_selectedContractItem));
+// Потом — RPC
+contractState.RequestAccept(c.contractId);
+
+private IEnumerator JustTakenPulse(int rowIndex) {
+    yield return null;  // ждём frame — Rebuild() асинхронен
+    var row = _contractsList.ElementAt(rowIndex) as VisualElement;
+    if (row == null) yield break;
+    row.AddToClassList("contract-row-just-taken");
+    yield return new WaitForSeconds(1.6f);
+    if (row != null) row.RemoveFromClassList("contract-row-just-taken");
+}
+```
+
+**Smoke test:** "контракты работают" (подтверждено юзером). Строка зеленеет мгновенно, через ~1.5с pulse гаснет, остаётся зелёная active-подсветка.
+
+### Открыто (после C2-этапа)
+
+| # | Issue | Приоритет | Блокер? |
+|---|-------|-----------|---------|
+| 17 | Auto-complete при входе в toLocationId (TODO) | Low | No |
+| 18 | Receipt контракт cargo (TODO в `ContractWorld.TryAccept:357`) | Medium | No (v1 был тот же) |
+| 19 | HUD кредитов за пределами `MarketWindow` (`HUDManager.cs` не подписан) | Low | No (out of scope) |
+| 20 | C1-cleanup: удалить 16 legacy файлов (`ContractSystem`, `ContractBoardUI`, `ContractData`, `ContractTrigger`, `PlayerTradeStorage`, `TradeMarketServer`, `TradeUI`, `PlayerDataStore`, `LocationMarket`, `MarketItem`, `MarketEvent` старый, `NPCTrader` старый, `AutoTradeZone`, `TradeSetup`, `TradeSceneSetup`, `TradeDebugTest`, `TradeDebugTools`) | Medium | No |
+| 21 | C5-cleanup: удалить 6 legacy RPC в `NetworkPlayer.cs:725-815` (`ContractRequestServerRpc`/`ContractAcceptServerRpc`/`ContractCompleteServerRpc`/`ContractFailServerRpc`/`ContractListClientRpc`/`ContractResultClientRpc`) | Medium | No |
+| 22 | C3-cleanup: 4 legacy `Market_*.asset` (старые `LocationMarket` SO) в `Assets/_Project/Trade/Data/Markets/` | Low | No |
+| 23 | C7-cleanup: `ProjectC_1.unity` (тестовая сцена) | Low | No |
+| 24 | C8-cleanup: 3 файла `_Test*.uss` | Low | No |
+
+**См. также:** [KNOWN_ISSUES.md §4 RESOLVED](KNOWN_ISSUES.md#4-open-resolved-2026-06-05-контракты-не-мигрированы-на-v2-архитектуру--контракты-как-3-й-таб-рынка).

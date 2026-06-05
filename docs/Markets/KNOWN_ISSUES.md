@@ -1,6 +1,6 @@
 # Markets — Known Issues
 
-Мелкие недочёты, оставленные на точечную правку. **Не блокеры** — полный цикл BUY/LOAD/UNLOAD/SELL работает + per-ship cargo cache. Подтверждено пользователем 2026-06-05: cargo не теряется при переключении между кораблями, multi-ship сценарий стабилен.
+Мелкие недочёты, оставленные на точечную правку. **Не блокеры** — полный цикл BUY/LOAD/UNLOAD/SELL работает + per-ship cargo cache + контракты (accept/complete/fail, награды, активные, таймеры). Подтверждено пользователем 2026-06-05: cargo не теряется при переключении между кораблями, мульти-корабельный сценарий стабилен, контракты работают через 3-й таб `MarketWindow` (`tab-contracts`).
 
 ---
 
@@ -61,18 +61,47 @@ if (_mainContainer != null) {
 
 ---
 
-## 4. Контракты (ContractSystem) не мигрированы
+## 4. ~~OPEN~~ RESOLVED 2026-06-05: контракты не мигрированы на v2-архитектуру + контракты как 3-й таб рынка
 
-**Где:** `Assets/_Project/Trade/Scripts/ContractSystem.cs:720` (ссылается на `TradeMarketServer.Instance`), `ContractBoardUI.cs:462`, `ContractData.cs:223`, `ContractTrigger.cs:109`.
+**Что было:** Контракты (`ContractSystem.cs:720`, `ContractBoardUI.cs:462`, `ContractData.cs:223`, `ContractTrigger.cs:109`) работали только через старую инфраструктуру. UI в `ContractBoardUI` — старый (UGUI, не UI Toolkit). Дублировал логику рынка, не использовал FIX'ы от 2026-06-04 (pickingMode=Ignore, layout-fallback и т.д.) — в итоге перекрывал стартовый Host/Server UI.
 
-**Симптом:** Контрактная система работает только через старую инфраструктуру. UI в `ContractBoardUI` — старый (UGUI, не UI Toolkit).
+**Что сделано в 2 коммитах** (см. [FIXES_HISTORY.md → "2026-06-05 — C2-этап: контракты как 3-й таб рынка"](FIXES_HISTORY.md)):
 
-**План:** Отдельная большая сессия (как `INTEGRATION_SHIPS_TO_WORLD_0_0.md` для кораблей). Мигрировать на:
-- `MarketServer.RequestXxxRpc` (новые) для операций
-- `MarketClientState` + UI Toolkit для UI
-- `MarketZone.ContractBoard` как scene-placed триггер
+**Коммит 1 — `первичная интеграция контрактов`** (миграция архитектуры):
+- Создана v2-цепочка: `ContractServer` (RPC hub, `[ContractServer]` GO в `BootstrapScene`) + `ContractWorld` (POCO singleton) + `ContractDebt` (POCO долг) + `ContractClientState` (клиентская проекция) + 4 DTO (`ContractDto`, `ContractSnapshotDto`, `ContractResultDto`, `ContractResultCode`) + `[ContractClientState]` auto-spawn в `NetworkManagerController` (паттерн FIX 2026-06-04) + 2 RPC метода в `NetworkPlayer.cs` (`ReceiveContractSnapshotTargetRpc`, `ReceiveContractResultTargetRpc`).
+- Legacy v1-стек (`ContractSystem.cs`, `ContractBoardUI.cs`, `ContractData.cs`, `ContractTrigger.cs`, `PlayerTradeStorage`) оставлен как регресс-сетка (помечен к удалению в C1-cleanup).
 
-**Приоритет:** Low-Medium. Не блокирует Stage 2.5 (контракты не критичны для визуального прототипа).
+**Коммит 2 — `контракты отладка и работа`** (рефакторинг + 4 фикса):
+- **Удалено 6 файлов** (v2-дубликаты): `ContractBoardWindow.cs`, `ContractInteractor.cs`, `ContractZone.cs`, `ContractZoneRegistry.cs`, `ContractBoardWindow.uxml`, `ContractBoardWindow.uss`.
+- **Удалено 2 GO из сцен**: `[ContractBoardWindow]` в `BootstrapScene`, `[NPCAgent_Primium]` в `WorldScene_0_0`.
+- **Контракты → 3-й таб** в `MarketWindow` (`tab-market` / `tab-warehouse` / `tab-contracts`). Один UI-стек, одни FIX'ы (pickingMode, layout-fallback), `MarketZone` остаётся единственной зоной.
+- **`MarketWindow.cs`** — +260 строк: ListView init, handlers, row factory/binder, подписки на `ContractClientState`, static helpers (портированы из `ContractBoardWindow`).
+- **`MarketWindow.uxml`** — +1 таб, +`contracts-section`, +3 кнопки (ВЗЯТЬ/СДАТЬ/ПРОВАЛИТЬ).
+- **`MarketWindow.uss`** — 9 новых классов: 3 action-btn цвета + 7 стилей для `.contract-row`/`.type-*`/`.timer-*`.
+- **`ContractServer.cs`** — 5 замен `ContractZoneRegistry.Get` → `MarketZoneRegistry.Get` (использует `MarketZone.IsPlayerInZone`).
+- **`ContractTrigger.cs`** — переписан: вызывает `MarketInteractor.TryOpenMarket` (вместо `ContractBoardWindow`).
+- **`MarketInteractor.cs`** — +5 строк: вызов `ContractClientState.RequestList(locationId)` при открытии (синхронизация таба).
+- **Дизайн-нота:** `docs/dev/CONTRACTS_AS_MARKET_TAB_REFACTOR.md` (28 КБ) + `docs/dev/CONTRACT_V2_MIGRATION.md` (36 КБ).
+
+**4 bug-фикса** (та же сессия):
+1. **`ContractResultDto.NetworkSerialize`**: NGO 2.x не сериализует `Nullable<ContractDto>` — на reader-пути `updatedContract.Value` падал. Фикс: явно разделил writer/reader ветки (writer использует `.Value`, reader — локальную переменную).
+2. **`HandleContractResult` не обновлял `_creditsLabel`**: кредиты начислялись на сервере, но UI их не показывал. Фикс: всегда обновлять `_creditsLabel.text = $"Кредиты: {result.newCredits:F0} CR"` + дёргать `MarketClientState.RequestSubscribeMarket` для синхронизации snapshot'а.
+3. **`HandleContractResult` не показывал message вне таба КОНТРАКТЫ**: игрок жал ВЗЯТЬ в табе РЫНОК и не видел feedback. Фикс: показывать message во всех табах.
+4. **Взятый контракт не отличался визуально от pending**: после accept сервер переводит в Active, но строка выглядела так же. Фикс: 3 уровня:
+   - Фильтр `state == Pending` для available + `state == Active` для active (защита от дублей).
+   - CSS `.contract-row-active` — зелёный фон + левая граница.
+   - type-label = `"[Стандарт] [ВЗЯТ]"` + reward-label пуст.
+   - **Optimistic update** в `OnAcceptContractClicked`: мгновенно `c.state = Active` в локальном кэше + `Rebuild()`. Строка зеленеет до прихода RPC.
+   - **Pulse-эффект** `.contract-row-just-taken` (CSS transition 1.5с) — ярко-зелёная вспышка при нажатии ВЗЯТЬ.
+
+**Что не сделано** (открыто):
+- Auto-complete при входе в toLocationId (TODO из прошлой сессии) — игрок должен сам жать СДАТЬ.
+- Receipt контракт cargo — TODO в `ContractWorld.TryAccept:357` (не кладёт груз автоматически).
+- HUD кредитов за пределами `MarketWindow` — `HUDManager.cs` не подписан на `MarketClientState`. Вне scope C2.
+- C1-cleanup (удалить legacy 16 файлов включая `ContractSystem`, `ContractBoardUI`, `ContractData`, `ContractTrigger`, `PlayerTradeStorage`, `TradeMarketServer`, ...).
+- C5-cleanup (удалить 6 legacy RPC в `NetworkPlayer.cs:725-815`).
+
+**Приоритет:** RESOLVED 2026-06-05. Контракты работают: accept/complete/fail, награды, активные контракты, таймеры (через `FixedUpdate` в `ContractServer`), визуальное отличие Active vs Pending.
 
 ---
 
@@ -246,7 +275,7 @@ if (_mainContainer != null) {
 | 1 | Diagnostic логи | Low | No |
 | 2 | Layout w=0 h=0 | Low | No |
 | 3 | Старая архитектура не удалена | Medium | No |
-| 4 | Контракты не мигрированы | Low-Medium | No |
+|| 4 | ~~Контракты не мигрированы~~ RESOLVED 2026-06-05 (C2-этап: миграция + 3-й таб рынка + 4 bug-фикса) | — | No |
 | 5 | ServerFileRepository stub | P1 | No (только host) |
 | 6 | RateLimited не возвращается | Low | No |
 | 7 | Reputation discount | Stage 5+ | No |

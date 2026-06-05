@@ -9,33 +9,26 @@
 
 ## Известные баги (Phase 7)
 
-### 🟡 MEDIUM: NetworkChestContainer использует СТАРЫЙ NetworkInventory
+### ✅ РЕШЕНО (R3-005, 2026-06-05): NetworkChestContainer мигрирован на v2
 
-**Симптом:** Открытие сундука может не работать или работать нестабильно.
+**Было:**
+- `NetworkChestContainer.RequestOpenChestServerRpc` использовал `playerObject.GetComponent<NetworkInventory>()` (старый компонент)
+- NetworkInventory **НЕ отправлял** snapshot в `InventoryClientState` → UI не обновлялся
+- Также: `clientId = NetworkManager.Singleton.LocalClientId` (на dedicated server это ID хоста, не того кто открыл)
+- И: `InvokePermission` не задан (deprecated API warning)
 
-**Причина:** `Assets/_Project/Scripts/World/Chest/NetworkChestContainer.cs:224`:
-```csharp
-var networkInventory = playerObject.GetComponent<NetworkInventory>();
-if (networkInventory != null) {
-    foreach (var item in lootItems) {
-        int itemId = NetworkInventory.GetItemId(item);
-        networkInventory.AddItem(itemId, item.itemType);
-    }
-}
-```
+**Стало:**
+- `RequestOpenChestServerRpc(RpcParams rpcParams = default)` с `[Rpc(SendTo.Server, InvokePermission = RpcInvokePermission.Server)]`
+- `clientId = rpcParams.Receive.SenderClientId` (правильный, кто реально отправил)
+- Сначала пытается `InventoryServer.Instance?.AddItem(clientId, itemId, itemType)` (v2)
+- Fallback на `NetworkInventory` (legacy safety net)
+- `Console: [NetworkChestContainer] v2 AddItem: itemId=N, type=..., ok=True` — для дебага
 
-Это вызывает **старый** `NetworkInventory` (который НЕ отправляет snapshot в `InventoryClientState`). UI не обновится.
+**Файлы:**
+- `Assets/_Project/Scripts/World/Chest/NetworkChestContainer.cs` (строки 170-265)
+- `docs/Character-menu/sub_inventory-tab/70_CHEST_PICKUP_TESTS.md` — manual tests
 
-**Workaround:** Phase 8 — мигрировать `NetworkChestContainer` на новый `InventoryServer.AddItem(clientId, itemId, type)`.
-
-**Файлы для Phase 8:**
-- `Assets/_Project/Scripts/World/Chest/NetworkChestContainer.cs` (line 224-234)
-- Возможно: добавить helper в `InventoryServer`: `AddItemFromChest(clientId, itemId, type)` — server-only
-
-**Проверка сейчас:**
-- Открой сундук в Play mode
-- Если в TAB-колесе / P-табе появились предметы — OK
-- Если нет — Phase 8 fix
+**Verification:** тестовые сундуки + pickup в WorldScene_0_0 @ (40000, 2512, 40000), 3 chest + 6 pickup.
 
 ---
 

@@ -1,0 +1,23 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 5031c565350a25b44b51d88c26b55038, type: 3}
+  m_Name: LootTable_TestCommon
+  m_EditorClassIdentifier: Assembly-CSharp::ProjectC.Items.LootTable
+  entries:
+  - item: {fileID: 11400000, guid: e1fc2ba90d517ef4b8fe8f61a02443f2, type: 2}
+    chance: 0.7
+    minCount: 1
+    maxCount: 2
+  guaranteedItems:
+  - {fileID: 11400000, guid: 8f1ea51bedeaf3a4086cba814b749401, type: 2}
+  - {fileID: 11400000, guid: a625f3d800583e34f8e3d12f8bc54ce8, type: 2}
+  - {fileID: 11400000, guid: f252f3e9d8a70014ba1332acd99ae06e, type: 2}

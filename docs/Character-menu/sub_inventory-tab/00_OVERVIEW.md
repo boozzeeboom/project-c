@@ -107,19 +107,28 @@ InventoryUI (TAB-колесо) ⊂ CharacterWindow.tab-inventory ⊂ InventoryCl
 | 11 | `Assets/_Project/UI/Client/InventoryUI.cs` | 20 KB | UI Toolkit TAB-колесо (переписан с IMGUI) |
 | 12 | `Assets/_Project/UI/Resources/UI/InventoryPanelSettings.asset` | 1.9 KB | **Отдельный PanelSettings** для `[InventoryWheel]` (Phase 7.5 fix) |
 | 13 | (24 .asset) | — | Тестовый датасет (8 типов × 3) |
+| 14 | `Assets/_Project/Resources/Items/LootTable_TestCommon.asset` | 0.6 KB | **LootTable** для тестовых сундуков (R3-005) |
+| 15 | `Assets/_Project/Prefabs/PickupItem_Test.prefab` | 1.4 KB | **Pickup prefab** с NetworkObject + Visual (R3-005) |
+| 16 | `Assets/_Project/Prefabs/NetworkChestContainer_Test.prefab` | 1.6 KB | **Chest prefab** с NetworkObject + Visual + LootTable ref (R3-005) |
 
-### Изменено (5 файлов)
+### Изменено (7 файлов)
 | # | Файл | Diff |
 |---|---|---|
-| 1 | `NetworkManagerController.cs` | +30 строк: `CreateInventoryClientState()` |
-| 2 | `NetworkPlayer.cs` | +30 строк: 2 TargetRpc; `SpawnInventory()` — no-op (legacy `_inventory` = null) |
-| 3 | `PickupItem.cs` | +50 строк: `Collect()` → `RequestPickup` через `InventoryClientState` + подписка на `OnInventoryResult` |
-| 4 | `CharacterWindow.cs` | ~80 строк: `using` + подписка + `RefreshInventoryCache` (v2 source) + handlers |
-| 5 | `ItemType.cs` | +10 строк: `ItemData` + поля `maxStack`, `weightKg` |
+| 1 | `Assets/_Project/Scripts/Core/NetworkManagerController.cs` | +30 строк: `CreateInventoryClientState()` |
+| 2 | `Assets/_Project/Scripts/Player/NetworkPlayer.cs` | +30 строк: 2 TargetRpc; `SpawnInventory()` — no-op (legacy `_inventory` = null) |
+| 3 | `Assets/_Project/Scripts/World/Chest/NetworkChestContainer.cs` | **R3-005:** +60 строк — миграция на `InventoryServer.AddItem` (v2), `InvokePermission=Server`, `clientId` из `rpcParams.Receive.SenderClientId` |
+| 4 | `Assets/_Project/Scripts/Core/PickupItem.cs` | +50 строк: `Collect()` → `RequestPickup` через `InventoryClientState` + подписка на `OnInventoryResult` |
+| 5 | `Assets/_Project/Scripts/UI/Client/CharacterWindow.cs` | ~80 строк: `using` + подписка + `RefreshInventoryCache` (v2 source) + handlers |
+| 6 | `Assets/_Project/Scripts/Core/ItemType.cs` | +10 строк: `ItemData` + поля `maxStack`, `weightKg` |
+| 7 | `Assets/_Project/Scenes/World/WorldScene_0_0.unity` | **R3-005:** +9 GO (3 chest + 6 pickup) @ (40000, 2512, 40000) |
 
 ### Сцена (BootstrapScene)
-- `[InventoryWheel]` GO: UIDocument (PanelSettings=MarketPanelSettings, sourceAsset=InventoryWheel.uxml) + InventoryUI
+- `[InventoryWheel]` GO: UIDocument (PanelSettings=InventoryPanelSettings, sourceAsset=InventoryWheel.uxml) + InventoryUI
 - `[InventoryServer]` GO: NetworkObject + InventoryServer
+
+### Сцена (WorldScene_0_0) — R3-005
+- 3 сундука (Chest_Main, Chest_North, Chest_East) с `LootTable_TestCommon`
+- 6 Pickup'ов (Pickup_Res_1..3, Pickup_Food_1..2, Pickup_Fuel_1) в круге радиуса 10m @ (40000, 2512, 40000)
 
 ---
 
@@ -145,7 +154,7 @@ InventoryUI (TAB-колесо) ⊂ CharacterWindow.tab-inventory ⊂ InventoryCl
 | InventoryUI (TAB-колесо, UI Toolkit) | ✅ Готово, sublist, hover/select |
 | CharacterWindow.tab-inventory | ✅ Готово, подписка на ClientState |
 | PickupItem → RequestPickup | ✅ Готово, server confirmation |
-| NetworkChestContainer → InventoryServer.AddItem | ⚠️ ЧАСТИЧНО: пока использует старый `NetworkInventory` (TODO Phase 8) |
+| NetworkChestContainer → InventoryServer.AddItem | ✅ **РЕШЕНО (R3-005)** | v2 migration + InvokePermission + правильный clientId |
 | Multi-client sync | ⚠️ НЕ проверено (требует ParrelSync) |
 | Stackable inventory (qty > 1) | ❌ TODO (сейчас 1 unit = 1 itemId) |
 | Drop в мир (SpawnPickupItem) | ❌ TODO (TryDrop → "InternalError") |

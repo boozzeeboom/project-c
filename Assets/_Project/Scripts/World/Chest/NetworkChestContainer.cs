@@ -170,11 +170,11 @@ namespace ProjectC.World.Chest
         /// ServerRpc: Player requests to open the chest.
         /// Server validates distance, generates loot, adds to inventory.
         /// </summary>
-        [Rpc(SendTo.Server)]
-        private void RequestOpenChestServerRpc()
+        [Rpc(SendTo.Server, InvokePermission = RpcInvokePermission.Server)]
+        private void RequestOpenChestServerRpc(RpcParams rpcParams = default)
         {
             if (debugMode)
-                Debug.Log($"[NetworkChestContainer] RequestOpenChestServerRpc received from client");
+                Debug.Log($"[NetworkChestContainer] RequestOpenChestServerRpc received from client {rpcParams.Receive.SenderClientId}");
 
             // Already opened check
             if (_isOpen.Value)
@@ -184,8 +184,8 @@ namespace ProjectC.World.Chest
                 return;
             }
 
-            // Get the client who requested (new NGO API)
-            ulong clientId = NetworkManager.Singleton.LocalClientId;
+            // Get the client who requested (правильный clientId из RPC params, НЕ LocalClientId)
+            ulong clientId = rpcParams.Receive.SenderClientId;
 
             // Find the player object
             var networkManager = NetworkManager.Singleton;
@@ -206,7 +206,7 @@ namespace ProjectC.World.Chest
             }
 
             float dist = Vector3.Distance(playerObject.transform.position, transform.position);
-            
+
             // Distance validation (anti-cheat)
             if (dist > openRadius + 2f) // 2m tolerance
             {
@@ -216,26 +216,51 @@ namespace ProjectC.World.Chest
 
             // Generate loot from LootTable
             var lootItems = GenerateLoot();
-            
-            if (debugMode)
-                Debug.Log($"[NetworkChestContainer] Generated {lootItems.Count} loot items");
 
-            // Add items to player's NetworkInventory
-            var networkInventory = playerObject.GetComponent<NetworkInventory>();
-            if (networkInventory != null)
+            if (debugMode)
+                Debug.Log($"[NetworkChestContainer] Generated {lootItems.Count} loot items for client {clientId}");
+
+            // R3-005 (INVENTORY_V2_REFACTOR.md Phase 8): use new InventoryServer (v2) when available,
+            // fall back to legacy NetworkInventory for safety.
+            bool addedToV2 = false;
+            var inventoryServer = ProjectC.Items.Network.InventoryServer.Instance;
+            if (inventoryServer != null)
             {
                 foreach (var item in lootItems)
                 {
-                    int itemId = NetworkInventory.GetItemId(item);
-                    networkInventory.AddItem(itemId, item.itemType);
+                    int itemId = ProjectC.Items.InventoryWorld.Instance != null
+                        ? ProjectC.Items.InventoryWorld.Instance.GetOrRegisterItemId(item)
+                        : -1;
+                    if (itemId < 0)
+                    {
+                        Debug.LogWarning($"[NetworkChestContainer] InventoryWorld has no id for {item.name} — skipping");
+                        continue;
+                    }
+                    bool ok = inventoryServer.AddItem(clientId, itemId, item.itemType);
+                    if (debugMode)
+                        Debug.Log($"[NetworkChestContainer] v2 AddItem: itemId={itemId}, type={item.itemType}, ok={ok}");
                 }
-                
-                Debug.Log($"[NetworkChestContainer] Added {lootItems.Count} items to player {clientId}");
+                addedToV2 = true;
             }
             else
             {
-                if (debugMode)
-                    Debug.LogWarning("[NetworkChestContainer] NetworkInventory not found on player!");
+                // Legacy fallback: write to old NetworkInventory (которое сейчас нигде не слушает InventoryClientState — TODO cleanup)
+                var networkInventory = playerObject.GetComponent<NetworkInventory>();
+                if (networkInventory != null)
+                {
+                    foreach (var item in lootItems)
+                    {
+                        int itemId = NetworkInventory.GetItemId(item);
+                        networkInventory.AddItem(itemId, item.itemType);
+                    }
+                    if (debugMode)
+                        Debug.LogWarning("[NetworkChestContainer] InventoryServer missing — used legacy NetworkInventory. UI may not update.");
+                }
+                else
+                {
+                    if (debugMode)
+                        Debug.LogWarning("[NetworkChestContainer] No inventory system on player (neither v2 nor legacy)!");
+                }
             }
 
             // Set open state (server authoritative)

@@ -14,6 +14,8 @@ git add Assets/_Project/Items/ \
         Assets/_Project/UI/Resources/UI/InventoryWheel.uss \
         Assets/_Project/UI/Resources/UI/InventoryWheel.uxml.meta \
         Assets/_Project/UI/Resources/UI/InventoryWheel.uss.meta \
+        Assets/_Project/UI/Resources/UI/InventoryPanelSettings.asset \
+        Assets/_Project/UI/Resources/UI/InventoryPanelSettings.asset.meta \
         Assets/_Project/UI/Client/InventoryUI.cs \
         Assets/_Project/UI/Client/InventoryUI.cs.meta \
         Assets/_Project/Scripts/Core/NetworkManagerController.cs \
@@ -24,6 +26,13 @@ git add Assets/_Project/Items/ \
         Assets/_Project/Scenes/BootstrapScene.unity \
         Assets/_Project/Resources/Items/Item_*.asset \
         Assets/_Project/Resources/Items/Item_*.asset.meta \
+        Assets/_Project/Resources/Items/LootTable_TestCommon.asset \
+        Assets/_Project/Resources/Items/LootTable_TestCommon.asset.meta \
+        Assets/_Project/Prefabs/PickupItem_Test.prefab \
+        Assets/_Project/Prefabs/PickupItem_Test.prefab.meta \
+        Assets/_Project/Prefabs/NetworkChestContainer_Test.prefab \
+        Assets/_Project/Prefabs/NetworkChestContainer_Test.prefab.meta \
+        Assets/_Project/Scenes/World/WorldScene_0_0.unity \
         docs/dev/INVENTORY_V2_REFACTOR.md \
         docs/Character-menu/sub_inventory-tab/
 
@@ -37,7 +46,7 @@ git commit -F docs/Character-menu/sub_inventory-tab/COMMIT_MESSAGE.txt
 ## Commit message (long form)
 
 ```
-inventory v2 refactor: server-authoritative InventoryClientState + TAB/P-tab UI
+inventory v2 refactor: server-authoritative InventoryClientState + TAB/P-tab UI + chest/pickup migration
 
 === Новый код (server-authoritative v2-архитектура, по образцу ContractClientState) ===
 
@@ -69,6 +78,24 @@ Editor (Assets/_Project/Items/Editor/):
                                   • 8 sectors (Resources, Equipment, Food, Fuel, Antigrav, Meziy, Medical, Tech)
                                   • Sublist ListView с предметами выбранного типа
                                   • Tab handler (InputAction "<Keyboard>/tab")
++ InventoryPanelSettings.asset — ОТДЕЛЬНЫЙ PanelSettings (Phase 7.5 fix, не общий с MarketWindow)
+
+=== R3-005: Chest + Pickup полностью на v2 ===
+
+M Assets/_Project/Scripts/World/Chest/NetworkChestContainer.cs:
+  • RequestOpenChestServerRpc(RpcParams rpcParams = default) + [Rpc(SendTo.Server, InvokePermission = RpcInvokePermission.Server)]
+  • clientId = rpcParams.Receive.SenderClientId (НЕ LocalClientId — было wrong on dedicated server)
+  • Сначала InventoryServer.Instance?.AddItem(clientId, itemId, itemType) — v2 путь
+  • Fallback на NetworkInventory (legacy safety net)
+  • Debug.Log v2 AddItem — для verify в Console
+
++ Assets/_Project/Resources/Items/LootTable_TestCommon.asset — LootTable (3 guaranteed + 1 entry)
++ Assets/_Project/Prefabs/PickupItem_Test.prefab — Pickup prefab (NetworkObject + BoxCollider trigger + Visual Cube)
++ Assets/_Project/Prefabs/NetworkChestContainer_Test.prefab — Chest prefab (NetworkObject + BoxCollider trigger + Visual Cube + LootTable ref)
+
+M Assets/_Project/Scenes/World/WorldScene_0_0.unity:
+  • +3 сундука (Chest_Main, Chest_North, Chest_East) в координатах (40000, 2512, 40000) ± 10m
+  • +6 pickup'ов (3 Res, 2 Food, 1 Fuel) в том же центре, разброс ± 10m
 
 === P-таб "Инвентарь" в CharacterWindow подключён к InventoryClientState ===
 
@@ -103,6 +130,8 @@ M Assets/_Project/Scripts/Core/ItemType.cs:
 
 M Assets/_Project/Scenes/BootstrapScene.unity:
   • [InventoryWheel] GameObject (UIDocument + InventoryUI)
+    + panelSettings = InventoryPanelSettings (через SerializedObject)
+    + inventoryWheelUxml/Uss сериализованы (через SerializedObject)
   • [InventoryServer] GameObject (NetworkObject + InventoryServer)
 
 === Датасет (24 ItemData) ===
@@ -118,15 +147,21 @@ A Assets/_Project/Resources/Items/Item_*.asset + .meta:
 
 + docs/dev/INVENTORY_V2_REFACTOR.md (37 KB) — главный дизайн-док
 + docs/Character-menu/sub_inventory-tab/:
-  • 00_OVERVIEW.md (10.8 KB) — обзор
+  • 00_OVERVIEW.md (10.8 KB → 14.1 KB) — обзор + §10 визуальный фикс стилей + R3-005 chest+pickup
   • 10_DESIGN.md (13.7 KB) — UXML/USS/classes
   • 20_IMPLEMENTATION_PLAN.md (20.9 KB) — пошаговый план
   • 30_VERIFICATION.md (9.6 KB) — manual smoke checklist
   • 40_CHANGES_SUMMARY.md (23.9 KB) — diff по файлам
   • 50_TESTING_GUIDE.md (16 KB) — testing scenarios
-  • 60_KNOWN_ISSUES.md (12.4 KB) — bugs + TODO
+  • 60_KNOWN_ISSUES.md (12.4 KB) — bugs + TODO (баг #1 = RESOLVED в R3-005)
+  • 70_CHEST_PICKUP_TESTS.md (16.2 KB) — **R3-005: chest+pickup manual tests** (новый)
   • INVENTORY_V2_REFACTOR.md (копия) — для удобства sub-system
   • COMMIT_MESSAGE.txt (этот файл)
+
+=== Skill updates (для будущих сессий) ===
+M ~/.hermes/profiles/project-c/skills/unity-mcp-orchestrator/SKILL.md:
+  • +pitfall #29: dedicated PanelSettings per window (НЕ переиспользовать между окнами)
+  • +pitfall #30: always serialize UXML/USS via SerializedObject (НЕ только Resources.Load fallback)
 
 === Compile state ===
 • 0 errors
@@ -136,22 +171,29 @@ A Assets/_Project/Resources/Items/Item_*.asset + .meta:
 • Assets/_Project/Scripts/Core/Inventory.cs — локальный, не инстанцируется
 • Assets/_Project/Scripts/UI/InventoryUI.cs — старый IMGUI, не инстанцируется
 • Assets/_Project/Scripts/Player/ItemPickupSystem.cs — нигде не используется
-• Assets/_Project/Scripts/Core/NetworkInventory.cs — legacy, используется в NetworkChestContainer
+• Assets/_Project/Scripts/Core/NetworkInventory.cs — legacy, теперь ТОЛЬКО fallback (R3-005)
 • Assets/_Project/Resources/Items/Item_Type[1-8].asset — старые заглушки, рядом с новыми
 
-=== Известные баги (см. 60_KNOWN_ISSUES.md) ===
-• NetworkChestContainer не мигрирован на InventoryServer (Phase 8)
-• TAB-колесо не закрывается по Esc (Phase 8)
-• Use-кнопка не делает ничего (Phase 8)
-• Drop в мир не работает (Phase 8)
-• Stackable inventory не работает (qty=1 hardcoded, Phase 8)
-• Cargo / weightKg не используется (Phase 8+)
-• Multi-client sync не проверен (Phase 8)
+=== Resolved bugs (R3-005) ===
+• ✅ NetworkChestContainer мигрирован на InventoryServer.AddItem (UI теперь обновляется)
+• ✅ InvokePermission = RpcInvokePermission.Server (новый API NGO 2.x)
+• ✅ clientId из rpcParams.Receive.SenderClientId (был wrong на dedicated server)
+
+=== Open bugs (Phase 8+) ===
+• Stackable inventory (qty > 1) — TODO
+• Drop в мир (SpawnPickupItem) — TODO
+• Use-кнопка (RequestUse) — TODO
+• Esc не закрывает TAB-колесо — TODO
+• Multi-client sync — не проверено (требует ParrelSync)
+• Cargo / weightKg — поле есть, не используется
 
 Refs: docs/dev/INVENTORY_V2_REFACTOR.md
       docs/Character-menu/sub_inventory-tab/00_OVERVIEW.md
+      docs/Character-menu/sub_inventory-tab/70_CHEST_PICKUP_TESTS.md
+      docs/Character-menu/refactor_log_2026-06-05.md
       AGENTS.md (hard rules)
       unity-v2-subsystem-migration skill (methodology)
+      unity-mcp-orchestrator skill (pitfalls #24, #26, #29, #30)
 ```
 
 ---

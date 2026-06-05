@@ -1,0 +1,268 @@
+/* =====================================================================================
+   InventoryWheel.uss — стили TAB-колеса инвентаря (Project C: The Clouds)
+   =====================================================================================
+   Phase 4 (INVENTORY_V2_REFACTOR.md): UI Toolkit стили для InventoryWheel.uxml.
+   Паттерн: реюз концепций из MarketWindow.uss + radial layout.
+
+   Pitfall #24 (unity-mcp-orchestrator skill): UnityDefaultRuntimeTheme перебивает
+   class-стили. ВСЕ критические свойства — с !important.
+   ===================================================================================== */
+
+/* === Container === */
+.wheel-container {
+    position: absolute !important;
+    top: 5% !important;
+    left: 50% !important;
+    translate: -50% 0 !important;
+    width: 800px !important;
+    max-width: 90% !important;
+    max-height: 90% !important;
+    background-color: rgba(20, 25, 35, 0.92) !important;
+    border-width: 2px !important;
+    border-color: rgba(120, 150, 200, 0.7) !important;
+    border-radius: 8px !important;
+    padding: 16px !important;
+    flex-direction: column !important;
+}
+
+/* === Header === */
+.header {
+    flex-direction: row !important;
+    justify-content: space-between !important;
+    align-items: center !important;
+    margin-bottom: 12px !important;
+    padding-bottom: 8px !important;
+    border-bottom-width: 1px !important;
+    border-bottom-color: rgba(120, 150, 200, 0.4) !important;
+}
+
+.wheel-title {
+    color: rgb(220, 220, 230) !important;
+    font-size: 18px !important;
+    -unity-font-style: bold !important;
+}
+
+.wheel-hint {
+    color: rgb(140, 140, 160) !important;
+    font-size: 11px !important;
+    -unity-font-style: italic !important;
+}
+
+/* === Wheel area: колесо + sublist === */
+.wheel-area {
+    flex-direction: row !important;
+    flex-grow: 1 !important;
+    min-height: 380px !important;
+}
+
+/* === Wheel (круг) === */
+.wheel {
+    width: 380px !important;
+    height: 380px !important;
+    flex-shrink: 0 !important;
+    align-items: center !important;
+    justify-content: center !important;
+    position: relative !important;
+}
+
+/* === Sector (базовый) === */
+.sector {
+    position: absolute !important;
+    width: 110px !important;
+    height: 110px !important;
+    /* sector-0..7 ниже — поворот + отступ от центра */
+    background-color: rgba(60, 60, 60, 0.6) !important;
+    border-width: 2px !important;
+    border-color: rgba(120, 120, 120, 0.5) !important;
+    border-radius: 8px !important;
+    align-items: center !important;
+    justify-content: center !important;
+    transition-property: scale, background-color, border-color !important;
+    transition-duration: 0.15s !important;
+}
+
+.sector-empty {
+    background-color: rgba(45, 45, 50, 0.5) !important;
+    border-color: rgba(80, 80, 90, 0.3) !important;
+}
+
+.sector-has-items {
+    background-color: rgba(50, 90, 50, 0.7) !important;
+    border-color: rgba(120, 200, 120, 0.6) !important;
+}
+
+.sector-hover {
+    scale: 1.1 1.1 !important;
+    border-color: rgba(255, 220, 100, 0.9) !important;
+    background-color: rgba(180, 150, 50, 0.6) !important;
+}
+
+.sector-selected {
+    scale: 1.15 1.15 !important;
+    border-color: rgb(255, 240, 130) !important;
+    border-width: 3px !important;
+    background-color: rgba(220, 180, 60, 0.7) !important;
+}
+
+/* === Расположение 8 секторов по окружности ===
+   wheel: 380×380, центр в (190, 190). Радиус 130, размер сектора 110×110.
+   Сектор N в позиции (190 + cos(angle) * 130 - 55, 190 + sin(angle) * 130 - 55).
+   Углы: 0=верх, далее по часовой стрелке через 45°.
+   top, left рассчитаны для UI Toolkit (Y вниз — поэтому меняем знак sin). */
+.sector-0 { top: 35px;  left: 135px; }  /* верх */
+.sector-1 { top: 75px;  left: 235px; }  /* верх-право */
+.sector-2 { top: 135px; left: 290px; }  /* право */
+.sector-3 { top: 235px; left: 235px; }  /* низ-право */
+.sector-4 { top: 270px; left: 135px; }  /* низ */
+.sector-5 { top: 235px; left: 35px; }   /* низ-лево */
+.sector-6 { top: 135px; left: -20px; }  /* лево */
+.sector-7 { top: 75px;  left: 35px; }   /* верх-лево */
+
+/* === Sector labels (внутри секторов) === */
+.sector-label {
+    position: absolute !important;
+    color: rgb(220, 220, 230) !important;
+    font-size: 11px !important;
+    -unity-font-style: bold !important;
+    -unity-text-align: middle-center !important;
+    width: 100px !important;
+    height: 60px !important;
+    white-space: normal !important;
+    text-overflow: clip !important;
+    -unity-font-definition: none !important;
+}
+
+.sector-label-0 { top: 60px;  left: 140px; }
+.sector-label-1 { top: 100px; left: 240px; }
+.sector-label-2 { top: 160px; left: 295px; }
+.sector-label-3 { top: 260px; left: 240px; }
+.sector-label-4 { top: 295px; left: 140px; }
+.sector-label-5 { top: 260px; left: 40px; }
+.sector-label-6 { top: 160px; left: -15px; }
+.sector-label-7 { top: 100px; left: 40px; }
+
+/* === Center (центр колеса) === */
+.wheel-center {
+    position: absolute !important;
+    top: 145px !important;
+    left: 145px !important;
+    width: 90px !important;
+    height: 90px !important;
+    background-color: rgba(30, 35, 50, 0.95) !important;
+    border-width: 2px !important;
+    border-color: rgba(150, 180, 220, 0.7) !important;
+    border-radius: 45px !important;
+    align-items: center !important;
+    justify-content: center !important;
+    flex-direction: column !important;
+}
+
+.center-type-label {
+    color: rgb(180, 200, 220) !important;
+    font-size: 10px !important;
+    -unity-text-align: middle-center !important;
+}
+
+.center-count-label {
+    color: rgb(255, 240, 130) !important;
+    font-size: 24px !important;
+    -unity-font-style: bold !important;
+    -unity-text-align: middle-center !important;
+}
+
+/* === Sublist (правая панель) === */
+.sublist-panel {
+    flex-grow: 1 !important;
+    margin-left: 16px !important;
+    background-color: rgba(30, 40, 60, 0.4) !important;
+    border-width: 1px !important;
+    border-color: rgba(80, 100, 130, 0.4) !important;
+    border-radius: 4px !important;
+    padding: 8px !important;
+    flex-direction: column !important;
+}
+
+.sublist-title {
+    color: rgb(180, 200, 220) !important;
+    font-size: 12px !important;
+    margin-bottom: 6px !important;
+    -unity-font-style: bold !important;
+}
+
+.sublist-list {
+    flex-grow: 1 !important;
+    background-color: rgba(20, 25, 35, 0.5) !important;
+    border-width: 1px !important;
+    border-color: rgba(60, 80, 100, 0.4) !important;
+    border-radius: 3px !important;
+}
+
+/* Sublist row template */
+.sublist-row {
+    flex-direction: row !important;
+    align-items: center !important;
+    height: 32px !important;
+    padding: 0 8px !important;
+    border-bottom-width: 1px !important;
+    border-bottom-color: rgba(80, 100, 130, 0.2) !important;
+}
+
+.sublist-row:hover {
+    background-color: rgba(100, 130, 180, 0.3) !important;
+}
+
+.sublist-row-icon {
+    width: 24px !important;
+    height: 24px !important;
+    margin-right: 6px !important;
+    background-color: rgba(60, 70, 90, 0.5) !important;
+}
+
+.sublist-row-name {
+    flex-grow: 1 !important;
+    color: rgb(220, 220, 230) !important;
+    font-size: 13px !important;
+}
+
+.sublist-row-qty {
+    width: 40px !important;
+    color: rgb(180, 200, 220) !important;
+    font-size: 12px !important;
+    -unity-text-align: middle-right !important;
+    -unity-font-style: bold !important;
+}
+
+/* === Actions === */
+.actions {
+    flex-direction: row !important;
+    margin-top: 12px !important;
+    min-height: 40px !important;
+}
+
+.action-btn {
+    flex-grow: 1 !important;
+    height: 36px !important;
+    margin: 0 4px !important;
+    color: rgb(240, 240, 240) !important;
+    -unity-font-style: bold !important;
+    border-width: 0 !important;
+    border-radius: 4px !important;
+    transition-property: scale !important;
+    transition-duration: 0.1s !important;
+}
+
+.action-btn:hover { scale: 1.03 1.03 !important; }
+
+.action-btn.use   { background-color: rgba(80, 130, 200, 0.7) !important; }
+.action-btn.close { background-color: rgba(120, 80, 80, 0.7) !important; }
+
+/* === Message === */
+.message-label {
+    margin-top: 8px !important;
+    padding: 6px !important;
+    color: rgb(220, 220, 230) !important;
+    font-size: 12px !important;
+    background-color: rgba(0, 0, 0, 0.3) !important;
+    border-radius: 4px !important;
+    -unity-text-align: middle-center !important;
+}

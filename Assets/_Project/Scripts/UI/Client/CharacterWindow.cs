@@ -33,6 +33,8 @@ using Unity.Netcode;
 using UnityEngine;
 using UnityEngine.UIElements;
 using ProjectC.Items;
+using ProjectC.Items.Client;
+using ProjectC.Items.Dto;
 using ProjectC.Network;
 using ProjectC.Player;
 using ProjectC.Trade;
@@ -199,6 +201,14 @@ namespace ProjectC.UI.Client
             {
                 _contractState.OnSnapshotUpdated -= HandleContractSnapshot;
                 _contractState.OnContractResult  -= HandleContractResult;
+            }
+            // Phase 5 (INVENTORY_V2_REFACTOR.md): отписка от InventoryClientState
+            // (важно: OnEnable/OnDisable парность, иначе event leak при re-enable).
+            var invState = ProjectC.Items.Client.InventoryClientState.Instance;
+            if (invState != null)
+            {
+                invState.OnSnapshotUpdated -= HandleInventorySnapshotUpdated;
+                invState.OnInventoryResult -= HandleInventoryResultReceived;
             }
         }
 
@@ -377,6 +387,22 @@ namespace ProjectC.UI.Client
                 // Безопасно: ContractClientState.RequestList сам фильтрует null/NotInZone.
                 var nearestZone = MarketZoneRegistry.LocalPlayerZone;
                 if (nearestZone != null) _contractState.RequestList(nearestZone.LocationId);
+            }
+
+            // ---- Phase 5 (INVENTORY_V2_REFACTOR.md): Subscribe to InventoryClientState ----
+            // Синглтон создаётся в NetworkManagerController.Awake — обычно уже есть
+            // к моменту EnsureBuilt. Если null (тест/edit-mode) — просто молча skip.
+            var invState = ProjectC.Items.Client.InventoryClientState.Instance;
+            if (invState == null)
+            {
+                Debug.LogWarning("[CharacterWindow] InventoryClientState.Instance == null, таб 'Инвентарь' не будет обновляться до StartHost");
+            }
+            else
+            {
+                invState.OnSnapshotUpdated += HandleInventorySnapshotUpdated;
+                invState.OnInventoryResult += HandleInventoryResultReceived;
+                // Попросить сервер прислать свежий snapshot (если есть данные — перерендерим)
+                invState.RequestRefresh();
             }
 
             // ---- Initial state ----
@@ -601,59 +627,127 @@ namespace ProjectC.UI.Client
         }
 
         // ============================================================
-        // Section refresh: inventory (read from NetworkPlayer.Inventory)
+        // Section refresh: inventory (read from InventoryClientState — v2)
         // ============================================================
+        //
+        // Phase 5 (INVENTORY_V2_REFACTOR.md): Раньше читался ЛОКАЛЬНЫЙ Inventory через
+        // GetComponentInChildren<Inventory>() + reflection на _inventory. Это давало
+        // рассинхрон с сервером (NetworkInventory обновлялся независимо). Теперь —
+        // единственный source of truth: InventoryClientState (server-authoritative
+        // snapshot). Подписка на OnSnapshotUpdated в EnsureBuilt.
 
         private void RefreshInventoryCache()
         {
             _inventoryCache.Clear();
             if (_localPlayer == null) FindLocalPlayer();
 
-            Inventory inv = null;
-            if (_localPlayer != null)
+            var invState = ProjectC.Items.Client.InventoryClientState.Instance;
+            if (invState == null || !invState.CurrentSnapshot.HasValue)
             {
-                // Сначала пробуем быстрый путь (Inventory — child GO).
-                inv = _localPlayer.GetComponentInChildren<Inventory>(true);
-                // На случай если структура иерархии изменится — fallback на reflection.
-                if (inv == null)
+                // Данных ещё нет — пустой кэш. UI покажет пустой список, message "Загрузка..."
+                if (_inventoryList != null)
                 {
-                    var fi = typeof(NetworkPlayer).GetField("_inventory",
-                        System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
-                    if (fi != null) inv = fi.GetValue(_localPlayer) as Inventory;
+                    _inventoryList.itemsSource = _inventoryCache;
+                    _inventoryList.Rebuild();
+                }
+                return;
+            }
+
+            var snap = invState.CurrentSnapshot.Value;
+            var items = snap.items;
+            if (items == null)
+            {
+                if (_inventoryList != null)
+                {
+                    _inventoryList.itemsSource = _inventoryCache;
+                    _inventoryList.Rebuild();
+                }
+                return;
+            }
+
+            // Группируем по (itemId) — если несколько стеков одного предмета,
+            // суммируем quantity. (Phase 2: каждый itemId = 1 unit, так что
+            // grouping ничего не делает, но код готов к будущему.)
+            var groups = new Dictionary<int, (int totalQty, InventoryItemDto first)>();
+            foreach (var dto in items)
+            {
+                // pitfall #14: InventoryItemDto — struct, == null не компилируется.
+                // Проверяем через default или is-pattern.
+                if (dto.itemId <= 0) continue;
+                if (groups.TryGetValue(dto.itemId, out var existing))
+                {
+                    groups[dto.itemId] = (existing.totalQty + dto.quantity, existing.first);
+                }
+                else
+                {
+                    groups[dto.itemId] = (dto.quantity, dto);
                 }
             }
 
-            if (inv != null)
+            foreach (var kvp in groups)
             {
-                var nonEmptyTypes = inv.GetNonEmptyTypes();
-                foreach (var t in nonEmptyTypes)
+                var first = kvp.Value.first;
+                ItemData def = invState.GetItemDefinition(first.itemId);
+                _inventoryCache.Add(new InventoryListItem
                 {
-                    var items = inv.GetItemsByType(t);
-                    // Группируем одинаковые по имени (qty = count группы).
-                    var groups = items
-                        .Where(i => i != null)
-                        .GroupBy(i => i.itemName);
-                    foreach (var g in groups)
-                    {
-                        var first = g.FirstOrDefault();
-                        _inventoryCache.Add(new InventoryListItem
-                        {
-                            itemId      = first != null ? first.itemName : g.Key,
-                            displayName = g.Key,
-                            type        = t,
-                            quantity    = g.Count(),
-                            icon        = first?.icon,
-                        });
-                    }
-                }
+                    itemId      = first.itemId.ToString(),
+                    displayName = def != null ? def.itemName : $"Item#{first.itemId}",
+                    type        = (ItemType)first.type,
+                    quantity    = kvp.Value.totalQty,
+                    icon        = def != null ? def.icon : null,
+                });
             }
-            // Если _inventoryList ещё не инициализирован — данные просто сохранятся в кэш;
-            // при следующем Show() EnsureBuilt() уже был вызван и ListView готов.
+
             if (_inventoryList != null)
             {
                 _inventoryList.itemsSource = _inventoryCache;
                 _inventoryList.Rebuild();
             }
+        }
+
+        /// <summary>
+        /// Phase 5 (INVENTORY_V2_REFACTOR.md): реакция на новый snapshot инвентаря.
+        /// Если активен таб "Инвентарь" — обновляем UI (cache + filters + rebuild).
+        /// </summary>
+        private void HandleInventorySnapshotUpdated(InventorySnapshotDto snap)
+        {
+            // Cross-tab: обновляем общий credits в header, если есть
+            if (_creditsLabel != null)
+            {
+                _creditsLabel.text = $"Кредиты: {snap.credits:F0} CR";
+            }
+            if (_statCredits != null)
+            {
+                _statCredits.text = $"{snap.credits:F0} CR";
+            }
+
+            if (_activeTab == "inventory")
+            {
+                RefreshInventoryCache();
+                ApplyInventoryFilters();
+            }
+        }
+
+        /// <summary>
+        /// Phase 5 (INVENTORY_V2_REFACTOR.md): реакция на результат операции (Pickup/Drop/Move/Use).
+        /// Показываем feedback в message label — UNCONDITIONALLY (cross-tab, см. pitfall #11
+        /// unity-v2-subsystem-migration skill).
+        /// </summary>
+        private void HandleInventoryResultReceived(InventoryResultDto result)
+        {
+            if (_messageLabel == null) return;
+
+            if (!IsVisible()) return;  // не спамим в скрытом окне
+
+            string msg = !string.IsNullOrEmpty(result.message)
+                ? result.message
+                : ProjectC.Items.Client.InventoryClientState.LocalizeResultCode(
+                    (ProjectC.Items.Dto.InventoryResultCode)result.code);
+
+            _messageLabel.text = msg;
+            _messageLabel.style.color = result.IsSuccess
+                ? new StyleColor(new Color(0.4f, 0.95f, 0.4f))
+                : new StyleColor(new Color(0.95f, 0.4f, 0.4f));
         }
 
         // ============================================================

@@ -262,14 +262,20 @@ namespace ProjectC.Player
 
         private void SpawnInventory()
         {
-            var invObj = new GameObject("Inventory");
-            invObj.transform.SetParent(transform);
-            _inventory = invObj.AddComponent<Inventory>();
-
-            var uiObj = new GameObject("InventoryUI");
-            _inventoryUI = uiObj.AddComponent<InventoryUI>();
-            // REFACTORED (R3-001): Используем SetInventory() вместо reflection
-            _inventoryUI.SetInventory(_inventory);
+            // Phase 4 (INVENTORY_V2_REFACTOR.md): TAB-колесо теперь — UI Toolkit версия,
+            // создаётся как сцен-placed [InventoryWheel] GameObject (см. BootstrapScene setup).
+            // Оно само подписывается на InputAction "<Keyboard>/tab" в Awake и слушает
+            // InventoryClientState. Старый IMGUI InventoryUI (ProjectC.Items.InventoryUI)
+            // НЕ инстанцируем здесь — файл остаётся жить для совместимости (cleanup в Phase 8).
+            //
+            // Локальный Inventory (ProjectC.Items.Inventory) тоже НЕ создаём: вся подсистема
+            // перешла на server-authoritative NetworkInventory + InventoryClientState.
+            // Локальный Inventory.cs остаётся файлом, но не инстанцируется.
+            //
+            // TODO (cleanup-сессия): удалить Assets/_Project/Scripts/Core/Inventory.cs +
+            // Assets/_Project/Scripts/UI/InventoryUI.cs (IMGUI) + связанные use-сайты.
+            _inventory = null;
+            _inventoryUI = null;
         }
 
         // ==================== ВВОД ====================
@@ -770,6 +776,27 @@ namespace ProjectC.Player
         public void ReceiveContractResultTargetRpc(ProjectC.Trade.Dto.ContractResultDto result, RpcParams rpcParams = default)
         {
             ProjectC.Trade.Client.ContractClientState.Instance?.OnTradeResultReceived(result);
+        }
+
+        // ==================== INVENTORY V2 RPC TARGETS ====================
+        // Phase 1 (INVENTORY_V2_REFACTOR.md): InventoryServer (server-only singleton) вызывает
+        // эти методы НА конкретном NetworkPlayer, чтобы доставить inventory snapshot / result
+        // именно этому клиенту. Аналог ReceiveContract*TargetRpc выше.
+        //
+        // Legacy RPC: НЕТ. Старая NetworkInventory (Assets/_Project/Scripts/Core/NetworkInventory.cs)
+        // использовала NetworkVariable<InventoryData> для авто-синхронизации ВСЕМ клиентам —
+        // новый дизайн шлёт snapshot ТОЛЬКО Owner'у (security: не светим чужие инвентари).
+
+        [Rpc(SendTo.Owner)]
+        public void ReceiveInventorySnapshotTargetRpc(ProjectC.Items.Dto.InventorySnapshotDto snapshot, RpcParams rpcParams = default)
+        {
+            ProjectC.Items.Client.InventoryClientState.Instance?.OnSnapshotReceived(snapshot);
+        }
+
+        [Rpc(SendTo.Owner)]
+        public void ReceiveInventoryResultTargetRpc(ProjectC.Items.Dto.InventoryResultDto result, RpcParams rpcParams = default)
+        {
+            ProjectC.Items.Client.InventoryClientState.Instance?.OnResultReceived(result);
         }
     }
 }

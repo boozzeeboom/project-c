@@ -1,12 +1,29 @@
+// =====================================================================================
+// PickupItem.cs — подбираемый предмет в мире (Project C: The Clouds)
+// =====================================================================================
+// Документация:
+//   • docs/dev/INVENTORY_V2_REFACTOR.md — Phase 3 (PickupItem → InventoryClientState)
+//
+// Phase 3 ИЗМЕНЕНИЯ:
+//   • Раньше: Collect() просто gameObject.SetActive(false). Предмет исчезал, но НЕ
+//     попадал в инвентарь — цепочка была разорвана.
+//   • Теперь: Collect() просит InventoryClientState → InventoryServer → валидация на
+//     сервере → NetworkVariable<InventoryData> → InventoryClientState.OnSnapshotUpdated
+//     → UI обновляется → ВСЁ через OnInventoryResult мы деактивируем (или реактивируем
+//     при ошибке) GameObject.
+//
+// LEGACY: collectOld() оставлен для совместимости, вызывается только в edit-mode / тестах.
+// =====================================================================================
+
 using UnityEngine;
+using ProjectC.Items.Client;
+using ProjectC.Items.Dto;
 
 namespace ProjectC.Items
 {
     /// <summary>
-    /// Component for pickup items in the world.
-    /// Attach to GameObject with trigger collider.
-    /// Press E when nearby — item is picked up and added to Inventory.
-    /// Implements IInteractable for trigger-based caching instead of FindObjectsByType.
+    /// Подбираемый предмет в мире.
+    /// Имеет trigger-коллайдер, покачивается, при подборе через E отправляет RPC на сервер.
     /// </summary>
     public class PickupItem : MonoBehaviour, Core.IInteractable
     {
@@ -18,11 +35,12 @@ namespace ProjectC.Items
         public float floatAmplitude = 0.2f;
 
         [Header("Interaction")]
-        [Tooltip("Radius for interaction (used by IInteractable)")]
+        [Tooltip("Радиус взаимодействия (используется IInteractable)")]
         public float interactionRadius = 3f;
 
         private Vector3 _startPosition;
         private bool _isCollected = false;
+        private bool _isAwaitingServer = false;   // защита от двойного E
 
         // IInteractable implementation
         public string InstanceId => gameObject.name + "_" + GetHashCode();
@@ -45,7 +63,7 @@ namespace ProjectC.Items
 
         private void Update()
         {
-            // Visual bobbing
+            // Visual bobbing (остановлено если собран)
             if (!_isCollected)
             {
                 transform.position = _startPosition + Vector3.up * Mathf.Sin(Time.time * floatSpeed) * floatAmplitude;
@@ -78,17 +96,94 @@ namespace ProjectC.Items
         }
 
         /// <summary>
-        /// Pick up the item. Called from NetworkPlayer.TryPickup().
+        /// Phase 3 (INVENTORY_V2_REFACTOR.md): запросить pickup у сервера.
+        /// Вызывается из NetworkPlayer.Update при E (или из ItemPickupSystem).
+        /// НЕ деактивирует сразу — ждёт server confirmation через OnInventoryResult.
         /// </summary>
         public void Collect()
         {
             if (_isCollected || itemData == null) return;
-            _isCollected = true;
+            if (_isAwaitingServer)
+            {
+                // Защита от двойного E / спама
+                return;
+            }
 
-            // Hide the item
+            // Получить itemId из ItemDatabase (auto-register если нужно)
+            int itemId = -1;
+            var server = ProjectC.Items.Network.InventoryServer.Instance;
+            if (server != null)
+            {
+                // Через world (там уже есть _itemDatabase) — но GetOrRegisterItemId public
+                itemId = ProjectC.Items.InventoryWorld.Instance?.GetOrRegisterItemId(itemData) ?? -1;
+            }
+            else
+            {
+                // Legacy fallback (на случай если новый сервер ещё не поднялся)
+                itemId = ProjectC.Core.NetworkInventory.GetItemId(itemData);
+            }
+
+            if (itemId < 0)
+            {
+                Debug.LogWarning($"[PickupItem] Cannot resolve itemId for {itemData.itemName}");
+                return;
+            }
+
+            // Попробовать отправить запрос через новый v2 client state
+            var clientState = ProjectC.Items.Client.InventoryClientState.Instance;
+            if (clientState != null)
+            {
+                _isAwaitingServer = true;
+                clientState.RequestPickup(itemId, itemData.itemType, transform.position);
+                // Подписка на результат (одноразовая)
+                clientState.OnInventoryResult += HandlePickupResult;
+            }
+            else
+            {
+                // Крайний случай: нет v2 client state. Fallback на legacy — деактивируем молча.
+                // (например, в тестах или если NetworkManager не запущен)
+                Debug.LogWarning($"[PickupItem] No InventoryClientState, falling back to legacy collect. {itemData.itemName}");
+                ForceCollect();
+            }
+        }
+
+        /// <summary>
+        /// Обработка результата pickup от сервера.
+        /// Подписка одноразовая: после обработки — отписка.
+        /// </summary>
+        private void HandlePickupResult(InventoryResultDto result)
+        {
+            var clientState = ProjectC.Items.Client.InventoryClientState.Instance;
+            if (clientState == null) return;
+            clientState.OnInventoryResult -= HandlePickupResult;
+            _isAwaitingServer = false;
+
+            if (result.IsSuccess)
+            {
+                _isCollected = true;
+                gameObject.SetActive(false);
+                Core.InteractableManager.UnregisterPickup(this);
+                Debug.Log($"[PickupItem] {itemData?.itemName} успешно подобран");
+            }
+            else
+            {
+                // Failure: не деактивируем — пусть висит, попробуют ещё раз
+                string msg = !string.IsNullOrEmpty(result.message)
+                    ? result.message
+                    : InventoryClientState.LocalizeResultCode((InventoryResultCode)result.code);
+                Debug.LogWarning($"[PickupItem] Pickup failed: {msg}");
+            }
+        }
+
+        /// <summary>
+        /// LEGACY: принудительно деактивировать (без server RPC).
+        /// Используется ТОЛЬКО в edge-cases: нет network, edit-mode, тесты.
+        /// </summary>
+        public void ForceCollect()
+        {
+            if (_isCollected || itemData == null) return;
+            _isCollected = true;
             gameObject.SetActive(false);
-            
-            // Unregister from manager
             Core.InteractableManager.UnregisterPickup(this);
         }
 

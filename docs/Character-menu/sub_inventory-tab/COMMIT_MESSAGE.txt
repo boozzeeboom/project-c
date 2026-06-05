@@ -1,0 +1,188 @@
+# Commit message — Inventory v2 Refactor (Phases 1-7)
+
+**Кто коммитит:** пользователь (Mavis не делает `git commit` per AGENTS.md)
+**Когда:** после успешного тестирования (Tests #1-13 в `50_TESTING_GUIDE.md`)
+
+---
+
+## Commit command
+
+```bash
+cd "C:/UNITY_PROJECTS/ProjectC_client"
+git add Assets/_Project/Items/ \
+        Assets/_Project/UI/Resources/UI/InventoryWheel.uxml \
+        Assets/_Project/UI/Resources/UI/InventoryWheel.uss \
+        Assets/_Project/UI/Resources/UI/InventoryWheel.uxml.meta \
+        Assets/_Project/UI/Resources/UI/InventoryWheel.uss.meta \
+        Assets/_Project/UI/Client/InventoryUI.cs \
+        Assets/_Project/UI/Client/InventoryUI.cs.meta \
+        Assets/_Project/Scripts/Core/NetworkManagerController.cs \
+        Assets/_Project/Scripts/Player/NetworkPlayer.cs \
+        Assets/_Project/Scripts/Core/PickupItem.cs \
+        Assets/_Project/Scripts/UI/Client/CharacterWindow.cs \
+        Assets/_Project/Scripts/Core/ItemType.cs \
+        Assets/_Project/Scenes/BootstrapScene.unity \
+        Assets/_Project/Resources/Items/Item_*.asset \
+        Assets/_Project/Resources/Items/Item_*.asset.meta \
+        docs/dev/INVENTORY_V2_REFACTOR.md \
+        docs/Character-menu/sub_inventory-tab/
+
+git status --short
+git diff --cached --stat
+git commit -F docs/Character-menu/sub_inventory-tab/COMMIT_MESSAGE.txt
+```
+
+---
+
+## Commit message (long form)
+
+```
+inventory v2 refactor: server-authoritative InventoryClientState + TAB/P-tab UI
+
+=== Новый код (server-authoritative v2-архитектура, по образцу ContractClientState) ===
+
+DTOs (Assets/_Project/Items/Dto/):
+  + InventoryItemDto.cs        — struct, INetworkSerializable (1 item)
+  + InventorySnapshotDto.cs    — full snapshot (locationId, items[], maxSlots, credits)
+  + InventoryResultDto.cs      — operation result (success, code, message, newCredits)
+  + InventoryResultCode.cs     — enum: Ok, NotInZone, InventoryFull, RateLimited, ...
+
+Core (Assets/_Project/Items/Core/):
+  + InventoryWorld.cs          — POCO singleton, бизнес-логика (TryPickup, BuildSnapshot)
+
+Client (Assets/_Project/Items/Client/):
+  + InventoryClientState.cs    — singleton-проекция (events, Request* API, helpers)
+
+Network (Assets/_Project/Items/Network/):
+  + InventoryServer.cs         — NetworkBehaviour, 5 RPC'шек, rate limit, SendSnapshot/Result
+
+Editor (Assets/_Project/Items/Editor/):
+  + ItemDatasetGenerator.cs    — [MenuItem] создаёт 24 ItemData (8 типов × 3)
+
+=== UI: TAB-колесо переписано с IMGUI/GL на UI Toolkit ===
+
++ InventoryWheel.uxml          — 8 sectors + center + sublist + actions + message
++ InventoryWheel.uss           — radial layout, sector states (empty/has-items/hover/selected)
++ InventoryUI.cs               — 20 KB, полностью переписан:
+                                  • UIDocument + UXML/USS
+                                  • Подписка на InventoryClientState.OnSnapshotUpdated
+                                  • 8 sectors (Resources, Equipment, Food, Fuel, Antigrav, Meziy, Medical, Tech)
+                                  • Sublist ListView с предметами выбранного типа
+                                  • Tab handler (InputAction "<Keyboard>/tab")
+
+=== P-таб "Инвентарь" в CharacterWindow подключён к InventoryClientState ===
+
+M Assets/_Project/Scripts/UI/Client/CharacterWindow.cs:
+  • using ProjectC.Items.Client; + ProjectC.Items.Dto;
+  • Подписка OnSnapshotUpdated/OnInventoryResult в EnsureBuilt
+  • Отписка в OnDisable (event-leak prevention)
+  • RefreshInventoryCache → читает InventoryClientState.CurrentSnapshot
+    (БЫЛО: GetComponentInChildren<Inventory>() + reflection)
+  • HandleInventorySnapshotUpdated — cross-tab credits update
+  • HandleInventoryResultReceived — cross-tab message feedback (pitfall #11)
+
+=== Патчи ===
+
+M Assets/_Project/Scripts/Core/NetworkManagerController.cs:
+  • CreateInventoryClientState() — auto-spawn (как CreateMarketClientState)
+
+M Assets/_Project/Scripts/Player/NetworkPlayer.cs:
+  • 2 TargetRpc: ReceiveInventorySnapshotTargetRpc, ReceiveInventoryResultTargetRpc
+  • SpawnInventory() — no-op (legacy Inventory/InventoryUI не инстанцируются)
+
+M Assets/_Project/Scripts/Core/PickupItem.cs:
+  • Полностью переписан
+  • Collect() → InventoryClientState.RequestPickup (БЫЛО: просто SetActive(false))
+  • HandlePickupResult — server confirmation, деактивация только при IsSuccess
+  • ForceCollect() — legacy fallback (если нет InventoryClientState)
+
+M Assets/_Project/Scripts/Core/ItemType.cs:
+  • ItemData + поля maxStack, weightKg (default 1, 0.1 — обратная совместимость)
+
+=== Сцена BootstrapScene ===
+
+M Assets/_Project/Scenes/BootstrapScene.unity:
+  • [InventoryWheel] GameObject (UIDocument + InventoryUI)
+  • [InventoryServer] GameObject (NetworkObject + InventoryServer)
+
+=== Датасет (24 ItemData) ===
+
+A Assets/_Project/Resources/Items/Item_*.asset + .meta:
+  • 8 типов × 3 варианта: Железная руда, Верёвка 10м, Сухпаёк,
+    Антигравитационное топливо, Антиграв-камень малый, Мезий-крошка,
+    Бинт, Батарея, и т.д.
+  • Создано ItemDatasetGenerator через MCP execute_code
+  • Старые Item_Type1..8 (заглушки) оставлены как safety net
+
+=== Документация ===
+
++ docs/dev/INVENTORY_V2_REFACTOR.md (37 KB) — главный дизайн-док
++ docs/Character-menu/sub_inventory-tab/:
+  • 00_OVERVIEW.md (10.8 KB) — обзор
+  • 10_DESIGN.md (13.7 KB) — UXML/USS/classes
+  • 20_IMPLEMENTATION_PLAN.md (20.9 KB) — пошаговый план
+  • 30_VERIFICATION.md (9.6 KB) — manual smoke checklist
+  • 40_CHANGES_SUMMARY.md (23.9 KB) — diff по файлам
+  • 50_TESTING_GUIDE.md (16 KB) — testing scenarios
+  • 60_KNOWN_ISSUES.md (12.4 KB) — bugs + TODO
+  • INVENTORY_V2_REFACTOR.md (копия) — для удобства sub-system
+  • COMMIT_MESSAGE.txt (этот файл)
+
+=== Compile state ===
+• 0 errors
+• 0 моих warnings (pre-existing legacy warnings не мои)
+
+=== Parallel stack (НЕ удалено в этой сессии, TODO Phase 8) ===
+• Assets/_Project/Scripts/Core/Inventory.cs — локальный, не инстанцируется
+• Assets/_Project/Scripts/UI/InventoryUI.cs — старый IMGUI, не инстанцируется
+• Assets/_Project/Scripts/Player/ItemPickupSystem.cs — нигде не используется
+• Assets/_Project/Scripts/Core/NetworkInventory.cs — legacy, используется в NetworkChestContainer
+• Assets/_Project/Resources/Items/Item_Type[1-8].asset — старые заглушки, рядом с новыми
+
+=== Известные баги (см. 60_KNOWN_ISSUES.md) ===
+• NetworkChestContainer не мигрирован на InventoryServer (Phase 8)
+• TAB-колесо не закрывается по Esc (Phase 8)
+• Use-кнопка не делает ничего (Phase 8)
+• Drop в мир не работает (Phase 8)
+• Stackable inventory не работает (qty=1 hardcoded, Phase 8)
+• Cargo / weightKg не используется (Phase 8+)
+• Multi-client sync не проверен (Phase 8)
+
+Refs: docs/dev/INVENTORY_V2_REFACTOR.md
+      docs/Character-menu/sub_inventory-tab/00_OVERVIEW.md
+      AGENTS.md (hard rules)
+      unity-v2-subsystem-migration skill (methodology)
+```
+
+---
+
+## Альтернативный commit (short form)
+
+Если хочется короткий message (для squash commit / single-line):
+
+```
+inventory v2: server-authoritative InventoryClientState + UI Toolkit TAB wheel
+
+- ProjectC.Items subsystem (DTO/World/ClientState/Server, 7 .cs)
+- ItemDatasetGenerator (24 ItemData for tests)
+- TAB-колесо: IMGUI/GL → UI Toolkit (InventoryWheel.{uxml,uss} + InventoryUI)
+- P-таб CharacterWindow подключён к InventoryClientState
+- PickupItem → RequestPickup RPC (предметы теперь подбираются)
+- [InventoryWheel], [InventoryServer] в BootstrapScene
+- Docs: docs/dev/INVENTORY_V2_REFACTOR.md + sub_inventory-tab/* (8 .md)
+- 0 errors. Parallel stack: Inventory.cs/старый InventoryUI.cs/ItemPickupSystem.cs/NetworkInventory.cs живут (cleanup Phase 8)
+```
+
+---
+
+## После коммита
+
+```bash
+git log --oneline -3
+# покажет ваш commit + предыдущие
+
+git status
+# пусто (всё закоммичено)
+```
+
+Если есть uncommitted changes — что-то пропустил в `git add`. Проверь `git status --short`.

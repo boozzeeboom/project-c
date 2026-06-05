@@ -1,0 +1,84 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  InventoryWheel.uxml — TAB-колесо инвентаря (Project C: The Clouds)
+
+  Phase 4 (INVENTORY_V2_REFACTOR.md): UI Toolkit-версия колеса. Заменяет старый
+  InventoryUI.cs (IMGUI/GL).
+
+  Структура:
+    - .wheel-container (позиционирование + pointer-events)
+    - .wheel (центральный контейнер для 8 секторов)
+    - .sector-N × 8 (сектора, расположены по окружности через USS rotate)
+    - .center-label (центр — заголовок + счётчик)
+    - .sublist (правая панель: ListView предметов выбранного сектора)
+    - .close-btn (закрыть колесо)
+    - .message-label (feedback от операций)
+
+  UXML НЕ задаёт стили — только структуру. Всё оформление — в InventoryWheel.uss.
+  Имена элементов используются в коде (Q<>), не менять без рефакторинга InventoryUI.cs.
+-->
+<ui:UXML xmlns:ui="UnityEngine.UIElements" xmlns:uie="UnityEditor.UIElements">
+
+    <!-- Главный контейнер -->
+    <ui:VisualElement name="wheel-container" class="wheel-container" picking-mode="Position">
+
+        <!-- Заголовок сверху -->
+        <ui:VisualElement class="header">
+            <ui:Label name="wheel-title" text="ИНВЕНТАРЬ" class="wheel-title" />
+            <ui:Label name="wheel-hint" text="TAB — закрыть • Клик по сектору — список предметов" class="wheel-hint" />
+        </ui:VisualElement>
+
+        <!-- Основная зона: колесо слева + sublist справа -->
+        <ui:VisualElement class="wheel-area">
+
+            <!-- КОЛЕСО: 8 секторов + центр -->
+            <ui:VisualElement name="wheel" class="wheel">
+
+                <!-- Сектора. Имена sector-0..7 — соответствуют (int)ItemType 0..7.
+                     Позиционируются через USS: position: absolute + left/right + rotate. -->
+                <ui:VisualElement name="sector-0" class="sector sector-0" data-type="Resources" />
+                <ui:VisualElement name="sector-1" class="sector sector-1" data-type="Equipment" />
+                <ui:VisualElement name="sector-2" class="sector sector-2" data-type="Food" />
+                <ui:VisualElement name="sector-3" class="sector sector-3" data-type="Fuel" />
+                <ui:VisualElement name="sector-4" class="sector sector-4" data-type="Antigrav" />
+                <ui:VisualElement name="sector-5" class="sector sector-5" data-type="Meziy" />
+                <ui:VisualElement name="sector-6" class="sector sector-6" data-type="Medical" />
+                <ui:VisualElement name="sector-7" class="sector sector-7" data-type="Tech" />
+
+                <!-- Лейблы для секторов (отдельно, чтобы можно было анимировать) -->
+                <ui:Label name="label-0" class="sector-label sector-label-0" text="РЕСУРСЫ" />
+                <ui:Label name="label-1" class="sector-label sector-label-1" text="ОБОРУДОВАНИЕ" />
+                <ui:Label name="label-2" class="sector-label sector-label-2" text="ЕДА" />
+                <ui:Label name="label-3" class="sector-label sector-label-3" text="ТОПЛИВО" />
+                <ui:Label name="label-4" class="sector-label sector-label-4" text="АНТИГРАВИЙ" />
+                <ui:Label name="label-5" class="sector-label sector-label-5" text="МЕЗИЙ" />
+                <ui:Label name="label-6" class="sector-label sector-label-6" text="МЕДИКАМЕНТЫ" />
+                <ui:Label name="label-7" class="sector-label sector-label-7" text="ТЕХНИКА" />
+
+                <!-- Центр колеса: счётчик предметов + название типа -->
+                <ui:VisualElement class="wheel-center">
+                    <ui:Label name="center-type-label" text="—" class="center-type-label" />
+                    <ui:Label name="center-count-label" text="0" class="center-count-label" />
+                </ui:VisualElement>
+
+            </ui:VisualElement>
+
+            <!-- SUBLIST: список предметов выбранного сектора -->
+            <ui:VisualElement name="sublist-panel" class="sublist-panel">
+                <ui:Label name="sublist-title" text="Выберите сектор" class="sublist-title" />
+                <ui:ListView name="sublist" class="sublist-list" />
+            </ui:VisualElement>
+
+        </ui:VisualElement>
+
+        <!-- Actions -->
+        <ui:VisualElement class="actions">
+            <ui:Button name="use-btn"   text="ИСПОЛЬЗОВАТЬ" class="action-btn use" />
+            <ui:Button name="close-btn" text="ЗАКРЫТЬ"       class="action-btn close" />
+        </ui:VisualElement>
+
+        <!-- Message feedback -->
+        <ui:Label name="message-label" text="Откройте инвентарь по TAB" class="message-label" />
+
+    </ui:VisualElement>
+</ui:UXML>

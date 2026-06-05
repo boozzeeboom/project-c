@@ -82,6 +82,11 @@ namespace ProjectC.Core
             // (аналогично MarketClientState, чтобы выживал при стриминге сцен).
             CreateContractClientState();
 
+            // Phase 1 (INVENTORY_V2_REFACTOR.md): InventoryClientState тоже auto-spawn.
+            // Создаётся root GO сразу, чтобы AddComponent→Awake→DontDestroyOnLoad отработали
+            // (см. FIX 2026-06-04 — на child DontDestroyOnLoad падает, singleton теряется).
+            CreateInventoryClientState();
+
             // Автоматический запуск Dedicated Server если передан аргумент -server
             if (IsDedicatedServerMode())
             {
@@ -142,7 +147,33 @@ namespace ProjectC.Core
             go.AddComponent<ProjectC.Trade.Client.ContractClientState>();
             Debug.Log("[NMC] Created [ContractClientState] as root GameObject");
         }
-        
+
+        /// <summary>
+        /// Phase 1 (INVENTORY_V2_REFACTOR.md): Создать InventoryClientState как root GameObject.
+        /// Паттерн идентичен CreateMarketClientState / CreateContractClientState.
+        /// InventoryClientState — проекция server-state инвентаря; UI (TAB-колесо + P-таб
+        /// CharacterWindow) подписывается на её события, как MarketClientState для рынка.
+        /// </summary>
+        private void CreateInventoryClientState()
+        {
+            var existing = FindObjectsByType<ProjectC.Items.Client.InventoryClientState>(FindObjectsInactive.Include);
+            foreach (var inst in existing)
+            {
+                if (inst != null && inst.transform.parent == null)
+                {
+                    Debug.Log("[NMC] InventoryClientState already root, skipping creation");
+                    return;
+                }
+            }
+            if (existing.Length > 0)
+            {
+                Debug.LogWarning($"[NMC] Found {existing.Length} non-root InventoryClientState in scene — DontDestroyOnLoad would fail. Creating root replacement.");
+            }
+            var go = new GameObject("[InventoryClientState]");
+            go.AddComponent<ProjectC.Items.Client.InventoryClientState>();
+            Debug.Log("[NMC] Created [InventoryClientState] as root GameObject");
+        }
+
         private void Start()
         {
             // NetworkManager.Singleton устанавливается в Start()

@@ -22,5 +22,14 @@ namespace ProjectC.Items
         [TextArea]
         public string description;
         public Sprite icon;
+
+        // Phase 6 (INVENTORY_V2_REFACTOR.md): доп-поля для stack + weight.
+        // maxStack = 1 значит non-stackable (по умолчанию, обратная совместимость с
+        // существующими Item_Type1..8). weightKg — для будущего cargo system.
+        [Header("Stack & Weight (Phase 6)")]
+        [Tooltip("Сколько таких предметов может быть в одном слоте. 1 = non-stackable.")]
+        public int   maxStack = 1;
+        [Tooltip("Вес одного предмета (кг). Используется в будущей cargo-системе.")]
+        public float weightKg = 0.1f;
     }
 }

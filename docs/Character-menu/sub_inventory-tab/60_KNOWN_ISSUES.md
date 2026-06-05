@@ -380,24 +380,56 @@ Console → [NetworkPlayer:1] ReceiveInventorySnapshotTargetRpc
 
 **Fix:** встроил lazy-subscribe в существующий Update, не дублируя.
 
-### 11.5 Что осталось открытым
+### 12. Phase 9 — Cleanup (2026-06-05)
 
-- **Multi-client verify** (ParrelSync) — не тестировалось в этой сессии
-- **NetworkChestContainer legacy fallback** — остаётся (как safety net), но `InventoryServer.AddItem` теперь основной путь
-- **Cleanup** (Phase 9, отдельная сессия): удаление `Inventory.cs`, `InventoryUI.cs` IMGUI, `ItemPickupSystem.cs`, `NetworkInventory.cs` (когда все потребители мигрируют), `Item_Type1..8.asset`
+Phase 9 = полный cleanup legacy. Все 6 dead-файлов + 8 dead-ассетов удалены.
+
+### 12.1 Что удалено (13 файлов)
+
+**Код (5):**
+- `Assets/_Project/Scripts/Core/Inventory.cs` (177 lines) — локальный MonoBehaviour, нигде не инстанцируется с Phase 4
+- `Assets/_Project/Scripts/Core/NetworkInventory.cs` (240 lines) — старый NetworkBehaviour, заменён InventoryServer
+- `Assets/_Project/Scripts/Player/ItemPickupSystem.cs` (238 lines) — мёртвый код с давних времён
+- `Assets/_Project/Scripts/UI/InventoryUI.cs` (384 lines) — IMGUI/GL TAB-колесо, заменено UI Toolkit
+- `Assets/_Project/Scripts/Core/ItemDatabaseInitializer.cs` (85 lines) — дублировал InventoryWorld.RegisterAllItems
+
+**Ассеты (8):**
+- `Assets/_Project/Resources/Items/Item_Type1..8.asset` — старые заглушки без имён/иконок, 0 ссылок
+
+### 12.2 Что патчено перед удалением (safety)
+
+- `PickupItem.cs` — убрана `else`-ветка с `NetworkInventory.GetItemId` (теперь единственный путь через `InventoryWorld.GetOrRegisterItemId`)
+- `NetworkChestContainer.cs` — убран legacy fallback на `NetworkInventory.AddItem`. Теперь **единственный** путь — v2 `InventoryServer.AddItem`. Если `InventoryServer.Instance == null` — `Debug.LogError` (должно быть impossible после fix'а ScenePlacedObjectSpawner)
+- `NetworkPlayer.cs`:
+  - Удалены поля `private Inventory _inventory; private InventoryUI _inventoryUI;`
+  - `OnNetworkSpawn` — убрана `_inventory.LoadFromPrefs()` (v2 persistence = ответственность сервера)
+  - `OnNetworkDespawn` — убраны `_inventory.SaveToPrefs()` + `Destroy(_inventoryUI.gameObject)`
+  - `SpawnInventory()` — no-op, оставлен как hook
+  - `TryPickup()` — убрана legacy chest-ветка (`_nearestChest.GetLootItems()` + `_inventory.AddMultipleItems`). Pickup — единственный путь `_nearestPickup.Collect()` (v2 RPC)
+- `NetworkManagerController.cs` — убран reflection-блок сохранения `_inventory` через `GetField("_inventory")`
+
+### 12.3 Что НЕ удалено (живой legacy)
+
+- `Assets/_Project/Scripts/Core/ChestContainer.cs` (не-сетевой) — используется в `InteractableManager`, `NetworkPlayer.FindNearestInteractable` (fallback), `ChunkNetworkSpawner`. Это **живой** код, не dead. Миграция — отдельная задача.
+- `Assets/_Project/Scripts/Player/ItemPickupSystem.cs` — см. выше (всё-таки удалён, но `ChestContainer` остался)
+
+### 12.4 Compile после cleanup
+
+**0 errors.** Можно коммитить.
 
 ---
 
 ## Заключение
 
-Phase 7 (базовая функциональность) — **готово к тестированию**. Phase 8 (bugfixes) — **готово**.
+Phase 7 + 8 (функциональность + bugfixes) + 9 (cleanup legacy) — **готовы к коммиту**.
 
 **Compile state:** 0 errors.
 **Coverage:**
-- ✅ Pickup (single client) — bugfix #11.2
-- ✅ Chest pickup (single client) — bugfix #11.1
-- ✅ TAB-колесо (UI Toolkit) — Phase 4
-- ✅ P-таб (CharacterWindow) — bugfix #11.3
+- ✅ Pickup (single client)
+- ✅ Chest pickup (single client)
+- ✅ TAB-колесо (UI Toolkit)
+- ✅ P-таб (CharacterWindow)
 - ✅ Server-authoritative snapshot
+- ✅ Legacy cleanup (13 файлов удалено, ~1700 lines мёртвого кода)
 - ⚠️ Multi-client — не проверено (требует ParrelSync)
-- ❌ Stackable / Drop / Use / Cargo — TODO Phase 9+
+- ❌ Stackable / Drop / Use / Cargo — TODO Phase 10+

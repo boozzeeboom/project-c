@@ -49,8 +49,6 @@ namespace ProjectC.Player
         private Vector3 _velocity;
         private bool _isGrounded;
         private ThirdPersonCamera _myCamera;
-        private Inventory _inventory;
-        private InventoryUI _inventoryUI;
 
         // Состояние
         private bool _inShip = false;
@@ -174,15 +172,9 @@ namespace ProjectC.Player
                 SpawnCamera();
                 SpawnInventory();
 
-                // Загружаем инвентарь из сохранения (после реконнекта)
-                if (_inventory != null)
-                {
-                    _inventory.LoadFromPrefs();
-                    if (_inventory.GetTotalItemCount() > 0 && _inventoryUI != null)
-                    {
-                        _inventoryUI.TriggerSectorFlash();
-                    }
-                }
+                // NOTE (cleanup Phase 9, 2026-06-05): legacy _inventory.LoadFromPrefs() убран —
+                // v2 серверный инвентарь авторитативен, persistence = ответственность сервера.
+                // Если reconnect-recovery нужен — реализовать через InventoryServer.RequestSnapshotOnReconnect.
 
                 ApplyWalkingState();
 
@@ -214,14 +206,10 @@ namespace ProjectC.Player
                 return;
             }
 
-            // Сохраняем инвентарь перед отключением
-            if (_inventory != null && _inventory.GetTotalItemCount() > 0)
-            {
-                _inventory.SaveToPrefs();
-            }
+            // NOTE (cleanup Phase 9, 2026-06-05): legacy _inventory.SaveToPrefs() убран —
+            // v2 серверный инвентарь авторитативен, persistence = ответственность сервера.
 
             if (_myCamera != null) Destroy(_myCamera.gameObject);
-            if (_inventoryUI != null) Destroy(_inventoryUI.gameObject);
             if (_inShip && _currentShip != null) _currentShip.RemovePilot(OwnerClientId);
         }
         
@@ -262,20 +250,9 @@ namespace ProjectC.Player
 
         private void SpawnInventory()
         {
-            // Phase 4 (INVENTORY_V2_REFACTOR.md): TAB-колесо теперь — UI Toolkit версия,
-            // создаётся как сцен-placed [InventoryWheel] GameObject (см. BootstrapScene setup).
-            // Оно само подписывается на InputAction "<Keyboard>/tab" в Awake и слушает
-            // InventoryClientState. Старый IMGUI InventoryUI (ProjectC.Items.InventoryUI)
-            // НЕ инстанцируем здесь — файл остаётся жить для совместимости (cleanup в Phase 8).
-            //
-            // Локальный Inventory (ProjectC.Items.Inventory) тоже НЕ создаём: вся подсистема
-            // перешла на server-authoritative NetworkInventory + InventoryClientState.
-            // Локальный Inventory.cs остаётся файлом, но не инстанцируется.
-            //
-            // TODO (cleanup-сессия): удалить Assets/_Project/Scripts/Core/Inventory.cs +
-            // Assets/_Project/Scripts/UI/InventoryUI.cs (IMGUI) + связанные use-сайты.
-            _inventory = null;
-            _inventoryUI = null;
+            // Phase 4 (INVENTORY_V2_REFACTOR.md) + Phase 9 cleanup (2026-06-05):
+            // TAB-колесо — сцен-placed [InventoryWheel] GameObject, инвентарь — v2 server-authoritative.
+            // Метод оставлен как hook для будущей per-player inventory-instance логики.
         }
 
         // ==================== ВВОД ====================
@@ -561,32 +538,18 @@ namespace ProjectC.Player
                 return;
             }
 
-            // Old ChestContainer
-            if (_nearestChest != null)
-            {
-                var loot = _nearestChest.GetLootItems();
-                if (_inventory != null && loot.Count > 0)
-                {
-                    _inventory.AddMultipleItems(loot);
-                    if (_inventoryUI != null) _inventoryUI.TriggerSectorFlash();
-                }
-                OpenChestRpc(_nearestChest.transform.position);
-                _nearestChest = null;
-                return;
-            }
+            // NOTE (cleanup Phase 9, 2026-06-05): старый ChestContainer путь УДАЛЁН.
+            // v2 chest = NetworkChestContainer (выше). Legacy ChestContainer.cs оставлен
+            // только для ChunkNetworkSpawner (старый API), но TryPickup() не должен к нему
+            // обращаться — chest теперь выдаёт loot через NetworkChestContainer.TryOpen →
+            // server RPC → InventoryServer.AddItem.
 
             // PickupItem
             if (_nearestPickup != null)
             {
-                // BUGFIX 2026-06-05: _inventory = null после Phase 4 (SpawnInventory no-op).
-                // Используем новый v2 путь — PickupItem.Collect() шлёт RPC через InventoryClientState.
-                // Старый путь (_inventory.AddItem) оставлен как fallback (если вернётся legacy _inventory).
-                if (_inventory != null) {
-                    _inventory.AddItem(_nearestPickup.itemData);
-                } else {
-                    _nearestPickup.Collect();
-                }
-                if (_inventoryUI != null) _inventoryUI.TriggerSectorFlash();
+                // v2 путь: PickupItem.Collect() шлёт RequestPickup через InventoryClientState.
+                // Подтверждение через OnInventoryResult → HandlePickupResult деактивирует GO.
+                _nearestPickup.Collect();
 
                 // Серверная RPC — скрыть предмет у ВСЕХ
                 HidePickupRpc(_nearestPickup.transform.position);

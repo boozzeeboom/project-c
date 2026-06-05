@@ -109,23 +109,15 @@ namespace ProjectC.Items
                 return;
             }
 
-            // Получить itemId из ItemDatabase (auto-register если нужно)
-            int itemId = -1;
-            var server = ProjectC.Items.Network.InventoryServer.Instance;
-            if (server != null)
-            {
-                // Через world (там уже есть _itemDatabase) — но GetOrRegisterItemId public
-                itemId = ProjectC.Items.InventoryWorld.Instance?.GetOrRegisterItemId(itemData) ?? -1;
-            }
-            else
-            {
-                // Legacy fallback (на случай если новый сервер ещё не поднялся)
-                itemId = ProjectC.Core.NetworkInventory.GetItemId(itemData);
-            }
-
+            // Получить itemId из InventoryWorld (auto-register если нужно).
+            // v2 hub гарантированно заспавнен после fix'а ScenePlacedObjectSpawner
+            // (см. docs/Character-menu/sub_inventory-tab/60_KNOWN_ISSUES.md §11.1).
+            // Legacy fallback на ProjectC.Core.NetworkInventory УБРАН — этот файл
+            // идёт в cleanup вместе с NetworkInventory.cs.
+            int itemId = ProjectC.Items.InventoryWorld.Instance?.GetOrRegisterItemId(itemData) ?? -1;
             if (itemId < 0)
             {
-                Debug.LogWarning($"[PickupItem] Cannot resolve itemId for {itemData.itemName}");
+                Debug.LogWarning($"[PickupItem] Cannot resolve itemId for {itemData.itemName} (InventoryWorld.Instance == null? Network not started?)");
                 return;
             }
 

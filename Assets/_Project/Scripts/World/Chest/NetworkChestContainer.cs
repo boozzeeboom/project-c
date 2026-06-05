@@ -220,47 +220,31 @@ namespace ProjectC.World.Chest
             if (debugMode)
                 Debug.Log($"[NetworkChestContainer] Generated {lootItems.Count} loot items for client {clientId}");
 
-            // R3-005 (INVENTORY_V2_REFACTOR.md Phase 8): use new InventoryServer (v2) when available,
-            // fall back to legacy NetworkInventory for safety.
-            bool addedToV2 = false;
+            // R3-005 (INVENTORY_V2_REFACTOR.md): единственный путь — v2 InventoryServer.
+            // Legacy fallback на NetworkInventory УДАЛЁН (cleanup Phase 9, 2026-06-05).
+            // v2 hub гарантированно заспавнен после fix'а ScenePlacedObjectSpawner
+            // (см. docs/Character-menu/sub_inventory-tab/60_KNOWN_ISSUES.md §11.1).
             var inventoryServer = ProjectC.Items.Network.InventoryServer.Instance;
-            if (inventoryServer != null)
+            if (inventoryServer == null)
             {
-                foreach (var item in lootItems)
-                {
-                    int itemId = ProjectC.Items.InventoryWorld.Instance != null
-                        ? ProjectC.Items.InventoryWorld.Instance.GetOrRegisterItemId(item)
-                        : -1;
-                    if (itemId < 0)
-                    {
-                        Debug.LogWarning($"[NetworkChestContainer] InventoryWorld has no id for {item.name} — skipping");
-                        continue;
-                    }
-                    bool ok = inventoryServer.AddItem(clientId, itemId, item.itemType);
-                    if (debugMode)
-                        Debug.Log($"[NetworkChestContainer] v2 AddItem: itemId={itemId}, type={item.itemType}, ok={ok}");
-                }
-                addedToV2 = true;
+                // Это КРИТИЧНО — должно быть impossible после fix'а. Если сработало — баг.
+                Debug.LogError($"[NetworkChestContainer] CRITICAL: InventoryServer.Instance is null! v2 hub не заспавнен. Chest для client {clientId} НЕ выдан.");
+                return;
             }
-            else
+
+            foreach (var item in lootItems)
             {
-                // Legacy fallback: write to old NetworkInventory (которое сейчас нигде не слушает InventoryClientState — TODO cleanup)
-                var networkInventory = playerObject.GetComponent<NetworkInventory>();
-                if (networkInventory != null)
+                int itemId = ProjectC.Items.InventoryWorld.Instance != null
+                    ? ProjectC.Items.InventoryWorld.Instance.GetOrRegisterItemId(item)
+                    : -1;
+                if (itemId < 0)
                 {
-                    foreach (var item in lootItems)
-                    {
-                        int itemId = NetworkInventory.GetItemId(item);
-                        networkInventory.AddItem(itemId, item.itemType);
-                    }
-                    if (debugMode)
-                        Debug.LogWarning("[NetworkChestContainer] InventoryServer missing — used legacy NetworkInventory. UI may not update.");
+                    Debug.LogWarning($"[NetworkChestContainer] InventoryWorld has no id for {item.name} — skipping");
+                    continue;
                 }
-                else
-                {
-                    if (debugMode)
-                        Debug.LogWarning("[NetworkChestContainer] No inventory system on player (neither v2 nor legacy)!");
-                }
+                bool ok = inventoryServer.AddItem(clientId, itemId, item.itemType);
+                if (debugMode)
+                    Debug.Log($"[NetworkChestContainer] v2 AddItem: itemId={itemId}, type={item.itemType}, ok={ok}");
             }
 
             // Set open state (server authoritative)

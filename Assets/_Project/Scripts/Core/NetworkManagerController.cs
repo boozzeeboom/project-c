@@ -471,20 +471,8 @@ namespace ProjectC.Core
                 _isReconnecting = false;
                 _reconnectAttempts = 0;
 
-                // Сохраняем инвентарь перед отключением
-                var player = FindAnyObjectByType<NetworkPlayer>();
-                if (player != null)
-                {
-                    var inventoryField = typeof(NetworkPlayer).GetField("_inventory", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
-                    if (inventoryField != null)
-                    {
-                        var inventory = inventoryField.GetValue(player) as Inventory;
-                        if (inventory != null && inventory.GetTotalItemCount() > 0)
-                        {
-                            inventory.SaveToPrefs();
-                        }
-                    }
-                }
+                // NOTE (cleanup Phase 9, 2026-06-05): legacy _inventory.SaveToPrefs() убран —
+                // v2 серверный инвентарь авторитативен, persistence = ответственность сервера.
 
                 networkManager.Shutdown();
                 UpdateStatus("Отключено");

@@ -1,16 +1,16 @@
-# Commit message — Inventory v2 Bugfixes (Phase 8, 2026-06-05)
+# Commit message — Inventory v2 Legacy Cleanup (Phase 9, 2026-06-05)
 
 **Кто коммитит:** пользователь (Mavis не делает `git commit` per AGENTS.md)
-**Когда:** после успешного тестирования (Phase 8 bugfixes работают, см. `60_KNOWN_ISSUES.md` §11)
+**Когда:** сразу (compile 0 errors, нет legacy-вызовов, тесты опциональны)
 
 ---
 
-## ⚠️ Этот коммит — только BUGFIXES
+## ⚠️ Этот коммит — Phase 9 cleanup (legacy files)
 
-Phase 1-7 (v2 рефакторинг) уже закоммичены ранее.
-Текущий коммит содержит **только** файлы, изменённые в Phase 8 bugfix-сессии.
-
-**Не включай `MoonMaterial.mat`** (он в `M` статусе, но это **pre-existing** изменение не моё).
+**Это завершающий коммит серии inventory-v2-migration.** После него:
+- 0 dead-файлов legacy
+- v2 server-authoritative архитектура — единственный путь
+- ~1700 lines мёртвого кода удалено
 
 ---
 
@@ -18,13 +18,35 @@ Phase 1-7 (v2 рефакторинг) уже закоммичены ранее.
 
 ```bash
 cd "C:/UNITY_PROJECTS/ProjectC_client"
-git add Assets/_Project/Scripts/World/Scene/ScenePlacedObjectSpawner.cs \
-        Assets/_Project/Scripts/Player/NetworkPlayer.cs \
-        Assets/_Project/Scripts/UI/Client/CharacterWindow.cs \
-        Assets/_Project/Items/Client/InventoryClientState.cs \
-        Assets/_Project/Scenes/World/WorldScene_0_0.unity \
-        docs/Character-menu/sub_inventory-tab/60_KNOWN_ISSUES.md
-git status --short   # проверь что нет лишнего
+git add -u Assets/_Project/Scripts/Core/Inventory.cs.meta \
+         Assets/_Project/Scripts/Core/NetworkInventory.cs.meta \
+         Assets/_Project/Scripts/Player/ItemPickupSystem.cs.meta \
+         Assets/_Project/Scripts/UI/InventoryUI.cs.meta \
+         Assets/_Project/Scripts/Core/ItemDatabaseInitializer.cs.meta \
+         Assets/_Project/Resources/Items/Item_Type1.asset.meta \
+         Assets/_Project/Resources/Items/Item_Type2.asset.meta \
+         Assets/_Project/Resources/Items/Item_Type3.asset.meta \
+         Assets/_Project/Resources/Items/Item_Type4.asset.meta \
+         Assets/_Project/Resources/Items/Item_Type5.asset.meta \
+         Assets/_Project/Resources/Items/Item_Type6.asset.meta \
+         Assets/_Project/Resources/Items/Item_Type7.asset.meta \
+         Assets/_Project/Resources/Items/Item_Type8.asset.meta \
+         Assets/_Project/Scripts/Core/PickupItem.cs \
+         Assets/_Project/Scripts/World/Chest/NetworkChestContainer.cs \
+         Assets/_Project/Scripts/Player/NetworkPlayer.cs \
+         Assets/_Project/Scripts/Core/NetworkManagerController.cs \
+         docs/Character-menu/sub_inventory-tab/60_KNOWN_ISSUES.md
+git status --short   # проверь
+git commit -F docs/Character-menu/sub_inventory-tab/COMMIT_MESSAGE.txt
+```
+
+**ИЛИ одной командой** (если уверен что других изменений нет):
+
+```bash
+cd "C:/UNITY_PROJECTS/ProjectC_client"
+git add -A   # осторожно — добавит ВСЁ включая MoonMaterial.mat (pre-existing) — потом откати его:
+git reset Assets/_Project/ScriptableObjects/DayNight/MoonMaterial.mat
+git status --short
 git commit -F docs/Character-menu/sub_inventory-tab/COMMIT_MESSAGE.txt
 ```
 
@@ -33,92 +55,86 @@ git commit -F docs/Character-menu/sub_inventory-tab/COMMIT_MESSAGE.txt
 ## Commit message (long form)
 
 ```
-inventory v2 bugfixes: scene-spawn BootstrapScene + pickup v2 path + P-tab lazy-subscribe
+inventory v2 cleanup: remove 5 dead .cs + 8 dead .asset (Phase 9)
 
-=== Phase 8: bugfixes после первой попытки тестирования ===
+=== Phase 9: full legacy cleanup ===
 
-Три бага найдены, все исправлены. Документация в
-docs/Character-menu/sub_inventory-tab/60_KNOWN_ISSUES.md §11.
+13 файлов удалено (~1700 lines мёртвого кода). v2 server-authoritative
+архитектура теперь — ЕДИНСТВЕННЫЙ путь. Safety-patches применены ПЕРЕД
+удалением, чтобы не сломать compile.
 
---- BUGFIX 1: [InventoryServer] не заспавнен ---
-Симптом: chest pickup → нет snapshot → TAB-колесо пустое.
-Root cause: scene-placed NetworkObject в BootstrapScene имеют
-InScenePlacedSourceGlobalObjectIdHash=0, NGO их не спавнит;
-ScenePlacedObjectSpawner фильтровал только WorldScene_* и
-пропускал BootstrapScene.
-Fix: ScenePlacedObjectSpawner.SpawnInAllLoadedScenes() — убрал
-фильтр, для не-WorldScene сцен спавним все scene-placed NetworkObject
-вручную.
-Verify: spawned=12, already=0, failed=0 в Scene(0,0).
+Документация: docs/Character-menu/sub_inventory-tab/60_KNOWN_ISSUES.md §12.
 
---- BUGFIX 2: pickup не добавлял в инвентарь ---
-Симптом: "предметы визуально подбираются, но в инвентаре не числятся".
-Root cause: NetworkPlayer.TryPickup() вызывал _inventory.AddItem,
-но _inventory == null после Phase 4 (SpawnInventory заноплен).
-Предмет деактивировался через RPC, но никогда не попадал в
-InventoryClientState.
-Fix: fallback на v2: if (_inventory != null) _inventory.AddItem()
-else _nearestPickup.Collect() (шлёт RequestPickup через v2 RPC).
-Verify: PickupItem успешно подобран + InventoryWorld picked up ID=7.
+--- Удалено (5 .cs файлов) ---
 
---- BUGFIX 3: P-таб пуст при первом клике (нужен toggle через Рынок) ---
-Симптом: P → Инвентарь (1-й клик) — пусто. P → Рынок → Инвентарь
-(3-й клик) — работает.
-Root cause (двухслойный):
-  a) Lazy-subscribe race: в EnsureBuilt (OnEnable) InventoryClientState.Instance
-     мог быть null (NetworkManagerController.Awake ещё не создал root GO).
-     Подписка OnSnapshotUpdated += HandleInventorySnapshotUpdated
-     пропускалась. Доказательство: в логе handlers=1 (только TAB-UI),
-     CharacterWindow не подписан.
-  b) ListView layout pitfall: первый display: none → flex на inventory-section
-     не вызывал повторный layout — VE не создавались, bindItem не вызывался.
-Fix (3 части):
-  1) Lazy-subscribe в Update() CharacterWindow с флагом _isInventorySubscribed.
-     SubscribeInventory() / UnsubscribeInventory() идемпотентны.
-  2) RefreshInventoryCache + ApplyInventoryFilters: Rebuild() → RefreshItems()
-     + null-trick (не переприсваиваем itemsSource если та же ссылка).
-  3) SwitchTab("inventory"): _inventoryList.MarkDirtyRepaint() после
-     display: flex.
-Verify: handlers=2 (TAB-UI + CharacterWindow), HandleInventorySnapshotUpdated
-срабатывает, P → Инвентарь сразу показывает содержимое.
+D Assets/_Project/Scripts/Core/Inventory.cs (177 lines)
+  - Локальный MonoBehaviour с давних времён.
+  - Нигде не инстанцируется с Phase 4 (SpawnInventory заноплен).
+  - Никем не используется с v2 InventoryClientState.
 
---- Compile fix ---
-Опечатка: добавил второй Update() — CS0111. Встроил lazy-subscribe
-в существующий Update (Esc-handler).
+D Assets/_Project/Scripts/Core/NetworkInventory.cs (240 lines)
+  - Старый NetworkBehaviour с NetworkVariable<InventoryData>.
+  - Заменён на InventoryServer (RPC hub, target delivery).
+  - Использовался как silent legacy fallback в NetworkChestContainer
+    (который я убрал в Phase 8 — pitfall #36 в unity-mcp-orchestrator).
 
-=== Изменённые файлы (5 кода + 1 сцена + 1 дока) ===
+D Assets/_Project/Scripts/Player/ItemPickupSystem.cs (238 lines)
+  - Мёртвый код с давних времён. Не привязан ни к одному GameObject в сценах.
+  - Логика pickup'а — в NetworkPlayer.FindNearestInteractable +
+    NetworkPlayer.TryPickup + PickupItem.Collect (v2 RPC).
 
-M Assets/_Project/Scripts/World/Scene/ScenePlacedObjectSpawner.cs (+35)
-  - SpawnInAllLoadedScenes: убрал фильтр WorldScene_, для BootstrapScene
-    спавним все NetworkObject вручную.
+D Assets/_Project/Scripts/UI/InventoryUI.cs (384 lines)
+  - Старая IMGUI/GL TAB-колесо.
+  - Заменена на UI Toolkit (Assets/_Project/UI/Client/InventoryUI.cs).
+  - Phase 4 (INVENTORY_V2_REFACTOR.md) уже мигрировала UI, файл оставался
+    как мёртвый код (NetworkPlayer.SpawnInventory no-op).
 
-M Assets/_Project/Scripts/Player/NetworkPlayer.cs (+8)
-  - TryPickup: fallback _inventory.AddItem → _nearestPickup.Collect().
+D Assets/_Project/Scripts/Core/ItemDatabaseInitializer.cs (85 lines)
+  - Дублировал InventoryWorld.RegisterAllItems (v2).
 
-M Assets/_Project/Scripts/UI/Client/CharacterWindow.cs (+50)
-  - Update: lazy-subscribe для InventoryClientState.
-  - SubscribeInventory / UnsubscribeInventory: идемпотентные через флаг.
-  - OnDisable: использует UnsubscribeInventory.
-  - EnsureBuilt: SubscribeInventory (без bare +=).
-  - RefreshInventoryCache / ApplyInventoryFilters: RefreshItems + null-trick.
-  - SwitchTab: MarkDirtyRepaint() после display: flex.
-  - DIAG-логи (для будущей диагностики).
+--- Удалено (8 .asset файлов) ---
 
-M Assets/_Project/Items/Client/InventoryClientState.cs (+2)
-  - OnSnapshotReceived: DIAG-лог (items, handlers count).
+D Assets/_Project/Resources/Items/Item_Type{1..8}.asset
+  - Старые заглушки без имён/иконок, 0 ссылок в коде/сценах/префабах.
+  - Заменены 24 новыми .asset'ами (по 3 на каждый из 8 ItemType).
 
-M Assets/_Project/Scenes/World/WorldScene_0_0.unity
-  - (от Phase 7 — добавлены 3 chest + 6 pickup, не от этой сессии,
-    но uncommitted changes в рабочем дереве)
+--- Safety-patches (4 файла, чтобы не сломать compile) ---
 
-M docs/Character-menu/sub_inventory-tab/60_KNOWN_ISSUES.md (+90)
-  - §11 Phase 8 — Bugfixes (документация 3 багов + fix).
+M Assets/_Project/Scripts/Core/PickupItem.cs
+  - Убрана else-ветка с ProjectC.Core.NetworkInventory.GetItemId.
+  - Единственный путь: InventoryWorld.GetOrRegisterItemId.
 
-=== R3-005 ===
-R3-005 chest+pickup миграция: chest через v2 AddItem (Phase 5),
-pickup через v2 RequestPickup (Phase 8). Оба работают.
+M Assets/_Project/Scripts/World/Chest/NetworkChestContainer.cs
+  - Убран legacy fallback на NetworkInventory.AddItem.
+  - Единственный путь: v2 InventoryServer.AddItem.
+  - Если Instance == null → Debug.LogError (должно быть impossible).
 
-Refs: docs/Character-menu/sub_inventory-tab/60_KNOWN_ISSUES.md §11
+M Assets/_Project/Scripts/Player/NetworkPlayer.cs
+  - Удалены поля private Inventory _inventory, private InventoryUI _inventoryUI.
+  - OnNetworkSpawn: убрана _inventory.LoadFromPrefs.
+  - OnNetworkDespawn: убраны _inventory.SaveToPrefs + Destroy(_inventoryUI).
+  - SpawnInventory: no-op hook.
+  - TryPickup: убрана legacy chest-ветка (_nearestChest.GetLootItems).
+  - Pickup: единственный путь _nearestPickup.Collect() (v2 RPC).
+
+M Assets/_Project/Scripts/Core/NetworkManagerController.cs
+  - Удалён reflection-блок сохранения _inventory через
+    GetField("_inventory") в Disconnect().
+
+--- Документация ---
+
+M docs/Character-menu/sub_inventory-tab/60_KNOWN_ISSUES.md
+  - §12 Phase 9 — Cleanup: что удалено, что патчено, что осталось.
+  - Обновлён "Заключение": Phase 7+8+9 готовы.
+
+--- Compile state ---
+
+0 errors. Phase 9 завершён. ~1700 lines мёртвого кода удалено.
+
+Refs:
+- INVENTORY_V2_REFACTOR.md §11.5 (cleanup plan)
+- 60_KNOWN_ISSUES.md §12 (Phase 9)
+- unity-mcp-orchestrator SKILL pitfalls #31, #33, #36, #37
 ```
 
 ---
@@ -126,24 +142,61 @@ Refs: docs/Character-menu/sub_inventory-tab/60_KNOWN_ISSUES.md §11
 ## Commit message (short form)
 
 ```
-inventory v2 bugfixes: scene-spawn BootstrapScene + pickup v2 path + P-tab lazy-subscribe
+inventory v2 cleanup: remove 5 dead .cs + 8 dead .asset (Phase 9)
 ```
 
 ---
 
-## После commit
-
-```bash
-git log --oneline -3
-```
-
 ## Что НЕ включено в этот commit
 
 - `Assets/_Project/ScriptableObjects/DayNight/MoonMaterial.mat` — pre-existing изменение не моё
-- `Assets/_Project/Screenshots/` — если ты делал скриншоты, не включай в этот commit
+- `Assets/_Project/Screenshots/` — если ты делал скриншоты, не включай
 - `Library/`, `Temp/`, `Logs/`, `Builds/`, `UserSettings/` — в .gitignore
+- `graphify-out/` — кэш graphify-анализа, не код
+
+---
 
 ## Что осталось после этого commit
 
-Phase 9 (отдельная сессия): cleanup legacy (`Inventory.cs`, `InventoryUI.cs` IMGUI, `ItemPickupSystem.cs`, `NetworkInventory.cs`, `Item_Type1..8.asset`).
-Phase 10+: Stackable / Drop / Use / Cargo / multi-client verify.
+- **Phase 10** (отдельная сессия): Stackable / Drop / Use / Cargo / multi-client verify
+- **Live legacy** (не удалено в Phase 9, требует отдельной миграции):
+  - `Assets/_Project/Scripts/Core/ChestContainer.cs` — нужен для InteractableManager,
+    NetworkPlayer.FindNearestInteractable, ChunkNetworkSpawner
+
+---
+
+## git status --short (ожидаемо)
+
+```
+M  Assets/_Project/Scripts/Core/NetworkManagerController.cs
+M  Assets/_Project/Scripts/Core/PickupItem.cs
+M  Assets/_Project/Scripts/Player/NetworkPlayer.cs
+M  Assets/_Project/Scripts/World/Chest/NetworkChestContainer.cs
+M  docs/Character-menu/sub_inventory-tab/60_KNOWN_ISSUES.md
+D  Assets/_Project/Resources/Items/Item_Type1.asset
+D  Assets/_Project/Resources/Items/Item_Type1.asset.meta
+D  Assets/_Project/Resources/Items/Item_Type2.asset
+D  Assets/_Project/Resources/Items/Item_Type2.asset.meta
+D  Assets/_Project/Resources/Items/Item_Type3.asset
+D  Assets/_Project/Resources/Items/Item_Type3.asset.meta
+D  Assets/_Project/Resources/Items/Item_Type4.asset
+D  Assets/_Project/Resources/Items/Item_Type4.asset.meta
+D  Assets/_Project/Resources/Items/Item_Type5.asset
+D  Assets/_Project/Resources/Items/Item_Type5.asset.meta
+D  Assets/_Project/Resources/Items/Item_Type6.asset
+D  Assets/_Project/Resources/Items/Item_Type6.asset.meta
+D  Assets/_Project/Resources/Items/Item_Type7.asset
+D  Assets/_Project/Resources/Items/Item_Type7.asset.meta
+D  Assets/_Project/Resources/Items/Item_Type8.asset
+D  Assets/_Project/Resources/Items/Item_Type8.asset.meta
+D  Assets/_Project/Scripts/Core/Inventory.cs
+D  Assets/_Project/Scripts/Core/Inventory.cs.meta
+D  Assets/_Project/Scripts/Core/ItemDatabaseInitializer.cs
+D  Assets/_Project/Scripts/Core/ItemDatabaseInitializer.cs.meta
+D  Assets/_Project/Scripts/Core/NetworkInventory.cs
+D  Assets/_Project/Scripts/Core/NetworkInventory.cs.meta
+D  Assets/_Project/Scripts/Player/ItemPickupSystem.cs
+D  Assets/_Project/Scripts/Player/ItemPickupSystem.cs.meta
+D  Assets/_Project/Scripts/UI/InventoryUI.cs
+D  Assets/_Project/Scripts/UI/InventoryUI.cs.meta
+```

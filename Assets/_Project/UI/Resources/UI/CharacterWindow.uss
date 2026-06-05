@@ -1,0 +1,269 @@
+/* ============================================
+   CharacterWindow.uss — стили окна персонажа (Project C: The Clouds)
+   Документация: docs/Character-menu/10_DESIGN.md
+
+   Концепции реюзаны из MarketWindow.uss (растягивание, 4 FIX'а: positioning,
+   pickingMode, cursor, MarkDirtyRepaint), но для ОКНА ЦЕЛИКОМ — 5 табов,
+   общий filter-row, 2 типа контента (stats-grid + ListView).
+
+   ТЮНИНГ РАЗМЕРА:
+   • .character-window: width / max-height — общие габариты (720px — шире MarketWindow)
+   • .item-list:        min-height / max-height — высота списков
+   • .stats-grid:       стат-поля (характеристики / корабль)
+   ============================================ */
+
+.character-window {
+    position: absolute;
+    top: 5%;
+    left: 50%;
+    translate: -50% 0;
+    width: 720px;
+    max-width: 90%;
+    max-height: 90%;
+    background-color: rgba(20, 25, 35, 0.95);
+    border-width: 2px;
+    border-color: rgba(120, 150, 200, 0.8);
+    border-radius: 8px;
+    padding: 12px;
+    color: rgb(220, 220, 230);
+    font-size: 14px;
+    display: flex;
+    flex-direction: column;
+    align-items: stretch;
+}
+
+/* === Header === */
+.header {
+    flex-direction: row;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 8px;
+}
+.character-name {
+    font-size: 20px;
+    color: rgb(255, 220, 130);
+    -unity-font-style: bold;
+}
+.time-label {
+    font-size: 12px;
+    color: rgb(180, 180, 200);
+}
+
+/* === Info bar === */
+.info-bar {
+    flex-direction: row;
+    justify-content: space-between;
+    margin-bottom: 12px;
+    padding: 6px 0;
+    border-top-width: 1px;
+    border-bottom-width: 1px;
+    border-color: rgba(120, 150, 200, 0.3);
+}
+.credits-label {
+    color: rgb(255, 230, 150);
+    -unity-font-style: bold;
+}
+.location-info {
+    color: rgb(180, 200, 220);
+    font-size: 12px;
+}
+
+/* === Tabs (с wrap для будущих табов) === */
+.tabs {
+    flex-direction: row;
+    flex-wrap: wrap;
+    margin-bottom: 8px;
+}
+.tab-btn {
+    flex-grow: 1;
+    height: 30px;
+    background-color: rgba(60, 80, 120, 0.4);
+    color: rgb(220, 220, 230);
+    border-width: 0;
+    border-bottom-width: 2px;
+    border-color: transparent;
+    -unity-font-style: bold;
+}
+.tab-btn:hover {
+    background-color: rgba(80, 100, 140, 0.6);
+}
+.tab-btn.active {
+    border-bottom-color: rgb(255, 220, 130);
+    background-color: rgba(80, 110, 160, 0.6);
+}
+
+/* === Filters row (Контракты/Инвентарь) === */
+.filters-row {
+    flex-direction: row;
+    margin-bottom: 6px;
+    padding: 4px;
+    background-color: rgba(30, 45, 70, 0.4);
+    border-radius: 4px;
+}
+.filter-dd {
+    flex-grow: 1;
+    margin-right: 4px;
+}
+.filter-search {
+    width: 140px;
+}
+
+/* === List sections === */
+.list-section {
+    min-height: 90px;
+    margin-bottom: 6px;
+}
+.section-title {
+    color: rgb(180, 200, 220);
+    font-size: 12px;
+    margin-bottom: 4px;
+}
+.item-list {
+    min-height: 80px;
+    max-height: 280px;
+    background-color: rgba(30, 40, 60, 0.4);
+    border-width: 1px;
+    border-color: rgba(80, 100, 130, 0.4);
+    border-radius: 4px;
+}
+
+/* === Stats grid (для character-section / ship-section) === */
+.stats-grid {
+    flex-direction: column;
+    padding: 6px;
+    background-color: rgba(30, 40, 60, 0.4);
+    border-radius: 4px;
+}
+.stat-row {
+    flex-direction: row;
+    justify-content: space-between;
+    padding: 3px 6px;
+    border-bottom-width: 1px;
+    border-bottom-color: rgba(80, 100, 130, 0.15);
+}
+.stat-label {
+    color: rgb(180, 180, 200);
+}
+.stat-value {
+    color: rgb(220, 220, 230);
+    -unity-font-style: bold;
+}
+.stat-value.debt-warn   { color: rgb(255, 200, 100); }
+.stat-value.debt-danger { color: rgb(255, 100, 100); }
+
+/* === Placeholder hint === */
+.placeholder-hint {
+    color: rgb(140, 140, 160);
+    font-size: 11px;
+    -unity-font-style: italic;
+    margin-top: 8px;
+}
+
+/* === Actions === */
+.actions {
+    flex-direction: row;
+    flex-wrap: wrap;
+    margin-top: 8px;
+    min-height: 40px;
+}
+.action-btn {
+    flex-grow: 1;
+    height: 36px;
+    margin: 2px;
+    color: rgb(240, 240, 240);
+    -unity-font-style: bold;
+    border-width: 0;
+    border-radius: 4px;
+}
+.action-btn.accept   { background-color: rgba(80, 160, 80, 0.7); }
+.action-btn.complete { background-color: rgba(80, 130, 200, 0.7); }
+.action-btn.fail     { background-color: rgba(200, 80, 60, 0.7); }
+.action-btn.close    { background-color: rgba(120, 80, 80, 0.7); }
+.action-btn:hover    { scale: 1.05 1.05; }
+
+/* === Message === */
+.message-label {
+    margin-top: 8px;
+    padding: 6px;
+    color: rgb(220, 220, 230);
+    font-size: 12px;
+    background-color: rgba(0, 0, 0, 0.3);
+    border-radius: 4px;
+    -unity-text-align: middle-center;
+}
+
+/* === Row states (для contracts/inventory/reputation) === */
+.contract-row {
+    flex-direction: row;
+    align-items: center;
+    height: 30px;
+    padding: 0 8px;
+    border-bottom-width: 1px;
+    border-color: rgba(80, 100, 130, 0.2);
+}
+.contract-row:hover {
+    background-color: rgba(100, 130, 180, 0.3);
+}
+.contract-type   { width: 90px;  font-size: 12px; }
+.contract-item   { flex-grow: 1; font-size: 12px; }
+.contract-reward { width: 80px;  font-size: 12px; -unity-text-align: middle-right; }
+.contract-timer  { width: 50px;  font-size: 12px; -unity-text-align: middle-right; }
+.type-standard { color: rgb(80, 150, 255); }
+.type-urgent   { color: rgb(255, 130, 50); -unity-font-style: bold; }
+.type-receipt  { color: rgb(80, 255, 100); }
+.contract-row-active {
+    background-color: rgba(80, 200, 100, 0.25);
+    border-left-width: 3px;
+    border-left-color: rgb(80, 220, 100);
+}
+.contract-row-just-taken {
+    background-color: rgba(120, 255, 140, 0.5);
+    border-left-width: 3px;
+    border-left-color: rgb(160, 255, 180);
+    transition-property: background-color, border-left-color;
+    transition-duration: 1.5s;
+}
+.timer-warn   { color: rgb(255, 220, 100); }
+.timer-danger { color: rgb(255, 80, 80);  -unity-font-style: bold; }
+.timer-ok     { color: rgb(180, 220, 255); }
+
+.inventory-row {
+    flex-direction: row;
+    align-items: center;
+    height: 30px;
+    padding: 0 8px;
+    border-bottom-width: 1px;
+    border-color: rgba(80, 100, 130, 0.2);
+}
+.inventory-row:hover {
+    background-color: rgba(100, 130, 180, 0.3);
+}
+.inventory-icon { width: 24px; height: 24px; margin-right: 6px; }
+.inventory-name { flex-grow: 1; font-size: 12px; }
+.inventory-type { width: 110px; font-size: 11px; color: rgb(150, 180, 220); }
+.inventory-qty  { width: 40px;  font-size: 12px; -unity-text-align: middle-right; }
+
+.reputation-row {
+    flex-direction: row;
+    align-items: center;
+    height: 32px;
+    padding: 0 8px;
+    border-bottom-width: 1px;
+    border-color: rgba(80, 100, 130, 0.2);
+}
+.reputation-row:hover {
+    background-color: rgba(100, 130, 180, 0.3);
+}
+.reputation-faction { width: 180px; font-size: 12px; }
+.reputation-bar {
+    flex-grow: 1;
+    height: 14px;
+    background-color: rgba(40, 50, 70, 0.6);
+    border-radius: 2px;
+    margin: 0 8px;
+}
+.reputation-fill {
+    height: 100%;
+    border-radius: 2px;
+}
+.reputation-value { width: 60px; font-size: 12px; -unity-text-align: middle-right; }

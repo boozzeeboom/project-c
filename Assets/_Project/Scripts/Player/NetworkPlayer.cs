@@ -295,6 +295,16 @@ namespace ProjectC.Player
                 SubmitSwitchModeRpc();
             }
 
+            // P — открыть/закрыть CharacterWindow ("P"ress / "P"rofile / "P"erson)
+            // (CharacterMenu v1, 2026-06-05: docs/Character-menu/00_OVERVIEW.md §7)
+            if (Keyboard.current.pKey.wasPressedThisFrame
+                && NetworkManager.Singleton != null
+                && IsSpawned)
+            {
+                var cw = ProjectC.UI.Client.CharacterWindow.Instance;
+                if (cw != null) cw.Toggle();
+            }
+
             if (_inShip)
             {
                 // Управление кораблём

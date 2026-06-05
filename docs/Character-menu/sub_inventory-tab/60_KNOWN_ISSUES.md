@@ -299,16 +299,105 @@ Console → [NetworkPlayer:1] ReceiveInventorySnapshotTargetRpc
 
 ---
 
+## 11. Phase 8 — Bugfixes (2026-06-05)
+
+Три бага найдены и исправлены в этой сессии (после первой попытки тестирования).
+
+### 11.1 БАГ #1: `[InventoryServer]` не заспавнен
+
+**Симптом:** Chest pickup → нет snapshot → TAB-колесо пустое (в прошлой итерации).
+
+**Root cause:**
+- `[InventoryServer]` (scene-placed в BootstrapScene) имеет `InScenePlacedSourceGlobalObjectIdHash = 0`
+- NGO scene manager **не спавнит** объекты с `hash=0` автоматически
+- `ScenePlacedObjectSpawner.SpawnInAllLoadedScenes()` фильтровал только `WorldScene_*` — **BootstrapScene пропускалась**
+
+**Fix:** `ScenePlacedObjectSpawner.cs` — убрал фильтр `scene.name.StartsWith("WorldScene_")`. Теперь для не-WorldScene сцен спавним все scene-placed NetworkObject вручную.
+
+**Verify:** `Scene(0, 0): spawned=12, already=0, failed=0` (12 = InventoryServer + MarketServer + ContractServer + CloudManager + ServerWeatherController + остальные сцен-placed).
+
+### 11.2 БАГ #2: Pickup не добавлял в инвентарь
+
+**Симптом:** "предметы визуально подбираются, но в инвентаре не числятся".
+
+**Root cause:** `NetworkPlayer.TryPickup()` (строки 578-588) вызывал **`_inventory.AddItem(_nearestPickup.itemData)`**, но `_inventory == null` после Phase 4 (SpawnInventory заноплен). Предмет деактивировался через RPC, но **никогда не попадал в InventoryClientState**.
+
+**Fix:** `NetworkPlayer.cs` — fallback на v2: `if (_inventory != null) _inventory.AddItem(...) else _nearestPickup.Collect()`. `PickupItem.Collect()` шлёт `RequestPickup` через `InventoryClientState → InventoryServer.RequestPickupRpc`.
+
+**Verify:** `PickupItem <Name> успешно подобран` + `InventoryWorld Player 0 picked up ID=7 (Food). Total: 5`.
+
+### 11.3 БАГ #3: P-таб пуст при первом клике (нужно toggle через Рынок)
+
+**Симптом:** P → Инвентарь (1-й клик) — пусто. P → Рынок → Инвентарь (3-й клик) — работает.
+
+**Root cause (двухслойный):**
+
+1. **Lazy-subscribe race condition:** В `EnsureBuilt` (OnEnable) `InventoryClientState.Instance` мог быть `null` (NetworkManagerController.Awake ещё не создал root GO — Unity script execution order race). Подписка `OnSnapshotUpdated += HandleInventorySnapshotUpdated` пропускалась. После StartHost Instance появлялся, но EnsureBuilt уже отработал.
+
+   Доказательство: в логе `[InventoryClientState] OnSnapshotReceived: items=N, handlers=1` — подписан **только InventoryUI (TAB-колесо)**, не CharacterWindow.
+
+2. **ListView layout pitfall:** даже если подписка отрабатывала, первый `display: none → flex` на `inventory-section` (UXML дефолт `style="display: none;"`) не вызывал повторный layout — VE не создавались, `bindItem` не вызывался. После toggle через другой таб — VE создавались.
+
+**Fix (3 части):**
+
+1. **Lazy-subscribe в `Update()`** (`CharacterWindow.cs`):
+   ```csharp
+   private void Update() {
+       if (_built && !_isInventorySubscribed) {
+           var invState = InventoryClientState.Instance;
+           if (invState != null) {
+               SubscribeInventory();
+               invState.RequestRefresh();
+               Debug.Log("[CharacterWindow] Lazy-subscribed to InventoryClientState.OnSnapshotUpdated");
+           }
+       }
+       // ... старый код ...
+   }
+   ```
+   Флаг `_isInventorySubscribed` — идемпотентность. `SubscribeInventory()` / `UnsubscribeInventory()` — через флаг, без bare `+=`/`-=`.
+
+2. **`RefreshInventoryCache` + `ApplyInventoryFilters`**: `Rebuild()` → `RefreshItems()` + null-trick:
+   ```csharp
+   if (!ReferenceEquals(_inventoryList.itemsSource, _inventoryCache))
+       _inventoryList.itemsSource = _inventoryCache;
+   _inventoryList.RefreshItems();
+   ```
+   `RefreshItems()` вызывает `bindItem` для всех видимых элементов (а не пересоздаёт их).
+
+3. **`SwitchTab("inventory")`**: добавил `_inventoryList.MarkDirtyRepaint()` после `display: flex` — принудительный пересчёт layout для ListView после first-show.
+
+**Verify (после фикса):**
+- `[CharacterWindow] Lazy-subscribed to InventoryClientState.OnSnapshotUpdated`
+- `OnSnapshotReceived: items=N, handlers=2` (вместо 1)
+- `[CharacterWindow] HandleInventorySnapshotUpdated: items=N, ...`
+- P → Инвентарь сразу показывает содержимое (без toggle)
+
+### 11.4 Compile error при добавлении Update
+
+**Симптом:** `error CS0111: Type 'CharacterWindow' already defines a member called 'Update'`
+
+**Root cause:** я добавил свой `private void Update()`, не зная что в `CharacterWindow` уже есть свой `Update()` (для Esc-handler'а).
+
+**Fix:** встроил lazy-subscribe в существующий Update, не дублируя.
+
+### 11.5 Что осталось открытым
+
+- **Multi-client verify** (ParrelSync) — не тестировалось в этой сессии
+- **NetworkChestContainer legacy fallback** — остаётся (как safety net), но `InventoryServer.AddItem` теперь основной путь
+- **Cleanup** (Phase 9, отдельная сессия): удаление `Inventory.cs`, `InventoryUI.cs` IMGUI, `ItemPickupSystem.cs`, `NetworkInventory.cs` (когда все потребители мигрируют), `Item_Type1..8.asset`
+
+---
+
 ## Заключение
 
-Phase 7 — **готово к тестированию** для базовых сценариев (Tests #1-13). Phase 8+ — cleanup + advanced features.
+Phase 7 (базовая функциональность) — **готово к тестированию**. Phase 8 (bugfixes) — **готово**.
 
 **Compile state:** 0 errors.
 **Coverage:**
-- ✅ Pickup (single client)
-- ✅ TAB-колесо (UI Toolkit)
-- ✅ P-таб (CharacterWindow)
+- ✅ Pickup (single client) — bugfix #11.2
+- ✅ Chest pickup (single client) — bugfix #11.1
+- ✅ TAB-колесо (UI Toolkit) — Phase 4
+- ✅ P-таб (CharacterWindow) — bugfix #11.3
 - ✅ Server-authoritative snapshot
-- ⚠️ NetworkChestContainer — частично (см. выше)
-- ⚠️ Multi-client — не проверено
-- ❌ Stackable / Drop / Cargo — TODO
+- ⚠️ Multi-client — не проверено (требует ParrelSync)
+- ❌ Stackable / Drop / Use / Cargo — TODO Phase 9+

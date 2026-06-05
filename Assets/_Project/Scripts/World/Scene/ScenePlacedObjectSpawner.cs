@@ -82,14 +82,49 @@ namespace ProjectC.World.Scene
             {
                 var scene = SceneManager.GetSceneAt(i);
                 if (!scene.isLoaded) continue;
-                if (!scene.name.StartsWith("WorldScene_")) continue;
 
-                // Извлечь SceneID из имени "WorldScene_X_Z"
-                var parts = scene.name.Substring("WorldScene_".Length).Split('_');
-                if (parts.Length != 2) continue;
-                if (!int.TryParse(parts[0], out int gridX) || !int.TryParse(parts[1], out int gridZ)) continue;
-
-                SpawnInScene(new SceneID(gridX, gridZ));
+                // Извлечь SceneID из имени "WorldScene_X_Z" (если это WorldScene)
+                // Иначе — спавним всё в сцене (например, BootstrapScene содержит [InventoryServer], [MarketServer], [ContractServer])
+                bool isWorldScene = scene.name.StartsWith("WorldScene_");
+                SceneID sceneId = default;
+                if (isWorldScene)
+                {
+                    var parts = scene.name.Substring("WorldScene_".Length).Split('_');
+                    if (parts.Length != 2) continue;
+                    if (!int.TryParse(parts[0], out int gridX) || !int.TryParse(parts[1], out int gridZ)) continue;
+                    sceneId = new SceneID(gridX, gridZ);
+                    SpawnInScene(sceneId);
+                }
+                else
+                {
+                    // Для не-WorldScene сцен (BootstrapScene) — спавним ВСЕ scene-placed NetworkObject
+                    // вручную, потому что NGO scene manager их не спавнит (InScenePlacedSourceGlobalObjectIdHash=0).
+                    // FIX 2026-06-05: [InventoryServer] в BootstrapScene требовал этого.
+                    int spawned = 0, already = 0, failed = 0;
+                    foreach (var root in scene.GetRootGameObjects())
+                    {
+                        var networkObjects = root.GetComponentsInChildren<NetworkObject>(true);
+                        foreach (var netObj in networkObjects)
+                        {
+                            if (netObj == null) continue;
+                            if (netObj.IsSpawned) { already++; continue; }
+                            try
+                            {
+                                netObj.Spawn(destroyWithScene: false);
+                                spawned++;
+                            }
+                            catch (System.Exception ex)
+                            {
+                                failed++;
+                                if (showDebugLogs) Debug.LogWarning($"[ScenePlacedObjectSpawner] Failed to spawn {netObj.name} in {scene.name}: {ex.Message}");
+                            }
+                        }
+                    }
+                    if (showDebugLogs && (spawned > 0 || already > 0 || failed > 0))
+                    {
+                        Debug.Log($"[ScenePlacedObjectSpawner] Scene {scene.name}: spawned={spawned}, already={already}, failed={failed}");
+                    }
+                }
             }
         }
 

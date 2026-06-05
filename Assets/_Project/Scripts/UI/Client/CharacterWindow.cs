@@ -202,14 +202,34 @@ namespace ProjectC.UI.Client
                 _contractState.OnSnapshotUpdated -= HandleContractSnapshot;
                 _contractState.OnContractResult  -= HandleContractResult;
             }
-            // Phase 5 (INVENTORY_V2_REFACTOR.md): отписка от InventoryClientState
-            // (важно: OnEnable/OnDisable парность, иначе event leak при re-enable).
+            // BUGFIX 2026-06-05: используем флаг-версию (UnsubscribeInventory).
+            // Старая версия делала bare -=, и если подписки не было — flag оставался неверным.
+            UnsubscribeInventory();
+        }
+
+        private bool _isInventorySubscribed = false;
+
+        // BUGFIX 2026-06-05: lazy-subscribe встроен в Update ниже (строка 255+).
+        // Helpers Subscribe/Unsubscribe оставлены для идемпотентности.
+
+        private void SubscribeInventory()
+        {
+            if (_isInventorySubscribed) return;
             var invState = ProjectC.Items.Client.InventoryClientState.Instance;
-            if (invState != null)
-            {
-                invState.OnSnapshotUpdated -= HandleInventorySnapshotUpdated;
-                invState.OnInventoryResult -= HandleInventoryResultReceived;
-            }
+            if (invState == null) return;
+            invState.OnSnapshotUpdated += HandleInventorySnapshotUpdated;
+            invState.OnInventoryResult += HandleInventoryResultReceived;
+            _isInventorySubscribed = true;
+        }
+
+        private void UnsubscribeInventory()
+        {
+            if (!_isInventorySubscribed) return;
+            var invState = ProjectC.Items.Client.InventoryClientState.Instance;
+            if (invState == null) { _isInventorySubscribed = false; return; }
+            invState.OnSnapshotUpdated -= HandleInventorySnapshotUpdated;
+            invState.OnInventoryResult -= HandleInventoryResultReceived;
+            _isInventorySubscribed = false;
         }
 
         private void OnDestroy()
@@ -219,6 +239,20 @@ namespace ProjectC.UI.Client
 
         private void Update()
         {
+            // BUGFIX 2026-06-05: lazy-subscribe для InventoryClientState.
+            // В EnsureBuilt Instance мог быть null (race condition с NMC.Awake).
+            // Если ещё не подписаны, а Instance уже жив — подписываемся.
+            if (_built && !_isInventorySubscribed)
+            {
+                var invState = ProjectC.Items.Client.InventoryClientState.Instance;
+                if (invState != null)
+                {
+                    SubscribeInventory();
+                    invState.RequestRefresh();
+                    Debug.Log("[CharacterWindow] Lazy-subscribed to InventoryClientState.OnSnapshotUpdated");
+                }
+            }
+
             var nm = NetworkManager.Singleton;
             if (nm == null || !nm.IsListening) return;
             if (!nm.IsClient && !nm.IsServer) return;
@@ -391,18 +425,12 @@ namespace ProjectC.UI.Client
 
             // ---- Phase 5 (INVENTORY_V2_REFACTOR.md): Subscribe to InventoryClientState ----
             // Синглтон создаётся в NetworkManagerController.Awake — обычно уже есть
-            // к моменту EnsureBuilt. Если null (тест/edit-mode) — просто молча skip.
-            var invState = ProjectC.Items.Client.InventoryClientState.Instance;
-            if (invState == null)
+            // к моменту EnsureBuilt. Если null (тест/edit-mode) — Update() подпишет lazy.
+            // BUGFIX 2026-06-05: используем флаг-версию SubscribeInventory (идемпотентно).
+            SubscribeInventory();
+            if (ProjectC.Items.Client.InventoryClientState.Instance == null)
             {
-                Debug.LogWarning("[CharacterWindow] InventoryClientState.Instance == null, таб 'Инвентарь' не будет обновляться до StartHost");
-            }
-            else
-            {
-                invState.OnSnapshotUpdated += HandleInventorySnapshotUpdated;
-                invState.OnInventoryResult += HandleInventoryResultReceived;
-                // Попросить сервер прислать свежий snapshot (если есть данные — перерендерим)
-                invState.RequestRefresh();
+                Debug.LogWarning("[CharacterWindow] InventoryClientState.Instance == null на момент EnsureBuilt — Update() lazy-подпишется");
             }
 
             // ---- Initial state ----
@@ -437,6 +465,13 @@ namespace ProjectC.UI.Client
             if (_reputationSection != null) _reputationSection.style.display = isReputation ? DisplayStyle.Flex : DisplayStyle.None;
             if (_contractsSection  != null) _contractsSection.style.display  = isContracts  ? DisplayStyle.Flex : DisplayStyle.None;
             if (_inventorySection  != null) _inventorySection.style.display  = isInventory  ? DisplayStyle.Flex : DisplayStyle.None;
+
+            // BUGFIX 2026-06-05: display: none → flex на ListView в первый раз
+            // не вызывает повторный layout — нужно принудительно MarkDirtyRepaint
+            // (иначе строки не отрисованы до следующего toggle). UI Toolkit pitfall.
+            if (isInventory && _inventoryList != null) {
+                _inventoryList.MarkDirtyRepaint();
+            }
 
             // ---- Active tab visual ----
             SetActiveTabVisual(_tabCharacter,  isCharacter);
@@ -645,10 +680,12 @@ namespace ProjectC.UI.Client
             if (invState == null || !invState.CurrentSnapshot.HasValue)
             {
                 // Данных ещё нет — пустой кэш. UI покажет пустой список, message "Загрузка..."
+                Debug.Log($"[CharacterWindow.RefreshInventoryCache] no-snapshot: invState={(invState!=null?"OK":"NULL")}, list={(_inventoryList!=null?"OK":"NULL")}");
                 if (_inventoryList != null)
                 {
-                    _inventoryList.itemsSource = _inventoryCache;
-                    _inventoryList.Rebuild();
+                    if (!ReferenceEquals(_inventoryList.itemsSource, _inventoryCache))
+                        _inventoryList.itemsSource = _inventoryCache;
+                    _inventoryList.RefreshItems();
                 }
                 return;
             }
@@ -657,10 +694,12 @@ namespace ProjectC.UI.Client
             var items = snap.items;
             if (items == null)
             {
+                Debug.Log($"[CharacterWindow.RefreshInventoryCache] items=null, list={(_inventoryList!=null?"OK":"NULL")}");
                 if (_inventoryList != null)
                 {
-                    _inventoryList.itemsSource = _inventoryCache;
-                    _inventoryList.Rebuild();
+                    if (!ReferenceEquals(_inventoryList.itemsSource, _inventoryCache))
+                        _inventoryList.itemsSource = _inventoryCache;
+                    _inventoryList.RefreshItems();
                 }
                 return;
             }
@@ -700,8 +739,13 @@ namespace ProjectC.UI.Client
 
             if (_inventoryList != null)
             {
-                _inventoryList.itemsSource = _inventoryCache;
-                _inventoryList.Rebuild();
+                // BUGFIX 2026-06-05: используем RefreshItems() вместо Rebuild() + null-trick.
+                // Rebuild() иногда не перебиндит строки, если itemsSource = тот же reference.
+                // RefreshItems() вызывает bindItem для всех видимых элементов с текущим itemsSource.
+                if (!ReferenceEquals(_inventoryList.itemsSource, _inventoryCache)) {
+                    _inventoryList.itemsSource = _inventoryCache;
+                }
+                _inventoryList.RefreshItems();
             }
         }
 
@@ -711,6 +755,10 @@ namespace ProjectC.UI.Client
         /// </summary>
         private void HandleInventorySnapshotUpdated(InventorySnapshotDto snap)
         {
+            // DIAG (bug report 2026-06-05): P-таб пуст при chest-add, но TAB обновляется.
+            // Логируем чтобы понять — cache заполняется, _inventoryList != null?
+            Debug.Log($"[CharacterWindow] HandleInventorySnapshotUpdated: items={(snap.items!=null?snap.items.Length:0)}, activeTab={_activeTab}, _inventoryList={(_inventoryList!=null?"OK":"NULL")}, cacheBefore={_inventoryCache.Count}");
+
             // Cross-tab: обновляем общий credits в header, если есть
             if (_creditsLabel != null)
             {
@@ -721,9 +769,14 @@ namespace ProjectC.UI.Client
                 _statCredits.text = $"{snap.credits:F0} CR";
             }
 
+            // FIX (bug report 2026-06-05): refresh cache UNCONDITIONALLY, не только при _activeTab == "inventory".
+            // Причина: cache читает InventoryClientState.CurrentSnapshot (он ВСЕГДА обновлён).
+            // Если не обновлять при неактивном табе, при следующем SwitchTab("inventory")
+            // мы прочитаем stale cache. (ApplyInventoryFilters будет применять фильтры, RefreshInventoryCache перечитает.)
+            // Сейчас безусловный refresh — SwitchTab всё равно пересоздаст UI.
+            RefreshInventoryCache();
             if (_activeTab == "inventory")
             {
-                RefreshInventoryCache();
                 ApplyInventoryFilters();
             }
         }
@@ -999,8 +1052,12 @@ namespace ProjectC.UI.Client
                 src = src.Where(i => (i.displayName ?? "").ToLowerInvariant().Contains(search));
             }
 
-            _inventoryList.itemsSource = src.ToList();
-            _inventoryList.Rebuild();
+            // BUGFIX 2026-06-05: то же что в RefreshInventoryCache — RefreshItems() + null-trick.
+            var filteredList = src.ToList();
+            if (!ReferenceEquals(_inventoryList.itemsSource, filteredList)) {
+                _inventoryList.itemsSource = filteredList;
+            }
+            _inventoryList.RefreshItems();
         }
 
         // ============================================================

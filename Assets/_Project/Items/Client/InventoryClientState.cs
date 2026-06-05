@@ -82,6 +82,8 @@ namespace ProjectC.Items.Client
             CurrentSnapshot = snapshot;
             try
             {
+                int handlerCount = OnSnapshotUpdated?.GetInvocationList().Length ?? 0;
+                Debug.Log($"[InventoryClientState] OnSnapshotReceived: items={(snapshot.items!=null?snapshot.items.Length:0)}, handlers={handlerCount}");
                 OnSnapshotUpdated?.Invoke(snapshot);
             }
             catch (Exception ex)

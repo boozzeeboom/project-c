@@ -1,7 +1,16 @@
-# Commit message — Inventory v2 Refactor (Phases 1-7)
+# Commit message — Inventory v2 Bugfixes (Phase 8, 2026-06-05)
 
 **Кто коммитит:** пользователь (Mavis не делает `git commit` per AGENTS.md)
-**Когда:** после успешного тестирования (Tests #1-13 в `50_TESTING_GUIDE.md`)
+**Когда:** после успешного тестирования (Phase 8 bugfixes работают, см. `60_KNOWN_ISSUES.md` §11)
+
+---
+
+## ⚠️ Этот коммит — только BUGFIXES
+
+Phase 1-7 (v2 рефакторинг) уже закоммичены ранее.
+Текущий коммит содержит **только** файлы, изменённые в Phase 8 bugfix-сессии.
+
+**Не включай `MoonMaterial.mat`** (он в `M` статусе, но это **pre-existing** изменение не моё).
 
 ---
 
@@ -9,35 +18,13 @@
 
 ```bash
 cd "C:/UNITY_PROJECTS/ProjectC_client"
-git add Assets/_Project/Items/ \
-        Assets/_Project/UI/Resources/UI/InventoryWheel.uxml \
-        Assets/_Project/UI/Resources/UI/InventoryWheel.uss \
-        Assets/_Project/UI/Resources/UI/InventoryWheel.uxml.meta \
-        Assets/_Project/UI/Resources/UI/InventoryWheel.uss.meta \
-        Assets/_Project/UI/Resources/UI/InventoryPanelSettings.asset \
-        Assets/_Project/UI/Resources/UI/InventoryPanelSettings.asset.meta \
-        Assets/_Project/UI/Client/InventoryUI.cs \
-        Assets/_Project/UI/Client/InventoryUI.cs.meta \
-        Assets/_Project/Scripts/Core/NetworkManagerController.cs \
+git add Assets/_Project/Scripts/World/Scene/ScenePlacedObjectSpawner.cs \
         Assets/_Project/Scripts/Player/NetworkPlayer.cs \
-        Assets/_Project/Scripts/Core/PickupItem.cs \
         Assets/_Project/Scripts/UI/Client/CharacterWindow.cs \
-        Assets/_Project/Scripts/Core/ItemType.cs \
-        Assets/_Project/Scenes/BootstrapScene.unity \
-        Assets/_Project/Resources/Items/Item_*.asset \
-        Assets/_Project/Resources/Items/Item_*.asset.meta \
-        Assets/_Project/Resources/Items/LootTable_TestCommon.asset \
-        Assets/_Project/Resources/Items/LootTable_TestCommon.asset.meta \
-        Assets/_Project/Prefabs/PickupItem_Test.prefab \
-        Assets/_Project/Prefabs/PickupItem_Test.prefab.meta \
-        Assets/_Project/Prefabs/NetworkChestContainer_Test.prefab \
-        Assets/_Project/Prefabs/NetworkChestContainer_Test.prefab.meta \
+        Assets/_Project/Items/Client/InventoryClientState.cs \
         Assets/_Project/Scenes/World/WorldScene_0_0.unity \
-        docs/dev/INVENTORY_V2_REFACTOR.md \
-        docs/Character-menu/sub_inventory-tab/
-
-git status --short
-git diff --cached --stat
+        docs/Character-menu/sub_inventory-tab/60_KNOWN_ISSUES.md
+git status --short   # проверь что нет лишнего
 git commit -F docs/Character-menu/sub_inventory-tab/COMMIT_MESSAGE.txt
 ```
 
@@ -46,185 +33,117 @@ git commit -F docs/Character-menu/sub_inventory-tab/COMMIT_MESSAGE.txt
 ## Commit message (long form)
 
 ```
-inventory v2 refactor: server-authoritative InventoryClientState + TAB/P-tab UI + chest/pickup migration
+inventory v2 bugfixes: scene-spawn BootstrapScene + pickup v2 path + P-tab lazy-subscribe
 
-=== Новый код (server-authoritative v2-архитектура, по образцу ContractClientState) ===
+=== Phase 8: bugfixes после первой попытки тестирования ===
 
-DTOs (Assets/_Project/Items/Dto/):
-  + InventoryItemDto.cs        — struct, INetworkSerializable (1 item)
-  + InventorySnapshotDto.cs    — full snapshot (locationId, items[], maxSlots, credits)
-  + InventoryResultDto.cs      — operation result (success, code, message, newCredits)
-  + InventoryResultCode.cs     — enum: Ok, NotInZone, InventoryFull, RateLimited, ...
+Три бага найдены, все исправлены. Документация в
+docs/Character-menu/sub_inventory-tab/60_KNOWN_ISSUES.md §11.
 
-Core (Assets/_Project/Items/Core/):
-  + InventoryWorld.cs          — POCO singleton, бизнес-логика (TryPickup, BuildSnapshot)
+--- BUGFIX 1: [InventoryServer] не заспавнен ---
+Симптом: chest pickup → нет snapshot → TAB-колесо пустое.
+Root cause: scene-placed NetworkObject в BootstrapScene имеют
+InScenePlacedSourceGlobalObjectIdHash=0, NGO их не спавнит;
+ScenePlacedObjectSpawner фильтровал только WorldScene_* и
+пропускал BootstrapScene.
+Fix: ScenePlacedObjectSpawner.SpawnInAllLoadedScenes() — убрал
+фильтр, для не-WorldScene сцен спавним все scene-placed NetworkObject
+вручную.
+Verify: spawned=12, already=0, failed=0 в Scene(0,0).
 
-Client (Assets/_Project/Items/Client/):
-  + InventoryClientState.cs    — singleton-проекция (events, Request* API, helpers)
+--- BUGFIX 2: pickup не добавлял в инвентарь ---
+Симптом: "предметы визуально подбираются, но в инвентаре не числятся".
+Root cause: NetworkPlayer.TryPickup() вызывал _inventory.AddItem,
+но _inventory == null после Phase 4 (SpawnInventory заноплен).
+Предмет деактивировался через RPC, но никогда не попадал в
+InventoryClientState.
+Fix: fallback на v2: if (_inventory != null) _inventory.AddItem()
+else _nearestPickup.Collect() (шлёт RequestPickup через v2 RPC).
+Verify: PickupItem успешно подобран + InventoryWorld picked up ID=7.
 
-Network (Assets/_Project/Items/Network/):
-  + InventoryServer.cs         — NetworkBehaviour, 5 RPC'шек, rate limit, SendSnapshot/Result
+--- BUGFIX 3: P-таб пуст при первом клике (нужен toggle через Рынок) ---
+Симптом: P → Инвентарь (1-й клик) — пусто. P → Рынок → Инвентарь
+(3-й клик) — работает.
+Root cause (двухслойный):
+  a) Lazy-subscribe race: в EnsureBuilt (OnEnable) InventoryClientState.Instance
+     мог быть null (NetworkManagerController.Awake ещё не создал root GO).
+     Подписка OnSnapshotUpdated += HandleInventorySnapshotUpdated
+     пропускалась. Доказательство: в логе handlers=1 (только TAB-UI),
+     CharacterWindow не подписан.
+  b) ListView layout pitfall: первый display: none → flex на inventory-section
+     не вызывал повторный layout — VE не создавались, bindItem не вызывался.
+Fix (3 части):
+  1) Lazy-subscribe в Update() CharacterWindow с флагом _isInventorySubscribed.
+     SubscribeInventory() / UnsubscribeInventory() идемпотентны.
+  2) RefreshInventoryCache + ApplyInventoryFilters: Rebuild() → RefreshItems()
+     + null-trick (не переприсваиваем itemsSource если та же ссылка).
+  3) SwitchTab("inventory"): _inventoryList.MarkDirtyRepaint() после
+     display: flex.
+Verify: handlers=2 (TAB-UI + CharacterWindow), HandleInventorySnapshotUpdated
+срабатывает, P → Инвентарь сразу показывает содержимое.
 
-Editor (Assets/_Project/Items/Editor/):
-  + ItemDatasetGenerator.cs    — [MenuItem] создаёт 24 ItemData (8 типов × 3)
+--- Compile fix ---
+Опечатка: добавил второй Update() — CS0111. Встроил lazy-subscribe
+в существующий Update (Esc-handler).
 
-=== UI: TAB-колесо переписано с IMGUI/GL на UI Toolkit ===
+=== Изменённые файлы (5 кода + 1 сцена + 1 дока) ===
 
-+ InventoryWheel.uxml          — 8 sectors + center + sublist + actions + message
-+ InventoryWheel.uss           — radial layout, sector states (empty/has-items/hover/selected)
-+ InventoryUI.cs               — 20 KB, полностью переписан:
-                                  • UIDocument + UXML/USS
-                                  • Подписка на InventoryClientState.OnSnapshotUpdated
-                                  • 8 sectors (Resources, Equipment, Food, Fuel, Antigrav, Meziy, Medical, Tech)
-                                  • Sublist ListView с предметами выбранного типа
-                                  • Tab handler (InputAction "<Keyboard>/tab")
-+ InventoryPanelSettings.asset — ОТДЕЛЬНЫЙ PanelSettings (Phase 7.5 fix, не общий с MarketWindow)
+M Assets/_Project/Scripts/World/Scene/ScenePlacedObjectSpawner.cs (+35)
+  - SpawnInAllLoadedScenes: убрал фильтр WorldScene_, для BootstrapScene
+    спавним все NetworkObject вручную.
 
-=== R3-005: Chest + Pickup полностью на v2 ===
+M Assets/_Project/Scripts/Player/NetworkPlayer.cs (+8)
+  - TryPickup: fallback _inventory.AddItem → _nearestPickup.Collect().
 
-M Assets/_Project/Scripts/World/Chest/NetworkChestContainer.cs:
-  • RequestOpenChestServerRpc(RpcParams rpcParams = default) + [Rpc(SendTo.Server, InvokePermission = RpcInvokePermission.Server)]
-  • clientId = rpcParams.Receive.SenderClientId (НЕ LocalClientId — было wrong on dedicated server)
-  • Сначала InventoryServer.Instance?.AddItem(clientId, itemId, itemType) — v2 путь
-  • Fallback на NetworkInventory (legacy safety net)
-  • Debug.Log v2 AddItem — для verify в Console
+M Assets/_Project/Scripts/UI/Client/CharacterWindow.cs (+50)
+  - Update: lazy-subscribe для InventoryClientState.
+  - SubscribeInventory / UnsubscribeInventory: идемпотентные через флаг.
+  - OnDisable: использует UnsubscribeInventory.
+  - EnsureBuilt: SubscribeInventory (без bare +=).
+  - RefreshInventoryCache / ApplyInventoryFilters: RefreshItems + null-trick.
+  - SwitchTab: MarkDirtyRepaint() после display: flex.
+  - DIAG-логи (для будущей диагностики).
 
-+ Assets/_Project/Resources/Items/LootTable_TestCommon.asset — LootTable (3 guaranteed + 1 entry)
-+ Assets/_Project/Prefabs/PickupItem_Test.prefab — Pickup prefab (NetworkObject + BoxCollider trigger + Visual Cube)
-+ Assets/_Project/Prefabs/NetworkChestContainer_Test.prefab — Chest prefab (NetworkObject + BoxCollider trigger + Visual Cube + LootTable ref)
+M Assets/_Project/Items/Client/InventoryClientState.cs (+2)
+  - OnSnapshotReceived: DIAG-лог (items, handlers count).
 
-M Assets/_Project/Scenes/World/WorldScene_0_0.unity:
-  • +3 сундука (Chest_Main, Chest_North, Chest_East) в координатах (40000, 2512, 40000) ± 10m
-  • +6 pickup'ов (3 Res, 2 Food, 1 Fuel) в том же центре, разброс ± 10m
+M Assets/_Project/Scenes/World/WorldScene_0_0.unity
+  - (от Phase 7 — добавлены 3 chest + 6 pickup, не от этой сессии,
+    но uncommitted changes в рабочем дереве)
 
-=== P-таб "Инвентарь" в CharacterWindow подключён к InventoryClientState ===
+M docs/Character-menu/sub_inventory-tab/60_KNOWN_ISSUES.md (+90)
+  - §11 Phase 8 — Bugfixes (документация 3 багов + fix).
 
-M Assets/_Project/Scripts/UI/Client/CharacterWindow.cs:
-  • using ProjectC.Items.Client; + ProjectC.Items.Dto;
-  • Подписка OnSnapshotUpdated/OnInventoryResult в EnsureBuilt
-  • Отписка в OnDisable (event-leak prevention)
-  • RefreshInventoryCache → читает InventoryClientState.CurrentSnapshot
-    (БЫЛО: GetComponentInChildren<Inventory>() + reflection)
-  • HandleInventorySnapshotUpdated — cross-tab credits update
-  • HandleInventoryResultReceived — cross-tab message feedback (pitfall #11)
+=== R3-005 ===
+R3-005 chest+pickup миграция: chest через v2 AddItem (Phase 5),
+pickup через v2 RequestPickup (Phase 8). Оба работают.
 
-=== Патчи ===
-
-M Assets/_Project/Scripts/Core/NetworkManagerController.cs:
-  • CreateInventoryClientState() — auto-spawn (как CreateMarketClientState)
-
-M Assets/_Project/Scripts/Player/NetworkPlayer.cs:
-  • 2 TargetRpc: ReceiveInventorySnapshotTargetRpc, ReceiveInventoryResultTargetRpc
-  • SpawnInventory() — no-op (legacy Inventory/InventoryUI не инстанцируются)
-
-M Assets/_Project/Scripts/Core/PickupItem.cs:
-  • Полностью переписан
-  • Collect() → InventoryClientState.RequestPickup (БЫЛО: просто SetActive(false))
-  • HandlePickupResult — server confirmation, деактивация только при IsSuccess
-  • ForceCollect() — legacy fallback (если нет InventoryClientState)
-
-M Assets/_Project/Scripts/Core/ItemType.cs:
-  • ItemData + поля maxStack, weightKg (default 1, 0.1 — обратная совместимость)
-
-=== Сцена BootstrapScene ===
-
-M Assets/_Project/Scenes/BootstrapScene.unity:
-  • [InventoryWheel] GameObject (UIDocument + InventoryUI)
-    + panelSettings = InventoryPanelSettings (через SerializedObject)
-    + inventoryWheelUxml/Uss сериализованы (через SerializedObject)
-  • [InventoryServer] GameObject (NetworkObject + InventoryServer)
-
-=== Датасет (24 ItemData) ===
-
-A Assets/_Project/Resources/Items/Item_*.asset + .meta:
-  • 8 типов × 3 варианта: Железная руда, Верёвка 10м, Сухпаёк,
-    Антигравитационное топливо, Антиграв-камень малый, Мезий-крошка,
-    Бинт, Батарея, и т.д.
-  • Создано ItemDatasetGenerator через MCP execute_code
-  • Старые Item_Type1..8 (заглушки) оставлены как safety net
-
-=== Документация ===
-
-+ docs/dev/INVENTORY_V2_REFACTOR.md (37 KB) — главный дизайн-док
-+ docs/Character-menu/sub_inventory-tab/:
-  • 00_OVERVIEW.md (10.8 KB → 14.1 KB) — обзор + §10 визуальный фикс стилей + R3-005 chest+pickup
-  • 10_DESIGN.md (13.7 KB) — UXML/USS/classes
-  • 20_IMPLEMENTATION_PLAN.md (20.9 KB) — пошаговый план
-  • 30_VERIFICATION.md (9.6 KB) — manual smoke checklist
-  • 40_CHANGES_SUMMARY.md (23.9 KB) — diff по файлам
-  • 50_TESTING_GUIDE.md (16 KB) — testing scenarios
-  • 60_KNOWN_ISSUES.md (12.4 KB) — bugs + TODO (баг #1 = RESOLVED в R3-005)
-  • 70_CHEST_PICKUP_TESTS.md (16.2 KB) — **R3-005: chest+pickup manual tests** (новый)
-  • INVENTORY_V2_REFACTOR.md (копия) — для удобства sub-system
-  • COMMIT_MESSAGE.txt (этот файл)
-
-=== Skill updates (для будущих сессий) ===
-M ~/.hermes/profiles/project-c/skills/unity-mcp-orchestrator/SKILL.md:
-  • +pitfall #29: dedicated PanelSettings per window (НЕ переиспользовать между окнами)
-  • +pitfall #30: always serialize UXML/USS via SerializedObject (НЕ только Resources.Load fallback)
-
-=== Compile state ===
-• 0 errors
-• 0 моих warnings (pre-existing legacy warnings не мои)
-
-=== Parallel stack (НЕ удалено в этой сессии, TODO Phase 8) ===
-• Assets/_Project/Scripts/Core/Inventory.cs — локальный, не инстанцируется
-• Assets/_Project/Scripts/UI/InventoryUI.cs — старый IMGUI, не инстанцируется
-• Assets/_Project/Scripts/Player/ItemPickupSystem.cs — нигде не используется
-• Assets/_Project/Scripts/Core/NetworkInventory.cs — legacy, теперь ТОЛЬКО fallback (R3-005)
-• Assets/_Project/Resources/Items/Item_Type[1-8].asset — старые заглушки, рядом с новыми
-
-=== Resolved bugs (R3-005) ===
-• ✅ NetworkChestContainer мигрирован на InventoryServer.AddItem (UI теперь обновляется)
-• ✅ InvokePermission = RpcInvokePermission.Server (новый API NGO 2.x)
-• ✅ clientId из rpcParams.Receive.SenderClientId (был wrong на dedicated server)
-
-=== Open bugs (Phase 8+) ===
-• Stackable inventory (qty > 1) — TODO
-• Drop в мир (SpawnPickupItem) — TODO
-• Use-кнопка (RequestUse) — TODO
-• Esc не закрывает TAB-колесо — TODO
-• Multi-client sync — не проверено (требует ParrelSync)
-• Cargo / weightKg — поле есть, не используется
-
-Refs: docs/dev/INVENTORY_V2_REFACTOR.md
-      docs/Character-menu/sub_inventory-tab/00_OVERVIEW.md
-      docs/Character-menu/sub_inventory-tab/70_CHEST_PICKUP_TESTS.md
-      docs/Character-menu/refactor_log_2026-06-05.md
-      AGENTS.md (hard rules)
-      unity-v2-subsystem-migration skill (methodology)
-      unity-mcp-orchestrator skill (pitfalls #24, #26, #29, #30)
+Refs: docs/Character-menu/sub_inventory-tab/60_KNOWN_ISSUES.md §11
 ```
 
 ---
 
-## Альтернативный commit (short form)
-
-Если хочется короткий message (для squash commit / single-line):
+## Commit message (short form)
 
 ```
-inventory v2: server-authoritative InventoryClientState + UI Toolkit TAB wheel
-
-- ProjectC.Items subsystem (DTO/World/ClientState/Server, 7 .cs)
-- ItemDatasetGenerator (24 ItemData for tests)
-- TAB-колесо: IMGUI/GL → UI Toolkit (InventoryWheel.{uxml,uss} + InventoryUI)
-- P-таб CharacterWindow подключён к InventoryClientState
-- PickupItem → RequestPickup RPC (предметы теперь подбираются)
-- [InventoryWheel], [InventoryServer] в BootstrapScene
-- Docs: docs/dev/INVENTORY_V2_REFACTOR.md + sub_inventory-tab/* (8 .md)
-- 0 errors. Parallel stack: Inventory.cs/старый InventoryUI.cs/ItemPickupSystem.cs/NetworkInventory.cs живут (cleanup Phase 8)
+inventory v2 bugfixes: scene-spawn BootstrapScene + pickup v2 path + P-tab lazy-subscribe
 ```
 
 ---
 
-## После коммита
+## После commit
 
 ```bash
 git log --oneline -3
-# покажет ваш commit + предыдущие
-
-git status
-# пусто (всё закоммичено)
 ```
 
-Если есть uncommitted changes — что-то пропустил в `git add`. Проверь `git status --short`.
+## Что НЕ включено в этот commit
+
+- `Assets/_Project/ScriptableObjects/DayNight/MoonMaterial.mat` — pre-existing изменение не моё
+- `Assets/_Project/Screenshots/` — если ты делал скриншоты, не включай в этот commit
+- `Library/`, `Temp/`, `Logs/`, `Builds/`, `UserSettings/` — в .gitignore
+
+## Что осталось после этого commit
+
+Phase 9 (отдельная сессия): cleanup legacy (`Inventory.cs`, `InventoryUI.cs` IMGUI, `ItemPickupSystem.cs`, `NetworkInventory.cs`, `Item_Type1..8.asset`).
+Phase 10+: Stackable / Drop / Use / Cargo / multi-client verify.

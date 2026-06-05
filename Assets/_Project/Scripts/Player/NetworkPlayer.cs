@@ -578,8 +578,14 @@ namespace ProjectC.Player
             // PickupItem
             if (_nearestPickup != null)
             {
-                if (_inventory != null)
+                // BUGFIX 2026-06-05: _inventory = null после Phase 4 (SpawnInventory no-op).
+                // Используем новый v2 путь — PickupItem.Collect() шлёт RPC через InventoryClientState.
+                // Старый путь (_inventory.AddItem) оставлен как fallback (если вернётся legacy _inventory).
+                if (_inventory != null) {
                     _inventory.AddItem(_nearestPickup.itemData);
+                } else {
+                    _nearestPickup.Collect();
+                }
                 if (_inventoryUI != null) _inventoryUI.TriggerSectorFlash();
 
                 // Серверная RPC — скрыть предмет у ВСЕХ

@@ -1,7 +1,7 @@
 # GDD-22: Economy & Trading — Project C: The Clouds
 
-**Версия:** 4.0 | **Дата:** 02 июня 2026 г. | **Статус:** 🟡 V2 в разработке (полный рефакторинг серверного слоя, time-multiplier, multi-ship selection)
-**Автор:** Qwen Code (3.0) + Mavis (4.0 — рефакторинг под bootstrap+24 сцены)
+**Версия:** 5.0 | **Дата:** 05 июня 2026 г. | **Статус:** ✅ V2 развёрнута полностью (cleanup C1+C4+C5 завершён, -27913 LOC мёртвого кода)
+**Автор:** Qwen Code (3.0) + Mavis (4.0 — рефакторинг под bootstrap+24 сцены) + Mavis (5.0 — финальный v2 cleanup, GDD sync)
 
 ---
 
@@ -369,178 +369,228 @@ speed_multiplier = 1.0 - (cargo_weight / max_capacity) × penalty_factor
 
 ---
 
-## 11. Техническая Архитектура
+## 11. Техническая Архитектура (v5.0, post-cleanup)
 
-### Сервер (Authoritative)
+> **История:** v4.0 описывала смешанную v1+v2 архитектуру (TradeMarketServer / TradeUI / ContractSystem / ContractBoardUI как основные компоненты). После C1+C4+C5 cleanup 2026-06-05 (-27913 LOC) **v1-слой полностью удалён**. Ниже — актуальная v2-архитектура (один источник истины — `MarketServer` + `ContractServer` на сервере, UI Toolkit на клиенте). Полные ссылки — `docs/Markets/ARCHITECTURE.md` (канонический), `docs/Markets/FLOW_TRADE.md` (флоу), `docs/Markets/INTEGRATION.md` (связи с остальным проектом).
 
-```
-TradeMarketServer (NetworkBehaviour)
-├── _markets: Dictionary<string, LocationMarket> — рынок каждой локации
-│   ├── MarketItem[] — товары с demand/supply/eventMultiplier
-│   ├── RecalculatePrices() — пересчёт каждый тик
-│   └── DecaySupplyAndDemand() — затухание 0.92x
-├── _npcTraders: List<NPCTrader> — NPC-трейдеры
-├── _activeEvents: List<MarketEvent> — глобальные события
-├── _playerCredits: Dictionary<ulong, float> — кэш кредитов (авторитет)
-├── FindPlayerStorage(clientId, locationId) — найти склад игрока
-├── BuyItemServerRpc() — покупка с валидацией
-├── SellItemServerRpc() — продажа с валидацией
-├── MarketTick() — обновление каждые N минут
-│   ├── ProcessNPCTrades() — NPC торгуют
-│   ├── UpdateEvents() — обновление событий
-│   ├── DecaySupplyAndDemand() — затухание
-│   └── RecalculatePrices() — пересчёт цен
-└── SendMarketUpdateClientRpc() — обновление UI клиентов
-
-PlayerDataStore (singleton, НЕ NetworkBehaviour)
-├── GetCredits(clientId) — кредиты (ОБЩИЕ для всех локаций)
-├── SetCredits(clientId, amount) — установить кредиты
-├── ModifyCredits(clientId, delta) — изменить кредиты
-├── GetWarehouse(clientId, locationId) — склад (привязан к локации)
-├── SetWarehouse(clientId, locationId, items) — сохранить склад
-└── Кэш в памяти + PlayerPrefs (P0: заменить на БД)
-
-ContractSystem (NetworkBehaviour)
-├── _availableContracts: Dictionary<string, ContractData>
-├── AcceptContractServerRpc() — принятие контракта
-├── CompleteContractServerRpc() — сдача контракта
-│   ├── Проверка груза в CargoSystem
-│   ├── PlayerDataStore.ModifyCredits(reward)
-│   └── contract.Complete()
-└── FailContract() — провал контракта → долг
-```
-
-### Клиент (NGO RPC)
+### Слои
 
 ```
-TradeUI (MonoBehaviour, НЕ NetworkBehaviour)
-├── currentMarket: LocationMarket — ScriptableObject текущего рынка
-├── playerStorage: PlayerTradeStorage — склад (через NetworkPlayer)
-├── OpenTrade(market) → LoadFromPlayerDataStore(clientId)
-├── TryBuyItem() → _tradeLocked проверка → BuyItemViaServer()
-├── BuyItemViaServer() → NetworkPlayer.TradeBuyServerRpc()
-├── OnTradeResult() → _tradeLocked=false + LoadFromPlayerDataStore()
-├── SendMarketUpdateClientRpc() — парсинг CSV → обновление MarketItem
-└── RenderItems() — рынок / склад / трюм корабля
-
-NetworkPlayer (NetworkBehaviour) — RPC прокси
-├── TradeBuyServerRpc(itemId, qty, locationId) → TradeMarketServer
-├── TradeSellServerRpc(itemId, qty, locationId) → TradeMarketServer
-├── TradeResultClientRpc(success, message, credits, itemId, qty, isPurchase)
-└── ContractListClientRpc(contracts) ← ContractSystem
-
-PlayerTradeStorage (MonoBehaviour, на NetworkPlayer)
-├── warehouse: List<WarehouseItem> — товары на складе
-├── credits: float — кредиты (синхронизировано с PlayerDataStore)
-├── BuyItem/SellItem — локальная логика покупки/продажи
-├── LoadToShip/UnloadFromShip — перемещение в трюм корабля
-├── LoadFromPlayerDataStore(clientId) — загрузка из PlayerDataStore
-└── Save() → PlayerDataStore.SetWarehouse()
-
-CargoSystem (NetworkBehaviour, на корабле)
-├── cargo: List<CargoItem> — груз корабля
-├── maxSlots, maxWeight, maxVolume — лимиты по классу корабля
-├── CurrentWeight, CurrentVolume, UsedSlots — расчёты
-├── GetSpeedPenalty() — влияние на скорость
-├── CheckLeakOnCollision() — опасный груз (5% шанс)
-└── AddCargo/RemoveCargo — управление грузом
+┌─────────────────────────────────────────────────────────────────────────────┐
+│  КЛИЕНТ (per-client MonoBehaviour + UI Toolkit)                            │
+│  ┌────────────────────────────────────────────────────────────────────┐    │
+│  │ MarketWindow (UIDocument, UI Toolkit)                              │    │
+│  │   • читает MarketClientState.CurrentSnapshot                      │    │
+│  │   • дергает MarketClientState.RequestXxx()                         │    │
+│  │   • Esc = Hide, остальное = через callbacks UXML/USS               │    │
+│  │   • ТАБЫ: РЫНОК / СКЛАД+ТРЮМ / КОНТРАКТЫ                         │    │
+│  └────────────────────────────────────────────────────────────────────┘    │
+│           ▲ OnSnapshotUpdated / OnTradeResult events                       │
+│  ┌────────┴───────────────────────────────────────────────────────────┐    │
+│  │ MarketClientState (singleton MonoBehaviour, DontDestroyOnLoad)    │    │
+│  │   • держит последний MarketSnapshotDto + последний TradeResultDto  │    │
+│  │   • forwardит NetworkPlayer.ReceiveMarketSnapshotTargetRpc/Rpc     │    │
+│  │   • Per-ship cargo cache: CurrentShipCargos[shipId]                │    │
+│  │   • Convenience API: RequestBuy/Sell/Load/Unload/Subscribe         │    │
+│  └────────┬───────────────────────────────────────────────────────────┘    │
+│           │ RPC: FindNetworkPlayer(clientId).ReceiveXxxTargetRpc(...)      │
+│  ┌────────┴───────────────────────────────────────────────────────────┐    │
+│  │ NetworkPlayer (NetworkBehaviour)                                   │    │
+│  │   • [Rpc(SendTo.Owner)] ReceiveMarketSnapshotTargetRpc(...)        │    │
+│  │   • [Rpc(SendTo.Owner)] ReceiveTradeResultTargetRpc(...)           │    │
+│  │   • [Rpc(SendTo.Owner)] ReceiveContractSnapshotTargetRpc(...)      │    │
+│  │   • [Rpc(SendTo.Owner)] ReceiveContractResultTargetRpc(...)        │    │
+│  └────────┬───────────────────────────────────────────────────────────┘    │
+│           │ NetworkObject.Netcode (server→owner transport)                 │
+└───────────┼─────────────────────────────────────────────────────────────────┘
+            │
+            ▼  SendTo.Server
+┌─────────────────────────────────────────────────────────────────────────────┐
+│  СЕРВЕР (NetworkBehaviour + server-only state)                             │
+│  ┌────────────────────────────────────────────────────────────────────┐    │
+│  │ MarketServer (NetworkBehaviour, 1 шт, DontDestroyOnLoad)           │    │
+│  │   • [Rpc(SendTo.Server, Owner)] RequestBuy/Sell/Load/UnloadRpc     │    │
+│  │   • [Rpc(SendTo.Server, Owner)] SubscribeMarketRpc                 │    │
+│  │   • [Rpc(SendTo.Server, Owner)] SetSelectedShipRpc                 │    │
+│  │   • [Rpc(SendTo.Server, Owner)] SetMarketTimeMultiplierRpc         │    │
+│  │   • Rate limit (maxOpsPerMinute, default 30)                       │    │
+│  │   • Position validation через MarketZoneRegistry                   │    │
+│  │   • Делегирует в TradeWorld.TryXxx()                                │    │
+│  │   • SendSnapshotToClient() / BroadcastSnapshotsToAll()             │    │
+│  │   • BuildItemPriceDtos / BuildWarehouseDtos / BuildTradeResultDto  │    │
+│  └────────┬───────────────────────────────────────────────────────────┘    │
+│  ┌────────┴───────────────────────────────────────────────────────────┐    │
+│  │ ContractServer (NetworkBehaviour, 1 шт, в BootstrapScene)         │    │
+│  │   • [Rpc(SendTo.Server, Owner)] RequestListRpc(locationId)         │    │
+│  │   • [Rpc(SendTo.Server, Owner)] RequestAcceptRpc(contractId)       │    │
+│  │   • [Rpc(SendTo.Server, Owner)] RequestCompleteRpc(contractId)     │    │
+│  │   • [Rpc(SendTo.Server, Owner)] RequestFailRpc(contractId)         │    │
+│  │   • [Rpc(SendTo.Server, Owner)] RequestAvailableContractsRpc(      │    │
+│  │       fromLocationId, toLocationId) — for NPC inter-city travel    │    │
+│  │   • Zone validation через MarketZoneRegistry (одна зона на локацию)│    │
+│  │   • Делегирует в ContractWorld.TryXxx()                             │    │
+│  │   • FixedUpdate: ContractWorld.Tick() — таймеры + auto-fail        │    │
+│  └────────┬───────────────────────────────────────────────────────────┘    │
+│           │                                                                 │
+│  ┌────────┴───────────────────────────────────────────────────────────┐    │
+│  │ TradeWorld (POCO singleton, server-only)                           │    │
+│  │   • Markets: Dictionary<locationId, MarketState>                  │    │
+│  │   • _npcTraders: List<NPCTrader> (ГосКонвой, Ветер, Караванщик...) │    │
+│  │   • _activeEvents: List<MarketEvent> (Мезиевая лихорадка)          │    │
+│  │   • _cargoCache: Dictionary<shipId, CargoData> (per-ship)          │    │
+│  │   • Repository: IPlayerDataRepository (PlayerPrefsRepository/      │    │
+│  │     ServerFileRepository P1)                                       │    │
+│  │   • Resolver: TradeItemDefinitionResolver (DatabaseResolver)       │    │
+│  │   • TryBuy / TrySell / TryLoadToShip / TryUnloadFromShip           │    │
+│  │   • MarketTick(dtSeconds) — NPC, events, decay, regen              │    │
+│  │   • GetOrLoadWarehouse / GetOrLoadCargo (in-memory cache)          │    │
+│  └────────┬───────────────────────────────────────────────────────────┘    │
+│  ┌────────┴───────────────────────────────────────────────────────────┐    │
+│  │ ContractWorld (POCO singleton, server-only)                        │    │
+│  │   • _availableContracts: Dictionary<contractId, ContractData>     │    │
+│  │   • _playerContracts: Dictionary<playerId, List<contractId>>      │    │
+│  │   • _playerDebts: Dictionary<playerId, ContractDebt>              │    │
+│  │   • TryAccept / TryComplete / TryFail → ContractResult             │    │
+│  │   • Tick(deltaTime) — таймеры, auto-fail                           │    │
+│  │   • InitDistanceTable() — таблица расстояний (4 локации)          │    │
+│  │   • GenerateContractsForLocation() — стандарт/срочный/расписка     │    │
+│  └────────┬───────────────────────────────────────────────────────────┘    │
+│           │ owns                                                            │
+│  ┌────────┴───────────────────────────────────────────────────────────┐    │
+│  │ POCO State: MarketState, MarketItemState, Warehouse, CargoData     │    │
+│  │   • in-memory, не MonoBehaviour, не сериализуются в сцену          │    │
+│  │   • создаются в TradeWorld.Initialize() / ContractWorld.Init()     │    │
+│  └────────────────────────────────────────────────────────────────────┘    │
+│                                                                             │
+│  ┌────────────────────────────────────────────────────────────────────┐    │
+│  │ MarketTimeService (server-only MonoBehaviour)                      │    │
+│  │   • Update() → tick timer → TradeWorld.MarketTick(dt)              │    │
+│  │   • OnMarketTick event → MarketServer.BroadcastSnapshotsToAll()    │    │
+│  │   • MarketTimeMultiplier (0.1x..100x, Range attribute)              │    │
+│  └────────────────────────────────────────────────────────────────────┘    │
+│                                                                             │
+│  ┌────────────────────────────────────────────────────────────────────┐    │
+│  │ MarketZone (scene-placed MonoBehaviour, ×N в WorldScene_X_Z)      │    │
+│  │   • SphereCollider (radius = tradeRadius) для player detection     │    │
+│  │   • OverlapSphere (radius = shipDockRadius) для ship detection     │    │
+│  │   • _playersInZone: HashSet<ulong> (server)                        │    │
+│  │   • _shipsInZone: HashSet<ulong> (server)                          │    │
+│  │   • Регистрирует себя в MarketZoneRegistry по locationId           │    │
+│  │   • BuildNearbyShipsDtos() — для снапшота                          │    │
+│  │   • Один источник истины для zone-validation (MarketServer +        │    │
+│  │     ContractServer читают MarketZone.IsPlayerInZone)               │    │
+│  └────────────────────────────────────────────────────────────────────┘    │
+└─────────────────────────────────────────────────────────────────────────────┘
 ```
 
-### ScriptableObject
+### Цепочка RPC покупки (v2)
 
 ```
-TradeItemDefinition (CreateAssetMenu)
-├── itemId: string — уникальный ID (напр. "mesium_canister_v01")
-├── displayName: string — отображаемое имя
-├── icon: Sprite — иконка товара
-├── basePrice: float — базовая цена CR
+MarketWindow.OnBuyClicked
+  → MarketClientState.RequestBuy(locationId, itemId, qty)
+  → MarketServer.Instance.RequestBuyRpc(...)   [SendTo.Server, Owner]
+     ├─ CheckRateLimit (sliding 60s window, 30 ops)
+     ├─ ValidateInZone (MarketZoneRegistry.Get → zone.IsPlayerInZone)
+     └─ TradeWorld.TryBuy(clientId, locationId, itemId, qty)
+        ├─ warehouse.TryAdd (лимиты: weight, volume, types)
+        ├─ Repository.TryModifyCredits(-totalCost)
+        ├─ item.availableStock -= qty
+        ├─ PriceFormula.ApplyBuy → item.RecalculatePrice (demand ↑)
+        └─ Repository.SetWarehouse (persist)
+     → BuildTradeResultDto → SendTradeResultToOwner(clientId, dto)
+        → NetworkPlayer.ReceiveTradeResultTargetRpc(dto)  [SendTo.Owner]
+           → MarketClientState.OnTradeResultReceived(dto)
+              → MarketWindow.HandleTradeResult (зелёное сообщение, refresh credits)
+     → SendSnapshotToClient (обновлённый снапшот с новыми ценами)
+        → NetworkPlayer.ReceiveMarketSnapshotTargetRpc(snapshot)  [SendTo.Owner]
+           → MarketClientState.OnSnapshotReceived(snapshot)
+              → CurrentShipCargos[shipId] = snapshot.shipCargos[]
+              → MarketWindow.HandleSnapshot (перерисовка списков)
+```
+
+### Цепочка RPC контракта (v2, через таб КОНТРАКТЫ)
+
+```
+MarketWindow (таб КОНТРАКТЫ) → OnAcceptClicked(contractId)
+  → ContractClientState.RequestAccept(contractId)
+  → ContractServer.Instance.RequestAcceptRpc(contractId)  [SendTo.Server, Owner]
+     ├─ ValidateInZone (MarketZoneRegistry, single source of truth)
+     ├─ ContractWorld.TryAccept(clientId, contractId)
+     │    ├─ MaxActiveReached? TooMuchDebt? → ContractResult.Fail
+     │    └─ _availableContracts[contractId].state = Active
+     │         _playerContracts[clientId].Add(contractId)
+     └─ BuildContractResultDto → SendContractResultToOwner
+        → NetworkPlayer.ReceiveContractResultTargetRpc(dto)  [SendTo.Owner]
+           → ContractClientState.OnTradeResultReceived(dto)
+              → MarketWindow.HandleContractResult (state=Active, row зеленеет)
+     + SendContractSnapshotToOwner (обновлённый список available+active)
+        → NetworkPlayer.ReceiveContractSnapshotTargetRpc(snapshot)  [SendTo.Owner]
+           → ContractClientState.OnSnapshotReceived(snapshot)
+              → MarketWindow.HandleContractSnapshot (rebuild contracts list)
+```
+
+### Сетевая синхронизация (v2)
+
+| Данные | Частота | Метод | Направление |
+|--------|---------|-------|-------------|
+| Snapshot рынка (цены+сток+склад+корабли+контракты) | Каждый тик (5 мин × 1/multiplier) | `MarketServer.SendSnapshotToClient` → `ReceiveMarketSnapshotTargetRpc` | Server → Owner |
+| Trade result (BUY/SELL/LOAD/UNLOAD) | По событию | `MarketServer.SendTradeResultToOwner` → `ReceiveTradeResultTargetRpc` | Server → Owner |
+| Запрос на подписку | При входе в зону (E) | `MarketServer.SubscribeMarketRpc` | Client → Server |
+| Запрос на действие (BUY/SELL/LOAD/UNLOAD) | По действию | `MarketServer.RequestBuyRpc`/etc. | Client → Server |
+| SetSelectedShip | По смене корабля в dropdown | `MarketServer.SetSelectedShipRpc` | Client → Server |
+| Contract snapshot | По подписке + по accept/complete/fail | `ContractServer.SendContractSnapshotToOwner` → `ReceiveContractSnapshotTargetRpc` | Server → Owner |
+| Contract result | По accept/complete/fail | `ContractServer.SendContractResultToOwner` → `ReceiveContractResultTargetRpc` | Server → Owner |
+| Запрос на действие с контрактом | По клику ВЗЯТЬ/СДАТЬ/ПРОВАЛИТЬ | `ContractServer.RequestAcceptRpc`/etc. | Client → Server |
+| SetMarketTimeMultiplier | По нажатию в dev-консоли | `MarketServer.SetMarketTimeMultiplierRpc` | Client → Server |
+
+### ScriptableObject (v2)
+
+```
+MarketConfig (CreateAssetMenu, read-only) — ОДИН на локацию (MarketConfig_Primium.asset, ...)
+├── locationId: string — "primium"/"secundus"/"tertius"/"quartus"
+├── displayName: string — "Примум (Столица)" / и т.д.
+├── items: List<MarketItemConfig> — статические параметры товаров на этой локации
+│   └── MarketItemConfig: TradeItemDefinition, allowBuy, allowSell, basePriceOverride,
+│                          stockRegenPerTick, factionRestriction
+├── initialEvents: List<MarketEventConfig> — стартовые события локации
+└── (НЕ mutable! runtime-state в TradeWorld._markets[locationId] = MarketState)
+
+TradeItemDefinition (CreateAssetMenu) — ОДИН на товар (TradeItem_Mesium_v01.asset, ...)
+├── itemId: string — уникальный ID ("mesium_canister_v01")
+├── displayName: string — "Мезий (канистра)"
+├── icon: Sprite
+├── basePrice: float
 ├── weight: float — кг за единицу
 ├── volume: float — м³ за единицу
 ├── slots: int — слотов за единицу
 ├── isDangerous: bool — мезий (протечка при столкновении)
 ├── isFragile: bool — двигатели, МНП (повреждение)
 ├── isContraband: bool — нелегальный товар
-└── requiredFaction: Faction — кто может продавать (null = все)
+└── requiredFaction: Faction — кто может продавать (None = все)
 
-TradeDatabase (CreateAssetMenu)
+TradeDatabase (CreateAssetMenu) — единственный asset (TradeItemDatabase.asset)
 ├── allItems: List<TradeItemDefinition>
 ├── GetItemById(string id)
 ├── GetItemByDisplayName(string name)
 ├── GetItemsByFaction(Faction f)
 └── GetContrabandItems()
-
-LocationMarket (ScriptableObject, рынок локации)
-├── locationId: string — "primium", "secundus", "tertius", "quartus"
-├── locationName: string — отображаемое имя
-├── items: List<MarketItem> — товары рынка
-├── InitItems() — инициализация + clamp факторов
-├── RecalculatePrices() — пересчёт цен всех товаров
-├── GetItem(itemId) — найти товар
-├── UpdateDemand(itemId, delta) — спрос +delta
-├── UpdateSupply(itemId, delta) — предложение +delta
-└── DecaySupplyAndDemand(decayRate, regenRate) — затухание
-
-MarketItem (Serializable, внутри LocationMarket)
-├── item: TradeItemDefinition — ссылка на товар (хрупкая!)
-├── itemId: string — ID для восстановления ссылки (Сессия 8D)
-├── basePrice: float — базовая цена
-├── currentPrice: float — текущая цена (рассчитывается)
-├── demandFactor: float — 0.0 … 1.5 (clamp)
-├── supplyFactor: float — 0.0 … 1.5 (clamp)
-├── eventMultiplier: float — 0.5 … 3.0 (1.0 = нет событий)
-├── availableStock: int — доступный сток
-├── RecalculatePrice() — расчёт цены с восстановлением item
-└── FindTradeDatabase() — поиск TradeDatabase для восстановления
 ```
 
-### Сетевая синхронизация
+> **Удалено в C1 cleanup:** `LocationMarket` (ScriptableObject с mutable state), `MarketItem` (Serializable, внутри LocationMarket). Заменены на read-only `MarketConfig` (SO) + `MarketItemConfig` (внутри MarketConfig.items[]) + runtime `MarketState`/`MarketItemState` (POCO в `TradeWorld`).
 
-| Данные | Частота | Метод | Направление |
-|--------|---------|-------|-------------|
-| Цены рынка | Каждый тик | SendMarketUpdateClientRpc | Server → All |
-| Результат сделки | По событию | TradeResultClientRpc | Server → Owner |
-| Покупка/продажа | По действию | TradeBuy/SellServerRpc | Client → Server |
-| Контракты | По запросу | ContractListClientRpc | Server → Owner |
-| Принятие контракта | По событию | AcceptContractServerRpc | Client → Server |
-| Сдача контракта | По событию | CompleteContractServerRpc | Client → Server |
-
-### Цепочка RPC покупки
+### Хранение данных (v2)
 
 ```
-TradeUI.TryBuyItem()
-  → проверка _tradeLocked
-  → TradeUI.BuyItemViaServer(itemId, quantity)
-  → NetworkPlayer.TradeBuyServerRpc(itemId, quantity, locationId)
-     [RPC: SendTo.Server]
-  → TradeMarketServer.BuyItemServerRpc(itemId, quantity, locationId)
-     ├── Валидация (quantity, locationId, rate limit, рынок, товар, сток, цена, кредиты, лимиты)
-     ├── PlayerDataStore.ModifyCredits(-totalCost)
-     ├── playerStorage.warehouse.Add/Update
-     ├── playerStorage.Save()
-     └── SendTradeResultToClient(clientId, success, message, newCredits, itemId, qty, isPurchase)
-        → NetworkPlayer.TradeResultClientRpc(...)
-           [RPC: SendTo.Owner]
-        → TradeUI.OnTradeResult()
-           ├── _tradeLocked = false
-           ├── playerStorage.LoadFromPlayerDataStore(clientId)
-           └── UpdateDisplays() + RenderItems()
-```
+# IPlayerDataRepository (interface) — два имплемента:
+#   - PlayerPrefsRepository (default, host) — host-only testing
+#   - ServerFileRepository (P1, dedicated) — JSON в Application.persistentDataPath/ServerData/
 
-### Хранение данных (Сессия 8F)
+PD2_Credits_{clientId}                 — кредиты (ОБЩИЕ для всех локаций)
+PD2_Warehouse_{clientId}_{locationId}  — склад (привязан к локации)
+PD2_Cargo_{shipNetworkObjectId}        — груз корабля (per-ship, persistent)
 
-```
-# PlayerDataStore — единый источник
-PD_Credits_{clientId}                 — кредиты (ОБЩИЕ для всех локаций)
-PD_Warehouse_{clientId}_{locationId}  — склад (привязан к локации)
-
-# PlayerTradeStorage.LoadFromPlayerDataStore():
-  credits = PlayerDataStore.GetCredits(clientId)
-  warehouse = PlayerDataStore.GetWarehouse(clientId, locationId)
-
-# PlayerTradeStorage.Save():
-  PlayerDataStore.SetWarehouse(clientId, currentLocationId, warehouse)
-
-# P0: PlayerPrefs → заменить на IPlayerDataRepository + БД
+# TradeWorld._cargoCache[shipId] — in-memory cache, persistent в PlayerPrefs/JSON
+# Repository.GetCredits/AddCredits/SetWarehouse/SetCargo — единый API
 ```
 
 ---

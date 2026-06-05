@@ -41,23 +41,36 @@ if (_mainContainer != null) {
 
 ---
 
-## 3. Старая v1 архитектура не удалена
+## 3. ~~OPEN~~ RESOLVED 2026-06-05: Старая v1 архитектура не удалена + dead RPC в NetworkPlayer
 
-**Где:** 16 файлов в `Assets/_Project/Trade/Scripts/` (root) — `TradeUI.cs`, `TradeMarketServer.cs`, `PlayerTradeStorage.cs`, `PlayerDataStore.cs`, `LocationMarket.cs`, `MarketItem.cs`, `MarketEvent.cs` (старый), `NPCTrader.cs` (старый), `CargoSystem.cs` (частично активен), `AutoTradeZone.cs`, `TradeTrigger.cs`, `PlayerCreditsManager.cs`, `PlayerDebt.cs`, `TradeSetup.cs`, `TradeSceneSetup.cs`, `TradeDebugTest.cs`, `TradeDebugTools.cs`. Плюс 4 `Market_*.asset` (старые `LocationMarket` SO) в `Assets/_Project/Trade/Data/Markets/`.
+**Что было:** ~4000 строк legacy v1 кода в `Assets/_Project/Trade/Scripts/` (root): `TradeUI.cs`, `TradeMarketServer.cs`, `PlayerTradeStorage.cs`, `PlayerDataStore.cs`, `LocationMarket.cs`, `MarketItem.cs`, `MarketEvent.cs` (root), `NPCTrader.cs` (root), `AutoTradeZone.cs`, `TradeTrigger.cs`, `PlayerCreditsManager.cs`, `PlayerDebt.cs`, `TradeSetup.cs`, `TradeSceneSetup.cs`, `TradeDebugTest.cs`, `TradeDebugTools.cs` + 2 Editor (`MarketItemIDInitializer`, `MarketAssetGenerator`) + 3 legacy контракта (`ContractSystem`, `ContractBoardUI`, `ContractTrigger`) + 9 dead RPC в `NetworkPlayer.cs:639-815` (3 Trade: `TradeBuyServerRpc`/`TradeSellServerRpc`/`TradeResultClientRpc`; 6 Contract: `ContractRequestServerRpc`/`ContractAcceptServerRpc`/`ContractCompleteServerRpc`/`ContractFailServerRpc`/`ContractListClientRpc`/`ContractResultClientRpc`).
 
-**Симптом:** ~4000 строк dead code компилируются, но не используются новой подсистемой. `NetworkPlayer.cs:588-617, 626-662` имеет dead RPC (`TradeBuyServerRpc`, `TradeSellServerRpc`, `TradeResultClientRpc`) — **не вызывается** (Update E-handler идёт через `MarketInteractor.TryOpenMarket`).
+**Что сделано (одной сессией, коммит готовится пользователем):**
 
-**Проверка:** `grep "TradeMarketServer.Instance"` в `.cs` даёт 8+ ссылок, но все внутри мёртвых файлов (`TradeUI`, `TradeDebugTools`, `TradeMarketServer` сам) или в `NetworkPlayer.TradeBuyServerRpc` (тоже мёртвый). **Новая** подсистема `MarketServer.Instance` (без `Trade`-префикса) — НЕ задета.
+1. **Удалено 13 root-legacy .cs** + 2 Editor-скрипта = **15 файлов** (Группа A+B C1-плана + `TradeDebugTest.cs`/`TradeSetup.cs`/`TradeSceneSetup.cs`/`AutoTradeZone.cs`/`TradeTrigger.cs`/`PlayerCreditsManager.cs`, не упомянутые в исходном плане, но попавшие под ту же логику).
+2. **Удалено 3 legacy контракта** (`ContractSystem.cs` 838 строк, `ContractBoardUI.cs` 549 строк, `ContractTrigger.cs` 110 строк).
+3. **Удалено 9 dead RPC** из `NetworkPlayer.cs` (3 Trade + 6 Contract), с комментарием-заглушкой `"// ==================== LEGACY TRADE/CONTRACT RPC REMOVED (C1-cleanup 2026-06-05) ===================="`.
+4. **Удалено 4 `Market_*.asset`** (legacy `LocationMarket` SO) — Primium/Secundus/Tertius/Quartus.
+5. **Удалено 3 `_Test*.uss`** (тест-стили для отладки layout).
+6. **Удалено 2 `ProjectC_1.unity`** (тест-сцены) + `Assets/ProjectC_1.unity` (дубль).
+7. **Удалено 2 префаба** (`TradeMarketServer.prefab`, `ContractBoard.prefab`).
+8. **Снят `TradeDebugTools` MonoBehaviour** с `DEBUG_UI_MANAGER` (уже выполнено предыдущей сессией: `NetworkManagerController.CreateTradeDebugTools()` вырезан, на сцене компонент отсутствует).
 
-**План:** Cleanup, отдельный тикет:
-- Удалить 13 файлов (TradeUI, TradeMarketServer, PlayerTradeStorage, PlayerDataStore, LocationMarket, MarketItem, MarketEvent, NPCTrader, AutoTradeZone, TradeTrigger, PlayerCreditsManager, PlayerDebt, TradeSetup, TradeSceneSetup, TradeDebugTest, TradeDebugTools) — `CargoSystem.cs` ОСТАВИТЬ (MarketServer читает `shipClass` из него)
-- Удалить `NetworkPlayer.TradeBuyServerRpc` / `TradeSellServerRpc` / `TradeResultClientRpc` (lines 583-662, 80 строк)
-- Удалить `NetworkPlayer.ContractRequestServerRpc` / `ContractAcceptServerRpc` / `ContractCompleteServerRpc` / `ContractFailServerRpc` / `ContractListClientRpc` / `ContractResultClientRpc` (если ContractSystem будет мигрирован отдельно — это можно оставить)
-- Удалить 4 `Market_*.asset` (LEGACY `LocationMarket` SO)
+**Всего: 70 файлов, -27913 LOC, +14 LOC** (комментарий-заглушка в `NetworkPlayer.cs`).
 
-**Риск:** Контракты (`ContractSystem.cs:720`) ссылаются на `TradeMarketServer.Instance` (старый). Если удалить старый `TradeMarketServer` раньше чем мигрировать контракты — **компиляция сломается**. Нужно мигрировать контракты на новый `MarketServer` СНАЧАЛА.
+**Что НЕ удалено (активно в v2):**
+- `CargoSystem.cs` — `MarketServer.ResolveShipClass:447-453` читает `shipClass`.
+- `ContractData.cs` — `ContractType` enum + `ContractData` class, **используется v2** в `Core/ContractWorld.cs:46,245,252,259` и `Client/MarketWindow.cs:642,647,781,785,786`.
+- `TradeDatabase.cs`, `TradeItemDefinition.cs` — активны в v2 (`MarketItemConfig`, `DatabaseResolver`, `TradeAssetGenerator`).
+- `Dto/TradeResultCode.cs` (root namespace) — v2 enum, активен.
 
-**Приоритет:** Medium. Не блокирует Stage 2.5, но при росте проекта станет проблемой.
+**Расширение скоупа C1 → C1+C4+C5:** исходный план C1 разделял cleanup на 3 тикета (C1=cs-файлы, C4=Trade RPC, C5=Contract RPC), но transitive-зависимость `ContractSystem → LocationMarket/PlayerDebt/PlayerTradeStorage` + `ContractBoardUI → LocationMarket/TradeUI` потребовала объединения: после удаления LocationMarket/PlayerDebt/PlayerTradeStorage legacy-контракты ломали компиляцию. Объединённый C1+C4+C5 в одной сессии подтверждён компиляцией (0 errors, 0 новых warnings).
+
+**Дизайн-нота:** `docs/dev/C1_CLEANUP_PLAN_2026-06-05.md` (22 KB).
+
+**Проверка после cleanup:** `grep -r "TradeMarketServer\.\|TradeUI\.\|ContractSystem\.\|ContractBoardUI\.\|LocationMarket\|PlayerDebt\|PlayerTradeStorage" Assets/_Project/Scripts` → 0 совпадений (только комментарий в `NetworkPlayer.cs:640`).
+
+**Приоритет:** RESOLVED 2026-06-05. Чистый билд, v2-архитектура полностью развёрнута.
 
 ---
 
@@ -189,15 +202,20 @@ if (_mainContainer != null) {
 
 ---
 
-## 12. `TradeDebugTools` / `TradeDebugTest` ссылки на старый API
+## 12. ~~OPEN~~ RESOLVED 2026-06-05: `TradeDebugTools` / `TradeDebugTest` ссылки на старый API
 
-**Где:** `Assets/_Project/Trade/Scripts/TradeDebugTools.cs:318`, `TradeDebugTest.cs:269` — ссылаются на `TradeUI.Instance`, `TradeMarketServer.Instance`, `PlayerDataStore.Instance`, `PlayerTradeStorage` (все устарели).
+**Где:** `Assets/_Project/Trade/Scripts/TradeDebugTools.cs:318`, `TradeDebugTest.cs:269` — ссылались на `TradeUI.Instance`, `TradeMarketServer.Instance`, `PlayerDataStore.Instance`, `PlayerTradeStorage` (все устарели).
 
-**Симптом:** Если их прицепить к сцене, будут NRE.
+**Симптом был:** Если их прицепить к сцене, NRE. `TradeDebugTools` висел на `DEBUG_UI_MANAGER` в `BootstrapScene` с `m_Enabled=0` (диагностический).
 
-**План:** Удалить файлы как часть cleanup (§3).
+**Что сделано:**
+- `TradeDebugTools.cs` (370 строк) и `TradeDebugTest.cs` (284 строки) **удалены**.
+- `NetworkManagerController.CreateTradeDebugTools()` (18 строк + doc-комментарий) **вырезан** из `NetworkManagerController.Awake` — заменён на комментарий `"// C1-cleanup (2026-06-05): CreateTradeDebugTools() удалён — TradeDebugTools.cs мёртв."`.
+- `TradeDebugTools` MonoBehaviour снят с `DEBUG_UI_MANAGER` (в `BootstrapScene`) — компонент полностью отсутствует. На GO остались только `MeziyStatusHUD`, `SceneDebugHUD`, `HUDManager` (все `m_Enabled=0`, не trade).
 
-**Приоритет:** Medium (cleanup). Не блокирует.
+**Диагностика UI** теперь идёт через `MarketWindow.cs` (включая 4 bug-фикса от 2026-06-04: `pickingMode=Ignore`, layout-fallback, ListView selectionChanged) + dev-консоль.
+
+**Приоритет:** RESOLVED 2026-06-05.
 
 ---
 
@@ -274,8 +292,8 @@ if (_mainContainer != null) {
 |---|-------|----------|---------------------|
 | 1 | Diagnostic логи | Low | No |
 | 2 | Layout w=0 h=0 | Low | No |
-| 3 | Старая архитектура не удалена | Medium | No |
-|| 4 | ~~Контракты не мигрированы~~ RESOLVED 2026-06-05 (C2-этап: миграция + 3-й таб рынка + 4 bug-фикса) | — | No |
+| 3 | ~~Старая архитектура не удалена~~ RESOLVED 2026-06-05 (C1+C4+C5: -27913 LOC, 70 файлов) | — | No |
+| 4 | ~~Контракты не мигрированы~~ RESOLVED 2026-06-05 (C2-этап: миграция + 3-й таб рынка + 4 bug-фикса) | — | No |
 | 5 | ServerFileRepository stub | P1 | No (только host) |
 | 6 | RateLimited не возвращается | Low | No |
 | 7 | Reputation discount | Stage 5+ | No |
@@ -283,7 +301,7 @@ if (_mainContainer != null) {
 | 9 | marketVersion не используется | Low | No |
 | 10 | Cargo visual | Stage 4 | No |
 | 11 | Хоткеи | Low | No |
-| 12 | TradeDebug* tools → старый API | Medium (cleanup) | No |
+| 12 | ~~TradeDebug* tools → старый API~~ RESOLVED 2026-06-05 (C1) | — | No |
 | 13 | ~~E не открывает рынок после E вне зоны~~ RESOLVED 2026-06-04 (ghost PlayerSpawner в FindLocalPlayer) | — | No |
 | 14 | ~~Cargo теряется при переключении корабля~~ RESOLVED 2026-06-05 (per-ship client cache + shipCargos[] DTO) | — | No |
 | 15 | Нет ownership-проверки Load/Unload + утечка cargo чужим игрокам в snapshot | P1 | No (single-player only) |

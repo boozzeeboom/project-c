@@ -29,6 +29,8 @@ namespace ProjectC.Items
     {
         [Header("Item Data")]
         public ItemData itemData;
+        [Tooltip("itemId в InventoryWorld._itemDatabase. Проставляется сервером при server-spawn (drop). Если 0 — будет вычислен через GetOrRegisterItemId при Collect().")]
+        public int itemId;   // public — server пишет после Instantiate (см. InventoryServer.RequestDropRpc)
 
         [Header("Settings")]
         public float floatSpeed = 1f;
@@ -109,15 +111,16 @@ namespace ProjectC.Items
                 return;
             }
 
-            // Получить itemId из InventoryWorld (auto-register если нужно).
-            // v2 hub гарантированно заспавнен после fix'а ScenePlacedObjectSpawner
-            // (см. docs/Character-menu/sub_inventory-tab/60_KNOWN_ISSUES.md §11.1).
-            // Legacy fallback на ProjectC.Core.NetworkInventory УБРАН — этот файл
-            // идёт в cleanup вместе с NetworkInventory.cs.
-            int itemId = ProjectC.Items.InventoryWorld.Instance?.GetOrRegisterItemId(itemData) ?? -1;
+            // Получить itemId: сначала пробуем прямое поле (если server-spawn).
+            // Fallback: вычислить через InventoryWorld (для scene-placed pickup'ов).
+            int itemId = this.itemId;
+            if (itemId <= 0)
+            {
+                itemId = ProjectC.Items.InventoryWorld.Instance?.GetOrRegisterItemId(itemData) ?? -1;
+            }
             if (itemId < 0)
             {
-                Debug.LogWarning($"[PickupItem] Cannot resolve itemId for {itemData.itemName} (InventoryWorld.Instance == null? Network not started?)");
+                Debug.LogWarning($"[PickupItem] Cannot resolve itemId for {itemData?.itemName} (InventoryWorld.Instance == null? Network not started?)");
                 return;
             }
 

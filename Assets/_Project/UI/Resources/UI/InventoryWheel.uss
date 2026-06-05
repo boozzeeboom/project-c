@@ -254,6 +254,7 @@
 .action-btn:hover { scale: 1.03 1.03 !important; }
 
 .action-btn.use   { background-color: rgba(80, 130, 200, 0.7) !important; }
+.action-btn.drop  { background-color: rgba(200, 100, 60, 0.75) !important; }
 .action-btn.close { background-color: rgba(120, 80, 80, 0.7) !important; }
 
 /* === Message === */

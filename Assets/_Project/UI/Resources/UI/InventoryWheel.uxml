@@ -74,6 +74,7 @@
         <!-- Actions -->
         <ui:VisualElement class="actions">
             <ui:Button name="use-btn"   text="ИСПОЛЬЗОВАТЬ" class="action-btn use" />
+            <ui:Button name="drop-btn"  text="БРОСИТЬ"      class="action-btn drop" />
             <ui:Button name="close-btn" text="ЗАКРЫТЬ"       class="action-btn close" />
         </ui:VisualElement>
 

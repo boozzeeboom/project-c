@@ -65,6 +65,7 @@ namespace ProjectC.UI.Client
         private Label _sublistTitle;
         private ListView _sublist;
         private Button _useBtn;
+        private Button _dropBtn;
         private Button _closeBtn;
         private Label _messageLabel;
 
@@ -194,6 +195,7 @@ namespace ProjectC.UI.Client
             _sublistTitle   = _root.Q<Label>("sublist-title");
             _sublist        = _root.Q<ListView>("sublist");
             _useBtn         = _root.Q<Button>("use-btn");
+            _dropBtn        = _root.Q<Button>("drop-btn");
             _closeBtn       = _root.Q<Button>("close-btn");
             _messageLabel   = _root.Q<Label>("message-label");
 
@@ -231,6 +233,7 @@ namespace ProjectC.UI.Client
 
             // Action buttons
             if (_useBtn != null)   _useBtn.clicked   += OnUseClicked;
+            if (_dropBtn != null)  _dropBtn.clicked  += OnDropClicked;
             if (_closeBtn != null) _closeBtn.clicked += OnCloseClicked;
 
             // Initial state — скрыт, пока Tab не нажат
@@ -282,8 +285,14 @@ namespace ProjectC.UI.Client
                 }
             }
 
-            // Если сектор выбран — обновить sublist
-            if (_selectedSector >= 0) RefreshSublist((ItemType)_selectedSector);
+            // BUGFIX 2026-06-05 (Phase 10): если sublist открыт — перезагрузить его,
+            // иначе после drop последнего item (или уменьшения count) sublist показывает
+            // устаревший список. Сектор обновился выше (label/class), но itemsSource
+            // не обновляется до следующего выбора сектора.
+            if (_selectedSector >= 0 && _sublist != null)
+            {
+                RefreshSublist((ItemType)_selectedSector);
+            }
         }
 
         private void HandleResultReceived(InventoryResultDto result)
@@ -421,6 +430,35 @@ namespace ProjectC.UI.Client
             // MVP: пока не реализовано, даём feedback
             SetMessage("Использование предметов — TODO (Phase 8+)", false);
             // InventoryClientState.Instance?.RequestUse(_sublistCache[_selectedItemIndex].slotIndex);
+        }
+
+        // Phase 10 (INVENTORY_V2_DROP_DESIGN.md): бросить предмет в мир перед игроком.
+        // Сервер уберёт из инвентаря + заспавнит PickupItem на worldPos.
+        private void OnDropClicked()
+        {
+            if (_selectedItemIndex < 0 || _selectedItemIndex >= _sublistCache.Count)
+            {
+                SetMessage("Выберите предмет для броска", true);
+                return;
+            }
+            var state = ProjectC.Items.Client.InventoryClientState.Instance;
+            if (state == null)
+            {
+                SetMessage("Сеть не запущена", true);
+                return;
+            }
+            var localPlayer = FindFirstObjectByType<ProjectC.Player.NetworkPlayer>();
+            if (localPlayer == null)
+            {
+                SetMessage("Игрок не найден", true);
+                return;
+            }
+            Vector3 playerPos = localPlayer.GetEffectivePosition();
+            // Бросаем в 1.5м перед игроком (forward * 1.5m, на уровне земли)
+            Vector3 dropPos = playerPos + localPlayer.transform.forward * 1.5f;
+            int slotIndex = _sublistCache[_selectedItemIndex].slotIndex;
+            state.RequestDrop(slotIndex, 1, dropPos, playerPos);
+            SetMessage("Бросаю...", false);
         }
 
         private void OnCloseClicked() => SetVisible(false);

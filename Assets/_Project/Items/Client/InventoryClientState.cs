@@ -120,10 +120,10 @@ namespace ProjectC.Items.Client
             ProjectC.Items.Network.InventoryServer.Instance.RequestPickupRpc(itemId, (byte)itemType, worldPos);
         }
 
-        public void RequestDrop(int slotIndex, int quantity, Vector3 worldPos)
+        public void RequestDrop(int slotIndex, int quantity, Vector3 worldPos, Vector3 playerPos)
         {
             if (ProjectC.Items.Network.InventoryServer.Instance == null) return;
-            ProjectC.Items.Network.InventoryServer.Instance.RequestDropRpc(slotIndex, quantity, worldPos);
+            ProjectC.Items.Network.InventoryServer.Instance.RequestDropRpc(slotIndex, quantity, worldPos, playerPos);
         }
 
         public void RequestMove(int fromSlot, int toSlot)

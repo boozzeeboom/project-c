@@ -42,6 +42,10 @@ namespace ProjectC.Items.Network
         [SerializeField] private int maxSlots = 32;
         [SerializeField] private int maxOpsPerMinute = 60;   // rate limit per-client
 
+        [Header("Drop (Phase 10)")]
+        [Tooltip("Prefab PickupItem для server-spawn при drop. Должен иметь NetworkObject + PickupItem компоненты. Регистрируется в NetworkManager.NetworkConfig.Prefabs.")]
+        [SerializeField] private GameObject _dropPickupPrefab;
+
         // ============================================================
         // Server-side state
         // ============================================================
@@ -113,13 +117,51 @@ namespace ProjectC.Items.Network
         }
 
         [Rpc(SendTo.Server, InvokePermission = RpcInvokePermission.Owner)]
-        public void RequestDropRpc(int slotIndex, int quantity, Vector3 worldPos, RpcParams rpcParams = default)
+        public void RequestDropRpc(int slotIndex, int quantity, Vector3 worldPos, Vector3 playerPos, RpcParams rpcParams = default)
         {
             ulong clientId = rpcParams.Receive.SenderClientId;
             if (!CheckRateLimit(clientId)) return;
 
-            var result = InventoryWorld.Instance.TryDrop(clientId, slotIndex, quantity, worldPos);
-            if (result.IsSuccess) SendSnapshot(clientId, null);
+            var result = InventoryWorld.Instance.TryDrop(clientId, slotIndex, quantity, worldPos, playerPos);
+            if (result.IsSuccess)
+            {
+                // Spawn PickupItem в мире (server-side)
+                if (_dropPickupPrefab == null)
+                {
+                    Debug.LogError("[InventoryServer] CRITICAL: dropPickupPrefab не задан! Drop не создаёт PickupItem в мире.");
+                }
+                else
+                {
+                    var itemData = InventoryWorld.Instance.GetItemDefinition(result.itemId);
+                    if (itemData == null)
+                    {
+                        Debug.LogError($"[InventoryServer] Drop: itemData for id={result.itemId} not found");
+                    }
+                    else
+                    {
+                        var go = Instantiate(_dropPickupPrefab, worldPos, Quaternion.identity);
+                        var pickup = go.GetComponent<ProjectC.Items.PickupItem>();
+                        if (pickup != null)
+                        {
+                            // SetItemData (itemData + auto-register itemId на клиенте через GetOrRegisterItemId)
+                            pickup.itemData = itemData;
+                            pickup.itemId = InventoryWorld.Instance.GetOrRegisterItemId(itemData);
+                        }
+                        var netObj = go.GetComponent<Unity.Netcode.NetworkObject>();
+                        if (netObj != null)
+                        {
+                            netObj.Spawn(destroyWithScene: true);
+                            Debug.Log($"[InventoryServer] Dropped PickupItem at {worldPos}: id={result.itemId} type={itemData.itemType} netObjId={netObj.NetworkObjectId}");
+                        }
+                        else
+                        {
+                            Debug.LogError("[InventoryServer] Drop: prefab missing NetworkObject!");
+                            Destroy(go);
+                        }
+                    }
+                }
+                SendSnapshot(clientId, null);
+            }
             SendResult(clientId, result);
         }
 

@@ -157,20 +157,67 @@ namespace ProjectC.Items
             return Ok($"Подобран предмет", itemId, -1);
         }
 
-        // ===========================================================
-        // Operations — TryDrop (TODO: world-spawn PickupItem после drop)
-        // ===========================================================
+        // ============================================================
+        // Operations — TryDrop (Phase 10)
+        // ============================================================
+        // Drop: убрать предмет из инвентаря. PickupItem в мире спавнит InventoryServer
+        // (не InventoryWorld — последний не имеет NetworkObject спавна).
 
-        public InventoryResultDto TryDrop(ulong clientId, int slotIndex, int quantity, Vector3 worldPos)
+        private const float DROP_RANGE_M = 3f;
+
+        public InventoryResultDto TryDrop(ulong clientId, int slotIndex, int quantity, Vector3 worldPos, Vector3 playerPos)
         {
             if (slotIndex < 0 || slotIndex >= MAX_SLOTS)
                 return Fail(InventoryResultCode.InvalidSlot, $"Слот {slotIndex} вне диапазона", -1, slotIndex);
+            if (quantity <= 0)
+                return Fail(InventoryResultCode.NotEnoughQuantity, "Quantity должен быть > 0", -1, slotIndex);
 
             var data = GetOrCreate(clientId);
-            // TODO (Phase 2): inventory-by-slot, не flat list. Сейчас — no-op.
-            // For MVP: возвращаем NotImplemented.
-            return Fail(InventoryResultCode.InternalError,
-                "Drop пока не реализован (TODO Phase 2)", -1, slotIndex);
+
+            // Convert slotIndex → (itemId, itemType) using snapshot order
+            // (тот же порядок что в BuildSnapshot — иначе UI/server разойдутся)
+            int currentSlot = 0;
+            int foundItemId = -1;
+            ItemType foundType = ItemType.Resources;
+            List<int> foundList = null;
+            int indexInList = -1;
+            foreach (ItemType type in System.Enum.GetValues(typeof(ItemType)))
+            {
+                var ids = data.GetIdsForType(type);
+                if (ids == null) continue;
+                if (currentSlot + ids.Count <= slotIndex)
+                {
+                    currentSlot += ids.Count;
+                    continue;
+                }
+                // slotIndex внутри этого списка
+                indexInList = slotIndex - currentSlot;
+                if (indexInList < 0 || indexInList >= ids.Count) continue;  // safety
+                foundItemId = ids[indexInList];
+                foundType = type;
+                foundList = ids;
+                break;
+            }
+            if (foundItemId < 0 || foundList == null)
+                return Fail(InventoryResultCode.InvalidSlot, $"Слот {slotIndex} пуст", -1, slotIndex);
+
+            // Anti-cheat: distance check (3м от player)
+            float dist = Vector3.Distance(worldPos, playerPos);
+            if (dist > DROP_RANGE_M)
+                return Fail(InventoryResultCode.NotInZone,
+                    $"Drop: distance {dist:F1}м > {DROP_RANGE_M}м (анти-чит)", foundItemId, slotIndex);
+
+            // Убрать itemId из списка. MVP: всегда 1 quantity.
+            // Убираем конкретное вхождение по indexInList (тот, что соответствует slotIndex).
+            foundList.RemoveAt(indexInList);
+
+            // Log для verify
+            if (foundList.Count == 0)
+                Debug.Log($"[InventoryWorld] Player {clientId} dropped last {foundType} ID={foundItemId} at {worldPos}");
+            else
+                Debug.Log($"[InventoryWorld] Player {clientId} dropped {foundType} ID={foundItemId} at {worldPos} (still has {foundList.Count} of this type)");
+
+            return Ok($"Dropped {foundType} ID={foundItemId}", foundItemId, slotIndex);
         }
 
         // ===========================================================

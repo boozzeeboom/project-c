@@ -632,187 +632,21 @@ namespace ProjectC.Player
             // Debug.Log($"[NetworkPlayer] ApplyServerPositionRpc: игнорируем (серверная позиция={serverPosition})");
         }
 
-        // ==================== TRADE RPC (Сессия 5) ====================
-
-        /// <summary>
-        /// Купить товар — клиент запрашивает, сервер валидирует
-        /// </summary>
-        [Rpc(SendTo.Server)]
-        public void TradeBuyServerRpc(string itemId, int quantity, string locationId)
-        {
-            // Серверная логика в TradeMarketServer
-            if (TradeMarketServer.Instance != null)
-            {
-                // Передаём свой OwnerClientId
-                TradeMarketServer.Instance.BuyItemServerRpc(itemId, quantity, locationId, OwnerClientId);
-            }
-            else
-            {
-                Debug.LogWarning("[NetworkPlayer] TradeMarketServer не найден");
-            }
-        }
-
-        /// <summary>
-        /// Продать товар — клиент запрашивает, сервер валидирует
-        /// </summary>
-        [Rpc(SendTo.Server)]
-        public void TradeSellServerRpc(string itemId, int quantity, string locationId)
-        {
-            if (TradeMarketServer.Instance != null)
-            {
-                TradeMarketServer.Instance.SellItemServerRpc(itemId, quantity, locationId, OwnerClientId);
-            }
-            else
-            {
-                Debug.LogWarning("[NetworkPlayer] TradeMarketServer не найден");
-            }
-        }
-
-        /// <summary>
-        /// Результат торговли — сервер отправляет конкретному клиенту
-        /// 
-        /// СЕССИЯ 8L FIX: Фильтруем по targetClientId вместо IsOwner.
-        /// Это решает проблему когда на хосте IsOwner проверяется относительно локального клиента,
-        /// а не того кому предназначался RPC.
-        /// </summary>
-        [ClientRpc]
-        public void TradeResultClientRpc(ulong targetClientId, bool success, string message, float newCredits, string itemId = "", int itemQuantity = 0, bool isPurchase = true,
-            ClientRpcParams rpcParams = default)
-        {
-            // Сессия FIX: Проверяем targetClientId
-            ulong localClientId = NetworkManager.Singleton.LocalClientId;
-            Debug.Log($"[NetworkPlayer] TradeResultClientRpc: targetClientId={targetClientId}, localClientId={localClientId}, success={success}, itemId={itemId}, IsOwner={IsOwner}");
-            
-            // Всегда вызываем OnTradeResult если это для нас (добавил для диагностики)
-            if (localClientId == targetClientId)
-            {
-                Debug.Log($"[NetworkPlayer] Вызываю OnTradeResult для клиента {targetClientId}");
-                if (TradeUI.Instance != null)
-                {
-                    TradeUI.Instance.OnTradeResult(success, message, newCredits, itemId, itemQuantity, isPurchase);
-                }
-                else
-                {
-                    Debug.LogWarning($"[NetworkPlayer] TradeUI.Instance == null!");
-                }
-                
-                // TradeDebugTools: принудительное обновление UI
-                if (TradeDebugTools.Instance != null)
-                {
-                    Debug.Log($"[NetworkPlayer] Вызываю TradeDebugTools.ForceRefresh()");
-                    TradeDebugTools.Instance.ForceRefresh();
-                }
-                else
-                {
-                    Debug.LogWarning($"[NetworkPlayer] TradeDebugTools.Instance == null!");
-                }
-            }
-            else
-            {
-                Debug.Log($"[NetworkPlayer] Этот клиент ({localClientId}) НЕ целевой ({targetClientId}), пропускаю");
-            }
-        }
+        // ==================== LEGACY TRADE/CONTRACT RPC REMOVED (C1-cleanup 2026-06-05) ====================
+        // C1-cleanup: удалены 9 legacy RPC:
+        //   - Trade: TradeBuyServerRpc, TradeSellServerRpc, TradeResultClientRpc
+        //   - Contracts: ContractRequestServerRpc, ContractAcceptServerRpc, ContractCompleteServerRpc,
+        //                ContractFailServerRpc, ContractListClientRpc, ContractResultClientRpc
+        // Все они проксировали в v1 TradeMarketServer / ContractSystem / ContractBoardUI,
+        // которые удалены в C1. v2-цепочка идёт через:
+        //   - MarketServer.RequestBuyRpc / RequestSellRpc / RequestLoadToShipRpc / RequestUnloadFromShipRpc
+        //     + NetworkPlayer.ReceiveMarketSnapshotTargetRpc / ReceiveTradeResultTargetRpc
+        //   - ContractServer.RequestListRpc / RequestAcceptRpc / RequestCompleteRpc / RequestFailRpc
+        //     + NetworkPlayer.ReceiveContractSnapshotTargetRpc / ReceiveContractResultTargetRpc
+        // (см. docs/dev/C1_CLEANUP_PLAN_2026-06-05.md и MARKETS_V2_AUDIT_2026-06-05.md §2.1 C4/C5)
 
         public new bool IsLocalPlayer => IsOwner;
         public ulong GetOwnerId() => OwnerClientId;
-
-        // ==================== CONTRACT RPC (Сессия 7) ====================
-
-        /// <summary>
-        /// Запросить доступные контракты — клиент → сервер
-        /// </summary>
-        [Rpc(SendTo.Server)]
-        public void ContractRequestServerRpc(string locationId, RpcParams rpcParams = default)
-        {
-            if (ContractSystem.Instance != null)
-            {
-                ContractSystem.Instance.RequestAvailableContractsServerRpc(locationId);
-            }
-            else
-            {
-                Debug.LogWarning("[NetworkPlayer] ContractSystem не найден");
-            }
-        }
-
-        /// <summary>
-        /// Принять контракт — клиент → сервер
-        /// </summary>
-        [Rpc(SendTo.Server)]
-        public void ContractAcceptServerRpc(string contractId, RpcParams rpcParams = default)
-        {
-            if (ContractSystem.Instance != null)
-            {
-                ContractSystem.Instance.AcceptContractServerRpc(contractId);
-            }
-            else
-            {
-                Debug.LogWarning("[NetworkPlayer] ContractSystem не найден");
-            }
-        }
-
-        /// <summary>
-        /// Завершить контракт — клиент → сервер
-        /// </summary>
-        [Rpc(SendTo.Server)]
-        public void ContractCompleteServerRpc(string contractId, string completionLocationId, RpcParams rpcParams = default)
-        {
-            if (ContractSystem.Instance != null)
-            {
-                ContractSystem.Instance.CompleteContractServerRpc(contractId, completionLocationId);
-            }
-            else
-            {
-                Debug.LogWarning("[NetworkPlayer] ContractSystem не найден");
-            }
-        }
-
-        /// <summary>
-        /// Провалить контракт (отмена) — клиент → сервер
-        /// </summary>
-        [Rpc(SendTo.Server)]
-        public void ContractFailServerRpc(string contractId, RpcParams rpcParams = default)
-        {
-            if (ContractSystem.Instance != null)
-            {
-                ContractSystem.Instance.FailContractServerRpc(contractId);
-            }
-            else
-            {
-                Debug.LogWarning("[NetworkPlayer] ContractSystem не найден");
-            }
-        }
-
-        /// <summary>
-        /// Список доступных контрактов — сервер → клиент
-        /// </summary>
-        [Rpc(SendTo.Owner)]
-        public void ContractListClientRpc(string serializedContracts, string locationId, RpcParams rpcParams = default)
-        {
-            if (ContractBoardUI.Instance != null)
-            {
-                ContractBoardUI.Instance.OnContractsReceived(serializedContracts, locationId);
-            }
-            else
-            {
-                Debug.LogWarning("[NetworkPlayer] ContractBoardUI.Instance == null!");
-            }
-        }
-
-        /// <summary>
-        /// Результат контракта — сервер → клиент
-        /// </summary>
-        [Rpc(SendTo.Owner)]
-        public void ContractResultClientRpc(bool success, string message, float reward, RpcParams rpcParams = default)
-        {
-            if (ContractBoardUI.Instance != null)
-            {
-                ContractBoardUI.Instance.OnContractResult(success, message, reward);
-            }
-            else if (TradeUI.Instance != null)
-            {
-                TradeUI.Instance.OnContractResult(success, message, reward);
-            }
-        }
 
         // ==================== TELEPORT RPC (Phase 2) ====================
 

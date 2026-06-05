@@ -68,8 +68,8 @@ namespace ProjectC.Core
 
             DontDestroyOnLoad(gameObject);
 
-            // СЕССИЯ DIAGNOSTIC: Создаём TradeDebugTools для отладки
-            CreateTradeDebugTools();
+            // C1-cleanup (2026-06-05): CreateTradeDebugTools() удалён — TradeDebugTools.cs мёртв.
+            // Окно TradeWindow/MarketWindow + dev-консоль достаточно для отладки.
 
             // FIX (2026-06-04): Создаём MarketClientState программно как root GO —
             // см. подробности в docs/Markets/FIXES_HISTORY.md 2026-06-04
@@ -88,26 +88,6 @@ namespace ProjectC.Core
                 Debug.Log("[Network] Запуск в режиме Dedicated Server");
                 Invoke(nameof(StartServer), 0.5f);
             }
-        }
-        
-        /// <summary>
-        /// Создать TradeDebugTools для диагностики торговли.
-        /// Это позволяет всегда видеть склад клиента на экране.
-        /// </summary>
-        private void CreateTradeDebugTools()
-        {
-            var existing = FindObjectsByType<ProjectC.Trade.TradeDebugTools>(FindObjectsInactive.Include);
-            if (existing.Length > 0)
-            {
-                Debug.Log("[NMC] TradeDebugTools already exists, skipping creation");
-                return;
-            }
-
-            var debugObj = new GameObject("TradeDebugTools");
-            var debugTools = debugObj.AddComponent<ProjectC.Trade.TradeDebugTools>();
-            // Parenting AFTER DontDestroyOnLoad to ensure debugObj is a root GameObject
-            debugObj.transform.SetParent(transform);
-            debugObj.SetActive(true);
         }
 
         /// <summary>

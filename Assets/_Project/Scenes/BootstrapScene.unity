@@ -1133,7 +1133,6 @@ GameObject:
   serializedVersion: 6
   m_Component:
   - component: {fileID: 124043120}
-  - component: {fileID: 124043119}
   - component: {fileID: 124043124}
   - component: {fileID: 124043123}
   - component: {fileID: 124043126}
@@ -1144,23 +1143,6 @@ GameObject:
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
   m_IsActive: 1
---- !u!114 &124043119
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 124043118}
-  m_Enabled: 0
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 7c8c709cae773814f9b7af3703402be0, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::ProjectC.Trade.TradeDebugTools
-  showOnScreen: 0
-  panelWidth: 350
-  panelHeight: 500
-  padding: 20
-  updateInterval: 0.5
 --- !u!4 &124043120
 Transform:
   m_ObjectHideFlags: 0

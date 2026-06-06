@@ -344,6 +344,43 @@ if (!_inShip) {  // посадка
 - NRE / scene-spawn: `docs/dev/INTEGRATION_SHIPS_TO_WORLD_0_0.md` (фут-ган `InScenePlacedSourceGlobalObjectIdHash==0`).
 - UI-паттерн (singleton + projection): `docs/dev/CONTRACTS_AS_MARKET_TAB_REFACTOR.md` (как устроен `ContractClientState` / `MarketClientState`).
 - **KNOWN_ISSUES.md** — баг-репорт "ключи в подпапке Resources/Items" (R2-SHIP-KEY-001).
+- **SHIP_KEY_TO_META_REQUIREMENT_MIGRATION.md** — план миграции на обобщённую подсистему `MetaRequirement` (Этап 1, ~3-4 часа).
+- **📋 docs/MetaRequirement/00_OVERVIEW.md** — дизайн новой подсистемы (planned).
+- **📋 docs/MetaRequirement/RECIPES.md** — 10 примеров конфигураций (planned).
 
 **Обновлено:** 2026-06-06 — первичный MVP-дизайн.
 **Обновлено:** 2026-06-06 — добавлен рецепт нового корабля+ключа, troubleshooting, CRITICAL warning про `Resources.LoadAll`.
+**Обновлено:** 2026-06-06 — запланирована миграция на `MetaRequirement` (Этап 1).
+
+---
+
+## 12. Migration to MetaRequirement (Этап 1)
+
+**Статус:** 📋 Планируется (см. подробный план в `SHIP_KEY_TO_META_REQUIREMENT_MIGRATION.md`)
+
+**Суть:** текущая подсистема (1 корабль ↔ 1 ключ) — вырожденный случай более общей системы `MetaRequirement` (любой `Interactable` ↔ N требуемых предметов с AND/OR/AtLeastN логикой).
+
+**Когда начинать:** в любой момент (Этап 1 оценён в 3-4 часа, с backward-compat алиасами).
+
+**Что останется** (не трогаем):
+- `InventoryWorld` core (только extension-методы)
+- `PickupItem`, `ItemData`, `InventoryClientState`, `InventoryServer`
+- `NetworkPlayer.F-key` (5-10 строк изменений, единый entry point)
+
+**Что переименовываем** (с алиасами):
+- `ShipKeyBinding` → `MetaRequirement`
+- `ShipKeyServer` → `MetaRequirementRegistry`
+- `ShipKeyClientState` → `MetaRequirementClientState`
+- `ShipKeyToast` → `MetaRequirementToast`
+
+**Что добавляем**:
+- `InventoryWorld.HasAllItems / HasAnyItem / CountOf / GetMissingItems`
+- `RequirementLogic` enum (All / Any / AtLeastN)
+- `ProgressInfo` struct для UI tooltip'а
+- `InteractableManager.FindNearestInteractable` (generic версия `FindNearestShip`)
+
+**Крафт (Этап 2) — НЕ делаем сейчас.** Это требует транзакций, дерева зависимостей, рецептов как SO — отдельная подсистема.
+
+**Подробный план:** `SHIP_KEY_TO_META_REQUIREMENT_MIGRATION.md` (10 шагов с тестами).
+**Дизайн новой подсистемы:** `docs/MetaRequirement/00_OVERVIEW.md`.
+**Примеры конфигураций:** `docs/MetaRequirement/RECIPES.md` (10 рецептов: ключ, дверь, босс, прогресс-квест, жертва и т.д.).

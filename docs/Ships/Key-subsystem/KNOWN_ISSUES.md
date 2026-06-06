@@ -135,6 +135,14 @@ if (scenePickupsWithData > registered) {
 ## Связанные документы
 
 - `00_OVERVIEW.md` — основной дизайн-документ Ship Key Subsystem
+- `SHIP_KEY_TO_META_REQUIREMENT_MIGRATION.md` — план миграции на `MetaRequirement`
 - `docs/dev/INVENTORY_V2_REFACTOR.md` — Phase 1 (InventoryWorld, InventoryServer)
 - `docs/Character-menu/sub_inventory-tab/00_OVERVIEW.md` — UI инвентаря
 - `unity-mcp-orchestrator` skill — pitfall #22 (типы не подхватываются после 1-го compile)
+
+---
+
+## История
+
+- **2026-06-06 (R2-SHIP-KEY-001):** Баг "ключи в подпапке Resources/Items" — исправлен, файлы перемещены в корень. Детальный пост-мортем в этом документе.
+- **2026-06-06 (R2-SHIP-KEY-002):** Планируется миграция на `MetaRequirement` (Этап 1). См. `SHIP_KEY_TO_META_REQUIREMENT_MIGRATION.md`.

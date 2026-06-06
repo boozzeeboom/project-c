@@ -79,6 +79,12 @@ namespace ProjectC.Player
         private ulong _pendingCanBoardShipId = ulong.MaxValue;
         private const float CAN_BOARD_REQUEST_TIMEOUT = 1.5f;
 
+        // MetaRequirement Subsystem: защита от двойного E (или F) пока ждём ответ
+        // сервера. Используется для не-корабельных interactable'ов (LockBox, дверь и т.п.).
+        private float _lastCanUseRequestTime = -10f;
+        private ulong _pendingCanUseInteractableId = ulong.MaxValue;
+        private const float CAN_USE_REQUEST_TIMEOUT = 1.5f;
+
 
 
         // ==================== CLIENT-SIDE PREDICTION ====================
@@ -368,6 +374,11 @@ namespace ProjectC.Player
                 // E — подбор ИЛИ открыть рынок (если в MarketZone и рядом нет сундука)
                 if (Keyboard.current.eKey.wasPressedThisFrame)
                 {
+                    // MetaRequirement Subsystem (R2-META-REQ-001): если рядом есть
+                    // не-корабельный interactable с MetaRequirement (например, LockBox),
+                    // — RequestCanUse. Иначе fallback на chest/pickup/market.
+                    if (TryInteractNearestMetaRequirement()) return;
+
                     FindNearestInteractable();
                     if (_nearestChest != null || _nearestNetworkChest != null)
                     {
@@ -569,6 +580,59 @@ namespace ProjectC.Player
             {
                 _nearestPickup = InteractableManager.FindNearestPickup(transform.position, pickupRange);
             }
+        }
+
+        // ==================== META REQUIREMENT (E-key для LockBox, дверей и т.д.) ====================
+        // Использует FindObjectsByType<NetworkObject> с MetaRequirement в радиусе interactDistance.
+        // Сейчас используем простой FindObjectsByType (на каждый E — единичный поиск, без GC issues
+        // потому что список обычно < 50 объектов). При необходимости — кэшировать в InteractableManager.
+
+        /// <summary>Возвращает true если нашёл interactable с MetaRequirement и обработал E.
+        /// Возвращает false если рядом ничего нет — тогда caller fallback на chest/pickup/market.</summary>
+        private bool TryInteractNearestMetaRequirement()
+        {
+            if (_inShip) return false;
+
+            // Ищем ближайший MetaRequirement с NetworkBehaviour и активным GO
+            var all = FindObjectsByType<ProjectC.MetaRequirement.MetaRequirement>(FindObjectsInactive.Exclude);
+            ProjectC.MetaRequirement.MetaRequirement nearest = null;
+            float minDist = float.MaxValue;
+            Vector3 pos = GetEffectivePosition();
+            float range = Mathf.Max(pickupRange, boardDistance); // reuse ranges
+            foreach (var mr in all)
+            {
+                if (mr == null || !mr.IsSpawned) continue;
+                // Пропускаем корабли (ShipController) — у них свой flow через F
+                if (mr.GetComponent<ShipController>() != null) continue;
+                float dist;
+                var collider = mr.GetComponentInChildren<Collider>();
+                if (collider != null)
+                {
+                    Vector3 closest = collider.bounds.ClosestPoint(pos);
+                    dist = Vector3.Distance(pos, closest);
+                }
+                else
+                {
+                    dist = Vector3.Distance(pos, mr.transform.position);
+                }
+                if (dist < range && dist < minDist)
+                {
+                    minDist = dist;
+                    nearest = mr;
+                }
+            }
+            if (nearest == null) return false;
+
+            // Защита от двойного E
+            if (Time.unscaledTime - _lastCanUseRequestTime < CAN_USE_REQUEST_TIMEOUT
+                && _pendingCanUseInteractableId == nearest.NetworkObjectId)
+            {
+                return true; // ещё ждём ответ — НЕ даём fallback-логике отработать
+            }
+            _lastCanUseRequestTime = Time.unscaledTime;
+            _pendingCanUseInteractableId = nearest.NetworkObjectId;
+            ProjectC.MetaRequirement.MetaRequirementClientState.Instance?.RequestCanUse(nearest.NetworkObjectId);
+            return true;
         }
 
         private void TryPickup()
@@ -832,6 +896,41 @@ namespace ProjectC.Player
         public void ReceiveShipKeyBindingsTargetRpc(ulong[] shipNetIds, int[] keyItemIds, Unity.Collections.FixedString64Bytes[] displayNames, RpcParams rpcParams = default)
         {
             ProjectC.Ship.Key.ShipKeyClientState.Instance?.OnBindingsPushed(shipNetIds, keyItemIds, displayNames);
+        }
+
+        // ==================== META REQUIREMENT RPCs (Target, Owner) ====================
+        // Доставка ответа от MetaRequirementRegistry (после RequestCanUseRpc) и реестра требований.
+        // Вызываются через netPlayer.ReceiveMetaRequirement*TargetRpc(...) из
+        // ProjectC.MetaRequirement.MetaRequirementRegistry.
+
+        [Rpc(SendTo.Owner)]
+        public void ReceiveMetaRequirementResponseTargetRpc(ulong interactableNetworkObjectId, bool allowed, string reason, RpcParams rpcParams = default)
+        {
+            // Сбрасываем race-protection. Клиентский OnUseAllowed (например, LockBox-анимация)
+            // дёргается изнутри MetaRequirementClientState.OnCanUseResponse.
+            _lastCanUseRequestTime = -10f;
+            _pendingCanUseInteractableId = ulong.MaxValue;
+            ProjectC.MetaRequirement.MetaRequirementClientState.Instance?.OnCanUseResponse(interactableNetworkObjectId, allowed, reason);
+        }
+
+        /// <summary>
+        /// Bulk-push реестра требований с сервера на клиента. Параметр itemIdsArr —
+        /// "jagged array" int[][], сериализуется NGO как массив массивов. Для
+        /// совместимости с NGO 2.x: используем стандартный механизм сериализации
+        /// (читаем/пишем длину + плоский массив).
+        /// </summary>
+        [Rpc(SendTo.Owner)]
+        public void ReceiveMetaRequirementBindingsTargetRpc(
+            ulong[] netIds,
+            Unity.Collections.FixedString64Bytes[] displayNames,
+            int[][] itemIdsArr,
+            byte[] logics,
+            int[] requiredCounts,
+            bool[] consumeOnUses,
+            RpcParams rpcParams = default)
+        {
+            ProjectC.MetaRequirement.MetaRequirementClientState.Instance?.OnRequirementsPushed(
+                netIds, displayNames, itemIdsArr, logics, requiredCounts, consumeOnUses);
         }
     }
 }

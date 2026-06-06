@@ -1,27 +1,24 @@
 // =====================================================================================
-// ShipKeyToast.cs — UI-компонент тоста (DEPRECATED, сохранён для legacy ship-key flow)
+// MetaRequirementToast.cs — UI-компонент тоста отказа в доступе (Project C: The Clouds)
 // =====================================================================================
 // Документация:
-//   • docs/Ships/Key-subsystem/SHIP_KEY_TO_META_REQUIREMENT_MIGRATION.md
+//   • docs/MetaRequirement/00_OVERVIEW.md
 //
-// Этот файл сохранён как полный subclass (НЕ пустой) — он по-прежнему подписан на
-// ShipKeyClientState.OnBoardDenied для совместимости со СТАРЫМИ deny-сообщениями от
-// ShipKeyServer (корабли). НОВЫЕ interactable'ы (блоки, двери) используют
-// MetaRequirementToast, подписанный на MetaRequirementClientState.OnAccessDenied.
+// Назначение: scene-placed MonoBehaviour с UIDocument. Подписывается на
+// MetaRequirementClientState.OnAccessDenied и показывает Label в нижней части экрана.
 //
-// Сцены: если в BootstrapScene уже есть [ShipKeyToast] GameObject — оставьте его
-// для совместимости; рядом положите отдельный [MetaRequirementToast] GameObject.
-// Через 1-2 релиз-цикла: удалить.
+// MVP-граница: один Label, fade-out по таймеру. Без анимаций, без стекинга сообщений.
+// Показывает reason (human-readable) как есть. В v2 — multiline с иконками предметов.
 // =====================================================================================
 
 using System.Collections;
 using UnityEngine;
 using UnityEngine.UIElements;
 
-namespace ProjectC.Ship.Key
+namespace ProjectC.MetaRequirement
 {
     [RequireComponent(typeof(UIDocument))]
-    public class ShipKeyToast : MonoBehaviour
+    public class MetaRequirementToast : MonoBehaviour
     {
         [Header("Settings")]
         [Tooltip("Длительность показа тоста в секундах.")]
@@ -29,6 +26,14 @@ namespace ProjectC.Ship.Key
 
         [Tooltip("Cooldown между показами (защита от двойного deny).")]
         [SerializeField] private float _cooldown = 0.4f;
+
+        [Header("Внешний вид")]
+        [Tooltip("Цвет текста тоста.")]
+        [SerializeField] private Color _textColor = new Color(1f, 0.85f, 0.3f, 1f); // ярко-золотой, как у Ship Key
+        [Tooltip("Цвет фона (alpha < 1 = полупрозрачный).")]
+        [SerializeField] private Color _backgroundColor = new Color(0f, 0f, 0f, 0.7f);
+        [Tooltip("Размер шрифта.")]
+        [SerializeField] private int _fontSize = 20;
 
         private UIDocument _doc;
         private VisualElement _container;
@@ -45,6 +50,8 @@ namespace ProjectC.Ship.Key
 
         private void OnEnable()
         {
+            // Делаем этот объект DontDestroyOnLoad — toast должен переживать стриминг сцен.
+            // (Мы root, как MetaRequirementClientState, так что DDOL безопасен.)
             if (transform.parent == null && Application.isPlaying)
             {
                 DontDestroyOnLoad(gameObject);
@@ -65,9 +72,9 @@ namespace ProjectC.Ship.Key
         private void Unsubscribe()
         {
             if (!_subscribed) return;
-            if (ShipKeyClientState.Instance != null)
+            if (MetaRequirementClientState.Instance != null)
             {
-                ShipKeyClientState.Instance.OnBoardDenied -= ShowToast;
+                MetaRequirementClientState.Instance.OnAccessDenied -= ShowToast;
             }
             _subscribed = false;
         }
@@ -89,7 +96,7 @@ namespace ProjectC.Ship.Key
 
             _container = new VisualElement
             {
-                name = "ship-key-toast",
+                name = "meta-requirement-toast",
                 pickingMode = PickingMode.Ignore
             };
             _container.style.position = Position.Absolute;
@@ -98,7 +105,7 @@ namespace ProjectC.Ship.Key
             _container.style.right = 0;
             _container.style.alignItems = Align.Center;
             _container.style.display = new StyleEnum<DisplayStyle>(DisplayStyle.None);
-            _container.style.backgroundColor = new StyleColor(new Color(0f, 0f, 0f, 0.7f));
+            _container.style.backgroundColor = new StyleColor(_backgroundColor);
             _container.style.paddingTop = 10;
             _container.style.paddingBottom = 10;
             _container.style.paddingLeft = 24;
@@ -112,12 +119,12 @@ namespace ProjectC.Ship.Key
 
             _label = new Label
             {
-                name = "ship-key-toast-label",
+                name = "meta-requirement-toast-label",
                 text = "",
                 pickingMode = PickingMode.Ignore
             };
-            _label.style.color = new StyleColor(new Color(1f, 0.85f, 0.3f, 1f));
-            _label.style.fontSize = 20;
+            _label.style.color = new StyleColor(_textColor);
+            _label.style.fontSize = _fontSize;
             _label.style.unityFontStyleAndWeight = FontStyle.Bold;
             _label.style.unityTextAlign = TextAnchor.MiddleCenter;
             _label.style.whiteSpace = WhiteSpace.Normal;
@@ -135,12 +142,15 @@ namespace ProjectC.Ship.Key
 
         private void TrySubscribe()
         {
-            if (ShipKeyClientState.Instance == null) return;
-            ShipKeyClientState.Instance.OnBoardDenied += ShowToast;
+            if (MetaRequirementClientState.Instance == null) return;
+            MetaRequirementClientState.Instance.OnAccessDenied += ShowToast;
             _subscribed = true;
         }
 
-        private void ShowToast(string message)
+        /// <summary>Public API: показать toast с заданным сообщением (для тестов / внешних вызовов).</summary>
+        public void ShowToastExternal(string message) => ShowToast(0, message);
+
+        private void ShowToast(ulong netId, string message)
         {
             if (!_built) TryBuild();
             if (_container == null || _label == null) return;

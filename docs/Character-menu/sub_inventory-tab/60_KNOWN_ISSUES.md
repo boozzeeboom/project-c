@@ -9,6 +9,100 @@
 
 ## Известные баги (Phase 7)
 
+### 🟠 MEDIUM (R3-INV-DROP-001, 2026-06-06): Drop-спавн теряет визуальное представление предмета
+
+**Симптом:**
+- Игрок подбирает красиво оформленный `[PickupItem]` (например, цветной ключ `[Key_Blue_Pickup]`,
+  синий URP/Lit материал с emission)
+- Через UI (TAB-колесо → Drop) или горячую клавишу выбрасывает предмет из инвентаря
+- В мире появляется **новый** `PickupItem` — но он **белый/базовый**, без цвета, без emission,
+  без иконки, которая была у оригинала
+
+**Сцена repro:**
+1. Editor → BootstrapScene → Play → StartHost
+2. Подойти к `[Key_Blue_Pickup]` (синяя сфера, URP/Lit материал с emission) → E (подобрать)
+3. Открыть TAB-колесо → выбрать слот Equipment (синий ключ) → нажать Drop (или будущий UI)
+4. На земле появляется `[PickupItem]`, но он **белый** (или какой указан в `_dropPickupPrefab`),
+   а не синий
+
+**Ожидаемое поведение:** выброшенный предмет выглядит так же, как подобранный (тот же цвет, материал,
+icon — или хотя бы визуально различимый для своего itemId).
+
+**Корневая причина (root cause):**
+В `Assets/_Project/Items/Network/InventoryServer.cs:142-149` (метод `RequestDropRpc`) при
+успешном drop сервер спавнит префаб `_dropPickupPrefab` и выставляет ему **только данные**:
+```csharp
+pickup.itemData = itemData;                                       // SO-ссылка
+pickup.itemId  = InventoryWorld.Instance.GetOrRegisterItemId(itemData);
+```
+Никакая визуальная часть (MeshRenderer.sharedMaterial, Sprite icon, размер, particle-эффект)
+**не пробрасывается** с оригинального scene-placed pickup'а на новый server-spawned.
+
+Scene-placed `PickupItem` в `WorldScene_0_0.unity` имел свой MeshRenderer.material,
+выставленный в инспекторе (или через MCP `manage_components` с `sharedMaterial`). Эта
+настройка **уникальна для каждого экземпляра** в сцене. Префаб `_dropPickupPrefab`,
+наоборот, имеет **один общий** материал на все дропы (его MeshRenderer.sharedMaterial),
+который обычно = базовый (default cube/sphere material).
+
+Поскольку `ItemData` (SO) хранит только `itemName/itemType/description/icon/maxStack/weightKg`
+(`Assets/_Project/Scripts/Core/ItemType.cs:18-34`) — **НЕ хранит 3D-материал**, цвет, размер
+или иной визуал, нет механизма передать "как должен выглядеть предмет itemId=N" от scene-placed
+источника в server-spawned экземпляр.
+
+**Почему не чиним в этой сессии:**
+- Затронуты несколько подсистем: `ItemData` (расширение полей), `InventoryServer` (новый
+  путь визуализации), `PickupItem` (новая логика `ApplyItemDataVisual`), `IconDatabase` или
+  аналог (отдельный SO или `Sprite[]`).
+- Часть проблемы решается в рамках **ItemData v2** (планируется: `icon` уже есть, но
+  не используется для 3D; `visualPrefab` / `visualMaterial` / `colorTint` — новые поля).
+- Без согласования с дизайнером (визуальный стиль, asset pipeline) фиксить опасно —
+  можем сломать существующие pickup'ы.
+- Трудоёмкость: ~0.5-1 сессия.
+
+**Workaround для тестов:**
+- Все 30+ pickup'ов в `WorldScene_0_0` уже имеют индивидуальные материалы (URP/Lit с цветом
+  и emission). Если drop в мир **не используется** (т.е. игрок только подбирает, не выбрасывает)
+  — баг не проявляется.
+- До фикса: в тестах избегать drop'а цветных предметов, либо не обращать внимания на "обесцвечивание".
+
+**Phase 10+ fix (план):**
+1. Расширить `ItemData` (опционально) полями:
+   ```csharp
+   public Material visualMaterial;  // 3D-материал для PickupItem (если есть)
+   public Vector3  visualScale = Vector3.one;  // размер
+   public Color    visualTint = Color.white;   // модификатор цвета (если material=null)
+   ```
+2. Добавить `PickupItem.ApplyItemDataVisual()` (server-side после `Instantiate`):
+   ```csharp
+   if (itemData.visualMaterial != null) renderer.sharedMaterial = itemData.visualMaterial;
+   transform.localScale = itemData.visualScale;
+   // + tint через MaterialPropertyBlock если material=null
+   ```
+3. В `InventoryServer.RequestDropRpc` после `pickup.itemData = itemData`:
+   `pickup.ApplyItemDataVisual();`
+4. Создать/назначить материалы для существующих 30+ `ItemData` (AssetDatabase workflow,
+   один проход).
+
+**Файлы:**
+- Бага: `Assets/_Project/Items/Network/InventoryServer.cs:142-149` (spawn + set itemData)
+- PickupItem: `Assets/_Project/Scripts/Core/PickupItem.cs:28-99` (нет метода ApplyItemDataVisual)
+- ItemData: `Assets/_Project/Scripts/Core/ItemType.cs:18-34` (нет visual-полей)
+
+**Связанные подсистемы:**
+- `MetaRequirement` (R2-META-REQ-001) — LockBox-блоки используют color tint через
+  `LockBox._baseColor` поле (не через ItemData), так что у них проблемы нет. Если в будущем
+  делать "ключ как ItemData + цветной pickup", та же проблема проявится — фикс должен быть
+  общим.
+
+**Связь с другими багами:** см. §"🟢 LOW: Drop в мир не работает" (TODO Phase 8). Тот баг
+про то, что drop в принципе возвращает InternalError. Этот (R3-INV-DROP-001) — про то, что
+даже когда drop работает, теряется визуал.
+
+**Статус:** 🟠 **ИЗВЕСТЕН, НЕ ЧИНИМ в этой сессии.** Записан для следующего бага-фикса
+(после Phase 10 stackable / cargo).
+
+---
+
 ### ✅ РЕШЕНО (R3-005, 2026-06-05): NetworkChestContainer мигрирован на v2
 
 **Было:**

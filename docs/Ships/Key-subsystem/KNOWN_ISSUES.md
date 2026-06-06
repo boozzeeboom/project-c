@@ -144,5 +144,15 @@ if (scenePickupsWithData > registered) {
 
 ## История
 
-- **2026-06-06 (R2-SHIP-KEY-001):** Баг "ключи в подпапке Resources/Items" — исправлен, файлы перемещены в корень. Детальный пост-мортем в этом документе.
-- **2026-06-06 (R2-SHIP-KEY-002):** Планируется миграция на `MetaRequirement` (Этап 1). См. `SHIP_KEY_TO_META_REQUIREMENT_MIGRATION.md`.
+- **2026-06-06 (R2-SHIP-KEY-001):** Баг "ключи в подпапке Resources/Items" — исправлен, файлы перемещены в корень. Детальный пост-мортем в этом документе. **Статус: ✅ RESOLVED**.
+- **2026-06-06 (R2-SHIP-KEY-002):** Миграция на MetaRequirement (Этап 1) — **ЗАВЕРШЕНА**. См. `SHIP_KEY_TO_META_REQUIREMENT_MIGRATION.md` + новый тикет **R2-META-REQ-001** (ниже). `ShipKeyBinding/ShipKeyServer/ShipKeyClientState/ShipKeyToast` теперь `[Obsolete]` алиасы поверх `MetaRequirement*`. Старые сцены работают без изменений (`.meta`-GUID сохранены). Через 1-2 релиз-цикла алиасы будут удалены.
+- **2026-06-06 (R2-META-REQ-001):** Универсальная MetaRequirement-подсистема. См. `docs/MetaRequirement/00_OVERVIEW.md`. Сделано:
+  - `Assets/_Project/Items/Core/InventoryWorld.cs` — extensions `HasAllItems/HasAnyItem/CountOf/GetMissingItems`.
+  - `Assets/_Project/Scripts/MetaRequirement/{RequirementLogic,ProgressInfo,MetaRequirementDto,MetaRequirement,MetaRequirementRegistry,MetaRequirementClientState,MetaRequirementToast,LockBox}.cs` — новые файлы.
+  - `NetworkManagerController` — `CreateMetaRequirementClientState` (auto-spawn root).
+  - `NetworkPlayer` — Target RPC'и `ReceiveMetaRequirementResponse/Bindings` + E-key entry point `TryInteractNearestMetaRequirement`.
+  - `Assets/_Project/Scripts/Ship/Key/*` — 4 алиаса с `[Obsolete]`, сохранены legacy API.
+  - `Assets/_Project/Resources/Items/Item_Key_Blue/Red/Green.asset` — 3 тестовых SO.
+  - `Assets/_Project/Scenes/World/WorldScene_0_0.unity` — добавлен parent `[MetaRequirement_Test]` с 3 Pickup-ключами + 3 LockBox-блоками.
+  - `Assets/_Project/Scenes/BootstrapScene.unity` — добавлен `[MetaRequirementRegistry]` (NetworkBehaviour) + `[MetaRequirementToast]` (UIDocument + `MetaRequirementPanelSettings.asset`).
+  - **Статус: 🟢 COMPILE-OK, готово к Play-mode тесту.**

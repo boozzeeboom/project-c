@@ -92,6 +92,14 @@ namespace ProjectC.Core
             // Тот же паттерн, что и InventoryClientState.
             CreateShipKeyClientState();
 
+            // MetaRequirement Subsystem (docs/MetaRequirement/00_OVERVIEW.md, R2-META-REQ-001):
+            // MetaRequirementClientState — клиентская проекция требований для ЛЮБЫХ
+            // interactable'ов (корабли, блоки, двери, NPC и т.д.).
+            // Оба singleton'а сосуществуют — ShipKeyClientState продолжает обслуживать
+            // старые Target RPC от ShipKeyServer, а MetaRequirementClientState — новые
+            // Target RPC от MetaRequirementRegistry. Через 1-2 релиз-цикла первый удалим.
+            CreateMetaRequirementClientState();
+
             // Автоматический запуск Dedicated Server если передан аргумент -server
             if (IsDedicatedServerMode())
             {
@@ -203,6 +211,31 @@ namespace ProjectC.Core
             var go = new GameObject("[ShipKeyClientState]");
             go.AddComponent<ProjectC.Ship.Key.ShipKeyClientState>();
             Debug.Log("[NMC] Created [ShipKeyClientState] as root GameObject");
+        }
+
+        /// <summary>
+        /// MetaRequirement Subsystem (docs/MetaRequirement/00_OVERVIEW.md, R2-META-REQ-001):
+        /// Создать MetaRequirementClientState как root GameObject.
+        /// Паттерн идентичен CreateShipKeyClientState.
+        /// </summary>
+        private void CreateMetaRequirementClientState()
+        {
+            var existing = FindObjectsByType<ProjectC.MetaRequirement.MetaRequirementClientState>(FindObjectsInactive.Include);
+            foreach (var inst in existing)
+            {
+                if (inst != null && inst.transform.parent == null)
+                {
+                    Debug.Log("[NMC] MetaRequirementClientState already root, skipping creation");
+                    return;
+                }
+            }
+            if (existing.Length > 0)
+            {
+                Debug.LogWarning($"[NMC] Found {existing.Length} non-root MetaRequirementClientState in scene — DontDestroyOnLoad would fail. Creating root replacement.");
+            }
+            var go = new GameObject("[MetaRequirementClientState]");
+            go.AddComponent<ProjectC.MetaRequirement.MetaRequirementClientState>();
+            Debug.Log("[NMC] Created [MetaRequirementClientState] as root GameObject");
         }
 
         private void Start()

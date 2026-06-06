@@ -149,6 +149,87 @@ namespace ProjectC.Items
             return false;
         }
 
+        // === MetaRequirement extensions (2026-06-06, R2-META-REQ-001) ===
+        // Обобщение для системы MetaRequirement: AND/OR/N-из-M логика.
+        // Все методы — server-side, используются MetaRequirementRegistry при авторизации.
+        // Backward compatible с HasItem (старый код ShipKeyServer продолжает работать).
+
+        /// <summary>True если у игрока ЕСТЬ ВСЕ itemId из списка. Дубликаты игнорируются (HashSet).</summary>
+        public bool HasAllItems(ulong clientId, int[] itemIds)
+        {
+            if (itemIds == null || itemIds.Length == 0) return true; // пустой = trivially satisfied
+            if (!_playerInventories.TryGetValue(clientId, out var data)) return false;
+            // Соберём уникальные requested id'ы
+            var requested = new HashSet<int>();
+            for (int i = 0; i < itemIds.Length; i++) requested.Add(itemIds[i]);
+            // Пройдём по всем слотам игрока
+            foreach (ItemType type in System.Enum.GetValues(typeof(ItemType)))
+            {
+                var ids = data.GetIdsForType(type);
+                if (ids == null) continue;
+                for (int i = 0; i < ids.Count; i++)
+                {
+                    requested.Remove(ids[i]);
+                    if (requested.Count == 0) return true;
+                }
+            }
+            return requested.Count == 0;
+        }
+
+        /// <summary>True если у игрока ЕСТЬ ХОТЯ БЫ ОДИН itemId из списка. Пустой список → false.</summary>
+        public bool HasAnyItem(ulong clientId, int[] itemIds)
+        {
+            if (itemIds == null || itemIds.Length == 0) return false;
+            if (!_playerInventories.TryGetValue(clientId, out var data)) return false;
+            foreach (ItemType type in System.Enum.GetValues(typeof(ItemType)))
+            {
+                var ids = data.GetIdsForType(type);
+                if (ids == null) continue;
+                for (int i = 0; i < ids.Count; i++)
+                {
+                    for (int j = 0; j < itemIds.Length; j++)
+                    {
+                        if (ids[i] == itemIds[j]) return true;
+                    }
+                }
+            }
+            return false;
+        }
+
+        /// <summary>Сколько штук указанного itemId есть у игрока (по List&lt;int&gt;.Count, MVP без stackable).</summary>
+        public int CountOf(ulong clientId, int itemId)
+        {
+            if (itemId <= 0) return 0;
+            if (!_playerInventories.TryGetValue(clientId, out var data)) return 0;
+            int n = 0;
+            foreach (ItemType type in System.Enum.GetValues(typeof(ItemType)))
+            {
+                var ids = data.GetIdsForType(type);
+                if (ids == null) continue;
+                for (int i = 0; i < ids.Count; i++)
+                {
+                    if (ids[i] == itemId) n++;
+                }
+            }
+            return n;
+        }
+
+        /// <summary>Массив itemId, которых НЕТ у игрока. Используется для генерации reason в toast'е.
+        /// Дубликаты входного списка → выходной список может быть короче (только уникальные missing).</summary>
+        public int[] GetMissingItems(ulong clientId, int[] itemIds)
+        {
+            if (itemIds == null || itemIds.Length == 0) return System.Array.Empty<int>();
+            var missing = new System.Collections.Generic.List<int>();
+            var seen = new HashSet<int>();
+            for (int i = 0; i < itemIds.Length; i++)
+            {
+                if (itemIds[i] <= 0) continue;
+                if (!seen.Add(itemIds[i])) continue; // уже проверяли
+                if (!HasItem(clientId, itemIds[i])) missing.Add(itemIds[i]);
+            }
+            return missing.ToArray();
+        }
+
         // ===========================================================
         // Operations — TryPickup
         // ===========================================================

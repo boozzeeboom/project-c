@@ -35,25 +35,36 @@
             <ui:VisualElement name="wheel" class="wheel">
 
                 <!-- Сектора. Имена sector-0..7 — соответствуют (int)ItemType 0..7.
-                     Позиционируются через USS: position: absolute + left/right + rotate. -->
-                <ui:VisualElement name="sector-0" class="sector sector-0" data-type="Resources" />
-                <ui:VisualElement name="sector-1" class="sector sector-1" data-type="Equipment" />
-                <ui:VisualElement name="sector-2" class="sector sector-2" data-type="Food" />
-                <ui:VisualElement name="sector-3" class="sector sector-3" data-type="Fuel" />
-                <ui:VisualElement name="sector-4" class="sector sector-4" data-type="Antigrav" />
-                <ui:VisualElement name="sector-5" class="sector sector-5" data-type="Meziy" />
-                <ui:VisualElement name="sector-6" class="sector sector-6" data-type="Medical" />
-                <ui:VisualElement name="sector-7" class="sector sector-7" data-type="Tech" />
-
-                <!-- Лейблы для секторов (отдельно, чтобы можно было анимировать) -->
-                <ui:Label name="label-0" class="sector-label sector-label-0" text="РЕСУРСЫ" />
-                <ui:Label name="label-1" class="sector-label sector-label-1" text="ОБОРУДОВАНИЕ" />
-                <ui:Label name="label-2" class="sector-label sector-label-2" text="ЕДА" />
-                <ui:Label name="label-3" class="sector-label sector-label-3" text="ТОПЛИВО" />
-                <ui:Label name="label-4" class="sector-label sector-label-4" text="АНТИГРАВИЙ" />
-                <ui:Label name="label-5" class="sector-label sector-label-5" text="МЕЗИЙ" />
-                <ui:Label name="label-6" class="sector-label sector-label-6" text="МЕДИКАМЕНТЫ" />
-                <ui:Label name="label-7" class="sector-label sector-label-7" text="ТЕХНИКА" />
+                     Позиционируются через USS: position: absolute + left/right + rotate.
+                     BUGFIX 2026-06-05 (Phase 10.2): label ВЛОЖЕН в sector как дочерний
+                     элемент. Раньше label был ОТДЕЛЬНЫМ VisualElement с теми же
+                     координатами — перекрывал sector, pointer events уходили в label,
+                     и сектор подсвечивался только на узкой полосе сверху (где label
+                     не было). Теперь label — child → events bubble до sector. -->
+                <ui:VisualElement name="sector-0" class="sector sector-0" data-type="Resources">
+                    <ui:Label name="label-0" class="sector-label" text="РЕСУРСЫ" />
+                </ui:VisualElement>
+                <ui:VisualElement name="sector-1" class="sector sector-1" data-type="Equipment">
+                    <ui:Label name="label-1" class="sector-label" text="ОБОРУДОВАНИЕ" />
+                </ui:VisualElement>
+                <ui:VisualElement name="sector-2" class="sector sector-2" data-type="Food">
+                    <ui:Label name="label-2" class="sector-label" text="ЕДА" />
+                </ui:VisualElement>
+                <ui:VisualElement name="sector-3" class="sector sector-3" data-type="Fuel">
+                    <ui:Label name="label-3" class="sector-label" text="ТОПЛИВО" />
+                </ui:VisualElement>
+                <ui:VisualElement name="sector-4" class="sector sector-4" data-type="Antigrav">
+                    <ui:Label name="label-4" class="sector-label" text="АНТИГРАВИЙ" />
+                </ui:VisualElement>
+                <ui:VisualElement name="sector-5" class="sector sector-5" data-type="Meziy">
+                    <ui:Label name="label-5" class="sector-label" text="МЕЗИЙ" />
+                </ui:VisualElement>
+                <ui:VisualElement name="sector-6" class="sector sector-6" data-type="Medical">
+                    <ui:Label name="label-6" class="sector-label" text="МЕДИКАМЕНТЫ" />
+                </ui:VisualElement>
+                <ui:VisualElement name="sector-7" class="sector sector-7" data-type="Tech">
+                    <ui:Label name="label-7" class="sector-label" text="ТЕХНИКА" />
+                </ui:VisualElement>
 
                 <!-- Центр колеса: счётчик предметов + название типа -->
                 <ui:VisualElement class="wheel-center">

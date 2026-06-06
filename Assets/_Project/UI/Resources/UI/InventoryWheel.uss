@@ -2,7 +2,8 @@
    InventoryWheel.uss — стили TAB-колеса инвентаря (Project C: The Clouds)
    =====================================================================================
    Phase 4 (INVENTORY_V2_REFACTOR.md): UI Toolkit стили для InventoryWheel.uxml.
-   Паттерн: реюз концепций из MarketWindow.uss + radial layout.
+   Phase 10.2 (2026-06-05): компактный layout — wheel 320×320, sector 75×75, кнопки 28px.
+   Раньше: wheel 380×380 + sector 110×110 → кнопки уезжали за экран, sector'ы пересекались.
 
    Pitfall #24 (unity-mcp-orchestrator skill): UnityDefaultRuntimeTheme перебивает
    class-стили. ВСЕ критические свойства — с !important.
@@ -11,17 +12,17 @@
 /* === Container === */
 .wheel-container {
     position: absolute !important;
-    top: 5% !important;
+    top: 4% !important;
     left: 50% !important;
     translate: -50% 0 !important;
-    width: 800px !important;
-    max-width: 90% !important;
-    max-height: 90% !important;
+    width: 640px !important;
+    max-width: 88% !important;
+    max-height: 86% !important;
     background-color: rgba(20, 25, 35, 0.92) !important;
     border-width: 2px !important;
     border-color: rgba(120, 150, 200, 0.7) !important;
     border-radius: 8px !important;
-    padding: 16px !important;
+    padding: 10px 12px !important;
     flex-direction: column !important;
 }
 
@@ -30,21 +31,21 @@
     flex-direction: row !important;
     justify-content: space-between !important;
     align-items: center !important;
-    margin-bottom: 12px !important;
-    padding-bottom: 8px !important;
+    margin-bottom: 8px !important;
+    padding-bottom: 6px !important;
     border-bottom-width: 1px !important;
     border-bottom-color: rgba(120, 150, 200, 0.4) !important;
 }
 
 .wheel-title {
     color: rgb(220, 220, 230) !important;
-    font-size: 18px !important;
+    font-size: 16px !important;
     -unity-font-style: bold !important;
 }
 
 .wheel-hint {
     color: rgb(140, 140, 160) !important;
-    font-size: 11px !important;
+    font-size: 10px !important;
     -unity-font-style: italic !important;
 }
 
@@ -52,13 +53,13 @@
 .wheel-area {
     flex-direction: row !important;
     flex-grow: 1 !important;
-    min-height: 380px !important;
+    min-height: 0 !important;
 }
 
 /* === Wheel (круг) === */
 .wheel {
-    width: 380px !important;
-    height: 380px !important;
+    width: 280px !important;
+    height: 280px !important;
     flex-shrink: 0 !important;
     align-items: center !important;
     justify-content: center !important;
@@ -68,13 +69,13 @@
 /* === Sector (базовый) === */
 .sector {
     position: absolute !important;
-    width: 110px !important;
-    height: 110px !important;
+    width: 60px !important;
+    height: 60px !important;
     /* sector-0..7 ниже — поворот + отступ от центра */
     background-color: rgba(60, 60, 60, 0.6) !important;
-    border-width: 2px !important;
+    border-width: 1px !important;
     border-color: rgba(120, 120, 120, 0.5) !important;
-    border-radius: 8px !important;
+    border-radius: 6px !important;
     align-items: center !important;
     justify-content: center !important;
     transition-property: scale, background-color, border-color !important;
@@ -92,66 +93,75 @@
 }
 
 .sector-hover {
-    scale: 1.1 1.1 !important;
+    scale: 1.08 1.08 !important;
     border-color: rgba(255, 220, 100, 0.9) !important;
     background-color: rgba(180, 150, 50, 0.6) !important;
 }
 
 .sector-selected {
-    scale: 1.15 1.15 !important;
+    scale: 1.12 1.12 !important;
     border-color: rgb(255, 240, 130) !important;
-    border-width: 3px !important;
+    border-width: 2px !important;
     background-color: rgba(220, 180, 60, 0.7) !important;
 }
 
 /* === Расположение 8 секторов по окружности ===
-   wheel: 380×380, центр в (190, 190). Радиус 130, размер сектора 110×110.
-   Сектор N в позиции (190 + cos(angle) * 130 - 55, 190 + sin(angle) * 130 - 55).
+   wheel: 280×280, центр в (140, 140). Радиус 95, размер сектора 60×60.
+   Сектор N в позиции (140 + cos(angle) * 95 - 30, 140 + sin(angle) * 95 - 30).
    Углы: 0=верх, далее по часовой стрелке через 45°.
-   top, left рассчитаны для UI Toolkit (Y вниз — поэтому меняем знак sin). */
-.sector-0 { top: 35px;  left: 135px; }  /* верх */
-.sector-1 { top: 75px;  left: 235px; }  /* верх-право */
-.sector-2 { top: 135px; left: 290px; }  /* право */
-.sector-3 { top: 235px; left: 235px; }  /* низ-право */
-.sector-4 { top: 270px; left: 135px; }  /* низ */
-.sector-5 { top: 235px; left: 35px; }   /* низ-лево */
-.sector-6 { top: 135px; left: -20px; }  /* лево */
-.sector-7 { top: 75px;  left: 35px; }   /* верх-лево */
+   Вычисления:
+     N=0 (-90°): top=140-95-30=15,    left=140-30=110
+     N=1 (-45°): top=140-67.2-30=43,  left=140+67.2-30=177
+     N=2 (0°):   top=140-30=110,      left=140+95-30=205
+     N=3 (45°):  top=140+67.2-30=177, left=140+67.2-30=177
+     N=4 (90°):  top=140+95-30=205,   left=140-30=110
+     N=5 (135°): top=140+67.2-30=177, left=140-67.2-30=43
+     N=6 (180°): top=140-30=110,      left=140-95-30=15
+     N=7 (225°): top=140-67.2-30=43,  left=140-67.2-30=43
+   Диагональное расстояние между соседними секторами: ~26px (нет пересечений).
+*/
+.sector-0 { top: 15px;  left: 110px; }  /* верх */
+.sector-1 { top: 43px;  left: 177px; }  /* верх-право */
+.sector-2 { top: 110px; left: 205px; }  /* право */
+.sector-3 { top: 177px; left: 177px; }  /* низ-право */
+.sector-4 { top: 205px; left: 110px; }  /* низ */
+.sector-5 { top: 177px; left: 43px;  }  /* низ-лево */
+.sector-6 { top: 110px; left: 15px;  }  /* лево */
+.sector-7 { top: 43px;  left: 43px;  }  /* верх-лево */
 
-/* === Sector labels (внутри секторов) === */
+/* === Sector labels (внутри sector'а, child-элемент) ===
+   BUGFIX 2026-06-05 (Phase 10.2): label теперь child sector'а (был sibling
+   с absolute-позицией, перекрывал sector). Теперь — flex-centered внутри.
+   position: absolute больше не нужен, но оставлен absolute для совместимости
+   если кто-то вложит вне sector. */
 .sector-label {
-    position: absolute !important;
     color: rgb(220, 220, 230) !important;
-    font-size: 11px !important;
+    font-size: 8px !important;
     -unity-font-style: bold !important;
     -unity-text-align: middle-center !important;
-    width: 100px !important;
-    height: 60px !important;
+    width: 100% !important;
+    height: 100% !important;
     white-space: normal !important;
     text-overflow: clip !important;
     -unity-font-definition: none !important;
+    position: absolute !important;
+    top: 0 !important;
+    left: 0 !important;
+    right: 0 !important;
+    bottom: 0 !important;
 }
-
-.sector-label-0 { top: 60px;  left: 140px; }
-.sector-label-1 { top: 100px; left: 240px; }
-.sector-label-2 { top: 160px; left: 295px; }
-.sector-label-3 { top: 260px; left: 240px; }
-.sector-label-4 { top: 295px; left: 140px; }
-.sector-label-5 { top: 260px; left: 40px; }
-.sector-label-6 { top: 160px; left: -15px; }
-.sector-label-7 { top: 100px; left: 40px; }
 
 /* === Center (центр колеса) === */
 .wheel-center {
     position: absolute !important;
-    top: 145px !important;
-    left: 145px !important;
-    width: 90px !important;
-    height: 90px !important;
+    top: 110px !important;
+    left: 110px !important;
+    width: 60px !important;
+    height: 60px !important;
     background-color: rgba(30, 35, 50, 0.95) !important;
     border-width: 2px !important;
     border-color: rgba(150, 180, 220, 0.7) !important;
-    border-radius: 45px !important;
+    border-radius: 30px !important;
     align-items: center !important;
     justify-content: center !important;
     flex-direction: column !important;
@@ -159,13 +169,13 @@
 
 .center-type-label {
     color: rgb(180, 200, 220) !important;
-    font-size: 10px !important;
+    font-size: 8px !important;
     -unity-text-align: middle-center !important;
 }
 
 .center-count-label {
     color: rgb(255, 240, 130) !important;
-    font-size: 24px !important;
+    font-size: 16px !important;
     -unity-font-style: bold !important;
     -unity-text-align: middle-center !important;
 }
@@ -173,19 +183,19 @@
 /* === Sublist (правая панель) === */
 .sublist-panel {
     flex-grow: 1 !important;
-    margin-left: 16px !important;
+    margin-left: 12px !important;
     background-color: rgba(30, 40, 60, 0.4) !important;
     border-width: 1px !important;
     border-color: rgba(80, 100, 130, 0.4) !important;
     border-radius: 4px !important;
-    padding: 8px !important;
+    padding: 6px !important;
     flex-direction: column !important;
 }
 
 .sublist-title {
     color: rgb(180, 200, 220) !important;
-    font-size: 12px !important;
-    margin-bottom: 6px !important;
+    font-size: 11px !important;
+    margin-bottom: 4px !important;
     -unity-font-style: bold !important;
 }
 
@@ -201,8 +211,8 @@
 .sublist-row {
     flex-direction: row !important;
     align-items: center !important;
-    height: 32px !important;
-    padding: 0 8px !important;
+    height: 26px !important;
+    padding: 0 6px !important;
     border-bottom-width: 1px !important;
     border-bottom-color: rgba(80, 100, 130, 0.2) !important;
 }
@@ -212,22 +222,25 @@
 }
 
 .sublist-row-icon {
-    width: 24px !important;
-    height: 24px !important;
-    margin-right: 6px !important;
+    width: 20px !important;
+    height: 20px !important;
+    margin-right: 5px !important;
     background-color: rgba(60, 70, 90, 0.5) !important;
 }
 
 .sublist-row-name {
     flex-grow: 1 !important;
     color: rgb(220, 220, 230) !important;
-    font-size: 13px !important;
+    font-size: 11px !important;
+    white-space: normal !important;
+    overflow: hidden !important;
+    text-overflow: ellipsis !important;
 }
 
 .sublist-row-qty {
-    width: 40px !important;
+    width: 32px !important;
     color: rgb(180, 200, 220) !important;
-    font-size: 12px !important;
+    font-size: 10px !important;
     -unity-text-align: middle-right !important;
     -unity-font-style: bold !important;
 }
@@ -235,18 +248,19 @@
 /* === Actions === */
 .actions {
     flex-direction: row !important;
-    margin-top: 12px !important;
-    min-height: 40px !important;
+    margin-top: 8px !important;
+    min-height: 28px !important;
 }
 
 .action-btn {
     flex-grow: 1 !important;
-    height: 36px !important;
-    margin: 0 4px !important;
+    height: 28px !important;
+    margin: 0 3px !important;
     color: rgb(240, 240, 240) !important;
+    font-size: 11px !important;
     -unity-font-style: bold !important;
     border-width: 0 !important;
-    border-radius: 4px !important;
+    border-radius: 3px !important;
     transition-property: scale !important;
     transition-duration: 0.1s !important;
 }
@@ -259,11 +273,11 @@
 
 /* === Message === */
 .message-label {
-    margin-top: 8px !important;
-    padding: 6px !important;
+    margin-top: 6px !important;
+    padding: 4px !important;
     color: rgb(220, 220, 230) !important;
-    font-size: 12px !important;
+    font-size: 10px !important;
     background-color: rgba(0, 0, 0, 0.3) !important;
-    border-radius: 4px !important;
+    border-radius: 3px !important;
     -unity-text-align: middle-center !important;
 }

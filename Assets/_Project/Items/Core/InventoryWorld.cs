@@ -124,6 +124,31 @@ namespace ProjectC.Items
 
         public bool Has(ulong clientId) => _playerInventories.ContainsKey(clientId);
 
+        /// <summary>
+        /// Ship Key Subsystem: проверить, есть ли у игрока предмет с указанным itemId
+        /// в любом из ItemType-слотов. Серверный single source of truth — клиент НЕ
+        /// может подделать наличие ключа, потому что инвентарь хранится на сервере.
+        /// Используется из ShipKeyServer для авторизации board'а.
+        /// </summary>
+        /// <param name="clientId">id игрока</param>
+        /// <param name="itemId">id предмета (из InventoryWorld._itemDatabase)</param>
+        /// <returns>true если itemId найден хотя бы в одном слоте</returns>
+        public bool HasItem(ulong clientId, int itemId)
+        {
+            if (itemId <= 0) return false;
+            if (!_playerInventories.TryGetValue(clientId, out var data)) return false;
+            foreach (ItemType type in System.Enum.GetValues(typeof(ItemType)))
+            {
+                var ids = data.GetIdsForType(type);
+                if (ids == null) continue;
+                for (int i = 0; i < ids.Count; i++)
+                {
+                    if (ids[i] == itemId) return true;
+                }
+            }
+            return false;
+        }
+
         // ===========================================================
         // Operations — TryPickup
         // ===========================================================

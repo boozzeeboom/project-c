@@ -49,8 +49,10 @@ namespace ProjectC.Quests
         public class DialogSession
         {
             public string treeId = "";
+            /// <summary>T-Q10: SO ref for fast access (no GetDialogTree lookup per advance).</summary>
+            public Dialogue.DialogTree tree;
             public string currentNodeId = "";
-            public string talkingToNpcId = "";
+            public string npcId = "";            // T-Q10: server stores npcId for session validation
             public ulong startedAtUnix = 0;
         }
 
@@ -138,6 +140,29 @@ namespace ProjectC.Quests
         public DialogSession GetDialogSession(ulong clientId)
         {
             return _dialogByPlayer.TryGetValue(clientId, out var s) ? s : null;
+        }
+
+        /// <summary>T-Q10: open new dialog session. Returns null если session уже open.</summary>
+        public DialogSession OpenDialog(ulong clientId, string npcId, Dialogue.DialogTree tree)
+        {
+            if (tree == null) return null;
+            if (_dialogByPlayer.ContainsKey(clientId)) return null; // already in dialog
+            var session = new DialogSession
+            {
+                treeId = tree.treeId,
+                tree = tree,
+                currentNodeId = string.IsNullOrEmpty(tree.rootNodeId) ? "" : tree.rootNodeId,
+                npcId = npcId ?? "",
+                startedAtUnix = (ulong)System.DateTimeOffset.UtcNow.ToUnixTimeSeconds()
+            };
+            _dialogByPlayer[clientId] = session;
+            return session;
+        }
+
+        /// <summary>T-Q10: close dialog session. No-op if not open.</summary>
+        public void CloseDialog(ulong clientId)
+        {
+            _dialogByPlayer.Remove(clientId);
         }
 
         // ============ T-Q06: NPC talk + Custom event tracking ============

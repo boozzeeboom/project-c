@@ -978,5 +978,23 @@ namespace ProjectC.Player
             if (Debug.isDebugBuild) Debug.Log($"[NetworkPlayer:{OwnerClientId}] ReceiveQuestDiscovered: {questId} '{displayName}'");
             ProjectC.Quests.Client.QuestClientState.Instance?.RaiseOnQuestDiscovered(questId, displayName);
         }
+
+        // ==================== DIALOG V2 RPC TARGETS ====================
+        // T-Q10: QuestServer (server-only singleton) шлёт dialog steps конкретному клиенту.
+        // Клиентский handler: T-Q11 UI binding (DialogWindow.OnStepReceived).
+
+        [Rpc(SendTo.Owner)]
+        public void ReceiveDialogStepTargetRpc(ProjectC.Quests.Dto.DialogStepDto step, RpcParams rpcParams = default)
+        {
+            if (Debug.isDebugBuild) Debug.Log($"[NetworkPlayer:{OwnerClientId}] ReceiveDialogStep: tree={step.treeId} node={step.nodeId} options={step.options?.Length ?? 0} isEnd={step.isEnd}");
+            ProjectC.Quests.Client.QuestClientState.Instance?.RaiseOnDialogStepReceived(step);
+        }
+
+        [Rpc(SendTo.Owner)]
+        public void ReceiveDialogActionResultTargetRpc(ProjectC.Quests.Dto.DialogActionResultDto result, RpcParams rpcParams = default)
+        {
+            if (Debug.isDebugBuild) Debug.Log($"[NetworkPlayer:{OwnerClientId}] ReceiveDialogActionResult: type={result.actionType} success={result.success}");
+            ProjectC.Quests.Client.QuestClientState.Instance?.RaiseOnDialogActionResultReceived(result);
+        }
     }
 }

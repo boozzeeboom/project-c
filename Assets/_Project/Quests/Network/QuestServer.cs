@@ -19,6 +19,8 @@ using Unity.Netcode;
 using UnityEngine;
 using ProjectC.Core;
 using ProjectC.Quests.Dto;
+using ProjectC.Dialogue;
+using ProjectC.Items;
 using NetworkPlayer = ProjectC.Player.NetworkPlayer;
 
 namespace ProjectC.Quests
@@ -149,30 +151,130 @@ namespace ProjectC.Quests
 
         /// <summary>
         /// Player wants to start a dialog with NPC. Server validates (rate, dist) and
-        /// returns first DialogueStepDto. T-Q10 fills the snapshot construction.
+        /// returns first DialogStepDto. T-Q10 real impl.
         /// </summary>
         [Rpc(SendTo.Server, InvokePermission = RpcInvokePermission.Owner)]
-        public void RequestTalkToNpcRpc(string npcId, RpcParams rpcParams = default)
+        public void RequestTalkToNpcRpc(string npcId, string treeIdHint, RpcParams rpcParams = default)
         {
             ulong clientId = rpcParams.Receive.SenderClientId;
             if (!CheckRateLimit(clientId)) return;
-            if (QuestWorld.Instance == null) return;
-            if (debugMode) Debug.Log($"[QuestServer] RequestTalkToNpc client={clientId} npc={npcId}");
-            // T-Q10: QuestWorld.StartDialog(clientId, npcId) → builds DialogueStepDto → sends to NetworkPlayer.ReceiveDialogueStepTargetRpc.
+            if (QuestWorld.Instance == null || questDatabase == null) return;
+            if (string.IsNullOrEmpty(npcId)) return;
+
+            if (debugMode) Debug.Log($"[QuestServer] RequestTalkToNpc client={clientId} npc={npcId} treeHint={treeIdHint}");
+
+            // Find NpcDefinition
+            var npc = questDatabase.GetNpc(npcId);
+            if (npc == null)
+            {
+                if (debugMode) Debug.LogWarning($"[QuestServer] RequestTalkToNpc: npc '{npcId}' not found");
+                return;
+            }
+
+            // Pick dialog tree: hint or default
+            DialogTree tree = null;
+            if (!string.IsNullOrEmpty(treeIdHint))
+            {
+                tree = questDatabase.GetDialogTree(treeIdHint);
+            }
+            if (tree == null)
+            {
+                tree = npc.defaultDialogTree;
+            }
+            if (tree == null)
+            {
+                if (debugMode) Debug.LogWarning($"[QuestServer] RequestTalkToNpc: NPC '{npcId}' has no dialog tree");
+                return;
+            }
+
+            // Open dialog session in QuestWorld
+            var session = QuestWorld.Instance.OpenDialog(clientId, npcId, tree);
+            if (session == null)
+            {
+                if (debugMode) Debug.LogWarning($"[QuestServer] RequestTalkToNpc: failed to open session for client {clientId}");
+                return;
+            }
+
+            // Build first step
+            var step = BuildDialogStep(tree, session.currentNodeId, clientId);
+            SendDialogStepToClient(clientId, step);
         }
 
         /// <summary>
         /// Player picked an option in dialog. Server validates option index, fires action,
-        /// returns next DialogueStepDto (or end marker).
+        /// returns next DialogStepDto (or end marker). T-Q10 real impl.
         /// </summary>
         [Rpc(SendTo.Server, InvokePermission = RpcInvokePermission.Owner)]
         public void RequestAdvanceDialogueRpc(string dialogTreeId, string currentNodeId, int optionIndex, string talkingToNpcId, RpcParams rpcParams = default)
         {
             ulong clientId = rpcParams.Receive.SenderClientId;
             if (!CheckRateLimit(clientId)) return;
-            if (QuestWorld.Instance == null) return;
+            if (QuestWorld.Instance == null || questDatabase == null) return;
             if (debugMode) Debug.Log($"[QuestServer] RequestAdvanceDialogue client={clientId} tree={dialogTreeId} node={currentNodeId} option={optionIndex}");
-            // T-Q10: QuestWorld.AdvanceDialogue(clientId, treeId, currentNodeId, optionIndex).
+
+            // Validate session
+            var session = QuestWorld.Instance.GetDialogSession(clientId);
+            if (session == null || session.npcId != talkingToNpcId || session.tree.treeId != dialogTreeId)
+            {
+                if (debugMode) Debug.LogWarning($"[QuestServer] RequestAdvanceDialogue: no matching session for client {clientId}");
+                return;
+            }
+
+            // Find current node
+            var node = session.tree.GetNode(currentNodeId);
+            if (node == null)
+            {
+                if (debugMode) Debug.LogWarning($"[QuestServer] RequestAdvanceDialogue: node '{currentNodeId}' not found");
+                return;
+            }
+
+            // Find option
+            if (optionIndex < 0 || optionIndex >= node.edges.Length)
+            {
+                if (debugMode) Debug.LogWarning($"[QuestServer] RequestAdvanceDialogue: option {optionIndex} out of range");
+                return;
+            }
+            var edge = node.edges[optionIndex];
+
+            // Check conditions (server-side authoritative)
+            if (!EvaluateConditions(edge, clientId))
+            {
+                if (debugMode) Debug.Log($"[QuestServer] RequestAdvanceDialogue: conditions not met for option {optionIndex}");
+                // Send same step back (with unavailable reason)
+                var sameStep = BuildDialogStep(session.tree, currentNodeId, clientId);
+                SendDialogStepToClient(clientId, sameStep);
+                return;
+            }
+
+            // Fire action (if any)
+            if (edge.action != null)
+            {
+                FireDialogAction(clientId, talkingToNpcId, edge.action);
+            }
+
+            // Publish DialogVisitedEvent (для TalkedToNpcTrigger)
+            WorldEventBus.Publish(new DialogVisitedEvent
+            {
+                PlayerId = clientId,
+                TimestampUnix = System.DateTimeOffset.UtcNow.ToUnixTimeSeconds(),
+                TreeId = dialogTreeId,
+                NodeId = currentNodeId,
+                NpcId = talkingToNpcId
+            });
+
+            // Advance to target node
+            var nextNode = session.tree.GetNode(edge.targetNodeId);
+            if (nextNode == null)
+            {
+                // End dialog
+                session.currentNodeId = "";
+                QuestWorld.Instance.CloseDialog(clientId);
+                SendDialogStepToClient(clientId, new DialogStepDto { treeId = dialogTreeId, nodeId = "", isEnd = true });
+                return;
+            }
+            session.currentNodeId = nextNode.nodeId;
+            var step = BuildDialogStep(session.tree, nextNode.nodeId, clientId);
+            SendDialogStepToClient(clientId, step);
         }
 
         /// <summary>
@@ -488,6 +590,169 @@ namespace ProjectC.Quests
             if (NetworkManager == null) return null;
             if (!NetworkManager.ConnectedClients.TryGetValue(clientId, out var cc)) return null;
             return cc.PlayerObject != null ? cc.PlayerObject.GetComponent<NetworkPlayer>() : null;
+        }
+
+        // ============================================================
+        // T-Q10: Dialog step builder + condition/action evaluators
+        // ============================================================
+
+        private DialogStepDto BuildDialogStep(DialogTree tree, string nodeId, ulong clientId)
+        {
+            if (tree == null || string.IsNullOrEmpty(nodeId))
+            {
+                return new DialogStepDto { treeId = tree != null ? tree.treeId : "", nodeId = "", isEnd = true };
+            }
+            var node = tree.GetNode(nodeId);
+            if (node == null)
+            {
+                return new DialogStepDto { treeId = tree.treeId, nodeId = "", isEnd = true };
+            }
+
+            // Build options: each edge → option (label, available, reason)
+            var options = new DialogOptionDto[node.edges.Length];
+            for (int i = 0; i < node.edges.Length; i++)
+            {
+                var edge = node.edges[i];
+                bool available = EvaluateConditions(edge, clientId);
+                options[i] = new DialogOptionDto
+                {
+                    index = i,
+                    label = edge.label ?? "",
+                    available = available,
+                    unavailableReason = available ? "" : "Условие не выполнено"
+                };
+            }
+
+            // Resolve speaker
+            string speakerNpcId = "";
+            string speakerText = "";
+            if (node.speaker.speakerKind == SpeakerRef.Kind.Npc && !string.IsNullOrEmpty(node.speaker.refId))
+            {
+                speakerNpcId = node.speaker.refId;
+                // T-Q11: lookup NpcDefinition.displayName. For now, just show refId.
+            }
+            // For now, raw text (T-Q18: localization).
+            speakerText = node.text ?? "";
+
+            return new DialogStepDto
+            {
+                treeId = tree.treeId,
+                nodeId = node.nodeId,
+                speakerNpcId = speakerNpcId,
+                speakerText = speakerText,
+                options = options,
+                isEnd = false
+            };
+        }
+
+        /// <summary>Evaluate all conditions (atomic AND) for edge. T-Q06: TriggerId-based convention.</summary>
+        private bool EvaluateConditions(DialogueEdge edge, ulong clientId)
+        {
+            if (edge == null) return true;
+            // Single condition (legacy)
+            if (edge.condition != null)
+            {
+                if (!EvaluateSingleCondition(edge.condition, clientId)) return false;
+            }
+            // Multiple conditions (AND)
+            if (edge.conditions != null)
+            {
+                for (int i = 0; i < edge.conditions.Length; i++)
+                {
+                    if (edge.conditions[i] == null) continue;
+                    if (!EvaluateSingleCondition(edge.conditions[i], clientId)) return false;
+                }
+            }
+            return true;
+        }
+
+        private bool EvaluateSingleCondition(DialogueCondition c, ulong clientId)
+        {
+            if (c == null) return true;
+            var w = QuestWorld.Instance;
+            if (w == null) return true;
+            switch (c.type)
+            {
+                case DialogueConditionType.HasItem:
+                    return InventoryWorld.Instance != null
+                        && InventoryWorld.Instance.CountOf(clientId, 0) >= c.intParam; // T-Q15: lookup by stringParam → ItemDataId
+                case DialogueConditionType.QuestStateEquals:
+                    return true; // T-Q15: full quest state lookup
+                case DialogueConditionType.ReputationAtLeast:
+                    return w.GetReputation(clientId, c.factionParam) >= c.intParam;
+                case DialogueConditionType.FlagIsSet:
+                    return w.GetFlag(clientId, c.stringParam);
+                case DialogueConditionType.TimeOfDayIn:
+                {
+                    var ctrl = DayNightController.Instance;
+                    if (ctrl == null) ctrl = UnityEngine.Object.FindObjectOfType<DayNightController>();
+                    return ctrl != null && ctrl.CurrentPhase != null && ctrl.CurrentPhase.phaseName == c.stringParam;
+                }
+                default:
+                    return true; // unknown / unimplemented → allow (T-Q10 stub)
+            }
+        }
+
+        /// <summary>Fire dialog action (server-side). T-Q10: minimal — OfferQuest emits event, others stub.</summary>
+        private void FireDialogAction(ulong clientId, string npcId, DialogueAction action)
+        {
+            if (action == null) return;
+            var w = QuestWorld.Instance;
+            if (w == null) return;
+            switch (action.type)
+            {
+                case DialogueActionType.OfferQuest:
+                    // T-Q15: QuestWorld.TryOffer(clientId, action.stringParam).
+                    // T-Q10: log + send DialogActionResultDto to client.
+                    if (debugMode) Debug.Log($"[QuestServer] FireDialogAction: OfferQuest {action.stringParam} to client {clientId}");
+                    SendDialogActionResultToClient(clientId, new DialogActionResultDto
+                    {
+                        actionType = (byte)action.type,
+                        success = true,
+                        resultData = action.stringParam
+                    });
+                    break;
+                case DialogueActionType.CompleteObjective:
+                case DialogueActionType.DiscoverQuest:
+                case DialogueActionType.GiveItem:
+                case DialogueActionType.TakeItem:
+                case DialogueActionType.GiveCredits:
+                case DialogueActionType.AddReputation:
+                case DialogueActionType.AddNpcAttitude:
+                case DialogueActionType.OpenMarket:
+                case DialogueActionType.OpenService:
+                case DialogueActionType.SetFlag:
+                case DialogueActionType.SwitchDialogTree:
+                case DialogueActionType.EndConversation:
+                case DialogueActionType.GiveCargoItem:
+                case DialogueActionType.TakeCargoItem:
+                case DialogueActionType.FailQuest:
+                    if (debugMode) Debug.Log($"[QuestServer] FireDialogAction: {action.type} (T-Q10 stub — T-Q15/T-Q16 fill)");
+                    SendDialogActionResultToClient(clientId, new DialogActionResultDto
+                    {
+                        actionType = (byte)action.type,
+                        success = true
+                    });
+                    break;
+            }
+        }
+
+        private void SendDialogStepToClient(ulong clientId, DialogStepDto step)
+        {
+            var netPlayer = FindNetworkPlayer(clientId);
+            if (netPlayer == null)
+            {
+                if (debugMode) Debug.LogWarning($"[QuestServer] SendDialogStepToClient: no NetworkPlayer for client {clientId}");
+                return;
+            }
+            netPlayer.ReceiveDialogStepTargetRpc(step);
+        }
+
+        private void SendDialogActionResultToClient(ulong clientId, DialogActionResultDto result)
+        {
+            var netPlayer = FindNetworkPlayer(clientId);
+            if (netPlayer == null) return;
+            netPlayer.ReceiveDialogActionResultTargetRpc(result);
         }
     }
 }

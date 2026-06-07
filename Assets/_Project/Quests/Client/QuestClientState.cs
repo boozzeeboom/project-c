@@ -41,6 +41,10 @@ namespace ProjectC.Quests.Client
         public event Action<ReputationResultDto> OnReputationResult;
         /// <summary>T-Q07: EventDriven quest auto-discovered. Args: (questId, displayName).</summary>
         public event Action<string, string> OnQuestDiscovered;
+        /// <summary>T-Q10: server pushed new dialog step. Args: DialogStepDto. UI: show options / close window if isEnd.</summary>
+        public event Action<DialogStepDto> OnDialogStepReceived;
+        /// <summary>T-Q10: server pushed dialog action result (e.g. "quest offered: find_artifact").</summary>
+        public event Action<DialogActionResultDto> OnDialogActionResultReceived;
 
         private void Awake()
         {
@@ -104,6 +108,20 @@ namespace ProjectC.Quests.Client
         {
             OnQuestDiscovered?.Invoke(questId, displayName);
             if (Debug.isDebugBuild) Debug.Log($"[QuestClientState] RaiseOnQuestDiscovered: {questId} '{displayName}'");
+        }
+
+        /// <summary>Public raiser for OnDialogStepReceived (T-Q10). Вызывается из NetworkPlayer.ReceiveDialogStepTargetRpc.</summary>
+        public void RaiseOnDialogStepReceived(DialogStepDto step)
+        {
+            OnDialogStepReceived?.Invoke(step);
+            if (Debug.isDebugBuild) Debug.Log($"[QuestClientState] RaiseOnDialogStepReceived: tree={step.treeId} node={step.nodeId} isEnd={step.isEnd}");
+        }
+
+        /// <summary>Public raiser for OnDialogActionResultReceived (T-Q10). Вызывается из NetworkPlayer.ReceiveDialogActionResultTargetRpc.</summary>
+        public void RaiseOnDialogActionResultReceived(DialogActionResultDto result)
+        {
+            OnDialogActionResultReceived?.Invoke(result);
+            if (Debug.isDebugBuild) Debug.Log($"[QuestClientState] RaiseOnDialogActionResultReceived: type={result.actionType} success={result.success}");
         }
     }
 }

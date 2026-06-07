@@ -1,0 +1,12 @@
+<ui:UXML xmlns:ui="UnityEngine.UIElements" xmlns:uie="UnityEditor.UIElements" editor-extension-mode="False">
+    <ui:VisualElement name="root" class="dialog-root" picking-mode="Ignore">
+        <ui:VisualElement name="panel" class="dialog-panel">
+            <ui:Label name="npc-name" class="dialog-npc-name" text="💬 NPC" />
+            <ui:ScrollView name="text-scroll" class="dialog-text-scroll">
+                <ui:Label name="text" class="dialog-text" text="" />
+            </ui:ScrollView>
+            <ui:VisualElement name="options" class="dialog-options" />
+            <ui:Label name="toast" class="dialog-toast" text="" />
+        </ui:VisualElement>
+    </ui:VisualElement>
+</ui:UXML>

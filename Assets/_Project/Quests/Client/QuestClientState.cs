@@ -131,7 +131,16 @@ namespace ProjectC.Quests.Client
         [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.AfterSceneLoad)]
         private static void AutoSpawn()
         {
+            // T-Q11b-fix: если instance уже существует (scene-placed в BootstrapScene), не спавним новый.
             if (Instance != null) return;
+
+            // Дополнительная проверка — найдём root [QuestClientState] GameObject в scene.
+            var existingRoot = GameObject.Find("[QuestClientState]");
+            if (existingRoot != null && existingRoot.GetComponent<QuestClientState>() != null)
+            {
+                return; // уже есть в scene
+            }
+
             var go = new GameObject("[QuestClientState]");
             go.AddComponent<QuestClientState>();
             UnityEngine.Object.DontDestroyOnLoad(go);

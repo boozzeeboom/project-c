@@ -16,10 +16,17 @@ namespace ProjectC.Quests.Dto
 
         public void NetworkSerialize<T>(BufferSerializer<T> s) where T : IReaderWriter
         {
-            s.SerializeValue(ref treeId);
-            s.SerializeValue(ref nodeId);
-            s.SerializeValue(ref speakerNpcId);
-            s.SerializeValue(ref speakerText);
+            // T-Q11c-fix: struct value semantics — local var для serialize, обратно в поля на READ.
+            var tree = treeId;
+            var node = nodeId;
+            var npc = speakerNpcId;
+            var text = speakerText;
+            if (s.IsWriter) { tree = treeId ?? ""; node = nodeId ?? ""; npc = speakerNpcId ?? ""; text = speakerText ?? ""; }
+            s.SerializeValue(ref tree);
+            s.SerializeValue(ref node);
+            s.SerializeValue(ref npc);
+            s.SerializeValue(ref text);
+            if (s.IsReader) { treeId = tree ?? ""; nodeId = node ?? ""; speakerNpcId = npc ?? ""; speakerText = text ?? ""; }
             s.SerializeValue(ref isEnd);
             SerializeOptions(ref options, s);
         }
@@ -47,10 +54,18 @@ namespace ProjectC.Quests.Dto
 
         public void NetworkSerialize<T>(BufferSerializer<T> s) where T : IReaderWriter
         {
+            // T-Q11c-fix: в struct ref-поля readonly в serialization, поэтому пишем через
+            // local var. На READ side: после SerializeValue local var содержит значение,
+            // но this.* НЕ обновляется (struct value semantics). Присваиваем обратно.
+            var lbl = label;
+            var reason = unavailableReason;
+            if (s.IsWriter) { lbl = label ?? ""; reason = unavailableReason ?? ""; }
+            s.SerializeValue(ref lbl);
+            s.SerializeValue(ref reason);
+            // Read: сохраняем прочитанное обратно в struct fields
+            if (s.IsReader) { label = lbl ?? ""; unavailableReason = reason ?? ""; }
             s.SerializeValue(ref index);
-            s.SerializeValue(ref label);
             s.SerializeValue(ref available);
-            s.SerializeValue(ref unavailableReason);
         }
     }
 
@@ -63,10 +78,15 @@ namespace ProjectC.Quests.Dto
 
         public void NetworkSerialize<T>(BufferSerializer<T> s) where T : IReaderWriter
         {
+            // T-Q11c-fix: struct value semantics — local var для serialize, обратно в поля на READ.
+            var err = errorMessage;
+            var dat = resultData;
+            if (s.IsWriter) { err = errorMessage ?? ""; dat = resultData ?? ""; }
+            s.SerializeValue(ref err);
+            s.SerializeValue(ref dat);
+            if (s.IsReader) { errorMessage = err ?? ""; resultData = dat ?? ""; }
             s.SerializeValue(ref actionType);
             s.SerializeValue(ref success);
-            s.SerializeValue(ref errorMessage);
-            s.SerializeValue(ref resultData);
         }
     }
 }

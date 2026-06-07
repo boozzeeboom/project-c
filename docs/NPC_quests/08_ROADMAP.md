@@ -318,25 +318,40 @@ T-X4 (input remap: pickup E → F) ← future TODO, после end-to-end demo
 
 ---
 
-### T-Q08 — QuestInteractor + E-key NPC branch (small, 45 мин) — РАСШИРЕН
+### T-Q08 — QuestInteractor + E-key NPC branch (small, 45 мин) — РАСШИРЕН ✅ DONE 2026-06-08 (T-Q11b)
 
-**Скоуп (см. `09_OPEN_QUESTIONS.md` §L):**
-- `ProjectC/Quests/Interactions/QuestInteractor.cs` (MonoBehaviour).
-- **Добавить NPC branch в начало E-pipeline** в `NetworkPlayer.cs:375`:
-  ```csharp
-  // 0. NPC (highest priority)
-  if (QuestInteractor.Instance != null && QuestInteractor.Instance.TryTalkToNpc()) return;
-  // 1. (existing) MetaRequirement / chest / pickup / market
-  ```
-- Auto-spawn `QuestInteractor` в `NetworkManagerController.Awake`.
-- Использует `PlayerInputReader.Instance?.OnInteractPressed` (после T-X3).
+**Статус:** ✅ Сделано в T-Q11b (переименован). Скоуп:
+- `NpcController` MonoBehaviour в `Assets/_Project/Quests/NpcController.cs` (165 LOC) с trigger collider + NpcDefinition ref.
+- E-key chain extended: `MetaRequirement` → **`TryInteractNearestNpc`** → Chest → Market. NPC = highest priority.
+- `[Mira]` GameObject в `WorldScene_0_0.unity` (pos=40007, 2502.77, 39985) с `NpcController` + `CapsuleCollider` (isTrigger, r=2.0) + `Mira.asset` (npcId=mira_01, faction=GuildOfThoughts).
+- E → `[QuestServer] RequestTalkToNpc client=0 npc=mira_01` → `ReceiveDialogStep: tree=mira_default node=greeting options=5` → dialog opens.
+- **User correction 2026-06-07**: NPC должен быть в WorldScene_X_Z (не BootstrapScene).
 
-**Verify:**
-- Place NPC prefab в WorldScene_0_0 (тестовый).
-- Play Mode → press E near NPC → console log `[QuestInteractor] TryTalkToNpc - npcId=...`.
-- E-handler падает through к pickup/chest если NPC нет.
+**См. lessons** в `docs/dev/T-Q11b_c_session_log_2026-06-08.md` (bug #7: scene placement rule).
 
-**Risk:** low. Wire-up only (server response stubbed до T-Q10).
+**Verify:** ✅ done. Compile 0 errors, E→Mira→dialog verified.
+
+---
+
+### T-Q10 — DialogWindow UI Toolkit (large, 150 мин) — РАСШИРЕН ✅ DONE 2026-06-08 (T-Q11c)
+
+**Статус:** ✅ Сделано в T-Q11c. Полный rewrite IMGUI → UIDocument по образцу `MarketWindow.cs` + `CharacterWindow.cs` (4 FIX'ы + 5 дополнительных). Скоуп:
+- `Assets/_Project/Quests/UI/DialogWindow.cs` (311 LOC) — UIDocument pattern: `EnsureBuilt` с `styleSheets.Add(uss)` (КРИТИЧНО), `Show/Close` с cursor + pickingMode + display toggle.
+- `Assets/_Project/Quests/Resources/UI/DialogWindow.uxml` (NEW) — root > panel > npc-name + text-scroll > text + options + toast.
+- `Assets/_Project/Quests/Resources/UI/DialogWindow.uss` (NEW) — все class-стили с `!important` (theme type > class). НЕ `!important` на `display`.
+- `Assets/_Project/Quests/Resources/UI/DialogPanelSettings.asset` (NEW) — копия `MarketPanelSettings.asset` с `themeUss: UnityDefaultRuntimeTheme` (guid `1cad08e114acf014d94b2301632cffa9`).
+- Scene binding `[QuestClientState]` GameObject в `BootstrapScene.unity` через `SerializedObject` (`m_PanelSettings` + `sourceAsset` + `dialogWindowUxml/uss`).
+- `RequestEndConversationRpc` (server-side close), stale session detection в `RequestTalkToNpcRpc` (replace if already open), null-safe `BuildDialogStep` (node.speaker, edges), try-catch diagnostic.
+- 3 struct DTO fix в `DialogStepDto.cs` (DialogStepDto/DialogOptionDto/DialogActionResultDto): null-coalesce + struct value semantics writeback.
+- Stale `_currentStep` guard в `SendAdvance` (после `isEnd` step).
+
+**Typewriter / F skip / mouse click skip** — НЕ сделано (T-Q11c.4-5 deferred — T-Q12).
+**Two reputation badges в header** — НЕ сделано (deferred — T-Q13).
+**Subscribe to `ReputationClientState`/`NpcAttitudeClientState`** — НЕ сделано (singleton'ы не существуют, T-Q13).
+
+**3 повтора UI bug** — lessons в `docs/dev/T-Q11b_c_session_log_2026-06-08.md` (8 PERSISTENT BUGS, Memory updated).
+
+**Verify:** ✅ done. Compile 0 errors, end-to-end Mira quest dialog работает.
 
 ---
 
@@ -416,7 +431,7 @@ T-X4 (input remap: pickup E → F) ← future TODO, после end-to-end demo
 
 ---
 
-### T-Q11 — Quest log таб в CharacterWindow (medium, 90 мин) — РАСШИРЕН
+### T-Q11 — Quest log таб в CharacterWindow (medium, 90 мин) — РАСШИРЕН 🟡 NEXT (after T-Q10)
 
 **Скоуп:**
 - Modify `CharacterWindow.uxml` — add `tab-quests` button + `quests-section`.
@@ -438,16 +453,23 @@ T-X4 (input remap: pickup E → F) ← future TODO, после end-to-end demo
 
 ---
 
-### T-Q12 — QuestTracker overlay (small, 30 мин)
+### T-Q12 — QuestTracker overlay + DialogWindow typewriter/F-skip (medium, 60 мин) — РАСШИРЕН 🟡 NEXT (after T-Q11)
 
-**Скоуп:**
-- `Assets/_Project/UI/Resources/UI/QuestTracker.uxml`, `.uss`.
-- `Assets/_Project/Quests/UI/QuestTracker.cs`.
-- Place QuestTracker GameObject в BootstrapScene.
+**Скоуп (объединено T-Q12 + T-Q11c.4-5):**
+- `Assets/_Project/Quests/Resources/UI/QuestTracker.uxml`, `.uss` (NEW).
+- `Assets/_Project/Quests/UI/QuestTracker.cs` (NEW) — singleton overlay, subscribe `QuestClientState.OnTrackedQuestChanged`.
+- Place QuestTracker GameObject в BootstrapScene (DontDestroyOnLoad).
+- **DialogWindow enhancements** (deferred from T-Q11c):
+  - Typewriter effect (coroutine, char-by-char, configurable speed).
+  - F key / mouse click = skip to end of current line.
+  - **DontDestroyOnLoad** для DialogWindow (persist across scene loads).
 
-**Verify:** Active tracked quest shows in top-right corner. Hide when no tracked quest.
+**Verify:**
+- Active tracked quest shows in top-right corner. Hide when no tracked quest.
+- DialogWindow: text appears char-by-char, F/click skip works.
+- Scene reload (Enter WorldScene_0_0) → DialogWindow stays open.
 
-**Risk:** low. Standalone overlay.
+**Risk:** medium. Typewriter + input handling.
 
 ---
 
@@ -635,7 +657,7 @@ T-X4 (input remap: pickup E → F) ← future TODO, после end-to-end demo
 | **M1.5 — Inventory persistence + Event bus foundation** | T-X0 | WorldEventBus + inventory save/load. Hooks в InventoryServer. |
 | **M2 — Server core** | T-Q05, T-Q06, T-Q07 | QuestServer спавнится, RPCs работают, DTOs передаются, full event bus + triggers. |
 | **M2.5 — Input refactor** | T-X3 | PlayerInputReader events, NetworkPlayer subscribes. |
-| **M3 — Player interaction** | T-Q08, T-Q10 | E-key → talk to NPC → DialogWindow opens (F skip). |
+| **M3 — Player interaction** | T-Q08, T-Q10 | E-key → talk to NPC → DialogWindow opens (F skip). | ✅ DONE 2026-06-08 |
 | **M4 — Quest log + tracker** | T-Q11, T-Q12 | Player can accept quest, see in log (Active/Completed/Discovered), see tracker. |
 | **M5 — Reputation + NpcAttitude** | T-Q13 | Reputation updates, NpcAttitude, CharacterWindow tab fix. |
 | **M6 — Item integration** | T-Q14, T-Q15 | Quest rewards give items, quest objectives check items, ContractMetaBridge. |
@@ -690,4 +712,66 @@ T-X4 (input remap: pickup E → F) ← future TODO, после end-to-end demo
 | 12 | Full PlayerInputReader refactor (T-X3) | Делать ДО T-Q08. Тщательно grep `Keyboard.current`. |
 | 13 | Full event bus (T-Q06) | Cross-cutting — тестировать каждую подписку отдельно. |
 | 14 | NpcAttitude + cross-faction influence (T-Q13) | MVP stub для cross-calc, полная реализация v2. |
-| 15 | EventDriven quests (T-Q04 + T-Q11) | Discovered state UI может быть confusing — disambiguate в UI. |
+|| 15 | EventDriven quests (T-Q04 + T-Q11) | Discovered state UI может быть confusing — disambiguate в UI. |
+|| 16 | **UI Toolkit recurrent bugs (T-Q11c)** | 3 повторных бага за сессию — см. `docs/dev/T-Q11b_c_session_log_2026-06-08.md` §LESSONS LEARNED. READ перед ЛЮБЫМ новым UIDocument. |
+|| 17 | **Struct INetworkSerializable string writeback** | 3 DTO в DialogStepDto.cs — generic rule для ВСЕХ будущих DTO: writeback на READ. |
+|| 18 | **Scene placement rule (user 2026-06-07)** | BootstrapScene = server infra ONLY. Game objects → WorldScene_X_Z. |
+
+---
+
+## 8.7 Session Summary — T-Q11b + T-Q11c (2026-06-08)
+
+### ✅ Что сделано (2 тикета в 1 сессии)
+
+| Т | Тикет | Commit scope | Verify |
+|---|-------|--------------|--------|
+| T-Q11b | NpcController + E-key NPC branch | `NpcController.cs` (NEW), `NetworkPlayer.cs` (E-chain), `[Mira]` в WorldScene_0_0 | ✅ E→Mira→dialog |
+| T-Q11c | DialogWindow UIDocument rewrite | `DialogWindow.cs` (REWRITE 311 LOC), UXML/USS/asset (NEW), QuestServer/DTOs fixes, scene binding | ✅ end-to-end dialog |
+
+**Compile:** 0 errors, 0 exceptions. **Play Mode:** Mira quest dialog работает полностью.
+
+### 🔑 Key Lessons (9 PERSISTENT BUGS — READ при следующих UI Toolkit окнах)
+
+1. **PanelSettings.asset** — runtime `CreateInstance` = no theme = "strip". Copy `MarketPanelSettings.asset`.
+2. **USS class-стили** — `themeUss` type-selector `.unity-base-button` > class. Все class-стили с `!important` (кроме `display`).
+3. **`styleSheets.Add(uss)`** — КРИТИЧНО в `EnsureBuilt()`. Без него panel collapse.
+4. **`display: none !important` в USS** — блокирует inline toggle. Убрать `display` из USS.
+5. **Cursor lock** — flight-mode Locked = mouse dead. `Show()` → None/visible; `Close()` → Locked (if IsListening).
+6. **PickingMode** — Ignore в EnsureBuilt, Position в Show, Ignore в Close.
+7. **UXML inline `style="..."`** — не парсятся runtime. Use `class="..."`.
+8. **Struct INetworkSerializable + string** — `var x=field; if(IsWriter)x=field??""; SerializeValue(ref x); if(IsReader)field=x??"";` — struct value semantics требуют writeback.
+9. **Stale `_currentStep`** — после `isEnd` step treeId/nodeId="". Guard в `SendAdvance`.
+
+### 📁 Files modified/new (commit)
+
+```
+M Assets/_Project/Quests/Client/QuestClientState.cs
+M Assets/_Project/Quests/Dto/DialogStepDto.cs
+M Assets/_Project/Quests/Network/QuestServer.cs
+M Assets/_Project/Quests/UI/DialogWindow.cs
+M Assets/_Project/Scenes/BootstrapScene.unity
+M Assets/_Project/Scenes/World/WorldScene_0_0.unity
+M Assets/_Project/Scripts/Player/NetworkPlayer.cs
+A Assets/_Project/Quests/NpcController.cs
+A Assets/_Project/Quests/Resources/UI/DialogWindow.uxml
+A Assets/_Project/Quests/Resources/UI/DialogWindow.uss
+A Assets/_Project/Quests/Resources/UI/DialogPanelSettings.asset
+A docs/dev/T-Q11b_c_session_log_2026-06-08.md
+```
+
+### ⏭️ Next Up (in order)
+
+1. **T-Q11** — Quest log таб в CharacterWindow (6th tab, Discovered section + Accept button)
+2. **T-Q12** — QuestTracker overlay + DialogWindow typewriter/F-skip + DontDestroyOnLoad
+3. **T-Q13** — ReputationClientState + NpcAttitudeClientState + CharacterWindow Reputation tab fix
+4. **T-Q14** — InventoryServer.TryRemove + event hooks
+5. **T-X5** — ContractServer publish events для quest bridge
+6. **T-Q15** — GiveItem/TakeItem + ContractMetaBridge
+7. **T-Q16** — GiveCredits/AddReputation/AddNpcAttitude executors
+8. **T-Q17** — OpenMarket/OpenService executors
+9. **T-Q18** — Persistence JSON
+10. **T-Q19** — C1 cleanup: delete v1 NPC
+
+---
+
+**Статус проекта:** M1-M3 ✅ DONE. **M4 (Quest log + tracker)** — NEXT.

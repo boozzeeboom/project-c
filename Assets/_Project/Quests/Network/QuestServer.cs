@@ -14,6 +14,7 @@
 //          DTO serialization, client senders.
 // T-Q07+: add SendTo.Owner RPCs (DONE on NetworkPlayer side via ReceiveXxxTargetRpc).
 
+using System;
 using System.Collections.Generic;
 using Unity.Netcode;
 using UnityEngine;
@@ -163,6 +164,14 @@ namespace ProjectC.Quests
 
             if (debugMode) Debug.Log($"[QuestServer] RequestTalkToNpc client={clientId} npc={npcId} treeHint={treeIdHint}");
 
+            // T-Q11c-fix: если сессия уже открыта (повторный E / stale state) — закрыть и открыть заново.
+            // Иначе OpenDialog возвращает null и игрок видит "failed to open session".
+            if (QuestWorld.Instance.GetDialogSession(clientId) != null)
+            {
+                if (debugMode) Debug.Log($"[QuestServer] RequestTalkToNpc: stale session detected, closing");
+                QuestWorld.Instance.CloseDialog(clientId);
+            }
+
             // Find NpcDefinition
             var npc = questDatabase.GetNpc(npcId);
             if (npc == null)
@@ -275,6 +284,21 @@ namespace ProjectC.Quests
             session.currentNodeId = nextNode.nodeId;
             var step = BuildDialogStep(session.tree, nextNode.nodeId, clientId);
             SendDialogStepToClient(clientId, step);
+        }
+
+        /// <summary>
+        /// T-Q11b-fix: player closes dialog via ESC. Server-side session must be cleaned up,
+        /// otherwise subsequent RequestTalkToNpc returns "failed to open session" (already-in-dialog).
+        /// </summary>
+        [Rpc(SendTo.Server, InvokePermission = RpcInvokePermission.Owner)]
+        public void RequestEndConversationRpc(RpcParams rpcParams = default)
+        {
+            ulong clientId = rpcParams.Receive.SenderClientId;
+            if (QuestWorld.Instance == null) return;
+            var session = QuestWorld.Instance.GetDialogSession(clientId);
+            if (session == null) return;
+            if (debugMode) Debug.Log($"[QuestServer] RequestEndConversation client={clientId}");
+            QuestWorld.Instance.CloseDialog(clientId);
         }
 
         /// <summary>
@@ -598,6 +622,8 @@ namespace ProjectC.Quests
 
         private DialogStepDto BuildDialogStep(DialogTree tree, string nodeId, ulong clientId)
         {
+            try
+            {
             if (tree == null || string.IsNullOrEmpty(nodeId))
             {
                 return new DialogStepDto { treeId = tree != null ? tree.treeId : "", nodeId = "", isEnd = true };
@@ -609,10 +635,12 @@ namespace ProjectC.Quests
             }
 
             // Build options: each edge → option (label, available, reason)
-            var options = new DialogOptionDto[node.edges.Length];
-            for (int i = 0; i < node.edges.Length; i++)
+            var edges = node.edges ?? Array.Empty<DialogueEdge>();
+            var options = new DialogOptionDto[edges.Length];
+            for (int i = 0; i < edges.Length; i++)
             {
-                var edge = node.edges[i];
+                var edge = edges[i];
+                if (edge == null) { options[i] = new DialogOptionDto { index = i, label = $"[edge {i} null]", available = false, unavailableReason = "edge null" }; continue; }
                 bool available = EvaluateConditions(edge, clientId);
                 options[i] = new DialogOptionDto
                 {
@@ -626,12 +654,10 @@ namespace ProjectC.Quests
             // Resolve speaker
             string speakerNpcId = "";
             string speakerText = "";
-            if (node.speaker.speakerKind == SpeakerRef.Kind.Npc && !string.IsNullOrEmpty(node.speaker.refId))
+            if (node.speaker != null && node.speaker.speakerKind == SpeakerRef.Kind.Npc && !string.IsNullOrEmpty(node.speaker.refId))
             {
                 speakerNpcId = node.speaker.refId;
-                // T-Q11: lookup NpcDefinition.displayName. For now, just show refId.
             }
-            // For now, raw text (T-Q18: localization).
             speakerText = node.text ?? "";
 
             return new DialogStepDto
@@ -643,6 +669,12 @@ namespace ProjectC.Quests
                 options = options,
                 isEnd = false
             };
+            }
+            catch (System.Exception e)
+            {
+                Debug.LogError($"[QuestServer] BuildDialogStep NRE/CSE: tree={tree?.treeId ?? "NULL"} nodeId='{nodeId}' clientId={clientId}: {e.Message}\n{e.StackTrace}");
+                return new DialogStepDto { treeId = tree != null ? tree.treeId : "", nodeId = "", isEnd = true };
+            }
         }
 
         /// <summary>Evaluate all conditions (atomic AND) for edge. T-Q06: TriggerId-based convention.</summary>

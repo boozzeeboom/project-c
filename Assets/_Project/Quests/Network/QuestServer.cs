@@ -33,9 +33,8 @@ namespace ProjectC.Quests
         public static QuestServer Instance { get; private set; }
 
         [Header("Quest Database")]
-        [Tooltip("Реестр всех QuestDefinition'ов в проекте. T-Q05: populated by tests; " +
-                 "T-Q09: QuestDatabase SO with auto-discovery via AssetDatabase.")]
-        [SerializeField] private QuestDefinition[] questDatabase = System.Array.Empty<QuestDefinition>();
+        [Tooltip("T-Q09: QuestDatabase SO с auto-discovery. Содержит factions, npcs, dialog trees, quests.")]
+        [SerializeField] private QuestDatabase questDatabase;
 
         [Header("Behavior")]
         [Tooltip("Макс активных квестов на игрока (для cap на Discover/Offer).")]
@@ -68,7 +67,13 @@ namespace ProjectC.Quests
             }
 
             // Init QuestWorld
-            QuestWorld.CreateAndInitialize(questDatabase);
+            // T-Q09: pass QuestDatabase.quests[] to QuestWorld (QuestDefinition[]).
+            if (questDatabase == null)
+            {
+                Debug.LogError("[QuestServer] questDatabase is not assigned! Auto-discovery not yet completed or asset missing.");
+                return;
+            }
+            QuestWorld.CreateAndInitialize(questDatabase.quests);
 
             // T-Q06: subscribe to WorldEventBus → route to QuestTriggerService.Evaluate().
             _handleItemAdded = OnItemAdded;
@@ -88,7 +93,7 @@ namespace ProjectC.Quests
 
             if (debugMode)
             {
-                Debug.Log($"[QuestServer] OnNetworkSpawn — IsServer=true, questDatabase={questDatabase.Length} quests, maxActive={maxActiveQuestsPerPlayer}, maxOps/min={maxOpsPerMinute}, triggerSubs=7");
+                Debug.Log($"[QuestServer] OnNetworkSpawn — IsServer=true, questDatabase={questDatabase.quests?.Length ?? 0} quests, maxActive={maxActiveQuestsPerPlayer}, maxOps/min={maxOpsPerMinute}, triggerSubs=7");
             }
         }
 

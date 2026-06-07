@@ -25597,9 +25597,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::ProjectC.Quests.QuestServer
   ShowTopMostFoldoutHeaderGroup: 1
-  questDatabase:
-  - {fileID: 11400000, guid: 5812fd7ccfb92f042a256c01da7c9192, type: 2}
-  - {fileID: 11400000, guid: d32b2207388517747b25c340bbaa0c8b, type: 2}
+  questDatabase: {fileID: 11400000, guid: 60b9b4612fa293a41a2c30200194a803, type: 2}
   maxActiveQuestsPerPlayer: 20
   debugMode: 1
   maxOpsPerMinute: 30

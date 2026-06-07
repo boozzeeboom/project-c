@@ -4,22 +4,29 @@ using UnityEngine;
 namespace ProjectC.World.Npc
 {
     /// <summary>
-    /// Factions available for NPCs in Project C.
+    /// Factions available for NPCs in Project C. (v1 — to be deleted in T-Q19.)
     /// </summary>
+    /// <remarks>
+    /// Deprecated: use <see cref="ProjectC.Factions.FactionId"/> instead.
+    /// Values are kept numerically identical so any existing serialized data
+    /// (prefab/scene/SO references) keeps working until v1 is deleted in T-Q19.
+    /// New code MUST reference <c>ProjectC.Factions.FactionId</c>.
+    /// </remarks>
+    [Obsolete("Use ProjectC.Factions.FactionId (T-Q01). NpcFaction is the v1 alias kept for backward-compat only and will be removed in T-Q19.")]
     public enum NpcFaction
     {
-        None,
-        GuildOfThoughts,      // Gildiya Mysley - scholarly, artifacts
-        GuildOfCreation,      // Gildiya Sozidaniya - engineering, modules
-        GuildOfStrength,      // Gildiya Sily - combat, security
-        GuildOfSecrets,       // Gildiya Tayn - exploration, reconnaissance
-        GuildOfSuccess,       // Gildiya Uspekha - trading, commerce
-        Underground,         // Podpolye - smugglers, contraband
-        Resistance,          // Soprotivleniye - freedom fighters
-        FreeTraders,         // Svobodnye Torgovtsy - neutral merchants
-        SOL_Patrol,          // SOL Patrol - hostile authority
-        Pirates,             // Pirates - hostile raiders
-        Neutral              // Neutral - unaffiliated
+        None = 0,
+        GuildOfThoughts = 1,      // Gildiya Mysley - scholarly, artifacts
+        GuildOfCreation = 2,      // Gildiya Sozidaniya - engineering, modules
+        GuildOfStrength = 3,      // Gildiya Sily - combat, security
+        GuildOfSecrets = 4,       // Gildiya Tayn - exploration, reconnaissance
+        GuildOfSuccess = 5,       // Gildiya Uspekha - trading, commerce
+        Underground = 6,          // Podpolye - smugglers, contraband
+        Resistance = 7,           // Soprotivleniye - freedom fighters
+        FreeTraders = 8,          // Svobodnye Torgovtsy - neutral merchants
+        SOL_Patrol = 9,           // SOL Patrol - hostile authority
+        Pirates = 10,             // Pirates - hostile raiders
+        Neutral = 11              // Neutral - unaffiliated
     }
 
     /// <summary>

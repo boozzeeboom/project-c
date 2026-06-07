@@ -17,6 +17,7 @@
 using System.Collections.Generic;
 using Unity.Netcode;
 using UnityEngine;
+using ProjectC.Core;
 
 namespace ProjectC.Quests
 {
@@ -67,9 +68,25 @@ namespace ProjectC.Quests
             // Init QuestWorld
             QuestWorld.CreateAndInitialize(questDatabase);
 
+            // T-Q06: subscribe to WorldEventBus → route to QuestTriggerService.Evaluate().
+            _handleItemAdded = OnItemAdded;
+            _handleItemRemoved = OnItemRemoved;
+            _handleReputationChanged = OnReputationChanged;
+            _handleNpcAttitudeChanged = OnNpcAttitudeChanged;
+            _handleCustomEvent = OnCustomEvent;
+            _handleDialogVisited = OnDialogVisited;
+            _handleDayNightChanged = OnDayNightChanged;
+            WorldEventBus.Subscribe(_handleItemAdded);
+            WorldEventBus.Subscribe(_handleItemRemoved);
+            WorldEventBus.Subscribe(_handleReputationChanged);
+            WorldEventBus.Subscribe(_handleNpcAttitudeChanged);
+            WorldEventBus.Subscribe(_handleCustomEvent);
+            WorldEventBus.Subscribe(_handleDialogVisited);
+            WorldEventBus.Subscribe(_handleDayNightChanged);
+
             if (debugMode)
             {
-                Debug.Log($"[QuestServer] OnNetworkSpawn — IsServer=true, questDatabase={questDatabase.Length} quests, maxActive={maxActiveQuestsPerPlayer}, maxOps/min={maxOpsPerMinute}");
+                Debug.Log($"[QuestServer] OnNetworkSpawn — IsServer=true, questDatabase={questDatabase.Length} quests, maxActive={maxActiveQuestsPerPlayer}, maxOps/min={maxOpsPerMinute}, triggerSubs=7");
             }
         }
 
@@ -78,6 +95,15 @@ namespace ProjectC.Quests
             base.OnNetworkDespawn();
             if (IsServer)
             {
+                // T-Q06: unsubscribe from bus
+                if (_handleItemAdded != null) WorldEventBus.Unsubscribe(_handleItemAdded);
+                if (_handleItemRemoved != null) WorldEventBus.Unsubscribe(_handleItemRemoved);
+                if (_handleReputationChanged != null) WorldEventBus.Unsubscribe(_handleReputationChanged);
+                if (_handleNpcAttitudeChanged != null) WorldEventBus.Unsubscribe(_handleNpcAttitudeChanged);
+                if (_handleCustomEvent != null) WorldEventBus.Unsubscribe(_handleCustomEvent);
+                if (_handleDialogVisited != null) WorldEventBus.Unsubscribe(_handleDialogVisited);
+                if (_handleDayNightChanged != null) WorldEventBus.Unsubscribe(_handleDayNightChanged);
+
                 if (QuestWorld.Instance != null)
                 {
                     // T-Q18: SaveAll() before shutdown.
@@ -230,6 +256,79 @@ namespace ProjectC.Quests
         {
             // Used by server-pushed notifications (EventDriven). T-Q06/T-Q11.
             if (debugMode) Debug.Log($"[QuestServer] NotifyQuestDiscovered (server-internal call)");
+        }
+
+        // ============================================================
+        // T-Q06: WorldEventBus subscribers → QuestTriggerService.Evaluate
+        // ============================================================
+
+        // Cached delegate fields (so Unsubscribe can find same instance).
+        private System.Action<ItemAddedEvent> _handleItemAdded;
+        private System.Action<ItemRemovedEvent> _handleItemRemoved;
+        private System.Action<ReputationChangedEvent> _handleReputationChanged;
+        private System.Action<NpcAttitudeChangedEvent> _handleNpcAttitudeChanged;
+        private System.Action<CustomEvent> _handleCustomEvent;
+        private System.Action<DialogVisitedEvent> _handleDialogVisited;
+        private System.Action<DayNightPhaseChangedEvent> _handleDayNightChanged;
+
+        private void OnItemAdded(ItemAddedEvent ev)
+        {
+            if (QuestWorld.Instance == null || QuestWorld.Instance.TriggerService == null) return;
+            // Hint format: "HaveItem:<itemId>". TriggerService filters by prefix.
+            int advances = QuestWorld.Instance.TriggerService.Evaluate(ev.PlayerId, $"HaveItem:{ev.ItemId}");
+            if (debugMode && advances > 0) Debug.Log($"[QuestServer] OnItemAdded player={ev.PlayerId} itemId={ev.ItemId} → {advances} objective(s) advanced");
+        }
+
+        private void OnItemRemoved(ItemRemovedEvent ev)
+        {
+            if (QuestWorld.Instance == null || QuestWorld.Instance.TriggerService == null) return;
+            int advances = QuestWorld.Instance.TriggerService.Evaluate(ev.PlayerId, $"HaveItem:{ev.ItemId}");
+            if (debugMode && advances > 0) Debug.Log($"[QuestServer] OnItemRemoved player={ev.PlayerId} itemId={ev.ItemId} → {advances} objective(s) advanced");
+        }
+
+        private void OnReputationChanged(ReputationChangedEvent ev)
+        {
+            if (QuestWorld.Instance == null || QuestWorld.Instance.TriggerService == null) return;
+            int advances = QuestWorld.Instance.TriggerService.Evaluate(ev.PlayerId, $"ReputationAtLeast:{ev.Faction}");
+            if (debugMode && advances > 0) Debug.Log($"[QuestServer] OnReputationChanged player={ev.PlayerId} faction={ev.Faction} → {advances} objective(s) advanced");
+        }
+
+        private void OnNpcAttitudeChanged(NpcAttitudeChangedEvent ev)
+        {
+            if (QuestWorld.Instance == null || QuestWorld.Instance.TriggerService == null) return;
+            int advances = QuestWorld.Instance.TriggerService.Evaluate(ev.PlayerId, $"NpcAttitudeAtLeast:{ev.NpcId}");
+            if (debugMode && advances > 0) Debug.Log($"[QuestServer] OnNpcAttitudeChanged player={ev.PlayerId} npc={ev.NpcId} → {advances} objective(s) advanced");
+        }
+
+        private void OnCustomEvent(CustomEvent ev)
+        {
+            if (QuestWorld.Instance == null || QuestWorld.Instance.TriggerService == null) return;
+            // Mark event occurred (for IsSatisfied check)
+            QuestWorld.Instance.MarkEventOccurred(ev.PlayerId, ev.EventId);
+            int advances = QuestWorld.Instance.TriggerService.Evaluate(ev.PlayerId, $"Event:{ev.EventId}");
+            if (debugMode && advances > 0) Debug.Log($"[QuestServer] OnCustomEvent player={ev.PlayerId} eventId={ev.EventId} → {advances} objective(s) advanced");
+        }
+
+        private void OnDialogVisited(DialogVisitedEvent ev)
+        {
+            if (QuestWorld.Instance == null || QuestWorld.Instance.TriggerService == null) return;
+            if (!string.IsNullOrEmpty(ev.NpcId))
+            {
+                QuestWorld.Instance.MarkNpcTalked(ev.PlayerId, ev.NpcId);
+            }
+            int advances = QuestWorld.Instance.TriggerService.Evaluate(ev.PlayerId, $"TalkedToNpc:{ev.NpcId}");
+            if (debugMode && advances > 0) Debug.Log($"[QuestServer] OnDialogVisited player={ev.PlayerId} npc={ev.NpcId} → {advances} objective(s) advanced");
+        }
+
+        private void OnDayNightChanged(DayNightPhaseChangedEvent ev)
+        {
+            // PlayerId=0 global event. Loop all connected clients (T-Q15: more efficient via per-player iteration).
+            if (QuestWorld.Instance == null || QuestWorld.Instance.TriggerService == null) return;
+            if (NetworkManager == null) return;
+            foreach (var clientId in NetworkManager.ConnectedClientsIds)
+            {
+                QuestWorld.Instance.TriggerService.Evaluate(clientId, $"DayNightPhase:{ev.NewPhaseName}");
+            }
         }
     }
 }

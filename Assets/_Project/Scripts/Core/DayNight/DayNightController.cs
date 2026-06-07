@@ -11,6 +11,12 @@ namespace ProjectC.Core
     /// </summary>
     public class DayNightController : MonoBehaviour
     {
+        /// <summary>
+        /// T-Q06: Static accessor для триггеров. Set в Awake/OnEnable, clear в OnDisable.
+        /// Fallback в DayNightPhaseTrigger.cs: FindObjectOfType если null.
+        /// </summary>
+        public static DayNightController Instance { get; private set; }
+
         [Header("Profile")]
         [Tooltip("DayNightProfile with phase definitions")]
         public DayNightProfile profile;
@@ -103,6 +109,8 @@ namespace ProjectC.Core
 
         void OnEnable()
         {
+            // T-Q06: set Instance для trigger accessors
+            if (Instance == null) Instance = this;
             SubscribeToServerEvents();
             ValidateProfileInstances();
         }
@@ -132,6 +140,8 @@ namespace ProjectC.Core
 
         void OnDisable()
         {
+            // T-Q06: clear Instance
+            if (Instance == this) Instance = null;
             UnsubscribeFromServerEvents();
         }
 
@@ -332,6 +342,18 @@ namespace ProjectC.Core
                 _currentPhase = newPhase;
                 _phaseTransitionTime = _currentPhase?.blendDuration ?? 0.5f;
                 OnPhaseChanged?.Invoke(_currentPhase, _phaseTransitionTime);
+
+                // T-Q06: publish WorldEvent for quest triggers (DayNightPhaseTrigger).
+                // PlayerId = 0 (global event, не привязан к игроку).
+                if (_currentPhase != null)
+                {
+                    ProjectC.Core.WorldEventBus.Publish(new ProjectC.Core.DayNightPhaseChangedEvent
+                    {
+                        PlayerId = 0,
+                        TimestampUnix = System.DateTimeOffset.UtcNow.ToUnixTimeSeconds(),
+                        NewPhaseName = _currentPhase.phaseName
+                    });
+                }
             }
 
             if (_currentPhase == null) return;

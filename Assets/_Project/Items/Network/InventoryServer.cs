@@ -273,7 +273,16 @@ namespace ProjectC.Items.Network
 
             if (IsServer && InventoryWorld.Instance == null)
             {
-                InventoryWorld.CreateAndInitialize();
+                // T-X0: instantiate repository. Default = JsonInventoryRepository (per-file JSON).
+                // Альтернатива (test): new InMemoryInventoryRepository() — out of scope T-X0.
+                var repository = new ProjectC.Core.JsonInventoryRepository();
+                InventoryWorld.CreateAndInitialize(repository);
+
+                // T-X0: hook client connect → load persisted inventory.
+                if (NetworkManager != null)
+                {
+                    NetworkManager.OnClientConnectedCallback += HandleClientConnectedServer;
+                }
             }
 
             // Кэш ItemData — заполняем из InventoryWorld (для клиентского UI)
@@ -292,14 +301,30 @@ namespace ProjectC.Items.Network
             }
 
             if (Instance == null) Instance = this;
-            Debug.Log($"[InventoryServer] OnNetworkSpawn. IsServer={IsServer}, _itemCache={_itemCache.Count}");
+            Debug.Log($"[InventoryServer] OnNetworkSpawn. IsServer={IsServer}, _itemCache={_itemCache.Count}, repo={InventoryWorld.Instance?.Repository?.GetType().Name ?? "null"}");
         }
 
         public override void OnNetworkDespawn()
         {
             base.OnNetworkDespawn();
+            if (NetworkManager != null)
+            {
+                NetworkManager.OnClientConnectedCallback -= HandleClientConnectedServer;
+            }
             if (Instance == this) Instance = null;
             _opTimestamps.Clear();
+        }
+
+        /// <summary>
+        /// T-X0: load persisted inventory when client connects. Safe если файл
+        /// не существует (новый игрок) — LoadPlayer no-op.
+        /// </summary>
+        private void HandleClientConnectedServer(ulong clientId)
+        {
+            if (!IsServer) return;
+            if (InventoryWorld.Instance == null) return;
+            InventoryWorld.Instance.LoadPlayer(clientId);
+            if (Debug.isDebugBuild) Debug.Log($"[InventoryServer] HandleClientConnectedServer({clientId}) — inventory loaded");
         }
     }
 }

@@ -932,5 +932,51 @@ namespace ProjectC.Player
             ProjectC.MetaRequirement.MetaRequirementClientState.Instance?.OnRequirementsPushed(
                 netIds, displayNames, itemIdsArr, logics, requiredCounts, consumeOnUses);
         }
+
+        // ==================== QUEST V2 RPC TARGETS ====================
+        // T-Q07: QuestServer (server-only singleton) вызывает эти методы НА конкретном
+        // NetworkPlayer, чтобы доставить snapshot / result именно этому клиенту.
+        // Pattern: ReceiveContractSnapshotTargetRpc / ReceiveContractResultTargetRpc (line 848/854).
+        // Клиентский state: ProjectC.Quests.Client.QuestClientState.
+
+        [Rpc(SendTo.Owner)]
+        public void ReceiveQuestSnapshotTargetRpc(ProjectC.Quests.Dto.QuestSnapshotDto snapshot, RpcParams rpcParams = default)
+        {
+            ProjectC.Quests.Client.QuestClientState.Instance?.OnQuestSnapshotReceived(snapshot);
+        }
+
+        [Rpc(SendTo.Owner)]
+        public void ReceiveReputationSnapshotTargetRpc(ProjectC.Quests.Dto.ReputationSnapshotDto snapshot, RpcParams rpcParams = default)
+        {
+            ProjectC.Quests.Client.QuestClientState.Instance?.OnReputationSnapshotReceived(snapshot);
+        }
+
+        [Rpc(SendTo.Owner)]
+        public void ReceiveNpcAttitudeSnapshotTargetRpc(ProjectC.Quests.Dto.NpcAttitudeSnapshotDto snapshot, RpcParams rpcParams = default)
+        {
+            ProjectC.Quests.Client.QuestClientState.Instance?.OnNpcAttitudeSnapshotReceived(snapshot);
+        }
+
+        [Rpc(SendTo.Owner)]
+        public void ReceiveQuestResultTargetRpc(ProjectC.Quests.Dto.QuestResultDto result, RpcParams rpcParams = default)
+        {
+            ProjectC.Quests.Client.QuestClientState.Instance?.OnQuestResultReceived(result);
+        }
+
+        [Rpc(SendTo.Owner)]
+        public void ReceiveReputationResultTargetRpc(ProjectC.Quests.Dto.ReputationResultDto result, RpcParams rpcParams = default)
+        {
+            ProjectC.Quests.Client.QuestClientState.Instance?.OnReputationResultReceived(result);
+        }
+
+        // Server-push notification: EventDriven quest auto-discovered.
+        [Rpc(SendTo.Owner)]
+        public void ReceiveQuestDiscoveredTargetRpc(string questId, string displayName, RpcParams rpcParams = default)
+        {
+            // T-Q11: QuestClientState.OnQuestDiscovered (UI "New Quest!" toast).
+            // T-Q07: route через QuestClientState.RaiseOnQuestDiscovered (event'ы в .NET — only raisable from declaring type).
+            if (Debug.isDebugBuild) Debug.Log($"[NetworkPlayer:{OwnerClientId}] ReceiveQuestDiscovered: {questId} '{displayName}'");
+            ProjectC.Quests.Client.QuestClientState.Instance?.RaiseOnQuestDiscovered(questId, displayName);
+        }
     }
 }

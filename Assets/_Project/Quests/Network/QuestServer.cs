@@ -18,6 +18,8 @@ using System.Collections.Generic;
 using Unity.Netcode;
 using UnityEngine;
 using ProjectC.Core;
+using ProjectC.Quests.Dto;
+using NetworkPlayer = ProjectC.Player.NetworkPlayer;
 
 namespace ProjectC.Quests
 {
@@ -210,6 +212,7 @@ namespace ProjectC.Quests
 
         /// <summary>
         /// Player requests full quest list snapshot (e.g. при открытии CharacterWindow).
+        /// T-Q07: real impl — build DTO + send TargetRpc to client.
         /// </summary>
         [Rpc(SendTo.Server, InvokePermission = RpcInvokePermission.Owner)]
         public void RequestRefreshQuestsRpc(RpcParams rpcParams = default)
@@ -218,11 +221,13 @@ namespace ProjectC.Quests
             if (!CheckRateLimit(clientId)) return;
             if (QuestWorld.Instance == null) return;
             if (debugMode) Debug.Log($"[QuestServer] RequestRefreshQuests client={clientId}");
-            // T-Q07: Build QuestSnapshotDto → send via NetworkPlayer.ReceiveQuestSnapshotTargetRpc.
+            var snapshot = BuildQuestSnapshot(clientId);
+            SendQuestSnapshotToClient(clientId, snapshot);
         }
 
         /// <summary>
         /// Player requests full reputation snapshot.
+        /// T-Q07: real impl — build DTO + send TargetRpc to client.
         /// </summary>
         [Rpc(SendTo.Server, InvokePermission = RpcInvokePermission.Owner)]
         public void RequestRefreshReputationRpc(RpcParams rpcParams = default)
@@ -231,11 +236,13 @@ namespace ProjectC.Quests
             if (!CheckRateLimit(clientId)) return;
             if (QuestWorld.Instance == null) return;
             if (debugMode) Debug.Log($"[QuestServer] RequestRefreshReputation client={clientId}");
-            // T-Q07/T-Q13: Build ReputationSnapshotDto → send.
+            var snapshot = BuildReputationSnapshot(clientId);
+            SendReputationSnapshotToClient(clientId, snapshot);
         }
 
         /// <summary>
         /// Player requests full NpcAttitude snapshot (per NPC relationship values).
+        /// T-Q07: real impl — build DTO + send TargetRpc to client.
         /// </summary>
         [Rpc(SendTo.Server, InvokePermission = RpcInvokePermission.Owner)]
         public void RequestRefreshNpcAttitudeRpc(RpcParams rpcParams = default)
@@ -244,7 +251,8 @@ namespace ProjectC.Quests
             if (!CheckRateLimit(clientId)) return;
             if (QuestWorld.Instance == null) return;
             if (debugMode) Debug.Log($"[QuestServer] RequestRefreshNpcAttitude client={clientId}");
-            // T-Q07/T-Q13: Build NpcAttitudeSnapshotDto → send.
+            var snapshot = BuildNpcAttitudeSnapshot(clientId);
+            SendNpcAttitudeSnapshotToClient(clientId, snapshot);
         }
 
         /// <summary>
@@ -329,6 +337,152 @@ namespace ProjectC.Quests
             {
                 QuestWorld.Instance.TriggerService.Evaluate(clientId, $"DayNightPhase:{ev.NewPhaseName}");
             }
+        }
+
+        // ============================================================
+        // T-Q07: Snapshot builders + TargetRpc senders
+        // ============================================================
+
+        private QuestSnapshotDto BuildQuestSnapshot(ulong clientId)
+        {
+            var w = QuestWorld.Instance;
+            if (w == null) return new QuestSnapshotDto { quests = null, newlyDiscoveredQuestIds = null };
+            var playerQuests = w.GetPlayerQuests(clientId);
+            int count = playerQuests.Count;
+            var arr = new QuestProgressDto[count];
+            for (int i = 0; i < count; i++)
+            {
+                var inst = playerQuests[i];
+                var def = w.GetQuest(inst.questId);
+                // Build objective progress
+                int objCount = inst.objectiveProgress != null ? inst.objectiveProgress.Count : 0;
+                var objArr = new ObjectiveProgressDto[objCount];
+                for (int j = 0; j < objCount; j++)
+                {
+                    var op = inst.objectiveProgress[j];
+                    string desc = "";
+                    // Look up description from current stage's objective
+                    if (def != null && !string.IsNullOrEmpty(inst.currentStageId))
+                    {
+                        var st = def.GetStage(inst.currentStageId);
+                        if (st != null)
+                        {
+                            for (int k = 0; k < st.objectives.Length; k++)
+                            {
+                                if (st.objectives[k] != null && st.objectives[k].objectiveId == op.objectiveId)
+                                {
+                                    desc = st.objectives[k].description;
+                                    break;
+                                }
+                            }
+                        }
+                    }
+                    objArr[j] = new ObjectiveProgressDto
+                    {
+                        objectiveId = op.objectiveId,
+                        description = desc,
+                        completed = op.completed,
+                        currentValue = op.currentCount
+                    };
+                }
+                arr[i] = new QuestProgressDto
+                {
+                    questId = inst.questId,
+                    displayName = def != null ? def.displayName : "",
+                    state = (byte)inst.state,
+                    currentStageId = inst.currentStageId ?? "",
+                    isTracked = inst.isTracked,
+                    objectives = objArr
+                };
+            }
+            return new QuestSnapshotDto
+            {
+                quests = arr,
+                newlyDiscoveredQuestIds = null  // T-Q11: populate on EventDriven
+            };
+        }
+
+        private ReputationSnapshotDto BuildReputationSnapshot(ulong clientId)
+        {
+            var w = QuestWorld.Instance;
+            if (w == null) return new ReputationSnapshotDto { entries = null };
+            var arr = new System.Collections.Generic.List<ReputationEntryDto>();
+            // Iterate all FactionId values (0..11 per T-Q01)
+            foreach (ProjectC.Factions.FactionId fid in System.Enum.GetValues(typeof(ProjectC.Factions.FactionId)))
+            {
+                if (fid == ProjectC.Factions.FactionId.None) continue;
+                int v = w.GetReputation(clientId, fid);
+                arr.Add(new ReputationEntryDto { faction = (byte)fid, value = v });
+            }
+            return new ReputationSnapshotDto { entries = arr.ToArray() };
+        }
+
+        private NpcAttitudeSnapshotDto BuildNpcAttitudeSnapshot(ulong clientId)
+        {
+            var w = QuestWorld.Instance;
+            if (w == null) return new NpcAttitudeSnapshotDto { entries = null };
+            // T-Q07: iterate questDatabase.questOffers[] to discover known NPC ids.
+            // T-Q15: track all NpcDefinitions globally in QuestWorld, not just quest givers.
+            var knownNpcIds = new System.Collections.Generic.HashSet<string>();
+            foreach (var def in w.GetAllQuests())
+            {
+                if (def == null) continue;
+                // Walk all stages for TalkToNpc objectives (NpcId) — defensive
+                for (int s = 0; s < def.stages.Length; s++)
+                {
+                    for (int o = 0; o < def.stages[s].objectives.Length; o++)
+                    {
+                        var obj = def.stages[s].objectives[o];
+                        if (obj != null && !string.IsNullOrEmpty(obj.targetNpcId))
+                        {
+                            knownNpcIds.Add(obj.targetNpcId);
+                        }
+                    }
+                }
+            }
+            var arr = new NpcAttitudeEntryDto[knownNpcIds.Count];
+            int idx = 0;
+            foreach (var npcId in knownNpcIds)
+            {
+                arr[idx++] = new NpcAttitudeEntryDto { npcId = npcId, value = w.GetNpcAttitude(clientId, npcId) };
+            }
+            return new NpcAttitudeSnapshotDto { entries = arr };
+        }
+
+        // -------- Senders --------
+
+        private void SendQuestSnapshotToClient(ulong clientId, QuestSnapshotDto snapshot)
+        {
+            var netPlayer = FindNetworkPlayer(clientId);
+            if (netPlayer == null)
+            {
+                if (debugMode) Debug.LogWarning($"[QuestServer] SendQuestSnapshotToClient: no NetworkPlayer for client {clientId}");
+                return;
+            }
+            netPlayer.ReceiveQuestSnapshotTargetRpc(snapshot);
+            if (debugMode) Debug.Log($"[QuestServer] SendQuestSnapshotToClient: client={clientId} quests={snapshot.quests?.Length ?? 0}");
+        }
+
+        private void SendReputationSnapshotToClient(ulong clientId, ReputationSnapshotDto snapshot)
+        {
+            var netPlayer = FindNetworkPlayer(clientId);
+            if (netPlayer == null) return;
+            netPlayer.ReceiveReputationSnapshotTargetRpc(snapshot);
+        }
+
+        private void SendNpcAttitudeSnapshotToClient(ulong clientId, NpcAttitudeSnapshotDto snapshot)
+        {
+            var netPlayer = FindNetworkPlayer(clientId);
+            if (netPlayer == null) return;
+            netPlayer.ReceiveNpcAttitudeSnapshotTargetRpc(snapshot);
+        }
+
+        /// <summary>Find NetworkPlayer for clientId (server-side). null если player object не spawned.</summary>
+        private NetworkPlayer FindNetworkPlayer(ulong clientId)
+        {
+            if (NetworkManager == null) return null;
+            if (!NetworkManager.ConnectedClients.TryGetValue(clientId, out var cc)) return null;
+            return cc.PlayerObject != null ? cc.PlayerObject.GetComponent<NetworkPlayer>() : null;
         }
     }
 }

@@ -996,5 +996,16 @@ namespace ProjectC.Player
             if (Debug.isDebugBuild) Debug.Log($"[NetworkPlayer:{OwnerClientId}] ReceiveDialogActionResult: type={result.actionType} success={result.success}");
             ProjectC.Quests.Client.QuestClientState.Instance?.RaiseOnDialogActionResultReceived(result);
         }
+
+        // T-Q11a: client-side wrappers для E-key trigger.
+        public void RequestTalkToNpc(string npcId, string treeIdHint = null)
+        {
+            ProjectC.Quests.QuestServer.Instance?.RequestTalkToNpcRpc(npcId, treeIdHint);
+        }
+
+        public void RequestAdvanceDialogue(string treeId, string nodeId, int optionIndex, string npcId)
+        {
+            ProjectC.Quests.QuestServer.Instance?.RequestAdvanceDialogueRpc(treeId, nodeId, optionIndex, npcId);
+        }
     }
 }

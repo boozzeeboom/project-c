@@ -123,5 +123,24 @@ namespace ProjectC.Quests.Client
             OnDialogActionResultReceived?.Invoke(result);
             if (Debug.isDebugBuild) Debug.Log($"[QuestClientState] RaiseOnDialogActionResultReceived: type={result.actionType} success={result.success}");
         }
+
+        // ============================================================
+        // T-Q11a: auto-spawn on scene load (host + client)
+        // ============================================================
+
+        [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.AfterSceneLoad)]
+        private static void AutoSpawn()
+        {
+            if (Instance != null) return;
+            var go = new GameObject("[QuestClientState]");
+            go.AddComponent<QuestClientState>();
+            UnityEngine.Object.DontDestroyOnLoad(go);
+            // Auto-attach DialogWindow sibling
+            if (go.GetComponent<UI.DialogWindow>() == null)
+            {
+                go.AddComponent<UI.DialogWindow>();
+            }
+            if (Debug.isDebugBuild) Debug.Log("[QuestClientState] Auto-spawned on scene load");
+        }
     }
 }

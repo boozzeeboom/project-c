@@ -60,10 +60,14 @@ docs/archive/
 
 # Agent configuration (personal - not for sharing)
 .qwen/
-.agents/           # Personal agent configs and skills
-.cline/            # Cline agent files
-.clinerules/       # Cline rules and hooks
-.vscode/            # VSCode settings
+# Personal agent configs and skills
+.agents/
+# Cline agent files
+.cline/
+# Cline rules and hooks
+.clinerules/
+# VSCode settings
+.vscode/
 
 # Graphify output (generated, per-session)
 # Root output with exceptions for git tracking

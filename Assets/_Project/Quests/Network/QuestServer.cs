@@ -850,9 +850,6 @@ namespace ProjectC.Quests
                     break;
                 case DialogueActionType.CompleteObjective:
                 case DialogueActionType.DiscoverQuest:
-                case DialogueActionType.GiveCredits:
-                case DialogueActionType.AddReputation:
-                case DialogueActionType.AddNpcAttitude:
                 case DialogueActionType.OpenMarket:
                 case DialogueActionType.OpenService:
                 case DialogueActionType.SetFlag:
@@ -932,6 +929,104 @@ namespace ProjectC.Quests
                             actionType = (byte)action.type,
                             success = ok,
                             resultData = action.stringParam
+                        });
+                    }
+                    break;
+                case DialogueActionType.GiveCredits:
+                    {
+                        // T-Q16: server-side modify credits via TradeWorld.Repository.
+                        if (action.intParam == 0)
+                        {
+                            // No-op (можно использовать как тестовая action).
+                            if (debugMode) Debug.Log($"[QuestServer] FireDialogAction: GiveCredits 0 (no-op)");
+                            SendDialogActionResultToClient(clientId, new DialogActionResultDto
+                            {
+                                actionType = (byte)action.type,
+                                success = true,
+                                resultData = "0"
+                            });
+                            break;
+                        }
+                        var repo = ProjectC.Trade.Core.TradeWorld.Instance != null ? ProjectC.Trade.Core.TradeWorld.Instance.Repository : null;
+                        if (repo == null)
+                        {
+                            Debug.LogWarning("[QuestServer] FireDialogAction: GiveCredits — TradeWorld.Repository == null");
+                            SendDialogActionResultToClient(clientId, new DialogActionResultDto
+                            {
+                                actionType = (byte)action.type,
+                                success = false,
+                                resultData = "no repository"
+                            });
+                            break;
+                        }
+                        float currentCredits = repo.GetCredits(clientId);
+                        float newCredits = Mathf.Max(0f, currentCredits + action.intParam);
+                        repo.SetCredits(clientId, newCredits);
+                        if (debugMode) Debug.Log($"[QuestServer] FireDialogAction: GiveCredits delta={action.intParam} {currentCredits:F0}→{newCredits:F0}");
+                        // T-Q16 fix: push fresh contract snapshot so ContractClientState.credits updates UI.
+                        if (ProjectC.Trade.Network.ContractServer.Instance != null)
+                            ProjectC.Trade.Network.ContractServer.Instance.PushPlayerSnapshot(clientId);
+                        SendDialogActionResultToClient(clientId, new DialogActionResultDto
+                        {
+                            actionType = (byte)action.type,
+                            success = true,
+                            resultData = action.intParam.ToString()
+                        });
+                    }
+                    break;
+                case DialogueActionType.AddReputation:
+                    {
+                        // T-Q16: server-side modify reputation via QuestWorld (T-Q13).
+                        if (QuestWorld.Instance == null) break;
+                        int delta = action.intParam;
+                        var faction = action.factionParam;
+                        if (faction == ProjectC.Factions.FactionId.None)
+                        {
+                            Debug.LogWarning($"[QuestServer] FireDialogAction: AddReputation skipped — faction=None");
+                            SendDialogActionResultToClient(clientId, new DialogActionResultDto
+                            {
+                                actionType = (byte)action.type,
+                                success = false,
+                                resultData = "faction=None"
+                            });
+                            break;
+                        }
+                        int newValue = QuestWorld.Instance.ModifyReputation(clientId, faction, delta);
+                        if (debugMode) Debug.Log($"[QuestServer] FireDialogAction: AddReputation faction={faction} delta={delta} newValue={newValue}");
+                        // ModifyReputation already publishes ReputationChangedEvent + broadcast.
+                        SendDialogActionResultToClient(clientId, new DialogActionResultDto
+                        {
+                            actionType = (byte)action.type,
+                            success = true,
+                            resultData = $"{faction}:{newValue}"
+                        });
+                    }
+                    break;
+                case DialogueActionType.AddNpcAttitude:
+                    {
+                        // T-Q16: server-side modify npc attitude via QuestWorld (T-Q13).
+                        if (QuestWorld.Instance == null) break;
+                        string targetNpcId = action.stringParam;
+                        if (string.IsNullOrEmpty(targetNpcId))
+                        {
+                            Debug.LogWarning($"[QuestServer] FireDialogAction: AddNpcAttitude skipped — npcId empty");
+                            SendDialogActionResultToClient(clientId, new DialogActionResultDto
+                            {
+                                actionType = (byte)action.type,
+                                success = false,
+                                resultData = "npcId empty"
+                            });
+                            break;
+                        }
+                        int delta = action.intParam;
+                        int newAttitude = QuestWorld.Instance.ModifyNpcAttitude(clientId, targetNpcId, delta);
+                        if (debugMode) Debug.Log($"[QuestServer] FireDialogAction: AddNpcAttitude npc={targetNpcId} delta={delta} newValue={newAttitude}");
+                        // ModifyNpcAttitude already publishes NpcAttitudeChangedEvent + broadcast + cross-faction.
+                        SendDialogActionResultToClient(clientId, new DialogActionResultDto
+                        {
+                            actionType = (byte)action.type,
+                            success = true,
+                            resultData = $"{targetNpcId}:{newAttitude}"
                         });
                     }
                     break;

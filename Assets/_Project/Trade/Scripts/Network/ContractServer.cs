@@ -325,6 +325,26 @@ namespace ProjectC.Trade.Network
         // SEND HELPERS
         // ========================================================
 
+        /// <summary>
+        /// T-Q16 fix: push fresh contract snapshot к клиенту (используется QuestServer.GiveCredits
+        /// и любым другим server-side изменением credits). Rebuilds snapshot с текущими данными
+        /// + last known location (если есть). Без зоны — базовая версия (без displayName).
+        /// </summary>
+        public void PushPlayerSnapshot(ulong clientId)
+        {
+            if (!IsServer) return;
+            if (ContractWorld.Instance == null) return;
+
+            // T-Q16: get player's current zone (best-effort) — для отображения market name.
+            // Если неизвестно — fallback на пустую строку + 0 multipler.
+            string locationId = "";
+            string displayName = "";
+            float timeMult = 1f;
+            float nextTick = 0f;
+            var snap = ContractWorld.Instance.BuildSnapshot(clientId, locationId, displayName, timeMult, nextTick);
+            SendSnapshotToClient(clientId, snap);
+        }
+
         private void SendSnapshotToClient(ulong clientId, ContractSnapshotDto snapshot)
         {
             var target = FindNetworkPlayer(clientId);

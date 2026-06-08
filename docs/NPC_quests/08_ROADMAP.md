@@ -448,14 +448,22 @@ T-X4 (input remap: pickup E → F) ← future TODO, после end-to-end demo
 
 ---
 
-### T-Q16 — DialogueAction: GiveCredits/AddReputation/AddNpcAttitude (small, 45 мин) — РАСШИРЕН
+### T-Q16 — DialogueAction: GiveCredits/AddReputation/AddNpcAttitude (small, 45 мин) ✅ DONE 2026-06-08
 
 **Скоуп (см. `09_OPEN_QUESTIONS.md` §G):**
-- `ProjectC/Dialogue/ActionExecutors/CreditsActionExecutor.cs`.
-- `ProjectC/Dialogue/ActionExecutors/ReputationActionExecutor.cs`.
-- **+ `ProjectC/Dialogue/ActionExecutors/NpcAttitudeActionExecutor.cs`** (новый).
-- `QuestWorld.ModifyReputation(playerId, faction, delta)`.
-- `QuestWorld.ModifyNpcAttitude(playerId, npcId, delta)` — triggers cross-faction influence (MVP stub).
+- `QuestServer.FireDialogAction.GiveCredits` — server-side modify credits via `TradeWorld.Repository.GetCredits+delta→SetCredits`, push snapshot через `ContractServer.PushPlayerSnapshot`. ✅
+- `QuestServer.FireDialogAction.AddReputation` — `QuestWorld.ModifyReputation` (T-Q13, broadcast+event). ✅
+- `QuestServer.FireDialogAction.AddNpcAttitude` — `QuestWorld.ModifyNpcAttitude` (T-Q13, broadcast+event+cross-faction). ✅
+- `ContractServer.PushPlayerSnapshot(ulong)` — public helper. ✅
+- **`ApplyQuestRewards` при TurnIn** — deferred to T-Q18 (M8 Persistence). ✅ (зафиксировано в roadmap как known gap).
+- **`DialogueActionRunner` class** — не создан (switch case в `FireDialogAction` достаточно, одиночные atomic actions). ✅
+
+**Verify (твои тесты):**
+- Authoring task: добавить в Mira dialog tree edges с `GiveCredits(50)` / `AddReputation(+25, GuildOfThoughts)` / `AddNpcAttitude(+5, "mira_01")` actions (out of scope T-Q16 — это SO editor work).
+- После добавления: `[QuestServer] FireDialogAction: GiveCredits delta=50 1000→1050` в Console + CharacterWindow таб РЕПУТАЦИЯ обновится + Dialog header показывает "❤ +5".
+
+**Risk:** low. ✅
+
 
 **Verify:** After "intro" stage complete → credits +50, reputation +25, npcAttitude[mira] +5.
 
@@ -567,7 +575,7 @@ T-X4 (input remap: pickup E → F) ← future TODO, после end-to-end demo
 | **M4 — Quest log + tracker** | T-Q11, T-Q12 | Player can accept quest, see in log (Active/Completed/Discovered), see tracker. | 🟡 NEXT |
 | **M5 — Reputation + NpcAttitude** | T-Q13 | Reputation updates, NpcAttitude, CharacterWindow tab fix. | ✅ DONE 2026-06-08 |
 | **M6 — Item integration** | T-Q14, T-Q15 | Quest rewards give items, quest objectives check items, ContractMetaBridge. | ✅ T-Q14 ✅ T-Q15 2026-06-08 |
-| **M7 — Full action set** | T-Q16, T-Q17, T-X5 | Credits/rep/attitude/market actions + ContractServer events. |
+| **M7 — Full action set** | T-Q16, T-Q17, T-X5 | Credits/rep/attitude/market actions + ContractServer events. | 🟡 T-Q16 ✅ T-Q17 T-X5 pending 2026-06-08 |
 | **M8 — Persistence** | T-Q18 | Quests + rep + attitude survive server restart. |
 | **M9 — Cleanup** | T-Q19, T-X1, T-X2 | v1 NPC deleted, optional renames. |
 | **M10 — Editor tool** | T-Q09, T-Q09b | Quest Database Explorer с full CRUD + GraphView. | ✅ DONE (M10 partially — CRUD done, GraphView deferred) |

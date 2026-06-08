@@ -1,0 +1,49 @@
+/* ============================================
+ T-Q12: QuestTracker HUD (top-right corner).
+ Все class-стили с !important — UnityDefaultRuntimeTheme type > class.
+ НЕ !important на display — inline toggle работает.
+ ============================================ */
+.quest-tracker-root {
+ position: absolute !important;
+ top:4% !important;
+ right:4% !important;
+ width:280px !important;
+ max-width:30% !important;
+ z-index:50 !important;
+ picking-mode: position !important;
+}
+.quest-tracker-panel {
+ flex-direction: column !important;
+ background-color: rgba(20,25,35,0.92) !important;
+ border-width:1px !important;
+ border-color: rgba(120,200,160,0.7) !important;
+ border-radius:4px !important;
+ padding:6px8px !important;
+ color: rgb(220,220,230) !important;
+ font-size:11px !important;
+}
+.quest-tracker-name {
+ font-size:12px !important;
+ -unity-font-style: bold !important;
+ color: rgb(220,230,200) !important;
+ margin-bottom:2px !important;
+ padding-left:2px !important;
+ white-space: normal !important;
+}
+.quest-tracker-objective {
+ font-size:10px !important;
+ color: rgb(180,200,180) !important;
+ margin-bottom:4px !important;
+ padding-left:2px !important;
+ white-space: normal !important;
+}
+.quest-tracker-hide {
+ font-size:10px !important;
+ height:20px !important;
+ padding:06px !important;
+ background-color: rgba(80,100,80,0.5) !important;
+ color: rgb(200,200,200) !important;
+ border-width:0 !important;
+ align-self: flex-end !important;
+}
+.quest-tracker-hide:hover { background-color: rgba(120,80,80,0.6) !important; }

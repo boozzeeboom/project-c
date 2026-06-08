@@ -248,16 +248,24 @@ T-X4 (input remap: pickup E → F) ← future TODO, после end-to-end demo
 
 ---
 
-### T-Q09 — QuestDatabaseWindow (Editor tool, FULL CRUD) (large, 180 мин) ✅ DONE (commit 16acb2c)
+### T-Q09 — Quest database data layer + asset auto-discovery (Editor infrastructure) (medium,90 мин) ✅ DONE (commit f55bf0b)
 
-**Статус:** ✅ Готово. Commit 16acb2c.
-- `QuestDatabaseWindow.cs` (UI Toolkit EditorWindow) + `QuestDatabaseWindow.uxml/.uss`.
-- `QuestIndexBuilder.cs` (reverse-index cache).
-- `QuestAssetWatcher.cs` (AssetPostprocessor).
-- **Full CRUD**: TreeView/MultiColumnListView + search/filters, toolbar buttons для создания NPC/Quest/Dialog, inline edit через PropertyField, delete с modal confirm, drag-drop linking, duplicate via context menu, real-time validation с inline badges.
-- 3-pane layout per `03_EDITOR_TOOLING.md` §3.3.
+**Статус:** ✅ Готово (data layer + auto-discovery, **НЕ EditorWindow UI**).
 
-**Verify:** ✅ `Window → Project C → Quests → Database Explorer` opens. Toolbar: "+ NPC", "+ Quest", "+ Dialog" создают ассеты. Click row → inline edit. Delete → modal confirm. Rename .asset → cache invalidates.
+**Фактически реализовано в коммите f55bf0b:**
+- `Assets/_Project/Quests/QuestDatabase.cs` (NEW) — central registry SO: factions[], npcs[], dialogTrees[], quests[] + lookup helpers (GetQuest/GetNpc/GetFaction/GetDialogTree).
+- `Assets/_Project/Quests/Editor/QuestDatabaseAutoDiscover.cs` (NEW) — `[InitializeOnLoad]` сканирует `Assets/_Project/Quests/Data/{Factions,Npcs,Dialogs,Quests}/` через `AssetDatabase.FindAssets("t:Type")`, наполняет `QuestDatabase.asset`. `[MenuItem("Tools/ProjectC/Quests/Re-scan Quest Database", priority=110)]` для ручного запуска.
+- `Assets/_Project/Quests/Editor/DialogueConditionDrawer.cs` (NEW) — `[CustomPropertyDrawer(typeof(DialogueCondition))]`, рисует only relevant поля по типу (HasItem/QuestStateEquals/ReputationAtLeast/etc).
+- `Assets/_Project/Quests/Editor/QuestDefinitionValidator.cs` (из T-Q08 commit `16acb2c`) — статический валидатор (`Tools/ProjectC/Validate All Quests`).
+
+**НЕ реализовано (описано в roadmap §8.3 как "full CRUD EditorWindow UI", но **в коде отсутствует** — QuestDatabaseWindow.cs / QuestIndexBuilder.cs / QuestAssetWatcher.cs не существуют):**
+- `QuestDatabaseWindow.cs` — UI Toolkit EditorWindow с TreeView/MultiColumnListView, toolbar CRUD (`+ NPC / + Quest / + Dialog`), drag-drop, modal confirm delete, duplicate via context menu, real-time validation badges.
+- `QuestIndexBuilder.cs` — reverse-index cache.
+- `QuestAssetWatcher.cs` — AssetPostprocessor.
+
+**Roadmap fix (2026-06-08, сессия):** пометки выше уточняют фактический scope. Полный CRUD EditorWindow — **отдельный будущий тикет** (T-Q09-ext, не входит в roadmap8.3), не блокирует quest play.
+
+**Verify:** ✅ `Tools → ProjectC → Quests → Re-scan Quest Database` работает. `QuestDatabase.asset` содержит1 faction,1 npc,1 dialog,2 quests. Inspector редактируется (DialogueConditionDrawer). Validate All Quests работает.
 
 ---
 
@@ -301,7 +309,18 @@ T-X4 (input remap: pickup E → F) ← future TODO, после end-to-end demo
 
 ---
 
-### T-Q11 — Quest log таб в CharacterWindow (medium, 90 мин) 🟡 NEXT (after T-Q10)
+### T-Q11 — Quest log таб в CharacterWindow (medium,90 мин) ✅ DONE (2026-06-08, uncommitted)
+
+**Статус:** ✅ Сделано в сессии2026-06-08 (после roadmap commit88ef77e).
+- `CharacterWindow.uxml` — +1 tab-button `tab-quests`, +1 section `quests-section` с4 под-секциями (active/completed/failed/discovered), +1 action-button `accept-quest-btn`.
+- `CharacterWindow.uss` — +`.quests-section`, `.quest-sub`, `.quest-section-title`, `.quest-list`, `.quest-row`, `.quest-row-state-*`, `.quest-row-title`, `.quest-row-objectives`, `.action-btn.accept-quest` (все с `!important`).
+- `CharacterWindow.cs` — +9 полей, +struct `QuestListItem`, +4 caches, +Subscribe/Unsubscribe +3 events, +MakeQuestRow/BindQuestRow, +RefreshQuestsCache + ApplyQuestListRefresh, +HandleQuestSnapshotUpdated/HandleQuestResult/HandleQuestDiscovered, +OnAcceptQuestClicked, +SwitchTab ветка "quests", +OnDisable Unsubscribe.
+- `QuestClientState.cs` — +`RequestAcceptQuest(questId, fromNpcId)` forward в `QuestServer.RequestAcceptQuestRpc`.
+- `docs/dev/T-Q11_DESIGN_NOTE.md` (NEW).
+
+**Accept пока stub на сервере** — `QuestServer.RequestAcceptQuestRpc` (T-Q05 line309) пропускает, реальный `QuestWorld.TryAccept` будет в T-Q15. UI полностью работает, RPC доходит, rate-limit OK.
+
+**Verify:** ✅ Compile0 errors. Все6 табов видны в CharacterWindow.4 под-секции + state badge + accept-кнопка для Discovered.
 
 **Скоуп:**
 - Modify `CharacterWindow.uxml` — add `tab-quests` button + `quests-section`.

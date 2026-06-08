@@ -40,6 +40,7 @@ using ProjectC.Player;
 using ProjectC.Quests;
 using ProjectC.Quests.Client;
 using ProjectC.Quests.Dto;
+using ProjectC.Quests.UI;
 using ProjectC.Trade;
 using ProjectC.Trade.Client;
 using ProjectC.Trade.Dto;
@@ -1195,6 +1196,14 @@ namespace ProjectC.UI.Client
             var obj = new Label { name = "row-objectives" };
             obj.AddToClassList("quest-row-objectives");
             row.Add(obj);
+            // T-Q12: per-row "Следить" / "Не следить" button (toggle).
+            var trackBtn = new Button { name = "row-track-btn" };
+            trackBtn.AddToClassList("quest-row-track-btn");
+            trackBtn.text = "Следить";
+            // UI Toolkit Button.clicked event не передаёт sender — используем RegisterCallback<ClickEvent>
+            // для доступа к evt.target (row-track-btn) → walk до row → читаем userData (questId).
+            trackBtn.RegisterCallback<ClickEvent>(OnQuestRowTrackClicked);
+            row.Add(trackBtn);
             return row;
             }
 
@@ -1206,6 +1215,7 @@ namespace ProjectC.UI.Client
             if (src == null) src = ResolveQuestRowList(row);
             if (src == null || index <0 || index >= src.Count) return;
             var q = src[index];
+            row.userData = q.questId; // T-Q12: store for track-btn handler.
             var badge = row.Q<Label>("row-state");
             var title = row.Q<Label>("row-title");
             var obj = row.Q<Label>("row-objectives");
@@ -1223,6 +1233,37 @@ namespace ProjectC.UI.Client
             obj.text = (q.objectiveTotalCount >0)
             ? $"{q.objectiveCompletedCount}/{q.objectiveTotalCount}"
             : "";
+
+            // T-Q12: track button toggle (текст обновляется при каждом bind).
+            var trackBtn = row.Q<Button>("row-track-btn");
+            if (trackBtn != null)
+            {
+            var trkInst = QuestTracker.Instance;
+            bool isTracked = trkInst != null && trkInst.TrackedQuestId == q.questId;
+            trackBtn.text = isTracked ? "Не следить" : "Следить";
+            }
+            }
+
+            // T-Q12: handler — ClickEvent передаёт target = нажатую кнопку → walk до row → читаем userData (questId).
+            private void OnQuestRowTrackClicked(ClickEvent evt)
+            {
+            var btn = evt.target as Button;
+            if (btn == null) return;
+            // Walk до row (parent).
+            var row = btn.parent;
+            if (row == null) return;
+            var questId = row.userData as string;
+            if (string.IsNullOrEmpty(questId)) return;
+            var trk = QuestTracker.Instance;
+            if (trk == null)
+            {
+            SetMessage("QuestTracker недоступен", true);
+            return;
+            }
+            if (trk.TrackedQuestId == questId) trk.Untrack();
+            else trk.Track(questId);
+            // Обновить текст кнопок в обоих списках (active/discovered).
+            RefreshQuestsCache();
             }
 
             private static List<QuestListItem> ResolveQuestRowList(VisualElement row)

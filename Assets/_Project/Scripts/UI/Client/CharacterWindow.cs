@@ -37,6 +37,9 @@ using ProjectC.Items.Client;
 using ProjectC.Items.Dto;
 using ProjectC.Network;
 using ProjectC.Player;
+using ProjectC.Quests;
+using ProjectC.Quests.Client;
+using ProjectC.Quests.Dto;
 using ProjectC.Trade;
 using ProjectC.Trade.Client;
 using ProjectC.Trade.Dto;
@@ -74,12 +77,13 @@ namespace ProjectC.UI.Client
         private Label _locationLabel;
         private Label _messageLabel;
 
-        // --- Sections (5 табов) ---
+        // --- Sections (6 табов) ---
         private VisualElement _characterSection;
         private VisualElement _shipSection;
         private VisualElement _reputationSection;
         private VisualElement _contractsSection;
         private VisualElement _inventorySection;
+        private VisualElement _questsSection;
         private VisualElement _filtersRow;
 
         // --- Tab buttons ---
@@ -88,16 +92,22 @@ namespace ProjectC.UI.Client
         private Button _tabReputation;
         private Button _tabContracts;
         private Button _tabInventory;
+        private Button _tabQuests;
 
         // --- ListViews ---
         private ListView _reputationList;
         private ListView _contractsList;
         private ListView _inventoryList;
+        private ListView _questsActiveList;
+        private ListView _questsCompletedList;
+        private ListView _questsFailedList;
+        private ListView _questsDiscoveredList;
 
         // --- Action buttons ---
         private Button _acceptBtn;
         private Button _completeBtn;
         private Button _failBtn;
+        private Button _acceptQuestBtn;
         private Button _closeBtn;
 
         // --- Filters (Контракты / Инвентарь) ---
@@ -131,8 +141,13 @@ namespace ProjectC.UI.Client
         private int _selectedInventoryItem = -1;
 
         private ContractDto[] _contractsCache = Array.Empty<ContractDto>();
-        private List<InventoryListItem>  _inventoryCache  = new List<InventoryListItem>();
-        private List<ReputationListItem>  _reputationCache = new List<ReputationListItem>();
+        private List<InventoryListItem> _inventoryCache = new List<InventoryListItem>();
+        private List<ReputationListItem> _reputationCache = new List<ReputationListItem>();
+        private List<QuestListItem> _questsActiveCache = new List<QuestListItem>();
+        private List<QuestListItem> _questsCompletedCache = new List<QuestListItem>();
+        private List<QuestListItem> _questsFailedCache = new List<QuestListItem>();
+        private List<QuestListItem> _questsDiscoveredCache = new List<QuestListItem>();
+        private int _selectedDiscoveredQuest = -1;
 
         // ============================================================
         // Cached state-проекции (НЕ создаём свои singleton'ы)
@@ -154,10 +169,23 @@ namespace ProjectC.UI.Client
 
         private struct ReputationListItem
         {
-            public string factionId;
-            public string displayName;
-            public int    value;   // -100..+100 (GDD-23)
-            public Color  color;
+        public string factionId;
+        public string displayName;
+        public int value; // -100..+100 (GDD-23)
+        public Color color;
+        }
+
+        // T-Q11: quest log projection для4 под-секций (Active/Completed/Failed/Discovered).
+        private struct QuestListItem
+        {
+        public string questId;
+        public string displayName;
+        public byte state; // ProjectC.Quests.QuestState
+        public string stateLabel; // "ACTIVE" / "COMPLETED" / "FAILED" / "DISCOVERED"
+        public string stateBadge; // .quest-row-state-* CSS class
+        public string objectivesSummary; // "3/5 objectives" или пусто
+        public int objectiveCompletedCount;
+        public int objectiveTotalCount;
         }
 
         // ============================================================
@@ -197,14 +225,16 @@ namespace ProjectC.UI.Client
 
         private void OnDisable()
         {
-            if (_contractState != null)
-            {
-                _contractState.OnSnapshotUpdated -= HandleContractSnapshot;
-                _contractState.OnContractResult  -= HandleContractResult;
-            }
-            // BUGFIX 2026-06-05: используем флаг-версию (UnsubscribeInventory).
-            // Старая версия делала bare -=, и если подписки не было — flag оставался неверным.
-            UnsubscribeInventory();
+        if (_contractState != null)
+        {
+        _contractState.OnSnapshotUpdated -= HandleContractSnapshot;
+        _contractState.OnContractResult -= HandleContractResult;
+        }
+        // BUGFIX2026-06-05: используем флаг-версию (UnsubscribeInventory).
+        // Старая версия делала bare -=, и если подписки не было — flag оставался неверным.
+        UnsubscribeInventory();
+        // T-Q11: Unsubscribe QuestClientState (3 события).
+        UnsubscribeQuestState();
         }
 
         private bool _isInventorySubscribed = false;
@@ -312,27 +342,34 @@ namespace ProjectC.UI.Client
             _locationLabel         = _root.Q<Label>("location-label");
             _messageLabel          = _root.Q<Label>("message-label");
 
-            _characterSection      = _root.Q<VisualElement>("character-section");
-            _shipSection           = _root.Q<VisualElement>("ship-section");
-            _reputationSection     = _root.Q<VisualElement>("reputation-section");
-            _contractsSection      = _root.Q<VisualElement>("contracts-section");
-            _inventorySection      = _root.Q<VisualElement>("inventory-section");
-            _filtersRow            = _root.Q<VisualElement>("filters-row");
+            _characterSection = _root.Q<VisualElement>("character-section");
+            _shipSection = _root.Q<VisualElement>("ship-section");
+            _reputationSection = _root.Q<VisualElement>("reputation-section");
+            _contractsSection = _root.Q<VisualElement>("contracts-section");
+            _inventorySection = _root.Q<VisualElement>("inventory-section");
+            _questsSection = _root.Q<VisualElement>("quests-section");
+            _filtersRow = _root.Q<VisualElement>("filters-row");
 
-            _tabCharacter          = _root.Q<Button>("tab-character");
-            _tabShip               = _root.Q<Button>("tab-ship");
-            _tabReputation         = _root.Q<Button>("tab-reputation");
-            _tabContracts          = _root.Q<Button>("tab-contracts");
-            _tabInventory          = _root.Q<Button>("tab-inventory");
+            _tabCharacter = _root.Q<Button>("tab-character");
+            _tabShip = _root.Q<Button>("tab-ship");
+            _tabReputation = _root.Q<Button>("tab-reputation");
+            _tabContracts = _root.Q<Button>("tab-contracts");
+            _tabInventory = _root.Q<Button>("tab-inventory");
+            _tabQuests = _root.Q<Button>("tab-quests");
 
-            _reputationList        = _root.Q<ListView>("reputation-list");
-            _contractsList         = _root.Q<ListView>("contracts-list");
-            _inventoryList         = _root.Q<ListView>("inventory-list");
+            _reputationList = _root.Q<ListView>("reputation-list");
+            _contractsList = _root.Q<ListView>("contracts-list");
+            _inventoryList = _root.Q<ListView>("inventory-list");
+            _questsActiveList = _root.Q<ListView>("quests-active-list");
+            _questsCompletedList = _root.Q<ListView>("quests-completed-list");
+            _questsFailedList = _root.Q<ListView>("quests-failed-list");
+            _questsDiscoveredList = _root.Q<ListView>("quests-discovered-list");
 
-            _acceptBtn             = _root.Q<Button>("accept-btn");
-            _completeBtn           = _root.Q<Button>("complete-btn");
-            _failBtn               = _root.Q<Button>("fail-btn");
-            _closeBtn              = _root.Q<Button>("close-btn");
+            _acceptBtn = _root.Q<Button>("accept-btn");
+            _completeBtn = _root.Q<Button>("complete-btn");
+            _failBtn = _root.Q<Button>("fail-btn");
+            _acceptQuestBtn = _root.Q<Button>("accept-quest-btn");
+            _closeBtn = _root.Q<Button>("close-btn");
 
             _filterSource          = _root.Q<DropdownField>("filter-source");
             _filterState           = _root.Q<DropdownField>("filter-state");
@@ -352,17 +389,19 @@ namespace ProjectC.UI.Client
             _shipCargo             = _root.Q<Label>("ship-cargo");
 
             // ---- Tab subscriptions ----
-            if (_tabCharacter  != null) _tabCharacter.clicked  += () => SwitchTab("character");
-            if (_tabShip       != null) _tabShip.clicked       += () => SwitchTab("ship");
+            if (_tabCharacter != null) _tabCharacter.clicked += () => SwitchTab("character");
+            if (_tabShip != null) _tabShip.clicked += () => SwitchTab("ship");
             if (_tabReputation != null) _tabReputation.clicked += () => SwitchTab("reputation");
-            if (_tabContracts  != null) _tabContracts.clicked  += () => SwitchTab("contracts");
-            if (_tabInventory  != null) _tabInventory.clicked  += () => SwitchTab("inventory");
+            if (_tabContracts != null) _tabContracts.clicked += () => SwitchTab("contracts");
+            if (_tabInventory != null) _tabInventory.clicked += () => SwitchTab("inventory");
+            if (_tabQuests != null) _tabQuests.clicked += () => SwitchTab("quests");
 
             // ---- Action buttons ----
-            if (_closeBtn    != null) _closeBtn.clicked    += OnCloseClicked;
-            if (_acceptBtn   != null) _acceptBtn.clicked   += OnAcceptContractClicked;
+            if (_closeBtn != null) _closeBtn.clicked += OnCloseClicked;
+            if (_acceptBtn != null) _acceptBtn.clicked += OnAcceptContractClicked;
             if (_completeBtn != null) _completeBtn.clicked += OnCompleteContractClicked;
-            if (_failBtn     != null) _failBtn.clicked     += OnFailContractClicked;
+            if (_failBtn != null) _failBtn.clicked += OnFailContractClicked;
+            if (_acceptQuestBtn != null) _acceptQuestBtn.clicked += OnAcceptQuestClicked;
 
             // ---- ListView: Contracts (re-use MarketWindow factory) ----
             if (_contractsList != null)
@@ -392,9 +431,30 @@ namespace ProjectC.UI.Client
             // ---- ListView: Reputation (новый) ----
             if (_reputationList != null)
             {
-                _reputationList.makeItem      = MakeReputationRow;
-                _reputationList.bindItem      = BindReputationRow;
-                _reputationList.fixedItemHeight = 32;
+            _reputationList.makeItem = MakeReputationRow;
+            _reputationList.bindItem = BindReputationRow;
+            _reputationList.fixedItemHeight =32;
+            }
+
+            // ---- ListView: Quests (T-Q11:4 под-секции, общий row factory) ----
+            // T-Q11: каждый список (active/completed/failed/discovered) имеет один factory.
+            // per-row state badge CSS class берётся из QuestListItem.stateBadge.
+            SetupQuestListView(_questsActiveList, ref _questsActiveCache);
+            SetupQuestListView(_questsCompletedList, ref _questsCompletedCache);
+            SetupQuestListView(_questsFailedList, ref _questsFailedCache);
+            // Discovered — отдельный ListView с selectionChanged (Accept-кнопка работает per row).
+            if (_questsDiscoveredList != null)
+            {
+            _questsDiscoveredList.makeItem = MakeQuestRow;
+            _questsDiscoveredList.bindItem = BindQuestRow;
+            _questsDiscoveredList.fixedItemHeight =28;
+            _questsDiscoveredList.selectionType = SelectionType.Single;
+            _questsDiscoveredList.selectedIndex = -1;
+            _questsDiscoveredList.selectionChanged += selectedItems =>
+            {
+            _selectedDiscoveredQuest = FindSelectedItemIndex<QuestListItem>(_questsDiscoveredList, selectedItems);
+            if (_questsDiscoveredList != null) _questsDiscoveredList.Rebuild();
+            };
             }
 
             // ---- Filters (options зависят от активного таба — см. SwitchTab) ----
@@ -423,14 +483,23 @@ namespace ProjectC.UI.Client
                 if (nearestZone != null) _contractState.RequestList(nearestZone.LocationId);
             }
 
-            // ---- Phase 5 (INVENTORY_V2_REFACTOR.md): Subscribe to InventoryClientState ----
+            // ---- Phase5 (INVENTORY_V2_REFACTOR.md): Subscribe to InventoryClientState ----
             // Синглтон создаётся в NetworkManagerController.Awake — обычно уже есть
             // к моменту EnsureBuilt. Если null (тест/edit-mode) — Update() подпишет lazy.
-            // BUGFIX 2026-06-05: используем флаг-версию SubscribeInventory (идемпотентно).
+            // BUGFIX2026-06-05: используем флаг-версию SubscribeInventory (идемпотентно).
             SubscribeInventory();
             if (ProjectC.Items.Client.InventoryClientState.Instance == null)
             {
-                Debug.LogWarning("[CharacterWindow] InventoryClientState.Instance == null на момент EnsureBuilt — Update() lazy-подпишется");
+            Debug.LogWarning("[CharacterWindow] InventoryClientState.Instance == null на момент EnsureBuilt — Update() lazy-подпишется");
+            }
+
+            // ---- T-Q11: Subscribe to QuestClientState (Quest log + Discovered events) ----
+            // QuestClientState singleton создаётся через RuntimeInitializeOnLoadMethod в его AutoSpawn,
+            // плюс scene-placed в BootstrapScene — всегда есть к моменту EnsureBuilt.
+            SubscribeQuestState();
+            if (QuestClientState.Instance == null)
+            {
+            Debug.LogWarning("[CharacterWindow] QuestClientState.Instance == null на момент EnsureBuilt — таб 'КВЕСТЫ' не будет обновляться (нормально до StartHost)");
             }
 
             // ---- Initial state ----
@@ -452,61 +521,74 @@ namespace ProjectC.UI.Client
 
         private void SwitchTab(string tab)
         {
-            _activeTab = tab;
-            bool isCharacter  = tab == "character";
-            bool isShip       = tab == "ship";
-            bool isReputation = tab == "reputation";
-            bool isContracts  = tab == "contracts";
-            bool isInventory  = tab == "inventory";
+        _activeTab = tab;
+        bool isCharacter = tab == "character";
+        bool isShip = tab == "ship";
+        bool isReputation = tab == "reputation";
+        bool isContracts = tab == "contracts";
+        bool isInventory = tab == "inventory";
+        bool isQuests = tab == "quests";
 
-            // ---- Sections visibility ----
-            if (_characterSection  != null) _characterSection.style.display  = isCharacter  ? DisplayStyle.Flex : DisplayStyle.None;
-            if (_shipSection       != null) _shipSection.style.display       = isShip       ? DisplayStyle.Flex : DisplayStyle.None;
-            if (_reputationSection != null) _reputationSection.style.display = isReputation ? DisplayStyle.Flex : DisplayStyle.None;
-            if (_contractsSection  != null) _contractsSection.style.display  = isContracts  ? DisplayStyle.Flex : DisplayStyle.None;
-            if (_inventorySection  != null) _inventorySection.style.display  = isInventory  ? DisplayStyle.Flex : DisplayStyle.None;
+        // ---- Sections visibility ----
+        if (_characterSection != null) _characterSection.style.display = isCharacter ? DisplayStyle.Flex : DisplayStyle.None;
+        if (_shipSection != null) _shipSection.style.display = isShip ? DisplayStyle.Flex : DisplayStyle.None;
+        if (_reputationSection != null) _reputationSection.style.display = isReputation ? DisplayStyle.Flex : DisplayStyle.None;
+        if (_contractsSection != null) _contractsSection.style.display = isContracts ? DisplayStyle.Flex : DisplayStyle.None;
+        if (_inventorySection != null) _inventorySection.style.display = isInventory ? DisplayStyle.Flex : DisplayStyle.None;
+        if (_questsSection != null) _questsSection.style.display = isQuests ? DisplayStyle.Flex : DisplayStyle.None;
 
-            // BUGFIX 2026-06-05: display: none → flex на ListView в первый раз
-            // не вызывает повторный layout — нужно принудительно MarkDirtyRepaint
-            // (иначе строки не отрисованы до следующего toggle). UI Toolkit pitfall.
-            if (isInventory && _inventoryList != null) {
-                _inventoryList.MarkDirtyRepaint();
-            }
+        // BUGFIX2026-06-05: display: none → flex на ListView в первый раз
+        // не вызывает повторный layout — нужно принудительно MarkDirtyRepaint
+        // (иначе строки не отрисованы до следующего toggle). UI Toolkit pitfall.
+        if (isInventory && _inventoryList != null) {
+        _inventoryList.MarkDirtyRepaint();
+        }
+        if (isQuests)
+        {
+        // T-Q11: все4 quest ListView требуют re-paint после первого display:flex.
+        if (_questsActiveList != null) _questsActiveList.MarkDirtyRepaint();
+        if (_questsCompletedList != null) _questsCompletedList.MarkDirtyRepaint();
+        if (_questsFailedList != null) _questsFailedList.MarkDirtyRepaint();
+        if (_questsDiscoveredList != null) _questsDiscoveredList.MarkDirtyRepaint();
+        }
 
-            // ---- Active tab visual ----
-            SetActiveTabVisual(_tabCharacter,  isCharacter);
-            SetActiveTabVisual(_tabShip,       isShip);
-            SetActiveTabVisual(_tabReputation, isReputation);
-            SetActiveTabVisual(_tabContracts,  isContracts);
-            SetActiveTabVisual(_tabInventory,  isInventory);
+        // ---- Active tab visual ----
+        SetActiveTabVisual(_tabCharacter, isCharacter);
+        SetActiveTabVisual(_tabShip, isShip);
+        SetActiveTabVisual(_tabReputation, isReputation);
+        SetActiveTabVisual(_tabContracts, isContracts);
+        SetActiveTabVisual(_tabInventory, isInventory);
+        SetActiveTabVisual(_tabQuests, isQuests);
 
-            // ---- Filters visibility + options ----
-            if (_filtersRow != null)
-            {
-                bool showFilters = isContracts || isInventory;
-                _filtersRow.style.display = showFilters ? DisplayStyle.Flex : DisplayStyle.None;
-            }
-            if (isContracts)
-            {
-                ConfigureContractFilters();
-            }
-            else if (isInventory)
-            {
-                ConfigureInventoryFilters();
-            }
+        // ---- Filters visibility + options ----
+        if (_filtersRow != null)
+        {
+        bool showFilters = isContracts || isInventory;
+        _filtersRow.style.display = showFilters ? DisplayStyle.Flex : DisplayStyle.None;
+        }
+        if (isContracts)
+        {
+        ConfigureContractFilters();
+        }
+        else if (isInventory)
+        {
+        ConfigureInventoryFilters();
+        }
 
-            // ---- Action buttons ----
-            if (_acceptBtn   != null) _acceptBtn.style.display   = isContracts ? DisplayStyle.Flex : DisplayStyle.None;
-            if (_completeBtn != null) _completeBtn.style.display = isContracts ? DisplayStyle.Flex : DisplayStyle.None;
-            if (_failBtn     != null) _failBtn.style.display     = isContracts ? DisplayStyle.Flex : DisplayStyle.None;
-            if (_closeBtn    != null) _closeBtn.style.display    = DisplayStyle.Flex;  // всегда
+        // ---- Action buttons ----
+        if (_acceptBtn != null) _acceptBtn.style.display = isContracts ? DisplayStyle.Flex : DisplayStyle.None;
+        if (_completeBtn != null) _completeBtn.style.display = isContracts ? DisplayStyle.Flex : DisplayStyle.None;
+        if (_failBtn != null) _failBtn.style.display = isContracts ? DisplayStyle.Flex : DisplayStyle.None;
+        if (_acceptQuestBtn != null) _acceptQuestBtn.style.display = isQuests ? DisplayStyle.Flex : DisplayStyle.None;
+        if (_closeBtn != null) _closeBtn.style.display = DisplayStyle.Flex; // всегда
 
-            // ---- Refresh data for the active tab ----
-            if (isCharacter)  RefreshCharacterStats();
-            if (isShip)       RefreshShipStats();
-            if (isReputation) RefreshReputationCache();
-            if (isInventory)  { RefreshInventoryCache(); ApplyInventoryFilters(); }
-            if (isContracts)  ApplyContractFilters();
+        // ---- Refresh data for the active tab ----
+        if (isCharacter) RefreshCharacterStats();
+        if (isShip) RefreshShipStats();
+        if (isReputation) RefreshReputationCache();
+        if (isInventory) { RefreshInventoryCache(); ApplyInventoryFilters(); }
+        if (isContracts) ApplyContractFilters();
+        if (isQuests) RefreshQuestsCache();
         }
 
         private static void SetActiveTabVisual(Button btn, bool isActive)
@@ -1052,17 +1134,329 @@ namespace ProjectC.UI.Client
                 src = src.Where(i => (i.displayName ?? "").ToLowerInvariant().Contains(search));
             }
 
-            // BUGFIX 2026-06-05: то же что в RefreshInventoryCache — RefreshItems() + null-trick.
+            // BUGFIX2026-06-05: то же что в RefreshInventoryCache — RefreshItems() + null-trick.
             var filteredList = src.ToList();
             if (!ReferenceEquals(_inventoryList.itemsSource, filteredList)) {
-                _inventoryList.itemsSource = filteredList;
+            _inventoryList.itemsSource = filteredList;
             }
             _inventoryList.RefreshItems();
-        }
+            }
 
-        // ============================================================
-        // Actions: contracts (реюз MarketWindow логики)
-        // ============================================================
+            // ============================================================
+            // T-Q11: Quest log таб — Subscribe/Unsubscribe + Cache + Handlers + Accept action
+            // ============================================================
+
+            private bool _isQuestStateSubscribed = false;
+
+            private void SubscribeQuestState()
+            {
+            if (_isQuestStateSubscribed) return;
+            var qs = QuestClientState.Instance;
+            if (qs == null) return;
+            qs.OnSnapshotUpdated += HandleQuestSnapshotUpdated;
+            qs.OnQuestResult += HandleQuestResult;
+            qs.OnQuestDiscovered += HandleQuestDiscovered;
+            _isQuestStateSubscribed = true;
+            Debug.Log("[CharacterWindow] Subscribed to QuestClientState (snapshot/result/discovered)");
+            }
+
+            private void UnsubscribeQuestState()
+            {
+            if (!_isQuestStateSubscribed) return;
+            var qs = QuestClientState.Instance;
+            if (qs == null) { _isQuestStateSubscribed = false; return; }
+            qs.OnSnapshotUpdated -= HandleQuestSnapshotUpdated;
+            qs.OnQuestResult -= HandleQuestResult;
+            qs.OnQuestDiscovered -= HandleQuestDiscovered;
+            _isQuestStateSubscribed = false;
+            }
+
+            // ---- ListView setup helper ----
+            private void SetupQuestListView(ListView list, ref List<QuestListItem> cacheRef)
+            {
+            if (list == null) return;
+            list.makeItem = MakeQuestRow;
+            list.bindItem = BindQuestRow;
+            list.fixedItemHeight =28;
+            list.itemsSource = cacheRef;
+            }
+
+            // ---- Row factory ----
+            private VisualElement MakeQuestRow()
+            {
+            var row = new VisualElement();
+            row.AddToClassList("quest-row");
+            var badge = new Label { name = "row-state" };
+            badge.AddToClassList("quest-row-state");
+            row.Add(badge);
+            var title = new Label { name = "row-title" };
+            title.AddToClassList("quest-row-title");
+            row.Add(title);
+            var obj = new Label { name = "row-objectives" };
+            obj.AddToClassList("quest-row-objectives");
+            row.Add(obj);
+            return row;
+            }
+
+            private void BindQuestRow(VisualElement row, int index)
+            {
+            if (row == null) return;
+            var src = row.userData as List<QuestListItem>;
+            // resolve source via parent list traversal (UI Toolkit quirk)
+            if (src == null) src = ResolveQuestRowList(row);
+            if (src == null || index <0 || index >= src.Count) return;
+            var q = src[index];
+            var badge = row.Q<Label>("row-state");
+            var title = row.Q<Label>("row-title");
+            var obj = row.Q<Label>("row-objectives");
+
+            // badge — чистим все state-классы, добавляем текущий
+            badge.RemoveFromClassList("quest-row-state-active");
+            badge.RemoveFromClassList("quest-row-state-completed");
+            badge.RemoveFromClassList("quest-row-state-failed");
+            badge.RemoveFromClassList("quest-row-state-discovered");
+            if (!string.IsNullOrEmpty(q.stateBadge)) badge.AddToClassList(q.stateBadge);
+            badge.text = q.stateLabel ?? "";
+
+            title.text = q.displayName ?? q.questId ?? "(unknown)";
+
+            obj.text = (q.objectiveTotalCount >0)
+            ? $"{q.objectiveCompletedCount}/{q.objectiveTotalCount}"
+            : "";
+            }
+
+            private static List<QuestListItem> ResolveQuestRowList(VisualElement row)
+            {
+            // Walk up parent chain до ListView, читаем itemsSource.
+            var cur = row?.parent;
+            while (cur != null)
+            {
+            if (cur is ListView lv && lv.itemsSource is List<QuestListItem> q) return q;
+            cur = cur.parent;
+            }
+            return null;
+            }
+
+            // ---- Refresh cache (single source of truth: QuestClientState.CurrentSnapshot) ----
+            private void RefreshQuestsCache()
+            {
+            _questsActiveCache.Clear();
+            _questsCompletedCache.Clear();
+            _questsFailedCache.Clear();
+            _questsDiscoveredCache.Clear();
+
+            var qs = QuestClientState.Instance;
+            if (qs == null || !qs.CurrentSnapshot.HasValue)
+            {
+            ApplyQuestListRefresh();
+            return;
+            }
+
+            var snap = qs.CurrentSnapshot.Value;
+            var quests = snap.quests;
+            if (quests == null)
+            {
+            ApplyQuestListRefresh();
+            return;
+            }
+
+            foreach (var q in quests)
+            {
+            var item = BuildQuestListItem(q);
+            // Discovered=0, Offered=1, Active=2, Completed=3, Failed=4, TurnedIn=5.
+            switch (q.state)
+            {
+            case (byte)QuestState.Active:
+            _questsActiveCache.Add(item);
+            break;
+            case (byte)QuestState.Completed:
+            case (byte)QuestState.TurnedIn:
+            _questsCompletedCache.Add(item);
+            break;
+            case (byte)QuestState.Failed:
+            _questsFailedCache.Add(item);
+            break;
+            case (byte)QuestState.Discovered:
+            case (byte)QuestState.Offered:
+            _questsDiscoveredCache.Add(item);
+            break;
+            }
+            }
+
+            ApplyQuestListRefresh();
+            UpdateQuestMessage();
+            }
+
+            private static QuestListItem BuildQuestListItem(QuestProgressDto q)
+            {
+            var item = new QuestListItem
+            {
+            questId = q.questId ?? "",
+            displayName = !string.IsNullOrEmpty(q.displayName) ? q.displayName : (q.questId ?? "(unknown)"),
+            state = q.state,
+            stateLabel = GetQuestStateLabel(q.state),
+            stateBadge = GetQuestStateBadgeClass(q.state),
+            objectiveCompletedCount =0,
+            objectiveTotalCount =0,
+            };
+
+            var objs = q.objectives;
+            if (objs != null)
+            {
+            item.objectiveTotalCount = objs.Length;
+            foreach (var o in objs) if (o.completed) item.objectiveCompletedCount++;
+            }
+            item.objectivesSummary = item.objectiveTotalCount >0
+            ? $"{item.objectiveCompletedCount}/{item.objectiveTotalCount}"
+            : "";
+            return item;
+            }
+
+            private static string GetQuestStateLabel(byte state)
+            {
+            switch (state)
+            {
+            case (byte)QuestState.Discovered: return "ОБНАРУЖЕН";
+            case (byte)QuestState.Offered: return "ПРЕДЛОЖЕН";
+            case (byte)QuestState.Active: return "АКТИВЕН";
+            case (byte)QuestState.Completed: return "ВЫПОЛНЕН";
+            case (byte)QuestState.TurnedIn: return "СДАН";
+            case (byte)QuestState.Failed: return "ПРОВАЛЕН";
+            default: return state.ToString();
+            }
+            }
+
+            private static string GetQuestStateBadgeClass(byte state)
+            {
+            switch (state)
+            {
+            case (byte)QuestState.Active: return "quest-row-state-active";
+            case (byte)QuestState.Completed:
+            case (byte)QuestState.TurnedIn: return "quest-row-state-completed";
+            case (byte)QuestState.Failed: return "quest-row-state-failed";
+            case (byte)QuestState.Discovered:
+            case (byte)QuestState.Offered: return "quest-row-state-discovered";
+            default: return "quest-row-state";
+            }
+            }
+
+            private void ApplyQuestListRefresh()
+            {
+            // Rebuild only if reference changed (RefreshItems — UI Toolkit pitfall R3-005).
+            if (_questsActiveList != null)
+            {
+            if (!ReferenceEquals(_questsActiveList.itemsSource, _questsActiveCache))
+            _questsActiveList.itemsSource = _questsActiveCache;
+            _questsActiveList.RefreshItems();
+            }
+            if (_questsCompletedList != null)
+            {
+            if (!ReferenceEquals(_questsCompletedList.itemsSource, _questsCompletedCache))
+            _questsCompletedList.itemsSource = _questsCompletedCache;
+            _questsCompletedList.RefreshItems();
+            }
+            if (_questsFailedList != null)
+            {
+            if (!ReferenceEquals(_questsFailedList.itemsSource, _questsFailedCache))
+            _questsFailedList.itemsSource = _questsFailedCache;
+            _questsFailedList.RefreshItems();
+            }
+            if (_questsDiscoveredList != null)
+            {
+            if (!ReferenceEquals(_questsDiscoveredList.itemsSource, _questsDiscoveredCache))
+            _questsDiscoveredList.itemsSource = _questsDiscoveredCache;
+            _questsDiscoveredList.RefreshItems();
+            }
+            }
+
+            private void UpdateQuestMessage()
+            {
+            if (_messageLabel == null || _activeTab != "quests") return;
+            int a = _questsActiveCache.Count;
+            int c = _questsCompletedCache.Count;
+            int f = _questsFailedCache.Count;
+            int d = _questsDiscoveredCache.Count;
+            if (a + c + f + d ==0)
+            {
+            _messageLabel.text = "Нет квестов в журнале. Серверная модель в разработке (T-Q15+)";
+            _messageLabel.style.color = new StyleColor(new Color(0.7f,0.7f,0.9f));
+            }
+            else
+            {
+            _messageLabel.text = $"Активных: {a} | Завершённых: {c} | Провалено: {f} | Найдено: {d}";
+            _messageLabel.style.color = new StyleColor(new Color(0.9f,0.9f,0.9f));
+            }
+            }
+
+            // ---- Handlers (R3-005 cross-tab: unconditional refresh, gated UI rebuild) ----
+            private void HandleQuestSnapshotUpdated(QuestSnapshotDto snap)
+            {
+            // cache — ALWAYS refresh (projection of server state).
+            RefreshQuestsCache();
+            // visible UI — gated by active tab.
+            if (_activeTab == "quests")
+            {
+            // cache уже обновлён внутри RefreshQuestsCache.
+            }
+            }
+
+            private void HandleQuestResult(QuestResultDto result)
+            {
+            if (_messageLabel == null || !IsVisible()) return;
+            bool isOk = result.code == (byte)QuestResultCode.Ok;
+            if (isOk)
+            {
+            _messageLabel.text = result.message ?? "OK";
+            _messageLabel.style.color = new StyleColor(new Color(0.4f,0.95f,0.4f));
+            }
+            else
+            {
+            _messageLabel.text = result.message ?? $"Ошибка ({result.code})";
+            _messageLabel.style.color = new StyleColor(new Color(0.95f,0.4f,0.4f));
+            }
+            // После Accept-кнопки сервер пришлёт snapshot — RefreshQuestsCache уже вызван через OnSnapshotUpdated.
+            }
+
+            private void HandleQuestDiscovered(string questId, string displayName)
+            {
+            // EventDriven push. Refresh cache + покажем в message (не gated, cross-tab).
+            RefreshQuestsCache();
+            if (_messageLabel != null && IsVisible())
+            {
+            _messageLabel.text = $"Новый квест: {displayName}";
+            _messageLabel.style.color = new StyleColor(new Color(0.9f,0.85f,0.5f));
+            }
+            }
+
+            // ---- Accept action ----
+            private void OnAcceptQuestClicked()
+            {
+            if (_questsDiscoveredList == null)
+            {
+            SetMessage("Список найденных квестов недоступен", true);
+            return;
+            }
+            var src = _questsDiscoveredList.itemsSource as List<QuestListItem>;
+            if (src == null || _selectedDiscoveredQuest <0 || _selectedDiscoveredQuest >= src.Count)
+            {
+            SetMessage("Выберите квест в секции 'Найденные' для принятия");
+            return;
+            }
+            var q = src[_selectedDiscoveredQuest];
+            var qs = QuestClientState.Instance;
+            if (qs == null)
+            {
+            SetMessage("QuestClientState недоступен", true);
+            return;
+            }
+            // T-Q15 stub: сервер пока не делает TryAccept, но RPC дойдёт, rate-limit OK.
+            qs.RequestAcceptQuest(q.questId, "");
+            SetMessage($"Запрос на принятие '{q.displayName}' отправлен...");
+            }
+
+            // ============================================================
+            // Actions: contracts (реюз MarketWindow логики)
+            // ============================================================
 
         private void OnAcceptContractClicked()
         {

@@ -120,8 +120,37 @@ namespace ProjectC.Quests.Client
         /// <summary>Public raiser for OnDialogActionResultReceived (T-Q10). Вызывается из NetworkPlayer.ReceiveDialogActionResultTargetRpc.</summary>
         public void RaiseOnDialogActionResultReceived(DialogActionResultDto result)
         {
-            OnDialogActionResultReceived?.Invoke(result);
-            if (Debug.isDebugBuild) Debug.Log($"[QuestClientState] RaiseOnDialogActionResultReceived: type={result.actionType} success={result.success}");
+        OnDialogActionResultReceived?.Invoke(result);
+        if (Debug.isDebugBuild) Debug.Log($"[QuestClientState] RaiseOnDialogActionResultReceived: type={result.actionType} success={result.success}");
+        }
+
+        // ============================================================
+        // T-Q11: client-side request forwarders (UI → server RPC)
+        // ============================================================
+
+        /// <summary>
+        /// T-Q11: игрок нажал "Принять" на discovered-квесте в CharacterWindow.
+        /// Forward в <see cref="QuestServer.RequestAcceptQuestRpc"/>.
+        /// Серверная сторона (T-Q15: QuestWorld.TryAccept) ещё не реализована —
+        /// RPC дойдёт, rate-limit пройдёт, но state не сменится. UI работает.
+        /// </summary>
+        /// <param name="questId">questId из QuestSnapshotDto.quests[i].questId</param>
+        /// <param name="fromNpcId">NPC, у которого игрок принял квест (пустая строка для EventDriven квестов, у которых нет "offering NPC")</param>
+        public void RequestAcceptQuest(string questId, string fromNpcId)
+        {
+        if (string.IsNullOrEmpty(questId))
+        {
+        Debug.LogWarning("[QuestClientState] RequestAcceptQuest: questId is empty");
+        return;
+        }
+        var server = QuestServer.Instance;
+        if (server == null)
+        {
+        Debug.LogWarning("[QuestClientState] RequestAcceptQuest: QuestServer.Instance == null (host not started?)");
+        return;
+        }
+        server.RequestAcceptQuestRpc(questId, fromNpcId ?? "");
+        if (Debug.isDebugBuild) Debug.Log($"[QuestClientState] RequestAcceptQuest: quest={questId} fromNpc={fromNpcId}");
         }
 
         // ============================================================

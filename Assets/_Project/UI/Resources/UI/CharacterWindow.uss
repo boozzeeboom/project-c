@@ -355,3 +355,81 @@
     border-radius: 2px !important;
 }
 .reputation-value { width: 50px !important; font-size: 11px !important; -unity-text-align: middle-right !important; }
+
+/* ============================================
+ T-Q11: Quest log таб (6-й таб)
+ Структура: .quests-section > .quest-sub ×4 > .quest-list > .quest-row.
+ Все стили с !important — UnityDefaultRuntimeTheme type-selector > class.
+ ============================================ */
+.quests-section {
+ flex-grow:1 !important;
+ flex-direction: column !important;
+ padding-top:4px !important;
+ padding-bottom:4px !important;
+ overflow: hidden !important;
+}
+.quest-sub {
+ flex-direction: column !important;
+ margin-bottom:6px !important;
+ flex-shrink:0 !important;
+ min-height:0 !important;
+}
+.quest-section-title {
+ font-size:11px !important;
+ -unity-font-style: bold !important;
+ color: rgb(180,200,230) !important;
+ margin-bottom:2px !important;
+ padding-left:2px !important;
+}
+.quest-list {
+ min-height:40px !important;
+ max-height:110px !important;
+ flex-grow:1 !important;
+ flex-shrink:1 !important;
+ background-color: rgba(0,0,0,0.25) !important;
+ border-width:1px !important;
+ border-color: rgba(120,150,200,0.3) !important;
+ border-radius:3px !important;
+ padding:2px !important;
+}
+.quest-row {
+ flex-direction: row !important;
+ align-items: center !important;
+ padding-left:6px !important;
+ padding-right:6px !important;
+ padding-top:2px !important;
+ padding-bottom:2px !important;
+ border-radius:2px !important;
+}
+.quest-row:hover { background-color: rgba(120,150,200,0.15) !important; }
+.quest-row-title {
+ flex-grow:1 !important;
+ font-size:11px !important;
+ color: rgb(220,220,230) !important;
+ -unity-text-align: middle-left !important;
+ white-space: normal !important;
+}
+.quest-row-state {
+ font-size:10px !important;
+ padding-left:4px !important;
+ padding-right:4px !important;
+ border-radius:2px !important;
+ margin-right:4px !important;
+ -unity-text-align: middle-center !important;
+ min-width:60px !important;
+}
+.quest-row-state-active { background-color: rgba(80,200,120,0.25) !important; color: rgb(120,230,160) !important; }
+.quest-row-state-completed { background-color: rgba(120,150,200,0.25) !important; color: rgb(180,200,230) !important; }
+.quest-row-state-failed { background-color: rgba(200,80,80,0.25) !important; color: rgb(230,120,120) !important; }
+.quest-row-state-discovered { background-color: rgba(230,200,80,0.25) !important; color: rgb(240,220,130) !important; }
+.quest-row-objectives {
+ font-size:10px !important;
+ color: rgb(160,160,170) !important;
+ margin-left:8px !important;
+}
+.action-btn.accept-quest {
+ background-color: rgb(60,120,80) !important;
+ color: rgb(220,240,220) !important;
+}
+.action-btn.accept-quest:hover { background-color: rgb(80,160,100) !important; }
+.action-btn.accept-quest:active { background-color: rgb(50,100,70) !important; }

@@ -1,0 +1,376 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: bec96c5c83d6d5f4f8baed538e2e4fde, type: 3}
+  m_Name: MiraDefault
+  m_EditorClassIdentifier: Assembly-CSharp::ProjectC.Dialogue.DialogTree
+  treeId: mira_default
+  displayName: "\u041C\u0438\u0440\u0430 \u2014 \u043E\u0431\u044B\u0447\u043D\u044B\u0439
+    \u0440\u0430\u0437\u0433\u043E\u0432\u043E\u0440"
+  rootNodeId: greeting
+  nodes:
+  - nodeId: greeting
+    speaker:
+      speakerKind: 0
+      refId: mira_01
+    text: "\u041F\u0440\u0438\u0432\u0435\u0442\u0441\u0442\u0432\u0443\u044E, \u0438\u0441\u043A\u0430\u0442\u0435\u043B\u044C.
+      \u0427\u0435\u043C \u043C\u043E\u0433\u0443 \u043F\u043E\u043C\u043E\u0447\u044C?"
+    portraitEmotion: neutral
+    edges:
+    - label: "\u0423 \u0442\u0435\u0431\u044F \u0435\u0441\u0442\u044C \u0440\u0430\u0431\u043E\u0442\u0430
+        \u0434\u043B\u044F \u043C\u0435\u043D\u044F?"
+      targetNodeId: offer_quest
+      condition:
+        type: 10
+        stringParam: 1
+        stageIdParam:
+        intParam: 1
+        factionParam: 0
+        questStateParam: 2
+      action:
+        type: 60
+        stringParam:
+        stageIdParam:
+        intParam: 0
+        factionParam: 0
+      hideIfUnavailable: 1
+    - label: "\u041D\u0443 \u0447\u0442\u043E, \u043D\u0430\u0448\u0451\u043B \u041A\u0440\u0438\u0441\u0442\u0430\u043B\u043B
+        \u0412\u0440\u0435\u043C\u0451\u043D?"
+      targetNodeId: check_b
+      condition:
+        type: 10
+        stringParam: 
+        stageIdParam: 
+        intParam: 0
+        factionParam: 0
+        questStateParam: 2
+      conditions:
+      - type: 20
+        stringParam: find_artifact
+        stageIdParam: 
+        intParam: 0
+        factionParam: 0
+        questStateParam: 2
+      action:
+        type: 60
+        stringParam: 
+        stageIdParam: 
+        intParam: 0
+        factionParam: 0
+      hideIfUnavailable: 1
+    - label: "\u041F\u043E\u043A\u0430."
+      targetNodeId: 
+      condition:
+        type: 10
+        stringParam: 
+        stageIdParam: 
+        intParam: 0
+        factionParam: 0
+        questStateParam: 2
+      conditions: []
+      action:
+        type: 60
+        stringParam: 
+        stageIdParam: 
+        intParam: 0
+        factionParam: 0
+      hideIfUnavailable: 1
+    onEnterActions: []
+  - nodeId: offer_quest
+    speaker:
+      speakerKind: 0
+      refId: mira_01
+    text: "\u0423 \u043C\u0435\u043D\u044F \u0435\u0441\u0442\u044C \u0434\u0435\u043B\u043E.
+      \u041C\u043D\u0435 \u043D\u0443\u0436\u0435\u043D \u041A\u0440\u0438\u0441\u0442\u0430\u043B\u043B
+      \u0412\u0440\u0435\u043C\u0451\u043D \u2014 \u044D\u0442\u043E \u0430\u0440\u0442\u0435\u0444\u0430\u043A\u0442
+      \u0413\u0438\u043B\u044C\u0434\u0438\u0438 \u041C\u044B\u0441\u043B\u0438.
+      \u0415\u0441\u043B\u0438 \u043F\u0440\u0438\u043D\u0435\u0441\u0451\u0448\u044C
+      \u2014 \u0445\u043E\u0440\u043E\u0448\u043E \u0437\u0430\u043F\u043B\u0430\u0447\u0443.
+      \u041F\u0440\u0430\u0432\u0434\u0430, \u0443 \u043C\u0435\u043D\u044F \u0441\u0435\u0439\u0447\u0430\u0441
+      \u043D\u0435\u0442 \u0437\u0430\u0434\u0430\u0442\u043A\u0430, \u0437\u0430\u0431\u0435\u0440\u0443
+      \u0442\u0432\u043E\u0439 \u0414\u0440\u0435\u0432\u043D\u0438\u0439 \u041A\u043B\u044E\u0447
+      \u0432 \u043A\u0430\u0447\u0435\u0441\u0442\u0432\u0435 \u043E\u043F\u043B\u0430\u0442\u044B
+      \u0430\u0432\u0430\u043D\u0441\u043E\u043C."
+    portraitEmotion: serious
+    edges:
+    - label: "\u042F \u043F\u043E\u043C\u043E\u0433\u0443."
+      targetNodeId: accept_thanks
+      condition:
+        type: 10
+        stringParam: 
+        stageIdParam: 
+        intParam: 0
+        factionParam: 0
+        questStateParam: 2
+      conditions: []
+      action:
+        type: 21
+        stringParam: 1
+        stageIdParam: 
+        intParam: 1
+        factionParam: 0
+      hideIfUnavailable: 0
+    - label: "\u041D\u0435\u0442, \u043D\u0435 \u0445\u043E\u0447\u0443."
+      targetNodeId: decline
+      condition:
+        type: 10
+        stringParam: 
+        stageIdParam: 
+        intParam: 0
+        factionParam: 0
+        questStateParam: 2
+      conditions: []
+      action:
+        type: 60
+        stringParam: 
+        stageIdParam: 
+        intParam: 0
+        factionParam: 0
+      hideIfUnavailable: 0
+    onEnterActions: []
+  - nodeId: decline
+    speaker:
+      speakerKind: 0
+      refId: mira_01
+    text: "\u041F\u043E\u043A\u0430."
+    portraitEmotion: neutral
+    edges:
+    - label: "\u0414\u043E \u0441\u0432\u0438\u0434\u0430\u043D\u0438\u044F."
+      targetNodeId: 
+      condition:
+        type: 10
+        stringParam: 
+        stageIdParam: 
+        intParam: 0
+        factionParam: 0
+        questStateParam: 2
+      conditions: []
+      action:
+        type: 60
+        stringParam: 
+        stageIdParam: 
+        intParam: 0
+        factionParam: 0
+      hideIfUnavailable: 0
+    onEnterActions: []
+  - nodeId: accept_thanks
+    speaker:
+      speakerKind: 0
+      refId: mira_01
+    text: "\u0421\u043F\u0430\u0441\u0438\u0431\u043E \u0437\u0430 \u043A\u043B\u044E\u0447.
+      \u041F\u0440\u0438\u043D\u0435\u0441\u0438 \u041A\u0440\u0438\u0441\u0442\u0430\u043B\u043B
+      \u0412\u0440\u0435\u043C\u0451\u043D \u2014 \u0438 \u043C\u044B \u0432 \u0440\u0430\u0441\u0447\u0451\u0442\u0435.
+      \u0418\u0449\u0438 \u0432 \u0440\u0443\u0438\u043D\u0430\u0445 \u043D\u0430
+      \u0432\u043E\u0441\u0442\u043E\u043A\u0435."
+    portraitEmotion: neutral
+    edges:
+    - label: "\u0425\u043E\u0440\u043E\u0448\u043E."
+      targetNodeId: 
+      condition:
+        type: 10
+        stringParam: 
+        stageIdParam: 
+        intParam: 0
+        factionParam: 0
+        questStateParam: 2
+      conditions: []
+      action:
+        type: 14
+        stringParam: find_artifact
+        stageIdParam: 
+        intParam: 0
+        factionParam: 0
+      hideIfUnavailable: 0
+    onEnterActions: []
+  - nodeId: check_b
+    speaker:
+      speakerKind: 0
+      refId: mira_01
+    text: "\u041D\u0443 \u0447\u0442\u043E, \u043D\u0430\u0448\u0451\u043B \u041A\u0440\u0438\u0441\u0442\u0430\u043B\u043B
+      \u0412\u0440\u0435\u043C\u0451\u043D?"
+    portraitEmotion: neutral
+    edges:
+    - label: "\u0414\u0430."
+      targetNodeId: give_b
+      condition:
+        type: 10
+        stringParam: 
+        stageIdParam: 
+        intParam: 0
+        factionParam: 0
+        questStateParam: 2
+      conditions: []
+      action:
+        type: 60
+        stringParam: 
+        stageIdParam: 
+        intParam: 0
+        factionParam: 0
+      hideIfUnavailable: 0
+    - label: "\u041D\u0435\u0442."
+      targetNodeId: not_yet
+      condition:
+        type: 10
+        stringParam: 
+        stageIdParam: 
+        intParam: 0
+        factionParam: 0
+        questStateParam: 2
+      conditions: []
+      action:
+        type: 60
+        stringParam: 
+        stageIdParam: 
+        intParam: 0
+        factionParam: 0
+      hideIfUnavailable: 0
+    onEnterActions: []
+  - nodeId: give_b
+    speaker:
+      speakerKind: 0
+      refId: mira_01
+    text: "\u0414\u0430\u0439-\u043A\u0430 \u043F\u043E\u0441\u043C\u043E\u0442\u0440\u044E..."
+    portraitEmotion: neutral
+    edges:
+    - label: "(\u043E\u0442\u0434\u0430\u0442\u044C \u041A\u0440\u0438\u0441\u0442\u0430\u043B\u043B)"
+      targetNodeId: complete_thanks
+      condition:
+        type: 10
+        stringParam: 2
+        stageIdParam:
+        intParam: 1
+        factionParam: 0
+        questStateParam: 2
+      conditions: []
+      action:
+        type: 21
+        stringParam: 2
+        stageIdParam: 
+        intParam: 1
+        factionParam: 0
+      hideIfUnavailable: 1
+    - label: "\u0421\u0442\u043E\u043F, \u044F \u043F\u0435\u0440\u0435\u0434\u0443\u043C\u0430\u043B."
+      targetNodeId: no_b
+      condition:
+        type: 10
+        stringParam: 
+        stageIdParam: 
+        intParam: 0
+        factionParam: 0
+        questStateParam: 2
+      conditions: []
+      action:
+        type: 60
+        stringParam: 
+        stageIdParam: 
+        intParam: 0
+        factionParam: 0
+      hideIfUnavailable: 0
+    onEnterActions: []
+  - nodeId: no_b
+    speaker:
+      speakerKind: 0
+      refId: mira_01
+    text: "\u041D\u0435 \u0432\u0438\u0436\u0443 \u0443 \u0442\u0435\u0431\u044F
+      \u041A\u0440\u0438\u0441\u0442\u0430\u043B\u043B\u0430. \u0418\u0434\u0438
+      \u0438\u0449\u0438."
+    portraitEmotion: serious
+    edges:
+    - label: "\u0418\u0437\u0432\u0438\u043D\u0438."
+      targetNodeId: 
+      condition:
+        type: 10
+        stringParam: 
+        stageIdParam: 
+        intParam: 0
+        factionParam: 0
+        questStateParam: 2
+      conditions: []
+      action:
+        type: 60
+        stringParam: 
+        stageIdParam: 
+        intParam: 0
+        factionParam: 0
+      hideIfUnavailable: 0
+    onEnterActions: []
+  - nodeId: not_yet
+    speaker:
+      speakerKind: 0
+      refId: mira_01
+    text: "\u041E\u043A, \u043A\u0430\u043A \u043D\u0430\u0439\u0434\u0451\u0448\u044C
+      \u2014 \u043F\u0440\u0438\u043D\u043E\u0441\u0438."
+    portraitEmotion: neutral
+    edges:
+    - label: "\u0414\u043E \u0441\u0432\u0438\u0434\u0430\u043D\u0438\u044F."
+      targetNodeId: 
+      condition:
+        type: 10
+        stringParam: 
+        stageIdParam: 
+        intParam: 0
+        factionParam: 0
+        questStateParam: 2
+      conditions: []
+      action:
+        type: 60
+        stringParam: 
+        stageIdParam: 
+        intParam: 0
+        factionParam: 0
+      hideIfUnavailable: 0
+    onEnterActions: []
+  - nodeId: complete_thanks
+    speaker:
+      speakerKind: 0
+      refId: mira_01
+    text: "\u041D\u0435\u0432\u0435\u0440\u043E\u044F\u0442\u043D\u043E! \u042D\u0442\u043E
+      \u0434\u0435\u0439\u0441\u0442\u0432\u0438\u0442\u0435\u043B\u044C\u043D\u043E
+      \u043E\u043D! \u0421\u043F\u0430\u0441\u0438\u0431\u043E \u0442\u0435\u0431\u0435.
+      \u0412\u043E\u0442 \u0442\u0432\u043E\u044F \u043D\u0430\u0433\u0440\u0430\u0434\u0430
+      \u2014 1000 \u043A\u0440\u0435\u0434\u0438\u0442\u043E\u0432 \u0438 \u043C\u043E\u044F
+      \u0431\u043B\u0430\u0433\u043E\u0434\u0430\u0440\u043D\u043E\u0441\u0442\u044C."
+    portraitEmotion: happy
+    edges:
+    - label: "\u0421\u043F\u0430\u0441\u0438\u0431\u043E, \u041C\u0438\u0440\u0430."
+      targetNodeId: 
+      condition:
+        type: 10
+        stringParam: 
+        stageIdParam: 
+        intParam: 0
+        factionParam: 0
+        questStateParam: 2
+      conditions: []
+      action:
+        type: 30
+        stringParam: 
+        stageIdParam: 
+        intParam: 1000
+        factionParam: 0
+      hideIfUnavailable: 0
+    onEnterActions:
+    - type: 31
+      stringParam: 
+      stageIdParam: 
+      intParam: 25
+      factionParam: 1
+    - type: 32
+      stringParam: mira_01
+      stageIdParam: 
+      intParam: 10
+      factionParam: 0
+    - type: 11
+      stringParam: find_artifact
+      stageIdParam: 
+      intParam: 0
+      factionParam: 0
+  localizationTable: {fileID: 0}

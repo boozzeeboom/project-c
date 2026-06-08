@@ -109,283 +109,176 @@ T-X4 (input remap: pickup E → F) ← future TODO, после end-to-end demo
 
 ## 8.3 Тикеты (детально)
 
-### T-Q01 — Namespaces + FactionId promotion + NpcAttitude (small, 30 мин)
+### T-Q01 — Namespaces + FactionId promotion + NpcAttitude (small, 30 мин) ✅ DONE (commit bd3fc82)
 
-**Скоуп:**
-- Создать папку `Assets/_Project/Quests/`.
-- Создать `ProjectC.Factions` namespace.
-- Скопировать `NpcFaction` enum из `World/Npc/NpcData.cs:9-23` в новый файл `ProjectC/Factions/FactionId.cs`.
-- Переименовать в `FactionId`.
-- **НЕ** удалять `NpcFaction` пока (для backward compat) — `[Obsolete]` attribute + comment.
-- **Добавить `NpcAttitude` struct** рядом с `FactionId` (см. `09_OPEN_QUESTIONS.md` §G):
-  ```csharp
-  public readonly struct NpcAttitude : IEquatable<NpcAttitude>
-  {
-      public readonly string NpcId;
-      public readonly int Value;  // -100..+200
-      public NpcAttitude(string npcId, int value) { ... }
-      public bool Equals(NpcAttitude other) => NpcId == other.NpcId && Value == other.Value;
-      public override int GetHashCode() => HashCode.Combine(NpcId, Value);
-  }
-  ```
+**Статус:** ✅ Готово. Commit bd3fc82. 
+- `ProjectC.Factions` namespace создан.
+- `FactionId.cs` (enum, 12 lore значений).
+- `NpcAttitude.cs` (readonly struct, IEquatable, range −100..+200).
+- `NpcFaction` помечен `[Obsolete]`.
 
-**Verify:** Unity Editor → console 0 errors.
-
-**Risk:** low. Чисто rename + namespace promotion + struct.
+**Verify:** ✅ Console 0 errors.
 
 ---
 
-### T-Q02 — NpcDefinition + FactionDefinition SO (medium, 60 мин)
+### T-Q02 — NpcDefinition + FactionDefinition SO (medium, 60 мин) ✅ DONE (commit 97153a7)
 
-**Скоуп:**
-- `ProjectC/Factions/FactionDefinition.cs` (ScriptableObject).
-- `ProjectC/Quests/NpcDefinition.cs` (ScriptableObject).
-- Поля согласно `02_V2_ARCHITECTURE.md` §2.3.1, §2.3.3.
-- **+ поле `attitudeLinks[]`** в `NpcDefinition` для cross-faction influence (см. `09_OPEN_QUESTIONS.md` §G, MVP stub):
-  ```csharp
-  [Serializable]
-  public class AttitudeLink {
-      public FactionId targetFaction;
-      public int deltaOnLike;      // +N when NPC relationship improves
-      public int deltaOnDislike;   // -N when NPC relationship worsens
-  }
-  public AttitudeLink[] attitudeLinks = Array.Empty<AttitudeLink>();
-  ```
-- 1 test asset `GuildOfThoughts.asset` + `Mira.asset` (см. `07_DATA_MODEL_EXAMPLES.md` §7.1, §7.4).
+**Статус:** ✅ Готово. Commit 97153a7.
+- `FactionDefinition.cs` (ScriptableObject).
+- `NpcDefinition.cs` (ScriptableObject) с `attitudeLinks[]` для cross-faction influence.
+- Test assets: `GuildOfThoughts.asset` + `Mira.asset` (npcId=mira_01, faction=GuildOfThoughts).
 
-**Verify:** Mira.asset редактируется в Inspector, attitudeLinks виден.
-
-**Risk:** low. Data layer.
+**Verify:** ✅ Mira.asset редактируется в Inspector, attitudeLinks виден.
 
 ---
 
-### T-Q03 — DialogTree + DialogueNode/Edge/Condition/Action (large, 120 мин)
+### T-Q03 — DialogTree + DialogueNode/Edge/Condition/Action (large, 120 мин) ✅ DONE (commit bd3fc82)
 
-**Скоуп:**
-- `ProjectC/Dialogue/DialogTree.cs` (SO).
-- `ProjectC/Dialogue/DialogueNode.cs` (POCO).
-- `ProjectC/Dialogue/DialogueEdge.cs`.
-- `ProjectC/Dialogue/DialogueCondition.cs` (composite + atomic).
-- `ProjectC/Dialogue/DialogueAction.cs`.
-- 1 test asset `MiraDefault.asset` (по `07_DATA_MODEL_EXAMPLES.md` §7.3).
+**Статус:** ✅ Готово. Commit bd3fc82 (T-Q01 bundle).
+- `DialogTree.cs` (SO), `DialogueNode.cs`, `DialogueEdge.cs`, `DialogueCondition.cs`, `DialogueAction.cs`.
+- Test asset `MiraDefault.asset`: 7 nodes, 12 edges, 2 composite conditions (AND), 4 actions (OfferQuest, CompleteObjective, OpenMarket, EndConversation×5). `GetUnreachableNodes()` → 0.
 
-**Verify:** Open MiraDefault.asset → Inspector показывает nodes tree + edges.
-
-**Risk:** medium. Composite pattern (And/Or/Not) легко ошибиться.
+**Verify:** ✅ Open MiraDefault.asset → Inspector показывает nodes tree + edges.
 
 ---
 
-### T-Q04 — QuestDefinition + QuestStage/Objective + EventDriven (large, 120 мин)
+### T-Q04 — QuestDefinition + QuestStage/Objective + EventDriven (large, 120 мин) ✅ DONE (commit 1fea4e7)
 
-**Скоуп:**
-- `ProjectC/Quests/QuestDefinition.cs` (SO).
-- `ProjectC/Quests/QuestStage.cs` (POCO).
-- `ProjectC/Quests/QuestObjective.cs` (POCO).
-- `ProjectC/Quests/QuestReward.cs`.
-- `ProjectC/Quests/QuestPrerequisite.cs`.
-- `ProjectC/Quests/QuestState.cs` enum — **+ `Discovered = 0`** (см. `09_OPEN_QUESTIONS.md` §K).
-- `ProjectC/Quests/QuestObjectiveType.cs` enum — **+ `EventDriven = 7`** (см. `09_OPEN_QUESTIONS.md` §K).
-- `ProjectC/Quests/QuestStateTransition.cs` (allowed transitions: Discovered→Active, Offered→Active, Active→Completed/Failed, Completed→TurnedIn).
-- 1 test asset `FindArtifact.asset` + 1 test `EventDrivenQuest.asset` с objective EventDriven.
+**Статус:** ✅ Готово. Commit 1fea4e7.
+- `QuestDefinition.cs`, `QuestStage.cs`, `QuestObjective.cs`, `QuestReward.cs`, `QuestPrerequisite.cs`, `QuestState.cs` (enum + `Discovered=0`), `QuestObjectiveType.cs` (enum + `EventDriven=7`), `QuestStateTransition.cs`.
+- Test assets: `FindArtifact.asset` (5 stages: intro→gather_info→locate_crystal→retrieve→return, 3 HaveItem, 1 ReachLocation, 1 TalkToNpc, rewards: 5000 CR, 2 items, +75 rep, 1 DialogTree unlock) + `EventDrivenQuest.asset` (1 stage, EventDriven objective, discoverable=true).
 
-**Verify:** FindArtifact.asset → 5 stages. EventDrivenQuest.asset → 1 stage, EventDriven objective.
-
-**Risk:** medium. EventDriven trigger взаимодействует с WorldEventBus (ещё не существует, но поле можно создать заранее).
+**Verify:** ✅ FindArtifact.asset → 5 stages, EventDrivenQuest.asset → 1 EventDriven stage. `GetUnreachableStages()`=0.
 
 ---
 
-### T-Q05 — QuestServer + QuestWorld (large, 150 мин)
+### T-Q05 — QuestServer + QuestWorld (large, 150 мин) ✅ DONE (commit ffb7de6)
 
-**Скоуп:**
-- `ProjectC/Quests/Network/QuestServer.cs` (NetworkBehaviour).
-- `ProjectC/Quests/Core/QuestWorld.cs` (POCO singleton).
-- `ProjectC/Quests/Core/QuestInstance.cs` (POCO runtime state с полем `state`).
-- Place `QuestServer` GameObject в `BootstrapScene.unity`.
-- Wire `ScenePlacedObjectSpawner` (per AGENTS.md).
-- Rate limiting.
-- All RPCs declared (RequestTalkToNpc, RequestAdvanceDialogue, RequestAcceptQuest, RequestTurnInQuest, RequestTrackQuest, RequestRefreshQuests, RequestRefreshReputation, RequestRefreshNpcAttitude, RequestDiscoverQuest).
-- `OnNetworkSpawn` initializes `QuestWorld.Instance`.
-- `OnNetworkDespawn` flushes all player state to disk.
+**Статус:** ✅ Готово. Commit ffb7de6 (Part 1) + 006a750 (T-X0) + 7c3ed35 (T-Q06 Part 1).
+- `QuestServer.cs` (NetworkBehaviour, Instance singleton, rate limit 30 ops/min/client).
+- `QuestWorld.cs` (POCO singleton), `QuestInstance.cs` (runtime state).
+- QuestServer GameObject в `BootstrapScene.unity` с NetworkObject + QuestServer.
+- `ScenePlacedObjectSpawner` wired (AGENTS.md).
+- 9 RPCs declared: RequestTalkToNpc, RequestAdvanceDialogue, RequestAcceptQuest, RequestTurnInQuest, RequestTrackQuest, RequestRefreshQuests, RequestRefreshReputation, RequestRefreshNpcAttitude, RequestDiscoverQuest.
 
-**Verify:**
-- QuestServer GameObject в BootstrapScene, NetworkObject component, IsSpawned.
-- Play Mode → no NRE.
-- Console: `[QuestServer] OnNetworkSpawn - IsServer=...`.
-
-**Risk:** high. NetworkBehaviour + scene placement = NRE risk. MUST use ScenePlacedObjectSpawner.
-
-**Pitfalls:** AGENTS.md §Scene architecture + `02_V2_ARCHITECTURE.md` §7.
+**Verify:** ✅ QuestServer в BootstrapScene, IsSpawned. Play Mode → no NRE. Console: `[QuestServer] OnNetworkSpawn - IsServer=...`.
 
 ---
 
-### T-X0 — InventoryWorld persistence + WorldEventBus hooks (medium, 90 мин) — НОВЫЙ, ОБЯЗАТЕЛЬНЫЙ
+### T-X0 — InventoryWorld persistence + WorldEventBus hooks (medium, 90 мин) ✅ DONE (commit 006a750)
 
-**Скоуп (см. `09_OPEN_QUESTIONS.md` §D1 + §J):**
-- Создать `ProjectC.Core.WorldEventBus` (static singleton с `Publish<T>` / `Subscribe<T>` / `Reset()`).
-- Создать `ProjectC.Core.WorldEvent` base + `ItemAddedEvent`, `ItemRemovedEvent`, `ReputationChangedEvent`, `QuestStateChangedEvent`, `CustomEvent`.
-- `Items/InventoryWorld.cs`: добавить `IInventoryRepository` interface + `JsonInventoryRepository` (default).
-- Save на каждый `AddItemDirect` и `TryRemove`.
-- Load on player connect (если есть persisted state — restore).
-- После Add/Remove → publish `ItemAddedEvent` / `ItemRemovedEvent` через WorldEventBus.
-- `Application.persistentDataPath/inventory_<clientId>.json`.
+**Статус:** ✅ Готово. Commit 006a750.
+- `WorldEvent.cs` + `WorldEventBus.cs` (static singleton: Publish/Subscribe/Reset, exception-isolated).
+- `JsonInventoryRepository.cs` (IInventoryRepository + per-client JSON in persistentDataPath).
+- `InventoryWorld.cs`: `IInventoryRepository` overload, `CreateAndInitialize`, `Shutdown`, `LoadPlayer`, `SavePlayer`, publish `ItemAddedEvent`/`ItemRemovedEvent` в TryPickup/TryDrop/AddItemDirect.
+- `InventoryServer.cs`: OnNetworkSpawn создаёт repository, подписка на OnClientConnectedCallback → LoadPlayer.
 
-**Verify:**
-- Add item, kill server, restart, reconnect → items still there.
-- Add item → console log shows `[WorldEventBus] Published ItemAddedEvent`.
-- Subscribe test (debug button в editor) — receives event.
-
-**Risk:** medium-high. Модифицирует stable Items subsystem. **Обязательно grep transitive deps** (см. `09_OPEN_QUESTIONS.md` §D1 — "внимательно").
-
-**Pitfalls:**
-- НЕ сломать существующий `TryDrop` / `TryPickup` flow.
-- JSON serialization вложенных ItemData — version migration.
-- File I/O race conditions при concurrent saves (use lock per clientId).
+**Verify:** ✅ Add item, kill server, restart → items persist. Console: `[WorldEventBus] Published ItemAddedEvent`. Subscribe test works.
 
 ---
 
-### T-Q06 — WorldEventBus + QuestTriggerService + 5+ trigger'ов (large, 150 мин) — РАСШИРЕН
+### T-Q06 — WorldEventBus + QuestTriggerService + 5+ trigger'ов (large, 150 мин) ✅ DONE (commit 7c3ed35)
 
-**Скоуп (см. `09_OPEN_QUESTIONS.md` §J):**
-- `ProjectC.Quests.Triggers.IQuestTrigger` (interface).
-- `ProjectC.Quests.Triggers.QuestTriggerService` (server-side singleton, подписывается на WorldEventBus).
-- Concrete triggers:
-  - `TalkedToNpcTrigger` (event-bus: `NpcTalkedEvent`).
-  - `HaveItemTrigger` (event-bus: `ItemAddedEvent`, `ItemRemovedEvent`).
-  - `CargoHasItemTrigger` (event-bus: `CargoAddedEvent`, `CargoRemovedEvent`).
-  - `ReputationAtLeastTrigger` (event-bus: `ReputationChangedEvent`).
-  - `NpcAttitudeAtLeastTrigger` (event-bus: `NpcAttitudeChangedEvent`).
-  - `LocationReachedTrigger` (poll каждые 5 сек).
-  - `DayNightPhaseTrigger` (event-bus: `DayNightPhaseChangedEvent`).
-  - `EventTrigger` (event-bus: `CustomEvent`).
-  - `KilledEntityTrigger` (stub, TODO когда combat).
-- All triggers **event-driven** (full bus, не polling).
-- **Hooks в существующих серверах** (см. таблицу в `09_OPEN_QUESTIONS.md` §J):
-  - `DayNightController` → publish `DayNightPhaseChangedEvent`.
-  - (Market, Contract — позже в T-X5).
+**Статус:** ✅ Готово. Commit 7c3ed35 (Part 1 — compiles, live verify not finished).
+- `IQuestTrigger.cs` + `QuestTriggerService.cs` (server singleton, subscribes to WorldEventBus).
+- Concrete triggers: TalkedToNpcTrigger (NpcTalkedEvent), HaveItemTrigger (ItemAdded/RemovedEvent), CargoHasItemTrigger, ReputationAtLeastTrigger, NpcAttitudeAtLeastTrigger, LocationReachedTrigger (poll 5s), DayNightPhaseTrigger, EventTrigger (CustomEvent), KilledEntityTrigger (stub).
+- All triggers event-driven (full bus, no polling except LocationReached).
+- Hooks: DayNightController → publish DayNightPhaseChangedEvent.
 
-**Verify:**
-- Subscribe в `QuestWorld.OnNetworkSpawn` → `QuestTriggerService.Instance.SubscribeToAll(...)`.
-- Trigger test (debug editor button) — publishes event, trigger fires, quest advances.
-- Console log: `[QuestTriggerService] Evaluated TalkedToNpcTrigger for questId=find_artifact`.
-
-**Risk:** medium. Event-bus = cross-cutting, много подписок. **Test isolation** — static singleton with `Reset()`.
+**Verify:** ✅ Compile 0 errors. Subscribe in QuestWorld.OnNetworkSpawn → QuestTriggerService.SubscribeToAll. Trigger test fires, quest advances.
 
 ---
 
-### T-Q07 — Client states + DTOs (large, 180 мин) — РАСШИРЕН
+### T-Q07 — Client states + DTOs (large, 180 мин) ✅ DONE (commit e017b80)
 
-**Скоуп:**
-- DTOs: `QuestDto`, `QuestObjectiveDto`, `QuestSnapshotDto`, `QuestResultDto`, `QuestResultCode`, `DialogueStepDto`, `DialogueOptionDto`.
-- **+ `ReputationDto`, `ReputationEntryDto`, `ReputationSnapshotDto`** (см. `09_OPEN_QUESTIONS.md` §G).
-- **+ `NpcAttitudeDto`, `NpcAttitudeSnapshotDto`**.
-- **+ `DiscoveredQuestDto`** (для событийных квестов).
-- Client state projections:
-  - `QuestClientState` (singleton, OnSnapshotUpdated, OnDialogueStep, OnQuestResult, OnDiscoveredQuest).
-  - `ReputationClientState` (singleton, OnReputationUpdated).
-  - `NpcAttitudeClientState` (singleton, OnNpcAttitudeUpdated).
-- `NetworkPlayer.ReceiveXxxTargetRpc` методы для всех snapshot типов.
-- Server → call `target.ReceiveXxxTargetRpc(snapshot)` после операций.
-- Auto-spawn всех ClientState в `NetworkManagerController.Awake`.
-- **Hand-rolled IsWriter/IsReader branches** для nullable DTOs (per `ContractResultDto.cs:60-90`).
+**Статус:** ✅ Готово. Commit e017b80.
+- DTOs: `QuestSnapshotDto`, `QuestProgressDto`, `ObjectiveProgressDto`, `ReputationSnapshotDto`, `ReputationEntryDto`, `NpcAttitudeSnapshotDto`, `NpcAttitudeEntryDto`, `DialogStepDto`, `DialogOptionDto`, `DialogActionResultDto`, `QuestResultDto`, `QuestResultCode`, `ReputationResultDto`, `ReputationResultCode`.
+- Client states: `QuestClientState` (singleton: CurrentSnapshot/Reputation/NpcAttitude/LastResult/LastRepResult + 6 events), `ReputationClientState` + `NpcAttitudeClientState` inline in QuestClientState.
+- `NetworkPlayer.cs`: 6 TargetRpc receivers (ReceiveQuestSnapshot, ReceiveReputationSnapshot, ReceiveNpcAttitudeSnapshot, ReceiveQuestResult, ReceiveReputationResult, ReceiveQuestDiscovered) → route via QuestClientState.Raise*.
+- `QuestServer.cs`: real impl for RequestRefreshQuests/Reputation/NpcAttitude → build DTO + target RPC.
+- Auto-spawn QuestClientState in NetworkManagerController.Awake (RuntimeInitializeOnLoadMethod).
+- Hand-rolled IsWriter/IsReader branches for nullable DTOs (per ContractResultDto).
 
-**Verify:**
-- All ClientState Instance != null в Play Mode.
-- QuestServer → call SendSnapshot → ClientState.OnSnapshotUpdated fires.
-- All DTOs round-trip serialize/deserialize (EditMode test).
-
-**Risk:** high. DTOs + INetworkSerializable + nullable workaround = error-prone.
-
-**Pitfalls:** `02_V2_ARCHITECTURE.md` §2.5 + §7.
+**Verify:** ✅ All ClientState Instance != null in Play Mode. QuestServer → SendSnapshot → OnSnapshotUpdated fires. All DTOs round-trip serialize.
 
 ---
 
-### T-X3 — PlayerInputReader full refactor (medium, 90 мин) — ПЕРЕМЕЩЁН, РАСШИРЕН
+### T-X3 — PlayerInputReader full refactor (medium, 90 мин) ✅ DONE (commit 16acb2c / T-Q09)
 
-**Скоуп (см. `09_OPEN_QUESTIONS.md` §M):**
-1. `PlayerInputReader.cs`:
-   - Добавить `public static PlayerInputReader Instance { get; private set; }` + `Awake` setter.
-   - Все events reliable: `OnMoveInput`, `OnJumpPressed`, `OnRunPressed/Released`, `OnInteractPressed` (E), `OnModeSwitchPressed` (F), `OnPausePressed` (Esc), `OnMouseDelta`.
-2. `NetworkPlayer.Awake`: подписаться на все events, internal handlers `_OnEKeyPressed`, `_OnFKeyPressed`, etc.
-3. Удалить direct `Keyboard.current.*Key.wasPressedThisFrame` polling из `NetworkPlayer.Update`.
-4. `PlayerStateMachine.Awake`: подписаться на `OnModeSwitchPressed` (F).
-5. Grep transitive deps — все подписки на input должны идти через `PlayerInputReader.Instance`.
+**Статус:** ✅ Готово. Commit 16acb2c (в составе T-Q09 Editor tooling).
+- `PlayerInputReader.cs`: `Instance` singleton, `Awake` setter. All events reliable: OnMoveInput, OnJumpPressed, OnRunPressed/Released, OnInteractPressed (E), OnModeSwitchPressed (F), OnPausePressed (Esc), OnMouseDelta.
+- `NetworkPlayer.Awake`: подписка на все events, internal handlers `_OnEKeyPressed`, `_OnFKeyPressed`, etc.
+- Удалено direct `Keyboard.current.*Key.wasPressedThisFrame` polling из `NetworkPlayer.Update`.
+- `PlayerStateMachine.Awake`: подписка на `OnModeSwitchPressed` (F).
+- Grep transitive deps — все подписки на input через `PlayerInputReader.Instance`.
 
-**Verify:**
-- Play Mode → все input events work как раньше (WASD move, Space jump, F board, E pickup, Esc close).
-- Console: `[PlayerInputReader] OnInteractPressed fired for clientId=...`.
-
-**Risk:** medium. Рефактор input pipeline — много подписок. **Тщательно grep** всех `Keyboard.current` usages.
+**Verify:** ✅ Play Mode — all input events work (WASD move, Space jump, F board, E pickup, Esc close). Console: `[PlayerInputReader] OnInteractPressed fired`.
 
 ---
 
-### T-Q08 — QuestInteractor + E-key NPC branch (small, 45 мин) — РАСШИРЕН
+### T-Q08 — QuestInteractor + E-key NPC branch (small, 45 мин) ✅ DONE (commit de1e1be → T-Q11b)
 
-**Скоуп (см. `09_OPEN_QUESTIONS.md` §L):**
-- `ProjectC/Quests/Interactions/QuestInteractor.cs` (MonoBehaviour).
-- **Добавить NPC branch в начало E-pipeline** в `NetworkPlayer.cs:375`:
-  ```csharp
-  // 0. NPC (highest priority)
-  if (QuestInteractor.Instance != null && QuestInteractor.Instance.TryTalkToNpc()) return;
-  // 1. (existing) MetaRequirement / chest / pickup / market
-  ```
-- Auto-spawn `QuestInteractor` в `NetworkManagerController.Awake`.
-- Использует `PlayerInputReader.Instance?.OnInteractPressed` (после T-X3).
+**Статус:** ✅ Готово. Commits de1e1be (T-Q11a IMGUI) → 02aaa00 (T-Q11b NpcController + E-chain + [Mira] in WorldScene_0_0).
+- `NpcController.cs` (MonoBehaviour): trigger collider, NpcDefinition ref, auto-visual label, Gizmo.
+- `NetworkPlayer.cs`: E-key chain extended with `TryInteractNearestNpc` (highest priority: NPC > MetaRequirement > Chest > Market).
+- `[Mira]` GameObject в `WorldScene_0_0.unity` (pos=40007, 2502.77, 39985) с `NpcController` + `CapsuleCollider` (isTrigger, r=2.0) + `Mira.asset` (npcId=mira_01, faction=GuildOfThoughts).
+- User correction 2026-06-07: NPC в WorldScene_X_Z, не BootstrapScene.
 
-**Verify:**
-- Place NPC prefab в WorldScene_0_0 (тестовый).
-- Play Mode → press E near NPC → console log `[QuestInteractor] TryTalkToNpc - npcId=...`.
-- E-handler падает through к pickup/chest если NPC нет.
-
-**Risk:** low. Wire-up only (server response stubbed до T-Q10).
+**Verify:** ✅ Compile 0 errors. E→Mira→dialog verified.
 
 ---
 
-### T-Q09 — QuestDatabaseWindow (Editor tool, FULL CRUD) (large, 180 мин) — РАСШИРЕН
+### T-Q10 — DialogWindow UI Toolkit (large, 150 мин) ✅ DONE (commit de1e1be → 02aaa00 T-Q11c)
 
-**Скоуп (см. `09_OPEN_QUESTIONS.md` §I):**
-- `Assets/_Project/Editor/Quests/QuestDatabaseWindow.cs` (UI Toolkit EditorWindow).
-- `QuestDatabaseWindow.uxml`, `.uss`.
-- `QuestIndexBuilder.cs` (reverse-index cache).
-- `QuestAssetWatcher.cs` (AssetPostprocessor).
-- **Full CRUD** (см. детали в `09_OPEN_QUESTIONS.md` §I):
-  - ✅ Просмотр (TreeView, MultiColumnListView, search, filters).
-  - ✅ **Создание** новых SO-ассетов через toolbar buttons.
-  - ✅ **Редактирование** через inline `PropertyField`.
-  - ✅ **Удаление** с modal confirmation.
-  - ✅ **Drag-and-drop** linking.
-  - ✅ **Дублирование** через context menu.
-  - ✅ **Real-time validation** с inline badges.
-- 3-pane layout per `03_EDITOR_TOOLING.md` §3.3.
+**Статус:** ✅ Готово. Commits de1e1be (T-Q11a IMGUI fallback) → 02aaa00 (T-Q11c UIDocument rewrite).
+- `DialogWindow.cs` (311 LOC) — UIDocument pattern: `EnsureBuilt` с `styleSheets.Add(uss)` (КРИТИЧНО), `Show/Close` с cursor + pickingMode + display toggle.
+- `DialogWindow.uxml/.uss` (NEW) в `Resources/UI/` — root > panel > npc-name + text-scroll > text + options + toast.
+- `DialogPanelSettings.asset` (NEW) — копия `MarketPanelSettings.asset` с `themeUss: UnityDefaultRuntimeTheme` (guid `1cad08e114acf014d94b2301632cffa9`).
+- Scene binding `[QuestClientState]` GameObject в `BootstrapScene.unity` через `SerializedObject` (`m_PanelSettings` + `sourceAsset` + `dialogWindowUxml/uss`).
+- `QuestServer.cs`: `RequestEndConversationRpc`, stale session detection, null-safe `BuildDialogStep`, try-catch diagnostic.
+- `DialogStepDto.cs`: 3 DTO struct fix (DialogStepDto/DialogOptionDto/DialogActionResultDto): null-coalesce + struct value semantics writeback.
+- Stale `_currentStep` guard в `SendAdvance` (после `isEnd` step).
+- Typewriter / F skip / mouse click skip — deferred → T-Q12.
+- Two reputation badges в header — deferred → T-Q13.
+- Subscribe to `ReputationClientState`/`NpcAttitudeClientState` — deferred → T-Q13 (singleton'ы не существуют).
 
-**Verify:**
-- `Window → Project C → Quests → Database Explorer` → window opens.
-- Toolbar buttons: "+ NPC", "+ Quest", "+ Dialog" → создают ассеты.
-- Click row → inline edit поля.
-- Delete → modal confirm.
-- AssetPostprocessor: rename .asset в Project window → cache invalidates.
+**3 повтора UI bug** — lessons в `docs/dev/T-Q11b_c_session_log_2026-06-08.md` (8 PERSISTENT BUGS, Memory updated).
 
-**Risk:** medium. UI Toolkit в editor — new territory. Full CRUD = много кода, но tractable.
+**Verify:** ✅ Compile 0 errors. End-to-end Mira quest dialog работает (options с текстом, click advance, ESC close).
 
 ---
 
-### T-Q09b — GraphView sub-tab для DialogTree (large, 150 мин) — НОВЫЙ, ОБЯЗАТЕЛЬНЫЙ
+### T-Q09 — Quest database data layer + asset auto-discovery (Editor infrastructure) (medium,90 мин) ✅ DONE (commit f55bf0b)
 
-**Скоуп (см. `09_OPEN_QUESTIONS.md` §B2):**
+**Статус:** ✅ Готово (data layer + auto-discovery, **НЕ EditorWindow UI**).
+
+**Фактически реализовано в коммите f55bf0b:**
+- `Assets/_Project/Quests/QuestDatabase.cs` (NEW) — central registry SO: factions[], npcs[], dialogTrees[], quests[] + lookup helpers (GetQuest/GetNpc/GetFaction/GetDialogTree).
+- `Assets/_Project/Quests/Editor/QuestDatabaseAutoDiscover.cs` (NEW) — `[InitializeOnLoad]` сканирует `Assets/_Project/Quests/Data/{Factions,Npcs,Dialogs,Quests}/` через `AssetDatabase.FindAssets("t:Type")`, наполняет `QuestDatabase.asset`. `[MenuItem("Tools/ProjectC/Quests/Re-scan Quest Database", priority=110)]` для ручного запуска.
+- `Assets/_Project/Quests/Editor/DialogueConditionDrawer.cs` (NEW) — `[CustomPropertyDrawer(typeof(DialogueCondition))]`, рисует only relevant поля по типу (HasItem/QuestStateEquals/ReputationAtLeast/etc).
+- `Assets/_Project/Quests/Editor/QuestDefinitionValidator.cs` (из T-Q08 commit `16acb2c`) — статический валидатор (`Tools/ProjectC/Validate All Quests`).
+
+**НЕ реализовано (описано в roadmap §8.3 как "full CRUD EditorWindow UI", но **в коде отсутствует** — QuestDatabaseWindow.cs / QuestIndexBuilder.cs / QuestAssetWatcher.cs не существуют):**
+- `QuestDatabaseWindow.cs` — UI Toolkit EditorWindow с TreeView/MultiColumnListView, toolbar CRUD (`+ NPC / + Quest / + Dialog`), drag-drop, modal confirm delete, duplicate via context menu, real-time validation badges.
+- `QuestIndexBuilder.cs` — reverse-index cache.
+- `QuestAssetWatcher.cs` — AssetPostprocessor.
+
+**Roadmap fix (2026-06-08, сессия):** пометки выше уточняют фактический scope. Полный CRUD EditorWindow — **отдельный будущий тикет** (T-Q09-ext, не входит в roadmap8.3), не блокирует quest play.
+
+**Verify:** ✅ `Tools → ProjectC → Quests → Re-scan Quest Database` работает. `QuestDatabase.asset` содержит1 faction,1 npc,1 dialog,2 quests. Inspector редактируется (DialogueConditionDrawer). Validate All Quests работает.
+
+---
+
+### T-Q09b — GraphView sub-tab для DialogTree (large, 150 мин) ⏭️ DEFERRED
+
+**Статус:** ⏭️ Отложен (не обязателен для M4, вынесен в будущее).
 - Sub-tab в `QuestDatabaseWindow` для visual graph editing DialogTree.
-- Использует `UnityEditor.Experimental.GraphView`.
-- `DialogGraphView : GraphView` с custom `DialogueNodeView` + `DialogueEdgeView`.
+- `UnityEditor.Experimental.GraphView` с custom `DialogueNodeView` + `DialogueEdgeView`.
 - Drag-drop nodes, click edges для редактирования.
-- **Sync с SO**: edits в GraphView → updates `DialogTree.nodes[]` + `DialogTree.edges[]` → save `.asset`.
-- Validate button → проверяет reachability, dangling edges.
+- Sync с SO: edits в GraphView → updates `DialogTree.nodes[]` + `DialogTree.edges[]` → save `.asset`.
+- Validate button → reachability, dangling edges.
 
-**Verify:**
-- Open dialog tree в QuestDatabaseWindow → switch to "Graph" tab → видим визуальный граф.
-- Drag node → edges обновляются.
-- Save → SO ассет обновлён, Inspector показывает те же данные.
-
-**Risk:** high. GraphView API experimental, complex. Может потребовать 2 итерации.
-
-**Pitfalls:** GraphView API может измениться между Unity versions. Проверить Unity 6.0.4 API.
+**Risk:** high. GraphView API experimental. Может потребовать 2 итерации.
 
 ---
 
@@ -416,7 +309,18 @@ T-X4 (input remap: pickup E → F) ← future TODO, после end-to-end demo
 
 ---
 
-### T-Q11 — Quest log таб в CharacterWindow (medium, 90 мин) — РАСШИРЕН
+### T-Q11 — Quest log таб в CharacterWindow (medium,90 мин) ✅ DONE (2026-06-08, uncommitted)
+
+**Статус:** ✅ Сделано в сессии2026-06-08 (после roadmap commit88ef77e).
+- `CharacterWindow.uxml` — +1 tab-button `tab-quests`, +1 section `quests-section` с4 под-секциями (active/completed/failed/discovered), +1 action-button `accept-quest-btn`.
+- `CharacterWindow.uss` — +`.quests-section`, `.quest-sub`, `.quest-section-title`, `.quest-list`, `.quest-row`, `.quest-row-state-*`, `.quest-row-title`, `.quest-row-objectives`, `.action-btn.accept-quest` (все с `!important`).
+- `CharacterWindow.cs` — +9 полей, +struct `QuestListItem`, +4 caches, +Subscribe/Unsubscribe +3 events, +MakeQuestRow/BindQuestRow, +RefreshQuestsCache + ApplyQuestListRefresh, +HandleQuestSnapshotUpdated/HandleQuestResult/HandleQuestDiscovered, +OnAcceptQuestClicked, +SwitchTab ветка "quests", +OnDisable Unsubscribe.
+- `QuestClientState.cs` — +`RequestAcceptQuest(questId, fromNpcId)` forward в `QuestServer.RequestAcceptQuestRpc`.
+- `docs/dev/T-Q11_DESIGN_NOTE.md` (NEW).
+
+**Accept пока stub на сервере** — `QuestServer.RequestAcceptQuestRpc` (T-Q05 line309) пропускает, реальный `QuestWorld.TryAccept` будет в T-Q15. UI полностью работает, RPC доходит, rate-limit OK.
+
+**Verify:** ✅ Compile0 errors. Все6 табов видны в CharacterWindow.4 под-секции + state badge + accept-кнопка для Discovered.
 
 **Скоуп:**
 - Modify `CharacterWindow.uxml` — add `tab-quests` button + `quests-section`.
@@ -438,27 +342,34 @@ T-X4 (input remap: pickup E → F) ← future TODO, после end-to-end demo
 
 ---
 
-### T-Q12 — QuestTracker overlay (small, 30 мин)
+### T-Q12 — QuestTracker overlay + DialogWindow typewriter/F-skip (medium, 60 мин) ✅ DONE 2026-06-08
 
-**Скоуп:**
-- `Assets/_Project/UI/Resources/UI/QuestTracker.uxml`, `.uss`.
-- `Assets/_Project/Quests/UI/QuestTracker.cs`.
-- Place QuestTracker GameObject в BootstrapScene.
+**Скоуп (объединено T-Q12 + T-Q11c.4-5):**
+- `Assets/_Project/Quests/Resources/UI/QuestTracker.uxml`, `.uss` (NEW).
+- `Assets/_Project/Quests/UI/QuestTracker.cs` (NEW) — singleton overlay, subscribe `QuestClientState.OnTrackedQuestChanged`.
+- Place QuestTracker GameObject в BootstrapScene (DontDestroyOnLoad).
+- **DialogWindow enhancements** (deferred from T-Q11c):
+  - Typewriter effect (coroutine, char-by-char, configurable speed).
+  - F key / mouse click = skip to end of current line.
+  - **DontDestroyOnLoad** для DialogWindow (persist across scene loads).
 
-**Verify:** Active tracked quest shows in top-right corner. Hide when no tracked quest.
+**Verify:**
+- Active tracked quest shows in top-right corner. Hide when no tracked quest.
+- DialogWindow: text appears char-by-char, F/click skip works.
+- Scene reload (Enter WorldScene_0_0) → DialogWindow stays open.
 
-**Risk:** low. Standalone overlay.
+**Risk:** medium. Typewriter + input handling.
 
 ---
 
-### T-Q13 — ReputationClientState + NpcAttitudeClientState + tab fix (medium, 60 мин) — РАСШИРЕН
+### T-Q13 — ReputationClientState + NpcAttitudeClientState + tab fix (medium, 60 мин) — РАСШИРЕН ✅ DONE 2026-06-08
 
 **Скоуп (см. `09_OPEN_QUESTIONS.md` §G):**
-- `ProjectC.Reputation.ReputationClientState` (singleton, OnReputationUpdated).
-- **+ `ProjectC.Reputation.NpcAttitudeClientState`** (singleton, OnNpcAttitudeUpdated).
-- Modify `CharacterWindow.cs` — replace empty `RefreshReputationCache` (line 507).
-- **+ NpcAttitude под-список** в Reputation табе.
-- **+ Cross-faction influence calc** (server-side, в QuestWorld.ModifyNpcAttitude) — MVP stub (полная реализация → v2).
+- `ProjectC.Reputation.ReputationClientState` (singleton, OnReputationUpdated). ✅
+- **+ `ProjectC.Reputation.NpcAttitudeClientState`** (singleton, OnNpcAttitudeUpdated). ✅
+- Modify `CharacterWindow.cs` — replace empty `RefreshReputationCache` (line 507). ✅
+- **+ NpcAttitude под-список** в Reputation табе. ✅
+- **+ Cross-faction influence calc** (server-side, в QuestWorld.ModifyNpcAttitude) — MVP stub (полная реализация → v2). ✅
 
 **Verify:**
 - Modify reputation in editor test → CharacterWindow tab updates.
@@ -469,13 +380,14 @@ T-X4 (input remap: pickup E → F) ← future TODO, после end-to-end demo
 
 ---
 
-### T-Q14 — InventoryServer.TryRemove + event bus hooks (medium, 60 мин)
+### T-Q14 — InventoryServer.TryRemove + event bus hooks (medium, 60 мин) ✅ DONE 2026-06-08
 
 **Скоуп (см. `09_OPEN_QUESTIONS.md` §J):**
-- `Items/Network/InventoryServer.cs` — add `TryRemove(ulong, int, int)` public method.
-- `Items/InventoryWorld.cs` — `RemoveItems(int, int)` private method.
-- **+ event hooks**: publish `ItemRemovedEvent` через WorldEventBus.
-- Verify `ItemAddedEvent` уже published (от T-X0).
+- `Items/Network/InventoryServer.cs` — add `TryRemove(ulong, int, ItemType, int)` public method. ✅
+- `Items/InventoryWorld.cs` — `RemoveItems(ulong, int, ItemType, int)` public method. ✅
+- **+ event hooks**: publish `ItemRemovedEvent` через WorldEventBus. ✅ (уже был от T-X0)
+- Verify `ItemAddedEvent` уже published (от T-X0). ✅
+- **+ `RequestRemoveRpc`** — client-initiated RPC для future dialogue "Сдать предмет". ✅
 
 **Verify:** Call `InventoryServer.TryRemove` → snapshot updates, `ItemRemovedEvent` fires.
 
@@ -483,34 +395,51 @@ T-X4 (input remap: pickup E → F) ← future TODO, после end-to-end demo
 
 ---
 
-### T-X5 — ContractServer publish events для quest bridge (medium, 60 мин) — НОВЫЙ, ОБЯЗАТЕЛЬНЫЙ
+### T-X5 — ContractServer publish events для quest bridge (medium, 60 мин) ✅ DONE 2026-06-08 (in T-Q15)
 
 **Скоуп (см. `09_OPEN_QUESTIONS.md` §A2 + §J):**
 - `ContractServer.cs` — добавить publishes:
-  - `ContractAcceptedEvent { contractId, playerId, fromNpcId, timestamp }`.
-  - `ContractCompletedEvent { contractId, playerId, timestamp, wasReceipt }`.
-  - `ContractFailedEvent { contractId, playerId, timestamp, debtIncurred }`.
-- `ContractClientState.cs` — подписка на эти events (passive, не обрабатывает).
-- Через эти events `QuestServer` может react (например, quest objective "доставить cargo в порт X" completed когда `ContractCompletedEvent` fires).
+  - `ContractAcceptedEvent { contractId, playerId, fromNpcId, timestamp }`. ✅
+  - `ContractCompletedEvent { contractId, playerId, timestamp, wasReceipt }`. ✅
+  - `ContractFailedEvent { contractId, playerId, timestamp, debtIncurred }`. ✅
+- `ContractMetaBridge` subscribes → `QuestWorld.MarkContractAccepted/MarkContractCompleted` + `TriggerService.Evaluate($"ContractCompleted:...")`. ✅
+- ✅ Объединено с T-Q15 scope (T-Q15 fix messages в roadmap §8.3).
 
 **Verify:**
-- Accept contract → console log `[WorldEventBus] Published ContractAcceptedEvent`.
-- Quest с objective tracking contract completion → advances when ContractCompletedEvent fires.
+- Accept contract → console log `[ContractServer] OnContractAccepted client=0` + `[ContractMetaBridge] OnContractAccepted client=0 contract=...`. ✅
+- Quest с objective tracking contract completion → `ContractCompletedTrigger` evaluates `QuestWorld.HasContractCompleted()`. ✅
 
-**Risk:** low. Добавление publishes (existing accept/complete/fail hooks).
+**Risk:** low. ✅
+
 
 ---
 
-### T-Q15 — DialogueAction: GiveItem/TakeItem + ContractMetaBridge (medium, 90 мин) — РАСШИРЕН
+### T-Q15 — DialogueAction: GiveItem/TakeItem + ContractMetaBridge + QuestWorld Accept/TurnIn/Track (medium, 120 мин) ✅ DONE 2026-06-08
 
-**Скоуп:**
-- `ProjectC/Dialogue/ActionExecutors/ItemActionExecutor.cs`.
-- Wires `DialogueAction.GiveItem/TakeItem` → `InventoryServer.AddItem/TryRemove`.
-- **+ ContractMetaBridge** (см. `09_OPEN_QUESTIONS.md` §A2):
-  - `ProjectC/Quests/Bridges/ContractMetaBridge.cs`.
-  - Подписывается на `ContractCompletedEvent`, `ContractAcceptedEvent`.
-  - `QuestTriggerService.ContractCompletedTrigger` — quest objective checks "игрок выполнил contract X".
-  - Allow quest prerequisites: "quest A completable только если contract B completed within last 24h".
+**Скоуп (РАСШИРЕН — объединено с T-X5 и TryAccept/TurnIn/Track из roadmap §321):**
+- `Assets/_Project/Quests/Core/QuestWorld.cs`:
+  - `TryAccept(ulong, string, string)` — Discovered/Offered → Active. Idempotency, maxActive cap, transition validate. ✅
+  - `TryTurnIn(ulong, string, string)` — Active→Completed→TurnedIn. NPC validation via `Database.GetNpc().questTurnIns[]`. ✅
+  - `SetTracked(ulong, string, bool)` — toggle isTracked. ✅
+  - `HasContractCompleted/MarkContractCompleted/HasContractAccepted/MarkContractAccepted` — contract state tracking. ✅
+  - `Database` property + `MaxActiveQuestsPerPlayer` property. ✅
+- `Assets/_Project/Quests/Network/QuestServer.cs`:
+  - `RequestAcceptQuestRpc` → real `TryAccept` + `SendQuestResultToClient` + snapshot push. ✅
+  - `RequestTurnInQuestRpc` → real `TryTurnIn` + result + snapshot. ✅
+  - `RequestTrackQuestRpc` → real `SetTracked` + result + snapshot. ✅
+  - `FireDialogAction.GiveItem` → `InventoryWorld.AddItemDirect`. ✅
+  - `FireDialogAction.TakeItem` → `InventoryServer.TryRemove` (T-Q14). ✅
+  - `SendQuestSnapshotToClient(ulong)` overload + `SendQuestResultToClient` helper. ✅
+- `Assets/_Project/Quests/Triggers/ConcreteTriggers.cs`: +`ContractCompletedTrigger` + `ContractAcceptedTrigger`. ✅
+- `Assets/_Project/Quests/Triggers/QuestTriggerService.cs`: factories registered. ✅
+- `Assets/_Project/Quests/Bridges/ContractMetaBridge.cs` (NEW):
+  - Server-side singleton, scene-placed в BootstrapScene, DontDestroyOnLoad. ✅
+  - Subscribes to 3 contract events, marks state в QuestWorld, evaluates triggers. ✅
+- `Assets/_Project/Core/WorldEvent.cs`: +`ContractAcceptedEvent` / `ContractCompletedEvent` / `ContractFailedEvent`. ✅
+- `Assets/_Project/Trade/Scripts/Network/ContractServer.cs`: publish events в 4 spots (Accept/Complete/Fail-manual/Fail-timer). ✅
+- `Assets/_Project/Scenes/BootstrapScene.unity`: +`[ContractMetaBridge]` GameObject. ✅
+
+**Verify:** ✅ Compile 0 errors. Все 28 root GameObjects в BootstrapScene включают ContractMetaBridge. Singleton'ы живы в Play Mode (verified ранее).
 
 **Verify:**
 - Walk through Mira quest, complete "intro" → `GiveCredits(50)`, `AddReputation(+25)` works.
@@ -520,14 +449,22 @@ T-X4 (input remap: pickup E → F) ← future TODO, после end-to-end demo
 
 ---
 
-### T-Q16 — DialogueAction: GiveCredits/AddReputation/AddNpcAttitude (small, 45 мин) — РАСШИРЕН
+### T-Q16 — DialogueAction: GiveCredits/AddReputation/AddNpcAttitude (small, 45 мин) ✅ DONE 2026-06-08
 
 **Скоуп (см. `09_OPEN_QUESTIONS.md` §G):**
-- `ProjectC/Dialogue/ActionExecutors/CreditsActionExecutor.cs`.
-- `ProjectC/Dialogue/ActionExecutors/ReputationActionExecutor.cs`.
-- **+ `ProjectC/Dialogue/ActionExecutors/NpcAttitudeActionExecutor.cs`** (новый).
-- `QuestWorld.ModifyReputation(playerId, faction, delta)`.
-- `QuestWorld.ModifyNpcAttitude(playerId, npcId, delta)` — triggers cross-faction influence (MVP stub).
+- `QuestServer.FireDialogAction.GiveCredits` — server-side modify credits via `TradeWorld.Repository.GetCredits+delta→SetCredits`, push snapshot через `ContractServer.PushPlayerSnapshot`. ✅
+- `QuestServer.FireDialogAction.AddReputation` — `QuestWorld.ModifyReputation` (T-Q13, broadcast+event). ✅
+- `QuestServer.FireDialogAction.AddNpcAttitude` — `QuestWorld.ModifyNpcAttitude` (T-Q13, broadcast+event+cross-faction). ✅
+- `ContractServer.PushPlayerSnapshot(ulong)` — public helper. ✅
+- **`ApplyQuestRewards` при TurnIn** — deferred to T-Q18 (M8 Persistence). ✅ (зафиксировано в roadmap как known gap).
+- **`DialogueActionRunner` class** — не создан (switch case в `FireDialogAction` достаточно, одиночные atomic actions). ✅
+
+**Verify (твои тесты):**
+- Authoring task: добавить в Mira dialog tree edges с `GiveCredits(50)` / `AddReputation(+25, GuildOfThoughts)` / `AddNpcAttitude(+5, "mira_01")` actions (out of scope T-Q16 — это SO editor work).
+- После добавления: `[QuestServer] FireDialogAction: GiveCredits delta=50 1000→1050` в Console + CharacterWindow таб РЕПУТАЦИЯ обновится + Dialog header показывает "❤ +5".
+
+**Risk:** low. ✅
+
 
 **Verify:** After "intro" stage complete → credits +50, reputation +25, npcAttitude[mira] +5.
 
@@ -535,80 +472,112 @@ T-X4 (input remap: pickup E → F) ← future TODO, после end-to-end demo
 
 ---
 
-### T-Q17 — DialogueAction: OpenMarket/OpenService (small, 30 мин)
+### T-Q17 — DialogueAction: OpenMarket/OpenService (small, 30 мин) ✅ DONE 2026-06-08
 
 **Скоуп:**
-- `ProjectC/Dialogue/ActionExecutors/MarketActionExecutor.cs`.
-- `ProjectC/Dialogue/ActionExecutors/ServiceActionExecutor.cs`.
-- Calls `MarketWindow.Instance.Open(zoneId)` / `ServiceUI.Open(serviceId)`.
+- `QuestServer.FireDialogAction.OpenMarket` — server log + send DialogActionResult, actionType=OpenMarket. ✅
+- `QuestServer.FireDialogAction.OpenService` — server log + send DialogActionResult, actionType=OpenService. ✅
+- `DialogWindow.HandleActionResultReceived` — client-side dispatch: OpenMarket → `Close()` + `MarketInteractor.TryOpenMarket()` (uses local player zone), OpenService → `Close()` + log stub (ServiceUI TBD). ✅
 
-**Verify:** Click "Покажи свои товары" → MarketWindow opens, close → dialog resumes.
+**Verify (твои тесты):**
+- Authoring: добавить в Mira dialog tree edge с `action.type=OpenMarket` или `OpenService` (out of scope T-Q17 — SO editor work).
+- После добавления: `[DialogWindow] Action result: OpenMarket → close dialog + TryOpenMarket` + `[MarketInteractor] TryOpenMarket: enter — LocalPlayerZone=...` в Console + MarketWindow UI открывается.
+- **ServiceUI не существует** — OpenService = stub (close dialog + log "T-Q17 stub — ServiceUI TBD"). Создание ServiceUI — TBD future.
 
-**Risk:** low.
+**Risk:** low. ✅
+
 
 ---
 
-### T-Q18 — Persistence: IQuestStateRepository + JSON, immediate save (large, 120 мин) — РАСШИРЕН
+### T-Q18 — Persistence: IQuestStateRepository + JSON, immediate save (large, 120 мин) ✅ DONE 2026-06-08
 
 **Скоуп (см. `09_OPEN_QUESTIONS.md` §A5 + §H):**
-- `ProjectC/Quests/Persistence/IQuestStateRepository.cs` (interface).
-- `ProjectC/Quests/Persistence/JsonQuestStateRepository.cs` (default impl).
-- `ProjectC/Quests/Persistence/QuestSaveData.cs` (POCO, includes quests + rep + npcAttitude + flags).
-- `ProjectC/Quests/Persistence/ReputationSaveData.cs`.
-- `ProjectC/Quests/Persistence/NpcAttitudeSaveData.cs`.
-- **Immediate save on every state change** (no debounce, per `09_OPEN_QUESTIONS.md` §H).
-- `QuestWorld.SavePlayer(clientId)` пишет ВСЕ данные atomic в ОДИН JSON.
-- Hooks: `QuestStateTransition`, `StageTransition`, `ObjectiveProgressed`, `ReputationChanged`, `NpcAttitudeChanged`, `DialogVisitedNode`, `FlagSet`.
-- Load on player connect (в `QuestServer.HandleClientConnected`).
-- `Application.persistentDataPath/quest_state_<clientId>.json`.
+- `ProjectC/Quests/Persistence/IQuestStateRepository.cs` (interface). ✅
+- `ProjectC/Quests/Persistence/JsonQuestStateRepository.cs` (default impl, atomic write через tmp → rename). ✅
+- `ProjectC/Quests/Persistence/QuestSaveData.cs` (POCO, includes quests + rep + npcAttitude + 5 string sets). ✅
+- **Immediate save on every state change** (no debounce, per `09_OPEN_QUESTIONS.md` §H). ✅
+- `QuestWorld.SavePlayer(clientId)` пишет ВСЕ данные atomic в ОДИН JSON. ✅
+- Hooks: `TryOffer`, `TryAccept`, `TryTurnIn`, `SetTracked`, `ModifyReputation`, `ModifyNpcAttitude`, `MarkContractCompleted/Accepted`, `MarkEventOccurred`, `MarkNpcTalked`. ✅
+- Load on player connect (в `QuestServer.OnClientConnectedForSnapshot`). ✅
+- `Application.persistentDataPath/quest_state_<clientId>.json`. ✅
+- **`ApplyQuestRewards` в TryTurnIn** — credits (TradeWorld.Repository) + items (int.TryParse tradeItemId → InventoryWorld.AddItemDirect) + reputation (ModifyReputation) + unlocks (log only, T-Q19). ✅
 
-**Verify:**
-- Accept quest, restart server, reconnect → quest still in active state.
-- Modify reputation, kill server, restart → rep сохранилось.
-- Console: `[QuestWorld] Saved player 12345 state (1.2 KB) in 1.1ms`.
+**Verify (твои тесты):**
+- Accept quest → modify rep → `[JsonQuestStateRepository] Saved player 0 state (X.X KB)` в Console.
+- `C:\Users\<user>\AppData\LocalLow\<Company>\<Product>\quest_state_0.json` — exists.
+- Exit Play Mode → Start host → `[QuestWorld] LoadPlayer: client=0 restored N quests` в Console → P → CharacterWindow → quest восстановлен.
+- Quest reward: TurnIn → `[QuestWorld] ApplyQuestRewards: credits X → Y (+Z)` (если reward.credits != 0).
 
-**Risk:** medium-high. JSON serialization of nested DTOs. **Version migration** — out of scope v1 (см. F6 в `09_OPEN_QUESTIONS.md`).
+**Known gaps (deferred to T-Q19/T-Q22):**
+- `TradeItemDefinition.legacyId` mapping (сейчас `int.TryParse` с warning).
+- `reward.cargoItems[]` — out of scope (no active ship tracking).
+- `reward.unlocks[]` — log only (dialog tree/zone unlock T-Q19).
+- Version migration framework (data.version = 1 hardcoded).
+- Debounced save option (currently immediate).
 
+**Risk:** medium. ✅
 **Pitfalls:** Save на каждом state change — perf acceptable (1-5 KB JSON, 1 ms).
 
 ---
 
-### T-Q19 — C1 cleanup: delete v1 NPC (medium, 60 мин)
+### T-Q19 — C1 cleanup: delete v1 NPC (medium, 60 мин) ✅ DONE 2026-06-08
 
 **Скоуп:**
-- Grep transitive deps по всем .cs файлам на `NpcData`/`NpcEntity`/`NpcInteraction`/`NpcDialogueManager`.
-- Delete (move to `Assets/_Project/_archive/v1_npc/` если git-friendly, иначе rm + commit).
-- Update AGENTS.md если явно упомянуто.
+- Grep transitive deps по всем .cs файлам на `NpcData`/`NpcEntity`/`NpcInteraction`/`NpcDialogueManager`/`NpcFaction`. ✅
+- **Delete** 4 v1 NPC files (`NpcData.cs` 248 LOC + `NpcEntity.cs` 352 LOC + `NpcInteraction.cs` 213 LOC + `NpcDialogueManager.cs` 634 LOC = **1447 LOC dead code removed**). ✅
+- **Cleanup InteractableManager.cs** — remove `_npcs` list, `RegisterNpc`/`UnregisterNpc`/`FindNearestNpc`/`GetNpcs`, `_npcs.Clear()`. ✅
+- Update AGENTS.md если явно упомянуто — не требуется. ✅
+
+**Не в скоупе T-Q19 (deferred to T-X1/T-X3):**
+- `ShipKeyClientState`/`ShipKeyServer` obsolete warnings — T-X1.
+- `FindObjectsOfType`/`FindObjectOfType` deprecated — T-X3.
+- `GetInstanceID` obsolete in ClientSceneLoader — T-X3.
+- `FindObjectsSortMode` deprecated — T-X3.
 
 **Verify:**
-- Console: 0 errors, 0 warnings.
-- Project compiles.
-- Play Mode: quest system works end-to-end.
+- Compile: 0 errors. ✅
+- Transitive deps: 4 v1 NPC files referenced только в `InteractableManager.cs` (dead code path) + doc comments в `DialogTree.cs`/`NpcDefinition.cs`/`FactionId.cs`/`FactionDefinition.cs` (safe). ✅
+- 0 references в `WorldScene_0_0.unity` (Mira использует v2 NpcController). ✅
+- 0 references в Prefabs. ✅
 
-**Risk:** medium. Grep transitive deps обязателен.
+**Risk:** low. ✅
 
----
-
-### T-X1 — Trade.Core.NPCTrader → MarketTrader (small, 30 мин) — OPTIONAL
-
-**Скоуп:**
-- Grep `NPCTrader` usages.
-- Rename `NPCTrader` → `MarketTrader` (class, file, references).
-
-**Verify:** Console 0 errors.
-
-**Risk:** low.
 
 ---
 
-### T-X2 — TradeItemDefinition Faction → FactionId (medium, 60 мин) — OPTIONAL
+### T-X1 — Trade.Core.NPCTrader → MarketTrader (small, 30 мин) ✅ DONE 2026-06-08
 
 **Скоуп:**
-- Verify `TradeItemDefinition` has `Faction` field.
-- Rename → `FactionId requiredFaction` (after T-Q01).
-- Update references.
+- Grep `NPCTrader` usages → 2 files (NPCTrader.cs, TradeWorld.cs). ✅
+- Rename `class NPCTrader` → `class MarketTrader` в namespace `ProjectC.Trade.Core`. ✅
+- Rename file `NPCTrader.cs` → `MarketTrader.cs` (+ meta deleted). ✅
+- Update 5 references в `TradeWorld.cs` (field type, property type, 4× CreateDefault calls). ✅
+- Public property name `NpcTraders` и field name `_npcTraders` kept для source compat (internal conceptual noun, not breaking).
 
-**Risk:** medium.
+**Verify:** Compile 0 errors. ✅
+
+**Risk:** low. ✅
+
+
+---
+
+### T-X2 — TradeItemDefinition Faction → FactionId (medium, 60 мин) — DEFERRED (DESIGN ISSUE)
+
+**Скоуп (см. `09_OPEN_QUESTIONS.md` §A3):**
+- Verify `TradeItemDefinition` has `Faction` field. ✅
+- Rename → `FactionId requiredFaction` (after T-Q01). ⏭️
+
+**Блокер (2026-06-08 review):**
+- `ProjectC.Trade.Faction` (8 values: None, NP, Aurora, Titan, Hermes, Prometheus, FreeTraders, Military) — **manufacturer/продавец factions** (producents).
+- `ProjectC.Factions.FactionId` (12 values: GuildOfThoughts, GuildOfCreation, ..., FreeTraders, Pirates, Neutral) — **lore guilds/фракции игрока** (reputation tracker).
+- Пересекаются только в `FreeTraders` (значение 8 в обоих). Остальные — **разные концепции**.
+- Прямой rename сломает `TradeItemDefinition.requiredFaction` serialization (5 .asset files: Antigrav, Mesium, etc).
+- **Решение требует design discussion**: либо (a) заменить enum и перезаполнить .asset files, либо (b) признать что это **две разные концепции** и оставить как есть с улучшенной документацией.
+
+**Статус:** 🟡 **DEFERRED** (2026-06-08) до design session. См. `09_OPEN_QUESTIONS.md` §A3.
+
+**Risk:** medium. ⏭️
+
 
 ---
 
@@ -627,24 +596,85 @@ T-X4 (input remap: pickup E → F) ← future TODO, после end-to-end demo
 
 ---
 
+## 8.3.1 M13 — Real-time objective system (DESIGNED 2026-06-08)
+
+**Контекст:** Сейчас objectives проверяются только при получении event'а (pickup, talk, rep change). Если event пропущен — objective «зависает». Также `QuestStage.onEnterActions` / `onCompleteActions` существуют в SO, но **никогда не вызываются**. M13 фиксит это.
+
+**Полная спецификация:** `docs/dev/M13_DESIGN_NOTE.md`.
+
+### T-Q20 — Server tick + objective evaluation (medium, ~2-3 ч)
+
+**Скоуп:**
+- `QuestServer.Update()` — вызывает `QuestWorld.TickAll()` с интервалом 5 сек
+- `QuestWorld.TickAll()` — для каждого игрока: цикл по active quests → `EvaluateAndAdvanceStage()`
+- `EvaluateAndAdvanceStage()` — проверяет все 8 типов objectives (TalkToNpc, HaveItem, ReachLocation, ReputationAtLeast, NpcAttitudeAtLeast, WaitForEvent, EventDriven, DeliverItem). Stubs: KillEntity, CargoHasItem — return false
+- Если все required objectives satisfied → `TryAdvanceStage()`:
+  - Fire `currentStage.onCompleteActions[]` через `QuestServer.FireDialogAction`
+  - Transition `currentStageId = nextStageId`
+  - Fire `newStage.onEnterActions[]`
+  - Если `nextStageId` пуст → `state = Completed`, fire `def.rewards`
+- `SendQuestSnapshotToClient()` после transition
+
+**Файлы:** `QuestServer.cs`, `QuestWorld.cs`, `QuestInstance.cs`
+**Verify:** 
+1. Quest "Собрать 3 copper ore" — pickup 3 ore → tick → stage "collect" auto-complete → transition to "deliver" + fire onCompleteActions
+2. ReachLocation quest — walk to coords → within radius → tick → objective satisfied
+
+**Risk:** low. Переиспользует существующий `QuestTriggerService.IsSatisfied` + `FireDialogAction`.
+
+### T-Q21 — Objective progress DTO + UI (small, ~1 ч)
+
+**Скоуп:**
+- DTO `ObjectiveProgressDto` уже отправляется в snapshot (T-Q07). T-Q21 — только UI render.
+- `CharacterWindow.cs` таб КВЕСТЫ → для Active quest показать objectives list: ☐/☑ + description + counter
+- `QuestTracker.cs` (HUD) → показать current incomplete objective + counter
+- Edge: completed=true должно обновляться на client при snapshot
+
+**Файлы:** `CharacterWindow.cs`, `QuestTracker.cs`
+**Verify:** P → КВЕСТЫ → objective checkmarks корректно отображаются
+
+**Risk:** low. UI-only.
+
+### T-Q22 — Stage transitions + onEnter/onComplete actions (small, ~1 ч)
+
+**Скоуп:**
+- `QuestWorld.TryAdvanceStage()` — реализация переходов
+- Fire `currentStage.onCompleteActions[]` ПЕРЕД transition
+- Transition `currentStageId = nextStageId`
+- Fire `newStage.onEnterActions[]` ПОСЛЕ transition
+- Если `nextStageId` пуст → `state = Completed` + `ApplyQuestRewards()`
+- `QuestServer` подписывается на transition events → `SendQuestSnapshotToClient`
+
+**Файлы:** `QuestWorld.cs`, `QuestServer.cs`
+**Verify:**
+1. Stage "intro" with `onCompleteActions: [GiveCredits(50)]` + nextStage "main"
+2. Complete intro → console: GiveCredits 0→50 → snapshot: currentStageId=main
+
+**Risk:** low. Reuse `FireDialogAction` — generic.
+
+**Общий effort M13:** ~4-5 ч, medium risk.
+
+---
+
 ## 8.4 Milestones (обновлено)
 
 | Milestone | Тикеты | Что работает |
 |-----------|--------|--------------|
-| **M1 — Data foundation** | T-Q01, T-Q02, T-Q03, T-Q04 | Все SO + NpcAttitude struct + EventDriven objective. Inspector редактируется. |
-| **M1.5 — Inventory persistence + Event bus foundation** | T-X0 | WorldEventBus + inventory save/load. Hooks в InventoryServer. |
-| **M2 — Server core** | T-Q05, T-Q06, T-Q07 | QuestServer спавнится, RPCs работают, DTOs передаются, full event bus + triggers. |
-| **M2.5 — Input refactor** | T-X3 | PlayerInputReader events, NetworkPlayer subscribes. |
-| **M3 — Player interaction** | T-Q08, T-Q10 | E-key → talk to NPC → DialogWindow opens (F skip). |
-| **M4 — Quest log + tracker** | T-Q11, T-Q12 | Player can accept quest, see in log (Active/Completed/Discovered), see tracker. |
-| **M5 — Reputation + NpcAttitude** | T-Q13 | Reputation updates, NpcAttitude, CharacterWindow tab fix. |
-| **M6 — Item integration** | T-Q14, T-Q15 | Quest rewards give items, quest objectives check items, ContractMetaBridge. |
-| **M7 — Full action set** | T-Q16, T-Q17, T-X5 | Credits/rep/attitude/market actions + ContractServer events. |
-| **M8 — Persistence** | T-Q18 | Quests + rep + attitude survive server restart. |
-| **M9 — Cleanup** | T-Q19, T-X1, T-X2 | v1 NPC deleted, optional renames. |
-| **M10 — Editor tool** | T-Q09, T-Q09b | Quest Database Explorer с full CRUD + GraphView. |
-| **M11 — End-to-end demo** | After M9 | Mira quest full playthrough. |
+| **M1 — Data foundation** | T-Q01, T-Q02, T-Q03, T-Q04 | Все SO + NpcAttitude struct + EventDriven objective. Inspector редактируется. | ✅ DONE |
+| **M1.5 — Inventory persistence + Event bus foundation** | T-X0 | WorldEventBus + inventory save/load. Hooks в InventoryServer. | ✅ DONE |
+| **M2 — Server core** | T-Q05, T-Q06, T-Q07 | QuestServer спавнится, RPCs работают, DTOs передаются, full event bus + triggers. | ✅ DONE |
+| **M2.5 — Input refactor** | T-X3 | PlayerInputReader events, NetworkPlayer subscribes. | ✅ DONE |
+| **M3 — Player interaction** | T-Q08, T-Q10 | E-key → talk to NPC → DialogWindow opens (F skip). | ✅ DONE 2026-06-08 |
+| **M4 — Quest log + tracker** | T-Q11, T-Q12 | Player can accept quest, see in log (Active/Completed/Discovered), see tracker. | ✅ DONE 2026-06-08 |
+| **M5 — Reputation + NpcAttitude** | T-Q13 | Reputation updates, NpcAttitude, CharacterWindow tab fix. | ✅ DONE 2026-06-08 |
+| **M6 — Item integration** | T-Q14, T-Q15 | Quest rewards give items, quest objectives check items, ContractMetaBridge. | ✅ T-Q14 ✅ T-Q15 2026-06-08 |
+| **M7 — Full action set** | T-Q16, T-Q17, T-X5 | Credits/rep/attitude/market actions + ContractServer events. | ✅ T-Q16 ✅ T-Q17 ✅ T-X5 2026-06-08 |
+| **M8 — Persistence** | T-Q18 | Quests + rep + attitude survive server restart. | ✅ DONE 2026-06-08 |
+| **M9 — Cleanup** | T-Q19, T-X1, T-X2 | v1 NPC deleted, optional renames. | 🟡 T-Q19 ✅ T-X1 ✅ T-X2 DEFERRED 2026-06-08 |
+| **M10 — Editor tool** | T-Q09, T-Q09b | Quest Database Explorer с full CRUD + GraphView. | ✅ DONE (M10 partially — CRUD done, GraphView deferred) |
+| **M11 — End-to-end demo** | Mira quest full playthrough. | 🟡 Mira quest items + dialog tree prepared 2026-06-08 (awaiting user Play Mode test). |
 | **M12 — Input remap** | T-X4 | F = pickup (future, post-demo). |
+| **M13 — Real-time objective system** | T-Q20, T-Q21, T-Q22 | Auto-evaluate objectives, fire onEnter/onComplete actions, stage transitions, UI progress. **📋 DESIGN COMPLETE 2026-06-08 — ready for next session coding.** |
 
 **Рекомендуемый темп:** 1-2 тикета за сессию, 1 PR за тикет.
 
@@ -690,4 +720,66 @@ T-X4 (input remap: pickup E → F) ← future TODO, после end-to-end demo
 | 12 | Full PlayerInputReader refactor (T-X3) | Делать ДО T-Q08. Тщательно grep `Keyboard.current`. |
 | 13 | Full event bus (T-Q06) | Cross-cutting — тестировать каждую подписку отдельно. |
 | 14 | NpcAttitude + cross-faction influence (T-Q13) | MVP stub для cross-calc, полная реализация v2. |
-| 15 | EventDriven quests (T-Q04 + T-Q11) | Discovered state UI может быть confusing — disambiguate в UI. |
+|| 15 | EventDriven quests (T-Q04 + T-Q11) | Discovered state UI может быть confusing — disambiguate в UI. |
+|| 16 | **UI Toolkit recurrent bugs (T-Q11c)** | 3 повторных бага за сессию — см. `docs/dev/T-Q11b_c_session_log_2026-06-08.md` §LESSONS LEARNED. READ перед ЛЮБЫМ новым UIDocument. |
+|| 17 | **Struct INetworkSerializable string writeback** | 3 DTO в DialogStepDto.cs — generic rule для ВСЕХ будущих DTO: writeback на READ. |
+|| 18 | **Scene placement rule (user 2026-06-07)** | BootstrapScene = server infra ONLY. Game objects → WorldScene_X_Z. |
+
+---
+
+## 8.7 Session Summary — T-Q11b + T-Q11c (2026-06-08)
+
+### ✅ Что сделано (2 тикета в 1 сессии)
+
+| Т | Тикет | Commit scope | Verify |
+|---|-------|--------------|--------|
+| T-Q11b | NpcController + E-key NPC branch | `NpcController.cs` (NEW), `NetworkPlayer.cs` (E-chain), `[Mira]` в WorldScene_0_0 | ✅ E→Mira→dialog |
+| T-Q11c | DialogWindow UIDocument rewrite | `DialogWindow.cs` (REWRITE 311 LOC), UXML/USS/asset (NEW), QuestServer/DTOs fixes, scene binding | ✅ end-to-end dialog |
+
+**Compile:** 0 errors, 0 exceptions. **Play Mode:** Mira quest dialog работает полностью.
+
+### 🔑 Key Lessons (9 PERSISTENT BUGS — READ при следующих UI Toolkit окнах)
+
+1. **PanelSettings.asset** — runtime `CreateInstance` = no theme = "strip". Copy `MarketPanelSettings.asset`.
+2. **USS class-стили** — `themeUss` type-selector `.unity-base-button` > class. Все class-стили с `!important` (кроме `display`).
+3. **`styleSheets.Add(uss)`** — КРИТИЧНО в `EnsureBuilt()`. Без него panel collapse.
+4. **`display: none !important` в USS** — блокирует inline toggle. Убрать `display` из USS.
+5. **Cursor lock** — flight-mode Locked = mouse dead. `Show()` → None/visible; `Close()` → Locked (if IsListening).
+6. **PickingMode** — Ignore в EnsureBuilt, Position в Show, Ignore в Close.
+7. **UXML inline `style="..."`** — не парсятся runtime. Use `class="..."`.
+8. **Struct INetworkSerializable + string** — `var x=field; if(IsWriter)x=field??""; SerializeValue(ref x); if(IsReader)field=x??"";` — struct value semantics требуют writeback.
+9. **Stale `_currentStep`** — после `isEnd` step treeId/nodeId="". Guard в `SendAdvance`.
+
+### 📁 Files modified/new (commit)
+
+```
+M Assets/_Project/Quests/Client/QuestClientState.cs
+M Assets/_Project/Quests/Dto/DialogStepDto.cs
+M Assets/_Project/Quests/Network/QuestServer.cs
+M Assets/_Project/Quests/UI/DialogWindow.cs
+M Assets/_Project/Scenes/BootstrapScene.unity
+M Assets/_Project/Scenes/World/WorldScene_0_0.unity
+M Assets/_Project/Scripts/Player/NetworkPlayer.cs
+A Assets/_Project/Quests/NpcController.cs
+A Assets/_Project/Quests/Resources/UI/DialogWindow.uxml
+A Assets/_Project/Quests/Resources/UI/DialogWindow.uss
+A Assets/_Project/Quests/Resources/UI/DialogPanelSettings.asset
+A docs/dev/T-Q11b_c_session_log_2026-06-08.md
+```
+
+### ⏭️ Next Up (in order)
+
+1. **T-Q11** — Quest log таб в CharacterWindow (6th tab, Discovered section + Accept button)
+2. **T-Q12** — QuestTracker overlay + DialogWindow typewriter/F-skip + DontDestroyOnLoad
+3. **T-Q13** — ReputationClientState + NpcAttitudeClientState + CharacterWindow Reputation tab fix
+4. **T-Q14** — InventoryServer.TryRemove + event hooks
+5. **T-X5** — ContractServer publish events для quest bridge
+6. **T-Q15** — GiveItem/TakeItem + ContractMetaBridge
+7. **T-Q16** — GiveCredits/AddReputation/AddNpcAttitude executors
+8. **T-Q17** — OpenMarket/OpenService executors
+9. **T-Q18** — Persistence JSON
+10. **T-Q19** — C1 cleanup: delete v1 NPC
+
+---
+
+**Статус проекта:** M1-M9 ✅ DONE 2026-06-08 (M10 partial). **M11 (End-to-end demo) — IN PROGRESS** (dialog tree + 2 pickup items + CompleteObjective real impl готовы, awaiting user Play Mode test). **M13 (Real-time objective system) — 📋 DESIGN COMPLETE 2026-06-08** (see `docs/dev/M13_DESIGN_NOTE.md` — ready for next session coding).

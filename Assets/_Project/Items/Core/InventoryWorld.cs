@@ -23,6 +23,7 @@
 // =====================================================================================
 
 using System.Collections.Generic;
+using ProjectC.Core;
 using ProjectC.Items.Dto;
 using UnityEngine;
 
@@ -40,21 +41,81 @@ namespace ProjectC.Items
 
         public static InventoryWorld Instance { get; private set; }
 
+        /// <summary>
+        /// Repository для persistence (T-X0). Может быть null (legacy / no-save mode) —
+        /// в этом случае Save/Load no-op.
+        /// </summary>
+        private IInventoryRepository _repository;
+
         public static InventoryWorld CreateAndInitialize()
         {
             if (Instance != null) return Instance;
             Instance = new InventoryWorld();
             Instance.RegisterAllItems();
-            Debug.Log($"[InventoryWorld] Created. Items registered: {Instance._itemDatabase.Count}");
+            Debug.Log($"[InventoryWorld] Created (no repository). Items registered: {Instance._itemDatabase.Count}");
+            return Instance;
+        }
+
+        /// <summary>
+        /// T-X0: Create with persistence repository. Repository.Save/Load вызываются
+        /// на каждом Add/Remove (fire-and-forget, no debounce — per §H).
+        /// </summary>
+        public static InventoryWorld CreateAndInitialize(IInventoryRepository repository)
+        {
+            if (Instance != null)
+            {
+                // Replace singleton if exists (testing convenience).
+                Instance._repository = repository;
+                return Instance;
+            }
+            Instance = new InventoryWorld();
+            Instance._repository = repository;
+            Instance.RegisterAllItems();
+            Debug.Log($"[InventoryWorld] Created with {repository?.GetType().Name ?? "null"}. Items registered: {Instance._itemDatabase.Count}");
             return Instance;
         }
 
         public static void Shutdown()
         {
             if (Instance == null) return;
+            // T-X0: save all dirty players before shutdown.
+            if (Instance._repository != null)
+            {
+                foreach (var kvp in Instance._playerInventories)
+                {
+                    Instance._repository.Save(kvp.Key, kvp.Value);
+                }
+            }
             Instance._playerInventories.Clear();
             Instance._itemDatabase.Clear();
+            Instance._repository = null;
             Instance = null;
+        }
+
+        /// <summary>Public accessor for tests / debug.</summary>
+        public IInventoryRepository Repository => _repository;
+
+        /// <summary>
+        /// T-X0: Load persisted inventory for player (on connect). Replaces in-memory
+        /// state if file exists. Безопасно вызывать несколько раз — идемпотентно.
+        /// </summary>
+        public void LoadPlayer(ulong clientId)
+        {
+            if (_repository == null) return;
+            var loaded = _repository.Load(clientId);
+            if (loaded.TotalCount > 0)
+            {
+                _playerInventories[clientId] = loaded;
+                if (Debug.isDebugBuild) Debug.Log($"[InventoryWorld] Loaded inventory for client {clientId}: {loaded.TotalCount} items");
+            }
+        }
+
+        /// <summary>Save single player. Public для QuestServer.TurnInQuest flow (T-Q16) и shutdown.</summary>
+        public void SavePlayer(ulong clientId)
+        {
+            if (_repository == null) return;
+            if (!_playerInventories.TryGetValue(clientId, out var inv)) return;
+            _repository.Save(clientId, inv);
         }
 
         // ===========================================================
@@ -260,6 +321,11 @@ namespace ProjectC.Items
             // OK: добавляем
             data.AddItem(itemType, itemId);
             Debug.Log($"[InventoryWorld] Player {clientId} picked up ID={itemId} ({itemType}). Total: {data.TotalCount}");
+
+            // T-X0: persist + publish event
+            SavePlayer(clientId);
+            PublishItemAdded(clientId, itemId, itemType, count: 1);
+
             return Ok($"Подобран предмет", itemId, -1);
         }
 
@@ -323,6 +389,10 @@ namespace ProjectC.Items
             else
                 Debug.Log($"[InventoryWorld] Player {clientId} dropped {foundType} ID={foundItemId} at {worldPos} (still has {foundList.Count} of this type)");
 
+            // T-X0: persist + publish event
+            SavePlayer(clientId);
+            PublishItemRemoved(clientId, foundItemId, foundType, count: 1);
+
             return Ok($"Dropped {foundType} ID={foundItemId}", foundItemId, slotIndex);
         }
 
@@ -363,7 +433,91 @@ namespace ProjectC.Items
                     $"Инвентарь полон ({data.TotalCount}/{MAX_SLOTS})", itemId, -1);
 
             data.AddItem(itemType, itemId);
+
+            // T-X0: persist + publish event
+            SavePlayer(clientId);
+            PublishItemAdded(clientId, itemId, itemType, count: 1);
+
             return Ok($"+{_itemDatabase[itemId].itemName}", itemId, -1);
+        }
+
+        // ============================================================
+        // T-Q14: RemoveItems — удалить N штук предмета (для quest turn-in, dialogue TakeItem, etc.)
+        // ============================================================
+
+        /// <summary>
+        /// T-Q14: удалить N штук предмета itemId (типа itemType) из инвентаря игрока.
+        /// Используется для quest turn-in (QuestServer), dialogue TakeItem (T-Q15), и любого
+        /// server-side сценария "забрать предмет". НЕ вызывается на клиенте — защита через InventoryServer.IsServer.
+        /// </summary>
+        /// <returns>Ok если удалено, Fail если itemId не найден или недостаточно count.</returns>
+        public InventoryResultDto RemoveItems(ulong clientId, int itemId, ItemType itemType, int count)
+        {
+            if (count <= 0)
+                return Fail(InventoryResultCode.NotEnoughQuantity, $"count={count} должен быть >0", itemId, -1);
+            if (!_itemDatabase.ContainsKey(itemId))
+                return Fail(InventoryResultCode.ItemNotFound, $"ID={itemId}", itemId, -1);
+
+            var data = GetOrCreate(clientId);
+            var ids = data.GetIdsForType(itemType);
+            if (ids == null)
+                return Fail(InventoryResultCode.ItemNotOwned, $"Нет предметов типа {itemType}", itemId, -1);
+
+            // Считаем сколько раз itemId встречается в списке
+            int available = 0;
+            for (int i = 0; i < ids.Count; i++)
+            {
+                if (ids[i] == itemId) available++;
+            }
+            if (available < count)
+                return Fail(InventoryResultCode.NotEnoughQuantity,
+                    $"Недостаточно: have={available} need={count}", itemId, -1);
+
+            // Удаляем первые `count` вхождений (для MVP — каждый id = 1 quantity).
+            int removed = 0;
+            for (int i = ids.Count - 1; i >= 0 && removed < count; i--)
+            {
+                if (ids[i] == itemId) { ids.RemoveAt(i); removed++; }
+            }
+
+            // T-X0: persist + publish event (один event на count, не на каждый item).
+            SavePlayer(clientId);
+            PublishItemRemoved(clientId, itemId, itemType, count);
+
+            Debug.Log($"[InventoryWorld] Player {clientId} removed {count}x ID={itemId} ({itemType}). Remaining: {ids.Count}");
+            return Ok($"-{count}x {_itemDatabase[itemId].itemName}", itemId, -1);
+        }
+
+        // ============================================================
+        // T-X0: Event publishing helpers
+        // ============================================================
+
+        private void PublishItemAdded(ulong clientId, int itemId, ItemType itemType, int count)
+        {
+            if (_itemDatabase.TryGetValue(itemId, out var def) && def != null)
+            {
+                // Def has `itemName` but no Trade itemId string. TradeItemId остаётся пустым — T-Q06 cross-link опционален.
+                WorldEventBus.Publish(new ItemAddedEvent
+                {
+                    PlayerId = clientId,
+                    TimestampUnix = System.DateTimeOffset.UtcNow.ToUnixTimeSeconds(),
+                    ItemId = itemId,
+                    Count = count,
+                    TradeItemId = ""  // T-Q06: lookup via ItemData → TradeItemDefinition mapping
+                });
+            }
+        }
+
+        private void PublishItemRemoved(ulong clientId, int itemId, ItemType itemType, int count)
+        {
+            WorldEventBus.Publish(new ItemRemovedEvent
+            {
+                PlayerId = clientId,
+                TimestampUnix = System.DateTimeOffset.UtcNow.ToUnixTimeSeconds(),
+                ItemId = itemId,
+                Count = count,
+                TradeItemId = ""
+            });
         }
 
         // ===========================================================
@@ -397,7 +551,7 @@ namespace ProjectC.Items
                 locationId = locationId,
                 items      = items.ToArray(),
                 maxSlots   = MAX_SLOTS,
-                credits    = 0f,                       // Phase 2: подтянуть из PlayerDataRepository
+                credits    = ProjectC.Trade.Core.TradeWorld.Instance?.Repository?.GetCredits(clientId) ?? 0f,
             };
         }
 

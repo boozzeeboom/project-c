@@ -175,6 +175,44 @@ namespace ProjectC.Items.Network
             SendResult(clientId, result);
         }
 
+        // ============================================================
+        // T-Q14: TryRemove (server-side helper) + RequestRemoveRpc (client-initiated)
+        // ============================================================
+
+        /// <summary>
+        /// T-Q14: удалить N штук предмета напрямую на сервере. Используется для quest turn-in
+        /// (QuestServer.RequestTurnInQuestRpc → QuestWorld.TryTurnIn → InventoryServer.TryRemove),
+        /// dialogue TakeItem (T-Q15: DialogueAction.TakeItem → QuestServer → InventoryServer.TryRemove),
+        /// и любого server-side сценария "забрать предмет".
+        /// НЕ вызывается на клиенте — защита через IsServer.
+        /// </summary>
+        public bool TryRemove(ulong clientId, int itemId, ItemType itemType, int count)
+        {
+            if (!IsServer) return false;
+            if (InventoryWorld.Instance == null) return false;
+            var result = InventoryWorld.Instance.RemoveItems(clientId, itemId, itemType, count);
+            if (result.IsSuccess)
+            {
+                // Отправим snapshot клиенту
+                SendSnapshot(clientId, null);
+            }
+            return result.IsSuccess;
+        }
+
+        /// <summary>
+        /// T-Q14: client-initiated removal. На будущее — для dialogue option "Сдать предмет" (T-Q15+).
+        /// Сейчас основной path — server-side TryRemove.
+        /// </summary>
+        [Rpc(SendTo.Server, InvokePermission = RpcInvokePermission.Owner)]
+        public void RequestRemoveRpc(int itemId, byte typeByte, int count, RpcParams rpcParams = default)
+        {
+            ulong clientId = rpcParams.Receive.SenderClientId;
+            if (!CheckRateLimit(clientId)) return;
+            var result = InventoryWorld.Instance.RemoveItems(clientId, itemId, (ItemType)typeByte, count);
+            if (result.IsSuccess) SendSnapshot(clientId, null);
+            SendResult(clientId, result);
+        }
+
         [Rpc(SendTo.Server, InvokePermission = RpcInvokePermission.Owner)]
         public void RequestUseRpc(int slotIndex, RpcParams rpcParams = default)
         {
@@ -215,6 +253,12 @@ namespace ProjectC.Items.Network
             }
             var snap = InventoryWorld.Instance.BuildSnapshot(clientId, locationId);
             networkPlayer.ReceiveInventorySnapshotTargetRpc(snap);
+        }
+
+        /// <summary>T-Q21/M11: public helper для QuestServer (GiveCredits → push refreshed snapshot).</summary>
+        public void PushSnapshot(ulong clientId)
+        {
+            SendSnapshot(clientId, null);
         }
 
         private void SendResult(ulong clientId, InventoryResultDto result)
@@ -273,7 +317,16 @@ namespace ProjectC.Items.Network
 
             if (IsServer && InventoryWorld.Instance == null)
             {
-                InventoryWorld.CreateAndInitialize();
+                // T-X0: instantiate repository. Default = JsonInventoryRepository (per-file JSON).
+                // Альтернатива (test): new InMemoryInventoryRepository() — out of scope T-X0.
+                var repository = new ProjectC.Core.JsonInventoryRepository();
+                InventoryWorld.CreateAndInitialize(repository);
+
+                // T-X0: hook client connect → load persisted inventory.
+                if (NetworkManager != null)
+                {
+                    NetworkManager.OnClientConnectedCallback += HandleClientConnectedServer;
+                }
             }
 
             // Кэш ItemData — заполняем из InventoryWorld (для клиентского UI)
@@ -292,14 +345,30 @@ namespace ProjectC.Items.Network
             }
 
             if (Instance == null) Instance = this;
-            Debug.Log($"[InventoryServer] OnNetworkSpawn. IsServer={IsServer}, _itemCache={_itemCache.Count}");
+            Debug.Log($"[InventoryServer] OnNetworkSpawn. IsServer={IsServer}, _itemCache={_itemCache.Count}, repo={InventoryWorld.Instance?.Repository?.GetType().Name ?? "null"}");
         }
 
         public override void OnNetworkDespawn()
         {
             base.OnNetworkDespawn();
+            if (NetworkManager != null)
+            {
+                NetworkManager.OnClientConnectedCallback -= HandleClientConnectedServer;
+            }
             if (Instance == this) Instance = null;
             _opTimestamps.Clear();
+        }
+
+        /// <summary>
+        /// T-X0: load persisted inventory when client connects. Safe если файл
+        /// не существует (новый игрок) — LoadPlayer no-op.
+        /// </summary>
+        private void HandleClientConnectedServer(ulong clientId)
+        {
+            if (!IsServer) return;
+            if (InventoryWorld.Instance == null) return;
+            InventoryWorld.Instance.LoadPlayer(clientId);
+            if (Debug.isDebugBuild) Debug.Log($"[InventoryServer] HandleClientConnectedServer({clientId}) — inventory loaded");
         }
     }
 }

@@ -28,11 +28,12 @@ namespace ProjectC.Trade.Core
         public TradeItemDefinitionResolver Resolver { get; private set; }
 
         private readonly Dictionary<string, MarketState> _markets = new Dictionary<string, MarketState>();
-        private readonly List<NPCTrader> _npcTraders = new List<NPCTrader>();
+        // T-X1: renamed NPCTrader → MarketTrader (M9 cleanup). _npcTraders list name kept for source compat.
+        private readonly List<MarketTrader> _npcTraders = new List<MarketTrader>();
         private readonly List<MarketEvent> _activeEvents = new List<MarketEvent>();
 
         public IReadOnlyDictionary<string, MarketState> Markets => _markets;
-        public IReadOnlyList<NPCTrader> NpcTraders => _npcTraders;
+        public IReadOnlyList<MarketTrader> NpcTraders => _npcTraders;
         public IReadOnlyList<MarketEvent> ActiveEvents => _activeEvents;
 
         public bool IsInitialized { get; private set; }
@@ -108,19 +109,20 @@ namespace ProjectC.Trade.Core
 
         private void InitDefaultNPCTraders()
         {
-            _npcTraders.Add(NPCTrader.CreateDefault(
+            // T-X1: NPCTrader.CreateDefault → MarketTrader.CreateDefault.
+            _npcTraders.Add(MarketTrader.CreateDefault(
                 "npc_state_convoy", "ГосКонвой",
                 "primium", "tertius", "mesium_canister_v01",
                 5, 8, TradeCondition.Always));
-            _npcTraders.Add(NPCTrader.CreateDefault(
+            _npcTraders.Add(MarketTrader.CreateDefault(
                 "npc_wind_trader", "Ветер",
                 "primium", "secundus", "antigrav_ingot_v01",
                 3, 5, TradeCondition.Always));
-            _npcTraders.Add(NPCTrader.CreateDefault(
+            _npcTraders.Add(MarketTrader.CreateDefault(
                 "npc_caravan", "Караванщик",
                 "tertius", "quartus", "latex_roll_v01",
                 8, 12, TradeCondition.SupplyThreshold, 0.3f));
-            _npcTraders.Add(NPCTrader.CreateDefault(
+            _npcTraders.Add(MarketTrader.CreateDefault(
                 "npc_shuttle", "Челнок",
                 "secundus", "primium", "mesium_canister_v01",
                 2, 4, TradeCondition.PriceThreshold, 1.3f));

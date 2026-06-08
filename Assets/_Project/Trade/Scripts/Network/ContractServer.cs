@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using ProjectC.Core;
 using ProjectC.Player;
 using ProjectC.Trade.Core;
 using ProjectC.Trade.Dto;
@@ -166,9 +167,18 @@ namespace ProjectC.Trade.Network
             var dto = BuildResultDto(clientId, r, contractId);
             SendResultToOwner(clientId, dto);
 
-            // Re-snapshot чтобы UI увидел обновлённый active[]
+            // T-X5/T-Q15: publish ContractAcceptedEvent → ContractMetaBridge.
             if (r.IsSuccess)
             {
+                WorldEventBus.Publish(new ContractAcceptedEvent
+                {
+                    PlayerId = clientId,
+                    TimestampUnix = System.DateTimeOffset.UtcNow.ToUnixTimeSeconds(),
+                    ContractId = contractId,
+                    FromNpcId = contract.fromLocationId
+                });
+
+                // Re-snapshot чтобы UI увидел обновлённый active[]
                 var snap = ContractWorld.Instance.BuildSnapshot(clientId, contract.fromLocationId, zone.DisplayName, 1f, 0f);
                 SendSnapshotToClient(clientId, snap);
             }
@@ -198,9 +208,17 @@ namespace ProjectC.Trade.Network
             var dto = BuildResultDto(clientId, r, contractId);
             SendResultToOwner(clientId, dto);
 
-            // Re-snapshot
+            // T-X5/T-Q15: publish ContractCompletedEvent → ContractMetaBridge.
             if (r.IsSuccess)
             {
+                WorldEventBus.Publish(new ContractCompletedEvent
+                {
+                    PlayerId = clientId,
+                    TimestampUnix = System.DateTimeOffset.UtcNow.ToUnixTimeSeconds(),
+                    ContractId = contractId,
+                    WasReceipt = false // T-Q15: instrumentation для Receipt vs Time-out — out of scope.
+                });
+
                 var zone = MarketZoneRegistry.Get(contract.toLocationId);
                 var snap = ContractWorld.Instance.BuildSnapshot(clientId, contract.toLocationId,
                     zone != null ? zone.DisplayName : contract.toLocationId, 1f, 0f);
@@ -219,13 +237,25 @@ namespace ProjectC.Trade.Network
             var dto = BuildResultDto(clientId, r, contractId);
             SendResultToOwner(clientId, dto);
 
-            // Re-snapshot с локации, на которой был контракт
-            if (r.Contract != null)
+            // T-X5/T-Q15: publish ContractFailedEvent → ContractMetaBridge.
+            if (r.IsSuccess)
             {
-                var zone = MarketZoneRegistry.Get(r.Contract.fromLocationId);
-                var snap = ContractWorld.Instance.BuildSnapshot(clientId, r.Contract.fromLocationId,
-                    zone != null ? zone.DisplayName : r.Contract.fromLocationId, 1f, 0f);
-                SendSnapshotToClient(clientId, snap);
+                WorldEventBus.Publish(new ContractFailedEvent
+                {
+                    PlayerId = clientId,
+                    TimestampUnix = System.DateTimeOffset.UtcNow.ToUnixTimeSeconds(),
+                    ContractId = contractId,
+                    DebtIncurred = false // T-Q15: full debt instrumentation — out of scope.
+                });
+
+                // Re-snapshot с локации, на которой был контракт
+                if (r.Contract != null)
+                {
+                    var zone = MarketZoneRegistry.Get(r.Contract.fromLocationId);
+                    var snap = ContractWorld.Instance.BuildSnapshot(clientId, r.Contract.fromLocationId,
+                        zone != null ? zone.DisplayName : r.Contract.fromLocationId, 1f, 0f);
+                    SendSnapshotToClient(clientId, snap);
+                }
             }
         }
 
@@ -271,6 +301,15 @@ namespace ProjectC.Trade.Network
                 };
                 SendResultToOwner(playerId, dto);
 
+                // T-X5/T-Q15: publish ContractFailedEvent для auto-fail by timer.
+                WorldEventBus.Publish(new ContractFailedEvent
+                {
+                    PlayerId = playerId,
+                    TimestampUnix = System.DateTimeOffset.UtcNow.ToUnixTimeSeconds(),
+                    ContractId = contractId,
+                    DebtIncurred = ContractWorld.Instance.GetOrCreateDebt(playerId).CurrentDebt > 0
+                });
+
                 // Re-snapshot с локации отправления (где была доска)
                 var zone = MarketZoneRegistry.Get(contract.fromLocationId);
                 if (zone != null)
@@ -285,6 +324,26 @@ namespace ProjectC.Trade.Network
         // ========================================================
         // SEND HELPERS
         // ========================================================
+
+        /// <summary>
+        /// T-Q16 fix: push fresh contract snapshot к клиенту (используется QuestServer.GiveCredits
+        /// и любым другим server-side изменением credits). Rebuilds snapshot с текущими данными
+        /// + last known location (если есть). Без зоны — базовая версия (без displayName).
+        /// </summary>
+        public void PushPlayerSnapshot(ulong clientId)
+        {
+            if (!IsServer) return;
+            if (ContractWorld.Instance == null) return;
+
+            // T-Q16: get player's current zone (best-effort) — для отображения market name.
+            // Если неизвестно — fallback на пустую строку + 0 multipler.
+            string locationId = "";
+            string displayName = "";
+            float timeMult = 1f;
+            float nextTick = 0f;
+            var snap = ContractWorld.Instance.BuildSnapshot(clientId, locationId, displayName, timeMult, nextTick);
+            SendSnapshotToClient(clientId, snap);
+        }
 
         private void SendSnapshotToClient(ulong clientId, ContractSnapshotDto snapshot)
         {

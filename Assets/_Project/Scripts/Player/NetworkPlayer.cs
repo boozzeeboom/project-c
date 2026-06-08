@@ -379,6 +379,9 @@ namespace ProjectC.Player
                     // — RequestCanUse. Иначе fallback на chest/pickup/market.
                     if (TryInteractNearestMetaRequirement()) return;
 
+                    // T-Q11b: NPC interact (higher priority than market) — открыть диалог.
+                    if (TryInteractNearestNpc()) return;
+
                     FindNearestInteractable();
                     if (_nearestChest != null || _nearestNetworkChest != null)
                     {
@@ -632,6 +635,37 @@ namespace ProjectC.Player
             _lastCanUseRequestTime = Time.unscaledTime;
             _pendingCanUseInteractableId = nearest.NetworkObjectId;
             ProjectC.MetaRequirement.MetaRequirementClientState.Instance?.RequestCanUse(nearest.NetworkObjectId);
+            return true;
+        }
+
+        // T-Q11b: NPC dialog trigger. Find nearest NpcController, call RequestTalkToNpc.
+        // Higher priority than market/chest. Skip если в корабле.
+        private bool TryInteractNearestNpc()
+        {
+            if (_inShip) return false;
+            var allNpcs = FindObjectsByType<ProjectC.Quests.NpcController>(FindObjectsInactive.Exclude);
+            ProjectC.Quests.NpcController nearest = null;
+            float minDist = float.MaxValue;
+            Vector3 pos = GetEffectivePosition();
+            float range = Mathf.Max(pickupRange, boardDistance);
+            foreach (var npc in allNpcs)
+            {
+                if (npc == null || npc.Definition == null) continue;
+                // Distance check (uses npc.PlayerInRange trigger OR IsWithinDistance fallback)
+                bool inRange = npc.PlayerInRange || npc.IsWithinDistance(pos);
+                if (!inRange) continue;
+                float dist = Vector3.Distance(pos, npc.transform.position);
+                if (dist < minDist)
+                {
+                    minDist = dist;
+                    nearest = npc;
+                }
+            }
+            if (nearest == null || string.IsNullOrEmpty(nearest.NpcId)) return false;
+
+            if (Debug.isDebugBuild) Debug.Log($"[NetworkPlayer:{OwnerClientId}] E → NPC '{nearest.NpcId}' (dist={minDist:F2}m)");
+            // Forward to QuestServer (server validates + sends DialogStepDto back)
+            ProjectC.Quests.QuestServer.Instance?.RequestTalkToNpcRpc(nearest.NpcId, null);
             return true;
         }
 
@@ -931,6 +965,86 @@ namespace ProjectC.Player
         {
             ProjectC.MetaRequirement.MetaRequirementClientState.Instance?.OnRequirementsPushed(
                 netIds, displayNames, itemIdsArr, logics, requiredCounts, consumeOnUses);
+        }
+
+        // ==================== QUEST V2 RPC TARGETS ====================
+        // T-Q07: QuestServer (server-only singleton) вызывает эти методы НА конкретном
+        // NetworkPlayer, чтобы доставить snapshot / result именно этому клиенту.
+        // Pattern: ReceiveContractSnapshotTargetRpc / ReceiveContractResultTargetRpc (line 848/854).
+        // Клиентский state: ProjectC.Quests.Client.QuestClientState.
+
+        [Rpc(SendTo.Owner)]
+        public void ReceiveQuestSnapshotTargetRpc(ProjectC.Quests.Dto.QuestSnapshotDto snapshot, RpcParams rpcParams = default)
+        {
+            ProjectC.Quests.Client.QuestClientState.Instance?.OnQuestSnapshotReceived(snapshot);
+        }
+
+        [Rpc(SendTo.Owner)]
+        public void ReceiveReputationSnapshotTargetRpc(ProjectC.Quests.Dto.ReputationSnapshotDto snapshot, RpcParams rpcParams = default)
+        {
+            ProjectC.Reputation.ReputationClientState.Instance?.OnReputationSnapshotReceived(snapshot);
+        }
+
+        [Rpc(SendTo.Owner)]
+        public void ReceiveNpcAttitudeSnapshotTargetRpc(ProjectC.Quests.Dto.NpcAttitudeSnapshotDto snapshot, RpcParams rpcParams = default)
+        {
+            ProjectC.Reputation.NpcAttitudeClientState.Instance?.OnNpcAttitudeSnapshotReceived(snapshot);
+        }
+
+        [Rpc(SendTo.Owner)]
+        public void ReceiveQuestResultTargetRpc(ProjectC.Quests.Dto.QuestResultDto result, RpcParams rpcParams = default)
+        {
+            ProjectC.Quests.Client.QuestClientState.Instance?.OnQuestResultReceived(result);
+        }
+
+        [Rpc(SendTo.Owner)]
+        public void ReceiveReputationResultTargetRpc(ProjectC.Quests.Dto.ReputationResultDto result, RpcParams rpcParams = default)
+        {
+            ProjectC.Quests.Client.QuestClientState.Instance?.OnReputationResultReceived(result);
+        }
+
+        // Server-push notification: EventDriven quest auto-discovered.
+        [Rpc(SendTo.Owner)]
+        public void ReceiveQuestDiscoveredTargetRpc(string questId, string displayName, RpcParams rpcParams = default)
+        {
+            // T-Q11: QuestClientState.OnQuestDiscovered (UI "New Quest!" toast).
+            // T-Q07: route через QuestClientState.RaiseOnQuestDiscovered (event'ы в .NET — only raisable from declaring type).
+            if (Debug.isDebugBuild) Debug.Log($"[NetworkPlayer:{OwnerClientId}] ReceiveQuestDiscovered: {questId} '{displayName}'");
+            ProjectC.Quests.Client.QuestClientState.Instance?.RaiseOnQuestDiscovered(questId, displayName);
+        }
+
+        // ==================== DIALOG V2 RPC TARGETS ====================
+        // T-Q10: QuestServer (server-only singleton) шлёт dialog steps конкретному клиенту.
+        // Клиентский handler: T-Q11 UI binding (DialogWindow.OnStepReceived).
+
+        [Rpc(SendTo.Owner)]
+        public void ReceiveDialogStepTargetRpc(ProjectC.Quests.Dto.DialogStepDto step, RpcParams rpcParams = default)
+        {
+            if (Debug.isDebugBuild) Debug.Log($"[NetworkPlayer:{OwnerClientId}] ReceiveDialogStep: tree={step.treeId} node={step.nodeId} options={step.options?.Length ?? 0} isEnd={step.isEnd}");
+            ProjectC.Quests.Client.QuestClientState.Instance?.RaiseOnDialogStepReceived(step);
+        }
+
+        [Rpc(SendTo.Owner)]
+        public void ReceiveDialogActionResultTargetRpc(ProjectC.Quests.Dto.DialogActionResultDto result, RpcParams rpcParams = default)
+        {
+            if (Debug.isDebugBuild) Debug.Log($"[NetworkPlayer:{OwnerClientId}] ReceiveDialogActionResult: type={result.actionType} success={result.success}");
+            ProjectC.Quests.Client.QuestClientState.Instance?.RaiseOnDialogActionResultReceived(result);
+        }
+
+        public void RequestEndConversation()
+        {
+            ProjectC.Quests.QuestServer.Instance?.RequestEndConversationRpc();
+        }
+
+        /// <summary>T-Q11a: client-side wrappers для E-key trigger.</summary>
+        public void RequestTalkToNpc(string npcId, string treeIdHint = null)
+        {
+            ProjectC.Quests.QuestServer.Instance?.RequestTalkToNpcRpc(npcId, treeIdHint);
+        }
+
+        public void RequestAdvanceDialogue(string treeId, string nodeId, int optionIndex, string npcId)
+        {
+            ProjectC.Quests.QuestServer.Instance?.RequestAdvanceDialogueRpc(treeId, nodeId, optionIndex, npcId);
         }
     }
 }

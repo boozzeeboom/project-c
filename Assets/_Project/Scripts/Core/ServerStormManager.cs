@@ -131,10 +131,14 @@ namespace ProjectC.Core
         private string GetAssetGuid(UnityEngine.Object asset)
         {
             if (asset == null) return "";
+#if UNITY_EDITOR
             string path = UnityEditor.AssetDatabase.GetAssetPath(asset);
             if (string.IsNullOrEmpty(path)) return "";
             var guid = UnityEditor.AssetDatabase.AssetPathToGUID(path);
             return guid;
+#else
+            return "";
+#endif
         }
 
         private void Update()

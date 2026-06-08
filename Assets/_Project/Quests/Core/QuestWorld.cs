@@ -657,6 +657,259 @@ namespace ProjectC.Quests
 
         // ============ T-Q06: Quest advancement (minimal) ============
 
+        // ============ T-Q20: Real-time tick + stage transitions ============
+
+        /// <summary>T-Q20: tick interval (seconds). QuestServer.Update accumulates Time.deltaTime.</summary>
+        public float TickInterval = 5f;
+
+        /// <summary>T-Q20: accumulator used by QuestServer-driven ticks.</summary>
+        public float TickAccumulator = 0f;
+
+        /// <summary>T-Q20: QuestWorld raises this when stage actions must fire (e.g. onCompleteActions,
+        /// onEnterActions). QuestServer subscribes and routes to FireDialogAction.
+        /// Args: (clientId, npcIdHint, actions[]). npcIdHint может быть пуст (stage transition не привязан к NPC).</summary>
+        public event System.Action<ulong, string, ProjectC.Dialogue.DialogueAction[]> OnFireDialogActions;
+
+        /// <summary>T-Q20: QuestWorld raises this когда stage transitioned. QuestServer
+        /// подписывается → SendQuestSnapshotToClient + SavePlayer.
+        /// Args: (clientId, questId, fromStageId, toStageId).</summary>
+        public event System.Action<ulong, string, string, string> OnStageTransition;
+
+        /// <summary>T-Q20: position lookup. Server подменяет этот делегат на NetworkPlayer.transform.position lookup.
+        /// Args: clientId, returns Vector3 или Vector3.zero если не найден.</summary>
+        public System.Func<ulong, Vector3> PlayerPositionProvider;
+
+        /// <summary>T-Q20: resolve item id from objective.itemTradeItemId. Tries:
+        /// 1) int.TryParse (direct id) — for legacy configs.
+        /// 2) ItemData.itemName lookup в Resources/Items/ — for M13 test convenience.
+        /// Returns 0 если ничего не найдено.
+        /// </summary>
+        public static int ResolveItemId(string itemTradeItemId)
+        {
+            if (string.IsNullOrEmpty(itemTradeItemId)) return 0;
+            // 1. Direct int.
+            if (int.TryParse(itemTradeItemId, out int direct) && direct > 0) return direct;
+            // 2. Name lookup через Resources/Items/ ItemData.
+            var allItems = Resources.LoadAll<ProjectC.Items.ItemData>("Items");
+            if (allItems == null) return 0;
+            for (int i = 0; i < allItems.Length; i++)
+            {
+                if (allItems[i] == null) continue;
+                if (allItems[i].itemName == itemTradeItemId) return i + 1;  // registration order = id
+            }
+            return 0;
+        }
+
+        /// <summary>
+        /// T-Q20: server-driven tick. Accumulate Time.deltaTime, evaluate all active
+        /// quests for all players when interval reached.
+        /// </summary>
+        public void TickAll(float dt)
+        {
+            if (dt < 0f) return;
+            TickAccumulator += dt;
+            if (TickAccumulator < TickInterval) return;
+            TickAccumulator = 0f;
+
+            // Snapshot keys (нельзя менять dictionary во время итерации)
+            if (_questsByPlayer == null || _questsByPlayer.Count == 0) return;
+            var playerIds = new List<ulong>(_questsByPlayer.Keys);
+            for (int i = 0; i < playerIds.Count; i++)
+            {
+                TickPlayer(playerIds[i]);
+            }
+        }
+
+        /// <summary>
+        /// T-Q20: tick one player. Walks all their Active quests, evaluates current stage.
+        /// </summary>
+        public void TickPlayer(ulong clientId)
+        {
+            if (!_questsByPlayer.TryGetValue(clientId, out var quests) || quests == null) return;
+
+            // Snapshot quest list (TryAdvanceStage может менять state, но не add/remove)
+            for (int i = 0; i < quests.Count; i++)
+            {
+                var inst = quests[i];
+                if (inst == null) continue;
+                if (inst.state != QuestState.Active) continue;
+                if (string.IsNullOrEmpty(inst.currentStageId)) continue;
+
+                var def = GetQuest(inst.questId);
+                if (def == null) continue;
+
+                var stage = def.GetStage(inst.currentStageId);
+                if (stage == null) continue;
+
+                EvaluateAndAdvanceStage(clientId, inst, def, stage);
+            }
+        }
+
+        /// <summary>
+        /// T-Q20: evaluate all required objectives в current stage. Если все satisfied
+        /// → TryAdvanceStage. Returns true если что-то изменилось.
+        /// </summary>
+        private bool EvaluateAndAdvanceStage(ulong clientId, QuestInstance instance, QuestDefinition def, QuestStage stage)
+        {
+            if (stage.objectives == null || stage.objectives.Length == 0)
+            {
+                // No objectives → auto-advance immediately (degenerate stage)
+                return TryAdvanceStage(clientId, instance, def, stage);
+            }
+
+            bool changed = false;
+            for (int i = 0; i < stage.objectives.Length; i++)
+            {
+                var obj = stage.objectives[i];
+                if (obj == null) continue;
+                if (!obj.required || obj.optional) continue;
+
+                var progress = instance.GetOrCreateProgress(obj.objectiveId);
+                if (progress.completed) continue;
+
+                if (EvaluateObjective(clientId, instance, obj, progress))
+                {
+                    progress.completed = true;
+                    if (Debug.isDebugBuild) Debug.Log($"[QuestWorld] Objective completed: quest={def.questId} stage={stage.stageId} obj={obj.objectiveId}");
+                    changed = true;
+                }
+            }
+
+            // If all required objectives now complete → advance.
+            if (instance.AreAllRequiredComplete(stage))
+            {
+                if (TryAdvanceStage(clientId, instance, def, stage))
+                {
+                    changed = true;
+                }
+            }
+
+            if (changed) SavePlayer(clientId);
+            return changed;
+        }
+
+        /// <summary>
+        /// T-Q20: evaluate single objective (event-driven + tick-friendly hybrid).
+        /// Updates progress.currentCount (for HaveItem, ReputationAtLeast).
+        /// </summary>
+        private bool EvaluateObjective(ulong clientId, QuestInstance instance, QuestObjective obj, QuestInstance.ObjectiveProgress progress)
+        {
+            if (obj == null) return false;
+            switch (obj.objectiveType)
+            {
+                case QuestObjectiveType.TalkToNpc:
+                    return HasNpcTalkedTo(clientId, obj.targetNpcId);
+
+                case QuestObjectiveType.HaveItem:
+                {
+                    int itemId = ResolveItemId(obj.itemTradeItemId);
+                    if (itemId <= 0) return false;
+                    int count = ProjectC.Items.InventoryWorld.Instance != null
+                        ? ProjectC.Items.InventoryWorld.Instance.CountOf(clientId, itemId)
+                        : 0;
+                    progress.currentCount = count;
+                    return count >= obj.requiredQuantity;
+                }
+
+                case QuestObjectiveType.DeliverItem:
+                {
+                    // Same as HaveItem for MVP (turn-in handled в TryTurnIn).
+                    int itemId = ResolveItemId(obj.itemTradeItemId);
+                    if (itemId <= 0) return false;
+                    int count = ProjectC.Items.InventoryWorld.Instance != null
+                        ? ProjectC.Items.InventoryWorld.Instance.CountOf(clientId, itemId)
+                        : 0;
+                    progress.currentCount = count;
+                    return count >= obj.requiredQuantity;
+                }
+
+                case QuestObjectiveType.ReachLocation:
+                {
+                    if (PlayerPositionProvider == null) return false;
+                    var playerPos = PlayerPositionProvider(clientId);
+                    if (playerPos == Vector3.zero) return false; // not on a real map
+                    float dist = Vector3.Distance(playerPos, obj.targetPosition);
+                    progress.currentCount = obj.targetRadius > 0f ? (int)(dist * 100f / obj.targetRadius) : 0;
+                    return dist <= obj.targetRadius;
+                }
+
+                case QuestObjectiveType.ReputationAtLeast:
+                {
+                    int val = GetReputation(clientId, obj.targetFaction);
+                    progress.currentCount = val;
+                    return val >= obj.reputationValue;
+                }
+
+                case QuestObjectiveType.WaitForEvent:
+                case QuestObjectiveType.EventDriven:
+                    return HasEventOccurred(clientId, obj.eventId);
+
+                case QuestObjectiveType.KillEntity:
+                    // STUB: combat system не реализован. Always false.
+                    if (Debug.isDebugBuild && Time.frameCount % 600 == 0)
+                        Debug.Log($"[QuestWorld] Objective {obj.objectiveType} ({obj.objectiveId}) is STUB — always unsatisfied");
+                    return false;
+
+                default:
+                    return false;
+            }
+        }
+
+        /// <summary>
+        /// T-Q20 + T-Q22: advance current stage to next. Fire onCompleteActions →
+        /// transition currentStageId → nextStageId (or Completed) → fire onEnterActions.
+        /// </summary>
+        /// <returns>True if a transition happened.</returns>
+        private bool TryAdvanceStage(ulong clientId, QuestInstance instance, QuestDefinition def, QuestStage currentStage)
+        {
+            if (instance == null || def == null || currentStage == null) return false;
+
+            string fromStage = currentStage.stageId;
+            string toStage = currentStage.nextStageId;
+
+            // 1. Fire onCompleteActions of CURRENT stage (before transition).
+            if (currentStage.onCompleteActions != null && currentStage.onCompleteActions.Length > 0)
+            {
+                OnFireDialogActions?.Invoke(clientId, "", currentStage.onCompleteActions);
+                // Also: if final stage — apply def.rewards
+                if (string.IsNullOrEmpty(toStage) && def.rewards != null)
+                {
+                    if (Debug.isDebugBuild) Debug.Log($"[QuestWorld] Stage advanced to END: {def.questId} {fromStage} → (final) → rewards");
+                    ApplyQuestRewards(clientId, def.rewards, "");
+                }
+            }
+
+            // 2. Transition.
+            if (string.IsNullOrEmpty(toStage))
+            {
+                // Final stage: Active → Completed
+                if (QuestStateTransition.IsAllowed(instance.state, QuestState.Completed))
+                {
+                    instance.state = QuestState.Completed;
+                    instance.completedAtUnix = System.DateTimeOffset.UtcNow.ToUnixTimeSeconds();
+                    if (Debug.isDebugBuild) Debug.Log($"[QuestWorld] State transitioned: {def.questId} {fromStage} → Completed");
+                }
+                OnStageTransition?.Invoke(clientId, def.questId, fromStage, "");
+                return true;
+            }
+            else
+            {
+                instance.currentStageId = toStage;
+                if (Debug.isDebugBuild) Debug.Log($"[QuestWorld] Stage advanced: {def.questId} {fromStage} → {toStage}");
+                OnStageTransition?.Invoke(clientId, def.questId, fromStage, toStage);
+
+                // 3. Fire onEnterActions of NEW stage.
+                var nextStage = def.GetStage(toStage);
+                if (nextStage != null && nextStage.onEnterActions != null && nextStage.onEnterActions.Length > 0)
+                {
+                    OnFireDialogActions?.Invoke(clientId, "", nextStage.onEnterActions);
+                }
+                return true;
+            }
+        }
+
+        // ============ T-Q06: TryAdvanceObjective (kept) ============
+
         /// <summary>
         /// T-Q06 scope: minimal TryAdvanceObjective. Mark objective как completed если
         /// есть matching QuestInstance.Active quest с этим objective. Полная логика

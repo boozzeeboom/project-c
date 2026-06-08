@@ -97,13 +97,18 @@ namespace ProjectC.Quests
             WorldEventBus.Subscribe(_handleDialogVisited);
             WorldEventBus.Subscribe(_handleDayNightChanged);
 
+            // T-Q20: subscribe to QuestWorld events (stage transitions + actions).
+            QuestWorld.Instance.OnFireDialogActions += OnWorldFireDialogActions;
+            QuestWorld.Instance.OnStageTransition += OnWorldStageTransition;
+            QuestWorld.Instance.PlayerPositionProvider = GetPlayerPosition;
+
             // T-Q13: при коннекте нового клиента — push initial reputation + npcAttitude snapshot.
             _handleClientConnected = OnClientConnectedForSnapshot;
             NetworkManager.Singleton.OnClientConnectedCallback += _handleClientConnected;
 
             if (debugMode)
             {
-                Debug.Log($"[QuestServer] OnNetworkSpawn — IsServer=true, questDatabase={questDatabase.quests?.Length ?? 0} quests, maxActive={maxActiveQuestsPerPlayer}, maxOps/min={maxOpsPerMinute}, triggerSubs=7");
+                Debug.Log($"[QuestServer] OnNetworkSpawn — IsServer=true, questDatabase={questDatabase.quests?.Length ?? 0} quests, maxActive={maxActiveQuestsPerPlayer}, maxOps/min={maxOpsPerMinute}, triggerSubs=7, tickInterval={QuestWorld.Instance.TickInterval}s");
             }
         }
 
@@ -128,6 +133,14 @@ namespace ProjectC.Quests
                     _handleClientConnected = null;
                 }
 
+                // T-Q20: unsubscribe QuestWorld events
+                if (QuestWorld.Instance != null)
+                {
+                    QuestWorld.Instance.OnFireDialogActions -= OnWorldFireDialogActions;
+                    QuestWorld.Instance.OnStageTransition -= OnWorldStageTransition;
+                    QuestWorld.Instance.PlayerPositionProvider = null;
+                }
+
                 if (QuestWorld.Instance != null)
                 {
                     // T-Q18: SaveAll() before shutdown.
@@ -135,6 +148,43 @@ namespace ProjectC.Quests
                 }
             }
             if (Instance == this) Instance = null;
+        }
+
+        // ============================================================
+        // T-Q20: Periodic tick (server-only)
+        // ============================================================
+
+        private void Update()
+        {
+            if (!IsServer) return;
+            if (QuestWorld.Instance == null) return;
+            QuestWorld.Instance.TickAll(Time.deltaTime);
+        }
+
+        /// <summary>T-Q20: server-side position provider for ReachLocation objective.</summary>
+        private Vector3 GetPlayerPosition(ulong clientId)
+        {
+            var np = FindNetworkPlayer(clientId);
+            if (np == null) return Vector3.zero;
+            return np.transform.position;
+        }
+
+        /// <summary>T-Q20: handler for QuestWorld.OnFireDialogActions (stage onComplete/onEnter actions).</summary>
+        private void OnWorldFireDialogActions(ulong clientId, string npcIdHint, ProjectC.Dialogue.DialogueAction[] actions)
+        {
+            if (actions == null) return;
+            for (int i = 0; i < actions.Length; i++)
+            {
+                if (actions[i] == null) continue;
+                FireDialogAction(clientId, npcIdHint, actions[i]);
+            }
+        }
+
+        /// <summary>T-Q20: handler for QuestWorld.OnStageTransition → push snapshot.</summary>
+        private void OnWorldStageTransition(ulong clientId, string questId, string fromStage, string toStage)
+        {
+            if (QuestWorld.Instance != null) QuestWorld.Instance.SavePlayer(clientId);
+            SendQuestSnapshotToClient(clientId);
         }
 
         // ============================================================

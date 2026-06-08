@@ -612,7 +612,7 @@ T-X4 (input remap: pickup E → F) ← future TODO, после end-to-end demo
 | **M8 — Persistence** | T-Q18 | Quests + rep + attitude survive server restart. | ✅ DONE 2026-06-08 |
 | **M9 — Cleanup** | T-Q19, T-X1, T-X2 | v1 NPC deleted, optional renames. | 🟡 T-Q19 ✅ T-X1 ✅ T-X2 DEFERRED 2026-06-08 |
 | **M10 — Editor tool** | T-Q09, T-Q09b | Quest Database Explorer с full CRUD + GraphView. | ✅ DONE (M10 partially — CRUD done, GraphView deferred) |
-| **M11 — End-to-end demo** | After M9 | Mira quest full playthrough. |
+| **M11 — End-to-end demo** | Mira quest full playthrough. | 🟡 Mira quest items + dialog tree prepared 2026-06-08 (awaiting user Play Mode test). |
 | **M12 — Input remap** | T-X4 | F = pickup (future, post-demo). |
 
 **Рекомендуемый темп:** 1-2 тикета за сессию, 1 PR за тикет.
@@ -721,4 +721,4 @@ A docs/dev/T-Q11b_c_session_log_2026-06-08.md
 
 ---
 
-**Статус проекта:** M1-M9 ✅ DONE 2026-06-08 (M10 partial). **M11 (End-to-end demo) — NEXT** (M4-M9 — все quest subsystem фичи реализованы + persistence + cleanup).
+**Статус проекта:** M1-M9 ✅ DONE 2026-06-08 (M10 partial). **M11 (End-to-end demo) — IN PROGRESS** (dialog tree + 2 pickup items + CompleteObjective real impl готовы, awaiting user Play Mode test).

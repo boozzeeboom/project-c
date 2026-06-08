@@ -31,6 +31,8 @@ namespace ProjectC.Dialogue
         FailQuest = 12,
         /// <summary>Server: add quest to log in Discovered state (EventDriven, §K).</summary>
         DiscoverQuest = 13,
+        /// <summary>Server: auto-accept quest (stringParam) — TryOffer+TryAccept. For dialog-driven immediate acceptance.</summary>
+        AcceptQuest = 14,
 
         // ============ Inventory / Cargo ============
         /// <summary>Add intParam of item stringParam to character inventory.</summary>

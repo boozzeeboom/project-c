@@ -13,203 +13,38 @@ MonoBehaviour:
   m_Name: FindArtifact
   m_EditorClassIdentifier: Assembly-CSharp::ProjectC.Quests.QuestDefinition
   questId: find_artifact
-  displayName: "\u041D\u0430\u0439\u0442\u0438 \u041A\u0440\u0438\u0441\u0442\u0430\u043B\u043B
-    \u0412\u0440\u0435\u043C\u0451\u043D"
-  description: "\u0410\u0440\u0442\u0435\u0444\u0430\u043A\u0442 GuildOfThoughts,
-    \u0443\u0442\u0435\u0440\u044F\u043D\u043D\u044B\u0439 \u0432\u043E \u0432\u0440\u0435\u043C\u044F
-    \u041F\u0430\u0434\u0435\u043D\u0438\u044F."
+  displayName: "Найти Кристалл Времён"
+  description: "Мира Тихаяступ просит принести Кристалл Времён в обмен на Древний Ключ."
   faction: 1
   minReputation: 0
   stages:
-  - stageId: intro
-    description: "\u041F\u043E\u0433\u043E\u0432\u043E\u0440\u0438 \u0441 \u041C\u0438\u0440\u043E\u0439
-      \u0438 \u0443\u0437\u043D\u0430\u0439 \u0434\u0435\u0442\u0430\u043B\u0438."
+  - stageId: start
+    description: "Принеси Кристалл Времён."
     objectives:
-    - objectiveId: talk_to_mira
-      objectiveType: 0
-      description: "\u041F\u043E\u0433\u043E\u0432\u043E\u0440\u0438 \u0441 \u041C\u0438\u0440\u043E\u0439
-        \u0432 \u041F\u0440\u0438\u043C\u0443\u043C\u0435."
+    - objectiveId: find_artifact
+      objectiveType: 4
+      description: "Найди Кристалл Времён и принеси Мире."
       targetNpcId: mira_01
-      itemTradeItemId: 
+      itemTradeItemId: 2
       requiredQuantity: 1
-      targetSceneId: 
+      targetSceneId:
       targetPosition: {x: 0, y: 0, z: 0}
       targetRadius: 10
-      targetEntityType: 
+      targetEntityType:
       targetFaction: 0
       reputationValue: 0
-      eventId: 
-      optional: 0
-      required: 1
-    onEnterActions: []
-    onCompleteActions:
-    - type: 30
-      stringParam: 
-      stageIdParam: 
-      intParam: 50
-      factionParam: 0
-    nextStageId: gather_info
-  - stageId: gather_info
-    description: "\u041D\u0430\u0439\u0434\u0438 3 \u0434\u043D\u0435\u0432\u043D\u0438\u043A\u0430
-      \u0438\u0441\u0441\u043B\u0435\u0434\u043E\u0432\u0430\u0442\u0435\u043B\u0435\u0439
-      \u0432 \u0440\u0443\u0438\u043D\u0430\u0445."
-    objectives:
-    - objectiveId: get_diary_1
-      objectiveType: 4
-      description: "\u041D\u0430\u0439\u0434\u0438 \u043F\u0435\u0440\u0432\u044B\u0439
-        \u0434\u043D\u0435\u0432\u043D\u0438\u043A (\u0440\u0443\u0438\u043D\u044B
-        \u0432\u043E\u0441\u0442\u043E\u0447\u043D\u043E\u0433\u043E \u0445\u0440\u0435\u0431\u0442\u0430)."
-      targetNpcId: 
-      itemTradeItemId: ancient_diary
-      requiredQuantity: 1
-      targetSceneId: 
-      targetPosition: {x: 0, y: 0, z: 0}
-      targetRadius: 10
-      targetEntityType: 
-      targetFaction: 0
-      reputationValue: 0
-      eventId: 
-      optional: 0
-      required: 1
-    - objectiveId: get_diary_2
-      objectiveType: 4
-      description: "\u041D\u0430\u0439\u0434\u0438 \u0432\u0442\u043E\u0440\u043E\u0439
-        \u0434\u043D\u0435\u0432\u043D\u0438\u043A (\u0440\u0443\u0438\u043D\u044B
-        \u044E\u0436\u043D\u043E\u0433\u043E \u0441\u043A\u043B\u043E\u043D\u0430)."
-      targetNpcId: 
-      itemTradeItemId: ancient_diary
-      requiredQuantity: 2
-      targetSceneId: 
-      targetPosition: {x: 0, y: 0, z: 0}
-      targetRadius: 10
-      targetEntityType: 
-      targetFaction: 0
-      reputationValue: 0
-      eventId: 
-      optional: 0
-      required: 1
-    - objectiveId: get_diary_3
-      objectiveType: 4
-      description: "\u041D\u0430\u0439\u0434\u0438 \u0442\u0440\u0435\u0442\u0438\u0439
-        \u0434\u043D\u0435\u0432\u043D\u0438\u043A (\u0440\u0443\u0438\u043D\u044B
-        \u0437\u0430\u043F\u0430\u0434\u043D\u043E\u0439 \u0442\u0435\u0440\u0440\u0430\u0441\u044B)."
-      targetNpcId: 
-      itemTradeItemId: ancient_diary
-      requiredQuantity: 3
-      targetSceneId: 
-      targetPosition: {x: 0, y: 0, z: 0}
-      targetRadius: 10
-      targetEntityType: 
-      targetFaction: 0
-      reputationValue: 0
-      eventId: 
-      optional: 0
-      required: 1
-    onEnterActions:
-    - type: 51
-      stringParam: find_artifact_stage_2_started
-      stageIdParam: 
-      intParam: 0
-      factionParam: 0
-    onCompleteActions:
-    - type: 31
-      stringParam: 
-      stageIdParam: 
-      intParam: 25
-      factionParam: 1
-    nextStageId: locate_crystal
-  - stageId: locate_crystal
-    description: "\u0421\u043F\u0443\u0441\u0442\u0438\u0441\u044C \u0432 \u043F\u043E\u0434\u0437\u0435\u043C\u043D\u0443\u044E
-      \u043B\u0430\u0431\u043E\u0440\u0430\u0442\u043E\u0440\u0438\u044E."
-    objectives:
-    - objectiveId: reach_lab
-      objectiveType: 2
-      description: "\u0414\u043E\u0441\u0442\u0438\u0433\u043D\u0438 \u0432\u0445\u043E\u0434\u0430
-        \u0432 \u043B\u0430\u0431\u043E\u0440\u0430\u0442\u043E\u0440\u0438\u044E."
-      targetNpcId: 
-      itemTradeItemId: 
-      requiredQuantity: 1
-      targetSceneId: WorldScene_0_0
-      targetPosition: {x: 1234.5, y: -50, z: 567.8}
-      targetRadius: 30
-      targetEntityType: 
-      targetFaction: 0
-      reputationValue: 0
-      eventId: 
-      optional: 0
-      required: 1
-    onEnterActions: []
-    onCompleteActions:
-    - type: 31
-      stringParam: 
-      stageIdParam: 
-      intParam: 10
-      factionParam: 1
-    nextStageId: retrieve
-  - stageId: retrieve
-    description: "\u0417\u0430\u0431\u0435\u0440\u0438 \u041A\u0440\u0438\u0441\u0442\u0430\u043B\u043B
-      \u0412\u0440\u0435\u043C\u0451\u043D \u0438\u0437 \u043B\u0430\u0431\u043E\u0440\u0430\u0442\u043E\u0440\u0438\u0438."
-    objectives:
-    - objectiveId: get_crystal
-      objectiveType: 4
-      description: "\u0412\u043E\u0437\u044C\u043C\u0438 \u041A\u0440\u0438\u0441\u0442\u0430\u043B\u043B
-        \u0412\u0440\u0435\u043C\u0451\u043D."
-      targetNpcId: 
-      itemTradeItemId: time_crystal
-      requiredQuantity: 1
-      targetSceneId: 
-      targetPosition: {x: 0, y: 0, z: 0}
-      targetRadius: 10
-      targetEntityType: 
-      targetFaction: 0
-      reputationValue: 0
-      eventId: 
+      eventId:
       optional: 0
       required: 1
     onEnterActions: []
     onCompleteActions: []
-    nextStageId: return
-  - stageId: return
-    description: "\u0412\u0435\u0440\u043D\u0438\u0441\u044C \u043A \u041C\u0438\u0440\u0435
-      \u0438 \u043E\u0442\u0434\u0430\u0439 \u043A\u0440\u0438\u0441\u0442\u0430\u043B\u043B."
-    objectives:
-    - objectiveId: turn_in
-      objectiveType: 0
-      description: "\u041F\u043E\u0433\u043E\u0432\u043E\u0440\u0438 \u0441 \u041C\u0438\u0440\u043E\u0439."
-      targetNpcId: mira_01
-      itemTradeItemId: 
-      requiredQuantity: 1
-      targetSceneId: 
-      targetPosition: {x: 0, y: 0, z: 0}
-      targetRadius: 10
-      targetEntityType: 
-      targetFaction: 0
-      reputationValue: 0
-      eventId: 
-      optional: 0
-      required: 1
-    onEnterActions: []
-    onCompleteActions:
-    - type: 21
-      stringParam: time_crystal
-      stageIdParam: 
-      intParam: 1
-      factionParam: 0
-    nextStageId: 
+    nextStageId:
   rewards:
-    credits: 5000
-    items:
-    - tradeItemId: ancient_knowledge_scroll
-      count: 1
-    - tradeItemId: refined_mezium
-      count: 3
+    credits: 0
+    items: []
     cargoItems: []
-    reputation:
-    - faction: 1
-      value: 75
-    unlocks:
-    - unlockType: 0
-      unlockId: mira_artifact_story
+    reputation: []
+    unlocks: []
   prerequisites: []
   oneShot: 1
   discoverable: 1

@@ -72,6 +72,8 @@ namespace ProjectC.Quests
             public string currentNodeId = "";
             public string npcId = "";            // T-Q10: server stores npcId for session validation
             public ulong startedAtUnix = 0;
+            /// <summary>T-Q21: filtered visible edges (hideIfUnavailable).</summary>
+            public System.Collections.Generic.List<ProjectC.Dialogue.DialogueEdge> visibleEdges;
         }
 
         // ============ Lifecycle ============

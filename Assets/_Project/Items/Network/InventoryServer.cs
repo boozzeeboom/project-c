@@ -255,6 +255,12 @@ namespace ProjectC.Items.Network
             networkPlayer.ReceiveInventorySnapshotTargetRpc(snap);
         }
 
+        /// <summary>T-Q21/M11: public helper для QuestServer (GiveCredits → push refreshed snapshot).</summary>
+        public void PushSnapshot(ulong clientId)
+        {
+            SendSnapshot(clientId, null);
+        }
+
         private void SendResult(ulong clientId, InventoryResultDto result)
         {
             if (!IsServer) return;

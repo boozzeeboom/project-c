@@ -251,13 +251,13 @@ namespace ProjectC.Quests
                 return;
             }
 
-            // Find option
-            if (optionIndex < 0 || optionIndex >= node.edges.Length)
+            // Find option. T-Q21: use session.visibleEdges (filtered by hideIfUnavailable).
+            if (optionIndex < 0 || session.visibleEdges == null || optionIndex >= session.visibleEdges.Count)
             {
-                if (debugMode) Debug.LogWarning($"[QuestServer] RequestAdvanceDialogue: option {optionIndex} out of range");
+                if (debugMode) Debug.LogWarning($"[QuestServer] RequestAdvanceDialogue: option {optionIndex} out of range (visibleEdges={session.visibleEdges?.Count ?? 0})");
                 return;
             }
-            var edge = node.edges[optionIndex];
+            var edge = session.visibleEdges[optionIndex];
 
             // Check conditions (server-side authoritative)
             if (!EvaluateConditions(edge, clientId))
@@ -296,6 +296,15 @@ namespace ProjectC.Quests
                 return;
             }
             session.currentNodeId = nextNode.nodeId;
+            // M11 fix: fire onEnterActions of the target node (reputation, attitude, complete objective, etc.)
+            if (nextNode.onEnterActions != null)
+            {
+                for (int i = 0; i < nextNode.onEnterActions.Length; i++)
+                {
+                    if (nextNode.onEnterActions[i] != null)
+                        FireDialogAction(clientId, talkingToNpcId, nextNode.onEnterActions[i]);
+                }
+            }
             var step = BuildDialogStep(session.tree, nextNode.nodeId, clientId);
             SendDialogStepToClient(clientId, step);
         }
@@ -736,21 +745,38 @@ namespace ProjectC.Quests
                 return new DialogStepDto { treeId = tree.treeId, nodeId = "", isEnd = true };
             }
 
-            // Build options: each edge → option (label, available, reason)
+            // Build options: each edge → option (label, available, reason).
+            // T-Q21: filter out edges where hideIfUnavailable && !available — они невидимы для клиента.
+            // Store visibleEdges in DialogSession for RequestAdvanceDialogue index mapping.
             var edges = node.edges ?? Array.Empty<DialogueEdge>();
-            var options = new DialogOptionDto[edges.Length];
+            var visibleEdges = new System.Collections.Generic.List<DialogueEdge>();
+            var visibleOptions = new System.Collections.Generic.List<DialogOptionDto>();
             for (int i = 0; i < edges.Length; i++)
             {
                 var edge = edges[i];
-                if (edge == null) { options[i] = new DialogOptionDto { index = i, label = $"[edge {i} null]", available = false, unavailableReason = "edge null" }; continue; }
+                if (edge == null) continue;
                 bool available = EvaluateConditions(edge, clientId);
-                options[i] = new DialogOptionDto
+                if (!available && edge.hideIfUnavailable)
+                {
+                    // Skip completely — invisible option.
+                    continue;
+                }
+                visibleOptions.Add(new DialogOptionDto
                 {
                     index = i,
                     label = edge.label ?? "",
                     available = available,
                     unavailableReason = available ? "" : "Условие не выполнено"
-                };
+                });
+                visibleEdges.Add(edge);
+            }
+            var options = visibleOptions.ToArray();
+            // Store for RequestAdvanceDialogue index mapping
+            var w = ProjectC.Quests.QuestWorld.Instance;
+            if (w != null)
+            {
+                var session = w.GetDialogSession(clientId);
+                if (session != null) session.visibleEdges = visibleEdges;
             }
 
             // Resolve speaker
@@ -808,10 +834,24 @@ namespace ProjectC.Quests
             switch (c.type)
             {
                 case DialogueConditionType.HasItem:
+                {
+                    int itemId = 0;
+                    if (!string.IsNullOrEmpty(c.stringParam)) int.TryParse(c.stringParam, out itemId);
                     return InventoryWorld.Instance != null
-                        && InventoryWorld.Instance.CountOf(clientId, 0) >= c.intParam; // T-Q15: lookup by stringParam → ItemDataId
+                        && InventoryWorld.Instance.CountOf(clientId, itemId) >= c.intParam;
+                }
                 case DialogueConditionType.QuestStateEquals:
-                    return true; // T-Q15: full quest state lookup
+                {
+                    // Real impl: check quest state by questId and questStateParam.
+                    var quests = w.GetPlayerQuests(clientId);
+                    if (quests == null || string.IsNullOrEmpty(c.stringParam)) return true; // unknown questId → allow (stub)
+                    for (int i = 0; i < quests.Count; i++)
+                    {
+                        if (quests[i].questId == c.stringParam)
+                            return (byte)quests[i].state == (byte)c.questStateParam;
+                    }
+                    return false; // quest not in player log → not in this state → edge hidden via hideIfUnavailable
+                }
                 case DialogueConditionType.ReputationAtLeast:
                     return w.GetReputation(clientId, c.factionParam) >= c.intParam;
                 case DialogueConditionType.FlagIsSet:
@@ -838,24 +878,45 @@ namespace ProjectC.Quests
                 case DialogueActionType.OfferQuest:
                     {
                         // T-Q15: real impl — QuestWorld.TryOffer (Discovered → Offered).
-                        // Edge action: action.stringParam = questId. После OfferQuest игрок
-                        // может Accept через CharacterWindow или следующий edge.action.type=OfferQuest.
-                        if (QuestWorld.Instance == null) break;
-                        var questId = action.stringParam;
-                        // TryOffer: создаёт QuestInstance в state=Discovered, добавляет в player log,
-                        // уведомляет UI через OnQuestDiscovered event. НЕ auto-accept.
-                        QuestResultDto offerResult = QuestWorld.Instance.TryOffer(clientId, questId);
-                        if (debugMode) Debug.Log($"[QuestServer] FireDialogAction: OfferQuest {questId} to client {clientId} → code={offerResult.code} msg={offerResult.message}");
-                        // T-Q15 fix: push fresh snapshot so CharacterWindow → таб КВЕСТЫ сразу показывает Discovered.
-                        if (offerResult.code == (byte)QuestResultCode.Discovered)
+                        var qwOffer = QuestWorld.Instance;
+                        if (qwOffer == null) break;
+                        var resultOffer = qwOffer.TryOffer(clientId, action.stringParam);
+                        if (debugMode) Debug.Log($"[QuestServer] FireDialogAction: OfferQuest {action.stringParam} to client {clientId} → code={resultOffer.code} msg={resultOffer.message}");
+                        if (resultOffer.code == (byte)QuestResultCode.Ok)
                         {
                             SendQuestSnapshotToClient(clientId);
                         }
                         SendDialogActionResultToClient(clientId, new DialogActionResultDto
                         {
                             actionType = (byte)action.type,
-                            success = offerResult.code == (byte)QuestResultCode.Ok || offerResult.code == (byte)QuestResultCode.Discovered,
-                            resultData = questId
+                            success = resultOffer.code == (byte)QuestResultCode.Ok,
+                            resultData = resultOffer.message
+                        });
+                    }
+                    break;
+                case DialogueActionType.AcceptQuest:
+                    {
+                        // M11: auto-accept quest — TryOffer + TryAccept (no manual P accept needed).
+                        if (string.IsNullOrEmpty(action.stringParam))
+                        {
+                            SendDialogActionResultToClient(clientId, new DialogActionResultDto { actionType = (byte)action.type, success = false, resultData = "missing questId" });
+                            break;
+                        }
+                        var qwAccept = QuestWorld.Instance;
+                        if (qwAccept == null)
+                        {
+                            SendDialogActionResultToClient(clientId, new DialogActionResultDto { actionType = (byte)action.type, success = false, resultData = "QuestWorld null" });
+                            break;
+                        }
+                        qwAccept.TryOffer(clientId, action.stringParam);
+                        var acceptResult = qwAccept.TryAccept(clientId, action.stringParam, "");
+                        if (debugMode) Debug.Log($"[QuestServer] FireDialogAction: AcceptQuest {action.stringParam} → code={acceptResult.code} {acceptResult.message}");
+                        SendQuestSnapshotToClient(clientId);
+                        SendDialogActionResultToClient(clientId, new DialogActionResultDto
+                        {
+                            actionType = (byte)action.type,
+                            success = acceptResult.code == (byte)QuestResultCode.Ok,
+                            resultData = acceptResult.message
                         });
                     }
                     break;
@@ -887,12 +948,66 @@ namespace ProjectC.Quests
                     }
                     break;
                 case DialogueActionType.CompleteObjective:
+                    {
+                        // M11 demo: CompleteObjective → server-side mark objective complete (T-Q15 stub real impl).
+                        // stringParam = questId, stageIdParam = objectiveId (quest stage id).
+                        // Если quest помечен TurnInPending (active goal) → trigger QuestWorld.TryTurnIn.
+                        if (string.IsNullOrEmpty(action.stringParam))
+                        {
+                            Debug.LogWarning("[QuestServer] FireDialogAction: CompleteObjective skipped — questId empty");
+                            SendDialogActionResultToClient(clientId, new DialogActionResultDto
+                            {
+                                actionType = (byte)action.type,
+                                success = false,
+                                resultData = "missing questId"
+                            });
+                            break;
+                        }
+                        // M11 demo: CompleteObjective action → TryTurnIn (если quest active/Completed).
+                        // Stage check убран — достаточно наличия quest в player log.
+                        var sw = ProjectC.Quests.QuestWorld.Instance;
+                        bool turnOk = false;
+                        if (sw != null)
+                        {
+                            var playerQuests = sw.GetPlayerQuests(clientId);
+                            bool questFound = false;
+                            if (playerQuests != null)
+                            {
+                                foreach (var p in playerQuests)
+                                {
+                                    if (p.questId == action.stringParam) { questFound = true; break; }
+                                }
+                            }
+                            if (questFound)
+                            {
+                                if (debugMode) Debug.Log($"[QuestServer] FireDialogAction: CompleteObjective quest={action.stringParam} → TryTurnIn");
+                                var turnRes = sw.TryTurnIn(clientId, action.stringParam, string.Empty);
+                                turnOk = turnRes.code == (byte)QuestResultCode.Ok;
+                                if (turnOk)
+                                {
+                                    // Push snapshot so client sees quest in TurnedIn
+                                    SendQuestSnapshotToClient(clientId);
+                                }
+                            }
+                            else if (debugMode)
+                            {
+                                Debug.Log($"[QuestServer] FireDialogAction: CompleteObjective quest={action.stringParam} — not in player log, stub");
+                            }
+                        }
+                        SendDialogActionResultToClient(clientId, new DialogActionResultDto
+                        {
+                            actionType = (byte)action.type,
+                            success = turnOk,
+                            resultData = action.stringParam
+                        });
+                    }
+                    break;
                 case DialogueActionType.DiscoverQuest:
                 case DialogueActionType.SetFlag:
                 case DialogueActionType.SwitchDialogTree:
                 case DialogueActionType.EndConversation:
                     {
-                        // T-Q15: stubs — SetFlag/SwitchDialogTree/EndConversation/CompleteObjective/DiscoverQuest — handled elsewhere or out of scope.
+                        // T-Q15: stubs — SetFlag/SwitchDialogTree/EndConversation/DiscoverQuest — handled elsewhere or out of scope.
                         if (debugMode) Debug.Log($"[QuestServer] FireDialogAction: {action.type} (T-Q15 stub — T-Q18+ fill)");
                         SendDialogActionResultToClient(clientId, new DialogActionResultDto
                         {
@@ -1001,6 +1116,9 @@ namespace ProjectC.Quests
                         // T-Q16 fix: push fresh contract snapshot so ContractClientState.credits updates UI.
                         if (ProjectC.Trade.Network.ContractServer.Instance != null)
                             ProjectC.Trade.Network.ContractServer.Instance.PushPlayerSnapshot(clientId);
+                        // M11 fix: push inventory snapshot with updated credits (InventorySnapshotDto.credits now reads from Repository).
+                        if (ProjectC.Items.Network.InventoryServer.Instance != null)
+                            ProjectC.Items.Network.InventoryServer.Instance.PushSnapshot(clientId);
                         SendDialogActionResultToClient(clientId, new DialogActionResultDto
                         {
                             actionType = (byte)action.type,
@@ -1028,7 +1146,8 @@ namespace ProjectC.Quests
                         }
                         int newValue = QuestWorld.Instance.ModifyReputation(clientId, faction, delta);
                         if (debugMode) Debug.Log($"[QuestServer] FireDialogAction: AddReputation faction={faction} delta={delta} newValue={newValue}");
-                        // ModifyReputation already publishes ReputationChangedEvent + broadcast.
+                        // M11 fix: push reputation snapshot to client so CharacterWindow updates.
+                        BroadcastReputationChange(clientId);
                         SendDialogActionResultToClient(clientId, new DialogActionResultDto
                         {
                             actionType = (byte)action.type,
@@ -1056,6 +1175,8 @@ namespace ProjectC.Quests
                         int delta = action.intParam;
                         int newAttitude = QuestWorld.Instance.ModifyNpcAttitude(clientId, targetNpcId, delta);
                         if (debugMode) Debug.Log($"[QuestServer] FireDialogAction: AddNpcAttitude npc={targetNpcId} delta={delta} newValue={newAttitude}");
+                        // M11 fix: push npc attitude snapshot so dialog badge updates.
+                        BroadcastNpcAttitudeChange(clientId);
                         // ModifyNpcAttitude already publishes NpcAttitudeChangedEvent + broadcast + cross-faction.
                         SendDialogActionResultToClient(clientId, new DialogActionResultDto
                         {

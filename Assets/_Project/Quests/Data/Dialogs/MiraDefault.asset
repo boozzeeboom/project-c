@@ -25,27 +25,26 @@ MonoBehaviour:
       \u0427\u0435\u043C \u043C\u043E\u0433\u0443 \u043F\u043E\u043C\u043E\u0447\u044C?"
     portraitEmotion: neutral
     edges:
-    - label: "\u0420\u0430\u0441\u0441\u043A\u0430\u0436\u0438 \u043E \u0413\u0438\u043B\u044C\u0434\u0438\u0438
-        \u041C\u044B\u0441\u043B\u0438"
-      targetNodeId: guild_info
-      condition:
-        type: 10
-        stringParam: 
-        stageIdParam: 
-        intParam: 0
-        factionParam: 0
-        questStateParam: 2
-      conditions: []
-      action:
-        type: 60
-        stringParam: 
-        stageIdParam: 
-        intParam: 0
-        factionParam: 0
-      hideIfUnavailable: 1
     - label: "\u0423 \u0442\u0435\u0431\u044F \u0435\u0441\u0442\u044C \u0440\u0430\u0431\u043E\u0442\u0430
         \u0434\u043B\u044F \u043C\u0435\u043D\u044F?"
       targetNodeId: offer_quest
+      condition:
+        type: 10
+        stringParam: 1
+        stageIdParam:
+        intParam: 1
+        factionParam: 0
+        questStateParam: 2
+      action:
+        type: 60
+        stringParam:
+        stageIdParam:
+        intParam: 0
+        factionParam: 0
+      hideIfUnavailable: 1
+    - label: "\u041D\u0443 \u0447\u0442\u043E, \u043D\u0430\u0448\u0451\u043B \u041A\u0440\u0438\u0441\u0442\u0430\u043B\u043B
+        \u0412\u0440\u0435\u043C\u0451\u043D?"
+      targetNodeId: check_b
       condition:
         type: 10
         stringParam: 
@@ -59,12 +58,6 @@ MonoBehaviour:
         stageIdParam: 
         intParam: 0
         factionParam: 0
-        questStateParam: 0
-      - type: 30
-        stringParam: 
-        stageIdParam: 
-        intParam: 0
-        factionParam: 1
         questStateParam: 2
       action:
         type: 60
@@ -73,97 +66,7 @@ MonoBehaviour:
         intParam: 0
         factionParam: 0
       hideIfUnavailable: 1
-    - label: "\u042F \u043D\u0430\u0448\u0451\u043B \u041A\u0440\u0438\u0441\u0442\u0430\u043B\u043B
-        \u0412\u0440\u0435\u043C\u0451\u043D."
-      targetNodeId: quest_turn_in
-      condition:
-        type: 10
-        stringParam: 
-        stageIdParam: 
-        intParam: 0
-        factionParam: 0
-        questStateParam: 2
-      conditions:
-      - type: 21
-        stringParam: find_artifact
-        stageIdParam: return
-        intParam: 0
-        factionParam: 0
-        questStateParam: 2
-      action:
-        type: 60
-        stringParam: 
-        stageIdParam: 
-        intParam: 0
-        factionParam: 0
-      hideIfUnavailable: 1
-    - label: "\u041F\u043E\u043A\u0430\u0436\u0438 \u0441\u0432\u043E\u0438 \u0442\u043E\u0432\u0430\u0440\u044B."
-      targetNodeId: open_trade
-      condition:
-        type: 10
-        stringParam: 
-        stageIdParam: 
-        intParam: 0
-        factionParam: 0
-        questStateParam: 2
-      conditions: []
-      action:
-        type: 40
-        stringParam: primium_artifact_shop
-        stageIdParam: 
-        intParam: 0
-        factionParam: 0
-      hideIfUnavailable: 1
-    - label: "\u041F\u0440\u043E\u0449\u0430\u0439."
-      targetNodeId: 
-      condition:
-        type: 10
-        stringParam: 
-        stageIdParam: 
-        intParam: 0
-        factionParam: 0
-        questStateParam: 2
-      conditions: []
-      action:
-        type: 60
-        stringParam: 
-        stageIdParam: 
-        intParam: 0
-        factionParam: 0
-      hideIfUnavailable: 1
-    onEnterActions: []
-  - nodeId: guild_info
-    speaker:
-      speakerKind: 0
-      refId: mira_01
-    text: "\u0413\u0438\u043B\u044C\u0434\u0438\u044F \u041C\u044B\u0441\u043B\u0438
-      \u2014 \u044D\u0442\u043E \u0441\u043E\u043E\u0431\u0449\u0435\u0441\u0442\u0432\u043E
-      \u0443\u0447\u0451\u043D\u044B\u0445, \u0444\u0438\u043B\u043E\u0441\u043E\u0444\u043E\u0432
-      \u0438 \u0438\u0441\u0441\u043B\u0435\u0434\u043E\u0432\u0430\u0442\u0435\u043B\u0435\u0439.
-      \u041C\u044B \u0438\u0449\u0435\u043C \u0437\u043D\u0430\u043D\u0438\u044F
-      \u0432\u0435\u0437\u0434\u0435, \u0433\u0434\u0435 \u0435\u0441\u0442\u044C
-      \u0442\u0435\u043D\u044C..."
-    portraitEmotion: thoughtful
-    edges:
-    - label: "\u041F\u043E\u043D\u044F\u0442\u043D\u043E. \u0420\u0430\u0441\u0441\u043A\u0430\u0436\u0438
-        \u0435\u0449\u0451 \u043E \u0447\u0451\u043C-\u043D\u0438\u0431\u0443\u0434\u044C."
-      targetNodeId: greeting
-      condition:
-        type: 10
-        stringParam: 
-        stageIdParam: 
-        intParam: 0
-        factionParam: 0
-        questStateParam: 2
-      conditions: []
-      action:
-        type: 60
-        stringParam: 
-        stageIdParam: 
-        intParam: 0
-        factionParam: 0
-      hideIfUnavailable: 1
-    - label: "\u041F\u0440\u043E\u0449\u0430\u0439."
+    - label: "\u041F\u043E\u043A\u0430."
       targetNodeId: 
       condition:
         type: 10
@@ -185,17 +88,21 @@ MonoBehaviour:
     speaker:
       speakerKind: 0
       refId: mira_01
-    text: "\u0414\u0430, \u0443 \u043C\u0435\u043D\u044F \u0435\u0441\u0442\u044C
-      \u0434\u0435\u043B\u043E. \u042F \u0438\u0449\u0443 \u041A\u0440\u0438\u0441\u0442\u0430\u043B\u043B
-      \u0412\u0440\u0435\u043C\u0451\u043D \u2014 \u0443\u0442\u0435\u0440\u044F\u043D\u043D\u044B\u0439
-      \u0430\u0440\u0442\u0435\u0444\u0430\u043A\u0442 \u0413\u0438\u043B\u044C\u0434\u0438\u0438.
-      \u0415\u0441\u043B\u0438 \u043D\u0430\u0439\u0434\u0451\u0448\u044C \u2014
-      \u043E\u0437\u043E\u043B\u043E\u0447\u0443."
+    text: "\u0423 \u043C\u0435\u043D\u044F \u0435\u0441\u0442\u044C \u0434\u0435\u043B\u043E.
+      \u041C\u043D\u0435 \u043D\u0443\u0436\u0435\u043D \u041A\u0440\u0438\u0441\u0442\u0430\u043B\u043B
+      \u0412\u0440\u0435\u043C\u0451\u043D \u2014 \u044D\u0442\u043E \u0430\u0440\u0442\u0435\u0444\u0430\u043A\u0442
+      \u0413\u0438\u043B\u044C\u0434\u0438\u0438 \u041C\u044B\u0441\u043B\u0438.
+      \u0415\u0441\u043B\u0438 \u043F\u0440\u0438\u043D\u0435\u0441\u0451\u0448\u044C
+      \u2014 \u0445\u043E\u0440\u043E\u0448\u043E \u0437\u0430\u043F\u043B\u0430\u0447\u0443.
+      \u041F\u0440\u0430\u0432\u0434\u0430, \u0443 \u043C\u0435\u043D\u044F \u0441\u0435\u0439\u0447\u0430\u0441
+      \u043D\u0435\u0442 \u0437\u0430\u0434\u0430\u0442\u043A\u0430, \u0437\u0430\u0431\u0435\u0440\u0443
+      \u0442\u0432\u043E\u0439 \u0414\u0440\u0435\u0432\u043D\u0438\u0439 \u041A\u043B\u044E\u0447
+      \u0432 \u043A\u0430\u0447\u0435\u0441\u0442\u0432\u0435 \u043E\u043F\u043B\u0430\u0442\u044B
+      \u0430\u0432\u0430\u043D\u0441\u043E\u043C."
     portraitEmotion: serious
     edges:
-    - label: "\u042F \u043F\u043E\u043C\u043E\u0433\u0443. (\u041F\u0440\u0438\u043D\u044F\u0442\u044C
-        \u043A\u0432\u0435\u0441\u0442)"
-      targetNodeId: 
+    - label: "\u042F \u043F\u043E\u043C\u043E\u0433\u0443."
+      targetNodeId: accept_thanks
       condition:
         type: 10
         stringParam: 
@@ -205,13 +112,13 @@ MonoBehaviour:
         questStateParam: 2
       conditions: []
       action:
-        type: 10
-        stringParam: find_artifact
+        type: 21
+        stringParam: 1
         stageIdParam: 
-        intParam: 0
+        intParam: 1
         factionParam: 0
-      hideIfUnavailable: 1
-    - label: "\u042D\u0442\u043E \u0441\u043B\u0438\u0448\u043A\u043E\u043C \u043E\u043F\u0430\u0441\u043D\u043E."
+      hideIfUnavailable: 0
+    - label: "\u041D\u0435\u0442, \u043D\u0435 \u0445\u043E\u0447\u0443."
       targetNodeId: decline
       condition:
         type: 10
@@ -227,17 +134,16 @@ MonoBehaviour:
         stageIdParam: 
         intParam: 0
         factionParam: 0
-      hideIfUnavailable: 1
+      hideIfUnavailable: 0
     onEnterActions: []
   - nodeId: decline
     speaker:
       speakerKind: 0
       refId: mira_01
-    text: "\u041F\u043E\u043D\u0438\u043C\u0430\u044E. \u0415\u0441\u043B\u0438 \u043F\u0435\u0440\u0435\u0434\u0443\u043C\u0430\u0435\u0448\u044C
-      \u2014 \u043F\u0440\u0438\u0445\u043E\u0434\u0438."
+    text: "\u041F\u043E\u043A\u0430."
     portraitEmotion: neutral
     edges:
-    - label: "\u041F\u0440\u043E\u0449\u0430\u0439."
+    - label: "\u0414\u043E \u0441\u0432\u0438\u0434\u0430\u043D\u0438\u044F."
       targetNodeId: 
       condition:
         type: 10
@@ -253,19 +159,21 @@ MonoBehaviour:
         stageIdParam: 
         intParam: 0
         factionParam: 0
-      hideIfUnavailable: 1
+      hideIfUnavailable: 0
     onEnterActions: []
-  - nodeId: quest_turn_in
+  - nodeId: accept_thanks
     speaker:
       speakerKind: 0
       refId: mira_01
-    text: "\u041D\u0435\u0432\u0435\u0440\u043E\u044F\u0442\u043D\u043E! \u042D\u0442\u043E
-      \u0434\u0435\u0439\u0441\u0442\u0432\u0438\u0442\u0435\u043B\u044C\u043D\u043E
-      \u043E\u043D! \u041F\u043E\u0437\u0432\u043E\u043B\u044C \u043C\u043D\u0435..."
+    text: "\u0421\u043F\u0430\u0441\u0438\u0431\u043E \u0437\u0430 \u043A\u043B\u044E\u0447.
+      \u041F\u0440\u0438\u043D\u0435\u0441\u0438 \u041A\u0440\u0438\u0441\u0442\u0430\u043B\u043B
+      \u0412\u0440\u0435\u043C\u0451\u043D \u2014 \u0438 \u043C\u044B \u0432 \u0440\u0430\u0441\u0447\u0451\u0442\u0435.
+      \u0418\u0449\u0438 \u0432 \u0440\u0443\u0438\u043D\u0430\u0445 \u043D\u0430
+      \u0432\u043E\u0441\u0442\u043E\u043A\u0435."
     portraitEmotion: neutral
     edges:
-    - label: "(\u041E\u0442\u0434\u0430\u0442\u044C \u043A\u0440\u0438\u0441\u0442\u0430\u043B\u043B)"
-      targetNodeId: quest_complete
+    - label: "\u0425\u043E\u0440\u043E\u0448\u043E."
+      targetNodeId: 
       condition:
         type: 10
         stringParam: 
@@ -275,22 +183,162 @@ MonoBehaviour:
         questStateParam: 2
       conditions: []
       action:
-        type: 11
+        type: 14
         stringParam: find_artifact
-        stageIdParam: turn_in
+        stageIdParam: 
         intParam: 0
         factionParam: 0
-      hideIfUnavailable: 1
+      hideIfUnavailable: 0
     onEnterActions: []
-  - nodeId: quest_complete
+  - nodeId: check_b
     speaker:
       speakerKind: 0
       refId: mira_01
-    text: "\u0411\u043B\u0430\u0433\u043E\u0434\u0430\u0440\u044E \u0442\u0435\u0431\u044F
-      \u043E\u0442 \u0438\u043C\u0435\u043D\u0438 \u0432\u0441\u0435\u0439 \u0413\u0438\u043B\u044C\u0434\u0438\u0438.
-      \u0412\u043E\u0442 \u0442\u0432\u043E\u044F \u043D\u0430\u0433\u0440\u0430\u0434\u0430
-      \u2014 \u0438 \u043A\u043E\u0435-\u0447\u0442\u043E \u0435\u0449\u0451..."
+    text: "\u041D\u0443 \u0447\u0442\u043E, \u043D\u0430\u0448\u0451\u043B \u041A\u0440\u0438\u0441\u0442\u0430\u043B\u043B
+      \u0412\u0440\u0435\u043C\u0451\u043D?"
     portraitEmotion: neutral
+    edges:
+    - label: "\u0414\u0430."
+      targetNodeId: give_b
+      condition:
+        type: 10
+        stringParam: 
+        stageIdParam: 
+        intParam: 0
+        factionParam: 0
+        questStateParam: 2
+      conditions: []
+      action:
+        type: 60
+        stringParam: 
+        stageIdParam: 
+        intParam: 0
+        factionParam: 0
+      hideIfUnavailable: 0
+    - label: "\u041D\u0435\u0442."
+      targetNodeId: not_yet
+      condition:
+        type: 10
+        stringParam: 
+        stageIdParam: 
+        intParam: 0
+        factionParam: 0
+        questStateParam: 2
+      conditions: []
+      action:
+        type: 60
+        stringParam: 
+        stageIdParam: 
+        intParam: 0
+        factionParam: 0
+      hideIfUnavailable: 0
+    onEnterActions: []
+  - nodeId: give_b
+    speaker:
+      speakerKind: 0
+      refId: mira_01
+    text: "\u0414\u0430\u0439-\u043A\u0430 \u043F\u043E\u0441\u043C\u043E\u0442\u0440\u044E..."
+    portraitEmotion: neutral
+    edges:
+    - label: "(\u043E\u0442\u0434\u0430\u0442\u044C \u041A\u0440\u0438\u0441\u0442\u0430\u043B\u043B)"
+      targetNodeId: complete_thanks
+      condition:
+        type: 10
+        stringParam: 2
+        stageIdParam:
+        intParam: 1
+        factionParam: 0
+        questStateParam: 2
+      conditions: []
+      action:
+        type: 21
+        stringParam: 2
+        stageIdParam: 
+        intParam: 1
+        factionParam: 0
+      hideIfUnavailable: 1
+    - label: "\u0421\u0442\u043E\u043F, \u044F \u043F\u0435\u0440\u0435\u0434\u0443\u043C\u0430\u043B."
+      targetNodeId: no_b
+      condition:
+        type: 10
+        stringParam: 
+        stageIdParam: 
+        intParam: 0
+        factionParam: 0
+        questStateParam: 2
+      conditions: []
+      action:
+        type: 60
+        stringParam: 
+        stageIdParam: 
+        intParam: 0
+        factionParam: 0
+      hideIfUnavailable: 0
+    onEnterActions: []
+  - nodeId: no_b
+    speaker:
+      speakerKind: 0
+      refId: mira_01
+    text: "\u041D\u0435 \u0432\u0438\u0436\u0443 \u0443 \u0442\u0435\u0431\u044F
+      \u041A\u0440\u0438\u0441\u0442\u0430\u043B\u043B\u0430. \u0418\u0434\u0438
+      \u0438\u0449\u0438."
+    portraitEmotion: serious
+    edges:
+    - label: "\u0418\u0437\u0432\u0438\u043D\u0438."
+      targetNodeId: 
+      condition:
+        type: 10
+        stringParam: 
+        stageIdParam: 
+        intParam: 0
+        factionParam: 0
+        questStateParam: 2
+      conditions: []
+      action:
+        type: 60
+        stringParam: 
+        stageIdParam: 
+        intParam: 0
+        factionParam: 0
+      hideIfUnavailable: 0
+    onEnterActions: []
+  - nodeId: not_yet
+    speaker:
+      speakerKind: 0
+      refId: mira_01
+    text: "\u041E\u043A, \u043A\u0430\u043A \u043D\u0430\u0439\u0434\u0451\u0448\u044C
+      \u2014 \u043F\u0440\u0438\u043D\u043E\u0441\u0438."
+    portraitEmotion: neutral
+    edges:
+    - label: "\u0414\u043E \u0441\u0432\u0438\u0434\u0430\u043D\u0438\u044F."
+      targetNodeId: 
+      condition:
+        type: 10
+        stringParam: 
+        stageIdParam: 
+        intParam: 0
+        factionParam: 0
+        questStateParam: 2
+      conditions: []
+      action:
+        type: 60
+        stringParam: 
+        stageIdParam: 
+        intParam: 0
+        factionParam: 0
+      hideIfUnavailable: 0
+    onEnterActions: []
+  - nodeId: complete_thanks
+    speaker:
+      speakerKind: 0
+      refId: mira_01
+    text: "\u041D\u0435\u0432\u0435\u0440\u043E\u044F\u0442\u043D\u043E! \u042D\u0442\u043E
+      \u0434\u0435\u0439\u0441\u0442\u0432\u0438\u0442\u0435\u043B\u044C\u043D\u043E
+      \u043E\u043D! \u0421\u043F\u0430\u0441\u0438\u0431\u043E \u0442\u0435\u0431\u0435.
+      \u0412\u043E\u0442 \u0442\u0432\u043E\u044F \u043D\u0430\u0433\u0440\u0430\u0434\u0430
+      \u2014 1000 \u043A\u0440\u0435\u0434\u0438\u0442\u043E\u0432 \u0438 \u043C\u043E\u044F
+      \u0431\u043B\u0430\u0433\u043E\u0434\u0430\u0440\u043D\u043E\u0441\u0442\u044C."
+    portraitEmotion: happy
     edges:
     - label: "\u0421\u043F\u0430\u0441\u0438\u0431\u043E, \u041C\u0438\u0440\u0430."
       targetNodeId: 
@@ -303,55 +351,26 @@ MonoBehaviour:
         questStateParam: 2
       conditions: []
       action:
-        type: 60
+        type: 30
         stringParam: 
         stageIdParam: 
-        intParam: 0
+        intParam: 1000
         factionParam: 0
-      hideIfUnavailable: 1
-    onEnterActions: []
-  - nodeId: open_trade
-    speaker:
-      speakerKind: 0
-      refId: mira_01
-    text: "(\u0422\u043E\u0440\u0433\u043E\u0432\u043B\u044F \u043E\u0442\u043A\u0440\u044B\u0442\u0430.
-      \u0417\u0430\u043A\u0440\u043E\u0439 \u043E\u043A\u043D\u043E, \u0447\u0442\u043E\u0431\u044B
-      \u043F\u0440\u043E\u0434\u043E\u043B\u0436\u0438\u0442\u044C.)"
-    portraitEmotion: neutral
-    edges:
-    - label: "\u0412\u0435\u0440\u043D\u0443\u0442\u044C\u0441\u044F \u043A \u0440\u0430\u0437\u0433\u043E\u0432\u043E\u0440\u0443."
-      targetNodeId: greeting
-      condition:
-        type: 10
-        stringParam: 
-        stageIdParam: 
-        intParam: 0
-        factionParam: 0
-        questStateParam: 2
-      conditions: []
-      action:
-        type: 60
-        stringParam: 
-        stageIdParam: 
-        intParam: 0
-        factionParam: 0
-      hideIfUnavailable: 1
-    - label: "\u041F\u0440\u043E\u0449\u0430\u0439."
-      targetNodeId: 
-      condition:
-        type: 10
-        stringParam: 
-        stageIdParam: 
-        intParam: 0
-        factionParam: 0
-        questStateParam: 2
-      conditions: []
-      action:
-        type: 60
-        stringParam: 
-        stageIdParam: 
-        intParam: 0
-        factionParam: 0
-      hideIfUnavailable: 1
-    onEnterActions: []
+      hideIfUnavailable: 0
+    onEnterActions:
+    - type: 31
+      stringParam: 
+      stageIdParam: 
+      intParam: 25
+      factionParam: 1
+    - type: 32
+      stringParam: mira_01
+      stageIdParam: 
+      intParam: 10
+      factionParam: 0
+    - type: 11
+      stringParam: find_artifact
+      stageIdParam: 
+      intParam: 0
+      factionParam: 0
   localizationTable: {fileID: 0}

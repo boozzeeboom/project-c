@@ -551,7 +551,7 @@ namespace ProjectC.Items
                 locationId = locationId,
                 items      = items.ToArray(),
                 maxSlots   = MAX_SLOTS,
-                credits    = 0f,                       // Phase 2: подтянуть из PlayerDataRepository
+                credits    = ProjectC.Trade.Core.TradeWorld.Instance?.Repository?.GetCredits(clientId) ?? 0f,
             };
         }
 

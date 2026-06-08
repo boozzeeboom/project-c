@@ -17,6 +17,7 @@ using System.Collections;
 using ProjectC.Quests.Dto;
 using ProjectC.Quests.Client;
 using ProjectC.Player;
+using ProjectC.Reputation;
 
 namespace ProjectC.Quests.UI
 {
@@ -44,6 +45,7 @@ namespace ProjectC.Quests.UI
  private VisualElement _root;
  private VisualElement _panel;
  private Label _npcNameLabel;
+ private Label _npcAttitudeLabel; // T-Q13
  private Label _textLabel;
  private VisualElement _optionsContainer;
  private Label _toastLabel;
@@ -57,6 +59,8 @@ namespace ProjectC.Quests.UI
  private string _fullText;
  private int _displayedCharCount;
  private bool _inputSubscribed;
+ // T-Q13: NpcAttitude subscribe state.
+ private bool _attitudeSubscribed;
 
  public bool IsOpen { get; private set; }
 
@@ -84,6 +88,7 @@ namespace ProjectC.Quests.UI
  EnsureBuilt();
  TrySubscribe();
  TrySubscribeInput();
+ TrySubscribeAttitude(); // T-Q13
  }
 
  // T-Q12-fix: UIDocument.OnEnable может сработать ПОСЛЕ DialogWindow.OnEnable и подвесить
@@ -103,6 +108,7 @@ namespace ProjectC.Quests.UI
  private void OnDestroy()
  {
  TryUnsubscribe();
+ TryUnsubscribeAttitude(); // T-Q13
  if (Instance == this) Instance = null;
  }
 
@@ -148,6 +154,42 @@ namespace ProjectC.Quests.UI
  _subscribed = false;
  }
 
+ // T-Q13: subscribe NpcAttitudeClientState → update badge on attitude change.
+ private void TrySubscribeAttitude()
+ {
+ if (_attitudeSubscribed) return;
+ var att = NpcAttitudeClientState.Instance;
+ if (att == null) return;
+ att.OnNpcAttitudeUpdated += OnNpcAttitudeChanged;
+ _attitudeSubscribed = true;
+ }
+ private void TryUnsubscribeAttitude()
+ {
+ if (!_attitudeSubscribed) return;
+ var att = NpcAttitudeClientState.Instance;
+ if (att == null) { _attitudeSubscribed = false; return; }
+ att.OnNpcAttitudeUpdated -= OnNpcAttitudeChanged;
+ _attitudeSubscribed = false;
+ }
+ private void OnNpcAttitudeChanged(NpcAttitudeSnapshotDto snapshot)
+ {
+ UpdateNpcAttitudeBadge();
+ }
+
+ // T-Q13: показать "❤ +N" / "❤ -N" / "" (если 0 или нет snapshot) для текущего NPC.
+ private void UpdateNpcAttitudeBadge()
+ {
+ if (_npcAttitudeLabel == null) return;
+ // DialogStepDto — struct, поэтому проверяем treeId+nodeId как "is set" indicator.
+ string npcId = (_currentStep.treeId != null) ? _currentStep.speakerNpcId : null;
+ if (string.IsNullOrEmpty(npcId)) { _npcAttitudeLabel.text = ""; return; }
+ var att = NpcAttitudeClientState.Instance;
+ if (att == null) { _npcAttitudeLabel.text = ""; return; }
+ int value = att.GetAttitudeForNpc(npcId);
+ if (value == 0) { _npcAttitudeLabel.text = "❤ 0"; return; }
+ _npcAttitudeLabel.text = value > 0 ? $"❤ +{value}" : $"❤ {value}";
+ }
+
  private void EnsureBuilt()
  {
  if (_doc == null) _doc = GetComponent<UIDocument>();
@@ -190,10 +232,12 @@ namespace ProjectC.Quests.UI
 
  _panel = _root.Q<VisualElement>("panel");
  _npcNameLabel = _root.Q<Label>("npc-name");
+ _npcAttitudeLabel = _root.Q<Label>("npc-attitude"); // T-Q13
  _textLabel = _root.Q<Label>("text");
  _optionsContainer = _root.Q<VisualElement>("options");
  _toastLabel = _root.Q<Label>("toast");
  if (_toastLabel != null) _toastLabel.style.display = DisplayStyle.None;
+ if (_npcAttitudeLabel != null) _npcAttitudeLabel.text = "";
  // Initially hidden — Show() переключит на Flex.
  if (_root != null) _root.style.display = DisplayStyle.None;
 
@@ -277,6 +321,9 @@ namespace ProjectC.Quests.UI
  _npcNameLabel.text = !string.IsNullOrEmpty(_currentStep.speakerNpcId)
  ? $"💬 {_currentStep.speakerNpcId}"
  : "💬 NPC";
+
+ // T-Q13: update NpcAttitude badge для текущего NPC.
+ UpdateNpcAttitudeBadge();
 
  // T-Q12: запустить typewriter для speakerText (char-by-char).
  if (_textLabel != null)
@@ -418,6 +465,8 @@ namespace ProjectC.Quests.UI
  // (порядок OnEnable между DialogWindow и QuestClientState НЕ гарантирован).
  // Без этого — после domain reload _subscribed остаётся false и event не приходит.
  if (!_subscribed) TrySubscribe();
+ // T-Q13: lazy-subscribe NpcAttitudeClientState (тот же race-condition pattern).
+ if (!_attitudeSubscribed) TrySubscribeAttitude();
  if (IsOpen && UnityEngine.InputSystem.Keyboard.current != null
  && UnityEngine.InputSystem.Keyboard.current.escapeKey.wasPressedThisFrame)
  {

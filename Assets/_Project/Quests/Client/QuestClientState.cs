@@ -26,8 +26,6 @@ namespace ProjectC.Quests.Client
 
         // ============ Quest state ============
         public QuestSnapshotDto? CurrentSnapshot { get; private set; }
-        public ReputationSnapshotDto? CurrentReputation { get; private set; }
-        public NpcAttitudeSnapshotDto? CurrentNpcAttitude { get; private set; }
 
         // ============ Last action result (для UI feedback) ============
         public QuestResultDto? LastResult { get; private set; }
@@ -35,8 +33,6 @@ namespace ProjectC.Quests.Client
 
         // ============ Events для UI ============
         public event Action<QuestSnapshotDto> OnSnapshotUpdated;
-        public event Action<ReputationSnapshotDto> OnReputationUpdated;
-        public event Action<NpcAttitudeSnapshotDto> OnNpcAttitudeUpdated;
         public event Action<QuestResultDto> OnQuestResult;
         public event Action<ReputationResultDto> OnReputationResult;
         /// <summary>T-Q07: EventDriven quest auto-discovered. Args: (questId, displayName).</summary>
@@ -73,20 +69,6 @@ namespace ProjectC.Quests.Client
             CurrentSnapshot = snapshot;
             OnSnapshotUpdated?.Invoke(snapshot);
             if (Debug.isDebugBuild) Debug.Log($"[QuestClientState] OnQuestSnapshotReceived: {snapshot.quests?.Length ?? 0} quests");
-        }
-
-        public void OnReputationSnapshotReceived(ReputationSnapshotDto snapshot)
-        {
-            CurrentReputation = snapshot;
-            OnReputationUpdated?.Invoke(snapshot);
-            if (Debug.isDebugBuild) Debug.Log($"[QuestClientState] OnReputationSnapshotReceived: {snapshot.entries?.Length ?? 0} factions");
-        }
-
-        public void OnNpcAttitudeSnapshotReceived(NpcAttitudeSnapshotDto snapshot)
-        {
-            CurrentNpcAttitude = snapshot;
-            OnNpcAttitudeUpdated?.Invoke(snapshot);
-            if (Debug.isDebugBuild) Debug.Log($"[QuestClientState] OnNpcAttitudeSnapshotReceived: {snapshot.entries?.Length ?? 0} NPCs");
         }
 
         public void OnQuestResultReceived(QuestResultDto result)

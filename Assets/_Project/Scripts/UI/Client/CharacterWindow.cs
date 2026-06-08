@@ -35,12 +35,14 @@ using UnityEngine.UIElements;
 using ProjectC.Items;
 using ProjectC.Items.Client;
 using ProjectC.Items.Dto;
+using ProjectC.Factions;
 using ProjectC.Network;
 using ProjectC.Player;
 using ProjectC.Quests;
 using ProjectC.Quests.Client;
 using ProjectC.Quests.Dto;
 using ProjectC.Quests.UI;
+using ProjectC.Reputation;
 using ProjectC.Trade;
 using ProjectC.Trade.Client;
 using ProjectC.Trade.Dto;
@@ -97,6 +99,7 @@ namespace ProjectC.UI.Client
 
         // --- ListViews ---
         private ListView _reputationList;
+        private ListView _npcAttitudeList; // T-Q13
         private ListView _contractsList;
         private ListView _inventoryList;
         private ListView _questsActiveList;
@@ -144,6 +147,7 @@ namespace ProjectC.UI.Client
         private ContractDto[] _contractsCache = Array.Empty<ContractDto>();
         private List<InventoryListItem> _inventoryCache = new List<InventoryListItem>();
         private List<ReputationListItem> _reputationCache = new List<ReputationListItem>();
+        private List<NpcAttitudeListItem> _npcAttitudeCache = new List<NpcAttitudeListItem>(); // T-Q13
         private List<QuestListItem> _questsActiveCache = new List<QuestListItem>();
         private List<QuestListItem> _questsCompletedCache = new List<QuestListItem>();
         private List<QuestListItem> _questsFailedCache = new List<QuestListItem>();
@@ -173,6 +177,15 @@ namespace ProjectC.UI.Client
         public string factionId;
         public string displayName;
         public int value; // -100..+100 (GDD-23)
+        public Color color;
+        }
+
+        // T-Q13: NpcAttitude row projection для под-секции "Отношения к NPC".
+        private struct NpcAttitudeListItem
+        {
+        public string npcId;
+        public string displayName;
+        public int value; // -100..+200 (NpcAttitude.MinValue..MaxValue)
         public Color color;
         }
 
@@ -236,9 +249,15 @@ namespace ProjectC.UI.Client
         UnsubscribeInventory();
         // T-Q11: Unsubscribe QuestClientState (3 события).
         UnsubscribeQuestState();
+        // T-Q13: Unsubscribe Reputation + NpcAttitude singletons.
+        UnsubscribeReputation();
+        UnsubscribeNpcAttitude();
         }
 
         private bool _isInventorySubscribed = false;
+        // T-Q13: subscribe flags для ReputationClientState и NpcAttitudeClientState.
+        private bool _isReputationSubscribed = false;
+        private bool _isNpcAttitudeSubscribed = false;
 
         // BUGFIX 2026-06-05: lazy-subscribe встроен в Update ниже (строка 255+).
         // Helpers Subscribe/Unsubscribe оставлены для идемпотентности.
@@ -255,12 +274,48 @@ namespace ProjectC.UI.Client
 
         private void UnsubscribeInventory()
         {
-            if (!_isInventorySubscribed) return;
-            var invState = ProjectC.Items.Client.InventoryClientState.Instance;
-            if (invState == null) { _isInventorySubscribed = false; return; }
-            invState.OnSnapshotUpdated -= HandleInventorySnapshotUpdated;
-            invState.OnInventoryResult -= HandleInventoryResultReceived;
-            _isInventorySubscribed = false;
+        if (!_isInventorySubscribed) return;
+        var invState = ProjectC.Items.Client.InventoryClientState.Instance;
+        if (invState == null) { _isInventorySubscribed = false; return; }
+        invState.OnSnapshotUpdated -= HandleInventorySnapshotUpdated;
+        invState.OnInventoryResult -= HandleInventoryResultReceived;
+        _isInventorySubscribed = false;
+        }
+
+        // T-Q13: Reputation subscribe/unsubscribe (lazy race-condition fix по аналогии с InventoryClientState).
+        private void SubscribeReputation()
+        {
+        if (_isReputationSubscribed) return;
+        var repState = ReputationClientState.Instance;
+        if (repState == null) return;
+        repState.OnReputationUpdated += HandleReputationSnapshot;
+        _isReputationSubscribed = true;
+        }
+        private void UnsubscribeReputation()
+        {
+        if (!_isReputationSubscribed) return;
+        var repState = ReputationClientState.Instance;
+        if (repState == null) { _isReputationSubscribed = false; return; }
+        repState.OnReputationUpdated -= HandleReputationSnapshot;
+        _isReputationSubscribed = false;
+        }
+
+        // T-Q13: NpcAttitude subscribe/unsubscribe.
+        private void SubscribeNpcAttitude()
+        {
+        if (_isNpcAttitudeSubscribed) return;
+        var attState = NpcAttitudeClientState.Instance;
+        if (attState == null) return;
+        attState.OnNpcAttitudeUpdated += HandleNpcAttitudeSnapshot;
+        _isNpcAttitudeSubscribed = true;
+        }
+        private void UnsubscribeNpcAttitude()
+        {
+        if (!_isNpcAttitudeSubscribed) return;
+        var attState = NpcAttitudeClientState.Instance;
+        if (attState == null) { _isNpcAttitudeSubscribed = false; return; }
+        attState.OnNpcAttitudeUpdated -= HandleNpcAttitudeSnapshot;
+        _isNpcAttitudeSubscribed = false;
         }
 
         private void OnDestroy()
@@ -281,6 +336,26 @@ namespace ProjectC.UI.Client
                     SubscribeInventory();
                     invState.RequestRefresh();
                     Debug.Log("[CharacterWindow] Lazy-subscribed to InventoryClientState.OnSnapshotUpdated");
+                }
+            }
+
+            // T-Q13: lazy-subscribe Reputation + NpcAttitude singletons.
+            if (_built && !_isReputationSubscribed)
+            {
+                var repState = ReputationClientState.Instance;
+                if (repState != null)
+                {
+                    SubscribeReputation();
+                    Debug.Log("[CharacterWindow] Lazy-subscribed to ReputationClientState.OnReputationUpdated");
+                }
+            }
+            if (_built && !_isNpcAttitudeSubscribed)
+            {
+                var attState = NpcAttitudeClientState.Instance;
+                if (attState != null)
+                {
+                    SubscribeNpcAttitude();
+                    Debug.Log("[CharacterWindow] Lazy-subscribed to NpcAttitudeClientState.OnNpcAttitudeUpdated");
                 }
             }
 
@@ -359,6 +434,7 @@ namespace ProjectC.UI.Client
             _tabQuests = _root.Q<Button>("tab-quests");
 
             _reputationList = _root.Q<ListView>("reputation-list");
+            _npcAttitudeList = _root.Q<ListView>("npc-attitude-list"); // T-Q13
             _contractsList = _root.Q<ListView>("contracts-list");
             _inventoryList = _root.Q<ListView>("inventory-list");
             _questsActiveList = _root.Q<ListView>("quests-active-list");
@@ -437,6 +513,14 @@ namespace ProjectC.UI.Client
             _reputationList.fixedItemHeight =32;
             }
 
+            // ---- ListView: NpcAttitude (T-Q13, под-секция "Отношения к NPC") ----
+            if (_npcAttitudeList != null)
+            {
+            _npcAttitudeList.makeItem = MakeNpcAttitudeRow;
+            _npcAttitudeList.bindItem = BindNpcAttitudeRow;
+            _npcAttitudeList.fixedItemHeight =28;
+            }
+
             // ---- ListView: Quests (T-Q11:4 под-секции, общий row factory) ----
             // T-Q11: каждый список (active/completed/failed/discovered) имеет один factory.
             // per-row state badge CSS class берётся из QuestListItem.stateBadge.
@@ -492,6 +576,20 @@ namespace ProjectC.UI.Client
             if (ProjectC.Items.Client.InventoryClientState.Instance == null)
             {
             Debug.LogWarning("[CharacterWindow] InventoryClientState.Instance == null на момент EnsureBuilt — Update() lazy-подпишется");
+            }
+
+            // T-Q13: subscribe to ReputationClientState + NpcAttitudeClientState (idempotent).
+            // Синглтоны создаются scene-placed в BootstrapScene (рядом с [QuestClientState]).
+            // Если null — Update() lazy-подпишется.
+            SubscribeReputation();
+            SubscribeNpcAttitude();
+            if (ReputationClientState.Instance == null)
+            {
+            Debug.LogWarning("[CharacterWindow] ReputationClientState.Instance == null на момент EnsureBuilt — Update() lazy-подпишется");
+            }
+            if (NpcAttitudeClientState.Instance == null)
+            {
+            Debug.LogWarning("[CharacterWindow] NpcAttitudeClientState.Instance == null на момент EnsureBuilt — Update() lazy-подпишется");
             }
 
             // ---- T-Q11: Subscribe to QuestClientState (Quest log + Discovered events) ----
@@ -586,7 +684,7 @@ namespace ProjectC.UI.Client
         // ---- Refresh data for the active tab ----
         if (isCharacter) RefreshCharacterStats();
         if (isShip) RefreshShipStats();
-        if (isReputation) RefreshReputationCache();
+        if (isReputation) { RefreshReputationCache(); RefreshNpcAttitudeCache(); }
         if (isInventory) { RefreshInventoryCache(); ApplyInventoryFilters(); }
         if (isContracts) ApplyContractFilters();
         if (isQuests) RefreshQuestsCache();
@@ -722,25 +820,145 @@ namespace ProjectC.UI.Client
         }
 
         // ============================================================
-        // Section refresh: reputation (плейсхолдер 5 гильдий GDD-23)
+        // T-Q13: Section refresh: reputation (read from ReputationClientState)
         // ============================================================
+
+        /// <summary>
+        /// 5 фракций GDD-23 как fallback (если snapshot ещё не пришёл). Placeholder — UI не пустой.
+        /// </summary>
+        private static readonly (string id, string name, Color color)[] FactionFallback = new[]
+        {
+            ("merchants",  "Гильдия Торговцев",   new Color(0.60f, 0.80f, 0.40f)),
+            ("engineers",  "Мануфактура «Аврора»", new Color(0.40f, 0.60f, 0.90f)),
+            ("military",   "Военный Анклав",      new Color(0.80f, 0.40f, 0.40f)),
+            ("resistance", "Сопротивление",       new Color(0.70f, 0.50f, 0.90f)),
+            ("smugglers",  "Чёрный Рынок",        new Color(0.55f, 0.55f, 0.55f)),
+        };
 
         private void RefreshReputationCache()
         {
-            // 5 фракций из GDD-23 (все value=0; серверная модель в разработке).
-            // Когда появится ReputationClientState, читать из него.
-            _reputationCache = new List<ReputationListItem>
+            _reputationCache.Clear();
+            var repState = ReputationClientState.Instance;
+            if (repState == null || !repState.CurrentReputation.HasValue)
             {
-                new ReputationListItem { factionId = "merchants",  displayName = "Гильдия Торговцев",   value = 0, color = new Color(0.60f, 0.80f, 0.40f) },
-                new ReputationListItem { factionId = "engineers",  displayName = "Мануфактура «Аврора»", value = 0, color = new Color(0.40f, 0.60f, 0.90f) },
-                new ReputationListItem { factionId = "military",   displayName = "Военный Анклав",      value = 0, color = new Color(0.80f, 0.40f, 0.40f) },
-                new ReputationListItem { factionId = "resistance", displayName = "Сопротивление",       value = 0, color = new Color(0.70f, 0.50f, 0.90f) },
-                new ReputationListItem { factionId = "smugglers",  displayName = "Чёрный Рынок",        value = 0, color = new Color(0.55f, 0.55f, 0.55f) },
-            };
+                // Snapshot ещё не пришёл — показать placeholder 5 фракций с value=0.
+                for (int i = 0; i < FactionFallback.Length; i++)
+                {
+                    var f = FactionFallback[i];
+                    _reputationCache.Add(new ReputationListItem
+                    {
+                        factionId = f.id, displayName = f.name, value = 0, color = f.color
+                    });
+                }
+            }
+            else
+            {
+                // Snapshot пришёл: рендерим только те фракции что есть в snapshot
+                // (а если там < 5 — дополним placeholder'ом, чтобы UI не "потерял" строку).
+                var entries = repState.CurrentReputation.Value.entries;
+                if (entries == null || entries.Length == 0)
+                {
+                    for (int i = 0; i < FactionFallback.Length; i++)
+                    {
+                        var f = FactionFallback[i];
+                        _reputationCache.Add(new ReputationListItem
+                        {
+                            factionId = f.id, displayName = f.name, value = 0, color = f.color
+                        });
+                    }
+                }
+                else
+                {
+                    for (int i = 0; i < entries.Length; i++)
+                    {
+                        var e = entries[i];
+                        var fb = FindFactionFallback((FactionId)e.faction);
+                        _reputationCache.Add(new ReputationListItem
+                        {
+                            factionId = fb.id,
+                            displayName = fb.name,
+                            value = e.value,
+                            color = fb.color
+                        });
+                    }
+                }
+            }
             if (_reputationList != null)
             {
                 _reputationList.itemsSource = _reputationCache;
                 _reputationList.Rebuild();
+            }
+        }
+
+        private static (string id, string name, Color color) FindFactionFallback(FactionId id)
+        {
+            // Маппинг FactionId → fallback. GDD-23 5 фракций. None → "Unknown".
+            switch (id)
+            {
+                case FactionId.GuildOfSuccess:  return FactionFallback[0]; // merchants
+                case FactionId.GuildOfCreation: return FactionFallback[1]; // engineers
+                case FactionId.GuildOfStrength: return FactionFallback[2]; // military
+                case FactionId.Resistance:      return FactionFallback[3];
+                case FactionId.Underground:     return FactionFallback[4]; // smugglers
+                default: return ("unknown", id.ToString(), new Color(0.5f, 0.5f, 0.5f));
+            }
+        }
+
+        // T-Q13: handlers + refresh для NpcAttitude под-секции.
+        private void HandleReputationSnapshot(ReputationSnapshotDto snapshot)
+        {
+            RefreshReputationCache();
+            if (_messageLabel != null && IsVisible() && _activeTab == "reputation")
+            {
+                _messageLabel.text = snapshot.entries != null
+                    ? $"Фракций: {snapshot.entries.Length}"
+                    : "Нет данных о репутации";
+                _messageLabel.style.color = new StyleColor(new Color(0.9f, 0.9f, 0.9f));
+            }
+        }
+
+        private void HandleNpcAttitudeSnapshot(NpcAttitudeSnapshotDto snapshot)
+        {
+            RefreshNpcAttitudeCache();
+            if (_messageLabel != null && IsVisible() && _activeTab == "reputation")
+            {
+                _messageLabel.text = snapshot.entries != null
+                    ? $"Отношений: {snapshot.entries.Length}"
+                    : "Нет данных об отношениях";
+                _messageLabel.style.color = new StyleColor(new Color(0.9f, 0.9f, 0.9f));
+            }
+        }
+
+        private void RefreshNpcAttitudeCache()
+        {
+            _npcAttitudeCache.Clear();
+            var attState = NpcAttitudeClientState.Instance;
+            if (attState != null && attState.CurrentNpcAttitude.HasValue)
+            {
+                var entries = attState.CurrentNpcAttitude.Value.entries;
+                if (entries != null)
+                {
+                    for (int i = 0; i < entries.Length; i++)
+                    {
+                        var e = entries[i];
+                        // Цвет: positive=green-ish, negative=red-ish, zero=gray.
+                        Color c = e.value > 0
+                            ? new Color(0.5f, 0.85f, 0.5f)
+                            : (e.value < 0 ? new Color(0.95f, 0.4f, 0.4f) : new Color(0.7f, 0.7f, 0.7f));
+                        _npcAttitudeCache.Add(new NpcAttitudeListItem
+                        {
+                            npcId = e.npcId,
+                            displayName = string.IsNullOrEmpty(e.npcId) ? "?" : e.npcId,
+                            value = e.value,
+                            color = c
+                        });
+                    }
+                }
+            }
+            if (_npcAttitudeList != null)
+            {
+                _npcAttitudeList.itemsSource = _npcAttitudeCache;
+                _npcAttitudeList.Rebuild();
             }
         }
 
@@ -997,6 +1215,35 @@ namespace ProjectC.UI.Client
             // Bar width: 0..100% = -100..+100 → 50% = 0, 0% = -100, 100% = +100
             float pct = Mathf.Clamp01((r.value + 100f) / 200f) * 100f;
             var fill = row.Q<VisualElement>("row-fill");
+            fill.style.width = new Length(pct, LengthUnit.Percent);
+            fill.style.backgroundColor = r.color;
+        }
+
+        // T-Q13: NpcAttitude row factory + binder.
+        private VisualElement MakeNpcAttitudeRow()
+        {
+            var row = new VisualElement { name = "npc-attitude-row" };
+            row.AddToClassList("npc-attitude-row");
+            var name  = new Label { name = "row-npc-name" }; name.AddToClassList("npc-attitude-name"); row.Add(name);
+            var value = new Label { name = "row-npc-value" }; value.AddToClassList("npc-attitude-value"); row.Add(value);
+            var bar   = new VisualElement { name = "row-npc-bar" }; bar.AddToClassList("npc-attitude-bar"); row.Add(bar);
+            var fill  = new VisualElement { name = "row-npc-fill" }; fill.AddToClassList("npc-attitude-fill"); bar.Add(fill);
+            return row;
+        }
+
+        private void BindNpcAttitudeRow(VisualElement row, int index)
+        {
+            if (_npcAttitudeList == null) return;
+            var src = _npcAttitudeList.itemsSource as List<NpcAttitudeListItem>;
+            if (src == null || index < 0 || index >= src.Count) return;
+            var r = src[index];
+
+            row.Q<Label>("row-npc-name").text = r.displayName;
+            row.Q<Label>("row-npc-value").text = (r.value > 0 ? "+" : "") + r.value.ToString();
+
+            // Bar width: 0..100% = -100..+200 → 33% = 0, 0% = -100, 100% = +200
+            float pct = Mathf.Clamp01((r.value + 100f) / 300f) * 100f;
+            var fill = row.Q<VisualElement>("row-npc-fill");
             fill.style.width = new Length(pct, LengthUnit.Percent);
             fill.style.backgroundColor = r.color;
         }

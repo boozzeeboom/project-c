@@ -10,6 +10,7 @@
 using System;
 using System.Collections.Generic;
 using UnityEngine;
+using ProjectC.Core;
 using ProjectC.Factions;
 using ProjectC.Quests.Triggers;
 
@@ -127,6 +128,93 @@ namespace ProjectC.Quests
         public int GetNpcAttitude(ulong clientId, string npcId)
         {
             return _npcAttitude.TryGetValue((clientId, npcId), out var v) ? v : 0;
+        }
+
+        // ============ T-Q13: Reputation + NpcAttitude modifiers (with cross-faction influence) ============
+
+        /// <summary>
+        /// T-Q13: apply delta to per-player faction reputation (clamped to [min..max]).
+        /// Publishes <see cref="ReputationChangedEvent"/> через WorldEventBus.
+        /// T-Q15+: вызывается из DialogueAction.AddReputation и QuestRewardReputation grant.
+        /// </summary>
+        /// <param name="silent">true = НЕ publish event (для cross-fallback внутри ModifyNpcAttitude).</param>
+        /// <returns>New value after clamp.</returns>
+        public int ModifyReputation(ulong clientId, FactionId faction, int delta, int min = -100, int max = 100, bool silent = false)
+        {
+            int oldVal = GetReputation(clientId, faction);
+            int newVal = oldVal + delta;
+            if (newVal < min) newVal = min;
+            if (newVal > max) newVal = max;
+            if (newVal == oldVal) return newVal;
+            _reputation[(clientId, faction)] = newVal;
+            if (!silent)
+            {
+                WorldEventBus.Publish(new ReputationChangedEvent
+                {
+                    PlayerId = clientId,
+                    Faction = faction,
+                    NewValue = newVal,
+                    Delta = newVal - oldVal
+                });
+            }
+            if (Debug.isDebugBuild) Debug.Log($"[QuestWorld] ModifyReputation player={clientId} faction={faction} delta={delta} {oldVal}→{newVal}");
+            return newVal;
+        }
+
+        /// <summary>
+        /// T-Q13: apply delta to per-player NpcAttitude (clamped to NpcDefinition.personalAttitudeMin/Max,
+        /// fallback NpcAttitude.MinValue/MaxValue = -100..200). Cross-faction influence:
+        /// для каждой link в NpcDefinition.attitudeLinks[] — применить deltaOnLike (delta > 0)
+        /// или deltaOnDislike (delta < 0) к target faction (silent — избежать recursion).
+        /// Publishes <see cref="NpcAttitudeChangedEvent"/>.
+        /// </summary>
+        public int ModifyNpcAttitude(ulong clientId, string npcId, int delta, NpcDefinition npcDef = null, QuestDatabase database = null)
+        {
+            if (string.IsNullOrEmpty(npcId)) return 0;
+            int oldVal = GetNpcAttitude(clientId, npcId);
+            int newVal = oldVal + delta;
+            int min = NpcAttitude.MinValue;
+            int max = NpcAttitude.MaxValue;
+            if (npcDef != null)
+            {
+                min = npcDef.personalAttitudeMin;
+                max = npcDef.personalAttitudeMax;
+            }
+            if (newVal < min) newVal = min;
+            if (newVal > max) newVal = max;
+            if (newVal == oldVal) return newVal;
+            _npcAttitude[(clientId, npcId)] = newVal;
+
+            // Cross-faction influence: для каждой link применить deltaOnLike/dislike к faction
+            // (только если NpcDefinition известен и delta реально изменил attitude).
+            if (npcDef != null && npcDef.attitudeLinks != null)
+            {
+                for (int i = 0; i < npcDef.attitudeLinks.Length; i++)
+                {
+                    var link = npcDef.attitudeLinks[i];
+                    if (link == null) continue;
+                    int crossDelta = delta > 0 ? link.deltaOnLike : link.deltaOnDislike;
+                    if (crossDelta == 0) continue;
+                    ModifyReputation(clientId, link.targetFaction, crossDelta, silent: true);
+                }
+            }
+
+            WorldEventBus.Publish(new NpcAttitudeChangedEvent
+            {
+                PlayerId = clientId,
+                NpcId = npcId,
+                NewValue = newVal,
+                Delta = newVal - oldVal
+            });
+            if (Debug.isDebugBuild) Debug.Log($"[QuestWorld] ModifyNpcAttitude player={clientId} npc={npcId} delta={delta} {oldVal}→{newVal}");
+            return newVal;
+        }
+
+        /// <summary>Lookup helper: найти NpcDefinition через database (если передан) или null.</summary>
+        public NpcDefinition FindNpcDefinition(string npcId, QuestDatabase database)
+        {
+            if (string.IsNullOrEmpty(npcId) || database == null) return null;
+            return database.GetNpc(npcId);
         }
 
         /// <summary>T-Q06: trigger service singleton. Created in CreateAndInitialize.</summary>

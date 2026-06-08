@@ -982,13 +982,13 @@ namespace ProjectC.Player
         [Rpc(SendTo.Owner)]
         public void ReceiveReputationSnapshotTargetRpc(ProjectC.Quests.Dto.ReputationSnapshotDto snapshot, RpcParams rpcParams = default)
         {
-            ProjectC.Quests.Client.QuestClientState.Instance?.OnReputationSnapshotReceived(snapshot);
+            ProjectC.Reputation.ReputationClientState.Instance?.OnReputationSnapshotReceived(snapshot);
         }
 
         [Rpc(SendTo.Owner)]
         public void ReceiveNpcAttitudeSnapshotTargetRpc(ProjectC.Quests.Dto.NpcAttitudeSnapshotDto snapshot, RpcParams rpcParams = default)
         {
-            ProjectC.Quests.Client.QuestClientState.Instance?.OnNpcAttitudeSnapshotReceived(snapshot);
+            ProjectC.Reputation.NpcAttitudeClientState.Instance?.OnNpcAttitudeSnapshotReceived(snapshot);
         }
 
         [Rpc(SendTo.Owner)]

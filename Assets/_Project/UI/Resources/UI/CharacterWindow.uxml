@@ -109,11 +109,14 @@
  <ui:Label text="Управление флотом, модификации, экипаж — в будущих итерациях (см. GDD-10)" class="placeholder-hint" />
  </ui:VisualElement>
 
- <!-- === Section3: РЕПУТАЦИЯ (плейсхолдер + план, см. GDD-23) === -->
+ <!-- === Section3: РЕПУТАЦИЯ (T-Q13: faction list + NpcAttitude под-секция) === -->
  <ui:VisualElement name="reputation-section" class="list-section" style="display: none;">
  <ui:Label text="Репутация по фракциям" class="section-title" />
  <ui:ListView name="reputation-list" class="item-list" />
- <ui:Label text="Репутация: см. GDD-23. Серверная модель в разработке. Сейчас отображаются плейсхолдер-данные." class="placeholder-hint" />
+ <!-- T-Q13: под-секция отношений к NPC (per NpcAttitudeClientState) -->
+ <ui:Label text="Отношения к NPC" class="quest-section-title" />
+ <ui:ListView name="npc-attitude-list" class="item-list npc-attitude-list" />
+ <ui:Label text="Репутация и отношения: см. GDD-23. Серверная модель в разработке. Сейчас отображаются плейсхолдер-данные." class="placeholder-hint" />
  </ui:VisualElement>
 
  <!-- === Section4: КОНТРАКТЫ / КВЕСТЫ (re-use ContractClientState) === -->

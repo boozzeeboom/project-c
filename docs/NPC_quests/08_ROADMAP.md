@@ -362,14 +362,14 @@ T-X4 (input remap: pickup E → F) ← future TODO, после end-to-end demo
 
 ---
 
-### T-Q13 — ReputationClientState + NpcAttitudeClientState + tab fix (medium, 60 мин) — РАСШИРЕН
+### T-Q13 — ReputationClientState + NpcAttitudeClientState + tab fix (medium, 60 мин) — РАСШИРЕН ✅ DONE 2026-06-08
 
 **Скоуп (см. `09_OPEN_QUESTIONS.md` §G):**
-- `ProjectC.Reputation.ReputationClientState` (singleton, OnReputationUpdated).
-- **+ `ProjectC.Reputation.NpcAttitudeClientState`** (singleton, OnNpcAttitudeUpdated).
-- Modify `CharacterWindow.cs` — replace empty `RefreshReputationCache` (line 507).
-- **+ NpcAttitude под-список** в Reputation табе.
-- **+ Cross-faction influence calc** (server-side, в QuestWorld.ModifyNpcAttitude) — MVP stub (полная реализация → v2).
+- `ProjectC.Reputation.ReputationClientState` (singleton, OnReputationUpdated). ✅
+- **+ `ProjectC.Reputation.NpcAttitudeClientState`** (singleton, OnNpcAttitudeUpdated). ✅
+- Modify `CharacterWindow.cs` — replace empty `RefreshReputationCache` (line 507). ✅
+- **+ NpcAttitude под-список** в Reputation табе. ✅
+- **+ Cross-faction influence calc** (server-side, в QuestWorld.ModifyNpcAttitude) — MVP stub (полная реализация → v2). ✅
 
 **Verify:**
 - Modify reputation in editor test → CharacterWindow tab updates.
@@ -548,7 +548,7 @@ T-X4 (input remap: pickup E → F) ← future TODO, после end-to-end demo
 | **M2.5 — Input refactor** | T-X3 | PlayerInputReader events, NetworkPlayer subscribes. | ✅ DONE |
 | **M3 — Player interaction** | T-Q08, T-Q10 | E-key → talk to NPC → DialogWindow opens (F skip). | ✅ DONE 2026-06-08 |
 | **M4 — Quest log + tracker** | T-Q11, T-Q12 | Player can accept quest, see in log (Active/Completed/Discovered), see tracker. | 🟡 NEXT |
-| **M5 — Reputation + NpcAttitude** | T-Q13 | Reputation updates, NpcAttitude, CharacterWindow tab fix. |
+| **M5 — Reputation + NpcAttitude** | T-Q13 | Reputation updates, NpcAttitude, CharacterWindow tab fix. | ✅ DONE 2026-06-08 |
 | **M6 — Item integration** | T-Q14, T-Q15 | Quest rewards give items, quest objectives check items, ContractMetaBridge. |
 | **M7 — Full action set** | T-Q16, T-Q17, T-X5 | Credits/rep/attitude/market actions + ContractServer events. |
 | **M8 — Persistence** | T-Q18 | Quests + rep + attitude survive server restart. |

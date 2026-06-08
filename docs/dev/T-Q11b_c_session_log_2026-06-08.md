@@ -187,3 +187,8 @@ new:        Assets/_Project/Quests/Resources.meta
 ```
 
 ---
+
+## Verify round (2026-06-08, после user test)
+- **Recompile:** 0 errors после фикса race condition.
+- **User Play Mode test:** dialog открывается по E, typewriter работает, F-skip работает, click-skip работает.
+- **T-Q11 + T-Q12 — VERIFIED ✅**

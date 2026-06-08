@@ -94,6 +94,10 @@ namespace ProjectC.Quests
             WorldEventBus.Subscribe(_handleDialogVisited);
             WorldEventBus.Subscribe(_handleDayNightChanged);
 
+            // T-Q13: при коннекте нового клиента — push initial reputation + npcAttitude snapshot.
+            _handleClientConnected = OnClientConnectedForSnapshot;
+            NetworkManager.Singleton.OnClientConnectedCallback += _handleClientConnected;
+
             if (debugMode)
             {
                 Debug.Log($"[QuestServer] OnNetworkSpawn — IsServer=true, questDatabase={questDatabase.quests?.Length ?? 0} quests, maxActive={maxActiveQuestsPerPlayer}, maxOps/min={maxOpsPerMinute}, triggerSubs=7");
@@ -113,6 +117,13 @@ namespace ProjectC.Quests
                 if (_handleCustomEvent != null) WorldEventBus.Unsubscribe(_handleCustomEvent);
                 if (_handleDialogVisited != null) WorldEventBus.Unsubscribe(_handleDialogVisited);
                 if (_handleDayNightChanged != null) WorldEventBus.Unsubscribe(_handleDayNightChanged);
+
+                // T-Q13: unsubscribe OnClientConnected
+                if (_handleClientConnected != null && NetworkManager.Singleton != null)
+                {
+                    NetworkManager.Singleton.OnClientConnectedCallback -= _handleClientConnected;
+                    _handleClientConnected = null;
+                }
 
                 if (QuestWorld.Instance != null)
                 {
@@ -409,6 +420,7 @@ namespace ProjectC.Quests
         private System.Action<CustomEvent> _handleCustomEvent;
         private System.Action<DialogVisitedEvent> _handleDialogVisited;
         private System.Action<DayNightPhaseChangedEvent> _handleDayNightChanged;
+        private System.Action<ulong> _handleClientConnected; // T-Q13
 
         private void OnItemAdded(ItemAddedEvent ev)
         {
@@ -606,6 +618,46 @@ namespace ProjectC.Quests
             var netPlayer = FindNetworkPlayer(clientId);
             if (netPlayer == null) return;
             netPlayer.ReceiveNpcAttitudeSnapshotTargetRpc(snapshot);
+        }
+
+        // ============================================================
+        // T-Q13: Broadcast helpers (после server-side Modify* через dialogue/reward/quest)
+        // + OnClientConnected snapshot push.
+        // ============================================================
+
+        /// <summary>T-Q13: вызывается из любого server-side кода после изменения reputation. Push snapshot клиенту.</summary>
+        public void BroadcastReputationChange(ulong clientId)
+        {
+            if (!IsServer) return;
+            var snapshot = BuildReputationSnapshot(clientId);
+            SendReputationSnapshotToClient(clientId, snapshot);
+            if (debugMode) Debug.Log($"[QuestServer] BroadcastReputationChange: client={clientId} factions={snapshot.entries?.Length ?? 0}");
+        }
+
+        /// <summary>T-Q13: вызывается из любого server-side кода после изменения npcAttitude. Push snapshot клиенту.</summary>
+        public void BroadcastNpcAttitudeChange(ulong clientId)
+        {
+            if (!IsServer) return;
+            var snapshot = BuildNpcAttitudeSnapshot(clientId);
+            SendNpcAttitudeSnapshotToClient(clientId, snapshot);
+            if (debugMode) Debug.Log($"[QuestServer] BroadcastNpcAttitudeChange: client={clientId} npcs={snapshot.entries?.Length ?? 0}");
+        }
+
+        /// <summary>T-Q13: push и reputation, и npcAttitude snapshot'ы. Удобно для cross-fallback (attitude → faction тоже).</summary>
+        public void BroadcastBothChange(ulong clientId)
+        {
+            BroadcastReputationChange(clientId);
+            BroadcastNpcAttitudeChange(clientId);
+        }
+
+        /// <summary>T-Q13: NetworkManager.OnClientConnectedCallback handler. Push initial snapshots новому клиенту.
+        /// Player object spawn'ится раньше client connect callback, поэтому netPlayer должен быть жив.</summary>
+        private void OnClientConnectedForSnapshot(ulong clientId)
+        {
+            if (!IsServer) return;
+            if (debugMode) Debug.Log($"[QuestServer] OnClientConnectedForSnapshot: client={clientId}");
+            // Небольшая задержка не нужна — SendTo.Owner RPC дождётся готовности client'а.
+            BroadcastBothChange(clientId);
         }
 
         /// <summary>Find NetworkPlayer for clientId (server-side). null если player object не spawned.</summary>

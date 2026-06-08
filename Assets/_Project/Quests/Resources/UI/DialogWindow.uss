@@ -30,6 +30,21 @@
     margin-bottom: 8px !important;
 }
 
+.dialog-header {
+    flex-direction: row !important;
+    align-items: center !important;
+    justify-content: space-between !important;
+    margin-bottom: 4px !important;
+}
+
+.dialog-npc-attitude {
+    color: rgb(255, 130, 160) !important;
+    font-size: 14px !important;
+    -unity-font-style: bold !important;
+    padding-left: 8px !important;
+    padding-right: 4px !important;
+}
+
 .dialog-text-scroll {
     flex-grow: 1 !important;
     margin-bottom: 12px !important;

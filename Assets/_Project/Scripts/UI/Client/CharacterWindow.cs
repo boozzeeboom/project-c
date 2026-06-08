@@ -1681,11 +1681,7 @@ namespace ProjectC.UI.Client
             {
             // cache — ALWAYS refresh (projection of server state).
             RefreshQuestsCache();
-            // visible UI — gated by active tab.
-            if (_activeTab == "quests")
-            {
-            // cache уже обновлён внутри RefreshQuestsCache.
-            }
+            if (Debug.isDebugBuild) Debug.Log($"[CharacterWindow] HandleQuestSnapshotUpdated: {snap.quests?.Length ?? 0} quests, tab={_activeTab}, discovered={_questsDiscoveredCache.Count}");
             }
 
             private void HandleQuestResult(QuestResultDto result)

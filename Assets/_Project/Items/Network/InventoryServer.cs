@@ -175,6 +175,44 @@ namespace ProjectC.Items.Network
             SendResult(clientId, result);
         }
 
+        // ============================================================
+        // T-Q14: TryRemove (server-side helper) + RequestRemoveRpc (client-initiated)
+        // ============================================================
+
+        /// <summary>
+        /// T-Q14: удалить N штук предмета напрямую на сервере. Используется для quest turn-in
+        /// (QuestServer.RequestTurnInQuestRpc → QuestWorld.TryTurnIn → InventoryServer.TryRemove),
+        /// dialogue TakeItem (T-Q15: DialogueAction.TakeItem → QuestServer → InventoryServer.TryRemove),
+        /// и любого server-side сценария "забрать предмет".
+        /// НЕ вызывается на клиенте — защита через IsServer.
+        /// </summary>
+        public bool TryRemove(ulong clientId, int itemId, ItemType itemType, int count)
+        {
+            if (!IsServer) return false;
+            if (InventoryWorld.Instance == null) return false;
+            var result = InventoryWorld.Instance.RemoveItems(clientId, itemId, itemType, count);
+            if (result.IsSuccess)
+            {
+                // Отправим snapshot клиенту
+                SendSnapshot(clientId, null);
+            }
+            return result.IsSuccess;
+        }
+
+        /// <summary>
+        /// T-Q14: client-initiated removal. На будущее — для dialogue option "Сдать предмет" (T-Q15+).
+        /// Сейчас основной path — server-side TryRemove.
+        /// </summary>
+        [Rpc(SendTo.Server, InvokePermission = RpcInvokePermission.Owner)]
+        public void RequestRemoveRpc(int itemId, byte typeByte, int count, RpcParams rpcParams = default)
+        {
+            ulong clientId = rpcParams.Receive.SenderClientId;
+            if (!CheckRateLimit(clientId)) return;
+            var result = InventoryWorld.Instance.RemoveItems(clientId, itemId, (ItemType)typeByte, count);
+            if (result.IsSuccess) SendSnapshot(clientId, null);
+            SendResult(clientId, result);
+        }
+
         [Rpc(SendTo.Server, InvokePermission = RpcInvokePermission.Owner)]
         public void RequestUseRpc(int slotIndex, RpcParams rpcParams = default)
         {

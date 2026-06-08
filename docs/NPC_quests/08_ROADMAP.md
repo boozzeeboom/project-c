@@ -380,13 +380,14 @@ T-X4 (input remap: pickup E → F) ← future TODO, после end-to-end demo
 
 ---
 
-### T-Q14 — InventoryServer.TryRemove + event bus hooks (medium, 60 мин)
+### T-Q14 — InventoryServer.TryRemove + event bus hooks (medium, 60 мин) ✅ DONE 2026-06-08
 
 **Скоуп (см. `09_OPEN_QUESTIONS.md` §J):**
-- `Items/Network/InventoryServer.cs` — add `TryRemove(ulong, int, int)` public method.
-- `Items/InventoryWorld.cs` — `RemoveItems(int, int)` private method.
-- **+ event hooks**: publish `ItemRemovedEvent` через WorldEventBus.
-- Verify `ItemAddedEvent` уже published (от T-X0).
+- `Items/Network/InventoryServer.cs` — add `TryRemove(ulong, int, ItemType, int)` public method. ✅
+- `Items/InventoryWorld.cs` — `RemoveItems(ulong, int, ItemType, int)` public method. ✅
+- **+ event hooks**: publish `ItemRemovedEvent` через WorldEventBus. ✅ (уже был от T-X0)
+- Verify `ItemAddedEvent` уже published (от T-X0). ✅
+- **+ `RequestRemoveRpc`** — client-initiated RPC для future dialogue "Сдать предмет". ✅
 
 **Verify:** Call `InventoryServer.TryRemove` → snapshot updates, `ItemRemovedEvent` fires.
 
@@ -549,7 +550,7 @@ T-X4 (input remap: pickup E → F) ← future TODO, после end-to-end demo
 | **M3 — Player interaction** | T-Q08, T-Q10 | E-key → talk to NPC → DialogWindow opens (F skip). | ✅ DONE 2026-06-08 |
 | **M4 — Quest log + tracker** | T-Q11, T-Q12 | Player can accept quest, see in log (Active/Completed/Discovered), see tracker. | 🟡 NEXT |
 | **M5 — Reputation + NpcAttitude** | T-Q13 | Reputation updates, NpcAttitude, CharacterWindow tab fix. | ✅ DONE 2026-06-08 |
-| **M6 — Item integration** | T-Q14, T-Q15 | Quest rewards give items, quest objectives check items, ContractMetaBridge. |
+| **M6 — Item integration** | T-Q14, T-Q15 | Quest rewards give items, quest objectives check items, ContractMetaBridge. | 🟡 T-Q14 ✅, T-Q15 pending |
 | **M7 — Full action set** | T-Q16, T-Q17, T-X5 | Credits/rep/attitude/market actions + ContractServer events. |
 | **M8 — Persistence** | T-Q18 | Quests + rep + attitude survive server restart. |
 | **M9 — Cleanup** | T-Q19, T-X1, T-X2 | v1 NPC deleted, optional renames. |

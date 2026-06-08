@@ -442,6 +442,53 @@ namespace ProjectC.Items
         }
 
         // ============================================================
+        // T-Q14: RemoveItems — удалить N штук предмета (для quest turn-in, dialogue TakeItem, etc.)
+        // ============================================================
+
+        /// <summary>
+        /// T-Q14: удалить N штук предмета itemId (типа itemType) из инвентаря игрока.
+        /// Используется для quest turn-in (QuestServer), dialogue TakeItem (T-Q15), и любого
+        /// server-side сценария "забрать предмет". НЕ вызывается на клиенте — защита через InventoryServer.IsServer.
+        /// </summary>
+        /// <returns>Ok если удалено, Fail если itemId не найден или недостаточно count.</returns>
+        public InventoryResultDto RemoveItems(ulong clientId, int itemId, ItemType itemType, int count)
+        {
+            if (count <= 0)
+                return Fail(InventoryResultCode.NotEnoughQuantity, $"count={count} должен быть >0", itemId, -1);
+            if (!_itemDatabase.ContainsKey(itemId))
+                return Fail(InventoryResultCode.ItemNotFound, $"ID={itemId}", itemId, -1);
+
+            var data = GetOrCreate(clientId);
+            var ids = data.GetIdsForType(itemType);
+            if (ids == null)
+                return Fail(InventoryResultCode.ItemNotOwned, $"Нет предметов типа {itemType}", itemId, -1);
+
+            // Считаем сколько раз itemId встречается в списке
+            int available = 0;
+            for (int i = 0; i < ids.Count; i++)
+            {
+                if (ids[i] == itemId) available++;
+            }
+            if (available < count)
+                return Fail(InventoryResultCode.NotEnoughQuantity,
+                    $"Недостаточно: have={available} need={count}", itemId, -1);
+
+            // Удаляем первые `count` вхождений (для MVP — каждый id = 1 quantity).
+            int removed = 0;
+            for (int i = ids.Count - 1; i >= 0 && removed < count; i--)
+            {
+                if (ids[i] == itemId) { ids.RemoveAt(i); removed++; }
+            }
+
+            // T-X0: persist + publish event (один event на count, не на каждый item).
+            SavePlayer(clientId);
+            PublishItemRemoved(clientId, itemId, itemType, count);
+
+            Debug.Log($"[InventoryWorld] Player {clientId} removed {count}x ID={itemId} ({itemType}). Remaining: {ids.Count}");
+            return Ok($"-{count}x {_itemDatabase[itemId].itemName}", itemId, -1);
+        }
+
+        // ============================================================
         // T-X0: Event publishing helpers
         // ============================================================
 

@@ -186,10 +186,42 @@ namespace ProjectC.Quests.Triggers
     public sealed class KilledEntityTrigger : IQuestTrigger
     {
         public string EntityType { get; set; } = "";
-        public int RequiredCount { get; set; } = 1;
 
         public string TriggerId => $"KilledEntity:{EntityType}";
 
         public bool IsSatisfied(QuestInstance instance, ulong playerId) => false;
+    }
+
+    /// <summary>
+    /// T-Q15: fires when player has completed a contract (via ContractCompletedEvent →
+    /// QuestWorld.HasContractCompleted). Allows quest objectives вроде
+    /// "доставить cargo в порт X" (после ContractCompleted → quest objective satisfied).
+    /// </summary>
+    public sealed class ContractCompletedTrigger : IQuestTrigger
+    {
+        public string ContractId { get; set; } = "";
+
+        public string TriggerId => $"ContractCompleted:{ContractId}";
+
+        public bool IsSatisfied(QuestInstance instance, ulong playerId)
+        {
+            return QuestWorld.Instance?.HasContractCompleted(playerId, ContractId) ?? false;
+        }
+    }
+
+    /// <summary>
+    /// T-Q15: fires when player has accepted a contract (via ContractAcceptedEvent).
+    /// Менее частый use-case, но возможен ("quest objective: подписать контракт с гильдией X").
+    /// </summary>
+    public sealed class ContractAcceptedTrigger : IQuestTrigger
+    {
+        public string ContractId { get; set; } = "";
+
+        public string TriggerId => $"ContractAccepted:{ContractId}";
+
+        public bool IsSatisfied(QuestInstance instance, ulong playerId)
+        {
+            return QuestWorld.Instance?.HasContractAccepted(playerId, ContractId) ?? false;
+        }
     }
 }

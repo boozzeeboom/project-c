@@ -413,16 +413,32 @@ T-X4 (input remap: pickup E → F) ← future TODO, после end-to-end demo
 
 ---
 
-### T-Q15 — DialogueAction: GiveItem/TakeItem + ContractMetaBridge (medium, 90 мин) — РАСШИРЕН
+### T-Q15 — DialogueAction: GiveItem/TakeItem + ContractMetaBridge + QuestWorld Accept/TurnIn/Track (medium, 120 мин) ✅ DONE 2026-06-08
 
-**Скоуп:**
-- `ProjectC/Dialogue/ActionExecutors/ItemActionExecutor.cs`.
-- Wires `DialogueAction.GiveItem/TakeItem` → `InventoryServer.AddItem/TryRemove`.
-- **+ ContractMetaBridge** (см. `09_OPEN_QUESTIONS.md` §A2):
-  - `ProjectC/Quests/Bridges/ContractMetaBridge.cs`.
-  - Подписывается на `ContractCompletedEvent`, `ContractAcceptedEvent`.
-  - `QuestTriggerService.ContractCompletedTrigger` — quest objective checks "игрок выполнил contract X".
-  - Allow quest prerequisites: "quest A completable только если contract B completed within last 24h".
+**Скоуп (РАСШИРЕН — объединено с T-X5 и TryAccept/TurnIn/Track из roadmap §321):**
+- `Assets/_Project/Quests/Core/QuestWorld.cs`:
+  - `TryAccept(ulong, string, string)` — Discovered/Offered → Active. Idempotency, maxActive cap, transition validate. ✅
+  - `TryTurnIn(ulong, string, string)` — Active→Completed→TurnedIn. NPC validation via `Database.GetNpc().questTurnIns[]`. ✅
+  - `SetTracked(ulong, string, bool)` — toggle isTracked. ✅
+  - `HasContractCompleted/MarkContractCompleted/HasContractAccepted/MarkContractAccepted` — contract state tracking. ✅
+  - `Database` property + `MaxActiveQuestsPerPlayer` property. ✅
+- `Assets/_Project/Quests/Network/QuestServer.cs`:
+  - `RequestAcceptQuestRpc` → real `TryAccept` + `SendQuestResultToClient` + snapshot push. ✅
+  - `RequestTurnInQuestRpc` → real `TryTurnIn` + result + snapshot. ✅
+  - `RequestTrackQuestRpc` → real `SetTracked` + result + snapshot. ✅
+  - `FireDialogAction.GiveItem` → `InventoryWorld.AddItemDirect`. ✅
+  - `FireDialogAction.TakeItem` → `InventoryServer.TryRemove` (T-Q14). ✅
+  - `SendQuestSnapshotToClient(ulong)` overload + `SendQuestResultToClient` helper. ✅
+- `Assets/_Project/Quests/Triggers/ConcreteTriggers.cs`: +`ContractCompletedTrigger` + `ContractAcceptedTrigger`. ✅
+- `Assets/_Project/Quests/Triggers/QuestTriggerService.cs`: factories registered. ✅
+- `Assets/_Project/Quests/Bridges/ContractMetaBridge.cs` (NEW):
+  - Server-side singleton, scene-placed в BootstrapScene, DontDestroyOnLoad. ✅
+  - Subscribes to 3 contract events, marks state в QuestWorld, evaluates triggers. ✅
+- `Assets/_Project/Core/WorldEvent.cs`: +`ContractAcceptedEvent` / `ContractCompletedEvent` / `ContractFailedEvent`. ✅
+- `Assets/_Project/Trade/Scripts/Network/ContractServer.cs`: publish events в 4 spots (Accept/Complete/Fail-manual/Fail-timer). ✅
+- `Assets/_Project/Scenes/BootstrapScene.unity`: +`[ContractMetaBridge]` GameObject. ✅
+
+**Verify:** ✅ Compile 0 errors. Все 28 root GameObjects в BootstrapScene включают ContractMetaBridge. Singleton'ы живы в Play Mode (verified ранее).
 
 **Verify:**
 - Walk through Mira quest, complete "intro" → `GiveCredits(50)`, `AddReputation(+25)` works.
@@ -550,7 +566,7 @@ T-X4 (input remap: pickup E → F) ← future TODO, после end-to-end demo
 | **M3 — Player interaction** | T-Q08, T-Q10 | E-key → talk to NPC → DialogWindow opens (F skip). | ✅ DONE 2026-06-08 |
 | **M4 — Quest log + tracker** | T-Q11, T-Q12 | Player can accept quest, see in log (Active/Completed/Discovered), see tracker. | 🟡 NEXT |
 | **M5 — Reputation + NpcAttitude** | T-Q13 | Reputation updates, NpcAttitude, CharacterWindow tab fix. | ✅ DONE 2026-06-08 |
-| **M6 — Item integration** | T-Q14, T-Q15 | Quest rewards give items, quest objectives check items, ContractMetaBridge. | 🟡 T-Q14 ✅, T-Q15 pending |
+| **M6 — Item integration** | T-Q14, T-Q15 | Quest rewards give items, quest objectives check items, ContractMetaBridge. | ✅ T-Q14 ✅ T-Q15 2026-06-08 |
 | **M7 — Full action set** | T-Q16, T-Q17, T-X5 | Credits/rep/attitude/market actions + ContractServer events. |
 | **M8 — Persistence** | T-Q18 | Quests + rep + attitude survive server restart. |
 | **M9 — Cleanup** | T-Q19, T-X1, T-X2 | v1 NPC deleted, optional renames. |

@@ -844,8 +844,6 @@ namespace ProjectC.Quests
                 case DialogueActionType.SetFlag:
                 case DialogueActionType.SwitchDialogTree:
                 case DialogueActionType.EndConversation:
-                case DialogueActionType.GiveItem:
-                case DialogueActionType.TakeItem:
                     {
                         // T-Q15: route to InventoryServer. ItemType сериализуется как byte в DTO
                         // (для будущего GiveCargoItem будет ItemType.Cargo).

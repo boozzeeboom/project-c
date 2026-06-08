@@ -142,6 +142,9 @@ namespace ProjectC.Quests.Triggers
             _factories["CargoHasItem"] = () => new CargoHasItemTrigger();
             _factories["LocationReached"] = () => new LocationReachedTrigger();
             _factories["KilledEntity"] = () => new KilledEntityTrigger();
+            // T-Q15: contract trigger'ы — quest objective "доставить cargo" / "подписать контракт"
+            _factories["ContractCompleted"] = () => new ContractCompletedTrigger();
+            _factories["ContractAccepted"] = () => new ContractAcceptedTrigger();
         }
 
         /// <summary>Total triggers across all players (debug stat).</summary>

@@ -437,6 +437,44 @@ namespace ProjectC.Quests
         /// <summary>Per-player set of custom event ids that have occurred (DialogueAction.EmitEvent).</summary>
         private readonly Dictionary<ulong, HashSet<string>> _eventsOccurred = new Dictionary<ulong, HashSet<string>>();
 
+        // T-Q15: contract tracking (для ContractCompletedTrigger / ContractAcceptedTrigger).
+        private readonly Dictionary<ulong, HashSet<string>> _contractsCompleted = new Dictionary<ulong, HashSet<string>>();
+        private readonly Dictionary<ulong, HashSet<string>> _contractsAccepted = new Dictionary<ulong, HashSet<string>>();
+
+        public bool HasContractCompleted(ulong clientId, string contractId)
+        {
+            if (string.IsNullOrEmpty(contractId)) return false;
+            return _contractsCompleted.TryGetValue(clientId, out var set) && set.Contains(contractId);
+        }
+
+        public void MarkContractCompleted(ulong clientId, string contractId)
+        {
+            if (string.IsNullOrEmpty(contractId)) return;
+            if (!_contractsCompleted.TryGetValue(clientId, out var set))
+            {
+                set = new HashSet<string>();
+                _contractsCompleted[clientId] = set;
+            }
+            set.Add(contractId);
+        }
+
+        public bool HasContractAccepted(ulong clientId, string contractId)
+        {
+            if (string.IsNullOrEmpty(contractId)) return false;
+            return _contractsAccepted.TryGetValue(clientId, out var set) && set.Contains(contractId);
+        }
+
+        public void MarkContractAccepted(ulong clientId, string contractId)
+        {
+            if (string.IsNullOrEmpty(contractId)) return;
+            if (!_contractsAccepted.TryGetValue(clientId, out var set))
+            {
+                set = new HashSet<string>();
+                _contractsAccepted[clientId] = set;
+            }
+            set.Add(contractId);
+        }
+
         public bool HasNpcTalkedTo(ulong clientId, string npcId)
         {
             if (string.IsNullOrEmpty(npcId)) return false;

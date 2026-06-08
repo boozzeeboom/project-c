@@ -596,6 +596,66 @@ T-X4 (input remap: pickup E → F) ← future TODO, после end-to-end demo
 
 ---
 
+## 8.3.1 M13 — Real-time objective system (DESIGNED 2026-06-08)
+
+**Контекст:** Сейчас objectives проверяются только при получении event'а (pickup, talk, rep change). Если event пропущен — objective «зависает». Также `QuestStage.onEnterActions` / `onCompleteActions` существуют в SO, но **никогда не вызываются**. M13 фиксит это.
+
+**Полная спецификация:** `docs/dev/M13_DESIGN_NOTE.md`.
+
+### T-Q20 — Server tick + objective evaluation (medium, ~2-3 ч)
+
+**Скоуп:**
+- `QuestServer.Update()` — вызывает `QuestWorld.TickAll()` с интервалом 5 сек
+- `QuestWorld.TickAll()` — для каждого игрока: цикл по active quests → `EvaluateAndAdvanceStage()`
+- `EvaluateAndAdvanceStage()` — проверяет все 8 типов objectives (TalkToNpc, HaveItem, ReachLocation, ReputationAtLeast, NpcAttitudeAtLeast, WaitForEvent, EventDriven, DeliverItem). Stubs: KillEntity, CargoHasItem — return false
+- Если все required objectives satisfied → `TryAdvanceStage()`:
+  - Fire `currentStage.onCompleteActions[]` через `QuestServer.FireDialogAction`
+  - Transition `currentStageId = nextStageId`
+  - Fire `newStage.onEnterActions[]`
+  - Если `nextStageId` пуст → `state = Completed`, fire `def.rewards`
+- `SendQuestSnapshotToClient()` после transition
+
+**Файлы:** `QuestServer.cs`, `QuestWorld.cs`, `QuestInstance.cs`
+**Verify:** 
+1. Quest "Собрать 3 copper ore" — pickup 3 ore → tick → stage "collect" auto-complete → transition to "deliver" + fire onCompleteActions
+2. ReachLocation quest — walk to coords → within radius → tick → objective satisfied
+
+**Risk:** low. Переиспользует существующий `QuestTriggerService.IsSatisfied` + `FireDialogAction`.
+
+### T-Q21 — Objective progress DTO + UI (small, ~1 ч)
+
+**Скоуп:**
+- DTO `ObjectiveProgressDto` уже отправляется в snapshot (T-Q07). T-Q21 — только UI render.
+- `CharacterWindow.cs` таб КВЕСТЫ → для Active quest показать objectives list: ☐/☑ + description + counter
+- `QuestTracker.cs` (HUD) → показать current incomplete objective + counter
+- Edge: completed=true должно обновляться на client при snapshot
+
+**Файлы:** `CharacterWindow.cs`, `QuestTracker.cs`
+**Verify:** P → КВЕСТЫ → objective checkmarks корректно отображаются
+
+**Risk:** low. UI-only.
+
+### T-Q22 — Stage transitions + onEnter/onComplete actions (small, ~1 ч)
+
+**Скоуп:**
+- `QuestWorld.TryAdvanceStage()` — реализация переходов
+- Fire `currentStage.onCompleteActions[]` ПЕРЕД transition
+- Transition `currentStageId = nextStageId`
+- Fire `newStage.onEnterActions[]` ПОСЛЕ transition
+- Если `nextStageId` пуст → `state = Completed` + `ApplyQuestRewards()`
+- `QuestServer` подписывается на transition events → `SendQuestSnapshotToClient`
+
+**Файлы:** `QuestWorld.cs`, `QuestServer.cs`
+**Verify:**
+1. Stage "intro" with `onCompleteActions: [GiveCredits(50)]` + nextStage "main"
+2. Complete intro → console: GiveCredits 0→50 → snapshot: currentStageId=main
+
+**Risk:** low. Reuse `FireDialogAction` — generic.
+
+**Общий effort M13:** ~4-5 ч, medium risk.
+
+---
+
 ## 8.4 Milestones (обновлено)
 
 | Milestone | Тикеты | Что работает |
@@ -614,6 +674,7 @@ T-X4 (input remap: pickup E → F) ← future TODO, после end-to-end demo
 | **M10 — Editor tool** | T-Q09, T-Q09b | Quest Database Explorer с full CRUD + GraphView. | ✅ DONE (M10 partially — CRUD done, GraphView deferred) |
 | **M11 — End-to-end demo** | Mira quest full playthrough. | 🟡 Mira quest items + dialog tree prepared 2026-06-08 (awaiting user Play Mode test). |
 | **M12 — Input remap** | T-X4 | F = pickup (future, post-demo). |
+| **M13 — Real-time objective system** | T-Q20, T-Q21, T-Q22 | Auto-evaluate objectives, fire onEnter/onComplete actions, stage transitions, UI progress. **📋 DESIGN COMPLETE 2026-06-08 — ready for next session coding.** |
 
 **Рекомендуемый темп:** 1-2 тикета за сессию, 1 PR за тикет.
 
@@ -721,4 +782,4 @@ A docs/dev/T-Q11b_c_session_log_2026-06-08.md
 
 ---
 
-**Статус проекта:** M1-M9 ✅ DONE 2026-06-08 (M10 partial). **M11 (End-to-end demo) — IN PROGRESS** (dialog tree + 2 pickup items + CompleteObjective real impl готовы, awaiting user Play Mode test).
+**Статус проекта:** M1-M9 ✅ DONE 2026-06-08 (M10 partial). **M11 (End-to-end demo) — IN PROGRESS** (dialog tree + 2 pickup items + CompleteObjective real impl готовы, awaiting user Play Mode test). **M13 (Real-time objective system) — 📋 DESIGN COMPLETE 2026-06-08** (see `docs/dev/M13_DESIGN_NOTE.md` — ready for next session coding).

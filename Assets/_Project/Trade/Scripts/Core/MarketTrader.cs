@@ -9,12 +9,12 @@ namespace ProjectC.Trade.Core
     /// Серверная абстракция NPC-трейдера. Перемещает товары между рынками
     /// каждый тик, создавая базовый поток и стабилизируя экономику.
     ///
-    /// Портировано из старого NPCTrader.cs с адаптацией:
+    /// Портировано из старого NPCTrader.cs с адаптацией (T-X1 rename → MarketTrader):
     ///   • использует <see cref="MarketState"/> (POCO) вместо LocationMarket (SO со state)
     ///   • условия вынесены в читабельный enum
     /// </summary>
     [Serializable]
-    public class NPCTrader
+    public class MarketTrader
     {
         [Header("Identity")]
         public string traderId = "";
@@ -64,7 +64,7 @@ namespace ProjectC.Trade.Core
             if (!markets.TryGetValue(fromLocationId, out var fromMarket) ||
                 !markets.TryGetValue(toLocationId, out var toMarket))
             {
-                Debug.LogWarning($"[NPCTrader {traderName}] Маршрут не найден: {fromLocationId} → {toLocationId}");
+                Debug.LogWarning($"[MarketTrader {traderName}] Маршрут не найден: {fromLocationId} → {toLocationId}");
                 return;
             }
 
@@ -92,11 +92,11 @@ namespace ProjectC.Trade.Core
             toItem.RecalculatePrice();
         }
 
-        public static NPCTrader CreateDefault(
+        public static MarketTrader CreateDefault(
             string id, string name, string fromLoc, string toLoc, string item,
             int minV, int maxV, TradeCondition cond = TradeCondition.Always, float condVal = 0.3f)
         {
-            return new NPCTrader
+            return new MarketTrader
             {
                 traderId = id,
                 traderName = name,

@@ -545,26 +545,39 @@ T-X4 (input remap: pickup E → F) ← future TODO, после end-to-end demo
 
 ---
 
-### T-X1 — Trade.Core.NPCTrader → MarketTrader (small, 30 мин) — OPTIONAL
+### T-X1 — Trade.Core.NPCTrader → MarketTrader (small, 30 мин) ✅ DONE 2026-06-08
 
 **Скоуп:**
-- Grep `NPCTrader` usages.
-- Rename `NPCTrader` → `MarketTrader` (class, file, references).
+- Grep `NPCTrader` usages → 2 files (NPCTrader.cs, TradeWorld.cs). ✅
+- Rename `class NPCTrader` → `class MarketTrader` в namespace `ProjectC.Trade.Core`. ✅
+- Rename file `NPCTrader.cs` → `MarketTrader.cs` (+ meta deleted). ✅
+- Update 5 references в `TradeWorld.cs` (field type, property type, 4× CreateDefault calls). ✅
+- Public property name `NpcTraders` и field name `_npcTraders` kept для source compat (internal conceptual noun, not breaking).
 
-**Verify:** Console 0 errors.
+**Verify:** Compile 0 errors. ✅
 
-**Risk:** low.
+**Risk:** low. ✅
+
 
 ---
 
-### T-X2 — TradeItemDefinition Faction → FactionId (medium, 60 мин) — OPTIONAL
+### T-X2 — TradeItemDefinition Faction → FactionId (medium, 60 мин) — DEFERRED (DESIGN ISSUE)
 
-**Скоуп:**
-- Verify `TradeItemDefinition` has `Faction` field.
-- Rename → `FactionId requiredFaction` (after T-Q01).
-- Update references.
+**Скоуп (см. `09_OPEN_QUESTIONS.md` §A3):**
+- Verify `TradeItemDefinition` has `Faction` field. ✅
+- Rename → `FactionId requiredFaction` (after T-Q01). ⏭️
 
-**Risk:** medium.
+**Блокер (2026-06-08 review):**
+- `ProjectC.Trade.Faction` (8 values: None, NP, Aurora, Titan, Hermes, Prometheus, FreeTraders, Military) — **manufacturer/продавец factions** (producents).
+- `ProjectC.Factions.FactionId` (12 values: GuildOfThoughts, GuildOfCreation, ..., FreeTraders, Pirates, Neutral) — **lore guilds/фракции игрока** (reputation tracker).
+- Пересекаются только в `FreeTraders` (значение 8 в обоих). Остальные — **разные концепции**.
+- Прямой rename сломает `TradeItemDefinition.requiredFaction` serialization (5 .asset files: Antigrav, Mesium, etc).
+- **Решение требует design discussion**: либо (a) заменить enum и перезаполнить .asset files, либо (b) признать что это **две разные концепции** и оставить как есть с улучшенной документацией.
+
+**Статус:** 🟡 **DEFERRED** (2026-06-08) до design session. См. `09_OPEN_QUESTIONS.md` §A3.
+
+**Risk:** medium. ⏭️
+
 
 ---
 
@@ -597,7 +610,7 @@ T-X4 (input remap: pickup E → F) ← future TODO, после end-to-end demo
 | **M6 — Item integration** | T-Q14, T-Q15 | Quest rewards give items, quest objectives check items, ContractMetaBridge. | ✅ T-Q14 ✅ T-Q15 2026-06-08 |
 | **M7 — Full action set** | T-Q16, T-Q17, T-X5 | Credits/rep/attitude/market actions + ContractServer events. | ✅ T-Q16 ✅ T-Q17 ✅ T-X5 2026-06-08 |
 | **M8 — Persistence** | T-Q18 | Quests + rep + attitude survive server restart. | ✅ DONE 2026-06-08 |
-| **M9 — Cleanup** | T-Q19, T-X1, T-X2 | v1 NPC deleted, optional renames. | 🟡 T-Q19 ✅ T-X1 T-X2 pending 2026-06-08 |
+| **M9 — Cleanup** | T-Q19, T-X1, T-X2 | v1 NPC deleted, optional renames. | 🟡 T-Q19 ✅ T-X1 ✅ T-X2 DEFERRED 2026-06-08 |
 | **M10 — Editor tool** | T-Q09, T-Q09b | Quest Database Explorer с full CRUD + GraphView. | ✅ DONE (M10 partially — CRUD done, GraphView deferred) |
 | **M11 — End-to-end demo** | After M9 | Mira quest full playthrough. |
 | **M12 — Input remap** | T-X4 | F = pickup (future, post-demo). |

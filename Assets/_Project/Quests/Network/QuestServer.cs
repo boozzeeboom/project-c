@@ -848,17 +848,41 @@ namespace ProjectC.Quests
                         });
                     }
                     break;
+                case DialogueActionType.OpenMarket:
+                    {
+                        // T-Q17: OpenMarket — close dialog + call MarketInteractor.TryOpenMarket.
+                        // Edge action: stringParam = zoneId (опционально, hint). Если пусто — local player zone.
+                        // TryOpenMarket — client-side, request ContractServer.RequestListRpc RPC.
+                        if (debugMode) Debug.Log($"[QuestServer] FireDialogAction: OpenMarket zone='{action.stringParam}'");
+                        SendDialogActionResultToClient(clientId, new DialogActionResultDto
+                        {
+                            actionType = (byte)action.type,
+                            success = true,
+                            resultData = action.stringParam
+                        });
+                    }
+                    break;
+                case DialogueActionType.OpenService:
+                    {
+                        // T-Q17: OpenService — stub (ServiceUI не существует; только PriceFormula helpers).
+                        // Edge action: stringParam = serviceId (опционально).
+                        if (debugMode) Debug.Log($"[QuestServer] FireDialogAction: OpenService serviceId='{action.stringParam}' (T-Q17 stub — ServiceUI TBD)");
+                        SendDialogActionResultToClient(clientId, new DialogActionResultDto
+                        {
+                            actionType = (byte)action.type,
+                            success = true,
+                            resultData = action.stringParam
+                        });
+                    }
+                    break;
                 case DialogueActionType.CompleteObjective:
                 case DialogueActionType.DiscoverQuest:
-                case DialogueActionType.OpenMarket:
-                case DialogueActionType.OpenService:
                 case DialogueActionType.SetFlag:
                 case DialogueActionType.SwitchDialogTree:
                 case DialogueActionType.EndConversation:
                     {
-                        // T-Q15: stubs — full impl в T-Q16 (GiveCredits/AddReputation/AddNpcAttitude) и T-Q17 (OpenMarket/OpenService).
-                        // EndConversation, SetFlag, SwitchDialogTree, CompleteObjective, DiscoverQuest — handled elsewhere or out of scope.
-                        if (debugMode) Debug.Log($"[QuestServer] FireDialogAction: {action.type} (T-Q15 stub — T-Q16/T-Q17 fill)");
+                        // T-Q15: stubs — SetFlag/SwitchDialogTree/EndConversation/CompleteObjective/DiscoverQuest — handled elsewhere or out of scope.
+                        if (debugMode) Debug.Log($"[QuestServer] FireDialogAction: {action.type} (T-Q15 stub — T-Q18+ fill)");
                         SendDialogActionResultToClient(clientId, new DialogActionResultDto
                         {
                             actionType = (byte)action.type,

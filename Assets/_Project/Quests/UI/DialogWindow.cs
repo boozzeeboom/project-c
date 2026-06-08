@@ -273,10 +273,25 @@ namespace ProjectC.Quests.UI
 
  private void HandleActionResultReceived(DialogActionResultDto result)
  {
- string status = result.success ? "OK" : "FAIL";
- _lastActionMessage = $"{status}: {result.actionType} {result.resultData}";
- _lastActionMessageTime = Time.time;
- if (Debug.isDebugBuild) Debug.Log($"[DialogWindow] Action result: {_lastActionMessage}");
+     string status = result.success ? "OK" : "FAIL";
+     _lastActionMessage = $"{status}: {result.actionType} {result.resultData}";
+     _lastActionMessageTime = Time.time;
+     if (Debug.isDebugBuild) Debug.Log($"[DialogWindow] Action result: {_lastActionMessage}");
+
+     // T-Q17: client-side dispatch по action type.
+     // OpenMarket → close dialog + MarketInteractor.TryOpenMarket (использует local player zone).
+     if (result.success && result.actionType == (byte)ProjectC.Dialogue.DialogueActionType.OpenMarket)
+     {
+         if (Debug.isDebugBuild) Debug.Log("[DialogWindow] Action result: OpenMarket → close dialog + TryOpenMarket");
+         Close();
+         ProjectC.Trade.Client.MarketInteractor.TryOpenMarket();
+     }
+     else if (result.success && result.actionType == (byte)ProjectC.Dialogue.DialogueActionType.OpenService)
+     {
+         // T-Q17 stub: ServiceUI не существует. Log only. Close dialog.
+         if (Debug.isDebugBuild) Debug.Log($"[DialogWindow] Action result: OpenService serviceId='{result.resultData}' (T-Q17 stub — ServiceUI TBD)");
+         Close();
+     }
  }
 
  public void Show()

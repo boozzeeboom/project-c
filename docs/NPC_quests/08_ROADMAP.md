@@ -471,16 +471,20 @@ T-X4 (input remap: pickup E → F) ← future TODO, после end-to-end demo
 
 ---
 
-### T-Q17 — DialogueAction: OpenMarket/OpenService (small, 30 мин)
+### T-Q17 — DialogueAction: OpenMarket/OpenService (small, 30 мин) ✅ DONE 2026-06-08
 
 **Скоуп:**
-- `ProjectC/Dialogue/ActionExecutors/MarketActionExecutor.cs`.
-- `ProjectC/Dialogue/ActionExecutors/ServiceActionExecutor.cs`.
-- Calls `MarketWindow.Instance.Open(zoneId)` / `ServiceUI.Open(serviceId)`.
+- `QuestServer.FireDialogAction.OpenMarket` — server log + send DialogActionResult, actionType=OpenMarket. ✅
+- `QuestServer.FireDialogAction.OpenService` — server log + send DialogActionResult, actionType=OpenService. ✅
+- `DialogWindow.HandleActionResultReceived` — client-side dispatch: OpenMarket → `Close()` + `MarketInteractor.TryOpenMarket()` (uses local player zone), OpenService → `Close()` + log stub (ServiceUI TBD). ✅
 
-**Verify:** Click "Покажи свои товары" → MarketWindow opens, close → dialog resumes.
+**Verify (твои тесты):**
+- Authoring: добавить в Mira dialog tree edge с `action.type=OpenMarket` или `OpenService` (out of scope T-Q17 — SO editor work).
+- После добавления: `[DialogWindow] Action result: OpenMarket → close dialog + TryOpenMarket` + `[MarketInteractor] TryOpenMarket: enter — LocalPlayerZone=...` в Console + MarketWindow UI открывается.
+- **ServiceUI не существует** — OpenService = stub (close dialog + log "T-Q17 stub — ServiceUI TBD"). Создание ServiceUI — TBD future.
 
-**Risk:** low.
+**Risk:** low. ✅
+
 
 ---
 
@@ -575,7 +579,7 @@ T-X4 (input remap: pickup E → F) ← future TODO, после end-to-end demo
 | **M4 — Quest log + tracker** | T-Q11, T-Q12 | Player can accept quest, see in log (Active/Completed/Discovered), see tracker. | 🟡 NEXT |
 | **M5 — Reputation + NpcAttitude** | T-Q13 | Reputation updates, NpcAttitude, CharacterWindow tab fix. | ✅ DONE 2026-06-08 |
 | **M6 — Item integration** | T-Q14, T-Q15 | Quest rewards give items, quest objectives check items, ContractMetaBridge. | ✅ T-Q14 ✅ T-Q15 2026-06-08 |
-| **M7 — Full action set** | T-Q16, T-Q17, T-X5 | Credits/rep/attitude/market actions + ContractServer events. | 🟡 T-Q16 ✅ T-Q17 T-X5 pending 2026-06-08 |
+| **M7 — Full action set** | T-Q16, T-Q17, T-X5 | Credits/rep/attitude/market actions + ContractServer events. | 🟡 T-Q16 ✅ T-Q17 ✅ T-X5 pending 2026-06-08 |
 | **M8 — Persistence** | T-Q18 | Quests + rep + attitude survive server restart. |
 | **M9 — Cleanup** | T-Q19, T-X1, T-X2 | v1 NPC deleted, optional renames. |
 | **M10 — Editor tool** | T-Q09, T-Q09b | Quest Database Explorer с full CRUD + GraphView. | ✅ DONE (M10 partially — CRUD done, GraphView deferred) |

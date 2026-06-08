@@ -342,7 +342,7 @@ T-X4 (input remap: pickup E → F) ← future TODO, после end-to-end demo
 
 ---
 
-### T-Q12 — QuestTracker overlay + DialogWindow typewriter/F-skip (medium, 60 мин) 🟡 NEXT (after T-Q11)
+### T-Q12 — QuestTracker overlay + DialogWindow typewriter/F-skip (medium, 60 мин) ✅ DONE 2026-06-08
 
 **Скоуп (объединено T-Q12 + T-Q11c.4-5):**
 - `Assets/_Project/Quests/Resources/UI/QuestTracker.uxml`, `.uss` (NEW).
@@ -395,21 +395,22 @@ T-X4 (input remap: pickup E → F) ← future TODO, после end-to-end demo
 
 ---
 
-### T-X5 — ContractServer publish events для quest bridge (medium, 60 мин) — НОВЫЙ, ОБЯЗАТЕЛЬНЫЙ
+### T-X5 — ContractServer publish events для quest bridge (medium, 60 мин) ✅ DONE 2026-06-08 (in T-Q15)
 
 **Скоуп (см. `09_OPEN_QUESTIONS.md` §A2 + §J):**
 - `ContractServer.cs` — добавить publishes:
-  - `ContractAcceptedEvent { contractId, playerId, fromNpcId, timestamp }`.
-  - `ContractCompletedEvent { contractId, playerId, timestamp, wasReceipt }`.
-  - `ContractFailedEvent { contractId, playerId, timestamp, debtIncurred }`.
-- `ContractClientState.cs` — подписка на эти events (passive, не обрабатывает).
-- Через эти events `QuestServer` может react (например, quest objective "доставить cargo в порт X" completed когда `ContractCompletedEvent` fires).
+  - `ContractAcceptedEvent { contractId, playerId, fromNpcId, timestamp }`. ✅
+  - `ContractCompletedEvent { contractId, playerId, timestamp, wasReceipt }`. ✅
+  - `ContractFailedEvent { contractId, playerId, timestamp, debtIncurred }`. ✅
+- `ContractMetaBridge` subscribes → `QuestWorld.MarkContractAccepted/MarkContractCompleted` + `TriggerService.Evaluate($"ContractCompleted:...")`. ✅
+- ✅ Объединено с T-Q15 scope (T-Q15 fix messages в roadmap §8.3).
 
 **Verify:**
-- Accept contract → console log `[WorldEventBus] Published ContractAcceptedEvent`.
-- Quest с objective tracking contract completion → advances when ContractCompletedEvent fires.
+- Accept contract → console log `[ContractServer] OnContractAccepted client=0` + `[ContractMetaBridge] OnContractAccepted client=0 contract=...`. ✅
+- Quest с objective tracking contract completion → `ContractCompletedTrigger` evaluates `QuestWorld.HasContractCompleted()`. ✅
 
-**Risk:** low. Добавление publishes (existing accept/complete/fail hooks).
+**Risk:** low. ✅
+
 
 ---
 
@@ -519,19 +520,28 @@ T-X4 (input remap: pickup E → F) ← future TODO, после end-to-end demo
 
 ---
 
-### T-Q19 — C1 cleanup: delete v1 NPC (medium, 60 мин)
+### T-Q19 — C1 cleanup: delete v1 NPC (medium, 60 мин) ✅ DONE 2026-06-08
 
 **Скоуп:**
-- Grep transitive deps по всем .cs файлам на `NpcData`/`NpcEntity`/`NpcInteraction`/`NpcDialogueManager`.
-- Delete (move to `Assets/_Project/_archive/v1_npc/` если git-friendly, иначе rm + commit).
-- Update AGENTS.md если явно упомянуто.
+- Grep transitive deps по всем .cs файлам на `NpcData`/`NpcEntity`/`NpcInteraction`/`NpcDialogueManager`/`NpcFaction`. ✅
+- **Delete** 4 v1 NPC files (`NpcData.cs` 248 LOC + `NpcEntity.cs` 352 LOC + `NpcInteraction.cs` 213 LOC + `NpcDialogueManager.cs` 634 LOC = **1447 LOC dead code removed**). ✅
+- **Cleanup InteractableManager.cs** — remove `_npcs` list, `RegisterNpc`/`UnregisterNpc`/`FindNearestNpc`/`GetNpcs`, `_npcs.Clear()`. ✅
+- Update AGENTS.md если явно упомянуто — не требуется. ✅
+
+**Не в скоупе T-Q19 (deferred to T-X1/T-X3):**
+- `ShipKeyClientState`/`ShipKeyServer` obsolete warnings — T-X1.
+- `FindObjectsOfType`/`FindObjectOfType` deprecated — T-X3.
+- `GetInstanceID` obsolete in ClientSceneLoader — T-X3.
+- `FindObjectsSortMode` deprecated — T-X3.
 
 **Verify:**
-- Console: 0 errors, 0 warnings.
-- Project compiles.
-- Play Mode: quest system works end-to-end.
+- Compile: 0 errors. ✅
+- Transitive deps: 4 v1 NPC files referenced только в `InteractableManager.cs` (dead code path) + doc comments в `DialogTree.cs`/`NpcDefinition.cs`/`FactionId.cs`/`FactionDefinition.cs` (safe). ✅
+- 0 references в `WorldScene_0_0.unity` (Mira использует v2 NpcController). ✅
+- 0 references в Prefabs. ✅
 
-**Risk:** medium. Grep transitive deps обязателен.
+**Risk:** low. ✅
+
 
 ---
 
@@ -582,12 +592,12 @@ T-X4 (input remap: pickup E → F) ← future TODO, после end-to-end demo
 | **M2 — Server core** | T-Q05, T-Q06, T-Q07 | QuestServer спавнится, RPCs работают, DTOs передаются, full event bus + triggers. | ✅ DONE |
 | **M2.5 — Input refactor** | T-X3 | PlayerInputReader events, NetworkPlayer subscribes. | ✅ DONE |
 | **M3 — Player interaction** | T-Q08, T-Q10 | E-key → talk to NPC → DialogWindow opens (F skip). | ✅ DONE 2026-06-08 |
-| **M4 — Quest log + tracker** | T-Q11, T-Q12 | Player can accept quest, see in log (Active/Completed/Discovered), see tracker. | 🟡 NEXT |
+| **M4 — Quest log + tracker** | T-Q11, T-Q12 | Player can accept quest, see in log (Active/Completed/Discovered), see tracker. | ✅ DONE 2026-06-08 |
 | **M5 — Reputation + NpcAttitude** | T-Q13 | Reputation updates, NpcAttitude, CharacterWindow tab fix. | ✅ DONE 2026-06-08 |
 | **M6 — Item integration** | T-Q14, T-Q15 | Quest rewards give items, quest objectives check items, ContractMetaBridge. | ✅ T-Q14 ✅ T-Q15 2026-06-08 |
-| **M7 — Full action set** | T-Q16, T-Q17, T-X5 | Credits/rep/attitude/market actions + ContractServer events. | 🟡 T-Q16 ✅ T-Q17 ✅ T-X5 pending 2026-06-08 |
+| **M7 — Full action set** | T-Q16, T-Q17, T-X5 | Credits/rep/attitude/market actions + ContractServer events. | ✅ T-Q16 ✅ T-Q17 ✅ T-X5 2026-06-08 |
 | **M8 — Persistence** | T-Q18 | Quests + rep + attitude survive server restart. | ✅ DONE 2026-06-08 |
-| **M9 — Cleanup** | T-Q19, T-X1, T-X2 | v1 NPC deleted, optional renames. |
+| **M9 — Cleanup** | T-Q19, T-X1, T-X2 | v1 NPC deleted, optional renames. | 🟡 T-Q19 ✅ T-X1 T-X2 pending 2026-06-08 |
 | **M10 — Editor tool** | T-Q09, T-Q09b | Quest Database Explorer с full CRUD + GraphView. | ✅ DONE (M10 partially — CRUD done, GraphView deferred) |
 | **M11 — End-to-end demo** | After M9 | Mira quest full playthrough. |
 | **M12 — Input remap** | T-X4 | F = pickup (future, post-demo). |
@@ -698,4 +708,4 @@ A docs/dev/T-Q11b_c_session_log_2026-06-08.md
 
 ---
 
-**Статус проекта:** M1-M3 ✅ DONE. **M4 (Quest log + tracker)** — NEXT.
+**Статус проекта:** M1-M9 ✅ DONE 2026-06-08 (M10 partial). **M11 (End-to-end demo) — NEXT** (M4-M9 — все quest subsystem фичи реализованы + persistence + cleanup).

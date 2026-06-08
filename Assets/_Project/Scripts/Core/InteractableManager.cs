@@ -9,6 +9,8 @@ namespace ProjectC.Core
     /// Static manager for tracking IInteractable objects in the scene.
     /// Replaces FindObjectsByType calls with trigger-based registration.
     /// Zero allocations in hot paths.
+    /// T-Q19: NPC detection (v1) removed — v2 NpcController handles NPC pickup via
+    /// NetworkPlayer.RequestTalkToNpc.
     /// </summary>
     public static class InteractableManager
     {
@@ -16,7 +18,6 @@ namespace ProjectC.Core
         private static readonly List<PickupItem> _pickups = new List<PickupItem>(32);
         private static readonly List<ChestContainer> _chests = new List<ChestContainer>(16);
         private static readonly List<ShipController> _ships = new List<ShipController>(8);
-        private static readonly List<object> _npcs = new List<object>(16);
 
         /// <summary>
         /// Register a pickup item when it enters player's trigger.
@@ -84,27 +85,8 @@ namespace ProjectC.Core
             }
         }
 
-        /// <summary>
-        /// Register an NPC when it enters player's trigger.
-        /// </summary>
-        public static void RegisterNpc(World.Npc.NpcInteraction npc)
-        {
-            if (npc != null && !_npcs.Contains(npc))
-            {
-                _npcs.Add(npc);
-            }
-        }
-
-        /// <summary>
-        /// Unregister an NPC when it exits player's trigger.
-        /// </summary>
-        public static void UnregisterNpc(World.Npc.NpcInteraction npc)
-        {
-            if (npc != null)
-            {
-                _npcs.Remove(npc);
-            }
-        }
+        // T-Q19: FindNearestNpc/RegisterNpc/UnregisterNpc removed. v1 World.Npc.NpcInteraction
+        // is gone; v2 NpcController handles NPC detection in NetworkPlayer (RequestTalkToNpcRpc).
 
         /// <summary>
         /// Get cached list of pickups. DO NOT modify this list.
@@ -122,19 +104,14 @@ namespace ProjectC.Core
         public static List<ShipController> GetShips() => _ships;
 
         /// <summary>
-        /// Get cached list of NPCs. DO NOT modify this list.
-        /// </summary>
-        public static IReadOnlyList<object> GetNpcs() => _npcs;
-
-        /// <summary>
         /// Clear all cached references. Call when scene changes.
+        /// T-Q19: _npcs clear removed.
         /// </summary>
         public static void ClearAll()
         {
             _pickups.Clear();
             _chests.Clear();
             _ships.Clear();
-            _npcs.Clear();
         }
 
         /// <summary>
@@ -149,7 +126,7 @@ namespace ProjectC.Core
             {
                 var pickup = _pickups[i];
                 if (pickup == null || !pickup.gameObject.activeSelf) continue;
-                
+
                 float dist = Vector3.Distance(position, pickup.transform.position);
                 if (dist < range && dist < minDist)
                 {
@@ -173,7 +150,7 @@ namespace ProjectC.Core
             {
                 var chest = _chests[i];
                 if (chest == null || !chest.gameObject.activeSelf) continue;
-                
+
                 float dist = Vector3.Distance(position, chest.transform.position);
                 if (dist < range && dist < minDist)
                 {
@@ -184,6 +161,8 @@ namespace ProjectC.Core
 
             return nearest;
         }
+
+        // T-Q19: FindNearestNpc removed (v1 dead code, see top of file).
 
         /// <summary>
         /// Find nearest ship within range. Zero allocations.
@@ -220,30 +199,6 @@ namespace ProjectC.Core
                 {
                     minDist = dist;
                     nearest = ship;
-                }
-            }
-
-            return nearest;
-        }
-
-        /// <summary>
-        /// Find nearest NPC within range. Zero allocations.
-        /// </summary>
-        public static World.Npc.NpcInteraction FindNearestNpc(Vector3 position, float range)
-        {
-            World.Npc.NpcInteraction nearest = null;
-            float minDist = float.MaxValue;
-
-            for (int i = 0; i < _npcs.Count; i++)
-            {
-                var npc = _npcs[i] as World.Npc.NpcInteraction;
-                if (npc == null || !npc.gameObject.activeSelf) continue;
-                
-                float dist = Vector3.Distance(position, npc.transform.position);
-                if (dist < range && dist < minDist)
-                {
-                    minDist = dist;
-                    nearest = npc;
                 }
             }
 

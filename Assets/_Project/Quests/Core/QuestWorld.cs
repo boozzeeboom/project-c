@@ -222,6 +222,52 @@ namespace ProjectC.Quests
         // ============ T-Q15: Quest state transitions (Accept / TurnIn / Track) ============
 
         /// <summary>
+        /// T-Q15 fix: QuestServer.FireDialogAction.OfferQuest stub → real impl.
+        /// Server-side offer quest to player (Discovered state). Если уже есть в log (любой state) — return Ok (idempotent).
+        /// Edge action: action.stringParam = questId. НЕ auto-accept.
+        /// </summary>
+        public QuestResultDto TryOffer(ulong clientId, string questId)
+        {
+            if (string.IsNullOrEmpty(questId))
+                return Fail(QuestResultCode.NotFound, "questId empty", questId);
+            var def = GetQuest(questId);
+            if (def == null)
+                return Fail(QuestResultCode.NotFound, $"Quest '{questId}' not found", questId);
+
+            var playerQuests = GetPlayerQuests(clientId);
+
+            // Idempotency: если уже в log — success (no-op).
+            for (int i = 0; i < playerQuests.Count; i++)
+            {
+                if (playerQuests[i].questId == questId)
+                {
+                    return Ok($"Already in log (state={playerQuests[i].state})", questId);
+                }
+            }
+
+            // Create new QuestInstance in Discovered state.
+            var instance = new QuestInstance
+            {
+                questId = questId,
+                state = QuestState.Discovered,
+                isTracked = false
+            };
+            playerQuests.Add(instance);
+
+            if (Debug.isDebugBuild) Debug.Log($"[QuestWorld] TryOffer: client={clientId} quest={questId} → Discovered");
+
+            // T-Q07: publish QuestStateChangedEvent → subscribers (UI, ContractMetaBridge) могут обновиться.
+            // Player сам увидит через QuestSnapshot (rebuild → snapshot push).
+            // Server должен push snapshot вручную после offer.
+            return new QuestResultDto
+            {
+                code = (byte)QuestResultCode.Discovered, // signal "newly discovered" to UI
+                questId = questId,
+                message = "Discovered"
+            };
+        }
+
+        /// <summary>
         /// T-Q15: accept a Discovered/Offered quest → Active.
         /// Server-authoritative: validates state transition, quest exists, max-active cap.
         /// Out of scope T-Q15: applying reward / finalizing quest (T-Q16+).

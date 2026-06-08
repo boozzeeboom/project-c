@@ -48,15 +48,18 @@ namespace ProjectC.Quests.Client
             {
                 Instance = this;
                 if (dontDestroyOnLoad) DontDestroyOnLoad(gameObject);
+                Debug.Log($"[QuestClientState] Awake: Instance set, GO={gameObject.name}, scene={gameObject.scene.name}, dddl={dontDestroyOnLoad}");
             }
             else if (Instance != this)
             {
+                Debug.LogWarning($"[QuestClientState] Awake: DUPLICATE found, destroying new instance. OldInstanceGO={Instance.gameObject.name}, NewInstanceGO={gameObject.name}");
                 Destroy(gameObject);
             }
         }
 
         private void OnDestroy()
         {
+            Debug.Log($"[QuestClientState] OnDestroy: GO={gameObject.name}, isInstance={Instance == this}");
             if (Instance == this) Instance = null;
         }
 

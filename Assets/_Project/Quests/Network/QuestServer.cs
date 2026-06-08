@@ -694,6 +694,9 @@ namespace ProjectC.Quests
             if (debugMode) Debug.Log($"[QuestServer] OnClientConnectedForSnapshot: client={clientId}");
             // Небольшая задержка не нужна — SendTo.Owner RPC дождётся готовности client'а.
             BroadcastBothChange(clientId);
+            // T-Q15 fix: push initial quest snapshot (rep+attitude уже отправлено выше).
+            // Без этого CharacterWindow → таб КВЕСТЫ пустой при P до любого Accept/TurnIn.
+            SendQuestSnapshotToClient(clientId);
         }
 
         /// <summary>Find NetworkPlayer for clientId (server-side). null если player object не spawned.</summary>
@@ -822,20 +825,31 @@ namespace ProjectC.Quests
             switch (action.type)
             {
                 case DialogueActionType.OfferQuest:
-                    // T-Q15: QuestWorld.TryOffer(clientId, action.stringParam).
-                    // T-Q10: log + send DialogActionResultDto to client.
-                    if (debugMode) Debug.Log($"[QuestServer] FireDialogAction: OfferQuest {action.stringParam} to client {clientId}");
-                    SendDialogActionResultToClient(clientId, new DialogActionResultDto
                     {
-                        actionType = (byte)action.type,
-                        success = true,
-                        resultData = action.stringParam
-                    });
+                        // T-Q15: real impl — QuestWorld.TryOffer (Discovered → Offered).
+                        // Edge action: action.stringParam = questId. После OfferQuest игрок
+                        // может Accept через CharacterWindow или следующий edge.action.type=OfferQuest.
+                        if (QuestWorld.Instance == null) break;
+                        var questId = action.stringParam;
+                        // TryOffer: создаёт QuestInstance в state=Discovered, добавляет в player log,
+                        // уведомляет UI через OnQuestDiscovered event. НЕ auto-accept.
+                        QuestResultDto offerResult = QuestWorld.Instance.TryOffer(clientId, questId);
+                        if (debugMode) Debug.Log($"[QuestServer] FireDialogAction: OfferQuest {questId} to client {clientId} → code={offerResult.code} msg={offerResult.message}");
+                        // T-Q15 fix: push fresh snapshot so CharacterWindow → таб КВЕСТЫ сразу показывает Discovered.
+                        if (offerResult.code == (byte)QuestResultCode.Discovered)
+                        {
+                            SendQuestSnapshotToClient(clientId);
+                        }
+                        SendDialogActionResultToClient(clientId, new DialogActionResultDto
+                        {
+                            actionType = (byte)action.type,
+                            success = offerResult.code == (byte)QuestResultCode.Ok || offerResult.code == (byte)QuestResultCode.Discovered,
+                            resultData = questId
+                        });
+                    }
                     break;
                 case DialogueActionType.CompleteObjective:
                 case DialogueActionType.DiscoverQuest:
-                case DialogueActionType.GiveItem:
-                case DialogueActionType.TakeItem:
                 case DialogueActionType.GiveCredits:
                 case DialogueActionType.AddReputation:
                 case DialogueActionType.AddNpcAttitude:
@@ -845,6 +859,19 @@ namespace ProjectC.Quests
                 case DialogueActionType.SwitchDialogTree:
                 case DialogueActionType.EndConversation:
                     {
+                        // T-Q15: stubs — full impl в T-Q16 (GiveCredits/AddReputation/AddNpcAttitude) и T-Q17 (OpenMarket/OpenService).
+                        // EndConversation, SetFlag, SwitchDialogTree, CompleteObjective, DiscoverQuest — handled elsewhere or out of scope.
+                        if (debugMode) Debug.Log($"[QuestServer] FireDialogAction: {action.type} (T-Q15 stub — T-Q16/T-Q17 fill)");
+                        SendDialogActionResultToClient(clientId, new DialogActionResultDto
+                        {
+                            actionType = (byte)action.type,
+                            success = true
+                        });
+                    }
+                    break;
+                case DialogueActionType.GiveItem:
+                case DialogueActionType.TakeItem:
+                    {
                         // T-Q15: route to InventoryServer. ItemType сериализуется как byte в DTO
                         // (для будущего GiveCargoItem будет ItemType.Cargo).
                         var itemType = (action.type == DialogueActionType.GiveItem)
@@ -853,22 +880,50 @@ namespace ProjectC.Quests
                         bool ok;
                         if (action.type == DialogueActionType.GiveItem)
                         {
+                            // T-Q15 fix: parse itemId safely. Если stringParam пуст / не int — log warn + skip.
+                            int itemId = 0;
+                            bool parsed = int.TryParse(action.stringParam, out itemId);
+                            if (!parsed || string.IsNullOrEmpty(action.stringParam))
+                            {
+                                Debug.LogWarning($"[QuestServer] FireDialogAction: GiveItem skipped — invalid itemId='{action.stringParam}'");
+                                SendDialogActionResultToClient(clientId, new DialogActionResultDto
+                                {
+                                    actionType = (byte)action.type,
+                                    success = false,
+                                    resultData = $"invalid itemId='{action.stringParam}'"
+                                });
+                                break;
+                            }
                             // AddItemDirect: server-add to inventory.
                             if (ProjectC.Items.InventoryWorld.Instance != null)
                             {
-                                var r = ProjectC.Items.InventoryWorld.Instance.AddItemDirect(clientId, int.Parse(action.stringParam), itemType);
+                                var r = ProjectC.Items.InventoryWorld.Instance.AddItemDirect(clientId, itemId, itemType);
                                 ok = r.IsSuccess;
-                                if (debugMode) Debug.Log($"[QuestServer] FireDialogAction: GiveItem id={action.stringParam} x{action.intParam} → {r.code} ({r.message})");
+                                if (debugMode) Debug.Log($"[QuestServer] FireDialogAction: GiveItem id={itemId} x{action.intParam} → {r.code} ({r.message})");
                             }
                             else { ok = false; }
                         }
                         else
                         {
+                            // T-Q15 fix: parse itemId safely (same as GiveItem).
+                            int itemId = 0;
+                            bool parsed = int.TryParse(action.stringParam, out itemId);
+                            if (!parsed || string.IsNullOrEmpty(action.stringParam))
+                            {
+                                Debug.LogWarning($"[QuestServer] FireDialogAction: TakeItem skipped — invalid itemId='{action.stringParam}'");
+                                SendDialogActionResultToClient(clientId, new DialogActionResultDto
+                                {
+                                    actionType = (byte)action.type,
+                                    success = false,
+                                    resultData = $"invalid itemId='{action.stringParam}'"
+                                });
+                                break;
+                            }
                             // TryRemove (T-Q14): server-remove from inventory.
                             if (ProjectC.Items.Network.InventoryServer.Instance != null)
                             {
-                                ok = ProjectC.Items.Network.InventoryServer.Instance.TryRemove(clientId, int.Parse(action.stringParam), itemType, action.intParam);
-                                if (debugMode) Debug.Log($"[QuestServer] FireDialogAction: TakeItem id={action.stringParam} x{action.intParam} → {ok}");
+                                ok = ProjectC.Items.Network.InventoryServer.Instance.TryRemove(clientId, itemId, itemType, action.intParam);
+                                if (debugMode) Debug.Log($"[QuestServer] FireDialogAction: TakeItem id={itemId} x{action.intParam} → {ok}");
                             }
                             else { ok = false; }
                         }

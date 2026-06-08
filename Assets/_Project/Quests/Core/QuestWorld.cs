@@ -12,6 +12,7 @@ using System.Collections.Generic;
 using UnityEngine;
 using ProjectC.Core;
 using ProjectC.Factions;
+using ProjectC.Quests.Dto;
 using ProjectC.Quests.Triggers;
 
 namespace ProjectC.Quests
@@ -30,6 +31,12 @@ namespace ProjectC.Quests
         /// T-Q05: list populated manually by tests; full integration in T-Q09.
         /// </summary>
         private readonly Dictionary<string, QuestDefinition> _questById = new Dictionary<string, QuestDefinition>();
+
+        /// <summary>T-Q15: NPC lookup reference (для TryTurnIn NPC validation). Set via CreateAndInitialize.</summary>
+        public QuestDatabase Database { get; private set; }
+
+        /// <summary>T-Q15: cap на max active quests per player (consumed in TryAccept).</summary>
+        public int MaxActiveQuestsPerPlayer { get; set; } = 20;
 
         /// <summary>Per-player quest instances (key: clientId).</summary>
         private readonly Dictionary<ulong, List<QuestInstance>> _questsByPlayer = new Dictionary<ulong, List<QuestInstance>>();
@@ -60,17 +67,19 @@ namespace ProjectC.Quests
         // ============ Lifecycle ============
 
         /// <summary>Create and assign singleton. Idempotent (call again replaces; for tests).</summary>
-        public static void CreateAndInitialize(QuestDefinition[] questDatabase)
+        public static void CreateAndInitialize(QuestDefinition[] questDefinitions, QuestDatabase database = null, int maxActiveQuestsPerPlayer = 20)
         {
             if (Instance != null)
             {
                 Debug.LogWarning("[QuestWorld] Already initialized — replacing.");
             }
             Instance = new QuestWorld();
-            Instance.RegisterQuests(questDatabase);
+            Instance.RegisterQuests(questDefinitions);
+            Instance.Database = database;
+            Instance.MaxActiveQuestsPerPlayer = maxActiveQuestsPerPlayer;
             // T-Q06: create trigger service immediately.
             Instance.TriggerService = new Triggers.QuestTriggerService(Instance);
-            Debug.Log($"[QuestWorld] Initialized: {Instance._questById.Count} quest definitions registered. TriggerService online.");
+            Debug.Log($"[QuestWorld] Initialized: {Instance._questById.Count} quest definitions registered, maxActive={maxActiveQuestsPerPlayer}, dbNPCs={(database?.npcs?.Length ?? 0)}, TriggerService online.");
         }
 
         /// <summary>Reset singleton. Editor/test only.</summary>
@@ -210,11 +219,178 @@ namespace ProjectC.Quests
             return newVal;
         }
 
-        /// <summary>Lookup helper: найти NpcDefinition через database (если передан) или null.</summary>
-        public NpcDefinition FindNpcDefinition(string npcId, QuestDatabase database)
+        // ============ T-Q15: Quest state transitions (Accept / TurnIn / Track) ============
+
+        /// <summary>
+        /// T-Q15: accept a Discovered/Offered quest → Active.
+        /// Server-authoritative: validates state transition, quest exists, max-active cap.
+        /// Out of scope T-Q15: applying reward / finalizing quest (T-Q16+).
+        /// </summary>
+        public QuestResultDto TryAccept(ulong clientId, string questId, string fromNpcId = "")
         {
-            if (string.IsNullOrEmpty(npcId) || database == null) return null;
-            return database.GetNpc(npcId);
+            if (string.IsNullOrEmpty(questId))
+                return Fail(QuestResultCode.NotFound, "questId empty", questId);
+            var def = GetQuest(questId);
+            if (def == null)
+                return Fail(QuestResultCode.NotFound, $"Quest '{questId}' not found", questId);
+
+            var playerQuests = GetPlayerQuests(clientId);
+
+            // Idempotency: если уже Active/Completed/TurnedIn — OK (success — no-op).
+            for (int i = 0; i < playerQuests.Count; i++)
+            {
+                var existing = playerQuests[i];
+                if (existing.questId == questId)
+                {
+                    if (existing.state == QuestState.Active || existing.state == QuestState.Completed || existing.state == QuestState.TurnedIn)
+                    {
+                        return Ok($"Already {existing.state}", questId);
+                    }
+                    if (!QuestStateTransition.IsAllowed(existing.state, QuestState.Active))
+                        return Fail(QuestResultCode.InvalidState,
+                            $"Cannot accept from state {existing.state}", questId);
+                    existing.state = QuestState.Active;
+                    if (string.IsNullOrEmpty(existing.currentStageId))
+                    {
+                        var entry = def.GetEntryStage();
+                        if (entry != null) existing.currentStageId = entry.stageId;
+                    }
+                    return Ok("Accepted", questId);
+                }
+            }
+
+            // Max active cap (считаем только Active — Discovered/Offered не лимитируем).
+            int activeCount = 0;
+            for (int i = 0; i < playerQuests.Count; i++)
+                if (playerQuests[i].state == QuestState.Active) activeCount++;
+            if (activeCount >= MaxActiveQuestsPerPlayer)
+                return Fail(QuestResultCode.PrerequisitesNotMet,
+                    $"Max active quests reached ({activeCount}/{MaxActiveQuestsPerPlayer})", questId);
+
+            // Create new QuestInstance
+            var instance = new QuestInstance
+            {
+                questId = questId,
+                state = QuestState.Active,
+                isTracked = false
+            };
+            var entryStage = def.GetEntryStage();
+            if (entryStage != null) instance.currentStageId = entryStage.stageId;
+            playerQuests.Add(instance);
+
+            if (Debug.isDebugBuild) Debug.Log($"[QuestWorld] TryAccept: client={clientId} quest={questId} fromNpc={fromNpcId} → Active");
+            return Ok("Accepted", questId);
+        }
+
+        /// <summary>
+        /// T-Q15: turn in a Completed quest at the right NPC → TurnedIn.
+        /// validates: state=Completed, NPC is in quest.questTurnIns[].
+        /// Out of scope T-Q15: applying rewards (T-Q16: ApplyQuestRewards).
+        /// </summary>
+        public QuestResultDto TryTurnIn(ulong clientId, string questId, string toNpcId)
+        {
+            if (string.IsNullOrEmpty(questId))
+                return Fail(QuestResultCode.NotFound, "questId empty", questId);
+            var def = GetQuest(questId);
+            if (def == null)
+                return Fail(QuestResultCode.NotFound, $"Quest '{questId}' not found", questId);
+
+            // Find player's quest instance
+            var playerQuests = GetPlayerQuests(clientId);
+            QuestInstance instance = null;
+            for (int i = 0; i < playerQuests.Count; i++)
+            {
+                if (playerQuests[i].questId == questId) { instance = playerQuests[i]; break; }
+            }
+            if (instance == null)
+                return Fail(QuestResultCode.NotFound, $"Quest not in player's log", questId);
+
+            // State: Active → Completed (auto-complete if all required objectives satisfied).
+            // For MVP: skip objective check, require state=Completed already. Stage advancement in T-Q06+ full impl.
+            if (instance.state == QuestState.Active)
+            {
+                // Auto-complete: if no required objectives remaining (MVP — just transition).
+                if (QuestStateTransition.IsAllowed(instance.state, QuestState.Completed))
+                {
+                    instance.state = QuestState.Completed;
+                }
+            }
+            if (instance.state != QuestState.Completed)
+                return Fail(QuestResultCode.InvalidState,
+                    $"Quest must be Completed (current={instance.state})", questId);
+
+            // Validate NPC can turn-in
+            if (!string.IsNullOrEmpty(toNpcId))
+            {
+                // NPC must be registered в questDatabase
+                var npc = Database != null ? Database.GetNpc(toNpcId) : null;
+                if (npc == null)
+                    return Fail(QuestResultCode.NotFound, $"NPC '{toNpcId}' not found", questId);
+                // Optional: check npc.questTurnIns contains questId
+                if (npc.questTurnIns != null && npc.questTurnIns.Length > 0)
+                {
+                    bool found = false;
+                    for (int i = 0; i < npc.questTurnIns.Length; i++)
+                    {
+                        if (npc.questTurnIns[i] == questId) { found = true; break; }
+                    }
+                    if (!found)
+                        return Fail(QuestResultCode.PrerequisitesNotMet,
+                            $"NPC '{toNpcId}' cannot turn-in quest '{questId}'", questId);
+                }
+            }
+
+            // Transition: Completed → TurnedIn
+            if (!QuestStateTransition.IsAllowed(instance.state, QuestState.TurnedIn))
+                return Fail(QuestResultCode.InvalidState, $"Cannot turn-in from {instance.state}", questId);
+            instance.state = QuestState.TurnedIn;
+
+            // T-Q16: ApplyQuestRewards (out of scope T-Q15).
+            // ApplyQuestRewards(clientId, def.rewards);
+
+            if (Debug.isDebugBuild) Debug.Log($"[QuestWorld] TryTurnIn: client={clientId} quest={questId} toNpc={toNpcId} → TurnedIn");
+            return Ok("Turned in", questId);
+        }
+
+        /// <summary>
+        /// T-Q15: toggle isTracked on player's quest instance. Snapshot rebuild reflects new value.
+        /// </summary>
+        public QuestResultDto SetTracked(ulong clientId, string questId, bool track)
+        {
+            if (string.IsNullOrEmpty(questId))
+                return Fail(QuestResultCode.NotFound, "questId empty", questId);
+            var playerQuests = GetPlayerQuests(clientId);
+            for (int i = 0; i < playerQuests.Count; i++)
+            {
+                if (playerQuests[i].questId == questId)
+                {
+                    playerQuests[i].isTracked = track;
+                    if (Debug.isDebugBuild) Debug.Log($"[QuestWorld] SetTracked: client={clientId} quest={questId} tracked={track}");
+                    return Ok(track ? "Tracking" : "Untracked", questId);
+                }
+            }
+            return Fail(QuestResultCode.NotFound, $"Quest not in player's log", questId);
+        }
+
+        // ============ T-Q15: Result helpers (alias for QuestWorld → avoid duplication) ============
+
+        private static QuestResultDto Ok(string message, string questId)
+        {
+            return new QuestResultDto
+            {
+                code = (byte)QuestResultCode.Ok,
+                questId = questId,
+                message = message
+            };
+        }
+        private static QuestResultDto Fail(QuestResultCode code, string message, string questId)
+        {
+            return new QuestResultDto
+            {
+                code = (byte)code,
+                questId = questId,
+                message = message
+            };
         }
 
         /// <summary>T-Q06: trigger service singleton. Created in CreateAndInitialize.</summary>

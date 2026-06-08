@@ -76,7 +76,7 @@ namespace ProjectC.Quests
                 Debug.LogError("[QuestServer] questDatabase is not assigned! Auto-discovery not yet completed or asset missing.");
                 return;
             }
-            QuestWorld.CreateAndInitialize(questDatabase.quests);
+            QuestWorld.CreateAndInitialize(questDatabase.quests, questDatabase, maxActiveQuestsPerPlayer);
 
             // T-Q06: subscribe to WorldEventBus → route to QuestTriggerService.Evaluate().
             _handleItemAdded = OnItemAdded;
@@ -323,7 +323,15 @@ namespace ProjectC.Quests
             if (!CheckRateLimit(clientId)) return;
             if (QuestWorld.Instance == null) return;
             if (debugMode) Debug.Log($"[QuestServer] RequestAcceptQuest client={clientId} quest={questId} fromNpc={fromNpcId}");
-            // T-Q15: QuestWorld.TryAccept(clientId, questId, fromNpcId).
+
+            // T-Q15: real impl — call QuestWorld.TryAccept.
+            var result = QuestWorld.Instance.TryAccept(clientId, questId, fromNpcId ?? "");
+            SendQuestResultToClient(clientId, result);
+            if (result.code == (byte)QuestResultCode.Ok)
+            {
+                // Push fresh snapshot so client sees new Active quest in their log.
+                SendQuestSnapshotToClient(clientId);
+            }
         }
 
         /// <summary>
@@ -336,7 +344,14 @@ namespace ProjectC.Quests
             if (!CheckRateLimit(clientId)) return;
             if (QuestWorld.Instance == null) return;
             if (debugMode) Debug.Log($"[QuestServer] RequestTurnInQuest client={clientId} quest={questId} toNpc={toNpcId}");
-            // T-Q16: QuestWorld.TryTurnIn(clientId, questId, toNpcId).
+
+            // T-Q15: real impl — call QuestWorld.TryTurnIn.
+            var result = QuestWorld.Instance.TryTurnIn(clientId, questId, toNpcId ?? "");
+            SendQuestResultToClient(clientId, result);
+            if (result.code == (byte)QuestResultCode.Ok)
+            {
+                SendQuestSnapshotToClient(clientId);
+            }
         }
 
         /// <summary>
@@ -349,7 +364,14 @@ namespace ProjectC.Quests
             if (!CheckRateLimit(clientId)) return;
             if (QuestWorld.Instance == null) return;
             if (debugMode) Debug.Log($"[QuestServer] RequestTrackQuest client={clientId} quest={questId} track={track}");
-            // T-Q12: QuestWorld.SetTracked(clientId, questId, track).
+
+            // T-Q15: real impl — call QuestWorld.SetTracked.
+            var result = QuestWorld.Instance.SetTracked(clientId, questId, track);
+            SendQuestResultToClient(clientId, result);
+            if (result.code == (byte)QuestResultCode.Ok)
+            {
+                SendQuestSnapshotToClient(clientId);
+            }
         }
 
         /// <summary>
@@ -606,6 +628,20 @@ namespace ProjectC.Quests
             if (debugMode) Debug.Log($"[QuestServer] SendQuestSnapshotToClient: client={clientId} quests={snapshot.quests?.Length ?? 0}");
         }
 
+        // T-Q15: overload — build snapshot inline (используется после Accept/TurnIn/Track).
+        private void SendQuestSnapshotToClient(ulong clientId)
+        {
+            SendQuestSnapshotToClient(clientId, BuildQuestSnapshot(clientId));
+        }
+
+        // T-Q15: send QuestResult (Ok/Fail with code+message) to client.
+        private void SendQuestResultToClient(ulong clientId, QuestResultDto result)
+        {
+            var netPlayer = FindNetworkPlayer(clientId);
+            if (netPlayer == null) return;
+            netPlayer.ReceiveQuestResultTargetRpc(result);
+        }
+
         private void SendReputationSnapshotToClient(ulong clientId, ReputationSnapshotDto snapshot)
         {
             var netPlayer = FindNetworkPlayer(clientId);
@@ -808,6 +844,44 @@ namespace ProjectC.Quests
                 case DialogueActionType.SetFlag:
                 case DialogueActionType.SwitchDialogTree:
                 case DialogueActionType.EndConversation:
+                case DialogueActionType.GiveItem:
+                case DialogueActionType.TakeItem:
+                    {
+                        // T-Q15: route to InventoryServer. ItemType сериализуется как byte в DTO
+                        // (для будущего GiveCargoItem будет ItemType.Cargo).
+                        var itemType = (action.type == DialogueActionType.GiveItem)
+                            ? ProjectC.Items.ItemType.Resources
+                            : ProjectC.Items.ItemType.Resources;
+                        bool ok;
+                        if (action.type == DialogueActionType.GiveItem)
+                        {
+                            // AddItemDirect: server-add to inventory.
+                            if (ProjectC.Items.InventoryWorld.Instance != null)
+                            {
+                                var r = ProjectC.Items.InventoryWorld.Instance.AddItemDirect(clientId, int.Parse(action.stringParam), itemType);
+                                ok = r.IsSuccess;
+                                if (debugMode) Debug.Log($"[QuestServer] FireDialogAction: GiveItem id={action.stringParam} x{action.intParam} → {r.code} ({r.message})");
+                            }
+                            else { ok = false; }
+                        }
+                        else
+                        {
+                            // TryRemove (T-Q14): server-remove from inventory.
+                            if (ProjectC.Items.Network.InventoryServer.Instance != null)
+                            {
+                                ok = ProjectC.Items.Network.InventoryServer.Instance.TryRemove(clientId, int.Parse(action.stringParam), itemType, action.intParam);
+                                if (debugMode) Debug.Log($"[QuestServer] FireDialogAction: TakeItem id={action.stringParam} x{action.intParam} → {ok}");
+                            }
+                            else { ok = false; }
+                        }
+                        SendDialogActionResultToClient(clientId, new DialogActionResultDto
+                        {
+                            actionType = (byte)action.type,
+                            success = ok,
+                            resultData = action.stringParam
+                        });
+                    }
+                    break;
                 case DialogueActionType.GiveCargoItem:
                 case DialogueActionType.TakeCargoItem:
                 case DialogueActionType.FailQuest:
@@ -831,7 +905,6 @@ namespace ProjectC.Quests
             }
             netPlayer.ReceiveDialogStepTargetRpc(step);
         }
-
         private void SendDialogActionResultToClient(ulong clientId, DialogActionResultDto result)
         {
             var netPlayer = FindNetworkPlayer(clientId);

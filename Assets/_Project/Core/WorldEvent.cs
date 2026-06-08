@@ -140,4 +140,37 @@ namespace ProjectC.Core
         /// <summary>Новая фаза. Используем string (phaseName), не enum — TimeOfDayPhase в проекте это SO, не enum.</summary>
         public string NewPhaseName;
     }
+
+    // ============ T-X5 / T-Q15: Contract events (Trade → Quest bridge) ============
+    // Publisher: ContractServer (см. T-X5 commit). Subscribers: ContractMetaBridge (T-Q15).
+
+    /// <summary>
+    /// Опубликован когда игрок accept'ит contract (RequestAcceptContractRpc → server apply).
+    /// Subscribers: ContractMetaBridge → quest trigger "ContractAccepted:contractId".
+    /// </summary>
+    public sealed class ContractAcceptedEvent : WorldEvent
+    {
+        public string ContractId;
+        public string FromNpcId; // NPC у которой приняли контракт (e.g. "trade_hub_mira").
+    }
+
+    /// <summary>
+    /// Опубликован когда игрок complete'ит contract (доставил cargo, оплата произведена).
+    /// Subscribers: ContractMetaBridge → quest trigger "ContractCompleted:contractId".
+    /// </summary>
+    public sealed class ContractCompletedEvent : WorldEvent
+    {
+        public string ContractId;
+        public bool WasReceipt; // true = доставлен по receipt (cargo), false = любой другой путь
+    }
+
+    /// <summary>
+    /// Опубликован когда contract fail'ится (timeout, death, breach).
+    /// Subscribers: ContractMetaBridge → quest trigger "ContractFailed:contractId" + penalty tracking.
+    /// </summary>
+    public sealed class ContractFailedEvent : WorldEvent
+    {
+        public string ContractId;
+        public bool DebtIncurred; // true = игрок получил долг
+    }
 }

@@ -38,6 +38,16 @@ namespace ProjectC.Quests
         /// <summary>T-Q15: cap на max active quests per player (consumed in TryAccept).</summary>
         public int MaxActiveQuestsPerPlayer { get; set; } = 20;
 
+        /// <summary>T-Q18: persistence repository (optional, nullable). Set by QuestServer.OnNetworkSpawn via SetRepository.</summary>
+        public ProjectC.Quests.Persistence.IQuestStateRepository Repository { get; private set; }
+
+        /// <summary>T-Q18: assign persistence backend. Pass null для disable persistence (test mode).</summary>
+        public void SetRepository(ProjectC.Quests.Persistence.IQuestStateRepository repo)
+        {
+            Repository = repo;
+            if (Debug.isDebugBuild) Debug.Log($"[QuestWorld] Repository set: {(repo == null ? "null (disabled)" : repo.GetType().Name)}");
+        }
+
         /// <summary>Per-player quest instances (key: clientId).</summary>
         private readonly Dictionary<ulong, List<QuestInstance>> _questsByPlayer = new Dictionary<ulong, List<QuestInstance>>();
 
@@ -167,6 +177,7 @@ namespace ProjectC.Quests
                 });
             }
             if (Debug.isDebugBuild) Debug.Log($"[QuestWorld] ModifyReputation player={clientId} faction={faction} delta={delta} {oldVal}→{newVal}");
+            SavePlayer(clientId); // T-Q18
             return newVal;
         }
 
@@ -216,6 +227,7 @@ namespace ProjectC.Quests
                 Delta = newVal - oldVal
             });
             if (Debug.isDebugBuild) Debug.Log($"[QuestWorld] ModifyNpcAttitude player={clientId} npc={npcId} delta={delta} {oldVal}→{newVal}");
+            SavePlayer(clientId); // T-Q18
             return newVal;
         }
 
@@ -256,9 +268,9 @@ namespace ProjectC.Quests
 
             if (Debug.isDebugBuild) Debug.Log($"[QuestWorld] TryOffer: client={clientId} quest={questId} → Discovered");
 
-            // T-Q07: publish QuestStateChangedEvent → subscribers (UI, ContractMetaBridge) могут обновиться.
-            // Player сам увидит через QuestSnapshot (rebuild → snapshot push).
-            // Server должен push snapshot вручную после offer.
+            // T-Q18: persist on every state change (per §H, no debounce).
+            SavePlayer(clientId);
+
             return new QuestResultDto
             {
                 code = (byte)QuestResultCode.Discovered, // signal "newly discovered" to UI
@@ -325,6 +337,7 @@ namespace ProjectC.Quests
             playerQuests.Add(instance);
 
             if (Debug.isDebugBuild) Debug.Log($"[QuestWorld] TryAccept: client={clientId} quest={questId} fromNpc={fromNpcId} → Active");
+            SavePlayer(clientId); // T-Q18
             return Ok("Accepted", questId);
         }
 
@@ -391,11 +404,95 @@ namespace ProjectC.Quests
                 return Fail(QuestResultCode.InvalidState, $"Cannot turn-in from {instance.state}", questId);
             instance.state = QuestState.TurnedIn;
 
-            // T-Q16: ApplyQuestRewards (out of scope T-Q15).
-            // ApplyQuestRewards(clientId, def.rewards);
+            // T-Q18: ApplyQuestRewards (real impl) — credits + items + reputation + npcAttitude + flags.
+            // def.rewards is a QuestReward (T-Q04).
+            if (def.rewards != null)
+            {
+                ApplyQuestRewards(clientId, def.rewards, toNpcId);
+            }
 
             if (Debug.isDebugBuild) Debug.Log($"[QuestWorld] TryTurnIn: client={clientId} quest={questId} toNpc={toNpcId} → TurnedIn");
+            SavePlayer(clientId); // T-Q18
             return Ok("Turned in", questId);
+        }
+
+        /// <summary>
+        /// T-Q18: apply QuestReward к player. Items → InventoryServer.AddItemDirect (ItemType.Resources, int.Parse tradeItemId).
+        /// Cargo items — out of scope T-Q18 (no active ship tracking). Reputation → ModifyReputation. NPC attitude → ModifyNpcAttitude.
+        /// Unlocks (DialogTree/Zone) → log only (T-Q19 cleanup will full impl).
+        /// </summary>
+        private void ApplyQuestRewards(ulong clientId, QuestReward reward, string turnInNpcId)
+        {
+            if (reward == null) return;
+
+            // 1) Credits: repository SetCredits.
+            if (reward.credits != 0)
+            {
+                var repo = ProjectC.Trade.Core.TradeWorld.Instance != null ? ProjectC.Trade.Core.TradeWorld.Instance.Repository : null;
+                if (repo != null)
+                {
+                    float currentCredits = repo.GetCredits(clientId);
+                    float newCredits = Mathf.Max(0f, currentCredits + reward.credits);
+                    repo.SetCredits(clientId, newCredits);
+                    if (Debug.isDebugBuild) Debug.Log($"[QuestWorld] ApplyQuestRewards: credits {currentCredits:F0} → {newCredits:F0} (+{reward.credits})");
+                }
+                else
+                {
+                    Debug.LogWarning("[QuestWorld] ApplyQuestRewards: TradeWorld.Repository == null, credits skipped");
+                }
+            }
+
+            // 2) Items: AddItemDirect via InventoryWorld.
+            if (reward.items != null)
+            {
+                for (int i = 0; i < reward.items.Length; i++)
+                {
+                    var ri = reward.items[i];
+                    if (ri == null || string.IsNullOrEmpty(ri.tradeItemId) || ri.count <= 0) continue;
+                    if (!int.TryParse(ri.tradeItemId, out int legacyIntId))
+                    {
+                        Debug.LogWarning($"[QuestWorld] ApplyQuestRewards: items[{i}] tradeItemId='{ri.tradeItemId}' не конвертируется в int (T-Q19 cleanup: TradeItemDefinition legacy mapping)");
+                        continue;
+                    }
+                    var inv = ProjectC.Items.InventoryWorld.Instance;
+                    if (inv == null)
+                    {
+                        Debug.LogWarning($"[QuestWorld] ApplyQuestRewards: InventoryWorld == null, items[{i}] skipped");
+                        break;
+                    }
+                    var result = inv.AddItemDirect(clientId, legacyIntId, ProjectC.Items.ItemType.Resources);
+                    if (Debug.isDebugBuild) Debug.Log($"[QuestWorld] ApplyQuestRewards: items[{i}] id={legacyIntId} x{ri.count} → code={result.code} message={result.message}");
+                }
+            }
+
+            // 3) Cargo items: out of scope T-Q18 (need active ship tracking, T-Q17+ or T-Q22).
+            if (reward.cargoItems != null && reward.cargoItems.Length > 0)
+            {
+                Debug.LogWarning($"[QuestWorld] ApplyQuestRewards: cargoItems ({reward.cargoItems.Length}) skipped — T-Q18 out of scope (active ship tracking TBD)");
+            }
+
+            // 4) Reputation deltas.
+            if (reward.reputation != null)
+            {
+                for (int i = 0; i < reward.reputation.Length; i++)
+                {
+                    var rr = reward.reputation[i];
+                    if (rr == null || rr.faction == FactionId.None) continue;
+                    int newVal = ModifyReputation(clientId, rr.faction, rr.value, silent: true);
+                    if (Debug.isDebugBuild) Debug.Log($"[QuestWorld] ApplyQuestRewards: reputation faction={rr.faction} delta={rr.value} → {newVal}");
+                }
+            }
+
+            // 5) Unlocks: log only. Real impl в T-Q19 (dialog tree unlock, zone unlock, etc).
+            if (reward.unlocks != null && reward.unlocks.Length > 0)
+            {
+                for (int i = 0; i < reward.unlocks.Length; i++)
+                {
+                    var ul = reward.unlocks[i];
+                    if (ul == null) continue;
+                    Debug.Log($"[QuestWorld] ApplyQuestRewards: unlock type={ul.unlockType} id='{ul.unlockId}' (T-Q19+ impl)");
+                }
+            }
         }
 
         /// <summary>
@@ -412,6 +509,7 @@ namespace ProjectC.Quests
                 {
                     playerQuests[i].isTracked = track;
                     if (Debug.isDebugBuild) Debug.Log($"[QuestWorld] SetTracked: client={clientId} quest={questId} tracked={track}");
+                    SavePlayer(clientId); // T-Q18
                     return Ok(track ? "Tracking" : "Untracked", questId);
                 }
             }
@@ -501,7 +599,7 @@ namespace ProjectC.Quests
                 set = new HashSet<string>();
                 _contractsCompleted[clientId] = set;
             }
-            set.Add(contractId);
+            if (set.Add(contractId)) SavePlayer(clientId); // T-Q18
         }
 
         public bool HasContractAccepted(ulong clientId, string contractId)
@@ -518,7 +616,7 @@ namespace ProjectC.Quests
                 set = new HashSet<string>();
                 _contractsAccepted[clientId] = set;
             }
-            set.Add(contractId);
+            if (set.Add(contractId)) SavePlayer(clientId); // T-Q18
         }
 
         public bool HasNpcTalkedTo(ulong clientId, string npcId)
@@ -535,7 +633,7 @@ namespace ProjectC.Quests
                 set = new HashSet<string>();
                 _npcTalkedTo[clientId] = set;
             }
-            set.Add(npcId);
+            if (set.Add(npcId)) SavePlayer(clientId); // T-Q18
         }
 
         public bool HasEventOccurred(ulong clientId, string eventId)
@@ -552,7 +650,7 @@ namespace ProjectC.Quests
                 set = new HashSet<string>();
                 _eventsOccurred[clientId] = set;
             }
-            set.Add(eventId);
+            if (set.Add(eventId)) SavePlayer(clientId); // T-Q18
         }
 
         // ============ T-Q06: Quest advancement (minimal) ============
@@ -611,6 +709,212 @@ namespace ProjectC.Quests
             return true;
         }
 
+        // ============ T-Q18: Persistence ============
+
+        /// <summary>
+        /// T-Q18: build complete QuestSaveData для clientId. Aggregates quests +
+        /// reputation + npcAttitude + sets (events/contracts/npcTalkedTo/worldFlags).
+        /// Returns null if no data (не должен — всегда хотя бы empty lists).
+        /// </summary>
+        public ProjectC.Quests.Persistence.QuestSaveData BuildSaveData(ulong clientId)
+        {
+            var data = new ProjectC.Quests.Persistence.QuestSaveData();
+            data.version = 1;
+
+            // Quests
+            if (_questsByPlayer.TryGetValue(clientId, out var quests))
+            {
+                for (int i = 0; i < quests.Count; i++)
+                {
+                    var q = quests[i];
+                    var entry = new ProjectC.Quests.Persistence.QuestSaveEntry
+                    {
+                        questId = q.questId,
+                        state = (byte)q.state,
+                        currentStageId = q.currentStageId ?? "",
+                        acceptedAtUnix = q.acceptedAtUnix,
+                        completedAtUnix = q.completedAtUnix,
+                        isTracked = q.isTracked
+                    };
+                    if (q.objectiveProgress != null)
+                    {
+                        for (int j = 0; j < q.objectiveProgress.Count; j++)
+                        {
+                            var op = q.objectiveProgress[j];
+                            entry.objectiveProgress.Add(new ProjectC.Quests.Persistence.ObjectiveSaveEntry
+                            {
+                                objectiveId = op.objectiveId,
+                                currentCount = op.currentCount,
+                                completed = op.completed
+                            });
+                        }
+                    }
+                    data.quests.Add(entry);
+                }
+            }
+
+            // Reputation: scan all keys with this clientId
+            foreach (var kv in _reputation)
+            {
+                if (kv.Key.Item1 != clientId) continue;
+                data.reputation.Add(new ProjectC.Quests.Persistence.FactionRepSaveEntry
+                {
+                    factionId = (int)kv.Key.Item2,
+                    value = kv.Value
+                });
+            }
+
+            // NPC attitude
+            foreach (var kv in _npcAttitude)
+            {
+                if (kv.Key.Item1 != clientId) continue;
+                data.npcAttitude.Add(new ProjectC.Quests.Persistence.NpcAttitudeSaveEntry
+                {
+                    npcId = kv.Key.Item2,
+                    value = kv.Value
+                });
+            }
+
+            // String sets
+            AddStringSetIfPresent(data, clientId, "eventsOccurred", _eventsOccurred);
+            AddStringSetIfPresent(data, clientId, "contractsCompleted", _contractsCompleted);
+            AddStringSetIfPresent(data, clientId, "contractsAccepted", _contractsAccepted);
+            AddStringSetIfPresent(data, clientId, "npcTalkedTo", _npcTalkedTo);
+
+            // worldFlags: Dictionary<(ulong, string), bool> → key.Item1=clientId, key.Item2=flagName, value=bool
+            // Only persist true flags (false = default).
+            var flagsEntry = new ProjectC.Quests.Persistence.StringSetSaveEntry { setName = "worldFlags" };
+            foreach (var kv in _worldFlags)
+            {
+                if (kv.Key.Item1 != clientId) continue;
+                if (kv.Value) flagsEntry.values.Add(kv.Key.Item2);
+            }
+            if (flagsEntry.values.Count > 0) data.stringSets.Add(flagsEntry);
+
+            return data;
+        }
+
+        private static void AddStringSetIfPresent(ProjectC.Quests.Persistence.QuestSaveData data, ulong clientId, string setName,
+            Dictionary<ulong, HashSet<string>> source)
+        {
+            if (!source.TryGetValue(clientId, out var set) || set == null || set.Count == 0) return;
+            var entry = new ProjectC.Quests.Persistence.StringSetSaveEntry { setName = setName };
+            entry.values.AddRange(set);
+            data.stringSets.Add(entry);
+        }
+
+        /// <summary>T-Q18: save player state via Repository. No-op если Repository == null.</summary>
+        public void SavePlayer(ulong clientId)
+        {
+            if (Repository == null) return;
+            var data = BuildSaveData(clientId);
+            Repository.Save(clientId, data);
+        }
+
+        /// <summary>T-Q18: load player state from Repository → populate dictionaries. Returns true если loaded.</summary>
+        public bool LoadPlayer(ulong clientId)
+        {
+            if (Repository == null) return false;
+            var data = Repository.Load(clientId);
+            if (data == null) return false;
+
+            // Wipe existing state for this client first (avoid stale data from prior in-memory session)
+            _questsByPlayer.Remove(clientId);
+            // Don't wipe reputation/attitude — caller decides if they want fresh start.
+            // For simplicity, also wipe:
+            var repToRemove = new List<(ulong, FactionId)>();
+            foreach (var kv in _reputation) if (kv.Key.Item1 == clientId) repToRemove.Add(kv.Key);
+            foreach (var k in repToRemove) _reputation.Remove(k);
+            var attToRemove = new List<(ulong, string)>();
+            foreach (var kv in _npcAttitude) if (kv.Key.Item1 == clientId) attToRemove.Add(kv.Key);
+            foreach (var k in attToRemove) _npcAttitude.Remove(k);
+            _eventsOccurred.Remove(clientId);
+            _contractsCompleted.Remove(clientId);
+            _contractsAccepted.Remove(clientId);
+            _npcTalkedTo.Remove(clientId);
+            var flagToRemove = new List<(ulong, string)>();
+            foreach (var kv in _worldFlags) if (kv.Key.Item1 == clientId) flagToRemove.Add(kv.Key);
+            foreach (var k in flagToRemove) _worldFlags.Remove(k);
+
+            // Apply quests
+            if (data.quests != null)
+            {
+                var list = new List<QuestInstance>();
+                for (int i = 0; i < data.quests.Count; i++)
+                {
+                    var e = data.quests[i];
+                    var inst = new QuestInstance
+                    {
+                        questId = e.questId,
+                        state = (QuestState)e.state,
+                        currentStageId = e.currentStageId ?? "",
+                        acceptedAtUnix = e.acceptedAtUnix,
+                        completedAtUnix = e.completedAtUnix,
+                        isTracked = e.isTracked
+                    };
+                    if (e.objectiveProgress != null)
+                    {
+                        for (int j = 0; j < e.objectiveProgress.Count; j++)
+                        {
+                            var op = e.objectiveProgress[j];
+                            inst.objectiveProgress.Add(new QuestInstance.ObjectiveProgress
+                            {
+                                objectiveId = op.objectiveId,
+                                currentCount = op.currentCount,
+                                completed = op.completed
+                            });
+                        }
+                    }
+                    list.Add(inst);
+                }
+                if (list.Count > 0) _questsByPlayer[clientId] = list;
+            }
+
+            // Apply reputation
+            if (data.reputation != null)
+            {
+                for (int i = 0; i < data.reputation.Count; i++)
+                {
+                    var e = data.reputation[i];
+                    _reputation[(clientId, (FactionId)e.factionId)] = e.value;
+                }
+            }
+
+            // Apply npcAttitude
+            if (data.npcAttitude != null)
+            {
+                for (int i = 0; i < data.npcAttitude.Count; i++)
+                {
+                    var e = data.npcAttitude[i];
+                    if (string.IsNullOrEmpty(e.npcId)) continue;
+                    _npcAttitude[(clientId, e.npcId)] = e.value;
+                }
+            }
+
+            // Apply string sets
+            if (data.stringSets != null)
+            {
+                for (int i = 0; i < data.stringSets.Count; i++)
+                {
+                    var e = data.stringSets[i];
+                    if (e.values == null || e.values.Count == 0) continue;
+                    switch (e.setName)
+                    {
+                        case "eventsOccurred": _eventsOccurred[clientId] = new HashSet<string>(e.values); break;
+                        case "contractsCompleted": _contractsCompleted[clientId] = new HashSet<string>(e.values); break;
+                        case "contractsAccepted": _contractsAccepted[clientId] = new HashSet<string>(e.values); break;
+                        case "npcTalkedTo": _npcTalkedTo[clientId] = new HashSet<string>(e.values); break;
+                        case "worldFlags":
+                            for (int j = 0; j < e.values.Count; j++) _worldFlags[(clientId, e.values[j])] = true;
+                            break;
+                    }
+                }
+            }
+
+            if (Debug.isDebugBuild) Debug.Log($"[QuestWorld] LoadPlayer: client={clientId} restored {data.quests?.Count ?? 0} quests, {data.reputation?.Count ?? 0} factions, {data.npcAttitude?.Count ?? 0} npcAttitudes");
+            return true;
+        }
+
         // ============ Shutdown ============
 
         /// <summary>
@@ -620,6 +924,14 @@ namespace ProjectC.Quests
         public void Shutdown()
         {
             Debug.Log("[QuestWorld] Shutdown.");
+            // T-Q18: flush all players
+            if (Repository != null)
+            {
+                foreach (var clientId in _questsByPlayer.Keys)
+                {
+                    SavePlayer(clientId);
+                }
+            }
             _questById.Clear();
             _questsByPlayer.Clear();
             _reputation.Clear();

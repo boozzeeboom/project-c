@@ -78,6 +78,9 @@ namespace ProjectC.Quests
             }
             QuestWorld.CreateAndInitialize(questDatabase.quests, questDatabase, maxActiveQuestsPerPlayer);
 
+            // T-Q18: assign JSON repository (load on client connect, save on every state change).
+            QuestWorld.Instance.SetRepository(new ProjectC.Quests.Persistence.JsonQuestStateRepository());
+
             // T-Q06: subscribe to WorldEventBus → route to QuestTriggerService.Evaluate().
             _handleItemAdded = OnItemAdded;
             _handleItemRemoved = OnItemRemoved;
@@ -692,6 +695,14 @@ namespace ProjectC.Quests
         {
             if (!IsServer) return;
             if (debugMode) Debug.Log($"[QuestServer] OnClientConnectedForSnapshot: client={clientId}");
+
+            // T-Q18: load player state from disk → populate QuestWorld dictionaries.
+            // No-op если нет save (new player) или Repository == null.
+            if (QuestWorld.Instance != null)
+            {
+                QuestWorld.Instance.LoadPlayer(clientId);
+            }
+
             // Небольшая задержка не нужна — SendTo.Owner RPC дождётся готовности client'а.
             BroadcastBothChange(clientId);
             // T-Q15 fix: push initial quest snapshot (rep+attitude уже отправлено выше).

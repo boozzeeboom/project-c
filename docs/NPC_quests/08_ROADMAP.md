@@ -488,27 +488,33 @@ T-X4 (input remap: pickup E → F) ← future TODO, после end-to-end demo
 
 ---
 
-### T-Q18 — Persistence: IQuestStateRepository + JSON, immediate save (large, 120 мин) — РАСШИРЕН
+### T-Q18 — Persistence: IQuestStateRepository + JSON, immediate save (large, 120 мин) ✅ DONE 2026-06-08
 
 **Скоуп (см. `09_OPEN_QUESTIONS.md` §A5 + §H):**
-- `ProjectC/Quests/Persistence/IQuestStateRepository.cs` (interface).
-- `ProjectC/Quests/Persistence/JsonQuestStateRepository.cs` (default impl).
-- `ProjectC/Quests/Persistence/QuestSaveData.cs` (POCO, includes quests + rep + npcAttitude + flags).
-- `ProjectC/Quests/Persistence/ReputationSaveData.cs`.
-- `ProjectC/Quests/Persistence/NpcAttitudeSaveData.cs`.
-- **Immediate save on every state change** (no debounce, per `09_OPEN_QUESTIONS.md` §H).
-- `QuestWorld.SavePlayer(clientId)` пишет ВСЕ данные atomic в ОДИН JSON.
-- Hooks: `QuestStateTransition`, `StageTransition`, `ObjectiveProgressed`, `ReputationChanged`, `NpcAttitudeChanged`, `DialogVisitedNode`, `FlagSet`.
-- Load on player connect (в `QuestServer.HandleClientConnected`).
-- `Application.persistentDataPath/quest_state_<clientId>.json`.
+- `ProjectC/Quests/Persistence/IQuestStateRepository.cs` (interface). ✅
+- `ProjectC/Quests/Persistence/JsonQuestStateRepository.cs` (default impl, atomic write через tmp → rename). ✅
+- `ProjectC/Quests/Persistence/QuestSaveData.cs` (POCO, includes quests + rep + npcAttitude + 5 string sets). ✅
+- **Immediate save on every state change** (no debounce, per `09_OPEN_QUESTIONS.md` §H). ✅
+- `QuestWorld.SavePlayer(clientId)` пишет ВСЕ данные atomic в ОДИН JSON. ✅
+- Hooks: `TryOffer`, `TryAccept`, `TryTurnIn`, `SetTracked`, `ModifyReputation`, `ModifyNpcAttitude`, `MarkContractCompleted/Accepted`, `MarkEventOccurred`, `MarkNpcTalked`. ✅
+- Load on player connect (в `QuestServer.OnClientConnectedForSnapshot`). ✅
+- `Application.persistentDataPath/quest_state_<clientId>.json`. ✅
+- **`ApplyQuestRewards` в TryTurnIn** — credits (TradeWorld.Repository) + items (int.TryParse tradeItemId → InventoryWorld.AddItemDirect) + reputation (ModifyReputation) + unlocks (log only, T-Q19). ✅
 
-**Verify:**
-- Accept quest, restart server, reconnect → quest still in active state.
-- Modify reputation, kill server, restart → rep сохранилось.
-- Console: `[QuestWorld] Saved player 12345 state (1.2 KB) in 1.1ms`.
+**Verify (твои тесты):**
+- Accept quest → modify rep → `[JsonQuestStateRepository] Saved player 0 state (X.X KB)` в Console.
+- `C:\Users\<user>\AppData\LocalLow\<Company>\<Product>\quest_state_0.json` — exists.
+- Exit Play Mode → Start host → `[QuestWorld] LoadPlayer: client=0 restored N quests` в Console → P → CharacterWindow → quest восстановлен.
+- Quest reward: TurnIn → `[QuestWorld] ApplyQuestRewards: credits X → Y (+Z)` (если reward.credits != 0).
 
-**Risk:** medium-high. JSON serialization of nested DTOs. **Version migration** — out of scope v1 (см. F6 в `09_OPEN_QUESTIONS.md`).
+**Known gaps (deferred to T-Q19/T-Q22):**
+- `TradeItemDefinition.legacyId` mapping (сейчас `int.TryParse` с warning).
+- `reward.cargoItems[]` — out of scope (no active ship tracking).
+- `reward.unlocks[]` — log only (dialog tree/zone unlock T-Q19).
+- Version migration framework (data.version = 1 hardcoded).
+- Debounced save option (currently immediate).
 
+**Risk:** medium. ✅
 **Pitfalls:** Save на каждом state change — perf acceptable (1-5 KB JSON, 1 ms).
 
 ---
@@ -580,7 +586,7 @@ T-X4 (input remap: pickup E → F) ← future TODO, после end-to-end demo
 | **M5 — Reputation + NpcAttitude** | T-Q13 | Reputation updates, NpcAttitude, CharacterWindow tab fix. | ✅ DONE 2026-06-08 |
 | **M6 — Item integration** | T-Q14, T-Q15 | Quest rewards give items, quest objectives check items, ContractMetaBridge. | ✅ T-Q14 ✅ T-Q15 2026-06-08 |
 | **M7 — Full action set** | T-Q16, T-Q17, T-X5 | Credits/rep/attitude/market actions + ContractServer events. | 🟡 T-Q16 ✅ T-Q17 ✅ T-X5 pending 2026-06-08 |
-| **M8 — Persistence** | T-Q18 | Quests + rep + attitude survive server restart. |
+| **M8 — Persistence** | T-Q18 | Quests + rep + attitude survive server restart. | ✅ DONE 2026-06-08 |
 | **M9 — Cleanup** | T-Q19, T-X1, T-X2 | v1 NPC deleted, optional renames. |
 | **M10 — Editor tool** | T-Q09, T-Q09b | Quest Database Explorer с full CRUD + GraphView. | ✅ DONE (M10 partially — CRUD done, GraphView deferred) |
 | **M11 — End-to-end demo** | After M9 | Mira quest full playthrough. |

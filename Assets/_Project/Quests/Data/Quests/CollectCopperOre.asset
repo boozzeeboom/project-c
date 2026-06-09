@@ -77,6 +77,10 @@ MonoBehaviour:
     - faction: 1
       value: 25
     unlocks: []
-  prerequisites: []
+  prerequisites:
+  - type: 0
+    stringParam: stage_intro_demo
+    intParam: 0
+    factionParam: 0
   oneShot: 1
   discoverable: 1

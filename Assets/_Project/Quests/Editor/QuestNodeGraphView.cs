@@ -28,6 +28,9 @@ namespace ProjectC.Quests.Editor
         private bool _editMode;
         // T-Q32: button visibility helpers
         private readonly List<VisualElement> _editButtons = new List<VisualElement>();
+        // T-Q33: multi-quest mode
+        private bool _showAllMode;
+        private const string DATABASE_PATH = "Assets/_Project/Quests/Data/QuestDatabase.asset";
 
         public bool EditMode
         {
@@ -72,6 +75,74 @@ namespace ProjectC.Quests.Editor
             if (_editMode)
             {
                 schedule.Execute(() => { EditMode = true; }).StartingIn(40);
+            }
+        }
+
+        // ========== T-Q33: Multi-quest mode ==========
+
+        public void ShowAllQuests()
+        {
+            _showAllMode = true;
+            var db = AssetDatabase.LoadAssetAtPath<QuestDatabase>(DATABASE_PATH);
+            if (db == null || db.quests == null || db.quests.Length == 0) { _showAllMode = false; return; }
+            Quest = null;
+            ClearAllElements();
+            BuildAllQuestsGraph(db.quests);
+            schedule.Execute(() => { MarkDirtyRepaint(); FrameAll(); }).StartingIn(100);
+        }
+
+        public void LoadSingleQuest(QuestDefinition q)
+        {
+            _showAllMode = false;
+            LoadQuest(q);
+        }
+
+        private void BuildAllQuestsGraph(QuestDefinition[] allQuests)
+        {
+            var questColor = new Color(0.20f, 0.35f, 0.60f);
+            var questNodes = new Dictionary<string, Node>();
+            float x = 0f;
+            const float W = 220f, H = 80f, GAP = 30f;
+
+            foreach (var q in allQuests)
+            {
+                if (q == null) continue;
+                var n = MakeEditableNode("📜 " + q.questId, questColor,
+                    new (string label, string value, System.Action<string> onSave)[] {
+                        ("", q.displayName, null)
+                    },
+                    q.questId);
+                // T-Q33: add ports for prerequisite edges
+                AddPorts(n, hasOutput: true, hasInput: true);
+                n.SetPosition(new Rect(x, 0, W, H));
+                AddElement(n);
+                questNodes[q.questId] = n;
+                x += W + GAP;
+            }
+
+            // Draw prerequisite edges
+            foreach (var q in allQuests)
+            {
+                if (q == null || q.prerequisites == null) continue;
+                if (!questNodes.TryGetValue(q.questId, out var toNode)) continue;
+                var toInput = GetInputPort(toNode);
+                if (toInput == null) continue;
+
+                foreach (var prereq in q.prerequisites)
+                {
+                    if (prereq == null || prereq.type != QuestPrerequisiteType.QuestCompleted) continue;
+                    string targetId = prereq.stringParam;
+                    if (string.IsNullOrEmpty(targetId) || !questNodes.TryGetValue(targetId, out var fromNode)) continue;
+                    var fromOutput = GetOutputPort(fromNode);
+                    if (fromOutput == null) continue;
+
+                    var edge = fromOutput.ConnectTo(toInput);
+                    edge.viewDataKey = "prereq";
+                    // Make visually distinct: orange color + thicker
+                    edge.edgeControl.inputColor = new Color(0.9f, 0.5f, 0.1f);
+                    edge.edgeControl.outputColor = new Color(0.9f, 0.5f, 0.1f);
+                    AddElement(edge);
+                }
             }
         }
 
@@ -459,6 +530,13 @@ namespace ProjectC.Quests.Editor
             return null;
         }
 
+        private Port GetInputPort(Node n)
+        {
+            foreach (var child in n.inputContainer.Children())
+                if (child is Port p && p.direction == Direction.Input) return p;
+            return null;
+        }
+
         private void ConnectPorts(Port output, Port input, bool isAuto = true)
         {
             if (output == null || input == null) return;
@@ -537,7 +615,6 @@ namespace ProjectC.Quests.Editor
 
             _questField = new UnityEditor.UIElements.ObjectField("Quest") { objectType = typeof(QuestDefinition), allowSceneObjects = false };
             _questField.style.flexGrow = 1;
-            _questField.RegisterValueChangedCallback(evt => LoadQuest(evt.newValue as QuestDefinition));
             toolbar.Add(_questField);
 
             var fitBtn = new Button(() => _graph?.FrameAll()) { text = "⊡ Fit" };
@@ -565,6 +642,20 @@ namespace ProjectC.Quests.Editor
             _revertBtn.style.marginLeft = 4;
             _revertBtn.style.display = DisplayStyle.None;
             toolbar.Add(_revertBtn);
+
+            // T-Q33: Show all quests button
+            var showAllBtn = new Button(() => _graph?.ShowAllQuests()) { text = "📋 Show All" };
+            showAllBtn.style.marginLeft = 4;
+            toolbar.Add(showAllBtn);
+
+            // T-Q33: When quest field changes, switch to single-quest mode
+            _questField.RegisterValueChangedCallback(evt =>
+            {
+                if (evt.newValue is QuestDefinition qd && qd != null)
+                    _graph?.LoadSingleQuest(qd);
+                else if (evt.newValue == null)
+                    _graph?.LoadQuest(null);
+            });
             root.Add(toolbar);
 
             _graph = new QuestNodeGraphView();

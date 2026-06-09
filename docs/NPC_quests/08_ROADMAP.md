@@ -755,6 +755,67 @@ T-X4 (input remap: pickup E → F) ← future TODO, после end-to-end demo
 
 ---
 
+## 8.3.5 M17 — QuestGraphView GraphView (DONE 2026-06-09)
+
+**Статус:** ✅ DONE 2026-06-09 (verified by Roslyn).
+
+**Что сделано:**
+
+| Файл | Что |
+|------|-----|
+| `Assets/_Project/Quests/Editor/QuestGraphView.cs` (new, ~340 lines) | `QuestGraphView` + 4 node types: `QuestNode`, `StageNode`, `ObjectiveNode`, `RewardNode` |
+| `Assets/_Project/Quests/Editor/QuestGraphWindow.cs` (new, ~110 lines) | EditorWindow с toolbar (ObjectField + Refresh + Fit) + GraphView |
+
+**Меню:**
+- `Tools > ProjectC > Quests > Quest Graph View` (пусто, без quest)
+- `Assets/ProjectC/Open Quest Graph` (для выбранного quest asset в Project window)
+
+**Layout:**
+```
+[Quest Asset Field] [🔄] [⊡ Fit]
+┌─────────────────────────────────────┐
+│ Grid background + GraphView         │
+│ ┌──────┐    ┌──────┐    ┌──────┐   │
+│ │ Quest│───▶│Stage │───▶│Obj   │   │
+│ │ quest│    │stage1│    │find  │   │
+│ └──────┘    └──────┘    └──────┘   │
+│     │                               │
+│     ▼                               │
+│ ┌──────┐                            │
+│ │Reward│                            │
+│ └──────┘                            │
+└─────────────────────────────────────┘
+[Status bar: Quest id | stages | CR]
+```
+
+**Node types:**
+- **QuestNode** (220×120) — header с questId, body с displayName + description
+- **StageNode** (200×80+) — header "Stage N: stageId", body с onEnter/onComplete counts
+- **ObjectiveNode** (240×50) — header `[type] objectiveId`, body qty + item/npc
+- **RewardNode** (220×120) — header "🎁 Rewards", body с CR + items + reputation
+
+**Read-only режим:**
+- ✅ Блокируется element removal в `OnGraphViewChanged`
+- ✅ Drag/zoom/pan/select работают (стандартные GraphView manipulators)
+- ✅ FrameAll (Fit) кнопка
+- ❌ Editable — M18
+
+**Verify (Roslyn 2026-06-09):**
+```
+Found in: Assembly-CSharp-Editor
+Window opened
+Quest: collect_copper_ore stages=1
+Loaded quest into graph
+Graph elements: 14
+```
+
+**Что НЕ сделано (out of scope M17):**
+- ❌ Edit nodes (drag/drop/create) — M18
+- ❌ Save back to QuestDefinition — M18
+- ❌ Visual diff между 2 versions — M19
+
+---
+
 ## 8.4 Milestones (обновлено)
 
 | Milestone | Тикеты | Что работает |
@@ -777,6 +838,7 @@ T-X4 (input remap: pickup E → F) ← future TODO, после end-to-end demo
 | **M15 — Toast notifications** | T-Q23, T-Q24, T-Q25 | Pickup/accept/complete/reward feedback to player. UI Toolkit overlay. | ✅ DONE 2026-06-09 (verified by user) |
 | **M14 — Item ID system** | T-Q26, T-Q27, T-Q28 | Single source of truth for item ids. ItemRegistry SO + DialogueAction.itemId + asset migration. | ✅ DONE 2026-06-09 (verified by Roslyn) |
 | **M16 — QuestDatabaseWindow** | T-Q09 (Editor UI) | UI Toolkit EditorWindow: tree view + detail panel для quests/dialogs/npcs/factions. | ✅ DONE 2026-06-09 (verified by Roslyn) |
+| **M17 — QuestGraphView** | T-Q09b (Graph viz) | GraphView-based read-only visualization: quest → stages → objectives + rewards. | ✅ DONE 2026-06-09 (verified by Roslyn) |
 
 **Рекомендуемый темп:** 1-2 тикета за сессию, 1 PR за тикет.
 

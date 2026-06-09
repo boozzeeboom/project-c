@@ -1,0 +1,2 @@
+﻿questId,displayName,description,faction,oneShot,prereqQuest,stageNum,stageId,stageDescription,onEnterActions,objectiveType,objectiveId,itemName,npcId,qty,onCompleteActions,rewardCR,rewardRep,rewardItem
+stage_intro_demo,Демо: stage с onEnter,Тестовый квест для onEnter/onComplete,None,n,,0,intro,,,TalkToNpc,talk_mira,,mira_01,1,GiveCredits::10,0,,

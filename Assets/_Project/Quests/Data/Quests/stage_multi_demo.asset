@@ -1,0 +1,85 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 009489055a12f1d4fb6aee9664b1af28, type: 3}
+  m_Name: stage_multi_demo
+  m_EditorClassIdentifier: Assembly-CSharp::ProjectC.Quests.QuestDefinition
+  questId: stage_multi_demo
+  displayName: "\u0422\u0435\u0441\u0442: multi-stage"
+  description: "\u0422\u0435\u0441\u0442 \u0441 2 \u044D\u0442\u0430\u043F\u0430\u043C\u0438"
+  faction: 0
+  minReputation: 0
+  stages:
+  - stageId: collect
+    description: 
+    objectives:
+    - objectiveId: collect_item
+      objectiveType: 4
+      description: 
+      targetNpcId: 
+      itemTradeItemId: TestStageItem
+      requiredQuantity: 1
+      targetSceneId: 
+      targetPosition: {x: 0, y: 0, z: 0}
+      targetRadius: 10
+      targetEntityType: 
+      targetFaction: 0
+      reputationValue: 0
+      eventId: 
+      optional: 0
+      required: 1
+    onEnterActions: []
+    onCompleteActions:
+    - type: 30
+      stringParam: 
+      stageIdParam: 
+      intParam: 20
+      factionParam: 0
+      itemId: 0
+      itemType: 0
+    nextStageId: deliver
+  - stageId: deliver
+    description: 
+    objectives:
+    - objectiveId: talk_mira
+      objectiveType: 0
+      description: 
+      targetNpcId: mira_01
+      itemTradeItemId: 
+      requiredQuantity: 1
+      targetSceneId: 
+      targetPosition: {x: 0, y: 0, z: 0}
+      targetRadius: 10
+      targetEntityType: 
+      targetFaction: 0
+      reputationValue: 0
+      eventId: 
+      optional: 0
+      required: 1
+    onEnterActions: []
+    onCompleteActions:
+    - type: 30
+      stringParam: 
+      stageIdParam: 
+      intParam: 50
+      factionParam: 0
+      itemId: 0
+      itemType: 0
+    nextStageId: 
+  rewards:
+    credits: 50
+    items: []
+    cargoItems: []
+    reputation: []
+    unlocks: []
+  prerequisites: []
+  oneShot: 0
+  discoverable: 1

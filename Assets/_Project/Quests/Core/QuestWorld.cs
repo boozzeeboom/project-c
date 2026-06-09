@@ -314,6 +314,11 @@ namespace ProjectC.Quests
                     {
                         var entry = def.GetEntryStage();
                         if (entry != null) existing.currentStageId = entry.stageId;
+                        // T-Q22 fix: fire onEnterActions of entry stage on accept.
+                        if (entry != null && entry.onEnterActions != null && entry.onEnterActions.Length > 0)
+                        {
+                            OnFireDialogActions?.Invoke(clientId, fromNpcId ?? "", entry.onEnterActions);
+                        }
                     }
                     return Ok("Accepted", questId);
                 }
@@ -337,6 +342,12 @@ namespace ProjectC.Quests
             var entryStage = def.GetEntryStage();
             if (entryStage != null) instance.currentStageId = entryStage.stageId;
             playerQuests.Add(instance);
+
+            // T-Q22 fix: fire onEnterActions of entry stage on accept.
+            if (entryStage != null && entryStage.onEnterActions != null && entryStage.onEnterActions.Length > 0)
+            {
+                OnFireDialogActions?.Invoke(clientId, fromNpcId ?? "", entryStage.onEnterActions);
+            }
 
             if (Debug.isDebugBuild) Debug.Log($"[QuestWorld] TryAccept: client={clientId} quest={questId} fromNpc={fromNpcId} → Active");
             SavePlayer(clientId); // T-Q18
@@ -367,13 +378,20 @@ namespace ProjectC.Quests
                 return Fail(QuestResultCode.NotFound, $"Quest not in player's log", questId);
 
             // State: Active → Completed (auto-complete if all required objectives satisfied).
-            // For MVP: skip objective check, require state=Completed already. Stage advancement in T-Q06+ full impl.
+            // T-Q22 fix: вместо прямого state=Completed (который пропускал fire onCompleteActions)
+            // — вызываем TryAdvanceStage. Он сам проверит AreAllRequiredComplete + fire onCompleteActions
+            // + если nextStageId пуст → state=Completed + ApplyQuestRewards. Также для non-final stages —
+            // переведёт в следующий stage без state=Completed.
             if (instance.state == QuestState.Active)
             {
-                // Auto-complete: if no required objectives remaining (MVP — just transition).
-                if (QuestStateTransition.IsAllowed(instance.state, QuestState.Completed))
+                var def2 = GetQuest(questId);
+                if (def2 != null && !string.IsNullOrEmpty(instance.currentStageId))
                 {
-                    instance.state = QuestState.Completed;
+                    var curStage = def2.GetStage(instance.currentStageId);
+                    if (curStage != null)
+                    {
+                        TryAdvanceStage(clientId, instance, def2, curStage);
+                    }
                 }
             }
             if (instance.state != QuestState.Completed)

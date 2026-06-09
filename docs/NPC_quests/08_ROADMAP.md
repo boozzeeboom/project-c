@@ -637,20 +637,33 @@ T-X4 (input remap: pickup E → F) ← future TODO, после end-to-end demo
 
 ### T-Q22 — Stage transitions + onEnter/onComplete actions (small, ~1 ч)
 
-**Скоуп:**
-- `QuestWorld.TryAdvanceStage()` — реализация переходов
-- Fire `currentStage.onCompleteActions[]` ПЕРЕД transition
-- Transition `currentStageId = nextStageId`
-- Fire `newStage.onEnterActions[]` ПОСЛЕ transition
-- Если `nextStageId` пуст → `state = Completed` + `ApplyQuestRewards()`
-- `QuestServer` подписывается на transition events → `SendQuestSnapshotToClient`
+**Статус (2026-06-09):** 🟡 частично сделано в T-Q20. Полная спецификация: `docs/dev/T-Q22_DESIGN_NOTE.md`.
 
-**Файлы:** `QuestWorld.cs`, `QuestServer.cs`
-**Verify:**
-1. Stage "intro" with `onCompleteActions: [GiveCredits(50)]` + nextStage "main"
-2. Complete intro → console: GiveCredits 0→50 → snapshot: currentStageId=main
+**Сделано в T-Q20:**
+- ✅ `TryAdvanceStage` (QuestWorld:879) — fire onCompleteActions → transition → fire onEnterActions
+- ✅ `OnStageTransition` event → QuestServer подписан → SavePlayer + SendQuestSnapshotToClient
+- ✅ Final stage: `nextStageId=""` → `state=Completed` + `ApplyQuestRewards`
+- ✅ `onEnterActions` и `onCompleteActions` поля в QuestStage
 
-**Risk:** low. Reuse `FireDialogAction` — generic.
+**Осталось для T-Q22:**
+- [ ] **FIX `TryTurnIn` (QuestWorld:371-377)** — для state=Active сейчас сразу ставит state=Completed **минуя** TryAdvanceStage → onCompleteActions финального stage **не вызываются** через turn-in. Заменить на `TryAdvanceStage` (он сам проверит AreAllRequiredComplete + fire actions + state=Completed).
+- [ ] **Multi-stage quest тест** — создать `stage_multi_demo.asset` (collect → deliver) для верификации что nextStageId действительно работает
+- [ ] **onEnter тест** — ни один production quest не имеет onEnter actions. Добавить в test quest для проверки.
+
+**Скоуп (новые файлы, НЕ удалять существующие):**
+- `Assets/_Project/Quests/Data/Quests/StageIntroDemo.asset` — single-stage с onEnter (AddNpcAttitude)
+- `Assets/_Project/Quests/Data/Quests/StageMultiDemo.asset` — multi-stage (collect HaveItem → deliver TalkToNpc)
+- `Assets/_Project/Resources/Items/Item_Resource_TestStageItem.asset` — ItemData для pickup теста
+- `WorldScene_0_0.unity` — добавить 1 GameObject `[Pickup_TestStageItem]` (НЕ трогать существующие pickup'ы)
+- `Assets/_Project/Quests/Data/QuestDatabase.asset` — append 2 quest'а (НЕ удалять существующие 3)
+- `Assets/_Project/Quests/Core/QuestWorld.cs` — fix `TryTurnIn` (1 patch)
+
+**Verify (после реализации):**
+1. `stage_intro_demo`: Accept → Console: AddNpcAttitude mira_01 delta=5 (onEnter) → E Mira → tick → GiveCredits delta=10 (onComplete) → state=Completed
+2. `stage_multi_demo`: Accept → AddReputation +3 (stage A onEnter) → pickup TestStageItem → tick → GiveCredits 20 (A onComplete) → Stage advanced collect→deliver → AddNpcAttitude +10 (B onEnter) → E Mira → tick → GiveCredits 50 (B onComplete) → state=Completed
+3. `TryTurnIn` fix: quest с onComplete action в финальном stage + turn-in через dialog → Console: actions fire (а не silent)
+
+**Risk:** low. TryAdvanceStage уже работает. Fix `TryTurnIn` — 1-liner. Test assets — additive.
 
 **Общий effort M13:** ~4-5 ч, medium risk.
 

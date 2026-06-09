@@ -1,0 +1,62 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 009489055a12f1d4fb6aee9664b1af28, type: 3}
+  m_Name: StageIntroDemo
+  m_EditorClassIdentifier: Assembly-CSharp::ProjectC.Quests.QuestDefinition
+  questId: stage_intro_demo
+  displayName: "\u0414\u0435\u043C\u043E: stage \u0441 onEnter"
+  description: "\u041F\u043E\u0433\u043E\u0432\u043E\u0440\u0438 \u0441 \u041C\u0438\u0440\u043E\u0439.
+    onEnter: +5 \u043A \u043E\u0442\u043D\u043E\u0448\u0435\u043D\u0438\u044E. onComplete:
+    +10 CR."
+  faction: 1
+  minReputation: 0
+  stages:
+  - stageId: intro
+    description: "\u041F\u043E\u0433\u043E\u0432\u043E\u0440\u0438 \u0441 \u041C\u0438\u0440\u043E\u0439."
+    objectives:
+    - objectiveId: talk_mira
+      objectiveType: 0
+      description: "\u041F\u043E\u0433\u043E\u0432\u043E\u0440\u0438 \u0441 \u041C\u0438\u0440\u043E\u0439"
+      targetNpcId: mira_01
+      itemTradeItemId: 
+      requiredQuantity: 1
+      targetSceneId: 
+      targetPosition: {x: 0, y: 0, z: 0}
+      targetRadius: 10
+      targetEntityType: 
+      targetFaction: 0
+      reputationValue: 0
+      eventId: 
+      optional: 0
+      required: 1
+    onEnterActions:
+    - type: 32
+      stringParam: mira_01
+      stageIdParam: 
+      intParam: 5
+      factionParam: 0
+    onCompleteActions:
+    - type: 30
+      stringParam: 
+      stageIdParam: 
+      intParam: 10
+      factionParam: 0
+    nextStageId: 
+  rewards:
+    credits: 0
+    items: []
+    cargoItems: []
+    reputation: []
+    unlocks: []
+  prerequisites: []
+  oneShot: 1
+  discoverable: 1

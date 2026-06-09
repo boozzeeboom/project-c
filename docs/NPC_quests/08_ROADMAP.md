@@ -840,25 +840,38 @@ Graph elements: 14
 
 ---
 
-## 8.3.7 M19 — CSV Import/Export pipeline (DESIGN 2026-06-09)
+## 8.3.7 M19 — CSV Import/Export pipeline v2 (DESIGN 2026-06-09)
 
-**Статус:** 📋 DESIGN — анализ + полный план готов.
+**Статус:** 📋 DESIGN v2 — single-file CSV (1 строка = 1 objective).
 
-**Контекст:** Content writer'ы (без Unity опыта) не могут создавать квесты через Inspector. Нужен читаемый формат — Excel/CSV.
+**Контекст:** Content writer'ы не могут работать с 5 CSV файлами. Нужен **1 файл, 1 таблица**.
 
-**Решение:** Multi-file CSV (5 файлов: quests, stages, objectives, actions, rewards) → EditorWindow импорт/экспорт. Создаёт стандартный QuestDefinition.asset, совместимый со всем рантаймом.
+**Решение:** Flat CSV — каждая строка = один objective квеста. Все поля (questId, stage, npc, item, rewards) в одной строке.
 
-**Полная спецификация:** `docs/dev/M19_CSV_PIPELINE.md`
+**Полная спецификация:** `docs/dev/M19_CSV_PIPELINE_v2.md` (заменяет v1)
+
+**Пример содержимого CSV:**
+```csv
+questId,displayName,stageNum,objectiveType,itemName,npcId,qty,rewardCR
+my_first_quest,Мой первый квест,0,HaveItem,Медная руда,,3,100
+my_first_quest,Мой первый квест,1,TalkToNpc,,mira_01,1,200
+```
+
+**Это создаёт квест** "Мой первый квест" с 2 stages: собрать 3 руды → поговорить с Мирой → награда 200 CR.
 
 **План (5 тикетов, ~6 ч):**
 
 | Тикет | Что | ~ч | Статус |
 |-------|-----|----|--------|
-| M19-T1 | QuestCsvSchema + CsvParser | 1.5 | ⏳ |
-| M19-T2 | QuestCsvImporter (create SO из CSV) | 2.0 | ⏳ |
-| M19-T3 | QuestCsvExporter (SO → CSV) | 1.0 | ⏳ |
-| M19-T4 | EditorWindow: Import/Export UI | 1.0 | ⏳ |
-| M19-T5 | Integration test (+ граф) | 0.5 | ⏳ |
+| M19-T1 | FlatCsvSchema + QuestCsvParser (one-file, validation) | 1.5 | ⏳ |
+| M19-T2 | QuestCsvImporter (CSV → QuestDefinition.asset) | 2.0 | ⏳ |
+| M19-T3 | QuestCsvExporter (SO → flat CSV) | 1.0 | ⏳ |
+| M19-T4 | EditorWindow: Upload CSV + Preview + Import | 1.0 | ⏳ |
+| M19-T5 | Integration test + sample CSV для writer'a | 0.5 | ⏳ |
+
+**Формат файла:** `quests_import.csv` — одна таблица, все колонки на одном листе. Writer заполняет только questId, displayName, stageNum, objectiveType — остальное опционально.
+
+**Спецификация полей:** см. `docs/dev/M19_CSV_PIPELINE_v2.md`
 
 **Verify:**
 - [ ] Экспорт → 5 CSV файлов

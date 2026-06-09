@@ -42,6 +42,9 @@ namespace ProjectC.Quests.UI
  public string TrackedQuestId => _trackedQuestId;
  public bool HasTrackedQuest => !string.IsNullOrEmpty(_trackedQuestId);
 
+ // T-Q21 fix: event чтобы CharacterWindow обновил кнопки "Следить"/"Не следить" при изменении tracking state.
+ public event System.Action OnTrackChanged;
+
  // T-Q21: lazy Instance init — fallback для случая когда [QuestTracker] есть в сцене,
  // но Awake не отработал к моменту UI click.
  private static QuestTracker _cachedInstance;
@@ -169,12 +172,8 @@ namespace ProjectC.Quests.UI
  return;
  }
  _trackedQuestId = questId;
- if (Debug.isDebugBuild) Debug.Log($"[QuestTracker] Track: questId={questId}");
- // T-Q21: auto EnsureBuilt если Awake/OnEnable ещё не отработали.
- if (!_built) {
-     EnsureBuilt();
-     TrySubscribe();
- }
+ Debug.Log($"[QuestTracker] Track: questId={questId} _built={_built}");
+ OnTrackChanged?.Invoke();
  RefreshDisplay();
  }
 
@@ -187,6 +186,7 @@ namespace ProjectC.Quests.UI
  }
  if (Debug.isDebugBuild) Debug.Log($"[QuestTracker] Untrack: questId={_trackedQuestId}");
  _trackedQuestId = null;
+ OnTrackChanged?.Invoke();
  RefreshDisplay();
  }
 
@@ -228,6 +228,7 @@ namespace ProjectC.Quests.UI
 
  private void RefreshDisplay()
  {
+ Debug.Log($"[QuestTracker] RefreshDisplay: _built={_built} _root={(_root!=null?_root.name:"null")} _trackedQuestId={_trackedQuestId}");
  if (!_built || _root == null) return;
  if (string.IsNullOrEmpty(_trackedQuestId))
  {
@@ -287,11 +288,16 @@ namespace ProjectC.Quests.UI
  if (objs == null || objs.Length ==0) return "Цель: (нет целей)";
  int completed =0;
  foreach (var o in objs) if (o.completed) completed++;
- // Первая не-completed для детального текста.
+ // T-Q21 fix: первая не-completed objective — показываем current/required для HUD counter.
  foreach (var o in objs)
  {
  if (!o.completed && !string.IsNullOrEmpty(o.description))
- return $"Цель: {o.description} ({completed}/{objs.Length})";
+ {
+ int req = o.requiredQuantity >0 ? o.requiredQuantity :1;
+ // Показываем counter только если requiredQuantity > 1 (для 1-цели counter избыточен).
+ if (req >1) return $"Цель: {o.description} ({o.currentValue}/{req})";
+ return $"Цель: {o.description}";
+ }
  }
  // Все completed — выводим общий счётчик.
  return $"Цель: ({completed}/{objs.Length}) выполнено";

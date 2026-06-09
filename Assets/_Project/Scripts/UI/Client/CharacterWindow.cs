@@ -608,6 +608,9 @@ namespace ProjectC.UI.Client
             // QuestClientState singleton создаётся через RuntimeInitializeOnLoadMethod в его AutoSpawn,
             // плюс scene-placed в BootstrapScene — всегда есть к моменту EnsureBuilt.
             SubscribeQuestState();
+            // T-Q21 fix: подписаться на QuestTracker.OnTrackChanged чтобы кнопки "Следить"/"Не следить" в списке
+            // обновлялись когда игрок жмёт "Скрыть" прямо в HUD (или наоборот).
+            SubscribeQuestTracker();
             if (QuestClientState.Instance == null)
             {
             Debug.LogWarning("[CharacterWindow] QuestClientState.Instance == null на момент EnsureBuilt — таб 'КВЕСТЫ' не будет обновляться (нормально до StartHost)");
@@ -1407,6 +1410,7 @@ namespace ProjectC.UI.Client
             // ============================================================
 
             private bool _isQuestStateSubscribed = false;
+            private bool _isQuestTrackerSubscribed = false;
 
             private void SubscribeQuestState()
             {
@@ -1420,9 +1424,35 @@ namespace ProjectC.UI.Client
             Debug.Log("[CharacterWindow] Subscribed to QuestClientState (snapshot/result/discovered)");
             }
 
+            // T-Q21 fix: подписка на QuestTracker.OnTrackChanged для sync кнопок "Следить"/"Не следить".
+            private void SubscribeQuestTracker()
+            {
+            if (_isQuestTrackerSubscribed) return;
+            var trk = QuestTracker.GetOrFindInstance();
+            if (trk == null) return;
+            trk.OnTrackChanged += HandleQuestTrackerChanged;
+            _isQuestTrackerSubscribed = true;
+            }
+
+            private void UnsubscribeQuestTracker()
+            {
+            if (!_isQuestTrackerSubscribed) return;
+            var trk = QuestTracker.GetOrFindInstance();
+            if (trk != null) trk.OnTrackChanged -= HandleQuestTrackerChanged;
+            _isQuestTrackerSubscribed = false;
+            }
+
+            private void HandleQuestTrackerChanged()
+            {
+            // Tracking state изменился — перестроить quest cache чтобы кнопки обновились.
+            RefreshQuestsCache();
+            }
+
             private void UnsubscribeQuestState()
             {
             if (!_isQuestStateSubscribed) return;
+            // T-Q21 fix: also unsubscribe QuestTracker.
+            UnsubscribeQuestTracker();
             var qs = QuestClientState.Instance;
             if (qs == null) { _isQuestStateSubscribed = false; return; }
             qs.OnSnapshotUpdated -= HandleQuestSnapshotUpdated;
@@ -1553,11 +1583,19 @@ namespace ProjectC.UI.Client
             {
             var btn = evt.target as Button;
             if (btn == null) return;
-            // Walk до row (parent).
-            var row = btn.parent;
-            if (row == null) return;
+            // T-Q21 fix: кнопка теперь внутри row-top-line, ищем parent с userData (row).
+            VisualElement row = btn.parent;
+            while (row != null && row.userData == null) row = row.parent;
+            if (row == null) {
+                Debug.LogWarning("[CharacterWindow] OnQuestRowTrackClicked: row not found (no parent with userData)");
+                return;
+            }
             var questId = row.userData as string;
-            if (string.IsNullOrEmpty(questId)) return;
+            if (string.IsNullOrEmpty(questId)) {
+                Debug.LogWarning($"[CharacterWindow] OnQuestRowTrackClicked: questId is null (userData type={row.userData?.GetType().Name ?? "null"})");
+                return;
+            }
+            Debug.Log($"[CharacterWindow] OnQuestRowTrackClicked: questId={questId}");
             var trk = QuestTracker.GetOrFindInstance();
             if (trk == null)
             {

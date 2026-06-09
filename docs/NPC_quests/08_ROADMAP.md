@@ -669,59 +669,37 @@ T-X4 (input remap: pickup E → F) ← future TODO, после end-to-end demo
 
 ---
 
-## 8.3.2 M15 — Toast notifications (DESIGNED 2026-06-09)
+## 8.3.2 M15 — Toast notifications (DONE 2026-06-09)
 
-**Контекст:** После M13 квесты работают, но feedback loop слабый — игрок не видит моментальных уведомлений о pickup/accept/complete/rewards. Жалоба: "не понял что квест получен, надо смотреть P-таб".
+**Статус:** ✅ DONE 2026-06-09 (verified by user).
 
-**Решение:** UI Toolkit toast overlay (top-right) + `ToastService.Show(message, kind)` API. Подписка на существующий `OnDialogActionResultReceived` event + `OnSnapshotUpdated`.
+**Что сделано в сессии:**
 
-**Полная спецификация:** `docs/dev/M15_DESIGN_NOTE.md`.
+| Тикет | Что | Файлы |
+|-------|-----|-------|
+| **T-Q23** | `QuestToast.cs` — runtime-constructed VisualElement, bottom-center, 2.5s display, queue-based (показывает все reward'ы по очереди вместо drop на cooldown) | `QuestToast.cs` (new) |
+| **T-Q24** | `OnQuestResult` подписка — ищет displayName в QuestSnapshotDto, показывает "📜 Accepted: Демо: stage с onEnter" | `QuestToast.cs` |
+| **T-Q25** | `DialogActionResultDto.intParam` добавлен + сериализуется. QuestServer pass intParam для GiveCredits/AddReputation/AddNpcAttitude. QuestToast показывает "💰 +200 CR" (delta напрямую, не string parse) | `DialogStepDto.cs` (modify), `QuestServer.cs` (modify), `QuestToast.cs` |
 
-### T-Q23 — ToastUI + Service (medium, ~1.5 ч)
+**M15 также починил:**
+- T-Q22 fix: `DialogWindow` теперь показывает human-readable messages вместо debug "OK: 30 200"
+- M13QuestTriggerZone пушит `ReceiveQuestDiscoveredTargetRpc` для trigger-zone auto-discover
+- Toast queue: `ProcessQueue()` coroutine показывает все toast'ы по очереди (ранее 1 из 4 показывался, остальные терялись)
 
-**Скоуп:**
-- `ToastUI.cs` — singleton MonoBehaviour с UIDocument, runtime UXML clone, queue (max 3 visible, fade 3 sec)
-- `ToastUI.uxml/.uss` — стили (top-right, fade, 4 kind colors: Info/Success/Warning/Error)
-- `ToastService.cs` — static API `Show(string, ToastKind)` (fire-and-forget)
-- `ToastKind.cs` — enum
-- `[ToastService]` GameObject в BootstrapScene (additive, NOT replace)
+**Артефакты в сцене:**
+- `BootstrapScene.unity` — `[QuestToast]` GameObject (UIDocument + QuestToast component + PanelSettings)
+- (legacy `[ToastService]` удалён)
 
-**Файлы:** `Assets/_Project/UI/Toast/*.{cs,uxml,uss}`
-**Verify:** Roslyn вызов `ToastService.Show("Hello", ToastKind.Success)` → toast visible top-right, fade out 3 sec
+**Verify (user confirmed 2026-06-09):**
+- ✅ "📜 Accepted: Демо: stage с onEnter" — displayName lookup работает
+- ✅ "💚 mira_01 +5" — AddNpcAttitude delta
+- ✅ "💰 +200 CR" — GiveCredits delta
+- ✅ "✨ Найден квест: ..." — trigger zone auto-discover
+- ✅ Queue: 4 toast'а подряд при quest complete показываются все
 
-**Risk:** low. UI Toolkit, no network.
-
-### T-Q24 — QuestClientState event routing (small, ~1 ч)
-
-**Скоуп:**
-- `QuestClientState` подписывается на `OnDialogActionResultReceived` → map to ToastService.Show:
-  - `GiveCredits` (30) → "💰 +{delta} CR"
-  - `AddReputation` (23) → "📈 {faction} +{delta}"
-  - `AddNpcAttitude` (24) → "💚 {npc} +{delta}"
-  - `GiveItem` (20) → "📦 +1 {itemName}"
-  - `TakeItem` (21) → "📦 -1 {itemName}"
-  - `AcceptQuest` (14) → "📜 Квест принят: {questId}"
-  - `OfferQuest` (10) → "✨ Найден квест: {displayName}"
-- `QuestClientState` подписывается на `OnSnapshotUpdated` → если `prev.discovered < curr.discovered` → toast
-
-**Файлы:** `QuestClientState.cs`
-**Verify:** Accept quest → "📜 Квест принят" + AddNpcAttitude → "💚 Mira +5"
-
-**Risk:** low.
-
-### T-Q25 — DialogActionResultDto.intParam (small, ~0.5 ч)
-
-**Скоуп:**
-- `DialogActionResultDto` — add `public int intParam` field + serialize
-- `QuestServer.FireDialogAction` — pass `action.intParam` to `SendDialogActionResultToClient` для всех action types (delta для display)
-- Reuse existing OnDialogActionResultReceived event — никаких новых RPC
-
-**Файлы:** `DialogStepDto.cs`, `QuestServer.cs`
-**Verify:** GiveCredits +10 → toast "💰 +10 CR" (delta корректный)
-
-**Risk:** low. Backward-compatible (default intParam=0 → fallback to hardcoded messages).
-
-**Общий effort M15:** ~3 ч, low risk.
+**Известные ограничения (acceptable):**
+- Toast показывает сырое "mira_01" вместо "Mira" — нужен NPC displayName lookup (отдельный тикет, M15.1 если потребуется)
+- No localized text — только русский
 
 ---
 
@@ -793,13 +771,44 @@ T-X4 (input remap: pickup E → F) ← future TODO, после end-to-end demo
 | **M8 — Persistence** | T-Q18 | Quests + rep + attitude survive server restart. | ✅ DONE 2026-06-08 |
 | **M9 — Cleanup** | T-Q19, T-X1, T-X2 | v1 NPC deleted, optional renames. | 🟡 T-Q19 ✅ T-X1 ✅ T-X2 DEFERRED 2026-06-08 |
 | **M10 — Editor tool** | T-Q09, T-Q09b | Quest Database Explorer с full CRUD + GraphView. | ✅ DONE (M10 partially — CRUD done, GraphView deferred) |
-| **M11 — End-to-end demo** | Mira quest full playthrough. | 🟡 Mira quest items + dialog tree prepared 2026-06-08 (awaiting user Play Mode test). |
+| **M11 — End-to-end demo** | Mira quest full playthrough. | ✅ DONE 2026-06-09 (user verified). |
 | **M12 — Input remap** | T-X4 | F = pickup (future, post-demo). |
 | **M13 — Real-time objective system** | T-Q20, T-Q21, T-Q22 | Auto-evaluate objectives, fire onEnter/onComplete actions, stage transitions, UI progress. | ✅ DONE 2026-06-09 (T-Q20, T-Q21, T-Q22 verified) |
 | **M15 — Toast notifications** | T-Q23, T-Q24, T-Q25 | Pickup/accept/complete/reward feedback to player. UI Toolkit overlay. | ✅ DONE 2026-06-09 (verified by user) |
 | **M14 — Item ID system** | T-Q26, T-Q27, T-Q28 | Single source of truth for item ids. ItemRegistry SO + DialogueAction.itemId + asset migration. | ✅ DONE 2026-06-09 (verified by Roslyn) |
+| **M16 — QuestDatabaseWindow** | T-Q09 (Editor UI) | UI Toolkit EditorWindow: tree view + detail panel для quests/dialogs/npcs/factions. | ✅ DONE 2026-06-09 (verified by Roslyn) |
 
 **Рекомендуемый темп:** 1-2 тикета за сессию, 1 PR за тикет.
+
+---
+
+## 8.3.4 M16 — QuestDatabaseWindow Editor tool (DONE 2026-06-09)
+
+**Статус:** ✅ DONE 2026-06-09 (verified by Roslyn).
+
+**Что сделано:**
+
+`Assets/_Project/Quests/Editor/QuestDatabaseWindow.cs` (new, 367 lines):
+- Unity EditorWindow с UI Toolkit (no IMGUI)
+- **Меню:** `Tools > ProjectC > Quests > Quest Database Explorer`
+- **Layout:**
+  - **Left pane (TreeView):** 4 группы — 📜 Quests, 💬 Dialogs, 👤 NPCs, 🏛 Factions (count badge)
+  - **Right pane (ScrollView):** detail view выбранного asset
+- **Кнопки:** 🔄 Re-scan DB (calls `QuestDatabaseAutoDiscover.Rescan()`)
+- **Detail views:**
+  - **Quest:** questId, displayName, description, faction, minRep, oneShot, discoverable + stages (с objectives + onEnter/onComplete counts) + rewards (CR/items/rep) + "Open in Inspector" / "Ping Asset"
+  - **Dialog:** treeId, displayName, rootNodeId, node list
+  - **NPC:** npcId, displayName, questOffers, questTurnIns
+  - **Faction:** factionId, displayName, loreDescription
+- **Status bar:** bottom-left показывает счётчики
+
+**Преимущества над IMGUI:**
+- ✅ Не блокирует mouse (как OnGUI)
+- ✅ Modern UI Toolkit
+- ✅ Per-pane scroll/flex
+- ✅ Data binding через `bindItem` callback
+
+**Тест:** Меню Tools → ProjectC → Quests → "Quest Database Explorer" → window открывается. В левой панели — 4 группы со всеми assets. Клик на quest → справа detail view с stages/objectives/rewards.
 
 ---
 

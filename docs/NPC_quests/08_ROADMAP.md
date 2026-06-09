@@ -863,7 +863,7 @@ Graph elements: 14
 | **M14 — Item ID system** | T-Q26, T-Q27, T-Q28 | Single source of truth for item ids. ItemRegistry SO + DialogueAction.itemId + asset migration. | ✅ DONE 2026-06-09 (verified by Roslyn) |
 | **M16 — QuestDatabaseWindow** | T-Q09 (Editor UI) | UI Toolkit EditorWindow: tree view + detail panel для quests/dialogs/npcs/factions. | ✅ DONE 2026-06-09 (verified by Roslyn) |
 | **M17 — QuestNodeGraph** | T-Q09b (Graph viz) | **Вариант A:** `QuestNodeGraphView` (GraphView Nodes+Edges, активный). **Вариант B (old):** `QuestGraphView` (custom VisualElement, maintenance). | ✅ DONE 2026-06-09 |
-| **M18 — Editable QuestNodeGraph** | T-Q30, T-Q31, T-Q32, T-Q33, T-Q34 | Editable nodes, save back to SO, quest-to-quest dependencies, drag-create edges. | 📋 IN PROGRESS 2026-06-09 (T-Q30 first) |
+| **M18 — Editable QuestNodeGraph** | T-Q30, T-Q31, T-Q32, T-Q33, T-Q34 | Editable nodes, save back to SO, quest-to-quest dependencies, drag-create edges. | 📋 IN PROGRESS 2026-06-09 (T-Q32 ✅, T-Q33 next) |
 
 **Рекомендуемый темп:** 1-2 тикета за сессию, 1 PR за тикет.
 

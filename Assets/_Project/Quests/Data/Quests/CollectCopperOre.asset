@@ -63,6 +63,12 @@ MonoBehaviour:
     onEnterActions: []
     onCompleteActions: []
     nextStageId: 
+  - stageId: new_stage
+    description: 
+    objectives: []
+    onEnterActions: []
+    onCompleteActions: []
+    nextStageId: 
   rewards:
     credits: 200
     items: []

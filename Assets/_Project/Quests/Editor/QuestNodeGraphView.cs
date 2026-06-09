@@ -459,23 +459,47 @@ namespace ProjectC.Quests.Editor
             return null;
         }
 
-        private void ConnectPorts(Port output, Port input)
+        private void ConnectPorts(Port output, Port input, bool isAuto = true)
         {
             if (output == null || input == null) return;
             var edge = output.ConnectTo(input);
+            if (isAuto) edge.viewDataKey = "auto";
             AddElement(edge);
         }
 
         private GraphViewChange OnGraphViewChanged(GraphViewChange change)
         {
             if (_suppressReadOnly) return change;
-            if (change.elementsToRemove != null) change.elementsToRemove.Clear();
-            if (change.edgesToCreate != null) change.edgesToCreate.Clear();
+            // T-Q34: allow user-created edges, block only deletion of auto-edges
+            if (change.elementsToRemove != null)
+            {
+                // Remove auto edges from deletion list (protect programmatic connections)
+                change.elementsToRemove.RemoveAll(e =>
+                {
+                    if (e is Edge edge && edge.viewDataKey == "auto") return true;
+                    return false;
+                });
+                // Also protect nodes (readonly)
+                change.elementsToRemove.RemoveAll(e => e is Node);
+            }
+            // Block moving nodes
             if (change.movedElements != null) change.movedElements.Clear();
             return change;
         }
 
-        public override List<Port> GetCompatiblePorts(Port startPort, NodeAdapter nodeAdapter) => new List<Port>();
+        // T-Q34: allow drag-connecting between compatible ports
+        public override List<Port> GetCompatiblePorts(Port startPort, NodeAdapter nodeAdapter)
+        {
+            var compatible = new List<Port>();
+            foreach (var p in ports)
+            {
+                if (p == startPort) continue;
+                if (p.node == startPort.node) continue; // no self-connections
+                if (p.direction == startPort.direction) continue; // no same-direction
+                compatible.Add(p);
+            }
+            return compatible;
+        }
 
         private static bool HasReward(QuestReward r) => r != null && (r.credits > 0 || (r.items != null && r.items.Length > 0) || (r.reputation != null && r.reputation.Length > 0));
     }

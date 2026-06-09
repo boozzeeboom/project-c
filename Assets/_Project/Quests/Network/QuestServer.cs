@@ -1080,18 +1080,26 @@ namespace ProjectC.Quests
                     {
                         // T-Q15: route to InventoryServer. ItemType сериализуется как byte в DTO
                         // (для будущего GiveCargoItem будет ItemType.Cargo).
-                        var itemType = (action.type == DialogueActionType.GiveItem)
-                            ? ProjectC.Items.ItemType.Resources
-                            : ProjectC.Items.ItemType.Resources;
+                        // T-Q27: prefer action.itemId (explicit) over action.stringParam (legacy name).
+                        var itemType = action.itemType;
+                        // Default to Resources если явно None (== 0 enum default).
+                        if ((int)itemType == 0) itemType = ProjectC.Items.ItemType.Resources;
                         bool ok;
                         if (action.type == DialogueActionType.GiveItem)
                         {
-                            // T-Q15 fix: parse itemId safely. Если stringParam пуст / не int — log warn + skip.
-                            int itemId = 0;
-                            bool parsed = int.TryParse(action.stringParam, out itemId);
-                            if (!parsed || string.IsNullOrEmpty(action.stringParam))
+                            // T-Q27: resolve itemId — prefer action.itemId, fallback на stringParam parse, fallback на name lookup.
+                            int itemId = action.itemId;
+                            if (itemId == 0 && !string.IsNullOrEmpty(action.stringParam))
                             {
-                                Debug.LogWarning($"[QuestServer] FireDialogAction: GiveItem skipped — invalid itemId='{action.stringParam}'");
+                                if (!int.TryParse(action.stringParam, out itemId))
+                                {
+                                    // Legacy: stringParam = item name → lookup via ItemRegistry.
+                                    itemId = ProjectC.Quests.QuestWorld.ResolveItemId(action.stringParam);
+                                }
+                            }
+                            if (itemId <= 0)
+                            {
+                                Debug.LogWarning($"[QuestServer] FireDialogAction: GiveItem skipped — invalid itemId='{action.stringParam}' (itemId field={action.itemId})");
                                 SendDialogActionResultToClient(clientId, new DialogActionResultDto
                                 {
                                     actionType = (byte)action.type,
@@ -1111,12 +1119,18 @@ namespace ProjectC.Quests
                         }
                         else
                         {
-                            // T-Q15 fix: parse itemId safely (same as GiveItem).
-                            int itemId = 0;
-                            bool parsed = int.TryParse(action.stringParam, out itemId);
-                            if (!parsed || string.IsNullOrEmpty(action.stringParam))
+                            // T-Q27: resolve itemId — same as GiveItem (prefer action.itemId, fallback parse).
+                            int itemId = action.itemId;
+                            if (itemId == 0 && !string.IsNullOrEmpty(action.stringParam))
                             {
-                                Debug.LogWarning($"[QuestServer] FireDialogAction: TakeItem skipped — invalid itemId='{action.stringParam}'");
+                                if (!int.TryParse(action.stringParam, out itemId))
+                                {
+                                    itemId = ProjectC.Quests.QuestWorld.ResolveItemId(action.stringParam);
+                                }
+                            }
+                            if (itemId <= 0)
+                            {
+                                Debug.LogWarning($"[QuestServer] FireDialogAction: TakeItem skipped — invalid itemId='{action.stringParam}' (itemId field={action.itemId})");
                                 SendDialogActionResultToClient(clientId, new DialogActionResultDto
                                 {
                                     actionType = (byte)action.type,

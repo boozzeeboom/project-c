@@ -725,6 +725,58 @@ T-X4 (input remap: pickup E → F) ← future TODO, после end-to-end demo
 
 ---
 
+## 8.3.3 M14 — Item ID single source of truth (AUDITED 2026-06-09)
+
+**Контекст:** Audit (2026-06-09) показал что Item ID работает по **двум независимым нумерациям**, которые **случайно** совпадают сейчас (alphabetical order из `Resources.LoadAll`). При добавлении item'а вне Resources/Items/ — id **молча** разъедутся, квесты перестанут работать. Это техдолг, не блокер для текущего контента, но блокер для масштабирования.
+
+**Текущее состояние:**
+- ✅ `InventoryWorld.GetOrRegisterItemId()` работает (32 items, id 1-32)
+- ✅ `QuestWorld.ResolveItemId()` работает (fallback через Resources)
+- ❌ Два разных source of truth → fragile, silent break при изменении Resources
+
+**Полная спецификация:** `docs/dev/M14_DESIGN_NOTE.md`.
+
+### T-Q26 — ItemRegistry SO (medium, ~1.5 ч)
+
+**Скоуп:**
+- `Assets/_Project/Items/Core/ItemRegistry.cs` — singleton ScriptableObject, `id ↔ ItemData` mapping
+  - `RegisterItem(int id, ItemData item)` — explicit
+  - `TryGetItem(int id, out ItemData item)` — lookup
+  - `TryGetId(ItemData item, out int id)` — reverse
+  - `GetAllItems()` — UI picker
+- `InventoryWorld.RegisterAllItems()` читает из `ItemRegistry.Instance` (не дублировать)
+- `QuestWorld.ResolveItemId` использует `ItemRegistry.TryGetId(itemName)`
+
+**Файлы:** `ItemRegistry.cs` (new), `ItemRegistry.asset` (new), `InventoryWorld.cs` (modify), `QuestWorld.cs` (modify)
+**Verify:** Roslyn dumps `InventoryWorld._itemDatabase.Keys` == `QuestWorld.ResolveItemId` for all 32 items
+**Risk:** medium (требует coord init order — InventoryWorld должен init раньше QuestWorld)
+
+### T-Q27 — DialogueAction itemId param (small, ~0.5 ч)
+
+**Скоуп:**
+- `DialogueAction.cs` — add `public int itemId = 0;` + `public ItemType itemType = ItemType.None;`
+- `QuestServer.FireDialogAction` для GiveItem/TakeItem: использовать `action.itemId` (itemType уже есть)
+- Backward compat: если `itemId == 0` → fallback на stringParam parse
+
+**Файлы:** `DialogueAction.cs`, `QuestServer.cs`
+**Verify:** Quest asset с GiveItem action корректно даёт предмет
+**Risk:** low (backward compatible)
+
+### T-Q28 — Migration string-id → int-id (small, ~0.5 ч)
+
+**Скоуп:**
+- Audit quest/dialog assets: `itemTradeItemId = "Медная руда"` → int 26
+- Migrate: `CollectCopperOre.asset`, `StageMultiDemo.asset`, `FindArtifact.asset`, `MiraDefault.asset`
+- Roslyn-driven (через MCP)
+
+**Файлы:** 4 quest/dialog assets (modify)
+**Verify:** Все квесты по-прежнему работают без gameplay change
+**Risk:** low (cosmetic migration)
+
+**Общий effort M14:** ~2.5 ч, low-medium risk.
+
+---
+
 ## 8.4 Milestones (обновлено)
 
 | Milestone | Тикеты | Что работает |
@@ -744,7 +796,8 @@ T-X4 (input remap: pickup E → F) ← future TODO, после end-to-end demo
 | **M11 — End-to-end demo** | Mira quest full playthrough. | 🟡 Mira quest items + dialog tree prepared 2026-06-08 (awaiting user Play Mode test). |
 | **M12 — Input remap** | T-X4 | F = pickup (future, post-demo). |
 | **M13 — Real-time objective system** | T-Q20, T-Q21, T-Q22 | Auto-evaluate objectives, fire onEnter/onComplete actions, stage transitions, UI progress. | ✅ DONE 2026-06-09 (T-Q20, T-Q21, T-Q22 verified) |
-| **M15 — Toast notifications** | T-Q23, T-Q24, T-Q25 | Pickup/accept/complete/reward feedback to player. UI Toolkit overlay. | 📋 DESIGN COMPLETE 2026-06-09 — ready for next session coding. |
+| **M15 — Toast notifications** | T-Q23, T-Q24, T-Q25 | Pickup/accept/complete/reward feedback to player. UI Toolkit overlay. | ✅ DONE 2026-06-09 (verified by user) |
+| **M14 — Item ID system** | T-Q26, T-Q27, T-Q28 | Single source of truth for item ids. ItemRegistry SO + DialogueAction.itemId + asset migration. | ✅ DONE 2026-06-09 (verified by Roslyn) |
 
 **Рекомендуемый темп:** 1-2 тикета за сессию, 1 PR за тикет.
 

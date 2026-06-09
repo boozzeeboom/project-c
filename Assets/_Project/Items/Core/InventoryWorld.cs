@@ -561,13 +561,42 @@ namespace ProjectC.Items
 
         private void RegisterAllItems()
         {
-            // 1. Resources/Items/ — все ItemData
-            var allResources = Resources.LoadAll<ItemData>("Items");
-            int id = 1;
-            foreach (var item in allResources)
+            // T-Q26: use ItemRegistry as single source of truth (replaces dual registration).
+            // Fallback: Resources/Items/ scan if ItemRegistry unavailable (e.g. tests).
+            ProjectC.Items.ItemRegistry registry = null;
+            if (ProjectC.Items.ItemRegistry.Instance != null)
             {
-                if (item == null) continue;
-                RegisterItem(id++, item);
+                registry = ProjectC.Items.ItemRegistry.Instance;
+            }
+            else
+            {
+                // Try to load from Resources/ItemRegistry.asset (test convenience).
+                registry = Resources.Load<ProjectC.Items.ItemRegistry>("ItemRegistry");
+                if (registry != null) ProjectC.Items.ItemRegistry.SetInstance(registry);
+            }
+
+            int registered = 0;
+            if (registry != null && registry.Count > 0)
+            {
+                // T-Q26: use explicit ids from registry.
+                foreach (var entry in registry.GetEntries())
+                {
+                    if (entry.item == null) continue;
+                    RegisterItem(entry.id, entry.item);
+                    registered++;
+                }
+            }
+            else
+            {
+                // Fallback: Resources/Items/ scan (original behavior).
+                var allResources = Resources.LoadAll<ItemData>("Items");
+                int id = 1;
+                foreach (var item in allResources)
+                {
+                    if (item == null) continue;
+                    RegisterItem(id++, item);
+                    registered++;
+                }
             }
 
             // 2. (legacy compat) ItemData из PickupItem на сцене — в случае если
@@ -582,7 +611,7 @@ namespace ProjectC.Items
                 {
                     if (kvp.Value == pickup.itemData) { already = true; break; }
                 }
-                if (!already) RegisterItem(id++, pickup.itemData);
+                if (!already) RegisterItem(_itemDatabase.Count + 1, pickup.itemData);
             }
         }
 

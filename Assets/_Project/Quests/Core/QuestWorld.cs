@@ -699,7 +699,8 @@ namespace ProjectC.Quests
 
         /// <summary>T-Q20: resolve item id from objective.itemTradeItemId. Tries:
         /// 1) int.TryParse (direct id) — for legacy configs.
-        /// 2) ItemData.itemName lookup в Resources/Items/ — for M13 test convenience.
+        /// 2) T-Q26: ItemRegistry.TryGetIdByName (single source of truth) — preferred.
+        /// 3) Resources/Items/ scan — fallback if ItemRegistry not loaded.
         /// Returns 0 если ничего не найдено.
         /// </summary>
         public static int ResolveItemId(string itemTradeItemId)
@@ -707,13 +708,23 @@ namespace ProjectC.Quests
             if (string.IsNullOrEmpty(itemTradeItemId)) return 0;
             // 1. Direct int.
             if (int.TryParse(itemTradeItemId, out int direct) && direct > 0) return direct;
-            // 2. Name lookup через Resources/Items/ ItemData.
+            // 2. T-Q26: ItemRegistry lookup (preferred — single source of truth).
+            var registry = ProjectC.Items.ItemRegistry.Instance;
+            if (registry == null)
+            {
+                // Try load from Resources/ItemRegistry.asset.
+                registry = Resources.Load<ProjectC.Items.ItemRegistry>("ItemRegistry");
+                if (registry != null) ProjectC.Items.ItemRegistry.SetInstance(registry);
+            }
+            if (registry != null && registry.TryGetIdByName(itemTradeItemId, out int regId) && regId > 0)
+                return regId;
+            // 3. Fallback: Resources/Items/ scan (for tests without ItemRegistry).
             var allItems = Resources.LoadAll<ProjectC.Items.ItemData>("Items");
             if (allItems == null) return 0;
             for (int i = 0; i < allItems.Length; i++)
             {
                 if (allItems[i] == null) continue;
-                if (allItems[i].itemName == itemTradeItemId) return i + 1;  // registration order = id
+                if (allItems[i].itemName == itemTradeItemId) return i + 1;
             }
             return 0;
         }

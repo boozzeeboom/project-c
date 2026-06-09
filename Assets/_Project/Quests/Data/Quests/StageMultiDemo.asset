@@ -28,7 +28,7 @@ MonoBehaviour:
       objectiveType: 4
       description: Test Stage Item
       targetNpcId: 
-      itemTradeItemId: TestStageItem
+      itemTradeItemId: 25
       requiredQuantity: 1
       targetSceneId: 
       targetPosition: {x: 0, y: 0, z: 0}
@@ -45,12 +45,16 @@ MonoBehaviour:
       stageIdParam: 
       intParam: 3
       factionParam: 1
+      itemId: 0
+      itemType: 0
     onCompleteActions:
     - type: 30
       stringParam: 
       stageIdParam: 
       intParam: 20
       factionParam: 0
+      itemId: 0
+      itemType: 0
     nextStageId: deliver
   - stageId: deliver
     description: "\u0421\u0434\u0430\u0442\u044C \u041C\u0438\u0440\u0435."
@@ -76,12 +80,16 @@ MonoBehaviour:
       stageIdParam: 
       intParam: 10
       factionParam: 0
+      itemId: 0
+      itemType: 0
     onCompleteActions:
     - type: 30
       stringParam: 
       stageIdParam: 
       intParam: 50
       factionParam: 0
+      itemId: 0
+      itemType: 0
     nextStageId: 
   rewards:
     credits: 0

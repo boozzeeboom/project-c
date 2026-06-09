@@ -13,6 +13,7 @@
 using System;
 using UnityEngine;
 using ProjectC.Factions;
+using ProjectC.Items;
 
 namespace ProjectC.Dialogue
 {
@@ -79,7 +80,7 @@ namespace ProjectC.Dialogue
         [Tooltip("Тип действия (atomic).")]
         public DialogueActionType type = DialogueActionType.EndConversation;
 
-        [Tooltip("Primary string param: questId / itemId / npcId / eventId / treeId / market zoneId / flag id.")]
+        [Tooltip("Primary string param: questId / itemName (legacy) / npcId / eventId / treeId / market zoneId / flag id.")]
         public string stringParam = "";
 
         [Tooltip("Secondary string param: objectiveId / service id / dialog nodeId.")]
@@ -90,5 +91,12 @@ namespace ProjectC.Dialogue
 
         [Tooltip("Faction param (для AddReputation).")]
         public FactionId factionParam = FactionId.None;
+
+        // T-Q27: explicit itemId for GiveItem/TakeItem (replaces fragile stringParam=name lookup).
+        [Tooltip("T-Q27: explicit item id (для GiveItem/TakeItem). Если 0 — fallback на stringParam name.")]
+        public int itemId = 0;
+
+        [Tooltip("T-Q27: ItemType for GiveItem (по умолчанию Resources).")]
+        public ItemType itemType = ItemType.Resources;
     }
 }

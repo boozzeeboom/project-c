@@ -26,6 +26,8 @@ namespace ProjectC.Quests.Editor
 
         // T-Q30: edit state
         private bool _editMode;
+        // T-Q32: button visibility helpers
+        private readonly List<VisualElement> _editButtons = new List<VisualElement>();
 
         public bool EditMode
         {
@@ -34,6 +36,8 @@ namespace ProjectC.Quests.Editor
             {
                 _editMode = value;
                 RefreshAllEditUI();
+                foreach (var btn in _editButtons)
+                    btn.style.display = _editMode ? DisplayStyle.Flex : DisplayStyle.None;
             }
         }
 
@@ -64,6 +68,11 @@ namespace ProjectC.Quests.Editor
             schedule.Execute(() => MarkDirtyRepaint()).StartingIn(0);
             schedule.Execute(() => { MarkDirtyRepaint(); FrameAll(); }).StartingIn(100);
             schedule.Execute(() => MarkDirtyRepaint()).StartingIn(300);
+            // KEY FIX #3: T-Q32 restore edit mode UI after rebuild
+            if (_editMode)
+            {
+                schedule.Execute(() => { EditMode = true; }).StartingIn(40);
+            }
         }
 
         private void ForceAllNodesExpanded()
@@ -87,6 +96,7 @@ namespace ProjectC.Quests.Editor
                 if (nodeList.Count > 0) DeleteElements(nodeList);
             }
             finally { _suppressReadOnly = false; }
+            _editButtons.Clear();
         }
 
         private void BuildGraph()
@@ -113,6 +123,10 @@ namespace ProjectC.Quests.Editor
                     ("Desc", Quest.description ?? "", v => Quest.description = v)
                 },
                 $"id: {Quest.questId}  •  stages: {Quest.stages?.Length ?? 0}");
+            // T-Q32: add stage button on quest node
+            var addStageBtn = MakeEditButton("+ Add Stage", () => AddStage(), "add-stage");
+            qn.extensionContainer.Add(addStageBtn);
+            _editButtons.Add(addStageBtn);
             qn.SetPosition(new Rect(COL1_X, Y_TOP, QUEST_W, QUEST_H));
             AddElement(qn);
             var qPort = AddPorts(qn, hasOutput: true, hasInput: false);
@@ -138,6 +152,14 @@ namespace ProjectC.Quests.Editor
                         (stage.onEnterActions?.Length > 0 ? $"  ▶ onEnter: {stage.onEnterActions.Length}" : "") +
                         (stage.onCompleteActions?.Length > 0 ? $"  ✓ onComplete: {stage.onCompleteActions.Length}" : "") +
                         (!string.IsNullOrEmpty(stage.nextStageId) ? $"  → {stage.nextStageId}" : ""));
+                    // T-Q32: delete stage button
+                    var delStageBtn = MakeEditButton("× Stage", () => DeleteStage(si), "stage-del-" + i);
+                    sn.extensionContainer.Add(delStageBtn);
+                    _editButtons.Add(delStageBtn);
+                    // T-Q32: add objective button
+                    var addObjBtn = MakeEditButton("+ Objective", () => AddObjective(si), "stage-add-" + i);
+                    sn.extensionContainer.Add(addObjBtn);
+                    _editButtons.Add(addObjBtn);
                     sn.SetPosition(new Rect(COL2_X, y, STAGE_W, STAGE_H));
                     AddElement(sn);
                     var sPort = AddPorts(sn, hasOutput: true, hasInput: true);
@@ -163,6 +185,10 @@ namespace ProjectC.Quests.Editor
                                     ("Npc", obj.targetNpcId ?? "", v => Quest.stages[stIdx].objectives[oi].targetNpcId = v),
                                     ($"[{obj.objectiveType}] ×{obj.requiredQuantity}", $"{obj.requiredQuantity}", v => { if (int.TryParse(v, out var n)) Quest.stages[stIdx].objectives[oi].requiredQuantity = n; })
                                 });
+                            // T-Q32: delete objective button
+                            var delObjBtn = MakeEditButton("× Obj", () => DeleteObjective(stIdx, oi), "obj-del-" + i + "-" + j);
+                            on.extensionContainer.Add(delObjBtn);
+                            _editButtons.Add(delObjBtn);
                             on.SetPosition(new Rect(COL3_X, oy, OBJ_W, OBJ_H));
                             AddElement(on);
                             var oPort = AddPorts(on, hasOutput: false, hasInput: true);
@@ -336,6 +362,72 @@ namespace ProjectC.Quests.Editor
             // Reload the graph from fresh SO
             LoadQuest(fresh);
             Debug.Log($"[QuestNodeGraph] Reverted {Quest.questId}");
+        }
+
+        // ========== T-Q32: Add/Delete CRUD ==========
+
+        /// <summary>Create a small edit-only button (hidden in view mode).</summary>
+        private VisualElement MakeEditButton(string text, System.Action onClick, string name)
+        {
+            var btn = new Button(onClick) { text = text, name = name };
+            btn.style.fontSize = 9;
+            btn.style.paddingLeft = 6;
+            btn.style.paddingRight = 6;
+            btn.style.paddingTop = 1;
+            btn.style.paddingBottom = 1;
+            btn.style.marginLeft = 4;
+            btn.style.marginTop = 2;
+            btn.style.marginBottom = 2;
+            btn.style.display = DisplayStyle.None;
+            return btn;
+        }
+
+        private void AddStage()
+        {
+            if (Quest == null) return;
+            var list = Quest.stages?.ToList() ?? new List<QuestStage>();
+            list.Add(new QuestStage { stageId = "new_stage", description = "" });
+            Quest.stages = list.ToArray();
+            EditorUtility.SetDirty(Quest);
+            AssetDatabase.SaveAssets();
+            LoadQuest(Quest);
+        }
+
+        private void DeleteStage(int index)
+        {
+            if (Quest == null || Quest.stages == null || index < 0 || index >= Quest.stages.Length) return;
+            var list = Quest.stages.ToList();
+            list.RemoveAt(index);
+            Quest.stages = list.ToArray();
+            EditorUtility.SetDirty(Quest);
+            AssetDatabase.SaveAssets();
+            LoadQuest(Quest);
+        }
+
+        private void AddObjective(int stageIndex)
+        {
+            if (Quest == null || Quest.stages == null || stageIndex < 0 || stageIndex >= Quest.stages.Length) return;
+            var stage = Quest.stages[stageIndex];
+            if (stage == null) return;
+            var list = stage.objectives?.ToList() ?? new List<QuestObjective>();
+            list.Add(new QuestObjective { objectiveId = "new_objective", objectiveType = QuestObjectiveType.HaveItem, requiredQuantity = 1 });
+            stage.objectives = list.ToArray();
+            EditorUtility.SetDirty(Quest);
+            AssetDatabase.SaveAssets();
+            LoadQuest(Quest);
+        }
+
+        private void DeleteObjective(int stageIndex, int objIndex)
+        {
+            if (Quest == null || Quest.stages == null || stageIndex < 0 || stageIndex >= Quest.stages.Length) return;
+            var stage = Quest.stages[stageIndex];
+            if (stage == null || stage.objectives == null || objIndex < 0 || objIndex >= stage.objectives.Length) return;
+            var list = stage.objectives.ToList();
+            list.RemoveAt(objIndex);
+            stage.objectives = list.ToArray();
+            EditorUtility.SetDirty(Quest);
+            AssetDatabase.SaveAssets();
+            LoadQuest(Quest);
         }
 
         private struct NodePorts { public Port input; public Port output; }

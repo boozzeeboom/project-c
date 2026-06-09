@@ -27,10 +27,8 @@ MonoBehaviour:
       \u043A\u043E\u043D\u0442\u0440\u0430\u0431\u0430\u043D\u0434\u0438\u0441\u0442\u043E\u0432."
     objectives:
     - objectiveId: trigger_event
-      objectiveType: 7
-      description: "\u0417\u0430\u0439\u0442\u0438 \u0432 \u0440\u0443\u0438\u043D\u044B
-        \u0438 \u0443\u0432\u0438\u0434\u0435\u0442\u044C \u0441\u0432\u0435\u0447\u0435\u043D\u0438\u0435
-        (event-driven)."
+      objectiveType: 4
+      description: 
       targetNpcId: 
       itemTradeItemId: 
       requiredQuantity: 1
@@ -40,9 +38,15 @@ MonoBehaviour:
       targetEntityType: 
       targetFaction: 0
       reputationValue: 0
-      eventId: player_visited_smuggler_lookout
+      eventId: 
       optional: 0
       required: 1
+    onEnterActions: []
+    onCompleteActions: []
+    nextStageId: 
+  - stageId: new_stage
+    description: 
+    objectives: []
     onEnterActions: []
     onCompleteActions: []
     nextStageId: 

@@ -857,17 +857,22 @@ my_first_quest,Мой первый квест,0,HaveItem,Медная руда,,
 my_first_quest,Мой первый квест,1,TalkToNpc,,mira_01,1,200
 ```
 
-**Это создаёт квест** "Мой первый квест" с 2 stages: собрать 3 руды → поговорить с Мирой → награда 200 CR.
-
-**План (5 тикетов, ~6 ч):**
+**Результат (2026-06-09):** ✅ **DONE — все 5 тикетов за 1 сессию.**
 
 | Тикет | Что | ~ч | Статус |
 |-------|-----|----|--------|
-| M19-T1 | FlatCsvSchema + QuestCsvParser (one-file, validation) | 1.5 | ⏳ |
-| M19-T2 | QuestCsvImporter (CSV → QuestDefinition.asset) | 2.0 | ⏳ |
-| M19-T3 | QuestCsvExporter (SO → flat CSV) | 1.0 | ⏳ |
-| M19-T4 | EditorWindow: Upload CSV + Preview + Import | 1.0 | ⏳ |
-| M19-T5 | Integration test + sample CSV для writer'a | 0.5 | ⏳ |
+| M19-T1 | FlatCsvSchema + QuestCsvParser (one-file, validation) | 1.5 | ✅ |
+| M19-T2 | QuestCsvImporter (CSV → QuestDefinition.asset) | 2.0 | ✅ |
+| M19-T3 | QuestCsvExporter (SO → flat CSV) | 1.0 | ✅ |
+| M19-T4 | EditorWindow: Upload CSV + Preview + Import | 1.0 | ✅ |
+| M19-T5 | Integration test + sample CSV для writer'a | 0.5 | ✅ |
+
+**Verify (2026-06-09):**
+- [x] Парсинг 4 строк CSV — 0 errors
+- [x] Импорт 3 квестов — created: 3
+- [x] Экспорт + ре-импорт — round-trip (updated: 1, created: 0)
+- [x] Window opens: ✅
+- [x] Compile: 0 errors
 
 **Формат файла:** `quests_import.csv` — одна таблица, все колонки на одном листе. Writer заполняет только questId, displayName, stageNum, objectiveType — остальное опционально.
 
@@ -906,7 +911,7 @@ my_first_quest,Мой первый квест,1,TalkToNpc,,mira_01,1,200
 | **M16 — QuestDatabaseWindow** | T-Q09 (Editor UI) | UI Toolkit EditorWindow: tree view + detail panel для quests/dialogs/npcs/factions. | ✅ DONE 2026-06-09 (verified by Roslyn) |
 | **M17 — QuestNodeGraph** | T-Q09b (Graph viz) | **Вариант A:** `QuestNodeGraphView` (GraphView Nodes+Edges, активный). **Вариант B (old):** `QuestGraphView` (custom VisualElement, maintenance). | ✅ DONE 2026-06-09 |
 | **M18 — Editable QuestNodeGraph** | T-Q30, T-Q31, T-Q32, T-Q33, T-Q34 | Editable nodes, save back to SO, quest-to-quest dependencies, drag-create edges. | ✅ DONE 2026-06-09 (verified by user) |
-| **M19 — CSV import/export pipeline** | — | Design phase. | 📋 DESIGN 2026-06-09 |
+| **M19 — CSV Import/Export** | M19-T1..T5 | Single-file CSV pipeline for content writers. Import/Export window. | ✅ DONE 2026-06-09 (verified by Roslyn) |
 
 **Рекомендуемый темп:** 1-2 тикета за сессию, 1 PR за тикет.
 

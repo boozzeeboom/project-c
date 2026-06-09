@@ -26,10 +26,15 @@ namespace ProjectC.Quests.UI
         [Tooltip("Cooldown между показами (защита от дублей).")]
         [SerializeField] private float _cooldown = 0.3f;
 
+        [Tooltip("T-Q25 fix: delay между последовательными toast'ами в queue (несколько rewards подряд).")]
+        [SerializeField] private float _queueDelay = 1.2f;
+
         private UIDocument _doc;
         private VisualElement _container;
         private Label _label;
         private Coroutine _hideCoroutine;
+        private Coroutine _queueCoroutine;
+        private System.Collections.Generic.Queue<string> _queue = new System.Collections.Generic.Queue<string>();
         private float _lastShowTime = -10f;
         private bool _built = false;
         private bool _subscribed = false;
@@ -224,14 +229,28 @@ namespace ProjectC.Quests.UI
         {
             if (!_built) TryBuild();
             if (_container == null || _label == null) return;
-            if (Time.unscaledTime - _lastShowTime < _cooldown) return;
-            _lastShowTime = Time.unscaledTime;
+            // T-Q25 fix: queue-based. Все toast'ы показываются по очереди.
+            // Cooldown убран — он дропал reward'ы. Дубли в одном frame крайне редки.
+            _queue.Enqueue(message);
+            if (_queueCoroutine == null) _queueCoroutine = StartCoroutine(ProcessQueue());
+        }
 
-            _label.text = message;
-            _container.style.display = new StyleEnum<DisplayStyle>(DisplayStyle.Flex);
-
-            if (_hideCoroutine != null) StopCoroutine(_hideCoroutine);
-            _hideCoroutine = StartCoroutine(HideAfter(_duration));
+        private System.Collections.IEnumerator ProcessQueue()
+        {
+            while (_queue.Count > 0)
+            {
+                var msg = _queue.Dequeue();
+                _label.text = msg;
+                _container.style.display = new StyleEnum<DisplayStyle>(DisplayStyle.Flex);
+                _lastShowTime = Time.unscaledTime;
+                yield return new WaitForSecondsRealtime(_duration);
+                if (_queue.Count == 0)
+                {
+                    _container.style.display = new StyleEnum<DisplayStyle>(DisplayStyle.None);
+                    yield return new WaitForSecondsRealtime(_queueDelay);
+                }
+            }
+            _queueCoroutine = null;
         }
 
         private IEnumerator HideAfter(float seconds)

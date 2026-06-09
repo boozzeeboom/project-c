@@ -151,11 +151,31 @@ namespace ProjectC.Quests.UI
             // QuestResultDto.code: 0=Ok. Show "Accepted" / "Turned in" / "Already..." messages.
             if (result.code != 0) return;
             if (string.IsNullOrEmpty(result.message)) return;
-            string data = string.IsNullOrEmpty(result.questId) ? "" : result.questId;
+            // T-Q24: lookup displayName from QuestDatabase for nice text.
+            string displayName = LookupQuestDisplayName(result.questId);
             string icon = "📜";
             if (result.message.StartsWith("Turned")) icon = "✅";
             else if (result.message.StartsWith("Already")) icon = "ℹ";
-            ShowToast($"{icon} {result.message}{(string.IsNullOrEmpty(data) ? "" : ": " + data)}");
+            string text = $"{icon} {result.message}{(string.IsNullOrEmpty(displayName) ? "" : ": " + displayName)}";
+            ShowToast(text);
+        }
+
+        private static string LookupQuestDisplayName(string questId)
+        {
+            if (string.IsNullOrEmpty(questId)) return "";
+            var qs = QuestClientState.Instance;
+            if (qs == null) return questId;
+            var snap = qs.CurrentSnapshot;
+            if (snap == null || !snap.HasValue || snap.Value.quests == null) return questId;
+            var arr = snap.Value.quests;
+            for (int i = 0; i < arr.Length; i++)
+            {
+                if (arr[i].questId == questId)
+                {
+                    return string.IsNullOrEmpty(arr[i].displayName) ? questId : arr[i].displayName;
+                }
+            }
+            return questId;
         }
 
         private void HandleDialogActionResult(DialogActionResultDto result)

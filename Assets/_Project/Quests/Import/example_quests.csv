@@ -1,0 +1,5 @@
+questId,displayName,description,faction,oneShot,prereqQuest,stageNum,stageId,objectiveType,objectiveId,itemName,npcId,qty,onCompleteActions,rewardCR,rewardRep
+stage_intro_demo,Демо: stage с onEnter,Тестовый квест для onEnter/onComplete,,n,,0,intro,TalkToNpc,talk_mira,,mira_01,1,GiveCredits::10,,
+collect_copper_ore,Собрать 3 медных руды,Соберите 3 куска медной руды,,n,stage_intro_demo,0,collect,HaveItem,gather_copper,Медная руда,,3,,200,GuildOfThoughts:25
+stage_multi_demo,Тест: multi-stage,Тест с 2 этапами,,n,,0,collect,HaveItem,collect_item,TestStageItem,,1,GiveCredits::20,20,
+stage_multi_demo,Тест: multi-stage,Тест с 2 этапами,,n,,1,deliver,TalkToNpc,talk_mira,,mira_01,1,GiveCredits::50,50,

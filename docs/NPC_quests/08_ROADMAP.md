@@ -814,6 +814,30 @@ Graph elements: 14
 - ❌ Save back to QuestDefinition — M18
 - ❌ Visual diff между 2 versions — M19
 
+**Артефакты (2 реализации):**
+- `Assets/_Project/Quests/Editor/QuestNodeGraphView.cs` — **активный**: GraphView Node+Edge, M18 база
+- `Assets/_Project/Quests/Editor/QuestGraphView.cs` — (old): custom VisualElement, maintenance
+
+---
+
+## 8.3.6 M18 — Editable QuestNodeGraph (IN PROGRESS 2026-06-09)
+
+**Статус:** 📋 IN PROGRESS — T-Q30 (editable node fields) первый.
+
+**Контекст:** M17 дал readonly граф. M18 делает его мутабельным — редактирование прямо в нодах.
+
+**План (6 тикетов, ~5 ч):**
+
+| Тикет | Что | ~ч | Статус |
+|-------|-----|----|--------|
+| **T-Q30** | TextField в нодах (displayName, description) + Save/Revert кнопки | 1.5 | 🔄 NEXT |
+| **T-Q31** | Save back to QuestDefinition (EditorUtility.SetDirty + AssetDatabase) | 1.0 | ⏳ |
+| **T-Q32** | Add/Delete stages + objectives (кнопки "+"/"×") | 1.0 | ⏳ |
+| **T-Q33** | Quest-to-quest prerequisites edge (dashed line, cross-quest) | 1.0 | ⏳ |
+| **T-Q34** | Drag-create edges (user-draggable Port's) | 0.5 | ⏳ |
+
+**Полная спецификация:** `docs/dev/M18_DESIGN_NOTE.md`
+
 ---
 
 ## 8.4 Milestones (обновлено)
@@ -838,7 +862,8 @@ Graph elements: 14
 | **M15 — Toast notifications** | T-Q23, T-Q24, T-Q25 | Pickup/accept/complete/reward feedback to player. UI Toolkit overlay. | ✅ DONE 2026-06-09 (verified by user) |
 | **M14 — Item ID system** | T-Q26, T-Q27, T-Q28 | Single source of truth for item ids. ItemRegistry SO + DialogueAction.itemId + asset migration. | ✅ DONE 2026-06-09 (verified by Roslyn) |
 | **M16 — QuestDatabaseWindow** | T-Q09 (Editor UI) | UI Toolkit EditorWindow: tree view + detail panel для quests/dialogs/npcs/factions. | ✅ DONE 2026-06-09 (verified by Roslyn) |
-| **M17 — QuestGraphView** | T-Q09b (Graph viz) | GraphView-based read-only visualization: quest → stages → objectives + rewards. | ✅ DONE 2026-06-09 (verified by Roslyn) |
+| **M17 — QuestNodeGraph** | T-Q09b (Graph viz) | **Вариант A:** `QuestNodeGraphView` (GraphView Nodes+Edges, активный). **Вариант B (old):** `QuestGraphView` (custom VisualElement, maintenance). | ✅ DONE 2026-06-09 |
+| **M18 — Editable QuestNodeGraph** | T-Q30, T-Q31, T-Q32, T-Q33, T-Q34 | Editable nodes, save back to SO, quest-to-quest dependencies, drag-create edges. | 📋 IN PROGRESS 2026-06-09 (T-Q30 first) |
 
 **Рекомендуемый темп:** 1-2 тикета за сессию, 1 PR за тикет.
 

@@ -15,6 +15,7 @@ using UnityEditor.Experimental.GraphView;
 using UnityEngine;
 using UnityEngine.UIElements;
 using ProjectC.Quests;
+using ProjectC.Factions;
 
 namespace ProjectC.Quests.Editor
 {
@@ -22,6 +23,19 @@ namespace ProjectC.Quests.Editor
     {
         public QuestDefinition Quest { get; private set; }
         private bool _suppressReadOnly;
+
+        // T-Q30: edit state
+        private bool _editMode;
+
+        public bool EditMode
+        {
+            get => _editMode;
+            set
+            {
+                _editMode = value;
+                RefreshAllEditUI();
+            }
+        }
 
         public QuestNodeGraphView()
         {
@@ -79,29 +93,29 @@ namespace ProjectC.Quests.Editor
         {
             if (Quest == null) return;
 
-            const float QUEST_W = 240f, QUEST_H = 120f;
-            const float STAGE_W = 240f, STAGE_H = 150f;
-            const float OBJ_W = 220f, OBJ_H = 90f;
-            const float REWARD_W = 240f, REWARD_H = 120f;
+            const float QUEST_W = 240f, QUEST_H = 140f;
+            const float STAGE_W = 240f, STAGE_H = 160f;
+            const float OBJ_W = 220f, OBJ_H = 100f;
+            const float REWARD_W = 240f, REWARD_H = 130f;
             const float COL1_X = 0f, COL2_X = 360f, COL3_X = 720f, COL4_X = 1100f;
             const float Y_TOP = 0f;
             const float ROW_GAP = 30f;
 
-            var questColors = new Color(0.20f, 0.35f, 0.60f);
-            var stageColors = new Color(0.20f, 0.55f, 0.30f);
-            var objColors = new Color(0.55f, 0.40f, 0.10f);
-            var rewardColors = new Color(0.65f, 0.40f, 0.10f);
-
-            // Build nodes + edges
-            var allPorts = new Dictionary<VisualElement, (Port input, Port output)>();
+            var questColor = new Color(0.20f, 0.35f, 0.60f);
+            var stageColor = new Color(0.20f, 0.55f, 0.30f);
+            var objColor = new Color(0.55f, 0.40f, 0.10f);
+            var rewardColor = new Color(0.65f, 0.40f, 0.10f);
 
             // Quest node
-            var questNode = MakeNode("📜 QUEST", questColors,
-                $"{Quest.displayName}",
-                $"stages: {Quest.stages?.Length ?? 0}  •  id: {Quest.questId}");
-            questNode.SetPosition(new Rect(COL1_X, Y_TOP, QUEST_W, QUEST_H));
-            AddElement(questNode);
-            var qPort = AddPorts(questNode, hasOutput: true, hasInput: false);
+            var qn = MakeEditableNode("📜 QUEST", questColor,
+                new (string label, string value, System.Action<string> onSave)[] {
+                    ("Name", Quest.displayName, v => Quest.displayName = v),
+                    ("Desc", Quest.description ?? "", v => Quest.description = v)
+                },
+                $"id: {Quest.questId}  •  stages: {Quest.stages?.Length ?? 0}");
+            qn.SetPosition(new Rect(COL1_X, Y_TOP, QUEST_W, QUEST_H));
+            AddElement(qn);
+            var qPort = AddPorts(qn, hasOutput: true, hasInput: false);
 
             int stageCount = Quest.stages?.Length ?? 0;
             var stageNodes = new List<Node>();
@@ -114,24 +128,21 @@ namespace ProjectC.Quests.Editor
                     var stage = Quest.stages[i];
                     if (stage == null) continue;
 
-                    var lines = new List<string> { $"<b>{stage.stageId}</b>" };
-                    if (!string.IsNullOrEmpty(stage.description)) lines.Add(stage.description);
-                    if (stage.objectives != null) lines.Add($"🎯 {stage.objectives.Length} objective(s)");
-                    if (stage.onEnterActions != null && stage.onEnterActions.Length > 0)
-                        lines.Add($"▶ onEnter: {stage.onEnterActions.Length} act");
-                    if (stage.onCompleteActions != null && stage.onCompleteActions.Length > 0)
-                        lines.Add($"✓ onComplete: {stage.onCompleteActions.Length} act");
-                    if (!string.IsNullOrEmpty(stage.nextStageId))
-                        lines.Add($"→ next: {stage.nextStageId}");
-
-                    var sn = MakeNode($"STAGE {i+1}/{stageCount}", stageColors, string.Join("\n", lines), "");
+                    int si = i; // capture
+                    var sn = MakeEditableNode($"STAGE {i+1}/{stageCount}", stageColor,
+                        new (string label, string value, System.Action<string> onSave)[] {
+                            ("ID", stage.stageId, v => Quest.stages[si].stageId = v),
+                            ("Desc", stage.description ?? "", v => Quest.stages[si].description = v)
+                        },
+                        (stage.objectives != null ? $"🎯 {stage.objectives.Length} objective(s)" : "") +
+                        (stage.onEnterActions?.Length > 0 ? $"  ▶ onEnter: {stage.onEnterActions.Length}" : "") +
+                        (stage.onCompleteActions?.Length > 0 ? $"  ✓ onComplete: {stage.onCompleteActions.Length}" : "") +
+                        (!string.IsNullOrEmpty(stage.nextStageId) ? $"  → {stage.nextStageId}" : ""));
                     sn.SetPosition(new Rect(COL2_X, y, STAGE_W, STAGE_H));
                     AddElement(sn);
                     var sPort = AddPorts(sn, hasOutput: true, hasInput: true);
 
-                    // Connect quest → stage 0
                     if (i == 0) ConnectPorts(qPort.output, sPort.input);
-                    // Connect stage i-1 → stage i
                     if (i > 0) ConnectPorts(GetOutputPort(stageNodes[i-1]), sPort.input);
                     stageNodes.Add(sn);
 
@@ -144,11 +155,14 @@ namespace ProjectC.Quests.Editor
                             var obj = stage.objectives[j];
                             if (obj == null) continue;
 
-                            var oLines = new List<string> { $"[{obj.objectiveType}] ×{obj.requiredQuantity}" };
-                            if (!string.IsNullOrEmpty(obj.itemTradeItemId)) oLines.Add($"📦 item: {obj.itemTradeItemId}");
-                            if (!string.IsNullOrEmpty(obj.targetNpcId)) oLines.Add($"👤 npc: {obj.targetNpcId}");
-
-                            var on = MakeNode($"🎯 {obj.objectiveId}", objColors, string.Join("\n", oLines), "");
+                            int oi = j; int stIdx = i; // capture
+                            var on = MakeEditableNode($"🎯 {obj.objectiveId}", objColor,
+                                new (string label, string value, System.Action<string> onSave)[] {
+                                    ("ObjId", obj.objectiveId ?? "", v => Quest.stages[stIdx].objectives[oi].objectiveId = v),
+                                    ("Item", obj.itemTradeItemId ?? "", v => Quest.stages[stIdx].objectives[oi].itemTradeItemId = v),
+                                    ("Npc", obj.targetNpcId ?? "", v => Quest.stages[stIdx].objectives[oi].targetNpcId = v),
+                                    ($"[{obj.objectiveType}] ×{obj.requiredQuantity}", $"{obj.requiredQuantity}", v => { if (int.TryParse(v, out var n)) Quest.stages[stIdx].objectives[oi].requiredQuantity = n; })
+                                });
                             on.SetPosition(new Rect(COL3_X, oy, OBJ_W, OBJ_H));
                             AddElement(on);
                             var oPort = AddPorts(on, hasOutput: false, hasInput: true);
@@ -160,16 +174,43 @@ namespace ProjectC.Quests.Editor
                 }
             }
 
-            // Reward — column 4, same row as first stage
+            // Reward — column 4
             if (Quest.rewards != null && HasReward(Quest.rewards))
             {
                 var r = Quest.rewards;
-                var rLines = new List<string>();
-                if (r.credits > 0) rLines.Add($"💰 {r.credits} CR");
-                if (r.items != null) foreach (var it in r.items) rLines.Add($"📦 Item ×{it.count}");
-                if (r.reputation != null) foreach (var rep in r.reputation) rLines.Add($"📈 <b>{rep.faction}</b> +{rep.value}");
+                var rLines = "";
+                if (r.credits > 0) rLines += $"💰 {r.credits} CR  ";
+                if (r.items != null) foreach (var it in r.items) rLines += $"📦 Item ×{it.count}  ";
+                if (r.reputation != null) foreach (var rep in r.reputation) rLines += $"📈 {rep.faction} +{rep.value}  ";
 
-                var rn = MakeNode("🎁 REWARDS", rewardColors, string.Join("\n", rLines), "");
+                var rFields = new List<(string label, string value, System.Action<string> onSave)>
+                {
+                    ("Credits", r.credits.ToString(), v => { if (int.TryParse(v, out var n)) r.credits = n; })
+                };
+                // T-Q30 fix: reputation fields (array, indexed)
+                if (r.reputation != null)
+                {
+                    for (int ri = 0; ri < r.reputation.Length; ri++)
+                    {
+                        int rIdx = ri;
+                        rFields.Add(($"Rep {ri} Faction", r.reputation[ri].faction.ToString(),
+                            v => { if (System.Enum.TryParse<FactionId>(v, out var f)) r.reputation[rIdx].faction = f; }));
+                        rFields.Add(($"Rep {ri} Value", r.reputation[ri].value.ToString(),
+                            v => { if (int.TryParse(v, out var n)) r.reputation[rIdx].value = n; }));
+                    }
+                }
+                if (r.items != null)
+                {
+                    for (int ii = 0; ii < r.items.Length; ii++)
+                    {
+                        int iIdx = ii;
+                        rFields.Add(($"Item {ii} Count", r.items[ii].count.ToString(),
+                            v => { if (int.TryParse(v, out var n)) r.items[iIdx].count = n; }));
+                    }
+                }
+
+                var rn = MakeEditableNode("🎁 REWARDS", rewardColor,
+                    rFields.ToArray(), rLines);
                 rn.SetPosition(new Rect(COL4_X, Y_TOP, REWARD_W, REWARD_H));
                 AddElement(rn);
                 var rPort = AddPorts(rn, hasOutput: false, hasInput: true);
@@ -178,26 +219,123 @@ namespace ProjectC.Quests.Editor
             }
         }
 
-        private Node MakeNode(string title, Color titleColor, string body, string meta)
+        /// <summary>
+        /// T-Q30: создать Node с editable полями (Label в view mode, TextField в edit mode).
+        /// fields: list of (labelName, currentValue, onSaveAction).
+        /// onSaveAction == null → поле только для просмотра. metaLine: строка снизу (всегда видна).
+        /// </summary>
+        private Node MakeEditableNode(string title, Color titleColor,
+            (string label, string value, System.Action<string> onSave)[] fields,
+            string metaLine = "")
         {
             var n = new Node { title = title };
             n.titleContainer.style.backgroundColor = new StyleColor(titleColor);
             n.extensionContainer.style.backgroundColor = new StyleColor(titleColor * 0.6f);
-            if (!string.IsNullOrEmpty(body))
+
+            if (fields != null)
             {
-                var bodyLbl = new Label(body);
-                bodyLbl.style.fontSize = 10;
-                bodyLbl.style.color = new StyleColor(new Color(0.9f, 0.9f, 0.9f, 1f));
-                bodyLbl.style.paddingLeft = 8;
-                bodyLbl.style.paddingTop = 4;
-                bodyLbl.style.paddingRight = 4;
-                bodyLbl.style.paddingBottom = 4;
-                bodyLbl.style.whiteSpace = WhiteSpace.Normal;
-                n.extensionContainer.Add(bodyLbl);
+                foreach (var f in fields)
+                    AddField(n, f);
             }
+
+            if (!string.IsNullOrEmpty(metaLine))
+            {
+                var ml = new Label(metaLine);
+                ml.style.fontSize = 9;
+                ml.style.color = new StyleColor(new Color(0.65f, 0.75f, 0.95f, 1f));
+                ml.style.paddingLeft = 8; ml.style.paddingRight = 8;
+                ml.style.paddingTop = 2; ml.style.paddingBottom = 4;
+                n.extensionContainer.Add(ml);
+            }
+
             n.RefreshExpandedState();
             n.expanded = true;
             return n;
+        }
+
+        /// <summary>T-Q30: добавить Label + TextField к Node.</summary>
+        private static void AddField(Node n, (string label, string value, System.Action<string> onSave) field)
+        {
+            if (field.label == null && field.value == null) return;
+
+            string displayLabel = !string.IsNullOrEmpty(field.label) ? $"{field.label}: " : "";
+
+            // TextField (edit mode)
+            var tf = new TextField(displayLabel) { value = field.value ?? "", name = "editable-field" };
+            tf.style.display = DisplayStyle.None;
+            tf.style.fontSize = 10;
+            tf.style.paddingLeft = 8; tf.style.paddingRight = 4;
+            tf.style.paddingTop = 1; tf.style.paddingBottom = 1;
+            tf.userData = field.onSave;
+            n.extensionContainer.Add(tf);
+
+            // Label (view mode) — only if there's actual content to show
+            if (!string.IsNullOrEmpty(field.value))
+            {
+                var lbl = new Label($"{displayLabel}{field.value}");
+                lbl.name = "editable-label";
+                lbl.style.fontSize = 10;
+                lbl.style.color = new StyleColor(new Color(0.9f, 0.9f, 0.9f, 1f));
+                lbl.style.paddingLeft = 8; lbl.style.paddingRight = 4;
+                lbl.style.paddingTop = 2; lbl.style.paddingBottom = 1;
+                if (field.onSave != null) lbl.style.unityFontStyleAndWeight = FontStyle.Italic; // editable hint
+                lbl.style.whiteSpace = WhiteSpace.Normal;
+                n.extensionContainer.Add(lbl);
+            }
+        }
+
+        /// <summary>T-Q30: toggle all editable fields between Label (view) and TextField (edit).</summary>
+        public void RefreshAllEditUI()
+        {
+            foreach (var n in nodes.Cast<Node>())
+            {
+                if (n == null) continue;
+                foreach (var child in n.extensionContainer.Children())
+                {
+                    if (child is TextField tf && tf.name == "editable-field")
+                        tf.style.display = _editMode ? DisplayStyle.Flex : DisplayStyle.None;
+                    else if (child is Label lbl && lbl.name == "editable-label")
+                        lbl.style.display = _editMode ? DisplayStyle.None : DisplayStyle.Flex;
+                }
+            }
+        }
+
+        /// <summary>T-Q30: read all TextField values and apply callbacks (save to SO).</summary>
+        public void SaveQuest()
+        {
+            if (Quest == null) return;
+            bool modified = false;
+            foreach (var n in nodes.Cast<Node>())
+            {
+                if (n == null) continue;
+                foreach (var child in n.extensionContainer.Children())
+                {
+                    if (child is TextField tf && tf.name == "editable-field" && tf.userData is System.Action<string> cb)
+                    {
+                        cb(tf.value);
+                        modified = true;
+                    }
+                }
+            }
+            if (modified)
+            {
+                EditorUtility.SetDirty(Quest);
+                AssetDatabase.SaveAssets();
+                Debug.Log($"[QuestNodeGraph] Saved {Quest.questId}");
+            }
+        }
+
+        /// <summary>T-Q30: re-read SO and update TextField values.</summary>
+        public void RevertQuest()
+        {
+            if (Quest == null) return;
+            var path = AssetDatabase.GetAssetPath(Quest);
+            var fresh = AssetDatabase.LoadAssetAtPath<QuestDefinition>(path);
+            if (fresh == null) return;
+
+            // Reload the graph from fresh SO
+            LoadQuest(fresh);
+            Debug.Log($"[QuestNodeGraph] Reverted {Quest.questId}");
         }
 
         private struct NodePorts { public Port input; public Port output; }
@@ -256,6 +394,9 @@ namespace ProjectC.Quests.Editor
     {
         private QuestNodeGraphView _graph;
         private UnityEditor.UIElements.ObjectField _questField;
+        private Button _editBtn;
+        private Button _saveBtn;
+        private Button _revertBtn;
 
         [MenuItem("Tools/ProjectC/Quests/Quest Node Graph", priority = 102)]
         public static void Open()
@@ -286,6 +427,28 @@ namespace ProjectC.Quests.Editor
             var fitBtn = new Button(() => _graph?.FrameAll()) { text = "⊡ Fit" };
             fitBtn.style.marginLeft = 4;
             toolbar.Add(fitBtn);
+
+            // T-Q30: Edit/Save/Revert buttons
+            _editBtn = new Button(() =>
+            {
+                if (_graph == null) return;
+                _graph.EditMode = !_graph.EditMode;
+                _editBtn.text = _graph.EditMode ? "🔒 View" : "✏️ Edit";
+                _saveBtn.style.display = _graph.EditMode ? DisplayStyle.Flex : DisplayStyle.None;
+                _revertBtn.style.display = _graph.EditMode ? DisplayStyle.Flex : DisplayStyle.None;
+            }) { text = "✏️ Edit" };
+            _editBtn.style.marginLeft = 4;
+            toolbar.Add(_editBtn);
+
+            _saveBtn = new Button(() => _graph?.SaveQuest()) { text = "💾 Save" };
+            _saveBtn.style.marginLeft = 4;
+            _saveBtn.style.display = DisplayStyle.None;
+            toolbar.Add(_saveBtn);
+
+            _revertBtn = new Button(() => _graph?.RevertQuest()) { text = "↩️ Revert" };
+            _revertBtn.style.marginLeft = 4;
+            _revertBtn.style.display = DisplayStyle.None;
+            toolbar.Add(_revertBtn);
             root.Add(toolbar);
 
             _graph = new QuestNodeGraphView();

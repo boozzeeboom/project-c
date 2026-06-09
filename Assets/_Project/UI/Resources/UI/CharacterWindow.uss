@@ -393,8 +393,8 @@
  padding:2px !important;
 }
 .quest-row {
- flex-direction: row !important;
- align-items: center !important;
+ flex-direction: column !important;
+ align-items: stretch !important;
  padding-left:6px !important;
  padding-right:6px !important;
  padding-top:2px !important;
@@ -402,12 +402,39 @@
  border-radius:2px !important;
 }
 .quest-row:hover { background-color: rgba(120,150,200,0.15) !important; }
-.quest-row-title {
+/* T-Q21: top-line (badge + title + counter + track button) — горизонтальный row внутри vertical quest-row. */
+.quest-row > Label[name="row-state"],
+.quest-row > Label[name="row-title"],
+.quest-row > Label[name="row-objectives"],
+.quest-row > Button[name="row-track-btn"] {
+ display: inline-block !important;
+}
+.quest-row > Label[name="row-title"] {
  flex-grow:1 !important;
+}
+.quest-row-title {
  font-size:11px !important;
  color: rgb(220,220,230) !important;
  -unity-text-align: middle-left !important;
  white-space: normal !important;
+}
+.quest-row-objectives-container {
+ flex-direction: column !important;
+ align-items: flex-start !important;
+ margin-top:2px !important;
+ margin-left:12px !important;
+}
+.quest-row-objective-line {
+ font-size:10px !important;
+ color: rgb(200,200,210) !important;
+ -unity-text-align: middle-left !important;
+ white-space: normal !important;
+ margin:0 !important;
+ padding:0 !important;
+}
+.quest-row-objective-line-done {
+ color: rgba(150,150,150,0.6) !important;
+ -unity-font-style: italic !important;
 }
 .quest-row-state {
  font-size:10px !important;

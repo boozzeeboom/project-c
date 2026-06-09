@@ -40,13 +40,14 @@ namespace ProjectC.Quests.Dto
         }
     }
 
-    /// <summary>Single objective progress: id, completed, counter.</summary>
+    /// <summary>Single objective progress: id, description, counter, required quantity.</summary>
     public struct ObjectiveProgressDto : INetworkSerializable
     {
         public string objectiveId;
         public string description;
         public bool completed;
-        public int currentValue;     // для future HaveItem with qty>1 (T-Q15)
+        public int currentValue;     // T-Q21: HaveItem qty / ReachLocation distance / ReputationAtLeast value
+        public int requiredQuantity; // T-Q21: 1 если не указано (1 медная руда, 1 NPC talk)
 
         public void NetworkSerialize<T>(BufferSerializer<T> s) where T : IReaderWriter
         {
@@ -54,6 +55,7 @@ namespace ProjectC.Quests.Dto
             s.SerializeValue(ref description);
             s.SerializeValue(ref completed);
             s.SerializeValue(ref currentValue);
+            s.SerializeValue(ref requiredQuantity);
         }
     }
 }

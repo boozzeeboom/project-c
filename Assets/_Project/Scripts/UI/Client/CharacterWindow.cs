@@ -200,6 +200,17 @@ namespace ProjectC.UI.Client
         public string objectivesSummary; // "3/5 objectives" или пусто
         public int objectiveCompletedCount;
         public int objectiveTotalCount;
+        // T-Q21: per-objective detail list (для рендера в row под quest'ом). Lazy-initialized.
+        public System.Collections.Generic.List<ObjectiveRowItem> objectives;
+        }
+
+        /// <summary>T-Q21: per-objective row data for the nested objectives list.</summary>
+        public class ObjectiveRowItem
+        {
+            public string description;
+            public bool completed;
+            public int currentValue;
+            public int requiredQuantity;
         }
 
         // ============================================================
@@ -532,7 +543,8 @@ namespace ProjectC.UI.Client
             {
             _questsDiscoveredList.makeItem = MakeQuestRow;
             _questsDiscoveredList.bindItem = BindQuestRow;
-            _questsDiscoveredList.fixedItemHeight =28;
+            _questsDiscoveredList.unbindItem = UnbindQuestRow;
+            _questsDiscoveredList.fixedItemHeight =0;  // T-Q21: variable
             _questsDiscoveredList.selectionType = SelectionType.Single;
             _questsDiscoveredList.selectedIndex = -1;
             _questsDiscoveredList.selectionChanged += selectedItems =>
@@ -1425,7 +1437,8 @@ namespace ProjectC.UI.Client
             if (list == null) return;
             list.makeItem = MakeQuestRow;
             list.bindItem = BindQuestRow;
-            list.fixedItemHeight =28;
+            list.unbindItem = UnbindQuestRow;  // T-Q21: cleanup nested objectives container (prevent leak).
+            list.fixedItemHeight =0;  // T-Q21: 0 = variable heights. UI Toolkit measures row content.
             list.itemsSource = cacheRef;
             }
 
@@ -1451,6 +1464,11 @@ namespace ProjectC.UI.Client
             // для доступа к evt.target (row-track-btn) → walk до row → читаем userData (questId).
             trackBtn.RegisterCallback<ClickEvent>(OnQuestRowTrackClicked);
             row.Add(trackBtn);
+
+            // T-Q21: nested objectives list (vertical container, populated в BindQuestRow).
+            var objContainer = new VisualElement { name = "row-objectives-container" };
+            objContainer.AddToClassList("quest-row-objectives-container");
+            row.Add(objContainer);
             return row;
             }
 
@@ -1489,9 +1507,41 @@ namespace ProjectC.UI.Client
             bool isTracked = trkInst != null && trkInst.TrackedQuestId == q.questId;
             trackBtn.text = isTracked ? "Не следить" : "Следить";
             }
+
+            // T-Q21: render objectives list under the quest row.
+            var objContainer = row.Q<VisualElement>("row-objectives-container");
+            if (objContainer != null)
+            {
+                objContainer.Clear();
+                if (q.objectives != null)
+                {
+                    for (int k = 0; k < q.objectives.Count; k++)
+                    {
+                        var o = q.objectives[k];
+                        var lbl = new Label();
+                        lbl.AddToClassList("quest-row-objective-line");
+                        if (o.completed) lbl.AddToClassList("quest-row-objective-line-done");
+                        // Format: ☐/☑ Description (current/total) или просто description
+                        string bullet = o.completed ? "☑" : "☐";
+                        string counter = "";
+                        if (o.requiredQuantity > 1)
+                        {
+                            counter = $" ({o.currentValue}/{o.requiredQuantity})";
+                        }
+                        lbl.text = $"  {bullet} {o.description}{counter}";
+                        objContainer.Add(lbl);
+                    }
+                }
+            }
             }
 
-            // T-Q12: handler — ClickEvent передаёт target = нажатую кнопку → walk до row → читаем userData (questId).
+            // T-Q21: cleanup nested objectives container (prevent VisualElement leak).
+            private void UnbindQuestRow(VisualElement row, int index)
+            {
+            if (row == null) return;
+            var objContainer = row.Q<VisualElement>("row-objectives-container");
+            if (objContainer != null) objContainer.Clear();
+            }
             private void OnQuestRowTrackClicked(ClickEvent evt)
             {
             var btn = evt.target as Button;
@@ -1593,6 +1643,24 @@ namespace ProjectC.UI.Client
             {
             item.objectiveTotalCount = objs.Length;
             foreach (var o in objs) if (o.completed) item.objectiveCompletedCount++;
+            // T-Q21: populate nested objectives list (description + current/required for UI).
+            if (item.objectives == null) item.objectives = new System.Collections.Generic.List<ObjectiveRowItem>(objs.Length);
+            else item.objectives.Clear();
+            for (int j = 0; j < objs.Length; j++)
+            {
+                var o = objs[j];
+                item.objectives.Add(new ObjectiveRowItem
+                {
+                    description = o.description ?? o.objectiveId ?? "",
+                    completed = o.completed,
+                    currentValue = o.currentValue,
+                    requiredQuantity = o.requiredQuantity > 0 ? o.requiredQuantity : 1
+                });
+            }
+            }
+            else if (item.objectives != null)
+            {
+                item.objectives.Clear();
             }
             item.objectivesSummary = item.objectiveTotalCount >0
             ? $"{item.objectiveCompletedCount}/{item.objectiveTotalCount}"

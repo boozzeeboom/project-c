@@ -588,7 +588,8 @@ namespace ProjectC.Quests
                 {
                     var op = inst.objectiveProgress[j];
                     string desc = "";
-                    // Look up description from current stage's objective
+                    int reqQty = 1;  // T-Q21: default 1 (TalkToNpc, DeliverItem, etc.)
+                    // Look up description AND requiredQuantity from current stage's objective
                     if (def != null && !string.IsNullOrEmpty(inst.currentStageId))
                     {
                         var st = def.GetStage(inst.currentStageId);
@@ -599,6 +600,7 @@ namespace ProjectC.Quests
                                 if (st.objectives[k] != null && st.objectives[k].objectiveId == op.objectiveId)
                                 {
                                     desc = st.objectives[k].description;
+                                    reqQty = st.objectives[k].requiredQuantity;
                                     break;
                                 }
                             }
@@ -609,7 +611,8 @@ namespace ProjectC.Quests
                         objectiveId = op.objectiveId,
                         description = desc,
                         completed = op.completed,
-                        currentValue = op.currentCount
+                        currentValue = op.currentCount,
+                        requiredQuantity = reqQty
                     };
                 }
                 arr[i] = new QuestProgressDto

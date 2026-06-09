@@ -669,6 +669,62 @@ T-X4 (input remap: pickup E → F) ← future TODO, после end-to-end demo
 
 ---
 
+## 8.3.2 M15 — Toast notifications (DESIGNED 2026-06-09)
+
+**Контекст:** После M13 квесты работают, но feedback loop слабый — игрок не видит моментальных уведомлений о pickup/accept/complete/rewards. Жалоба: "не понял что квест получен, надо смотреть P-таб".
+
+**Решение:** UI Toolkit toast overlay (top-right) + `ToastService.Show(message, kind)` API. Подписка на существующий `OnDialogActionResultReceived` event + `OnSnapshotUpdated`.
+
+**Полная спецификация:** `docs/dev/M15_DESIGN_NOTE.md`.
+
+### T-Q23 — ToastUI + Service (medium, ~1.5 ч)
+
+**Скоуп:**
+- `ToastUI.cs` — singleton MonoBehaviour с UIDocument, runtime UXML clone, queue (max 3 visible, fade 3 sec)
+- `ToastUI.uxml/.uss` — стили (top-right, fade, 4 kind colors: Info/Success/Warning/Error)
+- `ToastService.cs` — static API `Show(string, ToastKind)` (fire-and-forget)
+- `ToastKind.cs` — enum
+- `[ToastService]` GameObject в BootstrapScene (additive, NOT replace)
+
+**Файлы:** `Assets/_Project/UI/Toast/*.{cs,uxml,uss}`
+**Verify:** Roslyn вызов `ToastService.Show("Hello", ToastKind.Success)` → toast visible top-right, fade out 3 sec
+
+**Risk:** low. UI Toolkit, no network.
+
+### T-Q24 — QuestClientState event routing (small, ~1 ч)
+
+**Скоуп:**
+- `QuestClientState` подписывается на `OnDialogActionResultReceived` → map to ToastService.Show:
+  - `GiveCredits` (30) → "💰 +{delta} CR"
+  - `AddReputation` (23) → "📈 {faction} +{delta}"
+  - `AddNpcAttitude` (24) → "💚 {npc} +{delta}"
+  - `GiveItem` (20) → "📦 +1 {itemName}"
+  - `TakeItem` (21) → "📦 -1 {itemName}"
+  - `AcceptQuest` (14) → "📜 Квест принят: {questId}"
+  - `OfferQuest` (10) → "✨ Найден квест: {displayName}"
+- `QuestClientState` подписывается на `OnSnapshotUpdated` → если `prev.discovered < curr.discovered` → toast
+
+**Файлы:** `QuestClientState.cs`
+**Verify:** Accept quest → "📜 Квест принят" + AddNpcAttitude → "💚 Mira +5"
+
+**Risk:** low.
+
+### T-Q25 — DialogActionResultDto.intParam (small, ~0.5 ч)
+
+**Скоуп:**
+- `DialogActionResultDto` — add `public int intParam` field + serialize
+- `QuestServer.FireDialogAction` — pass `action.intParam` to `SendDialogActionResultToClient` для всех action types (delta для display)
+- Reuse existing OnDialogActionResultReceived event — никаких новых RPC
+
+**Файлы:** `DialogStepDto.cs`, `QuestServer.cs`
+**Verify:** GiveCredits +10 → toast "💰 +10 CR" (delta корректный)
+
+**Risk:** low. Backward-compatible (default intParam=0 → fallback to hardcoded messages).
+
+**Общий effort M15:** ~3 ч, low risk.
+
+---
+
 ## 8.4 Milestones (обновлено)
 
 | Milestone | Тикеты | Что работает |
@@ -687,7 +743,8 @@ T-X4 (input remap: pickup E → F) ← future TODO, после end-to-end demo
 | **M10 — Editor tool** | T-Q09, T-Q09b | Quest Database Explorer с full CRUD + GraphView. | ✅ DONE (M10 partially — CRUD done, GraphView deferred) |
 | **M11 — End-to-end demo** | Mira quest full playthrough. | 🟡 Mira quest items + dialog tree prepared 2026-06-08 (awaiting user Play Mode test). |
 | **M12 — Input remap** | T-X4 | F = pickup (future, post-demo). |
-| **M13 — Real-time objective system** | T-Q20, T-Q21, T-Q22 | Auto-evaluate objectives, fire onEnter/onComplete actions, stage transitions, UI progress. **📋 DESIGN COMPLETE 2026-06-08 — ready for next session coding.** |
+| **M13 — Real-time objective system** | T-Q20, T-Q21, T-Q22 | Auto-evaluate objectives, fire onEnter/onComplete actions, stage transitions, UI progress. | ✅ DONE 2026-06-09 (T-Q20, T-Q21, T-Q22 verified) |
+| **M15 — Toast notifications** | T-Q23, T-Q24, T-Q25 | Pickup/accept/complete/reward feedback to player. UI Toolkit overlay. | 📋 DESIGN COMPLETE 2026-06-09 — ready for next session coding. |
 
 **Рекомендуемый темп:** 1-2 тикета за сессию, 1 PR за тикет.
 

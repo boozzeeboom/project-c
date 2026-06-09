@@ -228,6 +228,11 @@ namespace ProjectC.Quests
 
             if (debugMode) Debug.Log($"[QuestServer] RequestTalkToNpc client={clientId} npc={npcId} treeHint={treeIdHint}");
 
+            // T-Q22 fix: mark NPC as talked-to for TalkToNpc objective evaluation.
+            // MarkNpcTalked must happen HERE (not only in AdvanceDialogue) because
+            // the player may just press E and never select a dialogue option.
+            QuestWorld.Instance?.MarkNpcTalked(clientId, npcId);
+
             // T-Q11c-fix: если сессия уже открыта (повторный E / stale state) — закрыть и открыть заново.
             // Иначе OpenDialog возвращает null и игрок видит "failed to open session".
             if (QuestWorld.Instance.GetDialogSession(clientId) != null)

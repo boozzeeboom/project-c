@@ -1,8 +1,0 @@
-<?xml version="1.0" encoding="utf-8"?>
-<!--
-  T-Q23: ToastUI.uxml — root overlay (top-right) + container для toast entries.
-  Auto-clone runtime; entries добавляются ToastUI.BuildToastElement().
--->
-<ui:UXML xmlns:ui="UnityEngine.UIElements" xmlns:uie="UnityEditor.UIElements">
-  <ui:VisualElement name="toast-container" class="toast-container" />
-</ui:UXML>

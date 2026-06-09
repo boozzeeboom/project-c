@@ -271,10 +271,34 @@ namespace ProjectC.Quests.UI
  else { Show(); BuildUI(); }
  }
 
+ // T-Q23: format DialogActionResultDto → human-readable text.
+ // Used by HandleActionResultReceived (in-dialog label).
+ // Action type IDs match DialogueActionType enum (DialogueAction.cs):
+ //   GiveCredits=30, AddReputation=31, AddNpcAttitude=32, CompleteObjective=11
+ private static string FormatActionResultForDialog(DialogActionResultDto r)
+ {
+     string data = r.resultData ?? "";
+     string prefix = r.success ? "✅" : "❌";
+     switch (r.actionType)
+     {
+         case 20: return string.IsNullOrEmpty(data) ? $"{prefix} +1 предмет" : $"{prefix} +1 {data}";
+         case 21: return string.IsNullOrEmpty(data) ? $"{prefix} -1 предмет" : $"{prefix} -1 {data}";
+         case 30: return string.IsNullOrEmpty(data) ? $"{prefix} Кредиты" : $"{prefix} +{data} CR";
+         case 31: return string.IsNullOrEmpty(data) ? $"{prefix} Репутация" : $"{prefix} {data}";
+         case 32:
+             if (string.IsNullOrEmpty(data)) return $"{prefix} Отношение";
+             var parts = data.Split(':');
+             if (parts.Length == 2) return $"{prefix} {parts[0]} +{parts[1]}";
+             return $"{prefix} {data}";
+         case 11: return string.IsNullOrEmpty(data) ? $"{prefix} Цель выполнена" : $"{prefix} {data}";
+         default: return string.IsNullOrEmpty(data) ? prefix : $"{prefix} {data}";
+     }
+ }
+
  private void HandleActionResultReceived(DialogActionResultDto result)
  {
-     string status = result.success ? "OK" : "FAIL";
-     _lastActionMessage = $"{status}: {result.actionType} {result.resultData}";
+     // T-Q23 fix: format human-readable text instead of "OK: 30 200".
+     _lastActionMessage = FormatActionResultForDialog(result);
      _lastActionMessageTime = Time.time;
      if (Debug.isDebugBuild) Debug.Log($"[DialogWindow] Action result: {_lastActionMessage}");
 

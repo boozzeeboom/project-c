@@ -86,6 +86,21 @@ namespace ProjectC.Quests.Testing
                 }
             }
 
+            // T-Q23: push "Квест найден" toast to client (DisplayName из QuestDefinition).
+            // NetworkPlayer владеет ReceiveQuestDiscoveredTargetRpc → QuestClientState.OnQuestDiscovered → QuestToast.
+            var def = QuestWorld.Instance?.GetQuest(questId);
+            string displayName = def != null && !string.IsNullOrEmpty(def.displayName) ? def.displayName : questId;
+            var tgtClient = NetworkManager.Singleton.ConnectedClients[clientId];
+            var tgtPlayer = tgtClient?.PlayerObject;
+            if (tgtPlayer != null)
+            {
+                var tgtNetPlayer = tgtPlayer.GetComponent<ProjectC.Player.NetworkPlayer>();
+                if (tgtNetPlayer != null)
+                {
+                    tgtNetPlayer.ReceiveQuestDiscoveredTargetRpc(questId, displayName);
+                }
+            }
+
             Debug.Log($"[M13QuestTriggerZone] Auto-discovered quest '{questId}' for client {clientId} on enter trigger '{name}'");
         }
     }

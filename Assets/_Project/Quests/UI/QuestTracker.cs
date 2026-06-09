@@ -50,12 +50,19 @@ namespace ProjectC.Quests.UI
  private static QuestTracker _cachedInstance;
  public static QuestTracker GetOrFindInstance()
  {
+     // T-Q21 fix: не вызываем GameObject.Find во время shutdown (Assertion failed on go.IsActive()).
      if (Instance != null) return Instance;
      if (_cachedInstance != null) return _cachedInstance;
-     var go = GameObject.Find("[QuestTracker]");
-     if (go != null) {
-         _cachedInstance = go.GetComponent<QuestTracker>();
-         if (_cachedInstance != null) return _cachedInstance;
+     // Application.isPlaying == false означает edit mode или shutdown — Find небезопасен.
+     if (!Application.isPlaying) return null;
+     try {
+         var go = GameObject.Find("[QuestTracker]");
+         if (go != null) {
+             _cachedInstance = go.GetComponent<QuestTracker>();
+             if (_cachedInstance != null) return _cachedInstance;
+         }
+     } catch (System.Exception) {
+         return null;
      }
      return null;
  }
@@ -98,6 +105,7 @@ namespace ProjectC.Quests.UI
  {
  TryUnsubscribe();
  if (Instance == this) Instance = null;
+ if (_cachedInstance == this) _cachedInstance = null;  // T-Q21 fix: clear cache.
  }
 
  private void Update()

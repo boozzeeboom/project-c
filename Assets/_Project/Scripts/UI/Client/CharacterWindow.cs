@@ -1437,7 +1437,8 @@ namespace ProjectC.UI.Client
             private void UnsubscribeQuestTracker()
             {
             if (!_isQuestTrackerSubscribed) return;
-            var trk = QuestTracker.GetOrFindInstance();
+            // T-Q21 fix: используем только Instance (не Find) чтобы не дёргать GameObject.Find во время shutdown.
+            var trk = QuestTracker.Instance;
             if (trk != null) trk.OnTrackChanged -= HandleQuestTrackerChanged;
             _isQuestTrackerSubscribed = false;
             }

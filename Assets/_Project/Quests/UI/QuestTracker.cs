@@ -42,6 +42,21 @@ namespace ProjectC.Quests.UI
  public string TrackedQuestId => _trackedQuestId;
  public bool HasTrackedQuest => !string.IsNullOrEmpty(_trackedQuestId);
 
+ // T-Q21: lazy Instance init — fallback для случая когда [QuestTracker] есть в сцене,
+ // но Awake не отработал к моменту UI click.
+ private static QuestTracker _cachedInstance;
+ public static QuestTracker GetOrFindInstance()
+ {
+     if (Instance != null) return Instance;
+     if (_cachedInstance != null) return _cachedInstance;
+     var go = GameObject.Find("[QuestTracker]");
+     if (go != null) {
+         _cachedInstance = go.GetComponent<QuestTracker>();
+         if (_cachedInstance != null) return _cachedInstance;
+     }
+     return null;
+ }
+
  private void Awake()
  {
  if (Instance == null) Instance = this;
@@ -155,6 +170,11 @@ namespace ProjectC.Quests.UI
  }
  _trackedQuestId = questId;
  if (Debug.isDebugBuild) Debug.Log($"[QuestTracker] Track: questId={questId}");
+ // T-Q21: auto EnsureBuilt если Awake/OnEnable ещё не отработали.
+ if (!_built) {
+     EnsureBuilt();
+     TrySubscribe();
+ }
  RefreshDisplay();
  }
 

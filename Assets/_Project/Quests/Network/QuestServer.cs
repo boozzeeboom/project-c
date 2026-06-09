@@ -614,6 +614,7 @@ namespace ProjectC.Quests
                         currentValue = op.currentCount,
                         requiredQuantity = reqQty
                     };
+                    if (Debug.isDebugBuild) Debug.Log($"[QuestServer] BuildQuestSnapshot: quest={inst.questId} obj={op.objectiveId} desc='{desc}' reqQty={reqQty} curVal={op.currentCount} completed={op.completed}");
                 }
                 arr[i] = new QuestProgressDto
                 {

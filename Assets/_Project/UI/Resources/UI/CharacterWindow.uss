@@ -402,14 +402,12 @@
  border-radius:2px !important;
 }
 .quest-row:hover { background-color: rgba(120,150,200,0.15) !important; }
-/* T-Q21: top-line (badge + title + counter + track button) — горизонтальный row внутри vertical quest-row. */
-.quest-row > Label[name="row-state"],
-.quest-row > Label[name="row-title"],
-.quest-row > Label[name="row-objectives"],
-.quest-row > Button[name="row-track-btn"] {
- display: inline-block !important;
+/* T-Q21 fix: top-line (badge + title + counter + track button) — горизонтальный row. */
+.quest-row-top-line {
+ flex-direction: row !important;
+ align-items: center !important;
 }
-.quest-row > Label[name="row-title"] {
+.quest-row-top-line > Label[name="row-title"] {
  flex-grow:1 !important;
 }
 .quest-row-title {

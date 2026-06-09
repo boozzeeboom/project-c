@@ -47,11 +47,22 @@ namespace ProjectC.Quests.Testing
                 return;
             }
 
-            // Idempotency
+            // Idempotency — check ALL terminal states (not just existence in log)
             var existing = w.GetPlayerQuests(clientId);
             for (int i = 0; i < existing.Count; i++)
             {
-                if (existing[i].questId == questId) { _alreadyTriggered.Add(clientId); return; }
+                if (existing[i].questId != questId) continue;
+                var st = existing[i].state;
+                if (st == QuestState.Completed || st == QuestState.TurnedIn || st == QuestState.Failed) {
+                    Debug.Log($"[M13QuestTriggerZone] Quest '{questId}' already {st} for client {clientId} — skipping discovery");
+                    _alreadyTriggered.Add(clientId);
+                    return;
+                }
+                if (st == QuestState.Discovered || st == QuestState.Offered || st == QuestState.Active) {
+                    Debug.Log($"[M13QuestTriggerZone] Quest '{questId}' already {st} for client {clientId} — skipping re-discovery");
+                    _alreadyTriggered.Add(clientId);
+                    return;
+                }
             }
 
             var newInst = new QuestInstance
@@ -67,8 +78,6 @@ namespace ProjectC.Quests.Testing
             // Send snapshot to client
             var qserver = QuestServer.Instance;
             if (qserver != null) {
-                // TriggerZone needs to notify client. QuestServer.SendQuestSnapshotToClient is private.
-                // Use reflection: just call the private method.
                 var method = typeof(QuestServer).GetMethod("SendQuestSnapshotToClient",
                     System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.NonPublic,
                     null, new System.Type[] { typeof(ulong) }, null);

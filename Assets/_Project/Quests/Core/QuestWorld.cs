@@ -765,12 +765,19 @@ namespace ProjectC.Quests
                 if (!obj.required || obj.optional) continue;
 
                 var progress = instance.GetOrCreateProgress(obj.objectiveId);
+                int prevCount = progress.currentCount;
+                bool prevCompleted = progress.completed;
                 if (progress.completed) continue;
 
                 if (EvaluateObjective(clientId, instance, obj, progress))
                 {
                     progress.completed = true;
                     if (Debug.isDebugBuild) Debug.Log($"[QuestWorld] Objective completed: quest={def.questId} stage={stage.stageId} obj={obj.objectiveId}");
+                    changed = true;
+                }
+                else if (progress.currentCount != prevCount || progress.completed != prevCompleted)
+                {
+                    // T-Q21: progress изменился (e.g. picked up item, qty 0→1) — push snapshot чтобы UI обновил (1/3).
                     changed = true;
                 }
             }
@@ -784,7 +791,16 @@ namespace ProjectC.Quests
                 }
             }
 
-            if (changed) SavePlayer(clientId);
+            if (changed) {
+                SavePlayer(clientId);
+                // T-Q21: push snapshot на client чтобы UI обновил счётчик objective (1/3, 2/3 ...).
+                if (QuestServer.Instance != null) {
+                    var method = typeof(QuestServer).GetMethod("SendQuestSnapshotToClient",
+                        System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.NonPublic,
+                        null, new System.Type[] { typeof(ulong) }, null);
+                    if (method != null) method.Invoke(QuestServer.Instance, new object[] { clientId });
+                }
+            }
             return changed;
         }
 

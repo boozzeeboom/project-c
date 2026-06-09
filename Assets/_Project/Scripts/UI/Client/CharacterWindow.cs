@@ -544,7 +544,7 @@ namespace ProjectC.UI.Client
             _questsDiscoveredList.makeItem = MakeQuestRow;
             _questsDiscoveredList.bindItem = BindQuestRow;
             _questsDiscoveredList.unbindItem = UnbindQuestRow;
-            _questsDiscoveredList.fixedItemHeight =0;  // T-Q21: variable
+            _questsDiscoveredList.fixedItemHeight =64;  // T-Q21 fix: см. SetupQuestListView.
             _questsDiscoveredList.selectionType = SelectionType.Single;
             _questsDiscoveredList.selectedIndex = -1;
             _questsDiscoveredList.selectionChanged += selectedItems =>
@@ -1438,7 +1438,10 @@ namespace ProjectC.UI.Client
             list.makeItem = MakeQuestRow;
             list.bindItem = BindQuestRow;
             list.unbindItem = UnbindQuestRow;  // T-Q21: cleanup nested objectives container (prevent leak).
-            list.fixedItemHeight =0;  // T-Q21: 0 = variable heights. UI Toolkit measures row content.
+            // T-Q21 fix: variable heights (fixedItemHeight=0) + RefreshItems race → ArgumentOutOfRangeException
+            // в UI Toolkit 6.0 (PostRefresh.ReleaseItem). Use fixedItemHeight=64 — fits badge row + 3 objectives.
+            // Если у quest >3 objectives — последние могут быть clipped, но стабильность важнее.
+            list.fixedItemHeight =64;
             list.itemsSource = cacheRef;
             }
 
@@ -1447,23 +1450,27 @@ namespace ProjectC.UI.Client
             {
             var row = new VisualElement();
             row.AddToClassList("quest-row");
+            // T-Q21 fix: top-line (badge+title+counter+track) в одном horizontal row.
+            // Раньше всё было column → track-btn уезжал за границу 64px фиксированной высоты.
+            var topLine = new VisualElement { name = "row-top-line" };
+            topLine.AddToClassList("quest-row-top-line");
+            row.Add(topLine);
+
             var badge = new Label { name = "row-state" };
             badge.AddToClassList("quest-row-state");
-            row.Add(badge);
+            topLine.Add(badge);
             var title = new Label { name = "row-title" };
             title.AddToClassList("quest-row-title");
-            row.Add(title);
+            topLine.Add(title);
             var obj = new Label { name = "row-objectives" };
             obj.AddToClassList("quest-row-objectives");
-            row.Add(obj);
+            topLine.Add(obj);
             // T-Q12: per-row "Следить" / "Не следить" button (toggle).
             var trackBtn = new Button { name = "row-track-btn" };
             trackBtn.AddToClassList("quest-row-track-btn");
             trackBtn.text = "Следить";
-            // UI Toolkit Button.clicked event не передаёт sender — используем RegisterCallback<ClickEvent>
-            // для доступа к evt.target (row-track-btn) → walk до row → читаем userData (questId).
             trackBtn.RegisterCallback<ClickEvent>(OnQuestRowTrackClicked);
-            row.Add(trackBtn);
+            topLine.Add(trackBtn);
 
             // T-Q21: nested objectives list (vertical container, populated в BindQuestRow).
             var objContainer = new VisualElement { name = "row-objectives-container" };
@@ -1551,7 +1558,7 @@ namespace ProjectC.UI.Client
             if (row == null) return;
             var questId = row.userData as string;
             if (string.IsNullOrEmpty(questId)) return;
-            var trk = QuestTracker.Instance;
+            var trk = QuestTracker.GetOrFindInstance();
             if (trk == null)
             {
             SetMessage("QuestTracker недоступен", true);
@@ -1697,6 +1704,25 @@ namespace ProjectC.UI.Client
             }
 
             private void ApplyQuestListRefresh()
+            {
+            // T-Q21: schedule на next frame — fixedItemHeight=0 (variable) layout update + bindItem
+            // могут race с одновременным RefreshItems → ArgumentOutOfRangeException в ReleaseItem.
+            // Отложенный вызов гарантирует что предыдущий layout pass завершился.
+            if (_pendingQuestRefresh) return;
+            _pendingQuestRefresh = true;
+            StartCoroutine(DeferredQuestRefresh());
+            }
+
+            private bool _pendingQuestRefresh;
+
+            private System.Collections.IEnumerator DeferredQuestRefresh()
+            {
+            yield return null;  // wait one frame
+            _pendingQuestRefresh = false;
+            ApplyQuestListRefreshImmediate();
+            }
+
+            private void ApplyQuestListRefreshImmediate()
             {
             // Rebuild only if reference changed (RefreshItems — UI Toolkit pitfall R3-005).
             if (_questsActiveList != null)

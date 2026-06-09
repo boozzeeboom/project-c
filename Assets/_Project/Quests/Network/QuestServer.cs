@@ -1182,7 +1182,8 @@ namespace ProjectC.Quests
                         {
                             actionType = (byte)action.type,
                             success = true,
-                            resultData = action.intParam.ToString()
+                            resultData = action.intParam.ToString(),
+                            intParam = action.intParam  // T-Q25
                         });
                     }
                     break;
@@ -1211,7 +1212,8 @@ namespace ProjectC.Quests
                         {
                             actionType = (byte)action.type,
                             success = true,
-                            resultData = $"{faction}:{newValue}"
+                            resultData = $"{faction}:{newValue}",
+                            intParam = delta  // T-Q25
                         });
                     }
                     break;
@@ -1241,7 +1243,8 @@ namespace ProjectC.Quests
                         {
                             actionType = (byte)action.type,
                             success = true,
-                            resultData = $"{targetNpcId}:{newAttitude}"
+                            resultData = $"{targetNpcId}:{newAttitude}",
+                            intParam = delta  // T-Q25
                         });
                     }
                     break;

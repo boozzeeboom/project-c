@@ -195,18 +195,25 @@ namespace ProjectC.Quests.UI
         private string FormatActionMessage(DialogActionResultDto r)
         {
             string data = r.resultData ?? "";
+            // T-Q25: intParam приоритетнее (delta value), fallback на resultData.
+            int delta = r.intParam;
             // Action type IDs: GiveCredits=30, AddReputation=31, AddNpcAttitude=32, CompleteObjective=11
             switch (r.actionType)
             {
                 case 20: return string.IsNullOrEmpty(data) ? "📦 +1 предмет" : $"📦 +1 {data}";
                 case 21: return string.IsNullOrEmpty(data) ? "📦 -1 предмет" : $"📦 -1 {data}";
-                case 30: return string.IsNullOrEmpty(data) ? "💰 Кредиты получены" : $"💰 +{data} CR";
-                case 31: return string.IsNullOrEmpty(data) ? "📈 Репутация" : $"📈 {data}";
+                case 30: return $"💰 +{delta} CR";
+                case 31:
+                    // resultData: "{faction}:{newValue}" — e.g. "GuildOfThoughts:75".
+                    if (string.IsNullOrEmpty(data)) return $"📈 Репутация +{delta}";
+                    var fparts = data.Split(':');
+                    if (fparts.Length == 2) return $"📈 {fparts[0]} +{delta}";
+                    return $"📈 {data}";
                 case 32:
                     // resultData: "{npcId}:{newAttitude}" — e.g. "mira_01:5".
-                    if (string.IsNullOrEmpty(data)) return "💚 Отношение";
+                    if (string.IsNullOrEmpty(data)) return $"💚 Отношение +{delta}";
                     var parts = data.Split(':');
-                    if (parts.Length == 2) return $"💚 {parts[0]} +{parts[1]}";
+                    if (parts.Length == 2) return $"💚 {parts[0]} +{delta}";
                     return $"💚 {data}";
                 case 11: return string.IsNullOrEmpty(data) ? "✅ Цель выполнена" : $"✅ {data}";
                 default: return data;

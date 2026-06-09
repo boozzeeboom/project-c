@@ -275,20 +275,26 @@ namespace ProjectC.Quests.UI
  // Used by HandleActionResultReceived (in-dialog label).
  // Action type IDs match DialogueActionType enum (DialogueAction.cs):
  //   GiveCredits=30, AddReputation=31, AddNpcAttitude=32, CompleteObjective=11
+ // T-Q25: использует intParam (delta) + resultData (display name) для clean format.
  private static string FormatActionResultForDialog(DialogActionResultDto r)
  {
      string data = r.resultData ?? "";
+     int delta = r.intParam;
      string prefix = r.success ? "✅" : "❌";
      switch (r.actionType)
      {
          case 20: return string.IsNullOrEmpty(data) ? $"{prefix} +1 предмет" : $"{prefix} +1 {data}";
          case 21: return string.IsNullOrEmpty(data) ? $"{prefix} -1 предмет" : $"{prefix} -1 {data}";
-         case 30: return string.IsNullOrEmpty(data) ? $"{prefix} Кредиты" : $"{prefix} +{data} CR";
-         case 31: return string.IsNullOrEmpty(data) ? $"{prefix} Репутация" : $"{prefix} {data}";
+         case 30: return $"{prefix} +{delta} CR";
+         case 31:
+             if (string.IsNullOrEmpty(data)) return $"{prefix} Репутация +{delta}";
+             var fparts = data.Split(':');
+             if (fparts.Length == 2) return $"{prefix} {fparts[0]} +{delta}";
+             return $"{prefix} {data}";
          case 32:
-             if (string.IsNullOrEmpty(data)) return $"{prefix} Отношение";
+             if (string.IsNullOrEmpty(data)) return $"{prefix} Отношение +{delta}";
              var parts = data.Split(':');
-             if (parts.Length == 2) return $"{prefix} {parts[0]} +{parts[1]}";
+             if (parts.Length == 2) return $"{prefix} {parts[0]} +{delta}";
              return $"{prefix} {data}";
          case 11: return string.IsNullOrEmpty(data) ? $"{prefix} Цель выполнена" : $"{prefix} {data}";
          default: return string.IsNullOrEmpty(data) ? prefix : $"{prefix} {data}";

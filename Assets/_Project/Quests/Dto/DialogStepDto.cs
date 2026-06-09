@@ -74,7 +74,8 @@ namespace ProjectC.Quests.Dto
         public byte actionType;     // DialogueActionType enum
         public bool success;
         public string errorMessage;
-        public string resultData;   // optional (e.g. questId offered)
+        public string resultData;   // optional (e.g. questId offered, "npcId:value" for AddNpcAttitude)
+        public int intParam;        // T-Q25: delta value для GiveCredits/AddReputation/AddNpcAttitude
 
         public void NetworkSerialize<T>(BufferSerializer<T> s) where T : IReaderWriter
         {
@@ -87,6 +88,7 @@ namespace ProjectC.Quests.Dto
             if (s.IsReader) { errorMessage = err ?? ""; resultData = dat ?? ""; }
             s.SerializeValue(ref actionType);
             s.SerializeValue(ref success);
+            s.SerializeValue(ref intParam);
         }
     }
 }

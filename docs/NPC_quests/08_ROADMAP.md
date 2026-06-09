@@ -840,6 +840,35 @@ Graph elements: 14
 
 ---
 
+## 8.3.7 M19 — CSV Import/Export pipeline (DESIGN 2026-06-09)
+
+**Статус:** 📋 DESIGN — анализ + полный план готов.
+
+**Контекст:** Content writer'ы (без Unity опыта) не могут создавать квесты через Inspector. Нужен читаемый формат — Excel/CSV.
+
+**Решение:** Multi-file CSV (5 файлов: quests, stages, objectives, actions, rewards) → EditorWindow импорт/экспорт. Создаёт стандартный QuestDefinition.asset, совместимый со всем рантаймом.
+
+**Полная спецификация:** `docs/dev/M19_CSV_PIPELINE.md`
+
+**План (5 тикетов, ~6 ч):**
+
+| Тикет | Что | ~ч | Статус |
+|-------|-----|----|--------|
+| M19-T1 | QuestCsvSchema + CsvParser | 1.5 | ⏳ |
+| M19-T2 | QuestCsvImporter (create SO из CSV) | 2.0 | ⏳ |
+| M19-T3 | QuestCsvExporter (SO → CSV) | 1.0 | ⏳ |
+| M19-T4 | EditorWindow: Import/Export UI | 1.0 | ⏳ |
+| M19-T5 | Integration test (+ граф) | 0.5 | ⏳ |
+
+**Verify:**
+- [ ] Экспорт → 5 CSV файлов
+- [ ] Импорт CSV → новый QuestDefinition.asset
+- [ ] Граф показывает новый квест
+- [ ] Play Mode: квест проходится
+- [ ] Re-import: asset обновлён, не дублирован
+
+---
+
 ## 8.4 Milestones (обновлено)
 
 | Milestone | Тикеты | Что работает |
@@ -863,7 +892,8 @@ Graph elements: 14
 | **M14 — Item ID system** | T-Q26, T-Q27, T-Q28 | Single source of truth for item ids. ItemRegistry SO + DialogueAction.itemId + asset migration. | ✅ DONE 2026-06-09 (verified by Roslyn) |
 | **M16 — QuestDatabaseWindow** | T-Q09 (Editor UI) | UI Toolkit EditorWindow: tree view + detail panel для quests/dialogs/npcs/factions. | ✅ DONE 2026-06-09 (verified by Roslyn) |
 | **M17 — QuestNodeGraph** | T-Q09b (Graph viz) | **Вариант A:** `QuestNodeGraphView` (GraphView Nodes+Edges, активный). **Вариант B (old):** `QuestGraphView` (custom VisualElement, maintenance). | ✅ DONE 2026-06-09 |
-| **M18 — Editable QuestNodeGraph** | T-Q30, T-Q31, T-Q32, T-Q33, T-Q34 | Editable nodes, save back to SO, quest-to-quest dependencies, drag-create edges. | 📋 IN PROGRESS 2026-06-09 (T-Q32 ✅, T-Q33 next) |
+| **M18 — Editable QuestNodeGraph** | T-Q30, T-Q31, T-Q32, T-Q33, T-Q34 | Editable nodes, save back to SO, quest-to-quest dependencies, drag-create edges. | ✅ DONE 2026-06-09 (verified by user) |
+| **M19 — CSV import/export pipeline** | — | Design phase. | 📋 DESIGN 2026-06-09 |
 
 **Рекомендуемый темп:** 1-2 тикета за сессию, 1 PR за тикет.
 

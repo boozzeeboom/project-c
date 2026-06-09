@@ -1,4 +1,4 @@
-// T-Q09b / M17: QuestGraphWindow — EditorWindow с QuestGraphView.
+// T-Q09b / M17 v7: QuestGraphWindow — EditorWindow с переписанным QuestGraphView.
 // Открыть: Tools > ProjectC > Quests > Quest Graph View (или для selected quest).
 
 #if UNITY_EDITOR
@@ -70,13 +70,13 @@ namespace ProjectC.Quests.Editor
             refreshBtn.style.marginLeft = 4;
             toolbar.Add(refreshBtn);
 
-            var fitBtn = new Button(() => { _graph?.FrameAll(); }) { text = "⊡ Fit" };
+            var fitBtn = new Button(() => _graph?.MarkDirtyRepaint()) { text = "⊡ Refresh" };
             fitBtn.style.marginLeft = 4;
             toolbar.Add(fitBtn);
 
             root.Add(toolbar);
 
-            // Graph view
+            // Graph view (VisualElement, not GraphView)
             _graph = new QuestGraphView();
             _graph.name = "QuestGraphView";
             _graph.style.flexGrow = 1;

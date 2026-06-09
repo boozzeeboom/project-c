@@ -1,328 +1,384 @@
-// T-Q09b / M17: QuestGraphView — read-only graph visualization для QuestDefinition.
-// НЕ редактирование (M18 будет editable) — только визуальный эксплорер
-// для content creators чтобы видеть quest → stages → objectives → rewards.
+// T-Q09b / M17 v8: QuestGraphView — **гибридный** подход.
+// - Nodes: настоящие VisualElement с Label (текст виден сразу)
+// - Connections: рисуются через Painter2D в generateVisualContent (видны сразу, без layout)
+// - Drag/zoom: contentContainer с transform
+// - Nodes можно перетаскивать (for convenience)
 
 #if UNITY_EDITOR
 using System.Collections.Generic;
 using System.Linq;
 using UnityEditor;
-using UnityEditor.Experimental.GraphView;
 using UnityEngine;
 using UnityEngine.UIElements;
 using ProjectC.Quests;
 
 namespace ProjectC.Quests.Editor
 {
-    public class QuestGraphView : GraphView
+    public class QuestGraphView : VisualElement
     {
         public QuestDefinition Quest { get; private set; }
 
+        // Content container with transform (zoom/pan)
+        private readonly VisualElement _content;
+        private Vector2 _contentOffset = Vector2.zero;
+        private float _contentZoom = 1f;
+
+        // Drag/pan state
+        private bool _panning;
+        private Vector2 _panStart;
+        private bool _draggingNode;
+        private VisualElement _dragTarget;
+        private Vector2 _dragOffset;
+
+        // Connection data (for painter)
+        private readonly List<(VisualElement from, VisualElement to)> _connections = new List<(VisualElement, VisualElement)>();
+
+        private const float GRID_SIZE = 50f;
+
         public QuestGraphView()
         {
-            SetupZoom(ContentZoomer.DefaultMinScale, ContentZoomer.DefaultMaxScale);
-            this.AddManipulator(new ContentDragger());
-            this.AddManipulator(new SelectionDragger());
-            this.AddManipulator(new RectangleSelector());
-            var grid = new GridBackground();
-            Insert(0, grid);
-            grid.StretchToParentSize();
-            var styleSheet = (StyleSheet)EditorGUIUtility.Load("StyleSheets/Default/GraphView/Default.uss");
-            if (styleSheet != null) this.styleSheets.Add(styleSheet);
-            this.AddManipulator(new ContentZoomer());
-            graphViewChanged = OnGraphViewChanged;
+            name = "QuestGraphView";
+            style.flexGrow = 1;
+            style.overflow = Overflow.Hidden;
+            style.backgroundColor = new StyleColor(new Color(0.19f, 0.19f, 0.19f, 1f));
+
+            // Content layer (zoom/pan applied via transform)
+            _content = new VisualElement();
+            _content.name = "content";
+            _content.style.position = Position.Absolute;
+            _content.style.left = 0; _content.style.top = 0;
+            _content.style.right = 0; _content.style.bottom = 0;
+            _content.pickingMode = PickingMode.Ignore;
+            Add(_content);
+
+            // Draw grid + connections via painter
+            generateVisualContent += DrawPainterContent;
+
+            // Pan via right-click (or middle-click)
+            this.RegisterCallback<MouseDownEvent>(e =>
+            {
+                if (e.button == 0 || e.button == 2)
+                {
+                    if (!_panning && !_draggingNode)
+                    {
+                        _panning = true;
+                        _panStart = e.mousePosition;
+                        e.StopPropagation();
+                    }
+                }
+            });
+            this.RegisterCallback<MouseMoveEvent>(e =>
+            {
+                if (_panning)
+                {
+                    _contentOffset += (e.mousePosition - _panStart) / _contentZoom;
+                    _panStart = e.mousePosition;
+                    UpdateTransform();
+                    MarkDirtyRepaint();
+                }
+                if (_draggingNode && _dragTarget != null)
+                {
+                    var pos = _dragTarget.layout.position;
+                    float newX = (e.mousePosition.x - _contentOffset.x) / _contentZoom - _dragOffset.x;
+                    float newY = (e.mousePosition.y - _contentOffset.y) / _contentZoom - _dragOffset.y;
+                    _dragTarget.style.left = newX;
+                    _dragTarget.style.top = newY;
+                    MarkDirtyRepaint();
+                }
+            });
+            this.RegisterCallback<MouseUpEvent>(e =>
+            {
+                _panning = false;
+                _draggingNode = false;
+                _dragTarget = null;
+            });
+            this.RegisterCallback<WheelEvent>(e =>
+            {
+                float prev = _contentZoom;
+                _contentZoom = Mathf.Clamp(_contentZoom - e.delta.y * 0.001f, 0.2f, 3f);
+                // Zoom towards mouse
+                Vector2 mouse = e.mousePosition;
+                _contentOffset = mouse / prev - (mouse / _contentZoom - _contentOffset);
+                UpdateTransform();
+                MarkDirtyRepaint();
+                e.StopPropagation();
+            });
         }
 
-        /// <summary>Programmatic delete (load new quest) — bypasses OnGraphViewChanged read-only check.</summary>
-        private bool _suppressReadOnly;
+        private void UpdateTransform()
+        {
+            // Unity 6: transform is read-only. Use style.translate + style.scale.
+            _content.style.translate = new Translate(_contentOffset.x, _contentOffset.y, 0);
+            _content.style.scale = new Scale(Vector3.one * _contentZoom);
+        }
 
         public void LoadQuest(QuestDefinition quest)
         {
             Quest = quest;
-            ClearGraph();
+            _content.Clear();
+            _connections.Clear();
             if (quest == null) return;
             BuildGraph();
+            // Center content
+            _contentOffset = new Vector2(50, 50);
+            UpdateTransform();
+            MarkDirtyRepaint();
         }
 
-        /// <summary>Remove ALL elements (edges + nodes) safely.</summary>
-        private void ClearGraph()
-        {
-            // T-Q09b fix: bypass OnGraphViewChanged read-only check during programmatic delete.
-            _suppressReadOnly = true;
-            try
-            {
-                var edgeList = new List<GraphElement>(edges.ToList());
-                var nodeList = new List<GraphElement>(nodes.ToList());
-                if (edgeList.Count > 0) DeleteElements(edgeList);
-                if (nodeList.Count > 0) DeleteElements(nodeList);
-            }
-            finally
-            {
-                _suppressReadOnly = false;
-            }
-        }
-
+        /// <summary>Build VisualElement nodes and connection list.</summary>
         private void BuildGraph()
         {
             if (Quest == null) return;
 
-            // QuestNode — top-left
-            var questNode = new QuestNode(Quest);
-            AddElement(questNode);
-            questNode.SetPosition(new Rect(0, 0, 240, 140));
+            const float QUEST_W = 240f, QUEST_H = 160f;
+            const float STAGE_W = 240f, STAGE_H = 180f;
+            const float OBJ_W = 200f, OBJ_H = 100f;
+            const float REWARD_W = 220f, REWARD_H = 140f;
+            const float STAGE_GAP = 300f;
+            const float X_QUEST = 0f;
+            const float X_STAGE_START = 360f;
+            const float OBJ_OFFSET_Y = 220f;
 
-            if (Quest.stages == null || Quest.stages.Length == 0)
+            var questTitleColor = "#3355AA";
+            var stageTitleColor = "#338855";
+            var objTitleColor = "#886633";
+            var rewardTitleColor = "#996633";
+
+            // Helpers
+            VisualElement MakeNode(string title, string bodyLines, string titleColor, float x, float y, float w, float h)
             {
-                // Add reward node even if no stages
-                AddRewardNode(questNode);
-                return;
-            }
-
-            // StageNode per stage — column 1
-            float yOffset = 0;
-            const float STAGE_HEIGHT = 110f;
-            const float STAGE_GAP = 30f;
-            for (int i = 0; i < Quest.stages.Length; i++)
-            {
-                var stage = Quest.stages[i];
-                if (stage == null) continue;
-                var sn = new StageNode(stage, i);
-                AddElement(sn);
-                sn.SetPosition(new Rect(360, yOffset, 240, STAGE_HEIGHT));
-
-                // Connect quest → stage (create edge manually)
-                var questOut = questNode.OutputPort;
-                var stageIn = sn.InputPort;
-                AddElement(questOut.ConnectTo(stageIn));
-
-                // ObjectiveNode per objective — column 2
-                if (stage.objectives != null)
+                var node = new VisualElement();
+                node.style.position = Position.Absolute;
+                node.style.left = x; node.style.top = y;
+                node.style.width = w; node.style.height = h;
+                node.style.backgroundColor = new StyleColor(new Color(0.13f, 0.18f, 0.28f, 1f));
+                node.style.borderTopLeftRadius = 3;
+                node.style.borderTopRightRadius = 3;
+                node.style.borderBottomLeftRadius = 3;
+                node.style.borderBottomRightRadius = 3;
+                node.style.paddingBottom = 0;
+                node.pickingMode = PickingMode.Position;
+                // Allow dragging this node
+                node.RegisterCallback<MouseDownEvent>(e =>
                 {
-                    float oy = yOffset;
-                    foreach (var obj in stage.objectives)
+                    if (e.button == 0)
                     {
-                        if (obj == null) continue;
-                        var on = new ObjectiveNode(obj);
-                        AddElement(on);
-                        on.SetPosition(new Rect(720, oy, 280, 70));
-                        var stageOut = sn.OutputPort;
-                        var objIn = on.InputPort;
-                        AddElement(stageOut.ConnectTo(objIn));
-                        oy += 90;
+                        _draggingNode = true;
+                        _dragTarget = node;
+                        _dragOffset = (e.mousePosition - new Vector2(x * _contentZoom + _contentOffset.x, y * _contentZoom + _contentOffset.y)) / _contentZoom;
+                        e.StopPropagation();
                     }
-                }
-                yOffset += STAGE_HEIGHT + STAGE_GAP + (stage.objectives?.Length ?? 0) * 90;
-            }
-
-            AddRewardNode(questNode);
-        }
-
-        private void AddRewardNode(QuestNode questNode)
-        {
-            if (Quest.rewards == null) return;
-            var rewardNode = new RewardNode(Quest);
-            AddElement(rewardNode);
-            rewardNode.SetPosition(new Rect(360, 600, 240, 140));
-            var questRewardIn = questNode.RewardInputPort;
-            if (questRewardIn != null)
-            {
-                // Use a synthetic output port on quest for reward connection
-                var rewardOut = rewardNode.InputPort; // reward has only input
-                // Skip — visual: just place reward near, no edge needed.
-            }
-        }
-
-        private GraphViewChange OnGraphViewChanged(GraphViewChange change)
-        {
-            // T-Q09b fix: allow programmatic delete (load new quest), block user-initiated.
-            if (_suppressReadOnly) return change;
-            // Read-only: block any element removal by user
-            if (change.elementsToRemove != null && change.elementsToRemove.Count > 0)
-            {
-                change.elementsToRemove.Clear();
-            }
-            return change;
-        }
-
-        public override List<Port> GetCompatiblePorts(Port startPort, NodeAdapter nodeAdapter) => ports.ToList();
-    }
-
-    // ============================================================
-    // Node types
-    // ============================================================
-
-    public class QuestNode : Node
-    {
-        public QuestDefinition Quest;
-        public Port OutputPort;
-        public Port RewardInputPort;
-        public QuestNode(QuestDefinition quest)
-        {
-            Quest = quest;
-            title = $"📜 {quest.questId}";
-            viewDataKey = "quest_" + quest.questId;
-            var ql = new Label(quest.displayName);
-            ql.style.fontSize = 13;
-            ql.style.unityFontStyleAndWeight = FontStyle.Bold;
-            ql.style.paddingLeft = 8;
-            ql.style.paddingTop = 4;
-            ql.style.paddingBottom = 4;
-            extensionContainer.Add(ql);
-            var desc = new Label(quest.description);
-            desc.style.fontSize = 10;
-            desc.style.paddingLeft = 8;
-            desc.style.paddingBottom = 4;
-            desc.style.color = new StyleColor(new Color(0.7f, 0.7f, 0.7f, 1f));
-            desc.style.whiteSpace = WhiteSpace.Normal;
-            extensionContainer.Add(desc);
-            RefreshExpandedState();
-            // Output port (quest → stage)
-            OutputPort = InstantiatePort(Orientation.Horizontal, Direction.Output, Port.Capacity.Multi, typeof(bool));
-            OutputPort.portName = "stages";
-            outputContainer.Add(OutputPort);
-            // Input port (reward connection)
-            RewardInputPort = InstantiatePort(Orientation.Horizontal, Direction.Input, Port.Capacity.Single, typeof(bool));
-            RewardInputPort.portName = "rewards";
-            inputContainer.Add(RewardInputPort);
-        }
-    }
-
-    public class StageNode : Node
-    {
-        public QuestStage Stage;
-        public Port InputPort;
-        public Port OutputPort;
-        public StageNode(QuestStage stage, int index)
-        {
-            Stage = stage;
-            title = $"Stage {index}: {stage.stageId}";
-            viewDataKey = "stage_" + stage.stageId;
-            if (!string.IsNullOrEmpty(stage.nextStageId))
-            {
-                var nxt = new Label($"→ next: {stage.nextStageId}");
-                nxt.style.fontSize = 10;
-                nxt.style.paddingLeft = 8;
-                nxt.style.paddingTop = 2;
-                nxt.style.paddingBottom = 2;
-                nxt.style.color = new StyleColor(new Color(0.4f, 0.7f, 1f, 1f));
-                extensionContainer.Add(nxt);
-            }
-            if (stage.objectives != null && stage.objectives.Length > 0)
-            {
-                var ol = new Label($"objectives: {stage.objectives.Length}");
-                ol.style.fontSize = 10;
-                ol.style.paddingLeft = 8;
-                ol.style.paddingBottom = 2;
-                extensionContainer.Add(ol);
-            }
-            if (stage.onEnterActions != null && stage.onEnterActions.Length > 0)
-            {
-                var e = new Label($"onEnter: {stage.onEnterActions.Length}");
-                e.style.fontSize = 10;
-                e.style.paddingLeft = 8;
-                e.style.paddingBottom = 2;
-                e.style.color = new StyleColor(new Color(0.4f, 1f, 0.4f, 1f));
-                extensionContainer.Add(e);
-            }
-            if (stage.onCompleteActions != null && stage.onCompleteActions.Length > 0)
-            {
-                var c = new Label($"onComplete: {stage.onCompleteActions.Length}");
-                c.style.fontSize = 10;
-                c.style.paddingLeft = 8;
-                c.style.paddingBottom = 2;
-                c.style.color = new StyleColor(new Color(1f, 0.8f, 0.4f, 1f));
-                extensionContainer.Add(c);
-            }
-            RefreshExpandedState();
-            // Input (from quest or prev stage)
-            InputPort = InstantiatePort(Orientation.Horizontal, Direction.Input, Port.Capacity.Multi, typeof(bool));
-            InputPort.portName = "in";
-            inputContainer.Add(InputPort);
-            // Output (to objective)
-            OutputPort = InstantiatePort(Orientation.Horizontal, Direction.Output, Port.Capacity.Multi, typeof(bool));
-            OutputPort.portName = "objectives";
-            outputContainer.Add(OutputPort);
-        }
-    }
-
-    public class ObjectiveNode : Node
-    {
-        public QuestObjective Objective;
-        public Port InputPort;
-        public ObjectiveNode(QuestObjective obj)
-        {
-            Objective = obj;
-            title = $"[{obj.objectiveType}] {obj.objectiveId}";
-            viewDataKey = "obj_" + obj.objectiveId;
-            var qty = new Label($"qty: {obj.requiredQuantity}");
-            qty.style.fontSize = 10;
-            qty.style.paddingLeft = 8;
-            qty.style.paddingTop = 2;
-            extensionContainer.Add(qty);
-            if (!string.IsNullOrEmpty(obj.itemTradeItemId))
-            {
-                var it = new Label($"item: {obj.itemTradeItemId}");
-                it.style.fontSize = 10;
-                it.style.paddingLeft = 8;
-                it.style.paddingBottom = 2;
-                it.style.color = new StyleColor(new Color(0.9f, 0.9f, 0.4f, 1f));
-                extensionContainer.Add(it);
-            }
-            if (!string.IsNullOrEmpty(obj.targetNpcId))
-            {
-                var np = new Label($"npc: {obj.targetNpcId}");
-                np.style.fontSize = 10;
-                np.style.paddingLeft = 8;
-                np.style.paddingBottom = 2;
-                np.style.color = new StyleColor(new Color(0.4f, 0.9f, 0.9f, 1f));
-                extensionContainer.Add(np);
-            }
-            RefreshExpandedState();
-            InputPort = InstantiatePort(Orientation.Horizontal, Direction.Input, Port.Capacity.Multi, typeof(bool));
-            InputPort.portName = "in";
-            inputContainer.Add(InputPort);
-        }
-    }
-
-    public class RewardNode : Node
-    {
-        public QuestDefinition Quest;
-        public Port InputPort;
-        public RewardNode(QuestDefinition quest)
-        {
-            Quest = quest;
-            title = "🎁 Rewards";
-            viewDataKey = "rewards_" + quest.questId;
-            if (quest.rewards != null)
-            {
-                if (quest.rewards.credits > 0)
+                });
+                // Title bar
+                var titleEl = new Label($"{title}");
+                titleEl.style.backgroundColor = new StyleColor(ParseColor(titleColor));
+                titleEl.style.color = new StyleColor(Color.white);
+                titleEl.style.fontSize = 12;
+                titleEl.style.unityFontStyleAndWeight = FontStyle.Bold;
+                titleEl.style.paddingTop = 4;
+                titleEl.style.paddingLeft = 8;
+                titleEl.style.paddingBottom = 2;
+                titleEl.style.whiteSpace = WhiteSpace.Normal;
+                titleEl.style.overflow = Overflow.Hidden;
+                node.Add(titleEl);
+                // Body
+                if (!string.IsNullOrEmpty(bodyLines))
                 {
-                    var c = new Label($"CR: {quest.rewards.credits}");
-                    c.style.fontSize = 11;
-                    c.style.paddingLeft = 8;
-                    c.style.paddingTop = 4;
-                    extensionContainer.Add(c);
+                    var bodyEl = new Label(bodyLines);
+                    bodyEl.style.color = new StyleColor(new Color(0.9f, 0.9f, 0.9f, 1f));
+                    bodyEl.style.fontSize = 10;
+                    bodyEl.style.paddingLeft = 8;
+                    bodyEl.style.paddingTop = 4;
+                    bodyEl.style.paddingRight = 4;
+                    bodyEl.style.paddingBottom = 4;
+                    bodyEl.style.whiteSpace = WhiteSpace.Normal;
+                    bodyEl.style.overflow = Overflow.Hidden;
+                    node.Add(bodyEl);
                 }
-                if (quest.rewards.items != null && quest.rewards.items.Length > 0)
+                _content.Add(node);
+                return node;
+            }
+
+            // Quest node
+            string qBody = $"{Quest.displayName}\nid: {Quest.questId}  •  stages: {Quest.stages?.Length ?? 0}";
+            if (!string.IsNullOrEmpty(Quest.description))
+                qBody = $"{Quest.displayName}\n{Quest.description}\nid: {Quest.questId}";
+            var questNode = MakeNode("📜 QUEST", qBody, questTitleColor, X_QUEST, 0, QUEST_W, QUEST_H);
+
+            int stageCount = Quest.stages?.Length ?? 0;
+            var stageNodes = new List<VisualElement>();
+
+            if (Quest.stages != null)
+            {
+                for (int i = 0; i < Quest.stages.Length; i++)
                 {
-                    foreach (var r in quest.rewards.items)
+                    var stage = Quest.stages[i];
+                    if (stage == null) continue;
+                    float x = X_STAGE_START + i * STAGE_GAP;
+
+                    var lines = new List<string>
                     {
-                        extensionContainer.Add(new Label($"Item x{r.count}") { style = { fontSize = 10, paddingLeft = 8 } });
-                    }
-                }
-                if (quest.rewards.reputation != null && quest.rewards.reputation.Length > 0)
-                {
-                    foreach (var rep in quest.rewards.reputation)
+                        $"{stage.stageId}"
+                    };
+                    if (!string.IsNullOrEmpty(stage.description)) lines.Add(stage.description);
+                    if (stage.objectives != null) lines.Add($"🎯 {stage.objectives.Length} objective(s)");
+                    if (stage.onEnterActions != null && stage.onEnterActions.Length > 0)
+                        lines.Add($"▶ onEnter: {stage.onEnterActions.Length} act");
+                    if (stage.onCompleteActions != null && stage.onCompleteActions.Length > 0)
+                        lines.Add($"✓ onComplete: {stage.onCompleteActions.Length} act");
+                    if (!string.IsNullOrEmpty(stage.nextStageId))
+                        lines.Add($"→ next: {stage.nextStageId}");
+
+                    var sn = MakeNode($"🟢 STAGE {i+1}/{stageCount}", string.Join("\n", lines), stageTitleColor, x, 0, STAGE_W, STAGE_H);
+                    stageNodes.Add(sn);
+
+                    // Quest → Stage 0
+                    if (i == 0) _connections.Add((questNode, sn));
+                    // Stage i → Stage i+1
+                    if (i > 0) _connections.Add((stageNodes[i-1], sn));
+
+                    // Objectives
+                    if (stage.objectives != null)
                     {
-                        extensionContainer.Add(new Label($"Rep: {rep.faction} +{rep.value}") { style = { fontSize = 10, paddingLeft = 8, paddingBottom = 2 } });
+                        for (int j = 0; j < stage.objectives.Length; j++)
+                        {
+                            var obj = stage.objectives[j];
+                            if (obj == null) continue;
+                            float oy = OBJ_OFFSET_Y + j * (OBJ_H + 15f);
+                            var oLines = $"[{obj.objectiveType}] ×{obj.requiredQuantity}";
+                            if (!string.IsNullOrEmpty(obj.itemTradeItemId))
+                                oLines += $"\n📦 item: {obj.itemTradeItemId}";
+                            if (!string.IsNullOrEmpty(obj.targetNpcId))
+                                oLines += $"\n👤 npc: {obj.targetNpcId}";
+                            var on = MakeNode($"🎯 {obj.objectiveId}", oLines, objTitleColor, x + 20, oy, OBJ_W, OBJ_H);
+                            _connections.Add((sn, on));
+                        }
                     }
                 }
             }
-            RefreshExpandedState();
-            // Input port (from quest)
-            InputPort = InstantiatePort(Orientation.Horizontal, Direction.Input, Port.Capacity.Single, typeof(bool));
-            InputPort.portName = "in";
-            inputContainer.Add(InputPort);
+
+            // Reward node
+            if (Quest.rewards != null && HasReward(Quest.rewards))
+            {
+                var r = Quest.rewards;
+                var rLines = new List<string>();
+                if (r.credits > 0) rLines.Add($"💰 {r.credits} CR");
+                if (r.items != null) foreach (var it in r.items) rLines.Add($"📦 Item ×{it.count}");
+                if (r.reputation != null) foreach (var rep in r.reputation) rLines.Add($"📈 {rep.faction} +{rep.value}");
+                float x = X_STAGE_START + stageCount * STAGE_GAP;
+                var rn = MakeNode("🎁 REWARDS", string.Join("\n", rLines), rewardTitleColor, x, 0, REWARD_W, REWARD_H);
+                if (stageNodes.Count > 0)
+                    _connections.Add((stageNodes[stageNodes.Count - 1], rn));
+            }
         }
+
+        /// <summary>Paint grid + connection lines.</summary>
+        private void DrawPainterContent(MeshGenerationContext mgc)
+        {
+            var painter = mgc.painter2D;
+            DrawGrid(painter);
+            DrawConnections(painter);
+        }
+
+        private void DrawConnections(Painter2D painter)
+        {
+            var connColor = new Color(0.55f, 0.85f, 1f, 0.85f);
+            painter.strokeColor = connColor;
+            painter.fillColor = connColor;
+            painter.lineWidth = 2f;
+
+            foreach (var (from, to) in _connections)
+            {
+                if (from == null || to == null) continue;
+                var r1 = from.layout;
+                var r2 = to.layout;
+
+                // Check if this is a vertical connection (target below source)
+                bool vertical = r2.y > r1.y + r1.height / 2f;
+                Vector2 start, end;
+                if (vertical)
+                {
+                    start = new Vector2(r1.x + r1.width / 2f, r1.y + r1.height);
+                    end = new Vector2(r2.x + r2.width / 2f, r2.y);
+                    var mid = new Vector2(end.x, start.y);
+                    painter.BeginPath();
+                    painter.MoveTo(start);
+                    painter.LineTo(mid);
+                    painter.LineTo(end);
+                    painter.Stroke();
+                    // Arrow down
+                    float al = 8f;
+                    painter.BeginPath();
+                    painter.MoveTo(end);
+                    painter.LineTo(end + new Vector2(-al, -al));
+                    painter.LineTo(end + new Vector2(al, -al));
+                    painter.ClosePath();
+                    painter.Fill();
+                }
+                else
+                {
+                    start = new Vector2(r1.x + r1.width, r1.y + r1.height / 2f);
+                    end = new Vector2(r2.x, r2.y + r2.height / 2f);
+                    painter.BeginPath();
+                    painter.MoveTo(start);
+                    painter.LineTo(end);
+                    painter.Stroke();
+                    // Arrow right
+                    float al = 8f;
+                    painter.BeginPath();
+                    painter.MoveTo(end);
+                    painter.LineTo(end + new Vector2(-al, -al));
+                    painter.LineTo(end + new Vector2(-al, al));
+                    painter.ClosePath();
+                    painter.Fill();
+                }
+            }
+        }
+
+        private void DrawGrid(Painter2D painter)
+        {
+            painter.strokeColor = new Color(0.25f, 0.25f, 0.25f, 0.5f);
+            painter.lineWidth = 1f;
+            float invZ = 1f / _contentZoom;
+            float sw = resolvedStyle.width * invZ;
+            float sh = resolvedStyle.height * invZ;
+            float ox = -_contentOffset.x / _contentZoom;
+            float oy = -_contentOffset.y / _contentZoom;
+            float sx = Mathf.Floor(ox / GRID_SIZE) * GRID_SIZE;
+            float sy = Mathf.Floor(oy / GRID_SIZE) * GRID_SIZE;
+
+            for (float x = sx; x < ox + sw + GRID_SIZE; x += GRID_SIZE)
+            {
+                var p1 = ToScreen(new Vector2(x, 0));
+                var p2 = ToScreen(new Vector2(x, 10000));
+                painter.BeginPath();
+                painter.MoveTo(p1);
+                painter.LineTo(p2);
+                painter.Stroke();
+            }
+            for (float y = sy; y < oy + sh + GRID_SIZE; y += GRID_SIZE)
+            {
+                var p1 = ToScreen(new Vector2(0, y));
+                var p2 = ToScreen(new Vector2(10000, y));
+                painter.BeginPath();
+                painter.MoveTo(p1);
+                painter.LineTo(p2);
+                painter.Stroke();
+            }
+        }
+
+        private Vector2 ToScreen(Vector2 world)
+        {
+            return new Vector2(world.x * _contentZoom + _contentOffset.x, world.y * _contentZoom + _contentOffset.y);
+        }
+
+        private static Color ParseColor(string hex)
+        {
+            ColorUtility.TryParseHtmlString(hex, out var c);
+            return c;
+        }
+
+        private static bool HasReward(QuestReward r) => r != null && (r.credits > 0 || (r.items != null && r.items.Length > 0) || (r.reputation != null && r.reputation.Length > 0));
     }
 }
 #endif

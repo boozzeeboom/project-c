@@ -100,6 +100,11 @@ namespace ProjectC.Core
             // Target RPC от MetaRequirementRegistry. Через 1-2 релиз-цикла первый удалим.
             CreateMetaRequirementClientState();
 
+            // T-G04: GatheringClientState — клиентская проекция сбора ресурсов.
+            // Подписывается на ReceiveGatherResultTargetRpc (NetworkPlayer.cs), эмитит events
+            // для GatheringToastController.
+            CreateGatheringClientState();
+
             // Автоматический запуск Dedicated Server если передан аргумент -server
             if (IsDedicatedServerMode())
             {
@@ -236,6 +241,29 @@ namespace ProjectC.Core
             var go = new GameObject("[MetaRequirementClientState]");
             go.AddComponent<ProjectC.MetaRequirement.MetaRequirementClientState>();
             Debug.Log("[NMC] Created [MetaRequirementClientState] as root GameObject");
+        }
+
+        /// <summary>
+        /// T-G04: GatheringClientState singleton. Паттерн идентичен CreateMetaRequirementClientState.
+        /// </summary>
+        private void CreateGatheringClientState()
+        {
+            var existing = FindObjectsByType<ProjectC.ResourceNode.GatheringClientState>(FindObjectsInactive.Include);
+            foreach (var inst in existing)
+            {
+                if (inst != null && inst.transform.parent == null)
+                {
+                    Debug.Log("[NMC] GatheringClientState already root, skipping creation");
+                    return;
+                }
+            }
+            if (existing.Length > 0)
+            {
+                Debug.LogWarning($"[NMC] Found {existing.Length} non-root GatheringClientState in scene — DontDestroyOnLoad would fail. Creating root replacement.");
+            }
+            var go = new GameObject("[GatheringClientState]");
+            go.AddComponent<ProjectC.ResourceNode.GatheringClientState>();
+            Debug.Log("[NMC] Created [GatheringClientState] as root GameObject");
         }
 
         private void Start()

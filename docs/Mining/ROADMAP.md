@@ -252,7 +252,7 @@ A docs/Mining/ROADMAP.md (T-G03 ✅ DONE)
 
 ---
 
-### T-G04 — GatheringClientState + GatheringToastController (Phase 4, ~2-3 ч)
+### T-G04 — GatheringClientState + GatheringToastController (Phase 4, ~2-3 ч) ✅ DONE 2026-06-10
 
 **Файлы:**
 - `Assets/_Project/Scripts/ResourceNode/GatheringClientState.cs`
@@ -298,6 +298,36 @@ A docs/Mining/ROADMAP.md (T-G03 ✅ DONE)
 - Toast показывается/скрывается корректно
 
 **Risk:** medium. UI Toolkit pitfalls (см. §6.3). **ВАЖНО:** читать `T-Q11b_c_session_log.md` (8 постоянных UI Toolkit багов) перед написанием UXML/USS.
+
+**Фактически реализовано (2026-06-10):**
+- `Assets/_Project/Scripts/ResourceNode/GatheringClientState.cs` — T-G03 stub расширен до полной версии (5 events, queue, timeout, state).
+  - Events: `OnGatherProgress(float 0..1)`, `OnGatherCompleted(string, int, bool)`, `OnGatherInterrupted(string)`, `OnGatherDenied(string)`, `OnGatherCancelled()`.
+  - Server timeout watcher (2.5 сек без ответа → Interrupted).
+  - Public state: `CurrentNodeNetId`, `IsGathering`, `LastProgress`.
+- `Assets/_Project/Scripts/ResourceNode/GatheringToastController.cs` — UIDocument + ProgressBar (UI Toolkit), runtime-constructed (без UXML/USS files). Паттерн QuestToast с поправкой на ProgressBar.
+  - HandleProgress: показывает контейнер, обновляет ProgressBar.value.
+  - HandleCompleted: "✅ Добыто: X × N" + 1.0 fill + скрытие через 0.5 сек.
+  - HandleInterrupted: "reason" + flash-fill прогресс-бара 0→1 за 0.2 сек + скрытие через 1 сек.
+  - HandleDenied: "❌ reason" + extended duration (1.5 сек).
+  - HandleCancelled: мгновенное скрытие.
+- `NetworkManagerController.cs` — `+CreateGatheringClientState()` auto-spawn (как `CreateMetaRequirementClientState`).
+- `Assets/_Project/UI/Resources/UI/GatheringPanelSettings.asset` — копия `QuestTrackerPanelSettings` (минимальный, runtime-constructed).
+- `[GatheringToast]` GameObject в `BootstrapScene.unity` (UIDocument + GatheringToastController, sourceAsset=null).
+
+**Key Lessons:**
+- **`ProgressBar.titleContainer` НЕ существует в UI Toolkit 6** — был API в более ранних версиях. Убрал, label сам по себе отображает текст.
+- **Runtime-constructed VisualElement (как QuestToast)** — проще чем UXML/USS files для одноэкранного оверлея. SourceAsset не нужен.
+- **GatheringPanelSettings копия QuestTrackerPanelSettings** — оба для runtime-constructed overlay'ев, не требуют themeUss. Паттерн из QuestToast.
+
+**Files modified/new:**
+```
+M Assets/_Project/Scripts/ResourceNode/GatheringClientState.cs (T-G03 stub → T-G04 full)
+A Assets/_Project/Scripts/ResourceNode/GatheringToastController.cs (~280 LOC)
+M Assets/_Project/Scripts/Core/NetworkManagerController.cs (+CreateGatheringClientState)
+A Assets/_Project/UI/Resources/UI/GatheringPanelSettings.asset (copy of QuestTrackerPanelSettings)
+M Assets/_Project/Scenes/BootstrapScene.unity (+[GatheringToast] GO)
+A docs/Mining/ROADMAP.md (T-G04 ✅ DONE)
+```
 
 ---
 
@@ -458,6 +488,28 @@ if (TryBoardNearestShip()) return;   // existing
 > A ...
 > ```
 
+### §7.4 T-G04 — GatheringClientState + GatheringToastController (2026-06-10)
+
+**Verify:**
+- ✅ Compile: 0 errors (после удаления `ProgressBar.titleContainer` — не существует в UI Toolkit 6)
+- ✅ `[GatheringToast]` GameObject в `BootstrapScene.unity` (UIDocument + GatheringPanelSettings + GatheringToastController)
+- ✅ Auto-spawn `GatheringClientState` в NetworkManagerController.Awake
+
+**Key Lessons:**
+- **`ProgressBar.titleContainer` удалён в UI Toolkit 6** — был в более ранних версиях. Проверять API через grep существующих контролов, не доверять stackoverflow из 2021.
+- **Runtime-constructed VisualElement** — для одноэкранных overlay'ев (тост, трекер) проще UXML/USS: не нужен sourceAsset, не нужно USS, не нужен styleSheets.Add. Паттерн QuestToast работает.
+- **GatheringPanelSettings копия QuestTrackerPanelSettings** — оба runtime-constructed, не нужен themeUss. Готовый asset копируем через `AssetDatabase.CopyAsset` (вместо `CreateInstance` чтобы не терять themeUss если он есть).
+
+**Files modified/new:**
+```
+M Assets/_Project/Scripts/ResourceNode/GatheringClientState.cs (stub → full, ~250 LOC)
+A Assets/_Project/Scripts/ResourceNode/GatheringToastController.cs (~280 LOC)
+M Assets/_Project/Scripts/Core/NetworkManagerController.cs (+CreateGatheringClientState)
+A Assets/_Project/UI/Resources/UI/GatheringPanelSettings.asset (copy of QuestTrackerPanelSettings)
+M Assets/_Project/Scenes/BootstrapScene.unity (+[GatheringToast] GO)
+A docs/Mining/ROADMAP.md (T-G04 ✅ DONE)
+```
+
 ### §7.3 T-G03 — GatheringServer RPC hub (2026-06-10)
 
 **Verify:**
@@ -531,7 +583,7 @@ A docs/Mining/ROADMAP.md (T-G01 ✅ DONE)
 
 **M1–M3 = 📋 PLANNED.** 7 тикетов. Код не начат. Дизайн-решения утверждены (F-key, MetaRequirement tool check, без distance check). Оценка: ~9-12 ч чистого кода, ~12-18 ч с фиксами. Старт — по готовности.
 
-**Обновлено 2026-06-10:** T-G01 ✅ DONE (ResourceNodeConfig SO + 3 .asset'а). T-G02 ✅ DONE (ResourceNode NetworkBehaviour + 3 GO в WorldScene_0_0 + InteractableManager.FindNearestResourceNode). T-G03 ✅ DONE (GatheringServer RPC hub + [GatheringServer] в BootstrapScene + GatheringClientState stub + ReceiveGatherResultTargetRpc). 4 тикета осталось.
+**Обновлено 2026-06-10:** T-G01 ✅ DONE. T-G02 ✅ DONE. T-G03 ✅ DONE. T-G04 ✅ DONE (GatheringClientState full + GatheringToastController + PanelSettings + [GatheringToast] в BootstrapScene). 3 тикета осталось.
 
 ---
 

@@ -991,6 +991,14 @@ namespace ProjectC.Player
             ProjectC.Reputation.NpcAttitudeClientState.Instance?.OnNpcAttitudeSnapshotReceived(snapshot);
         }
 
+        // T-G03: Gather result — server pushes tick updates to owner client.
+        // GatheringClientState (T-G04) подпишется на это и поднимет events для UI.
+        [Rpc(SendTo.Owner)]
+        public void ReceiveGatherResultTargetRpc(ProjectC.ResourceNode.GatherResult result, RpcParams rpcParams = default)
+        {
+            ProjectC.ResourceNode.GatheringClientState.Instance?.OnGatherResultReceived(result);
+        }
+
         [Rpc(SendTo.Owner)]
         public void ReceiveQuestResultTargetRpc(ProjectC.Quests.Dto.QuestResultDto result, RpcParams rpcParams = default)
         {

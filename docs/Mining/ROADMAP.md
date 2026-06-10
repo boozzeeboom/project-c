@@ -187,7 +187,7 @@ T-G07 (Prefab + BootstrapScene + WorldScene placement)
 
 ---
 
-### T-G03 — GatheringServer RPC hub (Phase 3, ~1.5-2 ч)
+### T-G03 — GatheringServer RPC hub (Phase 3, ~1.5-2 ч) ✅ DONE 2026-06-10
 
 **Файл:** `Assets/_Project/Scripts/ResourceNode/GatheringServer.cs`
 
@@ -223,6 +223,32 @@ T-G07 (Prefab + BootstrapScene + WorldScene placement)
 - Tick fires every 0.5 sec → `CompleteGather` after `_gatherSeconds`
 
 **Risk:** low-medium. Паттерн — копия `InventoryServer`.
+
+**Фактически реализовано (2026-06-10):**
+- `Assets/_Project/Scripts/ResourceNode/GatheringServer.cs` (~430 LOC) — NetworkBehaviour singleton + RPC hub.
+- Tick loop (Update): каждые 0.5s проходит по `_activeGathers`, вызывает `node.TickGather`, диспатчит InProgress/Completed/Interrupted клиенту через TargetRPC. Раз в 1.0s — `node.TickCooldown()`.
+- Rate limit (10 ops/min/client).
+- Distance check на сервере (защита от cheat).
+- `GatherResult` (struct, `INetworkSerializable`) + `GatherResultCode` (InProgress/Completed/Interrupted/Denied/Cancelled) — DTO для RPC. NGO 2.x null-string pitfall (P16d) — `?? ""` writeback.
+- `[GatheringServer]` GameObject создан в `BootstrapScene.unity` (NetworkObject + GatheringServer).
+- `GatheringClientState.cs` (T-G03 STUB) — singleton + `RequestStartGather` / `RequestCancelGather` / `OnGatherResultReceived` (только логирует). Полная версия (events + UI) — T-G04.
+- `NetworkPlayer.cs` — `+ReceiveGatherResultTargetRpc` → `GatheringClientState.Instance?.OnGatherResultReceived(result)`.
+- `ResourceNode.cs` — убраны рефлективные вызовы, прямые `GatheringServer.Instance.RegisterNode / UnregisterNode` (тип уже известен).
+
+**Key Lessons:**
+- **DTO для RPC должен быть INetworkSerializable** — `GatherResult` без интерфейса → ILPP error. Добавлен `NetworkSerialize<T>` с writeback для null-string (P16d, P36).
+- **Сразу stub для forward-dep** — `GatheringClientState` stub-версия (минимум для компиляции) добавлена в T-G03, чтобы RPC-цепочка `GatheringServer → NetworkPlayer.ReceiveGatherResultTargetRpc → ClientState` компилировалась. Полная версия — T-G04.
+- **P27 про Roslyn + новые типы:** для создания GO в BootstrapScene с новым компонентом нужна полная перекомпиляция ДО `Type.GetType`. После `refresh_unity scope=all` + 5-8s — тип загружается.
+
+**Files modified/new:**
+```
+A Assets/_Project/Scripts/ResourceNode/GatheringServer.cs (~430 LOC)
+A Assets/_Project/Scripts/ResourceNode/GatheringClientState.cs (T-G03 STUB, ~80 LOC)
+M Assets/_Project/Scripts/Player/NetworkPlayer.cs (+ReceiveGatherResultTargetRpc)
+M Assets/_Project/Scripts/ResourceNode/ResourceNode.cs (прямые вызовы вместо рефлексии)
+M Assets/_Project/Scenes/BootstrapScene.unity (+[GatheringServer] GO)
+A docs/Mining/ROADMAP.md (T-G03 ✅ DONE)
+```
 
 ---
 
@@ -432,6 +458,29 @@ if (TryBoardNearestShip()) return;   // existing
 > A ...
 > ```
 
+### §7.3 T-G03 — GatheringServer RPC hub (2026-06-10)
+
+**Verify:**
+- ✅ Compile: 0 errors (после `INetworkSerializable` на `GatherResult` + writeback null-string)
+- ✅ `[GatheringServer]` GameObject в `BootstrapScene.unity` (NetworkObject + GatheringServer)
+- ✅ `GatheringClientState` stub-версия создана для compile-цепочки
+- ✅ `NetworkPlayer.ReceiveGatherResultTargetRpc` добавлен
+
+**Key Lessons:**
+- **P36 (DTO) + P16d (null-string) hit сразу:** `GatherResult` без `INetworkSerializable` → ILPP error в NetworkBehaviour ILPP. Добавлен `NetworkSerialize<T>` + `?? ""` writeback для `itemName`/`reason`. QuestResultDto/ReputationResultDto делают то же самое.
+- **Stub-pattern для forward-dep:** `GatheringClientState` минимальная stub-версия (singleton + 3 метода, логирование вместо events) — добавлена в T-G03, чтобы `NetworkPlayer.ReceiveGatherResultTargetRpc` → `GatheringClientState.Instance?.OnGatherResultReceived` компилировалось. Полная версия (events + queue + UI) — T-G04.
+- **P27 (Roslyn) + scene-placed компонент:** `Type.GetType("ProjectC.ResourceNode.GatheringServer, Assembly-CSharp")` возвращает `null` если type ещё не скомпилирован. После `refresh_unity scope=all` + 5-8s — тип загружается в Assembly-CSharp.
+
+**Files modified/new:**
+```
+A Assets/_Project/Scripts/ResourceNode/GatheringServer.cs (~430 LOC)
+A Assets/_Project/Scripts/ResourceNode/GatheringClientState.cs (STUB, ~80 LOC)
+M Assets/_Project/Scripts/Player/NetworkPlayer.cs (+ReceiveGatherResultTargetRpc)
+M Assets/_Project/Scripts/ResourceNode/ResourceNode.cs (прямые вызовы вместо рефлексии)
+M Assets/_Project/Scenes/BootstrapScene.unity (+[GatheringServer] GO)
+A docs/Mining/ROADMAP.md (T-G03 ✅ DONE)
+```
+
 ### §7.2 T-G02 — ResourceNode NetworkBehaviour (2026-06-10)
 
 **Verify:**
@@ -482,7 +531,7 @@ A docs/Mining/ROADMAP.md (T-G01 ✅ DONE)
 
 **M1–M3 = 📋 PLANNED.** 7 тикетов. Код не начат. Дизайн-решения утверждены (F-key, MetaRequirement tool check, без distance check). Оценка: ~9-12 ч чистого кода, ~12-18 ч с фиксами. Старт — по готовности.
 
-**Обновлено 2026-06-10:** T-G01 ✅ DONE (ResourceNodeConfig SO + 3 .asset'а). T-G02 ✅ DONE (ResourceNode NetworkBehaviour + 3 GO в WorldScene_0_0 + InteractableManager.FindNearestResourceNode). 5 тикетов осталось.
+**Обновлено 2026-06-10:** T-G01 ✅ DONE (ResourceNodeConfig SO + 3 .asset'а). T-G02 ✅ DONE (ResourceNode NetworkBehaviour + 3 GO в WorldScene_0_0 + InteractableManager.FindNearestResourceNode). T-G03 ✅ DONE (GatheringServer RPC hub + [GatheringServer] в BootstrapScene + GatheringClientState stub + ReceiveGatherResultTargetRpc). 4 тикета осталось.
 
 ---
 

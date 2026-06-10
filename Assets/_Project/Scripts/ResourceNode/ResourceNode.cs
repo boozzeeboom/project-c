@@ -147,20 +147,14 @@ namespace ProjectC.ResourceNode
                 }
 
                 // Регистрация в GatheringServer (registry для RPC dispatch).
-                // T-G03 реализует GatheringServer — пока null-safe.
-                var serverType = System.Type.GetType(
-                    "ProjectC.ResourceNode.GatheringServer, Assembly-CSharp");
-                if (serverType != null)
+                if (GatheringServer.Instance != null)
                 {
-                    var instanceProp = serverType.GetProperty("Instance",
-                        System.Reflection.BindingFlags.Public | System.Reflection.BindingFlags.Static);
-                    var instance = instanceProp?.GetValue(null);
-                    if (instance != null)
-                    {
-                        var registerMethod = serverType.GetMethod("RegisterNode",
-                            System.Reflection.BindingFlags.Public | System.Reflection.BindingFlags.Instance);
-                        registerMethod?.Invoke(instance, new object[] { NetworkObjectId, this });
-                    }
+                    GatheringServer.Instance.RegisterNode(NetworkObjectId, this);
+                }
+                else
+                {
+                    Debug.LogWarning("[ResourceNode] OnNetworkSpawn: GatheringServer.Instance==null. " +
+                                     "Сбор работать не будет. Убедитесь, что [GatheringServer] GO в BootstrapScene.");
                 }
 
                 // Инициализируем счётчик на максимум (1-й сбор сразу доступен)
@@ -172,19 +166,9 @@ namespace ProjectC.ResourceNode
         {
             if (IsServer)
             {
-                var serverType = System.Type.GetType(
-                    "ProjectC.ResourceNode.GatheringServer, Assembly-CSharp");
-                if (serverType != null)
+                if (GatheringServer.Instance != null)
                 {
-                    var instanceProp = serverType.GetProperty("Instance",
-                        System.Reflection.BindingFlags.Public | System.Reflection.BindingFlags.Static);
-                    var instance = instanceProp?.GetValue(null);
-                    if (instance != null)
-                    {
-                        var unregisterMethod = serverType.GetMethod("UnregisterNode",
-                            System.Reflection.BindingFlags.Public | System.Reflection.BindingFlags.Instance);
-                        unregisterMethod?.Invoke(instance, new object[] { NetworkObjectId });
-                    }
+                    GatheringServer.Instance.UnregisterNode(NetworkObjectId);
                 }
             }
 
@@ -390,19 +374,7 @@ namespace ProjectC.ResourceNode
             if (netId != NetworkObjectId) return;
 
             // MetaReq tool check прошёл → стартуем сбор на сервере.
-            // GatheringClientState будет создан в T-G04; пока null-safe через Type.GetType.
-            var clientType = System.Type.GetType(
-                "ProjectC.ResourceNode.GatheringClientState, Assembly-CSharp");
-            if (clientType == null) return;
-
-            var instanceProp = clientType.GetProperty("Instance",
-                System.Reflection.BindingFlags.Public | System.Reflection.BindingFlags.Static);
-            var instance = instanceProp?.GetValue(null);
-            if (instance == null) return;
-
-            var requestMethod = clientType.GetMethod("RequestStartGather",
-                System.Reflection.BindingFlags.Public | System.Reflection.BindingFlags.Instance);
-            requestMethod?.Invoke(instance, new object[] { netId });
+            GatheringClientState.Instance?.RequestStartGather(netId);
         }
 
 #if UNITY_EDITOR

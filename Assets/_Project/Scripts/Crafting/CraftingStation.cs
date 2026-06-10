@@ -222,15 +222,23 @@ namespace ProjectC.Crafting
             _renderer = GetComponent<Renderer>();
             if (_renderer != null)
             {
+                // T-C07c: используем материальный ассет (как ResourceNode_Default) — emission пре-включён
+                var mat = UnityEngine.Resources.Load<UnityEngine.Material>("Materials/CraftingStation_Default");
+                if (mat != null)
+                {
+                    _renderer.sharedMaterial = mat;
+                }
+                else if (_renderer.sharedMaterial != null)
+                {
+                    // Fallback: runtime material — включаем emission вручную
+                    mat = _renderer.sharedMaterial;
+                    mat.EnableKeyword("_EMISSION");
+                    mat.SetColor(_emissionColorId, new Color(0.05f, 0.05f, 0.1f));
+                }
                 _mpb = new MaterialPropertyBlock();
                 _renderer.GetPropertyBlock(_mpb);
-                _mpb.SetColor(_emissionColorId, Color.black);
+                _mpb.SetColor(_emissionColorId, new Color(0.08f, 0.06f, 0.02f)); // warm dim idle
                 _renderer.SetPropertyBlock(_mpb);
-                // Enable _EMISSION on shared material (runtime-created material doesn't have it by default)
-                if (_renderer.sharedMaterial != null)
-                {
-                    _renderer.sharedMaterial.EnableKeyword("_EMISSION");
-                }
             }
             _baseScale = transform.localScale;
         }
@@ -282,7 +290,8 @@ namespace ProjectC.Crafting
                 float amp = 0.04f;
                 transform.localScale = _baseScale * (1f + amp * scaleLerp);
                 float emLerp = (t + 1f) * 0.5f;
-                Color color = Color.Lerp(new Color(0.3f, 0.2f, 0.0f), new Color(0.8f, 0.5f, 0.0f), emLerp);
+                // HDR colors — видимое свечение (как ResourceNode)
+                Color color = Color.Lerp(new Color(0.6f, 0.4f, 0.0f), new Color(2.0f, 1.2f, 0.0f), emLerp);
                 ApplyEmission(color);
                 yield return null;
             }
@@ -292,7 +301,8 @@ namespace ProjectC.Crafting
         {
             float duration = 0.8f;
             float elapsed = 0f;
-            Color startColor = new Color(0.3f, 0.5f, 0.2f);
+            // HDR start — яркая вспышка
+            Color startColor = new Color(1.5f, 2.5f, 0.5f);
             Color endColor = new Color(0.1f, 0.15f, 0.05f);
             while (elapsed < duration)
             {

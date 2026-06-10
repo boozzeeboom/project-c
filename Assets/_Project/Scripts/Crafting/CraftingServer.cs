@@ -112,7 +112,7 @@ namespace ProjectC.Crafting
         public void SubscribeStationRpc(ulong stationNetId, RpcParams rpcParams = default)
         {
             ulong clientId = rpcParams.Receive.SenderClientId;
-            Debug.Log($"[CraftingServer] SubscribeStationRpc: client={clientId} station={stationNetId}");
+            if (_debugMode) Debug.Log($"[CraftingServer] SubscribeStationRpc: client={clientId} station={stationNetId}");
             if (!CheckRateLimit(clientId)) { SendResultToClient(clientId, CraftingResultDto.Denied(CraftingResultCode.RateLimited, "Слишком частые операции")); return; }
 
             var station = CraftingWorld.GetStationRaw(stationNetId);
@@ -140,7 +140,7 @@ namespace ProjectC.Crafting
             // Шлём snapshot
             var snap = BuildSnapshot(stationNetId);
             SendSnapshotToClient(clientId, snap);
-            Debug.Log($"[CraftingServer] Subscribe: client={clientId} station={stationNetId} state={snap.jobState}");
+            if (_debugMode) Debug.Log($"[CraftingServer] Subscribe: client={clientId} station={stationNetId} state={snap.jobState}");
         }
 
         /// <summary>Клиент отписывается от snapshot'ов одной станции. Не удаляет клиента полностью — другие станции остаются.</summary>
@@ -389,7 +389,7 @@ namespace ProjectC.Crafting
                 StartCoroutine(RetrySendSnapshotNextFrame(clientId, snap));
                 return;
             }
-            Debug.Log($"[CraftingServer] SendSnapshotToClient: station={snap.stationNetId} state={snap.jobState} → client={clientId}");
+            if (_debugMode) Debug.Log($"[CraftingServer] SendSnapshotToClient: station={snap.stationNetId} state={snap.jobState} → client={clientId}");
             netPlayer.ReceiveCraftingSnapshotTargetRpc(snap);
         }
 

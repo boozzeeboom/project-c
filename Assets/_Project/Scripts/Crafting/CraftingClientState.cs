@@ -141,7 +141,7 @@ namespace ProjectC.Crafting
         /// <summary>Вызывается из NetworkPlayer.ReceiveCraftingResultTargetRpc.</summary>
         public void OnCraftingResultReceived(CraftingResultDto result)
         {
-            Debug.Log($"[CraftingClientState] Result received: station={result.stationNetId} code={result.code} msg={result.message}");
+            if (Debug.isDebugBuild) Debug.Log($"[CraftingClientState] Result received: station={result.stationNetId} code={result.code} msg={result.message}");
             CraftingResultCode code = (CraftingResultCode)result.code;
             switch (code)
             {
@@ -169,7 +169,7 @@ namespace ProjectC.Crafting
         /// <summary>Вызывается из NetworkPlayer.ReceiveCraftingSnapshotTargetRpc. Snapshot — authoritative state.</summary>
         public void OnCraftingSnapshotReceived(CraftingSnapshotDto snap)
         {
-            Debug.Log($"[CraftingClientState] Snapshot received: station={snap.stationNetId} state={snap.jobState} owner={snap.ownerClientId} recipe={snap.activeRecipeId}");
+            if (Debug.isDebugBuild) Debug.Log($"[CraftingClientState] Snapshot received: station={snap.stationNetId} state={snap.jobState} owner={snap.ownerClientId} recipe={snap.activeRecipeId}");
             _snapshots[snap.stationNetId] = snap;
 
             // FIX T-C07: Любой snapshot от сервера = сервер жив, таймаут сбрасываем

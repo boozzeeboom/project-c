@@ -6,35 +6,37 @@
 > **База:** `docs/Crafting_system/00_OVERVIEW.md` (архитектура), `docs/Crafting_system/10_DESIGN.md` (дизайн),
 > `ANALYSIS_REUSE_2026-06-10.md` (актуализация после Mining).
 >
-> **Обновлено 2026-06-10.** Дизайн-решения из `00_OVERVIEW.md` §5 (ADR-style) сохранены.
-> Актуализирован REUSE-список — 8 из 16 компонентов берём из готовых Gathering/MetaRequirement вместо Market.
->
+> **Обновлено 2026-06-11.** Все тикеты выполнены.
+
 > **Ключевые изменения против оригинального дизайна (2026-06-07):**
 > - Tool check → **MetaRequirement** (как Mining), не InventoryWorld.CountOf
 > - Выдача корабля → **ключ-предмет в инвентарь** (уже есть Item_Key_Ship*)
 > - UI → **отдельный UIDocument** (как DialogWindow), не tab в MarketWindow
-> - `InventoryWorld.TryRemoveByItemId` → **не нужно** (use `InventoryServer.TryRemove`)
->
+> - `InventoryWorld.TryRemoveByItemId` → **не нужно** (use `InventoryWorld.RemoveItems`)
+
 > Полный анализ: `ANALYSIS_REUSE_2026-06-10.md`
 
 ---
 
-## §0 Что осталось / текущий open work
+## §0 Что сделано / текущий статус
 
-> **TL;DR:** крафт-система — новая, не реализована. 7 тикетов, ~8-11 ч чистого кода.
-> После Фазы 1 можно будет подойти к станции → положить ресурсы → запустить крафт → таймер → забрать результат.
+> **TL;DR:** крафт-система **полностью реализована**. 9 тикетов, ~12-15 ч работы.
+> Работает: подойти к станции → F → окно → выбрать рецепт → +1 на ингредиентах → Начать крафт → таймер + ProgressBar
+> + тост → Готово → Забрать → предмет в инвентарь. Станции независимы. Анимация станции: пульсация + scale wiggle.
 
-### Открыто (нужно делать)
+### Закрыто (выполнено)
 
-| # | Тикет | Milestone | Приоритет | Скоуп | Фаза |
-|---|-------|-----------|-----------|-------|------|
-| 1 | **T-C01** — SO: `RecipeData` + `CraftingStationConfig` | M1 | 🔴 High (~1 ч) | ScriptableObjects: RecipeData (ingredients[], outputs[], craftSeconds), StationConfig (allowedRecipes[], displayName) | 1 |
-| 2 | **T-C02** — `CraftingWorld` POCO + DTOs | M1 | 🔴 High (~1.5 ч) | POCO world singleton, `CraftingJob` state machine, 6 DTO structs (INetworkSerializable), `CraftingTimeService` | 2 |
-| 3 | **T-C03** — `CraftingServer` RPC hub | M2 | 🔴 High (~1 ч) | NetworkBehaviour singleton, 5 RPCs (Subscribe/AddIngredient/Start/Cancel/Collect), rate-limit, tick handler | 3 |
-| 4 | **T-C04** — `CraftingStation` NetworkBehaviour | M2 | 🔴 High (~2 ч) | Scene-placed station, state machine, MetaRequirement tool check, trigger zone (IInteractable), NetworkVariable state | 4 |
-| 5 | **T-C05** — `CraftingClientState` + CraftingProgress toast | M3 | 🔴 High (~1.5 ч) | Client singleton (events), ProgressBar toast (копия GatheringToastController), auto-spawn NMC | 5 |
-| 6 | **T-C06** — `CraftingWindow` отдельный UIDocument | M3 | 🟡 Med (~2 ч) | Отдельный UIDocument (как DialogWindow), Recipe selector, Buffer slots, Start/Cancel/Collect кнопки | 6 |
-| 7 | **T-C07** — Scene placement: станция в WorldScene_0_0 | M3 | 🟢 Low (~0.5 ч) | Prefab + CraftingStation в WorldScene_0_0 рядом с Mira + [CraftingServer] в BootstrapScene | 7 |
+| # | Тикет | Milestone | Статус |
+|---|-------|-----------|--------|
+| 1 | **T-C01** — SO: `RecipeData` + `CraftingStationConfig` | M1 | ✅ DONE |
+| 2 | **T-C02** — `CraftingWorld` POCO + DTOs | M1 | ✅ DONE |
+| 3 | **T-C03** — `CraftingServer` RPC hub | M2 | ✅ DONE |
+| 4 | **T-C04** — `CraftingStation` NetworkBehaviour | M2 | ✅ DONE |
+| 5 | **T-C05** — `CraftingClientState` + CraftingProgress toast | M3 | ✅ DONE |
+| 6 | **T-C06** — `CraftingWindow` отдельный UIDocument | M3 | ✅ DONE |
+| 7 | **T-C07** — Scene placement: станция в WorldScene_0_0 | M3 | ✅ DONE |
+| 8 | **T-C07b** — Inventory интеграция (T-C07b) | M3 | ✅ DONE |
+| 9 | **T-C07c** — Анимация станции (emission pulse) | M3 | ✅ DONE |
 
 ### DEFERRED (post-MVP, не блокер)
 

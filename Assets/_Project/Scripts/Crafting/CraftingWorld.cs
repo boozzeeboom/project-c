@@ -19,6 +19,12 @@ namespace ProjectC.Crafting
         private static Dictionary<RecipeData, int> _idsByRecipe = new Dictionary<RecipeData, int>();
         private static int _nextRecipeId = 1;
 
+        // ----- Item registry (ItemData -> compact int id, like InventoryWorld._itemDatabase) -----
+        // Needed for DTOs that reference items by id (CraftingSnapshotDto.buffer, AddIngredientRpc).
+        private static Dictionary<int, ProjectC.Items.ItemData> _itemsById = new Dictionary<int, ProjectC.Items.ItemData>();
+        private static Dictionary<ProjectC.Items.ItemData, int> _idsByItem = new Dictionary<ProjectC.Items.ItemData, int>();
+        private static int _nextItemId = 1;
+
         // ----- Station registry (stationNetId -> MonoBehaviour; cast to CraftingStation in T-C04) -----
         // Using MonoBehaviour here avoids forward dependency on T-C04. CraftingServer/T-C04 registers
         // the actual CraftingStation component; we just hold the reference.
@@ -37,9 +43,12 @@ namespace ProjectC.Crafting
             if (IsInitialized) return;
             _recipesById.Clear();
             _idsByRecipe.Clear();
+            _itemsById.Clear();
+            _idsByItem.Clear();
             _stations.Clear();
             _jobs.Clear();
             _nextRecipeId = 1;
+            _nextItemId = 1;
             IsInitialized = true;
         }
 
@@ -47,6 +56,8 @@ namespace ProjectC.Crafting
         {
             _recipesById.Clear();
             _idsByRecipe.Clear();
+            _itemsById.Clear();
+            _idsByItem.Clear();
             _stations.Clear();
             _jobs.Clear();
             IsInitialized = false;
@@ -70,6 +81,32 @@ namespace ProjectC.Crafting
         {
             _recipesById.TryGetValue(recipeId, out var r);
             return r;
+        }
+
+        // ==========================================================
+        // Item registry (for AddIngredientRpc + CraftingSnapshotDto.buffer)
+        // ==========================================================
+        public static int RegisterItem(ProjectC.Items.ItemData item)
+        {
+            if (item == null) return -1;
+            if (_idsByItem.TryGetValue(item, out int existing)) return existing;
+            int id = _nextItemId++;
+            _idsByItem[item] = id;
+            _itemsById[id] = item;
+            return id;
+        }
+
+        public static int GetItemId(ProjectC.Items.ItemData item)
+        {
+            if (item == null) return -1;
+            _idsByItem.TryGetValue(item, out int id);
+            return id;
+        }
+
+        public static ProjectC.Items.ItemData GetItem(int itemId)
+        {
+            _itemsById.TryGetValue(itemId, out var it);
+            return it;
         }
 
         // ==========================================================

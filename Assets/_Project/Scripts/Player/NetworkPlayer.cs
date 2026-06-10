@@ -714,6 +714,13 @@ namespace ProjectC.Player
             _lastCanUseRequestTime = Time.unscaledTime;
             _pendingCanUseInteractableId = nearest.NetworkObjectId;
 
+            // T-C06: открыть окно сразу (UI optimistic open). Данные придут в snapshot.
+            // Если сервер deny (NotFound) — CraftingWindow покажет ❌ message и закроется.
+            var wnd = ProjectC.Crafting.UI.CraftingWindow.Instance;
+            if (wnd != null && !wnd.IsOpen)
+            {
+                wnd.Show(nearest.NetworkObjectId, nearest.Config);
+            }
             ProjectC.Crafting.CraftingClientState.Instance?.RequestSubscribe(nearest.NetworkObjectId);
             return true;
         }

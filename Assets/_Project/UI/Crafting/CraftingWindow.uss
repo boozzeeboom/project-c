@@ -1,0 +1,229 @@
+/* CraftingWindow.uss - styles for crafting UI (T-C06) */
+
+.crafting-root {
+    position: absolute;
+    left: 0;
+    top: 0;
+    right: 0;
+    bottom: 0;
+    align-items: center;
+    justify-content: center;
+    background-color: rgba(0, 0, 0, 0.55);
+}
+
+.crafting-panel {
+    width: 720px;
+    min-height: 480px;
+    background-color: rgb(18, 16, 22);
+    border-radius: 10px;
+    border-width: 2px;
+    border-color: rgb(120, 80, 40);
+    padding: 0;
+    flex-direction: column;
+}
+
+.crafting-header {
+    flex-direction: row;
+    align-items: center;
+    justify-content: space-between;
+    background-color: rgb(36, 24, 12);
+    padding-top: 10px;
+    padding-bottom: 10px;
+    padding-left: 16px;
+    padding-right: 16px;
+    border-top-left-radius: 8px;
+    border-top-right-radius: 8px;
+}
+
+.crafting-title {
+    color: rgb(255, 200, 120);
+    font-size: 20px;
+    -unity-font-style: bold;
+    flex-grow: 1;
+}
+
+.crafting-close-btn {
+    width: 32px;
+    height: 32px;
+    background-color: rgba(0, 0, 0, 0.0);
+    color: rgb(220, 200, 180);
+    border-width: 0;
+    font-size: 18px;
+    -unity-font-style: bold;
+    padding: 0;
+}
+
+.crafting-close-btn:hover {
+    color: rgb(255, 100, 80);
+}
+
+.crafting-body {
+    flex-direction: row;
+    flex-grow: 1;
+    padding: 12px;
+}
+
+.crafting-left-pane {
+    width: 220px;
+    flex-shrink: 0;
+    flex-direction: column;
+    margin-right: 12px;
+}
+
+.crafting-center-pane {
+    flex-grow: 1;
+    flex-direction: column;
+}
+
+.crafting-section-title {
+    color: rgb(180, 160, 130);
+    font-size: 12px;
+    -unity-font-style: bold;
+    margin-bottom: 6px;
+    margin-top: 4px;
+}
+
+.crafting-recipe-list {
+    flex-grow: 1;
+    background-color: rgba(0, 0, 0, 0.3);
+    border-radius: 4px;
+    border-width: 1px;
+    border-color: rgb(60, 50, 40);
+}
+
+.crafting-recipe-title {
+    color: rgb(255, 220, 160);
+    font-size: 18px;
+    -unity-font-style: bold;
+    margin-bottom: 4px;
+}
+
+.crafting-recipe-desc {
+    color: rgb(180, 180, 180);
+    font-size: 12px;
+    margin-bottom: 10px;
+    white-space: normal;
+}
+
+.crafting-ingredients {
+    flex-direction: column;
+    margin-bottom: 10px;
+}
+
+.crafting-ingredient-row {
+    flex-direction: row;
+    align-items: center;
+    padding-top: 4px;
+    padding-bottom: 4px;
+    padding-left: 6px;
+    padding-right: 6px;
+    background-color: rgba(255, 255, 255, 0.04);
+    border-radius: 3px;
+    margin-bottom: 2px;
+}
+
+.crafting-ingredient-name {
+    flex-grow: 1;
+    color: rgb(220, 210, 190);
+    font-size: 13px;
+}
+
+.crafting-ingredient-qty {
+    color: rgb(180, 160, 130);
+    font-size: 12px;
+    margin-right: 8px;
+}
+
+.crafting-buffer-section {
+    margin-top: 8px;
+    margin-bottom: 8px;
+}
+
+.crafting-buffer-grid {
+    flex-direction: column;
+    min-height: 24px;
+}
+
+.crafting-buffer-row {
+    flex-direction: row;
+    align-items: center;
+    padding-top: 2px;
+    padding-bottom: 2px;
+    padding-left: 6px;
+    padding-right: 6px;
+    background-color: rgba(60, 80, 60, 0.4);
+    border-radius: 3px;
+    margin-bottom: 2px;
+}
+
+.crafting-progress {
+    height: 16px;
+    margin-top: 8px;
+    margin-bottom: 4px;
+}
+
+.crafting-footer {
+    padding-top: 8px;
+    padding-bottom: 12px;
+    padding-left: 12px;
+    padding-right: 12px;
+    background-color: rgb(24, 20, 14);
+    border-bottom-left-radius: 8px;
+    border-bottom-right-radius: 8px;
+}
+
+.crafting-message {
+    color: rgb(255, 180, 120);
+    font-size: 12px;
+    height: 18px;
+    -unity-text-align: middle-left;
+    margin-bottom: 6px;
+}
+
+.crafting-button-row {
+    flex-direction: row;
+    justify-content: flex-end;
+}
+
+.crafting-btn {
+    height: 32px;
+    min-width: 100px;
+    margin-left: 8px;
+    padding-left: 12px;
+    padding-right: 12px;
+    border-radius: 4px;
+    font-size: 13px;
+    -unity-font-style: bold;
+}
+
+.crafting-btn-primary {
+    background-color: rgb(160, 100, 50);
+    color: rgb(255, 240, 220);
+    border-width: 1px;
+    border-color: rgb(200, 140, 80);
+}
+
+.crafting-btn-primary:hover {
+    background-color: rgb(190, 120, 60);
+}
+
+.crafting-btn-primary:disabled {
+    background-color: rgb(60, 50, 40);
+    color: rgb(120, 110, 100);
+}
+
+.crafting-btn-secondary {
+    background-color: rgb(80, 50, 40);
+    color: rgb(220, 200, 180);
+    border-width: 1px;
+    border-color: rgb(120, 80, 60);
+}
+
+.crafting-btn-secondary:hover {
+    background-color: rgb(110, 70, 50);
+}
+
+.crafting-btn-secondary:disabled {
+    background-color: rgb(50, 40, 35);
+    color: rgb(100, 90, 80);
+}

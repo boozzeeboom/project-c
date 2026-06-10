@@ -101,6 +101,17 @@ namespace ProjectC.ResourceNode
         private bool _subscribedToMetaReq = false;
 
         // ==========================================================
+        // Client-side: animation (T-G06)
+        // ==========================================================
+
+        private Renderer _renderer;
+        private MaterialPropertyBlock _mpb;
+        private Vector3 _baseScale;
+        private static readonly int _emissionColorId = Shader.PropertyToID("_EmissionColor");
+        private Coroutine _gatherAnimCoroutine;
+        private bool _onValueChangedSubscribed = false;
+
+        // ==========================================================
         // Unity lifecycle
         // ==========================================================
 
@@ -112,6 +123,17 @@ namespace ProjectC.ResourceNode
             {
                 _metaRequirement = GetComponent<MetaReq>();
             }
+
+            // T-G06: инициализация материала для анимации (как LockBox)
+            _renderer = GetComponent<Renderer>();
+            if (_renderer != null)
+            {
+                _mpb = new MaterialPropertyBlock();
+                _renderer.GetPropertyBlock(_mpb);
+                _mpb.SetColor(_emissionColorId, _config != null ? _config.AnimIdleEmission : Color.black);
+                _renderer.SetPropertyBlock(_mpb);
+            }
+            _baseScale = transform.localScale;
         }
 
         private void OnEnable()
@@ -160,10 +182,26 @@ namespace ProjectC.ResourceNode
                 // Инициализируем счётчик на максимум (1-й сбор сразу доступен)
                 _currentHarvests = 0;  // начнём с 0 — инкрементируемся после CompleteGather
             }
+
+            // T-G06: подписка на смену состояния для анимации (все клиенты, не сервер).
+            if (!_onValueChangedSubscribed)
+            {
+                _replicatedState.OnValueChanged += OnReplicatedStateChanged;
+                // Если нод уже не Idle (spawned как Occupied/Depleted) — сразу применить
+                OnReplicatedStateChanged(ResourceNodeState.Idle, _replicatedState.Value);
+                _onValueChangedSubscribed = true;
+            }
         }
 
         public override void OnNetworkDespawn()
         {
+            // T-G06: отписка от анимации
+            if (_onValueChangedSubscribed)
+            {
+                _replicatedState.OnValueChanged -= OnReplicatedStateChanged;
+                _onValueChangedSubscribed = false;
+            }
+
             if (IsServer)
             {
                 if (GatheringServer.Instance != null)
@@ -393,6 +431,94 @@ namespace ProjectC.ResourceNode
             }
         }
 #endif
+
+        // ==========================================================
+        // T-G06: Client-side animation
+        // ==========================================================
+
+        private void OnReplicatedStateChanged(ResourceNodeState previous, ResourceNodeState current)
+        {
+            if (IsServer) return; // анимация только на клиентах
+
+            // Остановить текущую анимацию
+            if (_gatherAnimCoroutine != null)
+            {
+                StopCoroutine(_gatherAnimCoroutine);
+                _gatherAnimCoroutine = null;
+            }
+
+            switch (current)
+            {
+                case ResourceNodeState.Idle:
+                    // Вернуть scale к базовому, emission к покою
+                    transform.localScale = _baseScale;
+                    ApplyEmission(_config != null ? _config.AnimIdleEmission : Color.black);
+                    gameObject.SetActive(true);
+                    break;
+
+                case ResourceNodeState.Occupied:
+                    // LOOP: scale-pulse + emissive flash
+                    _gatherAnimCoroutine = StartCoroutine(GatherPulse());
+                    break;
+
+                case ResourceNodeState.Depleted:
+                    // Плавное исчезание (scale → 0)
+                    _gatherAnimCoroutine = StartCoroutine(Disappear());
+                    break;
+
+                case ResourceNodeState.Cooldown:
+                    gameObject.SetActive(false);
+                    break;
+            }
+        }
+
+        private System.Collections.IEnumerator GatherPulse()
+        {
+            if (_config == null) yield break;
+            float amplitude = _config.AnimScaleAmplitude;
+            float period = _config.AnimPulsePeriod;
+            Color idleEm = _config.AnimIdleEmission;
+            Color gatherEm = _config.AnimGatherEmission;
+
+            while (true)
+            {
+                float t = Mathf.Sin(Time.time * (2f * Mathf.PI / Mathf.Max(0.01f, period)));
+                // scale: 1.0 ± amplitude
+                transform.localScale = _baseScale * (1.0f + amplitude * t);
+                // emissive: плавно между idle и gather
+                float emLerp = (t + 1f) * 0.5f; // 0..1
+                ApplyEmission(Color.Lerp(idleEm, gatherEm, emLerp));
+                yield return null;
+            }
+        }
+
+        private System.Collections.IEnumerator Disappear()
+        {
+            if (_config == null) yield break;
+            float duration = _config.AnimHiddenDuration;
+            float elapsed = 0f;
+            Vector3 startScale = transform.localScale;
+            while (elapsed < duration)
+            {
+                elapsed += Time.deltaTime;
+                float k = Mathf.Clamp01(elapsed / duration);
+                // scale плавно → 0, emission → idle перед исчезанием
+                transform.localScale = Vector3.Lerp(startScale, Vector3.zero, k);
+                if (_config != null) ApplyEmission(Color.Lerp(_config.AnimGatherEmission, _config.AnimIdleEmission, k));
+                yield return null;
+            }
+            transform.localScale = Vector3.zero;
+            gameObject.SetActive(false);
+            // Когда сервер переключит Cooldown → Idle, OnReplicatedStateChanged покажет снова
+        }
+
+        private void ApplyEmission(Color color)
+        {
+            if (_renderer == null || _mpb == null) return;
+            _renderer.GetPropertyBlock(_mpb);
+            _mpb.SetColor(_emissionColorId, color);
+            _renderer.SetPropertyBlock(_mpb);
+        }
     }
 
     /// <summary>

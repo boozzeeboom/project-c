@@ -85,6 +85,17 @@ namespace ProjectC.Player
         private ulong _pendingCanUseInteractableId = ulong.MaxValue;
         private const float CAN_USE_REQUEST_TIMEOUT = 1.5f;
 
+        // T-G07: Player gather animation — пульсация scale во время сбора
+        [Header("Gather Animation")]
+        [Tooltip("Амплитуда пульсации scale персонажа при сборе (0 = без анимации).")]
+        [SerializeField] private float _gatherScaleAmplitude = 0.08f;
+        [Tooltip("Период пульсации scale в секундах.")]
+        [SerializeField] [Range(0.1f, 1.5f)] private float _gatherPulsePeriod = 0.6f;
+        private Coroutine _gatherPulseCoroutine;
+        private Vector3 _originalScale;
+        private bool _subscribedToGather = false;
+        private bool _gatherActive = false;
+
 
 
         // ==================== CLIENT-SIDE PREDICTION ====================
@@ -202,6 +213,9 @@ namespace ProjectC.Player
             {
                 _controller.enabled = false;
             }
+
+            // T-G07: подписка на события сбора (client, не server)
+            TrySubscribeToGatherClientState();
         }
 
         public override void OnNetworkDespawn()
@@ -223,6 +237,9 @@ namespace ProjectC.Player
 
             if (_myCamera != null) Destroy(_myCamera.gameObject);
             if (_inShip && _currentShip != null) _currentShip.RemovePilot(OwnerClientId);
+
+            // T-G07: отписка от сбора
+            UnsubscribeFromGatherClientState();
         }
         
         // NOTE: FloatingOriginMP event handling removed - scene-based doesn't use world shifting
@@ -1089,6 +1106,95 @@ namespace ProjectC.Player
         public void RequestAdvanceDialogue(string treeId, string nodeId, int optionIndex, string npcId)
         {
             ProjectC.Quests.QuestServer.Instance?.RequestAdvanceDialogueRpc(treeId, nodeId, optionIndex, npcId);
+        }
+
+        // ==========================================================
+        // T-G07: Gather animation (player scale pulse)
+        // ==========================================================
+
+        /// <summary>Подписка на GatheringClientState события (вызывается в OnNetworkSpawn).</summary>
+        private void TrySubscribeToGatherClientState()
+        {
+            if (_subscribedToGather) return;
+            var state = ProjectC.ResourceNode.GatheringClientState.Instance;
+            if (state == null) return;
+            state.OnGatherProgress += OnGatherProgress;
+            state.OnGatherCompleted += OnGatherEnded;
+            state.OnGatherInterrupted += OnGatherEnded;
+            state.OnGatherDenied += OnGatherEnded;
+            state.OnGatherCancelled += OnGatherCancelled;
+            _subscribedToGather = true;
+        }
+
+        private void UnsubscribeFromGatherClientState()
+        {
+            if (!_subscribedToGather) return;
+            var state = ProjectC.ResourceNode.GatheringClientState.Instance;
+            if (state != null)
+            {
+                state.OnGatherProgress -= OnGatherProgress;
+                state.OnGatherCompleted -= OnGatherEnded;
+                state.OnGatherInterrupted -= OnGatherEnded;
+                state.OnGatherDenied -= OnGatherEnded;
+                state.OnGatherCancelled -= OnGatherCancelled;
+            }
+            _subscribedToGather = false;
+            StopGatherPulse();
+        }
+
+        private void OnGatherProgress(float progress)
+        {
+            if (!_gatherActive)
+            {
+                _gatherActive = true;
+                _originalScale = transform.localScale;
+                StartGatherPulse();
+            }
+        }
+
+        private void OnGatherEnded(string _unused1, int _unused2, bool _unused3)
+        {
+            if (_gatherActive) StopGatherPulse();
+        }
+
+        private void OnGatherEnded(string _unused)
+        {
+            if (_gatherActive) StopGatherPulse();
+        }
+
+        private void OnGatherCancelled()
+        {
+            if (_gatherActive) StopGatherPulse();
+        }
+
+        private void StartGatherPulse()
+        {
+            if (_gatherPulseCoroutine != null) StopCoroutine(_gatherPulseCoroutine);
+            _gatherPulseCoroutine = StartCoroutine(GatherPulseLoop());
+        }
+
+        private void StopGatherPulse()
+        {
+            _gatherActive = false;
+            if (_gatherPulseCoroutine != null)
+            {
+                StopCoroutine(_gatherPulseCoroutine);
+                _gatherPulseCoroutine = null;
+            }
+            transform.localScale = _originalScale;
+        }
+
+        private System.Collections.IEnumerator GatherPulseLoop()
+        {
+            if (_gatherScaleAmplitude <= 0f) yield break;
+            float amp = _gatherScaleAmplitude;
+            float period = Mathf.Max(0.01f, _gatherPulsePeriod);
+            while (true)
+            {
+                float t = Mathf.Sin(Time.time * (2f * Mathf.PI / period));
+                transform.localScale = _originalScale * (1.0f + amp * t);
+                yield return null;
+            }
         }
     }
 }

@@ -65,6 +65,7 @@ namespace ProjectC.Crafting
                 state.OnCraftingInterrupted -= HandleInterrupted;
                 state.OnCraftingDenied -= HandleDenied;
                 state.OnCraftingCancelled -= HandleCancelled;
+                state.OnSnapshotUpdated -= HandleSnapshotForToast;
             }
             _subscribed = false;
         }
@@ -153,6 +154,7 @@ namespace ProjectC.Crafting
             state.OnCraftingInterrupted += HandleInterrupted;
             state.OnCraftingDenied += HandleDenied;
             state.OnCraftingCancelled += HandleCancelled;
+            state.OnSnapshotUpdated += HandleSnapshotForToast;
             _subscribed = true;
         }
 
@@ -174,8 +176,13 @@ namespace ProjectC.Crafting
         {
             if (!_built) TryBuild();
             if (_container == null || _progressBar == null) return;
+            // FIX T-C07: НЕ прячем тост после _completeDuration — держим до Collect (state=0)
+            // Иначе каждый 1Гц snapshot перезапускает корутину, создавая мигание.
             if (_activeCoroutine != null) StopCoroutine(_activeCoroutine);
-            _activeCoroutine = StartCoroutine(ShowCompletedAndHide(resultItemName));
+            _label.text = "✅ Готово: " + (string.IsNullOrEmpty(resultItemName) ? "Предмет" : resultItemName);
+            _progressBar.value = 1f;
+            _container.style.display = new StyleEnum<DisplayStyle>(DisplayStyle.Flex);
+            _activeCoroutine = null;
         }
 
         private void HandleInterrupted(ulong stationNetId, string reason)
@@ -213,7 +220,19 @@ namespace ProjectC.Crafting
             _activeCoroutine = null;
         }
 
-        private IEnumerator ShowInterruptAndHide(string reason, bool extended = false)
+        // FIX T-C07: скрыть тост при смене state на Empty (после Collect)
+        private void HandleSnapshotForToast(ProjectC.Crafting.CraftingSnapshotDto snap)
+        {
+            if ((ProjectC.Crafting.CraftingJobState)snap.jobState == ProjectC.Crafting.CraftingJobState.Empty
+                && snap.activeRecipeId == -1)
+            {
+                if (_activeCoroutine != null) StopCoroutine(_activeCoroutine);
+                _container.style.display = new StyleEnum<DisplayStyle>(DisplayStyle.None);
+                _activeCoroutine = null;
+            }
+        }
+
+        private System.Collections.IEnumerator ShowInterruptAndHide(string reason, bool extended = false)
         {
             _label.text = reason;
             float elapsed = 0f;

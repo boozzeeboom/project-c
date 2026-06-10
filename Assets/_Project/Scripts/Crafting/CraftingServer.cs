@@ -28,8 +28,8 @@ namespace ProjectC.Crafting
         private CraftingTimeService _timeService;
         private Dictionary<ulong, List<float>> _opTimestamps = new Dictionary<ulong, List<float>>();
 
-        // client subscriptions: clientId -> stationNetId для периодического push прогресса
-        private readonly Dictionary<ulong, ulong> _subscribers = new Dictionary<ulong, ulong>();
+        // client subscriptions: clientId -> set of stationNetIds (множественные подписки — разные станции)
+        private readonly Dictionary<ulong, System.Collections.Generic.HashSet<ulong>> _subscribers = new Dictionary<ulong, System.Collections.Generic.HashSet<ulong>>();
 
         // ==========================================================
         // NetworkBehaviour lifecycle
@@ -86,15 +86,17 @@ namespace ProjectC.Crafting
             // Push прогресс всем подписчикам (каждый 1Гц tick — как GatheringServer.TickActiveGathers)
             if (_subscribers.Count > 0)
             {
-                // Copy keys to avoid modification during iteration
                 var clientIds = new List<ulong>(_subscribers.Keys);
                 for (int ci = 0; ci < clientIds.Count; ci++)
                 {
                     ulong clientId = clientIds[ci];
-                    if (!_subscribers.TryGetValue(clientId, out var stationNetId)) continue;
-                    var snap = BuildSnapshot(stationNetId);
-                    // Шлём всегда — клиент сам обработает таймаут через StopTimeoutWatcher
-                    SendSnapshotToClient(clientId, snap);
+                    if (!_subscribers.TryGetValue(clientId, out var stations)) continue;
+                    // Push snapshot для КАЖДОЙ подписанной станции этого клиента
+                    foreach (var sn in stations)
+                    {
+                        var snap = BuildSnapshot(sn);
+                        SendSnapshotToClient(clientId, snap);
+                    }
                 }
             }
         }
@@ -125,8 +127,13 @@ namespace ProjectC.Crafting
             // Distance check
             if (!CheckDistance(clientId, station)) { SendResultToClient(clientId, CraftingResultDto.Denied(CraftingResultCode.NotFound, "Слишком далеко от станции", stationNetId)); return; }
 
-            // Record subscription
-            _subscribers[clientId] = stationNetId;
+            // Record subscription (add to set — несколько станций на одного клиента)
+            if (!_subscribers.TryGetValue(clientId, out var subSet))
+            {
+                subSet = new System.Collections.Generic.HashSet<ulong>();
+                _subscribers[clientId] = subSet;
+            }
+            subSet.Add(stationNetId);
 
             // Шлём snapshot
             var snap = BuildSnapshot(stationNetId);
@@ -134,25 +141,30 @@ namespace ProjectC.Crafting
             Debug.Log($"[CraftingServer] Subscribe: client={clientId} station={stationNetId} state={snap.jobState}");
         }
 
-        /// <summary>Клиент отписывается от snapshot'ов (например, закрыл окно).</summary>
+        /// <summary>Клиент отписывается от snapshot'ов одной станции. Не удаляет клиента полностью — другие станции остаются.</summary>
         [Rpc(SendTo.Server, InvokePermission = RpcInvokePermission.Everyone)]
         public void UnsubscribeStationRpc(ulong stationNetId, RpcParams rpcParams = default)
         {
             ulong clientId = rpcParams.Receive.SenderClientId;
-            _subscribers.Remove(clientId);
+            if (_subscribers.TryGetValue(clientId, out var subSet))
+            {
+                subSet.Remove(stationNetId);
+                if (subSet.Count == 0) _subscribers.Remove(clientId);
+            }
             if (_debugMode) Debug.Log($"[CraftingServer] Unsubscribe: client={clientId} station={stationNetId}");
         }
 
         // Also remove subscriber when station despawns
         public void RemoveSubscriberForStation(ulong stationNetId)
         {
-            // Clean up all subscribers for this station
-            var toRemove = new List<ulong>();
+            // Clean up all subscribers for this station (iterates over all client sets)
+            var clientsToRemove = new List<ulong>();
             foreach (var kv in _subscribers)
             {
-                if (kv.Value == stationNetId) toRemove.Add(kv.Key);
+                kv.Value.Remove(stationNetId);
+                if (kv.Value.Count == 0) clientsToRemove.Add(kv.Key);
             }
-            foreach (var clientId in toRemove) _subscribers.Remove(clientId);
+            foreach (var clientId in clientsToRemove) _subscribers.Remove(clientId);
         }
 
         /// <summary>Положить ингредиент в buffer станции. Только владелец job'а (или претендент, если Empty).</summary>

@@ -204,14 +204,50 @@ namespace ProjectC.Crafting.UI
                 UnityEngine.Cursor.lockState = CursorLockMode.Locked;
                 UnityEngine.Cursor.visible = false;
             }
-            if (CraftingClientState.Instance != null && _currentStationNetId != 0)
-            {
-                CraftingClientState.Instance.RequestUnsubscribe(_currentStationNetId);
-            }
+            // FIX T-C07: НЕ отписываемся — подписка живёт пока станция активна.
+            // Тост прогресса продолжает получать snapshot'ы даже при закрытом окне.
             _currentStationNetId = 0;
             _currentConfig = null;
             _selectedRecipeId = -1;
             IsOpen = false;
+        }
+
+        /// <summary>T-C07: переключиться на другую станцию (окно уже открыто). Не отписывается от старой.</summary>
+        public void SwitchStation(ulong newStationNetId, CraftingStationConfig newConfig)
+        {
+            if (!_built) EnsureBuilt();
+            if (_root == null) return;
+
+            // Unsubscribe old — НЕ делаем, подписка остаётся активной для тоста прогресса.
+            // Просто переключаем отображение окна на новую станцию.
+            // Если новая станция ещё не подписана — снапшот придёт, когда клиент вызовет RequestSubscribe.
+            // А RequestSubscribe вызывается из NetworkPlayer.TryInteractNearestCraftingStation ПОСЛЕ SwitchStation.
+
+            _currentStationNetId = newStationNetId;
+            _currentConfig = newConfig;
+            _selectedRecipeId = -1;
+
+            // Reset UI
+            if (_stationNameLabel != null) _stationNameLabel.text = newConfig != null ? newConfig.DisplayName : "Станция";
+            if (_recipeTitleLabel != null) _recipeTitleLabel.text = "Выберите рецепт";
+            if (_recipeDescLabel != null) _recipeDescLabel.text = "";
+            if (_progressBar != null) _progressBar.value = 0f;
+            if (_messageLabel != null) _messageLabel.text = "Станция переключена";
+            if (_ingredientsContainer != null) _ingredientsContainer.Clear();
+            if (_bufferGrid != null) _bufferGrid.Clear();
+            if (_recipeList != null) _recipeList.Clear();
+
+            BuildRecipeList();
+
+            // Show если скрыто
+            if (_root != null)
+            {
+                _root.style.display = DisplayStyle.Flex;
+                _root.pickingMode = PickingMode.Position;
+            }
+            UnityEngine.Cursor.lockState = CursorLockMode.None;
+            UnityEngine.Cursor.visible = true;
+            IsOpen = true;
         }
 
         // ==========================================================

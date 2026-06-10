@@ -18,6 +18,7 @@ namespace ProjectC.Core
         private static readonly List<PickupItem> _pickups = new List<PickupItem>(32);
         private static readonly List<ChestContainer> _chests = new List<ChestContainer>(16);
         private static readonly List<ShipController> _ships = new List<ShipController>(8);
+        private static readonly List<ProjectC.ResourceNode.ResourceNode> _resourceNodes = new List<ProjectC.ResourceNode.ResourceNode>(16);
 
         /// <summary>
         /// Register a pickup item when it enters player's trigger.
@@ -85,6 +86,47 @@ namespace ProjectC.Core
             }
         }
 
+        // ==========================================================
+        // ResourceNode (T-G02)
+        // ==========================================================
+
+        /// <summary>Register a resource node when it enters player's trigger.</summary>
+        public static void RegisterResourceNode(ProjectC.ResourceNode.ResourceNode node)
+        {
+            if (node != null && !_resourceNodes.Contains(node))
+            {
+                _resourceNodes.Add(node);
+            }
+        }
+
+        /// <summary>Unregister a resource node when it exits player's trigger.</summary>
+        public static void UnregisterResourceNode(ProjectC.ResourceNode.ResourceNode node)
+        {
+            if (node != null)
+            {
+                _resourceNodes.Remove(node);
+            }
+        }
+
+        /// <summary>Find nearest resource node within range. Zero allocations.</summary>
+        public static ProjectC.ResourceNode.ResourceNode FindNearestResourceNode(Vector3 position, float range)
+        {
+            ProjectC.ResourceNode.ResourceNode nearest = null;
+            float minDist = float.MaxValue;
+            for (int i = 0; i < _resourceNodes.Count; i++)
+            {
+                var node = _resourceNodes[i];
+                if (node == null || !node.gameObject.activeSelf) continue;
+                float dist = Vector3.Distance(position, node.transform.position);
+                if (dist < range && dist < minDist)
+                {
+                    minDist = dist;
+                    nearest = node;
+                }
+            }
+            return nearest;
+        }
+
         // T-Q19: FindNearestNpc/RegisterNpc/UnregisterNpc removed. v1 World.Npc.NpcInteraction
         // is gone; v2 NpcController handles NPC detection in NetworkPlayer (RequestTalkToNpcRpc).
 
@@ -112,6 +154,7 @@ namespace ProjectC.Core
             _pickups.Clear();
             _chests.Clear();
             _ships.Clear();
+            _resourceNodes.Clear();
         }
 
         /// <summary>

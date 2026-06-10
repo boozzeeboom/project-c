@@ -126,7 +126,7 @@ T-G07 (Prefab + BootstrapScene + WorldScene placement)
 
 ---
 
-### T-G02 — ResourceNode NetworkBehaviour (Phase 2, ~2-3 ч)
+### T-G02 — ResourceNode NetworkBehaviour (Phase 2, ~2-3 ч) ✅ DONE 2026-06-10
 
 **Файл:** `Assets/_Project/Scripts/ResourceNode/ResourceNode.cs`
 
@@ -157,11 +157,33 @@ T-G07 (Prefab + BootstrapScene + WorldScene placement)
 - `OnTriggerEnter/Exit` → `InteractableManager.RegisterResourceNode / UnregisterResourceNode`
 
 **Verify:**
-- Compile: 0 errors
+- ✅ Compile: 0 errors
 - Start host → ResourceNode в сцене → NetworkBehaviour.IsSpawned = true
 - `_replicatedState` читается на клиенте
 
 **Risk:** medium. Сетевая логика + подписка на MetaRequirementClientState. Паттерн LockBox уже работает.
+
+**Фактически реализовано (2026-06-10):**
+- `Assets/_Project/Scripts/ResourceNode/ResourceNode.cs` (~430 LOC) — NetworkBehaviour + state machine + MetaReq subscription.
+- enum `ResourceNodeState` (Idle/Occupied/Depleted/Cooldown) + NetworkVariable + public getter `CurrentState`.
+- Server API: `CanStartGather`, `TryStartGather`, `TickGather`, `CompleteGather`, `CancelGather`, `TickCooldown`.
+- Client API: lazy-subscribe на `MetaRequirementClientState.OnAccessAllowed` (паттерн LockBox) → `OnMetaAccessAllowed(netId)` → рефлективный вызов `GatheringClientState.RequestStartGather` (null-safe — T-G04 создаст тип).
+- `OnTriggerEnter/Exit` → `InteractableManager.RegisterResourceNode / UnregisterResourceNode`.
+- `OnNetworkSpawn` (server) → `ResolveItemIds` + рефлективная регистрация в `GatheringServer` (null-safe).
+- `OnNetworkDespawn` (server) → unregister.
+- `InteractableManager.cs` — `+_resourceNodes` список + `Register/Unregister/FindNearest` (3 новых метода, 1 в ClearAll).
+
+**3 ResourceNode размещены в WorldScene_0_0 рядом с Mira (40000, 2502.77, 39985):**
+- `[ResourceNode_IronVein]` @ (40000, 2502.77, 40020) — без tool, "Железная руда", 3с/5harv
+- `[ResourceNode_CopperVein]` @ (40020, 2502.77, 40000) — требует ShipLight, "Медная руда", 3с/5harv
+- `[ResourceNode_PlantHerb]` @ (40000, 2502.77, 39980) — без tool, "Кристаллическая пыль", 1.5с/3harv
+- Каждый: BoxCollider (isTrigger, size 1×1×1, localScale 1.5×1.5×1.5) + NetworkObject (scene-placed — будет spawn'ен ScenePlacedObjectSpawner'ом) + ResourceNode + MetaRequirement (только на CopperVein).
+
+**Key Lessons:**
+- Namespace collision: `ProjectC.ResourceNode` + `using ProjectC.MetaRequirement` → C# считает `MetaRequirement` вложенным namespace, путает с type → `CS0118`. **Fix**: alias `using MetaReq = ProjectC.MetaRequirement.MetaRequirement;`
+- `InventoryWorld.AddItemDirect` возвращает `InventoryResultDto` (struct), не `bool`. Проверка успеха через `result.IsSuccess` (P36: enum pitfall).
+- `NetworkManager.ServerTime.Time` это `double`, `NetworkTime` — struct (не nullable). Упрощённо: `nm != null ? (float)nm.ServerTime.Time : Time.realtimeSinceStartup`.
+- `GatheringServer` и `GatheringClientState` ещё не созданы (T-G03, T-G04). В T-G02 связь идёт через рефлексию (`Type.GetType` + `GetMethod`) — null-safe.
 
 ---
 
@@ -410,6 +432,28 @@ if (TryBoardNearestShip()) return;   // existing
 > A ...
 > ```
 
+### §7.2 T-G02 — ResourceNode NetworkBehaviour (2026-06-10)
+
+**Verify:**
+- ✅ Compile: 0 errors (`refresh_unity scope=all` + `read_console types=["error"]`)
+- ✅ 3 ResourceNode GO созданы в WorldScene_0_0, сцена сохранена
+- ✅ IronVein + PlantHerb без MetaRequirement, CopperVein с MetaRequirement (logic=All, 1 item ShipLight)
+- ✅ BoxCollider isTrigger=true, localScale 1.5
+
+**Key Lessons:**
+- **Namespace collision pitfall (новый, расширяет P4):** namespace `ProjectC.ResourceNode` + `using ProjectC.MetaRequirement` → компилятор C# считает `MetaRequirement` "вложенным namespace" (даже при разных namespace!), путает с type → `CS0118`. **Fix**: `using MetaReq = ProjectC.MetaRequirement.MetaRequirement;` alias
+- **AddItemDirect returns DTO, not bool:** `InventoryWorld.AddItemDirect(ulong, int, ItemType)` returns `InventoryResultDto` (struct). Success check: `result.IsSuccess` (P36)
+- **NetworkTime — not nullable:** `NetworkManager.Singleton.ServerTime.Time` это `double`, `NetworkTime` это struct. `?.Time` не компилируется
+- **Рефлективная связь для forward-dependency:** GatheringServer / GatheringClientState ещё не созданы (T-G03/T-G04). Связь через `Type.GetType` + `GetMethod` — null-safe до появления типов. Заменим на прямую в T-G03
+
+**Files modified/new:**
+```
+A Assets/_Project/Scripts/ResourceNode/ResourceNode.cs (430 LOC)
+M Assets/_Project/Scripts/Core/InteractableManager.cs (+_resourceNodes, +3 methods, +ClearAll)
+M Assets/_Project/Scenes/World/WorldScene_0_0.unity (+3 ResourceNode GO)
+A docs/Mining/ROADMAP.md (T-G02 ✅ DONE)
+```
+
 ### §7.1 T-G01 — ResourceNodeConfig SO (2026-06-10)
 
 **Verify:**
@@ -438,7 +482,7 @@ A docs/Mining/ROADMAP.md (T-G01 ✅ DONE)
 
 **M1–M3 = 📋 PLANNED.** 7 тикетов. Код не начат. Дизайн-решения утверждены (F-key, MetaRequirement tool check, без distance check). Оценка: ~9-12 ч чистого кода, ~12-18 ч с фиксами. Старт — по готовности.
 
-**Обновлено 2026-06-10:** T-G01 ✅ DONE (ResourceNodeConfig SO + 3 .asset'а — IronVein, CopperVein, PlantHerb). 6 тикетов осталось.
+**Обновлено 2026-06-10:** T-G01 ✅ DONE (ResourceNodeConfig SO + 3 .asset'а). T-G02 ✅ DONE (ResourceNode NetworkBehaviour + 3 GO в WorldScene_0_0 + InteractableManager.FindNearestResourceNode). 5 тикетов осталось.
 
 ---
 

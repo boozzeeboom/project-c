@@ -28,6 +28,9 @@ namespace ProjectC.Crafting
         private CraftingTimeService _timeService;
         private Dictionary<ulong, List<float>> _opTimestamps = new Dictionary<ulong, List<float>>();
 
+        // client subscriptions: clientId -> stationNetId для периодического push прогресса
+        private readonly Dictionary<ulong, ulong> _subscribers = new Dictionary<ulong, ulong>();
+
         // ==========================================================
         // NetworkBehaviour lifecycle
         // ==========================================================
@@ -66,6 +69,7 @@ namespace ProjectC.Crafting
                 if (_timeService != null) _timeService.onCraftingTick.RemoveListener(OnCraftingTick);
                 CraftingWorld.Shutdown();
                 _opTimestamps.Clear();
+                _subscribers.Clear();
             }
             if (Instance == this) Instance = null;
         }
@@ -79,9 +83,20 @@ namespace ProjectC.Crafting
             float serverTime = NetworkManager != null ? (float)NetworkManager.ServerTime.Time : Time.realtimeSinceStartup;
             CraftingWorld.OnTick(serverTime);
 
-            // Push прогресс всем активным подписчикам (своим job'ам)
-            // В T-C05 будем хранить mapping clientId -> stationNetId для таргетированной отправки.
-            // Пока MVP: отправляем snapshot ТОЛЬКО по запросу клиента (SubscribeStation).
+            // Push прогресс всем подписчикам (каждый 1Гц tick — как GatheringServer.TickActiveGathers)
+            if (_subscribers.Count > 0)
+            {
+                // Copy keys to avoid modification during iteration
+                var clientIds = new List<ulong>(_subscribers.Keys);
+                for (int ci = 0; ci < clientIds.Count; ci++)
+                {
+                    ulong clientId = clientIds[ci];
+                    if (!_subscribers.TryGetValue(clientId, out var stationNetId)) continue;
+                    var snap = BuildSnapshot(stationNetId);
+                    // Шлём всегда — клиент сам обработает таймаут через StopTimeoutWatcher
+                    SendSnapshotToClient(clientId, snap);
+                }
+            }
         }
 
         // ==========================================================
@@ -110,6 +125,9 @@ namespace ProjectC.Crafting
             // Distance check
             if (!CheckDistance(clientId, station)) { SendResultToClient(clientId, CraftingResultDto.Denied(CraftingResultCode.NotFound, "Слишком далеко от станции", stationNetId)); return; }
 
+            // Record subscription
+            _subscribers[clientId] = stationNetId;
+
             // Шлём snapshot
             var snap = BuildSnapshot(stationNetId);
             SendSnapshotToClient(clientId, snap);
@@ -120,7 +138,21 @@ namespace ProjectC.Crafting
         [Rpc(SendTo.Server, InvokePermission = RpcInvokePermission.Everyone)]
         public void UnsubscribeStationRpc(ulong stationNetId, RpcParams rpcParams = default)
         {
-            // T-C05: будем вести Dictionary<clientId, HashSet<ulong>> подписок. Пока no-op.
+            ulong clientId = rpcParams.Receive.SenderClientId;
+            _subscribers.Remove(clientId);
+            if (_debugMode) Debug.Log($"[CraftingServer] Unsubscribe: client={clientId} station={stationNetId}");
+        }
+
+        // Also remove subscriber when station despawns
+        public void RemoveSubscriberForStation(ulong stationNetId)
+        {
+            // Clean up all subscribers for this station
+            var toRemove = new List<ulong>();
+            foreach (var kv in _subscribers)
+            {
+                if (kv.Value == stationNetId) toRemove.Add(kv.Key);
+            }
+            foreach (var clientId in toRemove) _subscribers.Remove(clientId);
         }
 
         /// <summary>Положить ингредиент в buffer станции. Только владелец job'а (или претендент, если Empty).</summary>
@@ -169,23 +201,49 @@ namespace ProjectC.Crafting
             var recipe = CraftingWorld.GetRecipe(recipeId);
             if (recipe == null) { SendResultToClient(clientId, CraftingResultDto.Denied(CraftingResultCode.NotFound, "Рецепт не найден", stationNetId)); return; }
 
-            // TODO T-C05b: проверить что buffer удовлетворяет recipe.Ingredients
-            // Пока: переносим buffer -> committed без валидации (anti-abuse в T-C07 sub-fix)
+            // FIX T-C07: вызываем станцию, а не мутируем job напрямую.
+            // station.ServerStartCraft синхронизирует и _replicatedState (NetworkVariable) и job в CraftingWorld.
+            var station = CraftingWorld.GetStationRaw(stationNetId);
+            if (station == null) { SendResultToClient(clientId, CraftingResultDto.Denied(CraftingResultCode.NotFound, "Станция не найдена", stationNetId)); return; }
 
-            job.Committed.Clear();
-            for (int i = 0; i < job.Buffer.Count; i++) job.Committed.Add(new CommittedIngredientDto { itemId = job.Buffer[i].itemId, quantity = job.Buffer[i].quantity, ownerClientId = clientId });
-            job.Buffer.Clear();
-            job.RecipeId = recipeId;
-            job.StartTime = NetworkManager != null ? (float)NetworkManager.ServerTime.Time : Time.realtimeSinceStartup;
-            float speedMult = 1f;
-            // CraftingStation (T-C04) expose SpeedMultiplier via reflection / property — пока hardcode
-            job.Duration = Mathf.Max(0.5f, recipe.CraftSeconds / Mathf.Max(0.0001f, speedMult));
-            job.State = CraftingJobState.InProgress;
-            job.ResultItemName = recipe.DisplayName;
+            // Подготовить committed из buffer (передаётся по значению через список)
+            var committedItems = new System.Collections.Generic.List<ProjectC.Crafting.CommittedIngredientDto>();
+            for (int i = 0; i < job.Buffer.Count; i++)
+            {
+                committedItems.Add(new ProjectC.Crafting.CommittedIngredientDto {
+                    itemId = job.Buffer[i].itemId,
+                    quantity = job.Buffer[i].quantity,
+                    ownerClientId = clientId
+                });
+            }
+
+            float startTime = NetworkManager != null ? (float)NetworkManager.ServerTime.Time : Time.realtimeSinceStartup;
+            float duration = Mathf.Max(0.5f, recipe.CraftSeconds / 1f); // speedMult=1f hardcode пока
+
+            // Find CraftingStation component (station is MonoBehaviour)
+            var cs = station.GetComponent<ProjectC.Crafting.CraftingStation>();
+            if (cs != null)
+            {
+                cs.ServerStartCraft(clientId, recipeId, startTime, duration, committedItems, recipe.DisplayName);
+                job.Buffer.Clear(); // committed already set inside ServerStartCraft
+            }
+            else
+            {
+                // Fallback: manual mutation (shouldn't happen)
+                job.Committed.Clear();
+                for (int i = 0; i < job.Buffer.Count; i++)
+                    job.Committed.Add(new CommittedIngredientDto { itemId = job.Buffer[i].itemId, quantity = job.Buffer[i].quantity, ownerClientId = clientId });
+                job.Buffer.Clear();
+                job.RecipeId = recipeId;
+                job.StartTime = startTime;
+                job.Duration = duration;
+                job.State = CraftingJobState.InProgress;
+                job.ResultItemName = recipe.DisplayName;
+            }
 
             SendResultToClient(clientId, CraftingResultDto.Ok(stationNetId));
             SendSnapshotToClient(clientId, BuildSnapshot(stationNetId));
-            if (_debugMode) Debug.Log($"[CraftingServer] StartCraft: client={clientId} station={stationNetId} recipe={recipeId} duration={job.Duration}s");
+            Debug.Log($"[CraftingServer] StartCraft: client={clientId} station={stationNetId} recipe={recipeId} duration={duration}s");
         }
 
         /// <summary>Отменить крафт: возврат committed -> buffer, state -> Buffered. Только владелец.</summary>
@@ -195,26 +253,18 @@ namespace ProjectC.Crafting
             ulong clientId = rpcParams.Receive.SenderClientId;
             if (!CheckRateLimit(clientId)) return;
 
-            var job = CraftingWorld.GetJob(stationNetId);
-            if (job == null) return;
-            if (job.OwnerClientId != clientId) { SendResultToClient(clientId, CraftingResultDto.Denied(CraftingResultCode.NotOwner, "Только владелец может отменить", stationNetId)); return; }
-            if (job.State != CraftingJobState.InProgress) { SendResultToClient(clientId, CraftingResultDto.Denied(CraftingResultCode.NotStarted, "Нечего отменять", stationNetId)); return; }
+            var station = CraftingWorld.GetStationRaw(stationNetId);
+            if (station == null) return;
 
-            // Возвращаем committed в buffer (для повторного StartCraft)
-            job.Buffer.Clear();
-            for (int i = 0; i < job.Committed.Count; i++) job.Buffer.Add(new BufferedIngredientDto { itemId = job.Committed[i].itemId, quantity = job.Committed[i].quantity, source = (byte)CraftingSourceType.Inventory, ownerClientId = clientId });
-            job.Committed.Clear();
-            job.State = CraftingJobState.Buffered;
-            job.RecipeId = -1;
-            job.StartTime = 0f;
-            job.Duration = 0f;
-            job.ResultItemName = null;
-
-            // TODO T-C05b: вернуть предметы в инвентарь клиента через InventoryWorld.TryAddToInventory
+            var cs = station.GetComponent<ProjectC.Crafting.CraftingStation>();
+            if (cs != null)
+            {
+                cs.ServerCancelCraft();
+            }
 
             SendResultToClient(clientId, CraftingResultDto.Ok(stationNetId));
             SendSnapshotToClient(clientId, BuildSnapshot(stationNetId));
-            if (_debugMode) Debug.Log($"[CraftingServer] CancelCraft: client={clientId} station={stationNetId}");
+            Debug.Log($"[CraftingServer] CancelCraft: client={clientId} station={stationNetId}");
         }
 
         /// <summary>Забрать готовый результат. Только владелец. State -> Empty.</summary>
@@ -224,21 +274,18 @@ namespace ProjectC.Crafting
             ulong clientId = rpcParams.Receive.SenderClientId;
             if (!CheckRateLimit(clientId)) return;
 
-            var job = CraftingWorld.GetJob(stationNetId);
-            if (job == null) return;
-            if (job.OwnerClientId != clientId) { SendResultToClient(clientId, CraftingResultDto.Denied(CraftingResultCode.NotOwner, "Только владелец может забрать", stationNetId)); return; }
-            if (job.State != CraftingJobState.Completed) { SendResultToClient(clientId, CraftingResultDto.Denied(CraftingResultCode.NotStarted, "Крафт ещё не завершён", stationNetId)); return; }
+            var station = CraftingWorld.GetStationRaw(stationNetId);
+            if (station == null) return;
 
-            // TODO T-C05b: выдать предмет в инвентарь клиента через InventoryWorld.TryAddToInventory
-            // T-C05b hook: var recipe = CraftingWorld.GetRecipe(job.RecipeId);
-            //              foreach (var out in recipe.Outputs) InventoryWorld.TryAddToInventory(clientId, out.item, out.quantity)
-
-            job.Reset();
-            job.State = CraftingJobState.Empty;
+            var cs = station.GetComponent<ProjectC.Crafting.CraftingStation>();
+            if (cs != null)
+            {
+                cs.ServerCollect();
+            }
 
             SendResultToClient(clientId, CraftingResultDto.Ok(stationNetId));
             SendSnapshotToClient(clientId, BuildSnapshot(stationNetId));
-            if (_debugMode) Debug.Log($"[CraftingServer] Collect: client={clientId} station={stationNetId}");
+            Debug.Log($"[CraftingServer] Collect: client={clientId} station={stationNetId}");
         }
 
         // ==========================================================
@@ -309,6 +356,19 @@ namespace ProjectC.Crafting
         {
             var job = CraftingWorld.GetJob(stationNetId);
             if (job == null) return new CraftingSnapshotDto { stationNetId = stationNetId, jobState = (byte)CraftingJobState.Empty, activeRecipeId = -1 };
+
+            // Server-computed progress (fixes clock drift between ServerTime.Time and Time.realtimeSinceStartup)
+            float progress = 0f;
+            if (job.State == CraftingJobState.InProgress && job.Duration > 0f)
+            {
+                float serverTime = NetworkManager != null ? (float)NetworkManager.ServerTime.Time : Time.realtimeSinceStartup;
+                progress = Mathf.Clamp01((serverTime - job.StartTime) / job.Duration);
+            }
+            else if (job.State == CraftingJobState.Completed)
+            {
+                progress = 1f;
+            }
+
             return new CraftingSnapshotDto
             {
                 stationNetId = stationNetId,
@@ -317,6 +377,7 @@ namespace ProjectC.Crafting
                 activeRecipeId = job.RecipeId,
                 startTime = job.StartTime,
                 duration = job.Duration,
+                progress = progress,
                 buffer = job.Buffer.ToArray(),
                 committed = job.Committed.ToArray(),
                 resultItemName = job.ResultItemName ?? "",

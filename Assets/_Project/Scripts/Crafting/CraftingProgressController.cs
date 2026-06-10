@@ -29,7 +29,16 @@ namespace ProjectC.Crafting
         private bool _subscribed = false;
         private ulong _currentStationNetId;
 
-        private void Awake() { _doc = GetComponent<UIDocument>(); }
+        private void Awake()
+        {
+            _doc = GetComponent<UIDocument>();
+            // T-C07: auto-bind panelSettings если не задан в Inspector
+            if (_doc != null && _doc.panelSettings == null)
+            {
+                var ps = Resources.Load<PanelSettings>("UI/CraftingPanelSettings");
+                if (ps != null) _doc.panelSettings = ps;
+            }
+        }
 
         private void OnEnable()
         {

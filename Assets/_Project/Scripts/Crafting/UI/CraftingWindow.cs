@@ -354,14 +354,39 @@ namespace ProjectC.Crafting.UI
             if (snap.stationNetId != _currentStationNetId) return;
             BuildBufferPanel(snap);
             UpdateButtonsVisibility((CraftingJobState)snap.jobState);
-            // Если сервер вернул state=Empty и ownerClientId=0 — закрываем окно (если игрок не owner)
-            // MVP: оставляем окно открытым, игрок сам закроет
+            // FIX T-C07: показать что крафтится + прогресс
+            var state = (CraftingJobState)snap.jobState;
+            if (state == CraftingJobState.InProgress && _progressBar != null)
+            {
+                _progressBar.value = Mathf.Clamp01(snap.progress);
+                if (_recipeTitleLabel != null && !string.IsNullOrEmpty(snap.resultItemName))
+                    _recipeTitleLabel.text = snap.resultItemName;
+            }
+            // T-C07: прячем кнопки +1 в ингредиентах при InProgress (сервер блокирует добавление)
+            if (_ingredientsContainer != null)
+            {
+                _ingredientsContainer.style.display = (state == CraftingJobState.InProgress)
+                    ? DisplayStyle.None : DisplayStyle.Flex;
+            }
+            // Message при Completed
+            if (state == CraftingJobState.Completed && _messageLabel != null)
+            {
+                _messageLabel.text = "✅ Готово: " + snap.resultItemName + " — нажмите «Забрать»";
+            }
+            // Message при Empty после Collect
+            if (state == CraftingJobState.Empty && snap.activeRecipeId == -1 && _messageLabel != null)
+            {
+                _messageLabel.text = "Выберите рецепт и добавьте ингредиенты";
+            }
         }
 
         private void HandleProgress(ulong stationNetId, float progress, string resultItemName)
         {
             if (stationNetId != _currentStationNetId) return;
             if (_progressBar != null) _progressBar.value = Mathf.Clamp01(progress);
+            // FIX T-C07: обновляем название рецепта при каждом тике прогресса
+            if (_recipeTitleLabel != null && !string.IsNullOrEmpty(resultItemName))
+                _recipeTitleLabel.text = resultItemName;
         }
 
         private void HandleCompleted(ulong stationNetId, string resultItemName)

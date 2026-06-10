@@ -179,14 +179,9 @@ namespace ProjectC.Crafting
             switch (state)
             {
                 case CraftingJobState.InProgress:
-                    float p = 0f;
-                    if (snap.duration > 0f)
-                    {
-                        float serverTime = Time.realtimeSinceStartup; // local approximation; server uses ServerTime.Time
-                        p = Mathf.Clamp01((serverTime - snap.startTime) / snap.duration);
-                    }
+                    // FIX T-C07: progress server-computed (избегаем clock drift ServerTime vs realtimeSinceStartup)
                     RestartTimeoutWatcher(snap.stationNetId);
-                    try { OnCraftingProgress?.Invoke(snap.stationNetId, p, snap.resultItemName ?? ""); }
+                    try { OnCraftingProgress?.Invoke(snap.stationNetId, snap.progress, snap.resultItemName ?? ""); }
                     catch (Exception ex) { Debug.LogError("[CraftingClientState] OnCraftingProgress handler threw: " + ex); }
                     break;
 

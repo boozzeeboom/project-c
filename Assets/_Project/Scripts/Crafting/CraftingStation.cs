@@ -51,6 +51,20 @@ namespace ProjectC.Crafting
         {
             base.OnNetworkSpawn();
             Debug.Log($"[CraftingStation {NetworkObjectId}] OnNetworkSpawn: IsServer={IsServer}, config={(_config!=null?_config.DisplayName:"NULL")}");
+
+            // T-C07: регистрируем рецепты и предметы ДО IsServer-check — и на клиенте работают ItemId->ItemData резолвы
+            if (_config != null)
+            {
+                foreach (var r in _config.AllowedRecipes)
+                {
+                    if (r == null) continue;
+                    CraftingWorld.RegisterRecipe(r);
+                    // Register all ingredient & output items so CraftingWorld.GetItem(itemId) works
+                    foreach (var ing in r.Ingredients) { if (ing.item != null) CraftingWorld.RegisterItem(ing.item); }
+                    foreach (var outItem in r.Outputs) { if (outItem.item != null) CraftingWorld.RegisterItem(outItem.item); }
+                }
+            }
+
             if (IsServer)
             {
                 if (CraftingServer.Instance == null)
@@ -59,15 +73,6 @@ namespace ProjectC.Crafting
                 }
                 else
                 {
-                    // Регистрируем рецепты этой станции (idempotent — повторный RegisterRecipe вернёт тот же id)
-                    if (_config != null)
-                    {
-                        foreach (var r in _config.AllowedRecipes)
-                        {
-                            if (r != null) CraftingWorld.RegisterRecipe(r);
-                        }
-                    }
-                    // Регистрируем станцию в CraftingWorld (этот GameObject — MonoBehaviour, подходит под late-bound reflection)
                     CraftingWorld.RegisterStation(NetworkObjectId, this);
                     Debug.Log($"[CraftingStation {NetworkObjectId}] Registered in CraftingWorld. Recipes: {(_config?.AllowedRecipes?.Count ?? 0)}");
                 }
@@ -175,12 +180,16 @@ namespace ProjectC.Crafting
         /// <summary>
         /// Завершение крафта (CraftingWorld.OnTick). Server-only. Переход InProgress → Completed.
         /// Имя метода зафиксировано: CraftingWorld.OnTick вызывает его через reflection (T-C02 forward-binding).
+        /// FIX T-C07: также обновляем job.State — иначе BuildSnapshot продолжит слать state=2.
         /// </summary>
         public void CompleteCraft()
         {
             if (_replicatedState.Value != CraftingJobState.InProgress) return;
             _replicatedState.Value = CraftingJobState.Completed;
-            // CraftingWorld.GetJob остаётся в InProgress до ServerCollect (так клиент видит что готово)
+            // Критично: обновляем job.State — BuildSnapshot читает оттуда.
+            // Если не обновить — клиент навсегда видит InProgress (state=2).
+            var job = CraftingWorld.GetJob(NetworkObjectId);
+            if (job != null) job.State = CraftingJobState.Completed;
         }
 
         // ==========================================================

@@ -1,5 +1,6 @@
-// CraftingSnapshotDto.cs (T-C02) - replicated state of one station for one subscriber
+// CraftingSnapshotDto.cs (T-C02) — replicated state of one station for one subscriber
 // Pattern: full snapshot on subscribe, then CraftingResultDto deltas
+// Fix T-C07: added `progress` field server-computed (not client-calcd, avoids clock drift)
 using Unity.Netcode;
 namespace ProjectC.Crafting
 {
@@ -11,6 +12,7 @@ namespace ProjectC.Crafting
         public int activeRecipeId;     // -1 = none
         public float startTime;        // server time (NetworkManager.ServerTime.Time)
         public float duration;         // seconds
+        public float progress;         // T-C07: server-computed 0..1, client uses directly (fixes clock drift)
         public BufferedIngredientDto[] buffer;
         public CommittedIngredientDto[] committed;
         public string resultItemName;  // populated on Completed (P16d)
@@ -23,6 +25,7 @@ namespace ProjectC.Crafting
             s.SerializeValue(ref activeRecipeId);
             s.SerializeValue(ref startTime);
             s.SerializeValue(ref duration);
+            s.SerializeValue(ref progress);
 
             int bLen = buffer != null ? buffer.Length : 0;
             s.SerializeValue(ref bLen);

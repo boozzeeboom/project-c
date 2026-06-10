@@ -150,12 +150,15 @@ namespace ProjectC.Crafting
             {
                 var job = _jobs[keys[i]];
                 if (job == null || job.State != CraftingJobState.InProgress) continue;
-                if (serverTime - job.StartTime >= job.Duration)
+                float elapsed = serverTime - job.StartTime;
+                Debug.Log($"[CraftingWorld.OnTick] station={keys[i]} state={job.State} elapsed={elapsed:F2}s / duration={job.Duration:F2}s >=? {elapsed >= job.Duration} stationExists={_stations.ContainsKey(keys[i])}");
+                if (elapsed >= job.Duration)
                 {
                     if (_stations.TryGetValue(keys[i], out var st) && st != null)
                     {
                         // Late-bound call: CraftingStation (T-C04) defines CompleteCraft()
                         var mi = st.GetType().GetMethod("CompleteCraft");
+                        Debug.Log($"[CraftingWorld.OnTick] calling CompleteCraft via reflection: found={mi != null}");
                         if (mi != null) mi.Invoke(st, null);
                     }
                 }

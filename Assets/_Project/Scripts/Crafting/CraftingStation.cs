@@ -50,6 +50,7 @@ namespace ProjectC.Crafting
         public override void OnNetworkSpawn()
         {
             base.OnNetworkSpawn();
+            Debug.Log($"[CraftingStation {NetworkObjectId}] OnNetworkSpawn: IsServer={IsServer}, config={(_config!=null?_config.DisplayName:"NULL")}");
             if (IsServer)
             {
                 if (CraftingServer.Instance == null)
@@ -68,6 +69,7 @@ namespace ProjectC.Crafting
                     }
                     // Регистрируем станцию в CraftingWorld (этот GameObject — MonoBehaviour, подходит под late-bound reflection)
                     CraftingWorld.RegisterStation(NetworkObjectId, this);
+                    Debug.Log($"[CraftingStation {NetworkObjectId}] Registered in CraftingWorld. Recipes: {(_config?.AllowedRecipes?.Count ?? 0)}");
                 }
             }
         }

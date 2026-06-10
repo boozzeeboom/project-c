@@ -22,7 +22,7 @@ namespace ProjectC.Crafting
         [SerializeField] private int _maxOpsPerMinute = 30;
 
         [Header("Debug")]
-        [SerializeField] private bool _debugMode = false;
+        [SerializeField] private bool _debugMode = true;
 
         // server-only
         private CraftingTimeService _timeService;
@@ -34,6 +34,7 @@ namespace ProjectC.Crafting
         public override void OnNetworkSpawn()
         {
             base.OnNetworkSpawn();
+            Debug.Log($"[CraftingServer] OnNetworkSpawn: Instance set={(Instance==null)}, IsServer={IsServer}");
             if (Instance == null) Instance = this;
             if (!IsServer) { enabled = false; return; }
 
@@ -54,7 +55,7 @@ namespace ProjectC.Crafting
             _timeService.OnServerStarted();
             _timeService.onCraftingTick.AddListener(OnCraftingTick);
 
-            if (_debugMode) Debug.Log($"[CraftingServer] OnNetworkSpawn: recipes={baseRecipes?.Count ?? 0}, rateLimit={_maxOpsPerMinute}/min");
+            Debug.Log($"[CraftingServer] Server init done: recipes={baseRecipes?.Count ?? 0}, rateLimit={_maxOpsPerMinute}/min, timeService={(CraftingTimeService.Instance!=null)}");
         }
 
         public override void OnNetworkDespawn()
@@ -92,10 +93,19 @@ namespace ProjectC.Crafting
         public void SubscribeStationRpc(ulong stationNetId, RpcParams rpcParams = default)
         {
             ulong clientId = rpcParams.Receive.SenderClientId;
+            Debug.Log($"[CraftingServer] SubscribeStationRpc: client={clientId} station={stationNetId}");
             if (!CheckRateLimit(clientId)) { SendResultToClient(clientId, CraftingResultDto.Denied(CraftingResultCode.RateLimited, "Слишком частые операции")); return; }
 
             var station = CraftingWorld.GetStationRaw(stationNetId);
-            if (station == null) { SendResultToClient(clientId, CraftingResultDto.Denied(CraftingResultCode.NotFound, "Станция не найдена", stationNetId)); return; }
+            if (station == null)
+            {
+                // Race fix: станция ещё не зарегистрирована (ScenePlacedObjectSpawner спавнит с задержкой).
+                // Отправляем пустой snapshot (state=Empty) — клиент не зависнет в timeout, UI обновится.
+                Debug.LogWarning($"[CraftingServer] Subscribe: station {stationNetId} not in CraftingWorld yet (race). Sending empty snapshot.");
+                var emptySnap = new CraftingSnapshotDto { stationNetId = stationNetId, jobState = (byte)CraftingJobState.Empty, activeRecipeId = -1 };
+                SendSnapshotToClient(clientId, emptySnap);
+                return;
+            }
 
             // Distance check
             if (!CheckDistance(clientId, station)) { SendResultToClient(clientId, CraftingResultDto.Denied(CraftingResultCode.NotFound, "Слишком далеко от станции", stationNetId)); return; }
@@ -103,7 +113,7 @@ namespace ProjectC.Crafting
             // Шлём snapshot
             var snap = BuildSnapshot(stationNetId);
             SendSnapshotToClient(clientId, snap);
-            if (_debugMode) Debug.Log($"[CraftingServer] Subscribe: client={clientId} station={stationNetId} state={snap.jobState}");
+            Debug.Log($"[CraftingServer] Subscribe: client={clientId} station={stationNetId} state={snap.jobState}");
         }
 
         /// <summary>Клиент отписывается от snapshot'ов (например, закрыл окно).</summary>

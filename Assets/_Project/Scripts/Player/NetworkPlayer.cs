@@ -703,7 +703,13 @@ namespace ProjectC.Player
         {
             if (_inShip) return false;
             var nearest = InteractableManager.FindNearestCraftingStation(GetEffectivePosition(), pickupRange);
-            if (nearest == null) return false;
+            if (nearest == null)
+            {
+                // Один раз в секунду лог чтобы не спамить
+                if (Time.unscaledTime - _lastCanUseRequestTime > 1f) Debug.Log($"[NetworkPlayer] F-crafting: no station in range (range={pickupRange}, pos={GetEffectivePosition()})");
+                return false;
+            }
+            Debug.Log($"[NetworkPlayer] F-crafting: found station {nearest.NetworkObjectId} '{nearest.DisplayName}' at {nearest.transform.position}");
 
             // Защита от двойного F на ту же станцию (race condition)
             if (Time.unscaledTime - _lastCanUseRequestTime < CAN_USE_REQUEST_TIMEOUT

@@ -5,6 +5,8 @@ using System.Collections.Generic;
 using Unity.Netcode;
 using UnityEngine;
 using ProjectC.Player;
+using ProjectC.Items;
+using ProjectC.Items.Dto;
 
 namespace ProjectC.Crafting
 {
@@ -183,19 +185,36 @@ namespace ProjectC.Crafting
             // Owner: 0 = no owner, можно стать; иначе должен совпадать
             if (job.OwnerClientId != 0 && job.OwnerClientId != clientId) { SendResultToClient(clientId, CraftingResultDto.Denied(CraftingResultCode.NotOwner, "Станция занята другим игроком", stationNetId)); return; }
 
-            // Проверка инвентаря: возьмём из ProjectC.Items.InventoryWorld (T-C05b wire-in)
-            // MVP: сервер ВЕРИТ клиенту. Антиабьюз через OnTick ServerSnapshot verify (T-C07 sub-fix).
-            // T-C05: вызвать InventoryWorld.TryConsumeFromInventory(clientId, itemId, quantity, out var reason)
-            // и вернуть NotEnoughResources если false.
+            // T-C07b: списать предметы из инвентаря
+            var itemData = CraftingWorld.GetItem(itemId);
+            if (itemData == null) { SendResultToClient(clientId, CraftingResultDto.Denied(CraftingResultCode.NotFound, "Предмет не найден", stationNetId)); return; }
 
-            // Пока — записываем в buffer
+            var invWorld = InventoryWorld.Instance;
+            if (invWorld == null)
+            {
+                Debug.LogWarning("[CraftingServer] InventoryWorld.Instance==null — пропускаем проверку инвентаря");
+            }
+            else
+            {
+                int invItemId = invWorld.GetOrRegisterItemId(itemData);
+                if (invItemId < 0) { SendResultToClient(clientId, CraftingResultDto.Denied(CraftingResultCode.InternalError, "Ошибка ID предмета", stationNetId)); return; }
+
+                var removeResult = invWorld.RemoveItems(clientId, invItemId, itemData.itemType, quantity);
+                if (!removeResult.IsSuccess)
+                {
+                    SendResultToClient(clientId, CraftingResultDto.Denied(CraftingResultCode.NotEnoughResources,
+                        "Недостаточно предметов: " + (removeResult.message ?? ""), stationNetId));
+                    return;
+                }
+            }
+
             if (job.OwnerClientId == 0) job.OwnerClientId = clientId;
             job.Buffer.Add(new BufferedIngredientDto { itemId = itemId, quantity = quantity, source = source, ownerClientId = clientId });
             job.State = CraftingJobState.Buffered;
 
             SendResultToClient(clientId, CraftingResultDto.Ok(stationNetId));
             SendSnapshotToClient(clientId, BuildSnapshot(stationNetId));
-            if (_debugMode) Debug.Log($"[CraftingServer] AddIngredient: client={clientId} station={stationNetId} itemId={itemId} qty={quantity}");
+            if (_debugMode) Debug.Log($"[CraftingServer] AddIngredient: client={clientId} station={stationNetId} itemId={itemId} qty={quantity} item={itemData.itemName}");
         }
 
         /// <summary>Запустить крафт: buffer -> committed, state -> InProgress.</summary>
@@ -268,6 +287,26 @@ namespace ProjectC.Crafting
             var station = CraftingWorld.GetStationRaw(stationNetId);
             if (station == null) return;
 
+            // T-C07b: вернуть предметы в инвентарь ДО ServerCancelCraft
+            var job = CraftingWorld.GetJob(stationNetId);
+            if (job != null && job.State == CraftingJobState.InProgress)
+            {
+                var invWorld = InventoryWorld.Instance;
+                if (invWorld != null)
+                {
+                    foreach (var c in job.Committed)
+                    {
+                        var itemData = CraftingWorld.GetItem(c.itemId);
+                        if (itemData == null) continue;
+                        int invItemId = invWorld.GetOrRegisterItemId(itemData);
+                        if (invItemId < 0) continue;
+                        for (int n = 0; n < c.quantity; n++)
+                            invWorld.AddItemDirect(clientId, invItemId, itemData.itemType);
+                    }
+                    Debug.Log($"[CraftingServer] CancelCraft return: client={clientId} station={stationNetId} items={job.Committed.Count}");
+                }
+            }
+
             var cs = station.GetComponent<ProjectC.Crafting.CraftingStation>();
             if (cs != null)
             {
@@ -288,6 +327,35 @@ namespace ProjectC.Crafting
 
             var station = CraftingWorld.GetStationRaw(stationNetId);
             if (station == null) return;
+
+            // T-C07b: выдать результат в инвентарь ДО ServerCollect (ServerCollect очищает job.State)
+            var job = CraftingWorld.GetJob(stationNetId);
+            if (job != null && job.State == CraftingJobState.Completed)
+            {
+                var recipe = CraftingWorld.GetRecipe(job.RecipeId);
+                if (recipe != null)
+                {
+                    var invWorld = InventoryWorld.Instance;
+                    if (invWorld != null)
+                    {
+                        foreach (var output in recipe.Outputs)
+                        {
+                            if (output.item == null) continue;
+                            int invItemId = invWorld.GetOrRegisterItemId(output.item);
+                            if (invItemId < 0) continue;
+                            for (int n = 0; n < output.quantity; n++)
+                            {
+                                invWorld.AddItemDirect(clientId, invItemId, output.item.itemType);
+                            }
+                            Debug.Log($"[CraftingServer] Collect grant: client={clientId} item={output.item.itemName} qty={output.quantity}");
+                        }
+                    }
+                    else
+                    {
+                        Debug.LogWarning("[CraftingServer] InventoryWorld.Instance==null — не выдаём предметы");
+                    }
+                }
+            }
 
             var cs = station.GetComponent<ProjectC.Crafting.CraftingStation>();
             if (cs != null)

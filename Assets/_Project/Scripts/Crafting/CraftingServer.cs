@@ -254,8 +254,33 @@ namespace ProjectC.Crafting
         private void SendSnapshotToClient(ulong clientId, CraftingSnapshotDto snap)
         {
             var netPlayer = FindNetworkPlayer(clientId);
-            if (netPlayer == null) return;
+            if (netPlayer == null)
+            {
+                // NetworkPlayer ещё не спавнен для clientId (race condition при свежем подключении).
+                // Повторим через 1 кадр — к тому моменту NetworkPlayerSpawner уже заспавнит player object.
+                Debug.LogWarning($"[CraftingServer] SendSnapshotToClient: NetworkPlayer for client {clientId} not spawned yet — scheduling retry in 1 frame");
+                StartCoroutine(RetrySendSnapshotNextFrame(clientId, snap));
+                return;
+            }
+            Debug.Log($"[CraftingServer] SendSnapshotToClient: station={snap.stationNetId} state={snap.jobState} → client={clientId}");
             netPlayer.ReceiveCraftingSnapshotTargetRpc(snap);
+        }
+
+        private System.Collections.IEnumerator RetrySendSnapshotNextFrame(ulong clientId, CraftingSnapshotDto snap)
+        {
+            yield return null; // 1 кадр
+            for (int i = 0; i < 10; i++) // до 10 попыток (примерно 0.16 сек на 60fps)
+            {
+                var netPlayer = FindNetworkPlayer(clientId);
+                if (netPlayer != null)
+                {
+                    Debug.Log($"[CraftingServer] RetrySendSnapshot: SUCCESS after {i+1} frames → client={clientId}");
+                    netPlayer.ReceiveCraftingSnapshotTargetRpc(snap);
+                    yield break;
+                }
+                yield return null;
+            }
+            Debug.LogError($"[CraftingServer] RetrySendSnapshot: GIVE UP after 10 frames — no NetworkPlayer for client {clientId}");
         }
 
         private NetworkPlayer FindNetworkPlayer(ulong clientId)

@@ -141,12 +141,13 @@ namespace ProjectC.Crafting
         /// <summary>Вызывается из NetworkPlayer.ReceiveCraftingResultTargetRpc.</summary>
         public void OnCraftingResultReceived(CraftingResultDto result)
         {
+            Debug.Log($"[CraftingClientState] Result received: station={result.stationNetId} code={result.code} msg={result.message}");
             CraftingResultCode code = (CraftingResultCode)result.code;
             switch (code)
             {
                 case CraftingResultCode.Ok:
-                    // Snapshot должен прийти отдельно; просто рестартуем timeout (если ждём InProgress)
-                    RestartTimeoutWatcher(result.stationNetId);
+                    // Snapshot придёт отдельно (или уже пришёл) — просто сбрасываем таймаут.
+                    StopTimeoutWatcher();
                     break;
                 case CraftingResultCode.NotEnoughResources:
                 case CraftingResultCode.StationBusy:
@@ -168,7 +169,11 @@ namespace ProjectC.Crafting
         /// <summary>Вызывается из NetworkPlayer.ReceiveCraftingSnapshotTargetRpc. Snapshot — authoritative state.</summary>
         public void OnCraftingSnapshotReceived(CraftingSnapshotDto snap)
         {
+            Debug.Log($"[CraftingClientState] Snapshot received: station={snap.stationNetId} state={snap.jobState} owner={snap.ownerClientId} recipe={snap.activeRecipeId}");
             _snapshots[snap.stationNetId] = snap;
+
+            // FIX T-C07: Любой snapshot от сервера = сервер жив, таймаут сбрасываем
+            StopTimeoutWatcher();
 
             CraftingJobState state = (CraftingJobState)snap.jobState;
             switch (state)

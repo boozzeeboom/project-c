@@ -1097,14 +1097,20 @@ namespace ProjectC.Player
         [Rpc(SendTo.Owner)]
         public void ReceiveCraftingResultTargetRpc(ProjectC.Crafting.CraftingResultDto result, RpcParams rpcParams = default)
         {
-            ProjectC.Crafting.CraftingClientState.Instance?.OnCraftingResultReceived(result);
+            Debug.Log($"[NetworkPlayer] ReceiveCraftingResultTargetRpc CALLED: station={result.stationNetId} code={result.code} msg={result.message}");
+            var inst = ProjectC.Crafting.CraftingClientState.Instance;
+            Debug.Log($"[NetworkPlayer] ReceiveCraftingResultTargetRpc: CraftingClientState.Instance={(inst!=null)}");
+            inst?.OnCraftingResultReceived(result);
         }
 
         // T-C03: Crafting snapshot — full state of one station (sent on subscribe + after each mutation).
         [Rpc(SendTo.Owner)]
         public void ReceiveCraftingSnapshotTargetRpc(ProjectC.Crafting.CraftingSnapshotDto snapshot, RpcParams rpcParams = default)
         {
-            ProjectC.Crafting.CraftingClientState.Instance?.OnCraftingSnapshotReceived(snapshot);
+            Debug.Log($"[NetworkPlayer] ReceiveCraftingSnapshotTargetRpc CALLED: station={snapshot.stationNetId} state={snapshot.jobState} owner={snapshot.ownerClientId} recipe={snapshot.activeRecipeId}");
+            var inst = ProjectC.Crafting.CraftingClientState.Instance;
+            Debug.Log($"[NetworkPlayer] ReceiveCraftingSnapshotTargetRpc: CraftingClientState.Instance={(inst!=null)}");
+            inst?.OnCraftingSnapshotReceived(snapshot);
         }
 
         [Rpc(SendTo.Owner)]

@@ -1,8 +1,9 @@
 # План разработки ММО "Project C: The Clouds" на Unity
 
-**Последнее обновление:** 10 июня 2026 г. | **Текущая версия:** `v0.0.18-npc-quests-v2-complete`
+**Последнее обновление:** 10 июня 2026 г. | **Текущая версия:** `v0.0.20-gathering-system-complete`
 
 > **Что нового с прошлого обновления (1 мая 2026):** NPC + Quests v2 подсистема полностью реализована (50+ тикетов, 19 milestones ✅ DONE, ~8400 строк кода, ~62 ч работы). См. `docs/NPC_quests/08_ROADMAP.md` и `docs/NPC_quests/old_session_log/99_FINAL_STATUS.md`. **Character Window v2** — реализован (5+ табов, TAB-колесо + P-таб inventory, T-Q11 quests tab, visual fix). См. `docs/Character-menu/00_OVERVIEW.md` + `docs/Character-menu/sub_inventory-tab/00_OVERVIEW.md`. **MetaRequirement / Key-Lock подсистема** — Ship Key MVP (R2-SHIP-KEY-001) + универсальная MetaRequirement v1 (R2-META-REQ-001) реализованы (2026-06-06). См. `docs/Ships/Key-subsystem/00_OVERVIEW.md` + `docs/MetaRequirement/00_OVERVIEW.md` + `docs/Ships/Key-subsystem/SHIP_KEY_TO_META_REQUIREMENT_MIGRATION.md`.
+**Resource Gathering (Mining) — подсистема сбора ресурсов MVP (T-G01–T-G07) — реализована (2026-06-10).** См. `docs/Mining/ROADMAP.md`.
 
 ---
 
@@ -197,6 +198,44 @@
 **Документация:** `docs/MetaRequirement/00_OVERVIEW.md` (517 строк) + `10_IMPLEMENTATION_GUIDE.md` (22 KB) + `20_INSPECTOR_REFERENCE.md` + `30_RUNTIME_FLOW.md` + `40_TESTING_GUIDE.md` + `50_KNOWN_ISSUES.md` + `99_CHANGELOG.md` + `RECIPES.md` (10 рецептов).
 **Migration guide:** `docs/Ships/Key-subsystem/SHIP_KEY_TO_META_REQUIREMENT_MIGRATION.md` (337 строк).
 **Предшественник:** `docs/Ships/Key-subsystem/00_OVERVIEW.md` (Ship Key MVP, R2-SHIP-KEY-001).
+
+---
+
+### 1.10 Сбор ресурсов (Resource Gathering / Mining) ✅ MVP ЗАВЕРШЁН (T-G01–T-G07, 2026-06-10)
+
+**Новая подсистема:** интерактивные 3D-объекты в мире — подойти и нажать F → сбор N секунд → предмет в инвентарь.
+
+**Принцип:** «пусть бегает и рубит» — движение не прерывает сбор. Tool check через MetaRequirement (Кирка → Руда). Возобновляемые узлы с cooldown.
+
+| Компонент | Назначение | Тикет |
+|-----------|-----------|-------|
+| `ResourceNodeConfig` (SO) | Параметры: время сбора, кол-во harvests, cooldown, результат, анимация | T-G01 ✅ |
+| `ResourceNode` (NetworkBehaviour) | State machine (Idle/Occupied/Depleted/Cooldown) + MetaReq tool check + client animation | T-G02 ✅ |
+| `GatheringServer` (NetworkBehaviour) | RPC hub + server tick (0.5s) + cooldown tick + GatherResult DTO (INetworkSerializable) | T-G03 ✅ |
+| `GatheringClientState` (client singleton) | Events: OnGatherProgress/Completed/Interrupted/Denied/Cancelled + timer timeout | T-G04 ✅ |
+| `GatheringToastController` (UIDocument) | ProgressBar + "Добыто: X × N" + flash-fill на прерывании | T-G04 ✅ |
+| `NetworkPlayer.TryGatherNearestNode()` | F-key entry (gather > boarding), MetaReq → OnAccessAllowed → gather | T-G05 ✅ |
+| ResourceNode animation (client) | Scale-pulse ±15% + emissive flash (LockBox pattern, `_EMISSION` material) | T-G06 ✅ |
+| Player gather animation (MVP) | Scale-pulse ±8% на персонаже во время сбора (вход для будущего StateHasher) | T-G07 ✅ |
+
+**В сцене WorldScene_0_0:**
+- 3 ResourceNode (IronVein, CopperVein, PlantHerb) — каждый с BoxCollider (trigger) + NetworkObject + ResourceNode + MetaRequirement
+- 2 Pickup_Pickaxe (E → подобрать) — Кирка как tool
+
+**В BootstrapScene:**
+- `[GatheringServer]` (NetworkObject + GatheringServer)
+- `[GatheringToast]` (UIDocument + GatheringToastController)
+- `GatheringClientState` — auto-spawn через `NetworkManagerController.CreateGatheringClientState()`
+
+**Ключевые решения:**
+- **F-key** (выше boarding по приоритету)
+- **MetaRequirement** для tool check (All/Any/AtLeastN) — бесплатный toast отказа
+- **Без distance check** во время сбора (пусть бегает и рубит)
+- **ProgressBar** через UI Toolkit runtime-constructed VisualElement
+
+**Документация:** `docs/Mining/00_OVERVIEW.md` + `10_DESIGN.md` + `20_IMPLEMENTATION_PLAN.md` + `ROADMAP.md` + `99_CHANGELOG.md`.
+
+**Post-MVP backlog:** Tool durability, multi-player на одном узле, player gather animation (StateHasher), node tiering, random yield, persistence.
 
 ---
 

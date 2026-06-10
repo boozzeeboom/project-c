@@ -1,11 +1,11 @@
 # Project C: The Clouds
-**Version:** 0.0.19 | **Stage:** Этап 2.5 В ПРОЦЕССЕ (Визуальный прототип) + NPC+Quests v2 готов (M1–M19)
+**Version:** 0.0.20 | **Stage:** Этап 2.5 В ПРОЦЕССЕ (Визуальный прототип) + NPC+Quests v2 готов (M1–M19) + Resource Gathering (Mining) MVP (T-G01–T-G07)
 **По мотивам книги «Интеграл Пьявица» — Бруно Арендт**
 ## Весь проект: [TheGravity](https://thegravity.ru) & [TheClouds](https://thegravity.ru/project-c/)
 
 ---
 
-> **Что нового в v0.0.19 (10 июня 2026):** NPC + Quests v2 подсистема полностью реализована (50+ тикетов, 19 milestones ✅ DONE, ~8400 строк кода, ~62 ч работы). CharacterWindow v2 (5+ табов) + DialogWindow + QuestTracker + QuestToast + MetaRequirement (lock-key) + Ship Key MVP. См. `docs/NPC_quests/08_ROADMAP.md` + `docs/MMO_Development_Plan.md`.
+> **Что нового в v0.0.20 (10 июня 2026):** **Resource Gathering (Mining) — MVP завершён.** 3D-объекты в мире: подойти → F → сбор N сек с ProgressBar → предмет в инвентарь. Tool check через MetaRequirement (Кирка → Руда). Возобновляемые узлы с cooldown. Анимация узла (scale-pulse + emissive flash) + анимация персонажа (scale-pulse). 7 тикетов T-G01–T-G07 ✅. См. `docs/Mining/ROADMAP.md`. Также NPC+Quests v2 (50+ тикетов, 19 milestones ✅ DONE, ~8400 строк кода, ~62 ч работы). CharacterWindow v2 (5+ табов) + DialogWindow + QuestTracker + QuestToast + MetaRequirement (lock-key) + Ship Key MVP. См. `docs/NPC_quests/08_ROADMAP.md` + `docs/MMO_Development_Plan.md`.
 **no marketing/bullshit/tech-heavy/sound sections**
 ---
 
@@ -42,7 +42,7 @@
 | Файл | Описание |
 |------|----------|
 | [`docs/WORLD_LORE_BOOK.md`](docs/WORLD_LORE_BOOK.md) | **Полный лор книги** — мир, технологии, гильдии, персонажи, сюжет |
-| [`docs/MMO_Development_Plan.md`](docs/MMO_Development_Plan.md) | **Полный план разработки** MMO игры (v0.0.18-npc-quests-v2-complete) |
+| [`docs/MMO_Development_Plan.md`](docs/MMO_Development_Plan.md) | **Полный план разработки** MMO игры (v0.0.20-gathering-system-complete) |
 | [`docs/QWEN_CONTEXT.md`](docs/QWEN_CONTEXT.md) | **Текущий контекст** — что сделано, какие задачи в работе |
 | [`docs/STEP_BY_STEP_DEVELOPMENT.md`](docs/STEP_BY_STEP_DEVELOPMENT.md) | **Пошаговая разработка** |
 | [`docs/CONTROLS.md`](docs/CONTROLS.md) | Документация по управлению |
@@ -56,10 +56,11 @@
 | [`docs/QUICK_GIT_COMMANDS.md`](docs/QUICK_GIT_COMMANDS.md) | Быстрые команды Git |
 | [`docs/VERSION_BACKUP.md`](docs/VERSION_BACKUP.md) | Резервное копирование |
 
-#### 🆕 v0.0.19 — Новые подсистемы (NPC + Quests, Character, Lock-Key)
+#### 🆕 v0.0.20 — Новые подсистемы (NPC + Quests, Character, Lock-Key, Mining)
 
 | Каталог | Описание |
 |---------|----------|
+| [`docs/Mining/`](docs/Mining/) | **Resource Gathering (Mining) v0.0.2** — 3D-объекты сбора, F-key, ProgressBar, tool check (MetaReq), анимация. 7 тикетов T-G01–T-G07 ✅. |
 | [`docs/NPC_quests/`](docs/NPC_quests/) | **NPC + Quests v2** — главный roadmap (50+ тикетов, M1–M19 ✅, сессионные логи, риски). 19 milestones: data foundation, server core, real-time objectives, ItemRegistry, Toast, QuestDatabaseWindow, QuestNodeGraph, CSV Import/Export, Mira E2E demo. |
 | [`docs/NPC_quests/old_session_log/`](docs/NPC_quests/old_session_log/) | **Исторические devlog'и** — 27 файлов (M*, T-Q*, 99_FINAL_STATUS). Не читать для текущей работы; для возврата к старому. |
 | [`docs/Character-menu/`](docs/Character-menu/) | **CharacterWindow v2** — 5+ табов (Персонаж, Корабль, Репутация, Контракты, Инвентарь, Квесты), P-key для открытия, 4 FIX'ы от MarketWindow, Visual fix 2026-06-05. |

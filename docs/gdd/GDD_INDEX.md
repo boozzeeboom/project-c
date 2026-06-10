@@ -1,8 +1,8 @@
 # 📋 Game Design Documents (GDD) — Project C: The Clouds
 
-**Последнее обновление:** 10 июня 2026 г. | **Ветка:** `feature/npc-quest-v2` (merged) | **Версия:** `v0.0.18-npc-quests-v2-complete`
+**Последнее обновление:** 10 июня 2026 г. | **Ветка:** `feature/npc-quest-v2` (merged) | **Версия:** `v0.0.20-gathering-system-complete`
 
-> **Что нового:** NPC+Quests v2 (50+ тикетов, M1–M19 ✅), CharacterWindow v2 (5+ табов), MetaRequirement v1 (lock-key), Ship Key MVP. Подробный статус реализации — в `docs/MMO_Development_Plan.md` + `docs/NPC_quests/08_ROADMAP.md`. **Содержимое GDD-файлов** (lore, формулы, дизайн-решения) **не пересматривалось** — только добавлены секции "Реализация в коде" со ссылками на коммиты. Design-контент остаётся в зоне game-designer'а (см. AGENTS.md).
+> **Что нового:** NPC+Quests v2 (50+ тикетов, M1–M19 ✅), CharacterWindow v2 (5+ табов), MetaRequirement v1 (lock-key), Ship Key MVP, **Resource Gathering (Mining) v0.0.2** (7 тикетов T-G01–T-G07 ✅). Подробный статус реализации — в `docs/MMO_Development_Plan.md` + `docs/NPC_quests/08_ROADMAP.md` + `docs/Mining/ROADMAP.md`. **Содержимое GDD-файлов** (lore, формулы, дизайн-решения) **не пересматривалось** — только добавлены секции "Реализация в коде" со ссылками на коммиты. Design-контент остаётся в зоне game-designer'а (см. AGENTS.md).
 
 ---
 
@@ -47,6 +47,16 @@
 | 22 | [GDD_22_Economy_Trading.md](GDD_22_Economy_Trading.md) | Экономика: валюта, цены, торговля, рынок | ✅ Готово |
 | 23 | [GDD_23_Faction_Reputation.md](GDD_23_Faction_Reputation.md) | Фракции: гильдии, репутация, ранги, отношения | ✅ Готово |
 | 24 | [GDD_24_Narrative_World_Lore.md](GDD_24_Narrative_World_Lore.md) | Нарратив: лор, история, персонажи, сюжет | ✅ Готово |
+
+### 🆕 v0.0.20 — Ресурсная система (Mining)
+
+| # | Файл | Описание | Статус |
+|---|------|----------|--------|
+| — | [`docs/Mining/00_OVERVIEW.md`](../Mining/00_OVERVIEW.md) | Сбор ресурсов — архитектура, REUSE, альтернативы, дизайн | ✅ DONE |
+| — | [`docs/Mining/10_DESIGN.md`](../Mining/10_DESIGN.md) | Классы, sequence-диаграммы, edge-cases, трафик | ✅ DONE |
+| — | [`docs/Mining/ROADMAP.md`](../Mining/ROADMAP.md) | T-G01–T-G07: 7 тикетов, 3 milestones, риски, сессионные логи | ✅ DONE |
+
+Сбор ресурсов (Mining) — MVP v0.0.2. Подойти к 3D-объекту → F → сбор N сек с ProgressBar → предмет в инвентарь. Tool check через MetaRequirement (Кирка). Возобновляемые узлы (maxHarvests → cooldown → Idle). Анимация scale-pulse ±15% + emissive flash на узле, scale-pulse на персонаже. **Документация:** `docs/Mining/` (5 файлов). **Статус:** ✅ 7/7 тикетов (2026-06-10).
 
 ---
 

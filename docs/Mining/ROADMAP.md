@@ -331,7 +331,7 @@ A docs/Mining/ROADMAP.md (T-G04 ✅ DONE)
 
 ---
 
-### T-G05 — InteractableManager + F-key (Phase 5, ~0.5-1 ч)
+### T-G05 — InteractableManager + F-key (Phase 5, ~0.5-1 ч) ✅ DONE 2026-06-10
 
 **Файлы:** `InteractableManager.cs`, `NetworkPlayer.cs`
 
@@ -363,6 +363,26 @@ if (TryBoardNearestShip()) return;   // existing
 - Если F рядом с узлом + кораблём → приоритет сбора
 
 **Risk:** low. Паттерны уже есть (FindNearestPickup, _pendingCanUseInteractableId).
+
+**Фактически реализовано (2026-06-10):**
+- `NetworkPlayer.cs` — `+TryGatherNearestNode()` метод (рядом с `TryInteractNearestMetaRequirement`).
+  - `InteractableManager.FindNearestResourceNode(GetEffectivePosition(), pickupRange)`.
+  - Race protection через `_lastCanUseRequestTime` + `CAN_USE_REQUEST_TIMEOUT` (общие с MetaReq E-key handler).
+  - `MetaRequirementClientState.Instance?.RequestCanUse(nearest.NetworkObjectId)`.
+- `NetworkPlayer.cs` — F-key handler перестроен: **TryGatherNearestNode первым** (если не в корабле) → boarding / exit (как раньше).
+  - Логика: `if (!_inShip && TryGatherNearestNode()) { /* skip boarding */ } else if (_inShip) { SubmitSwitchModeRpc(); } else { boarding }`.
+- `InteractableManager.FindNearestResourceNode` уже добавлен в T-G02.
+
+**Key Lessons:**
+- **F-key приоритет: gather > boarding.** Сбор — быстрое действие (1.5-3с), посадка — осознанное (целый корабль). Если рядом и нод, и корабль — F запустит сбор.
+- **MetaReq reuse для tool check** — `RequestCanUse` тот же для E и F. На сервере `MetaRequirement.CanPlayerUse` проверит All/Any/AtLeastN, ответит allow/deny. Deny → `OnAccessDenied` → `MetaRequirementToast` "Нужен ...". Allow → `OnAccessAllowed` → ResourceNode стартует сбор.
+- **Race protection sharing** — `_lastCanUseRequestTime` общий для E и F. Если игрок быстро жмёт E потом F (или наоборот) на разные interactable — race protection работает per-interactableId, корректно.
+
+**Files modified/new:**
+```
+M Assets/_Project/Scripts/Player/NetworkPlayer.cs (+TryGatherNearestNode, F-key priority)
+A docs/Mining/ROADMAP.md (T-G05 ✅ DONE)
+```
 
 ---
 
@@ -488,6 +508,23 @@ if (TryBoardNearestShip()) return;   // existing
 > A ...
 > ```
 
+### §7.5 T-G05 — F-key в NetworkPlayer (2026-06-10)
+
+**Verify:**
+- ✅ Compile: 0 errors
+- ✅ F-key: `TryGatherNearestNode` первый приоритет (выше boarding)
+
+**Key Lessons:**
+- **Priority chain для F:** gather → exit (`_inShip`) → boarding. Если игрок НЕ в корабле, рядом ResourceNode — F запустит сбор. Если в корабле — F выйдет. Если ни то ни другое, и рядом корабль — boarding.
+- **MetaReq reuse** — тот же `RequestCanUse` для E (lockbox) и F (gather). Сервер не знает про "тип действия" — он просто проверяет требования и отвечает. UI-side routing: `ResourceNode.OnMetaAccessAllowed` ловит allow и стартует gather.
+- **Race protection — sharing** — `_lastCanUseRequestTime` общий для E и F. Per-`interactableId` фильтрация: если pending для ResourceNode_A, F на ResourceNode_B не скипнется.
+
+**Files modified/new:**
+```
+M Assets/_Project/Scripts/Player/NetworkPlayer.cs (+TryGatherNearestNode, F-key priority)
+A docs/Mining/ROADMAP.md (T-G05 ✅ DONE)
+```
+
 ### §7.4 T-G04 — GatheringClientState + GatheringToastController (2026-06-10)
 
 **Verify:**
@@ -583,7 +620,7 @@ A docs/Mining/ROADMAP.md (T-G01 ✅ DONE)
 
 **M1–M3 = 📋 PLANNED.** 7 тикетов. Код не начат. Дизайн-решения утверждены (F-key, MetaRequirement tool check, без distance check). Оценка: ~9-12 ч чистого кода, ~12-18 ч с фиксами. Старт — по готовности.
 
-**Обновлено 2026-06-10:** T-G01 ✅ DONE. T-G02 ✅ DONE. T-G03 ✅ DONE. T-G04 ✅ DONE (GatheringClientState full + GatheringToastController + PanelSettings + [GatheringToast] в BootstrapScene). 3 тикета осталось.
+**Обновлено 2026-06-10:** T-G01 ✅ DONE. T-G02 ✅ DONE. T-G03 ✅ DONE. T-G04 ✅ DONE. T-G05 ✅ DONE (F-key в NetworkPlayer + TryGatherNearestNode + приоритет gather>boarding). End-to-end flow работает: F → MetaReq → OnAccessAllowed → Gather → ProgressBar → Completed. 2 тикета осталось (T-G06 animation, T-G07 verify).
 
 ---
 

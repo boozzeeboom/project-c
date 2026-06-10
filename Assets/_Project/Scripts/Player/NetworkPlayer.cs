@@ -287,11 +287,19 @@ namespace ProjectC.Player
                 && NetworkManager.Singleton != null
                 && IsSpawned)
             {
+                // T-G05: Resource gathering — высший приоритет (выше boarding).
+                // Если рядом ResourceNode и есть инструмент (MetaRequirement OK) →
+                // F запустит сбор, НЕ посадку.
+                if (!_inShip && TryGatherNearestNode())
+                {
+                    // Сбор поставлен в очередь (через MetaReq → OnAccessAllowed → gather).
+                    // Не выполняем boarding.
+                }
                 // Ship Key Subsystem: разделение выхода/посадки.
                 // - Выход (_inShip == true) — без проверки ключа (он уже сидит).
                 // - Посадка (_inShip == false) — требуется ключ → шлём RequestCanBoardRpc
                 //   и ждём ответа через ReceiveShipKeyCanBoardResponseTargetRpc.
-                if (_inShip)
+                else if (_inShip)
                 {
                     SubmitSwitchModeRpc();
                 }
@@ -634,6 +642,34 @@ namespace ProjectC.Player
             }
             _lastCanUseRequestTime = Time.unscaledTime;
             _pendingCanUseInteractableId = nearest.NetworkObjectId;
+            ProjectC.MetaRequirement.MetaRequirementClientState.Instance?.RequestCanUse(nearest.NetworkObjectId);
+            return true;
+        }
+
+        // T-G05: Resource gathering. Find nearest ResourceNode, call MetaReq check,
+        // и если tool OK → OnAccessAllowed → ResourceNode.OnMetaAccessAllowed → GatheringClientState.RequestStartGather.
+        // Если tool нет — MetaReq сам покажет отказ (через MetaRequirementToast).
+        // Возвращает true если найден ResourceNode (даже если MetaReq deny — toast всё равно покажется).
+        private bool TryGatherNearestNode()
+        {
+            if (_inShip) return false;
+
+            var nearest = InteractableManager.FindNearestResourceNode(GetEffectivePosition(), pickupRange);
+            if (nearest == null) return false;
+
+            // Защита от двойного F (тот же паттерн что у MetaRequirement E-key handler).
+            // _lastCanUseRequestTime / _pendingCanUseInteractableId — общие с TryInteractNearestMetaRequirement.
+            if (Time.unscaledTime - _lastCanUseRequestTime < CAN_USE_REQUEST_TIMEOUT
+                && _pendingCanUseInteractableId == nearest.NetworkObjectId)
+            {
+                return true; // уже ждём ответ сервера на этот нод
+            }
+            _lastCanUseRequestTime = Time.unscaledTime;
+            _pendingCanUseInteractableId = nearest.NetworkObjectId;
+
+            // MetaReq проверит инструмент (All/Any/AtLeastN).
+            // - deny → MetaRequirementClientState.OnAccessDenied → toast "Нужен ..."
+            // - allow → OnAccessAllowed → ResourceNode.OnMetaAccessAllowed → GatheringClientState.RequestStartGather
             ProjectC.MetaRequirement.MetaRequirementClientState.Instance?.RequestCanUse(nearest.NetworkObjectId);
             return true;
         }

@@ -346,9 +346,9 @@ T-C07 (Prefab + BootstrapScene + WorldScene placement)
 
 | Milestone | Тикеты | Что работает |
 |-----------|--------|--------------|
-| **M1 — Data + World** | T-C01, T-C02 | `RecipeData` SO с ингредиентами/выходами. `CraftingWorld` POCO: реестр рецептов, state machine, TryAddIngredient/TryStart/TryCancel/TryCollect. DTOs сериализуются (INetworkSerializable, null-string writeback). `CraftingTimeService` тикает раз в секунду. **Всё без сети.** |
-| **M2 — Server + Station** | T-C03, T-C04 | `CraftingServer` принимает RPC, CraftingTimeService.OnTick → CraftingWorld.OnTick. `CraftingStation` спавнится, проверяет tool через MetaRequirement (как ResourceNode), 5 RPC работают. End-to-end: ингредиенты → буфер → Start → InProgress → Completed → Collect → предмет в инвентаре. |
-| **M3 — UI + Deployment** | T-C05, T-C06, T-C07 | `CraftingClientState` доставляет события на клиент. `CraftingProgressController` показывает ProgressBar. `CraftingWindow` (отдельный UIDocument, как DialogWindow) — выбор рецепта, буфер, кнопки. Станция в WorldScene_0_0, `[CraftingServer]` в BootstrapScene. **Play Mode: E → окно → положить 3 руды → Start → 10 сек → Collect → слиток в инвентаре.** |
+| **M1 — Data + World** | T-C01, T-C02 | `RecipeData` SO с ингредиентами/выходами. `CraftingWorld` POCO: реестр рецептов, state machine, TryAddIngredient/TryStart/TryCancel/TryCollect. DTOs сериализуются (INetworkSerializable, null-string writeback). `CraftingTimeService` тикает раз в секунду. ✅ **DONE** |
+| **M2 — Server + Station** | T-C03, T-C04 | `CraftingServer` принимает RPC, CraftingTimeService.OnTick → CraftingWorld.OnTick. `CraftingStation` спавнится, проверяет tool через MetaRequirement, 5 RPC работают. End-to-end: ингредиенты → буфер → Start → InProgress → Completed → Collect → предмет в инвентаре. ✅ **DONE** |
+| **M3 — UI + Deployment + Polish** | T-C05, T-C06, T-C07, T-C07b, T-C07c | `CraftingClientState` доставляет события на клиент. `CraftingProgressController` показывает ProgressBar toast. `CraftingWindow` (отдельный UIDocument) — выбор рецепта, буфер, кнопки. Станция в WorldScene_0_0, `[CraftingServer]` в BootstrapScene. Инвентарь: списание/выдача предметов. Анимация: emission pulse + scale wiggle. **Play Mode: F → окно → +1 → Start → 10с → Collect → предмет в инвентаре.** ✅ **DONE** |
 
 ---
 
@@ -358,25 +358,28 @@ T-C07 (Prefab + BootstrapScene + WorldScene placement)
 |-----------|--------|--------|
 | M1 — Data + World | T-C01, T-C02 | ~2.5 ч |
 | M2 — Server + Station | T-C03, T-C04 | ~3 ч |
-| M3 — UI + Deployment | T-C05, T-C06, T-C07 | ~4 ч |
-| **TOTAL** | **7 тикетов** | **~9.5-11 ч** |
+| M3 — UI + Deployment + Polish | T-C05, T-C06, T-C07, T-C07b, T-C07c | ~6.5 ч |
+| **TOTAL** | **9 тикетов** | **~12 ч** |
 
-**С учётом фикс-итераций (опыт Mining: +30-50%): ~12-16 ч, 4-5 сессий.**
+**С учётом фикс-итераций: ~12-15 ч, 4 сессии.**
 
 ---
 
-## §6 Риски (прогноз)
+## §6 Риски (факт)
 
-| # | Риск | Статус | Митигация |
-|---|------|--------|-----------|
-| 1 | **UI Toolkit UIDocument pitfalls** | 🟡 unknown | **Обязательно** прочитать T-Q11b_c_session_log.md (18 persistent UI Toolkit bugs). PanelSettings, PickingMode, cursor, styleSheets. |
-| 2 | **CraftingWindow как отдельный UIDocument** — Show/Close pattern с Cursor unlock | 🟡 medium | Паттерн DialogWindow (уже работает) + MarketWindow (SetVisible). Show → Cursor None/visible, Close → Locked (если IsListening). |
-| 3 | **Scene-placed NRE (NetworkObject)** | 🟡 low | ScenePlacedObjectSpawner в BootstrapScene уже жив. InScenePlacedSourceGlobalObjectIdHash может быть 0. |
-| 4 | **CraftingTimeService race с MarketTimeService** | 🟡 low | Отдельный MonoBehaviour, не привязан к рынку. TickInterval = 1f. |
-| 5 | **Много NetworkVariable на станцию** (6 шт) | 🟡 low | 1 станция в MVP — не критично. Phase 2: `NetworkVariable<CraftingJobDto>` struct. |
-| 6 | **`RecipeData.requiredSkillLevel` не имплементируется в MVP** | 🟢 accepted | Задел `int = 0` в SO. Код не проверяет. |
-| 7 | **Drag-and-drop упрощён до кнопок `+1`** | 🟢 accepted | Пользователь сказал «MVP — минимум». Кнопки проще. |
-| 8 | **Выдача корабля через Item_Key_Ship* — ключ надо подбирать (E) после выдачи** | 🟢 accepted | Ключ падает в инвентарь (AddItemDirect). Игрок подходит к кораблю и F. |
+| # | Риск | Статус | Итог |
+|---|------|--------|------|
+| 1 | **UI Toolkit UIDocument pitfalls** | 🟡 medium | PanelSettings, cursor lock, PickingMode — решены. Окно открывается/закрывается корректно. |
+| 2 | **CraftingWindow как отдельный UIDocument** | 🟢 resolved | Show/Close pattern как DialogWindow, Cursor unlock/lock. |
+| 3 | **Scene-placed NRE (NetworkObject)** | 🟢 resolved | ScenePlacedObjectSpawner работает, InScenePlacedSourceGlobalObjectIdHash=0 не проблема. |
+| 4 | **CraftingTimeService race** | 🟢 не было | Отдельный MonoBehaviour. TickInterval=1f. |
+| 5 | **Много NetworkVariable** | 🟢 resolved | 3 NetworkVariable на станцию (replicatedState, jobOwnerClientId, activeRecipeId). |
+| 6 | **RecipeData.requiredSkillLevel не имплементирован** | 🟢 accepted | Задел int=0 в SO. Код не проверяет. |
+| 7 | **Drag-and-drop упрощён до кнопок +1** | 🟢 accepted | Пользователь OK. |
+| 8 | **Выдача корабля через ключ** | 🟢 accepted | Ключ падает в инвентарь (AddItemDirect). Игрок подходит к кораблю и F. |
+| 9 | **CompleteCraft не переключал state** | 🟢 fixed | Job.State синхронизируется с _replicatedState. |
+| 10 | **Progress clock drift (ServerTime vs realtimeSinceStartup)** | 🟢 fixed | progress поле в DTO, сервер вычисляет. |
+| 11 | **Станции не независимы** | 🟢 fixed | `_subscribers` → HashSet<stationId>, SwitchStation(). |
 
 ---
 
@@ -403,7 +406,7 @@ M ...
 
 ## §8 Сводный статус (1 строка)
 
-**M1–M3 = 📋 PLANNED.** 7 тикетов. Дизайн готов (оригинал `Crafting_system/` + актуализация `ANALYSIS_REUSE_2026-06-10.md`). 8 из 16 компонентов переиспользуют готовые паттерны из Gathering + MetaRequirement. **Оценка: ~9.5-11 ч.** Старт — по готовности.
+**M1–M3 = ✅ ВСЁ DONE.** 9 тикетов T-C01–T-C07c. Крафт-система: станции в мире, окно с рецептами, буфер ингредиентов, таймер (10с), прогресс-бар, тост уведомление, анимация станции, списание/выдача предметов через InventoryWorld. **Итого ~12-15 ч, 4 сессии.**
 
 ---
 

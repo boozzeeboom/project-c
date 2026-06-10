@@ -1,9 +1,10 @@
 # План разработки ММО "Project C: The Clouds" на Unity
 
-**Последнее обновление:** 10 июня 2026 г. | **Текущая версия:** `v0.0.20-gathering-system-complete`
+**Последнее обновление:** 11 июня 2026 г. | **Текущая версия:** `v0.0.21-crafting-system-complete`
 
-> **Что нового с прошлого обновления (1 мая 2026):** NPC + Quests v2 подсистема полностью реализована (50+ тикетов, 19 milestones ✅ DONE, ~8400 строк кода, ~62 ч работы). См. `docs/NPC_quests/08_ROADMAP.md` и `docs/NPC_quests/old_session_log/99_FINAL_STATUS.md`. **Character Window v2** — реализован (5+ табов, TAB-колесо + P-таб inventory, T-Q11 quests tab, visual fix). См. `docs/Character-menu/00_OVERVIEW.md` + `docs/Character-menu/sub_inventory-tab/00_OVERVIEW.md`. **MetaRequirement / Key-Lock подсистема** — Ship Key MVP (R2-SHIP-KEY-001) + универсальная MetaRequirement v1 (R2-META-REQ-001) реализованы (2026-06-06). См. `docs/Ships/Key-subsystem/00_OVERVIEW.md` + `docs/MetaRequirement/00_OVERVIEW.md` + `docs/Ships/Key-subsystem/SHIP_KEY_TO_META_REQUIREMENT_MIGRATION.md`.
-**Resource Gathering (Mining) — подсистема сбора ресурсов MVP (T-G01–T-G07) — реализована (2026-06-10).** См. `docs/Mining/ROADMAP.md`.
+> **Что нового с прошлого обновления (10 июня 2026):** **Crafting (крафт-система) — MVP завершён.** Подойти к станции → F → окно → выбрать рецепт → добавить ингредиенты (+1/+Все) → Начать крафт → таймер (10с) с ProgressBar + тост + анимация станции → Готово → Забрать → предмет в инвентарь. 2 станции в WorldScene_0_0: [CraftingStation_Table] (3 рецепта: медный/железный слиток, ключ корабля) и [CraftingStation_Shipyard] (1 рецепт). Подписки на несколько станций, независимая работа. Инвентарь: списание/выдача через InventoryWorld. 9 тикетов T-C01–T-C07c, ~12-15 ч работы. См. `docs/Crafting_system/ROADMAP.md`.
+>
+> **Предыдущее обновление (10 июня 2026):** Resource Gathering (Mining) — MVP завершён. 3D-объекты в мире: подойти → F → сбор N сек с ProgressBar → предмет в инвентарь. Tool check через MetaRequirement (Кирка → Руда). Возобновляемые узлы с cooldown. Анимация узла (scale-pulse + emissive flash) + анимация персонажа (scale-pulse). 7 тикетов T-G01–T-G07 ✅. См. `docs/Mining/ROADMAP.md`. Также NPC+Quests v2 (50+ тикетов, 19 milestones ✅ DONE, ~8400 строк кода, ~62 ч работы). CharacterWindow v2 (5+ табов) + DialogWindow + QuestTracker + QuestToast + MetaRequirement (lock-key) + Ship Key MVP. См. `docs/NPC_quests/08_ROADMAP.md`.
 
 ---
 
@@ -235,7 +236,47 @@
 
 **Документация:** `docs/Mining/00_OVERVIEW.md` + `10_DESIGN.md` + `20_IMPLEMENTATION_PLAN.md` + `ROADMAP.md` + `99_CHANGELOG.md`.
 
-**Post-MVP backlog:** Tool durability, multi-player на одном узле, player gather animation (StateHasher), node tiering, random yield, persistence.
+### 1.11 Крафт-система (Crafting) ✅ MVP ЗАВЕРШЁН (T-C01–T-C07c, 2026-06-11)
+
+**Цель:** Позволить игроку превращать ресурсы в полезные предметы через крафт-станции.
+
+**Что реализовано:**
+
+| Компонент | Описание | Статус |
+|-----------|----------|--------|
+| `RecipeData` (SO) | Ингредиенты, выходы, время крафта (сек) | T-C01 ✅ |
+| `CraftingStationConfig` (SO) | Список рецептов, displayName | T-C01 ✅ |
+| `CraftingWorld` (POCO singleton) | Реестр рецептов/станций/jobs, state machine (Empty/Buffered/InProgress/Completed) | T-C02 ✅ |
+| `CraftingTimeService` (MonoBehaviour) | Tick 1Гц, событие OnTick, подписка CraftingServer | T-C02 ✅ |
+| DTOs (6 structs) | CraftingSnapshotDto, CraftingResultDto, CraftingJobState, CraftingResultCode, BufferedIngredientDto, CommittedIngredientDto | T-C02 ✅ |
+| `CraftingServer` (NetworkBehaviour) | 5 RPC (Subscribe/AddIngredient/Start/Cancel/Collect), rate-limit, subscriber push (1Гц), CheckDistance | T-C03 ✅ |
+| `CraftingStation` (NetworkBehaviour) | 3 NetworkVariable (replicatedState, jobOwnerClientId, activeRecipeId), trigger zone, MetaReq tool check, client emission animation | T-C04 + T-C07c ✅ |
+| `CraftingClientState` (client singleton) | Events (Progress/Completed/Interrupted/Denied/Cancelled), timeout watcher, RequestSubscribe/AddIngredient/Start/Cancel/Collect | T-C05 ✅ |
+| `CraftingProgressController` (UIDocument toast) | ProgressBar + "✅ Готово" — живёт при закрытом окне | T-C05 ✅ |
+| `CraftingWindow` (UIDocument) | Recipe ListView, BufferGrid, +1/+All, Start/Cancel/Collect кнопки, ProgressBar, Station switch | T-C06 ✅ |
+| InventoryWorld интеграция | RemoveItems при AddIngredient, AddItemDirect при Collect, возврат при Cancel | T-C07b ✅ |
+| Станция анимация | Emission pulse (orange, HDR) + scale wiggle при InProgress, зелёная вспышка при Completed | T-C07c ✅ |
+
+**Assets в Resources:**
+- `Resources/Crafting/Recipes/Recipe_CopperIngot.asset` — 3×CopperOre → 1×CopperIngot, 10с
+- `Resources/Crafting/Recipes/Recipe_IronIngot.asset` — 3×IronOre → 1×IronIngot, 10с
+- `Resources/Crafting/Recipes/Recipe_ShipKeyLight.asset` — 1×Ingot + 1×CrystalDust → 1×ShipLight, 30с
+- `Resources/Crafting/Stations/` — Station_CraftingTable.asset (3 рецепта), Station_Shipyard.asset (1 рецепт)
+
+**Scene placement:**
+- WorldScene_0_0: `[CraftingStation_Table]` @ (39969, 2502.8, 40045) — универсальная (3 рецепта)
+- WorldScene_0_0: `[CraftingStation_Shipyard]` @ (39940, 2502.8, 39982) — только ShipKeyLight
+- BootstrapScene: `[CraftingServer]` (NetworkObject + CraftingServer)
+- BootstrapScene: `[CraftingClientState]` (auto-spawn NMC)
+- BootstrapScene: `[CraftingProgressController]` (UIDocument + panelSettings)
+
+**Паттерн:** копия Gathering/Mining (ResourceNode → CraftingStation, GatheringServer → CraftingServer, GatheringToast → CraftingProgress). 9 тикетов, ~12-15 ч работы.
+
+**Документация:** `docs/Crafting_system/00_OVERVIEW.md` + `10_DESIGN.md` + `ROADMAP.md`.
+
+---
+
+## Этап 2: Онлайн-интеграция 🔜 ЗАПЛАНИРОВАН
 
 ---
 

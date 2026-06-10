@@ -194,6 +194,7 @@
 |---------|----------|
 | Авто-регистрация | При старте: Resources/Items/, PickupItem, LootTable |
 | ScriptableObject | Загрузка всех ItemData из Resources |
+| **Crafting (крафт)** | **✅ Реализован (T-C01–T-C07c). Списание/выдача через `InventoryWorld.RemoveItems`/`AddItemDirect`. См. `docs/Crafting_system/ROADMAP.md`** |
 | Сцена | Регистрация PickupItem компонентов |
 
 ---

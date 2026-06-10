@@ -704,7 +704,7 @@ UI:
 - ⏳ **Multiple keys per ship** — расширение `MetaRequirement._requiredItems[]` уже поддерживает, но не используется в production.
 - ⏳ **Key как квестовый reward** — `DialogueAction.GiveItem` может выдать ключ (T-Q15, T-Q27), но **реальный** квест "принеси ключ" ещё не создан (только тестовые).
 - ⏳ **NPC trade ключами** — сейчас ключ — только pickup с пола. Возможность купить у NPC — Future.
-- ⏳ **Crafting ключа** — `docs/Crafting_system/` анализ сделан, реализация — future.
+- ✅ **Crafting ключа** — `docs/Crafting_system/` реализована (T-C01–T-C07c, 2026-06-11). Станция Shipyard в WorldScene_0_0 варит ключ ShipLight (1 слиток + 1 кристальная пыль → 1 ключ, 30с).
 
 ### 13.4 Где смотреть актуальный статус
 

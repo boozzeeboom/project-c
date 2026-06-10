@@ -1,11 +1,14 @@
 # Project C: The Clouds
-**Version:** 0.0.20 | **Stage:** Этап 2.5 В ПРОЦЕССЕ (Визуальный прототип) + NPC+Quests v2 готов (M1–M19) + Resource Gathering (Mining) MVP (T-G01–T-G07)
+**Version:** 0.0.21 | **Stage:** Этап 2.5 В ПРОЦЕССЕ (Визуальный прототип)
+**Подсистемы:** NPC+Quests v2 ✅ (M1–M19) | Gathering (Mining) ✅ (T-G01–T-G07) | **Crafting ✅ (T-C01–T-C07c)**
 **По мотивам книги «Интеграл Пьявица» — Бруно Арендт**
 ## Весь проект: [TheGravity](https://thegravity.ru) & [TheClouds](https://thegravity.ru/project-c/)
 
 ---
 
-> **Что нового в v0.0.20 (10 июня 2026):** **Resource Gathering (Mining) — MVP завершён.** 3D-объекты в мире: подойти → F → сбор N сек с ProgressBar → предмет в инвентарь. Tool check через MetaRequirement (Кирка → Руда). Возобновляемые узлы с cooldown. Анимация узла (scale-pulse + emissive flash) + анимация персонажа (scale-pulse). 7 тикетов T-G01–T-G07 ✅. См. `docs/Mining/ROADMAP.md`. Также NPC+Quests v2 (50+ тикетов, 19 milestones ✅ DONE, ~8400 строк кода, ~62 ч работы). CharacterWindow v2 (5+ табов) + DialogWindow + QuestTracker + QuestToast + MetaRequirement (lock-key) + Ship Key MVP. См. `docs/NPC_quests/08_ROADMAP.md` + `docs/MMO_Development_Plan.md`.
+> **Что нового в v0.0.21 (11 июня 2026):** **Crafting (крафт-система) — MVP завершён!** Две станции в мире: Верстак (3 рецепта: медный слиток, железный слиток, ключ корабля) и Верфь (ключ ShipLight). Подойти → F → окно → выбрать рецепт → добавить ресурсы → запустить крафт → таймер с ProgressBar + тост → Готово → предмет в инвентаре. Станции работают независимо, анимация свечения в процессе. 9 тикетов, все проверено в Play Mode.
+> **Предыдущее (v0.0.20):** Mining (сбор ресурсов) — 3D-узлы в мире, сбор с анимацией, Кирка→Руда.
+> **См. полную историю:** `docs/MMO_Development_Plan.md`
 **no marketing/bullshit/tech-heavy/sound sections**
 ---
 

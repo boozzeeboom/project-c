@@ -1,21 +1,77 @@
-// CraftingClientState.cs (T-C04 stub + partial T-C05 wire-in)
-// В T-C05 будет полная версия: events, ServerTimeoutWatcher, RequestAdd/Start/Cancel/Collect.
-// В T-C04 нужен минимум: RequestSubscribe() + Instance singleton, т.к. NetworkPlayer.TryInteractNearestCraftingStation его вызывает.
+// CraftingClientState.cs (T-C05, полная версия) - client-only singleton.
+// Pattern: GatheringClientState (T-G04) + QuestClientState (T-Q11).
+// Подписки: NetworkPlayer.ReceiveCraftingResultTargetRpc + ReceiveCraftingSnapshotTargetRpc.
+// События для UI: OnCraftingProgress, OnCraftingCompleted, OnCraftingInterrupted,
+//                  OnCraftingDenied, OnCraftingCancelled, OnSnapshotUpdated.
+
+using System;
+using System.Collections;
+using System.Collections.Generic;
 using UnityEngine;
 
 namespace ProjectC.Crafting
 {
-    /// <summary>Client-only singleton. Auto-spawned by NetworkManagerController.CreateCraftingClientState (T-C05).</summary>
     public class CraftingClientState : MonoBehaviour
     {
         public static CraftingClientState Instance { get; private set; }
 
+        [SerializeField] private bool _dontDestroyOnLoad = true;
+
+        [Header("Timeout")]
+        [Tooltip("Если сервер не прислал snapshot с InProgress/Completed в течение этого времени (сек) — " +
+                 "считаем что крафт прерван (сервер завис).")]
+        [SerializeField] private float _serverTimeoutSec = 5f;
+
+        // ==========================================================
+        // Events (UI / логика подписывается)
+        // ==========================================================
+
+        /// <summary>Сервер прислал snapshot с активным InProgress. UI обновляет ProgressBar.</summary>
+        public event Action<ulong, float, string> OnCraftingProgress;   // (stationNetId, progress01, resultItemName)
+
+        /// <summary>Крафт завершён (server: state=Completed). itemName — что можно забрать.</summary>
+        public event Action<ulong, string> OnCraftingCompleted;          // (stationNetId, resultItemName)
+
+        /// <summary>Крафт прерван (server tick timeout / Cancel RPC / despawn). reason — human-readable.</summary>
+        public event Action<ulong, string> OnCraftingInterrupted;        // (stationNetId, reason)
+
+        /// <summary>Сервер отказал в операции (CraftingResultDto.Denied). reason — human-readable.</summary>
+        public event Action<ulong, string> OnCraftingDenied;             // (stationNetId, reason)
+
+        /// <summary>Крафт отменён игроком через Cancel RPC.</summary>
+        public event Action<ulong> OnCraftingCancelled;                  // (stationNetId)
+
+        /// <summary>Любое изменение snapshot'а. UI (CraftingWindow) перечитывает state/buffer/committed.</summary>
+        public event Action<CraftingSnapshotDto> OnSnapshotUpdated;
+
+        // ==========================================================
+        // State
+        // ==========================================================
+
+        /// <summary>Кеш последнего snapshot'а для каждой подписанной станции. UI читает отсюда при открытии окна.</summary>
+        private readonly Dictionary<ulong, CraftingSnapshotDto> _snapshots = new Dictionary<ulong, CraftingSnapshotDto>();
+
+        /// <summary>Текущая станция, с которой работает игрок (выбрана через F).</summary>
+        public ulong CurrentStationNetId { get; private set; }
+
+        /// <summary>Есть snapshot для этой станции?</summary>
+        public bool HasSnapshot(ulong stationNetId) => _snapshots.ContainsKey(stationNetId);
+
+        /// <summary>Получить snapshot. Если нет — возвращает default (state=Empty).</summary>
+        public CraftingSnapshotDto GetSnapshot(ulong stationNetId)
+        {
+            return _snapshots.TryGetValue(stationNetId, out var s) ? s : new CraftingSnapshotDto { stationNetId = stationNetId, jobState = (byte)CraftingJobState.Empty, activeRecipeId = -1 };
+        }
+
+        // ==========================================================
+        // Lifecycle
+        // ==========================================================
         private void Awake()
         {
             if (Instance == null)
             {
                 Instance = this;
-                DontDestroyOnLoad(gameObject);
+                if (_dontDestroyOnLoad) DontDestroyOnLoad(gameObject);
             }
             else if (Instance != this)
             {
@@ -29,35 +85,167 @@ namespace ProjectC.Crafting
         }
 
         // ==========================================================
-        // Client → Server: subscribe to station snapshot
+        // Outgoing: client → server
         // ==========================================================
+
         public void RequestSubscribe(ulong stationNetId)
         {
-            var server = CraftingServer.Instance;
-            if (server == null) { Debug.LogWarning($"[CraftingClientState] RequestSubscribe: CraftingServer.Instance==null (server not started)"); return; }
-            server.SubscribeStationRpc(stationNetId);
+            if (CraftingServer.Instance == null)
+            {
+                Debug.LogWarning("[CraftingClientState] RequestSubscribe: CraftingServer.Instance==null. (сервер ещё не стартовал?)");
+                return;
+            }
+            CurrentStationNetId = stationNetId;
+            _serverTimeoutCoroutine = StartCoroutine(ServerTimeoutWatcher(stationNetId));
+            CraftingServer.Instance.SubscribeStationRpc(stationNetId);
         }
 
         public void RequestUnsubscribe(ulong stationNetId)
         {
-            var server = CraftingServer.Instance;
-            if (server == null) return;
-            server.UnsubscribeStationRpc(stationNetId);
+            StopTimeoutWatcher();
+            if (CraftingServer.Instance == null) return;
+            CraftingServer.Instance.UnsubscribeStationRpc(stationNetId);
+        }
+
+        public void RequestAddIngredient(ulong stationNetId, int itemId, int quantity, CraftingSourceType source = CraftingSourceType.Inventory)
+        {
+            if (CraftingServer.Instance == null) return;
+            CraftingServer.Instance.AddIngredientRpc(stationNetId, itemId, quantity, (byte)source);
+        }
+
+        public void RequestStartCraft(ulong stationNetId, int recipeId)
+        {
+            if (CraftingServer.Instance == null) return;
+            // Restart timeout — InProgress должен прийти в течение _serverTimeoutSec
+            StopTimeoutWatcher();
+            _serverTimeoutCoroutine = StartCoroutine(ServerTimeoutWatcher(stationNetId));
+            CraftingServer.Instance.StartCraftRpc(stationNetId, recipeId);
+        }
+
+        public void RequestCancelCraft(ulong stationNetId)
+        {
+            if (CraftingServer.Instance == null) return;
+            CraftingServer.Instance.CancelCraftRpc(stationNetId);
+        }
+
+        public void RequestCollect(ulong stationNetId)
+        {
+            if (CraftingServer.Instance == null) return;
+            CraftingServer.Instance.CollectRpc(stationNetId);
         }
 
         // ==========================================================
-        // NetworkPlayer.ReceiveCraftingResultTargetRpc target (T-C03 stub)
+        // Incoming: server → client
         // ==========================================================
+
+        /// <summary>Вызывается из NetworkPlayer.ReceiveCraftingResultTargetRpc.</summary>
         public void OnCraftingResultReceived(CraftingResultDto result)
         {
-            // T-C05: route to events (OnCraftingProgress / OnCraftingCompleted / etc.)
-            Debug.Log($"[CraftingClientState] Result: code={result.code} station={result.stationNetId} msg={result.message}");
+            CraftingResultCode code = (CraftingResultCode)result.code;
+            switch (code)
+            {
+                case CraftingResultCode.Ok:
+                    // Snapshot должен прийти отдельно; просто рестартуем timeout (если ждём InProgress)
+                    RestartTimeoutWatcher(result.stationNetId);
+                    break;
+                case CraftingResultCode.NotEnoughResources:
+                case CraftingResultCode.StationBusy:
+                case CraftingResultCode.NotOwner:
+                case CraftingResultCode.NotFound:
+                case CraftingResultCode.AlreadyStarted:
+                case CraftingResultCode.AlreadyCompleted:
+                case CraftingResultCode.InvalidArgs:
+                case CraftingResultCode.InternalError:
+                case CraftingResultCode.MetaReqDenied:
+                case CraftingResultCode.RateLimited:
+                    StopTimeoutWatcher();
+                    try { OnCraftingDenied?.Invoke(result.stationNetId, string.IsNullOrEmpty(result.message) ? "Отказано" : result.message); }
+                    catch (Exception ex) { Debug.LogError("[CraftingClientState] OnCraftingDenied handler threw: " + ex); }
+                    break;
+            }
         }
 
-        public void OnCraftingSnapshotReceived(CraftingSnapshotDto snapshot)
+        /// <summary>Вызывается из NetworkPlayer.ReceiveCraftingSnapshotTargetRpc. Snapshot — authoritative state.</summary>
+        public void OnCraftingSnapshotReceived(CraftingSnapshotDto snap)
         {
-            // T-C05: cache + emit OnSnapshotUpdated event (T-C06: opens CraftingWindow)
-            Debug.Log($"[CraftingClientState] Snapshot: station={snapshot.stationNetId} state={snapshot.jobState} owner={snapshot.ownerClientId} recipe={snapshot.activeRecipeId}");
+            _snapshots[snap.stationNetId] = snap;
+
+            CraftingJobState state = (CraftingJobState)snap.jobState;
+            switch (state)
+            {
+                case CraftingJobState.InProgress:
+                    float p = 0f;
+                    if (snap.duration > 0f)
+                    {
+                        float serverTime = Time.realtimeSinceStartup; // local approximation; server uses ServerTime.Time
+                        p = Mathf.Clamp01((serverTime - snap.startTime) / snap.duration);
+                    }
+                    RestartTimeoutWatcher(snap.stationNetId);
+                    try { OnCraftingProgress?.Invoke(snap.stationNetId, p, snap.resultItemName ?? ""); }
+                    catch (Exception ex) { Debug.LogError("[CraftingClientState] OnCraftingProgress handler threw: " + ex); }
+                    break;
+
+                case CraftingJobState.Completed:
+                    StopTimeoutWatcher();
+                    try { OnCraftingCompleted?.Invoke(snap.stationNetId, snap.resultItemName ?? "Результат"); }
+                    catch (Exception ex) { Debug.LogError("[CraftingClientState] OnCraftingCompleted handler threw: " + ex); }
+                    break;
+
+                case CraftingJobState.Empty:
+                    // Возможно — Cancel. Сервер присылает snapshot после каждого CancelCraftRpc → state=Buffered/Empty
+                    // Проверим: если до этого был InProgress, значит Cancel.
+                    if (_snapshots.TryGetValue(snap.stationNetId, out var prev) && prev.jobState == (byte)CraftingJobState.InProgress)
+                    {
+                        StopTimeoutWatcher();
+                        try { OnCraftingCancelled?.Invoke(snap.stationNetId); }
+                        catch (Exception ex) { Debug.LogError("[CraftingClientState] OnCraftingCancelled handler threw: " + ex); }
+                    }
+                    break;
+
+                case CraftingJobState.Buffered:
+                    // Owner UI: ингредиенты на станции, можно StartCraft
+                    break;
+            }
+
+            try { OnSnapshotUpdated?.Invoke(snap); }
+            catch (Exception ex) { Debug.LogError("[CraftingClientState] OnSnapshotUpdated handler threw: " + ex); }
+        }
+
+        // ==========================================================
+        // Server timeout watcher
+        // ==========================================================
+        private Coroutine _serverTimeoutCoroutine;
+        private ulong _timeoutStationNetId;
+
+        private IEnumerator ServerTimeoutWatcher(ulong stationNetId)
+        {
+            _timeoutStationNetId = stationNetId;
+            float elapsed = 0f;
+            while (elapsed < _serverTimeoutSec)
+            {
+                elapsed += Time.unscaledDeltaTime;
+                yield return null;
+            }
+            // Таймаут — сервер не прислал snapshot. Считаем прерванным.
+            Debug.LogWarning($"[CraftingClientState] Server timeout ({_serverTimeoutSec}s) — крафт на станции {stationNetId} прерван");
+            try { OnCraftingInterrupted?.Invoke(stationNetId, "Сервер не отвечает"); }
+            catch (Exception ex) { Debug.LogError("[CraftingClientState] OnCraftingInterrupted (timeout) handler threw: " + ex); }
+            _serverTimeoutCoroutine = null;
+        }
+
+        private void StopTimeoutWatcher()
+        {
+            if (_serverTimeoutCoroutine != null)
+            {
+                StopCoroutine(_serverTimeoutCoroutine);
+                _serverTimeoutCoroutine = null;
+            }
+        }
+
+        private void RestartTimeoutWatcher(ulong stationNetId)
+        {
+            StopTimeoutWatcher();
+            _serverTimeoutCoroutine = StartCoroutine(ServerTimeoutWatcher(stationNetId));
         }
     }
 }

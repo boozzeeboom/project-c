@@ -105,6 +105,11 @@ namespace ProjectC.Core
             // для GatheringToastController.
             CreateGatheringClientState();
 
+            // T-C05: CraftingClientState — клиентская проекция крафта.
+            // Подписывается на ReceiveCraftingResultTargetRpc + ReceiveCraftingSnapshotTargetRpc,
+            // эмитит events для CraftingProgressController + CraftingWindow.
+            CreateCraftingClientState();
+
             // Автоматический запуск Dedicated Server если передан аргумент -server
             if (IsDedicatedServerMode())
             {
@@ -264,6 +269,29 @@ namespace ProjectC.Core
             var go = new GameObject("[GatheringClientState]");
             go.AddComponent<ProjectC.ResourceNode.GatheringClientState>();
             Debug.Log("[NMC] Created [GatheringClientState] as root GameObject");
+        }
+
+        /// <summary>
+        /// T-C05: CraftingClientState singleton. Паттерн идентичен CreateGatheringClientState.
+        /// </summary>
+        private void CreateCraftingClientState()
+        {
+            var existing = FindObjectsByType<ProjectC.Crafting.CraftingClientState>(FindObjectsInactive.Include);
+            foreach (var inst in existing)
+            {
+                if (inst != null && inst.transform.parent == null)
+                {
+                    Debug.Log("[NMC] CraftingClientState already root, skipping creation");
+                    return;
+                }
+            }
+            if (existing.Length > 0)
+            {
+                Debug.LogWarning($"[NMC] Found {existing.Length} non-root CraftingClientState in scene — DontDestroyOnLoad would fail. Creating root replacement.");
+            }
+            var go = new GameObject("[CraftingClientState]");
+            go.AddComponent<ProjectC.Crafting.CraftingClientState>();
+            Debug.Log("[NMC] Created [CraftingClientState] as root GameObject");
         }
 
         private void Start()

@@ -312,6 +312,12 @@ namespace ProjectC.Player
                     // Сбор поставлен в очередь (через MetaReq → OnAccessAllowed → gather).
                     // Не выполняем boarding.
                 }
+                // T-C04: Crafting station — приоритет между gathering и boarding.
+                // F открывает CraftingWindow (через CraftingClientState.RequestSubscribe → RPC).
+                else if (!_inShip && TryInteractNearestCraftingStation())
+                {
+                    // Запрос отправлен; окно откроется в OnSnapshotReceived (T-C05/T-C06 wire-in).
+                }
                 // Ship Key Subsystem: разделение выхода/посадки.
                 // - Выход (_inShip == true) — без проверки ключа (он уже сидит).
                 // - Посадка (_inShip == false) — требуется ключ → шлём RequestCanBoardRpc
@@ -688,6 +694,27 @@ namespace ProjectC.Player
             // - deny → MetaRequirementClientState.OnAccessDenied → toast "Нужен ..."
             // - allow → OnAccessAllowed → ResourceNode.OnMetaAccessAllowed → GatheringClientState.RequestStartGather
             ProjectC.MetaRequirement.MetaRequirementClientState.Instance?.RequestCanUse(nearest.NetworkObjectId);
+            return true;
+        }
+
+        // T-C04: Crafting station interaction. F → CraftingClientState.RequestSubscribe → RPC.
+        // Snapshot вернётся в OnCraftingSnapshotReceived (T-C05) и откроет CraftingWindow (T-C06).
+        private bool TryInteractNearestCraftingStation()
+        {
+            if (_inShip) return false;
+            var nearest = InteractableManager.FindNearestCraftingStation(GetEffectivePosition(), pickupRange);
+            if (nearest == null) return false;
+
+            // Защита от двойного F на ту же станцию (race condition)
+            if (Time.unscaledTime - _lastCanUseRequestTime < CAN_USE_REQUEST_TIMEOUT
+                && _pendingCanUseInteractableId == nearest.NetworkObjectId)
+            {
+                return true;
+            }
+            _lastCanUseRequestTime = Time.unscaledTime;
+            _pendingCanUseInteractableId = nearest.NetworkObjectId;
+
+            ProjectC.Crafting.CraftingClientState.Instance?.RequestSubscribe(nearest.NetworkObjectId);
             return true;
         }
 

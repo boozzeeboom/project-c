@@ -19,6 +19,7 @@ namespace ProjectC.Core
         private static readonly List<ChestContainer> _chests = new List<ChestContainer>(16);
         private static readonly List<ShipController> _ships = new List<ShipController>(8);
         private static readonly List<ProjectC.ResourceNode.ResourceNode> _resourceNodes = new List<ProjectC.ResourceNode.ResourceNode>(16);
+        private static readonly List<ProjectC.Crafting.CraftingStation> _craftingStations = new List<ProjectC.Crafting.CraftingStation>(8);
 
         /// <summary>
         /// Register a pickup item when it enters player's trigger.
@@ -145,6 +146,36 @@ namespace ProjectC.Core
         /// </summary>
         public static List<ShipController> GetShips() => _ships;
 
+        // ==========================================================
+        // CraftingStation (T-C04)
+        // ==========================================================
+
+        public static void RegisterCraftingStation(ProjectC.Crafting.CraftingStation station)
+        {
+            if (station != null && !_craftingStations.Contains(station)) _craftingStations.Add(station);
+        }
+
+        public static void UnregisterCraftingStation(ProjectC.Crafting.CraftingStation station)
+        {
+            if (station != null) _craftingStations.Remove(station);
+        }
+
+        public static List<ProjectC.Crafting.CraftingStation> GetCraftingStations() => _craftingStations;
+
+        public static ProjectC.Crafting.CraftingStation FindNearestCraftingStation(Vector3 position, float range)
+        {
+            ProjectC.Crafting.CraftingStation nearest = null;
+            float minDist = float.MaxValue;
+            for (int i = 0; i < _craftingStations.Count; i++)
+            {
+                var st = _craftingStations[i];
+                if (st == null || !st.gameObject.activeSelf) continue;
+                float dist = Vector3.Distance(position, st.transform.position);
+                if (dist < range && dist < minDist) { minDist = dist; nearest = st; }
+            }
+            return nearest;
+        }
+
         /// <summary>
         /// Clear all cached references. Call when scene changes.
         /// T-Q19: _npcs clear removed.
@@ -155,6 +186,7 @@ namespace ProjectC.Core
             _chests.Clear();
             _ships.Clear();
             _resourceNodes.Clear();
+            _craftingStations.Clear();
         }
 
         /// <summary>

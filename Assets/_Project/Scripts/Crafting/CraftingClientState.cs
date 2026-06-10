@@ -1,7 +1,6 @@
-// CraftingClientState.cs (T-C03 stub, full impl in T-C05)
-// Stub нужен чтобы NetworkPlayer.ReceiveCraftingResultTargetRpc компилировался.
-// В T-C05 добавим events + RequestSubscribe/RequestAddIngredient/RequestStart/RequestCancel/RequestCollect
-// + ServerTimeoutWatcher (5s без InProgress → прервано) + авто-подписку на snapshot'ы.
+// CraftingClientState.cs (T-C04 stub + partial T-C05 wire-in)
+// В T-C05 будет полная версия: events, ServerTimeoutWatcher, RequestAdd/Start/Cancel/Collect.
+// В T-C04 нужен минимум: RequestSubscribe() + Instance singleton, т.к. NetworkPlayer.TryInteractNearestCraftingStation его вызывает.
 using UnityEngine;
 
 namespace ProjectC.Crafting
@@ -30,6 +29,23 @@ namespace ProjectC.Crafting
         }
 
         // ==========================================================
+        // Client → Server: subscribe to station snapshot
+        // ==========================================================
+        public void RequestSubscribe(ulong stationNetId)
+        {
+            var server = CraftingServer.Instance;
+            if (server == null) { Debug.LogWarning($"[CraftingClientState] RequestSubscribe: CraftingServer.Instance==null (server not started)"); return; }
+            server.SubscribeStationRpc(stationNetId);
+        }
+
+        public void RequestUnsubscribe(ulong stationNetId)
+        {
+            var server = CraftingServer.Instance;
+            if (server == null) return;
+            server.UnsubscribeStationRpc(stationNetId);
+        }
+
+        // ==========================================================
         // NetworkPlayer.ReceiveCraftingResultTargetRpc target (T-C03 stub)
         // ==========================================================
         public void OnCraftingResultReceived(CraftingResultDto result)
@@ -40,7 +56,7 @@ namespace ProjectC.Crafting
 
         public void OnCraftingSnapshotReceived(CraftingSnapshotDto snapshot)
         {
-            // T-C05: cache + emit OnSnapshotUpdated event
+            // T-C05: cache + emit OnSnapshotUpdated event (T-C06: opens CraftingWindow)
             Debug.Log($"[CraftingClientState] Snapshot: station={snapshot.stationNetId} state={snapshot.jobState} owner={snapshot.ownerClientId} recipe={snapshot.activeRecipeId}");
         }
     }

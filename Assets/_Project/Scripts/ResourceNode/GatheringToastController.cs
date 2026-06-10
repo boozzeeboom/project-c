@@ -1,23 +1,8 @@
 // =====================================================================================
-// GatheringToastController.cs — UI-компонент тоста с ProgressBar (T-G04)
+// GatheringToastController.cs — UI-компонент тоста с ProgressBar (T-G04, v2)
 // =====================================================================================
-// Документация:
-//   • docs/Mining/10_DESIGN.md §1.4
-//   • docs/Mining/ROADMAP.md T-G04
-//
-// Паттерн скопирован из QuestToast.cs (T-Q23):
-//   - Runtime-constructed VisualElement + ProgressBar (НЕ UXML/USS — T-G04 упрощение)
-//   - Bottom-center positioned
-//   - Singleton subscribed to GatheringClientState events
-//   - Queue-based (без cooldown, как T-Q25 fix)
-//
-// Отличия от QuestToast:
-//   - Есть ProgressBar (UI Toolkit <ui:ProgressBar>)
-//   - Показывается при старте сбора (InProgress) и заполняется 0..1
-//   - При Completed → ProgressBar.value = 1.0 + "Добыто: X × N" (через 0.5s скрыть)
-//   - При Interrupted/Denied → ProgressBar.value = 1.0 (flash-fill) + reason (через 1s скрыть)
-//
-// Создание: scene-placed GameObject `[GatheringToast]` в BootstrapScene.unity.
+// Паттерн скопирован из ShipKeyToast (работает снизу): position Absolute bottom=48.
+// ВЕРСИЯ 2: стили на самом _container, без inner — 1:1 как ShipKeyToast.
 // =====================================================================================
 
 using System.Collections;
@@ -39,20 +24,6 @@ namespace ProjectC.ResourceNode
         [Tooltip("Длительность flash-fill (progress 0→1) при Interrupted/Denied в секундах.")]
         [SerializeField] private float _interruptFlashFill = 0.2f;
 
-        [Header("Layout")]
-        [Tooltip("Отступ снизу в пикселях (выше квестового тоста).")]
-        [SerializeField] private float _bottomOffset = 200f;
-
-        [Tooltip("Ширина тоста в пикселях.")]
-        [SerializeField] private float _width = 320f;
-
-        [Tooltip("Размер шрифта.")]
-        [SerializeField] private int _fontSize = 16;
-
-        // ==========================================================
-        // State
-        // ==========================================================
-
         private UIDocument _doc;
         private VisualElement _container;
         private Label _label;
@@ -61,21 +32,12 @@ namespace ProjectC.ResourceNode
         private bool _built = false;
         private bool _subscribed = false;
 
-        // ==========================================================
-        // Lifecycle
-        // ==========================================================
-
-        private void Awake()
-        {
-            _doc = GetComponent<UIDocument>();
-        }
+        private void Awake() { _doc = GetComponent<UIDocument>(); }
 
         private void OnEnable()
         {
-            if (Application.isPlaying)
-            {
+            if (transform.parent == null && Application.isPlaying)
                 DontDestroyOnLoad(gameObject);
-            }
         }
 
         private void OnDisable()
@@ -84,10 +46,7 @@ namespace ProjectC.ResourceNode
             if (_activeCoroutine != null) { StopCoroutine(_activeCoroutine); _activeCoroutine = null; }
         }
 
-        private void OnDestroy()
-        {
-            Unsubscribe();
-        }
+        private void OnDestroy() { Unsubscribe(); }
 
         private void Unsubscribe()
         {
@@ -110,10 +69,6 @@ namespace ProjectC.ResourceNode
             if (!_subscribed) TrySubscribe();
         }
 
-        // ==========================================================
-        // Build
-        // ==========================================================
-
         private void TryBuild()
         {
             if (_doc == null) _doc = GetComponent<UIDocument>();
@@ -123,25 +78,27 @@ namespace ProjectC.ResourceNode
 
             var root = _doc.rootVisualElement;
 
+            // Контейнер: только позиционирование — absolute, bottom 48, растянут по ширине.
+            // Без фона, без padding. Внутри — inner с реальным оформлением.
             _container = new VisualElement
             {
                 name = "gathering-toast",
                 pickingMode = PickingMode.Ignore
             };
             _container.style.position = Position.Absolute;
-            _container.style.bottom = _bottomOffset;
+            _container.style.bottom = 48;
             _container.style.left = 0;
             _container.style.right = 0;
             _container.style.alignItems = Align.Center;
             _container.style.display = new StyleEnum<DisplayStyle>(DisplayStyle.None);
 
-            // Internal container with width
+            // Inner: сам тост-бокс фиксированной ширины с фоном.
             var inner = new VisualElement
             {
                 name = "gathering-toast-inner",
                 pickingMode = PickingMode.Ignore
             };
-            inner.style.width = _width;
+            inner.style.width = 320;
             inner.style.backgroundColor = new StyleColor(new Color(0.05f, 0.05f, 0.1f, 0.88f));
             inner.style.borderTopLeftRadius = 8;
             inner.style.borderTopRightRadius = 8;
@@ -149,8 +106,10 @@ namespace ProjectC.ResourceNode
             inner.style.borderBottomRightRadius = 8;
             inner.style.paddingTop = 10;
             inner.style.paddingBottom = 10;
-            inner.style.paddingLeft = 12;
-            inner.style.paddingRight = 12;
+            inner.style.paddingLeft = 16;
+            inner.style.paddingRight = 16;
+            inner.style.marginLeft = 32;
+            inner.style.marginRight = 32;
 
             _label = new Label
             {
@@ -159,7 +118,7 @@ namespace ProjectC.ResourceNode
                 pickingMode = PickingMode.Ignore
             };
             _label.style.color = new StyleColor(Color.white);
-            _label.style.fontSize = _fontSize;
+            _label.style.fontSize = 16;
             _label.style.unityFontStyleAndWeight = FontStyle.Bold;
             _label.style.unityTextAlign = TextAnchor.MiddleCenter;
             _label.style.whiteSpace = WhiteSpace.Normal;
@@ -173,7 +132,7 @@ namespace ProjectC.ResourceNode
                 value = 0f,
             };
             _progressBar.style.height = 14;
-            _progressBar.style.minWidth = _width - 24;
+            _progressBar.style.flexGrow = 1; // растягивается на всю ширину inner
 
             inner.Add(_label);
             inner.Add(_progressBar);
@@ -181,10 +140,6 @@ namespace ProjectC.ResourceNode
             root.Add(_container);
             _built = true;
         }
-
-        // ==========================================================
-        // Subscribe
-        // ==========================================================
 
         private void TrySubscribe()
         {
@@ -198,15 +153,10 @@ namespace ProjectC.ResourceNode
             _subscribed = true;
         }
 
-        // ==========================================================
-        // Event handlers
-        // ==========================================================
-
         private void HandleProgress(float progress)
         {
             if (!_built) TryBuild();
             if (_container == null || _progressBar == null) return;
-            // Первый InProgress (progress=0) — показать
             if (_activeCoroutine == null)
             {
                 _label.text = "Сбор ресурса…";
@@ -234,7 +184,6 @@ namespace ProjectC.ResourceNode
 
         private void HandleDenied(string reason)
         {
-            // Denied — как Interrupted, но чуть дольше видим (1.5s) — игрок должен прочитать
             if (!_built) TryBuild();
             if (_container == null || _progressBar == null) return;
             if (_activeCoroutine != null) StopCoroutine(_activeCoroutine);
@@ -250,10 +199,6 @@ namespace ProjectC.ResourceNode
             _activeCoroutine = null;
         }
 
-        // ==========================================================
-        // Coroutines
-        // ==========================================================
-
         private IEnumerator ShowCompletedAndHide(string itemName, int quantity, bool isDepleted)
         {
             _label.text = "✅ Добыто: " + (string.IsNullOrEmpty(itemName) ? "Ресурс" : itemName) + " × " + quantity;
@@ -268,15 +213,13 @@ namespace ProjectC.ResourceNode
         private IEnumerator ShowInterruptAndHide(string reason, bool extended = false)
         {
             _label.text = reason;
-            // Flash-fill прогресс-бара 0 → 1 за 0.2 сек
             float elapsed = 0f;
             float start = _progressBar.value;
-            float end = 1f;
             while (elapsed < _interruptFlashFill)
             {
                 elapsed += Time.unscaledDeltaTime;
                 float t = Mathf.Clamp01(elapsed / _interruptFlashFill);
-                _progressBar.value = Mathf.Lerp(start, end, t);
+                _progressBar.value = Mathf.Lerp(start, 1f, t);
                 yield return null;
             }
             _progressBar.value = 1f;

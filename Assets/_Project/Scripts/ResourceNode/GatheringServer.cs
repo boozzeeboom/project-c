@@ -112,7 +112,7 @@ namespace ProjectC.ResourceNode
         {
             if (!IsServer) return;
 
-            float now = Time.realtimeSinceStartup;
+            float now = Time.realtimeSinceStartup; // единые часы с _gatherStartServerTime
 
             // Tick active gathers
             if (now >= _nextTickTime)
@@ -229,7 +229,7 @@ namespace ProjectC.ResourceNode
                 return;
             }
 
-            float serverTime = (float)NetworkManager.ServerTime.Time;
+            float serverTime = Time.realtimeSinceStartup; // единые часы с TickActiveGathers
             if (!node.TryStartGather(clientId, serverTime))
             {
                 // node.CanStartGather() уже провалилась (состояние не Idle, или tool check fail)

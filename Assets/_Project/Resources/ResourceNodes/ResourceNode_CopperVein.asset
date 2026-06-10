@@ -14,7 +14,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::ProjectC.ResourceNode.ResourceNodeConfig
   _resultItem: {fileID: 11400000, guid: 31acd044b8ced9e47b4d7988ccd1b255, type: 2}
   _resultItemType: 0
-  _requiredTool: {fileID: 11400000, guid: 40135c9da6cb33c4aa6d1141e2e15508, type: 2}
+  _requiredTool: {fileID: 11400000, guid: 36a037a47987858458db216142622a14, type: 2}
   _gatherSeconds: 3
   _maxHarvests: 5
   _cooldownSeconds: 45

@@ -316,13 +316,9 @@ namespace ProjectC.ResourceNode
 
         private static float serverTimeSafe()
         {
-            // NGO 2.x: NetworkManager.Singleton.ServerTime.Time — это double, не nullable.
-            // fallback: Time.realtimeSinceStartup (на клиенте — local, на сервере — close-enough для кулдаунов).
-            var nm = Unity.Netcode.NetworkManager.Singleton;
-            if (nm != null)
-            {
-                return (float)nm.ServerTime.Time;
-            }
+            // Единые часы с GatheringServer.Update (Time.realtimeSinceStartup) — иначе
+            // cooldown (запущенный на tick) использует ServerTime.Time, а
+            // _cooldownEndServerTime считается от realtimeSinceStartup → рассогласование.
             return Time.realtimeSinceStartup;
         }
 

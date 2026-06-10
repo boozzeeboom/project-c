@@ -126,6 +126,7 @@ namespace ProjectC.ResourceNode
             {
                 case GatherResultCode.InProgress:
                     LastProgress = result.progress;
+                    RestartTimeoutWatcher();
                     try { OnGatherProgress?.Invoke(result.progress); }
                     catch (Exception ex) { Debug.LogError("[GatheringClientState] OnGatherProgress handler threw: " + ex); }
                     break;
@@ -197,6 +198,16 @@ namespace ProjectC.ResourceNode
                 StopCoroutine(_serverTimeoutCoroutine);
                 _serverTimeoutCoroutine = null;
             }
+        }
+
+        /// <summary>Сбросить таймаут при получении InProgress (сервер жив).</summary>
+        private void RestartTimeoutWatcher()
+        {
+            if (_serverTimeoutCoroutine != null)
+            {
+                StopCoroutine(_serverTimeoutCoroutine);
+            }
+            _serverTimeoutCoroutine = StartCoroutine(ServerTimeoutWatcher());
         }
     }
 }

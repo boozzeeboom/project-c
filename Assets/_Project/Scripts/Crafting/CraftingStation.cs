@@ -45,6 +45,7 @@ namespace ProjectC.Crafting
         private void Awake()
         {
             if (_metaRequirement == null) _metaRequirement = GetComponent<MetaReq>();
+            InitAnimation();
         }
 
         public override void OnNetworkSpawn()
@@ -52,18 +53,20 @@ namespace ProjectC.Crafting
             base.OnNetworkSpawn();
             Debug.Log($"[CraftingStation {NetworkObjectId}] OnNetworkSpawn: IsServer={IsServer}, config={(_config!=null?_config.DisplayName:"NULL")}");
 
-            // T-C07: регистрируем рецепты и предметы ДО IsServer-check — и на клиенте работают ItemId->ItemData резолвы
+            // T-C07b: регистрируем рецепты и предметы на обоих (Host — одна статика)
             if (_config != null)
             {
                 foreach (var r in _config.AllowedRecipes)
                 {
                     if (r == null) continue;
                     CraftingWorld.RegisterRecipe(r);
-                    // Register all ingredient & output items so CraftingWorld.GetItem(itemId) works
                     foreach (var ing in r.Ingredients) { if (ing.item != null) CraftingWorld.RegisterItem(ing.item); }
                     foreach (var outItem in r.Outputs) { if (outItem.item != null) CraftingWorld.RegisterItem(outItem.item); }
                 }
             }
+
+            // T-C07b: client-side анимация
+            SubscribeStateChanged();
 
             if (IsServer)
             {
@@ -82,6 +85,7 @@ namespace ProjectC.Crafting
         public override void OnNetworkDespawn()
         {
             base.OnNetworkDespawn();
+            UnsubscribeStateChanged();
             if (IsServer && CraftingServer.Instance != null)
             {
                 CraftingWorld.UnregisterStation(NetworkObjectId);
@@ -201,6 +205,111 @@ namespace ProjectC.Crafting
             // T-C05: CraftingClientState.RequestSubscribe(NetworkObjectId)
             // Пока — заглушка
             Debug.Log($"[CraftingStation {NetworkObjectId}] OnInteracted: name='{DisplayName}' state={_replicatedState.Value}");
+        }
+
+        // ==========================================================
+        // Client-side: animation (T-C07c, pattern ResourceNode T-G06)
+        // ==========================================================
+        private Renderer _renderer;
+        private MaterialPropertyBlock _mpb;
+        private Vector3 _baseScale;
+        private Coroutine _animCoroutine;
+        private bool _onValueChangedSubscribed = false;
+        private static readonly int _emissionColorId = Shader.PropertyToID("_EmissionColor");
+
+        private void InitAnimation()
+        {
+            _renderer = GetComponent<Renderer>();
+            if (_renderer != null)
+            {
+                _mpb = new MaterialPropertyBlock();
+                _renderer.GetPropertyBlock(_mpb);
+                _mpb.SetColor(_emissionColorId, Color.black);
+                _renderer.SetPropertyBlock(_mpb);
+                // Enable _EMISSION on shared material (runtime-created material doesn't have it by default)
+                if (_renderer.sharedMaterial != null)
+                {
+                    _renderer.sharedMaterial.EnableKeyword("_EMISSION");
+                }
+            }
+            _baseScale = transform.localScale;
+        }
+
+        private void SubscribeStateChanged()
+        {
+            if (_onValueChangedSubscribed) return;
+            _replicatedState.OnValueChanged += OnReplicatedStateChanged;
+            OnReplicatedStateChanged(CraftingJobState.Empty, _replicatedState.Value);
+            _onValueChangedSubscribed = true;
+        }
+
+        private void UnsubscribeStateChanged()
+        {
+            if (!_onValueChangedSubscribed) return;
+            _replicatedState.OnValueChanged -= OnReplicatedStateChanged;
+            _onValueChangedSubscribed = false;
+        }
+
+        private void OnReplicatedStateChanged(CraftingJobState previous, CraftingJobState current)
+        {
+            if (!IsClient) return;
+            if (_animCoroutine != null) { StopCoroutine(_animCoroutine); _animCoroutine = null; }
+
+            switch (current)
+            {
+                case CraftingJobState.Empty:
+                case CraftingJobState.Buffered:
+                    transform.localScale = _baseScale;
+                    ApplyEmission(new Color(0.1f, 0.15f, 0.05f)); // dim green
+                    break;
+                case CraftingJobState.InProgress:
+                    _animCoroutine = StartCoroutine(InProgressPulse());
+                    break;
+                case CraftingJobState.Completed:
+                    ApplyEmission(new Color(0.3f, 0.5f, 0.2f)); // bright green flash
+                    _animCoroutine = StartCoroutine(CompletedGlow());
+                    break;
+            }
+        }
+
+        private System.Collections.IEnumerator InProgressPulse()
+        {
+            float period = 1.5f;
+            while (true)
+            {
+                float t = Mathf.Sin(Time.time * (2f * Mathf.PI / period));
+                float scaleLerp = (t + 1f) * 0.5f; // 0..1
+                float amp = 0.04f;
+                transform.localScale = _baseScale * (1f + amp * scaleLerp);
+                float emLerp = (t + 1f) * 0.5f;
+                Color color = Color.Lerp(new Color(0.3f, 0.2f, 0.0f), new Color(0.8f, 0.5f, 0.0f), emLerp);
+                ApplyEmission(color);
+                yield return null;
+            }
+        }
+
+        private System.Collections.IEnumerator CompletedGlow()
+        {
+            float duration = 0.8f;
+            float elapsed = 0f;
+            Color startColor = new Color(0.3f, 0.5f, 0.2f);
+            Color endColor = new Color(0.1f, 0.15f, 0.05f);
+            while (elapsed < duration)
+            {
+                elapsed += Time.deltaTime;
+                float k = Mathf.Clamp01(elapsed / duration);
+                ApplyEmission(Color.Lerp(startColor, endColor, k));
+                yield return null;
+            }
+            _animCoroutine = null;
+        }
+
+        private void ApplyEmission(Color color)
+        {
+            if (_renderer == null || _mpb == null) return;
+            _renderer.GetPropertyBlock(_mpb);
+            _mpb.SetColor(_emissionColorId, color);
+            _renderer.SetPropertyBlock(_mpb);
         }
 
 #if UNITY_EDITOR

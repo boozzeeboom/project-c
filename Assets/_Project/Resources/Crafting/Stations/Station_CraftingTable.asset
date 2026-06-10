@@ -1,0 +1,25 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 75e8ddd39033db24b95b197a15c2908e, type: 3}
+  m_Name: Station_CraftingTable
+  m_EditorClassIdentifier: Assembly-CSharp::ProjectC.Crafting.CraftingStationConfig
+  _displayName: "\u0412\u0435\u0440\u0441\u0442\u0430\u043A"
+  _icon: {fileID: 0}
+  _description: "\u0411\u0430\u0437\u043E\u0432\u044B\u0439 \u0432\u0435\u0440\u0441\u0442\u0430\u043A"
+  _stationType: 0
+  _allowedRecipes:
+  - {fileID: 11400000, guid: 800e2ac7e8c0acb4e97728e953551a59, type: 2}
+  - {fileID: 11400000, guid: 728ca92bda9c6c940becd0342e37c56d, type: 2}
+  - {fileID: 11400000, guid: f83cae18e2e12bc4a9cac880c4ef012e, type: 2}
+  _maxConcurrentJobs: 1
+  _craftSpeedMultiplier: 1
+  _interactRadius: 4

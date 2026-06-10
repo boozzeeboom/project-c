@@ -1052,6 +1052,21 @@ namespace ProjectC.Player
             ProjectC.ResourceNode.GatheringClientState.Instance?.OnGatherResultReceived(result);
         }
 
+        // T-C03: Crafting result — server pushes ack/deny/progress to owner client.
+        // CraftingClientState (T-C05) подпишется на это и поднимет events для CraftingProgressController.
+        [Rpc(SendTo.Owner)]
+        public void ReceiveCraftingResultTargetRpc(ProjectC.Crafting.CraftingResultDto result, RpcParams rpcParams = default)
+        {
+            ProjectC.Crafting.CraftingClientState.Instance?.OnCraftingResultReceived(result);
+        }
+
+        // T-C03: Crafting snapshot — full state of one station (sent on subscribe + after each mutation).
+        [Rpc(SendTo.Owner)]
+        public void ReceiveCraftingSnapshotTargetRpc(ProjectC.Crafting.CraftingSnapshotDto snapshot, RpcParams rpcParams = default)
+        {
+            ProjectC.Crafting.CraftingClientState.Instance?.OnCraftingSnapshotReceived(snapshot);
+        }
+
         [Rpc(SendTo.Owner)]
         public void ReceiveQuestResultTargetRpc(ProjectC.Quests.Dto.QuestResultDto result, RpcParams rpcParams = default)
         {

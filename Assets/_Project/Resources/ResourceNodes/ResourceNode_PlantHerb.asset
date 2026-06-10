@@ -1,0 +1,28 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 7cc8640948322db4b968053a5978b2f9, type: 3}
+  m_Name: ResourceNode_PlantHerb
+  m_EditorClassIdentifier: Assembly-CSharp::ProjectC.ResourceNode.ResourceNodeConfig
+  _resultItem: {fileID: 11400000, guid: f31161333fb5acf458fff56ef2fcb332, type: 2}
+  _resultItemType: 0
+  _requiredTool: {fileID: 0}
+  _gatherSeconds: 1.5
+  _maxHarvests: 3
+  _cooldownSeconds: 30
+  _gatherRange: 3
+  _nodeDisplayName: "\u041A\u0440\u0438\u0441\u0442\u0430\u043B\u043B\u0438\u0447\u0435\u0441\u043A\u0430\u044F
+    \u043F\u044B\u043B\u044C"
+  _animScaleAmplitude: 0.15
+  _animPulsePeriod: 0.4
+  _animHiddenDuration: 0.3
+  _animIdleEmission: {r: 0.05, g: 0.05, b: 0.1, a: 1}
+  _animGatherEmission: {r: 0.3, g: 1.5, b: 0.3, a: 1}

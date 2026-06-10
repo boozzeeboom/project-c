@@ -1,7 +1,7 @@
 # GDD-23: Faction & Reputation — Project C: The Clouds
 
-**Версия:** 2.0 | **Дата:** 6 апреля 2026 г. | **Статус:** 🔴 Запланировано (Этап 3-4)
-**Автор:** Qwen Code (Game Studio: @world-builder + @game-designer + @economy-designer)
+**Версия:** 2.1 | **Дата:** 10 июня 2026 г. (дизайн-контент без изменений с 6 апреля 2026 г.; добавлена §X «Реализация в коде») | **Статус:** 🟡 Запланировано → частично реализовано (MVP foundation)
+**Автор:** Qwen Code (Game Studio: @world-builder + @game-designer + @economy-designer) — дизайн, Mavis 2026-06-10 — раздел реализации
 
 ---
 
@@ -331,7 +331,78 @@
 | 11 | Долговая система НП | Не доставить → долг | 🔴 |
 | 12 | Чёрный рынок доступен | Репутация +30 → проверить | 🔴 |
 | 13 | Военные анклавы | Выполнить контракт → доступ | 🔴 |
+| 14 | **ReputationClientState + NpcAttitudeClientState** (T-Q13) | см. §X ниже | 🟢 DONE (2026-06-08) |
+| 15 | **`FactionId` enum** (12 lore значений) | см. §X ниже | 🟢 DONE (2026-06-08) |
+| 16 | **`NpcAttitude` struct** (per-NPC) | см. §X ниже | 🟢 DONE (2026-06-08) |
+| 17 | **`AddReputation` / `AddNpcAttitude` dialog actions** (T-Q16) | см. §X ниже | 🟢 DONE (2026-06-08) |
 
 ---
 
-**Связанные документы:** [GDD_INDEX.md](GDD_INDEX.md) | [GDD_22_Economy_Trading.md](GDD_22_Economy_Trading.md) | [GDD_25_Trade_Routes.md](GDD_25_Trade_Routes.md) | [WORLD_LORE_BOOK.md](../WORLD_LORE_BOOK.md)
+## X. Реализация в коде (v2, 2026-06-08)
+
+> **Секция добавлена Mavis 2026-06-10.** Дизайн-контент (5 гильдий, 4 мануфактуры, ранги, формулы decay) остаётся в зоне game-designer'а. Здесь — **только статус реализации** MVP foundation: enum, struct, client states, dialog actions.
+
+### X.1 Что реализовано ✅
+
+#### FactionId enum (T-Q01)
+- ✅ **`ProjectC.Factions.FactionId`** — promoted enum, 12 lore значений:
+  - `GuildOfThoughts`, `GuildOfCreation`, `GuildOfSecrets`, `GuildOfExploration`, `GuildOfPreservation`
+  - `Pirates`, `Smugglers`, `FreeTraders`, `Military`, `Mercenaries`, `Neutral`, `None`
+- ✅ Числовые значения идентичны v1 `NpcFaction` (backward compat)
+- ✅ `NpcFaction` помечен `[Obsolete]` с алиасом на `FactionId`
+- ✅ **Namespace `ProjectC.Factions`** создан
+
+#### NpcAttitude struct (T-Q01)
+- ✅ **`NpcAttitude`** — readonly struct, `IEquatable<NpcAttitude>`, range −100..+200, clamp в ctor
+- ✅ Per-NPC reputation slot (отдельно от faction reputation)
+- ✅ Используется в `QuestWorld._npcAttitude`, `NpcAttitudeClientState`, `DialogAction.AddNpcAttitude`
+
+#### FactionDefinition + NpcDefinition SO (T-Q02)
+- ✅ **`FactionDefinition.cs`** (ScriptableObject) — `factionId`, `displayName`, `loreDescription`, `attitudeLinks[]` (cross-faction influence)
+- ✅ **`NpcDefinition.cs`** (ScriptableObject) — `npcId`, `displayName`, `faction`, `questOffers[]`, `questTurnIns[]`, `attitudeLinks[]`
+- ✅ Test assets: `GuildOfThoughts.asset` + `Mira.asset` (npcId=mira_01, faction=GuildOfThoughts)
+
+#### Client states (T-Q13)
+- ✅ **`ReputationClientState`** (singleton, AutoSpawn) — `OnReputationUpdated` event
+- ✅ **`NpcAttitudeClientState`** (singleton, AutoSpawn) — `OnNpcAttitudeUpdated` event
+- ✅ DTO: `ReputationSnapshotDto`, `ReputationEntryDto`, `NpcAttitudeSnapshotDto`, `NpcAttitudeEntryDto`
+- ✅ TargetRpc в `NetworkPlayer.cs` → route через `QuestClientState.Raise*`
+- ✅ `QuestWorld.ModifyReputation` + `ModifyNpcAttitude` (server-side, broadcast + event)
+
+#### Cross-faction influence (T-Q13)
+- ✅ MVP stub в `QuestWorld.ModifyNpcAttitude` — при изменении attitude одного NPC, рассчитывается влияние на faction
+- ✅ Полная реализация → v2 (когда будут полные таблицы influence)
+
+#### Dialog actions (T-Q16)
+- ✅ **`QuestServer.FireDialogAction.AddReputation(factionId, delta)`** — `QuestWorld.ModifyReputation` (broadcast + event)
+- ✅ **`QuestServer.FireDialogAction.AddNpcAttitude(npcId, delta)`** — `QuestWorld.ModifyNpcAttitude` (broadcast + event + cross-faction)
+- ✅ Интеграция с M11 Mira E2E: dialog tree вызывает `AddRep 25 + AddAtt 10` на `complete_thanks` node
+
+#### CharacterWindow integration
+- ✅ CharacterWindow → таб «Репутация» (T-Q13) — под-раздел Reputation + NpcAttitude
+- ✅ Cross-link: улучшить Mira → factionRep[GuildOfCreation] уменьшается (с конфигом)
+
+### X.2 Что открыто ⏳
+
+| # | Задача | GDD-секция | Milestone | Приоритет |
+|---|---|---|---|---|
+| 1 | **Rep-таблица** (12 guilds, tier thresholds, display messages) | §3, §4 | M5 (NPC+Quests) | 🟡 Med (нужен контент от game-designer'а) |
+| 2 | **Кросс-фракционные influence — полная реализация** | §6 | M5 (NPC+Quests) | 🟢 Low (MVP stub достаточно) |
+| 3 | **Display HUD репутации в header** (deferred с T-Q10) | §7 | M5 | 🟢 Low |
+| 4 | **4 мануфактуры** (Aurora/Titan/Hermes/Prometheus) | §2, §7.1 | Этап 3.5 | 🟡 Med |
+| 5 | **Чёрный рынок** (вступление через контрабанду) | §7, §6 | Этап 3.5 | 🟢 Low |
+| 6 | **Военные анклавы** | §2, §7 | Этап 3.5 | 🟢 Low |
+| 7 | **СОЛ-стелс** | §7 | post-MVP | 🟢 Low |
+| 8 | **Затухание репутации** | §8 | post-MVP | 🟢 Low |
+| 9 | **T-X2 — Faction migration** (`TradeItemDefinition.Faction` → `FactionId`) | §2 | M9 (NPC+Quests) | 🟡 design discussion |
+
+### X.3 Где смотреть актуальный статус
+
+- **`docs/NPC_quests/02_V2_ARCHITECTURE.md`** §1, §2 — namespace layout, `FactionId` design
+- **`docs/NPC_quests/old_session_log/T-Q13_DESIGN_NOTE.md`** — Reputation+NpcAttitude design
+- **`docs/NPC_quests/08_ROADMAP.md`** §8.3 T-Q01, T-Q13, T-Q16 — roadmap
+- **`docs/MMO_Development_Plan.md`** §3.5 — общий план фракций
+
+---
+
+**Связанные документы:** [GDD_INDEX.md](GDD_INDEX.md) | [GDD_22_Economy_Trading.md](GDD_22_Economy_Trading.md) | [GDD_25_Trade_Routes.md](GDD_25_Trade_Routes.md) | [WORLD_LORE_BOOK.md](../WORLD_LORE_BOOK.md) | [`docs/NPC_quests/02_V2_ARCHITECTURE.md`](../NPC_quests/02_V2_ARCHITECTURE.md)

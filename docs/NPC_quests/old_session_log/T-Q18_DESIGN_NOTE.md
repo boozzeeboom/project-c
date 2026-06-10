@@ -46,7 +46,7 @@
 - `Assets/_Project/Quests/Persistence/QuestSaveData.cs`
 - `Assets/_Project/Quests/Persistence/IQuestStateRepository.cs`
 - `Assets/_Project/Quests/Persistence/JsonQuestStateRepository.cs`
-- `docs/dev/T-Q18_DESIGN_NOTE.md` (этот файл)
+- `T-Q18_DESIGN_NOTE.md` (этот файл)
 
 ### Modified
 - `Assets/_Project/Quests/Core/QuestWorld.cs`:

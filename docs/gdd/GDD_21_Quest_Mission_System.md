@@ -1,10 +1,10 @@
 # GDD 21: Quest & Mission System
 
-**Game:** Project C: The Clouds  
-**Version:** 1.0  
-**Status:** 🔴 Запланировано (Этап 3-4)  
-**Last Updated:** 06.04.2026  
-**Author:** Game Design AI  
+**Game:** Project C: The Clouds
+**Version:** 1.1
+**Status:** 🟢 Реализовано (Этап 3-4 → DONE в 2026-06-09, M11-M19)
+**Last Updated:** 10.06.2026 (дизайн-контент без изменений с 06.04.2026; добавлена §16 «Реализация в коде»)
+**Author:** Game Design AI (дизайн), Mavis 2026-06-10 (раздел реализации)
 
 ---
 
@@ -25,17 +25,17 @@
 
 ### 1.3 Этапы реализации
 
-| Этап | Система | Приоритет | Зависимости |
-|------|---------|-----------|-------------|
-| Этап 3 | Базовые контракты | Высокий | Экономика |
-| Этап 3 | Quest Structure | Высокий | Базовые контракты |
-| Этап 3 | Reward System базовый | Высокий | Quest Structure |
-| Этап 4 | Quest Types полный | Высокий | Базовые контракты |
-| Этап 4 | Quest Chains | Высокий | Faction System |
-| Этап 4 | Multiplayer Quests | Средний | Multiplayer |
-| Этап 4 | Quest Generation процедурный | Средний | Quest Types |
-| Future | Daily/Weekly | Низкий | Всё остальное |
-| Future | Quest UI | Средний | Frontend |
+| Этап | Система | Приоритет | Зависимости | **Статус (2026-06-10)** |
+|------|---------|-----------|-------------|-------------------------|
+| Этап 3 | Базовые контракты | Высокий | Экономика | ✅ **DONE** (см. `docs/Markets/`) |
+| Этап 3 | Quest Structure | Высокий | Базовые контракты | ✅ **DONE** (T-Q04) |
+| Этап 3 | Reward System базовый | Высокий | Quest Structure | ✅ **DONE** (T-Q18 + credits/items/rep/unlocks через dialog actions) |
+| Этап 4 | Quest Types полный | Высокий | Базовые контракты | ✅ **DONE** (M14 ItemRegistry, M15 Toast, M18 editable graph) |
+| Этап 4 | Quest Chains | Высокий | Faction System | ✅ **DONE** (multi-stage квесты, M13 T-Q22) |
+| Этап 4 | Multiplayer Quests | Средний | Multiplayer | 🟡 **Частично** (Quests per-player, **нет shared party progress** — TODO) |
+| Этап 4 | Quest Generation процедурный | Средний | Quest Types | ⏳ **DEFERRED** (есть CSV pipeline M19, но procedural — future) |
+| Future | Daily/Weekly | Низкий | Всё остальное | ⏳ **DEFERRED** |
+| Future | Quest UI | Средний | Frontend | ✅ **DONE** (CharacterWindow, QuestTracker, DialogWindow, QuestDatabaseWindow) |
 
 ### 1.4 Связанные документы
 - GDD_20_Progression_RPG.md
@@ -1040,7 +1040,98 @@ Fail_Chance = 1.0 - (player_skill / required_skill)
 | Версия | Дата | Изменение | Автор |
 |--------|------|-----------|-------|
 | 1.0 | 06.04.2026 | Инициализация документа | Game Design AI |
+| 1.1 | 10.06.2026 | Добавлена §16 «Реализация в коде» (M1–M19, 50+ тикетов). §1.3 обновлена статусами. Дизайн-контент без изменений. | Mavis |
 
 ---
 
-*Документ создан для Project C: The Clouds. Все системы отмечены как [🔴 Запланировано] и будут реализованы на Этапах 3-4.*
+## 16. Реализация в коде (v2, 2026-06-07..09)
+
+> **Секция добавлена Mavis 2026-06-10.** Дизайн-контент (типы квестов, генерация, формулы, reward-таблицы) остаётся в зоне game-designer'а. Здесь — **только статус реализации** и ссылки на актуальные артефакты.
+
+### 16.1 Что реализовано (M1–M19, 50+ тикетов, ~8400 строк кода)
+
+#### Серверный фундамент
+- ✅ **`QuestServer`** (NetworkBehaviour, BootstrapScene, DontDestroyOnLoad) — 9 RPC: `RequestTalkToNpc`, `RequestAdvanceDialogue`, `RequestAcceptQuest`, `RequestTurnInQuest`, `RequestTrackQuest`, `RequestRefreshQuests`, `RequestRefreshReputation`, `RequestRefreshNpcAttitude`, `RequestDiscoverQuest`. Rate limit 30 ops/min/client.
+- ✅ **`QuestWorld`** (POCO singleton) — `_questById`, `_questsByPlayer`, `_reputation`, `_npcAttitude`, `_worldFlags`, `_dialogByPlayer`. State на сервере.
+- ✅ **`QuestInstance`** (runtime state) — `questId`, `state`, `currentStageId`, `objectiveProgress[]`, `acceptedAt/completedAt`, `isTracked`.
+- ✅ **`WorldEventBus`** + **`QuestTriggerService`** — 8+ типов триггеров: `TalkedToNpc`, `HaveItem`, `CargoHasItem`, `ReputationAtLeast`, `NpcAttitudeAtLeast`, `LocationReached` (poll 5s), `DayNightPhase`, `EventDriven`, `KilledEntity` (stub), `ContractAccepted/Completed`.
+- ✅ **Real-time objective evaluation** (M13, T-Q20) — `QuestServer.Update()` → `QuestWorld.TickAll()` каждые 5 сек → `EvaluateAndAdvanceStage()`.
+- ✅ **Multi-stage квесты** (M13, T-Q22) — `TryAdvanceStage`: fire onCompleteActions → transition → fire onEnterActions. `TryTurnIn` мигрирован на TryAdvanceStage.
+- ✅ **Persistence** (M8, T-Q18) — `JsonQuestStateRepository` (per-client JSON в `Application.persistentDataPath`, atomic write через tmp → rename, **immediate save** на каждый state change).
+
+#### Client projection
+- ✅ **`QuestClientState`** (singleton, AutoSpawn через `RuntimeInitializeOnLoadMethod`) — `CurrentSnapshot`, `Reputation`, `NpcAttitude`, `LastResult`, `LastRepResult`. 6 events: `OnSnapshotUpdated`, `OnReputationUpdated`, `OnNpcAttitudeUpdated`, `OnQuestResult`, `OnReputationResult`, `OnQuestDiscovered`. `RequestAcceptQuest(questId, fromNpcId)`.
+- ✅ **DTOs** — `QuestSnapshotDto`, `QuestProgressDto`, `ObjectiveProgressDto`, `ReputationSnapshotDto`, `ReputationEntryDto`, `NpcAttitudeSnapshotDto`, `NpcAttitudeEntryDto`, `DialogStepDto`, `DialogOptionDto`, `DialogActionResultDto`, `QuestResultDto`, `QuestResultCode`, `ReputationResultDto`, `ReputationResultCode` (с writeback-паттерном для struct + string).
+- ✅ **6 TargetRpc receivers** в `NetworkPlayer.cs` → `QuestClientState.Raise*`.
+
+#### Data layer (ScriptableObjects)
+- ✅ **`QuestDefinition`** : SO — `questId`, `displayName`, `description`, `faction`, `minReputation`, `stages[]`, `rewards`, `prerequisites[]`, `oneShot`, `discoverable`. `GetStage()`, `GetEntryStage()`, `GetUnreachableStages()` (BFS).
+- ✅ **`QuestStage`** — `stageId`, `objectives[]`, `onEnterActions[]`, `onCompleteActions[]`, `nextStageId`.
+- ✅ **`QuestObjective`** — 8 типов: `HaveItem`, `TalkToNpc`, `StandOnTrigger`, `ReachLocation`, `ReputationAtLeast`, `NpcAttitudeAtLeast`, `WaitForEvent`, `EventDriven`.
+- ✅ **`QuestReward`** — `credits`, `items[]`, `cargoItems[]`, `reputation[]`, `unlocks[]`.
+- ✅ **`QuestPrerequisite`** — 7 типов атомарных prerequisite.
+- ✅ **`QuestState`** enum — `Discovered=0, Offered=1, Active=2, Completed=3, Failed=4, TurnedIn=5`.
+- ✅ **`DialogTree`** : SO — `nodes[]`, `localizationTable`, `GetNode()`, `GetUnreachableNodes()`.
+- ✅ **`DialogueNode`**, **`DialogueEdge`** (label, targetNodeId, condition[], action, hideIfUnavailable), **`DialogueCondition`** (12 типов), **`DialogueAction`** (17 типов).
+- ✅ **`NpcDefinition`** : SO — `npcId`, `displayName`, `faction`, `questOffers[]`, `questTurnIns[]`, `attitudeLinks[]` (cross-faction influence).
+- ✅ **`FactionDefinition`** : SO — `factionId`, `displayName`, `loreDescription`, `attitudeLinks[]`.
+- ✅ **`ProjectC.Factions.FactionId`** enum — 12 lore значений (GuildOfThoughts, GuildOfCreation, ..., Pirates, Neutral).
+- ✅ **`NpcAttitude`** struct — readonly, IEquatable, range −100..+200, clamp в ctor.
+- ✅ **`ItemRegistry`** (M14) — singleton SO, 32 items, `id ↔ ItemData` mapping. Single source of truth для item IDs (replaces Resources.LoadAll + alphabetical order fragile).
+- ✅ **`QuestDatabase`** — central registry SO, `factions[]`, `npcs[]`, `dialogTrees[]`, `quests[]` + lookup helpers.
+
+#### UI (игрок)
+- ✅ **`DialogWindow`** (UIDocument) — typewriter char-by-char (40 chars/sec), F-skip, mouse-click skip, ESC close, cursor management, pickingMode toggle. 4 FIX'ы от MarketWindow унаследованы.
+- ✅ **`QuestTracker`** (HUD overlay, top-right) — singleton MonoBehaviour, scene-placed, DontDestroyOnLoad, `Track(questId)` / `Untrack()` / `Toggle(questId)`, auto-hide когда нет tracked, auto-untrack если quest удалён. 9 FIX'ы UI Toolkit применены.
+- ✅ **CharacterWindow → таб «Квесты»** (T-Q11) — 4 под-секции: active / completed / failed / discovered, с state badge + Accept-кнопка для Discovered. Track-кнопка в строках (T-Q12).
+- ✅ **QuestToast** (M15) — runtime VisualElement, bottom-center, 2.5s display, queue-based, события: "📜 Accepted: ...", "💚 mira_01 +5", "💰 +200 CR", "✨ Найден квест: ...".
+
+#### UI (editor)
+- ✅ **`QuestDatabaseWindow`** (M16) — UI Toolkit EditorWindow, TreeView + Detail panel: `Tools > ProjectC > Quests > Quest Database Explorer`.
+- ✅ **`QuestNodeGraphView`** + **`QuestGraphView`** (M17) — readonly graph viz: `Tools > ProjectC > Quests > Quest Node Graph` + `Assets/ProjectC/Open Quest Graph`. 4 node types: Quest, Stage, Objective, Reward.
+- ✅ **Editable QuestNodeGraph** (M18) — T-Q30..T-Q34: TextField в нодах, save back to SO, add/delete stages/objectives, quest-to-quest prereq edge, drag-create edges.
+- ✅ **CSV Import/Export pipeline** (M19) — single-file flat CSV, 18 колонок, 4 обязательных. `Tools > ProjectC > Quests > CSV Import/Export`. Schema + Parser + Importer + Exporter + Window + sample CSV.
+
+#### Integration (cross-cutting)
+- ✅ **Contract → Quest bridge** (T-X5, T-Q15) — `ContractServer` публикует `ContractAcceptedEvent` / `ContractCompletedEvent` / `ContractFailedEvent`. `ContractMetaBridge` (server-side singleton, scene-placed, DontDestroyOnLoad) подписан → `QuestWorld.MarkContractAccepted/Completed` + `QuestTriggerService.Evaluate()`.
+- ✅ **NPC scene-placement** (T-Q11b) — `NpcController` MonoBehaviour, trigger collider, scene-placed `[Mira]` в `WorldScene_0_0.unity`, E-key chain extension.
+- ✅ **Mira E2E demo** (M11, 2026-06-08) — 10 bugfixes в `QuestServer.cs` (QuestStateEquals, HasItem, AcceptQuest=14, hideIfUnavailable, visibleEdges, snapshot push, GiveCredits, AddRep, AddAtt, onEnter). Полный playthrough: Pickup → E → "Помогу" → TakeItem → AcceptQuest → Active → Pickup → E → "Отдать" → TakeItem + AddRep + AddAtt + CompleteObjective + TryTurnIn + GiveCredits → Completed.
+
+#### Persistence
+- ✅ **`IQuestStateRepository`** + **`JsonQuestStateRepository`** (T-Q18) — atomic JSON write per-client в `persistentDataPath`. `QuestSaveData` (POCO) с quests + rep + npcAttitude + 5 string sets. Load on `OnClientConnectedCallback` в `QuestServer`.
+
+### 16.2 Тестовые quest assets (создано, в git)
+
+| questId | displayName | Stages | Objectives | Примечание |
+|---------|-------------|--------|------------|------------|
+| `collect_copper_ore` | Собрать 3 медных руды | 1 | HaveItem | Простой тест |
+| `find_artifact` | Найти артефакт (EventDriven) | 2 | EventDriven | С `discoverable=true` |
+| `stage_intro_demo` | Демо: stage с onEnter (CSV-imported) | 1 | TalkToNpc | Тест onEnter actions |
+| `stage_multi_demo` | Тест: multi-stage (CSV-imported) | 2 | HaveItem + TalkToNpc | Тест nextStageId |
+| `collect_copper` | Собрать 3 медных руды (CSV-imported) | 1 | HaveItem | Через M19 CSV pipeline |
+
+### 16.3 Что открыто / TODO
+
+| # | Задача | Milestone | Приоритет | Ссылка |
+|---|---|---|---|---|
+| 1 | **M12 — Input remap (F = pickup, E = NPC)** | M12 | 🟡 Med (~45 мин) | `08_ROADMAP.md` §8.3 T-X4 |
+| 2 | **M17 polish — edges always visible** в QuestGraphView | M17 | 🟢 Low (~1 ч) | `08_ROADMAP.md` §8.3.5 |
+| 3 | **T-X2 — Faction migration** (`TradeItemDefinition.Faction` → `FactionId`) | M9 | 🟡 design discussion | `08_ROADMAP.md` §8.3 T-X2 |
+| 4 | **T-Q09b — GraphView sub-tab** внутри QuestDatabaseWindow | M10 | ⏭️ DEFERRED (покрыт M17) | `08_ROADMAP.md` §8.3 T-Q09b |
+| 5 | **Quest content — 5-10 production квестов** | post-MVP | 🔴 High | Сейчас 5 тестовых |
+| 6 | **Multiplayer shared party progress** | post-MVP | 🟢 Med | Сейчас per-player |
+| 7 | **Daily/Weekly Challenges** | Future | 🟢 Low | Из GDD §1.3 |
+| 8 | **Procedural quest generation** | Future | 🟢 Low | Из GDD §1.3 |
+| 9 | **Localization** (все строки в .po) | post-MVP | 🟢 Low (~3 ч) | Влияет на §1.2, §2-7 |
+| 10 | **MetaRequirement `_consumeOnUse`** | M7+ | 🟠 MEDIUM | `docs/MetaRequirement/50_KNOWN_ISSUES.md` |
+
+### 16.4 Где смотреть актуальный статус
+
+- **`docs/NPC_quests/08_ROADMAP.md`** — главный roadmap (50+ тикетов, 19 milestones, сессионные логи, риски, scope, что открыто)
+- **`docs/NPC_quests/old_session_log/99_FINAL_STATUS.md`** — итоговый статус 2026-06-09 (M1–M19 done)
+- **`docs/NPC_quests/02_V2_ARCHITECTURE.md`** — namespace layout, server/DTO/persistence pitfalls
+- **`docs/MMO_Development_Plan.md`** — общий план проекта (Этап 4.1 = квесты, статус ✅)
+
+---
+
+*Документ создан для Project C: The Clouds. Дизайн-контент (типы квестов, формулы, генерация) остаётся в зоне game-designer'а. Реализация v2 (M1–M19) сделана в 2026-06-07..09 сессиях и отражена в §16.*

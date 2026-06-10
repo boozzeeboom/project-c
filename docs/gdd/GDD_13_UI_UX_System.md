@@ -1,7 +1,7 @@
 # GDD-13: UI/UX System — Project C: The Clouds
 
-**Версия:** 2.0 | **Дата:** 12 апреля 2026 г. | **Статус:** ✅ Спринты 1-3 завершены, Спринт 4 (Polish) в ожидании
-**Автор:** Qwen Code (Game Studio: @ui-programmer + @ux-designer + @art-director)
+**Версия:** 2.1 | **Дата:** 10 июня 2026 г. (дизайн-контент без изменений с 12 апреля 2026 г.; добавлена §X «Реализация в коде») | **Статус:** 🟢 Спринты 1-3 завершены + CharacterWindow v2 + DialogWindow + QuestTracker + QuestToast + MetaRequirementToast (2026-06-05..09)
+**Автор:** Qwen Code (Game Studio: @ui-programmer + @ux-designer + @art-director) — дизайн, Mavis 2026-06-10 — раздел реализации
 
 ---
 
@@ -422,7 +422,134 @@ if (!UIManager.CanReceiveInput("TradeUI")) return;
 | 23 | Главное меню | [🔴 Запланировано] | 🔴 Этап 2.5 |
 | 24 | Карта мира | [🔴 Запланировано] | 🔴 Этап 4 |
 | 25 | Настройки | [🔴 Запланировано] | 🔴 Этап 3 |
+| 26 | **CharacterWindow v2** (5+ табов, P-окно) | см. §X ниже | 🟢 DONE (2026-06-05) |
+| 27 | **DialogWindow** (typewriter, F-skip) | см. §X ниже | 🟢 DONE (T-Q11c, 2026-06-08) |
+| 28 | **QuestTracker** (HUD overlay) | см. §X ниже | 🟢 DONE (T-Q12, 2026-06-08) |
+| 29 | **QuestToast** (уведомления) | см. §X ниже | 🟢 DONE (M15, 2026-06-09) |
+| 30 | **ShipKeyToast** (физический ключ) | см. §X ниже | 🟢 DONE (R2-SHIP-KEY-001, 2026-06-06) |
+| 31 | **MetaRequirementToast** (generic lock-key UI) | см. §X ниже | 🟢 DONE (R2-META-REQ-001, 2026-06-06) |
 
 ---
 
-**Связанные документы:** [GDD_INDEX.md](GDD_INDEX.md) | [CONTROLS.md](../CONTROLS.md)
+## X. Реализация в коде (v2, 2026-06-05..09)
+
+> **Секция добавлена Mavis 2026-06-10.** Дизайн-контент (архитектура, Ghibli стиль, control mapping) остаётся в зоне game-designer'а. Здесь — **только статус реализации** новых UI окон и панелей.
+
+### X.1 CharacterWindow v2 (2026-06-05) ✅
+
+**Концепция:** P-окно, единый "личный кабинет" игрока, 5+ табов, по образцу MarketWindow (UI Toolkit, singleton, 4 FIX'ы сразу бесплатно).
+
+**Табы (всего 5+):**
+
+| # | Таб | Серверная сущность | Клиентская проекция | Статус |
+|---|-----|--------------------|----------------------|--------|
+| 1 | **Персонаж** | (none yet) | `CharacterStatsClientState` (новый) | ⏳ MVP-заглушка + хард-стат |
+| 2 | **Корабль** | (none yet) | (read from `NetworkPlayer` local) | ⏳ MVP-заглушка + локальные данные |
+| 3 | **Репутация** | `QuestServer` → `ReputationClientState` | `ReputationClientState` + `NpcAttitudeClientState` | 🟢 Реализовано (T-Q13) |
+| 4 | **Инвентарь** | `InventoryServer` | `InventoryClientState` (single source of truth с TAB-колесо) | 🟢 Реализовано (sub_inventory-tab) |
+| 5 | **Контракты / Квесты** | `ContractServer` + `QuestServer` | `ContractClientState` + `QuestClientState` | 🟢 Реализовано (T-Q11) |
+| 6 | **Квесты (sub-tab)** | `QuestServer` | `QuestClientState` (4 под-секции: active/completed/failed/discovered) | 🟢 Реализовано (T-Q11) |
+
+**Реализация:**
+- ✅ `Assets/_Project/UI/Client/CharacterWindow.cs` (1345+ LOC) — singleton MonoBehaviour, scene-placed в `BootstrapScene`, DontDestroyOnLoad
+- ✅ `Assets/_Project/UI/Resources/UI/CharacterWindow.uxml` (5+ tab sections)
+- ✅ `Assets/_Project/UI/Resources/UI/CharacterWindow.uss` (с `!important` для всех class-стилей — fix `UnityDefaultRuntimeTheme`)
+- ✅ `Assets/_Project/UI/Resources/UI/CharacterWindowPanelSettings.asset` (dedicated PanelSettings)
+- ✅ 4 FIX'ы применены: `pickingMode` toggle, `styleSheets.Add(uss)` в `EnsureBuilt`, cursor lock/unlock, `MarkDirtyRepaint + schedule.Execute(50ms)`
+- ✅ Visual fix 2026-06-05: `characterWindowUss` привязан к правильному USS-ассету (был UXML-bug → все class-стили игнорировались)
+- ✅ P-key для открытия (по решению пользователя 2026-06-05)
+
+**Документация:** `docs/Character-menu/00_OVERVIEW.md` + `sub_inventory-tab/00_OVERVIEW.md` + `refactor_log_2026-06-05.md`.
+
+### X.2 DialogWindow (T-Q11c, 2026-06-08) ✅
+
+**Концепция:** UIDocument окно для диалогов с NPC, typewriter-эффект, F-skip, click-skip, ESC close.
+
+**Реализация:**
+- ✅ `Assets/_Project/Quests/UI/DialogWindow.cs` (311 LOC) — UIDocument pattern с 4 FIX'ами от MarketWindow
+- ✅ `Assets/_Project/Quests/Resources/UI/DialogWindow.uxml` (root > panel > npc-name + text-scroll > text + options + toast)
+- ✅ `Assets/_Project/Quests/Resources/UI/DialogWindow.uss`
+- ✅ `Assets/_Project/Quests/Resources/UI/DialogPanelSettings.asset` (копия `MarketPanelSettings.asset` с `themeUss: UnityDefaultRuntimeTheme`)
+- ✅ Scene binding в `BootstrapScene.unity` (SerializedObject: `m_PanelSettings` + `sourceAsset` + `dialogWindowUxml/uss`)
+- ✅ `QuestServer.RequestEndConversationRpc`, stale session detection, null-safe `BuildDialogStep`, try-catch diagnostic
+- ✅ `DialogStepDto.cs` — 3 DTO struct fix (writeback-паттерн для string)
+- ✅ Stale `_currentStep` guard в `SendAdvance`
+- ✅ **Typewriter** (T-Q12) — coroutine char-by-char, 40 chars/sec
+- ✅ **F skip typewriter** — `PlayerInputReader.Instance?.OnModeSwitchPressed`
+- ✅ **Click мышью** на body → skip
+- ✅ **9 PERSISTENT BUGS lessons** — в `old_session_log/T-Q11b_c_session_log_2026-06-08.md`
+
+**Документация:** `old_session_log/T-Q11b_c_session_log_2026-06-08.md`.
+
+### X.3 QuestTracker (T-Q12, 2026-06-08) ✅
+
+**Концепция:** HUD overlay (top-right) с отслеживаемым квестом — quest name + текущая цель + кнопка "Скрыть". Auto-hide когда нет tracked.
+
+**Реализация:**
+- ✅ `Assets/_Project/Quests/UI/QuestTracker.cs` (230 LOC) — singleton MonoBehaviour, scene-placed, DontDestroyOnLoad
+- ✅ `Assets/_Project/Quests/Resources/UI/QuestTracker.uxml` (root > panel > name + objective + hide button)
+- ✅ `Assets/_Project/Quests/Resources/UI/QuestTracker.uss` (top-right absolute, dark blue + green border, все `!important`)
+- ✅ `Assets/_Project/Quests/Resources/UI/QuestTrackerPanelSettings.asset` (копия `DialogPanelSettings.asset`)
+- ✅ Public API: `Track(questId)` / `Untrack()` / `Toggle(questId)`
+- ✅ Subscribe `QuestClientState.OnSnapshotUpdated` → RefreshDisplay
+- ✅ Lazy-subscribe в Update (auto-find QuestClientState если null)
+- ✅ Auto-hide когда нет tracked
+- ✅ Auto-untrack если quest удалён из snapshot
+- ✅ Первая не-completed objective как текущая цель
+- ✅ Track-кнопка в строках квестов в CharacterWindow (T-Q12 → T-Q11)
+
+**Документация:** `old_session_log/T-Q12_DESIGN_NOTE.md`.
+
+### X.4 QuestToast (M15, 2026-06-09) ✅
+
+**Концепция:** runtime VisualElement, bottom-center, 2.5s display, queue-based (все reward'ы по очереди, не drop на cooldown).
+
+**Реализация:**
+- ✅ `Assets/_Project/UI/Toast/ToastKind.cs` (enum Info/Success/Warning/Error)
+- ✅ `Assets/_Project/UI/Toast/ToastService.cs` (static Show + шорткаты)
+- ✅ `Assets/_Project/UI/Toast/ToastUI.cs` (singleton MonoBehaviour, queue max 3, fade in 0.2s, visible 3s, fade out 0.5s)
+- ✅ `Assets/_Project/UI/Resources/UI/ToastUI.uxml` + `.uss`
+- ✅ `BootstrapScene.unity` — `[QuestToast]` GameObject (legacy `[ToastService]` удалён)
+- ✅ Quest-specific events: "📜 Accepted: Демо: stage с onEnter", "💚 mira_01 +5", "💰 +200 CR", "✨ Найден квест: ..."
+- ✅ **Queue fix (T-Q25)** — `_cooldown=0.3s` дропал reward'ы. Заменён на `System.Collections.Generic.Queue<string>` + `ProcessQueue()` coroutine
+
+**Документация:** `old_session_log/M15_DESIGN_NOTE.md`.
+
+### X.5 ShipKeyToast + MetaRequirementToast (R2-SHIP-KEY-001 + R2-META-REQ-001, 2026-06-06) ✅
+
+**Концепция:** UI feedback при отказе в boarding/использовании — "Нужен ключ X для корабля Y" + список недостающих.
+
+**Реализация:**
+- ✅ `Assets/_Project/Scripts/Ship/Key/ShipKeyToast.cs` (UIDocument) — fade-out 3 сек, текст
+- ✅ `Assets/_Project/Scripts/MetaRequirement/MetaRequirementToast.cs` (UIDocument) — generic: "X/N собрано" + список недостающих
+- ✅ `Assets/_Project/UI/Resources/UI/ShipKeyPanelSettings.asset`
+- ✅ `Assets/_Project/UI/Resources/UI/MetaRequirementPanelSettings.asset`
+- ✅ `BootstrapScene.unity` — `[MetaRequirementToast]` GameObject (UIDocument + MetaRequirementToast)
+- ✅ **TODO:** `ProgressInfo` UI (multi-item tooltip "3/5 ключей собрано") — TODO (см. `docs/MetaRequirement/50_KNOWN_ISSUES.md`)
+
+### X.6 Что НЕ реализовано ⏳
+
+| # | Задача | Milestone | Приоритет |
+|---|---|---|---|
+| 1 | Таб "Персонаж" (реальный, не заглушка) | post-MVP | 🟢 Low |
+| 2 | Таб "Корабль" (реальный, не заглушка) | post-MVP | 🟢 Low |
+| 3 | ServiceUI для `OpenService` dialog action | Future | 🟢 Low |
+| 4 | `ProgressInfo` multi-item tooltip в MetaRequirementToast | M7+ | 🟠 MEDIUM |
+| 5 | Display HUD репутации в header (deferred с T-Q10) | M5 | 🟢 Low |
+| 6 | Звуковая обратная связь в UI | Sprint 4 | 🟡 Med |
+| 7 | Локализация всех строк | post-MVP | 🟢 Low |
+
+### X.7 Где смотреть актуальный статус
+
+- **`docs/Character-menu/00_OVERVIEW.md`** + `refactor_log_2026-06-05.md` — CharacterWindow
+- **`docs/Character-menu/sub_inventory-tab/00_OVERVIEW.md`** — sub_inventory-tab
+- **`docs/NPC_quests/old_session_log/T-Q11b_c_session_log_2026-06-08.md`** — DialogWindow 9 bugs
+- **`docs/NPC_quests/old_session_log/T-Q12_DESIGN_NOTE.md`** — QuestTracker
+- **`docs/NPC_quests/old_session_log/M15_DESIGN_NOTE.md`** — QuestToast
+- **`docs/Ships/Key-subsystem/00_OVERVIEW.md`** — ShipKeyToast
+- **`docs/MetaRequirement/00_OVERVIEW.md`** — MetaRequirementToast
+- **`docs/MMO_Development_Plan.md`** §1.7 — общий план UI
+
+---
+
+**Связанные документы:** [GDD_INDEX.md](GDD_INDEX.md) | [CONTROLS.md](../CONTROLS.md) | [`docs/Character-menu/00_OVERVIEW.md`](../Character-menu/00_OVERVIEW.md) | [`docs/NPC_quests/old_session_log/`](old_session_log/) | [`docs/MetaRequirement/`](../MetaRequirement/)

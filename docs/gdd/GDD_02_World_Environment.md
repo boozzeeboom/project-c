@@ -1,7 +1,7 @@
 # GDD-02: World & Environment — Project C: The Clouds
 
-**Версия:** 1.0 | **Дата:** 6 апреля 2026 г. | **Статус:** ✅ Документировано
-**Автор:** Qwen Code (Game Studio: @world-builder + @art-director)
+**Версия:** 1.1 | **Дата:** 10 июня 2026 г. (дизайн-контент без изменений с 6 апреля 2026 г.; добавлена §X «Реализация в коде») | **Статус:** ✅ Документировано + NPC + квестовые зоны реализованы
+**Автор:** Qwen Code (Game Studio: @world-builder + @art-director) — дизайн, Mavis 2026-06-10 — раздел реализации
 
 ---
 
@@ -422,7 +422,45 @@
 | 8 | Текстуры пиков | [🔴 Запланировано] | 🔴 |
 | 9 | Модульные здания | [🔴 Запланировано] | 🔴 |
 | 10 | Погода (дождь, ветер) | [🔴 Запланировано] | 🔴 |
+| 11 | **NPC scene-placement** (NpcController + scene-placed [Mira]) | см. §X ниже | 🟢 DONE (T-Q11b, 2026-06-08) |
+| 12 | **Quest trigger zones** (auto-discover, StandOnTrigger objective) | см. §X ниже | 🟢 DONE (M13, 2026-06-08) |
+| 13 | **Mira в WorldScene_0_0** (40007, 2502.77, 39985) | координаты [Mira] | 🟢 DONE (2026-06-08) |
 
 ---
 
-**Связанные документы:** [GDD_INDEX.md](GDD_INDEX.md) | [WORLD_LORE_BOOK.md](../WORLD_LORE_BOOK.md) | [ART_BIBLE.md](../ART_BIBLE.md)
+## X. Реализация в коде (дополнения NPC + квестовые зоны, 2026-06-08)
+
+> **Секция добавлена Mavis 2026-06-10.** Дизайн-контент (15 пиков, 4 города, Завеса) остаётся в зоне world-builder'а. Здесь — **только статус реализации** NPC + квестовых зон.
+
+### X.1 NPC Scene-Placement (T-Q11b, 2026-06-08)
+
+**Правило (user 2026-06-07):** BootstrapScene = server infra ONLY. Game-world objects → `WorldScene_X_Z`.
+
+**Реализация:**
+- ✅ `Assets/_Project/Quests/NpcController.cs` (165 LOC) — MonoBehaviour с trigger collider, `NpcDefinition` ref, auto-visual label, Gizmo
+- ✅ `[Mira]` GameObject в `WorldScene_0_0.unity` (pos=40007, 2502.77, 39985) с `NpcController` + `CapsuleCollider` (isTrigger, r=2.0) + `Mira.asset` (npcId=mira_01, faction=GuildOfThoughts)
+- ✅ E-key chain extension в `NetworkPlayer` — `TryInteractNearestNpc` (highest priority: NPC > MetaRequirement > Chest > Pickup > Market)
+- ✅ `MiraDefault.asset` (dialog tree) — 8 nodes, full quest playthrough
+- ✅ Тестовые pickup'ы рядом с Mira: `Item_Key_AncientKey`, `Item_Crystal_TimeCrystal` (M11 E2E)
+- ✅ Тестовые quest pickup'ы: 3× `Pickup_CopperOre_*` (5m E/S/W от Mira), 3× `LockBox_*` в [MetaRequirement_Test] parent
+
+### X.2 Quest Trigger Zones (M13, 2026-06-08)
+
+**Реализация:**
+- ✅ `QuestTriggerService` (server-side, IQuestTrigger registry) + 8+ trigger types: `TalkedToNpc`, `HaveItem`, `CargoHasItem`, `ReputationAtLeast`, `NpcAttitudeAtLeast`, `LocationReached` (poll 5s), `DayNightPhase`, `EventDriven`, `KilledEntity` (stub), `ContractAccepted/Completed`
+- ✅ `WorldEventBus` — static singleton с Publish/Subscribe/Unsubscribe, exception-isolated dispatch
+- ✅ Тестовые trigger zones: `[TriggerZone_DiscoverQuest]` (8m S от Mira, BoxCollider isTrigger), `[TriggerZone_StageIntro]` (8m E от Mira)
+- ✅ Hooks: `DayNightController` → publish `DayNightPhaseChangedEvent`
+- ✅ Server tick каждые 5 сек: `QuestServer.Update()` → `QuestWorld.TickAll()` → `EvaluateAndAdvanceStage()`
+
+**Документация:** `docs/NPC_quests/08_ROADMAP.md` §8.3.1 M13 + `docs/NPC_quests/old_session_log/M13_DESIGN_NOTE.md` + `M13_VERIFY_CHECKLIST.md`.
+
+### X.3 Где смотреть актуальный статус
+
+- **`docs/NPC_quests/08_ROADMAP.md`** §8.3.1, §8.3.3 — roadmap NPC + quest zones
+- **`docs/MMO_Development_Plan.md`** §2.1, §4.1 — общий план
+- **`docs/Ships/INTEGRATION_SHIPS_TO_WORLD_0_0.md`** — scene-placement rule детально
+
+---
+
+**Связанные документы:** [GDD_INDEX.md](GDD_INDEX.md) | [WORLD_LORE_BOOK.md](../WORLD_LORE_BOOK.md) | [ART_BIBLE.md](../ART_BIBLE.md) | [`docs/NPC_quests/08_ROADMAP.md`](../NPC_quests/08_ROADMAP.md)

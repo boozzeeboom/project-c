@@ -1,7 +1,7 @@
 # GDD-22: Economy & Trading — Project C: The Clouds
 
-**Версия:** 5.0 | **Дата:** 05 июня 2026 г. | **Статус:** ✅ V2 развёрнута полностью (cleanup C1+C4+C5 завершён, -27913 LOC мёртвого кода)
-**Автор:** Qwen Code (3.0) + Mavis (4.0 — рефакторинг под bootstrap+24 сцены) + Mavis (5.0 — финальный v2 cleanup, GDD sync)
+**Версия:** 5.1 | **Дата:** 10 июня 2026 г. (дизайн-контент без изменений с 5 июня 2026 г.; добавлена §X «Реализация в коде») | **Статус:** ✅ V2 развёрнута + Contract→Quest bridge + ItemRegistry
+**Автор:** Qwen Code (3.0) + Mavis (4.0 — рефакторинг под bootstrap+24 сцены) + Mavis (5.0 — финальный v2 cleanup, GDD sync) + Mavis (5.1, 2026-06-10 — доп. про Contract bridge + ItemRegistry)
 
 ---
 
@@ -18,7 +18,7 @@
 - **Серверная авторитетность:** Вся экономика — на сервере
 
 **Этап реализации:** Этап 3-4
-**Архитектура (v4.0):** Bootstrap + 24 World-сцены, server-authoritative, UI Toolkit, см. [docs/dev/TRADE_V2_DESIGN.md](../dev/TRADE_V2_DESIGN.md) и [docs/dev/TRADE_V2_INTEGRATION.md](../dev/TRADE_V2_INTEGRATION.md)
+**Архитектура (v4.0):** Bootstrap + 24 World-сцены, server-authoritative, UI Toolkit, см. [docs/Markets/TRADE_V2_DESIGN.md](../Markets/TRADE_V2_DESIGN.md) и [docs/Markets/TRADE_V2_INTEGRATION.md](../Markets/TRADE_V2_INTEGRATION.md)
 
 **Связанный документ:** [GDD_25_Trade_Routes.md](GDD_25_Trade_Routes.md) — полные спецификации маршрутов, логистики, контрактов
 
@@ -657,7 +657,52 @@ PD2_Cargo_{shipNetworkObjectId}        — груз корабля (per-ship, pe
 | 18 | (v4.0) Multi-ship: 1 корабль в зоне → dropdown скрыт | Убрать второй корабль | 🟡 (v4.0) |
 | 19 | (v4.0) Игрок вне MarketZone → RPC отклоняется с NotInZone | Сесть в корабль, уплыть далеко, попробовать купить | 🟡 (v4.0) |
 | 20 | (v4.0) Корабль вне MarketZone → Load/Unload отклоняется с ShipNotInZone | Уплыть корабль далеко, попробовать погрузить | 🟡 (v4.0) |
+| 21 | **ItemRegistry** (single source of truth для item IDs) | см. §X ниже | 🟢 DONE (M14, 2026-06-09) |
+| 22 | **Contract → Quest bridge** (`ContractMetaBridge`) | см. §X ниже | 🟢 DONE (T-X5+T-Q15, 2026-06-08) |
 
 ---
 
-**Связанные документы:** [GDD_INDEX.md](GDD_INDEX.md) | [GDD_23_Faction_Reputation.md](GDD_23_Faction_Reputation.md) | [GDD_25_Trade_Routes.md](GDD_25_Trade_Routes.md) | [GDD_10_Ship_System.md](GDD_10_Ship_System.md)
+## X. Реализация в коде (дополнения 2026-06-08..09)
+
+> **Секция добавлена Mavis 2026-06-10.** Дизайн-контент (валютная система, ресурсы, формулы pricing, динамическая экономика) остаётся в зоне economy-designer'а. Здесь — **только статус реализации** ItemRegistry + Contract→Quest bridge.
+
+### X.1 ItemRegistry (M14, 2026-06-09)
+
+**Проблема:** `InventoryWorld.GetOrRegisterItemId()` и `QuestWorld.ResolveItemId()` использовали **независимые** нумерации, которые **случайно** совпадали (alphabetical order из `Resources.LoadAll`). При добавлении item'а вне `Resources/Items/` — id **молча** разъедутся, квесты перестанут работать.
+
+**Решение:** **`ItemRegistry`** (singleton SO) — single source of truth для `id ↔ ItemData` mapping. 32 items, id 1-32. Деталь — `docs/NPC_quests/old_session_log/M14_DESIGN_NOTE.md` + см. GDD_11 §X.2.
+
+### X.2 Contract → Quest bridge (T-X5 + T-Q15, 2026-06-08)
+
+**Проблема:** Контракты и квесты — **две независимые** системы. Контракт может быть "доставить cargo из A в B", квест — "принести 3 руды NPC". Нет моста.
+
+**Решение:** **`ContractMetaBridge`** (server-side singleton, scene-placed в `BootstrapScene`, DontDestroyOnLoad).
+
+**Поток:**
+1. `ContractServer` публикует 3 events в `WorldEventBus`:
+   - `ContractAcceptedEvent { contractId, playerId, fromNpcId, timestamp }`
+   - `ContractCompletedEvent { contractId, playerId, timestamp, wasReceipt }`
+   - `ContractFailedEvent { contractId, playerId, timestamp, debtIncurred }`
+2. `ContractMetaBridge` подписан → `QuestWorld.MarkContractAccepted/MarkContractCompleted/Failed`
+3. `QuestTriggerService.Evaluate($"ContractCompleted:{contractId}")` — квесты могут следить за состоянием контрактов через `HasContractAccepted/HasContractCompleted` objectives
+
+**Деталь:** `docs/NPC_quests/old_session_log/T-Q15_DESIGN_NOTE.md`.
+
+**Что НЕ покрыто:**
+- ⏳ **TradeItemDefinition → FactionId migration** (T-X2, DEFERRED) — 2 разных enum'а (8 manufacturer factions vs 12 lore guilds), пересекаются только в `FreeTraders`. Дизайн дискуссия нужна.
+
+### X.3 Persistence pattern (M8, T-Q18, 2026-06-08)
+
+**Референс для market state:** в NPC+Quests v2 сделан `JsonQuestStateRepository` (T-Q18) — atomic JSON в `Application.persistentDataPath`, immediate save на каждый state change, единый JSON на игрока. Можно скопировать паттерн для market state (demand/supply factors, active events, tick-timer) — см. `docs/MMO_Development_Plan.md` §3.4 п.4.
+
+### X.4 Где смотреть актуальный статус
+
+- **`docs/NPC_quests/08_ROADMAP.md`** — главный roadmap (50+ тикетов, M1–M19)
+- **`docs/NPC_quests/old_session_log/M14_DESIGN_NOTE.md`** — ItemRegistry
+- **`docs/NPC_quests/old_session_log/T-Q15_DESIGN_NOTE.md`** — ContractMetaBridge
+- **`docs/Markets/`** — детали trade v2 (C1 cleanup, market state)
+- **`docs/MMO_Development_Plan.md`** §3.2, §3.3, §3.4 — общий план
+
+---
+
+**Связанные документы:** [GDD_INDEX.md](GDD_INDEX.md) | [GDD_23_Faction_Reputation.md](GDD_23_Faction_Reputation.md) | [GDD_25_Trade_Routes.md](GDD_25_Trade_Routes.md) | [GDD_10_Ship_System.md](GDD_10_Ship_System.md) | [`docs/NPC_quests/08_ROADMAP.md`](../NPC_quests/08_ROADMAP.md) | [`docs/Markets/`](../Markets/)

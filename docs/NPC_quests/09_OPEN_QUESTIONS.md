@@ -538,4 +538,4 @@ if (TryInteractNearestMetaRequirement()) return;
 T-Q01 → T-Q02 → T-Q03 → T-Q04 → T-Q05 → T-X0 → T-Q06 → T-Q07 → T-X3 → T-Q08 → T-Q09 → T-Q09b → T-Q10 → T-Q11 → T-Q12 → T-Q13 → T-Q14 → T-X5 → T-Q15 → T-Q16 → T-Q17 → T-Q18 → T-Q19 → T-X1 → T-X2 → T-X4
 ```
 
-**См. `08_ROADMAP.md` §8.3 для деталей каждого тикета (обновлено 2026-06-07).**
+**См. `08_ROADMAP.md` §8.3 для деталей каждого тикета (обновлено 2026-06-10).**

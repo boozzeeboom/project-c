@@ -1,6 +1,8 @@
 # 📋 Game Design Documents (GDD) — Project C: The Clouds
 
-**Последнее обновление:** 6 апреля 2026 г. | **Ветка:** `qwen-gamestudio-agent-dev` | **Версия:** `v0.0.14-gdd`
+**Последнее обновление:** 10 июня 2026 г. | **Ветка:** `feature/npc-quest-v2` (merged) | **Версия:** `v0.0.18-npc-quests-v2-complete`
+
+> **Что нового:** NPC+Quests v2 (50+ тикетов, M1–M19 ✅), CharacterWindow v2 (5+ табов), MetaRequirement v1 (lock-key), Ship Key MVP. Подробный статус реализации — в `docs/MMO_Development_Plan.md` + `docs/NPC_quests/08_ROADMAP.md`. **Содержимое GDD-файлов** (lore, формулы, дизайн-решения) **не пересматривалось** — только добавлены секции "Реализация в коде" со ссылками на коммиты. Design-контент остаётся в зоне game-designer'а (см. AGENTS.md).
 
 ---
 

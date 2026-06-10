@@ -2,7 +2,7 @@
 
 > **Дата:** 2026-06-09
 > **Статус:** 📋 DESIGN (v2)
-> **Предыдущая версия:** M19_CSV_PIPELINE.md (5 файлов) — **ЗАМЕНЕНА**
+> **Предыдущая версия:** `old_session_log/M19_CSV_PIPELINE.md` (5 файлов) — **ЗАМЕНЕНА**
 > **Цель:** 1 файл, 1 таблица, понятно нетехнарю
 
 ---
@@ -178,7 +178,7 @@ Assets/_Project/Quests/Editor/QuestCsvImporter.cs   — window + импорт
 Assets/_Project/Quests/Editor/QuestCsvSchema.cs     — парсер + структура
 Assets/_Project/Quests/Editor/QuestCsvExporter.cs   — экспорт
 Assets/_Project/Quests/Import/example_quests.csv    — пример для writer'a
-docs/dev/M19_CSV_PIPELINE_v2.md                     — этот документ (ЗАМЕНЯЕТ v1)
+M19_CSV_PIPELINE_v2.md                     — этот документ (ЗАМЕНЯЕТ v1)
 ```
 
 ---
@@ -222,4 +222,4 @@ A: В колонке `prereqQuest` укажите questId предыдущего
 ## 11. Изменения в roadmap
 
 - `08_ROADMAP.md` §8.3.7 — обновлён с single-file подходом
-- `M19_CSV_PIPELINE.md` (v1, 5 файлов) → **ЗАМЕНЁН** на этот документ
+- `old_session_log/M19_CSV_PIPELINE.md` (v1, 5 файлов) → **ЗАМЕНЁН** на этот документ

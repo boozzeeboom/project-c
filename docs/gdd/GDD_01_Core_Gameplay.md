@@ -1,7 +1,7 @@
 # GDD-01: Core Gameplay & Controls — Project C: The Clouds
 
-**Версия:** 1.0 | **Дата:** 6 апреля 2026 г. | **Статус:** ✅ Документировано
-**Автор:** Qwen Code (Game Studio: @game-designer + @gameplay-programmer)
+**Версия:** 1.1 | **Дата:** 10 июня 2026 г. (дизайн-контент без изменений с 6 апреля 2026 г.; добавлена §X «Реализация в коде») | **Статус:** ✅ Документировано + реализовано (CharacterWindow, NPC dialog, F-key key)
+**Автор:** Qwen Code (Game Studio: @game-designer + @gameplay-programmer) — дизайн, Mavis 2026-06-10 — раздел реализации
 
 ---
 
@@ -256,7 +256,7 @@
 | 1 | WASD двигает персонажа относительно камеры | Запустить, проверить движение | ✅ |
 | 2 | Space вызывает прыжок | Запустить, проверить прыжок | ✅ |
 | 3 | Shift ускоряет бег x2 | Запустить, сравнить скорость | ✅ |
-| 4 | F сажает в корабль (< 5м) | Подойти к кораблю, нажать F | ✅ |
+| 4 | F сажает в корабль (< 5м) | Подойти к кораблю, нажать F. **🟡 Требуется ключ** (см. §X ниже) | ✅ |
 | 5 | F выводит из корабля (< 3м высота) | На низкой высоте нажать F | ✅ |
 | 6 | Корабль летает (WASD + Q/E + мышь) | Запустить, проверить все оси | ✅ |
 | 7 | Shift бустит корабль x2 | Проверить скорость с/без буста | ✅ |
@@ -266,7 +266,39 @@
 | 11 | Кооп-пилотирование усредняет ввод | 2 игрока, проверить движение | ✅ |
 | 12 | ControlHintsUI обновляется | Проверить подсказки на экране | ✅ |
 | 13 | WorldCamera работает (dev) | V/N/B/R/H, проверить навигацию | ✅ |
+| 14 | P открывает CharacterWindow | Нажать P, проверить 5+ табов | 🟢 DONE (2026-06-05) |
+| 15 | E → NPC → DialogWindow | Подойти к [Mira], нажать E | 🟢 DONE (T-Q11b+c, 2026-06-08) |
+| 16 | M11 Mira quest E2E | Pickup → E → trade → quest Complete | 🟢 DONE (2026-06-08) |
 
 ---
 
-**Связанные документы:** [GDD_INDEX.md](GDD_INDEX.md) | [CONTROLS.md](../CONTROLS.md) | [SHIP_SYSTEM_DOCUMENTATION.md](../SHIP_SYSTEM_DOCUMENTATION.md)
+## X. Реализация в коде (дополнения 2026-06-05..09)
+
+> **Секция добавлена Mavis 2026-06-10.** Дизайн-контент (Core Loop, режимы, управление) остаётся в зоне game-designer'а. Здесь — **только статус реализации** F-boarding с ключом, CharacterWindow, NPC dialog.
+
+### X.1 F-boarding с физическим ключом (R2-SHIP-KEY-001, 2026-06-06)
+
+**Изменение:** F-посадка в корабль теперь **требует наличия ключа** в инвентаре пилота. Без ключа F не сработает (или сработает, но сервер откажет через 1.5 сек timeout).
+
+**Поток:**
+1. Игрок нажимает F рядом с кораблём
+2. `NetworkPlayer` отправляет pre-F RPC `RequestCanBoard` (1.5 сек timeout)
+3. `ShipKeyServer.CanPlayerBoard(clientId, netId)` → `InventoryWorld.HasItem(clientId, keyItemId)`
+4. Если `true` → разрешить, отправить `CanPlayerBoard` response → `SubmitSwitchModeRpc` → defense-in-depth проверка → посадка
+5. Если `false` → отказать, `ShipKeyToast` UI: "Нужен ключ X для корабля Y", fade-out 3 сек
+
+**Деталь:** см. `docs/Ships/Key-subsystem/00_OVERVIEW.md` + `docs/MetaRequirement/00_OVERVIEW.md` (Stage 2 — generic MetaRequirement).
+
+**Что НЕ требует ключа:** пеший режим (WASD), boarding NPC кораблей через [Mira] dialog (если quest дал), boarding "украденного" корабля (TODO).
+
+### X.2 CharacterWindow (P-key, 2026-06-05)
+
+**Новое:** P открывает CharacterWindow — единый "личный кабинет" с 5+ табами (Персонаж / Корабль / Репутация / Контракты / Инвентарь / Квесты). Подробнее — `docs/Character-menu/00_OVERVIEW.md`.
+
+### X.3 NPC DialogWindow (T-Q11b+c, 2026-06-08)
+
+**Новое:** E на NPC `[Mira]` → `DialogWindow` (typewriter, F-skip, click-skip). Диалог → квесты → reputation → credits. Mira E2E полностью пройден (M11, 2026-06-08).
+
+---
+
+**Связанные документы:** [GDD_INDEX.md](GDD_INDEX.md) | [CONTROLS.md](../CONTROLS.md) | [SHIP_SYSTEM_DOCUMENTATION.md](../SHIP_SYSTEM_DOCUMENTATION.md) | [`docs/Ships/Key-subsystem/00_OVERVIEW.md`](../Ships/Key-subsystem/00_OVERVIEW.md) | [`docs/NPC_quests/08_ROADMAP.md`](../NPC_quests/08_ROADMAP.md) | [`docs/Character-menu/00_OVERVIEW.md`](../Character-menu/00_OVERVIEW.md)

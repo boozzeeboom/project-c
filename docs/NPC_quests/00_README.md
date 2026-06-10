@@ -39,7 +39,7 @@ v1-заглушенный код в `Assets/_Project/Scripts/World/Npc/` (4 фа
 | **05** | `05_INPUT_AND_INTERACTION.md` | E-key pipeline, E = dialog, F = boarding+action, **PlayerInputReader full refactor**. | ~1000 |
 | **06** | `06_TRIGGERS_AND_INTEGRATION.md` | **Full event bus**, WorldEventBus, IQuestTrigger, интеграция с Inventory/Trade/Ship/DayNight. | ~1500 |
 | **07** | `07_DATA_MODEL_EXAMPLES.md` | Примеры SO-ассетов: NpcDefinition, QuestDefinition, DialogTree, FactionDefinition, **EventDriven**. | ~1200 |
-| **08** | `08_ROADMAP.md` | **22 тикета** (включая T-X0, T-X3, T-X4, T-X5, T-Q09b), порядок, milestones, риски. | ~3500 |
+| **08** | `08_ROADMAP.md` | **50+ тикетов** (T-Q01..T-Q34, T-X0..T-X5, M19-T1..T5), порядок, milestones, риски, session summaries. | ~5000 |
 | **09** | `09_OPEN_QUESTIONS.md` | **17 финальных решений** (приняты 2026-06-07) + детальные спецификации §G-§M. | ~4500 |
 | **10** | `10_REFERENCES.md` | Ссылки на существующие v2-референсы, GDD, lore, и pitfall-листы. | ~1300 |
 
@@ -153,7 +153,7 @@ v1-заглушенный код в `Assets/_Project/Scripts/World/Npc/` (4 фа
 - ❌ Не трогаем legacy v1-файлы NPC (помечены как "v1, to be deleted" в `02_V2_ARCHITECTURE.md` §6).
 
 Следующие сессии (по результатам текущей):
-- ✅ По каждому тикету в `08_ROADMAP.md` — отдельная сессия с code + MCP-verify.
+- ✅ Roadmap реализован: M1–M11, M13–M19 = ✅ DONE. Открыто: M12 (input remap), M17 polish, quest content. См. `08_ROADMAP.md` §8.0.
 - ✅ Cleanup v1 NPC — отдельный тикет T-XX, требует grep transitive deps.
 - ✅ Renaming `Trade.Core.NPCTrader` → `MarketTrader` — отдельный тикет (опционально).
 

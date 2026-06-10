@@ -1,7 +1,7 @@
 # GDD-11: Inventory & Items — Project C: The Clouds
 
-**Версия:** 1.0 | **Дата:** 6 апреля 2026 г. | **Статус:** ✅ Документировано
-**Автор:** Qwen Code (Game Studio: @gameplay-programmer + @systems-designer)
+**Версия:** 1.1 | **Дата:** 10 июня 2026 г. (дизайн-контент без изменений с 6 апреля 2026 г.; добавлена §X «Реализация в коде») | **Статус:** 🟢 Документировано + реализовано (v2)
+**Автор:** Qwen Code (Game Studio: @gameplay-programmer + @systems-designer) — дизайн, Mavis 2026-06-10 — раздел реализации
 
 ---
 
@@ -289,7 +289,132 @@
 | 13 | Иконки предметов 128x128 | [🔴 Запланировано] | 🔴 |
 | 14 | Торговля между игроками | [🔴 Запланировано] | 🔴 |
 | 15 | Крафт предметов | [🔴 Запланировано] | 🔴 |
+| 16 | **sub_inventory-tab (P → таб «Инвентарь»)** | P → таб в CharacterWindow, фильтры по типу. См. `docs/Character-menu/sub_inventory-tab/` | 🟢 DONE (Phases 0-7, 2026-06-05) |
+| 17 | **MetaRequirement extensions** (`HasAllItems` / `HasAnyItem` / `CountOf` / `GetMissingItems`) | см. §X ниже | 🟢 DONE (R2-META-REQ-001, 2026-06-06) |
+| 18 | **ItemRegistry** (single source of truth для item IDs) | см. §X ниже | 🟢 DONE (M14, 2026-06-09) |
+| 19 | **MetaRequirement v1 (lock-key)** | см. §X ниже | 🟢 DONE (R2-META-REQ-001) |
 
 ---
 
-**Связанные документы:** [GDD_INDEX.md](GDD_INDEX.md) | [INVENTORY_SYSTEM.md](../INVENTORY_SYSTEM.md)
+## X. Реализация в коде (v2, 2026-06-05..09)
+
+> **Секция добавлена Mavis 2026-06-10.** Дизайн-контент (типы предметов, колесо, формулы веса/объёма) остаётся в зоне game-designer'а. Здесь — **только статус реализации** и ссылки на актуальные артефакты.
+
+### X.1 Inventory v2 (Phases 0-7, 2026-06-05)
+
+**Архитектура:**
+```
+SERVER (host):
+[InventoryServer] : NetworkBehaviour (BootstrapScene, DontDestroyOnLoad)
+    ├── InventoryWorld (POCO singleton) — бизнес-логика
+    │     ├── Dictionary<int, ItemData> — ItemDatabase
+    │     ├── Dictionary<ulong, InventoryData> — per-player state
+    │     └── 4 extensions: HasAllItems, HasAnyItem, CountOf, GetMissingItems (META-REQ)
+    └── IInventoryRepository (interface) — abstract storage
+          └── JsonInventoryRepository (default, per-client JSON в persistentDataPath)
+
+CLIENT:
+[InventoryClientState] (singleton, RuntimeInitializeOnLoadMethod)
+    └── OnSnapshotUpdated event → оба UI подписаны
+          ├── InventoryUI (TAB-колесо) — GTA-стиль
+          └── CharacterWindow → таб «Инвентарь» (sub_inventory-tab) — детальный список
+```
+
+**Ключевые фичи:**
+- ✅ Single source of truth: TAB-колесо + P-таб читают **тот же** `InventoryClientState`
+- ✅ Server-authoritative: все мутации только на сервере через `TryPickup` / `TryDrop` / `AddItemDirect` / `TryRemove` (T-Q14)
+- ✅ Persistence: `JsonInventoryRepository`, atomic write per-client JSON, load on `OnClientConnectedCallback`
+- ✅ `ItemRemovedEvent` / `ItemAddedEvent` через `WorldEventBus` (publish/subscribe для quest triggers)
+- ✅ Drop в мир: server-spawn `PickupItem` (R3-INV-DROP-001: visual representation теряется, см. `docs/Character-menu/sub_inventory-tab/60_KNOWN_ISSUES.md`)
+
+**Stats (v2 refactor):**
+- Код: `Assets/_Project/Items/Core/InventoryWorld.cs` (~600 строк с extensions), `InventoryServer.cs`, `InventoryClientState.cs`
+- UI: `CharacterWindow.cs` (1345+ LOC) + sub_inventory-tab
+- Документация: `docs/Character-menu/sub_inventory-tab/{00..80}*.md` (8 файлов, ~150 KB)
+
+### X.2 ItemRegistry (M14, 2026-06-09)
+
+**Проблема:** `InventoryWorld.GetOrRegisterItemId()` и `QuestWorld.ResolveItemId()` использовали **независимые** нумерации, которые **случайно** совпадали (alphabetical order из `Resources.LoadAll`). При добавлении item'а вне `Resources/Items/` — id **молча** разъедутся, квесты перестанут работать.
+
+**Решение:** **`ItemRegistry`** (singleton SO) — single source of truth для `id ↔ ItemData` mapping.
+
+**API:**
+```csharp
+public class ItemRegistry : ScriptableObject
+{
+    public void RegisterItem(int id, ItemData item);
+    public bool TryGetItem(int id, out ItemData item);
+    public bool TryGetId(ItemData item, out int id);
+    public IEnumerable<ItemData> GetAllItems();
+}
+```
+
+**Wiring:**
+- ✅ `Assets/_Project/Items/Core/ItemRegistry.cs` (singleton SO, 32 items)
+- ✅ `Assets/_Project/Items/Data/ItemRegistry.asset` (auto-populated)
+- ✅ `InventoryWorld.RegisterAllItems()` читает из `ItemRegistry.Instance` (fallback на Resources если null)
+- ✅ `QuestWorld.ResolveItemId` использует `ItemRegistry.TryGetId(itemName)`, fallback на `Resources` scan
+- ✅ `QuestServer.FireDialogAction` (GiveItem/TakeItem) prefer `action.itemId` (T-Q27), fallback на stringParam, fallback на ItemRegistry name lookup
+- ✅ `DialogueAction.itemId + itemType` explicit fields (T-Q27)
+
+**Migration (T-Q28):** 2 quest objectives обновлены (`CollectCopperOre.asset`, `StageMultiDemo.asset`): string names → int ids.
+
+**Verify (2026-06-09):** ItemRegistry populated: 32 entries (id 1-32). Round-trip 0 errors.
+
+**Известные ограничения:**
+- 🟡 Init order: `InventoryWorld` должен init раньше `QuestWorld` (registry → item IDs). Fallback на `Resources.LoadAll` если null.
+
+### X.3 MetaRequirement v1 (lock-key, R2-META-REQ-001, 2026-06-06)
+
+**Цель:** обобщить **Ship Key Subsystem** (1 предмет на 1 корабль) в **универсальную систему требований** для любых Interactable-объектов: корабли, двери, контейнеры, терминалы, квестовые зоны.
+
+**Архитектура (generic, не только корабли):**
+- ✅ `MetaRequirementRegistry` (NetworkBehaviour, scene-placed в `BootstrapScene`) — `RegisterMetaRequirement(netId, MetaRequirement)`, `CanPlayerUse(clientId, netId) → bool + reason`, `RequestCanUseRpc(netId) → TargetRpc`
+- ✅ `MetaRequirement` (NetworkBehaviour MonoBehaviour, generic) — `_requiredItems: ItemData[]`, `_logic: RequirementLogic { All, Any, AtLeastN }`, `_requiredCount: int`, `_interactableDisplayName: string`, `OnInventoryChanged` event, `CanPlayerUse(clientId, out reason)`, `ProgressInfo` struct
+- ✅ `MetaRequirementClientState` (client singleton) — `OnCanUseResponse`, `OnBindingsPushed`, `OnInteractableFound`
+- ✅ `MetaRequirementToast` (UIDocument) — generic UI: "X/N собрано" + список недостающих
+
+**Extensions в `InventoryWorld`:**
+- ✅ `HasAllItems(ulong clientId, int[] itemIds)` — AND-логика
+- ✅ `HasAnyItem(ulong clientId, int[] itemIds)` — OR-логика
+- ✅ `CountOf(ulong clientId, int itemId)` — подсчёт (для AT_LEAST_N)
+- ✅ `GetMissingItems(ulong clientId, int[] itemIds)` — массив недостающих
+
+**Wiring:**
+- ✅ `NetworkManagerController.CreateMetaRequirementClientState()` (auto-spawn root GO в `Awake`)
+- ✅ `NetworkPlayer.TryInteractNearestMetaRequirement()` (E-key entry point для НЕ-кораблей)
+- ✅ `NetworkPlayer.ReceiveMetaRequirementResponseTargetRpc` + `ReceiveMetaRequirementBindingsTargetRpc`
+
+**Алиасы (backward compat):**
+- ⏳ `ShipKeyBinding.cs` — `[Obsolete]` empty subclass → `MetaRequirement`
+- ⏳ `ShipKeyServer.cs` / `ShipKeyClientState.cs` — legacy API сохранён, `[Obsolete]`
+- ⏳ TODO (через 1-2 релиз-цикла): удалить алиасы после миграции всех сцен
+
+**Тестовые ассеты:**
+- ✅ 3 SO `ItemData`: `Item_Key_Blue/Red/Green.asset`
+- ✅ 6 URP/Lit материалов: `Key_{Blue,Red,Green}.mat` + `LockBox_{Blue,Red,Green}.mat`
+- ✅ `MetaRequirementPanelSettings.asset`
+- ✅ `WorldScene_0_0.unity`: `[MetaRequirement_Test]` parent + 3 Pickup + 3 LockBox
+- ✅ `BootstrapScene.unity`: `[MetaRequirementRegistry]` + `[MetaRequirementToast]`
+
+**Compile (2026-06-06):** 0 errors, warnings только pre-existing + by-design obsolete-usage в алиасах.
+
+**TODO (Этап 2+):**
+- ⏳ `_consumeOnUse` логика + reservation pattern (поле есть, логика — TODO)
+- ⏳ `ProgressInfo` UI в `MetaRequirementToast` (multi-item tooltip)
+- ⏳ Disconnect → reconnect race fix
+- ⏳ Multi-MetaRequirement в одной зоне (сейчас 1→1)
+- ⏳ Использование `MetaRequirement` для квестов (T-Q?? когда потребуется)
+
+### X.4 Где смотреть актуальный статус
+
+- **`docs/Character-menu/sub_inventory-tab/00_OVERVIEW.md`** — обзор Inventory v2 + sub_inventory-tab
+- **`docs/MetaRequirement/00_OVERVIEW.md`** — дизайн MetaRequirement
+- **`docs/MetaRequirement/99_CHANGELOG.md`** — changelog MetaRequirement
+- **`docs/Ships/Key-subsystem/SHIP_KEY_TO_META_REQUIREMENT_MIGRATION.md`** — миграция Ship Key → MetaRequirement
+- **`docs/NPC_quests/old_session_log/M14_DESIGN_NOTE.md`** — ItemRegistry design note
+- **`docs/MMO_Development_Plan.md`** §1.6, §1.9 — общий план
+
+---
+
+**Связанные документы:** [GDD_INDEX.md](GDD_INDEX.md) | [INVENTORY_SYSTEM.md](../INVENTORY_SYSTEM.md) | [`docs/Character-menu/sub_inventory-tab/00_OVERVIEW.md`](../Character-menu/sub_inventory-tab/00_OVERVIEW.md) | [`docs/MetaRequirement/00_OVERVIEW.md`](../MetaRequirement/00_OVERVIEW.md)

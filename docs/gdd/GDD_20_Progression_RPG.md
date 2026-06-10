@@ -1,8 +1,8 @@
 # GDD 20: Progression & RPG System
 
-**Game:** Project C: The Clouds  
-**Version:** 1.0  
-**Status:** 🔴 Запланировано (Этап 3-4)  
+**Game:** Project C: The Clouds
+**Version:** 1.1
+**Status:** 🟡 Запланировано (Этап 3-4) → частично реализован MVP foundation (Reputation + NpcAttitude + Quest rewards)
 **Last Updated:** 06.04.2026  
 **Author:** Game Design AI  
 
@@ -706,7 +706,59 @@ Reward = base_reward × difficulty × reputation_modifier × completion_bonus
 | Версия | Дата | Изменение | Автор |
 |--------|------|-----------|-------|
 | 1.0 | 06.04.2026 | Инициализация документа | Game Design AI |
+| 1.1 | 10.06.2026 | Добавлена §X «Реализация в коде» (Reputation + NpcAttitude MVP foundation). Дизайн-контент без изменений. | Mavis |
 
 ---
 
-*Документ создан для Project C: The Clouds. Все системы отмечены как [🔴 Запланировано] и будут реализованы на Этапах 3-4.*
+## X. Реализация в коде (дополнения 2026-06-08)
+
+> **Секция добавлена Mavis 2026-06-10.** Дизайн-контент (XP формулы, skill trees, milestones, prestige) остаётся в зоне game-designer'а. Здесь — **только статус реализации** Reputation + NpcAttitude (MVP foundation для Faction-квестов).
+
+### X.1 Reputation + NpcAttitude (T-Q01 + T-Q13, 2026-06-08)
+
+**Контекст:** для quest reward'ов (`AddReputation` / `AddNpcAttitude` dialog actions, T-Q16) нужна runtime-система репутации.
+
+**Реализация:**
+- ✅ **`ProjectC.Factions.FactionId`** enum (12 lore значений) — promoted из `World.Npc.NpcFaction` (помечен `[Obsolete]`)
+- ✅ **`NpcAttitude`** struct — readonly, `IEquatable<NpcAttitude>`, range −100..+200, clamp в ctor (per-NPC)
+- ✅ **`ReputationClientState`** (singleton, AutoSpawn) — `OnReputationUpdated` event
+- ✅ **`NpcAttitudeClientState`** (singleton, AutoSpawn) — `OnNpcAttitudeUpdated` event
+- ✅ **`QuestWorld.ModifyReputation(clientId, factionId, delta)`** (server-side, broadcast + event)
+- ✅ **`QuestWorld.ModifyNpcAttitude(clientId, npcId, delta)`** (server-side, broadcast + event + cross-faction MVP stub)
+- ✅ **`FactionDefinition` / `NpcDefinition`** ScriptableObject'ы (T-Q02)
+- ✅ Persistence: `JsonQuestStateRepository` (M8, T-Q18) — atomic JSON в `persistentDataPath`, immediate save
+- ✅ **Dialog actions** (T-Q16): `AddReputation` / `AddNpcAttitude` в `QuestServer.FireDialogAction`
+- ✅ **M11 Mira E2E**: `complete_thanks` node вызывает `AddRep 25 + AddAtt 10` → broadcast клиенту → Mira E2E получает `+25 GuildOfThoughts, +10 mira_01`
+
+**Деталь:** см. `docs/NPC_quests/02_V2_ARCHITECTURE.md` §1, §2 + `docs/NPC_quests/old_session_log/T-Q13_DESIGN_NOTE.md` + см. GDD_23 §X.
+
+### X.2 CharacterWindow integration
+
+- ✅ CharacterWindow → таб «Репутация» (T-Q13) — под-раздел Reputation + NpcAttitude
+- ✅ Cross-link: улучшить Mira → factionRep[GuildOfCreation] уменьшается (с конфигом)
+
+### X.3 Что НЕ реализовано ⏳
+
+| # | Задача | Milestone | Приоритет |
+|---|---|---|---|
+| 1 | **XP система** (формулы, sources, multipliers) | M-NPC+Quests post-MVP | 🟡 Med |
+| 2 | **Leveling** (1-50, milestone unlocks) | M-NPC+Quests post-MVP | 🟡 Med |
+| 3 | **Skill trees** (Pilot / Merchant / Explorer) | M-NPC+Quests post-MVP | 🟡 Med |
+| 4 | **Character stats** (Endurance/Nav/Mechanics/Luck) | M-NPC+Quests post-MVP | 🟡 Med |
+| 5 | **Co-op progression** (XP distribution) | M-NPC+Quests post-MVP | 🟢 Low |
+| 6 | **Prestige system** (reset + bonus) | Future | 🟢 Low |
+| 7 | **Reputation table** (12 guilds, tier thresholds, display messages) | M5 | 🟡 Med (нужен контент от game-designer'а) |
+| 8 | **Cross-faction influence — полная реализация** | M5 | 🟢 Low (MVP stub достаточно) |
+| 9 | **Display HUD репутации в header** (deferred с T-Q10) | M5 | 🟢 Low |
+| 10 | **4 мануфактуры** (Aurora/Titan/Hermes/Prometheus) | Этап 3.5 | 🟡 Med |
+
+### X.4 Где смотреть актуальный статус
+
+- **`docs/NPC_quests/02_V2_ARCHITECTURE.md`** §1, §2 — namespace layout, `FactionId` design
+- **`docs/NPC_quests/old_session_log/T-Q13_DESIGN_NOTE.md`** — Reputation+NpcAttitude design
+- **`docs/NPC_quests/08_ROADMAP.md`** §8.3 T-Q01, T-Q13, T-Q16 — roadmap
+- **`docs/MMO_Development_Plan.md`** §3.5 — общий план фракций
+
+---
+
+*Документ создан для Project C: The Clouds. Дизайн-контент (XP, leveling, skill trees, milestones) остаётся в зоне game-designer'а. MVP foundation для Reputation + NpcAttitude реализован (2026-06-08) и отражён в §X.*

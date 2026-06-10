@@ -85,9 +85,9 @@
 
 ## 6. Файлы документации
 
-- Этот файл: `docs/dev/T-Q22_DESIGN_NOTE.md`
+- Этот файл: `T-Q22_DESIGN_NOTE.md`
 - Roadmap update: `docs/NPC_quests/08_ROADMAP.md` §8.3.1 (отметить T-Q22)
-- Verify checklist: `docs/dev/T-Q22_VERIFY_CHECKLIST.md` (после реализации)
+- Verify checklist: `T-Q22_VERIFY_CHECKLIST.md` (не создан, TODO после реализации)
 
 ## 7. Критерии готовности
 

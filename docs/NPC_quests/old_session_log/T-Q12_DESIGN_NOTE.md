@@ -250,5 +250,5 @@ A Assets/_Project/Quests/Resources/UI/QuestTracker.uss (NEW,50 LOC)
 A Assets/_Project/Quests/Resources/UI/QuestTrackerPanelSettings.asset (NEW,53 LOC)
 M Assets/_Project/Scripts/UI/Client/CharacterWindow.cs (+50 LOC: track buttons)
 M Assets/_Project/Scenes/BootstrapScene.unity (+[QuestTracker] GameObject)
-A docs/dev/T-Q12_DESIGN_NOTE.md (NEW, design note)
+A T-Q12_DESIGN_NOTE.md (NEW, design note)
 ```

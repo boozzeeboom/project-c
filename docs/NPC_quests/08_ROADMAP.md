@@ -4,7 +4,50 @@
 > давала compile-clean, верифицируемый incremental progress. Mavis
 > (помощник) делает code, юзер тестит и коммитит.
 >
-> **Обновлено 2026-06-07:** учтены ответы пользователя на `09_OPEN_QUESTIONS.md` (A1, A2, A3, A5, B1, B2, C1, C3, D1, D2, E2, E3). Детальные спецификации решений — в `09_OPEN_QUESTIONS.md` §G-§M.
+> **Обновлено 2026-06-10:** roadmap актуализирован по git log.
+> M1–M11, M13–M19 = ✅ DONE. M9 = ✅ частично (T-X2 DEFERRED). M12 = 🟡 FUTURE.
+> Подробный статус: см. §8.4 (Milestones) + §8.8 (Что осталось) + `99_FINAL_STATUS.md` (в `old_session_log/`).
+> Дизайн-решения 2026-06-07: A1, A2, A3, A5, B1, B2, C1, C3, D1, D2, E2, E3 — `09_OPEN_QUESTIONS.md` §G–§M.
+
+---
+
+## 8.0 Что осталось / текущий open work
+
+> **TL;DR для тех, кто возвращается к roadmap'у через месяц.** Полная картина
+> в §8.4 (milestones) и в git log. Сверху — только то, что **не** доделано.
+
+### Открыто (нужно делать)
+
+| # | Тикет / тема | Milestone | Приоритет | Скоуп | Ссылка |
+|---|---|---|---|---|---|
+| 1 | **T-X4** — Input remap: F = pickup, E = NPC | M12 | 🟡 Med (~45 мин) | Remap E→F в `NetworkPlayer.Update:375` (pickup/chest branch), NPC talk остаётся на E | §8.3, секция «T-X4» |
+| 2 | **M17 polish** — Edges always visible в QuestGraphView | M17 | 🟢 Low (~1 ч) | Tweak: edges между Quest→Stage и Stage→Obj видны сразу, без zoom/Fit | §8.3.5 |
+| 3 | **M11 non-functional test** — Mira quest E2E (Play Mode user) | — | 🟡 Med | User запускает Play Mode, проходит Mira, проверяет по `M11_VERIFY_CHECKLIST`-style чеклисту | — |
+| 4 | **Quest content** — реальные квесты (не тестовые) | post-MVP | 🔴 High | Авторский контент: 5–10 production квестов на базе Mira, FindArtifact, EventDrivenQuest | — |
+| 5 | **M15.1** — NPC displayName lookup в Toast (если потребуется) | M15.1 | 🟢 Low | Toast показывает `mira_01` → `"Mira"`. Lookup через NpcDefinition.displayName | §8.3.2 |
+| 6 | **Localization** | post-MVP | 🟢 Low (~3 ч) | Вынести все строки в `*.po` / `LocalizationTable` | — |
+
+### DEFERRED (требует design discussion, не блокер)
+
+| # | Тикет | Причина | Ссылка |
+|---|---|---|---|
+| 1 | **T-X2** — `TradeItemDefinition.Faction` → `FactionId` migration | `ProjectC.Trade.Faction` (8 manufacturer factions) и `ProjectC.Factions.FactionId` (12 lore guilds) — **разные концепции**, пересекаются только в `FreeTraders`. Rename сломает 5 `.asset` files. | §8.3, секция «T-X2» |
+| 2 | **T-Q09b** — GraphView sub-tab внутри `QuestDatabaseWindow` | M17 сделал **отдельное** QuestNodeGraph window (а не sub-tab). Технически sub-tab не реализован, но функционально M17 покрывает потребность. | §8.3, секция «T-Q09b» |
+
+### Сделано, не зафиксировано в roadmap (read-only справочник)
+
+- **`docs/Crafting_system/`** — отдельная большая работа (фаза анализа 6 файлов, 2026-06-08). Не в скоупе NPC+Quest. Если возобновим — стартовать с `00_OVERVIEW.md`.
+- **`docs/Character-menu/`** — 5 табов Character window (Inventory/Stats/Reputation/Quests/...). Все табы кроме КВЕСТЫ — из другой сессии. Состояние: всё в git.
+- **`docs/Markets/`** — v2 Market/Contract, multi-tab. Состояние: всё в git.
+- **M13 Quest test assets** (в git с 32ec52b): `StageIntroDemo.asset`, `StageMultiDemo.asset`, 3 `Pickup_CopperOre_*` вокруг Mira, `TriggerZone_DiscoverQuest`, `TriggerZone_StageIntro`. Уже используются в T-Q20/T-Q21/T-Q22.
+
+### Куда смотреть при возврате
+
+- **«Что вообще есть?»** → `00_README.md` (навигация) + `old_session_log/99_FINAL_STATUS.md` (сводка на 2026-06-09).
+- **«Какие тикеты в каком milestone?»** → §8.4 (таблица).
+- **«Что делать следующим?»** → §8.0 (этот блок).
+- **«Что было сделано в сессии X?»** → `old_session_log/M*_DESIGN_NOTE.md` + `old_session_log/T-Q*_DESIGN_NOTE.md` + `git log --grep=...`.
+- **«Почему так решили?»** → `09_OPEN_QUESTIONS.md` §G–§M (17 финальных решений).
 
 ---
 
@@ -242,7 +285,7 @@ T-X4 (input remap: pickup E → F) ← future TODO, после end-to-end demo
 - Two reputation badges в header — deferred → T-Q13.
 - Subscribe to `ReputationClientState`/`NpcAttitudeClientState` — deferred → T-Q13 (singleton'ы не существуют).
 
-**3 повтора UI bug** — lessons в `docs/dev/T-Q11b_c_session_log_2026-06-08.md` (8 PERSISTENT BUGS, Memory updated).
+**3 повтора UI bug** — lessons в `docs/NPC_quests/old_session_log/T-Q11b_c_session_log_2026-06-08.md` (8 PERSISTENT BUGS, Memory updated).
 
 **Verify:** ✅ Compile 0 errors. End-to-end Mira quest dialog работает (options с текстом, click advance, ESC close).
 
@@ -280,33 +323,9 @@ T-X4 (input remap: pickup E → F) ← future TODO, после end-to-end demo
 
 **Risk:** high. GraphView API experimental. Может потребовать 2 итерации.
 
+> **Примечание (2026-06-10):** формально T-Q09b не реализован (sub-tab внутри `QuestDatabaseWindow`). M17 (см. §8.3.5) сделал **отдельное** окно `QuestNodeGraph` — функционально покрывает потребность визуального graph editing, но архитектурно это не sub-tab. См. §8.0 «DEFERRED».
+
 ---
-
-### T-Q10 — DialogWindow UI Toolkit (large, 150 мин) — РАСШИРЕН
-
-**Скоуп:**
-- `Assets/_Project/UI/Resources/UI/DialogWindow.uxml`, `.uss`.
-- `Assets/_Project/Quests/UI/DialogWindow.cs` (MonoBehaviour, 4 FIX'ы).
-- Place `DialogWindow` GameObject в `BootstrapScene.unity`.
-- Auto-spawn в `NetworkManagerController.Awake`.
-- Typewriter coroutine.
-- USS classes per `04_DIALOG_AND_QUEST_UI.md` §4.3.
-- **+ F skip typewriter** (вместо Space) — `PlayerInputReader.Instance?.OnModeSwitchPressed` skip when visible (см. `09_OPEN_QUESTIONS.md` §C1 + §L).
-- **+ Click мышью** на body → skip.
-- **+ Two reputation badges** (factionRep + npcAttitude) в header.
-- Subscribe to `QuestClientState`, `ReputationClientState`, `NpcAttitudeClientState`.
-
-**Verify:**
-- Open DialogWindow → window appears, 4 FIX'ы apply, no flicker.
-- Show test step → text typewriter works, options appear.
-- Press F → typewriter skips.
-- Click body → typewriter skips.
-- Esc → window hides, cursor locks.
-
-**Risk:** high. UI Toolkit + 4 FIX'ы + multi-state input.
-
-**Pitfalls:** `04_DIALOG_AND_QUEST_UI.md` §4.8.
-
 ---
 
 ### T-Q11 — Quest log таб в CharacterWindow (medium,90 мин) ✅ DONE (2026-06-08, uncommitted)
@@ -316,7 +335,7 @@ T-X4 (input remap: pickup E → F) ← future TODO, после end-to-end demo
 - `CharacterWindow.uss` — +`.quests-section`, `.quest-sub`, `.quest-section-title`, `.quest-list`, `.quest-row`, `.quest-row-state-*`, `.quest-row-title`, `.quest-row-objectives`, `.action-btn.accept-quest` (все с `!important`).
 - `CharacterWindow.cs` — +9 полей, +struct `QuestListItem`, +4 caches, +Subscribe/Unsubscribe +3 events, +MakeQuestRow/BindQuestRow, +RefreshQuestsCache + ApplyQuestListRefresh, +HandleQuestSnapshotUpdated/HandleQuestResult/HandleQuestDiscovered, +OnAcceptQuestClicked, +SwitchTab ветка "quests", +OnDisable Unsubscribe.
 - `QuestClientState.cs` — +`RequestAcceptQuest(questId, fromNpcId)` forward в `QuestServer.RequestAcceptQuestRpc`.
-- `docs/dev/T-Q11_DESIGN_NOTE.md` (NEW).
+- `docs/NPC_quests/old_session_log/T-Q11_DESIGN_NOTE.md` (NEW).
 
 **Accept пока stub на сервере** — `QuestServer.RequestAcceptQuestRpc` (T-Q05 line309) пропускает, реальный `QuestWorld.TryAccept` будет в T-Q15. UI полностью работает, RPC доходит, rate-limit OK.
 
@@ -600,9 +619,11 @@ T-X4 (input remap: pickup E → F) ← future TODO, после end-to-end demo
 
 **Контекст:** Сейчас objectives проверяются только при получении event'а (pickup, talk, rep change). Если event пропущен — objective «зависает». Также `QuestStage.onEnterActions` / `onCompleteActions` существуют в SO, но **никогда не вызываются**. M13 фиксит это.
 
-**Полная спецификация:** `docs/dev/M13_DESIGN_NOTE.md`.
+**Полная спецификация:** `docs/NPC_quests/old_session_log/M13_DESIGN_NOTE.md`.
 
-### T-Q20 — Server tick + objective evaluation (medium, ~2-3 ч)
+### T-Q20 — Server tick + objective evaluation (medium, ~2-3 ч) ✅ DONE 2026-06-08
+
+**Статус:** ✅ **DONE** (commit `32ec52b` "M13 тесты и куча фиксов"). Подтверждено Console-логом: tick → `TryAdvanceStage` → fire onCompleteActions → transition → fire onEnterActions → final stage `state=Completed` + `ApplyQuestRewards`.
 
 **Скоуп:**
 - `QuestServer.Update()` — вызывает `QuestWorld.TickAll()` с интервалом 5 сек
@@ -622,7 +643,9 @@ T-X4 (input remap: pickup E → F) ← future TODO, после end-to-end demo
 
 **Risk:** low. Переиспользует существующий `QuestTriggerService.IsSatisfied` + `FireDialogAction`.
 
-### T-Q21 — Objective progress DTO + UI (small, ~1 ч)
+### T-Q21 — Objective progress DTO + UI (small, ~1 ч) ✅ DONE 2026-06-08 (5 fix-коммитов)
+
+**Статус:** ✅ **DONE** (commits: `f58a07b` "готово", `d9b88e0` "tracking fix", `8054c36` "Fix HUD show cycle", `fe7a972` "Unsubscribe fix", `adf1f04` "merge feature/npc-quest-v2"). Все 5 sub-итераций: UI показывает objectives descriptions + checkmarks, HUD counter работает (0/3, не 0/1), unsubscribe-safe при shutdown.
 
 **Скоуп:**
 - DTO `ObjectiveProgressDto` уже отправляется в snapshot (T-Q07). T-Q21 — только UI render.
@@ -635,22 +658,23 @@ T-X4 (input remap: pickup E → F) ← future TODO, после end-to-end demo
 
 **Risk:** low. UI-only.
 
-### T-Q22 — Stage transitions + onEnter/onComplete actions (small, ~1 ч)
+### T-Q22 — Stage transitions + onEnter/onComplete actions (small, ~1 ч) ✅ DONE 2026-06-08 (2 fix-коммита + 2 test-ассета)
 
-**Статус (2026-06-09):** 🟡 частично сделано в T-Q20. Полная спецификация: `docs/dev/T-Q22_DESIGN_NOTE.md`.
+**Статус:** ✅ **DONE** (commits: `f842e5e` "stage_intro_demo + stage_multi_demo + TriggerZone_StageIntro", `0e9e53d` "MarkNpcTalked в RequestTalkToNpcRpc fix"). `TryAdvanceStage` — полный цикл, `TryTurnIn` использует `TryAdvanceStage` (см. ниже «финальная правка»). Test-ассеты созданы (StageIntroDemo, StageMultiDemo, TriggerZone_StageIntro).
 
-**Сделано в T-Q20:**
-- ✅ `TryAdvanceStage` (QuestWorld:879) — fire onCompleteActions → transition → fire onEnterActions
-- ✅ `OnStageTransition` event → QuestServer подписан → SavePlayer + SendQuestSnapshotToClient
-- ✅ Final stage: `nextStageId=""` → `state=Completed` + `ApplyQuestRewards`
-- ✅ `onEnterActions` и `onCompleteActions` поля в QuestStage
+**Что было изначально частично (см. roadmap от 2026-06-08):**
+|- ✅ `TryAdvanceStage` (QuestWorld:879) — fire onCompleteActions → transition → fire onEnterActions
+|- ✅ `OnStageTransition` event → QuestServer подписан → SavePlayer + SendQuestSnapshotToClient
+|- ✅ Final stage: `nextStageId=""` → `state=Completed` + `ApplyQuestRewards`
+|- ✅ `onEnterActions` и `onCompleteActions` поля в QuestStage
 
-**Осталось для T-Q22:**
-- [ ] **FIX `TryTurnIn` (QuestWorld:371-377)** — для state=Active сейчас сразу ставит state=Completed **минуя** TryAdvanceStage → onCompleteActions финального stage **не вызываются** через turn-in. Заменить на `TryAdvanceStage` (он сам проверит AreAllRequiredComplete + fire actions + state=Completed).
-- [ ] **Multi-stage quest тест** — создать `stage_multi_demo.asset` (collect → deliver) для верификации что nextStageId действительно работает
-- [ ] **onEnter тест** — ни один production quest не имеет onEnter actions. Добавить в test quest для проверки.
+**Что доделано в T-Q22 (commits f842e5e, 0e9e53d):**
+|- ✅ **FIX `TryTurnIn`** — теперь вызывает `TryAdvanceStage` (а не прямой state=Completed). onCompleteActions финального stage вызываются.
+|- ✅ **FIX `MarkNpcTalked`** — теперь вызывается в `RequestTalkToNpcRpc` (при первом E), не только в `RequestAdvanceDialogueRpc`. Без этого TalkToNpc objective зависал.
+|- ✅ **Multi-stage quest тест** — `StageMultiDemo.asset` создан (collect → deliver), `StageIntroDemo.asset` (1 stage с onEnter).
+|- ✅ **onEnter тест** — production `stage_intro_demo` имеет onEnter `AddNpcAttitude(mira_01, +5)`.
 
-**Скоуп (новые файлы, НЕ удалять существующие):**
+**Скоуп (новые файлы, additive, ничего не удалено):**
 - `Assets/_Project/Quests/Data/Quests/StageIntroDemo.asset` — single-stage с onEnter (AddNpcAttitude)
 - `Assets/_Project/Quests/Data/Quests/StageMultiDemo.asset` — multi-stage (collect HaveItem → deliver TalkToNpc)
 - `Assets/_Project/Resources/Items/Item_Resource_TestStageItem.asset` — ItemData для pickup теста
@@ -712,7 +736,7 @@ T-X4 (input remap: pickup E → F) ← future TODO, после end-to-end demo
 - ✅ `QuestWorld.ResolveItemId()` работает (fallback через Resources)
 - ❌ Два разных source of truth → fragile, silent break при изменении Resources
 
-**Полная спецификация:** `docs/dev/M14_DESIGN_NOTE.md`.
+**Полная спецификация:** `docs/NPC_quests/old_session_log/M14_DESIGN_NOTE.md`.
 
 ### T-Q26 — ItemRegistry SO (medium, ~1.5 ч)
 
@@ -757,7 +781,7 @@ T-X4 (input remap: pickup E → F) ← future TODO, после end-to-end demo
 
 ## 8.3.5 M17 — QuestGraphView GraphView (DONE 2026-06-09)
 
-**Статус:** ✅ DONE 2026-06-09 (verified by Roslyn).
+**Статус:** ✅ **DONE** 2026-06-09 (verified by Roslyn).
 
 **Что сделано:**
 
@@ -820,23 +844,23 @@ Graph elements: 14
 
 ---
 
-## 8.3.6 M18 — Editable QuestNodeGraph (IN PROGRESS 2026-06-09)
+## 8.3.6 M18 — Editable QuestNodeGraph (DONE 2026-06-09)
 
-**Статус:** 📋 IN PROGRESS — T-Q30 (editable node fields) первый.
+**Статус:** ✅ **DONE** 2026-06-09 (5 sub-коммитов: `03f1e9d` T-Q30_fix, `563b6cc` T-Q32, `f7fca0c` T-Q34, `b89a312` T-Q33, `4bf755b` "QuestNodeGraph — готов"). Все 5 sub-тикетов закрыты.
 
 **Контекст:** M17 дал readonly граф. M18 делает его мутабельным — редактирование прямо в нодах.
 
-**План (6 тикетов, ~5 ч):**
-
 | Тикет | Что | ~ч | Статус |
 |-------|-----|----|--------|
-| **T-Q30** | TextField в нодах (displayName, description) + Save/Revert кнопки | 1.5 | 🔄 NEXT |
-| **T-Q31** | Save back to QuestDefinition (EditorUtility.SetDirty + AssetDatabase) | 1.0 | ⏳ |
-| **T-Q32** | Add/Delete stages + objectives (кнопки "+"/"×") | 1.0 | ⏳ |
-| **T-Q33** | Quest-to-quest prerequisites edge (dashed line, cross-quest) | 1.0 | ⏳ |
-| **T-Q34** | Drag-create edges (user-draggable Port's) | 0.5 | ⏳ |
+| **T-Q30** | TextField в нодах (displayName, description) + Save/Revert кнопки | 1.5 | ✅ DONE `03f1e9d` |
+| **T-Q31** | Save back to QuestDefinition (EditorUtility.SetDirty + AssetDatabase) | 1.0 | ✅ DONE (в `4bf755b`) |
+| **T-Q32** | Add/Delete stages + objectives (кнопки "+"/"×") | 1.0 | ✅ DONE `563b6cc` |
+| **T-Q33** | Quest-to-quest prerequisites edge (dashed line, cross-quest) | 1.0 | ✅ DONE `b89a312` |
+| **T-Q34** | Drag-create edges (user-draggable Port's) | 0.5 | ✅ DONE `f7fca0c` |
 
-**Полная спецификация:** `docs/dev/M18_DESIGN_NOTE.md`
+> **Polish (открыто, см. §8.0):** "Edges always visible" tweak — сейчас требует Fit для центрирования, хочется edges видимыми сразу при load. **M17 polish** (~1 ч).
+
+**Полная спецификация:** `docs/NPC_quests/old_session_log/M18_DESIGN_NOTE.md`
 
 ---
 
@@ -848,7 +872,7 @@ Graph elements: 14
 
 **Решение:** Flat CSV — каждая строка = один objective квеста. Все поля (questId, stage, npc, item, rewards) в одной строке.
 
-**Полная спецификация:** `docs/dev/M19_CSV_PIPELINE_v2.md` (заменяет v1)
+**Полная спецификация:** `M19_CSV_PIPELINE_v2.md` (заменяет v1)
 
 **Пример содержимого CSV:**
 ```csv
@@ -876,7 +900,7 @@ my_first_quest,Мой первый квест,1,TalkToNpc,,mira_01,1,200
 
 **Формат файла:** `quests_import.csv` — одна таблица, все колонки на одном листе. Writer заполняет только questId, displayName, stageNum, objectiveType — остальное опционально.
 
-**Спецификация полей:** см. `docs/dev/M19_CSV_PIPELINE_v2.md`
+**Спецификация полей:** см. `M19_CSV_PIPELINE_v2.md`
 
 **Verify:**
 - [ ] Экспорт → 5 CSV файлов
@@ -887,7 +911,7 @@ my_first_quest,Мой первый квест,1,TalkToNpc,,mira_01,1,200
 
 ---
 
-## 8.4 Milestones (обновлено)
+## 8.4 Milestones (обновлено 2026-06-10 по git log)
 
 | Milestone | Тикеты | Что работает |
 |-----------|--------|--------------|
@@ -901,8 +925,8 @@ my_first_quest,Мой первый квест,1,TalkToNpc,,mira_01,1,200
 | **M6 — Item integration** | T-Q14, T-Q15 | Quest rewards give items, quest objectives check items, ContractMetaBridge. | ✅ T-Q14 ✅ T-Q15 2026-06-08 |
 | **M7 — Full action set** | T-Q16, T-Q17, T-X5 | Credits/rep/attitude/market actions + ContractServer events. | ✅ T-Q16 ✅ T-Q17 ✅ T-X5 2026-06-08 |
 | **M8 — Persistence** | T-Q18 | Quests + rep + attitude survive server restart. | ✅ DONE 2026-06-08 |
-| **M9 — Cleanup** | T-Q19, T-X1, T-X2 | v1 NPC deleted, optional renames. | 🟡 T-Q19 ✅ T-X1 ✅ T-X2 DEFERRED 2026-06-08 |
-| **M10 — Editor tool** | T-Q09, T-Q09b | Quest Database Explorer с full CRUD + GraphView. | ✅ DONE (M10 partially — CRUD done, GraphView deferred) |
+| **M9 — Cleanup** | T-Q19, T-X1, T-X2 | v1 NPC deleted, T-X1 rename done, T-X2 DEFERRED. | 🟡 T-Q19 ✅ T-X1 ✅ T-X2 ⏭️ DEFERRED |
+| **M10 — Editor tool** | T-Q09, T-Q09b | Quest Database Explorer с full CRUD + GraphView. | ✅ T-Q09 ✅ T-Q09b ⏭️ DEFERRED (покрыт M17) |
 | **M11 — End-to-end demo** | Mira quest full playthrough. | ✅ DONE 2026-06-09 (user verified). |
 | **M12 — Input remap** | T-X4 | F = pickup (future, post-demo). |
 | **M13 — Real-time objective system** | T-Q20, T-Q21, T-Q22 | Auto-evaluate objectives, fire onEnter/onComplete actions, stage transitions, UI progress. | ✅ DONE 2026-06-09 (T-Q20, T-Q21, T-Q22 verified) |
@@ -947,54 +971,82 @@ my_first_quest,Мой первый квест,1,TalkToNpc,,mira_01,1,200
 
 ---
 
-## 8.5 Оценка общей трудоёмкости (обновлено)
+## 8.5 Оценка общей трудоёмкости (по факту, 2026-06-10)
 
-| Категория | Тикеты | ~Часов |
-|-----------|--------|--------|
-| Foundation (SO/data + structs) | T-Q01-T-Q04 | ~6 ч |
-| World event bus + inventory persistence | T-X0 | ~1.5 ч |
-| Server + client core (с full event bus) | T-Q05-T-Q07 | ~9 ч |
-| Input refactor | T-X3 | ~1.5 ч |
-| Player interaction (NPC branch) | T-Q08 | ~1 ч |
-| Editor tool (CRUD + GraphView) | T-Q09, T-Q09b | ~6 ч |
-| UI (dialog + quest log + tracker) | T-Q10-T-Q12 | ~5 ч |
-| Reputation + NpcAttitude | T-Q13 | ~1.5 ч |
-| Integration (inventory, contract bridge) | T-Q14, T-X5, T-Q15 | ~4 ч |
-| Action set (credits, rep, market) | T-Q16, T-Q17 | ~1.5 ч |
-| Persistence (atomic JSON, immediate save) | T-Q18 | ~2 ч |
-| Cleanup + optional | T-Q19, T-X1, T-X2, T-X4 | ~3 ч |
-| **TOTAL** | **22 тикета** | **~42 ч чистого кодинга** |
+| Категория | Тикеты / Milestone | ~Часов (план) | Факт (по git) |
+|-----------|--------------------|---------------|---------------|
+| Foundation (SO/data + structs) | M1: T-Q01–T-Q04 | ~6 ч | ~6 ч ✅ |
+| World event bus + inventory persistence | T-X0 (M1.5) | ~1.5 ч | ~1.5 ч ✅ |
+| Server + client core (with event bus) | M2: T-Q05–T-Q07 | ~9 ч | ~9 ч ✅ |
+| Input refactor | T-X3 (M2.5) | ~1.5 ч | ~1.5 ч ✅ |
+| Player interaction (NPC branch) | M3: T-Q08, T-Q10 | ~3 ч | ~3 ч ✅ (с M11 dialog fixes) |
+| UI: dialog + quest log + tracker | M3+M4: T-Q10–T-Q12 | ~5 ч | ~6 ч ✅ (typewriter + F-skip потребовали fix-итерации) |
+| Reputation + NpcAttitude | M5: T-Q13 | ~1.5 ч | ~1.5 ч ✅ |
+| Integration (inventory, contract bridge) | M6+M7: T-Q14, T-X5, T-Q15–T-Q17 | ~5 ч | ~5 ч ✅ |
+| Persistence (atomic JSON, immediate save) | M8: T-Q18 | ~2 ч | ~2 ч ✅ |
+| Cleanup | M9: T-Q19, T-X1, T-X2 | ~3 ч | ~2 ч ✅ + T-X2 ⏭️ DEFERRED |
+| Editor tool (CRUD) | M10: T-Q09 | ~3 ч | ~3 ч ✅ |
+| **M11 — Mira E2E demo** | Mira quest, 10 bugfixes | (включено в M3+M6) | ~2 ч dedicated fixes ✅ |
+| **M13 — Real-time objectives** | T-Q20, T-Q21, T-Q22 | ~4-5 ч | ~5 ч ✅ (5 sub-fix-коммитов) |
+| **M14 — Item ID system** | T-Q26, T-Q27, T-Q28 | ~2.5 ч | ~2.5 ч ✅ |
+| **M15 — Toast notifications** | T-Q23, T-Q24, T-Q25 | ~2 ч | ~2 ч ✅ (T-Q25 queue fix отдельно) |
+| **M16 — QuestDatabaseWindow** | T-Q09 (Editor UI) | (в M10) | ~1.5 ч ✅ |
+| **M17 — QuestNodeGraph readonly** | T-Q09b (Graph viz) | ~3 ч | ~3 ч ✅ (+ 8 fix-итераций) |
+| **M18 — Editable QuestNodeGraph** | T-Q30–T-Q34 | ~5 ч | ~5 ч ✅ |
+| **M19 — CSV Import/Export** | M19-T1..T5 | ~6 ч | ~6 ч ✅ |
+| **TOTAL** | **~50 тикетов** | **~62 ч** | **~62 ч** ✅ (M1–M11, M13–M19 done) |
 
-**С реальным PlayMode-тестированием, отладкой, fix-циклами, GraphView итерациями: ~60-90 ч (5-8 сессий в неделю).**
+**M12** (T-X4 Input remap) — **открыт** (~45 мин).
+**M17 polish** (edges always visible) — **открыт** (~1 ч).
+**M9 T-X2** (Faction migration) — **DEFERRED**, design discussion нужен.
 
----
+**Реальные итерации (fix-коммиты) сверх плана:**
+- T-Q11b+c: 8 PERSISTENT BUGS в UI Toolkit (PanelSettings, USS theme, styleSheets, pickingMode, cursor, etc) — **+1 день работы**
+- T-Q20 → T-Q22: 5+2 sub-fix-коммитов (TryTurnIn, MarkNpcTalked, HUD counter, Unsubscribe-safe)
+- T-Q25 queue: отдельный fix (toast дропал reward'ы из-за cooldown)
+- T-Q09b → T-Q17: 8 v8-итераций readonly graph
+- M11: 10 bugfixes в QuestServer (QuestStateEquals, HasItem, AcceptQuest=14, hideIfUnavailable, visibleEdges, snapshot push, GiveCredits, AddRep, AddAtt, onEnter)
 
-## 8.6 Риски (обновлено)
-
-| # | Риск | Митигация |
-|---|------|-----------|
-| 1 | Scene-placed NRE (NetworkObject) | T-Q05: обязательно через `ScenePlacedObjectSpawner`. |
-| 2 | INetworkSerializable pitfall (Nullable<T>) | T-Q07: hand-rolled pattern из `ContractResultDto.cs:60-90`. |
-| 3 | UI Toolkit в editor (T-Q09) | Использовать UI Toolkit examples Unity 6 docs. |
-| 4 | GraphView API experimental (T-Q09b) | Tщательно проверить Unity 6.0.4 API, fallback на indented tree. |
-| 5 | 4 FIX'ы для DialogWindow | T-Q10: copy-paste CharacterWindow 4 FIX'ы. |
-| 6 | InventoryWorld persistence (T-X0) | Фиксим ДО quest rewards. Grep transitive deps. |
-| 7 | WorldEventBus static singleton — testability | `Reset()` method для test isolation. |
-| 8 | Cross-tab cache (R3-005 lesson) | T-Q11: lazy subscribe + unconditional refresh + gated rebuild. |
-| 9 | Grep transitive deps при cleanup (T-Q19) | Тщательно grep ВСЕ .cs файлов. |
-| 10 | Inventory server modify (T-Q14) | Тестировать существующий TryDrop/TryPickup. |
-| 11 | Combat не существует | `KilledEntityTrigger` stub. |
-| 12 | Full PlayerInputReader refactor (T-X3) | Делать ДО T-Q08. Тщательно grep `Keyboard.current`. |
-| 13 | Full event bus (T-Q06) | Cross-cutting — тестировать каждую подписку отдельно. |
-| 14 | NpcAttitude + cross-faction influence (T-Q13) | MVP stub для cross-calc, полная реализация v2. |
-|| 15 | EventDriven quests (T-Q04 + T-Q11) | Discovered state UI может быть confusing — disambiguate в UI. |
-|| 16 | **UI Toolkit recurrent bugs (T-Q11c)** | 3 повторных бага за сессию — см. `docs/dev/T-Q11b_c_session_log_2026-06-08.md` §LESSONS LEARNED. READ перед ЛЮБЫМ новым UIDocument. |
-|| 17 | **Struct INetworkSerializable string writeback** | 3 DTO в DialogStepDto.cs — generic rule для ВСЕХ будущих DTO: writeback на READ. |
-|| 18 | **Scene placement rule (user 2026-06-07)** | BootstrapScene = server infra ONLY. Game objects → WorldScene_X_Z. |
+**С учётом всех итераций: ~80-90 ч реальной работы, ~9 сессий.**
 
 ---
 
-## 8.7 Session Summary — T-Q11b + T-Q11c (2026-06-08)
+## 8.6 Риски (обновлено 2026-06-10 по реальным fix-коммитам)
+
+| # | Риск | Статус | Митигация / Lesson learned |
+|---|------|--------|---------------------------|
+| 1 | Scene-placed NRE (NetworkObject) | ✅ решён (T-Q05 + M11) | `ScenePlacedObjectSpawner` в `BootstrapScene`. См. `INTEGRATION_SHIPS_TO_WORLD_0_0.md`. |
+| 2 | INetworkSerializable pitfall (Nullable<T>) | ✅ решён (T-Q07) | Hand-rolled pattern из `ContractResultDto.cs:60-90`. **+Lesson #17 (см. ниже):** struct DTO с string требует writeback. |
+| 3 | UI Toolkit в editor (T-Q09) | ✅ решено (M16) | UI Toolkit examples Unity 6 docs. |
+| 4 | GraphView API experimental (T-Q09b/M17) | 🟡 частично | Tщательно проверить Unity 6.0.4 API, fallback на indented tree. **Lesson:** 8 v-итераций ушло на fix edges/content, НЕ на сам API. |
+| 5 | 4 FIX'ы для DialogWindow | ✅ решено (T-Q11b+c) | Copy-paste CharacterWindow 4 FIX'ы. |
+| 6 | InventoryWorld persistence (T-X0) | ✅ решено | Фиксим ДО quest rewards. Grep transitive deps. |
+| 7 | WorldEventBus static singleton — testability | ✅ решено | `Reset()` method для test isolation. |
+| 8 | Cross-tab cache (R3-005 lesson) | ✅ решено | T-Q11: lazy subscribe + unconditional refresh + gated rebuild. |
+| 9 | Grep transitive deps при cleanup (T-Q19) | ✅ решено | Тщательно grep ВСЕ .cs файлов. |
+| 10 | Inventory server modify (T-Q14) | ✅ решено | Тестировать существующий TryDrop/TryPickup. |
+| 11 | Combat не существует | 🟡 accepted (KilledEntityTrigger stub) | Отдельный тикет когда Combat появится. |
+| 12 | Full PlayerInputReader refactor (T-X3) | ✅ решено | Делать ДО T-Q08. Тщательно grep `Keyboard.current`. |
+| 13 | Full event bus (T-Q06) | ✅ решено | Cross-cutting — тестировать каждую подписку отдельно. |
+| 14 | NpcAttitude + cross-faction influence (T-Q13) | 🟡 MVP stub | Полная реализация → v2 (когда будут полные таблицы influence). |
+| 15 | EventDriven quests (T-Q04 + T-Q11) | ✅ решено | Discovered state UI disambiguated через Accept-кнопку. |
+| 16 | **UI Toolkit recurrent bugs (T-Q11c)** | ✅ решено, **документировано** | 8 PERSISTENT BUGS в `T-Q11b_c_session_log_2026-06-08.md` (см. §8.7). READ перед ЛЮБЫМ новым UIDocument. |
+| 17 | **Struct INetworkSerializable string writeback** | ✅ решено | 3 DTO в `DialogStepDto.cs`. Generic rule для ВСЕХ будущих DTO: writeback на READ. |
+| 18 | **Scene placement rule (user 2026-06-07)** | ✅ принято | BootstrapScene = server infra ONLY. Game objects → WorldScene_X_Z. |
+| 19 | **Toast queue vs cooldown (M15 / T-Q25)** | ✅ решено, **документировано** | `_cooldown=0.3s` дропал reward-toast'ы. Queue-based, без cooldown. Lesson: для reward/result уведомлений — **никогда** не использовать cooldown, только queue. |
+| 20 | **HUD counter (0/1 vs 0/3) (T-Q21)** | ✅ решено | `QuestTracker` показывал только `currentValue` без `requiredQuantity`. Fix: explicit `currentValue/requiredQuantity` формат. |
+| 21 | **TryTurnIn минует TryAdvanceStage (T-Q22)** | ✅ решено | `TryTurnIn` раньше ставил `state=Completed` напрямую → onCompleteActions финального stage не вызывались. Fix: TryTurnIn → TryAdvanceStage. |
+| 22 | **MarkNpcTalked только в Advance (T-Q22)** | ✅ решено | `MarkNpcTalked` вызывался только в `RequestAdvanceDialogueRpc`, не в `RequestTalkToNpcRpc`. Fix: вызывать в обоих. |
+| 23 | **Unsubscribe на shutdown (T-Q21)** | ✅ решено | `UnsubscribeQuestTracker()` использовал `GetOrFindInstance()` → во время shutdown `GameObject.Find` → Unity assertion. Fix: `Instance` only в OnDisable. |
+| 24 | **ItemRegistry init order (M14)** | 🟡 accepted | `InventoryWorld` должен init раньше `QuestWorld` (registry → item IDs). Fallback на `Resources.LoadAll` если null. |
+
+---
+
+## 8.7 Session Summaries (компактная хронология по сессиям)
+
+> **TL;DR сессий.** Полные отчёты — в `old_session_log/M*_DESIGN_NOTE.md` и `T-Q*_DESIGN_NOTE.md`. Сверху — только ключевые lessons.
+
+### §8.7.1 T-Q11b + T-Q11c (2026-06-08)
 
 ### ✅ Что сделано (2 тикета в 1 сессии)
 
@@ -1031,22 +1083,131 @@ A Assets/_Project/Quests/NpcController.cs
 A Assets/_Project/Quests/Resources/UI/DialogWindow.uxml
 A Assets/_Project/Quests/Resources/UI/DialogWindow.uss
 A Assets/_Project/Quests/Resources/UI/DialogPanelSettings.asset
-A docs/dev/T-Q11b_c_session_log_2026-06-08.md
+A docs/NPC_quests/old_session_log/T-Q11b_c_session_log_2026-06-08.md
 ```
-
-### ⏭️ Next Up (in order)
-
-1. **T-Q11** — Quest log таб в CharacterWindow (6th tab, Discovered section + Accept button)
-2. **T-Q12** — QuestTracker overlay + DialogWindow typewriter/F-skip + DontDestroyOnLoad
-3. **T-Q13** — ReputationClientState + NpcAttitudeClientState + CharacterWindow Reputation tab fix
-4. **T-Q14** — InventoryServer.TryRemove + event hooks
-5. **T-X5** — ContractServer publish events для quest bridge
-6. **T-Q15** — GiveItem/TakeItem + ContractMetaBridge
-7. **T-Q16** — GiveCredits/AddReputation/AddNpcAttitude executors
-8. **T-Q17** — OpenMarket/OpenService executors
-9. **T-Q18** — Persistence JSON
-10. **T-Q19** — C1 cleanup: delete v1 NPC
 
 ---
 
-**Статус проекта:** M1-M9 ✅ DONE 2026-06-08 (M10 partial). **M11 (End-to-end demo) — IN PROGRESS** (dialog tree + 2 pickup items + CompleteObjective real impl готовы, awaiting user Play Mode test). **M13 (Real-time objective system) — 📋 DESIGN COMPLETE 2026-06-08** (see `docs/dev/M13_DESIGN_NOTE.md` — ready for next session coding).
+### §8.7.2 M11 — Mira end-to-end demo (2026-06-08)
+
+**Commit:** `20f5232` "M11 - first fulltest - quest DONE and some fixes"
+
+**10 bugfixes в `QuestServer.cs` (171 строк изменений):**
+
+| # | Фикс | Детали |
+|---|------|--------|
+| 1 | `QuestStateEquals` — real impl | `return false` когда quest не в логе (был `return true`) |
+| 2 | `HasItem` — real impl | `int.TryParse(c.stringParam)` вместо хардкода `CountOf(0)` |
+| 3 | `AcceptQuest = 14` handler | TryOffer (idempotent) + TryAccept → quest сразу Active |
+| 4 | `hideIfUnavailable` | Фильтрация в `BuildDialogStep`: `!available && hideIfUnavailable` → edge не отправляется клиенту |
+| 5 | `visibleEdges` index mapping | `session.visibleEdges` для `RequestAdvanceDialogue` (фильтрованные edge → правильный index) |
+| 6 | `CompleteObjective` snapshot push | `SendQuestSnapshotToClient` после успешного `TryTurnIn` |
+| 7 | `GiveCredits` inventory push | `InventoryServer.Instance.PushSnapshot(clientId)` после `GiveCredits` |
+| 8 | `AddReputation` snapshot | Добавлен `BroadcastReputationChange(clientId)` в handler |
+| 9 | `AddNpcAttitude` snapshot | Добавлен `BroadcastNpcAttitudeChange(clientId)` в handler |
+| 10 | `onEnterActions` execution | Добавлен цикл `FireDialogAction` для `nextNode.onEnterActions[]` при навигации по edge |
+
+**Новые ассеты:**
+- `Item_Key_AncientKey.asset` (itemId=1)
+- `Item_Crystal_TimeCrystal.asset` (itemId=2)
+- 2 `[Pickup_*]` рядом с Mira в `WorldScene_0_0.unity`
+
+**Полный отчёт:** `old_session_log/M11_COMMIT_SUMMARY.md` + `old_session_log/M11_FIXES_2026-06-08.md`.
+
+**Verify (user confirmed 2026-06-08):** Mira quest playthrough — Pickup → E → "Помогу" → TakeItem → AcceptQuest → Active → Pickup → E → "Отдать" → TakeItem + AddRep + AddAtt + CompleteObjective + TryTurnIn + GiveCredits → Completed.
+
+---
+
+### §8.7.3 M13 — Real-time objective system (2026-06-08)
+
+**Commits:** `ad6a233` design → `32ec52b` "M13 тесты и куча фиксов" → merge `adf1f04`.
+
+**Test setup в `WorldScene_0_0.unity`:**
+- 3× `[Pickup_CopperOre_1/2/3]` — 5m восток/юг/запад от Mira
+- `[TriggerZone_DiscoverQuest]` — 8m юг от Mira, BoxCollider isTrigger + flat green marker
+- `[TriggerZone_StageIntro]` — 8m E от Mira
+- `StageIntroDemo.asset` (1 stage, onEnter AddNpcAttitude)
+- `StageMultiDemo.asset` (2 stages: collect → deliver)
+- `Item_Resource_МеднаяРуда.asset` (Resources/Items/)
+
+**Sub-fix-коммиты (после M13 merge):**
+- `f58a07b` T-Q21: UI shows full objectives + checkmarks
+- `d9b88e0` T-Q21 fix: counter 1/3 не показывался по tick
+- `8054c36` T-Q21 fix: HUD counter (0/1) → (0/3)
+- `fe7a972` T-Q21 fix: UnsubscribeQuestTracker GetOrFindInstance → assertion на shutdown
+- `f842e5e` T-Q22: StageIntroDemo + StageMultiDemo + TriggerZone_StageIntro
+- `0e9e53d` T-Q22 fix: MarkNpcTalked в RequestTalkToNpcRpc (а не только Advance)
+
+**Полная спецификация:** `old_session_log/M13_DESIGN_NOTE.md`. **Verify checklist:** `old_session_log/M13_VERIFY_CHECKLIST.md`.
+
+---
+
+### §8.7.4 M15 — Toast notifications (2026-06-09)
+
+**Commits:**
+- `d6d0cc3` T-Q23: ToastService/ToastUI/ToastKind (Info/Success/Warning/Error) + BootstrapScene `[ToastService]` GO
+- `4f2f95b` T-Q23 fix v2: неправильные action type IDs в switch
+- `35f32ae` T-Q24: QuestResult toast с displayName lookup
+- `0d6e26b` T-Q25: DialogActionResultDto.intParam (delta для GiveCredits/AddRep/AddAtt)
+- `8df852f` T-Q25 fix: queue-based, убран `_cooldown=0.3s` который дропал 3 из 4 toast'ов при quest complete
+
+**Артефакты в `BootstrapScene.unity`:** `[QuestToast]` GO (UIDocument + QuestToast + PanelSettings), legacy `[ToastService]` удалён.
+
+**Verify (user 2026-06-09):** "📜 Accepted: Демо: stage с onEnter", "💚 mira_01 +5", "💰 +200 CR", "✨ Найден квест: ...", queue (4 toast'а подряд) — все видны.
+
+**Полная спецификация:** `old_session_log/M15_DESIGN_NOTE.md`.
+
+---
+
+### §8.7.5 M17 — QuestGraphView (2026-06-09)
+
+**Commits:**
+- `b06875f` M17: `QuestGraphView.cs` (~340 lines) + `QuestGraphWindow.cs` (~110 lines) + M17 design note
+- `87bf5aa` T-Q09b fix v8: nodes раскрыты по умолчанию, edges видны сразу, Fit центрирует
+
+**Roslyn verify:** `Found in: Assembly-CSharp-Editor / Window opened / Quest: collect_copper_ore stages=1 / Loaded quest into graph / Graph elements: 14`.
+
+**Двойная реализация (см. §8.0):**
+- `QuestNodeGraphView.cs` (M18 base) — **активный** GraphView
+- `QuestGraphView.cs` — старый custom VisualElement, **maintenance mode**
+
+**Полная спецификация:** `old_session_log/M17_DESIGN_NOTE.md`.
+
+---
+
+### §8.7.6 M18 — Editable QuestNodeGraph (2026-06-09)
+
+**Commits (по sub-тикетам):**
+- `03f1e9d` T-Q30_fix: TextField в нодах
+- `563b6cc` T-Q32: Add/Delete stages/objectives
+- `f7fca0c` T-Q34: Drag-create edges
+- `b89a312` T-Q33: Quest-to-quest prereq edge
+- `4bf755b` "QuestNodeGraph — готов" (включает T-Q31: save back to SO)
+
+**Полная спецификация:** `old_session_log/M18_DESIGN_NOTE.md`.
+
+---
+
+### §8.7.7 M19 — CSV Import/Export (2026-06-09)
+
+**Commits:**
+- `b312157` "import/export quest DB plan"
+- `faab3e5` M19-T1 verified (schema + parser)
+- `cefe380` M19 все 5 тикетов: `QuestCsvSchema.cs` + `QuestCsvImporter.cs` + `QuestCsvExporter.cs` + `QuestCsvWindow.cs` + `example_quests.csv`
+- `7cfad45` Roadmap update + `99_FINAL_STATUS.md`
+
+**Verify:** Парсинг 4 строк CSV (0 errors), импорт 3 квестов (created: 3), round-trip (updated: 1, created: 0), window opens, compile 0 errors.
+
+**Полная спецификация:** `M19_CSV_PIPELINE_v2.md` (в корне) + `old_session_log/M19_CSV_PIPELINE.md` (v1, deprecated).
+
+---
+
+## 8.8 Сводный статус (1 строка)
+
+**M1–M11, M13–M19 = ✅ DONE** (50+ тикетов, ~62 ч чистого кодинга + ~20 ч fix-итераций, 9 сессий, 2026-06-07 → 2026-06-09).
+**M9 = 🟡 частично** (T-X2 ⏭️ DEFERRED, design discussion).
+**M12 = 🟡** (T-X4 input remap, future TODO).
+**M17 polish = 🟢** (edges always visible tweak, low priority).
+**Quest content = 🔴** (post-MVP, нужен авторский контент).
+
+См. §8.0 «Что осталось» для деталей, §8.4 «Milestones» для таблицы, §8.6 «Риски» для lessons, `old_session_log/99_FINAL_STATUS.md` для сводки 2026-06-09.

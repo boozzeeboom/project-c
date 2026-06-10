@@ -1,6 +1,8 @@
 # План разработки ММО "Project C: The Clouds" на Unity
 
-**Последнее обновление:** 1 мая 2026 г. | **Текущая версия:** `v0.0.17-scene-world-complete`
+**Последнее обновление:** 10 июня 2026 г. | **Текущая версия:** `v0.0.18-npc-quests-v2-complete`
+
+> **Что нового с прошлого обновления (1 мая 2026):** NPC + Quests v2 подсистема полностью реализована (50+ тикетов, 19 milestones ✅ DONE, ~8400 строк кода, ~62 ч работы). См. `docs/NPC_quests/08_ROADMAP.md` и `docs/NPC_quests/old_session_log/99_FINAL_STATUS.md`. **Character Window v2** — реализован (5+ табов, TAB-колесо + P-таб inventory, T-Q11 quests tab, visual fix). См. `docs/Character-menu/00_OVERVIEW.md` + `docs/Character-menu/sub_inventory-tab/00_OVERVIEW.md`. **MetaRequirement / Key-Lock подсистема** — Ship Key MVP (R2-SHIP-KEY-001) + универсальная MetaRequirement v1 (R2-META-REQ-001) реализованы (2026-06-06). См. `docs/Ships/Key-subsystem/00_OVERVIEW.md` + `docs/MetaRequirement/00_OVERVIEW.md` + `docs/Ships/Key-subsystem/SHIP_KEY_TO_META_REQUIREMENT_MIGRATION.md`.
 
 ---
 
@@ -84,6 +86,7 @@
 - ✅ ⭐ MeziyThrusterVisual — URP-совместимые частицы, авто-создание
 - ✅ ⭐ ShipDebugHUD (F3) — debug overlay: fuel, speed, meziy state, roll
 - ✅ ⭐ Co-op пилотирование — несколько игроков, усреднение ввода (NetworkBehaviour)
+- ✅ ⭐ **Ship Key subsystem (R2-SHIP-KEY-001, 2026-06-06)** — физический ключ-предмет для запуска. `ShipKeyBinding` (MonoBehaviour) + `ShipKeyServer` (NetworkBehaviour hub) + `ShipKeyClientState` (singleton) + `ShipKeyToast` (UIDocument). F-key разделён на выход/посадку, pre-F RPC `RequestCanBoard` (1.5 сек timeout), server-side defense-in-depth guard в `SubmitSwitchModeRpc`. 3 ключа: `Item_Key_ShipLight/Medium/Heavy.asset`. `WorldScene_0_0.unity` — 3 KeyRod PickupItem + ShipKeyBinding на 3 ShipController. **MVP, deprecated** — superseded by MetaRequirement (см. §1.9). См. `docs/Ships/Key-subsystem/00_OVERVIEW.md`.
 - ⏳ Рефакторинг кода — ShipController.cs v2.7 (1200+ строк), разделение на подсистемы
 
 ### 1.5 Переключение режимов (пеший ↔ корабль) ✅
@@ -91,24 +94,41 @@
 - ✅ PlayerStateMachine — управление состояниями
 - ✅ Камера адаптируется к режиму
 - ✅ Проверка при выходе: корабль на земле ИЛИ скорость < 2 м/с
+- ✅ ⭐ **Server-side key validation (R2-SHIP-KEY-001, 2026-06-06)** — F-посадка блокируется, если в инвентаре пилота нет нужного ключа. Pre-F RPC `RequestCanBoard` (1.5 сек timeout) → `ShipKeyServer.InventoryWorld.HasItem` → вернуть CanPlayerBoard result + reason. Defense-in-depth: повторная проверка внутри `SubmitSwitchModeRpc` (на случай bypass через прямой RPC). `ShipKeyToast` UI: "Нужен ключ X для корабля Y" + fade-out 3 сек. **Сейчас superseded by MetaRequirement** (см. §1.9) — единый generic механизм для всех Interactable-объектов.
 
 ### 1.6 Подбор предметов и инвентарь ✅
 - ✅ **Подбор предметов** (E — ближайший в радиусе 3м)
-- ✅ **Круговой инвентарь** (Tab — 8 секторов, группировка по типам)
-- ✅ **Hover-подсветка** секторов (жёлтый при наведении)
-- ✅ **Подсписок** при >1 предмете в секторе
+- ✅ **Круговой инвентарь (TAB-колесо)** — UI Toolkit singleton, 8 секторов, группировка по типам
+  - ✅ Hover-подсветка секторов (жёлтый при наведении)
+  - ✅ Подсписок при >1 предмета в секторе
+  - ✅ **Auto-spawn через RuntimeInitializeOnLoadMethod (Phase 4)**
+- ✅ **CharacterWindow → таб "Инвентарь" (P-таб)** — детальный список с фильтрами по типу, поиском по имени
+  - ✅ Single source of truth: оба UI читают **тот же** `InventoryClientState` (server-authoritative singleton)
+  - ✅ Подбор → оба UI обновляются атомарно через `OnSnapshotUpdated`
+  - ✅ Phases 0–7 ✅ done (2026-06-05), Phase 8 (cleanup `InventoryUI.cs` IMGUI-файл) — TODO
+  - ⏳ `TryDrop / TryMove / TryUse` (InventoryServer) — TODO; UI кнопки есть, RPC не подключены
 - ✅ **Открытие сундуков** — контейнеры с несколькими предметами через LootTable
 - ✅ **Анимация сундука** — плавное вращение + масштаб при открытии
 - ✅ **Вспышка секторов** — визуальная обратная связь при получении лута
 - ✅ **Приоритет взаимодействия** — сундук > обычный предмет
+- ✅ **Drop в мир (Phase 10, 2026-06-05)** — server-spawn PickupItem (R3-INV-DROP-001: visual representation теряется, см. `docs/Character-menu/sub_inventory-tab/60_KNOWN_ISSUES.md`)
 
-### 1.7 UI ✅ ЗАВЕРШЕНО (Спринты 1-3: 10-12 апреля 2026)
+**Документация:** `docs/Character-menu/sub_inventory-tab/00_OVERVIEW.md` + `60_KNOWN_ISSUES.md`.
+
+### 1.7 UI ✅ ЗАВЕРШЕНО (Спринты 1-3: 10-12 апреля 2026) + Character Window v2 (2026-06-05)
 - ✅ ControlHintsUI — подсказки управления (F1 — скрыть/показать)
 - ✅ PeakNavigationUI — навигация между пиками (скрыт в production builds)
 - ✅ InventoryUI — круговое колесо (8 секторов, semantic labels: Resources, Equipment, Food, Fuel, Antigrav, Meziy, Medical, Tech)
 - ✅ NetworkUI — подключение/отключение (Disconnect по центру, Reconnect, Player Count)
 - ✅ TradeUI — торговля (TextMeshPro, UITheme, UIFactory)
 - ✅ ContractBoardUI — контракты (TextMeshPro, UITheme, UIFactory)
+- ✅ ⭐ **CharacterWindow** (P-окно, 5+ табов, UI Toolkit) — `Assets/_Project/UI/Resources/UI/CharacterWindow.{uxml,uss,asset}` + `Assets/_Project/Scripts/UI/Client/CharacterWindow.cs` (1345+ LOC)
+  - ✅ Pattern скопирован с MarketWindow: 4 FIX'ы сразу бесплатно (pickingMode/cursor/inline-fallback/MarkDirtyRepaint)
+  - ✅ Таб "Инвентарь" — sub_inventory-tab, см. секцию 1.6 + `docs/Character-menu/sub_inventory-tab/`
+  - ✅ Таб "Квесты" — 6-й таб, добавлен в T-Q11 (см. `08_ROADMAP.md` §8.3.1 T-Q11)
+  - ✅ Track-кнопка в строках квестов (T-Q12) — QuestTracker toggle
+  - ⏳ Табы "Персонаж" / "Корабль" / "Репутация" / "Контракты" — MVP-заглушки (хард-стат), план в `docs/Character-menu/00_OVERVIEW.md` §3
+  - ✅ Visual fix 2026-06-05: characterWindowUss привязан к правильному USS-ассету (был UXML-bug); все class-стили с `!important` (UnityDefaultRuntimeTheme fix)
 - ✅ ⭐ UIManager — централизованный менеджер UI (приоритеты, z-ordering, input management)
 - ✅ ⭐ UIFactory — фабрика UI компонентов (8 методов, устранено 120 строк дублирования)
 - ✅ ⭐ UITheme — ScriptableObject темы (51+ цвет → UITheme.Default, авто-создание)
@@ -119,9 +139,64 @@
 - ✅ ⭐ Audio feedback infrastructure — готовы методы PlayClick/PlayError/Open/Close
 - 🟡 Эмодзи устранены из TMP UI (📋📦⚡📝📢 → [Контракт] [Груз] [Срочный])
 - 🟡 Оценка UI системы: 4.5/10 → 7/10 (+55%)
-- 📋 Подробный отчёт: docs/QWEN-UI-AGENTIC-SUMMARY.md
+- 📋 Подробные отчёты: `docs/QWEN-UI-AGENTIC-SUMMARY.md` (UI Спринты 1-3) + `docs/Character-menu/00_OVERVIEW.md` (CharacterWindow) + `docs/Character-menu/refactor_log_2026-06-05.md` (visual fix)
 
 ### 1.8 Сетевая инфраструктура (базовая) ✅ ЗАВЕРШЕНО
+
+---
+
+### 1.9 Meta-требования (ключ-замок, lock-key) ✅ Этап 1 ЗАВЕРШЁН (R2-META-REQ-001, 2026-06-06)
+**Цель:** обобщить Ship Key Subsystem (1 предмет на 1 корабль) в **универсальную систему требований** для любых Interactable-объектов: корабли, двери, контейнеры, терминалы, квестовые зоны. Массив требуемых предметов (от 1 до N) с логикой ALL / ANY / AT_LEAST_N.
+
+**Серверный hub:**
+- ✅ `MetaRequirementRegistry` (NetworkBehaviour, scene-placed в `BootstrapScene`) — `RegisterMetaRequirement(netId, MetaRequirement)`, `CanPlayerUse(clientId, netId) → bool + reason`, `RequestCanUseRpc(netId) → TargetRpc`
+- ✅ `MetaRequirement` (NetworkBehaviour MonoBehaviour, generic) — `_requiredItems: ItemData[]`, `_logic: RequirementLogic { All, Any, AtLeastN }`, `_requiredCount: int` (для AtLeastN), `_interactableDisplayName: string`, `OnInventoryChanged` event, `CanPlayerUse(clientId, out reason)`, `ProgressInfo` struct для UI
+- ✅ `MetaRequirementClientState` (client singleton) — `OnCanUseResponse`, `OnBindingsPushed`, `OnInteractableFound`
+- ✅ `MetaRequirementToast` (UIDocument) — generic UI: показывает "X/N собрано" + список недостающих предметов + reason
+
+**Extensions в `InventoryWorld`:**
+- ✅ `HasAllItems(ulong clientId, int[] itemIds)` — AND-логика
+- ✅ `HasAnyItem(ulong clientId, int[] itemIds)` — OR-логика
+- ✅ `CountOf(ulong clientId, int itemId)` — сколько штук (для AT_LEAST_N)
+- ✅ `GetMissingItems(ulong clientId, int[] itemIds)` — массив недостающих
+
+**Wiring:**
+- ✅ `NetworkManagerController.CreateMetaRequirementClientState()` (auto-spawn root GO в `Awake`)
+- ✅ `NetworkPlayer.TryInteractNearestMetaRequirement()` (E-key entry point для НЕ-кораблей)
+- ✅ `NetworkPlayer.ReceiveMetaRequirementResponseTargetRpc` + `ReceiveMetaRequirementBindingsTargetRpc`
+
+**Алиасы (backward compat):**
+- ⏳ `ShipKeyBinding.cs` — `[Obsolete]` empty subclass → `MetaRequirement`
+- ⏳ `ShipKeyServer.cs` / `ShipKeyClientState.cs` — legacy API сохранён, `[Obsolete]`
+- ⏳ `ShipKeyToast.cs` — НЕ `[Obsolete]`, legacy functional
+- ⏳ **TODO (через 1-2 релиз-цикла):** удалить алиасы после миграции всех сцен
+
+**Тестовые ассеты (R2-META-REQ-001 verification, 2026-06-06):**
+- ✅ 3 SO `ItemData`: `Item_Key_Blue.asset` / `Item_Key_Red.asset` / `Item_Key_Green.asset`
+- ✅ 6 URP/Lit материалов: `Key_{Blue,Red,Green}.mat` + `LockBox_{Blue,Red,Green}.mat`
+- ✅ `MetaRequirementPanelSettings.asset` (dedicated UI Toolkit PanelSettings)
+- ✅ `WorldScene_0_0.unity`: parent `[MetaRequirement_Test]` (X=40050/40044/40038, Y=2502.7, Z=39990) с 3 Pickup-сферами + 3 LockBox-кубами
+- ✅ `BootstrapScene.unity`: `[MetaRequirementRegistry]` (server hub) + `[MetaRequirementToast]` (UI)
+
+**Stats:**
+- **+7** новых C# файлов (`Scripts/MetaRequirement/*`, ~50 KB)
+- **+4** extensions в `InventoryWorld` (backward compatible)
+- **+3** SO ItemData
+- **+6** материалов
+- **+9** GameObject'ов в сценах
+- **+9** документов в `docs/MetaRequirement/`
+- **Compile:** 0 errors, warnings только pre-existing + by-design obsolete-usage в алиасах
+
+**TODO (Этап 2+):**
+- ⏳ `_consumeOnUse` логика + reservation pattern (сейчас поле есть, логика — TODO)
+- ⏳ `ProgressInfo` UI в `MetaRequirementToast` (multi-item tooltip "3/5 ключей собрано")
+- ⏳ Disconnect → reconnect race fix (`OnClientConnectedCallback` пушит bindings, race с уже-spawned)
+- ⏳ Multi-MetaRequirement в одной зоне (сейчас 1→1)
+- ⏳ Использование `MetaRequirement` для квестов (см. `docs/NPC_quests/08_ROADMAP.md` — T-Q?? когда потребуется)
+
+**Документация:** `docs/MetaRequirement/00_OVERVIEW.md` (517 строк) + `10_IMPLEMENTATION_GUIDE.md` (22 KB) + `20_INSPECTOR_REFERENCE.md` + `30_RUNTIME_FLOW.md` + `40_TESTING_GUIDE.md` + `50_KNOWN_ISSUES.md` + `99_CHANGELOG.md` + `RECIPES.md` (10 рецептов).
+**Migration guide:** `docs/Ships/Key-subsystem/SHIP_KEY_TO_META_REQUIREMENT_MIGRATION.md` (337 строк).
+**Предшественник:** `docs/Ships/Key-subsystem/00_OVERVIEW.md` (Ship Key MVP, R2-SHIP-KEY-001).
 
 ---
 
@@ -337,6 +412,8 @@ FixedUpdate (сервер):
 - ⏳ Визуальная задержка загрузки чанков в новых сценах
 - ⏳ Коррекция позиции отключена — требует полноценной реализации для мультиплеера
 - ⏳ Y спавна = 3000 (для тестирования) — вернуть к нормальному значению
+- ⏳ WorldSceneManager / ServerSceneManager / WorldStreamingManager / WorldChunkManager / FloatingOriginMP — написаны, но **не развёрнуты в сцене**. Фокус проекта сейчас — `WorldScene_0_0`, остальные 23 сцены — на потом.
+- ✅ **NPC+Quest v2 scene-placement rule (2026-06-07):** BootstrapScene = server infra ONLY (NetworkManager, [QuestServer], [QuestClientState], [ContractMetaBridge], ScenePlacedObjectSpawner, [QuestTracker], [QuestToast], [MarketWindow], [DialogWindow]). Game-world objects → `WorldScene_X_Z` (NPC `[Mira]`, chest, pickup, market zone, ships). Иначе scene-placed NetworkObject с `InScenePlacedSourceGlobalObjectIdHash == 0` → не спавнится NGO → NRE в RPC. Подробнее: `docs/Ships/INTEGRATION_SHIPS_TO_WORLD_0_0.md`.
 
 ---
 
@@ -457,7 +534,11 @@ FixedUpdate (сервер):
    - ✅ ⭐ Эмодзи устранены (📋📦⚡📝 → [Контракт] [Груз] [Срочный])
    - ✅ ⭐ Cursor management при открытии/закрытии
    - ✅ ⭐ Input priority через UIManager
-3. **⏳ Серверная база данных:** (Этап 5+)
+3. **✅ Мост в квестовую систему (T-X5 + T-Q15, 2026-06-08):**
+   - ✅ `ContractServer` публикует 3 events: `ContractAcceptedEvent` / `ContractCompletedEvent` / `ContractFailedEvent`
+   - ✅ `ContractMetaBridge` (server-side singleton, scene-placed в BootstrapScene, DontDestroyOnLoad) подписан на events → `QuestWorld.MarkContractAccepted/MarkContractCompleted` + `QuestTriggerService.Evaluate()`
+   - ✅ Квесты могут следить за состоянием контрактов через `HasContractAccepted`/`HasContractCompleted` objectives
+4. **⏳ Серверная база данных:** (Этап 5+)
    - PostgreSQL для хранения аккаунтов, прогресса, инвентаря, долгов
    - Redis для кэширования сессионных данных
    - API для безопасного обмена данными (авторизация через JWT)
@@ -482,6 +563,7 @@ FixedUpdate (сервер):
    - Сохранение: demand/supply факторы, active events, tick-таймер
    - Восстановление при перезагрузке сервера
    - Формат: JSON или БД
+   - **Референс:** в NPC+Quests v2 сделан `JsonQuestStateRepository` (T-Q18) — atomic JSON в `Application.persistentDataPath`, immediate save на каждый state change, единый JSON на игрока. Можно скопировать паттерн для market state.
 
 **Результат:** ✅ Сохранение прогресса между сессиями, **ПОЛНАЯ система торговли с динамической экономикой, контрактами НП и долговой системой**.
 
@@ -493,11 +575,16 @@ FixedUpdate (сервер):
 - [`docs/QWEN-UI-AGENTIC-SUMMARY.md`](QWEN-UI-AGENTIC-SUMMARY.md) — ⭐ UI система: полный отчёт спринтов 1-3
 
 **Известные проблемы (P0-P1):**
-- 🔴 P0: PlayerPrefs → заменить на IPlayerDataRepository + БД (Сессия 10)
-- 🔴 P0: FindAnyObjectByType → PlayerRegistry (Сессия 10) — частично решено кэшированием в PeakNavigationUI
-- 🔴 P0: ScriptableObject state → MarketConfig + MarketState (Сессия 10)
+- 🔴 P0: PlayerPrefs → заменить на IPlayerDataRepository + БД (Сессия 10). **Частично сделано:**
+  - **Inventory:** `JsonInventoryRepository` (T-X0, 2026-06-05) — atomic JSON save/load per-client в `Application.persistentDataPath`.
+  - **Quests:** `JsonQuestStateRepository` (T-Q18, 2026-06-08) — atomic JSON, immediate save.
+  - **Не покрывает:** Trade/Cargo/Contract state.
+- 🔴 P0: FindAnyObjectByType → PlayerRegistry (Сессия 10) — частично решено кэшированием в PeakNavigationUI. **Полностью решён в NPC+Quests v2** (`QuestServer.Instance` singleton, `QuestClientState` RuntimeInitializeOnLoadMethod) **и в Inventory v2** (`InventoryClientState` singleton + `RuntimeInitializeOnLoadMethod`).
+- 🔴 P0: ScriptableObject state → MarketConfig + MarketState (Сессия 10). **В NPC+Quests v2 — решён частично:** `QuestDatabase` SO (registry, не state) + `ItemRegistry` SO (id↔item mapping, не state).
 - 🟡 P1: Валидация позиции в RPC (Сессия 10)
-- 🟡 P1: Clamp quantity + rate limit (Сессия 10)
+- 🟡 P1: Clamp quantity + rate limit (Сессия 10) — **В NPC+Quests v2 — решён:** QuestServer rate limit 30 ops/min/client.
+- 🟠 MEDIUM: **R3-INV-DROP-001 (2026-06-06) — Drop теряет визуальное представление предмета** (см. `docs/Character-menu/sub_inventory-tab/60_KNOWN_ISSUES.md`). Игрок подбирает цветной ключ с emission → drop → появляется базовая белая сфера. **Не блокер** для текущего контента, но визуально сбивает.
+- 🟠 MEDIUM: **MetaRequirement TODO (R2-META-REQ-001, Этап 2)** — `_consumeOnUse` логика, `ProgressInfo` UI, disconnect-reconnect race fix (см. `docs/MetaRequirement/50_KNOWN_ISSUES.md` §"TODO").
 - 🟡 UI: Контракты не сдаются с грузом на корабле (Спринт 3.3 — MVC рефакторинг)
 
 ---
@@ -525,6 +612,18 @@ FixedUpdate (сервер):
    - Дефицит мезия, бум антигравия, блокада, эпидемия, война гильдий
    - Визуальное оповещение игроков
 
+### ✅ Фундамент фракций (реализован в NPC+Quests v2, 2026-06-08)
+> Технический фундамент для Этапа 3.5 уже есть (M5, T-Q01, T-Q13). Контент и lore-связи — на этапе 3.5.
+> - ✅ `ProjectC.Factions.FactionId` enum (12 lore значений: GuildOfThoughts, GuildOfCreation, GuildOfSecrets, ..., Pirates, Neutral)
+> - ✅ `ReputationClientState` (singleton) — per-faction репутация игрока
+> - ✅ `NpcAttitudeClientState` (singleton) — per-NPC отношение
+> - ✅ `FactionDefinition` SO с cross-faction influence (MVP stub)
+> - ✅ Dialog actions `AddReputation` / `AddNpcAttitude` (T-Q16) — NPC диалоги меняют репутацию
+> - ⏳ **M5 в roadmap NPC+Quests:** сама Rep-таблица (12 guilds, tier thresholds, display messages) — на этапе 3.5
+> - ⏳ Кросс-фракционные influence — MVP stub, полная реализация → v2
+> - ⏳ Display HUD репутации в header (деферред с T-Q10)
+> - ⏳ T-X2 (DEFERRED): `TradeItemDefinition.Faction` (8 manufacturer factions) vs `FactionId` (12 lore guilds) — разные концепции, нужен design discussion (см. `docs/NPC_quests/08_ROADMAP.md` §8.0 «DEFERRED»).
+
 **Результат:** Живой мир торговли — НП vs мануфактуры, чёрный рынок, военные маршруты, динамические события.
 
 ---
@@ -533,11 +632,20 @@ FixedUpdate (сервер):
 **Цель:** Наполнить мир контентом, улучшить визуал и **интегрировать торговлю в Core Loop**.
 
 ### Задачи:
-1. **Миссии и квесты:**
-   - Система заданий (серверная логика выполнения)
-   - Диалоги с NPC (ветвящиеся сюжеты)
-   - Ежедневные испытания для удержания игроков
-   - **Торговые квесты:** цепочки гильдий, контрабанда, мануфактуры
+1. **Миссии и квесты:** ✅ ЗАВЕРШЕНО (сессии 2026-06-07..09, см. `docs/NPC_quests/08_ROADMAP.md`)
+   - ✅ **NPC + Quests v2 подсистема** (50+ тикетов, 19 milestones, ~8400 строк кода)
+   - ✅ Серверная логика выполнения: `QuestServer` (NetworkBehaviour) + `QuestWorld` (POCO) + 9 RPC
+   - ✅ Диалоги с NPC (ветвящиеся сюжеты): `DialogTree` SO + `DialogueNode`/`Edge`/`Condition`/`Action` + UI Toolkit `DialogWindow` (typewriter, F-skip, mouse-click skip)
+   - ✅ **Mira end-to-end quest** (M11) — полный playthrough с pickup, dialog tree, reputation, attitude, credits
+   - ✅ Multi-stage квесты (M13) — `onEnter`/`onComplete` actions, stage transitions
+   - ✅ Real-time objective evaluation (tick 5 sec) — `QuestTriggerService` + 8 trigger types
+   - ✅ Persistence (M8) — `JsonQuestStateRepository`, immediate save на каждом state change
+   - ✅ Editor tooling: `QuestDatabaseWindow` (M16), `QuestNodeGraph` (M17), **Editable** (M18), **CSV Import/Export** (M19)
+   - ✅ Quest toast notifications (M15): "📜 Accepted", "💚 +5", "💰 +200 CR", "✨ Найден квест"
+   - ✅ Item ID single source of truth (M14): `ItemRegistry` SO + 32 items
+   - ✅ **Торговые квесты:** ✅ **Quest ↔ Contract мост** — `ContractMetaBridge` (M7): NPC dialog actions `GiveItem`/`TakeItem` + ContractServer events (`ContractAcceptedEvent`/`ContractCompletedEvent`/`ContractFailedEvent`) → quest trigger evaluation
+   - ⏳ **Контент квестов (не доделано):** создать 5–10 production квестов (сейчас есть 5 тестовых: `collect_copper_ore`, `find_artifact`, `stage_intro_demo`, `stage_multi_demo`, `collect_copper`). **Авторский контент** — открыто.
+   - ⏳ **Ежедневные испытания** — не начато (post-MVP).
 
 2. **Визуальные улучшения:**
    - Финальные шейдеры для облаков и воды
@@ -702,11 +810,11 @@ FixedUpdate (сервер):
 ### Systems — Технические системы
 | Документ | Описание |
 |----------|---------|
-| [GDD_10: Ship System](gdd/GDD_10_Ship_System.md) | 4 класса кораблей, физика, кооп-пилотирование |
-| [GDD_11: Inventory & Items](gdd/GDD_11_Inventory_Items.md) | 8 типов, круговое колесо, LootTable, сундуки |
+| [GDD_10: Ship System](gdd/GDD_10_Ship_System.md) | 4 класса кораблей, физика, кооп-пилотирование. **✅ Ship Key MVP (R2-SHIP-KEY-001) + MetaRequirement v1 (R2-META-REQ-001) реализованы (2026-06-06), см. `docs/Ships/Key-subsystem/00_OVERVIEW.md` + `docs/MetaRequirement/00_OVERVIEW.md`.** |
+| [GDD_11: Inventory & Items](gdd/GDD_11_Inventory_Items.md) | 8 типов, круговое колесо, LootTable, сундуки. **✅ sub_inventory-tab (P-таб) + MetaRequirement extensions (HasAllItems/HasAnyItem/CountOf/GetMissingItems) реализованы, см. `docs/Character-menu/sub_inventory-tab/00_OVERVIEW.md` + `docs/MetaRequirement/30_RUNTIME_FLOW.md`.** |
 | [GDD_12: Network & Multiplayer](gdd/GDD_12_Network_Multiplayer.md) | NGO, RPC, реконнект, Dedicated Server |
 | [GDD_12.1: Scene-Based World Streaming](gdd/GDD_12_1_Scene_World_Streaming.md) | 24 сцены, 4×6 grid, boundary-based loading |
-| [GDD_13: UI/UX System](gdd/GDD_13_UI_UX_System.md) | HUD, Ghibli стиль, адаптивность |
+| [GDD_13: UI/UX System](gdd/GDD_13_UI_UX_System.md) | HUD, Ghibli стиль, адаптивность. **✅ CharacterWindow v2 (5+ табов) реализован (2026-06-05), см. `docs/Character-menu/00_OVERVIEW.md`.** |
 | [GDD_14: Visual & Art Pipeline](gdd/GDD_14_Visual_Art_Pipeline.md) | URP, CloudGhibli, шейдеры, постобработка |
 | [GDD_15: Audio System](gdd/GDD_15_Audio_System.md) | AudioMixer, SFX, музыка, 3D звук |
 
@@ -714,9 +822,9 @@ FixedUpdate (сервер):
 | Документ | Описание |
 |----------|----------|
 | [GDD_20: Progression & RPG](gdd/GDD_20_Progression_RPG.md) | XP, уровни 1-50, деревья навыков |
-| [GDD_21: Quest & Mission System](gdd/GDD_21_Quest_Mission_System.md) | 5 типов квестов, цепочки гильдий |
+| [GDD_21: Quest & Mission System](gdd/GDD_21_Quest_Mission_System.md) | 5 типов квестов, цепочки гильдий. **✅ Реализовано в NPC+Quests v2** (2026-06-07..09). |
 | [GDD_22: Economy & Trading](gdd/GDD_22_Economy_Trading.md) | Кредиты, ресурсы, спрос/предложение |
-| [GDD_23: Faction & Reputation](gdd/GDD_23_Faction_Reputation.md) | 5 Гильдий, подполье, СОЛ, репутация |
+| [GDD_23: Faction & Reputation](gdd/GDD_23_Faction_Reputation.md) | 5 Гильдий, подполье, СОЛ, репутация. **✅ Reputation+NpcAttitude подсистема реализована в NPC+Quests v2.** |
 | [GDD_24: Narrative & World Lore](gdd/GDD_24_Narrative_World_Lore.md) | Хронология, глоссарий, сюжетные арки |
 
 **Полный каталог:** [`docs/gdd/GDD_INDEX.md`](gdd/GDD_INDEX.md)
@@ -726,6 +834,7 @@ FixedUpdate (сервер):
 | Этап | Связанные GDD |
 |------|--------------|
 | Этап 1 (Прототип ядра) | GDD_01, GDD_10, GDD_11 |
+| **Этап 1.4 + 1.9 (корабли + meta-требования)** | GDD_10, GDD_11, `docs/Ships/Key-subsystem/`, `docs/MetaRequirement/` |
 | Этап 2 (Сетевой фундамент) | GDD_12, GDD_12.1, GDD_13 |
 | Этап 2.1 (Масштабный мир) | GDD_12.1, GDD_02 |
 | Этап 2.5 (Визуальный прототип) | GDD_02, GDD_14, GDD_15 |

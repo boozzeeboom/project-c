@@ -1,6 +1,7 @@
-# GDD_10: Ship System v4.0
+# GDD_10: Ship System v4.1
 
-**Версия:** 4.0 | **Дата:** Апрель 2026 | **Статус:** В разработке | **Ветка:** `qwen-gamestudio-agent-dev`
+**Версия:** 4.1 | **Дата:** 10 июня 2026 г. (дизайн-контент без изменений с Апрель 2026; добавлена §13 «Реализация в коде») | **Статус:** 🟢 В разработке → частично реализовано (Key + MetaRequirement)
+**Ветка:** `qwen-gamestudio-agent-dev` (дизайн), `feature/npc-quest-v2` (merged) (реализация)
 
 ---
 
@@ -577,7 +578,142 @@ public struct DispatcherMessage {
 | **Agent Summary** | `../Ships/AGENTS_SHIP_SYSTEM_SUMMARY.md` | Оркестрация и roadmap |
 | **Lore Book** | `WORLD_LORE_BOOK.md` | Лор мира из книги |
 | **Ship Lore** | `SHIP_LORE_AND_MECHANICS.md` | Лор кораблей |
+| **Ship Key Subsystem** | `../Ships/Key-subsystem/00_OVERVIEW.md` | Физический ключ-предмет для запуска (R2-SHIP-KEY-001, 2026-06-06) |
+| **MetaRequirement** | `../MetaRequirement/00_OVERVIEW.md` | Универсальная система требований (R2-META-REQ-001, 2026-06-06) |
+| **NPC + Quests v2** | `../NPC_quests/08_ROADMAP.md` | Квесты используют MetaRequirement pattern (post-MVP, T-Q??) |
 
 ---
 
-*Документ создан: Апрель 2026 | Агенты: @technical-director, @game-designer, @lead-programmer, @engine-programmer, @gameplay-programmer, @unity-specialist*
+## 13. Реализация в коде (2026-06-06)
+
+> **Секция добавлена Mavis 2026-06-10.** Дизайн-контент (физика, мезий, модули, коридоры высот) остаётся в зоне game-designer'а. Здесь — **только статус реализации** физического ключа и lock-key подсистемы.
+
+### 13.1 Ship Key Subsystem (R2-SHIP-KEY-001, 2026-06-06) ✅
+
+**MVP:** физический ключ-предмет для запуска корабля. F-посадка блокируется, если в инвентаре пилота нет нужного ключа.
+
+**Архитектура:**
+```
+SERVER (host):
+[ShipKeyServer] : NetworkBehaviour (BootstrapScene, DontDestroyOnLoad)
+    ├── ShipKeyBinding registry: Dictionary<netId, ShipKeyBinding>
+    ├── CanPlayerBoard(clientId, netId) → bool + reason
+    ├── RequestCanBoardRpc(netId) → TargetRpc (CanBoard response)
+    └── Defense-in-depth guard в SubmitSwitchModeRpc
+
+CLIENT:
+[ShipKeyClientState] (singleton, RuntimeInitializeOnLoadMethod)
+    ├── OnBoardDenied event
+    ├── OnBindingsPushed event
+    └── ReceiveShipKeyCanBoardResponseTargetRpc / ReceiveShipKeyBindingsTargetRpc
+
+UI:
+[ShipKeyToast] (UIDocument, UI Toolkit) — fade-out 3 сек
+    └── "Нужен ключ X для корабля Y" + визуальная индикация
+```
+
+**Wiring:**
+- ✅ `Assets/_Project/Scripts/Ship/Key/ShipKeyBinding.cs` (MonoBehaviour, ship ↔ key ItemData)
+- ✅ `Assets/_Project/Scripts/Ship/Key/ShipKeyServer.cs` (NetworkBehaviour hub)
+- ✅ `Assets/_Project/Scripts/Ship/Key/ShipKeyClientState.cs` (singleton projection)
+- ✅ `Assets/_Project/Scripts/Ship/Key/ShipKeyToast.cs` (UIDocument)
+- ✅ `NetworkPlayer.cs` — F-key разделён на выход/посадку, pre-F RPC `RequestCanBoard` (1.5 сек timeout)
+- ✅ `NetworkManagerController.cs` — `CreateShipKeyClientState()` (auto-spawn)
+- ✅ `InventoryWorld.cs` — `+HasItem(clientId, itemId)` extension
+
+**Ассеты:**
+- ✅ 3 SO `ItemData`: `Item_Key_ShipLight/Medium/Heavy.asset`
+- ✅ 1 PanelSettings: `ShipKeyPanelSettings.asset`
+- ✅ `WorldScene_0_0.unity` — 3 KeyRod PickupItem + ShipKeyBinding на 3 ShipController
+
+**Статус:** ✅ **DONE** (MVP). **Deprecated** — superseded by MetaRequirement (см. §13.2).
+
+**Документация:** `docs/Ships/Key-subsystem/00_OVERVIEW.md` + `KNOWN_ISSUES.md` + `SHIP_KEY_TO_META_REQUIREMENT_MIGRATION.md`.
+
+### 13.2 MetaRequirement v1 (R2-META-REQ-001, 2026-06-06) ✅
+
+**Универсализация:** обобщить Ship Key Subsystem (1 предмет на 1 корабль) в систему требований для **любых** Interactable-объектов с массивом требуемых предметов (от 1 до N) и логикой ALL / ANY / AT_LEAST_N.
+
+**Архитектура (generic):**
+```
+SERVER (host):
+[MetaRequirementRegistry] : NetworkBehaviour (scene-placed в BootstrapScene)
+    ├── RegisterMetaRequirement(netId, MetaRequirement)
+    ├── CanPlayerUse(clientId, netId) → bool + reason
+    └── RequestCanUseRpc(netId) → TargetRpc
+
+MetaRequirement на любом GameObject (generic):
+    ├── _requiredItems : ItemData[]  ← массив
+    ├── _logic : RequirementLogic { All, Any, AtLeastN }
+    ├── _requiredCount : int (для AtLeastN)
+    ├── _interactableDisplayName : string
+    ├── OnInventoryChanged event
+    └── CanPlayerUse(ulong clientId, out string reason)
+
+CLIENT:
+[MetaRequirementClientState] (singleton)
+    ├── OnCanUseResponse
+    ├── OnBindingsPushed
+    └── OnInteractableFound
+
+UI:
+[MetaRequirementToast] (UIDocument) — generic: "X/N собрано" + список недостающих
+```
+
+**Wiring:**
+- ✅ `Assets/_Project/Scripts/MetaRequirement/RequirementLogic.cs` (enum)
+- ✅ `MetaRequirement.cs`, `MetaRequirementRegistry.cs`, `MetaRequirementClientState.cs`, `MetaRequirementToast.cs`, `LockBox.cs` (7 файлов, ~50 KB)
+- ✅ `InventoryWorld.cs` — 4 extensions: `HasAllItems`, `HasAnyItem`, `CountOf`, `GetMissingItems`
+- ✅ `NetworkManagerController.CreateMetaRequirementClientState()` (auto-spawn)
+- ✅ `NetworkPlayer.TryInteractNearestMetaRequirement()` (E-key entry point для НЕ-кораблей)
+
+**Алиасы (backward compat):**
+- ⏳ `ShipKeyBinding.cs` — `[Obsolete]` empty subclass → `MetaRequirement`
+- ⏳ `ShipKeyServer.cs` / `ShipKeyClientState.cs` — legacy API сохранён, `[Obsolete]`
+- ⏳ TODO (через 1-2 релиз-цикла): удалить алиасы после миграции всех сцен
+
+**Тестовые ассеты (R2-META-REQ-001 verification):**
+- ✅ 3 SO `ItemData`: `Item_Key_Blue/Red/Green.asset`
+- ✅ 6 URP/Lit материалов: `Key_{Blue,Red,Green}.mat` + `LockBox_{Blue,Red,Green}.mat`
+- ✅ `MetaRequirementPanelSettings.asset`
+- ✅ `WorldScene_0_0.unity`: `[MetaRequirement_Test]` parent + 3 Pickup + 3 LockBox
+- ✅ `BootstrapScene.unity`: `[MetaRequirementRegistry]` + `[MetaRequirementToast]`
+
+**Compile (2026-06-06):** 0 errors, warnings только pre-existing + by-design obsolete-usage.
+
+**Stats:**
+- +7 C# файлов (~50 KB)
+- +3 SO ItemData
+- +6 материалов
+- +9 GameObject'ов в сценах
+- +9 документов в `docs/MetaRequirement/`
+
+**TODO (Этап 2+):**
+- ⏳ `_consumeOnUse` логика + reservation pattern
+- ⏳ `ProgressInfo` UI в `MetaRequirementToast` (multi-item tooltip "3/5 ключей собрано")
+- ⏳ Disconnect → reconnect race fix
+- ⏳ Multi-MetaRequirement в одной зоне (сейчас 1→1)
+- ⏳ Использование `MetaRequirement` для квестов (T-Q?? когда потребуется)
+
+**Документация:** `docs/MetaRequirement/00_OVERVIEW.md` (517 строк) + `10_IMPLEMENTATION_GUIDE.md` (22 KB) + `20_INSPECTOR_REFERENCE.md` + `30_RUNTIME_FLOW.md` + `40_TESTING_GUIDE.md` + `50_KNOWN_ISSUES.md` + `99_CHANGELOG.md` + `RECIPES.md` (10 рецептов).
+
+### 13.3 Что НЕ реализовано (out of scope)
+
+- ⏳ **Полноценная inventory-based boarding UI** — сейчас `ShipKeyToast` показывает только текст. UI с прогресс-баром "X/N ключей собрано" — TODO.
+- ⏳ **Пер-slot key requirement** — разные ключи для разных слотов (Light/Medium/Heavy vs custom binding).
+- ⏳ **Multiple keys per ship** — расширение `MetaRequirement._requiredItems[]` уже поддерживает, но не используется в production.
+- ⏳ **Key как квестовый reward** — `DialogueAction.GiveItem` может выдать ключ (T-Q15, T-Q27), но **реальный** квест "принеси ключ" ещё не создан (только тестовые).
+- ⏳ **NPC trade ключами** — сейчас ключ — только pickup с пола. Возможность купить у NPC — Future.
+- ⏳ **Crafting ключа** — `docs/Crafting_system/` анализ сделан, реализация — future.
+
+### 13.4 Где смотреть актуальный статус
+
+- **`docs/Ships/Key-subsystem/00_OVERVIEW.md`** — обзор Ship Key Subsystem
+- **`docs/Ships/Key-subsystem/SHIP_KEY_TO_META_REQUIREMENT_MIGRATION.md`** — миграция
+- **`docs/MetaRequirement/00_OVERVIEW.md`** — дизайн MetaRequirement
+- **`docs/MetaRequirement/99_CHANGELOG.md`** — changelog
+- **`docs/MMO_Development_Plan.md`** §1.4, §1.5, §1.9 — общий план
+
+---
+
+*Документ создан: Апрель 2026 | Агенты: @technical-director, @game-designer, @lead-programmer, @engine-programmer, @gameplay-programmer, @unity-specialist | Дополнено Mavis 2026-06-10 (раздел реализации Key + MetaRequirement)*

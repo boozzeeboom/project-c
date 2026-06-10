@@ -24,7 +24,7 @@
 |2 | `Assets/_Project/UI/Resources/UI/CharacterWindow.uss` | +`.quest-section`, `.quest-section-title`, `.quest-row`, `.quest-row-state-*`, `.quest-row-actions`, `.btn-accept-quest` (все с `!important` — theme type > class) | +40 |
 |3 | `Assets/_Project/Scripts/UI/Client/CharacterWindow.cs` | +9 полей (sections/lists/btn/tab/cache), +4 row factory, +SwitchTab ветка "quests", +EnsureBuilt подписки + OnDisable unsubscribe, +RefreshQuestsCache, +OnAcceptQuestClicked, +3 handler'а (snapshot/result/discovered), + filter integration | +200 |
 |4 | `Assets/_Project/Quests/Client/QuestClientState.cs` | +`RequestAcceptQuest(questId, fromNpcId)` forward в `QuestServer.Instance?.RequestAcceptQuestRpc` | +10 |
-|5 | `docs/dev/T-Q11_DESIGN_NOTE.md` | Этот файл | (new) |
+|5 | `T-Q11_DESIGN_NOTE.md` | Этот файл | (new) |
 
 ### Что НЕ делается (отложено в следующие тикеты)
 

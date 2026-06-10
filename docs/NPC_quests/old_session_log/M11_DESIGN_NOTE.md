@@ -132,4 +132,4 @@
 - `Assets/_Project/Quests/Data/Quests/FindArtifact.asset` — минимизирован (1 stage, 0 rewards)
 - `Assets/_Project/Quests/Data/Dialogs/MiraDefault.asset` — переписан (8 nodes)
 - `Assets/_Project/Scenes/World/WorldScene_0_0.unity` — +2 pickups (AncientKey, TimeCrystal)
-- `docs/dev/M11_DESIGN_NOTE.md` — этот файл (rewrite)
+- `M11_DESIGN_NOTE.md` — этот файл (rewrite)

@@ -3,7 +3,7 @@
  QuestTracker.uxml — top-right HUD-панель для отслеживаемого квеста.
  T-Q12: показывает имя квеста + текущую цель + кнопку "Скрыть".
  Auto-hide (`display: none`) когда нет tracked quest.
- Документация: docs/dev/T-Q12_DESIGN_NOTE.md.
+ Документация: docs/NPC_quests/old_session_log/T-Q12_DESIGN_NOTE.md.
 -->
 <ui:UXML xmlns:ui="UnityEngine.UIElements" xmlns:uie="UnityEditor.UIElements">
  <ui:VisualElement name="root" class="quest-tracker-root">

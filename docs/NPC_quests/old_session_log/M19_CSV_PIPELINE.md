@@ -215,7 +215,7 @@ Assets/_Project/Quests/Import/                        — default import folder
   └── objectives.csv (example)
   └── actions.csv (example)
   └── rewards.csv (example)
-docs/dev/M19_CSV_PIPELINE.md                          — этот документ
+old_session_log/M19_CSV_PIPELINE.md          — этот документ (v1, ЗАМЕНЁН)
 ```
 
 ---

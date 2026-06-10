@@ -6,7 +6,7 @@
 // Pattern: как DialogWindow / MarketWindow — UIDocument singleton, scene-placed
 // в BootstrapScene [QuestTracker] GameObject, DontDestroyOnLoad.
 //
-// Документация: docs/dev/T-Q12_DESIGN_NOTE.md.
+// Документация: docs/NPC_quests/old_session_log/T-Q12_DESIGN_NOTE.md.
 
 using UnityEngine;
 using UnityEngine.UIElements;

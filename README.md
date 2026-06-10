@@ -1,9 +1,11 @@
 # Project C: The Clouds
-**Version:** 0.0.18 | **Stage:** Этап 2.1 ЗАВЕРШЁН · Этап 2.5 В ПРОЦЕССЕ (Визуальный прототип)
+**Version:** 0.0.19 | **Stage:** Этап 2.5 В ПРОЦЕССЕ (Визуальный прототип) + NPC+Quests v2 готов (M1–M19)
 **По мотивам книги «Интеграл Пьявица» — Бруно Арендт**
 ## Весь проект: [TheGravity](https://thegravity.ru) & [TheClouds](https://thegravity.ru/project-c/)
 
 ---
+
+> **Что нового в v0.0.19 (10 июня 2026):** NPC + Quests v2 подсистема полностью реализована (50+ тикетов, 19 milestones ✅ DONE, ~8400 строк кода, ~62 ч работы). CharacterWindow v2 (5+ табов) + DialogWindow + QuestTracker + QuestToast + MetaRequirement (lock-key) + Ship Key MVP. См. `docs/NPC_quests/08_ROADMAP.md` + `docs/MMO_Development_Plan.md`.
 **no marketing/bullshit/tech-heavy/sound sections**
 ---
 
@@ -40,7 +42,7 @@
 | Файл | Описание |
 |------|----------|
 | [`docs/WORLD_LORE_BOOK.md`](docs/WORLD_LORE_BOOK.md) | **Полный лор книги** — мир, технологии, гильдии, персонажи, сюжет |
-| [`docs/MMO_Development_Plan.md`](docs/MMO_Development_Plan.md) | **Полный план разработки** MMO игры (v0.0.17) |
+| [`docs/MMO_Development_Plan.md`](docs/MMO_Development_Plan.md) | **Полный план разработки** MMO игры (v0.0.18-npc-quests-v2-complete) |
 | [`docs/QWEN_CONTEXT.md`](docs/QWEN_CONTEXT.md) | **Текущий контекст** — что сделано, какие задачи в работе |
 | [`docs/STEP_BY_STEP_DEVELOPMENT.md`](docs/STEP_BY_STEP_DEVELOPMENT.md) | **Пошаговая разработка** |
 | [`docs/CONTROLS.md`](docs/CONTROLS.md) | Документация по управлению |
@@ -53,6 +55,17 @@
 | [`docs/GIT_WORKFLOW_ADVANCED.md`](docs/GIT_WORKFLOW_ADVANCED.md) | Продвинутый Git workflow |
 | [`docs/QUICK_GIT_COMMANDS.md`](docs/QUICK_GIT_COMMANDS.md) | Быстрые команды Git |
 | [`docs/VERSION_BACKUP.md`](docs/VERSION_BACKUP.md) | Резервное копирование |
+
+#### 🆕 v0.0.19 — Новые подсистемы (NPC + Quests, Character, Lock-Key)
+
+| Каталог | Описание |
+|---------|----------|
+| [`docs/NPC_quests/`](docs/NPC_quests/) | **NPC + Quests v2** — главный roadmap (50+ тикетов, M1–M19 ✅, сессионные логи, риски). 19 milestones: data foundation, server core, real-time objectives, ItemRegistry, Toast, QuestDatabaseWindow, QuestNodeGraph, CSV Import/Export, Mira E2E demo. |
+| [`docs/NPC_quests/old_session_log/`](docs/NPC_quests/old_session_log/) | **Исторические devlog'и** — 27 файлов (M*, T-Q*, 99_FINAL_STATUS). Не читать для текущей работы; для возврата к старому. |
+| [`docs/Character-menu/`](docs/Character-menu/) | **CharacterWindow v2** — 5+ табов (Персонаж, Корабль, Репутация, Контракты, Инвентарь, Квесты), P-key для открытия, 4 FIX'ы от MarketWindow, Visual fix 2026-06-05. |
+| [`docs/Character-menu/sub_inventory-tab/`](docs/Character-menu/sub_inventory-tab/) | **sub_inventory-tab** — Inventory v2 (Phases 0-7), TAB-колесо + P-таб, single source of truth с `InventoryClientState`. 8 файлов (~150 KB). |
+| [`docs/MetaRequirement/`](docs/MetaRequirement/) | **MetaRequirement v1 (lock-key)** — универсальная система требований (R2-META-REQ-001). Массив предметов с логикой ALL/ANY/AT_LEAST_N. 9 файлов. |
+| [`docs/Ships/Key-subsystem/`](docs/Ships/Key-subsystem/) | **Ship Key MVP** (R2-SHIP-KEY-001) + **Migration guide** → MetaRequirement. Физический ключ-предмет для запуска корабля. |
 
 **Полный каталог:** [`docs/INDEX.md`](docs/INDEX.md)
 
@@ -116,7 +129,11 @@
 | Мышь | Вращение камеры |
 | Left Shift | Бег |
 | Space | Прыжок |
-| **F** | Сесть в корабль (ближайший < 5м) |
+| **E** | Взаимодействие: NPC (диалог) / PickupItem / Chest / MetaRequirement (lock-key) |
+| **F** | Сесть в корабль (ближайший < 5м) — **🟡 требуется ключ** ([Ship Key](docs/Ships/Key-subsystem/00_OVERVIEW.md) / [MetaRequirement](docs/MetaRequirement/00_OVERVIEW.md)) |
+| **Tab** | Круговое колесо инвентаря (GTA-стиль, 8 секторов) |
+| **P** | CharacterWindow (5+ табов: Персонаж, Корабль, Репутация, Контракты, Инвентарь, Квесты) |
+| ESC | Закрыть активное окно |
 
 #### Режим корабля
 | Клавиша | Действие |
@@ -149,11 +166,14 @@
 - **Фермерские угодья** — разбросаны по горным пикам (Эверест, Килиманджаро, Эльбрус)
 - **Заброшенные корабли** — остовы, лут, убежища потеряшек
 - **Завеса** — ядовитый слой, спуск = опасность
+- **NPC + Диалоги** — E на NPC открывает DialogWindow (typewriter, F-skip), ветвящиеся сюжеты
+- **Квестовые триггер-зоны** — `TriggerZone_*` для auto-discover квестов (M13)
 
 ### Фракции
 - **5 Гильдий** (Мысли, Созидания, Силы, Тайн, Успеха) — ранговая система, квесты, репутация
 - **Подпольные организации** — сопротивление, свободные торговцы, культ Фрейхейта
 - **Новое Правительство** — тоталитарный контроль, цензура, репрессии
+- **ReputationClientState + NpcAttitudeClientState** — `ProjectC.Factions.FactionId` (12 lore значений), per-NPC attitude. Dialog actions `AddReputation` / `AddNpcAttitude` (T-Q13, T-Q16). Mira E2E: `+25 GuildOfThoughts, +10 mira_01`.
 
 ---
 
@@ -168,8 +188,15 @@
    - Зарабатывай кредиты/ресурсы
    - Улучшай корабль / расти репутацию у фракций
    - Открывай новые миссии и локации
+4. **Квесты (NPC+Quests v2):**
+   - `E` на NPC → `DialogWindow` (typewriter, F-skip) → принять квест
+   - `QuestTracker` (HUD overlay) — отслеживает текущий quest + objective counter
+   - `QuestToast` — "📜 Accepted", "💚 +5", "💰 +200 CR", "✨ Найден квест"
+   - Persistence: `JsonQuestStateRepository` — квесты + репутация переживают restart сервера
 
 **Пример:** Игрок доставляет груз на базу → находит квест на артефакт → находит его на заброшенной платформе → улучшает корабль → открывает миссии Гильдии.
+
+**Mira E2E (M11, верифицировано 2026-06-08):** Pickup ключа → E → Mira → "Помогу" → TakeItem → AcceptQuest → Active → Pickup кристалла → E → "Отдать" → AddRep 25 + AddAtt 10 + GiveCredits 1000 → Completed. Полный playthrough: `old_session_log/M11_COMMIT_SUMMARY.md`.
 
 ---
 
@@ -205,7 +232,7 @@
 
 ## 8. Текущий статус
 
-**Ветка:** `main` | **Версия:** `v0.0.19-day-night-cycle-complete`
+**Ветка:** `feature/npc-quest-v2` (merged) | **Версия:** `v0.0.19-npc-quests-v2-complete`
 
 ### ✅ Реализовано
 - Процедурная генерация мира (15 горных пиков + 890+ облаков, 3 слоя)
@@ -231,7 +258,11 @@
 - Third-person камера (адаптивная)
 - WorldCamera (режим свободного полёта для разработки)
 - UI: подсказки управления, навигация по пикам
-- Инвентарь (круговое колесо, 8 типов, сундуки с LootTable, подбор предметов)
+- **Inventory v2 (Phases 0-7, 2026-06-05):**
+  - Круговое колесо (TAB) + детальный список (P-таб sub_inventory-tab)
+  - Single source of truth: `InventoryClientState` (server-authoritative)
+  - 8 типов предметов, сундуки с LootTable, drop в мир
+  - `JsonInventoryRepository` (atomic JSON per-client в persistentDataPath)
 - Сетевой мультиплеер (Host + Client + Dedicated Server)
 - Disconnect/Reconnect UI (авто-реконнект, сохранение инвентаря)
 - Синхронизация подбора (предметы/сундуки исчезают у всех)
@@ -258,16 +289,42 @@
   - Moon mesh + phase material (MoonController) at 400000 distance
   - ConstellationController — 215 stars, 24 constellations, sky dome radius 900000
   - Runtime profile instantiation (prevents asset reset on play/stop)
+- **🆕 Ship Key Subsystem (R2-SHIP-KEY-001, 2026-06-06):** `ShipKeyBinding` + `ShipKeyServer` + `ShipKeyClientState` + `ShipKeyToast`. 3 ключа (`Item_Key_ShipLight/Medium/Heavy`), F-boarding с server-side валидацией. [Документация](docs/Ships/Key-subsystem/00_OVERVIEW.md).
+- **🆕 MetaRequirement v1 (R2-META-REQ-001, 2026-06-06):** Универсальная система требований. `MetaRequirementRegistry` + `MetaRequirementClientState` + `MetaRequirementToast` + 4 extensions в `InventoryWorld` (`HasAllItems` / `HasAnyItem` / `CountOf` / `GetMissingItems`). Логика ALL/ANY/AT_LEAST_N. [Документация](docs/MetaRequirement/00_OVERVIEW.md).
+- **🆕 CharacterWindow v2 (2026-06-05):** P-окно, 5+ табов (Персонаж, Корабль, Репутация, Контракты, Инвентарь, Квесты), 4 FIX'ы от MarketWindow, visual fix (characterWindowUss). [Документация](docs/Character-menu/00_OVERVIEW.md).
+- **🆕 NPC + Quests v2 (50+ тикетов, 19 milestones ✅, 2026-06-07..09):**
+  - **M1-M11 Foundation + E2E:** Data foundation (FactionId, NpcAttitude, QuestDefinition, DialogTree, NpcDefinition, FactionDefinition) → Server core (QuestServer, QuestWorld, QuestInstance, RPCs) → Player interaction (E→NPC, DialogWindow) → Reputation + NpcAttitude → Item integration (TryRemove, ContractMetaBridge) → Action set (GiveCredits/AddRep/AddAtt) → Persistence (JsonQuestStateRepository, immediate save) → Cleanup (v1 NPC removed) → Editor (QuestDatabase) → **Mira E2E demo** (10 bugfixes, verified).
+  - **M13 Real-time objectives:** Server tick (5 sec) → `EvaluateAndAdvanceStage()` → multi-stage квесты → onEnter/onComplete actions → `TryTurnIn` мигрирован на `TryAdvanceStage`.
+  - **M14 ItemRegistry:** Single source of truth для 32 items, `id ↔ ItemData` mapping. Устраняет fragile `Resources.LoadAll` alphabetical order.
+  - **M15 Toast notifications:** `QuestToast` (queue-based) — "📜 Accepted", "💚 +5", "💰 +200 CR", "✨ Найден квест".
+  - **M16 QuestDatabaseWindow:** UI Toolkit EditorWindow — `Tools > ProjectC > Quests > Quest Database Explorer`.
+  - **M17 QuestNodeGraph (readonly):** `Tools > ProjectC > Quests > Quest Node Graph`, 4 node types.
+  - **M18 Editable QuestNodeGraph:** T-Q30..T-Q34 — TextField, save back to SO, add/delete stages, prereq edge, drag-create.
+  - **M19 CSV Import/Export:** Single-file flat CSV, 18 колонок, `Tools > ProjectC > Quests > CSV Import/Export`. Round-trip compatible.
+  - **Тестовые квесты:** `collect_copper_ore`, `find_artifact` (EventDriven), `stage_intro_demo`, `stage_multi_demo`, `collect_copper` (CSV-imported).
+  - [Документация](docs/NPC_quests/08_ROADMAP.md) + [Итоговый статус 2026-06-09](docs/NPC_quests/old_session_log/99_FINAL_STATUS.md).
 
-### 🔄 В процессе (Этап 2.5)
+### 🔄 В процессе (открыто)
+
+- **M12 — Input remap (F = pickup, E = NPC)** — T-X4 future TODO. Сейчас E = NPC, pickup = F, ship boarding = F (с ключом). [Дорожная карта §8.3 T-X4](docs/NPC_quests/08_ROADMAP.md).
+- **Quest content creation** — 5 тестовых квестов, нужен авторский контент (5-10 production квестов на базе Mira, FindArtifact, EventDrivenQuest).
+- **M17 polish — edges always visible** в QuestGraphView (~1 ч).
 - Модель корабля (Blender → FBX, замена примитива)
 - Модель персонажа (Mixamo)
 - Текстуры горных пиков (Poly Haven)
 - Post-Processing — ✅ ЗАВЕРШЕНО (Bloom, ColorAdjustments, Vignette работают)
 - ⏳ Moon orbit angle fine-tuning (mesh visible, phases work)
 - ⏳ Рефакторинг ShipController.cs — разделение на подсистемы
+- ⏳ T-X2 — Faction migration (TradeItemDefinition → FactionId) — design discussion needed
+- ⏳ Localization (все строки в .po / LocalizationTable)
+- ⏳ MetaRequirement `_consumeOnUse` логика + `ProgressInfo` UI (Этап 2+)
 
 ---
+
+**Подробный roadmap всех 19 milestones + 50+ тикетов:** [`docs/NPC_quests/08_ROADMAP.md`](docs/NPC_quests/08_ROADMAP.md)
+**Полный план проекта (Этапы 0-7):** [`docs/MMO_Development_Plan.md`](docs/MMO_Development_Plan.md)
+**GDD-каталог (дизайн всех систем):** [`docs/gdd/GDD_INDEX.md`](docs/gdd/GDD_INDEX.md)
+**Итоговый статус 2026-06-09 (17/19 milestones done):** [`docs/NPC_quests/old_session_log/99_FINAL_STATUS.md`](docs/NPC_quests/old_session_log/99_FINAL_STATUS.md)
 
 **Репозиторий:** [github.com/boozzeeboom/project-c](https://github.com/boozzeeboom/project-c)
 **Контакт:** [@indeed174](https://t.me/indeed174)

@@ -872,7 +872,7 @@ public InventoryResultCode TryRemove(ulong clientId, int itemId, int count)
 - `NpcFaction` (12 lore values) в `World/Npc/NpcData.cs:9-23` (GuildOfThoughts, GuildOfCreation, ..., Pirates, Neutral, None)
 - `Faction` (для item licensing) в `Trade.Config` (`TradeItemDefinition.requiredFaction`)
 
-**Решение v2:** **promote `NpcFaction` → `FactionId` в `ProjectC.Factions` namespace** как authoritative enum. `TradeItemDefinition` переименовывает свой `Faction` поле → `FactionId requiredFaction`. Trade-файлы: тикет T-X1, требует grep transitive deps (см. `08_ROADMAP.md`).
+**Решение v2:** **promote `NpcFaction` → `FactionId` в `ProjectC.Factions` namespace** как authoritative enum. `TradeItemDefinition` переименовывает свой `Faction` поле → `FactionId requiredFaction`. Trade-файлы: тикет **T-X2**, требует design discussion (см. `08_ROADMAP.md` §8.3 T-X2 + §8.0 «DEFERRED»).
 
 **`FactionDefinition : SO`** садится рядом с `FactionId` enum, индексируется через `FactionDatabase : SO` registry.
 

@@ -54,27 +54,29 @@
 ## 2. Milestone progress
 
 ```
-M1  ✅ Foundation (SO, structs, enums)
-M2  ✅ Server core (RPCs, DTOs, event bus)
-M3  ✅ Player interaction (E → NPC → dialog)
-M4  ✅ Quest log + tracker (P-таб, HUD)
-M5  ✅ Reputation + NpcAttitude
-M6  ✅ Item integration (give/take items)
-M7  ✅ Full action set (credits, rep, market)
-M8  ✅ Persistence (JSON save/load)
-M9  ✅ Cleanup (v1 NPC removed)
-M10 ✅ Editor tool (QuestDatabaseWindow)
-M11 ✅ Mira end-to-end demo
-M12 ⏸️ DEFERRED (F = pickup input remap)
-M13 ✅ Real-time objectives (T-Q20..T-Q22)
-M14 ✅ Item ID system (ItemRegistry)
-M15 ✅ Toast notifications
-M16 ✅ QuestDatabaseWindow
-M17 ✅ QuestNodeGraph + QuestGraphView
-M18 ✅ Editable nodes + CRUD + dependencies
-M19 ✅ CSV Import/Export pipeline
+M1   ✅ Foundation (SO, structs, enums)
+M1.5 ✅ Inventory persistence + Event bus foundation
+M2   ✅ Server core (RPCs, DTOs, event bus)
+M2.5 ✅ Input refactor (PlayerInputReader events)
+M3   ✅ Player interaction (E → NPC → dialog)
+M4   ✅ Quest log + tracker (P-таб, HUD)
+M5   ✅ Reputation + NpcAttitude
+M6   ✅ Item integration (give/take items)
+M7   ✅ Full action set (credits, rep, market)
+M8   ✅ Persistence (JSON save/load)
+M9   🟡 Cleanup (v1 NPC ✅, T-X1 ✅, T-X2 ⏭️ DEFERRED)
+M10  ✅ Editor tool (T-Q09 ✅, T-Q09b ⏭️ — покрыт M17)
+M11  ✅ Mira end-to-end demo
+M12  ⏸️ DEFERRED (T-X4: F = pickup input remap)
+M13  ✅ Real-time objectives (T-Q20..T-Q22)
+M14  ✅ Item ID system (ItemRegistry)
+M15  ✅ Toast notifications
+M16  ✅ QuestDatabaseWindow
+M17  ✅ QuestNodeGraph + QuestGraphView
+M18  ✅ Editable nodes + CRUD + dependencies
+M19  ✅ CSV Import/Export pipeline
 ```
-**19/19 closed.** 🎉
+**17/19 done + 1 partial (M9) + 1 deferred (M12).** 🎉
 
 ---
 
@@ -84,7 +86,9 @@ M19 ✅ CSV Import/Export pipeline
 |--------|-----------|----|
 | M12 — Input remap (F = pickup) | 🟡 Medium | 1 |
 | M17 polish — edges always visible | 🟢 Low | 1 |
-| Quest content creation (actual quests!) | 🔴 High | ∞ |
+| T-X2 — Faction migration (TradeItemDefinition → FactionId) | 🟡 Medium | design discussion |
+| M15.1 — NPC displayName lookup в Toast (если потребуется) | 🟢 Low | 0.5 |
+| **Quest content creation** (5–10 production квестов на базе Mira/FindArtifact/EventDrivenQuest) | 🔴 High | ∞ |
 | Localization | 🟢 Low | 3 |
 | M11 NPC quest (Mira) non-functional test | 🟡 Medium | 1 |
 
@@ -120,12 +124,12 @@ M19 ✅ CSV Import/Export pipeline
 | Файл | Что |
 |------|-----|
 | `08_ROADMAP.md` | **Главный roadmap** — прогресс, план, все milestones |
-| `dev/M19_CSV_PIPELINE_v2.md` | CSV pipeline: single-file flat format, spec, FAQ для writer'a |
-| `dev/M18_DESIGN_NOTE.md` | Editable GraphView: T-Q30..T-Q34 |
-| `dev/M17_DESIGN_NOTE.md` | QuestNodeGraph (readonly) |
-| `dev/M16_DESIGN_NOTE.md` | QuestDatabaseWindow |
-| `dev/M15_DESIGN_NOTE.md` | Toast system |
-| `dev/M14_DESIGN_NOTE.md` | ItemRegistry |
-| `dev/M13_DESIGN_NOTE.md` | Real-time objectives |
-| `dev/T-Q22_DESIGN_NOTE.md` | Multi-stage + onEnter/onComplete |
-| И 10+ других | M11, T-Q11, analysis notes... |
+| `M19_CSV_PIPELINE_v2.md` | CSV pipeline: single-file flat format, spec, FAQ для writer'a |
+| `old_session_log/M18_DESIGN_NOTE.md` | Editable GraphView: T-Q30..T-Q34 |
+| `old_session_log/M17_DESIGN_NOTE.md` | QuestNodeGraph (readonly) |
+| `old_session_log/M16_DESIGN_NOTE.md` | QuestDatabaseWindow |
+| `old_session_log/M15_DESIGN_NOTE.md` | Toast system |
+| `old_session_log/M14_DESIGN_NOTE.md` | ItemRegistry |
+| `old_session_log/M13_DESIGN_NOTE.md` | Real-time objectives |
+| `old_session_log/T-Q22_DESIGN_NOTE.md` | Multi-stage + onEnter/onComplete |
+| И 10+ других (см. `old_session_log/`) | M11, T-Q11, analysis notes... |

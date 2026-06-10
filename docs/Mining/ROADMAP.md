@@ -422,31 +422,27 @@ A docs/Mining/ROADMAP.md (T-G05 ✅ DONE)
 
 ---
 
-### T-G07 — Prefab + сцена (Phase 6, ~0.5 ч)
+### T-G07 — Player gather animation stub (~1 ч)
 
-**Файлы:** префаб + BootstrapScene.unity + WorldScene_0_0.unity
+> **Переопределён:** T-G07 изначально был "scene placement" (всё уже работает). Теперь T-G07 = **анимация персонажа во время сбора**.
 
-**Префаб `ResourceNode_Default.prefab`:**
-- GameObject с: `NetworkObject`, `Collider` (isTrigger), `MeshRenderer` (сфера/куб для теста), `ResourceNode` компонент, **`MetaRequirement` компонент**
-- `ResourceNode._metaRequirement` → ссылка на свой `MetaRequirement`
-- `ResourceNode._config` = `IronVein.asset`
-- `MetaRequirement._requiredItems[0]` = tool (кирка), или пусто (без требований)
-- `Renderer` нужен для анимации (MaterialPropertyBlock)
+**Файл:** `Assets/_Project/Scripts/Player/NetworkPlayer.cs` (дополнение)
 
-**BootstrapScene.unity:**
-- Новый GameObject `[GatheringServer]` с `NetworkObject` + `GatheringServer` (server-only)
-- `GatheringToastController` на корневом UIDocument (reuse существующий PanelSettings)
-
-**WorldScene_0_0.unity:**
-- 3-5 ResourceNode в кластере @ (40000, 2510, 40000) рядом с тестовым Mira
-- Разные конфиги: IronVein (руда), CopperVein (медь), PlantHerb (трава без инструмента)
+**Скоуп:**
+- `NetworkPlayer.cs` — метод `SetGatherVisual(bool isGathering)` (вызывается из `GatheringClientState` событий)
+- В MVP — простой scale-эффект на модели персонажа:
+  - `OnGatherStarted` → корутина пульсации (scale 1.0 ↔ 1.08, LOOP)
+  - `OnGatherEnded` → стоп корутины, scale = 1.0
+- Параметры: `_gatherScaleAmplitude = 0.08f`, `_gatherPulsePeriod = 0.6f` (поля в `NetworkPlayer`)
+- **Не использует** `StateHasher`/аниматор — только scale transform на корне.
+- Вызов: `GatheringClientState.OnGatherProgress` при первом `progress >= 0` → `OnGatherStarted`. `OnGatherCompleted/Interrupted/Denied/Cancelled` → `OnGatherEnded`.
+- **Вход для будущего:** заменить scale-пульсацию на `PlayerAnimationController.SetGathering(true/false)` когда появится полноценная state-машина.
 
 **Verify:**
-- Загрузить WorldScene_0_0 → 3-5 ResourceNode видны
-- StartHost → все ResourceNode зарегистрированы в GatheringServer
-- `[GatheringServer]` GameObject active в BootstrapScene
+- Host → F на IronVein → персонаж пульсирует (scale 1.0↔1.08).
+- Сбор завершён → пульсация останавливается, scale = 1.0.
 
-**Risk:** low. Scene placement.
+**Risk:** low.
 
 ---
 
@@ -620,7 +616,7 @@ A docs/Mining/ROADMAP.md (T-G01 ✅ DONE)
 
 **M1–M3 = 📋 PLANNED.** 7 тикетов. Код не начат. Дизайн-решения утверждены (F-key, MetaRequirement tool check, без distance check). Оценка: ~9-12 ч чистого кода, ~12-18 ч с фиксами. Старт — по готовности.
 
-**Обновлено 2026-06-10:** T-G01 ✅ DONE. T-G02 ✅ DONE. T-G03 ✅ DONE. T-G04 ✅ DONE. T-G05 ✅ DONE (F-key в NetworkPlayer + TryGatherNearestNode + приоритет gather>boarding). End-to-end flow работает: F → MetaReq → OnAccessAllowed → Gather → ProgressBar → Completed. 2 тикета осталось (T-G06 animation, T-G07 verify).
+**Обновлено 2026-06-10:** T-G01 ✅ DONE. T-G02 ✅ DONE. T-G03 ✅ DONE. T-G04 ✅ DONE. T-G05 ✅ DONE. T-G06 ✅ DONE (анимация ResourceNode: пульсация + emissive + исчезание). T-G07 (переопределён) — анимация персонажа во время сбора (ожидает реализации). **5 из 6 тикетов закрыто.**
 
 ---
 

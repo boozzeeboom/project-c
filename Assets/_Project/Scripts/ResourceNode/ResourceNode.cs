@@ -438,7 +438,7 @@ namespace ProjectC.ResourceNode
 
         private void OnReplicatedStateChanged(ResourceNodeState previous, ResourceNodeState current)
         {
-            if (IsServer) return; // анимация только на клиентах
+            if (!IsClient) return; // анимация только на клиентах (Host — тоже клиент, skip только для dedicated server)
 
             // Остановить текущую анимацию
             if (_gatherAnimCoroutine != null)

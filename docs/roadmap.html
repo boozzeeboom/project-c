@@ -938,6 +938,95 @@
   .graph-section__footer a { color: var(--accent2); text-decoration: none; }
   .graph-section__footer a:hover { text-decoration: underline; }
 
+  /* ===== COLLAB SECTION ===== */
+  .collab-section {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    margin-top: 40px;
+    overflow: hidden;
+    position: relative;
+  }
+  .collab-section::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 2px;
+    background: linear-gradient(90deg, #a78bfa, #c084fc, #e879f9);
+  }
+  .collab-section--hidden { display: none; }
+  .collab-section__toggle {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 16px 20px;
+    cursor: pointer;
+    user-select: none;
+    transition: background .2s, border-color .2s;
+  }
+  .collab-section__toggle:hover { background: rgba(167,139,250,.03); }
+  .collab-section__toggle-left {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+  .collab-section__icon {
+    width: 36px;
+    height: 36px;
+    background: rgba(167,139,250,.1);
+    border: 1px solid rgba(167,139,250,.25);
+    border-radius: 8px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 16px;
+    flex-shrink: 0;
+  }
+  .collab-section__toggle-text h2 { font-size: .95rem; font-weight: 700; color: #fff; margin: 0; }
+  .collab-section__toggle-text p { font-size: .75rem; color: var(--text-dim); margin-top: 2px; }
+  .collab-section__arrow { width: 20px; height: 20px; fill: var(--text-dim); transition: transform .3s; flex-shrink: 0; }
+  .collab-section--open .collab-section__arrow { transform: rotate(180deg); }
+  .collab-section__body {
+    max-height: 0;
+    overflow: hidden;
+    transition: max-height .4s ease;
+  }
+  .collab-section--open .collab-section__body { max-height: 0; }
+  .collab-section--open.is-loaded .collab-section__body { max-height: 10000px; }
+  .collab-section__content {
+    padding: 0 20px 20px;
+  }
+  .collab-section__content h1 { font-size: 1.3rem; font-weight: 800; color: #fff; margin: 0 0 16px; }
+  .collab-section__content h2 { font-size: 1.1rem; font-weight: 700; color: #fff; margin: 0 0 12px; }
+  .collab-section__content h3 { font-size: .95rem; font-weight: 600; color: #c084fc; margin: 16px 0 8px; }
+  .collab-section__content p { font-size: .88rem; color: var(--text-dim); margin-bottom: 10px; line-height: 1.6; }
+  .collab-section__content p strong { color: var(--text); }
+  .collab-section__content ul { list-style: none; margin-bottom: 12px; }
+  .collab-section__content ul li { font-size: .88rem; color: var(--text); padding: 4px 0 4px 16px; position: relative; }
+  .collab-section__content ul li::before { content: '•'; position: absolute; left: 0; color: #c084fc; font-weight: 700; }
+  .collab-section__content ul li ul { margin-top: 4px; }
+  .collab-section__content ul li ul li { font-size: .82rem; color: var(--text-dim); }
+  .collab-section__content ul li ul li::before { content: '›'; color: var(--text-dim); }
+  .collab-section__content code { font-family: 'Fira Code', 'Consolas', monospace; background: rgba(192,132,252,.08); color: #c084fc; padding: 2px 6px; border-radius: 4px; font-size: .8rem; }
+  .collab-section__content blockquote { border-left: 3px solid #a78bfa; padding-left: 14px; margin: 12px 0; color: var(--text-dim); font-size: .88rem; font-style: italic; }
+  .collab-section__content table { width: 100%; border-collapse: collapse; margin: 12px 0; font-size: .82rem; }
+  .collab-section__content th { background: rgba(167,139,250,.08); color: #c084fc; font-weight: 700; text-align: left; padding: 8px 12px; border-bottom: 2px solid var(--border); }
+  .collab-section__content td { padding: 6px 12px; border-bottom: 1px solid var(--border); color: var(--text); }
+  .collab-section__content a { color: #c084fc; text-decoration: none; }
+  .collab-section__content a:hover { text-decoration: underline; }
+  .collab-section__content pre { background: rgba(0,0,0,.3); border: 1px solid var(--border); border-radius: 6px; padding: 12px 16px; overflow-x: auto; margin: 12px 0; }
+  .collab-section__content pre code { background: none; padding: 0; color: var(--text); font-size: .8rem; }
+  .collab-section__content hr { border: none; height: 1px; background: var(--border); margin: 20px 0; }
+  .collab-section__loading, .collab-section__error {
+    text-align: center;
+    padding: 40px 20px;
+    color: var(--text-dim);
+    font-size: .85rem;
+  }
+  .collab-section__error { color: #f87171; }
+
   /* ===== FLOATING CLOUD GENERATOR BUTTON ===== */
   .cloud-btn {
     position: fixed;
@@ -1003,6 +1092,53 @@
   @keyframes float {
     0%, 100% { transform: translateY(0); }
     50% { transform: translateY(-4px); }
+  }
+
+  /* ===== COLLAB BUTTON ===== */
+  .collab-btn {
+    position: fixed;
+    top: 128px;
+    right: 12px;
+    z-index: 1002;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 12px 20px;
+    background: linear-gradient(135deg, #1a1a2e 0%, #2d1b4e 100%);
+    border: 2px solid rgba(167, 139, 250, .4);
+    border-radius: 50px;
+    color: #a78bfa;
+    font-size: .82rem;
+    font-weight: 700;
+    box-shadow: 0 4px 20px rgba(167, 139, 250, .15);
+    transition: all .3s;
+    backdrop-filter: blur(8px);
+    cursor: pointer;
+    animation: pulseBorder 2s ease-in-out infinite;
+    font-family: inherit;
+    text-decoration: none;
+  }
+  .collab-btn:hover {
+    transform: scale(1.05) translateY(-2px);
+    box-shadow: 0 6px 30px rgba(167, 139, 250, .4);
+    border-color: #a78bfa;
+    color: #fff;
+    animation: none;
+  }
+  .collab-btn__icon { font-size: 16px; animation: wave 2s ease-in-out infinite; display: inline-block; }
+  .collab-btn__text { letter-spacing: 0.5px; }
+  @media (max-width: 600px) {
+    .collab-btn { top: 128px; right: 8px; padding: 8px 14px; font-size: 11px; }
+    .collab-btn__text { display: none; }
+  }
+  @keyframes pulseBorder {
+    0%, 100% { box-shadow: 0 4px 20px rgba(167, 139, 250, .15); border-color: rgba(167, 139, 250, .4); }
+    50% { box-shadow: 0 4px 30px rgba(167, 139, 250, .5); border-color: rgba(167, 139, 250, .9); }
+  }
+  @keyframes wave {
+    0%, 100% { transform: rotate(0deg); }
+    25% { transform: rotate(-12deg); }
+    75% { transform: rotate(12deg); }
   }
 
   /* ===== FOOTER ===== */
@@ -1100,6 +1236,12 @@
   <span class="cloud-btn__icon">☁️</span>
   <span class="cloud-btn__text">CloudGen</span>
 </a>
+
+<!-- FLOATING COLLAB BUTTON -->
+<button class="collab-btn" onclick="toggleCollab()" title="Присоединиться к команде">
+  <span class="collab-btn__icon">🤝</span>
+  <span class="collab-btn__text">В команду</span>
+</button>
 
 <!-- CONTENT AREA -->
 <div class="content-area">
@@ -1280,9 +1422,27 @@
         <a href="https://github.com/boozzeeboom/project-c/blob/main/graphify-out/GRAPH_REPORT.md" target="_blank">GRAPH_REPORT.md</a>
       </div>
     </div>
-  </div>
+    </div>
 
-  <!-- FOOTER -->
+    <!-- COLLAB SECTION -->
+    <div class="collab-section" id="collab-section">
+    <div class="collab-section__toggle" onclick="toggleCollab()">
+      <div class="collab-section__toggle-left">
+        <div class="collab-section__icon">🤝</div>
+        <div class="collab-section__toggle-text">
+          <h2>Присоединиться к команде</h2>
+          <p>Project C: The Clouds — открытая разработка, ищем таланты</p>
+        </div>
+      </div>
+      <svg class="collab-section__arrow" viewBox="0 0 24 24"><path d="M7.41 8.59L12 13.17l4.59-4.58L18 10l-6 6-6-6 1.41-1.41z"/></svg>
+    </div>
+    <div class="collab-section__body" id="collab-body">
+      <div id="collab-loading" class="collab-section__loading">Нажмите, чтобы открыть</div>
+      <div id="collab-content" class="collab-section__content" style="display:none;"></div>
+    </div>
+    </div>
+
+    <!-- FOOTER -->
   <footer class="footer">
     <p class="footer__text" id="footer-text">Открытая разработка · Все коммиты на GitHub</p>
     <div class="footer__links">
@@ -1767,6 +1927,44 @@
     SECTION.classList.toggle('graph-section--open');
     LOADING.style.display = isOpen ? '' : 'none';
     IFRAME.style.display = isOpen ? 'none' : '';
+  };
+})();
+
+/* ================================================================
+   4. COLLAB SECTION (COLABORATION.md)
+   ================================================================ */
+(function() {
+  var SECTION = document.getElementById('collab-section');
+  var LOADING = document.getElementById('collab-loading');
+  var CONTENT = document.getElementById('collab-content');
+  if (!SECTION) return;
+
+  var loaded = false;
+
+  window.toggleCollab = function() {
+    var isOpen = SECTION.classList.contains('collab-section--open');
+    if (!isOpen && !loaded) {
+      var MD_URL = 'https://raw.githubusercontent.com/boozzeeboom/project-c/main/docs/COLABORATION.md?_=' + Date.now();
+      LOADING.textContent = 'Загрузка...';
+      LOADING.style.display = '';
+      CONTENT.style.display = 'none';
+      fetch(MD_URL, { cache: 'no-store' })
+        .then(function(res) {
+          if (!res.ok) throw new Error('HTTP ' + res.status);
+          return res.text();
+        })
+        .then(function(md) {
+          CONTENT.innerHTML = marked.parse(md);
+          LOADING.style.display = 'none';
+          CONTENT.style.display = '';
+          loaded = true;
+          SECTION.classList.add('is-loaded');
+        })
+        .catch(function(err) {
+          LOADING.innerHTML = 'Ошибка загрузки. <a href="https://github.com/boozzeeboom/project-c/blob/main/docs/COLABORATION.md" target="_blank" style="color:var(--accent2)">Открыть на GitHub →</a>';
+        });
+    }
+    SECTION.classList.toggle('collab-section--open');
   };
 })();
 </script>

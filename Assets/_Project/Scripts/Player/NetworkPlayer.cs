@@ -1101,8 +1101,8 @@ namespace ProjectC.Player
             if (inst != null) inst.OnCraftingResultReceived(result);
         }
 
-        /// <summary>Сервер пушит snapshot (CraftingServer -> client, TargetRPC).</summary>
-        [Rpc(SendTo.SpecifiedInParams)]
+        // T-C03: Crafting snapshot — full state of one station (sent on subscribe + after each mutation).
+        [Rpc(SendTo.Owner)]
         public void ReceiveCraftingSnapshotTargetRpc(ProjectC.Crafting.CraftingSnapshotDto snapshot, RpcParams rpcParams = default)
         {
             if (Debug.isDebugBuild) Debug.Log($"[NetworkPlayer] ReceiveCraftingSnapshotTargetRpc CALLED: station={snapshot.stationNetId} state={snapshot.jobState} owner={snapshot.ownerClientId} recipe={snapshot.activeRecipeId}");

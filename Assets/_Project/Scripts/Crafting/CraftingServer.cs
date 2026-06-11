@@ -192,7 +192,9 @@ namespace ProjectC.Crafting
             var invWorld = InventoryWorld.Instance;
             if (invWorld == null)
             {
-                Debug.LogWarning("[CraftingServer] InventoryWorld.Instance==null — пропускаем проверку инвентаря");
+                Debug.LogWarning("[CraftingServer] InventoryWorld.Instance==null — отказ");
+                SendResultToClient(clientId, CraftingResultDto.Denied(CraftingResultCode.InternalError, "Inventory not ready", stationNetId));
+                return;
             }
             else
             {
@@ -231,6 +233,9 @@ namespace ProjectC.Crafting
 
             var recipe = CraftingWorld.GetRecipe(recipeId);
             if (recipe == null) { SendResultToClient(clientId, CraftingResultDto.Denied(CraftingResultCode.NotFound, "Рецепт не найден", stationNetId)); return; }
+
+            // T-C07c: валидация buffer — должен быть не пуст
+            if (job.Buffer.Count == 0) { SendResultToClient(clientId, CraftingResultDto.Denied(CraftingResultCode.InvalidArgs, "Нет ингредиентов на станции", stationNetId)); return; }
 
             // FIX T-C07: вызываем станцию, а не мутируем job напрямую.
             // station.ServerStartCraft синхронизирует и _replicatedState (NetworkVariable) и job в CraftingWorld.

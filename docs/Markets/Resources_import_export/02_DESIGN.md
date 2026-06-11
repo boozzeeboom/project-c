@@ -131,7 +131,7 @@ antigrav_ingot_v01,Антигравий (осколок),1,100,Слиток ан
 | `tradeItems` | `tradeItemId` (case-insensitive) | warning + overwrite |
 | `marketItems` | `(tradeItemId, locationId)` | warning + overwrite |
 | `exchangeRates` | `(tradeItemId, inventoryItemName)` | warning + overwrite |
-| `recipes` | `recipeName` (= asset filename) | warning + overwrite |
+| ~~`recipes`~~ | ~~`recipeName` (= asset filename)~~ | **Phase 2 (skip with warning)** |
 
 ---
 
@@ -193,7 +193,7 @@ antigrav_ingot_v01,Антигравий (осколок),1,100,Слиток ан
 1. SELECT CSV file (user) → path
 2. PARSE CSV into 5 блоков (split by "# block=...")
 3. VALIDATE per-block (column types, required, duplicates)
-4. CROSS-VALIDATE (itemName ↔ tradeItemId, recipe ingredient ↔ inventory)
+4. CROSS-VALIDATE (itemName ↔ tradeItemId)
 5. PREVIEW (in Window: rows count, errors, warnings)
 6. USER confirms → APPLY
 7. CREATE/UPDATE each SO per block
@@ -352,7 +352,6 @@ public static class ResourcesCsvCrossValidator
         var tradeIds = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
         var marketItems = new HashSet<(string, string)>();
         var exchangeRates = new HashSet<(string, string)>();
-        var recipeNames = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
         
         // 1. Build indices
         if (blocks.TryGetValue("inventory", out var inv))
@@ -368,11 +367,9 @@ public static class ResourcesCsvCrossValidator
         if (blocks.TryGetValue("exchangeRates", out var xch))
             foreach (var r in xch) if (!r.HasError)
                 exchangeRates.Add((r.Get("tradeItemId"), r.Get("inventoryItemName")));
-        
-        if (blocks.TryGetValue("recipes", out var rec))
-            foreach (var r in rec) if (!r.HasError)
-                recipeNames.Add(r.Get("recipeName"));
-        
+
+        // Phase 2: if (blocks.TryGetValue("recipes", out var rec)) ... — CraftingCsvValidator
+
         // 2. inventory: uniqueness
         var dupInv = inv.GroupBy(r => r.Get("itemName"), StringComparer.OrdinalIgnoreCase)
             .Where(g => g.Count() > 1).Select(g => g.Key);
@@ -404,30 +401,23 @@ public static class ResourcesCsvCrossValidator
             }
         }
         
-        // 6. recipes: ingredients + outputs exist in inventory
-        foreach (var r in rec)
+        // 6. recipes — Phase 2 (out of scope MVP).
+        //    Парсер распознаёт секцию, но cross-validate не проверяет ингредиенты/outputs
+        //    (это будет делать CraftingCsvValidator в Phase 2). Здесь только убеждаемся,
+        //    что секция существует, иначе — global warning.
+        if (blocks.ContainsKey("recipes"))
         {
-            if (!r.HasError)
-            {
-                for (int i = 1; i <= MAX_INGREDIENTS; i++)
-                {
-                    var name = r.Get($"ingredient{i}Name");
-                    if (string.IsNullOrEmpty(name)) continue;
-                    if (!invNames.Contains(name))
-                        r.errors.Add($"recipes: ingredient{i}Name '{name}' not in inventory");
-                }
-                for (int i = 1; i <= MAX_OUTPUTS; i++)
-                {
-                    var name = r.Get($"output{i}Name");
-                    if (string.IsNullOrEmpty(name)) continue;
-                    if (!invNames.Contains(name))
-                        r.errors.Add($"recipes: output{i}Name '{name}' not in inventory");
-                }
-            }
+            // Ничего не валидируем в Phase 1 — Phase 2 CraftingCsvValidator займётся.
+            // Просто фиксируем факт для UI.
         }
     }
 }
 ```
+
+> 📌 **Phase 2 (отдельная итерация):** `CraftingCsvValidator.Validate` — проверяет
+> `recipeName` уникальность, `ingredientNName` / `outputMName` существование в
+> `inventory` блоке, `category` валидность и пр. Подключается к тому же `blocks`
+> dictionary, но только если есть секция `recipes`.
 
 ### 3.5 Шаг 6-7 — Apply (создание/обновление SO)
 
@@ -654,7 +644,7 @@ public static class ResourcesCsvExporter
 │ tradeItems: 5 rows, 0 errors                                    │
 │ marketItems: 8 rows, 0 errors                                   │
 │ exchangeRates: 4 rows, 0 errors                                 │
-│ recipes: 5 rows, 0 errors                                       │
+│ (recipes: 5 rows, skipped — Phase 2)                            │
 │                                                                 │
 │ ── Preview (first 50 rows) ──                                   │
 │ ┌─────┬────────────┬──────────┬────────┬──────────┬─────────┐   │
@@ -670,9 +660,9 @@ public static class ResourcesCsvExporter
 │ (none)                                                          │
 │                                                                 │
 │ ── Per-row errors (skip these rows) ──                          │
-│ Line 23 (recipes): ingredient1Name 'Железный' not in inventory │
+│ Line 23 (marketItems): tradeItemId 'unknown' not in tradeItems  │
 │                                                                 │
-│ [Status: Ready / X errors / N warnings]                         │
+│ [Status: Ready / X errors / N warnings / recipes: Phase 2 skip] │
 └─────────────────────────────────────────────────────────────────┘
 ```
 
@@ -700,15 +690,17 @@ public static class ResourcesCsvExporter
    ```
 3. Если хочет продавать на рынке — добавляет строки в `# block=tradeItems`,
    `# block=marketItems`, `# block=exchangeRates`.
-4. Если хочет рецепт — добавляет строку в `# block=recipes`.
-5. Сохраняет CSV (Ctrl+S).
-6. Открывает Unity → `Tools → ProjectC → Resources → CSV Import/Export`.
-7. Browse → выбирает CSV → Preview → видит 1 новую строку, 0 errors.
-8. Click **Import** → dialog: "Created 1 ItemData, Updated 0. Total 1 changes. 0 errors."
-9. Проверяет: `Resources/Items/Item_Resources_Медный_камень.asset` создан,
+4. Сохраняет CSV (Ctrl+S).
+5. Открывает Unity → `Tools → ProjectC → Resources → CSV Import/Export`.
+6. Browse → выбирает CSV → Preview → видит 1 новую строку, 0 errors.
+7. Click **Import** → dialog: "Created 1 ItemData, Updated 0. Total 1 changes. 0 errors."
+8. Проверяет: `Resources/Items/Item_Resources_Медный_камень.asset` создан,
    `ItemRegistry.asset` содержит новую запись.
-10. **Запускает Play Mode** → подбирает PickupItem с этим `ItemData` →
-    InventoryWorld загружает → работает.
+9. **Запускает Play Mode** → подбирает PickupItem с этим `ItemData` →
+   InventoryWorld загружает → работает.
+
+> **Рецепты (Phase 2):** если нужен крафт — отдельный CSV импортируется через
+> `CraftingCsvImporter` (см. `Crafting_system/` roadmap). В этом MVP не покрывается.
 
 ### Сценарий 2: Round-trip (export → import)
 

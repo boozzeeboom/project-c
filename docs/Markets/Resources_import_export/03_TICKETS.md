@@ -113,7 +113,8 @@ invokes MCP").
    `ItemRegistry.asset` содержит 33 записи (id 1..33), `entries[32].item` = новый ассет.
 5. Play Mode → PickupItem с этим itemData подбирается без NRE.
 
-**Что НЕ делаем:** tradeItems, marketItems, recipes — T-IE04, T-IE05.
+**Что НЕ делаем:** tradeItems, marketItems, exchangeRates — T-IE04.
+**Что НЕ делаем:** recipes — Phase 2 (out of scope MVP).
 
 ---
 
@@ -227,21 +228,22 @@ invokes MCP").
 ## Зависимости между тикетами
 
 ```
-T-IE01 ──┬──> T-IE02
-         │
-         └──> T-IE03 ──┬──> T-IE04 ──┐
-                       │             │
-                       └──> T-IE05 ──┤
-                                     │
-                       T-IE06 ───────┤
-                                     │
-                       T-IE07 ───────┤
-                                     │
-                       T-IE08 ◀─────┘
+T-IE01 ──┬──> T-IE02 ──┐
+         │            │
+         └──> T-IE03 ──┴──> T-IE04 ──┐
+                       │              │
+                       └──> T-IE05 ───┤
+                                      │
+                        T-IE06 ────────┤
+                                      │
+                        T-IE07 ◀──────┘
+
+⏭️ Phase 2 (Recipes):
+  T-IE01..T-IE07 ──> CraftingCsvSchema ──> CraftingCsvImporter ──> CraftingCsvExporter
 ```
 
 **T-IE02 можно параллелить с T-IE03** (cross-validator не зависит от импорта, но
-включается в UI только в T-IE07).
+включается в UI только в T-IE06).
 
 ---
 
@@ -249,26 +251,29 @@ T-IE01 ──┬──> T-IE02
 
 | Тикет | Сессий | LOC | Файлов |
 |-------|--------|-----|--------|
-| T-IE01 | 1 | ~450 | 2 |
-| T-IE02 | 0.5 (вместе с T-IE01) | ~150 | 1 |
-| T-IE03 | 1 | ~250 | 1 |
-| T-IE04 | 1 | ~300 | 0 (расширение) |
-| T-IE05 | 0.5 | ~200 | 0 (расширение) |
-| T-IE06 | 0.5 | ~250 | 1 |
-| T-IE07 | 1 | ~300 | 1 |
-| T-IE08 | 0.5 (с user validation) | ~50 | 2 (CSV + Schema.md) |
-| **ИТОГО** | **~4 сессии** | **~1950 LOC** | **8 файлов** |
+| T-IE01 | 1 | ~200 | 2 (Schema + Parser) |
+| T-IE02 | 0.5 (вместе с T-IE01) | ~110 | 1 (CrossValidator) |
+| T-IE03 | 1 | ~150 | 1 (Importer: inventory) |
+| T-IE04 | 1 | ~200 | 0 (расширение Importer) |
+| T-IE05 | 0.5 | ~200 | 1 (Exporter) |
+| T-IE06 | 1 | ~280 | 1 (Window) |
+| T-IE07 | 0.5 (с user validation) | ~50 | 2 (CSV sample + Schema doc) |
+| **ИТОГО** | **~3.5 сессии** | **~1190 LOC** | **~8 файлов** |
 
 Первая сессия может объединить T-IE01 + T-IE02 (как в Exchanger roadmap).
+Финальная сессия (T-IE07) — пользовательская валидация на реальных данных.
+
+⏭️ **Phase 2 (Recipes / CraftingStation):** ~3-4 сессии дополнительно, ~400 LOC.
+Отдельный roadmap, начинается после принятия MVP-импорта.
 
 ---
 
 ## Сравнение с Exchanger roadmap
 
-| Аспект | Exchanger (T-E01..T-E05) | Resources I/E (T-IE01..T-IE08) |
+| Аспект | Exchanger (T-E01..T-E05) | Resources I/E (T-IE01..T-IE07 + Phase 2) |
 |--------|--------------------------|---------------------------------|
-| Тикетов | 5 | 8 (больше подсистем) |
-| Сессий | ~1.5 | ~4 |
+| Тикетов | 5 | 7 (MVP) + Phase 2 (Recipes) |
+| Сессий | ~1.5 | ~3.5 (MVP) |
 | Паттерн | POCO + NetworkBehaviour + Tab | Editor-only (POCO + EditorWindow) |
 | Runtime-влияние | Да (ExchangeServer, ExchangeWorld) | Нет (только Editor) |
 | Меняет runtime-классы | Нет (zero-touch) | Нет (только `ItemRegistry` обновляется, что и так уже было) |

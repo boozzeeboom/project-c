@@ -1425,7 +1425,7 @@
     </div>
 
     <!-- COLLAB SECTION -->
-    <div class="collab-section" id="collab-section">
+    <div class="collab-section" id="team">
     <div class="collab-section__toggle" onclick="toggleCollab()">
       <div class="collab-section__toggle-left">
         <div class="collab-section__icon">🤝</div>
@@ -1934,7 +1934,7 @@
    4. COLLAB SECTION (COLABORATION.md)
    ================================================================ */
 (function() {
-  var SECTION = document.getElementById('collab-section');
+  var SECTION = document.getElementById('team');
   var LOADING = document.getElementById('collab-loading');
   var CONTENT = document.getElementById('collab-content');
   if (!SECTION) return;
@@ -1965,7 +1965,25 @@
         });
     }
     SECTION.classList.toggle('collab-section--open');
+
+    if (SECTION.classList.contains('collab-section--open')) {
+      setTimeout(function() {
+        SECTION.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      }, 100);
+      if (history.pushState) {
+        history.pushState(null, '', '#team');
+      }
+    } else {
+      if (history.pushState && location.hash === '#team') {
+        history.pushState(null, '', location.pathname + location.search);
+      }
+    }
   };
+
+  /* Auto-open if URL has #team hash */
+  if (location.hash === '#team') {
+    setTimeout(function() { window.toggleCollab(); }, 500);
+  }
 })();
 </script>
 

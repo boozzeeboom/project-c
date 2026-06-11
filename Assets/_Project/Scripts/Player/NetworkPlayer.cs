@@ -1132,6 +1132,18 @@ namespace ProjectC.Player
             ProjectC.Quests.Client.QuestClientState.Instance?.RaiseOnQuestDiscovered(questId, displayName);
         }
 
+        // ==================== EXCHANGE (Resources Exchanger) RPC TARGETS ====================
+        // T-E03: ExchangeServer вызывает этот метод НА конкретном NetworkPlayer,
+        // чтобы доставить результат Pack/Unpack именно этому клиенту.
+        // Аналог ReceiveTradeResultTargetRpc / ReceiveCraftingResultTargetRpc.
+        // Паттерн: TargetRpc на owner'а.
+
+        [Rpc(SendTo.Owner)]
+        public void ReceiveExchangeResultTargetRpc(ProjectC.Trade.Dto.ExchangeResultDto result, RpcParams rpcParams = default)
+        {
+            ProjectC.Trade.Client.ExchangeClientState.Instance?.OnExchangeResultReceived(result);
+        }
+
         // ==================== DIALOG V2 RPC TARGETS ====================
         // T-Q10: QuestServer (server-only singleton) шлёт dialog steps конкретному клиенту.
         // Клиентский handler: T-Q11 UI binding (DialogWindow.OnStepReceived).

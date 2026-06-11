@@ -286,3 +286,100 @@
 .market-row:hover, .warehouse-row:hover, .cargo-row:hover {
     background-color: rgba(100, 130, 180, 0.3);
 }
+
+/* ============================================
+   T-E04: Exchange tab (Resources Exchanger)
+   Pack/Unpack между инвентарём и складом
+   ============================================ */
+.exchange-section {
+    flex-grow: 1;
+    display: flex;
+    flex-direction: column;
+    min-height: 180px;
+}
+
+.exchange-panels {
+    flex-grow: 1;
+    flex-direction: row;
+    align-items: stretch;
+    min-height: 160px;
+}
+
+.exchange-panel {
+    flex-direction: column;
+    flex-grow: 1;
+    min-width: 180px;
+    max-width: 260px;
+    margin: 0 4px;
+}
+
+.exchange-panel-title {
+    color: rgb(180, 200, 220);
+    font-size: 11px;
+    -unity-font-style: bold;
+    margin-bottom: 4px;
+    margin-top: 4px;
+}
+
+.exchange-list {
+    flex-grow: 1;
+    min-height: 120px;
+    max-height: 200px;
+    background-color: rgba(30, 40, 60, 0.4);
+    border-width: 1px;
+    border-color: rgba(80, 100, 130, 0.4);
+    border-radius: 4px;
+}
+
+.exchange-arrows {
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    width: 110px;
+    min-width: 110px;
+    padding: 0 4px;
+}
+
+.action-btn.pack-btn {
+    background-color: rgba(80, 180, 80, 0.7);
+    font-size: 11px;
+    height: 32px;
+    margin: 4px 0;
+    width: 100%;
+}
+.action-btn.pack-btn:hover {
+    background-color: rgba(100, 220, 100, 0.9);
+}
+
+.action-btn.unpack-btn {
+    background-color: rgba(180, 140, 80, 0.7);
+    font-size: 11px;
+    height: 32px;
+    margin: 4px 0;
+    width: 100%;
+}
+.action-btn.unpack-btn:hover {
+    background-color: rgba(220, 180, 100, 0.9);
+}
+
+/* Row styles for exchange lists */
+.exchange-row {
+    flex-direction: row;
+    align-items: center;
+    height: 30px;
+    padding: 0 8px;
+}
+.exchange-row:hover {
+    background-color: rgba(100, 130, 180, 0.3);
+}
+.exchange-row-label {
+    flex-grow: 1;
+    font-size: 12px;
+}
+.exchange-row-qty {
+    width: 50px;
+    font-size: 11px;
+    -unity-text-align: middle-right;
+    color: rgb(180, 220, 180);
+}
+

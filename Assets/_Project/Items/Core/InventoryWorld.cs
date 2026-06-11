@@ -122,7 +122,21 @@ namespace ProjectC.Items
         // State
         // ===========================================================
 
-        private const int MAX_SLOTS = 32;
+        // T-E04: default 1000 чтобы обменник (Unpack 100шт за раз) работал.
+        // T-E04: сделано конфигурируемым — InventoryServer.maxSlots передаётся
+        // через ConfigureMaxSlots() в OnNetworkSpawn (см. InventoryServer.cs).
+        private const int DEFAULT_MAX_SLOTS = 1000;
+        private int _maxSlots = DEFAULT_MAX_SLOTS;
+
+        /// <summary>Текущий лимит слотов (конфигурируется через InventoryServer.maxSlots в инспекторе).</summary>
+        public int MaxSlots => _maxSlots;
+
+        /// <summary>Установить лимит слотов. Вызывается из InventoryServer после CreateAndInitialize().</summary>
+        public void ConfigureMaxSlots(int maxSlots)
+        {
+            _maxSlots = maxSlots > 0 ? maxSlots : DEFAULT_MAX_SLOTS;
+            Debug.Log($"[InventoryWorld] MaxSlots = {_maxSlots}");
+        }
         private const int MAX_STACK_DEFAULT = 1;
         private const float PICKUP_RANGE_M = 5f;
 
@@ -314,9 +328,9 @@ namespace ProjectC.Items
 
             // Валидация: место в инвентаре
             var data = GetOrCreate(clientId);
-            if (data.TotalCount >= MAX_SLOTS)
+            if (data.TotalCount >= _maxSlots)
                 return Fail(InventoryResultCode.InventoryFull,
-                    $"Инвентарь полон ({data.TotalCount}/{MAX_SLOTS})", itemId, -1);
+                    $"Инвентарь полон ({data.TotalCount}/{_maxSlots})", itemId, -1);
 
             // OK: добавляем
             data.AddItem(itemType, itemId);
@@ -339,7 +353,7 @@ namespace ProjectC.Items
 
         public InventoryResultDto TryDrop(ulong clientId, int slotIndex, int quantity, Vector3 worldPos, Vector3 playerPos)
         {
-            if (slotIndex < 0 || slotIndex >= MAX_SLOTS)
+            if (slotIndex < 0 || slotIndex >= _maxSlots)
                 return Fail(InventoryResultCode.InvalidSlot, $"Слот {slotIndex} вне диапазона", -1, slotIndex);
             if (quantity <= 0)
                 return Fail(InventoryResultCode.NotEnoughQuantity, "Quantity должен быть > 0", -1, slotIndex);
@@ -428,9 +442,9 @@ namespace ProjectC.Items
                 return Fail(InventoryResultCode.ItemNotFound, $"ID={itemId}", itemId, -1);
 
             var data = GetOrCreate(clientId);
-            if (data.TotalCount >= MAX_SLOTS)
+            if (data.TotalCount >= _maxSlots)
                 return Fail(InventoryResultCode.InventoryFull,
-                    $"Инвентарь полон ({data.TotalCount}/{MAX_SLOTS})", itemId, -1);
+                    $"Инвентарь полон ({data.TotalCount}/{_maxSlots})", itemId, -1);
 
             data.AddItem(itemType, itemId);
 
@@ -550,7 +564,7 @@ namespace ProjectC.Items
             {
                 locationId = locationId,
                 items      = items.ToArray(),
-                maxSlots   = MAX_SLOTS,
+                maxSlots   = _maxSlots,
                 credits    = ProjectC.Trade.Core.TradeWorld.Instance?.Repository?.GetCredits(clientId) ?? 0f,
             };
         }

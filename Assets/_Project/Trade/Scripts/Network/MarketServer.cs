@@ -292,6 +292,24 @@ namespace ProjectC.Trade.Network
             }
         }
 
+        public void PushPlayerSnapshot(ulong clientId)
+        {
+            if (!IsServer) return;
+            if (TradeWorld.Instance == null) return;
+
+            // Игрок может быть в нескольких зонах (если они overlap) — выбираем первую
+            // где он есть. Если ни в одной — пропускаем (UI не ждёт snapshot от Exchange).
+            foreach (var kv in MarketZoneRegistry.All)
+            {
+                var zone = kv.Value;
+                if (zone.IsPlayerInZone(clientId))
+                {
+                    SendSnapshotToClient(clientId, zone);
+                    return;
+                }
+            }
+        }
+
         private void SendSnapshotToClient(ulong clientId, MarketZone zone)
         {
             if (TradeWorld.Instance == null) return;

@@ -322,6 +322,9 @@ namespace ProjectC.Items.Network
                 var repository = new ProjectC.Core.JsonInventoryRepository();
                 InventoryWorld.CreateAndInitialize(repository);
 
+                // T-E04: применить лимит слотов из инспектора (по умолчанию 1000).
+                InventoryWorld.Instance.ConfigureMaxSlots(maxSlots);
+
                 // T-X0: hook client connect → load persisted inventory.
                 if (NetworkManager != null)
                 {

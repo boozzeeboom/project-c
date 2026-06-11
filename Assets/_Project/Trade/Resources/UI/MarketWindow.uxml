@@ -18,6 +18,7 @@
             <ui:Button name="tab-market" text="РЫНОК" class="tab-btn" />
             <ui:Button name="tab-warehouse" text="СКЛАД / ТРЮМ" class="tab-btn" />
             <ui:Button name="tab-contracts" text="КОНТРАКТЫ" class="tab-btn" />
+            <ui:Button name="tab-exchanger" text="ОБМЕННИК" class="tab-btn" />
         </ui:VisualElement>
 
         <!-- Количество (только в табе РЫНОК) -->
@@ -44,20 +45,41 @@
             <ui:ListView name="cargo-list" class="item-list" />
         </ui:VisualElement>
 
-        <!-- C2-refactor: вкладка КОНТРАКТЫ — список pending+active для текущей локации.
-             Доступ к контрактам через таб рынка (см. CONTRACTS_AS_MARKET_TAB_REFACTOR.md). -->
+        <!-- C2-refactor: вкладка КОНТРАКТЫ -->
         <ui:VisualElement name="contracts-section" class="list-section" style="display: none;">
             <ui:Label text="Контракты НП" class="section-title" />
             <ui:ListView name="contracts-list" class="item-list" />
         </ui:VisualElement>
 
-        <!-- Multi-ship selector (виден только когда > 1 корабля и таб СКЛАД) — display:none по умолчанию -->
+        <!-- T-E04: Вкладка ОБМЕННИК (Resources Exchanger — Pack/Unpack) -->
+        <ui:VisualElement name="exchange-section" class="exchange-section" style="display: none;">
+            <ui:Label text="Ресурсы: конвертация пикаблов ↔ ящики" class="section-title" />
+            <ui:VisualElement class="exchange-panels">
+                <!-- Левая панель: инвентарь игрока (пикаблы) -->
+                <ui:VisualElement class="exchange-panel inventory-panel">
+                    <ui:Label text="Инвентарь (ресурсы)" class="exchange-panel-title" />
+                    <ui:ListView name="exchange-inventory-list" class="exchange-list" />
+                </ui:VisualElement>
+                <!-- Стрелки-кнопки между панелями -->
+                <ui:VisualElement class="exchange-arrows">
+                    <ui:Button name="pack-btn" text="→ УПАКОВАТЬ" class="action-btn pack-btn" />
+                    <ui:Button name="unpack-btn" text="← РАСПАКОВАТЬ" class="action-btn unpack-btn" />
+                </ui:VisualElement>
+                <!-- Правая панель: склад (ящики) -->
+                <ui:VisualElement class="exchange-panel warehouse-panel">
+                    <ui:Label text="Склад (ящики)" class="exchange-panel-title" />
+                    <ui:ListView name="exchange-warehouse-list" class="exchange-list" />
+                </ui:VisualElement>
+            </ui:VisualElement>
+        </ui:VisualElement>
+
+        <!-- Multi-ship selector -->
         <ui:VisualElement name="ship-selector-container" class="ship-selector-container" style="display: none;">
             <ui:Label text="Корабль:" class="ship-selector-label" />
             <ui:DropdownField name="ship-selector" class="ship-selector" />
         </ui:VisualElement>
 
-        <!-- Кнопки действий (набор меняется в зависимости от таба) -->
+        <!-- Кнопки действий -->
         <ui:VisualElement class="actions">
             <ui:Button name="buy-btn" text="КУПИТЬ" class="action-btn buy" />
             <ui:Button name="sell-btn" text="ПРОДАТЬ" class="action-btn sell" />

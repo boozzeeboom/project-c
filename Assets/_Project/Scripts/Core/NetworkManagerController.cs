@@ -110,7 +110,11 @@ namespace ProjectC.Core
             // эмитит events для CraftingProgressController + CraftingWindow.
             CreateCraftingClientState();
 
-            // Автоматический запуск Dedicated Server если передан аргумент -server
+            // T-E03: ExchangeClientState — клиентская проекция обменника.
+            // Принимает результат Pack/Unpack от ExchangeServer.
+            CreateExchangeClientState();
+
+            // Автоматический запуск Dedicated Server
             if (IsDedicatedServerMode())
             {
                 Debug.Log("[Network] Запуск в режиме Dedicated Server");
@@ -292,6 +296,29 @@ namespace ProjectC.Core
             var go = new GameObject("[CraftingClientState]");
             go.AddComponent<ProjectC.Crafting.CraftingClientState>();
             Debug.Log("[NMC] Created [CraftingClientState] as root GameObject");
+        }
+
+        /// <summary>
+        /// T-E03: ExchangeClientState singleton. Паттерн идентичен CreateCraftingClientState.
+        /// </summary>
+        private void CreateExchangeClientState()
+        {
+            var existing = FindObjectsByType<ProjectC.Trade.Client.ExchangeClientState>(FindObjectsInactive.Include);
+            foreach (var inst in existing)
+            {
+                if (inst != null && inst.transform.parent == null)
+                {
+                    Debug.Log("[NMC] ExchangeClientState already root, skipping creation");
+                    return;
+                }
+            }
+            if (existing.Length > 0)
+            {
+                Debug.LogWarning($"[NMC] Found {existing.Length} non-root ExchangeClientState in scene — DontDestroyOnLoad would fail. Creating root replacement.");
+            }
+            var go = new GameObject("[ExchangeClientState]");
+            go.AddComponent<ProjectC.Trade.Client.ExchangeClientState>();
+            Debug.Log("[NMC] Created [ExchangeClientState] as root GameObject");
         }
 
         private void Start()

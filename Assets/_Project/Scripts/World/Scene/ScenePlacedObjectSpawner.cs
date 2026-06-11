@@ -40,7 +40,42 @@ namespace ProjectC.World.Scene
                 StartCoroutine(RetrySubscribe());
             }
 
+            // T-E04 FIX: подпишемся на OnServerStarted — на случай если [ExchangeServer] в BootstrapScene
+            // не был спавнут в Start() (тогда IsServer ещё false). После StartHost нужно повторно
+            // попытаться спавнить scene-placed NetworkObject в уже загруженных сценах.
+            if (NetworkManager.Singleton != null)
+            {
+                NetworkManager.Singleton.OnServerStarted += HandleServerStarted;
+                if (showDebugLogs)
+                    Debug.Log("[ScenePlacedObjectSpawner] Subscribed to NetworkManager.OnServerStarted");
+            }
+            else
+            {
+                // NWM может быть ещё не готов — попробуем через кадр
+                StartCoroutine(SubscribeToNetworkManager());
+            }
+
             // Также спавним объекты в уже загруженных сценах (на случай если сцена загружена до нашего Start)
+            SpawnInAllLoadedScenes();
+        }
+
+        private System.Collections.IEnumerator SubscribeToNetworkManager()
+        {
+            yield return null;
+            if (NetworkManager.Singleton != null)
+            {
+                NetworkManager.Singleton.OnServerStarted += HandleServerStarted;
+                if (showDebugLogs)
+                    Debug.Log("[ScenePlacedObjectSpawner] Subscribed to NetworkManager.OnServerStarted (retry)");
+            }
+        }
+
+        private void HandleServerStarted()
+        {
+            if (showDebugLogs)
+                Debug.Log("[ScenePlacedObjectSpawner] HandleServerStarted: re-spawn scene-placed NetworkObjects");
+            // После StartHost: ещё раз пробежимся по загруженным сценам (BootstrapScene в частности),
+            // потому что при Start() мы могли не заспавнить (IsServer был false).
             SpawnInAllLoadedScenes();
         }
 

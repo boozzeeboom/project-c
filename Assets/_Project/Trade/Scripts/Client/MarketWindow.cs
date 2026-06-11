@@ -4,6 +4,8 @@ using ProjectC.Trade;
 using ProjectC.Trade.Dto;
 using UnityEngine;
 using UnityEngine.UIElements;
+using ProjectC.Trade.Core;
+using ProjectC.Trade.Network;
 
 namespace ProjectC.Trade.Client
 {
@@ -80,9 +82,33 @@ namespace ProjectC.Trade.Client
         // но после каждой операции (Load/Unload) сервер присылает updatedCargoSnapshot.
         private WarehouseEntryDto[] _cargoCache = Array.Empty<WarehouseEntryDto>();
 
-        // C2-refactor: кэш контрактов (active+available текущей локации).
-        // Заполняется из HandleContractSnapshot (подписка на ContractClientState).
+        // C2-refactor: кэш контрактов
         private ContractDto[] _contractsCache = Array.Empty<ContractDto>();
+
+        // T-E04: Exchange tab (Resources Exchanger)
+        private VisualElement _exchangeSection;
+        private ListView _exchangeInvList;   // слева: инвентарь (пикаблы)
+        private ListView _exchangeWhList;    // справа: склад (ящики)
+        private Button _packBtn;
+        private Button _unpackBtn;
+        private int _selectedExchangeInvItem = -1;
+        private int _selectedExchangeWhItem = -1;
+        private List<ItemRow> _exchangeInvCache = new List<ItemRow>();
+        private List<ItemRow> _exchangeWhCache = new List<ItemRow>();
+
+        /// <summary>
+        /// T-E04: Строка для списков обменника (инвентарь→склад / склад→инвентарь).
+        /// </summary>
+        private struct ItemRow
+        {
+            public string displayName;      // название
+            public int haveQty;             // сколько есть
+            public int maxPacks;            // максимум упаковок/распаковок
+            public int inventoryQty;        // сколько штук = 1 паку (rate.inventoryQty) — для Pack
+            public int warehouseQty;        // сколько коробок = 1 распаковку (rate.warehouseQty) — для Unpack
+            public string warehouseItemId;  // ID товара на складе (для unpack)
+            public int inventoryItemId;     // ID предмета в инвентаре (для pack)
+        }
 
         private bool _built = false;
 
@@ -176,6 +202,12 @@ namespace ProjectC.Trade.Client
             _cargoSection = _root.Q<VisualElement>("cargo-section");
             // C2-refactor: contracts section
             _contractsSection = _root.Q<VisualElement>("contracts-section");
+            // T-E04: exchange elements
+            _exchangeSection = _root.Q<VisualElement>("exchange-section");
+            _exchangeInvList = _root.Q<ListView>("exchange-inventory-list");
+            _exchangeWhList = _root.Q<ListView>("exchange-warehouse-list");
+            _packBtn = _root.Q<Button>("pack-btn");
+            _unpackBtn = _root.Q<Button>("unpack-btn");
             _shipSelectorContainer = _root.Q<VisualElement>("ship-selector-container");
             _shipSelector = _root.Q<DropdownField>("ship-selector");
             _buyBtn = _root.Q<Button>("buy-btn");
@@ -253,13 +285,46 @@ namespace ProjectC.Trade.Client
                 };
             }
 
+            // T-E04: Exchange inventory list (left — pickable items)
+            if (_exchangeInvList != null)
+            {
+                _exchangeInvList.makeItem = MakeExchangeRow;
+                _exchangeInvList.bindItem = BindExchangeInvRow;
+                _exchangeInvList.fixedItemHeight = 30;
+                _exchangeInvList.selectionType = SelectionType.Single;
+                _exchangeInvList.selectedIndex = -1;
+                _exchangeInvList.selectionChanged += selectedItems =>
+                {
+                    _selectedExchangeInvItem = FindSelectedItemIndex<ItemRow>(_exchangeInvList, selectedItems);
+                    _exchangeInvList.Rebuild();
+                };
+            }
+
+            // T-E04: Exchange warehouse list (right — boxes)
+            if (_exchangeWhList != null)
+            {
+                _exchangeWhList.makeItem = MakeExchangeRow;
+                _exchangeWhList.bindItem = BindExchangeWhRow;
+                _exchangeWhList.fixedItemHeight = 30;
+                _exchangeWhList.selectionType = SelectionType.Single;
+                _exchangeWhList.selectedIndex = -1;
+                _exchangeWhList.selectionChanged += selectedItems =>
+                {
+                    _selectedExchangeWhItem = FindSelectedItemIndex<ItemRow>(_exchangeWhList, selectedItems);
+                    _exchangeWhList.Rebuild();
+                };
+            }
+
             var marketTabBtn = _root.Q<Button>("tab-market");
             var warehouseTabBtn = _root.Q<Button>("tab-warehouse");
             // C2-refactor: 3-й таб КОНТРАКТЫ
             var contractsTabBtn = _root.Q<Button>("tab-contracts");
+            // T-E04: 4-й таб ОБМЕННИК
+            var exchangeTabBtn = _root.Q<Button>("tab-exchanger");
             if (marketTabBtn != null) marketTabBtn.clicked += () => SwitchTab("market");
             if (warehouseTabBtn != null) warehouseTabBtn.clicked += () => SwitchTab("warehouse");
             if (contractsTabBtn != null) contractsTabBtn.clicked += () => SwitchTab("contracts");
+            if (exchangeTabBtn != null) exchangeTabBtn.clicked += () => SwitchTab("exchange");
 
             if (_buyBtn != null) _buyBtn.clicked += OnBuyClicked;
             if (_sellBtn != null) _sellBtn.clicked += OnSellClicked;
@@ -270,6 +335,9 @@ namespace ProjectC.Trade.Client
             if (_acceptBtn != null) _acceptBtn.clicked += OnAcceptContractClicked;
             if (_completeBtn != null) _completeBtn.clicked += OnCompleteContractClicked;
             if (_failBtn != null) _failBtn.clicked += OnFailContractClicked;
+            // T-E04: exchange button handlers
+            if (_packBtn != null) _packBtn.clicked += OnPackClicked;
+            if (_unpackBtn != null) _unpackBtn.clicked += OnUnpackClicked;
 
             if (_shipSelector != null)
             {
@@ -328,6 +396,24 @@ namespace ProjectC.Trade.Client
                 contractState.OnContractResult += HandleContractResult;
             }
 
+            // T-E04: подписка на ExchangeClientState для таба ОБМЕННИК.
+            var exchangeState = ProjectC.Trade.Client.ExchangeClientState.Instance;
+            if (exchangeState != null)
+            {
+                exchangeState.OnResultReceived += HandleExchangeResult;
+            }
+            else
+            {
+                Debug.LogWarning("[MarketWindow] ExchangeClientState.Instance == null, обменник UI не будет получать результаты");
+            }
+
+            // T-E04: подписка на InventoryClientState для инвентаря в табе ОБМЕННИК.
+            var invState = ProjectC.Items.Client.InventoryClientState.Instance;
+            if (invState != null)
+            {
+                invState.OnSnapshotUpdated += RefreshExchangeData;
+            }
+
             SwitchTab("market");
             SetVisible(visibleOnStart);
             _doc.rootVisualElement.MarkDirtyRepaint();
@@ -353,6 +439,18 @@ namespace ProjectC.Trade.Client
             {
                 contractState.OnSnapshotUpdated -= HandleContractSnapshot;
                 contractState.OnContractResult -= HandleContractResult;
+            }
+            // T-E04: отписка от ExchangeClientState
+            var exchangeState = ProjectC.Trade.Client.ExchangeClientState.Instance;
+            if (exchangeState != null)
+            {
+                exchangeState.OnResultReceived -= HandleExchangeResult;
+            }
+            // T-E04: отписка от InventoryClientState
+            var invState = ProjectC.Items.Client.InventoryClientState.Instance;
+            if (invState != null)
+            {
+                invState.OnSnapshotUpdated -= RefreshExchangeData;
             }
         }
 
@@ -963,10 +1061,11 @@ namespace ProjectC.Trade.Client
         private void SwitchTab(string tab)
         {
             _activeTab = tab;
-            // C2-refactor: 3 таба — market / warehouse / contracts
+            // T-E04: 4 таба — market / warehouse / contracts / exchange
             bool isMarket = tab == "market";
             bool isWarehouse = tab == "warehouse";
             bool isContracts = tab == "contracts";
+            bool isExchange = tab == "exchange";
 
             // FIX: прячем ВСЮ секцию (заголовок + список), а не только ListView —
             // иначе 3 заголовка "Товары на рынке / Ваш склад / Груз корабля" висят одновременно
@@ -976,6 +1075,8 @@ namespace ProjectC.Trade.Client
             if (_cargoSection != null) _cargoSection.style.display = isWarehouse ? DisplayStyle.Flex : DisplayStyle.None;
             // C2-refactor: contracts section
             if (_contractsSection != null) _contractsSection.style.display = isContracts ? DisplayStyle.Flex : DisplayStyle.None;
+            // T-E04: exchange section
+            if (_exchangeSection != null) _exchangeSection.style.display = isExchange ? DisplayStyle.Flex : DisplayStyle.None;
 
             // Кнопки — набор меняется по табу
             if (_buyBtn != null) _buyBtn.style.display = isMarket ? DisplayStyle.Flex : DisplayStyle.None;
@@ -986,6 +1087,15 @@ namespace ProjectC.Trade.Client
             if (_acceptBtn != null) _acceptBtn.style.display = isContracts ? DisplayStyle.Flex : DisplayStyle.None;
             if (_completeBtn != null) _completeBtn.style.display = isContracts ? DisplayStyle.Flex : DisplayStyle.None;
             if (_failBtn != null) _failBtn.style.display = isContracts ? DisplayStyle.Flex : DisplayStyle.None;
+            // T-E04: exchange buttons — только в табе exchange
+            if (_packBtn != null) _packBtn.style.display = isExchange ? DisplayStyle.Flex : DisplayStyle.None;
+            if (_unpackBtn != null) _unpackBtn.style.display = isExchange ? DisplayStyle.Flex : DisplayStyle.None;
+
+            // T-E04 FIX: при первом переключении на таб exchange — заполнить списки.
+            // RefreshExchangeData подписан только на OnSnapshotUpdated инвентаря,
+            // но когда игрок впервые открывает market window и переключается на exchange,
+            // инвентарь мог не меняться — списки остаются пустыми.
+            if (isExchange) RefreshExchangeData();
 
             // Ship selector виден только в табе СКЛАД (multi-ship load/unload)
             if (_shipSelectorContainer != null)
@@ -1180,6 +1290,18 @@ namespace ProjectC.Trade.Client
             {
                 _doc.rootVisualElement.schedule.Execute(() => _doc.rootVisualElement.MarkDirtyRepaint()).StartingIn(50);
             }
+
+            // T-E04 FIX: запросить у сервера свежий snapshot инвентаря и склада.
+            // Без этого при первом открытии обменника InventoryClientState может быть
+            // ещё не заполнен → RefreshExchangeData покажет пустые списки.
+            var invState = ProjectC.Items.Client.InventoryClientState.Instance;
+            if (invState != null) invState.RequestRefresh();
+            if (_state != null && !string.IsNullOrEmpty(_state.CurrentLocationId))
+            {
+                _state.RequestSubscribeMarket(_state.CurrentLocationId);
+            }
+            // Refresh сразу — если snapshot уже есть, покажем; если нет, OnSnapshotUpdated дёрнет ещё раз.
+            RefreshExchangeData();
             if (_mainContainer != null)
             {
                 var rs = _mainContainer.resolvedStyle;
@@ -1264,6 +1386,264 @@ namespace ProjectC.Trade.Client
                 case TradeOp.LoadToShip: return "Погрузка";
                 case TradeOp.UnloadFromShip: return "Разгрузка";
                 default: return op.ToString();
+            }
+        }
+
+        // ========================================================
+        // EXCHANGE TAB (T-E04: Resources Exchanger)
+        // ========================================================
+
+        /// <summary>
+        /// T-E04: Row factory для списков обменника.
+        /// Переиспользуется для exchange-inventory-list и exchange-warehouse-list.
+        /// </summary>
+        private static VisualElement MakeExchangeRow()
+        {
+            var row = new VisualElement();
+            row.AddToClassList("exchange-row");
+            var label = new Label { name = "row-label" };
+            label.AddToClassList("exchange-row-label");
+            row.Add(label);
+            var qty = new Label { name = "row-qty" };
+            qty.AddToClassList("exchange-row-qty");
+            row.Add(qty);
+            return row;
+        }
+
+        /// <summary>
+        /// T-E04: Binder для левого списка (инвентарь → упаковка на склад).
+        /// </summary>
+        private void BindExchangeInvRow(VisualElement row, int index)
+        {
+            if (index < 0 || index >= _exchangeInvCache.Count) return;
+            var item = _exchangeInvCache[index];
+            row.Q<Label>("row-label").text = item.displayName;
+            row.Q<Label>("row-qty").text = $"{item.haveQty} → {item.maxPacks} пач.";
+            row.style.backgroundColor = (index == _selectedExchangeInvItem)
+                ? new StyleColor(new Color(0.4f, 0.8f, 0.8f, 0.4f))
+                : StyleKeyword.Null;
+        }
+
+        /// <summary>
+        /// T-E04: Binder для правого списка (склад → распаковка в инвентарь).
+        /// </summary>
+        private void BindExchangeWhRow(VisualElement row, int index)
+        {
+            if (index < 0 || index >= _exchangeWhCache.Count) return;
+            var item = _exchangeWhCache[index];
+            row.Q<Label>("row-label").text = item.displayName;
+            row.Q<Label>("row-qty").text = $"{item.haveQty} → {item.maxPacks} пач.";
+            row.style.backgroundColor = (index == _selectedExchangeWhItem)
+                ? new StyleColor(new Color(0.8f, 0.6f, 0.4f, 0.4f))
+                : StyleKeyword.Null;
+        }
+
+        /// <summary>
+        /// T-E04: Обновляет кэши exchange-списков из InventoryClientState + MarketClientState.
+        /// </summary>
+        private void RefreshExchangeData(ProjectC.Items.Dto.InventorySnapshotDto _ = default)
+        {
+            var invState = ProjectC.Items.Client.InventoryClientState.Instance;
+            var snap = _state?.CurrentSnapshot;
+            var wh = snap?.warehouse ?? Array.Empty<WarehouseEntryDto>();
+
+            _exchangeInvCache.Clear();
+            _exchangeWhCache.Clear();
+
+            if (invState != null)
+            {
+                var invItems = invState.GetItems();
+                if (invItems != null)
+                {
+                    // T-E04 FIX: InventoryData ещё не стэкает (каждый id = 1 запись, quantity=1 в snapshot).
+                    // Группируем по itemId, чтобы получить реальное количество для Pack.
+                    var grouped = new System.Collections.Generic.Dictionary<int, int>(); // itemId → кол-во записей
+                    foreach (var inv in invItems)
+                    {
+                        if (!grouped.ContainsKey(inv.itemId)) grouped[inv.itemId] = 0;
+                        grouped[inv.itemId]++;
+                    }
+
+                    foreach (var kvp in grouped)
+                    {
+                        int itemId = kvp.Key;
+                        int count = kvp.Value; // кол-во stack-записей (= кол-ву предметов пока без stacking)
+                        var def = invState.GetItemDefinition(itemId);
+                        if (def == null) continue;
+                        string name = def.itemName;
+                        // Ищем rate по имени предмета
+                        var resolver = ResourceExchangeResolver.Default;
+                        if (resolver == null) continue;
+                        var rate = resolver.FindRateForItemName(name);
+                        if (rate == null) continue;
+                        var entry = rate.Value;
+                        int packs = count / entry.inventoryQty;
+                        if (packs <= 0) continue;
+                        _exchangeInvCache.Add(new ItemRow
+                        {
+                            displayName = $"{name} ×{count} ({def.itemType})",
+                            haveQty = count,
+                            maxPacks = packs,
+                            inventoryQty = entry.inventoryQty,
+                            warehouseQty = entry.warehouseQty,
+                            inventoryItemId = itemId,
+                        });
+                    }
+                }
+            }
+
+            // Правый список: товары склада, для которых есть rate (boxed items)
+            foreach (var entry in wh)
+            {
+                var resolver = ResourceExchangeResolver.Default;
+                if (resolver == null) continue;
+                var rate = resolver.FindRateForWarehouseItem(entry.itemId);
+                if (rate == null) continue;
+                var whRate = rate.Value;
+                int boxes = entry.quantity / whRate.warehouseQty;
+                if (boxes <= 0) continue;
+                _exchangeWhCache.Add(new ItemRow
+                {
+                    displayName = $"{entry.displayName} (ящ.)",
+                    haveQty = entry.quantity,
+                    maxPacks = boxes,
+                    inventoryQty = whRate.inventoryQty,
+                    warehouseQty = whRate.warehouseQty,
+                    warehouseItemId = entry.itemId,
+                });
+            }
+
+            if (_exchangeInvList != null)
+            {
+                _exchangeInvList.itemsSource = _exchangeInvCache;
+                _exchangeInvList.Rebuild();
+            }
+            if (_exchangeWhList != null)
+            {
+                _exchangeWhList.itemsSource = _exchangeWhCache;
+                _exchangeWhList.Rebuild();
+            }
+        }
+
+        /// <summary>
+        /// T-E04: Обработчик результата Pack/Unpack от ExchangeServer.
+        /// Обновляет message-label и перезапрашивает данные.
+        /// </summary>
+        private void HandleExchangeResult(ExchangeResultDto result)
+        {
+            if (_messageLabel != null)
+            {
+                if (result.success)
+                {
+                    _messageLabel.text = $"Обмен: OK (Δ склад={result.warehouseDelta}, инвентарь={result.inventoryDelta})";
+                    _messageLabel.style.color = new StyleColor(new Color(0.4f, 0.95f, 0.4f));
+                }
+                else
+                {
+                    _messageLabel.text = $"Ошибка: {result.message}";
+                    _messageLabel.style.color = new StyleColor(new Color(0.95f, 0.4f, 0.4f));
+                }
+            }
+            // Перезапрашиваем данные — инвентарь обновится через OnSnapshotUpdated
+            // (подписка уже висит), склад — через MarketClientState.
+            // Явно вызываем RefreshExchangeData для мгновенного UI.
+            RefreshExchangeData();
+        }
+
+        /// <summary>
+        /// T-E04: Упаковать выбранный предмет инвентаря → склад.
+        /// </summary>
+        private void OnPackClicked()
+        {
+            if (_selectedExchangeInvItem < 0 || _selectedExchangeInvItem >= _exchangeInvCache.Count)
+            {
+                if (_messageLabel != null)
+                {
+                    _messageLabel.text = "Выберите предмет в левом списке";
+                    _messageLabel.style.color = new StyleColor(new Color(0.95f, 0.8f, 0.4f));
+                }
+                return;
+            }
+            var item = _exchangeInvCache[_selectedExchangeInvItem];
+            var snap = _state?.CurrentSnapshot;
+            if (!snap.HasValue)
+            {
+                if (_messageLabel != null)
+                {
+                    _messageLabel.text = "Нет данных о рынке";
+                    _messageLabel.style.color = new StyleColor(new Color(0.95f, 0.4f, 0.4f));
+                }
+                return;
+            }
+
+            // Шлём RPC серверу через ExchangeServer.Instance
+            var ex = Network.ExchangeServer.Instance;
+            if (ex == null)
+            {
+                if (_messageLabel != null)
+                {
+                    _messageLabel.text = "Сервер обменника не доступен";
+                    _messageLabel.style.color = new StyleColor(new Color(0.95f, 0.4f, 0.4f));
+                }
+                return;
+            }
+            // T-E04: countToRemove = кол-во ЕДИНИЦ инвентаря (не паков!).
+            // 1 pack = inventoryQty единиц. Клиент запаковывает 1 пачку за раз → шлёт inventoryQty.
+            int countToRemove = item.inventoryQty > 0 ? item.inventoryQty : 1;
+            Debug.Log($"[MarketWindow][Pack] Отправляю RPC: locationId={snap.Value.locationId} inventoryItemId={item.inventoryItemId} countToRemove={countToRemove} (haveQty={item.haveQty} maxPacks={item.maxPacks})");
+            ex.RequestPackRpc(snap.Value.locationId, item.inventoryItemId, countToRemove);
+            if (_messageLabel != null)
+            {
+                _messageLabel.text = $"Отправлен запрос на упаковку {item.displayName}...";
+                _messageLabel.style.color = new StyleColor(new Color(0.6f, 0.8f, 1.0f));
+            }
+        }
+
+        /// <summary>
+        /// T-E04: Распаковать выбранный товар склада → инвентарь.
+        /// </summary>
+        private void OnUnpackClicked()
+        {
+            if (_selectedExchangeWhItem < 0 || _selectedExchangeWhItem >= _exchangeWhCache.Count)
+            {
+                if (_messageLabel != null)
+                {
+                    _messageLabel.text = "Выберите товар в правом списке";
+                    _messageLabel.style.color = new StyleColor(new Color(0.95f, 0.8f, 0.4f));
+                }
+                return;
+            }
+            var item = _exchangeWhCache[_selectedExchangeWhItem];
+            var snap = _state?.CurrentSnapshot;
+            if (!snap.HasValue)
+            {
+                if (_messageLabel != null)
+                {
+                    _messageLabel.text = "Нет данных о рынке";
+                    _messageLabel.style.color = new StyleColor(new Color(0.95f, 0.4f, 0.4f));
+                }
+                return;
+            }
+
+            var ex = Network.ExchangeServer.Instance;
+            if (ex == null)
+            {
+                Debug.LogError("[MarketWindow][Unpack] ExchangeServer.Instance == null — RPC не отправляется!");
+                if (_messageLabel != null)
+                {
+                    _messageLabel.text = "Сервер обменника не инициализирован. Подождите пару секунд.";
+                    _messageLabel.style.color = new StyleColor(new Color(0.95f, 0.4f, 0.4f));
+                }
+                return;
+            }
+            // T-E04: countToRemove = кол-во КОРОБОК склада. 1 распаковка = warehouseQty коробок.
+            int countToRemove = item.warehouseQty > 0 ? item.warehouseQty : 1;
+            Debug.Log($"[MarketWindow][Unpack] Отправляю RPC: locationId={snap.Value.locationId} warehouseItemId={item.warehouseItemId} countToRemove={countToRemove} (haveQty={item.haveQty} maxPacks={item.maxPacks})");
+            ex.RequestUnpackRpc(snap.Value.locationId, item.warehouseItemId, countToRemove);
+            if (_messageLabel != null)
+            {
+                _messageLabel.text = $"Отправлен запрос на распаковку {item.displayName}...";
+                _messageLabel.style.color = new StyleColor(new Color(0.6f, 0.8f, 1.0f));
             }
         }
     }

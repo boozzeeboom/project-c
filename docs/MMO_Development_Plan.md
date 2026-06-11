@@ -1,10 +1,10 @@
 # План разработки ММО "Project C: The Clouds" на Unity
 
-**Последнее обновление:** 11 июня 2026 г. | **Текущая версия:** `v0.0.21-crafting-system-complete`
+**Последнее обновление:** 11 июня 2026 г. | **Текущая версия:** `v0.0.22-exchange-system-complete`
 
-> **Что нового с прошлого обновления (10 июня 2026):** **Crafting (крафт-система) — MVP завершён.** Подойти к станции → F → окно → выбрать рецепт → добавить ингредиенты (+1/+Все) → Начать крафт → таймер (10с) с ProgressBar + тост + анимация станции → Готово → Забрать → предмет в инвентарь. 2 станции в WorldScene_0_0: [CraftingStation_Table] (3 рецепта: медный/железный слиток, ключ корабля) и [CraftingStation_Shipyard] (1 рецепт). Подписки на несколько станций, независимая работа. Инвентарь: списание/выдача через InventoryWorld. 9 тикетов T-C01–T-C07c, ~12-15 ч работы. См. `docs/Crafting_system/ROADMAP.md`.
+> **Что нового с прошлого обновления (10 июня 2026):** **Resources Exchanger (обменник ресурсов) — MVP завершён.** Мост между двумя системами предметов: pickable (инвентарь, 1 кг) ↔ boxed (склад, 100 кг). 4-я вкладка «Обменник» в MarketWindow. Pack: 100 осколков → 1 ящик на складе. Unpack: 1 ящик → 100 осколков в инвентарь. InventoryWorld.MAX_SLOTS увеличен до 1000 (конфигурируется в инспекторе). Исправлены: спавн scene-placed NetworkObject в BootstrapScene (OnServerStarted), PushSnapshot инвентаря и склада после каждой операции, группировка предметов по itemId в UI. 5 тикетов T-E01–T-E05, ~30 ч работы. См. `docs/Markets/Resources_exchanger/01_ANALYSIS.md`.
 >
-> **Предыдущее обновление (10 июня 2026):** Resource Gathering (Mining) — MVP завершён. 3D-объекты в мире: подойти → F → сбор N сек с ProgressBar → предмет в инвентарь. Tool check через MetaRequirement (Кирка → Руда). Возобновляемые узлы с cooldown. Анимация узла (scale-pulse + emissive flash) + анимация персонажа (scale-pulse). 7 тикетов T-G01–T-G07 ✅. См. `docs/Mining/ROADMAP.md`. Также NPC+Quests v2 (50+ тикетов, 19 milestones ✅ DONE, ~8400 строк кода, ~62 ч работы). CharacterWindow v2 (5+ табов) + DialogWindow + QuestTracker + QuestToast + MetaRequirement (lock-key) + Ship Key MVP. См. `docs/NPC_quests/08_ROADMAP.md`.
+> **Предыдущее обновление (10 июня 2026):** **Crafting (крафт-система) — MVP завершён.** Подойти к станции → F → окно → выбрать рецепт → добавить ингредиенты (+1/+Все) → Начать крафт → таймер (10с) с ProgressBar + тост + анимация станции → Готово → Забрать → предмет в инвентарь. 2 станции в WorldScene_0_0: [CraftingStation_Table] (3 рецепта: медный/железный слиток, ключ корабля) и [CraftingStation_Shipyard] (1 рецепт). Подписки на несколько станций, независимая работа. Инвентарь: списание/выдача через InventoryWorld. 9 тикетов T-C01–T-C07c, ~12-15 ч работы. См. `docs/Crafting_system/ROADMAP.md`.
 
 ---
 
@@ -273,6 +273,54 @@
 **Паттерн:** копия Gathering/Mining (ResourceNode → CraftingStation, GatheringServer → CraftingServer, GatheringToast → CraftingProgress). 9 тикетов, ~12-15 ч работы.
 
 **Документация:** `docs/Crafting_system/00_OVERVIEW.md` + `10_DESIGN.md` + `ROADMAP.md`.
+
+---
+
+### 1.12 Обменник ресурсов (Resources Exchanger) ✅ MVP ЗАВЕРШЁН (T-E01–T-E05, 2026-06-11)
+
+**Цель:** Создать мост между двумя системами предметов — pickable (инвентарь, добыча/крафт) и boxed (склад/рынок/торговля), не ломая существующие системы.
+
+**Что реализовано:**
+
+| Компонент | Описание | Статус |
+|-----------|----------|--------|
+| `ExchangeRateConfig` (SO) | Список пар: warehouseItemId ↔ inventoryItemName + курс (inventoryQty/warehouseQty) | T-E01 ✅ |
+| `ExchangeRateEntry` (struct) | warehouseItemId, inventoryItemName, inventoryQty, warehouseQty, displayName | T-E01 ✅ |
+| `ResourceExchangeResolver` | Lookup-слой: FindRateForItemName / FindRateForWarehouseItem, ResolveInventoryItemId (int ID ↔ itemName) | T-E01 ✅ |
+| `ExchangeWorld` (POCO singleton) | Pack (инвентарь→склад) + Unpack (склад→инвентарь) с rollback на каждой стороне | T-E02 ✅ |
+| `ExchangeServer` (NetworkBehaviour) | 2 RPC (RequestPackRpc / RequestUnpackRpc), zone validation, rate-limit, try-catch | T-E03 ✅ |
+| `ExchangeClientState` (client singleton) | Events OnResultReceived для UI | T-E03 ✅ |
+| `ExchangeResultDto` | success/message/warehouseDelta/inventoryDelta — INetworkSerializable | T-E03 ✅ |
+| 4-я вкладка «Обменник» в MarketWindow | Левая панель (pickable, grouped), правая (warehouse), кнопки Упаковать/Распаковать | T-E04 ✅ |
+| `[ExchangeServer]` в BootstrapScene | Root NetworkObject + NetworkObject. Спавнится через ScenePlacedObjectSpawner.OnServerStarted | T-E05 ✅ |
+| Antigrav pickable item + курс | Item_Antigrav_осколок.asset + antigrav_ingot_v01 курс в DefaultExchangeRate | T-E05 ✅ |
+
+**Архитектурные изменения:**
+
+| Изменение | Мотивация |
+|-----------|-----------|
+| `InventoryWorld.MAX_SLOTS` 32→1000, конфигурируется через `InventoryServer.maxSlots` | Unpack 100 предметов за раз не влезал в 32 слота |
+| `ScenePlacedObjectSpawner` подписка на `NetworkManager.OnServerStarted` | Scene-placed NetworkObject в BootstrapScene не спавнились (InScenePlacedSourceGlobalObjectIdHash==0) |
+| `MarketServer.PushPlayerSnapshot(clientId)` public helper | После Pack склад в UI не обновлялся (InventoryServer не шлёт market snapshot) |
+| `InventoryServer.Instance.PushSnapshot` + `MarketServer.Instance.PushPlayerSnapshot` | Клиент не видел изменения ни инвентаря, ни склада после Pack/Unpack |
+
+**DefaultExchangeRate.asset (Resources/Exchange/):**
+
+| warehouseItemId | inventoryItemName | Курс |
+|----------------|-------------------|:----:|
+| resource_iron_box | Железная руда | 100:1 |
+| resource_copper_box | Медная руда | 100:1 |
+| resource_wood_box | Древесина | 100:1 |
+| antigrav_ingot_v01 | Антигравий (осколок) | 100:1 |
+
+**Scene placement:**
+- BootstrapScene: `[ExchangeServer]` (NetworkObject + ExchangeServer)
+- BootstrapScene: `[ExchangeClientState]` (auto-spawn NMC)
+- WorldScene_0_0: PickupItem (Item_Antigrav_осколок) на земле возле рынка
+
+**Паттерн:** MarketServer (RPC hub) + ExchangeWorld (POCO) + tab в MarketWindow + config-driven (новые пары = запись в SO).
+
+**Документация:** `docs/Markets/Resources_exchanger/01_ANALYSIS.md` + `02_IMPLEMENTATION.md` + `03_FIXES_HISTORY.md`.
 
 ---
 

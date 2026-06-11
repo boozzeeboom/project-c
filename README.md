@@ -308,6 +308,12 @@
   - **Тестовые квесты:** `collect_copper_ore`, `find_artifact` (EventDriven), `stage_intro_demo`, `stage_multi_demo`, `collect_copper` (CSV-imported).
   - [Документация](docs/NPC_quests/08_ROADMAP.md) + [Итоговый статус 2026-06-09](docs/NPC_quests/old_session_log/99_FINAL_STATUS.md).
 
+- **🆕 Crafting System (T-C01–T-C07c, 2026-06-10):** Крафт-станции в мире (Верстак + Верфь), рецепты (слитки, ключ корабля), UI с ингредиентами, таймер крафта 10с, анимация станции.
+  - [Анализ](docs/Crafting_system/10_DESIGN.md) | [Roadmap](docs/Crafting_system/ROADMAP.md)
+
+- **🆕 Resources Exchanger (T-E01–T-E05, 2026-06-11):** Мост между двумя системами предметов — pickable (инвентарь) и boxed (склад). 4-я вкладка «Обменник» в MarketWindow. Pack: 100 осколков → 1 ящик. Unpack: 1 ящик → 100 осколков. Config-driven (DefaultExchangeRate.asset). MAX_SLOTS=1000.
+  - [Анализ](docs/Markets/Resources_exchanger/01_ANALYSIS.md) | [Реализация](docs/Markets/Resources_exchanger/02_IMPLEMENTATION.md)
+
 ### 🔄 В процессе (открыто)
 
 - **M12 — Input remap (F = pickup, E = NPC)** — T-X4 future TODO. Сейчас E = NPC, pickup = F, ship boarding = F (с ключом). [Дорожная карта §8.3 T-X4](docs/NPC_quests/08_ROADMAP.md).
@@ -328,6 +334,7 @@
 **Подробный roadmap всех 19 milestones + 50+ тикетов:** [`docs/NPC_quests/08_ROADMAP.md`](docs/NPC_quests/08_ROADMAP.md)
 **Полный план проекта (Этапы 0-7):** [`docs/MMO_Development_Plan.md`](docs/MMO_Development_Plan.md)
 **GDD-каталог (дизайн всех систем):** [`docs/gdd/GDD_INDEX.md`](docs/gdd/GDD_INDEX.md)
+**Resources Exchanger (Pack/Unpack инвентарь↔склад):** [`docs/Markets/Resources_exchanger/`](docs/Markets/Resources_exchanger/README.md)
 **Итоговый статус 2026-06-09 (17/19 milestones done):** [`docs/NPC_quests/old_session_log/99_FINAL_STATUS.md`](docs/NPC_quests/old_session_log/99_FINAL_STATUS.md)
 
 **Репозиторий:** [github.com/boozzeeboom/project-c](https://github.com/boozzeeboom/project-c)

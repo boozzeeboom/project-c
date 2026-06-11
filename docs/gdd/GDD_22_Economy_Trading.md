@@ -659,6 +659,7 @@ PD2_Cargo_{shipNetworkObjectId}        — груз корабля (per-ship, pe
 | 20 | (v4.0) Корабль вне MarketZone → Load/Unload отклоняется с ShipNotInZone | Уплыть корабль далеко, попробовать погрузить | 🟡 (v4.0) |
 | 21 | **ItemRegistry** (single source of truth для item IDs) | см. §X ниже | 🟢 DONE (M14, 2026-06-09) |
 | 22 | **Contract → Quest bridge** (`ContractMetaBridge`) | см. §X ниже | 🟢 DONE (T-X5+T-Q15, 2026-06-08) |
+| 23 | **Resources Exchanger** (Pack/Unpack inventory↔warehouse) | см. §X.5 | 🟢 DONE (T-E01–T-E05, 2026-06-11) |
 
 ---
 
@@ -700,8 +701,31 @@ PD2_Cargo_{shipNetworkObjectId}        — груз корабля (per-ship, pe
 - **`docs/NPC_quests/08_ROADMAP.md`** — главный roadmap (50+ тикетов, M1–M19)
 - **`docs/NPC_quests/old_session_log/M14_DESIGN_NOTE.md`** — ItemRegistry
 - **`docs/NPC_quests/old_session_log/T-Q15_DESIGN_NOTE.md`** — ContractMetaBridge
+- **`docs/Markets/Resources_exchanger/`** — Resources Exchanger (T-E01–T-E05)
 - **`docs/Markets/`** — детали trade v2 (C1 cleanup, market state)
 - **`docs/MMO_Development_Plan.md`** §3.2, §3.3, §3.4 — общий план
+
+### X.5 Resources Exchanger (T-E01–T-E05, 2026-06-11)
+
+**Зачем:** Две независимые системы предметов — pickable (инвентарь, int id, 1 кг) и boxed (склад, string id, 100 кг). Моста между ними не было. Crafting не может использовать склад, mining не может отправить добычу на склад.
+
+**Решение:** Обменник-упаковщик — 4-я вкладка «Обменник» в MarketWindow. Левая панель = pickable из инвентаря, правая = boxed со склада. Pack: 100 pickable → 1 box на склад. Unpack: 1 box → 100 pickable в инвентарь.
+
+**Архитектура (Hybrid D, см. анализ в docs/Markets/Resources_exchanger/01_ANALYSIS.md):**
+
+```
+ExchangeRateConfig (SO) → ResourceExchangeResolver (lookup) → ExchangeWorld (POCO, rollback) → ExchangeServer (RPC) → ExchangeClientState + MarketWindow tab
+```
+
+**Ключевые решения:**
+- **Zero-touch** — ни одна строка в InventoryWorld, TradeWorld, Crafting, Mining, Quests не менялась
+- **Config-driven** — новая пара = запись в `DefaultExchangeRate.asset`
+- **MAX_SLOTS = 1000** — временно (нет stacked inventory; каждый id = 1 запись)
+- **PushPlayerSnapshot** — после операции зовём и InventoryServer, и MarketServer (обновить и инвентарь, и склад)
+
+**4 базовых курса:** IronOre, CopperOre, Wood, Antigrav — 100:1.
+
+**Детали:** `docs/Markets/Resources_exchanger/02_IMPLEMENTATION.md` + `03_FIXES_HISTORY.md`.
 
 ---
 

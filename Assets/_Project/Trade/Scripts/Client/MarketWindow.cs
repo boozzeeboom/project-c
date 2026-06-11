@@ -1590,7 +1590,6 @@ namespace ProjectC.Trade.Client
             // T-E04: countToRemove = кол-во ЕДИНИЦ инвентаря (не паков!).
             // 1 pack = inventoryQty единиц. Клиент запаковывает 1 пачку за раз → шлёт inventoryQty.
             int countToRemove = item.inventoryQty > 0 ? item.inventoryQty : 1;
-            Debug.Log($"[MarketWindow][Pack] Отправляю RPC: locationId={snap.Value.locationId} inventoryItemId={item.inventoryItemId} countToRemove={countToRemove} (haveQty={item.haveQty} maxPacks={item.maxPacks})");
             ex.RequestPackRpc(snap.Value.locationId, item.inventoryItemId, countToRemove);
             if (_messageLabel != null)
             {
@@ -1638,7 +1637,6 @@ namespace ProjectC.Trade.Client
             }
             // T-E04: countToRemove = кол-во КОРОБОК склада. 1 распаковка = warehouseQty коробок.
             int countToRemove = item.warehouseQty > 0 ? item.warehouseQty : 1;
-            Debug.Log($"[MarketWindow][Unpack] Отправляю RPC: locationId={snap.Value.locationId} warehouseItemId={item.warehouseItemId} countToRemove={countToRemove} (haveQty={item.haveQty} maxPacks={item.maxPacks})");
             ex.RequestUnpackRpc(snap.Value.locationId, item.warehouseItemId, countToRemove);
             if (_messageLabel != null)
             {

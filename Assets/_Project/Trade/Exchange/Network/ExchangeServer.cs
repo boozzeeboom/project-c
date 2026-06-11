@@ -51,8 +51,7 @@ namespace ProjectC.Trade.Network
             base.OnNetworkSpawn();
             if (Instance == null) Instance = this;
 
-            // T-E04 DIAG: подробный лог.
-            Debug.Log("[ExchangeServer] OnNetworkSpawn: IsServer=" + IsServer + " exchangeRateConfig=" + (exchangeRateConfig != null ? exchangeRateConfig.name : "NULL") + " GlobalObjectIdHash=" + NetworkObjectId);
+            Debug.Log("[ExchangeServer] OnNetworkSpawn: rates=" + (exchangeRateConfig?.rates?.Count ?? 0));
 
             if (!IsServer)
             {
@@ -118,78 +117,56 @@ namespace ProjectC.Trade.Network
             int countToRemove, RpcParams rpcParams = default)
         {
             ulong clientId = rpcParams.Receive.SenderClientId;
-            Debug.Log($"[ExchangeServer][Pack] ENTER clientId={clientId} locationId='{locationId}' inventoryItemId={inventoryItemId} countToRemove={countToRemove}");
+            Debug.Log($"[ExchangeServer][Pack] ENTER clientId={clientId}");
 
             try
             {
-                if (!IsReadyOrResult(clientId, 0)) { Debug.Log($"[ExchangeServer][Pack] EXIT: not ready"); return; }
-                if (!CheckRateLimitOrResult(clientId, 0)) { Debug.Log($"[ExchangeServer][Pack] EXIT: rate-limited"); return; }
+                if (!IsReadyOrResult(clientId, 0)) return;
+                if (!CheckRateLimitOrResult(clientId, 0)) return;
 
-                // Валидация зоны
                 if (!ValidateInZone(clientId, locationId, out var zone))
                 {
-                    Debug.Log($"[ExchangeServer][Pack] EXIT: not in zone (locationId={locationId}, zone={(zone == null ? "null" : zone.LocationId)})");
                     SendResult(clientId, CreateFailResult("Вы не в зоне рынка", 0));
                     return;
                 }
-                Debug.Log($"[ExchangeServer][Pack] in zone OK, looking up item...");
 
-                // Найти rate по item-имени
                 string itemName = _resolver.GetInventoryItemName(inventoryItemId);
                 if (string.IsNullOrEmpty(itemName))
                 {
-                    Debug.Log($"[ExchangeServer][Pack] EXIT: itemName not found for ID={inventoryItemId}");
                     SendResult(clientId, CreateFailResult("Предмет не найден в БД", 0));
                     return;
                 }
-                Debug.Log($"[ExchangeServer][Pack] itemName='{itemName}', looking up rate...");
 
                 var rate = _resolver.FindRateForItemName(itemName);
                 if (rate == null)
                 {
-                    Debug.Log($"[ExchangeServer][Pack] EXIT: rate not found for '{itemName}'");
                     SendResult(clientId, CreateFailResult(
                         $"Предмет '{itemName}' не поддерживает упаковку", 0));
                     return;
                 }
-                Debug.Log($"[ExchangeServer][Pack] rate OK: inventoryQty={rate.Value.inventoryQty} warehouseQty={rate.Value.warehouseQty}, calling _world.Pack...");
 
                 var r = _resolver.GetItemType(inventoryItemId);
                 var result = _world.Pack(clientId, locationId, inventoryItemId, r,
                     rate.Value, countToRemove);
-                Debug.Log($"[ExchangeServer][Pack] _world.Pack returned: success={result.IsSuccess} message='{result.Message}' whDelta={result.WarehouseDelta} invDelta={result.InventoryDelta}");
+                if (!result.IsSuccess)
+                    Debug.Log($"[ExchangeServer][Pack] FAIL: {result.Message}");
 
                 if (result.IsSuccess)
                 {
-                    // Персист склада
                     var wh = TradeWorld.Instance.GetOrLoadWarehouse(clientId, locationId);
                     TradeWorld.Instance.Repository.SetWarehouse(
                         clientId, locationId, wh.SaveToList());
-                    Debug.Log($"[ExchangeServer][Pack] warehouse persisted");
                 }
 
-                // T-E04 FIX: PushSnapshot инвентаря — AddItemDirect не вызывает SendSnapshot,
-                // клиент не узнает об изменении (как QuestServer делает).
                 if (ProjectC.Items.Network.InventoryServer.Instance != null)
-                {
                     ProjectC.Items.Network.InventoryServer.Instance.PushSnapshot(clientId);
-                    Debug.Log($"[ExchangeServer][Pack] PushSnapshot called");
-                }
                 else
-                {
-                    Debug.LogWarning($"[ExchangeServer][Pack] InventoryServer.Instance == null, push skipped");
-                }
+                    Debug.LogWarning("[ExchangeServer][Pack] InventoryServer.Instance == null, push skipped");
 
-                // T-E04 FIX: PushPlayerSnapshot для MarketServer — иначе UI MarketWindow.warehouse не обновится
-                // (MarketClientState не получит свежий snapshot склада после Pack).
                 if (ProjectC.Trade.Network.MarketServer.Instance != null)
-                {
                     ProjectC.Trade.Network.MarketServer.Instance.PushPlayerSnapshot(clientId);
-                    Debug.Log($"[ExchangeServer][Pack] MarketServer.PushPlayerSnapshot called");
-                }
 
                 SendResult(clientId, ToDto(result, op: 0));
-                Debug.Log($"[ExchangeServer][Pack] SendResult OK: success={result.IsSuccess}");
             }
             catch (System.Exception ex)
             {
@@ -208,64 +185,48 @@ namespace ProjectC.Trade.Network
             int countToRemove, RpcParams rpcParams = default)
         {
             ulong clientId = rpcParams.Receive.SenderClientId;
-            Debug.Log($"[ExchangeServer][Unpack] ENTER clientId={clientId} locationId='{locationId}' warehouseItemId='{warehouseItemId}' countToRemove={countToRemove}");
+            Debug.Log($"[ExchangeServer][Unpack] ENTER clientId={clientId}");
 
             try
             {
-                if (!IsReadyOrResult(clientId, 1)) { Debug.Log($"[ExchangeServer][Unpack] EXIT: not ready"); return; }
-                if (!CheckRateLimitOrResult(clientId, 1)) { Debug.Log($"[ExchangeServer][Unpack] EXIT: rate-limited"); return; }
+                if (!IsReadyOrResult(clientId, 1)) return;
+                if (!CheckRateLimitOrResult(clientId, 1)) return;
 
                 // Валидация зоны
                 if (!ValidateInZone(clientId, locationId, out var zone))
                 {
-                    Debug.Log($"[ExchangeServer][Unpack] EXIT: not in zone (locationId={locationId}, zone={(zone == null ? "null" : zone.LocationId)})");
                     SendResult(clientId, CreateFailResult("Вы не в зоне рынка", 1));
                     return;
                 }
-                Debug.Log($"[ExchangeServer][Unpack] in zone OK, looking up rate...");
 
                 var rate = _resolver.FindRateForWarehouseItem(warehouseItemId);
                 if (rate == null)
                 {
-                    Debug.Log($"[ExchangeServer][Unpack] EXIT: rate not found for '{warehouseItemId}'");
                     SendResult(clientId, CreateFailResult(
                         $"Товар '{warehouseItemId}' не поддерживает распаковку", 1));
                     return;
                 }
-                Debug.Log($"[ExchangeServer][Unpack] rate OK: inventoryQty={rate.Value.inventoryQty} warehouseQty={rate.Value.warehouseQty}, calling _world.Unpack...");
 
                 var result = _world.Unpack(clientId, locationId, rate.Value, countToRemove);
-                Debug.Log($"[ExchangeServer][Unpack] _world.Unpack returned: success={result.IsSuccess} message='{result.Message}' whDelta={result.WarehouseDelta} invDelta={result.InventoryDelta}");
+                if (!result.IsSuccess)
+                    Debug.Log($"[ExchangeServer][Unpack] FAIL: {result.Message}");
 
                 if (result.IsSuccess)
                 {
-                    // Персист склада
                     var wh = TradeWorld.Instance.GetOrLoadWarehouse(clientId, locationId);
                     TradeWorld.Instance.Repository.SetWarehouse(
                         clientId, locationId, wh.SaveToList());
-                    Debug.Log($"[ExchangeServer][Unpack] warehouse persisted");
                 }
 
-                // T-E04 FIX: PushSnapshot инвентаря при любом результате
                 if (ProjectC.Items.Network.InventoryServer.Instance != null)
-                {
                     ProjectC.Items.Network.InventoryServer.Instance.PushSnapshot(clientId);
-                    Debug.Log($"[ExchangeServer][Unpack] PushSnapshot called");
-                }
                 else
-                {
-                    Debug.LogWarning($"[ExchangeServer][Unpack] InventoryServer.Instance == null, push skipped");
-                }
+                    Debug.LogWarning("[ExchangeServer][Unpack] InventoryServer.Instance == null, push skipped");
 
-                // T-E04 FIX: PushPlayerSnapshot для MarketServer — иначе UI MarketWindow.warehouse не обновится.
                 if (ProjectC.Trade.Network.MarketServer.Instance != null)
-                {
                     ProjectC.Trade.Network.MarketServer.Instance.PushPlayerSnapshot(clientId);
-                    Debug.Log($"[ExchangeServer][Unpack] MarketServer.PushPlayerSnapshot called");
-                }
 
                 SendResult(clientId, ToDto(result, op: 1));
-                Debug.Log($"[ExchangeServer][Unpack] SendResult OK: success={result.IsSuccess}");
             }
             catch (System.Exception ex)
             {

@@ -86,14 +86,17 @@ namespace ProjectC.Trade.Core
         {
             var world = InventoryWorld.Instance;
             if (world == null) return 0;
+            if (string.IsNullOrEmpty(itemName)) return 0;
 
-            int count = world.GetItemCount();
-            for (int id = 1; id <= count; id++)
+            string trimmedName = itemName.Trim();
+            foreach (var kvp in world.GetAllItems())
             {
-                var def = world.GetItemDefinition(id);
-                if (def != null && def.itemName == itemName)
-                    return id;
+                if (kvp.Value != null && kvp.Value.itemName != null && kvp.Value.itemName.Trim() == trimmedName)
+                    return kvp.Key;
             }
+
+            // DIAG: если не нашли — логируем
+            Debug.LogWarning($"[ResourceExchangeResolver] ResolveInventoryItemId не нашёл '{itemName}' среди {world.GetItemCount()} предметов");
             return 0;
         }
 

@@ -52,6 +52,7 @@ mono_crash.*
 #items_a lot of
 /[Aa]ssets/_Project/Resources/_docs/
 /[Aa]ssets/_Project/Trade/Data/Items/
+/[Aa]ssets/_Project/Resources/Items/
 
 # Dev memory (local session state)
 .dev-memory/

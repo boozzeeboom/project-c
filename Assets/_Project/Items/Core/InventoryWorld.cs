@@ -163,8 +163,15 @@ namespace ProjectC.Items
         {
             return _itemDatabase.TryGetValue(id, out var d) ? d : null;
         }
-
+        /// <summary>Количество зарегистрированных ItemData.</summary>
         public int GetItemCount() => _itemDatabase.Count;
+
+        /// <summary>Итерация по всем зарегистрированным предметам (id → ItemData).</summary>
+        public System.Collections.Generic.IEnumerable<System.Collections.Generic.KeyValuePair<int, ItemData>> GetAllItems()
+        {
+            foreach (var kvp in _itemDatabase)
+                yield return kvp;
+        }
 
         /// <summary>
         /// Получить itemId для ItemData (если нет в базе — регистрирует автоматически).
@@ -543,11 +550,13 @@ namespace ProjectC.Items
             var data = GetOrCreate(clientId);
             var items = new List<InventoryItemDto>();
             int slotIndex = 0;
+            int typeCount = 0, idsNull = 0;
 
             foreach (ItemType type in System.Enum.GetValues(typeof(ItemType)))
             {
+                typeCount++;
                 var ids = data.GetIdsForType(type);
-                if (ids == null) continue;
+                if (ids == null) { idsNull++; continue; }
                 foreach (int id in ids)
                 {
                     items.Add(new InventoryItemDto
@@ -559,6 +568,7 @@ namespace ProjectC.Items
                     });
                 }
             }
+            Debug.Log($"[InventoryWorld.BuildSnapshot] client={clientId} types={typeCount} idsNull={idsNull} itemsBuilt={items.Count}");
 
             return new InventorySnapshotDto
             {
@@ -586,6 +596,20 @@ namespace ProjectC.Items
             {
                 // Try to load from Resources/ItemRegistry.asset (test convenience).
                 registry = Resources.Load<ProjectC.Items.ItemRegistry>("ItemRegistry");
+
+                // T-IE: также пробуем прямой путь (импортер кладёт в Items/Data/).
+                if (registry == null)
+                {
+                    registry = Resources.Load<ProjectC.Items.ItemRegistry>("Items/Data/ItemRegistry");
+                }
+                if (registry == null)
+                {
+                    // Полный fallback: AssetDatabase.LoadAssetAtPath
+                    #if UNITY_EDITOR
+                    registry = UnityEditor.AssetDatabase.LoadAssetAtPath<ProjectC.Items.ItemRegistry>(
+                        "Assets/_Project/Items/Data/ItemRegistry.asset");
+                    #endif
+                }
                 if (registry != null) ProjectC.Items.ItemRegistry.SetInstance(registry);
             }
 

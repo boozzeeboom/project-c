@@ -12,11 +12,13 @@
 // inline style.display = Flex в Show() не сработает. Initial = inline `display: None`.
 //
 // T-IE06 (2026-06-12): MVP. ~280 LOC.
+// T-IE08 (2026-06-12): Prune UI controls (dropdown + toggles + applyBtn). ~440 LOC.
 // =====================================================================================
 
 #if UNITY_EDITOR
 using System.Collections.Generic;
 using System.IO;
+using System.Linq;
 using UnityEditor;
 using UnityEngine;
 using UnityEngine.UIElements;
@@ -41,9 +43,13 @@ namespace ProjectC.Items.Editor
         private VisualElement _resultsRoot;
         private Label _importedLabel;
 
-        // T-IE08: Prune UI (visible only after Preview, when prune block is present).
+        // T-IE08: Prune UI controls (always visible).
         private VisualElement _pruneRoot;
-        private Label _pruneModeLabel;
+        private PopupField<string> _pruneModeField;
+        private Toggle _pruneApplyInventory;
+        private Toggle _pruneApplyTradeItems;
+        private Toggle _pruneApplyMarketItems;
+        private Toggle _pruneApplyExchangeRates;
         private Label _pruneSummaryLabel;
 
         // Flat row для ListView (одна строка CSV = один FlatRow, не важно из какой секции).
@@ -117,25 +123,76 @@ namespace ProjectC.Items.Editor
             _importedLabel.style.whiteSpace = WhiteSpace.Normal;
             root.Add(_importedLabel);
 
-            // ---- T-IE08: Prune section (visible only if CSV has # block=prune) ----
+            // ---- T-IE08: Prune section (always visible) ----
             _pruneRoot = new VisualElement();
             _pruneRoot.style.marginTop = 4;
             _pruneRoot.style.paddingTop = 4;
             _pruneRoot.style.paddingBottom = 4;
             _pruneRoot.style.borderTopWidth = 1;
             _pruneRoot.style.borderTopColor = new StyleColor(new Color(0.3f, 0.3f, 0.3f));
-            _pruneRoot.style.display = DisplayStyle.None;  // hidden by default
 
             var pruneHeader = new Label("── Prune mode (T-IE08) ──");
             pruneHeader.style.unityFontStyleAndWeight = FontStyle.Bold;
             _pruneRoot.Add(pruneHeader);
 
-            _pruneModeLabel = new Label("Mode: (no prune block in CSV)");
-            _pruneModeLabel.style.fontSize = 11;
-            _pruneModeLabel.style.marginTop = 2;
-            _pruneRoot.Add(_pruneModeLabel);
+            // Mode row: label + dropdown.
+            var modeRow = new VisualElement();
+            modeRow.style.flexDirection = FlexDirection.Row;
+            modeRow.style.alignItems = Align.Center;
+            modeRow.style.marginTop = 2;
 
-            _pruneSummaryLabel = new Label("");
+            var modeLabel = new Label("Mode: ");
+            modeLabel.style.width = 50;
+            modeLabel.style.fontSize = 11;
+            modeRow.Add(modeLabel);
+
+            var choices = new List<string> { "none", "orphan", "replace" };
+            _pruneModeField = new PopupField<string>(choices, 0);
+            _pruneModeField.style.width = 100;
+            _pruneModeField.tooltip = "none = nothing deleted | orphan = delete safe (no refs) | replace = delete all (double confirm)";
+            modeRow.Add(_pruneModeField);
+
+            // Apply Prune button (separate from Import).
+            var applyPruneBtn = new Button(ApplyPrune) { text = "▶ Prune" };
+            applyPruneBtn.style.marginLeft = 8;
+            applyPruneBtn.style.backgroundColor = new StyleColor(new Color(0.8f, 0.3f, 0.2f, 1f));
+            applyPruneBtn.style.color = new StyleColor(Color.white);
+            applyPruneBtn.tooltip = "Apply prune NOW with current settings (no CSV import). Use after CSV Apply to cleanup.";
+            modeRow.Add(applyPruneBtn);
+
+            _pruneRoot.Add(modeRow);
+
+            // ApplyTo row: toggles.
+            var applyRow = new VisualElement();
+            applyRow.style.flexDirection = FlexDirection.Row;
+            applyRow.style.alignItems = Align.Center;
+            applyRow.style.marginTop = 2;
+
+            var applyLabel = new Label("ApplyTo: ");
+            applyLabel.style.width = 50;
+            applyLabel.style.fontSize = 11;
+            applyRow.Add(applyLabel);
+
+            _pruneApplyInventory = new Toggle("inventory") { value = true };
+            _pruneApplyInventory.style.marginRight = 6;
+            applyRow.Add(_pruneApplyInventory);
+
+            _pruneApplyTradeItems = new Toggle("tradeItems") { value = true };
+            _pruneApplyTradeItems.style.marginRight = 6;
+            applyRow.Add(_pruneApplyTradeItems);
+
+            _pruneApplyMarketItems = new Toggle("marketItems") { value = true };
+            _pruneApplyMarketItems.style.marginRight = 6;
+            applyRow.Add(_pruneApplyMarketItems);
+
+            _pruneApplyExchangeRates = new Toggle("exchangeRates") { value = true };
+            _pruneApplyExchangeRates.style.marginRight = 6;
+            applyRow.Add(_pruneApplyExchangeRates);
+
+            _pruneRoot.Add(applyRow);
+
+            // Summary label.
+            _pruneSummaryLabel = new Label("Mode: none — no-op. Change mode above to orphan or replace, then click ▶ Prune.");
             _pruneSummaryLabel.style.fontSize = 10;
             _pruneSummaryLabel.style.whiteSpace = WhiteSpace.Normal;
             _pruneSummaryLabel.style.marginTop = 2;
@@ -281,33 +338,79 @@ namespace ProjectC.Items.Editor
             if (errCount > 0) summary += $" {errCount} row errors.";
             _importedLabel.text = summary;
 
-            // T-IE08: Update Prune summary (if prune block present).
-            UpdatePruneSummary();
+            // T-IE08: override prune mode from CSV (if present) into UI controls.
+            SyncPruneFromBlocks();
 
-            _lastStatus = "Preview ready. Click Import to apply.";
+            _lastStatus = "Preview ready. Click Import to apply, or ▶ Prune to cleanup.";
             _statusField.value = _lastStatus;
             RefreshButtons();
         }
 
-        /// <summary>T-IE08: обновляет UI prune-секции (mode + applyTo) на основе распарсенного CSV.</summary>
+        /// <summary>T-IE08: читает mode/applyTo из CSV (если есть prune block) в UI controls.</summary>
+        private void SyncPruneFromBlocks()
+        {
+            if (_blocks != null && _blocks.TryGetValue("prune", out var pruneRows) && pruneRows.Count > 0)
+            {
+                var row = pruneRows[0];
+                var mode = (row.Get("mode") ?? "none").Trim().ToLowerInvariant();
+                var idx = _pruneModeField.choices.IndexOf(mode);
+                if (idx >= 0) _pruneModeField.index = idx;
+
+                var applyTo = (row.Get("applyTo") ?? "all").Trim().ToLowerInvariant();
+                bool hasAll = applyTo == "all";
+                _pruneApplyInventory.value = hasAll || applyTo.Contains("inventory");
+                _pruneApplyTradeItems.value = hasAll || applyTo.Contains("tradeitems");
+                _pruneApplyMarketItems.value = hasAll || applyTo.Contains("marketitems");
+                _pruneApplyExchangeRates.value = hasAll || applyTo.Contains("exchangerates");
+            }
+            UpdatePruneSummary();
+        }
+
+        /// <summary>T-IE08: обновляет summary-текст внизу prune-секции.</summary>
         private void UpdatePruneSummary()
         {
-            if (_pruneRoot == null) return;
-            if (_blocks == null || !_blocks.TryGetValue("prune", out var pruneRows) || pruneRows.Count == 0)
+            if (_pruneSummaryLabel == null) return;
+            var mode = _pruneModeField.value;
+            var applyTo = string.Join(", ", GetActiveApplyTo());
+            _pruneSummaryLabel.text = mode == "none"
+                ? "Mode: none — no-op. Change to orphan or replace to enable deletions."
+                : $"Mode: {mode}, ApplyTo: {applyTo}. Saved runtime state (InventoryData/Warehouse/CargoData/ContractData) is NOT scanned — clear saves before testing.";
+        }
+
+        /// <summary>Собирает выбранные applyTo токены из toggles.</summary>
+        private List<string> GetActiveApplyTo()
+        {
+            var list = new List<string>();
+            if (_pruneApplyInventory.value) list.Add("inventory");
+            if (_pruneApplyTradeItems.value) list.Add("tradeItems");
+            if (_pruneApplyMarketItems.value) list.Add("marketItems");
+            if (_pruneApplyExchangeRates.value) list.Add("exchangeRates");
+            return list;
+        }
+
+        /// <summary>T-IE08: встраивает UI-настройки prune в blocks (как будто из CSV).</summary>
+        private void InjectPruneIntoBlocks()
+        {
+            if (_blocks == null)
             {
-                _pruneRoot.style.display = DisplayStyle.None;
+                _lastStatus = "No blocks to inject prune into. Preview CSV first.";
+                _statusField.value = _lastStatus;
                 return;
             }
-            var row = pruneRows[0];
-            var mode = (row.Get("mode") ?? "none").Trim();
-            var applyTo = (row.Get("applyTo") ?? "all").Trim();
-            _pruneModeLabel.text = $"Mode: {mode}    ApplyTo: {applyTo}";
-            _pruneSummaryLabel.text =
-                "Prune will: delete items NOT in CSV (inventory/tradeItems) " +
-                "and remove from registry/db/arrays. mode='none' is a no-op. " +
-                "mode='orphan' blocks delete if there are references. mode='replace' ignores references. " +
-                "Saved runtime state (InventoryData/Warehouse/CargoData/ContractData) is NOT scanned — clear saves before testing.";
-            _pruneRoot.style.display = DisplayStyle.Flex;
+
+            var mode = _pruneModeField.value;
+            var applyToTokens = GetActiveApplyTo();
+            var applyToStr = applyToTokens.Count == 4 ? "all" : string.Join(",", applyToTokens);
+
+            // Build a single-row ResourcesCsvRow for prune.
+            var row = new ResourcesCsvRow();
+            row.block = "prune";
+            row.lineNumber = 0;
+            row.values["mode"] = mode;
+            row.values["applyTo"] = applyToStr;
+
+            // Replace (or add) prune block.
+            _blocks["prune"] = new List<ResourcesCsvRow> { row };
         }
 
         private void ImportCsv()
@@ -319,37 +422,37 @@ namespace ProjectC.Items.Editor
                 return;
             }
 
+            // T-IE08: inject prune settings from UI into blocks before Apply.
+            InjectPruneIntoBlocks();
+
             // T-IE08: confirm dialog for prune modes.
-            if (_blocks.TryGetValue("prune", out var pruneRows) && pruneRows.Count > 0)
+            var mode = _pruneModeField.value;
+            if (mode == "replace")
             {
-                var mode = (pruneRows[0].Get("mode") ?? "none").Trim().ToLowerInvariant();
-                if (mode == "replace")
-                {
-                    bool ok1 = EditorUtility.DisplayDialog("Prune: REPLACE",
-                        "This will DELETE ALL existing data in the selected sections (not in CSV).\n\n" +
-                        "If you have NOT backed up via git, do Ctrl+Z in Unity or close without saving.\n\n" +
-                        "Continue?",
-                        "Yes", "Cancel");
-                    if (!ok1) { _lastStatus = "Import cancelled (replace mode)."; _statusField.value = _lastStatus; return; }
-                    bool ok2 = EditorUtility.DisplayDialog("Prune: REPLACE — final confirm",
-                        "FINAL CONFIRMATION.\n\n" +
-                        "Pressing Yes will permanently delete all out-of-CSV items, registry entries, " +
-                        "market items, and exchange rates in the selected sections.\n\n" +
-                        "Are you absolutely sure?",
-                        "Yes, delete", "Cancel");
-                    if (!ok2) { _lastStatus = "Import cancelled (replace mode)."; _statusField.value = _lastStatus; return; }
-                }
-                else if (mode == "orphan")
-                {
-                    bool ok = EditorUtility.DisplayDialog("Prune: ORPHAN",
-                        "This will delete items NOT in CSV (only those without references in scenes/SOs).\n\n" +
-                        "Items with references (PickupItem/LootTable/RecipeData/etc) will be BLOCKED (kept).\n\n" +
-                        "Saved runtime state (InventoryData/Warehouse/CargoData/ContractData) cannot be scanned " +
-                        "and may break if you delete an ItemData.\n\n" +
-                        "Continue?",
-                        "Yes", "Cancel");
-                    if (!ok) { _lastStatus = "Import cancelled (orphan mode)."; _statusField.value = _lastStatus; return; }
-                }
+                bool ok1 = EditorUtility.DisplayDialog("Prune: REPLACE",
+                    "This will DELETE ALL existing data in selected sections (not in CSV).\n\n" +
+                    "If you have NOT backed up via git, do Ctrl+Z in Unity or close without saving.\n\n" +
+                    "Continue?",
+                    "Yes", "Cancel");
+                if (!ok1) { _lastStatus = "Import cancelled (replace mode)."; _statusField.value = _lastStatus; return; }
+                bool ok2 = EditorUtility.DisplayDialog("Prune: REPLACE — final confirm",
+                    "FINAL CONFIRMATION.\n\n" +
+                    "Pressing Yes will permanently delete all out-of-CSV items, registry entries, " +
+                    "market items, and exchange rates in the selected sections.\n\n" +
+                    "Are you absolutely sure?",
+                    "Yes, delete", "Cancel");
+                if (!ok2) { _lastStatus = "Import cancelled (replace mode)."; _statusField.value = _lastStatus; return; }
+            }
+            else if (mode == "orphan")
+            {
+                bool ok = EditorUtility.DisplayDialog("Prune: ORPHAN",
+                    "This will delete items NOT in CSV (only those without references in scenes/SOs).\n\n" +
+                    "Items with references (PickupItem/LootTable/RecipeData/etc) will be BLOCKED (kept).\n\n" +
+                    "Saved runtime state (InventoryData/Warehouse/CargoData/ContractData) cannot be scanned " +
+                    "and may break if you delete an ItemData.\n\n" +
+                    "Continue?",
+                    "Yes", "Cancel");
+                if (!ok) { _lastStatus = "Import cancelled (orphan mode)."; _statusField.value = _lastStatus; return; }
             }
 
             _lastResult = ResourcesCsvImporter.Apply(_blocks);
@@ -360,6 +463,66 @@ namespace ProjectC.Items.Editor
                 $"Created: {_lastResult.created}\nUpdated: {_lastResult.updated}\nSkipped: {_lastResult.skipped}\nErrors: {_lastResult.errors.Count}\nWarnings: {_lastResult.warnings.Count}",
                 "OK");
             Debug.Log($"[ResourcesCsvWindow] Import done: {_lastStatus}");
+        }
+
+        /// <summary>T-IE08: отдельная кнопка Prune (без импорта CSV). Только чистка.</summary>
+        private void ApplyPrune()
+        {
+            var mode = _pruneModeField.value;
+
+            if (mode == "none")
+            {
+                _lastStatus = "Prune mode is none — nothing to do. Change mode to orphan or replace.";
+                _statusField.value = _lastStatus;
+                return;
+            }
+
+            // Если CSV не был загружен — создаём пустой blocks dict.
+            // Все секции пусты → prune удалит всё out-of-CSV (т.е. всё в applyTo).
+            if (_blocks == null)
+            {
+                _blocks = new Dictionary<string, List<ResourcesCsvRow>>();
+                _blocks["inventory"] = new List<ResourcesCsvRow>();
+                _blocks["tradeItems"] = new List<ResourcesCsvRow>();
+                _blocks["marketItems"] = new List<ResourcesCsvRow>();
+                _blocks["exchangeRates"] = new List<ResourcesCsvRow>();
+            }
+
+            InjectPruneIntoBlocks();
+
+            // Confirm dialogs.
+            if (mode == "replace")
+            {
+                bool ok1 = EditorUtility.DisplayDialog("Prune: REPLACE",
+                    "This will DELETE ALL existing data in selected sections (not in CSV).\n\n" +
+                    "If you have NOT backed up via git, do Ctrl+Z in Unity or close without saving.\n\n" +
+                    "Continue?",
+                    "Yes", "Cancel");
+                if (!ok1) { _lastStatus = "Prune cancelled (replace mode)."; _statusField.value = _lastStatus; return; }
+                bool ok2 = EditorUtility.DisplayDialog("Prune: REPLACE — final confirm",
+                    "FINAL CONFIRMATION. This action is NOT REVERSIBLE.\n\nContinue?",
+                    "Yes, delete", "Cancel");
+                if (!ok2) { _lastStatus = "Prune cancelled (replace mode)."; _statusField.value = _lastStatus; return; }
+            }
+            else if (mode == "orphan")
+            {
+                bool ok = EditorUtility.DisplayDialog("Prune: ORPHAN",
+                    "This will delete items NOT in CSV (only those without refs in scenes/SOs).\n\n" +
+                    "Items with references will be BLOCKED (kept). Saved runtime state is NOT scanned.\n\n" +
+                    "Continue?",
+                    "Yes", "Cancel");
+                if (!ok) { _lastStatus = "Prune cancelled (orphan mode)."; _statusField.value = _lastStatus; return; }
+            }
+
+            _lastResult = ResourcesCsvImporter.Apply(_blocks);
+            var summary = $"Prune: mode={mode}, applyTo={string.Join(",", GetActiveApplyTo())}";
+            _lastStatus = $"Prune done. Warnings: {_lastResult.warnings.Count}, Errors: {_lastResult.errors.Count}";
+            _statusField.value = _lastStatus;
+            RenderResults(_lastResult);
+            EditorUtility.DisplayDialog("Prune complete",
+                $"{summary}\n\nWarnings:\n{string.Join("\n", _lastResult.warnings)}",
+                "OK");
+            Debug.Log($"[ResourcesCsvWindow] Prune done: {_lastStatus}");
         }
 
         private void ExportCsv()

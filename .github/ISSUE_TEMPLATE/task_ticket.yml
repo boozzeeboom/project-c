@@ -1,0 +1,137 @@
+name: "🎯 Task / Задача"
+description: "Плановая задача разработки / Development task (с тикет-айди)"
+title: "[TASK] <ID подсистемы-XXX: краткое описание>"
+labels: ["task"]
+projects: ["ProjectC_client"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        ## Task / Задача разработки
+
+        Плановая задача с тикет-ID для трекинга в рамках спринта.
+        Task with a ticket ID for sprint tracking.
+
+        **Формат ID:** `{Подсистема}-{XXX}` — например, `M11`, `T-C03`, `R2-007`, `T-E01`
+
+  - type: input
+    id: ticket_id
+    attributes:
+      label: "🎫 Ticket ID"
+      description: "Уникальный ID задачи в рамках подсистемы"
+      placeholder: "M11, T-C03, R2-007"
+    validations:
+      required: true
+
+  - type: dropdown
+    id: subsystem
+    attributes:
+      label: "🗂️ Подсистема / Subsystem"
+      options:
+        - Core
+        - Player
+        - Ship
+        - Network / NGO
+        - UI
+        - World
+        - NPC / Quests
+        - Trade / Economy
+        - Items / Inventory
+        - Scene / Streaming
+        - Editor Tooling
+        - Tests
+        - Refactoring / Tech Debt
+        - Documentation
+    validations:
+      required: true
+
+  - type: textarea
+    id: description
+    attributes:
+      label: "📝 Описание / Description"
+      description: "Что нужно сделать (DoD — Definition of Done)"
+      placeholder: |
+        - [ ] Функция А реализована
+        - [ ] Ошибок в консоли нет
+        - [ ] Протестировано в Play Mode (Host + Client)
+    validations:
+      required: true
+
+  - type: textarea
+    id: technical_notes
+    attributes:
+      label: "🔧 Технические заметки / Technical notes"
+      description: "Архитектурные решения, файлы, которые нужно менять, риски"
+      placeholder: |
+        - Изменяемые файлы: `Assets/_Project/Scripts/...`
+        - Зависимости: ...
+        - Риски: ...
+    validations:
+      required: false
+
+  - type: input
+    id: gdd_ref
+    attributes:
+      label: "📄 Ссылка на GDD / GDD reference"
+      description: "Если задача описана в GDD — укажите документ"
+      placeholder: "GDD_11_Inventory_Items.md §3.2"
+    validations:
+      required: false
+
+  - type: input
+    id: design_doc
+    attributes:
+      label: "📋 Design note / dev doc"
+      description: "Ссылка на `docs/dev/*.md`, если уже написан"
+      placeholder: "docs/dev/MY_DESIGN_NOTE.md"
+    validations:
+      required: false
+
+  - type: dropdown
+    id: sprint
+    attributes:
+      label: "🔄 Спринт / Sprint"
+      options:
+        - R1 (Performance Hotfix)
+        - R2 (Network Sync)
+        - R3
+        - R4
+        - Unplanned / Backlog
+    validations:
+      required: true
+
+  - type: dropdown
+    id: priority
+    attributes:
+      label: "📊 Приоритет / Priority"
+      options:
+        - "P0 — Блокер / Blocker"
+        - "P1 — Критично / Critical"
+        - "P2 — Важно / Important"
+        - "P3 — Хорошо бы / Nice to have"
+    validations:
+      required: true
+
+  - type: checkboxes
+    id: prerequisites
+    attributes:
+      label: "✅ Чеклист открытия / Prerequisites"
+      options:
+        - label: "GDD/спецификация прочитана (если применимо)"
+          required: false
+        - label: "Дизайн-нота написана (docs/dev/) для нетривиальной работы"
+          required: false
+        - label: "Связанные тикеты заведены (если нужны)"
+          required: false
+
+  - type: textarea
+    id: acceptance
+    attributes:
+      label: "🎯 Acceptance criteria / Критерии приёмки"
+      description: "Как проверить, что задача сделана?"
+      placeholder: |
+        1. Открыть BootstrapScene → Play
+        2. Нажать кнопку X → появляется Y
+        3. Консоль: 0 errors, 0 warnings
+    validations:
+      required: true

@@ -1,0 +1,150 @@
+name: "🎨 Community Asset / Ассет от сообщества"
+description: "Предложить ассет (3D, музыка, текстура, VFX, код) / Submit a community asset"
+title: "[ASSET] <тип ассета: краткое описание>"
+labels: ["contributor", "asset-review"]
+projects: ["ProjectC_client"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        ## 🎁 Community Asset Submission
+
+        Спасибо, что хотите помочь Project C! Заполните форму — мы рассмотрим ассет и добавим в игру с указанием авторства.
+
+        Подробнее о контрибьюции: [docs/COLABORATION.md](https://github.com/boozzeeboom/project-c/blob/main/docs/COLABORATION.md)
+
+        ---
+
+  - type: input
+    id: contributor_name
+    attributes:
+      label: "👤 Ваше имя / Your name"
+      description: "Как вас указать в игре? (табличка на ассете, credits)"
+      placeholder: "Кузнец Иванов / ArtistName"
+    validations:
+      required: true
+
+  - type: input
+    id: contact
+    attributes:
+      label: "📬 Контакт / Contact"
+      description: "Telegram, Discord или email — чтобы мы могли связаться"
+      placeholder: "@username или email@example.com"
+    validations:
+      required: true
+
+  - type: dropdown
+    id: asset_type
+    attributes:
+      label: "📦 Тип ассета / Asset type"
+      options:
+        - "🎵 Музыка / Music"
+        - "🔊 Звуковой эффект / SFX"
+        - "🎨 3D-модель / 3D Model"
+        - "🖼️ Текстура / Texture"
+        - "✨ VFX / Shader"
+        - "🕺 Анимация / Animation"
+        - "💻 Код / Code (C#, shader, tool)"
+        - "📜 Сценарий / Narrative (quest, dialogue, lore)"
+        - "🌍 UI / Icon"
+        - "📄 Документация / Documentation"
+        - "🔧 Настройка / Config (URP, physics, etc.)"
+        - "❓ Другое / Other"
+    validations:
+      required: true
+
+  - type: textarea
+    id: description
+    attributes:
+      label: "📝 Описание / Description"
+      description: "Что это за ассет? Куда он идёт? Какую часть игры затрагивает?"
+      placeholder: |
+        Это музыкальная тема для города Аваллон. Спокойная, меланхоличная,
+        с элементами индастриала. Длительность ~3:30.
+
+        или
+
+        3D-модель крафт-станции «Верстак механика». Poly count ~2500 tris.
+        Пропорции: ~2×1.5×1.5 метров.
+    validations:
+      required: true
+
+  - type: input
+    id: download_url
+    attributes:
+      label: "🔗 Ссылка на скачивание / Download link"
+      description: "Ссылка на облако (Google Drive, Dropbox, Яндекс.Диск и т.д.) с файлами ассета"
+      placeholder: "https://drive.google.com/..."
+    validations:
+      required: true
+
+  - type: textarea
+    id: replaces
+    attributes:
+      label: "🔄 Замещает / Replaces or extends"
+      description: "Это замена существующего ассета, дополнение к нему или полностью новый?"
+      placeholder: |
+        - Новый ассет (ничего не замещает)
+        - Заменяет: Assets/_Project/Models/Enemies/OldEnemy.fbx
+        - Дополняет: музыкальную тему Аваллона (GDD_02 §4.3)
+    validations:
+      required: true
+
+  - type: textarea
+    id: project_path
+    attributes:
+      label: "📂 Куда в проекте / Target path"
+      description: "В какую папку проекта должен лечь ассет (если знаете)"
+      placeholder: "Assets/_Project/Art/Music/Avalon_Theme.wav  или  Assets/_Project/Prefabs/..."
+    validations:
+      required: false
+
+  - type: textarea
+    id: technical_notes
+    attributes:
+      label: "⚙️ Техническая информация / Technical specs"
+      description: "Формат, размеры, поликаунт, длительность, настройки импорта"
+      placeholder: |
+        - Формат: .wav, 44100 Hz, stereo, 16 bit
+        - Длительность: 3:28
+        - Громкость: -3 dB (пик)
+
+        или
+
+        - Poly count: 3500 tris
+        - Текстур: 2 (albedo + normal, 1024×1024)
+        - Формат: .fbx
+    validations:
+      required: false
+
+  - type: checkboxes
+    id: license_accept
+    attributes:
+      label: "📜 Лицензия / License agreement"
+      description: "Ассеты распространяются под лицензиями, указанными в COLABORATION.md"
+      options:
+        - label: "📌 **Код / Code:** я согласен(а) распространять его под **MIT**"
+          required: false
+        - label: "🎨 **Ассет / Asset (3D, музыка, текстуры, VFX):** я согласен(а) распространять его под **CC BY-NC-ND 4.0**"
+          required: false
+        - label: "✅ Я подтверждаю, что это моя оригинальная работа / I confirm this is my original work"
+          required: true
+
+  - type: textarea
+    id: additional
+    attributes:
+      label: "📎 Дополнительно / Additional info"
+      description: "Скриншоты, референсы, пожелания по размещению в мире игры"
+      placeholder: "Приложите скриншоты / ссылки на референсы"
+    validations:
+      required: false
+
+  - type: markdown
+    attributes:
+      value: |
+        ---
+
+        **После отправки:**
+        - Мы свяжемся с вами в течение нескольких дней
+        - Ассет пройдёт ревью (техническое и художественное)
+        - После утверждения вы получите именную табличку / credits в игре 🏆

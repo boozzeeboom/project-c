@@ -1,0 +1,95 @@
+name: "🏗️ Design / Architecture"
+description: "Архитектурное обсуждение, ADR, рефакторинг / Design decision, ADR, refactoring proposal"
+title: "[DESIGN] <тема>"
+labels: ["design", "discussion"]
+projects: ["ProjectC_client"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        ## Design Discussion / Архитектурное решение
+
+        Для ADR (Architecture Decision Records), рефакторинга,
+        и значимых архитектурных изменений.
+
+        > Результатом такого issue должен быть ADR в `docs/dev/` или обновлённая дизайн-нота.
+
+  - type: input
+    id: related_tickets
+    attributes:
+      label: "🔗 Связанные тикеты / Related tickets"
+      description: "Какие тикеты затрагивает это решение?"
+      placeholder: "R2-007, T-C03, M11"
+    validations:
+      required: false
+
+  - type: textarea
+    id: context
+    attributes:
+      label: "📋 Контекст / Context"
+      description: "Почему это решение обсуждается? Какая проблема?"
+      placeholder: |
+        Текущая ситуация:
+        Проблема:
+        Почему это стало актуально сейчас:
+    validations:
+      required: true
+
+  - type: textarea
+    id: options
+    attributes:
+      label: "🔀 Варианты / Options considered"
+      description: "Какие подходы рассматривались?"
+      placeholder: |
+        ## Вариант A: ...
+        Плюсы:
+        Минусы:
+
+        ## Вариант B: ...
+        Плюсы:
+        Минусы:
+    validations:
+      required: true
+
+  - type: textarea
+    id: decision
+    attributes:
+      label: "✅ Решение / Decision"
+      description: "Что выбрали и почему"
+      placeholder: "Выбран вариант A, потому что ..."
+    validations:
+      required: false
+
+  - type: checkboxes
+    id: consequences
+    attributes:
+      label: "📌 Последствия / Consequences"
+      options:
+        - label: "Брейкинг-чендж / Breaking change (сломает существующее)"
+          required: false
+        - label: "Нужен рефакторинг смежных систем"
+          required: false
+        - label: "Нужна новая зависимость / пакет"
+          required: false
+        - label: "Влияет на производительность / Performance impact"
+          required: false
+
+  - type: textarea
+    id: action_items
+    attributes:
+      label: "📝 План действий / Action items"
+      description: "Конкретные шаги после принятия решения"
+      placeholder: |
+        - [ ] Написать ADR в docs/dev/
+        - [ ] Создать task-тикеты для реализации
+        - [ ] Обновить GDD (если нужно)
+    validations:
+      required: false
+
+  - type: textarea
+    id: additional
+    attributes:
+      label: "📎 Дополнительно / Additional context"
+      description: "Ссылки, референсы, скриншоты, диаграммы"
+    validations:
+      required: false

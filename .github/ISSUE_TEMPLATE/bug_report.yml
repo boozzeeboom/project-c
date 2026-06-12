@@ -1,0 +1,128 @@
+name: 🐞 Bug Report
+description: Сообщить о баге / Report a bug
+title: "[BUG] <краткое описание>"
+labels: ["bug", "triage"]
+projects: ["ProjectC_client"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        ## Сообщение о баге / Bug Report
+
+        Спасибо, что помогаете делать Project C лучше! Заполните поля ниже.
+        Thanks for helping improve Project C! Fill in the fields below.
+
+  - type: input
+    id: ticket_id
+    attributes:
+      label: "🎫 Ticket ID (если есть)"
+      description: "Если баг найден в рамках тикета — укажите ID (например, `R2-007`, `M11`)"
+      placeholder: "R2-XXX или MXX"
+    validations:
+      required: false
+
+  - type: dropdown
+    id: subsystem
+    attributes:
+      label: "🗂️ Подсистема / Subsystem"
+      description: "Какая часть проекта затронута?"
+      options:
+        - Core (singletons, managers, DayNight)
+        - Player (Controller, Input, Ship, NetworkPlayer)
+        - Ship (Module, Fuel, WindZone, Altitude, Meziy)
+        - Network (NGO, spawners, RPC, sync)
+        - UI (HUD, menus, MarketWindow, tabs)
+        - World (Generation, Streaming, Clouds, Water)
+        - NPC (Quests, Dialogue)
+        - Trade (Economy, Exchange, Crafting, Mining)
+        - Items / Inventory
+        - Scene (Bootstrap, WorldScene, Scenes)
+        - Editor Tooling
+        - Tests
+        - Other
+    validations:
+      required: true
+
+  - type: textarea
+    id: description
+    attributes:
+      label: "📝 Описание / Description"
+      description: "Что происходит? Что должно происходить? В чём разница?"
+      placeholder: |
+        Ожидаемое поведение:
+        Фактическое поведение:
+        Шаги воспроизведения:
+    validations:
+      required: true
+
+  - type: textarea
+    id: reproduction
+    attributes:
+      label: "🔄 Шаги воспроизведения / Steps to reproduce"
+      description: "Пошагово — как воспроизвести баг"
+      placeholder: |
+        1. Открыть BootstrapScene
+        2. Нажать Play
+        3. ...
+      value: |
+        1.
+        2.
+        3.
+    validations:
+      required: true
+
+  - type: textarea
+    id: logs
+    attributes:
+      label: "📋 Логи / Console output"
+      description: "Скопируйте вывод Console из Unity (Run → read_console при работе через MCP). Ошибки, NRE, предупреждения — всё сюда."
+      render: text
+    validations:
+      required: false
+
+  - type: input
+    id: scene
+    attributes:
+      label: "🎬 Сцена / Scene"
+      description: "На какой сцене проявляется?"
+      placeholder: "BootstrapScene, WorldScene_0_0, ..."
+    validations:
+      required: false
+
+  - type: checkboxes
+    id: occurs
+    attributes:
+      label: "⚙️ Воспроизводится / Occurs on"
+      options:
+        - label: "Host (Server + Client)"
+        - label: "Client only"
+        - label: "Edit Mode (без Play)"
+        - label: "Build"
+
+  - type: dropdown
+    id: severity
+    attributes:
+      label: "💥 Серьёзность / Severity"
+      options:
+        - "🔴 Critical — игра не запускается / core mechanic broken"
+        - "🟡 Major — функциональность сломана / feature broken"
+        - "🟢 Minor — косметика / cosmetic, minor glitch"
+        - "⚪ Suggestion — не баг, а улучшение / not a bug, improvement"
+    validations:
+      required: true
+
+  - type: checkboxes
+    id: regression
+    attributes:
+      label: "⚠️ Регрессия / Regression"
+      options:
+        - label: "Да, раньше работало / used to work"
+          required: false
+
+  - type: textarea
+    id: additional
+    attributes:
+      label: "📎 Дополнительно / Additional context"
+      description: "Скриншоты, ссылки, файлы. Screenshots, links, etc."
+    validations:
+      required: false

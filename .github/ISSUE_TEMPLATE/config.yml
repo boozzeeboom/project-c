@@ -1,0 +1,14 @@
+blank_issues_enabled: true
+contact_links:
+  - name: "🤝 Как контрибьютить / Contribution guide"
+    url: https://github.com/boozzeeboom/project-c/blob/main/docs/COLABORATION.md
+    about: "Как предложить ассет, код, идею — правила и лицензии"
+  - name: "💬 Telegram-чат"
+    url: https://t.me/indeed174
+    about: "Связаться с командой / Contact the team"
+  - name: "📖 GDD Index"
+    url: https://github.com/boozzeeboom/project-c/blob/main/docs/gdd/GDD_INDEX.md
+    about: "Дизайн-документы проекта / Game Design Documents"
+  - name: "📋 Roadmap"
+    url: https://github.com/boozzeeboom/project-c/blob/main/docs/MMO_Development_Plan.md
+    about: "Текущий статус и план разработки"

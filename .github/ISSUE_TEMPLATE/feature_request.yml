@@ -1,0 +1,88 @@
+name: ✨ Feature Request
+description: Предложить новую фичу / Suggest a new feature
+title: "[FEATURE] <краткое описание>"
+labels: ["enhancement"]
+projects: ["ProjectC_client"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        ## Feature Request / Предложение
+
+        Новая идея для Project C. Заполните поля ниже.
+        A new idea for Project C.
+
+  - type: input
+    id: ticket_ref
+    attributes:
+      label: "🔗 Связанный тикет / Related ticket"
+      description: "Если предложение расширяет существующий тикет (например, `R2-007`, `T-C03`)"
+      placeholder: "R2-XXX, MXX, T-CXX"
+    validations:
+      required: false
+
+  - type: dropdown
+    id: subsystem
+    attributes:
+      label: "🗂️ Подсистема / Subsystem"
+      options:
+        - Core
+        - Player
+        - Ship
+        - Network
+        - UI
+        - World
+        - NPC / Quests
+        - Trade / Economy
+        - Items / Inventory
+        - Scene / Streaming
+        - Editor Tooling
+        - Audio
+        - VFX / Shaders
+        - Other
+    validations:
+      required: true
+
+  - type: textarea
+    id: problem
+    attributes:
+      label: "❓ Какая проблема решается? / Problem statement"
+      description: "Что сейчас неудобно/невозможно и почему это стоит сделать?"
+    validations:
+      required: true
+
+  - type: textarea
+    id: solution
+    attributes:
+      label: "💡 Предлагаемое решение / Proposed solution"
+      description: "Как вы видите реализацию? Технический подход, если есть."
+    validations:
+      required: true
+
+  - type: textarea
+    id: alternatives
+    attributes:
+      label: "🔄 Альтернативы / Alternatives considered"
+      description: "Какие ещё варианты рассматривали?"
+    validations:
+      required: false
+
+  - type: dropdown
+    id: priority
+    attributes:
+      label: "📊 Приоритет / Priority"
+      options:
+        - "P0 — Блокер / Blocker (без этого не летим)"
+        - "P1 — Критично / Critical (нужно в этом спринте)"
+        - "P2 — Важно / Important (хорошо бы в этом спринте)"
+        - "P3 — Хорошо бы / Nice to have (когда-нибудь)"
+    validations:
+      required: true
+
+  - type: textarea
+    id: additional
+    attributes:
+      label: "📎 Дополнительно / Additional context"
+      description: "Ссылки на референсы, GDD, дизайн-документы, скриншоты"
+    validations:
+      required: false

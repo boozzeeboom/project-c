@@ -1,0 +1,81 @@
+﻿# Project C: The Clouds — Resources Database
+# Эталонный CSV (sample). Содержит ВСЕ существующие в проекте ресурсы + несколько
+# шаблонных строк для демонстрации формата. Source of truth для ItemData, TradeItemDefinition,
+# MarketItemConfig, ExchangeRateEntry. .asset файлы ГЕНЕРИРУЮТСЯ из этого CSV.
+#
+# Редактирование: открыть в Excel, добавить/изменить строки, сохранить как UTF-8 (с BOM).
+# Применение: Tools → ProjectC → Resources → CSV Import/Export → Browse → Import.
+#
+# Schema: см. Resources_Import_Schema.md
+# Прецедент: docs/Markets/Resources_import_export/02_DESIGN.md
+
+# block=inventory
+itemName,itemType,description,maxStack,weightKg
+Антисептик,Medical,Дезинфицирующий раствор. Предотвращает заражение.,10,0.1
+Бутыль воды,Food,Чистая питьевая вода. 0.5 литра.,5,0.6
+Бинт,Medical,Обычный марлевый бинт. Перевязка ран.,20,0.05
+Батарея,Tech,Стандартная электрическая батарея.,20,0.1
+Верёвка 10м,Equipment,Прочная верёвка длиной 10 метров. Нужна для восхождений.,5,0.8
+Газовый баллон,Fuel,Сжатый газ для нагревателей. Взрывоопасен.,3,2.5
+Говно,Resources,Тестовый предмет (заглушка для отладки).,1,0.1
+Железная руда,Resources,Обычная железная руда. Добывается в шахтах.,20,2.0
+Кабель,Tech,Электрический кабель 1м. Универсальный.,20,0.05
+Карабин,Equipment,Металлический карабин для страховки.,10,0.1
+Кислородный баллон,Fuel,Баллон с кислородом для дыхания на высоте.,5,4.0
+Консервы,Food,Мясные консервы. Долго хранятся.,10,0.5
+Кристалл Времён,Resources,Пульсирующий фиолетовый кристалл. Редкий ресурс.,1,0.1
+Кристаллическая пыль,Resources,Мерцающие кристаллы. Редкий ресурс.,10,0.5
+Древесина,Resources,Обычная древесина. Строительный материал.,50,1.0
+Медная руда,Resources,Красноватая медная руда. Используется в проводке.,20,1.5
+Мезий,Meziy,Заготовка для крафта мезий-кристалла.,1,0.1
+Мезий-кристалл,Meziy,Целый кристалл мезия. Источник энергии.,5,0.3
+Мезий-крошка,Meziy,Маленький осколок мезия. Слабо светится.,20,0.05
+Мезий-сердцевина,Meziy,Чистая сердцевина мезия. Редчайший компонент.,1,1.0
+Микросхема,Tech,Печатная плата. Нужна для ремонта техники.,10,0.05
+Стабилизатор поля,Antigrav,Устройство для стабилизации антиграв-поля. Расходник.,5,0.2
+Стимулятор,Medical,Медицинский стимулятор. Восстанавливает силы.,5,0.1
+Сухпаёк,Food,Военный сухой паёк. Восстанавливает силы.,10,0.4
+ТестовыйКамень,Resources,Тестовый камень для отладки mining.,10,2.0
+Угольные брикеты,Fuel,Спрессованный уголь. Дешёвое топливо.,20,1.0
+Фонарь,Equipment,Ручной фонарь. Освещает тёмные места.,1,0.3
+Антигравитационное топливо,Fuel,Жидкое топливо для антиграв-двигателей. Высокая плотность.,5,3.0
+Антиграв-камень большой,Antigrav,Большой левитирующий камень. Подходит для тяжёлых кораблей.,1,5.0
+Антиграв-камень малый,Antigrav,Маленький левитирующий камень. Подходит для малых платформ.,3,1.0
+Антигравий (осколок),Antigrav,Осколок антигравия. 100 осколков можно спрессовать в слиток на рынке.,99,0.1
+Зелёный ключ,Equipment,Универсальный зелёный ключ от двери.,1,0.05
+Красный ключ,Equipment,Универсальный красный ключ от двери.,1,0.05
+Синий ключ,Equipment,Универсальный синий ключ от двери.,1,0.05
+ShipLight ключ,Equipment,Ключ-стержень для запуска лёгкого корабля.,1,0.05
+ShipMedium ключ,Equipment,Ключ-стержень для запуска среднего корабля.,1,0.05
+ShipHeavy ключ,Equipment,Ключ-стержень для запуска тяжёлого корабля.,1,0.05
+
+# block=tradeItems
+tradeItemId,displayName,basePrice,weight,volume,slots,isDangerous,isFragile,isContraband,requiredFaction
+mesium_canister_v01,Мезий (канистра),200,10,0.5,1,y,n,n,None
+antigrav_ingot_v01,Антигравий (слиток),500,5,0.2,1,n,y,n,None
+resource_iron_box,Ящик железной руды,100,50,5,4,n,n,n,None
+resource_copper_box,Ящик медной руды,80,40,4,4,n,n,n,None
+resource_wood_box,Ящик древесины,40,30,8,4,n,n,n,None
+
+# block=marketItems
+# (itemId, locationId) — одна строка = один товар на одном рынке.
+tradeItemId,locationId,basePrice,initialStock,regenPerTick,factionRestriction,allowBuy,allowSell
+mesium_canister_v01,primium,10,80,0.04,None,y,y
+antigrav_ingot_v01,primium,50,40,0.04,None,y,y
+mesium_canister_v01,secundus,14,50,0.03,None,y,y
+antigrav_ingot_v01,secundus,45,50,0.03,None,y,y
+mesium_canister_v01,tertius,12,60,0.03,None,y,y
+mesium_canister_v01,quartus,18,30,0.02,None,y,y
+antigrav_ingot_v01,quartus,60,20,0.02,None,y,y
+resource_iron_box,primium,120,50,0.02,None,y,y
+resource_iron_box,secundus,100,30,0.015,None,y,y
+resource_copper_box,primium,90,40,0.02,None,y,y
+resource_wood_box,primium,50,40,0.02,None,y,y
+
+# block=exchangeRates
+# Связь inventory (itemName) ↔ warehouse (tradeItemId).
+tradeItemId,inventoryItemName,warehouseQty,inventoryQty,displayName
+resource_iron_box,Железная руда,1,100,Ящик железной руды
+resource_copper_box,Медная руда,1,100,Ящик медной руды
+resource_wood_box,Древесина,1,100,Ящик древесины
+antigrav_ingot_v01,Антигравий (осколок),1,100,Слиток антигравия

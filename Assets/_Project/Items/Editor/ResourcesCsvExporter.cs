@@ -190,24 +190,9 @@ namespace ProjectC.Items.Editor
         }
 
         // ============================================================
-        // Editor menu: Tools → ProjectC → Resources → Export to CSV
+        // Programmatic entry point: Export(string csvPath) → rowsWritten.
+        // Для UI — ResourcesCsvWindow (Tools/ProjectC/Resources/CSV Import/Export).
         // ============================================================
-
-        [MenuItem("Tools/ProjectC/Resources/Export to CSV", priority = 200)]
-        public static void ExportMenuItem()
-        {
-            var path = EditorUtility.SaveFilePanel(
-                "Export Resources CSV",
-                Application.dataPath,
-                "Resources_Import.csv",
-                "csv");
-            if (string.IsNullOrEmpty(path)) return;
-
-            int rows = Export(path);
-            Debug.Log($"[ResourcesCsvExporter] Exported {rows} rows to {path}");
-            EditorUtility.DisplayDialog("Export complete",
-                $"Exported {rows} rows to:\n{path}", "OK");
-        }
     }
 }
 #endif

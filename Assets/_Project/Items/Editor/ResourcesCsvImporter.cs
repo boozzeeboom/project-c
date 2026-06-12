@@ -334,7 +334,7 @@ namespace ProjectC.Items.Editor
             var byLocation = new Dictionary<string, List<ResourcesCsvRow>>(StringComparer.OrdinalIgnoreCase);
             foreach (var row in rows)
             {
-                if (row.HasError) continue;
+                if (row.HasError) { result.skipped++; continue; }
                 var loc = row.Get("locationId");
                 if (string.IsNullOrEmpty(loc)) continue;
                 if (!byLocation.TryGetValue(loc, out var list))

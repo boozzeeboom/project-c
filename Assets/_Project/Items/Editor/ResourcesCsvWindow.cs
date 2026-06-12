@@ -543,7 +543,9 @@ namespace ProjectC.Items.Editor
 
         private void RefreshButtons()
         {
-            bool canImport = _blocks != null && _globalErrors.Count == 0;
+            // T-IE08+: импорт НЕ блокируется глобальными ошибками.
+            // Cross-validator все ошибки теперь per-row → skipped при импорте.
+            bool canImport = _blocks != null;
             if (_importBtn != null) _importBtn.SetEnabled(canImport);
         }
 

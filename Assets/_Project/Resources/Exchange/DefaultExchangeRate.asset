@@ -12,4 +12,544 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: dbe5e4f41e78ec947937f2f645977e1f, type: 3}
   m_Name: DefaultExchangeRate
   m_EditorClassIdentifier: Assembly-CSharp::ProjectC.Trade.Config.ExchangeRateConfig
-  rates: []
+  rates:
+  - warehouseItemId: resource_mezium_box
+    warehouseQty: 1
+    inventoryItemName: Mezium
+    inventoryQty: 100
+    displayName: Mezium Box
+  - warehouseItemId: resource_antigrav_box
+    warehouseQty: 1
+    inventoryItemName: Antigrav
+    inventoryQty: 100
+    displayName: Antigrav Box
+  - warehouseItemId: resource_raw_antigrav_box
+    warehouseQty: 1
+    inventoryItemName: Raw Antigrav
+    inventoryQty: 100
+    displayName: Raw Antigrav Box
+  - warehouseItemId: resource_purified_antigrav_ag_1_box
+    warehouseQty: 1
+    inventoryItemName: Purified Antigrav AG-1
+    inventoryQty: 100
+    displayName: Purified Antigrav AG-1 Box
+  - warehouseItemId: resource_technical_antigrav_ag_2_box
+    warehouseQty: 1
+    inventoryItemName: Technical Antigrav AG-2
+    inventoryQty: 100
+    displayName: Technical Antigrav AG-2 Box
+  - warehouseItemId: resource_sheet_antigrav_box
+    warehouseQty: 1
+    inventoryItemName: Sheet Antigrav
+    inventoryQty: 100
+    displayName: Sheet Antigrav Box
+  - warehouseItemId: resource_rod_antigrav_box
+    warehouseQty: 1
+    inventoryItemName: Rod Antigrav
+    inventoryQty: 100
+    displayName: Rod Antigrav Box
+  - warehouseItemId: resource_antigrav_steel_ags_40_box
+    warehouseQty: 1
+    inventoryItemName: Antigrav Steel AGS-40
+    inventoryQty: 100
+    displayName: Antigrav Steel AGS-40 Box
+  - warehouseItemId: resource_antigrav_bronze_agb_12_box
+    warehouseQty: 1
+    inventoryItemName: Antigrav Bronze AGB-12
+    inventoryQty: 100
+    displayName: Antigrav Bronze AGB-12 Box
+  - warehouseItemId: resource_antigrav_brass_agl_8_box
+    warehouseQty: 1
+    inventoryItemName: Antigrav Brass AGL-8
+    inventoryQty: 100
+    displayName: Antigrav Brass AGL-8 Box
+  - warehouseItemId: resource_antigrav_chips_box
+    warehouseQty: 1
+    inventoryItemName: Antigrav Chips
+    inventoryQty: 100
+    displayName: Antigrav Chips Box
+  - warehouseItemId: resource_raw_mezium_box
+    warehouseQty: 1
+    inventoryItemName: Raw Mezium
+    inventoryQty: 100
+    displayName: Raw Mezium Box
+  - warehouseItemId: resource_stabilized_mezium_m_1_box
+    warehouseQty: 1
+    inventoryItemName: Stabilized Mezium M-1
+    inventoryQty: 100
+    displayName: Stabilized Mezium M-1 Box
+  - warehouseItemId: resource_mezium_oil_box
+    warehouseQty: 1
+    inventoryItemName: Mezium Oil
+    inventoryQty: 100
+    displayName: Mezium Oil Box
+  - warehouseItemId: resource_refined_mezium_fuel_box
+    warehouseQty: 1
+    inventoryItemName: Refined Mezium Fuel
+    inventoryQty: 100
+    displayName: Refined Mezium Fuel Box
+  - warehouseItemId: resource_mezium_mag_concentrate_box
+    warehouseQty: 1
+    inventoryItemName: Mezium MAG Concentrate
+    inventoryQty: 100
+    displayName: Mezium MAG Concentrate Box
+  - warehouseItemId: resource_mezium_neutralizer_n_7_box
+    warehouseQty: 1
+    inventoryItemName: Mezium Neutralizer N-7
+    inventoryQty: 100
+    displayName: Mezium Neutralizer N-7 Box
+  - warehouseItemId: resource_primium_forged_steel_box
+    warehouseQty: 1
+    inventoryItemName: Primium Forged Steel
+    inventoryQty: 100
+    displayName: Primium Forged Steel Box
+  - warehouseItemId: resource_galvanized_sheet_steel_box
+    warehouseQty: 1
+    inventoryItemName: Galvanized Sheet Steel
+    inventoryQty: 100
+    displayName: Galvanized Sheet Steel Box
+  - warehouseItemId: resource_gray_cast_iron_box
+    warehouseQty: 1
+    inventoryItemName: Gray Cast Iron
+    inventoryQty: 100
+    displayName: Gray Cast Iron Box
+  - warehouseItemId: resource_copper_wire_box
+    warehouseQty: 1
+    inventoryItemName: Copper Wire
+    inventoryQty: 100
+    displayName: Copper Wire Box
+  - warehouseItemId: resource_brass_sheet_box
+    warehouseQty: 1
+    inventoryItemName: Brass Sheet
+    inventoryQty: 100
+    displayName: Brass Sheet Box
+  - warehouseItemId: resource_tin_bronze_box
+    warehouseQty: 1
+    inventoryItemName: Tin Bronze
+    inventoryQty: 100
+    displayName: Tin Bronze Box
+  - warehouseItemId: resource_duralumin_aluminum_box
+    warehouseQty: 1
+    inventoryItemName: Duralumin Aluminum
+    inventoryQty: 100
+    displayName: Duralumin Aluminum Box
+  - warehouseItemId: resource_technical_tin_box
+    warehouseQty: 1
+    inventoryItemName: Technical Tin
+    inventoryQty: 100
+    displayName: Technical Tin Box
+  - warehouseItemId: resource_technical_silver_box
+    warehouseQty: 1
+    inventoryItemName: Technical Silver
+    inventoryQty: 100
+    displayName: Technical Silver Box
+  - warehouseItemId: resource_canvas_tarpaulin_box
+    warehouseQty: 1
+    inventoryItemName: Canvas Tarpaulin
+    inventoryQty: 100
+    displayName: Canvas Tarpaulin Box
+  - warehouseItemId: resource_mountain_wool_box
+    warehouseQty: 1
+    inventoryItemName: Mountain Wool
+    inventoryQty: 100
+    displayName: Mountain Wool Box
+  - warehouseItemId: resource_multilayer_felt_box
+    warehouseQty: 1
+    inventoryItemName: Multilayer Felt
+    inventoryQty: 100
+    displayName: Multilayer Felt Box
+  - warehouseItemId: resource_filter_grade_silk_box
+    warehouseQty: 1
+    inventoryItemName: Filter-Grade Silk
+    inventoryQty: 100
+    displayName: Filter-Grade Silk Box
+  - warehouseItemId: resource_lightweight_canvas_box
+    warehouseQty: 1
+    inventoryItemName: Lightweight Canvas
+    inventoryQty: 100
+    displayName: Lightweight Canvas Box
+  - warehouseItemId: resource_underwear_knit_box
+    warehouseQty: 1
+    inventoryItemName: Underwear Knit
+    inventoryQty: 100
+    displayName: Underwear Knit Box
+  - warehouseItemId: resource_guild_cloth_box
+    warehouseQty: 1
+    inventoryItemName: Guild Cloth
+    inventoryQty: 100
+    displayName: Guild Cloth Box
+  - warehouseItemId: resource_farm_timber_box
+    warehouseQty: 1
+    inventoryItemName: Farm Timber
+    inventoryQty: 100
+    displayName: Farm Timber Box
+  - warehouseItemId: resource_teak_beam_box
+    warehouseQty: 1
+    inventoryItemName: Teak Beam
+    inventoryQty: 100
+    displayName: Teak Beam Box
+  - warehouseItemId: resource_aviation_plywood_box
+    warehouseQty: 1
+    inventoryItemName: Aviation Plywood
+    inventoryQty: 100
+    displayName: Aviation Plywood Box
+  - warehouseItemId: resource_oak_veneer_box
+    warehouseQty: 1
+    inventoryItemName: Oak Veneer
+    inventoryQty: 100
+    displayName: Oak Veneer Box
+  - warehouseItemId: resource_technical_cardboard_box
+    warehouseQty: 1
+    inventoryItemName: Technical Cardboard
+    inventoryQty: 100
+    displayName: Technical Cardboard Box
+  - warehouseItemId: resource_sulfuric_acid_box
+    warehouseQty: 1
+    inventoryItemName: Sulfuric Acid
+    inventoryQty: 100
+    displayName: Sulfuric Acid Box
+  - warehouseItemId: resource_caustic_alkali_box
+    warehouseQty: 1
+    inventoryItemName: Caustic Alkali
+    inventoryQty: 100
+    displayName: Caustic Alkali Box
+  - warehouseItemId: resource_universal_solvent_ru_5_box
+    warehouseQty: 1
+    inventoryItemName: Universal Solvent RU-5
+    inventoryQty: 100
+    displayName: Universal Solvent RU-5 Box
+  - warehouseItemId: resource_mezium_resistant_sealant_hm_200_box
+    warehouseQty: 1
+    inventoryItemName: Mezium-Resistant Sealant HM-200
+    inventoryQty: 100
+    displayName: Mezium-Resistant Sealant HM-200 Box
+  - warehouseItemId: resource_gmag_grease_s_4_box
+    warehouseQty: 1
+    inventoryItemName: GMAG Grease S-4
+    inventoryQty: 100
+    displayName: GMAG Grease S-4 Box
+  - warehouseItemId: resource_rigging_impregnation_pt_1_box
+    warehouseQty: 1
+    inventoryItemName: Rigging Impregnation PT-1
+    inventoryQty: 100
+    displayName: Rigging Impregnation PT-1 Box
+  - warehouseItemId: resource_anti_corrosion_enamel_paint_box
+    warehouseQty: 1
+    inventoryItemName: Anti-Corrosion Enamel Paint
+    inventoryQty: 100
+    displayName: Anti-Corrosion Enamel Paint Box
+  - warehouseItemId: resource_shellac_varnish_box
+    warehouseQty: 1
+    inventoryItemName: Shellac Varnish
+    inventoryQty: 100
+    displayName: Shellac Varnish Box
+  - warehouseItemId: resource_borosilicate_glass_box
+    warehouseQty: 1
+    inventoryItemName: Borosilicate Glass
+    inventoryQty: 100
+    displayName: Borosilicate Glass Box
+  - warehouseItemId: resource_fireproof_ceramics_box
+    warehouseQty: 1
+    inventoryItemName: Fireproof Ceramics
+    inventoryQty: 100
+    displayName: Fireproof Ceramics Box
+  - warehouseItemId: resource_technical_graphite_box
+    warehouseQty: 1
+    inventoryItemName: Technical Graphite
+    inventoryQty: 100
+    displayName: Technical Graphite Box
+  - warehouseItemId: resource_technical_rubber_box
+    warehouseQty: 1
+    inventoryItemName: Technical Rubber
+    inventoryQty: 100
+    displayName: Technical Rubber Box
+  - warehouseItemId: resource_pressed_cork_box
+    warehouseQty: 1
+    inventoryItemName: Pressed Cork
+    inventoryQty: 100
+    displayName: Pressed Cork Box
+  - warehouseItemId: resource_beeswax_box
+    warehouseQty: 1
+    inventoryItemName: Beeswax
+    inventoryQty: 100
+    displayName: Beeswax Box
+  - warehouseItemId: resource_steel_helmet_with_clips_box
+    warehouseQty: 1
+    inventoryItemName: Steel Helmet with Clips
+    inventoryQty: 100
+    displayName: Steel Helmet with Clips Box
+  - warehouseItemId: resource_steel_heels_box
+    warehouseQty: 1
+    inventoryItemName: Steel Heels
+    inventoryQty: 100
+    displayName: Steel Heels Box
+  - warehouseItemId: resource_plumb_glass_writer_box
+    warehouseQty: 1
+    inventoryItemName: Plumb Glass Writer
+    inventoryQty: 100
+    displayName: Plumb Glass Writer Box
+  - warehouseItemId: resource_steel_ruler_500mm_box
+    warehouseQty: 1
+    inventoryItemName: Steel Ruler 500mm
+    inventoryQty: 100
+    displayName: Steel Ruler 500mm Box
+  - warehouseItemId: resource_engineers_square_box
+    warehouseQty: 1
+    inventoryItemName: Engineer's Square
+    inventoryQty: 100
+    displayName: Engineer's Square Box
+  - warehouseItemId: resource_canvas_tape_measure_20m_box
+    warehouseQty: 1
+    inventoryItemName: Canvas Tape Measure 20m
+    inventoryQty: 100
+    displayName: Canvas Tape Measure 20m Box
+  - warehouseItemId: resource_technical_pressure_gauge_box
+    warehouseQty: 1
+    inventoryItemName: Technical Pressure Gauge
+    inventoryQty: 100
+    displayName: Technical Pressure Gauge Box
+  - warehouseItemId: resource_steel_rivets_box
+    warehouseQty: 1
+    inventoryItemName: Steel Rivets
+    inventoryQty: 100
+    displayName: Steel Rivets Box
+  - warehouseItemId: resource_technical_tweezers_box
+    warehouseQty: 1
+    inventoryItemName: Technical Tweezers
+    inventoryQty: 100
+    displayName: Technical Tweezers Box
+  - warehouseItemId: resource_cast_iron_weight_set_box
+    warehouseQty: 1
+    inventoryItemName: Cast Iron Weight Set
+    inventoryQty: 100
+    displayName: Cast Iron Weight Set Box
+  - warehouseItemId: resource_buckwheat_porridge_with_butter_box
+    warehouseQty: 1
+    inventoryItemName: Buckwheat Porridge with Butter
+    inventoryQty: 100
+    displayName: Buckwheat Porridge with Butter Box
+  - warehouseItemId: resource_salted_butter_box
+    warehouseQty: 1
+    inventoryItemName: Salted Butter
+    inventoryQty: 100
+    displayName: Salted Butter Box
+  - warehouseItemId: resource_black_leaf_tea_primium_box
+    warehouseQty: 1
+    inventoryItemName: Black Leaf Tea Primium
+    inventoryQty: 100
+    displayName: Black Leaf Tea Primium Box
+  - warehouseItemId: resource_red_table_wine_box
+    warehouseQty: 1
+    inventoryItemName: Red Table Wine
+    inventoryQty: 100
+    displayName: Red Table Wine Box
+  - warehouseItemId: resource_dry_white_table_wine_box
+    warehouseQty: 1
+    inventoryItemName: Dry White Table Wine
+    inventoryQty: 100
+    displayName: Dry White Table Wine Box
+  - warehouseItemId: resource_granulated_sugar_box
+    warehouseQty: 1
+    inventoryItemName: Granulated Sugar
+    inventoryQty: 100
+    displayName: Granulated Sugar Box
+  - warehouseItemId: resource_vegetable_oil_box
+    warehouseQty: 1
+    inventoryItemName: Vegetable Oil
+    inventoryQty: 100
+    displayName: Vegetable Oil Box
+  - warehouseItemId: resource_imported_olive_oil_box
+    warehouseQty: 1
+    inventoryItemName: Imported Olive Oil
+    inventoryQty: 100
+    displayName: Imported Olive Oil Box
+  - warehouseItemId: resource_portable_mag_1_box
+    warehouseQty: 1
+    inventoryItemName: Portable MAG-1
+    inventoryQty: 100
+    displayName: Portable MAG-1 Box
+  - warehouseItemId: resource_standard_mag_3_box
+    warehouseQty: 1
+    inventoryItemName: Standard MAG-3
+    inventoryQty: 100
+    displayName: Standard MAG-3 Box
+  - warehouseItemId: resource_industrial_mag_5_box
+    warehouseQty: 1
+    inventoryItemName: Industrial MAG-5
+    inventoryQty: 100
+    displayName: Industrial MAG-5 Box
+  - warehouseItemId: resource_gmag_7_box
+    warehouseQty: 1
+    inventoryItemName: GMAG-7
+    inventoryQty: 100
+    displayName: GMAG-7 Box
+  - warehouseItemId: resource_gmag_9_box
+    warehouseQty: 1
+    inventoryItemName: GMAG-9
+    inventoryQty: 100
+    displayName: GMAG-9 Box
+  - warehouseItemId: resource_mag_graphite_brushes_box
+    warehouseQty: 1
+    inventoryItemName: MAG Graphite Brushes
+    inventoryQty: 100
+    displayName: MAG Graphite Brushes Box
+  - warehouseItemId: resource_surgical_silk_suture_box
+    warehouseQty: 1
+    inventoryItemName: Surgical Silk Suture
+    inventoryQty: 100
+    displayName: Surgical Silk Suture Box
+  - warehouseItemId: resource_mezium_skin_neutralizer_box
+    warehouseQty: 1
+    inventoryItemName: Mezium Skin Neutralizer
+    inventoryQty: 100
+    displayName: Mezium Skin Neutralizer Box
+  - warehouseItemId: resource_activated_charcoal_box
+    warehouseQty: 1
+    inventoryItemName: Activated Charcoal
+    inventoryQty: 100
+    displayName: Activated Charcoal Box
+  - warehouseItemId: resource_steel_frame_rib_box
+    warehouseQty: 1
+    inventoryItemName: Steel Frame Rib
+    inventoryQty: 100
+    displayName: Steel Frame Rib Box
+  - warehouseItemId: resource_seam_sealant_nm_300_box
+    warehouseQty: 1
+    inventoryItemName: Seam Sealant NM-300
+    inventoryQty: 100
+    displayName: Seam Sealant NM-300 Box
+  - warehouseItemId: resource_steel_cable_6mm_box
+    warehouseQty: 1
+    inventoryItemName: Steel Cable 6mm
+    inventoryQty: 100
+    displayName: Steel Cable 6mm Box
+  - warehouseItemId: resource_steel_climbing_carabiner_box
+    warehouseQty: 1
+    inventoryItemName: Steel Climbing Carabiner
+    inventoryQty: 100
+    displayName: Steel Climbing Carabiner Box
+  - warehouseItemId: resource_cast_iron_bollard_box
+    warehouseQty: 1
+    inventoryItemName: Cast Iron Bollard
+    inventoryQty: 100
+    displayName: Cast Iron Bollard Box
+  - warehouseItemId: resource_round_porthole_glass_box
+    warehouseQty: 1
+    inventoryItemName: Round Porthole Glass
+    inventoryQty: 100
+    displayName: Round Porthole Glass Box
+  - warehouseItemId: resource_mag_technical_passport_box
+    warehouseQty: 1
+    inventoryItemName: MAG Technical Passport
+    inventoryQty: 100
+    displayName: MAG Technical Passport Box
+  - warehouseItemId: resource_cast_iron_iron_box
+    warehouseQty: 1
+    inventoryItemName: Cast Iron Iron
+    inventoryQty: 100
+    displayName: Cast Iron Iron Box
+  - warehouseItemId: resource_cast_iron_pot_box
+    warehouseQty: 1
+    inventoryItemName: Cast Iron Pot
+    inventoryQty: 100
+    displayName: Cast Iron Pot Box
+  - warehouseItemId: resource_cast_iron_frying_pan_box
+    warehouseQty: 1
+    inventoryItemName: Cast Iron Frying Pan
+    inventoryQty: 100
+    displayName: Cast Iron Frying Pan Box
+  - warehouseItemId: resource_steel_canister_20l_box
+    warehouseQty: 1
+    inventoryItemName: Steel Canister 20L
+    inventoryQty: 100
+    displayName: Steel Canister 20L Box
+  - warehouseItemId: resource_glass_vial_50ml_box
+    warehouseQty: 1
+    inventoryItemName: Glass Vial 50ml
+    inventoryQty: 100
+    displayName: Glass Vial 50ml Box
+  - warehouseItemId: resource_corrugated_cardboard_box_box
+    warehouseQty: 1
+    inventoryItemName: Corrugated Cardboard Box
+    inventoryQty: 100
+    displayName: Corrugated Cardboard Box Box
+  - warehouseItemId: resource_skol_5_bronze_box
+    warehouseQty: 1
+    inventoryItemName: Skol 5 (Bronze)
+    inventoryQty: 100
+    displayName: Skol 5 (Bronze) Box
+  - warehouseItemId: resource_skol_10_silver_box
+    warehouseQty: 1
+    inventoryItemName: Skol 10 (Silver)
+    inventoryQty: 100
+    displayName: Skol 10 (Silver) Box
+  - warehouseItemId: resource_skol_25_gold_silver_box
+    warehouseQty: 1
+    inventoryItemName: Skol 25 (Gold-Silver)
+    inventoryQty: 100
+    displayName: Skol 25 (Gold-Silver) Box
+  - warehouseItemId: resource_book_poetry_above_the_clouds_box
+    warehouseQty: 1
+    inventoryItemName: Book Poetry Above the Clouds
+    inventoryQty: 100
+    displayName: Book Poetry Above the Clouds Box
+  - warehouseItemId: resource_poster_caution_mezium_box
+    warehouseQty: 1
+    inventoryItemName: Poster Caution - Mezium!
+    inventoryQty: 100
+    displayName: Poster Caution - Mezium! Box
+  - warehouseItemId: resource_canvas_apron_box
+    warehouseQty: 1
+    inventoryItemName: Canvas Apron
+    inventoryQty: 100
+    displayName: Canvas Apron Box
+  - warehouseItemId: resource_technical_paraffin_box
+    warehouseQty: 1
+    inventoryItemName: Technical Paraffin
+    inventoryQty: 100
+    displayName: Technical Paraffin Box
+  - warehouseItemId: resource_soapstone_talc_box
+    warehouseQty: 1
+    inventoryItemName: Soapstone (Talc)
+    inventoryQty: 100
+    displayName: Soapstone (Talc) Box
+  - warehouseItemId: resource_asbestos_sheet_box
+    warehouseQty: 1
+    inventoryItemName: Asbestos Sheet
+    inventoryQty: 100
+    displayName: Asbestos Sheet Box
+  - warehouseItemId: resource_acoustic_felt_box
+    warehouseQty: 1
+    inventoryItemName: Acoustic Felt
+    inventoryQty: 100
+    displayName: Acoustic Felt Box
+  - warehouseItemId: resource_balaclava_mask_box
+    warehouseQty: 1
+    inventoryItemName: Balaclava Mask
+    inventoryQty: 100
+    displayName: Balaclava Mask Box
+  - warehouseItemId: resource_butter_pancakes_box
+    warehouseQty: 1
+    inventoryItemName: Butter Pancakes
+    inventoryQty: 100
+    displayName: Butter Pancakes Box
+  - warehouseItemId: resource_cafeteria_menu_buffet_no5_box
+    warehouseQty: 1
+    inventoryItemName: Cafeteria Menu Buffet No.5
+    inventoryQty: 100
+    displayName: Cafeteria Menu Buffet No.5 Box
+  - warehouseItemId: resource_colored_glass_plumb_box
+    warehouseQty: 1
+    inventoryItemName: Colored Glass Plumb
+    inventoryQty: 100
+    displayName: Colored Glass Plumb Box
+  - warehouseItemId: resource_mezium_fuel_m_100_box
+    warehouseQty: 1
+    inventoryItemName: Mezium Fuel M-100
+    inventoryQty: 100
+    displayName: Mezium Fuel M-100 Box
+  - warehouseItemId: resource_cover_tarp_box
+    warehouseQty: 1
+    inventoryItemName: Cover Tarp
+    inventoryQty: 100
+    displayName: Cover Tarp Box

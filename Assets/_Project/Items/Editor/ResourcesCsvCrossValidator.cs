@@ -6,8 +6,8 @@
 //   • docs/Markets/Resources_import_export/03_TICKETS.md T-IE02
 //
 // Назначение: проверяет кросс-ссылки между блоками ПОСЛЕ парсинга (T-IE01).
-// Per-row errors накапливаются в row.errors (импортёр их прочитает и skip).
-// Global errors — блокируют импорт (например, missing required column).
+// Per-row errors накапливаются в row.errors — импортёр skip'ает плохие строки.
+// Все ошибки теперь per-row, globalErrors НЕ используются (больше не блокируют).
 //
 // MVP проверки (4 шт.):
 //   1. inventory: уникальность itemName (case-insensitive)
@@ -33,45 +33,58 @@ namespace ProjectC.Items.Editor
     public static class ResourcesCsvCrossValidator
     {
         /// <summary>
-        /// Проверяет кросс-ссылки между блоками. Per-row errors → row.errors;
-        /// global errors → globalErrors list.
+        /// Проверяет кросс-ссылки между блоками. Все ошибки — per-row (row.errors).
+        /// globalErrors больше не пополняется — импорт НЕ блокируется.
         /// </summary>
         public static void Validate(
             Dictionary<string, List<ResourcesCsvRow>> blocks,
-            List<string> globalErrors)
+            List<string> globalErrors)  // kept for backward-compat with Window, but not added to
         {
             // 1. Build indices (skip rows that already have errors — no point cascading).
-            var invNames = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
-            var tradeIds = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+            var invNames = new Dictionary<string, ResourcesCsvRow>(StringComparer.OrdinalIgnoreCase);
+            var tradeIds = new Dictionary<string, ResourcesCsvRow>(StringComparer.OrdinalIgnoreCase);
 
+            // 2. inventory: duplicate itemName → per-row error on BOTH occurrences (keep first wins).
             if (blocks.TryGetValue("inventory", out var inv))
-                foreach (var r in inv) if (!r.HasError) invNames.Add(r.Get("itemName"));
-
-            if (blocks.TryGetValue("tradeItems", out var trd))
-                foreach (var r in trd) if (!r.HasError) tradeIds.Add(r.Get("tradeItemId"));
-
-            // 2. inventory: duplicate itemName.
-            if (blocks.TryGetValue("inventory", out var inv2))
             {
-                var dupNames = inv2
-                    .Where(r => !r.HasError)
-                    .GroupBy(r => r.Get("itemName"), StringComparer.OrdinalIgnoreCase)
-                    .Where(g => g.Count() > 1 && !string.IsNullOrEmpty(g.Key))
-                    .Select(g => g.Key);
-                foreach (var d in dupNames)
-                    globalErrors.Add($"inventory: duplicate itemName '{d}'");
+                var seen = new Dictionary<string, ResourcesCsvRow>(StringComparer.OrdinalIgnoreCase);
+                foreach (var r in inv)
+                {
+                    if (r.HasError) continue;
+                    var name = r.Get("itemName");
+                    if (string.IsNullOrEmpty(name)) continue;
+                    if (seen.TryGetValue(name, out var first))
+                    {
+                        r.errors.Add($"Duplicate itemName '{name}' (first at line {first.lineNumber}). Skipping this row.");
+                        // Don't mark first row as error — it's the canonical entry.
+                    }
+                    else
+                    {
+                        seen[name] = r;
+                        invNames[name] = r;
+                    }
+                }
             }
 
-            // 3. tradeItems: duplicate tradeItemId.
-            if (blocks.TryGetValue("tradeItems", out var trd2))
+            // 3. tradeItems: duplicate tradeItemId → per-row error.
+            if (blocks.TryGetValue("tradeItems", out var trd))
             {
-                var dupIds = trd2
-                    .Where(r => !r.HasError)
-                    .GroupBy(r => r.Get("tradeItemId"), StringComparer.OrdinalIgnoreCase)
-                    .Where(g => g.Count() > 1 && !string.IsNullOrEmpty(g.Key))
-                    .Select(g => g.Key);
-                foreach (var d in dupIds)
-                    globalErrors.Add($"tradeItems: duplicate tradeItemId '{d}'");
+                var seen = new Dictionary<string, ResourcesCsvRow>(StringComparer.OrdinalIgnoreCase);
+                foreach (var r in trd)
+                {
+                    if (r.HasError) continue;
+                    var id = r.Get("tradeItemId");
+                    if (string.IsNullOrEmpty(id)) continue;
+                    if (seen.TryGetValue(id, out var first))
+                    {
+                        r.errors.Add($"Duplicate tradeItemId '{id}' (first at line {first.lineNumber}). Skipping this row.");
+                    }
+                    else
+                    {
+                        seen[id] = r;
+                        tradeIds[id] = r;
+                    }
+                }
             }
 
             // 4. marketItems: tradeItemId must exist in tradeItems.
@@ -81,7 +94,7 @@ namespace ProjectC.Items.Editor
                 {
                     if (r.HasError) continue;
                     var tid = r.Get("tradeItemId");
-                    if (!string.IsNullOrEmpty(tid) && !tradeIds.Contains(tid))
+                    if (!string.IsNullOrEmpty(tid) && !tradeIds.ContainsKey(tid))
                         r.errors.Add($"Line {r.lineNumber} (marketItems): tradeItemId '{tid}' not in tradeItems block");
                 }
             }
@@ -95,10 +108,10 @@ namespace ProjectC.Items.Editor
                     var tid = r.Get("tradeItemId");
                     var inm = r.Get("inventoryItemName");
 
-                    if (!string.IsNullOrEmpty(tid) && !tradeIds.Contains(tid))
+                    if (!string.IsNullOrEmpty(tid) && !tradeIds.ContainsKey(tid))
                         r.errors.Add($"Line {r.lineNumber} (exchangeRates): tradeItemId '{tid}' not in tradeItems block");
 
-                    if (!string.IsNullOrEmpty(inm) && !invNames.Contains(inm))
+                    if (!string.IsNullOrEmpty(inm) && !invNames.ContainsKey(inm))
                         r.errors.Add($"Line {r.lineNumber} (exchangeRates): inventoryItemName '{inm}' not in inventory block");
                 }
             }
@@ -108,7 +121,7 @@ namespace ProjectC.Items.Editor
             //    Здесь только фиксируем факт наличия секции (для UI в T-IE06 Window).
             //    Реальная валидация ингредиентов/outputs — CraftingCsvValidator.
 
-            // 7. T-IE08: prune block — validate mode + applyTo.
+            // 7. T-IE08: prune block — validate mode + applyTo (per-row, non-blocking).
             if (blocks.TryGetValue("prune", out var pruneRows) && pruneRows.Count > 0)
             {
                 var firstRow = pruneRows[0];
@@ -116,24 +129,21 @@ namespace ProjectC.Items.Editor
                 {
                     var mode = (firstRow.Get("mode") ?? "").Trim().ToLowerInvariant();
                     if (mode != "none" && mode != "orphan" && mode != "replace")
-                        globalErrors.Add($"prune: invalid mode '{firstRow.Get("mode")}'. Valid: none, orphan, replace.");
+                        firstRow.errors.Add($"Invalid prune mode '{firstRow.Get("mode")}'. Valid: none, orphan, replace.");
 
                     var applyTo = (firstRow.Get("applyTo") ?? "all").Trim().ToLowerInvariant();
-                    var tokens = applyTo.Split(',', System.StringSplitOptions.RemoveEmptyEntries);
-                    var validTokens = new HashSet<string>(System.StringComparer.OrdinalIgnoreCase)
+                    var tokens = applyTo.Split(',', StringSplitOptions.RemoveEmptyEntries);
+                    var validTokens = new HashSet<string>(StringComparer.OrdinalIgnoreCase)
                         { "all", "inventory", "tradeItems", "marketItems", "exchangeRates" };
-                    var seenTokens = new HashSet<string>(System.StringComparer.OrdinalIgnoreCase);
+                    var seenTokens = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
                     foreach (var t in tokens)
                     {
                         var tk = t.Trim();
                         if (tk.Length == 0) continue;
                         if (!seenTokens.Add(tk))
-                        {
-                            globalErrors.Add($"prune: duplicate applyTo token '{tk}'");
-                            continue;
-                        }
-                        if (!validTokens.Contains(tk))
-                            globalErrors.Add($"prune: invalid applyTo token '{tk}'. Valid: all, inventory, tradeItems, marketItems, exchangeRates.");
+                            firstRow.errors.Add($"Duplicate prune applyTo token '{tk}'.");
+                        else if (!validTokens.Contains(tk))
+                            firstRow.errors.Add($"Invalid prune applyTo token '{tk}'. Valid: all, inventory, tradeItems, marketItems, exchangeRates.");
                     }
                 }
             }
@@ -145,13 +155,17 @@ namespace ProjectC.Items.Editor
         public static string Summary(Dictionary<string, List<ResourcesCsvRow>> blocks)
         {
             var sb = new System.Text.StringBuilder();
+            int totalErrors = 0;
             foreach (var name in new[] { "inventory", "tradeItems", "marketItems", "exchangeRates", "recipes" })
             {
                 if (!blocks.TryGetValue(name, out var rows)) continue;
                 int errs = rows.Count(r => r.HasError);
+                totalErrors += errs;
                 string suffix = errs > 0 ? $" ({errs} errors)" : "";
                 sb.AppendLine($"{name}: {rows.Count} rows{suffix}");
             }
+            if (totalErrors > 0)
+                sb.AppendLine($"⚠ {totalErrors} row(s) with errors — will be SKIPPED during import.");
             return sb.ToString();
         }
     }

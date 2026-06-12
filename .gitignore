@@ -49,6 +49,10 @@ mono_crash.*
 /[Aa]ssets/Resources/
 /[Aa]ssets/MobileDependencyResolver/
 
+#items_a lot of
+/[Aa]ssets/_Project/Resources/_docs/
+/[Aa]ssets/_Project/Trade/Data/Items/
+
 # Dev memory (local session state)
 .dev-memory/
 

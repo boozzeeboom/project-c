@@ -34,3 +34,27 @@ MonoBehaviour:
     factionRestriction: 0
     allowBuy: 1
     allowSell: 1
+  - itemId: resource_iron_box
+    definition: {fileID: 11400000, guid: 73b3cf722b6f4344c8a53073c827e401, type: 2}
+    basePrice: 120
+    initialStock: 50
+    regenPerTick: 0.02
+    factionRestriction: 0
+    allowBuy: 1
+    allowSell: 1
+  - itemId: resource_copper_box
+    definition: {fileID: 11400000, guid: adb5fd1be84ac7a49a3c6663d806fb0f, type: 2}
+    basePrice: 90
+    initialStock: 40
+    regenPerTick: 0.02
+    factionRestriction: 0
+    allowBuy: 1
+    allowSell: 1
+  - itemId: resource_wood_box
+    definition: {fileID: 11400000, guid: e23e7f3f1975fd34eb019fb910835996, type: 2}
+    basePrice: 50
+    initialStock: 40
+    regenPerTick: 0.02
+    factionRestriction: 0
+    allowBuy: 1
+    allowSell: 1

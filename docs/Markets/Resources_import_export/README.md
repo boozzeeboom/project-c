@@ -34,11 +34,12 @@
 
 | Файл | Содержание |
 |------|------------|
-| [`README.md`](README.md) | Этот файл — индекс, контекст, статус |
-| [`01_ANALYSIS.md`](01_ANALYSIS.md) | Глубокий разбор всех 5 систем: схемы SO, ID-ы, конвенции, текущие ассеты, edge-cases |
-| [`02_DESIGN.md`](02_DESIGN.md) | Схема CSV-колонок, поведение импорта/экспорта, план Editor Window |
-| [`03_TICKETS.md`](03_TICKETS.md) | Декомпозиция на тикеты T-IE01..T-IE0N (по аналогии с T-E01..T-E05) |
-| [`04_EXAMPLES.md`](04_EXAMPLES.md) | Примеры CSV-файлов (минимальный, с recipes, с exchange, реальные данные антигравия) |
+| [`README.md`](README.md) | Этот файл — индекс, контекст, прецеденты |
+| [`01_ANALYSIS.md`](01_ANALYSIS.md) | Глубокий разбор 5 SO-систем |
+| [`02_DESIGN.md`](02_DESIGN.md) | Схема CSV, алгоритм, макет окна |
+| [`03_TICKETS.md`](03_TICKETS.md) | T-IE01..T-IE07 (декомпозиция) |
+| [`04_EXAMPLES.md`](04_EXAMPLES.md) | Примеры CSV + acceptance |
+| **`05_USER_GUIDE.md`** | **Start-to-end: от CSV до ящиков в обменнике в Play Mode** |
 
 ## Прецеденты в проекте
 

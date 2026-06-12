@@ -12,26 +12,4 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: dbe5e4f41e78ec947937f2f645977e1f, type: 3}
   m_Name: DefaultExchangeRate
   m_EditorClassIdentifier: Assembly-CSharp::ProjectC.Trade.Config.ExchangeRateConfig
-  rates:
-  - warehouseItemId: resource_iron_box
-    warehouseQty: 1
-    inventoryItemName: "\u0416\u0435\u043B\u0435\u0437\u043D\u0430\u044F \u0440\u0443\u0434\u0430"
-    inventoryQty: 100
-    displayName: "\u042F\u0449\u0438\u043A \u0436\u0435\u043B\u0435\u0437\u043D\u043E\u0439
-      \u0440\u0443\u0434\u044B"
-  - warehouseItemId: resource_copper_box
-    warehouseQty: 1
-    inventoryItemName: "\u041C\u0435\u0434\u043D\u0430\u044F \u0440\u0443\u0434\u0430"
-    inventoryQty: 100
-    displayName: "\u042F\u0449\u0438\u043A \u043C\u0435\u0434\u043D\u043E\u0439 \u0440\u0443\u0434\u044B"
-  - warehouseItemId: resource_wood_box
-    warehouseQty: 1
-    inventoryItemName: "\u0414\u0440\u0435\u0432\u0435\u0441\u0438\u043D\u0430"
-    inventoryQty: 100
-    displayName: "\u042F\u0449\u0438\u043A \u0434\u0440\u0435\u0432\u0435\u0441\u0438\u043D\u044B"
-  - warehouseItemId: antigrav_ingot_v01
-    warehouseQty: 1
-    inventoryItemName: "\u0410\u043D\u0442\u0438\u0433\u0440\u0430\u0432\u0438\u0439
-      (\u043E\u0441\u043A\u043E\u043B\u043E\u043A)"
-    inventoryQty: 100
-    displayName: "\u0421\u043B\u0438\u0442\u043E\u043A \u0430\u043D\u0442\u0438\u0433\u0440\u0430\u0432\u0438\u044F"
+  rates: []

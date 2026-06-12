@@ -17,28 +17,4 @@ MonoBehaviour:
   description: "\u0412\u043E\u0435\u043D\u043D\u044B\u0439 \u0430\u043D\u043A\u043B\u0430\u0432,
     \u0434\u0435\u0444\u0438\u0446\u0438\u0442 \u043C\u0435\u0437\u0438\u044F, \u0446\u0435\u043D\u0442\u0440
     \u043F\u0440\u043E\u0438\u0437\u0432\u043E\u0434\u0441\u0442\u0432\u0430 \u0431\u0440\u043E\u043D\u0438."
-  items:
-  - itemId: mesium_canister_v01
-    definition: {fileID: 11400000, guid: ed66825e934a87a43b520aee290591a8, type: 2}
-    basePrice: 14
-    initialStock: 50
-    regenPerTick: 0.03
-    factionRestriction: 0
-    allowBuy: 1
-    allowSell: 1
-  - itemId: antigrav_ingot_v01
-    definition: {fileID: 11400000, guid: a42e66c79c7d213499b91953538249f3, type: 2}
-    basePrice: 45
-    initialStock: 50
-    regenPerTick: 0.03
-    factionRestriction: 0
-    allowBuy: 1
-    allowSell: 1
-  - itemId: resource_iron_box
-    definition: {fileID: 11400000, guid: 73b3cf722b6f4344c8a53073c827e401, type: 2}
-    basePrice: 100
-    initialStock: 30
-    regenPerTick: 0.015
-    factionRestriction: 0
-    allowBuy: 1
-    allowSell: 1
+  items: []

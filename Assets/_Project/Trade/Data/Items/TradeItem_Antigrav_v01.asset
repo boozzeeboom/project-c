@@ -15,11 +15,11 @@ MonoBehaviour:
   itemId: antigrav_ingot_v01
   displayName: "\u0410\u043D\u0442\u0438\u0433\u0440\u0430\u0432\u0438\u0439 (\u0441\u043B\u0438\u0442\u043E\u043A)"
   icon: {fileID: 0}
-  basePrice: 50
+  basePrice: 500
   weight: 5
   volume: 0.2
   slots: 1
   isDangerous: 0
-  isFragile: 0
+  isFragile: 1
   isContraband: 0
   requiredFaction: 0

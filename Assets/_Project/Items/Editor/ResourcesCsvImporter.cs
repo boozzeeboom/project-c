@@ -28,6 +28,7 @@ using System.Text;
 using UnityEditor;
 using UnityEngine;
 using ProjectC.Trade;
+using ProjectC.Trade.Config;
 
 namespace ProjectC.Items.Editor
 {
@@ -39,6 +40,12 @@ namespace ProjectC.Items.Editor
 
         public const string ITEMS_FOLDER = "Assets/_Project/Resources/Items";
         public const string ITEM_REGISTRY_PATH = "Assets/_Project/Items/Data/ItemRegistry.asset";
+
+        // T-IE04
+        public const string TRADE_ITEMS_FOLDER = "Assets/_Project/Trade/Data/Items";
+        public const string TRADE_ITEM_DATABASE_PATH = "Assets/_Project/Trade/Data/TradeItemDatabase.asset";
+        public const string EXCHANGE_RATE_CONFIG_PATH = "Assets/_Project/Resources/Exchange/DefaultExchangeRate.asset";
+        public const string MARKET_CONFIGS_FOLDER = "Assets/_Project/Trade/Data/Markets";
 
         // ============================================================
         // ImportResult
@@ -75,8 +82,8 @@ namespace ProjectC.Items.Editor
 
         /// <summary>
         /// Применяет blocks (из ResourcesCsvParser) к SO-ассетам. Возвращает ImportResult.
-        /// MVP: обрабатывает inventory (T-IE03) + recipes skip (Phase 2).
-        /// T-IE04 добавит tradeItems/marketItems/exchangeRates.
+        /// T-IE03: inventory + ItemRegistry.
+        /// T-IE04: tradeItems + TradeItemDatabase + marketItems + MarketConfig + exchangeRates + ExchangeRateConfig.
         /// </summary>
         public static ImportResult Apply(Dictionary<string, List<ResourcesCsvRow>> blocks)
         {
@@ -85,11 +92,18 @@ namespace ProjectC.Items.Editor
             // 1. Process inventory → ItemData + ItemRegistry.
             ProcessInventory(blocks.GetValueOrDefault("inventory", new List<ResourcesCsvRow>()), result);
 
-            // 2. recipes — Phase 2 placeholder (skip with warning).
+            // 2. Process tradeItems → TradeItemDefinition + TradeItemDatabase.
+            ProcessTradeItems(blocks.GetValueOrDefault("tradeItems", new List<ResourcesCsvRow>()), result);
+
+            // 3. Process marketItems → MarketConfig.items[].
+            ProcessMarketItems(blocks.GetValueOrDefault("marketItems", new List<ResourcesCsvRow>()), result);
+
+            // 4. Process exchangeRates → ExchangeRateConfig.rates[].
+            ProcessExchangeRates(blocks.GetValueOrDefault("exchangeRates", new List<ResourcesCsvRow>()), result);
+
+            // 5. recipes — Phase 2 placeholder (skip with warning).
             if (blocks.TryGetValue("recipes", out var recipes) && recipes.Count > 0)
                 result.warnings.Add($"recipes: {recipes.Count} rows skipped (Phase 2, see Crafting roadmap)");
-
-            // T-IE04: ProcessTradeItems, ProcessMarketItems, ProcessExchangeRates.
 
             // Save all dirty assets.
             AssetDatabase.SaveAssets();
@@ -198,6 +212,337 @@ namespace ProjectC.Items.Editor
 
             // 4. Apply SerializedObject changes (writes entries back to ItemRegistry.asset).
             so.ApplyModifiedProperties();
+        }
+
+        // ============================================================
+        // ProcessTradeItems — TradeItemDefinition + TradeItemDatabase (T-IE04)
+        // ============================================================
+
+        private static void ProcessTradeItems(List<ResourcesCsvRow> rows, ImportResult result)
+        {
+            if (rows.Count == 0) return;
+
+            EnsureFolder(TRADE_ITEMS_FOLDER);
+
+            // 1. Load TradeItemDatabase.
+            var db = AssetDatabase.LoadAssetAtPath<TradeDatabase>(TRADE_ITEM_DATABASE_PATH);
+            if (db == null)
+            {
+                result.errors.Add($"TradeItemDatabase not found at {TRADE_ITEM_DATABASE_PATH}");
+                return;
+            }
+
+            // 2. Build byId index from db + orphan scan.
+            var byId = new Dictionary<string, TradeItemDefinition>(StringComparer.OrdinalIgnoreCase);
+            foreach (var t in db.allItems)
+            {
+                if (t != null && !string.IsNullOrEmpty(t.itemId))
+                    byId[t.itemId] = t;
+            }
+            var existingTradeAssets = AssetDatabase.FindAssets("t:TradeItemDefinition", new[] { TRADE_ITEMS_FOLDER });
+            foreach (var guid in existingTradeAssets)
+            {
+                var path = AssetDatabase.GUIDToAssetPath(guid);
+                var t = AssetDatabase.LoadAssetAtPath<TradeItemDefinition>(path);
+                if (t != null && !string.IsNullOrEmpty(t.itemId) && !byId.ContainsKey(t.itemId))
+                    byId[t.itemId] = t;
+            }
+
+            foreach (var row in rows)
+            {
+                if (row.HasError) { result.skipped++; continue; }
+
+                var itemId = row.Get("tradeItemId");
+                if (string.IsNullOrEmpty(itemId)) { result.skipped++; continue; }
+
+                if (byId.TryGetValue(itemId, out var existing))
+                {
+                    UpdateTradeItem(existing, row, result);
+                }
+                else
+                {
+                    var newItem = CreateTradeItem(itemId, row);
+                    db.allItems.Add(newItem);
+                    byId[itemId] = newItem;
+                    result.created++;
+                }
+            }
+
+            EditorUtility.SetDirty(db);
+        }
+
+        private static void UpdateTradeItem(TradeItemDefinition item, ResourcesCsvRow row, ImportResult result)
+        {
+            // itemId is the key — don't overwrite.
+            item.displayName = row.Get("displayName");
+            if (string.IsNullOrEmpty(item.displayName)) item.displayName = item.itemId;
+            item.basePrice = row.GetFloat("basePrice", item.basePrice);
+            item.weight = row.GetFloat("weight", item.weight);
+            item.volume = row.GetFloat("volume", item.volume);
+            item.slots = Mathf.Max(1, row.GetInt("slots", item.slots));
+            item.isDangerous = row.GetBool("isDangerous");
+            item.isFragile = row.GetBool("isFragile");
+            item.isContraband = row.GetBool("isContraband");
+            var facStr = row.Get("requiredFaction");
+            if (!string.IsNullOrEmpty(facStr) && Enum.TryParse<Faction>(facStr, true, out var fac))
+                item.requiredFaction = fac;
+
+            EditorUtility.SetDirty(item);
+            result.updated++;
+        }
+
+        private static TradeItemDefinition CreateTradeItem(string itemId, ResourcesCsvRow row)
+        {
+            var item = ScriptableObject.CreateInstance<TradeItemDefinition>();
+            item.itemId = itemId;
+            item.displayName = row.Get("displayName");
+            if (string.IsNullOrEmpty(item.displayName)) item.displayName = itemId;
+            item.basePrice = row.GetFloat("basePrice", 10f);
+            item.weight = row.GetFloat("weight", 1f);
+            item.volume = row.GetFloat("volume", 0.1f);
+            item.slots = Mathf.Max(1, row.GetInt("slots", 1));
+            item.isDangerous = row.GetBool("isDangerous");
+            item.isFragile = row.GetBool("isFragile");
+            item.isContraband = row.GetBool("isContraband");
+            var facStr = row.Get("requiredFaction");
+            if (!string.IsNullOrEmpty(facStr) && Enum.TryParse<Faction>(facStr, true, out var fac))
+                item.requiredFaction = fac;
+            // icon: CSV doesn't carry Sprite refs — leave null.
+
+            var path = $"{TRADE_ITEMS_FOLDER}/TradeItem_{itemId}.asset";
+            EnsureUniqueAssetPath(ref path);
+            AssetDatabase.CreateAsset(item, path);
+            Debug.Log($"[ResourcesCsvImporter] Created TradeItem: '{itemId}' → {path}");
+            return item;
+        }
+
+        // ============================================================
+        // ProcessMarketItems — MarketConfig.items[] (T-IE04)
+        // ============================================================
+
+        private static void ProcessMarketItems(List<ResourcesCsvRow> rows, ImportResult result)
+        {
+            if (rows.Count == 0) return;
+
+            // 1. Group by locationId (CSV has one row per (itemId, locationId) pair).
+            var byLocation = new Dictionary<string, List<ResourcesCsvRow>>(StringComparer.OrdinalIgnoreCase);
+            foreach (var row in rows)
+            {
+                if (row.HasError) continue;
+                var loc = row.Get("locationId");
+                if (string.IsNullOrEmpty(loc)) continue;
+                if (!byLocation.TryGetValue(loc, out var list))
+                {
+                    list = new List<ResourcesCsvRow>();
+                    byLocation[loc] = list;
+                }
+                list.Add(row);
+            }
+
+            // 2. For each location, load/create MarketConfig and process its rows.
+            foreach (var kv in byLocation)
+            {
+                var mc = GetOrCreateMarketConfig(kv.Key, result);
+                if (mc == null) continue;
+
+                foreach (var row in kv.Value)
+                {
+                    var itemId = row.Get("tradeItemId");
+                    if (string.IsNullOrEmpty(itemId)) { result.skipped++; continue; }
+
+                    // Find definition by itemId (needed for MarketItemConfig.definition field).
+                    var def = FindTradeItemById(itemId);
+                    if (def == null)
+                    {
+                        // Cross-validate should have caught this. Skip with warning.
+                        result.warnings.Add($"Line {row.lineNumber} (marketItems): tradeItemId '{itemId}' has no TradeItemDefinition — skipping");
+                        result.skipped++;
+                        continue;
+                    }
+
+                    // Find existing MarketItemConfig in this MarketConfig (by itemId).
+                    MarketItemConfig existingMic = null;
+                    foreach (var mic in mc.items)
+                    {
+                        if (mic != null && mic.itemId == itemId) { existingMic = mic; break; }
+                    }
+
+                    if (existingMic != null)
+                    {
+                        UpdateMarketItemConfig(existingMic, def, row, result);
+                    }
+                    else
+                    {
+                        var newMic = CreateMarketItemConfig(def, row);
+                        mc.items.Add(newMic);
+                        result.created++;
+                    }
+                }
+
+                EditorUtility.SetDirty(mc);
+            }
+        }
+
+        private static MarketConfig GetOrCreateMarketConfig(string locationId, ImportResult result)
+        {
+            // Search existing MarketConfig by locationId.
+            var existingGuids = AssetDatabase.FindAssets("t:MarketConfig", new[] { MARKET_CONFIGS_FOLDER });
+            foreach (var g in existingGuids)
+            {
+                var p = AssetDatabase.GUIDToAssetPath(g);
+                var mc = AssetDatabase.LoadAssetAtPath<MarketConfig>(p);
+                if (mc != null && mc.locationId == locationId) return mc;
+            }
+
+            // Not found — create new.
+            EnsureFolder(MARKET_CONFIGS_FOLDER);
+            var newMc = ScriptableObject.CreateInstance<MarketConfig>();
+            newMc.locationId = locationId;
+            newMc.displayName = Capitalize(locationId);
+            newMc.description = $"Auto-created by ResourcesCsvImporter (locationId={locationId})";
+            newMc.items = new List<MarketItemConfig>();
+
+            var path = $"{MARKET_CONFIGS_FOLDER}/MarketConfig_{Capitalize(locationId)}.asset";
+            EnsureUniqueAssetPath(ref path);
+            AssetDatabase.CreateAsset(newMc, path);
+            result.warnings.Add($"Created new MarketConfig: {path}");
+            Debug.Log($"[ResourcesCsvImporter] Created MarketConfig: locationId='{locationId}' → {path}");
+            return newMc;
+        }
+
+        private static MarketItemConfig CreateMarketItemConfig(TradeItemDefinition def, ResourcesCsvRow row)
+        {
+            var mic = new MarketItemConfig
+            {
+                itemId = def.itemId,
+                definition = def,
+            };
+            UpdateMarketItemConfig(mic, def, row, null);
+            return mic;
+        }
+
+        private static void UpdateMarketItemConfig(MarketItemConfig mic, TradeItemDefinition def, ResourcesCsvRow row, ImportResult result)
+        {
+            mic.itemId = def.itemId;
+            mic.definition = def;
+            var basePriceStr = row.Get("basePrice");
+            if (!string.IsNullOrEmpty(basePriceStr)) mic.basePrice = row.GetFloat("basePrice", mic.basePrice);
+            int newStock = row.GetInt("initialStock", mic.initialStock);
+            if (newStock > 0) mic.initialStock = newStock;
+            float newRegen = row.GetFloat("regenPerTick", mic.regenPerTick);
+            if (newRegen >= 0f) mic.regenPerTick = newRegen;
+            var facStr = row.Get("factionRestriction");
+            if (!string.IsNullOrEmpty(facStr) && Enum.TryParse<Faction>(facStr, true, out var fac))
+                mic.factionRestriction = fac;
+            // For bool, always apply (default is "y"/"n").
+            mic.allowBuy = row.GetBool("allowBuy");
+            mic.allowSell = row.GetBool("allowSell");
+
+            if (result != null) result.updated++;
+        }
+
+        /// <summary>TitleCase: "primium" → "Primium", "tertius" → "Tertius".</summary>
+        private static string Capitalize(string s)
+        {
+            if (string.IsNullOrEmpty(s)) return s;
+            if (s.Length == 1) return s.ToUpper();
+            return char.ToUpper(s[0]) + s.Substring(1);
+        }
+
+        // ============================================================
+        // ProcessExchangeRates — ExchangeRateConfig.rates[] (T-IE04)
+        // ============================================================
+
+        private static void ProcessExchangeRates(List<ResourcesCsvRow> rows, ImportResult result)
+        {
+            if (rows.Count == 0) return;
+
+            var config = AssetDatabase.LoadAssetAtPath<ExchangeRateConfig>(EXCHANGE_RATE_CONFIG_PATH);
+            if (config == null)
+            {
+                result.errors.Add($"ExchangeRateConfig not found at {EXCHANGE_RATE_CONFIG_PATH}");
+                return;
+            }
+
+            // Build byPair index for upsert.
+            var byPair = new Dictionary<(string, string), int>();
+            for (int i = 0; i < config.rates.Count; i++)
+            {
+                var r = config.rates[i];
+                // ExchangeRateEntry is a struct — can't be null. Use string.IsNullOrEmpty as a proxy.
+                if (string.IsNullOrEmpty(r.warehouseItemId) || string.IsNullOrEmpty(r.inventoryItemName)) continue;
+                byPair[(r.warehouseItemId, r.inventoryItemName)] = i;
+            }
+
+            foreach (var row in rows)
+            {
+                if (row.HasError) { result.skipped++; continue; }
+
+                var whId = row.Get("tradeItemId");
+                var invName = row.Get("inventoryItemName");
+                if (string.IsNullOrEmpty(whId) || string.IsNullOrEmpty(invName)) { result.skipped++; continue; }
+
+                if (byPair.TryGetValue((whId, invName), out var idx))
+                {
+                    UpdateExchangeRateEntry(config.rates[idx], row, result);
+                }
+                else
+                {
+                    var newEntry = CreateExchangeRateEntry(whId, invName, row);
+                    config.rates.Add(newEntry);
+                    result.created++;
+                }
+            }
+
+            EditorUtility.SetDirty(config);
+        }
+
+        private static void UpdateExchangeRateEntry(ExchangeRateEntry entry, ResourcesCsvRow row, ImportResult result)
+        {
+            entry.warehouseItemId = row.Get("tradeItemId");
+            entry.inventoryItemName = row.Get("inventoryItemName");
+            entry.warehouseQty = Mathf.Max(1, row.GetInt("warehouseQty", entry.warehouseQty));
+            entry.inventoryQty = Mathf.Max(1, row.GetInt("inventoryQty", entry.inventoryQty));
+            var display = row.Get("displayName");
+            if (!string.IsNullOrEmpty(display)) entry.displayName = display;
+
+            if (result != null) result.updated++;
+        }
+
+        private static ExchangeRateEntry CreateExchangeRateEntry(string whId, string invName, ResourcesCsvRow row)
+        {
+            return new ExchangeRateEntry
+            {
+                warehouseItemId = whId,
+                inventoryItemName = invName,
+                warehouseQty = Mathf.Max(1, row.GetInt("warehouseQty", 1)),
+                inventoryQty = Mathf.Max(1, row.GetInt("inventoryQty", 100)),
+                displayName = row.Get("displayName"),
+            };
+        }
+
+        // ============================================================
+        // Find helpers
+        // ============================================================
+
+        private static TradeItemDefinition FindTradeItemById(string itemId)
+        {
+            // 1. Try TradeItemDatabase.allItems (fast).
+            var db = AssetDatabase.LoadAssetAtPath<TradeDatabase>(TRADE_ITEM_DATABASE_PATH);
+            if (db != null)
+            {
+                foreach (var t in db.allItems)
+                    if (t != null && t.itemId == itemId) return t;
+            }
+            // 2. Scan assets (fallback for orphans).
+            var guids = AssetDatabase.FindAssets("t:TradeItemDefinition", new[] { TRADE_ITEMS_FOLDER });
+            foreach (var g in guids)
+            {
+                var p = AssetDatabase.GUIDToAssetPath(g);
+                var t = AssetDatabase.LoadAssetAtPath<TradeItemDefinition>(p);
+                if (t != null && t.itemId == itemId) return t;
+            }
+            return null;
         }
 
         private static void UpdateItemData(ItemData item, ItemType itemType, ResourcesCsvRow row, ImportResult result)

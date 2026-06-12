@@ -15,7 +15,7 @@ MonoBehaviour:
   itemId: mesium_canister_v01
   displayName: "\u041C\u0435\u0437\u0438\u0439 (\u043A\u0430\u043D\u0438\u0441\u0442\u0440\u0430)"
   icon: {fileID: 0}
-  basePrice: 10
+  basePrice: 200
   weight: 10
   volume: 0.5
   slots: 1

@@ -131,6 +131,23 @@ namespace ProjectC.Items.Editor
             new ColumnDef { name = "recipeName", required = true, type = "string", description = "[Phase 2] Уникальное имя рецепта (= asset filename)" },
         });
 
+        // -------- Block 6: prune (T-IE08) --------
+        // Управляет очисткой устаревших ItemData/TradeItemDefinition/MarketItemConfig/
+        // ExchangeRateEntry. Если блок отсутствует — mode=none (backward-compat, ничего
+        // не удаляется). Только 1 строка данных (mode, applyTo).
+        // mode: "none" | "orphan" | "replace"
+        //   - none    — ничего не удалять (default)
+        //   - orphan  — удалить ассеты, которых нет в CSV И на которые нет references
+        //   - replace — удалить ВСЁ в указанных applyTo секциях (двойной confirm)
+        // applyTo: "all" | "inventory,tradeItems,marketItems,exchangeRates" (через запятую)
+        public static readonly BlockSchema BlockPrune = new BlockSchema("prune", new[]
+        {
+            new ColumnDef { name = "mode",     aliases = new[]{"prune mode"}, required = true,  type = "string", defaultValue = "none",
+                            description = "none | orphan | replace. Default: none. См. 06_PRUNE_DESIGN.md." },
+            new ColumnDef { name = "applyTo",  aliases = new[]{"apply to","scope"},  required = false, type = "string", defaultValue = "all",
+                            description = "all | inventory,tradeItems,marketItems,exchangeRates (через запятую). Default: all." },
+        });
+
         // ============================================================
         // Lookup
         // ============================================================
@@ -142,6 +159,7 @@ namespace ProjectC.Items.Editor
             { BlockMarketItems.blockName, BlockMarketItems },
             { BlockExchangeRates.blockName, BlockExchangeRates },
             { BlockRecipes.blockName,     BlockRecipes },
+            { BlockPrune.blockName,       BlockPrune },
         };
 
         public static BlockSchema GetBlockSchema(string blockName)

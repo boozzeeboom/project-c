@@ -39,7 +39,8 @@
 | [`02_DESIGN.md`](02_DESIGN.md) | Схема CSV, алгоритм, макет окна |
 | [`03_TICKETS.md`](03_TICKETS.md) | T-IE01..T-IE07 (декомпозиция) |
 | [`04_EXAMPLES.md`](04_EXAMPLES.md) | Примеры CSV + acceptance |
-| **`05_USER_GUIDE.md`** | **Start-to-end: от CSV до ящиков в обменнике в Play Mode** |
+| [`05_USER_GUIDE.md`](05_USER_GUIDE.md) | **Start-to-end: от CSV до ящиков в обменнике в Play Mode** |
+| [`06_PRUNE_DESIGN.md`](06_PRUNE_DESIGN.md) | T-IE08 Pruning: режимы none/orphan/replace для очистки устаревших предметов |
 
 ## Прецеденты в проекте
 

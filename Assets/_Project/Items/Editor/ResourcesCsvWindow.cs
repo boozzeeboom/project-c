@@ -41,6 +41,11 @@ namespace ProjectC.Items.Editor
         private VisualElement _resultsRoot;
         private Label _importedLabel;
 
+        // T-IE08: Prune UI (visible only after Preview, when prune block is present).
+        private VisualElement _pruneRoot;
+        private Label _pruneModeLabel;
+        private Label _pruneSummaryLabel;
+
         // Flat row для ListView (одна строка CSV = один FlatRow, не важно из какой секции).
         private class FlatRow
         {
@@ -111,6 +116,32 @@ namespace ProjectC.Items.Editor
             _importedLabel.style.marginBottom = 4;
             _importedLabel.style.whiteSpace = WhiteSpace.Normal;
             root.Add(_importedLabel);
+
+            // ---- T-IE08: Prune section (visible only if CSV has # block=prune) ----
+            _pruneRoot = new VisualElement();
+            _pruneRoot.style.marginTop = 4;
+            _pruneRoot.style.paddingTop = 4;
+            _pruneRoot.style.paddingBottom = 4;
+            _pruneRoot.style.borderTopWidth = 1;
+            _pruneRoot.style.borderTopColor = new StyleColor(new Color(0.3f, 0.3f, 0.3f));
+            _pruneRoot.style.display = DisplayStyle.None;  // hidden by default
+
+            var pruneHeader = new Label("── Prune mode (T-IE08) ──");
+            pruneHeader.style.unityFontStyleAndWeight = FontStyle.Bold;
+            _pruneRoot.Add(pruneHeader);
+
+            _pruneModeLabel = new Label("Mode: (no prune block in CSV)");
+            _pruneModeLabel.style.fontSize = 11;
+            _pruneModeLabel.style.marginTop = 2;
+            _pruneRoot.Add(_pruneModeLabel);
+
+            _pruneSummaryLabel = new Label("");
+            _pruneSummaryLabel.style.fontSize = 10;
+            _pruneSummaryLabel.style.whiteSpace = WhiteSpace.Normal;
+            _pruneSummaryLabel.style.marginTop = 2;
+            _pruneRoot.Add(_pruneSummaryLabel);
+
+            root.Add(_pruneRoot);
 
             // ---- Preview ListView ----
             _previewList = new ListView
@@ -249,9 +280,34 @@ namespace ProjectC.Items.Editor
             if (_globalErrors.Count > 0) summary += $". {_globalErrors.Count} global errors.";
             if (errCount > 0) summary += $" {errCount} row errors.";
             _importedLabel.text = summary;
+
+            // T-IE08: Update Prune summary (if prune block present).
+            UpdatePruneSummary();
+
             _lastStatus = "Preview ready. Click Import to apply.";
             _statusField.value = _lastStatus;
             RefreshButtons();
+        }
+
+        /// <summary>T-IE08: обновляет UI prune-секции (mode + applyTo) на основе распарсенного CSV.</summary>
+        private void UpdatePruneSummary()
+        {
+            if (_pruneRoot == null) return;
+            if (_blocks == null || !_blocks.TryGetValue("prune", out var pruneRows) || pruneRows.Count == 0)
+            {
+                _pruneRoot.style.display = DisplayStyle.None;
+                return;
+            }
+            var row = pruneRows[0];
+            var mode = (row.Get("mode") ?? "none").Trim();
+            var applyTo = (row.Get("applyTo") ?? "all").Trim();
+            _pruneModeLabel.text = $"Mode: {mode}    ApplyTo: {applyTo}";
+            _pruneSummaryLabel.text =
+                "Prune will: delete items NOT in CSV (inventory/tradeItems) " +
+                "and remove from registry/db/arrays. mode='none' is a no-op. " +
+                "mode='orphan' blocks delete if there are references. mode='replace' ignores references. " +
+                "Saved runtime state (InventoryData/Warehouse/CargoData/ContractData) is NOT scanned — clear saves before testing.";
+            _pruneRoot.style.display = DisplayStyle.Flex;
         }
 
         private void ImportCsv()
@@ -262,6 +318,40 @@ namespace ProjectC.Items.Editor
                 _statusField.value = _lastStatus;
                 return;
             }
+
+            // T-IE08: confirm dialog for prune modes.
+            if (_blocks.TryGetValue("prune", out var pruneRows) && pruneRows.Count > 0)
+            {
+                var mode = (pruneRows[0].Get("mode") ?? "none").Trim().ToLowerInvariant();
+                if (mode == "replace")
+                {
+                    bool ok1 = EditorUtility.DisplayDialog("Prune: REPLACE",
+                        "This will DELETE ALL existing data in the selected sections (not in CSV).\n\n" +
+                        "If you have NOT backed up via git, do Ctrl+Z in Unity or close without saving.\n\n" +
+                        "Continue?",
+                        "Yes", "Cancel");
+                    if (!ok1) { _lastStatus = "Import cancelled (replace mode)."; _statusField.value = _lastStatus; return; }
+                    bool ok2 = EditorUtility.DisplayDialog("Prune: REPLACE — final confirm",
+                        "FINAL CONFIRMATION.\n\n" +
+                        "Pressing Yes will permanently delete all out-of-CSV items, registry entries, " +
+                        "market items, and exchange rates in the selected sections.\n\n" +
+                        "Are you absolutely sure?",
+                        "Yes, delete", "Cancel");
+                    if (!ok2) { _lastStatus = "Import cancelled (replace mode)."; _statusField.value = _lastStatus; return; }
+                }
+                else if (mode == "orphan")
+                {
+                    bool ok = EditorUtility.DisplayDialog("Prune: ORPHAN",
+                        "This will delete items NOT in CSV (only those without references in scenes/SOs).\n\n" +
+                        "Items with references (PickupItem/LootTable/RecipeData/etc) will be BLOCKED (kept).\n\n" +
+                        "Saved runtime state (InventoryData/Warehouse/CargoData/ContractData) cannot be scanned " +
+                        "and may break if you delete an ItemData.\n\n" +
+                        "Continue?",
+                        "Yes", "Cancel");
+                    if (!ok) { _lastStatus = "Import cancelled (orphan mode)."; _statusField.value = _lastStatus; return; }
+                }
+            }
+
             _lastResult = ResourcesCsvImporter.Apply(_blocks);
             _lastStatus = $"Import: C={_lastResult.created}, U={_lastResult.updated}, S={_lastResult.skipped}, E={_lastResult.errors.Count}, W={_lastResult.warnings.Count}";
             _statusField.value = _lastStatus;

@@ -29,6 +29,8 @@ using UnityEditor;
 using UnityEngine;
 using ProjectC.Trade;
 using ProjectC.Trade.Config;
+using ProjectC.Crafting;
+using ProjectC.ResourceNode;
 
 namespace ProjectC.Items.Editor
 {
@@ -84,6 +86,7 @@ namespace ProjectC.Items.Editor
         /// Применяет blocks (из ResourcesCsvParser) к SO-ассетам. Возвращает ImportResult.
         /// T-IE03: inventory + ItemRegistry.
         /// T-IE04: tradeItems + TradeItemDatabase + marketItems + MarketConfig + exchangeRates + ExchangeRateConfig.
+        /// T-IE08: prune block — optional cleanup (none/orphan/replace).
         /// </summary>
         public static ImportResult Apply(Dictionary<string, List<ResourcesCsvRow>> blocks)
         {
@@ -104,6 +107,9 @@ namespace ProjectC.Items.Editor
             // 5. recipes — Phase 2 placeholder (skip with warning).
             if (blocks.TryGetValue("recipes", out var recipes) && recipes.Count > 0)
                 result.warnings.Add($"recipes: {recipes.Count} rows skipped (Phase 2, see Crafting roadmap)");
+
+            // 6. T-IE08: prune (cleanup).
+            ApplyPrune(blocks, result);
 
             // Save all dirty assets.
             AssetDatabase.SaveAssets();
@@ -577,6 +583,332 @@ namespace ProjectC.Items.Editor
             AssetDatabase.CreateAsset(item, path);
             Debug.Log($"[ResourcesCsvImporter] Created ItemData: '{name}' (id will be assigned in registry) → {path}");
             return item;
+        }
+
+        // ============================================================
+        // PruneEngine (T-IE08)
+        // ============================================================
+
+        public class PruneReport
+        {
+            public int safeToDeleteInventory;
+            public int safeToDeleteTradeItems;
+            public int safeToDeleteMarketItems;
+            public int safeToDeleteExchangeRates;
+            public int blockedInventory;
+            public int blockedTradeItems;
+            public int blockedMarketItems;
+            public int blockedExchangeRates;
+            public List<string> warnings = new List<string>();
+            public List<string> blockedReasons = new List<string>();
+            public List<string> willDeleteAssetPaths = new List<string>();
+        }
+
+        /// <summary>
+        /// T-IE08: применяет prune-логику (после apply CSV). Если блок prune отсутствует
+        /// или mode=none — no-op.
+        /// </summary>
+        private static void ApplyPrune(Dictionary<string, List<ResourcesCsvRow>> blocks, ImportResult result)
+        {
+            if (!blocks.TryGetValue("prune", out var pruneRows) || pruneRows.Count == 0) return;
+            var firstRow = pruneRows[0];
+            if (firstRow.HasError)
+            {
+                result.errors.Add("prune block has errors, skipping prune");
+                return;
+            }
+
+            var mode = (firstRow.Get("mode") ?? "none").Trim().ToLowerInvariant();
+            if (mode == "none") return;
+
+            var applyToStr = (firstRow.Get("applyTo") ?? "all").Trim().ToLowerInvariant();
+            var applyTo = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+            foreach (var t in applyToStr.Split(',', StringSplitOptions.RemoveEmptyEntries))
+            {
+                var tk = t.Trim();
+                if (tk.Length == 0) continue;
+                if (tk == "all") { applyTo.UnionWith(new[] { "inventory", "tradeItems", "marketItems", "exchangeRates" }); }
+                else { applyTo.Add(tk); }
+            }
+            if (applyTo.Count == 0) { result.errors.Add("prune: applyTo is empty"); return; }
+
+            // 1. Build references blacklist.
+            var referencedItemNames = ScanReferencedItemNames();
+            var referencedTradeItemIds = ScanReferencedTradeItemIds();
+
+            // 2. Build CSV whitelist.
+            var csvInvNames = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+            if (blocks.TryGetValue("inventory", out var invRows))
+                foreach (var r in invRows) if (!r.HasError) csvInvNames.Add(r.Get("itemName"));
+
+            var csvTradeIds = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+            if (blocks.TryGetValue("tradeItems", out var trdRows))
+                foreach (var r in trdRows) if (!r.HasError) csvTradeIds.Add(r.Get("tradeItemId"));
+
+            var csvMarketPairs = new HashSet<(string, string)>();
+            if (blocks.TryGetValue("marketItems", out var mktRows))
+                foreach (var r in mktRows) if (!r.HasError)
+                    csvMarketPairs.Add((r.Get("tradeItemId"), r.Get("locationId")));
+
+            var csvExchPairs = new HashSet<(string, string)>();
+            if (blocks.TryGetValue("exchangeRates", out var xchRows))
+                foreach (var r in xchRows) if (!r.HasError)
+                    csvExchPairs.Add((r.Get("tradeItemId"), r.Get("inventoryItemName")));
+
+            // 3. Compute decisions.
+            var report = new PruneReport();
+
+            // 3a. inventory: ItemData + ItemRegistry entries.
+            if (applyTo.Contains("inventory"))
+            {
+                var registry = AssetDatabase.LoadAssetAtPath<ItemRegistry>(ITEM_REGISTRY_PATH);
+                if (registry != null)
+                {
+                    var so = new SerializedObject(registry);
+                    var entriesProp = so.FindProperty("entries");
+                    var guids = AssetDatabase.FindAssets("t:ItemData", new[] { ITEMS_FOLDER });
+
+                    // Collect all ItemData by name.
+                    var allItems = new Dictionary<string, ItemData>(StringComparer.OrdinalIgnoreCase);
+                    foreach (var g in guids)
+                    {
+                        var p = AssetDatabase.GUIDToAssetPath(g);
+                        var it = AssetDatabase.LoadAssetAtPath<ItemData>(p);
+                        if (it != null && !string.IsNullOrEmpty(it.itemName))
+                            allItems[it.itemName] = it;
+                    }
+                    for (int i = entriesProp.arraySize - 1; i >= 0; i--)
+                    {
+                        var elem = entriesProp.GetArrayElementAtIndex(i);
+                        var itemRef = elem.FindPropertyRelative("item").objectReferenceValue as ItemData;
+                        if (itemRef != null && csvInvNames.Contains(itemRef.itemName)) continue;
+
+                        // Decide: SKIP / DELETE.
+                        bool shouldDelete = false;
+                        string reason = null;
+                        if (itemRef == null)
+                        {
+                            // Orphan entry (objectReferenceValue is null) — always delete.
+                            shouldDelete = true;
+                            reason = "orphan entry (no ItemData)";
+                        }
+                        else if (mode == "orphan" && referencedItemNames.Contains(itemRef.itemName))
+                        {
+                            // Blocked: has references in scenes/SOs.
+                            report.blockedInventory++;
+                            report.blockedReasons.Add($"inventory: '{itemRef.itemName}' not in CSV but has references (PickupItem/LootTable/RecipeData/etc)");
+                            continue;
+                        }
+                        else
+                        {
+                            // Safe to delete.
+                            shouldDelete = true;
+                            reason = "not in CSV";
+                        }
+
+                        if (shouldDelete)
+                        {
+                            report.safeToDeleteInventory++;
+                            if (itemRef != null)
+                            {
+                                var assetPath = AssetDatabase.GetAssetPath(itemRef);
+                                if (!string.IsNullOrEmpty(assetPath)) report.willDeleteAssetPaths.Add(assetPath);
+                            }
+                            else
+                            {
+                                report.willDeleteAssetPaths.Add($"ItemRegistry entry #{i} (orphan, no ItemData)");
+                            }
+                            entriesProp.DeleteArrayElementAtIndex(i);
+                        }
+                    }
+                    so.ApplyModifiedProperties();
+
+                    // Delete .asset files (not in registry now).
+                    foreach (var name in allItems.Keys)
+                    {
+                        if (csvInvNames.Contains(name)) continue;
+                        if (mode == "orphan" && referencedItemNames.Contains(name)) continue;
+                        var it = allItems[name];
+                        var p = AssetDatabase.GetAssetPath(it);
+                        if (!string.IsNullOrEmpty(p) && AssetDatabase.DeleteAsset(p))
+                            Debug.Log($"[ResourcesCsvImporter] Pruned ItemData: '{name}' ({p})");
+                    }
+                }
+            }
+
+            // 3b. tradeItems: TradeItemDefinition + TradeItemDatabase.allItems.
+            if (applyTo.Contains("tradeItems"))
+            {
+                var db = AssetDatabase.LoadAssetAtPath<TradeDatabase>(TRADE_ITEM_DATABASE_PATH);
+                if (db != null)
+                {
+                    // Build byId map (db + orphan scan).
+                    var byId = new Dictionary<string, TradeItemDefinition>(StringComparer.OrdinalIgnoreCase);
+                    foreach (var t in db.allItems)
+                        if (t != null && !string.IsNullOrEmpty(t.itemId)) byId[t.itemId] = t;
+                    var existingGuids = AssetDatabase.FindAssets("t:TradeItemDefinition", new[] { TRADE_ITEMS_FOLDER });
+                    foreach (var g in existingGuids)
+                    {
+                        var p = AssetDatabase.GUIDToAssetPath(g);
+                        var t = AssetDatabase.LoadAssetAtPath<TradeItemDefinition>(p);
+                        if (t != null && !string.IsNullOrEmpty(t.itemId) && !byId.ContainsKey(t.itemId))
+                            byId[t.itemId] = t;
+                    }
+
+                    foreach (var kv in byId)
+                    {
+                        if (csvTradeIds.Contains(kv.Key)) continue;
+                        if (mode == "orphan" && referencedTradeItemIds.Contains(kv.Key))
+                        {
+                            report.blockedTradeItems++;
+                            report.blockedReasons.Add($"tradeItems: '{kv.Key}' not in CSV but referenced by MarketItemConfig.definition");
+                            continue;
+                        }
+                        report.safeToDeleteTradeItems++;
+                        var assetPath = AssetDatabase.GetAssetPath(kv.Value);
+                        if (!string.IsNullOrEmpty(assetPath)) report.willDeleteAssetPaths.Add(assetPath);
+                        // Remove from TradeItemDatabase.
+                        db.allItems.Remove(kv.Value);
+                        // Delete .asset.
+                        if (!string.IsNullOrEmpty(assetPath))
+                        {
+                            if (AssetDatabase.DeleteAsset(assetPath))
+                                Debug.Log($"[ResourcesCsvImporter] Pruned TradeItem: '{kv.Key}' ({assetPath})");
+                        }
+                    }
+                    EditorUtility.SetDirty(db);
+                }
+            }
+
+            // 3c. marketItems: MarketConfig.items[].
+            if (applyTo.Contains("marketItems"))
+            {
+                var mcGuids = AssetDatabase.FindAssets("t:MarketConfig", new[] { MARKET_CONFIGS_FOLDER });
+                foreach (var g in mcGuids)
+                {
+                    var p = AssetDatabase.GUIDToAssetPath(g);
+                    var mc = AssetDatabase.LoadAssetAtPath<MarketConfig>(p);
+                    if (mc == null || mc.items == null) continue;
+                    int before = mc.items.Count;
+                    mc.items.RemoveAll(mic => mic != null && !csvMarketPairs.Contains((mic.itemId, mc.locationId)));
+                    int removed = before - mc.items.Count;
+                    report.safeToDeleteMarketItems += removed;
+                    EditorUtility.SetDirty(mc);
+                }
+            }
+
+            // 3d. exchangeRates: ExchangeRateConfig.rates[].
+            if (applyTo.Contains("exchangeRates"))
+            {
+                var config = AssetDatabase.LoadAssetAtPath<ExchangeRateConfig>(EXCHANGE_RATE_CONFIG_PATH);
+                if (config != null && config.rates != null)
+                {
+                    int before = config.rates.Count;
+                    config.rates.RemoveAll(r =>
+                        string.IsNullOrEmpty(r.warehouseItemId) || string.IsNullOrEmpty(r.inventoryItemName) ||
+                        !csvExchPairs.Contains((r.warehouseItemId, r.inventoryItemName)));
+                    int removed = before - config.rates.Count;
+                    report.safeToDeleteExchangeRates += removed;
+                    EditorUtility.SetDirty(config);
+                }
+            }
+
+            // 4. Warnings.
+            report.warnings.Add(
+                "prune: applied mode='" + mode + "', applyTo='" + applyToStr + "'. " +
+                "Deleted: inventory=" + report.safeToDeleteInventory + ", tradeItems=" + report.safeToDeleteTradeItems +
+                ", marketItems=" + report.safeToDeleteMarketItems + ", exchangeRates=" + report.safeToDeleteExchangeRates + ". " +
+                "Blocked: inventory=" + report.blockedInventory + ", tradeItems=" + report.blockedTradeItems +
+                ", marketItems=" + report.blockedMarketItems + ", exchangeRates=" + report.blockedExchangeRates + ".");
+            // Saved runtime state warning (cannot be scanned).
+            report.warnings.Add("prune: saved runtime state (InventoryData, Warehouse, CargoData, ContractData) lives in Application.persistentDataPath/ and cannot be scanned. If you deleted ItemData, saved player inventories that reference its id may break. Recommend clearing saves before testing.");
+            result.warnings.AddRange(report.warnings);
+        }
+
+        /// <summary>Сканирует scenes + SO, ссылающиеся на ItemData. Возвращает HashSet itemName (case-insensitive).</summary>
+        private static HashSet<string> ScanReferencedItemNames()
+        {
+            var result = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+
+            // 1. PickupItem.itemData (prefab-scene).
+            var prefabGuids = AssetDatabase.FindAssets("t:Prefab");
+            foreach (var g in prefabGuids)
+            {
+                var p = AssetDatabase.GUIDToAssetPath(g);
+                if (string.IsNullOrEmpty(p) || !p.EndsWith(".prefab", StringComparison.OrdinalIgnoreCase)) continue;
+                GameObject root = null;
+                try { root = PrefabUtility.LoadPrefabContents(p); }
+                catch { continue; }
+                if (root == null) continue;
+                try
+                {
+                    foreach (var pickup in root.GetComponentsInChildren<PickupItem>(true))
+                    {
+                        if (pickup != null && pickup.itemData != null && !string.IsNullOrEmpty(pickup.itemData.itemName))
+                            result.Add(pickup.itemData.itemName);
+                    }
+                }
+                finally { PrefabUtility.UnloadPrefabContents(root); }
+            }
+
+            // 2. LootTable (entries + guaranteedItems).
+            foreach (var g in AssetDatabase.FindAssets("t:LootTable"))
+            {
+                var lt = AssetDatabase.LoadAssetAtPath<LootTable>(AssetDatabase.GUIDToAssetPath(g));
+                if (lt == null) continue;
+                if (lt.entries != null) foreach (var e in lt.entries) if (e?.item != null) result.Add(e.item.itemName);
+                if (lt.guaranteedItems != null) foreach (var it in lt.guaranteedItems) if (it != null) result.Add(it.itemName);
+            }
+
+            // 3. RecipeData (_ingredients + _outputs).
+            foreach (var g in AssetDatabase.FindAssets("t:RecipeData"))
+            {
+                var r = AssetDatabase.LoadAssetAtPath<RecipeData>(AssetDatabase.GUIDToAssetPath(g));
+                if (r == null) continue;
+                if (r.Ingredients != null) foreach (var ing in r.Ingredients) if (ing.item != null) result.Add(ing.item.itemName);
+                if (r.Outputs != null) foreach (var outp in r.Outputs) if (outp.item != null) result.Add(outp.item.itemName);
+            }
+
+            // 4. ResourceNodeConfig (_resultItem + _requiredTool).
+            foreach (var g in AssetDatabase.FindAssets("t:ResourceNodeConfig"))
+            {
+                var rn = AssetDatabase.LoadAssetAtPath<ResourceNodeConfig>(AssetDatabase.GUIDToAssetPath(g));
+                if (rn == null) continue;
+                if (rn.ResultItem != null) result.Add(rn.ResultItem.itemName);
+                if (rn.RequiredTool != null) result.Add(rn.RequiredTool.itemName);
+            }
+
+            // 5. MarketItemConfig.definition (MarketConfig_*.asset).
+            foreach (var g in AssetDatabase.FindAssets("t:MarketConfig"))
+            {
+                var mc = AssetDatabase.LoadAssetAtPath<MarketConfig>(AssetDatabase.GUIDToAssetPath(g));
+                if (mc?.items == null) continue;
+                foreach (var mic in mc.items)
+                    if (mic?.definition != null && !string.IsNullOrEmpty(mic.definition.itemId)) result.Add(mic.definition.itemId);
+            }
+
+            return result;
+        }
+
+        /// <summary>Сканирует SO, ссылающиеся на TradeItemDefinition. Возвращает HashSet itemId.</summary>
+        private static HashSet<string> ScanReferencedTradeItemIds()
+        {
+            var result = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+
+            // 1. MarketItemConfig.definition.
+            foreach (var g in AssetDatabase.FindAssets("t:MarketConfig"))
+            {
+                var mc = AssetDatabase.LoadAssetAtPath<MarketConfig>(AssetDatabase.GUIDToAssetPath(g));
+                if (mc?.items == null) continue;
+                foreach (var mic in mc.items)
+                    if (mic?.definition != null && !string.IsNullOrEmpty(mic.definition.itemId))
+                        result.Add(mic.definition.itemId);
+            }
+
+            // 2. TradeItemDatabase.allItems (itself — keep all that are listed in db).
+            // (Handled implicitly — not added to delete set.)
+
+            return result;
         }
 
         // ============================================================

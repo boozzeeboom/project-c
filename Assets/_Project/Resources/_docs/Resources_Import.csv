@@ -79,3 +79,20 @@ resource_iron_box,Железная руда,1,100,Ящик железной ру
 resource_copper_box,Медная руда,1,100,Ящик медной руды
 resource_wood_box,Древесина,1,100,Ящик древесины
 antigrav_ingot_v01,Антигравий (осколок),1,100,Слиток антигравия
+
+# block=prune
+# T-IE08: cleanup mode. Раскомментируйте для удаления старых предметов.
+# mode,none          ← none (default) | orphan | replace
+# applyTo,all       ← all | inventory,tradeItems,marketItems,exchangeRates
+# mode=none:     ничего не удалять (backward-compat, рекомендуется)
+# mode=orphan:   удалять items НЕ в CSV, но БЕЗ references (PickupItem/LootTable/RecipeData/etc)
+# mode=replace:  удалять ВСЁ что не в CSV (двойной confirm dialog в UI)
+#
+# ⚠️ Saved runtime state (InventoryData/Warehouse/CargoData/ContractData) НЕ сканируется
+# (живёт в Application.persistentDataPath/). Если удалите ItemData, на который ссылается
+# savegame — сломается. Рекомендуется: clear saves перед тестированием.
+#
+# Пример:
+# mode,applyTo
+# orphan,inventory
+

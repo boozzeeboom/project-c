@@ -22,6 +22,7 @@ invokes MCP").
 | **T-IE05** | Exporter | S | T-IE03, T-IE04 |
 | **T-IE06** | Editor Window | M | T-IE01..T-IE05 |
 | **T-IE07** | Sample CSV + smoke test (антигравий) | S | T-IE06 |
+| **T-IE08** | Pruning (none/orphan/replace) | M | T-IE07 |
 | **⏭️ Phase 2** | Recipes / CraftingStation — отдельная итерация | L | T-IE01..T-IE07 |
 
 > **Out of scope MVP (Phase 2):** импорт `RecipeData` и обновление

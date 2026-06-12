@@ -107,6 +107,36 @@ namespace ProjectC.Items.Editor
             //    Парсер уже выдал global error "Unknown column" если есть лишние колонки.
             //    Здесь только фиксируем факт наличия секции (для UI в T-IE06 Window).
             //    Реальная валидация ингредиентов/outputs — CraftingCsvValidator.
+
+            // 7. T-IE08: prune block — validate mode + applyTo.
+            if (blocks.TryGetValue("prune", out var pruneRows) && pruneRows.Count > 0)
+            {
+                var firstRow = pruneRows[0];
+                if (!firstRow.HasError)
+                {
+                    var mode = (firstRow.Get("mode") ?? "").Trim().ToLowerInvariant();
+                    if (mode != "none" && mode != "orphan" && mode != "replace")
+                        globalErrors.Add($"prune: invalid mode '{firstRow.Get("mode")}'. Valid: none, orphan, replace.");
+
+                    var applyTo = (firstRow.Get("applyTo") ?? "all").Trim().ToLowerInvariant();
+                    var tokens = applyTo.Split(',', System.StringSplitOptions.RemoveEmptyEntries);
+                    var validTokens = new HashSet<string>(System.StringComparer.OrdinalIgnoreCase)
+                        { "all", "inventory", "tradeItems", "marketItems", "exchangeRates" };
+                    var seenTokens = new HashSet<string>(System.StringComparer.OrdinalIgnoreCase);
+                    foreach (var t in tokens)
+                    {
+                        var tk = t.Trim();
+                        if (tk.Length == 0) continue;
+                        if (!seenTokens.Add(tk))
+                        {
+                            globalErrors.Add($"prune: duplicate applyTo token '{tk}'");
+                            continue;
+                        }
+                        if (!validTokens.Contains(tk))
+                            globalErrors.Add($"prune: invalid applyTo token '{tk}'. Valid: all, inventory, tradeItems, marketItems, exchangeRates.");
+                    }
+                }
+            }
         }
 
         /// <summary>

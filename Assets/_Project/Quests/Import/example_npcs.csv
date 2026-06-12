@@ -1,0 +1,5 @@
+npcId,services,attitudeLinks,attitudeMin,attitudeMax,greetingText,voicePrefix,interactionRadius
+npc_002,Trade,Pirates:-15,0,100,"Приветствую, путник! Что привело тебя в наш квартал?",npc_002_,3.0
+npc_005,Repair,Neutral:5,-50,200,"Здравствуй. Чем могу помочь?",npc_005_,2.5
+npc_010,Trade;Repair,GuildOfSuccess:-10;Underground:5,0,200,"Приветствую. Мистер Эстик к вашим услугам.",npc_010_,3.0
+npc_019,Repair;Refuel,Underground:10;Pirates:-20,0,150,"Чем могу помочь, путник?",npc_019_,2.5

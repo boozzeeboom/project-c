@@ -18,34 +18,6 @@ MonoBehaviour:
   faction: 0
   minReputation: 0
   stages:
-  - stageId: collect
-    description: 
-    objectives:
-    - objectiveId: collect_item
-      objectiveType: 4
-      description: 
-      targetNpcId: 
-      itemTradeItemId: TestStageItem
-      requiredQuantity: 1
-      targetSceneId: 
-      targetPosition: {x: 0, y: 0, z: 0}
-      targetRadius: 10
-      targetEntityType: 
-      targetFaction: 0
-      reputationValue: 0
-      eventId: 
-      optional: 0
-      required: 1
-    onEnterActions: []
-    onCompleteActions:
-    - type: 30
-      stringParam: 
-      stageIdParam: 
-      intParam: 20
-      factionParam: 0
-      itemId: 0
-      itemType: 0
-    nextStageId: deliver
   - stageId: deliver
     description: 
     objectives:

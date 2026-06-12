@@ -898,6 +898,19 @@ my_first_quest,Мой первый квест,1,TalkToNpc,,mira_01,1,200
 - [x] Window opens: ✅
 - [x] Compile: 0 errors
 
+**M19-T6 (auto-create NPCs):**
+- [x] `ImportOptions` класс с checkbox'ами: importQuests, autoCreateMissingNpcs, autoCreateMissingDialogs, dialogsCsvPath
+- [x] `EnsureNpc()` — auto-создаёт NpcDefinition.asset если отсутствует
+- [x] `CollectNpcIds()` — собирает уникальные npcId из CSV
+- [x] Window: 3 toggle'а + поле dialogs.csv path
+- [x] CrossValidate: NPC not found = warning (не error)
+- [x] Verify: 1 NPC (mira_01) auto-created при импорте
+- [x] **M19-T6.1**: поля `npcDisplayName` и `npcFaction` в schema (fallback на npcId/Neutral)
+- [x] **T-Q19**: auto-populate `questOffers` для каждого NPC (stage 0 + TalkToNpc)
+- [x] **T-Q19.1**: auto-populate `questTurnIns` (last stage + TalkToNpc)
+- [x] **T-Q19.2**: auto-link `defaultDialogTree` если matching dialog (npcId_default)
+- [x] **T-Q19.3**: `npcs.csv` schema (services, attitudeLinks, greeting, voice) — 8 колонок, auto-detect в окне
+
 **Формат файла:** `quests_import.csv` — одна таблица, все колонки на одном листе. Writer заполняет только questId, displayName, stageNum, objectiveType — остальное опционально.
 
 **Спецификация полей:** см. `M19_CSV_PIPELINE_v2.md`
@@ -935,7 +948,7 @@ my_first_quest,Мой первый квест,1,TalkToNpc,,mira_01,1,200
 | **M16 — QuestDatabaseWindow** | T-Q09 (Editor UI) | UI Toolkit EditorWindow: tree view + detail panel для quests/dialogs/npcs/factions. | ✅ DONE 2026-06-09 (verified by Roslyn) |
 | **M17 — QuestNodeGraph** | T-Q09b (Graph viz) | **Вариант A:** `QuestNodeGraphView` (GraphView Nodes+Edges, активный). **Вариант B (old):** `QuestGraphView` (custom VisualElement, maintenance). | ✅ DONE 2026-06-09 |
 | **M18 — Editable QuestNodeGraph** | T-Q30, T-Q31, T-Q32, T-Q33, T-Q34 | Editable nodes, save back to SO, quest-to-quest dependencies, drag-create edges. | ✅ DONE 2026-06-09 (verified by user) |
-| **M19 — CSV Import/Export** | M19-T1..T5 | Single-file CSV pipeline for content writers. Import/Export window. | ✅ DONE 2026-06-09 (verified by Roslyn) |
+| **M19 — CSV Import/Export** | M19-T1..T7 | Single-file CSV pipeline. **T7:** dialogs.csv (edges format). Auto-create missing NPCs. | ✅ DONE 2026-06-09 (verified by Roslyn) |
 
 **Рекомендуемый темп:** 1-2 тикета за сессию, 1 PR за тикет.
 

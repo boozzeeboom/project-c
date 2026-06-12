@@ -48,11 +48,13 @@ namespace ProjectC.Quests.Editor
             new ColumnDef { name = "objectiveId",     aliases = new[]{"objective id","objective_id","obj id","obj_id","цель id","id цели"}, required = false, type = "string", description = "ID цели" },
             new ColumnDef { name = "itemName",        aliases = new[]{"item name","item_name","item","предмет"},               required = false, type = "string", description = "Название предмета (для HaveItem)" },
             new ColumnDef { name = "npcId",           aliases = new[]{"npc id","npc_id","npc","NPC","персонаж"},              required = false, type = "string", description = "ID NPC (для TalkToNpc)" },
+            new ColumnDef { name = "npcDisplayName",  aliases = new[]{"npc display name","npc_name","npc name","имя нпс","имя npc"},  required = false, type = "string", description = "Отображаемое имя NPC (при auto-create). Fallback: npcId" },
+            new ColumnDef { name = "npcFaction",      aliases = new[]{"npc faction","npc_faction","фракция нпс"},                required = false, type = "string", description = "Фракция NPC (при auto-create). Fallback: нейтральная" },
             new ColumnDef { name = "qty",             aliases = new[]{"quantity","кол-во","количество","count"},               required = true,  type = "int",   defaultValue = "1", description = "Сколько нужно (3 руды, 1 поговорить)" },
             new ColumnDef { name = "onCompleteActions",aliases = new[]{"on complete","on_complete","onComplete","при завершении"},  required = false, type = "string", description = "Действия при завершении этапа" },
             new ColumnDef { name = "rewardCR",        aliases = new[]{"reward cr","reward_cr","reward","credits","награда cr","кредиты"}, required = false, type = "int",   defaultValue = "0", description = "Награда кредитами" },
             new ColumnDef { name = "rewardRep",       aliases = new[]{"reward rep","reward_rep","reward reputation","награда реп","репутация"}, required = false, type = "string", description = "Награда репутацией (FactionId:value)" },
-            new ColumnDef { name = "rewardItem",      aliases = new[]{"reward item","reward_item","награда предмет"},          required = false, type = "string", description = "Награда предметом (itemName:count)" },
+            new ColumnDef { name = "rewardItem",      aliases = new[]{"reward item","reward_item","награда предмет","rewardItems"},          required = false, type = "string", description = "Награда предметом (itemName:count,;itemName:count)" },
         };
 
         /// <summary>Найти каноническое имя колонки по любому алиасу (case-insensitive).</summary>
@@ -87,11 +89,15 @@ namespace ProjectC.Quests.Editor
         /// <summary>Ошибки валидации этой строки.</summary>
         public List<string> errors = new List<string>();
 
+        /// <summary>Warnings (некритичные, можно auto-fix при импорте).</summary>
+        public List<string> warnings = new List<string>();
+
         public string Get(string column) => values.TryGetValue(column, out var v) ? v ?? "" : "";
         public int GetInt(string column, int defaultVal = 0) => int.TryParse(Get(column), out var v) ? v : defaultVal;
         public bool GetBool(string column) { var v = Get(column).ToLowerInvariant(); return v == "y" || v == "yes" || v == "true" || v == "1"; }
 
         public bool HasError => errors.Count > 0;
+        public bool HasWarning => warnings.Count > 0;
     }
 
     // ============================================================
@@ -361,29 +367,24 @@ namespace ProjectC.Quests.Editor
                         row.errors.Add($"Item '{itemName}' not found in ItemRegistry. Line {row.lineNumber}");
                 }
 
-                // npcId → NpcDefinition lookup  
+                // npcId → NpcDefinition lookup
                 var npcId = row.Get("npcId");
                 if (!string.IsNullOrEmpty(npcId))
                 {
                     if (!ResolveNpc(npcId))
-                        row.errors.Add($"NPC '{npcId}' not found in NpcDefinition. Line {row.lineNumber}");
-                }
-
-                // rewardRep → FactionId lookup
-                var rep = row.Get("rewardRep");
-                if (!string.IsNullOrEmpty(rep))
-                {
-                    var parts = rep.Split(':');
-                    if (parts.Length >= 1 && !ResolveFaction(parts[0].Trim()))
-                        row.errors.Add($"Faction '{parts[0]}' not found in FactionDefinition. Line {row.lineNumber}");
+                        row.warnings.Add($"NPC '{npcId}' not found — will be auto-created on import (checkbox). Line {row.lineNumber}");
                 }
             }
         }
 
         // Resolve using the current project context (via reflection-safe calls)
         private static int ResolveItem(string name) => ProjectC.Quests.QuestWorld.ResolveItemId(name);
-        private static bool ResolveNpc(string npcId) { /* stubs — runtime context */ return true; }
-        private static bool ResolveFaction(string faction) { /* stubs */ return true; }
+        private static bool ResolveNpc(string npcId)
+        {
+            // Check if NpcDefinition asset exists in project
+            string path = "Assets/_Project/Quests/Data/Npcs/" + npcId + ".asset";
+            return UnityEditor.AssetDatabase.LoadAssetAtPath<ProjectC.Quests.NpcDefinition>(path) != null;
+        }
     }
 }
 #endif

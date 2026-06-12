@@ -1,13 +1,13 @@
 # Project C: The Clouds
-**Version:** 0.0.21 | **Stage:** Этап 2.5 В ПРОЦЕССЕ (Визуальный прототип)
-**Подсистемы:** NPC+Quests v2 ✅ (M1–M19) | Gathering (Mining) ✅ (T-G01–T-G07) | **Crafting ✅ (T-C01–T-C07c)**
+**Version:** 0.0.23 | **Stage:** Этап 2.5 В ПРОЦЕССЕ (Визуальный прототип)
+**Подсистемы:** NPC+Quests v2 ✅ (M1–M19.3) | Gathering (Mining) ✅ (T-G01–T-G07) | **Crafting ✅ (T-C01–T-C07c)** | **Exchange ✅ (T-E01–T-E05)**
 **По мотивам книги «Интеграл Пьявица» — Бруно Арендт**
 ## Весь проект: [TheGravity](https://thegravity.ru) & [TheClouds](https://thegravity.ru/project-c/)
 
 ---
 
-> **Что нового в v0.0.21 (11 июня 2026):** **Crafting (крафт-система) — MVP завершён!** Две станции в мире: Верстак (3 рецепта: медный слиток, железный слиток, ключ корабля) и Верфь (ключ ShipLight). Подойти → F → окно → выбрать рецепт → добавить ресурсы → запустить крафт → таймер с ProgressBar + тост → Готово → предмет в инвентаре. Станции работают независимо, анимация свечения в процессе. 9 тикетов, все проверено в Play Mode.
-> **Предыдущее (v0.0.20):** Mining (сбор ресурсов) — 3D-узлы в мире, сбор с анимацией, Кирка→Руда.
+> **Что нового в v0.0.23 (13 июня 2026):** **CSV Pipeline — финал!** Теперь контент-райтер забивает квесты в Excel → CSV → 1 кнопка в Unity → готово. Auto-создание NPC из CSV (displayName, faction, questOffers, questTurnIns). `npcs.csv` (9 колонок: services, attitude, greeting, voice, radius). `dialogs.csv` (15 колонок: деревья диалогов с 11 условиями и 17 действиями). Auto-link `{npcId}_default` к NPC. Тестовый импорт: **106 NPC, 802 квеста** — 1 кнопка. Примеры: `Import/example_quests.csv`, `example_npcs.csv`, `example_dialogs.csv`. Writer-документация: `M19_CSV_PIPELINE_v2.md`.
+> **Предыдущее (v0.0.21):** Crafting (крафт-система) — MVP завершён! Две станции в мире: Верстак (3 рецепта: медный слиток, железный слиток, ключ корабля) и Верфь (ключ ShipLight). Подойти → F → окно → выбрать рецепт → добавить ресурсы → запустить крафт → таймер с ProgressBar + тост → Готово → предмет в инвентаре. Станции работают независимо, анимация свечения в процессе. 9 тикетов, все проверено в Play Mode.
 > **См. полную историю:** `docs/MMO_Development_Plan.md`
 **no marketing/bullshit/tech-heavy/sound sections**
 ---
@@ -64,7 +64,7 @@
 | Каталог | Описание |
 |---------|----------|
 | [`docs/Mining/`](docs/Mining/) | **Resource Gathering (Mining) v0.0.2** — 3D-объекты сбора, F-key, ProgressBar, tool check (MetaReq), анимация. 7 тикетов T-G01–T-G07 ✅. |
-| [`docs/NPC_quests/`](docs/NPC_quests/) | **NPC + Quests v2** — главный roadmap (50+ тикетов, M1–M19 ✅, сессионные логи, риски). 19 milestones: data foundation, server core, real-time objectives, ItemRegistry, Toast, QuestDatabaseWindow, QuestNodeGraph, CSV Import/Export, Mira E2E demo. |
+|| [`docs/NPC_quests/`](docs/NPC_quests/) | **NPC + Quests v2** — главный roadmap (50+ тикетов, M1–M19.3 ✅, новые: M19.3 CSV Pipeline NPC/dialogs, сессионные логи, риски). 19 milestones: data foundation, server core, real-time objectives, ItemRegistry, Toast, QuestDatabaseWindow, QuestNodeGraph, CSV Import/Export → **M19.3 CSV Pipeline** (NPC/dialogs auto-import из CSV), Mira E2E demo. |
 | [`docs/NPC_quests/old_session_log/`](docs/NPC_quests/old_session_log/) | **Исторические devlog'и** — 27 файлов (M*, T-Q*, 99_FINAL_STATUS). Не читать для текущей работы; для возврата к старому. |
 | [`docs/Character-menu/`](docs/Character-menu/) | **CharacterWindow v2** — 5+ табов (Персонаж, Корабль, Репутация, Контракты, Инвентарь, Квесты), P-key для открытия, 4 FIX'ы от MarketWindow, Visual fix 2026-06-05. |
 | [`docs/Character-menu/sub_inventory-tab/`](docs/Character-menu/sub_inventory-tab/) | **sub_inventory-tab** — Inventory v2 (Phases 0-7), TAB-колесо + P-таб, single source of truth с `InventoryClientState`. 8 файлов (~150 KB). |

@@ -1,0 +1,223 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: bec96c5c83d6d5f4f8baed538e2e4fde, type: 3}
+  m_Name: mira_default
+  m_EditorClassIdentifier: Assembly-CSharp::ProjectC.Dialogue.DialogTree
+  treeId: mira_default
+  displayName: mira default
+  rootNodeId: greeting
+  nodes:
+  - nodeId: greeting
+    speaker:
+      speakerKind: 0
+      refId: "\u043F\u0443\u0442\u0435\u0448\u0435\u0441\u0442\u0432\u0435\u043D\u043D\u0438\u043A!
+        \u0427\u0442\u043E \u043F\u0440\u0438\u0432\u0435\u043B\u043E \u0442\u0435\u0431\u044F
+        \u0441\u044E\u0434\u0430?"
+    text: "\u041F\u0440\u0438\u0432\u0435\u0442"
+    portraitEmotion: neutral
+    edges:
+    - label: 'Npc: mira_01'
+      targetNodeId: "\u042F \u043F\u0440\u043E\u0441\u0442\u043E \u043E\u0441\u043C\u0430\u0442\u0440\u0438\u0432\u0430\u044E\u0441\u044C"
+      condition:
+        type: 10
+        stringParam: 
+        stageIdParam: 
+        intParam: 0
+        factionParam: 0
+        questStateParam: 2
+      conditions: []
+      action:
+        type: 60
+        stringParam: 
+        stageIdParam: 
+        intParam: 0
+        factionParam: 0
+        itemId: 0
+        itemType: 0
+      hideIfUnavailable: 0
+    - label: 'Npc: mira_01'
+      targetNodeId: "\u0423 \u043C\u0435\u043D\u044F \u0435\u0441\u0442\u044C \u0440\u0430\u0431\u043E\u0442\u0430
+        \u0434\u043B\u044F \u0442\u0435\u0431\u044F"
+      condition:
+        type: 10
+        stringParam: QuestCompleted
+        stageIdParam: 
+        intParam: 0
+        factionParam: 0
+        questStateParam: 2
+      conditions: []
+      action:
+        type: 10
+        stringParam: find_artifact
+        stageIdParam: 
+        intParam: 0
+        factionParam: 0
+        itemId: 0
+        itemType: 0
+      hideIfUnavailable: 0
+    - label: 'Npc: mira_01'
+      targetNodeId: "\u0423 \u043C\u0435\u043D\u044F \u0435\u0441\u0442\u044C \u0440\u0430\u0431\u043E\u0442\u0430
+        \u0434\u043B\u044F \u0442\u0435\u0431\u044F"
+      condition:
+        type: 10
+        stringParam: 
+        stageIdParam: 
+        intParam: 0
+        factionParam: 0
+        questStateParam: 2
+      conditions: []
+      action:
+        type: 10
+        stringParam: find_artifact
+        stageIdParam: 
+        intParam: 0
+        factionParam: 0
+        itemId: 0
+        itemType: 0
+      hideIfUnavailable: 0
+    onEnterActions: []
+  - nodeId: offer_quest
+    speaker:
+      speakerKind: 0
+      refId: mira_01
+    text: "\u0423 \u043C\u0435\u043D\u044F \u0435\u0441\u0442\u044C \u0437\u0430\u0434\u0430\u043D\u0438\u0435.
+      \u041D\u0430\u0439\u0434\u0438 \u0434\u0440\u0435\u0432\u043D\u0438\u0439 \u0430\u0440\u0442\u0435\u0444\u0430\u043A\u0442
+      \u0432 \u0440\u0443\u0438\u043D\u0430\u0445 \u043A \u0441\u0435\u0432\u0435\u0440\u0443.
+      \u042D\u0442\u043E \u043E\u043F\u0430\u0441\u043D\u043E."
+    portraitEmotion: neutral
+    edges:
+    - label: "\u042F \u0441\u043E\u0433\u043B\u0430\u0441\u0435\u043D!"
+      targetNodeId: quest_active
+      condition:
+        type: 10
+        stringParam: 
+        stageIdParam: 
+        intParam: 0
+        factionParam: 0
+        questStateParam: 2
+      conditions: []
+      action:
+        type: 60
+        stringParam: 
+        stageIdParam: 
+        intParam: 0
+        factionParam: 0
+        itemId: 0
+        itemType: 0
+      hideIfUnavailable: 0
+    - label: "\u0421\u043B\u0438\u0448\u043A\u043E\u043C \u043E\u043F\u0430\u0441\u043D\u043E"
+      targetNodeId: reject
+      condition:
+        type: 10
+        stringParam: 
+        stageIdParam: 
+        intParam: 0
+        factionParam: 0
+        questStateParam: 2
+      conditions: []
+      action:
+        type: 60
+        stringParam: 
+        stageIdParam: 
+        intParam: 0
+        factionParam: 0
+        itemId: 0
+        itemType: 0
+      hideIfUnavailable: 0
+    onEnterActions: []
+  - nodeId: quest_active
+    speaker:
+      speakerKind: 0
+      refId: "\u0438\u0449\u0438 \u0432\u043D\u0438\u043C\u0430\u0442\u0435\u043B\u044C\u043D\u043E!
+        \u0412\u0435\u0440\u043D\u0451\u0448\u044C\u0441\u044F \u043A\u043E\u0433\u0434\u0430
+        \u043D\u0430\u0439\u0434\u0451\u0448\u044C \u0430\u0440\u0442\u0435\u0444\u0430\u043A\u0442."
+    text: "\u0423\u0434\u0430\u0447\u0438"
+    portraitEmotion: neutral
+    edges:
+    - label: 'Npc: mira_01'
+      targetNodeId: "\u041F\u0440\u0438\u043D\u044F\u043B!"
+      condition:
+        type: 10
+        stringParam: 
+        stageIdParam: 
+        intParam: 0
+        factionParam: 0
+        questStateParam: 2
+      conditions: []
+      action:
+        type: 60
+        stringParam: 
+        stageIdParam: 
+        intParam: 0
+        factionParam: 0
+        itemId: 0
+        itemType: 0
+      hideIfUnavailable: 0
+    onEnterActions: []
+  - nodeId: done
+    speaker:
+      speakerKind: 0
+      refId: mira_01
+    text: "\u0411\u0443\u0434\u0443 \u0436\u0434\u0430\u0442\u044C \u0442\u0435\u0431\u044F
+      \u0441 \u043D\u0430\u0445\u043E\u0434\u043A\u043E\u0439. \u041D\u0435 \u043F\u043E\u0434\u0432\u0435\u0434\u0438!"
+    portraitEmotion: neutral
+    edges:
+    - label: "\u0414\u043E \u0432\u0441\u0442\u0440\u0435\u0447\u0438"
+      targetNodeId: end
+      condition:
+        type: 10
+        stringParam: 
+        stageIdParam: 
+        intParam: 0
+        factionParam: 0
+        questStateParam: 2
+      conditions: []
+      action:
+        type: 60
+        stringParam: 
+        stageIdParam: 
+        intParam: 0
+        factionParam: 0
+        itemId: 0
+        itemType: 0
+      hideIfUnavailable: 0
+    onEnterActions: []
+  - nodeId: greeting_end
+    speaker:
+      speakerKind: 0
+      refId: mira_01
+    text: "\u0417\u0430\u0445\u043E\u0434\u0438 \u0435\u0449\u0451! \u0423 \u043D\u0430\u0441
+      \u0442\u0443\u0442 \u0432\u0441\u0435\u0433\u0434\u0430 \u0435\u0441\u0442\u044C
+      \u0447\u0442\u043E-\u0442\u043E \u0438\u043D\u0442\u0435\u0440\u0435\u0441\u043D\u043E\u0435."
+    portraitEmotion: neutral
+    edges:
+    - label: "\u041F\u043E\u043A\u0430"
+      targetNodeId: end
+      condition:
+        type: 10
+        stringParam: 
+        stageIdParam: 
+        intParam: 0
+        factionParam: 0
+        questStateParam: 2
+      conditions: []
+      action:
+        type: 60
+        stringParam: 
+        stageIdParam: 
+        intParam: 0
+        factionParam: 0
+        itemId: 0
+        itemType: 0
+      hideIfUnavailable: 0
+    onEnterActions: []
+  localizationTable: {fileID: 0}

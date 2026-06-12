@@ -1,6 +1,6 @@
 # План разработки ММО "Project C: The Clouds" на Unity
 
-**Последнее обновление:** 11 июня 2026 г. | **Текущая версия:** `v0.0.22-exchange-system-complete`
+**Последнее обновление:** 13 июня 2026 г. | **Текущая версия:** `v0.0.23-csv-pipeline-complete`
 
 > **Что нового с прошлого обновления (10 июня 2026):** **Resources Exchanger (обменник ресурсов) — MVP завершён.** Мост между двумя системами предметов: pickable (инвентарь, 1 кг) ↔ boxed (склад, 100 кг). 4-я вкладка «Обменник» в MarketWindow. Pack: 100 осколков → 1 ящик на складе. Unpack: 1 ящик → 100 осколков в инвентарь. InventoryWorld.MAX_SLOTS увеличен до 1000 (конфигурируется в инспекторе). Исправлены: спавн scene-placed NetworkObject в BootstrapScene (OnServerStarted), PushSnapshot инвентаря и склада после каждой операции, группировка предметов по itemId в UI. 5 тикетов T-E01–T-E05, ~30 ч работы. См. `docs/Markets/Resources_exchanger/01_ANALYSIS.md`.
 >
@@ -321,6 +321,28 @@
 **Паттерн:** MarketServer (RPC hub) + ExchangeWorld (POCO) + tab в MarketWindow + config-driven (новые пары = запись в SO).
 
 **Документация:** `docs/Markets/Resources_exchanger/01_ANALYSIS.md` + `02_IMPLEMENTATION.md` + `03_FIXES_HISTORY.md`.
+
+### 1.13 NPC + Quests v2 (полная подсистема) ✅ ЗАВЕРШЕНО (M1–M19, 2026-06-09..13)
+**Цель:** Полноценная система квестов и диалогов с NPC, от создания данных до выполнения в игре и редакторского инструментария.
+
+| Компонент | Описание | Статус |
+|-----------|----------|--------|
+| `QuestServer` (NetworkBehaviour) | 9 RPC, tick 5s, rate-limit 30/min/client | ✅ M1-M4 |
+| `QuestWorld` (POCO) | Quest state, reputation, attitude, flags | ✅ M5-M8 |
+| `QuestClientState` (singleton) | 6 событий, 8 DTOs | ✅ M6 |
+| `DialogWindow` (UIDocument) | Typewriter 40cps, F-skip, 4 FIX'ы | ✅ M9 |
+| `QuestTracker` (HUD) | Track/Untrack, top-right | ✅ M10 |
+| `NpcController` | Trigger zone, E-key chain | ✅ M11 |
+| Persistence | JsonQuestStateRepository, immediate save | ✅ M8 |
+| Multi-stage | onEnter/onComplete, TryAdvanceStage | ✅ M13 |
+| ItemRegistry | SO, 32 items, id↔ItemData | ✅ M14 |
+| Toast | Queue-based, 4 события | ✅ M15 |
+| QuestDatabaseWindow | Editor: Tools→Quests→Explorer | ✅ M16 |
+| QuestNodeGraph | Readonly + Editable (M18) | ✅ M17-M18 |
+| CSV Import/Export | 3 входа (quests + npcs + dialogs), 1 кнопка | ✅ M19 |
+
+**Stats:** ~8400 строк кода, 106 NPC, 802 квеста, 2 DialogTree, 6 CSV файлов.
+**Документация:** `docs/NPC_quests/08_ROADMAP.md` + `docs/NPC_quests/M19_CSV_PIPELINE_v2.md`.
 
 ---
 
@@ -742,10 +764,18 @@ FixedUpdate (сервер):
    - ✅ Real-time objective evaluation (tick 5 sec) — `QuestTriggerService` + 8 trigger types
    - ✅ Persistence (M8) — `JsonQuestStateRepository`, immediate save на каждом state change
    - ✅ Editor tooling: `QuestDatabaseWindow` (M16), `QuestNodeGraph` (M17), **Editable** (M18), **CSV Import/Export** (M19)
+   - ✅ **M19 CSV pipeline — финал** (T-Q19.1–T-Q19.3, 2026-06-13):
+     - ✅ T-Q19.1 Авто-заполнение `questTurnIns` у NPC (последний stage + TalkToNpc → NPC)
+     - ✅ T-Q19.2 Авто-link `defaultDialogTree` (DialogTree `{npcId}_default` → NPC)
+     - ✅ T-Q19.3 `npcs.csv` — 9 колонок (services, attitudeLinks, attitudeMin/Max, greeting, voice, radius, showGreeting)
+   - ✅ **DialogCsvImporter** — 15 колонок treeId/fromNodeId/fromText/fromSpeaker/edgeLabel/toNodeId/conditions/actions. Создаёт DialogTree + auto-link к NPC.
+   - ✅ **NpcCsvImporter** — 9 колонок, batch-update существующих NPC.
+   - ✅ **Тестовые данные:** 106 NPC, 802 квеста, 2 DialogTree, 6 CSV файлов.
+   - ✅ Writer-документация: `docs/NPC_quests/M19_CSV_PIPELINE_v2.md` (26 KB, 7 разделов).
    - ✅ Quest toast notifications (M15): "📜 Accepted", "💚 +5", "💰 +200 CR", "✨ Найден квест"
    - ✅ Item ID single source of truth (M14): `ItemRegistry` SO + 32 items
    - ✅ **Торговые квесты:** ✅ **Quest ↔ Contract мост** — `ContractMetaBridge` (M7): NPC dialog actions `GiveItem`/`TakeItem` + ContractServer events (`ContractAcceptedEvent`/`ContractCompletedEvent`/`ContractFailedEvent`) → quest trigger evaluation
-   - ⏳ **Контент квестов (не доделано):** создать 5–10 production квестов (сейчас есть 5 тестовых: `collect_copper_ore`, `find_artifact`, `stage_intro_demo`, `stage_multi_demo`, `collect_copper`). **Авторский контент** — открыто.
+   - ✅ **Контент квестов (расширение):** 🟢 106 NPC, 802 квеста, 6 CSV файлов — bulk импорт завершён. **Авторский контент** — открыто (создание сюжетных квестов через CSV/Editor).
    - ⏳ **Ежедневные испытания** — не начато (post-MVP).
 
 2. **Визуальные улучшения:**

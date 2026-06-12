@@ -53,6 +53,11 @@ mono_crash.*
 /[Aa]ssets/_Project/Resources/_docs/
 /[Aa]ssets/_Project/Trade/Data/Items/
 /[Aa]ssets/_Project/Resources/Items/
+#quests_a lot of
+/[Aa]ssets/_Project/Quests/Data/Quests
+/[Aa]ssets/_Project/Quests/Data/Factions
+/[Aa]ssets/_Project/Quests/Data/Npcs
+/[Aa]ssets/_Project/Quests/Data/Import
 
 # Dev memory (local session state)
 .dev-memory/

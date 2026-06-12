@@ -1,10 +1,10 @@
 # GDD 21: Quest & Mission System
 
 **Game:** Project C: The Clouds
-**Version:** 1.1
-**Status:** 🟢 Реализовано (Этап 3-4 → DONE в 2026-06-09, M11-M19)
-**Last Updated:** 10.06.2026 (дизайн-контент без изменений с 06.04.2026; добавлена §16 «Реализация в коде»)
-**Author:** Game Design AI (дизайн), Mavis 2026-06-10 (раздел реализации)
+**Version:** 1.2
+**Status:** 🟢 Реализовано (M1–M19 CSV pipeline финал, 2026-06-13)
+**Last Updated:** 13.06.2026 (добавлен §16.5 CSV Pipeline финал M19)
+**Author:** Game Design AI (дизайн), Mavis 2026-06-13 (раздел реализации + CSV pipeline)
 
 ---
 
@@ -1041,6 +1041,7 @@ Fail_Chance = 1.0 - (player_skill / required_skill)
 |--------|------|-----------|-------|
 | 1.0 | 06.04.2026 | Инициализация документа | Game Design AI |
 | 1.1 | 10.06.2026 | Добавлена §16 «Реализация в коде» (M1–M19, 50+ тикетов). §1.3 обновлена статусами. Дизайн-контент без изменений. | Mavis |
+| 1.2 | 13.06.2026 | Добавлен §16.5 «CSV Pipeline финал» (M19 T-Q19.1–T-Q19.3). §16.3 обновлён. §16.2 дополнен. | Mavis |
 
 ---
 
@@ -1109,8 +1110,11 @@ Fail_Chance = 1.0 - (player_skill / required_skill)
 | `stage_intro_demo` | Демо: stage с onEnter (CSV-imported) | 1 | TalkToNpc | Тест onEnter actions |
 | `stage_multi_demo` | Тест: multi-stage (CSV-imported) | 2 | HaveItem + TalkToNpc | Тест nextStageId |
 | `collect_copper` | Собрать 3 медных руды (CSV-imported) | 1 | HaveItem | Через M19 CSV pipeline |
+| — | **bulk test: 802 квеста, 106 NPC** | — | — | Импорт через M19 CSV pipeline (`Tools > ProjectC > Quests > CSV Import/Export`). 3 формата: `*_quests.csv` (21 колонок), `*_npcs.csv` (9 колонок), `*_dialogs.csv` (15 колонок) |
 
 ### 16.3 Что открыто / TODO
+
+> **M19 CSV pipeline — ✅ DONE (2026-06-13).** T-Q19.1 (auto-populate `questTurnIns`), T-Q19.2 (auto-link `defaultDialogTree`), T-Q19.3 (`npcs.csv` 8 колонок) — все реализованы. См. §16.5 ниже.
 
 | # | Задача | Milestone | Приоритет | Ссылка |
 |---|---|---|---|---|
@@ -1131,6 +1135,23 @@ Fail_Chance = 1.0 - (player_skill / required_skill)
 - **`docs/NPC_quests/old_session_log/99_FINAL_STATUS.md`** — итоговый статус 2026-06-09 (M1–M19 done)
 - **`docs/NPC_quests/02_V2_ARCHITECTURE.md`** — namespace layout, server/DTO/persistence pitfalls
 - **`docs/MMO_Development_Plan.md`** — общий план проекта (Этап 4.1 = квесты, статус ✅)
+
+### 16.5 CSV Pipeline финал (M19 T-Q19.1–T-Q19.3, 2026-06-13)
+
+| Подтикет | Что | Файлы |
+|----------|-----|-------|
+| T-Q19.1 | Auto-populate `questTurnIns` для каждого NPC (последний stage + TalkToNpc) | `QuestCsvImporter.cs` |
+| T-Q19.2 | Auto-link `defaultDialogTree` если DialogTree с именем `{npcId}_default` существует | `QuestCsvImporter.cs` |
+| T-Q19.3 | `npcs.csv` — 8 колонок (services, attitudeLinks, attitudeMin/Max, greetingText, voicePrefix, interactionRadius, showGreeting) | `NpcCsvImporter.cs` (новый, 395 строк) |
+
+**Итого по M19 CSV pipeline:**
+- **3 входных формата:** `*_quests.csv` (21 колонка), `*_npcs.csv` (9 колонок), `*_dialogs.csv` (15 колонок)
+- **DialogCsvImporter** — дерево диалогов: treeId, fromNodeId, fromText, fromSpeaker, edgeLabel, toNodeId, 11 условия, 17 действий
+- **NpcCsvImporter** — batch-update NPC: services (Trade,Repair,Refuel,Restock,Banking,Healing), attitudeLinks (FactionId:delta), greeting, voice
+- **Auto-обнаружение:** `*_dialogs.csv` и `*_npcs.csv` подхватываются автоматически если лежат рядом с `*_quests.csv`
+- **Примеры:** `Assets/_Project/Quests/Import/{example_quests,example_npcs,example_dialogs}.csv`
+- **Writer-документация:** `docs/NPC_quests/M19_CSV_PIPELINE_v2.md` (26 KB, 7 разделов для content writer'a)
+- **Тестовые данные:** 106 NPC, 802 квеста — 1 кнопка импорт
 
 ---
 

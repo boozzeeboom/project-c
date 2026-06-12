@@ -16,6 +16,11 @@ namespace ProjectC.Quests.Editor
     public class QuestCsvWindow : EditorWindow
     {
         private TextField _csvPathField;
+        private TextField _dialogsCsvField;
+        private TextField _npcsCsvField;
+        private Toggle _importQuestsToggle;
+        private Toggle _autoCreateNpcsToggle;
+        private Toggle _autoCreateDialogsToggle;
         private ListView _previewList;
         private Label _statusLabel;
         private List<PreviewRow> _previewData = new List<PreviewRow>();
@@ -83,6 +88,61 @@ namespace ProjectC.Quests.Editor
             fileRow.Add(importBtn);
 
             root.Add(fileRow);
+
+            // ---- Options section (T6) ----
+            var optionsHeader = new Label("Import Options");
+            optionsHeader.style.fontSize = 12;
+            optionsHeader.style.unityFontStyleAndWeight = FontStyle.Bold;
+            optionsHeader.style.marginTop = 6;
+            optionsHeader.style.marginBottom = 2;
+            root.Add(optionsHeader);
+
+            var optionsBox = new VisualElement();
+            optionsBox.style.paddingLeft = 12;
+            optionsBox.style.paddingBottom = 4;
+            optionsBox.style.borderBottomWidth = 1;
+            optionsBox.style.borderBottomColor = new StyleColor(new Color(0.3f, 0.3f, 0.3f, 0.5f));
+
+            _importQuestsToggle = new Toggle("Import Quests") { value = true };
+            _importQuestsToggle.tooltip = "Create/update QuestDefinition assets from CSV";
+            optionsBox.Add(_importQuestsToggle);
+
+            _autoCreateNpcsToggle = new Toggle("Auto-create missing NPCs") { value = true };
+            _autoCreateNpcsToggle.tooltip = "If CSV references NPC that doesn't exist, create a default NpcDefinition asset";
+            optionsBox.Add(_autoCreateNpcsToggle);
+
+            _autoCreateDialogsToggle = new Toggle("Auto-create Dialogs") { value = true };
+            _autoCreateDialogsToggle.tooltip = "If checkbox is on, look for dialogs.csv next to the quests CSV";
+            optionsBox.Add(_autoCreateDialogsToggle);
+
+            var dialogsRow = new VisualElement();
+            dialogsRow.style.flexDirection = FlexDirection.Row;
+            dialogsRow.style.marginLeft = 18;
+            _dialogsCsvField = new TextField("dialogs.csv") { value = "" };
+            _dialogsCsvField.style.flexGrow = 1;
+            _dialogsCsvField.tooltip = "Optional: path to dialogs.csv. If empty, only auto-NPCs are created (default dialogs later)";
+            dialogsRow.Add(_dialogsCsvField);
+            var dialogsBrowseBtn = new Button(BrowseDialogsFile) { text = "..." };
+            dialogsBrowseBtn.style.marginLeft = 2;
+            dialogsBrowseBtn.style.width = 30;
+            dialogsRow.Add(dialogsBrowseBtn);
+            optionsBox.Add(dialogsRow);
+
+            // T-Q19.3: npcs.csv row
+            var npcsRow = new VisualElement();
+            npcsRow.style.flexDirection = FlexDirection.Row;
+            npcsRow.style.marginLeft = 18;
+            _npcsCsvField = new TextField("npcs.csv") { value = "" };
+            _npcsCsvField.style.flexGrow = 1;
+            _npcsCsvField.tooltip = "Optional: path to npcs.csv (services, attitude, greeting, voice)";
+            npcsRow.Add(_npcsCsvField);
+            var npcsBrowseBtn = new Button(BrowseNpcsFile) { text = "..." };
+            npcsBrowseBtn.style.marginLeft = 2;
+            npcsBrowseBtn.style.width = 30;
+            npcsRow.Add(npcsBrowseBtn);
+            optionsBox.Add(npcsRow);
+
+            root.Add(optionsBox);
 
             // Preview list
             _previewList = new ListView();
@@ -153,6 +213,40 @@ namespace ProjectC.Quests.Editor
             {
                 _csvPathField.value = path;
                 PreviewCsv();
+                // T-Q7: auto-fill dialogs.csv path if it exists next to quests.csv
+                string questDir = System.IO.Path.GetDirectoryName(path);
+                string questBase = System.IO.Path.GetFileNameWithoutExtension(path);
+                // If quests file is "foo.csv" → look for "foo_dialogs.csv" and "foo_npcs.csv"
+                string dialogPath = System.IO.Path.Combine(questDir, questBase + "_dialogs.csv");
+                if (!System.IO.File.Exists(dialogPath))
+                {
+                    // Otherwise look for any *_dialogs.csv in same folder
+                    var dir = new System.IO.DirectoryInfo(questDir);
+                    if (dir.Exists)
+                    {
+                        var found = dir.GetFiles("*_dialogs.csv");
+                        if (found.Length > 0) dialogPath = found[0].FullName;
+                    }
+                }
+                if (System.IO.File.Exists(dialogPath))
+                {
+                    _dialogsCsvField.value = dialogPath;
+                }
+                // T-Q19.3: same for npcs.csv
+                string npcsPath = System.IO.Path.Combine(questDir, questBase + "_npcs.csv");
+                if (!System.IO.File.Exists(npcsPath))
+                {
+                    var dir = new System.IO.DirectoryInfo(questDir);
+                    if (dir.Exists)
+                    {
+                        var found = dir.GetFiles("*_npcs.csv");
+                        if (found.Length > 0) npcsPath = found[0].FullName;
+                    }
+                }
+                if (System.IO.File.Exists(npcsPath))
+                {
+                    _npcsCsvField.value = npcsPath;
+                }
             }
         }
 
@@ -204,15 +298,54 @@ namespace ProjectC.Quests.Editor
                 return;
             }
 
-            var result = QuestCsvImporter.Import(_currentCsvPath);
-            var msg = $"Import complete:\n\nCreated: {result.created}\nUpdated: {result.updated}\nSkipped: {result.skipped}\n";
+            var options = new QuestCsvImporter.ImportOptions
+            {
+                importQuests = _importQuestsToggle.value,
+                autoCreateMissingNpcs = _autoCreateNpcsToggle.value,
+                autoCreateMissingDialogs = _autoCreateDialogsToggle.value,
+                dialogsCsvPath = _dialogsCsvField.value,
+            };
+
+            var result = QuestCsvImporter.Import(_currentCsvPath, options);
+
+            // T-Q19.3: also import npcs.csv if provided
+            if (!string.IsNullOrEmpty(_npcsCsvField.value) && System.IO.File.Exists(_npcsCsvField.value))
+            {
+                var npcResult = NpcCsvImporter.Import(_npcsCsvField.value);
+                result.warnings.Add($"[npcs.csv] Updated: {npcResult.npcsUpdated}, Skipped: {npcResult.npcsSkipped}");
+                foreach (var w in npcResult.warnings) result.warnings.Add($"[npcs.csv] {w}");
+                foreach (var e in npcResult.errors) result.errors.Add($"[npcs.csv] {e}");
+            }
+
+            var msg = $"Import complete:\n\nCreated: {result.created}\nUpdated: {result.updated}\nNPCs created: {result.npcsCreated}\nDialogs created: {result.dialogsCreated}\nSkipped: {result.skipped}\n";
             if (result.errors.Count > 0)
                 msg += $"\nErrors ({result.errors.Count}):\n" + string.Join("\n", result.errors.Take(5));
             if (result.warnings.Count > 0)
                 msg += $"\nWarnings ({result.warnings.Count}):\n" + string.Join("\n", result.warnings.Take(5));
 
             EditorUtility.DisplayDialog("Import CSV", msg, "OK");
-            _statusLabel.text = $"Import: {result.created} created, {result.updated} updated";
+            _statusLabel.text = $"Import: {result.created} created, {result.updated} updated, {result.npcsCreated} NPCs";
+        }
+
+        private void BrowseDialogsFile()
+        {
+            var path = EditorUtility.OpenFilePanel("Select dialogs.csv", "Assets/_Project/Quests/Import", "csv");
+            if (!string.IsNullOrEmpty(path))
+            {
+                _dialogsCsvField.value = path;
+                // Auto-fill from same folder if it's a 'dialogs.csv' next to quests
+                if (string.IsNullOrEmpty(_csvPathField.value) && !string.IsNullOrEmpty(_currentCsvPath))
+                    _csvPathField.value = _currentCsvPath;
+            }
+        }
+
+        private void BrowseNpcsFile()
+        {
+            var path = EditorUtility.OpenFilePanel("Select npcs.csv", "Assets/_Project/Quests/Import", "csv");
+            if (!string.IsNullOrEmpty(path))
+            {
+                _npcsCsvField.value = path;
+            }
         }
 
         private void ExportAllQuests()

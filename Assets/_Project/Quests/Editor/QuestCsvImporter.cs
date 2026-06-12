@@ -18,48 +18,128 @@ namespace ProjectC.Quests.Editor
     public static class QuestCsvImporter
     {
         private const string QUESTS_FOLDER = "Assets/_Project/Quests/Data/Quests";
+        private const string NPCS_FOLDER = "Assets/_Project/Quests/Data/Npcs";
+        private const string DIALOGS_FOLDER = "Assets/_Project/Quests/Data/Dialogs";
+
+        /// <summary>Опции импорта — пользователь выбирает через checkbox'ы.</summary>
+        public class ImportOptions
+        {
+            public bool importQuests = true;
+            public bool autoCreateMissingNpcs = true;
+            public bool autoCreateMissingDialogs = true;  // создаёт минимальный dialog
+            public string dialogsCsvPath;                // опционально: путь к dialogs.csv
+        }
 
         public class ImportResult
         {
             public int created;
             public int updated;
+            public int npcsCreated;
+            public int dialogsCreated;
             public int skipped;
             public List<string> errors = new List<string>();
             public List<string> warnings = new List<string>();
         }
 
         /// <summary>Import CSV file → QuestDefinition.asset.</summary>
-        public static ImportResult Import(string csvPath)
+        public static ImportResult Import(string csvPath, ImportOptions options = null)
         {
             var result = new ImportResult();
+            if (options == null) options = new ImportOptions();
 
             // 1. Parse CSV
             var (rows, header, parseErrors) = QuestCsvParser.ParseFile(csvPath);
             result.errors.AddRange(parseErrors);
             if (rows.Count == 0) return result;
 
-            // 2. Cross-validate (optional, not blocking)
+            // 2. Cross-validate (warnings only)
             QuestCsvValidator.CrossValidate(rows, result.errors);
 
-            // 3. Group by questId
-            var questGroups = rows
-                .Where(r => !r.HasError && !string.IsNullOrEmpty(r.Get("questId")))
-                .GroupBy(r => r.Get("questId").Trim(), StringComparer.OrdinalIgnoreCase)
-                .ToList();
-
-            foreach (var group in questGroups)
+            // 3. Pre-load dialogs.csv (if path provided) — needed for defaultDialogTree linking in step 4.3
+            Dictionary<string, DialogTree> customDialogs = null;
+            if (options.autoCreateMissingDialogs && !string.IsNullOrEmpty(options.dialogsCsvPath) && File.Exists(options.dialogsCsvPath))
             {
-                try
+                customDialogs = ImportDialogsCsv(options.dialogsCsvPath, result);
+            }
+
+            // 4. Collect unique NPC ids referenced in CSV
+            var npcIds = CollectNpcIds(rows);
+            result.warnings.Add($"Found {npcIds.Count} unique NPC(s) referenced in CSV: {string.Join(", ", npcIds.Take(10))}");
+
+            // 5. Auto-create missing NPCs (if checkbox)
+            if (options.autoCreateMissingNpcs)
+            {
+                var npcOverrides = CollectNpcOverrides(rows);
+                foreach (var npcId in npcIds)
                 {
-                    ProcessQuest(group.ToList(), result);
+                    bool created;
+                    var (displayName, faction) = npcOverrides.TryGetValue(npcId, out var ov) ? ov : (null, FactionId.Neutral);
+                    EnsureNpc(npcId, out created, displayName, faction);
+                    if (created) result.npcsCreated++;
                 }
-                catch (Exception e)
+
+                // 5.1. T-Q19: populate questOffers for each NPC based on quests where they are the giver
+                var npcQuestMap = CollectNpcQuestOffers(rows);
+                foreach (var (npcId, questSet) in npcQuestMap)
                 {
-                    result.errors.Add($"Error processing quest '{group.Key}': {e.Message}");
+                    UpdateNpcQuestOffers(npcId, questSet);
+                }
+
+                // 5.2. T-Q19.1: populate questTurnIns (last stage + TalkToNpc = who accepts the quest)
+                var npcTurnInMap = CollectNpcQuestTurnIns(rows);
+                foreach (var (npcId, questSet) in npcTurnInMap)
+                {
+                    UpdateNpcQuestTurnIns(npcId, questSet);
+                }
+
+                // 5.3. T-Q19.2: auto-link defaultDialogTree for each NPC if matching dialog exists
+                if (customDialogs != null && customDialogs.Count > 0)
+                {
+                    foreach (var npcId in npcIds)
+                    {
+                        UpdateNpcDefaultDialog(npcId, customDialogs);
+                    }
                 }
             }
 
-            // 4. Trigger database rescan
+            // 6. Group by questId, process
+            var questGroups = options.importQuests
+                ? rows
+                    .Where(r => !r.HasError && !string.IsNullOrEmpty(r.Get("questId")))
+                    .GroupBy(r => r.Get("questId").Trim(), StringComparer.OrdinalIgnoreCase)
+                    .ToList()
+                : new List<IGrouping<string, QuestCsvRow>>();
+
+            if (options.importQuests)
+            {
+                foreach (var group in questGroups)
+                {
+                    try
+                    {
+                        ProcessQuest(group.ToList(), result, customDialogs);
+                    }
+                    catch (Exception e)
+                    {
+                        result.errors.Add($"Error processing quest '{group.Key}': {e.Message}");
+                    }
+                }
+            }
+
+            // 7. Auto-create default dialogs for each quest NPC (if checkbox, no customDialogs provided)
+            if (options.autoCreateMissingDialogs)
+            {
+                foreach (var group in questGroups)
+                {
+                    var quest = UnityEditor.AssetDatabase.LoadAssetAtPath<QuestDefinition>($"{QUESTS_FOLDER}/{group.Key.Trim()}.asset");
+                    if (quest == null) continue;
+                    foreach (var prereq in quest.prerequisites)
+                    {
+                        // For each prereq NPC, ensure it has a default dialog (if not exists)
+                    }
+                }
+            }
+
+            // 8. Trigger database rescan
             QuestDatabaseAutoDiscover.Rescan();
             AssetDatabase.SaveAssets();
             AssetDatabase.Refresh();
@@ -67,7 +147,262 @@ namespace ProjectC.Quests.Editor
             return result;
         }
 
-        private static void ProcessQuest(List<QuestCsvRow> rows, ImportResult result)
+        private static HashSet<string> CollectNpcIds(List<QuestCsvRow> rows)
+        {
+            var npcIds = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+            foreach (var row in rows)
+            {
+                var npcId = row.Get("npcId");
+                if (!string.IsNullOrEmpty(npcId)) npcIds.Add(npcId);
+                var prereq = row.Get("prereqQuest");
+                if (!string.IsNullOrEmpty(prereq))
+                {
+                    // prereq is questId, not npcId — skip
+                }
+            }
+            return npcIds;
+        }
+
+        /// <summary>
+        /// Build a map of npcId → set of questIds where this NPC is the **first TalkToNpc** in the quest.
+        /// T-Q19: NPC owns the quest if their npcId is referenced in stage 0 of the quest.
+        /// </summary>
+        private static Dictionary<string, HashSet<string>> CollectNpcQuestOffers(List<QuestCsvRow> rows)
+        {
+            var map = new Dictionary<string, HashSet<string>>(StringComparer.OrdinalIgnoreCase);
+
+            // Group rows by questId
+            var questGroups = rows
+                .Where(r => !string.IsNullOrEmpty(r.Get("questId")))
+                .GroupBy(r => r.Get("questId").Trim(), StringComparer.OrdinalIgnoreCase);
+
+            foreach (var group in questGroups)
+            {
+                var questId = group.Key;
+                // Get all rows for this quest, ordered by stageNum
+                var questRows = group.OrderBy(r => r.GetInt("stageNum", 0)).ToList();
+
+                // First stage: find which NPC is offered
+                var firstStageRows = questRows.Where(r => r.GetInt("stageNum", 0) == 0).ToList();
+                foreach (var row in firstStageRows)
+                {
+                    var npcId = row.Get("npcId");
+                    var objType = row.Get("objectiveType");
+                    // Only TalkToNpc objectives count as "quest offer" — that's the NPC who gives the quest
+                    if (string.IsNullOrEmpty(npcId) || objType != "TalkToNpc") continue;
+                    if (!map.ContainsKey(npcId)) map[npcId] = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+                    map[npcId].Add(questId);
+                }
+            }
+
+            return map;
+        }
+
+        /// <summary>
+        /// T-Q19.1: Build a map of npcId → set of questIds where this NPC is the **turn-in target**.
+        /// Rule: last stage + TalkToNpc objective = NPC who accepts the quest.
+        /// </summary>
+        private static Dictionary<string, HashSet<string>> CollectNpcQuestTurnIns(List<QuestCsvRow> rows)
+        {
+            var map = new Dictionary<string, HashSet<string>>(StringComparer.OrdinalIgnoreCase);
+
+            var questGroups = rows
+                .Where(r => !string.IsNullOrEmpty(r.Get("questId")))
+                .GroupBy(r => r.Get("questId").Trim(), StringComparer.OrdinalIgnoreCase);
+
+            foreach (var group in questGroups)
+            {
+                var questId = group.Key;
+                var questRows = group.ToList();
+                if (questRows.Count == 0) continue;
+
+                // Find max stageNum for this quest
+                int maxStage = questRows.Max(r => r.GetInt("stageNum", 0));
+                // Get rows from last stage
+                var lastStageRows = questRows.Where(r => r.GetInt("stageNum", 0) == maxStage).ToList();
+                foreach (var row in lastStageRows)
+                {
+                    var npcId = row.Get("npcId");
+                    var objType = row.Get("objectiveType");
+                    if (string.IsNullOrEmpty(npcId) || objType != "TalkToNpc") continue;
+                    if (!map.ContainsKey(npcId)) map[npcId] = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+                    map[npcId].Add(questId);
+                }
+            }
+
+            return map;
+        }
+
+        /// <summary>
+        /// Build a map of npcId → (displayName, faction) from CSV.
+        /// First row wins (per npcId). If column missing — empty/Neutral.
+        /// </summary>
+        private static Dictionary<string, (string displayName, FactionId faction)> CollectNpcOverrides(List<QuestCsvRow> rows)
+        {
+            var map = new Dictionary<string, (string, FactionId)>(StringComparer.OrdinalIgnoreCase);
+            foreach (var row in rows)
+            {
+                var npcId = row.Get("npcId");
+                if (string.IsNullOrEmpty(npcId)) continue;
+                if (map.ContainsKey(npcId)) continue; // first row wins
+
+                var name = row.Get("npcDisplayName");
+                if (string.IsNullOrEmpty(name))
+                {
+                    // Fallback: keep npcId as-is (user can re-import with explicit displayName)
+                    name = npcId;
+                }
+                var factionStr = row.Get("npcFaction");
+                FactionId faction = FactionId.Neutral;
+                if (!string.IsNullOrEmpty(factionStr))
+                {
+                    if (Enum.TryParse<FactionId>(factionStr, true, out var f)) faction = f;
+                    else if (factionStr.Equals("npcId", StringComparison.OrdinalIgnoreCase))
+                        faction = FactionId.Neutral; // special: "fallback to npcId" marker
+                }
+                map[npcId] = (name, faction);
+            }
+            return map;
+        }
+
+        /// <summary>
+        /// Update NPC's questOffers array with all questIds where this NPC is the quest giver.
+        /// Preserves existing questOffers that aren't in the new set (in case quest was removed).
+        /// </summary>
+        private static void UpdateNpcQuestOffers(string npcId, HashSet<string> newOffers)
+        {
+            if (newOffers == null || newOffers.Count == 0) return;
+            string assetPath = $"{NPCS_FOLDER}/{npcId}.asset";
+            var npc = AssetDatabase.LoadAssetAtPath<NpcDefinition>(assetPath);
+            if (npc == null) return;
+
+            var currentOffers = npc.questOffers?.ToList() ?? new List<string>();
+            var beforeCount = currentOffers.Count;
+            foreach (var qid in newOffers)
+            {
+                if (!currentOffers.Any(q => string.Equals(q, qid, StringComparison.OrdinalIgnoreCase)))
+                    currentOffers.Add(qid);
+            }
+            if (currentOffers.Count != beforeCount)
+            {
+                npc.questOffers = currentOffers.ToArray();
+                EditorUtility.SetDirty(npc);
+                Debug.Log($"[QuestCsvImporter] Updated NPC '{npcId}' questOffers: added {currentOffers.Count - beforeCount} new (total {currentOffers.Count})");
+            }
+        }
+
+        /// <summary>
+        /// T-Q19.1: Update NPC's questTurnIns array — quests that this NPC accepts (player turns them in).
+        /// </summary>
+        private static void UpdateNpcQuestTurnIns(string npcId, HashSet<string> newTurnIns)
+        {
+            if (newTurnIns == null || newTurnIns.Count == 0) return;
+            string assetPath = $"{NPCS_FOLDER}/{npcId}.asset";
+            var npc = AssetDatabase.LoadAssetAtPath<NpcDefinition>(assetPath);
+            if (npc == null) return;
+
+            var currentTurnIns = npc.questTurnIns?.ToList() ?? new List<string>();
+            var beforeCount = currentTurnIns.Count;
+            foreach (var qid in newTurnIns)
+            {
+                if (!currentTurnIns.Any(q => string.Equals(q, qid, StringComparison.OrdinalIgnoreCase)))
+                    currentTurnIns.Add(qid);
+            }
+            if (currentTurnIns.Count != beforeCount)
+            {
+                npc.questTurnIns = currentTurnIns.ToArray();
+                EditorUtility.SetDirty(npc);
+                Debug.Log($"[QuestCsvImporter] Updated NPC '{npcId}' questTurnIns: added {currentTurnIns.Count - beforeCount} new (total {currentTurnIns.Count})");
+            }
+        }
+
+        /// <summary>
+        /// T-Q19.2: Auto-link NPC's defaultDialogTree if a matching dialog exists.
+        /// Convention: dialog treeId = "{npcId}_default" (e.g. npc_002_default).
+        /// </summary>
+        private static void UpdateNpcDefaultDialog(string npcId, Dictionary<string, DialogTree> availableDialogs)
+        {
+            if (availableDialogs == null || availableDialogs.Count == 0) return;
+            string dialogKey = $"{npcId}_default";
+            if (!availableDialogs.TryGetValue(dialogKey, out var dialog)) return;
+            if (dialog == null) return;
+
+            string assetPath = $"{NPCS_FOLDER}/{npcId}.asset";
+            var npc = AssetDatabase.LoadAssetAtPath<NpcDefinition>(assetPath);
+            if (npc == null) return;
+
+            if (npc.defaultDialogTree != dialog)
+            {
+                npc.defaultDialogTree = dialog;
+                EditorUtility.SetDirty(npc);
+                Debug.Log($"[QuestCsvImporter] Linked NPC '{npcId}' → defaultDialogTree = '{dialogKey}'");
+            }
+        }
+
+        /// <summary>Ensure NpcDefinition asset exists. Returns whether it was newly created.</summary>
+        private static void EnsureNpc(string npcId, out bool created, string displayNameOverride = null, FactionId factionOverride = FactionId.Neutral)
+        {
+            created = false;
+            string assetPath = $"{NPCS_FOLDER}/{npcId}.asset";
+            var existing = AssetDatabase.LoadAssetAtPath<NpcDefinition>(assetPath);
+            if (existing != null)
+            {
+                // Update existing asset if we have better metadata (don't clobber portraits/prefabs)
+                bool updated = false;
+                if (!string.IsNullOrEmpty(displayNameOverride) && existing.displayName != displayNameOverride)
+                {
+                    existing.displayName = displayNameOverride;
+                    updated = true;
+                }
+                if (factionOverride != FactionId.Neutral && existing.faction != factionOverride)
+                {
+                    // Only update if explicit override
+                    existing.faction = factionOverride;
+                    updated = true;
+                }
+                if (updated)
+                {
+                    EditorUtility.SetDirty(existing);
+                    Debug.Log($"[QuestCsvImporter] Updated NPC '{npcId}' metadata (displayName/faction)");
+                }
+                return;
+            }
+
+            // Ensure folder exists
+            if (!AssetDatabase.IsValidFolder(NPCS_FOLDER))
+            {
+                var parent = "Assets/_Project/Quests/Data";
+                if (!AssetDatabase.IsValidFolder(parent))
+                    AssetDatabase.CreateFolder("Assets/_Project/Quests", "Data");
+                AssetDatabase.CreateFolder(parent, "Npcs");
+            }
+
+            // Create default NPC
+            var npc = ScriptableObject.CreateInstance<NpcDefinition>();
+            npc.npcId = npcId;
+            npc.displayName = !string.IsNullOrEmpty(displayNameOverride)
+                ? displayNameOverride
+                : npcId.Replace('_', ' ').Trim();
+            npc.faction = factionOverride;
+            npc.questOffers = new string[0];
+            AssetDatabase.CreateAsset(npc, assetPath);
+            created = true;
+            Debug.Log($"[QuestCsvImporter] Auto-created NPC '{npcId}' as '{npc.displayName}' (faction: {npc.faction}) at {assetPath}");
+        }
+
+        /// <summary>Parse dialogs.csv. Returns dialog by treeId.</summary>
+        private static Dictionary<string, DialogTree> ImportDialogsCsv(string path, ImportResult result)
+        {
+            var dialogResult = new DialogCsvImporter.ImportResult();
+            var dialogs = DialogCsvImporter.Import(path, dialogResult);
+            // Propagate dialog result to our result
+            result.dialogsCreated = dialogResult.treesCreated + dialogResult.treesUpdated;
+            foreach (var e in dialogResult.errors) result.errors.Add($"[dialogs.csv] {e}");
+            foreach (var w in dialogResult.warnings) result.warnings.Add($"[dialogs.csv] {w}");
+            return dialogs;
+        }
+
+        private static void ProcessQuest(List<QuestCsvRow> rows, ImportResult result, Dictionary<string, DialogTree> customDialogs = null)
         {
             var firstRow = rows[0];
             var questId = firstRow.Get("questId").Trim();

@@ -1,0 +1,2 @@
+questId,displayName,description,faction,oneShot,prereqQuest,stageNum,stageId,objectiveType,objectiveId,itemName,npcId,npcDisplayName,npcFaction,qty,onCompleteActions,rewardCR,rewardRep
+test_npc_name,Тест NPC имени,Проверить что displayName применился,,n,,0,talk,HaveItem,obj_test,Медная руда,npc_002,Мистер Фринли,GuildOfSuccess,3,,100,

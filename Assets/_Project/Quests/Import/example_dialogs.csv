@@ -1,0 +1,10 @@
+treeId,fromNodeId,fromText,fromSpeaker,edgeLabel,toNodeId,hideIfUnavailable,conditionType,conditionStringParam,conditionIntParam,conditionFactionParam,actionType,actionStringParam,actionIntParam,actionFactionParam
+mira_default,greeting,Привет, путешественник! Что привело тебя сюда?,Npc: mira_01,Я просто осматриваюсь,greeting_end,FALSE,,,,,,
+mira_default,greeting,Привет, путешественник! Что привело тебя сюда?,Npc: mira_01,У меня есть работа для тебя,offer_quest,TRUE,QuestCompleted,stage_intro demo,,OfferQuest,find_artifact,,
+mira_default,greeting,Привет, путешественник! Что привело тебя сюда?,Npc: mira_01,У меня есть работа для тебя,offer_quest,FALSE,,,,OfferQuest,find_artifact,,
+mira_default,offer_quest,У меня есть задание. Найди древний артефакт в руинах к северу. Это опасно.,Npc: mira_01,Я согласен!,quest_active,FALSE,,,,,,
+mira_default,offer_quest,У меня есть задание. Найди древний артефакт в руинах к северу. Это опасно.,Npc: mira_01,Слишком опасно,reject,FALSE,,,,,,
+mira_default,quest_active,Удачи, ищи внимательно! Вернёшься когда найдёшь артефакт.,Npc: mira_01,Принял!,done,FALSE,,,,,,
+mira_default,done,Буду ждать тебя с находкой. Не подведи!,Npc: mira_01,До встречи,end,FALSE,,,,,,
+mira_default,greeting_end,Заходи ещё! У нас тут всегда есть что-то интересное.,Npc: mira_01,Пока,end,FALSE,,,,,,
+mira_default,end,,,,Player,Закончить разговор,,FALSE,,,,EndConversation,,

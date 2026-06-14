@@ -1941,6 +1941,32 @@
 
   var loaded = false;
 
+  function setHash(hash, title) {
+    /* Set hash on current page */
+    if (history.pushState) {
+      history.pushState(null, '', hash || (location.pathname + location.search));
+    }
+    /* Try parent frame (same-origin) */
+    try {
+      if (window.parent && window.parent !== window && window.parent.history.pushState) {
+        window.parent.history.pushState(null, title || '', hash || (window.parent.location.pathname + window.parent.location.search));
+      }
+    } catch(e) { /* cross-origin — silent */ }
+    /* Notify parent frame (cross-origin) */
+    try {
+      if (window.parent && window.parent !== window) {
+        window.parent.postMessage({ type: 'collab-hash', hash: hash }, '*');
+      }
+    } catch(e) {}
+  }
+
+  /* Listen for postMessage from parent (WordPress + GitHub Pages bridge) */
+  window.addEventListener('message', function(ev) {
+    if (ev.data && ev.data.type === 'collab-open') {
+      window.toggleCollab();
+    }
+  });
+
   window.toggleCollab = function() {
     var isOpen = SECTION.classList.contains('collab-section--open');
     if (!isOpen && !loaded) {
@@ -1970,20 +1996,37 @@
       setTimeout(function() {
         SECTION.scrollIntoView({ behavior: 'smooth', block: 'start' });
       }, 100);
-      if (history.pushState) {
-        history.pushState(null, '', '#team');
-      }
+      setHash('#team', 'Project C — команда');
     } else {
-      if (history.pushState && location.hash === '#team') {
-        history.pushState(null, '', location.pathname + location.search);
-      }
+      setHash(null);
     }
   };
 
-  /* Auto-open if URL has #team hash */
-  if (location.hash === '#team') {
+  /* Detect #team hash from current page OR parent frame */
+  function detectTeamHash() {
+    /* Check own hash */
+    if (location.hash === '#team') return true;
+    /* Check parent hash (same-origin) */
+    try {
+      if (window.parent && window.parent !== window && window.parent.location.hash === '#team') return true;
+    } catch(e) { /* cross-origin — ignore */ }
+    return false;
+  }
+
+  /* Auto-open if #team detected */
+  if (detectTeamHash()) {
     setTimeout(function() { window.toggleCollab(); }, 500);
   }
+
+  /* Watch for hash changes (same page or same-origin parent) */
+  window.addEventListener('hashchange', function() {
+    if (location.hash === '#team') {
+      /* If not already open, open it */
+      if (!SECTION.classList.contains('collab-section--open')) {
+        window.toggleCollab();
+      }
+    }
+  });
 })();
 </script>
 

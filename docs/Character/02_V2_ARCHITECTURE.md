@@ -157,14 +157,16 @@ public class StatGrowthConfig : ScriptableObject {
     [Tooltip("XP_for_next_tier = baseXp * (growthRate ^ currentTier)")]
     [SerializeField, Range(1.01f, 3.0f)] private float _growthRate = 1.5f;
 
-    [Header("Global multiplier (for testing)")]
+    [Header("Global multiplier (for testing) — без upper bound (Q1.3: 1 = ориентир на норму)")]
     [Tooltip("Applied to ALL XP gains. 1.0 = no change. Tunable for season/event buffs.")]
-    [SerializeField, Range(0.01f, 10f)] private float _globalMultiplier = 1.0f;
+    [SerializeField, Min(0f)] private float _globalMultiplier = 1.0f;
 
-    [Header("Per-stat multipliers (default 1.0)")]
-    [SerializeField, Min(0f)] private float _strengthMultiplier = 1.0f;
-    [SerializeField, Min(0f)] private float _dexterityMultiplier = 1.0f;
-    [SerializeField, Min(0f)] private float _intelligenceMultiplier = 1.0f;
+    [Header("Debug")]
+    [Tooltip("Enable verbose logging (Q10.5)")]
+    [SerializeField] private bool _debugLogging = false;
+
+    [Header("Track total walked/piloted distance (for achievements — Q1.5)")]
+    [SerializeField] private bool _trackTotalDistance = true;
 
     // === Public API ===
     public float XpForNextTier(int currentTier) {
@@ -173,14 +175,8 @@ public class StatGrowthConfig : ScriptableObject {
     }
 
     public float ApplyGlobalMultiplier(float xp) => xp * _globalMultiplier;
-    public float ApplyStatMultiplier(StatType stat, float xp) {
-        return xp * (stat switch {
-            StatType.Strength => _strengthMultiplier,
-            StatType.Dexterity => _dexterityMultiplier,
-            StatType.Intelligence => _intelligenceMultiplier,
-            _ => 1f,
-        });
-    }
+    public bool DebugLogging => _debugLogging;
+    public bool TrackTotalDistance => _trackTotalDistance;
 }
 ```
 

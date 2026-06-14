@@ -165,8 +165,8 @@ public override void OnNetworkSpawn() {
 ```csharp
 private void OnMiningCompleted(MiningCompletedEvent ev) {
     if (ev.PlayerId == 0 || ev.Quantity <= 0) return;
-    var stat = _config.GetStatFor(MiningXpSource.Mining);
-    float xp = _config.GetBaseXp(MiningXpSource.Mining) * ev.Quantity;
+    var stat = _config.GetStatFor(XpSource.Mining);
+    float xp = _config.GetBaseXp(XpSource.Mining) * ev.Quantity;
     ApplyXp(ev.PlayerId, stat, xp);
 }
 
@@ -185,66 +185,117 @@ private void OnDialogVisited(DialogVisitedEvent ev) {
     if (!CanGainDialogXp(ev.PlayerId, ev.NpcId)) return;
     MarkDialogXpGained(ev.PlayerId, ev.NpcId);
 
-    var stat = _config.GetStatFor(MiningXpSource.Dialog);
-    float xp = _config.GetBaseXp(MiningXpSource.Dialog);
+    var stat = _config.GetStatFor(XpSource.Dialog);
+    float xp = _config.GetBaseXp(XpSource.Dialog);
     ApplyXp(ev.PlayerId, stat, xp);
 }
 ```
 
 ---
 
-## 3. NPC-spam protection
+## 3. Unique-event tracking (НЕ cooldown — Q1.4)
 
-### 3.1 Проблема
+### 3.1 Проблема (ОТВЕТ ПОЛЬЗОВАТЕЛЯ)
 
-Игрок может подойти к NPC, поговорить → получить +1 XP → быстро повторить → фарм XP бесконечно.
+**Решение пользователя (Q1.4, дословно):**
+> "здесь не должен быть кулдаун. должен быть per uniq dialog\нажатие или т.п. тоесть когда есть уникальное событие, встретил впервые - даются очки, поговрил на новую тему - которую раньше не жал, даются очки, сделал квест - даются очки и т.п. в такой системе не нужен кулдаун. так как любой кулдаун объодится автокликером."
 
-### 3.2 Решение
+**Принцип:** XP даётся только за **уникальные события**, не за повторения. Никакого cooldown — его обходят автокликеры. Каждое уникальное событие = +1 (или +N) XP, и больше никогда.
 
-**Подход:** Cooldown per `(playerId, npcId)`. Default 60 секунд.
+### 3.2 Какие события считаются "уникальными"
 
-**Структура:**
+| Событие | Уникальный ключ | +XP |
+|---------|-----------------|-----|
+| Встретил NPC впервые | `(playerId, npcId)` | +1 INT |
+| Поговорил с NPC на новую тему | `(playerId, npcId, dialogNodeId)` | +1 INT |
+| Завершил квест | `(playerId, questId)` | уже считается через `QuestCompletedEvent` (см. Q1.4 — это covered) |
+| Сел в корабль впервые | `(playerId, shipTypeId)` | (если нужно — будущее) |
+| Зашёл в новую зону | `(playerId, sceneId)` | (если нужно — будущее) |
+
+**Минимальный MVP:** только `(playerId, npcId)` — встретил NPC впервые = +1 INT. Дальше расширяем.
+
+### 3.3 Реализация — Set<string> с уникальными ключами
+
 ```csharp
-private Dictionary<ulong, Dictionary<string, float>> _lastDialogPerPlayerNpc = new();
-```
+// Per-player, per-... уникальные ключи
+private Dictionary<ulong, HashSet<string>> _uniqueEventsPerPlayer = new();
+// Где ключ может быть: $"{npcId}" или $"{npcId}:{dialogNodeId}" и т.д.
 
-**Методы:**
-```csharp
-private bool CanGainDialogXp(ulong clientId, string npcId) {
-    if (!_lastDialogPerPlayerNpc.TryGetValue(clientId, out var perNpc)) return true;
-    if (!perNpc.TryGetValue(npcId, out var lastTimestamp)) return true;
-    float now = (float)NetworkManager.Singleton.ServerTime.Time;
-    return (now - lastTimestamp) >= _config.DialogXpCooldownSeconds;
-}
-
-private void MarkDialogXpGained(ulong clientId, string npcId) {
-    if (!_lastDialogPerPlayerNpc.TryGetValue(clientId, out var perNpc)) {
-        perNpc = new Dictionary<string, float>();
-        _lastDialogPerPlayerNpc[clientId] = perNpc;
+private bool IsUniqueEvent(ulong clientId, string eventKey) {
+    if (!_uniqueEventsPerPlayer.TryGetValue(clientId, out var set)) {
+        set = new HashSet<string>();
+        _uniqueEventsPerPlayer[clientId] = set;
     }
-    perNpc[npcId] = (float)NetworkManager.Singleton.ServerTime.Time;
+    return set.Add(eventKey);  // returns true если НОВЫЙ, false если уже был
 }
 ```
 
-### 3.3 Persistence
+### 3.4 Handler для DialogVisitedEvent
 
-**При load** (OnPlayerConnected или repository restore):
-- Загружаем `dialogCooldowns[]` из `CharacterSaveData`
-- Ресторим в `_lastDialogPerPlayerNpc`
+```csharp
+private void OnDialogVisited(DialogVisitedEvent ev) {
+    if (ev.PlayerId == 0 || string.IsNullOrEmpty(ev.NpcId)) return;
 
-**При save** (periodic или on disconnect):
-- Snapshot `_lastDialogPerPlayerNpc` → `dialogCooldowns[]` в `CharacterSaveData`
+    // Q1.4: уникальное событие — встретил NPC впервые ИЛИ поговорил на новую тему
+    // eventKey включает dialogNodeId если есть, иначе просто npcId
+    string eventKey = string.IsNullOrEmpty(ev.NodeId) ? ev.NpcId : $"{ev.NpcId}:{ev.NodeId}";
 
-**Cleanup:** Если `_lastDialogPerPlayerNpc` распухает (много NPC'ов), периодически чистим записи старше 1 час.
+    if (!IsUniqueEvent(ev.PlayerId, eventKey)) {
+        if (_config.DebugLogging) {
+            Debug.Log($"[StatsServer] Player {ev.PlayerId} repeat dialog with {eventKey} — no XP");
+        }
+        return;  // уже было — НЕ даём XP
+    }
 
-### 3.4 Альтернативные подходы (отвергнуты)
+    // Новое уникальное событие — даём XP
+    var stat = _config.GetStatFor(XpSource.Dialog);
+    float xp = _config.GetBaseXp(XpSource.Dialog);
+    ApplyXp(ev.PlayerId, stat, xp);
+
+    if (_config.DebugLogging) {
+        Debug.Log($"[StatsServer] Player {ev.PlayerId} NEW unique dialog '{eventKey}' → +{xp} INT");
+    }
+}
+```
+
+### 3.5 Дополнительные уникальные источники XP (Phase 2)
+
+Сейчас в MVP — только DialogVisitedEvent. Phase 2 (не блокер):
+- **Discovered new location** — `WorldEventBus.Publish(new LocationDiscoveredEvent { PlayerId, LocationId })` → уникальный ключ
+- **Discovered new NPC** — то же (вместо простого dialog)
+- **First time in scene** — `OnSceneLoaded` в `NetworkManagerController` → unique key
+
+Все эти события идут через **тот же** `IsUniqueEvent` метод — просто другой eventKey.
+
+### 3.6 Persistence (в CharacterSaveData)
+
+**В CharacterSaveData** (см. `08_ROADMAP.md` T-P06):
+```csharp
+[Serializable]
+public class StatsSave {
+    // ... stats fields ...
+    public string[] uniqueDialogEvents = Array.Empty<string>();
+}
+```
+
+**При load** (OnPlayerConnected):
+```csharp
+_uniqueEventsPerPlayer[clientId] = new HashSet<string>(savedData.uniqueDialogEvents);
+```
+
+**При save** (periodic / disconnect):
+```csharp
+data.stats.uniqueDialogEvents = _uniqueEventsPerPlayer[clientId].ToArray();
+```
+
+### 3.7 Альтернативы (отвергнуты)
 
 | Подход | Почему нет |
 |--------|-----------|
-| Anti-spam только через `Time.realtimeSinceStartup` | drift между domain reloads |
-| Anti-spam на client side | легко bypass через RPC spoofing |
-| Anti-spam в QuestServer | смешивает concerns, нужна отдельная логика в StatsServer |
-| Полностью отключить dialog XP | слишком скучно для игрока |
+| Cooldown per (playerId, npcId) | обходится автокликером (Q1.4 пользователь явно отверг) |
+| Cooldown global | обходится переключением NPC |
+| Rate-limit в QuestServer | смешивает concerns |
+| Client-side tracking | bypass через RPC spoofing |
 
 ---
 
@@ -289,18 +340,36 @@ private void FixedUpdate() {
 }
 
 private void AccumulateWalkedXp(ulong clientId, float deltaDistance) {
+    // Q1.5: per 1m walked, настраиваемо, +track total
     if (!_walkedDistanceBuffer.TryGetValue(clientId, out var buffer)) buffer = 0f;
     buffer += deltaDistance;
+
+    // Зацемпить total walked для ачивок/трекеров (Q1.5)
+    if (_config.TrackTotalDistance) {
+        if (!_totalWalkedDistance.TryGetValue(clientId, out var total)) total = 0f;
+        total += deltaDistance;
+        _totalWalkedDistance[clientId] = total;
+    }
+
     if (buffer >= _config.WalkDistanceXpThreshold) {
         float overshoot = buffer - _config.WalkDistanceXpThreshold;
-        float xpAmount = _config.GetBaseXp(MiningXpSource.Walk) * (buffer / _config.WalkDistanceXpThreshold);
-        var stat = _config.GetStatFor(MiningXpSource.Walk);
+        float xpAmount = _config.GetBaseXp(XpSource.Walk) * (buffer / _config.WalkDistanceXpThreshold);
+        var stat = _config.GetStatFor(XpSource.Walk);
         ApplyXp(clientId, stat, xpAmount);
         _walkedDistanceBuffer[clientId] = overshoot;  // save remainder
     } else {
         _walkedDistanceBuffer[clientId] = buffer;
     }
 }
+
+// Q1.5: total walked/piloted distance (для ачивок и трекеров)
+private Dictionary<ulong, float> _totalWalkedDistance = new();
+private Dictionary<ulong, float> _totalPilotedDistance = new();
+
+public float GetTotalWalkedDistance(ulong clientId) =>
+    _totalWalkedDistance.TryGetValue(clientId, out var v) ? v : 0f;
+public float GetTotalPilotedDistance(ulong clientId) =>
+    _totalPilotedDistance.TryGetValue(clientId, out var v) ? v : 0f;
 ```
 
 **Важно:**
@@ -346,12 +415,20 @@ private Dictionary<ulong, float> _pilotDistanceBuffer = new();
 
 private void OnShipPilotTick(ShipPilotTickEvent ev) {
     if (ev.PlayerId == 0 || ev.DeltaDistance <= 0f) return;
+
+    // Q1.5: track total piloted distance
+    if (_config.TrackTotalDistance) {
+        if (!_totalPilotedDistance.TryGetValue(ev.PlayerId, out var total)) total = 0f;
+        total += ev.DeltaDistance;
+        _totalPilotedDistance[ev.PlayerId] = total;
+    }
+
     if (!_pilotDistanceBuffer.TryGetValue(ev.PlayerId, out var buffer)) buffer = 0f;
     buffer += ev.DeltaDistance;
     if (buffer >= _config.PilotDistanceXpThreshold) {
         float overshoot = buffer - _config.PilotDistanceXpThreshold;
-        float xpAmount = _config.GetBaseXp(MiningXpSource.Pilot) * (buffer / _config.PilotDistanceXpThreshold);
-        var stat = _config.GetStatFor(MiningXpSource.Pilot);
+        float xpAmount = _config.GetBaseXp(XpSource.Pilot) * (buffer / _config.PilotDistanceXpThreshold);
+        var stat = _config.GetStatFor(XpSource.Pilot);
         ApplyXp(ev.PlayerId, stat, xpAmount);
         _pilotDistanceBuffer[ev.PlayerId] = overshoot;
     } else {

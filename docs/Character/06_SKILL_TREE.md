@@ -184,6 +184,27 @@ public class SkillsServer : NetworkBehaviour {
         SendSnapshotToOwner(clientId);
     }
 
+    /// <summary>
+    /// Q3.4: free respec без потерь. Игрок может забыть любой learned skill в любой момент,
+    /// XP потраченное на learn НЕ возвращается (Q3.4: "без потерь" = без денежных потерь,
+    /// НЕ без потерь XP). После forget: убираем из learned, recompute stats (бонус снимается).
+    /// </summary>
+    [Rpc(SendTo.Server, RequireOwnership = true)]
+    public void RequestForgetSkillRpc(string skillId, RpcParams rpcParams = default) {
+        ulong clientId = rpcParams.Receive.SenderClientId;
+        if (!RateLimit(clientId)) return;
+
+        if (!SkillsWorld.Instance.TryForgetSkill(clientId, skillId, out var reason)) {
+            SendSkillResult(clientId, SkillResultDto.Denied(reason));
+            return;
+        }
+
+        SendSkillResult(clientId, SkillResultDto.Forgotten(skillId));
+        // Recompute stats (skill bonus removed)
+        StatsServer.Instance?.RecomputeAndSendSnapshot(clientId);
+        SendSnapshotToOwner(clientId);
+    }
+
     // === Server → Client ===
     private void SendSnapshotToOwner(ulong clientId) {
         if (!NetworkManager.Singleton.ConnectedClients.TryGetValue(clientId, out var client)) return;
@@ -206,7 +227,7 @@ public class SkillsServer : NetworkBehaviour {
 [CreateAssetMenu(fileName = "SkillsConfig", menuName = "Project C/Skills/Skills Config")]
 public class SkillsConfig : ScriptableObject {
     [Header("Default starting skills (auto-granted on connect)")]
-    [Tooltip("These skills are granted to new players automatically. Typically the ones with learnXpCost = 0.")]
+    [Tooltip("Q3.2: по решению пользователя — ПУСТОЙ массив. Игрок учит все skills с нуля сам. Если designer захочет starter skills — добавит в .asset.")]
     public SkillNodeConfig[] defaultSkills = Array.Empty<SkillNodeConfig>();
 
     [Header("Rate limit")]
@@ -316,6 +337,25 @@ public class SkillsWorld {
         // Здесь просто сигнализируем: skill добавлен в learned set.
     }
 
+    /// <summary>
+    /// Q3.4: free respec. Убирает skill из learned set. XP НЕ возвращается.
+    /// Down-stream skills (которые требуют этот skill как prereq) остаются
+    /// (даже если их prereq-chain сломан) — не делаем recursive cleanup.
+    /// </summary>
+    public bool TryForgetSkill(ulong clientId, string skillId, out string reason) {
+        reason = "";
+        if (!_skillsById.TryGetValue(skillId, out var skill)) {
+            reason = "Навык не найден"; return false;
+        }
+        var learned = GetLearnedSkillIds(clientId);
+        if (!learned.Contains(skillId)) {
+            reason = "Навык не изучен"; return false;
+        }
+        learned.Remove(skillId);
+        Debug.Log($"[SkillsWorld] Player {clientId} forgot skill '{skill.displayName}' (XP not refunded)");
+        return true;
+    }
+
     public SkillsSnapshotDto BuildSnapshot(ulong clientId) {
         var learned = GetLearnedSkillIds(clientId);
         return new SkillsSnapshotDto {
@@ -361,19 +401,31 @@ public class SkillsWorld {
 **-:** build error в runtime — `using UnityEditor.Experimental.GraphView;` не работает в player build
 **Вердикт:** ❌ НЕ используем в runtime
 
-#### Вариант B: Custom VisualElement + Painter2D
+#### Вариант B: Custom VisualElement + Painter2D (ПЕРВИЧНЫЙ — Q3.6)
 
-**+:** полный контроль, runtime API
-**-:** нужно ~600 строк кода, porting Editor-only кода в runtime, тестирование pan/zoom под тач
-**Вердикт:** реалистичен за 2 сессии, но не приоритет для MVP
+**ОТВЕТ ПОЛЬЗОВАТЕЛЯ:** "сразу с графом. нужно посмотреть насколько в игре это комофртно даже на мвп этапе."
 
-#### Вариант C: ListView + prerequisite-arrows (ДЁШЁВЫЙ MVP)
+**+:** полный контроль над rendering, нодовый граф с zoom/pan, connections visible, runtime API
+**-:** ~2 сессии (600+ строк), porting `QuestGraphView` (Editor-only) в runtime namespace, тестирование pan/zoom
+**Вердикт (обновлён):** ✅ ПЕРВИЧНЫЙ подход для MVP. Painter2D graph — сразу в MVP.
+
+**Подход:**
+1. Создать `Assets/_Project/UI/Skills/SkillTreeView.cs` — custom `VisualElement` + `generateVisualContent` callback + `Painter2D`
+2. Отделить от `QuestGraphView` (Editor-only): убрать `using UnityEditor`, переписать `AssetDatabase` paths на `Resources.Load`
+3. Nodes — реальные `VisualElement` с child labels, позиционируются через `style.left/top`
+4. Connections — `Painter2D` линии между parent и child
+5. Pan/zoom — через `MouseDownEvent` / `MouseMoveEvent` / `WheelEvent` (copy из `QuestGraphView`)
+6. SkillNodeConfig.treeX/treeY используются для layout позиционирования
+
+**MVP vs Phase 2:** Painter2D сразу в MVP (T-P14 объединит оба подхода — Painter2D graph + ListView fallback). Если Painter2D окажется неудобным — откат на ListView (Вариант C).
+
+#### Вариант C: ListView + prerequisite-arrows (FALLBACK)
 
 **+:** 1 сессия (300 строк), переиспользует `MakeQuestRow`/`BindQuestRow` pattern, чисто UI Toolkit
 **-:** не "дерево" визуально, просто список с метками prerequisites
-**Вердикт:** ✅ РЕКОМЕНДУЕТСЯ для MVP
+**Вердикт (обновлён):** ⬅️ FALLBACK, если Painter2D окажется некомфортным
 
-### 4.3 Вариант C — реализация
+### 4.3 Вариант C — реализация (fallback)
 
 **UXML:**
 ```xml
@@ -712,8 +764,8 @@ public enum SkillState : byte { Locked, Available, Learned }
 ## 8. Что НЕ делаем
 
 - ❌ Не используем `UnityEditor.Experimental.GraphView` в runtime
-- ❌ Не делаем Painter2D skill tree в MVP (Phase 2)
-- ❌ Не делаем `RequestForgetSkillRpc` в MVP (skills permanent)
+- ❌ Painter2D = **первичный подход** в MVP (Q3.6). ListView = fallback.
+- ✅ **RequestForgetSkillRpc = ВКЛЮЧЁН в MVP** (Q3.4 — free respec без потерь)
 - ❌ Не делаем drag-and-drop skill learning (MVP — кнопка "ИЗУЧИТЬ")
 - ❌ Не делаем tier-downgrade при XP spend (clamp at 0)
 - ❌ Не делаем skill leveling (1 skill learned = full effects, не partial)

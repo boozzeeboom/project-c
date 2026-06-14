@@ -160,7 +160,7 @@
 .sub-tab-btn.active { border-bottom-color: rgb(255, 220, 130) !important; }
 ```
 
-### 3.2 Stat-row с прогрессом
+### 3.2 Stat-row с прогрессом (Q4.2: fill + value, без тиров)
 
 ```css
 .stat-row-progress {
@@ -192,17 +192,24 @@
     transition-property: width !important;
     transition-duration: 0.3s !important;
 }
-.stat-progress-fill.tier-low    { background-color: rgba(180, 180, 200, 0.7) !important; }
-.stat-progress-fill.tier-mid    { background-color: rgba(100, 180, 255, 0.8) !important; }
-.stat-progress-fill.tier-high   { background-color: rgba(255, 200, 100, 0.9) !important; }
-.stat-progress-fill.tier-master { background-color: rgba(255, 130, 200, 0.95) !important; }
-.stat-tier-label {
-    color: rgb(255, 220, 130) !important;
-    font-size: 10px !important;
+/* Q4.3: Per-category цвета (STR=red, DEX=green, INT=blue) + glow по уровню */
+.stat-progress-fill.str { background-color: rgba(220, 80, 80, 0.85) !important; }
+.stat-progress-fill.dex { background-color: rgba(80, 200, 100, 0.85) !important; }
+.stat-progress-fill.int { background-color: rgba(80, 150, 255, 0.85) !important; }
+/* Glow: чем больше XP в тире, тем ярче (через opacity) */
+/* В BindStatRow: fill.style.opacity = Mathf.Lerp(0.5f, 1f, progressPct / 100f) */
+.stat-progress-fill.str.glow-high { box-shadow: 0 0 8px rgba(220, 80, 80, 0.5) !important; }
+.stat-progress-fill.dex.glow-high { box-shadow: 0 0 8px rgba(80, 200, 100, 0.5) !important; }
+.stat-progress-fill.int.glow-high { box-shadow: 0 0 8px rgba(80, 150, 255, 0.5) !important; }
+
+.stat-value {
+    width: 80px !important;
+    -unity-text-align: middle-right !important;
+    font-size: 12px !important;
     -unity-font-style: bold !important;
-    margin-right: 4px !important;
+    color: rgb(220, 220, 230) !important;
 }
-```
+/* stat-tier-label: убран (Q4.2: без тиров в UI) */
 
 ### 3.3 Skill rows
 
@@ -545,36 +552,98 @@ private void UnsubscribeStats() {
 ### 4.6 Handlers — Refresh*Cache + Rebuild*ListView
 
 ```csharp
-private void HandleStatsSnapshot(StatsSnapshotDto snap) {
+private void HandleStatsSnapshot(StatsSnapshotDto snap, bool isAfterEquip = false) {
+    // Q4.4: detect tier-up before updating display
+    bool hadTierUp = false;
+    StatType tierUpStat = StatType.Strength;
+    int tierUpValue = -1;
+    if (_lastStatsSnapshot.HasValue) {
+        var prev = _lastStatsSnapshot.Value;
+        if (snap.strengthTier > prev.strengthTier) { hadTierUp = true; tierUpStat = StatType.Strength; tierUpValue = snap.strengthTier; }
+        else if (snap.dexterityTier > prev.dexterityTier) { hadTierUp = true; tierUpStat = StatType.Dexterity; tierUpValue = snap.dexterityTier; }
+        else if (snap.intelligenceTier > prev.intelligenceTier) { hadTierUp = true; tierUpStat = StatType.Intelligence; tierUpValue = snap.intelligenceTier; }
+    }
     _lastStatsSnapshot = snap;
     if (_activeTab == "progression" && _activeProgressionTab == "stats") {
         RefreshStatsDisplay();
     }
+    // Q4.4: tier-up = 3 эффекта
+    if (hadTierUp && !isAfterEquip) {
+        HandleTierUp(tierUpStat, tierUpValue);
+    }
+}
+
+/// <summary>
+/// Q4.4: все 3 tier-up эффекта (toast + inline animation + progress bar pulse).
+/// Используем существующий QuestToast pattern для toast + coroutine для inline.
+/// </summary>
+private void HandleTierUp(StatType stat, int newTier) {
+    string statName = stat switch { StatType.Strength => "Сила", StatType.Dexterity => "Ловкость", StatType.Intelligence => "Интеллект", _ => "" };
+    string message = $"⚡ {statName} достигла {newTier}!";
+
+    // 1) Toast (reuse QuestToast или GatheringToast queue pattern)
+    // QuestToast.Instance?.Show(message, ToastKind.Success);
+
+    // 2) Inline animation: pulse on the stat row
+    var fill = stat switch {
+        StatType.Strength => _statStrFill,
+        StatType.Dexterity => _statDexFill,
+        StatType.Intelligence => _statIntFill,
+        _ => null,
+    };
+    if (fill != null) {
+        // Add class trigger pulse animation (tier-up-pulse)
+        fill.AddToClassList("tier-up-pulse");
+        StartCoroutine(RemovePulseAfterDelay(fill, 0.5f));
+    }
+
+    // 3) Progress bar плавно переливается (transition-duration 0.3s — уже работает через USS)
+    Debug.Log($"[CharacterWindow] Tier-up: {message}");
+}
+
+private System.Collections.IEnumerator RemovePulseAfterDelay(VisualElement fill, float delay) {
+    yield return new WaitForSecondsRealtime(delay);
+    fill.RemoveFromClassList("tier-up-pulse");
 }
 
 private void RefreshStatsDisplay() {
     if (_lastStatsSnapshot == null) return;
     var snap = _lastStatsSnapshot.Value;
 
+    // Q4.2: fill + value, БЕЗ тиров (убраны statStrTier/DexTier/IntTier)
+    string statPct(float current, float next) => next > 0
+        ? $"{current:F0} / {next:F0}" : $"{current:F0}";
+
     // Strength
-    _statStrTier.text = $"Тир {snap.strengthTier}";
     float strPct = snap.strengthXpForNextTier > 0 ? Mathf.Clamp01(snap.strength / snap.strengthXpForNextTier) * 100f : 0f;
     _statStrFill.style.width = new Length(strPct, LengthUnit.Percent);
-    _statStrValue.text = $"{snap.strength:F0} / {snap.strengthXpForNextTier:F0}";
-    UpdateTierClass(_statStrFill, snap.strengthTier);
+    _statStrValue.text = statPct(snap.strength, snap.strengthXpForNextTier);
+    // Q4.3: per-category color (css class "str"), glow по уровню
+    ApplyStatFillGlow(_statStrFill, strPct);
 
-    // Dexterity, Intelligence — аналогично
+    // Dexterity
+    float dexPct = snap.dexterityXpForNextTier > 0 ? Mathf.Clamp01(snap.dexterity / snap.dexterityXpForNextTier) * 100f : 0f;
+    _statDexFill.style.width = new Length(dexPct, LengthUnit.Percent);
+    _statDexValue.text = statPct(snap.dexterity, snap.dexterityXpForNextTier);
+    ApplyStatFillGlow(_statDexFill, dexPct);
+
+    // Intelligence
+    float intPct = snap.intelligenceXpForNextTier > 0 ? Mathf.Clamp01(snap.intelligence / snap.intelligenceXpForNextTier) * 100f : 0f;
+    _statIntFill.style.width = new Length(intPct, LengthUnit.Percent);
+    _statIntValue.text = statPct(snap.intelligence, snap.intelligenceXpForNextTier);
+    ApplyStatFillGlow(_statIntFill, intPct);
 }
 
-private void UpdateTierClass(VisualElement fill, int tier) {
-    fill.RemoveFromClassList("tier-low");
-    fill.RemoveFromClassList("tier-mid");
-    fill.RemoveFromClassList("tier-high");
-    fill.RemoveFromClassList("tier-master");
-    if (tier >= 15) fill.AddToClassList("tier-master");
-    else if (tier >= 10) fill.AddToClassList("tier-high");
-    else if (tier >= 5) fill.AddToClassList("tier-mid");
-    else fill.AddToClassList("tier-low");
+/// <summary>
+/// Q4.3: Continuous glow — от бледного к яркому + свечение при >50%.
+/// </summary>
+private void ApplyStatFillGlow(VisualElement fill, float pct) {
+    fill.style.opacity = Mathf.Lerp(0.5f, 1f, pct / 100f);
+    if (pct > 50f) {
+        fill.AddToClassList("glow-high");
+    } else {
+        fill.RemoveFromClassList("glow-high");
+    }
 }
 
 private void HandleEquipmentSnapshot(EquipmentSnapshotDto snap) {
@@ -870,7 +939,7 @@ private void CreateStatsClientState() {
 - ❌ Не используем `UnityEditor.Experimental.GraphView` в runtime
 - ❌ Не делаем Painter2D skill tree в MVP (Phase 2)
 - ❌ Не делаем drag-and-drop для equip (кнопки)
-- ❌ Не делаем tier-up notification visual feedback (MVP — просто обновить progress bar)
+- ❌ Не делаем tier-up notification visual feedback — **ДЕЛАЕМ ВСЕ 3 ЭФФЕКТА** (Q4.4: toast + inline animation + progress bar pulse)
 - ❌ Не делаем StatsServer.RecomputeAndSendSnapshot как Periodic (only on-change)
 - ❌ Не пишем `.meta` / `.asmdef` файлы
 - ❌ Не делаем tier-downgrade при XP spend (clamp at 0)

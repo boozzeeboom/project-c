@@ -17,137 +17,118 @@
 ```csharp
 [CreateAssetMenu(fileName = "StatsConfig", menuName = "Project C/Stats/Stats Config", order = 10)]
 public class StatsConfig : ScriptableObject {
-    [Header("Per-source base XP amounts")]
-    [Tooltip("XP gained per 1 mining resource gathered (default: 1 XP per item)")]
+    [Header("Per-action multipliers (NOT hardcoded — каждое действие имеет свой коэффициент)")]
+    [Tooltip("Множитель при добыче 1 единицы ресурса. 0.1 = +0.1 STR за каждый item")]
     [SerializeField, Min(0f)] private float _miningXpPerItem = 1f;
 
-    [Tooltip("XP gained per 1 craft completed")]
+    [Tooltip("Множитель за завершённый крафт. +N INT за каждый craft")]
     [SerializeField, Min(0f)] private float _craftingXpPerItem = 5f;
 
-    [Tooltip("XP gained per exchange operation (Pack or Unpack)")]
+    [Tooltip("Множитель за операцию обмена (Pack/Unpack). +N INT за op")]
     [SerializeField, Min(0f)] private float _exchangeXpPerOp = 2f;
 
-    [Tooltip("XP gained per market trade (Buy or Sell)")]
+    [Tooltip("Множитель за покупку/продажу. +N INT за op")]
     [SerializeField, Min(0f)] private float _marketXpPerOp = 1f;
 
-    [Tooltip("XP gained per quest accepted")]
+    [Tooltip("Множитель за принятый квест. +N INT за quest")]
     [SerializeField, Min(0f)] private float _questAcceptedXp = 3f;
 
-    [Tooltip("XP gained per quest completed")]
+    [Tooltip("Множитель за завершённый квест. +N INT за quest")]
     [SerializeField, Min(0f)] private float _questCompletedXp = 10f;
 
-    [Tooltip("XP gained per dialog with NPC (anti-spam cooldown applies)")]
+    [Tooltip("Множитель за уникальный dialog/нажатие. +N INT за unique event (НЕ cooldown)")]
     [SerializeField, Min(0f)] private float _dialogXpPerVisit = 1f;
 
-    [Tooltip("XP gained per jump (DEX)")]
+    [Tooltip("Множитель за прыжок. +N DEX за jump")]
     [SerializeField, Min(0f)] private float _jumpXp = 0.5f;
 
-    [Tooltip("XP multiplier per 10m walked (DEX) — 1.0 = +1 XP per 10m")]
-    [SerializeField, Min(0f)] private float _walkXpPer10m = 1f;
+    [Tooltip("Множитель за 1 метр пешей ходьбы. +N DEX за 1m (НЕ за 10m)")]
+    [SerializeField, Min(0f)] private float _walkXpPerMeter = 1f;
 
-    [Tooltip("XP multiplier per 100m piloted (INT) — 1.0 = +1 XP per 100m")]
-    [SerializeField, Min(0f)] private float _pilotXpPer100m = 1f;
+    [Tooltip("Множитель за 1 метр пилотирования. +N INT за 1m")]
+    [SerializeField, Min(0f)] private float _pilotXpPerMeter = 1f;
 
-    [Header("NPC dialog anti-spam")]
-    [Tooltip("Minimum seconds between dialog XP gains from same NPC (per player)")]
-    [SerializeField, Min(0f)] private float _dialogXpCooldownSeconds = 60f;
+    [Header("Source → Stat mapping (HARDCODED — user сказал "не нужна вариативность")")]
+    // Источник XP жёстко привязан к характеристике (Q10.3: mining → STR, walk → DEX, etc.).
+    // НЕ конфигурируется. Если когда-то нужно будет — добавим field здесь.
 
-    [Header("Distance tracking")]
+    [Header("Distance thresholds (для batched XP)")]
     [Tooltip("Walked distance accumulator threshold (meters). XP awarded per this much walked.")]
-    [SerializeField, Min(1f)] private float _walkDistanceXpThreshold = 10f;
+    [SerializeField, Min(1f)] private float _walkDistanceXpThreshold = 1f;
 
     [Tooltip("Piloted distance accumulator threshold (meters). XP awarded per this much piloted.")]
-    [SerializeField, Min(1f)] private float _pilotDistanceXpThreshold = 100f;
+    [SerializeField, Min(1f)] private float _pilotDistanceXpThreshold = 10f;
 
-    [Header("Per-stat mapping")]
-    [Tooltip("Which stat grows from which source")]
-    [SerializeField] private StatMapping _miningTarget = StatMapping.Strength;
-    [SerializeField] private StatMapping _craftingTarget = StatMapping.Intelligence;
-    [SerializeField] private StatMapping _exchangeTarget = StatMapping.Intelligence;
-    [SerializeField] private StatMapping _marketTarget = StatMapping.Intelligence;
-    [SerializeField] private StatMapping _questAcceptedTarget = StatMapping.Intelligence;
-    [SerializeField] private StatMapping _questCompletedTarget = StatMapping.Intelligence;
-    [SerializeField] private StatMapping _dialogTarget = StatMapping.Intelligence;
-    [SerializeField] private StatMapping _jumpTarget = StatMapping.Dexterity;
-    [SerializeField] private StatMapping _walkTarget = StatMapping.Dexterity;
-    [SerializeField] private StatMapping _pilotTarget = StatMapping.Intelligence;
+    [Header("Track total walked/piloted distance (for achievements)")]
+    [Tooltip("Зацемпить суммарную пройденную дистанцию. Используется для ачивок и трекеров (Q1.5)")]
+    [SerializeField] private bool _trackTotalDistance = true;
 
     [Header("Global multiplier (for testing / events)")]
-    [Tooltip("Applied to ALL XP gains. 1.0 = no change. Tunable for season/event buffs.")]
-    [SerializeField, Range(0.01f, 10f)] private float _globalMultiplier = 1f;
+    [Tooltip("Применяется ко ВСЕМ XP gains. 1.0 = норма. Без upper bound — 10 000 может быть мало для тестов (Q1.3).")]
+    [SerializeField, Min(0f)] private float _globalMultiplier = 1f;
 
     [Header("Stat growth formula (geometric, no cap by design)")]
     [Tooltip("XP required to advance from tier N to N+1 = baseXp * (growthRate^N)")]
     [SerializeField, Min(1f)] private float _tierBaseXp = 100f;
     [SerializeField, Range(1.01f, 3.0f)] private float _tierGrowthRate = 1.5f;
 
-    [Header("Per-stat growth multiplier (default 1.0 = no change)")]
-    [SerializeField, Min(0f)] private float _strengthMultiplier = 1f;
-    [SerializeField, Min(0f)] private float _dexterityMultiplier = 1f;
-    [SerializeField, Min(0f)] private float _intelligenceMultiplier = 1f;
-
     [Header("Tier up notification")]
     [Tooltip("Show toast notification when player advances tier")]
     [SerializeField] private bool _announceTierUp = true;
+
+    [Header("Debug")]
+    [Tooltip("Enable verbose logging in StatsServer/EquipmentServer/SkillsServer for WorldEventBus publications (Q10.5: вкл/выкл в инспекторе)")]
+    [SerializeField] private bool _debugLogging = false;
 
     // === Public API ===
     public float GlobalMultiplier => _globalMultiplier;
     public float TierBaseXp => _tierBaseXp;
     public float TierGrowthRate => _tierGrowthRate;
-    public float DialogXpCooldownSeconds => _dialogXpCooldownSeconds;
     public float WalkDistanceXpThreshold => _walkDistanceXpThreshold;
     public float PilotDistanceXpThreshold => _pilotDistanceXpThreshold;
+    public bool TrackTotalDistance => _trackTotalDistance;
     public bool AnnounceTierUp => _announceTierUp;
+    public bool DebugLogging => _debugLogging;
 
     public float XpForNextTier(int currentTier) =>
         currentTier < 0 ? _tierBaseXp : _tierBaseXp * Mathf.Pow(_tierGrowthRate, currentTier);
 
-    public StatType GetStatFor(MiningXpSource source) => MapToStat(source switch {
-        MiningXpSource.Mining => _miningTarget,
-        MiningXpSource.Crafting => _craftingTarget,
-        MiningXpSource.Exchange => _exchangeTarget,
-        MiningXpSource.Market => _marketTarget,
-        MiningXpSource.QuestAccepted => _questAcceptedTarget,
-        MiningXpSource.QuestCompleted => _questCompletedTarget,
-        MiningXpSource.Dialog => _dialogTarget,
-        MiningXpSource.Jump => _jumpTarget,
-        MiningXpSource.Walk => _walkTarget,
-        MiningXpSource.Pilot => _pilotTarget,
-        _ => StatMapping.Strength,
-    });
+    /// <summary>
+    /// HARDCODED source → stat mapping (Q10.3: не нужна вариативность).
+    /// Если когда-то понадобится mapping — добавим поле здесь.
+    /// </summary>
+    public StatType GetStatFor(XpSource source) => source switch {
+        XpSource.Mining           => StatType.Strength,
+        XpSource.Walk             => StatType.Dexterity,
+        XpSource.Jump             => StatType.Dexterity,
+        XpSource.Pilot            => StatType.Intelligence,
+        XpSource.Crafting         => StatType.Intelligence,
+        XpSource.Exchange         => StatType.Intelligence,
+        XpSource.Market           => StatType.Intelligence,
+        XpSource.QuestAccepted    => StatType.Intelligence,
+        XpSource.QuestCompleted   => StatType.Intelligence,
+        XpSource.Dialog           => StatType.Intelligence,
+        _ => StatType.Intelligence,
+    };
 
-    public float GetBaseXp(MiningXpSource source) => source switch {
-        MiningXpSource.Mining => _miningXpPerItem,
-        MiningXpSource.Crafting => _craftingXpPerItem,
-        MiningXpSource.Exchange => _exchangeXpPerOp,
-        MiningXpSource.Market => _marketXpPerOp,
-        MiningXpSource.QuestAccepted => _questAcceptedXp,
-        MiningXpSource.QuestCompleted => _questCompletedXp,
-        MiningXpSource.Dialog => _dialogXpPerVisit,
-        MiningXpSource.Jump => _jumpXp,
-        MiningXpSource.Walk => _walkXpPer10m,
-        MiningXpSource.Pilot => _pilotXpPer100m,
+    public float GetBaseXp(XpSource source) => source switch {
+        XpSource.Mining => _miningXpPerItem,
+        XpSource.Crafting => _craftingXpPerItem,
+        XpSource.Exchange => _exchangeXpPerOp,
+        XpSource.Market => _marketXpPerOp,
+        XpSource.QuestAccepted => _questAcceptedXp,
+        XpSource.QuestCompleted => _questCompletedXp,
+        XpSource.Dialog => _dialogXpPerVisit,
+        XpSource.Jump => _jumpXp,
+        XpSource.Walk => _walkXpPerMeter,
+        XpSource.Pilot => _pilotXpPerMeter,
         _ => 0f,
     };
 
     public float ApplyGlobalMultiplier(float xp) => xp * _globalMultiplier;
-    public float ApplyStatMultiplier(StatType stat, float xp) => xp * (stat switch {
-        StatType.Strength => _strengthMultiplier,
-        StatType.Dexterity => _dexterityMultiplier,
-        StatType.Intelligence => _intelligenceMultiplier,
-        _ => 1f,
-    });
-
-    private static StatType MapToStat(StatMapping m) => m switch {
-        StatMapping.Strength => StatType.Strength,
-        StatMapping.Dexterity => StatType.Dexterity,
-        StatMapping.Intelligence => StatType.Intelligence,
-        _ => StatType.Strength,
-    };
 }
 
-public enum StatMapping : byte { Strength = 0, Dexterity = 1, Intelligence = 2 }
-public enum MiningXpSource : byte {
+public enum XpSource : byte {
     Mining, Crafting, Exchange, Market, QuestAccepted, QuestCompleted,
     Dialog, Jump, Walk, Pilot
 }
@@ -158,13 +139,16 @@ public enum MiningXpSource : byte {
 **Файл:** `Assets/_Project/Resources/Stats/StatsConfig_Default.asset`
 
 Default values:
-- Mining: 1 XP/item → STR
+- Mining: 1 XP/item → STR (hardcoded mapping, Q10.3)
 - Crafting: 5 XP → INT
-- Dialog: 1 XP, cooldown 60s → INT
-- Walk: 1 XP per 10m → DEX
-- Pilot: 1 XP per 100m → INT
-- Global multiplier: 1.0
+- Dialog: 1 XP per **unique event** (НЕ cooldown, Q1.4)
+- Walk: 1 XP per **1m** → DEX (Q1.5)
+- Pilot: 1 XP per 1m → INT
+- Global multiplier: 1.0 (без upper bound, Q1.3)
 - Tier base: 100 XP, growth rate 1.5
+- Per-stat multipliers: УБРАНЫ (Q1.2 — все одинаковые)
+- _debugLogging: false (Q10.5, вкл в инспекторе)
+- _trackTotalDistance: true (Q1.5 — для ачивок/трекеров)
 
 ---
 

@@ -14,6 +14,8 @@
 > "одежда с характеристиками... слоты в P-персонаж"
 > "модули — отдельная до одежда с характеристиками... слоты в P-персонаж"
 
+**Уточнение от пользователя (Q2.1):** "А. [Wearable vs Implant], **но и то и другое будет видно**" — оба типа предметов (одежда + модули) визуально отображаются на персонаже (для clothing — mesh/skin swap, для модулей — индикатор/свечение). Конкретная визуальная реализация — Phase 2 (внешний вид одежды), но архитектура data-model должна это поддерживать (отдельный `visualPrefab` или `meshReference` field — добавим в Phase 2).
+
 **Слоты (13 штук, normalized to 0..12 в EquipmentData):**
 
 ```csharp
@@ -66,10 +68,15 @@ public const int SLOT_COUNT = 13;  // 1..10 (10) + 11..13 (3 modules)
 ### 2.1 Наследование
 
 ```csharp
+public enum RequirementType : byte {
+    Hard = 0,  // нельзя надеть без навыка
+    Soft = 1,  // можно надеть, но stat-bonus = 50% (Q2.3)
+}
+
 [CreateAssetMenu(fileName = "Clothing_", menuName = "Project C/Equipment/Clothing", order = 11)]
 public class ClothingItemData : ItemData {
     // Наследует: itemName, itemType (auto: Equipment), description, icon, maxStack=1, weightKg
-    // Добавляет: slot, tier, statBonuses, requiredSkills
+    // Добавляет: slot, tier, statBonuses, requiredSkills, requirementType
 
     [Header("Equip")]
     public EquipSlot slot;
@@ -90,6 +97,10 @@ public class ClothingItemData : ItemData {
     [Header("Skill Requirements")]
     [Tooltip("All listed skills must be unlocked to equip this item.")]
     public SkillNodeConfig[] requiredSkills = Array.Empty<SkillNodeConfig>();
+
+    [Header("Requirement Type (Q2.3 — Both hard+soft)")]
+    [Tooltip("Hard = нельзя надеть без навыка. Soft = можно, но bonuses = 50%.")]
+    public RequirementType requirementType = RequirementType.Hard;
 }
 ```
 
@@ -203,6 +214,10 @@ public class ModuleItemData : ItemData {
 
     [Header("Skill Requirements")]
     public SkillNodeConfig[] requiredSkills = Array.Empty<SkillNodeConfig>();
+
+    [Header("Requirement Type (Q2.3 — Both hard+soft)")]
+    [Tooltip("Hard = нельзя надеть без навыка. Soft = можно, но bonuses = 50%.")]
+    public RequirementType requirementType = RequirementType.Hard;
 
     [Header("Power Consumption (future)")]
     [Tooltip("Watts — for future ship power system")]
@@ -328,13 +343,35 @@ public bool TryEquip(ulong clientId, int itemId, EquipSlot slot, out string reas
         reason = $"Слот не подходит: нужен {requiredSlot}"; return false;
     }
 
-    // 4. Skill requirements?
+    // 4. Skill requirements? (Q2.3: hybrid — hard для уникальных, soft для обычных)
     if (requiredSkills != null) {
         var learned = SkillsWorld.Instance?.GetLearnedSkillIds(clientId) ?? new HashSet<string>();
+        var missingSkills = new List<string>();
         foreach (var skill in requiredSkills) {
             if (skill != null && !learned.Contains(skill.skillId)) {
-                reason = $"Требуется навык: {skill.displayName}"; return false;
+                missingSkills.Add(skill.displayName);
             }
+        }
+        if (missingSkills.Count > 0) {
+            // Проверяем тип требования: hard или soft
+            bool isHardRequirement = itemData is ClothingItemData c && c.requirementType == RequirementType.Hard
+                || itemData is ModuleItemData m && m.requirementType == RequirementType.Hard;
+
+            if (isHardRequirement) {
+                // Hard: equip deny с reason
+                reason = $"Требуется навык: {string.Join(", ", missingSkills)}"; return false;
+            } else {
+                // Soft: equip OK, но stat-bonus = 50%
+                if (_config.DebugLogging) {
+                    Debug.Log($"[EquipmentWorld] Player {clientId} equipping {itemData.itemName} WITHOUT skills [{string.Join(", ", missingSkills)}] → soft mode (50% bonuses)");
+                }
+                // Mark item как "soft-equipped" — в Recompute stat-bonus умножается на 0.5
+                // (через _softEquippedPerPlayer Dictionary)
+                MarkSoftEquipped(clientId, itemId);
+            }
+        } else {
+            // Все skills изучены — full bonuses
+            MarkHardEquipped(clientId, itemId);
         }
     }
 

@@ -40,6 +40,7 @@
 - **`docs/Character-menu/`** — 5 табов Character window (Inventory/Stats/Reputation/Quests/...). Все табы кроме КВЕСТЫ — из другой сессии. Состояние: всё в git.
 - **`docs/Markets/`** — v2 Market/Contract, multi-tab. Состояние: всё в git.
 - **M13 Quest test assets** (в git с 32ec52b): `StageIntroDemo.asset`, `StageMultiDemo.asset`, 3 `Pickup_CopperOre_*` вокруг Mira, `TriggerZone_DiscoverQuest`, `TriggerZone_StageIntro`. Уже используются в T-Q20/T-Q21/T-Q22.
+- **T-Q28** (2026-06-14): Prerequisite-фильтрация в диалогах (prereqQuest из CSV → runtime check в TryOffer/TryAccept) + toast при клике на 🔒-квест. Файлы: QuestWorld.cs, QuestServer.cs, QuestToast.cs. Документация: `T-Q28_DESIGN_NOTE.md`.
 
 ### Куда смотреть при возврате
 

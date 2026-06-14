@@ -1057,7 +1057,7 @@
   .cloud-btn__icon { font-size: 16px; animation: float 2s ease-in-out infinite; }
   .cloud-btn__text { letter-spacing: 0.5px; }
   @media (max-width: 600px) {
-    .cloud-btn { top: 70px; right: 8px; padding: 8px 14px; font-size: 11px; }
+    .cloud-btn { top: 140px; right: 8px; padding: 8px 14px; font-size: 11px; }
     .cloud-btn__text { display: none; }
   }
 
@@ -1089,6 +1089,10 @@
     color: #fff;
   }
   .fun-btn__icon { font-size: 16px; animation: float 2s ease-in-out infinite; }
+  @media (max-width: 600px) {
+    .fun-btn { top: 84px; right: 8px; padding: 8px 14px; font-size: 11px; }
+    .fun-btn > span:not(.fun-btn__icon) { display: none; }
+  }
   @keyframes float {
     0%, 100% { transform: translateY(0); }
     50% { transform: translateY(-4px); }
@@ -1128,7 +1132,7 @@
   .collab-btn__icon { font-size: 16px; animation: wave 2s ease-in-out infinite; display: inline-block; }
   .collab-btn__text { letter-spacing: 0.5px; }
   @media (max-width: 600px) {
-    .collab-btn { top: 128px; right: 8px; padding: 8px 14px; font-size: 11px; }
+    .collab-btn { top: 196px; right: 8px; padding: 8px 14px; font-size: 11px; }
     .collab-btn__text { display: none; }
   }
   @keyframes pulseBorder {
@@ -1997,10 +2001,28 @@
         SECTION.scrollIntoView({ behavior: 'smooth', block: 'start' });
       }, 100);
       setHash('#team', 'Project C — команда');
+      /* Notify parent (WordPress iframe) to scroll this iframe into view */
+      try {
+        if (window.parent && window.parent !== window) {
+          var rect = SECTION.getBoundingClientRect();
+          window.parent.postMessage({
+            type: 'collab-scroll',
+            offsetTop: rect.top + window.scrollY,
+            height: rect.height
+          }, '*');
+        }
+      } catch(e) {}
     } else {
       setHash(null);
     }
   };
+
+  /* Listen for parent postMessage: tell us to scroll to #team */
+  window.addEventListener('message', function(ev) {
+    if (ev.data && ev.data.type === 'collab-scroll-to') {
+      SECTION.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }
+  });
 
   /* Detect #team hash from current page OR parent frame */
   function detectTeamHash() {

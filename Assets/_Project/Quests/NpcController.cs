@@ -11,6 +11,7 @@
 //   - Visual placeholder: Cube primitive с `displayName` text (T-Q18: portrait + animator).
 
 using UnityEngine;
+using TMPro;
 using ProjectC.Quests;
 
 namespace ProjectC.Quests
@@ -39,8 +40,8 @@ namespace ProjectC.Quests
         [Header("Visual (placeholder)")]
         [Tooltip("Optional SpriteRenderer — если null, создаётся Cube primitive.")]
         [SerializeField] private SpriteRenderer portraitRenderer;
-        [Tooltip("Optional text label — child TMP_Text или GameObject name fallback.")]
-        [SerializeField] private TextMesh nameLabel;
+        [Tooltip("Optional TMPro label — создаётся автоматически если null.")]
+        [SerializeField] private TextMeshPro nameLabel;
 
         // Cached collider (must be trigger)
         private Collider _triggerCollider;
@@ -87,11 +88,10 @@ namespace ProjectC.Quests
                 var labelGo = new GameObject("NameLabel");
                 labelGo.transform.SetParent(transform, false);
                 labelGo.transform.localPosition = new Vector3(0, 2.0f, 0);
-                nameLabel = labelGo.AddComponent<TextMesh>();
+                nameLabel = labelGo.AddComponent<TextMeshPro>();
                 nameLabel.text = definition.displayName;
                 nameLabel.fontSize = 32;
-                nameLabel.anchor = TextAnchor.MiddleCenter;
-                nameLabel.alignment = TextAlignment.Center;
+                nameLabel.alignment = TextAlignmentOptions.Center;
                 nameLabel.color = Color.yellow;
             }
         }

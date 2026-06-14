@@ -3,6 +3,7 @@ using UnityEngine.InputSystem;
 using UnityEngine.UI;
 using TMPro;
 using Unity.Netcode;
+using ProjectC.UI;
 
 namespace ProjectC.Core
 {
@@ -164,6 +165,9 @@ namespace ProjectC.Core
             CreateControlHintsUI();
 
             _cameraInitialized = true;
+
+            // R2-XXX: Регистрируем камеру для Billboard (имена над персонажами)
+            Billboard.ActiveCamera = transform;
         }
 
         /// <summary>

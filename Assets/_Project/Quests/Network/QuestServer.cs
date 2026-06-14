@@ -146,8 +146,279 @@ namespace ProjectC.Quests
                     // T-Q18: SaveAll() before shutdown.
                     QuestWorld.Instance.Shutdown();
                 }
+
+                // T-Q28: destroy runtime fallback DialogTree ScriptableObject instances.
+                DestroyFallbackTrees();
             }
             if (Instance == this) Instance = null;
+        }
+
+        // ============================================================
+        // T-Q28: Runtime fallback DialogTree for NPCs without defaultDialogTree.
+        // Builds a minimal in-memory tree from NpcDefinition.questOffers[] +
+        // questTurnIns[] + greetingText. ScriptableObject instance with
+        // HideAndDontSave (Editor-friendly, no asset file pollution).
+        // Cache: одна tree per npcId per server lifetime.
+        // ============================================================
+        private readonly System.Collections.Generic.Dictionary<string, ProjectC.Dialogue.DialogTree> _runtimeFallbackTrees
+            = new System.Collections.Generic.Dictionary<string, ProjectC.Dialogue.DialogTree>();
+
+        /// <summary>
+        /// T-Q28: Get or build a runtime fallback DialogTree for the given NPC.
+        /// Returns null only если у NPC нет ни questOffers, ни questTurnIns, ни greetingText
+        /// (фактически dead-NPC). Caller must dispose via DestroyFallbackTree on shutdown.
+        /// </summary>
+        private ProjectC.Dialogue.DialogTree GetOrBuildFallbackTree(NpcDefinition npc, ulong clientId)
+        {
+            if (npc == null || string.IsNullOrEmpty(npc.npcId)) return null;
+            string cacheKey = $"{npc.npcId}@{clientId}";  // T-Q28: per-player cache (state зависит от игрока)
+            if (_runtimeFallbackTrees.TryGetValue(cacheKey, out var cached) && cached != null)
+            {
+                return cached;
+            }
+            var tree = BuildFallbackDialogTree(npc, clientId);
+            if (tree != null)
+            {
+                _runtimeFallbackTrees[cacheKey] = tree;
+            }
+            return tree;
+        }
+
+        /// <summary>
+        /// T-Q28: Quest availability для NPC's questOffer/questTurnIn slot'а.
+        /// Используется в BuildFallbackDialogTree для фильтрации кнопок.
+        /// </summary>
+        private enum TQ28QuestAvailability
+        {
+            Available,        // можно взять/сдать
+            Locked,           // prereq/rep не выполнены — показываем серым
+            AlreadyActive,     // уже взят (нельзя взять второй раз)
+            AlreadyCompleted,  // oneShot=true, уже сдан
+            Hidden             // вообще не показываем
+        }
+
+        /// <summary>
+        /// T-Q28: проверка доступности квеста для игрока.
+        /// Учитывает: prerequisites (prereqQuest), state игрока, oneShot.
+        /// </summary>
+        private TQ28QuestAvailability CheckQuestAvailability(ulong clientId, QuestDefinition def)
+        {
+            if (def == null) return TQ28QuestAvailability.Hidden;
+            var state = QuestWorld.Instance.GetPlayerQuestState(clientId, def.questId);
+            // Если в логе — фильтруем по state
+            if (state.HasValue)
+            {
+                switch (state.Value)
+                {
+                    case QuestState.Discovered:
+                    case QuestState.Offered:
+                    case QuestState.Active:
+                        return TQ28QuestAvailability.AlreadyActive;
+                    case QuestState.Completed:
+                    case QuestState.TurnedIn:
+                        return def.oneShot ? TQ28QuestAvailability.AlreadyCompleted : TQ28QuestAvailability.AlreadyActive;
+                    case QuestState.Failed:
+                        return TQ28QuestAvailability.Hidden;
+                }
+            }
+            // Не в логе — проверяем prerequisites
+            var (met, _) = QuestWorld.Instance.ArePrerequisitesMet(clientId, def);
+            return met ? TQ28QuestAvailability.Available : TQ28QuestAvailability.Locked;
+        }
+
+        /// <summary>
+        /// T-Q28: Build a minimal dialog graph at runtime:
+        ///   greeting (root) ──► "Взять квест: {name}" edges (OfferQuest, только Available) ──► accepted (terminal)
+        ///                  ├──► "🔒 {reason}" edges (greyed, для Locked) — info-only
+        ///                  ├──► "Сдать квест: {name}" edges (CompleteObjective) ──► turned_in (terminal)
+        ///                  └──► "До свидания" (EndConversation)
+        /// Each OfferQuest/CompleteObjective edge → separate terminal node с подтверждением.
+        /// </summary>
+        private ProjectC.Dialogue.DialogTree BuildFallbackDialogTree(NpcDefinition npc, ulong clientId)
+        {
+            // Empty-NPC: no questOffers, no questTurnIns, no greeting → nothing to show.
+            int offerCount = npc.questOffers != null ? npc.questOffers.Length : 0;
+            int turnInCount = npc.questTurnIns != null ? npc.questTurnIns.Length : 0;
+            string greeting = npc.showGreeting ? npc.greetingText : "";
+            if (offerCount == 0 && turnInCount == 0 && string.IsNullOrEmpty(greeting)) return null;
+
+            var w = QuestWorld.Instance;
+            var nodes = new System.Collections.Generic.List<ProjectC.Dialogue.DialogueNode>();
+            var greetingEdges = new System.Collections.Generic.List<ProjectC.Dialogue.DialogueEdge>();
+            int shownOffers = 0, lockedShown = 0, hiddenOffers = 0, turnInsShown = 0, hiddenTurnIns = 0;
+
+            // --- Per-offer branches ---
+            // T-Q28: фильтрация по availability. Available → "Взять", Locked → "🔒 ...", остальное → скрыть.
+            for (int i = 0; i < offerCount; i++)
+            {
+                string questId = npc.questOffers[i];
+                if (string.IsNullOrEmpty(questId)) continue;
+                var def = w?.GetQuest(questId);
+                if (def == null) { hiddenOffers++; continue; }
+                var avail = CheckQuestAvailability(clientId, def);
+                if (avail == TQ28QuestAvailability.Hidden || avail == TQ28QuestAvailability.AlreadyCompleted) { hiddenOffers++; continue; }
+                if (avail == TQ28QuestAvailability.AlreadyActive)
+                {
+                    // Уже взят — НЕ показываем кнопку "Взять", но questTurnIns может его покрыть (если в TurnIns).
+                    hiddenOffers++;
+                    continue;
+                }
+
+                string questName = ResolveQuestDisplayName(questId);
+                string acceptedNodeId = $"accepted_{i}";
+                nodes.Add(new ProjectC.Dialogue.DialogueNode
+                {
+                    nodeId = acceptedNodeId,
+                    speaker = new ProjectC.Dialogue.SpeakerRef { speakerKind = ProjectC.Dialogue.SpeakerRef.Kind.Npc, refId = npc.npcId },
+                    text = $"Квест «{questName}» добавлен в журнал. Возвращайся, когда справишься.",
+                    portraitEmotion = "neutral",
+                    edges = new[]
+                    {
+                        new ProjectC.Dialogue.DialogueEdge
+                        {
+                            label = "Понятно",
+                            targetNodeId = "greeting",
+                            action = new ProjectC.Dialogue.DialogueAction { type = ProjectC.Dialogue.DialogueActionType.EndConversation }
+                        }
+                    }
+                });
+                if (avail == TQ28QuestAvailability.Available)
+                {
+                    greetingEdges.Add(new ProjectC.Dialogue.DialogueEdge
+                    {
+                        label = $"Взять квест: {questName}",
+                        targetNodeId = acceptedNodeId,
+                        action = new ProjectC.Dialogue.DialogueAction
+                        {
+                            type = ProjectC.Dialogue.DialogueActionType.OfferQuest,
+                            stringParam = questId
+                        }
+                    });
+                    shownOffers++;
+                }
+                else // Locked
+                {
+                    var (_, reason) = w.ArePrerequisitesMet(clientId, def);
+                    greetingEdges.Add(new ProjectC.Dialogue.DialogueEdge
+                    {
+                        label = $"🔒 {reason ?? "Недоступно"} ({questName})",
+                        targetNodeId = "",  // no-op target, но action OfferQuest всё равно сработает
+                        hideIfUnavailable = false,  // показать серым (через label)
+                        action = new ProjectC.Dialogue.DialogueAction
+                        {
+                            type = ProjectC.Dialogue.DialogueActionType.OfferQuest,
+                            stringParam = questId
+                        }
+                    });
+                    lockedShown++;
+                }
+            }
+
+            // --- Per-turnIn branches: "Сдать квест: {questName}" → CompleteObjective → turned_in_node ---
+            // T-Q28: фильтруем — показываем ТОЛЬКО для квестов, которые игрок может реально сдать
+            // (state=Active или Discovered, и prereq выполнены, и квест существует).
+            // oneShot=true и сдан → скрыть. Не в логе → скрыть.
+            for (int i = 0; i < turnInCount; i++)
+            {
+                string questId = npc.questTurnIns[i];
+                if (string.IsNullOrEmpty(questId)) continue;
+                var def = w?.GetQuest(questId);
+                if (def == null) { hiddenTurnIns++; continue; }
+                var st = w.GetPlayerQuestState(clientId, questId);
+                if (!st.HasValue) { hiddenTurnIns++; continue; }  // не в логе
+                bool canTurnIn = st.Value == QuestState.Active || st.Value == QuestState.Discovered
+                                 || st.Value == QuestState.Offered || st.Value == QuestState.Completed;
+                if (!canTurnIn) { hiddenTurnIns++; continue; }
+                if (st.Value == QuestState.Completed && def.oneShot) { hiddenTurnIns++; continue; }  // уже сдан
+                string questName = ResolveQuestDisplayName(questId);
+                string turnedInNodeId = $"turned_in_{i}";
+                nodes.Add(new ProjectC.Dialogue.DialogueNode
+                {
+                    nodeId = turnedInNodeId,
+                    speaker = new ProjectC.Dialogue.SpeakerRef { speakerKind = ProjectC.Dialogue.SpeakerRef.Kind.Npc, refId = npc.npcId },
+                    text = $"Квест «{questName}» засчитан. Хорошая работа.",
+                    portraitEmotion = "neutral",
+                    edges = new[]
+                    {
+                        new ProjectC.Dialogue.DialogueEdge
+                        {
+                            label = "Спасибо",
+                            targetNodeId = "greeting",
+                            action = new ProjectC.Dialogue.DialogueAction { type = ProjectC.Dialogue.DialogueActionType.EndConversation }
+                        }
+                    }
+                });
+                greetingEdges.Add(new ProjectC.Dialogue.DialogueEdge
+                {
+                    label = $"Сдать квест: {questName}",
+                    targetNodeId = turnedInNodeId,
+                    action = new ProjectC.Dialogue.DialogueAction
+                    {
+                        type = ProjectC.Dialogue.DialogueActionType.CompleteObjective,
+                        stringParam = questId
+                    }
+                });
+                turnInsShown++;
+            }
+
+            // --- Goodbye edge (always last) ---
+            greetingEdges.Add(new ProjectC.Dialogue.DialogueEdge
+            {
+                label = "До свидания",
+                targetNodeId = "",  // EndConversation (empty targetNodeId)
+                action = new ProjectC.Dialogue.DialogueAction { type = ProjectC.Dialogue.DialogueActionType.EndConversation }
+            });
+
+            // --- Greeting root node ---
+            string greetingText = !string.IsNullOrEmpty(greeting) ? greeting : $"{npc.displayName}: чем могу помочь?";
+            nodes.Add(new ProjectC.Dialogue.DialogueNode
+            {
+                nodeId = "greeting",
+                speaker = new ProjectC.Dialogue.SpeakerRef { speakerKind = ProjectC.Dialogue.SpeakerRef.Kind.Npc, refId = npc.npcId },
+                text = greetingText,
+                portraitEmotion = "neutral",
+                edges = greetingEdges.ToArray()
+            });
+
+            // --- Create runtime ScriptableObject ---
+            var tree = ScriptableObject.CreateInstance<ProjectC.Dialogue.DialogTree>();
+            tree.name = $"RuntimeFallback_{npc.npcId}";
+            tree.hideFlags = HideFlags.HideAndDontSave;  // Editor: no save to scene, no leak warning
+            tree.treeId = $"runtime_{npc.npcId}";
+            tree.displayName = $"{npc.displayName} (runtime fallback)";
+            tree.rootNodeId = "greeting";
+            tree.nodes = nodes.ToArray();
+            if (debugMode)
+            {
+                Debug.Log($"[QuestServer] T-Q28: built fallback DialogTree for NPC '{npc.npcId}' clientId={clientId} " +
+                          $"(offers: shown={shownOffers} locked={lockedShown} hidden={hiddenOffers} / " +
+                          $"turnIns: shown={turnInsShown} hidden={hiddenTurnIns})");
+            }
+            return tree;
+        }
+
+        /// <summary>
+        /// T-Q28: resolve quest display name from QuestDatabase. Falls back to questId если не найден.
+        /// </summary>
+        private string ResolveQuestDisplayName(string questId)
+        {
+            if (questDatabase != null)
+            {
+                var q = questDatabase.GetQuest(questId);
+                if (q != null && !string.IsNullOrEmpty(q.displayName)) return q.displayName;
+            }
+            return questId;
+        }
+
+        /// <summary>T-Q28: cleanup all runtime fallback trees (called from OnNetworkDespawn).</summary>
+        private void DestroyFallbackTrees()
+        {
+            if (_runtimeFallbackTrees.Count == 0) return;
+            foreach (var kvp in _runtimeFallbackTrees)
+            {
+                if (kvp.Value != null) Destroy(kvp.Value);
+            }
+            _runtimeFallbackTrees.Clear();
         }
 
         // ============================================================
@@ -261,7 +532,14 @@ namespace ProjectC.Quests
             }
             if (tree == null)
             {
-                if (debugMode) Debug.LogWarning($"[QuestServer] RequestTalkToNpc: NPC '{npcId}' has no dialog tree");
+                // T-Q28: runtime fallback — build DialogTree from NpcDefinition.questOffers[]+
+                // questTurnIns[]+greetingText. NPC can offer/turn-in квесты immediately after
+                // being placed in the world, no manual DialogTree asset needed.
+                tree = GetOrBuildFallbackTree(npc, clientId);
+            }
+            if (tree == null)
+            {
+                if (debugMode) Debug.LogWarning($"[QuestServer] RequestTalkToNpc: NPC '{npcId}' has no dialog tree (no offers, no turnIns, no greeting)");
                 return;
             }
 

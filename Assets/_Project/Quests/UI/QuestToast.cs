@@ -185,8 +185,19 @@ namespace ProjectC.Quests.UI
 
         private void HandleDialogActionResult(DialogActionResultDto result)
         {
-            // Отображаем только successful действия, не ошибки.
-            if (!result.success) return;
+            // T-Q28 fix: при success=false И type=OfferQuest/AcceptQuest — показать toast с reason.
+            // Раньше игрок кликал 🔒-кнопку → диалог закрывался без feedback, юзер не понимал почему.
+            // result.resultData содержит server-side message (ru), e.g. "Сначала выполните квест «q_002_0»".
+            if (!result.success)
+            {
+                if (result.actionType == (byte)ProjectC.Dialogue.DialogueActionType.OfferQuest
+                    || result.actionType == (byte)ProjectC.Dialogue.DialogueActionType.AcceptQuest)
+                {
+                    string reason = string.IsNullOrEmpty(result.resultData) ? "Не удалось взять квест" : result.resultData;
+                    ShowToast($"🔒 {reason}");
+                }
+                return;
+            }
 
             // result.actionType: 20=GiveItem, 21=TakeItem, 22=GiveCredits, 23=AddReputation,
             //                   24=AddNpcAttitude, 60=CompleteObjective

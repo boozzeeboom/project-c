@@ -151,6 +151,95 @@ namespace ProjectC.Quests
             return _npcAttitude.TryGetValue((clientId, npcId), out var v) ? v : 0;
         }
 
+        // ============ T-Q28: Prerequisite check (для цепочек через prereqQuest в CSV) ============
+
+        /// <summary>
+        /// T-Q28: возвращает QuestState текущего квеста у игрока (если в логе), иначе null.
+        /// Используется в IsPrerequisiteMet для QuestCompleted/QuestActive.
+        /// </summary>
+        public QuestState? GetPlayerQuestState(ulong clientId, string questId)
+        {
+            if (string.IsNullOrEmpty(questId)) return null;
+            var quests = GetPlayerQuests(clientId);
+            for (int i = 0; i < quests.Count; i++)
+            {
+                if (quests[i].questId == questId) return quests[i].state;
+            }
+            return null;
+        }
+
+        /// <summary>
+        /// T-Q28: проверка одного atomic prerequisite для данного игрока.
+        /// Покрывает все типы из QuestPrerequisiteType (QuestCompleted/QuestActive/
+        /// ReputationAtLeast/NpcAttitudeAtLeast/HaveItem/FlagIsSet/PlayerFaction).
+        /// AND-комбинация — caller'у (TryOffer/TryAccept).
+        /// </summary>
+        public bool IsPrerequisiteMet(ulong clientId, QuestPrerequisite prereq)
+        {
+            if (prereq == null) return true;
+            switch (prereq.type)
+            {
+                case QuestPrerequisiteType.QuestCompleted:
+                {
+                    var s = GetPlayerQuestState(clientId, prereq.stringParam);
+                    if (!s.HasValue) return false;
+                    return s.Value == QuestState.Completed || s.Value == QuestState.TurnedIn;
+                }
+                case QuestPrerequisiteType.QuestActive:
+                {
+                    var s = GetPlayerQuestState(clientId, prereq.stringParam);
+                    return s.HasValue && s.Value == QuestState.Active;
+                }
+                case QuestPrerequisiteType.ReputationAtLeast:
+                    return GetReputation(clientId, prereq.factionParam) >= prereq.intParam;
+                case QuestPrerequisiteType.NpcAttitudeAtLeast:
+                    return GetNpcAttitude(clientId, prereq.stringParam) >= prereq.intParam;
+                case QuestPrerequisiteType.HaveItem:
+                {
+                    // T-Q28: resolve tradeItemId → int itemId via QuestWorld.ResolveItemId
+                    int itemId = ResolveItemId(prereq.stringParam);
+                    if (itemId <= 0) return false;
+                    return ProjectC.Items.InventoryWorld.Instance != null
+                        && ProjectC.Items.InventoryWorld.Instance.CountOf(clientId, itemId) >= prereq.intParam;
+                }
+                case QuestPrerequisiteType.FlagIsSet:
+                    return GetFlag(clientId, prereq.stringParam);
+                case QuestPrerequisiteType.PlayerFaction:
+                    return false; // deprecated в v2 — use ReputationAtLeast
+                default:
+                    return true; // unknown type — пропускаем (не блокируем)
+            }
+        }
+
+        /// <summary>
+        /// T-Q28: проверка ВСЕХ prerequisites (AND-комбинация). Возвращает (bool met, string failedReason).
+        /// failedReason = null если met=true. Используется в TryOffer/TryAccept и в BuildFallbackDialogTree.
+        /// </summary>
+        public (bool met, string reason) ArePrerequisitesMet(ulong clientId, QuestDefinition def)
+        {
+            if (def == null || def.prerequisites == null || def.prerequisites.Length == 0) return (true, null);
+            for (int i = 0; i < def.prerequisites.Length; i++)
+            {
+                var p = def.prerequisites[i];
+                if (p == null) continue;
+                if (!IsPrerequisiteMet(clientId, p))
+                {
+                    string reason = p.type switch
+                    {
+                        QuestPrerequisiteType.QuestCompleted => $"Сначала выполните квест «{p.stringParam}»",
+                        QuestPrerequisiteType.QuestActive => $"Сначала активируйте квест «{p.stringParam}»",
+                        QuestPrerequisiteType.ReputationAtLeast => $"Нужна репутация {p.factionParam} ≥ {p.intParam}",
+                        QuestPrerequisiteType.NpcAttitudeAtLeast => $"Нужно отношение с NPC «{p.stringParam}» ≥ {p.intParam}",
+                        QuestPrerequisiteType.HaveItem => $"Нужен предмет «{p.stringParam}» ×{p.intParam}",
+                        QuestPrerequisiteType.FlagIsSet => $"Не выполнено условие «{p.stringParam}»",
+                        _ => $"Не выполнено условие #{i}"
+                    };
+                    return (false, reason);
+                }
+            }
+            return (true, null);
+        }
+
         // ============ T-Q13: Reputation + NpcAttitude modifiers (with cross-faction influence) ============
 
         /// <summary>
@@ -259,6 +348,15 @@ namespace ProjectC.Quests
                 }
             }
 
+            // T-Q28: проверяем prerequisites (prereqQuest в CSV → QuestDefinition.prerequisites[]).
+            // Если не выполнены — возвращаем fail БЕЗ добавления в log.
+            var (prereqMet, prereqReason) = ArePrerequisitesMet(clientId, def);
+            if (!prereqMet)
+            {
+                if (Debug.isDebugBuild) Debug.Log($"[QuestWorld] TryOffer: client={clientId} quest={questId} prereq NOT met: {prereqReason}");
+                return Fail(QuestResultCode.PrerequisitesNotMet, prereqReason, questId);
+            }
+
             // Create new QuestInstance in Discovered state.
             var instance = new QuestInstance
             {
@@ -331,6 +429,15 @@ namespace ProjectC.Quests
             if (activeCount >= MaxActiveQuestsPerPlayer)
                 return Fail(QuestResultCode.PrerequisitesNotMet,
                     $"Max active quests reached ({activeCount}/{MaxActiveQuestsPerPlayer})", questId);
+
+            // T-Q28: проверяем prerequisites (prereqQuest) — для пути "новый инстанс" тоже.
+            // (Idempotency path выше не трогаем — там квест уже в логе, prereq не применим.)
+            var (prereqMet, prereqReason) = ArePrerequisitesMet(clientId, def);
+            if (!prereqMet)
+            {
+                if (Debug.isDebugBuild) Debug.Log($"[QuestWorld] TryAccept: client={clientId} quest={questId} prereq NOT met: {prereqReason}");
+                return Fail(QuestResultCode.PrerequisitesNotMet, prereqReason, questId);
+            }
 
             // Create new QuestInstance
             var instance = new QuestInstance

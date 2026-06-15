@@ -178,6 +178,31 @@ namespace ProjectC.UI.Client
         private List<QuestListItem> _questsDiscoveredCache = new List<QuestListItem>();
         private int _selectedDiscoveredQuest = -1;
 
+        // T-P17: Clothing/Modules ListView refs + caches + per-row fields
+        private ListView _clothingList;
+        private ListView _modulesList;
+        private List<EquipRow> _clothingCache = new List<EquipRow>();
+        private List<EquipRow> _modulesCache = new List<EquipRow>();
+        private Label _equipRowSlot;       // per-row template (bound in MakeEquipmentRow)
+        private Label _equipRowItem;
+        private Label _equipRowBonuses;
+        private Button _equipRowBtn;
+        private bool _isEquipmentSubscribed = false;
+
+        /// <summary>
+        /// T-P17: Row DTO для clothing/modules ListView. IsModule=true для modules-list (icon/type вариация).
+        /// </summary>
+        private struct EquipRow
+        {
+            public ProjectC.Equipment.EquipSlot Slot;
+            public int ItemId;          // inventory id; 0 = пусто
+            public string ItemName;
+            public string SlotName;     // "Head" / "Chest" / "Module1" — для удобства
+            public string Bonuses;      // "+3 STR" / "+1 STR, +1 INT" / etc
+            public string TierText;     // "T2"
+            public bool IsModule;
+        }
+
         // ============================================================
         // Cached state-проекции (НЕ создаём свои singleton'ы)
         // ============================================================
@@ -291,6 +316,8 @@ namespace ProjectC.UI.Client
         UnsubscribeSkills();
         // T-P16: Unsubscribe StatsClientState (1 событие).
         UnsubscribeStats();
+        // T-P17: Unsubscribe EquipmentClientState (2 события).
+        UnsubscribeEquipment();
         }
 
         private bool _isInventorySubscribed = false;
@@ -488,6 +515,14 @@ namespace ProjectC.UI.Client
             _statDexRow = _statDexBar != null ? _statDexBar.parent as VisualElement : null;
             _statIntRow = _statIntBar != null ? _statIntBar.parent as VisualElement : null;
 
+            // T-P17: clothing/modules ListView refs
+            _clothingList = _root.Q<ListView>("clothing-list");
+            _modulesList = _root.Q<ListView>("modules-list");
+            _equipRowSlot = null; // bound per-row via userData (см. MakeEquipmentRow)
+            _equipRowItem = null;
+            _equipRowBonuses = null;
+            _equipRowBtn = null;
+
             _tabCharacter = _root.Q<Button>("tab-character");
             _tabShip = _root.Q<Button>("tab-ship");
             _tabReputation = _root.Q<Button>("tab-reputation");
@@ -611,6 +646,12 @@ namespace ProjectC.UI.Client
             if (_questsDiscoveredList != null) _questsDiscoveredList.Rebuild();
             };
             }
+
+            // T-P17: clothing/modules ListView setup (progression sub-tabs)
+            SetupEquipmentListView(_clothingList, ref _clothingCache);
+            SetupEquipmentListView(_modulesList, ref _modulesCache);
+            // T-P17: subscribe to EquipmentClientState (M2) for live updates
+            SubscribeEquipment();
 
             // ---- Filters (options зависят от активного таба — см. SwitchTab) ----
             if (_filterSearch != null)
@@ -1920,6 +1961,300 @@ namespace ProjectC.UI.Client
             // Если у quest >3 objectives — последние могут быть clipped, но стабильность важнее.
             list.fixedItemHeight =64;
             list.itemsSource = cacheRef;
+            }
+
+            // ============================================================
+            // T-P17: Clothing/Modules ListView (M2 equipment в M4 UI)
+            // ============================================================
+
+            /// <summary>
+            /// Setup clothing/modules ListView (per roadmap T-P15 §3.1 T-P17). Per-row factory + bind
+            /// с lazy-определением bind функции (clothing vs module).
+            /// </summary>
+            private void SetupEquipmentListView(ListView list, ref List<EquipRow> cacheRef)
+            {
+                if (list == null) return;
+                list.makeItem = MakeEquipmentRow;
+                // bind зависит от list — clothing или modules
+                bool isModules = (list == _modulesList);
+                list.bindItem = (e, i) => BindEquipmentRow(e, i, cacheRef, isModules);
+                list.fixedItemHeight = 28;  // per T-P15 USS .equip-slot-row height: 28px
+                list.itemsSource = cacheRef;
+            }
+
+            /// <summary>
+            /// VisualElement factory: slot name + item name + bonuses + [СНЯТЬ] button.
+            /// USS: .equip-slot-row (.equip-slot-name, .equip-slot-item, .equip-slot-bonuses, .equip-slot-btn)
+            /// </summary>
+            private VisualElement MakeEquipmentRow()
+            {
+                var row = new VisualElement();
+                row.AddToClassList("equip-slot-row");
+
+                var slot = new Label { name = "equip-slot-name" };
+                slot.AddToClassList("equip-slot-name");
+                row.Add(slot);
+
+                var item = new Label { name = "equip-slot-item" };
+                item.AddToClassList("equip-slot-item");
+                row.Add(item);
+
+                var bonuses = new Label { name = "equip-slot-bonuses" };
+                bonuses.AddToClassList("equip-slot-bonuses");
+                row.Add(bonuses);
+
+                var btn = new Button { name = "equip-slot-btn", text = "СНЯТЬ" };
+                btn.AddToClassList("equip-slot-btn");
+                btn.clicked += OnUnequipClicked;
+                row.Add(btn);
+
+                return row;
+            }
+
+            /// <summary>
+            /// Bind для clothing/modules rows. Walk up parent chain to find row → userData = EquipRow.
+            /// (см. project-c-mcp-unity pitfall #42: btn.parent не = row, нужен walk-up.)
+            /// </summary>
+            private void BindEquipmentRow(VisualElement row, int index, System.Collections.Generic.List<EquipRow> cache, bool isModules)
+            {
+                if (index < 0 || index >= cache.Count) return;
+                var data = cache[index];
+
+                var slotLabel = row.Q<Label>("equip-slot-name");
+                var itemLabel = row.Q<Label>("equip-slot-item");
+                var bonusesLabel = row.Q<Label>("equip-slot-bonuses");
+                var btn = row.Q<Button>("equip-slot-btn");
+
+                if (slotLabel != null) slotLabel.text = data.SlotName;
+                if (itemLabel != null) itemLabel.text = data.ItemName;
+                if (bonusesLabel != null)
+                {
+                    string bonusText = !string.IsNullOrEmpty(data.Bonuses) ? data.Bonuses : "—";
+                    if (!string.IsNullOrEmpty(data.TierText)) bonusText += $" ({data.TierText})";
+                    bonusesLabel.text = bonusText;
+                }
+                if (btn != null)
+                {
+                    btn.text = "СНЯТЬ";
+                    btn.SetEnabled(data.ItemId > 0);  // disable для пустых слотов
+                }
+                // userData = data — для OnUnequipClicked handler (find row → read userData)
+                row.userData = data;
+            }
+
+            /// <summary>
+            /// Skill pitfall #42: btn.parent — это row, но для надёжности walk-up parent chain до row с userData.
+            /// </summary>
+            private void OnUnequipClicked()
+            {
+                // Найти row через walk-up: текущий focused element
+                // (UI Toolkit не передаёт sender в Button.clicked автоматически; используем
+                // глобальный panel.focusedElement как fallback)
+                var focused = UnityEngine.UIElements.UIElementsUtility.GetFocusedElement();
+                if (focused == null) return;
+                VisualElement row = focused;
+                while (row != null && row.userData == null) row = row.parent;
+                if (row == null || !(row.userData is EquipRow data)) return;
+
+                // RequestUnequipRpc(slot) → EquipmentServer
+                var eqServerType = System.Type.GetType("ProjectC.Equipment.EquipmentServer, Assembly-CSharp");
+                if (eqServerType == null) { Debug.LogWarning("[CharacterWindow] EquipmentServer not found"); return; }
+                var inst = eqServerType.GetMethod("GetStaticInstance", System.Reflection.BindingFlags.Public | System.Reflection.BindingFlags.Static)?.Invoke(null, null)
+                           ?? eqServerType.GetProperty("Instance", System.Reflection.BindingFlags.Public | System.Reflection.BindingFlags.Static)?.GetValue(null);
+                if (inst == null) return;
+                var mi = eqServerType.GetMethod("RequestUnequipRpc");
+                if (mi == null) return;
+                var defaultRpcParams = System.Activator.CreateInstance(typeof(Unity.Netcode.RpcParams));
+                mi.Invoke(inst, new object[] { data.Slot, defaultRpcParams });
+            }
+
+            // ----- Equipment subscription + refresh (M2 → M4) -----
+
+            private void SubscribeEquipment()
+            {
+                if (_isEquipmentSubscribed) return;
+                var eq = ProjectC.Equipment.EquipmentClientState.Instance;
+                if (eq == null) return;
+                eq.OnEquipmentUpdated += HandleEquipmentSnapshot;
+                eq.OnEquipResult += HandleEquipResult;
+                _isEquipmentSubscribed = true;
+                Debug.Log("[CharacterWindow] Subscribed to EquipmentClientState (snapshot/result)");
+            }
+
+            private void UnsubscribeEquipment()
+            {
+                if (!_isEquipmentSubscribed) return;
+                var eq = ProjectC.Equipment.EquipmentClientState.Instance;
+                if (eq == null) { _isEquipmentSubscribed = false; return; }
+                eq.OnEquipmentUpdated -= HandleEquipmentSnapshot;
+                eq.OnEquipResult -= HandleEquipResult;
+                _isEquipmentSubscribed = false;
+            }
+
+            private void HandleEquipmentSnapshot(ProjectC.Equipment.Dto.EquipmentSnapshotDto snap)
+            {
+                RefreshEquipmentCache(snap);
+                RebuildEquipmentListView();
+            }
+
+            private void HandleEquipResult(ProjectC.Equipment.Dto.EquipResultDto result)
+            {
+                if (Debug.isDebugBuild)
+                {
+                    string msg = result.code switch
+                    {
+                        ProjectC.Equipment.Dto.EquipResultCode.Equipped   => $"✅ Надето: {result.itemId} ({result.slot})",
+                        ProjectC.Equipment.Dto.EquipResultCode.Unequipped => $"✅ Снято: {result.slot}",
+                        ProjectC.Equipment.Dto.EquipResultCode.Denied     => $"❌ {result.reason}",
+                        _ => $"? unknown code={result.code}",
+                    };
+                    Debug.Log($"[CharacterWindow] OnEquipResult: {msg}");
+                }
+            }
+
+            /// <summary>
+            /// Fill _clothingCache + _modulesCache из EquipmentSnapshotDto (server-side per-player state).
+            /// Показываем 13 clothing slots (Head..Accessory2, WeaponMain, WeaponOff) + 3 module slots.
+            /// T-P17 MVP: показываем все 13 + 3 всегда (пустые слоты = "—" + disabled button).
+            /// </summary>
+            private void RefreshEquipmentCache(ProjectC.Equipment.Dto.EquipmentSnapshotDto snap)
+            {
+                _clothingCache.Clear();
+                _modulesCache.Clear();
+
+                // 13 clothing slots (Head..Accessory2, WeaponMain, WeaponOff) — заполняем всегда
+                // (10 clothing + Module1..3 = 13, но Module1..3 относятся к modules)
+                // Per EquipmentData.SLOT_COUNT=13: Head=0, Chest=1, ..., Module3=12
+                // "clothing" = indices 0..9 (Head..WeaponOff), "modules" = indices 10..12 (Module1..3)
+
+                // Clothing rows (10 slots)
+                for (int idx = 0; idx < 10; idx++)
+                {
+                    var slot = ProjectC.Equipment.EquipmentData.IndexToSlot(idx);
+                    int itemId = 0;
+                    string itemName = "—";
+                    string bonuses = "";
+                    string tierText = "";
+                    if (idx < snap.equip.slotOccupied.Length && snap.equip.slotOccupied[idx] == 1)
+                    {
+                        itemId = snap.equip.slotItemIds[idx];
+                        itemName = LookupItemName(itemId);
+                        var itemData = LookupItemData(itemId);
+                        if (itemData != null)
+                        {
+                            bonuses = FormatBonuses(itemData);
+                            if (itemData is ProjectC.Equipment.ClothingItemData cd) tierText = $"T{cd.tier}";
+                        }
+                    }
+                    _clothingCache.Add(new EquipRow
+                    {
+                        Slot = slot,
+                        ItemId = itemId,
+                        ItemName = itemName,
+                        SlotName = slot.ToString(),
+                        Bonuses = bonuses,
+                        TierText = tierText,
+                        IsModule = false,
+                    });
+                }
+
+                // Module rows (3 slots)
+                for (int idx = 10; idx < 13; idx++)
+                {
+                    var slot = ProjectC.Equipment.EquipmentData.IndexToSlot(idx);
+                    int itemId = 0;
+                    string itemName = "—";
+                    string bonuses = "";
+                    string tierText = "";
+                    string moduleType = "";
+                    if (idx < snap.equip.slotOccupied.Length && snap.equip.slotOccupied[idx] == 1)
+                    {
+                        itemId = snap.equip.slotItemIds[idx];
+                        itemName = LookupItemName(itemId);
+                        var itemData = LookupItemData(itemId);
+                        if (itemData != null)
+                        {
+                            bonuses = FormatBonuses(itemData);
+                            if (itemData is ProjectC.Equipment.ModuleItemData md)
+                            {
+                                moduleType = md.moduleType.ToString();
+                                tierText = $"T{md.tier}";
+                            }
+                        }
+                    }
+                    string fullBonuses = !string.IsNullOr(moduleType) ? $"[{moduleType}] {bonuses}" : bonuses;
+                    _modulesCache.Add(new EquipRow
+                    {
+                        Slot = slot,
+                        ItemId = itemId,
+                        ItemName = itemName,
+                        SlotName = slot.ToString(),
+                        Bonuses = fullBonuses,
+                        TierText = tierText,
+                        IsModule = true,
+                    });
+                }
+            }
+
+            private void RebuildEquipmentListView()
+            {
+                if (_clothingList != null)
+                {
+                    if (!ReferenceEquals(_clothingList.itemsSource, _clothingCache))
+                        _clothingList.itemsSource = _clothingCache;
+                    _clothingList.RefreshItems();
+                    _clothingList.MarkDirtyRepaint();
+                }
+                if (_modulesList != null)
+                {
+                    if (!ReferenceEquals(_modulesList.itemsSource, _modulesCache))
+                        _modulesList.itemsSource = _modulesCache;
+                    _modulesList.RefreshItems();
+                    _modulesList.MarkDirtyRepaint();
+                }
+            }
+
+            /// <summary>Lookup ItemData по itemId (InventoryWorld API). T-P17: best-effort — null если не найден.</summary>
+            private ProjectC.Items.ItemData LookupItemData(int itemId)
+            {
+                if (itemId == 0) return null;
+                var inv = ProjectC.Items.InventoryWorld.Instance;
+                if (inv == null) return null;
+                return inv.GetItemDefinition(itemId);
+            }
+
+            private string LookupItemName(int itemId)
+            {
+                var d = LookupItemData(itemId);
+                return d != null && !string.IsNullOrEmpty(d.itemName) ? d.itemName : $"#{itemId}";
+            }
+
+            /// <summary>Format stat bonuses clothing/module → "+3 STR" / "+1 STR, +1 INT".</summary>
+            private string FormatBonuses(ProjectC.Items.ItemData itemData)
+            {
+                if (itemData is ProjectC.Equipment.ClothingItemData cd)
+                {
+                    var parts = new System.Collections.Generic.List<string>();
+                    if (cd.strengthBonus != 0) parts.Add($"{(cd.strengthBonus > 0 ? "+" : "")}{cd.strengthBonus:F0} STR");
+                    if (cd.dexterityBonus != 0) parts.Add($"{(cd.dexterityBonus > 0 ? "+" : "")}{cd.dexterityBonus:F0} DEX");
+                    if (cd.intelligenceBonus != 0) parts.Add($"{(cd.intelligenceBonus > 0 ? "+" : "")}{cd.intelligenceBonus:F0} INT");
+                    if (cd.strengthMultiplier > 0) parts.Add($"STR×{1f + cd.strengthMultiplier:F2}");
+                    if (cd.dexterityMultiplier > 0) parts.Add($"DEX×{1f + cd.dexterityMultiplier:F2}");
+                    if (cd.intelligenceMultiplier > 0) parts.Add($"INT×{1f + cd.intelligenceMultiplier:F2}");
+                    return parts.Count > 0 ? string.Join(", ", parts) : "—";
+                }
+                if (itemData is ProjectC.Equipment.ModuleItemData md)
+                {
+                    var parts = new System.Collections.Generic.List<string>();
+                    if (md.strengthBonus != 0) parts.Add($"{(md.strengthBonus > 0 ? "+" : "")}{md.strengthBonus:F0} STR");
+                    if (md.dexterityBonus != 0) parts.Add($"{(md.dexterityBonus > 0 ? "+" : "")}{md.dexterityBonus:F0} DEX");
+                    if (md.intelligenceBonus != 0) parts.Add($"{(md.intelligenceBonus > 0 ? "+" : "")}{md.intelligenceBonus:F0} INT");
+                    if (md.sensorRangeBonus > 0) parts.Add($"Sensor+{md.sensorRangeBonus:F0}m");
+                    if (md.craftingSpeedMultiplier > 0) parts.Add($"Craft×{1f + md.craftingSpeedMultiplier:F2}");
+                    if (md.weaponDamageBonus > 0) parts.Add($"DMG+{md.weaponDamageBonus:F0}");
+                    return parts.Count > 0 ? string.Join(", ", parts) : "—";
+                }
+                return "—";
             }
 
             // ---- Row factory ----

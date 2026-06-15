@@ -173,4 +173,95 @@ namespace ProjectC.Core
         public string ContractId;
         public bool DebtIncurred; // true = игрок получил долг
     }
+
+    // ============================================================
+    // T-P05: Character Progression events (XP sources)
+    // Подписчик: StatsServer (StatsServer.cs). Publishers: см. docs/Character/04_STATS_PROGRESSION.md §2.3.
+    // ============================================================
+
+    /// <summary>
+    /// Игрок завершил mine 1+ item(s). Publisher: GatheringServer (T-G03) в success-ветке CompleteGather.
+    /// Subscribers: StatsServer → ApplyXp(XpSource.Mining) → STR.
+    /// </summary>
+    public sealed class MiningCompletedEvent : WorldEvent
+    {
+        public int ItemId;
+        public string ItemName;       // для Debug.Log и UI
+        public int Quantity;          // сколько units добыто за раз
+        public bool IsDepleted;       // узел depleted после harvest
+    }
+
+    /// <summary>
+    /// Игрок завершил craft 1+ item(s). Publisher: CraftingServer в OnCraftingTick (T-C07).
+    /// Subscribers: StatsServer → ApplyXp(XpSource.Crafting) → INT.
+    /// </summary>
+    public sealed class CraftingCompletedEvent : WorldEvent
+    {
+        public ulong StationNetId;    // NetworkObjectId станции (для диагностики)
+        public string RecipeId;
+        public string ResultItemName;
+        public int Quantity;
+    }
+
+    /// <summary>
+    /// Игрок выполнил Pack/Unpack на exchange-станции. Publisher: ExchangeServer (T-E05).
+    /// Subscribers: StatsServer → ApplyXp(XpSource.Exchange) → INT.
+    /// </summary>
+    public sealed class ExchangeCompletedEvent : WorldEvent
+    {
+        /// <summary>"pack" или "unpack" (op type). Используем string для совместимости с ExchangeServer.</summary>
+        public string Op;
+        public int ItemId;
+        public int Quantity;
+    }
+
+    /// <summary>
+    /// Игрок купил/продал item на market. Publisher: MarketServer в success-ветке RequestBuy/RequestSell.
+    /// Subscribers: StatsServer → ApplyXp(XpSource.Market) → INT.
+    /// </summary>
+    public sealed class MarketTradedEvent : WorldEvent
+    {
+        /// <summary>"buy" или "sell".</summary>
+        public string Op;
+        public int ItemId;
+        public int Quantity;
+        public int NewCredits;        // баланс ПОСЛЕ транзакции (для UI, не для XP)
+    }
+
+    /// <summary>
+    /// Игрок accept'ил quest. Publisher: QuestServer в Discovered→Active transition (T-Q20).
+    /// Subscribers: StatsServer → ApplyXp(XpSource.QuestAccepted) → INT.
+    /// </summary>
+    public sealed class QuestAcceptedEvent : WorldEvent
+    {
+        public string QuestId;
+    }
+
+    /// <summary>
+    /// Игрок завершил quest (turn-in). Publisher: QuestServer в Active→Completed transition.
+    /// Subscribers: StatsServer → ApplyXp(XpSource.QuestCompleted) → INT.
+    /// </summary>
+    public sealed class QuestCompletedEvent : WorldEvent
+    {
+        public string QuestId;
+    }
+
+    /// <summary>
+    /// Ship pilot переместился на DeltaDistance метров за server-tick. Publisher: ShipController
+    /// FixedUpdate (server-only) после physics integration.
+    /// Subscribers: StatsServer → ApplyXp(XpSource.Pilot) → INT.
+    /// </summary>
+    public sealed class ShipPilotTickEvent : WorldEvent
+    {
+        public float DeltaDistance;   // meters за этот тик
+    }
+
+    /// <summary>
+    /// Игрок нажал Space (jump) на owner-клиенте. Publisher: NetworkPlayer.SubmitJumpRpc (server branch).
+    /// Subscribers: StatsServer → ApplyXp(XpSource.Jump) → DEX.
+    /// </summary>
+    public sealed class PlayerJumpedEvent : WorldEvent
+    {
+        // Marker event — факт прыжка. XP amount из StatsConfig.JumpXp.
+    }
 }

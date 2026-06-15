@@ -400,6 +400,12 @@ namespace ProjectC.Player
                 _jumpPressed = Keyboard.current.spaceKey.wasPressedThisFrame;
                 _runPressed = Keyboard.current.leftShiftKey.isPressed;
 
+                // T-P05: owner-only jump notification → server → StatsServer → DEX XP
+                if (_jumpPressed && IsOwner)
+                {
+                    SubmitJumpRpc();
+                }
+
                 ProcessMovement(_moveInput, _jumpPressed, _runPressed);
 
                 // E — подбор ИЛИ открыть рынок (если в MarketZone и рядом нет сундука)
@@ -877,6 +883,27 @@ namespace ProjectC.Player
         public void TeleportServerRpc(Vector3 position)
         {
             TeleportToPosition(position);
+        }
+
+        // ==================== T-P05: JUMP RPC (Character Progression) ====================
+        // Server-не знает о прыжках (spaceKey.wasPressedThisFrame читается только на owner).
+        // Owner→server RPC: нотифицируем сервер о прыжке → publish PlayerJumpedEvent →
+        // StatsServer.OnJumped → ApplyXp(JumpXp) → DEX.
+
+        /// <summary>
+        /// Owner→server notification: "я только что прыгнул". Вызывается из Update() на
+        /// owner client когда _jumpPressed=true. Публикует PlayerJumpedEvent, StatsServer
+        /// подписан и начисляет DEX XP.
+        /// </summary>
+        [Rpc(SendTo.Server, RequireOwnership = true)]
+        public void SubmitJumpRpc(RpcParams rpcParams = default)
+        {
+            ulong clientId = rpcParams.Receive.SenderClientId;
+            ProjectC.Core.WorldEventBus.Publish(new ProjectC.Core.PlayerJumpedEvent
+            {
+                PlayerId = clientId,
+                TimestampUnix = System.DateTimeOffset.UtcNow.ToUnixTimeSeconds(),
+            });
         }
 
         /// <summary>

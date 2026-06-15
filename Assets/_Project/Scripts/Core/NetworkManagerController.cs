@@ -7,6 +7,7 @@ using ProjectC.Items;
 using ProjectC.Player;
 using ProjectC.Stats;
 using ProjectC.Equipment;
+using ProjectC.Skills;
 
 namespace ProjectC.Core
 {
@@ -125,6 +126,11 @@ namespace ProjectC.Core
             // Принимает EquipmentSnapshotDto + EquipResultDto от EquipmentServer (T-P09).
             // Подписка в CharacterWindow (T-P17) на events OnEquipmentUpdated/OnEquipResult.
             CreateEquipmentClientState();
+
+            // T-P13: SkillsClientState — клиентская проекция изученных навыков.
+            // Принимает SkillsSnapshotDto + SkillResultDto от SkillsServer (T-P13).
+            // Подписка в CharacterWindow (T-P14) на events OnSkillsUpdated/OnSkillResult.
+            CreateSkillsClientState();
 
             // Автоматический запуск Dedicated Server
             if (IsDedicatedServerMode())
@@ -379,6 +385,30 @@ namespace ProjectC.Core
             var go = new GameObject("[EquipmentClientState]");
             go.AddComponent<ProjectC.Equipment.EquipmentClientState>();
             Debug.Log("[NMC] Created [EquipmentClientState] as root GameObject");
+        }
+
+        /// <summary>
+        /// T-P13: SkillsClientState singleton (Character Progression, M3).
+        /// Паттерн идентичен CreateStatsClientState — root GO + AddComponent.
+        /// </summary>
+        private void CreateSkillsClientState()
+        {
+            var existing = FindObjectsByType<ProjectC.Skills.SkillsClientState>(FindObjectsInactive.Include);
+            foreach (var inst in existing)
+            {
+                if (inst != null && inst.transform.parent == null)
+                {
+                    Debug.Log("[NMC] SkillsClientState already root, skipping creation");
+                    return;
+                }
+            }
+            if (existing.Length > 0)
+            {
+                Debug.LogWarning($"[NMC] Found {existing.Length} non-root SkillsClientState in scene — DontDestroyOnLoad would fail. Creating root replacement.");
+            }
+            var go = new GameObject("[SkillsClientState]");
+            go.AddComponent<ProjectC.Skills.SkillsClientState>();
+            Debug.Log("[NMC] Created [SkillsClientState] as root GameObject");
         }
 
         private void Start()

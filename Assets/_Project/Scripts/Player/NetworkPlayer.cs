@@ -1143,6 +1143,23 @@ namespace ProjectC.Player
             ProjectC.Equipment.EquipmentClientState.Instance?.OnEquipResultReceived(result);
         }
 
+        // T-P13: Skills snapshot — server pushes learned skills to owner client.
+        // SkillsClientState (T-P13) примет snapshot и fire'ит OnSkillsUpdated event.
+        // CharacterWindow (T-P14) подпишется для отображения skill rows с LOCKED/AVAILABLE/LEARNED states.
+        [Rpc(SendTo.Owner)]
+        public void ReceiveSkillsSnapshotTargetRpc(ProjectC.Skills.Dto.SkillsSnapshotDto snapshot, RpcParams rpcParams = default)
+        {
+            ProjectC.Skills.SkillsClientState.Instance?.OnSkillsSnapshotReceived(snapshot);
+        }
+
+        // T-P13: Skills learn/forget result (ack/deny of RequestLearnSkillRpc/RequestForgetSkillRpc).
+        // SkillsClientState (T-P13) примет result. T-P14 UI покажет toast.
+        [Rpc(SendTo.Owner)]
+        public void ReceiveSkillResultTargetRpc(ProjectC.Skills.Dto.SkillResultDto result, RpcParams rpcParams = default)
+        {
+            ProjectC.Skills.SkillsClientState.Instance?.OnSkillResultReceived(result);
+        }
+
         // T-C03: Crafting result — server pushes ack/deny/progress to owner client.
         // CraftingClientState (T-C05) подпишется на это и поднимет events для CraftingProgressController.
         [Rpc(SendTo.Owner)]

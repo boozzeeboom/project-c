@@ -1,29 +1,44 @@
-// Project C: Character Progression — T-P08 (STUB) → полная версия T-P10
-// EquipmentClientState: client-side projection. Stub — public surface совпадает с T-P10 версией,
-// чтобы T-P09 (EquipmentServer) + NetworkPlayer.ReceiveEquipmentSnapshotTargetRpc компилировались.
+// Project C: Character Progression — T-P10
+// EquipmentClientState: client-side projection. T-P08 stub → ПОЛНАЯ ВЕРСИЯ.
+// Design: docs/Character/05_CLOTHING_AND_MODULES.md, docs/Character/08_ROADMAP.md T-P10
 //
-// В T-P08 stub: методы существуют, но только логируют. Events (OnEquipmentUpdated, OnEquipResult)
-// не объявлены — добавятся в T-P10. (T-P09 не использует events, только direct calls.)
+// Pattern: копия StatsClientState (T-P04) для event-architecture.
+// Events для UI (CharacterWindow T-P17):
+//   - OnEquipmentUpdated: новый snapshot пришёл
+//   - OnEquipResult: ack/deny от TryEquip/TryUnequip (toast)
 
+using System;
 using UnityEngine;
+using ProjectC.Equipment.Dto;
 
 namespace ProjectC.Equipment
 {
     /// <summary>
-    /// Client-side projection of server equipment state. T-P08 STUB — полная версия в T-P10.
+    /// Client-side projection of server equipment state. T-P10 FULL — events + snapshot.
     /// </summary>
     public class EquipmentClientState : MonoBehaviour
     {
         public static EquipmentClientState Instance { get; private set; }
 
-        public Equipment.Dto.EquipmentSnapshotDto? CurrentSnapshot { get; private set; }
+        [Header("Lifecycle")]
+        [SerializeField] private bool dontDestroyOnLoad = true;
+
+        // ============ State ============
+        public EquipmentSnapshotDto? CurrentSnapshot { get; private set; }
+
+        // ============ Events для UI ============
+        /// <summary>Data event: новый snapshot пришёл. UI вызывает RefreshDisplay.</summary>
+        public event Action<EquipmentSnapshotDto> OnEquipmentUpdated;
+
+        /// <summary>Notification event: equip/unequip ack/deny. UI показывает toast.</summary>
+        public event Action<EquipResultDto> OnEquipResult;
 
         private void Awake()
         {
             if (Instance == null)
             {
                 Instance = this;
-                DontDestroyOnLoad(gameObject);
+                if (dontDestroyOnLoad) DontDestroyOnLoad(gameObject);
             }
             else if (Instance != this)
             {
@@ -37,29 +52,45 @@ namespace ProjectC.Equipment
         }
 
         /// <summary>
-        /// Server → client handler. Вызывается из NetworkPlayer.ReceiveEquipmentSnapshotTargetRpc.
-        /// T-P08: только сохраняет snapshot + log. T-P10: добавит events.
+        /// Server → client handler. Вызывается из NetworkPlayer.ReceiveEquipmentSnapshotTargetRpc (T-P09).
+        /// Обновляет CurrentSnapshot + fire'ит OnEquipmentUpdated.
         /// </summary>
-        public void OnEquipmentSnapshotReceived(Equipment.Dto.EquipmentSnapshotDto snapshot)
+        public void OnEquipmentSnapshotReceived(EquipmentSnapshotDto snapshot)
         {
             CurrentSnapshot = snapshot;
+            OnEquipmentUpdated?.Invoke(snapshot);
             if (Debug.isDebugBuild)
             {
                 int occupied = 0;
                 foreach (var _ in snapshot.equip.EnumerateOccupiedSlots()) occupied++;
-                Debug.Log($"[EquipmentClientState] (T-P08 stub) snapshot received: {occupied} occupied slots");
+                Debug.Log($"[EquipmentClientState] OnEquipmentSnapshotReceived: {occupied} slots occupied");
             }
         }
 
         /// <summary>
-        /// T-P08 STUB: server → client equip result (success/denied). T-P10 добавит OnEquipResult event.
+        /// Server → client handler. Вызывается из NetworkPlayer.ReceiveEquipResultTargetRpc (T-P09).
+        /// Fire'ит OnEquipResult для UI toast.
         /// </summary>
-        public void OnEquipResultReceived(Equipment.Dto.EquipResultDto result)
+        public void OnEquipResultReceived(EquipResultDto result)
         {
+            OnEquipResult?.Invoke(result);
             if (Debug.isDebugBuild)
             {
-                Debug.Log($"[EquipmentClientState] (T-P08 stub) equip result: code={result.code} itemId={result.itemId} slot={result.slot} reason='{result.reason}'");
+                string msg = result.code switch
+                {
+                    EquipResultCode.Equipped   => $"✅ Надето: itemId={result.itemId} slot={result.slot}",
+                    EquipResultCode.Unequipped => $"✅ Снято: slot={result.slot}",
+                    EquipResultCode.Denied     => $"❌ {result.reason}",
+                    _ => $"? unknown code={result.code}",
+                };
+                Debug.Log($"[EquipmentClientState] OnEquipResultReceived: {msg}");
             }
+        }
+
+        /// <summary>Convenience для UI: clear state (scene reload без DontDestroyOnLoad).</summary>
+        public void ClearState()
+        {
+            CurrentSnapshot = null;
         }
     }
 }

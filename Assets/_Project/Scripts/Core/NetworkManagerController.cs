@@ -6,6 +6,7 @@ using System.Collections;
 using ProjectC.Items;
 using ProjectC.Player;
 using ProjectC.Stats;
+using ProjectC.Equipment;
 
 namespace ProjectC.Core
 {
@@ -119,6 +120,11 @@ namespace ProjectC.Core
             // Принимает StatsSnapshotDto от StatsServer (T-P05) через NetworkPlayer.ReceiveStatsSnapshotTargetRpc.
             // Подписка в CharacterWindow (T-P16) на event OnStatsUpdated.
             CreateStatsClientState();
+
+            // T-P10: EquipmentClientState — клиентская проекция одежды/модулей.
+            // Принимает EquipmentSnapshotDto + EquipResultDto от EquipmentServer (T-P09).
+            // Подписка в CharacterWindow (T-P17) на events OnEquipmentUpdated/OnEquipResult.
+            CreateEquipmentClientState();
 
             // Автоматический запуск Dedicated Server
             if (IsDedicatedServerMode())
@@ -349,6 +355,30 @@ namespace ProjectC.Core
             var go = new GameObject("[StatsClientState]");
             go.AddComponent<ProjectC.Stats.StatsClientState>();
             Debug.Log("[NMC] Created [StatsClientState] as root GameObject");
+        }
+
+        /// <summary>
+        /// T-P10: EquipmentClientState singleton (Character Progression, M2).
+        /// Паттерн идентичен CreateStatsClientState — root GO + AddComponent.
+        /// </summary>
+        private void CreateEquipmentClientState()
+        {
+            var existing = FindObjectsByType<ProjectC.Equipment.EquipmentClientState>(FindObjectsInactive.Include);
+            foreach (var inst in existing)
+            {
+                if (inst != null && inst.transform.parent == null)
+                {
+                    Debug.Log("[NMC] EquipmentClientState already root, skipping creation");
+                    return;
+                }
+            }
+            if (existing.Length > 0)
+            {
+                Debug.LogWarning($"[NMC] Found {existing.Length} non-root EquipmentClientState in scene — DontDestroyOnLoad would fail. Creating root replacement.");
+            }
+            var go = new GameObject("[EquipmentClientState]");
+            go.AddComponent<ProjectC.Equipment.EquipmentClientState>();
+            Debug.Log("[NMC] Created [EquipmentClientState] as root GameObject");
         }
 
         private void Start()

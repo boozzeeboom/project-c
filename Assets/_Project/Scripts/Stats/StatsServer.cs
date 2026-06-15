@@ -130,6 +130,26 @@ namespace ProjectC.Stats
         {
             if (!IsServer) return;
 
+            // SESSION 1 fix: FLUSH SAVE для всех players перед unhook.
+            // Раньше OnNetworkDespawn сразу unhook'ал — клиенты никогда не успевали
+            // поймать OnClientDisconnectCallback и save не срабатывал.
+            if (_world != null && _repo != null)
+            {
+                foreach (var clientId in _world.GetAllPlayerIds())
+                {
+                    try
+                    {
+                        var data = _world.BuildSaveData(clientId);
+                        if (data != null) _repo.Save(clientId, data);
+                        Debug.Log($"[StatsServer] OnNetworkDespawn: FLUSHED save for client={clientId}");
+                    }
+                    catch (System.Exception ex)
+                    {
+                        Debug.LogWarning($"[StatsServer] Flush save failed for client={clientId}: {ex.Message}");
+                    }
+                }
+            }
+
             // T-P06: unhook persistence
             if (NetworkManager.Singleton != null)
             {
@@ -436,6 +456,25 @@ namespace ProjectC.Stats
             if (!IsServer || _config == null) return;
             if (NetworkManager.Singleton == null) return;
 
+            // SESSION 1 fix: periodic auto-save (каждые AutoSaveInterval секунд).
+            // Защита от crash / быстрого exit — данные не теряются.
+            if (_repo != null && _world != null)
+            {
+                if (Time.unscaledTime >= _nextAutoSaveUtc)
+                {
+                    _nextAutoSaveUtc = Time.unscaledTime + AutoSaveInterval;
+                    foreach (var cid in _world.GetAllPlayerIds())
+                    {
+                        try
+                        {
+                            var d = _world.BuildSaveData(cid);
+                            if (d != null) _repo.Save(cid, d);
+                        }
+                        catch { /* silent on periodic; main flow catches errors */ }
+                    }
+                }
+            }
+
             // SESSION 1 fix: sane max per FixedUpdate — игрок не может переместиться больше чем
             // MaxWalkDeltaPerFixedUpdate метров за 1/50 сек. Защита от teleport/scene-load спайков
             // которые раньше давали 10M+ XP за один кадр.
@@ -503,6 +542,8 @@ namespace ProjectC.Stats
         }
 
         // === Q1.4: unique-event dialog tracking ===
+        private const float AutoSaveInterval = 30.0f; // SESSION 1: save every 30 sec
+        private float _nextAutoSaveUtc;
 
         private bool IsUniqueDialogEvent(ulong clientId, string eventKey)
         {

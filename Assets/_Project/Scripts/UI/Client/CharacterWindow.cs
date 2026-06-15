@@ -413,6 +413,38 @@ namespace ProjectC.UI.Client
                 }
             }
 
+            // SESSION 1 fix: lazy-subscribe для Stats/Skills/Equipment ClientStates.
+            // В EnsureBuilt Instance мог быть null если client state создан позже (race condition).
+            if (_built && !_isStatsSubscribed)
+            {
+                var statsState = ProjectC.Stats.StatsClientState.Instance;
+                if (statsState != null)
+                {
+                    SubscribeStats();
+                    Debug.Log("[CharacterWindow] Lazy-subscribed to StatsClientState.OnStatsUpdated");
+                    // Триггерим немедленный refresh — если CurrentStats уже есть, отобразим
+                    if (statsState.CurrentStats.HasValue) RefreshStatsDisplay(statsState.CurrentStats.Value);
+                }
+            }
+            if (_built && !_isEquipmentSubscribed)
+            {
+                var eqState = ProjectC.Equipment.EquipmentClientState.Instance;
+                if (eqState != null)
+                {
+                    SubscribeEquipment();
+                    Debug.Log("[CharacterWindow] Lazy-subscribed to EquipmentClientState");
+                }
+            }
+            if (_built && !_isSkillsSubscribed)
+            {
+                var skState = ProjectC.Skills.SkillsClientState.Instance;
+                if (skState != null)
+                {
+                    SubscribeSkills();
+                    Debug.Log("[CharacterWindow] Lazy-subscribed to SkillsClientState");
+                }
+            }
+
             var nm = NetworkManager.Singleton;
             if (nm == null || !nm.IsListening) return;
             if (!nm.IsClient && !nm.IsServer) return;
@@ -1620,6 +1652,7 @@ namespace ProjectC.UI.Client
 
             private void HandleStatsSnapshot(ProjectC.Stats.Dto.StatsSnapshotDto snap)
             {
+                if (Debug.isDebugBuild) Debug.Log($"[CharacterWindow] HandleStatsSnapshot: STR={snap.strength:F2} DEX={snap.dexterity:F2} INT={snap.intelligence:F2} | refs: strBar={_statStrBar!=null} dexBar={_statDexBar!=null} intBar={_statIntBar!=null} strVal={_statStrValue!=null}");
                 RefreshStatsDisplay(snap);
             }
 

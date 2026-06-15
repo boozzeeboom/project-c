@@ -404,13 +404,17 @@ namespace ProjectC.Stats
             };
 
             // T-P06: ReceiveStatsSnapshotTargetRpc добавлен в NetworkPlayer (owner→server).
+            // Сигнатура: ReceiveStatsSnapshotTargetRpc(StatsSnapshotDto snapshot, RpcParams rpcParams).
+            // При reflection-вызове NGO RPC нужно передать ОБА параметра (default RpcParams через Activator.CreateInstance).
             // Вызываем через reflection — работает в обоих направлениях:
             //   T-P05 (RPC не существовал) → fall-back на Debug.Log
-            //   T-P06+ → reflection находит метод и вызывает его с snap
+            //   T-P06+ → reflection находит метод и вызывает его с (snap, default RpcParams)
             var mi = typeof(NetworkPlayer).GetMethod("ReceiveStatsSnapshotTargetRpc");
             if (mi != null)
             {
-                mi.Invoke(netPlayer, new object[] { snap });
+                // default RpcParams — это struct, Activator.CreateInstance работает для value-types
+                var defaultRpcParams = System.Activator.CreateInstance(typeof(RpcParams));
+                mi.Invoke(netPlayer, new object[] { snap, defaultRpcParams });
             }
             else if (_config != null && _config.DebugLogging)
             {

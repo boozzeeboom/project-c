@@ -12,7 +12,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 7cc8640948322db4b968053a5978b2f9, type: 3}
   m_Name: ResourceNode_PlantHerb
   m_EditorClassIdentifier: Assembly-CSharp::ProjectC.ResourceNode.ResourceNodeConfig
-  _resultItem: {fileID: 11400000, guid: f31161333fb5acf458fff56ef2fcb332, type: 2}
+  _resultItem: {fileID: 11400000, guid: 0d18eeec96dcf99459173f43545552e9, type: 2}
   _resultItemType: 0
   _requiredTool: {fileID: 0}
   _gatherSeconds: 1.5

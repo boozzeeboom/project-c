@@ -315,6 +315,14 @@ namespace ProjectC.ResourceNode
                 return GatherTickResult.Interrupted("Инвентарь не инициализирован");
             }
 
+            // T-Gxx: BootstrapScene timing fix — если OnNetworkSpawn вызвался ДО
+            // InventoryServer.OnNetworkSpawn, то _resultItemId мог остаться -1.
+            // Пере-резолвим здесь, перед AddItemDirect.
+            if (_config.ResultItemId <= 0)
+            {
+                _config.ResolveItemIds();
+            }
+
             // Добавить предмет (AddItemDirect возвращает InventoryResultDto)
             var addResult = InventoryWorld.Instance.AddItemDirect(
                 _currentGathererClientId,
@@ -323,10 +331,15 @@ namespace ProjectC.ResourceNode
 
             if (!addResult.IsSuccess)
             {
+                // T-Gxx: логируем реальную ошибку (не маскируем её хардкодом)
+                Debug.LogWarning($"[ResourceNode] CompleteGather: AddItemDirect failed: " +
+                    $"code={addResult.code} msg={addResult.message} itemId={_config.ResultItemId}");
+                // T-IE: показываем реальную причину, а не хардкод
+                string reason = !string.IsNullOrEmpty(addResult.message) ? addResult.message : "Инвентарь полон";
                 // Не влезло / не найден — оставим Idle, предмет остаётся доступным.
                 _currentGathererClientId = 0;
                 _replicatedState.Value = ResourceNodeState.Idle;
-                return GatherTickResult.Interrupted("Инвентарь полон");
+                return GatherTickResult.Interrupted(reason);
             }
 
             _currentHarvests++;

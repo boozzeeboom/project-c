@@ -97,6 +97,12 @@ namespace ProjectC.Items.Client
             LastResult = result;
             try
             {
+                // T-Gxx: per-operation callback (PickupItem) BEFORE global event
+                // чтобы избежать cross-talk на OnInventoryResult.
+                var cb = _pendingPickupCallback;
+                _pendingPickupCallback = null;
+                cb?.Invoke(result);
+
                 OnInventoryResult?.Invoke(result);
             }
             catch (Exception ex)
@@ -118,6 +124,27 @@ namespace ProjectC.Items.Client
                 return;
             }
             ProjectC.Items.Network.InventoryServer.Instance.RequestPickupRpc(itemId, (byte)itemType, worldPos);
+        }
+
+        /// <summary>
+        /// T-Gxx: per-operation callback для PickupItem. Предотвращает cross-talk
+        /// когда несколько PickupItem подписаны на глобальный OnInventoryResult.
+        /// </summary>
+        private Action<InventoryResultDto> _pendingPickupCallback;
+
+        /// <summary>
+        /// T-Gxx: overload with per-operation callback. Вызывается из PickupItem.Collect()
+        /// вместо подписки на глобальное событие OnInventoryResult.
+        /// </summary>
+        public void RequestPickup(int itemId, ItemType itemType, Vector3 worldPos,
+            Action<InventoryResultDto> onResult)
+        {
+            if (_pendingPickupCallback != null)
+            {
+                Debug.LogWarning("[InventoryClientState] RequestPickup: предыдущий pickup ещё ожидает ответа. Перезаписываем.");
+            }
+            _pendingPickupCallback = onResult;
+            RequestPickup(itemId, itemType, worldPos);
         }
 
         public void RequestDrop(int slotIndex, int quantity, Vector3 worldPos, Vector3 playerPos)

@@ -98,15 +98,49 @@ namespace ProjectC.Items
         /// <summary>
         /// T-X0: Load persisted inventory for player (on connect). Replaces in-memory
         /// state if file exists. Безопасно вызывать несколько раз — идемпотентно.
+        /// T-IE: фильтрует items с id которых нет в текущем ItemRegistry (старые сохранёнки
+        /// могут иметь невалидные id после реимпорта).
         /// </summary>
         public void LoadPlayer(ulong clientId)
         {
             if (_repository == null) return;
             var loaded = _repository.Load(clientId);
+
+            // T-IE: clean up invalid itemIds (импортер мог изменить ID при реимпорте).
+            int before = loaded.TotalCount;
+            CleanInvalidItems(loaded);
+            int after = loaded.TotalCount;
+            if (before != after)
+            {
+                Debug.LogWarning($"[InventoryWorld] LoadPlayer client={clientId}: очищено {before - after} невалидных items (id отсутствует в БД)");
+                // Save обратно
+                _repository.Save(clientId, loaded);
+            }
+
             if (loaded.TotalCount > 0)
             {
                 _playerInventories[clientId] = loaded;
                 if (Debug.isDebugBuild) Debug.Log($"[InventoryWorld] Loaded inventory for client {clientId}: {loaded.TotalCount} items");
+            }
+        }
+
+        /// <summary>T-IE: удалить из InventoryData все itemId, которых нет в _itemDatabase.</summary>
+        private void CleanInvalidItems(InventoryData data)
+        {
+            // _itemDatabase сейчас null возможен при LoadPlayer до RegisterAllItems
+            // (Order: InventoryServer.OnNetworkSpawn → CreateAndInitialize → LoadPlayer).
+            // В этом случае — не чистим, вернём всё как есть.
+            if (_itemDatabase.Count == 0) return;
+
+            foreach (ItemType type in System.Enum.GetValues(typeof(ItemType)))
+            {
+                var ids = data.GetIdsForType(type);
+                if (ids == null) continue;
+                for (int i = ids.Count - 1; i >= 0; i--)
+                {
+                    if (!_itemDatabase.ContainsKey(ids[i]))
+                        ids.RemoveAt(i);
+                }
             }
         }
 
@@ -445,6 +479,9 @@ namespace ProjectC.Items
         /// </summary>
         public InventoryResultDto AddItemDirect(ulong clientId, int itemId, ItemType itemType)
         {
+            // T-IE DIAG: точное состояние при попытке добавить (даже при fail)
+            Debug.Log($"[InventoryWorld] AddItemDirect: client={clientId} itemId={itemType}({itemId}) dbHasItem={_itemDatabase.ContainsKey(itemId)} have={GetOrCreate(clientId).TotalCount}/{_maxSlots}");
+
             if (!_itemDatabase.ContainsKey(itemId))
                 return Fail(InventoryResultCode.ItemNotFound, $"ID={itemId}", itemId, -1);
 

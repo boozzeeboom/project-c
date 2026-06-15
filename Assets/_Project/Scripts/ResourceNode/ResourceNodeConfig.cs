@@ -120,9 +120,21 @@ namespace ProjectC.ResourceNode
                 return;
             }
 
+            // T-IE DIAG: проверка что ссылки живы после импорта
+            if (_resultItem == null)
+                Debug.LogError($"[ResourceNodeConfig] {name}: _resultItem == null! После импорта ItemData удалены/пересозданы. " +
+                    "Переназначьте _resultItem в инспекторе на новый ItemData из Resources/Items/.");
+            else
+                Debug.Log($"[ResourceNodeConfig] {name}: resolving _resultItem='{_resultItem.itemName}'");
+
             _resultItemId = _resultItem != null
                 ? InventoryWorld.Instance.GetOrRegisterItemId(_resultItem)
                 : -1;
+
+            if (_requiredTool == null)
+                Debug.LogWarning($"[ResourceNodeConfig] {name}: _requiredTool == null. Tool-check будет отключён.");
+            else
+                Debug.Log($"[ResourceNodeConfig] {name}: resolving _requiredTool='{_requiredTool.itemName}'");
 
             _requiredToolId = _requiredTool != null
                 ? InventoryWorld.Instance.GetOrRegisterItemId(_requiredTool)

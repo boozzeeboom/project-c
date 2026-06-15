@@ -129,9 +129,9 @@ namespace ProjectC.Items
             if (clientState != null)
             {
                 _isAwaitingServer = true;
-                clientState.RequestPickup(itemId, itemData.itemType, transform.position);
-                // Подписка на результат (одноразовая)
-                clientState.OnInventoryResult += HandlePickupResult;
+                // T-Gxx: per-operation callback (не подписка на глобальное OnInventoryResult)
+                clientState.RequestPickup(itemId, itemData.itemType, transform.position,
+                    HandlePickupResult);
             }
             else
             {
@@ -148,9 +148,6 @@ namespace ProjectC.Items
         /// </summary>
         private void HandlePickupResult(InventoryResultDto result)
         {
-            var clientState = ProjectC.Items.Client.InventoryClientState.Instance;
-            if (clientState == null) return;
-            clientState.OnInventoryResult -= HandlePickupResult;
             _isAwaitingServer = false;
 
             if (result.IsSuccess)

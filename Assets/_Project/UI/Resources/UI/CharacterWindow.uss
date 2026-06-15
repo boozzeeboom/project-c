@@ -507,3 +507,231 @@
 .npc-attitude-fill {
     height: 100% !important;
 }
+
+/* ============================================
+   T-P15: Character Progression M4 (progression tab + 4 sub-tabs + stats/clothing/modules/skills sub-sections)
+
+   APPLIED FIXES (из recon_visual_bugs.md + recon_visual_fix_plan.md):
+   • B1 (tabs wrap): .progression-sub-tabs использует flex-basis:0 (как .tabs выше) — 4 sub-tabs влезают в строку.
+   • B2 (stat-row overlap): .stat-row-progress использует align-self: stretch + min-width: 0 (как .stat-row).
+   • B3 (list-section overflow): .progression-sub-section = .list-section-style с flex-shrink:1, min-height:0, overflow:hidden.
+   • B4 (actions overlap): .actions уже имеет flex-shrink:0 в основном USS.
+   • B5 (transparent bg): .progression-section background-color: rgb(20,25,35) без alpha — перебивает inline-стили C#.
+
+   Также все стили !important (REFACTOR 2026-06-05 v2 — UnityDefaultRuntimeTheme имеет type-selector specificity > class).
+   ============================================ */
+
+/* Progression section — аналог .list-section, но с дополнительными sub-tabs сверху */
+.progression-section {
+    margin-bottom: 4px !important;
+    flex-grow: 1 !important;
+    flex-shrink: 1 !important;
+    min-height: 0 !important;
+    overflow: hidden !important;
+    display: flex !important;
+    flex-direction: column !important;
+    background-color: rgba(15, 20, 30, 0.5) !important;  /* чуть темнее основной секции для вложенности */
+    border-width: 1px !important;
+    border-color: rgba(80, 100, 130, 0.3) !important;
+    border-radius: 4px !important;
+    padding: 4px !important;
+}
+
+/* Sub-tabs: Статы / Одежда / Модули / Навыки (4 кнопки в строку) */
+.progression-sub-tabs {
+    flex-direction: row !important;
+    flex-wrap: nowrap !important;  /* 4 кнопки = 720px/4 = 180px каждая, wrap не нужен */
+    margin-bottom: 4px !important;
+    flex-shrink: 0 !important;
+}
+.sub-tab-btn {
+    flex-grow: 1 !important;
+    flex-basis: 0 !important;        /* per Lesson B1: делит поровну */
+    flex-shrink: 1 !important;
+    height: 20px !important;
+    font-size: 9px !important;       /* ещё мельче чем top-level tabs (10px) */
+    background-color: rgba(40, 55, 80, 0.5) !important;
+    color: rgb(200, 200, 220) !important;
+    border-width: 0 !important;
+    border-bottom-width: 2px !important;
+    border-bottom-color: transparent !important;
+    border-radius: 2px !important;
+    margin: 0 1px !important;
+    padding: 0 !important;
+    -unity-text-align: middle-center !important;
+    -unity-font-style: normal !important;
+}
+.sub-tab-btn:hover { background-color: rgba(60, 80, 120, 0.6) !important; }
+.sub-tab-btn.active {
+    border-bottom-color: rgb(180, 220, 255) !important;  /* blue accent для sub-tabs (top-level = yellow) */
+    background-color: rgba(60, 90, 140, 0.7) !important;
+    color: rgb(230, 240, 255) !important;
+}
+
+/* Sub-section: один из 4 (stats/clothing/modules/skills) виден в данный момент */
+.progression-sub-section {
+    flex-grow: 1 !important;          /* per Lesson B3: scroll-внутри */
+    flex-shrink: 1 !important;
+    min-height: 0 !important;
+    overflow: hidden !important;
+    display: flex !important;
+    flex-direction: column !important;
+    background-color: rgba(20, 25, 35, 0.3) !important;
+    border-radius: 3px !important;
+    padding: 4px !important;
+}
+
+/* T-P16: stat-row-progress (Q4.2) — label + ProgressBar + value в строку */
+.stat-row-progress {
+    flex-direction: row !important;
+    align-items: center !important;
+    align-self: stretch !important;   /* per Lesson B2: stretch в flex-column */
+    min-width: 0 !important;
+    padding: 3px 6px !important;
+    margin-bottom: 2px !important;
+    border-bottom-width: 1px !important;
+    border-bottom-color: rgba(80, 100, 130, 0.15) !important;
+    flex-shrink: 0 !important;
+}
+.stat-row-progress > .stat-label {
+    width: 70px !important;             /* фиксированная ширина для лейбла */
+    min-width: 0 !important;
+    flex-shrink: 1 !important;
+}
+.stat-row-progress > .stat-progress-bar {
+    flex-grow: 1 !important;            /* bar занимает всё оставшееся место */
+    flex-shrink: 1 !important;
+    min-width: 0 !important;
+    margin: 0 6px !important;
+    height: 14px !important;
+}
+.stat-row-progress > .stat-value {
+    width: 80px !important;             /* фиксированная ширина для value */
+    min-width: 0 !important;
+    flex-shrink: 0 !important;
+    -unity-text-align: middle-right !important;
+    font-size: 10px !important;
+    color: rgb(220, 220, 230) !important;
+}
+.stat-progress-fill {                  /* inner fill bar (для tier-up color) */
+    height: 100% !important;
+}
+.stat-progress-fill.tier-low {
+    background-color: rgba(100, 140, 180, 0.8) !important;
+}
+.stat-progress-fill.tier-mid {
+    background-color: rgba(120, 200, 140, 0.8) !important;
+}
+.stat-progress-fill.tier-high {
+    background-color: rgba(220, 180, 100, 0.9) !important;
+}
+.stat-progress-fill.tier-master {
+    background-color: rgba(220, 120, 180, 0.9) !important;
+}
+.stat-row-progress.tier-promoted {
+    background-color: rgba(255, 220, 130, 0.15) !important;
+}
+
+/* T-P14: skill-row (для skills-combat-list / skills-social-list в T-P14) */
+.skill-row {
+    flex-direction: row !important;
+    align-items: center !important;
+    padding: 3px 6px !important;
+    border-bottom-width: 1px !important;
+    border-bottom-color: rgba(80, 100, 130, 0.2) !important;
+    flex-shrink: 0 !important;
+    min-width: 0 !important;
+}
+.skill-row:hover { background-color: rgba(120, 150, 200, 0.1) !important; }
+.skill-row-state {
+    width: 18px !important;
+    font-size: 12px !important;
+    -unity-text-align: middle-center !important;
+    margin-right: 4px !important;
+    flex-shrink: 0 !important;
+}
+.skill-row-title {
+    flex-grow: 1 !important;
+    min-width: 0 !important;
+    font-size: 11px !important;
+    color: rgb(220, 220, 230) !important;
+    white-space: normal !important;
+}
+.skill-row-cost {
+    width: 50px !important;
+    font-size: 10px !important;
+    color: rgb(180, 200, 150) !important;
+    -unity-text-align: middle-right !important;
+    flex-shrink: 0 !important;
+}
+.skill-row-desc {
+    width: 60px !important;
+    font-size: 9px !important;
+    color: rgb(160, 180, 200) !important;
+    -unity-text-align: middle-right !important;
+    flex-shrink: 0 !important;
+    margin-left: 2px !important;
+}
+.skill-row-prereq {
+    display: none !important;          /* prereq info only in tooltip (T-P15+); row height фиксирован */
+}
+.skill-row-learned {
+    background-color: rgba(80, 160, 120, 0.2) !important;
+    color: rgba(180, 220, 200, 0.9) !important;
+}
+.skill-row-learned .skill-row-state { color: rgb(120, 220, 160) !important; }
+.skill-row-available {
+    background-color: rgba(60, 100, 160, 0.1) !important;
+}
+.skill-row-available .skill-row-state { color: rgb(220, 220, 130) !important; }
+.skill-row-locked {
+    color: rgba(140, 140, 150, 0.7) !important;
+}
+.skill-row-locked .skill-row-state { color: rgb(180, 100, 100) !important; }
+
+/* T-P17: equip-slot-row (для clothing-list / modules-list) */
+.equip-slot-row {
+    flex-direction: row !important;
+    align-items: center !important;
+    padding: 3px 6px !important;
+    border-bottom-width: 1px !important;
+    border-bottom-color: rgba(80, 100, 130, 0.2) !important;
+    flex-shrink: 0 !important;
+    min-width: 0 !important;
+    height: 28px !important;
+}
+.equip-slot-row:hover { background-color: rgba(120, 150, 200, 0.15) !important; }
+.equip-slot-name {
+    width: 60px !important;
+    font-size: 10px !important;
+    color: rgb(180, 200, 220) !important;
+    flex-shrink: 0 !important;
+}
+.equip-slot-item {
+    flex-grow: 1 !important;
+    min-width: 0 !important;
+    font-size: 11px !important;
+    color: rgb(220, 220, 230) !important;
+    -unity-font-style: bold !important;
+    white-space: normal !important;
+    margin: 0 4px !important;
+}
+.equip-slot-bonuses {
+    width: 100px !important;
+    font-size: 9px !important;
+    color: rgb(150, 200, 150) !important;
+    -unity-text-align: middle-right !important;
+    flex-shrink: 0 !important;
+}
+.equip-slot-btn {
+    width: 50px !important;
+    height: 18px !important;
+    font-size: 9px !important;
+    margin-left: 4px !important;
+    background-color: rgba(160, 80, 80, 0.5) !important;
+    color: rgb(240, 200, 200) !important;
+    border-width: 0 !important;
+    border-radius: 2px !important;
+    flex-shrink: 0 !important;
+}
+.equip-slot-btn:hover { background-color: rgba(200, 100, 100, 0.7) !important; }

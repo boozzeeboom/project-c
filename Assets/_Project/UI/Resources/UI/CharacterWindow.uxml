@@ -1,22 +1,31 @@
 <?xml version="1.0" encoding="utf-8"?>
 <!--
  CharacterWindow.uxml — окно "Персонаж" игрока (Project C: The Clouds).
- Документация: docs/Character-menu/10_DESIGN.md, docs/Character-menu/00_OVERVIEW.md.
+ Документация: docs/Character-menu/10_DESIGN.md, docs/Character-menu/00_OVERVIEW.md,
+ docs/Character/08_ROADMAP.md T-P15 (M4 — UI integration).
 
  Структура:
  • header — имя игрока + время
  • info-bar — кредиты / локация
- • tabs —6 кнопок (ПЕРСОНАЖ / КОРАБЛЬ / РЕПУТАЦИЯ / КОНТРАКТЫ / ИНВЕНТАРЬ / КВЕСТЫ)
+ • tabs — 7 кнопок (ПЕРСОНАЖ / КОРАБЛЬ / РЕПУТАЦИЯ / КОНТРАКТЫ / ИНВЕНТАРЬ / КВЕСТЫ / ПРОГРЕССИЯ)
  • filters-row — общие фильтры (только для Контракты/Инвентарь)
- •6 секций (одна видимая за раз через SwitchTab)
+ • 7 секций (одна видимая за раз через SwitchTab)
+ • progression-section содержит 4 sub-tabs (Статы / Одежда / Модули / Навыки) — SwitchProgressionTab
  • actions — контекстные кнопки (ВЗЯТЬ/СДАТЬ/ПРОВАЛИТЬ для Контракты; ПРИНЯТЬ для Квесты-Discovered; ЗАКРЫТЬ всегда)
  • message — общий feedback
 
+ T-P15 ADDED:
+ • 7-й таб "ПРОГРЕССИЯ" (Character Progression M4)
+ • progression-section с 4 sub-tabs (Боевые/Социальные для навыков разделены внутри)
+ • stats progress bars (stat-row-progress) per Q4.2
+ • skill rows для T-P14 (LEARNED/AVAILABLE/LOCKED states)
+ • clothing/modules ListView для T-P17/T-P17
+
  Добавление нового таба:
-1) добавить <ui:Button name="tab-X" /> в .tabs
-2) добавить <ui:VisualElement name="X-section" /> сюда
-3) добавить case в CharacterWindow.SwitchTab(string)
-4) (опц.) добавить подписку на новый singleton в EnsureBuilt
+ 1) добавить <ui:Button name="tab-X" /> в .tabs
+ 2) добавить <ui:VisualElement name="X-section" /> сюда
+ 3) добавить case в CharacterWindow.SwitchTab(string)
+ 4) (опц.) добавить подписку на новый singleton в EnsureBuilt
 -->
 <ui:UXML xmlns:ui="UnityEngine.UIElements" xmlns:uie="UnityEditor.UIElements">
  <ui:VisualElement name="main-container" class="character-window">
@@ -32,7 +41,8 @@
  <ui:Label name="location-label" text="Локация: —" class="location-info" />
  </ui:VisualElement>
 
- <!-- === Tabs (порядок важен: character, ship, reputation, contracts, inventory, quests) === -->
+ <!-- === Tabs (порядок важен: character, ship, reputation, contracts, inventory, quests, progression) === -->
+ <!-- T-P15 ADDED: 7-й таб "ПРОГРЕССИЯ" (M4). Visual: 7 табов × 90px в 720px окне, шрифт 10px, !important flex-basis:0 (см. .tab-btn в .uss) — влезают в строку. -->
  <ui:VisualElement class="tabs">
  <ui:Button name="tab-character" text="ПЕРСОНАЖ" class="tab-btn" />
  <ui:Button name="tab-ship" text="КОРАБЛЬ" class="tab-btn" />
@@ -40,6 +50,7 @@
  <ui:Button name="tab-contracts" text="КОНТРАКТЫ" class="tab-btn" />
  <ui:Button name="tab-inventory" text="ИНВЕНТАРЬ" class="tab-btn" />
  <ui:Button name="tab-quests" text="КВЕСТЫ" class="tab-btn" />
+ <ui:Button name="tab-progression" text="ПРОГРЕССИЯ" class="tab-btn" />
  </ui:VisualElement>
 
  <!-- === Filters (общий для Контракты/Инвентарь) === -->
@@ -78,7 +89,7 @@
  <ui:Label name="stat-active-contracts" text="0" class="stat-value" />
  </ui:VisualElement>
  </ui:VisualElement>
- <ui:Label text="Одежда, гаджеты и прочие фичи — в будущих итерациях" class="placeholder-hint" />
+ <ui:Label text="Одежда, гаджеты и прочие фичи — см. таб ПРОГРЕССИЯ" class="placeholder-hint" />
  </ui:VisualElement>
 
  <!-- === Section2: КОРАБЛЬ (заглушка + план, см. GDD-10) === -->
@@ -113,7 +124,6 @@
  <ui:VisualElement name="reputation-section" class="list-section" style="display: none;">
  <ui:Label text="Репутация по фракциям" class="section-title" />
  <ui:ListView name="reputation-list" class="item-list" />
- <!-- T-Q13: под-секция отношений к NPC (per NpcAttitudeClientState) -->
  <ui:Label text="Отношения к NPC" class="quest-section-title" />
  <ui:ListView name="npc-attitude-list" class="item-list npc-attitude-list" />
  <ui:Label text="Репутация и отношения: см. GDD-23. Серверная модель в разработке. Сейчас отображаются плейсхолдер-данные." class="placeholder-hint" />
@@ -131,33 +141,97 @@
  <ui:ListView name="inventory-list" class="item-list" />
  </ui:VisualElement>
 
- <!-- === Section6: КВЕСТЫ (T-Q11: re-use QuestClientState,4 под-секции + Accept) === -->
+ <!-- === Section6: КВЕСТЫ (T-Q11: re-use QuestClientState, 4 под-секции + Accept) === -->
  <ui:VisualElement name="quests-section" class="list-section quests-section" style="display: none;">
  <ui:Label text="Журнал квестов" class="section-title" />
-
- <!-- T-Q11:4 под-секции (Active / Completed / Failed / Discovered) -->
  <ui:VisualElement class="quest-sub">
  <ui:Label text="Активные" class="quest-section-title" />
  <ui:ListView name="quests-active-list" class="item-list quest-list" />
  </ui:VisualElement>
-
  <ui:VisualElement class="quest-sub">
  <ui:Label text="Завершённые" class="quest-section-title" />
  <ui:ListView name="quests-completed-list" class="item-list quest-list" />
  </ui:VisualElement>
-
  <ui:VisualElement class="quest-sub">
  <ui:Label text="Проваленные" class="quest-section-title" />
  <ui:ListView name="quests-failed-list" class="item-list quest-list" />
  </ui:VisualElement>
-
  <ui:VisualElement class="quest-sub">
  <ui:Label text="Найденные (можно принять)" class="quest-section-title" />
  <ui:ListView name="quests-discovered-list" class="item-list quest-list" />
  </ui:VisualElement>
-
  <ui:Label text="Квесты можно принять из найденных. Turn-in / Track придёт в T-Q15+." class="placeholder-hint" />
  </ui:VisualElement>
+
+ <!-- === Section7: ПРОГРЕССИЯ (T-P15, Character Progression M4) ===
+ Структура: progression-section (растягивается) > progression-sub-tabs (4 кнопки) >
+ 4 sub-sections: stats / clothing / modules / skills (одна видимая за раз через SwitchProgressionTab).
+ Внутри каждой sub-section: свой content (stat-row-progress / item-list / item-list / 2 item-list для combat+social). -->
+ <ui:VisualElement name="progression-section" class="list-section progression-section" style="display: none;">
+
+ <!-- Sub-tabs: Статы / Одежда / Модули / Навыки (per roadmap §3 T-P15) -->
+ <!-- !important flex-basis:0 гарантирует что 4 sub-tabs влезают в строку (per Lesson B1: wrap уйдёт вниз) -->
+ <ui:VisualElement class="progression-sub-tabs">
+ <ui:Button name="tab-stats" text="СТАТЫ" class="sub-tab-btn" />
+ <ui:Button name="tab-clothing" text="ОДЕЖДА" class="sub-tab-btn" />
+ <ui:Button name="tab-modules" text="МОДУЛИ" class="sub-tab-btn" />
+ <ui:Button name="tab-skills" text="НАВЫКИ" class="sub-tab-btn" />
+ </ui:VisualElement>
+
+ <!-- Sub-section: СТАТЫ (T-P16) — stat-row-progress per Q4.2 -->
+ <!-- visibility: default (SwitchProgressionTab покажет остальные по необходимости) -->
+ <ui:VisualElement name="stats-sub-section" class="progression-sub-section">
+ <ui:Label text="Характеристики (T-P16)" class="section-title" />
+ <ui:VisualElement class="stats-grid">
+ <ui:VisualElement class="stat-row-progress">
+ <ui:Label text="Сила" class="stat-label" />
+ <ui:ProgressBar name="stat-str-bar" value="0" low-value="0" high-value="100" class="stat-progress-bar" />
+ <ui:Label name="stat-str-value" text="0/100 T0" class="stat-value" />
+ </ui:VisualElement>
+ <ui:VisualElement class="stat-row-progress">
+ <ui:Label text="Ловкость" class="stat-label" />
+ <ui:ProgressBar name="stat-dex-bar" value="0" low-value="0" high-value="100" class="stat-progress-bar" />
+ <ui:Label name="stat-dex-value" text="0/100 T0" class="stat-value" />
+ </ui:VisualElement>
+ <ui:VisualElement class="stat-row-progress">
+ <ui:Label text="Интеллект" class="stat-label" />
+ <ui:ProgressBar name="stat-int-bar" value="0" low-value="0" high-value="100" class="stat-progress-bar" />
+ <ui:Label name="stat-int-value" text="0/100 T0" class="stat-value" />
+ </ui:VisualElement>
+ </ui:VisualElement>
+ <ui:Label text="XP источники: mining (STR), walk/jump (DEX), dialog/quest (INT). См. T-P05." class="placeholder-hint" />
+ </ui:VisualElement>
+
+ <!-- Sub-section: ОДЕЖДА (T-P17) — list equipped items, [СНЯТЬ] button per row -->
+ <ui:VisualElement name="clothing-sub-section" class="progression-sub-section" style="display: none;">
+ <ui:Label text="Одежда (T-P17)" class="section-title" />
+ <ui:ListView name="clothing-list" class="item-list equipment-list" />
+ <ui:Label text="Экипировка: головной убор / нагрудник / штаны / обувь / плащ / перчатки / аксессуары. Надеть: RequestEquipRpc." class="placeholder-hint" />
+ </ui:VisualElement>
+
+ <!-- Sub-section: МОДУЛИ (T-P17) — list equipped modules, [СНЯТЬ] button per row -->
+ <ui:VisualElement name="modules-sub-section" class="progression-sub-section" style="display: none;">
+ <ui:Label text="Модули (T-P17)" class="section-title" />
+ <ui:ListView name="modules-list" class="item-list equipment-list" />
+ <ui:Label text="Импланты: Module1/2/3. Per-type effects: sensor / processor / weapon / utility." class="placeholder-hint" />
+ </ui:VisualElement>
+
+ <!-- Sub-section: НАВЫКИ (T-P14) — 2 ListView: combat + social. Rows: LEARNED/AVAILABLE/LOCKED -->
+ <ui:VisualElement name="skills-sub-section" class="progression-sub-section" style="display: none;">
+ <ui:Label text="Навыки (T-P14)" class="section-title" />
+ <ui:VisualElement class="quest-sub">
+ <ui:Label text="Боевые" class="quest-section-title" />
+ <ui:ListView name="skills-combat-list" class="item-list skill-list" />
+ </ui:VisualElement>
+ <ui:VisualElement class="quest-sub">
+ <ui:Label text="Социальные" class="quest-section-title" />
+ <ui:ListView name="skills-social-list" class="item-list skill-list" />
+ </ui:VisualElement>
+ <ui:Label text="8 навыков: BasicStrike/DodgeRoll (free) → HeavySwing (100XP) → PrecisionStrike (200XP) + BasicTalk (free) → Barter/Persuasion (100XP) → Leadership (200XP)." class="placeholder-hint" />
+ </ui:VisualElement>
+
+ </ui:VisualElement>
+ <!-- /progression-section -->
 
  <!-- === Actions (набор меняется по табу) === -->
  <ui:VisualElement class="actions">

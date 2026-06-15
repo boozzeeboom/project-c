@@ -1127,6 +1127,22 @@ namespace ProjectC.Player
             ProjectC.Stats.StatsClientState.Instance?.OnStatsSnapshotReceived(snapshot);
         }
 
+        // T-P09: Equipment snapshot — server pushes EquipmentData update to owner client.
+        // EquipmentClientState (T-P08 stub, T-P10 full) примет snapshot. T-P17 UI подпишется.
+        [Rpc(SendTo.Owner)]
+        public void ReceiveEquipmentSnapshotTargetRpc(ProjectC.Equipment.Dto.EquipmentSnapshotDto snapshot, RpcParams rpcParams = default)
+        {
+            ProjectC.Equipment.EquipmentClientState.Instance?.OnEquipmentSnapshotReceived(snapshot);
+        }
+
+        // T-P09: Equipment equip result (ack/deny of RequestEquip/RequestUnequip RPC).
+        // EquipmentClientState (T-P08 stub) примет result. T-P17 UI покажет toast.
+        [Rpc(SendTo.Owner)]
+        public void ReceiveEquipResultTargetRpc(ProjectC.Equipment.Dto.EquipResultDto result, RpcParams rpcParams = default)
+        {
+            ProjectC.Equipment.EquipmentClientState.Instance?.OnEquipResultReceived(result);
+        }
+
         // T-C03: Crafting result — server pushes ack/deny/progress to owner client.
         // CraftingClientState (T-C05) подпишется на это и поднимет events для CraftingProgressController.
         [Rpc(SendTo.Owner)]

@@ -97,6 +97,12 @@ namespace ProjectC.UI.Client
         private Button _tabContracts;
         private Button _tabInventory;
         private Button _tabQuests;
+        // T-P16: Progression tab (7й таб) + 4 sub-tabs (статы/одежда/модули/навыки)
+        private Button _tabProgression;
+        private Button _tabStats;
+        private Button _tabClothing;
+        private Button _tabModules;
+        private Button _tabSkills;
 
         // --- ListViews ---
         private ListView _reputationList;
@@ -107,6 +113,23 @@ namespace ProjectC.UI.Client
         private ListView _questsCompletedList;
         private ListView _questsFailedList;
         private ListView _questsDiscoveredList;
+
+        // T-P16: Progression sub-sections + stat-row-progress refs
+        private VisualElement _progressionSection;
+        private VisualElement _statsSubSection;
+        private VisualElement _clothingSubSection;
+        private VisualElement _modulesSubSection;
+        private VisualElement _skillsSubSection;
+        private ProgressBar _statStrBar;
+        private Label _statStrValue;
+        private ProgressBar _statDexBar;
+        private Label _statDexValue;
+        private ProgressBar _statIntBar;
+        private Label _statIntValue;
+        private VisualElement _statStrRow;
+        private VisualElement _statDexRow;
+        private VisualElement _statIntRow;
+        private int _activeProgressionTab = 0; // 0=stats, 1=clothing, 2=modules, 3=skills (per roadmap §3)
 
         // --- Action buttons ---
         private Button _acceptBtn;
@@ -266,6 +289,8 @@ namespace ProjectC.UI.Client
         UnsubscribeNpcAttitude();
         // T-P14: Unsubscribe SkillsClientState (2 события).
         UnsubscribeSkills();
+        // T-P16: Unsubscribe StatsClientState (1 событие).
+        UnsubscribeStats();
         }
 
         private bool _isInventorySubscribed = false;
@@ -440,6 +465,29 @@ namespace ProjectC.UI.Client
             _questsSection = _root.Q<VisualElement>("quests-section");
             _filtersRow = _root.Q<VisualElement>("filters-row");
 
+            // T-P16: progression tab + sub-tabs + sub-section refs
+            _tabProgression = _root.Q<Button>("tab-progression");
+            _progressionSection = _root.Q<VisualElement>("progression-section");
+            _tabStats = _root.Q<Button>("tab-stats");
+            _tabClothing = _root.Q<Button>("tab-clothing");
+            _tabModules = _root.Q<Button>("tab-modules");
+            _tabSkills = _root.Q<Button>("tab-skills");
+            _statsSubSection = _root.Q<VisualElement>("stats-sub-section");
+            _clothingSubSection = _root.Q<VisualElement>("clothing-sub-section");
+            _modulesSubSection = _root.Q<VisualElement>("modules-sub-section");
+            _skillsSubSection = _root.Q<VisualElement>("skills-sub-section");
+
+            // T-P16: stat-row-progress refs (3 stat bars + 3 value labels)
+            _statStrBar = _root.Q<ProgressBar>("stat-str-bar");
+            _statStrValue = _root.Q<Label>("stat-str-value");
+            _statDexBar = _root.Q<ProgressBar>("stat-dex-bar");
+            _statDexValue = _root.Q<Label>("stat-dex-value");
+            _statIntBar = _root.Q<ProgressBar>("stat-int-bar");
+            _statIntValue = _root.Q<Label>("stat-int-value");
+            _statStrRow = _statStrBar != null ? _statStrBar.parent as VisualElement : null;
+            _statDexRow = _statDexBar != null ? _statDexBar.parent as VisualElement : null;
+            _statIntRow = _statIntBar != null ? _statIntBar.parent as VisualElement : null;
+
             _tabCharacter = _root.Q<Button>("tab-character");
             _tabShip = _root.Q<Button>("tab-ship");
             _tabReputation = _root.Q<Button>("tab-reputation");
@@ -486,6 +534,13 @@ namespace ProjectC.UI.Client
             if (_tabContracts != null) _tabContracts.clicked += () => SwitchTab("contracts");
             if (_tabInventory != null) _tabInventory.clicked += () => SwitchTab("inventory");
             if (_tabQuests != null) _tabQuests.clicked += () => SwitchTab("quests");
+            // T-P16: progression tab → switch to progression + show stats sub-tab by default
+            if (_tabProgression != null) _tabProgression.clicked += () => { SwitchTab("progression"); SwitchProgressionTab("stats"); };
+            // T-P16: sub-tab clicks
+            if (_tabStats != null) _tabStats.clicked += () => SwitchProgressionTab("stats");
+            if (_tabClothing != null) _tabClothing.clicked += () => SwitchProgressionTab("clothing");
+            if (_tabModules != null) _tabModules.clicked += () => SwitchProgressionTab("modules");
+            if (_tabSkills != null) _tabSkills.clicked += () => SwitchProgressionTab("skills");
 
             // ---- Action buttons ----
             if (_closeBtn != null) _closeBtn.clicked += OnCloseClicked;
@@ -618,6 +673,8 @@ namespace ProjectC.UI.Client
             // T-P14: Subscribe to SkillsClientState (M3) — refresh skill rows on snapshot/result.
             // T-P15 создаст UXML refs `skills-combat-list`/`skills-social-list`; T-P14 логика готова.
             SubscribeSkills();
+            // T-P16: Subscribe to StatsClientState (M1) — refresh stat-row-progress on snapshot.
+            SubscribeStats();
             if (QuestClientState.Instance == null)
             {
             Debug.LogWarning("[CharacterWindow] QuestClientState.Instance == null на момент EnsureBuilt — таб 'КВЕСТЫ' не будет обновляться (нормально до StartHost)");
@@ -1515,6 +1572,154 @@ namespace ProjectC.UI.Client
                 sk.OnSkillsUpdated -= HandleSkillsSnapshot;
                 sk.OnSkillResult -= HandleSkillResult;
                 _isSkillsSubscribed = false;
+            }
+
+            // ============================================================
+            // T-P16: Stats subscription + display (M1 stats → M4 UI)
+            // ============================================================
+
+            private bool _isStatsSubscribed = false;
+
+            private void SubscribeStats()
+            {
+                if (_isStatsSubscribed) return;
+                var st = ProjectC.Stats.StatsClientState.Instance;
+                if (st == null) return;
+                st.OnStatsUpdated += HandleStatsSnapshot;
+                _isStatsSubscribed = true;
+                Debug.Log("[CharacterWindow] Subscribed to StatsClientState (snapshot)");
+            }
+
+            private void UnsubscribeStats()
+            {
+                if (!_isStatsSubscribed) return;
+                var st = ProjectC.Stats.StatsClientState.Instance;
+                if (st == null) { _isStatsSubscribed = false; return; }
+                st.OnStatsUpdated -= HandleStatsSnapshot;
+                _isStatsSubscribed = false;
+            }
+
+            private void HandleStatsSnapshot(ProjectC.Stats.Dto.StatsSnapshotDto snap)
+            {
+                RefreshStatsDisplay(snap);
+            }
+
+            /// <summary>
+            /// Обновить 3 stat-row-progress (label+ProgressBar+value) по snapshot.
+            /// tier-low/mid/high/master CSS classes на fill bar (per Q4.3).
+            /// </summary>
+            private void RefreshStatsDisplay(ProjectC.Stats.Dto.StatsSnapshotDto snap)
+            {
+                // STR
+                if (_statStrBar != null)
+                {
+                    float maxStr = snap.strengthXpForNextTier > 0 ? snap.strengthXpForNextTier : 100f;
+                    _statStrBar.value = Mathf.Clamp01(snap.strength / maxStr);
+                    ApplyTierClass(_statStrBar, snap.strengthTier);
+                }
+                if (_statStrValue != null)
+                {
+                    _statStrValue.text = $"{snap.strength:F1}/{snap.strengthXpForNextTier:F0} T{snap.strengthTier}";
+                }
+                if (_statStrRow != null) ApplyRowClass(_statStrRow, snap.strengthTier);
+
+                // DEX
+                if (_statDexBar != null)
+                {
+                    float maxDex = snap.dexterityXpForNextTier > 0 ? snap.dexterityXpForNextTier : 100f;
+                    _statDexBar.value = Mathf.Clamp01(snap.dexterity / maxDex);
+                    ApplyTierClass(_statDexBar, snap.dexterityTier);
+                }
+                if (_statDexValue != null)
+                {
+                    _statDexValue.text = $"{snap.dexterity:F1}/{snap.dexterityXpForNextTier:F0} T{snap.dexterityTier}";
+                }
+                if (_statDexRow != null) ApplyRowClass(_statDexRow, snap.dexterityTier);
+
+                // INT
+                if (_statIntBar != null)
+                {
+                    float maxInt = snap.intelligenceXpForNextTier > 0 ? snap.intelligenceXpForNextTier : 100f;
+                    _statIntBar.value = Mathf.Clamp01(snap.intelligence / maxInt);
+                    ApplyTierClass(_statIntBar, snap.intelligenceTier);
+                }
+                if (_statIntValue != null)
+                {
+                    _statIntValue.text = $"{snap.intelligence:F1}/{snap.intelligenceXpForNextTier:F0} T{snap.intelligenceTier}";
+                }
+                if (_statIntRow != null) ApplyRowClass(_statIntRow, snap.intelligenceTier);
+            }
+
+            /// <summary>
+            /// Apply tier-low/mid/high/master CSS class к ProgressBar's inner fill (per roadmap Q4.3 + T-P15 USS).
+            /// Thresholds: low=T0-T2, mid=T3-T5, high=T6-T9, master=T10+.
+            /// </summary>
+            private void ApplyTierClass(UnityEngine.UIElements.ProgressBar bar, int tier)
+            {
+                if (bar == null) return;
+                // ProgressBar в Unity 6: fill через `bar.Q<VisualElement>(className: "unity-progress-bar__progress")`
+                // Или просто на сам bar — T-P15 USS имеет `.stat-progress-fill.tier-*` для внутреннего fill.
+                // Apply к bar (для cascading) — USS применится к inner fill через `.stat-progress-fill` selector
+                bar.RemoveFromClassList("tier-low");
+                bar.RemoveFromClassList("tier-mid");
+                bar.RemoveFromClassList("tier-high");
+                bar.RemoveFromClassList("tier-master");
+                string tierClass = tier switch
+                {
+                    <= 2 => "tier-low",
+                    <= 5 => "tier-mid",
+                    <= 9 => "tier-high",
+                    _    => "tier-master",
+                };
+                bar.AddToClassList(tierClass);
+            }
+
+            private void ApplyRowClass(UnityEngine.UIElements.VisualElement row, int tier)
+            {
+                if (row == null) return;
+                row.RemoveFromClassList("tier-promoted");
+                if (tier > 0) row.AddToClassList("tier-promoted"); // visual marker на T>0
+            }
+
+            /// <summary>
+            /// T-P16: Switch между 4 sub-tabs внутри progression-section.
+            /// per roadmap §3 T-P15: stats / clothing / modules / skills.
+            /// </summary>
+            private void SwitchProgressionTab(string tab)
+            {
+                SetSubSectionVisible(_statsSubSection, tab == "stats");
+                SetSubSectionVisible(_clothingSubSection, tab == "clothing");
+                SetSubSectionVisible(_modulesSubSection, tab == "modules");
+                SetSubSectionVisible(_skillsSubSection, tab == "skills");
+
+                // active class на sub-tab buttons (per T-P15 USS `.sub-tab-btn.active`)
+                SetSubTabActive(_tabStats, tab == "stats");
+                SetSubTabActive(_tabClothing, tab == "clothing");
+                SetSubTabActive(_tabModules, tab == "modules");
+                SetSubTabActive(_tabSkills, tab == "skills");
+
+                // Track active tab
+                _activeProgressionTab = tab switch
+                {
+                    "stats" => 0,
+                    "clothing" => 1,
+                    "modules" => 2,
+                    "skills" => 3,
+                    _ => _activeProgressionTab,
+                };
+            }
+
+            private void SetSubTabActive(UnityEngine.UIElements.Button btn, bool active)
+            {
+                if (btn == null) return;
+                if (active) btn.AddToClassList("active");
+                else btn.RemoveFromClassList("active");
+            }
+
+            private void SetSubSectionVisible(UnityEngine.UIElements.VisualElement section, bool visible)
+            {
+                if (section == null) return;
+                section.style.display = visible ? DisplayStyle.Flex : DisplayStyle.None;
             }
 
             private void HandleSkillsSnapshot(System.Collections.Generic.HashSet<string> learned)

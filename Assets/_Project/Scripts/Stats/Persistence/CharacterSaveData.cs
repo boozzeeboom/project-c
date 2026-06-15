@@ -22,7 +22,8 @@ namespace ProjectC.Stats.Persistence
         public PlayerStatsSave stats = new PlayerStatsSave();
         // T-P09 STUB add — T-P06 (JsonCharacterDataRepository) уже имеет stats; equipment/skills придут в T-P09 расширении
         public EquipmentSave equipment = new EquipmentSave();
-        // public SkillsSave skills = new SkillsSave();  // T-P13
+        // T-P12: skills persistence (learned skill IDs). Полная версия в T-P13 (StatsServer owns persistence).
+        public SkillsSave skills = new SkillsSave();
     }
 
     /// <summary>

@@ -97,12 +97,7 @@ namespace ProjectC.UI.Client
         private Button _tabContracts;
         private Button _tabInventory;
         private Button _tabQuests;
-        // T-P16: Progression tab (7й таб) + 4 sub-tabs (статы/одежда/модули/навыки)
-        private Button _tabProgression;
-        private Button _tabStats;
-        private Button _tabClothing;
-        private Button _tabModules;
-        private Button _tabSkills;
+        // T-P16: 4 sub-tab buttons (now unused — removed in UXML refactor)
 
         // --- ListViews ---
         private ListView _reputationList;
@@ -114,12 +109,6 @@ namespace ProjectC.UI.Client
         private ListView _questsFailedList;
         private ListView _questsDiscoveredList;
 
-        // T-P16: Progression sub-sections + stat-row-progress refs
-        private VisualElement _progressionSection;
-        private VisualElement _statsSubSection;
-        private VisualElement _clothingSubSection;
-        private VisualElement _modulesSubSection;
-        private VisualElement _skillsSubSection;
         private ProgressBar _statStrBar;
         private Label _statStrValue;
         private ProgressBar _statDexBar;
@@ -129,7 +118,6 @@ namespace ProjectC.UI.Client
         private VisualElement _statStrRow;
         private VisualElement _statDexRow;
         private VisualElement _statIntRow;
-        private int _activeProgressionTab = 0; // 0=stats, 1=clothing, 2=modules, 3=skills (per roadmap §3)
 
         // --- Action buttons ---
         private Button _acceptBtn;
@@ -492,18 +480,6 @@ namespace ProjectC.UI.Client
             _questsSection = _root.Q<VisualElement>("quests-section");
             _filtersRow = _root.Q<VisualElement>("filters-row");
 
-            // T-P16: progression tab + sub-tabs + sub-section refs
-            _tabProgression = _root.Q<Button>("tab-progression");
-            _progressionSection = _root.Q<VisualElement>("progression-section");
-            _tabStats = _root.Q<Button>("tab-stats");
-            _tabClothing = _root.Q<Button>("tab-clothing");
-            _tabModules = _root.Q<Button>("tab-modules");
-            _tabSkills = _root.Q<Button>("tab-skills");
-            _statsSubSection = _root.Q<VisualElement>("stats-sub-section");
-            _clothingSubSection = _root.Q<VisualElement>("clothing-sub-section");
-            _modulesSubSection = _root.Q<VisualElement>("modules-sub-section");
-            _skillsSubSection = _root.Q<VisualElement>("skills-sub-section");
-
             // T-P16: stat-row-progress refs (3 stat bars + 3 value labels)
             _statStrBar = _root.Q<ProgressBar>("stat-str-bar");
             _statStrValue = _root.Q<Label>("stat-str-value");
@@ -569,13 +545,6 @@ namespace ProjectC.UI.Client
             if (_tabContracts != null) _tabContracts.clicked += () => SwitchTab("contracts");
             if (_tabInventory != null) _tabInventory.clicked += () => SwitchTab("inventory");
             if (_tabQuests != null) _tabQuests.clicked += () => SwitchTab("quests");
-            // T-P16: progression tab → switch to progression + show stats sub-tab by default
-            if (_tabProgression != null) _tabProgression.clicked += () => { SwitchTab("progression"); SwitchProgressionTab("stats"); };
-            // T-P16: sub-tab clicks
-            if (_tabStats != null) _tabStats.clicked += () => SwitchProgressionTab("stats");
-            if (_tabClothing != null) _tabClothing.clicked += () => SwitchProgressionTab("clothing");
-            if (_tabModules != null) _tabModules.clicked += () => SwitchProgressionTab("modules");
-            if (_tabSkills != null) _tabSkills.clicked += () => SwitchProgressionTab("skills");
 
             // ---- Action buttons ----
             if (_closeBtn != null) _closeBtn.clicked += OnCloseClicked;
@@ -652,6 +621,15 @@ namespace ProjectC.UI.Client
             SetupEquipmentListView(_modulesList, ref _modulesCache);
             // T-P17: subscribe to EquipmentClientState (M2) for live updates
             SubscribeEquipment();
+
+            // FIX 2026-06-17: pre-populate caches so UI не пустая до первого snapshot.
+            // Equipment: 10 clothing + 3 module slots empty.
+            InitEquipmentCache(_clothingCache, 0, 10, false);
+            InitEquipmentCache(_modulesCache, 10, 3, true);
+            RebuildEquipmentListView();
+            // Skills: Resources.LoadAll -> LOCKED state.
+            InitSkillsCache();
+            RebuildSkillsListView();
 
             // ---- Filters (options зависят от активного таба — см. SwitchTab) ----
             if (_filterSearch != null)
@@ -1723,44 +1701,52 @@ namespace ProjectC.UI.Client
             }
 
             /// <summary>
-            /// T-P16: Switch между 4 sub-tabs внутри progression-section.
-            /// per roadmap §3 T-P15: stats / clothing / modules / skills.
+            /// FIX 2026-06-17: pre-fill equipment cache с пустыми слотами (до первого snapshot).
             /// </summary>
-            private void SwitchProgressionTab(string tab)
+            private void InitEquipmentCache(System.Collections.Generic.List<EquipRow> cache, int startIdx, int count, bool isModule)
             {
-                SetSubSectionVisible(_statsSubSection, tab == "stats");
-                SetSubSectionVisible(_clothingSubSection, tab == "clothing");
-                SetSubSectionVisible(_modulesSubSection, tab == "modules");
-                SetSubSectionVisible(_skillsSubSection, tab == "skills");
-
-                // active class на sub-tab buttons (per T-P15 USS `.sub-tab-btn.active`)
-                SetSubTabActive(_tabStats, tab == "stats");
-                SetSubTabActive(_tabClothing, tab == "clothing");
-                SetSubTabActive(_tabModules, tab == "modules");
-                SetSubTabActive(_tabSkills, tab == "skills");
-
-                // Track active tab
-                _activeProgressionTab = tab switch
+                cache.Clear();
+                for (int i = startIdx; i < startIdx + count; i++)
                 {
-                    "stats" => 0,
-                    "clothing" => 1,
-                    "modules" => 2,
-                    "skills" => 3,
-                    _ => _activeProgressionTab,
-                };
+                    var slot = ProjectC.Equipment.EquipmentData.IndexToSlot(i);
+                    cache.Add(new EquipRow
+                    {
+                        Slot = slot,
+                        ItemId = 0,
+                        ItemName = "—",
+                        SlotName = slot.ToString(),
+                        Bonuses = "",
+                        TierText = "",
+                        IsModule = isModule,
+                    });
+                }
             }
 
-            private void SetSubTabActive(UnityEngine.UIElements.Button btn, bool active)
+            /// <summary>
+            /// FIX 2026-06-17: pre-fill skills cache из Resources (все LOCKED до первого snapshot).
+            /// </summary>
+            private void InitSkillsCache()
             {
-                if (btn == null) return;
-                if (active) btn.AddToClassList("active");
-                else btn.RemoveFromClassList("active");
-            }
-
-            private void SetSubSectionVisible(UnityEngine.UIElements.VisualElement section, bool visible)
-            {
-                if (section == null) return;
-                section.style.display = visible ? DisplayStyle.Flex : DisplayStyle.None;
+                var all = Resources.LoadAll<ProjectC.Skills.SkillNodeConfig>("Skills");
+                _skillsCombatCache.Clear();
+                _skillsSocialCache.Clear();
+                if (all == null) return;
+                foreach (var skill in all)
+                {
+                    if (skill == null || string.IsNullOrEmpty(skill.skillId)) continue;
+                    var row = new SkillRow
+                    {
+                        SkillId = skill.skillId,
+                        DisplayName = !string.IsNullOrEmpty(skill.displayName) ? skill.displayName : skill.skillId,
+                        Category = skill.category,
+                        State = "LOCKED",
+                        XpCost = skill.LearnXpCost,
+                        RequiredTier = skill.RequiredIntelligenceTier,
+                        PrereqNames = "",
+                    };
+                    if (skill.category == ProjectC.Skills.SkillCategory.Combat) _skillsCombatCache.Add(row);
+                    else _skillsSocialCache.Add(row);
+                }
             }
 
             private void HandleSkillsSnapshot(System.Collections.Generic.HashSet<string> learned)

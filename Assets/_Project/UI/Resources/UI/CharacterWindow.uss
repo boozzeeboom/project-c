@@ -735,3 +735,144 @@
     flex-shrink: 0 !important;
 }
 .equip-slot-btn:hover { background-color: rgba(200, 100, 100, 0.7) !important; }
+
+/* ============================================
+   FIX 2026-06-17: single-page layout classes
+   (progression-section-block, progression-section-title,
+    skills-grid, skills-column, skill-column-title)
+   ============================================ */
+
+.progression-section-block {
+    flex-direction: column !important;
+    margin-bottom: 6px !important;
+    flex-shrink: 0 !important;
+    min-height: 0 !important;
+}
+.progression-section-title {
+    color: rgb(180, 200, 220) !important;
+    font-size: 11px !important;
+    margin-bottom: 3px !important;
+    padding-left: 2px !important;
+    flex-shrink: 0 !important;
+    -unity-font-style: bold !important;
+    border-bottom-width: 1px !important;
+    border-bottom-color: rgba(80, 100, 130, 0.3) !important;
+}
+
+/* Skills grid: 2 columns (Боевые / Социальные) */
+.skills-grid {
+    flex-direction: row !important;
+    flex-wrap: wrap !important;
+    align-items: stretch !important;
+    min-height: 0 !important;
+    gap: 4px !important;
+}
+.skills-column {
+    flex-grow: 1 !important;
+    flex-basis: 45% !important;
+    min-width: 100px !important;
+    flex-direction: column !important;
+    min-height: 0 !important;
+}
+.skill-column-title {
+    font-size: 10px !important;
+    color: rgb(160, 180, 200) !important;
+    margin-bottom: 2px !important;
+    padding-left: 2px !important;
+    flex-shrink: 0 !important;
+}
+.skill-list {
+    min-height: 40px !important;
+    max-height: 140px !important;
+}
+
+/* ============================================
+   FIX 2026-06-17: 2-rows × columns grid layout
+   ============================================ */
+
+.progression-top-row {
+    flex-direction: row !important;
+    flex-grow: 1 !important;
+    flex-shrink: 1 !important;
+    min-height: 0 !important;
+    margin-bottom: 4px !important;
+}
+.progression-equip-col {
+    flex-grow: 1 !important;
+    flex-basis: 0 !important;
+    min-width: 0 !important;
+    flex-direction: column !important;
+    margin: 0 2px !important;
+    min-height: 0 !important;
+}
+.equip-list {
+    min-height: 40px !important;
+    max-height: none !important;
+    flex-grow: 1 !important;
+    flex-shrink: 1 !important;
+    min-height: 0 !important;
+}
+
+.progression-bottom-row {
+    flex-direction: row !important;
+    flex-shrink: 0 !important;
+    min-height: 0 !important;
+    /* Фиксированная высота для нижней половины = 45% окна */
+    flex-grow: 1 !important;
+}
+.progression-stats-col {
+    flex-basis: 20% !important;
+    min-width: 0 !important;
+    flex-direction: column !important;
+    margin: 0 2px !important;
+    min-height: 0 !important;
+}
+.progression-skill-col {
+    flex-basis: 35% !important;
+    min-width: 0 !important;
+    flex-direction: column !important;
+    margin: 0 2px !important;
+    min-height: 0 !important;
+}
+
+/* Compact stat bars (20% колонка) */
+.stat-row-compact {
+    flex-direction: column !important;
+    align-items: stretch !important;
+    margin-bottom: 3px !important;
+    padding: 2px 4px !important;
+    background-color: rgba(30, 40, 60, 0.3) !important;
+    border-radius: 3px !important;
+}
+.stat-row-compact > .stat-label-compact {
+    font-size: 9px !important;
+    color: rgb(180, 200, 220) !important;
+    margin-bottom: 1px !important;
+    -unity-font-style: bold !important;
+}
+.stat-row-compact > .stat-bar-compact {
+    height: 8px !important;
+    margin-bottom: 1px !important;
+}
+.stat-row-compact > .stat-value-compact {
+    font-size: 9px !important;
+    color: rgb(160, 180, 200) !important;
+    -unity-text-align: middle-right !important;
+}
+.stat-row-compact.tier-promoted {
+    background-color: rgba(255, 220, 130, 0.1) !important;
+}
+
+/* Skill list sizing */
+.skill-list {
+    min-height: 40px !important;
+    max-height: none !important;
+    flex-grow: 1 !important;
+    flex-shrink: 1 !important;
+    min-height: 0 !important;
+}
+
+/* Prevent double-float conflict */
+.progression-section-title {
+    flex-shrink: 0 !important;
+}

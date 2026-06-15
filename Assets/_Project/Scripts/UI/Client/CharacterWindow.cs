@@ -167,15 +167,14 @@ namespace ProjectC.UI.Client
         private int _selectedDiscoveredQuest = -1;
 
         // T-P17: Clothing/Modules ListView refs + caches + per-row fields
-        private ListView _clothingList;
-        private ListView _modulesList;
+        private VisualElement _clothingContainer;   // SESSION 2: container instead of ListView
+        private VisualElement _modulesContainer;    // SESSION 2: container instead of ListView
         private List<EquipRow> _clothingCache = new List<EquipRow>();
         private List<EquipRow> _modulesCache = new List<EquipRow>();
-        private Label _equipRowSlot;       // per-row template (bound in MakeEquipmentRow)
+        private bool _isEquipmentSubscribed = false;
         private Label _equipRowItem;
         private Label _equipRowBonuses;
         private Button _equipRowBtn;
-        private bool _isEquipmentSubscribed = false;
 
         /// <summary>
         /// T-P17: Row DTO для clothing/modules ListView. IsModule=true для modules-list (icon/type вариация).
@@ -523,13 +522,9 @@ namespace ProjectC.UI.Client
             _statDexRow = _statDexBar != null ? _statDexBar.parent as VisualElement : null;
             _statIntRow = _statIntBar != null ? _statIntBar.parent as VisualElement : null;
 
-            // T-P17: clothing/modules ListView refs
-            _clothingList = _root.Q<ListView>("clothing-list");
-            _modulesList = _root.Q<ListView>("modules-list");
-            _equipRowSlot = null; // bound per-row via userData (см. MakeEquipmentRow)
-            _equipRowItem = null;
-            _equipRowBonuses = null;
-            _equipRowBtn = null;
+            // T-P17: clothing/modules containers (SESSION 2: ручные rows вместо ListView)
+            _clothingContainer = _root.Q<VisualElement>("clothing-container");
+            _modulesContainer = _root.Q<VisualElement>("modules-container");
 
             _tabCharacter = _root.Q<Button>("tab-character");
             _tabShip = _root.Q<Button>("tab-ship");
@@ -648,14 +643,13 @@ namespace ProjectC.UI.Client
             };
             }
 
-            // T-P17: clothing/modules ListView setup (progression sub-tabs)
-            SetupEquipmentListView(_clothingList, ref _clothingCache);
-            SetupEquipmentListView(_modulesList, ref _modulesCache);
+            // T-P17: clothing/modules containers setup + pre-populate
+            // SESSION 2: InitEquipmentContainers удалён — containers используются напрямую из UXML
+            // (ScrollView НЕ оборачиваем — каждый container уже имеет flex-grow: 1; min-height: 0).
             // T-P17: subscribe to EquipmentClientState (M2) for live updates
             SubscribeEquipment();
 
-            // FIX 2026-06-17: pre-populate caches so UI не пустая до первого snapshot.
-            // Equipment: 10 clothing + 3 module slots empty.
+            // SESSION 2: pre-populate caches + rebuild containers
             InitEquipmentCache(_clothingCache, 0, 10, false);
             InitEquipmentCache(_modulesCache, 10, 3, true);
             RebuildEquipmentListView();
@@ -1869,28 +1863,76 @@ namespace ProjectC.UI.Client
 
             private void RebuildSkillsListView()
             {
-                // Lazy: refs `_skillsCombatList`/`_skillsSocialList` создаются в T-P15 через UXML.
-                // Пока refs == null, метод no-op (UI рендеринг подключим в M4).
-                // Создаём refs через Q<ListView>(...) если их нет (для T-P14 standalone test).
-                if (_skillsCombatList == null) _skillsCombatList = _root?.Q<UnityEngine.UIElements.ListView>("skills-combat-list");
-                if (_skillsSocialList == null) _skillsSocialList = _root?.Q<UnityEngine.UIElements.ListView>("skills-social-list");
-                if (_skillsCombatList == null || _skillsSocialList == null) return;
-                _skillsCombatList.itemsSource = _skillsCombatCache;
-                _skillsCombatList.makeItem = MakeSkillRow;
-                _skillsCombatList.bindItem = (e, i) => BindSkillRow(e, i, _skillsCombatCache);
-                _skillsCombatList.fixedItemHeight = 48;
-                _skillsCombatList.RefreshItems();
-                _skillsCombatList.MarkDirtyRepaint();
-                _skillsSocialList.itemsSource = _skillsSocialCache;
-                _skillsSocialList.makeItem = MakeSkillRow;
-                _skillsSocialList.bindItem = (e, i) => BindSkillRow(e, i, _skillsSocialCache);
-                _skillsSocialList.fixedItemHeight = 48;
-                _skillsSocialList.RefreshItems();
-                _skillsSocialList.MarkDirtyRepaint();
+                // SESSION 2: manual rebuild into skill containers (no ListView).
+                var combatContainer = _root?.Q<VisualElement>("skills-combat-container");
+                var socialContainer = _root?.Q<VisualElement>("skills-social-container");
+                if (combatContainer == null || socialContainer == null) return;
+                combatContainer.Clear();
+                socialContainer.Clear();
+                foreach (var sk in _skillsCombatCache)
+                {
+                    var ve = MakeManualSkillRow(sk);
+                    if (ve != null) combatContainer.Add(ve);
+                }
+                foreach (var sk in _skillsSocialCache)
+                {
+                    var ve = MakeManualSkillRow(sk);
+                    if (ve != null) socialContainer.Add(ve);
+                }
             }
 
-            private UnityEngine.UIElements.ListView _skillsCombatList;
-            private UnityEngine.UIElements.ListView _skillsSocialList;
+            /// <summary>
+            /// SESSION 2: ручная skill row — простой, всегда видна.
+            /// </summary>
+            private VisualElement MakeManualSkillRow(SkillRow data)
+            {
+                var row = new VisualElement();
+                row.AddToClassList("skill-row");
+                var state = new Label { name = "skill-row-state", text = data.State switch { "LEARNED" => "✓", "AVAILABLE" => "○", _ => "✕" } };
+                state.AddToClassList("skill-row-state");
+                row.Add(state);
+                var title = new Label { name = "skill-row-title", text = data.DisplayName };
+                title.AddToClassList("skill-row-title");
+                row.Add(title);
+                var cost = new Label { name = "skill-row-cost", text = data.XpCost > 0 ? $"{data.XpCost:F0}XP" : "Free" };
+                cost.AddToClassList("skill-row-cost");
+                row.Add(cost);
+                var tier = new Label { name = "skill-row-tier", text = $"T{data.RequiredTier}" };
+                tier.AddToClassList("skill-row-tier");
+                row.Add(tier);
+                // SESSION 2: click row to learn (только AVAILABLE).
+                if (data.State == "AVAILABLE")
+                {
+                    var capturedSkillId = data.SkillId;
+                    row.RegisterCallback<ClickEvent>(evt => {
+                        Debug.Log("!!!!! SKILL CLICK !!!!! skill=" + data.DisplayName + " id=" + capturedSkillId);
+                        OnLearnSkillClicked(capturedSkillId);
+                        evt.StopPropagation();
+                    });
+                }
+                return row;
+            }
+
+            private void OnLearnSkillClicked(string skillId)
+            {
+                // Reflection-based RPC to SkillsServer.RequestLearnSkillRpc(string, RpcParams)
+                try
+                {
+                    var t = System.Type.GetType("ProjectC.Skills.SkillsServer, Assembly-CSharp");
+                    if (t == null) { Debug.LogWarning("[CharacterWindow] SkillsServer type not found"); return; }
+                    var inst = t.GetProperty("Instance", System.Reflection.BindingFlags.Public | System.Reflection.BindingFlags.Static)?.GetValue(null);
+                    if (inst == null) { Debug.LogWarning("[CharacterWindow] SkillsServer.Instance is null"); return; }
+                    var mi = t.GetMethod("RequestLearnSkillRpc");
+                    if (mi == null) { Debug.LogWarning("[CharacterWindow] RequestLearnSkillRpc not found"); return; }
+                    var rpcParams = System.Activator.CreateInstance(typeof(Unity.Netcode.RpcParams));
+                    mi.Invoke(inst, new object[] { skillId, rpcParams });
+                    Debug.Log($"[CharacterWindow] RequestLearnSkillRpc: skillId={skillId}");
+                }
+                catch (System.Exception ex) { Debug.LogWarning($"[CharacterWindow] OnLearnSkillClicked error: {ex.Message}"); }
+            }
+
+            private UnityEngine.UIElements.ListView _skillsCombatList;  // SESSION 2: unused (manual rebuild)
+            private UnityEngine.UIElements.ListView _skillsSocialList;  // SESSION 2: unused (manual rebuild)
 
             /// <summary>VisualElement factory: state badge + title + cost + prereq + status.</summary>
             private UnityEngine.UIElements.VisualElement MakeSkillRow()
@@ -1987,97 +2029,91 @@ namespace ProjectC.UI.Client
             // ============================================================
 
             /// <summary>
-            /// Setup clothing/modules ListView (per roadmap T-P15 §3.1 T-P17). Per-row factory + bind
-            /// с lazy-определением bind функции (clothing vs module).
+            /// SESSION 2 rewrite: ручное построение equip rows (вместо ListView).
+            /// ListView НЕ использовался — только клиппинг и проблемы с click.
+            /// Строим rows напрямую как children container, все rows видны всегда.
             /// </summary>
-            private void SetupEquipmentListView(ListView list, ref List<EquipRow> cacheRef)
+            private void RebuildEquipmentListView()
             {
-                if (list == null) return;
-                list.makeItem = MakeEquipmentRow;
-                // bind зависит от list — clothing или modules.
-                // CS1628 fix: нельзя использовать ref параметр внутри lambda. Читаем _clothingCache/_modulesCache
-                // напрямую через field access (не ref).
-                bool isModules = (list == _modulesList);
-                list.bindItem = (e, i) => BindEquipmentRow(e, i, isModules ? _modulesCache : _clothingCache, isModules);
-                list.fixedItemHeight = 28;  // per T-P15 USS .equip-slot-row height: 28px
-                list.itemsSource = isModules ? (System.Collections.IList)_modulesCache : (System.Collections.IList)_clothingCache;
+                // Clothing: rebuild в контейнер _clothingContainer (VisualElement)
+                if (_clothingContainer != null)
+                {
+                    _clothingContainer.Clear();
+                    foreach (var row in _clothingCache)
+                    {
+                        var ve = MakeManualEquipRow(row);
+                        _clothingContainer.Add(ve);
+                    }
+                }
+                // Modules
+                if (_modulesContainer != null)
+                {
+                    _modulesContainer.Clear();
+                    foreach (var row in _modulesCache)
+                    {
+                        var ve = MakeManualEquipRow(row);
+                        _modulesContainer.Add(ve);
+                    }
+                }
             }
 
             /// <summary>
-            /// VisualElement factory: slot name + item name + bonuses + [СНЯТЬ] button.
-            /// USS: .equip-slot-row (.equip-slot-name, .equip-slot-item, .equip-slot-bonuses, .equip-slot-btn)
+            /// SESSION 2: ручная row без ListView. Всегда видна, click работает.
+            /// Используем VisualElement как кнопку + RegisterCallback<ClickEvent>
+            /// вместо Button.clicked (которое требует focusable=true).
             /// </summary>
-            private VisualElement MakeEquipmentRow()
+            private VisualElement MakeManualEquipRow(EquipRow data)
             {
                 var row = new VisualElement();
                 row.AddToClassList("equip-slot-row");
 
-                var slot = new Label { name = "equip-slot-name" };
+                var slot = new Label { name = "equip-slot-name", text = data.SlotName };
                 slot.AddToClassList("equip-slot-name");
                 row.Add(slot);
 
-                var item = new Label { name = "equip-slot-item" };
+                var item = new Label { name = "equip-slot-item", text = data.ItemName };
                 item.AddToClassList("equip-slot-item");
                 row.Add(item);
 
                 var bonuses = new Label { name = "equip-slot-bonuses" };
                 bonuses.AddToClassList("equip-slot-bonuses");
+                string bonusText = !string.IsNullOrEmpty(data.Bonuses) ? data.Bonuses : "—";
+                if (!string.IsNullOrEmpty(data.TierText)) bonusText += $" ({data.TierText})";
+                bonuses.text = bonusText;
                 row.Add(bonuses);
 
-                var btn = new Button { name = "equip-slot-btn", text = "СНЯТЬ" };
+                // Кнопка — VisualElement с RegisterCallback<ClickEvent> (нативный UI Toolkit click).
+                // В отличие от Button.clicked, срабатывает на любой click без focusable.
+                var btn = new VisualElement { name = "equip-slot-btn" };
                 btn.AddToClassList("equip-slot-btn");
-                // FIX 2026-06-17: PointerDownEvent даёт target (event.target → walk-up до row с userData).
-                // btn.clicked не предоставляет sender (UI Toolkit not like WinForms).
-                btn.RegisterCallback<PointerDownEvent>(OnUnequipPointerDown);
+                var btnLabel = new Label { text = data.ItemId > 0 ? "СНЯТЬ" : "—" };
+                btnLabel.AddToClassList("equip-slot-btn-label");
+                btnLabel.style.flexGrow = 1;
+                btnLabel.style.unityTextAlign = UnityEngine.TextAnchor.MiddleCenter;
+                btn.Add(btnLabel);
+                if (data.ItemId > 0)
+                {
+                    var capturedData = data;
+                    btn.RegisterCallback<ClickEvent>(evt => {
+                        Debug.Log("!!!!! EQUIP CLICKED !!!!! slot=" + capturedData.SlotName + " id=" + capturedData.ItemId);
+                        OnUnequipClicked(capturedData);
+                        evt.StopPropagation();
+                    });
+                }
+                else
+                {
+                    btn.SetEnabled(false);
+                }
                 row.Add(btn);
 
                 return row;
             }
 
             /// <summary>
-            /// Bind для clothing/modules rows. Walk up parent chain to find row → userData = EquipRow.
-            /// (см. project-c-mcp-unity pitfall #42: btn.parent не = row, нужен walk-up.)
+            /// SESSION 2 final: handler получает EquipRow напрямую (уже извлечено из userData).
             /// </summary>
-            private void BindEquipmentRow(VisualElement row, int index, System.Collections.Generic.List<EquipRow> cache, bool isModules)
+            private void OnUnequipClicked(EquipRow data)
             {
-                if (index < 0 || index >= cache.Count) return;
-                var data = cache[index];
-
-                var slotLabel = row.Q<Label>("equip-slot-name");
-                var itemLabel = row.Q<Label>("equip-slot-item");
-                var bonusesLabel = row.Q<Label>("equip-slot-bonuses");
-                var btn = row.Q<Button>("equip-slot-btn");
-
-                if (slotLabel != null) slotLabel.text = data.SlotName;
-                if (itemLabel != null) itemLabel.text = data.ItemName;
-                if (bonusesLabel != null)
-                {
-                    string bonusText = !string.IsNullOrEmpty(data.Bonuses) ? data.Bonuses : "—";
-                    if (!string.IsNullOrEmpty(data.TierText)) bonusText += $" ({data.TierText})";
-                    bonusesLabel.text = bonusText;
-                }
-                if (btn != null)
-                {
-                    btn.text = "СНЯТЬ";
-                    btn.SetEnabled(data.ItemId > 0);  // disable для пустых слотов
-                }
-                // userData = data — для OnUnequipClicked handler (find row → read userData)
-                row.userData = data;
-            }
-
-            /// <summary>
-            /// FIX 2026-06-17: PointerDownEvent handler — event.target даёт VisualElement на котором кликнули.
-            /// Walk-up parent chain до row с userData = EquipRow.
-            /// </summary>
-            private void OnUnequipPointerDown(PointerDownEvent evt)
-            {
-                var target = evt.target as VisualElement;
-                if (target == null) return;
-                // Walk-up parent chain до row с userData (EquipRow)
-                VisualElement row = target;
-                while (row != null && row.userData == null) row = row.parent;
-                if (row == null || !(row.userData is EquipRow data)) { return; }
-
                 // RequestUnequipRpc(slot) → EquipmentServer
                 var eqSvrType = System.Type.GetType("ProjectC.Equipment.EquipmentServer, Assembly-CSharp");
                 if (eqSvrType == null) { Debug.LogWarning("[CharacterWindow] EquipmentServer not found"); return; }
@@ -2216,24 +2252,6 @@ namespace ProjectC.UI.Client
                         TierText = tierText,
                         IsModule = true,
                     });
-                }
-            }
-
-            private void RebuildEquipmentListView()
-            {
-                if (_clothingList != null)
-                {
-                    if (!ReferenceEquals(_clothingList.itemsSource, _clothingCache))
-                        _clothingList.itemsSource = _clothingCache;
-                    _clothingList.RefreshItems();
-                    _clothingList.MarkDirtyRepaint();
-                }
-                if (_modulesList != null)
-                {
-                    if (!ReferenceEquals(_modulesList.itemsSource, _modulesCache))
-                        _modulesList.itemsSource = _modulesCache;
-                    _modulesList.RefreshItems();
-                    _modulesList.MarkDirtyRepaint();
                 }
             }
 

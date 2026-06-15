@@ -1,44 +1,29 @@
 /* ============================================
-   CharacterWindow.uss — стили окна персонажа (Project C: The Clouds)
-   Документация: docs/Character-menu/10_DESIGN.md
-
-   REFACTOR 2026-06-05 (v2 — фикс пустого окна):
-   • КРИТИЧНО: все class-стили имеют !important, чтобы перебить UnityDefaultRuntimeTheme.
-     Без !important тема задаёт button/dropdown/list-view стили с более высокой
-     specificity (type-selector `.unity-base-button` > class `.tab-btn` в UI Toolkit 6).
-     С !important мои правила всегда побеждают.
-   • Окно адаптивно: width=min(720px, 90%), max-height=92%.
-   • Chrome (header+info-bar+tabs+actions+message) ≈ 120px → инфо-зона ~76% высоты.
-   • Кнопки 22-24px / шрифт 10-12px (был 30-36 / 12-14).
-   • base font-size 12px — все дочерние font-size-ы (наследуемые) тоже меньше.
-
-   ТЮНИНГ РАЗМЕРА:
-   • .character-window — общие габариты + базовый шрифт
-   • .item-list        — min-height списков
-   • .stats-grid       — стат-поля
+   CharacterWindow.uss — 2026-06-16 REWRITE
+   Simple, compact, no broken flex.
    ============================================ */
 
+/* === Window === */
 .character-window {
     position: absolute !important;
     top: 4% !important;
     left: 50% !important;
     translate: -50% 0 !important;
-    width: 720px !important;
-    max-width: 90% !important;
+    width: 760px !important;
+    max-width: 92% !important;
     max-height: 92% !important;
     background-color: rgb(20, 25, 35) !important;
     border-width: 1px !important;
     border-color: rgba(120, 150, 200, 0.7) !important;
     border-radius: 6px !important;
-    padding: 6px 8px !important;
+    padding: 6px !important;
     color: rgb(220, 220, 230) !important;
     font-size: 12px !important;
     display: flex !important;
     flex-direction: column !important;
-    align-items: stretch !important;
 }
 
-/* === Header (компактнее) === */
+/* === Header / Info bar / Tabs (chrome) === */
 .header {
     flex-direction: row !important;
     justify-content: space-between !important;
@@ -46,43 +31,28 @@
     margin-bottom: 4px !important;
     flex-shrink: 0 !important;
 }
-.character-name {
-    font-size: 15px !important;
-    color: rgb(255, 220, 130) !important;
-    -unity-font-style: bold !important;
-}
-.time-label {
-    font-size: 10px !important;
-    color: rgb(180, 180, 200) !important;
-}
+.character-name { font-size: 14px !important; -unity-font-style: bold !important; color: rgb(255, 220, 130) !important; }
+.time-label { font-size: 10px !important; color: rgb(180, 180, 200) !important; }
 
-/* === Info bar (компактнее) === */
 .info-bar {
     flex-direction: row !important;
     justify-content: space-between !important;
-    margin-bottom: 6px !important;
-    padding: 3px 0 !important;
+    margin-bottom: 4px !important;
+    padding: 2px 4px !important;
     border-top-width: 1px !important;
     border-bottom-width: 1px !important;
     border-color: rgba(120, 150, 200, 0.3) !important;
     flex-shrink: 0 !important;
 }
-.credits-label {
-    color: rgb(255, 230, 150) !important;
-    -unity-font-style: bold !important;
-    font-size: 11px !important;
-}
-.location-info {
-    color: rgb(180, 200, 220) !important;
-    font-size: 10px !important;
-}
+.credits-label { font-size: 11px !important; -unity-font-style: bold !important; color: rgb(255, 230, 150) !important; }
+.location-info { font-size: 10px !important; color: rgb(180, 200, 220) !important; }
 
-/* === Tabs (мелкие, аккуратные, в строку через flex-basis:0) === */
 .tabs {
     flex-direction: row !important;
-    flex-wrap: wrap !important;
-    margin-bottom: 3px !important;
+    flex-wrap: nowrap !important;
+    margin-bottom: 4px !important;
     flex-shrink: 0 !important;
+    height: 22px !important;
 }
 .tab-btn {
     flex-grow: 1 !important;
@@ -92,58 +62,27 @@
     font-size: 10px !important;
     background-color: rgba(60, 80, 120, 0.4) !important;
     color: rgb(220, 220, 230) !important;
-    border-top-width: 0 !important;
-    border-right-width: 0 !important;
+    border-width: 0 !important;
     border-bottom-width: 2px !important;
-    border-left-width: 0 !important;
-    border-top-color: transparent !important;
-    border-right-color: transparent !important;
     border-bottom-color: transparent !important;
-    border-left-color: transparent !important;
-    border-top-left-radius: 0 !important;
-    border-top-right-radius: 0 !important;
-    border-bottom-left-radius: 0 !important;
-    border-bottom-right-radius: 0 !important;
-    padding-top: 0 !important;
-    padding-bottom: 0 !important;
-    padding-left: 2px !important;
-    padding-right: 2px !important;
-    margin: 0 !important;
+    margin: 0 1px !important;
+    padding: 0 !important;
     -unity-text-align: middle-center !important;
     -unity-font-style: normal !important;
 }
-.tab-btn:hover {
-    background-color: rgba(80, 100, 140, 0.6) !important;
-}
-.tab-btn.active {
-    border-bottom-color: rgb(255, 220, 130) !important;
-    background-color: rgba(80, 110, 160, 0.6) !important;
-}
+.tab-btn.active { border-bottom-color: rgb(255, 220, 130) !important; background-color: rgba(80, 110, 160, 0.6) !important; }
 
-/* === Filters row (только для Контракты/Инвентарь) — компактнее === */
 .filters-row {
     flex-direction: row !important;
-    margin-bottom: 3px !important;
-    padding: 2px 4px !important;
-    background-color: rgba(30, 45, 70, 0.4) !important;
-    border-radius: 3px !important;
-    flex-shrink: 0 !important;
-}
-.filter-dd {
-    flex-grow: 1 !important;
-    margin-right: 3px !important;
-    font-size: 10px !important;
-    min-height: 18px !important;
-}
-.filter-search {
-    width: 120px !important;
-    font-size: 10px !important;
-    min-height: 18px !important;
-}
-
-/* === List sections (главная инфо-зона, занимает ~76% окна) === */
-.list-section {
     margin-bottom: 4px !important;
+    flex-shrink: 0 !important;
+    display: flex !important;
+}
+.filter-dd { flex-grow: 1 !important; margin-right: 4px !important; min-height: 18px !important; }
+.filter-search { width: 100px !important; min-height: 18px !important; }
+
+/* === Section base === */
+.list-section {
     flex-grow: 1 !important;
     flex-shrink: 1 !important;
     min-height: 0 !important;
@@ -152,762 +91,290 @@
     flex-direction: column !important;
 }
 .section-title {
-    color: rgb(180, 200, 220) !important;
     font-size: 11px !important;
-    margin-bottom: 2px !important;
+    color: rgb(180, 200, 220) !important;
+    margin-bottom: 4px !important;
     flex-shrink: 0 !important;
     -unity-font-style: bold !important;
 }
 .item-list {
+    flex-grow: 1 !important;
+    flex-shrink: 1 !important;
     min-height: 60px !important;
-    max-height: none !important;
-    flex-grow: 1 !important;
-    flex-shrink: 1 !important;
-    min-height: 0 !important;
-    background-color: rgba(30, 40, 60, 0.4) !important;
-    border-width: 1px !important;
-    border-color: rgba(80, 100, 130, 0.4) !important;
-    border-radius: 3px !important;
-}
-
-/* === Stats grid (для character-section / ship-section) === */
-.stats-grid {
-    flex-direction: column !important;
-    padding: 4px 6px !important;
-    background-color: rgba(30, 40, 60, 0.4) !important;
-    border-radius: 3px !important;
-    flex-shrink: 0 !important;
-}
-.stat-row {
-    flex-direction: row !important;
-    justify-content: space-between !important;
-    align-self: stretch !important;
-    min-width: 0 !important;
-    padding: 2px 6px !important;
-    border-bottom-width: 1px !important;
-    border-bottom-color: rgba(80, 100, 130, 0.15) !important;
-}
-.stat-label {
-    color: rgb(180, 180, 200) !important;
-    min-width: 0 !important;
-    font-size: 11px !important;
-}
-.stat-value {
-    color: rgb(220, 220, 230) !important;
-    -unity-text-align: middle-right !important;
-    min-width: 0 !important;
-    font-size: 12px !important;
-    -unity-font-style: bold !important;
-}
-.stat-value.debt-warn   { color: rgb(255, 200, 100) !important; }
-.stat-value.debt-danger { color: rgb(255, 100, 100) !important; }
-
-/* === Placeholder hint (мелкий, внизу) === */
-.placeholder-hint {
-    color: rgb(140, 140, 160) !important;
-    font-size: 10px !important;
-    -unity-font-style: italic !important;
-    margin-top: 3px !important;
-    flex-shrink: 0 !important;
-}
-
-/* === Actions (мелкие кнопки внизу) === */
-.actions {
-    flex-direction: row !important;
-    flex-wrap: wrap !important;
-    margin-top: 3px !important;
-    min-height: 26px !important;
-    flex-shrink: 0 !important;
-}
-.action-btn {
-    flex-grow: 1 !important;
-    height: 24px !important;
-    font-size: 10px !important;
-    margin-top: 0 !important;
-    margin-bottom: 0 !important;
-    margin-left: 1px !important;
-    margin-right: 1px !important;
-    padding-top: 0 !important;
-    padding-bottom: 0 !important;
-    padding-left: 4px !important;
-    padding-right: 4px !important;
-    color: rgb(240, 240, 240) !important;
-    -unity-font-style: normal !important;
-    border-top-width: 0 !important;
-    border-right-width: 0 !important;
-    border-bottom-width: 0 !important;
-    border-left-width: 0 !important;
-    border-top-left-radius: 2px !important;
-    border-top-right-radius: 2px !important;
-    border-bottom-left-radius: 2px !important;
-    border-bottom-right-radius: 2px !important;
-    -unity-text-align: middle-center !important;
-}
-.action-btn.accept   { background-color: rgba(80, 160, 80, 0.7) !important; }
-.action-btn.complete { background-color: rgba(80, 130, 200, 0.7) !important; }
-.action-btn.fail     { background-color: rgba(200, 80, 60, 0.7) !important; }
-.action-btn.close    { background-color: rgba(120, 80, 80, 0.7) !important; }
-.action-btn:hover    { background-color: rgba(160, 160, 180, 0.5) !important; }
-
-/* === Message (компактный feedback) === */
-.message-label {
-    margin-top: 2px !important;
-    padding-top: 2px !important;
-    padding-bottom: 2px !important;
-    padding-left: 6px !important;
-    padding-right: 6px !important;
-    color: rgb(220, 220, 230) !important;
-    font-size: 10px !important;
-    background-color: rgba(0, 0, 0, 0.5) !important;
-    border-top-left-radius: 2px !important;
-    border-top-right-radius: 2px !important;
-    border-bottom-left-radius: 2px !important;
-    border-bottom-right-radius: 2px !important;
-    -unity-text-align: middle-center !important;
-    flex-shrink: 0 !important;
-    align-self: stretch !important;
-}
-
-/* === Row states (контракты / инвентарь / репутация — ListView-строки) === */
-.contract-row {
-    flex-direction: row !important;
-    align-items: center !important;
-    height: 26px !important;
-    padding-top: 0 !important;
-    padding-bottom: 0 !important;
-    padding-left: 6px !important;
-    padding-right: 6px !important;
-    border-bottom-width: 1px !important;
-    border-color: rgba(80, 100, 130, 0.2) !important;
-}
-.contract-row:hover {
-    background-color: rgba(100, 130, 180, 0.3) !important;
-}
-.contract-type   { width: 80px  !important; font-size: 11px !important; }
-.contract-item   { flex-grow: 1 !important; font-size: 11px !important; }
-.contract-reward { width: 70px  !important; font-size: 11px !important; -unity-text-align: middle-right !important; }
-.contract-timer  { width: 40px  !important; font-size: 11px !important; -unity-text-align: middle-right !important; }
-.type-standard { color: rgb(80, 150, 255) !important; }
-.type-urgent   { color: rgb(255, 130, 50) !important; -unity-font-style: bold !important; }
-.type-receipt  { color: rgb(80, 255, 100) !important; }
-.contract-row-active {
-    background-color: rgba(80, 200, 100, 0.25) !important;
-    border-left-width: 3px !important;
-    border-left-color: rgb(80, 220, 100) !important;
-}
-.contract-row-just-taken {
-    background-color: rgba(120, 255, 140, 0.5) !important;
-    border-left-width: 3px !important;
-    border-left-color: rgb(160, 255, 180) !important;
-    transition-property: background-color, border-left-color !important;
-    transition-duration: 1.5s !important;
-}
-.timer-warn   { color: rgb(255, 220, 100) !important; }
-.timer-danger { color: rgb(255, 80, 80)  !important; -unity-font-style: bold !important; }
-.timer-ok     { color: rgb(180, 220, 255) !important; }
-
-.inventory-row {
-    flex-direction: row !important;
-    align-items: center !important;
-    height: 26px !important;
-    padding-top: 0 !important;
-    padding-bottom: 0 !important;
-    padding-left: 6px !important;
-    padding-right: 6px !important;
-    border-bottom-width: 1px !important;
-    border-color: rgba(80, 100, 130, 0.2) !important;
-}
-.inventory-row:hover {
-    background-color: rgba(100, 130, 180, 0.3) !important;
-}
-.inventory-icon { width: 20px !important; height: 20px !important; margin-right: 5px !important; }
-.inventory-name { flex-grow: 1 !important; font-size: 11px !important; }
-.inventory-type { width: 100px !important; font-size: 10px !important; color: rgb(150, 180, 220) !important; }
-.inventory-qty  { width: 36px  !important; font-size: 11px !important; -unity-text-align: middle-right !important; }
-
-.reputation-row {
-    flex-direction: row !important;
-    align-items: center !important;
-    height: 26px !important;
-    padding-top: 0 !important;
-    padding-bottom: 0 !important;
-    padding-left: 6px !important;
-    padding-right: 6px !important;
-    border-bottom-width: 1px !important;
-    border-color: rgba(80, 100, 130, 0.2) !important;
-}
-.reputation-row:hover {
-    background-color: rgba(100, 130, 180, 0.3) !important;
-}
-.reputation-faction { width: 160px !important; font-size: 11px !important; }
-.reputation-bar {
-    flex-grow: 1 !important;
-    height: 10px !important;
-    background-color: rgba(40, 50, 70, 0.6) !important;
-    border-radius: 2px !important;
-    margin-top: 0 !important;
-    margin-bottom: 0 !important;
-    margin-left: 6px !important;
-    margin-right: 6px !important;
-}
-.reputation-fill {
-    height: 100% !important;
-    border-radius: 2px !important;
-}
-.reputation-value { width: 50px !important; font-size: 11px !important; -unity-text-align: middle-right !important; }
-
-/* ============================================
- T-Q11: Quest log таб (6-й таб)
- Структура: .quests-section > .quest-sub ×4 > .quest-list > .quest-row.
- Все стили с !important — UnityDefaultRuntimeTheme type-selector > class.
- ============================================ */
-.quests-section {
- flex-grow:1 !important;
- flex-direction: column !important;
- padding-top:4px !important;
- padding-bottom:4px !important;
- overflow: hidden !important;
-}
-.quest-sub {
- flex-direction: column !important;
- margin-bottom:6px !important;
- flex-shrink:0 !important;
- min-height:0 !important;
-}
-.quest-section-title {
- font-size:11px !important;
- -unity-font-style: bold !important;
- color: rgb(180,200,230) !important;
- margin-bottom:2px !important;
- padding-left:2px !important;
-}
-.quest-list {
- min-height:40px !important;
- max-height:110px !important;
- flex-grow:1 !important;
- flex-shrink:1 !important;
- background-color: rgba(0,0,0,0.25) !important;
- border-width:1px !important;
- border-color: rgba(120,150,200,0.3) !important;
- border-radius:3px !important;
- padding:2px !important;
-}
-.quest-row {
- flex-direction: column !important;
- align-items: stretch !important;
- padding-left:6px !important;
- padding-right:6px !important;
- padding-top:2px !important;
- padding-bottom:2px !important;
- border-radius:2px !important;
-}
-.quest-row:hover { background-color: rgba(120,150,200,0.15) !important; }
-/* T-Q21 fix: top-line (badge + title + counter + track button) — горизонтальный row. */
-.quest-row-top-line {
- flex-direction: row !important;
- align-items: center !important;
-}
-.quest-row-top-line > Label[name="row-title"] {
- flex-grow:1 !important;
-}
-.quest-row-title {
- font-size:11px !important;
- color: rgb(220,220,230) !important;
- -unity-text-align: middle-left !important;
- white-space: normal !important;
-}
-.quest-row-objectives-container {
- flex-direction: column !important;
- align-items: flex-start !important;
- margin-top:2px !important;
- margin-left:12px !important;
-}
-.quest-row-objective-line {
- font-size:10px !important;
- color: rgb(200,200,210) !important;
- -unity-text-align: middle-left !important;
- white-space: normal !important;
- margin:0 !important;
- padding:0 !important;
-}
-.quest-row-objective-line-done {
- color: rgba(150,150,150,0.6) !important;
- -unity-font-style: italic !important;
-}
-.quest-row-state {
- font-size:10px !important;
- padding-left:4px !important;
- padding-right:4px !important;
- border-radius:2px !important;
- margin-right:4px !important;
- -unity-text-align: middle-center !important;
- min-width:60px !important;
-}
-.quest-row-state-active { background-color: rgba(80,200,120,0.25) !important; color: rgb(120,230,160) !important; }
-.quest-row-state-completed { background-color: rgba(120,150,200,0.25) !important; color: rgb(180,200,230) !important; }
-.quest-row-state-failed { background-color: rgba(200,80,80,0.25) !important; color: rgb(230,120,120) !important; }
-.quest-row-state-discovered { background-color: rgba(230,200,80,0.25) !important; color: rgb(240,220,130) !important; }
-.quest-row-objectives {
- font-size:10px !important;
- color: rgb(160,160,170) !important;
- margin-left:8px !important;
-}
-.action-btn.accept-quest {
- background-color: rgb(60,120,80) !important;
- color: rgb(220,240,220) !important;
-}
-.action-btn.accept-quest:hover { background-color: rgb(80,160,100) !important; }
-.action-btn.accept-quest:active { background-color: rgb(50,100,70) !important; }
-.quest-row-track-btn {
- font-size:10px !important;
- height:20px !important;
- padding:06px !important;
- margin-left:6px !important;
- background-color: rgba(60,100,80,0.5) !important;
- color: rgb(200,220,200) !important;
- border-width:0 !important;
- -unity-text-align: middle-center !important;
- min-width:70px !important;
-}
-.quest-row-track-btn:hover { background-color: rgba(80,140,100,0.7) !important; }
-
-/* ============================================
-   T-Q13: NpcAttitude list row styles (mirror .reputation-row*)
-   ============================================ */
-.npc-attitude-row {
-    flex-direction: row !important;
-    align-items: center !important;
-    padding: 4px 6px !important;
-    height: 28px !important;
-}
-
-.npc-attitude-name {
-    width: 60% !important;
-    color: rgb(220, 220, 240) !important;
-    font-size: 12px !important;
-}
-
-.npc-attitude-value {
-    width: 25% !important;
-    color: rgb(255, 130, 160) !important;
-    -unity-text-align: middle-right !important;
-    font-size: 12px !important;
-    -unity-font-style: bold !important;
-}
-
-.npc-attitude-bar {
-    width: 15% !important;
-    flex-direction: row !important;
-    background-color: rgba(0, 0, 0, 0.3) !important;
-    height: 8px !important;
-    border-radius: 2px !important;
-    overflow: hidden !important;
-}
-
-.npc-attitude-fill {
-    height: 100% !important;
-}
-
-/* ============================================
-   T-P15: Character Progression M4 (progression tab + 4 sub-tabs + stats/clothing/modules/skills sub-sections)
-
-   APPLIED FIXES (из recon_visual_bugs.md + recon_visual_fix_plan.md):
-   • B1 (tabs wrap): .progression-sub-tabs использует flex-basis:0 (как .tabs выше) — 4 sub-tabs влезают в строку.
-   • B2 (stat-row overlap): .stat-row-progress использует align-self: stretch + min-width: 0 (как .stat-row).
-   • B3 (list-section overflow): .progression-sub-section = .list-section-style с flex-shrink:1, min-height:0, overflow:hidden.
-   • B4 (actions overlap): .actions уже имеет flex-shrink:0 в основном USS.
-   • B5 (transparent bg): .progression-section background-color: rgb(20,25,35) без alpha — перебивает inline-стили C#.
-
-   Также все стили !important (REFACTOR 2026-06-05 v2 — UnityDefaultRuntimeTheme имеет type-selector specificity > class).
-   ============================================ */
-
-/* Progression section — аналог .list-section, но с дополнительными sub-tabs сверху */
-.progression-section {
-    margin-bottom: 4px !important;
-    flex-grow: 1 !important;
-    flex-shrink: 1 !important;
-    min-height: 0 !important;
-    overflow: hidden !important;
-    display: flex !important;
-    flex-direction: column !important;
-    background-color: rgba(15, 20, 30, 0.5) !important;  /* чуть темнее основной секции для вложенности */
+    max-height: 33% !important;
+    background-color: rgba(30, 40, 60, 0.3) !important;
     border-width: 1px !important;
     border-color: rgba(80, 100, 130, 0.3) !important;
+    border-radius: 3px !important;
+    margin-bottom: 4px !important;
+}
+.item-list:last-child { margin-bottom: 0 !important; }
+
+/* Inventory list: count column should be right-aligned */
+.inventory-item-count {
+    -unity-text-align: middle-right !important;
+}
+
+/* === Character Progression: 2-row grid === */
+.progression-root {
+    /* override list-section to be a flex column with two rows */
+    flex-direction: column !important;
+}
+.progression-row {
+    flex-direction: row !important;
+    flex-grow: 1 !important;
+    flex-shrink: 1 !important;
+    flex-basis: 0 !important;
+    min-height: 0 !important;
+    margin-bottom: 4px !important;
+    width: 100% !important;
+}
+.progression-row.equip-row {
+    flex-basis: 45% !important;
+}
+.progression-row.stats-row {
+    flex-basis: 50% !important;
+}
+.progression-col {
+    flex-direction: column !important;
+    min-height: 0 !important;
+    margin: 0 2px !important;
+    background-color: rgba(30, 40, 60, 0.4) !important;
     border-radius: 4px !important;
     padding: 4px !important;
 }
-
-/* Sub-tabs: Статы / Одежда / Модули / Навыки (4 кнопки в строку) */
-.progression-sub-tabs {
-    flex-direction: row !important;
-    flex-wrap: nowrap !important;  /* 4 кнопки = 720px/4 = 180px каждая, wrap не нужен */
-    margin-bottom: 4px !important;
-    flex-shrink: 0 !important;
-}
-.sub-tab-btn {
+.progression-col.equip-col {
     flex-grow: 1 !important;
-    flex-basis: 0 !important;        /* per Lesson B1: делит поровну */
-    flex-shrink: 1 !important;
-    height: 20px !important;
-    font-size: 9px !important;       /* ещё мельче чем top-level tabs (10px) */
-    background-color: rgba(40, 55, 80, 0.5) !important;
-    color: rgb(200, 200, 220) !important;
-    border-width: 0 !important;
-    border-bottom-width: 2px !important;
-    border-bottom-color: transparent !important;
-    border-radius: 2px !important;
-    margin: 0 1px !important;
-    padding: 0 !important;
-    -unity-text-align: middle-center !important;
-    -unity-font-style: normal !important;
+    flex-basis: 0 !important;
 }
-.sub-tab-btn:hover { background-color: rgba(60, 80, 120, 0.6) !important; }
-.sub-tab-btn.active {
-    border-bottom-color: rgb(180, 220, 255) !important;  /* blue accent для sub-tabs (top-level = yellow) */
-    background-color: rgba(60, 90, 140, 0.7) !important;
-    color: rgb(230, 240, 255) !important;
+.progression-col.stats-col {
+    flex-grow: 0 !important;
+    flex-shrink: 0 !important;
+    width: 22% !important;
+}
+.progression-col.skills-col {
+    flex-grow: 1 !important;
+    flex-basis: 0 !important;
+}
+.progression-col-title {
+    font-size: 11px !important;
+    color: rgb(220, 220, 240) !important;
+    margin-bottom: 4px !important;
+    padding-bottom: 2px !important;
+    border-bottom-width: 1px !important;
+    border-bottom-color: rgba(80, 100, 130, 0.4) !important;
+    -unity-font-style: bold !important;
+    flex-shrink: 0 !important;
+    -unity-text-align: middle-left !important;
 }
 
-/* Sub-section: один из 4 (stats/clothing/modules/skills) виден в данный момент */
-.progression-sub-section {
-    flex-grow: 1 !important;          /* per Lesson B3: scroll-внутри */
+/* Equip scroll container */
+.equip-scroll {
+    flex-grow: 1 !important;
     flex-shrink: 1 !important;
     min-height: 0 !important;
-    overflow: hidden !important;
-    display: flex !important;
-    flex-direction: column !important;
-    background-color: rgba(20, 25, 35, 0.3) !important;
+    background-color: rgba(15, 20, 30, 0.5) !important;
     border-radius: 3px !important;
-    padding: 4px !important;
+    border-width: 1px !important;
+    border-color: rgba(80, 100, 130, 0.3) !important;
+}
+.equip-container {
+    flex-direction: column !important;
+    padding: 2px !important;
 }
 
-/* T-P16: stat-row-progress (Q4.2) — label + ProgressBar + value в строку */
-.stat-row-progress {
+/* Skills scroll container */
+.skills-scroll {
+    flex-grow: 1 !important;
+    flex-shrink: 1 !important;
+    min-height: 0 !important;
+    background-color: rgba(15, 20, 30, 0.5) !important;
+    border-radius: 3px !important;
+    border-width: 1px !important;
+    border-color: rgba(80, 100, 130, 0.3) !important;
+}
+.skills-container {
+    flex-direction: column !important;
+    padding: 2px !important;
+}
+
+/* === Equip slot row (uniform compact) === */
+.equip-slot-row {
     flex-direction: row !important;
     align-items: center !important;
-    align-self: stretch !important;   /* per Lesson B2: stretch в flex-column */
-    min-width: 0 !important;
-    padding: 3px 6px !important;
-    margin-bottom: 2px !important;
+    padding: 2px 4px !important;
     border-bottom-width: 1px !important;
     border-bottom-color: rgba(80, 100, 130, 0.15) !important;
     flex-shrink: 0 !important;
+    height: 24px !important;
 }
-.stat-row-progress > .stat-label {
-    width: 70px !important;             /* фиксированная ширина для лейбла */
-    min-width: 0 !important;
-    flex-shrink: 1 !important;
-}
-.stat-row-progress > .stat-progress-bar {
-    flex-grow: 1 !important;            /* bar занимает всё оставшееся место */
-    flex-shrink: 1 !important;
-    min-width: 0 !important;
-    margin: 0 6px !important;
-    height: 14px !important;
-}
-.stat-row-progress > .stat-value {
-    width: 80px !important;             /* фиксированная ширина для value */
-    min-width: 0 !important;
+.equip-slot-name {
+    width: 70px !important;
+    font-size: 10px !important;
+    color: rgb(180, 200, 220) !important;
     flex-shrink: 0 !important;
-    -unity-text-align: middle-right !important;
+    -unity-text-align: middle-left !important;
+    -unity-font-style: bold !important;
+}
+.equip-slot-item {
+    flex-grow: 1 !important;
+    min-width: 0 !important;
     font-size: 10px !important;
     color: rgb(220, 220, 230) !important;
+    -unity-text-align: middle-left !important;
+    -unity-font-style: bold !important;
+    white-space: normal !important;
 }
-.stat-progress-fill {                  /* inner fill bar (для tier-up color) */
-    height: 100% !important;
+.equip-slot-bonuses {
+    width: 80px !important;
+    font-size: 9px !important;
+    color: rgb(150, 200, 150) !important;
+    -unity-text-align: middle-right !important;
+    flex-shrink: 0 !important;
+    white-space: normal !important;
 }
-.stat-progress-fill.tier-low {
-    background-color: rgba(100, 140, 180, 0.8) !important;
+.equip-slot-btn {
+    width: 50px !important;
+    height: 22px !important;
+    margin-left: 4px !important;
+    background-color: rgba(180, 60, 60, 0.6) !important;
+    color: rgb(255, 220, 220) !important;
+    border-width: 1px !important;
+    border-color: rgba(200, 100, 100, 0.5) !important;
+    border-radius: 3px !important;
+    flex-shrink: 0 !important;
+    cursor: link !important;
 }
-.stat-progress-fill.tier-mid {
-    background-color: rgba(120, 200, 140, 0.8) !important;
+.equip-slot-btn-label {
+    flex-grow: 1 !important;
+    -unity-text-align: middle-center !important;
+    font-size: 10px !important;
+    color: inherit !important;
 }
-.stat-progress-fill.tier-high {
-    background-color: rgba(220, 180, 100, 0.9) !important;
-}
-.stat-progress-fill.tier-master {
-    background-color: rgba(220, 120, 180, 0.9) !important;
-}
-.stat-row-progress.tier-promoted {
-    background-color: rgba(255, 220, 130, 0.15) !important;
+.equip-slot-btn:hover { background-color: rgba(220, 80, 80, 0.85) !important; }
+.equip-slot-btn.disabled,
+.equip-slot-btn:disabled {
+    background-color: rgba(50, 50, 50, 0.3) !important;
+    color: rgba(120, 120, 120, 0.5) !important;
+    border-color: rgba(70, 70, 70, 0.2) !important;
+    cursor: default !important;
 }
 
-/* T-P14: skill-row (для skills-combat-list / skills-social-list в T-P14) */
+/* === Skill row (uniform compact) === */
 .skill-row {
     flex-direction: row !important;
     align-items: center !important;
-    padding: 3px 6px !important;
+    padding: 2px 4px !important;
     border-bottom-width: 1px !important;
-    border-bottom-color: rgba(80, 100, 130, 0.2) !important;
+    border-bottom-color: rgba(80, 100, 130, 0.15) !important;
     flex-shrink: 0 !important;
-    min-width: 0 !important;
+    height: 24px !important;
 }
-.skill-row:hover { background-color: rgba(120, 150, 200, 0.1) !important; }
 .skill-row-state {
     width: 18px !important;
     font-size: 12px !important;
     -unity-text-align: middle-center !important;
     margin-right: 4px !important;
     flex-shrink: 0 !important;
+    color: rgb(180, 100, 100) !important;
 }
 .skill-row-title {
     flex-grow: 1 !important;
     min-width: 0 !important;
-    font-size: 11px !important;
+    font-size: 10px !important;
     color: rgb(220, 220, 230) !important;
     white-space: normal !important;
+    -unity-text-align: middle-left !important;
 }
 .skill-row-cost {
-    width: 50px !important;
-    font-size: 10px !important;
-    color: rgb(180, 200, 150) !important;
-    -unity-text-align: middle-right !important;
-    flex-shrink: 0 !important;
-}
-.skill-row-desc {
-    width: 60px !important;
+    width: 36px !important;
     font-size: 9px !important;
-    color: rgb(160, 180, 200) !important;
+    color: rgb(180, 200, 150) !important;
     -unity-text-align: middle-right !important;
     flex-shrink: 0 !important;
     margin-left: 2px !important;
 }
-.skill-row-prereq {
-    display: none !important;          /* prereq info only in tooltip (T-P15+); row height фиксирован */
-}
-.skill-row-learned {
-    background-color: rgba(80, 160, 120, 0.2) !important;
-    color: rgba(180, 220, 200, 0.9) !important;
-}
-.skill-row-learned .skill-row-state { color: rgb(120, 220, 160) !important; }
-.skill-row-available {
-    background-color: rgba(60, 100, 160, 0.1) !important;
-}
-.skill-row-available .skill-row-state { color: rgb(220, 220, 130) !important; }
-.skill-row-locked {
-    color: rgba(140, 140, 150, 0.7) !important;
-}
-.skill-row-locked .skill-row-state { color: rgb(180, 100, 100) !important; }
-
-/* T-P17: equip-slot-row (для clothing-list / modules-list) */
-.equip-slot-row {
-    flex-direction: row !important;
-    align-items: center !important;
-    padding: 3px 6px !important;
-    border-bottom-width: 1px !important;
-    border-bottom-color: rgba(80, 100, 130, 0.2) !important;
-    flex-shrink: 0 !important;
-    min-width: 0 !important;
-    height: 28px !important;
-}
-.equip-slot-row:hover { background-color: rgba(120, 150, 200, 0.15) !important; }
-.equip-slot-name {
-    width: 60px !important;
-    font-size: 10px !important;
-    color: rgb(180, 200, 220) !important;
-    flex-shrink: 0 !important;
-}
-.equip-slot-item {
-    flex-grow: 1 !important;
-    min-width: 0 !important;
-    font-size: 11px !important;
-    color: rgb(220, 220, 230) !important;
-    -unity-font-style: bold !important;
-    white-space: normal !important;
-    margin: 0 4px !important;
-}
-.equip-slot-bonuses {
-    width: 100px !important;
+.skill-row-tier {
+    width: 26px !important;
     font-size: 9px !important;
-    color: rgb(150, 200, 150) !important;
+    color: rgb(150, 180, 200) !important;
     -unity-text-align: middle-right !important;
     flex-shrink: 0 !important;
 }
-.equip-slot-btn {
-    width: 50px !important;
-    height: 18px !important;
-    font-size: 9px !important;
-    margin-left: 4px !important;
-    background-color: rgba(160, 80, 80, 0.5) !important;
-    color: rgb(240, 200, 200) !important;
-    border-width: 0 !important;
-    border-radius: 2px !important;
-    flex-shrink: 0 !important;
-}
-.equip-slot-btn:hover { background-color: rgba(200, 100, 100, 0.7) !important; }
 
-/* ============================================
-   FIX 2026-06-17: single-page layout classes
-   (progression-section-block, progression-section-title,
-    skills-grid, skills-column, skill-column-title)
-   ============================================ */
-
-.progression-section-block {
+/* === Compact stat bars (20% column) === */
+.stats-grid {
     flex-direction: column !important;
-    margin-bottom: 6px !important;
-    flex-shrink: 0 !important;
-    min-height: 0 !important;
+    padding: 2px !important;
 }
-.progression-section-title {
-    color: rgb(180, 200, 220) !important;
-    font-size: 11px !important;
-    margin-bottom: 3px !important;
-    padding-left: 2px !important;
-    flex-shrink: 0 !important;
-    -unity-font-style: bold !important;
-    border-bottom-width: 1px !important;
-    border-bottom-color: rgba(80, 100, 130, 0.3) !important;
-}
-
-/* Skills grid: 2 columns (Боевые / Социальные) */
-.skills-grid {
-    flex-direction: row !important;
-    flex-wrap: wrap !important;
-    align-items: stretch !important;
-    min-height: 0 !important;
-    gap: 4px !important;
-}
-.skills-column {
-    flex-grow: 1 !important;
-    flex-basis: 45% !important;
-    min-width: 100px !important;
-    flex-direction: column !important;
-    min-height: 0 !important;
-}
-.skill-column-title {
-    font-size: 10px !important;
-    color: rgb(160, 180, 200) !important;
-    margin-bottom: 2px !important;
-    padding-left: 2px !important;
-    flex-shrink: 0 !important;
-}
-.skill-list {
-    min-height: 40px !important;
-    max-height: 140px !important;
-}
-
-/* ============================================
-   FIX 2026-06-17: 2-rows × columns grid layout
-   ============================================ */
-
-.progression-top-row {
-    flex-direction: row !important;
-    flex-grow: 1 !important;
-    flex-shrink: 1 !important;
-    min-height: 0 !important;
-    margin-bottom: 4px !important;
-}
-.progression-equip-col {
-    flex-grow: 1 !important;
-    flex-basis: 0 !important;
-    min-width: 0 !important;
-    flex-direction: column !important;
-    margin: 0 2px !important;
-    min-height: 0 !important;
-}
-.equip-list {
-    min-height: 40px !important;
-    max-height: none !important;
-    flex-grow: 1 !important;
-    flex-shrink: 1 !important;
-    min-height: 0 !important;
-}
-
-.progression-bottom-row {
-    flex-direction: row !important;
-    flex-shrink: 0 !important;
-    min-height: 0 !important;
-    /* Фиксированная высота для нижней половины = 45% окна */
-    flex-grow: 1 !important;
-}
-.progression-stats-col {
-    flex-basis: 20% !important;
-    min-width: 0 !important;
-    flex-direction: column !important;
-    margin: 0 2px !important;
-    min-height: 0 !important;
-}
-.progression-skill-col {
-    flex-basis: 35% !important;
-    min-width: 0 !important;
-    flex-direction: column !important;
-    margin: 0 2px !important;
-    min-height: 0 !important;
-}
-
-/* Compact stat bars (20% колонка) — SESSION 1 visible: bigger fonts, prominent values */
 .stat-row-compact {
     flex-direction: column !important;
     align-items: stretch !important;
-    margin-bottom: 4px !important;
-    padding: 4px 6px !important;
+    margin-bottom: 3px !important;
+    padding: 3px 4px !important;
     background-color: rgba(30, 40, 60, 0.5) !important;
-    border-radius: 4px !important;
+    border-radius: 3px !important;
 }
-.stat-row-compact > .stat-label-compact {
-    font-size: 12px !important;
+.stat-label-compact {
+    font-size: 10px !important;
     color: rgb(220, 220, 240) !important;
-    margin-bottom: 2px !important;
+    margin-bottom: 1px !important;
     -unity-font-style: bold !important;
 }
-.stat-row-compact > .stat-bar-compact {
-    height: 16px !important;
-    margin-bottom: 2px !important;
+.stat-bar-compact {
+    height: 12px !important;
+    margin-bottom: 1px !important;
     border-width: 1px !important;
     border-color: rgba(80, 100, 130, 0.5) !important;
-    border-radius: 3px !important;
+    border-radius: 2px !important;
     background-color: rgba(20, 25, 35, 0.6) !important;
 }
-.stat-row-compact > .stat-value-compact {
-    font-size: 11px !important;
+.stat-value-compact {
+    font-size: 10px !important;
     color: rgb(200, 220, 200) !important;
     -unity-text-align: middle-right !important;
     -unity-font-style: bold !important;
 }
-.stat-row-compact.tier-promoted {
-    background-color: rgba(255, 220, 130, 0.15) !important;
-}
 
-/* SESSION 1 fix: ProgressBar internal fill — без этого fill рендерится дефолтным Unity стилем
-   который не виден на тёмном фоне окна. */
+/* ProgressBar internal fill (Unity UI Toolkit) */
 .stat-bar-compact > .unity-progress-bar__container {
     background-color: rgba(20, 25, 35, 0.8) !important;
-    border-radius: 2px !important;
     height: 100% !important;
+    border-radius: 2px !important;
     margin: 0 !important;
 }
 .stat-bar-compact > .unity-progress-bar__container > .unity-progress-bar__progress {
     background-color: rgb(120, 180, 140) !important;
     border-radius: 2px !important;
-    height: 100% !important;
     min-width: 4px !important;
-    transition-property: width, background-color !important;
-    transition-duration: 0.3s !important;
-}
-/* Tier-based fill colors (apply to the .unity-progress-bar__progress element) */
-.stat-row-compact > .stat-bar-compact.tier-low > .unity-progress-bar__container > .unity-progress-bar__progress {
-    background-color: rgb(100, 150, 200) !important;
-}
-.stat-row-compact > .stat-bar-compact.tier-mid > .unity-progress-bar__container > .unity-progress-bar__progress {
-    background-color: rgb(120, 200, 140) !important;
-}
-.stat-row-compact > .stat-bar-compact.tier-high > .unity-progress-bar__container > .unity-progress-bar__progress {
-    background-color: rgb(220, 180, 100) !important;
-}
-.stat-row-compact > .stat-bar-compact.tier-master > .unity-progress-bar__container > .unity-progress-bar__progress {
-    background-color: rgb(220, 120, 180) !important;
 }
 
-/* Skill list sizing */
-.skill-list {
-    min-height: 40px !important;
-    max-height: none !important;
+/* === Actions / Message === */
+.actions {
+    flex-direction: row !important;
+    margin-top: 4px !important;
+    min-height: 30px !important;
+    flex-shrink: 0 !important;
+}
+.action-btn {
     flex-grow: 1 !important;
-    flex-shrink: 1 !important;
-    min-height: 0 !important;
+    height: 24px !important;
+    font-size: 10px !important;
+    margin: 0 2px !important;
+    color: rgb(240, 240, 240) !important;
+    border-width: 0 !important;
+    border-radius: 3px !important;
+    background-color: rgba(80, 100, 130, 0.5) !important;
 }
+.action-btn.close { background-color: rgba(180, 60, 60, 0.6) !important; }
 
-/* Prevent double-float conflict */
-.progression-section-title {
+.message-label {
+    margin-top: 4px !important;
+    padding: 4px 6px !important;
+    color: rgb(220, 220, 230) !important;
+    font-size: 10px !important;
+    background-color: rgba(0, 0, 0, 0.5) !important;
+    border-radius: 3px !important;
+    -unity-text-align: middle-center !important;
     flex-shrink: 0 !important;
 }

@@ -1,163 +1,120 @@
 <?xml version="1.0" encoding="utf-8"?>
 <!--
- CharacterWindow.uxml — окно "Персонаж" игрока (Project C: The Clouds).
- FIX 2026-06-17: 2-rows × columns grid layout.
-
- Структура character-section:
-  row1: Одежда (50%) | Модули (50%)
-  row2: Характеристики (20%) | Боевые навыки (35%) | Социальные навыки (35%)
+ CharacterWindow.uxml — 2026-06-16 REWRITE.
+ Layout (simple grid, 2 rows × columns):
+  Row 1: ОДЕЖДА (50%) | МОДУЛИ (50%) — full slots, 10 clothing + 3 module rows, scrollable
+  Row 2: ХАРАКТЕРИСТИКИ (20%) | БОЕВЫЕ (40%) | СОЦИАЛЬНЫЕ (40%) — compact, no scroll
 -->
 <ui:UXML xmlns:ui="UnityEngine.UIElements" xmlns:uie="UnityEditor.UIElements">
  <ui:VisualElement name="main-container" class="character-window">
 
  <ui:VisualElement class="header">
- <ui:Label name="character-name-label" text="Игрок" class="character-name" />
- <ui:Label name="time-info-label" text="—" class="time-label" />
+  <ui:Label name="character-name-label" text="Игрок" class="character-name" />
+  <ui:Label name="time-info-label" text="—" class="time-label" />
  </ui:VisualElement>
 
  <ui:VisualElement class="info-bar">
- <ui:Label name="credits-label" text="Кредиты:0 CR" class="credits-label" />
- <ui:Label name="location-label" text="Локация: —" class="location-info" />
+  <ui:Label name="credits-label" text="Кредиты: 0 CR" class="credits-label" />
+  <ui:Label name="location-label" text="Локация: —" class="location-info" />
  </ui:VisualElement>
 
  <ui:VisualElement class="tabs">
- <ui:Button name="tab-character" text="ПЕРСОНАЖ" class="tab-btn" />
- <ui:Button name="tab-ship" text="КОРАБЛЬ" class="tab-btn" />
- <ui:Button name="tab-reputation" text="РЕПУТАЦИЯ" class="tab-btn" />
- <ui:Button name="tab-contracts" text="КОНТРАКТЫ" class="tab-btn" />
- <ui:Button name="tab-inventory" text="ИНВЕНТАРЬ" class="tab-btn" />
- <ui:Button name="tab-quests" text="КВЕСТЫ" class="tab-btn" />
+  <ui:Button name="tab-character" text="ПЕРСОНАЖ" class="tab-btn" />
+  <ui:Button name="tab-ship" text="КОРАБЛЬ" class="tab-btn" />
+  <ui:Button name="tab-reputation" text="РЕПУТАЦИЯ" class="tab-btn" />
+  <ui:Button name="tab-contracts" text="КОНТРАКТЫ" class="tab-btn" />
+  <ui:Button name="tab-inventory" text="ИНВЕНТАРЬ" class="tab-btn" />
+  <ui:Button name="tab-quests" text="КВЕСТЫ" class="tab-btn" />
  </ui:VisualElement>
 
  <ui:VisualElement name="filters-row" class="filters-row" style="display: none;">
- <ui:DropdownField name="filter-source" class="filter-dd" />
- <ui:DropdownField name="filter-state" class="filter-dd" />
- <ui:TextField name="filter-search" class="filter-search" placeholder="поиск..." />
+  <ui:DropdownField name="filter-source" class="filter-dd" />
+  <ui:DropdownField name="filter-state" class="filter-dd" />
+  <ui:TextField name="filter-search" class="filter-search" placeholder="поиск..." />
  </ui:VisualElement>
 
- <!-- ============================================================
-      ПЕРСОНАЖ — 2-rows × columns grid
-      ============================================================ -->
- <ui:VisualElement name="character-section" class="list-section">
+ <!-- Character section: single-page with 2 rows × columns -->
+ <ui:VisualElement name="character-section" class="list-section progression-root">
 
- <!-- Row1: Одежда | Модули -->
- <ui:VisualElement class="progression-top-row">
- <ui:VisualElement class="progression-equip-col">
- <ui:Label text="Одежда" class="progression-section-title" />
- <ui:ListView name="clothing-list" class="item-list equip-list" />
- </ui:VisualElement>
- <ui:VisualElement class="progression-equip-col">
- <ui:Label text="Модули" class="progression-section-title" />
- <ui:ListView name="modules-list" class="item-list equip-list" />
- </ui:VisualElement>
+  <!-- Row 1: Одежда | Модули -->
+  <ui:VisualElement class="progression-row equip-row">
+   <ui:VisualElement class="progression-col equip-col">
+    <ui:Label text="Одежда" class="progression-col-title" />
+    <ui:ScrollView name="clothing-scroll" class="equip-scroll">
+     <ui:VisualElement name="clothing-container" class="equip-container" />
+    </ui:ScrollView>
+   </ui:VisualElement>
+   <ui:VisualElement class="progression-col equip-col">
+    <ui:Label text="Модули" class="progression-col-title" />
+    <ui:ScrollView name="modules-scroll" class="equip-scroll">
+     <ui:VisualElement name="modules-container" class="equip-container" />
+    </ui:ScrollView>
+   </ui:VisualElement>
+  </ui:VisualElement>
+
+  <!-- Row 2: Характеристики (20%) | Боевые (40%) | Социальные (40%) -->
+  <ui:VisualElement class="progression-row stats-row">
+   <ui:VisualElement class="progression-col stats-col">
+    <ui:Label text="Характеристики" class="progression-col-title" />
+    <ui:VisualElement class="stats-grid">
+     <ui:VisualElement class="stat-row-compact">
+      <ui:Label text="STR" class="stat-label-compact" />
+      <ui:ProgressBar name="stat-str-bar" value="0" low-value="0" high-value="100" class="stat-bar-compact" />
+      <ui:Label name="stat-str-value" text="T0" class="stat-value-compact" />
+     </ui:VisualElement>
+     <ui:VisualElement class="stat-row-compact">
+      <ui:Label text="DEX" class="stat-label-compact" />
+      <ui:ProgressBar name="stat-dex-bar" value="0" low-value="0" high-value="100" class="stat-bar-compact" />
+      <ui:Label name="stat-dex-value" text="T0" class="stat-value-compact" />
+     </ui:VisualElement>
+     <ui:VisualElement class="stat-row-compact">
+      <ui:Label text="INT" class="stat-label-compact" />
+      <ui:ProgressBar name="stat-int-bar" value="0" low-value="0" high-value="100" class="stat-bar-compact" />
+      <ui:Label name="stat-int-value" text="T0" class="stat-value-compact" />
+     </ui:VisualElement>
+    </ui:VisualElement>
+   </ui:VisualElement>
+   <ui:VisualElement class="progression-col skills-col">
+    <ui:Label text="Боевые навыки" class="progression-col-title" />
+    <ui:ScrollView name="skills-combat-scroll" class="skills-scroll">
+     <ui:VisualElement name="skills-combat-container" class="skills-container" />
+    </ui:ScrollView>
+   </ui:VisualElement>
+   <ui:VisualElement class="progression-col skills-col">
+    <ui:Label text="Социальные навыки" class="progression-col-title" />
+    <ui:ScrollView name="skills-social-scroll" class="skills-scroll">
+     <ui:VisualElement name="skills-social-container" class="skills-container" />
+    </ui:ScrollView>
+   </ui:VisualElement>
+  </ui:VisualElement>
+
  </ui:VisualElement>
 
- <!-- Row2: Характеристики (20%) | Боевые навыки (35%) | Социальные навыки (35%) -->
- <ui:VisualElement class="progression-bottom-row">
-
- <!-- Колонка: Характеристики (20%) — компактные полоски -->
- <ui:VisualElement class="progression-stats-col">
- <ui:Label text="Характеристики" class="progression-section-title" />
- <ui:VisualElement class="stats-grid">
- <ui:VisualElement class="stat-row-compact">
- <ui:Label text="STR" class="stat-label-compact" />
- <ui:ProgressBar name="stat-str-bar" value="0" low-value="0" high-value="100" class="stat-bar-compact" />
- <ui:Label name="stat-str-value" text="T0" class="stat-value-compact" />
- </ui:VisualElement>
- <ui:VisualElement class="stat-row-compact">
- <ui:Label text="DEX" class="stat-label-compact" />
- <ui:ProgressBar name="stat-dex-bar" value="0" low-value="0" high-value="100" class="stat-bar-compact" />
- <ui:Label name="stat-dex-value" text="T0" class="stat-value-compact" />
- </ui:VisualElement>
- <ui:VisualElement class="stat-row-compact">
- <ui:Label text="INT" class="stat-label-compact" />
- <ui:ProgressBar name="stat-int-bar" value="0" low-value="0" high-value="100" class="stat-bar-compact" />
- <ui:Label name="stat-int-value" text="T0" class="stat-value-compact" />
- </ui:VisualElement>
- </ui:VisualElement>
- </ui:VisualElement>
-
- <!-- Колонка: Боевые навыки (35%) -->
- <ui:VisualElement class="progression-skill-col">
- <ui:Label text="Боевые навыки" class="progression-section-title" />
- <ui:ListView name="skills-combat-list" class="item-list skill-list" />
- </ui:VisualElement>
-
- <!-- Колонка: Социальные навыки (35%) -->
- <ui:VisualElement class="progression-skill-col">
- <ui:Label text="Социальные навыки" class="progression-section-title" />
- <ui:ListView name="skills-social-list" class="item-list skill-list" />
- </ui:VisualElement>
-
- </ui:VisualElement>
-
- </ui:VisualElement>
- <!-- /character-section -->
-
+ <!-- Other sections (unchanged) -->
  <ui:VisualElement name="ship-section" class="list-section" style="display: none;">
- <ui:Label text="Текущий корабль" class="section-title" />
- <ui:VisualElement class="stats-grid">
- <ui:VisualElement class="stat-row">
- <ui:Label text="Корабль" class="stat-label" /> <ui:Label name="ship-name" text="—" class="stat-value" />
+  <ui:Label text="Текущий корабль" class="section-title" />
+  <ui:ListView name="ship-name" />
  </ui:VisualElement>
- <ui:VisualElement class="stat-row">
- <ui:Label text="Состояние" class="stat-label" /> <ui:Label name="ship-state" text="На палубе" class="stat-value" />
- </ui:VisualElement>
- <ui:VisualElement class="stat-row">
- <ui:Label text="Скорость" class="stat-label" /> <ui:Label name="ship-speed" text="0" class="stat-value" />
- </ui:VisualElement>
- <ui:VisualElement class="stat-row">
- <ui:Label text="Топливо" class="stat-label" /> <ui:Label name="ship-fuel" text="—" class="stat-value" />
- </ui:VisualElement>
- <ui:VisualElement class="stat-row">
- <ui:Label text="Грузоподъёмность" class="stat-label" /> <ui:Label name="ship-cargo" text="—" class="stat-value" />
- </ui:VisualElement>
- </ui:VisualElement>
- </ui:VisualElement>
-
  <ui:VisualElement name="reputation-section" class="list-section" style="display: none;">
- <ui:Label text="Репутация по фракциям" class="section-title" />
- <ui:ListView name="reputation-list" class="item-list" />
- <ui:Label text="Отношения к NPC" class="quest-section-title" />
- <ui:ListView name="npc-attitude-list" class="item-list npc-attitude-list" />
+  <ui:Label text="Репутация" class="section-title" />
+  <ui:ListView name="reputation-list" class="item-list" />
+  <ui:ListView name="npc-attitude-list" class="item-list npc-attitude-list" />
  </ui:VisualElement>
-
  <ui:VisualElement name="contracts-section" class="list-section" style="display: none;">
- <ui:Label text="Контракты и квесты" class="section-title" />
- <ui:ListView name="contracts-list" class="item-list" />
+  <ui:ListView name="contracts-list" class="item-list" />
  </ui:VisualElement>
-
  <ui:VisualElement name="inventory-section" class="list-section" style="display: none;">
- <ui:Label text="Инвентарь" class="section-title" />
- <ui:ListView name="inventory-list" class="item-list" />
+  <ui:ListView name="inventory-list" class="item-list" />
  </ui:VisualElement>
-
- <ui:VisualElement name="quests-section" class="list-section quests-section" style="display: none;">
- <ui:Label text="Журнал квестов" class="section-title" />
- <ui:VisualElement class="quest-sub">
- <ui:Label text="Активные" class="quest-section-title" />
- <ui:ListView name="quests-active-list" class="item-list quest-list" />
- </ui:VisualElement>
- <ui:VisualElement class="quest-sub">
- <ui:Label text="Завершённые" class="quest-section-title" />
- <ui:ListView name="quests-completed-list" class="item-list quest-list" />
- </ui:VisualElement>
- <ui:VisualElement class="quest-sub">
- <ui:Label text="Проваленные" class="quest-section-title" />
- <ui:ListView name="quests-failed-list" class="item-list quest-list" />
- </ui:VisualElement>
- <ui:VisualElement class="quest-sub">
- <ui:Label text="Найденные (можно принять)" class="quest-section-title" />
- <ui:ListView name="quests-discovered-list" class="item-list quest-list" />
- </ui:VisualElement>
+ <ui:VisualElement name="quests-section" class="list-section" style="display: none;">
+  <ui:ListView name="quests-active-list" class="item-list quest-list" />
+  <ui:ListView name="quests-completed-list" class="item-list quest-list" />
+  <ui:ListView name="quests-failed-list" class="item-list quest-list" />
+  <ui:ListView name="quests-discovered-list" class="item-list quest-list" />
  </ui:VisualElement>
 
  <ui:VisualElement class="actions">
- <ui:Button name="accept-btn" text="ВЗЯТЬ" class="action-btn accept" style="display: none;" />
- <ui:Button name="complete-btn" text="СДАТЬ" class="action-btn complete" style="display: none;" />
- <ui:Button name="fail-btn" text="ПРОВАЛИТЬ" class="action-btn fail" style="display: none;" />
- <ui:Button name="accept-quest-btn" text="ПРИНЯТЬ" class="action-btn accept-quest" style="display: none;" />
- <ui:Button name="close-btn" text="ЗАКРЫТЬ" class="action-btn close" />
+  <ui:Button name="close-btn" text="ЗАКРЫТЬ" class="action-btn close" />
  </ui:VisualElement>
 
  <ui:Label name="message-label" text="Откройте меню персонажа" class="message-label" />

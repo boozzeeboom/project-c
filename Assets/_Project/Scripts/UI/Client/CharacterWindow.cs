@@ -1975,11 +1975,13 @@ namespace ProjectC.UI.Client
             {
                 if (list == null) return;
                 list.makeItem = MakeEquipmentRow;
-                // bind зависит от list — clothing или modules
+                // bind зависит от list — clothing или modules.
+                // CS1628 fix: нельзя использовать ref параметр внутри lambda. Читаем _clothingCache/_modulesCache
+                // напрямую через field access (не ref).
                 bool isModules = (list == _modulesList);
-                list.bindItem = (e, i) => BindEquipmentRow(e, i, cacheRef, isModules);
+                list.bindItem = (e, i) => BindEquipmentRow(e, i, isModules ? _modulesCache : _clothingCache, isModules);
                 list.fixedItemHeight = 28;  // per T-P15 USS .equip-slot-row height: 28px
-                list.itemsSource = cacheRef;
+                list.itemsSource = isModules ? (System.Collections.IList)_modulesCache : (System.Collections.IList)_clothingCache;
             }
 
             /// <summary>
@@ -2048,12 +2050,31 @@ namespace ProjectC.UI.Client
             private void OnUnequipClicked()
             {
                 // Найти row через walk-up: текущий focused element
-                // (UI Toolkit не передаёт sender в Button.clicked автоматически; используем
-                // глобальный panel.focusedElement как fallback)
-                var focused = UnityEngine.UIElements.UIElementsUtility.GetFocusedElement();
-                if (focused == null) return;
-                VisualElement row = focused;
-                while (row != null && row.userData == null) row = row.parent;
+                // (UI Toolkit не передаёт sender в Button.clicked автоматически; walk-up parent chain
+                // через panel.focusedElement НЕ работает (UIElementsUtility internal).
+                // Используем row-relative walk-up внутри самого button.eventHandler context:
+                // Button.clicked event passes `evt` (MouseEventBase) через который можно дотянуться
+                // до target element, и затем walk-up до userData = EquipRow.)
+                //
+                // Простейшее решение: сохраняем current row в field при BindEquipmentRow + передаём в OnUnequipClicked.
+                // Но для простоты: ищем через panel.focusedElement через reflection (UIElementsUtility — internal в Unity 6).
+                UnityEngine.UIElements.VisualElement row = null;
+                try {
+                    // Через reflection: UIElementsUtility.GetFocusedElement() — internal в UnityEngine.UIElements.UIElementsUtility.
+                    var utilityType = System.Type.GetType("UnityEngine.UIElements.UIElementsUtility, UnityEngine.UIElementsModule")
+                                   ?? System.Type.GetType("UnityEngine.UIElements.UIElementsUtility, UnityEngine");
+                    if (utilityType != null) {
+                        var utilityMi = utilityType.GetMethod("GetFocusedElement", System.Reflection.BindingFlags.Public | System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Static);
+                        if (utilityMi != null) {
+                            var focused = utilityMi.Invoke(null, null) as UnityEngine.UIElements.VisualElement;
+                            if (focused != null) {
+                                row = focused;
+                                while (row != null && row.userData == null) row = row.parent;
+                            }
+                        }
+                    }
+                } catch {}
+                if (row == null) return;
                 if (row == null || !(row.userData is EquipRow data)) return;
 
                 // RequestUnequipRpc(slot) → EquipmentServer
@@ -2182,7 +2203,7 @@ namespace ProjectC.UI.Client
                             }
                         }
                     }
-                    string fullBonuses = !string.IsNullOr(moduleType) ? $"[{moduleType}] {bonuses}" : bonuses;
+                    string fullBonuses = !string.IsNullOrEmpty(moduleType) ? $"[{moduleType}] {bonuses}" : bonuses;
                     _modulesCache.Add(new EquipRow
                     {
                         Slot = slot,

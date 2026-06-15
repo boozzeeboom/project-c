@@ -43,6 +43,7 @@ using ProjectC.Quests.Client;
 using ProjectC.Quests.Dto;
 using ProjectC.Quests.UI;
 using ProjectC.Reputation;
+using ProjectC.Skills;
 using ProjectC.Trade;
 using ProjectC.Trade.Client;
 using ProjectC.Trade.Dto;
@@ -263,6 +264,8 @@ namespace ProjectC.UI.Client
         // T-Q13: Unsubscribe Reputation + NpcAttitude singletons.
         UnsubscribeReputation();
         UnsubscribeNpcAttitude();
+        // T-P14: Unsubscribe SkillsClientState (2 события).
+        UnsubscribeSkills();
         }
 
         private bool _isInventorySubscribed = false;
@@ -611,6 +614,10 @@ namespace ProjectC.UI.Client
             // T-Q21 fix: подписаться на QuestTracker.OnTrackChanged чтобы кнопки "Следить"/"Не следить" в списке
             // обновлялись когда игрок жмёт "Скрыть" прямо в HUD (или наоборот).
             SubscribeQuestTracker();
+
+            // T-P14: Subscribe to SkillsClientState (M3) — refresh skill rows on snapshot/result.
+            // T-P15 создаст UXML refs `skills-combat-list`/`skills-social-list`; T-P14 логика готова.
+            SubscribeSkills();
             if (QuestClientState.Instance == null)
             {
             Debug.LogWarning("[CharacterWindow] QuestClientState.Instance == null на момент EnsureBuilt — таб 'КВЕСТЫ' не будет обновляться (нормально до StartHost)");
@@ -1412,6 +1419,29 @@ namespace ProjectC.UI.Client
             private bool _isQuestStateSubscribed = false;
             private bool _isQuestTrackerSubscribed = false;
 
+            // ============================================================
+            // T-P14: Skills subscription state (M3) — lazy-subscribe pattern как 5 других state'ов
+            // ============================================================
+
+            private bool _isSkillsSubscribed = false;
+            private List<SkillRow> _skillsCombatCache = new List<SkillRow>();
+            private List<SkillRow> _skillsSocialCache = new List<SkillRow>();
+
+            /// <summary>
+            /// Row DTO для skill list (skillId, displayName, category, state, cost, prereqs).
+            /// State = "LEARNED" | "AVAILABLE" | "LOCKED" (per skill tree UI states).
+            /// </summary>
+            private struct SkillRow
+            {
+                public string SkillId;
+                public string DisplayName;
+                public SkillCategory Category;
+                public string State;          // LEARNED / AVAILABLE / LOCKED
+                public float XpCost;
+                public int RequiredTier;
+                public string PrereqNames;    // comma-separated "Нужно: A, B"
+            }
+
             private void SubscribeQuestState()
             {
             if (_isQuestStateSubscribed) return;
@@ -1460,6 +1490,217 @@ namespace ProjectC.UI.Client
             qs.OnQuestResult -= HandleQuestResult;
             qs.OnQuestDiscovered -= HandleQuestDiscovered;
             _isQuestStateSubscribed = false;
+            }
+
+            // ============================================================
+            // T-P14: Skills subscription + row factories (M3)
+            // ============================================================
+
+            private void SubscribeSkills()
+            {
+                if (_isSkillsSubscribed) return;
+                var sk = ProjectC.Skills.SkillsClientState.Instance;
+                if (sk == null) return;
+                sk.OnSkillsUpdated += HandleSkillsSnapshot;
+                sk.OnSkillResult += HandleSkillResult;
+                _isSkillsSubscribed = true;
+                Debug.Log("[CharacterWindow] Subscribed to SkillsClientState (snapshot/result)");
+            }
+
+            private void UnsubscribeSkills()
+            {
+                if (!_isSkillsSubscribed) return;
+                var sk = ProjectC.Skills.SkillsClientState.Instance;
+                if (sk == null) { _isSkillsSubscribed = false; return; }
+                sk.OnSkillsUpdated -= HandleSkillsSnapshot;
+                sk.OnSkillResult -= HandleSkillResult;
+                _isSkillsSubscribed = false;
+            }
+
+            private void HandleSkillsSnapshot(System.Collections.Generic.HashSet<string> learned)
+            {
+                RefreshSkillsCache(learned);
+                RebuildSkillsListView();
+            }
+
+            private void HandleSkillResult(ProjectC.Skills.Dto.SkillResultDto result)
+            {
+                // Toast-стиль log для отладки (UI toast появится в T-P15/M4 если roadmap расширится)
+                if (Debug.isDebugBuild)
+                {
+                    Debug.Log($"[CharacterWindow] Skill result: code={result.code} skillId='{result.skillId}' reason='{result.reason}'");
+                }
+                // Snapshot перепридёт через SendSnapshotToOwner после learn/forget, так что cache обновится.
+            }
+
+            /// <summary>
+            /// Заполняет _skillsCombatCache + _skillsSocialCache из Resources/Skills/ + learned set.
+            /// Состояние каждой строки: LEARNED / AVAILABLE / LOCKED (по roadmap §4.3).
+            /// </summary>
+            private void RefreshSkillsCache(System.Collections.Generic.HashSet<string> learned)
+            {
+                _skillsCombatCache.Clear();
+                _skillsSocialCache.Clear();
+                var all = Resources.LoadAll<ProjectC.Skills.SkillNodeConfig>("Skills");
+                if (all == null) return;
+                // INT tier нужен для LOCKED check. Из StatsClientState (lazy).
+                int intTier = 0;
+                var statsSt = ProjectC.Stats.StatsClientState.Instance;
+                if (statsSt != null && statsSt.CurrentStats.HasValue)
+                {
+                    intTier = statsSt.CurrentStats.Value.intelligenceTier;
+                }
+                foreach (var skill in all)
+                {
+                    if (skill == null || string.IsNullOrEmpty(skill.skillId)) continue;
+                    bool isLearned = learned != null && learned.Contains(skill.skillId);
+                    string state;
+                    if (isLearned) state = "LEARNED";
+                    else if (CanLearn(skill, learned, intTier)) state = "AVAILABLE";
+                    else state = "LOCKED";
+                    var row = new SkillRow
+                    {
+                        SkillId = skill.skillId,
+                        DisplayName = !string.IsNullOrEmpty(skill.displayName) ? skill.displayName : skill.skillId,
+                        Category = skill.category,
+                        State = state,
+                        XpCost = skill.LearnXpCost,
+                        RequiredTier = skill.RequiredIntelligenceTier,
+                        PrereqNames = GetMissingPrereqNames(skill, learned),
+                    };
+                    if (skill.category == ProjectC.Skills.SkillCategory.Combat) _skillsCombatCache.Add(row);
+                    else _skillsSocialCache.Add(row);
+                }
+            }
+
+            private bool CanLearn(ProjectC.Skills.SkillNodeConfig skill, System.Collections.Generic.HashSet<string> learned, int intTier)
+            {
+                if (learned == null) return false;
+                if (skill.prerequisites != null)
+                {
+                    foreach (var p in skill.prerequisites)
+                    {
+                        if (p != null && !learned.Contains(p.skillId)) return false;
+                    }
+                }
+                if (intTier < skill.RequiredIntelligenceTier) return false;
+                return true;
+            }
+
+            private string GetMissingPrereqNames(ProjectC.Skills.SkillNodeConfig skill, System.Collections.Generic.HashSet<string> learned)
+            {
+                if (skill.prerequisites == null || skill.prerequisites.Length == 0) return string.Empty;
+                var missing = new System.Collections.Generic.List<string>();
+                foreach (var p in skill.prerequisites)
+                {
+                    if (p == null) continue;
+                    if (learned == null || !learned.Contains(p.skillId))
+                    {
+                        missing.Add(!string.IsNullOrEmpty(p.displayName) ? p.displayName : p.skillId);
+                    }
+                }
+                return string.Join(", ", missing);
+            }
+
+            private void RebuildSkillsListView()
+            {
+                // Lazy: refs `_skillsCombatList`/`_skillsSocialList` создаются в T-P15 через UXML.
+                // Пока refs == null, метод no-op (UI рендеринг подключим в M4).
+                // Создаём refs через Q<ListView>(...) если их нет (для T-P14 standalone test).
+                if (_skillsCombatList == null) _skillsCombatList = _root?.Q<UnityEngine.UIElements.ListView>("skills-combat-list");
+                if (_skillsSocialList == null) _skillsSocialList = _root?.Q<UnityEngine.UIElements.ListView>("skills-social-list");
+                if (_skillsCombatList == null || _skillsSocialList == null) return;
+                _skillsCombatList.itemsSource = _skillsCombatCache;
+                _skillsCombatList.makeItem = MakeSkillRow;
+                _skillsCombatList.bindItem = (e, i) => BindSkillRow(e, i, _skillsCombatCache);
+                _skillsCombatList.fixedItemHeight = 48;
+                _skillsCombatList.RefreshItems();
+                _skillsCombatList.MarkDirtyRepaint();
+                _skillsSocialList.itemsSource = _skillsSocialCache;
+                _skillsSocialList.makeItem = MakeSkillRow;
+                _skillsSocialList.bindItem = (e, i) => BindSkillRow(e, i, _skillsSocialCache);
+                _skillsSocialList.fixedItemHeight = 48;
+                _skillsSocialList.RefreshItems();
+                _skillsSocialList.MarkDirtyRepaint();
+            }
+
+            private UnityEngine.UIElements.ListView _skillsCombatList;
+            private UnityEngine.UIElements.ListView _skillsSocialList;
+
+            /// <summary>VisualElement factory: state badge + title + cost + prereq + status.</summary>
+            private UnityEngine.UIElements.VisualElement MakeSkillRow()
+            {
+                var row = new UnityEngine.UIElements.VisualElement();
+                row.AddToClassList("skill-row");
+
+                var stateBadge = new UnityEngine.UIElements.Label { name = "skill-row-state" };
+                stateBadge.AddToClassList("skill-row-state");
+                row.Add(stateBadge);
+
+                var title = new UnityEngine.UIElements.Label { name = "skill-row-title" };
+                title.AddToClassList("skill-row-title");
+                row.Add(title);
+
+                var cost = new UnityEngine.UIElements.Label { name = "skill-row-cost" };
+                cost.AddToClassList("skill-row-cost");
+                row.Add(cost);
+
+                var desc = new UnityEngine.UIElements.Label { name = "skill-row-desc" };
+                desc.AddToClassList("skill-row-desc");
+                row.Add(desc);
+
+                var prereq = new UnityEngine.UIElements.Label { name = "skill-row-prereq" };
+                prereq.AddToClassList("skill-row-prereq");
+                row.Add(prereq);
+
+                return row;
+            }
+
+            private void BindSkillRow(UnityEngine.UIElements.VisualElement row, int index, System.Collections.Generic.List<SkillRow> cache)
+            {
+                if (index < 0 || index >= cache.Count) return;
+                var data = cache[index];
+
+                var stateLabel = row.Q<UnityEngine.UIElements.Label>("skill-row-state");
+                var titleLabel = row.Q<UnityEngine.UIElements.Label>("skill-row-title");
+                var costLabel = row.Q<UnityEngine.UIElements.Label>("skill-row-cost");
+                var descLabel = row.Q<UnityEngine.UIElements.Label>("skill-row-desc");
+                var prereqLabel = row.Q<UnityEngine.UIElements.Label>("skill-row-prereq");
+
+                if (stateLabel != null)
+                {
+                    stateLabel.text = data.State switch
+                    {
+                        "LEARNED"   => "✅",
+                        "AVAILABLE" => "○",
+                        "LOCKED"    => "✕",
+                        _ => "?",
+                    };
+                }
+                if (titleLabel != null) titleLabel.text = data.DisplayName;
+                if (costLabel != null)
+                {
+                    costLabel.text = data.XpCost > 0
+                        ? $"{data.XpCost:F0} XP"
+                        : "Free";
+                }
+                if (descLabel != null) descLabel.text = $"Tier ≥ {data.RequiredTier}";
+                if (prereqLabel != null)
+                {
+                    prereqLabel.text = !string.IsNullOrEmpty(data.PrereqNames)
+                        ? $"Нужно: {data.PrereqNames}"
+                        : string.Empty;
+                }
+
+                row.RemoveFromClassList("skill-row-learned");
+                row.RemoveFromClassList("skill-row-available");
+                row.RemoveFromClassList("skill-row-locked");
+                switch (data.State)
+                {
+                    case "LEARNED":   row.AddToClassList("skill-row-learned"); break;
+                    case "AVAILABLE": row.AddToClassList("skill-row-available"); break;
+                    case "LOCKED":    row.AddToClassList("skill-row-locked"); break;
+                }
             }
 
             // ---- ListView setup helper ----

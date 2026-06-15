@@ -17,15 +17,8 @@ using UnityEngine;
 
 namespace ProjectC.Stats
 {
-    // T-P01 stub-forward-declare: T-P02 (PlayerStats.cs) объявит настоящий enum StatType с теми же значениями.
-    // Нужен прямо сейчас, чтобы GetStatFor() компилировался. После T-P02 stub удалится,
-    // настоящий enum придёт через `using ProjectC.Stats` (тот же namespace).
-    public enum StatType : byte
-    {
-        Strength     = 0,
-        Dexterity    = 1,
-        Intelligence = 2,
-    }
+    // StatType enum переехал в PlayerStats.cs (T-P02) — тот же namespace, те же значения.
+    // Тут только ссылка через `using ProjectC.Stats` неявно (мы в том же namespace).
 
     [CreateAssetMenu(fileName = "StatsConfig", menuName = "Project C/Stats/Stats Config", order = 10)]
     public class StatsConfig : ScriptableObject

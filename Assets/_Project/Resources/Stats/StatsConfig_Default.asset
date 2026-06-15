@@ -19,10 +19,10 @@ MonoBehaviour:
   _questAcceptedXp: 3
   _questCompletedXp: 10
   _dialogXpPerVisit: 1
-  _jumpXp: 0.5
-  _walkXpPerMeter: 1
-  _pilotXpPerMeter: 1
-  _walkDistanceXpThreshold: 1
+  _jumpXp: 0.005
+  _walkXpPerMeter: 0.005
+  _pilotXpPerMeter: 0.005
+  _walkDistanceXpThreshold: 10
   _pilotDistanceXpThreshold: 10
   _trackTotalDistance: 1
   _globalMultiplier: 1

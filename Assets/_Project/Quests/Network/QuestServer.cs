@@ -22,6 +22,7 @@ using ProjectC.Core;
 using ProjectC.Quests.Dto;
 using ProjectC.Dialogue;
 using ProjectC.Items;
+using ProjectC.Stats;
 using NetworkPlayer = ProjectC.Player.NetworkPlayer;
 
 namespace ProjectC.Quests
@@ -617,6 +618,16 @@ namespace ProjectC.Quests
                 NodeId = currentNodeId,
                 NpcId = talkingToNpcId
             });
+
+            // SESSION 1 refactor: прямой вызов StatsServer INT XP (не полагаемся на WorldEventBus).
+            try {
+                var ss = StatsServer.Instance;
+                if (ss != null) {
+                    ss.ApplyXp(clientId, StatType.Intelligence, 1.0f, $"Dialog {talkingToNpcId}/{currentNodeId}");
+                }
+            } catch (System.Exception ex) {
+                if (debugMode) Debug.LogWarning("[QuestServer] Dialog XP grant failed: " + ex.Message);
+            }
 
             // Advance to target node
             var nextNode = session.tree.GetNode(edge.targetNodeId);

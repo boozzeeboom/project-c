@@ -313,6 +313,11 @@ namespace ProjectC.Stats
         {
             if (_config == null || rawXp == 0f) return;
 
+            if (_config.DebugLogging || Debug.isDebugBuild)
+            {
+                Debug.Log($"[StatsServer] ApplyXp: client={clientId} stat={stat} xp={rawXp:F2} reason='{reasonForLog}'");
+            }
+
             float xp = _config.ApplyGlobalMultiplier(rawXp);
             if (xp <= 0f) return;
 
@@ -431,6 +436,12 @@ namespace ProjectC.Stats
             if (!IsServer || _config == null) return;
             if (NetworkManager.Singleton == null) return;
 
+            // SESSION 1 fix: sane max per FixedUpdate — игрок не может переместиться больше чем
+            // MaxWalkDeltaPerFixedUpdate метров за 1/50 сек. Защита от teleport/scene-load спайков
+            // которые раньше давали 10M+ XP за один кадр.
+            const float MaxWalkDeltaPerFixedUpdate = 5.0f; // 5 m/frame = 250 m/s — всё равно слишком быстро
+            const float MaxPilotDeltaPerFixedUpdate = 20.0f;
+
             foreach (var clientId in NetworkManager.Singleton.ConnectedClientsIds)
             {
                 var player = NetworkManager.Singleton.ConnectedClients[clientId]?.PlayerObject;
@@ -450,9 +461,15 @@ namespace ProjectC.Stats
                 if (_lastWalkPosPerPlayer.TryGetValue(clientId, out var lastPos))
                 {
                     float dist = Vector3.Distance(currentPos, lastPos);
-                    if (dist > 0.01f)  // ignore micro-jitter (NetworkTransform sync)
+                    if (dist > 0.01f && dist < MaxWalkDeltaPerFixedUpdate)  // SESSION 1 fix: clamp teleport
                     {
                         AccumulateWalkedXp(clientId, dist);
+                    }
+                    else if (dist >= MaxWalkDeltaPerFixedUpdate)
+                    {
+                        // Телепорт или scene load — обновить lastPos без XP
+                        _lastWalkPosPerPlayer[clientId] = currentPos;
+                        if (_config.DebugLogging) Debug.Log($"[StatsServer] Walk delta {dist:F1}m ignored (likely teleport/scene-load)");
                     }
                 }
                 _lastWalkPosPerPlayer[clientId] = currentPos;

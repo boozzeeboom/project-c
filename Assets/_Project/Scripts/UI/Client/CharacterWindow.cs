@@ -1993,7 +1993,9 @@ namespace ProjectC.UI.Client
 
                 var btn = new Button { name = "equip-slot-btn", text = "СНЯТЬ" };
                 btn.AddToClassList("equip-slot-btn");
-                btn.clicked += OnUnequipClicked;
+                // FIX 2026-06-17: PointerDownEvent даёт target (event.target → walk-up до row с userData).
+                // btn.clicked не предоставляет sender (UI Toolkit not like WinForms).
+                btn.RegisterCallback<PointerDownEvent>(OnUnequipPointerDown);
                 row.Add(btn);
 
                 return row;
@@ -2031,48 +2033,29 @@ namespace ProjectC.UI.Client
             }
 
             /// <summary>
-            /// Skill pitfall #42: btn.parent — это row, но для надёжности walk-up parent chain до row с userData.
+            /// FIX 2026-06-17: PointerDownEvent handler — event.target даёт VisualElement на котором кликнули.
+            /// Walk-up parent chain до row с userData = EquipRow.
             /// </summary>
-            private void OnUnequipClicked()
+            private void OnUnequipPointerDown(PointerDownEvent evt)
             {
-                // Найти row через walk-up: текущий focused element
-                // (UI Toolkit не передаёт sender в Button.clicked автоматически; walk-up parent chain
-                // через panel.focusedElement НЕ работает (UIElementsUtility internal).
-                // Используем row-relative walk-up внутри самого button.eventHandler context:
-                // Button.clicked event passes `evt` (MouseEventBase) через который можно дотянуться
-                // до target element, и затем walk-up до userData = EquipRow.)
-                //
-                // Простейшее решение: сохраняем current row в field при BindEquipmentRow + передаём в OnUnequipClicked.
-                // Но для простоты: ищем через panel.focusedElement через reflection (UIElementsUtility — internal в Unity 6).
-                UnityEngine.UIElements.VisualElement row = null;
-                try {
-                    // Через reflection: UIElementsUtility.GetFocusedElement() — internal в UnityEngine.UIElements.UIElementsUtility.
-                    var utilityType = System.Type.GetType("UnityEngine.UIElements.UIElementsUtility, UnityEngine.UIElementsModule")
-                                   ?? System.Type.GetType("UnityEngine.UIElements.UIElementsUtility, UnityEngine");
-                    if (utilityType != null) {
-                        var utilityMi = utilityType.GetMethod("GetFocusedElement", System.Reflection.BindingFlags.Public | System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Static);
-                        if (utilityMi != null) {
-                            var focused = utilityMi.Invoke(null, null) as UnityEngine.UIElements.VisualElement;
-                            if (focused != null) {
-                                row = focused;
-                                while (row != null && row.userData == null) row = row.parent;
-                            }
-                        }
-                    }
-                } catch {}
-                if (row == null) return;
-                if (row == null || !(row.userData is EquipRow data)) return;
+                var target = evt.target as VisualElement;
+                if (target == null) return;
+                // Walk-up parent chain до row с userData (EquipRow)
+                VisualElement row = target;
+                while (row != null && row.userData == null) row = row.parent;
+                if (row == null || !(row.userData is EquipRow data)) { return; }
 
                 // RequestUnequipRpc(slot) → EquipmentServer
-                var eqServerType = System.Type.GetType("ProjectC.Equipment.EquipmentServer, Assembly-CSharp");
-                if (eqServerType == null) { Debug.LogWarning("[CharacterWindow] EquipmentServer not found"); return; }
-                var inst = eqServerType.GetMethod("GetStaticInstance", System.Reflection.BindingFlags.Public | System.Reflection.BindingFlags.Static)?.Invoke(null, null)
-                           ?? eqServerType.GetProperty("Instance", System.Reflection.BindingFlags.Public | System.Reflection.BindingFlags.Static)?.GetValue(null);
-                if (inst == null) return;
-                var mi = eqServerType.GetMethod("RequestUnequipRpc");
-                if (mi == null) return;
+                var eqSvrType = System.Type.GetType("ProjectC.Equipment.EquipmentServer, Assembly-CSharp");
+                if (eqSvrType == null) { Debug.LogWarning("[CharacterWindow] EquipmentServer not found"); return; }
+                var inst = eqSvrType.GetMethod("GetStaticInstance", System.Reflection.BindingFlags.Public | System.Reflection.BindingFlags.Static)?.Invoke(null, null)
+                           ?? eqSvrType.GetProperty("Instance", System.Reflection.BindingFlags.Public | System.Reflection.BindingFlags.Static)?.GetValue(null);
+                if (inst == null) { Debug.LogWarning("[CharacterWindow] EquipmentServer.Instance is null"); return; }
+                var mi = eqSvrType.GetMethod("RequestUnequipRpc");
+                if (mi == null) { Debug.LogWarning("[CharacterWindow] RequestUnequipRpc method not found"); return; }
                 var defaultRpcParams = System.Activator.CreateInstance(typeof(Unity.Netcode.RpcParams));
                 mi.Invoke(inst, new object[] { data.Slot, defaultRpcParams });
+                if (Debug.isDebugBuild) Debug.Log($"[CharacterWindow] RequestUnequipRpc: slot={data.Slot} itemId={data.ItemId}");
             }
 
             // ----- Equipment subscription + refresh (M2 → M4) -----

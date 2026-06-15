@@ -29,6 +29,8 @@
 using System.Collections.Generic;
 using Unity.Netcode;
 using UnityEngine;
+using ProjectC.Core;
+using ProjectC.Stats;
 using NetworkPlayer = ProjectC.Player.NetworkPlayer;
 
 namespace ProjectC.ResourceNode
@@ -157,6 +159,18 @@ namespace ProjectC.ResourceNode
                         // Если просто _currentHarvests++ < _maxHarvests — возвращаем в Idle, новый F может начать новый сбор.
                         _activeGathers.Remove(clientId);
                         SendGatherResultToClient(clientId, GatherResult.Completed(result.ItemName, result.Quantity, result.IsDepleted));
+
+                        // SESSION 1 refactor: прямой вызов StatsServer (не через WorldEventBus) — надёжнее, нет race-conditions.
+                        try {
+                            var ss = ProjectC.Stats.StatsServer.Instance;
+                            if (ss != null) {
+                                ss.ApplyXp(clientId, ProjectC.Stats.StatType.Strength, (float)result.Quantity * 1.0f, $"Mining ×{result.Quantity} {result.ItemName}");
+                            } else if (_debugMode) {
+                                Debug.LogWarning("[GatheringServer] XP grant: StatsServer.Instance==null (server not spawned yet) — xp will be missed");
+                            }
+                        } catch (System.Exception ex) {
+                            if (_debugMode) Debug.LogWarning("[GatheringServer] XP grant failed: " + ex.Message);
+                        }
                         if (_debugMode) Debug.Log("[GatheringServer] Gather COMPLETED: client=" + clientId + " item=" + result.ItemName + " qty=" + result.Quantity + " depleted=" + result.IsDepleted);
                         break;
                     case GatherTickResult.ResultType.Interrupted:

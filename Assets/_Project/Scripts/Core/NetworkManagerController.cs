@@ -5,6 +5,7 @@ using System;
 using System.Collections;
 using ProjectC.Items;
 using ProjectC.Player;
+using ProjectC.Stats;
 
 namespace ProjectC.Core
 {
@@ -113,6 +114,11 @@ namespace ProjectC.Core
             // T-E03: ExchangeClientState — клиентская проекция обменника.
             // Принимает результат Pack/Unpack от ExchangeServer.
             CreateExchangeClientState();
+
+            // T-P06: StatsClientState — клиентская проекция Character Progression stats.
+            // Принимает StatsSnapshotDto от StatsServer (T-P05) через NetworkPlayer.ReceiveStatsSnapshotTargetRpc.
+            // Подписка в CharacterWindow (T-P16) на event OnStatsUpdated.
+            CreateStatsClientState();
 
             // Автоматический запуск Dedicated Server
             if (IsDedicatedServerMode())
@@ -319,6 +325,30 @@ namespace ProjectC.Core
             var go = new GameObject("[ExchangeClientState]");
             go.AddComponent<ProjectC.Trade.Client.ExchangeClientState>();
             Debug.Log("[NMC] Created [ExchangeClientState] as root GameObject");
+        }
+
+        /// <summary>
+        /// T-P06: StatsClientState singleton (Character Progression, M1).
+        /// Паттерн идентичен CreateExchangeClientState — root GO + AddComponent.
+        /// </summary>
+        private void CreateStatsClientState()
+        {
+            var existing = FindObjectsByType<ProjectC.Stats.StatsClientState>(FindObjectsInactive.Include);
+            foreach (var inst in existing)
+            {
+                if (inst != null && inst.transform.parent == null)
+                {
+                    Debug.Log("[NMC] StatsClientState already root, skipping creation");
+                    return;
+                }
+            }
+            if (existing.Length > 0)
+            {
+                Debug.LogWarning($"[NMC] Found {existing.Length} non-root StatsClientState in scene — DontDestroyOnLoad would fail. Creating root replacement.");
+            }
+            var go = new GameObject("[StatsClientState]");
+            go.AddComponent<ProjectC.Stats.StatsClientState>();
+            Debug.Log("[NMC] Created [StatsClientState] as root GameObject");
         }
 
         private void Start()

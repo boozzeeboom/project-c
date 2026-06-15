@@ -19,6 +19,7 @@ using System.Collections.Generic;
 using ProjectC.Core;
 using ProjectC.Player;
 using ProjectC.Stats.Dto;
+using ProjectC.Stats.Persistence;
 using Unity.Netcode;
 using UnityEngine;
 
@@ -49,6 +50,7 @@ namespace ProjectC.Stats
 
         // === State (server-side) ===
         private StatsWorld _world;
+        private ICharacterDataRepository _repo;
 
         // Walk distance tracker (per-player last position)
         private readonly Dictionary<ulong, Vector3> _lastWalkPosPerPlayer = new Dictionary<ulong, Vector3>();
@@ -89,6 +91,13 @@ namespace ProjectC.Stats
             // StatsWorld singleton (server-only)
             _world = new StatsWorld();
 
+            // Persistence (T-P06): per-clientId JSON repository
+            _repo = new JsonCharacterDataRepository();
+
+            // Hook OnClientConnected/Disconnected for load/save
+            NetworkManager.Singleton.OnClientConnectedCallback += OnClientConnectedForStats;
+            NetworkManager.Singleton.OnClientDisconnectCallback += OnClientDisconnectedForStats;
+
             // Subscribe к 9 WorldEventBus событиям
             _handleMining        = OnMiningCompleted;
             _handleCrafting      = OnCraftingCompleted;
@@ -121,6 +130,13 @@ namespace ProjectC.Stats
         {
             if (!IsServer) return;
 
+            // T-P06: unhook persistence
+            if (NetworkManager.Singleton != null)
+            {
+                NetworkManager.Singleton.OnClientConnectedCallback -= OnClientConnectedForStats;
+                NetworkManager.Singleton.OnClientDisconnectCallback -= OnClientDisconnectedForStats;
+            }
+
             // Unsubscribe (mirror)
             if (_handleMining != null)         WorldEventBus.Unsubscribe(_handleMining);
             if (_handleCrafting != null)       WorldEventBus.Unsubscribe(_handleCrafting);
@@ -134,6 +150,46 @@ namespace ProjectC.Stats
 
             StatsWorld.Reset();
             if (Instance == this) Instance = null;
+        }
+
+        // === T-P06: Persistence hooks (server-authoritative load/save) ===
+
+        private void OnClientConnectedForStats(ulong clientId)
+        {
+            if (_repo == null || _world == null) return;
+            if (_repo.TryLoad(clientId, out var data))
+            {
+                _world.LoadPlayer(clientId, data);
+                if (_config != null && _config.DebugLogging)
+                {
+                    var stats = _world.GetOrCreateStats(clientId);
+                    Debug.Log($"[StatsServer] OnClientConnectedForStats: client={clientId} — loaded " +
+                              $"STR={stats.strength:F1}/T{stats.strengthTier} DEX={stats.dexterity:F1}/T{stats.dexterityTier} " +
+                              $"INT={stats.intelligence:F1}/T{stats.intelligenceTier}");
+                }
+            }
+            else
+            {
+                if (_config != null && _config.DebugLogging)
+                {
+                    Debug.Log($"[StatsServer] OnClientConnectedForStats: client={clientId} — no save file, starting fresh");
+                }
+            }
+            // Send initial snapshot (loaded or default)
+            SendSnapshotToOwner(clientId);
+        }
+
+        private void OnClientDisconnectedForStats(ulong clientId)
+        {
+            if (_repo == null || _world == null) return;
+            // Build save DTO from current state + atomic save
+            var data = _world.BuildSaveData(clientId);
+            _repo.Save(clientId, data);
+            if (_config != null && _config.DebugLogging)
+            {
+                Debug.Log($"[StatsServer] OnClientDisconnectedForStats: client={clientId} — saved to {_repo.GetSavePath(clientId)}");
+            }
+            OnPlayerDisconnected(clientId);
         }
 
         // === WorldEventBus handlers ===
@@ -347,11 +403,10 @@ namespace ProjectC.Stats
                 intelligenceTotalXp       = stats.intelligenceTotalXp,
             };
 
-            // T-P06: netPlayer.ReceiveStatsSnapshotTargetRpc(snap) — RPC ещё не добавлен,
-            // T-P05 компилируется standalone (RPC будет null-safe через reflection если вызвать)
-            // На текущем этапе мы ТОЛЬКО конструируем snapshot; RPC delivery в T-P06.
-            //
-            // Fallback: если RPC существует — вызываем, иначе просто log'им.
+            // T-P06: ReceiveStatsSnapshotTargetRpc добавлен в NetworkPlayer (owner→server).
+            // Вызываем через reflection — работает в обоих направлениях:
+            //   T-P05 (RPC не существовал) → fall-back на Debug.Log
+            //   T-P06+ → reflection находит метод и вызывает его с snap
             var mi = typeof(NetworkPlayer).GetMethod("ReceiveStatsSnapshotTargetRpc");
             if (mi != null)
             {
@@ -359,9 +414,9 @@ namespace ProjectC.Stats
             }
             else if (_config != null && _config.DebugLogging)
             {
-                Debug.Log($"[StatsServer] (T-P05 stub) snapshot built for client {clientId}: " +
+                Debug.Log($"[StatsServer] snapshot built for client {clientId} but RPC not found: " +
                           $"STR={snap.strength:F1}/T{snap.strengthTier} DEX={snap.dexterity:F1}/T{snap.dexterityTier} " +
-                          $"INT={snap.intelligence:F1}/T{snap.intelligenceTier} — RPC not yet wired (T-P06)");
+                          $"INT={snap.intelligence:F1}/T{snap.intelligenceTier}");
             }
         }
 

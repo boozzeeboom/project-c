@@ -1118,6 +1118,15 @@ namespace ProjectC.Player
             ProjectC.ResourceNode.GatheringClientState.Instance?.OnGatherResultReceived(result);
         }
 
+        // T-P06: Stats snapshot — server pushes PlayerStats update to owner client.
+        // StatsClientState (T-P04) примет snapshot и fire'ит OnStatsUpdated event.
+        // CharacterWindow (T-P16) подпишется для отображения progress bars / tier class.
+        [Rpc(SendTo.Owner)]
+        public void ReceiveStatsSnapshotTargetRpc(ProjectC.Stats.Dto.StatsSnapshotDto snapshot, RpcParams rpcParams = default)
+        {
+            ProjectC.Stats.StatsClientState.Instance?.OnStatsSnapshotReceived(snapshot);
+        }
+
         // T-C03: Crafting result — server pushes ack/deny/progress to owner client.
         // CraftingClientState (T-C05) подпишется на это и поднимет events для CraftingProgressController.
         [Rpc(SendTo.Owner)]

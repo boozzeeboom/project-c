@@ -90,6 +90,21 @@
     display: flex !important;
     flex-direction: column !important;
 }
+
+/* T-P19: Reputation секция — списки растягиваются на всю высоту */
+#reputation-section {
+    flex: 1 !important;
+    min-height: 300px !important;
+}
+#reputation-section > #reputation-list,
+#reputation-section > #npc-attitude-list {
+    max-height: none !important;
+    flex: 1 !important;
+    min-height: 100px !important;
+}
+#reputation-section > .section-title {
+    flex-shrink: 0 !important;
+}
 .section-title {
     font-size: 11px !important;
     color: rgb(180, 200, 220) !important;

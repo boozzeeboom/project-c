@@ -1061,15 +1061,33 @@ namespace ProjectC.UI.Client
             }
         }
 
-        /// <summary>T-P19: форматирует npcId в читаемое имя.</summary>
+        // T-P19: красивое имя NPC. NpcDefinition ассеты в Assets/_Project/Quests/Data/Npcs/
         private static string FormatNpcDisplayName(string npcId)
         {
             if (string.IsNullOrEmpty(npcId)) return "?";
-            // Пытаемся загрузить NpcDefinition (если есть ассеты)
-            var def = Resources.Load<ProjectC.Quests.NpcDefinition>("Quests/Npcs/" + npcId);
-            if (def != null && !string.IsNullOrEmpty(def.displayName))
-                return def.displayName;
-            // Fallback: читабельный формат — "mira_01" → "Mira 01"
+
+            // В редакторе — через AssetDatabase (ассеты не в Resources, Runtime.Load не работает)
+#if UNITY_EDITOR
+            try
+            {
+                string path = "Assets/_Project/Quests/Data/Npcs/" + npcId + ".asset";
+                var def = UnityEditor.AssetDatabase.LoadAssetAtPath<ProjectC.Quests.NpcDefinition>(path);
+                if (def != null && !string.IsNullOrEmpty(def.displayName))
+                    return def.displayName;
+            }
+            catch { }
+#endif
+
+            // Runtime fallback: пытаемся загрузить через Resources (если ассеты дублированы в Resources)
+            try
+            {
+                var def = Resources.Load<ProjectC.Quests.NpcDefinition>("Data/Npcs/" + npcId);
+                if (def != null && !string.IsNullOrEmpty(def.displayName))
+                    return def.displayName;
+            }
+            catch { }
+
+            // Fallback: "npc_004" → "Npc 004"
             var parts = npcId.Split('_');
             for (int j = 0; j < parts.Length; j++)
             {

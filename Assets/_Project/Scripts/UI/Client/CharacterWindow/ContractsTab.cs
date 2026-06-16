@@ -47,12 +47,11 @@ namespace ProjectC.UI.Client
         private Button _failBtn;
 
         // Caches
-        private ContractDto[] _contractsCache = Array.Empty<ContractDto>();
+        private List<ContractDto> _contractsCache = new List<ContractDto>();  // ТОЛЬКО активные контракты
         private int _selectedContractItem = -1;
 
-        // Filters — статические т.к. не меняются
-        private List<string> _contractFilterSourceOptions = new List<string> { "Все", "Контракты", "Квесты" };
-        private List<string> _contractFilterStateOptions = new List<string> { "Все", "Активные", "Доступные" };
+        // Filters — только "Все" | "Активные" | "Завершённые"
+        private List<string> _contractFilterStateOptions  = new List<string> { "Все", "Активные", "Завершённые" };
 
         // Subscription
         private ContractClientState _contractState;
@@ -90,7 +89,8 @@ namespace ProjectC.UI.Client
                 _contractsList.selectionChanged += selectedItems =>
                 {
                     _selectedContractItem = FindSelectedItemIndex<ContractDto>(_contractsList, selectedItems);
-                    if (_contractsList != null) _contractsList.Rebuild();
+                    // BUGFIX T-P19: НЕ вызываем Rebuild() здесь — это вызывает рекурсивный фриз,
+                    // потому что Rebuild → selectionChanged → Rebuild → ...
                 };
             }
 
@@ -122,15 +122,29 @@ namespace ProjectC.UI.Client
             if (_contractsList != null)
                 _contractsList.MarkDirtyRepaint();
 
-            ConfigureContractFilters();
-            ApplyContractFilters();
+            // BUGFIX T-P19: берём свежий Instance (синглтон мог пересоздаться после BuildUI)
+            var contractState = ProjectC.Trade.Client.ContractClientState.Instance;
 
-            // BUGFIX T-P19: запрашиваем свежий snapshot при каждом открытии таба.
-            // Если мы уже подписаны (имеем Instance), RequestList обновит кэш.
-            if (_contractState != null)
+            ConfigureContractFilters();
+
+            Debug.Log($"[ContractsTab] OnTabShown: contractState={(contractState != null ? "OK" : "NULL")}, " +
+                $"hasSnapshot={(contractState != null && contractState.CurrentSnapshot.HasValue ? "YES" : "NO")}");
+
+            if (contractState != null && contractState.CurrentSnapshot.HasValue)
+            {
+                var snap = contractState.CurrentSnapshot.Value;
+                Debug.Log($"[ContractsTab] Processing CurrentSnapshot: active={snap.active?.Length ?? 0}, available={snap.available?.Length ?? 0}");
+                HandleContractSnapshot(snap);
+            }
+            else
+            {
+                ApplyContractFilters();
+            }
+
+            if (contractState != null)
             {
                 var nearestZone = MarketZoneRegistry.LocalPlayerZone;
-                if (nearestZone != null) _contractState.RequestList(nearestZone.LocationId);
+                if (nearestZone != null) contractState.RequestList(nearestZone.LocationId);
             }
         }
 
@@ -168,11 +182,12 @@ namespace ProjectC.UI.Client
 
         private void ConfigureContractFilters()
         {
+            // T-P19: только контракты — source показывает "Контракты" (фикс), state = фильтр
             if (_filterSource != null)
             {
-                _filterSource.choices = _contractFilterSourceOptions;
-                if (!_contractFilterSourceOptions.Contains(_filterSource.value))
-                    _filterSource.value = "Все";
+                _filterSource.choices = new List<string> { "Контракты" };
+                _filterSource.value = "Контракты";
+                _filterSource.SetEnabled(false);  // readonly
             }
             if (_filterState != null)
             {
@@ -180,34 +195,22 @@ namespace ProjectC.UI.Client
                 _filterState.style.display = DisplayStyle.Flex;
                 if (!_contractFilterStateOptions.Contains(_filterState.value))
                     _filterState.value = "Все";
+                _filterState.SetEnabled(true);
             }
         }
 
         private void ApplyContractFilters()
         {
             if (_contractsList == null) return;
-            IEnumerable<ContractDto> src = _contractsCache ?? Array.Empty<ContractDto>();
+            IEnumerable<ContractDto> src = _contractsCache;
 
-            string source = _filterSource != null ? _filterSource.value : "Все";
-            if (source == "Квесты")
-            {
-                _contractsList.itemsSource = Array.Empty<ContractDto>();
-                _selectedContractItem = -1;
-                _contractsList.selectedIndex = -1;
-                _contractsList.Rebuild();
-                if (_messageLabel != null && _owner.GetActiveTab() == "contracts")
-                {
-                    _messageLabel.text = "Квесты ещё не реализованы (см. GDD-21)";
-                    _messageLabel.style.color = new StyleColor(new Color(0.7f, 0.7f, 0.9f));
-                }
-                return;
-            }
+            // T-P19: только контракты (квесты убраны)
 
             string state = _filterState != null ? _filterState.value : "Все";
             if (state == "Активные")
                 src = src.Where(c => c.state == (byte)ContractState.Active);
-            else if (state == "Доступные")
-                src = src.Where(c => c.state == (byte)ContractState.Pending);
+            else if (state == "Завершённые")
+                src = src.Where(c => c.state == (byte)ContractState.Completed);
 
             string search = _filterSearch != null ? (_filterSearch.value ?? "").ToLowerInvariant() : "";
             if (!string.IsNullOrEmpty(search))
@@ -217,7 +220,7 @@ namespace ProjectC.UI.Client
                     (c.contractId ?? "").ToLowerInvariant().Contains(search));
             }
 
-            var result = src.ToArray();
+            var result = src.ToList();
             _contractsList.itemsSource = result;
             _selectedContractItem = -1;
             _contractsList.selectedIndex = -1;
@@ -250,8 +253,8 @@ namespace ProjectC.UI.Client
         private void BindContractRow(VisualElement row, int index)
         {
             if (_contractsList == null) return;
-            var src = _contractsList.itemsSource as ContractDto[];
-            if (src == null || index < 0 || index >= src.Length) return;
+            var src = _contractsList.itemsSource as List<ContractDto>;
+            if (src == null || index < 0 || index >= src.Count) return;
             var c = src[index];
 
             row.Q<Label>("row-type").text = GetContractTypeDisplayName((ContractType)c.type);
@@ -282,28 +285,23 @@ namespace ProjectC.UI.Client
 
         private void HandleContractSnapshot(ContractSnapshotDto snapshot)
         {
-            ContractDto[] available = snapshot.available ?? Array.Empty<ContractDto>();
-            var activeAll = snapshot.active ?? Array.Empty<ContractDto>();
-            var activeList = new List<ContractDto>(activeAll.Length);
+            // T-P19: Показываем ТОЛЬКО активные контракты (которые взяли в Market).
+            // Доступные (available) — не показываем, это таб "мои контракты".
+            _contractsCache.Clear();
+            var activeAll = snapshot.active ?? System.Array.Empty<ContractDto>();
             for (int i = 0; i < activeAll.Length; i++)
             {
                 if (activeAll[i].state == (byte)ContractState.Active)
-                    activeList.Add(activeAll[i]);
+                    _contractsCache.Add(activeAll[i]);
             }
-            ContractDto[] active = activeList.ToArray();
-
-            var combined = new List<ContractDto>(active.Length + available.Length);
-            combined.AddRange(active);
-            combined.AddRange(available);
-            _contractsCache = combined.ToArray();
 
             ApplyContractFilters();
 
             if (_messageLabel != null && _owner != null && _owner.IsVisible() && _owner.GetActiveTab() == "contracts")
             {
-                _messageLabel.text = active.Length == 0 && available.Length == 0
-                    ? "Нет активных или доступных контрактов"
-                    : $"Активных: {active.Length} | Доступно: {available.Length}";
+                _messageLabel.text = _contractsCache.Count == 0
+                    ? "Нет активных контрактов"
+                    : $"Активных: {_contractsCache.Count}";
                 _messageLabel.style.color = new StyleColor(new Color(0.9f, 0.9f, 0.9f));
             }
         }
@@ -337,7 +335,7 @@ namespace ProjectC.UI.Client
 
         private void OnAcceptContractClicked()
         {
-            if (_selectedContractItem < 0 || _selectedContractItem >= _contractsCache.Length)
+            if (_selectedContractItem < 0 || _selectedContractItem >= _contractsCache.Count)
             {
                 if (_messageLabel != null)
                     _messageLabel.text = "Выберите контракт из списка";
@@ -350,7 +348,7 @@ namespace ProjectC.UI.Client
 
         private void OnCompleteContractClicked()
         {
-            if (_selectedContractItem < 0 || _selectedContractItem >= _contractsCache.Length)
+            if (_selectedContractItem < 0 || _selectedContractItem >= _contractsCache.Count)
             {
                 if (_messageLabel != null)
                     _messageLabel.text = "Выберите контракт из списка";
@@ -363,7 +361,7 @@ namespace ProjectC.UI.Client
 
         private void OnFailContractClicked()
         {
-            if (_selectedContractItem < 0 || _selectedContractItem >= _contractsCache.Length)
+            if (_selectedContractItem < 0 || _selectedContractItem >= _contractsCache.Count)
             {
                 if (_messageLabel != null)
                     _messageLabel.text = "Выберите контракт из списка";
@@ -377,8 +375,8 @@ namespace ProjectC.UI.Client
         private System.Collections.IEnumerator JustTakenPulse(int rowIndex)
         {
             if (_contractsList == null) yield break;
-            var itemsSource = _contractsList.itemsSource as ContractDto[];
-            if (itemsSource == null || rowIndex < 0 || rowIndex >= itemsSource.Length) yield break;
+            var itemsSource = _contractsList.itemsSource as List<ContractDto>;
+            if (itemsSource == null || rowIndex < 0 || rowIndex >= itemsSource.Count) yield break;
 
             var row = _contractsList.GetRootElementForIndex(rowIndex);
             if (row != null) row.AddToClassList("contract-row-just-taken");

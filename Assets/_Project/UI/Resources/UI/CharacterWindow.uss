@@ -740,3 +740,82 @@
     -unity-text-align: middle-left !important;
     -unity-font-style: bold !important;
 }
+
+/* === Contracts section height fix === */
+#contracts-section {
+    flex: 1 !important;
+    min-height: 300px !important;
+}
+#contracts-section > #contracts-list {
+    max-height: none !important;
+    flex: 1 !important;
+    min-height: 100px !important;
+}
+
+/* === T-P19: Contract row (2-line: info + route) === */
+.contract-row {
+    flex-direction: column !important;
+    padding: 3px 6px !important;
+    border-bottom-width: 1px !important;
+    border-bottom-color: rgba(80, 100, 130, 0.12) !important;
+    flex-shrink: 0 !important;
+}
+.contract-row-active {
+    background-color: rgba(60, 140, 80, 0.08) !important;
+}
+.contract-row-line {
+    flex-direction: row !important;
+    align-items: center !important;
+    min-height: 18px !important;
+}
+.contract-type {
+    width: 56px !important;
+    font-size: 9px !important;
+    flex-shrink: 0 !important;
+    -unity-text-align: middle-left !important;
+    -unity-font-style: bold !important;
+}
+.type-standard { color: rgb(160, 200, 220) !important; }
+.type-urgent   { color: rgb(255, 200, 80) !important; }
+.type-receipt  { color: rgb(200, 160, 255) !important; }
+.contract-item {
+    flex-grow: 1 !important;
+    font-size: 10px !important;
+    color: rgb(220, 220, 230) !important;
+    -unity-text-align: middle-left !important;
+    white-space: nowrap !important;
+    overflow: hidden !important;
+    text-overflow: ellipsis !important;
+}
+.contract-qty {
+    width: 28px !important;
+    font-size: 9px !important;
+    color: rgb(160, 180, 200) !important;
+    -unity-text-align: middle-right !important;
+    flex-shrink: 0 !important;
+}
+.contract-reward {
+    width: 60px !important;
+    font-size: 9px !important;
+    color: rgb(100, 220, 100) !important;
+    -unity-text-align: middle-right !important;
+    flex-shrink: 0 !important;
+}
+.contract-timer {
+    width: 42px !important;
+    font-size: 9px !important;
+    -unity-text-align: middle-right !important;
+    flex-shrink: 0 !important;
+}
+.contract-timer.timer-ok     { color: rgb(140, 200, 140) !important; }
+.contract-timer.timer-warn   { color: rgb(220, 200, 80) !important; }
+.contract-timer.timer-danger { color: rgb(220, 80, 80) !important; -unity-font-style: bold !important; }
+.contract-route {
+    font-size: 9px !important;
+    color: rgb(140, 155, 175) !important;
+    margin-left: 4px !important;
+    -unity-text-align: middle-left !important;
+    white-space: nowrap !important;
+    overflow: hidden !important;
+    text-overflow: ellipsis !important;
+}

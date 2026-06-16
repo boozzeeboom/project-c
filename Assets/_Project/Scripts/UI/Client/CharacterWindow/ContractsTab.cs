@@ -83,7 +83,7 @@ namespace ProjectC.UI.Client
             {
                 _contractsList.makeItem = MakeContractRow;
                 _contractsList.bindItem = BindContractRow;
-                _contractsList.fixedItemHeight = 32;
+                _contractsList.fixedItemHeight = 48;
                 _contractsList.selectionType = SelectionType.Single;
                 _contractsList.selectedIndex = -1;
                 _contractsList.selectionChanged += selectedItems =>
@@ -235,18 +235,37 @@ namespace ProjectC.UI.Client
         {
             var row = new VisualElement();
             row.AddToClassList("contract-row");
+
+            // Top line: type + displayName + quantity
+            var topLine = new VisualElement();
+            topLine.AddToClassList("contract-row-line");
+            row.Add(topLine);
+
             var typeLbl = new Label { name = "row-type" };
             typeLbl.AddToClassList("contract-type");
-            row.Add(typeLbl);
+            topLine.Add(typeLbl);
+
             var itemLbl = new Label { name = "row-item" };
             itemLbl.AddToClassList("contract-item");
-            row.Add(itemLbl);
+            topLine.Add(itemLbl);
+
+            var qtyLbl = new Label { name = "row-qty" };
+            qtyLbl.AddToClassList("contract-qty");
+            topLine.Add(qtyLbl);
+
             var rewardLbl = new Label { name = "row-reward" };
             rewardLbl.AddToClassList("contract-reward");
-            row.Add(rewardLbl);
+            topLine.Add(rewardLbl);
+
             var timerLbl = new Label { name = "row-timer" };
             timerLbl.AddToClassList("contract-timer");
-            row.Add(timerLbl);
+            topLine.Add(timerLbl);
+
+            // Bottom line: route (from → to)
+            var routeLbl = new Label { name = "row-route" };
+            routeLbl.AddToClassList("contract-route");
+            row.Add(routeLbl);
+
             return row;
         }
 
@@ -257,26 +276,62 @@ namespace ProjectC.UI.Client
             if (src == null || index < 0 || index >= src.Count) return;
             var c = src[index];
 
-            row.Q<Label>("row-type").text = GetContractTypeDisplayName((ContractType)c.type);
+            // Type badge
             var typeLbl = row.Q<Label>("row-type");
+            typeLbl.text = GetContractTypeDisplayName((ContractType)c.type);
             typeLbl.RemoveFromClassList("type-standard");
             typeLbl.RemoveFromClassList("type-urgent");
             typeLbl.RemoveFromClassList("type-receipt");
             typeLbl.AddToClassList(GetContractTypeClass((ContractType)c.type));
 
-            string statePrefix = c.state == (byte)ContractState.Active ? "[ВЗЯТ] " : "";
-            row.Q<Label>("row-item").text = $"{statePrefix}{c.displayName} ×{c.quantity}";
-            row.Q<Label>("row-reward").text = $"{c.reward:F0} CR";
+            // Item name + quantity
+            row.Q<Label>("row-item").text = c.displayName ?? c.itemId ?? "?";
+            row.Q<Label>("row-qty").text = $"×{c.quantity}";
 
+            // Reward
+            row.Q<Label>("row-reward").text = $"+{c.reward:F0} CR";
+
+            // Timer: timeRemaining / timeLimit
             var timerLbl = row.Q<Label>("row-timer");
-            timerLbl.text = GetContractTimeRemainingString(c);
-            timerLbl.RemoveFromClassList("timer-ok");
-            timerLbl.RemoveFromClassList("timer-warn");
-            timerLbl.RemoveFromClassList("timer-danger");
-            timerLbl.AddToClassList(GetContractTimerClass(c));
+            if (c.timeLimit > 0f)
+            {
+                float remaining = Mathf.Max(0f, c.timeRemaining);
+                int min = Mathf.FloorToInt(remaining / 60f);
+                int sec = Mathf.FloorToInt(remaining % 60f);
+                timerLbl.text = c.timeRemaining <= 0f ? "—" : $"{min}:{sec:D2}";
+                timerLbl.RemoveFromClassList("timer-ok");
+                timerLbl.RemoveFromClassList("timer-warn");
+                timerLbl.RemoveFromClassList("timer-danger");
+                timerLbl.AddToClassList(remaining < 60f ? "timer-danger" : remaining < 300f ? "timer-warn" : "timer-ok");
+            }
+            else
+            {
+                timerLbl.text = "∞";
+                timerLbl.style.color = new StyleColor(new Color(0.6f, 0.8f, 0.6f));
+            }
+
+            // Route: fromLocationId → toLocationId
+            var routeLbl = row.Q<Label>("row-route");
+            string fromName = ResolveLocationDisplayName(c.fromLocationId);
+            string toName = ResolveLocationDisplayName(c.toLocationId);
+            routeLbl.text = $"{fromName} → {toName}";
 
             row.RemoveFromClassList("contract-row-active");
             if (c.state == (byte)ContractState.Active) row.AddToClassList("contract-row-active");
+        }
+
+        /// <summary>T-P19: резолвит LocationId в читаемое имя.</summary>
+        private static string ResolveLocationDisplayName(string locationId)
+        {
+            if (string.IsNullOrEmpty(locationId)) return "?";
+            switch (locationId.ToLowerInvariant())
+            {
+                case "primium":  return "Примум";
+                case "secundus": return "Секундус";
+                case "tertius":  return "Терциус";
+                case "quartus":  return "Квартус";
+                default:         return locationId;
+            }
         }
 
         // ============================================================

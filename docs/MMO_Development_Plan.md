@@ -135,8 +135,10 @@
   - ✅ Таб "Инвентарь" — sub_inventory-tab, см. секцию 1.6 + `docs/Character-menu/sub_inventory-tab/`
   - ✅ Таб "Квесты" — 6-й таб, добавлен в T-Q11 (см. `08_ROADMAP.md` §8.3.1 T-Q11)
   - ✅ Track-кнопка в строках квестов (T-Q12) — QuestTracker toggle
-  - ⏳ [Табы] MVP-заглушки (хард-стат), план в docs/Character-menu/00_OVERVIEW.md sect3
-  - [ОБНОВЛЕНИЕ июнь 2026]: Character Progression subsystem реализована (T-P01..T-P18). ПЕРСОНАЖ таб переработан single-page layout со статами (STR/DEX/INT + effective equip bonuses), одеждой (10 slots), модулями (3 slots), навыками (4 combat + 4 social). Inventory split (list+detail). Stats: STR от mining, DEX от walk/jump, INT от dialog. 18 tickets. Compile 0 errors.
+  - ✅ Таб "Персонаж" — T-P01..T-P18 (Character Progression: STR/DEX/INT + 13 экипировки + 8 навыков, single-page)
+  - ✅ Таб "Репутация" — реализован в NPC+Quests v2 (см. секцию 1.7)
+  - ✅ Таб "Контракты" — реализован в NPC+Quests v2 (T-Q11..T-Q20+, см. `docs/Character-menu/sub_contracts-tab/`)
+  - ⏳ Таб "Корабль" — MVP-заглушка (хард-стат), план в `docs/Character-menu/00_OVERVIEW.md` §3
   - ✅ Visual fix 2026-06-05: characterWindowUss привязан к правильному USS-ассету (был UXML-bug); все class-стили с `!important` (UnityDefaultRuntimeTheme fix)
 - ✅ ⭐ UIManager — централизованный менеджер UI (приоритеты, z-ordering, input management)
 - ✅ ⭐ UIFactory — фабрика UI компонентов (8 методов, устранено 120 строк дублирования)
@@ -353,6 +355,10 @@
 
 ---
 
+## Этап 2: Онлайн-интеграция 🔜 ЗАПЛАНИРОВАН
+
+---
+
 ## 🚢 Система кораблей — Детализация (Сессии 1-5_4)
 
 > **Ветка:** `qwen-gamestudio-agent-dev` | **ShipController:** v2.7 | **Коммиты:** `fdc76b4`, `845ec5e`
@@ -450,6 +456,29 @@ FixedUpdate (сервер):
 | Коммитов | 25+ |
 | Откатов | 1 (asmdef инцидент) |
 | Тегов бэкапа | 5 |
+
+---
+
+### 1.8 Сетевая инфраструктура (базовая) ✅ ЗАВЕРШЕНО
+- ✅ NetworkManagerController — управление подключениями
+- ✅ NetworkPlayer — синхронизация игрока
+- ✅ NetworkUI — UI подключения (Disconnect кнопка по центру)
+- ✅ Host + Client — синхронизация движения, камеры, инвентаря, кораблей
+- ✅ Кооп-корабли — несколько игроков, усреднение ввода
+- ✅ Обработка обрывов соединения (OnClientDisconnectCallback, OnTransportFailure)
+- ⏳ Полноценная синхронизация (Этап 2)
+
+### Что осталось в Этапе 1:
+> ⚠️ **Визуальные задачи перенесены в [Этап 2.5: Визуальный прототип](#этап-25-визуальный-прототип-недели-11-14--в-процессе)**
+
+- [ ] Доработка физики корабля (banking, инерция, плавность)
+- [ ] Система топлива (мезий)
+- [ ] Звуки двигателя, шагов, ветра
+- [ ] Слот 9 (центр) для ключевого предмета
+
+**Результат:** Оффлайн-билд с работающим перемещением, миром, инвентарём, сундуками и сетевым мультиплеером.
+
+**Версия:** `v0.0.11-disconnect-fix` (5 апреля 2026)
 
 ---
 
@@ -771,6 +800,9 @@ FixedUpdate (сервер):
    - ✅ Real-time objective evaluation (tick 5 sec) — `QuestTriggerService` + 8 trigger types
    - ✅ Persistence (M8) — `JsonQuestStateRepository`, immediate save на каждом state change
    - ✅ Editor tooling: `QuestDatabaseWindow` (M16), `QuestNodeGraph` (M17), **Editable** (M18), **CSV Import/Export** (M19)
+   - ✅ Quest toast notifications (M15): "📜 Accepted", "💚 +5", "💰 +200 CR", "✨ Найден квест"
+   - ✅ Item ID single source of truth (M14): `ItemRegistry` SO + 32 items
+   - ✅ **Торговые квесты:** ✅ **Quest ↔ Contract мост** — `ContractMetaBridge` (M7): NPC dialog actions `GiveItem`/`TakeItem` + ContractServer events (`ContractAcceptedEvent`/`ContractCompletedEvent`/`ContractFailedEvent`) → quest trigger evaluation
    - ✅ **M19 CSV pipeline — финал** (T-Q19.1–T-Q19.3, 2026-06-13):
      - ✅ T-Q19.1 Авто-заполнение `questTurnIns` у NPC (последний stage + TalkToNpc → NPC)
      - ✅ T-Q19.2 Авто-link `defaultDialogTree` (DialogTree `{npcId}_default` → NPC)
@@ -779,9 +811,6 @@ FixedUpdate (сервер):
    - ✅ **NpcCsvImporter** — 9 колонок, batch-update существующих NPC.
    - ✅ **Тестовые данные:** 106 NPC, 802 квеста, 2 DialogTree, 6 CSV файлов.
    - ✅ Writer-документация: `docs/NPC_quests/M19_CSV_PIPELINE_v2.md` (26 KB, 7 разделов).
-   - ✅ Quest toast notifications (M15): "📜 Accepted", "💚 +5", "💰 +200 CR", "✨ Найден квест"
-   - ✅ Item ID single source of truth (M14): `ItemRegistry` SO + 32 items
-   - ✅ **Торговые квесты:** ✅ **Quest ↔ Contract мост** — `ContractMetaBridge` (M7): NPC dialog actions `GiveItem`/`TakeItem` + ContractServer events (`ContractAcceptedEvent`/`ContractCompletedEvent`/`ContractFailedEvent`) → quest trigger evaluation
    - ✅ **Контент квестов (расширение):** 🟢 106 NPC, 802 квеста, 6 CSV файлов — bulk импорт завершён. **Авторский контент** — открыто (создание сюжетных квестов через CSV/Editor).
    - ⏳ **Ежедневные испытания** — не начато (post-MVP).
 
@@ -894,12 +923,6 @@ FixedUpdate (сервер):
 4. **Перегрузка контентом**
    → Фокус на минимально жизнеспособный продукт (MVP) для раннего доступа.
 
-5. **Ограниченность арт-ресурсов (1 человек)**
-   → Приоритет: корабли → облака → пики → остальное. Mixamo + CC0 текстуры.
-
-6. **URP-совместимость шейдеров**
-   → Все новые материалы — только URP Lit/Unlit. Standard → авто-конвертация.
-
 ---
 
 ## Инструменты и зависимости:
@@ -918,6 +941,25 @@ FixedUpdate (сервер):
   - ✅ Реализовано для кораблей (ShipController v2.2)
   - ⏳ Запланировано для персонажа (адаптация CharacterController)
 - **Art Bible:** [`docs/ART_BIBLE.md`](docs/ART_BIBLE.md)
+
+### Критические риски и меры:
+1. **Сложность сетевой синхронизации физики**
+   → Начать с упрощенной модели, тестировать с первых недель.
+
+2. **Читеры в экономике**
+   → Вся критичная логика только на сервере, логирование действий.
+
+3. **Высокие требования к инфраструктуре**
+   → Использовать облачные решения (AWS GameLift, Azure PlayFab) для старта.
+
+4. **Перегрузка контентом**
+   → Фокус на минимально жизнеспособный продукт (MVP) для раннего доступа.
+
+5. **Ограниченность арт-ресурсов (1 человек)**
+   → Приоритет: корабли → облака → пики → остальное. Mixamo + CC0 текстуры.
+
+6. **URP-совместимость шейдеров**
+   → Все новые материалы — только URP Lit/Unlit. Standard → авто-конвертация.
 
 ---
 
@@ -946,7 +988,7 @@ FixedUpdate (сервер):
 ### Content — Контентные системы
 | Документ | Описание |
 |----------|----------|
-| [GDD_20: Progression & RPG](gdd/GDD_20_Progression_RPG.md) | XP, уровни 1-50, деревья навыков. **✅ Character Progression subsystem реализована июнь 2026: 3 статистики (STR/DEX/INT) с геометрическим ростом (tier-based), 13 слотов экипировки (10 одежда + 3 модуля), effective stats (base + equip bonuses), сохранение (flush on disconnect + periodic auto-save 30s). Skills UI ready, click handlers deferred (после battle system). См. `docs/Character/`.** |
+| [GDD_20: Progression & RPG](gdd/GDD_20_Progression_RPG.md) | XP, уровни 1-50, деревья навыков. ✅ T-P01..T-P18 (2026-06-17) |
 | [GDD_21: Quest & Mission System](gdd/GDD_21_Quest_Mission_System.md) | 5 типов квестов, цепочки гильдий. **✅ Реализовано в NPC+Quests v2** (2026-06-07..09). |
 | [GDD_22: Economy & Trading](gdd/GDD_22_Economy_Trading.md) | Кредиты, ресурсы, спрос/предложение |
 | [GDD_23: Faction & Reputation](gdd/GDD_23_Faction_Reputation.md) | 5 Гильдий, подполье, СОЛ, репутация. **✅ Reputation+NpcAttitude подсистема реализована в NPC+Quests v2.** |

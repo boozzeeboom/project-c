@@ -5,6 +5,59 @@
 
 ---
 
+## 2026-06-15..17 — S2: Полная реализация Character Progression (18 тикетов)
+
+**Сессия:** Имплементация T-P01..T-P18 по `08_ROADMAP.md`. ~30 часов кодинга, 4 фазы, 50+ .cs файлов, 20+ .asset файлов.
+
+### Милестоуны
+
+| Milestone | Тикеты | Статус | Ключевые результаты |
+|-----------|--------|--------|-------------------|
+| **M1 — Stats core** | T-P01..T-P06 | ✅ DONE | StatsConfig SO, PlayerStats, StatsWorld, StatsClientState, StatsServer (9 событий WorldEventBus + FixedUpdate walk tracker), JsonCharacterDataRepository, auto-spawn через NMC. STR/INT/DEX работают. |
+| **M2 — Clothing & Modules** | T-P07..T-P10 | ✅ DONE | ClothingItemData/ModuleItemData (2 SO), EquipSlot enum, EquipmentData, EquipmentWorld, EquipmentServer (TryEquip/TryUnequip + rate limit), EquipmentClientState. Equip → remove from inventory, Unequip → add back. |
+| **M3 — Skill Tree** | T-P11..T-P14 | ✅ DONE | SkillNodeConfig + SkillEffect (8 .asset: 4 combat + 4 social), SkillsConfig/SkillsWorld/SkillsServer, SkillsClientState. Skill rows в CharacterWindow (LOCKED/AVAILABLE/LEARNED). Click handlers deferred до battle system. |
+| **M4 — UI Integration** | T-P15..T-P18 | ✅ DONE | CharacterWindow: single-page ПЕРСОНАЖ (Характеристики+Одежда+Модули+Навыки). Effective stat bars. [СНЯТЬ] button. [НАДЕТЬ] button в инвентаре. Inventory split layout (list+detail). 3 server GO в BootstrapScene. |
+
+### Ключевые архитектурные решения (bugfixes)
+
+| Проблема | Решение |
+|----------|---------|
+| ItemID хардкод (1001..2001) не работали | Переход на `FindItemIdByName()` + slot-based fallback при ID mismatch |
+| ClothingItemData/ModuleItemData не загружались в `_itemDatabase` | `RegisterEquipmentAssets()` → `Resources.LoadAll<T>(path)` + auto-ID |
+| Множитель DEX (10M XP при scene load) | `MaxWalkDeltaPerFixedUpdate = 5.0f` clamp |
+| `[СНЯТЬ]` button не работала | `RegisterCallback<ClickEvent>` через closure с captured EquipRow + `TrickleDown.TrickleDown` capture phase |
+| Unequip не возвращает item в инвентарь | `Equip → RemoveItems`, `Unequip → AddItemDirect` + ID resolution fallback |
+| Save не срабатывал при exit | `Flush` в `OnNetworkDespawn` + `periodic auto-save 30s` |
+| Effective stats = 0 при equip | `SendSnapshotToOwner` → inline `GetEquipStatBonuses()` (не через cache) |
+| Пустое место под inventory ListView | ScrollView заменил ListView в UXML (flex-grow корректно) |
+
+### Файлы
+
+| Файл | LOCs | Назначение |
+|------|------|-----------|
+| `Assets/_Project/Scripts/Stats/` (11 .cs) | ~2000 | StatsConfig, PlayerStats, StatsWorld, StatsClientState, StatsServer, Repository |
+| `Assets/_Project/Scripts/Equipment/` (7 .cs) | ~1500 | ClothingItemData, ModuleItemData, EquipSlot, EquipmentData, World, Server, ClientState |
+| `Assets/_Project/Skills/` (6 .cs) | ~1200 | SkillNodeConfig, SkillEffect, SkillCategory, SkillsConfig, World, Server, ClientState |
+| `Assets/_Project/Scripts/UI/Client/CharacterWindow.cs` (+~900 LOC) | 3400 | SubscribeX/UnsubscribeX, MakeManualSkillRow, MakeManualEquipRow, MakeInventoryRow/BindInventoryRow |
+| `Assets/_Project/UI/Resources/UI/CharacterWindow.uss` (+~400 LOC) | 540 | progression, stats, skills, equipment, inventory layout |
+
+### Что осталось (deferred)
+
+- Skills click handlers (awaiting battle system integration)
+- [НАДЕТЬ] кнопка в пустых equip slots (сейчас только [СНЯТЬ] для filled)
+- Painter2D skill tree graph (Phase 2)
+- Drag-and-drop equip (Phase 2)
+
+### Closed
+
+- ✅ **Все 18 тикетов T-P01..T-P18**
+- ✅ All milestones M1-M4
+- ✅ Compile 0 errors
+- ✅ 18 .asset files (StatsConfig, SkillsConfig, 8 Skills, 5 Clothing, 3 Modules)
+- ✅ 3 server GameObjects в BootstrapScene
+
+---
+
 ## 2026-06-14 — S1: Первые ответы пользователя на Open Questions
 
 **Сессия:** пользователь записал ответы под каждым вопросом в `09_OPEN_QUESTIONS.md`. Задача — актуализировать всю дизайн-документацию по ответам.

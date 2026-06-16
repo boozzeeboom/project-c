@@ -129,7 +129,8 @@
   - ✅ Таб "Инвентарь" — sub_inventory-tab, см. секцию 1.6 + `docs/Character-menu/sub_inventory-tab/`
   - ✅ Таб "Квесты" — 6-й таб, добавлен в T-Q11 (см. `08_ROADMAP.md` §8.3.1 T-Q11)
   - ✅ Track-кнопка в строках квестов (T-Q12) — QuestTracker toggle
-  - ⏳ Табы "Персонаж" / "Корабль" / "Репутация" / "Контракты" — MVP-заглушки (хард-стат), план в `docs/Character-menu/00_OVERVIEW.md` §3
+  - ⏳ [Табы] MVP-заглушки (хард-стат), план в docs/Character-menu/00_OVERVIEW.md sect3
+  - [ОБНОВЛЕНИЕ июнь 2026]: Character Progression subsystem реализована (T-P01..T-P18). ПЕРСОНАЖ таб переработан single-page layout со статами (STR/DEX/INT + effective equip bonuses), одеждой (10 slots), модулями (3 slots), навыками (4 combat + 4 social). Inventory split (list+detail). Stats: STR от mining, DEX от walk/jump, INT от dialog. 18 tickets. Compile 0 errors.
   - ✅ Visual fix 2026-06-05: characterWindowUss привязан к правильному USS-ассету (был UXML-bug); все class-стили с `!important` (UnityDefaultRuntimeTheme fix)
 - ✅ ⭐ UIManager — централизованный менеджер UI (приоритеты, z-ordering, input management)
 - ✅ ⭐ UIFactory — фабрика UI компонентов (8 методов, устранено 120 строк дублирования)
@@ -939,7 +940,7 @@ FixedUpdate (сервер):
 ### Content — Контентные системы
 | Документ | Описание |
 |----------|----------|
-| [GDD_20: Progression & RPG](gdd/GDD_20_Progression_RPG.md) | XP, уровни 1-50, деревья навыков |
+| [GDD_20: Progression & RPG](gdd/GDD_20_Progression_RPG.md) | XP, уровни 1-50, деревья навыков. **✅ Character Progression subsystem реализована июнь 2026: 3 статистики (STR/DEX/INT) с геометрическим ростом (tier-based), 13 слотов экипировки (10 одежда + 3 модуля), effective stats (base + equip bonuses), сохранение (flush on disconnect + periodic auto-save 30s). Skills UI ready, click handlers deferred (после battle system). См. `docs/Character/`.** |
 | [GDD_21: Quest & Mission System](gdd/GDD_21_Quest_Mission_System.md) | 5 типов квестов, цепочки гильдий. **✅ Реализовано в NPC+Quests v2** (2026-06-07..09). |
 | [GDD_22: Economy & Trading](gdd/GDD_22_Economy_Trading.md) | Кредиты, ресурсы, спрос/предложение |
 | [GDD_23: Faction & Reputation](gdd/GDD_23_Faction_Reputation.md) | 5 Гильдий, подполье, СОЛ, репутация. **✅ Reputation+NpcAttitude подсистема реализована в NPC+Quests v2.** |

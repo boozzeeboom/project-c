@@ -2,7 +2,7 @@
 
 > **Подсистема:** Уникальность персонажа (Stats + Progression + Clothing + Modules + Skills)
 > **Версия:** v0.0.1-design (2026-06-14)
-> **Статус:** 📋 Дизайн завершён, код не начат
+> **Статус:** ✅ **Полностью реализовано (июнь 2026)**
 > **Назначение:** одежда с характеристиками, модули с характеристиками, дерево навыков (социальные/боевые), 3 характеристики (Сила/Ловкость/Интеллект) с геометрическим ростом от действий игрока.
 > **Связанные подсистемы:** Mining (`docs/Mining/`), Crafting (`docs/Crafting_system/`), Exchange (`docs/Markets/`), Quests (`docs/NPC_quests/`), Ship (`docs/Ships/`), Character-menu (`docs/Character-menu/`).
 > **Внешний контракт:** `CharacterWindow` уже имеет 6 табов (character/ship/reputation/contracts/inventory/quests). Новые табы встраиваются как **вложенные sub-tabs** под табом "ПРОГРЕССИЯ".
@@ -51,9 +51,9 @@ docs/Character/
 
 ---
 
-## Статус проекта (1 строка)
+## Status bar (actual — 2026-06-17)
 
-**M1 (Stats core): ⬜ TODO → T-P01..T-P06** • **M2 (Clothing/Modules): ⬜ TODO → T-P07..T-P10** • **M3 (Skill tree): ⬜ TODO → T-P11..T-P14** • **M4 (UI integration): ⬜ TODO → T-P15..T-P18** • обновлено 2026-06-14
+**M1 (Stats core): ✅ DONE (T-P01..T-P06)** • **M2 (Clothing/Modules): ✅ DONE (T-P07..T-P10)** • **M3 (Skill tree): ✅ DONE (T-P11..T-P14)** • **M4 (UI integration): ✅ DONE (T-P15..T-P18)** • обновлено 2026-06-17
 
 ---
 

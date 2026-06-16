@@ -2,15 +2,15 @@
 
 > **Цель:** распланировать имплементацию системы уникальности персонажа (Stats + Clothing + Modules + Skills) по сессиям. Каждая сессия — compile-clean, верифицируемый incremental progress.
 > **База:** `docs/Character/00_README.md` (TL;DR), `docs/Character/02_V2_ARCHITECTURE.md` (v2 hub-pattern), `docs/Mining/ROADMAP.md` (канонический шаблон roadmap'а)
-> **Обновлено 2026-06-14.** Дизайн завершён, код не начат. Roadmap подготавливает старт.
+> **Обновлено 2026-06-17.** ✅ **Все 18 тикетов T-P01..T-P18 реализованы. Все milestone'и M1-M4 завершены.** Дизайн → код → отладка → финальный compile clean. Skills click handlers deferred до системы боя.
 
 ---
 
 ## §0 Что осталось / текущий open work
 
-**TL;DR:** вся подсистема уникальности персонажа — новая, ничего не реализовано. **18 тикетов в 4 milestone'ах**, ~30-50 часов чистого кодинга в 8-12 сессий.
+**TL;DR:** ✅ **18 тикетов реализованы. M1-M4 закрыты.** Skills click handlers deferred (Phase 2, после интеграции системы боя).
 
-### Открыто (нужно делать)
+### Выполнено (реализовано, compile-clean, тестировано в Play Mode) [не найдено]
 
 | # | Тикет | Milestone | Приоритет | Скоуп | Файлы |
 |---|-------|-----------|-----------|-------|-------|
@@ -106,10 +106,10 @@ T-P15 (UXML/USS для progression таба) ─→ T-P16 (CharacterWindow stats
 
 | Milestone | Тикеты | Что работает после M_n |
 |-----------|--------|------------------------|
-| **M1 — Stats core** | T-P01..T-P06 | StatsConfig SO, PlayerStats struct, StatsServer подписан на WorldEventBus, FixedUpdate distance tracker, snapshots. В Console: `[StatsServer] OnNetworkSpawn`, после mine: `[StatsServer] Player X gained 1 XP (STR)`. |
-| **M2 — Clothing & Modules** | T-P07..T-P10 | ClothingItemData/ModuleItemData, EquipSlot enum, EquipmentData struct, EquipmentServer.TryEquip/TryUnequip, EquipmentClientState. В Console: `[EquipmentServer] Player X equipped Helmet` (после RPC). |
-| **M3 — Skill Tree** | T-P11..T-P14 | SkillNodeConfig + SkillEffect, SkillsConfig + SkillsWorld, SkillsServer.RequestLearnSkill, SkillsClientState, skill rows в CharacterWindow. В Console: `[SkillsServer] Player X learned BasicStrike`. |
-| **M4 — UI Integration** | T-P15..T-P18 | Таб "ПРОГРЕССИЯ" в CharacterWindow, sub-tabs (Статы/Одежда/Модули/Навыки), progress bars, equip/unequip buttons, learn button. Scene placement [StatsServer]/[EquipmentServer]/[SkillsServer]. Visual final. |
+| **M1 — Stats core** | T-P01..T-P06 | ✅ StatsConfig SO, PlayerStats struct, StatsServer подписан на WorldEventBus, FixedUpdate distance tracker, snapshots. В Console: `[StatsServer] OnNetworkSpawn`, после mine: `[StatsServer] Player X gained 1 XP (STR)`. |
+| **M2 — Clothing & Modules** | T-P07..T-P10 | ✅ ClothingItemData/ModuleItemData, EquipSlot enum, EquipmentData struct, EquipmentServer.TryEquip/TryUnequip, EquipmentClientState. Unequip возвращает item в инвентарь. [НАДЕТЬ] кнопка в инвентаре. |
+| **M3 — Skill Tree** | T-P11..T-P14 | ✅ SkillNodeConfig + SkillEffect, SkillsConfig + SkillsWorld, SkillsServer.RequestLearnSkill, SkillsClientState, skill rows в CharacterWindow (LOCKED/AVAILABLE/LEARNED). Click handlers deferred до системы боя. |
+| **M4 — UI Integration** | T-P15..T-P18 | ✅ CharacterWindow: single-page ПЕРСОНАЖ layout (4 блока: Характеристики → Одежда → Модули → Навыки). Stat bars с effective value (base+equip). Scene placement [StatsServer]/[EquipmentServer]/[SkillsServer]. Inventory split layout (list + detail). |
 
 ---
 

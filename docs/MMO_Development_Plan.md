@@ -27,8 +27,7 @@
 2. **Настройка репозитория:** ✅
    - ✅ Структура папок `Assets/_Project/`
    - ✅ `.gitignore` + `.gitattributes` (LFS)
-   - ✅ Ветка `qwen-dev` на GitHub
-   - ✅ `.qwenignore` для оптимизации контекста
+   - ✅ Ветка `main` на GitHub
 
 3. **Базовая архитектура:** ✅
    - ✅ Unity Netcode for GameObjects (вместо Mirror)
@@ -355,133 +354,6 @@
 
 ---
 
-## Этап 2: Онлайн-интеграция 🔜 ЗАПЛАНИРОВАН
-
----
-
-## 🚢 Система кораблей — Детализация (Сессии 1-5_4)
-
-> **Ветка:** `qwen-gamestudio-agent-dev` | **ShipController:** v2.7 | **Коммиты:** `fdc76b4`, `845ec5e`
-
-### Реализованные системы
-
-| # | Система | Сессия | Статус | Файлы |
-|---|---------|--------|--------|-------|
-| 1 | Core Smooth Movement | 1 | ✅ | ShipController.cs v2.0 → v2.1 |
-| 2 | Altitude Corridor System | 2 | ✅ | AltitudeCorridorData, AltitudeCorridorSystem, TurbulenceEffect, SystemDegradationEffect |
-| 3 | Wind & Environmental Forces | 3 | ✅ | WindZone, WindZoneData, интеграция в ShipController v2.2 |
-| 4 | Module System Foundation | 4 | ✅ | ShipModule, ModuleSlot, ShipModuleManager, 7 модулей (YAW_ENH, PITCH_ENH, LIFT_ENH, ROLL, MEZIY_*) |
-| 5 | Fuel System + Meziy Modules | 5 | ✅ | ShipFuelSystem, MeziyModuleActivator, MeziyThrusterVisual, MODULE_ROLL |
-| 5.2 | Continuous Mode Rewrite | 5_2 | ✅ | Переработка между, Debug HUD, фиксы частиц |
-| 5.3 | Passive/Active/Overheat | 5_3 | ✅ | Новая архитектура: C/V (pitch), Z/X (roll), Shift+A/D (yaw) |
-| 5.4 | UI, Thrust Module, Polish | 5_4 | ✅ | MeziyStatusHUD, MODULE_MEZIY_THRUST, cooldown 15s, валидация слотов |
-
-### Архитектура ShipController v2.7 (1249 строк)
-
-```
-FixedUpdate (сервер):
-  1. AverageInputs() — усреднение от всех пилотов
-  2. ApplyModuleModifiers() — модульные множители + passive meziy
-  3. MeziyModuleActivator.Tick() — перегрев/кулдаун
-  4. Fuel check — engine stall при fuel < 10
-  5. Atmospheric refuel (L) — 2.0 fuel/s, stationary only
-  6. Meziy activation — C/V, Z/X, Shift+A/D, Shift+W/S
-  7. Smooth thrust/yaw/pitch/lift/roll — Mathf.SmoothDamp
-  8. Validate altitude — corridor effects
-  9. Apply forces — thrust, anti-gravity, lift, rotation
-  10. Stabilization — auto при отсутствии ввода 0.5s+
-  11. ApplyMeziyEffects — torque + thrust boost
-  12. ApplyWind — зарегистрированные зоны
-  13. ClampVelocity / ClampPitchAngle
-```
-
-### Параметры кораблей (4 класса)
-
-| Параметр | Light | Medium | Heavy | HeavyII |
-|----------|-------|--------|-------|---------|
-| Mass | 800kg | 1000kg | 1500kg | 2000kg |
-| Max Speed | 50 м/с | 40 м/с | 25 м/с | 18 м/с |
-| Thrust Force | 500 | 650 | 800 | 900 |
-| Yaw Force | 3500 | 3000 | 2000 | 1500 |
-| Yaw Smooth | 0.25s | 0.3s | 0.5s | 0.7s |
-| Yaw Decay | 0.8s | 1.0s | 1.5s | 2.0s |
-| Wind Exposure | 1.2 | 1.0 | 0.7 | 0.5 |
-
-### Мезиевые модули (4 модуля)
-
-| Модуль | Сила | Кулдаун | Fuel Cost | Управление |
-|--------|------|---------|-----------|------------|
-| MODULE_MEZIY_PITCH | 500 | 15s | 5 | C (вверх) / V (вниз) |
-| MODULE_MEZIY_ROLL | 800 | 15s | 5 | Z (влево) / X (вправо) |
-| MODULE_MEZIY_YAW | 1000 | 15s | 5 | Shift+A / Shift+D |
-| MODULE_MEZIY_THRUST | 800 | 15s | 4 | Shift+W (ускор.) / Shift+S (тормоз) |
-
-**Принцип:** Модуль установлен = пассивный эффект (+10% к управлению, 0 топлива). Зажата клавиша = активный выхлоп (torque/thrust + частицы + расход). 10 сек активности → перегрев → 15 сек кулдаун.
-
-### Управление кораблём (полная карта)
-
-| Клавиша | Действие |
-|---------|----------|
-| W/S | Тяга вперёд/назад |
-| A/D | Рыскание (поворот) |
-| Q/E | Подъём/спуск |
-| Мышь Y | Тангаж |
-| Left Shift | Ускорение |
-| Z/X | Крен (требует MODULE_ROLL) |
-| C/V | Мезиевый тангаж |
-| Shift+A/D | Мезиевое рыскание |
-| Shift+W/S | Мезиевый рывок вперёд/торможение |
-| L | Дозаправка (stationary) |
-| F3 | Debug HUD |
-| F4 | Meziy Status HUD |
-
-### Известные ограничения
-
-| # | Ограничение | Приоритет | План |
-|---|-------------|-----------|------|
-| 1 | ShipController.cs v2.7 — 1200+ строк, монолитный файл | P2 | Рефакторинг: разделение на подсистемы (Movement, Environment, Modules, Fuel) |
-| 2 | Cinemachine Impulse для турбулентности не работает | P3 | Отложено |
-| 3 | Wind lanes между пиками не реализованы | P3 | Отложено |
-| 4 | MODULE_MEZIY_THRUST расход топлива — 8 fuel/sec при continuous | P2 | Балансировка после тестов |
-| 5 | Shift+W потенциальный конфликт с обычным thrust | P2 | Требуется геймплейное тестирование |
-
-### Статистика разработки
-
-| Метрика | Значение |
-|---------|----------|
-| Сессий проведено | 8 (1, 2, 3, 4, 5, 5.2, 5.3, 5.4) |
-| Багов зафиксировано | 14 (все исправлены) |
-| Файлов создано | 20+ |
-| Файлов изменено | 10+ |
-| Коммитов | 25+ |
-| Откатов | 1 (asmdef инцидент) |
-| Тегов бэкапа | 5 |
-
----
-
-### 1.8 Сетевая инфраструктура (базовая) ✅ ЗАВЕРШЕНО
-- ✅ NetworkManagerController — управление подключениями
-- ✅ NetworkPlayer — синхронизация игрока
-- ✅ NetworkUI — UI подключения (Disconnect кнопка по центру)
-- ✅ Host + Client — синхронизация движения, камеры, инвентаря, кораблей
-- ✅ Кооп-корабли — несколько игроков, усреднение ввода
-- ✅ Обработка обрывов соединения (OnClientDisconnectCallback, OnTransportFailure)
-- ⏳ Полноценная синхронизация (Этап 2)
-
-### Что осталось в Этапе 1:
-> ⚠️ **Визуальные задачи перенесены в [Этап 2.5: Визуальный прототип](#этап-25-визуальный-прототип-недели-11-14--в-процессе)**
-
-- [ ] Доработка физики корабля (banking, инерция, плавность)
-- [ ] Система топлива (мезий)
-- [ ] Звуки двигателя, шагов, ветра
-- [ ] Слот 9 (центр) для ключевого предмета
-
-**Результат:** Оффлайн-билд с работающим перемещением, миром, инвентарём, сундуками и сетевым мультиплеером.
-
-**Версия:** `v0.0.11-disconnect-fix` (5 апреля 2026)
-
----
-
 ## Этап 2: Сетевой фундамент (Недели 7-10) ✅ ЗАВЕРШЁН
 **Цель:** Реализовать клиент-серверное взаимодействие.
 
@@ -570,7 +442,6 @@ FixedUpdate (сервер):
 ### Известные ограничения (pending):
 - ⏳ Визуальная задержка загрузки чанков в новых сценах
 - ⏳ Коррекция позиции отключена — требует полноценной реализации для мультиплеера
-- ⏳ Y спавна = 3000 (для тестирования) — вернуть к нормальному значению
 - ⏳ WorldSceneManager / ServerSceneManager / WorldStreamingManager / WorldChunkManager / FloatingOriginMP — написаны, но **не развёрнуты в сцене**. Фокус проекта сейчас — `WorldScene_0_0`, остальные 23 сцены — на потом.
 - ✅ **NPC+Quest v2 scene-placement rule (2026-06-07):** BootstrapScene = server infra ONLY (NetworkManager, [QuestServer], [QuestClientState], [ContractMetaBridge], ScenePlacedObjectSpawner, [QuestTracker], [QuestToast], [MarketWindow], [DialogWindow]). Game-world objects → `WorldScene_X_Z` (NPC `[Mira]`, chest, pickup, market zone, ships). Иначе scene-placed NetworkObject с `InScenePlacedSourceGlobalObjectIdHash == 0` → не спавнится NGO → NRE в RPC. Подробнее: `docs/Ships/INTEGRATION_SHIPS_TO_WORLD_0_0.md`.
 
@@ -615,7 +486,6 @@ FixedUpdate (сервер):
    - ⏳ Интеграция в NetworkPlayer (замена capsule)
 
 7. **UI и предметы:** ⏳
-   - ⏳ 8 иконок инвентаря (128×128, game-icons.net или нарисовать)
    - ⏳ 3D модель сундука (low-poly, анимация открытия)
    - ⏳ Модели ресурсов (мезий, антигравий, МНП)
 
@@ -730,7 +600,7 @@ FixedUpdate (сервер):
 - [`docs/TRADE_SYSTEM_RAG.md`](TRADE_SYSTEM_RAG.md) — ⭐⭐ RAG документация (архитектура, потоки, формулы)
 - [`docs/TRADE_DEBUG_GUIDE.md`](TRADE_DEBUG_GUIDE.md) — отладка (симптомы → решения)
 - [`docs/gdd/GDD_22_Economy_Trading.md`](gdd/GDD_22_Economy_Trading.md) — GDD экономики (v3.0)
-- [`docs/gdd/GDD_25_Trade_Routes.md`](gdd/GDD_25_Trade_Routes.md) — GDD маршрутов
+- [`docs/gdd/GDD_INDEX.md`](gdd/GDD_INDEX.md) — каталог всех GDD (включая GDD_25 Trade Routes, в работе)
 - [`docs/QWEN-UI-AGENTIC-SUMMARY.md`](QWEN-UI-AGENTIC-SUMMARY.md) — ⭐ UI система: полный отчёт спринтов 1-3
 
 **Известные проблемы (P0-P1):**
@@ -907,21 +777,6 @@ FixedUpdate (сервер):
    - Косметические предметы (скины, эффекты)
    - Боевой пропуск (без pay-to-win)
    - Донаты за поддержку развития
-
----
-
-## Критические риски и меры:
-1. **Сложность сетевой синхронизации физики**
-   → Начать с упрощенной модели, тестировать с первых недель.
-
-2. **Читеры в экономике**
-   → Вся критичная логика только на сервере, логирование действий.
-
-3. **Высокие требования к инфраструктуре**
-   → Использовать облачные решения (AWS GameLift, Azure PlayFab) для старта.
-
-4. **Перегрузка контентом**
-   → Фокус на минимально жизнеспособный продукт (MVP) для раннего доступа.
 
 ---
 

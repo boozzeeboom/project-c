@@ -134,6 +134,16 @@ namespace ProjectC.UI.Client
             if (_inventoryList != null)
                 _inventoryList.MarkDirtyRepaint();
 
+            // T-P19: schedule delayed repaint — UI Toolkit не пересчитывает layout
+            // при display: none → flex на вложенных flex-контейнерах.
+            // Без этого inventory-layout получает только 60% высоты от других табов.
+            if (_inventorySection != null)
+                _inventorySection.schedule.Execute(() =>
+                {
+                    if (_inventorySection != null) _inventorySection.MarkDirtyRepaint();
+                    if (_inventoryList != null) _inventoryList.MarkDirtyRepaint();
+                }).StartingIn(50);
+
             // Configure filters
             ConfigureInventoryFilters();
 

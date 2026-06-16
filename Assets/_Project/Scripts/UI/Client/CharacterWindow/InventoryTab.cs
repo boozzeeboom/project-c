@@ -115,11 +115,37 @@ namespace ProjectC.UI.Client
             // ---- Subscribe ----
             SubscribeInventory();
 
+            // T-P19: подписываемся на EquipmentClientState — чтобы кнопки НАДЕТЬ/СНЯТЬ
+            // обновлялись при изменении экипировки (без переоткрытия таба).
+            TrySubscribeEquipment();
+
             if (ProjectC.Items.Client.InventoryClientState.Instance == null)
             {
                 Debug.LogWarning("[InventoryTab] InventoryClientState.Instance == null на момент BuildUI — Update() lazy-подпишется");
             }
         }
+
+        /// <summary>
+        /// T-P19: подписка на EquipmentClientState.OnEquipmentUpdated для обновления кнопок.
+        /// </summary>
+        private void TrySubscribeEquipment()
+        {
+            if (_isEquipmentSubscribed) return;
+            var eq = ProjectC.Equipment.EquipmentClientState.Instance;
+            if (eq == null) return;
+            eq.OnEquipmentUpdated += OnEquipmentUpdated;
+            _isEquipmentSubscribed = true;
+            Debug.Log("[InventoryTab] Subscribed to EquipmentClientState.OnEquipmentUpdated");
+        }
+
+        private void OnEquipmentUpdated(ProjectC.Equipment.Dto.EquipmentSnapshotDto _snap)
+        {
+            // Обновляем кнопки НАДЕТЬ/СНЯТЬ в инвентаре при изменении экипировки
+            if (_inventoryList != null)
+                _inventoryList.RefreshItems();
+        }
+
+        private bool _isEquipmentSubscribed = false;
 
         /// <summary>
         /// Вызывается из CharacterWindow.SwitchTab когда активен "inventory".
@@ -186,26 +212,47 @@ namespace ProjectC.UI.Client
         /// </summary>
         public void Unsubscribe()
         {
-            if (!_isInventorySubscribed) return;
-            var invState = ProjectC.Items.Client.InventoryClientState.Instance;
-            if (invState == null) { _isInventorySubscribed = false; return; }
-            invState.OnSnapshotUpdated -= HandleInventorySnapshotUpdated;
-            invState.OnInventoryResult -= HandleInventoryResultReceived;
-            if (_inventoryList != null) _inventoryList.selectionChanged -= OnInventorySelectionChanged;
-            _isInventorySubscribed = false;
+            if (_isInventorySubscribed)
+            {
+                var invState = ProjectC.Items.Client.InventoryClientState.Instance;
+                if (invState != null)
+                {
+                    invState.OnSnapshotUpdated -= HandleInventorySnapshotUpdated;
+                    invState.OnInventoryResult -= HandleInventoryResultReceived;
+                }
+                if (_inventoryList != null) _inventoryList.selectionChanged -= OnInventorySelectionChanged;
+                _isInventorySubscribed = false;
+            }
+
+            // T-P19: отписка от EquipmentClientState
+            if (_isEquipmentSubscribed)
+            {
+                var eq = ProjectC.Equipment.EquipmentClientState.Instance;
+                if (eq != null) eq.OnEquipmentUpdated -= OnEquipmentUpdated;
+                _isEquipmentSubscribed = false;
+            }
         }
 
         /// <summary>
         /// Lazy-subscribe из CharacterWindow.Update (если Instance был null при BuildUI).
+        /// Также дозапрашиваем EquipmentClientState.
         /// </summary>
         public void TryLazySubscribe()
         {
-            if (_isInventorySubscribed) return;
-            var invState = ProjectC.Items.Client.InventoryClientState.Instance;
-            if (invState == null) return;
-            SubscribeInventory();
-            invState.RequestRefresh();
-            Debug.Log("[InventoryTab] Lazy-subscribed to InventoryClientState");
+            if (!_isInventorySubscribed)
+            {
+                var invState = ProjectC.Items.Client.InventoryClientState.Instance;
+                if (invState == null) return;
+                SubscribeInventory();
+                invState.RequestRefresh();
+                Debug.Log("[InventoryTab] Lazy-subscribed to InventoryClientState");
+            }
+
+            // T-P19: lazy-subscribe для EquipmentClientState
+            if (!_isEquipmentSubscribed)
+            {
+                TrySubscribeEquipment();
+            }
         }
 
         /// <summary>
@@ -467,7 +514,7 @@ namespace ProjectC.UI.Client
                 row.Q<Label>("row-type").text = ItemTypeNames.GetDisplayName(item.type);
                 row.Q<Label>("row-qty").text = $"×{item.quantity}";
 
-                // [НАДЕТЬ] кнопка — показываем для Equipment
+                // [НАДЕТЬ] / [СНЯТЬ] — только для Equipment
                 var equipBtn = row.Q<VisualElement>("row-equip-btn");
                 if (equipBtn == null) return;
 
@@ -475,13 +522,24 @@ namespace ProjectC.UI.Client
                 if (isEquipable)
                 {
                     equipBtn.style.display = DisplayStyle.Flex;
+
+                    // T-P19: проверяем — предмет уже надет?
+                    bool isEquipped = IsItemEquipped(item.itemId);
+                    var label = equipBtn.Q<Label>("row-equip-label");
+                    if (label != null) label.text = isEquipped ? "СНЯТЬ" : "НАДЕТЬ";
+                    equipBtn.RemoveFromClassList("equipped");
+                    if (isEquipped) equipBtn.AddToClassList("equipped");
+
                     string capturedDisplayName = item.displayName;
                     string capturedItemId = item.itemId;
+                    bool capturedIsEquipped = isEquipped;
                     equipBtn.UnregisterCallback<ClickEvent>(OnInventoryEquipBtnClick);
                     equipBtn.RegisterCallback<ClickEvent>(evt =>
                     {
-                        Debug.Log("!!!!! EQUIP FROM INVENTORY !!!!! name=" + capturedDisplayName);
-                        OnEquipFromInventoryClicked(capturedItemId, capturedDisplayName);
+                        if (capturedIsEquipped)
+                            OnUnequipFromInventoryClicked(capturedItemId, capturedDisplayName);
+                        else
+                            OnEquipFromInventoryClicked(capturedItemId, capturedDisplayName);
                         evt.StopPropagation();
                     });
                 }
@@ -494,8 +552,27 @@ namespace ProjectC.UI.Client
 
         private void OnInventoryEquipBtnClick(ClickEvent evt) { /* placeholder for Unregister */ }
 
+        /// <summary>
+        /// T-P19: проверяет, надет ли предмет с inventory itemId.
+        /// Смотрит EquipmentClientState.CurrentSnapshot — все 13 слотов.
+        /// </summary>
+        private bool IsItemEquipped(string itemIdStr)
+        {
+            if (!int.TryParse(itemIdStr, out int itemId)) return false;
+            var eq = ProjectC.Equipment.EquipmentClientState.Instance;
+            if (eq == null || !eq.CurrentSnapshot.HasValue) return false;
+            var equip = eq.CurrentSnapshot.Value.equip;
+            if (equip.slotItemIds == null) return false;
+            for (int i = 0; i < equip.slotItemIds.Length; i++)
+            {
+                if (equip.slotOccupied[i] == 1 && equip.slotItemIds[i] == itemId)
+                    return true;
+            }
+            return false;
+        }
+
         // ============================================================
-        // Equip from inventory (SESSION 2 fix)
+        // Equip/Unequip from inventory
         // ============================================================
 
         private void OnEquipFromInventoryClicked(string itemIdStr, string displayName)
@@ -504,7 +581,6 @@ namespace ProjectC.UI.Client
             {
                 if (!int.TryParse(itemIdStr, out int itemId)) return;
 
-                // Резолвим ItemData
                 ProjectC.Items.ItemData def = ProjectC.Items.InventoryWorld.Instance?.GetItemDefinition(itemId);
                 if (def == null)
                 {
@@ -521,36 +597,106 @@ namespace ProjectC.UI.Client
                     return;
                 }
 
-                // Reflection RPC (stop-gap — будет заменён на прямой RPC в будущем тикете)
-                int dbItemId = -1;
-                var invDbField = typeof(ProjectC.Items.InventoryWorld).GetField("_itemDatabase",
-                    System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
-                var invDb = invDbField?.GetValue(ProjectC.Items.InventoryWorld.Instance)
-                    as Dictionary<int, ProjectC.Items.ItemData>;
-                if (invDb != null)
-                {
-                    foreach (var kvp in invDb)
-                    {
-                        if (kvp.Value == def) { dbItemId = kvp.Key; break; }
-                    }
-                }
-                if (dbItemId <= 0) { Debug.LogWarning("[InventoryTab] item not found in db"); return; }
+                // Resolve itemId in _itemDatabase (InventoryWorld uses definition IDs)
+                int dbItemId = ResolveDbItemId(def);
+                if (dbItemId <= 0) return;
 
-                var t = System.Type.GetType("ProjectC.Equipment.EquipmentServer, Assembly-CSharp");
-                if (t == null) { Debug.LogWarning("[InventoryTab] EquipmentServer type not found"); return; }
-                var inst = t.GetProperty("Instance",
-                    System.Reflection.BindingFlags.Public | System.Reflection.BindingFlags.Static)?.GetValue(null);
-                if (inst == null) { Debug.LogWarning("[InventoryTab] EquipmentServer.Instance is null"); return; }
-                var mi = t.GetMethod("RequestEquipRpc");
-                if (mi == null) { Debug.LogWarning("[InventoryTab] RequestEquipRpc not found"); return; }
-                var rpcParams = System.Activator.CreateInstance(typeof(Unity.Netcode.RpcParams));
-                mi.Invoke(inst, new object[] { dbItemId, slot, rpcParams });
-                Debug.Log($"[InventoryTab] RequestEquipRpc: itemId={dbItemId} slot={slot} name={def.itemName}");
+                CallEquipRpc(dbItemId, slot, def.itemName);
             }
             catch (System.Exception ex)
             {
                 Debug.LogWarning($"[InventoryTab] OnEquipFromInventoryClicked error: {ex.Message}");
             }
+        }
+
+        /// <summary>
+        /// T-P19: снять предмет. Находит слот в котором предмет надет,
+        /// вызывает RequestUnequipRpc.
+        /// </summary>
+        private void OnUnequipFromInventoryClicked(string itemIdStr, string displayName)
+        {
+            try
+            {
+                if (!int.TryParse(itemIdStr, out int itemId)) return;
+
+                // Находим слот в котором надет предмет
+                ProjectC.Equipment.EquipSlot slot = FindEquippedSlot(itemId);
+                if (slot == ProjectC.Equipment.EquipSlot.None)
+                {
+                    Debug.LogWarning("[InventoryTab] item not equipped in any slot");
+                    return;
+                }
+
+                CallUnequipRpc(slot, displayName);
+            }
+            catch (System.Exception ex)
+            {
+                Debug.LogWarning($"[InventoryTab] OnUnequipFromInventoryClicked error: {ex.Message}");
+            }
+        }
+
+        /// <summary>
+        /// T-P19: найти слот в котором надет itemId.
+        /// </summary>
+        private ProjectC.Equipment.EquipSlot FindEquippedSlot(int itemId)
+        {
+            var eq = ProjectC.Equipment.EquipmentClientState.Instance;
+            if (eq == null || !eq.CurrentSnapshot.HasValue) return ProjectC.Equipment.EquipSlot.None;
+            var equip = eq.CurrentSnapshot.Value.equip;
+            if (equip.slotItemIds == null) return ProjectC.Equipment.EquipSlot.None;
+            for (int i = 0; i < equip.slotItemIds.Length; i++)
+            {
+                if (equip.slotOccupied[i] == 1 && equip.slotItemIds[i] == itemId)
+                    return ProjectC.Equipment.EquipmentData.IndexToSlot(i);
+            }
+            return ProjectC.Equipment.EquipSlot.None;
+        }
+
+        // Shared helpers
+
+        private int ResolveDbItemId(ProjectC.Items.ItemData def)
+        {
+            var invDbField = typeof(ProjectC.Items.InventoryWorld).GetField("_itemDatabase",
+                System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
+            var invDb = invDbField?.GetValue(ProjectC.Items.InventoryWorld.Instance)
+                as System.Collections.Generic.Dictionary<int, ProjectC.Items.ItemData>;
+            if (invDb != null)
+            {
+                foreach (var kvp in invDb)
+                {
+                    if (kvp.Value == def) return kvp.Key;
+                }
+            }
+            Debug.LogWarning("[InventoryTab] item not found in db");
+            return -1;
+        }
+
+        private void CallEquipRpc(int dbItemId, ProjectC.Equipment.EquipSlot slot, string itemName)
+        {
+            var t = System.Type.GetType("ProjectC.Equipment.EquipmentServer, Assembly-CSharp");
+            if (t == null) { Debug.LogWarning("[InventoryTab] EquipmentServer type not found"); return; }
+            var inst = t.GetProperty("Instance",
+                System.Reflection.BindingFlags.Public | System.Reflection.BindingFlags.Static)?.GetValue(null);
+            if (inst == null) { Debug.LogWarning("[InventoryTab] EquipmentServer.Instance is null"); return; }
+            var mi = t.GetMethod("RequestEquipRpc");
+            if (mi == null) { Debug.LogWarning("[InventoryTab] RequestEquipRpc not found"); return; }
+            var rpcParams = System.Activator.CreateInstance(typeof(Unity.Netcode.RpcParams));
+            mi.Invoke(inst, new object[] { dbItemId, slot, rpcParams });
+            Debug.Log($"[InventoryTab] RequestEquipRpc: itemId={dbItemId} slot={slot} name={itemName}");
+        }
+
+        private void CallUnequipRpc(ProjectC.Equipment.EquipSlot slot, string itemName)
+        {
+            var t = System.Type.GetType("ProjectC.Equipment.EquipmentServer, Assembly-CSharp");
+            if (t == null) { Debug.LogWarning("[InventoryTab] EquipmentServer type not found"); return; }
+            var inst = t.GetProperty("Instance",
+                System.Reflection.BindingFlags.Public | System.Reflection.BindingFlags.Static)?.GetValue(null);
+            if (inst == null) { Debug.LogWarning("[InventoryTab] EquipmentServer.Instance is null"); return; }
+            var mi = t.GetMethod("RequestUnequipRpc");
+            if (mi == null) { Debug.LogWarning("[InventoryTab] RequestUnequipRpc not found"); return; }
+            var rpcParams = System.Activator.CreateInstance(typeof(Unity.Netcode.RpcParams));
+            mi.Invoke(inst, new object[] { slot, rpcParams });
+            Debug.Log($"[InventoryTab] RequestUnequipRpc: slot={slot} name={itemName}");
         }
 
         // ============================================================

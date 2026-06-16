@@ -1039,14 +1039,15 @@ namespace ProjectC.UI.Client
                     for (int i = 0; i < entries.Length; i++)
                     {
                         var e = entries[i];
-                        // Цвет: positive=green-ish, negative=red-ish, zero=gray.
+                        // T-P19: красивое имя вместо raw npcId
+                        string displayName = FormatNpcDisplayName(e.npcId);
                         Color c = e.value > 0
                             ? new Color(0.5f, 0.85f, 0.5f)
                             : (e.value < 0 ? new Color(0.95f, 0.4f, 0.4f) : new Color(0.7f, 0.7f, 0.7f));
                         _npcAttitudeCache.Add(new NpcAttitudeListItem
                         {
                             npcId = e.npcId,
-                            displayName = string.IsNullOrEmpty(e.npcId) ? "?" : e.npcId,
+                            displayName = displayName,
                             value = e.value,
                             color = c
                         });
@@ -1058,6 +1059,24 @@ namespace ProjectC.UI.Client
                 _npcAttitudeList.itemsSource = _npcAttitudeCache;
                 _npcAttitudeList.Rebuild();
             }
+        }
+
+        /// <summary>T-P19: форматирует npcId в читаемое имя.</summary>
+        private static string FormatNpcDisplayName(string npcId)
+        {
+            if (string.IsNullOrEmpty(npcId)) return "?";
+            // Пытаемся загрузить NpcDefinition (если есть ассеты)
+            var def = Resources.Load<ProjectC.Quests.NpcDefinition>("Quests/Npcs/" + npcId);
+            if (def != null && !string.IsNullOrEmpty(def.displayName))
+                return def.displayName;
+            // Fallback: читабельный формат — "mira_01" → "Mira 01"
+            var parts = npcId.Split('_');
+            for (int j = 0; j < parts.Length; j++)
+            {
+                if (parts[j].Length > 0)
+                    parts[j] = char.ToUpper(parts[j][0]) + parts[j].Substring(1);
+            }
+            return string.Join(" ", parts);
         }
 
         // ============================================================
@@ -1481,10 +1500,27 @@ namespace ProjectC.UI.Client
         {
             var row = new VisualElement();
             row.AddToClassList("reputation-row");
-            var faction = new Label { name = "row-faction" }; faction.AddToClassList("reputation-faction"); row.Add(faction);
-            var bar     = new VisualElement { name = "row-bar" }; bar.AddToClassList("reputation-bar"); row.Add(bar);
-            var fill    = new VisualElement { name = "row-fill" }; fill.AddToClassList("reputation-fill"); bar.Add(fill);
-            var value   = new Label { name = "row-value" }; value.AddToClassList("reputation-value"); row.Add(value);
+            var faction = new Label { name = "rep-faction" };
+            faction.AddToClassList("rep-faction");
+            row.Add(faction);
+            var bar = new VisualElement { name = "rep-bar" };
+            bar.AddToClassList("rep-bar");
+            row.Add(bar);
+            var negFill = new VisualElement { name = "rep-neg" };
+            negFill.AddToClassList("rep-bar-neg");
+            bar.Add(negFill);
+            var center = new VisualElement { name = "rep-center" };
+            center.AddToClassList("rep-bar-center");
+            bar.Add(center);
+            var posFill = new VisualElement { name = "rep-pos" };
+            posFill.AddToClassList("rep-bar-pos");
+            bar.Add(posFill);
+            var spacer = new VisualElement();
+            spacer.AddToClassList("rep-bar-spacer");
+            bar.Add(spacer);
+            var value = new Label { name = "rep-value" };
+            value.AddToClassList("rep-value");
+            row.Add(value);
             return row;
         }
 
@@ -1495,25 +1531,54 @@ namespace ProjectC.UI.Client
             if (src == null || index < 0 || index >= src.Count) return;
             var r = src[index];
 
-            row.Q<Label>("row-faction").text = r.displayName;
-            row.Q<Label>("row-value").text   = (r.value > 0 ? "+" : "") + r.value.ToString();
+            row.Q<Label>("rep-faction").text = r.displayName;
+            row.Q<Label>("rep-value").text   = (r.value > 0 ? "+" : "") + r.value.ToString();
 
-            // Bar width: 0..100% = -100..+100 → 50% = 0, 0% = -100, 100% = +100
-            float pct = Mathf.Clamp01((r.value + 100f) / 200f) * 100f;
-            var fill = row.Q<VisualElement>("row-fill");
-            fill.style.width = new Length(pct, LengthUnit.Percent);
-            fill.style.backgroundColor = r.color;
+            // Bar: center-zero, negative=red (left), positive=green (right).
+            // Диапазон -100..+100 → 200 единиц, 0 = 50% от ширины бара.
+            var negFill = row.Q<VisualElement>("rep-neg");
+            var posFill = row.Q<VisualElement>("rep-pos");
+            if (r.value < 0)
+            {
+                float negPct = Mathf.Clamp01(Mathf.Abs(r.value) / 100f) * 50f;
+                negFill.style.width = new Length(negPct, LengthUnit.Percent);
+                negFill.style.backgroundColor = new Color(0.85f, 0.2f, 0.2f);
+                posFill.style.width = new Length(0, LengthUnit.Percent);
+            }
+            else
+            {
+                negFill.style.width = new Length(0, LengthUnit.Percent);
+                float posPct = Mathf.Clamp01(r.value / 100f) * 50f;
+                posFill.style.width = new Length(posPct, LengthUnit.Percent);
+                posFill.style.backgroundColor = new Color(0.2f, 0.85f, 0.2f);
+            }
         }
 
         // T-Q13: NpcAttitude row factory + binder.
         private VisualElement MakeNpcAttitudeRow()
         {
-            var row = new VisualElement { name = "npc-attitude-row" };
+            var row = new VisualElement();
             row.AddToClassList("npc-attitude-row");
-            var name  = new Label { name = "row-npc-name" }; name.AddToClassList("npc-attitude-name"); row.Add(name);
-            var value = new Label { name = "row-npc-value" }; value.AddToClassList("npc-attitude-value"); row.Add(value);
-            var bar   = new VisualElement { name = "row-npc-bar" }; bar.AddToClassList("npc-attitude-bar"); row.Add(bar);
-            var fill  = new VisualElement { name = "row-npc-fill" }; fill.AddToClassList("npc-attitude-fill"); bar.Add(fill);
+            var name  = new Label { name = "npc-att-name" }; name.AddToClassList("npc-att-name"); row.Add(name);
+            // Center-zero bar (как reputation, но диапазон -100..+200)
+            var bar = new VisualElement { name = "npc-att-bar" };
+            bar.AddToClassList("rep-bar");
+            row.Add(bar);
+            var negFill = new VisualElement { name = "npc-att-neg" };
+            negFill.AddToClassList("rep-bar-neg");
+            bar.Add(negFill);
+            var center = new VisualElement { name = "npc-att-center" };
+            center.AddToClassList("rep-bar-center");
+            bar.Add(center);
+            var posFill = new VisualElement { name = "npc-att-pos" };
+            posFill.AddToClassList("rep-bar-pos");
+            bar.Add(posFill);
+            var spacer = new VisualElement();
+            spacer.AddToClassList("rep-bar-spacer");
+            bar.Add(spacer);
+            var value = new Label { name = "npc-att-value" };
+            value.AddToClassList("rep-value");
+            row.Add(value);
             return row;
         }
 
@@ -1524,14 +1589,28 @@ namespace ProjectC.UI.Client
             if (src == null || index < 0 || index >= src.Count) return;
             var r = src[index];
 
-            row.Q<Label>("row-npc-name").text = r.displayName;
-            row.Q<Label>("row-npc-value").text = (r.value > 0 ? "+" : "") + r.value.ToString();
+            row.Q<Label>("npc-att-name").text = r.displayName;
+            row.Q<Label>("npc-att-value").text = (r.value > 0 ? "+" : "") + r.value.ToString();
 
-            // Bar width: 0..100% = -100..+200 → 33% = 0, 0% = -100, 100% = +200
-            float pct = Mathf.Clamp01((r.value + 100f) / 300f) * 100f;
-            var fill = row.Q<VisualElement>("row-npc-fill");
-            fill.style.width = new Length(pct, LengthUnit.Percent);
-            fill.style.backgroundColor = r.color;
+            // Bar: -100..+200 → 300 единиц, 0 = 33.33% от ширины.
+            var negFill = row.Q<VisualElement>("npc-att-neg");
+            var posFill = row.Q<VisualElement>("npc-att-pos");
+            float total = 300f;
+            float zeroPct = 100f / total; // 33.33%
+            if (r.value < 0)
+            {
+                float negPct = Mathf.Clamp01(Mathf.Abs(r.value) / total) * 100f;
+                negFill.style.width = new Length(negPct, LengthUnit.Percent);
+                negFill.style.backgroundColor = new Color(0.85f, 0.25f, 0.25f);
+                posFill.style.width = new Length(0, LengthUnit.Percent);
+            }
+            else
+            {
+                negFill.style.width = new Length(0, LengthUnit.Percent);
+                float posPct = Mathf.Clamp01(r.value / total) * 100f;
+                posFill.style.width = new Length(posPct, LengthUnit.Percent);
+                posFill.style.backgroundColor = new Color(0.25f, 0.85f, 0.25f);
+            }
         }
 
         // ============================================================

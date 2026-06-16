@@ -78,8 +78,8 @@
     flex-shrink: 0 !important;
     display: flex !important;
 }
-.filter-dd { flex-grow: 1 !important; margin-right: 4px !important; min-height: 18px !important; }
-.filter-search { width: 100px !important; min-height: 18px !important; }
+.filter-dd { flex-grow: 1 !important; margin-right: 4px !important; min-height: 18px !important; height: 18px !important; font-size: 9px !important; }
+.filter-search { width: 100px !important; min-height: 18px !important; height: 18px !important; font-size: 9px !important; }
 
 /* === Section base === */
 .list-section {

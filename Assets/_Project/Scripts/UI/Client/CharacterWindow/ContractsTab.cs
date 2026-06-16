@@ -124,6 +124,14 @@ namespace ProjectC.UI.Client
 
             ConfigureContractFilters();
             ApplyContractFilters();
+
+            // BUGFIX T-P19: запрашиваем свежий snapshot при каждом открытии таба.
+            // Если мы уже подписаны (имеем Instance), RequestList обновит кэш.
+            if (_contractState != null)
+            {
+                var nearestZone = MarketZoneRegistry.LocalPlayerZone;
+                if (nearestZone != null) _contractState.RequestList(nearestZone.LocationId);
+            }
         }
 
         public void OnTabHidden()

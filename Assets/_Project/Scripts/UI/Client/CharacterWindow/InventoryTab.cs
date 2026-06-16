@@ -137,6 +137,26 @@ namespace ProjectC.UI.Client
             // Configure filters
             ConfigureInventoryFilters();
 
+            // BUGFIX T-P19: RequestRefresh при каждом открытии таба.
+            // InventoryClientState.CurrentSnapshot может быть пуст (ни один UI не запросил snapshot).
+            // TAB-колесо (InventoryUI) это делает, но CharacterWindow должен сам.
+            var invState = ProjectC.Items.Client.InventoryClientState.Instance;
+            if (invState != null)
+            {
+                if (_isInventorySubscribed)
+                {
+                    invState.RequestRefresh();
+                    Debug.Log("[InventoryTab] OnTabShown: RequestRefresh");
+                }
+                else
+                {
+                    // Не подписаны — подписываемся и запрашиваем
+                    SubscribeInventory();
+                    invState.RequestRefresh();
+                    Debug.Log("[InventoryTab] OnTabShown: Subscribe + RequestRefresh");
+                }
+            }
+
             // Refresh data
             RefreshInventoryCache();
             ApplyInventoryFilters();
@@ -263,7 +283,9 @@ namespace ProjectC.UI.Client
             var invState = ProjectC.Items.Client.InventoryClientState.Instance;
             if (invState == null || !invState.CurrentSnapshot.HasValue)
             {
-                SyncListView(itemsSourceNull: true);
+                // Данных ещё нет — пустой кэш. UI покажет пустой список.
+                // СESSION 2 ROLLBACK: вернулись к ListView (было рабочее)
+                SyncListView();
                 return;
             }
 
@@ -271,7 +293,7 @@ namespace ProjectC.UI.Client
             var items = snap.items;
             if (items == null)
             {
-                SyncListView(itemsSourceNull: true);
+                SyncListView();
                 return;
             }
 
@@ -314,14 +336,14 @@ namespace ProjectC.UI.Client
             SyncListView();
         }
 
-        private void SyncListView(bool itemsSourceNull = false)
+        private void SyncListView()
         {
             if (_inventoryList == null) return;
-            if (itemsSourceNull)
-            {
-                if (!ReferenceEquals(_inventoryList.itemsSource, _inventoryCache))
-                    _inventoryList.itemsSource = _inventoryCache;
-            }
+            // BUGFIX T-P19: ВСЕГДА проверяем itemsSource, не только при itemsSourceNull=true.
+            // Без этого после первого пустого кэша itemsSource остаётся пустым списком,
+            // и RefreshItems() ничего не показывает.
+            if (!ReferenceEquals(_inventoryList.itemsSource, _inventoryCache))
+                _inventoryList.itemsSource = _inventoryCache;
             _inventoryList.RefreshItems();
         }
 

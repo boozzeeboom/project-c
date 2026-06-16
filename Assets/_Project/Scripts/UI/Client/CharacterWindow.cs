@@ -595,6 +595,11 @@ namespace ProjectC.UI.Client
             _contractsTab.BuildUI(this, _root, _filterSource, _filterState, _filterSearch,
                 _creditsLabel, _messageLabel);
 
+            // T-P19: InventoryTab вынесен — BuildUI делает ListView + detail labels + подписку.
+            _inventoryTab = new InventoryTab();
+            _inventoryTab.BuildUI(this, _root, _filterSource, _filterState, _filterSearch,
+                _creditsLabel, _messageLabel, _statCredits);
+
             // T-Q13: NpcAttitude + Reputation listviews (остаются в CharacterWindow)
             if (_reputationList != null)
             {

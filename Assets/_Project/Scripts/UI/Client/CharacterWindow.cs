@@ -661,6 +661,14 @@ namespace ProjectC.UI.Client
                     else if (_activeTab == "inventory" && _inventoryTab != null) _inventoryTab.ApplyFilters();
                 });
             }
+            // T-P19: dropdown source (тип предмета) — триггерит ApplyFilters для инвентаря
+            if (_filterSource != null)
+            {
+                _filterSource.RegisterValueChangedCallback(evt =>
+                {
+                    if (_activeTab == "inventory" && _inventoryTab != null) _inventoryTab.ApplyFilters();
+                });
+            }
 
             // T-P19: ContractClientState subscription переехал в ContractsTab.BuildUI.
             // InventoryClientState subscription — в InventoryTab.BuildUI.
@@ -755,10 +763,10 @@ namespace ProjectC.UI.Client
         SetActiveTabVisual(_tabQuests, isQuests);
 
         // ---- Filters visibility + options ----
-        // SESSION 2 fix: filters — ТОЛЬКО для контрактов, не для инвентаря.
+        // T-P19: фильтры показаны для контрактов И для инвентаря
         if (_filtersRow != null)
         {
-            bool showFilters = isContracts;
+            bool showFilters = isContracts || isInventory;
             _filtersRow.style.display = showFilters ? DisplayStyle.Flex : DisplayStyle.None;
         }
         if (isContracts)

@@ -309,28 +309,41 @@ namespace ProjectC.UI.Client
             }
 
             // T-P19: сортировка по (ItemType, displayName) — категории сгруппированы,
-            // внутри категории — алфавитный порядок.
-            var sortedGroups = groups
-                .Select(kvp => new { kvp.Key, Value = kvp.Value })
-                .OrderBy(x => (int)x.Value.first.type)
-                .ThenBy(x =>
-                {
-                    var def = invState.GetItemDefinition(x.Value.first.itemId);
-                    return def != null ? def.itemName : $"Item#{x.Value.first.itemId}";
-                }, System.StringComparer.OrdinalIgnoreCase);
-
-            foreach (var entry in sortedGroups)
+            // внутри категории — алфавитный порядок. Сначала заполняем _inventoryCache,
+            // потом сортируем in-place в конце (LINQ OrderBy может иметь ленивую оценку).
+            foreach (var kvp in groups)
             {
-                var first = entry.Value.first;
+                var first = kvp.Value.first;
                 ItemData def = invState.GetItemDefinition(first.itemId);
                 _inventoryCache.Add(new InventoryListItem
                 {
                     itemId = first.itemId.ToString(),
                     displayName = def != null ? def.itemName : $"Item#{first.itemId}",
                     type = (ItemType)first.type,
-                    quantity = entry.Value.totalQty,
+                    quantity = kvp.Value.totalQty,
                     icon = def != null ? def.icon : null,
                 });
+            }
+
+            // T-P19: in-place Sort гарантирует порядок в самом списке
+            _inventoryCache.Sort((a, b) =>
+            {
+                int typeCmp = ((int)a.type).CompareTo((int)b.type);
+                if (typeCmp != 0) return typeCmp;
+                return string.Compare(a.displayName, b.displayName, System.StringComparison.OrdinalIgnoreCase);
+            });
+
+            // DIAG T-P19: выводим порядок сортировки
+            if (_inventoryCache.Count > 0)
+            {
+                var diag = new System.Text.StringBuilder();
+                diag.Append("[InventoryTab] Sorted items: ");
+                for (int i = 0; i < _inventoryCache.Count && i < 20; i++)
+                {
+                    var it = _inventoryCache[i];
+                    diag.Append($"#{i}={it.displayName}(type={(int)it.type}) ");
+                }
+                Debug.Log(diag.ToString());
             }
 
             SyncListView();

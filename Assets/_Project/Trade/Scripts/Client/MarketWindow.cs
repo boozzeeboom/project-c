@@ -460,15 +460,18 @@ namespace ProjectC.Trade.Client
             // даже вне зоны MarketZone. Открытие теперь идёт ТОЛЬКО через NetworkPlayer
             // → MarketInteractor.TryOpenMarket() (только в зоне).
             // Здесь оставлен только Esc для закрытия открытого окна.
-            var nm = Unity.Netcode.NetworkManager.Singleton;
-            if (nm == null || !nm.IsListening) return;
-            if (!nm.IsClient && !nm.IsServer) return;
-
+            // BUGFIX T-P19: Esc проверяем ДО guard'а NetworkManager — окно должно
+            // закрываться Esc независимо от состояния сети.
             var kb = UnityEngine.InputSystem.Keyboard.current;
             if (kb != null && kb.escapeKey.wasPressedThisFrame && IsVisible())
             {
                 Hide();
+                return;
             }
+
+            var nm = Unity.Netcode.NetworkManager.Singleton;
+            if (nm == null || !nm.IsListening) return;
+            if (!nm.IsClient && !nm.IsServer) return;
         }
 
         // ========================================================

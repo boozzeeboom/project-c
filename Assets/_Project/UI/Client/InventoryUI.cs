@@ -129,6 +129,13 @@ namespace ProjectC.UI.Client
             {
                 TrySubscribeToClientState();
             }
+
+            // BUGFIX T-P19: Esc закрывает TAB-колесо
+            var kb = UnityEngine.InputSystem.Keyboard.current;
+            if (kb != null && kb.escapeKey.wasPressedThisFrame && IsVisible())
+            {
+                SetVisible(false);
+            }
         }
 
         // ============================================================

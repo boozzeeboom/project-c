@@ -161,6 +161,9 @@ namespace ProjectC.UI.Client
         private int _selectedContractItem = -1;
         private int _selectedInventoryItem = -1;
 
+        // T-P19: ContractsTab — вынесенная вкладка контрактов
+        private ContractsTab _contractsTab;
+
         private ContractDto[] _contractsCache = Array.Empty<ContractDto>();
         [Obsolete("Переехало в InventoryTab._inventoryCache — удалить при следующем рефакторе")]
         private List<InventoryListItem> _inventoryCache = new List<InventoryListItem>();
@@ -308,6 +311,8 @@ namespace ProjectC.UI.Client
         // Старая версия делала bare -=, и если подписки не было — flag оставался неверным.
         // T-P19: Inventory переехал в InventoryTab.
         if (_inventoryTab != null) _inventoryTab.Unsubscribe();
+        // T-P19: Contracts переехал в ContractsTab.
+        if (_contractsTab != null) _contractsTab.Unsubscribe();
         // T-Q11: Unsubscribe QuestClientState (3 события).
         UnsubscribeQuestState();
         // T-Q13: Unsubscribe Reputation + NpcAttitude singletons.
@@ -582,37 +587,20 @@ namespace ProjectC.UI.Client
 
             // ---- Action buttons ----
             if (_closeBtn != null) _closeBtn.clicked += OnCloseClicked;
-            if (_acceptBtn != null) _acceptBtn.clicked += OnAcceptContractClicked;
-            if (_completeBtn != null) _completeBtn.clicked += OnCompleteContractClicked;
-            if (_failBtn != null) _failBtn.clicked += OnFailContractClicked;
             if (_acceptQuestBtn != null) _acceptQuestBtn.clicked += OnAcceptQuestClicked;
+            // T-P19: Accept/Complete/Fail для контрактов переехали в ContractsTab.BuildUI
 
-            // ---- ListView: Contracts (re-use MarketWindow factory) ----
-            if (_contractsList != null)
-            {
-                _contractsList.makeItem      = MakeContractRow;
-                _contractsList.bindItem      = BindContractRow;
-                _contractsList.fixedItemHeight = 32;
-                _contractsList.selectionType = SelectionType.Single;
-                _contractsList.selectedIndex = -1;
-                _contractsList.selectionChanged += selectedItems =>
-                {
-                    _selectedContractItem = FindSelectedItemIndex<ContractDto>(_contractsList, selectedItems);
-                    _contractsList.Rebuild();
-                };
-            }
-            // T-P19: InventoryTab вынесен в отдельный класс — BuildUI делает всё:
-            // ListView setup, detail labels, подписка.
-            _inventoryTab = new InventoryTab();
-            _inventoryTab.BuildUI(this, _root, _filterSource, _filterState, _filterSearch,
-                _creditsLabel, _messageLabel, _statCredits);
+            // T-P19: ContractsTab вынесен — BuildUI делает ListView setup + подписку + кнопки.
+            _contractsTab = new ContractsTab();
+            _contractsTab.BuildUI(this, _root, _filterSource, _filterState, _filterSearch,
+                _creditsLabel, _messageLabel);
 
-            // ---- ListView: Reputation (новый) ----
+            // T-Q13: NpcAttitude + Reputation listviews (остаются в CharacterWindow)
             if (_reputationList != null)
             {
-            _reputationList.makeItem = MakeReputationRow;
-            _reputationList.bindItem = BindReputationRow;
-            _reputationList.fixedItemHeight =32;
+                _reputationList.makeItem = MakeReputationRow;
+                _reputationList.bindItem = BindReputationRow;
+                _reputationList.fixedItemHeight = 32;
             }
 
             // ---- ListView: NpcAttitude (T-Q13, под-секция "Отношения к NPC") ----
@@ -659,34 +647,18 @@ namespace ProjectC.UI.Client
             InitSkillsCache();
             RebuildSkillsListView();
 
-            // ---- Filters (options зависят от активного таба — см. SwitchTab) ----
+            // ---- Filter change callback (общий для Contracts и Inventory) ----
             if (_filterSearch != null)
             {
                 _filterSearch.RegisterValueChangedCallback(evt =>
                 {
-                    if (_activeTab == "contracts") ApplyContractFilters();
+                    if (_activeTab == "contracts" && _contractsTab != null) _contractsTab.ApplyFilters();
                     else if (_activeTab == "inventory" && _inventoryTab != null) _inventoryTab.ApplyFilters();
                 });
             }
 
-            // ---- Subscribe to ContractClientState (re-use MarketWindow pattern) ----
-            _contractState = ContractClientState.Instance;
-            if (_contractState == null)
-            {
-                Debug.LogWarning("[CharacterWindow] ContractClientState.Instance == null, таб 'Контракты' не будет обновляться (нормально до StartHost)");
-            }
-            else
-            {
-                _contractState.OnSnapshotUpdated += HandleContractSnapshot;
-                _contractState.OnContractResult  += HandleContractResult;
-                // Если игрок уже в зоне рынка — попросить свежий snapshot.
-                // Безопасно: ContractClientState.RequestList сам фильтрует null/NotInZone.
-                var nearestZone = MarketZoneRegistry.LocalPlayerZone;
-                if (nearestZone != null) _contractState.RequestList(nearestZone.LocationId);
-            }
-
-            // T-P19: SubscribeInventory + lazy-subscribe переехали в InventoryTab.BuildUI.
-            // InventoryClientState может быть null до StartHost — BuildUI выведет warning, Update() lazy-подпишет.
+            // T-P19: ContractClientState subscription переехал в ContractsTab.BuildUI.
+            // InventoryClientState subscription — в InventoryTab.BuildUI.
 
             // T-Q13: subscribe to ReputationClientState + NpcAttitudeClientState (idempotent).
             // Синглтоны создаются scene-placed в BootstrapScene (рядом с [QuestClientState]).
@@ -751,26 +723,25 @@ namespace ProjectC.UI.Client
         if (_characterSection != null) _characterSection.style.display = isCharacter ? DisplayStyle.Flex : DisplayStyle.None;
         if (_shipSection != null) _shipSection.style.display = isShip ? DisplayStyle.Flex : DisplayStyle.None;
         if (_reputationSection != null) _reputationSection.style.display = isReputation ? DisplayStyle.Flex : DisplayStyle.None;
+        // T-P19: Contracts/Inventory/Quests display переехали в табы
         if (_contractsSection != null) _contractsSection.style.display = isContracts ? DisplayStyle.Flex : DisplayStyle.None;
         if (_inventorySection != null) _inventorySection.style.display = isInventory ? DisplayStyle.Flex : DisplayStyle.None;
         if (_questsSection != null) _questsSection.style.display = isQuests ? DisplayStyle.Flex : DisplayStyle.None;
 
-        // BUGFIX2026-06-05: display: none → flex на ListView в первый раз
-        // не вызывает повторный layout — нужно принудительно MarkDirtyRepaint
-        // (иначе строки не отрисованы до следующего toggle). UI Toolkit pitfall.
+        // BUGFIX: display: none → flex — MarkDirtyRepaint через табы
+        if (isContracts && _contractsTab != null) {
+            _contractsTab.OnTabShown();
+        }
         if (isInventory && _inventoryTab != null) {
             _inventoryTab.OnTabShown();
         }
         if (isQuests)
         {
-        // T-Q11: все4 quest ListView требуют re-paint после первого display:flex.
         if (_questsActiveList != null) _questsActiveList.MarkDirtyRepaint();
         if (_questsCompletedList != null) _questsCompletedList.MarkDirtyRepaint();
         if (_questsFailedList != null) _questsFailedList.MarkDirtyRepaint();
         if (_questsDiscoveredList != null) _questsDiscoveredList.MarkDirtyRepaint();
         }
-
-        // ---- Active tab visual ----
         SetActiveTabVisual(_tabCharacter, isCharacter);
         SetActiveTabVisual(_tabShip, isShip);
         SetActiveTabVisual(_tabReputation, isReputation);
@@ -787,15 +758,12 @@ namespace ProjectC.UI.Client
         }
         if (isContracts)
         {
-        ConfigureContractFilters();
+        // T-P19: ConfigureContractFilters, ApplyContractFilters — в ContractsTab.OnTabShown
         }
-        // T-P19: ConfigureInventoryFilters, RefreshInventoryCache, ApplyInventoryFilters
-        // переехали в InventoryTab.OnTabShown. Убрано из SwitchTab.
+        // T-P19: Inventory filters — в InventoryTab.OnTabShown
 
         // ---- Action buttons ----
-        if (_acceptBtn != null) _acceptBtn.style.display = isContracts ? DisplayStyle.Flex : DisplayStyle.None;
-        if (_completeBtn != null) _completeBtn.style.display = isContracts ? DisplayStyle.Flex : DisplayStyle.None;
-        if (_failBtn != null) _failBtn.style.display = isContracts ? DisplayStyle.Flex : DisplayStyle.None;
+        // T-P19: accept/complete/fail кнопки — переехали в ContractsTab.BuildUI
         if (_acceptQuestBtn != null) _acceptQuestBtn.style.display = isQuests ? DisplayStyle.Flex : DisplayStyle.None;
         if (_closeBtn != null) _closeBtn.style.display = DisplayStyle.Flex; // всегда
 
@@ -803,8 +771,7 @@ namespace ProjectC.UI.Client
         if (isCharacter) RefreshCharacterStats();
         if (isShip) RefreshShipStats();
         if (isReputation) { RefreshReputationCache(); RefreshNpcAttitudeCache(); }
-        // T-P19: Inventory refresh переехал в InventoryTab.OnTabShown
-        if (isContracts) ApplyContractFilters();
+        // T-P19: Contracts/Inventory refresh — в OnTabShown табов
         if (isQuests) RefreshQuestsCache();
         }
 

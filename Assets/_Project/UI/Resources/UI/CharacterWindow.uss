@@ -108,7 +108,8 @@
     border-radius: 3px !important;
     margin-bottom: 4px !important;
 }
-.item-list:last-of-type { margin-bottom: 0 !important; }
+/* UI Toolkit не поддерживает :last-child/:last-of-type. Для quests и reputation
+   списки получают margin-bottom: 4px от .item-list — не критично. */
 
 /* T-P19: Inventory list — заполняет всю высоту pane, не 33%.
    .item-list выше имеет max-height: 33% — это для случаев когда в одном табе

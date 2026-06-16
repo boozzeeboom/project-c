@@ -59,6 +59,37 @@ namespace ProjectC.Equipment
 
         public bool HasEquipment(ulong clientId) => _perPlayer.ContainsKey(clientId);
 
+        /// <summary>
+        /// SESSION 2: effective stat bonuses from equipped items.
+        /// Sum across all slots of ClothingItemData/ModuleItemData bonuses.
+        /// Out: bonusStrength, bonusDexterity, bonusIntelligence (flat add).
+        /// </summary>
+        public void GetEquipStatBonuses(ulong clientId, out float bonusStrength, out float bonusDexterity, out float bonusIntelligence)
+        {
+            bonusStrength = 0f; bonusDexterity = 0f; bonusIntelligence = 0f;
+            var equip = GetEquipment(clientId);
+            var inv = ProjectC.Items.InventoryWorld.Instance;
+            if (inv == null) return;
+            for (int i = 0; i < equip.slotItemIds.Length; i++)
+            {
+                if (equip.slotOccupied[i] != 1) continue;
+                int itemId = equip.slotItemIds[i];
+                var data = inv.GetItemDefinition(itemId);
+                if (data is ProjectC.Equipment.ClothingItemData c)
+                {
+                    bonusStrength += c.strengthBonus;
+                    bonusDexterity += c.dexterityBonus;
+                    bonusIntelligence += c.intelligenceBonus;
+                }
+                else if (data is ProjectC.Equipment.ModuleItemData m)
+                {
+                    bonusStrength += m.strengthBonus;
+                    bonusDexterity += m.dexterityBonus;
+                    bonusIntelligence += m.intelligenceBonus;
+                }
+            }
+        }
+
         // === Write API ===
 
         public void SetEquipment(ulong clientId, EquipmentData data)

@@ -77,33 +77,70 @@ namespace ProjectC.Equipment
                 var db = field?.GetValue(inv) as System.Collections.Generic.Dictionary<int, ProjectC.Items.ItemData>;
                 if (db == null) return;
 
-                // SESSION 2: используем Resources.LoadAll чтобы работало в BOTH editor и runtime.
-                // Resources.FindObjectsOfTypeAll загружает из Resources/ при runtime, в Editor — все из проекта.
-                var clothing = Resources.FindObjectsOfTypeAll<ProjectC.Equipment.ClothingItemData>();
-                int nextId = 1300;
+                // SESSION 2 fix: грузим ClothingItemData/ModuleItemData по подпапкам явно.
+                // Resources.LoadAll<ItemData>("Items") НЕ подхватывает подклассы — только базовый ItemData.
+                // Resources.LoadAll<T>(path) фильтрует по ТОЧНОМУ типу, поэтому загружаем по подпапкам.
                 int registered = 0;
-                foreach (var c in clothing)
+                int nextId = 0;
+                foreach (var k in db.Keys) { if (k >= nextId) nextId = k + 1; }
+
+                // Известные подпапки с экипировкой
+                var equipFolders = new[] {
+                    "Items/Clothing",
+                    "Items/Modules",
+                    "Items/Equipment"
+                };
+                foreach (var folder in equipFolders)
                 {
-                    db[nextId] = c;
-                    nextId++;
-                    registered++;
-                }
-                var modules = Resources.FindObjectsOfTypeAll<ProjectC.Equipment.ModuleItemData>();
-                foreach (var m in modules)
-                {
-                    db[nextId] = m;
-                    nextId++;
-                    registered++;
+                    var cloth = Resources.LoadAll<ProjectC.Equipment.ClothingItemData>(folder);
+                    foreach (var c in cloth)
+                    {
+                        if (c == null) continue;
+                        // Не дублируем: ищем по itemName
+                        bool already = false;
+                        foreach (var kvp in db) { if (kvp.Value == c) { already = true; break; } }
+                        if (!already) { db[nextId++] = c; registered++; }
+                    }
+                    var mods = Resources.LoadAll<ProjectC.Equipment.ModuleItemData>(folder);
+                    foreach (var m in mods)
+                    {
+                        if (m == null) continue;
+                        bool already = false;
+                        foreach (var kvp in db) { if (kvp.Value == m) { already = true; break; } }
+                        if (!already) { db[nextId++] = m; registered++; }
+                    }
                 }
                 if (Debug.isDebugBuild && registered > 0)
                 {
-                    Debug.Log($"[EquipmentServer] Registered {registered} clothing+module assets (ids 1300+)");
+                    Debug.Log($"[EquipmentServer] Registered {registered} clothing+module assets");
                 }
             }
             catch (System.Exception ex)
             {
                 Debug.LogWarning($"[EquipmentServer] RegisterEquipmentAssets failed: {ex.Message}");
             }
+        }
+
+        /// <summary>
+        /// SESSION 2: найти itemId по имени предмета в _itemDatabase.
+        /// Используется в seed вместо хардкода ID.
+        /// </summary>
+        private int FindItemIdByName(string itemName)
+        {
+            try
+            {
+                var inv = ProjectC.Items.InventoryWorld.Instance;
+                if (inv == null) return -1;
+                var field = typeof(ProjectC.Items.InventoryWorld).GetField("_itemDatabase", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
+                var db = field?.GetValue(inv) as System.Collections.Generic.Dictionary<int, ProjectC.Items.ItemData>;
+                if (db == null) return -1;
+                foreach (var kvp in db)
+                {
+                    if (kvp.Value != null && kvp.Value.itemName == itemName) return kvp.Key;
+                }
+            }
+            catch (System.Exception ex) { Debug.LogWarning($"[EquipmentServer] FindItemIdByName failed: {ex.Message}"); }
+            return -1;
         }
 
         private void HandleClientConnectedForSeed(ulong clientId)
@@ -134,34 +171,46 @@ namespace ProjectC.Equipment
             var inv = ProjectC.Items.InventoryWorld.Instance;
             if (inv == null) return;
 
-            // Seed 1: 4 items в инвентарь (Chest, Feet, Module1, Back)
-            // Реальные ClothingItemData/ModuleItemData в _itemDatabase: 1300-1307
-            var invItems = new int[] { 1301, 1303, 1305, 1306 };
-            foreach (var iid in invItems)
+            // SESSION 2 refactor: находим предметы по ИМЕНИ (не по хардкод ID).
+            // Names соответствуют ClothingItemData/ModuleItemData assets в Resources/Items/Clothing/ и /Modules/.
+            // Любой ClothingItemData/ModuleItemData может надеваться — нет привязки к конкретному itemId.
+            var seedNames = new[] { "Рабочая каска", "Кузнечный фартук", "Дорожные сапоги", "Крафт-ассистент" };
+
+            // Add 4 to inventory by name
+            foreach (var name in seedNames)
             {
-                if (!inv.HasItem(clientId, iid))
+                int id = FindItemIdByName(name);
+                if (id <= 0) { Debug.LogWarning($"[EquipmentServer] Seed: item '{name}' not in db"); continue; }
+                if (!inv.HasItem(clientId, id))
                 {
-                    inv.AddItemDirect(clientId, iid, ProjectC.Items.ItemType.Equipment);
+                    inv.AddItemDirect(clientId, id, ProjectC.Items.ItemType.Equipment);
                 }
             }
 
-            // Seed 2: Рабочая каска (1304) → сначала в инвентарь, потом equip на Head.
-            if (!inv.HasItem(clientId, 1304))
+            // Equip "Рабочая каска" to Head by name
+            int helmetId = FindItemIdByName("Рабочая каска");
+            if (helmetId > 0)
             {
-                inv.AddItemDirect(clientId, 1304, ProjectC.Items.ItemType.Equipment);
+                if (!inv.HasItem(clientId, helmetId))
+                {
+                    inv.AddItemDirect(clientId, helmetId, ProjectC.Items.ItemType.Equipment);
+                }
+                string equipReason = "";
+                if (_world != null && _world.TryEquip(clientId, helmetId, ProjectC.Equipment.EquipSlot.Head, out equipReason))
+                {
+                    inv.RemoveItems(clientId, helmetId, ProjectC.Items.ItemType.Equipment, 1);
+                }
+                else if (Debug.isDebugBuild)
+                {
+                    Debug.LogWarning($"[EquipmentServer] Seed equip failed: {equipReason}");
+                }
             }
-            // BUGFIX: TryEquip требует item в инвентаре. RemoveItems после успешного equip.
-            string equipReason = "";
-            if (_world != null && _world.TryEquip(clientId, 1304, ProjectC.Equipment.EquipSlot.Head, out equipReason))
+            else
             {
-                inv.RemoveItems(clientId, 1304, ProjectC.Items.ItemType.Equipment, 1);
-            }
-            else if (Debug.isDebugBuild)
-            {
-                Debug.LogWarning($"[EquipmentServer] Seed equip failed: {equipReason}");
+                Debug.LogWarning("[EquipmentServer] Seed: 'Рабочая каска' not found in db");
             }
 
-            Debug.Log($"[EquipmentServer] Seeded items for client {clientId}: inv=4 equipped=WorkerHelmet1304");
+            Debug.Log($"[EquipmentServer] Seeded items for client {clientId}: inv=4 equipped=WorkerHelmet");
 
             // Push initial snapshot.
             if (_world != null && _world.GetEquipment(clientId) != null)
@@ -216,10 +265,29 @@ namespace ProjectC.Equipment
                 return;
             }
 
-            // SESSION 1 refactor: equip = move from inventory to equipment slot.
+            // SESSION 2 refactor: equip = move from inventory to equipment slot.
             // Без RemoveItems item дублировался бы в инвентаре (плохо).
             var inv = ProjectC.Items.InventoryWorld.Instance;
-            if (inv != null) inv.RemoveItems(clientId, itemId, ProjectC.Items.ItemType.Equipment, 1);
+            if (inv != null)
+            {
+                // SESSION 2: try RemoveItems с id, если ItemNotFound — fallback по slot+type.
+                int correctId = itemId;
+                var invDbField = typeof(ProjectC.Items.InventoryWorld).GetField("_itemDatabase", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
+                var invDb = invDbField?.GetValue(inv) as System.Collections.Generic.Dictionary<int, ProjectC.Items.ItemData>;
+                if (invDb != null && !invDb.ContainsKey(itemId))
+                {
+                    foreach (var kvp in invDb)
+                    {
+                        if (kvp.Value is ProjectC.Equipment.ClothingItemData c && c.slot == slot) { correctId = kvp.Key; break; }
+                        else if (kvp.Value is ProjectC.Equipment.ModuleItemData m && m.slot == slot) { correctId = kvp.Key; break; }
+                    }
+                }
+                var result = inv.RemoveItems(clientId, correctId, ProjectC.Items.ItemType.Equipment, 1);
+                if (Debug.isDebugBuild)
+                {
+                    Debug.Log($"[EquipmentServer] Equip → RemoveItems: client={clientId} origId={itemId} correctId={correctId} code={result.code} msg={result.message}");
+                }
+            }
 
             SendEquipResult(clientId, EquipResultDto.Equipped(itemId, slot));
             // Recompute effective stats (after equip) — StatsServer T-P05 hook
@@ -248,12 +316,55 @@ namespace ProjectC.Equipment
                 return;
             }
 
-            // SESSION 1 refactor: unequip = return item back to inventory.
+            // SESSION 2 refactor: unequip = return item back to inventory.
             // Без AddItemDirect item просто исчезал (плохо).
             if (itemId > 0)
             {
                 var inv = ProjectC.Items.InventoryWorld.Instance;
-                if (inv != null) inv.AddItemDirect(clientId, itemId, ProjectC.Items.ItemType.Equipment);
+                if (inv != null)
+                {
+                    // SESSION 2 CRITICAL FIX: AddItemDirect принимает ТОЛЬКО ID из _itemDatabase.
+                    // Если id пришёл из `EquipmentData.slotItemIds[idx]` (seed ID) но RegisterEquipmentAssets
+                    // переместил ClothingItemData в другой ID (1300+) — AddItemDirect падает с ItemNotFound.
+                    // Резолвим правильный ID через reference equality.
+                    int correctId = itemId;
+                    var invDbField = typeof(ProjectC.Items.InventoryWorld).GetField("_itemDatabase", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
+                    var invDb = invDbField?.GetValue(inv) as System.Collections.Generic.Dictionary<int, ProjectC.Items.ItemData>;
+                    if (invDb != null)
+                    {
+                        // Попытка 1: сначала проверяем что id существует в _itemDatabase
+                        if (!invDb.ContainsKey(itemId))
+                        {
+                            // Попытка 2: itemId не найден — ищем по slot+itemName (через EquipData)
+                            // Слот уже известен, itemName в EquipData не хранится → ищем в _itemDatabase
+                            // одежду/модуль для этого слота.
+                            // Простой fallback: первый ClothingItemData/ModuleItemData с таким slot.
+                            foreach (var kvp in invDb)
+                            {
+                                if (kvp.Value is ProjectC.Equipment.ClothingItemData c && c.slot == slot)
+                                {
+                                    correctId = kvp.Key;
+                                    break;
+                                }
+                                else if (kvp.Value is ProjectC.Equipment.ModuleItemData m && m.slot == slot)
+                                {
+                                    correctId = kvp.Key;
+                                    break;
+                                }
+                            }
+                        }
+                    }
+                    // SESSION 2: addItem возвращает InventoryResultDto. Проверяем успех.
+                    var result = inv.AddItemDirect(clientId, correctId, ProjectC.Items.ItemType.Equipment);
+                    if (Debug.isDebugBuild)
+                    {
+                        Debug.Log($"[EquipmentServer] Unequip → AddItemDirect: client={clientId} origId={itemId} correctId={correctId} code={result.code} msg={result.message}");
+                    }
+                }
+                else
+                {
+                    Debug.LogWarning("[EquipmentServer] Unequip failed: InventoryWorld.Instance is null");
+                }
             }
 
             SendEquipResult(clientId, EquipResultDto.Unequipped(slot));

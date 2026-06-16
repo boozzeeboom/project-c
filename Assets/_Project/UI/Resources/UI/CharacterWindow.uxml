@@ -104,7 +104,17 @@
   <ui:ListView name="contracts-list" class="item-list" />
  </ui:VisualElement>
  <ui:VisualElement name="inventory-section" class="list-section" style="display: none;">
-  <ui:ListView name="inventory-list" class="item-list" />
+  <ui:VisualElement class="inventory-layout">
+   <ui:ListView name="inventory-list" class="item-list inventory-list-pane" />
+   <ui:VisualElement name="inventory-detail" class="inventory-detail-pane">
+    <ui:Label text="Описание предмета" class="detail-title" />
+    <ui:Label name="inventory-detail-name" text="Выберите предмет слева" class="detail-name" />
+    <ui:Label name="inventory-detail-type" text="—" class="detail-type" />
+    <ui:Label name="inventory-detail-weight" text="—" class="detail-row" />
+    <ui:Label name="inventory-detail-stat" text="—" class="detail-row" />
+    <ui:Label name="inventory-detail-desc" text="—" class="detail-desc" />
+   </ui:VisualElement>
+  </ui:VisualElement>
  </ui:VisualElement>
  <ui:VisualElement name="quests-section" class="list-section" style="display: none;">
   <ui:ListView name="quests-active-list" class="item-list quest-list" />

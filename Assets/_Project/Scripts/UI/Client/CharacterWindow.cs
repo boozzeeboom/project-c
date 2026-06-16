@@ -103,7 +103,7 @@ namespace ProjectC.UI.Client
         private ListView _reputationList;
         private ListView _npcAttitudeList; // T-Q13
         private ListView _contractsList;
-        private ListView _inventoryList;
+        private ListView _inventoryList;  // Сессия 2 ROLLBACK: обратно на ListView
         private ListView _questsActiveList;
         private ListView _questsCompletedList;
         private ListView _questsFailedList;
@@ -152,11 +152,17 @@ namespace ProjectC.UI.Client
         // Допустимые значения _activeTab: "character" | "ship" | "reputation" | "contracts" | "inventory".
         // Новый таб = добавить Button + Section + case в SwitchTab.
         private string _activeTab = "character";
+        /// <summary>T-P19: публичный геттер для InventoryTab и других табов.</summary>
+        public string GetActiveTab() => _activeTab;
+
+        // T-P19: InventoryTab — вынесенная вкладка инвентаря
+        private InventoryTab _inventoryTab;
 
         private int _selectedContractItem = -1;
         private int _selectedInventoryItem = -1;
 
         private ContractDto[] _contractsCache = Array.Empty<ContractDto>();
+        [Obsolete("Переехало в InventoryTab._inventoryCache — удалить при следующем рефакторе")]
         private List<InventoryListItem> _inventoryCache = new List<InventoryListItem>();
         private List<ReputationListItem> _reputationCache = new List<ReputationListItem>();
         private List<NpcAttitudeListItem> _npcAttitudeCache = new List<NpcAttitudeListItem>(); // T-Q13
@@ -175,6 +181,13 @@ namespace ProjectC.UI.Client
         private Label _equipRowItem;
         private Label _equipRowBonuses;
         private Button _equipRowBtn;
+
+        // SESSION 2: Inventory detail labels (правая панель с описанием предмета)
+        private Label _invDetailName;
+        private Label _invDetailType;
+        private Label _invDetailWeight;
+        private Label _invDetailStat;
+        private Label _invDetailDesc;
 
         /// <summary>
         /// T-P17: Row DTO для clothing/modules ListView. IsModule=true для modules-list (icon/type вариация).
@@ -293,7 +306,8 @@ namespace ProjectC.UI.Client
         }
         // BUGFIX2026-06-05: используем флаг-версию (UnsubscribeInventory).
         // Старая версия делала bare -=, и если подписки не было — flag оставался неверным.
-        UnsubscribeInventory();
+        // T-P19: Inventory переехал в InventoryTab.
+        if (_inventoryTab != null) _inventoryTab.Unsubscribe();
         // T-Q11: Unsubscribe QuestClientState (3 события).
         UnsubscribeQuestState();
         // T-Q13: Unsubscribe Reputation + NpcAttitude singletons.
@@ -332,6 +346,7 @@ namespace ProjectC.UI.Client
         if (invState == null) { _isInventorySubscribed = false; return; }
         invState.OnSnapshotUpdated -= HandleInventorySnapshotUpdated;
         invState.OnInventoryResult -= HandleInventoryResultReceived;
+        if (_inventoryList != null) _inventoryList.selectionChanged -= OnInventorySelectionChanged;
         _isInventorySubscribed = false;
         }
 
@@ -378,18 +393,10 @@ namespace ProjectC.UI.Client
 
         private void Update()
         {
-            // BUGFIX 2026-06-05: lazy-subscribe для InventoryClientState.
-            // В EnsureBuilt Instance мог быть null (race condition с NMC.Awake).
-            // Если ещё не подписаны, а Instance уже жив — подписываемся.
-            if (_built && !_isInventorySubscribed)
+            // T-P19: lazy-subscribe для InventoryClientState переехал в InventoryTab.TryLazySubscribe.
+            if (_built && _inventoryTab != null)
             {
-                var invState = ProjectC.Items.Client.InventoryClientState.Instance;
-                if (invState != null)
-                {
-                    SubscribeInventory();
-                    invState.RequestRefresh();
-                    Debug.Log("[CharacterWindow] Lazy-subscribed to InventoryClientState.OnSnapshotUpdated");
-                }
+                _inventoryTab.TryLazySubscribe();
             }
 
             // T-Q13: lazy-subscribe Reputation + NpcAttitude singletons.
@@ -594,16 +601,11 @@ namespace ProjectC.UI.Client
                     _contractsList.Rebuild();
                 };
             }
-
-            // ---- ListView: Inventory (новый) ----
-            if (_inventoryList != null)
-            {
-                _inventoryList.makeItem      = MakeInventoryRow;
-                _inventoryList.bindItem      = BindInventoryRow;
-                _inventoryList.fixedItemHeight = 32;
-                _inventoryList.selectionType = SelectionType.Single;
-                _inventoryList.selectedIndex = -1;
-            }
+            // T-P19: InventoryTab вынесен в отдельный класс — BuildUI делает всё:
+            // ListView setup, detail labels, подписка.
+            _inventoryTab = new InventoryTab();
+            _inventoryTab.BuildUI(this, _root, _filterSource, _filterState, _filterSearch,
+                _creditsLabel, _messageLabel, _statCredits);
 
             // ---- ListView: Reputation (новый) ----
             if (_reputationList != null)
@@ -663,7 +665,7 @@ namespace ProjectC.UI.Client
                 _filterSearch.RegisterValueChangedCallback(evt =>
                 {
                     if (_activeTab == "contracts") ApplyContractFilters();
-                    else if (_activeTab == "inventory") ApplyInventoryFilters();
+                    else if (_activeTab == "inventory" && _inventoryTab != null) _inventoryTab.ApplyFilters();
                 });
             }
 
@@ -683,15 +685,8 @@ namespace ProjectC.UI.Client
                 if (nearestZone != null) _contractState.RequestList(nearestZone.LocationId);
             }
 
-            // ---- Phase5 (INVENTORY_V2_REFACTOR.md): Subscribe to InventoryClientState ----
-            // Синглтон создаётся в NetworkManagerController.Awake — обычно уже есть
-            // к моменту EnsureBuilt. Если null (тест/edit-mode) — Update() подпишет lazy.
-            // BUGFIX2026-06-05: используем флаг-версию SubscribeInventory (идемпотентно).
-            SubscribeInventory();
-            if (ProjectC.Items.Client.InventoryClientState.Instance == null)
-            {
-            Debug.LogWarning("[CharacterWindow] InventoryClientState.Instance == null на момент EnsureBuilt — Update() lazy-подпишется");
-            }
+            // T-P19: SubscribeInventory + lazy-subscribe переехали в InventoryTab.BuildUI.
+            // InventoryClientState может быть null до StartHost — BuildUI выведет warning, Update() lazy-подпишет.
 
             // T-Q13: subscribe to ReputationClientState + NpcAttitudeClientState (idempotent).
             // Синглтоны создаются scene-placed в BootstrapScene (рядом с [QuestClientState]).
@@ -763,8 +758,8 @@ namespace ProjectC.UI.Client
         // BUGFIX2026-06-05: display: none → flex на ListView в первый раз
         // не вызывает повторный layout — нужно принудительно MarkDirtyRepaint
         // (иначе строки не отрисованы до следующего toggle). UI Toolkit pitfall.
-        if (isInventory && _inventoryList != null) {
-        _inventoryList.MarkDirtyRepaint();
+        if (isInventory && _inventoryTab != null) {
+            _inventoryTab.OnTabShown();
         }
         if (isQuests)
         {
@@ -784,19 +779,18 @@ namespace ProjectC.UI.Client
         SetActiveTabVisual(_tabQuests, isQuests);
 
         // ---- Filters visibility + options ----
+        // SESSION 2 fix: filters — ТОЛЬКО для контрактов, не для инвентаря.
         if (_filtersRow != null)
         {
-        bool showFilters = isContracts || isInventory;
-        _filtersRow.style.display = showFilters ? DisplayStyle.Flex : DisplayStyle.None;
+            bool showFilters = isContracts;
+            _filtersRow.style.display = showFilters ? DisplayStyle.Flex : DisplayStyle.None;
         }
         if (isContracts)
         {
         ConfigureContractFilters();
         }
-        else if (isInventory)
-        {
-        ConfigureInventoryFilters();
-        }
+        // T-P19: ConfigureInventoryFilters, RefreshInventoryCache, ApplyInventoryFilters
+        // переехали в InventoryTab.OnTabShown. Убрано из SwitchTab.
 
         // ---- Action buttons ----
         if (_acceptBtn != null) _acceptBtn.style.display = isContracts ? DisplayStyle.Flex : DisplayStyle.None;
@@ -809,7 +803,7 @@ namespace ProjectC.UI.Client
         if (isCharacter) RefreshCharacterStats();
         if (isShip) RefreshShipStats();
         if (isReputation) { RefreshReputationCache(); RefreshNpcAttitudeCache(); }
-        if (isInventory) { RefreshInventoryCache(); ApplyInventoryFilters(); }
+        // T-P19: Inventory refresh переехал в InventoryTab.OnTabShown
         if (isContracts) ApplyContractFilters();
         if (isQuests) RefreshQuestsCache();
         }
@@ -1104,8 +1098,8 @@ namespace ProjectC.UI.Client
             var invState = ProjectC.Items.Client.InventoryClientState.Instance;
             if (invState == null || !invState.CurrentSnapshot.HasValue)
             {
-                // Данных ещё нет — пустой кэш. UI покажет пустой список, message "Загрузка..."
-                Debug.Log($"[CharacterWindow.RefreshInventoryCache] no-snapshot: invState={(invState!=null?"OK":"NULL")}, list={(_inventoryList!=null?"OK":"NULL")}");
+                // Данных ещё нет — пустой кэш. UI покажет пустой список.
+                // СESSION 2 ROLLBACK: вернулись к ListView (было рабочее)
                 if (_inventoryList != null)
                 {
                     if (!ReferenceEquals(_inventoryList.itemsSource, _inventoryCache))
@@ -1119,7 +1113,6 @@ namespace ProjectC.UI.Client
             var items = snap.items;
             if (items == null)
             {
-                Debug.Log($"[CharacterWindow.RefreshInventoryCache] items=null, list={(_inventoryList!=null?"OK":"NULL")}");
                 if (_inventoryList != null)
                 {
                     if (!ReferenceEquals(_inventoryList.itemsSource, _inventoryCache))
@@ -1130,13 +1123,10 @@ namespace ProjectC.UI.Client
             }
 
             // Группируем по (itemId) — если несколько стеков одного предмета,
-            // суммируем quantity. (Phase 2: каждый itemId = 1 unit, так что
-            // grouping ничего не делает, но код готов к будущему.)
+            // суммируем quantity.
             var groups = new Dictionary<int, (int totalQty, InventoryItemDto first)>();
             foreach (var dto in items)
             {
-                // pitfall #14: InventoryItemDto — struct, == null не компилируется.
-                // Проверяем через default или is-pattern.
                 if (dto.itemId <= 0) continue;
                 if (groups.TryGetValue(dto.itemId, out var existing))
                 {
@@ -1148,28 +1138,37 @@ namespace ProjectC.UI.Client
                 }
             }
 
-            foreach (var kvp in groups)
+            // T-P19 refactor: сортировка по (ItemType, displayName) — категории сгруппированы,
+            // внутри категории — алфавитный порядок. Потерялась при рефакторе f136fd5.
+            // Dictionary не гарантирует порядка, поэтому сортируем явно.
+            var sortedGroups = groups
+                .Select(kvp => new { kvp.Key, Value = kvp.Value })
+                .OrderBy(x => (int)x.Value.first.type)
+                .ThenBy(x =>
+                {
+                    var def = invState.GetItemDefinition(x.Value.first.itemId);
+                    return def != null ? def.itemName : $"Item#{x.Value.first.itemId}";
+                }, System.StringComparer.OrdinalIgnoreCase);
+
+            foreach (var entry in sortedGroups)
             {
-                var first = kvp.Value.first;
+                var first = entry.Value.first;
                 ItemData def = invState.GetItemDefinition(first.itemId);
                 _inventoryCache.Add(new InventoryListItem
                 {
                     itemId      = first.itemId.ToString(),
                     displayName = def != null ? def.itemName : $"Item#{first.itemId}",
                     type        = (ItemType)first.type,
-                    quantity    = kvp.Value.totalQty,
+                    quantity    = entry.Value.totalQty,
                     icon        = def != null ? def.icon : null,
                 });
             }
 
+            // СESSION 2 ROLLBACK: ListView itemsSource
             if (_inventoryList != null)
             {
-                // BUGFIX 2026-06-05: используем RefreshItems() вместо Rebuild() + null-trick.
-                // Rebuild() иногда не перебиндит строки, если itemsSource = тот же reference.
-                // RefreshItems() вызывает bindItem для всех видимых элементов с текущим itemsSource.
-                if (!ReferenceEquals(_inventoryList.itemsSource, _inventoryCache)) {
+                if (!ReferenceEquals(_inventoryList.itemsSource, _inventoryCache))
                     _inventoryList.itemsSource = _inventoryCache;
-                }
                 _inventoryList.RefreshItems();
             }
         }
@@ -1278,7 +1277,134 @@ namespace ProjectC.UI.Client
         }
 
         // ============================================================
-        // Row factories: inventory (новый)
+        // Row factories: inventory (legacy MakeInventoryRow/BindInventoryRow
+        // заменены на MakeManualInventoryRow для ScrollView-based render)
+        // ============================================================
+        /// <summary>
+        /// SESSION 2 fix: equip item прямо из inventory через reflection RPC.
+        /// Принимает ItemData (уже резолвленный из _itemDatabase), а не string-id,
+        /// потому что ID из InventoryClientState может НЕ совпадать с EquipmentServer ID.
+        /// </summary>
+        private void OnEquipFromInventoryClicked(ProjectC.Items.ItemData def)
+        {
+            try
+            {
+                if (def == null) { Debug.LogWarning("[CharacterWindow] item is null"); return; }
+                ProjectC.Equipment.EquipSlot slot = ProjectC.Equipment.EquipSlot.None;
+                if (def is ProjectC.Equipment.ClothingItemData c) slot = c.slot;
+                else if (def is ProjectC.Equipment.ModuleItemData m) slot = m.slot;
+                if (slot == ProjectC.Equipment.EquipSlot.None) { Debug.LogWarning("[CharacterWindow] item not equipable"); return; }
+
+                // Резолвим EquipmentServer ID — ищем в _itemDatabase по ItemData reference.
+                int itemId = -1;
+                var invDbField = typeof(ProjectC.Items.InventoryWorld).GetField("_itemDatabase", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
+                var invDb = invDbField?.GetValue(ProjectC.Items.InventoryWorld.Instance) as System.Collections.Generic.Dictionary<int, ProjectC.Items.ItemData>;
+                if (invDb != null)
+                {
+                    foreach (var kvp in invDb)
+                    {
+                        if (kvp.Value == def) { itemId = kvp.Key; break; }
+                    }
+                }
+                if (itemId <= 0) { Debug.LogWarning("[CharacterWindow] item not found in db"); return; }
+
+                var t = System.Type.GetType("ProjectC.Equipment.EquipmentServer, Assembly-CSharp");
+                if (t == null) { Debug.LogWarning("[CharacterWindow] EquipmentServer type not found"); return; }
+                var inst = t.GetProperty("Instance", System.Reflection.BindingFlags.Public | System.Reflection.BindingFlags.Static)?.GetValue(null);
+                if (inst == null) { Debug.LogWarning("[CharacterWindow] EquipmentServer.Instance is null"); return; }
+                var mi = t.GetMethod("RequestEquipRpc");
+                if (mi == null) { Debug.LogWarning("[CharacterWindow] RequestEquipRpc not found"); return; }
+                var rpcParams = System.Activator.CreateInstance(typeof(Unity.Netcode.RpcParams));
+                mi.Invoke(inst, new object[] { itemId, slot, rpcParams });
+                Debug.Log($"[CharacterWindow] RequestEquipRpc from inventory: itemId={itemId} slot={slot} name={def.itemName}");
+            }
+            catch (System.Exception ex) { Debug.LogWarning($"[CharacterWindow] OnEquipFromInventoryClicked error: {ex.Message}"); }
+        }
+
+        // SESSION 2: при выборе предмета в инвентаре — обновить detail panel справа.
+        private void OnInventorySelectionChanged(System.Collections.Generic.IEnumerable<object> selectedItems)
+        {
+            if (selectedItems == null) return;
+            if (_inventoryList == null) return;
+            int selectedIdx = _inventoryList.selectedIndex;
+            if (selectedIdx < 0 || selectedIdx >= _inventoryCache.Count)
+            {
+                ClearInventoryDetail();
+                return;
+            }
+            var item = _inventoryCache[selectedIdx];
+            UpdateInventoryDetail(item);
+        }
+
+        private void ClearInventoryDetail()
+        {
+            if (_invDetailName != null) _invDetailName.text = "Выберите предмет слева";
+            if (_invDetailType != null) _invDetailType.text = "—";
+            if (_invDetailWeight != null) _invDetailWeight.text = "—";
+            if (_invDetailStat != null) _invDetailStat.text = "—";
+            if (_invDetailDesc != null) _invDetailDesc.text = "—";
+        }
+
+        private void UpdateInventoryDetail(InventoryListItem item)
+        {
+            // Резолвим ItemData для деталей
+            ProjectC.Items.ItemData def = null;
+            if (int.TryParse(item.itemId, out int parsedId))
+            {
+                def = ProjectC.Items.InventoryWorld.Instance?.GetItemDefinition(parsedId);
+            }
+            if (def == null)
+            {
+                var invDbField = typeof(ProjectC.Items.InventoryWorld).GetField("_itemDatabase", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
+                var invDb = invDbField?.GetValue(ProjectC.Items.InventoryWorld.Instance) as System.Collections.Generic.Dictionary<int, ProjectC.Items.ItemData>;
+                if (invDb != null)
+                {
+                    foreach (var kvp in invDb)
+                    {
+                        if (kvp.Value != null && kvp.Value.itemName == item.displayName) { def = kvp.Value; break; }
+                    }
+                }
+            }
+
+            if (_invDetailName != null) _invDetailName.text = item.displayName;
+            if (_invDetailType != null) _invDetailType.text = $"Тип: {ItemTypeNames.GetDisplayName(item.type)}";
+            if (_invDetailWeight != null) _invDetailWeight.text = $"Вес: {(def != null ? def.weightKg : 0):F1} кг";
+            if (_invDetailDesc != null) _invDetailDesc.text = def != null && !string.IsNullOrEmpty(def.description) ? def.description : "—";
+
+            // Stat bonuses для ClothingItemData/ModuleItemData
+            if (_invDetailStat != null)
+            {
+                if (def is ProjectC.Equipment.ClothingItemData c)
+                {
+                    string sb = "Бонусы: ";
+                    if (c.strengthBonus != 0) sb += $"STR {(c.strengthBonus>=0?"+":"")}{c.strengthBonus:F0} ";
+                    if (c.dexterityBonus != 0) sb += $"DEX {(c.dexterityBonus>=0?"+":"")}{c.dexterityBonus:F0} ";
+                    if (c.intelligenceBonus != 0) sb += $"INT {(c.intelligenceBonus>=0?"+":"")}{c.intelligenceBonus:F0} ";
+                    if (c.strengthMultiplier != 0) sb += $"\nSTR ×{(c.strengthMultiplier):F2} ";
+                    if (c.dexterityMultiplier != 0) sb += $"\nDEX ×{(c.dexterityMultiplier):F2} ";
+                    if (c.intelligenceMultiplier != 0) sb += $"\nINT ×{(c.intelligenceMultiplier):F2} ";
+                    _invDetailStat.text = sb;
+                }
+                else if (def is ProjectC.Equipment.ModuleItemData m)
+                {
+                    string sb = "Бонусы: ";
+                    if (m.strengthBonus != 0) sb += $"STR {(m.strengthBonus>=0?"+":"")}{m.strengthBonus:F0} ";
+                    if (m.dexterityBonus != 0) sb += $"DEX {(m.dexterityBonus>=0?"+":"")}{m.dexterityBonus:F0} ";
+                    if (m.intelligenceBonus != 0) sb += $"INT {(m.intelligenceBonus>=0?"+":"")}{m.intelligenceBonus:F0} ";
+                    if (m.weaponDamageBonus != 0) sb += $"\nWeapon DMG +{m.weaponDamageBonus:F0}";
+                    if (m.sensorRangeBonus != 0) sb += $"\nSensor +{m.sensorRangeBonus:F0}";
+                    if (m.craftingSpeedMultiplier != 0) sb += $"\nCraft ×{m.craftingSpeedMultiplier:F2}";
+                    _invDetailStat.text = sb;
+                }
+                else
+                {
+                    _invDetailStat.text = "—";
+                }
+            }
+        }
+
+        // ============================================================
+        // Row factories: inventory (восстановлено)
         // ============================================================
 
         private VisualElement MakeInventoryRow()
@@ -1289,6 +1415,12 @@ namespace ProjectC.UI.Client
             var name = new Label { name = "row-name" }; name.AddToClassList("inventory-name"); row.Add(name);
             var type = new Label { name = "row-type" }; type.AddToClassList("inventory-type"); row.Add(type);
             var qty  = new Label { name = "row-qty"  }; qty.AddToClassList("inventory-qty");   row.Add(qty);
+            var equipBtn = new VisualElement { name = "row-equip-btn" };
+            equipBtn.AddToClassList("inventory-equip-btn");
+            var equipLabel = new Label { name = "row-equip-label", text = "НАДЕТЬ" };
+            equipLabel.AddToClassList("inventory-equip-label");
+            equipBtn.Add(equipLabel);
+            row.Add(equipBtn);
             return row;
         }
 
@@ -1308,8 +1440,58 @@ namespace ProjectC.UI.Client
                 row.Q<Label>("row-name").text = item.displayName;
                 row.Q<Label>("row-type").text = ItemTypeNames.GetDisplayName(item.type);
                 row.Q<Label>("row-qty").text  = $"×{item.quantity}";
+
+                // SESSION 2: [НАДЕТЬ] для всех Equipment items
+                var equipBtn = row.Q<VisualElement>("row-equip-btn");
+                if (equipBtn == null) return;
+
+                ProjectC.Items.ItemData def = null;
+                if (int.TryParse(item.itemId, out int parsedItemId))
+                {
+                    def = ProjectC.Items.InventoryWorld.Instance?.GetItemDefinition(parsedItemId);
+                }
+                if (def == null && !string.IsNullOrEmpty(item.displayName))
+                {
+                    var invDbField = typeof(ProjectC.Items.InventoryWorld).GetField("_itemDatabase", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
+                    var invDb = invDbField?.GetValue(ProjectC.Items.InventoryWorld.Instance) as System.Collections.Generic.Dictionary<int, ProjectC.Items.ItemData>;
+                    if (invDb != null)
+                    {
+                        foreach (var kvp in invDb)
+                        {
+                            if (kvp.Value != null && (kvp.Value.itemName == item.displayName ||
+                                kvp.Value.itemName.Contains(item.displayName) ||
+                                item.displayName.Contains(kvp.Value.itemName)))
+                            {
+                                if (kvp.Value is ProjectC.Equipment.ClothingItemData || kvp.Value is ProjectC.Equipment.ModuleItemData)
+                                { def = kvp.Value; break; }
+                            }
+                        }
+                    }
+                }
+                bool isEquipable = def is ProjectC.Equipment.ClothingItemData || def is ProjectC.Equipment.ModuleItemData;
+                if (!isEquipable && item.type == ProjectC.Items.ItemType.Equipment) isEquipable = true;
+
+                if (isEquipable)
+                {
+                    equipBtn.style.display = DisplayStyle.Flex;
+                    var capturedDef = def;
+                    string capturedDisplayName = item.displayName;
+                    // SESSION 2 fix: unregister old handler to avoid duplicates (ListView recycling)
+                    equipBtn.UnregisterCallback<ClickEvent>(OnInventoryEquipBtnClick);
+                    equipBtn.RegisterCallback<ClickEvent>(evt => {
+                        Debug.Log("!!!!! EQUIP FROM INVENTORY !!!!! name=" + capturedDisplayName);
+                        OnEquipFromInventoryClicked(capturedDef);
+                        evt.StopPropagation();
+                    });
+                }
+                else
+                {
+                    equipBtn.style.display = DisplayStyle.None;
+                }
             }
         }
+
+        private void OnInventoryEquipBtnClick(ClickEvent evt) { /* placeholder for Unregister */ }
 
         // ============================================================
         // Row factories: reputation (новый)
@@ -1656,16 +1838,17 @@ namespace ProjectC.UI.Client
             /// </summary>
             private void RefreshStatsDisplay(ProjectC.Stats.Dto.StatsSnapshotDto snap)
             {
-                // STR
+                // STR (effective = base + equip bonus)
                 if (_statStrBar != null)
                 {
                     float maxStr = snap.strengthXpForNextTier > 0 ? snap.strengthXpForNextTier : 100f;
-                    _statStrBar.value = Mathf.Clamp01(snap.strength / maxStr);
+                    _statStrBar.value = Mathf.Clamp01(snap.effectiveStrength / maxStr);
                     ApplyTierClass(_statStrBar, snap.strengthTier);
                 }
                 if (_statStrValue != null)
                 {
-                    _statStrValue.text = $"{snap.strength:F1}/{snap.strengthXpForNextTier:F0} T{snap.strengthTier}";
+                    string bonusStr = (snap.effectiveStrength - snap.strength > 0.01f) ? $" (+{snap.effectiveStrength - snap.strength:F0})" : "";
+                    _statStrValue.text = $"{snap.effectiveStrength:F1}/{snap.strengthXpForNextTier:F0} T{snap.strengthTier}{bonusStr}";
                 }
                 if (_statStrRow != null) ApplyRowClass(_statStrRow, snap.strengthTier);
 
@@ -1673,12 +1856,13 @@ namespace ProjectC.UI.Client
                 if (_statDexBar != null)
                 {
                     float maxDex = snap.dexterityXpForNextTier > 0 ? snap.dexterityXpForNextTier : 100f;
-                    _statDexBar.value = Mathf.Clamp01(snap.dexterity / maxDex);
+                    _statDexBar.value = Mathf.Clamp01(snap.effectiveDexterity / maxDex);
                     ApplyTierClass(_statDexBar, snap.dexterityTier);
                 }
                 if (_statDexValue != null)
                 {
-                    _statDexValue.text = $"{snap.dexterity:F1}/{snap.dexterityXpForNextTier:F0} T{snap.dexterityTier}";
+                    string bonusDex = (snap.effectiveDexterity - snap.dexterity > 0.01f) ? $" (+{snap.effectiveDexterity - snap.dexterity:F0})" : "";
+                    _statDexValue.text = $"{snap.effectiveDexterity:F1}/{snap.dexterityXpForNextTier:F0} T{snap.dexterityTier}{bonusDex}";
                 }
                 if (_statDexRow != null) ApplyRowClass(_statDexRow, snap.dexterityTier);
 
@@ -1686,12 +1870,13 @@ namespace ProjectC.UI.Client
                 if (_statIntBar != null)
                 {
                     float maxInt = snap.intelligenceXpForNextTier > 0 ? snap.intelligenceXpForNextTier : 100f;
-                    _statIntBar.value = Mathf.Clamp01(snap.intelligence / maxInt);
+                    _statIntBar.value = Mathf.Clamp01(snap.effectiveIntelligence / maxInt);
                     ApplyTierClass(_statIntBar, snap.intelligenceTier);
                 }
                 if (_statIntValue != null)
                 {
-                    _statIntValue.text = $"{snap.intelligence:F1}/{snap.intelligenceXpForNextTier:F0} T{snap.intelligenceTier}";
+                    string bonusInt = (snap.effectiveIntelligence - snap.intelligence > 0.01f) ? $" (+{snap.effectiveIntelligence - snap.intelligence:F0})" : "";
+                    _statIntValue.text = $"{snap.effectiveIntelligence:F1}/{snap.intelligenceXpForNextTier:F0} T{snap.intelligenceTier}{bonusInt}";
                 }
                 if (_statIntRow != null) ApplyRowClass(_statIntRow, snap.intelligenceTier);
             }

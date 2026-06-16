@@ -1,0 +1,599 @@
+// =====================================================================================
+// InventoryTab.cs — вкладка ИНВЕНТАРЬ для CharacterWindow (Project C: The Clouds)
+// =====================================================================================
+// T-P19 refactor: вынесено из CharacterWindow.cs (монолит 3186 строк).
+// Отвечает за список предметов, сортировку по ItemType, detail-panel,
+// фильтрацию по типу, [НАДЕТЬ]-кнопку.
+//
+// Подписки:
+//   • InventoryClientState.OnSnapshotUpdated — server-authoritative snapshot
+//   • InventoryClientState.OnInventoryResult — результат операции
+// =====================================================================================
+
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using ProjectC.Items;
+using ProjectC.Items.Client;
+using ProjectC.Items.Dto;
+using UnityEngine;
+using UnityEngine.UIElements;
+
+namespace ProjectC.UI.Client
+{
+    /// <summary>
+    /// Вкладка ИНВЕНТАРЬ для CharacterWindow. Создаётся CharacterWindow в EnsureBuilt.
+    /// </summary>
+    public class InventoryTab
+    {
+        // ============================================================
+        // State
+        // ============================================================
+        private CharacterWindow _owner;
+        private VisualElement _root;
+
+        // Shared UI refs (владеет CharacterWindow, InventoryTab их конфигурирует)
+        private DropdownField _filterSource;
+        private DropdownField _filterState;
+        private TextField _filterSearch;
+        private Label _creditsLabel;
+        private Label _messageLabel;
+        private Label _statCredits;
+
+        // Inventory-specific refs
+        private VisualElement _inventorySection;
+        private ListView _inventoryList; // Сессия 2 ROLLBACK: обратно на ListView
+        private Label _invDetailName;
+        private Label _invDetailType;
+        private Label _invDetailWeight;
+        private Label _invDetailStat;
+        private Label _invDetailDesc;
+
+        // Caches
+        private List<InventoryListItem> _inventoryCache = new List<InventoryListItem>();
+        private int _selectedInventoryItem = -1;
+        private List<string> _inventoryFilterSourceOptionsCache; // динамически по ItemType
+        private List<string> _inventoryFilterStateOptions = new List<string> { "Все типы" };
+
+        // Subscription flags
+        private bool _isInventorySubscribed = false;
+
+        // ============================================================
+        // DTO-проекция для ListView
+        // ============================================================
+        private struct InventoryListItem
+        {
+            public string itemId;
+            public string displayName;
+            public ItemType type;
+            public int quantity;
+            public Sprite icon;
+        }
+
+        // ============================================================
+        // API (вызывается из CharacterWindow)
+        // ============================================================
+
+        /// <summary>
+        /// Инициализация: найти все UI-элементы в root, настроить ListView,
+        /// подписаться на InventoryClientState.
+        /// </summary>
+        public void BuildUI(CharacterWindow owner, VisualElement root,
+            DropdownField filterSource, DropdownField filterState, TextField filterSearch,
+            Label creditsLabel, Label messageLabel, Label statCredits)
+        {
+            _owner = owner;
+            _root = root;
+            _filterSource = filterSource;
+            _filterState = filterState;
+            _filterSearch = filterSearch;
+            _creditsLabel = creditsLabel;
+            _messageLabel = messageLabel;
+            _statCredits = statCredits;
+
+            _inventorySection = root.Q<VisualElement>("inventory-section");
+
+            // ---- ListView: Inventory ----
+            _inventoryList = root.Q<ListView>("inventory-list");
+            if (_inventoryList != null)
+            {
+                _inventoryList.makeItem = MakeInventoryRow;
+                _inventoryList.bindItem = BindInventoryRow;
+                _inventoryList.fixedItemHeight = 28;
+                _inventoryList.selectionType = SelectionType.Single;
+                _inventoryList.selectedIndex = -1;
+                _inventoryList.selectionChanged += OnInventorySelectionChanged;
+            }
+
+            // ---- Detail labels ----
+            _invDetailName = root.Q<Label>("inventory-detail-name");
+            _invDetailType = root.Q<Label>("inventory-detail-type");
+            _invDetailWeight = root.Q<Label>("inventory-detail-weight");
+            _invDetailStat = root.Q<Label>("inventory-detail-stat");
+            _invDetailDesc = root.Q<Label>("inventory-detail-desc");
+
+            // ---- Subscribe ----
+            SubscribeInventory();
+
+            if (ProjectC.Items.Client.InventoryClientState.Instance == null)
+            {
+                Debug.LogWarning("[InventoryTab] InventoryClientState.Instance == null на момент BuildUI — Update() lazy-подпишется");
+            }
+        }
+
+        /// <summary>
+        /// Вызывается из CharacterWindow.SwitchTab когда активен "inventory".
+        /// Обновляет display visibility, конфигурирует фильтры, триггерит refresh.
+        /// </summary>
+        public void OnTabShown()
+        {
+            if (_inventorySection != null)
+                _inventorySection.style.display = DisplayStyle.Flex;
+
+            // MarkDirtyRepaint — BUGFIX: display: none → flex не вызывает повторный layout
+            if (_inventoryList != null)
+                _inventoryList.MarkDirtyRepaint();
+
+            // Configure filters
+            ConfigureInventoryFilters();
+
+            // Refresh data
+            RefreshInventoryCache();
+            ApplyInventoryFilters();
+        }
+
+        /// <summary>
+        /// Вызывается из CharacterWindow.SwitchTab когда "inventory" перестаёт быть активным.
+        /// </summary>
+        public void OnTabHidden()
+        {
+            if (_inventorySection != null)
+                _inventorySection.style.display = DisplayStyle.None;
+        }
+
+        /// <summary>
+        /// Вызывается из CharacterWindow.OnDisable. Отписывается от всех событий.
+        /// </summary>
+        public void Unsubscribe()
+        {
+            if (!_isInventorySubscribed) return;
+            var invState = ProjectC.Items.Client.InventoryClientState.Instance;
+            if (invState == null) { _isInventorySubscribed = false; return; }
+            invState.OnSnapshotUpdated -= HandleInventorySnapshotUpdated;
+            invState.OnInventoryResult -= HandleInventoryResultReceived;
+            if (_inventoryList != null) _inventoryList.selectionChanged -= OnInventorySelectionChanged;
+            _isInventorySubscribed = false;
+        }
+
+        /// <summary>
+        /// Lazy-subscribe из CharacterWindow.Update (если Instance был null при BuildUI).
+        /// </summary>
+        public void TryLazySubscribe()
+        {
+            if (_isInventorySubscribed) return;
+            var invState = ProjectC.Items.Client.InventoryClientState.Instance;
+            if (invState == null) return;
+            SubscribeInventory();
+            invState.RequestRefresh();
+            Debug.Log("[InventoryTab] Lazy-subscribed to InventoryClientState");
+        }
+
+        /// <summary>
+        /// HandleInventorySnapshotUpdated вызывается из CharacterWindow при cross-tab
+        /// (credits update) + из InventoryTab подписки на OnSnapshotUpdated.
+        /// </summary>
+        public void HandleSnapshotUpdated(InventorySnapshotDto snap)
+        {
+            // DIAG: логируем
+            Debug.Log($"[InventoryTab] HandleSnapshotUpdated: items={(snap.items!=null?snap.items.Length:0)}, cacheBefore={_inventoryCache.Count}");
+
+            // Cross-tab: обновляем credits в header
+            if (_creditsLabel != null)
+                _creditsLabel.text = $"Кредиты: {snap.credits:F0} CR";
+            if (_statCredits != null)
+                _statCredits.text = $"{snap.credits:F0} CR";
+
+            // Refresh cache unconditionally (cross-tab cache rule)
+            RefreshInventoryCache();
+
+            // Apply filters only if this tab is active
+            if (_owner != null && _owner.GetActiveTab() == "inventory")
+                ApplyInventoryFilters();
+        }
+
+        /// <summary>
+        /// Применить фильтры (вызывается из CharacterWindow при изменении фильтра поиска/типа).
+        /// </summary>
+        public void ApplyFilters()
+        {
+            ApplyInventoryFilters();
+        }
+
+        /// <summary>
+        /// HandleInventoryResultReceived — показываем feedback.
+        /// </summary>
+        public void HandleResultReceived(InventoryResultDto result)
+        {
+            if (_messageLabel == null) return;
+            if (_owner != null && !_owner.IsVisible()) return;
+
+            string msg = !string.IsNullOrEmpty(result.message)
+                ? result.message
+                : InventoryClientState.LocalizeResultCode((InventoryResultCode)result.code);
+
+            _messageLabel.text = msg;
+            _messageLabel.style.color = result.IsSuccess
+                ? new StyleColor(new Color(0.4f, 0.95f, 0.4f))
+                : new StyleColor(new Color(0.95f, 0.4f, 0.4f));
+        }
+
+        // ============================================================
+        // Subscriptions
+        // ============================================================
+
+        private void SubscribeInventory()
+        {
+            if (_isInventorySubscribed) return;
+            var invState = ProjectC.Items.Client.InventoryClientState.Instance;
+            if (invState == null) return;
+            invState.OnSnapshotUpdated += HandleInventorySnapshotUpdated;
+            invState.OnInventoryResult += HandleInventoryResultReceived;
+            _isInventorySubscribed = true;
+        }
+
+        private void UnsubscribeInventory()
+        {
+            if (!_isInventorySubscribed) return;
+            var invState = ProjectC.Items.Client.InventoryClientState.Instance;
+            if (invState == null) { _isInventorySubscribed = false; return; }
+            invState.OnSnapshotUpdated -= HandleInventorySnapshotUpdated;
+            invState.OnInventoryResult -= HandleInventoryResultReceived;
+            if (_inventoryList != null) _inventoryList.selectionChanged -= OnInventorySelectionChanged;
+            _isInventorySubscribed = false;
+        }
+
+        // ============================================================
+        // Refresh + Sort
+        // ============================================================
+
+        private void RefreshInventoryCache()
+        {
+            _inventoryCache.Clear();
+
+            var invState = ProjectC.Items.Client.InventoryClientState.Instance;
+            if (invState == null || !invState.CurrentSnapshot.HasValue)
+            {
+                SyncListView(itemsSourceNull: true);
+                return;
+            }
+
+            var snap = invState.CurrentSnapshot.Value;
+            var items = snap.items;
+            if (items == null)
+            {
+                SyncListView(itemsSourceNull: true);
+                return;
+            }
+
+            // Группируем по (itemId) — несколько стеков = один entry с total
+            var groups = new Dictionary<int, (int totalQty, InventoryItemDto first)>();
+            foreach (var dto in items)
+            {
+                if (dto.itemId <= 0) continue;
+                if (groups.TryGetValue(dto.itemId, out var existing))
+                    groups[dto.itemId] = (existing.totalQty + dto.quantity, existing.first);
+                else
+                    groups[dto.itemId] = (dto.quantity, dto);
+            }
+
+            // T-P19: сортировка по (ItemType, displayName) — категории сгруппированы,
+            // внутри категории — алфавитный порядок.
+            var sortedGroups = groups
+                .Select(kvp => new { kvp.Key, Value = kvp.Value })
+                .OrderBy(x => (int)x.Value.first.type)
+                .ThenBy(x =>
+                {
+                    var def = invState.GetItemDefinition(x.Value.first.itemId);
+                    return def != null ? def.itemName : $"Item#{x.Value.first.itemId}";
+                }, System.StringComparer.OrdinalIgnoreCase);
+
+            foreach (var entry in sortedGroups)
+            {
+                var first = entry.Value.first;
+                ItemData def = invState.GetItemDefinition(first.itemId);
+                _inventoryCache.Add(new InventoryListItem
+                {
+                    itemId = first.itemId.ToString(),
+                    displayName = def != null ? def.itemName : $"Item#{first.itemId}",
+                    type = (ItemType)first.type,
+                    quantity = entry.Value.totalQty,
+                    icon = def != null ? def.icon : null,
+                });
+            }
+
+            SyncListView();
+        }
+
+        private void SyncListView(bool itemsSourceNull = false)
+        {
+            if (_inventoryList == null) return;
+            if (itemsSourceNull)
+            {
+                if (!ReferenceEquals(_inventoryList.itemsSource, _inventoryCache))
+                    _inventoryList.itemsSource = _inventoryCache;
+            }
+            _inventoryList.RefreshItems();
+        }
+
+        // ============================================================
+        // Filters
+        // ============================================================
+
+        private void ConfigureInventoryFilters()
+        {
+            // Build dynamic options: "Все типы" + все 8 ItemType
+            if (_inventoryFilterSourceOptionsCache == null)
+            {
+                _inventoryFilterSourceOptionsCache = new List<string> { "Все типы" };
+                foreach (ItemType t in Enum.GetValues(typeof(ItemType)))
+                {
+                    _inventoryFilterSourceOptionsCache.Add(ItemTypeNames.GetDisplayName(t));
+                }
+            }
+            if (_filterSource != null)
+            {
+                _filterSource.choices = _inventoryFilterSourceOptionsCache;
+                if (!_inventoryFilterSourceOptionsCache.Contains(_filterSource.value))
+                    _filterSource.value = "Все типы";
+            }
+            if (_filterState != null)
+            {
+                _filterState.style.display = DisplayStyle.None;
+            }
+        }
+
+        private void ApplyInventoryFilters()
+        {
+            if (_inventoryList == null) return;
+            IEnumerable<InventoryListItem> src = _inventoryCache;
+
+            string source = _filterSource != null ? _filterSource.value : "Все типы";
+            if (source != "Все типы")
+            {
+                src = src.Where(i => ItemTypeNames.GetDisplayName(i.type) == source);
+            }
+            string search = _filterSearch != null ? (_filterSearch.value ?? "").ToLowerInvariant() : "";
+            if (!string.IsNullOrEmpty(search))
+            {
+                src = src.Where(i => (i.displayName ?? "").ToLowerInvariant().Contains(search));
+            }
+
+            var filteredList = src.ToList();
+            if (!ReferenceEquals(_inventoryList.itemsSource, filteredList))
+                _inventoryList.itemsSource = filteredList;
+            _inventoryList.RefreshItems();
+        }
+
+        // ============================================================
+        // Row factories
+        // ============================================================
+
+        private VisualElement MakeInventoryRow()
+        {
+            var row = new VisualElement();
+            row.AddToClassList("inventory-row");
+            var icon = new VisualElement { name = "row-icon" };
+            icon.AddToClassList("inventory-icon");
+            row.Add(icon);
+            var name = new Label { name = "row-name" };
+            name.AddToClassList("inventory-name");
+            row.Add(name);
+            var type = new Label { name = "row-type" };
+            type.AddToClassList("inventory-type");
+            row.Add(type);
+            var qty = new Label { name = "row-qty" };
+            qty.AddToClassList("inventory-qty");
+            row.Add(qty);
+            var equipBtn = new VisualElement { name = "row-equip-btn" };
+            equipBtn.AddToClassList("inventory-equip-btn");
+            var equipLabel = new Label { name = "row-equip-label", text = "НАДЕТЬ" };
+            equipLabel.AddToClassList("inventory-equip-label");
+            equipBtn.Add(equipLabel);
+            row.Add(equipBtn);
+            return row;
+        }
+
+        private void BindInventoryRow(VisualElement row, int index)
+        {
+            if (_inventoryList == null) return;
+            var src = _inventoryList.itemsSource;
+            if (src is List<InventoryListItem> list)
+            {
+                if (index < 0 || index >= list.Count) return;
+                var item = list[index];
+
+                var icon = row.Q<VisualElement>("row-icon");
+                if (item.icon != null)
+                    icon.style.backgroundImage = new StyleBackground(item.icon);
+                else
+                    icon.style.backgroundImage = new StyleBackground(StyleKeyword.Null);
+
+                row.Q<Label>("row-name").text = item.displayName;
+                row.Q<Label>("row-type").text = ItemTypeNames.GetDisplayName(item.type);
+                row.Q<Label>("row-qty").text = $"×{item.quantity}";
+
+                // [НАДЕТЬ] кнопка — показываем для Equipment
+                var equipBtn = row.Q<VisualElement>("row-equip-btn");
+                if (equipBtn == null) return;
+
+                bool isEquipable = item.type == ItemType.Equipment;
+                if (isEquipable)
+                {
+                    equipBtn.style.display = DisplayStyle.Flex;
+                    string capturedDisplayName = item.displayName;
+                    string capturedItemId = item.itemId;
+                    equipBtn.UnregisterCallback<ClickEvent>(OnInventoryEquipBtnClick);
+                    equipBtn.RegisterCallback<ClickEvent>(evt =>
+                    {
+                        Debug.Log("!!!!! EQUIP FROM INVENTORY !!!!! name=" + capturedDisplayName);
+                        OnEquipFromInventoryClicked(capturedItemId, capturedDisplayName);
+                        evt.StopPropagation();
+                    });
+                }
+                else
+                {
+                    equipBtn.style.display = DisplayStyle.None;
+                }
+            }
+        }
+
+        private void OnInventoryEquipBtnClick(ClickEvent evt) { /* placeholder for Unregister */ }
+
+        // ============================================================
+        // Equip from inventory (SESSION 2 fix)
+        // ============================================================
+
+        private void OnEquipFromInventoryClicked(string itemIdStr, string displayName)
+        {
+            try
+            {
+                if (!int.TryParse(itemIdStr, out int itemId)) return;
+
+                // Резолвим ItemData
+                ProjectC.Items.ItemData def = ProjectC.Items.InventoryWorld.Instance?.GetItemDefinition(itemId);
+                if (def == null)
+                {
+                    Debug.LogWarning("[InventoryTab] item not found in db");
+                    return;
+                }
+
+                ProjectC.Equipment.EquipSlot slot = ProjectC.Equipment.EquipSlot.None;
+                if (def is ProjectC.Equipment.ClothingItemData c) slot = c.slot;
+                else if (def is ProjectC.Equipment.ModuleItemData m) slot = m.slot;
+                if (slot == ProjectC.Equipment.EquipSlot.None)
+                {
+                    Debug.LogWarning("[InventoryTab] item not equipable");
+                    return;
+                }
+
+                // Reflection RPC (stop-gap — будет заменён на прямой RPC в будущем тикете)
+                int dbItemId = -1;
+                var invDbField = typeof(ProjectC.Items.InventoryWorld).GetField("_itemDatabase",
+                    System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
+                var invDb = invDbField?.GetValue(ProjectC.Items.InventoryWorld.Instance)
+                    as Dictionary<int, ProjectC.Items.ItemData>;
+                if (invDb != null)
+                {
+                    foreach (var kvp in invDb)
+                    {
+                        if (kvp.Value == def) { dbItemId = kvp.Key; break; }
+                    }
+                }
+                if (dbItemId <= 0) { Debug.LogWarning("[InventoryTab] item not found in db"); return; }
+
+                var t = System.Type.GetType("ProjectC.Equipment.EquipmentServer, Assembly-CSharp");
+                if (t == null) { Debug.LogWarning("[InventoryTab] EquipmentServer type not found"); return; }
+                var inst = t.GetProperty("Instance",
+                    System.Reflection.BindingFlags.Public | System.Reflection.BindingFlags.Static)?.GetValue(null);
+                if (inst == null) { Debug.LogWarning("[InventoryTab] EquipmentServer.Instance is null"); return; }
+                var mi = t.GetMethod("RequestEquipRpc");
+                if (mi == null) { Debug.LogWarning("[InventoryTab] RequestEquipRpc not found"); return; }
+                var rpcParams = System.Activator.CreateInstance(typeof(Unity.Netcode.RpcParams));
+                mi.Invoke(inst, new object[] { dbItemId, slot, rpcParams });
+                Debug.Log($"[InventoryTab] RequestEquipRpc: itemId={dbItemId} slot={slot} name={def.itemName}");
+            }
+            catch (System.Exception ex)
+            {
+                Debug.LogWarning($"[InventoryTab] OnEquipFromInventoryClicked error: {ex.Message}");
+            }
+        }
+
+        // ============================================================
+        // Detail panel
+        // ============================================================
+
+        private void OnInventorySelectionChanged(System.Collections.Generic.IEnumerable<object> selectedItems)
+        {
+            if (selectedItems == null) return;
+            if (_inventoryList == null) return;
+            int selectedIdx = _inventoryList.selectedIndex;
+            if (selectedIdx < 0 || selectedIdx >= _inventoryCache.Count)
+            {
+                ClearInventoryDetail();
+                return;
+            }
+            var item = _inventoryCache[selectedIdx];
+            UpdateInventoryDetail(item);
+        }
+
+        private void ClearInventoryDetail()
+        {
+            if (_invDetailName != null) _invDetailName.text = "Выберите предмет слева";
+            if (_invDetailType != null) _invDetailType.text = "—";
+            if (_invDetailWeight != null) _invDetailWeight.text = "—";
+            if (_invDetailStat != null) _invDetailStat.text = "—";
+            if (_invDetailDesc != null) _invDetailDesc.text = "—";
+        }
+
+        private void UpdateInventoryDetail(InventoryListItem item)
+        {
+            // Резолвим ItemData
+            ProjectC.Items.ItemData def = null;
+            if (int.TryParse(item.itemId, out int parsedId))
+            {
+                def = ProjectC.Items.InventoryWorld.Instance?.GetItemDefinition(parsedId);
+            }
+
+            if (_invDetailName != null) _invDetailName.text = item.displayName;
+            if (_invDetailType != null) _invDetailType.text = $"Тип: {ItemTypeNames.GetDisplayName(item.type)}";
+            if (_invDetailWeight != null) _invDetailWeight.text = $"Вес: {(def != null ? def.weightKg : 0):F1} кг";
+            if (_invDetailDesc != null)
+                _invDetailDesc.text = def != null && !string.IsNullOrEmpty(def.description) ? def.description : "—";
+
+            // Stat bonuses для ClothingItemData / ModuleItemData
+            if (_invDetailStat != null)
+            {
+                if (def is ProjectC.Equipment.ClothingItemData c)
+                {
+                    string sb = "Бонусы: ";
+                    if (c.strengthBonus != 0) sb += $"STR {(c.strengthBonus >= 0 ? "+" : "")}{c.strengthBonus:F0} ";
+                    if (c.dexterityBonus != 0) sb += $"DEX {(c.dexterityBonus >= 0 ? "+" : "")}{c.dexterityBonus:F0} ";
+                    if (c.intelligenceBonus != 0) sb += $"INT {(c.intelligenceBonus >= 0 ? "+" : "")}{c.intelligenceBonus:F0} ";
+                    if (c.strengthMultiplier != 0) sb += $"\nSTR ×{c.strengthMultiplier:F2} ";
+                    if (c.dexterityMultiplier != 0) sb += $"\nDEX ×{c.dexterityMultiplier:F2} ";
+                    if (c.intelligenceMultiplier != 0) sb += $"\nINT ×{c.intelligenceMultiplier:F2} ";
+                    _invDetailStat.text = sb;
+                }
+                else if (def is ProjectC.Equipment.ModuleItemData m)
+                {
+                    string sb = "Бонусы: ";
+                    if (m.strengthBonus != 0) sb += $"STR {(m.strengthBonus >= 0 ? "+" : "")}{m.strengthBonus:F0} ";
+                    if (m.dexterityBonus != 0) sb += $"DEX {(m.dexterityBonus >= 0 ? "+" : "")}{m.dexterityBonus:F0} ";
+                    if (m.intelligenceBonus != 0) sb += $"INT {(m.intelligenceBonus >= 0 ? "+" : "")}{m.intelligenceBonus:F0} ";
+                    if (m.weaponDamageBonus != 0) sb += $"\nWeapon DMG +{m.weaponDamageBonus:F0}";
+                    if (m.sensorRangeBonus != 0) sb += $"\nSensor +{m.sensorRangeBonus:F0}";
+                    if (m.craftingSpeedMultiplier != 0) sb += $"\nCraft ×{m.craftingSpeedMultiplier:F2}";
+                    _invDetailStat.text = sb;
+                }
+                else
+                {
+                    _invDetailStat.text = "—";
+                }
+            }
+        }
+
+        // ============================================================
+        // Snapshot/Result handlers (для подписки)
+        // ============================================================
+
+        private void HandleInventorySnapshotUpdated(InventorySnapshotDto snap)
+        {
+            HandleSnapshotUpdated(snap);
+        }
+
+        private void HandleInventoryResultReceived(InventoryResultDto result)
+        {
+            HandleResultReceived(result);
+        }
+    }
+}

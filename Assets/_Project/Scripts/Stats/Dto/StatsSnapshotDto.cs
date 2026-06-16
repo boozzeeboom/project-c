@@ -39,6 +39,12 @@ namespace ProjectC.Stats.Dto
         public float dexterityTotalXp;
         public float intelligenceTotalXp;
 
+        // SESSION 2: effective stats = base + equip bonuses (для UI).
+        // Серверная сторона заполняет effective, base остаётся в strength/dexterity/intelligence.
+        public float effectiveStrength;
+        public float effectiveDexterity;
+        public float effectiveIntelligence;
+
         public void NetworkSerialize<T>(BufferSerializer<T> serializer) where T : IReaderWriter
         {
             serializer.SerializeValue(ref strength);
@@ -56,6 +62,10 @@ namespace ProjectC.Stats.Dto
             serializer.SerializeValue(ref strengthTotalXp);
             serializer.SerializeValue(ref dexterityTotalXp);
             serializer.SerializeValue(ref intelligenceTotalXp);
+
+            serializer.SerializeValue(ref effectiveStrength);
+            serializer.SerializeValue(ref effectiveDexterity);
+            serializer.SerializeValue(ref effectiveIntelligence);
         }
 
         public bool Equals(StatsSnapshotDto other)

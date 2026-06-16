@@ -396,13 +396,28 @@ namespace ProjectC.Stats
 
         /// <summary>
         /// Recompute effective stats (после equip/unequip/learn/forget) и шлёт snapshot.
-        /// В T-P05 — пока просто snapshot (без effective calculation, это будет в T-P09).
+        /// SESSION 2: effective = base + equip bonuses. UI использует effective для отображения.
         /// </summary>
         public void RecomputeAndSendSnapshot(ulong clientId)
         {
-            // TODO T-P09: effective stat = (base + additive bonuses from equipment) * (1 + multiplicative bonuses)
+            var stats = _world.GetOrCreateStats(clientId);
+            // Берём бонусы от экипировки (EquipmentWorld — singleton)
+            float bonusStr = 0f, bonusDex = 0f, bonusInt = 0f;
+            var eqWorld = ProjectC.Equipment.EquipmentWorld.Instance;
+            if (eqWorld != null)
+            {
+                eqWorld.GetEquipStatBonuses(clientId, out bonusStr, out bonusDex, out bonusInt);
+            }
+            _pendingEquipBonus[clientId] = (bonusStr, bonusDex, bonusInt);
+            if (Debug.isDebugBuild)
+            {
+                Debug.Log($"[StatsServer] Recompute equip: client={clientId} +STR={bonusStr} +DEX={bonusDex} +INT={bonusInt}");
+            }
             SendSnapshotToOwner(clientId);
         }
+
+        // SESSION 2: cache для бонусов экипировки (заполняется в Recompute, читается в SendSnapshot)
+        private readonly System.Collections.Generic.Dictionary<ulong, (float str, float dex, float iq)> _pendingEquipBonus = new System.Collections.Generic.Dictionary<ulong, (float, float, float)>();
 
         private void SendSnapshotToOwner(ulong clientId)
         {
@@ -412,6 +427,13 @@ namespace ProjectC.Stats
             if (netPlayer == null) return;
 
             var stats = _world.GetOrCreateStats(clientId);
+            // SESSION 2: всегда вычисляем equip bonuses inline (не rely на cache).
+            float bonusStr = 0f, bonusDex = 0f, bonusInt = 0f;
+            var eqWorld = ProjectC.Equipment.EquipmentWorld.Instance;
+            if (eqWorld != null)
+            {
+                eqWorld.GetEquipStatBonuses(clientId, out bonusStr, out bonusDex, out bonusInt);
+            }
             var snap = new StatsSnapshotDto
             {
                 strength                  = stats.strength,
@@ -426,6 +448,9 @@ namespace ProjectC.Stats
                 strengthTotalXp           = stats.strengthTotalXp,
                 dexterityTotalXp          = stats.dexterityTotalXp,
                 intelligenceTotalXp       = stats.intelligenceTotalXp,
+                effectiveStrength         = stats.strength + bonusStr,
+                effectiveDexterity        = stats.dexterity + bonusDex,
+                effectiveIntelligence     = stats.intelligence + bonusInt,
             };
 
             // T-P06: ReceiveStatsSnapshotTargetRpc добавлен в NetworkPlayer (owner→server).

@@ -1,8 +1,14 @@
 # План разработки ММО "Project C: The Clouds" на Unity
 
-**Последнее обновление:** 13 июня 2026 г. | **Текущая версия:** `v0.0.23-csv-pipeline-complete`
+**Последнее обновление:** 17 июня 2026 г. | **Текущая версия:** `v0.0.25-Character-UI-Refactor`
 
-> **Что нового с прошлого обновления (10 июня 2026):** **Resources Exchanger (обменник ресурсов) — MVP завершён.** Мост между двумя системами предметов: pickable (инвентарь, 1 кг) ↔ boxed (склад, 100 кг). 4-я вкладка «Обменник» в MarketWindow. Pack: 100 осколков → 1 ящик на складе. Unpack: 1 ящик → 100 осколков в инвентарь. InventoryWorld.MAX_SLOTS увеличен до 1000 (конфигурируется в инспекторе). Исправлены: спавн scene-placed NetworkObject в BootstrapScene (OnServerStarted), PushSnapshot инвентаря и склада после каждой операции, группировка предметов по itemId в UI. 5 тикетов T-E01–T-E05, ~30 ч работы. См. `docs/Markets/Resources_exchanger/01_ANALYSIS.md`.
+> **Что нового с прошлого обновления (17 июня 2026):** **Character Progression — полная реализация (18 тикетов T-P01..T-P18) + UI рефакторинг CharacterWindow.**
+> 3 характеристики: Сила (майнинг), Ловкость (ходьба/прыжок), Интеллект (квесты/диалоги) с геометрическим ростом по тирам. 13 слотов экипировки (10 одежда + 3 модуля). Effective stats (base + equip bonuses). [НАДЕТЬ] из инвентаря, [СНЯТЬ] в одежде. 8 навыков (4 боевых + 4 социальных).
+> **UI-рефакторинг:** CharacterWindow полностью переработан — single-page ПЕРСОНАЖ layout (характеристики + одежда + модули + навыки). Inventory split layout (ScrollView list + detail panel). Устранено пустое пространство под списком, фильтр "Все типы" убран с инвентаря. USS-стили переписаны с нуля для корректного flex-растяжения.
+> **Технические фиксы:** динамическое разрешение ID предметов (FindItemIdByName), auto-registration ClothingItemData в _itemDatabase, fix unequip→inventory (AddItemDirect + ID fallback по slot), save/load (flush on disconnect + auto-save 30s), effective stats inline в SendSnapshotToOwner.
+> См. `docs/Character/00_README.md`, `docs/Character/08_ROADMAP.md`.
+>
+> **Предыдущее обновление (13 июня 2026):** **Resources Exchanger (обменник ресурсов) — MVP завершён.** Мост между двумя системами предметов: pickable (инвентарь, 1 кг) ↔ boxed (склад, 100 кг). 4-я вкладка «Обменник» в MarketWindow. Pack: 100 осколков → 1 ящик на складе. Unpack: 1 ящик → 100 осколков в инвентарь. InventoryWorld.MAX_SLOTS увеличен до 1000 (конфигурируется в инспекторе). Исправлены: спавн scene-placed NetworkObject в BootstrapScene (OnServerStarted), PushSnapshot инвентаря и склада после каждой операции, группировка предметов по itemId в UI. 5 тикетов T-E01–T-E05, ~30 ч работы. См. `docs/Markets/Resources_exchanger/01_ANALYSIS.md`.
 >
 > **Предыдущее обновление (10 июня 2026):** **Crafting (крафт-система) — MVP завершён.** Подойти к станции → F → окно → выбрать рецепт → добавить ингредиенты (+1/+Все) → Начать крафт → таймер (10с) с ProgressBar + тост + анимация станции → Готово → Забрать → предмет в инвентарь. 2 станции в WorldScene_0_0: [CraftingStation_Table] (3 рецепта: медный/железный слиток, ключ корабля) и [CraftingStation_Shipyard] (1 рецепт). Подписки на несколько станций, независимая работа. Инвентарь: списание/выдача через InventoryWorld. 9 тикетов T-C01–T-C07c, ~12-15 ч работы. См. `docs/Crafting_system/ROADMAP.md`.
 

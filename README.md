@@ -1,12 +1,13 @@
 # Project C: The Clouds
-**Version:** 0.0.23 | **Stage:** Этап 2.5 В ПРОЦЕССЕ (Визуальный прототип)
-**Подсистемы:** NPC+Quests v2 ✅ (M1–M19.3) | Gathering (Mining) ✅ (T-G01–T-G07) | **Crafting ✅ (T-C01–T-C07c)** | **Exchange ✅ (T-E01–T-E05)**
+**Version:** 0.0.25 | **Stage:** Этап 2.5 В ПРОЦЕССЕ (Визуальный прототип)
+**Подсистемы:** NPC+Quests v2 ✅ (M1–M19.3) | Character Progression ✅ (T-P01–T-P18) | Gathering (Mining) ✅ (T-G01–T-G07) | **Crafting ✅ (T-C01–T-C07c)** | **Exchange ✅ (T-E01–T-E05)**
 **По мотивам книги «Интеграл Пьявица» — Бруно Арендт**
 ## Весь проект: [TheGravity](https://thegravity.ru) & [TheClouds](https://thegravity.ru/project-c/)
 
 ---
 
-> **Что нового в v0.0.23 (13 июня 2026):** **CSV Pipeline — финал!** Теперь контент-райтер забивает квесты в Excel → CSV → 1 кнопка в Unity → готово. Auto-создание NPC из CSV (displayName, faction, questOffers, questTurnIns). `npcs.csv` (9 колонок: services, attitude, greeting, voice, radius). `dialogs.csv` (15 колонок: деревья диалогов с 11 условиями и 17 действиями). Auto-link `{npcId}_default` к NPC. Тестовый импорт: **106 NPC, 802 квеста** — 1 кнопка. Примеры: `Import/example_quests.csv`, `example_npcs.csv`, `example_dialogs.csv`. Writer-документация: `M19_CSV_PIPELINE_v2.md`.
+> **Что нового в v0.0.25 (17 июня 2026):** **Character Progression — 18 тикетов T-P01..T-P18 ✅ + UI рефакторинг CharacterWindow.** 3 характеристики (STR/DEX/INT) с геометрическим ростом от mining/walking/dialog. 13 слотов экипировки (10 одежда + 3 модуля). Effective stats (base + equip bonuses). [НАДЕТЬ]/[СНЯТЬ]. 8 навыков (4 боевых + 4 социальных). UI: single-page ПЕРСОНАЖ, inventory split layout, ScrollView вместо ListView. Фикс пустого пространства, убран фильтр с инвентаря. Compile 0 errors. См. `docs/Character/`.
+> **Предыдущее (v0.0.23):** **CSV Pipeline — финал!** Теперь контент-райтер забивает квесты в Excel → CSV → 1 кнопка в Unity → готово. Auto-создание NPC из CSV (displayName, faction, questOffers, questTurnIns). `npcs.csv` (9 колонок: services, attitude, greeting, voice, radius). `dialogs.csv` (15 колонок: деревья диалогов с 11 условиями и 17 действиями). Auto-link `{npcId}_default` к NPC. Тестовый импорт: **106 NPC, 802 квеста** — 1 кнопка. Примеры: `Import/example_quests.csv`, `example_npcs.csv`, `example_dialogs.csv`. Writer-документация: `M19_CSV_PIPELINE_v2.md`.
 > **Предыдущее (v0.0.21):** Crafting (крафт-система) — MVP завершён! Две станции в мире: Верстак (3 рецепта: медный слиток, железный слиток, ключ корабля) и Верфь (ключ ShipLight). Подойти → F → окно → выбрать рецепт → добавить ресурсы → запустить крафт → таймер с ProgressBar + тост → Готово → предмет в инвентаре. Станции работают независимо, анимация свечения в процессе. 9 тикетов, все проверено в Play Mode.
 > **См. полную историю:** `docs/MMO_Development_Plan.md`
 **no marketing/bullshit/tech-heavy/sound sections**

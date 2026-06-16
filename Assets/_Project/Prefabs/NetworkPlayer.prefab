@@ -129,6 +129,8 @@ MonoBehaviour:
   cameraPrefab: {fileID: 5405426399639928988, guid: 020b4cd7c3349134b8c1de87bed1f706, type: 3}
   boardDistance: 5
   pickupRange: 3
+  _gatherScaleAmplitude: 0.08
+  _gatherPulsePeriod: 0.6
   positionCorrectionThreshold: 0.5
   positionCorrectionSpeed: 10
 --- !u!143 &-8638653109892984551
@@ -237,7 +239,7 @@ MeshRenderer:
   m_RenderingLayerMask: 1
   m_RendererPriority: 0
   m_Materials:
-  - {fileID: 10303, guid: 0000000000000000f000000000000000, type: 0}
+  - {fileID: 2100000, guid: 650ca714904a414b91d0a9446fd09b7a, type: 2}
   m_StaticBatchInfo:
     firstSubMesh: 0
     subMeshCount: 0

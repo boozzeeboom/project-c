@@ -458,15 +458,18 @@ namespace ProjectC.UI.Client
                 }
             }
 
-            var nm = NetworkManager.Singleton;
-            if (nm == null || !nm.IsListening) return;
-            if (!nm.IsClient && !nm.IsServer) return;
-
+            // BUGFIX T-P19: Esc проверяем ДО guard'а NetworkManager, чтобы закрытие
+            // работало независимо от состояния сети (был баг: Esc не закрывал окно).
             var kb = UnityEngine.InputSystem.Keyboard.current;
             if (kb != null && kb.escapeKey.wasPressedThisFrame && IsVisible())
             {
                 Hide();
+                return;
             }
+
+            var nm = NetworkManager.Singleton;
+            if (nm == null || !nm.IsListening) return;
+            if (!nm.IsClient && !nm.IsServer) return;
             // P-handler реализован в NetworkPlayer.Update (P = "Press" / "Profile" / "Person"),
             // см. docs/Character-menu/00_OVERVIEW.md §7. Здесь — только Esc для закрытия.
         }

@@ -123,7 +123,9 @@ namespace ProjectC.UI.Client
         private Button _acceptBtn;
         private Button _completeBtn;
         private Button _failBtn;
+        // T-P19: Quests buttons
         private Button _acceptQuestBtn;
+        private Button _rejectQuestBtn;
         private Button _closeBtn;
 
         // --- Filters (Контракты / Инвентарь) ---
@@ -558,6 +560,7 @@ namespace ProjectC.UI.Client
             _completeBtn = _root.Q<Button>("complete-btn");
             _failBtn = _root.Q<Button>("fail-btn");
             _acceptQuestBtn = _root.Q<Button>("accept-quest-btn");
+            _rejectQuestBtn = _root.Q<Button>("reject-quest-btn");
             _closeBtn = _root.Q<Button>("close-btn");
 
             _filterSource          = _root.Q<DropdownField>("filter-source");
@@ -588,6 +591,7 @@ namespace ProjectC.UI.Client
             // ---- Action buttons ----
             if (_closeBtn != null) _closeBtn.clicked += OnCloseClicked;
             if (_acceptQuestBtn != null) _acceptQuestBtn.clicked += OnAcceptQuestClicked;
+            if (_rejectQuestBtn != null) _rejectQuestBtn.clicked += OnRejectQuestClicked;
             // T-P19: Accept/Complete/Fail для контрактов переехали в ContractsTab.BuildUI
 
             // T-P19: ContractsTab вынесен — BuildUI делает ListView setup + подписку + кнопки.
@@ -778,6 +782,7 @@ namespace ProjectC.UI.Client
         // ---- Action buttons ----
         // T-P19: accept/complete/fail кнопки — переехали в ContractsTab.BuildUI
         if (_acceptQuestBtn != null) _acceptQuestBtn.style.display = isQuests ? DisplayStyle.Flex : DisplayStyle.None;
+        if (_rejectQuestBtn != null) _rejectQuestBtn.style.display = isQuests ? DisplayStyle.Flex : DisplayStyle.None;
         if (_closeBtn != null) _closeBtn.style.display = DisplayStyle.Flex; // всегда
 
         // ---- Refresh data for the active tab ----
@@ -2955,7 +2960,13 @@ namespace ProjectC.UI.Client
             SetMessage($"Запрос на принятие '{q.displayName}' отправлен...");
             }
 
-            // ============================================================
+            // T-P19: Отказаться от квеста (reject/abandon — заглушка, серверная часть не реализована)
+            private void OnRejectQuestClicked()
+            {
+            SetMessage("Отказ от квеста пока не реализован (ждёт серверную часть)");
+            }
+
+
             // Actions: contracts (реюз MarketWindow логики)
             // ============================================================
 

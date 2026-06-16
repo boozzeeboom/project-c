@@ -105,6 +105,96 @@
 #reputation-section > .section-title {
     flex-shrink: 0 !important;
 }
+
+/* === T-P19: Quests section === */
+.quests-scroll {
+    flex-grow: 1 !important;
+    flex-shrink: 1 !important;
+    min-height: 0 !important;
+}
+.quests-section-title {
+    font-size: 10px !important;
+    color: rgb(160, 180, 200) !important;
+    -unity-font-style: bold !important;
+    padding: 3px 4px 1px 4px !important;
+    flex-shrink: 0 !important;
+    border-bottom-width: 1px !important;
+    border-bottom-color: rgba(80, 100, 130, 0.2) !important;
+    margin-top: 2px !important;
+}
+.quest-list-full {
+    max-height: none !important;
+    min-height: 40px !important;
+    margin-bottom: 2px !important;
+}
+/* Quest row */
+.quest-row {
+    flex-direction: column !important;
+    padding: 2px 4px !important;
+    border-bottom-width: 1px !important;
+    border-bottom-color: rgba(80, 100, 130, 0.1) !important;
+    flex-shrink: 0 !important;
+}
+.quest-row-top-line {
+    flex-direction: row !important;
+    align-items: center !important;
+    min-height: 20px !important;
+}
+.quest-row-state {
+    width: 60px !important;
+    font-size: 9px !important;
+    color: rgb(180, 180, 180) !important;
+    flex-shrink: 0 !important;
+    -unity-text-align: middle-center !important;
+}
+.quest-row-state-active { color: rgb(100, 200, 100) !important; -unity-font-style: bold !important; }
+.quest-row-state-completed { color: rgb(140, 180, 220) !important; }
+.quest-row-state-failed { color: rgb(200, 100, 100) !important; }
+.quest-row-state-discovered { color: rgb(220, 200, 100) !important; }
+.quest-row-title {
+    flex-grow: 1 !important;
+    font-size: 10px !important;
+    color: rgb(220, 220, 230) !important;
+    min-width: 0 !important;
+    -unity-text-align: middle-left !important;
+    white-space: nowrap !important;
+    overflow: hidden !important;
+    text-overflow: ellipsis !important;
+}
+.quest-row-objectives {
+    width: 40px !important;
+    font-size: 9px !important;
+    color: rgb(160, 200, 160) !important;
+    -unity-text-align: middle-right !important;
+    flex-shrink: 0 !important;
+}
+.quest-row-track-btn {
+    width: 60px !important;
+    height: 18px !important;
+    font-size: 9px !important;
+    margin-left: 4px !important;
+    flex-shrink: 0 !important;
+    background-color: rgba(60, 100, 160, 0.5) !important;
+    border-width: 1px !important;
+    border-color: rgba(80, 120, 180, 0.4) !important;
+    border-radius: 3px !important;
+    color: rgb(220, 220, 240) !important;
+    cursor: link !important;
+}
+.quest-row-track-btn:hover { background-color: rgba(80, 140, 200, 0.7) !important; }
+.quest-row-objectives-container {
+    flex-direction: column !important;
+    padding: 0 4px 2px 4px !important;
+}
+.quest-row-objective-line {
+    font-size: 9px !important;
+    color: rgb(180, 180, 190) !important;
+    padding: 1px 0 !important;
+}
+.quest-row-objective-line-done {
+    color: rgb(100, 180, 100) !important;
+    text-decoration: line-through !important;
+}
 .section-title {
     font-size: 11px !important;
     color: rgb(180, 200, 220) !important;
@@ -394,6 +484,8 @@
     background-color: rgba(80, 100, 130, 0.5) !important;
 }
 .action-btn.close { background-color: rgba(180, 60, 60, 0.6) !important; }
+.action-btn.accept { background-color: rgba(60, 140, 80, 0.6) !important; }
+.action-btn.reject { background-color: rgba(180, 120, 40, 0.6) !important; }
 
 .message-label {
     margin-top: 4px !important;

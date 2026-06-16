@@ -117,13 +117,22 @@
   </ui:VisualElement>
  </ui:VisualElement>
  <ui:VisualElement name="quests-section" class="list-section" style="display: none;">
-  <ui:ListView name="quests-active-list" class="item-list quest-list" />
-  <ui:ListView name="quests-completed-list" class="item-list quest-list" />
-  <ui:ListView name="quests-failed-list" class="item-list quest-list" />
-  <ui:ListView name="quests-discovered-list" class="item-list quest-list" />
+  <ui:Label text="Квесты" class="section-title" />
+  <ui:ScrollView class="quests-scroll">
+   <ui:Label text="— Активные" class="quests-section-title" />
+   <ui:ListView name="quests-active-list" class="item-list quest-list quest-list-full" />
+   <ui:Label text="— Завершённые" class="quests-section-title" />
+   <ui:ListView name="quests-completed-list" class="item-list quest-list quest-list-full" />
+   <ui:Label text="— Провалено" class="quests-section-title" />
+   <ui:ListView name="quests-failed-list" class="item-list quest-list quest-list-full" />
+   <ui:Label text="— Найдено" class="quests-section-title" />
+   <ui:ListView name="quests-discovered-list" class="item-list quest-list quest-list-full" />
+  </ui:ScrollView>
  </ui:VisualElement>
 
  <ui:VisualElement class="actions">
+  <ui:Button name="reject-quest-btn" text="ОТКАЗАТЬСЯ" class="action-btn reject" style="display: none;" />
+  <ui:Button name="accept-quest-btn" text="ПРИНЯТЬ" class="action-btn accept" style="display: none;" />
   <ui:Button name="close-btn" text="ЗАКРЫТЬ" class="action-btn close" />
  </ui:VisualElement>
 

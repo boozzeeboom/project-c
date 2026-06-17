@@ -1,0 +1,3 @@
+<ui:UXML xmlns:ui="UnityEngine.UIElements" xmlns:uie="UnityEditor.UIElements">
+  <!-- S-HUD-04: stub root — заменяется runtime-построенным деревом в ShipHudController.TryBuild() -->
+</ui:UXML>

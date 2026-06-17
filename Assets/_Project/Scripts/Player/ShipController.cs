@@ -917,6 +917,8 @@ namespace ProjectC.Player
         public float RollAngleDegrees  { get { float a = transform.eulerAngles.z; if (a > 180f) a -= 360f; return a; } }
         public float YawAngleDegrees   => transform.eulerAngles.y;
         public float VerticalSpeed     => _rb != null ? _rb.linearVelocity.y : 0f;
+        /// <summary>Компонента скорости вдоль носа корабля (м/с). Положительная = вперёд (W), отрицательная = назад (S).</summary>
+        public float ForwardSpeedMps   => _rb != null ? Vector3.Dot(_rb.linearVelocity, transform.forward) : 0f;
         public Vector3 AngularVelocity => _rb != null ? _rb.angularVelocity : Vector3.zero;
         public AltitudeCorridorData ActiveCorridor => _activeCorridor;
         public AltitudeStatus CurrentAltitudeStatus => _currentAltitudeStatus;

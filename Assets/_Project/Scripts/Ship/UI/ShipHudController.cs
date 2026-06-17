@@ -35,7 +35,7 @@ namespace ProjectC.Ship.UI
 
         [Header("Размеры (см. §3.2 design doc)")]
         [SerializeField] private float _rootTopOffset = 8f;
-        [SerializeField] private float _rootHeight = 96f;
+        [SerializeField] private float _rootHeight = 62f;  // S-HUD-03b fix: 96→62 (x1.5 уменьшение)
 
         // Стек построения (5-step guards по project-c-ui-toolkit-runtime §0)
         private bool _built = false;
@@ -50,6 +50,11 @@ namespace ProjectC.Ship.UI
         private VisualElement _colEnv;
         private VisualElement _colDispatch;
 
+        // S-HUD-03b: Speed column (K3)
+        private Label _speedValueLabel;     // "24.3 м/с"
+        private VisualElement _speedBarFill; // полоска скорости (ширина меняется)
+        private Label _maxSpeedLabel;        // "MAX 40 м/с"
+
         // LocalPlayer (кешируем после нахождения; null если не найден)
         private ProjectC.Player.NetworkPlayer _localPlayer;
 
@@ -57,6 +62,8 @@ namespace ProjectC.Ship.UI
         {
             // S-HUD-03a: cache UIDocument, fallback PanelSettings, persist scene
             if (_doc == null) _doc = GetComponent<UIDocument>();
+            bool docFound = _doc != null;
+            bool psFromInspector = docFound && _doc.panelSettings != null;
 
             // FALLBACK PanelSettings (как ShipKeyToast.cs — критично для не-thin-strip)
             if (_doc != null && _doc.panelSettings == null)
@@ -79,7 +86,8 @@ namespace ProjectC.Ship.UI
             if (!_built)
             {
                 TryBuild();
-                if (!_built) return; // guards не прошли — выходим, попробуем на следующем кадре
+                if (!_built) { /* guards не прошли — попробуем на следующем кадре */ return; }
+                Debug.Log("[ShipHudController] TryBuild SUCCESS — HUD дерево построено.");
             }
 
             // 1. Найти локального игрока (race-handling: не заспавнен = HUD скрыт)
@@ -92,7 +100,11 @@ namespace ProjectC.Ship.UI
 
             // 2. Видимость по состоянию
             bool shouldShow = _localPlayer.IsInShip && _localPlayer.CurrentShip != null;
-            if (shouldShow != _wasShown) SetVisible(shouldShow);
+            if (shouldShow != _wasShown)
+            {
+                Debug.Log($"[ShipHudController] SetVisible({shouldShow}): IsInShip={_localPlayer.IsInShip}, CurrentShip={(_localPlayer.CurrentShip != null ? _localPlayer.CurrentShip.name : "null")}");
+                SetVisible(shouldShow);
+            }
             if (!shouldShow) return;
 
             // 3. Обновить данные (пока пусто — S-HUD-03b..f наполнят)
@@ -107,9 +119,10 @@ namespace ProjectC.Ship.UI
         /// </summary>
         private void TryBuild()
         {
-            if (_doc == null) return;
-            if (_doc.rootVisualElement == null) return;
-            if (_doc.panelSettings == null) return;
+            // S-HUD-03a debug guard chain
+            if (_doc == null) { Debug.LogWarning("[ShipHudController] TryBuild BLOCKED: _doc == null (Awake не нашёл UIDocument?)"); return; }
+            if (_doc.rootVisualElement == null) { Debug.LogWarning("[ShipHudController] TryBuild BLOCKED: rootVisualElement == null (UIDocument не инициализирован)"); return; }
+            if (_doc.panelSettings == null) { Debug.LogWarning("[ShipHudController] TryBuild BLOCKED: panelSettings == null (ShipHudPanelSettings не загружен)"); return; }
 
             // Root — absolute-positioned overlay, top-anchored, центрированный по горизонтали
             _root = new VisualElement { name = "ship-hud-root", pickingMode = PickingMode.Ignore };
@@ -128,12 +141,15 @@ namespace ProjectC.Ship.UI
             _centerRow.style.height = Length.Percent(100);
             _centerRow.style.alignItems = Align.Center;
 
-            // 5 пустых колонок-плейсхолдеров (наполняются в S-HUD-03b..f)
+            // 5 колонок
             _colModules   = MakeColumn("col-modules",   240f, flexShrink: 1f);
             _colFlight    = MakeColumn("col-flight",    200f, flexShrink: 0f);  // критические данные — не сжимаем
             _colSpeed     = MakeColumn("col-speed",     180f, flexShrink: 0f);
             _colEnv       = MakeColumn("col-env",       220f, flexShrink: 1f);
             _colDispatch  = MakeColumn("col-dispatch",  200f, flexShrink: 1f);
+
+            // S-HUD-03b: наполнить _colSpeed (K3 — скорость, центр)
+            BuildSpeedColumn();
 
             _centerRow.Add(_colModules);
             _centerRow.Add(_colFlight);
@@ -198,7 +214,80 @@ namespace ProjectC.Ship.UI
         /// </summary>
         private void Refresh(ProjectC.Player.ShipController ship)
         {
-            // S-HUD-03a: пока пусто. Колонки-плейсхолдеры рендерятся, но без данных.
+            UpdateSpeedColumn(ship);
+        }
+
+        // ==================== S-HUD-03b: Speed (K3) ====================
+
+        /// <summary>
+        /// Построить визуальные элементы колонки скорости (вызывается 1 раз в TryBuild).
+        /// _colSpeed уже создан как flex-контейнер. Добавляем дочерние VEs.
+        /// </summary>
+        private void BuildSpeedColumn()
+        {
+            if (_colSpeed == null) return;
+
+            // SPEED цифра (крупный текст)
+            _speedValueLabel = new Label { name = "speed-value" };
+            _speedValueLabel.text = "SPEED\n0 км/ч";
+            _speedValueLabel.style.fontSize = 18;                  // 26→18 (x1.5)
+            _speedValueLabel.style.unityFontStyleAndWeight = FontStyle.Bold;
+            _speedValueLabel.style.unityTextAlign = TextAnchor.MiddleCenter;
+            _speedValueLabel.style.color = Color.white;
+            _speedValueLabel.style.marginBottom = 3;
+            _colSpeed.Add(_speedValueLabel);
+
+            // Progress bar (горизонтальный)
+            var barTrack = new VisualElement { name = "speed-bar-track" };
+            barTrack.style.height = 4;                              // 6→4
+            barTrack.style.minHeight = 4;
+            barTrack.style.backgroundColor = new Color(0.08f, 0.10f, 0.14f, 0.8f);
+            barTrack.style.borderTopLeftRadius = 2;
+            barTrack.style.borderTopRightRadius = 2;
+            barTrack.style.borderBottomLeftRadius = 2;
+            barTrack.style.borderBottomRightRadius = 2;
+            barTrack.style.overflow = Overflow.Hidden;
+            barTrack.style.flexShrink = 0;
+
+            _speedBarFill = new VisualElement { name = "speed-bar-fill" };
+            _speedBarFill.style.height = Length.Percent(100);
+            _speedBarFill.style.width = Length.Percent(0);
+            _speedBarFill.style.backgroundColor = new Color(0.31f, 0.78f, 0.47f); // зелёный
+            barTrack.Add(_speedBarFill);
+            _colSpeed.Add(barTrack);
+
+            // MAX текст
+            _maxSpeedLabel = new Label { name = "speed-max" };
+            _maxSpeedLabel.text = "MAX 0 км/ч";
+            _maxSpeedLabel.style.fontSize = 8;                     // 10→8
+            _maxSpeedLabel.style.color = new Color(1, 1, 1, 0.5f);
+            _maxSpeedLabel.style.unityTextAlign = TextAnchor.MiddleCenter;
+            _maxSpeedLabel.style.marginTop = 1;
+            _colSpeed.Add(_maxSpeedLabel);
+        }
+
+        /// <summary>
+        /// Обновить данные скорости (вызывается каждый кадр когда IsInShip == true).
+        /// </summary>
+        private void UpdateSpeedColumn(ProjectC.Player.ShipController ship)
+        {
+            if (_speedValueLabel == null || ship == null) return;
+
+            // Только forward component (W/S) → км/ч
+            float speedKmh = Mathf.Abs(ship.ForwardSpeedMps) * 3.6f;
+            float maxSpeedKmh = ship.MaxSpeed * 3.6f;
+
+            _speedValueLabel.text = $"SPEED\n{speedKmh:F0} км/ч";
+            _maxSpeedLabel.text = $"MAX {maxSpeedKmh:F0} км/ч";
+
+            float fill = maxSpeedKmh > 1f ? Mathf.Clamp01(speedKmh / maxSpeedKmh) : 0f;
+            _speedBarFill.style.width = Length.Percent(fill * 100f);
+
+            Color barColor;
+            if (fill < 0.5f) barColor = new Color(0.31f, 0.78f, 0.47f);
+            else if (fill < 0.8f) barColor = new Color(0.94f, 0.78f, 0.31f);
+            else barColor = new Color(0.86f, 0.31f, 0.31f);
+            _speedBarFill.style.backgroundColor = barColor;
         }
     }
 }

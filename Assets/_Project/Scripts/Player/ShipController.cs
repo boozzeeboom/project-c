@@ -186,6 +186,11 @@ namespace ProjectC.Player
                 _rb.angularDamping = angularDrag;
                 _rb.useGravity = true;
                 _rb.constraints = RigidbodyConstraints.None;
+                // T-CARGO-04-debug: Continuous ловит тонкие/быстрые столкновения
+                // которые Discrete пропускает (стены при скорости, ребра пиков).
+                // Небольшая perf-цена оправдана — корабль один на сцену.
+                _rb.collisionDetectionMode = CollisionDetectionMode.Continuous;
+                _rb.interpolation = RigidbodyInterpolation.Interpolate;
             }
 
             // Сессия 2: Инициализация системы коридоров
@@ -244,17 +249,36 @@ namespace ProjectC.Player
         // Использует ShipCollisionDamageConfig (SO) для параметров.
         // Энергия = impulse.magnitude. col.relativeVelocity не подходит —
         // зависит от массы обоих тел и масштабирования, impulse стабильнее.
+        //
+        // FIX (T-CARGO-04-debug): ранее ранний return на !_cargoRegistered
+        // блокировал любой удар ДО окончания корутины регистрации. Теперь
+        // если cargo ещё не зарегистрирован — пробуем ленивую синхронную
+        // регистрацию, и только если не вышло — skip.
         // ========================================================
         private void OnCollisionEnter(Collision col)
         {
             if (!IsServer) return;
             if (TradeWorld.Instance == null) return;
-            if (!_cargoRegistered) return; // корабль ещё не зарегистрирован в TradeWorld
+
+            // Ленивая регистрация если корутина ещё не отработала
+            if (!_cargoRegistered)
+            {
+                var lazyCargo = TradeWorld.Instance.GetOrLoadCargo(NetworkObjectId, _resolvedCargoClass);
+                if (lazyCargo == null) return;
+                _cargoRegistered = true;
+                RecalculateCargoPenalty(NetworkObjectId);
+            }
 
             var cfg = ShipCollisionDamageConfig.Default;
+            float energy = col.impulse.magnitude;
+            if (cfg.verboseLogging)
+            {
+                Debug.Log($"[ShipController] OnCollisionEnter shipId={NetworkObjectId} energy={energy:F2} threshold={cfg.impactEnergyThreshold} other={col.gameObject.name}");
+            }
+
             var p = new ProjectC.Trade.Core.TradeWorld.CollisionDamageParams
             {
-                impactEnergy = col.impulse.magnitude,
+                impactEnergy = energy,
                 impactEnergyThreshold = cfg.impactEnergyThreshold,
                 leakChancePerDangerous = cfg.leakChancePerDangerous,
                 leakPercentOfStack = cfg.leakPercentOfStack,
@@ -268,11 +292,7 @@ namespace ProjectC.Player
 
             if (processed && (leaked > 0 || damaged > 0))
             {
-                if (cfg.verboseLogging)
-                {
-                    Debug.Log($"[ShipController] collision shipId={NetworkObjectId} energy={p.impactEnergy:F1} " +
-                              $"leaked={leaked} damaged={damaged} class={_resolvedCargoClass}");
-                }
+                Debug.Log($"[ShipController] damage applied shipId={NetworkObjectId} energy={energy:F1} leaked={leaked} damaged={damaged} class={_resolvedCargoClass}");
                 // _serverCargoPenalty обновится автоматически через OnCargoChanged → RecalculateCargoPenalty
             }
         }
@@ -307,6 +327,10 @@ namespace ProjectC.Player
         /// <summary>
         /// Применить пресет параметров в зависимости от класса корабля.
         /// Вызывается в Awake() и при смене shipClass в Inspector.
+        /// T-CARGO-EXTRA: больше НЕ перезаписывает thrustForce/maxSpeed/yawForce/pitchForce/verticalForce
+        /// (это editable per-instance поля). Только _rb.mass, *SmoothTime/DecayTime, windExposure —
+        /// это характеристики "как корабль себя ведёт" (баржа vs истребитель), они класс-специфичны.
+        /// Физические силы — в инспекторе.
         /// </summary>
         private void ApplyShipClass()
         {
@@ -316,64 +340,44 @@ namespace ProjectC.Player
             {
                 case ShipFlightClass.Light:
                     // Лёгкий: маневренный, быстрый, слабый
-                    thrustForce = 500f;
-                    yawForce = 3500f;
-                    pitchForce = 25f;
-                    verticalForce = 7000f;
                     yawSmoothTime = 0.25f;
                     pitchSmoothTime = 0.6f;
                     liftSmoothTime = 0.8f;
                     thrustSmoothTime = 0.2f;
                     yawDecayTime = 0.8f;
-                    maxSpeed = 50f;
                     windExposure = 1.2f;
                     if (_rb != null) _rb.mass = 800f;
                     break;
 
                 case ShipFlightClass.Medium:
                     // Средний: баланс (параметры пользователя)
-                    thrustForce = 650f;
-                    yawForce = 3000f;
-                    pitchForce = 20f;
-                    verticalForce = 8000f;
                     yawSmoothTime = 0.3f;
                     pitchSmoothTime = 0.7f;
                     liftSmoothTime = 1.0f;
                     thrustSmoothTime = 0.3f;
                     yawDecayTime = 1.0f;
-                    maxSpeed = 40f;
                     windExposure = 1.0f;
                     if (_rb != null) _rb.mass = 1000f;
                     break;
 
                 case ShipFlightClass.Heavy:
                     // Тяжёлый: медленный, устойчивый, мощный
-                    thrustForce = 800f;
-                    yawForce = 2000f;
-                    pitchForce = 15f;
-                    verticalForce = 6000f;
                     yawSmoothTime = 0.5f;
                     pitchSmoothTime = 0.9f;
                     liftSmoothTime = 1.2f;
                     thrustSmoothTime = 0.4f;
                     yawDecayTime = 1.5f;
-                    maxSpeed = 25f;
                     windExposure = 0.7f;
                     if (_rb != null) _rb.mass = 1500f;
                     break;
 
                 case ShipFlightClass.HeavyII:
                     // Тяжёлый II: очень медленный, очень устойчивый
-                    thrustForce = 900f;
-                    yawForce = 1500f;
-                    pitchForce = 12f;
-                    verticalForce = 5000f;
                     yawSmoothTime = 0.7f;
                     pitchSmoothTime = 1.1f;
                     liftSmoothTime = 1.5f;
                     thrustSmoothTime = 0.5f;
                     yawDecayTime = 2.0f;
-                    maxSpeed = 18f;
                     windExposure = 0.5f;
                     if (_rb != null) _rb.mass = 2000f;
                     break;

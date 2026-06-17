@@ -7331,8 +7331,8 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::ProjectC.Player.ShipController
   ShowTopMostFoldoutHeaderGroup: 1
   shipFlightClass: 0
-  thrustForce: 500
-  maxSpeed: 50
+  thrustForce: 5000
+  maxSpeed: 5000
   yawForce: 3500
   pitchForce: 25
   verticalForce: 7000

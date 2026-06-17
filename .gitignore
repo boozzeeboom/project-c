@@ -29,6 +29,7 @@
 *.sln
 *.suo
 *.user
+*.graphifyignore
 
 # Mono
 mono_crash.*

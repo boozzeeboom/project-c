@@ -51,9 +51,16 @@ namespace ProjectC.Ship.UI
         private VisualElement _colDispatch;
 
         // S-HUD-03b: Speed column (K3)
-        private Label _speedValueLabel;     // "24.3 м/с"
-        private VisualElement _speedBarFill; // полоска скорости (ширина меняется)
-        private Label _maxSpeedLabel;        // "MAX 40 м/с"
+        private Label _speedValueLabel;
+        private VisualElement _speedBarFill;
+        private Label _maxSpeedLabel;
+
+        // S-HUD-03c: Flight column (K2) — 4 строки LIFT/TURN/PITCH/BANK
+        // Каждый элемент — массив [lift, turn, pitch, bank]
+        private Label[] _flightLabels;     // левая часть "LIFT" / "TURN" / ...
+        private Label[] _flightValues;     // правая "+1.2" / "30°/s" / ...
+        private VisualElement[] _flightNegFill;  // bar левый сегмент (отрицательный)
+        private VisualElement[] _flightPosFill;  // bar правый сегмент (положительный)
 
         // LocalPlayer (кешируем после нахождения; null если не найден)
         private ProjectC.Player.NetworkPlayer _localPlayer;
@@ -151,6 +158,9 @@ namespace ProjectC.Ship.UI
             // S-HUD-03b: наполнить _colSpeed (K3 — скорость, центр)
             BuildSpeedColumn();
 
+            // S-HUD-03c: наполнить _colFlight (K2 — полёт, левая)
+            BuildFlightColumn();
+
             _centerRow.Add(_colModules);
             _centerRow.Add(_colFlight);
             _centerRow.Add(_colSpeed);
@@ -215,6 +225,7 @@ namespace ProjectC.Ship.UI
         private void Refresh(ProjectC.Player.ShipController ship)
         {
             UpdateSpeedColumn(ship);
+            UpdateFlightColumn(ship);
         }
 
         // ==================== S-HUD-03b: Speed (K3) ====================
@@ -288,6 +299,161 @@ namespace ProjectC.Ship.UI
             else if (fill < 0.8f) barColor = new Color(0.94f, 0.78f, 0.31f);
             else barColor = new Color(0.86f, 0.31f, 0.31f);
             _speedBarFill.style.backgroundColor = barColor;
+        }
+
+        // ==================== S-HUD-03c: Flight (K2) ====================
+
+        /// <summary>
+        /// Имена строк и их единицы измерения для Flight колонки.
+        /// </summary>
+        private static readonly string[] FlightNames = { "LIFT", "TURN", "PITCH", "BANK" };
+
+        private void BuildFlightColumn()
+        {
+            if (_colFlight == null) return;
+            int n = FlightNames.Length;
+
+            _flightLabels   = new Label[n];
+            _flightValues   = new Label[n];
+            _flightNegFill  = new VisualElement[n];
+            _flightPosFill  = new VisualElement[n];
+
+            // Header
+            var hdr = new Label { name = "flight-header", text = "FLIGHT" };
+            hdr.style.fontSize = 8;
+            hdr.style.color = new Color(1, 1, 1, 0.6f);
+            hdr.style.unityTextAlign = TextAnchor.MiddleLeft;
+            hdr.style.marginBottom = 1;
+            hdr.style.marginLeft = 2;
+            _colFlight.Add(hdr);
+
+            for (int i = 0; i < n; i++)
+            {
+                var row = new VisualElement { name = FlightNames[i] };
+                row.style.flexDirection = FlexDirection.Column;
+                // Каждая строка: [label  |  value] + [bar: neg│pos]
+                row.style.height = 13;
+                row.style.flexShrink = 0;
+                row.style.marginBottom = 0;
+                row.style.marginLeft = 2;
+                row.style.marginRight = 2;
+
+                // Верхняя строка: имя + число
+                var topLine = new VisualElement { name = FlightNames[i] + "-top" };
+                topLine.style.flexDirection = FlexDirection.Row;
+                topLine.style.justifyContent = Justify.SpaceBetween;
+                topLine.style.width = Length.Percent(100);
+                topLine.style.height = 10;
+
+                var nameLabel = new Label { name = FlightNames[i] + "-label" };
+                nameLabel.text = FlightNames[i];
+                nameLabel.style.fontSize = 9;
+                nameLabel.style.color = new Color(1, 1, 1, 0.85f);
+                nameLabel.style.unityFontStyleAndWeight = FontStyle.Bold;
+                nameLabel.style.unityTextAlign = TextAnchor.MiddleLeft;
+                nameLabel.style.flexShrink = 0;
+                _flightLabels[i] = nameLabel;
+                topLine.Add(nameLabel);
+
+                var valLabel = new Label { name = FlightNames[i] + "-val" };
+                valLabel.text = "0.0";
+                valLabel.style.fontSize = 9;
+                valLabel.style.color = new Color(1, 1, 1, 0.85f);
+                valLabel.style.unityTextAlign = TextAnchor.MiddleRight;
+                valLabel.style.flexShrink = 0;
+                _flightValues[i] = valLabel;
+                topLine.Add(valLabel);
+
+                row.Add(topLine);
+
+                // Bar line: center-zero (neg│pos)
+                var barLine = new VisualElement { name = FlightNames[i] + "-bar" };
+                barLine.style.flexDirection = FlexDirection.Row;
+                barLine.style.height = 3;
+                barLine.style.minHeight = 3;
+                barLine.style.backgroundColor = new Color(0.08f, 0.10f, 0.14f, 0.6f);
+                barLine.style.borderTopLeftRadius = 1;
+                barLine.style.borderTopRightRadius = 1;
+                barLine.style.borderBottomLeftRadius = 1;
+                barLine.style.borderBottomRightRadius = 1;
+                barLine.style.overflow = Overflow.Hidden;
+                barLine.style.flexShrink = 0;
+                barLine.style.width = Length.Percent(100);
+
+                // neg fill (red, left side)
+                var neg = new VisualElement { name = FlightNames[i] + "-neg" };
+                neg.style.height = Length.Percent(100);
+                neg.style.width = Length.Percent(0);
+                neg.style.backgroundColor = new Color(0.86f, 0.31f, 0.31f, 0.9f);
+                _flightNegFill[i] = neg;
+                barLine.Add(neg);
+
+                // center marker (always visible)
+                var ctr = new VisualElement { name = FlightNames[i] + "-ctr" };
+                ctr.style.width = 2;
+                ctr.style.height = Length.Percent(100);
+                ctr.style.backgroundColor = new Color(1, 1, 1, 0.35f);
+                ctr.style.flexShrink = 0;
+                barLine.Add(ctr);
+
+                // pos fill (green, right side)
+                var pos = new VisualElement { name = FlightNames[i] + "-pos" };
+                pos.style.height = Length.Percent(100);
+                pos.style.width = Length.Percent(0);
+                pos.style.backgroundColor = new Color(0.31f, 0.78f, 0.47f, 0.9f);
+                _flightPosFill[i] = pos;
+                barLine.Add(pos);
+
+                row.Add(barLine);
+                _colFlight.Add(row);
+            }
+        }
+
+        /// <summary>
+        /// Обновить 4 строки полётных данных каждый кадр.
+        /// </summary>
+        private void UpdateFlightColumn(ProjectC.Player.ShipController ship)
+        {
+            if (_flightLabels == null || ship == null) return;
+
+            // LIFT: VerticalSpeed (м/с), range ±10
+            UpdateFlightRow(0, ship.VerticalSpeed, 10f, " м/с");
+
+            // TURN: angularVelocity.y (rad/s → deg/s), range ±180
+            float yawDeg = ship.AngularVelocity.y * Mathf.Rad2Deg;
+            UpdateFlightRow(1, yawDeg, 180f, "°/с");
+
+            // PITCH: nose up/down in deg, range ±20 (maxPitchAngle)
+            UpdateFlightRow(2, ship.PitchAngleDegrees, 20f, "\u00B0");
+
+            // BANK: roll in deg, range ±90
+            UpdateFlightRow(3, ship.RollAngleDegrees, 90f, "\u00B0");
+        }
+
+        private void UpdateFlightRow(int idx, float value, float range, string unit)
+        {
+            if (idx < 0 || idx >= _flightLabels.Length) return;
+
+            string sign = value >= 0f ? "+" : "";
+            _flightValues[idx].text = $"{sign}{value:F1}{unit}";
+            _flightLabels[idx].text = FlightNames[idx];
+
+            // Center-zero bar: value от -range до +range
+            float clamped = Mathf.Clamp(value, -range, range);
+            float pct = range > 0.01f ? clamped / range : 0f; // -1..+1
+
+            if (pct >= 0f)
+            {
+                // Positive: right fill visible, left fill 0
+                _flightNegFill[idx].style.width = Length.Percent(0);
+                _flightPosFill[idx].style.width = Length.Percent(pct * 50f);
+            }
+            else
+            {
+                // Negative: left fill visible, right fill 0
+                _flightNegFill[idx].style.width = Length.Percent(Mathf.Abs(pct) * 50f);
+                _flightPosFill[idx].style.width = Length.Percent(0);
+            }
         }
     }
 }

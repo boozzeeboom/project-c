@@ -922,6 +922,10 @@ namespace ProjectC.Player
         public Vector3 AngularVelocity => _rb != null ? _rb.angularVelocity : Vector3.zero;
         public AltitudeCorridorData ActiveCorridor => _activeCorridor;
         public AltitudeStatus CurrentAltitudeStatus => _currentAltitudeStatus;
+        /// <summary>Ссылка на менеджер модулей корабля (для HUD).</summary>
+        public ShipModuleManager ShipModuleManager => moduleManager;
+        /// <summary>Ссылка на активатор мезиевых модулей (для HUD).</summary>
+        public MeziyModuleActivator MeziyModuleActivator => meziyActivator;
 
         /// <summary>
         /// Добавить пилота (кооп — несколько могут одновременно)
@@ -1170,6 +1174,11 @@ namespace ProjectC.Player
         /// </summary>
         private void InitializeDebugHUD()
         {
+            // S-HUD-05: ShipDebugHUD и MeziyStatusHUD_Legacy больше не нужны — заменены ShipHudController.
+            // Оставлены только при _showLegacyMeziyHud = true (ручная настройка).
+            if (!_showLegacyMeziyHud) return;
+
+            // Legacy HUDs — только если явно включены
             var hud = GetComponent<ShipDebugHUD>();
             if (hud == null)
             {

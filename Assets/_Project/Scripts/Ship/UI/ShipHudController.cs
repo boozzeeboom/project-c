@@ -1,5 +1,6 @@
 using UnityEngine;
 using UnityEngine.UIElements;
+using ProjectC.Ship;
 
 namespace ProjectC.Ship.UI
 {
@@ -61,6 +62,17 @@ namespace ProjectC.Ship.UI
         private Label[] _flightValues;     // правая "+1.2" / "30°/s" / ...
         private VisualElement[] _flightNegFill;  // bar левый сегмент (отрицательный)
         private VisualElement[] _flightPosFill;  // bar правый сегмент (положительный)
+
+        // S-HUD-03d: Modules column (K1) — контейнер для строк модулей
+        private VisualElement _modulesContainer;
+
+        // S-HUD-03e: Environment column (K4) — WIND + ALTITUDE
+        private Label _windSpeedLabel;
+        private VisualElement _windCompass;
+        private float _lastCompassAngle = -999f;
+        private Label _altValueLabel;
+        private Label _altCorridorLabel;
+        private VisualElement _altBarFill; // сюда добавляются/удаляются строки
 
         // LocalPlayer (кешируем после нахождения; null если не найден)
         private ProjectC.Player.NetworkPlayer _localPlayer;
@@ -161,6 +173,15 @@ namespace ProjectC.Ship.UI
             // S-HUD-03c: наполнить _colFlight (K2 — полёт, левая)
             BuildFlightColumn();
 
+            // S-HUD-03d: наполнить _colModules (K1 — модули, самая левая)
+            BuildModulesColumn();
+
+            // S-HUD-03e: наполнить _colEnv (K4 — WIND + ALTITUDE)
+            BuildEnvColumn();
+
+            // S-HUD-03f: наполнить _colDispatch (K5 — заглушки)
+            BuildDispatchColumn();
+
             _centerRow.Add(_colModules);
             _centerRow.Add(_colFlight);
             _centerRow.Add(_colSpeed);
@@ -226,6 +247,8 @@ namespace ProjectC.Ship.UI
         {
             UpdateSpeedColumn(ship);
             UpdateFlightColumn(ship);
+            UpdateModulesColumn(ship);
+            UpdateEnvColumn(ship);
         }
 
         // ==================== S-HUD-03b: Speed (K3) ====================
@@ -444,16 +467,454 @@ namespace ProjectC.Ship.UI
 
             if (pct >= 0f)
             {
-                // Positive: right fill visible, left fill 0
                 _flightNegFill[idx].style.width = Length.Percent(0);
                 _flightPosFill[idx].style.width = Length.Percent(pct * 50f);
             }
             else
             {
-                // Negative: left fill visible, right fill 0
                 _flightNegFill[idx].style.width = Length.Percent(Mathf.Abs(pct) * 50f);
                 _flightPosFill[idx].style.width = Length.Percent(0);
             }
+        }
+
+        // ==================== S-HUD-03d: Modules (K1) ====================
+
+        private void BuildModulesColumn()
+        {
+            if (_colModules == null) return;
+
+            // Header
+            var hdr = new Label { name = "modules-header", text = "MODULES" };
+            hdr.style.fontSize = 8;
+            hdr.style.color = new Color(1, 1, 1, 0.6f);
+            hdr.style.unityTextAlign = TextAnchor.MiddleLeft;
+            hdr.style.marginBottom = 1;
+            hdr.style.marginLeft = 2;
+            _colModules.Add(hdr);
+
+            // Container for rows (ребуилдится каждый кадр в UpdateModulesColumn)
+            _modulesContainer = new VisualElement { name = "modules-rows" };
+            _modulesContainer.style.flexDirection = FlexDirection.Column;
+            _modulesContainer.style.alignItems = Align.Stretch;
+            _modulesContainer.style.overflow = Overflow.Hidden;
+            _modulesContainer.style.flexShrink = 1;
+            _modulesContainer.style.flexGrow = 1;
+            _colModules.Add(_modulesContainer);
+
+            // "+N more" label (скрыт, показывается если слотов > 4)
+            // Создаётся в Build, текст обновляется в Update
+            var moreLabel = new Label { name = "modules-more", text = "" };
+            moreLabel.style.fontSize = 7;
+            moreLabel.style.color = new Color(1, 1, 1, 0.4f);
+            moreLabel.style.display = DisplayStyle.None;
+            _modulesContainer.Add(moreLabel);
+        }
+
+        private void UpdateModulesColumn(ProjectC.Player.ShipController ship)
+        {
+            if (_modulesContainer == null || ship == null) return;
+
+            // Очищаем контейнер — перестраиваем строки заново
+            _modulesContainer.Clear();
+
+            // "+N more" создаётся заново после Clear
+            var moreLabel = new Label { name = "modules-more", text = "" };
+            moreLabel.style.fontSize = 7;
+            moreLabel.style.color = new Color(1, 1, 1, 0.4f);
+            moreLabel.style.display = DisplayStyle.None;
+
+            var mm = ship.ShipModuleManager;
+            if (mm == null || mm.slots == null) return;
+
+            // Типичный корабль: 4-6 слотов
+            const int maxVisible = 4;
+            int occupiedCount = 0;
+            int visibleCount = 0;
+
+            foreach (var slot in mm.slots)
+            {
+                if (slot == null || !slot.isOccupied) continue; // NOTE: slot.isOccupied
+                occupiedCount++;
+                if (visibleCount >= maxVisible) continue; // за лимитом — только считаем
+
+                visibleCount++;
+
+                var module = slot.installedModule;
+                if (module == null) continue;
+
+                // Имя: последний токен после "_". "MODULE_MEZIY_PITCH" → "PITCH"
+                string shortName = module.moduleId;
+                int lastUnderscore = shortName.LastIndexOf('_');
+                if (lastUnderscore >= 0 && lastUnderscore < shortName.Length - 1)
+                    shortName = shortName.Substring(lastUnderscore + 1);
+
+                // Состояние через MeziyModuleActivator
+                var activator = ship.MeziyModuleActivator;
+                var state = activator != null ? activator.GetState(module.moduleId) : null;
+
+                // Цвет кружка
+                Color circleColor;
+                if (state == null) circleColor = new Color(0.47f, 0.47f, 0.47f); // серый (не мезий)
+                else if (state.isOnCooldown) circleColor = new Color(0.86f, 0.31f, 0.31f); // красный
+                else if (state.isActive) circleColor = new Color(0.94f, 0.63f, 0.24f);    // оранжевый
+                else circleColor = new Color(0.31f, 0.78f, 0.47f);                         // зелёный
+
+                var row = new VisualElement { name = "mod-" + shortName };
+                row.style.flexDirection = FlexDirection.Row;
+                row.style.height = 12;
+                row.style.minHeight = 12;
+                row.style.flexShrink = 0;
+                row.style.alignItems = Align.Center;
+                row.style.marginLeft = 2;
+                row.style.marginRight = 2;
+                row.style.marginBottom = 0;
+
+                // Кружок
+                var dot = new VisualElement { name = shortName + "-dot" };
+                dot.style.width = 8;
+                dot.style.height = 8;
+                dot.style.borderTopLeftRadius = 4;
+                dot.style.borderTopRightRadius = 4;
+                dot.style.borderBottomLeftRadius = 4;
+                dot.style.borderBottomRightRadius = 4;
+                dot.style.backgroundColor = circleColor;
+                dot.style.flexShrink = 0;
+                dot.style.marginRight = 4;
+                row.Add(dot);
+
+                // Имя
+                var label = new Label { name = shortName + "-name", text = shortName };
+                label.style.fontSize = 9;
+                label.style.color = new Color(1, 1, 1, 0.85f);
+                label.style.unityTextAlign = TextAnchor.MiddleLeft;
+                label.style.flexShrink = 1;
+                row.Add(label);
+
+                // Процент перегрева
+                if (state != null && state.isActive)
+                {
+                    float heat = activator != null ? activator.GetOverheatProgress(module.moduleId) : 0f;
+                    if (heat > 0.01f)
+                    {
+                        var pct = new Label { name = shortName + "-heat" };
+                        pct.text = $"{heat * 100f:F0}%";
+                        pct.style.fontSize = 7;
+                        pct.style.color = new Color(0.94f, 0.63f, 0.24f);
+                        pct.style.unityTextAlign = TextAnchor.MiddleRight;
+                        pct.style.flexShrink = 0;
+                        pct.style.marginLeft = 2;
+                        row.Add(pct);
+                    }
+                }
+
+                _modulesContainer.Add(row);
+            }
+
+            // "+N more" если есть скрытые
+            string moreText = "";
+            int hidden = occupiedCount - maxVisible;
+            if (hidden > 0) moreText = $"+{hidden} more";
+            bool hasMore = hidden > 0;
+
+            if (moreLabel != null)
+            {
+                moreLabel.text = moreText;
+                moreLabel.style.display = hasMore ? DisplayStyle.Flex : DisplayStyle.None;
+                if (hasMore) _modulesContainer.Add(moreLabel);
+            }
+
+            // Грязный хак: если слотов всего 0 — покажем "—"
+            if (occupiedCount == 0)
+            {
+                var emptyLabel = new Label { name = "mods-empty", text = "—" };
+                emptyLabel.style.fontSize = 9;
+                emptyLabel.style.color = new Color(1, 1, 1, 0.3f);
+                emptyLabel.style.marginLeft = 2;
+                _modulesContainer.Add(emptyLabel);
+            }
+        }
+
+        // ==================== S-HUD-03e: Environment (K4 — WIND + ALTITUDE) ====================
+
+        private void BuildEnvColumn()
+        {
+            if (_colEnv == null) return;
+
+            // Header
+            var hdr = new Label { name = "env-header", text = "ENV" };
+            hdr.style.fontSize = 8;
+            hdr.style.color = new Color(1, 1, 1, 0.6f);
+            hdr.style.marginBottom = 2;
+            hdr.style.marginLeft = 2;
+            _colEnv.Add(hdr);
+
+            // ── WIND row ──
+            var windRow = new VisualElement { name = "env-wind" };
+            windRow.style.flexDirection = FlexDirection.Row;
+            windRow.style.height = 24;
+            windRow.style.minHeight = 24;
+            windRow.style.flexShrink = 0;
+            windRow.style.alignItems = Align.Center;
+            windRow.style.marginLeft = 2;
+            windRow.style.marginRight = 2;
+
+            // Левая половина WIND — цифра + направление текстом
+            var windLeft = new VisualElement { name = "env-wind-left" };
+            windLeft.style.flexDirection = FlexDirection.Column;
+            windLeft.style.flexGrow = 1;
+            windLeft.style.justifyContent = Justify.Center;
+
+            _windSpeedLabel = new Label { name = "wind-speed" };
+            _windSpeedLabel.text = "0 м/с";
+            _windSpeedLabel.style.fontSize = 12;
+            _windSpeedLabel.style.color = Color.white;
+            _windSpeedLabel.style.unityTextAlign = TextAnchor.MiddleLeft;
+            windLeft.Add(_windSpeedLabel);
+
+            var windDirLabel = new Label { name = "wind-dir-label" };
+            windDirLabel.text = "→";
+            windDirLabel.style.fontSize = 9;
+            windDirLabel.style.color = new Color(1, 1, 1, 0.5f);
+            windDirLabel.style.unityTextAlign = TextAnchor.MiddleLeft;
+            windDirLabel.style.marginTop = -1;
+            windLeft.Add(windDirLabel);
+            windRow.Add(windLeft);
+
+            // Правая половина WIND — мини-компас 28×28
+            _windCompass = new VisualElement { name = "wind-compass" };
+            _windCompass.style.width = 28;
+            _windCompass.style.minWidth = 28;
+            _windCompass.style.height = 28;
+            _windCompass.style.minHeight = 28;
+            _windCompass.style.flexShrink = 0;
+            _windCompass.style.marginLeft = 4;
+            _windCompass.generateVisualContent += OnCompassGenerateContent;
+            windRow.Add(_windCompass);
+
+            _colEnv.Add(windRow);
+
+            // ── ALT row ──
+            var altRow = new VisualElement { name = "env-alt" };
+            altRow.style.flexDirection = FlexDirection.Row;
+            altRow.style.height = 24;
+            altRow.style.minHeight = 24;
+            altRow.style.flexShrink = 0;
+            altRow.style.alignItems = Align.Center;
+            altRow.style.marginLeft = 2;
+            altRow.style.marginRight = 2;
+
+            // Левая половина ALT — высота + имя коридора
+            var altLeft = new VisualElement { name = "env-alt-left" };
+            altLeft.style.flexDirection = FlexDirection.Column;
+            altLeft.style.flexGrow = 1;
+            altLeft.style.justifyContent = Justify.Center;
+
+            _altValueLabel = new Label { name = "alt-value" };
+            _altValueLabel.text = "0 м";
+            _altValueLabel.style.fontSize = 12;
+            _altValueLabel.style.color = Color.white;
+            _altValueLabel.style.unityTextAlign = TextAnchor.MiddleLeft;
+            altLeft.Add(_altValueLabel);
+
+            _altCorridorLabel = new Label { name = "alt-corridor" };
+            _altCorridorLabel.text = "---";
+            _altCorridorLabel.style.fontSize = 9;
+            _altCorridorLabel.style.color = new Color(1, 1, 1, 0.5f);
+            _altCorridorLabel.style.unityTextAlign = TextAnchor.MiddleLeft;
+            _altCorridorLabel.style.marginTop = -1;
+            altLeft.Add(_altCorridorLabel);
+            altRow.Add(altLeft);
+
+            // Правая половина ALT — вертикальный bar
+            var altBarTrack = new VisualElement { name = "alt-bar-track" };
+            altBarTrack.style.width = 6;
+            altBarTrack.style.minWidth = 6;
+            altBarTrack.style.height = 22;
+            altBarTrack.style.minHeight = 22;
+            altBarTrack.style.backgroundColor = new Color(0.08f, 0.10f, 0.14f, 0.8f);
+            altBarTrack.style.borderTopLeftRadius = 3;
+            altBarTrack.style.borderTopRightRadius = 3;
+            altBarTrack.style.borderBottomLeftRadius = 3;
+            altBarTrack.style.borderBottomRightRadius = 3;
+            altBarTrack.style.overflow = Overflow.Hidden;
+            altBarTrack.style.flexShrink = 0;
+            altBarTrack.style.marginLeft = 4;
+
+            _altBarFill = new VisualElement { name = "alt-bar-fill" };
+            _altBarFill.style.width = Length.Percent(100);
+            _altBarFill.style.height = Length.Percent(0);
+            _altBarFill.style.backgroundColor = new Color(0.31f, 0.78f, 0.47f);
+            _altBarFill.style.alignSelf = Align.FlexEnd; // растёт СНИЗУ вверх
+            altBarTrack.Add(_altBarFill);
+            altRow.Add(altBarTrack);
+
+            _colEnv.Add(altRow);
+        }
+
+        private void UpdateEnvColumn(ProjectC.Player.ShipController ship)
+        {
+            if (_windSpeedLabel == null || ship == null) return;
+
+            // === WIND ===
+            float speed = 0f;
+            Vector3 windDir = Vector3.forward;
+            var wm = ProjectC.Core.WindManager.Instance;
+            if (wm != null)
+            {
+                speed = wm.CurrentWindSpeed;
+                windDir = wm.CurrentWindDirection;
+            }
+            _windSpeedLabel.text = $"{speed:F1} м/с";
+
+            // Компас: угол ветра относительно носа корабля
+            float compassAngle = 0f;
+            if (wm != null && speed > 0.5f)
+            {
+                Vector3 shipForward = ship.transform.forward;
+                shipForward.y = 0; // проекция на горизонталь
+                if (shipForward.sqrMagnitude > 0.001f)
+                {
+                    Vector3 windFlat = windDir;
+                    windFlat.y = 0;
+                    if (windFlat.sqrMagnitude > 0.001f)
+                    {
+                        compassAngle = Vector3.SignedAngle(shipForward.normalized, windFlat.normalized, Vector3.up);
+                    }
+                }
+            }
+
+            // Стрелка компаса — текстовая
+            string arrow;
+            float absAng = Mathf.Abs(compassAngle);
+            if (absAng < 22.5f) arrow = "↑";
+            else if (absAng < 67.5f) arrow = compassAngle > 0 ? "↗" : "↖";
+            else if (absAng < 112.5f) arrow = compassAngle > 0 ? "→" : "←";
+            else if (absAng < 157.5f) arrow = compassAngle > 0 ? "↘" : "↙";
+            else arrow = "↓";
+            // Находим label направления (первый child windLeft)
+            var windRow = _colEnv?.Q("env-wind");
+            var windDirLabel = windRow?.Q("wind-dir-label") as Label;
+            if (windDirLabel != null) windDirLabel.text = arrow;
+
+            // Компас repaint только при изменении угла > 1°
+            if (Mathf.Abs(compassAngle - _lastCompassAngle) > 1f)
+            {
+                _lastCompassAngle = compassAngle;
+                _windCompass?.MarkDirtyRepaint();
+            }
+
+            // === ALTITUDE ===
+            float alt = ship.transform.position.y;
+            string altStr = alt >= 10000f ? $"{alt / 1000f:F1}k" : $"{alt:F0}";
+            _altValueLabel.text = $"{altStr} м";
+
+            string corrName = "---";
+            float fillPct = 0f;
+            Color fillColor = new Color(0.31f, 0.78f, 0.47f);
+
+            var corridor = ship.ActiveCorridor;
+            if (corridor != null)
+            {
+                corrName = corridor.displayName;
+                float range = corridor.maxAltitude - corridor.minAltitude;
+                if (range > 1f)
+                {
+                    // Позиция в коридоре: 0 = min, 1 = max
+                    float pos = (alt - corridor.minAltitude) / range;
+                    fillPct = Mathf.Clamp01(pos) * 100f;
+                }
+
+                // Цвет по статусу
+                var status = ship.CurrentAltitudeStatus;
+                switch (status)
+                {
+                    case AltitudeStatus.WarningLower:
+                    case AltitudeStatus.WarningUpper:
+                        fillColor = new Color(0.94f, 0.78f, 0.31f);
+                        break;
+                    case AltitudeStatus.DangerLower:
+                    case AltitudeStatus.DangerUpper:
+                        fillColor = new Color(0.86f, 0.31f, 0.31f);
+                        break;
+                    default:
+                        fillColor = new Color(0.31f, 0.78f, 0.47f);
+                        break;
+                }
+            }
+
+            _altCorridorLabel.text = corrName;
+            _altBarFill.style.height = Length.Percent(fillPct);
+            _altBarFill.style.backgroundColor = fillColor;
+        }
+
+        // ==================== S-HUD-03f: Dispatch (K5 — заглушки) ====================
+
+        private void BuildDispatchColumn()
+        {
+            if (_colDispatch == null) return;
+
+            var hdr = new Label { name = "dispatch-header", text = "DISPATCH" };
+            hdr.style.fontSize = 8;
+            hdr.style.color = new Color(1, 1, 1, 0.6f);
+            hdr.style.marginBottom = 6;
+            hdr.style.marginLeft = 2;
+            _colDispatch.Add(hdr);
+
+            string[] lines = { "DISPATCHER  ---", "REGION      ---", "CORRIDOR    ---" };
+            foreach (var line in lines)
+            {
+                var label = new Label { text = line };
+                label.style.fontSize = 9;
+                label.style.color = new Color(1, 1, 1, 0.4f);
+                label.style.unityFontStyleAndWeight = FontStyle.Bold;
+                label.style.marginBottom = 6;
+                label.style.marginLeft = 2;
+                _colDispatch.Add(label);
+            }
+        }
+
+        /// <summary>
+        /// Callback для рендеринга мини-компаса через Painter2D (UI Toolkit).
+        /// </summary>
+        private void OnCompassGenerateContent(MeshGenerationContext ctx)
+        {
+            var rect = _windCompass?.contentRect ?? new Rect(0, 0, 28, 28);
+            var painter = ctx.painter2D;
+
+            // Фон круга
+            painter.fillColor = new Color(0.06f, 0.08f, 0.12f, 0.9f);
+            painter.BeginPath();
+            painter.Arc(new Vector2(rect.width / 2, rect.height / 2), rect.width / 2 - 1, 0, 360);
+            painter.Fill();
+
+            // Обводка
+            painter.strokeColor = new Color(0.4f, 0.4f, 0.5f, 0.6f);
+            painter.lineWidth = 1f;
+            painter.BeginPath();
+            painter.Arc(new Vector2(rect.width / 2, rect.height / 2), rect.width / 2 - 1, 0, 360);
+            painter.Stroke();
+
+            // Стрелка ветра
+            float angleRad = _lastCompassAngle * Mathf.Deg2Rad;
+            float cx = rect.width / 2;
+            float cy = rect.height / 2;
+            float radius = rect.width / 2 - 4;
+
+            float ex = cx + Mathf.Sin(angleRad) * radius;
+            float ey = cy - Mathf.Cos(angleRad) * radius;
+
+            painter.strokeColor = new Color(0.86f, 0.31f, 0.31f, 0.9f);
+            painter.lineWidth = 2f;
+            painter.BeginPath();
+            painter.MoveTo(new Vector2(cx, cy));
+            painter.LineTo(new Vector2(ex, ey));
+            painter.Stroke();
+
+            // Маленький кружок в центре
+            painter.fillColor = new Color(0.86f, 0.31f, 0.31f, 0.6f);
+            painter.BeginPath();
+            painter.Arc(new Vector2(cx, cy), 1.5f, 0, 360);
+            painter.Fill();
         }
     }
 }

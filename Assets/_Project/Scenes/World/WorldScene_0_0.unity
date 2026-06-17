@@ -1457,6 +1457,7 @@ MonoBehaviour:
   meziyActivator: {fileID: 0}
   fuelSystem: {fileID: 0}
   meziyVisual: {fileID: 0}
+  _showLegacyMeziyHud: 0
 --- !u!114 &221536789
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -3865,6 +3866,7 @@ MonoBehaviour:
   meziyActivator: {fileID: 0}
   fuelSystem: {fileID: 0}
   meziyVisual: {fileID: 0}
+  _showLegacyMeziyHud: 0
 --- !u!114 &724436406
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -7626,6 +7628,7 @@ GameObject:
   - component: {fileID: 1531988015}
   - component: {fileID: 1531988016}
   - component: {fileID: 1531988017}
+  - component: {fileID: 1531988019}
   m_Layer: 0
   m_Name: Ship_Light_root
   m_TagString: Ship
@@ -7819,8 +7822,9 @@ MonoBehaviour:
   cargoSystem: {fileID: 0}
   moduleManager: {fileID: 0}
   meziyActivator: {fileID: 0}
-  fuelSystem: {fileID: 0}
+  fuelSystem: {fileID: 1531988019}
   meziyVisual: {fileID: 0}
+  _showLegacyMeziyHud: 0
 --- !u!114 &1531988015
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -7901,6 +7905,25 @@ MonoBehaviour:
   _consumeOnUse: 0
   _interactableDisplayName: Object
   _customFailureMessage: 
+--- !u!114 &1531988019
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1531988007}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 9667864ab7695b24fabbb9516ee3ec33, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::ProjectC.Ship.ShipFuelSystem
+  currentFuel: 500
+  maxFuel: 100
+  fuelConsumptionRate: 0.8
+  fuelRegenRate: 0.3
+  atmosphericRefuelRate: 2
+  thrustPenaltyDuringRefuel: 0.5
+  speedPenaltyDuringRefuel: 0.7
 --- !u!1 &1570584519
 GameObject:
   m_ObjectHideFlags: 0

@@ -14,11 +14,12 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::ProjectC.Ship.ShipModule
   moduleId: MODULE_YAW_ENH
   displayName: "\u0423\u043B\u0443\u0447\u0448\u0435\u043D\u043D\u043E\u0435 \u0420\u044B\u0441\u043A\u0430\u043D\u0438\u0435"
-  type: 0
+  type: 1
   tier: 1
   thrustMultiplier: 1
   yawMultiplier: 1.4
   pitchMultiplier: 1
+  rollMultiplier: 1
   liftMultiplier: 1
   maxSpeedModifier: 0
   windExposureModifier: 0

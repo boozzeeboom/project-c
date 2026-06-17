@@ -926,6 +926,8 @@ namespace ProjectC.Player
         public ShipModuleManager ShipModuleManager => moduleManager;
         /// <summary>Ссылка на активатор мезиевых модулей (для HUD).</summary>
         public MeziyModuleActivator MeziyModuleActivator => meziyActivator;
+        /// <summary>Ссылка на систему топлива (для HUD).</summary>
+        public ShipFuelSystem FuelSystem => fuelSystem;
 
         /// <summary>
         /// Добавить пилота (кооп — несколько могут одновременно)

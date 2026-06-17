@@ -56,6 +56,12 @@ namespace ProjectC.Ship.UI
         private VisualElement _speedBarFill;
         private Label _maxSpeedLabel;
 
+        // Fuel display under speed (K3-b)
+        private VisualElement _fuelBarFill;
+        private Label _fuelLabel;
+        private VisualElement _refuelDot;   // зелёный кружок при заправке
+        private Label _refuelLabel;          // "REFUEL +2.0/s"
+
         // S-HUD-03c: Flight column (K2) — 4 строки LIFT/TURN/PITCH/BANK
         // Каждый элемент — массив [lift, turn, pitch, bank]
         private Label[] _flightLabels;     // левая часть "LIFT" / "TURN" / ...
@@ -298,6 +304,66 @@ namespace ProjectC.Ship.UI
             _maxSpeedLabel.style.unityTextAlign = TextAnchor.MiddleCenter;
             _maxSpeedLabel.style.marginTop = 1;
             _colSpeed.Add(_maxSpeedLabel);
+
+            // ── FUEL bar (под MAX) ──
+            var fuelTrack = new VisualElement { name = "fuel-bar-track" };
+            fuelTrack.style.height = 3;
+            fuelTrack.style.minHeight = 3;
+            fuelTrack.style.marginTop = 2;
+            fuelTrack.style.backgroundColor = new Color(0.08f, 0.10f, 0.14f, 0.8f);
+            fuelTrack.style.borderTopLeftRadius = 2;
+            fuelTrack.style.borderTopRightRadius = 2;
+            fuelTrack.style.borderBottomLeftRadius = 2;
+            fuelTrack.style.borderBottomRightRadius = 2;
+            fuelTrack.style.overflow = Overflow.Hidden;
+            fuelTrack.style.flexShrink = 0;
+
+            _fuelBarFill = new VisualElement { name = "fuel-bar-fill" };
+            _fuelBarFill.style.height = Length.Percent(100);
+            _fuelBarFill.style.width = Length.Percent(100);
+            _fuelBarFill.style.backgroundColor = new Color(0.2f, 0.6f, 1.0f); // синий
+            fuelTrack.Add(_fuelBarFill);
+            _colSpeed.Add(fuelTrack);
+
+            // FUEL текст + refuel строка
+            _fuelLabel = new Label { name = "fuel-label" };
+            _fuelLabel.text = "FUEL 100/100";
+            _fuelLabel.style.fontSize = 8;
+            _fuelLabel.style.color = new Color(1, 1, 1, 0.85f);
+            _fuelLabel.style.unityTextAlign = TextAnchor.MiddleCenter;
+            _fuelLabel.style.marginTop = 1;
+            _colSpeed.Add(_fuelLabel);
+
+            // REFUEL строка (скрыта, показывается только при isRefueling)
+            var refuelRow = new VisualElement { name = "refuel-row" };
+            refuelRow.style.flexDirection = FlexDirection.Row;
+            refuelRow.style.justifyContent = Justify.Center;
+            refuelRow.style.alignItems = Align.Center;
+            refuelRow.style.marginTop = 1;
+            refuelRow.style.display = DisplayStyle.None;
+
+            _refuelDot = new VisualElement { name = "refuel-dot" };
+            _refuelDot.style.width = 6;
+            _refuelDot.style.height = 6;
+            _refuelDot.style.minWidth = 6;
+            _refuelDot.style.minHeight = 6;
+            _refuelDot.style.borderTopLeftRadius = 3;
+            _refuelDot.style.borderTopRightRadius = 3;
+            _refuelDot.style.borderBottomLeftRadius = 3;
+            _refuelDot.style.borderBottomRightRadius = 3;
+            _refuelDot.style.backgroundColor = new Color(0.31f, 0.78f, 0.47f); // зелёный
+            _refuelDot.style.flexShrink = 0;
+            _refuelDot.style.marginRight = 3;
+            refuelRow.Add(_refuelDot);
+
+            _refuelLabel = new Label { name = "refuel-label" };
+            _refuelLabel.text = "REFUEL +2.0/s";
+            _refuelLabel.style.fontSize = 7;
+            _refuelLabel.style.color = new Color(0.31f, 0.78f, 0.47f);
+            _refuelLabel.style.unityTextAlign = TextAnchor.MiddleCenter;
+            refuelRow.Add(_refuelLabel);
+
+            _colSpeed.Add(refuelRow);
         }
 
         /// <summary>
@@ -322,6 +388,35 @@ namespace ProjectC.Ship.UI
             else if (fill < 0.8f) barColor = new Color(0.94f, 0.78f, 0.31f);
             else barColor = new Color(0.86f, 0.31f, 0.31f);
             _speedBarFill.style.backgroundColor = barColor;
+
+            // ── FUEL: bar + label + refuel indicator ──
+            var fs = ship.FuelSystem;
+            if (fs != null)
+            {
+                float fuelPct = fs.FuelPercent;
+                _fuelBarFill.style.width = Length.Percent(fuelPct * 100f);
+
+                // Цвет fuel bar: зелёный > 0.4, жёлтый > 0.2, красный
+                Color fuelColor;
+                if (fuelPct > 0.4f) fuelColor = new Color(0.31f, 0.78f, 0.47f);
+                else if (fuelPct > 0.2f) fuelColor = new Color(0.94f, 0.78f, 0.31f);
+                else fuelColor = new Color(0.86f, 0.31f, 0.31f);
+                _fuelBarFill.style.backgroundColor = fuelColor;
+
+                _fuelLabel.text = $"FUEL {fs.CurrentFuel:F0}/{fs.MaxFuel:F0}";
+
+                // REFUEL indicator
+                var refuelRow = _colSpeed?.Q("refuel-row");
+                if (refuelRow != null)
+                {
+                    bool isRefueling = fs.isRefueling;
+                    refuelRow.style.display = isRefueling ? DisplayStyle.Flex : DisplayStyle.None;
+                    if (isRefueling && _refuelLabel != null)
+                    {
+                        _refuelLabel.text = $"REFUEL +{fs.AtmosphericRefuelRate:F1}/s";
+                    }
+                }
+            }
         }
 
         // ==================== S-HUD-03c: Flight (K2) ====================

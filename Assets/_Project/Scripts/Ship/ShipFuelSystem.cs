@@ -77,6 +77,16 @@ namespace ProjectC.Ship
         public bool IsFull => currentFuel >= maxFuel;
 
         /// <summary>
+        /// Расход топлива в секунду (для HUD).
+        /// </summary>
+        public float ConsumptionRate => fuelConsumptionRate;
+
+        /// <summary>
+        /// Скорость атмосферной дозаправки (для HUD).
+        /// </summary>
+        public float AtmosphericRefuelRate => atmosphericRefuelRate;
+
+        /// <summary>
         /// Идёт ли сейчас атмосферная дозаправка.
         /// </summary>
         public bool isRefueling { get; private set; }

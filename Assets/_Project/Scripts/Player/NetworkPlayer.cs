@@ -533,10 +533,8 @@ namespace ProjectC.Player
                 // COMPOSITE SHIP (Phase 1): отпарентить от корабля
                 transform.SetParent(null);
 
-                // Показываем игрока
+                // Включаем управление — игрок снова может ходить
                 _controller.enabled = true;
-                foreach (var r in _playerRenderers) r.enabled = true;
-                foreach (var c in _playerColliders) c.enabled = true;
 
                 // Снимаем пилота (себя)
                 _currentShip.RemovePilot(OwnerClientId);
@@ -554,10 +552,11 @@ namespace ProjectC.Player
                 _currentShip = _nearestShip;
                 _inShip = true;
 
-                // Скрываем игрока (ВСЕ renderer и collider)
+                // COMPOSITE SHIP (Phase 1): игрок НЕ пропадает.
+                // _controller отключается чтобы не мог ходить во время пилотирования.
+                // Renderer'ы остаются включены — игрок стоит в кресле/у штурвала.
+                // В будущем — анимация сидения.
                 _controller.enabled = false;
-                foreach (var r in _playerRenderers) r.enabled = false;
-                foreach (var c in _playerColliders) c.enabled = true; // Collider оставляем для рейкаста
 
                 // COMPOSITE SHIP (Phase 1): парентим игрока к корню корабля.
                 // worldPositionStays=true — игрок сохраняет мировую позицию (своё место в кресле).

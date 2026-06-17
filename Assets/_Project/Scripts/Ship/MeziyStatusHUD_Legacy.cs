@@ -4,19 +4,20 @@ using System.Collections.Generic;
 namespace ProjectC.Ship
 {
     /// <summary>
-    /// MeziyStatusHUD — HUD overlay для отображения состояния мезиевых модулей.
+    /// MeziyStatusHUD_Legacy — LEGACY HUD overlay для отображения состояния мезиевых модулей.
     /// Сессия 5_4: UI, Thrust Module, и Полировка.
+    ///
+    /// ⚠️ LEGACY — будет заменён новым HUD. Оставлен как референс.
+    /// Управление: F4 toggle
+    /// Позиция: bottom-right (не пересекается с ShipDebugHUD top-left)
     ///
     /// Отображает:
     /// - Статус каждого модуля: 🟢 Passive | 🔵 Active | 🔴 Overheated
     /// - Прогресс-бар перегрева (0-10 сек до перегрева)
     /// - Прогресс-бар кулдауна (15 сек → 0)
     /// - Текущий уровень топлива
-    ///
-    /// Управление: F4 toggle
-    /// Позиция: bottom-right (не пересекается с ShipDebugHUD top-left)
     /// </summary>
-    public class MeziyStatusHUD : MonoBehaviour
+    public class MeziyStatusHUD_Legacy : MonoBehaviour
     {
         [Header("Настройки")]
         [Tooltip("Включить HUD при старте")]
@@ -77,7 +78,7 @@ namespace ProjectC.Ship
             if (f4Pressed)
             {
                 _visible = !_visible;
-                Debug.Log($"[MeziyStatusHUD] Visible: {_visible}");
+                Debug.Log($"[MeziyStatusHUD_Legacy] Visible: {_visible}");
             }
         }
 

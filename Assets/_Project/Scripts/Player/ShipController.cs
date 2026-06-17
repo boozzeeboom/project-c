@@ -110,6 +110,10 @@ namespace ProjectC.Player
         [Tooltip("Визуал сопел при мезиевой тяге (опционально)")]
         [SerializeField] private MeziyThrusterVisual meziyVisual;
 
+        [Header("Legacy HUD (будет заменён)")]
+        [Tooltip("Показать LEGACY MeziyStatusHUD (IMGUI, правый нижний угол). F4 toggle внутри HUD.")]
+        [SerializeField] private bool _showLegacyMeziyHud = false;
+
         // Модификаторы от модулей (применяются в FixedUpdate)
         private float _moduleThrustMult = 1f;
         private float _moduleYawMult = 1f;
@@ -1159,11 +1163,22 @@ namespace ProjectC.Player
                 hud = gameObject.AddComponent<ShipDebugHUD>();
             }
 
-            // Сессия 5_4: авто-добавление MeziyStatusHUD
-            var meziyHUD = GetComponent<MeziyStatusHUD>();
-            if (meziyHUD == null)
+            // Сессия 5_4 + Legacy: MeziyStatusHUD_Legacy — conditional по _showLegacyMeziyHud
+            var meziyHUD = GetComponent<MeziyStatusHUD_Legacy>();
+            if (_showLegacyMeziyHud)
             {
-                meziyHUD = gameObject.AddComponent<MeziyStatusHUD>();
+                if (meziyHUD == null)
+                {
+                    meziyHUD = gameObject.AddComponent<MeziyStatusHUD_Legacy>();
+                }
+                meziyHUD.enabled = true;
+            }
+            else
+            {
+                if (meziyHUD != null)
+                {
+                    meziyHUD.enabled = false;
+                }
             }
         }
 

@@ -39,6 +39,17 @@ namespace ProjectC.Trade.Core
         public bool IsInitialized { get; private set; }
 
         // ========================================================
+        // T-CARGO-03: События для подписчиков (ShipController, UI)
+        // ========================================================
+        // OnCargoChanged вызывается при ЛЮБОЙ мутации cargo корабля:
+        //   • TryLoadToShip / TryUnloadFromShip (явные операции игрока)
+        //   • GetOrLoadCargo (первая загрузка из репозитория)
+        //   • InvalidateCargo (явная инвалидация)
+        // Подписчики (ShipController) используют это для обновления NetworkVariable.
+        // ========================================================
+        public event Action<ulong> OnCargoChanged;
+
+        // ========================================================
         // INITIALIZATION
         // ========================================================
 
@@ -292,6 +303,7 @@ namespace ProjectC.Trade.Core
             Repository.SetWarehouse(clientId, locationId, warehouse.SaveToList());
             Repository.SetCargo(shipNetworkObjectId, cargo.SaveToList());
 
+            OnCargoChanged?.Invoke(shipNetworkObjectId);
             Debug.Log($"[TradeWorld] LOAD client={clientId} loc={locationId} ship={shipNetworkObjectId} item={itemId} qty={quantity}");
             return TradeResult.Ok(Repository.GetCredits(clientId), 0, warehouse, cargo);
         }
@@ -321,6 +333,7 @@ namespace ProjectC.Trade.Core
             Repository.SetWarehouse(clientId, locationId, warehouse.SaveToList());
             Repository.SetCargo(shipNetworkObjectId, cargo.SaveToList());
 
+            OnCargoChanged?.Invoke(shipNetworkObjectId);
             Debug.Log($"[TradeWorld] UNLOAD client={clientId} loc={locationId} ship={shipNetworkObjectId} item={itemId} qty={quantity}");
             return TradeResult.Ok(Repository.GetCredits(clientId), 0, warehouse, cargo);
         }
@@ -383,15 +396,27 @@ namespace ProjectC.Trade.Core
             if (shipNetworkObjectId == 0) return null;
             if (_cargoCache.TryGetValue(shipNetworkObjectId, out var c)) return c;
             var cargo = new CargoData(shipNetworkObjectId, shipClass);
-            if (Repository.TryGetCargo(shipNetworkObjectId, out var items))
+            bool loadedFromRepo = Repository.TryGetCargo(shipNetworkObjectId, out var items);
+            if (loadedFromRepo)
                 cargo.LoadFrom(items);
             _cargoCache[shipNetworkObjectId] = cargo;
+
+            // T-CARGO-03: уведомляем подписчиков ТОЛЬКО если из репозитория пришли данные.
+            // Для нового корабля (items пуст) событие не нужно — penalty и так = 1.0.
+            if (loadedFromRepo && cargo.Items.Count > 0)
+                OnCargoChanged?.Invoke(shipNetworkObjectId);
+
             return cargo;
         }
 
         public void InvalidateCargo(ulong shipNetworkObjectId)
         {
+            // T-CARGO-03: уведомляем до удаления, чтобы подписчики успели
+            // пересчитать penalty (= 1.0 для несуществующего корабля).
+            bool existed = _cargoCache.ContainsKey(shipNetworkObjectId);
             _cargoCache.Remove(shipNetworkObjectId);
+            if (existed)
+                OnCargoChanged?.Invoke(shipNetworkObjectId);
         }
 
         // ========================================================
@@ -483,6 +508,36 @@ namespace ProjectC.Trade.Core
         {
             var c = GetOrLoadCargo(shipNetworkObjectId, shipClass);
             return c != null ? c.SaveToList() : new List<WarehouseEntry>();
+        }
+
+        // ========================================================
+        // T-CARGO-03: Штраф скорости от груза (для ShipController)
+        // ========================================================
+        // Формула перенесена из CargoSystem.GetSpeedPenalty() (удаляется в Этапе 5).
+        //   speedMultiplier = 1.0 - (weight/maxWeight) * penaltyFactor
+        //   перегруз: -20% за каждые 10% сверх лимита
+        //   min = 0
+        // penaltyFactor берётся из ShipClassLimits (CargoData.cs:138), а не хардкодится.
+        // ========================================================
+        public float GetSpeedPenalty(ulong shipNetworkObjectId, ShipClass shipClass)
+        {
+            var cargo = GetOrLoadCargo(shipNetworkObjectId, shipClass);
+            if (cargo == null || Resolver == null) return 1.0f;
+
+            var limits = ShipClassLimits.Get(shipClass);
+            float weight = cargo.ComputeTotalWeight(Resolver);
+            float weightRatio = limits.maxWeight > 0f ? weight / limits.maxWeight : 0f;
+            float speedMultiplier = 1.0f - weightRatio * limits.penaltyFactor;
+
+            // Перегруз: -20% за каждые полные 10% сверх лимита
+            if (weightRatio > 1.0f)
+            {
+                float overloadPercent = (weightRatio - 1.0f) / 0.1f;
+                float overloadPenalty = Mathf.Floor(overloadPercent) * 0.20f;
+                speedMultiplier -= overloadPenalty;
+            }
+
+            return Mathf.Max(0f, speedMultiplier);
         }
     }
 }

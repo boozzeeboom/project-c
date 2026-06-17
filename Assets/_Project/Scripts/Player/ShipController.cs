@@ -102,8 +102,8 @@ namespace ProjectC.Player
         [SerializeField] private float windDecayTime = 1.5f;
 
         [Header("Cargo (Сессия 2)")]
-        [Tooltip("Система груза корабля (влияет на скорость)")]
-        [SerializeField] private ProjectC.Player.CargoSystem cargoSystem;
+        [Tooltip("LEGACY: MonoBehaviour-адаптер. Будет удалён в Этапе 5. Груз управляется через TradeWorld (см. ResolvedCargoClass).")]
+        [SerializeField] [HideInInspector] private ProjectC.Player.CargoSystem cargoSystem;
 
         [Header("Модули (Сессия 4)")]
         [Tooltip("Менеджер модулей корабля")]
@@ -371,6 +371,14 @@ namespace ProjectC.Player
             // Резолвим CargoClass сразу — дешёвая операция, можно даже на клиенте
             _resolvedCargoClass = ShipClassMappingConfig.Default.Resolve(shipFlightClass) ?? ShipClass.Light;
 
+            // T-CARGO-03: подписка на OnCargoChanged — реагируем на мутации cargo
+            // (Load/Unload/Damage). Подписка ДО корутины, т.к. GetOrLoadCargo
+            // может сразу вызвать event, если в репозитории были данные.
+            if (TradeWorld.Instance != null)
+            {
+                TradeWorld.Instance.OnCargoChanged += RecalculateCargoPenalty;
+            }
+
             // Регистрация в TradeWorld — отложенная (TradeWorld может быть не готов)
             StartCoroutine(RegisterCargoWhenReady());
         }
@@ -382,6 +390,11 @@ namespace ProjectC.Player
                 TradeWorld.Instance.InvalidateCargo(NetworkObjectId);
                 Debug.Log($"[ShipController] OnNetworkDespawn: invalidate cargo shipId={NetworkObjectId} class={_resolvedCargoClass}");
                 _cargoRegistered = false;
+            }
+            // T-CARGO-03: отписка от event
+            if (TradeWorld.Instance != null)
+            {
+                TradeWorld.Instance.OnCargoChanged -= RecalculateCargoPenalty;
             }
             base.OnNetworkDespawn();
         }
@@ -408,6 +421,43 @@ namespace ProjectC.Player
             if (_cargoRegistered)
             {
                 Debug.Log($"[ShipController] OnNetworkSpawn: registered cargo shipId={NetworkObjectId} class={_resolvedCargoClass} items={cargo.Items.Count}");
+                // T-CARGO-03: сразу считаем penalty (1.0 если пусто, иначе по формуле)
+                RecalculateCargoPenalty(NetworkObjectId);
+            }
+        }
+
+        // ========================================================
+        // T-CARGO-03: NetworkVariable penalty + подписка на OnCargoChanged
+        // ========================================================
+        // Сервер пишет, все читают. При мутации cargo на сервере (Load/Unload/
+        // Damage) TradeWorld вызывает OnCargoChanged → мы пересчитываем penalty.
+        // ========================================================
+        private readonly NetworkVariable<float> _serverCargoPenalty = new NetworkVariable<float>(
+            1.0f,
+            NetworkVariableReadPermission.Everyone,
+            NetworkVariableWritePermission.Server);
+
+        /// <summary>
+        /// Текущий штраф скорости от груза (для UI/HUD).
+        /// 1.0 = пустой трюм, 0.0 = полный перегруз.
+        /// </summary>
+        public float ServerCargoPenalty => _serverCargoPenalty.Value;
+
+        /// <summary>
+        /// Обработчик OnCargoChanged. Только сервер пишет в NetworkVariable.
+        /// </summary>
+        private void RecalculateCargoPenalty(ulong shipId)
+        {
+            if (!IsServer) return;
+            if (shipId != NetworkObjectId) return; // не наш корабль
+            if (TradeWorld.Instance == null) return;
+
+            float newPenalty = TradeWorld.Instance.GetSpeedPenalty(NetworkObjectId, _resolvedCargoClass);
+            float oldPenalty = _serverCargoPenalty.Value;
+            if (!Mathf.Approximately(oldPenalty, newPenalty))
+            {
+                _serverCargoPenalty.Value = newPenalty;
+                Debug.Log($"[ShipController] cargoPenalty shipId={NetworkObjectId} {oldPenalty:F3}→{newPenalty:F3} class={_resolvedCargoClass}");
             }
         }
 
@@ -703,12 +753,10 @@ namespace ProjectC.Player
         {
             if (Mathf.Abs(currentThrust) < 0.01f) return;
 
-            // Применяем штраф скорости от груза (Сессия 2)
-            float cargoPenalty = 1.0f;
-            if (cargoSystem != null)
-            {
-                cargoPenalty = cargoSystem.GetSpeedPenalty();
-            }
+            // T-CARGO-03: штраф скорости от груза с сервера (через NetworkVariable).
+            // Источник: TradeWorld.GetSpeedPenalty(), обновляется через OnCargoChanged.
+            // cargoSystem (legacy) больше не используется — поле скрыто, удаляется в Этапе 5.
+            float cargoPenalty = _serverCargoPenalty.Value;
 
             _rb.AddForce(transform.forward * currentThrust * cargoPenalty, ForceMode.Force);
         }

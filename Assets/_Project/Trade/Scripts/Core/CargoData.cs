@@ -135,6 +135,8 @@ namespace ProjectC.Trade.Core
     /// <summary>
     /// Лимиты корабля по классу. Копия значений из CargoSystem, чтобы серверная
     /// логика не зависела от MonoBehaviour-компонента.
+    /// T-CARGO-03: penaltyFactor перенесён сюда из CargoSystem.cs:49-52,
+    /// чтобы GetSpeedPenalty жил в TradeWorld, а не в удаляемом legacy-коде.
     /// </summary>
     public static class ShipClassLimits
     {
@@ -143,17 +145,18 @@ namespace ProjectC.Trade.Core
             public int maxSlots;
             public float maxWeight;
             public float maxVolume;
+            public float penaltyFactor; // T-CARGO-03: для GetSpeedPenalty
         }
 
         public static Limits Get(ShipClass cls)
         {
             switch (cls)
             {
-                case ShipClass.Light:   return new Limits { maxSlots = 4,  maxWeight = 100f,  maxVolume = 3f };
-                case ShipClass.Medium:  return new Limits { maxSlots = 10, maxWeight = 500f,  maxVolume = 12f };
-                case ShipClass.HeavyI:  return new Limits { maxSlots = 20, maxWeight = 2000f, maxVolume = 40f };
-                case ShipClass.HeavyII: return new Limits { maxSlots = 30, maxWeight = 5000f, maxVolume = 80f };
-                default: return new Limits { maxSlots = 4, maxWeight = 100f, maxVolume = 3f };
+                case ShipClass.Light:   return new Limits { maxSlots = 4,  maxWeight = 100f,  maxVolume = 3f,  penaltyFactor = 0.05f };
+                case ShipClass.Medium:  return new Limits { maxSlots = 10, maxWeight = 500f,  maxVolume = 12f, penaltyFactor = 0.08f };
+                case ShipClass.HeavyI:  return new Limits { maxSlots = 20, maxWeight = 2000f, maxVolume = 40f, penaltyFactor = 0.10f };
+                case ShipClass.HeavyII: return new Limits { maxSlots = 30, maxWeight = 5000f, maxVolume = 80f, penaltyFactor = 0.12f };
+                default: return new Limits { maxSlots = 4, maxWeight = 100f, maxVolume = 3f, penaltyFactor = 0.05f };
             }
         }
     }

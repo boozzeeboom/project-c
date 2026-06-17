@@ -338,6 +338,82 @@ namespace ProjectC.Trade.Core
             return TradeResult.Ok(Repository.GetCredits(clientId), 0, warehouse, cargo);
         }
 
+        // ========================================================
+        // T-CARGO-04: Повреждение груза при столкновении
+        // ========================================================
+        // Параметры передаются снаружи (из ShipController → ShipCollisionDamageConfig),
+        // чтобы TradeWorld не зависел от ProjectC.Ship.
+        //   • dangerous: roll leakChance → удалить leakPercentOfStack от количества
+        //   • fragile:   roll fragileChance → логировать повреждение (пока без мутации)
+        // Возвращает (leaked, damaged) — сколько единиц потеряно / сколько помялось.
+        // ========================================================
+        public struct CollisionDamageParams
+        {
+            public float impactEnergy;
+            public float impactEnergyThreshold;
+            public float leakChancePerDangerous;
+            public float leakPercentOfStack;
+            public float fragileChancePerItem;
+            public bool verboseLogging;
+        }
+
+        public void TryDamageCargo(ulong shipNetworkObjectId, ShipClass shipClass, CollisionDamageParams p,
+            out int leakedAmount, out int damagedAmount, out bool processed)
+        {
+            leakedAmount = 0;
+            damagedAmount = 0;
+            processed = false;
+
+            if (shipNetworkObjectId == 0 || Resolver == null) return;
+            if (p.impactEnergy < p.impactEnergyThreshold) return; // мелкое столкновение — игнор
+
+            var cargo = GetOrLoadCargo(shipNetworkObjectId, shipClass);
+            if (cargo == null) return;
+
+            processed = true;
+            var items = cargo.Items;
+            // Снимем копию списка, т.к. TryRemove мутирует _items
+            var snapshot = new System.Collections.Generic.List<WarehouseEntry>(items.Count);
+            for (int i = 0; i < items.Count; i++) snapshot.Add(items[i]);
+
+            for (int i = 0; i < snapshot.Count; i++)
+            {
+                var entry = snapshot[i];
+                if (string.IsNullOrEmpty(entry.itemId) || entry.quantity <= 0) continue;
+                if (!Resolver.TryGet(entry.itemId, out var def) || def == null) continue;
+
+                if (def.isDangerous && UnityEngine.Random.value < p.leakChancePerDangerous)
+                {
+                    int lost = Mathf.Max(1, Mathf.CeilToInt(entry.quantity * p.leakPercentOfStack));
+                    int actual = Mathf.Min(lost, entry.quantity);
+                    if (cargo.TryRemove(entry.itemId, actual, out _))
+                    {
+                        leakedAmount += actual;
+                        if (p.verboseLogging)
+                            Debug.LogWarning($"[TradeWorld] LEAK shipId={shipNetworkObjectId} item={def.itemId} qty={entry.quantity} lost={actual}");
+                    }
+                }
+
+                if (def.isFragile && UnityEngine.Random.value < p.fragileChancePerItem)
+                {
+                    damagedAmount++;
+                    if (p.verboseLogging)
+                        Debug.LogWarning($"[TradeWorld] FRAGILE shipId={shipNetworkObjectId} item={def.itemId} qty={entry.quantity} (status=damaged TBD)");
+                }
+            }
+
+            if (leakedAmount > 0)
+            {
+                Repository.SetCargo(shipNetworkObjectId, cargo.SaveToList());
+                OnCargoChanged?.Invoke(shipNetworkObjectId);
+                Debug.Log($"[TradeWorld] DAMAGE shipId={shipNetworkObjectId} energy={p.impactEnergy:F1} leaked={leakedAmount} damaged={damagedAmount}");
+            }
+            else if (damagedAmount > 0 && p.verboseLogging)
+            {
+                Debug.Log($"[TradeWorld] DAMAGE shipId={shipNetworkObjectId} energy={p.impactEnergy:F1} (no leak, {damagedAmount} fragile marked)");
+            }
+        }
+
         private static TradeResultCode MapWarehouseFail(string s)
         {
             return s switch

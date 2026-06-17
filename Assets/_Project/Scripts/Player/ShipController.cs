@@ -237,6 +237,46 @@ namespace ProjectC.Player
             }
         }
 
+        // ========================================================
+        // T-CARGO-04: Повреждение груза при столкновении
+        // ========================================================
+        // Только на сервере (NGO 2.x паттерн: мутации только в server context).
+        // Использует ShipCollisionDamageConfig (SO) для параметров.
+        // Энергия = impulse.magnitude. col.relativeVelocity не подходит —
+        // зависит от массы обоих тел и масштабирования, impulse стабильнее.
+        // ========================================================
+        private void OnCollisionEnter(Collision col)
+        {
+            if (!IsServer) return;
+            if (TradeWorld.Instance == null) return;
+            if (!_cargoRegistered) return; // корабль ещё не зарегистрирован в TradeWorld
+
+            var cfg = ShipCollisionDamageConfig.Default;
+            var p = new ProjectC.Trade.Core.TradeWorld.CollisionDamageParams
+            {
+                impactEnergy = col.impulse.magnitude,
+                impactEnergyThreshold = cfg.impactEnergyThreshold,
+                leakChancePerDangerous = cfg.leakChancePerDangerous,
+                leakPercentOfStack = cfg.leakPercentOfStack,
+                fragileChancePerItem = cfg.fragileChancePerItem,
+                verboseLogging = cfg.verboseLogging,
+            };
+
+            TradeWorld.Instance.TryDamageCargo(
+                NetworkObjectId, _resolvedCargoClass, p,
+                out int leaked, out int damaged, out bool processed);
+
+            if (processed && (leaked > 0 || damaged > 0))
+            {
+                if (cfg.verboseLogging)
+                {
+                    Debug.Log($"[ShipController] collision shipId={NetworkObjectId} energy={p.impactEnergy:F1} " +
+                              $"leaked={leaked} damaged={damaged} class={_resolvedCargoClass}");
+                }
+                // _serverCargoPenalty обновится автоматически через OnCargoChanged → RecalculateCargoPenalty
+            }
+        }
+
         /// <summary>
         /// Сессия 2: Инициализация системы коридоров высот.
         /// Находит AltitudeCorridorSystem на сцене или использует fallback.

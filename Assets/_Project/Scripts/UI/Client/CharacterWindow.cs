@@ -66,6 +66,10 @@ namespace ProjectC.UI.Client
         [Header("Behavior")]
         [SerializeField] private bool visibleOnStart = false;
 
+        [Header("Debug")]
+        [Tooltip("Verbose logging для CharacterWindow. Выключи для тишины в консоли.")]
+        [SerializeField] private bool _debugLogging = false;
+
         // ============================================================
         // Runtime refs
         // ============================================================
@@ -1913,7 +1917,7 @@ namespace ProjectC.UI.Client
 
             private void HandleStatsSnapshot(ProjectC.Stats.Dto.StatsSnapshotDto snap)
             {
-                if (Debug.isDebugBuild) Debug.Log($"[CharacterWindow] HandleStatsSnapshot: STR={snap.strength:F2} DEX={snap.dexterity:F2} INT={snap.intelligence:F2} | refs: strBar={_statStrBar!=null} dexBar={_statDexBar!=null} intBar={_statIntBar!=null} strVal={_statStrValue!=null}");
+                if (_debugLogging) Debug.Log($"[CharacterWindow] HandleStatsSnapshot: STR={snap.strength:F2} DEX={snap.dexterity:F2} INT={snap.intelligence:F2} | refs: strBar={_statStrBar!=null} dexBar={_statDexBar!=null} intBar={_statIntBar!=null} strVal={_statStrValue!=null}");
                 RefreshStatsDisplay(snap);
             }
 

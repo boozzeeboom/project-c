@@ -2,6 +2,7 @@ using System.Collections.Generic;
 using UnityEngine;
 using ProjectC.Items;
 using ProjectC.Player;
+using ProjectC.Ship;
 
 namespace ProjectC.Core
 {
@@ -240,10 +241,13 @@ namespace ProjectC.Core
         // T-Q19: FindNearestNpc removed (v1 dead code, see top of file).
 
         /// <summary>
-        /// Find nearest ship within range. Zero allocations.
-        /// Учитывает размер корабля: если у корабля есть Collider, используем Bounds.ClosestPoint
-        /// (иначе дистанция считается от центра transform.position и для больших кораблей
-        /// игрок не может "подойти" в зону посадки у края).
+        /// COMPOSITE SHIP (Phase 1): Find nearest ship within range. Zero allocations.
+        /// Считаем distance только до PilotSeat collider'а (IsTrigger=true).
+        /// Платформа корабля (BoxCollider IsTrigger=false) НЕ участвует в поиске —
+        /// это даёт игроку чёткую зону посадки, а не "всю палубу".
+        ///
+        /// Fallback на старый путь (любой Collider) если PilotSeat не найден —
+        /// чтобы старые префабы без PilotSeat продолжали работать.
         /// </summary>
         public static ShipController FindNearestShip(Vector3 position, float range)
         {
@@ -255,20 +259,19 @@ namespace ProjectC.Core
                 var ship = _ships[i];
                 if (ship == null || !ship.gameObject.activeSelf) continue;
 
-                float dist;
-                // Ищем ближайший Collider — учитываем ВСЕ коллайдеры (включая дочерние)
-                // чтобы визуально увеличенные корабли (transform.localScale > 1) корректно
-                // определяли свою "зону посадки"
-                var collider = ship.GetComponentInChildren<Collider>();
-                if (collider != null)
+                // COMPOSITE SHIP: distance до PilotSeat (если есть), иначе fallback.
+                var pilotSeat = ship.GetComponentInChildren<PilotSeatController>(true);
+                Collider targetCollider = pilotSeat != null ? pilotSeat.GetComponent<Collider>() : null;
+
+                if (targetCollider == null)
                 {
-                    Vector3 closest = collider.bounds.ClosestPoint(position);
-                    dist = Vector3.Distance(position, closest);
+                    // Fallback: первый collider в детях (старое поведение для префабов без PilotSeat)
+                    targetCollider = ship.GetComponentInChildren<Collider>();
                 }
-                else
-                {
-                    dist = Vector3.Distance(position, ship.transform.position);
-                }
+                if (targetCollider == null) continue;
+
+                Vector3 closest = targetCollider.bounds.ClosestPoint(position);
+                float dist = Vector3.Distance(position, closest);
 
                 if (dist < range && dist < minDist)
                 {

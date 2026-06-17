@@ -333,7 +333,7 @@ namespace ProjectC.Stats
         {
             if (_config == null || rawXp == 0f) return;
 
-            if (_config.DebugLogging || Debug.isDebugBuild)
+            if (_config.DebugLogging)
             {
                 Debug.Log($"[StatsServer] ApplyXp: client={clientId} stat={stat} xp={rawXp:F2} reason='{reasonForLog}'");
             }

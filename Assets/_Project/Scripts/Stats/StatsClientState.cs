@@ -46,6 +46,10 @@ namespace ProjectC.Stats
                  "можно апнуть 3+ стата за <1s; показываем tier-up только раз в окно.")]
         [SerializeField, Min(0f)] private float _tierUpEventMinIntervalSeconds = 0.2f;
 
+        [Header("Debug")]
+        [Tooltip("Verbose logging в инспекторе StatsClientState. Выключи для тишины в консоли.")]
+        [SerializeField] private bool _debugLogging = false;
+
         // ============ State ============
         public StatsSnapshotDto? CurrentStats { get; private set; }
 
@@ -102,7 +106,7 @@ namespace ProjectC.Stats
                 FireTierUpThrottled(tierUpStat.Value, newTier);
             }
 
-            if (Debug.isDebugBuild)
+            if (_debugLogging)
             {
                 Debug.Log($"[StatsClientState] OnStatsSnapshotReceived: STR={snapshot.strength:F1}/T{snapshot.strengthTier} " +
                           $"DEX={snapshot.dexterity:F1}/T{snapshot.dexterityTier} INT={snapshot.intelligence:F1}/T{snapshot.intelligenceTier}");

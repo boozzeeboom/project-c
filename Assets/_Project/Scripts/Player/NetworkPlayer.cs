@@ -530,6 +530,9 @@ namespace ProjectC.Player
                 // Телепорт на палубу
                 transform.position = _currentShip.GetExitPosition();
 
+                // COMPOSITE SHIP (Phase 1): отпарентить от корабля
+                transform.SetParent(null);
+
                 // Показываем игрока
                 _controller.enabled = true;
                 foreach (var r in _playerRenderers) r.enabled = true;
@@ -555,6 +558,12 @@ namespace ProjectC.Player
                 _controller.enabled = false;
                 foreach (var r in _playerRenderers) r.enabled = false;
                 foreach (var c in _playerColliders) c.enabled = true; // Collider оставляем для рейкаста
+
+                // COMPOSITE SHIP (Phase 1): парентим игрока к корню корабля.
+                // worldPositionStays=true — игрок сохраняет мировую позицию (своё место в кресле).
+                // Без парентирования коллайдер игрока остаётся на месте, а корабль улетает →
+                // физика «дергается» из-за оверлапа коллайдеров.
+                transform.SetParent(_currentShip.ShipRoot, true);
 
                 // Добавляем себя как пилота (кооп)
                 _currentShip.AddPilot(this);

@@ -31,6 +31,7 @@
 *.user
 *.graphifyignore
 
+
 # Mono
 mono_crash.*
 
@@ -79,6 +80,8 @@ docs/archive/
 .clinerules/
 # VSCode settings
 .vscode/
+#hermes
+*.hermes/
 
 # Graphify output (generated, per-session)
 # Root output with exceptions for git tracking

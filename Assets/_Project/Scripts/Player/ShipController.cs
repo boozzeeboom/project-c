@@ -1,7 +1,9 @@
 using UnityEngine;
 using Unity.Netcode;
+using System.Collections;
 using System.Collections.Generic;
 using ProjectC.Ship;
+using ProjectC.Trade.Core; // T-CARGO-02: ShipClass, TradeWorld, ShipClassLimits
 
 namespace ProjectC.Player
 {
@@ -344,6 +346,69 @@ namespace ProjectC.Player
                 _rb.angularDamping = angularDrag;
             }
 
+        }
+
+        // ========================================================
+        // T-CARGO-02: Регистрация корабля в TradeWorld._cargoCache
+        // ========================================================
+        // NGO не гарантирует порядок OnNetworkSpawn между NetworkObjects —
+        // TradeWorld.Instance может быть ещё null (MarketServer.OnNetworkSpawn
+        // не отработал). Поэтому используем корутину с таймаутом (паттерн
+        // ExchangeServer.cs:76-90).
+        // ========================================================
+
+        private ShipClass _resolvedCargoClass = ShipClass.Light;
+        private bool _cargoRegistered = false;
+
+        public ShipClass ResolvedCargoClass => _resolvedCargoClass;
+        public bool IsCargoRegistered => _cargoRegistered;
+
+        public override void OnNetworkSpawn()
+        {
+            base.OnNetworkSpawn();
+            if (!IsServer) return;
+
+            // Резолвим CargoClass сразу — дешёвая операция, можно даже на клиенте
+            _resolvedCargoClass = ShipClassMappingConfig.Default.Resolve(shipFlightClass) ?? ShipClass.Light;
+
+            // Регистрация в TradeWorld — отложенная (TradeWorld может быть не готов)
+            StartCoroutine(RegisterCargoWhenReady());
+        }
+
+        public override void OnNetworkDespawn()
+        {
+            if (IsServer && _cargoRegistered && TradeWorld.Instance != null)
+            {
+                TradeWorld.Instance.InvalidateCargo(NetworkObjectId);
+                Debug.Log($"[ShipController] OnNetworkDespawn: invalidate cargo shipId={NetworkObjectId} class={_resolvedCargoClass}");
+                _cargoRegistered = false;
+            }
+            base.OnNetworkDespawn();
+        }
+
+        private IEnumerator RegisterCargoWhenReady()
+        {
+            float timeout = 5f;
+            while (TradeWorld.Instance == null && timeout > 0f)
+            {
+                yield return null;
+                timeout -= Time.deltaTime;
+            }
+
+            if (TradeWorld.Instance == null)
+            {
+                Debug.LogError($"[ShipController] TradeWorld not initialized after 5s timeout. shipId={NetworkObjectId} cargo NOT registered.");
+                yield break;
+            }
+
+            // Touch cache — создаёт CargoData, загружает из repository
+            var cargo = TradeWorld.Instance.GetOrLoadCargo(NetworkObjectId, _resolvedCargoClass);
+            _cargoRegistered = cargo != null;
+
+            if (_cargoRegistered)
+            {
+                Debug.Log($"[ShipController] OnNetworkSpawn: registered cargo shipId={NetworkObjectId} class={_resolvedCargoClass} items={cargo.Items.Count}");
+            }
         }
 
 #if UNITY_EDITOR

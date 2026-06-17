@@ -318,6 +318,12 @@ namespace ProjectC.Player
                 {
                     // Запрос отправлен; окно откроется в OnSnapshotReceived (T-C05/T-C06 wire-in).
                 }
+                // COMPOSITE SHIP (Phase 3): Door interaction — приоритет выше ship boarding,
+                // ниже crafting. F на двери открывает/закрывает (Toggle).
+                else if (!_inShip && TryInteractNearestDoor())
+                {
+                    // DoorController.Toggle() вызван
+                }
                 // Ship Key Subsystem: разделение выхода/посадки.
                 // - Выход (_inShip == true) — без проверки ключа (он уже сидит).
                 // - Посадка (_inShip == false) — требуется ключ → шлём RequestCanBoardRpc
@@ -742,6 +748,47 @@ namespace ProjectC.Player
                 wnd.SwitchStation(nearest.NetworkObjectId, nearest.Config);
             }
             ProjectC.Crafting.CraftingClientState.Instance?.RequestSubscribe(nearest.NetworkObjectId);
+            return true;
+        }
+
+        // COMPOSITE SHIP (Phase 3): Door interaction. F → найти ближайшую дверь → Toggle().
+        private bool TryInteractNearestDoor()
+        {
+            if (_inShip) return false;
+
+            var allDoors = FindObjectsByType<ProjectC.Ship.DoorController>(FindObjectsInactive.Exclude);
+            ProjectC.Ship.DoorController nearest = null;
+            float minDist = float.MaxValue;
+            Vector3 pos = GetEffectivePosition();
+            float range = Mathf.Max(pickupRange, boardDistance);
+
+            foreach (var door in allDoors)
+            {
+                if (door == null || !door.gameObject.activeSelf) continue;
+
+                float dist;
+                var col = door.GetComponent<Collider>();
+                if (col != null)
+                {
+                    Vector3 closest = col.bounds.ClosestPoint(pos);
+                    dist = Vector3.Distance(pos, closest);
+                }
+                else
+                {
+                    dist = Vector3.Distance(pos, door.transform.position);
+                }
+
+                if (dist < range && dist < minDist)
+                {
+                    minDist = dist;
+                    nearest = door;
+                }
+            }
+
+            if (nearest == null) return false;
+
+            Debug.Log($"[NetworkPlayer:{OwnerClientId}] F → Door '{nearest.name}' (dist={minDist:F2}m)");
+            nearest.Toggle();
             return true;
         }
 

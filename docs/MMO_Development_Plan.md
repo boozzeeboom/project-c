@@ -1,8 +1,8 @@
 # План разработки ММО "Project C: The Clouds" на Unity
 
-**Последнее обновление:** 17 июня 2026 г. | **Текущая версия:** `v0.0.25-Character-UI-Refactor`
+**Последнее обновление:** 17 июня 2026 г. | **Текущая версия:** `v0.0.26-Composite-Ship`
 
-> **Что нового с прошлого обновления (17 июня 2026):** **Character Progression — полная реализация (18 тикетов T-P01..T-P18) + UI рефакторинг CharacterWindow.**
+> **Что нового с прошлого обновления (17 июня 2026):** **Composite Ship Architecture — Phase 0+1.** Корабль больше не монолитный блок — теперь это составная конструкция (летающая баржа). Реализованы: `ShipRootReference` (маркер на любой части корабля), `ShipComponentLocator` (единый поиск ShipController), `PilotSeatController` (место пилота как отдельный ребёнок), `DoorController` (slide-анимация E-key). Ключевые изменения: игрок НЕ пропадает при посадке (стоит в кресле), парентируется к корню корабля (физика не дергается). Камера переключает target на `ShipRoot`. `InteractableManager.FindNearestShip` использует PilotSeat коллайдер для чёткой зоны посадки. Полный анализ и roadmap: `docs/Ships/analysis-composite-ship.md`, `docs/Ships/roadmap-integration.md`.
 > 3 характеристики: Сила (майнинг), Ловкость (ходьба/прыжок), Интеллект (квесты/диалоги) с геометрическим ростом по тирам. 13 слотов экипировки (10 одежда + 3 модуля). Effective stats (base + equip bonuses). [НАДЕТЬ] из инвентаря, [СНЯТЬ] в одежде. 8 навыков (4 боевых + 4 социальных).
 > **UI-рефакторинг:** CharacterWindow полностью переработан — single-page ПЕРСОНАЖ layout (характеристики + одежда + модули + навыки). Inventory split layout (ScrollView list + detail panel). Устранено пустое пространство под списком, фильтр "Все типы" убран с инвентаря. USS-стили переписаны с нуля для корректного flex-растяжения.
 > **Технические фиксы:** динамическое разрешение ID предметов (FindItemIdByName), auto-registration ClothingItemData в _itemDatabase, fix unequip→inventory (AddItemDirect + ID fallback по slot), save/load (flush on disconnect + auto-save 30s), effective stats inline в SendSnapshotToOwner.
@@ -351,6 +351,45 @@
 
 **Stats:** ~8400 строк кода, 106 NPC, 802 квеста, 2 DialogTree, 6 CSV файлов.
 **Документация:** `docs/NPC_quests/08_ROADMAP.md` + `docs/NPC_quests/M19_CSV_PIPELINE_v2.md`.
+
+### 1.14 Composite Ship Architecture (Phase 0–1) ✅ MVP ЗАВЕРШЁН (2026-06-17)
+
+**Цель:** Перейти от монолитного корабля (1 куб с ShipController) к составному — летающая баржа из иерархии GameObjects. Фундамент для всех будущих ship-систем.
+
+**Что реализовано:**
+
+| Компонент | Файл | Назначение | Статус |
+|-----------|------|------------|--------|
+| `ShipRootReference` | `Scripts/Ship/ShipRootReference.cs` | Маркер на любой части корабля. Кеширует ShipController/Rigidbody/NetworkObject с корня | Phase 0 ✅ |
+| `ShipComponentLocator` | `Scripts/Ship/ShipComponentLocator.cs` | Static helper: FindShipController(GameObject) от любой части | Phase 0 ✅ |
+| `ShipRoot` on ShipController | `Scripts/Player/ShipController.cs` | `public Transform ShipRoot => transform.root` | Phase 0 ✅ |
+| `PilotSeatController` | `Scripts/Ship/PilotSeatController.cs` | Триггер места пилота. `_controller.enabled = false` при посадке | Phase 1 ✅ |
+| Camera → ShipRoot | `Scripts/Core/ThirdPersonCamera.cs` | `SetTargetMode(target, isShip)` — атомарная смена target+режима | Phase 1 ✅ |
+| Player parenting | `Scripts/Player/NetworkPlayer.cs` | `SetParent(ShipRoot)` при посадке, `SetParent(null)` при выходе | Phase 1 ✅ |
+| Player stays visible | `Scripts/Player/NetworkPlayer.cs` | _playerRenderers НЕ отключаются — стоит в кресле | Phase 1 ✅ |
+| `DoorController` | `Scripts/Ship/DoorController.cs` | Slide-анимация (Lerp), локальная, E-key toggle | Phase 3 ✅ |
+| `DoorController` + MetaRequirement | — | Дверь-замок: требуется ключ для открытия | Phase 3 ⬜ |
+
+**Изменения в существующих подсистемах:**
+
+| Подсистема | Изменение | Статус |
+|-----------|-----------|--------|
+| `InteractableManager.FindNearestShip` | Приоритет PilotSeat коллайдера (чёткая зона посадки) | ✅ |
+| `ShipModuleManager` | `GetComponentsInChildren<ModuleSlot>()` — уже ищет в детях | ✅ Готов (не менялся) |
+| `WindZone` | `GetComponentInParent<ShipController>()` — уже находит корень | ✅ Готов (не менялся) |
+| `MeziyModuleActivator` | Нужен `GetComponentsInChildren<MeziyNozzle>()` вместо serialized ссылки | ⏳ Phase 4 |
+
+**Архитектурные решения:**
+- ShipController **остаётся на корне** — не переносим на место пилота
+- Один Rigidbody на корне — все дети без Rigidbody
+- Дочерние объекты **без NetworkObject** (для MVP)
+- Парентинг игрока к ShipRoot — фикс физики («дергалось» без этого)
+
+**Документация:**
+- `docs/Ships/00_COMPOSITE_SHIP_SUMMARY.md` — обзор (3 KB)
+- `docs/Ships/analysis-composite-ship.md` — полный анализ (29 KB, 12 разделов)
+- `docs/Ships/roadmap-integration.md` — план реализации (10 KB, 224 строки)
+- `docs/gdd/GDD_10_Ship_System.md` §14 — GDD-дополнение
 
 ---
 

@@ -716,4 +716,66 @@ UI:
 
 ---
 
-*Документ создан: Апрель 2026 | Агенты: @technical-director, @game-designer, @lead-programmer, @engine-programmer, @gameplay-programmer, @unity-specialist | Дополнено Mavis 2026-06-10 (раздел реализации Key + MetaRequirement)*
+## 14. Composite Ship Architecture (Phase 0–1, 2026-06-17)
+
+> **Секция добавлена 2026-06-17.** Реализация составного корабля — фундамент для всех будущих ship-систем.
+
+### 14.1 Концепция
+
+Корабль больше не 1 куб. Теперь это **иерархия GameObjects** с единым корневым Rigidbody:
+
+```
+Ship_Root (Rigidbody + NetworkObject + ShipController)
+├── PilotSeat (PilotSeatController + ShipRootReference + BoxCollider trigger)
+├── Door (DoorController + ShipRootReference + BoxCollider trigger)
+├── Engine_Left (ModuleSlot + ShipRootReference)
+└── (любые другие части)
+```
+
+### 14.2 Ключевые решения
+
+| Решение | Обоснование |
+|---------|-------------|
+| **ShipController на корне** | `GetComponent<Rigidbody>()` работает; WindZone находит через GetComponentInParent |
+| **Один Rigidbody на корне** | Физика цельной конструкции, никаких вложенных Rigidbody |
+| **Дочерние объекты — без NetworkObject** | Для MVP — только корневой NetworkObject. Всё движется как единое целое |
+| **Парентинг игрока при посадке** | Без парентинга коллайдер игрока внутри корабля → физика дергается |
+
+### 14.3 Новые компоненты
+
+| Компонент | Файл | Назначение |
+|-----------|------|------------|
+| `ShipRootReference` | `Scripts/Ship/ShipRootReference.cs` | Маркер на любой части корабля. В Awake кеширует ShipController/Rigidbody/NetworkObject с корня |
+| `ShipComponentLocator` | `Scripts/Ship/ShipComponentLocator.cs` | Static helper: FindShipController(GameObject) от любой части корабля |
+| `PilotSeatController` | `Scripts/Ship/PilotSeatController.cs` | Триггер места пилота. `_controller.enabled = false`, renderer остаётся видимым |
+| `DoorController` | `Scripts/Ship/DoorController.cs` | Slide-анимация (Lerp). Локальная, без сети. E-key toggle |
+
+### 14.4 Изменения в существующих скриптах
+
+| Скрипт | Изменение | Связанные тикеты |
+|--------|-----------|-----------------|
+| `ShipController.cs` | + `public Transform ShipRoot => transform.root` | Phase 0 |
+| `NetworkPlayer.cs` | + `transform.SetParent(корень)` при посадке / `SetParent(null)` при выходе | Phase 1 |
+| `NetworkPlayer.cs` | Игрок НЕ скрывается (renderer остаётся включён) | Phase 1, дизайн |
+| `ThirdPersonCamera.cs` | + `SetTargetMode(target, isShip)` | Phase 1 |
+| `InteractableManager.cs` | `FindNearestShip` — приоритет PilotSeat коллайдера | Phase 1 |
+
+### 14.5 Совместимость с подсистемами
+
+| Подсистема | Статус | Как работает |
+|-----------|--------|-------------|
+| **ShipModuleManager** | ✅ Готов | GetComponentsInChildren\<ModuleSlot\> — ищет в детях |
+| **ModuleSlot** | ✅ Готов | Отдельный MonoBehaviour на дочерних объектах |
+| **WindZone** | ✅ Готов | GetComponentInParent\<ShipController\> — находит корень |
+| **MetaRequirement** | ✅ Готов | На любом дочернем GameObject. Ships пропущены через фильтр `ShipController` |
+| **MeziyModuleActivator** | ⏳ Phase 4 | Сейчас serialized ссылка; нужно `GetComponentsInChildren\<MeziyNozzle\>()` |
+
+### 14.6 Документация
+
+- `docs/Ships/00_COMPOSITE_SHIP_SUMMARY.md` — обзор архитектуры
+- `docs/Ships/analysis-composite-ship.md` — полный анализ (29 KB, 12 разделов)
+- `docs/Ships/roadmap-integration.md` — план реализации
+
+---
+
+*Документ создан: Апрель 2026 | Агенты: @technical-director, @game-designer, @lead-programmer, @engine-programmer, @gameplay-programmer, @unity-specialist | Дополнено Mavis 2026-06-10 (раздел реализации Key + MetaRequirement), 2026-06-17 (Composite Ship Architecture)*

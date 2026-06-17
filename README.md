@@ -1,12 +1,13 @@
 # Project C: The Clouds
-**Version:** 0.0.25 | **Stage:** Этап 2.5 В ПРОЦЕССЕ (Визуальный прототип)
-**Подсистемы:** NPC+Quests v2 ✅ (M1–M19.3) | Character Progression ✅ (T-P01–T-P18) | Gathering (Mining) ✅ (T-G01–T-G07) | **Crafting ✅ (T-C01–T-C07c)** | **Exchange ✅ (T-E01–T-E05)**
+**Version:** 0.0.26 | **Stage:** Этап 2.5 В ПРОЦЕССЕ (Визуальный прототип)
+**Подсистемы:** NPC+Quests v2 ✅ (M1–M19.3) | Character Progression ✅ (T-P01–T-P18) | Gathering (Mining) ✅ (T-G01–T-G07) | **Crafting ✅ (T-C01–T-C07c)** | **Exchange ✅ (T-E01–T-E05)** | **Composite Ship ✅ (Phase 0–1)**
 **По мотивам книги «Интеграл Пьявица» — Бруно Арендт**
 ## Весь проект: [TheGravity](https://thegravity.ru) & [TheClouds](https://thegravity.ru/project-c/)
 
 ---
 
-> **Что нового в v0.0.25 (17 июня 2026):** **Character Progression — 18 тикетов T-P01..T-P18 ✅ + UI рефакторинг CharacterWindow.** 3 характеристики (STR/DEX/INT) с геометрическим ростом от mining/walking/dialog. 13 слотов экипировки (10 одежда + 3 модуля). Effective stats (base + equip bonuses). [НАДЕТЬ]/[СНЯТЬ]. 8 навыков (4 боевых + 4 социальных). UI: single-page ПЕРСОНАЖ, inventory split layout, ScrollView вместо ListView. Фикс пустого пространства, убран фильтр с инвентаря. Compile 0 errors. См. `docs/Character/`.
+> **Что нового в v0.0.26 (17 июня 2026):** **Composite Ship Architecture — Phase 0+1.** Корабль больше не монолитный блок — теперь составная конструкция (летающая баржа). `ShipRootReference` (маркер части корабля), `ShipComponentLocator` (поиск ShipController), `PilotSeatController` (место пилота как отдельный child), `DoorController` (slide E-key). Игрок НЕ пропадает при посадке — стоит в кресле, видимый. Парентинг к корню корабля — физика плавная, без дерганий. Камера следит за ShipRoot, а не за игроком. Полный анализ: `docs/Ships/analysis-composite-ship.md`.
+> **Предыдущее (v0.0.25):** Character Progression — 18 тикетов T-P01..T-P18 ✅ + UI рефакторинг CharacterWindow. 3 характеристики (STR/DEX/INT) с геометрическим ростом от mining/walking/dialog. 13 слотов экипировки (10 одежда + 3 модуля). Effective stats (base + equip bonuses). [НАДЕТЬ]/[СНЯТЬ]. 8 навыков (4 боевых + 4 социальных). UI: single-page ПЕРСОНАЖ, inventory split layout, ScrollView вместо ListView. Compile 0 errors. См. `docs/Character/`.
 > **Предыдущее (v0.0.23):** **CSV Pipeline — финал!** Теперь контент-райтер забивает квесты в Excel → CSV → 1 кнопка в Unity → готово. Auto-создание NPC из CSV (displayName, faction, questOffers, questTurnIns). `npcs.csv` (9 колонок: services, attitude, greeting, voice, radius). `dialogs.csv` (15 колонок: деревья диалогов с 11 условиями и 17 действиями). Auto-link `{npcId}_default` к NPC. Тестовый импорт: **106 NPC, 802 квеста** — 1 кнопка. Примеры: `Import/example_quests.csv`, `example_npcs.csv`, `example_dialogs.csv`. Writer-документация: `M19_CSV_PIPELINE_v2.md`.
 > **Предыдущее (v0.0.21):** Crafting (крафт-система) — MVP завершён! Две станции в мире: Верстак (3 рецепта: медный слиток, железный слиток, ключ корабля) и Верфь (ключ ShipLight). Подойти → F → окно → выбрать рецепт → добавить ресурсы → запустить крафт → таймер с ProgressBar + тост → Готово → предмет в инвентаре. Станции работают независимо, анимация свечения в процессе. 9 тикетов, все проверено в Play Mode.
 > **См. полную историю:** `docs/MMO_Development_Plan.md`
@@ -50,7 +51,7 @@
 | [`docs/QWEN_CONTEXT.md`](docs/QWEN_CONTEXT.md) | **Текущий контекст** — что сделано, какие задачи в работе |
 | [`docs/STEP_BY_STEP_DEVELOPMENT.md`](docs/STEP_BY_STEP_DEVELOPMENT.md) | **Пошаговая разработка** |
 | [`docs/CONTROLS.md`](docs/CONTROLS.md) | Документация по управлению |
-| [`docs/SHIP_SYSTEM_DOCUMENTATION.md`](docs/SHIP_SYSTEM_DOCUMENTATION.md) | Система кораблей (текущая реализация) |
+| [`docs/Ships/00_COMPOSITE_SHIP_SUMMARY.md`](docs/Ships/00_COMPOSITE_SHIP_SUMMARY.md) | **Composite Ship Architecture** — составной корабль, Phase 0–1 |
 | [`docs/ART_BIBLE.md`](docs/ART_BIBLE.md) | Визуальная спецификация |
 | [`docs/world/CLOUD_system/STORM_EVENT_INTEGRATION_LOG.md`](docs/world/CLOUD_system/STORM_EVENT_INTEGRATION_LOG.md) | Storm Cloud System — implementation log |
 | [`docs/world/CLOUD_system/STORM_SETUP_GUIDE.md`](docs/world/CLOUD_system/STORM_SETUP_GUIDE.md) | Storm setup & testing guide |
@@ -310,6 +311,7 @@
   - **Тестовые квесты:** `collect_copper_ore`, `find_artifact` (EventDriven), `stage_intro_demo`, `stage_multi_demo`, `collect_copper` (CSV-imported).
   - [Документация](docs/NPC_quests/08_ROADMAP.md) + [Итоговый статус 2026-06-09](docs/NPC_quests/old_session_log/99_FINAL_STATUS.md).
 
+- **🆕 Composite Ship Architecture (Phase 0–1, 2026-06-17):** Переход от монолитного блока к составной конструкции. `ShipRootReference`, `ShipComponentLocator`, `PilotSeatController` (место пилота child), `DoorController` (slide E-key). Игрок видим при посадке, парентится к ShipRoot. Камера следит за корнем. [Анализ](docs/Ships/analysis-composite-ship.md) | [Roadmap](docs/Ships/roadmap-integration.md).
 - **🆕 Crafting System (T-C01–T-C07c, 2026-06-10):** Крафт-станции в мире (Верстак + Верфь), рецепты (слитки, ключ корабля), UI с ингредиентами, таймер крафта 10с, анимация станции.
   - [Анализ](docs/Crafting_system/10_DESIGN.md) | [Roadmap](docs/Crafting_system/ROADMAP.md)
 

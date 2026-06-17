@@ -263,6 +263,18 @@ namespace ProjectC.Core
                 var pilotSeat = ship.GetComponentInChildren<PilotSeatController>(true);
                 Collider targetCollider = pilotSeat != null ? pilotSeat.GetComponent<Collider>() : null;
 
+                // COMPOSITE SHIP (Phase 1): если есть PilotSeat — радиус посадки = размер
+                // коллайдера кресла (обычно ~1-2м). Без PilotSeat (старые корабли) —
+                // используем переданный range (boardDistance, ~5м).
+                float effectiveRange = range;
+                if (pilotSeat != null && targetCollider != null)
+                {
+                    // Радиус от кресла: половина диагонали коллайдера + запас 0.3м
+                    Vector3 colSize = targetCollider.bounds.size;
+                    float seatRadius = Mathf.Max(colSize.x, colSize.y, colSize.z) * 0.6f + 0.3f;
+                    effectiveRange = Mathf.Min(range, Mathf.Max(seatRadius, 1.5f));
+                }
+
                 if (targetCollider == null)
                 {
                     // Fallback: первый collider в детях (старое поведение для префабов без PilotSeat)
@@ -273,7 +285,7 @@ namespace ProjectC.Core
                 Vector3 closest = targetCollider.bounds.ClosestPoint(position);
                 float dist = Vector3.Distance(position, closest);
 
-                if (dist < range && dist < minDist)
+                if (dist < effectiveRange && dist < minDist)
                 {
                     minDist = dist;
                     nearest = ship;

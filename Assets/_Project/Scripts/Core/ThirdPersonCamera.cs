@@ -195,6 +195,16 @@ namespace ProjectC.Core
         }
 
         /// <summary>
+        /// COMPOSITE SHIP (Phase 1): установить target и сразу переключить режим камеры.
+        /// Заменяет пару SetTarget+SetShipMode.
+        /// </summary>
+        public void SetTargetMode(Transform newTarget, bool isShip)
+        {
+            SetTarget(newTarget);
+            SetShipMode(isShip);
+        }
+
+        /// <summary>
         /// Создать UI подсказок автоматически.
         /// REFACTORED: Uses cached references instead of FindAnyObjectByType.
         /// </summary>

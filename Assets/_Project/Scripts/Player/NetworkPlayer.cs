@@ -574,8 +574,7 @@ namespace ProjectC.Player
         {
             if (_myCamera != null)
             {
-                _myCamera.SetTarget(transform);
-                _myCamera.SetShipMode(false);
+                _myCamera.SetTargetMode(transform, false);
             }
         }
 
@@ -583,8 +582,10 @@ namespace ProjectC.Player
         {
             if (_currentShip != null && _myCamera != null)
             {
-                _myCamera.SetTarget(_currentShip.transform);
-                _myCamera.SetShipMode(true);
+                // COMPOSITE SHIP (Phase 1): камера следит за КОРНЕМ корабля, а не за ShipController
+                // (ShipController уже на корне, но явно используем ShipRoot для ясности и для
+                // будущей поддержки случая, когда ShipController не на корне).
+                _myCamera.SetTargetMode(_currentShip.ShipRoot, true);
             }
         }
 

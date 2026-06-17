@@ -1258,5 +1258,53 @@ namespace ProjectC.Player
                 _rb.AddForce(windEffect, ForceMode.Force);
             }
         }
+
+        // ==================== COMPOSITE SHIP (Phase 0) ====================
+
+        /// <summary>
+        /// Корневой Transform корабля. ShipController всегда висит на корне,
+        /// но дочерние компоненты (PilotSeat, Door, ModuleSlot) могут обращаться
+        /// к корню через эту property.
+        /// Phase 0 (Composite Ship).
+        /// </summary>
+        public Transform ShipRoot => transform.root;
+
+        /// <summary>
+        /// Найти ближайшее место пилота к указанной позиции.
+        /// Используется NetworkPlayer при посадке, чтобы знать
+        /// какое конкретно PilotSeatController было выбрано.
+        /// Phase 1 (Composite Ship).
+        /// </summary>
+        public ProjectC.Ship.PilotSeatController FindNearestPilotSeat(Vector3 position, float maxDistance)
+        {
+            ProjectC.Ship.PilotSeatController nearest = null;
+            float minDist = float.MaxValue;
+
+            // Собираем все PilotSeatController из детей
+            var seats = GetComponentsInChildren<ProjectC.Ship.PilotSeatController>(true);
+            foreach (var seat in seats)
+            {
+                if (seat == null || !seat.gameObject.activeSelf) continue;
+
+                var col = seat.GetComponent<Collider>();
+                float dist;
+                if (col != null)
+                {
+                    Vector3 closest = col.bounds.ClosestPoint(position);
+                    dist = Vector3.Distance(position, closest);
+                }
+                else
+                {
+                    dist = Vector3.Distance(position, seat.transform.position);
+                }
+
+                if (dist < maxDistance && dist < minDist)
+                {
+                    minDist = dist;
+                    nearest = seat;
+                }
+            }
+            return nearest;
+        }
     }
 }

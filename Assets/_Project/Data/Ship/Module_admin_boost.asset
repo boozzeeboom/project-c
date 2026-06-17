@@ -12,19 +12,19 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 0a2ee72e2ca4c264faa0110acf851850, type: 3}
   m_Name: Module_admin_boost
   m_EditorClassIdentifier: Assembly-CSharp::ProjectC.Ship.ShipModule
-  moduleId: 
-  displayName: 
-  type: 0
+  moduleId: admin_boost
+  displayName: admin_boost
+  type: 2
   tier: 1
-  thrustMultiplier: 1
-  yawMultiplier: 1
-  pitchMultiplier: 1
-  rollMultiplier: 1
-  liftMultiplier: 1
-  maxSpeedModifier: 0
+  thrustMultiplier: 100
+  yawMultiplier: 100
+  pitchMultiplier: 100
+  rollMultiplier: 100
+  liftMultiplier: 100
+  maxSpeedModifier: 1000
   windExposureModifier: 0
-  powerConsumption: 0
-  compatibleClasses: 
+  powerConsumption: 35
+  compatibleClasses: 00000000
   requiredModules: []
   incompatibleModules: []
   isMeziyModule: 0

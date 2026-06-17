@@ -910,6 +910,17 @@ namespace ProjectC.Player
         public Vector3 GetExitPosition() => transform.position + Vector3.up * 1.5f;
         public int PilotCount => _pilots.Count;
 
+        // S-HUD-01: Expose данные для ShipHudController (additive, no logic).
+        // Никаких переименований, никаких рефакторингов — только геттеры поверх уже существующего состояния.
+        public float MaxSpeed => maxSpeed;
+        public float PitchAngleDegrees { get { float a = transform.eulerAngles.x; if (a > 180f) a -= 360f; return a; } }
+        public float RollAngleDegrees  { get { float a = transform.eulerAngles.z; if (a > 180f) a -= 360f; return a; } }
+        public float YawAngleDegrees   => transform.eulerAngles.y;
+        public float VerticalSpeed     => _rb != null ? _rb.linearVelocity.y : 0f;
+        public Vector3 AngularVelocity => _rb != null ? _rb.angularVelocity : Vector3.zero;
+        public AltitudeCorridorData ActiveCorridor => _activeCorridor;
+        public AltitudeStatus CurrentAltitudeStatus => _currentAltitudeStatus;
+
         /// <summary>
         /// Добавить пилота (кооп — несколько могут одновременно)
         /// </summary>

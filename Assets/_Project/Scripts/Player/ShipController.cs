@@ -34,6 +34,13 @@ namespace ProjectC.Player
         [Tooltip("Класс определяет характеристики полёта. НЕ путать с грузовым классом (CargoSystem).")]
         [SerializeField] private ShipFlightClass shipFlightClass = ShipFlightClass.Medium;
 
+        /// <summary>
+        /// Публичный геттер физического класса корабля. T-CARGO-01:
+        /// ShipClassMappingConfig маппит это в ProjectC.Trade.Core.ShipClass
+        /// (для лимитов трюма). Не дублировать — менять через инспектор.
+        /// </summary>
+        public ShipFlightClass ShipFlightClass => shipFlightClass;
+
         [Header("Тяга")]
 #pragma warning disable 0414
         [SerializeField] private float thrustForce = 650f;

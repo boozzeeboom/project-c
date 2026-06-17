@@ -1,5 +1,6 @@
 using System.Collections.Generic;
 using ProjectC.Player;
+using ProjectC.Trade.Core; // T-CARGO-01: ShipClass живёт здесь (перенесён из ProjectC.Player)
 using UnityEngine;
 
 namespace ProjectC.Trade.Core

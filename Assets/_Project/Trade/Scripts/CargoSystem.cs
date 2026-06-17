@@ -4,19 +4,14 @@ using System.Linq;
 using UnityEngine;
 using Unity.Netcode;
 using ProjectC.Trade;
+using ProjectC.Trade.Core; // T-CARGO-01: ShipClass переехал сюда из ProjectC.Player
 
 namespace ProjectC.Player
 {
     /// <summary>
-    /// Тип корабля для определения характеристик груза
+    /// T-CARGO-01: enum ShipClass перенесён в ProjectC.Trade.Core.ShipClass
+    /// (см. Assets/_Project/Trade/Scripts/Core/ShipClass.cs). Дубликат удалён.
     /// </summary>
-    public enum ShipClass
-    {
-        Light,      // Лёгкий: 4 слота, 100 кг, 3 м³
-        Medium,     // Средний: 10 слотов, 500 кг, 12 м³
-        HeavyI,     // Тяжёлый I: 20 слотов, 2000 кг, 40 м³
-        HeavyII     // Тяжёлый II: 30 слотов, 5000 кг, 80 м³
-    }
 
     /// <summary>
     /// Один элемент груза

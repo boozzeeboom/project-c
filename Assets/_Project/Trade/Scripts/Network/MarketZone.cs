@@ -348,7 +348,17 @@ namespace ProjectC.Trade.Network
                 if (sc == null) continue;
 
                 var cargoComp = sc.GetComponent<CargoSystem>();
-                ShipClass cls = cargoComp != null ? cargoComp.shipClass : ShipClass.Light;
+                // T-CARGO-01: маппинг FlightClass → CargoClass через SO. Если маппинг
+                // не нашёлся (старый префаб без classMarker), fallback на cargoComp.shipClass.
+                // В Этапе 5 (когда удалим CargoSystem) fallback уйдёт.
+                ShipClass cls = ProjectC.Ship.ShipClassMappingConfig.Default.Resolve(sc.ShipFlightClass)
+                                 ?? (cargoComp != null ? cargoComp.shipClass : ShipClass.Light);
+                if (cls == ShipClass.Light && cargoComp == null && sc.ShipFlightClass != ShipFlightClass.Light)
+                {
+                    // warning один раз на корабль: маппинг не настроен, держим Light как safe default
+                    Debug.LogWarning($"[MarketZone] shipId={shipId} name='{sc.gameObject.name}' flightClass={sc.ShipFlightClass} → CargoClass=Light (fallback). " +
+                                     $"Создай Resources/ShipClassMapping.asset или проверь ShipClassMappingConfig.Default.");
+                }
                 var limits = ShipClassLimits.Get(cls);
 
                 var cargo = TradeWorld.Instance.GetOrLoadCargo(shipId, cls);

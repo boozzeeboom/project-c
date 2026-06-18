@@ -438,6 +438,12 @@ namespace ProjectC.Items
             // Убираем конкретное вхождение по indexInList (тот, что соответствует slotIndex).
             foundList.RemoveAt(indexInList);
 
+            // T-KEY-02: для Key-предметов синхронизируем удаление из _keySlots
+            if (foundType == ItemType.Key)
+            {
+                data.RemoveKeySlotAt(indexInList);
+            }
+
             // Log для verify
             if (foundList.Count == 0)
                 Debug.Log($"[InventoryWorld] Player {clientId} dropped last {foundType} ID={foundItemId} at {worldPos}");
@@ -497,6 +503,78 @@ namespace ProjectC.Items
             PublishItemAdded(clientId, itemId, itemType, count: 1);
 
             return Ok($"+{_itemDatabase[itemId].itemName}", itemId, -1);
+        }
+
+        // ============================================================
+        // T-KEY-02: AddItemDirect с instanceId (для Key-предметов)
+        // ============================================================
+
+        /// <summary>Добавить предмет с instanceId (для KeyRodInstance предметов).
+        /// Обычные предметы используют AddItemDirect без instanceId (instanceId=0).</summary>
+        public InventoryResultDto AddItemDirect(ulong clientId, int itemId, int instanceId, ItemType itemType)
+        {
+            Debug.Log($"[InventoryWorld] AddItemDirect (with instanceId): client={clientId} itemId={itemId} instanceId={instanceId} type={itemType}");
+            if (!_itemDatabase.ContainsKey(itemId))
+                return Fail(InventoryResultCode.ItemNotFound, $"ID={itemId}", itemId, -1);
+
+            var data = GetOrCreate(clientId);
+            if (data.TotalCount >= _maxSlots)
+                return Fail(InventoryResultCode.InventoryFull,
+                    $"Инвентарь полон ({data.TotalCount}/{_maxSlots})", itemId, -1);
+
+            // Если есть instanceId — используем AddKeyItem (Key type), иначе обычный AddItem
+            if (instanceId > 0 && itemType == ItemType.Key)
+            {
+                data.AddKeyItem(itemId, instanceId);
+            }
+            else
+            {
+                data.AddItem(itemType, itemId);
+            }
+
+            SavePlayer(clientId);
+            PublishItemAdded(clientId, itemId, itemType, count: 1);
+
+            return Ok($"+{_itemDatabase[itemId].itemName}", itemId, -1);
+        }
+
+        // ============================================================
+        // T-KEY-02: Key-specific lookup methods
+        // ============================================================
+
+        /// <summary>True если у игрока есть Key slot с указанным instanceId.</summary>
+        public bool HasKeyInstance(ulong clientId, int instanceId)
+        {
+            if (instanceId <= 0) return false;
+            if (!_playerInventories.TryGetValue(clientId, out var data)) return false;
+            return data.HasKeyInstance(instanceId);
+        }
+
+        /// <summary>Пары (instanceId, registeredShipId) для всех KeyRodInstance в инвентаре клиента.
+        /// Используется для UI "Мои корабли" (см. 22_SHIP_TELEMETRY_PLAN.md).</summary>
+        public System.Collections.Generic.List<(int instanceId, ulong shipNetworkObjectId)> GetMyShips(ulong clientId)
+        {
+            var result = new System.Collections.Generic.List<(int, ulong)>();
+            if (!_playerInventories.TryGetValue(clientId, out var data)) return result;
+
+            // Итерируем по Key-слотам
+            int count = data.KeySlotCount;
+            for (int i = 0; i < count; i++)
+            {
+                var slot = data.GetKeySlotAt(i);
+                if (slot.instanceId <= 0) continue;  // non-instance item
+
+                // Ищем ship через KeyRodInstanceWorld
+                if (ProjectC.Ship.Key.KeyRodInstanceWorld.IsInitialized)
+                {
+                    var inst = ProjectC.Ship.Key.KeyRodInstanceWorld.GetInstance(slot.instanceId);
+                    if (inst != null && inst.state == ProjectC.Ship.Key.KeyRodInstanceState.Active)
+                    {
+                        result.Add((slot.instanceId, inst.registeredShipId));
+                    }
+                }
+            }
+            return result;
         }
 
         // ============================================================
@@ -592,17 +670,38 @@ namespace ProjectC.Items
             foreach (ItemType type in System.Enum.GetValues(typeof(ItemType)))
             {
                 typeCount++;
-                var ids = data.GetIdsForType(type);
-                if (ids == null) { idsNull++; continue; }
-                foreach (int id in ids)
+
+                // T-KEY-02: для Key-предметов используем KeySlot API с instanceId
+                if (type == ItemType.Key)
                 {
-                    items.Add(new InventoryItemDto
+                    int keyCount = data.KeySlotCount;
+                    for (int ki = 0; ki < keyCount; ki++)
                     {
-                        itemId    = id,
-                        type      = (byte)type,
-                        quantity  = 1,                  // MVP: каждый id = 1 unit
-                        slotIndex = slotIndex++,
-                    });
+                        var slot = data.GetKeySlotAt(ki);
+                        items.Add(new InventoryItemDto
+                        {
+                            itemId     = slot.itemId,
+                            type       = (byte)type,
+                            quantity   = 1,
+                            slotIndex  = slotIndex++,
+                            instanceId = slot.instanceId,
+                        });
+                    }
+                }
+                else
+                {
+                    var ids = data.GetIdsForType(type);
+                    if (ids == null) { idsNull++; continue; }
+                    foreach (int id in ids)
+                    {
+                        items.Add(new InventoryItemDto
+                        {
+                            itemId    = id,
+                            type      = (byte)type,
+                            quantity  = 1,
+                            slotIndex = slotIndex++,
+                        });
+                    }
                 }
             }
             Debug.Log($"[InventoryWorld.BuildSnapshot] client={clientId} types={typeCount} idsNull={idsNull} itemsBuilt={items.Count}");

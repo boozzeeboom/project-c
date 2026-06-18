@@ -4,6 +4,49 @@
 
 ---
 
+## 2026-06-18 — R2-SHIP-KEY-003 v4 (T-KEY-02: Inventory slot extension + instance-id слой)
+
+**Контекст**: второй тикет R2-SHIP-KEY-003 после T-KEY-01. Добавление instance-id слоя в `InventoryData`/`InventoryItemDto`/`InventoryWorld`. Backward compat для всех существующих операций (HasItem, HasAllItems и т.д.).
+
+**Что изменилось в коде**:
+
+| Файл | Что | Статус |
+|---|---|---|
+| `Assets/_Project/Scripts/Core/InventoryData.cs` | + struct `InventorySlot` (itemId + instanceId) + `INetworkSerializable`. + `_keySlots : List<InventorySlot>` + `_keyIds : List<int>` (parallel, для backward compat). + методы `AddKeyItem`, `GetKeySlotAt`, `RemoveKeySlotAt`, `RemoveKeyByInstanceId`, `GetKeyInstanceIdsForItem`, `HasKeyInstance`, `KeySlotCount`. `TotalCount` + `_keySlots.Count`. `NetworkSerialize` + InventorySlot-сериализация. | ✅ |
+| `Assets/_Project/Items/Dto/InventoryItemDto.cs` | + поле `int instanceId` (default 0 в NetworkSerialize, Equals, GetHashCode) | ✅ |
+| `Assets/_Project/Items/Core/InventoryWorld.cs` | + `AddItemDirect(clientId, itemId, instanceId, itemType)` (4-param overload). + `HasKeyInstance(clientId, instanceId)` – проверяет через data.HasKeyInstance. + `GetMyShips(clientId)` – возвращает пары (instanceId, shipNetId) через KeyRodInstanceWorld. `BuildSnapshot` – для Key-типа читает instanceId из _keySlots. `TryDrop` – для Key-типа синхронизирует удаление из _keySlots | ✅ |
+
+**Verify**:
+- ✅ Compile: 0 errors, 0 new warnings (11 pre-existing `[Obsolete]` alias warnings не наши)
+- ✅ Reflection probe:
+  - `InventorySlot` – struct, `itemId (Int32)`, `instanceId (Int32)`
+  - `InventoryData` – все 7 новых методов
+  - `InventoryItemDto.instanceId` – Int32
+  - `InventoryWorld.HasKeyInstance`, `GetMyShips` – OK
+  - `AddItemDirect` – 2 overloads (3-param + 4-param)
+- ✅ Smoke test (полный flow):
+  - `KeyRodInstanceWorld.CreateInstance(100, ship=200, owner=5)` → id=1
+  - `InventoryData.AddKeyItem(100, instanceId=1)` → OK
+  - `HasKeyInstance(1)=True`, `HasKeyInstance(999)=False`
+  - `KeySlotCount=1`
+  - `GetKeySlotAt(0) → {itemId=100, instanceId=1}`
+  - `Shutdown` чистит реестр
+
+**Backward compat**: все существующие операции (HasItem, HasAllItems, CountOf, GetMissingItems, AddItem, RemoveItems, TryPickup, TryDrop для non-Key типов) работают как раньше через `GetIdsForType` → `_keyIds` (для Key) или исходные `List<int>`.
+
+**Что НЕ сделано** (намеренно, для следующих тикетов):
+- ❌ ShipOwnershipRequirement component → **T-KEY-03** (~1.5h)
+- ❌ KeyRodInstanceBinding explicit pickup component → **T-KEY-04** (~1h)
+- ❌ Transfer logic (drop → pickup с instanceId) → **T-KEY-05** (~1h)
+- ❌ Persistence через IPlayerDataRepository → **T-KEY-PERSIST** (~1.5h)
+
+**Что НЕ нужно тестировать в Play Mode**:
+- Старые KeyRod_* PickupItem в WorldScene_0_0 продолжают работать через legacy AddItem + AddItem(Key, itemId) → _keySlots с instanceId=0
+- `ItemType.Key = 8` теперь полностью поддерживается в инвентаре (слоты, snapshot, serialization)
+- Новые методы (HasKeyInstance, GetMyShips) НЕ вызываются из существующих сценариев — вызов будет в T-KEY-03..07
+
+---
+
 ## 2026-06-18 — R2-SHIP-KEY-003 v3 (T-KEY-01: KeyRodInstance + KeyRodInstanceWorld + ItemType.Key)
 
 **Контекст**: первый тикет R2-SHIP-KEY-003 после Q6 префикса. Создание POCO registry для уникальных ключей кораблей.

@@ -14,6 +14,8 @@
 //   • quantity   — stack count (1..maxStack; maxStack хранится в ItemData.maxStack)
 //   • slotIndex  — позиция в инвентаре [0, maxSlots); -1 означает "нет слота" (не используется
 //                  в DTO, но reserved для будущих операций drop с авто-выбором слота).
+//   • instanceId — (T-KEY-02, R2-SHIP-KEY-003) 0 для обычных предметов; >0 для Key-предметов
+//                  с привязкой к KeyRodInstance.
 // =====================================================================================
 
 using System;
@@ -28,6 +30,7 @@ namespace ProjectC.Items.Dto
         public byte type;        // (byte)ItemType
         public int  quantity;
         public int  slotIndex;
+        public int  instanceId;  // T-KEY-02: 0 = non-instance, >0 = KeyRodInstance.instanceId
 
         public void NetworkSerialize<T>(BufferSerializer<T> serializer) where T : IReaderWriter
         {
@@ -35,6 +38,7 @@ namespace ProjectC.Items.Dto
             serializer.SerializeValue(ref type);
             serializer.SerializeValue(ref quantity);
             serializer.SerializeValue(ref slotIndex);
+            serializer.SerializeValue(ref instanceId);
         }
 
         public bool Equals(InventoryItemDto other)
@@ -42,10 +46,23 @@ namespace ProjectC.Items.Dto
             return itemId == other.itemId
                 && type == other.type
                 && quantity == other.quantity
-                && slotIndex == other.slotIndex;
+                && slotIndex == other.slotIndex
+                && instanceId == other.instanceId;
         }
 
         public override bool Equals(object obj) => obj is InventoryItemDto o && Equals(o);
-        public override int GetHashCode() => HashCode.Combine(itemId, type, quantity, slotIndex);
+        public override int GetHashCode()
+        {
+            unchecked
+            {
+                int hash = 17;
+                hash = hash * 31 + itemId;
+                hash = hash * 31 + type;
+                hash = hash * 31 + quantity;
+                hash = hash * 31 + slotIndex;
+                hash = hash * 31 + instanceId;
+                return hash;
+            }
+        }
     }
 }

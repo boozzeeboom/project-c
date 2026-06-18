@@ -11,7 +11,12 @@ namespace ProjectC.Items
         Antigrav = 4,
         Meziy = 5,
         Medical = 6,
-        Tech = 7
+        Tech = 7,
+        // R2-SHIP-KEY-003 (T-KEY-01, Q1, 2026-06-18): отдельный тип для ключей кораблей.
+        // Позволяет чётко фильтровать KeyRods в PickupItem / Inventory UI.
+        // ВНИМАНИЕ: не переименовывать и не удалять — instance-id слой (T-KEY-02)
+        // рассчитывает на это значение для slot extension.
+        Key = 8
     }
 
     [CreateAssetMenu(fileName = "NewItem", menuName = "Project C/Item Data", order = 1)]

@@ -6367,6 +6367,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::ProjectC.Player.ShipController
   ShowTopMostFoldoutHeaderGroup: 1
   shipFlightClass: 1
+  _customDisplayName: "\u0420\u0443\u0441\u0441\u043A\u0438_\u0442\u0435\u0441\u0442"
   thrustForce: 5000
   maxSpeed: 5000
   yawForce: 3500
@@ -8245,6 +8246,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::ProjectC.Player.ShipController
   ShowTopMostFoldoutHeaderGroup: 1
   shipFlightClass: 0
+  _customDisplayName: Pushka
   thrustForce: 5000
   maxSpeed: 5000
   yawForce: 3500

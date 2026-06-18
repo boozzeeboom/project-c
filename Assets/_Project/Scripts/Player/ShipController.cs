@@ -44,6 +44,18 @@ namespace ProjectC.Player
         /// </summary>
         public ShipFlightClass ShipFlightClass => shipFlightClass;
 
+
+        [Header("Display Name (R2-SHIP-KEY-003, Q6)")]
+        [Tooltip("Человекочитаемое имя корабля для UI/HUD/toast'ов. " +
+                 "Если пусто — клиент сгенерирует fallback из класса (Light/Medium/Heavy/HeavyII). " +
+                 "Подтягивается к KeyRodInstance через TelemetryState.displayName (см. 22_SHIP_TELEMETRY_PLAN.md §2.3).")]
+        [SerializeField] private string _customDisplayName = "";
+
+        /// <summary>Custom display name из инспектора, или пустая строка (клиент сам сделает fallback).
+        /// Доступно с клиента и сервера — обычное string поле, не требует серверной синхронизации
+        /// (клиент видит тот же инспектор, что и сервер, scene-placed object).</summary>
+        public string CustomDisplayName => _customDisplayName;
+
         [Header("Тяга")]
 #pragma warning disable 0414
         [SerializeField] private float thrustForce = 650f;

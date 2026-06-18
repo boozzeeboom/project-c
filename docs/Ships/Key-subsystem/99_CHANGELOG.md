@@ -4,6 +4,79 @@
 
 ---
 
+## 2026-06-18 — R2-SHIP-KEY-003 v3 (T-KEY-01: KeyRodInstance + KeyRodInstanceWorld + ItemType.Key)
+
+**Контекст**: первый тикет R2-SHIP-KEY-003 после Q6 префикса. Создание POCO registry для уникальных ключей кораблей.
+
+**Что изменилось в коде**:
+
+| Файл | Что | Статус |
+|---|---|---|
+| `Assets/_Project/Scripts/Ship/Key/KeyRodInstance.cs` | NEW. `[Serializable]` class с полями `instanceId/itemId/registeredShipId/ownerPlayerId/originalOwnerId/state/createdAtUnix` + enum `KeyRodInstanceState {Active, Destroyed, Lost}` + const `OWNER_NONE = ulong.MaxValue` | ✅ создан |
+| `Assets/_Project/Scripts/Ship/Key/KeyRodInstanceWorld.cs` | NEW. Server-only static facade (паттерн `CraftingWorld`). API: `CreateInstance`, `TransferInstance`, `UpdateState`, `DestroyInstance`, `GetInstance/GetInstanceForShip/GetInstancesForPlayer/GetPlayerShips`, `IsOwnerOfInstance/IsOwnerOfShip`, `GetAllInstances/GetInstanceCount`. Lifecycle: `CreateAndInitialize` / `Shutdown`. Event: `static OnOwnershipChanged(int instanceId, ulong newOwner)` для T-KEY-07. | ✅ создан |
+| `Assets/_Project/Scripts/Core/ItemType.cs` | + enum value `Key = 8` (Q1) | ✅ добавлено |
+
+**Verify**:
+- ✅ Compile: 0 errors, 0 new warnings
+- ✅ Reflection probe (run after compile):
+  - `ItemType.Key = 8` (enum)
+  - `KeyRodInstance` — `[Serializable]` class с 7 public полями + `OWNER_NONE = 18446744073709551615` (ulong.MaxValue)
+  - `KeyRodInstanceState` — `Active=0, Destroyed=1, Lost=2`
+  - `KeyRodInstanceWorld` — `abstract+sealed static` class, 16 публичных static методов, event `Action<int, ulong>`
+- ✅ Smoke test (полный flow):
+  - `CreateInstance(itemId=31, ship=100, owner=NONE)` → id=1 (instance в мире)
+  - `CreateInstance(itemId=32, ship=101, owner=0)` → id=2 (instance у player 0)
+  - `TransferInstance(1, NONE→5)` → True (из мира → player 5)
+  - `IsOwnerOfShip(0, 101)=True`, `IsOwnerOfShip(5, 100)=True`, `IsOwnerOfShip(99, 100)=False`
+  - `GetPlayerShips(0)=1`, `GetPlayerShips(5)=1`, `GetInstanceCount()=2`
+  - `Shutdown` → `IsInitialized=False`
+
+**Что НЕ сделано** (намеренно, для следующих тикетов):
+- ❌ Persistence через IPlayerDataRepository → **T-KEY-PERSIST** (~1.5h)
+- ❌ Inventory slot extension (instance-id слой) → **T-KEY-02** (~2h)
+- ❌ ShipOwnershipRequirement component → **T-KEY-03** (~1.5h)
+- ❌ KeyRodInstanceBinding explicit pickup component → **T-KEY-04** (~1h)
+- ❌ Wire в `KeyRodInstanceBinding.OnNetworkSpawn` для авто-вызова `CreateAndInitialize` → T-KEY-04
+
+**Что НЕ нужно тестировать в Play Mode**:
+- POCO registry полностью изолирован, не подключён к существующим сценам
+- Старый `ShipKeyBinding` / `ShipKeyServer` legacy aliases продолжают работать как раньше — никаких изменений в API
+- `ItemType.Key = 8` — новый enum value, существующие ItemData с `Equipment=1` НЕ затронуты
+
+**Известные особенности**:
+- `KeyRodInstanceWorld.CreateInstance` валидирует `itemId` через `InventoryWorld.Instance.GetItemDefinition(itemId) != null` — если InventoryWorld ещё не инициализирован (race на StartHost), валидация пропускается (lazy check). Это намеренно: в T-KEY-04 binding будет создан в OnNetworkSpawn ПОСЛЕ InventoryServer.OnNetworkSpawn.
+- Smoke test запускал API через reflection — `_nextInstanceId` сбрасывается в `Shutdown`, поэтому повторные smoke test чистые.
+
+---
+
+## 2026-06-18 — R2-SHIP-KEY-003 v3 (T-KEY-00: Q6 ShipController префикс)
+
+**Контекст**: реализация Q6 (displayName через ShipController) — первый код-шаг R2-SHIP-KEY-003, до T-KEY-01.
+
+**Что изменилось в коде**:
+
+| Файл | Что | Зачем |
+|---|---|---|
+| `Assets/_Project/Scripts/Player/ShipController.cs` | + поле `[SerializeField] private string _customDisplayName = ""` + геттер `public string CustomDisplayName` | Q6: минимальный фикс в ShipController, "подтягивается к ключу". Доступно с клиента и сервера (scene-placed object, не требует NetworkVariable) |
+
+**Совместимость**: 100% backward compat. Поле дефолт `""` = пустая строка. Если в инспекторе ничего не задано — клиент сам сделает fallback `"Light #42"` / `"Medium #42"` и т.п. (T-KEY-07).
+
+**Verify**:
+- ✅ Compile: 0 errors, 0 new warnings
+- ✅ Runtime reflection probe: `type_found=true`, `field_found=true (System.String)`, `property_found=true, can_read=true`
+- ✅ Никаких конфликтов с существующими полями (поиск по 'name/display' нашёл только наш `_customDisplayName` + `CustomDisplayName` + стандартный `Object.name`)
+
+**Что НЕ сделано** (намеренно, для следующих тикетов):
+- ❌ TelemetryState NetworkVariable (T-KEY-07)
+- ❌ Fallback-логика "Light #42" (T-KEY-07)
+- ❌ Pull-through в KeyRodInstance.displayName (T-KEY-01..02)
+
+**Что НЕ нужно тестировать в Play Mode**:
+- Поле пока НЕ читается ни одним скриптом (всё ещё ссылается на старое `_shipDisplayName` через ShipKeyBinding legacy alias)
+- Эффект увидим в T-KEY-07 когда TelemetryState.startnet читает `CustomDisplayName`
+
+---
+
 ## 2026-06-18 — R2-SHIP-KEY-003 v2 (decision integration)
 
 **Контекст**: пользователь ответил на 12 вопросов в `24_OPEN_QUESTIONS.md` (2026-06-18). Применены 3 архитектурных изменения.

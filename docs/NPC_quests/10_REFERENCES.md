@@ -103,7 +103,7 @@
 - `Assets/_Project/Trade/Scripts/TradeItemDefinition.cs` (line 5) — item SO.
 - `Assets/_Project/Trade/Scripts/TradeDatabase.cs` (line 7) — registry SO with `OnValidate` index.
 - `Assets/_Project/Trade/Scripts/ContractData.cs` (259 LOC).
-- `Assets/_Project/Trade/Scripts/CargoSystem.cs` (287 LOC) — legacy client-side.
+- `Assets/_Project/Trade/Scripts/Core/CargoData.cs` (160 LOC) — POCO cargo, Trade v2. Legacy `Assets/_Project/Trade/Scripts/CargoSystem.cs` удалён в T-CARGO-05 (2026-06-17).
 - `Assets/_Project/Trade/Scripts/Config/MarketConfig.cs` (line 14).
 - `Assets/_Project/Trade/Scripts/Config/MarketItemConfig.cs`.
 

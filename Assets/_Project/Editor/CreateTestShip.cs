@@ -33,7 +33,7 @@ namespace ProjectC.Editor
         private void OnGUI()
         {
             GUILayout.Label("Выберите класс корабля (физика полёта):", EditorStyles.boldLabel);
-            GUILayout.Label("НЕ путать с ShipClass из CargoSystem (грузовые слоты)", EditorStyles.miniLabel);
+            GUILayout.Label("НЕ путать с ShipClass из Trade v2 Cargo (грузовые слоты — см. ShipClassMappingConfig)", EditorStyles.miniLabel);
             
             // Используем Popup с явным выбором индекса чтобы избежать конфликта типов
             string[] options = System.Enum.GetNames(typeof(ShipFlightClass));

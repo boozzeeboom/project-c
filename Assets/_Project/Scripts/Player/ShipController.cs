@@ -9,7 +9,8 @@ namespace ProjectC.Player
 {
     /// <summary>
     /// Классы кораблей для физики полёта — определяют характеристики движения.
-    /// НЕ путать с ProjectC.Player.ShipClass (грузовые характеристики из CargoSystem).
+    /// НЕ путать с ProjectC.Trade.Core.ShipClass (грузовые характеристики,
+    /// маппинг через ShipClassMappingConfig).
     /// </summary>
     public enum ShipFlightClass
     {
@@ -33,7 +34,7 @@ namespace ProjectC.Player
     public class ShipController : NetworkBehaviour
     {
         [Header("Класс Корабля")]
-        [Tooltip("Класс определяет характеристики полёта. НЕ путать с грузовым классом (CargoSystem).")]
+        [Tooltip("Класс определяет характеристики полёта. НЕ путать с грузовым классом (Trade.Core.ShipClass, маппинг в ShipClassMappingConfig).")]
         [SerializeField] private ShipFlightClass shipFlightClass = ShipFlightClass.Medium;
 
         /// <summary>
@@ -100,10 +101,6 @@ namespace ProjectC.Player
         [SerializeField] private float windExposure = 1.0f;
         [Tooltip("Время затухания ветра при выходе из зоны")]
         [SerializeField] private float windDecayTime = 1.5f;
-
-        [Header("Cargo (Сессия 2)")]
-        [Tooltip("LEGACY: MonoBehaviour-адаптер. Будет удалён в Этапе 5. Груз управляется через TradeWorld (см. ResolvedCargoClass).")]
-        [SerializeField] [HideInInspector] private ProjectC.Player.CargoSystem cargoSystem;
 
         [Header("Модули (Сессия 4)")]
         [Tooltip("Менеджер модулей корабля")]
@@ -799,7 +796,7 @@ namespace ProjectC.Player
 
             // T-CARGO-03: штраф скорости от груза с сервера (через NetworkVariable).
             // Источник: TradeWorld.GetSpeedPenalty(), обновляется через OnCargoChanged.
-            // cargoSystem (legacy) больше не используется — поле скрыто, удаляется в Этапе 5.
+            // legacy ProjectC.Player.CargoSystem удалён в T-CARGO-05.
             float cargoPenalty = _serverCargoPenalty.Value;
 
             _rb.AddForce(transform.forward * currentThrust * cargoPenalty, ForceMode.Force);

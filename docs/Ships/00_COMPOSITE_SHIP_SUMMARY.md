@@ -64,7 +64,7 @@ Ship_Root (GameObject) — Rigidbody, NetworkObject, ShipController
 | **WindZone** | ✅ Готов | `GetComponentInParent<ShipController>()` на триггере — находит корень |
 | **MeziyModuleActivator** | ⏳ Phase 4 | Сейчас serialized ссылка. Нужен `GetComponentsInChildren<MeziyNozzle>()` |
 | **MetaRequirement** | ✅ Готов | На любом дочернем GameObject. Ships пропущены через фильтр `mr.GetComponent<ShipController>()` |
-| **CargoSystem** | ❌ Не существует | Создаётся с нуля когда понадобится |
+| **CargoSystem** | ✅ Готово (Trade v2) | `ProjectC.Trade.Core.CargoData` + `TradeWorld._cargoCache` + `OnCargoChanged` event. См. `docs/Ships/cargo_system/CARGO_REFACTOR_PLAN_2026-06-17.md` |
 
 ## What's next
 

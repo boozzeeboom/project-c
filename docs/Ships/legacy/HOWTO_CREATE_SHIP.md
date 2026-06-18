@@ -94,7 +94,6 @@ Hierarchy → Right Click → 3D Object → Cube
 | **Min Altitude** | 1200 |
 | **Max Altitude** | 4450 |
 | **Max Lift Speed** | 2.5 |
-| **Cargo System** | (оставить пустым) |
 
 #### 3.4 NetworkObject (Add Component → NetworkObject)
 

@@ -497,8 +497,11 @@ namespace ProjectC.Trade.Network
         {
             if (NetworkManager.Singleton == null || NetworkManager.Singleton.SpawnManager == null) return ShipClass.Light;
             if (!NetworkManager.Singleton.SpawnManager.SpawnedObjects.TryGetValue(shipNetworkObjectId, out var no)) return ShipClass.Light;
-            var cargo = no.GetComponent<CargoSystem>();
-            return cargo != null ? cargo.shipClass : ShipClass.Light;
+            // T-CARGO-05: было cargo != null ? cargo.shipClass : Light (через CargoSystem).
+            // Теперь через ShipClassMappingConfig (FlightClass → CargoClass).
+            var sc = no.GetComponent<ShipController>();
+            if (sc == null) return ShipClass.Light;
+            return ProjectC.Ship.ShipClassMappingConfig.Default.Resolve(sc.ShipFlightClass) ?? ShipClass.Light;
         }
 
         private static NetworkPlayer FindNetworkPlayer(ulong clientId)

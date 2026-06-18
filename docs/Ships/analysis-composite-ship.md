@@ -27,7 +27,7 @@
 | **ThirdPersonCamera** | ⚠️ **Рефакторинг** | target → корень корабля при входе, динамическая дистанция |
 | **Место пилота (PilotSeat)** | 🆕 **Новый компонент** | Отдельный child с триггером + ссылка на ShipController |
 | **DoorController** | 🆕 **Новый компонент** | NetworkBehaviour + NetworkVariable, slide-анимация |
-| **CargoSystem** | ❌ **Отсутствует** | Класс не найден, ShipClass enum существует но CargoSystem как скрипта нет |
+| **CargoSystem** | ✅ **Готово (Trade v2)** | CargoData + TradeWorld._cargoCache + OnCargoChanged event. См. `docs/Ships/cargo_system/CARGO_DIAGNOSIS_2026-06-17.md` |
 | **MeziyModuleActivator** | ⚠️ **Рефакторинг** | Центральный → распределённый по двигателям |
 
 ---
@@ -430,7 +430,7 @@ if (Keyboard.current.eKey.wasPressedThisFrame) {
 
 ### Phase 4+: Multi-crew + Cargo + Modules (отдельные сессии)
 - `ShipController._pilots` → `Dictionary<ulong, PilotSeatController>`
-- CargoSystem (создать с нуля)
+- CargoSystem (Trade v2, 2026-06-17: CargoData + OnCargoChanged)
 - Компоненты с `NetworkObject` для синхронизации
 
 ---

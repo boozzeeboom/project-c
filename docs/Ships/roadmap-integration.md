@@ -197,7 +197,7 @@ Ship_Root
 | **Не добавляем NetworkObject на дочерние объекты** | Лишняя сложность для MVP. Вся логика через корневой NetworkObject. |
 | **Не синхронизируем дверь по сети** | Каждый клиент проигрывает анимацию локально. Работает. |
 | **Не переносим ShipController на место пилота** | Ломает Rigidbody, WindZone, всё. ShipController на корне. |
-| **Не делаем CargoSystem** | Класса нет, не нужен для MVP. |
+| **CargoSystem (T-CARGO-01..05, 2026-06-17)** | ✅ Готово как часть Trade v2 (CargoData POCO + TradeWorld._cargoCache + OnCargoChanged event). См. `docs/Ships/cargo_system/CARGO_REFACTOR_PLAN_2026-06-17.md`. |
 | **Не создаём .meta / .asmdef** | Запрещено AGENTS.md. |
 | **Не трогаем BootstrapScene/ScenePlacedObjectSpawner** | Не требует изменений. |
 | **Не трогаем AltitudeCorridorSystem** | Сценовый singleton, ничего не знает о структуре корабля. |

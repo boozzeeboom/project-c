@@ -347,15 +347,13 @@ namespace ProjectC.Trade.Network
                 var sc = no.GetComponent<ShipController>();
                 if (sc == null) continue;
 
-                var cargoComp = sc.GetComponent<CargoSystem>();
-                // T-CARGO-01: маппинг FlightClass → CargoClass через SO. Если маппинг
-                // не нашёлся (старый префаб без classMarker), fallback на cargoComp.shipClass.
-                // В Этапе 5 (когда удалим CargoSystem) fallback уйдёт.
-                ShipClass cls = ProjectC.Ship.ShipClassMappingConfig.Default.Resolve(sc.ShipFlightClass)
-                                 ?? (cargoComp != null ? cargoComp.shipClass : ShipClass.Light);
-                if (cls == ShipClass.Light && cargoComp == null && sc.ShipFlightClass != ShipFlightClass.Light)
+                // T-CARGO-05: маппинг FlightClass → CargoClass через SO.
+                // Этап 1 имел fallback на cargoComp (CargoSystem), но в Этапе 5
+                // CargoSystem удалён — fallback больше не нужен.
+                ShipClass cls = ProjectC.Ship.ShipClassMappingConfig.Default.Resolve(sc.ShipFlightClass) ?? ShipClass.Light;
+                if (cls == ShipClass.Light && sc.ShipFlightClass != ShipFlightClass.Light)
                 {
-                    // warning один раз на корабль: маппинг не настроен, держим Light как safe default
+                    // warning: маппинг не настроен, держим Light как safe default
                     Debug.LogWarning($"[MarketZone] shipId={shipId} name='{sc.gameObject.name}' flightClass={sc.ShipFlightClass} → CargoClass=Light (fallback). " +
                                      $"Создай Resources/ShipClassMapping.asset или проверь ShipClassMappingConfig.Default.");
                 }

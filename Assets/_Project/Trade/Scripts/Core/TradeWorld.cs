@@ -322,10 +322,17 @@ namespace ProjectC.Trade.Core
         /// Если корабль зарегистрирован (есть в ShipCargoRegistry) — используем
         /// per-instance лимиты с учётом модулей. Иначе return false (= cargo.TryAdd
         /// сам проверит статический fallback).
+        ///
+        /// FIX (T-CARGO-06-race): NGO не гарантирует порядок OnNetworkSpawn — клиент
+        /// может вызвать TryLoadToShip RPC раньше, чем у сервера отработает
+        /// ShipController.OnNetworkSpawn (race). Поэтому перед использованием
+        /// registry — пробуем force-register через NetworkManager.SpawnManager.
         /// </summary>
         private bool TryCheckEffectiveCargoLimits(ulong shipNetworkObjectId, CargoData cargo, string itemId, int quantity, out string failReason)
         {
             failReason = null;
+            // Force-register корабля если он заспавнен, но ещё не в реестре
+            TryForceRegisterFromNetworkManager(shipNetworkObjectId);
             var effLimits = ProjectC.Ship.ShipCargoRegistry.GetEffectiveLimits(shipNetworkObjectId);
             if (effLimits == null) return false; // корабль не зарегистрирован, пусть cargo.TryAdd fallback'нет
 
@@ -343,6 +350,26 @@ namespace ProjectC.Trade.Core
             if (newVolume > effLimits.Value.maxVolume) { failReason = "cargo_max_volume"; return true; }
             if (newSlots > effLimits.Value.maxSlots) { failReason = "cargo_max_slots"; return true; }
             return false;
+        }
+
+        /// <summary>
+        /// T-CARGO-06-race: если корабль уже заспавнен, но ещё не зарегистрирован
+        /// в ShipCargoRegistry (race между OnNetworkSpawn и RPC TryLoadToShip) —
+        /// находим его через NetworkManager.SpawnManager и регистрируем.
+        /// </summary>
+        private static void TryForceRegisterFromNetworkManager(ulong shipNetworkObjectId)
+        {
+            if (ProjectC.Ship.ShipCargoRegistry.Get(shipNetworkObjectId) != null) return;
+
+            var nm = Unity.Netcode.NetworkManager.Singleton;
+            if (nm == null || nm.SpawnManager == null) return;
+            if (!nm.SpawnManager.SpawnedObjects.TryGetValue(shipNetworkObjectId, out var no)) return;
+
+            var sc = no != null ? no.GetComponent<ProjectC.Player.ShipController>() : null;
+            if (sc != null)
+            {
+                ProjectC.Ship.ShipCargoRegistry.Register(sc);
+            }
         }
 
         /// <summary>
@@ -639,6 +666,8 @@ namespace ProjectC.Trade.Core
 
             // T-CARGO-06: per-instance лимиты через ShipCargoRegistry.
             // Если корабль зарегистрирован — лимиты с учётом модулей. Иначе fallback на статический.
+            // T-CARGO-06-race: force-register если корабль заспавнен но не в registry.
+            TryForceRegisterFromNetworkManager(shipNetworkObjectId);
             float maxWeight;
             float penaltyFactor;
             var effLimits = ProjectC.Ship.ShipCargoRegistry.GetEffectiveLimits(shipNetworkObjectId);

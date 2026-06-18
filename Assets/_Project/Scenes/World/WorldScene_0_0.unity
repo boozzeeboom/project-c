@@ -6389,6 +6389,10 @@ MonoBehaviour:
   windInfluence: 0.5
   windExposure: 1.2
   windDecayTime: 1.5
+  baseMaxCargoSlots: 4
+  baseMaxCargoWeight: 100
+  baseMaxCargoVolume: 3
+  baseCargoPenaltyFactor: 0.05
   moduleManager: {fileID: 1236236186}
   meziyActivator: {fileID: 1236236185}
   fuelSystem: {fileID: 1236236187}
@@ -8224,6 +8228,7 @@ Transform:
   - {fileID: 954022944}
   - {fileID: 1108472421}
   - {fileID: 1970377412}
+  - {fileID: 2047548080}
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!114 &1531988014
@@ -8262,6 +8267,10 @@ MonoBehaviour:
   windInfluence: 0.5
   windExposure: 1.2
   windDecayTime: 1.5
+  baseMaxCargoSlots: 4
+  baseMaxCargoWeight: 100
+  baseMaxCargoVolume: 3
+  baseCargoPenaltyFactor: 0.05
   moduleManager: {fileID: 1531988021}
   meziyActivator: {fileID: 1531988020}
   fuelSystem: {fileID: 1531988019}
@@ -8390,6 +8399,7 @@ MonoBehaviour:
   - {fileID: 954022943}
   - {fileID: 1108472420}
   - {fileID: 1970377411}
+  - {fileID: 2047548079}
   availablePower: 200
 --- !u!1 &1566613463
 GameObject:
@@ -10571,6 +10581,52 @@ PhysicsMaterial:
   m_Bounciness: 0
   m_FrictionCombine: 0
   m_BounceCombine: 0
+--- !u!1 &2047548078
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 2047548080}
+  - component: {fileID: 2047548079}
+  m_Layer: 0
+  m_Name: Slot_cargo
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!114 &2047548079
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 2047548078}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: bfdc8fa418911ab42a91087c7323a797, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::ProjectC.Ship.ModuleSlot
+  slotType: 1
+  installedModule: {fileID: 11400000, guid: 4bc432030f43d3546a0c5972786b81be, type: 2}
+--- !u!4 &2047548080
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 2047548078}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 1531988013}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1001 &2054275749
 PrefabInstance:
   m_ObjectHideFlags: 0

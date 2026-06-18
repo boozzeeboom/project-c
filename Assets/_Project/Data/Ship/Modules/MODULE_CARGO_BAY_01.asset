@@ -12,7 +12,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 0a2ee72e2ca4c264faa0110acf851850, type: 3}
   m_Name: MODULE_CARGO_BAY_01
   m_EditorClassIdentifier: Assembly-CSharp::ProjectC.Ship.ShipModule
-  moduleId: MODULE_CARGO_BAY_01
+  moduleId: MODULE_CARGO_BAY_01_admin
   displayName: Cargo Bay Expansion
   type: 1
   tier: 2
@@ -24,8 +24,8 @@ MonoBehaviour:
   maxSpeedModifier: 0
   windExposureModifier: 0
   cargoSlotsBonus: 6
-  cargoWeightBonus: 50
-  cargoVolumeBonus: 2
+  cargoWeightBonus: 5000
+  cargoVolumeBonus: 2000
   cargoPenaltyReduction: -0.02
   powerConsumption: 0
   compatibleClasses: 

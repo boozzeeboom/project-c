@@ -102,6 +102,16 @@ namespace ProjectC.Player
         [Tooltip("Время затухания ветра при выходе из зоны")]
         [SerializeField] private float windDecayTime = 1.5f;
 
+        [Header("Cargo (T-CARGO-06, базовые лимиты)")]
+        [Tooltip("Базовое максимальное количество грузовых слотов. Модули с cargoSlotsBonus добавляют flat.")]
+        [Min(0)] [SerializeField] private int baseMaxCargoSlots = 4;
+        [Tooltip("Базовый максимальный вес груза (кг). Модули с cargoWeightBonus добавляют flat.")]
+        [Min(0f)] [SerializeField] private float baseMaxCargoWeight = 100f;
+        [Tooltip("Базовый максимальный объём груза (м³). Модули с cargoVolumeBonus добавляют flat.")]
+        [Min(0f)] [SerializeField] private float baseMaxCargoVolume = 3f;
+        [Tooltip("Базовый коэффициент штрафа скорости от груза (0..1). Модули с cargoPenaltyReduction (отрицательный) уменьшают.")]
+        [Range(0f, 1f)] [SerializeField] private float baseCargoPenaltyFactor = 0.05f;
+
         [Header("Модули (Сессия 4)")]
         [Tooltip("Менеджер модулей корабля")]
         [SerializeField] private ShipModuleManager moduleManager;
@@ -412,6 +422,10 @@ namespace ProjectC.Player
             // Резолвим CargoClass сразу — дешёвая операция, можно даже на клиенте
             _resolvedCargoClass = ShipClassMappingConfig.Default.Resolve(shipFlightClass) ?? ShipClass.Light;
 
+            // T-CARGO-06: регистрация в ShipCargoRegistry — TradeWorld читает лимиты
+            // через этот реестр (per-instance, с учётом модулей).
+            ShipCargoRegistry.Register(this);
+
             // T-CARGO-03: подписка на OnCargoChanged — реагируем на мутации cargo
             // (Load/Unload/Damage). Подписка ДО корутины, т.к. GetOrLoadCargo
             // может сразу вызвать event, если в репозитории были данные.
@@ -426,6 +440,10 @@ namespace ProjectC.Player
 
         public override void OnNetworkDespawn()
         {
+            // T-CARGO-06: отписка из registry (важно: до base.OnNetworkDespawn,
+            // чтобы NetworkObjectId ещё был валиден)
+            ShipCargoRegistry.Unregister(NetworkObjectId);
+
             if (IsServer && _cargoRegistered && TradeWorld.Instance != null)
             {
                 TradeWorld.Instance.InvalidateCargo(NetworkObjectId);
@@ -500,6 +518,42 @@ namespace ProjectC.Player
                 _serverCargoPenalty.Value = newPenalty;
                 Debug.Log($"[ShipController] cargoPenalty shipId={NetworkObjectId} {oldPenalty:F3}→{newPenalty:F3} class={_resolvedCargoClass}");
             }
+        }
+
+        // ========================================================
+        // T-CARGO-06: Эффективные лимиты трюма (base + module bonuses)
+        // ========================================================
+        // TradeWorld/TradeData вызывают это через ShipCargoRegistry.
+        // На клиенте тоже работает (для UI/HUD).
+        // ========================================================
+
+        /// <summary>
+        /// Получить эффективные лимиты трюма с учётом бонусов модулей.
+        /// </summary>
+        public CargoLimits GetEffectiveCargoLimits()
+        {
+            int slots = baseMaxCargoSlots;
+            float weight = baseMaxCargoWeight;
+            float volume = baseMaxCargoVolume;
+            float penalty = baseCargoPenaltyFactor;
+
+            if (moduleManager != null)
+            {
+                slots += moduleManager.GetCargoSlotsBonus();
+                weight += moduleManager.GetCargoWeightBonus();
+                volume += moduleManager.GetCargoVolumeBonus();
+                // penaltyReduction — отрицательный = уменьшает штраф (стабилизатор).
+                // Отрицательное суммируется → итоговый penalty меньше.
+                penalty += moduleManager.GetCargoPenaltyReduction();
+            }
+
+            return new CargoLimits
+            {
+                maxSlots = Mathf.Max(0, slots),
+                maxWeight = Mathf.Max(0f, weight),
+                maxVolume = Mathf.Max(0f, volume),
+                penaltyFactor = Mathf.Clamp(penalty, 0f, 1f),
+            };
         }
 
 #if UNITY_EDITOR

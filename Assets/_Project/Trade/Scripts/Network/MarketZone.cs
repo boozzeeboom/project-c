@@ -357,7 +357,8 @@ namespace ProjectC.Trade.Network
                     Debug.LogWarning($"[MarketZone] shipId={shipId} name='{sc.gameObject.name}' flightClass={sc.ShipFlightClass} → CargoClass=Light (fallback). " +
                                      $"Создай Resources/ShipClassMapping.asset или проверь ShipClassMappingConfig.Default.");
                 }
-                var limits = ShipClassLimits.Get(cls);
+                // T-CARGO-06: per-instance лимиты с учётом модулей (через ShipController напрямую)
+                var effLimits = sc.GetEffectiveCargoLimits();
 
                 var cargo = TradeWorld.Instance.GetOrLoadCargo(shipId, cls);
                 float w = cargo != null && TradeWorld.Instance.Resolver != null
@@ -373,11 +374,11 @@ namespace ProjectC.Trade.Network
                     displayName = string.IsNullOrEmpty(sc.gameObject.name) ? $"Корабль #{shipId}" : sc.gameObject.name,
                     shipClassName = cls.ToString(),
                     currentWeight = w,
-                    maxWeight = limits.maxWeight,
+                    maxWeight = effLimits.maxWeight,
                     currentVolume = v,
-                    maxVolume = limits.maxVolume,
+                    maxVolume = effLimits.maxVolume,
                     currentSlots = s,
-                    maxSlots = limits.maxSlots,
+                    maxSlots = effLimits.maxSlots,
                     uniqueItemCount = cargo?.Items.Count ?? 0
                 });
             }

@@ -43,6 +43,40 @@
 | **D8** | UI трюма — **ОТДЕЛЬНАЯ задача** (T-Cargo-UI), не в этом плане | Сначала интеграция данных, потом UI. Не смешивать scope |
 | **D9** | Параметры leak/fragile (порог энергии, % утечки) — **ScriptableObject `ShipCollisionDamageConfig`** в `Assets/_Project/Data/Ship/`. Default из старого кода (5%×10% leak, 10% fragile), правится в инспекторе | Ответ Q3: «не в хардкод, дать править в инспекторе». Этап 4 |
 | **D10** | Event-driven обновление `_serverCargoPenalty` через `TradeWorld.OnCargoChanged` | Ответ Q2: «как работает наш рынок и остальное, без костылей, v2 значит v2». В v2 событийная модель (MarketTimeService, ContractServer) |
+| **D11** | **Per-instance базовые лимиты трюма** в `ShipController` (НЕ статический switch в `ShipClassLimits`). Поля: `baseMaxCargoSlots/Weight/Volume/PenaltyFactor` (inspector-editable) | Решение Q-06: «лёгкий с большим хранилищем» — per-instance. Модули stackable flat, penaltyReduction отрицательный = уменьшает штраф. `ShipClassLimits` остаётся **fallback по умолчанию**, если на корабле не выставлено |
+| **D12** | **`ShipCargoRegistry`** — статический `Dictionary<ulong, ShipController>`. `OnNetworkSpawn` → register, `OnNetworkDespawn` → unregister | Мост: TradeWorld (POCO) вызывает per-instance лимиты без хранения ссылки на GameObject. `MarketZone` использует `sc.GetEffectiveCargoLimits()` напрямую (уже имеет sc) |
+| **D13** | **Cargo-бонусы** в `ShipModule` (flat): `cargoSlotsBonus/WeightBonus/VolumeBonus/PenaltyReduction`. Stackable. Без cooldown | Q-06.2: «бонус — flat, penalty factor уменьшается, без кулдауна». `ShipModuleManager.GetCargoXxxBonus()` суммирует со всех занятых слотов |
+
+---
+
+## Дополнение T-CARGO-06 (per-instance лимиты + модули)
+
+Закрыто 2026-06-17. Дополнение к основному плану (Этапы 1-5).
+
+**Что создано (поверх D1-D10):**
+- `Assets/_Project/Scripts/Ship/ShipCargoRegistry.cs` — static registry по NetworkObjectId
+- `Assets/_Project/Data/Ship/Modules/MODULE_CARGO_BAY_01.asset` — тестовый модуль (Utility tier=2, +6 слотов, +50кг, +2м³, -0.02 penalty)
+
+**Что модифицировано:**
+- `ShipModule.cs` — 4 новых поля cargo-бонусов (flat)
+- `ShipModuleManager.cs` — 4 новых метода `GetCargoSlotsBonus/WeightBonus/VolumeBonus/PenaltyReduction()`
+- `ShipController.cs` — 4 новых base-поля + `GetEffectiveCargoLimits()` + регистрация в registry
+- `TradeWorld.cs` — `TryLoadToShip` (pre-check через registry) + `GetSpeedPenalty` (через registry)
+- `MarketZone.cs` — `sc.GetEffectiveCargoLimits()` вместо `ShipClassLimits.Get(cls)`
+
+**Архитектурный принцип:** Cargo лимиты живут **per-instance на ShipController** (D11), модули stackable flat (D13), `ShipCargoRegistry` — мост к серверной POCO-логике Trade (D12). Никаких хардкодных switch'ей — все базовые значения правятся в инспекторе.
+
+**Что увидишь в Play Mode:**
+
+| Действие | Результат |
+|---|---|
+| `Ship_Light_root` в Inspector → `Cargo` секция → `Base Max Cargo Slots: 4 → 10` | После Save: можно загрузить 10 слотов вместо 4 (MarketWindow покажет max=10) |
+| Установить `MODULE_CARGO_BAY_01` в Utility-слот корабля | +6 слотов, +50кг, +2м³, -0.02 penalty → maxSlots=10, penaltyFactor=0.03 |
+| Загрузить antigrav_ingot × 20 (было слишком много) | Поместится, penalty = 1.0 - 0.5×0.03 = 0.985 |
+
+**Файлы документации:**
+- `docs/Ships/cargo_system/CARGO_DIAGNOSIS_2026-06-17.md` — обновлён (финальное состояние T-CARGO-01..05)
+- `docs/Ships/cargo_system/CARGO_REFACTOR_PLAN_2026-06-17.md` — этот файл (D11-D13 + новая секция выше)
 
 ---
 

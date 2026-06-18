@@ -42,6 +42,10 @@ namespace ProjectC.Trade.Core
             failReason = null;
             if (string.IsNullOrEmpty(itemId) || quantity <= 0) { failReason = "invalid_args"; return false; }
 
+            // T-CARGO-06: лимиты = статический fallback по shipClass.
+            // Per-instance лимиты (с учётом модулей) читает TradeWorld через
+            // ShipCargoRegistry ДО вызова TryAdd — см. TradeWorld.TryLoadToShip.
+            // Двойная проверка = безопасно, без coupling Trade → Ship namespace.
             var limits = ShipClassLimits.Get(shipClass);
             int itemSlots = resolver.GetSlots(itemId);
             float itemWeight = resolver.GetWeight(itemId);

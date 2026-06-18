@@ -58,6 +58,19 @@ namespace ProjectC.Ship
         [Tooltip("Изменение экспозиции к ветру (±к windExposure)")]
         public float windExposureModifier = 0f;
 
+        [Header("Cargo Expansion (T-CARGO-06)")]
+        [Tooltip("Бонус к максимальному количеству грузовых слотов (flat, +N)")]
+        [Min(0)] public int cargoSlotsBonus = 0;
+
+        [Tooltip("Бонус к максимальному весу груза (flat, +N кг)")]
+        [Min(0f)] public float cargoWeightBonus = 0f;
+
+        [Tooltip("Бонус к максимальному объёму груза (flat, +N м³)")]
+        [Min(0f)] public float cargoVolumeBonus = 0f;
+
+        [Tooltip("Снижение коэффициента штрафа скорости от груза (flat, -N). Отрицательное = увеличение штрафа.")]
+        public float cargoPenaltyReduction = 0f;
+
         [Header("Требования")]
         [Tooltip("Потребление энергии (0 = не потребляет)")]
         public int powerConsumption = 0;

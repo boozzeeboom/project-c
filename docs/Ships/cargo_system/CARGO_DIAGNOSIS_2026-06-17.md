@@ -191,6 +191,58 @@
 
 ---
 
+## 7.5. T-CARGO-06: Per-instance лимиты + модули (дополнение 2026-06-17)
+
+После Этапов 1-5 (полный рефакторинг legacy `CargoSystem.cs`) по запросу пользователя добавил **per-instance лимиты + модульное расширение трюма**. Архитектурное решение — лимиты НЕ живут в статическом switch'е `ShipClassLimits.Get(cls)`, а в **Inspector-editable полях `ShipController`** (per-instance).
+
+### Что добавлено
+
+| Файл | Назначение |
+|---|---|
+| `Assets/_Project/Scripts/Ship/ShipCargoRegistry.cs` | Static `Dictionary<ulong, ShipController>` — мост от server-POCO `TradeWorld` к per-instance лимитам. `OnNetworkSpawn` register, `OnNetworkDespawn` unregister |
+| `ShipModule.cs` (modified) | 4 новых поля cargo-бонусов (flat): `cargoSlotsBonus/WeightBonus/VolumeBonus/PenaltyReduction` |
+| `ShipModuleManager.cs` (modified) | 4 новых метода `GetCargoXxxBonus()` — суммируют бонусы со всех занятых слотов |
+| `ShipController.cs` (modified) | 4 base-поля (`baseMaxCargoSlots/Weight/Volume/PenaltyFactor`) + `GetEffectiveCargoLimits()` (base + bonuses) |
+| `TradeWorld.cs` (modified) | `TryLoadToShip` — pre-check через `ShipCargoRegistry`. `GetSpeedPenalty` — читает effective limits |
+| `MarketZone.cs` (modified) | `sc.GetEffectiveCargoLimits()` вместо `ShipClassLimits.Get(cls)` |
+| `Assets/_Project/Data/Ship/Modules/MODULE_CARGO_BAY_01.asset` | Тестовый модуль: +6 слотов, +50кг, +2м³, -0.02 penalty |
+
+### Архитектурный принцип (D11-D13)
+
+| Решение | Почему |
+|---|---|
+| **D11**: per-instance лимиты в ShipController | «Лёгкий с большим хранилищем» — конкретный кейс, который не покрывает статический switch по классу. Меняется в инспекторе конкретного префаба |
+| **D12**: `ShipCargoRegistry` static | POCO `TradeWorld` не может хранить ссылки на `MonoBehaviour`. Registry — мост (register/unregister в `OnNetworkSpawn`/`OnNetworkDespawn`) |
+| **D13**: cargo-бонусы в `ShipModule` flat | Модули stackable (Q-06.2). Penalty reduction отрицательный = уменьшение штрафа. `ShipClassLimits` остаётся **fallback** если корабль не зарегистрирован в registry |
+
+### Тест-результат (cold test через `execute_code`)
+
+```
+slotsCount_after_add=1 slot.isOccupied=True
+SlotsBonus=6 (expect 6)
+WeightBonus=50 (expect 50)
+VolBonus=2 (expect 2)
+PenaltyRed=-0,02 (expect -0,02)
+```
+
+Все 4 бонуса корректно читаются через `ShipModuleManager.GetCargoXxxBonus()`.
+
+### Сценарий проверки в Play Mode
+
+1. Открыть `WorldScene_0_0.unity`, выбрать `Ship_Light_root`
+2. Inspector → секция `Cargo (T-CARGO-06, базовые лимиты)` — увеличить `Base Max Cargo Weight: 100 → 500`
+3. Save, Play, Start Host
+4. Открыть `MarketWindow` → выбрать `Ship_Light_root` → `maxWeight` покажет 500
+5. (Опц.) Перетащить `MODULE_CARGO_BAY_01` в Utility-слот корабля → `maxWeight` станет 550
+
+### Что НЕ делал (явно out of scope T-CARGO-06)
+
+- ❌ Не делал UI для управления модулями (уже есть отдельный план)
+- ❌ Не делал валидацию «модуль не должен быть уже установлен в 2 слота» (current logic: `ModuleSlot.isOccupied` + manager-уровневые проверки)
+- ❌ Не делал визуальное отображение bonus-модулей в HUD
+
+---
+
 ## 8. Связанные документы (прочитать перед планом)
 
 - [CARGO_REFACTOR_PLAN_2026-06-17.md](CARGO_REFACTOR_PLAN_2026-06-17.md) — **собственно план** (следующий шаг)

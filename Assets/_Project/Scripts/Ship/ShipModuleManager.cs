@@ -215,6 +215,52 @@ namespace ProjectC.Ship
             return modifier;
         }
 
+        // ========================================================
+        // T-CARGO-06: Cargo Expansion — flat бонусы от модулей
+        // ========================================================
+        // Модули могут расширять трюм. Бонусы stackable (суммируются flat).
+        // penaltyReduction — отрицательный = уменьшает штраф (модуль "Cargo Stabilizer"),
+        // положительный = увеличивает штраф (модуль "Unstable Rack").
+        // ========================================================
+        public int GetCargoSlotsBonus()
+        {
+            int bonus = 0;
+            foreach (var slot in slots)
+                if (slot.isOccupied)
+                    bonus += slot.installedModule.cargoSlotsBonus;
+            return bonus;
+        }
+
+        public float GetCargoWeightBonus()
+        {
+            float bonus = 0f;
+            foreach (var slot in slots)
+                if (slot.isOccupied)
+                    bonus += slot.installedModule.cargoWeightBonus;
+            return bonus;
+        }
+
+        public float GetCargoVolumeBonus()
+        {
+            float bonus = 0f;
+            foreach (var slot in slots)
+                if (slot.isOccupied)
+                    bonus += slot.installedModule.cargoVolumeBonus;
+            return bonus;
+        }
+
+        /// <summary>
+        /// Изменение penaltyFactor. flat суммирование. Отрицательный = уменьшение штрафа.
+        /// </summary>
+        public float GetCargoPenaltyReduction()
+        {
+            float delta = 0f;
+            foreach (var slot in slots)
+                if (slot.isOccupied)
+                    delta += slot.installedModule.cargoPenaltyReduction;
+            return delta;
+        }
+
         /// <summary>
         /// Проверить валидность конфигурации (все модули совместимы).
         /// </summary>

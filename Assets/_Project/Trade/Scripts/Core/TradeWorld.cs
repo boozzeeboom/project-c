@@ -293,6 +293,15 @@ namespace ProjectC.Trade.Core
             if (!warehouse.TryRemove(itemId, quantity, out var whFail))
                 return TradeResult.Fail(MapWarehouseFail(whFail), whFail, Repository.GetCredits(clientId), warehouse, cargo);
 
+            // T-CARGO-06: pre-check через ShipCargoRegistry (per-instance лимиты с модулями).
+            // Если корабль не зарегистрирован (старый код) — fallback на cargo.TryAdd (статический).
+            if (TryCheckEffectiveCargoLimits(shipNetworkObjectId, cargo, itemId, quantity, out var effFail))
+            {
+                // откатить склад
+                warehouse.TryAdd(itemId, quantity, Resolver, out _);
+                return TradeResult.Fail(MapCargoFail(effFail), effFail, Repository.GetCredits(clientId), warehouse, cargo);
+            }
+
             if (!cargo.TryAdd(itemId, quantity, Resolver, out var cargoFail))
             {
                 // откатить склад
@@ -306,6 +315,34 @@ namespace ProjectC.Trade.Core
             OnCargoChanged?.Invoke(shipNetworkObjectId);
             Debug.Log($"[TradeWorld] LOAD client={clientId} loc={locationId} ship={shipNetworkObjectId} item={itemId} qty={quantity}");
             return TradeResult.Ok(Repository.GetCredits(clientId), 0, warehouse, cargo);
+        }
+
+        /// <summary>
+        /// T-CARGO-06: Pre-check через ShipCargoRegistry.
+        /// Если корабль зарегистрирован (есть в ShipCargoRegistry) — используем
+        /// per-instance лимиты с учётом модулей. Иначе return false (= cargo.TryAdd
+        /// сам проверит статический fallback).
+        /// </summary>
+        private bool TryCheckEffectiveCargoLimits(ulong shipNetworkObjectId, CargoData cargo, string itemId, int quantity, out string failReason)
+        {
+            failReason = null;
+            var effLimits = ProjectC.Ship.ShipCargoRegistry.GetEffectiveLimits(shipNetworkObjectId);
+            if (effLimits == null) return false; // корабль не зарегистрирован, пусть cargo.TryAdd fallback'нет
+
+            if (Resolver == null) return false; // нечем посчитать вес/объём
+
+            int itemSlots = Resolver.GetSlots(itemId);
+            float itemWeight = Resolver.GetWeight(itemId);
+            float itemVolume = Resolver.GetVolume(itemId);
+
+            float newWeight = cargo.ComputeTotalWeight(Resolver) + itemWeight * quantity;
+            float newVolume = cargo.ComputeTotalVolume(Resolver) + itemVolume * quantity;
+            int newSlots = cargo.ComputeTotalSlots(Resolver) + itemSlots * quantity;
+
+            if (newWeight > effLimits.Value.maxWeight) { failReason = "cargo_max_weight"; return true; }
+            if (newVolume > effLimits.Value.maxVolume) { failReason = "cargo_max_volume"; return true; }
+            if (newSlots > effLimits.Value.maxSlots) { failReason = "cargo_max_slots"; return true; }
+            return false;
         }
 
         /// <summary>
@@ -600,10 +637,26 @@ namespace ProjectC.Trade.Core
             var cargo = GetOrLoadCargo(shipNetworkObjectId, shipClass);
             if (cargo == null || Resolver == null) return 1.0f;
 
-            var limits = ShipClassLimits.Get(shipClass);
+            // T-CARGO-06: per-instance лимиты через ShipCargoRegistry.
+            // Если корабль зарегистрирован — лимиты с учётом модулей. Иначе fallback на статический.
+            float maxWeight;
+            float penaltyFactor;
+            var effLimits = ProjectC.Ship.ShipCargoRegistry.GetEffectiveLimits(shipNetworkObjectId);
+            if (effLimits != null)
+            {
+                maxWeight = effLimits.Value.maxWeight;
+                penaltyFactor = effLimits.Value.penaltyFactor;
+            }
+            else
+            {
+                var staticLimits = ShipClassLimits.Get(shipClass);
+                maxWeight = staticLimits.maxWeight;
+                penaltyFactor = staticLimits.penaltyFactor;
+            }
+
             float weight = cargo.ComputeTotalWeight(Resolver);
-            float weightRatio = limits.maxWeight > 0f ? weight / limits.maxWeight : 0f;
-            float speedMultiplier = 1.0f - weightRatio * limits.penaltyFactor;
+            float weightRatio = maxWeight > 0f ? weight / maxWeight : 0f;
+            float speedMultiplier = 1.0f - weightRatio * penaltyFactor;
 
             // Перегруз: -20% за каждые полные 10% сверх лимита
             if (weightRatio > 1.0f)

@@ -1,0 +1,38 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 0a2ee72e2ca4c264faa0110acf851850, type: 3}
+  m_Name: MODULE_CARGO_BAY_01
+  m_EditorClassIdentifier: Assembly-CSharp::ProjectC.Ship.ShipModule
+  moduleId: MODULE_CARGO_BAY_01
+  displayName: Cargo Bay Expansion
+  type: 1
+  tier: 2
+  thrustMultiplier: 1
+  yawMultiplier: 1
+  pitchMultiplier: 1
+  rollMultiplier: 1
+  liftMultiplier: 1
+  maxSpeedModifier: 0
+  windExposureModifier: 0
+  cargoSlotsBonus: 6
+  cargoWeightBonus: 50
+  cargoVolumeBonus: 2
+  cargoPenaltyReduction: -0.02
+  powerConsumption: 0
+  compatibleClasses: 
+  requiredModules: []
+  incompatibleModules: []
+  isMeziyModule: 0
+  meziyForce: 0
+  meziyDuration: 0
+  meziyCooldown: 0
+  meziyFuelCost: 0

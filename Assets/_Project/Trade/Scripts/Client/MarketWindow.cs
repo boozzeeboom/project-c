@@ -67,7 +67,28 @@ namespace ProjectC.Trade.Client
         private Button _completeBtn;
         private Button _failBtn;
         private Label _messageLabel;
-        private TextField _qtyField;
+        private Label _qtyLabel;
+        private Label _warehouseQtyLabel;
+        private int _marketQty = 1;
+        private int _warehouseQty = 1;
+        // R3-xxx: тоггл "мои товары" на вкладке Рынок
+        private Button _myItemsToggle;
+        private bool _myItemsOnly;
+        private ItemPriceDto[] _marketItemsCache;       // полный список (для фильтрации)
+        private WarehouseEntryDto[] _marketWhCache;     // склад из того же снепшота
+        // R3-qty: круговые кнопки ± для количества
+        private Button _marketQtyMinus10;
+        private Button _marketQtyMinus1;
+        private Button _marketQtyPlus1;
+        private Button _marketQtyPlus10;
+        private Button _warehouseQtyMinus10;
+        private Button _warehouseQtyMinus1;
+        private Button _warehouseQtyPlus1;
+        private Button _warehouseQtyPlus10;
+        private Button _marketQtyMin;
+        private Button _marketQtyMax;
+        private Button _warehouseQtyMin;
+        private Button _warehouseQtyMax;
 
         // State
         private int _selectedMarketItem = -1;
@@ -220,7 +241,23 @@ namespace ProjectC.Trade.Client
             _completeBtn = _root.Q<Button>("complete-btn");
             _failBtn = _root.Q<Button>("fail-btn");
             _messageLabel = _root.Q<Label>("message-label");
-            _qtyField = _root.Q<TextField>("qty-field");
+            _qtyLabel = _root.Q<Label>("qty-label-value");
+            _warehouseQtyLabel = _root.Q<Label>("warehouse-qty-label-value");
+            // R3-qty: круговые кнопки ±
+            _marketQtyMinus10 = _root.Q<Button>("market-qty-minus10");
+            _marketQtyMinus1 = _root.Q<Button>("market-qty-minus1");
+            _marketQtyPlus1 = _root.Q<Button>("market-qty-plus1");
+            _marketQtyPlus10 = _root.Q<Button>("market-qty-plus10");
+            _warehouseQtyMinus10 = _root.Q<Button>("warehouse-qty-minus10");
+            _warehouseQtyMinus1 = _root.Q<Button>("warehouse-qty-minus1");
+            _warehouseQtyPlus1 = _root.Q<Button>("warehouse-qty-plus1");
+            _warehouseQtyPlus10 = _root.Q<Button>("warehouse-qty-plus10");
+            _marketQtyMin = _root.Q<Button>("market-qty-min");
+            _marketQtyMax = _root.Q<Button>("market-qty-max");
+            _warehouseQtyMin = _root.Q<Button>("warehouse-qty-min");
+            _warehouseQtyMax = _root.Q<Button>("warehouse-qty-max");
+            // R3 Qty Row Refactor: inline-стили для всего qty-row (USS не работает)
+            SetupQtyRow();
 
             if (_itemList != null)
             {
@@ -241,6 +278,12 @@ namespace ProjectC.Trade.Client
                     _selectedMarketItem = FindSelectedItemIndex<ItemPriceDto>(_itemList, selectedItems);
                     _itemList.Rebuild();
                 };
+                // R3-xxx: тоггл "Показать мои товары"
+                _myItemsToggle = _root.Q<Button>("my-items-toggle");
+                if (_myItemsToggle != null)
+                {
+                    _myItemsToggle.clicked += OnMyItemsToggleClicked;
+                }
             }
             if (_warehouseList != null)
             {
@@ -338,6 +381,22 @@ namespace ProjectC.Trade.Client
             // T-E04: exchange button handlers
             if (_packBtn != null) _packBtn.clicked += OnPackClicked;
             if (_unpackBtn != null) _unpackBtn.clicked += OnUnpackClicked;
+
+            // R3-qty: круговые кнопки ± — market
+            if (_marketQtyMinus10 != null) _marketQtyMinus10.clicked += () => AdjustMarketQty(-10);
+            if (_marketQtyMinus1 != null) _marketQtyMinus1.clicked += () => AdjustMarketQty(-1);
+            if (_marketQtyPlus1 != null) _marketQtyPlus1.clicked += () => AdjustMarketQty(1);
+            if (_marketQtyPlus10 != null) _marketQtyPlus10.clicked += () => AdjustMarketQty(10);
+            // R3-qty: круговые кнопки ± — warehouse
+            if (_warehouseQtyMinus10 != null) _warehouseQtyMinus10.clicked += () => AdjustWarehouseQty(-10);
+            if (_warehouseQtyMinus1 != null) _warehouseQtyMinus1.clicked += () => AdjustWarehouseQty(-1);
+            if (_warehouseQtyPlus1 != null) _warehouseQtyPlus1.clicked += () => AdjustWarehouseQty(1);
+            if (_warehouseQtyPlus10 != null) _warehouseQtyPlus10.clicked += () => AdjustWarehouseQty(10);
+            // MIN/MAX — прямой установкой
+            if (_marketQtyMin != null) _marketQtyMin.clicked += SetMarketQty1;
+            if (_marketQtyMax != null) _marketQtyMax.clicked += SetMarketQty999;
+            if (_warehouseQtyMin != null) _warehouseQtyMin.clicked += SetWarehouseQty1;
+            if (_warehouseQtyMax != null) _warehouseQtyMax.clicked += SetWarehouseQty999;
 
             if (_shipSelector != null)
             {
@@ -490,17 +549,13 @@ namespace ProjectC.Trade.Client
 
         private void BindMarketRow(VisualElement row, int index)
         {
+            // FIX (2026-06-18): читаем из itemsSource (может быть полный или отфильтрованный),
+            // НЕ из snap.Value.items — иначе при фильтрации показывает не те товары.
+            var source = _itemList?.itemsSource;
+            if (source == null || index < 0 || index >= source.Count) return;
+            var it = (ItemPriceDto)source[index];
             var snap = _state?.CurrentSnapshot;
-            if (!snap.HasValue) return;
-            var items = snap.Value.items;
-            if (index < 0 || index >= items.Length) return;
-            var it = items[index];
-            // FIX (2026-06-04): На вкладке «РЫНОК» показываем не только рыночный сток
-            // (сколько можно КУПИТЬ), но и количество на складе игрока (сколько можно
-            // ПРОДАТЬ). Раньше это было видно только после переключения на вкладку
-            // «СКЛАД / ТРЮМ» — продажа шла «вслепую», игрок вводил qty наугад и
-            // получал ошибку NotEnoughInWarehouse от сервера.
-            int whQty = FindWarehouseQty(snap.Value.warehouse, it.itemId);
+            int whQty = snap.HasValue ? FindWarehouseQty(snap.Value.warehouse, it.itemId) : 0;
             row.Q<Label>("row-label").text =
                 $"{it.displayName}  —  {it.currentPrice:F0} CR  (сток: {it.availableStock})  (у вас: {whQty})";
             row.style.backgroundColor = (index == _selectedMarketItem) ? new StyleColor(new Color(0.4f, 0.6f, 0.9f, 0.4f)) : StyleKeyword.Null;
@@ -605,7 +660,17 @@ namespace ProjectC.Trade.Client
             }
             // Списки — назначаем itemsSource (массивы DTO).
             // Без этого ListView знает callbacks (makeItem/bindItem), но не знает сколько элементов.
-            if (_itemList != null) _itemList.itemsSource = snap.items;
+            _marketItemsCache = snap.items;
+            _marketWhCache = snap.warehouse;
+
+            if (_myItemsOnly)
+            {
+                ApplyMarketFilter();
+            }
+            else
+            {
+                if (_itemList != null) _itemList.itemsSource = snap.items;
+            }
             if (_warehouseList != null) _warehouseList.itemsSource = snap.warehouse ?? Array.Empty<WarehouseEntryDto>();
             if (_cargoList != null) _cargoList.itemsSource = _cargoCache ?? Array.Empty<WarehouseEntryDto>();
             if (_itemList != null) _itemList.Rebuild();
@@ -927,8 +992,8 @@ namespace ProjectC.Trade.Client
             var snap = _state?.CurrentSnapshot;
             if (!snap.HasValue) return;
             if (_selectedMarketItem < 0 || _selectedMarketItem >= snap.Value.items.Length) return;
-            int qty = ParseQty();
             var it = snap.Value.items[_selectedMarketItem];
+            int qty = Mathf.Min(GetMarketQty(), it.availableStock);
             _state.RequestBuy(snap.Value.locationId, it.itemId, qty);
         }
 
@@ -937,8 +1002,9 @@ namespace ProjectC.Trade.Client
             var snap = _state?.CurrentSnapshot;
             if (!snap.HasValue) return;
             if (_selectedMarketItem < 0 || _selectedMarketItem >= snap.Value.items.Length) return;
-            int qty = ParseQty();
             var it = snap.Value.items[_selectedMarketItem];
+            int whQty = FindWarehouseQty(snap.Value.warehouse, it.itemId);
+            int qty = Mathf.Min(GetMarketQty(), whQty);
             _state.RequestSell(snap.Value.locationId, it.itemId, qty);
         }
 
@@ -947,8 +1013,8 @@ namespace ProjectC.Trade.Client
             var snap = _state?.CurrentSnapshot;
             if (!snap.HasValue) return;
             if (_selectedWarehouseItem < 0 || _selectedWarehouseItem >= (snap.Value.warehouse?.Length ?? 0)) return;
-            int qty = ParseQty();
             var wh = snap.Value.warehouse[_selectedWarehouseItem];
+            int qty = Mathf.Min(GetWarehouseQty(), wh.quantity);
             ulong shipId = GetSelectedShipId();
             if (shipId == 0) { SetMessage("Сначала выберите корабль", true); return; }
             _state.RequestLoadToShip(snap.Value.locationId, wh.itemId, qty, shipId);
@@ -960,10 +1026,10 @@ namespace ProjectC.Trade.Client
             if (!snap.HasValue) return;
             var cargo = SnapCargo(snap.Value);
             if (_selectedCargoItem < 0 || _selectedCargoItem >= cargo.Count) return;
-            int qty = ParseQty();
             ulong shipId = GetSelectedShipId();
             if (shipId == 0) { SetMessage("Сначала выберите корабль", true); return; }
             var it = cargo[_selectedCargoItem];
+            int qty = Mathf.Min(GetWarehouseQty(), it.quantity);
             _state.RequestUnloadFromShip(snap.Value.locationId, it.itemId, qty, shipId);
         }
 
@@ -1108,11 +1174,15 @@ namespace ProjectC.Trade.Client
             }
 
             // C2-refactor: qty row виден только в табе РЫНОК (qty не используется для контрактов)
-            // ИСПРАВЛЕНО: раньше qty был показан в обоих market/warehouse, но в warehouse qty
-            // уже парсится из _qtyField без изменений. В contracts qty не имеет смысла.
-            if (_qtyField != null && _qtyField.parent != null)
+            if (_qtyLabel != null && _qtyLabel.parent != null)
             {
-                _qtyField.parent.style.display = isMarket ? DisplayStyle.Flex : DisplayStyle.None;
+                _qtyLabel.parent.style.display = isMarket ? DisplayStyle.Flex : DisplayStyle.None;
+            }
+
+            // R3-xxx: отдельный qty-row для вкладки СКЛАД/ТРЮМ.
+            if (_warehouseQtyLabel != null && _warehouseQtyLabel.parent != null)
+            {
+                _warehouseQtyLabel.parent.style.display = isWarehouse ? DisplayStyle.Flex : DisplayStyle.None;
             }
         }
 
@@ -1131,11 +1201,96 @@ namespace ProjectC.Trade.Client
         // UTILS
         // ========================================================
 
-        private int ParseQty()
+        /// R3 Qty Row Refactor: напряжение из полей _marketQty / _warehouseQty.
+        private int GetMarketQty() => Mathf.Clamp(_marketQty, 1, 9999);
+        private int GetWarehouseQty() => Mathf.Clamp(_warehouseQty, 1, 9999);
+
+        /// R3-xxx: тоггл "Показать только мои товары" / "Показать все товары".
+        private void OnMyItemsToggleClicked()
         {
-            if (_qtyField == null) return 1;
-            if (!int.TryParse(_qtyField.value, out var q)) return 1;
-            return Mathf.Clamp(q, 1, 9999);
+            _myItemsOnly = !_myItemsOnly;
+            if (_myItemsToggle != null)
+            {
+                _myItemsToggle.text = _myItemsOnly ? "Показать все товары" : "Показать мои товары";
+            }
+            ApplyMarketFilter();
+        }
+
+        /// Применить фильтр "мои товары" (склад игрока > 0) или показать все.
+        private void ApplyMarketFilter()
+        {
+            if (_itemList == null || _marketItemsCache == null) return;
+
+            if (_myItemsOnly)
+            {
+                int count = 0;
+                for (int i = 0; i < _marketItemsCache.Length; i++)
+                    if (FindWarehouseQty(_marketWhCache, _marketItemsCache[i].itemId) > 0) count++;
+
+                var filtered = new ItemPriceDto[count];
+                int idx = 0;
+                for (int i = 0; i < _marketItemsCache.Length; i++)
+                {
+                    var it = _marketItemsCache[i];
+                    if (FindWarehouseQty(_marketWhCache, it.itemId) > 0)
+                        filtered[idx++] = it;
+                }
+
+                // FIX (2026-06-18): Unity 6 ListView не отображает новые itemsSource
+                // после Rebuild() — нужна принудительная перезагрузка через null + Rebuild
+                _itemList.itemsSource = null;
+                _itemList.Rebuild();
+                _itemList.itemsSource = filtered;
+                _itemList.selectedIndex = -1;
+                _itemList.Rebuild();
+
+                if (_marketWhCache != null && _marketWhCache.Length > 0)
+                {
+                    string whIds = "";
+                    for (int i = 0; i < _marketWhCache.Length; i++)
+                        whIds += $"  wh[{i}] = '{_marketWhCache[i].itemId}' qty={_marketWhCache[i].quantity}";
+                    string matchIds = "";
+                    for (int i = 0; i < Mathf.Min(filtered.Length, 5); i++)
+                        matchIds += $"  match[{i}] = '{filtered[i].itemId}'";
+                    Debug.Log($"[MarketWindow] Filter: {_marketItemsCache.Length}→{filtered.Length}" +
+                        $"\n  WH cache:{whIds}" +
+                        $"\n  First matches:{matchIds}");
+                }
+            }
+            else
+            {
+                _itemList.itemsSource = null;
+                _itemList.Rebuild();
+                _itemList.itemsSource = _marketItemsCache;
+                _itemList.selectedIndex = -1;
+                _itemList.Rebuild();
+            }
+        }
+
+        /// R3 Qty Row Refactor: корректировка количества на delta, обновление Label.
+        private void AdjustMarketQty(int delta)
+        {
+            _marketQty = Mathf.Clamp(_marketQty + delta, 1, 9999);
+            if (_qtyLabel != null) _qtyLabel.text = _marketQty.ToString();
+        }
+        private void AdjustWarehouseQty(int delta)
+        {
+            _warehouseQty = Mathf.Clamp(_warehouseQty + delta, 1, 9999);
+            if (_warehouseQtyLabel != null) _warehouseQtyLabel.text = _warehouseQty.ToString();
+        }
+        private void SetMarketQty1() { SetMarketQty(1); }
+        private void SetMarketQty999() { SetMarketQty(999); }
+        private void SetMarketQty(int v)
+        {
+            _marketQty = Mathf.Clamp(v, 1, 9999);
+            if (_qtyLabel != null) _qtyLabel.text = _marketQty.ToString();
+        }
+        private void SetWarehouseQty1() { SetWarehouseQty(1); }
+        private void SetWarehouseQty999() { SetWarehouseQty(999); }
+        private void SetWarehouseQty(int v)
+        {
+            _warehouseQty = Mathf.Clamp(v, 1, 9999);
+            if (_warehouseQtyLabel != null) _warehouseQtyLabel.text = _warehouseQty.ToString();
         }
 
         /// <summary>
@@ -1646,6 +1801,160 @@ namespace ProjectC.Trade.Client
                 _messageLabel.text = $"Отправлен запрос на распаковку {item.displayName}...";
                 _messageLabel.style.color = new StyleColor(new Color(0.6f, 0.8f, 1.0f));
             }
+        }
+
+        /// <summary>
+        /// R3 Qty Row Refactor (2026-06-18): полный inline-стиль для qty-row.
+        /// USS НЕ применяется к MarketWindow (styleSheets.count=0 на root), поэтому
+        /// все стили задаём через C# напрямую. Охватывает: поле кол-ва, кнопки ±,
+        /// лейбл "Кол-во:", внутренний TextElement для читаемости цифр.
+        /// </summary>
+        private void SetupQtyRow()
+        {
+            // ---- Label-значение: цвет, размер, фон ----
+            StyleQtyLabel(_qtyLabel);
+            StyleQtyLabel(_warehouseQtyLabel);
+
+            // ---- Label "Кол-во:" ----
+            var qtyLabel = _root?.Q<Label>(className: "qty-label");
+            if (qtyLabel != null)
+            {
+                qtyLabel.style.color = new StyleColor(new Color(0.78f, 0.78f, 0.86f));
+                qtyLabel.style.fontSize = 11;
+                qtyLabel.style.unityFontStyleAndWeight = FontStyle.Bold;
+                qtyLabel.style.marginLeft = 2;
+                qtyLabel.style.marginRight = 2;
+            }
+
+            // ---- Кнопки ± ----
+            StyleQtyBtn(_marketQtyMinus10, isMinus: true);
+            StyleQtyBtn(_marketQtyMinus1, isMinus: true);
+            StyleQtyBtn(_marketQtyPlus1, isMinus: false);
+            StyleQtyBtn(_marketQtyPlus10, isMinus: false);
+            StyleQtyBtn(_warehouseQtyMinus10, isMinus: true);
+            StyleQtyBtn(_warehouseQtyMinus1, isMinus: true);
+            StyleQtyBtn(_warehouseQtyPlus1, isMinus: false);
+            StyleQtyBtn(_warehouseQtyPlus10, isMinus: false);
+            // MIN/MAX — прямоугольные, синеватые
+            StyleQtyExtremeBtn(_marketQtyMin, "MIN");
+            StyleQtyExtremeBtn(_marketQtyMax, "MAX");
+            StyleQtyExtremeBtn(_warehouseQtyMin, "MIN");
+            StyleQtyExtremeBtn(_warehouseQtyMax, "MAX");
+        }
+
+        /// <summary>Inline-стиль для Label-значения количества (чёрный на светло-сером).</summary>
+        private static void StyleQtyLabel(Label label)
+        {
+            if (label == null) return;
+
+            label.style.width = 50;
+            label.style.minWidth = 50;
+            label.style.height = 24;
+            label.style.backgroundColor = new StyleColor(new Color(0.92f, 0.94f, 0.97f, 0.95f));
+            label.style.color = new StyleColor(new Color(0.05f, 0.05f, 0.08f));
+            label.style.fontSize = 13;
+            label.style.borderTopWidth = 1;
+            label.style.borderBottomWidth = 1;
+            label.style.borderLeftWidth = 1;
+            label.style.borderRightWidth = 1;
+            label.style.borderTopColor = new StyleColor(new Color(0.7f, 0.75f, 0.85f, 0.5f));
+            label.style.borderBottomColor = new StyleColor(new Color(0.7f, 0.75f, 0.85f, 0.5f));
+            label.style.borderLeftColor = new StyleColor(new Color(0.7f, 0.75f, 0.85f, 0.5f));
+            label.style.borderRightColor = new StyleColor(new Color(0.7f, 0.75f, 0.85f, 0.5f));
+            label.style.borderTopLeftRadius = 3;
+            label.style.borderTopRightRadius = 3;
+            label.style.borderBottomLeftRadius = 3;
+            label.style.borderBottomRightRadius = 3;
+            label.style.paddingLeft = 4;
+            label.style.paddingRight = 4;
+            label.style.unityTextAlign = TextAnchor.MiddleCenter;
+            label.style.marginLeft = 2;
+            label.style.marginRight = 2;
+            label.style.unityFontStyleAndWeight = FontStyle.Bold;
+        }
+
+        /// <summary>Inline-стиль для круглой кнопки ±22×22px.</summary>
+        private static void StyleQtyBtn(Button btn, bool isMinus)
+        {
+            if (btn == null) return;
+
+            btn.style.width = 22;
+            btn.style.height = 22;
+            btn.style.minWidth = 22;
+            btn.style.minHeight = 22;
+            btn.style.borderTopLeftRadius = 11;
+            btn.style.borderTopRightRadius = 11;
+            btn.style.borderBottomLeftRadius = 11;
+            btn.style.borderBottomRightRadius = 11;
+            btn.style.borderTopWidth = 1;
+            btn.style.borderBottomWidth = 1;
+            btn.style.borderLeftWidth = 1;
+            btn.style.borderRightWidth = 1;
+            btn.style.fontSize = 10;
+            btn.style.unityFontStyleAndWeight = FontStyle.Bold;
+            btn.style.unityTextAlign = TextAnchor.MiddleCenter;
+            btn.style.paddingLeft = 0;
+            btn.style.paddingRight = 0;
+            btn.style.paddingTop = 0;
+            btn.style.paddingBottom = 0;
+            btn.style.marginLeft = 0;
+            btn.style.marginRight = 0;
+            btn.style.alignSelf = Align.Center;
+
+            if (isMinus)
+            {
+                btn.style.color = new StyleColor(new Color(0.16f, 0.16f, 0.2f));   // тёмный текст
+                btn.style.backgroundColor = new StyleColor(new Color(0.86f, 0.63f, 0.63f, 0.85f));
+                btn.style.borderTopColor = new StyleColor(new Color(0.7f, 0.4f, 0.4f, 0.6f));
+                btn.style.borderBottomColor = new StyleColor(new Color(0.7f, 0.4f, 0.4f, 0.6f));
+                btn.style.borderLeftColor = new StyleColor(new Color(0.7f, 0.4f, 0.4f, 0.6f));
+                btn.style.borderRightColor = new StyleColor(new Color(0.7f, 0.4f, 0.4f, 0.6f));
+            }
+            else
+            {
+                btn.style.color = new StyleColor(new Color(0.16f, 0.16f, 0.2f));   // тёмный текст
+                btn.style.backgroundColor = new StyleColor(new Color(0.63f, 0.86f, 0.63f, 0.85f));
+                btn.style.borderTopColor = new StyleColor(new Color(0.4f, 0.7f, 0.4f, 0.6f));
+                btn.style.borderBottomColor = new StyleColor(new Color(0.4f, 0.7f, 0.4f, 0.6f));
+                btn.style.borderLeftColor = new StyleColor(new Color(0.4f, 0.7f, 0.4f, 0.6f));
+                btn.style.borderRightColor = new StyleColor(new Color(0.4f, 0.7f, 0.4f, 0.6f));
+            }
+        }
+
+        /// <summary>Inline-стиль для MIN/MAX кнопок (прямоугольные, синеватые).</summary>
+        private static void StyleQtyExtremeBtn(Button btn, string text)
+        {
+            if (btn == null) return;
+            btn.text = text;
+            btn.style.width = 32;
+            btn.style.height = 22;
+            btn.style.minWidth = 32;
+            btn.style.minHeight = 22;
+            btn.style.borderTopLeftRadius = 3;
+            btn.style.borderTopRightRadius = 3;
+            btn.style.borderBottomLeftRadius = 3;
+            btn.style.borderBottomRightRadius = 3;
+            btn.style.borderTopWidth = 1;
+            btn.style.borderBottomWidth = 1;
+            btn.style.borderLeftWidth = 1;
+            btn.style.borderRightWidth = 1;
+            btn.style.fontSize = 9;
+            btn.style.unityFontStyleAndWeight = FontStyle.Bold;
+            btn.style.unityTextAlign = TextAnchor.MiddleCenter;
+            btn.style.paddingLeft = 2;
+            btn.style.paddingRight = 2;
+            btn.style.paddingTop = 0;
+            btn.style.paddingBottom = 0;
+            btn.style.marginLeft = 0;
+            btn.style.marginRight = 0;
+            btn.style.alignSelf = Align.Center;
+            btn.style.flexShrink = 0;
+            btn.style.color = new StyleColor(new Color(0.78f, 0.82f, 0.9f));
+            btn.style.backgroundColor = new StyleColor(new Color(0.24f, 0.31f, 0.51f, 0.6f));
+            btn.style.borderTopColor = new StyleColor(new Color(0.4f, 0.5f, 0.7f, 0.4f));
+            btn.style.borderBottomColor = new StyleColor(new Color(0.4f, 0.5f, 0.7f, 0.4f));
+            btn.style.borderLeftColor = new StyleColor(new Color(0.4f, 0.5f, 0.7f, 0.4f));
+            btn.style.borderRightColor = new StyleColor(new Color(0.4f, 0.5f, 0.7f, 0.4f));
         }
     }
 }

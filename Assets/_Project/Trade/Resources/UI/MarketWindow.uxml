@@ -1,5 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <ui:UXML xmlns:ui="UnityEngine.UIElements" xmlns:uie="UnityEditor.UIElements">
+    <ui:Style src="MarketWindow" />
     <ui:VisualElement name="main-container" class="market-window">
         <!-- Заголовок -->
         <ui:VisualElement class="header">
@@ -21,16 +22,23 @@
             <ui:Button name="tab-exchanger" text="ОБМЕННИК" class="tab-btn" />
         </ui:VisualElement>
 
-        <!-- Количество (только в табе РЫНОК) -->
-        <ui:VisualElement class="qty-row">
-            <ui:Label text="Кол-во:" class="qty-label" />
-            <ui:TextField name="qty-field" value="1" class="qty-field" />
-        </ui:VisualElement>
-
         <!-- Список товаров рынка (показывается на вкладке РЫНОК) -->
         <ui:VisualElement name="item-section" class="list-section">
             <ui:Label text="Товары на рынке" class="section-title" />
+            <ui:Button name="my-items-toggle" text="Показать мои товары" class="my-items-toggle" />
             <ui:ListView name="item-list" class="item-list" />
+        </ui:VisualElement>
+
+        <!-- Количество РЫНОК (под списком товаров, над кнопками КУПИТЬ/ПРОДАТЬ) -->
+        <ui:VisualElement class="qty-row">
+            <ui:Button name="market-qty-min" text="MIN" class="qty-btn qty-btn-min" />
+            <ui:Button name="market-qty-minus10" text="-10" class="qty-btn qty-btn-minus" />
+            <ui:Button name="market-qty-minus1"  text="-1"  class="qty-btn qty-btn-minus" />
+            <ui:Label text="Кол-во:" class="qty-label" />
+            <ui:Label name="qty-label-value" text="1" class="qty-label-value" />
+            <ui:Button name="market-qty-plus1"   text="+1"  class="qty-btn qty-btn-plus" />
+            <ui:Button name="market-qty-plus10"  text="+10" class="qty-btn qty-btn-plus" />
+            <ui:Button name="market-qty-max" text="MAX" class="qty-btn qty-btn-max" />
         </ui:VisualElement>
 
         <!-- Список склада (показывается на вкладке СКЛАД / ТРЮМ) -->
@@ -43,6 +51,18 @@
         <ui:VisualElement name="cargo-section" class="list-section">
             <ui:Label text="Груз корабля" class="section-title" />
             <ui:ListView name="cargo-list" class="item-list" />
+        </ui:VisualElement>
+
+        <!-- Количество СКЛАД/ТРЮМ (между списками и кнопками ПОГРУЗИТЬ/РАЗГРУЗИТЬ) -->
+        <ui:VisualElement name="warehouse-qty-row" class="qty-row" style="display: none;">
+            <ui:Button name="warehouse-qty-min" text="MIN" class="qty-btn qty-btn-min" />
+            <ui:Button name="warehouse-qty-minus10" text="-10" class="qty-btn qty-btn-minus" />
+            <ui:Button name="warehouse-qty-minus1"  text="-1"  class="qty-btn qty-btn-minus" />
+            <ui:Label text="Кол-во:" class="qty-label" />
+            <ui:Label name="warehouse-qty-label-value" text="1" class="qty-label-value" />
+            <ui:Button name="warehouse-qty-plus1"   text="+1"  class="qty-btn qty-btn-plus" />
+            <ui:Button name="warehouse-qty-plus10"  text="+10" class="qty-btn qty-btn-plus" />
+            <ui:Button name="warehouse-qty-max" text="MAX" class="qty-btn qty-btn-max" />
         </ui:VisualElement>
 
         <!-- C2-refactor: вкладка КОНТРАКТЫ -->

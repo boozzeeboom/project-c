@@ -31,6 +31,8 @@ namespace ProjectC.Ship.Key
     /// Server-only static facade. Single source of truth для всех KeyRodInstance
     /// в текущей серверной сессии. Создаётся в KeyRodInstanceBinding.OnNetworkSpawn
     /// (T-KEY-04, Q11 explicit binding), закрывается при серверном shutdown.
+    /// 
+    /// T-KEY-PERSIST: поддержка auto-save через IKeyRodInstanceRepository.
     /// </summary>
     public static class KeyRodInstanceWorld
     {
@@ -38,48 +40,113 @@ namespace ProjectC.Ship.Key
         // State
         // ===========================================================
 
-        /// <summary>instanceId → KeyRodInstance. Primary registry.</summary>
         private static readonly Dictionary<int, KeyRodInstance> _instancesById = new Dictionary<int, KeyRodInstance>();
-
-        /// <summary>shipNetId → instanceId. 1:1 в MVP (расширяется до 1:N в фазе 2).</summary>
         private static readonly Dictionary<ulong, int> _primaryInstanceByShipId = new Dictionary<ulong, int>();
-
-        /// <summary>clientId → List&lt;instanceId&gt;. Per-player index для быстрого GetInstancesForPlayer.
-        /// Содержит ТОЛЬКО Active instance'ы в чьём-то инвентаре (owner != OWNER_NONE).</summary>
         private static readonly Dictionary<ulong, List<int>> _instancesByPlayer = new Dictionary<ulong, List<int>>();
-
-        /// <summary>Монотонный counter для новых instanceId. Начинается с 1 (0 = "no instance").</summary>
         private static int _nextInstanceId = 1;
-
-        /// <summary>True после CreateAndInitialize(). Сбрасывается в Shutdown().</summary>
         public static bool IsInitialized { get; private set; }
+
+        // T-KEY-PERSIST: optional repository (null = no persistence)
+        private static IKeyRodInstanceRepository _repository;
 
         // ===========================================================
         // Lifecycle
         // ===========================================================
 
-        /// <summary>Инициализация реестра. Идемпотентно. Вызывается из KeyRodInstanceBinding.OnNetworkSpawn
-        /// (T-KEY-04) или из NetworkManagerController при StartHost (fallback).</summary>
+        /// <summary>Инициализация реестра без persistence. Идемпотентно.</summary>
         public static void CreateAndInitialize()
+        {
+            CreateAndInitialize(null);  // делегируем с null-репозиторием
+        }
+
+        /// <summary>Инициализация реестра с persistence (T-KEY-PERSIST). Идемпотентно.
+        /// Загружает сохранённые instance'ы из репозитория и восстанавливает _nextInstanceId.</summary>
+        /// <param name="repository">Репозиторий (null = без persistence).</param>
+        public static void CreateAndInitialize(IKeyRodInstanceRepository repository)
         {
             if (IsInitialized) return;
             _instancesById.Clear();
             _primaryInstanceByShipId.Clear();
             _instancesByPlayer.Clear();
             _nextInstanceId = 1;
+            _repository = repository;
             IsInitialized = true;
-            Debug.Log($"[KeyRodInstanceWorld] CreateAndInitialize: empty registry ready.");
+
+            // Загрузка из репозитория (если есть)
+            int loaded = 0;
+            if (_repository != null)
+            {
+                var saved = _repository.LoadAll();
+                foreach (var dto in saved)
+                {
+                    if (dto == null) continue;
+                    var inst = new KeyRodInstance
+                    {
+                        instanceId       = _nextInstanceId++,
+                        itemId           = dto.itemId,
+                        registeredShipId = dto.registeredShipId,
+                        ownerPlayerId    = dto.ownerPlayerId,
+                        originalOwnerId  = dto.originalOwnerId,
+                        state            = (KeyRodInstanceState)dto.state,
+                        createdAtUnix    = dto.createdAtUnix,
+                    };
+                    _instancesById[inst.instanceId] = inst;
+
+                    if (inst.registeredShipId != 0)
+                        _primaryInstanceByShipId[inst.registeredShipId] = inst.instanceId;
+
+                    if (inst.ownerPlayerId != KeyRodInstance.OWNER_NONE
+                        && inst.state == KeyRodInstanceState.Active)
+                    {
+                        if (!_instancesByPlayer.TryGetValue(inst.ownerPlayerId, out var list))
+                        {
+                            list = new List<int>();
+                            _instancesByPlayer[inst.ownerPlayerId] = list;
+                        }
+                        list.Add(inst.instanceId);
+                    }
+
+                    loaded++;
+                }
+            }
+
+            Debug.Log($"[KeyRodInstanceWorld] CreateAndInitialize: registry ready. Loaded {loaded} persisted instances. Next ID = {_nextInstanceId}");
         }
 
-        /// <summary>Очистка всех instance'ов. Вызывается при серверном shutdown.</summary>
+        /// <summary>Очистка всех instance'ов. Перед очисткой — auto-save всех активных (T-KEY-PERSIST).</summary>
         public static void Shutdown()
         {
+            // Auto-save перед shutdown
+            AutoSave();
+
             _instancesById.Clear();
             _primaryInstanceByShipId.Clear();
             _instancesByPlayer.Clear();
             _nextInstanceId = 1;
+            _repository = null;
             IsInitialized = false;
-            Debug.Log($"[KeyRodInstanceWorld] Shutdown: registry cleared.");
+            Debug.Log($"[KeyRodInstanceWorld] Shutdown: registry cleared and saved.");
+        }
+
+        // ===========================================================
+        // Auto-save (T-KEY-PERSIST)
+        // ===========================================================
+
+        /// <summary>Сохранить все active instance'ы в репозиторий (если репозиторий задан).</summary>
+        private static void AutoSave()
+        {
+            if (_repository == null) return;
+            if (!IsInitialized) return;
+
+            var list = new List<KeyRodInstance>();
+            foreach (var kvp in _instancesById)
+            {
+                // Сохраняем только Active (Destroyed не восстанавливаются)
+                if (kvp.Value.state == KeyRodInstanceState.Active)
+                    list.Add(kvp.Value);
+            }
+            _repository.SaveAll(list);
+            Debug.Log($"[KeyRodInstanceWorld] AutoSave: saved {list.Count} active instances.");
         }
 
         // ===========================================================
@@ -222,6 +289,7 @@ namespace ProjectC.Ship.Key
                       $"ship={registeredShipId}, owner={ownerPlayerId}");
 
             OnOwnershipChanged?.Invoke(inst.instanceId, ownerPlayerId);
+            AutoSave();  // T-KEY-PERSIST
 
             return inst.instanceId;
         }
@@ -277,6 +345,7 @@ namespace ProjectC.Ship.Key
                       $"{fromClientId} → {toClientId}");
 
             OnOwnershipChanged?.Invoke(instanceId, toClientId);
+            AutoSave();  // T-KEY-PERSIST
             return true;
         }
 
@@ -293,6 +362,7 @@ namespace ProjectC.Ship.Key
             var oldState = inst.state;
             inst.state = newState;
             Debug.Log($"[KeyRodInstanceWorld] UpdateState: id={instanceId}, {oldState} → {newState}");
+            AutoSave();  // T-KEY-PERSIST
             return true;
         }
 
@@ -321,6 +391,7 @@ namespace ProjectC.Ship.Key
             inst.state = KeyRodInstanceState.Destroyed;
             Debug.Log($"[KeyRodInstanceWorld] DestroyInstance: id={instanceId} removed.");
             OnOwnershipChanged?.Invoke(instanceId, KeyRodInstance.OWNER_NONE);
+            AutoSave();  // T-KEY-PERSIST
             return true;
         }
 

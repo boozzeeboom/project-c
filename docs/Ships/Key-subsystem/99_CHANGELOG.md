@@ -4,6 +4,46 @@
 
 ---
 
+## 2026-06-18 — R2-SHIP-KEY-003 v5 (T-KEY-PERSIST: KeyRodInstance persistence через IPlayerDataRepository)
+
+**Контекст**: третий тикет R2-SHIP-KEY-003 после T-KEY-02. Persistence для KeyRodInstance через `IKeyRodInstanceRepository`.
+
+**Что изменилось в коде**:
+
+| Файл | Что | Статус |
+|---|---|---|
+| `Assets/_Project/Scripts/Ship/Key/KeyRodInstanceRepository.cs` | NEW. Interface `IKeyRodInstanceRepository` (LoadAll/SaveAll), DTO `KeyRodInstanceSaveData` (public fields), `JsonKeyRodInstanceRepository` (один JSON файл `KeyRodInstances.json` в `Application.persistentDataPath`) | ✅ создан |
+| `Assets/_Project/Scripts/Ship/Key/KeyRodInstanceWorld.cs` | + `CreateAndInitialize(IKeyRodInstanceRepository)` (загрузка из репозитория), + `_repository` field, + `AutoSave()` private метод (сохраняет только Active). Auto-save hook добавлен в `CreateInstance`, `TransferInstance`, `UpdateState`, `DestroyInstance`. `Shutdown` вызывает `AutoSave` перед очисткой. | ✅ updated |
+
+**Verify**:
+- ✅ Compile: 0 errors, 0 new warnings
+- ✅ Reflection probe:
+  - `IKeyRodInstanceRepository` – interface с `LoadAll() → List<KeyRodInstanceSaveData>` и `SaveAll(List<KeyRodInstance>)`
+  - `KeyRodInstanceSaveData` – `[Serializable]` class, 6 полей (itemId, registeredShipId, ownerPlayerId, originalOwnerId, state, createdAtUnix)
+  - `JsonKeyRodInstanceRepository` – class, implements IKeyRodInstanceRepository
+  - `KeyRodInstanceWorld.CreateAndInitialize` – 2 overloads (no-arg + repo)
+- ✅ Round-trip smoke test:
+  - Init(no repo) → Create → Transfer → UpdateState(Lost) → Destroy → Shutdown → OK
+  - Init(with repo) → Create(2 instances) → Transfer → Shutdown (AutoSave: all Active)
+  - Re-init(with repo) → GetInstanceCount=2 → id3=restored {item=300, ship=400, owner=99, state=Active} ✅
+  - `IsOwnerOfShip(99, 400)=True`, `IsOwnerOfShip(1, 400)=False` ✅
+  - Final Shutdown → OK. **Full round-trip PASSED.**
+
+**Known: instanceId эпифемерный** — при загрузке из репозитория instanceId пересоздаётся (счётчик сборки сессии). Это по дизайну (`20_UNIQUE_KEY_INSTANCE.md` §2.5: "instanceId (server counter — НЕ сохраняется)"). Все остальные поля (itemId, shipId, owner, state) сохраняются через DTO.
+
+**Что НЕ нужно тестировать в Play Mode**:
+- Репозиторий/auto-save работают автоматически, без ручных вызовов
+- Старые legacy ключи (через AddItem → instanceId=0) НЕ затрагиваются
+- Эффект в game loop увидим в T-KEY-04 (экземпляры создаются при спавне) и T-KEY-05 (auto-save при transfer)
+
+**Что НЕ сделано** (намеренно, для следующих тикетов):
+- ❌ ShipOwnershipRequirement component → **T-KEY-03** (~1.5h)
+- ❌ KeyRodInstanceBinding explicit pickup component → **T-KEY-04** (~1h)
+- ❌ Transfer logic (drop → pickup с instanceId) → **T-KEY-05** (~1h)
+- ❌ Wire `CreateAndInitialize(repo)` в рантайм → T-KEY-04 (KeyRodInstanceBinding.OnNetworkSpawn)
+
+---
+
 ## 2026-06-18 — R2-SHIP-KEY-003 v4 (T-KEY-02: Inventory slot extension + instance-id слой)
 
 **Контекст**: второй тикет R2-SHIP-KEY-003 после T-KEY-01. Добавление instance-id слоя в `InventoryData`/`InventoryItemDto`/`InventoryWorld`. Backward compat для всех существующих операций (HasItem, HasAllItems и т.д.).

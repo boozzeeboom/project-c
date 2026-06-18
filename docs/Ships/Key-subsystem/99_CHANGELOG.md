@@ -4,6 +4,27 @@
 
 ---
 
+## 2026-06-18 — R2-SHIP-KEY-003 v7 (T-KEY-04: KeyRodInstanceBinding explicit component)
+
+**Контекст**: пятый тикет R2-SHIP-KEY-003 после T-KEY-03. Явный `KeyRodInstanceBinding` компонент для PickupItem. Заменяет отменённый auto-bootstrap (Q11).
+
+**Что изменилось в коде**:
+
+| Файл | Что | Статус |
+|---|---|---|
+| `Assets/_Project/Scripts/Ship/Key/KeyRodInstanceBinding.cs` | NEW. `MonoBehaviour` (не `NetworkBehaviour` — не требует NetworkObject на PickupItem). `[SerializeField] _ship` (ShipController), `_keyItemData` (ItemData). `[RequireComponent(typeof(PickupItem))]`. При старте на сервере: ждёт готовности ShipController (Invoke loop, 15 retries), инициализирует `KeyRodInstanceWorld`, вызывает `CreateInstance(itemId, shipNetId, OWNER_NONE)`. Публичный `TryGetInstanceId(out int)` для T-KEY-05. Editor helpers: `OnValidate` автоподстановка _keyItemData из PickupItem, `Reset` для AddComponent. | ✅ создан |
+
+**Verify**:
+- ✅ Compile: 0 errors, 0 new warnings
+- ✅ KeyRodInstanceBinding: `MonoBehaviour`, поля `_ship (ShipController)`, `_keyItemData (ItemData)`, `_debugInstanceId (Int32)`, `TryGetInstanceId(out int)`, `RequireComponent(PickupItem)`
+
+**Что НЕ сделано** (намеренно, для следующих тикетов):
+- ❌ Pickup flow с instanceId (T-KEY-05 — Transfer логика, использует `TryGetInstanceId`)
+- ❌ Wire `CreateAndInitialize(repository)` в рантайм (будет в T-KEY-07)
+- ❌ Добавление компонента на существующие `[KeyRod_*]` PickupItem в WorldScene_0_0 (ручная работа через Editor — drag Ship + ItemData)
+
+---
+
 ## 2026-06-18 — R2-SHIP-KEY-003 v6 (T-KEY-03: ShipOwnershipRequirement + Registry integration)
 
 **Контекст**: четвёртый тикет R2-SHIP-KEY-003 после T-KEY-PERSIST. Новый `ShipOwnershipRequirement` component + интеграция в `MetaRequirementRegistry` (ownership приоритет).

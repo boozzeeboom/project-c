@@ -28,7 +28,7 @@ MonoBehaviour:
   cargoVolumeBonus: 2000
   cargoPenaltyReduction: -0.02
   powerConsumption: 0
-  compatibleClasses: 
+  compatibleClasses: 00000000
   requiredModules: []
   incompatibleModules: []
   isMeziyModule: 0

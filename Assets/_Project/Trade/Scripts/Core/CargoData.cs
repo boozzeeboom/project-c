@@ -22,6 +22,20 @@ namespace ProjectC.Trade.Core
         public readonly ShipClass shipClass;
         private readonly List<WarehouseEntry> _items = new List<WarehouseEntry>();
 
+        // T-CARGO-06: если override установлен (из ShipCargoRegistry) — TryAdd
+        // использует его вместо статического ShipClassLimits.Get(shipClass).
+        private ShipClassLimits.Limits? _limitsOverride;
+
+        public void SetLimitsOverride(ShipClassLimits.Limits limits)
+        {
+            _limitsOverride = limits;
+        }
+
+        public void ClearLimitsOverride()
+        {
+            _limitsOverride = null;
+        }
+
         public IReadOnlyList<WarehouseEntry> Items => _items;
 
         public CargoData(ulong shipNetworkObjectId, ShipClass shipClass)
@@ -42,11 +56,9 @@ namespace ProjectC.Trade.Core
             failReason = null;
             if (string.IsNullOrEmpty(itemId) || quantity <= 0) { failReason = "invalid_args"; return false; }
 
-            // T-CARGO-06: лимиты = статический fallback по shipClass.
-            // Per-instance лимиты (с учётом модулей) читает TradeWorld через
-            // ShipCargoRegistry ДО вызова TryAdd — см. TradeWorld.TryLoadToShip.
-            // Двойная проверка = безопасно, без coupling Trade → Ship namespace.
-            var limits = ShipClassLimits.Get(shipClass);
+            // T-CARGO-06: лимиты = _limitsOverride (если установлен TradeWorld) или
+            // статический fallback по shipClass. Установка через SetLimitsOverride().
+            var limits = _limitsOverride ?? ShipClassLimits.Get(shipClass);
             int itemSlots = resolver.GetSlots(itemId);
             float itemWeight = resolver.GetWeight(itemId);
             float itemVolume = resolver.GetVolume(itemId);

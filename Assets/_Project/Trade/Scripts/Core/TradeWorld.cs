@@ -294,7 +294,9 @@ namespace ProjectC.Trade.Core
                 return TradeResult.Fail(MapWarehouseFail(whFail), whFail, Repository.GetCredits(clientId), warehouse, cargo);
 
             // T-CARGO-06: pre-check через ShipCargoRegistry (per-instance лимиты с модулями).
-            // Если корабль не зарегистрирован (старый код) — fallback на cargo.TryAdd (статический).
+            // Если корабль не зарегистрирован — fallback на cargo.TryAdd (статический).
+            // Pre-check также устанавливает _limitsOverride на cargo, чтобы
+            // cargo.TryAdd использовал effective лимиты, а не статический fallback.
             if (TryCheckEffectiveCargoLimits(shipNetworkObjectId, cargo, itemId, quantity, out var effFail))
             {
                 // откатить склад
@@ -349,6 +351,16 @@ namespace ProjectC.Trade.Core
             if (newWeight > effLimits.Value.maxWeight) { failReason = "cargo_max_weight"; return true; }
             if (newVolume > effLimits.Value.maxVolume) { failReason = "cargo_max_volume"; return true; }
             if (newSlots > effLimits.Value.maxSlots) { failReason = "cargo_max_slots"; return true; }
+
+            // Check passed — устанавливаем effective лимиты на cargo, чтобы
+            // cargo.TryAdd (сразу после pre-check) использовал их вместо статики.
+            cargo.SetLimitsOverride(new ShipClassLimits.Limits
+            {
+                maxSlots = effLimits.Value.maxSlots,
+                maxWeight = effLimits.Value.maxWeight,
+                maxVolume = effLimits.Value.maxVolume,
+                penaltyFactor = effLimits.Value.penaltyFactor,
+            });
             return false;
         }
 

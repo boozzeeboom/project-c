@@ -89,6 +89,10 @@ namespace ProjectC.Trade.Client
         private Button _marketQtyMax;
         private Button _warehouseQtyMin;
         private Button _warehouseQtyMax;
+        // Cargo info panel (вес, слоты, прогресс-бар)
+        private Label _cargoWeightLabel;
+        private Label _cargoSlotsLabel;
+        private VisualElement _cargoBarFill;
 
         // State
         private int _selectedMarketItem = -1;
@@ -311,6 +315,12 @@ namespace ProjectC.Trade.Client
                     _cargoList.Rebuild();
                 };
             }
+
+            // Cargo info panel (вес, слоты, прогресс-бар)
+            _cargoWeightLabel = _root.Q<Label>("cargo-weight-label");
+            _cargoSlotsLabel = _root.Q<Label>("cargo-slots-label");
+            _cargoBarFill = _root.Q<VisualElement>("cargo-weight-bar-fill");
+
             // C2-refactor: contracts ListView — row factory MakeContractRow / binder BindContractRow.
             // По выбору пользователя «по зоне (fromLocationId)» в _contractsCache лежат
             // только те контракты, у которых fromLocationId == текущая локация (см. HandleContractSnapshot).
@@ -423,6 +433,7 @@ namespace ProjectC.Trade.Client
                             // локального кэша + отправка RPC (safety net: сервер
                             // пришлёт свежий snapshot, если корабль не был в кэше).
                             ApplySelectedShipCargoFromCache(newShipId);
+                            RefreshCargoInfo();
 
                             _state?.RequestSetSelectedShip(snap.Value.locationId, newShipId);
                             return;
@@ -676,6 +687,9 @@ namespace ProjectC.Trade.Client
             if (_itemList != null) _itemList.Rebuild();
             if (_warehouseList != null) _warehouseList.Rebuild();
             if (_cargoList != null) _cargoList.Rebuild();
+
+            // Cargo info panel (вес, слоты, прогресс-бар)
+            RefreshCargoInfo();
 
             // Ship selector
             if (_shipSelector != null && snap.nearbyShips != null)
@@ -1204,6 +1218,41 @@ namespace ProjectC.Trade.Client
         /// R3 Qty Row Refactor: напряжение из полей _marketQty / _warehouseQty.
         private int GetMarketQty() => Mathf.Clamp(_marketQty, 1, 9999);
         private int GetWarehouseQty() => Mathf.Clamp(_warehouseQty, 1, 9999);
+
+        /// Обновить cargo-info-panel (вес, слоты, прогресс-бар).
+        private void RefreshCargoInfo()
+        {
+            if (_cargoWeightLabel == null || _cargoSlotsLabel == null || _cargoBarFill == null) return;
+            var snap = _state?.CurrentSnapshot;
+            if (!snap.HasValue || snap.Value.nearbyShips == null) { ResetCargoInfo(); return; }
+
+            ulong shipId = GetSelectedShipId();
+            if (shipId == 0) { ResetCargoInfo(); return; }
+
+            ShipSummaryDto? found = null;
+            for (int i = 0; i < snap.Value.nearbyShips.Length; i++)
+            {
+                if (snap.Value.nearbyShips[i].shipNetworkObjectId == shipId)
+                {
+                    found = snap.Value.nearbyShips[i];
+                    break;
+                }
+            }
+            if (!found.HasValue) { ResetCargoInfo(); return; }
+
+            var s = found.Value;
+            float weightPct = s.maxWeight > 0 ? Mathf.Clamp01(s.currentWeight / s.maxWeight) * 100f : 0f;
+            _cargoWeightLabel.text = $"{s.currentWeight:F1} / {s.maxWeight:F0} кг";
+            _cargoSlotsLabel.text = $"{s.currentSlots} / {s.maxSlots} слотов";
+            _cargoBarFill.style.width = new StyleLength(Length.Percent(weightPct));
+        }
+
+        private void ResetCargoInfo()
+        {
+            _cargoWeightLabel.text = "— / — кг";
+            _cargoSlotsLabel.text = "— / — слотов";
+            _cargoBarFill.style.width = new StyleLength(Length.Percent(0f));
+        }
 
         /// R3-xxx: тоггл "Показать только мои товары" / "Показать все товары".
         private void OnMyItemsToggleClicked()

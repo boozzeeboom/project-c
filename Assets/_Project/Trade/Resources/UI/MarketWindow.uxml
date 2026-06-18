@@ -50,6 +50,13 @@
         <!-- Список груза (показывается на вкладке СКЛАД / ТРЮМ) -->
         <ui:VisualElement name="cargo-section" class="list-section">
             <ui:Label text="Груз корабля" class="section-title" />
+            <ui:VisualElement name="cargo-info-panel" class="cargo-info-panel">
+                <ui:Label name="cargo-weight-label" text="0 / 0 кг" class="cargo-weight-label" />
+                <ui:VisualElement name="cargo-weight-bar-bg" class="cargo-bar-bg">
+                    <ui:VisualElement name="cargo-weight-bar-fill" class="cargo-bar-fill" />
+                </ui:VisualElement>
+                <ui:Label name="cargo-slots-label" text="0 / 0 слотов" class="cargo-slots-label" />
+            </ui:VisualElement>
             <ui:ListView name="cargo-list" class="item-list" />
         </ui:VisualElement>
 

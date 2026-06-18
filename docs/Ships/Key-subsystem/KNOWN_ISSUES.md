@@ -145,6 +145,7 @@ if (scenePickupsWithData > registered) {
 ## История
 
 - **2026-06-06 (R2-SHIP-KEY-001):** Баг "ключи в подпапке Resources/Items" — исправлен, файлы перемещены в корень. Детальный пост-мортем в этом документе. **Статус: ✅ RESOLVED**.
+- **2026-06-18 (R2-SHIP-KEY-003):** **Unique Key Instance** — планируется. Концепция: 1 физический ключ ↔ 1 экземпляр корабля (через `KeyRodInstance` + `KeyRodInstanceWorld`). См. `20_UNIQUE_KEY_INSTANCE.md`, `21_SHIP_OWNERSHIP_MODEL.md`, `22_SHIP_TELEMETRY_PLAN.md`, `23_ROADMAP.md`, `24_OPEN_QUESTIONS.md`. **Статус:** 📋 дизайн готов (5 новых файлов, ~80 KB), код НЕ начат, ждём ответов на 12 вопросов в `24_OPEN_QUESTIONS.md` перед стартом T-KEY-01.
 - **2026-06-06 (R2-SHIP-KEY-002):** Миграция на MetaRequirement (Этап 1) — **ЗАВЕРШЕНА**. См. `SHIP_KEY_TO_META_REQUIREMENT_MIGRATION.md` + новый тикет **R2-META-REQ-001** (ниже). `ShipKeyBinding/ShipKeyServer/ShipKeyClientState/ShipKeyToast` теперь `[Obsolete]` алиасы поверх `MetaRequirement*`. Старые сцены работают без изменений (`.meta`-GUID сохранены). Через 1-2 релиз-цикла алиасы будут удалены.
 - **2026-06-06 (R2-META-REQ-001):** Универсальная MetaRequirement-подсистема. См. `docs/MetaRequirement/00_OVERVIEW.md`. Сделано:
   - `Assets/_Project/Items/Core/InventoryWorld.cs` — extensions `HasAllItems/HasAnyItem/CountOf/GetMissingItems`.

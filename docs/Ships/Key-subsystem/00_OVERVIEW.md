@@ -2,8 +2,8 @@
 
 **Подсистема:** Корабли — физический ключ для запуска
 **Тег:** `ship-key`, `key_rod`, `key-binding`, `server-authoritative`
-**Статус:** MVP (блокировка F-посадки). Расширение — TODO.
-**Дата:** 2026-06-06
+| **Статус:** ✅ MVP (F-посадка). ✅ MetaRequirement (R2-META-REQ-001). 📋 Unique Key Instance (R2-SHIP-KEY-003, дизайн готов, код не начат). |
+| **Дата:** 2026-06-06 (MVP) → 2026-06-18 (Unique Key Instance дизайн) |
 
 ---
 

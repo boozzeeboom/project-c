@@ -10611,7 +10611,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::ProjectC.Ship.ModuleSlot
   slotType: 1
-  installedModule: {fileID: 11400000, guid: 4bc432030f43d3546a0c5972786b81be, type: 2}
+  installedModule: {fileID: 11400000, guid: 776f656b81cf9ba4788d4bf2d52ae3aa, type: 2}
 --- !u!4 &2047548080
 Transform:
   m_ObjectHideFlags: 0

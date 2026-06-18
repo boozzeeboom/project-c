@@ -20,6 +20,7 @@ using Unity.Netcode;
 using UnityEngine;
 using ProjectC.Items;
 using ProjectC.Player;
+using ProjectC.Ship.Key;  // T-KEY-03: ShipOwnershipRequirement
 
 namespace ProjectC.MetaRequirement
 {
@@ -30,6 +31,10 @@ namespace ProjectC.MetaRequirement
 
         // interactableNetId → MetaRequirement
         private readonly Dictionary<ulong, MetaRequirement> _requirements = new Dictionary<ulong, MetaRequirement>();
+
+        // T-KEY-03: shipNetId → ShipOwnershipRequirement (приоритет над MetaRequirement)
+        private readonly Dictionary<ulong, ShipOwnershipRequirement> _ownershipRequirements
+            = new Dictionary<ulong, ShipOwnershipRequirement>();
 
         // ===========================================================
         // Public read-only API (server-only)
@@ -42,18 +47,23 @@ namespace ProjectC.MetaRequirement
         }
 
         /// <summary>Server-only: авторитетная проверка доступа. Удобный wrapper для
-        /// NetworkPlayer.Submit*Rpc (defense in depth на сервере).</summary>
+        /// NetworkPlayer.Submit*Rpc (defense in depth на сервере).
+        /// T-KEY-03: приоритет — ShipOwnershipRequirement (для кораблей),
+        /// затем MetaRequirement (для блоков/дверей), затем allow по умолчанию.</summary>
         public bool CanPlayerUse(ulong clientId, ulong netId)
         {
             if (!IsServer) return false;
-            var req = GetRequirement(netId);
-            if (req == null)
-            {
-                // Нет MetaRequirement = "unknown interactable". Разрешаем по умолчанию
-                // (тот же паттерн что в ShipKeyServer), чтобы не сломать обычные объекты.
-                return true;
-            }
-            return req.CanPlayerUse(clientId, out _);
+
+            // 1) Ship ownership (приоритет для кораблей)
+            if (_ownershipRequirements.TryGetValue(netId, out var ownership))
+                return ownership.CanPlayerUse(clientId, out _);
+
+            // 2) MetaRequirement (для блоков/дверей)
+            if (_requirements.TryGetValue(netId, out var req))
+                return req.CanPlayerUse(clientId, out _);
+
+            // 3) Нет требований = доступ разрешён
+            return true;
         }
 
         // ===========================================================
@@ -93,28 +103,60 @@ namespace ProjectC.MetaRequirement
         }
 
         // ===========================================================
+        // T-KEY-03: Ship ownership registration
+        // ===========================================================
+
+        /// <summary>Регистрация ship ownership requirement. Вызывается из ShipOwnershipRequirement.OnNetworkSpawn.</summary>
+        public void RegisterShipOwnership(ulong netId, ShipOwnershipRequirement req)
+        {
+            if (!IsServer) return;
+            if (req == null) return;
+            if (_ownershipRequirements.TryGetValue(netId, out var existing) && existing == req) return;
+            _ownershipRequirements[netId] = req;
+            Debug.Log($"[MetaRequirementRegistry] Registered ship ownership: netId={netId}, " +
+                      $"display='{req.GetComponent<ShipController>()?.CustomDisplayName ?? "no ShipController"}')");
+        }
+
+        /// <summary>Отписка ship ownership. Вызывается из ShipOwnershipRequirement.OnNetworkDespawn.</summary>
+        public void UnregisterShipOwnership(ulong netId)
+        {
+            if (!IsServer) return;
+            if (_ownershipRequirements.Remove(netId))
+            {
+                Debug.Log($"[MetaRequirementRegistry] Unregistered ship ownership: netId={netId}");
+            }
+        }
+
+        // ===========================================================
         // CLIENT → SERVER RPC
         // ===========================================================
 
         /// <summary>Клиент хочет использовать interactable. Сервер проверяет требования и
-        /// отвечает allowed/denied. Ответ доставляется через NetworkPlayer.ReceiveMetaRequirementResponseTargetRpc.</summary>
+        /// отвечает allowed/denied. Ответ доставляется через NetworkPlayer.ReceiveMetaRequirementResponseTargetRpc.
+        /// T-KEY-03: приоритет — ship ownership (корабль), затем MetaRequirement (блок/дверь/NPC).</summary>
         [Rpc(SendTo.Server, InvokePermission = RpcInvokePermission.Owner)]
         public void RequestCanUseRpc(ulong interactableNetworkObjectId, RpcParams rpcParams = default)
         {
             ulong clientId = rpcParams.Receive.SenderClientId;
-            var req = GetRequirement(interactableNetworkObjectId);
 
             bool allowed;
             string reason;
-            if (req == null)
+
+            // 1) Ship ownership (приоритет)
+            if (_ownershipRequirements.TryGetValue(interactableNetworkObjectId, out var ownership))
             {
-                // Без MetaRequirement = "нечего проверять". Разрешаем (default behaviour).
-                allowed = true;
-                reason = "";
+                allowed = ownership.CanPlayerUse(clientId, out reason);
+            }
+            // 2) MetaRequirement (для блоков/дверей)
+            else if (_requirements.TryGetValue(interactableNetworkObjectId, out var req))
+            {
+                allowed = req.CanPlayerUse(clientId, out reason);
             }
             else
             {
-                allowed = req.CanPlayerUse(clientId, out reason);
+                // 3) Без требований — разрешаем (default behaviour)
+                allowed = true;
+                reason = "";
             }
 
             // Доставка ответа владельцу через NetworkPlayer.
@@ -154,6 +196,7 @@ namespace ProjectC.MetaRequirement
                 NetworkManager.Singleton.OnClientConnectedCallback -= HandleClientConnected;
             }
             _requirements.Clear();
+            _ownershipRequirements.Clear();  // T-KEY-03
             base.OnNetworkDespawn();
         }
 

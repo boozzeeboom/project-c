@@ -4,6 +4,36 @@
 
 ---
 
+## 2026-06-18 — R2-SHIP-KEY-003 v6 (T-KEY-03: ShipOwnershipRequirement + Registry integration)
+
+**Контекст**: четвёртый тикет R2-SHIP-KEY-003 после T-KEY-PERSIST. Новый `ShipOwnershipRequirement` component + интеграция в `MetaRequirementRegistry` (ownership приоритет).
+
+**Что изменилось в коде**:
+
+| Файл | Что | Статус |
+|---|---|---|
+| `Assets/_Project/Scripts/Ship/Key/ShipOwnershipRequirement.cs` | NEW. `NetworkBehaviour` на кораблях. `CanPlayerUse(clientId, out string reason)` — проверяет `KeyRodInstanceWorld.IsOwnerOfShip(clientId, this.NetworkObjectId)`. DisplayName из `ShipController.CustomDisplayName` (Q6). Server-only. | ✅ создан |
+| `Assets/_Project/Scripts/MetaRequirement/MetaRequirementRegistry.cs` | + `_ownershipRequirements` dictionary + `RegisterShipOwnership`/`UnregisterShipOwnership`. `CanPlayerUse` — ownership приоритет, затем MetaRequirement, затем allow. `RequestCanUseRpc` — ownership приоритет, затем MetaRequirement. `OnNetworkDespawn` — очистка ownership. | ✅ updated |
+
+**Verify**:
+- ✅ Compile: 0 errors, 0 new warnings
+- ✅ `ShipOwnershipRequirement` — `NetworkBehaviour` subclass, `CanPlayerUse(out string)` OK
+- ✅ `MetaRequirementRegistry` — `RegisterShipOwnership`/`UnregisterShipOwnership`/`CanPlayerUse` (client, netId) OK
+- ✅ Smoke test: `CreateInstance(owner=5, ship=200) → IsOwnerOfShip(5,200)=True, IsOwnerOfShip(99,200)=False`
+
+**Backward compat**: все существующие `MetaRequirement` (LockBox, Legacy ships через ShipKeyBinding) продолжают работать через fallback-путь. Изменения в `CanPlayerUse`/`RequestCanUseRpc` — additive: добавляют ownership check перед MetaRequirement, но если ownership нет — fallback работает как раньше.
+
+**Что НЕ нужно тестировать в Play Mode**:
+- Компонент не будет задействован до T-KEY-04 (KeyRodInstanceBinding на pickup) и T-KEY-06 (NetworkPlayer F-key wiring), где ShipOwnershipRequirement будет вызываться через MetaRequirementRegistry
+- Legacy `ShipKeyServer.CanPlayerBoard` (deprecated) продолжает работать как раньше
+
+**Что НЕ сделано** (намеренно, для следующих тикетов):
+- ❌ KeyRodInstanceBinding explicit pickup component → **T-KEY-04** (~1h)
+- ❌ Transfer logic (drop → pickup с instanceId) → **T-KEY-05** (~1h)
+- ❌ NetworkPlayer F-key wiring → **T-KEY-06** (~1.5h)
+
+---
+
 ## 2026-06-18 — R2-SHIP-KEY-003 v5 (T-KEY-PERSIST: KeyRodInstance persistence через IPlayerDataRepository)
 
 **Контекст**: третий тикет R2-SHIP-KEY-003 после T-KEY-02. Persistence для KeyRodInstance через `IKeyRodInstanceRepository`.

@@ -101,6 +101,7 @@ namespace ProjectC.Items
         /// Phase 3 (INVENTORY_V2_REFACTOR.md): запросить pickup у сервера.
         /// Вызывается из NetworkPlayer.Update при E (или из ItemPickupSystem).
         /// НЕ деактивирует сразу — ждёт server confirmation через OnInventoryResult.
+        /// T-KEY-05: для Key-предметов читает instanceId из KeyRodInstanceBinding.
         /// </summary>
         public void Collect()
         {
@@ -124,19 +125,26 @@ namespace ProjectC.Items
                 return;
             }
 
+            // T-KEY-05: читаем instanceId из KeyRodInstanceBinding (если есть)
+            int instanceId = 0;
+            var keyBinding = GetComponent<ProjectC.Ship.Key.KeyRodInstanceBinding>();
+            if (keyBinding != null)
+            {
+                keyBinding.TryGetInstanceId(out instanceId);
+            }
+
             // Попробовать отправить запрос через новый v2 client state
             var clientState = ProjectC.Items.Client.InventoryClientState.Instance;
             if (clientState != null)
             {
                 _isAwaitingServer = true;
-                // T-Gxx: per-operation callback (не подписка на глобальное OnInventoryResult)
-                clientState.RequestPickup(itemId, itemData.itemType, transform.position,
+                // T-KEY-05: передаём instanceId (0 для обычных предметов)
+                clientState.RequestPickup(itemId, itemData.itemType, instanceId, transform.position,
                     HandlePickupResult);
             }
             else
             {
                 // Крайний случай: нет v2 client state. Fallback на legacy — деактивируем молча.
-                // (например, в тестах или если NetworkManager не запущен)
                 Debug.LogWarning($"[PickupItem] No InventoryClientState, falling back to legacy collect. {itemData.itemName}");
                 ForceCollect();
             }

@@ -434,14 +434,42 @@ namespace ProjectC.Items
                 return Fail(InventoryResultCode.NotInZone,
                     $"Drop: distance {dist:F1}м > {DROP_RANGE_M}м (анти-чит)", foundItemId, slotIndex);
 
-            // Убрать itemId из списка. MVP: всегда 1 quantity.
-            // Убираем конкретное вхождение по indexInList (тот, что соответствует slotIndex).
-            foundList.RemoveAt(indexInList);
-
             // T-KEY-02: для Key-предметов синхронизируем удаление из _keySlots
+            // T-KEY-05: перед удалением захватываем instanceId для KeyRodInstanceWorld
+            int droppedKeyInstanceId = -1;
             if (foundType == ItemType.Key)
             {
+                droppedKeyInstanceId = data.GetKeySlotAt(indexInList).instanceId;
+                // RemoveKeySlotAt удаляет из обеих параллельных структур (_keyIds + _keySlots).
+                // Не нужно вызывать foundList.RemoveAt — _keyIds уже обновлён.
                 data.RemoveKeySlotAt(indexInList);
+            }
+            else
+            {
+                // Для не-Key типов: удаляем из стандартного List<int>
+                foundList.RemoveAt(indexInList);
+            }
+
+            // T-KEY-05: уведомить KeyRodInstanceWorld об утере ключа
+            if (droppedKeyInstanceId > 0)
+            {
+                var krw = typeof(ProjectC.Ship.Key.KeyRodInstanceWorld);
+                var transfer = krw.GetMethod("TransferInstance",
+                    System.Reflection.BindingFlags.Public | System.Reflection.BindingFlags.Static);
+                if (transfer != null)
+                {
+                    transfer.Invoke(null, new object[] { droppedKeyInstanceId, clientId,
+                        ProjectC.Ship.Key.KeyRodInstance.OWNER_NONE });
+                }
+                var updateState = krw.GetMethod("UpdateState",
+                    System.Reflection.BindingFlags.Public | System.Reflection.BindingFlags.Static);
+                if (updateState != null)
+                {
+                    updateState.Invoke(null, new object[] { droppedKeyInstanceId,
+                        ProjectC.Ship.Key.KeyRodInstanceState.Lost });
+                }
+                Debug.Log($"[InventoryWorld] Key dropped: instanceId={droppedKeyInstanceId}, " +
+                          $"TransferInstance(client={clientId}, NONE) + UpdateState(Lost)");
             }
 
             // Log для verify

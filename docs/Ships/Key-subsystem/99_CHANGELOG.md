@@ -4,6 +4,38 @@
 
 ---
 
+## 2026-06-18 — R2-SHIP-KEY-003 v8 (T-KEY-05: Transfer logic — drop/pickup с instanceId)
+
+**Контекст**: шестой тикет R2-SHIP-KEY-003 после T-KEY-04. Интеграция KeyRodInstanceWorld в drop/pickup flow.
+
+**Что изменилось в коде**:
+
+| Файл | Что | Статус |
+|---|---|---|
+| `Assets/_Project/Items/Core/InventoryWorld.cs` (TryDrop) | Key-предметы: `GetKeySlotAt(indexInList).instanceId` захватывается ДО удаления. После удаления через `RemoveKeySlotAt` (оба списка) → `TransferInstance(clientId→OWNER_NONE)` + `UpdateState(Lost)` через reflection. | ✅ |
+| `Assets/_Project/Items/Network/InventoryServer.cs` | `RequestPickupRpc(int itemId, byte typeByte, Vector3 worldPos, ...)` → `RequestPickupRpc(int itemId, byte typeByte, int instanceId, Vector3 worldPos, ...)`. После успешного pickup: если `instanceId>0 && type=Key` → `TransferInstance(OWNER_NONE→clientId)`. | ✅ |
+| `Assets/_Project/Items/Client/InventoryClientState.cs` | + `RequestPickup(itemId, type, instanceId, pos)` — новый overload с instanceId. + `RequestPickup(itemId, type, instanceId, pos, onResult)` — callback-версия. Legacy-версия без instanceId вызывает с `0`. | ✅ |
+| `Assets/_Project/Scripts/Core/PickupItem.cs` | `Collect()` читает instanceId из `GetComponent<KeyRodInstanceBinding>()?.TryGetInstanceId(out instanceId)` и передаёт в `RequestPickup(... instanceId ...)`. | ✅ |
+
+**Verify**:
+- ✅ Compile: 0 errors, 0 new warnings
+- ✅ `RequestPickupRpc` — `instanceId:Int32` в параметрах
+- ✅ `InventoryClientState.RequestPickup` — 4 overloads
+- ✅ `PickupItem.Collect` — OK
+- ✅ `TryDrop` — signature unchanged (внутренний flow расширен)
+- ✅ Smoke: `CreateInstance(owner=5)` → `TransferInstance(5→NONE)` → `UpdateState(Lost=1)` → `GetInstancesForPlayer(5)=0`
+
+**Flow MVP**:
+- Drop: Player дропает Key → `InventoryWorld.TryDrop` → instanceId захвачен → `TransferInstance(clientId→OWNER_NONE)` + `UpdateState(Lost)` → auto-save
+- Pickup: Player подбирает Key → `PickupItem.Collect` → instanceId из `KeyRodInstanceBinding` → `RequestPickupRpc(..., instanceId)` → сервер добавляет в инвентарь (slot с instanceId=0) → `TransferInstance(OWNER_NONE→clientId)` → auto-save
+
+**Что НЕ сделано** (намеренно, для следующих тикетов):
+- ❌ NetworkPlayer F-key wiring → **T-KEY-06** (~1.5h)
+- ❌ ShipTelemetry server + client state → **T-KEY-07** (~3h)
+- ❌ MyShipsTab UI → **T-KEY-08** (Phase 2)
+
+---
+
 ## 2026-06-18 — R2-SHIP-KEY-003 v7 (T-KEY-04: KeyRodInstanceBinding explicit component)
 
 **Контекст**: пятый тикет R2-SHIP-KEY-003 после T-KEY-03. Явный `KeyRodInstanceBinding` компонент для PickupItem. Заменяет отменённый auto-bootstrap (Q11).

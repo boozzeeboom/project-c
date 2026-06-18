@@ -115,7 +115,8 @@ namespace ProjectC.Items.Client
         // CONVENIENCE API — UI и NetworkPlayer вызывают ЭТИ методы
         // ============================================================
 
-        /// <summary>Попросить сервер выполнить pickup предмета (вызывается из PickupItem.Collect()).</summary>
+        /// <summary>Попросить сервер выполнить pickup предмета (вызывается из PickupItem.Collect()).
+        /// T-KEY-05: instanceId=0 для обычных предметов.</summary>
         public void RequestPickup(int itemId, ItemType itemType, Vector3 worldPos)
         {
             if (ProjectC.Items.Network.InventoryServer.Instance == null)
@@ -123,7 +124,14 @@ namespace ProjectC.Items.Client
                 Debug.LogWarning("[InventoryClientState] RequestPickup: InventoryServer.Instance is NULL (network not started?)");
                 return;
             }
-            ProjectC.Items.Network.InventoryServer.Instance.RequestPickupRpc(itemId, (byte)itemType, worldPos);
+            ProjectC.Items.Network.InventoryServer.Instance.RequestPickupRpc(itemId, (byte)itemType, 0, worldPos);
+        }
+
+        /// <summary>T-KEY-05: overload с instanceId (для Key-предметов).</summary>
+        public void RequestPickup(int itemId, ItemType itemType, int instanceId, Vector3 worldPos)
+        {
+            if (ProjectC.Items.Network.InventoryServer.Instance == null) return;
+            ProjectC.Items.Network.InventoryServer.Instance.RequestPickupRpc(itemId, (byte)itemType, instanceId, worldPos);
         }
 
         /// <summary>
@@ -133,8 +141,22 @@ namespace ProjectC.Items.Client
         private Action<InventoryResultDto> _pendingPickupCallback;
 
         /// <summary>
-        /// T-Gxx: overload with per-operation callback. Вызывается из PickupItem.Collect()
-        /// вместо подписки на глобальное событие OnInventoryResult.
+        /// T-Gxx/T-KEY-05: per-operation callback для PickupItem с поддержкой instanceId.
+        /// Вызывается из PickupItem.Collect() вместо подписки на глобальное событие OnInventoryResult.
+        /// </summary>
+        public void RequestPickup(int itemId, ItemType itemType, int instanceId, Vector3 worldPos,
+            Action<InventoryResultDto> onResult)
+        {
+            if (_pendingPickupCallback != null)
+            {
+                Debug.LogWarning("[InventoryClientState] RequestPickup: предыдущий pickup ещё ожидает ответа. Перезаписываем.");
+            }
+            _pendingPickupCallback = onResult;
+            RequestPickup(itemId, itemType, instanceId, worldPos);
+        }
+
+        /// <summary>
+        /// T-Gxx: legacy overload без instanceId (для обратной совместимости).
         /// </summary>
         public void RequestPickup(int itemId, ItemType itemType, Vector3 worldPos,
             Action<InventoryResultDto> onResult)
@@ -144,7 +166,7 @@ namespace ProjectC.Items.Client
                 Debug.LogWarning("[InventoryClientState] RequestPickup: предыдущий pickup ещё ожидает ответа. Перезаписываем.");
             }
             _pendingPickupCallback = onResult;
-            RequestPickup(itemId, itemType, worldPos);
+            RequestPickup(itemId, itemType, 0, worldPos);
         }
 
         public void RequestDrop(int slotIndex, int quantity, Vector3 worldPos, Vector3 playerPos)

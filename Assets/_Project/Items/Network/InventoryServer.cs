@@ -94,9 +94,10 @@ namespace ProjectC.Items.Network
         // CLIENT RPCs — RequestXxx
         // ============================================================
 
-        /// <summary>Клиент хочет подобрать предмет в мире. Только Owner.</summary>
+        /// <summary>Клиент хочет подобрать предмет в мире. Только Owner.
+        /// T-KEY-05: instanceId для Key-предметов (0 для обычных).</summary>
         [Rpc(SendTo.Server, InvokePermission = RpcInvokePermission.Owner)]
-        public void RequestPickupRpc(int itemId, byte typeByte, Vector3 worldPos, RpcParams rpcParams = default)
+        public void RequestPickupRpc(int itemId, byte typeByte, int instanceId, Vector3 worldPos, RpcParams rpcParams = default)
         {
             ulong clientId = rpcParams.Receive.SenderClientId;
             if (!CheckRateLimit(clientId)) return;
@@ -111,6 +112,22 @@ namespace ProjectC.Items.Network
             var result = InventoryWorld.Instance.TryPickup(clientId, itemId, (ItemType)typeByte, worldPos, playerPos);
             if (result.IsSuccess)
             {
+                // T-KEY-05: если Key-предмет с instanceId — передаём владение игроку
+                if (instanceId > 0 && (ItemType)typeByte == ItemType.Key)
+                {
+                    var krwType = System.Type.GetType("ProjectC.Ship.Key.KeyRodInstanceWorld, Assembly-CSharp");
+                    if (krwType != null)
+                    {
+                        var transfer = krwType.GetMethod("TransferInstance",
+                            System.Reflection.BindingFlags.Public | System.Reflection.BindingFlags.Static);
+                        if (transfer != null)
+                        {
+                            transfer.Invoke(null, new object[] { instanceId,
+                                System.UInt64.MaxValue /* OWNER_NONE */, clientId });
+                            Debug.Log($"[InventoryServer] Pickup Key: TransferInstance(id={instanceId}, NONE→{clientId})");
+                        }
+                    }
+                }
                 SendSnapshot(clientId, null);
             }
             SendResult(clientId, result);

@@ -242,6 +242,15 @@ namespace ProjectC.Player
 
             // REFACTORED: Register with InteractableManager for trigger-based ship detection
             Core.InteractableManager.RegisterShip(this);
+
+            // T-KEY-08: авто-добавление ShipOwnershipRequirement — каждый корабль
+            // получает проверку владения ключом без ручных действий.
+            // Добавляется в Awake (до NetworkSpawn), безопасно для уже существующих.
+            if (GetComponent<ProjectC.Ship.Key.ShipOwnershipRequirement>() == null)
+            {
+                gameObject.AddComponent<ProjectC.Ship.Key.ShipOwnershipRequirement>();
+                Debug.Log($"[ShipController] Auto-added ShipOwnershipRequirement on {gameObject.name}");
+            }
         }
 
         private new void OnDestroy()

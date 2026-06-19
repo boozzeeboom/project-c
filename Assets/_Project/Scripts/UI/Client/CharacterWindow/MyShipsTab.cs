@@ -48,6 +48,7 @@ namespace ProjectC.UI.Client
 
         private int _selectedIndex = -1;
         private bool _isTelemetrySubscribed;
+        private bool _isInventorySubscribed;
 
         // Кэш последнего telemetry snapshot (для throttle: не обновлять UI каждый кадр)
         private ProjectC.Ship.Network.ShipTelemetryState _lastDisplayed;
@@ -95,6 +96,8 @@ namespace ProjectC.UI.Client
 
             // Подписка на telemetry (lazy)
             TrySubscribeTelemetry();
+            // T-KEY-08 fix: подписка на inventory changes
+            TrySubscribeInventory();
 
             // Перечитать список кораблей (мог измениться инвентарь)
             RefreshShipList();
@@ -118,6 +121,13 @@ namespace ProjectC.UI.Client
                     t.OnShipStateChanged -= HandleShipStateChanged;
                 _isTelemetrySubscribed = false;
             }
+            if (_isInventorySubscribed)
+            {
+                var inv = ProjectC.Items.Client.InventoryClientState.Instance;
+                if (inv != null)
+                    inv.OnSnapshotUpdated -= HandleInventorySnapshotUpdated;
+                _isInventorySubscribed = false;
+            }
         }
 
         private void TrySubscribeTelemetry()
@@ -127,6 +137,23 @@ namespace ProjectC.UI.Client
             if (t == null) return;
             t.OnShipStateChanged += HandleShipStateChanged;
             _isTelemetrySubscribed = true;
+        }
+
+        /// <summary>T-KEY-08 fix: подписка на изменения инвентаря — обновляет dropdown
+        /// при подборе/выбросе ключа в реальном времени, без перезахода во вкладку.</summary>
+        private void TrySubscribeInventory()
+        {
+            if (_isInventorySubscribed) return;
+            var inv = ProjectC.Items.Client.InventoryClientState.Instance;
+            if (inv == null) return;
+            inv.OnSnapshotUpdated += HandleInventorySnapshotUpdated;
+            _isInventorySubscribed = true;
+        }
+
+        private void HandleInventorySnapshotUpdated(ProjectC.Items.Dto.InventorySnapshotDto snapshot)
+        {
+            // Снимок обновился — перечитать список кораблей
+            RefreshShipList();
         }
 
         // ===== Ship List Resolution =====
@@ -139,38 +166,137 @@ namespace ProjectC.UI.Client
             _itemIds.Clear();
             _shipByItemId.Clear();
 
-            // 1. Получить все Key-слоты из инвентаря
-            var invState = ProjectC.Items.Client.InventoryClientState.Instance;
-            if (invState == null || !invState.CurrentSnapshot.HasValue)
+            var bindingType = System.Type.GetType("ProjectC.Ship.Key.KeyRodInstanceBinding, Assembly-CSharp");
+            if (bindingType == null) return;
+
+            var itemField = bindingType.GetField("_keyItemData",
+                System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.NonPublic);
+            var shipField = bindingType.GetField("_ship",
+                System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.NonPublic);
+            if (itemField == null || shipField == null) return;
+
+            var invWorld = ProjectC.Items.InventoryWorld.Instance;
+            if (invWorld == null) return;
+
+            // Текущий playerId
+            ulong myId = Unity.Netcode.NetworkManager.Singleton != null
+                ? Unity.Netcode.NetworkManager.Singleton.LocalClientId : 0;
+
+            // Собираем itemId ключей, которые реально есть в инвентаре игрока
+            // 3 уровня fallback чтобы работать в любой момент:
+            //   1) серверные данные InventoryWorld (Host)
+            //   2) KeyRodInstanceWorld.GetInstancesForPlayer (даже без persistence itemId)
+            //   3) InventoryClientState snapshot (чистый клиент)
+            System.Collections.Generic.HashSet<int> ownedKeyItemIds = new System.Collections.Generic.HashSet<int>();
+
+            // Priority 1: серверные данные напрямую
+            var getDataMethod = invWorld.GetType().GetMethod("GetOrCreate",
+                System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.NonPublic);
+            if (getDataMethod != null)
             {
-                UpdateVisibility();
-                return;
+                var data = getDataMethod.Invoke(invWorld, new object[] { myId });
+                if (data != null)
+                {
+                    var gft = data.GetType().GetMethod("GetIdsForType");
+                    if (gft != null)
+                    {
+                        var ids = gft.Invoke(data, new object[] { ProjectC.Items.ItemType.Key }) as System.Collections.IList;
+                        if (ids != null)
+                        {
+                            foreach (int id in ids) ownedKeyItemIds.Add(id);
+                        }
+                    }
+                }
             }
-            var snapshot = invState.CurrentSnapshot.Value;
 
-            // InventorySnapshotDto.items[] — массив InventoryItemDto с полями itemId/type/instanceId
-            if (snapshot.items == null) return;
-
-            for (int i = 0; i < snapshot.items.Length; i++)
+            // Priority 2: KeyRodInstanceWorld.GetInstancesForPlayer (даже если серверный
+            // InventoryWorld ещё не синхронизирован)
+            if (ownedKeyItemIds.Count == 0)
             {
-                var it = snapshot.items[i];
-                if ((ProjectC.Items.ItemType)it.type != ProjectC.Items.ItemType.Key) continue;
+                var krwType = System.Type.GetType("ProjectC.Ship.Key.KeyRodInstanceWorld, Assembly-CSharp");
+                if (krwType != null)
+                {
+                    var getInstancesForPlayer = krwType.GetMethod("GetInstancesForPlayer",
+                        System.Reflection.BindingFlags.Public | System.Reflection.BindingFlags.Static);
+                    var getInstance = krwType.GetMethod("GetInstance",
+                        System.Reflection.BindingFlags.Public | System.Reflection.BindingFlags.Static);
+                    if (getInstancesForPlayer != null && getInstance != null)
+                    {
+                        var instanceIds = getInstancesForPlayer.Invoke(null, new object[] { myId }) as System.Collections.IList;
+                        if (instanceIds != null)
+                        {
+                            foreach (int iid in instanceIds)
+                            {
+                                var inst = getInstance.Invoke(null, new object[] { iid });
+                                if (inst != null)
+                                {
+                                    var itemIdField = inst.GetType().GetField("itemId");
+                                    if (itemIdField != null)
+                                    {
+                                        int itemId = (int)itemIdField.GetValue(inst);
+                                        if (itemId > 0) ownedKeyItemIds.Add(itemId);
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
 
-                int itemId = it.itemId;
+            // Priority 3: snapshot (чистый клиент)
+            if (ownedKeyItemIds.Count == 0)
+            {
+                var invState = ProjectC.Items.Client.InventoryClientState.Instance;
+                if (invState != null && invState.CurrentSnapshot.HasValue)
+                {
+                    var snapshot = invState.CurrentSnapshot.Value;
+                    if (snapshot.items != null)
+                    {
+                        foreach (var it in snapshot.items)
+                        {
+                            if ((ProjectC.Items.ItemType)it.type == ProjectC.Items.ItemType.Key)
+                                ownedKeyItemIds.Add(it.itemId);
+                        }
+                    }
+                }
+            }
 
-                // 2. Найти KeyRodInstanceBinding по itemId в сцене
-                var binding = FindKeyRodBindingByItemId(itemId);
-                if (binding == null) continue;
+            Debug.Log($"[MyShipsTab] ownedKeyItemIds: [{string.Join(",", ownedKeyItemIds)}]");
 
-                // 3. Получить _ship → ShipController
-                var sc = GetShipControllerFromBinding(binding);
+            var allBindings = UnityEngine.Object.FindObjectsByType(bindingType,
+                FindObjectsInactive.Include, FindObjectsSortMode.None);
+
+            foreach (var binding in allBindings)
+            {
+                var mb = binding as MonoBehaviour;
+                if (mb == null || !mb.gameObject.activeInHierarchy) continue;
+
+                var sc = shipField.GetValue(binding) as ProjectC.Player.ShipController;
                 if (sc == null) continue;
 
-                // 4. Сохранить для dropdown
+                var itemData = itemField.GetValue(binding) as ProjectC.Items.ItemData;
+                if (itemData == null) continue;
+
+                // Resolve itemId для этого ItemData (через ItemRegistry — стабильный)
+                int targetId = invWorld.GetOrRegisterItemId(itemData);
+                if (targetId <= 0) continue;
+
+                // Есть ли этот itemId в ownedKeyItemIds?
+                if (!ownedKeyItemIds.Contains(targetId)) continue;
+
                 string displayName = ResolveShipDisplayName(sc);
+
+                // Try get instanceId из binding для ключа словаря
+                var idField = bindingType.GetField("_instanceId",
+                    System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.NonPublic);
+                int bindingInstanceId = idField != null ? (int)idField.GetValue(binding) : 0;
+
+                // Используем targetId (стабильный itemId) как ключ
                 _choices.Add($"🚀 {displayName}");
-                _itemIds.Add(itemId);
-                _shipByItemId[itemId] = sc;
+                _itemIds.Add(targetId);
+                _shipByItemId[targetId] = sc;
+
+                Debug.Log($"[MyShipsTab] Корабль добавлен: {displayName} (itemId={targetId}, instanceId={bindingInstanceId})");
             }
 
             // Обновить dropdown UI
@@ -193,9 +319,10 @@ namespace ProjectC.UI.Client
 
             UpdateVisibility();
 
-            // Если есть выбранный — отрендерить его
             if (_selectedIndex >= 0)
                 RenderSelectedShip();
+
+            Debug.Log($"[MyShipsTab] RefreshShipList: {_choices.Count} кораблей");
         }
 
         private void UpdateVisibility()
@@ -422,45 +549,6 @@ namespace ProjectC.UI.Client
         }
 
         // ===== Helpers =====
-
-        /// <summary>Ищет KeyRodInstanceBinding в сцене по itemId (через _keyItemData → InventoryWorld).</summary>
-        private static ProjectC.Ship.Key.KeyRodInstanceBinding FindKeyRodBindingByItemId(int itemId)
-        {
-            if (itemId <= 0) return null;
-            var invWorld = ProjectC.Items.InventoryWorld.Instance;
-            if (invWorld == null) return null;
-
-            var bindingType = System.Type.GetType("ProjectC.Ship.Key.KeyRodInstanceBinding, Assembly-CSharp");
-            if (bindingType == null) return null;
-
-            var itemField = bindingType.GetField("_keyItemData",
-                System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.NonPublic);
-            if (itemField == null) return null;
-
-            var bindings = UnityEngine.Object.FindObjectsByType(bindingType,
-                FindObjectsInactive.Include, FindObjectsSortMode.None);
-            foreach (var binding in bindings)
-            {
-                if (binding == null) continue;
-                var itemData = itemField.GetValue(binding) as ProjectC.Items.ItemData;
-                if (itemData == null) continue;
-                int bindingItemId = invWorld.GetOrRegisterItemId(itemData);
-                if (bindingItemId == itemId)
-                    return binding as ProjectC.Ship.Key.KeyRodInstanceBinding;
-            }
-            return null;
-        }
-
-        /// <summary>Читает _ship из KeyRodInstanceBinding (через reflection).</summary>
-        private static ProjectC.Player.ShipController GetShipControllerFromBinding(
-            ProjectC.Ship.Key.KeyRodInstanceBinding binding)
-        {
-            if (binding == null) return null;
-            var shipField = binding.GetType().GetField("_ship",
-                System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.NonPublic);
-            if (shipField == null) return null;
-            return shipField.GetValue(binding) as ProjectC.Player.ShipController;
-        }
 
         /// <summary>Имя корабля с fallback через ShipController.CustomDisplayName.</summary>
         private static string ResolveShipDisplayName(ProjectC.Player.ShipController sc)

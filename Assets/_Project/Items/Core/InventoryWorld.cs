@@ -373,14 +373,14 @@ namespace ProjectC.Items
                 return Fail(InventoryResultCode.InventoryFull,
                     $"Инвентарь полон ({data.TotalCount}/{_maxSlots})", itemId, -1);
 
-            // T-KEY-07: для Key-предметов — защита от дубликата (scene-placed PickupItem respawn)
+            // T-KEY-07: для Key-предметов — защита от дубликата по instanceId (не по itemId — у разных
+            // кораблей разные ItemData с разными itemId, но guard по itemId не пропустит Medium/Heavy).
             if (itemType == ItemType.Key)
             {
                 var keyIds = data.GetIdsForType(ItemType.Key);
                 if (keyIds != null && keyIds.Contains(itemId))
                 {
-                    return Fail(InventoryResultCode.ItemNotFound,
-                        $"Ключ (ID={itemId}) уже есть в инвентаре. Нельзя подобрать второй.", itemId, -1);
+                    // Уже есть ключ с таким itemId — без instanceId не защищаем (legacy flow).
                 }
             }
 

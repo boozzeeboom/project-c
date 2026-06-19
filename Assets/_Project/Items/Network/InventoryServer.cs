@@ -102,6 +102,17 @@ namespace ProjectC.Items.Network
             ulong clientId = rpcParams.Receive.SenderClientId;
             if (!CheckRateLimit(clientId)) return;
 
+            // T-KEY-08: guard дубликата по instanceId (у разных кораблей может быть одинаковый itemId,
+            // но instanceId — уникальный).
+            if (instanceId > 0 && (ItemType)typeByte == ItemType.Key)
+            {
+                if (InventoryWorld.Instance.HasKeyInstance(clientId, instanceId))
+                {
+                    SendResult(clientId, FailResult(InventoryResultCode.ItemNotFound));
+                    return;
+                }
+            }
+
             // Найти игрока для distance validation
             var nm = NetworkManager.Singleton;
             if (nm == null) { SendResult(clientId, FailResult(InventoryResultCode.InternalError)); return; }

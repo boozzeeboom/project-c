@@ -268,6 +268,14 @@ namespace ProjectC.UI.Client
             {
                 var type = (ItemType)i;
                 int count = state.GetCountByType(type);
+
+                // T-KEY-08: сектор 1 (Equipment) объединён с Key — "ВЛАДЕНИЕ".
+                // Удобно для игрока: всё что носится и все ключи в одном месте.
+                if (i == 1) // Equipment
+                {
+                    count += state.GetCountByType(ItemType.Key);
+                }
+
                 var sec = _sectors[i];
                 if (sec == null) continue;
 
@@ -356,15 +364,24 @@ namespace ProjectC.UI.Client
             var state = InventoryClientState.Instance;
             if (state == null) return;
 
+            // T-KEY-08: сектор "ВЛАДЕНИЕ" (Equipment) объединён с Key.
+            // Показываем оба типа в sublist.
             _sublistCache = state.GetItemsByType(type);
+            if ((int)type == 1) // Equipment — добавляем Key
+            {
+                var keyItems = state.GetItemsByType(ItemType.Key);
+                _sublistCache.AddRange(keyItems);
+            }
+
             _sublist.itemsSource = _sublistCache;
             _sublist.selectedIndex = -1;
             _selectedItemIndex = -1;
             _sublist.Rebuild();
 
+            int totalCount = _sublistCache.Count;
             if (_centerTypeLabel != null) _centerTypeLabel.text = ItemTypeNames.GetDisplayName(type);
-            if (_centerCountLabel != null) _centerCountLabel.text = state.GetCountByType(type).ToString();
-            if (_sublistTitle != null) _sublistTitle.text = $"{ItemTypeNames.GetDisplayName(type)} ({_sublistCache.Count})";
+            if (_centerCountLabel != null) _centerCountLabel.text = totalCount.ToString();
+            if (_sublistTitle != null) _sublistTitle.text = $"{ItemTypeNames.GetDisplayName(type)} ({totalCount})";
         }
 
         // ============================================================
@@ -402,10 +419,58 @@ namespace ProjectC.UI.Client
                 icon.style.backgroundImage = new StyleBackground(StyleKeyword.Null);
 
             var name = row.Q<Label>("row-name");
-            name.text = def != null ? def.itemName : $"Item#{item.itemId}";
+            // T-KEY-08: для Key-предметов показываем имя корабля через scene-placed binding.
+            string displayName;
+            if (def != null && (ItemType)item.type == ItemType.Key)
+            {
+                displayName = ResolveKeyItemDisplayName(def, item);
+            }
+            else
+            {
+                displayName = def != null ? def.itemName : $"Item#{item.itemId}";
+            }
+            name.text = displayName;
 
             var qty = row.Q<Label>("row-qty");
             qty.text = item.quantity > 1 ? $"×{item.quantity}" : "";
+        }
+
+        /// <summary>T-KEY-08: резолвит имя корабля для Key-предмета через scene-placed KeyRodInstanceBinding.
+        /// Стабильно между сессиями (не зависит от эфемерного instanceId).</summary>
+        private static string ResolveKeyItemDisplayName(ProjectC.Items.ItemData def, InventoryItemDto dto)
+        {
+            string baseName = def != null ? def.itemName : $"Item#{dto.itemId}";
+            if ((ItemType)dto.type != ItemType.Key) return baseName;
+
+            // Priority: scene-placed KeyRodInstanceBinding по itemId
+            var bindingType = System.Type.GetType("ProjectC.Ship.Key.KeyRodInstanceBinding, Assembly-CSharp");
+            if (bindingType == null) return baseName;
+
+            var itemField = bindingType.GetField("_keyItemData",
+                System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.NonPublic);
+            var shipField = bindingType.GetField("_ship",
+                System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.NonPublic);
+            if (itemField == null || shipField == null) return baseName;
+
+            var invWorld = ProjectC.Items.InventoryWorld.Instance;
+            if (invWorld == null) return baseName;
+
+            var bindings = UnityEngine.Object.FindObjectsByType(bindingType,
+                FindObjectsInactive.Include, FindObjectsSortMode.None);
+
+            foreach (var binding in bindings)
+            {
+                var itemData = itemField.GetValue(binding) as ProjectC.Items.ItemData;
+                if (itemData == null) continue;
+                int bindingItemId = invWorld.GetOrRegisterItemId(itemData);
+                if (bindingItemId == dto.itemId)
+                {
+                    var sc = shipField.GetValue(binding) as ProjectC.Player.ShipController;
+                    if (sc != null && !string.IsNullOrEmpty(sc.CustomDisplayName))
+                        return $"🚀 {sc.CustomDisplayName}";
+                }
+            }
+            return baseName;
         }
 
         private static int FindSelectedIndex<T>(ListView list, IEnumerable<object> selectedItems)

@@ -45,7 +45,7 @@
                     <ui:Label name="label-0" class="sector-label" text="РЕСУРСЫ" />
                 </ui:VisualElement>
                 <ui:VisualElement name="sector-1" class="sector sector-1" data-type="Equipment">
-                    <ui:Label name="label-1" class="sector-label" text="ОБОРУДОВАНИЕ" />
+                    <ui:Label name="label-1" class="sector-label" text="ВЛАДЕНИЕ" />
                 </ui:VisualElement>
                 <ui:VisualElement name="sector-2" class="sector sector-2" data-type="Food">
                     <ui:Label name="label-2" class="sector-label" text="ЕДА" />

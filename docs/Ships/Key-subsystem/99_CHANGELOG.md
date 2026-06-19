@@ -515,6 +515,104 @@ var compositeKey = (dto.itemId, groupKey2);
 4. Если у 2 разных Key один itemId (legacy) — всё равно 2 строки, т.к. instanceId разный
 
 **MVP завершён полностью.** R2-SHIP-KEY-003 done.
+
+---
+
+## 2026-06-19 — R2-SHIP-KEY-003 v14 (TAB-колесо: Equipment + Key → "ВЛАДЕНИЕ")
+
+**Контекст**: TAB-колесо (InventoryUI) имело 8 секторов = 8 ItemType (0..7), Key=8 отсутствовал. Дублирование фильтра в P-табе — игрок путался между Equipment (одежда/модули) и Key.
+
+**Что изменилось**:
+
+| Файл | Изменение |
+|---|---|
+| `Assets/_Project/UI/Client/InventoryUI.cs` | Сектор 1 (Equipment) теперь объединён с Key — счётчик `count += state.GetCountByType(Key)`. Sublist показывает оба типа. Для Key-предметов отображается имя корабля через scene-placed binding. |
+| `Assets/_Project/UI/Resources/UI/InventoryWheel.uxml` | Label сектора 1: "ОБОРУДОВАНИЕ" → "ВЛАДЕНИЕ" |
+
+**UX**:
+- Сектор "ВЛАДЕНИЕ" показывает: одежда + модули + ключи
+- Sublist: `[Equipment] куртка MK2` → `[Key] 🚀 Pushka` (с эмодзи)
+- Счётчик: `[3]` если 1 одежда + 2 ключа
+
+**Compile**: 0 errors.
+
+**Архитектурное правило**: TAB-колесо остаётся на 8 секторах (8 типов = 8 углов). Объединение Equipment+Key — единственное исключение, потому что оба являются "носимыми". Если добавятся другие "нательные" типы (м.б. Consumables?), их тоже стоит объединить в "ВЛАДЕНИЕ".
+
+**MVP завершён полностью.** R2-SHIP-KEY-003 done.
+
+---
+
+## 2026-06-19 — R2-SHIP-KEY-003 v15 (T-KEY-09: Drop key ownership fix)
+
+**Контекст**: критический архитектурный баг — при drop'е Key-предмета `KeyRodInstanceWorld` оставался с `ownerPlayerId = playerId, state = Active`. Игрок мог продолжать управлять кораблём.
+
+**Root cause**: 3 причины найдены через глубокий sub-анализ:
+
+| # | Причина | Эффект |
+|---|---|---|
+| 1 | `TryDrop` вызывал `TransferInstance` только если `slot.instanceId > 0`. При `instanceId = 0` (drop'нутый ключ) — ownership не сбрасывался | Drop bug — основной |
+| 2 | При pickup drop'нутого ключа (`KeyRodInstanceBinding` отсутствует) — `instanceId = 0` в слоте | Никак не отличить от нового |
+| 3 | `KeyRodInstanceBinding.TryRegister()` стартует в `Start` — race condition с scene-load и InventoryServer.OnNetworkSpawn | Persistence файл загрязняется кривыми instance'ами |
+
+### Фиксы (3 шага)
+
+| Шаг | Файл | Что |
+|---|---|---|
+| Шаг 1: Drop fix | `Assets/_Project/Items/Core/InventoryWorld.cs` | + `FindActiveKeyInstance(clientId, itemId)` — поиск instance по (itemId, owner, state=Active). `TryDrop` сначала пробует slot.instanceId, fallback на поиск. Если не нашли — Debug.LogWarning но продолжает. |
+| Шаг 2: Pickup creates instance | `Assets/_Project/Items/Core/InventoryWorld.cs` | + `TryPickup` принимает `instanceId` параметром. Для Key без `KeyRodInstanceBinding` (drop'нутый) — создаёт новый instance через `CreateInstance(itemId, 0, clientId)`. Slot получает правильный instanceId. |
+| Шаг 3: Binding.TryRegister в Awake | `Assets/_Project/Scripts/Ship/Key/KeyRodInstanceBinding.cs` | Awake() → если IsServer + InventoryWorld есть → TryRegister() сразу. Fallback — Start → TryRegister. |
+
+**Файлы изменены:**
+- ✅ `InventoryWorld.cs` (TryDrop + TryPickup signature + FindActiveKeyInstance helper)
+- ✅ `InventoryServer.cs` (передаёт instanceId в TryPickup)
+- ✅ `KeyRodInstanceBinding.cs` (Awake TryRegister)
+
+**Compile**: 0 errors.
+
+### Тест-план (drop bug fix)
+
+| Шаг | Ожидание |
+|---|---|
+| 1. Подобрать Light ключ | Key в инвентаре, instanceId=1, state=Active, owner=player |
+| 2. **TAB → ВЛАДЕНИЕ → БРОСИТЬ** | Console: `[InventoryWorld] Key dropped: instanceId=1, TransferInstance(client=0, NONE) + UpdateState(Lost)` |
+| 3. F у корабля (Light) | ❌ Доступ запрещён (IsOwnerOfShip → false, state=Lost) |
+| 4. Exit Play → Play Host | Persistence сохранён state=Lost, owner=NONE |
+| 5. F у корабля | ❌ Всё ещё запрещён |
+| 6. Pickup drop'нутого ключа | Console: `[InventoryWorld] Created new KeyRodInstance for drop-ped key: itemId=2010, instanceId=N, owner=0` |
+| 7. F у корабля | ✅ Доступ разрешён (новый instanceId=Active, owner=player) |
+
+**Архитектурный комментарий**: эти 3 фикса решают конкретные баги но НЕ решают фундаментальную проблему двойной структуры данных. Полный рефакторинг по плану `28_KEY_ARCHITECTURE_REVIEW.md` остаётся в Phase 2 (~13 часов).
+
+---
+
+## 2026-06-19 — R2-SHIP-KEY-003 v16 (Phase C: Remove ALL reflection → direct calls)
+
+**Контекст**: полное удаление reflection-вызовов из подсистемы ключей. Найдено и заменено 5 мест.
+
+**Что изменилось**:
+
+| Файл | Было | Стало |
+|---|---|---|
+| `InventoryWorld.cs` TryPickup | `typeof(KeyRodInstanceWorld).GetMethod("CreateInstance")...Invoke()` | `KeyRodInstanceWorld.CreateInstance()` — прямой вызов |
+| `InventoryWorld.cs` TryDrop | `typeof(KeyRodInstanceWorld).GetMethod("TransferInstance")...Invoke()` + `GetMethod("UpdateState")...Invoke()` | `KeyRodInstanceWorld.TransferInstance()` + `.UpdateState()` — прямые вызовы |
+| `InventoryServer.cs` RequestPickupRpc | `Type.GetType("...KeyRodInstanceWorld, Assembly-CSharp").GetMethod("TransferInstance")...Invoke()` | `KeyRodInstanceWorld.TransferInstance()` — прямой вызов |
+
+**Что дало**: 0 reflection к KeyRodInstanceWorld. Все вызовы компилируются — ошибки в аргументах выявляются на этапе компиляции, а не в runtime.
+
+**Техника замены**: удалено 3 уровня проверок (`krwType != null`, `transfer != null`, `if (createMethod != null)`) — методы гарантированно есть в сборке.
+
+**Compile**: 0 errors.
+
+**Связанный документ**: `docs/Ships/Key-subsystem/29_KEY_REFACTOR_PLAN.md` — Phase C complete.
+
+**Что осталось (Phases D-F)**:
+- Phase D: `InventoryData` — `_keyIds` не сериализуется. `GetIdsForType(Key)` возвращает пустой список на клиенте после Network-десериализации
+- Phase E: `KeyRodInstanceBinding` — упрощение регистрации (сейчас все ещё в Wake/Start с retries)
+- Phase F: UI — reflection fallback'и пока остаются (упрощать при рефакторинге UI)
+
+---
+
+*Changelog ведёт агент Mavis.*
 ---
 
 *Changelog ведёт агент Mavis.*

@@ -67,6 +67,14 @@ namespace ProjectC.Ship.Key
         private void Awake()
         {
             _pickupItem = GetComponent<PickupItem>();
+
+            // T-KEY-09 (Шаг 3): если сервер уже готов и InventoryWorld есть — попытаться
+            // зарегистрировать instance сразу. Fallback — Start → TryRegister с retries.
+            if (NetworkManager.Singleton != null && NetworkManager.Singleton.IsServer
+                && ProjectC.Items.InventoryWorld.Instance != null)
+            {
+                TryRegister();
+            }
         }
 
         private void Start()
@@ -78,7 +86,8 @@ namespace ProjectC.Ship.Key
                 return;
             }
 
-            // Начинаем цикл ожидания (ShipController и InventoryWorld могут быть не готовы)
+            // Начинаем цикл ожидания (ShipController и InventoryWorld могут быть не готовы).
+            // Если уже зарегистрированы в Awake — TryRegister no-op.
             TryRegister();
         }
 

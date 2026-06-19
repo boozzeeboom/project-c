@@ -23,44 +23,35 @@
 //   • Assets/_Project/Scripts/Core/NetworkInventory.cs:202-228
 //     — статические RegisterItem/GetItemId → переехали в InventoryWorld
 // =====================================================================================
-
 using System;
 using System.Collections.Generic;
 using ProjectC.Items.Client;
 using ProjectC.Items.Dto;
 using Unity.Netcode;
 using UnityEngine;
-
 namespace ProjectC.Items.Network
 {
     [DisallowMultipleComponent]
     public class InventoryServer : NetworkBehaviour
     {
         public static InventoryServer Instance { get; private set; }
-
         [Header("Settings")]
         [SerializeField] private int maxSlots = 32;
         [SerializeField] private int maxOpsPerMinute = 60;   // rate limit per-client
-
         [Header("Drop (Phase 10)")]
         [Tooltip("Prefab PickupItem для server-spawn при drop. Должен иметь NetworkObject + PickupItem компоненты. Регистрируется в NetworkManager.NetworkConfig.Prefabs.")]
         [SerializeField] private GameObject _dropPickupPrefab;
-
         // ============================================================
         // Server-side state
         // ============================================================
-
         // Per-client rate-limit timestamps (для RPC spam protection)
         private readonly Dictionary<ulong, List<float>> _opTimestamps = new Dictionary<ulong, List<float>>();
-
         // Локальный кэш ItemData (на клиенте нужен для UI — отображать icon, name)
         // На сервере дублирует InventoryWorld._itemDatabase.
         private readonly Dictionary<int, ItemData> _itemCache = new Dictionary<int, ItemData>();
-
         // ============================================================
         // Public read-only API (для клиентского UI через InventoryClientState)
         // ============================================================
-
         /// <summary>Получить ItemData из локального кэша (для UI: icon, name, maxStack).</summary>
         public ItemData GetCachedDefinition(int itemId)
         {
@@ -68,11 +59,9 @@ namespace ProjectC.Items.Network
             // Fallback: запросим у World (на случай если кэш пуст)
             return InventoryWorld.Instance?.GetItemDefinition(itemId);
         }
-
         // ============================================================
         // Server APIs (legacy — вызывается из NetworkChestContainer, и т.д.)
         // ============================================================
-
         /// <summary>
         /// Добавить предмет напрямую на сервере. Используется NetworkChestContainer после открытия сундука.
         /// </summary>
@@ -80,7 +69,6 @@ namespace ProjectC.Items.Network
         {
             if (!IsServer) return false;
             if (InventoryWorld.Instance == null) return false;
-
             var result = InventoryWorld.Instance.AddItemDirect(clientId, itemId, itemType);
             if (result.IsSuccess)
             {
@@ -89,11 +77,9 @@ namespace ProjectC.Items.Network
             }
             return result.IsSuccess;
         }
-
         // ============================================================
         // CLIENT RPCs — RequestXxx
         // ============================================================
-
         /// <summary>Клиент хочет подобрать предмет в мире. Только Owner.
         /// T-KEY-05: instanceId для Key-предметов (0 для обычных).</summary>
         [Rpc(SendTo.Server, InvokePermission = RpcInvokePermission.Owner)]
@@ -101,7 +87,6 @@ namespace ProjectC.Items.Network
         {
             ulong clientId = rpcParams.Receive.SenderClientId;
             if (!CheckRateLimit(clientId)) return;
-
             // T-KEY-08: guard дубликата по instanceId (у разных кораблей может быть одинаковый itemId,
             // но instanceId — уникальный).
             if (instanceId > 0 && (ItemType)typeByte == ItemType.Key)
@@ -112,13 +97,11 @@ namespace ProjectC.Items.Network
                     return;
                 }
             }
-
             // Найти игрока для distance validation
             var nm = NetworkManager.Singleton;
             if (nm == null) { SendResult(clientId, FailResult(InventoryResultCode.InternalError)); return; }
             var playerObj = nm.SpawnManager.GetPlayerNetworkObject(clientId);
             if (playerObj == null) { SendResult(clientId, FailResult(InventoryResultCode.NoPermission)); return; }
-
             Vector3 playerPos = playerObj.transform.position;
             var result = InventoryWorld.Instance.TryPickup(clientId, itemId, (ItemType)typeByte, worldPos, playerPos);
             if (result.IsSuccess)
@@ -128,17 +111,18 @@ namespace ProjectC.Items.Network
                 {
                     // T-KEY-07: обновляем instanceId в слоте инвентаря (чтобы UI знал, какой это корабль)
                     InventoryWorld.Instance.UpdateKeySlotInstanceId(clientId, instanceId);
-
-                    var krwType = System.Type.GetType("ProjectC.Ship.Key.KeyRodInstanceWorld, Assembly-CSharp");
-                    if (krwType != null)
+                                        // T-KEY-09: прямой вызов (без reflection)
+                    if (ProjectC.Ship.Key.KeyRodInstanceWorld.IsInitialized)
                     {
-                        var transfer = krwType.GetMethod("TransferInstance",
-                            System.Reflection.BindingFlags.Public | System.Reflection.BindingFlags.Static);
-                        if (transfer != null)
+                        bool ok = ProjectC.Ship.Key.KeyRodInstanceWorld.TransferInstance(instanceId,
+                            System.UInt64.MaxValue /* OWNER_NONE */, clientId);
+                        if (ok)
                         {
-                            transfer.Invoke(null, new object[] { instanceId,
-                                System.UInt64.MaxValue /* OWNER_NONE */, clientId });
                             Debug.Log($"[InventoryServer] Pickup Key: TransferInstance(id={instanceId}, NONE→{clientId})");
+                        }
+                        else
+                        {
+                            Debug.LogWarning($"[InventoryServer] Pickup Key: TransferInstance FAILED for instanceId={instanceId}");
                         }
                     }
                 }
@@ -146,13 +130,11 @@ namespace ProjectC.Items.Network
             }
             SendResult(clientId, result);
         }
-
         [Rpc(SendTo.Server, InvokePermission = RpcInvokePermission.Owner)]
         public void RequestDropRpc(int slotIndex, int quantity, Vector3 worldPos, Vector3 playerPos, RpcParams rpcParams = default)
         {
             ulong clientId = rpcParams.Receive.SenderClientId;
             if (!CheckRateLimit(clientId)) return;
-
             var result = InventoryWorld.Instance.TryDrop(clientId, slotIndex, quantity, worldPos, playerPos);
             if (result.IsSuccess)
             {
@@ -195,7 +177,6 @@ namespace ProjectC.Items.Network
             }
             SendResult(clientId, result);
         }
-
         [Rpc(SendTo.Server, InvokePermission = RpcInvokePermission.Owner)]
         public void RequestMoveRpc(int fromSlot, int toSlot, RpcParams rpcParams = default)
         {
@@ -205,11 +186,9 @@ namespace ProjectC.Items.Network
             if (result.IsSuccess) SendSnapshot(clientId, null);
             SendResult(clientId, result);
         }
-
         // ============================================================
         // T-Q14: TryRemove (server-side helper) + RequestRemoveRpc (client-initiated)
         // ============================================================
-
         /// <summary>
         /// T-Q14: удалить N штук предмета напрямую на сервере. Используется для quest turn-in
         /// (QuestServer.RequestTurnInQuestRpc → QuestWorld.TryTurnIn → InventoryServer.TryRemove),
@@ -229,7 +208,6 @@ namespace ProjectC.Items.Network
             }
             return result.IsSuccess;
         }
-
         /// <summary>
         /// T-Q14: client-initiated removal. На будущее — для dialogue option "Сдать предмет" (T-Q15+).
         /// Сейчас основной path — server-side TryRemove.
@@ -243,7 +221,6 @@ namespace ProjectC.Items.Network
             if (result.IsSuccess) SendSnapshot(clientId, null);
             SendResult(clientId, result);
         }
-
         [Rpc(SendTo.Server, InvokePermission = RpcInvokePermission.Owner)]
         public void RequestUseRpc(int slotIndex, RpcParams rpcParams = default)
         {
@@ -252,7 +229,6 @@ namespace ProjectC.Items.Network
             var result = InventoryWorld.Instance.TryUse(clientId, slotIndex);
             SendResult(clientId, result);
         }
-
         /// <summary>Клиент просит переслать полный snapshot (для refresh / re-spawn).</summary>
         [Rpc(SendTo.Server, InvokePermission = RpcInvokePermission.Owner)]
         public void RequestRefreshRpc(RpcParams rpcParams = default)
@@ -260,11 +236,9 @@ namespace ProjectC.Items.Network
             ulong clientId = rpcParams.Receive.SenderClientId;
             SendSnapshot(clientId, null);
         }
-
         // ============================================================
         // DELIVERY — найти NetworkPlayer и отправить TargetRpc
         // ============================================================
-
         private void SendSnapshot(ulong clientId, string locationId)
         {
             if (!IsServer) return;
@@ -285,13 +259,11 @@ namespace ProjectC.Items.Network
             var snap = InventoryWorld.Instance.BuildSnapshot(clientId, locationId);
             networkPlayer.ReceiveInventorySnapshotTargetRpc(snap);
         }
-
         /// <summary>T-Q21/M11: public helper для QuestServer (GiveCredits → push refreshed snapshot).</summary>
         public void PushSnapshot(ulong clientId)
         {
             SendSnapshot(clientId, null);
         }
-
         private void SendResult(ulong clientId, InventoryResultDto result)
         {
             if (!IsServer) return;
@@ -303,11 +275,9 @@ namespace ProjectC.Items.Network
             if (networkPlayer == null) return;
             networkPlayer.ReceiveInventoryResultTargetRpc(result);
         }
-
         // ============================================================
         // Rate limit
         // ============================================================
-
         private bool CheckRateLimit(ulong clientId)
         {
             if (maxOpsPerMinute <= 0) return true;
@@ -327,7 +297,6 @@ namespace ProjectC.Items.Network
             list.Add(now);
             return true;
         }
-
         private static InventoryResultDto FailResult(InventoryResultCode code)
             => new InventoryResultDto
             {
@@ -337,22 +306,18 @@ namespace ProjectC.Items.Network
                 slotIndex = -1,
                 newCredits = -1f,
             };
-
         // ============================================================
         // Lifecycle
         // ============================================================
-
         public override void OnNetworkSpawn()
         {
             base.OnNetworkSpawn();
-
             if (IsServer && InventoryWorld.Instance == null)
             {
                 // T-X0: instantiate repository. Default = JsonInventoryRepository (per-file JSON).
                 // Альтернатива (test): new InMemoryInventoryRepository() — out of scope T-X0.
                 var repository = new ProjectC.Core.JsonInventoryRepository();
                 InventoryWorld.CreateAndInitialize(repository);
-
                 // T-KEY-PERSIST: инициализируем KeyRodInstanceWorld с репозиторием
                 if (!ProjectC.Ship.Key.KeyRodInstanceWorld.IsInitialized)
                 {
@@ -360,17 +325,14 @@ namespace ProjectC.Items.Network
                     ProjectC.Ship.Key.KeyRodInstanceWorld.CreateAndInitialize(krRepo);
                     Debug.Log($"[InventoryServer] KeyRodInstanceWorld initialized with JsonKeyRodInstanceRepository");
                 }
-
                 // T-E04: применить лимит слотов из инспектора (по умолчанию 1000).
                 InventoryWorld.Instance.ConfigureMaxSlots(maxSlots);
-
                 // T-X0: hook client connect → load persisted inventory.
                 if (NetworkManager != null)
                 {
                     NetworkManager.OnClientConnectedCallback += HandleClientConnectedServer;
                 }
             }
-
             // Кэш ItemData — заполняем из InventoryWorld (для клиентского UI)
             if (InventoryWorld.Instance != null)
             {
@@ -385,11 +347,9 @@ namespace ProjectC.Items.Network
                     if (item != null) _itemCache[id++] = item;
                 }
             }
-
             if (Instance == null) Instance = this;
             Debug.Log($"[InventoryServer] OnNetworkSpawn. IsServer={IsServer}, _itemCache={_itemCache.Count}, repo={InventoryWorld.Instance?.Repository?.GetType().Name ?? "null"}");
         }
-
         public override void OnNetworkDespawn()
         {
             base.OnNetworkDespawn();
@@ -400,7 +360,6 @@ namespace ProjectC.Items.Network
             if (Instance == this) Instance = null;
             _opTimestamps.Clear();
         }
-
         /// <summary>
         /// T-X0: load persisted inventory when client connects. Safe если файл
         /// не существует (новый игрок) — LoadPlayer no-op.

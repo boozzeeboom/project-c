@@ -3,6 +3,7 @@ using UnityEngine;
 using UnityEngine.InputSystem;
 using ProjectC.Core;
 using ProjectC.Items;
+using ProjectC.MetaRequirement;  // T-KEY-06: direct access to MetaRequirementClientState/Registry
 using ProjectC.Network;
 using ProjectC.Ship.Key;
 using ProjectC.Trade;
@@ -344,7 +345,16 @@ namespace ProjectC.Player
                     }
                     _lastCanBoardRequestTime = Time.unscaledTime;
                     _pendingCanBoardShipId = nearestShip.NetworkObjectId;
-                    ProjectC.Ship.Key.ShipKeyClientState.Instance?.RequestCanBoard(nearestShip.NetworkObjectId);
+                    // T-KEY-06: direct call to MetaRequirementClientState (ownership-priority).
+                    // ShipKeyClientState оставлен как legacy [Obsolete] alias, не используем.
+                    if (MetaRequirementClientState.Instance != null)
+                    {
+                        MetaRequirementClientState.Instance.RequestCanUse(nearestShip.NetworkObjectId);
+                    }
+                    else
+                    {
+                        Debug.LogWarning("[NetworkPlayer] MetaRequirementClientState.Instance==null. F-key board skipped.");
+                    }
                 }
             }
 
@@ -507,24 +517,29 @@ namespace ProjectC.Player
         [Rpc(SendTo.Everyone)]
         public void SubmitSwitchModeRpc(RpcParams rpcParams = default)
         {
-            // Defense-in-depth (Ship Key Subsystem): если это посадка И сервер знает, что у клиента
+            // Defense-in-depth (T-KEY-06): если это посадка И сервер знает, что у клиента
             // нет ключа — молча отказываем (визуально ничего не происходит). Клиент уже должен был
-            // отказать через RequestCanBoardRpc, но если он пропустил проверку (чит/баг) — сервер
-            // не пустит.
+            // отказать через MetaRequirementClientState.RequestCanUse, но если он пропустил
+            // проверку (чит/баг) — сервер не пустит.
             if (!_inShip) // посадка
             {
                 ulong serverClientId = rpcParams.Receive.SenderClientId;
                 var nearestShip = FindNearestShip();
-                if (nearestShip != null
-                    && ProjectC.Ship.Key.ShipKeyServer.Instance != null
-                    && !ProjectC.Ship.Key.ShipKeyServer.Instance.CanPlayerBoard(serverClientId, nearestShip.NetworkObjectId))
+                if (nearestShip != null)
                 {
-                    Debug.LogWarning($"[NetworkPlayer] SubmitSwitchModeRpc BLOCKED on server: " +
-                                     $"client={serverClientId} ship={nearestShip.NetworkObjectId} (missing key)");
-                    return;
+                    // T-KEY-06: direct call to MetaRequirementRegistry (ownership-priority for ships).
+                    // ShipKeyServer.CanPlayerBoard DEPRECATED.
+                    bool allowed = MetaRequirementRegistry.Instance != null
+                        && MetaRequirementRegistry.Instance.CanPlayerUse(serverClientId, nearestShip.NetworkObjectId);
+                    if (!allowed)
+                    {
+                        Debug.LogWarning($"[NetworkPlayer] SubmitSwitchModeRpc BLOCKED on server: " +
+                                         $"client={serverClientId} ship={nearestShip.NetworkObjectId} (MetaRequirement denied)");
+                        return;
+                    }
                 }
-            }
 
+            }
             if (_inShip)
             {
                 // Выход из корабля

@@ -4,6 +4,29 @@
 
 ---
 
+## 2026-06-18 — R2-SHIP-KEY-003 v9 (T-KEY-06: NetworkPlayer F-key wiring — direct calls)
+
+**Контекст**: седьмой тикет R2-SHIP-KEY-003 после T-KEY-05. Заменил reflection-based fallback'и на прямые вызовы `MetaRequirementClientState`/`MetaRequirementRegistry`.
+
+**Что изменилось в коде**:
+
+| Файл | Что | Статус |
+|---|---|---|
+| `Assets/_Project/Scripts/Player/NetworkPlayer.cs` | + `using ProjectC.MetaRequirement;`. **Client-side F-key** (line 347+): reflection на `MetaRequirementClientState.RequestCanUse` → прямой вызов `MetaRequirementClientState.Instance.RequestCanUse(shipNetId)`. Legacy fallback на `ShipKeyClientState` удалён. **Server-side `SubmitSwitchModeRpc`** (line 518+): reflection на `MetaRequirementRegistry.CanPlayerUse` → прямой вызов `MetaRequirementRegistry.Instance != null && MetaRequirementRegistry.Instance.CanPlayerUse(serverClientId, shipNetId)`. | ✅ |
+
+**Verify**:
+- ✅ Compile: 0 errors, 0 new warnings (warnings для pre-existing [Obsolete] ShipKey* в NetworkPlayer удалены — теперь не используются)
+- ✅ Reflection probe: `MetaRequirementRegistry.CanPlayerUse(client, netId)` OK, `MetaRequirementClientState.RequestCanUse` OK
+- ✅ Прямой call flow: F → `MetaRequirementClientState.RequestCanUse` → `MetaRequirementRegistry.RequestCanUseRpc` → `ShipOwnershipRequirement.CanPlayerUse` (server) → response → `MetaRequirementClientState.OnCanUseResponse` → allowed → `SubmitSwitchModeRpc` → server defense-in-depth check
+
+**Backward compat**: `ShipKeyClientState`/`ShipKeyServer` остаются как `[Obsolete]` aliases для обратной совместимости (R2-SHIP-KEY-001 legacy), но не используются напрямую из NetworkPlayer.
+
+**Что НЕ сделано** (намеренно, для следующих тикетов):
+- ❌ ShipTelemetry server + client state → **T-KEY-07** (~3h)
+- ❌ MyShipsTab UI → **T-KEY-08** (Phase 2)
+
+---
+
 ## 2026-06-18 — R2-SHIP-KEY-003 v8 (T-KEY-05: Transfer logic — drop/pickup с instanceId)
 
 **Контекст**: шестой тикет R2-SHIP-KEY-003 после T-KEY-04. Интеграция KeyRodInstanceWorld в drop/pickup flow.

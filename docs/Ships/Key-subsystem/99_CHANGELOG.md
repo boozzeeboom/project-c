@@ -613,6 +613,18 @@ var compositeKey = (dto.itemId, groupKey2);
 ---
 
 *Changelog ведёт агент Mavis.*
+
+---
+
+## 2026-06-19 — v17 (Phase D: InventoryData._keyIds serialization fix)
+
+**Root cause**: `GetIdsForType(ItemType.Key)` возвращал `_keyIds` (не сериализуется через NetworkVariable). После Network-синхронизации на клиенте `_keyIds` пуст → `HasItem`/`CountOf`/`HasAllItems` для Key-предметов возвращали неверные значения.
+
+**Fix**: `GetIdsForType(ItemType.Key)` теперь вычисляется из `_keySlots` (сериализуется через `InventorySlot.NetworkSerialize`). `_keyIds` больше не нужен для чтения — сохраняется только для backward compat через `AddItem`/`AddKeyItem`.
+
+**Файл**: `Assets/_Project/Scripts/Core/InventoryData.cs` — метод `GetIdsForType()`.
+
+**Compile**: 0 errors.
 ---
 
 *Changelog ведёт агент Mavis.*

@@ -467,35 +467,21 @@ namespace ProjectC.UI.Client
             return FindShipNameByNetworkId(inst.registeredShipId);
         }
 
-        private string TryGetShipNameByItemId(int itemId)
+                private string TryGetShipNameByItemId(int itemId)
         {
             if (itemId <= 0) return null;
-            // Ищем KeyRodInstanceBinding в сцене по _keyItemData == itemId.
-            // _ship в binding — scene-placed ссылка, стабильная между рестартами.
-            // Не используем NetworkObjectId (эфемерный) или instanceId (пересоздаётся).
-            var bindingType = System.Type.GetType("ProjectC.Ship.Key.KeyRodInstanceBinding, Assembly-CSharp");
-            if (bindingType == null) return null;
-
-            var invWorld = ProjectC.Items.InventoryWorld.Instance;
-            if (invWorld == null) return null;
-
-            var itemField = bindingType.GetField("_keyItemData",
-                System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.NonPublic);
-            var shipField = bindingType.GetField("_ship",
-                System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.NonPublic);
-            if (itemField == null || shipField == null) return null;
-
-            foreach (var binding in UnityEngine.Object.FindObjectsByType(bindingType,
-                UnityEngine.FindObjectsInactive.Include, UnityEngine.FindObjectsSortMode.None))
+            // Ищем в KeyRodInstanceWorld любой Active instance с этим itemId.
+            // Не используем KeyRodInstanceBinding — его может не быть (server-spawned pickup).
+            if (!ProjectC.Ship.Key.KeyRodInstanceWorld.IsInitialized) return null;
+            var all = ProjectC.Ship.Key.KeyRodInstanceWorld.GetAllInstances();
+            if (all == null) return null;
+            foreach (var inst in all)
             {
-                var bindingItemData = itemField.GetValue(binding) as ProjectC.Items.ItemData;
-                if (bindingItemData == null) continue;
-                int bindingItemId = invWorld.GetOrRegisterItemId(bindingItemData);
-                if (bindingItemId == itemId)
+                if (inst.itemId == itemId
+                    && inst.state == ProjectC.Ship.Key.KeyRodInstanceState.Active
+                    && inst.registeredShipId != 0)
                 {
-                    var sc = shipField.GetValue(binding) as ProjectC.Player.ShipController;
-                    if (sc != null && !string.IsNullOrEmpty(sc.CustomDisplayName))
-                        return sc.CustomDisplayName;
+                    return FindShipNameByNetworkId(inst.registeredShipId);
                 }
             }
             return null;

@@ -87,6 +87,18 @@ namespace ProjectC.Items
         /// </summary>
         public List<int> GetIdsForType(ItemType type)
         {
+            // T-KEY-09: Key-тип возвращает itemId из _keySlots (сериализуется).
+            // Старое _keyIds не сериализовалось при NetworkSync — пустой на клиенте.
+            if (type == ItemType.Key)
+            {
+                if (_keySlots == null || _keySlots.Count == 0) return null;
+                // ReSharper disable once HeapView.ObjectAllocation.Possible
+                var result = new List<int>(_keySlots.Count);
+                for (int i = 0; i < _keySlots.Count; i++)
+                    result.Add(_keySlots[i].itemId);
+                return result;
+            }
+
             return type switch
             {
                 ItemType.Resources => _resourceIds,
@@ -97,7 +109,6 @@ namespace ProjectC.Items
                 ItemType.Meziy => _meziyIds,
                 ItemType.Medical => _medicalIds,
                 ItemType.Tech => _techIds,
-                ItemType.Key => _keyIds,
                 _ => new List<int>()
             };
         }

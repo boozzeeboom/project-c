@@ -64,17 +64,9 @@ namespace ProjectC.Ship.Key
         // Lifecycle
         // ===========================================================
 
-        private void Awake()
+                private void Awake()
         {
             _pickupItem = GetComponent<PickupItem>();
-
-            // T-KEY-09 (Шаг 3): если сервер уже готов и InventoryWorld есть — попытаться
-            // зарегистрировать instance сразу. Fallback — Start → TryRegister с retries.
-            if (NetworkManager.Singleton != null && NetworkManager.Singleton.IsServer
-                && ProjectC.Items.InventoryWorld.Instance != null)
-            {
-                TryRegister();
-            }
         }
 
         private void Start()
@@ -86,101 +78,49 @@ namespace ProjectC.Ship.Key
                 return;
             }
 
-            // Начинаем цикл ожидания (ShipController и InventoryWorld могут быть не готовы).
-            // Если уже зарегистрированы в Awake — TryRegister no-op.
+            // T-KEY-09 (Шаг 3): единственная попытка регистрации в Start.
+            // Все зависимости (KeyRodInstanceWorld, InventoryWorld, ShipController.IsSpawned)
+            // гарантированно готовы — scene-placed NetworkObject спавнится после BootstrapScene.
+            // Если регистрация не удалась — silent fail (instanceId=0 при pickup).
             TryRegister();
         }
 
-        /// <summary>Повторная попытка регистрации с задержкой (ожидание готовности
-        /// ShipController.OnNetworkSpawn и InventoryWorld.CreateAndInitialize).</summary>
+                /// <summary>Однократная регистрация instance через KeyRodInstanceWorld.
+        /// Если не удалось — silent fail, pickup будет с instanceId=0.</summary>
         private void TryRegister()
         {
             if (_registered) return;
-            if (_retryCount >= MAX_RETRIES)
-            {
-                Debug.LogError($"[KeyRodInstanceBinding] Failed to register after {MAX_RETRIES} retries. " +
-                               $"ship={( _ship != null ? _ship.name : "NULL")}, item={(_keyItemData != null ? _keyItemData.name : "NULL")}");
-                return;
-            }
-            _retryCount++;
 
-            // Проверка: ShipController готов (IsSpawned)
-            if (_ship == null)
+            // Проверки
+            if (_ship == null || !_ship.IsSpawned || !KeyRodInstanceWorld.IsInitialized || _keyItemData == null)
             {
-                Debug.LogWarning($"[KeyRodInstanceBinding] GameObject={gameObject.name}: _ship is null. Retry {_retryCount}/{MAX_RETRIES}");
-                Invoke(nameof(TryRegister), 1.0f);
-                return;
-            }
-            if (!_ship.IsSpawned)
-            {
-                // Проверка: может быть не заспавнен (scene-placed NetworkObject timing)
-                Invoke(nameof(TryRegister), 1.0f);
+                Debug.LogWarning($"[KeyRodInstanceBinding] Prerequisites not met: " +
+                                 $"ship={(_ship != null ? _ship.name : "NULL")}, " +
+                                 $"spawned={(_ship != null && _ship.IsSpawned)}, " +
+                                 $"krwInit={KeyRodInstanceWorld.IsInitialized}, " +
+                                 $"itemData={(_keyItemData != null ? _keyItemData.name : "NULL")}. " +
+                                 $"Instance NOT created. Pickup will have instanceId=0.");
                 return;
             }
 
-            // T-KEY-PERSIST: KeyRodInstanceWorld инициализируется в InventoryServer.OnNetworkSpawn
-            // с репозиторием. Не вызываем CreateAndInitialize() — он уже готов.
-            if (!KeyRodInstanceWorld.IsInitialized)
-            {
-                Debug.LogWarning($"[KeyRodInstanceBinding] KeyRodInstanceWorld not ready yet. Retry {_retryCount}/{MAX_RETRIES}");
-                Invoke(nameof(TryRegister), 1.0f);
-                return;
-            }
-
-            // Проверка: InventoryWorld готов для резолва itemId
-            if (_keyItemData == null)
-            {
-                Debug.LogWarning($"[KeyRodInstanceBinding] GameObject={gameObject.name}: _keyItemData is null. Cannot resolve itemId.");
-                Invoke(nameof(TryRegister), 1.0f);
-                return;
-            }
-
-            // Резолвим itemId (через InventoryWorld если готов, иначе прямой ID)
-            int itemId = -1;
-            if (InventoryWorld.Instance != null)
-            {
-                itemId = InventoryWorld.Instance.GetOrRegisterItemId(_keyItemData);
-            }
-
-            // Если InventoryWorld ещё не готов — ждём (но он обычно готов до ShipController)
-            if (itemId <= 0)
-            {
-                Invoke(nameof(TryRegister), 1.0f);
-                return;
-            }
+            // ItemId
+            int itemId = InventoryWorld.Instance != null
+                ? InventoryWorld.Instance.GetOrRegisterItemId(_keyItemData) : -1;
+            if (itemId <= 0) return;
 
             // Создаём экземпляр ключа (owner = NONE = ключ в мире)
-            // T-KEY-PERSIST: если instance уже есть (из persistence), CreateInstance вернёт
-            // существующий instanceId (guard внутри KeyRodInstanceWorld.CreateInstance).
-            ulong shipNetId = _ship.NetworkObjectId;
-            _instanceId = KeyRodInstanceWorld.CreateInstance(itemId, shipNetId, KeyRodInstance.OWNER_NONE);
-
+            // T-KEY-PERSIST: если instance уже есть (из persistence), CreateInstance вернёт существующий id
+            _instanceId = KeyRodInstanceWorld.CreateInstance(itemId, _ship.NetworkObjectId,
+                KeyRodInstance.OWNER_NONE);
             if (_instanceId > 0)
             {
                 _registered = true;
-                _debugInstanceId = _instanceId;
-                Debug.Log($"[KeyRodInstanceBinding] Registered: keyRod={_keyItemData.name}, " +
-                          $"ship={_ship.name} (netId={shipNetId}), " +
-                          $"itemId={itemId}, instanceId={_instanceId}");
-            }
-            else
-            {
-                Debug.LogError($"[KeyRodInstanceBinding] CreateInstance FAILED: itemId={itemId}, " +
-                               $"ship={_ship.name} (netId={shipNetId}), item={_keyItemData.name}");
-                // One more retry
-                Invoke(nameof(TryRegister), 2.0f);
+                Debug.Log($"[KeyRodInstanceBinding] Registered: gameObject={gameObject.name}, " +
+                          $"instanceId={_instanceId}, ship={_ship.name}({_ship.NetworkObjectId})");
             }
         }
 
-        // ===========================================================
-        // Public API (для PickupItem / InventoryServer, T-KEY-05)
-        // ===========================================================
-
-        /// <summary>Получить instanceId этого ключа. Вызывается из PickupItem.Collect()
-        /// или InventoryServer при pickup.</summary>
-        /// <param name="instanceId">instanceId если > 0, иначе 0 (не зарегистрирован).</param>
-        /// <returns>True если instanceId > 0 (экземпляр создан).</returns>
-        public bool TryGetInstanceId(out int instanceId)
+public bool TryGetInstanceId(out int instanceId)
         {
             instanceId = _instanceId;
             return _instanceId > 0;

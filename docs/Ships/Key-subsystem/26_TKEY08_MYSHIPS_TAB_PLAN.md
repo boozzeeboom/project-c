@@ -263,3 +263,38 @@ public class MyShipsTab
 | Пустая вкладка `tab-content-ship` в UXML | ✅ есть |
 
 **Всё готово. Можно начинать MVP-1.**
+
+---
+
+## §9. Статус реализации
+
+**MVP-1, MVP-2, MVP-3 завершены 2026-06-19.**
+
+**Файлы**:
+- ✅ NEW: `Assets/_Project/Scripts/UI/Client/CharacterWindow/MyShipsTab.cs` (~470 строк)
+- ✅ PATCH: `Assets/_Project/UI/Resources/UI/CharacterWindow.uxml` — заменён placeholder на полноценную структуру (dropdown + info panel + modules scroll)
+- ✅ PATCH: `Assets/_Project/UI/Resources/UI/CharacterWindow.uss` — добавлены 11 стилей (.ship-selector, .ship-info, .ship-info-name, .ship-fuel-bar, .ship-cargo-bar, .ship-modules-scroll, .ship-module-row и др.)
+- ✅ PATCH: `Assets/_Project/Scripts/UI/Client/CharacterWindow.cs` — добавлено поле `_myShipsTab`, удалены мусорные `_shipName/_shipState/_shipSpeed/_shipFuel/_shipCargo`, перенаправлен `RefreshShipStats` в `MyShipsTab.OnTabShown`
+
+**Compile**: 0 errors.
+
+**Что реализовано (MVP-1..3)**:
+- Dropdown со списком кораблей из Key-слотов инвентаря (стабильно между сессиями через scene-placed KeyRodInstanceBinding)
+- Info panel с 7 секциями: name, class, keyId, fuel (bar+text), cargo (bar+text), modules list, position, state
+- Subscribe на `ShipTelemetryClientState.OnShipStateChanged` — UI обновляется при изменениях (с throttle)
+- Throttle: не перерисовываем UI если fuel/cargo/state изменились незначительно (eps=0.01)
+- Empty state: "Нет доступных кораблей. Найдите ключ в мире."
+- Modules list: читает имена модулей через reflection (`InstalledModules` property или `_modules` field, потом `name`/`displayName`/`Name`)
+
+**Что отложено (Phase 2)**:
+- 🔲 Refresh при AddItem/RemoveItem (MVP-4) — пока RefreshShipList вызывается только при OnTabShown
+- 🔲 Детальные модули с иконками (MVP-5 расширенный)
+
+**Тест-план**:
+
+| Шаг | Ожидание |
+|---|---|
+| 1. Play Host (без ключей) → P → КОРАБЛЬ | Placeholder "Нет доступных кораблей" |
+| 2. **E** на [KeyRod_ShipLight] → P → КОРАБЛЬ | Dropdown: `🚀 Pushka` (1 item) |
+| 3. Выбрать Pushka | Info: name, class, keyId, fuel bar, cargo bar, modules list, position, state |
+| 4. Exit → Play снова → P → КОРАБЛЬ | Список сохранился (через scene-placed binding) |

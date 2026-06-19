@@ -162,7 +162,9 @@ namespace ProjectC.UI.Client
         public string GetActiveTab() => _activeTab;
 
         // T-P19: InventoryTab — вынесенная вкладка инвентаря
-        private InventoryTab _inventoryTab;
+                private InventoryTab _inventoryTab;
+                // T-KEY-08: MyShipsTab — вынесенная вкладка "Мои корабли"
+                private MyShipsTab _myShipsTab;
 
         private int _selectedContractItem = -1;
         private int _selectedInventoryItem = -1;
@@ -607,9 +609,13 @@ namespace ProjectC.UI.Client
                 _creditsLabel, _messageLabel);
 
             // T-P19: InventoryTab вынесен — BuildUI делает ListView + detail labels + подписку.
-            _inventoryTab = new InventoryTab();
-            _inventoryTab.BuildUI(this, _root, _filterSource, _filterState, _filterSearch,
-                _creditsLabel, _messageLabel, _statCredits);
+                        _inventoryTab = new InventoryTab();
+                        _inventoryTab.BuildUI(this, _root, _filterSource, _filterState, _filterSearch,
+                            _creditsLabel, _messageLabel, _statCredits);
+
+                        // T-KEY-08: MyShipsTab вынесен — вкладка "Мои корабли"
+                        _myShipsTab = new MyShipsTab();
+                        _myShipsTab.BuildUI(this, _root);
 
             // T-Q13: NpcAttitude + Reputation listviews (остаются в CharacterWindow)
             if (_reputationList != null)
@@ -794,7 +800,9 @@ namespace ProjectC.UI.Client
 
         // ---- Refresh data for the active tab ----
         if (isCharacter) RefreshCharacterStats();
-        if (isShip) RefreshShipStats();
+        if (isShip) {
+            if (_myShipsTab != null) _myShipsTab.OnTabShown();
+        }
         if (isReputation) { RefreshReputationCache(); RefreshNpcAttitudeCache(); }
         // T-P19: Contracts/Inventory refresh — в OnTabShown табов
         if (isQuests) RefreshQuestsCache();
@@ -916,18 +924,10 @@ namespace ProjectC.UI.Client
         // ============================================================
 
         private void RefreshShipStats()
-        {
-            if (_localPlayer == null) FindLocalPlayer();
-            // Сейчас — read-only плейсхолдеры. Когда появится ShipClientState,
-            // заменим заглушки на чтение из него.
-            if (_shipName  != null) _shipName.text  = "—";
-            if (_shipState != null) _shipState.text = _localPlayer != null
-                ? (_localPlayer.IsInShip ? "В корабле" : "На палубе")
-                : "—";
-            if (_shipSpeed != null) _shipSpeed.text = "0";
-            if (_shipFuel  != null) _shipFuel.text  = "—";
-            if (_shipCargo != null) _shipCargo.text = "—";
-        }
+                {
+                    // T-KEY-08: делегировано в MyShipsTab.OnTabShown. Метод оставлен как no-op
+                    // для backward compat с возможными вызывающими (если есть).
+                }
 
         // ============================================================
         // T-Q13: Section refresh: reputation (read from ReputationClientState)

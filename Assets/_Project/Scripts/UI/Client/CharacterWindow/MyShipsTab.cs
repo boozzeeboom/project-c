@@ -1,0 +1,485 @@
+// =====================================================================================
+// MyShipsTab.cs — вкладка "Мои корабли" в CharacterWindow (R2-SHIP-KEY-003, T-KEY-08)
+// =====================================================================================
+// Документация:
+//   • docs/Ships/Key-subsystem/26_TKEY08_MYSHIPS_TAB_PLAN.md
+//
+// Назначение: отображает корабли, доступные игроку по ключам в инвентаре.
+// Список кораблей получаем через scene-placed KeyRodInstanceBinding (стабильно
+// между рестартами). Актуальное состояние — через ShipTelemetryClientState
+// (NetworkVariable, синхронизируется NGO).
+// =====================================================================================
+
+using System.Collections.Generic;
+using UnityEngine;
+using UnityEngine.UIElements;
+
+namespace ProjectC.UI.Client
+{
+    /// <summary>UI вкладка "Мои корабли". Вызывается из CharacterWindow при SwitchTab("ship").</summary>
+    public class MyShipsTab
+    {
+        // ===== UI элементы =====
+        private DropdownField _selector;
+        private Label _emptyLabel;
+        private VisualElement _infoPanel;
+
+        private Label _name;
+        private Label _class;
+        private Label _keyId;
+        private Label _fuelText;
+        private Label _cargoText;
+        private Label _position;
+        private Label _state;
+
+        private ProgressBar _fuelBar;
+        private ProgressBar _cargoBar;
+
+        private VisualElement _modulesContainer;
+        private VisualElement _modulesScroll;
+
+        // ===== Данные =====
+        /// <summary>Пары (displayName, itemId) для dropdown.</summary>
+        private readonly List<string> _choices = new List<string>();
+        /// <summary>Параллельный список itemId (choices[i] ↔ _itemIds[i]).</summary>
+        private readonly List<int> _itemIds = new List<int>();
+        /// <summary>ShipController, найденные через KeyRodInstanceBinding (по itemId).</summary>
+        private readonly Dictionary<int, ProjectC.Player.ShipController> _shipByItemId = new Dictionary<int, ProjectC.Player.ShipController>();
+
+        private int _selectedIndex = -1;
+        private bool _isTelemetrySubscribed;
+
+        // Кэш последнего telemetry snapshot (для throttle: не обновлять UI каждый кадр)
+        private ProjectC.Ship.Network.ShipTelemetryState _lastDisplayed;
+        private bool _hasLastDisplayed;
+
+        // ===== Lifecycle =====
+
+        /// <summary>Привязывает UI элементы. Вызывается из CharacterWindow.EnsureBuilt().</summary>
+        public void BuildUI(CharacterWindow owner, VisualElement root)
+        {
+            _selector     = root.Q<DropdownField>("ship-selector");
+            _emptyLabel   = root.Q<Label>("ship-empty-label");
+            _infoPanel    = root.Q<VisualElement>("ship-info");
+
+            _name         = root.Q<Label>("ship-info-name");
+            _class        = root.Q<Label>("ship-info-class");
+            _keyId        = root.Q<Label>("ship-info-key-id");
+            _fuelText     = root.Q<Label>("ship-fuel-text");
+            _cargoText    = root.Q<Label>("ship-cargo-text");
+            _position     = root.Q<Label>("ship-info-position");
+            _state        = root.Q<Label>("ship-info-state");
+
+            _fuelBar      = root.Q<ProgressBar>("ship-fuel-bar");
+            _cargoBar     = root.Q<ProgressBar>("ship-cargo-bar");
+
+            _modulesScroll     = root.Q<VisualElement>("ship-modules-scroll");
+            _modulesContainer  = root.Q<VisualElement>("ship-modules-container");
+
+            if (_selector != null)
+            {
+                _selector.choices = _choices;
+                _selector.RegisterValueChangedCallback(OnSelectorChanged);
+            }
+
+            UpdateVisibility();
+        }
+
+        /// <summary>Вызывается из CharacterWindow.SwitchTab когда вкладка становится активной.</summary>
+        public void OnTabShown()
+        {
+            if (_infoPanel != null)
+                _infoPanel.style.display = DisplayStyle.Flex;
+
+            if (_infoPanel != null) _infoPanel.MarkDirtyRepaint();
+
+            // Подписка на telemetry (lazy)
+            TrySubscribeTelemetry();
+
+            // Перечитать список кораблей (мог измениться инвентарь)
+            RefreshShipList();
+
+            Debug.Log("[MyShipsTab] OnTabShown");
+        }
+
+        /// <summary>Вызывается из CharacterWindow.SwitchTab когда вкладка скрывается.</summary>
+        public void OnTabHidden()
+        {
+            // Не отписываемся от telemetry — дешёво и нужно для обновления UI при возврате.
+        }
+
+        /// <summary>Вызывается из CharacterWindow.OnDisable. Полная отписка.</summary>
+        public void Unsubscribe()
+        {
+            if (_isTelemetrySubscribed)
+            {
+                var t = ProjectC.Ship.Client.ShipTelemetryClientState.Instance;
+                if (t != null)
+                    t.OnShipStateChanged -= HandleShipStateChanged;
+                _isTelemetrySubscribed = false;
+            }
+        }
+
+        private void TrySubscribeTelemetry()
+        {
+            if (_isTelemetrySubscribed) return;
+            var t = ProjectC.Ship.Client.ShipTelemetryClientState.Instance;
+            if (t == null) return;
+            t.OnShipStateChanged += HandleShipStateChanged;
+            _isTelemetrySubscribed = true;
+        }
+
+        // ===== Ship List Resolution =====
+
+        /// <summary>Обновляет dropdown: перечитывает Key-слоты → находит scene-placed KeyRodInstanceBinding
+        /// → сохраняет ShipController для каждого itemId. Стабильно между сессиями.</summary>
+        public void RefreshShipList()
+        {
+            _choices.Clear();
+            _itemIds.Clear();
+            _shipByItemId.Clear();
+
+            // 1. Получить все Key-слоты из инвентаря
+            var invState = ProjectC.Items.Client.InventoryClientState.Instance;
+            if (invState == null || !invState.CurrentSnapshot.HasValue)
+            {
+                UpdateVisibility();
+                return;
+            }
+            var snapshot = invState.CurrentSnapshot.Value;
+
+            // InventorySnapshotDto.items[] — массив InventoryItemDto с полями itemId/type/instanceId
+            if (snapshot.items == null) return;
+
+            for (int i = 0; i < snapshot.items.Length; i++)
+            {
+                var it = snapshot.items[i];
+                if ((ProjectC.Items.ItemType)it.type != ProjectC.Items.ItemType.Key) continue;
+
+                int itemId = it.itemId;
+
+                // 2. Найти KeyRodInstanceBinding по itemId в сцене
+                var binding = FindKeyRodBindingByItemId(itemId);
+                if (binding == null) continue;
+
+                // 3. Получить _ship → ShipController
+                var sc = GetShipControllerFromBinding(binding);
+                if (sc == null) continue;
+
+                // 4. Сохранить для dropdown
+                string displayName = ResolveShipDisplayName(sc);
+                _choices.Add($"🚀 {displayName}");
+                _itemIds.Add(itemId);
+                _shipByItemId[itemId] = sc;
+            }
+
+            // Обновить dropdown UI
+            if (_selector != null)
+            {
+                _selector.choices = _choices;
+                if (_choices.Count > 0)
+                {
+                    if (_selectedIndex < 0 || _selectedIndex >= _choices.Count)
+                        _selectedIndex = 0;
+                    _selector.value = _choices[_selectedIndex];
+                    _selector.SetValueWithoutNotify(_choices[_selectedIndex]);
+                }
+                else
+                {
+                    _selectedIndex = -1;
+                    _selector.SetValueWithoutNotify(string.Empty);
+                }
+            }
+
+            UpdateVisibility();
+
+            // Если есть выбранный — отрендерить его
+            if (_selectedIndex >= 0)
+                RenderSelectedShip();
+        }
+
+        private void UpdateVisibility()
+        {
+            bool hasShips = _choices.Count > 0;
+
+            if (_selector != null)
+                _selector.style.display = hasShips ? DisplayStyle.Flex : DisplayStyle.None;
+            if (_emptyLabel != null)
+                _emptyLabel.style.display = hasShips ? DisplayStyle.None : DisplayStyle.Flex;
+            if (_infoPanel != null)
+                _infoPanel.style.display = hasShips ? DisplayStyle.Flex : DisplayStyle.None;
+        }
+
+        private void OnSelectorChanged(ChangeEvent<string> evt)
+        {
+            int idx = _choices.IndexOf(evt.newValue);
+            if (idx < 0) return;
+            _selectedIndex = idx;
+            RenderSelectedShip();
+        }
+
+        // ===== Render =====
+
+        private void RenderSelectedShip()
+        {
+            if (_selectedIndex < 0 || _selectedIndex >= _itemIds.Count) return;
+            int itemId = _itemIds[_selectedIndex];
+            if (!_shipByItemId.TryGetValue(itemId, out var sc) || sc == null) return;
+
+            // ShipController.TelemetryState getter returns NetworkVariable.Value
+            var telemetry = sc.TelemetryState;
+            _lastDisplayed = telemetry;
+            _hasLastDisplayed = true;
+
+            // Name + class
+            string displayName = telemetry.displayName.ToString();
+            if (string.IsNullOrEmpty(displayName))
+                displayName = ResolveShipDisplayName(sc);
+            if (_name != null) _name.text = $"🚀 {displayName}";
+
+            if (_class != null)
+                _class.text = string.IsNullOrEmpty(telemetry.className.ToString())
+                    ? "Класс: —"
+                    : $"Класс: {telemetry.className}";
+
+            if (_keyId != null)
+                _keyId.text = $"🔑 Key itemId={itemId}, instanceId={telemetry.keyInstanceId}";
+
+            // Fuel
+            if (_fuelBar != null)
+            {
+                _fuelBar.value = telemetry.fuelNormalized * 100f;
+                _fuelBar.title = $"{telemetry.fuelNormalized * 100f:F0}%";
+            }
+            if (_fuelText != null)
+                _fuelText.text = $"Топливо: {telemetry.fuelNormalized * 100f:F1}% ({telemetry.fuelMax:F0} max)";
+
+            // Cargo
+            if (_cargoBar != null && telemetry.cargoMax > 0)
+            {
+                float cargoPct = (float)telemetry.cargoUsed / telemetry.cargoMax * 100f;
+                _cargoBar.value = cargoPct;
+                _cargoBar.title = $"{cargoPct:F0}%";
+            }
+            if (_cargoText != null)
+                _cargoText.text = telemetry.cargoMax > 0
+                    ? $"Груз: {telemetry.cargoUsed}/{telemetry.cargoMax}"
+                    : $"Груз: — (нет данных)";
+
+            // Modules
+            RenderModules(sc);
+
+            // Position
+            if (_position != null)
+                _position.text = $"📍 ({telemetry.position.x:F1}, {telemetry.position.y:F1}, {telemetry.position.z:F1})";
+
+            // State
+            if (_state != null)
+            {
+                string stateStr = ResolveShipState(telemetry.state);
+                _state.text = $"Состояние: {stateStr}";
+            }
+        }
+
+        private void RenderModules(ProjectC.Player.ShipController sc)
+        {
+            if (_modulesContainer == null) return;
+            _modulesContainer.Clear();
+
+            // Получить имена модулей через reflection (без прямой зависимости от ShipModuleManager)
+            var moduleNames = TryGetModuleNames(sc);
+            if (moduleNames == null || moduleNames.Count == 0)
+            {
+                var row = new Label($"Модулей: {0}");
+                row.AddToClassList("ship-info-row");
+                _modulesContainer.Add(row);
+                return;
+            }
+
+            foreach (var name in moduleNames)
+            {
+                var row = new VisualElement();
+                row.AddToClassList("ship-module-row");
+
+                var lbl = new Label(name);
+                lbl.AddToClassList("ship-module-name");
+                row.Add(lbl);
+
+                _modulesContainer.Add(row);
+            }
+        }
+
+        private static List<string> TryGetModuleNames(ProjectC.Player.ShipController sc)
+        {
+            var result = new List<string>();
+            if (sc == null) return result;
+
+            // Попытка 1: публичное свойство Modules / InstalledModules
+            var prop = sc.GetType().GetProperty("InstalledModules",
+                System.Reflection.BindingFlags.Instance |
+                System.Reflection.BindingFlags.Public |
+                System.Reflection.BindingFlags.NonPublic);
+            if (prop != null)
+            {
+                var val = prop.GetValue(sc) as System.Collections.IEnumerable;
+                if (val != null)
+                {
+                    foreach (var m in val)
+                    {
+                        if (m == null) continue;
+                        string name = TryGetNameField(m);
+                        if (!string.IsNullOrEmpty(name)) result.Add(name);
+                    }
+                    if (result.Count > 0) return result;
+                }
+            }
+
+            // Попытка 2: поле _modules (List<...>)
+            var field = sc.GetType().GetField("_modules",
+                System.Reflection.BindingFlags.Instance |
+                System.Reflection.BindingFlags.NonPublic);
+            if (field != null)
+            {
+                var val = field.GetValue(sc) as System.Collections.IEnumerable;
+                if (val != null)
+                {
+                    foreach (var m in val)
+                    {
+                        if (m == null) continue;
+                        string name = TryGetNameField(m);
+                        if (!string.IsNullOrEmpty(name)) result.Add(name);
+                    }
+                }
+            }
+            return result;
+        }
+
+        private static string TryGetNameField(object module)
+        {
+            var t = module.GetType();
+            var nf = t.GetProperty("Name",
+                System.Reflection.BindingFlags.Instance |
+                System.Reflection.BindingFlags.Public |
+                System.Reflection.BindingFlags.NonPublic);
+            if (nf != null && nf.PropertyType == typeof(string))
+            {
+                var v = (string)nf.GetValue(module);
+                if (!string.IsNullOrEmpty(v)) return v;
+            }
+            var sf = t.GetField("name",
+                System.Reflection.BindingFlags.Instance |
+                System.Reflection.BindingFlags.Public |
+                System.Reflection.BindingFlags.NonPublic);
+            if (sf != null && sf.FieldType == typeof(string))
+            {
+                var v = (string)sf.GetValue(module);
+                if (!string.IsNullOrEmpty(v)) return v;
+            }
+            var df = t.GetProperty("displayName",
+                System.Reflection.BindingFlags.Instance |
+                System.Reflection.BindingFlags.Public |
+                System.Reflection.BindingFlags.NonPublic);
+            if (df != null)
+            {
+                var v = df.GetValue(module)?.ToString();
+                if (!string.IsNullOrEmpty(v)) return v;
+            }
+            // Последний fallback — type name
+            return t.Name;
+        }
+
+        private void HandleShipStateChanged(ulong shipNetId)
+        {
+            // Если выбран другой корабль — игнор
+            if (_selectedIndex < 0 || _selectedIndex >= _itemIds.Count) return;
+            int itemId = _itemIds[_selectedIndex];
+            if (!_shipByItemId.TryGetValue(itemId, out var sc) || sc == null) return;
+            if (sc.NetworkObjectId != shipNetId) return;
+
+            // Получить текущее состояние через ShipController (NetworkVariable.Value)
+            var currentState = sc.TelemetryState;
+
+            // Throttle: если fuel/cargo изменились незначительно — пропускаем
+            if (_hasLastDisplayed && ShipTelemetryStateEqualsApprox(_lastDisplayed, currentState)) return;
+            _lastDisplayed = currentState;
+            _hasLastDisplayed = true;
+
+            RenderSelectedShip();
+        }
+
+        private static bool ShipTelemetryStateEqualsApprox(
+            ProjectC.Ship.Network.ShipTelemetryState a,
+            ProjectC.Ship.Network.ShipTelemetryState b)
+        {
+            const float eps = 0.01f;
+            return Mathf.Abs(a.fuelNormalized - b.fuelNormalized) < eps
+                && Mathf.Abs(a.fuelMax - b.fuelMax) < eps
+                && a.cargoUsed == b.cargoUsed
+                && a.cargoMax == b.cargoMax
+                && a.moduleCount == b.moduleCount
+                && a.state == b.state
+                && Vector3.Distance(a.position, b.position) < 0.1f;
+        }
+
+        // ===== Helpers =====
+
+        /// <summary>Ищет KeyRodInstanceBinding в сцене по itemId (через _keyItemData → InventoryWorld).</summary>
+        private static ProjectC.Ship.Key.KeyRodInstanceBinding FindKeyRodBindingByItemId(int itemId)
+        {
+            if (itemId <= 0) return null;
+            var invWorld = ProjectC.Items.InventoryWorld.Instance;
+            if (invWorld == null) return null;
+
+            var bindingType = System.Type.GetType("ProjectC.Ship.Key.KeyRodInstanceBinding, Assembly-CSharp");
+            if (bindingType == null) return null;
+
+            var itemField = bindingType.GetField("_keyItemData",
+                System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.NonPublic);
+            if (itemField == null) return null;
+
+            var bindings = UnityEngine.Object.FindObjectsByType(bindingType,
+                FindObjectsInactive.Include, FindObjectsSortMode.None);
+            foreach (var binding in bindings)
+            {
+                if (binding == null) continue;
+                var itemData = itemField.GetValue(binding) as ProjectC.Items.ItemData;
+                if (itemData == null) continue;
+                int bindingItemId = invWorld.GetOrRegisterItemId(itemData);
+                if (bindingItemId == itemId)
+                    return binding as ProjectC.Ship.Key.KeyRodInstanceBinding;
+            }
+            return null;
+        }
+
+        /// <summary>Читает _ship из KeyRodInstanceBinding (через reflection).</summary>
+        private static ProjectC.Player.ShipController GetShipControllerFromBinding(
+            ProjectC.Ship.Key.KeyRodInstanceBinding binding)
+        {
+            if (binding == null) return null;
+            var shipField = binding.GetType().GetField("_ship",
+                System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.NonPublic);
+            if (shipField == null) return null;
+            return shipField.GetValue(binding) as ProjectC.Player.ShipController;
+        }
+
+        /// <summary>Имя корабля с fallback через ShipController.CustomDisplayName.</summary>
+        private static string ResolveShipDisplayName(ProjectC.Player.ShipController sc)
+        {
+            if (sc == null) return "—";
+            string n = sc.CustomDisplayName;
+            if (!string.IsNullOrEmpty(n)) return n;
+            return $"{sc.GetType().Name}";
+        }
+
+        /// <summary>Декодирует state byte в читаемое имя.</summary>
+        private static string ResolveShipState(byte state)
+        {
+            // ShipState enum (если есть) — пробуем через Enum.ToObject
+            var t = System.Type.GetType("ProjectC.Ship.ShipState, Assembly-CSharp");
+            if (t != null && System.Enum.IsDefined(t, state))
+                return System.Enum.GetName(t, state);
+            // Generic byte fallback
+            return state == 0 ? "Active" : $"State({state})";
+        }
+    }
+}

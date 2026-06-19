@@ -819,3 +819,90 @@
     overflow: hidden !important;
     text-overflow: ellipsis !important;
 }
+
+
+/* T-KEY-08: MyShipsTab — вкладка КОРАБЛЬ */
+.ship-selector {
+    margin-bottom: 8px !important;
+    flex-shrink: 0 !important;
+}
+.ship-empty {
+    font-size: 11px !important;
+    color: rgb(150, 150, 150) !important;
+    -unity-font-style: italic !important;
+    margin-top: 8px !important;
+    flex-shrink: 0 !important;
+}
+.ship-info {
+    padding: 8px !important;
+    background-color: rgba(30, 40, 60, 0.25) !important;
+    border-radius: 3px !important;
+    border-width: 1px !important;
+    border-color: rgba(80, 100, 130, 0.3) !important;
+    flex-grow: 1 !important;
+    flex-shrink: 1 !important;
+    min-height: 0 !important;
+}
+.ship-info-name {
+    font-size: 16px !important;
+    -unity-font-style: bold !important;
+    color: rgb(220, 230, 240) !important;
+    margin-bottom: 2px !important;
+}
+.ship-info-class {
+    font-size: 12px !important;
+    color: rgb(180, 200, 220) !important;
+    margin-bottom: 8px !important;
+}
+.ship-info-key-id {
+    font-size: 10px !important;
+    color: rgb(140, 160, 180) !important;
+    margin-bottom: 12px !important;
+}
+.ship-info-header {
+    font-size: 11px !important;
+    -unity-font-style: bold !important;
+    color: rgb(180, 200, 220) !important;
+    margin-top: 8px !important;
+    margin-bottom: 2px !important;
+    flex-shrink: 0 !important;
+}
+.ship-info-row {
+    font-size: 12px !important;
+    color: rgb(200, 210, 220) !important;
+    margin-bottom: 4px !important;
+    flex-shrink: 0 !important;
+    white-space: normal !important;
+}
+.ship-fuel-bar,
+.ship-cargo-bar {
+    height: 14px !important;
+    margin-bottom: 4px !important;
+    flex-shrink: 0 !important;
+}
+.ship-modules-scroll {
+    flex-grow: 1 !important;
+    flex-shrink: 1 !important;
+    min-height: 60px !important;
+    max-height: 33% !important;
+    background-color: rgba(20, 28, 44, 0.4) !important;
+    border-width: 1px !important;
+    border-color: rgba(80, 100, 130, 0.3) !important;
+    border-radius: 3px !important;
+    margin-bottom: 4px !important;
+}
+.ship-modules-container {
+    padding: 4px !important;
+}
+.ship-module-row {
+    flex-direction: row !important;
+    align-items: center !important;
+    padding: 2px 4px !important;
+    border-bottom-width: 1px !important;
+    border-bottom-color: rgba(80, 100, 130, 0.15) !important;
+}
+.ship-module-name {
+    font-size: 11px !important;
+    color: rgb(200, 210, 220) !important;
+    flex-grow: 1 !important;
+}

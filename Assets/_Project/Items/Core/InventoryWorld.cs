@@ -715,6 +715,7 @@ namespace ProjectC.Items
                             instanceId = slot.instanceId,
                         });
                     }
+                    Debug.Log($"[InventoryWorld.BuildSnapshot] Key type: added {keyCount} slots");
                 }
                 else
                 {

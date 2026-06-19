@@ -1135,6 +1135,16 @@ namespace ProjectC.Player
             _lastCanUseRequestTime = -10f;
             _pendingCanUseInteractableId = ulong.MaxValue;
             ProjectC.MetaRequirement.MetaRequirementClientState.Instance?.OnCanUseResponse(interactableNetworkObjectId, allowed, reason);
+
+            // T-KEY-07: если ответ на F-key ship boarding (allowed) — садим в корабль.
+            // _pendingCanBoardShipId устанавливается в Update() при нажатии F.
+            if (allowed && _pendingCanBoardShipId == interactableNetworkObjectId)
+            {
+                _pendingCanBoardShipId = ulong.MaxValue;
+                _lastCanBoardRequestTime = -10f;
+                Debug.Log($"[NetworkPlayer] MetaRequirement allowed for ship (netId={interactableNetworkObjectId}). Calling SubmitSwitchModeRpc.");
+                SubmitSwitchModeRpc();
+            }
         }
 
         /// <summary>

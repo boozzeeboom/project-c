@@ -628,3 +628,70 @@ var compositeKey = (dto.itemId, groupKey2);
 ---
 
 *Changelog ведёт агент Mavis.*
+
+---
+
+## 2026-06-19 — R2-SHIP-KEY-003 v18-v20 (Drop↔Pickup bugfix: фаза окончательная)
+
+**Контекст**: после v17 обнаружен повторяющийся баг — после drop+pickup ключа вкладка "КОРАБЛЬ" не показывает корабль, ключ которого был выброшен и подобран. Каждое предыдущее исправление давало регрессию где-то ещё. Найден **финальный root cause**: `data.AddItem(itemType, itemId)` создавал слот с `instanceId=0` для Key-предметов, а последующее `UpdateKeySlotInstanceId(clientId, instanceId)` не работало корректно с таймингом AddItem → BuildSnapshot.
+
+**Что изменилось в коде**:
+
+| Файл | Что | Статус |
+|---|---|---|
+| `KeyRodInstanceWorld.cs` | + `FindActiveKeyInstance(clientId, itemId)` — поиск существующего Active instance по (itemId, owner). Используется при pickup drop'нутого ключа чтобы **не создавать дубль** с `registeredShipId=0`. | ✅ |
+| `InventoryWorld.cs` (TryPickup) | **КРИТИЧНЫЙ ФИКС**: для Key-предметов теперь `data.AddKeyItem(itemId, instanceId)` вместо `data.AddItem(itemType, itemId)`. `AddKeyItem` создаёт слот сразу с правильным instanceId. `GetMyShips` фильтрует `instanceId<=0`, поэтому instanceId=0 в слоте делал корабль невидимым в UI. | ✅ |
+| `InventoryWorld.cs` (TryPickup) | Логика `FindLostInstance` остаётся первой попыткой (реактивация); `FindActiveKeyInstance` — fallback если Lost не нашли. Если ничего — `CreateInstance(itemId, 0, clientId)` (последний fallback). | ✅ |
+| `KeyRodInstanceBinding.cs` | TryRegister с **retry-loop** через `Invoke(nameof(TryRegister), 1.0f)` × 15 попыток. Без retry регистрация могла не успеть до первого pickup (InventoryServer спавнится ПОЗЖЕ scene-placed объектов). | ✅ |
+
+**Verify**:
+- ✅ Compile: 0 errors
+- ✅ Flow: drop → pickup → вкладка "КОРАБЛЬ" показывает корабль корректно
+- ✅ Persistence: `KeyRodInstances.json` хранит Lost instances (AutoSave фильтр `!= Destroyed`)
+- ✅ Не дубликатов: instance[4] (shipId=0) больше не создаётся при drop↔pickup
+
+**Архитектурное замечание**: фикс прошёл через несколько итераций:
+- v18: добавлен `FindActiveKeyInstance` (не помогло — слот всё ещё instanceId=0)
+- v19: retry-loop в KeyRodInstanceBinding (стабилизировало регистрацию)
+- v20: `data.AddKeyItem` вместо `data.AddItem` для Key-предметов (финальное решение)
+
+**Что НЕ сделано** (Phase 2):
+- Phase E+F (reflection removal в UI) — частично сделано в v16
+- Полный рефакторинг по `28_KEY_ARCHITECTURE_REVIEW.md` — отложен, текущая система работает
+
+---
+
+## 2026-06-19 — Phase G: Документация и планы
+
+**Что добавлено**:
+
+| Файл | Описание |
+|---|---|
+| `docs/Ships/Key-subsystem/27_TKEY09_DROP_FIX_PLAN.md` | Полный план 3-шагового фикса drop bug |
+| `docs/Ships/Key-subsystem/28_KEY_ARCHITECTURE_REVIEW.md` | Глубокий архитектурный анализ: 5 reflection → 0, 11 проблем найдено, рекомендация полного рефакторинга |
+| `docs/Ships/Key-subsystem/29_KEY_REFACTOR_PLAN.md` | Дизайн новой архитектуры (KeyInstance + KeyRegistry) |
+| `docs/Ships/Key-subsystem/SHIP_KEY_SETUP_v11.md` | Пошаговая инструкция настройки ключ↔корабль |
+| `docs/dev/SHIP_KEY_SETUP_v11.md` | Дубликат для dev-секции |
+
+**Итоговое состояние подсистемы**:
+
+| Компонент | Статус |
+|---|---|
+| KeyRodInstance + KeyRodInstanceWorld + ItemType.Key | ✅ v3 |
+| Inventory slot extension | ✅ v4 |
+| Persistence через IPlayerDataRepository | ✅ v5 |
+| ShipOwnershipRequirement + Registry | ✅ v6 |
+| KeyRodInstanceBinding explicit | ✅ v7 |
+| Transfer logic (drop/pickup) | ✅ v8 + v18-v20 |
+| NetworkPlayer F-key wiring | ✅ v9 |
+| ShipTelemetry NetworkVariable | ✅ v10 |
+| Bugfix round (name, persistence, guard) | ✅ v11 |
+| MyShipsTab UI | ✅ v12 |
+| InventoryTab instanceId group | ✅ v13 |
+| TAB-колесо ВЛАДЕНИЕ | ✅ v14 |
+| T-KEY-09 Drop fix | ✅ v15 |
+| Phase C: Remove reflection | ✅ v16 |
+| Phase D: Serialization fix | ✅ v17 |
+| Drop↔Pickup final fix | ✅ v18-v20 |
+
+**MVP готов** ✅

@@ -1,6 +1,6 @@
 # GDD_10: Ship System v4.1
 
-**Версия:** 4.1 | **Дата:** 10 июня 2026 г. (дизайн-контент без изменений с Апрель 2026; добавлена §13 «Реализация в коде») | **Статус:** 🟢 В разработке → частично реализовано (Key + MetaRequirement)
+**Версия:** 4.2 | **Дата:** 19 июня 2026 г. (дизайн-контент без изменений с Апрель 2026; добавлена §13 «Реализация в коде») | **Статус:** 🟢 В разработке → частично реализовано (Key + MetaRequirement)
 **Ветка:** `qwen-gamestudio-agent-dev` (дизайн), `feature/npc-quest-v2` (merged) (реализация)
 
 ---
@@ -697,6 +697,93 @@ UI:
 
 **Документация:** `docs/MetaRequirement/00_OVERVIEW.md` (517 строк) + `10_IMPLEMENTATION_GUIDE.md` (22 KB) + `20_INSPECTOR_REFERENCE.md` + `30_RUNTIME_FLOW.md` + `40_TESTING_GUIDE.md` + `50_KNOWN_ISSUES.md` + `99_CHANGELOG.md` + `RECIPES.md` (10 рецептов).
 
+
+
+### 13.3 Ship Key Subsystem v2 (R2-SHIP-KEY-003, 2026-06-19) ✅
+
+**MVP:** уникальные экземпляры ключей для каждого корабля. Каждый из 3 кораблей (Light/Medium/Heavy) получил свой уникальный KeyRodInstance — серверный реестр различает физические копии ключей.
+
+**Ключевая идея:** ключ — это пара `(itemId, instanceId)`. ItemId определяет тип ключа (Light/Medium/Heavy), instanceId — конкретный физический стержень в мире. Сервер гарантирует 1:1 привязку: один instanceId ↔ один корабль ↔ один владелец.
+
+**Игровой цикл:**
+1. Игрок видит [KeyRod_ShipLight] в мире (физический объект с `PickupItem` + `KeyRodInstanceBinding`).
+2. **E (interact)**: `PickupItem.Collect` → `RequestPickupRpc(itemId=2010, instanceId=N)`. Сервер проверяет что instanceId не дубликат, `TransferInstance(NONE→playerId)`, добавляет в `InventoryData._keySlots[]` с правильным instanceId.
+3. **P → КОРАБЛЬ**: в CharacterWindow показан dropdown с кораблями игрока (только те, instanceId которых у него в инвентаре). Можно выбрать корабль и просмотреть телеметрию (fuel, cargo, modules, position).
+4. **F (board ship)**: `MetaRequirementRegistry.CanPlayerUse` → `ShipOwnershipRequirement.IsOwnerOfShip` → `KeyRodInstanceWorld.IsOwnerOfInstance(clientId, instanceId) == true` → F разрешает, `SubmitSwitchModeRpc` → посадка.
+5. **TAB → БРОСИТЬ ключ**: `TransferInstance(playerId→NONE)` + `UpdateState(Lost)`. Корабль больше не доступен через F.
+6. **E на дропнутый ключ**: сервер **реактивирует** Lost instance (а не создаёт новый): `UpdateState(Lost→Active)` + `TransferInstance(NONE→playerId)`. Слот получает тот же instanceId — корабль снова доступен.
+
+**Архитектура:**
+```
+SERVER (host):
+[InventoryServer] : NetworkBehaviour (BootstrapScene)
+    ├── HandleClientConnectedServer → InventoryWorld.GetOrCreate(clientId)
+    └── RequestPickupRpc(itemId, type, instanceId, pos) → InventoryWorld.TryPickup(clientId, itemId, type, pos, instanceId)
+                                                ↓
+[InventoryWorld] : MonoBehaviour (DontDestroyOnLoad) — глобальный singleton
+    ├── _playerInventories : Dictionary<ulong, InventoryData>
+    ├── TryPickup: для Key → FindLostInstance (reactivate) → FindActiveKeyInstance (return existing) → CreateInstance (last fallback)
+    └── AddKeyItem(itemId, instanceId) — создаёт слот С instanceId (НЕ AddItem!)
+                                                ↓
+[KeyRodInstanceWorld] : static — server-only single source of truth для всех KeyRodInstance
+    ├── _instancesById : Dictionary<int, KeyRodInstance>
+    ├── _primaryInstanceByShipId : Dictionary<ulong, int> (1:1 ship → instance)
+    ├── _instancesByPlayer : Dictionary<ulong, List<int>> (владение)
+    ├── CreateInstance(itemId, shipId, ownerId)
+    ├── TransferInstance(id, oldOwner, newOwner)
+    ├── UpdateState(id, Active/Lost/Destroyed)
+    └── FindActiveKeyInstance(clientId, itemId) — поиск existing instance для pickup drop-нутого ключа
+                                                ↓
+[ShipController] : NetworkBehaviour
+    ├── ShipOwnershipRequirement — авто-attach в Awake
+    └── ShipTelemetryState : NetworkVariable<struct> — fuel/cargo/position для UI
+                                                ↓
+[JsonKeyRodInstanceRepository] : IPlayerDataRepository — persistence
+    └── KeyRodInstances.json — {instances: [{instanceId, itemId, registeredShipId, ownerPlayerId, state, ...}]}
+                                                ↓
+[ScenePlacedObjectSpawner] : NetworkBehaviour
+    └── Auto-spawn [KeyRod_*] PickupItem + KeyRodInstanceBinding при загрузке сцены
+
+CLIENT:
+[InventoryClientState] : MonoBehaviour singleton
+    └── OnSnapshotReceived → InventoryTab + MyShipsTab обновляются
+
+[MyShipsTab] : UI Toolkit tab в CharacterWindow
+    ├── Subscribe: InventoryClientState.OnSnapshotUpdated
+    └── Render: dropdown кораблей игрока + telemetry
+```
+
+**Ключевые компоненты (новые/обновлённые):**
+- ✅ `KeyRodInstance` — POCO: instanceId, itemId, registeredShipId (shipNetId), ownerPlayerId, originalOwnerId, state (Active/Lost/Destroyed)
+- ✅ `KeyRodInstanceWorld` — server-only static facade с persistence
+- ✅ `KeyRodInstanceBinding` — scene-placed MonoBehaviour (auto-register с retry 1.0s × 15)
+- ✅ `ShipOwnershipRequirement` — auto-attach на ShipController.Awake (не требует ручной настройки)
+- ✅ `MyShipsTab` — UI вкладка в CharacterWindow с dropdown + telemetry
+- ✅ `JsonKeyRodInstanceRepository` — JSON persistence (`KeyRodInstances.json`)
+
+**Backward compatibility:**
+- `ShipKeyBinding`/`ShipKeyServer`/`ShipKeyClientState` — остаются как `[Obsolete]` алиасы
+- `MetaRequirement` — продолжает работать как generic требование (двери, контейнеры)
+- ShipKey теперь построен поверх MetaRequirement для boarding check
+
+**Документация:** `docs/Ships/Key-subsystem/99_CHANGELOG.md` (v1–v20) + `28_KEY_ARCHITECTURE_REVIEW.md` (глубокий обзор 11 проблем) + `29_KEY_REFACTOR_PLAN.md` (план полного рефакторинга, Phase 2).
+
+**Что изменилось для игрока:**
+- 🔑 Каждый ключ теперь **уникален** (нельзя скопировать без специального крафта — Phase 2).
+- 🚪 Дроп ключа = потеря доступа к кораблю (нельзя сесть).
+- 🔄 Re-pickup дропнутого ключа = реактивация того же instance (не дубль).
+- 👥 Передача ключа другому игроку = передача владения кораблём (Phase 2: trade UI).
+- 📋 TAB → ВЛАДЕНИЕ (новое имя сектора): Equipment + Key предметы вместе.
+
+**TODO (Phase 2):**
+- ⏳ Квесты на ключи (`DialogueAction.GiveItem` для quest reward)
+- ⏳ Крафт копий ключей на верфи (нелегальный `isDuplicate` путь)
+- ⏳ NPC-продажа ключей (вторичный рынок)
+- ⏳ Trade UI: передача ключа между игроками
+- ⏳ HUD telemetry widget (position, fuel, cargo на экране)
+- ⏳ Key access level: Limited / OneTime (текущий Full)
+
+
 ### 13.3 Что НЕ реализовано (out of scope)
 
 - ⏳ **Полноценная inventory-based boarding UI** — сейчас `ShipKeyToast` показывает только текст. UI с прогресс-баром "X/N ключей собрано" — TODO.
@@ -778,4 +865,4 @@ Ship_Root (Rigidbody + NetworkObject + ShipController)
 
 ---
 
-*Документ создан: Апрель 2026 | Агенты: @technical-director, @game-designer, @lead-programmer, @engine-programmer, @gameplay-programmer, @unity-specialist | Дополнено Mavis 2026-06-10 (раздел реализации Key + MetaRequirement), 2026-06-17 (Composite Ship Architecture)*
+*Документ создан: Апрель 2026 | Агенты: @technical-director, @game-designer, @lead-programmer, @engine-programmer, @gameplay-programmer, @unity-specialist | Дополнено Mavis 2026-06-10 (раздел реализации Key + MetaRequirement), 2026-06-17 (Composite Ship Architecture), 2026-06-19 (R2-SHIP-KEY-003 §13.3 — уникальные экземпляры ключей)*

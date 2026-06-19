@@ -294,6 +294,7 @@
 | 17 | **MetaRequirement extensions** (`HasAllItems` / `HasAnyItem` / `CountOf` / `GetMissingItems`) | см. §X ниже | 🟢 DONE (R2-META-REQ-001, 2026-06-06) |
 | 18 | **ItemRegistry** (single source of truth для item IDs) | см. §X ниже | 🟢 DONE (M14, 2026-06-09) |
 | 19 | **MetaRequirement v1 (lock-key)** | см. §X ниже | 🟢 DONE (R2-META-REQ-001) |
+| 20 | **Ship Key v2 (уникальные экземпляры)** | см. §X.4 ниже + GDD_10 §13.3 | 🟢 DONE (R2-SHIP-KEY-003, v18-v20) |
 
 ---
 
@@ -415,6 +416,50 @@ public class ItemRegistry : ScriptableObject
 - **`docs/Ships/Key-subsystem/SHIP_KEY_TO_META_REQUIREMENT_MIGRATION.md`** — миграция Ship Key → MetaRequirement
 - **`docs/NPC_quests/old_session_log/M14_DESIGN_NOTE.md`** — ItemRegistry design note
 - **`docs/MMO_Development_Plan.md`** §1.6, §1.9 — общий план
+
+
+### X.4 Ship Key v2 — уникальные экземпляры (R2-SHIP-KEY-003, 2026-06-19)
+
+**Концепция:** в отличие от обычных предметов (itemId достаточно), ключ-стержень — это **пара** `(itemId, instanceId)`:
+- `itemId` определяет **тип** ключа (Light/Medium/Heavy) — ItemData SO
+- `instanceId` определяет **физический экземпляр** ключа в мире — уникальный серверный ID
+
+Один itemId может иметь несколько экземпляров в игре, каждый — отдельный `KeyRodInstance` в `KeyRodInstanceWorld`. Например, на 3 разных ShipController в сцене — 3 KeyRodInstance с одним itemId=2009 (Key_heavy_ship), но разными instanceId.
+
+**Хранение в инвентаре:**
+
+В `InventoryData` ключи хранятся в **двух параллельных структурах**:
+- `_keyIds : List<int>` — для сериализации и быстрого подсчёта
+- `_keySlots : List<InventorySlot>` — itemId + instanceId, для server-side логики
+
+Для корректной работы добавлять нужно через `AddKeyItem(itemId, instanceId)`, а не `AddItem(itemType, itemId)`.
+
+**Гарантии уникальности:**
+
+1. **1:1 ship ↔ instanceId**: `_primaryInstanceByShipId[shipId] = instanceId`. На каждый корабль — один экземпляр ключа.
+2. **1:1 instanceId ↔ state**: `KeyRodInstanceState` (Active / Lost / Destroyed).
+3. **Persistence**: `JsonKeyRodInstanceRepository` хранит ВСЕ instance (Active+Lost) в `KeyRodInstances.json`. На рестарте `KeyRodInstanceWorld.CreateAndInitialize` восстанавливает реестр.
+4. **Drop↔pickup не дублирует**: при pickup drop'нутого ключа сервер ищет существующий Lost instance по `(itemId, owner=NONE)`, реактивирует, а не создаёт новый.
+
+**Игровые последствия:**
+
+- **Передача ключа** = передача права собственности на корабль. Игрок A → Игрок B: `TransferInstance(A→B)` + обновление `_instancesByPlayer`.
+- **Потеря ключа** (выбросил, уничтожен) = нельзя сесть в корабль. `ShipOwnershipRequirement.IsOwnerOfShip(clientId, shipNetId)` вернёт false.
+- **Крафт копий** (Phase 2) — только через специальную рецептуру. Без копий — ключи нельзя "раздобыть задним числом".
+
+**Файлы:**
+- ✅ `Assets/_Project/Scripts/Ship/Key/KeyRodInstance.cs` — POCO
+- ✅ `Assets/_Project/Scripts/Ship/Key/KeyRodInstanceWorld.cs` — server-only static registry
+- ✅ `Assets/_Project/Scripts/Ship/Key/KeyRodInstanceBinding.cs` — scene-placed MonoBehaviour
+- ✅ `Assets/_Project/Scripts/Ship/Key/KeyRodInstanceRepository.cs` — IPlayerDataRepository
+- ✅ `Assets/_Project/Scripts/Ship/Key/ShipOwnershipRequirement.cs` — auto-attach
+- ✅ `Assets/_Project/Scripts/Ship/Network/ShipTelemetryState.cs` — NetworkVariable struct
+- ✅ `Assets/_Project/Scripts/Ship/Client/ShipTelemetryClientState.cs` — client cache
+
+**UI:** см. `GDD_10_Ship_System.md` §13.3 + `docs/Ships/Key-subsystem/26_TKEY08_MYSHIPS_TAB_PLAN.md`.
+
+**Changelog:** `docs/Ships/Key-subsystem/99_CHANGELOG.md` (v1–v20).
+
 
 ---
 

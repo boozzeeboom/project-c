@@ -3,6 +3,8 @@ using Unity.Netcode;
 using System.Collections;
 using System.Collections.Generic;
 using ProjectC.Ship;
+using ProjectC.Ship.Network;  // T-KEY-07: ShipTelemetryState
+using ProjectC.Ship.Key;     // T-KEY-07: KeyRodInstanceWorld
 using ProjectC.Trade.Core; // T-CARGO-02: ShipClass, TradeWorld, ShipClassLimits
 
 namespace ProjectC.Player
@@ -205,6 +207,10 @@ namespace ProjectC.Player
                 _rb.angularDamping = angularDrag;
                 _rb.useGravity = true;
                 _rb.constraints = RigidbodyConstraints.None;
+
+                // T-KEY-07: подписка на _telemetryState.OnValueChanged — клиент получает deltas от сервера
+                _telemetryState.OnValueChanged += HandleTelemetryValueChanged;
+
                 // T-CARGO-04-debug: Continuous ловит тонкие/быстрые столкновения
                 // которые Discrete пропускает (стены при скорости, ребра пиков).
                 // Небольшая perf-цена оправдана — корабль один на сцену.
@@ -514,6 +520,125 @@ namespace ProjectC.Player
         /// </summary>
         public float ServerCargoPenalty => _serverCargoPenalty.Value;
 
+        // ========================================================
+        // T-KEY-07: NetworkVariable<ShipTelemetryState> — server-authoritative
+        // ship state для HUD/UI. Server пишет в UpdateTelemetryState() (5 Hz),
+        // все клиенты читают через ShipTelemetryClientState.
+        // ========================================================
+        private readonly NetworkVariable<ShipTelemetryState> _telemetryState = new NetworkVariable<ShipTelemetryState>(
+            default,
+            NetworkVariableReadPermission.Everyone,
+            NetworkVariableWritePermission.Server);
+
+        /// <summary>Server-authoritative state этого корабля. Клиент читает через
+        /// ShipTelemetryClientState (агрегатор всех кораблей).</summary>
+        public ShipTelemetryState TelemetryState => _telemetryState.Value;
+
+        /// <summary>T-KEY-07: event для клиентов. Вызывается когда NetworkVariable.Value изменилась.
+        /// Подписка из ShipTelemetryClientState.SubscribeToShip().</summary>
+        public event System.Action<ShipTelemetryState, ShipTelemetryState> OnTelemetryStateChanged;
+
+        // ========================================================
+        // T-KEY-07: подписка на _telemetryState.OnValueChanged (клиент-сайд).
+        // Вызывается в Awake() ниже (после _rb = GetComponent&lt;Rigidbody&gt;()).
+        // ========================================================
+        private void HandleTelemetryValueChanged(ShipTelemetryState prev, ShipTelemetryState next)
+        {
+            // Срабатывает на клиенте при server delta. Forward в user-facing event.
+            OnTelemetryStateChanged?.Invoke(prev, next);
+        }
+
+        // Throttle для UpdateTelemetryState (5 Hz = 200ms interval)
+        private float _lastTelemetryUpdate = -10f;
+        private const float TELEMETRY_UPDATE_INTERVAL = 0.2f;
+
+        /// <summary>Server-only: обновление telemetry state. Throttled до 5 Hz чтобы
+        /// не грузить сеть. Читает fuel/cargo/modules из существующих систем.</summary>
+        private void UpdateTelemetryState()
+        {
+            if (!IsServer) return;
+            if (Time.time - _lastTelemetryUpdate < TELEMETRY_UPDATE_INTERVAL) return;
+            _lastTelemetryUpdate = Time.time;
+
+            // Резолвим owner через KeyRodInstanceWorld (если есть)
+            ulong ownerId = KeyRodInstance.OWNER_NONE;
+            int keyInstanceId = 0;
+            if (KeyRodInstanceWorld.IsInitialized)
+            {
+                int foundInstanceId = KeyRodInstanceWorld.GetInstanceIdForShip(NetworkObjectId);
+                if (foundInstanceId > 0)
+                {
+                    var inst = KeyRodInstanceWorld.GetInstance(foundInstanceId);
+                    if (inst != null)
+                    {
+                        ownerId = inst.ownerPlayerId;
+                        keyInstanceId = inst.instanceId;
+                    }
+                }
+            }
+
+            // Fuel (если есть ShipFuelSystem) — fallback на 1.0/0 если нет
+            float fuelNormalized = 1f;
+            float fuelMax = 0f;
+            if (fuelSystem != null)
+            {
+                fuelMax = fuelSystem.MaxFuel;
+                fuelNormalized = fuelSystem.CurrentFuel / Mathf.Max(fuelMax, 1f);
+            }
+
+            // Cargo (если зарегистрирован в TradeWorld)
+            int cargoUsed = 0;
+            int cargoMax = 0;
+            if (TradeWorld.Instance != null)
+            {
+                var cargo = TradeWorld.Instance.GetOrLoadCargo(NetworkObjectId, _resolvedCargoClass);
+                if (cargo != null)
+                {
+                    cargoUsed = cargo.Items.Count;
+                }
+            }
+
+            _telemetryState.Value = new ShipTelemetryState
+            {
+                shipNetworkObjectId   = NetworkObjectId,
+                keyInstanceId         = keyInstanceId,
+                displayName           = ShipDisplayName,
+                className             = shipFlightClass.ToString(),
+                position              = transform.position,
+                rotationEuler         = transform.rotation.eulerAngles,
+                fuelNormalized        = fuelNormalized,
+                fuelMax               = fuelMax,
+                cargoUsed             = cargoUsed,
+                cargoMax              = cargoMax,
+                moduleCount           = moduleManager != null && moduleManager.slots != null ? moduleManager.slots.Count : 0,
+                state                 = 0,  // (byte)CurrentState — пока 0, расширим в Phase 2
+                ownerClientId         = ownerId,
+                lastUpdateServerTime  = NetworkManager != null && NetworkManager.ServerTime.Time > 0
+                    ? NetworkManager.ServerTime.Time
+                    : Time.timeAsDouble,
+            };
+        }
+
+        /// <summary>Кастомное имя из инспектора. Если пусто — автогенерация из class + instanceId
+        /// (Q6, 2026-06-18: подтягивается к ключу).</summary>
+        public string ShipDisplayName
+        {
+            get
+            {
+                if (!string.IsNullOrEmpty(_customDisplayName)) return _customDisplayName;
+                if (KeyRodInstanceWorld.IsInitialized)
+                {
+                    int instId = KeyRodInstanceWorld.GetInstanceIdForShip(NetworkObjectId);
+                    if (instId > 0)
+                    {
+                        var inst = KeyRodInstanceWorld.GetInstance(instId);
+                        if (inst != null) return $"{shipFlightClass} #{inst.instanceId:D4}";
+                    }
+                }
+                return $"{shipFlightClass} #{NetworkObjectId}";
+            }
+        }
+
         /// <summary>
         /// Обработчик OnCargoChanged. Только сервер пишет в NetworkVariable.
         /// </summary>
@@ -584,7 +709,12 @@ namespace ProjectC.Player
 
         private void FixedUpdate()
         {
-            if (_rb == null || !IsServer) return;
+            if (_rb == null) return;
+
+            // T-KEY-07: telemetry update — server-only, throttled внутри метода.
+            if (IsServer) UpdateTelemetryState();
+
+            if (!IsServer) return;
             if (_pilots.Count == 0) return;
 
             float dt = Time.fixedDeltaTime;

@@ -4,6 +4,40 @@
 
 ---
 
+## 2026-06-18 — R2-SHIP-KEY-003 v10 (T-KEY-07: ShipTelemetry — NetworkVariable-based)
+
+**Контекст**: восьмой тикет R2-SHIP-KEY-003 после T-KEY-06. Самый большой тикет — реализация ship telemetry через NetworkVariable. HUD/UI получают актуальные данные без polling RPC.
+
+**Что изменилось в коде**:
+
+| Файл | Что | Статус |
+|---|---|---|
+| `Assets/_Project/Scripts/Ship/Network/ShipTelemetryState.cs` | NEW. INetworkSerializable struct с 14 полями (shipNetId, keyInstanceId, displayName, className, position, rotation, fuel, cargo, moduleCount, state, ownerClientId, lastUpdate). IEquatable + GetHashCode + operator==/!=. | ✅ |
+| `Assets/_Project/Scripts/Ship/Network/ShipOwnershipRegistry.cs` | NEW. NetworkBehaviour, NetworkList<OwnershipEntry> (shipNetId ↔ ownerClientId). `SetOwner/RemoveOwner` API. Подписка на `KeyRodInstanceWorld.OnOwnershipChanged` для автоматической синхронизации. `OnOwnershipListChanged` event для клиентов. | ✅ |
+| `Assets/_Project/Scripts/Ship/Client/ShipTelemetryClientState.cs` | NEW. Singleton (MonoBehaviour, не NetworkBehaviour). Агрегирует `ShipTelemetryState` со всех ShipController + ownership cache. `SubscribeToShip/UnsubscribeFromShip/SubscribeToRegistry`. `MyShips` (LINQ-style filter по ownership). `IsMyShip(shipNetId)`. Events `OnShipStateChanged/OnOwnershipUpdated`. | ✅ |
+| `Assets/_Project/Scripts/Player/ShipController.cs` | + `using ProjectC.Ship.Network/Key`. + `NetworkVariable<ShipTelemetryState> _telemetryState` (read=Everyone, write=Server). + `TelemetryState` getter. + `OnTelemetryStateChanged` event. + `_telemetryState.OnValueChanged += HandleTelemetryValueChanged` в Awake. + `UpdateTelemetryState()` (5Hz throttle). + `ShipDisplayName` (customDisplayName fallback на "{Class} #{instanceId:D4}"). `FixedUpdate` вызывает `UpdateTelemetryState()` server-only. | ✅ |
+| `Assets/_Project/Scripts/Core/NetworkManagerController.cs` | + `CreateShipTelemetryClientState()` (root GameObject, DontDestroyOnLoad). Вызывается в OnNetworkSpawn после `CreateShipKeyClientState`. | ✅ |
+
+**Verify**:
+- ✅ Compile: 0 errors
+- ✅ Reflection probe: все 4 новых типа + их API присутствуют (TelemetryState, ShipOwnershipRegistry, ShipTelemetryClientState, ShipController.TelemetryState)
+- ✅ Все events (OnTelemetryStateChanged, OnOwnershipListChanged) определены
+
+**MVP flow (server → client)**:
+1. Server: `ShipController.FixedUpdate` → `UpdateTelemetryState()` (5Hz) → пишет в `_telemetryState.Value`
+2. NGO: автоматически синхронизирует deltas клиентам
+3. Client: `_telemetryState.OnValueChanged` (подписка в Awake) → `HandleTelemetryValueChanged` → `OnTelemetryStateChanged` event
+4. `ShipTelemetryClientState.SubscribeToShip(ship)` подписывается на event → обновляет `_allShips` cache
+5. UI/HUD подписываются на `ShipTelemetryClientState.OnShipStateChanged(shipNetId)` → реактивно обновляются
+
+**Throttle**: server пишет 5Hz (200ms interval), NGO sync — стандартный delta sync. Throttling сервера предотвращает перегрузку сети.
+
+**Что НЕ сделано** (намеренно):
+- ❌ MyShipsTab UI (Phase 2)
+- ❌ HUD telemetry widget (зависит от UI-проекта — отдельный тикет)
+
+---
+
 ## 2026-06-18 — R2-SHIP-KEY-003 v9 (T-KEY-06: NetworkPlayer F-key wiring — direct calls)
 
 **Контекст**: седьмой тикет R2-SHIP-KEY-003 после T-KEY-05. Заменил reflection-based fallback'и на прямые вызовы `MetaRequirementClientState`/`MetaRequirementRegistry`.

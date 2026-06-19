@@ -91,9 +91,12 @@ namespace ProjectC.Core
             CreateInventoryClientState();
 
             // Ship Key Subsystem (docs/Ships/Key-subsystem/00_OVERVIEW.md):
-            // ShipKeyClientState — клиентская проекция привязок корабль↔ключ.
-            // Тот же паттерн, что и InventoryClientState.
-            CreateShipKeyClientState();
+                        // ShipKeyClientState — клиентская проекция привязок корабль↔ключ.
+                        // Тот же паттерн, что и InventoryClientState.
+                        CreateShipKeyClientState();
+
+                        // T-KEY-07: ShipTelemetryClientState — клиентский агрегатор ship telemetry + ownership.
+                        CreateShipTelemetryClientState();
 
             // MetaRequirement Subsystem (docs/MetaRequirement/00_OVERVIEW.md, R2-META-REQ-001):
             // MetaRequirementClientState — клиентская проекция требований для ЛЮБЫХ
@@ -243,6 +246,30 @@ namespace ProjectC.Core
             var go = new GameObject("[ShipKeyClientState]");
             go.AddComponent<ProjectC.Ship.Key.ShipKeyClientState>();
             Debug.Log("[NMC] Created [ShipKeyClientState] as root GameObject");
+        }
+        /// <summary>
+        /// T-KEY-07: ShipTelemetryClientState — клиентский агрегатор ship telemetry + ownership cache.
+        /// Подписывается на NetworkVariable всех ShipController и ShipOwnershipRegistry.
+        /// </summary>
+        private void CreateShipTelemetryClientState()
+        {
+            var existing = FindObjectsByType<ProjectC.Ship.Client.ShipTelemetryClientState>(FindObjectsInactive.Include);
+            foreach (var inst in existing)
+            {
+                if (inst != null && inst.transform.parent == null)
+                {
+                    Debug.Log("[NMC] ShipTelemetryClientState already root, skipping creation");
+                    return;
+                }
+            }
+            if (existing.Length > 0)
+            {
+                Debug.LogWarning($"[NMC] Found {existing.Length} non-root ShipTelemetryClientState in scene — DontDestroyOnLoad would fail. Creating root replacement.");
+            }
+            var go = new GameObject("[ShipTelemetryClientState]");
+            go.AddComponent<ProjectC.Ship.Client.ShipTelemetryClientState>();
+            DontDestroyOnLoad(go);
+            Debug.Log("[NMC] Created [ShipTelemetryClientState] as root GameObject (DontDestroyOnLoad)");
         }
 
         /// <summary>

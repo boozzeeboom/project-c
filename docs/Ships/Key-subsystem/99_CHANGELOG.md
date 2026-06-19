@@ -372,7 +372,86 @@
 **Что сделано**: первичная реализация физического ключа-предмета для запуска корабля.
 
 См. `KNOWN_ISSUES.md` (баг с `Resources.LoadAll` не рекурсивен → ключи не подбирались).
+---
 
+## 2026-06-19 — R2-SHIP-KEY-003 v11 (bugfix round: name display, persistence, pickup guard)
+
+**Контекст**: финальный bugfix раунд R2-SHIP-KEY-003 после Play Mode тестирования. Исправлены 4 бага:
+
+1. **F-key не сажал после получения ключа** (T-KEY-06 fix)
+2. **Имя ключа в инвентаре показывало generic `Key_Heavy_Ship`** (display name resolution)
+3. **Ключ не сохранялся при рестарте** (JsonInventoryRepository не имел Key-типа)
+4. **Дубликат ключа при повторном подборе** (guard в TryPickup)
+
+### Баг 1: F-key ship boarding не срабатывал
+
+**Root cause**: `MetaRequirementClientState.OnAccessAllowed` дёргался, но `NetworkPlayer` не был на него подписан для F-key. Событие срабатывало, но `SubmitSwitchModeRpc()` не вызывался.
+
+**Фикс**:
+| Файл | Изменение |
+|---|---|
+| `NetworkPlayer.cs` | `ReceiveMetaRequirementResponseTargetRpc` — после передачи в `MetaRequirementClientState.OnCanUseResponse`, проверяет `allowed && _pendingCanBoardShipId == netId` → вызывает `SubmitSwitchModeRpc()` с `Debug.Log`. |
+
+### Баг 2: имя ключа — generic `Key_Heavy_Ship`
+
+**Root cause**: display name резолвился через `instanceId` / `NetworkObjectId` — оба эфемерные (пересоздаются при каждом старте NGO). `KeyRodInstanceWorld` при загрузке из persistence переназначал instanceId, и старый instanceId в слоте инвентаря не совпадал.
+
+**Фикс**: три уровня fallback:
+
+| Приоритет | Метод | Когда работает |
+|---|---|---|
+| 1 | `ShipTelemetryClientState.MyShips` по `keyInstanceId` | Внутри сессии, после синхронизации |
+| 2 | `KeyRodInstanceWorld.GetInstance` по `instanceId` + `FindShipNameByNetworkId` | На Host внутри сессии |
+| 3 | `KeyRodInstanceBinding._ship` по `itemId` (reflection, scene-placed ссылка) | **Стабильно между рестартами** |
+
+Priority 3 — ключевой фикс: `KeyRodInstanceBinding` — scene-placed компонент, его `_ship` ссылка стабильна. Использует reflection для чтения приватных полей `_keyItemData` → `InventoryWorld.GetOrRegisterItemId()` → совпадение по `itemId` → `_ship.CustomDisplayName`.
+
+**Изменённые файлы**:
+| Файл | Изменение |
+|---|---|
+| `InventoryTab.cs` | + `using ProjectC.Ship.Client/Key/Player`. + `ResolveKeyItemDisplayName()` с 3-уровневым fallback. + `TryGetShipNameFromTelemetry()`, `TryGetShipNameFromKeyWorld()`, `TryGetShipNameByItemId()` (reflection-based), `FindShipNameByNetworkId()`. |
+
+### Баг 3: ключ не сохранялся при рестарте
+
+**Root cause**: `JsonInventoryRepository.Converters` не знали про `ItemType.Key`. `InventorySaveData` не имел `keyIds`/`keyInstanceIds`. `ConvertToSaveData` switch дропал Key-тип. `ConvertToInventoryData` не восстанавливал.
+
+**Фикс**:
+| Файл | Изменение |
+|---|---|
+| `JsonInventoryRepository.cs` | `InventorySaveData`: + `List<int> keyIds`, + `List<int> keyInstanceIds`. `ConvertToSaveData`: + `case ItemType.Key:` (сохраняет keyIds + keyInstanceIds). `ConvertToInventoryData`: + загрузка Key через `inv.AddKeyItem(keyIds[i], keyInstanceIds[i])`. |
+| `InventoryData.cs` | + `GetKeyInstanceIds()` — доступ к instanceId для конвертера. |
+
+### Баг 4: дубликат ключа при подборе (x2)
+
+**Root cause**: scene-placed `[KeyRod_ShipLight]` респавнится при каждом Play Mode. Игрок может подобрать его снова → второй ключ с неправильным именем.
+
+**Фикс**:
+| Файл | Изменение |
+|---|---|
+| `InventoryWorld.cs` (`TryPickup`) | Для Key-типа: проверка `GetIdsForType(Key).Contains(itemId)` → если есть, `Fail("Ключ уже есть в инвентаре")`. |
+
+### Сопутствующие: wiring persistence в bootstrap flow
+
+**Проблема**: `KeyRodInstanceBinding.Start()` вызывал `KeyRodInstanceWorld.CreateAndInitialize()` без репозитория → перетирал сохранённые данные.
+
+**Фикс**:
+| Файл | Изменение |
+|---|---|
+| `InventoryServer.cs` | `OnNetworkSpawn` — инициализирует `KeyRodInstanceWorld` с `JsonKeyRodInstanceRepository` (после `InventoryWorld`). |
+| `KeyRodInstanceBinding.cs` | `TryRegister()` — больше НЕ вызывает `CreateAndInitialize()` если уже инициализирован. `CreateInstance()` сам возвращает существующий instanceId (guard). |
+
+### Тест-план (end-to-end)
+
+| Шаг | Ожидание |
+|---|---|
+| 1. Play Host | 0 CS errors. Console: `[InventoryServer] KeyRodInstanceWorld initialized with JsonKeyRodInstanceRepository` |
+| 2. Подойти к `[KeyRod_ShipLight]`, **E** | `[InventoryWorld] Player 0 picked up ID=... (Key). Total: N` |
+| 3. **P** → инвентарь → фильтр "Key" | `🚀 Pushka` (не `Key_Heavy_Ship`) |
+| 4. Закрыть P, **F** у корабля | `[NetworkPlayer] MetaRequirement allowed for ship (netId=...). Calling SubmitSwitchModeRpc.` → игрок садится |
+| 5. Exit Play Mode → Play Host | В консоли: `JsonKeyRodInstanceRepository` + `Loaded N instances` |
+| 6. **P** → "Key" фильтр | `🚀 Pushka` — имя сохранилось |
+| 7. **E** на том же ключе | `[InventoryWorld] Ключ (ID=...) уже есть в инвентаре` |
+| 8. **P** → всё ещё 1 ключ (не x2) | ✅ |
 ---
 
 *Changelog ведёт агент Mavis.*

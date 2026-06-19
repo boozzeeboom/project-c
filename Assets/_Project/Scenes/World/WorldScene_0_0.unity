@@ -6330,7 +6330,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::ProjectC.Ship.Key.ShipKeyBinding
   ShowTopMostFoldoutHeaderGroup: 1
   _requiredItems:
-  - {fileID: 11400000, guid: b08791afdeeed1049a341e8452da084d, type: 2}
+  - {fileID: 0}
   _logic: 0
   _requiredCount: 1
   _consumeOnUse: 0

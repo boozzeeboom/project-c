@@ -386,7 +386,11 @@ namespace ProjectC.Items
                     {
                         try
                         {
-                            int newInstId = ProjectC.Ship.Key.KeyRodInstanceWorld.CreateInstance(itemId, (ulong)0, clientId);
+                            // T-KEY-09 fix: поиск существующего Active instance чтобы не создать дубль
+                            int newInstId = ProjectC.Ship.Key.KeyRodInstanceWorld.FindActiveKeyInstance(clientId, itemId);
+                            if (newInstId <= 0) {
+                                newInstId = ProjectC.Ship.Key.KeyRodInstanceWorld.CreateInstance(itemId, (ulong)0, clientId);
+                            }
                             if (newInstId > 0)
                             {
                                 instanceId = newInstId;
@@ -403,7 +407,15 @@ namespace ProjectC.Items
             }
 
             // OK: добавляем (для Key — с правильным instanceId)            // OK: добавляем
-            data.AddItem(itemType, itemId);
+            // T-KEY-09: для Key используем AddKeyItem чтобы instanceId попал в слот
+            if (itemType == ItemType.Key && instanceId > 0)
+            {
+                data.AddKeyItem(itemId, instanceId);
+            }
+            else
+            {
+                data.AddItem(itemType, itemId);
+            }
             Debug.Log($"[InventoryWorld] Player {clientId} picked up ID={itemId} ({itemType}). Total: {data.TotalCount}");
             // T-X0: persist + publish event
             SavePlayer(clientId);

@@ -160,6 +160,23 @@ namespace ProjectC.Ship.Key
             return inst;
         }
 
+        /// <summary>T-KEY-09: поиск Active instance для clientId+itemId (при pickup drop-нутого ключа).</summary>
+        public static int FindActiveKeyInstance(ulong clientId, int itemId)
+        {
+            foreach (var kvp in _instancesById)
+            {
+                var inst = kvp.Value;
+                if (inst != null
+                    && inst.itemId == itemId
+                    && inst.ownerPlayerId == clientId
+                    && inst.state == KeyRodInstanceState.Active)
+                {
+                    return inst.instanceId;
+                }
+            }
+            return 0;
+        }
+
         /// <summary>Получить instanceId, привязанный к конкретному кораблю (1:1 в MVP).
         /// Возвращает 0 если корабль не зарегистрирован (не имеет экземпляра ключа).</summary>
         public static int GetInstanceIdForShip(ulong shipNetworkObjectId)

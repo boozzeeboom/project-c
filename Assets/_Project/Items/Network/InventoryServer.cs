@@ -112,10 +112,14 @@ namespace ProjectC.Items.Network
                     // T-KEY-07: обновляем instanceId в слоте инвентаря (чтобы UI знал, какой это корабль)
                     InventoryWorld.Instance.UpdateKeySlotInstanceId(clientId, instanceId);
                                         // T-KEY-09: прямой вызов (без reflection)
-                    if (ProjectC.Ship.Key.KeyRodInstanceWorld.IsInitialized)
-                    {
-                        bool ok = ProjectC.Ship.Key.KeyRodInstanceWorld.TransferInstance(instanceId,
-                            System.UInt64.MaxValue /* OWNER_NONE */, clientId);
+                                        if (ProjectC.Ship.Key.KeyRodInstanceWorld.IsInitialized)
+                                        {
+                                            // T-KEY-09 fix: UpdateState(Active) перед TransferInstance —
+                                            // TransferInstance проверяет state == Active (строки 308-312).
+                                            ProjectC.Ship.Key.KeyRodInstanceWorld.UpdateState(instanceId,
+                                                ProjectC.Ship.Key.KeyRodInstanceState.Active);
+                                            bool ok = ProjectC.Ship.Key.KeyRodInstanceWorld.TransferInstance(instanceId,
+                                                System.UInt64.MaxValue /* OWNER_NONE */, clientId);
                         if (ok)
                         {
                             Debug.Log($"[InventoryServer] Pickup Key: TransferInstance(id={instanceId}, NONE→{clientId})");

@@ -91,15 +91,26 @@ namespace ProjectC.Ship.Key
         {
             if (_registered) return;
 
-            // Проверки
+            // Проверки с retry (макс 15 попыток, ~15 сек)
             if (_ship == null || !_ship.IsSpawned || !KeyRodInstanceWorld.IsInitialized || _keyItemData == null)
             {
-                Debug.LogWarning($"[KeyRodInstanceBinding] Prerequisites not met: " +
-                                 $"ship={(_ship != null ? _ship.name : "NULL")}, " +
-                                 $"spawned={(_ship != null && _ship.IsSpawned)}, " +
-                                 $"krwInit={KeyRodInstanceWorld.IsInitialized}, " +
-                                 $"itemData={(_keyItemData != null ? _keyItemData.name : "NULL")}. " +
-                                 $"Instance NOT created. Pickup will have instanceId=0.");
+                if (_retryCount < MAX_RETRIES)
+                {
+                    _retryCount++;
+                    Debug.Log($"[KeyRodInstanceBinding] Retry {_retryCount}/{MAX_RETRIES}: " +
+                              $"ship={(_ship != null ? _ship.name : "NULL")}, " +
+                              $"spawned={(_ship != null && _ship.IsSpawned)}, " +
+                              $"krwInit={KeyRodInstanceWorld.IsInitialized}, " +
+                              $"itemData={(_keyItemData != null ? _keyItemData.name : "NULL")}");
+                    Invoke(nameof(TryRegister), 1.0f);
+                }
+                else
+                {
+                    Debug.LogError($"[KeyRodInstanceBinding] Failed to register after {MAX_RETRIES} retries. " +
+                                   $"ship={(_ship != null ? _ship.name : "NULL")}, " +
+                                   $"item={(_keyItemData != null ? _keyItemData.name : "NULL")}. " +
+                                   $"Pickup will have instanceId=0.");
+                }
                 return;
             }
 

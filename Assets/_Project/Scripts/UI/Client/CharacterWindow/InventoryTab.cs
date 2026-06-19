@@ -410,49 +410,103 @@ namespace ProjectC.UI.Client
         }
 
         /// <summary>T-KEY-07: для Key-предметов с instanceId подставляет имя корабля из телепатрии.</summary>
+        /// <summary>T-KEY-07: для Key-предметов с instanceId подставляет имя корабля из телепатрии.
+        /// Fallback при рассинхронизации instanceId (после перезагрузки persistence) — ищет
+        /// по itemId + ownership в KeyRodInstanceWorld.</summary>
         private string ResolveKeyItemDisplayName(ItemData def, InventoryItemDto first)
         {
             string baseName = def != null ? def.itemName : $"Item#{first.itemId}";
-            if ((ItemType)first.type == ItemType.Key && first.instanceId > 0)
-            {
-                // Priority 1: ShipTelemetryClientState (все клиенты)
-                var telemetry = ProjectC.Ship.Client.ShipTelemetryClientState.Instance;
-                if (telemetry != null)
-                {
-                    foreach (var ship in telemetry.MyShips)
-                    {
-                        if (ship.Value.keyInstanceId == first.instanceId)
-                        {
-                            string shipName = ship.Value.displayName.ToString();
-                            if (!string.IsNullOrEmpty(shipName))
-                                return $"🚀 {shipName}";
-                            break;
-                        }
-                    }
-                }
+            if ((ItemType)first.type != ItemType.Key) return baseName;
 
-                // Priority 2: fallback через KeyRodInstanceWorld (доступен на Host)
-                if (ProjectC.Ship.Key.KeyRodInstanceWorld.IsInitialized)
-                {
-                    var inst = ProjectC.Ship.Key.KeyRodInstanceWorld.GetInstance(first.instanceId);
-                    if (inst != null)
-                    {
-                        // Ищем ShipController по registeredShipId в сцене
-                        foreach (var sc in UnityEngine.Object.FindObjectsByType<ProjectC.Player.ShipController>(
-                            UnityEngine.FindObjectsInactive.Include, UnityEngine.FindObjectsSortMode.None))
-                        {
-                            if (sc.NetworkObjectId == inst.registeredShipId)
-                            {
-                                string name = sc.CustomDisplayName;
-                                if (!string.IsNullOrEmpty(name))
-                                    return $"🚀 {name}";
-                            }
-                        }
-                    }
-                }
-            }
+            // Priority 1: ShipTelemetryClientState (все клиенты, instanceId должен совпадать)
+            string telemetryName = TryGetShipNameFromTelemetry(first.instanceId);
+            if (telemetryName != null) return $"🚀 {telemetryName}";
+
+            // Priority 2: KeyRodInstanceWorld Host fallback по instanceId (работает в сессии)
+            string hostName = TryGetShipNameFromKeyWorld(first.instanceId);
+            if (hostName != null) return $"🚀 {hostName}";
+
+            // Priority 3: KeyRodInstanceWorld по itemId (после перезагрузки persistence)
+            string persistedName = TryGetShipNameByItemId(first.itemId);
+            if (persistedName != null) return $"🚀 {persistedName}";
+
             return baseName;
         }
+
+        private string TryGetShipNameFromTelemetry(int instanceId)
+        {
+            if (instanceId <= 0) return null;
+            var telemetry = ProjectC.Ship.Client.ShipTelemetryClientState.Instance;
+            if (telemetry == null) return null;
+            foreach (var ship in telemetry.MyShips)
+            {
+                if (ship.Value.keyInstanceId == instanceId)
+                {
+                    string n = ship.Value.displayName.ToString();
+                    if (!string.IsNullOrEmpty(n)) return n;
+                }
+            }
+            return null;
+        }
+
+        private string TryGetShipNameFromKeyWorld(int instanceId)
+        {
+            if (instanceId <= 0) return null;
+            if (!ProjectC.Ship.Key.KeyRodInstanceWorld.IsInitialized) return null;
+            var inst = ProjectC.Ship.Key.KeyRodInstanceWorld.GetInstance(instanceId);
+            if (inst == null) return null;
+            return FindShipNameByNetworkId(inst.registeredShipId);
+        }
+
+        private string TryGetShipNameByItemId(int itemId)
+        {
+            if (itemId <= 0) return null;
+            // Ищем KeyRodInstanceBinding в сцене по _keyItemData == itemId.
+            // _ship в binding — scene-placed ссылка, стабильная между рестартами.
+            // Не используем NetworkObjectId (эфемерный) или instanceId (пересоздаётся).
+            var bindingType = System.Type.GetType("ProjectC.Ship.Key.KeyRodInstanceBinding, Assembly-CSharp");
+            if (bindingType == null) return null;
+
+            var invWorld = ProjectC.Items.InventoryWorld.Instance;
+            if (invWorld == null) return null;
+
+            var itemField = bindingType.GetField("_keyItemData",
+                System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.NonPublic);
+            var shipField = bindingType.GetField("_ship",
+                System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.NonPublic);
+            if (itemField == null || shipField == null) return null;
+
+            foreach (var binding in UnityEngine.Object.FindObjectsByType(bindingType,
+                UnityEngine.FindObjectsInactive.Include, UnityEngine.FindObjectsSortMode.None))
+            {
+                var bindingItemData = itemField.GetValue(binding) as ProjectC.Items.ItemData;
+                if (bindingItemData == null) continue;
+                int bindingItemId = invWorld.GetOrRegisterItemId(bindingItemData);
+                if (bindingItemId == itemId)
+                {
+                    var sc = shipField.GetValue(binding) as ProjectC.Player.ShipController;
+                    if (sc != null && !string.IsNullOrEmpty(sc.CustomDisplayName))
+                        return sc.CustomDisplayName;
+                }
+            }
+            return null;
+        }
+
+        private static string FindShipNameByNetworkId(ulong shipNetId)
+        {
+            if (shipNetId == 0) return null;
+            foreach (var sc in UnityEngine.Object.FindObjectsByType<ProjectC.Player.ShipController>(
+                UnityEngine.FindObjectsInactive.Include, UnityEngine.FindObjectsSortMode.None))
+            {
+                if (sc.NetworkObjectId == shipNetId)
+                {
+                    string n = sc.CustomDisplayName;
+                    if (!string.IsNullOrEmpty(n)) return n;
+                }
+            }
+            return null;
+        }
+
 
         private void SyncListView()
         {

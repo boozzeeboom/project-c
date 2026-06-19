@@ -373,6 +373,17 @@ namespace ProjectC.Items
                 return Fail(InventoryResultCode.InventoryFull,
                     $"Инвентарь полон ({data.TotalCount}/{_maxSlots})", itemId, -1);
 
+            // T-KEY-07: для Key-предметов — защита от дубликата (scene-placed PickupItem respawn)
+            if (itemType == ItemType.Key)
+            {
+                var keyIds = data.GetIdsForType(ItemType.Key);
+                if (keyIds != null && keyIds.Contains(itemId))
+                {
+                    return Fail(InventoryResultCode.ItemNotFound,
+                        $"Ключ (ID={itemId}) уже есть в инвентаре. Нельзя подобрать второй.", itemId, -1);
+                }
+            }
+
             // OK: добавляем
             data.AddItem(itemType, itemId);
             Debug.Log($"[InventoryWorld] Player {clientId} picked up ID={itemId} ({itemType}). Total: {data.TotalCount}");

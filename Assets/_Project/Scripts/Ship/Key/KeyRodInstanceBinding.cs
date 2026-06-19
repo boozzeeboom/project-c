@@ -6,9 +6,11 @@
 //   • docs/Ships/Key-subsystem/23_ROADMAP.md T-KEY-04
 //
 // Назначение: явный компонент на [KeyRod_*] PickupItem в сцене. Заменяет отменённый
-// auto-bootstrap (Q11, 2026-06-18: "Альтернативный вариант более подходящим кажется").
-// При Server Start создаёт KeyRodInstance через KeyRodInstanceWorld.CreateInstance
-// с привязкой к заданному ShipController.
+// auto-bootstrap (Q11, 2026-06-18). При Server Start создаёт KeyRodInstance
+// через KeyRodInstanceWorld.CreateInstance с привязкой к заданному ShipController.
+// T-KEY-PERSIST: KeyRodInstanceWorld инициализируется в InventoryServer.OnNetworkSpawn
+// с репозиторием. KeyRodInstanceBinding НЕ вызывает CreateAndInitialize() повторно.
+// CreateInstance() сам возвращает существующий instanceId если корабль уже привязан.
 //
 // Связь с PickupItem:
 //   • KeyRodInstanceBinding НЕ заменяет PickupItem — они на одном GameObject
@@ -107,12 +109,13 @@ namespace ProjectC.Ship.Key
                 return;
             }
 
-            // Проверка: KeyRodInstanceWorld готов (если нет — инициализируем)
+            // T-KEY-PERSIST: KeyRodInstanceWorld инициализируется в InventoryServer.OnNetworkSpawn
+            // с репозиторием. Не вызываем CreateAndInitialize() — он уже готов.
             if (!KeyRodInstanceWorld.IsInitialized)
             {
-                // T-KEY-PERSIST: без репозитория (null). Репозиторий будет установлен
-                // через KeyRodInstanceBinding.SetRepository или в T-KEY-07.
-                KeyRodInstanceWorld.CreateAndInitialize();
+                Debug.LogWarning($"[KeyRodInstanceBinding] KeyRodInstanceWorld not ready yet. Retry {_retryCount}/{MAX_RETRIES}");
+                Invoke(nameof(TryRegister), 1.0f);
+                return;
             }
 
             // Проверка: InventoryWorld готов для резолва itemId
@@ -138,6 +141,8 @@ namespace ProjectC.Ship.Key
             }
 
             // Создаём экземпляр ключа (owner = NONE = ключ в мире)
+            // T-KEY-PERSIST: если instance уже есть (из persistence), CreateInstance вернёт
+            // существующий instanceId (guard внутри KeyRodInstanceWorld.CreateInstance).
             ulong shipNetId = _ship.NetworkObjectId;
             _instanceId = KeyRodInstanceWorld.CreateInstance(itemId, shipNetId, KeyRodInstance.OWNER_NONE);
 

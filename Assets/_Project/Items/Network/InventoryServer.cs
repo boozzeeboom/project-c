@@ -342,6 +342,14 @@ namespace ProjectC.Items.Network
                 var repository = new ProjectC.Core.JsonInventoryRepository();
                 InventoryWorld.CreateAndInitialize(repository);
 
+                // T-KEY-PERSIST: инициализируем KeyRodInstanceWorld с репозиторием
+                if (!ProjectC.Ship.Key.KeyRodInstanceWorld.IsInitialized)
+                {
+                    var krRepo = new ProjectC.Ship.Key.JsonKeyRodInstanceRepository();
+                    ProjectC.Ship.Key.KeyRodInstanceWorld.CreateAndInitialize(krRepo);
+                    Debug.Log($"[InventoryServer] KeyRodInstanceWorld initialized with JsonKeyRodInstanceRepository");
+                }
+
                 // T-E04: применить лимит слотов из инспектора (по умолчанию 1000).
                 InventoryWorld.Instance.ConfigureMaxSlots(maxSlots);
 

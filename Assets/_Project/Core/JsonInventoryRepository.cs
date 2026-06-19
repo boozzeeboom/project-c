@@ -35,6 +35,7 @@ namespace ProjectC.Core
     /// <summary>
     /// Plain DTO для JSON serialization. JsonUtility не сериализует private fields
     /// InventoryData, поэтому создаём посредника с public lists.
+    /// T-KEY-07: + keyIds / keyInstanceIds (для ItemType.Key persistence).
     /// </summary>
     [Serializable]
     public class InventorySaveData
@@ -42,7 +43,7 @@ namespace ProjectC.Core
         public ulong clientId;
         public long savedAtUnix;
 
-        // 8 list'ов, parallel to InventoryData._xxxIds
+        // 8 list'ов, parallel to InventoryData._xxxIds (ItemType.Resources..Tech)
         public List<int> resourceIds = new List<int>();
         public List<int> equipmentIds = new List<int>();
         public List<int> foodIds = new List<int>();
@@ -51,6 +52,10 @@ namespace ProjectC.Core
         public List<int> meziyIds = new List<int>();
         public List<int> medicalIds = new List<int>();
         public List<int> techIds = new List<int>();
+
+        // T-KEY-07: Key-specific (ItemType.Key = 8), parallel lists
+        public List<int> keyIds = new List<int>();
+        public List<int> keyInstanceIds = new List<int>();
     }
 
     /// <summary>
@@ -142,6 +147,10 @@ namespace ProjectC.Core
                     case ItemType.Meziy: dto.meziyIds.AddRange(ids); break;
                     case ItemType.Medical: dto.medicalIds.AddRange(ids); break;
                     case ItemType.Tech: dto.techIds.AddRange(ids); break;
+                    case ItemType.Key:
+                        dto.keyIds.AddRange(ids);
+                        dto.keyInstanceIds.AddRange(inv.GetKeyInstanceIds());
+                        break;
                 }
             }
             return dto;
@@ -158,6 +167,13 @@ namespace ProjectC.Core
             if (dto.meziyIds != null) foreach (var id in dto.meziyIds) inv.AddItem(ItemType.Meziy, id);
             if (dto.medicalIds != null) foreach (var id in dto.medicalIds) inv.AddItem(ItemType.Medical, id);
             if (dto.techIds != null) foreach (var id in dto.techIds) inv.AddItem(ItemType.Tech, id);
+            // T-KEY-07: Key type — параллельные keyIds + keyInstanceIds
+            if (dto.keyIds != null && dto.keyInstanceIds != null)
+            {
+                int n = System.Math.Min(dto.keyIds.Count, dto.keyInstanceIds.Count);
+                for (int i = 0; i < n; i++)
+                    inv.AddKeyItem(dto.keyIds[i], dto.keyInstanceIds[i]);
+            }
             return inv;
         }
     }

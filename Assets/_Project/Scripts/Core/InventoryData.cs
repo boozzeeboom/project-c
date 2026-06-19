@@ -213,6 +213,16 @@ namespace ProjectC.Items
             }
         }
 
+        /// <summary>Получить instanceId для всех Key-слотов (для persistence).</summary>
+        public List<int> GetKeyInstanceIds()
+        {
+            var result = new List<int>();
+            if (_keySlots == null) return result;
+            for (int i = 0; i < _keySlots.Count; i++)
+                result.Add(_keySlots[i].instanceId);
+            return result;
+        }
+
         /// <summary>
         /// Общее количество предметов
         /// </summary>

@@ -111,10 +111,13 @@ namespace ProjectC.Items.Network
             Vector3 playerPos = playerObj.transform.position;
             var result = InventoryWorld.Instance.TryPickup(clientId, itemId, (ItemType)typeByte, worldPos, playerPos);
             if (result.IsSuccess)
-            {
+                {
                 // T-KEY-05: если Key-предмет с instanceId — передаём владение игроку
                 if (instanceId > 0 && (ItemType)typeByte == ItemType.Key)
                 {
+                    // T-KEY-07: обновляем instanceId в слоте инвентаря (чтобы UI знал, какой это корабль)
+                    InventoryWorld.Instance.UpdateKeySlotInstanceId(clientId, instanceId);
+
                     var krwType = System.Type.GetType("ProjectC.Ship.Key.KeyRodInstanceWorld, Assembly-CSharp");
                     if (krwType != null)
                     {

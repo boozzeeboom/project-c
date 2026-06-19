@@ -19,6 +19,7 @@ using System.Collections.Generic;
 using Unity.Netcode;
 using UnityEngine;
 using ProjectC.Ship.Key;
+using ProjectC.Ship.Client;  // T-KEY-07: ShipTelemetryClientState
 
 namespace ProjectC.Ship.Network
 {
@@ -133,6 +134,9 @@ namespace ProjectC.Ship.Network
             // T-KEY-07: подписка на NetworkList.OnListChanged для клиентских уведомлений
             _ownership.OnListChanged += HandleListChanged;
 
+            // T-KEY-07: подписка ShipTelemetryClientState на ownership список
+            ShipTelemetryClientState.Instance?.SubscribeToRegistry(this);
+
             if (IsServer && KeyRodInstanceWorld.IsInitialized)
             {
                 KeyRodInstanceWorld.OnOwnershipChanged += HandleOwnershipChanged;
@@ -178,6 +182,9 @@ namespace ProjectC.Ship.Network
                 KeyRodInstanceWorld.CreateAndInitialize();
                 KeyRodInstanceWorld.OnOwnershipChanged += HandleOwnershipChanged;
             }
+
+            // T-KEY-07: подписка на случай если registry создался после OwnershipRegistry
+            ShipTelemetryClientState.Instance?.SubscribeToRegistry(this);
 
             // Найти ship по instanceId
             var inst = KeyRodInstanceWorld.GetInstance(instanceId);

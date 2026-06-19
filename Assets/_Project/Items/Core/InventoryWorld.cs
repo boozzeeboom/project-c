@@ -578,6 +578,15 @@ namespace ProjectC.Items
             return data.HasKeyInstance(instanceId);
         }
 
+        /// <summary>T-KEY-07: после успешного pickup Key-предмета обновить instanceId в слоте.
+        /// Вызывается из InventoryServer.RequestPickupRpc.</summary>
+        public void UpdateKeySlotInstanceId(ulong clientId, int instanceId)
+        {
+            if (instanceId <= 0) return;
+            if (!_playerInventories.TryGetValue(clientId, out var data)) return;
+            data.SetLastKeySlotInstanceId(instanceId);
+        }
+
         /// <summary>Пары (instanceId, registeredShipId) для всех KeyRodInstance в инвентаре клиента.
         /// Используется для UI "Мои корабли" (см. 22_SHIP_TELEMETRY_PLAN.md).</summary>
         public System.Collections.Generic.List<(int instanceId, ulong shipNetworkObjectId)> GetMyShips(ulong clientId)

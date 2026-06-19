@@ -199,6 +199,20 @@ namespace ProjectC.Items
             return false;
         }
 
+        /// <summary>T-KEY-07: установить instanceId в последний Key-слот (после pickup).
+        /// Вызывается из InventoryServer.RequestPickupRpc после AddItem + TransferInstance.</summary>
+        public void SetLastKeySlotInstanceId(int instanceId)
+        {
+            if (instanceId <= 0) return;
+            if (_keySlots == null || _keySlots.Count == 0) return;
+            var slot = _keySlots[_keySlots.Count - 1];
+            if (slot.instanceId != instanceId)
+            {
+                slot.instanceId = instanceId;
+                _keySlots[_keySlots.Count - 1] = slot;
+            }
+        }
+
         /// <summary>
         /// Общее количество предметов
         /// </summary>

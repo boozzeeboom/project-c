@@ -16,6 +16,9 @@ using System.Linq;
 using ProjectC.Items;
 using ProjectC.Items.Client;
 using ProjectC.Items.Dto;
+using ProjectC.Ship.Client;  // T-KEY-07: ShipTelemetryClientState для имени корабля ключа
+using ProjectC.Ship.Key;     // T-KEY-07: KeyRodInstanceWorld fallback
+using ProjectC.Player;       // T-KEY-07: ShipController fallback
 using UnityEngine;
 using UnityEngine.UIElements;
 
@@ -375,7 +378,7 @@ namespace ProjectC.UI.Client
                 _inventoryCache.Add(new InventoryListItem
                 {
                     itemId = first.itemId.ToString(),
-                    displayName = def != null ? def.itemName : $"Item#{first.itemId}",
+                    displayName = ResolveKeyItemDisplayName(def, first),
                     type = (ItemType)first.type,
                     quantity = kvp.Value.totalQty,
                     icon = def != null ? def.icon : null,
@@ -404,6 +407,51 @@ namespace ProjectC.UI.Client
             }
 
             SyncListView();
+        }
+
+        /// <summary>T-KEY-07: для Key-предметов с instanceId подставляет имя корабля из телепатрии.</summary>
+        private string ResolveKeyItemDisplayName(ItemData def, InventoryItemDto first)
+        {
+            string baseName = def != null ? def.itemName : $"Item#{first.itemId}";
+            if ((ItemType)first.type == ItemType.Key && first.instanceId > 0)
+            {
+                // Priority 1: ShipTelemetryClientState (все клиенты)
+                var telemetry = ProjectC.Ship.Client.ShipTelemetryClientState.Instance;
+                if (telemetry != null)
+                {
+                    foreach (var ship in telemetry.MyShips)
+                    {
+                        if (ship.Value.keyInstanceId == first.instanceId)
+                        {
+                            string shipName = ship.Value.displayName.ToString();
+                            if (!string.IsNullOrEmpty(shipName))
+                                return $"🚀 {shipName}";
+                            break;
+                        }
+                    }
+                }
+
+                // Priority 2: fallback через KeyRodInstanceWorld (доступен на Host)
+                if (ProjectC.Ship.Key.KeyRodInstanceWorld.IsInitialized)
+                {
+                    var inst = ProjectC.Ship.Key.KeyRodInstanceWorld.GetInstance(first.instanceId);
+                    if (inst != null)
+                    {
+                        // Ищем ShipController по registeredShipId в сцене
+                        foreach (var sc in UnityEngine.Object.FindObjectsByType<ProjectC.Player.ShipController>(
+                            UnityEngine.FindObjectsInactive.Include, UnityEngine.FindObjectsSortMode.None))
+                        {
+                            if (sc.NetworkObjectId == inst.registeredShipId)
+                            {
+                                string name = sc.CustomDisplayName;
+                                if (!string.IsNullOrEmpty(name))
+                                    return $"🚀 {name}";
+                            }
+                        }
+                    }
+                }
+            }
+            return baseName;
         }
 
         private void SyncListView()

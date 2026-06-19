@@ -5,6 +5,7 @@ using System.Collections.Generic;
 using ProjectC.Ship;
 using ProjectC.Ship.Network;  // T-KEY-07: ShipTelemetryState
 using ProjectC.Ship.Key;     // T-KEY-07: KeyRodInstanceWorld
+using ProjectC.Ship.Client;  // T-KEY-07: ShipTelemetryClientState
 using ProjectC.Trade.Core; // T-CARGO-02: ShipClass, TradeWorld, ShipClassLimits
 
 namespace ProjectC.Player
@@ -454,6 +455,13 @@ namespace ProjectC.Player
 
             // Регистрация в TradeWorld — отложенная (TradeWorld может быть не готов)
             StartCoroutine(RegisterCargoWhenReady());
+
+            // T-KEY-07: клиент-сайд подписка на ShipTelemetryClientState
+            // Выполняется и на Host (т.к. IsClient true), и на чистом клиенте.
+            if (IsClient)
+            {
+                ShipTelemetryClientState.Instance?.SubscribeToShip(this);
+            }
         }
 
         public override void OnNetworkDespawn()

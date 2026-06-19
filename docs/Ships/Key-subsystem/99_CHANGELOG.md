@@ -452,6 +452,69 @@ Priority 3 — ключевой фикс: `KeyRodInstanceBinding` — scene-plac
 | 6. **P** → "Key" фильтр | `🚀 Pushka` — имя сохранилось |
 | 7. **E** на том же ключе | `[InventoryWorld] Ключ (ID=...) уже есть в инвентаре` |
 | 8. **P** → всё ещё 1 ключ (не x2) | ✅ |
+
+---
+
+## 2026-06-19 — R2-SHIP-KEY-003 v12 (T-KEY-08: MyShipsTab UI + Architecture Refactor)
+
+**Контекст**: финальный тикет MVP — UI вкладка "Мои корабли" + архитектурный рефакторинг после Play Mode багов.
+
+### Что реализовано
+
+**T-KEY-08 (MyShipsTab UI)**:
+- ✅ NEW `Assets/_Project/Scripts/UI/Client/CharacterWindow/MyShipsTab.cs` (~530 строк) — dropdown + info panel + telemetry
+- ✅ PATCH `CharacterWindow.uxml` — заменён placeholder на полную структуру
+- ✅ PATCH `CharacterWindow.uss` — 11 стилей для вкладки
+- ✅ PATCH `CharacterWindow.cs` — добавлено поле `_myShipsTab`, удалены мусорные поля
+
+**Архитектурный рефакторинг (после Play Mode тестов)**:
+- ✅ PATCH `Assets/_Project/Items/Data/ItemRegistry.asset` — добавлены 3 Key entries (id=2009/2010/2011). Стабильные itemId навсегда.
+- ✅ PATCH `Assets/_Project/Scripts/Player/ShipController.cs` — auto-attach `ShipOwnershipRequirement` в `Awake()` (каждый корабль защищён автоматически)
+- ✅ PATCH `Assets/_Project/Items/Network/InventoryServer.cs` — guard дубликата по `instanceId` (не по `itemId` — раньше блокировало Medium/Heavy)
+- ✅ PATCH `MyShipsTab.cs` — 3-level fallback для ownedKeyItemIds (серверные данные / KeyRodInstanceWorld / snapshot клиента)
+- ✅ Real-time refresh dropdown: подписка на `InventoryClientState.OnSnapshotUpdated`
+- ✅ Persistence файл `KeyRodInstances.json` очищен (3 кривых instance с itemId=1010)
+
+**Compile**: 0 errors.
+
+### Архитектурный принцип
+
+> **Стабильный ID для каждого предмета.** Все Key-предметы должны быть зарегистрированы в `ItemRegistry.asset` с явными ID. Auto-ID через `GetOrRegisterItemId` — fallback для тестов, не production.
+
+### Известные смежные баги (требуют решения)
+
+| Проблема | Приоритет | Effort |
+|---|---|---|
+| InventoryTab показывает "x2 Pushka" если 2 Key с одним itemId | P1 | 30min |
+| Фильтр "Key" иногда неактивен после pickup 3 ключей | P2 | 1h |
+
+---
+
+## 2026-06-19 — R2-SHIP-KEY-003 v13 (T-KEY-08 fix: InventoryTab Key group by instanceId)
+
+**Контекст**: после Play Mode теста выявлен последний баг — при подборе 2+ Key-предметов с одним itemId инвентарь показывал "x2 Pushka" (группировка по itemId, а не по instance).
+
+**Что изменилось**:
+
+| Файл | Изменение |
+|---|---|
+| `Assets/_Project/Scripts/UI/Client/CharacterWindow/InventoryTab.cs` | `InventoryListItem` struct: + `int instanceId` поле. Группировка в `RefreshInventoryCache`: Key-предметы группируются по `(itemId, instanceId)`, остальные — по `itemId`. |
+
+**Логика**:
+```csharp
+int groupKey2 = (ItemType)dto.type == ItemType.Key ? dto.instanceId : 0;
+var compositeKey = (dto.itemId, groupKey2);
+```
+
+**Verify**: 0 errors compile.
+
+**Тест-план**:
+1. Подобрать 2 разных ключа (Light + Medium) с разными ItemData
+2. Открыть **P** → ИНВЕНТАРЬ → фильтр "Key"
+3. Должно быть **2 отдельных строки** с разными именами кораблей
+4. Если у 2 разных Key один itemId (legacy) — всё равно 2 строки, т.к. instanceId разный
+
+**MVP завершён полностью.** R2-SHIP-KEY-003 done.
 ---
 
 *Changelog ведёт агент Mavis.*

@@ -67,6 +67,9 @@ namespace ProjectC.UI.Client
         private struct InventoryListItem
         {
             public string itemId;
+            // T-KEY-08 fix: instanceId для уникальной идентификации Key-предметов.
+            // 0 = не применимо (не Key или legacy item).
+            public int instanceId;
             public string displayName;
             public ItemType type;
             public int quantity;
@@ -357,15 +360,20 @@ namespace ProjectC.UI.Client
                 return;
             }
 
-            // Группируем по (itemId) — несколько стеков = один entry с total
-            var groups = new Dictionary<int, (int totalQty, InventoryItemDto first)>();
+            // T-KEY-08 fix: Key-предметы группируем по (itemId, instanceId) — иначе 2 разных
+            // ключа одного типа сливаются в "x2 Pushka". Остальные предметы — по itemId.
+            var groups = new Dictionary<(int itemId, int instanceId), (int totalQty, InventoryItemDto first)>();
             foreach (var dto in items)
             {
                 if (dto.itemId <= 0) continue;
-                if (groups.TryGetValue(dto.itemId, out var existing))
-                    groups[dto.itemId] = (existing.totalQty + dto.quantity, existing.first);
+
+                int groupKey2 = (ItemType)dto.type == ItemType.Key ? dto.instanceId : 0;
+                var compositeKey = (dto.itemId, groupKey2);
+
+                if (groups.TryGetValue(compositeKey, out var existing))
+                    groups[compositeKey] = (existing.totalQty + dto.quantity, existing.first);
                 else
-                    groups[dto.itemId] = (dto.quantity, dto);
+                    groups[compositeKey] = (dto.quantity, dto);
             }
 
             // T-P19: сортировка по (ItemType, displayName) — категории сгруппированы,
@@ -378,6 +386,7 @@ namespace ProjectC.UI.Client
                 _inventoryCache.Add(new InventoryListItem
                 {
                     itemId = first.itemId.ToString(),
+                    instanceId = first.instanceId,
                     displayName = ResolveKeyItemDisplayName(def, first),
                     type = (ItemType)first.type,
                     quantity = kvp.Value.totalQty,

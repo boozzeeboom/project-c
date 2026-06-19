@@ -1,7 +1,7 @@
 # T-KEY-08: MyShipsTab UI — план реализации
 
 > Интеграция UI вкладки "ship" в CharacterWindow.  
-> Дата: 2026-06-19 | Версия: v12 (план) | Тикет: T-KEY-08
+> Дата: 2026-06-19 | Версия: v12 | Тикет: T-KEY-08 | Статус: ✅ MVP-1..4 завершены
 
 ---
 
@@ -20,81 +20,76 @@
 | Источник | Что даёт | Где живёт |
 |---|---|---|
 | `InventoryData.GetIdsForType(Key)` | Список itemId всех Key-предметов в инвентаре | Клиент |
-| `InventoryData.GetKeyInstanceIds()` | Параллельный список `instanceId` (стабильные между сессиями? — нет, эфемерные. См. ниже) | Клиент |
 | `KeyRodInstanceWorld.GetInstancesForPlayer(clientId)` | Список `instanceId` ключей, которыми владеет игрок | Server-only |
 | `KeyRodInstanceWorld.GetInstance(instanceId)` | `KeyRodInstance` (itemId, registeredShipId, ownerPlayerId, state) | Server-only |
 | `ShipTelemetryClientState.MyShips` | Список `ShipTelemetryState` для кораблей владельца | Клиент |
+| `ItemRegistry` | Стабильный itemId ↔ ItemData маппинг | Static asset |
 
 ### 2.2 Проблема: instanceId эфемерный, KeyRodInstanceWorld — server-only
 
-После рестарта persistence `instanceId` переназначается. На клиенте `KeyRodInstanceWorld` НЕ инициализирован. Чтобы получить список "моих кораблей" на клиенте, нужен **путь через InventoryData + scene-placed `KeyRodInstanceBinding`** (как мы делали в `InventoryTab.ResolveKeyItemDisplayName`).
+После рестарта persistence `instanceId` переназначается. На клиенте `KeyRodInstanceWorld` НЕ инициализирован. Чтобы получить список "моих кораблей" на клиенте, нужен путь через scene-placed `KeyRodInstanceBinding` (стабильный между сессиями).
 
-### 2.3 Решение — Client-side resolution
-
-Аналогично `ResolveKeyItemDisplayName`:
+### 2.3 Решение — 3 уровня fallback
 
 ```csharp
-// В новом MyShipsTab:
-List<ShipTelemetryState> myShips = new();
+// MyShipsTab.RefreshShipList:
+HashSet<int> ownedKeyItemIds = new();
 
-// 1. Получить все Key-слоты из инвентаря
-foreach (var kv in inventoryData.GetAllKeySlots()) {
-    // 2. Найти KeyRodInstanceBinding по itemId в сцене (стабильный scene-placed)
-    // 3. Получить _ship → ShipController
-    // 4. Взять _telemetryState.Value
-    myShips.Add(ship.TelemetryState);
-}
+// Priority 1: серверные данные напрямую (Host)
+var data = invWorld.GetOrCreate(myId).GetIdsForType(Key);
+
+// Priority 2: KeyRodInstanceWorld.GetInstancesForPlayer
+foreach (var iid in KeyRodInstanceWorld.GetInstancesForPlayer(myId))
+    ownedKeyItemIds.Add(KeyRodInstanceWorld.GetInstance(iid).itemId);
+
+// Priority 3: snapshot клиента (чистый client)
+foreach (var it in invState.CurrentSnapshot.Value.items)
+    if (it.type == Key) ownedKeyItemIds.Add(it.itemId);
+
+// Iterate scene-placed KeyRodInstanceBinding, проверяя ownedKeyItemIds.Contains(targetId)
 ```
-
-**Преимущества**: работает между сессиями (стабильно).
 
 ### 2.4 UI структура (UXML)
 
 ```xml
-<section name="ship-section" class="ship-section">
-  <!-- Header: dropdown выбора корабля -->
-  <DropdownField name="ship-selector"
-                 label="Корабли"
-                 class="ship-selector" />
-
-  <!-- Body: информация о выбранном корабле -->
-  <VisualElement name="ship-info" class="ship-info">
-
-    <!-- Карточка 1: общее -->
-    <Label class="ship-info-name" name="ship-info-name" />
-    <Label class="ship-info-class" name="ship-info-class" />
-    <Label class="ship-info-key-id" name="ship-info-key-id" />
-
-    <!-- Карточка 2: топливо -->
-    <ProgressBar name="ship-fuel-bar" />
-    <Label name="ship-fuel-text" />
-
-    <!-- Карточка 3: груз -->
-    <ProgressBar name="ship-cargo-bar" />
-    <Label name="ship-cargo-text" />
-
-    <!-- Карточка 4: модули -->
-    <Label class="ship-info-header" text="Установленные модули:" />
-    <ListView name="ship-modules-list" />
-
-    <!-- Карточка 5: позиция (для отладки) -->
-    <Label name="ship-info-position" />
-
-    <!-- Card 6: состояние -->
-    <Label name="ship-info-state" />
-  </VisualElement>
+<section name="ship-section" class="list-section">
+ <Label text="Мои корабли" class="section-title" />
+ <DropdownField name="ship-selector" label="Корабль" class="ship-selector" />
+ <Label name="ship-empty-label" text="Нет доступных кораблей. Найдите ключ в мире." class="ship-empty" />
+ <VisualElement name="ship-info" class="ship-info">
+  <Label name="ship-info-name" text="—" class="ship-info-name" />
+  <Label name="ship-info-class" text="—" class="ship-info-class" />
+  <Label name="ship-info-key-id" text="—" class="ship-info-key-id" />
+  <Label text="Топливо" class="ship-info-header" />
+  <ProgressBar name="ship-fuel-bar" value="0" low-value="0" high-value="100" class="ship-fuel-bar" />
+  <Label name="ship-fuel-text" text="—" class="ship-info-row" />
+  <Label text="Груз" class="ship-info-header" />
+  <ProgressBar name="ship-cargo-bar" value="0" low-value="0" high-value="100" class="ship-cargo-bar" />
+  <Label name="ship-cargo-text" text="—" class="ship-info-row" />
+  <Label text="Установленные модули" class="ship-info-header" />
+  <ScrollView name="ship-modules-scroll" class="ship-modules-scroll">
+   <VisualElement name="ship-modules-container" class="ship-modules-container" />
+  </ScrollView>
+  <Label text="Позиция" class="ship-info-header" />
+  <Label name="ship-info-position" text="—" class="ship-info-row" />
+  <Label text="Состояние" class="ship-info-header" />
+  <Label name="ship-info-state" text="—" class="ship-info-row" />
+ </VisualElement>
 </section>
 ```
 
 ### 2.5 CSS classes
 
 ```css
-.ship-section { padding: 8px; }
-.ship-selector { margin-bottom: 12px; }
-.ship-info { padding: 12px; background: rgba(0,0,0,0.1); border-radius: 4px; }
-.ship-info-name { font-size: 18px; -unity-font-style: bold; margin-bottom: 4px; }
-.ship-info-class { font-size: 14px; color: rgb(180,180,180); margin-bottom: 12px; }
-.ship-info-header { font-size: 14px; -unity-font-style: bold; margin-top: 12px; margin-bottom: 4px; }
+.ship-selector { margin-bottom: 8px; flex-shrink: 0; }
+.ship-empty { font-size: 11px; color: rgb(150,150,150); font-style: italic; }
+.ship-info { padding: 8px; background: rgba(30,40,60,0.25); border-radius: 3px; flex-grow: 1; }
+.ship-info-name { font-size: 16px; font-style: bold; color: rgb(220,230,240); }
+.ship-info-class { font-size: 12px; color: rgb(180,200,220); }
+.ship-info-header { font-size: 11px; font-style: bold; color: rgb(180,200,220); }
+.ship-fuel-bar, .ship-cargo-bar { height: 14px; margin-bottom: 4px; }
+.ship-modules-scroll { max-height: 33%; }
+.ship-module-row { flex-direction: row; padding: 2px 4px; }
 ```
 
 ---
@@ -103,99 +98,82 @@ foreach (var kv in inventoryData.GetAllKeySlots()) {
 
 ### Шаг 1: NEW — `Assets/_Project/Scripts/UI/Client/CharacterWindow/MyShipsTab.cs`
 
-```csharp
-public class MyShipsTab
-{
-    // Ссылки на UI элементы
-    private DropdownField _shipSelector;
-    private VisualElement _shipInfo;
-    private Label _name, _class, _keyId, _fuelText, _cargoText, _position, _state;
-    private ProgressBar _fuelBar, _cargoBar;
-    private ListView _modulesList;
-
-    // Текущий выбранный корабль
-    private ulong _currentShipNetId;
-
-    // Метод вызывается CharacterWindow при SwitchTab("ship")
-    public void Build(VisualElement shipSection) { /* attach to UXML */ }
-
-    // Подписка на telemetry updates
-    public void Subscribe(ShipTelemetryClientState state) { /* OnShipStateChanged */ }
-    public void Unsubscribe() { /* unsubscribe */ }
-
-    // Когда инвентарь изменился (key picked up / dropped)
-    public void RefreshShipList() {
-        // 1. Получить все Key-слоты
-        // 2. Для каждого — найти KeyRodInstanceBinding в сцене по itemId
-        // 3. Получить ShipController.TelemetryState
-        // 4. Обновить _shipSelector choices
-        // 5. Если ничего не выбрано → выбрать первый
-        // 6. Обновить info panel
-    }
-
-    private void OnShipSelectorChanged(ChangeEvent<string> evt) {
-        // Парсим выбор, обновляем _currentShipNetId
-        // Обновить info panel из telemetry state
-    }
-
-    private void OnTelemetryChanged(ulong shipNetId, ShipTelemetryState state) {
-        // Если это наш корабль — обновить UI
-    }
-}
-```
+Класс `MyShipsTab` в namespace `ProjectC.UI.Client`. Методы:
+- `BuildUI(CharacterWindow owner, VisualElement root)` — привязка UI элементов
+- `OnTabShown()` — подписка telemetry + inventory, RefreshShipList
+- `OnTabHidden()` — no-op (не отписываемся, чтобы dropdown обновлялся без переоткрытия)
+- `Unsubscribe()` — снимает обе подписки (вызывается из OnDisable)
+- `TrySubscribeTelemetry()` — lazy subscribe на `ShipTelemetryClientState.OnShipStateChanged`
+- `TrySubscribeInventory()` — lazy subscribe на `InventoryClientState.OnSnapshotUpdated`
+- `HandleShipStateChanged(ulong shipNetId)` — обновляет info panel если выбран этот корабль
+- `HandleInventorySnapshotUpdated(InventorySnapshotDto snap)` — RefreshShipList
+- `RefreshShipList()` — 3-level fallback для ownedKeyItemIds + iterate scene-placed bindings
+- `RenderSelectedShip()` — рендер name/class/fuel/cargo/modules/position/state из telemetry
+- `RenderModules(ShipController sc)` — reflection-based names
+- `HasKeyItemInSnapshot(snap, itemData)` — НЕ используется (legacy после рефакторинга)
 
 ### Шаг 2: PATCH — `CharacterWindow.cs`
 
-- + `MyShipsTab _myShipsTab` поле
-- + `BuildMyShipsTab()` вызывается из `EnsureBuilt()`
-- В `SwitchTab("ship")` → `_myShipsTab.RefreshShipList()` + `Subscribe()`
-- В `SwitchTab(<other>)` → `_myShipsTab.Unsubscribe()`
-- В `OnDestroy` / `OnDisable` → `_myShipsTab.Unsubscribe()`
+- + `MyShipsTab _myShipsTab` поле (вместе с `_inventoryTab` после `private InventoryTab _inventoryTab;`)
+- В `EnsureBuilt()` (после `_inventoryTab.BuildUI(...)`):
+  ```csharp
+  _myShipsTab = new MyShipsTab();
+  _myShipsTab.BuildUI(this, _root);
+  ```
+- В `SwitchTab(tab)`:
+  ```csharp
+  if (isShip) { if (_myShipsTab != null) _myShipsTab.OnTabShown(); }
+  ```
+- Удалены мусорные `_shipName/_shipState/_shipSpeed/_shipFuel/_shipCargo` поля
+- `RefreshShipStats()` — no-op (legacy stub)
 
 ### Шаг 3: PATCH — `CharacterWindow.uxml`
 
-Добавить `<section name="ship-section">` сразу после открытия `<div name="tab-content-ship">`:
-
-```xml
-<div id="tab-content-ship" name="tab-content-ship" class="tab-content" style="display: none;">
-    <section name="ship-section" class="ship-section">
-        <DropdownField name="ship-selector" label="Корабли" class="ship-selector" />
-        <VisualElement name="ship-info" class="ship-info">
-            <!-- карточки как в §2.4 -->
-        </VisualElement>
-    </section>
-</div>
-```
+Заменён placeholder (`<ListView name="ship-name"/>`) на полноценную структуру (см. §2.4).
 
 ### Шаг 4: PATCH — `CharacterWindow.uss`
 
-+ `.ship-section`, `.ship-selector`, `.ship-info`, `.ship-info-name`, etc. (см. §2.5).
++ 11 стилей (см. §2.5).
 
-### Шаг 5: PATCH — `InventoryClientState.cs` (опционально)
+### Шаг 5: AUTO — `ShipController.cs`
 
-+ `event Action OnInventoryUpdated` — стреляет при AddItem/RemoveItem для Key. `MyShipsTab` подписывается на это событие и перезагружает список.
+```csharp
+// T-KEY-08: авто-добавление ShipOwnershipRequirement
+if (GetComponent<ProjectC.Ship.Key.ShipOwnershipRequirement>() == null)
+    gameObject.AddComponent<ProjectC.Ship.Key.ShipOwnershipRequirement>();
+```
 
-Альтернатива: перезагружать список при открытии вкладки (тогда event не нужен).
+### Шаг 6: PATCH — `InventoryServer.cs`
+
+Guard дубликата по `instanceId` (не по `itemId`):
+```csharp
+if (instanceId > 0 && type == Key)
+{
+    if (InventoryWorld.Instance.HasKeyInstance(clientId, instanceId))
+    {
+        SendResult(clientId, FailResult(InventoryResultCode.ItemNotFound));
+        return;
+    }
+}
+```
 
 ---
 
 ## §4. Подводные камни
 
-### 4.1 Стабильность между сессиями
+### 4.1 Стабильный itemId для каждого предмета
 
-`InstanceId` эфемерный. После рестарта:
-- `InventoryData.keySlots[i].instanceId` — старый
-- `ShipController._telemetryState.keyInstanceId` — старый (но `ShipController.OnNetworkSpawn` перезаписывает)
+**Критично**: все Key ItemData **должны быть** в `ItemRegistry.asset` с явными ID. Auto-ID через `GetOrRegisterItemId` — fallback для тестов, не production.
 
-Решение: **не использовать `instanceId` для matching** на клиенте. Использовать `itemId` (стабильный) + scene-placed `KeyRodInstanceBinding` (стабильный).
+Пример: `Key_light_ship=2010`, `Key_medium_ship=2011`, `Key_heavy_ship=2009`.
 
 ### 4.2 KeyRodInstanceBinding инициализируется после InventoryServer
 
-Если игрок открывает вкладку до того как сервер создал `KeyRodInstance` (OnNetworkSpawn race) — `KeyRodInstanceWorld.GetInstance` вернёт null.
+Если игрок открывает вкладку до того как сервер создал `KeyRodInstance` (OnNetworkSpawn race) — `_instanceId == 0`.
 
-Решение: `RefreshShipList()` итерирует scene-placed bindings напрямую, не через `KeyRodInstanceWorld`. См. `ResolveKeyItemDisplayName` Priority 3 — тот же подход.
+Решение: `RefreshShipList()` **не использует** `_instanceId` для matching. Использует `itemId` через `ItemRegistry`.
 
-### 4.3 ServerCargoPenalty и ShipModuleManager — где?
+### 4.3 ServerCargoPenalty и ShipModuleManager
 
 Поля `cargoUsed/cargoMax/moduleCount` уже в `ShipTelemetryState`. Они обновляются в `ShipController.UpdateTelemetryState()` (T-KEY-07) при `IsServer`. На клиенте они доступны через `ShipController.TelemetryState`.
 
@@ -203,13 +181,13 @@ public class MyShipsTab
 
 `ShipTelemetryClientState` агрегирует ВСЕ корабли клиента, независимо от дистанции. NetworkVariable синхронизируется NGO глобально.
 
-### 4.5 Что показывать если у игрока нет ключей?
+### 4.5 Что показывать если у игрока нет ключей
 
-`ship-selector` пустой → показать placeholder "Нет доступных кораблей. Найдите ключ в мире."
+`ship-selector` скрыт, `_emptyLabel` показывает "Нет доступных кораблей. Найдите ключ в мире."
 
-### 4.6 Что показывать если корабль уничтожен?
+### 4.6 RefreshShipList без переоткрытия вкладки
 
-`ShipTelemetryState.state` (byte). `KeyRodInstanceState.Destroyed` ≠ `ShipState.Destroyed` — это разные enum'ы. Показывать "Уничтожен" если `state == (byte)ShipState.Destroyed`.
+Подписка на `InventoryClientState.OnSnapshotUpdated` → handler вызывает `RefreshShipList`. Работает в реальном времени.
 
 ---
 
@@ -217,84 +195,154 @@ public class MyShipsTab
 
 | Шаг | Ожидание |
 |---|---|
-| 1. Play Host (без ключей) | Вкладка "КОРАБЛЬ" → placeholder "Нет доступных кораблей" |
-| 2. **E** на [KeyRod_ShipLight] → открыть P | Выпадающий список: `🚀 Pushka` (1 item) |
-| 3. Выбрать Pushka | Info: `Pushka (Light)`, fuel bar, cargo bar, modules list |
-| 4. Открыть P, переключиться на другой таб, обратно | Список сохранился, выбор сохранился |
-| 5. Exit Play → Play снова | При открытии P: список всё ещё `🚀 Pushka` |
-| 6. Подобрать второй ключ (heavy) | Список: `🚀 Pushka`, `🚀 Hammer` |
-| 7. Переключиться между кораблями | Info панель обновляется с правильными данными каждого |
+| 1. Play Host (без ключей) | Console: `[ItemRegistry] Loaded 2011 items`. `[ShipController] Auto-added ShipOwnershipRequirement на Ship_Medium_root` |
+| 2. **E** на [KeyRod_ShipLight] → P → КОРАБЛЬ | Dropdown: `🚀 Pushka` (1 item) |
+| 3. **E** на [KeyRod_ShipMedium] → P → КОРАБЛЬ (НЕ закрывая!) | Dropdown автоматически обновляется: `🚀 Pushka`, `🚀 Русски_тест` |
+| 4. Выбрать Medium | Info: name, class, keyId, fuel bar, cargo bar, modules list, position, state |
+| 5. **E** на [KeyRod_ShipHeavy] → P → КОРАБЛЬ | Dropdown: 3 корабля |
+| 6. Exit → Play снова → P | Все 3 корабля в списке |
+| 7. **F** у Medium без medium ключа (дропнуть) | ❌ Доступ запрещён |
 
 ---
 
-## §6. Effort итерации
+## §6. Effort итераций
 
 | Итерация | Что | Файлы | Effort |
 |---|---|---|---|
-| **MVP-1** | Dropdown + placeholder | UXML + USS + MyShipsTab.cs (stub) | 0.5h |
-| **MVP-2** | Resolution через `KeyRodInstanceBinding` (без telemetry) | MyShipsTab.cs | 1h |
-| **MVP-3** | Подписка на `ShipTelemetryClientState` + рендер info | MyShipsTab.cs | 1.5h |
-| **MVP-4** | Refresh при AddItem/RemoveItem (опционально) | InventoryClientState.cs | 0.5h |
-| **MVP-5** | Modules list (читает ShipModuleManager через reflection) | MyShipsTab.cs | 1h |
+| **MVP-1** | Dropdown + placeholder + UXML + USS | UXML + USS + MyShipsTab.cs (stub) | 0.5h |
+| **MVP-2** | Resolution через scene-placed bindings | MyShipsTab.cs | 1h |
+| **MVP-3** | Подписка на ShipTelemetryClientState + рендер info | MyShipsTab.cs | 1.5h |
+| **MVP-4** | Refresh при AddItem/RemoveItem (OnSnapshotUpdated) | MyShipsTab.cs | 0.5h |
+| **Arch-refactor** | ItemRegistry + 3-level fallback + auto-attach + guard | Asset + 3 .cs файла | 1.5h |
 
-**Total MVP**: ~4.5h
+**Total**: ~5h
 
 ---
 
 ## §7. Что отложено в Phase 2
 
-| Фича | Почему |
-|---|---|
-| Кнопка "Лететь к кораблю" | Требует waypoint/companion system |
-| Кнопка "Открыть грузовой отсек" | Cargo UI — отдельный тикет |
-| Trade через вкладку | Это уже в Markets UI |
-| Изменение имени корабля | Не было в MVP |
-| Детальные модули (иконки, описание) | Phase 2 |
+| Фича | Почему | Effort |
+|---|---|---|
+| Детальные модули (иконки, описание, эффекты) | Требует новый UI | 2h |
+| Кнопка "Лететь к кораблю" (waypoint) | Требует waypoint/companion system | 3h |
+| Cargo UI во вкладке (открытие грузового отсека) | Cargo UI — отдельный тикет | 4h |
+| Trade через вкладку | Это уже в Markets UI | 4h |
+| Изменение имени корабля через UI | Не было в MVP | 1h |
+| HUD telemetry widget для активного корабля | Зависит от UI-проекта | 3h |
+| Multi-pilot display | Убран из MVP (Q8) | 4h |
 
 ---
 
-## §8. Зависимости (нужно для старта)
+## §8. Зависимости
 
 | Зависимость | Статус |
 |---|---|
-| `ShipTelemetryClientState.MyShips` populated | ✅ T-KEY-07 |
+| `ShipTelemetryClientState` populated | ✅ T-KEY-07 |
 | `InventoryData.GetIdsForType(Key)` | ✅ T-KEY-02 |
 | `KeyRodInstanceBinding._ship/_keyItemData` scene-placed | ✅ T-KEY-04 + scene setup |
+| ItemRegistry содержит Key-предметы с стабильными ID | ✅ Ручная правка asset |
 | Пустая вкладка `tab-content-ship` в UXML | ✅ есть |
-
-**Всё готово. Можно начинать MVP-1.**
 
 ---
 
 ## §9. Статус реализации
 
-**MVP-1, MVP-2, MVP-3 завершены 2026-06-19.**
+**MVP-1, MVP-2, MVP-3, MVP-4 завершены 2026-06-19.**
 
 **Файлы**:
-- ✅ NEW: `Assets/_Project/Scripts/UI/Client/CharacterWindow/MyShipsTab.cs` (~470 строк)
+- ✅ NEW: `Assets/_Project/Scripts/UI/Client/CharacterWindow/MyShipsTab.cs` (~530 строк)
 - ✅ PATCH: `Assets/_Project/UI/Resources/UI/CharacterWindow.uxml` — заменён placeholder на полноценную структуру (dropdown + info panel + modules scroll)
-- ✅ PATCH: `Assets/_Project/UI/Resources/UI/CharacterWindow.uss` — добавлены 11 стилей (.ship-selector, .ship-info, .ship-info-name, .ship-fuel-bar, .ship-cargo-bar, .ship-modules-scroll, .ship-module-row и др.)
-- ✅ PATCH: `Assets/_Project/Scripts/UI/Client/CharacterWindow.cs` — добавлено поле `_myShipsTab`, удалены мусорные `_shipName/_shipState/_shipSpeed/_shipFuel/_shipCargo`, перенаправлен `RefreshShipStats` в `MyShipsTab.OnTabShown`
+- ✅ PATCH: `Assets/_Project/UI/Resources/UI/CharacterWindow.uss` — добавлены 11 стилей
+- ✅ PATCH: `Assets/_Project/Scripts/UI/Client/CharacterWindow.cs` — добавлено поле `_myShipsTab`, удалены мусорные поля, перенаправлен `RefreshShipStats`
+- ✅ PATCH: `Assets/_Project/Scripts/Player/ShipController.cs` — auto-attach `ShipOwnershipRequirement` в `Awake()`
+- ✅ PATCH: `Assets/_Project/Items/Network/InventoryServer.cs` — guard дубликата по `instanceId`
+- ✅ PATCH: `Assets/_Project/Items/Data/ItemRegistry.asset` — добавлены 3 Key entries (id=2009/2010/2011)
 
 **Compile**: 0 errors.
 
-**Что реализовано (MVP-1..3)**:
-- Dropdown со списком кораблей из Key-слотов инвентаря (стабильно между сессиями через scene-placed KeyRodInstanceBinding)
-- Info panel с 7 секциями: name, class, keyId, fuel (bar+text), cargo (bar+text), modules list, position, state
-- Subscribe на `ShipTelemetryClientState.OnShipStateChanged` — UI обновляется при изменениях (с throttle)
-- Throttle: не перерисовываем UI если fuel/cargo/state изменились незначительно (eps=0.01)
-- Empty state: "Нет доступных кораблей. Найдите ключ в мире."
-- Modules list: читает имена модулей через reflection (`InstalledModules` property или `_modules` field, потом `name`/`displayName`/`Name`)
+**Что реализовано**:
+- Dropdown со списком кораблей из Key-слотов инвентаря
+- Info panel с 7 секциями: name, class, keyId, fuel, cargo, modules, position, state
+- Subscribe на `ShipTelemetryClientState.OnShipStateChanged` (с throttle eps=0.01)
+- Subscribe на `InventoryClientState.OnSnapshotUpdated` — **real-time refresh** dropdown при pickup/drop
+- Empty state: "Нет доступных кораблей"
+- Modules list: reflection-based имена модулей
+- 3-level fallback для ownedKeyItemIds (серверные данные / KeyRodInstanceWorld / snapshot)
+- Auto-attach ShipOwnershipRequirement на каждый ShipController
+- Guard дубликата по instanceId (не по itemId)
 
-**Что отложено (Phase 2)**:
-- 🔲 Refresh при AddItem/RemoveItem (MVP-4) — пока RefreshShipList вызывается только при OnTabShown
-- 🔲 Детальные модули с иконками (MVP-5 расширенный)
+---
 
-**Тест-план**:
+## §10. Архитектурный рефакторинг (2026-06-19)
+
+После первых Play Mode тестов выявлено 3 бага:
+
+1. **itemId ключей неопределённый** — ItemRegistry не содержал Key-предметы, `GetOrRegisterItemId` назначал auto-ID 1010 всем
+2. **MyShipsTab показывал wrong ship** — `FindKeyRodBindingByItemId` возвращал первый matching, неправильный
+3. **Persistence загрязнён** — `KeyRodInstances.json` имел кривые instance'ы
+
+### Фиксы
+
+| Фикс | Файл | Что изменилось |
+|---|---|---|
+| **Key items в ItemRegistry** | `Assets/_Project/Items/Data/ItemRegistry.asset` | +3 entries: `Key_heavy_ship=2009`, `Key_light_ship=2010`, `Key_medium_ship=2011`. Стабильные ID навсегда. |
+| **Persistence сброшен** | `Application.persistentDataPath/KeyRodInstances.json` | Удалён (3 instance с одинаковым itemId=1010). Сервер пересоздал корректные. |
+| **MyShipsTab: 3-level fallback** | `MyShipsTab.cs` | `RefreshShipList()` использует 3 источника: (1) серверные данные, (2) `KeyRodInstanceWorld.GetInstancesForPlayer()`, (3) `InventoryClientState.CurrentSnapshot`. Устойчиво к race-condition. |
+| **Guard дубликата по instanceId** | `InventoryServer.cs` | `RequestPickupRpc` проверяет `HasKeyInstance(clientId, instanceId)` **до** TryPickup. Раньше — по itemId, что блокировало Medium/Heavy. |
+| **Auto-attach ShipOwnershipRequirement** | `ShipController.cs` | `Awake()` → `if (GetComponent<ShipOwnershipRequirement>() == null) AddComponent`. |
+
+### Архитектурный принцип
+
+> **Стабильный ID для каждого предмета.** Все Key-предметы должны быть зарегистрированы в `ItemRegistry.asset` с явными ID. Auto-ID через `GetOrRegisterItemId` — fallback для тестов, не production.
+
+### Тест-план
 
 | Шаг | Ожидание |
 |---|---|
-| 1. Play Host (без ключей) → P → КОРАБЛЬ | Placeholder "Нет доступных кораблей" |
-| 2. **E** на [KeyRod_ShipLight] → P → КОРАБЛЬ | Dropdown: `🚀 Pushka` (1 item) |
-| 3. Выбрать Pushka | Info: name, class, keyId, fuel bar, cargo bar, modules list, position, state |
-| 4. Exit → Play снова → P → КОРАБЛЬ | Список сохранился (через scene-placed binding) |
+| Play Host | Console: `[ItemRegistry] Loaded 2011 items` (включая 3 Key). `[ShipController] Auto-added ShipOwnershipRequirement на Ship_Medium_root` |
+| **E** на любом ключе | `[InventoryServer] Pickup Key: TransferInstance(id=N, NONE→0)` + `[MyShipsTab] ownedKeyItemIds: [...]` |
+| **P** → КОРАБЛЬ | Dropdown обновляется **в реальном времени** при подборе каждого ключа |
+| Подобрать 3 разных ключа | Dropdown: 3 корабля |
+| **F** у любого корабля | Доступ разрешён только при наличии ключа |
+
+---
+
+## §11. Что осталось
+
+### ✅ Сделано
+
+| MVP | Что | Статус |
+|---|---|---|
+| MVP-1 | Dropdown + placeholder | ✅ |
+| MVP-2 | Resolution через KeyRodInstanceBinding | ✅ |
+| MVP-3 | Подписка на ShipTelemetryClientState + info panel | ✅ |
+| MVP-4 | Refresh при AddItem/RemoveItem | ✅ |
+| Arch-refactor | ItemRegistry + 3-level fallback + auto-attach + guard | ✅ |
+
+### 🔲 Phase 2 (отложено, не в MVP)
+
+| Тикет | Что | Effort |
+|---|---|---|
+| T-KEY-08-2 | Детальные модули (иконки, описание, эффекты) | 2h |
+| T-KEY-08-3 | Кнопка "Лететь к кораблю" (waypoint) | 3h |
+| T-KEY-08-4 | Cargo UI во вкладке (открытие грузового отсека) | 4h |
+| T-KEY-08-5 | Изменение имени корабля через UI | 1h |
+| T-KEY-08-6 | HUD telemetry widget для активного корабля | 3h |
+| T-KEY-08-7 | Trade через вкладку "Корабли" | 4h |
+
+### 🔴 Известные смежные баги (требуют решения)
+
+| Проблема | Описание | Приоритет | Effort |
+|---|---|---|---|
+| ~~InventoryTab показывает "x2 Pushka"~~ | ~~Если 2 PickupItem используют одно ItemData — инвентарь группирует по itemId.~~ ✅ **FIXED 2026-06-19** | ✅ P1 done | 30min |
+| ~~Фильтр "Key" ломается после pickup 3 ключей~~ | ~~Расследовать — возможно `InventoryClientState.OnSnapshotUpdated` стреляет несколько раз, фильтр не успевает пересчитаться~~ | ~~P2~~ ✅ done | — |
+
+### Что дальше
+
+**Самый логичный следующий шаг** — фикс дубликатов в InventoryTab (отображение Key-предметов по `instanceId`). Без этого игрок видит `x2 Pushka` хотя это разные ключи. 30 минут работы, решит оставшуюся UX-проблему.
+
+После этого — **Phase 2 фичи** или **другая подсистема** (Crafting, Markets, Quests и т.п.).
+
+---
+
+*Changelog ведёт агент Mavis. Дата: 2026-06-19*

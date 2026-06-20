@@ -125,11 +125,17 @@ namespace ProjectC.Docking.Network
         public void RequestDockingRpc(string stationId, ulong shipNetworkObjectId, RpcParams rpcParams = default)
         {
             ulong clientId = rpcParams.Receive.SenderClientId;
+
+            // FIX T-DOCK-RPC: Pre-build RpcParams for all TargetRpc calls below —
+            // NGO 2.x SpecifiedInParams требует явного TargetClientId в RpcParams
+            // (вызов изнутри RPC-обработчика не наследует rpcParams автоматически).
+            RpcParams targetRpcParams = ForClient(clientId);
+
             if (debugMode) Debug.Log($"[DockingServer] RequestDockingRpc client={clientId} station={stationId} ship={shipNetworkObjectId}");
 
             if (!CheckRateLimit(clientId))
             {
-                SendDockingAssignmentTargetRpc(clientId, MakeFail("RATE_LIMITED", shipNetworkObjectId));
+                SendDockingAssignmentTargetRpc(clientId, MakeFail("RATE_LIMITED", shipNetworkObjectId), targetRpcParams);
                 return;
             }
             if (DockingWorld.Instance == null)
@@ -142,7 +148,7 @@ namespace ProjectC.Docking.Network
             if (station == null)
             {
                 if (debugMode) Debug.LogWarning($"[DockingServer] station not found: {stationId}");
-                SendDockingAssignmentTargetRpc(clientId, MakeFail("STATION_NOT_FOUND", shipNetworkObjectId));
+                SendDockingAssignmentTargetRpc(clientId, MakeFail("STATION_NOT_FOUND", shipNetworkObjectId), targetRpcParams);
                 return;
             }
 
@@ -150,7 +156,7 @@ namespace ProjectC.Docking.Network
             if (ship == null || !ship.IsSpawned)
             {
                 if (debugMode) Debug.LogWarning($"[DockingServer] ship not found: {shipNetworkObjectId}");
-                SendDockingAssignmentTargetRpc(clientId, MakeFail("SHIP_NOT_FOUND", shipNetworkObjectId));
+                SendDockingAssignmentTargetRpc(clientId, MakeFail("SHIP_NOT_FOUND", shipNetworkObjectId), targetRpcParams);
                 return;
             }
 
@@ -167,7 +173,7 @@ namespace ProjectC.Docking.Network
             {
                 if (debugMode) Debug.LogWarning($"[DockingServer] AssignPad failed: {assignment.failReason}");
             }
-            SendDockingAssignmentTargetRpc(clientId, assignment);
+            SendDockingAssignmentTargetRpc(clientId, assignment, targetRpcParams);
         }
 
         /// <summary>
@@ -177,6 +183,8 @@ namespace ProjectC.Docking.Network
         public void RequestConfirmAssignmentRpc(ulong shipNetworkObjectId, bool accept, RpcParams rpcParams = default)
         {
             ulong clientId = rpcParams.Receive.SenderClientId;
+            RpcParams targetRpcParams = ForClient(clientId);
+
             if (debugMode) Debug.Log($"[DockingServer] RequestConfirmAssignmentRpc client={clientId} ship={shipNetworkObjectId} accept={accept}");
 
             if (!CheckRateLimit(clientId)) return;
@@ -196,7 +204,7 @@ namespace ProjectC.Docking.Network
                         timestamp = Time.time
                     };
                     if (debugMode) Debug.Log($"[DockingServer] Confirmed: pad={status.padId} client={clientId}");
-                    SendDockingStatusTargetRpc(clientId, status);
+                    SendDockingStatusTargetRpc(clientId, status, targetRpcParams);
                 }
             }
             else
@@ -211,7 +219,7 @@ namespace ProjectC.Docking.Network
                     timestamp = Time.time
                 };
                 if (debugMode) Debug.Log($"[DockingServer] Cancelled pending for client {clientId}");
-                SendDockingStatusTargetRpc(clientId, status);
+                SendDockingStatusTargetRpc(clientId, status, targetRpcParams);
             }
         }
 
@@ -223,6 +231,8 @@ namespace ProjectC.Docking.Network
         public void RequestTakeoffRpc(ulong shipNetworkObjectId, RpcParams rpcParams = default)
         {
             ulong clientId = rpcParams.Receive.SenderClientId;
+            RpcParams targetRpcParams = ForClient(clientId);
+
             if (debugMode) Debug.Log($"[DockingServer] RequestTakeoffRpc client={clientId} ship={shipNetworkObjectId}");
 
             if (!CheckRateLimit(clientId)) return;
@@ -235,7 +245,7 @@ namespace ProjectC.Docking.Network
             var takingOffShip = FindNetworkObject(shipNetworkObjectId)?.GetComponent<ShipController>();
             if (takingOffShip != null) takingOffShip.ExitDocked();
 
-            SendTakeoffApprovedTargetRpc(clientId, shipNetworkObjectId);
+            SendTakeoffApprovedTargetRpc(clientId, shipNetworkObjectId, targetRpcParams);
         }
 
         /// <summary>
@@ -246,6 +256,8 @@ namespace ProjectC.Docking.Network
         public void NotifyTouchedDownRpc(ulong shipNetworkObjectId, string padId, string stationId, RpcParams rpcParams = default)
         {
             ulong clientId = rpcParams.Receive.SenderClientId;
+            RpcParams targetRpcParams = ForClient(clientId);
+
             if (debugMode) Debug.Log($"[DockingServer] NotifyTouchedDownRpc client={clientId} ship={shipNetworkObjectId} pad={padId}");
 
             if (!CheckRateLimit(clientId)) return;
@@ -261,7 +273,7 @@ namespace ProjectC.Docking.Network
                 if (dockedShip != null) dockedShip.EnterDocked();
             }
 
-            SendDockingStatusTargetRpc(clientId, status);
+            SendDockingStatusTargetRpc(clientId, status, targetRpcParams);
         }
 
         // ============================================================
@@ -306,6 +318,25 @@ namespace ProjectC.Docking.Network
         {
             if (NetworkManager.Singleton == null || NetworkManager.Singleton.SpawnManager == null) return null;
             return NetworkManager.Singleton.SpawnManager.SpawnedObjects.TryGetValue(networkObjectId, out var no) ? no : null;
+        }
+
+        /// <summary>
+        /// T-DOCK-RPC: Создаёт RpcParams с TargetClientId для SpecifiedInParams.
+        /// NGO 2.x требует явного target при вызове TargetRpc ИЗНУТРИ другого RPC-обработчика.
+        /// </summary>
+        private static RpcParams ForClient(ulong clientId)
+        {
+            // NGO 2.x: RpcTarget — это property на NetworkBehaviour/NetworkManager.
+            // Single — extension-метод через .Single(clientId, RpcTargetUse).
+            var nm = NetworkManager.Singleton;
+            if (nm == null) return default;
+            return new RpcParams
+            {
+                Send = new RpcSendParams
+                {
+                    Target = nm.RpcTarget.Single(clientId, RpcTargetUse.Temp)
+                }
+            };
         }
     }
 }

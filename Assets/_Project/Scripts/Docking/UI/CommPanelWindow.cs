@@ -32,6 +32,7 @@ namespace ProjectC.Docking.UI
         // UI refs
         private UIDocument _doc;
         private VisualElement _root;
+        private VisualElement _container;
         private VisualElement _panel;
         private Label _header;
         private Label _message;
@@ -146,6 +147,7 @@ namespace ProjectC.Docking.UI
             _doc.sortingOrder = 10;
 
             _panel = _root.Q<VisualElement>("panel");
+            _container = _root.Q<VisualElement>("root");
             _header = _root.Q<Label>("header");
             _message = _root.Q<Label>("dispatcher-message");
             _progressBar = _root.Q<ProgressBar>("landing-window-bar");
@@ -210,11 +212,14 @@ namespace ProjectC.Docking.UI
                 _root.pickingMode = open ? PickingMode.Position : PickingMode.Ignore;
             }
             if (open)
-            {
-                UpdateUI();
-                // Inline fallback styles для frame-1 (USS может не успеть)
-                if (_panel != null) ApplyInlineFallbackStyles(_panel);
-            }
+                        {
+                            UpdateUI();
+                            // FIX T-DOCK-UI: ApplyInlineFallbackStyles на container (.comm-panel-root),
+                            // не на _panel. _panel — это ВНУТРЕННЯЯ панель внутри растянутого _container.
+                            // Применять absolute/translate к _panel бессмысленно — оно absolute в relative-родителе.
+                            // По паттерну CharacterWindow: позиционируем корневой VE.
+                            if (_container != null) ApplyInlineFallbackStyles(_container);
+                        }
 
             // Cursor — flight-режим держит курсор залоченным. При открытом UI отпускаем.
             if (open)

@@ -52,7 +52,7 @@ namespace ProjectC.Docking.UI
         private bool _subscribed = false;
 
         // ====================================================
-        // LIFECYCLE (как DialogWindow.cs)
+        // LIFECYCLE (как DialogWindow.cs / CharacterWindow.cs)
         // ====================================================
 
         private void Awake()
@@ -72,13 +72,25 @@ namespace ProjectC.Docking.UI
 
         private void OnEnable()
         {
+            if (_doc == null) _doc = GetComponent<UIDocument>();
+            if (_doc == null)
+            {
+                Debug.LogError("[CommPanelWindow] нет UIDocument на GameObject");
+                return;
+            }
             EnsureBuilt();
             TrySubscribe();
         }
 
         private void Start()
         {
-            EnsureBuilt();  // backup (как DialogWindow — UIDocument.OnEnable может быть позже)
+            // FIX: после всех OnEnable (включая UIDocument, который мог подвесить
+            // свой UXML-auto-load поверх нашего дерева) — перепроверяем состояние.
+            if (!_built || !IsLayoutValid())
+            {
+                Debug.LogWarning("[CommPanelWindow] Start(): layout invalid, rebuilding");
+                EnsureBuilt();
+            }
         }
 
         private void OnDisable()
@@ -92,31 +104,45 @@ namespace ProjectC.Docking.UI
             if (Instance == this) Instance = null;
         }
 
+        private bool IsLayoutValid()
+        {
+            // Не полагаемся на resolvedStyle.width — на первом кадре после
+            // Clear()+CloneTree() он бывает NaN/0 (USS layout не успел посчитаться).
+            // Достаточно проверить, что дерево существует и panel на месте.
+            return _built && _root != null && _panel != null;
+        }
+
         private void EnsureBuilt()
         {
-            if (_built) return;
-            if (_doc == null) _doc = GetComponent<UIDocument>();
-            if (_doc == null)
-            {
-                Debug.LogError("[CommPanelWindow] нет UIDocument", this);
-                return;
-            }
-
+            if (_doc.rootVisualElement == null) return;
             if (commPanelUxml == null)
                 commPanelUxml = Resources.Load<VisualTreeAsset>("UI/CommPanel");
             if (commPanelUss == null)
                 commPanelUss = Resources.Load<StyleSheet>("UI/CommPanel");
-
             if (commPanelUxml == null)
             {
-                Debug.LogError("[CommPanelWindow] нет UXML", this);
+                Debug.LogError("[CommPanelWindow] UXML не найден ни в Inspector, ни в Resources/UI/");
                 return;
             }
 
-            _doc.visualTreeAsset = commPanelUxml;
-            _root = _doc.rootVisualElement;
+            // КРИТИЧНО: очищаем и подвешиваем стили КАЖДЫЙ раз (после UIDocument.OnEnable
+            // может подвесить свой UXML-auto-load поверх нашего, и USS слетит).
+            _doc.rootVisualElement.Clear();
             if (commPanelUss != null)
-                _root.styleSheets.Add(commPanelUss);
+                _doc.rootVisualElement.styleSheets.Add(commPanelUss);
+
+            _root = commPanelUxml.CloneTree();
+            // CloneTree возвращает TemplateContainer с position:relative 0×0. Растягиваем на
+            // весь rootVE — иначе .comm-panel-root (position:absolute) уезжает в (-W/2,0).
+            _root.style.position = Position.Absolute;
+            _root.style.left = 0;
+            _root.style.top = 0;
+            _root.style.right = 0;
+            _root.style.bottom = 0;
+            // pickingMode=Ignore на root — клики "снаружи" диалога не пробрасываются в game
+            // во время модального окна. Кнопки внутри (.comm-panel-button-*) ловят mouse сами.
+            _root.pickingMode = PickingMode.Ignore;
+            _doc.rootVisualElement.Add(_root);
 
             _panel = _root.Q<VisualElement>("panel");
             _header = _root.Q<Label>("header");
@@ -129,8 +155,11 @@ namespace ProjectC.Docking.UI
             if (_secondaryButton != null) _secondaryButton.clicked += OnSecondaryClicked;
 
             _built = true;
-            SetOpen(false);
-            UpdateUI();
+            // Изначально скрыто — Show()/SetOpen(true) переключит на Flex
+            if (_root != null) _root.style.display = DisplayStyle.None;
+
+            if (Debug.isDebugBuild)
+                Debug.Log($"[CommPanelWindow] Built: rootVE.children={_doc.rootVisualElement.childCount}, styleSheets={_doc.rootVisualElement.styleSheets.count}");
         }
 
         // ====================================================
@@ -175,8 +204,38 @@ namespace ProjectC.Docking.UI
             if (!_built) return;
             IsOpen = open;
             if (_root != null)
-                _root.EnableInClassList("is-open", open);
-            if (open) UpdateUI();
+            {
+                _root.style.display = open ? DisplayStyle.Flex : DisplayStyle.None;
+                _root.pickingMode = open ? PickingMode.Position : PickingMode.Ignore;
+            }
+            if (open)
+            {
+                UpdateUI();
+                // Inline fallback styles для frame-1 (USS может не успеть)
+                if (_panel != null) ApplyInlineFallbackStyles(_panel);
+            }
+
+            // Cursor — flight-режим держит курсор залоченным. При открытом UI отпускаем.
+            if (open)
+            {
+                UnityEngine.Cursor.lockState = CursorLockMode.None;
+                UnityEngine.Cursor.visible = true;
+                // Frame-1 repaint fix: USS не успел примениться → принудительный repaint
+                _doc?.rootVisualElement?.MarkDirtyRepaint();
+                if (_doc?.rootVisualElement != null)
+                {
+                    _doc.rootVisualElement.schedule.Execute(() => _doc.rootVisualElement.MarkDirtyRepaint()).StartingIn(50);
+                }
+            }
+            else
+            {
+                var nm = Unity.Netcode.NetworkManager.Singleton;
+                if (nm != null && nm.IsListening)
+                {
+                    UnityEngine.Cursor.lockState = CursorLockMode.Locked;
+                    UnityEngine.Cursor.visible = false;
+                }
+            }
         }
 
         public void ToggleOpen()
@@ -515,6 +574,25 @@ namespace ProjectC.Docking.UI
                     UpdateUI();
                 }
             }
+        }
+
+        // ====================================================
+        // Helpers
+        // ====================================================
+
+        private static void ApplyInlineFallbackStyles(VisualElement main)
+        {
+            // FIX: на 1-м кадре resolvedStyle=initial (USS не успел примениться) — задаём
+            // только позиционирование и размеры inline. Всё остальное (фон, рамка, шрифт,
+            // padding, цвет) в CommPanel.uss с !important, который перебивает
+            // UnityDefaultRuntimeTheme. Дублировать эти свойства inline больше не нужно.
+            main.style.position = Position.Absolute;
+            main.style.top    = new Length(4,  LengthUnit.Percent);
+            main.style.left   = new Length(50, LengthUnit.Percent);
+            main.style.translate = new StyleTranslate(new Translate(new Length(-50, LengthUnit.Percent), 0));
+            main.style.width      = 560;
+            main.style.maxWidth   = new Length(90, LengthUnit.Percent);
+            main.style.maxHeight  = new Length(92, LengthUnit.Percent);
         }
     }
 }

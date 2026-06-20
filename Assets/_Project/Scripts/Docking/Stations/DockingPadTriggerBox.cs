@@ -76,15 +76,5 @@ namespace ProjectC.Docking.Stations
             }
             return null;
         }
-
-#if UNITY_EDITOR
-        private void OnDrawGizmos()
-        {
-            var col = GetComponent<BoxCollider>();
-            if (col == null) return;
-            Gizmos.color = new Color(0.3f, 1f, 0.3f, 0.3f);
-            Gizmos.DrawWireCube(transform.position, col.size);
-        }
-#endif
     }
 }

@@ -587,9 +587,9 @@ namespace ProjectC.Docking.UI
             // padding, цвет) в CommPanel.uss с !important, который перебивает
             // UnityDefaultRuntimeTheme. Дублировать эти свойства inline больше не нужно.
             main.style.position = Position.Absolute;
-            main.style.top    = new Length(4,  LengthUnit.Percent);
+            main.style.top    = new Length(50, LengthUnit.Percent);
             main.style.left   = new Length(50, LengthUnit.Percent);
-            main.style.translate = new StyleTranslate(new Translate(new Length(-50, LengthUnit.Percent), 0));
+            main.style.translate = new StyleTranslate(new Translate(new Length(-50, LengthUnit.Percent), new Length(-50, LengthUnit.Percent)));
             main.style.width      = 560;
             main.style.maxWidth   = new Length(90, LengthUnit.Percent);
             main.style.maxHeight  = new Length(92, LengthUnit.Percent);

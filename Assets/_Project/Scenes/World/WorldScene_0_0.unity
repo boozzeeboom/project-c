@@ -12390,7 +12390,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::ProjectC.Docking.Network.DockStationController
   ShowTopMostFoldoutHeaderGroup: 1
-  dockStationDefinition: {fileID: 0}
+  dockStationDefinition: {fileID: 11400000, guid: 30c91001fda78e04ab679d205469b2e3, type: 2}
   debugMode: 1
 --- !u!114 &2099880789
 MonoBehaviour:

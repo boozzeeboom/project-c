@@ -9,13 +9,11 @@
     bottom: 0;
     align-items: center;
     justify-content: center;
-    background-color: rgba(0, 0, 0, 0.4);
-    display: none;
-}
-
-.comm-panel-root.is-open {
+    background-color: rgba(250, 40, 40, 0.5);
     display: flex;
 }
+
+/* display visibility управляется из C# (inline style), НЕ из USS */
 
 /* === Panel === */
 .comm-panel {

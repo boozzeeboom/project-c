@@ -230,6 +230,11 @@ namespace ProjectC.Docking.Network
 
             DockingWorld.Instance.ReleaseAssignment(clientId, shipNetworkObjectId);
             if (debugMode) Debug.Log($"[DockingServer] Released assignment for client {clientId}");
+
+            // T-DOCK-09: снимаем флаг IsDocked
+            var takingOffShip = FindNetworkObject(shipNetworkObjectId)?.GetComponent<ShipController>();
+            if (takingOffShip != null) takingOffShip.ExitDocked();
+
             SendTakeoffApprovedTargetRpc(clientId, shipNetworkObjectId);
         }
 
@@ -248,6 +253,14 @@ namespace ProjectC.Docking.Network
 
             var status = DockingWorld.Instance.ConfirmTouchdown(clientId, shipNetworkObjectId, padId, stationId);
             if (debugMode) Debug.Log($"[DockingServer] Touchdown status: {status.status} client={clientId}");
+
+            // T-DOCK-09: если стыковка успешна — IsDocked = true
+            if (status.status == DockingStatus.Docked)
+            {
+                var dockedShip = FindNetworkObject(shipNetworkObjectId)?.GetComponent<ShipController>();
+                if (dockedShip != null) dockedShip.EnterDocked();
+            }
+
             SendDockingStatusTargetRpc(clientId, status);
         }
 

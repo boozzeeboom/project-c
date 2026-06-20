@@ -59,6 +59,30 @@ namespace ProjectC.Player
         /// (клиент видит тот же инспектор, что и сервер, scene-placed object).</summary>
         public string CustomDisplayName => _customDisplayName;
 
+        // T-DOCK-09: Docking state (Q15 bool-flag)
+        /// <summary>Сервер-авторитативный NetworkVariable: пристыкован ли корабль.</summary>
+        private readonly NetworkVariable<bool> _netIsDocked = new NetworkVariable<bool>(
+            false, NetworkVariableReadPermission.Everyone, NetworkVariableWritePermission.Server);
+
+        /// <summary>Быстрый геттер (локальное значение, синхронизированное).</summary>
+        public bool IsDocked => _netIsDocked.Value;
+
+        /// <summary>Вызвать на сервере при успешной стыковке.</summary>
+        public void EnterDocked()
+        {
+            if (!IsServer) return;
+            _netIsDocked.Value = true;
+            Debug.Log($"[ShipController:{name}] EnterDocked");
+        }
+
+        /// <summary>Вызвать на сервере при отстыковке.</summary>
+        public void ExitDocked()
+        {
+            if (!IsServer) return;
+            _netIsDocked.Value = false;
+            Debug.Log($"[ShipController:{name}] ExitDocked");
+        }
+
         [Header("Тяга")]
 #pragma warning disable 0414
         [SerializeField] private float thrustForce = 650f;

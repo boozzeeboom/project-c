@@ -305,6 +305,14 @@ namespace ProjectC.Player
                 && NetworkManager.Singleton != null
                 && IsSpawned)
             {
+                // Q9 (принято 2026-06-19): F внутри CommPanel = стандартное поведение,
+                // но CommPanel закрывается.
+                if (ProjectC.Docking.UI.CommPanelWindow.Instance != null
+                    && ProjectC.Docking.UI.CommPanelWindow.Instance.IsOpen)
+                {
+                    ProjectC.Docking.UI.CommPanelWindow.Instance.SetOpen(false);
+                }
+
                 // T-G05: Resource gathering — высший приоритет (выше boarding).
                 // Если рядом ResourceNode и есть инструмент (MetaRequirement OK) →
                 // F запустит сбор, НЕ посадку.
@@ -366,6 +374,21 @@ namespace ProjectC.Player
             {
                 var cw = ProjectC.UI.Client.CharacterWindow.Instance;
                 if (cw != null) cw.Toggle();
+            }
+
+            // T-DOCK-08: T — CommPanel (Dispatch). Q10: только если пилотирует.
+            if (Keyboard.current.tKey.wasPressedThisFrame
+                && NetworkManager.Singleton != null
+                && IsSpawned)
+            {
+                // Q10: T игнорируется если игрок не пилотирует корабль
+                if (!ProjectC.Docking.Client.DockingClientState.IsLocalPlayerPilotingShip())
+                    return;
+                var station = ProjectC.Docking.Network.DockingZoneRegistry.LocalPlayerStation
+                           ?? ProjectC.Docking.Network.DockingZoneRegistry.LocalPlayerShipStation;
+                if (station == null) return;  // не в OuterCommZone
+                var cp = ProjectC.Docking.UI.CommPanelWindow.Instance;
+                if (cp != null) cp.ToggleOpen();
             }
 
             if (_inShip)

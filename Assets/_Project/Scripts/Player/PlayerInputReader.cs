@@ -31,6 +31,7 @@ namespace ProjectC.Player
         public event System.Action OnInteractPressed;
         public event System.Action OnModeSwitchPressed;
         public event System.Action<Vector2> OnMouseDelta;       // Camera rotation
+        public event System.Action OnCommPanelPressed;          // T — CommPanel (T-DOCK-08)
 
         // Состояние ввода
         private Vector2 _moveInput;
@@ -38,6 +39,7 @@ namespace ProjectC.Player
         private bool _runPressed;
         private bool _interactPressed;
         private bool _modeSwitchPressed;
+        private bool _commPanelPressed;   // T-DOCK-08: T-key
         private Vector2 _mouseDelta;
 
         private void Update()
@@ -97,6 +99,17 @@ namespace ProjectC.Player
                 else if (!Keyboard.current.fKey.isPressed)
                 {
                     _modeSwitchPressed = false;
+                }
+
+                // ===== COMM PANEL (T) — T-DOCK-08 =====
+                if (Keyboard.current.tKey.wasPressedThisFrame && !_commPanelPressed)
+                {
+                    _commPanelPressed = true;
+                    OnCommPanelPressed?.Invoke();
+                }
+                else if (!Keyboard.current.tKey.isPressed)
+                {
+                    _commPanelPressed = false;
                 }
             }
 

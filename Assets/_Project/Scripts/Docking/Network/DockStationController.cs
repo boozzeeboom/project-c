@@ -1,19 +1,56 @@
-// T-DOCK-00: Stub DockStationController (полная реализация в T-DOCK-06).
-// Этот stub нужен чтобы DockingWorld.cs компилировался.
+// T-DOCK-06: DockStationController — NetworkBehaviour на корне DockStation.
+// Scene-placed в WorldScene_X_Z (центр тестовой зоны ~(40500, 2510, 40500)).
+// Auto-spawn через ScenePlacedObjectSpawner (как QuestServer, ExchangeServer).
+//
+// Q4 (принято 2026-06-19): dockStationDefinition SO — без хардкода кол-ва pads.
 
+using ProjectC.Docking.Core;  // DockStationDefinition
+using ProjectC.Docking.Zones; // OuterCommZone
+using Unity.Netcode;
 using UnityEngine;
-using ProjectC.Docking.Core;
 
 namespace ProjectC.Docking.Network
 {
-    /// <summary>
-    /// NetworkBehaviour на корне DockStation. Stub в T-DOCK-00.
-    /// В T-DOCK-06: добавится [RequireComponent(typeof(NetworkObject))] + ScenePlacedObjectSpawner wiring.
-    /// </summary>
-    public class DockStationController : MonoBehaviour
+    [RequireComponent(typeof(NetworkObject))]
+    [RequireComponent(typeof(OuterCommZone))]
+    public class DockStationController : NetworkBehaviour
     {
-        [SerializeField] private DockStationDefinition stationDefinition;
+        [Header("Definition")]
+        [Tooltip("Паспорт станции. Должен быть назначен в инспекторе. " +
+                 "Создаётся через Assets > Create > ProjectC > Docking > DockStationDefinition.")]
+        [SerializeField] private DockStationDefinition dockStationDefinition;
 
-        public DockStationDefinition StationDefinition => stationDefinition;
+        [Header("Debug")]
+        [SerializeField] private bool debugMode = true;
+
+        // NetworkBehaviour — не может быть static Instance (multi-station)
+        // DockingZoneRegistry держит словарь stationId → DockStationController.
+
+        public DockStationDefinition StationDefinition => dockStationDefinition;
+
+        public string StationId => dockStationDefinition != null ? dockStationDefinition.StationId : "";
+        public string LocationId => dockStationDefinition != null ? dockStationDefinition.LocationId : "";
+        public string DisplayName => dockStationDefinition != null ? dockStationDefinition.DisplayName : "";
+
+        public bool IsDockStation => true;  // маркер для внешних систем
+
+        private void Awake()
+        {
+            if (dockStationDefinition == null)
+            {
+                Debug.LogError(
+                    $"[DockStationController:{gameObject.name}] dockStationDefinition is null! " +
+                    "Назначь SO в инспекторе.", this);
+            }
+        }
+
+        public override void OnNetworkSpawn()
+        {
+            base.OnNetworkSpawn();
+            // Регистрация происходит в OuterCommZone.OnEnable (T-DOCK-05).
+            if (debugMode)
+                Debug.Log($"[DockStationController:{StationId}] OnNetworkSpawn — IsServer={IsServer}, " +
+                          $"stationDef={dockStationDefinition != null}");
+        }
     }
 }

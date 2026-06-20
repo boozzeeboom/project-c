@@ -135,6 +135,11 @@ namespace ProjectC.Core
             // Подписка в CharacterWindow (T-P14) на events OnSkillsUpdated/OnSkillResult.
             CreateSkillsClientState();
 
+            // T-DOCK-03: DockingClientState — клиентская проекция DockingServer.
+            // Принимает DockingAssignmentDto + DockingStatusDto от DockingServer (T-DOCK-01).
+            // Подписка в CommPanelWindow (T-DOCK-07) на events OnAwaitingConfirmation/OnStatusReceived.
+            CreateDockingClientState();
+
             // Автоматический запуск Dedicated Server
             if (IsDedicatedServerMode())
             {
@@ -436,6 +441,30 @@ namespace ProjectC.Core
             var go = new GameObject("[SkillsClientState]");
             go.AddComponent<ProjectC.Skills.SkillsClientState>();
             Debug.Log("[NMC] Created [SkillsClientState] as root GameObject");
+        }
+
+        /// <summary>
+        /// T-DOCK-03: Создать DockingClientState как root GameObject.
+        /// Паттерн идентичен CreateSkillsClientState — см. комментарий выше.
+        /// </summary>
+        private void CreateDockingClientState()
+        {
+            var existing = FindObjectsByType<ProjectC.Docking.Client.DockingClientState>(FindObjectsInactive.Include);
+            foreach (var inst in existing)
+            {
+                if (inst != null && inst.transform.parent == null)
+                {
+                    Debug.Log("[NMC] DockingClientState already root, skipping creation");
+                    return;
+                }
+            }
+            if (existing.Length > 0)
+            {
+                Debug.LogWarning($"[NMC] Found {existing.Length} non-root DockingClientState in scene — DontDestroyOnLoad would fail. Creating root replacement.");
+            }
+            var go = new GameObject("[DockingClientState]");
+            go.AddComponent<ProjectC.Docking.Client.DockingClientState>();
+            Debug.Log("[NMC] Created [DockingClientState] as root GameObject");
         }
 
         private void Start()

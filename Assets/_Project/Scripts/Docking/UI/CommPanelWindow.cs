@@ -139,10 +139,11 @@ namespace ProjectC.Docking.UI
             _root.style.top = 0;
             _root.style.right = 0;
             _root.style.bottom = 0;
-            // pickingMode=Ignore на root — клики "снаружи" диалога не пробрасываются в game
-            // во время модального окна. Кнопки внутри (.comm-panel-button-*) ловят mouse сами.
-            _root.pickingMode = PickingMode.Ignore;
+            // pickingMode=Position по умолчанию — кнопки кликабельны.
             _doc.rootVisualElement.Add(_root);
+
+            // FIX T-DOCK-07: sortingOrder
+            _doc.sortingOrder = 10;
 
             _panel = _root.Q<VisualElement>("panel");
             _header = _root.Q<Label>("header");

@@ -121,7 +121,7 @@ namespace ProjectC.Docking.Network
         /// DockingAssignmentDto (через TargetRpc). Клиент должен подтвердить
         /// (RequestConfirmAssignmentRpc) перед тем как pad будет заблокирован.
         /// </summary>
-        [Rpc(SendTo.Server, InvokePermission = RpcInvokePermission.Owner)]
+        [Rpc(SendTo.Server, InvokePermission = RpcInvokePermission.Everyone)]
         public void RequestDockingRpc(string stationId, ulong shipNetworkObjectId, RpcParams rpcParams = default)
         {
             ulong clientId = rpcParams.Receive.SenderClientId;
@@ -173,7 +173,7 @@ namespace ProjectC.Docking.Network
         /// <summary>
         /// Q7: игрок подтверждает назначение (Хорошо) или отказывается (Отбой).
         /// </summary>
-        [Rpc(SendTo.Server, InvokePermission = RpcInvokePermission.Owner)]
+        [Rpc(SendTo.Server, InvokePermission = RpcInvokePermission.Everyone)]
         public void RequestConfirmAssignmentRpc(ulong shipNetworkObjectId, bool accept, RpcParams rpcParams = default)
         {
             ulong clientId = rpcParams.Receive.SenderClientId;
@@ -219,7 +219,7 @@ namespace ProjectC.Docking.Network
         /// Q8: пилот хочет отстыковаться (из Docked состояния). ТОЛЬКО для отстыковки.
         /// Вылет из OuterCommZone — подсистема Departure (T-DEPART-*).
         /// </summary>
-        [Rpc(SendTo.Server, InvokePermission = RpcInvokePermission.Owner)]
+        [Rpc(SendTo.Server, InvokePermission = RpcInvokePermission.Everyone)]
         public void RequestTakeoffRpc(ulong shipNetworkObjectId, RpcParams rpcParams = default)
         {
             ulong clientId = rpcParams.Receive.SenderClientId;
@@ -242,7 +242,7 @@ namespace ProjectC.Docking.Network
         /// Пилот коснулся pad'а (любого). Сервер определяет правильный/чужой
         /// и отвечает DockingStatusDto.
         /// </summary>
-        [Rpc(SendTo.Server, InvokePermission = RpcInvokePermission.Owner)]
+        [Rpc(SendTo.Server, InvokePermission = RpcInvokePermission.Everyone)]
         public void NotifyTouchedDownRpc(ulong shipNetworkObjectId, string padId, string stationId, RpcParams rpcParams = default)
         {
             ulong clientId = rpcParams.Receive.SenderClientId;

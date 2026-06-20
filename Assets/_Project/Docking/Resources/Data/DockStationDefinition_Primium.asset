@@ -9,9 +9,9 @@ MonoBehaviour:
   m_GameObject: {fileID: 0}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 0}
+  m_Script: {fileID: 11500000, guid: 6438017ff98961a4991a274123e603e2, type: 3}
   m_Name: DockStationDefinition_Primium
-  m_EditorClassIdentifier: Assembly-CSharp:ProjectC.Docking.Core:DockStationDefinition
+  m_EditorClassIdentifier: Assembly-CSharp::ProjectC.Docking.Core.DockStationDefinition
   stationId: STN-PRM-001
   locationId: PRIMIUM
   displayName: "\u0414\u043E\u043A-\u0441\u0442\u0430\u043D\u0446\u0438\u044F \u041F\u0440\u0438\u043C\u0443\u043C"

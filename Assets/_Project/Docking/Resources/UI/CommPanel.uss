@@ -1,0 +1,90 @@
+/* T-DOCK-07: CommPanel USS styles */
+
+/* === Root === */
+.comm-panel-root {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    align-items: center;
+    justify-content: center;
+    background-color: rgba(0, 0, 0, 0.4);
+    display: none;
+}
+
+.comm-panel-root.is-open {
+    display: flex;
+}
+
+/* === Panel === */
+.comm-panel {
+    width: 560px;
+    background-color: rgb(15, 25, 38);
+    border-width: 2px;
+    border-color: rgb(80, 110, 145);
+    border-radius: 6px;
+    padding: 18px 22px;
+    flex-direction: column;
+}
+
+.comm-panel-header {
+    color: rgb(220, 200, 110);
+    font-size: 18px;
+    -unity-font-style: bold;
+    margin-bottom: 10px;
+}
+
+.comm-panel-divider {
+    height: 1px;
+    background-color: rgb(60, 75, 95);
+    margin: 10px 0;
+}
+
+.comm-panel-message {
+    color: rgb(220, 230, 245);
+    font-size: 15px;
+    white-space: normal;
+    min-height: 60px;
+}
+
+.comm-panel-progress {
+    height: 6px;
+    margin: 10px 0;
+    display: none;
+}
+
+.comm-panel-progress.is-active {
+    display: flex;
+}
+
+.comm-panel-buttons {
+    flex-direction: row;
+    justify-content: flex-end;
+    margin-top: 14px;
+}
+
+.comm-panel-button-primary {
+    background-color: rgb(70, 130, 200);
+    color: white;
+    padding: 8px 20px;
+    margin-left: 8px;
+    border-radius: 4px;
+    -unity-font-style: bold;
+}
+
+.comm-panel-button-primary:hover {
+    background-color: rgb(95, 155, 220);
+}
+
+.comm-panel-button-secondary {
+    background-color: rgb(60, 75, 95);
+    color: rgb(180, 195, 215);
+    padding: 8px 20px;
+    margin-left: 8px;
+    border-radius: 4px;
+}
+
+.comm-panel-button-secondary:hover {
+    background-color: rgb(80, 95, 115);
+}

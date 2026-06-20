@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="utf-8"?>
+<ui:UXML xmlns:ui="UnityEngine.UIElements" xmlns:uie="UnityEditor.UIElements">
+  <ui:VisualElement name="root" class="comm-panel-root">
+    <ui:VisualElement name="panel" class="comm-panel">
+      <ui:Label name="header" text="Примум — Диспетчерская" class="comm-panel-header" />
+      <ui:VisualElement name="divider1" class="comm-panel-divider" />
+      <ui:Label name="dispatcher-message" text="" class="comm-panel-message" />
+      <ui:VisualElement name="divider2" class="comm-panel-divider" />
+      <ui:ProgressBar name="landing-window-bar" low-value="0" high-value="100" class="comm-panel-progress" />
+      <ui:VisualElement name="buttons-container" class="comm-panel-buttons">
+        <ui:Button name="primary-action-button" text="Запросить посадку" class="comm-panel-button-primary" />
+        <ui:Button name="secondary-action-button" text="Отмена" class="comm-panel-button-secondary" />
+      </ui:VisualElement>
+    </ui:VisualElement>
+  </ui:VisualElement>
+</ui:UXML>

@@ -1,31 +1,30 @@
-/* T-DOCK-07 v2: CommPanel USS styles.
-   Рефакторинг 2026-06-20 после character-window refactor (см. docs/Character/Character-menu/refactor_log_2026-06-05.md).
-   - Все class-стили получили !important (защита от UnityDefaultRuntimeTheme).
-   - flex-grow:1 на .comm-panel-button-* чтобы они занимали равную долю в .comm-panel-buttons.
-   - Минимальные height/font-size для компактности. */
+/* T-DOCK-07 v3: CommPanel USS styles.
+   v3 (2026-06-21): Панель справа, в 2 раза меньше, не перекрывает весь экран.
+   - .comm-panel-root теперь не overlay, а контейнер в правом верхнем секторе
+   - Размер панели: 320px (было 560), шрифты 12-13px (было 14-18)
+   - Нет фонового затемнения (окно не модальное) */
 
-/* === Root (full-screen overlay) === */
+/* === Root (позиционирование) — больше не full-screen === */
 .comm-panel-root {
     position: absolute !important;
-    top: 0 !important;
-    left: 0 !important;
-    right: 0 !important;
-    bottom: 0 !important;
-    align-items: center !important;
-    justify-content: center !important;
-    background-color: rgba(0, 0, 0, 0.4) !important;
+    top: 50% !important;
+    right: 24px !important;
+    translate: 0 -50% !important;
+    width: auto !important;
+    height: auto !important;
     display: flex !important;
+    flex-direction: column !important;
+    align-items: flex-end !important;
 }
 
-/* === Panel (центрированная карточка) === */
+/* === Panel (карточка) — уменьшена в ~1.75 раза === */
 .comm-panel {
-    width: 560px !important;
-    max-width: 92% !important;
-    background-color: rgb(15, 25, 38) !important;
-    border-width: 2px !important;
-    border-color: rgb(80, 110, 145) !important;
-    border-radius: 6px !important;
-    padding: 16px 20px !important;
+    width: 320px !important;
+    background-color: rgb(12, 20, 32) !important;
+    border-width: 1px !important;
+    border-color: rgb(60, 85, 120) !important;
+    border-radius: 5px !important;
+    padding: 10px 14px !important;
     flex-direction: column !important;
     flex-shrink: 0 !important;
     align-items: stretch !important;
@@ -33,31 +32,32 @@
 
 .comm-panel-header {
     color: rgb(220, 200, 110) !important;
-    font-size: 18px !important;
+    font-size: 13px !important;
     -unity-font-style: bold !important;
-    margin-bottom: 8px !important;
+    margin-bottom: 5px !important;
     flex-shrink: 0 !important;
 }
 
 .comm-panel-divider {
     height: 1px !important;
-    background-color: rgb(60, 75, 95) !important;
-    margin: 8px 0 !important;
+    background-color: rgb(50, 65, 85) !important;
+    margin: 5px 0 !important;
     flex-shrink: 0 !important;
 }
 
 .comm-panel-message {
-    color: rgb(220, 230, 245) !important;
-    font-size: 14px !important;
+    color: rgb(210, 220, 235) !important;
+    font-size: 12px !important;
     white-space: normal !important;
-    min-height: 50px !important;
+    min-height: 36px !important;
     flex-shrink: 1 !important;
-    margin-bottom: 4px !important;
+    margin-bottom: 3px !important;
+    line-height: 1.4 !important;
 }
 
 .comm-panel-progress {
-    height: 6px !important;
-    margin: 8px 0 !important;
+    height: 4px !important;
+    margin: 5px 0 !important;
     display: none !important;
     flex-shrink: 0 !important;
 }
@@ -69,40 +69,40 @@
 .comm-panel-buttons {
     flex-direction: row !important;
     justify-content: flex-end !important;
-    margin-top: 12px !important;
-    min-height: 32px !important;
+    margin-top: 8px !important;
+    min-height: 26px !important;
     flex-shrink: 0 !important;
+    gap: 4px !important;
 }
 
-/* === Buttons === */
+/* === Buttons — компактные === */
 .comm-panel-button-primary,
 .comm-panel-button-secondary {
-    height: 28px !important;
-    min-width: 100px !important;
-    margin-left: 6px !important;
-    padding: 4px 14px !important;
-    border-radius: 4px !important;
+    height: 24px !important;
+    min-width: 72px !important;
+    padding: 2px 10px !important;
+    border-radius: 3px !important;
     border-width: 0 !important;
-    font-size: 13px !important;
+    font-size: 11px !important;
     -unity-font-style: bold !important;
     -unity-text-align: middle-center !important;
     flex-shrink: 0 !important;
 }
 
 .comm-panel-button-primary {
-    background-color: rgb(70, 130, 200) !important;
+    background-color: rgb(60, 115, 185) !important;
     color: rgb(240, 240, 245) !important;
 }
 
 .comm-panel-button-primary:hover {
-    background-color: rgb(95, 155, 220) !important;
+    background-color: rgb(85, 140, 205) !important;
 }
 
 .comm-panel-button-secondary {
-    background-color: rgb(60, 75, 95) !important;
-    color: rgb(180, 195, 215) !important;
+    background-color: rgb(50, 65, 85) !important;
+    color: rgb(170, 185, 205) !important;
 }
 
 .comm-panel-button-secondary:hover {
-    background-color: rgb(80, 95, 115) !important;
+    background-color: rgb(70, 85, 105) !important;
 }

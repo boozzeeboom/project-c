@@ -20,4 +20,4 @@ MonoBehaviour:
   padLayout: {fileID: 11400000, guid: e8be5aca0a680ca499fc32227ad63de9, type: 2}
   voiceLines: {fileID: 11400000, guid: e5b247ae70c80a74daeaa810049c0553, type: 2}
   maxConcurrentLandings: 2
-  landingWindowSeconds: 90
+  landingWindowSeconds: 300

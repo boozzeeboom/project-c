@@ -68,20 +68,34 @@ namespace ProjectC.Player
         public bool IsDocked => _netIsDocked.Value;
 
         /// <summary>Вызвать на сервере при успешной стыковке.</summary>
-        public void EnterDocked()
-        {
-            if (!IsServer) return;
-            _netIsDocked.Value = true;
-            Debug.Log($"[ShipController:{name}] EnterDocked");
-        }
+                public void EnterDocked()
+                {
+                    if (!IsServer) return;
+                    _netIsDocked.Value = true;
+                    // T-DOCK-09: физическая блокировка — двигатель заблокирован.
+                    // Также обнуляем linearVelocity чтобы корабль не «прыгнул» при
+                    // последующем physics-step (см. AUDIT_AND_REFACTOR.md §6 R3).
+                    if (_rb != null)
+                    {
+                        _rb.linearVelocity = Vector3.zero;
+                        _rb.angularVelocity = Vector3.zero;
+                        _rb.isKinematic = true;
+                    }
+                    Debug.Log($"[ShipController:{name}] EnterDocked — engine locked");
+                }
 
-        /// <summary>Вызвать на сервере при отстыковке.</summary>
-        public void ExitDocked()
-        {
-            if (!IsServer) return;
-            _netIsDocked.Value = false;
-            Debug.Log($"[ShipController:{name}] ExitDocked");
-        }
+                /// <summary>Вызвать на сервере при отстыковке.</summary>
+                public void ExitDocked()
+                {
+                    if (!IsServer) return;
+                    _netIsDocked.Value = false;
+                    // T-DOCK-09: снимаем kinematic — корабль снова под управлением.
+                    if (_rb != null)
+                    {
+                        _rb.isKinematic = false;
+                    }
+                    Debug.Log($"[ShipController:{name}] ExitDocked — engine unlocked");
+                }
 
         [Header("Тяга")]
 #pragma warning disable 0414
@@ -1007,25 +1021,33 @@ namespace ProjectC.Player
         /// Пилот шлёт ввод на сервер
         /// </summary>
         [Rpc(SendTo.Server)]
-        private void SubmitShipInputRpc(float thrust, float yaw, float pitch, float vertical, bool boost, RpcParams rpcParams = default)
-        {
-            if (!_pilots.Contains(rpcParams.Receive.SenderClientId)) return;
+                private void SubmitShipInputRpc(float thrust, float yaw, float pitch, float vertical, bool boost, RpcParams rpcParams = default)
+                {
+                    if (!_pilots.Contains(rpcParams.Receive.SenderClientId)) return;
+                    // T-DOCK-09: если корабль пристыкован — двигатель заблокирован, ввод игнорируем.
+                    // Defense in depth — owner-side guard есть в SendShipInput, но клиент может
+                    // дёрнуть RPC напрямую через модифицированный клиент.
+                    if (_netIsDocked.Value) return;
 
-            _sumThrust += thrust;
-            _sumYaw += yaw;
-            _sumPitch += pitch;
-            _sumVertical += vertical;
-            if (boost) _boostCount++;
-            _inputCount++;
-        }
+                    _sumThrust += thrust;
+                    _sumYaw += yaw;
+                    _sumPitch += pitch;
+                    _sumVertical += vertical;
+                    if (boost) _boostCount++;
+                    _inputCount++;
+                }
 
-        public void SendShipInput(float thrust, float yaw, float pitch, float vertical, bool boost)
-        {
-            // Guard: не отправляем RPC если NGO не готов или корабль не spawned
-            // (защита от NRE в __endSendRpc при scene transition / shutdown)
-            if (NetworkManager.Singleton == null || !IsSpawned) return;
-            SubmitShipInputRpc(thrust, yaw, pitch, vertical, boost);
-        }
+                public void SendShipInput(float thrust, float yaw, float pitch, float vertical, bool boost)
+                {
+                    // Guard: не отправляем RPC если NGO не готов или корабль не spawned
+                    // (защита от NRE в __endSendRpc при scene transition / shutdown)
+                    if (NetworkManager.Singleton == null || !IsSpawned) return;
+                    // T-DOCK-09: если корабль пристыкован — двигатель заблокирован.
+                    // Игрок должен сначала через T → CommPanel → "Отстыковка" → одобрение,
+                    // чтобы снять флаг IsDocked (см. AUDIT_AND_REFACTOR.md §1.3).
+                    if (_netIsDocked.Value) return;
+                    SubmitShipInputRpc(thrust, yaw, pitch, vertical, boost);
+                }
 
         private void ApplyThrustForce(float currentThrust)
         {

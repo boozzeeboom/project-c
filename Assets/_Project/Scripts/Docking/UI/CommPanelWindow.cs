@@ -214,11 +214,10 @@ namespace ProjectC.Docking.UI
             if (open)
                         {
                             UpdateUI();
-                            // FIX T-DOCK-UI: ApplyInlineFallbackStyles на container (.comm-panel-root),
-                            // не на _panel. _panel — это ВНУТРЕННЯЯ панель внутри растянутого _container.
-                            // Применять absolute/translate к _panel бессмысленно — оно absolute в relative-родителе.
-                            // По паттерну CharacterWindow: позиционируем корневой VE.
-                            if (_container != null) ApplyInlineFallbackStyles(_container);
+                            // T-DOCK-UI-1: ApplyInlineFallbackStyles НЕ вызываем на .comm-panel-root.
+                            // USS уже делает flex-center на root'е (top:0;left:0;right:0;bottom:0;
+                            // align-items:center;justify-content:center). Inline-styles с width:560
+                            // ломают flex-center → кнопки растягиваются (см. AUDIT_AND_REFACTOR.md §1.5).
                         }
 
             // Cursor — flight-режим держит курсор залоченным. При открытом UI отпускаем.
@@ -282,21 +281,31 @@ namespace ProjectC.Docking.UI
         }
 
         private void HandleStatusReceived(DockingStatusDto status)
-        {
-            _currentStatus = status.status;
-            _currentStationId = status.stationId;
-            _currentPadId = status.padId;
+                {
+                    _currentStatus = status.status;
+                    _currentStationId = status.stationId;
+                    _currentPadId = status.padId;
 
-            if (status.status == DockingStatus.Assigned)
-            {
-                _awaitingConfirmation = null;
-            }
-            else if (status.status == DockingStatus.Cancelled)
-            {
-                _awaitingConfirmation = null;
-            }
-            UpdateUI();
-        }
+                    if (status.status == DockingStatus.Assigned)
+                    {
+                        _awaitingConfirmation = null;
+                    }
+                    else if (status.status == DockingStatus.Cancelled)
+                    {
+                        _awaitingConfirmation = null;
+                    }
+                    // T-DOCK-UI-4: WrongPad → toast. После рефакторинга ConfirmTouchdown
+                    // НЕ возвращает WrongPad без assignment — этот toast только для
+                    // "есть assignment, но коснулся другого pad'а".
+                    else if (status.status == DockingStatus.WrongPad)
+                    {
+                        if (_message != null)
+                        {
+                            _message.text = $"Диспетчер: «Борт, вы на чужом pad'е (#{_currentPadId}). Перепаркуйтесь».";
+                        }
+                    }
+                    UpdateUI();
+                }
 
         private void HandleTouchedDown(DockingStatusDto status)
         {
@@ -426,18 +435,20 @@ namespace ProjectC.Docking.UI
                 _secondaryButton.style.display = DisplayStyle.Flex;
             }
             else if (_currentStatus == DockingStatus.Docked)
-            {
-                _primaryButton.text = "F — Отстыковка";
-                _primaryButton.style.display = DisplayStyle.Flex;
-                _secondaryButton.style.display = DisplayStyle.None;
-            }
-            else if (_currentStatus == DockingStatus.WrongPad)
-            {
-                _primaryButton.text = "Перепарковаться";
-                _primaryButton.style.display = DisplayStyle.Flex;
-                _secondaryButton.text = "Закрыть";
-                _secondaryButton.style.display = DisplayStyle.Flex;
-            }
+                        {
+                            // T-DOCK-UI-3: в Docked primary-кнопка = "Отстыковка", а не закрытие панели.
+                            // Раньше был SetOpen(false) — баг: игрок нажимал кнопку и ничего не происходило.
+                            _primaryButton.text = "Отстыковка";
+                            _primaryButton.style.display = DisplayStyle.Flex;
+                            _secondaryButton.style.display = DisplayStyle.None;
+                        }
+                        else if (_currentStatus == DockingStatus.WrongPad)
+                        {
+                            _primaryButton.text = "Перепарковаться";
+                            _primaryButton.style.display = DisplayStyle.Flex;
+                            _secondaryButton.text = "Закрыть";
+                            _secondaryButton.style.display = DisplayStyle.Flex;
+                        }
         }
 
         // ====================================================
@@ -454,18 +465,20 @@ namespace ProjectC.Docking.UI
             }
 
             if (_currentStatus == DockingStatus.Idle || _currentStatus == DockingStatus.Cancelled)
-            {
-                RequestDocking();
-            }
-            else if (_currentStatus == DockingStatus.Docked)
-            {
-                SetOpen(false);
-                // F-handler (NetworkPlayer) на уровне выше сделает RequestTakeoffRpc
-            }
-            else if (_currentStatus == DockingStatus.WrongPad)
-            {
-                RequestDocking();
-            }
+                        {
+                            RequestDocking();
+                        }
+                        else if (_currentStatus == DockingStatus.Docked)
+                        {
+                            // T-DOCK-UI-3: в Docked primary = "Отстыковка" → CancelAssignment()
+                            // шлёт RequestTakeoffRpc на сервер → ReleaseAssignment → ExitDocked.
+                            // Раньше тут был SetOpen(false) — баг: кнопка ничего не делала (см. AUDIT §1.4).
+                            CancelAssignment();
+                        }
+                        else if (_currentStatus == DockingStatus.WrongPad)
+                        {
+                            RequestDocking();
+                        }
         }
 
         private void OnSecondaryClicked()
@@ -491,19 +504,21 @@ namespace ProjectC.Docking.UI
         }
 
         private void RequestDocking()
-        {
-            var server = DockingServer.Instance;
-            if (server == null || !server.IsSpawned) return;
+                {
+                    var server = DockingServer.Instance;
+                    if (server == null || !server.IsSpawned) return;
 
-            var station = DockingZoneRegistry.LocalPlayerStation
-                          ?? DockingZoneRegistry.LocalPlayerShipStation;
-            if (station == null) return;
+                    var station = DockingZoneRegistry.LocalPlayerStation
+                                  ?? DockingZoneRegistry.LocalPlayerShipStation;
+                    // T-DOCK-RPC-2: guard на пустой StationId — иначе сервер не найдёт
+                    // станцию и ответит failure (см. AUDIT_AND_REFACTOR.md §1.2)
+                    if (station == null || string.IsNullOrEmpty(station.StationId)) return;
 
-            ulong shipNetId = GetLocalShipNetworkObjectId();
-            if (shipNetId == 0) return;
+                    ulong shipNetId = GetLocalShipNetworkObjectId();
+                    if (shipNetId == 0) return;
 
-            server.RequestDockingRpc(station.StationId, shipNetId);
-        }
+                    server.RequestDockingRpc(station.StationId, shipNetId);
+                }
 
         private void ConfirmAssignment(bool accept)
         {
@@ -586,19 +601,7 @@ namespace ProjectC.Docking.UI
         // Helpers
         // ====================================================
 
-        private static void ApplyInlineFallbackStyles(VisualElement main)
-        {
-            // FIX: на 1-м кадре resolvedStyle=initial (USS не успел примениться) — задаём
-            // только позиционирование и размеры inline. Всё остальное (фон, рамка, шрифт,
-            // padding, цвет) в CommPanel.uss с !important, который перебивает
-            // UnityDefaultRuntimeTheme. Дублировать эти свойства inline больше не нужно.
-            main.style.position = Position.Absolute;
-            main.style.top    = new Length(50, LengthUnit.Percent);
-            main.style.left   = new Length(50, LengthUnit.Percent);
-            main.style.translate = new StyleTranslate(new Translate(new Length(-50, LengthUnit.Percent), new Length(-50, LengthUnit.Percent)));
-            main.style.width      = 560;
-            main.style.maxWidth   = new Length(90, LengthUnit.Percent);
-            main.style.maxHeight  = new Length(92, LengthUnit.Percent);
+        // T-DOCK-UI-1: ApplyInlineFallbackStyles удалён — см. AUDIT_AND_REFACTOR.md §1.5.
+                // USS .comm-panel-root сам делает flex-center; inline-стили ломали верстку.
+            }
         }
-    }
-}

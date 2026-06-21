@@ -154,12 +154,19 @@ namespace ProjectC.Docking.Core
 
         public DockingStatusDto ConfirmTouchdown(ulong clientId, ulong shipNetId, string padId, string stationId)
         {
-            var assignment = _assignmentsByShip.TryGetValue(shipNetId, out var a) ? a : default;
-            if (assignment.clientId != clientId)
+            // T-DOCK-SRV-1: если у этого корабля нет confirmed assignment — игрок
+            // коснулся pad'а БЕЗ предварительного запроса (подлетел, не делал T).
+            // Это НЕ WrongPad (на диздоку WrongPad = assignment есть, но коснулся
+            // другого pad'а). Здесь — "вы ещё не запросили стыковку".
+            // Возвращаем Idle чтобы UI не показывал toast "перепаркуйтесь".
+            if (!_assignmentsByShip.TryGetValue(shipNetId, out var a) || a.clientId != clientId)
             {
-                return MakeStatus(DockingStatus.WrongPad, stationId, padId);
+                // T-DOCK-SRV-1: нет assignment → игрок ещё не делал RequestDocking.
+                // Возвращаем Idle (НЕ WrongPad) — см. AUDIT_AND_REFACTOR.md §1.6.
+                return MakeStatus(DockingStatus.Idle, stationId, padId);
             }
-            if (assignment.padId != padId)
+            // Есть assignment, но коснулся чужого pad'а
+            if (a.padId != padId)
             {
                 return MakeStatus(DockingStatus.WrongPad, stationId, padId);
             }

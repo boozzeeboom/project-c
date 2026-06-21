@@ -310,8 +310,13 @@ namespace ProjectC.Docking.Network
             new DockingAssignmentDto
             {
                 success = false,
-                failReason = reason,
-                shipNetworkObjectId = shipNetId
+                failReason = reason ?? "UNKNOWN",
+                shipNetworkObjectId = shipNetId,
+                // T-DOCK-RPC-1: инициализируем ВСЕ string-поля пустыми "" — иначе
+                // FastBufferWriter.WriteValueSafe(string) кидает NRE при сериализации.
+                stationId = "",
+                padId = "",
+                voiceLine = ""
             };
 
         private static NetworkObject FindNetworkObject(ulong networkObjectId)

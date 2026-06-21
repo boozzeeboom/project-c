@@ -5,6 +5,59 @@
 
 ---
 
+## 2026-06-20 — Критический аудит + рефакторинг (P0)
+
+**Сессия:** «нужен глубокий анализ и четкий рефакторинг чтобы уточнить объединить разрозненные подсистемы»
+**Профиль:** project-c
+**Статус:** ✅ Все 5 фаз выполнены, compile = 0 errors
+
+### Найдено и исправлено
+
+| # | Баг | Файл | Фикс |
+|---|-----|------|------|
+| T-DOCK-RPC-1 | `MakeFail` возвращает DTO с null string-полями → NRE в `FastBufferWriter.WriteValueSafe` | `DockingServer.cs` | Инициализируем `stationId/padId/voiceLine = ""` |
+| T-DOCK-RPC-2 | `RequestDocking` нет guard на пустой `StationId` → RPC уходит с пустой stationId | `CommPanelWindow.cs` | Добавлен guard `string.IsNullOrEmpty(station.StationId)` |
+| T-DOCK-UI-1 | `ApplyInlineFallbackStyles` ломает USS flex-center → «кнопки на весь экран» | `CommPanelWindow.cs` | Удалён вызов; USS `.comm-panel-root` сам делает flex-center |
+| T-DOCK-UI-2 | Красная отладочная плёнка на UI | `CommPanel.uss` | `background-color: rgba(0, 0, 0, 0.4)` |
+| T-DOCK-09a | `SendShipInput` не блокирует ввод при `IsDocked=true` → можно улететь из дока | `ShipController.cs` | Guard `if (_netIsDocked.Value) return;` (owner + server) |
+| T-DOCK-09b | `EnterDocked` только ставит флаг, физика не блокируется | `ShipController.cs` | `_rb.isKinematic = true; linearVelocity = 0` |
+| T-DOCK-09c | `ExitDocked` не снимает kinematic | `ShipController.cs` | `_rb.isKinematic = false` |
+| T-DOCK-UI-3 | Primary-кнопка в `Docked` → `SetOpen(false)` (ничего не делает) | `CommPanelWindow.cs` | → `CancelAssignment()` (шлёт `RequestTakeoffRpc`) |
+| T-DOCK-SRV-1 | `ConfirmTouchdown` возвращает `WrongPad` даже без assignment → «сразу не там» | `DockingWorld.cs` | → `Idle` (нет assignment = ещё не запросил стыковку) |
+| T-DOCK-UI-4 | `WrongPad` toast не показывался в message | `CommPanelWindow.cs` | Добавлен setter в `HandleStatusReceived` |
+| T-DOCK-SRV-2 | Дублирующий `Register` в `Start()` | `OuterCommZone.cs` | Удалён (OnEnable идемпотентен) |
+
+### Изменённые файлы
+
+- `Assets/_Project/Scripts/Docking/Network/DockingServer.cs` — `MakeFail`
+- `Assets/_Project/Scripts/Docking/UI/CommPanelWindow.cs` — guard RequestDocking, удалён ApplyInlineFallbackStyles, OnPrimaryClicked Docked → CancelAssignment, ConfigureButtons текст, HandleStatusReceived WrongPad toast
+- `Assets/_Project/Docking/Resources/UI/CommPanel.uss` — фон
+- `Assets/_Project/Scripts/Player/ShipController.cs` — SendShipInput/SubmitShipInputRpc guards, EnterDocked/ExitDocked kinematic
+- `Assets/_Project/Scripts/Docking/Core/DockingWorld.cs` — ConfirmTouchdown no-assignment → Idle
+- `Assets/_Project/Scripts/Docking/Zones/OuterCommZone.cs` — убран дубль Register
+
+### Новые документы
+
+- `AUDIT_AND_REFACTOR.md` (24 KB) — полный аудит + план рефакторинга
+
+### Что НЕ делалось
+
+- ❌ Никаких изменений в `docs/Docking_stations/02_V2_ARCHITECTURE.md` — архитектура уже правильная (проблема была в реализации)
+- ❌ Departure subsystem (Phase 1.5)
+- ❌ Автопилот (Phase 2)
+
+### Что нужно проверить в Play Mode (smoke test)
+
+1. T в корабле → CommPanel открывается с нормальной версткой (не «большие кнопки на весь экран»)
+2. [Запросить посадку] → диспетчер отвечает (НЕ RpcException)
+3. [Хорошо] → Assigned, прогресс-бар
+4. Лететь к PAD-001 → касание → Docked
+5. W/A/S/D в Docked → **ничего не происходит** (двигатель заблокирован)
+6. T → primary = «Отстыковка» → клик → Docked → Idle, корабль снова летит
+7. Подлетел к pad'у **БЕЗ** запроса → Docked НЕ срабатывает (Idle)
+
+---
+
 ## 2026-06-19 — Решения приняты, документация актуализирована
 
 **Сессия:** «проанализируй, я записал ответы и актуализируй документацию»

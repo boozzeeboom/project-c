@@ -76,12 +76,9 @@ namespace ProjectC.Docking.Zones
             }
         }
 
-        private void Start()
-        {
-            // Duplicate registration safe (DockingZoneRegistry.Register проверяет stationId)
-            if (_stationController != null)
-                DockingZoneRegistry.Register(_stationController);
-        }
+        // T-DOCK-SRV-2: убран дублирующий Register в Start() — OnEnable уже идемпотентно
+        // регистрирует станцию (см. DockingZoneRegistry.Register — проверка _stationsById[def.StationId]).
+        // Двойная регистрация в OnEnable + Start() — мусор (хоть и безопасный).
 
         private void OnDisable()
         {

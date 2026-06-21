@@ -9,7 +9,7 @@
     bottom: 0;
     align-items: center;
     justify-content: center;
-    background-color: rgba(250, 40, 40, 0.5);
+    background-color: rgba(0, 0, 0, 0.4); /* T-DOCK-UI-2: нормальный полупрозрачный фон (убрана красная отладка) */
     display: flex;
 }
 

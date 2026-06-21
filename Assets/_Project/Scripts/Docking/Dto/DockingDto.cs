@@ -70,16 +70,30 @@ namespace ProjectC.Docking.Dto
 
         public void NetworkSerialize<T>(BufferSerializer<T> s) where T : IReaderWriter
         {
-            s.SerializeValue(ref stationId);
-            s.SerializeValue(ref padId);
+            // T-DOCK-RPC-FIX: NGO 2.x FastBufferWriter.WriteValueSafe(string) кидает NRE на null.
+            // Защищаем каждый string-член — нормализуем null в "" перед сериализацией.
+            // Это надёжнее чем патчить каждый caller (MakeFail, AssignPad, etc).
+            string _stationId = stationId ?? "";
+            string _padId = padId ?? "";
+            string _voiceLine = voiceLine ?? "";
+            string _failReason = failReason ?? "";
+
+            s.SerializeValue(ref _stationId);
+            s.SerializeValue(ref _padId);
             s.SerializeValue(ref approachPoint);
             s.SerializeValue(ref approachAltitude);
             s.SerializeValue(ref approachHeading);
             s.SerializeValue(ref landingWindowSeconds);
-            s.SerializeValue(ref voiceLine);
+            s.SerializeValue(ref _voiceLine);
             s.SerializeValue(ref shipNetworkObjectId);
             s.SerializeValue(ref success);
-            s.SerializeValue(ref failReason);
+            s.SerializeValue(ref _failReason);
+
+            // Возвращаем нормализованные значения обратно (для round-trip)
+            stationId = _stationId;
+            padId = _padId;
+            voiceLine = _voiceLine;
+            failReason = _failReason;
         }
     }
 
@@ -107,12 +121,17 @@ namespace ProjectC.Docking.Dto
 
         public void NetworkSerialize<T>(BufferSerializer<T> s) where T : IReaderWriter
         {
+            // T-DOCK-RPC-FIX: см. DockingAssignmentDto — null-safety для всех strings.
             byte sByte = (byte)status;
             s.SerializeValue(ref sByte);
             status = (DockingStatus)sByte;
-            s.SerializeValue(ref stationId);
-            s.SerializeValue(ref padId);
+            string _stationId = stationId ?? "";
+            string _padId = padId ?? "";
+            s.SerializeValue(ref _stationId);
+            s.SerializeValue(ref _padId);
             s.SerializeValue(ref timestamp);
+            stationId = _stationId;
+            padId = _padId;
         }
     }
 }

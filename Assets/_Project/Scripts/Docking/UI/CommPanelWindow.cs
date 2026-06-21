@@ -376,6 +376,31 @@ namespace ProjectC.Docking.UI
                 return;
             }
 
+            // T-DOCK-SRV-7: если статус Idle, но корабль физически пристыкован
+            // (через ScanExistingOccupants на старте сервера), переключаем UI
+            // в Docked state, чтобы игрок видел кнопку «Отстыковка», а не «Запросить посадку».
+            if (_currentStatus == DockingStatus.Idle || _currentStatus == DockingStatus.Cancelled)
+            {
+                var localPlayer = FindLocalPlayer();
+                if (localPlayer != null && localPlayer.IsInShip && localPlayer.CurrentShip != null
+                    && localPlayer.CurrentShip.IsDocked)
+                {
+                    _currentStatus = DockingStatus.Docked;
+                    // Определяем станцию через DockingZoneRegistry
+                    var station = DockingZoneRegistry.LocalPlayerStation
+                                  ?? DockingZoneRegistry.LocalPlayerShipStation;
+                    if (station != null)
+                    {
+                        _currentStationId = station.StationId;
+                        // Ищем padId — у нас нет точного, но можем найти через
+                        // ближайший DockingPadTriggerBox к кораблю
+                        _currentPadId = GetNearestPadId(station);
+                    }
+                    if (Debug.isDebugBuild)
+                        Debug.Log($"[CommPanelWindow] IsDocked detected from ship state → Docked. station={_currentStationId} pad={_currentPadId}");
+                }
+            }
+
             // Header
             if (_header != null)
             {
@@ -619,7 +644,35 @@ namespace ProjectC.Docking.UI
         // Helpers
         // ====================================================
 
-        // T-DOCK-UI-1: ApplyInlineFallbackStyles удалён — см. AUDIT_AND_REFACTOR.md §1.5.
-                // USS .comm-panel-root сам делает flex-center; inline-стили ломали верстку.
+        /// <summary>
+        /// T-DOCK-SRV-7: находит ближайший DockingPadTriggerBox к позиции корабля
+        /// и возвращает его padId. Для сканированных при старте кораблей — определяет,
+        /// на каком паде стоит корабль.
+        /// </summary>
+        private static string GetNearestPadId(ProjectC.Docking.Network.DockStationController station)
+        {
+            if (station == null) return "";
+            var localPlayer = FindLocalPlayer();
+            if (localPlayer == null || !localPlayer.IsInShip || localPlayer.CurrentShip == null)
+                return "";
+            Vector3 shipPos = localPlayer.CurrentShip.transform.position;
+
+            var triggerBoxes = station.GetComponentsInChildren<ProjectC.Docking.Stations.DockingPadTriggerBox>();
+            float bestDist = float.MaxValue;
+            string bestPadId = "";
+            foreach (var tb in triggerBoxes)
+            {
+                float d = Vector3.Distance(tb.transform.position, shipPos);
+                if (d < bestDist)
+                {
+                    bestDist = d;
+                    bestPadId = tb.PadId;
+                }
             }
+            return bestPadId;
         }
+
+        // T-DOCK-UI-1: ApplyInlineFallbackStyles удалён — см. AUDIT_AND_REFACTOR.md §1.5.
+        // USS .comm-panel-root сам делает flex-center; inline-стили ломали верстку.
+    }
+}

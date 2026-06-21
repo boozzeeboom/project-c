@@ -8,6 +8,7 @@
 using System.Collections.Generic;
 using ProjectC.Docking.Dto;
 using ProjectC.Docking.Network; // DockStationController
+using ProjectC.Docking.Stations; // DockingPadTriggerBox
 using ProjectC.Player;
 using UnityEngine;
 // NetworkingUtils живёт в ProjectC.Trade.Network — см. MarketTimeService.cs:157.
@@ -80,9 +81,32 @@ namespace ProjectC.Docking.Core
 
             // Q4: без хардкода — берём все pads из layout, проверяем каждый
             var defaultTriggerSize = def.PadLayout.DefaultTriggerBoxSize;
+
+            // T-DOCK-SRV-5: собираем override`ы из scene-placed DockingPadTriggerBox
+            // (пользователь может настроить compatibleShipClasses прямо на триггер-боксе,
+            // а не только в PadLayout SO).
+            var triggerBoxOverrides = new Dictionary<string, ShipFlightClass[]>();
+            var triggerBoxes = station.GetComponentsInChildren<DockingPadTriggerBox>();
+            foreach (var tb in triggerBoxes)
+            {
+                if (tb.CompatibleShipClasses != null && tb.CompatibleShipClasses.Length > 0)
+                    triggerBoxOverrides[tb.PadId] = tb.CompatibleShipClasses;
+            }
+
+            Debug.Log($"[DockingWorld] AssignPad: station={def.StationId} ship={ship.name} shipClass={shipClass} padsCount={def.PadLayout.Pads.Count}");
             foreach (var pad in def.PadLayout.Pads)
             {
-                if (!IsCompatible(pad.compatibleShipClasses, shipClass)) continue;
+                // T-DOCK-SRV-5: используем override из триггер-бокса, если есть, иначе из SO
+                ShipFlightClass[] effectiveCompatible = triggerBoxOverrides.Count > 0 && triggerBoxOverrides.TryGetValue(pad.padId, out var ovr)
+                    ? ovr : pad.compatibleShipClasses;
+
+                string clsStr = "";
+                if (effectiveCompatible != null)
+                    foreach (var c in effectiveCompatible) clsStr += c.ToString() + ",";
+                Debug.Log($"[DockingWorld]  checking pad={pad.padId} effectiveCompatible=[{clsStr}] shipClass={shipClass} " +
+                    $"compatible={IsCompatible(effectiveCompatible, shipClass)}");
+
+                if (!IsCompatible(effectiveCompatible, shipClass)) continue;
                 string padKey = PadKey(def.StationId, pad.padId);
                 if (_occupiedPads.ContainsKey(padKey)) continue;   // уже занят (SOT check)
                 if (IsPending(def.StationId, pad.padId)) continue; // ждёт подтверждения

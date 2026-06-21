@@ -24,6 +24,9 @@ namespace ProjectC.Docking.Stations
 
         public string PadId => padId;
 
+        /// <summary>T-DOCK-SRV-5: публичный геттер для override совместимости (используется в DockingWorld.AssignPad).</summary>
+        public ShipFlightClass[] CompatibleShipClasses => compatibleShipClasses;
+
         private BoxCollider _box;
         private DockStationController _stationController;
 

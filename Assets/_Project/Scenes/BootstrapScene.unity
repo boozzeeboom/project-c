@@ -16477,8 +16477,8 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: f8fa45bcd460663419f17283ec12ca97, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::ProjectC.Docking.UI.CommPanelWindow
-  commPanelUxml: {fileID: 0}
-  commPanelUss: {fileID: 0}
+  commPanelUxml: {fileID: 9197481963319205126, guid: 5122c042db1e69d4dadbe0c1603ddb87, type: 3}
+  commPanelUss: {fileID: 7433441132597879392, guid: 63ea576e708dcf64abee3663d9b658e4, type: 3}
 --- !u!114 &1422682205
 MonoBehaviour:
   m_ObjectHideFlags: 0

@@ -1,88 +1,108 @@
-/* T-DOCK-07: CommPanel USS styles */
+/* T-DOCK-07 v2: CommPanel USS styles.
+   Рефакторинг 2026-06-20 после character-window refactor (см. docs/Character/Character-menu/refactor_log_2026-06-05.md).
+   - Все class-стили получили !important (защита от UnityDefaultRuntimeTheme).
+   - flex-grow:1 на .comm-panel-button-* чтобы они занимали равную долю в .comm-panel-buttons.
+   - Минимальные height/font-size для компактности. */
 
-/* === Root === */
+/* === Root (full-screen overlay) === */
 .comm-panel-root {
-    position: absolute;
-    top: 0;
-    left: 0;
-    right: 0;
-    bottom: 0;
-    align-items: center;
-    justify-content: center;
-    background-color: rgba(0, 0, 0, 0.4); /* T-DOCK-UI-2: нормальный полупрозрачный фон (убрана красная отладка) */
-    display: flex;
+    position: absolute !important;
+    top: 0 !important;
+    left: 0 !important;
+    right: 0 !important;
+    bottom: 0 !important;
+    align-items: center !important;
+    justify-content: center !important;
+    background-color: rgba(0, 0, 0, 0.4) !important;
+    display: flex !important;
 }
 
-/* display visibility управляется из C# (inline style), НЕ из USS */
-
-/* === Panel === */
+/* === Panel (центрированная карточка) === */
 .comm-panel {
-    width: 560px;
-    background-color: rgb(15, 25, 38);
-    border-width: 2px;
-    border-color: rgb(80, 110, 145);
-    border-radius: 6px;
-    padding: 18px 22px;
-    flex-direction: column;
+    width: 560px !important;
+    max-width: 92% !important;
+    background-color: rgb(15, 25, 38) !important;
+    border-width: 2px !important;
+    border-color: rgb(80, 110, 145) !important;
+    border-radius: 6px !important;
+    padding: 16px 20px !important;
+    flex-direction: column !important;
+    flex-shrink: 0 !important;
+    align-items: stretch !important;
 }
 
 .comm-panel-header {
-    color: rgb(220, 200, 110);
-    font-size: 18px;
-    -unity-font-style: bold;
-    margin-bottom: 10px;
+    color: rgb(220, 200, 110) !important;
+    font-size: 18px !important;
+    -unity-font-style: bold !important;
+    margin-bottom: 8px !important;
+    flex-shrink: 0 !important;
 }
 
 .comm-panel-divider {
-    height: 1px;
-    background-color: rgb(60, 75, 95);
-    margin: 10px 0;
+    height: 1px !important;
+    background-color: rgb(60, 75, 95) !important;
+    margin: 8px 0 !important;
+    flex-shrink: 0 !important;
 }
 
 .comm-panel-message {
-    color: rgb(220, 230, 245);
-    font-size: 15px;
-    white-space: normal;
-    min-height: 60px;
+    color: rgb(220, 230, 245) !important;
+    font-size: 14px !important;
+    white-space: normal !important;
+    min-height: 50px !important;
+    flex-shrink: 1 !important;
+    margin-bottom: 4px !important;
 }
 
 .comm-panel-progress {
-    height: 6px;
-    margin: 10px 0;
-    display: none;
+    height: 6px !important;
+    margin: 8px 0 !important;
+    display: none !important;
+    flex-shrink: 0 !important;
 }
 
 .comm-panel-progress.is-active {
-    display: flex;
+    display: flex !important;
 }
 
 .comm-panel-buttons {
-    flex-direction: row;
-    justify-content: flex-end;
-    margin-top: 14px;
+    flex-direction: row !important;
+    justify-content: flex-end !important;
+    margin-top: 12px !important;
+    min-height: 32px !important;
+    flex-shrink: 0 !important;
+}
+
+/* === Buttons === */
+.comm-panel-button-primary,
+.comm-panel-button-secondary {
+    height: 28px !important;
+    min-width: 100px !important;
+    margin-left: 6px !important;
+    padding: 4px 14px !important;
+    border-radius: 4px !important;
+    border-width: 0 !important;
+    font-size: 13px !important;
+    -unity-font-style: bold !important;
+    -unity-text-align: middle-center !important;
+    flex-shrink: 0 !important;
 }
 
 .comm-panel-button-primary {
-    background-color: rgb(70, 130, 200);
-    color: white;
-    padding: 8px 20px;
-    margin-left: 8px;
-    border-radius: 4px;
-    -unity-font-style: bold;
+    background-color: rgb(70, 130, 200) !important;
+    color: rgb(240, 240, 245) !important;
 }
 
 .comm-panel-button-primary:hover {
-    background-color: rgb(95, 155, 220);
+    background-color: rgb(95, 155, 220) !important;
 }
 
 .comm-panel-button-secondary {
-    background-color: rgb(60, 75, 95);
-    color: rgb(180, 195, 215);
-    padding: 8px 20px;
-    margin-left: 8px;
-    border-radius: 4px;
+    background-color: rgb(60, 75, 95) !important;
+    color: rgb(180, 195, 215) !important;
 }
 
 .comm-panel-button-secondary:hover {
-    background-color: rgb(80, 95, 115);
+    background-color: rgb(80, 95, 115) !important;
 }

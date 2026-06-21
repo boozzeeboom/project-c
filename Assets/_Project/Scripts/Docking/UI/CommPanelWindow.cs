@@ -57,19 +57,18 @@ namespace ProjectC.Docking.UI
         // ====================================================
 
         private void Awake()
-        {
-            if (Instance == null) Instance = this;
-            else if (Instance != this) { Destroy(gameObject); return; }
+                {
+                    if (Instance == null) Instance = this;
+                    else if (Instance != this) { Destroy(gameObject); return; }
 
-            _doc = GetComponent<UIDocument>();
-            if (_doc == null) _doc = gameObject.AddComponent<UIDocument>();
+                    _doc = GetComponent<UIDocument>();
+                    if (_doc == null) _doc = gameObject.AddComponent<UIDocument>();
 
-            // Resources fallback
-            if (commPanelUxml == null)
-                commPanelUxml = Resources.Load<VisualTreeAsset>("UI/CommPanel");
-            if (commPanelUss == null)
-                commPanelUss = Resources.Load<StyleSheet>("UI/CommPanel");
-        }
+                    // Resources fallback для UXML только — Inspector-поле должно быть заполнено заранее.
+                    // Для USS fallback НЕ делаем (Resources.Load<StyleSheet>("UI/...") может вернуть мусор).
+                    if (commPanelUxml == null)
+                        commPanelUxml = Resources.Load<VisualTreeAsset>("UI/CommPanel");
+                }
 
         private void OnEnable()
         {
@@ -114,56 +113,63 @@ namespace ProjectC.Docking.UI
         }
 
         private void EnsureBuilt()
-        {
-            if (_doc.rootVisualElement == null) return;
-            if (commPanelUxml == null)
-                commPanelUxml = Resources.Load<VisualTreeAsset>("UI/CommPanel");
-            if (commPanelUss == null)
-                commPanelUss = Resources.Load<StyleSheet>("UI/CommPanel");
-            if (commPanelUxml == null)
-            {
-                Debug.LogError("[CommPanelWindow] UXML не найден ни в Inspector, ни в Resources/UI/");
-                return;
-            }
+                        {
+                            if (_doc == null) _doc = GetComponent<UIDocument>();
+                            if (_doc == null || _doc.rootVisualElement == null) return;
+                    // UI Toolkit refactor 2026-06-20: НЕ делаем Resources.Load fallback для StyleSheet.
+                    // Inspector-ссылка уже есть и валидна. Resources.Load может вернуть мусор
+                    // (например `inlineStyle` из Default Runtime Theme — см. character-window
+                    // refactor log 2026-06-05 §2.2).
+                    // UXML fallback на Resources допустим только если Inspector-поле null.
+                    if (commPanelUxml == null)
+                        commPanelUxml = Resources.Load<VisualTreeAsset>("UI/CommPanel");
+                    if (commPanelUxml == null)
+                    {
+                        Debug.LogError("[CommPanelWindow] UXML не найден ни в Inspector, ни в Resources/UI/");
+                        return;
+                    }
 
-            // КРИТИЧНО: очищаем и подвешиваем стили КАЖДЫЙ раз (после UIDocument.OnEnable
-            // может подвесить свой UXML-auto-load поверх нашего, и USS слетит).
-            _doc.rootVisualElement.Clear();
-            if (commPanelUss != null)
-                _doc.rootVisualElement.styleSheets.Add(commPanelUss);
+                    // UI Toolkit refactor 2026-06-20: НЕ делаем Clear()+CloneTree() вручную.
+                    // UIDocument сам подгружает visualTreeAsset на Start/Enable.
+                    // Вручную добавляем styleSheets (один раз).
+                    _root = _doc.rootVisualElement;
+                    if (commPanelUss != null && !_root.styleSheets.Contains(commPanelUss))
+                    {
+                        _root.styleSheets.Add(commPanelUss);
+                    }
 
-            _root = commPanelUxml.CloneTree();
-            // CloneTree возвращает TemplateContainer с position:relative 0×0. Растягиваем на
-            // весь rootVE — иначе .comm-panel-root (position:absolute) уезжает в (-W/2,0).
-            _root.style.position = Position.Absolute;
-            _root.style.left = 0;
-            _root.style.top = 0;
-            _root.style.right = 0;
-            _root.style.bottom = 0;
-            // pickingMode=Position по умолчанию — кнопки кликабельны.
-            _doc.rootVisualElement.Add(_root);
+                    // FIX T-DOCK-07: sortingOrder
+                    _doc.sortingOrder = 10;
 
-            // FIX T-DOCK-07: sortingOrder
-            _doc.sortingOrder = 10;
+                    // TemplateContainer(CloneTree результат) или rootVE — оба имеют класс .comm-panel-root.
+                    // Ищем "panel" внутри UXML-дерева.
+                    _panel = _root.Q<VisualElement>("panel");
+                    _container = _root.Q<VisualElement>("root");
+                    _header = _root.Q<Label>("header");
+                    _message = _root.Q<Label>("dispatcher-message");
+                    _progressBar = _root.Q<ProgressBar>("landing-window-bar");
+                    _primaryButton = _root.Q<Button>("primary-action-button");
+                    _secondaryButton = _root.Q<Button>("secondary-action-button");
 
-            _panel = _root.Q<VisualElement>("panel");
-            _container = _root.Q<VisualElement>("root");
-            _header = _root.Q<Label>("header");
-            _message = _root.Q<Label>("dispatcher-message");
-            _progressBar = _root.Q<ProgressBar>("landing-window-bar");
-            _primaryButton = _root.Q<Button>("primary-action-button");
-            _secondaryButton = _root.Q<Button>("secondary-action-button");
+                    if (_primaryButton != null)
+                    {
+                        _primaryButton.clicked -= OnPrimaryClicked;  // avoid double-subscribe
+                        _primaryButton.clicked += OnPrimaryClicked;
+                    }
+                    if (_secondaryButton != null)
+                    {
+                        _secondaryButton.clicked -= OnSecondaryClicked;
+                        _secondaryButton.clicked += OnSecondaryClicked;
+                    }
 
-            if (_primaryButton != null) _primaryButton.clicked += OnPrimaryClicked;
-            if (_secondaryButton != null) _secondaryButton.clicked += OnSecondaryClicked;
+                    _built = true;
+                    // Изначально скрыто — Show()/SetOpen(true) переключит на Flex
+                    if (_container != null) _container.style.display = DisplayStyle.None;
+                    else if (_root != null) _root.style.display = DisplayStyle.None;
 
-            _built = true;
-            // Изначально скрыто — Show()/SetOpen(true) переключит на Flex
-            if (_root != null) _root.style.display = DisplayStyle.None;
-
-            if (Debug.isDebugBuild)
-                Debug.Log($"[CommPanelWindow] Built: rootVE.children={_doc.rootVisualElement.childCount}, styleSheets={_doc.rootVisualElement.styleSheets.count}");
-        }
+                    if (Debug.isDebugBuild)
+                        Debug.Log($"[CommPanelWindow] Built: rootVE.children={_doc.rootVisualElement.childCount}, styleSheets={_doc.rootVisualElement.styleSheets.count}, panel={(_panel!=null)}, container={(_container!=null)}");
+                }
 
         // ====================================================
         // SUBSCRIPTIONS (как DialogWindow)
@@ -202,46 +208,48 @@ namespace ProjectC.Docking.UI
         // ====================================================
 
         public void SetOpen(bool open)
-        {
-            if (!_built) EnsureBuilt();
-            if (!_built) return;
-            IsOpen = open;
-            if (_root != null)
-            {
-                _root.style.display = open ? DisplayStyle.Flex : DisplayStyle.None;
-                _root.pickingMode = open ? PickingMode.Position : PickingMode.Ignore;
-            }
-            if (open)
-                        {
-                            UpdateUI();
-                            // T-DOCK-UI-1: ApplyInlineFallbackStyles НЕ вызываем на .comm-panel-root.
-                            // USS уже делает flex-center на root'е (top:0;left:0;right:0;bottom:0;
-                            // align-items:center;justify-content:center). Inline-styles с width:560
-                            // ломают flex-center → кнопки растягиваются (см. AUDIT_AND_REFACTOR.md §1.5).
-                        }
+                {
+                    if (!_built) EnsureBuilt();
+                    if (!_built) return;
+                    IsOpen = open;
+                    // T-DOCK-UI-1 v2: управляем .comm-panel-root (он же _container).
+                    // _container — это VisualElement с name="root" в UXML, который имеет
+                    // класс .comm-panel-root (полноэкранный overlay с flex-center).
+                    var target = _container != null ? _container : _root;
+                    if (target != null)
+                    {
+                        target.style.display = open ? DisplayStyle.Flex : DisplayStyle.None;
+                        target.pickingMode = open ? PickingMode.Position : PickingMode.Ignore;
+                    }
+                    if (open)
+                    {
+                        UpdateUI();
+                        // USS .comm-panel-root сам делает flex-center на panel'е через align-items/justify-content.
+                        // ApplyInlineFallbackStyles НЕ нужен — USS с !important перебивает всё (см. AUDIT §1.5).
+                    }
 
-            // Cursor — flight-режим держит курсор залоченным. При открытом UI отпускаем.
-            if (open)
-            {
-                UnityEngine.Cursor.lockState = CursorLockMode.None;
-                UnityEngine.Cursor.visible = true;
-                // Frame-1 repaint fix: USS не успел примениться → принудительный repaint
-                _doc?.rootVisualElement?.MarkDirtyRepaint();
-                if (_doc?.rootVisualElement != null)
-                {
-                    _doc.rootVisualElement.schedule.Execute(() => _doc.rootVisualElement.MarkDirtyRepaint()).StartingIn(50);
+                    // Cursor — flight-режим держит курсор залоченным. При открытом UI отпускаем.
+                    if (open)
+                    {
+                        UnityEngine.Cursor.lockState = CursorLockMode.None;
+                        UnityEngine.Cursor.visible = true;
+                        // Frame-1 repaint fix: USS не успел примениться → принудительный repaint
+                        _doc?.rootVisualElement?.MarkDirtyRepaint();
+                        if (_doc?.rootVisualElement != null)
+                        {
+                            _doc.rootVisualElement.schedule.Execute(() => _doc.rootVisualElement.MarkDirtyRepaint()).StartingIn(50);
+                        }
+                    }
+                    else
+                    {
+                        var nm = Unity.Netcode.NetworkManager.Singleton;
+                        if (nm != null && nm.IsListening)
+                        {
+                            UnityEngine.Cursor.lockState = CursorLockMode.Locked;
+                            UnityEngine.Cursor.visible = false;
+                        }
+                    }
                 }
-            }
-            else
-            {
-                var nm = Unity.Netcode.NetworkManager.Singleton;
-                if (nm != null && nm.IsListening)
-                {
-                    UnityEngine.Cursor.lockState = CursorLockMode.Locked;
-                    UnityEngine.Cursor.visible = false;
-                }
-            }
-        }
 
         public void ToggleOpen()
         {

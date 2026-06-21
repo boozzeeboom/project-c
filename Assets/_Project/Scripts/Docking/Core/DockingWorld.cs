@@ -76,20 +76,42 @@ namespace ProjectC.Docking.Core
         {
             var def = station.StationDefinition;
             if (def == null) return MakeFail("STATION_NO_DEFINITION", ship.NetworkObjectId);
+            if (def.PadLayout == null) return MakeFail("NO_PAD_LAYOUT", ship.NetworkObjectId);
 
             // Q4: без хардкода — берём все pads из layout, проверяем каждый
+            var defaultTriggerSize = def.PadLayout.DefaultTriggerBoxSize;
             foreach (var pad in def.PadLayout.Pads)
             {
                 if (!IsCompatible(pad.compatibleShipClasses, shipClass)) continue;
                 string padKey = PadKey(def.StationId, pad.padId);
                 if (_occupiedPads.ContainsKey(padKey)) continue;   // уже занят (SOT check)
                 if (IsPending(def.StationId, pad.padId)) continue; // ждёт подтверждения
+
+                // T-DOCK-SRV-3: физическая проверка — есть ли корабль внутри trigger зоны пада.
+                // Если да — пад считается занятым даже без формального Assign/Confirm.
+                // Важно для стартового состояния, когда на падах уже стоят npc-корабли.
+                Vector3 worldPadPos = station.transform.TransformPoint(pad.localPosition);
+                Quaternion worldPadRot = station.transform.rotation * Quaternion.Euler(pad.localEulerAngles);
+                Vector3 boxSize = pad.triggerBoxSize.sqrMagnitude > 0.001f ? pad.triggerBoxSize : defaultTriggerSize;
+                Collider[] hits = Physics.OverlapBox(worldPadPos, boxSize * 0.5f, worldPadRot, ~0, QueryTriggerInteraction.Collide);
+                bool physicallyOccupied = false;
+                for (int i = 0; i < hits.Length; i++)
+                {
+                    if (hits[i].GetComponentInParent<ShipController>() != null)
+                    {
+                        physicallyOccupied = true;
+                        Debug.Log($"[DockingWorld] Pad {pad.padId} physically occupied by ship inside trigger — skipping");
+                        break;
+                    }
+                }
+                if (physicallyOccupied) continue;
+
                 // OK — назначаем (но не регистрируем)
                 return new DockingAssignmentDto
                 {
                     stationId = def.StationId,
                     padId = pad.padId,
-                    approachPoint = station.transform.TransformPoint(pad.localPosition),
+                    approachPoint = worldPadPos,
                     approachAltitude = station.transform.position.y + 30f,
                     approachHeading = station.transform.eulerAngles.y + pad.localEulerAngles.y,
                     landingWindowSeconds = def.LandingWindowSeconds,

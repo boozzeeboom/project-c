@@ -55,6 +55,68 @@ namespace ProjectC.Docking.Core
             Debug.Log("[DockingWorld] Created");
         }
 
+        private void Start()
+        {
+            // T-DOCK-SRV-6: сканируем пады при старте — корабли, уже стоящие на падах,
+            // регистрируются как занятые + получают EnterDocked (блокировка двигателя).
+            // Задержка 1 секунда — чтобы все станции успели зарегистрироваться в
+            // DockingZoneRegistry через OnEnable.
+            StartCoroutine(ScanExistingOccupantsDelayed());
+        }
+
+        private System.Collections.IEnumerator ScanExistingOccupantsDelayed()
+        {
+            yield return new UnityEngine.WaitForSeconds(1f);
+            ScanExistingOccupants();
+        }
+
+        /// <summary>
+        /// T-DOCK-SRV-6: сканирует все зарегистрированные станции, находит корабли
+        /// внутри DockingPadTriggerBox и регистрирует их как occupants.
+        /// </summary>
+        public void ScanExistingOccupants()
+        {
+            var stations = DockingZoneRegistry.All;
+            if (stations == null || stations.Count == 0)
+            {
+                Debug.Log("[DockingWorld] ScanExistingOccupants: no stations registered");
+                return;
+            }
+            int totalOccupied = 0;
+            foreach (var kv in stations)
+            {
+                var station = kv.Value;
+                if (station == null || station.StationDefinition == null) continue;
+                var triggerBoxes = station.GetComponentsInChildren<DockingPadTriggerBox>();
+                foreach (var tb in triggerBoxes)
+                {
+                    Vector3 padWorldPos = tb.transform.position;
+                    Vector3 boxSize = Vector3.one * 10f; // fallback
+                    var box = tb.GetComponent<BoxCollider>();
+                    if (box != null) boxSize = box.size;
+
+                    Collider[] hits = Physics.OverlapBox(padWorldPos, boxSize * 0.5f, tb.transform.rotation, ~0, QueryTriggerInteraction.Collide);
+                    for (int i = 0; i < hits.Length; i++)
+                    {
+                        var ship = hits[i].GetComponentInParent<ShipController>();
+                        if (ship != null)
+                        {
+                            string padKey = PadKey(station.StationId, tb.PadId);
+                            if (!_occupiedPads.ContainsKey(padKey))
+                            {
+                                _occupiedPads[padKey] = ship.NetworkObject != null ? ship.NetworkObject.NetworkObjectId : 0;
+                                // Блокируем двигатель
+                                if (ship.IsServer) ship.EnterDocked();
+                                Debug.Log($"[DockingWorld] ScanExistingOccupants: pad={tb.PadId} station={station.StationId} ship={ship.name} — registered + engine locked");
+                                totalOccupied++;
+                            }
+                        }
+                    }
+                }
+            }
+            Debug.Log($"[DockingWorld] ScanExistingOccupants: completed, {totalOccupied} pads occupied");
+        }
+
         public static void Shutdown()
         {
             if (Instance != null) Destroy(Instance.gameObject);
@@ -230,6 +292,20 @@ namespace ProjectC.Docking.Core
                 _occupiedPads.Remove(padKey);  // Q3: освобождаем pad
                 _assignmentsByClient.Remove(clientId);
                 _assignmentsByShip.Remove(shipNetId);
+            }
+            else if (shipNetId != 0)
+            {
+                // T-DOCK-SRV-6: если assignment нет (корабль был зарегистрирован через
+                // ScanExistingOccupants, а не через формальное Assign+Confirm), ищем
+                // занятый pad по ship сетевому идентификатору.
+                foreach (var kv in _occupiedPads)
+                {
+                    if (kv.Value == shipNetId)
+                    {
+                        _occupiedPads.Remove(kv.Key);
+                        break;
+                    }
+                }
             }
             // Также чистим pending (если был)
             _pendingByClient.Remove(clientId);

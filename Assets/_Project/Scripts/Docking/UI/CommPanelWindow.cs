@@ -322,13 +322,19 @@ namespace ProjectC.Docking.UI
         }
 
         private void HandleTakeoffApproved(ulong shipNetId)
-        {
-            _currentStatus = DockingStatus.Idle;
-            _currentStationId = null;
-            _currentPadId = null;
-            _awaitingConfirmation = null;
-            UpdateUI();
-        }
+                {
+                    // T-DOCK-UI-5 v2: после отстыковки — закрыть окно автоматически.
+                    // Двигатель разблокирован, игрок может лететь. Окно оставаться открытым
+                    // не должно — иначе игрок видит Idle state с кнопкой "Запросить посадку"
+                    // и случайно повторно запрашивает стыковку (баг репорта 2026-06-20).
+                    _currentStatus = DockingStatus.Idle;
+                    _currentStationId = null;
+                    _currentPadId = null;
+                    _awaitingConfirmation = null;
+                    // Закрываем + снимаем курсор-locking
+                    SetOpen(false);
+                    Debug.Log("[CommPanelWindow] Takeoff approved — окно закрыто, двигатели разблокированы");
+                }
 
         // ====================================================
         // UI UPDATE
@@ -443,13 +449,17 @@ namespace ProjectC.Docking.UI
                 _secondaryButton.style.display = DisplayStyle.Flex;
             }
             else if (_currentStatus == DockingStatus.Docked)
-                        {
-                            // T-DOCK-UI-3: в Docked primary-кнопка = "Отстыковка", а не закрытие панели.
-                            // Раньше был SetOpen(false) — баг: игрок нажимал кнопку и ничего не происходило.
-                            _primaryButton.text = "Отстыковка";
-                            _primaryButton.style.display = DisplayStyle.Flex;
-                            _secondaryButton.style.display = DisplayStyle.None;
-                        }
+                                    {
+                                        // T-DOCK-UI-3 v2: в Docked primary = "Отстыковка", secondary = "Закрыть".
+                                        // При нажатии primary: CancelAssignment() → RequestTakeoffRpc →
+                                        // сервер ReleaseAssignment + ExitDocked + SendTakeoffApprovedTargetRpc.
+                                        // HandleTakeoffApproved закроет окно автоматически (см. ниже).
+                                        // Secondary = "Закрыть" если игрок хочет остаться в окне просмотра состояния.
+                                        _primaryButton.text = "Отстыковка";
+                                        _primaryButton.style.display = DisplayStyle.Flex;
+                                        _secondaryButton.text = "Закрыть";
+                                        _secondaryButton.style.display = DisplayStyle.Flex;
+                                    }
                         else if (_currentStatus == DockingStatus.WrongPad)
                         {
                             _primaryButton.text = "Перепарковаться";

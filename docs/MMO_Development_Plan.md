@@ -157,6 +157,68 @@
 - 🟡 Оценка UI системы: 4.5/10 → 7/10 (+55%)
 - 📋 Подробные отчёты: `docs/QWEN-UI-AGENTIC-SUMMARY.md` (UI Спринты 1-3) + `docs/Character-menu/00_OVERVIEW.md` (CharacterWindow) + `docs/Character-menu/refactor_log_2026-06-05.md` (visual fix)
 
+### 1.7.1 Docking Stations (MVP) ✅ ЗАВЕРШЕНО (2026-06-20)
+
+**Цель:** Реализовать стыковочные порты — игрок подлетает в зоне связи, открывает CommPanel, запрашивает посадку, получает назначенный pad, летит к нему, при касании — двигатель блокируется (Docked). Двусторонняя связь с диспетчером.
+
+**Серверный hub:**
+- ✅ `DockingServer` (NetworkBehaviour, scene-placed в `BootstrapScene`) — `RequestDockingRpc`, `RequestConfirmAssignmentRpc` (Q7 двусторонняя), `RequestTakeoffRpc`, `NotifyTouchedDownRpc`
+- ✅ `DockingWorld` (server-only singleton MonoBehaviour, DontDestroyOnLoad) — single source of truth занятости pads (`_occupiedPads: Dictionary<padKey, clientId>`)
+- ✅ Rate limiting (copy-paste из `QuestServer`), null-safety на всех string DTO полях
+- ✅ `ScanExistingOccupants()` при старте — корабли, уже стоящие на падах, регистрируются как occupants
+
+**Клиентский state:**
+- ✅ `DockingClientState` (singleton, `[RuntimeInitializeOnLoadMethod] AutoCreate`) — events `OnAwaitingConfirmation`, `OnAssignmentFailed`, `OnStatusReceived`, `OnTakeoffApproved`, `OnTouchedDown`
+- ✅ `DockingZoneRegistry` (static) — `LocalPlayerStation` / `LocalPlayerShipStation` для T-key check
+
+**UI:**
+- ✅ `CommPanelWindow` (UI Toolkit) — двусторонний диалог с диспетчером, кнопки `[Запросить посадку]`, `[Хорошо]`, `[Отбой]`, `[Отменить запрос]`, `[Отстыковка]`. Расположен справа (`right:24px; top:50%`), компактный (320×~200px). Не модальный (без затемнения экрана). Theme + `!important`-стили по канону `docs/UI/UI_TOOLKIT_GUIDE.md`.
+- ✅ `DockPadVisualMarker` (runtime Quad-метка на каждом паде) — создаёт Quad + Unlit/Color материал, читает `_padBox.IsShipInside`. ⚠️ Цвет не меняется корректно — **требует переработки** (тикет `T-DOCK-14`).
+
+**FSM / физика:**
+- ✅ `ShipController._netIsDocked` (NetworkVariable<bool>, server-write) — сервер-авторитативный флаг
+- ✅ `EnterDocked()` / `ExitDocked()` — `_rb.isKinematic = true/false`, обнуление velocity
+- ✅ `SendShipInput` — guard `if (_netIsDocked.Value) return;` (owner + server defense in depth)
+
+**SO + ассеты:**
+- ✅ `DockStationDefinition` (паспорт станции) — stationId, locationId, displayName, padLayout, voiceLines, landingWindowSeconds
+- ✅ `DockPadLayout` (список pads) — `Pads[]` с `padId`, `localPosition`, `localEulerAngles`, `compatibleShipClasses[]`, `triggerBoxSize`. `DefaultTriggerBoxSize` для всех pads.
+- ✅ `DispatcherVoiceLines` (фразы по контексту: Greeting, Assigning, Assigned, AwaitingConfirmation, Touchdown, WrongPad)
+- ✅ `DockStationDefinition_Primium.asset` (5 pads: PAD-001..005, разные классы совместимости), `DockPadLayout_Primium.asset`, `DispatcherVoiceLines_Default.asset`
+- ✅ `CommPanelPanelSettings.asset` (themeUss=UnityDefaultRuntimeTheme)
+
+**Сцена:**
+- ✅ `[DockStation_Primium]` в `WorldScene_0_0.unity` — root с `DockStationController` + `OuterCommZone` (radius=1000m), 5 child trigger-boxов `Pad_001..005` с `DockingPadTriggerBox` + `DockPadVisualMarker`
+- ✅ `[CommPanelWindow]` в `BootstrapScene.unity` — UIDocument + CommPanelWindow + PanelSettings
+
+**HUD интеграция (T-DOCK-HUD):**
+- ✅ `ShipHudController.K5 (DISPATCH)` — подключена к `DockingZoneRegistry.LocalPlayerShipStation`. Красная точка ● вне зоны, зелёная в зоне. Показывает `DISPATCHER STN-PRM-001` + `REGION Примум` + подсказка `T — связаться`.
+
+**Подсистемы / Edge cases:**
+- ✅ Физическая проверка падов — `Physics.OverlapBox` через `DockingWorld.AssignPad` (нельзя сесть на занятный физически)
+- ✅ Совместимость классов — проверка `IsCompatible` с fallback override из trigger-box
+- ✅ Initial state detection в UI — если `Ship.IsDocked == true`, CommPanel показывает Docked state
+- ✅ Auto-close после одобрения отстыковки — `HandleTakeoffApproved` → `SetOpen(false)`
+
+**Что НЕ сделано (Phase 2 / Phase 1.5):**
+- ⏳ **Departure subsystem** — отдельная подсистема вылета по запросу через T (`08_DEPARTURE_SUBSYSTEM.md`)
+- ⏳ **Автопилот стыковки** (модуль `MODULE_AUTO_DOCK`) — GDD-10 §4.2 P2-T2
+- ⏳ **NPC-корабли на падах** — SOT уже поддерживает, но нет логики спавна NPC
+- ⏳ **`DockPadVisualMarker` v2** — переделка маркера с правильной реакцией на `IsShipInside`
+
+**Документация:**
+- ✅ `docs/Docking_stations/AUDIT_AND_REFACTOR.md` — полный аудит + 5 фаз рефакторинга
+- ✅ `docs/Docking_stations/CHANGELOG.md` — лог всех фиксов (RPC null-safety, UI реверт, двигатель-блокировка, initial scan, отстыковка)
+- ✅ `docs/Docking_stations/REFACTOR_PLAN.md`, `docs/Docking_stations/BUG_AUDIT.md` — предыдущие отчёты
+
+**Stats:**
+- **+12** новых C# файлов (`Assets/_Project/Scripts/Docking/**`, ~50 KB)
+- **+3** SO файлов
+- **+1** PanelSettings
+- **+1** обновлён `ShipHudController` (K5 Dispatch column)
+- **+1** новый документ `docs/UI/UI_TOOLKIT_GUIDE.md` (~24 KB)
+- **+3** документа в `docs/Docking_stations/` (AUDIT_AND_REFACTOR, CHANGELOG entry)
+
 ### 1.8 Сетевая инфраструктура (базовая) ✅ ЗАВЕРШЕНО
 
 ---
@@ -879,7 +941,7 @@
 ### Systems — Технические системы
 | Документ | Описание |
 |----------|---------|
-| [GDD_10: Ship System](gdd/GDD_10_Ship_System.md) | 4 класса кораблей, физика, кооп-пилотирование. **✅ Ship Key MVP (R2-SHIP-KEY-001) + MetaRequirement v1 (R2-META-REQ-001) реализованы (2026-06-06), см. `docs/Ships/Key-subsystem/00_OVERVIEW.md` + `docs/MetaRequirement/00_OVERVIEW.md`.** |
+| [GDD_10: Ship System](gdd/GDD_10_Ship_System.md) | 4 класса кораблей, физика, кооп-пилотирование. **✅ Ship Key MVP (R2-SHIP-KEY-001) + MetaRequirement v1 (R2-META-REQ-001) реализованы (2026-06-06), см. `docs/Ships/Key-subsystem/00_OVERVIEW.md` + `docs/MetaRequirement/00_OVERVIEW.md`. ✅ Docking Stations MVP (2026-06-20), см. `docs/Docking_stations/00_README.md`.** |
 | [GDD_11: Inventory & Items](gdd/GDD_11_Inventory_Items.md) | 8 типов, круговое колесо, LootTable, сундуки. **✅ sub_inventory-tab (P-таб) + MetaRequirement extensions (HasAllItems/HasAnyItem/CountOf/GetMissingItems) реализованы, см. `docs/Character-menu/sub_inventory-tab/00_OVERVIEW.md` + `docs/MetaRequirement/30_RUNTIME_FLOW.md`.** |
 | [GDD_12: Network & Multiplayer](gdd/GDD_12_Network_Multiplayer.md) | NGO, RPC, реконнект, Dedicated Server |
 | [GDD_12.1: Scene-Based World Streaming](gdd/GDD_12_1_Scene_World_Streaming.md) | 24 сцены, 4×6 grid, boundary-based loading |

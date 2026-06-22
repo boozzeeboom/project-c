@@ -1,5 +1,7 @@
 # 06 — Roadmap: Docking Stations
 
+> **Статус (2026-06-20):** ✅ **MVP реализован.** Все тикеты `T-DOCK-00..13` выполнены, compile = 0 errors.
+> Известное ограничение: `DockPadVisualMarker` — не меняет цвет при посадке/отстыковке (требует переработки, тикет `T-DOCK-14`).
 > **Цель:** По-тикетный план реализации MVP стыковочных портов. Каждый
 > тикет — отдельная PR/commit (по правилу AGENTS.md: «1 ticket = 1 PR =
 > 1 session = 30-150 min coding»). Фазы сгруппированы по логическим
@@ -7,28 +9,36 @@
 
 ---
 
-## 1. Milestones (M-DOCK-1 .. M-DOCK-5)
+## 1. Milestones (M-DOCK-1 .. M-DOCK-5) — ✅ все завершены
 
 **Q1 (T-key), Q3 (SOT), Q4 (без хардкода), Q7 (двусторонняя), Q8 (Departure
 = отдельная подсистема), Q10 (T вне кресла), Q11 (KeyRod не обрабатываем),
-Q13 (цифры на mesh'е), Q15 (bool-флаги) — все приняты 2026-06-19.**
+Q13 (цифры на mesh'е), Q15 (bool-флаги) — все приняты 2026-06-19, реализованы 2026-06-20.**
 
-### Docking (T-DOCK-*)
+### Docking (T-DOCK-*) — ✅ MVP complete
 
-| Milestone | Название | Что внутри | Тикетов |
-|-----------|----------|------------|---------|
-| **M-DOCK-1** | Server hub skeleton | DockingWorld + DTOs + Server hub + RPCs (включая Q7 `RequestConfirmAssignmentRpc`) + ClientState + реестр | T-DOCK-00..03 (4) |
-| **M-DOCK-2** | Zones & scene objects | OuterCommZone + DockStationController + composite + SOs (Q4 без хардкода) | T-DOCK-04..06 (3) |
-| **M-DOCK-3** | UI: CommPanel + Toast | UXML/USS + Window (Q7 AwaitingConfirmation) + Toast + T-key (Q10 check) | T-DOCK-07..08 (2) |
-| **M-DOCK-4** | FSM + integration | ShipController.IsDocked (Q15 bool) + F-key (Q9 boarding always) | T-DOCK-09..10 (2) |
-| **M-DOCK-5** | Test scene + smoke | SOs (Q4) + scene placement (Q6 40500,2510,40500) + тест-сценарий | T-DOCK-11..13 (3) |
+| Milestone | Название | Что внутри | Тикетов | Статус |
+|-----------|----------|------------|---------|--------|
+| **M-DOCK-1** | Server hub skeleton | DockingWorld + DTOs + Server hub + RPCs (включая Q7 `RequestConfirmAssignmentRpc`) + ClientState + реестр | T-DOCK-00..03 (4) | ✅ |
+| **M-DOCK-2** | Zones & scene objects | OuterCommZone + DockStationController + composite + SOs (Q4 без хардкода) | T-DOCK-04..06 (3) | ✅ |
+| **M-DOCK-3** | UI: CommPanel + Toast | UXML/USS + Window (Q7 AwaitingConfirmation) + Toast + T-key (Q10 check) | T-DOCK-07..08 (2) | ✅ |
+| **M-DOCK-4** | FSM + integration | ShipController.IsDocked (Q15 bool) + F-key (Q9 boarding always) | T-DOCK-09..10 (2) | ✅ |
+| **M-DOCK-5** | Test scene + smoke | SOs (Q4) + scene placement (Q6 40500,2510,40500) + тест-сценарий | T-DOCK-11..13 (3) | ✅ |
+| **M-DOCK-6** | Post-MVP фиксы (UI, RPC null-safety, авто-отстыковка) | `AUDIT_AND_REFACTOR.md`, `CHANGELOG.md` | — | ✅ |
 
-### Departure (T-DEPART-*) — **отдельная подсистема (Q8)**
+### Bonus (не из roadmap, добавлено в ходе разработки)
 
-| Milestone | Название | Что внутри | Тикетов |
-|-----------|----------|------------|---------|
-| **M-DEPART-1** | DepartureServer | Server hub + RPCs (RequestDeparturePermission) | T-DEPART-00..02 (3) |
-| **M-DEPART-2** | Departure UI + violation toast | UI + violation warning | T-DEPART-03..05 (3) |
+- ✅ **T-DOCK-HUD** — подключение Dispatch column (К5) к docking system в `ShipHudController`
+- ✅ **T-DOCK-SRV-5** — `compatibleShipClasses` override на `DockingPadTriggerBox` (плюс к SO)
+- ✅ **T-DOCK-SRV-6** — `ScanExistingOccupants` при старте сервера (корабли на падах)
+- ✅ **T-DOCK-SRV-7** — `IsShipInside` на trigger-box для маркера + UI Docked-state detection
+
+### Departure (T-DEPART-*) — **отдельная подсистема (Q8)** — ⏳ Phase 1.5
+
+| Milestone | Название | Что внутри | Тикетов | Статус |
+|-----------|----------|------------|---------|--------|
+| **M-DEPART-1** | DepartureServer | Server hub + RPCs (RequestDeparturePermission) | T-DEPART-00..02 (3) | ⏳ |
+| **M-DEPART-2** | Departure UI + violation toast | UI + violation warning | T-DEPART-03..05 (3) | ⏳ |
 
 **Всего:** 14 docking + 6 departure = **20 тикетов**, ~35-50 часов.
 

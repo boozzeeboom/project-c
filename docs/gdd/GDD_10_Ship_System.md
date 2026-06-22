@@ -393,31 +393,69 @@ public class KeyRodData : ScriptableObject {
 
 ## 7. Стыковка и Диспетчер
 
-### 7.1 Поток Стыковки
+> **Статус (2026-06-20):** ✅ **MVP реализован.** Подробности в `docs/Docking_stations/`. ⚠️ Визуальные маркеры падов (`DockPadVisualMarker`) требуют переработки. ⏳ Departure — отдельная подсистема Phase 1.5.
+
+### 7.1 Поток Стыковки (как реализовано)
+
 ```
-1. Игрок входит в зону города (radius = 500-1500м)
-2. Открывает CommPanel → "Запрос стыковки"
-3. Запрос на сервер → DockingDispatcher
-4. Диспетчер отвечает:
-   ├── Pad #5, сектор B
-   ├── Подход: высота 4200, курс 270
-   ├── Окно посадки: 90 секунд
-   └── "Борт [ID], добро пожаловать в Примум"
-5. Игрок следует инструкциям → авто-наведение (с MODULE_AUTO_DOCK)
-6. Касание платформы → Docked состояние → Engine Off
+1. Игрок входит в OuterCommZone (radius 1000m для Примум)
+2. T в корабле (Q10: только если пилотирует) → CommPanel открывается
+3. Кнопка "Запросить посадку" → RequestDockingRpc на DockingServer
+4. Сервер (DockingWorld.AssignPad):
+   - Проверка физической занятости пада (Physics.OverlapBox)
+   - Проверка совместимости классов (compatibleShipClasses)
+   - Назначение pad'а из свободных
+   - Регистрация как pending (Q7: ждёт подтверждения игрока 30 сек)
+5. Клиент получает DockingAssignmentDto → UI: "Назначаю pad #5, подход..."
+   Кнопки [Хорошо] / [Отбой]
+6. Игрок жмёт "Хорошо" → RequestConfirmAssignmentRpc(true)
+   Сервер: _occupiedPads[padKey] = clientId, статус Assigned
+   Клиент: окно 5 минут (timer), кнопка [Отменить запрос]
+7. Игрок летит к pad'у (без автопилота — MVP)
+8. Касание DockingPadTriggerBox → NotifyTouchedDownRpc
+9. Сервер (DockingWorld.ConfirmTouchdown):
+   - Проверка ship assigned этому client'у + правильный padId
+   - Статус Docked
+   - ShipController.EnterDocked(): _netIsDocked=true, rb.isKinematic=true
+10. Клиент: "Стыковка зафиксирована. Двигатели заблокированы."
+    HUD: Dispatch column зелёная, кнопка "T — связаться"
+    Кнопки CommPanel: [Отстыковка] / [Закрыть]
+11. W/A/S/D в Docked → ничего не происходит (SendShipInput guard)
+12. T → CommPanel → [Отстыковка] → RequestTakeoffRpc
+13. Сервер: ReleaseAssignment + ExitDocked (rb.isKinematic=false)
+    Клиент: окно CommPanel автоматически закрывается, двигатели разблокированы
 ```
 
-### 7.2 Диспетчер — Сообщения
+### 7.2 Диспетчер — DTO (как реализовано)
+
 ```csharp
-public struct DispatcherMessage {
-    public string padId;         // "PAD-PRM-005"
+public struct DockingAssignmentDto : INetworkSerializable {
+    public string stationId;          // "STN-PRM-001"
+    public string padId;              // "PAD-001".."PAD-005"
     public Vector3 approachPoint;
     public float approachAltitude;
     public float approachHeading;
-    public float landingWindow;  // секунды
-    public string voiceLine;     // "Борт 7-Альфа, Примум-Диспетчер..."
+    public float landingWindowSeconds; // 300 (5 минут)
+    public string voiceLine;          // фраза из DispatcherVoiceLines SO
+    public ulong shipNetworkObjectId;
+    public bool success;
+    public string failReason;
 }
 ```
+
+### 7.3 Подсистемы (Phase 2 / Phase 1.5)
+
+#### 7.3.1 Departure — отдельная подсистема (`docs/Docking_stations/08_DEPARTURE_SUBSYSTEM.md`)
+
+Вылет из зоны по запросу через T → ожидание → разрешение. Не блокируется в MVP, **НЕ** toast-предупреждается. Реализация — Phase 1.5 (T-DEPART-00..05).
+
+#### 7.3.2 Автопилот стыковки (`MODULE_AUTO_DOCK`)
+
+Автоподход по инструкции диспетчера (approachPoint, approachAltitude, approachHeading). Модуль C/B/A/S-tier. Тир 2. **Phase 2** (после MVP).
+
+#### 7.3.3 NPC-корабли на падах
+
+Сервер-авторитативный SOT (`_occupiedPads: Dictionary<padKey, ulong>`) уже поддерживает. На старте `ScanExistingOccupants()` регистрирует корабли, стоящие на падах. Полная логика спавна NPC + AI-цикл — Phase 3.
 
 ### 7.3 Зоны СОЛ и Заброшенные Корабли
 ```
@@ -436,17 +474,20 @@ public struct DispatcherMessage {
 
 ## 8. Машина Состояний Корабля
 
-| Состояние | Описание | Триггер Входа | Триггер Выхода |
-|-----------|----------|---------------|----------------|
-| **EngineOff** | Все системы неактивны | KeyRod извлечён | KeyRod вставлен |
-| **Idle** | Антиграв активен, зависание | KeyRod вставлен, нет ввода | Ввод обнаружен |
-| **Flying** | Под управлением пилота | Ввод от пилота | Все пилоты вышли |
-| **Docking** | Следует инструкциям диспетчера | Docking accepted | Landed / Cancelled |
-| **Docked** | Заблокирован на платформе | Касание pad + скорость=0 | KeyRod извлечён / Engine On |
-| **AutoHover** | Зависание (все пилоты вышли) | PilotCount = 0 | PilotCount > 0 |
-| **⚠️ VeilTurbulence** | Ниже коридора | Alt < minAlt | Alt >= minAlt + 50 |
-| **⚠️ SystemDegrade** | Выше коридора | Alt > maxAlt + 100 | Alt <= maxAlt |
-| **⚠️ SOLLock** | СОЛ блокирует | SOL violation timeout | Оплата штрафа / модуль Stealth |
+> **Статус (2026-06-20):** ✅ **Реализовано** через `ShipController._netIsDocked: NetworkVariable<bool>` (server-authoritative).
+> Игрок под управлением (`_pilots`) + `DockingWorld` серверный singleton. `SendShipInput` имеет guard на `IsDocked`.
+
+| Состояние | Описание | Триггер Входа | Триггер Выхода | Реализация |
+|-----------|----------|---------------|----------------|------------|
+| **EngineOff** | Все системы неактивны | KeyRod извлечён | KeyRod вставлен | Phase 5 (KeyRod subsystem) |
+| **Idle** | Антиграв активен, зависание | KeyRod вставлен, нет ввода | Ввод обнаружен | ✅ |
+| **Flying** | Под управлением пилота | Ввод от пилота | Все пилоты вышли | ✅ |
+| **Docking** | Следует инструкциям диспетчера | Docking accepted | Landed / Cancelled | Phase 2 (автопилот) |
+| **Docked** | Заблокирован на платформе | `DockingWorld.ConfirmTouchdown` → `ShipController.EnterDocked()` | `RequestTakeoffRpc` → `ExitDocked()` | ✅ (`_netIsDocked=true`, `rb.isKinematic=true`, `SendShipInput` blocked) |
+| **AutoHover** | Зависание (все пилоты вышли) | PilotCount = 0 | PilotCount > 0 | ✅ |
+| **⚠️ VeilTurbulence** | Ниже коридора | Alt < minAlt | Alt >= minAlt + 50 | ✅ |
+| **⚠️ SystemDegrade** | Выше коридора | Alt > maxAlt + 100 | Alt <= maxAlt | ✅ |
+| **⚠️ SOLLock** | СОЛ блокирует | SOL violation timeout | Оплата штрафа / модуль Stealth | Phase 4 |
 
 ---
 

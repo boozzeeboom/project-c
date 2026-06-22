@@ -430,15 +430,42 @@ namespace ProjectC.Docking.Core
             return result;
         }
 
-        // === T-NS03 STUBS: NPC ship integration ===
-        // Полная реализация AssignPadForNpc / ReleaseNpcAssignment будет в T-NS05.
-        // Эти stubs нужны чтобы NpcShipWorld.TickNpc мог компилироваться.
+        // === T-NS05: NPC ship integration ===
+        // Полная реализация AssignPadForNpc + ReleaseNpcAssignment.
 
         /// <summary>
-        /// T-NS03 STUB: tries to assign a pad for NPC. Полная реализация в T-NS05
-        /// (с проверкой maxConcurrentLandings, физической занятости, sentinel npc id).
+        /// T-NS05: Проверить, является ли ulong id NPC-идентификатором (sentinel bit = 1).
+        /// Q3: NpcInstanceId = NetworkObjectId | 0x8000_0000_0000_0000UL.
         /// </summary>
-        public bool TryAssignPadForNpcStub(
+        private static bool IsNpcInstanceId(ulong id)
+        {
+            return id > 0x7FFF_FFFF_FFFF_FFFFUL;
+        }
+
+        /// <summary>
+        /// T-NS05: Подсчитать количество текущих посадок (pending + confirmed) на станции.
+        /// Используется для проверки maxConcurrentLandings (Q6).
+        /// </summary>
+        private int CountLandingsAtStation(string stationId)
+        {
+            int count = 0;
+            foreach (var kv in _assignmentsByClient)
+            {
+                if (kv.Value.stationId == stationId) count++;
+            }
+            foreach (var kv in _pendingByClient)
+            {
+                if (kv.Value.stationId == stationId) count++;
+            }
+            return count;
+        }
+
+        /// <summary>
+        /// T-NS05: server-internal путь для NPC-кораблей.
+        /// Обходит RPC, валидирует maxConcurrentLandings (Q6), назначает pad + подтверждает в один шаг.
+        /// Возвращает true если pad назначен и корабль застыкован.
+        /// </summary>
+        public bool AssignPadForNpc(
             DockStationController station,
             ShipController ship,
             ShipFlightClass shipClass,
@@ -446,19 +473,39 @@ namespace ProjectC.Docking.Core
         {
             if (!ProjectC.Trade.Network.NetworkingUtils.IsServerSafe()) return false;
             if (station == null || ship == null || npcInstanceId == 0) return false;
-            // Simple stub: AssignPad + ConfirmAssignment в один шаг
+
+            // Q6: проверка maxConcurrentLandings
+            var stationDef = station.StationDefinition;
+            if (stationDef != null)
+            {
+                int currentLandings = CountLandingsAtStation(stationDef.StationId);
+                if (currentLandings >= stationDef.MaxConcurrentLandings)
+                {
+                    return false; // станция полна
+                }
+            }
+
+            // Проверка: уже есть assignment?
+            if (_assignmentsByClient.ContainsKey(npcInstanceId))
+            {
+                return false; // уже назначен
+            }
+
             var assignment = AssignPad(station, ship, shipClass);
             if (!assignment.success) return false;
+
+            // RegisterPending + Confirm в один шаг (NPC не имеет QA-стадии)
             RegisterPendingAssignment(npcInstanceId, ship.NetworkObjectId, assignment);
             ConfirmAssignment(npcInstanceId, ship.NetworkObjectId);
             if (ship.IsServer) ship.EnterDocked();
+
             return true;
         }
 
         /// <summary>
-        /// T-NS03 STUB: releases NPC pad assignment. Полная реализация в T-NS05.
+        /// T-NS05: освободить assignment NPC (Release + ExitDocked).
         /// </summary>
-        public void ReleaseNpcAssignmentStub(ulong npcInstanceId, ulong shipNetId)
+        public void ReleaseNpcAssignment(ulong npcInstanceId, ulong shipNetId)
         {
             if (!ProjectC.Trade.Network.NetworkingUtils.IsServerSafe()) return;
             ReleaseAssignment(npcInstanceId, shipNetId);

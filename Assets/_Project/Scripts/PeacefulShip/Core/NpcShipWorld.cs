@@ -342,8 +342,7 @@ namespace ProjectC.PeacefulShip.Core
         /// </summary>
         private bool TryAssignPadForNpc(NpcShipState state)
         {
-            // TODO T-NS05: replace with DockingWorld.Instance.AssignPadForNpc(...)
-            // For now: just check if any station has free pad — simplified placeholder
+            // T-NS05: DockingWorld.Instance.AssignPadForNpc(...)
             if (state.Ship == null || state.Ship.IsDocked) return false;
 
             // Stub check: if within docking tolerance, claim the pad via DockingWorld
@@ -357,17 +356,17 @@ namespace ProjectC.PeacefulShip.Core
             var station = Docking.Network.DockingZoneRegistry.GetByLocation(state.CurrentRoute.toLocationId);
             if (station == null) return false;
 
-            // Use the stub TryAssign method which will be added in T-NS05
-            return Docking.Core.DockingWorld.Instance.TryAssignPadForNpcStub(
+            // AssignPadForNpc проверяет maxConcurrentLandings, sentinel id
+            return Docking.Core.DockingWorld.Instance.AssignPadForNpc(
                 station, state.Ship, state.Ship.ShipFlightClass, state.NpcInstanceId);
         }
 
         private void ReleaseNpcAssignment(NpcShipState state)
         {
-            // T-NS05: DockingWorld.ReleaseNpcAssignment(npcInstanceId, shipNetId)
+            // T-NS05: ReleaseNpcAssignment
             if (Docking.Core.DockingWorld.Instance == null) return;
             if (state.Ship == null || state.Ship.NetworkObject == null) return;
-            Docking.Core.DockingWorld.Instance.ReleaseNpcAssignmentStub(state.NpcInstanceId, state.Ship.NetworkObjectId);
+            Docking.Core.DockingWorld.Instance.ReleaseNpcAssignment(state.NpcInstanceId, state.Ship.NetworkObjectId);
         }
 
         // === Station position lookup ===

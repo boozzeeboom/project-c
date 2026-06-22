@@ -4,6 +4,48 @@
 
 ---
 
+## 2026-06-22 — T-NS05+06: DockingWorld full AssignPadForNpc + NpcShipServer hub
+
+**Сессия:** T-NS05 + T-NS06 (bundle: depends on each other)
+**Статус:** ✅ Compile-clean. 2 файла изменены, 1 создан.
+
+### Файлы
+
+| Файл | Изменения |
+|------|-----------|
+| `Docking/Core/DockingWorld.cs` | `TryAssignPadForNpcStub` → `AssignPadForNpc` + `ReleaseNpcAssignment` + `IsNpcInstanceId` + `CountLandingsAtStation` (Q6 maxConcurrentLandings) |
+| `PeacefulShip/Core/NpcShipWorld.cs` | Обновлены вызовы с stub → real API |
+| **NEW** `PeacefulShip/Network/NpcShipServer.cs` | NetworkBehaviour hub (BootstrapScene), `OnNetworkSpawn` → `NpcShipWorld.CreateAndInitialize`, `DiscoverNpcShipsDelayed()` с задержкой 2 сек |
+
+### API (new)
+- `NpcShipServer.Instance` — singleton
+- `NpcShipServer.NpcCount` — количество зарегистрированных NPC
+- `NpcShipServer.DebugRediscover()` — дебаг-пересканирование сцены
+
+### 0 errors / 0 warnings. Все типы в Assembly-CSharp (12 PeacefulShip + 2 DockingWorld methods).
+
+---
+
+## 2026-06-22 — T-NS04: NpcShipTrafficManager — Gaussian arrival shaping
+
+**Сессия:** Реализация по 05_ROADMAP.md, тикет T-NS04
+**Статус:** ✅ Compile-clean. 4 public API метода.
+
+### Созданные файлы (1)
+
+| Файл | LOC | Назначение |
+|------|-----|-----------|
+| `Assets/_Project/Scripts/PeacefulShip/Network/NpcShipTrafficManager.cs` | ~155 | Singleton — Gaussian arrival + min-spacing + jitter |
+
+### API
+- `CreateAndInitialize()` / `Shutdown()` — lifecycle
+- `ScheduleNextArrival(stationId, schedule, now)` — Box-Muller Gaussian + clamping + spacing enforcement + jitter
+- `Clear()` — сброс arrival tracking при scene reload
+
+**0 errors / 0 warnings.** Все API видны через reflection.
+
+---
+
 ## 2026-06-22 — T-NS03: NpcShipWorld полная FSM реализация (stub → full)
 
 **Сессия:** Реализация по 05_ROADMAP.md, тикет T-NS03

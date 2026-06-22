@@ -255,6 +255,7 @@ namespace ProjectC.Ship.UI
             UpdateFlightColumn(ship);
             UpdateModulesColumn(ship);
             UpdateEnvColumn(ship);
+            UpdateDispatchColumn();  // T-DOCK-HUD-2: docking zone status
         }
 
         // ==================== S-HUD-03b: Speed (K3) ====================
@@ -942,7 +943,13 @@ namespace ProjectC.Ship.UI
             _altBarFill.style.backgroundColor = fillColor;
         }
 
-        // ==================== S-HUD-03f: Dispatch (K5 — заглушки) ====================
+        // ==================== S-HUD-03f: Dispatch (K5 — docking system) ====================
+
+        // T-DOCK-HUD-1: ссылки на labels для обновления в Update()
+        private Label _dispatchDot;   // ● — индикатор: красный/зелёный
+        private Label _dispatcherLabel;
+        private Label _regionLabel;
+        private Label _corridorLabel;
 
         private void BuildDispatchColumn()
         {
@@ -955,16 +962,84 @@ namespace ProjectC.Ship.UI
             hdr.style.marginLeft = 2;
             _colDispatch.Add(hdr);
 
-            string[] lines = { "DISPATCHER  ---", "REGION      ---", "CORRIDOR    ---" };
-            foreach (var line in lines)
+            // T-DOCK-HUD-1: 3 строки, по макету из docs/Ships/UI/HUD/00_OVERVIEW.md §3.6,
+            // но живые — Dispatcher (●), Region (station id), Corridor (comm range).
+            // Когда игрок в OuterCommZone:
+            //   • ● зелёный
+            //   • DISPATCHER: stationId
+            //   • REGION: "T — связь" (подсказка нажать T)
+            // Вне зоны:
+            //   • ● красный
+            //   • DISPATCHER: "---"
+            //   • REGION: "---"
+
+            _dispatchDot = new Label { text = "●" };
+            _dispatchDot.style.fontSize = 10;
+            _dispatchDot.style.color = new Color(1f, 0.3f, 0.3f, 0.9f); // красный = не в зоне
+            _dispatchDot.style.unityFontStyleAndWeight = FontStyle.Bold;
+            _dispatchDot.style.marginBottom = 2;
+            _dispatchDot.style.marginLeft = 2;
+            _colDispatch.Add(_dispatchDot);
+
+            _dispatcherLabel = new Label { text = "DISPATCHER  ---" };
+            _dispatcherLabel.style.fontSize = 9;
+            _dispatcherLabel.style.color = new Color(1, 1, 1, 0.5f);
+            _dispatcherLabel.style.unityFontStyleAndWeight = FontStyle.Bold;
+            _dispatcherLabel.style.marginBottom = 2;
+            _dispatcherLabel.style.marginLeft = 2;
+            _colDispatch.Add(_dispatcherLabel);
+
+            _regionLabel = new Label { text = "REGION      ---" };
+            _regionLabel.style.fontSize = 9;
+            _regionLabel.style.color = new Color(1, 1, 1, 0.5f);
+            _regionLabel.style.unityFontStyleAndWeight = FontStyle.Bold;
+            _regionLabel.style.marginBottom = 2;
+            _regionLabel.style.marginLeft = 2;
+            _colDispatch.Add(_regionLabel);
+
+            _corridorLabel = new Label { text = "CORRIDOR    ---" };
+            _corridorLabel.style.fontSize = 9;
+            _corridorLabel.style.color = new Color(1, 1, 1, 0.5f);
+            _corridorLabel.style.unityFontStyleAndWeight = FontStyle.Bold;
+            _corridorLabel.style.marginBottom = 2;
+            _corridorLabel.style.marginLeft = 2;
+            _colDispatch.Add(_corridorLabel);
+        }
+
+        /// <summary>
+        /// T-DOCK-HUD-2: обновляет K5 (Dispatch) — показывает состояние связи с
+        /// OuterCommZone + station id + подсказку нажать T.
+        /// </summary>
+        private void UpdateDispatchColumn()
+        {
+            if (_dispatchDot == null || _dispatcherLabel == null) return;
+
+            // Берём ближайшую станцию — LocalPlayerShipStation (для игрока в корабле)
+            // или LocalPlayerStation (для пешего).
+            var station = ProjectC.Docking.Network.DockingZoneRegistry.LocalPlayerShipStation
+                          ?? ProjectC.Docking.Network.DockingZoneRegistry.LocalPlayerStation;
+
+            if (station != null && !string.IsNullOrEmpty(station.StationId))
             {
-                var label = new Label { text = line };
-                label.style.fontSize = 9;
-                label.style.color = new Color(1, 1, 1, 0.4f);
-                label.style.unityFontStyleAndWeight = FontStyle.Bold;
-                label.style.marginBottom = 6;
-                label.style.marginLeft = 2;
-                _colDispatch.Add(label);
+                // В зоне — зелёная точка
+                _dispatchDot.style.color = new Color(0.3f, 1f, 0.4f, 1f);
+                _dispatcherLabel.text = "DISPATCHER  " + station.StationId;
+                _dispatcherLabel.style.color = new Color(0.3f, 1f, 0.4f, 0.95f);
+                _regionLabel.text = "REGION      " + (station.DisplayName ?? "");
+                _regionLabel.style.color = new Color(1, 1, 1, 0.75f);
+                _corridorLabel.text = "T — связаться";
+                _corridorLabel.style.color = new Color(1, 1, 1, 0.75f);
+            }
+            else
+            {
+                // Вне зоны — красная точка
+                _dispatchDot.style.color = new Color(1f, 0.3f, 0.3f, 0.9f);
+                _dispatcherLabel.text = "DISPATCHER  ---";
+                _dispatcherLabel.style.color = new Color(1, 1, 1, 0.4f);
+                _regionLabel.text = "REGION      ---";
+                _regionLabel.style.color = new Color(1, 1, 1, 0.4f);
+                _corridorLabel.text = "CORRIDOR    ---";
+                _corridorLabel.style.color = new Color(1, 1, 1, 0.4f);
             }
         }
 

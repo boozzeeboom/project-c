@@ -27,6 +27,9 @@ namespace ProjectC.Docking.Stations
         /// <summary>T-DOCK-SRV-5: публичный геттер для override совместимости (используется в DockingWorld.AssignPad).</summary>
         public ShipFlightClass[] CompatibleShipClasses => compatibleShipClasses;
 
+        /// <summary>T-DOCK-13 v2.2: true если внутри trigger-бокса есть ShipController (любой).</summary>
+        public bool IsShipInside { get; private set; }
+
         private BoxCollider _box;
         private DockStationController _stationController;
 
@@ -44,6 +47,9 @@ namespace ProjectC.Docking.Stations
         {
             var ship = other.GetComponentInParent<ShipController>();
             if (ship == null) return;
+
+            // T-DOCK-13 v2.2: флаг для DockPadVisualMarker
+            IsShipInside = true;
 
             // Только владелец корабля отправляет RPC
             var localPlayer = FindLocalPlayer();
@@ -66,6 +72,16 @@ namespace ProjectC.Docking.Stations
             Debug.Log(
                 $"[DockingPadTriggerBox:{padId}] OnTriggerEnter — ship={ship.name} " +
                 $"owner={localPlayer.OwnerClientId}, sent NotifyTouchedDownRpc");
+        }
+
+        private void OnTriggerExit(Collider other)
+        {
+            var ship = other.GetComponentInParent<ShipController>();
+            if (ship != null)
+            {
+                // T-DOCK-13 v2.2: снимаем флаг для DockPadVisualMarker
+                IsShipInside = false;
+            }
         }
 
         private static NetworkPlayer FindLocalPlayer()

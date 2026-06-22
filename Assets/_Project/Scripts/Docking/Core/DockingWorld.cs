@@ -10,6 +10,7 @@ using ProjectC.Docking.Dto;
 using ProjectC.Docking.Network; // DockStationController
 using ProjectC.Docking.Stations; // DockingPadTriggerBox
 using ProjectC.Player;
+using Unity.Netcode;  // T-NS03: NetworkManager для ReleaseNpcAssignmentStub
 using UnityEngine;
 // NetworkingUtils живёт в ProjectC.Trade.Network — см. MarketTimeService.cs:157.
 // Используем fully-qualified name ниже чтобы не пачкать using-секцию.
@@ -427,6 +428,45 @@ namespace ProjectC.Docking.Core
                 });
             }
             return result;
+        }
+
+        // === T-NS03 STUBS: NPC ship integration ===
+        // Полная реализация AssignPadForNpc / ReleaseNpcAssignment будет в T-NS05.
+        // Эти stubs нужны чтобы NpcShipWorld.TickNpc мог компилироваться.
+
+        /// <summary>
+        /// T-NS03 STUB: tries to assign a pad for NPC. Полная реализация в T-NS05
+        /// (с проверкой maxConcurrentLandings, физической занятости, sentinel npc id).
+        /// </summary>
+        public bool TryAssignPadForNpcStub(
+            DockStationController station,
+            ShipController ship,
+            ShipFlightClass shipClass,
+            ulong npcInstanceId)
+        {
+            if (!ProjectC.Trade.Network.NetworkingUtils.IsServerSafe()) return false;
+            if (station == null || ship == null || npcInstanceId == 0) return false;
+            // Simple stub: AssignPad + ConfirmAssignment в один шаг
+            var assignment = AssignPad(station, ship, shipClass);
+            if (!assignment.success) return false;
+            RegisterPendingAssignment(npcInstanceId, ship.NetworkObjectId, assignment);
+            ConfirmAssignment(npcInstanceId, ship.NetworkObjectId);
+            if (ship.IsServer) ship.EnterDocked();
+            return true;
+        }
+
+        /// <summary>
+        /// T-NS03 STUB: releases NPC pad assignment. Полная реализация в T-NS05.
+        /// </summary>
+        public void ReleaseNpcAssignmentStub(ulong npcInstanceId, ulong shipNetId)
+        {
+            if (!ProjectC.Trade.Network.NetworkingUtils.IsServerSafe()) return;
+            ReleaseAssignment(npcInstanceId, shipNetId);
+            if (NetworkManager.Singleton == null) return;
+            if (NetworkManager.Singleton.SpawnManager == null) return;
+            if (!NetworkManager.Singleton.SpawnManager.SpawnedObjects.TryGetValue(shipNetId, out var no)) return;
+            var ship = no.GetComponent<ShipController>();
+            if (ship != null && ship.IsServer) ship.ExitDocked();
         }
     }
 }

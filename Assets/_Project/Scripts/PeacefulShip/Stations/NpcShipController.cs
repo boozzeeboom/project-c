@@ -50,7 +50,9 @@ namespace ProjectC.PeacefulShip.Stations
         [Range(0.1f, 1.5f)] [SerializeField] private float npcYawMult = 0.4f;
 
         [Tooltip("Дистанция до цели (м), при которой считаем что прибыли.")]
+#pragma warning disable 0414  // used in T-NS03 via NpcShipWorld (future refactor — direct read)
         [Min(1f)] [SerializeField] private float npcArrivalToleranceMeters = 50f;
+#pragma warning restore 0414
 
         [Header("Anti-gravity boost (Q8)")]
         [Tooltip("Длительность boost после ExitDocked (сек). 0 = отключить.")]

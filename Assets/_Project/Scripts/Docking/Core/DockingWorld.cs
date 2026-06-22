@@ -240,6 +240,22 @@ namespace ProjectC.Docking.Core
             if (!_pendingByClient.TryGetValue(clientId, out var a)) return;
             if (a.shipNetId != shipNetId) return;
             string padKey = PadKey(a.stationId, a.padId);
+
+            // T-NS08: если pad занят NPC — уведомить NpcShipWorld (player displacement)
+            if (_occupiedPads.TryGetValue(padKey, out ulong prevOccupant) && IsNpcInstanceId(prevOccupant))
+            {
+                // Очищаем old assignment (но не снимаем kinematic — NPC FSM сделает сам)
+                _assignmentsByClient.Remove(prevOccupant);
+                foreach (var kv in _assignmentsByShip)
+                {
+                    if (PadKey(kv.Value.stationId, kv.Value.padId) == padKey)
+                    {
+                        _assignmentsByShip.Remove(kv.Key);
+                        break;
+                    }
+                }
+            }
+
             // Q3: занимаем pad (SOT)
             _occupiedPads[padKey] = clientId;
             _assignmentsByClient[clientId] = a;

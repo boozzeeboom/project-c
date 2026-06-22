@@ -4,6 +4,79 @@
 
 ---
 
+## 2026-06-22 — T-NS07+08+09: ClientState, DTOs, Pad contention, Scene prep
+
+**Статус:** ✅ Все 10 тикетов M1 реализованы. Compile-clean.
+
+### T-NS07: NpcShipClientState + DTOs (3 файла)
+
+| Файл | LOC | Описание |
+|------|-----|----------|
+| `PeacefulShip/Dto/NpcShipSpawnDto.cs` | ~40 | INetworkSerializable struct (spawn data) |
+| `PeacefulShip/Dto/NpcShipStatusDto.cs` | ~35 | INetworkSerializable struct (status update) |
+| `PeacefulShip/Client/NpcShipClientState.cs` | ~175 | Auto-created singleton, VisibleNpcs list, status-to-string mapping |
+
+### T-NS08: Pad contention (1 файл)
+
+| Файл | Изменение |
+|------|-----------|
+| `Docking/Core/DockingWorld.cs` | В `ConfirmAssignment` добавлен Check: если pad занят NPC (IsNpcInstanceId) — чистим его assignment перед отдачей игроку |
+
+### T-NS09: Scene preparation (Editor tool + SO assets)
+
+| Файл/Ассет | Описание |
+|-------------|----------|
+| `PeacefulShip/Editor/CreateNpcShipSchedules.cs` | MenuItem `Tools/ProjectC/PeacefulShip/Create Test Schedules` — создаёт 2 NpcShipSchedule SO |
+| `Resources/PeacefulShip/NpcShipSchedule_Courier.asset` | SCH-NPC-001 (Создан через MCP execute_code) |
+| (второй SO — через MenuItem) | SCH-NPC-002 |
+
+### Итоговая сводка M1: 15 .cs файлов, ~1560 LOC
+
+```
+Assets/_Project/Scripts/PeacefulShip/
+├── Core/
+│   ├── NpcShipStatus.cs            (enum FSM)
+│   ├── NpcShipRoute.cs             (struct + demand enum)
+│   ├── NpcShipCargoManifest.cs     (v2 hook DTO + entry)
+│   ├── NpcShipState.cs             (server state POCO)
+│   └── NpcShipWorld.cs             (FSM tick, server singleton)
+├── Stations/
+│   ├── NpcShipSchedule.cs          (SO — routes + traffic params)
+│   └── NpcShipController.cs        (scene-placed NetworkBehaviour)
+├── Network/
+│   ├── NpcShipServer.cs            (hub, BootstrapScene)
+│   ├── NpcShipTrafficManager.cs    (Gaussian arrival shaping)
+│   └── NpcShipZoneRegistry.cs      (static lookup)
+├── Client/
+│   └── NpcShipClientState.cs       (UI projection singleton)
+├── Dto/
+│   ├── NpcShipSpawnDto.cs          (INetworkSerializable)
+│   └── NpcShipStatusDto.cs         (INetworkSerializable)
+└── Editor/
+    └── CreateNpcShipSchedules.cs   (MenuItem для SO assets)
+Docking/Core/DockingWorld.cs        (+ AssignPadForNpc, ReleaseNpcAssignment, IsNpcInstanceId, CountLandingsAtStation, displacement check)
+Player/ShipController.cs            (+ ApplyServerInput, EnableNpcPilot, AntiGravity, _hasNpcPilot gate fix)
+```
+
+### Статус тикетов M1
+
+| Тикет | Часов | LOC | Status |
+|-------|-------|-----|--------|
+| T-NS00 | 1.0 | 175 | ✅ |
+| T-NS01 | 0.5 | 50 | ✅ |
+| T-NS02 | 1.5 | 385 | ✅ |
+| T-NS03 | 1.0 | 440 | ✅ |
+| T-NS04 | 0.75 | 155 | ✅ |
+| T-NS05 | 1.0 | 100 | ✅ |
+| T-NS06 | 1.0 | 150 | ✅ |
+| T-NS07 | 0.75 | 120 | ✅ |
+| T-NS08 | 0.5 | 60 | ✅ |
+| T-NS09 | 1.0 | ~0 code + Editor tool | ✅ |
+| T-NS10 | 0.5 | doc | ✅ |
+| **Итого** | **~10.5** | **~1560 LOC** | **✅ ALL DONE** |
+
+---
+
 ## 2026-06-22 — T-NS05+06: DockingWorld full AssignPadForNpc + NpcShipServer hub
 
 **Сессия:** T-NS05 + T-NS06 (bundle: depends on each other)

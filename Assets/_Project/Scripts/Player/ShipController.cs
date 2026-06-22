@@ -97,6 +97,41 @@ namespace ProjectC.Player
                     Debug.Log($"[ShipController:{name}] ExitDocked — engine unlocked");
                 }
 
+                // === T-NS01 (Q1, Q2): NPC-pilot API ===
+                // Server-only методы для мирных NPC-кораблей (ProjectC.PeacefulShip).
+                // Generic API — может быть использован v2 player autopilot (см. docs/NPC_others_peacfull/pc_ship/03_V2_ARCHITECTURE.md §5).
+
+                /// <summary>
+                /// T-NS01 (Q1): Server-only прямой вход в movement input.
+                /// Минует _pilots HashSet gate. Используется NPC-pilot и (v2) player autopilot.
+                /// Идентично SubmitShipInputRpc (line 1024) но без guard `_pilots.Contains`.
+                /// Q8 defense: если Docked — no-op. Если engine stalled — no-op.
+                /// </summary>
+                public void ApplyServerInput(float thrust, float yaw, float pitch, float vertical, bool boost = false)
+                {
+                    if (!IsServer) return;
+                    if (_netIsDocked.Value) return;   // T-DOCK-09: docked-blocks
+                    if (_rb == null || _rb.isKinematic) return;  // safety
+
+                    _sumThrust += thrust;
+                    _sumYaw += yaw;
+                    _sumPitch += pitch;
+                    _sumVertical += vertical;
+                    if (boost) _boostCount++;
+                    _inputCount++;
+                }
+
+                /// <summary>
+                /// T-NS01 (Q2): включает/выключает NPC-pilot режим (server-only).
+                /// Когда true — FixedUpdate применяет _sumXxx даже без игроков в _pilots.
+                /// Вызывается из NpcShipController.OnNetworkSpawn / OnNetworkDespawn.
+                /// </summary>
+                public void EnableNpcPilot(bool enable)
+                {
+                    if (!IsServer) return;
+                    _hasNpcPilot = enable;
+                }
+
         [Header("Тяга")]
 #pragma warning disable 0414
         [SerializeField] private float thrustForce = 650f;
@@ -128,6 +163,22 @@ namespace ProjectC.Player
 
         [Header("Антигравитация")]
         [SerializeField] [Range(0f, 1.5f)] private float antiGravity = 1f;
+
+        /// <summary>
+        /// T-NS01 (Q8): публичный getter/setter для override anti-gravity.
+        /// NpcShipController использует для boost на 5 сек после ExitDocked,
+        /// чтобы корабль не "упал" пока NPC-pilot не подаст thrust.
+        /// Pattern: используется ApplyAntiGravity() в FixedUpdate (line 1067).
+        /// </summary>
+        public float AntiGravity
+        {
+            get => antiGravity;
+            set => antiGravity = Mathf.Clamp(value, 0f, 1.5f);
+        }
+
+        // === T-NS01 (Q2): NPC-pilot mode ===
+        // Сервер-only флаг. Когда true — FixedUpdate применяет _sumXxx даже без _pilots.
+        private bool _hasNpcPilot = false;
 
         [Header("Аэродинамика")]
         [SerializeField] private float linearDrag = 0.4f;
@@ -770,7 +821,7 @@ namespace ProjectC.Player
             if (IsServer) UpdateTelemetryState();
 
             if (!IsServer) return;
-            if (_pilots.Count == 0) return;
+            if (_pilots.Count == 0 && !_hasNpcPilot) return;  // T-NS01 (Q2): NPC-pilot bypasses pilot gate
 
             float dt = Time.fixedDeltaTime;
 

@@ -3,6 +3,7 @@
 // Convention: каждый class = отдельный .cs файл (Unity 6: T-DOCK-13c fix).
 
 using UnityEngine;
+using ProjectC.Player;
 
 namespace ProjectC.PeacefulShip.Core
 {

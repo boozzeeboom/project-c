@@ -4,6 +4,135 @@
 
 ---
 
+## 2026-06-22 — T-NS02: NpcShipSchedule SO + NpcShipController + NpcShipZoneRegistry + NpcShipWorld stub
+
+**Сессия:** Реализация по 05_ROADMAP.md, тикет T-NS02
+**Профиль:** project-c
+**Статус:** ✅ Реализовано + compile-clean. Все API видны через reflection (verified).
+
+### Созданные файлы (4)
+
+| Файл | LOC | Назначение |
+|------|-----|-----------|
+| `Assets/_Project/Scripts/PeacefulShip/Stations/NpcShipSchedule.cs` | ~95 | ScriptableObject — маршруты + Gaussian params + dwell time |
+| `Assets/_Project/Scripts/PeacefulShip/Stations/NpcShipController.cs` | ~165 | scene-placed NetworkBehaviour на корне NPC-корабля |
+| `Assets/_Project/Scripts/PeacefulShip/Network/NpcShipZoneRegistry.cs` | ~55 | Static lookup NpcInstanceId → NpcShipController |
+| `Assets/_Project/Scripts/PeacefulShip/Core/NpcShipWorld.cs` | ~70 | **STUB** — placeholder для T-NS03 |
+
+**~385 LOC** добавлено (3 финальных + 1 stub).
+
+### Что внутри
+
+**`NpcShipSchedule` (SO)**
+- `[CreateAssetMenu]` → `Assets > Create > ProjectC > PeacefulShip > NpcShipSchedule`
+- `ScheduleType` enum (RoundTrip/Loop/RandomFromPool)
+- `routes: NpcShipRoute[]` (использует T-NS00 NpcShipRoute)
+- Gaussian params: `meanArrivalIntervalSec=480, arrivalIntervalStdDev=90, minArrivalSpacingSec=60`
+- Q5 dwell params: `minDwellTimeSec=60, maxDwellTimeSec=90`
+- `OnValidate` проверяет max>=min, non-empty routes, valid locationIds
+
+**`NpcShipController` (scene-placed NetworkBehaviour)**
+- `[RequireComponent(typeof(NetworkObject))]` + `[RequireComponent(typeof(ShipController))]`
+- `ApplyMovementInput(thrust, yaw, pitch, vertical)` → `ShipController.ApplyServerInput(...)` (T-NS01)
+- `ServerTeleport(pos, rot)` — финальное позиционирование на pad
+- `StartAntiGravityBoost()` — Q8 корутина 5 сек с AntiGravity=1.5
+- `OnNetworkSpawn` → Q3 sentinel id, Q2 `EnableNpcPilot(true)`, регистрация в `NpcShipZoneRegistry` + lazy `NpcShipWorld.RegisterNpc`
+- `OnNetworkDespawn` → cleanup anti-grav routine, `EnableNpcPilot(false)`, unregister
+
+**`NpcShipZoneRegistry` (static)**
+- `Register(NpcShipController)` / `Unregister(...)` / `Get(ulong)` / `All` / `Clear()`
+- Pattern: DockingZoneRegistry (Docking/Network/DockingZoneRegistry.cs:12)
+- Idempotent Register, safe Unregister (only если запись наша)
+
+**`NpcShipWorld` (STUB — будет полная реализация в T-NS03)**
+- `Instance`, `CreateAndInitialize()`, `Shutdown()`
+- `RegisterNpc(id, ship, schedule)` / `UnregisterNpc(id)` / `GetNpc(id)` / `AllNpcCount`
+- Events stub: `OnNpcShipArrived`, `OnNpcShipDeparted` (с `#pragma warning disable 0067`)
+- FSM tick в `Update()` — **НЕ реализован в stub**, только заглушки
+
+### Reflection verify (Unity MCP execute_code)
+
+```
+NpcShipSchedule (SO): ProjectC.PeacefulShip.Stations.NpcShipSchedule
+NpcShipController (NB): ProjectC.PeacefulShip.Stations.NpcShipController
+  - base: NetworkBehaviour
+  - ApplyMovementInput: True
+  - StartAntiGravityBoost: True
+NpcShipZoneRegistry: ProjectC.PeacefulShip.Network.NpcShipZoneRegistry
+  - Register: True
+  - Get: True
+NpcShipWorld (stub): ProjectC.PeacefulShip.Core.NpcShipWorld
+  - RegisterNpc: True
+```
+
+**Все типы скомпилированы и видны Roslyn.**
+
+### Compile iterations
+
+| # | Проблема | Решение |
+|---|----------|---------|
+| 1 | `CS0103 NpcShipZoneRegistry not found` в NpcShipController.cs | Добавил `using ProjectC.PeacefulShip.Network;` |
+| 2 | `CS0103 NpcShipWorld not found` в NpcShipController.cs | Создал stub `NpcShipWorld.cs` с минимальным API (полная реализация T-NS03) |
+| 3 | `CS0067 event never used` warning в NpcShipWorld stub | Обернул events в `#pragma warning disable 0067 / restore 0067` |
+| 4 | `scope=scripts` не подхватил новый файл (per mcp-quirks.md #21) | `scope=all` + подождать компиляцию |
+
+После фиксов: **0 errors / 0 warnings** от PeacefulShip.
+
+### Применённые конвенции
+
+- ✅ Namespace per `03_V2_ARCHITECTURE.md §1`
+- ✅ `using UnityEngine;` для Tooltip, Vector3, etc.
+- ✅ Server-only методы проверяют `IsServer` первой строкой
+- ✅ XML `<summary>` на всех публичных API
+- ✅ Sentinel pattern Q3: `NetworkObjectId | 0x8000_0000_0000_0000UL`
+- ✅ Explicit `_hasNpcPilot` flag (Q2) — включается в `OnNetworkSpawn`
+- ✅ Anti-gravity boost Q8: отдельная coroutine, cleanup в OnNetworkDespawn
+- ✅ Stub создан чтобы устранить forward-reference без TODO-комментариев
+
+### Что НЕ делалось
+
+- ❌ Не сделана FSM логика (это T-NS03 — `NpcShipWorld.TickNpc`)
+- ❌ Не сделана AssignPadForNpc (это T-NS05)
+- ❌ Не сделана scene placement (это T-NS09)
+- ❌ Не создавал .meta — Unity создаст при refresh
+
+### Что пользователь должен проверить
+
+**Шаг 1: Файлы на диске** ✅
+```
+Assets/_Project/Scripts/PeacefulShip/
+├── Core/
+│   ├── NpcShipStatus.cs
+│   ├── NpcShipRoute.cs
+│   ├── NpcShipCargoManifest.cs
+│   ├── NpcShipState.cs
+│   └── NpcShipWorld.cs          ← NEW (stub)
+├── Stations/
+│   ├── NpcShipSchedule.cs       ← NEW (SO)
+│   └── NpcShipController.cs     ← NEW (NB)
+└── Network/
+    └── NpcShipZoneRegistry.cs   ← NEW
+```
+
+**Шаг 2: Compile clean** ✅ (verified)
+- 0 errors / 0 warnings от PeacefulShip
+
+**Шаг 3: API доступны** ✅ (verified reflection)
+- `NpcShipController.ApplyMovementInput(...)` — компилируется
+- `NpcShipController.StartAntiGravityBoost()` — компилируется
+- `NpcShipZoneRegistry.Get(npcId)` — компилируется
+
+### Следующий тикет
+
+**T-NS03:** Полная реализация `NpcShipWorld` — FSM tick (`TickNpc(state, dt)`), переходы состояний per docs/.../04_LIVING_BEHAVIOR.md §2.
+- Файл: переписать `Assets/_Project/Scripts/PeacefulShip/Core/NpcShipWorld.cs`
+- LOC: ~200 (stub → full)
+- Время: ~60 мин coding + verify
+
+Скажите «**поехали T-NS03**» чтобы продолжить.
+
+---
+
 ## 2026-06-22 — T-NS01: ShipController.ApplyServerInput + _hasNpcPilot + AntiGravity
 
 **Сессия:** Реализация по 05_ROADMAP.md, тикет T-NS01

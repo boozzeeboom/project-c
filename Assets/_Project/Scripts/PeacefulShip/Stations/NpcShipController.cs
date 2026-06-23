@@ -112,6 +112,11 @@ namespace ProjectC.PeacefulShip.Stations
                 Debug.LogError($"[NpcShipController:{gameObject.name}] no ShipController on root!", this);
             }
 
+            // NPC solid collider: ребёнок RootCollider (solid BoxCollider) для OnTriggerEnter с pad-триггерами.
+            // Все существующие коллайдеры (если trigger) → solid, чтобы Unity вызывал OnTriggerEnter.
+            // NPC↔NPC коллизия отключается через layer matrix в ProjectSettings.
+            EnsureNpcSolidCollider();
+
             // Регистрация в локальном registry (нужно для DockingWorld.AssignPadForNpc)
             NpcShipZoneRegistry.Register(this);
 
@@ -156,6 +161,28 @@ namespace ProjectC.PeacefulShip.Stations
 
                 if (debugMode)
                     Debug.Log($"[NpcShipController:{gameObject.name}] OnNetworkDespawn — unregistered");
+            }
+        }
+
+        /// <summary>
+        /// NPC solid collider: обеспечивает чтобы корабль имел solid BoxCollider.
+        /// Все имеющиеся BoxCollider → solid (isTrigger=false). Если нет вообще — добавляем.
+        /// NPC↔NPC коллизия отключается через Layer Collision Matrix в ProjectSettings.
+        /// </summary>
+        private void EnsureNpcSolidCollider()
+        {
+            var cols = GetComponentsInChildren<BoxCollider>(true);
+            if (cols.Length > 0)
+            {
+                foreach (var c in cols) c.isTrigger = false;
+            }
+            else
+            {
+                // Добавляем дефолтный solid BoxCollider размера как у ShipController
+                var col = gameObject.AddComponent<BoxCollider>();
+                col.isTrigger = false;
+                col.size = new Vector3(4f, 2.5f, 6f);
+                col.center = new Vector3(0f, 0f, 0f);
             }
         }
 

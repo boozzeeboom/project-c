@@ -150,28 +150,40 @@ namespace ProjectC.PeacefulShip.Core
                         ReleaseNpcAssignment(state);
                         controller.StartAntiGravityBoost();
                     }
-                    // Lift UP пока не поднимемся на 10м
+                    // Lift UP пока не поднимемся на cruiseAltitude (или 30м если 0)
+                    float cruiseAlt = state.CurrentRoute.cruiseAltitude > 0f ? state.CurrentRoute.cruiseAltitude : 30f;
                     float departStartY = state.StateEnteredAt > 0f ? state.LastKnownPosition.y : state.Ship.transform.position.y;
+                    float currentY = state.Ship.transform.position.y;
                     controller.ApplyMovementInput(thrust: 0f, yaw: 0f, pitch: 0f, vertical: 0.8f);
-                    if (state.Ship.transform.position.y > departStartY + 10f || timeInState > 5f)
+                    if (currentY > departStartY + cruiseAlt)
                         TransitionTo(state, NpcShipStatus.InTransit);
                     break;
 
                 case NpcShipStatus.InTransit:
                     ApplyTransitMovement(state, controller);
-                    var transitTarget = ResolveStationWorldPos(state.CurrentRoute.toLocationId);
-                    if (transitTarget.HasValue)
+                    // Detect arrival: вошли в OuterCommZone (коммуникационная зона порта)
+                    var station = Docking.Network.DockingZoneRegistry.GetByLocation(state.CurrentRoute.toLocationId);
+                    if (station != null)
                     {
-                        if (!_staggerOffset.TryGetValue(state.NpcInstanceId, out float stagOff))
+                        var outerZone = station.GetComponentInChildren<ProjectC.Docking.Zones.OuterCommZone>(true);
+                        if (outerZone != null && outerZone.CommRange > 0f)
                         {
-                            stagOff = UnityEngine.Random.Range(0f, 200f);
-                            _staggerOffset[state.NpcInstanceId] = stagOff;
+                            float dist = Vector3.Distance(state.Ship.transform.position, outerZone.transform.position);
+                            if (dist < outerZone.CommRange)
+                            {
+                                TransitionTo(state, NpcShipStatus.Approaching);
+                                Debug.Log($"[NpcShipWorld:NPC] id={state.NpcInstanceId:X} InTransit→Approaching (entered OuterCommZone of {state.CurrentRoute.toLocationId}, dist={dist:F0}m)");
+                            }
                         }
-                        float threshold = 500f - stagOff;
-                        if (Vector3.Distance(state.Ship.transform.position, transitTarget.Value) < threshold)
+                        else
                         {
-                            TransitionTo(state, NpcShipStatus.Approaching);
-                            Debug.Log($"[NpcShipWorld:NPC] id={state.NpcInstanceId:X} InTransit→Approaching (dist<{threshold:F0}m to {state.CurrentRoute.toLocationId})");
+                            // Fallback: distance to station center, threshold 500м
+                            float dist = Vector3.Distance(state.Ship.transform.position, station.transform.position);
+                            if (dist < 500f)
+                            {
+                                TransitionTo(state, NpcShipStatus.Approaching);
+                                Debug.Log($"[NpcShipWorld:NPC] id={state.NpcInstanceId:X} InTransit→Approaching (no OuterCommZone, dist={dist:F0}m)");
+                            }
                         }
                     }
                     break;
@@ -191,18 +203,21 @@ namespace ProjectC.PeacefulShip.Core
                         TryAssignPadForNpc(state); // сохраняет AssignedPadId при успехе
                     }
 
-                    // Если есть назначенный пад и мы над ним (dist < 5м) — стыкуемся
-                    if (!string.IsNullOrEmpty(state.AssignedPadId))
+                    // Y-tolerant: проверяем DockingPadTriggerBox.IsShipInside (Unity OnTriggerEnter на solid NPC collider)
+                                        if (!string.IsNullOrEmpty(state.AssignedPadId))
                     {
-                        var padPos = ResolvePadWorldPos(state.CurrentRoute.toLocationId, state.AssignedPadId);
-                        if (padPos.HasValue)
+                        var destStation = Docking.Network.DockingZoneRegistry.GetByLocation(state.CurrentRoute.toLocationId);
+                        if (destStation != null)
                         {
-                            float distToPad = Vector3.Distance(state.Ship.transform.position, padPos.Value);
-                            if (distToPad < 5f && !state.Ship.IsDocked)
+                            foreach (var tb in destStation.GetComponentsInChildren<ProjectC.Docking.Stations.DockingPadTriggerBox>(true))
                             {
-                                state.Ship.EnterDocked();
-                                TransitionTo(state, NpcShipStatus.Docking);
-                                Debug.Log($"[NpcShipWorld:NPC] id={state.NpcInstanceId:X} Approaching→Docking (pad={state.AssignedPadId} dist={distToPad:F1}m)");
+                                if (tb.PadId == state.AssignedPadId && tb.IsShipInside && !state.Ship.IsDocked)
+                                {
+                                    state.Ship.EnterDocked();
+                                    TransitionTo(state, NpcShipStatus.Docking);
+                                    Debug.Log($"[NpcShipWorld:NPC] id={state.NpcInstanceId:X} Approaching→Docking (trigger entered pad={state.AssignedPadId})");
+                                    break;
+                                }
                             }
                         }
                     }
@@ -295,26 +310,27 @@ namespace ProjectC.PeacefulShip.Core
         private void ApplyTransitMovement(NpcShipState state, NpcShipController controller)
         {
             var targetPos = ResolveStationWorldPos(state.CurrentRoute.toLocationId);
-            if (!targetPos.HasValue) return;
-            var ship = state.Ship;
+                    if (!targetPos.HasValue) return;
+                    var ship = state.Ship;
 
-            float bearing = CalcBearing(ship.transform.position, targetPos.Value) - ship.transform.eulerAngles.y;
-            bearing = Mathf.DeltaAngle(0f, bearing);
+                    float bearing = CalcBearing(ship.transform.position, targetPos.Value) - ship.transform.eulerAngles.y;
+                    bearing = Mathf.DeltaAngle(0f, bearing);
 
-            if (Mathf.Abs(bearing) > 5f)
-            {
-                // Разворот на месте к цели — yaw без thrust
-                float yawInput = Mathf.Clamp(bearing * 0.5f, -0.8f, 0.8f);
-                controller.ApplyMovementInput(thrust: 0f, yaw: yawInput, pitch: 0f, vertical: 0f);
-            }
-            else
-            {
-                // Смотрим на цель — thrust вперёд без yaw
-                float dist = Vector3.Distance(ship.transform.position, targetPos.Value);
-                float thrust = Mathf.Clamp01(dist / 200f) * 1.0f;
-                controller.ApplyMovementInput(thrust: thrust, yaw: 0f, pitch: 0f, vertical: 0f);
-            }
-        }
+                    // HYSTERESIS: dead zone ±15°
+                    // Снаружи (±15°) — yaw без thrust
+                    // Внутри — thrust без yaw (никогда вместе)
+                    if (Mathf.Abs(bearing) > 15f)
+                    {
+                        float yawInput = Mathf.Clamp(bearing * 0.3f, -0.8f, 0.8f);
+                        controller.ApplyMovementInput(thrust: 0f, yaw: yawInput, pitch: 0f, vertical: 0f);
+                    }
+                    else
+                    {
+                        float dist = Vector3.Distance(ship.transform.position, targetPos.Value);
+                        float thrust = Mathf.Clamp01(dist / 100f) * 1.0f;
+                        controller.ApplyMovementInput(thrust: thrust, yaw: 0f, pitch: 0f, vertical: 0f);
+                    }
+                }
 
         private void ApplyApproachMovement(NpcShipState state, NpcShipController controller)
         {
@@ -427,26 +443,13 @@ namespace ProjectC.PeacefulShip.Core
         {
             if (state.Ship == null) return false;
             if (state.Status == NpcShipStatus.Docked) return false;
+            if (!string.IsNullOrEmpty(state.AssignedPadId)) return true; // уже назначен
 
             var station = Docking.Network.DockingZoneRegistry.GetByLocation(state.CurrentRoute.toLocationId);
             if (station == null) return false;
             if (Docking.Core.DockingWorld.Instance == null) return false;
 
-            // Дистанция: проверяем расстояние до БЛИЖАЙШЕГО триггер-бокса пада (не станции)
-            var triggerBoxes = station.GetComponentsInChildren<ProjectC.Docking.Stations.DockingPadTriggerBox>(true);
-            float minPadDist = float.MaxValue;
-            foreach (var tb in triggerBoxes)
-            {
-                float d = UnityEngine.Vector3.Distance(state.Ship.transform.position, tb.transform.position);
-                if (d < minPadDist) minPadDist = d;
-            }
-            // Если нет триггер-боксов → fallback к станции
-            if (triggerBoxes.Length == 0)
-                minPadDist = UnityEngine.Vector3.Distance(state.Ship.transform.position, station.transform.position);
-
-            // Назначаем пад только когда уже РЯДОМ (dist < 100м)
-            if (minPadDist > 100f) return false;
-
+            // Просто запросить пад без distance check — DockingWorld раздаёт свободные
             string assignedPadId = Docking.Core.DockingWorld.Instance.AssignPadForNpc(
                 station, state.Ship, state.Ship.ShipFlightClass, state.NpcInstanceId);
             if (!string.IsNullOrEmpty(assignedPadId))
@@ -487,6 +490,16 @@ namespace ProjectC.PeacefulShip.Core
                     return triggerBoxes[i].transform.position;
             }
             return station.transform.position;
+        }
+
+        private Vector3? ResolveClosestPadWorldPos(string locationId)
+        {
+            var station = Docking.Network.DockingZoneRegistry.GetByLocation(locationId);
+            if (station == null) return null;
+            var triggerBoxes = station.GetComponentsInChildren<ProjectC.Docking.Stations.DockingPadTriggerBox>(true);
+            if (triggerBoxes == null || triggerBoxes.Length == 0)
+                return station.transform.position;
+            return triggerBoxes[0].transform.position;
         }
     }
 }

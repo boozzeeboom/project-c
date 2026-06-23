@@ -33,12 +33,9 @@ namespace ProjectC.PeacefulShip.Core
         private readonly Dictionary<string, float> _lastArrivalAtStation = new Dictionary<string, float>();
     // Throttle pad assignment attempts (avoid per-frame spam)
     private readonly Dictionary<ulong, float> _lastPadAttempt = new Dictionary<ulong, float>();
-    // === NPC physics flight constants (barge, no pitch/roll) ===
-    private const float NPC_CRUISE_ALTITUDE_OFFSET = 100f;  // летим на 100м выше точки старта
-    private const float NPC_APPROACH_DISTANCE = 500f;       // начинаем снижение за 500м
-    private const float NPC_YAW_GAIN = 0.02f;               // мягкая коррекция курса (было 0.5 → осцилляции)
-    private const float NPC_YAW_CLAMP = 0.3f;                // макс yaw input
-    private const float NPC_ALT_HOLD_GAIN = 0.05f;           // коррекция высоты
+    // === NPC barge flight constants ===
+    private const float CRUISE_ALT_OFFSET = 100f;
+    private const float APPROACH_DIST = 20f;  // докинг только в 20м от пада
 
         // === Events (server fires, others subscribe) ===
         // Q10 stubs (v2 subscribers: TradeWorld, QuestServer)
@@ -152,9 +149,10 @@ namespace ProjectC.PeacefulShip.Core
                     ApplyDepartingMovement(state, controller);
                     // Transition after enough climb time (15s for 100m) or altitude check
                     float startY = state.StateEnteredAt > 0 ? state.LastKnownPosition.y : state.Ship.transform.position.y;
-                    float cruiseTarget = startY + NPC_CRUISE_ALTITUDE_OFFSET;
+                    float cruiseTarget = startY + CRUISE_ALT_OFFSET;
                     if (state.Ship.transform.position.y >= cruiseTarget - 5f || timeInState > 20f)
                     {
+                        state.FlightDirection = Vector3.zero; // fresh direction for transit
                         TransitionTo(state, NpcShipStatus.InTransit);
                     }
                     break;
@@ -254,6 +252,7 @@ namespace ProjectC.PeacefulShip.Core
                     }
                     if (timeInState > 2f)
                     {
+                        state.AssignedPadId = null; // reset — next destination gets fresh pad
                         AdvanceScheduleIndex(state, schedule);
                         TransitionTo(state, NpcShipStatus.Departing);
                         Debug.Log($"[NpcShipWorld:NPC] id={state.NpcInstanceId:X} Undocking→Departing (next leg: {state.CurrentRoute.toLocationId})");
@@ -272,7 +271,7 @@ namespace ProjectC.PeacefulShip.Core
 
         private void ApplyDepartingMovement(NpcShipState state, NpcShipController controller)
         {
-            // Pure vertical climb via physics: full vertical thrust, no forward/yaw
+            // Pure vertical climb via ship physics, no forward movement
             controller.ApplyMovementInput(thrust: 0f, yaw: 0f, pitch: 0f, vertical: 1.0f);
         }
 
@@ -281,57 +280,76 @@ namespace ProjectC.PeacefulShip.Core
             var targetPos = ResolveStationWorldPos(state.CurrentRoute.toLocationId);
             if (!targetPos.HasValue) return;
             var ship = state.Ship;
-            
-            // Determine bearing to target
-            Vector3 dir = (targetPos.Value - ship.transform.position).normalized;
-            float bearing = CalcBearing(ship.transform.position, targetPos.Value) - ship.transform.eulerAngles.y;
-            bearing = Mathf.DeltaAngle(0f, bearing);
-            
-            // Gentle yaw correction (reduce gain to prevent oscillation)
-            float yawInput = Mathf.Clamp(bearing * NPC_YAW_GAIN, -NPC_YAW_CLAMP, NPC_YAW_CLAMP);
-            
-            // Altitude hold: maintain cruise altitude
-            float startY = state.StateEnteredAt > 0 ? state.LastKnownPosition.y : ship.transform.position.y;
-            float cruiseAlt = startY + NPC_CRUISE_ALTITUDE_OFFSET;
-            float altError = cruiseAlt - ship.transform.position.y;
-            float verticalInput = Mathf.Clamp(altError * NPC_ALT_HOLD_GAIN, -0.3f, 0.3f);
-            
-            // Gentle forward thrust
-            float thrustInput = Mathf.Clamp01(Mathf.Abs(UnityEngine.Vector3.Dot(dir, ship.transform.forward)));
-            
-            controller.ApplyMovementInput(
-                thrust: thrustInput * 1.2f,
-                yaw: yawInput,
-                pitch: 0f,
-                vertical: verticalInput
-            );
+            var pos = ship.transform.position;
+
+            // FlightDirection = вектор к цели (запоминаем один раз)
+            if (state.FlightDirection == Vector3.zero)
+            {
+                Vector3 dir = (targetPos.Value - pos).normalized;
+                dir.y = 0f;
+                state.FlightDirection = dir;
+            }
+
+            float dist = Vector3.Distance(new Vector3(pos.x, 0, pos.z),
+                new Vector3(targetPos.Value.x, 0, targetPos.Value.z));
+
+            if (dist > APPROACH_DIST)
+            {
+                // Поворот к цели (прямой transform.rotation, не через physics)
+                var targetRot = Quaternion.LookRotation(state.FlightDirection);
+                ship.transform.rotation = Quaternion.RotateTowards(
+                    ship.transform.rotation, targetRot, 90f * Time.deltaTime);
+
+                // Удержание высоты
+                float cruiseAlt = (state.StateEnteredAt > 0 ? state.LastKnownPosition.y : pos.y) + CRUISE_ALT_OFFSET;
+                float altErr = cruiseAlt - pos.y;
+                float vertical = Mathf.Clamp(altErr * 0.05f, -0.3f, 0.3f);
+
+                // Вперёд только когда почти смотрим в нужную сторону
+                float facingDot = Vector3.Dot(ship.transform.forward, state.FlightDirection);
+                float thrust = Mathf.Clamp01((facingDot - 0.5f) * 2f) * 0.8f; // 0→1 когда смотрит в цель
+
+                controller.ApplyMovementInput(thrust: thrust, yaw: 0f, pitch: 0f, vertical: vertical);
+            }
+            else
+            {
+                state.FlightDirection = Vector3.zero; // сбросить для следующей фазы
+            }
         }
 
         private void ApplyApproachMovement(NpcShipState state, NpcShipController controller)
         {
-            var targetPos = ResolveStationWorldPos(state.CurrentRoute.toLocationId);
+            Vector3? targetPos;
+            if (!string.IsNullOrEmpty(state.AssignedPadId))
+                targetPos = ResolvePadWorldPos(state.CurrentRoute.toLocationId, state.AssignedPadId);
+            else
+                targetPos = ResolveStationWorldPos(state.CurrentRoute.toLocationId);
             if (!targetPos.HasValue) return;
+
             var ship = state.Ship;
-            float dist = UnityEngine.Vector3.Distance(ship.transform.position, targetPos.Value);
-            
-            // Bearing to target
-            Vector3 dir = (targetPos.Value - ship.transform.position).normalized;
-            float bearing = CalcBearing(ship.transform.position, targetPos.Value) - ship.transform.eulerAngles.y;
-            bearing = Mathf.DeltaAngle(0f, bearing);
-            float yawInput = Mathf.Clamp(bearing * NPC_YAW_GAIN, -NPC_YAW_CLAMP, NPC_YAW_CLAMP);
-            
-            // Slow down + descend to station altitude + 5m
-            float thrustInput = Mathf.Clamp01(dist / NPC_APPROACH_DISTANCE) * 0.8f;
-            float targetAlt = targetPos.Value.y + 5f;
-            float altError = targetAlt - ship.transform.position.y;
-            float verticalInput = Mathf.Clamp(altError * NPC_ALT_HOLD_GAIN * 2f, -0.5f, 0.5f);
-            
-            controller.ApplyMovementInput(
-                thrust: thrustInput,
-                yaw: yawInput,
-                pitch: 0f,
-                vertical: verticalInput
-            );
+            var pos = ship.transform.position;
+            Vector3 target = targetPos.Value;
+            target.y += 3f; // 3м над падом
+
+            Vector3 dir = (target - pos).normalized;
+            float dist = Vector3.Distance(pos, target);
+
+            if (dist > 2f)
+            {
+                var targetRot = Quaternion.LookRotation(dir);
+                ship.transform.rotation = Quaternion.RotateTowards(ship.transform.rotation, targetRot, 30f * Time.deltaTime);
+
+                float speed = Mathf.Clamp01(dist / 50f) * 0.4f; // тормозим на подходе
+                float altErr = target.y - pos.y;
+                float vertical = Mathf.Clamp(altErr * 0.1f, -0.5f, 0.5f);
+
+                controller.ApplyMovementInput(thrust: speed, yaw: 0f, pitch: 0f, vertical: vertical);
+            }
+            else
+            {
+                // Уже на месте — нулевая тяга
+                controller.ApplyMovementInput(thrust: 0f, yaw: 0f, pitch: 0f, vertical: 0f);
+            }
         }
 
         private static float CalcBearing(Vector3 from, Vector3 to)
@@ -410,23 +428,23 @@ namespace ProjectC.PeacefulShip.Core
         /// </summary>
         private bool TryAssignPadForNpc(NpcShipState state)
         {
-            // T-NS05: DockingWorld.Instance.AssignPadForNpc(...)
-            if (state.Ship == null || state.Ship.IsDocked) return false;
-
-            // Stub check: if within docking tolerance, claim the pad via DockingWorld
-            var targetPos = ResolveStationWorldPos(state.CurrentRoute.toLocationId);
-            if (!targetPos.HasValue) return false;
-            float dist = Vector3.Distance(state.Ship.transform.position, targetPos.Value);
-            if (dist > 200f) return false; // not close enough
-
-            // Call into DockingWorld (server-side only)
+            if (state.Ship == null) return false;
             if (Docking.Core.DockingWorld.Instance == null) return false;
             var station = Docking.Network.DockingZoneRegistry.GetByLocation(state.CurrentRoute.toLocationId);
             if (station == null) return false;
 
-            // AssignPadForNpc проверяет maxConcurrentLandings, sentinel id
-            return Docking.Core.DockingWorld.Instance.AssignPadForNpc(
+            // === distance check: NPC должен быть физически рядом с падом ===
+            float distToStation = Vector3.Distance(state.Ship.transform.position, station.transform.position);
+            if (distToStation > APPROACH_DIST) return false; // не рядом — жди
+
+            string assignedPadId = Docking.Core.DockingWorld.Instance.AssignPadForNpc(
                 station, state.Ship, state.Ship.ShipFlightClass, state.NpcInstanceId);
+            if (!string.IsNullOrEmpty(assignedPadId))
+            {
+                state.AssignedPadId = assignedPadId;
+                return true;
+            }
+            return false;
         }
 
         private void ReleaseNpcAssignment(NpcShipState state)
@@ -437,13 +455,29 @@ namespace ProjectC.PeacefulShip.Core
             Docking.Core.DockingWorld.Instance.ReleaseNpcAssignment(state.NpcInstanceId, state.Ship.NetworkObjectId);
         }
 
+        
         // === Station position lookup ===
 
         private Vector3? ResolveStationWorldPos(string locationId)
         {
-            if (string.IsNullOrEmpty(locationId)) return null;
-            var station = Docking.Network.DockingZoneRegistry.GetByLocation(locationId);
+            var station = ProjectC.Docking.Network.DockingZoneRegistry.GetByLocation(locationId);
             if (station == null) return null;
+            return station.transform.position;
+        }
+
+        /// <summary>
+        /// Реальная позиция пада в сцене (из DockingPadTriggerBox). Приоритет: scene > station center.
+        /// </summary>
+        private Vector3? ResolvePadWorldPos(string locationId, string padId)
+        {
+            var station = ProjectC.Docking.Network.DockingZoneRegistry.GetByLocation(locationId);
+            if (station == null) return null;
+            var triggerBoxes = station.GetComponentsInChildren<ProjectC.Docking.Stations.DockingPadTriggerBox>(true);
+            for (int i = 0; i < triggerBoxes.Length; i++)
+            {
+                if (triggerBoxes[i].PadId == padId)
+                    return triggerBoxes[i].transform.position;
+            }
             return station.transform.position;
         }
     }

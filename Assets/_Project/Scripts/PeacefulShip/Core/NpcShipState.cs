@@ -37,6 +37,12 @@ namespace ProjectC.PeacefulShip.Core
         /// <summary>V2 hook (Q10): cargo manifest. В M1 — пустой (capacity=0, items=null).</summary>
         public NpcShipCargoManifest Cargo;
 
+        /// <summary>Назначенный NPC пад (из DockingWorld.AssignPadForNpc). Используется в Approach для точной посадки.</summary>
+        public string AssignedPadId;
+
+        /// <summary>Фиксированное направление полёта (запоминается при входе в InTransit).</summary>
+        public Vector3 FlightDirection;
+
         public NpcShipState(ulong npcInstanceId, ShipController ship)
         {
             NpcInstanceId = npcInstanceId;

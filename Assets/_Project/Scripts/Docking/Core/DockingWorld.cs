@@ -171,9 +171,34 @@ namespace ProjectC.Docking.Core
                 // T-DOCK-SRV-3: физическая проверка — есть ли корабль внутри trigger зоны пада.
                 // Если да — пад считается занятым даже без формального Assign/Confirm.
                 // Важно для стартового состояния, когда на падах уже стоят npc-корабли.
-                Vector3 worldPadPos = station.transform.TransformPoint(pad.localPosition);
-                Quaternion worldPadRot = station.transform.rotation * Quaternion.Euler(pad.localEulerAngles);
-                Vector3 boxSize = pad.triggerBoxSize.sqrMagnitude > 0.001f ? pad.triggerBoxSize : defaultTriggerSize;
+                Vector3 worldPadPos;
+                Quaternion worldPadRot;
+                Vector3 boxSize;
+
+                // Приоритет: сцена (триггер-бокс) > SO (padLayout)
+                DockingPadTriggerBox triggerBox = null;
+                for (int t = 0; t < triggerBoxes.Length; t++)
+                {
+                    if (triggerBoxes[t].PadId == pad.padId)
+                    {
+                        triggerBox = triggerBoxes[t];
+                        break;
+                    }
+                }
+                if (triggerBox != null)
+                {
+                    worldPadPos = triggerBox.transform.position;
+                    worldPadRot = triggerBox.transform.rotation;
+                    var boxCol = triggerBox.GetComponent<BoxCollider>();
+                    boxSize = boxCol != null ? boxCol.size :
+                        (pad.triggerBoxSize.sqrMagnitude > 0.001f ? pad.triggerBoxSize : defaultTriggerSize);
+                }
+                else
+                {
+                    worldPadPos = station.transform.TransformPoint(pad.localPosition);
+                    worldPadRot = station.transform.rotation * Quaternion.Euler(pad.localEulerAngles);
+                    boxSize = pad.triggerBoxSize.sqrMagnitude > 0.001f ? pad.triggerBoxSize : defaultTriggerSize;
+                }
                 Collider[] hits = Physics.OverlapBox(worldPadPos, boxSize * 0.5f, worldPadRot, ~0, QueryTriggerInteraction.Collide);
                 bool physicallyOccupied = false;
                 for (int i = 0; i < hits.Length; i++)
@@ -475,14 +500,14 @@ namespace ProjectC.Docking.Core
         /// Обходит RPC, валидирует maxConcurrentLandings (Q6), назначает pad + подтверждает в один шаг.
         /// Возвращает true если pad назначен и корабль застыкован.
         /// </summary>
-        public bool AssignPadForNpc(
+        public string AssignPadForNpc(
             DockStationController station,
             ShipController ship,
             ShipFlightClass shipClass,
             ulong npcInstanceId)
         {
-            if (!ProjectC.Trade.Network.NetworkingUtils.IsServerSafe()) return false;
-            if (station == null || ship == null || npcInstanceId == 0) return false;
+            if (!ProjectC.Trade.Network.NetworkingUtils.IsServerSafe()) return null;
+            if (station == null || ship == null || npcInstanceId == 0) return null;
 
             // Q6: проверка maxConcurrentLandings
             var stationDef = station.StationDefinition;
@@ -491,25 +516,25 @@ namespace ProjectC.Docking.Core
                 int currentLandings = CountLandingsAtStation(stationDef.StationId);
                 if (currentLandings >= stationDef.MaxConcurrentLandings)
                 {
-                    return false; // станция полна
+                    return null; // станция полна
                 }
             }
 
             // Проверка: уже есть assignment?
             if (_assignmentsByClient.ContainsKey(npcInstanceId))
             {
-                return false; // уже назначен
+                return null; // уже назначен
             }
 
             var assignment = AssignPad(station, ship, shipClass);
-            if (!assignment.success) return false;
+            if (!assignment.success) return null;
 
             // RegisterPending + Confirm в один шаг (NPC не имеет QA-стадии)
             RegisterPendingAssignment(npcInstanceId, ship.NetworkObjectId, assignment);
             ConfirmAssignment(npcInstanceId, ship.NetworkObjectId);
             if (ship.IsServer) ship.EnterDocked();
 
-            return true;
+            return assignment.padId;
         }
 
         /// <summary>

@@ -151,31 +151,55 @@ namespace ProjectC.PeacefulShip.Core
                         ReleaseNpcAssignment(state);
                         controller.StartAntiGravityBoost();
                     }
-                    // Pure vertical climb with physics
-                    ApplyDepartingMovement(state, controller);
-                    // Transition after enough climb time (15s for 100m) or altitude check
-                    float startY = state.StateEnteredAt > 0 ? state.LastKnownPosition.y : state.Ship.transform.position.y;
-                    float cruiseTarget = startY + NPC_CRUISE_ALTITUDE_OFFSET;
-                    if (state.Ship.transform.position.y >= cruiseTarget - 5f || timeInState > 20f)
+
+                    if (timeInState < 3f)
                     {
+                        // Phase 1 (0-3s): lift up 10м — только vertical, без thrust/yaw
+                        controller.ApplyMovementInput(thrust: 0f, yaw: 0f, pitch: 0f, vertical: 0.8f);
+                    }
+                    else if (timeInState < 8f)
+                    {
+                        // Phase 2 (3-8s): разворот на месте к цели — только yaw, без thrust/lift
+                        var depTarget = ResolveStationWorldPos(state.CurrentRoute.toLocationId);
+                        if (depTarget.HasValue)
+                        {
+                            float bearing = CalcBearing(state.Ship.transform.position, depTarget.Value)
+                                - state.Ship.transform.eulerAngles.y;
+                            bearing = Mathf.DeltaAngle(0f, bearing);
+                            float yawInput = Mathf.Clamp(bearing * 0.5f, -0.8f, 0.8f);
+                            controller.ApplyMovementInput(thrust: 0f, yaw: yawInput, pitch: 0f, vertical: 0f);
+                            // Если уже почти смотрим — переходим раньше
+                            if (Mathf.Abs(bearing) < 5f)
+                            {
+                                TransitionTo(state, NpcShipStatus.InTransit);
+                            }
+                        }
+                        else
+                        {
+                            TransitionTo(state, NpcShipStatus.InTransit);
+                        }
+                    }
+                    else
+                    {
+                        // Phase 3 (8s+): timeout — переход в InTransit с current facing
                         TransitionTo(state, NpcShipStatus.InTransit);
                     }
                     break;
 
                 case NpcShipStatus.InTransit:
-                    // Cruise toward target station at altitude
+                    // Cruise toward target station — thrust только вперёд, без yaw
+                    // (поворот уже сделан в Departing phase 2)
                     ApplyTransitMovement(state, controller);
-                    // Detect arrival: dist < 500м (со staggered random смещением для каждого NPC)
+                    // Detect arrival: dist < threshold (staggered 300-500м)
                     var targetPos = ResolveStationWorldPos(state.CurrentRoute.toLocationId);
                     if (targetPos.HasValue)
                     {
-                        // Персональный threshold для каждого NPC (stagger)
                         if (!_staggerOffset.TryGetValue(state.NpcInstanceId, out float staggerOffset))
                         {
                             staggerOffset = UnityEngine.Random.Range(0f, 200f);
                             _staggerOffset[state.NpcInstanceId] = staggerOffset;
                         }
-                        float threshold = 500f - staggerOffset; // 300-500м
+                        float threshold = 500f - staggerOffset;
                         if (Vector3.Distance(state.Ship.transform.position, targetPos.Value) < threshold)
                         {
                             TransitionTo(state, NpcShipStatus.Approaching);
@@ -300,36 +324,17 @@ namespace ProjectC.PeacefulShip.Core
             // Pure vertical climb via physics: full vertical thrust, no forward/yaw
             controller.ApplyMovementInput(thrust: 0f, yaw: 0f, pitch: 0f, vertical: 1.0f);
         }
-
         private void ApplyTransitMovement(NpcShipState state, NpcShipController controller)
         {
             var targetPos = ResolveStationWorldPos(state.CurrentRoute.toLocationId);
             if (!targetPos.HasValue) return;
             var ship = state.Ship;
-            
-            // Determine bearing to target
-            Vector3 dir = (targetPos.Value - ship.transform.position).normalized;
-            float bearing = CalcBearing(ship.transform.position, targetPos.Value) - ship.transform.eulerAngles.y;
-            bearing = Mathf.DeltaAngle(0f, bearing);
-            
-            // Gentle yaw correction (reduce gain to prevent oscillation)
-            float yawInput = Mathf.Clamp(bearing * NPC_YAW_GAIN, -NPC_YAW_CLAMP, NPC_YAW_CLAMP);
-            
-            // Altitude hold: maintain cruise altitude
-            float startY = state.StateEnteredAt > 0 ? state.LastKnownPosition.y : ship.transform.position.y;
-            float cruiseAlt = startY + NPC_CRUISE_ALTITUDE_OFFSET;
-            float altError = cruiseAlt - ship.transform.position.y;
-            float verticalInput = Mathf.Clamp(altError * NPC_ALT_HOLD_GAIN, -0.3f, 0.3f);
-            
-            // Gentle forward thrust
-            float thrustInput = Mathf.Clamp01(Mathf.Abs(UnityEngine.Vector3.Dot(dir, ship.transform.forward)));
-            
-            controller.ApplyMovementInput(
-                thrust: thrustInput * 1.2f,
-                yaw: yawInput,
-                pitch: 0f,
-                vertical: verticalInput
-            );
+            float dist = UnityEngine.Vector3.Distance(ship.transform.position, targetPos.Value);
+
+            // Thrust вперёд, yaw=0 (уже развёрнуты с Departing phase 2)
+            // vertical=0 для удержания высоты (anti-gravity)
+            float thrustInput = Mathf.Clamp01(dist / 200f) * 1.0f; // полная тяга когда далеко
+            controller.ApplyMovementInput(thrust: thrustInput, yaw: 0f, pitch: 0f, vertical: 0f);
         }
 
         private void ApplyApproachMovement(NpcShipState state, NpcShipController controller)
@@ -342,26 +347,29 @@ namespace ProjectC.PeacefulShip.Core
                 targetPos = ResolveStationWorldPos(state.CurrentRoute.toLocationId);
             if (!targetPos.HasValue) return;
             var ship = state.Ship;
+
             float dist = UnityEngine.Vector3.Distance(ship.transform.position, targetPos.Value);
+            float horizDist = UnityEngine.Vector3.Distance(
+                new UnityEngine.Vector3(ship.transform.position.x, 0, ship.transform.position.z),
+                new UnityEngine.Vector3(targetPos.Value.x, 0, targetPos.Value.z));
             
-            // Bearing to target
-            Vector3 dir = (targetPos.Value - ship.transform.position).normalized;
-            float bearing = CalcBearing(ship.transform.position, targetPos.Value) - ship.transform.eulerAngles.y;
-            bearing = Mathf.DeltaAngle(0f, bearing);
-            float yawInput = Mathf.Clamp(bearing * NPC_YAW_GAIN, -NPC_YAW_CLAMP, NPC_YAW_CLAMP);
-            
-            // Slow down + descend to station altitude + 5m
-            float thrustInput = Mathf.Max(Mathf.Clamp01(dist / NPC_APPROACH_DISTANCE) * 0.8f, 0.3f);
-            float targetAlt = targetPos.Value.y + 5f;
-            float altError = targetAlt - ship.transform.position.y;
-            float verticalInput = Mathf.Clamp(altError * NPC_ALT_HOLD_GAIN * 2f, -0.5f, 0.5f);
-            
-            controller.ApplyMovementInput(
-                thrust: thrustInput,
-                yaw: yawInput,
-                pitch: 0f,
-                vertical: verticalInput
-            );
+            if (horizDist > 10f)
+            {
+                // Ещё не над падом: yaw на месте к цели, без thrust/lift
+                float bearing = CalcBearing(ship.transform.position, targetPos.Value) - ship.transform.eulerAngles.y;
+                bearing = Mathf.DeltaAngle(0f, bearing);
+                float yawInput = Mathf.Clamp(bearing * 0.5f, -0.8f, 0.8f);
+                // Если уже почти смотрим в нужную сторону — даём немного thrust
+                float thrust = Mathf.Abs(bearing) < 10f ? 0.6f : 0f;
+                controller.ApplyMovementInput(thrust: thrust, yaw: yawInput, pitch: 0f, vertical: 0f);
+            }
+            else
+            {
+                // Над падом: lift DOWN, без thrust/yaw
+                float altError = targetPos.Value.y + 3f - ship.transform.position.y;
+                float verticalInput = Mathf.Clamp(altError * 0.3f, -0.8f, 0.8f);
+                controller.ApplyMovementInput(thrust: 0f, yaw: 0f, pitch: 0f, vertical: verticalInput);
+            }
         }
 
         private static float CalcBearing(Vector3 from, Vector3 to)

@@ -163,12 +163,6 @@ namespace ProjectC.Docking.Core
                 ShipFlightClass[] effectiveCompatible = triggerBoxOverrides.Count > 0 && triggerBoxOverrides.TryGetValue(pad.padId, out var ovr)
                     ? ovr : pad.compatibleShipClasses;
 
-                string clsStr = "";
-                if (effectiveCompatible != null)
-                    foreach (var c in effectiveCompatible) clsStr += c.ToString() + ",";
-                Debug.Log($"[DockingWorld]  checking pad={pad.padId} effectiveCompatible=[{clsStr}] shipClass={shipClass} " +
-                    $"compatible={IsCompatible(effectiveCompatible, shipClass)}");
-
                 if (!IsCompatible(effectiveCompatible, shipClass)) continue;
                 string padKey = PadKey(def.StationId, pad.padId);
                 if (_occupiedPads.ContainsKey(padKey)) continue;   // уже занят (SOT check)

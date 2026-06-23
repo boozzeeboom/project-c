@@ -31,6 +31,14 @@ namespace ProjectC.PeacefulShip.Core
 
         // StationId → последний arrival timestamp (для min spacing Q11)
         private readonly Dictionary<string, float> _lastArrivalAtStation = new Dictionary<string, float>();
+    // Throttle pad assignment attempts (avoid per-frame spam)
+    private readonly Dictionary<ulong, float> _lastPadAttempt = new Dictionary<ulong, float>();
+    // === NPC physics flight constants (barge, no pitch/roll) ===
+    private const float NPC_CRUISE_ALTITUDE_OFFSET = 100f;  // летим на 100м выше точки старта
+    private const float NPC_APPROACH_DISTANCE = 500f;       // начинаем снижение за 500м
+    private const float NPC_YAW_GAIN = 0.02f;               // мягкая коррекция курса (было 0.5 → осцилляции)
+    private const float NPC_YAW_CLAMP = 0.3f;                // макс yaw input
+    private const float NPC_ALT_HOLD_GAIN = 0.05f;           // коррекция высоты
 
         // === Events (server fires, others subscribe) ===
         // Q10 stubs (v2 subscribers: TradeWorld, QuestServer)
@@ -135,16 +143,17 @@ namespace ProjectC.PeacefulShip.Core
 
                 case NpcShipStatus.Departing:
                     // Pre-condition: Docked → ExitDocked + start anti-grav + take off
-                    // If we're still docked, release the pad assignment first
                     if (state.Ship != null && state.Ship.IsDocked)
                     {
                         ReleaseNpcAssignment(state);
                         controller.StartAntiGravityBoost();
                     }
-                    // Move toward target station with positive vertical
+                    // Pure vertical climb with physics
                     ApplyDepartingMovement(state, controller);
-                    // After 3 sec (climb time) — switch to InTransit
-                    if (timeInState > 3f)
+                    // Transition after enough climb time (15s for 100m) or altitude check
+                    float startY = state.StateEnteredAt > 0 ? state.LastKnownPosition.y : state.Ship.transform.position.y;
+                    float cruiseTarget = startY + NPC_CRUISE_ALTITUDE_OFFSET;
+                    if (state.Ship.transform.position.y >= cruiseTarget - 5f || timeInState > 20f)
                     {
                         TransitionTo(state, NpcShipStatus.InTransit);
                     }
@@ -165,17 +174,22 @@ namespace ProjectC.PeacefulShip.Core
                 case NpcShipStatus.Approaching:
                     // Slow descent toward target station
                     ApplyApproachMovement(state, controller);
-                    // Try to assign a pad (delegates to DockingWorld.AssignPadForNpc — T-NS05)
-                    if (TryAssignPadForNpc(state))
+                    // Try to assign a pad (throttled — not every frame!)
+                    if (timeInState < 2f || _lastPadAttempt.ContainsKey(state.NpcInstanceId) && 
+                        Time.time - _lastPadAttempt[state.NpcInstanceId] < 2f)
                     {
-                        TransitionTo(state, NpcShipStatus.Docking);
-                        Debug.Log($"[NpcShipWorld:NPC] id={state.NpcInstanceId:X} Approaching→Docking");
+                        // Skip this frame (throttle at 2s)
                     }
-                    else if (timeInState > 30f)
+                    else
                     {
-                        // Timeout — divert to next station
-                        Debug.LogWarning($"[NpcShipWorld:NPC] id={state.NpcInstanceId:X} Approaching timeout → Diverting");
-                        TransitionTo(state, NpcShipStatus.Diverting);
+                        _lastPadAttempt[state.NpcInstanceId] = Time.time;
+                        if (TryAssignPadForNpc(state))
+                        {
+                            TransitionTo(state, NpcShipStatus.Docking);
+                            Debug.Log($"[NpcShipWorld:NPC] id={state.NpcInstanceId:X} Approaching→Docking");
+                        }
+                        // No timeout→Diverting: stay in Approaching, keep retrying
+                        // NPC hovers until pad frees up. This prevents the ping-pong loop.
                     }
                     break;
 
@@ -258,8 +272,8 @@ namespace ProjectC.PeacefulShip.Core
 
         private void ApplyDepartingMovement(NpcShipState state, NpcShipController controller)
         {
-            // Climb vertically + slight forward thrust
-            controller.ApplyMovementInput(thrust: 0.4f, yaw: 0f, pitch: 0.2f, vertical: 0.6f);
+            // Pure vertical climb via physics: full vertical thrust, no forward/yaw
+            controller.ApplyMovementInput(thrust: 0f, yaw: 0f, pitch: 0f, vertical: 1.0f);
         }
 
         private void ApplyTransitMovement(NpcShipState state, NpcShipController controller)
@@ -267,14 +281,29 @@ namespace ProjectC.PeacefulShip.Core
             var targetPos = ResolveStationWorldPos(state.CurrentRoute.toLocationId);
             if (!targetPos.HasValue) return;
             var ship = state.Ship;
+            
+            // Determine bearing to target
             Vector3 dir = (targetPos.Value - ship.transform.position).normalized;
             float bearing = CalcBearing(ship.transform.position, targetPos.Value) - ship.transform.eulerAngles.y;
             bearing = Mathf.DeltaAngle(0f, bearing);
+            
+            // Gentle yaw correction (reduce gain to prevent oscillation)
+            float yawInput = Mathf.Clamp(bearing * NPC_YAW_GAIN, -NPC_YAW_CLAMP, NPC_YAW_CLAMP);
+            
+            // Altitude hold: maintain cruise altitude
+            float startY = state.StateEnteredAt > 0 ? state.LastKnownPosition.y : ship.transform.position.y;
+            float cruiseAlt = startY + NPC_CRUISE_ALTITUDE_OFFSET;
+            float altError = cruiseAlt - ship.transform.position.y;
+            float verticalInput = Mathf.Clamp(altError * NPC_ALT_HOLD_GAIN, -0.3f, 0.3f);
+            
+            // Gentle forward thrust
+            float thrustInput = Mathf.Clamp01(Mathf.Abs(UnityEngine.Vector3.Dot(dir, ship.transform.forward)));
+            
             controller.ApplyMovementInput(
-                thrust: 0.6f,
-                yaw: Mathf.Clamp(bearing * 0.5f, -1f, 1f),
+                thrust: thrustInput * 1.2f,
+                yaw: yawInput,
                 pitch: 0f,
-                vertical: 0.2f * dir.y // maintain altitude
+                vertical: verticalInput
             );
         }
 
@@ -283,16 +312,25 @@ namespace ProjectC.PeacefulShip.Core
             var targetPos = ResolveStationWorldPos(state.CurrentRoute.toLocationId);
             if (!targetPos.HasValue) return;
             var ship = state.Ship;
-            float dist = Vector3.Distance(ship.transform.position, targetPos.Value);
+            float dist = UnityEngine.Vector3.Distance(ship.transform.position, targetPos.Value);
+            
+            // Bearing to target
+            Vector3 dir = (targetPos.Value - ship.transform.position).normalized;
             float bearing = CalcBearing(ship.transform.position, targetPos.Value) - ship.transform.eulerAngles.y;
             bearing = Mathf.DeltaAngle(0f, bearing);
-            // Slow down + descend
-            float thrust = Mathf.Clamp01(dist / 200f) * 0.4f;
+            float yawInput = Mathf.Clamp(bearing * NPC_YAW_GAIN, -NPC_YAW_CLAMP, NPC_YAW_CLAMP);
+            
+            // Slow down + descend to station altitude + 5m
+            float thrustInput = Mathf.Clamp01(dist / NPC_APPROACH_DISTANCE) * 0.8f;
+            float targetAlt = targetPos.Value.y + 5f;
+            float altError = targetAlt - ship.transform.position.y;
+            float verticalInput = Mathf.Clamp(altError * NPC_ALT_HOLD_GAIN * 2f, -0.5f, 0.5f);
+            
             controller.ApplyMovementInput(
-                thrust: thrust,
-                yaw: Mathf.Clamp(bearing * 0.5f, -0.5f, 0.5f),
-                pitch: -0.1f, // descent
-                vertical: -0.3f
+                thrust: thrustInput,
+                yaw: yawInput,
+                pitch: 0f,
+                vertical: verticalInput
             );
         }
 
@@ -307,18 +345,48 @@ namespace ProjectC.PeacefulShip.Core
         private void AdvanceScheduleIndex(NpcShipState state, NpcShipSchedule schedule)
         {
             if (schedule.routes == null || schedule.routes.Length == 0) return;
+            int len = schedule.routes.Length;
             switch (schedule.scheduleType)
             {
                 case NpcShipSchedule.ScheduleType.RoundTrip:
-                    // 0 → 1 → 0 → 1
-                    state.ScheduleIndex = (state.ScheduleIndex + 1) % 2;
-                    break;
+                    if (len == 1)
+                    {
+                        var route = schedule.routes[0];
+                        // ОДИН маршрут: чередуем forward/reverse каждый вызов
+                        // Сначала инкрементим, потом решаем направление
+                        state.ScheduleIndex++;
+                        // Нечётный (1,3,5) = только что завершил forward → летит reverse
+                        // Чётный (2,4,6) = только что завершил reverse → летит forward
+                        if (state.ScheduleIndex % 2 == 1)
+                        {
+                            // Reverse direction
+                            state.CurrentRoute = new NpcShipRoute
+                            {
+                                fromLocationId = route.toLocationId,
+                                toLocationId = route.fromLocationId,
+                                dwellTimeSec = route.dwellTimeSec,
+                                flightDurationSec = route.flightDurationSec,
+                                preferredShipClass = route.preferredShipClass,
+                                demandCategory = route.demandCategory
+                            };
+                        }
+                        else
+                        {
+                            state.CurrentRoute = route; // forward
+                        }
+                        return;
+                    }
+                    else
+                    {
+                        state.ScheduleIndex = (state.ScheduleIndex + 1) % len;
+                        state.CurrentRoute = schedule.routes[state.ScheduleIndex];
+                    }
+                    return;
                 case NpcShipSchedule.ScheduleType.Loop:
-                    // 0 → 1 → 2 → 0
-                    state.ScheduleIndex = (state.ScheduleIndex + 1) % schedule.routes.Length;
+                    state.ScheduleIndex = (state.ScheduleIndex + 1) % len;
                     break;
                 case NpcShipSchedule.ScheduleType.RandomFromPool:
-                    state.ScheduleIndex = Random.Range(0, schedule.routes.Length);
+                    state.ScheduleIndex = Random.Range(0, len);
                     break;
             }
             state.CurrentRoute = schedule.routes[state.ScheduleIndex];

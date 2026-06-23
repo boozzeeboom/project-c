@@ -18,8 +18,8 @@ public static class CreateNpcShipSchedules
         s1.displayName = "Курьер Примум-Тест";
         s1.scheduleType = NpcShipSchedule.ScheduleType.RoundTrip;
         s1.routes = new NpcShipRoute[1];
-        s1.routes[0] = new NpcShipRoute { fromLocationId = "PRIMIUM", toLocationId = "PRIMIUM_TEST_ZONE_2",
-            dwellTimeSec = 60f, flightDurationSec = 120f, preferredShipClass = ShipFlightClass.Light, demandCategory = NpcShipDemandCategory.Generic };
+        s1.routes[0] = new NpcShipRoute { fromLocationId = "PRIMIUM", toLocationId = "PRIMIUM_TEST_ZONE",
+            dwellTimeSec = 60f, flightDurationSec = 120f, preferredShipClass = ShipFlightClass.HeavyII, demandCategory = NpcShipDemandCategory.Generic };
         s1.meanArrivalIntervalSec = 480f;
         s1.arrivalIntervalStdDev = 90f;
         s1.minArrivalSpacingSec = 60f;
@@ -33,8 +33,8 @@ public static class CreateNpcShipSchedules
         s2.displayName = "Торговец ТестЗона-Примум";
         s2.scheduleType = NpcShipSchedule.ScheduleType.Loop;
         s2.routes = new NpcShipRoute[1];
-        s2.routes[0] = new NpcShipRoute { fromLocationId = "PRIMIUM_TEST_ZONE_2", toLocationId = "PRIMIUM",
-            dwellTimeSec = 90f, flightDurationSec = 120f, preferredShipClass = ShipFlightClass.Medium, demandCategory = NpcShipDemandCategory.Generic };
+        s2.routes[0] = new NpcShipRoute { fromLocationId = "PRIMIUM_TEST_ZONE", toLocationId = "PRIMIUM",
+            dwellTimeSec = 90f, flightDurationSec = 120f, preferredShipClass = ShipFlightClass.HeavyII, demandCategory = NpcShipDemandCategory.Generic };
         s2.meanArrivalIntervalSec = 600f;
         s2.arrivalIntervalStdDev = 120f;
         s2.minArrivalSpacingSec = 90f;

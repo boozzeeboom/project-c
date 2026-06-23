@@ -1323,7 +1323,8 @@ namespace ProjectC.Player
                 case AltitudeStatus.WarningUpper:
                     // Warning — показываем предупреждение (будет в UI)
                     // Эффекты пока не применяем
-                    Debug.LogWarning($"[ShipController] Altitude Warning: {_currentAltitudeStatus} at {currentAlt:F0}m");
+                    if (_pilots.Count > 0)
+                        Debug.LogWarning($"[ShipController] Altitude Warning: {_currentAltitudeStatus} at {currentAlt:F0}m");
                     break;
 
                 case AltitudeStatus.DangerLower:

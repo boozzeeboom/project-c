@@ -35,9 +35,10 @@ namespace ProjectC.PeacefulShip.Core
     private readonly Dictionary<ulong, float> _lastPadAttempt = new Dictionary<ulong, float>();
     // === NPC physics flight constants (barge, no pitch/roll) ===
     private const float NPC_CRUISE_ALTITUDE_OFFSET = 100f;  // летим на 100м выше точки старта
+    // === NPC constants ===
     private const float NPC_APPROACH_DISTANCE = 500f;       // начинаем снижение за 500м
-    private const float NPC_YAW_GAIN = 0.02f;               // мягкая коррекция курса (было 0.5 → осцилляции)
-    private const float NPC_YAW_CLAMP = 0.3f;                // макс yaw input
+    private const float NPC_YAW_GAIN = 0.5f;                // коррекция курса
+    private const float NPC_YAW_CLAMP = 1.0f;               // макс yaw input
     private const float NPC_ALT_HOLD_GAIN = 0.05f;           // коррекция высоты
 
         // === Events (server fires, others subscribe) ===

@@ -40,6 +40,9 @@ namespace ProjectC.PeacefulShip.Core
         /// <summary>ID пада, назначенного через AssignPadForNpc. null пока не назначен.</summary>
         public string AssignedPadId;
 
+        /// <summary>Y координата ground-уровня при первом Departing. Используется для удержания cruiseAlt во всех state.</summary>
+        public float StartCruiseY;
+
         public NpcShipState(ulong npcInstanceId, ShipController ship)
         {
             NpcInstanceId = npcInstanceId;

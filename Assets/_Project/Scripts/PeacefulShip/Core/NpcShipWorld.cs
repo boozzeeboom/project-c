@@ -150,13 +150,22 @@ namespace ProjectC.PeacefulShip.Core
                         ReleaseNpcAssignment(state);
                         controller.StartAntiGravityBoost();
                     }
-                    // Lift UP пока не поднимемся на cruiseAltitude (или 30м если 0)
+                    // Первый раз вошли в Departing — запоминаем Y ground
+                    if (state.StartCruiseY <= 0f)
+                        state.StartCruiseY = state.Ship.transform.position.y;
+
+                    // PD-controller высоты: тянемся к startCruiseY + cruiseAltitude
                     float cruiseAlt = state.CurrentRoute.cruiseAltitude > 0f ? state.CurrentRoute.cruiseAltitude : 30f;
-                    float departStartY = state.StateEnteredAt > 0f ? state.LastKnownPosition.y : state.Ship.transform.position.y;
-                    float currentY = state.Ship.transform.position.y;
-                    controller.ApplyMovementInput(thrust: 0f, yaw: 0f, pitch: 0f, vertical: 0.8f);
-                    if (currentY > departStartY + cruiseAlt)
+                    float targetCruiseY = state.StartCruiseY + cruiseAlt;
+                    float verticalCmd = ComputeAltitudeInput(state.Ship, targetCruiseY);
+                    controller.ApplyMovementInput(thrust: 0f, yaw: 0f, pitch: 0f, vertical: verticalCmd);
+                    // Достигли целевой высоты с точностью 0.5м и vertVelocity < 0.5 → переход
+                    var rbDep = state.Ship.GetComponent<Rigidbody>();
+                    if (Mathf.Abs(state.Ship.transform.position.y - targetCruiseY) < 0.5f && Mathf.Abs(rbDep.linearVelocity.y) < 0.5f)
+                    {
+                        KillVerticalVelocity(state.Ship);
                         TransitionTo(state, NpcShipStatus.InTransit);
+                    }
                     break;
 
                 case NpcShipStatus.InTransit:
@@ -310,27 +319,31 @@ namespace ProjectC.PeacefulShip.Core
         private void ApplyTransitMovement(NpcShipState state, NpcShipController controller)
         {
             var targetPos = ResolveStationWorldPos(state.CurrentRoute.toLocationId);
-                    if (!targetPos.HasValue) return;
-                    var ship = state.Ship;
+            if (!targetPos.HasValue) return;
+            var ship = state.Ship;
 
-                    float bearing = CalcBearing(ship.transform.position, targetPos.Value) - ship.transform.eulerAngles.y;
-                    bearing = Mathf.DeltaAngle(0f, bearing);
+            // Target cruise altitude (используем из маршрута или fallback 30м от старта)
+            float cruiseAlt = state.CurrentRoute.cruiseAltitude > 0f ? state.CurrentRoute.cruiseAltitude : 30f;
+            // Целевая высота = ground (Y старта) + cruiseAlt. Ground Y из LastKnownPosition первого Departing.
+            float targetCruiseY = state.StartCruiseY > 0f ? state.StartCruiseY : (ship.transform.position.y + cruiseAlt);
 
-                    // HYSTERESIS: dead zone ±15°
-                    // Снаружи (±15°) — yaw без thrust
-                    // Внутри — thrust без yaw (никогда вместе)
-                    if (Mathf.Abs(bearing) > 15f)
-                    {
-                        float yawInput = Mathf.Clamp(bearing * 0.3f, -0.8f, 0.8f);
-                        controller.ApplyMovementInput(thrust: 0f, yaw: yawInput, pitch: 0f, vertical: 0f);
-                    }
-                    else
-                    {
-                        float dist = Vector3.Distance(ship.transform.position, targetPos.Value);
-                        float thrust = Mathf.Clamp01(dist / 100f) * 1.0f;
-                        controller.ApplyMovementInput(thrust: thrust, yaw: 0f, pitch: 0f, vertical: 0f);
-                    }
-                }
+            float bearing = CalcBearing(ship.transform.position, targetPos.Value) - ship.transform.eulerAngles.y;
+            bearing = Mathf.DeltaAngle(0f, bearing);
+
+            float vertical = ComputeAltitudeInput(ship, targetCruiseY);
+
+            // HYSTERESIS ±15°: yaw или thrust, никогда вместе
+            if (Mathf.Abs(bearing) > 15f)
+            {
+                controller.ApplyMovementInput(thrust: 0f, yaw: Mathf.Clamp(bearing * 0.3f, -0.8f, 0.8f), pitch: 0f, vertical: vertical);
+            }
+            else
+            {
+                float dist = Vector3.Distance(ship.transform.position, targetPos.Value);
+                float thrust = Mathf.Clamp01(dist / 100f);
+                controller.ApplyMovementInput(thrust: thrust, yaw: 0f, pitch: 0f, vertical: vertical);
+            }
+        }
 
         private void ApplyApproachMovement(NpcShipState state, NpcShipController controller)
         {
@@ -346,21 +359,22 @@ namespace ProjectC.PeacefulShip.Core
                 new Vector3(ship.transform.position.x, 0, ship.transform.position.z),
                 new Vector3(targetPos.Value.x, 0, targetPos.Value.z));
 
+            // Target altitude = та же крейсерская до момента когда IsShipInside станет true
+            float cruiseAlt = state.CurrentRoute.cruiseAltitude > 0f ? state.CurrentRoute.cruiseAltitude : 30f;
+            float targetCruiseY = state.StartCruiseY > 0f ? state.StartCruiseY : (ship.transform.position.y + cruiseAlt);
+
             if (horizDist > 10f)
             {
-                // Ещё не над падом: yaw на месте к цели
                 float bearing = CalcBearing(ship.transform.position, targetPos.Value) - ship.transform.eulerAngles.y;
                 bearing = Mathf.DeltaAngle(0f, bearing);
-                float yawInput = Mathf.Clamp(bearing * 0.5f, -0.8f, 0.8f);
-                // Когда почти смотрим — даём thrust
-                float thrust = Mathf.Abs(bearing) < 10f ? 0.6f : 0f;
-                controller.ApplyMovementInput(thrust: thrust, yaw: yawInput, pitch: 0f, vertical: 0f);
+                float yawInput = Mathf.Clamp(bearing * 0.3f, -0.8f, 0.8f);
+                float vertical = ComputeAltitudeInput(ship, targetCruiseY);
+                float thrust = Mathf.Abs(bearing) < 15f ? 0.6f : 0f;
+                controller.ApplyMovementInput(thrust: thrust, yaw: yawInput, pitch: 0f, vertical: vertical);
             }
             else
             {
-                // Над падом: lift DOWN
-                float altError = targetPos.Value.y + 3f - ship.transform.position.y;
-                float vertical = Mathf.Clamp(altError * 0.3f, -0.8f, 0.8f);
+                float vertical = ComputeAltitudeInput(ship, targetPos.Value.y);
                 controller.ApplyMovementInput(thrust: 0f, yaw: 0f, pitch: 0f, vertical: vertical);
             }
         }
@@ -500,6 +514,33 @@ namespace ProjectC.PeacefulShip.Core
             if (triggerBoxes == null || triggerBoxes.Length == 0)
                 return station.transform.position;
             return triggerBoxes[0].transform.position;
+        }
+
+        // === Altitude control (PD-controller) ===
+        // Универсальный — НЕ зависит от силы двигателя. Возвращает vertical input [-1, 1].
+        // altKp / altKd — коэффициенты ПД-регулятора (работают для любого движка).
+        private float ComputeAltitudeInput(ShipController ship, float targetY)
+        {
+            var rb = ship.GetComponent<Rigidbody>();
+            float currentY = ship.transform.position.y;
+            float error = targetY - currentY;
+            float vertVel = rb != null ? rb.linearVelocity.y : 0f;
+            // PD: error*kp - vel*kd (damping)
+            float kp = 0.3f;
+            float kd = 0.5f;
+            float cmd = error * kp - vertVel * kd;
+            return Mathf.Clamp(cmd, -1f, 1f);
+        }
+
+        // Сбросить вертикальную velocity (anti-windup при смене state)
+        private void KillVerticalVelocity(ShipController ship)
+        {
+            if (ship == null) return;
+            var rb = ship.GetComponent<Rigidbody>();
+            if (rb == null) return;
+            var v = rb.linearVelocity;
+            v.y = 0f;
+            rb.linearVelocity = v;
         }
     }
 }

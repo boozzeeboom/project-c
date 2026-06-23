@@ -16,7 +16,7 @@ MonoBehaviour:
   locationId: PRIMIUM
   displayName: "\u0414\u043E\u043A-\u0441\u0442\u0430\u043D\u0446\u0438\u044F \u041F\u0440\u0438\u043C\u0443\u043C"
   platformCenter: {x: 40500, y: 2510, z: 40500}
-  platformAltitude: 4348
+  platformAltitude: 2510
   voiceLines: {fileID: 11400000, guid: e5b247ae70c80a74daeaa810049c0553, type: 2}
   maxConcurrentLandings: 10
   landingWindowSeconds: 300

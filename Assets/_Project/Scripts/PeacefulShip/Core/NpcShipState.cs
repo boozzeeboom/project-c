@@ -43,6 +43,17 @@ namespace ProjectC.PeacefulShip.Core
         /// <summary>Y координата ground-уровня при первом Departing. Используется для удержания cruiseAlt во всех state.</summary>
         public float StartCruiseY;
 
+        // === M2: Diagonal movement fields ===
+
+        /// <summary>Направление полёта (единичный вектор). Vector3.zero = не установлено (вычислить при первом ApplyTransitMovement).</summary>
+        public Vector3 FlightDirection;
+
+        /// <summary>Позиция начала маршрута при Departing. Используется для расчёта диагональной линии A→B.</summary>
+        public Vector3 StartPathPos;
+
+        /// <summary>Время последней проверки отклонения от курса (Time.time).</summary>
+        public float LastCourseCheckTime;
+
         public NpcShipState(ulong npcInstanceId, ShipController ship)
         {
             NpcInstanceId = npcInstanceId;

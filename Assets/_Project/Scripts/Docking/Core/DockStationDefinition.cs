@@ -1,12 +1,13 @@
-// T-DOCK-04: DockStationDefinition — обособленный SO.
-// Вынесен из DockingDefinitions.cs (T-DOCK-13c fix: один класс = один .cs файл).
+// T-DOCK-04 (refactored): DockStationDefinition — обособленный SO.
+// PadLayout удалён: пады читаются из DockingPadTriggerBox в сцене.
 
 using UnityEngine;
 
 namespace ProjectC.Docking.Core
 {
     /// <summary>
-    /// Паспорт станции. Содержит identity, geometry, ссылки на pad layout + voice lines.
+    /// Паспорт станции. Содержит identity, geometry, voice lines.
+    /// Pad'ы — из DockingPadTriggerBox в сцене.
     /// </summary>
     [CreateAssetMenu(fileName = "DockStation_", menuName = "ProjectC/Docking/DockStationDefinition", order = 100)]
     public class DockStationDefinition : ScriptableObject
@@ -21,10 +22,6 @@ namespace ProjectC.Docking.Core
         [SerializeField, Tooltip("Из GDD-10 §2.2 — высота города (например 4348 для Примум).")]
         private float platformAltitude = 4348f;
 
-        [Header("Pads")]
-        [Tooltip("Ссылка на общий layout pads (Light/Medium/Heavy slots).")]
-        [SerializeField] private DockPadLayout padLayout;
-
         [Header("Dispatcher")]
         [SerializeField] private DispatcherVoiceLines voiceLines;
 
@@ -37,7 +34,6 @@ namespace ProjectC.Docking.Core
         public string DisplayName => string.IsNullOrEmpty(displayName) ? stationId : displayName;
         public Vector3 PlatformCenter => platformCenter;
         public float PlatformAltitude => platformAltitude;
-        public DockPadLayout PadLayout => padLayout;
         public DispatcherVoiceLines VoiceLines => voiceLines;
         public int MaxConcurrentLandings => maxConcurrentLandings;
         public float LandingWindowSeconds => landingWindowSeconds;

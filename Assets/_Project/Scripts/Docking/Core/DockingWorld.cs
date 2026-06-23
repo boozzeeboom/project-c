@@ -424,15 +424,16 @@ namespace ProjectC.Docking.Core
             DockStationController station)
         {
             var result = new List<PadStatusInfo>();
-            if (station == null || station.StationDefinition == null
-                || station.StationDefinition.PadLayout == null) return result;
-            foreach (var pad in station.StationDefinition.PadLayout.Pads)
+            if (station == null) return result;
+            var triggerBoxes = station.GetComponentsInChildren<DockingPadTriggerBox>();
+            if (triggerBoxes == null) return result;
+            foreach (var tb in triggerBoxes)
             {
                 result.Add(new PadStatusInfo
                 {
-                    padId = pad.padId,
-                    isOccupied = IsPadOccupied(stationId, pad.padId),
-                    isPending = IsPending(stationId, pad.padId)
+                    padId = tb.PadId,
+                    isOccupied = IsPadOccupied(stationId, tb.PadId),
+                    isPending = IsPending(stationId, tb.PadId)
                 });
             }
             return result;

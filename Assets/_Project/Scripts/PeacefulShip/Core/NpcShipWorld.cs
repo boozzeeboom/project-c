@@ -33,11 +33,13 @@ namespace ProjectC.PeacefulShip.Core
         private readonly Dictionary<string, float> _lastArrivalAtStation = new Dictionary<string, float>();
     // Throttle pad assignment attempts (avoid per-frame spam)
     private readonly Dictionary<ulong, float> _lastPadAttempt = new Dictionary<ulong, float>();
+    // Stagger offset — персональный threshold для перехода InTransit→Approach
+    private readonly Dictionary<ulong, float> _staggerOffset = new Dictionary<ulong, float>();
     // === NPC physics flight constants (barge, no pitch/roll) ===
     private const float NPC_CRUISE_ALTITUDE_OFFSET = 100f;  // летим на 100м выше точки старта
     // === NPC constants ===
     private const float NPC_APPROACH_DISTANCE = 500f;       // начинаем снижение за 500м
-    private const float NPC_YAW_GAIN = 0.5f;                // коррекция курса
+    private const float NPC_YAW_GAIN = 0.15f;                // коррекция курса
     private const float NPC_YAW_CLAMP = 1.0f;               // макс yaw input
     private const float NPC_ALT_HOLD_GAIN = 0.05f;           // коррекция высоты
 
@@ -163,12 +165,22 @@ namespace ProjectC.PeacefulShip.Core
                 case NpcShipStatus.InTransit:
                     // Cruise toward target station at altitude
                     ApplyTransitMovement(state, controller);
-                    // Detect arrival: dist < 500m
+                    // Detect arrival: dist < 500м (со staggered random смещением для каждого NPC)
                     var targetPos = ResolveStationWorldPos(state.CurrentRoute.toLocationId);
-                    if (targetPos.HasValue && Vector3.Distance(state.Ship.transform.position, targetPos.Value) < 500f)
+                    if (targetPos.HasValue)
                     {
-                        TransitionTo(state, NpcShipStatus.Approaching);
-                        Debug.Log($"[NpcShipWorld:NPC] id={state.NpcInstanceId:X} InTransit→Approaching (dist<500m to {state.CurrentRoute.toLocationId})");
+                        // Персональный threshold для каждого NPC (stagger)
+                        if (!_staggerOffset.TryGetValue(state.NpcInstanceId, out float staggerOffset))
+                        {
+                            staggerOffset = UnityEngine.Random.Range(0f, 200f);
+                            _staggerOffset[state.NpcInstanceId] = staggerOffset;
+                        }
+                        float threshold = 500f - staggerOffset; // 300-500м
+                        if (Vector3.Distance(state.Ship.transform.position, targetPos.Value) < threshold)
+                        {
+                            TransitionTo(state, NpcShipStatus.Approaching);
+                            Debug.Log($"[NpcShipWorld:NPC] id={state.NpcInstanceId:X} InTransit→Approaching (dist<{threshold:F0}m to {state.CurrentRoute.toLocationId})");
+                        }
                     }
                     break;
 
@@ -266,6 +278,7 @@ namespace ProjectC.PeacefulShip.Core
                     if (timeInState > 2f)
                     {
                         state.AssignedPadId = null; // сброс на следующий цикл
+                        _staggerOffset.Remove(state.NpcInstanceId); // свежий stagger для обратного пути
                         AdvanceScheduleIndex(state, schedule);
                         TransitionTo(state, NpcShipStatus.Departing);
                         Debug.Log($"[NpcShipWorld:NPC] id={state.NpcInstanceId:X} Undocking→Departing (next leg: {state.CurrentRoute.toLocationId})");
@@ -338,7 +351,7 @@ namespace ProjectC.PeacefulShip.Core
             float yawInput = Mathf.Clamp(bearing * NPC_YAW_GAIN, -NPC_YAW_CLAMP, NPC_YAW_CLAMP);
             
             // Slow down + descend to station altitude + 5m
-            float thrustInput = Mathf.Clamp01(dist / NPC_APPROACH_DISTANCE) * 0.8f;
+            float thrustInput = Mathf.Max(Mathf.Clamp01(dist / NPC_APPROACH_DISTANCE) * 0.8f, 0.3f);
             float targetAlt = targetPos.Value.y + 5f;
             float altError = targetAlt - ship.transform.position.y;
             float verticalInput = Mathf.Clamp(altError * NPC_ALT_HOLD_GAIN * 2f, -0.5f, 0.5f);
@@ -434,8 +447,21 @@ namespace ProjectC.PeacefulShip.Core
             if (station == null) return false;
             if (Docking.Core.DockingWorld.Instance == null) return false;
 
-            // AssignPadForNpc теперь возвращает string padId (или null)
-            // НЕ вызывает EnterDocked — только резервирует пад в DockingWorld
+            // Дистанция: проверяем расстояние до БЛИЖАЙШЕГО триггер-бокса пада (не станции)
+            var triggerBoxes = station.GetComponentsInChildren<ProjectC.Docking.Stations.DockingPadTriggerBox>(true);
+            float minPadDist = float.MaxValue;
+            foreach (var tb in triggerBoxes)
+            {
+                float d = UnityEngine.Vector3.Distance(state.Ship.transform.position, tb.transform.position);
+                if (d < minPadDist) minPadDist = d;
+            }
+            // Если нет триггер-боксов → fallback к станции
+            if (triggerBoxes.Length == 0)
+                minPadDist = UnityEngine.Vector3.Distance(state.Ship.transform.position, station.transform.position);
+
+            // Назначаем пад только когда уже РЯДОМ (dist < 100м)
+            if (minPadDist > 100f) return false;
+
             string assignedPadId = Docking.Core.DockingWorld.Instance.AssignPadForNpc(
                 station, state.Ship, state.Ship.ShipFlightClass, state.NpcInstanceId);
             if (!string.IsNullOrEmpty(assignedPadId))

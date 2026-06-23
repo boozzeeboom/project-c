@@ -140,40 +140,38 @@ namespace ProjectC.Docking.Core
         {
             var def = station.StationDefinition;
             if (def == null) return MakeFail("STATION_NO_DEFINITION", ship.NetworkObjectId);
-            if (def.PadLayout == null) return MakeFail("NO_PAD_LAYOUT", ship.NetworkObjectId);
 
-            // Q4: без хардкода — берём все pads из layout, проверяем каждый
-            var defaultTriggerSize = def.PadLayout.DefaultTriggerBoxSize;
-
-            // T-DOCK-SRV-5: собираем override`ы из scene-placed DockingPadTriggerBox
-            // (пользователь может настроить compatibleShipClasses прямо на триггер-боксе,
-            // а не только в PadLayout SO).
-            var triggerBoxOverrides = new Dictionary<string, ShipFlightClass[]>();
+            // T-DOCK-SRV-5 (refactored): pads ТОЛЬКО из DockingPadTriggerBox в сцене.
+            // DockPadLayout SO больше не используется — только scene-placed trigger boxes.
             var triggerBoxes = station.GetComponentsInChildren<DockingPadTriggerBox>();
+            if (triggerBoxes == null || triggerBoxes.Length == 0)
+                return MakeFail("NO_PADS_IN_SCENE", ship.NetworkObjectId);
+
+            Debug.Log($"[DockingWorld] AssignPad: station={def.StationId} ship={ship.name} shipClass={shipClass} scenePads={triggerBoxes.Length}");
             foreach (var tb in triggerBoxes)
             {
+                // Ship class compatibility
                 if (tb.CompatibleShipClasses != null && tb.CompatibleShipClasses.Length > 0)
-                    triggerBoxOverrides[tb.PadId] = tb.CompatibleShipClasses;
-            }
+                {
+                    if (!IsCompatible(tb.CompatibleShipClasses, shipClass)) continue;
+                }
 
-            Debug.Log($"[DockingWorld] AssignPad: station={def.StationId} ship={ship.name} shipClass={shipClass} padsCount={def.PadLayout.Pads.Count}");
-            foreach (var pad in def.PadLayout.Pads)
-            {
-                // T-DOCK-SRV-5: используем override из триггер-бокса, если есть, иначе из SO
-                ShipFlightClass[] effectiveCompatible = triggerBoxOverrides.Count > 0 && triggerBoxOverrides.TryGetValue(pad.padId, out var ovr)
-                    ? ovr : pad.compatibleShipClasses;
-
-                if (!IsCompatible(effectiveCompatible, shipClass)) continue;
-                string padKey = PadKey(def.StationId, pad.padId);
+                string padKey = PadKey(def.StationId, tb.PadId);
                 if (_occupiedPads.ContainsKey(padKey)) continue;   // уже занят (SOT check)
-                if (IsPending(def.StationId, pad.padId)) continue; // ждёт подтверждения
+                if (IsPending(def.StationId, tb.PadId)) continue; // ждёт подтверждения
 
                 // T-DOCK-SRV-3: физическая проверка — есть ли корабль внутри trigger зоны пада.
-                // Если да — пад считается занятым даже без формального Assign/Confirm.
-                // Важно для стартового состояния, когда на падах уже стоят npc-корабли.
-                Vector3 worldPadPos = station.transform.TransformPoint(pad.localPosition);
-                Quaternion worldPadRot = station.transform.rotation * Quaternion.Euler(pad.localEulerAngles);
-                Vector3 boxSize = pad.triggerBoxSize.sqrMagnitude > 0.001f ? pad.triggerBoxSize : defaultTriggerSize;
+                Vector3 worldPadPos = tb.transform.position;
+                Quaternion worldPadRot = tb.transform.rotation;
+                Vector3 boxSize = Vector3.one * 5f;
+                var boxCol = tb.GetComponent<BoxCollider>();
+                if (boxCol != null) boxSize = boxCol.size;
+                else
+                {
+                    // Fallback: оцениваем размер из scale
+                    boxSize = tb.transform.lossyScale;
+                }
+
                 Collider[] hits = Physics.OverlapBox(worldPadPos, boxSize * 0.5f, worldPadRot, ~0, QueryTriggerInteraction.Collide);
                 bool physicallyOccupied = false;
                 for (int i = 0; i < hits.Length; i++)
@@ -181,7 +179,7 @@ namespace ProjectC.Docking.Core
                     if (hits[i].GetComponentInParent<ShipController>() != null)
                     {
                         physicallyOccupied = true;
-                        Debug.Log($"[DockingWorld] Pad {pad.padId} physically occupied by ship inside trigger — skipping");
+                        Debug.Log($"[DockingWorld] Pad {tb.PadId} physically occupied by ship inside trigger — skipping");
                         break;
                     }
                 }
@@ -191,10 +189,10 @@ namespace ProjectC.Docking.Core
                 return new DockingAssignmentDto
                 {
                     stationId = def.StationId,
-                    padId = pad.padId,
+                    padId = tb.PadId,
                     approachPoint = worldPadPos,
                     approachAltitude = station.transform.position.y + 30f,
-                    approachHeading = station.transform.eulerAngles.y + pad.localEulerAngles.y,
+                    approachHeading = tb.transform.eulerAngles.y,
                     landingWindowSeconds = def.LandingWindowSeconds,
                     voiceLine = def.VoiceLines != null
                         ? def.VoiceLines.GetRandomLine("Assigning")

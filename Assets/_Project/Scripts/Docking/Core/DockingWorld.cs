@@ -474,41 +474,38 @@ namespace ProjectC.Docking.Core
         /// Обходит RPC, валидирует maxConcurrentLandings (Q6), назначает pad + подтверждает в один шаг.
         /// Возвращает true если pad назначен и корабль застыкован.
         /// </summary>
-        public bool AssignPadForNpc(
+        public string AssignPadForNpc(
             DockStationController station,
             ShipController ship,
             ShipFlightClass shipClass,
             ulong npcInstanceId)
         {
-            if (!ProjectC.Trade.Network.NetworkingUtils.IsServerSafe()) return false;
-            if (station == null || ship == null || npcInstanceId == 0) return false;
+            if (!ProjectC.Trade.Network.NetworkingUtils.IsServerSafe()) return null;
+            if (station == null || ship == null || npcInstanceId == 0) return null;
 
-            // Q6: проверка maxConcurrentLandings
             var stationDef = station.StationDefinition;
+
+            // Q6: проверка maxConcurrentLandings (только количество назначенных, не застыкованных)
             if (stationDef != null)
             {
                 int currentLandings = CountLandingsAtStation(stationDef.StationId);
                 if (currentLandings >= stationDef.MaxConcurrentLandings)
-                {
-                    return false; // станция полна
-                }
+                    return null;
             }
 
-            // Проверка: уже есть assignment?
+            // Уже есть assignment?
             if (_assignmentsByClient.ContainsKey(npcInstanceId))
-            {
-                return false; // уже назначен
-            }
+                return null;
 
             var assignment = AssignPad(station, ship, shipClass);
-            if (!assignment.success) return false;
+            if (!assignment.success) return null;
 
-            // RegisterPending + Confirm в один шаг (NPC не имеет QA-стадии)
+            // RegisterPending + Confirm — резервируем пад, НО не вызываем EnterDocked.
+            // NPC сам войдёт в Docked когда физически долетит до пада.
             RegisterPendingAssignment(npcInstanceId, ship.NetworkObjectId, assignment);
             ConfirmAssignment(npcInstanceId, ship.NetworkObjectId);
-            if (ship.IsServer) ship.EnterDocked();
 
-            return true;
+            return assignment.padId; // возвращаем padId, а не bool
         }
 
         /// <summary>

@@ -17,7 +17,6 @@ MonoBehaviour:
   displayName: Test station for npc
   platformCenter: {x: 40377, y: 2502.98, z: 39434}
   platformAltitude: 2502.98
-  padLayout: {fileID: 11400000, guid: 241a6d34a37e445468d0202d46d965e9, type: 2}
   voiceLines: {fileID: 11400000, guid: e5b247ae70c80a74daeaa810049c0553, type: 2}
-  maxConcurrentLandings: 4
+  maxConcurrentLandings: 10
   landingWindowSeconds: 300

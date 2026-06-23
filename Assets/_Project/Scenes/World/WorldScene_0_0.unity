@@ -3348,12 +3348,12 @@ Transform:
   m_GameObject: {fileID: 392476057}
   serializedVersion: 2
   m_LocalRotation: {x: -0, y: -0, z: -0, w: 1}
-  m_LocalPosition: {x: -474.4, y: 0, z: -721.3}
+  m_LocalPosition: {x: -43, y: 0, z: -254.10156}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children:
   - {fileID: 1138714775}
-  m_Father: {fileID: 2061455427}
+  m_Father: {fileID: 2099880785}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!114 &392476059
 MonoBehaviour:
@@ -3395,7 +3395,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 7da9b65a306b5964e9ad4caab9d84a17, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::ProjectC.Docking.Stations.DockingPadTriggerBox
-  padId: PAD-001
+  padId: Pad_008-npc
   compatibleShipClasses: 03000000
 --- !u!65 &392476062
 BoxCollider:
@@ -11041,12 +11041,12 @@ Transform:
   m_GameObject: {fileID: 1470170325}
   serializedVersion: 2
   m_LocalRotation: {x: -0, y: -0, z: -0, w: 1}
-  m_LocalPosition: {x: -268.80078, y: 0, z: -673.10156}
+  m_LocalPosition: {x: 162.59766, y: 0, z: -205.90234}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children:
   - {fileID: 1074490789}
-  m_Father: {fileID: 2061455427}
+  m_Father: {fileID: 2099880785}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!114 &1470170327
 MonoBehaviour:
@@ -11088,7 +11088,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 7da9b65a306b5964e9ad4caab9d84a17, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::ProjectC.Docking.Stations.DockingPadTriggerBox
-  padId: PAD-001
+  padId: Pad_006-npc
   compatibleShipClasses: 03000000
 --- !u!65 &1470170330
 BoxCollider:
@@ -14290,12 +14290,12 @@ Transform:
   m_GameObject: {fileID: 1804118383}
   serializedVersion: 2
   m_LocalRotation: {x: -0, y: -0, z: -0, w: 1}
-  m_LocalPosition: {x: -175, y: 0, z: -666.8008}
+  m_LocalPosition: {x: 256.39844, y: 0, z: -199.60156}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children:
   - {fileID: 1584705784}
-  m_Father: {fileID: 2061455427}
+  m_Father: {fileID: 2099880785}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!114 &1804118385
 MonoBehaviour:
@@ -14321,7 +14321,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 7da9b65a306b5964e9ad4caab9d84a17, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::ProjectC.Docking.Stations.DockingPadTriggerBox
-  padId: PAD-001
+  padId: Pad_007-npc
   compatibleShipClasses: 03000000
 --- !u!65 &1804118387
 BoxCollider:
@@ -15212,12 +15212,12 @@ Transform:
   m_GameObject: {fileID: 1918676028}
   serializedVersion: 2
   m_LocalRotation: {x: -0, y: -0, z: -0, w: 1}
-  m_LocalPosition: {x: -400.30078, y: 0, z: -708.5}
+  m_LocalPosition: {x: 31.097656, y: 0, z: -241.30078}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children:
   - {fileID: 946731700}
-  m_Father: {fileID: 2061455427}
+  m_Father: {fileID: 2099880785}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!114 &1918676030
 MonoBehaviour:
@@ -15259,7 +15259,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 7da9b65a306b5964e9ad4caab9d84a17, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::ProjectC.Docking.Stations.DockingPadTriggerBox
-  padId: PAD-001
+  padId: Pad_009-npc
   compatibleShipClasses: 03000000
 --- !u!65 &1918676033
 BoxCollider:
@@ -16020,41 +16020,6 @@ PrefabInstance:
     m_AddedGameObjects: []
     m_AddedComponents: []
   m_SourcePrefab: {fileID: 100100000, guid: 2c75f6da2ba793a4fa4c3cd51e7704ac, type: 3}
---- !u!1 &2061455426
-GameObject:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  serializedVersion: 6
-  m_Component:
-  - component: {fileID: 2061455427}
-  m_Layer: 0
-  m_Name: NPC PAD TEST
-  m_TagString: Untagged
-  m_Icon: {fileID: 0}
-  m_NavMeshLayer: 0
-  m_StaticEditorFlags: 0
-  m_IsActive: 1
---- !u!4 &2061455427
-Transform:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 2061455426}
-  serializedVersion: 2
-  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: 431.4, y: 0, z: 467.2}
-  m_LocalScale: {x: 1, y: 1, z: 1}
-  m_ConstrainProportionsScale: 0
-  m_Children:
-  - {fileID: 1918676029}
-  - {fileID: 392476058}
-  - {fileID: 1470170326}
-  - {fileID: 1804118384}
-  m_Father: {fileID: 2099880785}
-  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1 &2099880783
 GameObject:
   m_ObjectHideFlags: 0
@@ -16118,7 +16083,10 @@ Transform:
   - {fileID: 641830867}
   - {fileID: 2052372481}
   - {fileID: 817492328}
-  - {fileID: 2061455427}
+  - {fileID: 1918676029}
+  - {fileID: 392476058}
+  - {fileID: 1470170326}
+  - {fileID: 1804118384}
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!114 &2099880787

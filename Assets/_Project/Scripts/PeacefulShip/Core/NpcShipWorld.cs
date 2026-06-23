@@ -183,13 +183,23 @@ namespace ProjectC.PeacefulShip.Core
                     else
                     {
                         _lastPadAttempt[state.NpcInstanceId] = Time.time;
-                        if (TryAssignPadForNpc(state))
+                        TryAssignPadForNpc(state); // сохраняет AssignedPadId при успехе
+                    }
+
+                    // Если есть назначенный пад и мы над ним (dist < 5м) — стыкуемся
+                    if (!string.IsNullOrEmpty(state.AssignedPadId))
+                    {
+                        var padPos = ResolvePadWorldPos(state.CurrentRoute.toLocationId, state.AssignedPadId);
+                        if (padPos.HasValue)
                         {
-                            TransitionTo(state, NpcShipStatus.Docking);
-                            Debug.Log($"[NpcShipWorld:NPC] id={state.NpcInstanceId:X} Approaching→Docking");
+                            float distToPad = Vector3.Distance(state.Ship.transform.position, padPos.Value);
+                            if (distToPad < 5f && !state.Ship.IsDocked)
+                            {
+                                state.Ship.EnterDocked();
+                                TransitionTo(state, NpcShipStatus.Docking);
+                                Debug.Log($"[NpcShipWorld:NPC] id={state.NpcInstanceId:X} Approaching→Docking (pad={state.AssignedPadId} dist={distToPad:F1}m)");
+                            }
                         }
-                        // No timeout→Diverting: stay in Approaching, keep retrying
-                        // NPC hovers until pad frees up. This prevents the ping-pong loop.
                     }
                     break;
 
@@ -254,6 +264,7 @@ namespace ProjectC.PeacefulShip.Core
                     }
                     if (timeInState > 2f)
                     {
+                        state.AssignedPadId = null; // сброс на следующий цикл
                         AdvanceScheduleIndex(state, schedule);
                         TransitionTo(state, NpcShipStatus.Departing);
                         Debug.Log($"[NpcShipWorld:NPC] id={state.NpcInstanceId:X} Undocking→Departing (next leg: {state.CurrentRoute.toLocationId})");
@@ -309,7 +320,12 @@ namespace ProjectC.PeacefulShip.Core
 
         private void ApplyApproachMovement(NpcShipState state, NpcShipController controller)
         {
-            var targetPos = ResolveStationWorldPos(state.CurrentRoute.toLocationId);
+            // Если есть назначенный пад — летим к нему, иначе к станции
+            Vector3? targetPos;
+            if (!string.IsNullOrEmpty(state.AssignedPadId))
+                targetPos = ResolvePadWorldPos(state.CurrentRoute.toLocationId, state.AssignedPadId);
+            else
+                targetPos = ResolveStationWorldPos(state.CurrentRoute.toLocationId);
             if (!targetPos.HasValue) return;
             var ship = state.Ship;
             float dist = UnityEngine.Vector3.Distance(ship.transform.position, targetPos.Value);
@@ -410,23 +426,23 @@ namespace ProjectC.PeacefulShip.Core
         /// </summary>
         private bool TryAssignPadForNpc(NpcShipState state)
         {
-            // T-NS05: DockingWorld.Instance.AssignPadForNpc(...)
-            if (state.Ship == null || state.Ship.IsDocked) return false;
+            if (state.Ship == null) return false;
+            if (state.Status == NpcShipStatus.Docked) return false;
 
-            // Stub check: if within docking tolerance, claim the pad via DockingWorld
-            var targetPos = ResolveStationWorldPos(state.CurrentRoute.toLocationId);
-            if (!targetPos.HasValue) return false;
-            float dist = Vector3.Distance(state.Ship.transform.position, targetPos.Value);
-            if (dist > 200f) return false; // not close enough
-
-            // Call into DockingWorld (server-side only)
-            if (Docking.Core.DockingWorld.Instance == null) return false;
             var station = Docking.Network.DockingZoneRegistry.GetByLocation(state.CurrentRoute.toLocationId);
             if (station == null) return false;
+            if (Docking.Core.DockingWorld.Instance == null) return false;
 
-            // AssignPadForNpc проверяет maxConcurrentLandings, sentinel id
-            return Docking.Core.DockingWorld.Instance.AssignPadForNpc(
+            // AssignPadForNpc теперь возвращает string padId (или null)
+            // НЕ вызывает EnterDocked — только резервирует пад в DockingWorld
+            string assignedPadId = Docking.Core.DockingWorld.Instance.AssignPadForNpc(
                 station, state.Ship, state.Ship.ShipFlightClass, state.NpcInstanceId);
+            if (!string.IsNullOrEmpty(assignedPadId))
+            {
+                state.AssignedPadId = assignedPadId;
+                return true;
+            }
+            return false;
         }
 
         private void ReleaseNpcAssignment(NpcShipState state)
@@ -444,6 +460,20 @@ namespace ProjectC.PeacefulShip.Core
             if (string.IsNullOrEmpty(locationId)) return null;
             var station = Docking.Network.DockingZoneRegistry.GetByLocation(locationId);
             if (station == null) return null;
+            return station.transform.position;
+        }
+
+        private Vector3? ResolvePadWorldPos(string locationId, string padId)
+        {
+            if (string.IsNullOrEmpty(locationId) || string.IsNullOrEmpty(padId)) return null;
+            var station = Docking.Network.DockingZoneRegistry.GetByLocation(locationId);
+            if (station == null) return null;
+            var triggerBoxes = station.GetComponentsInChildren<ProjectC.Docking.Stations.DockingPadTriggerBox>(true);
+            for (int i = 0; i < triggerBoxes.Length; i++)
+            {
+                if (triggerBoxes[i].PadId == padId)
+                    return triggerBoxes[i].transform.position;
+            }
             return station.transform.position;
         }
     }

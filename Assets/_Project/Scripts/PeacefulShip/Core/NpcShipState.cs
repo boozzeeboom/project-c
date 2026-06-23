@@ -37,6 +37,9 @@ namespace ProjectC.PeacefulShip.Core
         /// <summary>V2 hook (Q10): cargo manifest. В M1 — пустой (capacity=0, items=null).</summary>
         public NpcShipCargoManifest Cargo;
 
+        /// <summary>ID пада, назначенного через AssignPadForNpc. null пока не назначен.</summary>
+        public string AssignedPadId;
+
         public NpcShipState(ulong npcInstanceId, ShipController ship)
         {
             NpcInstanceId = npcInstanceId;

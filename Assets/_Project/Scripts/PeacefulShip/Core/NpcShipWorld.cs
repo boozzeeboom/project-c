@@ -93,7 +93,16 @@ namespace ProjectC.PeacefulShip.Core
             if (id == 0 || ship == null) return;
             if (_npcByInstanceId.ContainsKey(id)) return; // idempotent
 
-            _npcByInstanceId[id] = new NpcShipState(id, ship);
+            var state = new NpcShipState(id, ship);
+            // M3.1.9: задать первый маршрут при регистрации — Forward (schedule.routes[0]).
+            // Без этого первый AdvanceScheduleIndex (RoundTrip) реверсит маршрут ДО первого лега,
+            // и NPC летит обратно к той же станции ("heading to PRIMIUM").
+            if (schedule != null && schedule.routes != null && schedule.routes.Length > 0)
+            {
+                state.CurrentRoute = schedule.routes[0];
+                state.ScheduleIndex = 0;
+            }
+            _npcByInstanceId[id] = state;
             _scheduleByNpcInstanceId[id] = schedule;
             Debug.Log($"[NpcShipWorld] RegisterNpc id={id:X}");
         }
@@ -134,7 +143,10 @@ namespace ProjectC.PeacefulShip.Core
 
                 // M3.1+: синхронизировать state в controller (NavTick читает отсюда)
                 controller.CurrentRoute = state.CurrentRoute;
-                controller.AssignedPadId = state.AssignedPadId;
+                // M3.1.9: двусторонняя — controller.AssignedPadId устанавливается в TickHolding/TryAssignPadFromDispatcher,
+                // но state.AssignedPadId живёт в старой TickNpc (не вызывается). Перезаписывать controller → state.
+                // Без этого state.AssignedPadId = null → синхронизация затирает controller.AssignedPadId.
+                state.AssignedPadId = controller.AssignedPadId;
 
                 // M3.1+: dwell time + schedule advance для NavTick.
                 // Когда NPC в NavMode.Docked и time elapsed > route.dwellTimeSec →

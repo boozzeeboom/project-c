@@ -299,9 +299,14 @@ namespace ProjectC.PeacefulShip.Stations
                 if (rb != null) {
                     rb.linearVelocity = Vector3.zero;
                     rb.angularVelocity = Vector3.zero;
-                    // Сброс rotation к горизонту — без наклона от падения на пад
+                    rb.detectCollisions = false;  // отключить collision detection при взлёте
                     rb.MoveRotation(Quaternion.Euler(0, rb.rotation.eulerAngles.y, 0));
                 }
+            }
+            // Включить обратно при выходе из Lifting
+            if (old == NavMode.Lifting && m != NavMode.Lifting) {
+                var rb = GetComponent<Rigidbody>();
+                if (rb != null) rb.detectCollisions = true;
             }
             Debug.Log($"[NpcShipController:NPC:{npcInstanceId:X}] NavMode {old} → {m}");
         }

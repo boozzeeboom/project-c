@@ -99,6 +99,9 @@ namespace ProjectC.PeacefulShip.Stations
         public Vector3 StartPathPos { get; set; }
         public NavTarget CruiseTargetPos { get; set; }
 
+        /// <summary>Time.time когда вошли в NavMode.Docked. Используется для dwell time.</summary>
+        public float DockedSinceTime { get; private set; }
+
         /// <summary>Текущий route (синк с NpcShipState.CurrentRoute — обновляется NpcShipWorld).</summary>
         public NpcShipRoute CurrentRoute { get; set; }
 
@@ -354,6 +357,11 @@ namespace ProjectC.PeacefulShip.Stations
             {
                 WasYawAligned = false;
             }
+            // При входе в Docked — запомнить timestamp для dwell time
+            if (newMode == NavMode.Docked)
+            {
+                DockedSinceTime = Time.time;
+            }
             if (debugMode)
             {
                 string r = string.IsNullOrEmpty(reason) ? "" : $" ({reason})";
@@ -365,8 +373,9 @@ namespace ProjectC.PeacefulShip.Stations
 
         private void TickDocked()
         {
-            // Docked: ничего не делаем, двигатель заблокирован (ship.IsDocked==true).
-            // В M3.3 NpcShipWorld решит когда переключить в Lifting (через ExitDocked + start new route).
+            // Docked: двигатель заблокирован. Решение о старте leg принимает NpcShipWorld
+            // (он advance schedule index + дёргает BeginNewLeg). Здесь только нулевой input.
+            // M3.1+: NpcShipWorld.Update вызывает controller.DebugForceLeg/BeginNewLeg после dwell time.
             ApplyZeroInput();
         }
 
@@ -618,12 +627,32 @@ namespace ProjectC.PeacefulShip.Stations
                 station, Ship, Ship.ShipFlightClass, npcInstanceId);
         }
 
-        /// <summary>Вызывается из NpcShipWorld (или вручную) при ExitDocked — старт нового route.</summary>
+        /// <summary>
+        /// Старт нового leg: ExitDocked (снять kinematic) + StartAntiGravityBoost + SetMode(Lifting).
+        /// Вызывается из TickDocked (после dwell time) или DebugForceLeg (MCP).
+        /// </summary>
         public void BeginNewLeg()
         {
+            if (!IsServer) return;
             AssignedPadId = null;
-            // Mode ставится в Lifting, StartPathPos запомнится в SetMode
+            // 1. Снимаем kinematic через стандартный API
+            var ship = Ship;
+            if (ship != null && ship.IsDocked)
+            {
+                ship.ExitDocked();
+            }
+            // 2. Anti-grav boost 5 сек — чтобы не упал пока не набрал высоту
+            StartAntiGravityBoost();
+            // 3. Mode → Lifting, StartPathPos запомнится в SetMode
             SetMode(NavMode.Lifting, "BeginNewLeg");
+        }
+
+        /// <summary>Debug-команда: принудительно начать leg (для MCP execute_code тестирования).</summary>
+        [ContextMenu("Debug: Force New Leg")]
+        public void DebugForceLeg()
+        {
+            Debug.Log($"[NpcShipController:NPC:{npcInstanceId:X}] DebugForceLeg called — was in {CurrentMode}");
+            BeginNewLeg();
         }
     }
 }

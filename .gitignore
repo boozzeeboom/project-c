@@ -83,6 +83,7 @@ docs/archive/
 #hermes
 *.hermes/
 
+
 # Graphify output (generated, per-session)
 # Root output with exceptions for git tracking
 graphify-out/**
@@ -116,3 +117,6 @@ package-lock.json
 
 # Test files
 test-pirate.js
+Assets/_Project/ScriptableObjects/DayNight/MoonMaterial.mat
+[Aa]ssets/_Project/ScriptableObjects/DayNight/MoonMaterial.mat
+

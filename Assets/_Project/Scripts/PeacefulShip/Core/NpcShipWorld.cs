@@ -136,6 +136,25 @@ namespace ProjectC.PeacefulShip.Core
                 controller.CurrentRoute = state.CurrentRoute;
                 controller.AssignedPadId = state.AssignedPadId;
 
+                // M3.1+: dwell time + schedule advance для NavTick.
+                // Когда NPC в NavMode.Docked и time elapsed > route.dwellTimeSec →
+                // advance schedule index (round-trip) + BeginNewLeg (ExitDocked + Lifting).
+                if (controller.useNewNavTick && controller.CurrentMode == NavMode.Docked)
+                {
+                    if (_scheduleByNpcInstanceId.TryGetValue(state.NpcInstanceId, out var schedule)
+                        && schedule != null
+                        && schedule.routes != null
+                        && schedule.routes.Length > 0)
+                    {
+                        float dwell = Mathf.Max(1f, state.CurrentRoute.dwellTimeSec);
+                        if (Time.time - controller.DockedSinceTime >= dwell)
+                        {
+                            AdvanceScheduleIndex(state, schedule);
+                            controller.BeginNewLeg();
+                        }
+                    }
+                }
+
                 // M3.1+: новая NavTick работает параллельно со старой TickNpc.
                 // Решение о переходе в NavTick-only — в M3.3 (когда старая логика выпилена).
                 if (controller.useNewNavTick)

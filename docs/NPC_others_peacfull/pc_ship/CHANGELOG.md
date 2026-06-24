@@ -4,6 +4,75 @@
 
 ---
 
+## 2026-06-24 — T-NS M3.1.4 (Dwell time + BeginNewLeg) ✅ COMPILE-CLEAN
+
+**Сессия:** Плагин для автоматического старта NPC после dwell time + DebugForceLeg для MCP.
+**Статус:** ✅ Compile-clean. Готово к Play Mode verification.
+
+### Изменённые файлы (2)
+
+| Файл | Изменение |
+|------|-----------|
+| `PeacefulShip/Stations/NpcShipController.cs` | + `DockedSinceTime` property, + `SetMode` записывает timestamp при входе в Docked, + `BeginNewLeg()` теперь вызывает `ship.ExitDocked()` + `StartAntiGravityBoost()` + `SetMode(Lifting)`, + `DebugForceLeg()` ContextMenu для MCP-теста |
+| `PeacefulShip/Core/NpcShipWorld.cs` | `Update()` — после sync state в controller, если `controller.CurrentMode == Docked` и `Time.time - DockedSinceTime >= dwellTime` → `AdvanceScheduleIndex(state, schedule)` + `controller.BeginNewLeg()` |
+
+### Архитектура (M3.1+)
+
+```
+NpcShipWorld.Update()                          ← Координатор (schedule)
+  1. Sync controller.CurrentRoute = state.CurrentRoute
+  2. Sync controller.AssignedPadId = state.AssignedPadId
+  3. Если controller.CurrentMode == Docked && time > dwell:
+       AdvanceScheduleIndex (round-trip PRIMIUM → PRIMIUM_TEST_ZONE → PRIMIUM)
+       controller.BeginNewLeg() = ExitDocked + StartAntiGravityBoost + SetMode(Lifting)
+  4. controller.NavTick(dt)                    ← Исполнитель (input'ы)
+
+NpcShipController.NavTick(dt)                  ← Один input pattern на режим
+  switch (CurrentMode):
+    Docked:     ApplyZeroInput (ждём dwell от NpcShipWorld)
+    Lifting:    vertical=1f до startY+5м
+    Yawing:     yaw input до bearing<5°
+    Cruising:   thrust+vertical по диагонали к CruiseTargetPos
+    Holding:    TryAssignPad каждые 2s, потом Berthing
+    Berthing:   yaw→diagonal→vertical к AssignedPad, IsShipInside → EnterDocked
+    Hover:      ApplyZeroInput
+```
+
+### Что теперь делает NPC автоматически
+
+1. Start host → NPC заспавнен на паде PRIMIUM (Pad_009/008/006/007-npc)
+2. `DockingWorld.ScanExistingOccupants` → `ship.EnterDocked()` через ~1 сек
+3. NPC в `NavMode.Docked`, `DockedSinceTime = Time.time`
+4. Через `dwellTimeSec` (60 сек по дефолту, из `route.dwellTimeSec`)
+5. `NpcShipWorld.Update` → `AdvanceScheduleIndex` + `controller.BeginNewLeg()`
+6. `ship.ExitDocked()` + `StartAntiGravityBoost` + `SetMode(Lifting)`
+7. NavTick: Lifting (5м вверх) → Yawing → Cruising (к PRIMIUM_TEST_ZONE) → Holding → Berthing → EnterDocked
+8. Цикл: Docked ещё 60 сек → swap route (reverse) → BeginNewLeg → Lifting → ...
+
+### Verification commands (для пользователя)
+
+```powershell
+# В Unity Editor:
+# 1. Открой BootstrapScene
+# 2. Start Host
+# 3. Открой WorldScene_0_0 (через ClientSceneLoader)
+# 4. Подожди 65+ секунд (dwell = 60s)
+# 5. Console → фильтр "NpcShipController:NPC"
+# 6. Должны быть transitions: Docked → Lifting → Yawing → Cruising → Holding → Berthing → Docked
+```
+
+### Compile iterations
+
+0 ошибок, 0 предупреждений по PeacefulShip.
+
+### Что НЕ реализовано (M3.3, M3.6)
+
+- ❌ Старая `NpcShipWorld.TickNpc` всё ещё в коде, но **не вызывается** (useNewNavTick=true для всех 4 NPC)
+- ❌ Pad placement bug — NPC спавнятся на +2м над падом, падают 1 сек до `EnterDocked`. Некрасиво визуально, но не блокирует логику. Фикс в `CreateNpcShips.cs:32` (убрать `+2f`) — M3.6
+- ❌ Round-trip только scheduleType=Loop, не RoundTrip. Schedule `SCH-NPC-001` имеет `scheduleType=0` (RoundTrip). Проверим в Play Mode
+
+---
+
 ## 2026-06-24 — T-NS M3.1 (NavTick + scene fixes) ✅ COMPILE-CLEAN
 
 **Сессия:** Реализация каркаса 7-режимной NavTick FSM + фикс 4 багов сцены.

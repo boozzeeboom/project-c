@@ -521,7 +521,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::ProjectC.Docking.Zones.OuterCommZone
   stationId: PRIMIUM_TEST_ZONE_2
-  commRange: 600
+  commRange: 236
   drawGizmos: 1
 --- !u!135 &52261665
 SphereCollider:
@@ -2079,7 +2079,7 @@ MonoBehaviour:
   _customDisplayName: 
   thrustForce: 12000
   maxSpeed: 1000
-  yawForce: 50
+  yawForce: 5000
   pitchForce: 0
   verticalForce: 1200
   yawSmoothTime: 0.6

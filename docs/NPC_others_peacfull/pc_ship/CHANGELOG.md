@@ -4,6 +4,40 @@
 
 ---
 
+## 2026-06-24 — T-NS M3.1.10 (3 фикса: bearing gate + zero-angular + ignore-NPC-collision) ✅ COMPILE-CLEAN
+
+**Сессия:** Глубокий анализ по фидбэку пользователя "yawForce не влияет, вертолёты, ползут куда попало".
+**Статус:** ✅ Compile-clean. Готово к Play Mode.
+
+### Корневые причины (по фидбэку + reflection)
+
+| # | Симптом | Корневая причина | Фикс |
+|---|---------|------------------|------|
+| 1 | "ползут куда попало" | `TickCruising` подаёт thrust **без проверки bearing**. NPC с bearing=180° после Yawing летит в противоположную сторону | `if abs(bearing) > 15° → SetMode(Yawing)`. NPC стоит пока не выровняется |
+| 2 | "вертолёты" | 4 NPC стартуют на падах PRIMIUM в кучке, сталкиваются друг с другом, contact forces крутят их | `Physics.IgnoreCollision` всех NPC-пар в `OnNetworkSpawn` |
+| 3 | "yawForce не влияет" | Вертолёты от collision, не от yaw input | Решается фиксом #2 |
+
+### Что добавлено / изменено в NpcShipController.cs
+
+1. **Bearing gate в TickCruising**: `if abs(bearing) > 15° → SetMode(Yawing, "cruise bearing X° > 15°")` — NPC стоит, не летит мимо
+2. **Zero angular velocity на вход в Cruising**: новый флаг `_cruiseAngularKilled`, обнуляет `rb.angularVelocity = Vector3.zero` один раз при входе. Сбрасывается в `SetMode` при выходе из Cruising
+3. **IgnoreCollisionsWithExistingNpcs**: статический метод вызывается в `OnNetworkSpawn` после `NpcShipZoneRegistry.Register`. Проходит по всем коллайдерам self + всех зарегистрированных NPC, вызывает `Physics.IgnoreCollision`
+
+### Verification
+
+- ✅ Compile-clean: 0 errors
+- ⚠️ Не тестировалось в Play Mode (нужен ручной запуск)
+
+### Что пользователь увидит
+
+- 4 NPC стартуют на падах PRIMIUM **не толкают друг друга**
+- Через 60s dwell → Lifting → Yawing → Cruising
+- **В Cruising NPC автоматически возвращается в Yawing если bearing > 15°** (не летит мимо)
+- **Cruise momentum от Yawing обнуляется** — нет дрейфа после transition
+- ⚠️ yawForce всё ещё настраивается пользователем (я не трогаю по его просьбе)
+
+---
+
 ## 2026-06-24 — T-NS M3.1.7 (NavTick race fix: Lifting→Docked) ✅ COMPILE-CLEAN
 
 **Сессия:** Убрал guard в NavTick который срабатывал на race с NGO NetworkVariable batching.

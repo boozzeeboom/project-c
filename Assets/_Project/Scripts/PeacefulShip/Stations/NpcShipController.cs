@@ -102,6 +102,9 @@ namespace ProjectC.PeacefulShip.Stations
         /// <summary>Time.time когда вошли в NavMode.Docked. Используется для dwell time.</summary>
         public float DockedSinceTime { get; private set; }
 
+        /// <summary>M3.1.10: флаг "angular velocity уже обнулена на входе в Cruising". Сбрасывается при выходе из Cruising.</summary>
+        private bool _cruiseAngularKilled;
+
         /// <summary>Текущий route (синк с NpcShipState.CurrentRoute — обновляется NpcShipWorld).</summary>
         public NpcShipRoute CurrentRoute { get; set; }
 
@@ -166,6 +169,10 @@ namespace ProjectC.PeacefulShip.Stations
 
             // Регистрация в локальном registry (нужно для DockingWorld.AssignPadForNpc)
             NpcShipZoneRegistry.Register(this);
+
+            // M3.1.10: IgnoreCollision со всеми уже зарегистрированными NPC.
+            // Иначе 4 NPC кучкуются на падах PRIMIUM и толкают друг друга от contacts → "вертолёты".
+            IgnoreCollisionsWithExistingNpcs(this);
 
             // Регистрация в server-side state machine (NpcShipWorld создаётся позже в T-NS03,
             // здесь только ленивая регистрация — OnNetworkSpawn может произойти раньше CreateAndInitialize)
@@ -358,6 +365,11 @@ namespace ProjectC.PeacefulShip.Stations
             {
                 DockedSinceTime = Time.time;
             }
+            // M3.1.10: сбросить angular-velocity kill flag при выходе из Cruising
+            if (old == NavMode.Cruising && newMode != NavMode.Cruising)
+            {
+                _cruiseAngularKilled = false;
+            }
             if (debugMode)
             {
                 string r = string.IsNullOrEmpty(reason) ? "" : $" ({reason})";
@@ -457,11 +469,20 @@ namespace ProjectC.PeacefulShip.Stations
                 return;
             }
 
-            // Periodic course correction: каждые 5 сек проверяем отклонение от идеального bearing
-            // Если |bearing| > 30° → stop thrust, обновить target, в Yawing
             float shipYaw = ship.transform.eulerAngles.y;
             float idealBearing = NavChecks.BearingDegrees(pos, target);
             float bearing = Mathf.DeltaAngle(shipYaw, idealBearing);
+
+            // M3.1.10: bearing gate — если NPC смотрит мимо цели, не лететь. Возврат в Yawing.
+            // Без этого NPC с bearing=180° (после Yawing не успел выровняться) летит
+            // transform.forward в противоположную сторону ("ползут куда попало").
+            if (Mathf.Abs(bearing) > 15f)
+            {
+                SetMode(NavMode.Yawing, $"cruise bearing {bearing:F1}° > 15° — re-align");
+                return;
+            }
+
+            // Periodic course correction: каждые 5 сек проверяем отклонение от идеального bearing
             if (Time.time - LastCourseCheckTime > 5f)
             {
                 LastCourseCheckTime = Time.time;
@@ -471,6 +492,16 @@ namespace ProjectC.PeacefulShip.Stations
                     SetMode(NavMode.Yawing, $"course correction: bearing {bearing:F1}° > 30°");
                     return;
                 }
+            }
+
+            // M3.1.10: zero angular velocity на входе (один раз за вход в Cruising).
+            // Убивает angular momentum от Yawing → NPC не дрейфует после перехода.
+            // Делаем через флаг — каждый вход обнуляем.
+            if (!_cruiseAngularKilled)
+            {
+                var rb0 = ship.GetComponent<Rigidbody>();
+                if (rb0 != null) rb0.angularVelocity = Vector3.zero;
+                _cruiseAngularKilled = true;
             }
 
             // Diagonal flight: thrust + vertical по прямой A→B
@@ -656,6 +687,33 @@ namespace ProjectC.PeacefulShip.Stations
         {
             Debug.Log($"[NpcShipController:NPC:{npcInstanceId:X}] DebugForceLeg called — was in {CurrentMode}");
             BeginNewLeg();
+        }
+
+        /// <summary>
+        /// M3.1.10: пройтись по всем коллайдерам этого NPC и всех ранее зарегистрированных NPC,
+        /// вызвать Physics.IgnoreCollision. Без этого NPC-корабли, спавнящиеся рядом (на падах одной станции),
+        /// сталкиваются друг с другом при старте и крутятся от contact forces ("вертолёты").
+        /// </summary>
+        private static void IgnoreCollisionsWithExistingNpcs(NpcShipController self)
+        {
+            if (self == null) return;
+            var selfColliders = self.GetComponentsInChildren<Collider>();
+            if (selfColliders.Length == 0) return;
+            foreach (var kv in NpcShipZoneRegistry.All)
+            {
+                var other = kv.Value;
+                if (other == null || other == self) continue;
+                var otherColliders = other.GetComponentsInChildren<Collider>();
+                foreach (var c1 in selfColliders)
+                {
+                    if (c1 == null) continue;
+                    foreach (var c2 in otherColliders)
+                    {
+                        if (c2 == null) continue;
+                        Physics.IgnoreCollision(c1, c2, true);
+                    }
+                }
+            }
         }
     }
 }

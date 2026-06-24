@@ -150,7 +150,8 @@ namespace ProjectC.PeacefulShip.Core
 
                 // M3.1+: dwell time + schedule advance для NavTick.
                 // Когда NPC в NavMode.Docked и time elapsed > route.dwellTimeSec →
-                // advance schedule index (round-trip) + BeginNewLeg (ExitDocked + Lifting).
+                // BeginNewLeg (ExitDocked + Lifting). AdvanceScheduleIndex НЕ вызывается здесь —
+                // это делается при входе в Docked из Berthing (после полного цикла).
                 if (controller.useNewNavTick && controller.CurrentMode == NavMode.Docked)
                 {
                     if (_scheduleByNpcInstanceId.TryGetValue(state.NpcInstanceId, out var schedule)
@@ -161,7 +162,6 @@ namespace ProjectC.PeacefulShip.Core
                         float dwell = Mathf.Max(1f, state.CurrentRoute.dwellTimeSec);
                         if (Time.time - controller.DockedSinceTime >= dwell)
                         {
-                            AdvanceScheduleIndex(state, schedule);
                             controller.BeginNewLeg();
                         }
                     }

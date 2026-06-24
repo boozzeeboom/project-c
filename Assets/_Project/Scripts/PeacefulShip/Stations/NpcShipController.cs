@@ -112,6 +112,17 @@ namespace ProjectC.PeacefulShip.Stations
                 Debug.LogError($"[NpcShipController:{gameObject.name}] no ShipController on root!", this);
             }
 
+            // T-NS03: fix angular damping для NPC yaw (scene-placed HeavyII имеет angularDamping=8,
+            // что практически блокирует поворот при yawForce=5)
+            var rb = GetComponent<Rigidbody>();
+            if (rb != null && rb.angularDamping > 2f)
+            {
+                float oldAngularDamping = rb.angularDamping;
+                rb.angularDamping = 0.8f;
+                if (debugMode)
+                    Debug.Log($"[NpcShipController:{gameObject.name}] Reduced angularDamping from {oldAngularDamping:F1} → 0.8 for NPC yaw");
+            }
+
             // NPC solid collider: ребёнок RootCollider (solid BoxCollider) для OnTriggerEnter с pad-триггерами.
             // Все существующие коллайдеры (если trigger) → solid, чтобы Unity вызывал OnTriggerEnter.
             // NPC↔NPC коллизия отключается через layer matrix в ProjectSettings.

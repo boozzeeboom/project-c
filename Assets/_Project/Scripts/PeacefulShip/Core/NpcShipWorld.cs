@@ -169,7 +169,7 @@ namespace ProjectC.PeacefulShip.Core
 
                     // LIFT ONLY — подъём на PAD_CLEAR_HEIGHT вертикально вверх
                     float liftTargetY = state.StartPathPos.y + PAD_CLEAR_HEIGHT;
-                    float verticalCmd = ComputeAltitudeInput(state.Ship, liftTargetY);
+                    float verticalCmd = ApplyAltitudeControl(state.Ship, liftTargetY);
                     controller.ApplyMovementInput(thrust: 0f, yaw: 0f, pitch: 0f, vertical: verticalCmd);
 
                     // Достигли чистой высоты → InTransit (там yaw + diagonal)
@@ -330,7 +330,8 @@ namespace ProjectC.PeacefulShip.Core
         /// M2: Diagonal flight with course correction.
         /// YAW ONLY when not aligned (never with thrust or vertical).
         /// THRUST + VERTICAL when aligned (diagonal toward target).
-        /// Periodic course re-check every COURSE_RECHECK_INTERVAL.
+        /// Periodic course re-check every COURSE_RECHECK_INTERVAL
+        /// — only while thrusting (bearing < YAW_DEAD_ZONE).
         /// </summary>
         private void ApplyTransitMovement(NpcShipState state, NpcShipController controller)
         {
@@ -349,40 +350,44 @@ namespace ProjectC.PeacefulShip.Core
                 state.LastCourseCheckTime = Time.time;
             }
 
-            // Step 2: Periodic course correction — check if we drifted off course
-            if (Time.time - state.LastCourseCheckTime > COURSE_RECHECK_INTERVAL)
-            {
-                state.LastCourseCheckTime = Time.time;
-                Vector3 idealDir = (targetPos.Value - pos).normalized;
-
-                // Compare current forward direction to ideal horizontal direction
-                float idealBearing = Mathf.Atan2(idealDir.x, idealDir.z) * Mathf.Rad2Deg;
-                float forwardBearing = ship.transform.eulerAngles.y;
-                float bearingDiff = Mathf.DeltaAngle(forwardBearing, idealBearing);
-
-                if (Mathf.Abs(bearingDiff) > BEARING_DRIFT_LIMIT)
-                {
-                    // Off course: stop thrust+vertical, set new FlightDirection → yaw in place
-                    state.FlightDirection = idealDir;
-                    Debug.Log($"[NpcShipWorld:NPC] id={state.NpcInstanceId:X} course correction: bearingDiff={bearingDiff:F1}°, recalculating");
-                }
-            }
-
-            // Step 3: Compute bearing to current FlightDirection
+            // Step 2: Compute bearing to current FlightDirection
             float targetBearing = Mathf.Atan2(state.FlightDirection.x, state.FlightDirection.z) * Mathf.Rad2Deg;
             float currentBearing = ship.transform.eulerAngles.y;
             float bearing = Mathf.DeltaAngle(currentBearing, targetBearing);
 
-            // Step 4: YAW OR diagonal — NEVER together
+            // Step 3: YAW OR diagonal — NEVER together
             if (Mathf.Abs(bearing) > YAW_DEAD_ZONE)
             {
-                // YAW ONLY on the spot (no thrust, no vertical)
+                // YAW ONLY on the spot (no thrust, maintain altitude with PD-controller)
                 float yawInput = Mathf.Clamp(bearing * 0.5f, -1f, 1f);
-                controller.ApplyMovementInput(thrust: 0f, yaw: yawInput, pitch: 0f, vertical: 0f);
+                float hoverVertical = ApplyAltitudeControl(ship, pos.y);
+                controller.ApplyMovementInput(thrust: 0f, yaw: yawInput, pitch: 0f, vertical: hoverVertical);
+                // R2-007 debug: verify yaw is being called every frame
+                if (Time.frameCount % 120 == 0)
+                    Debug.Log($"[NpcShipWorld:NPC] id={state.NpcInstanceId:X} yaw phase bearing={bearing:F1}° yawIn={yawInput:F2} vertIn={hoverVertical:F2} posY={pos.y:F1}");
             }
             else
             {
                 // DIAGONAL: thrust + vertical simultaneously, following A→B line
+                // Step 2b: Periodic course correction — only while thrusting
+                if (Time.time - state.LastCourseCheckTime > COURSE_RECHECK_INTERVAL)
+                {
+                    state.LastCourseCheckTime = Time.time;
+                    Vector3 idealDir = (targetPos.Value - pos).normalized;
+                    float idealBearing = Mathf.Atan2(idealDir.x, idealDir.z) * Mathf.Rad2Deg;
+                    float bearingDiff = Mathf.DeltaAngle(currentBearing, idealBearing);
+
+                    if (Mathf.Abs(bearingDiff) > BEARING_DRIFT_LIMIT)
+                    {
+                        // Off course: stop thrust, yaw in place
+                        state.FlightDirection = idealDir;
+                        Debug.Log($"[NpcShipWorld:NPC] id={state.NpcInstanceId:X} course correction: bearingDiff={bearingDiff:F1}°, recalculating");
+
+                        // Fall through to still apply diagonal this frame
+                        // (will switch to yaw-only next Tick on corrected FlightDirection)
+                    }
+                }
+
                 float dist = Vector3.Distance(pos, targetPos.Value);
                 float thrust = Mathf.Clamp01(dist / APPROACH_THRUST_SCALE) * 0.8f;
 
@@ -391,7 +396,7 @@ namespace ProjectC.PeacefulShip.Core
                 float progress = totalDist > 0.01f ? 1f - (dist / totalDist) : 0f;
                 float diagonalTargetY = Mathf.Lerp(state.StartPathPos.y, targetPos.Value.y, progress);
 
-                float vertical = ComputeAltitudeInput(ship, diagonalTargetY);
+                float vertical = ApplyAltitudeControl(ship, diagonalTargetY);
                 controller.ApplyMovementInput(thrust: thrust, yaw: 0f, pitch: 0f, vertical: vertical);
             }
         }
@@ -441,13 +446,13 @@ namespace ProjectC.PeacefulShip.Core
 
                 // Diagonal: lerp from station height to pad height
                 float diagonalTargetY = Mathf.Lerp(state.StartPathPos.y, target.y + 1f, 0.5f);
-                float vertical = ComputeAltitudeInput(ship, diagonalTargetY);
+                float vertical = ApplyAltitudeControl(ship, diagonalTargetY);
                 controller.ApplyMovementInput(thrust: thrust, yaw: 0f, pitch: 0f, vertical: vertical);
                 return;
             }
 
             // Phase 4: VERTICAL DESCENT (close to pad: horizDist < threshold)
-            float verticalCmd = ComputeAltitudeInput(ship, target.y);
+            float verticalCmd = ApplyAltitudeControl(ship, target.y);
             controller.ApplyMovementInput(thrust: 0f, yaw: 0f, pitch: 0f, vertical: verticalCmd);
         }
 
@@ -592,20 +597,42 @@ namespace ProjectC.PeacefulShip.Core
             return triggerBoxes[0].transform.position;
         }
 
-        // === Altitude control (PD-controller) ===
-        // Универсальный — НЕ зависит от силы двигателя. Возвращает vertical input [-1, 1].
-        // altKp / altKd — коэффициенты ПД-регулятора (работают для любого движка).
-        private float ComputeAltitudeInput(ShipController ship, float targetY)
+        // === Altitude control (AntiGravity PD-controller) ===
+        // Универсальный — НЕ зависит от силы двигателя. Управляет ship.AntiGravity напрямую
+        // (анти-гравитация компенсирует вес, чтобы корабль завис/поднялся/опустился к targetY).
+        // Возвращает vertical input (только для случая когда надо лететь вниз быстрее чем AG).
+        private const float AG_BASE = 1.0f;        // полная компенсация веса
+        private const float AG_KP = 0.05f;         // реакция на ошибку высоты
+        private const float AG_KD = 0.4f;          // демпфирование вертикальной скорости
+        private const float AG_MIN = 0.3f;         // нижний предел (иначе свалится)
+        private const float AG_MAX = 1.5f;         // верхний предел (как у boost)
+
+        /// <summary>
+        /// Применяет PD-контроль высоты к ship.AntiGravity.
+        /// Возвращает vertical input для дополнительного спуска когда AG_Min недостаточно.
+        /// </summary>
+        private float ApplyAltitudeControl(ShipController ship, float targetY)
         {
+            if (ship == null) return 0f;
             var rb = ship.GetComponent<Rigidbody>();
             float currentY = ship.transform.position.y;
-            float error = targetY - currentY;
+            float error = targetY - currentY; // >0 = нужно вверх, <0 = вниз
             float vertVel = rb != null ? rb.linearVelocity.y : 0f;
-            // PD: error*kp - vel*kd (damping)
-            float kp = 0.3f;
-            float kd = 0.5f;
-            float cmd = error * kp - vertVel * kd;
-            return Mathf.Clamp(cmd, -1f, 1f);
+
+            // PD на AntiGravity: base + error*kp - vel*kd
+            float deltaAG = error * AG_KP - vertVel * AG_KD;
+            float newAG = Mathf.Clamp(AG_BASE + deltaAG, AG_MIN, AG_MAX);
+            ship.AntiGravity = newAG;
+
+            // Если target сильно ниже (нужен быстрый спуск) — добавляем vertical input
+            // AG_Min=0.3 всё ещё даёт ~70% веса вниз, этого мало если нужно экстренно вниз
+            if (error < -3f)
+            {
+                // Маппим ошибку: -3м → 0, -20м → -1.0
+                float vertical = Mathf.Clamp(error * 0.05f, -1f, 0f);
+                return vertical;
+            }
+            return 0f;
         }
 
         // Сбросить вертикальную velocity (anti-windup при смене state)

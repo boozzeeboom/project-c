@@ -2073,7 +2073,7 @@ MonoBehaviour:
   _customDisplayName: 
   thrustForce: 12000
   maxSpeed: 1000
-  yawForce: 5
+  yawForce: 50
   pitchForce: 0
   verticalForce: 1200
   yawSmoothTime: 0.6
@@ -2656,7 +2656,7 @@ MonoBehaviour:
   _customDisplayName: 
   thrustForce: 12000
   maxSpeed: 1000
-  yawForce: 5
+  yawForce: 500
   pitchForce: 0
   verticalForce: 2000
   yawSmoothTime: 0.6
@@ -6478,7 +6478,7 @@ MonoBehaviour:
   _customDisplayName: 
   thrustForce: 12000
   maxSpeed: 1000
-  yawForce: 5
+  yawForce: 50
   pitchForce: 0
   verticalForce: 1200
   yawSmoothTime: 0.6
@@ -8006,7 +8006,7 @@ MonoBehaviour:
   _customDisplayName: 
   thrustForce: 12000
   maxSpeed: 1000
-  yawForce: 5
+  yawForce: 50
   pitchForce: 0
   verticalForce: 2000
   yawSmoothTime: 0.6

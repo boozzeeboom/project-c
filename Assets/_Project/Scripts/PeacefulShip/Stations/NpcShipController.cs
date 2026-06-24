@@ -248,7 +248,7 @@ namespace ProjectC.PeacefulShip.Stations
         public float MaxYawRate = 45f;     // deg/s — ПРЯМОЙ angular velocity
         public float DwellTime = 5f;      // s — время на паде перед стартом (5s для теста, потом route.dwellTimeSec)
         public float DockedSinceTime { get; private set; } = -1000f;
-        private bool _scheduleAdvancedAfterDock = false;
+        private bool _scheduleAdvancedAfterDock = true; // true = первый Docked не двигаем schedule
         public string AssignedPadId { get; set; }
         public bool useNewNavTick = true;
 
@@ -301,7 +301,10 @@ namespace ProjectC.PeacefulShip.Stations
             if (CurrentMode == m) return;
             var old = CurrentMode;
             CurrentMode = m;
-            if (m == NavMode.Docked) DockedSinceTime = Time.time;
+            if (m == NavMode.Docked) {
+                DockedSinceTime = Time.time;
+                if (old == NavMode.Berthing) _scheduleAdvancedAfterDock = false; // после полёта — можно снова advance
+            }
             if (m == NavMode.Lifting) {
                 var rb = GetComponent<Rigidbody>();
                 if (rb != null) {

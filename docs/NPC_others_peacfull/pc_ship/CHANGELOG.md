@@ -4,6 +4,54 @@
 
 ---
 
+## 2026-06-24 — T-NS M3.1.6 (KillVerticalVelocity + унификация forces) ✅ APPLIED
+
+**Сессия:** Устранение momentum-drift в Yawing + унификация `yawForce` (50/50/500/5000 → 200 для всех).
+**Статус:** ✅ Compile-clean. Все 4 NPC имеют одинаковые параметры.
+
+### Что исправлено
+
+| # | Фикс | Файл | Детали |
+|---|------|------|--------|
+| 1 | `KillVerticalVelocity` при входе в `NavMode.Yawing` | `NpcShipController.SetMode` | `rb.linearVelocity.y = 0` — NPC перестаёт всплывать после Lifting |
+| 2 | Унификация `yawForce=200` для всех 4 NPC | `M3SetTestForces.cs` (Editor tool) | Было 50/50/500/5000 — NPC с 50 не могли развернуться |
+| 3 | Унификация `thrustForce=650`, `verticalForce=1200`, `pitchForce=0`, `antiGravity=1.0` | тот же | Было 12000/1200/2000/0,1/1 — неконсистентно |
+
+### Компромиссные значения
+
+| Параметр | Старое | Новое | Обоснование |
+|----------|--------|-------|-------------|
+| `thrustForce` | 12000 | **650** | Делим на 18 — реальный force корабля (как дефолт Light) |
+| `yawForce` | 50/50/500/5000 | **200** | ×2 от дефолта — NPC быстро разворачиваются |
+| `verticalForce` | 1200/2000 | **1200** | Как у дефолтного Heavy |
+| `pitchForce` | 0 | 0 | (не используется) |
+| `antiGravity` | 1.5 (boost) → 1.0 | 1.0 | Нормальная компенсация |
+
+### Verification
+
+- ✅ Compile-clean: 0 errors
+- ✅ Все 4 NPC в `WorldScene_0_0.unity` имеют `yawForce=200`, `thrustForce=650`, `verticalForce=1200`
+- ✅ Scene saved
+- ⚠️ Scene теперь активна в Editor (закроется автоматически при следующем Play Mode)
+
+### Что пользователь увидит в Play Mode
+
+1. NPC стартуют на +2f над падами (визуально наклонены, как раньше)
+2. Через 60s dwell → `Lifting` (vertical=1) → набор 5м
+3. Переход в `Yawing` — `rb.linearVelocity.y = 0` (сброс momentum!)
+4. `yawInput = bearing * 0.02` clamped [-1, 1] → `targetYawRate = avgYaw * 200 = 200 deg/sec equivalent`
+5. NPC крутятся со скоростью 200°/sec → полный оборот за 1.8 sec. Bearing 180° → выровняются за 0.9 sec
+6. После выравнивания → `Cruising` (thrust+vertical diagonal)
+7. Вход в OuterCommZone (commRange=600) → `Holding` → pad assignment → `Berthing` → touchdown
+
+### Что НЕ менялось
+
+- ❌ Pad placement (`CreateNpcShips.cs:32` +2f) — визуально криво стоят первые 60s
+- ❌ NPC "нос кверху" при старте (pitch от падения под gravity)
+- ❌ AutoStabilization NPC при потере input (проверим в следующем Play Mode)
+
+---
+
 ## 2026-06-24 — T-NS M3.1.5 (Idempotent re-fix: locationId + commRange) ✅ APPLIED
 
 **Сессия:** Повторное применение фиксов с правильным порядком (load scene additive → apply → save).

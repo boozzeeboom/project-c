@@ -352,10 +352,20 @@ namespace ProjectC.PeacefulShip.Stations
             {
                 StartPathPos = Ship.transform.position;
             }
-            // При входе в Yawing — сбросить aligned-флаг
+            // При входе в Yawing — сбросить aligned-флаг И сбросить вертикальную скорость
+            // от Lifting (иначе NPC продолжает всплывать вверх в Yawing).
             if (newMode == NavMode.Yawing)
             {
                 WasYawAligned = false;
+                var ship = Ship;
+                if (ship != null)
+                {
+                    var rb = ship.GetComponent<Rigidbody>();
+                    if (rb != null)
+                    {
+                        var v = rb.linearVelocity; v.y = 0f; rb.linearVelocity = v;
+                    }
+                }
             }
             // При входе в Docked — запомнить timestamp для dwell time
             if (newMode == NavMode.Docked)

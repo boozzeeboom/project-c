@@ -2077,9 +2077,9 @@ MonoBehaviour:
   ShowTopMostFoldoutHeaderGroup: 1
   shipFlightClass: 3
   _customDisplayName: 
-  thrustForce: 12000
+  thrustForce: 650
   maxSpeed: 1000
-  yawForce: 5000
+  yawForce: 200
   pitchForce: 0
   verticalForce: 1200
   yawSmoothTime: 0.6
@@ -2666,11 +2666,11 @@ MonoBehaviour:
   ShowTopMostFoldoutHeaderGroup: 1
   shipFlightClass: 3
   _customDisplayName: 
-  thrustForce: 12000
+  thrustForce: 650
   maxSpeed: 1000
-  yawForce: 500
+  yawForce: 200
   pitchForce: 0
-  verticalForce: 2000
+  verticalForce: 1200
   yawSmoothTime: 0.6
   pitchSmoothTime: 0.7
   liftSmoothTime: 1
@@ -6494,9 +6494,9 @@ MonoBehaviour:
   ShowTopMostFoldoutHeaderGroup: 1
   shipFlightClass: 3
   _customDisplayName: 
-  thrustForce: 12000
+  thrustForce: 650
   maxSpeed: 1000
-  yawForce: 50
+  yawForce: 200
   pitchForce: 0
   verticalForce: 1200
   yawSmoothTime: 0.6
@@ -8028,11 +8028,11 @@ MonoBehaviour:
   ShowTopMostFoldoutHeaderGroup: 1
   shipFlightClass: 3
   _customDisplayName: 
-  thrustForce: 12000
+  thrustForce: 650
   maxSpeed: 1000
-  yawForce: 50
+  yawForce: 200
   pitchForce: 0
-  verticalForce: 2000
+  verticalForce: 1200
   yawSmoothTime: 0.6
   pitchSmoothTime: 0.7
   liftSmoothTime: 1

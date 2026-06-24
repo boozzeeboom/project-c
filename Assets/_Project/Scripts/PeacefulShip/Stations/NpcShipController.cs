@@ -246,7 +246,7 @@ namespace ProjectC.PeacefulShip.Stations
         public float CruiseSpeed = 12f;     // m/s
         public float ApproachSpeed = 5f;    // m/s возле станции
         public float MaxYawRate = 45f;     // deg/s — ПРЯМОЙ angular velocity
-        public float DwellTime = 60f;      // s — время на паде перед стартом
+        public float DwellTime = 5f;      // s — время на паде перед стартом (5s для теста, потом route.dwellTimeSec)
         public float DockedSinceTime { get; private set; } = -1000f;
         public string AssignedPadId { get; set; }
         public bool useNewNavTick = true;
@@ -267,14 +267,17 @@ namespace ProjectC.PeacefulShip.Stations
             // Dwell logic: после touchdown начать dwell, после dwell -> lift
             if (CurrentMode == NavMode.Docked) {
                 if (DockedSinceTime < 0) DockedSinceTime = Time.time;
+                // M3.2.4: принудительное isKinematic=true пока в Docked.
+                // Без EnterDocked (ScanExistingOccupants не находит collider) IsDocked=False,
+                // и NPC падает/скользит по геометрии ("ползёт вперёд").
+                if (!rb.isKinematic) rb.isKinematic = true;
                 if (Time.time - DockedSinceTime > DwellTime) {
                     LiftStartY = ship.transform.position.y;
+                    rb.isKinematic = false;
                     ship.ExitDocked();
                     SetMode(NavMode.Lifting);
                     return;
                 }
-                rb.linearVelocity = Vector3.zero;
-                rb.angularVelocity = Vector3.zero;
                 return;
             }
 

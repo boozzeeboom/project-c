@@ -37,23 +37,6 @@ namespace ProjectC.PeacefulShip.Core
         /// <summary>V2 hook (Q10): cargo manifest. В M1 — пустой (capacity=0, items=null).</summary>
         public NpcShipCargoManifest Cargo;
 
-        /// <summary>ID пада, назначенного через AssignPadForNpc. null пока не назначен.</summary>
-        public string AssignedPadId;
-
-        /// <summary>Y координата ground-уровня при первом Departing. Используется для удержания cruiseAlt во всех state.</summary>
-        public float StartCruiseY;
-
-        // === M2: Diagonal movement fields ===
-
-        /// <summary>Направление полёта (единичный вектор). Vector3.zero = не установлено (вычислить при первом ApplyTransitMovement).</summary>
-        public Vector3 FlightDirection;
-
-        /// <summary>Позиция начала маршрута при Departing. Используется для расчёта диагональной линии A→B.</summary>
-        public Vector3 StartPathPos;
-
-        /// <summary>Время последней проверки отклонения от курса (Time.time).</summary>
-        public float LastCourseCheckTime;
-
         public NpcShipState(ulong npcInstanceId, ShipController ship)
         {
             NpcInstanceId = npcInstanceId;

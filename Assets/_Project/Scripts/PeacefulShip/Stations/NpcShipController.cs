@@ -1,4 +1,4 @@
-// T-NS M3.1: NpcShipController — scene-placed NetworkBehaviour на корне NPC-корабля.
+// T-NS02: NpcShipController — scene-placed NetworkBehaviour на корне NPC-корабля.
 // Pattern: ShipController (Player/ShipController.cs), DockStationController (Docking/Network/).
 //
 // Требует на корне GameObject:
@@ -10,14 +10,11 @@
 //   - OnNetworkSpawn → EnableNpcPilot(true), NpcShipZoneRegistry.Register, NpcShipWorld.RegisterNpc
 //   - OnNetworkDespawn → EnableNpcPilot(false), Unregister
 //   - ApplyMovementInput, ServerTeleport, AntiGravityBoostAfterExitDocked
-//   - NavTick (M3.1+) — чистая 7-режимная FSM, заменит старый NpcShipWorld.TickNpc в M3.3
 //
 // Q3: NpcInstanceId = NetworkObjectId | 0x8000_0000_0000_0000UL (sentinel bit)
 // Q8: anti-gravity boost на 5 сек после ExitDocked (см. docs/.../04_LIVING_BEHAVIOR.md §2.3)
 
 using System.Collections;
-using ProjectC.Docking.Stations;
-using ProjectC.Docking.Zones;
 using ProjectC.PeacefulShip.Core;
 using ProjectC.PeacefulShip.Network;
 using ProjectC.Player;
@@ -45,33 +42,17 @@ namespace ProjectC.PeacefulShip.Stations
                  "Для стабильности между scene reloads рекомендуется оставить 0.")]
         [SerializeField] private ulong npcInstanceId = 0;
 
-        [Header("Movement tuning (M3 — универсальный)")]
-        [Tooltip("Множитель тяги для NPC (1.0 = как игрок). Снижай если NPC слишком быстро летит.")]
-        [Range(0.1f, 1.5f)] [SerializeField] private float npcThrustMult = 1.0f;
+        [Header("Movement (server-only)")]
+        [Tooltip("Множитель тяги для NPC (обычно < 1.0 — NPC летит медленнее игрока).")]
+        [Range(0.1f, 1.5f)] [SerializeField] private float npcThrustMult = 0.6f;
 
-        [Tooltip("Множитель рыскания для NPC. Снижай если NPC крутится слишком резко.")]
-        [Range(0.1f, 1.5f)] [SerializeField] private float npcYawMult = 1.0f;
+        [Tooltip("Множитель рыскания для NPC (более плавные повороты).")]
+        [Range(0.1f, 1.5f)] [SerializeField] private float npcYawMult = 0.4f;
 
-        // === T-NS M3.1: NavTick parameters (вместо magic numbers в NpcShipWorld) ===
-
-        [Header("NavTick tuning (M3.1+)")]
-        [Tooltip("Высота набора при Lifting (м). 5м — безопасно для уникального пада.")]
-        [Min(1f)] [SerializeField] private float liftClearanceMeters = 5f;
-
-        [Tooltip("Порог входа в 'aligned' (yaw считается выровненным). 15° — мягкий вход.")]
-        [Range(1f, 45f)] [SerializeField] private float yawAlignEntryDeg = 15f;
-
-        [Tooltip("Порог выхода из 'aligned' (hysteresis — не выходим пока не ушли далеко). 5° — узкий выход.")]
-        [Range(1f, 30f)] [SerializeField] private float yawAlignExitDeg = 5f;
-
-        [Tooltip("Coarse gain для yaw input (bearing → [-1,1]). 0.02 = медленный разворот.")]
-        [Range(0.005f, 0.1f)] [SerializeField] private float yawGainCoarse = 0.02f;
-
-        [Tooltip("Замедление thrust при подходе: thrust *= clamp01(dist/100) * maxThrust. 100м — окно торможения.")]
-        [Min(10f)] [SerializeField] private float thrustSlowdownWindowMeters = 100f;
-
-        [Tooltip("Максимальный thrust input (1.0 = полная тяга).")]
-        [Range(0.1f, 1.0f)] [SerializeField] private float maxThrustInput = 0.6f;
+        [Tooltip("Дистанция до цели (м), при которой считаем что прибыли.")]
+#pragma warning disable 0414  // used in T-NS03 via NpcShipWorld (future refactor — direct read)
+        [Min(1f)] [SerializeField] private float npcArrivalToleranceMeters = 50f;
+#pragma warning restore 0414
 
         [Header("Anti-gravity boost (Q8)")]
         [Tooltip("Длительность boost после ExitDocked (сек). 0 = отключить.")]
@@ -82,31 +63,11 @@ namespace ProjectC.PeacefulShip.Stations
 
         [Header("Debug")]
         [SerializeField] private bool debugMode = true;
-        [Tooltip("Включить новую 7-режимную NavTick FSM (M3). Если false — старый NpcShipWorld.TickNpc управляет.")]
-        public bool useNewNavTick = true;
 
         // === Public API ===
         public NpcShipSchedule Schedule => schedule;
         public ulong NpcInstanceId => npcInstanceId;
         public ShipController Ship => GetComponent<ShipController>();
-
-        // === NavTick runtime state (M3.1) ===
-        public NavMode CurrentMode { get; private set; } = NavMode.Docked;
-        public string AssignedPadId { get; set; }
-        public float LastPadRequestTime { get; private set; }
-        public float LastCourseCheckTime { get; private set; }
-        public bool WasYawAligned { get; private set; }
-        public Vector3 StartPathPos { get; set; }
-        public NavTarget CruiseTargetPos { get; set; }
-
-        /// <summary>Time.time когда вошли в NavMode.Docked. Используется для dwell time.</summary>
-        public float DockedSinceTime { get; private set; }
-
-        /// <summary>M3.1.10: флаг "angular velocity уже обнулена на входе в Cruising". Сбрасывается при выходе из Cruising.</summary>
-        private bool _cruiseAngularKilled;
-
-        /// <summary>Текущий route (синк с NpcShipState.CurrentRoute — обновляется NpcShipWorld).</summary>
-        public NpcShipRoute CurrentRoute { get; set; }
 
         // === Private ===
         private Coroutine _antiGravityRoutine;
@@ -151,28 +112,8 @@ namespace ProjectC.PeacefulShip.Stations
                 Debug.LogError($"[NpcShipController:{gameObject.name}] no ShipController on root!", this);
             }
 
-            // T-NS03: fix angular damping для NPC yaw (scene-placed HeavyII имеет angularDamping=8,
-            // что практически блокирует поворот при yawForce=5)
-            var rb = GetComponent<Rigidbody>();
-            if (rb != null && rb.angularDamping > 2f)
-            {
-                float oldAngularDamping = rb.angularDamping;
-                rb.angularDamping = 0.8f;
-                if (debugMode)
-                    Debug.Log($"[NpcShipController:{gameObject.name}] Reduced angularDamping from {oldAngularDamping:F1} → 0.8 for NPC yaw");
-            }
-
-            // NPC solid collider: ребёнок RootCollider (solid BoxCollider) для OnTriggerEnter с pad-триггерами.
-            // Все существующие коллайдеры (если trigger) → solid, чтобы Unity вызывал OnTriggerEnter.
-            // NPC↔NPC коллизия отключается через layer matrix в ProjectSettings.
-            EnsureNpcSolidCollider();
-
             // Регистрация в локальном registry (нужно для DockingWorld.AssignPadForNpc)
             NpcShipZoneRegistry.Register(this);
-
-            // M3.1.10: IgnoreCollision со всеми уже зарегистрированными NPC.
-            // Иначе 4 NPC кучкуются на падах PRIMIUM и толкают друг друга от contacts → "вертолёты".
-            IgnoreCollisionsWithExistingNpcs(this);
 
             // Регистрация в server-side state machine (NpcShipWorld создаётся позже в T-NS03,
             // здесь только ленивая регистрация — OnNetworkSpawn может произойти раньше CreateAndInitialize)
@@ -218,25 +159,11 @@ namespace ProjectC.PeacefulShip.Stations
             }
         }
 
-        /// <summary>
-        /// NPC solid collider: убираем. Раньше (M2) считалось что NPC нужно иметь solid collider
-        /// для Physics.OverlapBox в ScanExistingOccupants, но:
-        /// 1. Это заставляет NPC застревать на геометрии станции (висит на +2м над падом)
-        /// 2. Исходные префабы (HeavyII) уже имеют solid MeshCollider/BoxCollider на модели
-        /// 3. Pad-триггеры (DockingPadTriggerBox) — trigger, не нуждаются в solid
-        /// 4. IsShipInside polling работает без solid — через bounds или proximity
-        /// </summary>
-        [System.Obsolete("M3.1.8: Убрано — NPC застревал на геометрии станции.")]
-        private void EnsureNpcSolidCollider()
-        {
-            // No-op
-        }
-
-        // === Movement API (server-only) — legacy, оставлен для обратной совместимости с M2 ===
+        // === Movement API (server-only) ===
 
         /// <summary>
         /// Применить движение к ShipController через новый ApplyServerInput (T-NS01).
-        /// Вызывается из NpcShipWorld.TickNpc FSM (legacy M2 код).
+        /// Вызывается из NpcShipWorld.TickNpc FSM.
         /// </summary>
         public void ApplyMovementInput(float thrust, float yaw, float pitch, float vertical)
         {
@@ -304,406 +231,165 @@ namespace ProjectC.PeacefulShip.Stations
             _antiGravityRoutine = null;
         }
 
-        // === T-NS M3.1: NavTick — чистая 7-режимная FSM ===
 
-        /// <summary>
-        /// Главная точка входа NavTick. Вызывается из NpcShipWorld (в M3.3 — заменит TickNpc switch).
-        /// Один режим = один input pattern. Все spatial conditions через NavChecks.
-        /// </summary>
-        public void NavTick(float dt)
-        {
-            if (!IsServer) return;
-            if (!useNewNavTick) return;
+        // === M3.2: NavTick — прямой Rigidbody control (минуя ShipController.ApplyServerInput) ===
+        // Корневая причина переделки: ApplyServerInput -> SmoothDamp -> AddTorque(ForceMode.Force)
+        // с mass=2000, inertiaTensor~50000 даёт angular accel ~0.02°/с² → NPC не вращаются.
+        // Решение: MoveRotation (прямое вращение за кадр) + linearVelocity assignment.
 
-            var ship = Ship;
-            if (ship == null) return;
+        public NavMode CurrentMode { get; private set; } = NavMode.Docked;
+        public float LiftStartY { get; set; }
+        public Vector3 CruiseTargetPos { get; set; }
+        public float LiftSpeed = 8f;       // m/s
+        public float CruiseSpeed = 12f;     // m/s
+        public float ApproachSpeed = 5f;    // m/s возле станции
+        public float MaxYawRate = 45f;     // deg/s — ПРЯМОЙ angular velocity
+        public float DwellTime = 60f;      // s — время на паде перед стартом
+        public float DockedSinceTime { get; private set; } = -1000f;
+        public string AssignedPadId { get; set; }
+        public bool useNewNavTick = true;
 
-            // M3.1.8: Guard убран. NpcShipWorld.Update вызывает NavTick один раз на кадр для каждого NPC —
-            // race невозможен. Переходы между режимами — явные через SetMode().
-            // TickDocked/TickLifting сами решают что делать (в т.ч. проверяют IsDocked для ApplyServerInput).
-            // ShipController.FixedUpdate сам проверяет _netIsDocked.Value — input безопасен.
-            switch (CurrentMode)
-            {
-                case NavMode.Docked: TickDocked(); break;
-                case NavMode.Lifting: TickLifting(); break;
-                case NavMode.Yawing: TickYawing(); break;
-                case NavMode.Cruising: TickCruising(); break;
-                case NavMode.Holding: TickHolding(); break;
-                case NavMode.Berthing: TickBerthing(); break;
-                case NavMode.Hover: TickHover(); break;
+        public enum NavMode : byte { Docked, Lifting, Yawing, Cruising, Berthing }
+
+        /// <summary>Вызывается из NpcShipWorld.Update каждый FixedUpdate.</summary>
+        public void NavTick(float dt) {
+            if (!IsServer || !useNewNavTick) return;
+            var ship = GetComponent<ShipController>();
+            if (ship == null || ship.IsDocked) {
+                if (CurrentMode != NavMode.Docked) SetMode(NavMode.Docked);
+                return;
+            }
+            var rb = GetComponent<Rigidbody>();
+            if (rb == null || rb.isKinematic) return;
+
+            // Dwell logic: после touchdown начать dwell, после dwell -> lift
+            if (CurrentMode == NavMode.Docked) {
+                if (DockedSinceTime < 0) DockedSinceTime = Time.time;
+                if (Time.time - DockedSinceTime > DwellTime) {
+                    LiftStartY = ship.transform.position.y;
+                    ship.ExitDocked();
+                    SetMode(NavMode.Lifting);
+                    return;
+                }
+                rb.linearVelocity = Vector3.zero;
+                rb.angularVelocity = Vector3.zero;
+                return;
+            }
+
+            switch (CurrentMode) {
+                case NavMode.Lifting: TickLift(rb); break;
+                case NavMode.Yawing: TickYaw(rb); break;
+                case NavMode.Cruising: TickCruise(rb); break;
+                case NavMode.Berthing: TickBerth(rb); break;
             }
         }
 
-        /// <summary>Сменить режим с логированием (R2-003: всегда логировать переходы).</summary>
-        public void SetMode(NavMode newMode, string reason = null)
-        {
-            if (CurrentMode == newMode) return;
+        public void SetMode(NavMode m) {
+            if (CurrentMode == m) return;
             var old = CurrentMode;
-            CurrentMode = newMode;
-            // При входе в Lifting — запомнить startY для условия IsLiftedTo
-            if (newMode == NavMode.Lifting)
-            {
-                StartPathPos = Ship.transform.position;
-            }
-            // При входе в Yawing — сбросить aligned-флаг И сбросить вертикальную скорость
-            // от Lifting (иначе NPC продолжает всплывать вверх в Yawing).
-            if (newMode == NavMode.Yawing)
-            {
-                WasYawAligned = false;
-                var ship = Ship;
-                if (ship != null)
-                {
-                    var rb = ship.GetComponent<Rigidbody>();
-                    if (rb != null)
-                    {
-                        var v = rb.linearVelocity; v.y = 0f; rb.linearVelocity = v;
-                    }
-                }
-            }
-            // При входе в Docked — запомнить timestamp для dwell time
-            if (newMode == NavMode.Docked)
-            {
-                DockedSinceTime = Time.time;
-            }
-            // M3.1.10: сбросить angular-velocity kill flag при выходе из Cruising
-            if (old == NavMode.Cruising && newMode != NavMode.Cruising)
-            {
-                _cruiseAngularKilled = false;
-            }
-            if (debugMode)
-            {
-                string r = string.IsNullOrEmpty(reason) ? "" : $" ({reason})";
-                Debug.Log($"[NpcShipController:NPC:{npcInstanceId:X}] NavMode {old} → {newMode}{r}");
-            }
+            CurrentMode = m;
+            if (m == NavMode.Docked) DockedSinceTime = Time.time;
+            Debug.Log($"[NpcShipController:NPC:{npcInstanceId:X}] NavMode {old} → {m}");
         }
 
-        // === Mode handlers (по одному input pattern каждый) ===
-
-        private void TickDocked()
-        {
-            // Docked: двигатель заблокирован. Решение о старте leg принимает NpcShipWorld
-            // (он advance schedule index + дёргает BeginNewLeg). Здесь только нулевой input.
-            // M3.1+: NpcShipWorld.Update вызывает controller.DebugForceLeg/BeginNewLeg после dwell time.
-            ApplyZeroInput();
-        }
-
-        private void TickLifting()
-        {
-            var ship = Ship;
-            Vector3 pos = ship.transform.position;
-            if (NavChecks.IsLiftedTo(pos.y, StartPathPos.y, liftClearanceMeters))
-            {
-                // Достигли высоты → вычислить CruiseTarget (станция) и перейти в Yawing
-                var target = ResolveStationCenterPos();
-                if (target.HasValue)
-                {
-                    CruiseTargetPos = target;
-                    SetMode(NavMode.Yawing, $"cleared pad, heading to {CurrentRoute.toLocationId}");
+        void TickLift(Rigidbody rb) {
+            float targetY = LiftStartY + 5f;
+            float dy = targetY - rb.position.y;
+            if (dy <= 0.1f) {
+                // Достигли высоты → ищем станцию назначения
+                var station = ResolveTargetStation();
+                if (station.HasValue) {
+                    CruiseTargetPos = station.Value;
+                    SetMode(NavMode.Yawing);
+                } else {
+                    // Не нашли станцию — fallback hover
+                    rb.linearVelocity = Vector3.zero;
+                    rb.angularVelocity = Vector3.zero;
                 }
-                else
-                {
-                    // M3.1.5: станция не найдена (locationId mismatch) — сбросить vertical velocity
-                    // чтобы NPC не всплывал по инерции вверх. И остаться в Lifting.
-                    Debug.LogWarning($"[NpcShipController:NPC:{npcInstanceId:X}] No station for {CurrentRoute.toLocationId} — staying Lifting, velocity reset");
-                    var rb = ship.GetComponent<Rigidbody>();
-                    if (rb != null)
-                    {
-                        var v = rb.linearVelocity; v.y = 0f; rb.linearVelocity = v;
-                    }
-                    ApplyZeroInput();
-                }
-            }
-            else
-            {
-                // M3.1.11: crane-подход из 9d8bc1c — vertical через ApplyMovementInput
-                ApplyMovementInput(thrust: 0f, yaw: 0f, pitch: 0f, vertical: 1f);
-            }
-        }
-
-        private void TickYawing()
-        {
-            if (!CruiseTargetPos.HasValue) { SetMode(NavMode.Hover, "no target"); return; }
-            var ship = Ship;
-            Vector3 pos = ship.transform.position;
-            float shipYaw = ship.transform.eulerAngles.y;
-            Vector3 target = CruiseTargetPos.Value;
-            float targetBearing = NavChecks.BearingDegrees(pos, target);
-
-            bool isAligned = NavChecks.IsYawAligned(shipYaw, targetBearing, WasYawAligned,
-                                                    yawAlignEntryDeg, yawAlignExitDeg);
-
-            if (isAligned && WasYawAligned)
-            {
-                // Уже были выровнены — переходим в Cruising
-                SetMode(NavMode.Cruising, $"aligned to bearing {targetBearing:F1}°");
                 return;
             }
-            WasYawAligned = isAligned;
+            // Прямая velocity вверх
+            rb.linearVelocity = new Vector3(0, LiftSpeed, 0);
+            rb.angularVelocity = Vector3.zero;
+        }
 
-            if (!isAligned)
-            {
-                // M3.1.11: crane-подход (из 9d8bc1c) — мягкая yaw коррекция clamp ±0.3 + thrust по cos(bearing).
-                // NPC летит по дуге, постепенно выравниваясь. НЕ стоит на месте.
-                float bearing = Mathf.DeltaAngle(shipYaw, targetBearing);
-                float yawInput = Mathf.Clamp(bearing * 0.02f, -0.3f, 0.3f);
-                float thrust = Mathf.Clamp01(Mathf.Cos(bearing * Mathf.Deg2Rad)) * 0.4f;
-                ApplyMovementInput(thrust: thrust, yaw: yawInput, pitch: 0f, vertical: 0f);
+        void TickYaw(Rigidbody rb) {
+            if (CruiseTargetPos == Vector3.zero) {
+                rb.linearVelocity = Vector3.zero;
+                return;
             }
-            else
-            {
-                // Только что вошли в aligned — один кадр ждём, потом Cruising (через WasYawAligned)
-                ApplyZeroInput();
+            Vector3 toTarget = CruiseTargetPos - rb.position;
+            float targetYaw = Mathf.Atan2(toTarget.x, toTarget.z) * Mathf.Rad2Deg;
+            float currentYaw = rb.rotation.eulerAngles.y;
+            float deltaYaw = Mathf.DeltaAngle(currentYaw, targetYaw);
+
+            // Прямое вращение через MoveRotation (МИНУЕТ AddTorque)
+            float yawStep = Mathf.Sign(deltaYaw) * Mathf.Min(Mathf.Abs(deltaYaw), MaxYawRate * Time.fixedDeltaTime);
+            rb.MoveRotation(Quaternion.AngleAxis(currentYaw + yawStep, Vector3.up));
+            rb.linearVelocity = Vector3.zero;
+
+            if (Mathf.Abs(deltaYaw) < 3f) {
+                SetMode(NavMode.Cruising);
             }
         }
 
-        private void TickCruising()
-        {
-            if (!CruiseTargetPos.HasValue) { SetMode(NavMode.Hover, "no target"); return; }
-            var ship = Ship;
-            Vector3 pos = ship.transform.position;
-            Vector3 target = CruiseTargetPos.Value;
-
-            // Проверить: вошли ли в OuterCommZone целевой станции?
-            var zone = ResolveCommZone(CurrentRoute.toLocationId);
-            if (zone != null && NavChecks.IsInCommZone(pos, zone))
-            {
-                SetMode(NavMode.Holding, $"entered OuterCommZone of {CurrentRoute.toLocationId} (r={zone.CommRange:F0})");
+        void TickCruise(Rigidbody rb) {
+            if (CruiseTargetPos == Vector3.zero) {
+                rb.linearVelocity = Vector3.zero;
+                return;
+            }
+            Vector3 toTarget = CruiseTargetPos - rb.position;
+            float dist = toTarget.magnitude;
+            if (dist < 5f) {
+                // Возле станции — переход в Berthing
+                SetMode(NavMode.Berthing);
                 return;
             }
 
-            float shipYaw = ship.transform.eulerAngles.y;
-            float idealBearing = NavChecks.BearingDegrees(pos, target);
-            float bearing = Mathf.DeltaAngle(shipYaw, idealBearing);
+            Vector3 dir = toTarget.normalized;
+            float targetYaw = Mathf.Atan2(dir.x, dir.z) * Mathf.Rad2Deg;
+            float currentYaw = rb.rotation.eulerAngles.y;
+            float deltaYaw = Mathf.DeltaAngle(currentYaw, targetYaw);
 
-            // M3.1.11: crane-approach (из 9d8bc1c) — thrust + мягкий yaw clamp ±0.3 + altitude hold.
-            // НЕТ bearing gate — NPC постепенно выравнивается во время полёта, не останавливается.
-            float dist = Vector3.Distance(pos, target);
-            float thrustInput = Mathf.Clamp01(dist / 500f) * 0.6f;
-            float yawInput = Mathf.Clamp(bearing * 0.02f, -0.3f, 0.3f);
-            float targetAlt = target.y + 5f;
-            float altError = targetAlt - pos.y;
-            float verticalInput = Mathf.Clamp(altError * 0.1f, -0.5f, 0.5f);
+            // Постоянная коррекция yaw каждый FixedUpdate (минуя AddTorque)
+            float yawStep = Mathf.Sign(deltaYaw) * Mathf.Min(Mathf.Abs(deltaYaw), MaxYawRate * Time.fixedDeltaTime);
+            rb.MoveRotation(Quaternion.AngleAxis(currentYaw + yawStep, Vector3.up));
 
-            ApplyMovementInput(thrust: thrustInput, yaw: yawInput, pitch: 0f, vertical: verticalInput);
-
-
-            // Periodic course correction: каждые 5 сек проверяем отклонение от идеального bearing
-            if (Time.time - LastCourseCheckTime > 5f)
-            {
-                LastCourseCheckTime = Time.time;
-                if (Mathf.Abs(bearing) > 30f)
-                {
-                    // Off course — go back to Yawing
-                    SetMode(NavMode.Yawing, $"course correction: bearing {bearing:F1}° > 30°");
-                    return;
-                }
-            }
-
-            // M3.1.10: zero angular velocity на входе (один раз за вход в Cruising).
-            // Убивает angular momentum от Yawing → NPC не дрейфует после перехода.
-            // Делаем через флаг — каждый вход обнуляем.
-            if (!_cruiseAngularKilled)
-            {
-                var rb0 = ship.GetComponent<Rigidbody>();
-                if (rb0 != null) rb0.angularVelocity = Vector3.zero;
-                _cruiseAngularKilled = true;
-            }
-
+            // Прямая velocity toward target (XZ plane)
+            float speed = (dist > 100f) ? CruiseSpeed : ApproachSpeed;
+            rb.linearVelocity = new Vector3(dir.x * speed, 0, dir.z * speed);
         }
 
-        private void TickHolding()
-        {
-            // Запрашиваем pad каждые 2 сек (anti-spam)
-            if (Time.time - LastPadRequestTime > 2f)
-            {
-                LastPadRequestTime = Time.time;
-                string padId = TryAssignPadFromDispatcher();
-                if (!string.IsNullOrEmpty(padId))
-                {
-                    AssignedPadId = padId;
-                    CruiseTargetPos = ResolvePadPos(CurrentRoute.toLocationId, AssignedPadId);
-                    if (CruiseTargetPos.HasValue)
-                    {
-                        SetMode(NavMode.Berthing, $"pad {padId} assigned");
-                        return;
-                    }
-                }
-            }
-            // Hover: только anti-gravity, нулевые input
-            ApplyZeroInput();
-        }
-
-        private void TickBerthing()
-        {
-            if (!CruiseTargetPos.HasValue || string.IsNullOrEmpty(AssignedPadId))
-            {
-                SetMode(NavMode.Holding, "missing pad in Berthing — fallback");
+        void TickBerth(Rigidbody rb) {
+            if (CruiseTargetPos == Vector3.zero) {
+                rb.linearVelocity = Vector3.zero;
                 return;
             }
-            var ship = Ship;
-            Vector3 pos = ship.transform.position;
-            Vector3 padPos = CruiseTargetPos.Value;
+            Vector3 toTarget = CruiseTargetPos - rb.position;
+            float dist = toTarget.magnitude;
 
-            // Проверить trigger-bокс пада — если вошли → EnterDocked → Docked
-            var pad = ResolvePadTriggerBox(AssignedPadId);
-            if (NavChecks.IsInsidePadTrigger(ship, pad))
-            {
+            if (dist < 1.5f) {
+                rb.linearVelocity = Vector3.zero;
+                rb.angularVelocity = Vector3.zero;
+                var ship = GetComponent<ShipController>();
                 ship.EnterDocked();
-                SetMode(NavMode.Docked, $"trigger entered pad {AssignedPadId}");
+                SetMode(NavMode.Docked);
                 return;
             }
 
-            // Yaw к паду
-            float shipYaw = ship.transform.eulerAngles.y;
-            float padBearing = NavChecks.BearingDegrees(pos, padPos);
-            float bearing = Mathf.DeltaAngle(shipYaw, padBearing);
-            float horizDist = NavChecks.HorizontalDistance(pos, padPos);
-
-            if (horizDist > 10f)
-            {
-                if (Mathf.Abs(bearing) > yawAlignExitDeg)
-                {
-                    // Yaw ONLY (на месте)
-                    float yawInput = Mathf.Clamp(bearing * yawGainCoarse, -1f, 1f);
-                    ship.ApplyServerInput(thrust: 0f, yaw: yawInput, pitch: 0f, vertical: 0f);
-                    return;
-                }
-                // Diagonal: thrust + vertical
-                float thrust = Mathf.Clamp01(horizDist / 50f) * 0.4f;
-                float yError = padPos.y - pos.y;
-                float vertical = Mathf.Clamp(yError * 0.05f, -1f, 1f);
-                ship.ApplyServerInput(thrust: thrust, yaw: 0f, pitch: 0f, vertical: vertical);
-                return;
-            }
-
-            // Vertical descent (close to pad: horizDist < 10m)
-            float yErrorFinal = padPos.y - pos.y;
-            float verticalFinal = Mathf.Clamp(yErrorFinal * 0.05f, -1f, 1f);
-            ship.ApplyServerInput(thrust: 0f, yaw: 0f, pitch: 0f, vertical: verticalFinal);
+            Vector3 dir = toTarget.normalized;
+            float speed = Mathf.Min(ApproachSpeed, dist * 2f);
+            rb.linearVelocity = new Vector3(dir.x * speed, dir.y * speed, dir.z * speed);
+            rb.angularVelocity = Vector3.zero;
         }
 
-        private void TickHover()
-        {
-            // Только anti-gravity держит высоту, никаких input
-            ApplyZeroInput();
-        }
-
-        private void ApplyZeroInput()
-        {
-            var ship = Ship;
-            if (ship == null) return;
-            ship.ApplyServerInput(thrust: 0f, yaw: 0f, pitch: 0f, vertical: 0f);
-        }
-
-        // === Station/pad lookup (используется NavTick) ===
-
-        private NavTarget ResolveStationCenterPos()
-        {
-            if (CurrentRoute.toLocationId == null) return NavTarget.None;
-            var station = Docking.Network.DockingZoneRegistry.GetByLocation(CurrentRoute.toLocationId);
-            if (station == null) return NavTarget.None;
+        Vector3? ResolveTargetStation() {
+            // Берем текущий route из NpcShipState (синхронизируется из NpcShipWorld)
+            var state = NpcShipWorld.Instance?.GetNpc(npcInstanceId);
+            if (state == null || string.IsNullOrEmpty(state.CurrentRoute.toLocationId)) return null;
+            var station = Docking.Network.DockingZoneRegistry.GetByLocation(state.CurrentRoute.toLocationId);
+            if (station == null) return null;
             return station.transform.position;
-        }
-
-        private OuterCommZone ResolveCommZone(string locationId)
-        {
-            if (string.IsNullOrEmpty(locationId)) return null;
-            var station = Docking.Network.DockingZoneRegistry.GetByLocation(locationId);
-            if (station == null) return null;
-            return station.GetComponentInChildren<OuterCommZone>(true);
-        }
-
-        private NavTarget ResolvePadPos(string locationId, string padId)
-        {
-            if (string.IsNullOrEmpty(locationId) || string.IsNullOrEmpty(padId)) return NavTarget.None;
-            var station = Docking.Network.DockingZoneRegistry.GetByLocation(locationId);
-            if (station == null) return NavTarget.None;
-            var boxes = station.GetComponentsInChildren<DockingPadTriggerBox>(true);
-            for (int i = 0; i < boxes.Length; i++)
-            {
-                if (boxes[i].PadId == padId) return boxes[i].transform.position;
-            }
-            return station.transform.position;
-        }
-
-        private DockingPadTriggerBox ResolvePadTriggerBox(string padId)
-        {
-            if (string.IsNullOrEmpty(padId)) return null;
-            var station = Docking.Network.DockingZoneRegistry.GetByLocation(CurrentRoute.toLocationId);
-            if (station == null) return null;
-            var boxes = station.GetComponentsInChildren<DockingPadTriggerBox>(true);
-            for (int i = 0; i < boxes.Length; i++)
-            {
-                if (boxes[i].PadId == padId) return boxes[i];
-            }
-            return null;
-        }
-
-        private string TryAssignPadFromDispatcher()
-        {
-            if (Ship == null || CurrentRoute.toLocationId == null) return null;
-            var station = Docking.Network.DockingZoneRegistry.GetByLocation(CurrentRoute.toLocationId);
-            if (station == null) return null;
-            if (Docking.Core.DockingWorld.Instance == null) return null;
-
-            // Q6: maxConcurrentLandings проверяется внутри AssignPadForNpc
-            return Docking.Core.DockingWorld.Instance.AssignPadForNpc(
-                station, Ship, Ship.ShipFlightClass, npcInstanceId);
-        }
-
-        /// <summary>
-        /// Старт нового leg: ExitDocked (снять kinematic) + StartAntiGravityBoost + SetMode(Lifting).
-        /// Вызывается из TickDocked (после dwell time) или DebugForceLeg (MCP).
-        /// </summary>
-        public void BeginNewLeg()
-        {
-            if (!IsServer) return;
-            AssignedPadId = null;
-            // 1. Снимаем kinematic через стандартный API
-            var ship = Ship;
-            if (ship != null && ship.IsDocked)
-            {
-                ship.ExitDocked();
-            }
-            // 2. Anti-grav boost 5 сек — чтобы не упал пока не набрал высоту
-            StartAntiGravityBoost();
-            // 3. Mode → Lifting, StartPathPos запомнится в SetMode
-            SetMode(NavMode.Lifting, "BeginNewLeg");
-        }
-
-        /// <summary>Debug-команда: принудительно начать leg (для MCP execute_code тестирования).</summary>
-        [ContextMenu("Debug: Force New Leg")]
-        public void DebugForceLeg()
-        {
-            Debug.Log($"[NpcShipController:NPC:{npcInstanceId:X}] DebugForceLeg called — was in {CurrentMode}");
-            BeginNewLeg();
-        }
-
-        /// <summary>
-        /// M3.1.10: пройтись по всем коллайдерам этого NPC и всех ранее зарегистрированных NPC,
-        /// вызвать Physics.IgnoreCollision. Без этого NPC-корабли, спавнящиеся рядом (на падах одной станции),
-        /// сталкиваются друг с другом при старте и крутятся от contact forces ("вертолёты").
-        /// </summary>
-        private static void IgnoreCollisionsWithExistingNpcs(NpcShipController self)
-        {
-            if (self == null) return;
-            var selfColliders = self.GetComponentsInChildren<Collider>();
-            if (selfColliders.Length == 0) return;
-            foreach (var kv in NpcShipZoneRegistry.All)
-            {
-                var other = kv.Value;
-                if (other == null || other == self) continue;
-                var otherColliders = other.GetComponentsInChildren<Collider>();
-                foreach (var c1 in selfColliders)
-                {
-                    if (c1 == null) continue;
-                    foreach (var c2 in otherColliders)
-                    {
-                        if (c2 == null) continue;
-                        Physics.IgnoreCollision(c1, c2, true);
-                    }
-                }
-            }
         }
     }
 }

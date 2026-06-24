@@ -45,8 +45,5 @@ namespace ProjectC.PeacefulShip.Core
 
         [Tooltip("M1: всегда Generic. V2: пересчитывается из TradeWorld.MarketTick.")]
         public NpcShipDemandCategory demandCategory;
-
-        [Tooltip("Крейсерская высота полёта от точки старта (м). По умолчанию 30.")]
-        public float cruiseAltitude;        // 30м по умолчанию
     }
 }

@@ -103,6 +103,9 @@ namespace ProjectC.PeacefulShip.Core
         public NpcShipState GetNpc(ulong id)
             => _npcByInstanceId.TryGetValue(id, out var s) ? s : null;
 
+        public NpcShipSchedule GetSchedule(ulong id)
+            => _scheduleByNpcInstanceId.TryGetValue(id, out var s) ? s : null;
+
         public int AllNpcCount => _npcByInstanceId.Count;
 
         /// <summary>Read-only iterate all NPCs (for FSM tick, debugging).</summary>

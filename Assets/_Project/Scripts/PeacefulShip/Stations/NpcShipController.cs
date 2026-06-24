@@ -248,6 +248,7 @@ namespace ProjectC.PeacefulShip.Stations
         public float MaxYawRate = 45f;     // deg/s — ПРЯМОЙ angular velocity
         public float DwellTime = 5f;      // s — время на паде перед стартом (5s для теста, потом route.dwellTimeSec)
         public float DockedSinceTime { get; private set; } = -1000f;
+        private bool _scheduleAdvancedAfterDock = false;
         public string AssignedPadId { get; set; }
         public bool useNewNavTick = true;
 
@@ -271,14 +272,17 @@ namespace ProjectC.PeacefulShip.Stations
             // Dwell logic: после touchdown начать dwell, после dwell -> lift
             if (CurrentMode == NavMode.Docked) {
                 if (DockedSinceTime < 0) DockedSinceTime = Time.time;
-                // M3.2.4: принудительное isKinematic=true пока в Docked.
-                // Без EnterDocked (ScanExistingOccupants не находит collider) IsDocked=False,
-                // и NPC падает/скользит по геометрии ("ползёт вперёд").
+                // При первом входе в Docked после завершения полёта — advance schedule
+                if (DockedSinceTime > 1f && !_scheduleAdvancedAfterDock) {
+                    AdvanceScheduleForCurrentNpc();
+                    _scheduleAdvancedAfterDock = true;
+                }
                 if (!rb.isKinematic) rb.isKinematic = true;
                 if (Time.time - DockedSinceTime > DwellTime) {
                     LiftStartY = ship.transform.position.y;
                     rb.isKinematic = false;
                     ship.ExitDocked();
+                    _scheduleAdvancedAfterDock = false;
                     SetMode(NavMode.Lifting);
                     return;
                 }
@@ -467,6 +471,25 @@ namespace ProjectC.PeacefulShip.Stations
                 if (pads[i].PadId == AssignedPadId) return pads[i].transform.position;
             }
             return Vector3.zero;
+        }
+
+        void AdvanceScheduleForCurrentNpc() {
+            var state = NpcShipWorld.Instance?.GetNpc(npcInstanceId);
+            if (state == null) return;
+            var schedule = NpcShipWorld.Instance?.GetSchedule(npcInstanceId);
+            if (schedule == null || schedule.routes == null || schedule.routes.Length == 0) return;
+            var route = schedule.routes[0];
+            state.ScheduleIndex++;
+            if (state.ScheduleIndex % 2 == 1) {
+                state.CurrentRoute = new ProjectC.PeacefulShip.Core.NpcShipRoute {
+                    fromLocationId = route.toLocationId,
+                    toLocationId = route.fromLocationId,
+                    dwellTimeSec = route.dwellTimeSec
+                };
+            } else {
+                state.CurrentRoute = route;
+            }
+            Debug.Log($"[NpcShipController:NPC:{npcInstanceId:X}] Schedule advanced to {state.CurrentRoute.toLocationId}");
         }
     }
 }

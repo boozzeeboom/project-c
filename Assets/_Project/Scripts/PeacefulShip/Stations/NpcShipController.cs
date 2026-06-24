@@ -414,7 +414,10 @@ namespace ProjectC.PeacefulShip.Stations
                 if (!string.IsNullOrEmpty(padId)) {
                     AssignedPadId = padId;
                     // Перенаправить к паду, не к станции
-                    CruiseTargetPos = ResolvePadPos();
+                    Vector3 padPos = ResolvePadPos();
+                    if (padPos != Vector3.zero) {
+                        CruiseTargetPos = padPos;
+                    }
                 } else {
                     rb.linearVelocity = Vector3.zero;
                     return;
@@ -425,10 +428,14 @@ namespace ProjectC.PeacefulShip.Stations
                 rb.linearVelocity = Vector3.zero;
                 return;
             }
+
             Vector3 toTarget = CruiseTargetPos - rb.position;
             float dist = toTarget.magnitude;
 
-            if (dist < 1.5f) {
+            // M3.2.12: проверять дистанцию только до ПАДА (если пад назначен),
+            // или до станции (если пада нет). Док только при dist < 1.5f.
+            bool canDock = !string.IsNullOrEmpty(AssignedPadId) ? dist < 1.5f : dist < 3f;
+            if (canDock) {
                 rb.linearVelocity = Vector3.zero;
                 rb.angularVelocity = Vector3.zero;
                 var ship = GetComponent<ShipController>();
@@ -498,6 +505,7 @@ namespace ProjectC.PeacefulShip.Stations
             } else {
                 state.CurrentRoute = route;
             }
+            _scheduleAdvancedAfterDock = true;  // M3.2.11: не дать Docked handlerу advance снова
             Debug.Log($"[NpcShipController:NPC:{npcInstanceId:X}] Schedule advanced to {state.CurrentRoute.toLocationId}");
         }
     }

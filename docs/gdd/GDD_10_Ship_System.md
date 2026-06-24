@@ -455,7 +455,11 @@ public struct DockingAssignmentDto : INetworkSerializable {
 
 #### 7.3.3 NPC-корабли на падах
 
-Сервер-авторитативный SOT (`_occupiedPads: Dictionary<padKey, ulong>`) уже поддерживает. На старте `ScanExistingOccupants()` регистрирует корабли, стоящие на падах. Полная логика спавна NPC + AI-цикл — Phase 3.
+Сервер-авторитативный SOT (`_occupiedPads: Dictionary<padKey, ulong>`) уже поддерживает. На старте `ScanExistingOccupants()` регистрирует корабли, стоящие на падах.
+
+**Реализовано (Phase 3, M3.2.15):** Полный цикл NPC-кораблей — 4 NPC курсируют между Примум и TestZone. FSM: Docked → Lifting (прямой взлёт на 5м, detectCollisions=false) → Yawing (MoveRotation 45°/с к цели) → Cruising (12 м/с + altitude hold) → Berthing (CommZone → AssignPad → полёт к паду) → Docked. Schedule advance (reverse route) после каждой стыковки. Round-trip бесконечен. **Прямой Rigidbody control** (MoveRotation + linearVelocity) — ShipController.AddTorque не используется (ForceMode.Force даёт 0.017°/с² для mass=2000).
+
+**Архитектура:** `NpcShipController.NavTick` (5-mode FSM) вызывается из `NpcShipWorld.FixedUpdate`. ShipController.FixedUpdate пропускает всю физику если `_hasNpcPilot && _pilots.Count==0`. Парковка через `DockingWorld.AssignPadForNpc` + `ReleaseNpcAssignment`. Документация: `docs/NPC_others_peacfull/pc_ship/`.
 
 ### 7.3 Зоны СОЛ и Заброшенные Корабли
 ```

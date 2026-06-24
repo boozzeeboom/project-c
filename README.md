@@ -1,8 +1,13 @@
 # Project C: The Clouds
-**Version:** 0.0.28 | **Stage:** Этап 2.5 В ПРОЦЕССЕ (Визуальный прототип)
+**Version:** 0.0.30 | **Stage:** Этап 2.5 В ПРОЦЕССЕ (Визуальный прототип)
 **Подсистемы:** NPC+Quests v2 ✅ (M1–M19.3) | Character Progression ✅ (T-P01–T-P18) | Gathering (Mining) ✅ (T-G01–T-G07) | **Crafting ✅ (T-C01–T-C07c)** | **Exchange ✅ (T-E01–T-E05)** | **Composite Ship ✅ (Phase 0–1)** | **Docking Stations ✅ (MVP)**
 **По мотивам книги «Интеграл Пьявица» — Бруно Арендт**
-## Весь проект: [TheGravity](https://thegravity.ru) & [TheClouds](https://thegravity.ru/project-c/)
+|**Project C: The Clouds** | Unity 6000.4.1f1 | NGO 2.11.0 | URP 17.0.3
+> **Версия v0.0.30** | **29 июня 2026**
+> **Статус:** NPC Ships round-trip ✅ | Полный цикл: док → взлёт → полёт → стыковка → док → обратно
+> **Подсистемы:** NPC Ships (M3.2) ✅ | Docking Stations MVP ✅ | Composite Ship ✅ | Crafting ✅ | Exchange ✅ | NPC+Quests M1-M19 ✅ | Character Progression ✅ | Mining ✅
+> **Ретроспектива:** 10 кругов ошибок → рабочий round-trip. Полный анализ в `docs/NPC_others_peacfull/pc_ship/99_RETROSPECTIVE.md`.
+> **По мотивам книги «Интеграл Пьявица» — Бруно Арендт**
 
 ---
 
@@ -65,7 +70,13 @@
 | [`docs/QUICK_GIT_COMMANDS.md`](docs/QUICK_GIT_COMMANDS.md) | Быстрые команды Git |
 | [`docs/VERSION_BACKUP.md`](docs/VERSION_BACKUP.md) | Резервное копирование |
 
-#### 🆕 v0.0.20 — Новые подсистемы (NPC + Quests, Character, Lock-Key, Mining)
+#### 🆕 v0.0.30 — NPC Ships Round-Trip ✅
+
+| Каталог | Описание |
+|---------|----------|
+| [`docs/NPC_others_peacfull/pc_ship/`](docs/NPC_others_peacfull/pc_ship/) | **Peaceful NPC Ships (M3.2)** — Полный round-trip 4 NPC: док → взлёт → полёт → стыковка → док → обратно. 15 файлов: README, архитектура, CHANGELOG, 99_RETROSPECTIVE.md (10 кругов ошибок). |
+
+#### 🆕 v0.0.20 — Ранее реализованные подсистемы
 
 | Каталог | Описание |
 |---------|----------|

@@ -1,8 +1,8 @@
 # План разработки ММО "Project C: The Clouds" на Unity
 
-**Последнее обновление:** 17 июня 2026 г. | **Текущая версия:** `v0.0.28-Cargo-Modules`
+**Последнее обновление:** 24 июня 2026 г. | **Текущая версия:** `v0.0.30-NPC-Ships-RoundTrip`
 
-> **Что нового с прошлого обновления (19 июня 2026):** **R2-SHIP-KEY-003 MVP ЗАВЕРШЁН (v18–v20).** Уникальные экземпляры ключей к кораблям — каждый из 3 кораблей (Light/Medium/Heavy) получил свой уникальный KeyRodInstance через scene-placed `KeyRodInstanceBinding`. Подбор/дроп с передачей instanceId, persistence через `JsonKeyRodInstanceRepository`, drop↔pickup корректно реактивирует Lost instance. UI вкладка "КОРАБЛЬ" в CharacterWindow показывает только корабли игрока (`MyShipsTab`); TAB-колесо: сектор 1 = "ВЛАДЕНИЕ" (Equipment + Key). Полная серия фиксов: T-KEY-06/07/08/09, Phase C/D (reflection removal + serialization fix), Phase E (retry-loop). Документация: `docs/Ships/Key-subsystem/99_CHANGELOG.md` (v1–v20) + `28_KEY_ARCHITECTURE_REVIEW.md` (глубокий обзор) + `29_KEY_REFACTOR_PLAN.md` (план полного рефакторинга, Phase 2).
+> **Что нового (24 июня 2026):** **NPC Ships M3.2.15 — первый рабочий round-trip ✅.** 4 NPC-корабля (HeavyII) курсируют между Primium и TestZone: док → взлёт → полёт → CommZone → пад → стыковка → обратно. 27 коммитов, 15 часов. После 10 кругов ошибок (ForceMode.Force ≠ angular velocity, guard-блокировки, потеря пада) — найден правильный архитектурный подход: прямой Rigidbody control (MoveRotation + linearVelocity) минуя ShipController.AddTorque. Полный ретроспективный анализ: `docs/NPC_others_peacfull/pc_ship/99_RETROSPECTIVE.md`.
 
 **Предыдущее обновление (17 июня 2026):** **T-CARGO-06: Per-instance лимиты трюма + модульное расширение.** Cargo лимиты перенесены из статического `ShipClassLimits.Get(cls)` в Inspector-editable поля `ShipController` (baseMaxCargoSlots/Weight/Volume/PenaltyFactor). Модули (`ShipModule`) получили 4 cargo-бонуса: cargoSlotsBonus/WeightBonus/VolumeBonus/PenaltyReduction (flat, stackable, без cooldown). `ShipCargoRegistry` (static Dictionary) — мост от server-POCO `TradeWorld` к per-instance лимитам. Тестовый модуль: `Assets/_Project/Data/Ship/Modules/MODULE_CARGO_BAY_01.asset` (+6 слотов, +50кг, +2м³, -0.02 penalty). `ShipClassLimits` остаётся fallback. ~3 ч. См. `docs/Ships/cargo_system/CARGO_REFACTOR_PLAN_2026-06-17.md` §T-CARGO-06.
 
@@ -203,7 +203,7 @@
 **Что НЕ сделано (Phase 2 / Phase 1.5):**
 - ⏳ **Departure subsystem** — отдельная подсистема вылета по запросу через T (`08_DEPARTURE_SUBSYSTEM.md`)
 - ⏳ **Автопилот стыковки** (модуль `MODULE_AUTO_DOCK`) — GDD-10 §4.2 P2-T2
-- ⏳ **NPC-корабли на падах** — SOT уже поддерживает, но нет логики спавна NPC
+- ✅ **NPC-корабли на падах (M3.2)** — Полный round-trip: док → взлёт → полёт → CommZone → пад → стыковка → обратно. 4 NPC, 2 станции. Документация: `docs/NPC_others_peacfull/pc_ship/`.
 - ⏳ **`DockPadVisualMarker` v2** — переделка маркера с правильной реакцией на `IsShipInside`
 
 **Документация:**

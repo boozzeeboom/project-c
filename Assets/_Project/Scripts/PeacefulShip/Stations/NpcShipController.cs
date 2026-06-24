@@ -15,6 +15,8 @@
 // Q8: anti-gravity boost на 5 сек после ExitDocked (см. docs/.../04_LIVING_BEHAVIOR.md §2.3)
 
 using System.Collections;
+using ProjectC.Docking.Stations;
+using ProjectC.Docking.Zones;
 using ProjectC.PeacefulShip.Core;
 using ProjectC.PeacefulShip.Network;
 using ProjectC.Player;
@@ -340,8 +342,20 @@ namespace ProjectC.PeacefulShip.Stations
             }
             Vector3 toTarget = CruiseTargetPos - rb.position;
             float dist = toTarget.magnitude;
-            if (dist < 5f) {
-                // Возле станции — переход в Berthing
+
+            // Проверить: вошли ли в OuterCommZone целевой станции?
+            var zone = ResolveCommZone();
+            if (zone != null && Vector3.Distance(rb.position, zone.transform.position) < zone.CommRange) {
+                rb.linearVelocity = Vector3.zero;
+                rb.angularVelocity = Vector3.zero;
+                SetMode(NavMode.Berthing);
+                return;
+            }
+
+            // Если уже очень близко к станции — Berthing (fallback без зоны)
+            if (dist < 50f) {
+                rb.linearVelocity = Vector3.zero;
+                rb.angularVelocity = Vector3.zero;
                 SetMode(NavMode.Berthing);
                 return;
             }
@@ -351,16 +365,28 @@ namespace ProjectC.PeacefulShip.Stations
             float currentYaw = rb.rotation.eulerAngles.y;
             float deltaYaw = Mathf.DeltaAngle(currentYaw, targetYaw);
 
-            // Постоянная коррекция yaw каждый FixedUpdate (минуя AddTorque)
             float yawStep = Mathf.Sign(deltaYaw) * Mathf.Min(Mathf.Abs(deltaYaw), MaxYawRate * Time.fixedDeltaTime);
             rb.MoveRotation(Quaternion.AngleAxis(currentYaw + yawStep, Vector3.up));
 
-            // Прямая velocity toward target (XZ plane)
-            float speed = (dist > 100f) ? CruiseSpeed : ApproachSpeed;
-            rb.linearVelocity = new Vector3(dir.x * speed, 0, dir.z * speed);
+            float speed = (dist > 200f) ? CruiseSpeed : ApproachSpeed;
+            float altHold = (CruiseTargetPos.y + 5f - rb.position.y) * 0.5f;
+            rb.linearVelocity = new Vector3(dir.x * speed, Mathf.Clamp(altHold, -2f, 2f), dir.z * speed);
         }
 
         void TickBerth(Rigidbody rb) {
+            // Если пад не назначен — запросить у диспетчера
+            if (string.IsNullOrEmpty(AssignedPadId)) {
+                var padId = TryAssignPadFromDispatcher();
+                if (!string.IsNullOrEmpty(padId)) {
+                    AssignedPadId = padId;
+                    // Перенаправить к паду, не к станции
+                    CruiseTargetPos = ResolvePadPos();
+                } else {
+                    rb.linearVelocity = Vector3.zero;
+                    return;
+                }
+            }
+
             if (CruiseTargetPos == Vector3.zero) {
                 rb.linearVelocity = Vector3.zero;
                 return;
@@ -384,12 +410,42 @@ namespace ProjectC.PeacefulShip.Stations
         }
 
         Vector3? ResolveTargetStation() {
-            // Берем текущий route из NpcShipState (синхронизируется из NpcShipWorld)
             var state = NpcShipWorld.Instance?.GetNpc(npcInstanceId);
             if (state == null || string.IsNullOrEmpty(state.CurrentRoute.toLocationId)) return null;
             var station = Docking.Network.DockingZoneRegistry.GetByLocation(state.CurrentRoute.toLocationId);
             if (station == null) return null;
             return station.transform.position;
+        }
+
+        OuterCommZone ResolveCommZone() {
+            var state = NpcShipWorld.Instance?.GetNpc(npcInstanceId);
+            if (state == null || string.IsNullOrEmpty(state.CurrentRoute.toLocationId)) return null;
+            var station = Docking.Network.DockingZoneRegistry.GetByLocation(state.CurrentRoute.toLocationId);
+            if (station == null) return null;
+            return station.GetComponentInChildren<OuterCommZone>(true);
+        }
+
+        string TryAssignPadFromDispatcher() {
+            var state = NpcShipWorld.Instance?.GetNpc(npcInstanceId);
+            if (state == null || string.IsNullOrEmpty(state.CurrentRoute.toLocationId)) return null;
+            var station = Docking.Network.DockingZoneRegistry.GetByLocation(state.CurrentRoute.toLocationId);
+            if (station == null || Docking.Core.DockingWorld.Instance == null) return null;
+            var ship = GetComponent<ShipController>();
+            if (ship == null) return null;
+            return Docking.Core.DockingWorld.Instance.AssignPadForNpc(
+                station, ship, ship.ShipFlightClass, npcInstanceId);
+        }
+
+        Vector3 ResolvePadPos() {
+            var state = NpcShipWorld.Instance?.GetNpc(npcInstanceId);
+            if (state == null || string.IsNullOrEmpty(state.CurrentRoute.toLocationId)) return Vector3.zero;
+            var station = Docking.Network.DockingZoneRegistry.GetByLocation(state.CurrentRoute.toLocationId);
+            if (station == null || string.IsNullOrEmpty(AssignedPadId)) return Vector3.zero;
+            var pads = station.GetComponentsInChildren<DockingPadTriggerBox>(true);
+            for (int i = 0; i < pads.Length; i++) {
+                if (pads[i].PadId == AssignedPadId) return pads[i].transform.position;
+            }
+            return Vector3.zero;
         }
     }
 }

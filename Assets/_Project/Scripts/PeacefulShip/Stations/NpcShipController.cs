@@ -415,8 +415,8 @@ namespace ProjectC.PeacefulShip.Stations
             }
             else
             {
-                // Vertical input ONLY (через ApplyServerInput — тот же код что у игрока на Space)
-                ship.ApplyServerInput(thrust: 0f, yaw: 0f, pitch: 0f, vertical: 1f);
+                // M3.1.11: crane-подход из 9d8bc1c — vertical через ApplyMovementInput
+                ApplyMovementInput(thrust: 0f, yaw: 0f, pitch: 0f, vertical: 1f);
             }
         }
 
@@ -442,10 +442,12 @@ namespace ProjectC.PeacefulShip.Stations
 
             if (!isAligned)
             {
-                // Yaw ONLY (anti-gravity держит высоту через ship.AntiGravity=1.0)
+                // M3.1.11: crane-подход (из 9d8bc1c) — мягкая yaw коррекция clamp ±0.3 + thrust по cos(bearing).
+                // NPC летит по дуге, постепенно выравниваясь. НЕ стоит на месте.
                 float bearing = Mathf.DeltaAngle(shipYaw, targetBearing);
-                float yawInput = Mathf.Clamp(bearing * yawGainCoarse, -1f, 1f);
-                ship.ApplyServerInput(thrust: 0f, yaw: yawInput, pitch: 0f, vertical: 0f);
+                float yawInput = Mathf.Clamp(bearing * 0.02f, -0.3f, 0.3f);
+                float thrust = Mathf.Clamp01(Mathf.Cos(bearing * Mathf.Deg2Rad)) * 0.4f;
+                ApplyMovementInput(thrust: thrust, yaw: yawInput, pitch: 0f, vertical: 0f);
             }
             else
             {
@@ -473,14 +475,17 @@ namespace ProjectC.PeacefulShip.Stations
             float idealBearing = NavChecks.BearingDegrees(pos, target);
             float bearing = Mathf.DeltaAngle(shipYaw, idealBearing);
 
-            // M3.1.10: bearing gate — если NPC смотрит мимо цели, не лететь. Возврат в Yawing.
-            // Без этого NPC с bearing=180° (после Yawing не успел выровняться) летит
-            // transform.forward в противоположную сторону ("ползут куда попало").
-            if (Mathf.Abs(bearing) > 15f)
-            {
-                SetMode(NavMode.Yawing, $"cruise bearing {bearing:F1}° > 15° — re-align");
-                return;
-            }
+            // M3.1.11: crane-approach (из 9d8bc1c) — thrust + мягкий yaw clamp ±0.3 + altitude hold.
+            // НЕТ bearing gate — NPC постепенно выравнивается во время полёта, не останавливается.
+            float dist = Vector3.Distance(pos, target);
+            float thrustInput = Mathf.Clamp01(dist / 500f) * 0.6f;
+            float yawInput = Mathf.Clamp(bearing * 0.02f, -0.3f, 0.3f);
+            float targetAlt = target.y + 5f;
+            float altError = targetAlt - pos.y;
+            float verticalInput = Mathf.Clamp(altError * 0.1f, -0.5f, 0.5f);
+
+            ApplyMovementInput(thrust: thrustInput, yaw: yawInput, pitch: 0f, vertical: verticalInput);
+
 
             // Periodic course correction: каждые 5 сек проверяем отклонение от идеального bearing
             if (Time.time - LastCourseCheckTime > 5f)
@@ -504,21 +509,6 @@ namespace ProjectC.PeacefulShip.Stations
                 _cruiseAngularKilled = true;
             }
 
-            // Diagonal flight: thrust + vertical по прямой A→B
-            float dist = Vector3.Distance(pos, target);
-            float thrust = Mathf.Clamp01(dist / thrustSlowdownWindowMeters) * maxThrustInput;
-
-            // Diagonal Y: lerp от startY к targetY по прогрессу
-            float totalDist = Vector3.Distance(StartPathPos, target);
-            float progress = totalDist > 0.01f ? 1f - (dist / totalDist) : 0f;
-            float diagonalTargetY = Mathf.Lerp(StartPathPos.y, target.y, Mathf.Clamp01(progress));
-
-            // Vertical input: PD-подобный контроль через ApplyServerInput.
-            // Ошибка по Y → input. Не магические числа — delta в метрах, clamp в [-1,1].
-            float yError = diagonalTargetY - pos.y;
-            float vertical = Mathf.Clamp(yError * 0.05f, -1f, 1f);
-
-            ship.ApplyServerInput(thrust: thrust, yaw: 0f, pitch: 0f, vertical: vertical);
         }
 
         private void TickHolding()

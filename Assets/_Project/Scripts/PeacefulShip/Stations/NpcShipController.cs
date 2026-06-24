@@ -262,7 +262,11 @@ namespace ProjectC.PeacefulShip.Stations
                 return;
             }
             var rb = GetComponent<Rigidbody>();
-            if (rb == null || rb.isKinematic) return;
+            if (rb == null) return;
+
+            // M3.2.6: isKinematic guard — пропускаем только если НЕ в Docked.
+            // В Docked mode сами ставим isKinematic; без этого guard выходит до dwell-check.
+            if (rb.isKinematic && CurrentMode != NavMode.Docked) return;
 
             // Dwell logic: после touchdown начать dwell, после dwell -> lift
             if (CurrentMode == NavMode.Docked) {

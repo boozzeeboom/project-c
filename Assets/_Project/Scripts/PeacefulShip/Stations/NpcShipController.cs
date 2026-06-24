@@ -212,25 +212,17 @@ namespace ProjectC.PeacefulShip.Stations
         }
 
         /// <summary>
-        /// NPC solid collider: обеспечивает чтобы корабль имел solid BoxCollider.
-        /// Все имеющиеся BoxCollider → solid (isTrigger=false). Если нет вообще — добавляем.
-        /// NPC↔NPC коллизия отключается через Layer Collision Matrix в ProjectSettings.
+        /// NPC solid collider: убираем. Раньше (M2) считалось что NPC нужно иметь solid collider
+        /// для Physics.OverlapBox в ScanExistingOccupants, но:
+        /// 1. Это заставляет NPC застревать на геометрии станции (висит на +2м над падом)
+        /// 2. Исходные префабы (HeavyII) уже имеют solid MeshCollider/BoxCollider на модели
+        /// 3. Pad-триггеры (DockingPadTriggerBox) — trigger, не нуждаются в solid
+        /// 4. IsShipInside polling работает без solid — через bounds или proximity
         /// </summary>
+        [System.Obsolete("M3.1.8: Убрано — NPC застревал на геометрии станции.")]
         private void EnsureNpcSolidCollider()
         {
-            var cols = GetComponentsInChildren<BoxCollider>(true);
-            if (cols.Length > 0)
-            {
-                foreach (var c in cols) c.isTrigger = false;
-            }
-            else
-            {
-                // Добавляем дефолтный solid BoxCollider размера как у ShipController
-                var col = gameObject.AddComponent<BoxCollider>();
-                col.isTrigger = false;
-                col.size = new Vector3(4f, 2.5f, 6f);
-                col.center = new Vector3(0f, 0f, 0f);
-            }
+            // No-op
         }
 
         // === Movement API (server-only) — legacy, оставлен для обратной совместимости с M2 ===
@@ -314,29 +306,15 @@ namespace ProjectC.PeacefulShip.Stations
         public void NavTick(float dt)
         {
             if (!IsServer) return;
-            if (!useNewNavTick) return; // legacy: NpcShipWorld.TickNpc управляет
+            if (!useNewNavTick) return;
 
             var ship = Ship;
             if (ship == null) return;
 
-            // M3.1.7: race fix. BeginNewLeg() делает ship.ExitDocked() (NGO NetworkVariable
-            // батчится, локально IsDocked остаётся true до конца Update tick).
-            // Если в том же кадре guard `if (ship.IsDocked) SetMode(Docked)` сработает —
-            // NPC фликает Docked→Lifting→Docked и dwell=60s считается заново ("2 минуты стоит").
-            // Решение: переход в Docked ТОЛЬКО если текущий mode уже Docked (повторный вход skip)
-            // или если BeginNewLeg только что был (CurrentMode == Lifting в первом кадре).
-            // Проще: просто убрать guard — TickDocked сам решает. НО если ship реально docked
-            // (после ScanExistingOccupants или TickBerthing), мы должны зафиксировать Docked.
-            // Финал: устанавливаем Docked только если текущий mode ещё Lifting/Yawing/Cruising
-            // и ship.IsDocked стал true ИЗВНЕ (не от нашего BeginNewLeg).
-            // Самый безопасный: SetMode(Docked) только если текущий mode != Docked И mode != Lifting
-            // (Lifting только что стартовал через BeginNewLeg, IsDocked=true race — skip).
-            if (ship.IsDocked && CurrentMode != NavMode.Docked && CurrentMode != NavMode.Lifting)
-            {
-                SetMode(NavMode.Docked);
-                return;
-            }
-
+            // M3.1.8: Guard убран. NpcShipWorld.Update вызывает NavTick один раз на кадр для каждого NPC —
+            // race невозможен. Переходы между режимами — явные через SetMode().
+            // TickDocked/TickLifting сами решают что делать (в т.ч. проверяют IsDocked для ApplyServerInput).
+            // ShipController.FixedUpdate сам проверяет _netIsDocked.Value — input безопасен.
             switch (CurrentMode)
             {
                 case NavMode.Docked: TickDocked(); break;

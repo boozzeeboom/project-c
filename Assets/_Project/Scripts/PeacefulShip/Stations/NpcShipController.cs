@@ -414,14 +414,7 @@ namespace ProjectC.PeacefulShip.Stations
         }
 
         void TickBerth(Rigidbody rb) {
-            // M3.2.13: очистить старый пад (может быть с другого лега/станции)
-            if (!string.IsNullOrEmpty(AssignedPadId) && CruiseTargetPos != Vector3.zero) {
-                // Проверить что текущий CruiseTargetPos — это пад. Если это центр станции — сбросить.
-                float distToPad = Vector3.Distance(rb.position, CruiseTargetPos);
-                if (distToPad > 200f) AssignedPadId = null; // слишком далеко — старый пад
-            }
-
-            // Если пад не назначен или устарел — запросить у диспетчера
+            // Если пад не назначен — запросить у диспетчера
             if (string.IsNullOrEmpty(AssignedPadId)) {
                 var padId = TryAssignPadFromDispatcher();
                 if (!string.IsNullOrEmpty(padId)) {

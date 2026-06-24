@@ -1,8 +1,9 @@
 # Peaceful NPC Ships — Architecture & Roadmap
 
 > **Project C: The Clouds** | Unity 6000.4.1f1 | NGO 2.11.0 | URP 17.0.3
-> **Статус:** Дизайн-документ ✅ (13 решений приняты). Код не написан.
-> **Сессия:** 2026-06-22 (Mavis, profile `project-c`)
+> **Статус:** M3.2.15 — первый рабочий round-trip ✅ (2026-06-24)
+> **Всего коммитов:** ~27 от 9d8bc1c до 706a9d1
+> **Retrospective:** `99_RETROSPECTIVE.md`
 > **Каталог:** `docs/NPC_others_peacfull/pc_ship/`
 > **Конвенция:** См. `AGENTS.md` и `project-c-bootstrap` skill (Unity 6, NGO 2.11, UI Toolkit, .NET 8).
 
@@ -29,6 +30,7 @@
 | **04** | `04_LIVING_BEHAVIOR.md` | «Живость»: FSM, dwell times, traffic shaping, pad contention, anti-grav | ~1300 |
 | **05** | `05_ROADMAP.md` | M1-M3 + тикеты T-NS00..10, dependency graph | ~1100 |
 | **06** | `06_OPEN_QUESTIONS.md` | Финальные решения (13 ответов пользователя) | ~1000 |
+| **99** | `99_RETROSPECTIVE.md` | Полный ретроспективный анализ: 10 кругов ошибок, корневые причины, уроки | ~1500 |
 | **—** | `CHANGELOG.md` | Лог изменений каталога | — |
 
 **Всего:** ~7900 слов, 8 файлов.

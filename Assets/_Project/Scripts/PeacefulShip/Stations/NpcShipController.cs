@@ -258,8 +258,11 @@ namespace ProjectC.PeacefulShip.Stations
         public void NavTick(float dt) {
             if (!IsServer || !useNewNavTick) return;
             var ship = GetComponent<ShipController>();
-            if (ship == null || ship.IsDocked) {
-                if (CurrentMode != NavMode.Docked) SetMode(NavMode.Docked);
+            if (ship == null) return;
+            // M3.2.10: guard — если спавн тайминг или IsDocked до NavMode, синхронизируем.
+            // НО НЕ делаем return — Docked handler должен дойти до dwell-check.
+            if (ship.IsDocked && CurrentMode != NavMode.Docked) {
+                SetMode(NavMode.Docked);
                 return;
             }
             var rb = GetComponent<Rigidbody>();

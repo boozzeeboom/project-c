@@ -291,6 +291,15 @@ namespace ProjectC.PeacefulShip.Stations
             var old = CurrentMode;
             CurrentMode = m;
             if (m == NavMode.Docked) DockedSinceTime = Time.time;
+            if (m == NavMode.Lifting) {
+                var rb = GetComponent<Rigidbody>();
+                if (rb != null) {
+                    rb.linearVelocity = Vector3.zero;
+                    rb.angularVelocity = Vector3.zero;
+                    // Сброс rotation к горизонту — без наклона от падения на пад
+                    rb.MoveRotation(Quaternion.Euler(0, rb.rotation.eulerAngles.y, 0));
+                }
+            }
             Debug.Log($"[NpcShipController:NPC:{npcInstanceId:X}] NavMode {old} → {m}");
         }
 

@@ -129,7 +129,26 @@ namespace ProjectC.PeacefulShip.Core
             foreach (var state in _npcByInstanceId.Values)
             {
                 if (state == null || state.Ship == null) continue;
-                TickNpc(state, dt);
+                var controller = NpcShipZoneRegistry.Get(state.NpcInstanceId);
+                if (controller == null) continue;
+
+                // M3.1+: синхронизировать state в controller (NavTick читает отсюда)
+                controller.CurrentRoute = state.CurrentRoute;
+                controller.AssignedPadId = state.AssignedPadId;
+
+                // M3.1+: новая NavTick работает параллельно со старой TickNpc.
+                // Решение о переходе в NavTick-only — в M3.3 (когда старая логика выпилена).
+                if (controller.useNewNavTick)
+                {
+                    controller.NavTick(dt);
+                }
+
+                // Старая логика остаётся активной пока не отключим в M3.3.
+                // Чтобы не было двойного движения — отключаем старую если NavTick активен.
+                if (!controller.useNewNavTick)
+                {
+                    TickNpc(state, dt);
+                }
             }
         }
 

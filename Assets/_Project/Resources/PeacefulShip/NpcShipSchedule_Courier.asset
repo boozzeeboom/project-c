@@ -17,11 +17,12 @@ MonoBehaviour:
   scheduleType: 0
   routes:
   - fromLocationId: PRIMIUM
-    toLocationId: PRIMIUM_TEST_ZONE_2
+    toLocationId: PRIMIUM_TEST_ZONE
     dwellTimeSec: 60
     flightDurationSec: 120
     preferredShipClass: 3
     demandCategory: 0
+    cruiseAltitude: 0
   meanArrivalIntervalSec: 480
   arrivalIntervalStdDev: 90
   minArrivalSpacingSec: 60

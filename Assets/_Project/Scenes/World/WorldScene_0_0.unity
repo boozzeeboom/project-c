@@ -475,7 +475,7 @@ GameObject:
   - component: {fileID: 52261663}
   - component: {fileID: 52261662}
   m_Layer: 0
-  m_Name: TESTZONENPC
+  m_Name: DockStation_TestZone
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -521,7 +521,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::ProjectC.Docking.Zones.OuterCommZone
   stationId: PRIMIUM_TEST_ZONE_2
-  commRange: 242.3
+  commRange: 600
   drawGizmos: 1
 --- !u!135 &52261665
 SphereCollider:
@@ -538,7 +538,7 @@ SphereCollider:
     serializedVersion: 2
     m_Bits: 0
   m_LayerOverridePriority: 0
-  m_IsTrigger: 0
+  m_IsTrigger: 1
   m_ProvidesContacts: 0
   m_Enabled: 1
   serializedVersion: 3
@@ -2052,10 +2052,16 @@ MonoBehaviour:
   npcInstanceId: 0
   npcThrustMult: 0.6
   npcYawMult: 0.4
-  npcArrivalToleranceMeters: 50
+  liftClearanceMeters: 5
+  yawAlignEntryDeg: 15
+  yawAlignExitDeg: 5
+  yawGainCoarse: 0.02
+  thrustSlowdownWindowMeters: 100
+  maxThrustInput: 0.6
   antiGravityBoostDuration: 5
   antiGravityBoostValue: 1.5
   debugMode: 1
+  useNewNavTick: 1
 --- !u!114 &209819097
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -2635,10 +2641,16 @@ MonoBehaviour:
   npcInstanceId: 0
   npcThrustMult: 0.6
   npcYawMult: 0.4
-  npcArrivalToleranceMeters: 50
+  liftClearanceMeters: 5
+  yawAlignEntryDeg: 15
+  yawAlignExitDeg: 5
+  yawGainCoarse: 0.02
+  thrustSlowdownWindowMeters: 100
+  maxThrustInput: 0.6
   antiGravityBoostDuration: 5
   antiGravityBoostValue: 1.5
   debugMode: 1
+  useNewNavTick: 1
 --- !u!114 &306382035
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -6457,10 +6469,16 @@ MonoBehaviour:
   npcInstanceId: 0
   npcThrustMult: 0.6
   npcYawMult: 0.4
-  npcArrivalToleranceMeters: 50
+  liftClearanceMeters: 5
+  yawAlignEntryDeg: 15
+  yawAlignExitDeg: 5
+  yawGainCoarse: 0.02
+  thrustSlowdownWindowMeters: 100
+  maxThrustInput: 0.6
   antiGravityBoostDuration: 5
   antiGravityBoostValue: 1.5
   debugMode: 1
+  useNewNavTick: 1
 --- !u!114 &897557593
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -7985,10 +8003,16 @@ MonoBehaviour:
   npcInstanceId: 0
   npcThrustMult: 0.6
   npcYawMult: 0.4
-  npcArrivalToleranceMeters: 50
+  liftClearanceMeters: 5
+  yawAlignEntryDeg: 15
+  yawAlignExitDeg: 5
+  yawGainCoarse: 0.02
+  thrustSlowdownWindowMeters: 100
+  maxThrustInput: 0.6
   antiGravityBoostDuration: 5
   antiGravityBoostValue: 1.5
   debugMode: 1
+  useNewNavTick: 1
 --- !u!114 &1058054673
 MonoBehaviour:
   m_ObjectHideFlags: 0

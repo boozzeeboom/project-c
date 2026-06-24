@@ -4,6 +4,107 @@
 
 ---
 
+## 2026-06-24 — T-NS M3.1 (NavTick + scene fixes) ✅ COMPILE-CLEAN
+
+**Сессия:** Реализация каркаса 7-режимной NavTick FSM + фикс 4 багов сцены.
+**Статус:** ✅ Compile-clean (0 errors). NavTick активен, старый TickNpc отключается per-controller (useNewNavTick=true).
+
+### Созданные/изменённые файлы (5)
+
+| Файл | LOC | Изменение |
+|------|-----|-----------|
+| `PeacefulShip/Core/NavMode.cs` | ~30 | NEW — enum 7 режимов (Docked/Lifting/Yawing/Cruising/Holding/Berthing/Hover) |
+| `PeacefulShip/Core/NavChecks.cs` | ~85 | NEW — статические spatial checks (IsInCommZone, IsYawAligned, IsLiftedTo, IsAtRange, IsInsidePadTrigger, BearingDegrees, HorizontalDistance). НИКАКИХ magic numbers внутри |
+| `PeacefulShip/Core/NavTarget.cs` | ~25 | NEW — nullable-обёртка для Vector3 (Unity Vector3 — struct, нельзя Vector3?) |
+| `PeacefulShip/Stations/NpcShipController.cs` | +350 (переписан) | Добавлен `NavTick(dt)`, 7 mode-handlers, `useNewNavTick` public flag, `BeginNewLeg()`, `CurrentRoute`/`AssignedPadId`/`CruiseTargetPos` properties. Старый `ApplyMovementInput()` оставлен для обратной совместимости с M2 |
+| `PeacefulShip/Core/NpcShipWorld.cs` | +12 | `Update()` — синхронизация `controller.CurrentRoute = state.CurrentRoute` + `controller.AssignedPadId = state.AssignedPadId` перед `NavTick(dt)`. Параллельно работает старая `TickNpc` если `useNewNavTick=false` |
+| `PeacefulShip/Editor/FixM3SceneAndSchedule.cs` | ~140 | NEW — MenuItem `Tools/ProjectC/PeacefulShip/M3.1 Fix Scene + Schedule`. Применяет 4 фикса |
+
+### Применённые фиксы сцены (через FixM3 MenuItem)
+
+| # | Что было | Что стало | Где |
+|---|----------|-----------|-----|
+| 1 | `TESTZONENPC.SphereCollider.isTrigger = false` | `true` | `WorldScene_0_0.unity:541` |
+| 2 | `TESTZONENPC.OuterCommZone.commRange = 242.3` | `600` | `WorldScene_0_0.unity:524` |
+| 3 | `TESTZONENPC` — 0 DockingPadTriggerBox children | 4 пада (TZ-PAD-01..04) — от предыдущего `CreateTestZoneFixed` | `WorldScene_0_0.unity:584-588` |
+| 4 | `NpcShipSchedule_Courier.routes[0].toLocationId = "PRIMIUM_TEST_ZONE_2"` | `"PRIMIUM_TEST_ZONE"` (синк с `DockStationDefinition_TestZone.locationId`) | `NpcShipSchedule_Courier.asset:20` |
+| 5 | `TESTZONENPC` GameObject | переименован в `DockStation_TestZone` (consistency) | `WorldScene_0_0.unity:478` |
+
+### Verification (Editor-side)
+
+- ✅ 4 NPC корабля в сцене, все с `schedule = NpcShipSchedule_Courier`, `useNewNavTick = true`
+- ✅ DockStation_Primium: 8 pads, commRange 421.6
+- ✅ DockStation_TestZone: 4 pads (TZ-PAD-01..04), commRange 600, SphereCollider isTrigger = true
+- ✅ 0 compile errors по PeacefulShip (verified через `read_console`)
+- ⚠️ `DockingZoneRegistry.GetByLocation` возвращает null в Editor (статика заполняется только при `OuterCommZone.OnEnable` → нужен Play Mode для верификации)
+
+### Compile iterations
+
+| # | Проблема | Решение |
+|---|----------|---------|
+| 1 | `CS0246: NavMode type not found` | `scope=scripts` не подхватывает новые .cs — `scope=all` |
+| 2 | `CS0266: Vector3? to Vector3` | Unity Vector3 — struct, не nullable. Создал `NavTarget` (readonly struct) |
+| 3 | `CS0122: useNewNavTick inaccessible` | private → public (нужен из NpcShipWorld.Update) |
+| 4 | `CS0272: AssignedPadId set inaccessible` | `private set` → `set` |
+| 5 | `execute_code` Roslyn "not all paths return" | Добавлен `return "ok";` в конце |
+
+### Что НЕ делалось (M3.2, M3.3, M3.6)
+
+- ❌ Не отключал старый `NpcShipWorld.TickNpc` (useNewNavTick=true default — но старая логика работает параллельно пока useNewNavTick=true). M3.3 удалит TickNpc полностью
+- ❌ Не реализовывал round-trip (текущий `NpcShipController.BeginNewLeg()` существует, но не вызывается нигде автоматически)
+- ❌ Не тестировал в Play Mode (требует ручного запуска пользователем)
+
+### Следующий шаг
+
+**M3.5 — Verification в Play Mode.** Пользователь запускает BootstrapScene → Start Host → открыть WorldScene_0_0 → смотреть console на `[NpcShipController:NPC:*] NavMode Docked → Lifting → Yawing → ...`
+
+---
+
+## 2026-06-24 — M2 FSM Diagnosis & M3 Plan (Mavis)
+
+**Сессия:** Полный честный анализ M2 (12-state FSM). Причина: NPC улетают вверх, не стыкуются, "срезают углы".
+
+**Статус:** Документ ✅. Код M3 — после approval.
+
+### Файл
+
+| Файл | LOC | Описание |
+|------|-----|----------|
+| `M2_FSM_DIAGNOSIS.md` | ~480 | Полный разбор 7 итераций (10 симптомов, 12 корневых проблем), что сохранить, что выкинуть, предлагаемая 7-режимная архитектура (NavMode enum), и roadmap T-NS M3.1..M3.6 |
+
+### Главный вывод
+
+**Корневая проблема — не формулы движения, а архитектура.** FSM (12 состояний в `NpcShipWorld.TickNpc`) переплетена с movement-логикой. Per-frame `ApplyMovementInput` борется с физикой корабля (anti-gravity, vertical input, smoothdamp).
+
+**Предлагаемое решение (M3):**
+- 7-режимный `NavMode` (Docked/Lifting/Yawing/Cruising/Holding/Berthing/Hover) — каждый режим = 1 input pattern
+- Все spatial conditions через `Vector3.Distance` / углы / trigger (НЕ magic numbers)
+- `NpcShipController.NavTick` генерирует input, `NpcShipWorld` — только координация
+- Trigger-зоны (`OuterCommZone`, `DockingPadTriggerBox`) — единственный источник истины о прибытии
+
+### Обнаружено в сцене (требуют фикса в M3.1)
+
+- ❌ `TESTZONENPC` SphereCollider `m_IsTrigger: 0` (должно быть 1) — `OuterCommZone.Awake` не может включить триггер
+- ❌ `TESTZONENPC.commRange=242.3` — слишком мало, NPC проскакивает
+- ❌ `TESTZONENPC` — нет DockingPadTriggerBox (нельзя сесть)
+- ❌ `TESTZONENPC.stationId="PRIMIUM_TEST_ZONE_2"` ≠ `DockStation_Primium.stationId="STN-PRM-001"` — `DockingZoneRegistry.GetByLocation(...)` возвращает null
+- ❌ `NPC_Ship_HeavyII_01..04.schedule` — требуется аудит после `refresh_unity`
+
+### Roadmap M3
+
+| Тикет | Что | LOC | Время |
+|-------|-----|-----|-------|
+| M3.1 | NavChecks + scene fixes (Editor tool + MCP) | 200 | 90 мин |
+| M3.2 | NpcShipController.NavTick (7 режимов) | 500 | 180 мин |
+| M3.3 | NpcShipWorld — только координация | 100 | 60 мин |
+| M3.4 | NpcShipState cleanup | 30 | 30 мин |
+| M3.5 | Verification (1 NPC, 1 route) | 0 | 60 мин |
+| M3.6 | Round trip + 4 NPC | 50 | 60 мин |
+
+Подробности: `M2_FSM_DIAGNOSIS.md` §1 (симптомы), §2 (корневые проблемы), §3 (архитектура), §4 (сцена), §6 (roadmap).
+
+---
+
 ## 2026-06-22 — T-NS07+08+09: ClientState, DTOs, Pad contention, Scene prep
 
 **Статус:** ✅ Все 10 тикетов M1 реализованы. Compile-clean.

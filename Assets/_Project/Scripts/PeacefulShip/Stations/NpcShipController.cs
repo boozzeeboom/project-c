@@ -312,6 +312,11 @@ namespace ProjectC.PeacefulShip.Stations
                 }
             }
             if (m == NavMode.Lifting) {
+                // M3.2.14: освободить старый пад (если был) перед взлётом
+                if (Docking.Core.DockingWorld.Instance != null) {
+                    var ship = GetComponent<ShipController>();
+                    if (ship != null) Docking.Core.DockingWorld.Instance.ReleaseNpcAssignment(npcInstanceId, ship.NetworkObjectId);
+                }
                 AssignedPadId = null; // новый лег — новый пад
                 var rb = GetComponent<Rigidbody>();
                 if (rb != null) {

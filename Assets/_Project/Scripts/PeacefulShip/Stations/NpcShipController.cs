@@ -303,7 +303,10 @@ namespace ProjectC.PeacefulShip.Stations
             CurrentMode = m;
             if (m == NavMode.Docked) {
                 DockedSinceTime = Time.time;
-                if (old == NavMode.Berthing) _scheduleAdvancedAfterDock = false; // после полёта — можно снова advance
+                if (old == NavMode.Berthing) {
+                    _scheduleAdvancedAfterDock = false; // после полёта — advance на след тике
+                    AdvanceScheduleForCurrentNpc();
+                }
             }
             if (m == NavMode.Lifting) {
                 var rb = GetComponent<Rigidbody>();

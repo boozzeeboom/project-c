@@ -520,8 +520,8 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: a316f0f720f17b84da73cb9e95d6cc61, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::ProjectC.Docking.Zones.OuterCommZone
-  stationId: PRIMIUM_TEST_ZONE_2
-  commRange: 236
+  stationId: PRIMIUM_TEST_ZONE
+  commRange: 600
   drawGizmos: 1
 --- !u!135 &52261665
 SphereCollider:

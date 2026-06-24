@@ -153,4 +153,97 @@ public static class FixM3SceneAndSchedule
         UnityEditor.SceneManagement.EditorSceneManager.SaveScene(scene);
 #endif
     }
+
+    // === M3.1.5: Idempotent re-fix — выровнять DockStationDefinition_TEST_NPC + OuterCommZone.stationId ===
+    // Первая версия Fix() правила Schedule.toLocationId, но DockStationDefinition_TEST_NPC
+    // (который реально используется сценой через guid a79d4dc8...) остался с PRIMIUM_TEST_ZONE_2.
+    // В результате GetByLocation("PRIMIUM_TEST_ZONE") возвращает null.
+
+    [MenuItem("Tools/ProjectC/PeacefulShip/M3.1.5 Re-apply (idempotent)")]
+    public static void ReapplyIdempotent()
+    {
+        // === A. DockStationDefinition_TEST_NPC.locationId → "PRIMIUM_TEST_ZONE" ===
+        var defNpc = AssetDatabase.LoadAssetAtPath<DockStationDefinition>(
+            "Assets/_Project/Docking/Resources/Data/DockStationDefinition_TEST_NPC.asset");
+        if (defNpc == null)
+        {
+            Debug.LogError("[FixM3.5] DockStationDefinition_TEST_NPC.asset not found");
+            return;
+        }
+        var defSo = new SerializedObject(defNpc);
+        var locProp = defSo.FindProperty("locationId");
+        var stIdProp = defSo.FindProperty("stationId");
+        if (locProp == null || stIdProp == null)
+        {
+            Debug.LogError("[FixM3.5] locationId/stationId properties not found on DockStationDefinition");
+            return;
+        }
+        string locBefore = locProp.stringValue;
+        string stBefore = stIdProp.stringValue;
+        if (locBefore != "PRIMIUM_TEST_ZONE")
+        {
+            locProp.stringValue = "PRIMIUM_TEST_ZONE";
+            defSo.ApplyModifiedProperties();
+            EditorUtility.SetDirty(defNpc);
+            AssetDatabase.SaveAssetIfDirty(defNpc);
+            Debug.Log($"[FixM3.5] DockStationDefinition_TEST_NPC.locationId: '{locBefore}' → 'PRIMIUM_TEST_ZONE'");
+        }
+        if (stBefore != "PRIMIUM_TEST_ZONE")
+        {
+            stIdProp.stringValue = "PRIMIUM_TEST_ZONE";
+            defSo.ApplyModifiedProperties();
+            EditorUtility.SetDirty(defNpc);
+            AssetDatabase.SaveAssetIfDirty(defNpc);
+            Debug.Log($"[FixM3.5] DockStationDefinition_TEST_NPC.stationId: '{stBefore}' → 'PRIMIUM_TEST_ZONE'");
+        }
+
+        // === B. OuterCommZone.stationId в сцене → "PRIMIUM_TEST_ZONE" + commRange=600 с SetDirty ===
+        var scene = SceneManager.GetSceneByName("WorldScene_0_0");
+        if (!scene.isLoaded)
+        {
+            Debug.LogError("[FixM3.5] WorldScene_0_0 not loaded");
+            return;
+        }
+        SceneManager.SetActiveScene(scene);
+        var root = GameObject.Find("DockStation_TestZone");
+        if (root == null)
+        {
+            Debug.LogError("[FixM3.5] DockStation_TestZone not found in scene");
+            return;
+        }
+        var commZone = root.GetComponent<OuterCommZone>();
+        if (commZone == null)
+        {
+            Debug.LogError("[FixM3.5] OuterCommZone not found on DockStation_TestZone");
+            return;
+        }
+        var commSo = new SerializedObject(commZone);
+        var sceneStIdProp = commSo.FindProperty("stationId");
+        var sceneRangeProp = commSo.FindProperty("commRange");
+        if (sceneStIdProp != null)
+        {
+            string stBefore2 = sceneStIdProp.stringValue;
+            if (stBefore2 != "PRIMIUM_TEST_ZONE")
+            {
+                sceneStIdProp.stringValue = "PRIMIUM_TEST_ZONE";
+                commSo.ApplyModifiedProperties();
+                EditorUtility.SetDirty(commZone);
+                Debug.Log($"[FixM3.5] OuterCommZone.stationId: '{stBefore2}' → 'PRIMIUM_TEST_ZONE'");
+            }
+        }
+        if (sceneRangeProp != null)
+        {
+            float rBefore = sceneRangeProp.floatValue;
+            if (Mathf.Abs(rBefore - 600f) > 0.01f)
+            {
+                sceneRangeProp.floatValue = 600f;
+                commSo.ApplyModifiedProperties();
+                EditorUtility.SetDirty(commZone);
+                Debug.Log($"[FixM3.5] OuterCommZone.commRange: {rBefore:F1} → 600");
+            }
+        }
+        UnityEditor.SceneManagement.EditorSceneManager.MarkSceneDirty(scene);
+        UnityEditor.SceneManagement.EditorSceneManager.SaveScene(scene);
+        Debug.Log("[FixM3.5] ✅ Re-apply complete. Save complete.");
+    }
 }

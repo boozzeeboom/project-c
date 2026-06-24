@@ -12,8 +12,8 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 6438017ff98961a4991a274123e603e2, type: 3}
   m_Name: DockStationDefinition_TEST_NPC
   m_EditorClassIdentifier: Assembly-CSharp::ProjectC.Docking.Core.DockStationDefinition
-  stationId: PRIMIUM_TEST_ZONE_2
-  locationId: PRIMIUM_TEST_ZONE_2
+  stationId: PRIMIUM_TEST_ZONE
+  locationId: PRIMIUM_TEST_ZONE
   displayName: Test station for npc
   platformCenter: {x: 40377, y: 2502.98, z: 39434}
   platformAltitude: 2502.98

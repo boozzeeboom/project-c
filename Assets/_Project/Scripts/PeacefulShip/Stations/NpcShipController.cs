@@ -394,7 +394,14 @@ namespace ProjectC.PeacefulShip.Stations
                 }
                 else
                 {
-                    Debug.LogWarning($"[NpcShipController:NPC:{npcInstanceId:X}] No station for {CurrentRoute.toLocationId} — staying Lifting");
+                    // M3.1.5: станция не найдена (locationId mismatch) — сбросить vertical velocity
+                    // чтобы NPC не всплывал по инерции вверх. И остаться в Lifting.
+                    Debug.LogWarning($"[NpcShipController:NPC:{npcInstanceId:X}] No station for {CurrentRoute.toLocationId} — staying Lifting, velocity reset");
+                    var rb = ship.GetComponent<Rigidbody>();
+                    if (rb != null)
+                    {
+                        var v = rb.linearVelocity; v.y = 0f; rb.linearVelocity = v;
+                    }
                     ApplyZeroInput();
                 }
             }

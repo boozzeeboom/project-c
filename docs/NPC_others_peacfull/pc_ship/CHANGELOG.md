@@ -4,6 +4,41 @@
 
 ---
 
+## 2026-06-24 — T-NS M3.1.5 (Idempotent re-fix: locationId + commRange) ✅ APPLIED
+
+**Сессия:** Повторное применение фиксов с правильным порядком (load scene additive → apply → save).
+**Статус:** ✅ Все 4 фикса применены и сохранены в scene + asset.
+
+### Что исправлено (Reapply Idempotent)
+
+| # | Что было | Что стало | Файл |
+|---|----------|-----------|------|
+| 1 | `DockStationDefinition_TEST_NPC.locationId = "PRIMIUM_TEST_ZONE_2"` | `"PRIMIUM_TEST_ZONE"` (синк с `NpcShipSchedule_Courier.toLocationId`) | `Docking/Resources/Data/DockStationDefinition_TEST_NPC.asset` |
+| 2 | `DockStationDefinition_TEST_NPC.stationId = "PRIMIUM_TEST_ZONE_2"` | `"PRIMIUM_TEST_ZONE"` (для label consistency в `DockStationController`) | тот же asset |
+| 3 | `WorldScene_0_0.unity:523 OuterCommZone.stationId = "PRIMIUM_TEST_ZONE_2"` | `"PRIMIUM_TEST_ZONE"` | `WorldScene_0_0.unity:523` |
+| 4 | `WorldScene_0_0.unity:524 OuterCommZone.commRange = 236` | `600` | `WorldScene_0_0.unity:524` |
+
+### Почему первый FixM3 не сработал
+
+1. **Сцена `WorldScene_0_0` была выгружена** после Stop Play → `SceneManager.GetSceneByName().isLoaded = false` → `GameObject.Find("TESTZONENPC")` возвращал `null` → `MarkSceneDirty` + `SaveScene` не выполнялись
+2. **Я менял `NpcShipSchedule.toLocationId`** на `"PRIMIUM_TEST_ZONE"`, но DockStationDefinition (в сцене) остался `"PRIMIUM_TEST_ZONE_2"`. В результате `DockingZoneRegistry.GetByLocation("PRIMIUM_TEST_ZONE")` возвращал `null` — NPC не видел станцию назначения
+
+### Также применено (код)
+
+`NpcShipController.TickLifting` — при `ResolveStationCenterPos() == None` (станция не найдена) — теперь сбрасывает `rb.linearVelocity.y = 0` чтобы NPC не всплывал по инерции вверх бесконечно
+
+### Verification (Editor-side, без Play Mode)
+
+- ✅ `DockStationDefinition_TEST_NPC.asset` на диске: `stationId: PRIMIUM_TEST_ZONE`, `locationId: PRIMIUM_TEST_ZONE`
+- ✅ `WorldScene_0_0.unity` на диске: `commRange: 600`, `stationId: PRIMIUM_TEST_ZONE`
+- ✅ Compile-clean: 0 errors
+
+### Следующий шаг
+
+Пользователь запускает Play Mode (после scene unload из Editor) и проверяет `GetByLocation("PRIMIUM_TEST_ZONE")` в `DockingZoneRegistry` — теперь должен вернуть `DockStation_TestZone`.
+
+---
+
 ## 2026-06-24 — T-NS M3.1.4 (Dwell time + BeginNewLeg) ✅ COMPILE-CLEAN
 
 **Сессия:** Плагин для автоматического старта NPC после dwell time + DebugForceLeg для MCP.

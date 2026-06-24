@@ -319,15 +319,23 @@ namespace ProjectC.PeacefulShip.Stations
             var ship = Ship;
             if (ship == null) return;
 
-            // Coast-guard: если корабль docked — мы в Docked mode, выходим
-            if (ship.IsDocked)
+            // M3.1.7: race fix. BeginNewLeg() делает ship.ExitDocked() (NGO NetworkVariable
+            // батчится, локально IsDocked остаётся true до конца Update tick).
+            // Если в том же кадре guard `if (ship.IsDocked) SetMode(Docked)` сработает —
+            // NPC фликает Docked→Lifting→Docked и dwell=60s считается заново ("2 минуты стоит").
+            // Решение: переход в Docked ТОЛЬКО если текущий mode уже Docked (повторный вход skip)
+            // или если BeginNewLeg только что был (CurrentMode == Lifting в первом кадре).
+            // Проще: просто убрать guard — TickDocked сам решает. НО если ship реально docked
+            // (после ScanExistingOccupants или TickBerthing), мы должны зафиксировать Docked.
+            // Финал: устанавливаем Docked только если текущий mode ещё Lifting/Yawing/Cruising
+            // и ship.IsDocked стал true ИЗВНЕ (не от нашего BeginNewLeg).
+            // Самый безопасный: SetMode(Docked) только если текущий mode != Docked И mode != Lifting
+            // (Lifting только что стартовал через BeginNewLeg, IsDocked=true race — skip).
+            if (ship.IsDocked && CurrentMode != NavMode.Docked && CurrentMode != NavMode.Lifting)
             {
-                if (CurrentMode != NavMode.Docked) SetMode(NavMode.Docked);
+                SetMode(NavMode.Docked);
                 return;
             }
-
-            // Docked → Lifting: при ExitDocked()
-            // (вызывается из NavDockedToLifting() из NpcShipWorld в M3.3, или через тест)
 
             switch (CurrentMode)
             {

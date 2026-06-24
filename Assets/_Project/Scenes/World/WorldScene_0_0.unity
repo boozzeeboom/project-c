@@ -521,7 +521,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::ProjectC.Docking.Zones.OuterCommZone
   stationId: PRIMIUM_TEST_ZONE
-  commRange: 600
+  commRange: 242.9
   drawGizmos: 1
 --- !u!135 &52261665
 SphereCollider:
@@ -2077,9 +2077,9 @@ MonoBehaviour:
   ShowTopMostFoldoutHeaderGroup: 1
   shipFlightClass: 3
   _customDisplayName: 
-  thrustForce: 650
+  thrustForce: 6500
   maxSpeed: 1000
-  yawForce: 200
+  yawForce: 2000
   pitchForce: 0
   verticalForce: 1200
   yawSmoothTime: 0.6
@@ -2666,9 +2666,9 @@ MonoBehaviour:
   ShowTopMostFoldoutHeaderGroup: 1
   shipFlightClass: 3
   _customDisplayName: 
-  thrustForce: 650
+  thrustForce: 65000
   maxSpeed: 1000
-  yawForce: 200
+  yawForce: 20000
   pitchForce: 0
   verticalForce: 1200
   yawSmoothTime: 0.6
@@ -6496,7 +6496,7 @@ MonoBehaviour:
   _customDisplayName: 
   thrustForce: 650
   maxSpeed: 1000
-  yawForce: 200
+  yawForce: 10000
   pitchForce: 0
   verticalForce: 1200
   yawSmoothTime: 0.6
@@ -8028,9 +8028,9 @@ MonoBehaviour:
   ShowTopMostFoldoutHeaderGroup: 1
   shipFlightClass: 3
   _customDisplayName: 
-  thrustForce: 650
+  thrustForce: 6500
   maxSpeed: 1000
-  yawForce: 200
+  yawForce: 5000
   pitchForce: 0
   verticalForce: 1200
   yawSmoothTime: 0.6

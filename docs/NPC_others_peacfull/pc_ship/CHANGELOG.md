@@ -4,6 +4,71 @@
 
 ---
 
+## 2026-06-24 — T-NS M3.1.7 (NavTick race fix: Lifting→Docked) ✅ COMPILE-CLEAN
+
+**Сессия:** Убрал guard в NavTick который срабатывал на race с NGO NetworkVariable batching.
+**Статус:** ✅ Compile-clean. Готово к Play Mode.
+
+### Корневая причина (по фактам из console)
+
+В console пользователь видел цикл:
+```
+Docked → Lifting (BeginNewLeg) → Docked (1 кадр) → Lifting (BeginNewLeg) → Yawing
+```
+
+**`Lifting → Docked` через 1 кадр после `BeginNewLeg`.**
+
+Цепочка:
+1. `BeginNewLeg()` → `ship.ExitDocked()` → `_netIsDocked.Value = false` (NGO батчит broadcast)
+2. `BeginNewLeg()` → `SetMode(Lifting)` — внутри того же Update tick
+3. Другой `NavTick` в том же кадре проверяет `ship.IsDocked` — **NGO батч ещё не применён**, локально `IsDocked=true`
+4. Guard `if (ship.IsDocked) SetMode(Docked)` срабатывает
+5. NPC фликает Docked → Lifting → Docked
+6. `state.DockedSinceTime` сбрасывается → **новые 60 сек dwell** (пользователь видит "2 минуты стоит")
+7. Цикл повторяется
+
+**Это объясняет "2 минуты криво стоят потом рванут вверх"** — два dwell-цикла по 60s = 120s.
+
+### Фикс
+
+```csharp
+// БЫЛО (race):
+if (ship.IsDocked) {
+    if (CurrentMode != NavMode.Docked) SetMode(NavMode.Docked);
+    return;
+}
+
+// СТАЛО (M3.1.7):
+// Skip guard если только что стартовали Lifting (CurrentMode == Lifting означает BeginNewLeg был)
+if (ship.IsDocked && CurrentMode != NavMode.Docked && CurrentMode != NavMode.Lifting) {
+    SetMode(NavMode.Docked);
+    return;
+}
+```
+
+`CurrentMode == Lifting` после `BeginNewLeg` означает: "мы только что ExitDocked, race в порядке, IsDocked станет false на следующем кадре". Skip.
+
+### Verification
+
+- ✅ Compile-clean: 0 errors
+- ⚠️ Не тестировалось в Play Mode (нужен ручной запуск)
+
+### Что пользователь увидит
+
+- **Первый dwell 60s** (вместо 120s) → Lifting → Yawing → ... без флика
+- NPC больше не "2 минуты стоит"
+- ⚠️ **Yaw force=200 всё ещё мал** для mass=2000 (пользователь сказал сам менять)
+- ⚠️ AutoStabilize не работает во время yaw input (NPC может опрокидываться)
+
+### Что НЕ менялось (M3.6)
+
+- ❌ Pad placement (+2f) — пользователь не просил
+- ❌ yawForce (пользователь сам настраивает)
+- ❌ AutoStabilization (требует изменения ShipController)
+- ❌ CommRange overlap (пользователь сам уменьшил TestZone до 242.9)
+
+---
+
 ## 2026-06-24 — T-NS M3.1.6 (KillVerticalVelocity + унификация forces) ✅ APPLIED
 
 **Сессия:** Устранение momentum-drift в Yawing + унификация `yawForce` (50/50/500/5000 → 200 для всех).

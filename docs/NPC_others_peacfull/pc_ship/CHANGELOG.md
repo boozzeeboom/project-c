@@ -4,6 +4,80 @@
 
 ---
 
+## 2026-06-24 — T-NS M3.2 (полный rewrite NPC movement на прямой Rigidbody) ✅ COMPILE-CLEAN
+
+**Commit:** `bc5444b`
+
+### Честный отчёт: 5 итераций без понимания физики
+
+| Итерация | Что пытался | Что получалось |
+|----------|-------------|----------------|
+| M3.1.7 | NavTick race fix | Сломал — NPC застрял |
+| M3.1.8 | Убрал guard + solid collider | Solid collider был нужен |
+| M3.1.9 | route + padId sync | Работало, но появилась проблема Berthing |
+| M3.1.10 | bearing gate + zero-angular + ignore-collision | NPC "ползли" |
+| M3.1.11 | crane-approach (9d8bc1c формулы) | Course correction остался, NPC всё равно не разворачивались |
+
+### Корневая причина (вскрыта при анализе 9d8bc1c)
+
+`ShipController.ApplyRotation`:
+```csharp
+_rb.AddTorque(Vector3.up * yawRate, ForceMode.Force);
+```
+
+**`ForceMode.Force` для Rigidbody.AddTorque применяет значение как TORQUE (Н⋅м), не angular velocity.**
+
+Цепочка: `ApplyServerInput` → `targetYawRate = avgYaw * yawForce` (degrees/sec) → SmoothDamp → `AddTorque(ForceMode.Force)` (interprets as torque).
+
+С `mass=2000, inertiaTensor.y~50000`, `yawForce=50` → `yawRate=15` → `torque=15 Н⋅м` → **accel = 15/50000 = 0.0003 рад/с² = 0.017°/с²**. 10000 сек = 2.7 часа на поворот 180°.
+
+Даже `yawForce=5000` → 0.17°/с² → 17 минут. Не "почти", а безнадёжно.
+
+### Решение (M3.2)
+
+**Прямой Rigidbody control без `ApplyServerInput`:**
+
+- `MoveRotation(Quaternion.AngleAxis)` для yaw — прямое вращение за кадр
+- `linearVelocity = dir * speed` для thrust
+- `rb.angularVelocity = Vector3.zero` для стабилизации
+- Не трогаю `ShipController` (игрок не затронут)
+
+### Новая архитектура NavTick
+
+```
+Docked (dwell 60s)
+  → Lifting: rb.linearVelocity = (0, liftSpeed, 0)
+    → Yawing: rb.MoveRotation(Quaternion.AngleAxis(yaw + step, up))
+      → Cruising: rb.MoveRotation + rb.linearVelocity = dir * speed
+        → Berthing: rb.linearVelocity = dir * min(speed, dist*2)
+          → dist < 1.5m → EnterDocked → Docked
+```
+
+5-mode FSM (упрощено с 7). Каждый mode = один прямой эффект на Rigidbody.
+
+### Изменённые файлы
+
+| Файл | Изменения |
+|------|-----------|
+| `NpcShipController.cs` | +187 строк (NavTick, TickLift, TickYaw, TickCruise, TickBerth, SetMode). Минует ApplyMovementInput |
+| `NpcShipWorld.cs` | Update() теперь только вызывает controller.NavTick(dt). Fix AssignPadForNpc возвращает string не bool |
+| 3 других файла | Откат к 9d8bc1c состоянию |
+
+### Verification
+
+- ✅ Compile-clean: 0 errors
+- ✅ Commit `bc5444b`
+- ⚠️ Не тестировалось в Play Mode (нужен ручной запуск)
+
+### Что должно произойти в Play Mode
+
+- NPC через 60s взлетают на 5м (`linearVelocity.y = 8`)
+- Поворачиваются со скоростью 45°/sec к TestZone (maxYawRate)
+- Летят к TestZone на 12 m/s
+- При dist<1.5m → EnterDocked → Docked → цикл (если есть next route)
+
+---
+
 ## 2026-06-24 — T-NS M3.1.10 (3 фикса: bearing gate + zero-angular + ignore-NPC-collision) ✅ COMPILE-CLEAN
 
 **Сессия:** Глубокий анализ по фидбэку пользователя "yawForce не влияет, вертолёты, ползут куда попало".

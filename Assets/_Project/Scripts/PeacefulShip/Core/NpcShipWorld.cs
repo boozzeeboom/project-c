@@ -74,14 +74,22 @@ namespace ProjectC.PeacefulShip.Core
         // === Public API (server-side) ===
 
         public void RegisterNpc(ulong id, ShipController ship, NpcShipSchedule schedule)
-        {
-            if (id == 0 || ship == null) return;
-            if (_npcByInstanceId.ContainsKey(id)) return; // idempotent
+                {
+                    if (id == 0 || ship == null) return;
+                    if (_npcByInstanceId.ContainsKey(id)) return; // idempotent
 
-            _npcByInstanceId[id] = new NpcShipState(id, ship);
-            _scheduleByNpcInstanceId[id] = schedule;
-            Debug.Log($"[NpcShipWorld] RegisterNpc id={id:X}");
-        }
+                    var state = new NpcShipState(id, ship);
+                    // M3.2.1: задать первый route при регистрации. Без этого state.CurrentRoute пустой,
+                    // и NavTick.ResolveTargetStation() возвращает null → NPC зависает в Lifting без цели.
+                    if (schedule != null && schedule.routes != null && schedule.routes.Length > 0)
+                    {
+                        state.CurrentRoute = schedule.routes[0];
+                        state.ScheduleIndex = 0;
+                    }
+                    _npcByInstanceId[id] = state;
+                    _scheduleByNpcInstanceId[id] = schedule;
+                    Debug.Log($"[NpcShipWorld] RegisterNpc id={id:X}");
+                }
 
         public void UnregisterNpc(ulong id)
         {
@@ -106,11 +114,11 @@ namespace ProjectC.PeacefulShip.Core
         /// Per-frame FSM tick — вызывается у каждого зарегистрированного NPC.
         /// Документация: docs/NPC_others_peacfull/pc_ship/04_LIVING_BEHAVIOR.md §2.
         /// </summary>
-        private void Update()
+        private void FixedUpdate()
                 {
                     if (!ProjectC.Trade.Network.NetworkingUtils.IsServerSafe()) return;
 
-                    float dt = Time.fixedDeltaTime;  // Используем fixedDeltaTime для синхронизации с FixedUpdate
+                    float dt = Time.fixedDeltaTime;
                     foreach (var state in _npcByInstanceId.Values)
                     {
                         if (state == null || state.Ship == null) continue;
@@ -118,7 +126,7 @@ namespace ProjectC.PeacefulShip.Core
                         if (controller == null) continue;
 
                         // M3.2: только NavTick с прямым Rigidbody control.
-                        // Старая TickNpc (через ApplyMovementInput -> ApplyServerInput -> AddTorque) НЕ работает.
+                        // ShipController.FixedUpdate пропускает физику если _hasNpcPilot && _pilots.Count==0.
                         controller.NavTick(dt);
                     }
                 }

@@ -823,6 +823,12 @@ namespace ProjectC.Player
             if (!IsServer) return;
             if (_pilots.Count == 0 && !_hasNpcPilot) return;  // T-NS01 (Q2): NPC-pilot bypasses pilot gate
 
+            // M3.2: если NPC-pilot активен и нет пилотов-игроков — вся физика через NavTick.
+            // ShipController.ApplyServerInput -> SmoothDamp -> AddTorque(ForceMode.Force)
+            // НЕ работает для mass=2000 (torque=Н⋅м, angular accel ~0.02°/с²).
+            // NavTick управляет Rigidbody напрямую: MoveRotation + linearVelocity.
+            if (_hasNpcPilot && _pilots.Count == 0) return;
+
             float dt = Time.fixedDeltaTime;
 
             // 1. Усредняем ввод от всех пилотов

@@ -78,11 +78,16 @@ namespace ProjectC.Combat
         public void RebuildSources()
         {
             _activeSources.Clear();
-            if (EquipmentWorld.Instance == null) return;
+            if (EquipmentWorld.Instance == null)
+            {
+                EnsureUnarmedFallback();
+                return;
+            }
 
             var equip = EquipmentWorld.Instance.GetEquipment(_clientId);
             TryAddSourceFromSlot(equip, EquipSlot.WeaponMain, "WeaponMain");
             TryAddSourceFromSlot(equip, EquipSlot.WeaponOff, "WeaponOff");
+            EnsureUnarmedFallback();  // v0.1.3: unarmed fallback
         }
 
         private void TryAddSourceFromSlot(EquipmentData equip, EquipSlot slot, string slotName)
@@ -101,6 +106,18 @@ namespace ProjectC.Combat
             // MVP: всегда DefaultDamageSource (fallback). После T-CB03:
             //   if (data is WeaponItemData w) _activeSources.Add(new WeaponDamageSource(w, itemId));
             _activeSources.Add(new DefaultDamageSource((ulong)itemId, $"{slotName}:{data.itemName}"));
+        }
+
+        /// <summary>
+        /// v0.1.3: Гарантировать наличие хотя бы одного IDamageSource (unarmed fallback).
+        /// Если WeaponMain + WeaponOff пусты, добавить DefaultDamageSource(0, "Unarmed") —
+        /// debug-K-key шлёт sourceId=0, иначе ResolveAttack вернёт InvalidSource.
+        /// </summary>
+        private void EnsureUnarmedFallback()
+        {
+            if (_activeSources.Count > 0) return;
+            _activeSources.Add(new DefaultDamageSource(0UL, "Unarmed"));
+            if (Debug.isDebugBuild) Debug.Log($"[PlayerAttacker] No weapon equipped — added Unarmed fallback source (id=0). clientId={_clientId}");
         }
 
         public Vector3 GetPosition() => transform.position;

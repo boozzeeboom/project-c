@@ -95,6 +95,16 @@ namespace ProjectC.Combat
             {
                 Debug.Log($"[NpcTarget] npc={_targetId} took {result.finalDamage} from attacker={attackerClientId} (HP {_currentHp.Value + result.finalDamage} → {newHp}, isCrit={result.isCrit}, type={result.damageType})");
             }
+
+            // v0.1.4: при смерти — скрыть GO через 3 сек (corpse delay). За это время:
+            //   - клиенты увидят анимацию смерти / damage feedback
+            //   - EntityKilledTargetRpc успеет дойти
+            //   - respawn можно сделать позже (Phase 2)
+            if (newHp == 0)
+            {
+                if (Debug.isDebugBuild) Debug.Log($"[NpcTarget] npc={_targetId} killed. Destroying in 3s (corpse delay).");
+                Destroy(gameObject, 3.0f);
+            }
         }
     }
 }

@@ -35,6 +35,12 @@ namespace ProjectC.Combat
 
         // === Lifecycle ===
 
+        /// <summary>
+        /// T-RTC06 (v0.1.2): Second-chance recovery через 1 сек после OnNetworkSpawn.
+        /// Race condition: если Player.NetworkObject spawned'ится ПОЗЖЕ CombatServer,
+        /// push-down в OnNetworkSpawn его не ловит (Player ещё не в сцене FindObjectsByType
+        /// на момент OnNetworkSpawn). Invoke через 1 сек повторяет find — подхватывает.
+        /// </summary>
         public override void OnNetworkSpawn()
         {
             base.OnNetworkSpawn();
@@ -51,6 +57,14 @@ namespace ProjectC.Combat
             // (race condition: их OnNetworkSpawn мог сработать раньше нашего Instance = this).
             // После этого — все combat entities синхронизированы.
             RecoverExistingEntities();
+
+            // T-RTC06 (v0.1.2): Second-chance через 1 сек — для Player, чей NetworkObject
+            // spawned'ится ПОЗЖЕ CombatServer (push-down в OnNetworkSpawn его не ловит).
+            if (IsInvoking(nameof(RecoverExistingEntities)))
+            {
+                CancelInvoke(nameof(RecoverExistingEntities));
+            }
+            Invoke(nameof(RecoverExistingEntities), 1.0f);
         }
 
         public override void OnNetworkDespawn()
@@ -62,6 +76,9 @@ namespace ProjectC.Combat
         /// <summary>
         /// T-RTC06 (v0.1 fix): Подобрать уже-спавненные IAttacker/IDamageTarget в сцене
         /// и зарегистрировать тех, кто ещё не зарегистрирован. Страховка от race condition.
+        /// v0.1.2 fix: убран skip `if (id == 0) continue;` для Player (0 = валидный clientId для host).
+        /// v0.1.2 fix: добавлен second-chance recovery через Start (для Player, чей NetworkObject
+        /// spawned'ится ПОЗЖЕ CombatServer — push-down в OnNetworkSpawn его не ловит).
         /// </summary>
         private void RecoverExistingEntities()
         {
@@ -69,8 +86,7 @@ namespace ProjectC.Combat
             foreach (var pa in playerAttackers)
             {
                 if (pa == null) continue;
-                ulong id = pa.ClientId;
-                if (id == 0) continue;
+                ulong id = pa.ClientId;  // 0 = host player, ВАЛИДНО
                 if (!_attackers.ContainsKey(id))
                 {
                     _attackers[id] = pa;
@@ -82,8 +98,7 @@ namespace ProjectC.Combat
             foreach (var pt in playerTargets)
             {
                 if (pt == null) continue;
-                ulong id = pt.ClientId;
-                if (id == 0) continue;
+                ulong id = pt.ClientId;  // 0 = host player, ВАЛИДНО
                 if (!_targets.ContainsKey(id))
                 {
                     _targets[id] = pt;
@@ -96,7 +111,7 @@ namespace ProjectC.Combat
             {
                 if (na == null) continue;
                 ulong id = na.GetAttackerId();
-                if (id == 0) continue;
+                if (id == 0) continue;  // для NPC id==0 = не инициализирован
                 if (!_attackers.ContainsKey(id))
                 {
                     _attackers[id] = na;
@@ -109,7 +124,7 @@ namespace ProjectC.Combat
             {
                 if (nt == null) continue;
                 ulong id = nt.GetTargetId();
-                if (id == 0) continue;
+                if (id == 0) continue;  // для NPC id==0 = не инициализирован
                 if (!_targets.ContainsKey(id))
                 {
                     _targets[id] = nt;

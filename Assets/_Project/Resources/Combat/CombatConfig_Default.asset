@@ -1,0 +1,28 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 755f2314443aadc429886dab5c1e2cc7, type: 3}
+  m_Name: CombatConfig_Default
+  m_EditorClassIdentifier: Assembly-CSharp::ProjectC.Combat.Config.CombatConfig
+  baseMeleeHitChance: 0.85
+  baseRangedHitChance: 0.75
+  dexHitMultiplier: 0.015
+  baseCritThreshold: 100
+  critMultiplier: 2
+  antigravArmorMult: 0.5
+  explosiveArmorMult: 0.7
+  mesiumArmorMult: 0
+  baseMeleeCooldown: 1
+  baseRangedCooldown: 1.5
+  serverTickRate: 30
+  showDamageNumbers: 1
+  showHitFlash: 1
+  damageNumberDuration: 1.5

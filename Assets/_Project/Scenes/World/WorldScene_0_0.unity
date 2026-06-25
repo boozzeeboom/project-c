@@ -2052,15 +2052,15 @@ MonoBehaviour:
   npcInstanceId: 0
   npcThrustMult: 0.6
   npcYawMult: 0.4
-  liftClearanceMeters: 5
-  yawAlignEntryDeg: 15
-  yawAlignExitDeg: 5
-  yawGainCoarse: 0.02
-  thrustSlowdownWindowMeters: 100
-  maxThrustInput: 0.6
+  npcArrivalToleranceMeters: 50
   antiGravityBoostDuration: 5
   antiGravityBoostValue: 1.5
   debugMode: 1
+  LiftSpeed: 8
+  CruiseSpeed: 12
+  ApproachSpeed: 5
+  MaxYawRate: 45
+  DwellTime: 5
   useNewNavTick: 1
 --- !u!114 &209819097
 MonoBehaviour:
@@ -2641,15 +2641,15 @@ MonoBehaviour:
   npcInstanceId: 0
   npcThrustMult: 0.6
   npcYawMult: 0.4
-  liftClearanceMeters: 5
-  yawAlignEntryDeg: 15
-  yawAlignExitDeg: 5
-  yawGainCoarse: 0.02
-  thrustSlowdownWindowMeters: 100
-  maxThrustInput: 0.6
+  npcArrivalToleranceMeters: 50
   antiGravityBoostDuration: 5
   antiGravityBoostValue: 1.5
   debugMode: 1
+  LiftSpeed: 8
+  CruiseSpeed: 12
+  ApproachSpeed: 5
+  MaxYawRate: 45
+  DwellTime: 5
   useNewNavTick: 1
 --- !u!114 &306382035
 MonoBehaviour:
@@ -6469,15 +6469,15 @@ MonoBehaviour:
   npcInstanceId: 0
   npcThrustMult: 0.6
   npcYawMult: 0.4
-  liftClearanceMeters: 5
-  yawAlignEntryDeg: 15
-  yawAlignExitDeg: 5
-  yawGainCoarse: 0.02
-  thrustSlowdownWindowMeters: 100
-  maxThrustInput: 0.6
+  npcArrivalToleranceMeters: 50
   antiGravityBoostDuration: 5
   antiGravityBoostValue: 1.5
   debugMode: 1
+  LiftSpeed: 8
+  CruiseSpeed: 12
+  ApproachSpeed: 5
+  MaxYawRate: 45
+  DwellTime: 5
   useNewNavTick: 1
 --- !u!114 &897557593
 MonoBehaviour:
@@ -8003,15 +8003,15 @@ MonoBehaviour:
   npcInstanceId: 0
   npcThrustMult: 0.6
   npcYawMult: 0.4
-  liftClearanceMeters: 5
-  yawAlignEntryDeg: 15
-  yawAlignExitDeg: 5
-  yawGainCoarse: 0.02
-  thrustSlowdownWindowMeters: 100
-  maxThrustInput: 0.6
+  npcArrivalToleranceMeters: 50
   antiGravityBoostDuration: 5
   antiGravityBoostValue: 1.5
   debugMode: 1
+  LiftSpeed: 8
+  CruiseSpeed: 12
+  ApproachSpeed: 5
+  MaxYawRate: 45
+  DwellTime: 5
   useNewNavTick: 1
 --- !u!114 &1058054673
 MonoBehaviour:
@@ -13738,6 +13738,94 @@ SphereCollider:
   serializedVersion: 3
   m_Radius: 1.53
   m_Center: {x: 0, y: 0, z: 0}
+--- !u!1 &1769391236
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 1769391238}
+  - component: {fileID: 1769391237}
+  - component: {fileID: 1769391240}
+  - component: {fileID: 1769391239}
+  m_Layer: 0
+  m_Name: NPC_TestEnemy
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!114 &1769391237
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1769391236}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: d5a57f767e5e46a458fc5d3c628d0cbb, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Unity.Netcode.Runtime::Unity.Netcode.NetworkObject
+  GlobalObjectIdHash: 2096563799
+  InScenePlacedSourceGlobalObjectIdHash: 0
+  DeferredDespawnTick: 0
+  Ownership: 1
+  AlwaysReplicateAsRoot: 0
+  SynchronizeTransform: 1
+  ActiveSceneSynchronization: 0
+  SceneMigrationSynchronization: 0
+  SpawnWithObservers: 1
+  DontDestroyWithOwner: 0
+  AutoObjectParentSync: 1
+  SyncOwnerTransformWhenParented: 1
+  AllowOwnerToParent: 0
+--- !u!4 &1769391238
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1769391236}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 40000, y: 2502.77, z: 40083.8}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 0}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &1769391239
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1769391236}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 5ee11148b5c08894495fd4a3b89de0a4, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::ProjectC.Combat.NpcTarget
+  ShowTopMostFoldoutHeaderGroup: 1
+  _data: {fileID: 11400000, guid: 315d4986040ecde429b737c8ba179721, type: 2}
+  _maxHpOverride: 0
+--- !u!114 &1769391240
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1769391236}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 419f4361dd8b41d4e8f33b09cb72ea8e, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::ProjectC.Combat.NpcAttacker
+  _data: {fileID: 11400000, guid: 315d4986040ecde429b737c8ba179721, type: 2}
+  _attackerIdOverride: 0
 --- !u!1 &1782230265
 GameObject:
   m_ObjectHideFlags: 0
@@ -16215,3 +16303,4 @@ SceneRoots:
   - {fileID: 209819095}
   - {fileID: 1058054671}
   - {fileID: 897557591}
+  - {fileID: 1769391238}

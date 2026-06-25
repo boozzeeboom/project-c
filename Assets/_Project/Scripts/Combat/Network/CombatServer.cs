@@ -45,12 +45,82 @@ namespace ProjectC.Combat
             }
             Instance = this;
             Debug.Log("[CombatServer] OnNetworkSpawn: Instance set, IsServer=True.");
+
+            // T-RTC06 (v0.1 fix): Push-down registration — подобрать всех PlayerAttacker/NpcAttacker/
+            // PlayerTarget/NpcTarget в сцене, которые уже NetworkSpawn'нулись, но не зарегистрированы
+            // (race condition: их OnNetworkSpawn мог сработать раньше нашего Instance = this).
+            // После этого — все combat entities синхронизированы.
+            RecoverExistingEntities();
         }
 
         public override void OnNetworkDespawn()
         {
             base.OnNetworkDespawn();
             if (Instance == this) Instance = null;
+        }
+
+        /// <summary>
+        /// T-RTC06 (v0.1 fix): Подобрать уже-спавненные IAttacker/IDamageTarget в сцене
+        /// и зарегистрировать тех, кто ещё не зарегистрирован. Страховка от race condition.
+        /// </summary>
+        private void RecoverExistingEntities()
+        {
+            var playerAttackers = FindObjectsByType<PlayerAttacker>(FindObjectsSortMode.None);
+            foreach (var pa in playerAttackers)
+            {
+                if (pa == null) continue;
+                ulong id = pa.ClientId;
+                if (id == 0) continue;
+                if (!_attackers.ContainsKey(id))
+                {
+                    _attackers[id] = pa;
+                    if (Debug.isDebugBuild) Debug.Log($"[CombatServer] RecoverExistingEntities: registered PlayerAttacker id={id}");
+                }
+            }
+
+            var playerTargets = FindObjectsByType<PlayerTarget>(FindObjectsSortMode.None);
+            foreach (var pt in playerTargets)
+            {
+                if (pt == null) continue;
+                ulong id = pt.ClientId;
+                if (id == 0) continue;
+                if (!_targets.ContainsKey(id))
+                {
+                    _targets[id] = pt;
+                    if (Debug.isDebugBuild) Debug.Log($"[CombatServer] RecoverExistingEntities: registered PlayerTarget id={id}");
+                }
+            }
+
+            var npcAttackers = FindObjectsByType<NpcAttacker>(FindObjectsSortMode.None);
+            foreach (var na in npcAttackers)
+            {
+                if (na == null) continue;
+                ulong id = na.GetAttackerId();
+                if (id == 0) continue;
+                if (!_attackers.ContainsKey(id))
+                {
+                    _attackers[id] = na;
+                    if (Debug.isDebugBuild) Debug.Log($"[CombatServer] RecoverExistingEntities: registered NpcAttacker id={id}");
+                }
+            }
+
+            var npcTargets = FindObjectsByType<NpcTarget>(FindObjectsSortMode.None);
+            foreach (var nt in npcTargets)
+            {
+                if (nt == null) continue;
+                ulong id = nt.GetTargetId();
+                if (id == 0) continue;
+                if (!_targets.ContainsKey(id))
+                {
+                    _targets[id] = nt;
+                    if (Debug.isDebugBuild) Debug.Log($"[CombatServer] RecoverExistingEntities: registered NpcTarget id={id}");
+                }
+            }
+
+            if (Debug.isDebugBuild)
+            {
+                Debug.Log($"[CombatServer] RecoverExistingEntities done: attackers={_attackers.Count}, targets={_targets.Count}");
+            }
         }
 
         // === Registration (called by PlayerAttacker/NpcAttacker at spawn) ===

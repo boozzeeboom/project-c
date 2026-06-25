@@ -1,5 +1,6 @@
 // Project C: Real-Time Combat Engine — T-RTC03
-// NpcAttacker: реализация IAttacker для NPC-врага. MonoBehaviour, не NetworkBehaviour (NPC спавнятся через host's authority).
+// NpcAttacker: реализация IAttacker для NPC-врага. NetworkBehaviour (был MonoBehaviour —
+// изменено v0.1 для self-register в CombatServer через OnNetworkSpawn).
 // Design: docs/Character/Skills/real-time-combat/10_DESIGN.md §3.3.
 //
 // Cooldown — per-NPC (внутри компонента), не централизованный: NPC-враги малочисленны
@@ -10,11 +11,12 @@
 
 using System.Collections.Generic;
 using UnityEngine;
+using Unity.Netcode;
 using ProjectC.Combat.Core;
 
 namespace ProjectC.Combat
 {
-    public class NpcAttacker : MonoBehaviour, IAttacker
+    public class NpcAttacker : NetworkBehaviour, IAttacker
     {
         [SerializeField] private NpcCombatData _data;
         [Tooltip("Stable id для RPC. Default = GetInstanceID. Переопредели если NPC спавнится динамически.")]
@@ -33,6 +35,29 @@ namespace ProjectC.Combat
             _data = data;
             Target = target;
             _defaultSource = new NpcDefaultDamageSource(this);
+        }
+
+        /// <summary>
+        /// T-RTC06 (v0.1 fix): Self-register в CombatServer при NetworkSpawn (server-side only).
+        /// </summary>
+        public override void OnNetworkSpawn()
+        {
+            base.OnNetworkSpawn();
+            if (!IsServer) return;
+            if (CombatServer.Instance != null)
+            {
+                CombatServer.Instance.RegisterAttacker(GetAttackerId(), this);
+            }
+        }
+
+        public override void OnNetworkDespawn()
+        {
+            base.OnNetworkDespawn();
+            if (!IsServer) return;
+            if (CombatServer.Instance != null)
+            {
+                CombatServer.Instance.UnregisterAttacker(GetAttackerId());
+            }
         }
 
         public Vector3 GetPosition() => transform.position;

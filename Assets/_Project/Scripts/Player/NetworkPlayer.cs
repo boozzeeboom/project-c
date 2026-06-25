@@ -268,6 +268,40 @@ namespace ProjectC.Player
             if (Debug.isDebugBuild) Debug.Log($"[NetworkPlayer] UnregisterFromCombatServer: clientId={OwnerClientId}");
         }
 
+        /// <summary>
+        /// T-RTC06 (DEBUG): Найти ближайший NpcTarget в радиусе 5м и отправить RequestAttackRpc.
+        /// ВРЕМЕННЫЙ код — только для verify CombatEngine в Play Mode. Удалить в Phase 2
+        /// (когда будет нормальный targeting через raycast + UI).
+        /// </summary>
+        private void DebugAttackNearestNpc()
+        {
+            const float MAX_RANGE = 5.0f;
+            NpcTarget nearest = null;
+            float bestDistSq = MAX_RANGE * MAX_RANGE;
+
+            foreach (var npc in FindObjectsByType<NpcTarget>(FindObjectsSortMode.None))
+            {
+                if (npc == null || !npc.IsAlive()) continue;
+                float dSq = (npc.transform.position - transform.position).sqrMagnitude;
+                if (dSq < bestDistSq)
+                {
+                    bestDistSq = dSq;
+                    nearest = npc;
+                }
+            }
+
+            if (nearest == null)
+            {
+                Debug.Log($"[NetworkPlayer] K-attack: no NpcTarget within {MAX_RANGE}м.");
+                return;
+            }
+
+            // sourceId = 0 (первый source в PlayerAttacker; после T-CB03 — реальный weapon id).
+            ulong targetId = nearest.GetTargetId();
+            Debug.Log($"[NetworkPlayer] K-attack: targetId={targetId}, dist={Mathf.Sqrt(bestDistSq):F2}м");
+            CombatServer.Instance.RequestAttackRpc(targetId, 0UL);
+        }
+
         public override void OnNetworkDespawn()
         {
             base.OnNetworkDespawn();
@@ -523,6 +557,16 @@ namespace ProjectC.Player
                             TryPickup();
                         }
                     }
+                }
+
+                // T-RTC06 (DEBUG): K — debug-attack nearest NPC. ВРЕМЕННЫЙ (только для verify).
+                // Найти ближайший NpcTarget в радиусе 5м → RequestAttackRpc.
+                if (Keyboard.current.kKey.wasPressedThisFrame
+                    && NetworkManager.Singleton != null
+                    && IsSpawned
+                    && CombatServer.Instance != null)
+                {
+                    DebugAttackNearestNpc();
                 }
 
                 FindNearestInteractable();

@@ -26,6 +26,29 @@ namespace ProjectC.Combat
             _currentHp.Value = hp;
         }
 
+        /// <summary>
+        /// T-RTC06 (v0.1 fix): Self-register в CombatServer при NetworkSpawn (server-side only).
+        /// </summary>
+        public override void OnNetworkSpawn()
+        {
+            base.OnNetworkSpawn();
+            if (!IsServer) return;
+            if (CombatServer.Instance != null)
+            {
+                CombatServer.Instance.RegisterTarget(GetTargetId(), this);
+            }
+        }
+
+        public override void OnNetworkDespawn()
+        {
+            base.OnNetworkDespawn();
+            if (!IsServer) return;
+            if (CombatServer.Instance != null)
+            {
+                CombatServer.Instance.UnregisterTarget(GetTargetId());
+            }
+        }
+
         public Vector3 GetPosition() => transform.position;
         public int GetCurrentHp() => _currentHp.Value;
         public int GetMaxHp() => _maxHp.Value;

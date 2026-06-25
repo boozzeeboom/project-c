@@ -31,6 +31,31 @@ namespace ProjectC.Combat
             _clientId = clientId;
         }
 
+        /// <summary>
+        /// T-RTC06: Self-register в CombatServer при NetworkSpawn (server-side only).
+        /// Решает race condition: NetworkPlayer.OnNetworkSpawn может сработать РАНЬШЕ
+        /// CombatServer.OnNetworkSpawn. Push-down в CombatServer.OnNetworkSpawn страхует.
+        /// </summary>
+        public override void OnNetworkSpawn()
+        {
+            base.OnNetworkSpawn();
+            if (!IsServer) return;
+            if (_clientId != 0 && CombatServer.Instance != null)
+            {
+                CombatServer.Instance.RegisterTarget(_clientId, this);
+            }
+        }
+
+        public override void OnNetworkDespawn()
+        {
+            base.OnNetworkDespawn();
+            if (!IsServer) return;
+            if (CombatServer.Instance != null && _clientId != 0)
+            {
+                CombatServer.Instance.UnregisterTarget(_clientId);
+            }
+        }
+
         public Vector3 GetPosition() => transform.position;
         public int GetCurrentHp() => _currentHp.Value;
         public int GetMaxHp() => _maxHp.Value;

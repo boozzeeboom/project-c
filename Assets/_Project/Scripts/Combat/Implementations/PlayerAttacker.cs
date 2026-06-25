@@ -11,6 +11,7 @@
 
 using System.Collections.Generic;
 using UnityEngine;
+using Unity.Netcode;
 using ProjectC.Combat.Core;
 using ProjectC.Equipment;
 using ProjectC.Items;
@@ -18,7 +19,12 @@ using ProjectC.Stats;
 
 namespace ProjectC.Combat
 {
-    public class PlayerAttacker : MonoBehaviour, IAttacker
+    /// <summary>
+    /// T-RTC02: Реализация <see cref="IAttacker"/> для NetworkPlayer.
+    /// Наследует <c>NetworkBehaviour</c> (НЕ <c>MonoBehaviour</c>) — даёт <c>OnNetworkSpawn</c> hook
+    /// для self-registration в <c>CombatServer</c>. Add-only патч: см. v0.1 changelog.
+    /// </summary>
+    public class PlayerAttacker : NetworkBehaviour, IAttacker
     {
         private ulong _clientId;
         private readonly List<IDamageSource> _activeSources = new List<IDamageSource>();
@@ -29,11 +35,40 @@ namespace ProjectC.Combat
         /// <summary>Back-reference для CombatServer (server reads this for IDamageTarget).</summary>
         public ulong ClientId => _clientId;
 
-        /// <summary>Инициализация (вызывается из NetworkPlayer.OnNetworkSpawn, server-side only).</summary>
+        /// <summary>Инициализация (вызывается из NetworkPlayer.OnNetworkSpawn или из своего OnNetworkSpawn).</summary>
         public void Initialize(ulong clientId)
         {
             _clientId = clientId;
             RebuildSources();
+        }
+
+        /// <summary>
+        /// T-RTC06: Self-register в CombatServer при NetworkSpawn.
+        /// Решает race condition: NetworkPlayer.OnNetworkSpawn может сработать РАНЬШЕ
+        /// CombatServer.OnNetworkSpawn (порядок scene-spawn не гарантирован).
+        /// Push-down в CombatServer.OnNetworkSpawn страхует второй стороной.
+        /// </summary>
+        public override void OnNetworkSpawn()
+        {
+            base.OnNetworkSpawn();
+            if (!IsServer) return;
+            // _clientId должен быть уже выставлен NetworkPlayer.RegisterWithCombatServer.
+            // Если Instance уже доступен — регистрируемся. Иначе push-down в CombatServer
+            // подхватит позже.
+            if (_clientId != 0 && CombatServer.Instance != null)
+            {
+                CombatServer.Instance.RegisterAttacker(_clientId, this);
+            }
+        }
+
+        public override void OnNetworkDespawn()
+        {
+            base.OnNetworkDespawn();
+            if (!IsServer) return;
+            if (CombatServer.Instance != null && _clientId != 0)
+            {
+                CombatServer.Instance.UnregisterAttacker(_clientId);
+            }
         }
 
         /// <summary>

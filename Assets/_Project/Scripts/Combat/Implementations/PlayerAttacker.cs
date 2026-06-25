@@ -103,9 +103,16 @@ namespace ProjectC.Combat
             var data = inv.GetItemDefinition(itemId);
             if (data == null) return;
 
-            // MVP: всегда DefaultDamageSource (fallback). После T-CB03:
-            //   if (data is WeaponItemData w) _activeSources.Add(new WeaponDamageSource(w, itemId));
-            _activeSources.Add(new DefaultDamageSource((ulong)itemId, $"{slotName}:{data.itemName}"));
+            // T-CB03: если это WeaponItemData — использовать WeaponDamageSource (real ERPR).
+            // Иначе fallback на DefaultDamageSource (unarmed / non-weapon slot).
+            if (data is ProjectC.Equipment.WeaponItemData w)
+            {
+                _activeSources.Add(new WeaponDamageSource(w, (ulong)itemId));
+            }
+            else
+            {
+                _activeSources.Add(new DefaultDamageSource((ulong)itemId, $"{slotName}:{data.itemName}"));
+            }
         }
 
         /// <summary>

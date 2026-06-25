@@ -88,7 +88,8 @@ namespace ProjectC.Equipment
                 var equipFolders = new[] {
                     "Items/Clothing",
                     "Items/Modules",
-                    "Items/Equipment"
+                    "Items/Equipment",
+                    "Items/Weapons"  // T-CB03: WeaponItemData
                 };
                 foreach (var folder in equipFolders)
                 {
@@ -108,6 +109,16 @@ namespace ProjectC.Equipment
                         bool already = false;
                         foreach (var kvp in db) { if (kvp.Value == m) { already = true; break; } }
                         if (!already) { db[nextId++] = m; registered++; }
+                    }
+                    // T-CB03: WeaponItemData (extends ItemData). Resources.LoadAll<T> фильтрует
+                    // по ТОЧНОМУ типу — нужна явная загрузка.
+                    var weapons = Resources.LoadAll<ProjectC.Equipment.WeaponItemData>(folder);
+                    foreach (var w in weapons)
+                    {
+                        if (w == null) continue;
+                        bool already = false;
+                        foreach (var kvp in db) { if (kvp.Value == w) { already = true; break; } }
+                        if (!already) { db[nextId++] = w; registered++; }
                     }
                 }
                 if (Debug.isDebugBuild && registered > 0)

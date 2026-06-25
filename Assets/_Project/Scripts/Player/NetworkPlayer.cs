@@ -232,27 +232,36 @@ namespace ProjectC.Player
         /// Add-only: компоненты создаются AddComponent, инициализируются clientId, регистрируются.
         /// Идемпотентно — повторный вызов безопасен (OnNetworkSpawn может вызываться при reconnect).
         /// </summary>
+        /// <remarks>
+        /// v0.1 fix (race condition): AddComponent вызывается ВСЕГДА, даже если CombatServer.Instance==null.
+        /// Ранний return был багом — без компонентов pull-up (PlayerAttacker/Target.OnNetworkSpawn) не сработает.
+        /// Push-down (CombatServer.OnNetworkSpawn → RecoverExistingEntities) подхватит, если Instance ещё null.
+        /// </remarks>
         private void RegisterWithCombatServer()
         {
             if (!IsServer) return;
-            if (CombatServer.Instance == null)
-            {
-                // CombatServer ещё не scene-spawned. Это ожидаемо до Этапа C.
-                if (Debug.isDebugBuild) Debug.Log($"[NetworkPlayer] RegisterWithCombatServer: CombatServer.Instance==null (scene-placement pending). clientId={OwnerClientId}");
-                return;
-            }
 
-            // PlayerAttacker
+            // 1. ALWAYS add components first (pull-up будет ждать OnNetworkSpawn компонентов).
+            //    GetComponent → AddComponent — идемпотентно.
             var attacker = GetComponent<PlayerAttacker>();
             if (attacker == null) attacker = gameObject.AddComponent<PlayerAttacker>();
             attacker.Initialize(OwnerClientId);
-            CombatServer.Instance.RegisterAttacker(OwnerClientId, attacker);
 
-            // PlayerTarget
             var target = GetComponent<PlayerTarget>();
             if (target == null) target = gameObject.AddComponent<PlayerTarget>();
             target.Initialize(OwnerClientId);
-            CombatServer.Instance.RegisterTarget(OwnerClientId, target);
+
+            // 2. Try immediate registration. Если CombatServer ещё не spawn'нулся —
+            //    push-down в CombatServer.OnNetworkSpawn → RecoverExistingEntities подхватит.
+            if (CombatServer.Instance != null)
+            {
+                CombatServer.Instance.RegisterAttacker(OwnerClientId, attacker);
+                CombatServer.Instance.RegisterTarget(OwnerClientId, target);
+            }
+            else if (Debug.isDebugBuild)
+            {
+                Debug.Log($"[NetworkPlayer] RegisterWithCombatServer: components added (PlayerAttacker/Target), but CombatServer.Instance==null — push-down will catch up. clientId={OwnerClientId}");
+            }
         }
 
         /// <summary>

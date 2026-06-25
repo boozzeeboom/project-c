@@ -28,11 +28,24 @@ namespace ProjectC.Combat
 
         /// <summary>
         /// T-RTC06 (v0.1 fix): Self-register в CombatServer при NetworkSpawn (server-side only).
+        /// Также: если <c>Initialize</c> не был вызван (например, для scene-placed NPC, созданных
+        /// вручную через Edit Mode без explicit Initialize call), инициализируем HP из <c>_data</c>.
         /// </summary>
         public override void OnNetworkSpawn()
         {
             base.OnNetworkSpawn();
             if (!IsServer) return;
+
+            // Fallback init: если _targetId == 0 → Initialize не вызывался → init HP из _data
+            if (_targetId == 0 && _data != null)
+            {
+                int hp = _maxHpOverride > 0 ? _maxHpOverride : _data.maxHp;
+                _maxHp.Value = hp;
+                _currentHp.Value = hp;
+                _targetId = NetworkObjectId;  // используем реальный NetworkObjectId
+                if (Debug.isDebugBuild) Debug.Log($"[NpcTarget] OnNetworkSpawn fallback-init: name={gameObject.name}, targetId={_targetId}, HP={hp}");
+            }
+
             if (CombatServer.Instance != null)
             {
                 CombatServer.Instance.RegisterTarget(GetTargetId(), this);

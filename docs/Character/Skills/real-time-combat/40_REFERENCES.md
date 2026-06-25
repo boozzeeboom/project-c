@@ -1,8 +1,10 @@
 # References — file:line index
 
-> **Дата:** 2026-06-25 (v0.3 — после ответов пользователя, новый sequencing)
+> **Дата:** 2026-06-25 (v0.3 design + v0.1.4 implementation, ACTUAL)
 > **Метод:** read_file реальных .cs + .md + grep по `Assets/` и `docs/`
 > **Все ссылки file:line проверены** через реальные file reads.
+>
+> **Status:** ✅ **MVP реализован** (T-RTC01..T-RTC09). См. `50_IMPL_CHANGELOG.md` для подробного changelog v0.1 → v0.1.4.
 
 ---
 
@@ -165,61 +167,71 @@
 
 ---
 
-## 4. Grep-данные (для Combat-движка)
+## 4. Grep-данные (факт v0.1.4 — Combat Engine реализован)
 
-| Что | Где | Результат |
-|-----|-----|-----------|
-| `IAttacker` | grep пусто в `Assets/` | **НЕ существует** — T-RTC01 |
-| `IDamageTarget` | grep пусто в `Assets/` | **НЕ существует** — T-RTC01 |
-| `IDamageSource` | grep пусто в `Assets/` | **НЕ существует** — T-RTC01 |
-| `IRangePolicy` | grep пусто в `Assets/` | **НЕ существует** — T-RTC01 |
-| `DamageResult` | grep пусто в `Assets/` | **НЕ существует** — T-RTC01 |
-| `DamageType` | grep пусто в `Assets/` | **НЕ существует** — T-RTC01 (или переиспользуем из `Battle/10_DESIGN.md §3.1`) |
-| `DamageDice` | grep пусто в `Assets/` | **НЕ существует** — T-RTC01 (или переиспользуем из `Battle/10_DESIGN.md §3.1`) |
-| `HitLocation` | grep пусто в `Assets/` | **НЕ существует** — T-CB10 / T-RTC01 (но в real-time = `locMult=1.0`, hitLocation=1=default) |
-| `CombatServer` | grep пусто в `Assets/` | **НЕ существует** — T-RTC06 |
-| `CombatClientState` | grep пусто в `Assets/` | **НЕ существует** — T-RTC07 |
-| `DamageCalculator` | grep пусто в `Assets/` | **НЕ существует** — T-RTC05 (спецификация в `Battle/10_DESIGN.md §7`) |
-| `WeaponDamageSource` | grep пусто в `Assets/` | **НЕ существует** — T-RTC04 |
-| `PlayerAttacker` / `PlayerTarget` | grep пусто в `Assets/` | **НЕ существует** — T-RTC02 |
-| `NpcAttacker` / `NpcTarget` | grep пусто в `Assets/` | **НЕ существует** — T-RTC03 |
-| `ShipAttacker` / `ShipTarget` | grep пусто в `Assets/` | **НЕ существует** — T-RTC16 (Phase 3) |
-| `Turret` | grep пусто в `Assets/` | **НЕ существует** — T-RTC17 (Phase 3) |
-| `AttackStartedEvent` / `AttackLandedEvent` / `DamageDealtEvent` / `EntityKilledEvent` | grep пусто в `WorldEvent.cs` | **НЕ существует** — T-RTC09 |
-| `CombatConfig` | grep пусто в `Assets/` | **НЕ существует** — T-RTC09 |
-| `armorDefense` поле | grep пусто в `Assets/` | **НЕ существует** — T-CB06 (ClothingItemData) |
-| `damageDice/baseDamage/critModifier` поля | grep пусто в `Assets/` | **НЕ существует** — T-CB03 (WeaponItemData) |
+| Что | Где (file) | Строк | Ключевые места |
+|---|---|---|---|
+| `IAttacker` interface | `Assets/_Project/Scripts/Combat/Core/IAttacker.cs` | 39 | `GetPosition/GetStrength/GetDexterity/GetIntelligence/GetActiveDamageSources/GetDamageSource/IsAlive/IsPlayer/CanAttack/SetCooldown/GetAttackerId` |
+| `IDamageTarget` interface | `Assets/_Project/Scripts/Combat/Core/IDamageTarget.cs` | 27 | `GetPosition/GetCurrentHp/GetMaxHp/GetArmorDefense/ApplyDamage/IsAlive/IsPlayer/GetDisplayName/GetTargetId` |
+| `IDamageSource` interface | `Assets/_Project/Scripts/Combat/Core/IDamageSource.cs` | 35 | `GetSourceId/GetDamageType/GetDamageDice/GetBaseDamage/GetCritModifier/GetRange/GetCooldownSeconds/GetSkillMultiplier/GetDisplayName` |
+| `IRangePolicy` interface | `Assets/_Project/Scripts/Combat/Core/IRangePolicy.cs` | 18 | `IsInRange/Distance/RequiresLineOfSight/CalculateHitChance` |
+| `DamageType` enum + extensions | `Assets/_Project/Scripts/Combat/Core/DamageType.cs` | 60 | enum (Physical/Ballistic/Antigrav/Explosive/Mesium), DamageDice (d4-d20), `Roll()/Average()` extensions, `ArmorMultiplier()` |
+| `DamageResult` struct | `Assets/_Project/Scripts/Combat/Core/DamageResult.cs` | 60 | all fields + `static Miss(...)` helper |
+| `DamageCalculator` (static, ERPR) | `Assets/_Project/Scripts/Combat/DamageCalculator.cs` | 95 | `Calculate(...)` — server rolls dice, ERPR formula |
+| `DefaultDamageSource` (fallback) | `Assets/_Project/Scripts/Combat/Implementations/DefaultDamageSource.cs` | 32 | d6, base=1, critMod=0, range=2м, type=Physical, cd=1s |
+| `MeleeRangePolicy` | `Assets/_Project/Scripts/Combat/Implementations/MeleeRangePolicy.cs` | 30 | `baseMelee=0.85, dexMod=0.85+(DEX-10)*0.015` |
+| `RangedRangePolicy` | `Assets/_Project/Scripts/Combat/Implementations/RangedRangePolicy.cs` | 30 | `baseRanged=0.75, аналогичный dexMod` |
+| `PlayerAttacker : NetworkBehaviour, IAttacker` | `Assets/_Project/Scripts/Combat/Implementations/PlayerAttacker.cs` | 145 | `OnNetworkSpawn` (v0.1 self-register), `EnsureUnarmedFallback` (v0.1.3), `RebuildSources`, `GetClientId` |
+| `PlayerTarget : NetworkBehaviour, IDamageTarget` | `Assets/_Project/Scripts/Combat/Implementations/PlayerTarget.cs` | 90 | `OnNetworkSpawn` (v0.1 self-register), `NetworkVariable<int> _currentHp/_maxHp`, `GetArmorDefense() => 0` (TODO T-CB06) |
+| `NpcAttacker : NetworkBehaviour, IAttacker` | `Assets/_Project/Scripts/Combat/Implementations/NpcAttacker.cs` | 110 | `OnNetworkSpawn` (v0.1 self-register, was MonoBehaviour), nested `NpcDefaultDamageSource` |
+| `NpcTarget : NetworkBehaviour, IDamageTarget` | `Assets/_Project/Scripts/Combat/Implementations/NpcTarget.cs` | 110 | `OnNetworkSpawn` (v0.1 self-register + fallback-init HP), `ApplyDamage` (v0.1.4 corpse delay 3s) |
+| `NpcCombatData` (SO) | `Assets/_Project/Scripts/Combat/Implementations/NpcCombatData.cs` | 50 | displayName, maxHp, STR/DEX/INT, damageType/Dice/BaseDamage/CritModifier/Range, cooldownSeconds |
+| `CombatServer : NetworkBehaviour` | `Assets/_Project/Scripts/Combat/Network/CombatServer.cs` | 295 | `OnNetworkSpawn → Instance + RecoverExistingEntities + Invoke second-chance`, `RequestAttackRpc` (RPC), `ResolveAttack`, `RecoverExistingEntities` (push-down), `AttackLandedTargetRpc` (broadcast), `AttackErrorTargetRpc` |
+| `DamageResultDto` (INetworkSerializable) | `Assets/_Project/Scripts/Combat/Network/DamageResultDto.cs` | 95 | all fields, `BufferSerializer.SerializeValue`, `static FromResult(DamageResult)` |
+| `CombatClientState` (singleton) | `Assets/_Project/Scripts/Combat/Client/CombatClientState.cs` | 120 | `OnAttackLanded/OnDamageDealt/OnEntityKilled/OnAttackError` events, `HandleAttackLanded/HandleEntityKilled/HandleError` |
+| `CombatConfig` (SO) | `Assets/_Project/Scripts/Combat/Config/CombatConfig.cs` | 65 | hit/crit/defense multipliers, serverTickRate, `Instance` (Resources.Load) |
+| `Assets/_Project/Resources/Combat/CombatConfig_Default.asset` | binary | — | default values (не подключён к CombatServer) |
+| `Assets/_Project/Resources/Combat/Npc_Goblin.asset` | binary | — | displayName=Goblin Test, maxHp=20, d6, base=2, range=2м, cd=1.5s |
+
+### 4.1 Add-only правки в существующих файлах
+
+| Файл | Строки (add-only) | Что |
+|---|---|---|
+| `Assets/_Project/Core/WorldEvent.cs` | +30 (lines 268-296) | 4 event-класса: `AttackStartedEvent`, `AttackLandedEvent`, `DamageDealtEvent`, `EntityKilledEvent` |
+| `Assets/_Project/Scripts/Core/NetworkManagerController.cs` | +25 (Awake + CreateCombatClientState method) | `CreateCombatClientState()` root GO, `DontDestroyOnLoad` |
+| `Assets/_Project/Scripts/Player/NetworkPlayer.cs` | +100 (Register/Unregister/DebugAttackNearestNpc + K-key in Update) | `using ProjectC.Combat;` + `RegisterWithCombatServer` (add-only, +v0.1.1) + `UnregisterFromCombatServer` + `DebugAttackNearestNpc` + K-key handler |
+
+### 4.2 Scene edits (persistent)
+
+| Сцена | GameObject | Компоненты | Position |
+|---|---|---|---|
+| `BootstrapScene.unity` | `[CombatServer]` | `NetworkObject` + `CombatServer` | root (default) |
+| `WorldScene_0_0.unity` | `NPC_TestEnemy` | `NetworkObject` + `NpcAttacker` + `NpcTarget` | `(40030, 2502, 40030)` (30м right of `WorldRoot_0_0`) |
+| `WorldScene_0_0.unity` | `NPC_TestEnemy/VisualMarker` (child) | `MeshFilter` (Capsule) + `MeshRenderer` (URP Lit red) | `(0, 1, 0)` local |
 
 ---
 
-## 5. Что НЕ нашлось (явно подтверждено)
+## 5. Что НЕ нашлось (явно подтверждено v0.1.4)
 
 | Что | Статус |
-|-----|--------|
-| **Real-Time Combat Engine целиком** | **НЕ существует** — проектируется (T-RTC01..T-RTC10) |
-| `IAttacker` / `IDamageTarget` / `IDamageSource` / `IRangePolicy` interfaces | **НЕ существуют** — T-RTC01 |
-| `DamageCalculator` (static) | **НЕ существует** — T-RTC05 (спецификация в `Battle/10_DESIGN.md §7` готова) |
-| `CombatServer` (NetworkBehaviour) | **НЕ существует** — T-RTC06 |
-| `CombatClientState` (singleton) | **НЕ существует** — T-RTC07 |
-| `PlayerAttacker` / `PlayerTarget` (NetworkBehaviour) | **НЕ существуют** — T-RTC02 |
-| `NpcAttacker` / `NpcTarget` (NetworkBehaviour) | **НЕ существуют** — T-RTC03 |
-| `WeaponDamageSource` / `MeleeRangePolicy` / `RangedRangePolicy` | **НЕ существуют** — T-RTC04 |
-| `CombatConfig` (SO) | **НЕ существует** — T-RTC09 |
-| 4 новых event-класса в `WorldEvent.cs` | **НЕ существуют** — T-RTC09 |
-| `DamageType` / `DamageDice` enums | **НЕ существуют** (но дизайн в `Battle/10_DESIGN.md §3.1`) — T-RTC01 |
-| `HitLocation` enum | **НЕ существует** (но в real-time = `locMult=1.0`, hitLocation=1=default) — T-RTC01 |
-| `WeaponItemData` (T-CB03) | **НЕ существует** — отложен в MVP+1 |
-| `armorDefense` поле в `ClothingItemData` (T-CB06) | **НЕ существует** — отложен в MVP+1 |
-| `ShipAttacker` / `ShipTarget` (T-RTC16) | **НЕ существует** — Phase 3 |
+|---|---|
+| `WeaponItemData` (T-CB03) | **НЕ существует** — отложен в MVP+1, см. `60_NEXT_STEPS_T-CB01.md §2` |
+| `armorDefense` поле в `ClothingItemData` (T-CB06) | **НЕ существует** — отложен в MVP+1, см. `60_NEXT_STEPS_T-CB01.md §3` |
+| `WeaponDamageSource` (T-RTC04) | **НЕ существует** — `DefaultDamageSource` (fallback) до T-CB03 |
+| `HitLocation` enum | **НЕ существует** — но в real-time = `locMult=1.0`, `hitLocation=1` (Torso) hardcoded в `DamageResult` |
+| `ShipAttacker` / `ShipTarget` (T-RTC16) | **НЕ существует** — Phase 3, anti-restrictive hooks готовы (`IAttacker/IDamageTarget`) |
 | `Turret` (T-RTC17) | **НЕ существует** — Phase 3 |
 | `ShipRangePolicy` (T-RTC18) | **НЕ существует** — Phase 3 |
 | `NpcShipAttacker` (T-RTC20) | **НЕ существует** — Phase 3 |
 | NPC-AI для open world (HostileNPC, FactionAI) | **НЕ существует** — отдельная подсистема |
 | PvP-дуэль flow (T-RTC11..T-RTC15) | **НЕ существует** — Phase 2 |
-| UI damage numbers / hit flash (T-RTC10) | **НЕ существует** — Phase 2 |
+| UI damage numbers / hit flash (T-RTC10) | **НЕ существует** — Phase 2, см. `60_NEXT_STEPS_T-CB01.md` (next priority после T-CB*) |
 | Client prediction (Phase 2) | **НЕ существует** |
 | AreaOfInterest broadcasting (Phase 3) | **НЕ существует** |
 | Line-of-sight raycast (Phase 2) | **НЕ существует** |
+| Respawn NPC (Phase 2) | **НЕ существует** — corpse delay 3s, потом Destroy |
+| Persistence (HP, cooldowns) | **НЕ существует** — disconnect = respawn with full HP |
+| `CombatConfig.Instance` подключение к CombatServer | **НЕ подключён** — hardcoded defaults в `MeleeRangePolicy/RangedRangePolicy/DamageCalculator` |
 
 ---
 

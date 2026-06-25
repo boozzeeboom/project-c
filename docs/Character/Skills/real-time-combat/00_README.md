@@ -1,78 +1,237 @@
 # Real-Time Combat Engine — пеший бой + extensible на ship combat
 
 > **Подсистема:** Real-Time Combat Engine (пеший бой MVP, ship combat future)
-> **Статус:** 🟢 Проектирование завершено (v0.3, 2026-06-25) — **все решения приняты, ждём команду «делай»**
-> **Принятые решения:** 16 вопросов в `30_PITFALLS_AND_OPEN_QUESTIONS.md` — ответы пользователя подтверждены. Финальная таблица — §3.
-> **Ключевая идея:** строим **combat-engine сначала**, навыки подключаются позже. Engine **extensible** для будущего ship combat (без рефакторинга) через **abstractions + composition**.
-> **Scope сессии:** research + design-doc only. **Без кода.** Реализация — отдельные сессии по тикетам T-RTC01..T-RTC10.
+> **Статус:** ✅ **MVP РЕАЛИЗОВАН** (T-RTC01..T-RTC09, v0.1.4, 2026-06-25). End-to-end combat flow работает: hit/miss/crit/defense/cooldown/kill.
+> **Следующий этап:** T-CB01..T-CB09 (навыки) — см. `60_NEXT_STEPS_T-CB01.md`.
+> **Ключевая идея:** строим **combat-engine сначала**, навыки подключаются как **opt-in** слой через hooks. Engine **extensible** для будущего ship combat (без рефакторинга) через **abstractions + composition**.
 
 ---
 
 ## TL;DR
 
-Пользователь дал ответы на 25 open questions в `Battle/30_PITFALLS_AND_OPEN_QUESTIONS.md` и **изменил стратегический порядок разработки**:
+**Combat Engine (MVP) реализован и работает.** Пеший бой player vs NPC — end-to-end:
+- 19 новых файлов в `Assets/_Project/Scripts/Combat/`
+- 2 SO assets (`CombatConfig_Default`, `Npc_Goblin`)
+- Scene integration (`[CombatServer]` в `BootstrapScene`, `NPC_TestEnemy` с красной капсулой-маркером в `WorldScene_0_0`)
+- add-only в `WorldEvent.cs`, `NetworkManagerController.cs`, `NetworkPlayer.cs` (без refactor существующего)
+- Server-authoritative, NGO 2.x RPC, NetworkVariable HP, broadcast, race condition фиксы (push-down + second-chance + pull-up)
 
-1. **Real-time combat-движок = MVP** (пеший бой). Тикеты T-RTC01..T-RTC10, оценка **~30-40 ч кодинга** (3-4 сессии).
-2. **Навыки (T-CB01..T-CB09) = MVP+1** — подключаются **после движка** («когда уже можно будет»). Оценка **~16-21 ч**.
-3. **Turn-based battles = отложен на неопределённый срок** (отдельная работа после ЗБТ). Документ `turn-based-battles/` остаётся как **parking-lot reference** (не удаляем — ЗБТ может пересмотреть приоритеты).
-4. **Ship combat = future** (GDD 10 пиллар «Co-Op-first» + M3.2.15+ roadmap). Engine **должен** быть extensible под ship combat **с самого начала** — anti-restrictive design, не refactor.
-5. **PvP-aware с самого начала** (2.10) — duel-флоу, faction combat, рейтинги. Реализация после пешего MVP.
+**Что НЕ реализовано (отложено):**
+- T-RTC10 (UI damage numbers, hit flash) — Phase 2
+- T-RTC11..T-RTC15 (PvP duel) — Phase 2
+- T-RTC16..T-RTC20 (ship combat) — Phase 3
+- T-CB01..T-CB09 (навыки) — **следующая сессия**, см. `60_NEXT_STEPS_T-CB01.md`
+- T-TB01..T-TB14 (turn-based) — parking, не развиваем
 
-**Ключевое архитектурное решение:** движок оперирует **абстракциями** (`IAttacker`, `ITarget`, `IWeapon`, `IDamageType`, `IRangePolicy`, `IDamageSource`), а не конкретными типами (`Player`, `Npc`, `Ship`). Конкретные реализации — **композиция** + **стратегии**. Это позволяет добавить ship combat в будущем **без изменения ядра движка**.
+**T-CB03 (`WeaponItemData`) и T-CB06 (`armorDefense` поле в `ClothingItemData`)** — ещё не сделаны. Движок работает с `DefaultDamageSource` fallback (d6, base=1, critMod=0, range=2м) и `armorDefense=0`. После T-CB03/06 — реальные значения.
 
-**Ключевые ответы пользователя** (влияют на дизайн):
-- **2.1** — 5 дисциплин (Melee/Ranged/Explosives/Antigrav/Defense), все 35 нод.
-- **2.4** — **антиграв-щит есть** (Defense-ветка +1 навык).
-- **2.5** — DEX-штраф heavy armor = `-2`.
-- **2.9** — **сначала real-time движок, без turn-based**.
-- **2.10** — PvP-aware (с самого начала).
-- **2.14** — Damage defaults **по weaponClass** (auto в `OnValidate`).
-- **2.17** — **HitLocation только в TB** (real-time = `locMult = 1.0`).
-- **2.18** — **SkillMult без cap** (без ограничений, для гибкости в ship combat).
-- **2.20** — **начинать с движка, навыки потом**.
+---
 
-**Что это значит для `Battle/`:**
-- `Battle/10_DESIGN.md §7` (ERPR-формула) — **готова**, переиспользуется движком.
-- `Battle/20_SKILL_TREES.md` — **остаётся**, но **сдвигается в roadmap** (после T-RTC).
-- `Battle/30_PITFALLS_AND_OPEN_QUESTIONS.md` — обновляется с ответами пользователя.
-- `turn-based-battles/` — **parking** (не удаляем, не правим, не развиваем).
+## Стратегия сессий (что сделано)
 
-**Структура подсистемы:**
-```
-Real-Time Combat Engine
-├── CombatServer (NetworkBehaviour) — server-authoritative hub
-├── CombatClient (singleton) — клиентский event-bus
-├── CombatWorld (POCO) — server-side state
-├── IDamageSource interface — что наносит урон (PlayerWeapon, NpcWeapon, ShipTurret, Explosion)
-├── IDamageTarget interface — что получает урон (Player, Npc, Ship, Building)
-├── IWeapon interface — оружие (range, ammo, damageType)
-├── IDamageType — Physical/Ballistic/Antigrav/Explosive/Mesium (ERPR-пакет)
-├── IRangePolicy — distance check (PlayerMelee, PlayerRanged, ShipTurret, ShipCannon)
-├── DamageCalculator (static) — ERPR-формула (готова в Battle/10_DESIGN.md §7)
-├── CombatConfig (SO) — настройки баланса (server-authoritative)
-├── CombatEvents (4 новых) — AttackStarted, AttackLanded, DamageDealt, EntityKilled
-├── PvPDuelSystem (Phase 2) — server-authoritative duel flow
-└── ShipCombatAdapter (Phase 3) — адаптер для будущего ship combat
-```
-
-**Связь с существующим:**
-- Переиспользует `SkillNodeConfig` (T-P11) — навыки как **opt-in** (engine работает без навыков, навыки дают бонусы).
-- Переиспользует `StatsWorld`/`EquipmentWorld` — для модификаторов урона.
-- Переиспользует `WorldEventBus` — публикует combat events.
-- Переиспользует `DamageCalculator` (ERPR-формула) — общая для real-time и turn-based (если/когда TB вернётся).
-
-**Трудозатраты (обновлённые):**
-
-| Что | Трудозатраты | Когда |
+| Сессия | Что | Результат |
 |---|---|---|
-| **T-RTC01..T-RTC10** (real-time combat engine, пеший) | **~30-40 ч** | **MVP (3-4 сессии)** |
-| T-CB01..T-CB09 (навыки + ERPR-пакет) | ~16-21 ч | MVP+1 (после движка) |
-| T-RTC11..T-RTC15 (PvP duel flow) | ~15-20 ч | Phase 2 |
-| T-RTC16..T-RTC20 (ship combat adapter) | ~25-35 ч | Phase 3 (ЗБТ+) |
-| T-TB01..T-TB14 (turn-based, **отложен**) | ~46 ч | **после ЗБТ, parking** |
-| **ИТОГО до играбельного combat (пеший)** | **~46-61 ч** (real-time + skills) | 6-8 сессий |
+| **#1** (2026-06-25) | T-RTC01, T-RTC04, T-RTC05 — фундамент | 10 файлов: interfaces, enums, `DamageCalculator`, `DefaultDamageSource`, range policies. 0 errors. |
+| **#2** (2026-06-25) | T-RTC02, T-RTC03, T-RTC06, T-RTC07, T-RTC08, T-RTC09 — server+client интеграция | 11 файлов: `PlayerAttacker/Target`, `NpcAttacker/Target`, `CombatServer`, `CombatClientState`, `DamageResultDto`, 4 events, hook в `NetworkManagerController` + `NetworkPlayer`. |
+| **#3** (2026-06-25) | Scene integration через MCP | 2 SO assets, `[CombatServer]` в `BootstrapScene`, `NPC_TestEnemy` (с `VisualMarker` капсулой) в `WorldScene_0_0`, debug K-key в `NetworkPlayer`. |
+| **#4** (2026-06-25) | Playtest #1 + race condition fix v0.1 | 3 патча: `PlayerAttacker` MonoBehaviour→NetworkBehaviour + self-register, `NpcAttacker/Target` self-register, `CombatServer.RecoverExistingEntities` push-down. |
+| **#5** (2026-06-25) | Playtest #2 + register fix v0.1.1 | `NetworkPlayer.RegisterWithCombatServer`: убран ранний return, `AddComponent` всегда. |
+| **#6** (2026-06-25) | Playtest #3 + host player fix v0.1.2 | `RecoverExistingEntities`: убран skip `id==0` для Player (0 = host clientId), second-chance `Invoke` через 1 сек. |
+| **#7** (2026-06-25) | Playtest #4 + unarmed fallback v0.1.3 | `PlayerAttacker.EnsureUnarmedFallback()`: если оба weapon-слота пустые, добавляет `DefaultDamageSource(0, "Unarmed")`. |
+| **#8** (2026-06-25) | Playtest #5 + corpse delay v0.1.4 | `NpcTarget.ApplyDamage`: при HP=0 → `Destroy(gameObject, 3.0f)` (3 сек corpse delay). |
 
-**Вердикт:** **снижение общего объёма** (~90-110 ч в v0.2 → ~46-61 ч в v0.3), потому что **turn-based отложен**. Фокус на real-time = выше качество к концу MVP.
+**Подробный changelog:** `50_IMPL_CHANGELOG.md`.
+
+---
+
+## Что работает прямо сейчас (Play Mode verify)
+
+1. **Press Play** в `BootstrapScene` → **Start Host** (через `NetworkTestMenu` или `NetworkManagerController.StartHost()`).
+2. **Ожидаемое в Console:**
+   - `[NMC] Created [CombatClientState] as root GameObject` (✓ — singleton root)
+   - `[CombatServer] OnNetworkSpawn: Instance set, IsServer=True.`
+   - `[CombatServer] RecoverExistingEntities done: attackers=2, targets=2` (после second-chance)
+3. **Player spawns** → автоматически добавляются `PlayerAttacker/PlayerTarget` компоненты + регистрация в `CombatServer`.
+4. **Teleport к NPC** (или подойти WASD) → нажать **K** (debug) → `RequestAttackRpc(targetId, 0)` → server вычисляет damage через `DamageCalculator` (ERPR-формула) → broadcast `AttackLandedTargetRpc(DamageResultDto)` → клиент получает через `CombatClientState`.
+5. **Пример успешного боя** (из Play Mode #5):
+   ```
+   K-attack: targetId=45, dist=1,48м
+   DamageCalculator: baseAttack=15, hitChance=0,79, isHit=True, preDefense=15, defense=0, final=15
+   NpcTarget took 15 (HP 20 → 5)
+   AttackLanded: dmg=15, crit=False
+   ... cooldown 1s ...
+   K-attack → MISS (random<0,79) — промах
+   ... cooldown ...
+   K-attack → OnCooldown (spam)
+   ... 
+   K-attack → hit (HP 5 → 0) + EntityKilled: target=45
+   NpcTarget killed. Destroying in 3s (corpse delay).
+   ... 3 сек ...
+   NetworkObject OnDestroy → капсула исчезает.
+   ```
+
+---
+
+## Архитектура (как есть в коде, v0.1.4)
+
+### Структура файлов
+
+```
+Assets/_Project/Scripts/Combat/
+├── Core/                       (ProjectC.Combat.Core namespace)
+│   ├── IAttacker.cs            (interface: что угодно, что может атаковать)
+│   ├── IDamageTarget.cs        (interface: что угодно, что может получать урон)
+│   ├── IDamageSource.cs        (interface: что угодно, что наносит урон)
+│   ├── IRangePolicy.cs         (interface: distance check + hit chance)
+│   ├── DamageType.cs           (enum DamageType + DamageDice + extensions: Roll/Average/ArmorMultiplier)
+│   └── DamageResult.cs         (POCO struct, server-authoritative, не сериализуется)
+│
+├── Implementations/            (ProjectC.Combat namespace)
+│   ├── PlayerAttacker.cs       (NetworkBehaviour, IAttacker)
+│   ├── PlayerTarget.cs         (NetworkBehaviour, IDamageTarget)
+│   ├── NpcAttacker.cs          (NetworkBehaviour, IAttacker) — v0.1: был MonoBehaviour
+│   ├── NpcTarget.cs            (NetworkBehaviour, IDamageTarget)
+│   ├── NpcCombatData.cs        (SO: HP, STR/DEX/INT, weapon defaults)
+│   ├── DefaultDamageSource.cs  (fallback: d6, base=1, critMod=0, range=2м, type=Physical)
+│   ├── MeleeRangePolicy.cs     (range<3м, baseHit=0.85, dexMod=0.85+(DEX-10)*0.015)
+│   └── RangedRangePolicy.cs    (range>=3м, baseHit=0.75, аналогичный dexMod)
+│
+├── Network/                    (ProjectC.Combat.Network namespace)
+│   ├── CombatServer.cs         (NetworkBehaviour, server-authoritative hub, RPC, registries)
+│   └── DamageResultDto.cs      (INetworkSerializable struct)
+│
+├── Client/                     (ProjectC.Combat.Client namespace)
+│   └── CombatClientState.cs    (singleton MonoBehaviour, event-bus, debug-логи)
+│
+├── Config/                     (ProjectC.Combat.Config namespace)
+│   └── CombatConfig.cs         (SO: hit/crit/defense multipliers, serverTickRate)
+│
+└── DamageCalculator.cs         (static, ERPR-формула, server-authoritative)
+```
+
+### Namespace map
+
+| Namespace | Содержимое |
+|---|---|
+| `ProjectC.Combat.Core` | `IAttacker`, `IDamageTarget`, `IDamageSource`, `IRangePolicy`, `DamageType`, `DamageDice`, `DamageResult` |
+| `ProjectC.Combat` | `DamageCalculator`, `DefaultDamageSource`, `MeleeRangePolicy`, `RangedRangePolicy`, `PlayerAttacker`, `PlayerTarget`, `NpcAttacker`, `NpcTarget`, `NpcCombatData` |
+| `ProjectC.Combat.Network` | `CombatServer`, `DamageResultDto` |
+| `ProjectC.Combat.Client` | `CombatClientState` |
+| `ProjectC.Combat.Config` | `CombatConfig` |
+
+### End-to-end flow (как есть в коде)
+
+```
+[Client] Player нажимает K
+    ↓
+[Client] NetworkPlayer.DebugAttackNearestNpc() (UPDATE, add-only)
+    ↓
+[Client] CombatServer.Instance.RequestAttackRpc(targetId=45, sourceId=0)
+    ↓ [RPC: SendTo.Server, RequireOwnership=true]
+[Server] CombatServer.RequestAttackRpc:
+    - RateLimit check (10 ops/sec)
+    ↓
+[Server] CombatServer.ResolveAttack(attackerId, targetId, sourceId):
+    1. Lookup attacker = _attackers[0] (PlayerAttacker)
+    2. Lookup target = _targets[45] (NpcTarget)
+    3. target.IsAlive() check
+    4. attacker.IsAlive() check
+    5. source = attacker.GetDamageSource(0) → DefaultDamageSource("Unarmed")
+    6. attacker.CanAttack(source, now) — cooldown check
+    7. rangePolicy auto-select: source.GetRange()<3 → MeleeRangePolicy
+    8. rangePolicy.IsInRange(attacker, target, source) — distance check
+    9. DamageCalculator.Calculate(attacker, target, source, rangePolicy):
+       - roll d6 = 3 (Random)
+       - baseAttack = 3 + 1 + 10 (STR) = 14
+       - hitChance = rangePolicy.CalculateHitChance() = 0.79
+       - isHit = Random < 0.79 = true
+       - locMult = 1.0 (real-time, 2.17)
+       - critRoll 1d100 = 45 + 0 (critMod) < 100 → no crit
+       - critMult = 1.0
+       - skillMult = 1.0 (no skills, opt-in)
+       - preDefense = 14
+       - defense = target.GetArmorDefense() = 0 (NPC placeholder)
+       - armorMult = Physical → 1.0
+       - effectiveDefense = 0
+       - final = 14
+    10. attacker.SetCooldown(source, now + 1.0s)
+    11. target.ApplyDamage(result, attackerId=0)
+    ↓
+[Server] NpcTarget.ApplyDamage:
+    - _currentHp.Value = max(0, 20 - 14) = 6
+    - if newHp == 0 → Destroy(gameObject, 3.0f) (v0.1.4 corpse delay)
+    ↓
+[Server] CombatServer.ResolveAttack (continue):
+    12. DamageResultDto.FromResult(result)
+    13. AttackLandedTargetRpc(dto, RpcParams { Target = RpcTarget.Everyone })
+    14. WorldEventBus.Publish(AttackLandedEvent { PlayerId = 0, Result = result })
+    15. if isHit: WorldEventBus.Publish(DamageDealtEvent)
+    16. if isHit && !target.IsAlive(): WorldEventBus.Publish(EntityKilledEvent) + EntityKilledTargetRpc
+    ↓ [RPC: SendTo.SpecifiedInParams, Target=Everyone]
+[Client] CombatClientState.HandleAttackLanded(dto):
+    - OnAttackLanded event → UI subscribers (Phase 2)
+    - Debug.Log: "AttackLanded: attacker=0 → target=45, dmg=14, crit=False, type=Physical"
+    - if isHit: OnDamageDealt event
+[Client] (если EntityKilledTargetRpc) → HandleEntityKilled → OnEntityKilled event
+```
+
+### Registration flow (race-safe)
+
+```
+[Scene load] BootstrapScene
+    - [CombatServer] GameObject (NetworkObject + CombatServer)
+    - [PlayerSpawner] GameObject (scene-placed, skip guard)
+    - WorldScene_0_0 (additive, client-side)
+        - NPC_TestEnemy GameObject (NetworkObject + NpcAttacker + NpcTarget + VisualMarker)
+
+[StartHost] (в любом порядке, NGO не гарантирует)
+    1. NetworkManager.OnServerStarted
+    2. ScenePlacedObjectSpawner.HandleServerStarted → Spawn(destroyWithScene=true) scene-placed NetworkObjects
+    3. [CombatServer].OnNetworkSpawn:
+        - Instance = this
+        - RecoverExistingEntities():
+            - FindObjectsByType<PlayerAttacker>: ПУСТО (Player ещё не spawned)
+            - FindObjectsByType<PlayerTarget>: ПУСТО
+            - FindObjectsByType<NpcAttacker>: 1 (NPC_TestEnemy уже spawned) → Register(atkId=GetInstanceID(), this)
+            - FindObjectsByType<NpcTarget>: 1 → Register(tgtId=45, this) + fallback-init HP=20
+        - Result: attackers=1, targets=1
+        - Invoke(nameof(RecoverExistingEntities), 1.0f) — second-chance через 1 сек
+    4. [NetworkPlayer].OnNetworkSpawn:
+        - IsServer && !IsPlayerSpawner marker → RegisterWithCombatServer()
+        - GetComponent<PlayerAttacker>() ?? gameObject.AddComponent<PlayerAttacker>() + Initialize(OwnerClientId=0)
+        - GetComponent<PlayerTarget>() ?? gameObject.AddComponent<PlayerTarget>() + Initialize(0)
+        - CombatServer.Instance==null (race!) → НЕ регистрирует сейчас, ждёт push-down
+        - AddComponent вызывает PlayerAttacker/Target.OnNetworkSpawn → Instance==null → НЕ регистрирует
+    5. [PlayerAttacker].OnNetworkSpawn: 
+        - _clientId=0, CombatServer.Instance==null → НЕ регистрирует
+    6. [PlayerTarget].OnNetworkSpawn: same
+    7. ScenePlacedObjectSpawner re-spawn → [NPC_TestEnemy].OnNetworkSpawn:
+        - NpcAttacker.OnNetworkSpawn → Register(atkId=137562, this) ✓
+        - NpcTarget.OnNetworkSpawn → fallback-init, Register(tgtId=45, this) ✓
+    8. +1 sec → RecoverExistingEntities (second-chance):
+        - FindObjectsByType<PlayerAttacker>: 1 (ClientId=0) → Register(0, this) ✓ (v0.1.2: 0 валидный id для host)
+        - FindObjectsByType<PlayerTarget>: 1 → Register(0, this) ✓
+        - NpcAttacker/Target уже зарегистрированы, ContainsKey=true → skip
+        - Result: attackers=2, targets=2
+```
+
+**Итог:** 2-сторонняя защита:
+- **Pull-up** (NetworkBehaviour.OnNetworkSpawn → Register в CombatServer.Instance): для тех, чей OnNetworkSpawn срабатывает ПОСЛЕ `CombatServer.Instance = this`.
+- **Push-down** (CombatServer.OnNetworkSpawn → RecoverExistingEntities + second-chance Invoke): для тех, чей OnNetworkSpawn сработал ДО `CombatServer.Instance = this` (но они уже в сцене, FindObjectsByType найдёт).
+
+---
+
+## Подробные ссылки
+
+- **Что реализовано, какие баги, какие фиксы:** `50_IMPL_CHANGELOG.md`
+- **Дизайн (что планировали, что в итоге):** `10_DESIGN.md` (обновлён со status)
+- **Технический flow (RPC, registries, race fixes):** `20_TECHNICAL.md` (переписан под факт)
+- **Pitfalls + race condition фиксы:** `30_PITFALLS_AND_OPEN_QUESTIONS.md` (обновлён)
+- **Что нужно для следующего этапа (T-CB01..09 навыки):** `60_NEXT_STEPS_T-CB01.md`
+- **Сценарии использования (пеший MVP, ship-extensibility):** `30_SCENARIOS.md` (без изменений)
+- **Лор-обоснование:** `02_LORE.md` (без изменений)
+- **Анализ + gaps:** `01_ANALYSIS.md` (без изменений)
+- **file:line index:** `40_REFERENCES.md` (обновить, см. changelog)
 
 ---
 
@@ -80,181 +239,72 @@ Real-Time Combat Engine
 
 ```
 docs/Character/Skills/
-├── Battle/                              ← навыки (отложены в MVP+1)
+├── Battle/                              ← навыки-в-процессе (T-CB01..09)
 │   ├── 00_README.md
 │   ├── 01_ANALYSIS.md
 │   ├── 02_LORE.md
 │   ├── ERPR_collaboration.md            ← damage-формула (готова, переиспользуется)
-│   ├── 10_DESIGN.md                     ← §7 damage-формула (готова)
-│   ├── 20_SKILL_TREES.md                ← 35 нод (отложены в roadmap)
-│   ├── 30_PITFALLS_AND_OPEN_QUESTIONS.md ← обновлён с ответами
+│   ├── 10_DESIGN.md                     ← §7 damage-формула (готова, реализована в Combat/DamageCalculator.cs)
+│   ├── 20_SKILL_TREES.md                ← 35 нод (отложены)
+│   ├── 30_PITFALLS_AND_OPEN_QUESTIONS.md
 │   └── 40_REFERENCES.md
 │
-├── real-time-combat/                    ← ЭТОТ каталог, MVP
-│   ├── 00_README.md                     ← этот файл (манифест, новый sequencing)
-│   ├── 01_ANALYSIS.md                   ← что есть / gaps / anti-restrictive design
-│   ├── 02_LORE.md                       ← пеший vs корабельный бой
-│   ├── 10_DESIGN.md                     ← архитектура, IAttacker/ITarget abstractions
-│   ├── 20_TECHNICAL.md                  ← NGO RPC, server-authoritative, hooks
-│   ├── 30_SCENARIOS.md                  ← пеший MVP, ship-extensibility примеры
-│   ├── 30_PITFALLS_AND_OPEN_QUESTIONS.md ← обновлённые вопросы
-│   └── 40_REFERENCES.md
+├── real-time-combat/                    ← ЭТОТ каталог, MVP РЕАЛИЗОВАН
+│   ├── 00_README.md                     ← этот файл (манифест + статус)
+│   ├── 01_ANALYSIS.md                   ← без изменений
+│   ├── 02_LORE.md                       ← без изменений
+│   ├── 10_DESIGN.md                     ← обновлён: status реализации
+│   ├── 20_TECHNICAL.md                  ← переписан: факт. flow + race fixes
+│   ├── 30_SCENARIOS.md                  ← без изменений
+│   ├── 30_PITFALLS_AND_OPEN_QUESTIONS.md ← обновлён: race fixes
+│   ├── 40_REFERENCES.md                 ← обновить file:line
+│   ├── 50_IMPL_CHANGELOG.md             ← НОВЫЙ: v0.1 → v0.1.4 changelog
+│   └── 60_NEXT_STEPS_T-CB01.md          ← НОВЫЙ: гайд для T-CB01..09
 │
-└── turn-based-battles/                  ← PARKING (не удаляем, не правим)
-    ├── 00_README.md
-    ├── 01_ANALYSIS.md
-    ├── 10_DESIGN.md
-    ├── 20_TECHNICAL.md
-    ├── 30_SCENARIOS.md
-    ├── 30_PITFALLS_AND_OPEN_QUESTIONS.md
-    └── 40_REFERENCES.md
+└── turn-based-battles/                  ← PARKING (не удаляем, не правим, не развиваем)
 ```
 
 ---
 
-## Архитектурные принципы (anti-restrictive)
+## Связь с другими подсистемами (как реализовано)
 
-Движок **не знает** о конкретных сущностях (Player, Npc, Ship). Знает только **абстракции**:
-
-### 1. Compositional abstractions
-
-```csharp
-// Что угодно, что может атаковать
-public interface IAttacker {
-    Vector3 GetPosition();
-    int GetStrength();
-    int GetDexterity();
-    int GetIntelligence();
-    IWeapon GetEquippedWeapon();
-    IReadOnlyList<IDamageSource> GetActiveDamageSources();  // оружие И турели И ...
-    bool IsAlive();
-}
-
-// Что угодно, что может получать урон
-public interface IDamageTarget {
-    Vector3 GetPosition();
-    int GetCurrentHp();
-    int GetMaxHp();
-    int GetArmorDefense();
-    void ApplyDamage(DamageResult result, ulong attackerClientId);
-    bool IsAlive();
-    bool IsPlayer();
-}
-
-// Что угодно, что наносит урон (меч, турель, граната, мина, AoE)
-public interface IDamageSource {
-    DamageType DamageType { get; }
-    DamageDice DamageDice { get; }
-    int BaseDamage { get; }
-    int CritModifier { get; }
-    float Range { get; }
-    int AttackSecondsCost { get; }
-    int GetSkillMult(ulong attackerId);  // навыки модифицируют
-    int GetHitLocationBias(ulong attackerId);  // Phase 3
-}
-
-// Что угодно, что считает «в радиусе»
-public interface IRangePolicy {
-    bool IsInRange(IAttacker attacker, IDamageTarget target, IDamageSource source);
-    float Distance(IAttacker attacker, IDamageTarget target);
-    bool RequiresLineOfSight { get; }
-}
-```
-
-### 2. Конкретные реализации (различные, переиспользуют ядро)
-
-```csharp
-// Пеший игрок
-public class PlayerAttacker : MonoBehaviour, IAttacker { ... }
-public class PlayerTarget : NetworkBehaviour, IDamageTarget { ... }
-
-// Пеший NPC
-public class NpcAttacker : MonoBehaviour, IAttacker { ... }
-public class NpcTarget : NetworkBehaviour, IDamageTarget { ... }
-
-// Корабль (FUTURE)
-public class ShipAttacker : NetworkBehaviour, IAttacker {
-    public IReadOnlyList<IDamageSource> GetActiveDamageSources() {
-        return turrets;  // массив турелей
-    }
-}
-public class ShipTarget : NetworkBehaviour, IDamageTarget {
-    public int GetArmorDefense() => armorHull + armorShield;
-}
-
-// Турель на корабле (FUTURE)
-public class TurretDamageSource : IDamageSource { ... }
-
-// Граната / мина (FUTURE)
-public class ExplosiveDamageSource : MonoBehaviour, IDamageSource { ... }
-```
-
-### 3. CombatServer — ядро, не знает о Player/Ship
-
-```csharp
-public class CombatServer : NetworkBehaviour {
-    // Абстракции, не конкретные типы
-    private Dictionary<ulong, IAttacker> _attackers = new();
-    private Dictionary<ulong, IDamageTarget> _targets = new();
-
-    public void RegisterAttacker(ulong id, IAttacker attacker) { ... }
-    public void RegisterTarget(ulong id, IDamageTarget target) { ... }
-    public void Unregister(ulong id) { ... }
-
-    // Server-side damage flow — работает для ЛЮБЫХ IAttacker/IDamageTarget
-    public DamageResult ResolveAttack(ulong attackerId, ulong targetId, IDamageSource source) {
-        var attacker = _attackers[attackerId];
-        var target = _targets[targetId];
-        return DamageCalculator.Calculate(attacker, target, source, /* skill = */ null);
-    }
-}
-```
-
-### 4. Почему это anti-restrictive
-
-- **Нет** `if (attacker is PlayerAttacker) ... else if (attacker is ShipAttacker) ...` — движок работает через полиморфизм.
-- **Нет** `if (source is SwordDamageSource) ...` — каждый `IDamageSource` сам знает свой `DamageDice`, `CritModifier`.
-- **Нет** жёстких enum'ов типа `AttackerType.Player | AttackerType.Ship` — есть просто `IAttacker`.
-- **Расширяемость** — добавить `BuildingAttacker` (турель на стене) = реализовать `IAttacker` + `IDamageSource`, зарегистрировать в `CombatServer`. **0 изменений в ядре**.
-
-### 5. Что НЕ делает движок
-
-- ❌ Не знает, что «пеший» или «корабельный».
-- ❌ Не знает про конкретные классы оружия.
-- ❌ Не знает про анимации.
-- ❌ Не знает про UI.
-- ❌ Не знает про NPC-AI (NPC-AI подключается через IAttacker).
+| Подсистема | Связь | Hook |
+|---|---|---|
+| `Battle/10_DESIGN.md §7` ERPR-формула | `DamageCalculator.Calculate` — статический метод, идентичная логика | ✓ готова |
+| `Skills/SkillNodeConfig` (T-P11) | `IDamageSource.GetSkillMultiplier(attackerId)` — MVP возвращает 1.0 | hook готов, после T-CB01..09 — реальная интеграция |
+| `Stats/StatsWorld` | `PlayerAttacker.GetStrength/Dexterity/Intelligence` — читает `tier*5+10` | ✓ готова (default 10) |
+| `Equipment/EquipmentWorld` | `PlayerAttacker.RebuildSources` — читает EquipSlot.WeaponMain/Off | ✓ готова, fallback DefaultDamageSource (v0.1.3 unarmed) |
+| `Items/InventoryWorld` | `PlayerAttacker.TryAddSourceFromSlot` — `GetItemDefinition(itemId)` | ✓ готова |
+| `Core/WorldEventBus` | 4 новых event: `AttackStartedEvent`, `AttackLandedEvent`, `DamageDealtEvent`, `EntityKilledEvent` | ✓ готова |
+| `Core/NetworkManagerController` | `CreateCombatClientState()` (root GO, DontDestroyOnLoad) | ✓ готова |
+| `Player/NetworkPlayer` | `RegisterWithCombatServer` / `UnregisterFromCombatServer` / `DebugAttackNearestNpc` (add-only) | ✓ готова |
+| `Player/ShipController` (Phase 3) | `ShipAttacker/ShipTarget` adapter — НЕ трогаем сейчас | future, anti-restrictive |
+| `PeacefulShip/NpcShipController` | мирные корабли, без боя | out of scope |
+| `Crafting` | рецепты гранат/мин → `ExplosiveDamageSource` | после T-CB04 |
+| `NPC_quests` | quest-events (kill pirate) → `EntityKilledEvent` подписка | future |
 
 ---
 
-## Связь с другими подсистемами
+## Трудозатраты (факт)
 
-| Подсистема | Связь |
-|---|---|
-| `Battle/ERPR_collaboration.md` | damage-формула (готова) |
-| `Battle/10_DESIGN.md §7` | формула `CalculateDamage` (готова, переиспользуется) |
-| `Battle/20_SKILL_TREES.md` | навыки (отложены, но `SkillEffect.Type` = hooks для движка) |
-| `Character/StatsWorld` | STR/DEX/INT — модификаторы урона |
-| `Character/EquipmentWorld` | `WeaponItemData` (после T-CB03) — `IDamageSource` |
-| `Character/SkillsWorld` | `SkillNodeConfig` — навыки (opt-in, не блокирует движок) |
-| `Core/WorldEventBus` | 4 новых event-класса (AttackStarted, AttackLanded, DamageDealt, EntityKilled) |
-| `Core/NetworkManagerController` | `CreateCombatClientState()` |
-| `Player/ShipController` (player-ship) | **FUTURE** — `ShipAttacker` adapter, Phase 3 |
-| `PeacefulShip/NpcShipController` | **FUTURE** — мирные корабли, без боя (вне scope) |
-| `NPC_quests/` | quest-events (например, "kill pirate") подключаются через `EntityKilledEvent` |
-| `Crafting_system/` | рецепты (гранаты/мины, после T-CB04) — `ExplosiveDamageSource` |
-| `gdd/GDD_10_Ship_System.md` | vision doc для ship combat, **не трогаем** (gdd/ read-only) |
-| `gdd/GDD_20_Progression_RPG.md` | расхождение (см. `Battle/01_ANALYSIS.md §3.2`) |
-| `turn-based-battles/` | **PARKING** — отложен, но архитектурно совместим (общий `DamageCalculator`) |
+| Тикет | Оценка | Факт | Статус |
+|---|---|---|---|
+| T-RTC01 (core interfaces) | 2-3 ч | ~1 ч | ✅ |
+| T-RTC02 (PlayerAttacker/Target) | 3-4 ч | ~2 ч (+ 4 fix-итерации) | ✅ |
+| T-RTC03 (NpcAttacker/Target + NpcCombatData) | 3-4 ч | ~2 ч (+ 2 fix-итерации) | ✅ |
+| T-RTC04 (DefaultDamageSource + range policies) | 2-3 ч | ~1 ч | ✅ |
+| T-RTC05 (DamageCalculator) | 2-3 ч | ~1 ч | ✅ |
+| T-RTC06 (CombatServer) | 4-5 ч | ~3 ч (+ 3 race fixes) | ✅ |
+| T-RTC07 (CombatClientState) | 2-3 ч | ~1 ч | ✅ |
+| T-RTC08 (NGO RPC + DTO) | 3-4 ч | ~2 ч | ✅ |
+| T-RTC09 (CombatConfig + 4 WorldEvent) | 2-3 ч | ~1 ч | ✅ |
+| T-RTC10 (UI) | (Phase 2) | — | ⏸ |
+| **ИТОГО MVP (8 сессий)** | **~23-32 ч** | **~14 ч реализации + 4 ч fix-итерации** | ✅ |
+
+**Вердикт:** оценка занижена (быстрее, чем думали), но **5 race condition багов** потребовали итеративного фикса. Общее время включая fix — ~18 ч, в рамках 23-32 ч оценки. **Хорошо.**
 
 ---
 
 ## Следующий шаг
 
-1. Прочитай `01_ANALYSIS.md` — что есть / чего нет / gaps / anti-restrictive patterns.
-2. Прочитай `02_LORE.md` — пеший vs корабельный бой в лоре.
-3. Прочитай `10_DESIGN.md` — архитектура с `IAttacker/ITarget/IWeapon/IDamageSource`.
-4. Прочитай `20_TECHNICAL.md` — NGO RPC, server-authoritative, hooks для навыков/корабля.
-5. Прочитай `30_SCENARIOS.md` — пеший MVP, ship-extensibility примеры.
-6. Прочитай `30_PITFALLS_AND_OPEN_QUESTIONS.md` — обновлённые вопросы.
-7. Прочитай `40_REFERENCES.md` — file:line.
+См. `60_NEXT_STEPS_T-CB01.md` — что нужно для T-CB01..T-CB09 (навыки + skillMult hook), какие файлы трогать, какие зависимости.

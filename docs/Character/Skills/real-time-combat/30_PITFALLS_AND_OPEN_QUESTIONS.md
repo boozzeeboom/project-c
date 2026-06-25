@@ -176,6 +176,35 @@ public class DefaultDamageSource : IDamageSource {
 
 **Вердикт:** **не удаляем**, **не правим** (кроме DISCLAIMER), **не развиваем**.
 
+### 1.21 Pitfall: race condition registration (RESOLVED v0.1.2)
+
+**Сценарий:** `NetworkPlayer.OnNetworkSpawn` может сработать **раньше** `CombatServer.OnNetworkSpawn` (порядок scene-spawn не гарантирован в NGO 2.x). `RegisterWithCombatServer` пытался зарегистрировать PlayerAttacker/Target в `CombatServer.Instance` — но Instance ещё null. С ранним `return` (v0.0) `AddComponent` пропускался → компонентов нет → push-up `OnNetworkSpawn` не сработает → Player не зарегистрирован.
+
+**Решение (v0.1.1 + v0.1.2):** двухсторонняя защита:
+- **Pull-up:** `PlayerAttacker/Target/NpcAttacker/Target : NetworkBehaviour` + `OnNetworkSpawn` override → если `CombatServer.Instance != null` → `Register`.
+- **Push-down:** `CombatServer.OnNetworkSpawn → RecoverExistingEntities()` → `FindObjectsByType` всех PlayerAttacker/Target/NpcAttacker/Target → `Register` тех, кого ещё нет.
+- **Second-chance:** `CombatServer.OnNetworkSpawn → Invoke(nameof(RecoverExistingEntities), 1.0f)` — для тех, кто spawned'ится позже.
+
+**Также исправлено:** `RecoverExistingEntities` имел `if (id == 0) continue;` для Player — отфильтровывал host player (clientId=0). Убран. Для NPC — оставлен (0 = не инициализирован).
+
+**Вердикт:** РЕШЕНО в v0.1.2. Подробности: `50_IMPL_CHANGELOG.md §v0.1.1, v0.1.2` и `20_TECHNICAL.md §2`.
+
+### 1.22 Pitfall: K-key debug → InvalidSource (RESOLVED v0.1.3)
+
+**Сценарий:** host player без экипированного оружия (WeaponMain/WeaponOff пусты). `PlayerAttacker.RebuildSources` → пустой `_activeSources`. K шлёт `sourceId=0` → `GetDamageSource(0) == null` → `InvalidSource` error.
+
+**Решение (v0.1.3):** `PlayerAttacker.EnsureUnarmedFallback()` — если `_activeSources.Count == 0` после RebuildSources, добавить `DefaultDamageSource(0UL, "Unarmed")`. Debug K-key работает, unarmed combat возможен.
+
+**Вердикт:** РЕШЕНО в v0.1.3. После T-CB03 (WeaponItemData) — `DefaultDamageSource` заменится на `WeaponDamageSource` (id != 0), fallback останется для случая "no weapon equipped".
+
+### 1.23 Pitfall: NPC corpse остаётся видимый (RESOLVED v0.1.4)
+
+**Сценарий:** после `HP=0` (EntityKilled) — `VisualMarker` капсула оставалась видимой. `NpcTarget` не скрывал GameObject.
+
+**Решение (v0.1.4):** `NpcTarget.ApplyDamage` — после `_currentHp.Value = 0` → `Destroy(gameObject, 3.0f)`. 3 сек corpse delay (клиенты видят анимацию/feedback, EntityKilledTargetRpc дойдёт). После — `NetworkObject` NGO-удалится у всех клиентов автоматически.
+
+**Вердикт:** РЕШЕНО в v0.1.4. Подробности: `50_IMPL_CHANGELOG.md §v0.1.4`.
+
 ---
 
 ## 2. Open Questions (новый раздел для движка)

@@ -1,520 +1,408 @@
-# Technical — NGO RPC, server-authoritative, hooks
+# Technical — фактическая реализация Real-Time Combat Engine (v0.1.4, 2026-06-25)
 
-> **Дата:** 2026-06-25 (v0.3)
-> **Базируется на:** `10_DESIGN.md` (архитектура), `Battle/01_ANALYSIS.md §1.4-1.6` (NetworkManager, WorldEventBus, NGO 2.x pattern)
-> **Подход:** server-authoritative, NGO 2.x RPC, scene-placed в BootstrapScene, переиспользуем существующие NGO-паттерны из Battle/Equipment/Skills.
+> **Статус:** ✅ MVP реализован. Этот документ описывает **то, что есть в коде** (не дизайн).
+> **Отличия от дизайна (`10_DESIGN.md`):** race condition фиксы (push-down + second-chance), `EnsureUnarmedFallback` v0.1.3, corpse delay v0.1.4, `NpcAttacker` стал `NetworkBehaviour` (был `MonoBehaviour`).
+> **Ключевая идея:** server-authoritative, NGO 2.x RPC, scene-placed `[CombatServer]` в `BootstrapScene` (singleton), push-down + pull-up registration для race-safety.
 
 ---
 
 ## 1. Scene placement
 
-### 1.1 CombatServer (NetworkBehaviour)
+### 1.1 `[CombatServer]` GameObject
 
-**Файл (новый):** `Assets/_Project/Scripts/Combat/Network/CombatServer.cs`
-**Namespace:** `ProjectC.Combat`
-**Сцена:** `Assets/_Project/Scenes/BootstrapScene.unity` — рядом с другими серверами.
+| Свойство | Значение |
+|---|---|
+| Path | `Assets/_Project/Scenes/BootstrapScene.unity` |
+| Имя | `[CombatServer]` |
+| Компоненты | `Transform` (root) + `NetworkObject` + `CombatServer` |
+| Spawn | scene-placed через `ScenePlacedObjectSpawner` (re-spawn при StartHost) |
+| Singleton | `CombatServer.Instance` устанавливается в `OnNetworkSpawn` (server-only) |
 
-**GameObject:** `[CombatServer]`
-- `NetworkObject` (NGO 2.x, scene-placed)
-- `NetworkBehaviour` (этот скрипт)
-- `Transform` (root, как у других серверов)
-
-**Регистрация в `NetworkManagerController`:** добавить в `Awake()` (по аналогии с `CreateStatsClientState` / `CreateSkillsClientState` / `CreateEquipmentClientState`).
-
+**Создание через execute_code (Edit Mode):**
 ```csharp
-private void CreateCombatClientState() {
-    if (CombatClientState.Instance == null) {
-        var go = new GameObject("[CombatClientState]");
-        DontDestroyOnLoad(go);
-        go.AddComponent<CombatClientState>();
-    }
-}
+var go = new GameObject("[CombatServer]");
+var netObj = go.AddComponent<Unity.Netcode.NetworkObject>();
+var cs = go.AddComponent<ProjectC.Combat.CombatServer>();
+UnityEditor.SceneManagement.EditorSceneManager.MarkSceneDirty(scene);
+UnityEditor.SceneManagement.EditorSceneManager.SaveScene(scene);
 ```
 
-### 1.2 Scene-placed vs spawned
+### 1.2 `NPC_TestEnemy` GameObject
 
-**CombatServer — scene-placed**, как и остальные. Singleton через `Instance`, auto-spawn через NGO.
+| Свойство | Значение |
+|---|---|
+| Path | `Assets/_Project/Scenes/World/WorldScene_0_0.unity` |
+| Имя | `NPC_TestEnemy` |
+| Position | `(30, 0, 0)` относительно `WorldRoot_0_0` = `(40030, 2502, 40030)` (в мировых координатах) |
+| Компоненты | `Transform` + `NetworkObject` + `NpcAttacker` + `NpcTarget` |
+| Дочерний | `VisualMarker` (Capsule primitive, красный URP Lit, scale=0.8×1×0.8, pos +1м Y) |
 
-**Регистрация IAttacker/IDamageTarget** — **в runtime**, на OnNetworkSpawn конкретных GameObject'ов (PlayerAttacker, NpcAttacker, Phase 3 — ShipAttacker). Не scene-placed.
+**Создание через execute_code (Edit Mode):** см. `50_IMPL_CHANGELOG.md §3.1`.
+
+### 1.3 `CombatClientState` — программный singleton
+
+Создаётся в `NetworkManagerController.CreateCombatClientState()` (add-only), как **root GameObject** с `DontDestroyOnLoad` (паттерн идентичен `MarketClientState`, `ContractClientState` и т.п.). Если в сцене уже есть root-инстанс — skip; иначе создать новый root, чтобы пережить streaming сцен.
 
 ---
 
-## 2. NGO RPC (client ↔ server)
+## 2. Registration flow (race-safe, v0.1.2)
 
-### 2.1 Client → Server RPCs
+### 2.1 Проблема
 
-```csharp
-public class CombatServer : NetworkBehaviour {
-    public static CombatServer Instance { get; private set; }
-    
-    // === Основная атака ===
-    [Rpc(SendTo.Server, RequireOwnership = true)]
-    public void RequestAttackRpc(ulong targetId, ulong sourceId, RpcParams rpcParams = default) {
-        ulong attackerId = rpcParams.Receive.SenderClientId;
-        if (!RateLimit(attackerId)) return;
-        ResolveAttack(attackerId, targetId, sourceId);
-    }
-    
-    // === Skill-based attack (Phase 2) ===
-    [Rpc(SendTo.Server, RequireOwnership = true)]
-    public void RequestSkillRpc(ulong targetId, string skillId, RpcParams rpcParams = default) {
-        ulong attackerId = rpcParams.Receive.SenderClientId;
-        if (!RateLimit(attackerId)) return;
-        ResolveSkill(attackerId, targetId, skillId);
-    }
-    
-    // === Defend (стойка) ===
-    [Rpc(SendTo.Server, RequireOwnership = true)]
-    public void RequestDefendRpc(RpcParams rpcParams = default) {
-        ulong clientId = rpcParams.Receive.SenderClientId;
-        if (!RateLimit(clientId)) return;
-        SetDefendingStance(clientId, true);
-    }
-    
-    // === Stop defending ===
-    [Rpc(SendTo.Server, RequireOwnership = true)]
-    public void RequestStopDefendRpc(RpcParams rpcParams = default) {
-        ulong clientId = rpcParams.Receive.SenderClientId;
-        if (!RateLimit(clientId)) return;
-        SetDefendingStance(clientId, false);
-    }
-    
-    // === PvP duel (Phase 2) ===
-    [Rpc(SendTo.Server, RequireOwnership = false)]
-    public void RequestDuelRpc(ulong opponentId, RpcParams rpcParams = default) {
-        ulong clientId = rpcParams.Receive.SenderClientId;
-        if (!RateLimit(clientId)) return;
-        SendDuelInvite(clientId, opponentId);
-    }
-    
-    [Rpc(SendTo.Server, RequireOwnership = false)]
-    public void RespondDuelRpc(ulong duelId, bool accept, RpcParams rpcParams = default) {
-        ulong clientId = rpcParams.Receive.SenderClientId;
-        if (!RateLimit(clientId)) return;
-        if (accept) AcceptDuel(duelId);
-        else DeclineDuel(duelId);
-    }
-}
+В NGO 2.x порядок `OnNetworkSpawn` у scene-placed NetworkObjects **не гарантирован**. Ситуация:
+- `NetworkPlayer.OnNetworkSpawn` срабатывает **раньше** `CombatServer.OnNetworkSpawn` → `CombatServer.Instance==null` в момент `RegisterWithCombatServer()` → `AddComponent` пропускался (ранний return в v0.0) → `PlayerAttacker/Target` не создавались.
+- `PlayerAttacker.ClientId == 0` для host player (server's own client), и мой skip `if (id == 0) continue;` отфильтровывал host.
+
+### 2.2 Решение (v0.1.2)
+
+**Двухсторонняя защита:**
+
+#### Pull-up (NetworkBehaviour.OnNetworkSpawn → Register)
+- `PlayerAttacker : NetworkBehaviour` + `OnNetworkSpawn` override → если `CombatServer.Instance != null` → `RegisterAttacker(_clientId, this)`.
+- `PlayerTarget : NetworkBehaviour` (был уже) + `OnNetworkSpawn` override → то же.
+- `NpcAttacker : NetworkBehaviour` (v0.1: был MonoBehaviour) + `OnNetworkSpawn` override.
+- `NpcTarget : NetworkBehaviour` (был уже) + `OnNetworkSpawn` override (с fallback-init HP если `_targetId==0`).
+- `OnNetworkDespawn` override у всех четырёх → `Unregister` в CombatServer.
+
+#### Push-down (CombatServer.OnNetworkSpawn → RecoverExistingEntities)
+- После `Instance = this` в `CombatServer.OnNetworkSpawn` → `RecoverExistingEntities()`.
+- `FindObjectsByType<PlayerAttacker/PlayerTarget/NpcAttacker/NpcTarget>(FindObjectsSortMode.None)` → для каждого, если `!_attackers.ContainsKey(id)` → `Register`.
+- Для **Player** — `if (id == 0) continue;` **УБРАН** (0 = валидный clientId для host).
+- Для **NPC** — `if (id == 0) continue;` **ОСТАВЛЕН** (0 = не инициализирован).
+- Логирует каждое действие: `[CombatServer] RecoverExistingEntities: registered PlayerAttacker id=0` и т.п.
+
+#### Second-chance (v0.1.2)
+- В `CombatServer.OnNetworkSpawn` после `RecoverExistingEntities()` → `Invoke(nameof(RecoverExistingEntities), 1.0f)`.
+- Через 1 сек повторный find. На случай, если Player NetworkObject spawned'ится ПОЗЖЕ CombatServer (push-down в OnNetworkSpawn его не ловит, а pull-up ещё не сработал).
+
+### 2.3 Хронология (факт из Play Mode #5)
+
+```
+[71]  NetworkPlayer.RegisterWithCombatServer: components added (PlayerAttacker/Target), 
+       but CombatServer.Instance==null — push-down will catch up. clientId=0
+[87]  CombatServer.OnNetworkSpawn: Instance set, IsServer=True.
+[88]  RecoverExistingEntities: registered PlayerAttacker id=0   ← push-down
+[89]  RecoverExistingEntities: registered PlayerTarget id=0      ← push-down
+[90]  RecoverExistingEntities done: attackers=1, targets=1
+[228] Registered attacker id=140956 (NpcAttacker)                ← pull-up NpcAttacker
+[229] NpcTarget.OnNetworkSpawn fallback-init: HP=20              ← pull-up NpcTarget
+[230] Registered target id=45 (NpcTarget)                        ← уже был через push-down? нет, race.
+[243] RecoverExistingEntities done: attackers=2, targets=2       ← second-chance
 ```
 
-### 2.2 Server → Client TargetRPCs (multicast)
-
-```csharp
-// Multicast to all clients in scene (default for combat)
-[Rpc(SendTo.SpecifiedInParams)]
-public void AttackLandedTargetRpc(DamageResultDto dto, RpcParams rpcParams) {
-    CombatClientState.Instance.HandleAttackLanded(dto);
-}
-
-[Rpc(SendTo.SpecifiedInParams)]
-public void DamageDealtTargetRpc(DamageResultDto dto, RpcParams rpcParams) {
-    CombatClientState.Instance.HandleDamageDealt(dto);
-}
-
-[Rpc(SendTo.SpecifiedInParams)]
-public void EntityKilledTargetRpc(DamageResultDto dto, RpcParams rpcParams) {
-    CombatClientState.Instance.HandleEntityKilled(dto);
-}
-
-[Rpc(SendTo.SpecifiedInParams)]
-public void OutOfRangeTargetRpc(ulong clientId, RpcParams rpcParams) {
-    CombatClientState.Instance.HandleOutOfRange();
-}
-
-[Rpc(SendTo.SpecifiedInParams)]
-public void AttackErrorTargetRpc(ulong clientId, AttackErrorCode code, RpcParams rpcParams) {
-    CombatClientState.Instance.HandleError(code);
-}
-```
-
-**Паттерн `SendTo.SpecifiedInParams`:** отправляем конкретному client (или списку). Multicast через `RpcTarget.Everyone` для combat events.
-
-### 2.3 DTO (server ↔ client)
-
-```csharp
-[Serializable]
-public struct DamageResultDto : INetworkSerializable {
-    public int baseAttack;
-    public float locMult;
-    public float critMult;
-    public float skillMult;
-    public float hitChance;
-    public int preDefenseDamage;
-    public int effectiveDefense;
-    public int finalDamage;
-    public bool isCrit;
-    public bool isHit;
-    public byte hitLocation;       // 0=Limbs, 1=Torso, 2=Head (Phase 3)
-    public byte damageType;        // 0=Physical, 1=Ballistic, 2=Antigrav, 3=Explosive, 4=Mesium
-    public ulong attackerId;
-    public ulong targetId;
-    public ulong sourceId;
-    public Vector3 attackerPosition;
-    public Vector3 targetPosition;
-    
-    public void NetworkSerialize<T>(BufferSerializer<T> s) where T : IReaderWriter {
-        s.SerializeValue(ref baseAttack);
-        s.SerializeValue(ref locMult);
-        s.SerializeValue(ref critMult);
-        s.SerializeValue(ref skillMult);
-        s.SerializeValue(ref hitChance);
-        s.SerializeValue(ref preDefenseDamage);
-        s.SerializeValue(ref effectiveDefense);
-        s.SerializeValue(ref finalDamage);
-        s.SerializeValue(ref isCrit);
-        s.SerializeValue(ref isHit);
-        s.SerializeValue(ref hitLocation);
-        s.SerializeValue(ref damageType);
-        s.SerializeValue(ref attackerId);
-        s.SerializeValue(ref targetId);
-        s.SerializeValue(ref sourceId);
-        s.SerializeValue(ref attackerPosition);
-        s.SerializeValue(ref targetPosition);
-    }
-    
-    public static DamageResultDto FromResult(DamageResult result) {
-        return new DamageResultDto {
-            baseAttack = result.baseAttack,
-            locMult = result.locMult,
-            critMult = result.critMult,
-            skillMult = result.skillMult,
-            hitChance = result.hitChance,
-            preDefenseDamage = result.preDefenseDamage,
-            effectiveDefense = result.effectiveDefense,
-            finalDamage = result.finalDamage,
-            isCrit = result.isCrit,
-            isHit = result.isHit,
-            hitLocation = result.hitLocation,
-            damageType = (byte)result.damageType,
-            attackerId = result.attackerId,
-            targetId = result.targetId,
-            sourceId = result.sourceId,
-            attackerPosition = result.attackerPosition,
-            targetPosition = result.targetPosition,
-        };
-    }
-}
-
-public enum AttackErrorCode : byte {
-    OutOfRange = 0,
-    OnCooldown = 1,
-    InvalidTarget = 2,
-    InvalidSource = 3,
-    NotEnoughSeconds = 4,
-    RateLimit = 5,
-    AlreadyDead = 6,
-}
-```
-
-**Вердикт:** `INetworkSerializable` + `BufferSerializer` (NGO 2.x pattern). Аналогично `SkillsSnapshotDto`.
+**Итог:** `attackers=2 (Player id=0 + Npc id=140956), targets=2 (Player id=0 + Npc id=45)`. Готово к бою.
 
 ---
 
-## 3. Server-authoritative flow (anti-cheat)
+## 3. ERPR Damage Formula (факт, в `DamageCalculator.cs`)
 
-### 3.1 Принцип: только сервер кидает кубики
-
-**❌ ПЛОХО (cheatable):**
 ```csharp
-[Rpc(SendTo.Server)]
-public void RequestDamageRpc(int amount) {
-    target.ApplyDamage(amount);  // клиент указал урон!
+public static DamageResult Calculate(
+    IAttacker attacker,
+    IDamageTarget defender,
+    IDamageSource source,
+    IRangePolicy rangePolicy,
+    object skill = null)  // MVP: всегда null
+{
+    // 1. Base attack: roll dN + base + STR
+    int roll = source.GetDamageDice().Roll();  // Random.Range(1, N+1)
+    int baseAttack = roll + source.GetBaseDamage() + attacker.GetStrength();
+
+    // 2. Hit chance (from range policy)
+    float hitChance = rangePolicy.CalculateHitChance(attacker, defender, source);
+    bool isHit = Random.value < hitChance;
+
+    if (!isHit) return DamageResult.Miss(...);
+
+    // 3. Hit location — ОТКЛЮЧЕН в real-time (per 2.17)
+    float locMult = 1.0f;
+    byte hitLocation = 1;  // Torso (default)
+
+    // 4. Crit (1d100 + critMod >= 100 → ×2)
+    int critRoll = Random.Range(1, 101);
+    bool isCrit = (critRoll + source.GetCritModifier()) >= 100;
+    float critMult = isCrit ? 2.0f : 1.0f;
+
+    // 5. Skill multiplier (от навыков, opt-in, БЕЗ CAP per 2.18)
+    float skillMult = source.GetSkillMultiplier(attackerId);
+
+    // 6. Pre-defense damage
+    int preDefense = Mathf.RoundToInt(baseAttack * locMult * critMult * skillMult);
+
+    // 7. Defense (armor × typeMultiplier)
+    int totalArmor = defender.GetArmorDefense();
+    float armorMult = source.GetDamageType().ArmorMultiplier();
+    int effectiveDefense = Mathf.RoundToInt(totalArmor * armorMult);
+
+    // 8. Final
+    int final = Mathf.Max(0, preDefense - effectiveDefense);
+
+    return new DamageResult { /* fill all fields */ };
 }
 ```
 
-**✅ ХОРОШО (server-authoritative):**
-```csharp
-[Rpc(SendTo.Server)]
-public void RequestAttackRpc(ulong targetId, ulong sourceId) {
-    // Валидация: target существует, alive, in range, etc.
-    var result = DamageCalculator.Calculate(attacker, target, source);  // SERVER кидает кубики
-    target.ApplyDamage(result, attackerId);  // SERVER применяет
-    BroadcastAttackLanded(result);  // SERVER бродкастит
-}
-```
+**Constants:**
+- `BaseCritThreshold = 100`
+- `CritMultiplier = 2.0f`
+- HitLocation: `locMult = 1.0`, `hitLocation = 1` (Torso) — отключён per 2.17
+- SkillMult: без cap per 2.18
 
-**Клиент НИКОГДА не вычисляет damage. Только рисует UI после получения server-подтверждения.**
+**DamageType → armor multiplier** (per `DamageTypeExtensions.ArmorMultiplier`):
+| Type | Multiplier |
+|---|---|
+| Physical | 1.0 |
+| Ballistic | 1.0 |
+| Antigrav | 0.5 (g-волна частично игнорирует броню) |
+| Explosive | 0.7 |
+| Mesium | 0.0 (токсин не блокируется) |
 
-### 3.2 Client-prediction (Phase 2, опционально)
+**HitChance formulas** (per 2.1):
 
-**Проблема:** на 100ms ping клиент видит "атаку началась, но damage ещё не пришёл" — lag.
+`MeleeRangePolicy.CalculateHitChance`:
+- `distMod = clamp01(1 - (dist - 1.5) / 2)` (1.0 на dist≤1.5м, 0 на dist≥3.5м)
+- `dexMod = clamp01(0.85 + (DEX - 10) * 0.015)` (0.85 на DEX 10, 0.925 на DEX 20)
+- `baseMelee = 0.85`
+- `hitChance = clamp01(0.85 * distMod * dexMod)`
 
-**Решение (Phase 2):** клиент **предсказывает** damage (используя local RNG с тем же seed), рисует floating number сразу. Когда server присылает authoritative result — корректирует (если не совпало).
+`RangedRangePolicy.CalculateHitChance`:
+- `distMod = clamp01(1 - dist / maxRange)` (1.0 на dist=0, 0 на dist=maxRange)
+- `dexMod = clamp01(0.85 + (DEX - 10) * 0.015)`
+- `baseRanged = 0.75`
+- `hitChance = clamp01(0.75 * distMod * dexMod)`
 
-**MVP:** **без предсказания**. Клиент ждёт server-подтверждения. Лаг 100ms приемлем для MVP.
+---
 
-### 3.3 Multiplayer sync (пеший)
+## 4. Server-authoritative flow (факт)
+
+### 4.1 Server → Client (multicast)
+
+| RPC | Target | Назначение |
+|---|---|---|
+| `RequestAttackRpc(ulong targetId, ulong sourceId, RpcParams)` | `SendTo.Server, RequireOwnership=true` | client → server, начать атаку |
+| `RequestSkillRpc(ulong targetId, string skillId, RpcParams)` | `SendTo.Server, RequireOwnership=true` | Phase 2: skill-based attack |
+| `RequestDefendRpc(RpcParams)` | `SendTo.Server, RequireOwnership=true` | Phase 2: defend stance |
+| `AttackLandedTargetRpc(DamageResultDto dto, RpcParams)` | `SendTo.SpecifiedInParams` (Everyone) | broadcast результат |
+| `EntityKilledTargetRpc(DamageResultDto dto, RpcParams)` | `SendTo.SpecifiedInParams` (Everyone) | broadcast смерти |
+| `AttackErrorTargetRpc(ulong clientId, string code, RpcParams)` | `SendTo.SpecifiedInParams` (Single) | error → конкретный client |
+
+### 4.2 `DamageResultDto` (INetworkSerializable)
+
+Содержит все поля `DamageResult` (см. `Core/DamageResult.cs`) + `static FromResult(in DamageResult)` конвертер. Сериализуется через `BufferSerializer<T>` (стандарт NGO 2.x).
+
+### 4.3 ResolveAttack (server-side, факт в `CombatServer.cs`)
 
 ```csharp
 public void ResolveAttack(ulong attackerId, ulong targetId, ulong sourceId) {
     if (!_attackers.TryGetValue(attackerId, out var attacker)) return;
     if (!_targets.TryGetValue(targetId, out var target)) return;
-    if (!target.IsAlive()) return;
-    
+    if (!target.IsAlive()) { SendErrorToClient(attackerId, "AlreadyDead"); return; }
+    if (!attacker.IsAlive()) return;
+
     var source = attacker.GetDamageSource(sourceId);
-    if (source == null) return;
-    
-    // Cooldown
+    if (source == null) { SendErrorToClient(attackerId, "InvalidSource"); return; }
+
     float now = Time.unscaledTime;
-    if (!attacker.CanAttack(source, now)) {
-        SendErrorToClient(attackerId, AttackErrorCode.OnCooldown);
-        return;
-    }
-    
-    // Range
-    var rangePolicy = GetRangePolicy(source);
-    if (!rangePolicy.IsInRange(attacker, target, source)) {
-        SendErrorToClient(attackerId, AttackErrorCode.OutOfRange);
-        return;
-    }
-    
-    // Hit chance
-    float hitChance = rangePolicy.CalculateHitChance(attacker, target, source);
-    
-    // Calculate damage
-    var result = DamageCalculator.Calculate(attacker, target, source);
-    result.hitChance = hitChance;
-    
-    // Set cooldown
+    if (!attacker.CanAttack(source, now)) { SendErrorToClient(attackerId, "OnCooldown"); return; }
+
+    IRangePolicy rangePolicy = source.GetRange() < 3.0f
+        ? (IRangePolicy)new MeleeRangePolicy()
+        : new RangedRangePolicy();
+
+    if (!rangePolicy.IsInRange(attacker, target, source)) { SendErrorToClient(attackerId, "OutOfRange"); return; }
+
+    var result = DamageCalculator.Calculate(attacker, target, source, rangePolicy);
     attacker.SetCooldown(source, now + source.GetCooldownSeconds());
-    
-    // Apply damage (server-side, authoritative)
-    if (result.isHit) {
-        target.ApplyDamage(result, attackerId);
-    }
-    
-    // Broadcast to all clients (multicast)
-    BroadcastAttackLanded(result);
-    
-    // WorldEvent (для подписчиков)
-    WorldEventBus.Publish(new AttackLandedEvent { result = result });
-    if (result.isHit) {
-        WorldEventBus.Publish(new DamageDealtEvent { result = result });
-    }
-    if (!target.IsAlive()) {
-        WorldEventBus.Publish(new EntityKilledEvent { result = result });
-    }
-}
 
-private void BroadcastAttackLanded(DamageResult result) {
+    if (result.isHit) target.ApplyDamage(result, attackerId);
+
     var dto = DamageResultDto.FromResult(result);
-    var rpcParams = new RpcParams {
-        Send = new RpcSendParams { Target = RpcTarget.Everyone }
-    };
+    var rpcParams = new RpcParams { Send = new RpcSendParams { Target = RpcTarget.Everyone } };
     AttackLandedTargetRpc(dto, rpcParams);
-}
-```
 
-**Вердикт:** server-authoritative, **все клиенты** получают broadcast (для visual + audio sync).
-
----
-
-## 4. State management
-
-### 4.1 CombatServer registries
-
-```csharp
-public class CombatServer : NetworkBehaviour {
-    private Dictionary<ulong, IAttacker> _attackers = new();
-    private Dictionary<ulong, IDamageTarget> _targets = new();
-    private Dictionary<ulong, List<IDamageSource>> _sources = new();  // attackerId → list of sources
-    
-    // Register/unregister (called by PlayerAttacker/NpcAttacker on spawn/despawn)
-    public void RegisterAttacker(ulong id, IAttacker attacker) {
-        _attackers[id] = attacker;
-    }
-    public void RegisterTarget(ulong id, IDamageTarget target) {
-        _targets[id] = target;
-    }
-    public void UnregisterAttacker(ulong id) {
-        _attackers.Remove(id);
-        _sources.Remove(id);
-    }
-    public void UnregisterTarget(ulong id) {
-        _targets.Remove(id);
+    WorldEventBus.Publish(new AttackLandedEvent { PlayerId = attackerId, Result = result });
+    if (result.isHit) WorldEventBus.Publish(new DamageDealtEvent { PlayerId = attackerId, Result = result });
+    if (result.isHit && !target.IsAlive()) {
+        WorldEventBus.Publish(new EntityKilledEvent { PlayerId = attackerId, Result = result });
+        EntityKilledTargetRpc(dto, rpcParams);
     }
 }
 ```
 
-### 4.2 Per-attacker cooldowns
+### 4.4 Anti-cheat (server-authoritative)
 
-```csharp
-public class CooldownTracker {
-    // Per (attackerId, sourceId) → readyTime
-    private Dictionary<(ulong, ulong), float> _cooldowns = new();
-    
-    public bool IsReady(ulong attackerId, ulong sourceId, float now) {
-        return !_cooldowns.TryGetValue((attackerId, sourceId), out var ready) || now >= ready;
-    }
-    
-    public void SetCooldown(ulong attackerId, ulong sourceId, float until) {
-        _cooldowns[(attackerId, sourceId)] = until;
-    }
-}
-```
-
-**Где хранить:** в `CombatServer` (POCO, server-side). **Не** реплицируется на клиентов (сервер сам считает).
-
-### 4.3 Per-attacker defending stance
-
-```csharp
-// Per clientId → isDefending (true/false)
-private Dictionary<ulong, bool> _defending = new();
-
-public bool IsDefending(ulong clientId) {
-    return _defending.TryGetValue(clientId, out var d) && d;
-}
-
-public void SetDefendingStance(ulong clientId, bool defending) {
-    _defending[clientId] = defending;
-    // Broadcast stance change (для UI)
-    DefendingStanceChangedTargetRpc(clientId, defending, /* RpcTarget.Group */);
-}
-```
-
-**Эффект:** `IDamageTarget.GetArmorDefense()` может учитывать стойку (+50% defense на ход). **MVP:** стойка = ×1.5 defense на 2 сек.
-
-### 4.4 Health state (NetworkVariable on PlayerTarget)
-
-```csharp
-public class PlayerTarget : NetworkBehaviour, IDamageTarget {
-    [SerializeField] private NetworkVariable<int> _currentHp = new(20);
-    [SerializeField] private NetworkVariable<int> _maxHp = new(20);
-    
-    public int GetCurrentHp() => _currentHp.Value;
-    public int GetMaxHp() => _maxHp.Value;
-    
-    public void ApplyDamage(DamageResult result, ulong attackerClientId) {
-        if (!IsServer) return;
-        int newHp = Mathf.Max(0, _currentHp.Value - result.finalDamage);
-        _currentHp.Value = newHp;
-    }
-}
-```
-
-**NGO автоматически реплицирует** `NetworkVariable<int>` на все клиенты. UI читает `OnValueChanged`.
-
-**То же для `NpcTarget`** (подтверждено 2.8) — `_currentHp` реплицируется через `NetworkVariable<int>`. Разница: NPC не имеет `OwnerClientId` (server-owned), поэтому `NetworkVariable` читается всеми клиентами через `SceneManager.Singleton.OnSceneEvent` или `BroadcastAttackLanded`.
-
----
-
-## 5. Determinism vs anti-cheat
-
-### 5.1 Сервер — истина, клиент — UX
-
-| Аспект | Сервер | Клиент |
+| Угроза | Защита | Где |
 |---|---|---|
-| **Damage calculation** | ✅ (authoritative) | ❌ (никогда) |
-| **Hit chance roll** | ✅ (server) | ❌ |
-| **Crit roll** | ✅ (server) | ❌ |
-| **Cooldown tracking** | ✅ (server) | ❌ (но клиент предсказывает для UX) |
-| **HP** | ✅ (NetworkVariable) | ✅ (replicated) |
-| **Animation/sound** | ❌ (нет сервер-анимации) | ✅ (trigger при server-подтверждении) |
-| **UI damage numbers** | ❌ (нет) | ✅ (рисует по server-данным) |
-
-### 5.2 Network lag handling (MVP — без prediction)
-
-```csharp
-// Client side (в PlayerAttacker / InputHandler):
-public void OnAttackPressed(ulong targetId, ulong sourceId) {
-    // 1. Проверяем cooldown локально (UI feedback)
-    if (LocalCooldownTracker.IsReady(...)) {
-        // 2. Отправляем RPC
-        CombatServer.Instance.RequestAttackRpc(targetId, sourceId);
-        // 3. Ждём AttackLandedTargetRpc
-        // 4. UI: floating damage number, hit flash, etc.
-    } else {
-        // UI: "On cooldown" toast
-    }
-}
-```
-
-**Lag = ~100ms** (100ms между нажатием и видимым уроном). Приемлемо для MVP. Phase 2: client prediction.
-
-### 5.3 Anti-cheat: target switching
-
-**Проблема:** игрок нажимает ЛКМ → target уже мёртв (только что убит другим игроком).
-
-**Решение:**
-```csharp
-public void ResolveAttack(ulong attackerId, ulong targetId, ulong sourceId) {
-    if (!_targets.TryGetValue(targetId, out var target)) {
-        SendError(attackerId, AttackErrorCode.InvalidTarget);
-        return;
-    }
-    if (!target.IsAlive()) {
-        SendError(attackerId, AttackErrorCode.AlreadyDead);
-        return;
-    }
-    // ... rest of flow
-}
-```
-
-**Клиент получает error → UI: "Target already dead"** (Phase 2).
-
-### 5.4 Anti-cheat: distance spoofing
-
-**Проблема:** игрок «подкручивает» позицию, чтобы бить издалека.
-
-**Решение:** все distance checks на **сервере** (`rangePolicy.IsInRange` в `ResolveAttack`). Клиент не может обмануть.
-
-### 5.5 Anti-cheat: cooldown bypass
-
-**Проблема:** игрок спамит атаки быстрее, чем cooldown.
-
-**Решение:** `attacker.CanAttack(source, now)` проверяется на сервере. `RateLimit` (10 ops/sec) защищает от RPC-spam.
+| Подмена damage | Server rolls dice, client только рисует UI | `DamageCalculator.Calculate` на server |
+| Distance spoofing | Все distance checks на server | `IRangePolicy.IsInRange` в `ResolveAttack` |
+| Cooldown bypass | `attacker.CanAttack(source, now)` на server | `CombatServer.IsCooldownReady` (централизованно per 2.3) |
+| Target switching на мёртвом NPC | `target.IsAlive()` check | `ResolveAttack` |
+| RPC spam | `RateLimit` 10 ops/sec per client | `CombatServer.RateLimit` |
+| Weapon spoofing | `GetDamageSource(sourceId)` — server ищет в реальном списке | `attacker.GetDamageSource` |
 
 ---
 
-## 6. Cooldown / timing
+## 5. Cooldown (централизованно per 2.3)
 
-### 6.1 Server tick rate
+`CombatServer` хранит `Dictionary<(ulong attackerId, ulong sourceId), float> _cooldowns` (readyTime в `Time.unscaledTime`).
 
-```csharp
-public class CombatServer : NetworkBehaviour {
-    [SerializeField] private float _serverTickInterval = 1f / 30f;  // 30 Hz
-    private float _lastTick = 0f;
-    
-    private void FixedUpdate() {
-        if (!IsServer) return;
-        float now = Time.fixedTime;
-        if (now - _lastTick < _serverTickInterval) return;
-        _lastTick = now;
-        
-        // Server tick: проверяем expired cooldowns, expired defending stances, etc.
-        // (не критично — проверки по требованию)
-    }
-}
-```
+- `IAttacker.CanAttack(source, now)` → `CombatServer.IsCooldownReady(_clientId, source.GetSourceId(), now)`.
+- `IAttacker.SetCooldown(source, until)` → `CombatServer.SetCooldown(_clientId, source.GetSourceId(), until)`.
+- `PlayerAttacker` — passthrough в CombatServer.
+- `NpcAttacker` — per-component `float _lastAttackTime` (NPC-враги малочисленны, не конкурируют за cooldown-таблицу).
 
-**Вердикт:** 30 Hz = 33ms. Достаточно для combat. Cooldowns проверяются **по требованию** (lazy, при ResolveAttack), не через tick.
-
-### 6.2 Default cooldowns (server-side config)
-
-Из `WeaponDamageSource.GetCooldownSeconds()`:
-- d4/d6 (кинжал, меч) → 1.0 сек
-- d8/d10 (копьё, двуручник) → 1.5 сек
-- d12/d20 (мезиевое) → 2.5 сек
-
-**Вердикт:** мелкое оружие быстрее, тяжёлое — медленнее. Дизайнер-конфигурируемо через `CombatConfig.baseMeleeCooldown` / `baseRangedCooldown`.
-
-### 6.3 Defending stance duration
-
-**MVP:** стойка длится **2 секунды** (или до следующей атаки/движения). Дизайнер-конфигурируемо.
+**Default cooldowns** (в `DefaultDamageSource` / `WeaponDamageSource`):
+- `d4/d6` → 1.0s
+- `d8/d10` → 1.5s
+- `d12/d20` → 2.5s
 
 ---
 
-## 7. Integration с существующими подсистемами
+## 6. Range policy (auto-select per source)
 
-### 7.1 SkillsWorld (T-P12, opt-in)
+В `CombatServer.ResolveAttack`:
+```csharp
+IRangePolicy rangePolicy = source.GetRange() < 3.0f
+    ? (IRangePolicy)new MeleeRangePolicy()
+    : new RangedRangePolicy();
+```
 
-**Движок читает:**
-- `SkillsWorld.GetLearnedSkills(clientId)` — **после T-CB01..T-CB09** (MVP+1).
-- Через `IDamageSource.GetSkillMultiplier(attackerId)` — навыки дают бонус (например, `HeavySwing` ×1.2, `CriticalStrike` ×1.5, `DodgeRoll` — снижение получаемого урона).
+**MVP:** hardcoded threshold 3.0м. После T-CB03 — designer-конфигурируемо через `CombatConfig`.
 
-**MVP (T-RTC01..T-RTC10):** `GetSkillMultiplier` возвращает **1.0** (навыки не подключены). Движок работает.
+---
 
-**После T-CB01..T-CB09 (MVP+1):** `GetSkillMultiplier` интегрируется с `SkillsWorld`:
+## 7. HP state (NetworkVariable)
+
+`PlayerTarget` и `NpcTarget` используют `NetworkVariable<int> _currentHp` + `NetworkVariable<int> _maxHp`. NGO автоматически реплицирует на все клиенты. UI подписывается на `OnValueChanged` (когда будет T-RTC10).
+
+**MVP default:**
+- `PlayerTarget._currentHp = 20` (default NetworkVariable init)
+- `NpcTarget._currentHp = _data.maxHp` (default 30, после v0.1.4 NpcTarget.OnNetworkSpawn fallback-init из `_data` → 20 для `Npc_Goblin.asset`)
+
+---
+
+## 8. State management
+
+### 8.1 Registries
+
+```csharp
+private readonly Dictionary<ulong, IAttacker> _attackers = new();
+private readonly Dictionary<ulong, IDamageTarget> _targets = new();
+```
+
+Заполняются через:
+- `RegisterAttacker(id, attacker)` / `RegisterTarget(id, target)` — explicit (pull-up)
+- `RecoverExistingEntities()` — push-down (OnNetworkSpawn + Invoke second-chance)
+- `UnregisterAttacker(id)` / `UnregisterTarget(id)` — при despawn
+
+### 8.2 Cooldown + Rate limit
+
+- `_cooldowns` — per (attackerId, sourceId)
+- `_nextAllowedTime` — per clientId, 10 ops/sec
+
+---
+
+## 9. Tick (server loop)
+
+**НЕТ explicit tick.** Все проверки **lazy** (при ResolveAttack):
+- Cooldown: `Time.unscaledTime` против `_cooldowns[(id, srcId)]`.
+- Defending stances: не реализовано (Phase 2).
+- HP regen: не реализовано (Phase 2).
+
+`FixedUpdate` в `CombatServer` отсутствует (только `OnNetworkSpawn/Despawn/RecoverExistingEntities/Invoke`).
+
+---
+
+## 10. Error handling (факт)
+
+`AttackErrorCode` enum — **НЕ реализован** в коде. Используются **string константы** для простоты MVP:
+
+| Код | Триггер | Действие |
+|---|---|---|
+| `"AlreadyDead"` | `target.IsAlive() == false` | UI toast (Phase 2) |
+| `"OnCooldown"` | `attacker.CanAttack == false` | UI toast |
+| `"OutOfRange"` | `rangePolicy.IsInRange == false` | UI toast |
+| `"InvalidSource"` | `GetDamageSource(sourceId) == null` | UI toast |
+| `"InvalidTarget"` | `_targets[targetId] == null` | (нет error code, return) |
+
+`AttackErrorTargetRpc(ulong clientId, string code, RpcParams)` → `CombatClientState.HandleError(code)` → `OnAttackError` event + Debug.Log.
+
+---
+
+## 11. Persistence
+
+**НЕ реализовано.** Disconnect = respawn with full HP (designer config). HP, stance, cooldowns не сериализуются. После Phase 2 — `CharacterSaveData` extension (отдельный тикет).
+
+---
+
+## 12. Performance & scalability
+
+- `Dictionary.TryGetValue` — O(1)
+- `Vector3.Distance` — O(1)
+- `DamageCalculator.Calculate` — O(1) (Random + Math)
+- `BroadcastAttackLanded` — O(n) где n = число клиентов. NGO 2.x RPC overhead.
+
+**MVP:** 100 игроков × 1 атака/сек × ~50 bytes DamageResultDto = 5 KB/сек → OK. Phase 3 — AreaOfInterest.
+
+---
+
+## 13. Integration с существующими подсистемами (add-only)
+
+### 13.1 `Assets/_Project/Core/WorldEvent.cs`
+
+Добавлены 4 event-класса в конец файла (add-only, не трогаем существующие):
+- `AttackStartedEvent { ulong AttackerId; ulong TargetId; ulong SourceId; }`
+- `AttackLandedEvent { DamageResult Result; }`
+- `DamageDealtEvent { DamageResult Result; }`
+- `EntityKilledEvent { DamageResult Result; }`
+
+`WorldEvent` base class уже имеет `PlayerId` и `TimestampUnix`.
+
+### 13.2 `Assets/_Project/Scripts/Core/NetworkManagerController.cs`
+
+Добавлены (add-only):
+- Вызов `CreateCombatClientState()` в `Awake()` (после `CreateDockingClientState()`).
+- Метод `CreateCombatClientState()` (паттерн идентичен другим `Create*ClientState`).
+
+### 13.3 `Assets/_Project/Scripts/Player/NetworkPlayer.cs`
+
+Добавлены (add-only):
+- `using ProjectC.Combat;`
+- Вызов `RegisterWithCombatServer()` в `OnNetworkSpawn` (после всех других setup).
+- Метод `RegisterWithCombatServer()` (v0.1.1: без раннего return).
+- Метод `UnregisterFromCombatServer()`.
+- Метод `DebugAttackNearestNpc()` (временный, для verify).
+- K-key handler в `Update()` (debug, можно удалить после T-RTC10).
+
+**БЕЗ изменений:** `SpawnCamera`, `SpawnInventory`, `OnNetworkDespawn` кроме добавленного `UnregisterFromCombatServer()` в самом конце.
+
+### 13.4 `Assets/_Project/Resources/Combat/`
+
+Созданы 2 SO assets (через `execute_code` Edit Mode):
+- `CombatConfig_Default.asset` — дефолтные значения, не подключён к CombatServer (hardcoded).
+- `Npc_Goblin.asset` — displayName="Goblin Test", maxHp=20, STR/DEX=10, INT=8, d6, base=2, range=2м, cooldown=1.5s.
+
+### 13.5 Scene edits
+
+- `BootstrapScene.unity`: добавлен `[CombatServer]` GameObject (NetworkObject + CombatServer).
+- `WorldScene_0_0.unity`: добавлен `NPC_TestEnemy` GameObject (NetworkObject + NpcAttacker + NpcTarget + VisualMarker capsule child).
+
+---
+
+## 14. Hooks для будущего
+
+### 14.1 Ship combat (Phase 3) — anti-restrictive
+
+Новые классы, **0 изменений в `CombatServer.cs`**:
+- `ShipAttacker : NetworkBehaviour, IAttacker` — `GetPosition` → `ShipController.transform.position`, `GetActiveDamageSources` → список турелей.
+- `ShipTarget : NetworkBehaviour, IDamageTarget` — `GetArmorDefense` → `armorHull + armorShield`.
+- `Turret : NetworkBehaviour, IDamageSource` — d20, Ballistic, range 100-1000м, cooldown 2-5s.
+- `ShipRangePolicy : IRangePolicy` — line-of-sight (raycast), ship маневренность.
+
+`CombatServer.ResolveAttack(shipId, enemyShipId, turretId)` — **тот же код**, что и для пешего.
+
+### 14.2 Skills (T-CB01..09, MVP+1)
+
+`IDamageSource.GetSkillMultiplier(attackerId)` — hook готов. После T-CB01..09:
 ```csharp
 public float GetSkillMultiplier(ulong attackerId) {
     var learned = SkillsWorld.Instance.GetLearnedSkills(attackerId);
@@ -523,7 +411,6 @@ public float GetSkillMultiplier(ulong attackerId) {
         var skill = SkillsWorld.Instance.GetSkillConfig(skillId);
         if (skill == null) continue;
         foreach (var eff in skill.effects) {
-            // StatMod type с multiplier > 0 → skillMult (без cap, 2.18)
             if (eff.type == SkillEffect.Type.StatMod && eff.multiplier > 0) {
                 mult *= eff.multiplier;
             }
@@ -533,338 +420,39 @@ public float GetSkillMultiplier(ulong attackerId) {
 }
 ```
 
-### 7.2 StatsWorld (T-P03)
+Подробнее: `60_NEXT_STEPS_T-CB01.md`.
 
-**Движок читает:**
-- `StatsWorld.GetOrCreateStats(clientId)` → STR/DEX/INT/tiers.
-- STR → damage bonus.
-- DEX → hit chance modifier.
+### 14.3 Armor (после T-CB06, `armorDefense` поле в `ClothingItemData`)
 
+`PlayerTarget.GetArmorDefense()`:
 ```csharp
-public int GetStrength() => StatsWorld.Instance.GetOrCreateStats(_clientId).strengthTier * 5 + 10;
-public int GetDexterity() => StatsWorld.Instance.GetOrCreateStats(_clientId).dexterityTier * 5 + 10;
-public int GetIntelligence() => StatsWorld.Instance.GetOrCreateStats(_clientId).intelligenceTier * 5 + 10;
-```
-
-**Вердикт:** готов. STR/DEX читаются в `PlayerAttacker.GetStrength/GetDexterity`.
-
-### 7.3 EquipmentWorld (T-P09)
-
-**Движок читает:**
-- `EquipmentWorld.GetEquipment(clientId)` → equipped weapon.
-- `InventoryWorld.GetItemDataById(itemId)` → `WeaponItemData` (после T-CB03) или `ItemData` (до).
-
-```csharp
-// В PlayerAttacker.RebuildSources():
-var equip = EquipmentWorld.Instance.GetEquipment(_clientId);
-if (equip.TryGetItemId(EquipSlot.WeaponMain, out var mainId)) {
-    var data = InventoryWorld.Instance.GetItemDataById(mainId);
-    if (data is WeaponItemData weapon) {
-        _activeSources.Add(new WeaponDamageSource(weapon, mainId));
-    } else {
-        // До T-CB03: создаём дефолтный IDamageSource из ItemData
-        // damageDice = d6, baseDamage = 1, critMod = 0
-        _activeSources.Add(new DefaultDamageSource(mainId));
-    }
-}
-```
-
-**MVP:** `DefaultDamageSource` — fallback до T-CB03.
-
-### 7.4 WorldEventBus
-
-**Движок публикует (4 новых events):**
-- `AttackStartedEvent` — игрок/NPC/Ship начал атаку (в `ResolveAttack`, после валидации).
-- `AttackLandedEvent` — атака достигла цели (hit/miss).
-- `DamageDealtEvent` — урон нанесён (только если hit).
-- `EntityKilledEvent` — HP = 0, сущность уничтожена.
-
-**Подписки (MVP+1):**
-- `QuestServer` — отслеживает kills для квестов.
-- `StatsServer` — начисляет XP за combat.
-- `NpcAttacker` AI — реагирует на атаки.
-
-### 7.5 NetworkManagerController
-
-**Регистрация CombatClientState:**
-```csharp
-private void CreateCombatClientState() {
-    if (CombatClientState.Instance == null) {
-        var go = new GameObject("[CombatClientState]");
-        DontDestroyOnLoad(go);
-        go.AddComponent<CombatClientState>();
-    }
-}
-```
-
-**Вызывается в `Awake()`** (как и для других ClientState'ов).
-
----
-
-## 8. Tick (server loop)
-
-### 8.1 FixedUpdate в CombatServer
-
-```csharp
-public class CombatServer : NetworkBehaviour {
-    private void FixedUpdate() {
-        if (!IsServer) return;
-        // Tick active entities (regen HP, expire stances, etc.)
-        TickDefendingStances();
-        // Cooldowns lazy (при ResolveAttack)
-    }
-    
-    private void TickDefendingStances() {
-        float now = Time.unscaledTime;
-        var toRemove = new List<ulong>();
-        foreach (var (clientId, expires) in _defendingExpiries) {
-            if (now >= expires) toRemove.Add(clientId);
-        }
-        foreach (var clientId in toRemove) {
-            _defending.Remove(clientId);
-            _defendingExpiries.Remove(clientId);
-            DefendingStanceExpiredTargetRpc(clientId, /* RpcTarget.Group */);
-        }
-    }
-}
-```
-
-### 8.2 Regen (Phase 2)
-
-**MVP:** без regen. После боя — wait или respawn. **Phase 2:** HP regen (1%/сек, configurable).
-
----
-
-## 9. Error handling
-
-### 9.1 Типы ошибок
-
-| Ошибка | Код | Действие |
-|---|---|---|
-| `OutOfRange` | 0 | UI: "Out of range" toast |
-| `OnCooldown` | 1 | UI: "Wait" toast (с timer) |
-| `InvalidTarget` | 2 | UI: "Invalid target" |
-| `InvalidSource` | 3 | UI: "Invalid weapon" (баг, report) |
-| `NotEnoughSeconds` | 4 | (Phase 2, для turn-based) |
-| `RateLimit` | 5 | UI: "Slow down" |
-| `AlreadyDead` | 6 | UI: "Target is dead" |
-
-### 9.2 Error DTO + RPC
-
-```csharp
-[Rpc(SendTo.SpecifiedInParams)]
-public void AttackErrorTargetRpc(ulong clientId, byte errorCode, RpcParams rpcParams) {
-    CombatClientState.Instance.HandleError((AttackErrorCode)errorCode);
-}
-```
-
-**Клиент** получает error → UI toast.
-
----
-
-## 10. Persistence
-
-### 10.1 Что сохраняем
-
-```csharp
-// В CharacterSaveData (расширение):
-[Serializable]
-public class CombatSave {
-    public int totalKills;        // NPC убито (для ачивок)
-    public int totalDamageDealt;
-    public int totalDamageTaken;
-    public int highestSingleHit;
-    public int currentKillStreak;  // подряд без смерти
-}
-```
-
-**Триггеры save:**
-- `EntityKilledEvent` → save (раз в 30 сек, batched).
-- `OnDisconnect` → save.
-- `OnNetworkDespawn` → save (server shutdown).
-
-### 10.2 НЕ сохраняем in-flight combat state
-
-HP, stance, cooldowns — **не сериализуются**. Disconnect = respawn с full HP (или partial, designer config).
-
----
-
-## 11. Performance & scalability
-
-### 11.1 Один сервер — 100 игроков в combat
-
-**Расчёт:** 100 игроков × 1 атака/сек × 100 bytes (DamageResultDto) = 10 KB/сек. NGO 2.x справится (есть 64 KB/s на 1 клиента).
-
-**Вердикт:** для MVP — ок. Phase 3 — оптимизация (delta-sync, AreaOfInterest).
-
-### 11.2 CombatServer perf: O(n) per ResolveAttack
-
-**Сложность:**
-- `Dictionary.TryGetValue` — O(1).
-- `Vector3.Distance` — O(1).
-- `DamageCalculator.Calculate` — O(1) (несколько Random.Range + Math).
-- `BroadcastAttackLanded` — O(n) где n = число клиентов. **NGO 2.x** оптимизирует (RPC target group).
-
-**Вердикт:** для MVP — ok. Phase 3 — AreaOfInterest (бродкаст только ближайшим).
-
-### 11.3 Tick rate: 30 Hz
-
-**Server FixedUpdate** — 30 Hz (33ms). Достаточно для combat. Cooldowns проверяются lazy (при ResolveAttack).
-
----
-
-## 12. Hooks для ship combat (anti-restrictive)
-
-### 12.1 Что добавится в Phase 3 (без изменений в CombatServer)
-
-```csharp
-// Новый файл: Assets/_Project/Scripts/Combat/Implementations/ShipAttacker.cs
-public class ShipAttacker : NetworkBehaviour, IAttacker {
-    private ShipController _ship;
-    private List<Turret> _turrets;
-    public Vector3 GetPosition() => _ship.transform.position;
-    public int GetStrength() => /* ship armor */ 50;
-    public int GetDexterity() => /* pilot */ 10;
-    public IReadOnlyList<IDamageSource> GetActiveDamageSources() => _turrets.Cast<IDamageSource>().ToList();
-    // ... остальные методы ...
-}
-
-// Новый файл: ShipTarget.cs (аналогично)
-// Новый файл: Turret.cs (IDamageSource)
-// Новый файл: ShipRangePolicy.cs (IRangePolicy)
-```
-
-**CombatServer.ResolveAttack(attackerId, targetId, sourceId) — БЕЗ ИЗМЕНЕНИЙ.** Работает с `IAttacker/IDamageTarget/IDamageSource`, не знает о Player/Ship.
-
-### 12.2 Turret → IDamageSource (FUTURE)
-
-```csharp
-public class Turret : MonoBehaviour, IDamageSource {
-    [SerializeField] private TurretConfig _config;
-    private float _lastFireTime;
-    
-    public ulong GetSourceId() => (ulong)GetInstanceID();
-    public DamageType GetDamageType() => _config.damageType;  // Ballistic
-    public DamageDice GetDamageDice() => _config.damageDice;  // d20 (крупнее)
-    public int GetBaseDamage() => _config.baseDamage;
-    public int GetCritModifier() => _config.critModifier;
-    public float GetRange() => _config.range;  // 100-1000м
-    public float GetCooldownSeconds() => _config.cooldownSeconds;
-    public float GetSkillMultiplier(ulong attackerId) => /* pilot skill */ 1.0f;
-    public string GetDisplayName() => _config.turretName;
-}
-```
-
-**Anti-restrictive:** `Turret` — это просто `IDamageSource`. CombatServer не знает, что это турель.
-
-### 12.3 ShipRangePolicy (FUTURE)
-
-```csharp
-public class ShipRangePolicy : IRangePolicy {
-    public bool IsInRange(IAttacker a, IDamageTarget t, IDamageSource s) {
-        return Distance(a, t) <= s.GetRange();  // 100-1000м
-    }
-    public bool RequiresLineOfSight => true;  // Phase 3: турели нужна прямая видимость
-    public float CalculateHitChance(IAttacker a, IDamageTarget t, IDamageSource s) {
-        // Учитывает маневренность, дистанцию, угол
-        return 0.5f;  // Phase 3
-    }
-}
-```
-
-### 12.4 Ship vs Ship combat flow (FUTURE, без изменений)
-
-```csharp
-// В ShipController (Phase 3, new method):
-[Rpc(SendTo.Server, RequireOwnership = false)]
-public void RequestTurretFireRpc(ulong enemyShipId, ulong turretId, RpcParams rpcParams = default) {
-    ulong pilotId = rpcParams.Receive.SenderClientId;
-    if (!RateLimit(pilotId)) return;
-    CombatServer.Instance.RequestAttackRpc(NetworkObjectId, enemyShipId, turretId);
-    // ^^^^^ Точно тот же RPC, что и для пешего.
-}
-```
-
-**CombatServer**:
-```csharp
-public void ResolveAttack(ulong attackerId, ulong targetId, ulong sourceId) {
-    // ... same code ...
-    var attacker = _attackers[attackerId];  // ShipAttacker
-    var target = _targets[targetId];  // ShipTarget
-    var source = attacker.GetDamageSource(sourceId);  // Turret
-    var result = DamageCalculator.Calculate(attacker, target, source);  // ERPR-формула
-    // ...
-}
-```
-
-**Вердикт:** **0 изменений** в `CombatServer`, `DamageCalculator`, интерфейсах. Только новые классы-реализации.
-
----
-
-## 13. Hooks для навыков (T-CB01..T-CB09, MVP+1)
-
-### 13.1 `WeaponDamageSource.GetSkillMultiplier` (T-CB07 hook)
-
-```csharp
-public float GetSkillMultiplier(ulong attackerId) {
-    // MVP (T-RTC01..T-RTC10): всегда 1.0
-    // MVP+1 (T-CB01..T-CB09): интеграция с SkillsWorld
-    return 1.0f;
-}
-```
-
-**После T-CB07:**
-```csharp
-public float GetSkillMultiplier(ulong attackerId) {
-    var learned = SkillsWorld.Instance.GetLearnedSkills(attackerId);
-    float mult = 1.0f;
-    foreach (var skillId in learned) {
-        var skill = SkillsWorld.Instance.GetSkillConfig(skillId);
-        if (skill == null) continue;
-        foreach (var eff in skill.effects) {
-            if (eff.type == SkillEffect.Type.StatMod && eff.multiplier > 0) {
-                mult *= eff.multiplier;  // БЕЗ CAP (per 2.18)
-            }
-        }
-    }
-    return mult;
-}
-```
-
-### 13.2 Defense buff (от навыков)
-
-```csharp
-// В PlayerTarget.GetArmorDefense():
 public int GetArmorDefense() {
-    int baseArmor = /* sum from ClothingItemData.armorDefense */;
-    
-    // Skill bonus: defense_master_defender ×1.2 (из Battle/20_SKILL_TREES.md §5.1)
-    var learned = SkillsWorld.Instance.GetLearnedSkills(_clientId);
-    float skillMult = 1.0f;
-    foreach (var skillId in learned) {
-        var skill = SkillsWorld.Instance.GetSkillConfig(skillId);
-        if (skill == null) continue;
-        // Если навык типа "defense_mult" — применить
+    int total = 0;
+    var equip = EquipmentWorld.Instance.GetEquipment(_clientId);
+    foreach (var slot in new[] { EquipSlot.Head, EquipSlot.Chest, EquipSlot.Legs, EquipSlot.Feet, EquipSlot.Back }) {
+        if (equip.TryGetItemId(slot, out var itemId)) {
+            var data = InventoryWorld.Instance.GetItemDefinition(itemId);
+            if (data is ClothingItemData c) total += c.armorDefense;
+        }
     }
-    
-    return Mathf.RoundToInt(baseArmor * skillMult);
+    return total;
 }
 ```
 
-### 13.3 Dodge / crit (от навыков)
-
-**Phase 2:** навыки типа `DodgeRoll` снижают hitChance на X%. Навыки типа `PrecisionStrike` увеличивают crit chance. Combat-движок предоставляет `IDamageSource.GetSkillMultiplier` + `IDamageTarget.GetDefenseModifier(attacker, source)` hooks.
+Сейчас возвращает 0 (TODO комментарий).
 
 ---
 
-## 14. Что НЕ делаем (явные запреты)
+## 15. Что НЕ делаем
 
-- ❌ Не делаем ship combat (Phase 3, отложено).
-- ❌ Не делаем NPC-AI для open world (отдельная подсистема).
-- ❌ Не делаем PvP duel flow (T-RTC11..T-RTC15, Phase 2).
-- ❌ Не делаем UI damage numbers (T-RTC10, Phase 2).
-- ❌ Не делаем line-of-sight (Phase 2).
-- ❌ Не делаем anti-cheat beyond server-authoritative (Phase 3).
-- ❌ Не делаем client prediction (Phase 2).
-- ❌ Не делаем turn-based (`turn-based-battles/`, parking).
-- ❌ Не пишем код в этой сессии.
+- ❌ UI damage numbers (T-RTC10, Phase 2).
+- ❌ Line-of-sight (Phase 2).
+- ❌ Client prediction (Phase 2).
+- ❌ PvP duel flow (T-RTC11..15, Phase 2).
+- ❌ Ship combat (T-RTC16..20, Phase 3).
+- ❌ NPC-AI (отдельная подсистема).
+- ❌ `WeaponItemData` (T-CB03) — MVP с `DefaultDamageSource` fallback.
+- ❌ `armorDefense` поле в `ClothingItemData` (T-CB06) — MVP `GetArmorDefense() => 0`.
+- ❌ `CombatConfig` runtime hookup — hardcoded defaults.
+- ❌ Persistence (HP, cooldowns).
+- ❌ Respawn (NPC corpse удаляется через 3 сек, без respawn).

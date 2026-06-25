@@ -1,12 +1,40 @@
 # Design — архитектура Real-Time Combat Engine (anti-restrictive)
 
-> **Дата:** 2026-06-25 (v0.3)
+> **Дата:** 2026-06-25 (v0.3 design + v0.1.4 implementation status)
 > **Базируется на:** `01_ANALYSIS.md` (gaps), `02_LORE.md` (лор-база), `Battle/10_DESIGN.md §7` (ERPR-формула)
 > **Ключевой принцип:** **anti-restrictive**. Движок не знает, что есть «только пешие». Оперирует **абстракциями** (`IAttacker`, `IDamageTarget`, `IDamageSource`, `IRangePolicy`). Конкретные реализации — **композиция** + **стратегии**. Это позволяет добавить **ship combat в будущем** (Phase 3) **без рефакторинга ядра**.
+>
+> **⚠️ ВАЖНО:** этот документ описывает **архитектурный дизайн**. Фактическая реализация (v0.1.4) может отличаться в деталях — см. `20_TECHNICAL.md` (technical факт) и `50_IMPL_CHANGELOG.md` (что и почему изменилось).
+
+### Status legend (v0.1.4)
+
+| Секция | Status | Комментарий |
+|---|---|---|
+| §1 Высокоуровневая архитектура | ✅ | Реализовано (19 файлов + 2 SO + 2 scene edits) |
+| §2.1 IAttacker | ✅ | Без изменений. `PlayerAttacker/NpcAttacker/ShipAttacker` реализуют |
+| §2.2 IDamageTarget | ✅ | Без изменений. `PlayerTarget/NpcTarget/ShipTarget` реализуют |
+| §2.3 IDamageSource | ✅ | `DefaultDamageSource` (MVP). `WeaponDamageSource` — после T-CB03 |
+| §2.4 IRangePolicy | ✅ | `MeleeRangePolicy/RangedRangePolicy`. `ShipRangePolicy` — Phase 3 |
+| §2.5 DamageResult | ✅ | Без изменений |
+| §3.1 PlayerAttacker | ✅ | + race-safe v0.1.1 (NetworkBehaviour + self-register + unarmed fallback v0.1.3) |
+| §3.2 PlayerTarget | ✅ | + race-safe v0.1.2, corpse delay N/A (player не corpse) |
+| §3.3 NpcAttacker | ✅ | + v0.1: MonoBehaviour → NetworkBehaviour |
+| §3.4 NpcTarget | ✅ | + v0.1.4: corpse delay 3s |
+| §3.5 WeaponDamageSource | ⏸ | T-CB03 (after MVP+1). Сейчас `DefaultDamageSource` |
+| §3.6/3.7 MeleeRangePolicy/RangedRangePolicy | ✅ | + hardcoded threshold 3м для auto-select (designer config — T-RTC09 follow-up) |
+| §4 DamageCalculator | ✅ | Без изменений. ERPR-формула |
+| §5 CombatServer | ✅ | + race-safe v0.1.2 (push-down + second-chance), + scene-placed в BootstrapScene |
+| §6 CombatClientState | ✅ | + auto-create в `NetworkManagerController.CreateCombatClientState()` |
+| §7 CombatConfig | ✅ | SO создан (`CombatConfig_Default.asset`), hardcoded defaults (T-RTC09 follow-up) |
+| §8 WorldEvent | ✅ | 4 event-класса добавлены в `WorldEvent.cs` |
+| §9 Lifecycle | ✅ | + self-register pattern в OnNetworkSpawn |
+| §10 Ship combat hooks | 📝 | Только design (Phase 3) |
+| §11 End-to-end сценарий | ✅ | Работает (см. `00_README.md §Play Mode verify`) |
+| §12 Что НЕ делаем | ✅ | T-RTC10, ship, NPC-AI, TB, client-prediction — отложены |
 
 ---
 
-## 1. Высокоуровневая архитектура
+## 1. Высокоуровневая архитектура [✅ реализовано как в дизайне, отличия в деталях]
 
 ```
 ┌─────────────────────────────────────────────────────────────────────────────┐

@@ -688,6 +688,11 @@ namespace ProjectC.UI.Client
                 ProjectC.Equipment.EquipSlot slot = ProjectC.Equipment.EquipSlot.None;
                 if (def is ProjectC.Equipment.ClothingItemData c) slot = c.slot;
                 else if (def is ProjectC.Equipment.ModuleItemData m) slot = m.slot;
+                else if (def is ProjectC.Equipment.WeaponItemData)
+                {
+                    // T-CB03: weapon → WeaponMain по умолчанию
+                    slot = ProjectC.Equipment.EquipSlot.WeaponMain;
+                }
                 if (slot == ProjectC.Equipment.EquipSlot.None)
                 {
                     Debug.LogWarning("[InventoryTab] item not equipable");

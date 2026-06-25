@@ -134,6 +134,14 @@ namespace ProjectC.Equipment
                 requiredSlot = module.slot;
                 requiredSkills = module.requiredSkills;
             }
+            // T-CB03: WeaponItemData — в слот WeaponMain или WeaponOff (берётся из caller)
+            else if (itemData is WeaponItemData weapon)
+            {
+                requiredSlot = slot;  // caller уже знает слот (WeaponMain/WeaponOff). Принимаем как есть.
+                requiredSkills = weapon.requiredProficiency != null
+                    ? new SkillNodeConfig[] { weapon.requiredProficiency }
+                    : null;
+            }
             else
             {
                 reason = "Этот предмет не надевается";

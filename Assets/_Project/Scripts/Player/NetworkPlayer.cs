@@ -284,7 +284,7 @@ namespace ProjectC.Player
         /// </summary>
         private void DebugAttackNearestNpc()
         {
-            const float MAX_RANGE = 5.0f;
+            const float MAX_RANGE = 15.0f;  // T-CB03: увеличено с 5м (playground ~ 6-12м от NPC до player после walking)
             NpcTarget nearest = null;
             float bestDistSq = MAX_RANGE * MAX_RANGE;
 

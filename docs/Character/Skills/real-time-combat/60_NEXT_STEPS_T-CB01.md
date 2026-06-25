@@ -1,8 +1,9 @@
 # Next Steps — T-CB01..T-CB09 (навыки + skill hook)
 
-> **Статус:** план для следующей сессии. Combat MVP (T-RTC01..T-RTC09) реализован, end-to-end работает. Навыки = MVP+1, opt-in через hook `IDamageSource.GetSkillMultiplier(attackerId)`.
-> **Цель:** подключить `SkillsWorld` к combat-движку через `WeaponDamageSource.GetSkillMultiplier`. Без изменений в `CombatServer`/`DamageCalculator`/interfaces.
-> **Оценка:** ~16-21 ч (2-3 сессии).
+> **Статус (2026-06-25):** ✅ T-CB03 завершён. ⏸ Остальное — в работе.
+> **Combat MVP** (T-RTC01..T-RTC09) — ✅ работает. WeaponItemData + WeaponDamageSource + InventoryTab equip — ✅.
+> **Что в этой сессии:** T-CB06 (armorDefense) + T-CB07 (skillMult hook) — ~2 ч.
+> **Полный roadmap:** `docs/dev/SKILLS_ROADMAP_T-CB.md`.
 
 ---
 

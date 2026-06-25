@@ -48,6 +48,7 @@ namespace ProjectC.Player
 
         // Компоненты
         private CharacterController _controller;
+        private Animator _animator;
         private Vector3 _velocity;
         private bool _isGrounded;
         private ThirdPersonCamera _myCamera;
@@ -144,6 +145,7 @@ namespace ProjectC.Player
 
             networkObject = GetComponent<NetworkObject>();
             _controller = GetComponent<CharacterController>();
+            _animator = GetComponentInChildren<Animator>();
 
             // ПРИМЕЧАНИЕ: NetworkTransform.InterpolatePosition/Rotation/Scale
             // отключаются ВРУЧНУЮ в Unity Editor на префабе Player.prefab
@@ -509,6 +511,14 @@ namespace ProjectC.Player
             _isGrounded = _controller.isGrounded;
             if (_isGrounded && _velocity.y < 0) _velocity.y = -2f;
 
+            // R2-NONE: animator parameters
+            if (_animator != null)
+            {
+                _animator.SetBool("IsGrounded", _isGrounded);
+                float speed = moveInput.magnitude > 0.01f ? (run ? runSpeed : walkSpeed) : 0f;
+                _animator.SetFloat("Speed", speed);
+            }
+
             Vector3 forward = _myCamera != null ? _myCamera.CameraForward : Vector3.forward;
             Vector3 right = _myCamera != null ? _myCamera.CameraRight : Vector3.right;
 
@@ -526,7 +536,10 @@ namespace ProjectC.Player
             }
 
             if (_isGrounded && jump)
+            {
                 _velocity.y = Mathf.Sqrt(jumpForce * -2f * gravity);
+                if (_animator != null) _animator.SetTrigger("Jump");
+            }
 
             _velocity.y += gravity * Time.deltaTime;
             _controller.Move(_velocity * Time.deltaTime);

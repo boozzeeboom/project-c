@@ -2,7 +2,11 @@
 
 > **Pitfalls** — антипаттерны, которых избегаем при реализации. Часть уже зафиксирована в `06_SKILL_TREE.md §6-7` (skill tree pitfalls) — здесь переиспользуем.
 > **Open Questions** — вопросы, требующие решения от тебя. Каждый раздел = одна область решений. После твоих ответов → design-doc обновится (в следующей сессии) → тикеты T-CB01..T-CB09 получают финальные ответы.
-> **Обновлено v0.2 (2026-06-25):** добавлены вопросы по ERPR-пакету (§2.14-2.20) и по turn-based-battles (§2.21-2.25).
+>
+> **История версий:**
+> - v0.1 (2026-06-25) — первая версия, 13 open questions.
+> - v0.2 (2026-06-25) — добавлены вопросы по ERPR-пакету (§2.14-2.20) и turn-based-battles (§2.21-2.25).
+> - **v0.3 (2026-06-25)** — **пользователь дал ответы на 25 вопросов**. Новый sequencing: **real-time-combat движок = MVP**, навыки (T-CB01..T-CB09) = MVP+1, **turn-based = PARKING**.
 
 ---
 
@@ -187,6 +191,8 @@ case SkillEffect.Type.WeaponProficiencyUnlock:
 
 **РЕК:** **(a) все 5** — навыки без antigrav/explosives не дают полной картины combat. Antigrav — уникальная фишка проекта (лор), должна быть в MVP.
 
+**ответ:** а.
+
 ### 2.2 Стартовые combat-навыки — какие?
 
 **Текущая догадка:** **0 starter combat-навыков** (по решению Q3.2 = b для базовой системы). Игрок учит basic_sword/basic_dagger/basic_crossbow/etc. сам за XP.
@@ -198,6 +204,8 @@ case SkillEffect.Type.WeaponProficiencyUnlock:
 | (c) **basic_sword + basic_dagger (XP 0)** | два стартовых — выбор ближнего боя |
 
 **РЕК:** **(a) 0 starter** — consistency с Q3.2. Игрок тратит первые XP на выбор оружия. Это часть онбординга.
+
+**ответ:** а.
 
 ### 2.3 ItemType.Meziy для оружия — конфликт с ресурсом
 
@@ -211,6 +219,8 @@ case SkillEffect.Type.WeaponProficiencyUnlock:
 
 **РЕК:** **(a)** — чистое разделение без миграции. Открыто для game-designer'а.
 
+**ответ:** а.
+
 ### 2.4 Антиграв-щит в Defense-ветке
 
 **Текущая догадка:** **нет** `ArmorClass.AntigravShield` — нет подтверждения в lore. Если game-designer подтвердит — добавим.
@@ -221,6 +231,8 @@ case SkillEffect.Type.WeaponProficiencyUnlock:
 | (b) **Есть антиграв-щит** | +1 навык `defense_antigrav_shield`, prereq = `antigrav_basic` |
 
 **РЕК:** **(a)** пока не подтверждено. Открыто для game-designer'а (см. `02_LORE.md §6.2`).
+
+**ответ:** б.
 
 ### 2.5 Штраф DEX за тяжёлую броню
 
@@ -234,6 +246,8 @@ case SkillEffect.Type.WeaponProficiencyUnlock:
 
 **РЕК:** **(b)** — реалистично, помогает балансу (тяжёлая броня не всегда лучший выбор). Стоимость = STR-tier tradeoff.
 
+**ответ:** б.
+
 ### 2.6 `WeaponItemData.maxStack` — как override
 
 **Текущая догадка:** отдельное поле `weaponMaxStack = 1` (вариант (a) из `§1.2`).
@@ -245,6 +259,8 @@ case SkillEffect.Type.WeaponProficiencyUnlock:
 | (c) **OnEnable runtime set** | хак, не persistent в editor |
 
 **РЕК:** **(a)** — наименее invasive, не ломает существующие .asset. OnValidate warning если designer выставит maxStack != 1.
+
+**ответ:** а.
 
 ### 2.7 Что делать со старыми Combat-навыками (T-P11)?
 
@@ -258,6 +274,8 @@ case SkillEffect.Type.WeaponProficiencyUnlock:
 
 **РЕК:** **(a)** — generic roots, доступны всем, не привязаны к оружию. Это **намеренно** — базовый stat-bonus, который работает в любом бою.
 
+**ответ:** а.
+
 ### 2.8 Tier cap для SkillNodeConfig
 
 **Текущая догадка:** без tier cap (по аналогии с StatsConfig, Q1.3). `RequiredIntelligenceTier` = 0..N.
@@ -269,6 +287,8 @@ case SkillEffect.Type.WeaponProficiencyUnlock:
 | (c) **Tier cap 10** | больше глубины для долгоиграющих |
 
 **РЕК:** **(a)** — consistency с Q3.3a, дизайнер может добавить навыки tier 6+ позже.
+
+**ответ:** а.
 
 ### 2.9 Combat-движок — когда и как?
 
@@ -282,6 +302,8 @@ case SkillEffect.Type.WeaponProficiencyUnlock:
 
 **РЕК:** **(b)** — навыки **маркеры** готовятся первыми (T-CB01..T-CB09), real-time combat-движок + turn-based battles — отдельные подсистемы, подключаются позже. ERPR-формула готова (`10_DESIGN.md §7`) и используется **обоими**.
 
+**ответ:** а. без turn based - оно совсем отдельно.
+
 ### 2.10 PvP / мультиплеер-combat
 
 **Текущая догадка:** **PvP через turn-based battles** (см. `turn-based-battles/30_SCENARIOS.md §3`).
@@ -292,6 +314,8 @@ case SkillEffect.Type.WeaponProficiencyUnlock:
 | (b) **PvP-aware** | turn-based для игрок vs игрок, server-authoritative |
 
 **РЕК:** **(b)** — TB-подсистема с самого начала проектируется с поддержкой PvP (1v1 duel). Не усложняет.
+
+**ответ:** б.
 
 ### 2.11 Integration с Crafting — когда?
 
@@ -305,6 +329,8 @@ case SkillEffect.Type.WeaponProficiencyUnlock:
 
 **РЕК:** **(c)** — MVP = no-op. Когда CraftingSystem станет полноценным (T-Q22+, M19 уже реализован, см. `docs/NPC_quests/`) — подключим. Не блокируем combat-скилы ожиданием Crafting.
 
+**ответ:** C.
+
 ### 2.12 Сколько нод создавать в T-CB08?
 
 **Текущая догадка:** **все 35** (4 generic + 8 Melee + 6 Ranged + 5 Explosives + 6 Antigrav + 6 Defense).
@@ -317,6 +343,8 @@ case SkillEffect.Type.WeaponProficiencyUnlock:
 
 **РЕК:** **(a) все 35** — навыки создаются один раз, не блокирует ничего, экономит сессии. ~4 ч.
 
+**ответ:** а.
+
 ### 2.13 Где расположить `CombatDiscipline` enum и новые Weapon/Armor классы?
 
 **Текущая догадка:** в `Assets/_Project/Scripts/Skills/CombatDiscipline.cs` + `Assets/_Project/Scripts/Equipment/WeaponClass.cs` etc.
@@ -327,6 +355,8 @@ case SkillEffect.Type.WeaponProficiencyUnlock:
 | (b) **Новый namespace** `ProjectC.Combat` | явная изоляция, больше файлов |
 
 **РЕК:** **(a)** — consistency с `ProjectC.Equipment`, `ProjectC.Skills`. Избегаем плодящиеся namespace.
+
+**ответ:** а.
 
 ### 2.14 (ERPR) Damage dice — default значения для новых .asset
 
@@ -340,6 +370,8 @@ case SkillEffect.Type.WeaponProficiencyUnlock:
 
 **РЕК:** **(c)** — `OnEnable()` или `OnValidate()` ставит дефолт по `weaponClass`. Например, `Sword → d6/3/0`, `Crossbow → d8/4/+5`, `AntigravBlade → d8/3/+10`. Минимизирует designer-error.
 
+**ответ:** с. 
+
 ### 2.15 (ERPR) critModifier — диапазон
 
 **Текущая догадка:** `[Range(-20, 20)] int critModifier`. Положительные = чаще крит, отрицательные = реже.
@@ -351,6 +383,8 @@ case SkillEffect.Type.WeaponProficiencyUnlock:
 | (c) **-10..+10** | узкий диапазон, проще балансить |
 
 **РЕК:** **(a)** — для будущих легендарных оружий может быть нужно `-10` (проклятое) или `+20` (мифическое). Дизайнер сам решает, что нормально.
+
+**ответ:** а.
 
 ### 2.16 (ERPR) armorDefense — диапазон и накопительный эффект
 
@@ -364,6 +398,8 @@ case SkillEffect.Type.WeaponProficiencyUnlock:
 
 **РЕК:** **(a)** для MVP. **(b)/(c)** — Phase 3 после playtest.
 
+**ответ:** а.
+
 ### 2.17 (ERPR) Hit location — везде или только в TB?
 
 **Текущая догадка:** HitLocation в MVP-1 = **только в turn-based battles** (`turn-based-battles/`). В real-time combat-движок = `locMult = 1.0` (отключено).
@@ -375,6 +411,8 @@ case SkillEffect.Type.WeaponProficiencyUnlock:
 | (c) **Нигде** | упрощение, `locMult = 1.0` всегда |
 
 **РЕК:** **(a)** — TB = основное применение hit_location (есть пошаговая анимация). Real-time Phase 3 (после анимаций).
+
+**ответ:** а.
 
 ### 2.18 (ERPR) SkillMult cap — насколько жёстко ограничивать?
 
@@ -388,6 +426,8 @@ case SkillEffect.Type.WeaponProficiencyUnlock:
 
 **РЕК:** **(b)** — 2.0 (×2) достаточно для «легендарного мастера». Если нужно больше — Phase 3 пересмотр.
 
+**ответ:** а. без ограничений
+
 ### 2.19 (ERPR) damage formula — где находится?
 
 **Текущая догадка:** `10_DESIGN.md §7.2` — псевдокод `CalculateDamage`. Реальная реализация — в `Assets/_Project/Scripts/Combat/DamageCalculator.cs` (отдельная подсистема, future).
@@ -399,6 +439,8 @@ case SkillEffect.Type.WeaponProficiencyUnlock:
 | (c) **Внутри WeaponItemData** (метод `RollDamage()`) | ООП-чисто, но много логики в SO |
 
 **РЕК:** **(a)** — `Combat/DamageCalculator.cs` static class, используется обоими (real-time и TB).
+
+**ответ:** а.
 
 ### 2.20 (ERPR) Combat-движок — насколько сейчас?
 
@@ -413,6 +455,8 @@ case SkillEffect.Type.WeaponProficiencyUnlock:
 
 **РЕК:** начать с T-CB01..T-CB09 (навыки), потом **параллельно** T-CB10 + T-TB01..T-TB10 (можно одной сессией — навыки готовы).
 
+**ответ:** начинать и продумывать нужно с realtime combat движок, потом навыки - это мвп. turnbased -это после збт отдельно.
+
 ### 2.21 (Turn-based) PvE данж — что именно?
 
 **Текущая догадка:** PvE данж = **соло-данж** (1 игрок vs N NPC). См. `turn-based-battles/30_SCENARIOS.md §1`.
@@ -424,6 +468,8 @@ case SkillEffect.Type.WeaponProficiencyUnlock:
 | (c) **Оба** | соло + кооп, разные сложности |
 
 **РЕК:** **(c)** — соло простой (для онбординга), кооп-сложный (для долгоиграющих). Начать с (a) в MVP.
+
+**ответ:** - откладываем turnbased -он отдельно
 
 ### 2.22 (Turn-based) PvP дуэль — формат
 
@@ -437,6 +483,8 @@ case SkillEffect.Type.WeaponProficiencyUnlock:
 
 **РЕК:** **(a) 1v1** для MVP. (b)/(c) — Phase 3.
 
+**ответ:** - откладываем turnbased -он отдельно
+
 ### 2.23 (Turn-based) Сетка — какой размер по умолчанию?
 
 **Текущая догадка:** сетка 10x10 клеток для соло-данжа, 8x8 для дуэли. 1 клетка = 2м (см. `turn-based-battles/10_DESIGN.md §2`).
@@ -448,6 +496,8 @@ case SkillEffect.Type.WeaponProficiencyUnlock:
 | (c) **Адаптивный** (по числу участников) | максимум 16x16, минимум 6x6 |
 
 **РЕК:** **(c)** — адаптивный по сценарию. Реализация через `BattleConfig.gridSize`.
+
+**ответ:** - откладываем turnbased -он отдельно
 
 ### 2.24 (Turn-based) Инициатива — кто ходит первым?
 
@@ -461,6 +511,8 @@ case SkillEffect.Type.WeaponProficiencyUnlock:
 
 **РЕК:** **(a)** — `DEX` уже есть в `StatsConfig`, не нужно нового stat.
 
+**ответ:** - откладываем turnbased -он отдельно
+
 ### 2.25 (Turn-based) Смерть в бою — что дальше?
 
 **Текущая догадка:** HP = 0 → выход с сетки, **respawn через 5 сек**, **потеря 20% XP** текущего уровня (ERPR §2.3 «При потере всех ОЗ, судьбу персонажа решает ГМ» → MMO-эквивалент = respawn + XP penalty).
@@ -473,45 +525,64 @@ case SkillEffect.Type.WeaponProficiencyUnlock:
 
 **РЕК:** **(a)** для PvE, **(c)** для PvP (consent-based). Подробности в `turn-based-battles/30_SCENARIOS.md §3.4`.
 
+**ответ:** - откладываем turnbased -он отдельно
+
 ---
 
-## 3. Промежуточный сводный список (обновлено v0.2)
+## 3. Промежуточный сводный список (обновлено v0.3, ответы пользователя)
 
-| # | Область | Рекомендация | Альтернативы |
+> **v0.3:** все 25 вопросов имеют ответы пользователя. Зафиксированы в §2 выше. Ниже — финальная таблица решений.
+
+| # | Область | **Ответ пользователя** | Рекомендация (совпала?) |
 |---|---|---|---|
-| 2.1 | Дисциплины в MVP | **(a) все 5** | 3 базовых, только Melee |
-| 2.2 | Стартовые combat | **(a) 0** | basic_sword free, sword+dagger free |
-| 2.3 | ItemType.Meziy | **(a) оставить** | ItemType.MeziyWeapon, игнор |
-| 2.4 | Антиграв-щит | **(a) нет** | добавить если подтвердит game-designer |
-| 2.5 | DEX-штраф heavy armor | **(b) StatMod(DEX, -2)** | без штрафа, multiplicative |
-| 2.6 | maxStack override | **(a) отдельное поле** | virtual, OnEnable |
-| 2.7 | Старые Combat-скилы | **(a) сохраняем** | привязать к Melee, удалить |
-| 2.8 | Tier cap | **(a) без cap** | cap 5, cap 10 |
-| 2.9 | Combat-движок | **(b) навыки сначала** | сначала движок, параллельно |
-| 2.10 | PvP | **(a) PvE в TB** + **(b) PvP-aware** | только PvE |
-| 2.11 | Crafting integration | **(c) отложить** | flag, прямая регистрация |
-| 2.12 | Кол-во нод T-CB08 | **(a) все 35** | 10, 20 |
-| 2.13 | Namespace | **(a) существующие** | новый ProjectC.Combat |
-| 2.14 (ERPR) | Damage dice defaults | **(c) по weaponClass** | безопасные defaults, 0 base |
-| 2.15 (ERPR) | critModifier range | **(a) -20..+20** | 0..+30, -10..+10 |
-| 2.16 (ERPR) | armorDefense range | **(a) 0..50, суммируется** | штраф over-armor, set bonus |
-| 2.17 (ERPR) | Hit location | **(a) только в TB** | везде, нигде |
-| 2.18 (ERPR) | SkillMult cap | **(b) hard cap 2.0** | soft cap, cap 3.0 |
-| 2.19 (ERPR) | DamageCalculator | **(a) static class `Combat/`** | в server, в SO |
-| 2.20 (ERPR) | Объём combat | **16-21 ч навыки + 30-40 ч RT + 40-60 ч TB** | — |
-| 2.21 (TB) | PvE данж | **(c) соло + кооп** | только соло |
-| 2.22 (TB) | PvP формат | **(a) 1v1** для MVP | 2v2, FFA |
-| 2.23 (TB) | Размер сетки | **(c) адаптивный** | 10x10/8x8, один 8x8 |
-| 2.24 (TB) | Инициатива | **(a) по DEX** | Speed, Random |
-| 2.25 (TB) | Смерть | **(a) respawn+XP для PvE**, **(c) permadeath для PvP** | без XP loss |
+| 2.1 | Дисциплины в MVP | **а. все 5** | ✅ совпала |
+| 2.2 | Стартовые combat | **а. 0** | ✅ совпала |
+| 2.3 | ItemType.Meziy | **а. оставить** | ✅ совпала |
+| 2.4 | Антиграв-щит | **б. есть** | ❌ рекомендовали «нет» — **ДОБАВЛЯЕМ** `defense_antigrav_shield` |
+| 2.5 | DEX-штраф heavy armor | **б. -2** | ✅ совпала |
+| 2.6 | maxStack override | **а. отдельное поле** | ✅ совпала |
+| 2.7 | Старые Combat-скилы | **а. сохраняем** | ✅ совпала |
+| 2.8 | Tier cap | **а. без cap** | ✅ совпала |
+| 2.9 | Combat-движок | **а. сначала real-time движок, без turn-based** | ❌ рекомендовали (b) «навыки сначала» — **РЕВЕРС** |
+| 2.10 | PvP | **б. PvP-aware** | ✅ совпала |
+| 2.11 | Crafting integration | **с. отложить** | ✅ совпала |
+| 2.12 | Кол-во нод T-CB08 | **а. все 35** | ✅ совпала |
+| 2.13 | Namespace | **а. существующие** | ✅ совпала |
+| 2.14 (ERPR) | Damage dice defaults | **с. по weaponClass** | ✅ совпала |
+| 2.15 (ERPR) | critModifier range | **а. -20..+20** | ✅ совпала |
+| 2.16 (ERPR) | armorDefense range | **а. 0..50, суммируется** | ✅ совпала |
+| 2.17 (ERPR) | Hit location | **а. только в TB** | ✅ совпала (но TB = parking, см. §2.21) |
+| 2.18 (ERPR) | SkillMult cap | **а. без ограничений** | ❌ рекомендовали (b) «hard cap 2.0» — **БЕЗ CAP** |
+| 2.19 (ERPR) | DamageCalculator | **а. static class `Combat/`** | ✅ совпала |
+| 2.20 (ERPR) | Combat-движок | **сначала real-time, потом навыки, turn-based после ЗБТ** | ❌ рекомендовали навыки сначала — **РЕВЕРС** |
+| 2.21 (TB) | PvE данж | **- откладываем turnbased** | ❌ рекомендовали (c) — **PARKING** |
+| 2.22 (TB) | PvP формат | **- откладываем turnbased** | ❌ рекомендовали (a) — **PARKING** |
+| 2.23 (TB) | Размер сетки | **- откладываем turnbased** | ❌ рекомендовали (c) — **PARKING** |
+| 2.24 (TB) | Инициатива | **- откладываем turnbased** | ❌ рекомендовали (a) — **PARKING** |
+| 2.25 (TB) | Смерть | **- откладываем turnbased** | ❌ рекомендовали (a/c) — **PARKING** |
+
+**Ключевые РЕВЕРСЫ (v0.3 vs v0.2):**
+1. **Порядок разработки:** real-time-combat движок сначала (НЕ навыки).
+2. **Hit location:** только в TB (parking) → в real-time отключён (`locMult = 1.0`).
+3. **SkillMult cap:** без ограничений (для гибкости, в т.ч. ship combat).
+4. **Антиграв-щит:** добавляем `defense_antigrav_shield` (Defender-ветка, +1 навык).
+5. **Turn-based:** полный parking на неопределённый срок. ЗБТ пересмотрит.
+
+**Итоговый sequencing (v0.3):**
+1. **T-RTC01..T-RTC09** — Real-Time Combat Engine (MVP, ~23-32 ч).
+2. **T-CB01..T-CB09** — навыки (MVP+1, ~16-21 ч).
+3. **T-RTC11..T-RTC15** — PvP-дуэль (Phase 2, ~15-20 ч).
+4. **T-RTC16..T-RTC20** — ship combat (Phase 3, ~25-33 ч).
+5. **T-TB01..T-TB14** — turn-based (PARKING, ~46 ч).
 
 ---
 
 ## 4. Что НЕ обсуждаем (вне scope)
 
-- ❌ Damage-формулы, попадание, крит (combat-движок) — см. `10_DESIGN.md §7`
-- ❌ NPC-враги, faction AI (future)
-- ❌ Real-time Combat-движок (hit/projectile) — отдельная подсистема, `10_DESIGN.md §1`
+- ❌ Damage-формулы, попадание, крит (combat-движок) — **см. `../real-time-combat/10_DESIGN.md §7`**
+- ❌ NPC-враги, faction AI (future) — отдельная подсистема
+- ❌ Real-time Combat-движок (hit/projectile) — **отдельная подсистема, `../real-time-combat/`** (MVP)
+- ❌ Turn-based battles — **PARKING**, см. `../turn-based-battles/` (отложен)
 - ❌ Анимации ударов/блока (3D-отдел)
 - ❌ VFX-эффекты (3D-отдел + шейдеры)
 - ❌ Sound effects (audio-отдел)
@@ -519,3 +590,8 @@ case SkillEffect.Type.WeaponProficiencyUnlock:
 - ❌ Skill respec с возвратом XP (Q3.4 = free respec без возврата)
 - ❌ Skill tree визуализация Painter2D (T-P19, Phase 2)
 - ❌ Drag-and-drop equip (T-P20, Phase 2)
+- ❌ Ship combat (Phase 3, отложен, см. `../real-time-combat/01_ANALYSIS.md §3.10`)
+
+---
+
+> **Cross-reference:** 16 вопросов по Real-Time Combat Engine также решены пользователем — см. `../real-time-combat/30_PITFALLS_AND_OPEN_QUESTIONS.md §3`. Все совпали с рекомендациями. Ключевое: hitChance формула (2.1) — **(b)** `dexMod = 0.85 + (DEX-10)*0.015`.

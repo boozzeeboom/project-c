@@ -1,7 +1,7 @@
 # References — file:line index
 
-> **Дата:** 2026-06-25 (v0.2 — обновлено под вариант B: ERPR-пакет)
-> **Метод:** read_file реальных .cs + .md в этой сессии + grep по `docs/` и `Assets/`
+> **Дата:** 2026-06-25 (v0.3 — обновлено под вариант B + новый sequencing)
+> **Метод:** read_file реальных .cs + .md в этой сессии + grep по `Assets/` и `docs/`
 > **Все ссылки file:line проверены** через реальные file reads.
 
 ---
@@ -101,6 +101,23 @@
 | `docs/Character/Skills/Battle/ERPR_collaboration.md` | Анализ ERPR-пакета, mapping A/B/C, рекомендация B (принят) |
 | `F:\yandex\Yandex.Disk\Glob file\homerule\erpr\ERPR1.2.pdf` | Исходник настолки (9 страниц, CorelDRAW). Damage dice 1dN (стр.7), Hit location 1d4, Crit 1d100, 3 секунды на ход (стр.5), 20 ОЗ (стр.3), 100 ОД/день (стр.2) |
 
+### 2.3 Real-Time Combat Engine (новое, v0.3 — MVP)
+
+| Файл | Назначение |
+|------|-----------|
+| `../real-time-combat/00_README.md` | манифест, новый sequencing, anti-restrictive |
+| `../real-time-combat/01_ANALYSIS.md` | что есть / gaps / sequencing / ship-combat extensibility |
+| `../real-time-combat/02_LORE.md` | пеший vs корабельный бой, общая лор-база |
+| `../real-time-combat/10_DESIGN.md` | архитектура, IAttacker/ITarget abstractions, §7 ERPR damage-формула |
+| `../real-time-combat/20_TECHNICAL.md` | NGO RPC, server-authoritative, hooks |
+| `../real-time-combat/30_SCENARIOS.md` | пеший MVP, ship-extensibility примеры |
+| `../real-time-combat/30_PITFALLS_AND_OPEN_QUESTIONS.md` | pitfalls + open questions (новый) |
+| `../real-time-combat/40_REFERENCES.md` | file:line |
+
+**Связь с `Battle/`:** движок переиспользует ERPR damage-формулу из `Battle/10_DESIGN.md §7`. Навыки (T-CB01..T-CB09) — opt-in слой, подключаются позже.
+
+### 2.4 Turn-Based Battles (PARKING)
+
 ### 2.3 GDD (для справки, не модифицируем)
 
 | Файл | Строк | Ключевые места |
@@ -172,18 +189,29 @@
 
 | Что | Статус |
 |-----|--------|
+| **Real-Time Combat Engine целиком** | **НЕ существует** — проектируется в `../real-time-combat/` (T-RTC01..T-RTC10) |
 | `WeaponItemData` в `Assets/` | **НЕ существует** — T-CB03 |
 | `ExplosiveItemData` в `Assets/` | **НЕ существует** — T-CB04 |
-| `CombatWorld/CombatServer` | **НЕ существует** — отдельная подсистема (не наш scope) |
-| `HitController` / `DamageController` | **НЕ существует** — отдельная подсистема |
-| `WorldEvent.AttackLandedEvent` | **НЕ существует** — будущее, combat-движок |
-| `WorldEvent.DamageDealtEvent` | **НЕ существует** — будущее, combat-движок |
+| `CombatWorld/CombatServer` (старое имя, переименовано в v0.3) | **НЕ существует** — `../real-time-combat/CombatServer.cs` (T-RTC06) |
+| `HitController` / `DamageController` | **НЕ существует** — отдельная подсистема (внутри real-time-combat) |
+| `WorldEvent.AttackLandedEvent` | **НЕ существует** — T-RTC09 (4 новых event-класса) |
+| `WorldEvent.DamageDealtEvent` | **НЕ существует** — T-RTC09 |
 | `CombatDiscipline` enum | **НЕ существует** — T-CB02 |
 | `WeaponClass` / `ArmorClass` enum | **НЕ существует** — T-CB03/T-CB05 |
-| `DamageType` enum | **НЕ существует** — T-CB03 (но упоминается в `docs/ART_BIBLE.md` как цветовая палитра) |
-| `HitLocation` enum | **НЕ существует** — T-CB10/T-TB10 (ERPR) |
-| `DamageDice` enum | **НЕ существует** — T-CB03 (ERPR) |
+| `DamageType` enum | **НЕ существует** — T-RTC01 (или T-CB03) |
+| `HitLocation` enum | **НЕ существует** — T-RTC01 (в real-time = `locMult=1.0`, hitLocation=1=default) |
+| `DamageDice` enum | **НЕ существует** — T-RTC01 (или T-CB03) |
 | `armorDefense` поле в ClothingItemData | **НЕ существует** — T-CB06 (ERPR) |
+| `IAttacker` / `IDamageTarget` / `IDamageSource` / `IRangePolicy` interfaces | **НЕ существуют** — T-RTC01 |
+| `DamageCalculator` (static) | **НЕ существует** — T-RTC05 (спецификация в `Battle/10_DESIGN.md §7` готова) |
+| `CombatClientState` (singleton) | **НЕ существует** — T-RTC07 |
+| `PlayerAttacker` / `PlayerTarget` (NetworkBehaviour) | **НЕ существуют** — T-RTC02 |
+| `NpcAttacker` / `NpcTarget` (NetworkBehaviour) | **НЕ существуют** — T-RTC03 |
+| `WeaponDamageSource` / `MeleeRangePolicy` / `RangedRangePolicy` | **НЕ существуют** — T-RTC04 |
+| `CombatConfig` (SO) | **НЕ существует** — T-RTC09 |
+| `ShipAttacker` / `ShipTarget` (Phase 3) | **НЕ существуют** — T-RTC16 (отложен) |
+| `Turret` (Phase 3) | **НЕ существует** — T-RTC17 (отложен) |
+| **Turn-Based Battles подсистема** | **PARKING** (отложен на неопределённый срок) — см. `../turn-based-battles/` (НЕ развиваем) |
 | `WORLD_LORE_BOOK.md` | **НЕ в репо** — файл упоминается в `GDD_INDEX.md` но не найден в `docs/`. Возможно в `C:\Users\leon7\` или будущее |
 | `docs/gdd/GDD_24_Narrative_World_Lore.md` | **УПОМИНАЕТСЯ** в `GDD_INDEX.md`, не прочитан в этой сессии (out of scope, gdd read-only) |
 | `Skill_Combat_Antigrav*` .asset | **НЕ существует** — T-CB08 |

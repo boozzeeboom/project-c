@@ -1,8 +1,41 @@
 # Turn-Based Battles — пошаговые бои как мини-игра
 
+> **⚠️ PARKING — отложено на неопределённый срок (v0.3, 2026-06-25).**
+>
+> **Причина:** пользователь дал ответы на 25 open questions в `Battle/30_PITFALLS_AND_OPEN_QUESTIONS.md` и явно сказал:
+> - 2.20: «*начинать и продумывать нужно с realtime combat движок, потом навыки - это мвп. turnbased -это после збт отдельно.*»
+> - 2.21-2.25: «*откладываем turnbased -он отдельно*»
+>
+> **Новый sequencing (v0.3):**
+> 1. Real-Time Combat Engine (`../real-time-combat/`, MVP) — **делаем сейчас**
+> 2. Combat-навыки (T-CB01..T-CB09, MVP+1) — после движка
+> 3. PvP-дуэль (Phase 2)
+> 4. Ship combat (Phase 3, после ЗБТ)
+> 5. **Turn-based battles — этот каталог — отложен на неопределённый срок**
+>
+> **Что с этим каталогом:**
+> - ❌ **НЕ удалять** (ЗБТ может пересмотреть приоритеты)
+> - ❌ **НЕ править** (не развиваем)
+> - ✅ **Сохраняем как reference** для будущей работы
+> - ✅ Все архитектурные решения (anti-restrictive design из `../real-time-combat/`) совместимы с TB-движком (общая `DamageCalculator`, общие interfaces)
+>
+> **Когда пересмотреть:**
+> - После ЗБТ (если ЗБТ покажет, что нужен TB)
+> - Phase 4+ (после ship combat)
+> - При наличии конкретного запроса от game-designer'а
+>
+> **См. также:**
+> - `Battle/00_README.md` — основной combat-навыки, обновлён v0.3
+> - `Battle/30_PITFALLS_AND_OPEN_QUESTIONS.md` §3 — финальная таблица решений
+> - `../real-time-combat/00_README.md` — MVP combat engine, anti-restrictive
+
+---
+
+> **Оригинальный манифест (v0.2, 2026-06-25) — НЕ развиваем, сохраняем как reference**
+
 > **Подсистема:** Character Progression → Skill Tree → Combat branch → **Turn-Based Battles** (mini-game)
-> **Статус:** 🟡 Проектирование (v0.1, 2026-06-25)
-> **Базовый документ:** `docs/Character/Skills/Battle/ERPR_collaboration.md` (ERPR-пакет), `docs/Character/Skills/Battle/10_DESIGN.md §7` (damage-формула)
+> **Статус:** 🟡 Проектирование (v0.1, 2026-06-25) — **ПРИОСТАНОВЛЕНО** (parking)
+> **Базовый документ:** `docs/Character/Skills/Battle/ERPR_collaboration.md` (ERPR-пакет), `Battle/10_DESIGN.md §7` (damage-формула)
 > **Scope сессии:** research + design-doc only. **Без кода.** Реализация — отдельные сессии по тикетам T-TB01..T-TB10 (см. `30_PITFALLS_AND_OPEN_QUESTIONS.md`).
 > **Ключевая идея:** реализовать ERPR-ядро в полном объёме (сетка + 3 сек на ход + ГМ-эквивалент = сервер-ИИ) как **мини-игру** внутри MMO-сэндбокса, в **специальных локациях** (PvE-данж, PvP-дуэль, фракционные ивенты).
 

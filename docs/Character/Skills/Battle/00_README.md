@@ -1,11 +1,12 @@
 # Battle Skills — боевые навыки поверх существующей skill tree
 
 > **Подсистема:** Character Progression → Skill Tree → Combat branch
-> **Статус:** 🟡 Проектирование (v0.2, 2026-06-25) — **актуализировано под вариант B** (ERPR-пакет принят)
+> **Статус:** 🟡 Проектирование (v0.3, 2026-06-25) — **новый sequencing, реверс v0.2**
 > **Базовый документ:** `docs/Character/06_SKILL_TREE.md` (T-P11..T-P14 уже реализовано)
 > **Коллаборация с ERPR:** `ERPR_collaboration.md` (damage dice + crit + hit location, без магии, без сетки, без пошаговости)
-> **Scope сессии:** research + design-doc only. **Без кода.** Реализация — отдельные сессии по тикетам T-CB01.. (см. `30_PITFALLS_AND_OPEN_QUESTIONS.md`).
-> **Смежный документ:** `docs/Character/Skills/turn-based-battles/` — **отдельная подсистема** для пошаговых мини-игр (PvE-данж, PvP-дуэли, ивенты). Реализует ERPR-ядро в полном объёме (сетка + 3 сек + ГМ-эквивалент = сервер-ИИ).
+> **Связанный документ (MVP):** `../real-time-combat/` — **Real-Time Combat Engine**, который переиспользует ERPR damage-формулу (см. `Battle/10_DESIGN.md §7`).
+> **Scope сессии:** research + design-doc only. **Без кода.** Реализация навыков — T-CB01..T-CB09 (отложены в roadmap, после T-RTC01..T-RTC09).
+> **Turn-based battles** (`turn-based-battles/`) — **PARKING** (отложен на неопределённый срок). ЗБТ может пересмотреть.
 
 ---
 
@@ -14,27 +15,34 @@
 Сегодня Combat-навыки в проекте — это 4 placeholder-ноды в `docs/Character/06_SKILL_TREE.md §1.3`:
 `BasicStrike (+2 STR)`, `DodgeRoll (+3 DEX)`, `HeavySwing`, `PrecisionStrike`. Все четыре — обычные `SkillEffect.StatMod`, **не привязаны к оружию**. CHANGELOG 2026-06-17 фиксирует: *«Skills click handlers deferred до battle system»*. Combat-системы как таковой в коде нет: `WeaponItemData` не существует, `EquipSlot.WeaponMain/Off` объявлены, но реальное оружие не описано; `CombatWorld/CombatServer` отсутствуют.
 
-**Решение сессии (вариант B из `ERPR_collaboration.md`):**
+**Решение сессии (v0.3, после ответов пользователя) — новый sequencing:**
+- **Real-Time Combat Engine** (`../real-time-combat/`) = **MVP**. Движок делаем **сначала**, навыки подключаются позже («когда уже можно будет»).
+- **Combat-навыки (T-CB01..T-CB09)** = **MVP+1**, после движка. Без блокировки движка.
+- **Turn-based battles** = **PARKING** (отложен на неопределённый срок). ЗБТ пересмотрит.
+- **PvP-aware** с самого начала (2.10) — duel-флоу (Phase 2).
+- **Ship combat** = future, но движок **уже extensible** (anti-restrictive design, см. `../real-time-combat/10_DESIGN.md`).
+
+**ERPR-пакет (variant B, принят):**
 - **Damage dice 1dN** (d6/d8/d10/d12/d20) → 3 новых поля в `WeaponItemData` (`damageDice`, `baseDamage`, `critModifier`).
 - **Crit 1d100 + crit_modifier** → нативная замена через `Random.Range(1, 101) + critModifier >= 100`.
-- **Hit location 1d4** (Limbs/Torso/Head, ×0.5/1/2) → `HitLocation` enum + multiplier.
-- **Защита от экипировки** → новое поле `armorDefense` в `ClothingItemData` (в Defense-ветке).
+- **Hit location 1d4** (Limbs/Torso/Head, ×0.5/1/2) → **только в TB** (parking). В real-time = `locMult = 1.0` (отключён, 2.17).
+- **Защита от экипировки** → новое поле `armorDefense` в `ClothingItemData` (T-CB06).
 - **Сила/Ловкость/Интеллект** (модификаторы) → уже 1:1 совпадают с `StatsConfig`.
 
-**Что остаётся вне Combat-навыков (отдельная подсистема):**
-- ❌ **Пошаговость** (3 сек на ход) — это **только** в `turn-based-battles/` (отдельный документ).
-- ❌ **Сетка квадратов/гексов** — только в `turn-based-battles/` (PvE-данж, PvP-дуэль).
-- ❌ **ГМ-свобода предложений** — не применимо, сервер-авторитативный.
-- ❌ **Магия** — запрещена лором.
+**Что остаётся вне Combat-навыков (отдельные подсистемы):**
+- ❌ **Real-time Combat Engine** — `../real-time-combat/` (новый каталог, MVP).
+- ❌ **Turn-based** — `../turn-based-battles/` (PARKING, отложен).
+- ❌ **NPC-AI** для open world — отдельная подсистема (вне scope).
+- ❌ **Damage-system** как таковой — реализуется в `../real-time-combat/10_DESIGN.md §7` (ERPR-формула).
+- ❌ **Ship combat** — Phase 3 (после ЗБТ), extensible hooks уже в движке.
 
-**Задача сессии (актуализировано под B):**
+**Задача сессии (актуализировано под v0.3):**
 
 1. **Расширяем существующий `SkillNodeConfig` + `SkillEffect`** (T-P11) — не ломая 8 уже созданных .asset.
 2. **Добавляем 3 поля в `WeaponItemData`** (T-CB03) — `damageDice`, `baseDamage`, `critModifier` (ERPR-пакет).
-3. **Добавляем `armorDefense` в `ClothingItemData`** — для Defense-ветки.
-4. **Строим 5 боевых дисциплин** (Melee / Ranged / Explosives / Antigrav / Defense), каждая = отдельная подветка Combat. Навык разблокирует владение классом оружия/брони, технику (парирование, прицельный выстрел, рикошет, подкат, и т.п.) или рецепт (граната, мина).
-5. **Опционально** — `HitLocation` enum для Combat-движка (Phase 2, отдельная подсистема).
-6. **Опционально** — damage dice / crit / hit location используются в `turn-based-battles/` (пошаговый бой, отдельный документ).
+3. **Добавляем `armorDefense` в `ClothingItemData`** (T-CB06).
+4. **Строим 5 боевых дисциплин** (Melee / Ranged / Explosives / Antigrav / Defense), каждая = отдельная подветка Combat. Навык разблокирует владение классом оружия/брони, технику или рецепт.
+5. **Подключаем навыки** к Real-Time Combat Engine как opt-in слой (skillMult, critMod, и т.п.).
 
 **НЕ делаем:**
 - ❌ Не трогаем `GDD_20_Progression_RPG.md` (gdd/ read-only) — там корабельный бой, не пехотный. См. `01_ANALYSIS.md §3.2`.
@@ -126,34 +134,44 @@ docs/Character/Skills/turn-based-battles/
 
 ---
 
-## Roadmap реализации (обновлён под B)
+## Roadmap реализации (обновлён v0.3, новый sequencing)
+
+**Sequencing (v0.3):** Real-Time Combat Engine (MVP) → навыки (MVP+1) → PvP-duel (Phase 2) → ship combat (Phase 3) → turn-based (PARKING).
 
 | # | Тикет | Что | Зависимости | Сложность |
 |---|---|---|---|---|
+| **T-RTC01..T-RTC09** | **Real-Time Combat Engine (MVP)** | **см. `../real-time-combat/`** | **самодостаточный** | **~23-32 ч (3-4 сессии)** |
 | T-CB01 | Расширить `SkillEffect` enum | 5 новых Type | T-P11 уже есть | ~1-2 ч |
 | T-CB02 | Добавить `CombatDiscipline` enum + поле в `SkillNodeConfig` | display + filter | T-P11 уже есть | ~0.5 ч |
-| T-CB03 | `WeaponItemData` SO (extends ItemData) **+ 3 поля ERPR (damageDice/baseDamage/critModifier)** | новый тип предмета + ERPR | T-P07 pattern | ~1.5 ч |
+| T-CB03 | `WeaponItemData` SO (extends ItemData) **+ 3 ERPR-поля** | новый тип предмета + ERPR | T-P07 pattern | ~2 ч |
 | T-CB04 | `ExplosiveItemData` SO (extends ItemData) | гранаты/мины | T-P07 pattern | ~1.5 ч |
 | T-CB05 | `WeaponClass` + `ArmorClass` + `WeaponTechnique` lookup SOs | справочники | новые | ~2 ч |
-| T-CB06 | `EquipmentServer.TryEquip` + `ClothingItemData.armorDefense` | reuse Q2.3 + ERPR | T-P07+T-P09 | ~1.5 ч |
+| T-CB06 | `EquipmentServer.TryEquip` + `ClothingItemData.armorDefense` | reuse Q2.3 + ERPR | T-P07+T-P09 | ~2 ч |
 | T-CB07 | `SkillsServer.ApplySkillEffects` — обработка новых Type | reuse T-P13 | T-CB01 | ~2 ч |
-| T-CB08 | `Resources/Skills/Combat/*.asset` — 5 веток, ~25-30 нод **с damage-параметрами** | контент | T-CB01..07 | ~4-5 ч |
+| T-CB08 | `Resources/Skills/Combat/*.asset` — 5 веток, 35 нод **с damage-параметрами** | контент | T-CB01..07 | ~4-5 ч |
 | T-CB09 | `CharacterWindow` — фильтр по `CombatDiscipline` в combat-sub-tab | UI | T-CB02 | ~1.5 ч |
-| T-CB10 | Combat-движок (real-time, hit/damage/projectile) — **ERPR-формула в полном объёме** | future | T-CB08 + параллельная работа | большая (~30-40 ч) |
-| T-TB01..T-TB10 | **Пошаговые бои** (отдельная подсистема) | PvE/PvP/ивенты | T-CB01..08 (навыки) + Combat-движок | большая (~40-60 ч) |
+| T-RTC11..T-RTC15 | PvP-дуэль flow (Phase 2) | duel invite, accept, duel HUD | T-RTC* | ~15-20 ч |
+| T-RTC16..T-RTC20 | Ship combat (Phase 3, после ЗБТ) | `ShipAttacker`, `Turret`, `ShipRangePolicy` | T-RTC* | ~25-33 ч |
+| T-TB01..T-TB14 | **Turn-based battles (PARKING, отложен)** | см. `../turn-based-battles/` | T-CB01..T-CB09 | ~46 ч (отложено) |
 
-**Оценка:** T-CB01..T-CB09 = **~16-21 ч кодинга** (2-3 сессии). ERPR-пакет добавляет ~0.5 ч к T-CB03 (3 поля в SO) + 0.5 ч к T-CB06 (1 поле в ClothingItemData). Без combat-движка — навыки только **разблокируют** классы/техники/рецепты, а реальный бой — отдельный engine + пошаговые бои (`turn-based-battles/`).
+**Оценка (v0.3, фокус — MVP):**
+- **MVP (пеший combat без навыков):** T-RTC01..T-RTC09 = **~23-32 ч** (3-4 сессии).
+- **MVP+1 (пеший + навыки):** T-CB01..T-CB09 = **~16-21 ч** (2-3 сессии).
+- **Phase 2 (PvP-дуэль + UI + NPC-AI):** ~30-40 ч.
+- **Phase 3 (ship combat + ЗБТ):** ~25-33 ч.
+- **PARKING (turn-based):** ~46 ч (отложено).
 
----
+**ИТОГО до играбельного combat (пеший MVP + skills):** **~40-53 ч** (5-7 сессий).
+**ИТОГО до играбельного combat (включая ship + PvP):** **~95-126 ч** (12-17 сессий).
 
-## Связанные документы
-
+**Ключевое:** движок спроектирован **anti-restrictive** (см. `../real-time-combat/10_DESIGN.md §1, §4`) — добавление ship combat = **0 изменений** в ядре, только новые классы-реализации.
 ### Внутренние (Project C)
 - `docs/Character/06_SKILL_TREE.md` — базовый skill tree (T-P11..T-P14 уже реализовано)
 - `docs/Character/03_DATA_MODEL.md` — паттерн `SkillNodeConfig` / `SkillEffect`
 - `docs/Character/05_CLOTHING_AND_MODULES.md` — `EquipSlot` / `EquipmentData` / `TryEquip` (T-P08/T-P09)
 - `docs/Character/09_OPEN_QUESTIONS.md` — решённые вопросы базовой системы (Q1-Q6)
-- `docs/Character/Skills/turn-based-battles/` — **отдельная подсистема пошаговых боёв** (PvE-данж, PvP-дуэль)
+- `../real-time-combat/` — **Real-Time Combat Engine** (MVP, **переиспользует** ERPR damage-формулу из `Battle/10_DESIGN.md §7`)
+- `../turn-based-battles/` — **PARKING** (отложен на неопределённый срок, не развиваем)
 
 ### Игровой дизайн (не модифицируем)
 - `docs/gdd/GDD_00_Overview.md` — пиллар 2: «Исследование над боем» (важно для баланса)

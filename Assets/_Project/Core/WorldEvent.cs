@@ -264,4 +264,37 @@ namespace ProjectC.Core
     {
         // Marker event — факт прыжка. XP amount из StatsConfig.JumpXp.
     }
+
+    // ============================================================
+    // T-RTC09: Real-Time Combat events (см. docs/Character/Skills/real-time-combat/20_TECHNICAL.md §7.4)
+    // Publishers: CombatServer.ResolveAttack (server-side).
+    // Subscribers: QuestServer (kill-tracking), StatsServer (combat XP), CombatClientState (UI).
+    // ============================================================
+
+    /// <summary>Атака достигла цели (hit ИЛИ miss). Полная ERPR-формула в <see cref="Result"/>.</summary>
+    public sealed class AttackLandedEvent : WorldEvent
+    {
+        /// <summary>DamageResult от DamageCalculator (server-authoritative).</summary>
+        public Combat.Core.DamageResult Result;
+    }
+
+    /// <summary>Урон реально нанесён (только если <c>Result.isHit == true</c>).</summary>
+    public sealed class DamageDealtEvent : WorldEvent
+    {
+        public Combat.Core.DamageResult Result;
+    }
+
+    /// <summary>Цель убита (HP = 0 после атаки). <c>Result.isHit</c> всегда true.</summary>
+    public sealed class EntityKilledEvent : WorldEvent
+    {
+        public Combat.Core.DamageResult Result;
+    }
+
+    /// <summary>Игрок/NPC/Ship начал атаку (опционально, для UI-feedback "attack started").</summary>
+    public sealed class AttackStartedEvent : WorldEvent
+    {
+        public ulong AttackerId;
+        public ulong TargetId;
+        public ulong SourceId;
+    }
 }

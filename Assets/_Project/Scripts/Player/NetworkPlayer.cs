@@ -1,6 +1,7 @@
 using Unity.Netcode;
 using UnityEngine;
 using UnityEngine.InputSystem;
+using ProjectC.Combat;  // T-RTC06: PlayerAttacker, PlayerTarget, CombatServer
 using ProjectC.Core;
 using ProjectC.Items;
 using ProjectC.MetaRequirement;  // T-KEY-06: direct access to MetaRequirementClientState/Registry
@@ -219,6 +220,52 @@ namespace ProjectC.Player
 
             // T-G07: подписка на события сбора (client, не server)
             TrySubscribeToGatherClientState();
+
+            // T-RTC06: Регистрация IAttacker/IDamageTarget в CombatServer (server-side only).
+            // Add-only: PlayerAttacker + PlayerTarget как компоненты, register/unregister в lifecycle.
+            // Skip для scene-placed PlayerSpawner-пустышек (выше guard на NetworkPlayerSpawner).
+            RegisterWithCombatServer();
+        }
+
+        /// <summary>
+        /// T-RTC06: Зарегистрировать PlayerAttacker + PlayerTarget в CombatServer (server-side only).
+        /// Add-only: компоненты создаются AddComponent, инициализируются clientId, регистрируются.
+        /// Идемпотентно — повторный вызов безопасен (OnNetworkSpawn может вызываться при reconnect).
+        /// </summary>
+        private void RegisterWithCombatServer()
+        {
+            if (!IsServer) return;
+            if (CombatServer.Instance == null)
+            {
+                // CombatServer ещё не scene-spawned. Это ожидаемо до Этапа C.
+                if (Debug.isDebugBuild) Debug.Log($"[NetworkPlayer] RegisterWithCombatServer: CombatServer.Instance==null (scene-placement pending). clientId={OwnerClientId}");
+                return;
+            }
+
+            // PlayerAttacker
+            var attacker = GetComponent<PlayerAttacker>();
+            if (attacker == null) attacker = gameObject.AddComponent<PlayerAttacker>();
+            attacker.Initialize(OwnerClientId);
+            CombatServer.Instance.RegisterAttacker(OwnerClientId, attacker);
+
+            // PlayerTarget
+            var target = GetComponent<PlayerTarget>();
+            if (target == null) target = gameObject.AddComponent<PlayerTarget>();
+            target.Initialize(OwnerClientId);
+            CombatServer.Instance.RegisterTarget(OwnerClientId, target);
+        }
+
+        /// <summary>
+        /// T-RTC06: Unregister IAttacker/IDamageTarget из CombatServer при despawn/disconnect.
+        /// </summary>
+        private void UnregisterFromCombatServer()
+        {
+            if (!IsServer) return;
+            if (CombatServer.Instance == null) return;
+
+            CombatServer.Instance.UnregisterAttacker(OwnerClientId);
+            CombatServer.Instance.UnregisterTarget(OwnerClientId);
+            if (Debug.isDebugBuild) Debug.Log($"[NetworkPlayer] UnregisterFromCombatServer: clientId={OwnerClientId}");
         }
 
         public override void OnNetworkDespawn()
@@ -243,6 +290,9 @@ namespace ProjectC.Player
 
             // T-G07: отписка от сбора
             UnsubscribeFromGatherClientState();
+
+            // T-RTC06: Unregister от CombatServer
+            UnregisterFromCombatServer();
         }
         
         // NOTE: FloatingOriginMP event handling removed - scene-based doesn't use world shifting

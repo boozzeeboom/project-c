@@ -96,6 +96,23 @@ namespace ProjectC.Combat
                 Debug.Log($"[NpcTarget] npc={_targetId} took {result.finalDamage} from attacker={attackerClientId} (HP {_currentHp.Value + result.finalDamage} → {newHp}, isCrit={result.isCrit}, type={result.damageType})");
             }
 
+            // T-NPC-12: Damage trigger на Animator (если NPC жив после удара).
+            if (newHp > 0)
+            {
+                var anim = GetComponentInChildren<Animator>();
+                if (anim != null && anim.runtimeAnimatorController != null)
+                {
+                    foreach (var p in anim.parameters)
+                    {
+                        if (p.type == AnimatorControllerParameterType.Trigger && p.name == "Damage")
+                        {
+                            anim.SetTrigger("Damage");
+                            break;
+                        }
+                    }
+                }
+            }
+
             // T-NPC-01 v0.2: при смерти — death animation + loot spawn + 3s corpse delay.
             if (newHp == 0)
             {

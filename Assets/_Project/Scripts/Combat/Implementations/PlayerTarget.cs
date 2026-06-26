@@ -111,6 +111,34 @@ namespace ProjectC.Combat
             {
                 Debug.Log($"[PlayerTarget] client={_clientId} took {result.finalDamage} from attacker={attackerClientId} (HP {_currentHp.Value + result.finalDamage} → {newHp}, isCrit={result.isCrit}, type={result.damageType})");
             }
+
+            // T-NPC-12: Damage trigger на Animator (если жив). Death trigger если убит.
+            var anim = GetComponentInChildren<Animator>();
+            if (anim != null && anim.runtimeAnimatorController != null)
+            {
+                if (newHp > 0)
+                {
+                    foreach (var p in anim.parameters)
+                    {
+                        if (p.type == AnimatorControllerParameterType.Trigger && p.name == "Damage")
+                        {
+                            anim.SetTrigger("Damage");
+                            break;
+                        }
+                    }
+                }
+                else
+                {
+                    foreach (var p in anim.parameters)
+                    {
+                        if (p.type == AnimatorControllerParameterType.Trigger && p.name == "Death")
+                        {
+                            anim.SetTrigger("Death");
+                            break;
+                        }
+                    }
+                }
+            }
         }
     }
 }

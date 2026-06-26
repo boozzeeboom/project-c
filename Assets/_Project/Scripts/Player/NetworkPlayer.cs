@@ -3,6 +3,7 @@ using UnityEngine;
 using UnityEngine.InputSystem;
 using ProjectC.Combat;  // T-RTC06: PlayerAttacker, PlayerTarget, CombatServer
 using ProjectC.Core;
+using ProjectC.Equipment;  // T-NPC-12: InCombat
 using ProjectC.Items;
 using ProjectC.MetaRequirement;  // T-KEY-06: direct access to MetaRequirementClientState/Registry
 using ProjectC.Network;
@@ -578,6 +579,8 @@ namespace ProjectC.Player
                     && CombatServer.Instance != null)
                 {
                     DebugAttackNearestNpc();
+                    // T-NPC-12: Attack animation trigger (пока на K, потом на реальную кнопку).
+                    if (_animator != null) _animator.SetTrigger("Attack");
                 }
 
                 FindNearestInteractable();
@@ -622,6 +625,16 @@ namespace ProjectC.Player
                 _animator.SetBool("IsGrounded", _isGrounded);
                 float speed = moveInput.magnitude > 0.01f ? (run ? runSpeed : walkSpeed) : 0f;
                 _animator.SetFloat("Speed", speed);
+
+                // T-NPC-12: InCombat flag — true если экипировано WeaponMain.
+                bool inCombat = false;
+                if (EquipmentWorld.Instance != null)
+                {
+                    var equip = EquipmentWorld.Instance.GetEquipment(OwnerClientId);
+                    if (equip != null && equip.TryGetItemId(EquipSlot.WeaponMain, out int weaponId) && weaponId > 0)
+                        inCombat = true;
+                }
+                _animator.SetBool("InCombat", inCombat);
             }
 
             Vector3 forward = _myCamera != null ? _myCamera.CameraForward : Vector3.forward;

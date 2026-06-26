@@ -242,3 +242,107 @@ public float creditsMultiplier = 1.0f;
 - **WorldChunkManager** + **ChunkNetworkSpawner** (chunk spawning) — ✅ есть (нужно хук).
 
 **Всё готово для начала.** T-NPC-01..10 не требуют новых зависимостей — только организация существующих.
+
+---
+
+## 11. PITFALLS: настройка анимации NPC (опыт P2)
+
+> Сессия P2 (2026-06-26) выявила 3 независимые проблемы, которые по отдельности и вместе приводили к T-pose.
+> **Все 3 должны быть проверены при добавлении нового NPC-префаба или нового AnimatorController.**
+
+### Питфолл №1: Animator.controller не назначен на префаб
+
+**Симптом:** Animator есть на `Visual` child, Avatar есть, анимации в `.controller` есть, но NPC в T-pose. В runtime `animator.runtimeAnimatorController == null`.
+
+**Причина:** `AnimatorController.CreateAnimatorControllerAtPath()` создаёт `.controller` ассет на диске, но **не подшивает его в префаб**. Это нужно делать отдельно — через `SerializedObject` на `Animator` компоненте или через инспектор в Editor.
+
+**Исправление (C#):**
+```csharp
+var anim = visualT.GetComponent<Animator>();
+var so = new SerializedObject(anim);
+so.FindProperty("m_Controller").objectReferenceValue = controller;
+so.ApplyModifiedProperties();
+```
+
+**Или вручную:** выделить `Visual` в префабе → в `Animator` компоненте перетащить `.controller` в поле `Controller`.
+
+**Проверка:** `animator.runtimeAnimatorController != null` на префабе (не на runtime instance).
+
+### Питфолл №2: Два Animator в иерархии (Visual + HumanM_Model)
+
+**Симптом:** Visual/Animator настроен правильно (контроллер + Avatar), но модель в T-pose.
+
+**Причина:** В префабе `Npc_Goblin` есть **два** Animator компонента:
+- `Visual` (root child, наш контроллер)
+- `Visual/HumanM_Model` (nested FBX, свой Animator от Kevin Iglesias)
+
+HumanM_Model имеет Avatar `HumanM_ModelAvatar` и `enabled = true`. Два активных Animator на одной иерархии с одинаковым Avatar **конфликтуют** — результат непредсказуем (обычно T-pose).
+
+**Исправление:** отключить Animator на `HumanM_Model`:
+```csharp
+var humanAnim = humanT.GetComponent<Animator>();
+var so = new SerializedObject(humanAnim);
+so.FindProperty("m_Enabled").boolValue = false;
+so.ApplyModifiedProperties();
+```
+
+HumanM_Model — nested FBX. Его Animator не нужен: `Visual/Animator` через Avatar управляет всеми костями в дочерних объектах.
+
+**Проверка:** В инспекторе префаба: `HumanM_Model` → `Animator.enabled = false` (unchecked).
+
+### Питфолл №3: Avatar не назначен на Animator
+
+**Симптом:** Анимации проигрываются (не T-pose), но модель стоит на месте или части тела не двигаются.
+
+**Причина:** `Visual/Animator.avatar == null`. Humanoid анимации не могут быть применены к модели без Avatar.
+
+**Исправление:**
+```csharp
+var avatar = AssetDatabase.LoadAssetAtPath<Avatar>("Assets/.../HumanM_Model.fbx");
+// Внутри FBX есть Avatar как sub-asset.
+anim.avatar = avatar;
+```
+
+**Где брать Avatar:** `HumanM_Model.fbx` содержит Avatar `HumanM_ModelAvatar` как sub-asset. Достаточно загрузить FBX как `GameObject` и взять `GetComponent<Animator>().avatar`.
+
+### Чек-лист: что проверить при добавлении NPC-префаба с анимацией
+
+- [ ] `Visual` child имеет `Animator`
+- [ ] `Animator.Controller` → `.controller` ассет (не null)
+- [ ] `Animator.Avatar` → Avatar из модели (не null)
+- [ ] `Animator.isHuman == true` (Humanoid)
+- [ ] `Animator.applyRootMotion == false` (для NavMeshAgent-driven движения)
+- [ ] `Visual/HumanM_Model` → `Animator.enabled == false` (выключен)
+- [ ] В `.controller`: клипы назначены, transitions ведут к существующим state-ам, `hasMotion == true`
+- [ ] NpcBrain вызывает `_animator.SetFloat("Speed", ...)` и `SetTrigger("Attack"/"Death")`
+- [ ] Параметры `.controller` совпадают с теми, что NpcBrain устанавливает
+
+### Техника: как менять AnimatorController через Editor API (без YAML-хакерства)
+
+**НЕ использовать:**
+- `File.WriteAllText` для .controller (ломал fileID)
+- `Activator.CreateInstance()` для AnimatorState (даёт новый fileID, ломает transitions)
+- Прямые патчи YAML через `patch` (несогласованность fileID)
+
+**Использовать:**
+- `AnimatorController.CreateAnimatorControllerAtPath()` — создание с нуля
+- `AnimatorState.motion = clip` — in-place, без пересоздания state
+- `stateMachine.states` (public property `ChildAnimatorState[]`) — читать и писать
+- `state.AddTransition()` — создание transitions
+- `SerializedObject` для свойств `m_Controller` и `m_Avatar` на компонентах префаба
+- `EditorUtility.SetDirty` + `AssetDatabase.SaveAssets()` после изменений
+
+### Резюме (коротко для следующий раз)
+
+T-pose = три причины:
+
+| # | Причина | Как проверить |
+|---|---|---|
+| 1 | `Animator.controller == null` на префабе | `anim.runtimeAnimatorController` в префабе |
+| 2 | Второй Animator включён (HumanM_Model) | `HumanM_Model/Animator.enabled == false` |
+| 3 | `Animator.avatar == null` | `anim.avatar` в префабе |
+
+Если после фикса всё ещё T-pose:
+- проверить что Agent velocity > 0 (NPC двигается)
+- проверить `Animator.GetFloat("Speed")` в Chase state
+- проверить что клипы в .controller не empty

@@ -4,6 +4,9 @@
 //
 // Atomic design (per skill pitfall #33): один SkillEffect = один тип параметров.
 // Избегаем composite struct (depth limit Unity serializer).
+//
+// T-CB01 expansion (2026-06-26): enum Type расширен с 3 до 8 значений (WeaponProficiency/Armor/Technique/ExplosiveRecipe/AntigravTechnique).
+// Backward-compat: 8 существующих .asset используют StatMod=0 и AbilityUnlock=1 — новые code 3..7 не задевают их.
 
 using System;
 using ProjectC.Stats;
@@ -15,9 +18,24 @@ namespace ProjectC.Skills
     {
         public enum Type : byte
         {
+            // === Existing (T-P11, 0..2) — НЕ ТРОГАЕМ ===
             StatMod        = 0,  // +X к STR/DEX/INT (additive и/или multiplicative)
             AbilityUnlock  = 1,  // открывает ability ID (для будущего оружия)
             PassiveEffect  = 2,  // generic passive (future use, e.g. "+10% dialog XP")
+
+            // === NEW (T-CB01, 3..7) — runtime-handler добавится в T-CB07 ===
+            // Enum-only expansion. Существующие .asset используют 0..2 — backward-compat сохранён.
+            // Семантика stringParam по type:
+            //   WeaponProficiencyUnlock → WeaponClass (e.g. "sword") — открывает экипировку этого класса
+            //   ArmorProficiencyUnlock  → ArmorClass (e.g. "heavy") — открывает экипировку этого класса
+            //   WeaponTechniqueUnlock   → TechniqueId (e.g. "parry") — открывает технику (combat engine использует)
+            //   ExplosiveRecipeUnlock   → RecipeId (e.g. "recipe_grenade_basic") — открывает крафт-рецепт
+            //   AntigravTechniqueUnlock → TechniqueId (e.g. "grav_pull") — открывает antigrav-приём
+            WeaponProficiencyUnlock = 3,
+            ArmorProficiencyUnlock  = 4,
+            WeaponTechniqueUnlock   = 5,
+            ExplosiveRecipeUnlock   = 6,
+            AntigravTechniqueUnlock = 7,
         }
 
         public Type type;
@@ -27,7 +45,7 @@ namespace ProjectC.Skills
         public float floatValue;
         /// <summary>Multiplicative bonus (StatMod), 0 = no multiplier. Range [0..5].</summary>
         public float multiplier;
-        /// <summary>Ability id (AbilityUnlock) или passive id (PassiveEffect). "" = none.</summary>
+        /// <summary>Ability id (AbilityUnlock) или passive id (PassiveEffect) или weaponClass/armorClass/techniqueId/recipeId. "" = none.</summary>
         public string stringParam;
 
         // === Factory methods ===
@@ -52,6 +70,37 @@ namespace ProjectC.Skills
         {
             type = Type.PassiveEffect, statType = StatType.Strength, floatValue = duration,
             multiplier = 0f, stringParam = passiveId ?? string.Empty,
+        };
+
+        // T-CB01: factory methods для новых 5 типов.
+        public static SkillEffect WeaponProficiency(string weaponClass) => new SkillEffect
+        {
+            type = Type.WeaponProficiencyUnlock, statType = StatType.Strength,
+            floatValue = 0f, multiplier = 0f, stringParam = weaponClass ?? string.Empty,
+        };
+
+        public static SkillEffect ArmorProficiency(string armorClass) => new SkillEffect
+        {
+            type = Type.ArmorProficiencyUnlock, statType = StatType.Strength,
+            floatValue = 0f, multiplier = 0f, stringParam = armorClass ?? string.Empty,
+        };
+
+        public static SkillEffect WeaponTechnique(string techniqueId) => new SkillEffect
+        {
+            type = Type.WeaponTechniqueUnlock, statType = StatType.Strength,
+            floatValue = 0f, multiplier = 0f, stringParam = techniqueId ?? string.Empty,
+        };
+
+        public static SkillEffect ExplosiveRecipe(string recipeId) => new SkillEffect
+        {
+            type = Type.ExplosiveRecipeUnlock, statType = StatType.Strength,
+            floatValue = 0f, multiplier = 0f, stringParam = recipeId ?? string.Empty,
+        };
+
+        public static SkillEffect AntigravTechnique(string techniqueId) => new SkillEffect
+        {
+            type = Type.AntigravTechniqueUnlock, statType = StatType.Strength,
+            floatValue = 0f, multiplier = 0f, stringParam = techniqueId ?? string.Empty,
         };
     }
 }

@@ -141,6 +141,15 @@ namespace ProjectC.Equipment
                 requiredSkills = weapon.requiredProficiency != null
                     ? new SkillNodeConfig[] { weapon.requiredProficiency }
                     : null;
+
+                // T-INP-06: warning-only proficiency log (variant A per audit §4).
+                // Hard gate ниже (requiredSkills check) уже работает для hard proficiency.
+                if (Debug.isDebugBuild)
+                {
+                    var learnedSafe = GetLearnedSkillIdsSafe(clientId);
+                    bool hasProf = weapon.requiredProficiency == null || learnedSafe.Contains(weapon.requiredProficiency.skillId);
+                    Debug.Log($"[EquipmentWorld] Weapon equip attempt: client={clientId} weapon='{weapon.itemName}' class={weapon.weaponClass} proficiency='{weapon.requiredProficiency?.skillId ?? "<none>"}' hasProficiency={hasProf}");
+                }
             }
             else
             {

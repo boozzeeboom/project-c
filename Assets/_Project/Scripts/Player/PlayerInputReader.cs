@@ -32,6 +32,10 @@ namespace ProjectC.Player
         public event System.Action OnModeSwitchPressed;
         public event System.Action<Vector2> OnMouseDelta;       // Camera rotation
         public event System.Action OnCommPanelPressed;          // T — CommPanel (T-DOCK-08)
+        // T-INP-04: Parallel event для attack. Не трогаем legacy K/E/F etc.
+        // Эмитится при ЛКМ (Mouse 0) и/или K. SkillInputService подпишется в будущем.
+        // Делегат: () => void. Никаких параметров — handler сам решает.
+        public event System.Action OnAttackPressed;
 
         // Состояние ввода
         private Vector2 _moveInput;
@@ -121,6 +125,17 @@ namespace ProjectC.Player
                 {
                     OnMouseDelta?.Invoke(_mouseDelta);
                 }
+            }
+
+            // ===== ATTACK (T-INP-04) — ЛКМ + K, parallel к legacy =====
+            // Эмитим OnAttackPressed если ЛКМ или K нажата в этом кадре.
+            // Не трогаем legacy K-handling в NetworkPlayer (parallel пути).
+            bool attackPressed = false;
+            if (Mouse.current != null && Mouse.current.leftButton.wasPressedThisFrame) attackPressed = true;
+            if (Keyboard.current != null && Keyboard.current.kKey.wasPressedThisFrame) attackPressed = true;
+            if (attackPressed)
+            {
+                OnAttackPressed?.Invoke();
             }
         }
 

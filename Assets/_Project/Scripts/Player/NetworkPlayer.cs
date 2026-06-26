@@ -12,6 +12,7 @@ using ProjectC.Trade;
 using ProjectC.Trade.Dto;
 using ProjectC.Trade.Network;
 using ProjectC.UI;
+using ProjectC.Skills;  // T-INP-01: SkillInputService
 using ProjectC.World.Streaming;
 using ProjectC.World.Chest;
 using System.Collections.Generic;
@@ -215,6 +216,8 @@ namespace ProjectC.Player
                     _playerChunkTracker = chunkTrackers[0];
                 }
 
+                // T-INP-01: SkillInputService (owner-only). Единая точка "нажата кнопка → выполнить навык".
+                InitializeSkillInputService();
             }
             else
             {
@@ -312,6 +315,47 @@ namespace ProjectC.Player
             ulong targetId = nearest.GetTargetId();
             Debug.Log($"[NetworkPlayer] K-attack: targetId={targetId}, dist={Mathf.Sqrt(bestDistSq):F2}м");
             CombatServer.Instance.RequestAttackRpc(targetId, 0UL);
+        }
+
+        /// <summary>
+        /// T-INP-01: Инициализация SkillInputService (owner-only).
+        /// AddComponent идемпотентен — повторный вызов безопасен (reconnect).
+        /// Target finder: "nearest NpcTarget в 15м" (legacy DebugAttackNearestNpc).
+        /// </summary>
+        private void InitializeSkillInputService()
+        {
+            var svc = GetComponent<SkillInputService>();
+            if (svc == null) svc = gameObject.AddComponent<SkillInputService>();
+
+            System.Func<ulong> targetFinder = () =>
+            {
+                const float MAX_RANGE = 15.0f;
+                NpcTarget nearest = null;
+                float bestDistSq = MAX_RANGE * MAX_RANGE;
+                foreach (var npc in FindObjectsByType<NpcTarget>(FindObjectsSortMode.None))
+                {
+                    if (npc == null || !npc.IsAlive()) continue;
+                    float dSq = (npc.transform.position - transform.position).sqrMagnitude;
+                    if (dSq < bestDistSq) { bestDistSq = dSq; nearest = npc; }
+                }
+                return nearest != null ? nearest.GetTargetId() : 0UL;
+            };
+
+            svc.Initialize(this, targetFinder);
+            if (Debug.isDebugBuild)
+            {
+                Debug.Log("[NetworkPlayer] InitializeSkillInputService: SkillInputService ready (owner-only)");
+            }
+        }
+
+        /// <summary>
+        /// T-INP-02: Единая точка primary attack input (ЛКМ + K-fallback).
+        /// Делегирует в SkillInputService.TryActivate(Primary).
+        /// </summary>
+        private void HandlePrimaryAttackInput()
+        {
+            if (SkillInputService.Instance == null) return;
+            SkillInputService.Instance.TryActivate(SkillInputSlot.Primary);
         }
 
         public override void OnNetworkDespawn()
@@ -578,9 +622,20 @@ namespace ProjectC.Player
                     && IsSpawned
                     && CombatServer.Instance != null)
                 {
-                    DebugAttackNearestNpc();
-                    // T-NPC-12: Attack animation trigger (пока на K, потом на реальную кнопку).
-                    if (_animator != null) _animator.SetTrigger("Attack");
+                    // T-INP-02: K-fallback для primary attack. Делегирует в SkillInputService.
+                    // ЛКМ (mouse 0) обрабатывается в Patch 5.
+                    // Animation trigger тоже делает SkillInputService.TryActivate.
+                    HandlePrimaryAttackInput();
+                }
+
+                // T-INP-03: ЛКМ (Mouse 0) как primary attack — parallel к K-fallback.
+                // Guard: только owner, IsSpawned, CombatServer жив.
+                if (Mouse.current != null && Mouse.current.leftButton.wasPressedThisFrame
+                    && NetworkManager.Singleton != null
+                    && IsSpawned
+                    && CombatServer.Instance != null)
+                {
+                    HandlePrimaryAttackInput();
                 }
 
                 FindNearestInteractable();

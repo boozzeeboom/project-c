@@ -2136,24 +2136,52 @@ namespace ProjectC.UI.Client
             }
 
             private void RebuildSkillsListView()
-            {
-                // SESSION 2: manual rebuild into skill containers (no ListView).
-                var combatContainer = _root?.Q<VisualElement>("skills-combat-container");
-                var socialContainer = _root?.Q<VisualElement>("skills-social-container");
-                if (combatContainer == null || socialContainer == null) return;
-                combatContainer.Clear();
-                socialContainer.Clear();
-                foreach (var sk in _skillsCombatCache)
-                {
-                    var ve = MakeManualSkillRow(sk);
-                    if (ve != null) combatContainer.Add(ve);
-                }
-                foreach (var sk in _skillsSocialCache)
-                {
-                    var ve = MakeManualSkillRow(sk);
-                    if (ve != null) socialContainer.Add(ve);
-                }
-            }
+                        {
+                            // SESSION 2: manual rebuild into skill containers (no ListView).
+                            var combatContainer = _root?.Q<VisualElement>("skills-combat-container");
+                            var socialContainer = _root?.Q<VisualElement>("skills-social-container");
+                            if (combatContainer == null || socialContainer == null) return;
+                            combatContainer.Clear();
+                            socialContainer.Clear();
+                            // T-INP-07: фильтрация combat-строк по _activeCombatFilter.
+                            foreach (var sk in _skillsCombatCache)
+                            {
+                                if (!MatchesCombatFilter(sk.SkillId, _activeCombatFilter)) continue;
+                                var ve = MakeManualSkillRow(sk);
+                                if (ve != null) combatContainer.Add(ve);
+                            }
+                            foreach (var sk in _skillsSocialCache)
+                            {
+                                var ve = MakeManualSkillRow(sk);
+                                if (ve != null) socialContainer.Add(ve);
+                            }
+                        }
+
+                        // T-INP-07: фильтр по combat-дисциплинам (substring по skillId prefix).
+                        public enum CombatFilter { All = 0, Melee = 1, Ranged = 2, Explosives = 3, Antigrav = 4, Defense = 5, }
+                        private CombatFilter _activeCombatFilter = CombatFilter.All;
+                        public void SetCombatFilter(CombatFilter filter)
+                        {
+                            if (_activeCombatFilter == filter) return;
+                            _activeCombatFilter = filter;
+                            RebuildSkillsListView();
+                            UnityEngine.Debug.Log($"[CharacterWindow] SetCombatFilter: {filter}");
+                        }
+                        public CombatFilter GetCombatFilter() => _activeCombatFilter;
+                        private static bool MatchesCombatFilter(string skillId, CombatFilter filter)
+                        {
+                            if (filter == CombatFilter.All) return true;
+                            if (string.IsNullOrEmpty(skillId)) return false;
+                            switch (filter)
+                            {
+                                case CombatFilter.Melee:      return skillId.StartsWith("melee") || skillId == "combat_basic_strike" || skillId == "combat_heavy_swing" || skillId == "combat_precision_strike";
+                                case CombatFilter.Ranged:     return skillId.StartsWith("ranged");
+                                case CombatFilter.Explosives: return skillId.StartsWith("expl") || skillId.StartsWith("explosives");
+                                case CombatFilter.Antigrav:   return skillId.StartsWith("antigrav");
+                                case CombatFilter.Defense:    return skillId.StartsWith("defense");
+                                default: return true;
+                            }
+                        }
 
             /// <summary>
             /// SESSION 2: ручная skill row — простой, всегда видна.

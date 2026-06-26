@@ -703,10 +703,10 @@ namespace ProjectC.Player
             // T-NPC-13: BlendTree MoveX/MoveY (directional locomotion).
             if (_animator != null)
             {
-                float moveX = hasInput ? moveInput.x : 0f;
-                float moveY = hasInput ? moveInput.y : 0f;
-                _animator.SetFloat("MoveX", moveX);
-                _animator.SetFloat("MoveY", moveY);
+                // Character physically rotates toward moveDirection via LookRotation.
+                // BlendTree always plays Forward animation.
+                _animator.SetFloat("MoveX", 0f);
+                _animator.SetFloat("MoveY", hasInput ? 1f : 0f);
             }
 
             

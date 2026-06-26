@@ -104,12 +104,18 @@ namespace ProjectC.Skills
         {
             if (slot == SkillInputSlot.None) return false;
 
-            // 1) Slot привязан к skill?
+            // 1) Slot привязан к skill? Для Primary/Secondary разрешаем unarmed attack без бинда.
             string skillId = GetSkillForSlot(slot);
-            if (string.IsNullOrEmpty(skillId))
+            bool hasBind = !string.IsNullOrEmpty(skillId);
+            if (!hasBind && slot != SkillInputSlot.Primary && slot != SkillInputSlot.Secondary)
             {
-                // Не warning — пустой slot это норма (например Slot4 ещё не настроен).
+                // Slot1..Slot4 без бинда — молча skip.
                 return false;
+            }
+            if (!hasBind)
+            {
+                // Primary/Secondary без бинда — используем skillId="" как маркер "unarmed".
+                skillId = "";
             }
 
             // 2) Cooldown (локальный, для отзывчивости)

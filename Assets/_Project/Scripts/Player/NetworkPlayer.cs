@@ -635,6 +635,8 @@ namespace ProjectC.Player
                         inCombat = true;
                 }
                 _animator.SetBool("InCombat", inCombat);
+
+                // T-NPC-13: BlendTree MoveX/MoveY (поставлены ниже после вычисления hasInput).
             }
 
             Vector3 forward = _myCamera != null ? _myCamera.CameraForward : Vector3.forward;
@@ -643,6 +645,17 @@ namespace ProjectC.Player
             Vector3 moveDirection = forward * moveInput.y + right * moveInput.x;
             bool hasInput = moveDirection.magnitude > 0.01f;
 
+            // T-NPC-13: BlendTree MoveX/MoveY (directional locomotion).
+            if (_animator != null)
+            {
+                float moveX = hasInput ? moveInput.x : 0f;
+                float moveY = hasInput ? moveInput.y : 0f;
+                _animator.SetFloat("MoveX", moveX);
+                _animator.SetFloat("MoveY", moveY);
+            }
+
+            
+            // moveDirection + hasInput уже вычислены выше (для BlendTree MoveX/MoveY).
             if (hasInput)
             {
                 moveDirection.Normalize();

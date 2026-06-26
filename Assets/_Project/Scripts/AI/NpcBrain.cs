@@ -292,6 +292,7 @@ namespace ProjectC.AI
             if (_agent != null && _agent.isOnNavMesh && !_agent.isStopped) speed = _agent.velocity.magnitude;
             _animator.SetFloat("Speed", speed);
             _animator.SetBool("IsAttacking", _state == BrainState.Attack);
+            _animator.SetBool("IsGrounded", true); // T-NPC-13: NPC всегда на NavMesh
         }
     }
 }

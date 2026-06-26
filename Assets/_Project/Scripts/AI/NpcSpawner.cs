@@ -15,10 +15,17 @@
 // Анти-рестриктивное:
 //   - если npcPrefab = null → no-op (не падает, дизайнер может деактивировать).
 //   - если config = null → используется built-in default (rad 30м, max 5).
+//
+// v0.2 (T-NPC-09): chunk integration.
+//   - опционально подписывается на ChunkLoader.OnChunkLoaded/OnChunkUnloaded.
+//   - при загрузке чанка → спавнит NPC в радиусе вокруг центра чанка (до maxAlivePerChunk).
+//   - spawn всё равно проходит через TrySpawnAtPoint (DRY: surface validation + rate-limit общие).
+//   - при выгрузке чанка NGO сам деспавнит NPC (потому что destroyWithScene=true).
 
 using System.Collections.Generic;
 using UnityEngine;
 using Unity.Netcode;
+using ProjectC.World.Streaming;
 
 namespace ProjectC.AI
 {
@@ -39,6 +46,20 @@ namespace ProjectC.AI
                  "Полезно для зонирования — NPC спавнятся только в конкретной области.")]
         [Range(0f, 200f)] public float activationRadius = 80f;
 
+        [Header("Chunk integration (T-NPC-09)")]
+        [Tooltip("T-NPC-09: подписаться на ChunkLoader.OnChunkLoaded/OnChunkUnloaded. " +
+                 "При загрузке чанка → спавнить NPC в его центре. " +
+                 "Анти-рестриктивное: false (default) = старое zone-based поведение.")]
+        [SerializeField] private bool _autoPopulateChunks = false;
+
+        [Tooltip("T-NPC-09: радиус спавна вокруг центра чанка (метры). " +
+                 "NPC спавнятся в случайных точках в пределах этого радиуса от chunk.WorldBounds.center.")]
+        [Range(5f, 100f)] [SerializeField] private float _chunkSpawnRadius = 30f;
+
+        [Tooltip("T-NPC-09: максимум NPC на один чанк (дополнительно к maxAliveCount глобально). " +
+                 "Если 0 — chunk-spawn выключен даже при _autoPopulateChunks=true.")]
+        [Range(0, 20)] [SerializeField] private int _maxAlivePerChunk = 3;
+
         // Spawned NPCs (server-only) — для alive-count tracking.
         private readonly List<NetworkObject> _spawned = new List<NetworkObject>();
         private float _nextCheckTime;
@@ -56,6 +77,12 @@ namespace ProjectC.AI
         private readonly Dictionary<ulong, Queue<float>> _playerSpawnTimestamps = new Dictionary<ulong, Queue<float>>();
         private const float RATE_LIMIT_WINDOW_SEC = 60f;
 
+        // T-NPC-09: chunk integration state.
+        // ChunkId → число NPC, заспавненных в этом чанке (для лимита _maxAlivePerChunk).
+        private readonly Dictionary<ChunkId, int> _chunkAliveCount = new Dictionary<ChunkId, int>();
+        // Кэш ChunkLoader (найден в OnNetworkSpawn, используется в handlers).
+        private ChunkLoader _chunkLoader;
+
         public override void OnNetworkSpawn()
         {
             base.OnNetworkSpawn();
@@ -65,6 +92,32 @@ namespace ProjectC.AI
             ApplyConfig();
             _nextCheckTime = Time.unscaledTime + _spawnInterval;
             if (_showDebugLogs) Debug.Log($"[NpcSpawner] Initialized. prefab={(_prefab != null ? _prefab.name : "null")}, max={_maxAlive}, interval={_spawnInterval}s, radius=[{_spawnRadiusMin},{_spawnRadiusMax}]");
+
+            // T-NPC-09: chunk integration — опциональная подписка.
+            if (_autoPopulateChunks && _maxAlivePerChunk > 0)
+            {
+                _chunkLoader = FindAnyObjectByType<ChunkLoader>();
+                if (_chunkLoader != null)
+                {
+                    _chunkLoader.OnChunkLoaded += OnChunkLoaded_SpawnNpcs;
+                    _chunkLoader.OnChunkUnloaded += OnChunkUnloaded_CleanupCount;
+                    if (_showDebugLogs) Debug.Log($"[NpcSpawner] Chunk integration ENABLED: perChunk={_maxAlivePerChunk}, radius={_chunkSpawnRadius}m");
+                }
+                else
+                {
+                    Debug.LogWarning("[NpcSpawner] _autoPopulateChunks=true but no ChunkLoader found in scene. Chunk spawn disabled.");
+                }
+            }
+        }
+
+        public override void OnNetworkDespawn()
+        {
+            if (_chunkLoader != null)
+            {
+                _chunkLoader.OnChunkLoaded -= OnChunkLoaded_SpawnNpcs;
+                _chunkLoader.OnChunkUnloaded -= OnChunkUnloaded_CleanupCount;
+            }
+            base.OnNetworkDespawn();
         }
 
         private void ApplyConfig()
@@ -133,6 +186,34 @@ namespace ProjectC.AI
             // Validate distance от других NPC.
             if (IsTooCloseToOtherNpc(spawnPos)) return;
 
+            // Spawn! (DRY: общий путь для zone-spawn и chunk-spawn через TrySpawnAtPoint)
+            if (TrySpawnAtPoint(spawnerPos, clientId, out _))
+            {
+                if (_showDebugLogs) Debug.Log($"[NpcSpawner] Spawned NPC '{_prefab.name}' at {spawnPos:F1} (zone-center={spawnerPos:F1}, distToPlayer={Vector3.Distance(spawnerPos, playerObj.transform.position):F1}, alive={_spawned.Count}/{_maxAlive})");
+            }
+        }
+
+        /// <summary>
+        /// T-NPC-09: публичный API для внешнего запроса спавна NPC в конкретной точке.
+        /// Используется chunk handlers (при загрузке чанка), а также может быть вызван
+        /// из других систем (квесты, события, dev-commands). DRY: вся spawn-логика
+        /// (instantiate, NetworkObject.Spawn, visual override, alive-tracking) в одном месте.
+        /// </summary>
+        /// <param name="anchorPos">Точка-центр, вокруг которой ищем место спавна (chunk center или spawner anchor).</param>
+        /// <param name="attributedClientId">ClientId, к которому привязать rate-limit. 0 = chunk spawn (не привязан к игроку).</param>
+        /// <param name="spawned">Выходной параметр — заспавненный NetworkObject (для трекинга), null при отказе.</param>
+        /// <returns>true если NPC заспавнен, false при любом отказе (prefab=null, max alive, no surface, etc).</returns>
+        public bool TrySpawnAtPoint(Vector3 anchorPos, ulong attributedClientId, out NetworkObject spawned)
+        {
+            spawned = null;
+            if (!IsServer || _prefab == null) return false;
+            if (_spawned.Count >= _maxAlive) return false;
+
+            // Surface validation вокруг anchorPos (тот же TryFindSpawnPoint, что и для zone-spawn).
+            if (!TryFindSpawnPoint(anchorPos, out Vector3 spawnPos)) return false;
+            // Distance от других NPC.
+            if (IsTooCloseToOtherNpc(spawnPos)) return false;
+
             // Spawn!
             var go = Instantiate(_prefab, spawnPos, Quaternion.identity);
             var netObj = go.GetComponent<NetworkObject>();
@@ -140,13 +221,88 @@ namespace ProjectC.AI
             {
                 Debug.LogError($"[NpcSpawner] Prefab '{_prefab.name}' missing NetworkObject component!");
                 Destroy(go);
-                return;
+                return false;
             }
             netObj.Spawn(destroyWithScene: true);
             _spawned.Add(netObj);
-            RegisterSpawnTimestamp(clientId);
+            spawned = netObj;
 
-            if (_showDebugLogs) Debug.Log($"[NpcSpawner] Spawned NPC '{_prefab.name}' at {spawnPos:F1} (zone-center={spawnerPos:F1}, distToPlayer={Vector3.Distance(spawnerPos, playerObj.transform.position):F1}, alive={_spawned.Count}/{_maxAlive})");
+            // Rate-limit tracking (для zone-spawn — per player; для chunk — attributedClientId=0).
+            if (attributedClientId != 0) RegisterSpawnTimestamp(attributedClientId);
+
+            // T-NPC-05: visual override (если задан в NpcSpawnerConfig).
+            if (_config != null && _config.visualConfig != null)
+            {
+                var applier = go.GetComponent<NpcVisualApplier>();
+                if (applier == null) applier = go.AddComponent<NpcVisualApplier>();
+                applier.Apply(_config.visualConfig);
+            }
+            return true;
+        }
+
+        // === T-NPC-09: chunk handlers ===
+
+        private void OnChunkLoaded_SpawnNpcs(ChunkId chunkId)
+        {
+            if (!IsServer || _prefab == null || _maxAlivePerChunk <= 0) return;
+
+            // Инициализировать счётчик для этого чанка.
+            _chunkAliveCount.TryGetValue(chunkId, out int existing);
+            if (existing >= _maxAlivePerChunk)
+            {
+                if (_showDebugLogs) Debug.Log($"[NpcSpawner] Chunk {chunkId} already has {existing}/{_maxAlivePerChunk} NPC, skipping.");
+                return;
+            }
+
+            // Центр чанка — берём из WorldChunkManager.
+            var chunkManager = FindAnyObjectByType<WorldChunkManager>();
+            if (chunkManager == null)
+            {
+                if (_showDebugLogs) Debug.LogWarning($"[NpcSpawner] WorldChunkManager not found — cannot resolve chunk center for {chunkId}.");
+                return;
+            }
+            var chunk = chunkManager.GetChunk(chunkId);
+            if (chunk == null)
+            {
+                if (_showDebugLogs) Debug.Log($"[NpcSpawner] Chunk {chunkId} not found in registry, skipping spawn.");
+                return;
+            }
+
+            Vector3 chunkCenter = chunk.WorldBounds.center;
+            int spawned = 0;
+            int attempts = 0;
+            int maxAttempts = _maxAlivePerChunk * 3; // allow 3× попыток на нужное количество
+            while (spawned < _maxAlivePerChunk && attempts < maxAttempts)
+            {
+                attempts++;
+                // Подменим anchor для surface validation на chunk center (TrySpawnAtPoint ищет вокруг anchor).
+                // Чтобы не попасть в стену в самом центре — используем chunk center + случайный оффсет внутри _chunkSpawnRadius.
+                Vector3 anchor = chunkCenter + new Vector3(
+                    Random.Range(-_chunkSpawnRadius, _chunkSpawnRadius), 0,
+                    Random.Range(-_chunkSpawnRadius, _chunkSpawnRadius));
+                if (TrySpawnAtPoint(anchor, attributedClientId: 0, out var no))
+                {
+                    spawned++;
+                    _chunkAliveCount[chunkId] = existing + spawned;
+                }
+            }
+            if (_showDebugLogs) Debug.Log($"[NpcSpawner] Chunk {chunkId} loaded → spawned {spawned}/{_maxAlivePerChunk} NPC (attempts={attempts}, alive global={_spawned.Count}/{_maxAlive})");
+        }
+
+        private void OnChunkUnloaded_CleanupCount(ChunkId chunkId)
+        {
+            // NGO сам деспавнит NPC (destroyWithScene=true).
+            // Мы только сбрасываем счётчик для повторной загрузки чанка.
+            _chunkAliveCount.Remove(chunkId);
+            if (_showDebugLogs) Debug.Log($"[NpcSpawner] Chunk {chunkId} unloaded → counter cleared.");
+        }
+
+        /// <summary>
+        /// T-NPC-09: external query для тестов/дебага.
+        /// </summary>
+        public int GetChunkAliveCount(ChunkId chunkId)
+        {
+            return _chunkAliveCount.TryGetValue(chunkId, out int c) ? c : 0;
         }
 
         private (ulong clientId, NetworkObject playerObj) FindNearestPlayer()

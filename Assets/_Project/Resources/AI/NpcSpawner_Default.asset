@@ -49,3 +49,4 @@ MonoBehaviour:
     m_PreInfinity: 2
     m_PostInfinity: 2
     m_RotationOrder: 4
+  visualConfig: {fileID: 11400000, guid: 836c429369883d345818eeda74e158d6, type: 2}

@@ -45,5 +45,11 @@ namespace ProjectC.AI
         [Tooltip("Множитель урона NPC в зависимости от расстояния от игрока. " +
                  "X=0 = возле игрока (легче), X=1 = на границе радиуса (сложнее).")]
         public AnimationCurve difficultyByDistance = AnimationCurve.Linear(0, 1f, 1, 1f);
+
+        [Header("Visual (anti-restrictive T-NPC-05)")]
+        [Tooltip("Опционально. Применяется к NPC при спавне (материал/цвет/масштаб/имя). " +
+                 "Если null — дефолтный вид из префаба (HumanM_Model без изменений). " +
+                 "Anti-restrictive: позволяет иметь один префаб и разные фракции через разные .asset.")]
+        public NpcVisualConfig visualConfig;
     }
 }

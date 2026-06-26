@@ -419,6 +419,115 @@
     flex-shrink: 0 !important;
 }
 
+/* === Skill row state colors (LEARNED/AVAILABLE/LOCKED) — applied via class in C# === */
+.skill-row-learned {
+    background-color: rgba(80, 160, 120, 0.15) !important;
+    border-left-width: 2px !important;
+    border-left-color: rgba(100, 200, 140, 0.7) !important;
+}
+.skill-row-learned .skill-row-state { color: rgb(100, 200, 140) !important; }
+.skill-row-learned .skill-row-title { color: rgb(200, 240, 210) !important; }
+.skill-row-available {
+    background-color: rgba(60, 100, 160, 0.08) !important;
+    border-left-width: 2px !important;
+    border-left-color: rgba(100, 150, 200, 0.5) !important;
+}
+.skill-row-available .skill-row-state { color: rgb(180, 200, 220) !important; }
+.skill-row-available .skill-row-title { color: rgb(220, 220, 230) !important; }
+.skill-row-locked {
+    background-color: rgba(0, 0, 0, 0) !important;
+    border-left-width: 2px !important;
+    border-left-color: rgba(80, 80, 90, 0.4) !important;
+}
+.skill-row-locked .skill-row-state { color: rgba(140, 140, 150, 0.6) !important; }
+.skill-row-locked .skill-row-title { color: rgba(160, 160, 170, 0.6) !important; }
+
+/* === Skill row effects text (stat bonuses) === */
+.skill-row-effects {
+    font-size: 9px !important;
+    color: rgb(150, 220, 150) !important;
+    -unity-text-align: middle-left !important;
+    flex-shrink: 0 !important;
+    margin-left: 4px !important;
+    min-width: 50px !important;
+    max-width: 90px !important;
+    white-space: nowrap !important;
+    overflow: hidden !important;
+    text-overflow: ellipsis !important;
+}
+
+/* === Skill row action button (Изучить / Забыть) — VisualElement + ClickEvent === */
+.skill-action-btn {
+    width: 56px !important;
+    height: 18px !important;
+    margin-left: 4px !important;
+    font-size: 9px !important;
+    -unity-text-align: middle-center !important;
+    -unity-font-style: bold !important;
+    border-width: 1px !important;
+    border-radius: 2px !important;
+    flex-shrink: 0 !important;
+}
+.skill-btn-learn {
+    background-color: rgba(60, 140, 80, 0.5) !important;
+    border-color: rgba(80, 180, 100, 0.4) !important;
+    color: rgb(200, 255, 200) !important;
+}
+.skill-btn-learn:hover {
+    background-color: rgba(80, 180, 100, 0.8) !important;
+}
+.skill-btn-forget {
+    background-color: rgba(180, 80, 60, 0.4) !important;
+    border-color: rgba(220, 100, 80, 0.4) !important;
+    color: rgb(255, 200, 180) !important;
+}
+.skill-btn-forget:hover {
+    background-color: rgba(220, 100, 80, 0.7) !important;
+}
+
+/* === Skill row prereq line (full-width below main row) === */
+.skill-row-prereq {
+    font-size: 8px !important;
+    color: rgba(180, 160, 100, 0.85) !important;
+    padding-left: 22px !important;
+    -unity-text-align: middle-left !important;
+    margin-top: 0px !important;
+    margin-bottom: 1px !important;
+    height: 12px !important;
+    flex-shrink: 0 !important;
+}
+
+/* === Skill filter chip row (above combat list) === */
+.skill-chip-row {
+    flex-direction: row !important;
+    flex-wrap: wrap !important;
+    padding: 2px 0px !important;
+    margin-bottom: 2px !important;
+    gap: 2px !important;
+    flex-shrink: 0 !important;
+    border-bottom-width: 1px !important;
+    border-bottom-color: rgba(80, 100, 130, 0.2) !important;
+}
+.skill-chip {
+    font-size: 9px !important;
+    padding: 1px 5px !important;
+    border-width: 1px !important;
+    border-radius: 3px !important;
+    border-color: rgba(80, 100, 130, 0.3) !important;
+    color: rgb(160, 180, 200) !important;
+    -unity-text-align: middle-center !important;
+    background-color: rgba(30, 40, 60, 0.4) !important;
+    flex-shrink: 0 !important;
+}
+.skill-chip:hover {
+    background-color: rgba(60, 80, 120, 0.6) !important;
+}
+.skill-chip-active {
+    background-color: rgba(80, 140, 200, 0.5) !important;
+    border-color: rgba(100, 180, 230, 0.8) !important;
+    color: rgb(220, 240, 255) !important;
+}
+
 /* === Compact stat bars (20% column) === */
 .stats-grid {
     flex-direction: column !important;

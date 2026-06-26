@@ -1813,6 +1813,9 @@ namespace ProjectC.UI.Client
                 public float XpCost;
                 public int RequiredTier;
                 public string PrereqNames;    // comma-separated "Нужно: A, B"
+                public string EffectsText;    // T-INP-08: human-readable effects (e.g. "STR+2 x1.15")
+                public int TreeX;             // T-INP-08: layout X для indent
+                public int TreeY;             // T-INP-08: layout Y для сортировки
             }
 
             private void SubscribeQuestState()
@@ -2083,6 +2086,8 @@ namespace ProjectC.UI.Client
                 {
                     intTier = statsSt.CurrentStats.Value.intelligenceTier;
                 }
+                // T-INP-08: combat sort по treeY (сверху вниз) + treeX (слева направо).
+                var combatList = new System.Collections.Generic.List<SkillRow>();
                 foreach (var skill in all)
                 {
                     if (skill == null || string.IsNullOrEmpty(skill.skillId)) continue;
@@ -2100,10 +2105,41 @@ namespace ProjectC.UI.Client
                         XpCost = skill.LearnXpCost,
                         RequiredTier = skill.RequiredIntelligenceTier,
                         PrereqNames = GetMissingPrereqNames(skill, learned),
+                        EffectsText = FormatEffectsText(skill),
+                        TreeX = skill.treeX,
+                        TreeY = skill.treeY,
                     };
-                    if (skill.category == ProjectC.Skills.SkillCategory.Combat) _skillsCombatCache.Add(row);
+                    if (skill.category == ProjectC.Skills.SkillCategory.Combat) combatList.Add(row);
                     else _skillsSocialCache.Add(row);
                 }
+                // Сортировка combat: по Y, потом по X. Без layout (0,0) — в конец.
+                combatList.Sort((a, b) => {
+                    int yA = (a.TreeY == 0 && a.TreeX == 0) ? int.MaxValue : a.TreeY;
+                    int yB = (b.TreeY == 0 && b.TreeX == 0) ? int.MaxValue : b.TreeY;
+                    if (yA != yB) return yA.CompareTo(yB);
+                    return a.TreeX.CompareTo(b.TreeX);
+                });
+                _skillsCombatCache.AddRange(combatList);
+            }
+
+            /// <summary>T-INP-08: skill.effects[] в human-readable строку.</summary>
+            private static string FormatEffectsText(ProjectC.Skills.SkillNodeConfig skill)
+            {
+                if (skill.effects == null || skill.effects.Length == 0) return string.Empty;
+                var parts = new System.Collections.Generic.List<string>();
+                foreach (var e in skill.effects)
+                {
+                    if (e.type == ProjectC.Skills.SkillEffect.Type.StatMod)
+                    {
+                        if (e.floatValue > 0f) parts.Add($"{e.statType}+{e.floatValue:F0}");
+                        if (e.multiplier > 0f) parts.Add($"x{e.multiplier:F2}");
+                    }
+                    else if ((int)e.type >= 3)
+                    {
+                        if (!string.IsNullOrEmpty(e.stringParam)) parts.Add($"[{e.stringParam}]");
+                    }
+                }
+                return string.Join(" ", parts);
             }
 
             private bool CanLearn(ProjectC.Skills.SkillNodeConfig skill, System.Collections.Generic.HashSet<string> learned, int intTier)
@@ -2190,28 +2226,68 @@ namespace ProjectC.UI.Client
             {
                 var row = new VisualElement();
                 row.AddToClassList("skill-row");
+
+                // State-класс для подсветки (LEARNED/AVAILABLE/LOCKED)
+                row.AddToClassList("skill-row-" + data.State.ToLower());
+
+                // 1) state badge
                 var state = new Label { name = "skill-row-state", text = data.State switch { "LEARNED" => "✓", "AVAILABLE" => "○", _ => "✕" } };
                 state.AddToClassList("skill-row-state");
                 row.Add(state);
+
+                // 2) title
                 var title = new Label { name = "skill-row-title", text = data.DisplayName };
                 title.AddToClassList("skill-row-title");
                 row.Add(title);
+
+                // 3) effects (stat bonuses) — если есть
+                if (!string.IsNullOrEmpty(data.EffectsText))
+                {
+                    var eff = new Label { name = "skill-row-effects", text = data.EffectsText };
+                    eff.AddToClassList("skill-row-effects");
+                    row.Add(eff);
+                }
+
+                // 4) cost
                 var cost = new Label { name = "skill-row-cost", text = data.XpCost > 0 ? $"{data.XpCost:F0}XP" : "Free" };
                 cost.AddToClassList("skill-row-cost");
                 row.Add(cost);
+
+                // 5) tier badge
                 var tier = new Label { name = "skill-row-tier", text = $"T{data.RequiredTier}" };
                 tier.AddToClassList("skill-row-tier");
                 row.Add(tier);
-                // SESSION 2: click row to learn (только AVAILABLE).
-                if (data.State == "AVAILABLE")
+
+                // 6) action button — [Изучить] / [Забыть] / none
+                string btnText = data.State switch { "LEARNED" => "Забыть", "AVAILABLE" => "Изучить", _ => null };
+                string btnClass = data.State switch { "LEARNED" => "skill-btn-forget", "AVAILABLE" => "skill-btn-learn", _ => null };
+                if (btnText != null)
                 {
-                    var capturedSkillId = data.SkillId;
-                    row.RegisterCallback<ClickEvent>(evt => {
-                        Debug.Log("!!!!! SKILL CLICK !!!!! skill=" + data.DisplayName + " id=" + capturedSkillId);
-                        OnLearnSkillClicked(capturedSkillId);
+                    var btn = new Label { name = "skill-action-btn", text = btnText };
+                    btn.AddToClassList("skill-action-btn");
+                    btn.AddToClassList(btnClass);
+                    var capturedId = data.SkillId;
+                    var capturedState = data.State;
+                    btn.RegisterCallback<ClickEvent>(evt => {
+                        if (capturedState == "AVAILABLE") OnLearnSkillClicked(capturedId);
+                        else OnForgetSkillClicked(capturedId);
                         evt.StopPropagation();
                     });
+                    row.Add(btn);
                 }
+
+                // 7) prereq line под строкой (только для LOCKED/AVAILABLE)
+                if (!string.IsNullOrEmpty(data.PrereqNames))
+                {
+                    var prereq = new Label { name = "skill-row-prereq", text = "→ " + data.PrereqNames };
+                    prereq.AddToClassList("skill-row-prereq");
+                    row.Add(prereq);
+                }
+
+                // 8) treeX indent (для combat-навыков). clamp 0..32 px.
+                int indent = data.TreeX > 0 ? System.Math.Min(data.TreeX / 5, 32) : 0;
+                if (indent > 0) row.style.paddingLeft = indent;
+
                 return row;
             }
 
@@ -2231,6 +2307,54 @@ namespace ProjectC.UI.Client
                     Debug.Log($"[CharacterWindow] RequestLearnSkillRpc: skillId={skillId}");
                 }
                 catch (System.Exception ex) { Debug.LogWarning($"[CharacterWindow] OnLearnSkillClicked error: {ex.Message}"); }
+            }
+
+            /// <summary>T-INP-08: инициализирует чипы фильтра дисциплин. Клик → SetCombatFilter().</summary>
+            private void InitSkillFilterChips()
+            {
+                var root = _root;
+                if (root == null) return;
+                BindChipClick(root, "chip-all", CombatFilter.All);
+                BindChipClick(root, "chip-melee", CombatFilter.Melee);
+                BindChipClick(root, "chip-ranged", CombatFilter.Ranged);
+                BindChipClick(root, "chip-explosives", CombatFilter.Explosives);
+                BindChipClick(root, "chip-antigrav", CombatFilter.Antigrav);
+                BindChipClick(root, "chip-defense", CombatFilter.Defense);
+            }
+
+            private void BindChipClick(VisualElement root, string chipName, CombatFilter filter)
+            {
+                var chip = root.Q<VisualElement>(chipName);
+                if (chip == null) return;
+                chip.RegisterCallback<ClickEvent>(_ =>
+                {
+                    SetCombatFilter(filter);
+                    var chipRow = root.Q<VisualElement>("skill-combat-chip-row");
+                    if (chipRow == null) return;
+                    foreach (var child in chipRow.Children())
+                    {
+                        child.RemoveFromClassList("skill-chip-active");
+                    }
+                    chip.AddToClassList("skill-chip-active");
+                });
+            }
+
+            /// <summary>T-INP-08: кнопка [Забыть]. Шлёт RequestForgetSkillRpc (free respec по Q3.4).</summary>
+            private void OnForgetSkillClicked(string skillId)
+            {
+                try
+                {
+                    var t = System.Type.GetType("ProjectC.Skills.SkillsServer, Assembly-CSharp");
+                    if (t == null) { Debug.LogWarning("[CharacterWindow] SkillsServer type not found"); return; }
+                    var inst = t.GetProperty("Instance", System.Reflection.BindingFlags.Public | System.Reflection.BindingFlags.Static)?.GetValue(null);
+                    if (inst == null) { Debug.LogWarning("[CharacterWindow] SkillsServer.Instance is null"); return; }
+                    var mi = t.GetMethod("RequestForgetSkillRpc");
+                    if (mi == null) { Debug.LogWarning("[CharacterWindow] RequestForgetSkillRpc not found"); return; }
+                    var rpcParams = System.Activator.CreateInstance(typeof(Unity.Netcode.RpcParams));
+                    mi.Invoke(inst, new object[] { skillId, rpcParams });
+                    Debug.Log($"[CharacterWindow] RequestForgetSkillRpc: skillId={skillId}");
+                }
+                catch (System.Exception ex) { Debug.LogWarning($"[CharacterWindow] OnForgetSkillClicked error: {ex.Message}"); }
             }
 
             private UnityEngine.UIElements.ListView _skillsCombatList;  // SESSION 2: unused (manual rebuild)

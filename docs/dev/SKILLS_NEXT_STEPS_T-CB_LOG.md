@@ -105,6 +105,64 @@
 
 ---
 
+
+---
+
+## Сессия #3 (2026-06-26) — Battle Skills UI: реализация по 50_UI_DESIGN_PLAN.md
+
+**План:** `docs/Character/Skills/Battle/50_UI_DESIGN_PLAN.md` (10 шагов).
+**Дизайн-гайд:** `docs/UI/UI_TOOLKIT_GUIDE.md` (manual rows pattern, !important, click handlers).
+
+### Что сделано
+
+| # | Шаг | Файл | Что |
+|---|---|---|---|
+| 1 | USS новые классы | `Assets/_Project/UI/Resources/UI/CharacterWindow.uss` | `.skill-row-learned/available/locked` (state-подсветка), `.skill-row-effects`, `.skill-action-btn` + `.skill-btn-learn/forget` (action-кнопки), `.skill-row-prereq` (text под строкой), `.skill-chip-row` + `.skill-chip` + `.skill-chip-active` (фильтр) |
+| 2 | SkillRow struct | `CharacterWindow.cs` | +3 поля: `EffectsText`, `TreeX`, `TreeY` |
+| 3 | RefreshSkillsCache | `CharacterWindow.cs` | Заполнение EffectsText через `FormatEffectsText()` (StatMod бонус + multiplier + new effect types 3..7), сортировка combat по treeY/treeX (с 0/0 — в конец) |
+| 4 | MakeManualSkillRow rewrite | `CharacterWindow.cs` | State-класс на row, effects label, action-кнопка `[Изучить]`/`[Забыть]`, prereq text под строкой, treeX → paddingLeft (clamp 0..32px) |
+| 5 | OnForgetSkillClicked | `CharacterWindow.cs` | Reflection-RPC `RequestForgetSkillRpc(skillId, RpcParams)` (Q3.4 free respec) |
+| 6 | UXML chip-row | `CharacterWindow.uxml` | Horizontal VisualElement с 6 чипами: `[Все] [⚔ Melee] [🏹 Ranged] [💣 Explosives] [🌌 Antigrav] [🛡 Defense]`. Все классы `skill-chip`, активный `skill-chip-active` |
+| 7 | InitSkillFilterChips + BindChipClick | `CharacterWindow.cs` | Привязка ClickEvent на каждый чип → SetCombatFilter() + toggle `.skill-chip-active` class |
+| 8 | treeX indent | (в task 4) | paddingLeft на row = min(treeX/5, 32) px |
+| 9 | Compile check | — | `refresh_unity scope=all` + `read_console` → **0 errors** |
+| 10 | Changelog | этот файл | — |
+
+### Compile verification
+
+- Brace balance OK во всех файлах (572=572, 588=588, 1020 строк USS).
+- read_console: 0 errors, 0 warnings (только my own code).
+- `scope=all` потребовался — UXML+USS изменения в Resources/UI/ подхватывают asset import.
+
+### Что НЕ реализовано (явно, отложено)
+
+- **Drag-to-slot** для Skill1-4 — нужен `InputBindingsConfig` SO (O-1 в audit).
+- **Painter2D skill tree** (T-P19) — full DAG visualization, Phase 2.
+- **Soft glow / tier color** на effects — пока только базовый green.
+- **Toasts** на learn/forget success — пока Debug.Log (CharacterWindow.HandleSkillResult).
+
+### Play Mode verify
+
+1. `refresh_unity` → compile clean.
+2. P (открыть CharacterWindow) → должна быть вкладка "ПЕРСОНАЖ".
+3. В секции "Характеристики | Боевые | Социальные" у "Боевые навыки" сверху — 6 чипов, `[Все]` подсвечен.
+4. Клик `[⚔ Melee]` → только melee-строки (BasicSword, HeavySwing, PrecisionStrike, DaggerMastery, SpearReach, DualWield). Чип подсвечивается.
+5. Клик `[Все]` → все combat-строки возвращаются.
+6. `AVAILABLE` строка: state ○ + title + `[STR+1]` effects + cost + T1 + зелёная `[Изучить]` кнопка + text `→ BasicStrike` (если prereq).
+7. `LOCKED` строка: state ✕ + title + effects + cost + T1 + text `→ BasicSword, BasicStrike`. Без кнопки.
+8. Клик `[Изучить]` → Console: `[CharacterWindow] RequestLearnSkillRpc: skillId=melee_basic_sword`. После snapshot: state меняется на LEARNED, появляется красная `[Забыть]`.
+9. Клик `[Забыть]` → Console: `[CharacterWindow] RequestForgetSkillRpc: skillId=melee_basic_sword`. После snapshot: снова AVAILABLE (XP не возвращается по Q3.4).
+
+### Файлы изменены
+
+| Файл | Изменение |
+|---|---|
+| `Assets/_Project/UI/Resources/UI/CharacterWindow.uss` | +111 строк (новые классы) |
+| `Assets/_Project/UI/Resources/UI/CharacterWindow.uxml` | +8 строк (chip-row) |
+| `Assets/_Project/Scripts/UI/Client/CharacterWindow.cs` | +110 строк, рефакторинг MakeManualSkillRow, OnForgetSkillClicked, InitSkillFilterChips, BindChipClick, FormatEffectsText |
+| `docs/Character/Skills/Battle/50_UI_DESIGN_PLAN.md` | design-doc (без изменений) |
+
+
 ## История документа
 
 | Дата | Сессия | Изменения |

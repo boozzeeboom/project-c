@@ -2,8 +2,9 @@
 
 > **Формат:** version-based changelog, сессия за сессией.
 > **v0.0** (2026-06-25) — design doc, тикеты T-RTC01..T-RTC10, без кода.
-> **v0.1** (2026-06-25, сессии #1-3) — MVP реализован: фундамент + server+client + scene integration.
-> **v0.1.1** (2026-06-25, сессия #5) — fix race condition: `RegisterWithCombatServer` ранний return.
+> **v0.1** (2026-06-25) — первая реализация Combat MVP (T-RTC01..T-RTC09). 19 файлов. 3 race condition fixes.
+> **v0.2** (2026-06-25) — T-CB03 (WeaponItemData). 4 weapon .asset, WeaponDamageSource, InventoryTab+EquipmentWorld patches.
+> **v0.3** (2026-06-25) — T-CB06 + T-CB07 + T-CB08. armorDefense + skillMult + 23 combat skills. **Код готов, runtime verify — после NPC-AI.**
 > **v0.1.2** (2026-06-25, сессия #6) — fix: убран skip `id==0` для Player, second-chance recovery.
 > **v0.1.3** (2026-06-25, сессия #7) — fix: `EnsureUnarmedFallback()` (DefaultDamageSource когда нет оружия).
 > **v0.1.4** (2026-06-25, сессия #8) — fix: corpse delay `Destroy(gameObject, 3.0f)`.

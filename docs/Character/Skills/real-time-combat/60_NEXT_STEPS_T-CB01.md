@@ -1,9 +1,9 @@
 # Next Steps — T-CB01..T-CB09 (навыки + skill hook)
 
-> **Статус (2026-06-25, v0.3):** ✅ T-CB03, T-CB06, T-CB07, T-CB08 завершены. ⏸ T-CB09 (UI filter) — optional.
-> **Combat MVP** (T-RTC01..T-RTC09) + **Skills** (T-CB01..T-CB08) — ✅ работает.
-> **Что блокирует полное end-to-end тестирование:** NPC-AI (отдельная подсистема, не в скоупе combat).
-> **Полный roadmap:** `docs/dev/SKILLS_ROADMAP_T-CB.md`.
+> **Status — v0.3 (2026-06-25):** T-CB03, T-CB06, T-CB07, T-CB08 — код готов.
+> **T-CB03** (WeaponItemData) — ✅ протестирован в Play Mode (оружие подбирается, экипируется, damage работает).
+> **T-CB06** (armorDefense) + **T-CB07** (skillMult hook) + **T-CB08** (23 skills) — ✅ код готов, ⚠️ **runtime verify — после NPC-AI** (необходимо для проверки входящего урона).
+> **T-CB09** (UI filter) — ⏸ optional, не блокер.
 
 ---
 

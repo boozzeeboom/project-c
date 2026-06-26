@@ -39,6 +39,8 @@
 | **#6** (2026-06-25) | Playtest #3 + host player fix v0.1.2 | `RecoverExistingEntities`: убран skip `id==0` для Player (0 = host clientId), second-chance `Invoke` через 1 сек. |
 | **#7** (2026-06-25) | Playtest #4 + unarmed fallback v0.1.3 | `PlayerAttacker.EnsureUnarmedFallback()`: если оба weapon-слота пустые, добавляет `DefaultDamageSource(0, "Unarmed")`. |
 | **#8** (2026-06-25) | Playtest #5 + corpse delay v0.1.4 | `NpcTarget.ApplyDamage`: при HP=0 → `Destroy(gameObject, 3.0f)` (3 сек corpse delay). |
+| **#9** (2026-06-25) | T-CB03 — WeaponItemData | 4 weapon .asset, WeaponDamageSource, патчи PlayerAttacker + EquipmentServer + InventoryTab + EquipmentWorld. ✅ Play Mode — работает. |
+| **#10** (2026-06-25) | T-CB06 + T-CB07 + T-CB08 — armorDefense + skillMult + 23 skills | Код готов. Runtime verify — после NPC-AI. |
 
 **Подробный changelog:** `50_IMPL_CHANGELOG.md`.
 

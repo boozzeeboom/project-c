@@ -12,8 +12,8 @@
 | Тикет | Файлы / Scope | Статус | Примечание |
 |---|---|---|---|
 | **T-CB03** | `WeaponItemData.cs`, `WeaponDamageSource.cs`, 4 .asset, патчи PlayerAttacker + EquipmentServer + InventoryTab + EquipmentWorld | ✅ **DONE** | Weapon equippable через UI, damage корректный (d8/base2 для меча). |
-| **T-CB06** | `ClothingItemData.armorDefense` поле + 5 .asset с armor 1/2/4/8 + `PlayerTarget.GetArmorDefense()` | ✅ **DONE** | 5 clothing .asset обновлены, PlayerTarget считает armor из 5 armor-slots. |
-| **T-CB07** | `WeaponDamageSource.GetSkillMultiplier()` — интеграция с SkillsWorld | ✅ **DONE** | Читает `SkillsWorld.GetLearnedSkillIds(attackerId)`, накапливает `mult *= (1+eff.multiplier)` для StatMod-эффектов. Без cap. |
+| **T-CB06** | `ClothingItemData.armorDefense` поле + 5 .asset с armor 1/2/4/8 + `PlayerTarget.GetArmorDefense()` | ✅ **КОД ГОТОВ** ⚠️ **НЕ ТЕСТИРОВАЛОСЬ** | 5 clothing .asset обновлены, PlayerTarget считает armor из 5 armor-slots. **Без NPC-AI проверить reduction входящего урона невозможно — ждёт реализации NPC-AI для полной verify.** |
+| **T-CB07** | `WeaponDamageSource.GetSkillMultiplier()` — интеграция с SkillsWorld | ✅ **КОД ГОТОВ** ⚠️ **НЕ ТЕСТИРОВАЛОСЬ** | Читает `SkillsWorld.GetLearnedSkillIds(attackerId)`, накапливает `mult *= (1+eff.multiplier)` для StatMod-эффектов. Без cap. **Runtime verify требует Play Mode + learned skills — ждёт Play Mode теста.** |
 | **T-CB08** | 23 combat skill .asset (5 дисциплин: Melee/Ranged/Explosives/Antigrav/Defense) | ✅ **DONE** | 19 новых (BasicSword/HeavySwing/PrecisionStrike/DefenseMaster + 15 по дисциплинам) + 4 placeholder'а из T-P11 (BasicStrike/DodgeRoll/HeavySwing/PrecisionStrike). |
 | **T-CB09** | UI фильтр по CombatDiscipline в CharacterWindow | ⏸ **OPTIONAL** | Не блокер. Сделать после Phase 2. |
 
@@ -27,9 +27,19 @@
 
 ---
 
+**Задокументировано, но не протестировано (ожидает NPC-AI):**
+
+| Компонент | Почему не тестировалось | Когда будет |
+|---|---|---|
+| `PlayerTarget.GetArmorDefense()` — реальный подсчёт из 5 armor-slots | NPC-атака на игрока не реализована — нет входящего урона для проверки reduction | После NPC-AI stub |
+| `WeaponDamageSource.GetSkillMultiplier()` — чтение SkillsWorld.GetLearnedSkillIds | skillsMultiplier применяется — но без NPC-атаки не виден эффект на получателе | После NPC-AI stub |
+| 5 clothing .asset с `armorDefense` 2/8/1/2/4 | Экипировка через UI работает, но reduction проверить нечем | После NPC-AI stub |
+
+---
+
 ## Детальный план — следующая сессия
 
-### 1. T-CB06 — armorDefense в ClothingItemData (~1 ч) ✅ DONE
+### 1. T-CB06 — armorDefense в ClothingItemData (~1 ч) ✅ КОД ГОТОВ | ⚠️ НЕ ТЕСТИРОВАЛОСЬ
 
 **Файлы (add-only):**
 - `Assets/_Project/Scripts/Equipment/ClothingItemData.cs` — добавил `[Range(0, 50)] public int armorDefense = 0;`
@@ -47,7 +57,7 @@
 
 ---
 
-### 2. T-CB07 — SkillMult hook (~1 ч) ✅ DONE
+### 2. T-CB07 — SkillMult hook (~1 ч) ✅ КОД ГОТОВ | ⚠️ НЕ ТЕСТИРОВАЛОСЬ
 
 **Файлы (add-only, WeaponDamageSource.cs):** — реализован полный hook (см. `Assets/_Project/Scripts/Combat/Implementations/WeaponDamageSource.cs`):
 ```csharp
@@ -73,7 +83,7 @@ public float GetSkillMultiplier(ulong attackerId) {
 
 ---
 
-### 3. T-CB08 — Skill assets finish ✅ DONE (23 combat skills)
+### 3. T-CB08 — Skill assets finish ✅ КОД ГОТОВ (23 combat skills, verify via Edit Mode подтверждён)
 
 **Создан 23 combat skill .asset** (5 дисциплин, 19 новых + 4 placeholder'а из T-P11):
 
@@ -84,6 +94,8 @@ public float GetSkillMultiplier(ulong attackerId) {
 - **Defense** (4): BasicArmor (DEX+2, free), HeavyArmor (DEX ×1.15, 100XP), AntigravShield (DEX ×1.25, 200XP, tier 4), MasterDefender (DEX+3, free) + [T-P11] HeavySwing (placeholder)
 
 Всего: 23 combat + 4 social (T-P11) = 27. **Все 5 дисциплин** покрыты (Melee 7, Ranged 4, Explosives 3, Antigrav 3, Defense 4 + 4 placeholder'а).
+
+**Runtime verify (Play Mode + SkillsWorld.Instance + learned skills):** ⏸ ожидает Play Mode теста.
 
 ---
 

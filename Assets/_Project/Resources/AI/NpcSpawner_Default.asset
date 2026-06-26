@@ -13,8 +13,9 @@ MonoBehaviour:
   m_Name: NpcSpawner_Default
   m_EditorClassIdentifier: Assembly-CSharp::ProjectC.AI.NpcSpawnerConfig
   npcPrefab: {fileID: 3856242148590983311, guid: 66676f0230dd44b479d8956d60243844, type: 3}
-  spawnRadiusMin: 20
-  spawnRadiusMax: 60
+  spawnRadiusMin: 5
+  spawnRadiusMax: 20
+  activationRadius: 0
   maxAliveCount: 5
   spawnCheckInterval: 4
   spawnChance: 0.5
@@ -23,7 +24,7 @@ MonoBehaviour:
     serializedVersion: 2
     m_Bits: 4294967295
   groundRaycastDistance: 30
-  minDistanceFromOtherNpc: 5
+  minDistanceFromOtherNpc: 3
   difficultyByDistance:
     serializedVersion: 2
     m_Curve:

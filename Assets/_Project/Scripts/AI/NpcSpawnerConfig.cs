@@ -15,11 +15,15 @@ namespace ProjectC.AI
         [Tooltip("Префаб NPC-врага (должен иметь NetworkObject + NpcAttacker + NpcTarget + NpcBrain).")]
         public GameObject npcPrefab;
 
-        [Header("Spawn rules (around nearest player)")]
-        [Tooltip("Минимальный радиус спавна от игрока (внутри не спавним — нечестно).")]
-        [Range(5f, 100f)] public float spawnRadiusMin = 20f;
-        [Tooltip("Максимальный радиус спавна от игрока (дальше — деспавн leash).")]
-        [Range(20f, 200f)] public float spawnRadiusMax = 60f;
+        [Header("Spawn rules (around spawner)")]
+        [Tooltip("Минимальный радиус спавна от spawner'а (anchor). NPC не появятся вплотную — нечестно.")]
+        [Range(1f, 50f)] public float spawnRadiusMin = 5f;
+        [Tooltip("Максимальный радиус спавна от spawner'а — определяет зону спавна.")]
+        [Range(5f, 200f)] public float spawnRadiusMax = 20f;
+        [Tooltip("T-NPC-08 v0.2: Игрок должен быть в этом радиусе от spawner'а чтобы спавнить NPC. " +
+                 "Если 0 = всегда спавним (даже когда игрок далеко). " +
+                 "Полезно для зонирования — NPC спавнятся только когда игрок входит в зону.")]
+        [Range(0f, 300f)] public float activationRadius = 60f;
         [Tooltip("Лимит одновременно живых NPC от этого spawner'а.")]
         [Range(1, 50)] public int maxAliveCount = 5;
         [Tooltip("Интервал между проверками спавна (сек).")]

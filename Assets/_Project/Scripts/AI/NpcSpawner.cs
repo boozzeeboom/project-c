@@ -33,17 +33,23 @@ namespace ProjectC.AI
         [Header("Debug")]
         [SerializeField] private bool _showDebugLogs = true;
 
+        [Header("Activation (when to spawn at all)")]
+        [Tooltip("Игрок должен быть в этом радиусе от спавнера чтобы спавнить NPC. " +
+                 "Если 0 = всегда спавним (даже когда игрок далеко). " +
+                 "Полезно для зонирования — NPC спавнятся только в конкретной области.")]
+        [Range(0f, 200f)] public float activationRadius = 80f;
+
         // Spawned NPCs (server-only) — для alive-count tracking.
         private readonly List<NetworkObject> _spawned = new List<NetworkObject>();
         private float _nextCheckTime;
         private float _spawnInterval = 4f;
         private int _maxAlive = 5;
-        private float _spawnRadiusMin = 20f;
-        private float _spawnRadiusMax = 60f;
+        private float _spawnRadiusMin = 5f;
+        private float _spawnRadiusMax = 20f;
         private float _spawnChance = 0.5f;
         private LayerMask _groundMask = 1;
         private float _groundRaycastDistance = 30f;
-        private float _minDistanceFromOtherNpc = 5f;
+        private float _minDistanceFromOtherNpc = 3f;
         private GameObject _prefab;
 
         // Rate-limit per player (spawns per minute).
@@ -74,6 +80,8 @@ namespace ProjectC.AI
                 _groundMask = _config.groundMask;
                 _groundRaycastDistance = _config.groundRaycastDistance;
                 _minDistanceFromOtherNpc = _config.minDistanceFromOtherNpc;
+                // T-NPC-08 v0.2: read activationRadius too.
+                activationRadius = _config.activationRadius;
             }
         }
 
@@ -101,14 +109,26 @@ namespace ProjectC.AI
             var (clientId, playerObj) = FindNearestPlayer();
             if (playerObj == null) return;
 
+            // T-NPC-08 v0.2: активация только если игрок в зоне спавнера (для зонирования).
+            Vector3 spawnerPos = _anchor != null ? _anchor.position : transform.position;
+            if (activationRadius > 0f)
+            {
+                float distToPlayer = Vector3.Distance(spawnerPos, playerObj.transform.position);
+                if (distToPlayer > activationRadius)
+                {
+                    // Игрок далеко → no spawn. Существующие NPC не despawn (можно отдельно).
+                    return;
+                }
+            }
+
             // Rate-limit per player.
             if (!CheckRateLimit(clientId)) return;
 
             if (Random.value > _spawnChance) return;
 
-            // Spawn point: random в кольце [radiusMin, radiusMax] вокруг игрока.
-            Vector3 anchorPos = playerObj.transform.position;
-            if (!TryFindSpawnPoint(anchorPos, out Vector3 spawnPos)) return;
+            // T-NPC-08 v0.2: Spawn point — вокруг СПАВНЕРА (не вокруг игрока).
+            // Это даёт зонирование — NPC спавнятся только в конкретной зоне.
+            if (!TryFindSpawnPoint(spawnerPos, out Vector3 spawnPos)) return;
 
             // Validate distance от других NPC.
             if (IsTooCloseToOtherNpc(spawnPos)) return;
@@ -126,7 +146,7 @@ namespace ProjectC.AI
             _spawned.Add(netObj);
             RegisterSpawnTimestamp(clientId);
 
-            if (_showDebugLogs) Debug.Log($"[NpcSpawner] Spawned NPC '{_prefab.name}' at {spawnPos:F1} (anchor={anchorPos:F1}, alive={_spawned.Count}/{_maxAlive})");
+            if (_showDebugLogs) Debug.Log($"[NpcSpawner] Spawned NPC '{_prefab.name}' at {spawnPos:F1} (zone-center={spawnerPos:F1}, distToPlayer={Vector3.Distance(spawnerPos, playerObj.transform.position):F1}, alive={_spawned.Count}/{_maxAlive})");
         }
 
         private (ulong clientId, NetworkObject playerObj) FindNearestPlayer()

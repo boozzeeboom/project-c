@@ -70,6 +70,8 @@ namespace ProjectC.Player
         private ChestContainer _nearestChest;
         private NetworkChestContainer _nearestNetworkChest;
         private ShipController _nearestShip;
+        // T-NPC-03: NPC loot (credits pickup)
+        private ProjectC.AI.NpcLootPickup _nearestNpcLoot;
 
         // NetworkObject
         private NetworkObject networkObject;
@@ -764,6 +766,7 @@ namespace ProjectC.Player
             _nearestPickup = null;
             _nearestChest = null;
             _nearestNetworkChest = null;
+            _nearestNpcLoot = null;
 
             // First check NEW NetworkChestContainer (higher priority)
             var networkChests = FindObjectsByType<NetworkChestContainer>(FindObjectsInactive.Include);
@@ -789,6 +792,9 @@ namespace ProjectC.Player
             {
                 _nearestPickup = InteractableManager.FindNearestPickup(transform.position, pickupRange);
             }
+
+            // T-NPC-03: NpcLootPickup (lower priority than chest/pickup but still within range)
+            _nearestNpcLoot = InteractableManager.FindNearestNpcLoot(transform.position, pickupRange);
         }
 
         // ==================== META REQUIREMENT (E-key для LockBox, дверей и т.д.) ====================
@@ -1005,6 +1011,24 @@ namespace ProjectC.Player
                 // Серверная RPC — скрыть предмет у ВСЕХ
                 HidePickupRpc(_nearestPickup.transform.position);
                 _nearestPickup = null;
+                return;
+            }
+
+            // T-NPC-03: NPC loot (credits pickup).
+            // Если рядом нет chest и нет PickupItem — пробуем NpcLoot.
+            if (_nearestNpcLoot != null)
+            {
+                // Server-side collection: call NpcLootPickup.Collect(clientId).
+                if (IsServer)
+                {
+                    _nearestNpcLoot.Collect(OwnerClientId);
+                }
+                else
+                {
+                    // Клиент отправляет RPC серверу.
+                    CollectNpcLootServerRpc(_nearestNpcLoot.NetworkObjectId);
+                }
+                _nearestNpcLoot = null;
             }
         }
 
@@ -1022,6 +1046,24 @@ namespace ProjectC.Player
                     return;
                 }
             }
+        }
+
+        // T-NPC-03: client → server RPC для сбора NpcLootPickup credits.
+        [Rpc(SendTo.Server, RequireOwnership = true)]
+        private void CollectNpcLootServerRpc(ulong lootNetId, RpcParams rpcParams = default)
+        {
+            // Найти NpcLootPickup по NetworkObjectId.
+            var loot = FindObjectsByType<ProjectC.AI.NpcLootPickup>(FindObjectsSortMode.None);
+            foreach (var l in loot)
+            {
+                if (l.NetworkObjectId == lootNetId && l.IsSpawned)
+                {
+                    ulong clientId = rpcParams.Receive.SenderClientId;
+                    l.Collect(clientId);
+                    return;
+                }
+            }
+            Debug.LogWarning($"[NetworkPlayer] CollectNpcLootServerRpc: loot {lootNetId} not found.");
         }
 
         [Rpc(SendTo.Everyone)]

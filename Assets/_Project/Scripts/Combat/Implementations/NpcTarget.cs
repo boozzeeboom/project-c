@@ -96,15 +96,84 @@ namespace ProjectC.Combat
                 Debug.Log($"[NpcTarget] npc={_targetId} took {result.finalDamage} from attacker={attackerClientId} (HP {_currentHp.Value + result.finalDamage} → {newHp}, isCrit={result.isCrit}, type={result.damageType})");
             }
 
-            // v0.1.4: при смерти — скрыть GO через 3 сек (corpse delay). За это время:
-            //   - клиенты увидят анимацию смерти / damage feedback
-            //   - EntityKilledTargetRpc успеет дойти
-            //   - respawn можно сделать позже (Phase 2)
+            // T-NPC-01 v0.2: при смерти — death animation + loot spawn + 3s corpse delay.
             if (newHp == 0)
             {
-                if (Debug.isDebugBuild) Debug.Log($"[NpcTarget] npc={_targetId} killed. Destroying in 3s (corpse delay).");
+                if (Debug.isDebugBuild) Debug.Log($"[NpcTarget] npc={_targetId} killed. Spawning loot + Destroy in 3s.");
+                OnKilled(attackerClientId);
                 Destroy(gameObject, 3.0f);
             }
+        }
+
+        /// <summary>
+        /// T-NPC-01 v0.2: death handler — death animation trigger + spawn NpcLootPickup (credits).
+        /// </summary>
+        private void OnKilled(ulong attackerClientId)
+        {
+            // Trigger Death animation (на child Animator, если есть).
+            var animator = GetComponentInChildren<Animator>();
+            if (animator != null && animator.runtimeAnimatorController != null)
+            {
+                // Безопасный вызов: проверяем что параметр существует.
+                foreach (var p in animator.parameters)
+                {
+                    if (p.type == AnimatorControllerParameterType.Trigger && p.name == "Death")
+                    {
+                        animator.SetTrigger("Death");
+                        break;
+                    }
+                }
+            }
+
+            // T-NPC-03: Spawn NpcLootPickup на месте смерти с credits из NpcCombatData.
+            SpawnLootPickup(attackerClientId);
+        }
+
+        /// <summary>
+        /// T-NPC-03 + T-NPC-04: server-only spawn NpcLootPickup на текущей позиции NPC.
+        /// Использует NpcLootPickup prefab (если зарегистрирован) иначе — спавнит programmatic.
+        /// </summary>
+        private void SpawnLootPickup(ulong attackerClientId)
+        {
+            // Credits из _data (placeholder: фиксированный value до T-NPC-04 LootTable extension).
+            int credits = 0;
+            if (_data != null)
+            {
+                // До T-NPC-04: простой fixed credits based on NPC maxHp (scaling).
+                // T-NPC-04: заменить на _data.loot.GenerateCredits().
+                credits = Mathf.Max(5, _data.maxHp / 4);  // HP=20 → 5 CR; HP=100 → 25 CR
+            }
+
+            if (credits <= 0) return;
+
+            // Программное создание NpcLootPickup (без prefab asset для MVP).
+            var loot = new GameObject($"Loot_{_data?.displayName ?? "NPC"}_CR{credits}");
+            loot.transform.position = transform.position + Vector3.up * 0.5f;  // поднимаем над землёй
+
+            var netObj = loot.AddComponent<Unity.Netcode.NetworkObject>();
+            var pickup = loot.AddComponent<ProjectC.AI.NpcLootPickup>();
+            pickup.creditsAmount = credits;
+            pickup.displayName = _data != null ? $"{_data.displayName} Loot" : "Loot";
+            pickup.interactionRadius = 2.0f;
+            pickup.autoDespawnSeconds = 120f;  // 2 мин
+
+            // Visual: small yellow sphere (placeholder — gold coins vibe).
+            var visual = GameObject.CreatePrimitive(PrimitiveType.Sphere);
+            visual.name = "VisualMarker";
+            visual.transform.SetParent(loot.transform, false);
+            visual.transform.localPosition = Vector3.zero;
+            visual.transform.localScale = new Vector3(0.3f, 0.3f, 0.3f);
+            var col = visual.GetComponent<Collider>();
+            if (col != null) UnityEngine.Object.DestroyImmediate(col);
+            var mr = visual.GetComponent<Renderer>();
+            var shader = Shader.Find("Universal Render Pipeline/Lit");
+            if (shader == null) shader = Shader.Find("Standard");
+            var mat = new Material(shader);
+            mat.color = new Color(1f, 0.85f, 0.2f, 1f);  // gold
+            if (mat.HasProperty("_BaseColor")) mat.SetColor("_BaseColor", mat.color);
+            mr.sharedMaterial = mat;
+
+            netObj.Spawn(destroyWithScene: true);
         }
     }
 }

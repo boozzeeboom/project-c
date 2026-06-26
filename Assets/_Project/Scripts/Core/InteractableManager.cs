@@ -1,6 +1,7 @@
 using System.Collections.Generic;
 using UnityEngine;
 using ProjectC.Items;
+using ProjectC.AI;  // T-NPC-03: NpcLootPickup
 using ProjectC.Player;
 using ProjectC.Ship;
 
@@ -23,15 +24,61 @@ namespace ProjectC.Core
         private static readonly List<ProjectC.Crafting.CraftingStation> _craftingStations = new List<ProjectC.Crafting.CraftingStation>(8);
 
         /// <summary>
-        /// Register a pickup item when it enters player's trigger.
-        /// </summary>
-        public static void RegisterPickup(PickupItem pickup)
-        {
-            if (pickup != null && !_pickups.Contains(pickup))
-            {
-                _pickups.Add(pickup);
-            }
-        }
+                /// Register a pickup item when it enters player's trigger.
+                /// </summary>
+                public static void RegisterPickup(PickupItem pickup)
+                {
+                    if (pickup != null && !_pickups.Contains(pickup))
+                    {
+                        _pickups.Add(pickup);
+                    }
+                }
+
+                // T-NPC-03: NpcLootPickup uses IInteractable (not PickupItem). Separate pool.
+                private static readonly List<NpcLootPickup> _npcLootPickups = new List<NpcLootPickup>(16);
+
+                /// <summary>
+                /// T-NPC-03: Register NPC loot pickup (uses IInteractable; not in standard pickup pool).
+                /// </summary>
+                public static void RegisterNpcLoot(NpcLootPickup pickup)
+                {
+                    if (pickup != null && !_npcLootPickups.Contains(pickup))
+                    {
+                        _npcLootPickups.Add(pickup);
+                    }
+                }
+
+                /// <summary>
+                /// T-NPC-03: Unregister NPC loot pickup.
+                /// </summary>
+                public static void UnregisterNpcLoot(NpcLootPickup pickup)
+                {
+                    if (pickup != null)
+                    {
+                        _npcLootPickups.Remove(pickup);
+                    }
+                }
+
+                /// <summary>
+                /// T-NPC-03: Find nearest NPC loot pickup within range.
+                /// </summary>
+                public static NpcLootPickup FindNearestNpcLoot(Vector3 position, float range)
+                {
+                    NpcLootPickup nearest = null;
+                    float minDistSq = float.MaxValue;
+                    for (int i = 0; i < _npcLootPickups.Count; i++)
+                    {
+                        var l = _npcLootPickups[i];
+                        if (l == null || !l.isActiveAndEnabled || !l.IsSpawned) { _npcLootPickups.RemoveAt(i--); continue; }
+                        float d = (l.transform.position - position).sqrMagnitude;
+                        if (d < minDistSq && d <= range * range)
+                        {
+                            minDistSq = d;
+                            nearest = l;
+                        }
+                    }
+                    return nearest;
+                }
 
         /// <summary>
         /// Unregister a pickup item when it exits player's trigger.

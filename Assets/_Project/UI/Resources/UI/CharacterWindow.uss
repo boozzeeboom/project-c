@@ -1015,3 +1015,22 @@
     color: rgb(200, 210, 220) !important;
     flex-grow: 1 !important;
 }
+
+
+/* === Open SkillTreeWindow button (T-INP-09) === */
+.open-skill-tree-btn {
+    height: 22px !important;
+    margin-top: 4px !important;
+    font-size: 11px !important;
+    -unity-text-align: middle-center !important;
+    -unity-font-style: bold !important;
+    border-width: 1px !important;
+    border-radius: 2px !important;
+    background-color: rgba(80, 140, 200, 0.5) !important;
+    border-color: rgba(120, 180, 230, 0.7) !important;
+    color: rgb(230, 245, 255) !important;
+    flex-shrink: 0 !important;
+}
+.open-skill-tree-btn:hover {
+    background-color: rgba(100, 170, 230, 0.8) !important;
+}

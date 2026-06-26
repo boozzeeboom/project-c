@@ -1,0 +1,62 @@
+<ui:UXML xmlns:ui="UnityEngine.UIElements" xmlns:uie="UnityEditor.UIElements" editor-extension-mode="False">
+ <ui:VisualElement name="skill-tree-root" class="stw-root">
+
+  <!-- TOP: title + filter chips + search -->
+  <ui:VisualElement class="stw-top">
+   <ui:VisualElement class="stw-top-row">
+    <ui:Label text="Дерево навыков" class="stw-title" />
+   </ui:VisualElement>
+   <ui:VisualElement class="stw-chip-row">
+    <ui:Label name="chip-all"        text="Все"          class="stw-chip stw-chip-active" />
+    <ui:Label name="chip-melee"      text="⚔ Melee"     class="stw-chip" />
+    <ui:Label name="chip-ranged"     text="🏹 Ranged"   class="stw-chip" />
+    <ui:Label name="chip-explosives" text="💣 Explosives" class="stw-chip" />
+    <ui:Label name="chip-antigrav"   text="🌌 Antigrav" class="stw-chip" />
+    <ui:Label name="chip-defense"    text="🛡 Defense"  class="stw-chip" />
+   </ui:VisualElement>
+   <ui:TextField name="skill-search" placeholder-text="Поиск по имени или эффекту (STR, +2)..." class="stw-search" />
+  </ui:VisualElement>
+
+  <!-- MIDDLE: list (left 40%) + detail (right 60%) -->
+  <ui:VisualElement class="stw-middle">
+
+   <!-- LEFT: list of skills -->
+   <ui:VisualElement class="stw-list-col">
+    <ui:Label text="Навыки" class="stw-section-title" />
+    <ui:ScrollView name="skill-list-scroll" class="stw-scroll">
+     <ui:VisualElement name="skill-list-container" class="stw-list-container" />
+    </ui:ScrollView>
+   </ui:VisualElement>
+
+   <!-- RIGHT: detail panel -->
+   <ui:VisualElement class="stw-detail-col">
+    <ui:VisualElement class="stw-detail-header">
+     <ui:Label name="detail-name" text="Выберите навык слева" class="stw-detail-name" />
+     <ui:Label name="detail-desc" text="" class="stw-detail-desc" />
+    </ui:VisualElement>
+    <ui:VisualElement class="stw-detail-stats">
+     <ui:Label name="detail-effects" text="" class="stw-detail-effects" />
+     <ui:Label name="detail-cost"    text="" class="stw-detail-cost" />
+     <ui:Label name="detail-tier"    text="" class="stw-detail-tier" />
+    </ui:VisualElement>
+    <ui:VisualElement class="stw-detail-prereq">
+     <ui:Label text="Требуется:" class="stw-detail-prereq-title" />
+     <ui:VisualElement name="detail-prereq-container" class="stw-detail-prereq-container" />
+    </ui:VisualElement>
+    <ui:VisualElement class="stw-detail-deps">
+     <ui:Label text="Откроет:" class="stw-detail-deps-title" />
+     <ui:VisualElement name="detail-deps-container" class="stw-detail-deps-container" />
+    </ui:VisualElement>
+    <ui:VisualElement class="stw-detail-actions">
+     <ui:Label name="btn-learn"  text="Изучить"  class="stw-btn stw-btn-learn"  style="display: none;" />
+     <ui:Label name="btn-forget" text="Забыть"   class="stw-btn stw-btn-forget" style="display: none;" />
+    </ui:VisualElement>
+   </ui:VisualElement>
+  </ui:VisualElement>
+
+  <!-- BOTTOM: close -->
+  <ui:VisualElement class="stw-bottom">
+   <ui:Label name="btn-close" text="Закрыть (Esc)" class="stw-btn stw-btn-close" />
+  </ui:VisualElement>
+ </ui:VisualElement>
+</ui:UXML>

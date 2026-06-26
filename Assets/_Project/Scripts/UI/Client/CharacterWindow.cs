@@ -668,6 +668,10 @@ namespace ProjectC.UI.Client
             // Skills: Resources.LoadAll -> LOCKED state.
             InitSkillsCache();
             RebuildSkillsListView();
+            // T-INP-08: filter chip handlers (вызов пропущен в прошлой сессии — fix сейчас)
+            InitSkillFilterChips();
+            // T-INP-09: кнопка [ИЗУЧИТЬ НАВЫК] → SkillTreeWindow overlay
+            InitOpenSkillTreeButton();
 
             // ---- Filter change callback (общий для Contracts и Inventory) ----
             if (_filterSearch != null)
@@ -2086,31 +2090,48 @@ namespace ProjectC.UI.Client
                 {
                     intTier = statsSt.CurrentStats.Value.intelligenceTier;
                 }
-                // T-INP-08: combat sort по treeY (сверху вниз) + treeX (слева направо).
+                // T-INP-09: combat-список = ТОЛЬКО LEARNED. Управление изучением — в SkillTreeWindow overlay.
+                // Сохраняем сортировку по treeY/treeX для читаемого порядка.
                 var combatList = new System.Collections.Generic.List<SkillRow>();
                 foreach (var skill in all)
                 {
                     if (skill == null || string.IsNullOrEmpty(skill.skillId)) continue;
-                    bool isLearned = learned != null && learned.Contains(skill.skillId);
-                    string state;
-                    if (isLearned) state = "LEARNED";
-                    else if (CanLearn(skill, learned, intTier)) state = "AVAILABLE";
-                    else state = "LOCKED";
-                    var row = new SkillRow
+                    if (skill.category == ProjectC.Skills.SkillCategory.Combat)
                     {
-                        SkillId = skill.skillId,
-                        DisplayName = !string.IsNullOrEmpty(skill.displayName) ? skill.displayName : skill.skillId,
-                        Category = skill.category,
-                        State = state,
-                        XpCost = skill.LearnXpCost,
-                        RequiredTier = skill.RequiredIntelligenceTier,
-                        PrereqNames = GetMissingPrereqNames(skill, learned),
-                        EffectsText = FormatEffectsText(skill),
-                        TreeX = skill.treeX,
-                        TreeY = skill.treeY,
-                    };
-                    if (skill.category == ProjectC.Skills.SkillCategory.Combat) combatList.Add(row);
-                    else _skillsSocialCache.Add(row);
+                        if (learned == null || !learned.Contains(skill.skillId)) continue;
+                        combatList.Add(new SkillRow
+                        {
+                            SkillId = skill.skillId,
+                            DisplayName = !string.IsNullOrEmpty(skill.displayName) ? skill.displayName : skill.skillId,
+                            Category = skill.category,
+                            State = "LEARNED",
+                            XpCost = skill.LearnXpCost,
+                            RequiredTier = skill.RequiredIntelligenceTier,
+                            PrereqNames = "",
+                            EffectsText = FormatEffectsText(skill),
+                            TreeX = skill.treeX,
+                            TreeY = skill.treeY,
+                        });
+                    }
+                    else
+                    {
+                        // Social — оставляем как было (LEARNED/AVAILABLE/LOCKED)
+                        bool isLearned = learned != null && learned.Contains(skill.skillId);
+                        string state = isLearned ? "LEARNED" : (CanLearn(skill, learned, intTier) ? "AVAILABLE" : "LOCKED");
+                        _skillsSocialCache.Add(new SkillRow
+                        {
+                            SkillId = skill.skillId,
+                            DisplayName = !string.IsNullOrEmpty(skill.displayName) ? skill.displayName : skill.skillId,
+                            Category = skill.category,
+                            State = state,
+                            XpCost = skill.LearnXpCost,
+                            RequiredTier = skill.RequiredIntelligenceTier,
+                            PrereqNames = GetMissingPrereqNames(skill, learned),
+                            EffectsText = FormatEffectsText(skill),
+                            TreeX = skill.treeX,
+                            TreeY = skill.treeY,
+                        });
+                    }
                 }
                 // Сортировка combat: по Y, потом по X. Без layout (0,0) — в конец.
                 combatList.Sort((a, b) => {
@@ -2336,6 +2357,26 @@ namespace ProjectC.UI.Client
                         child.RemoveFromClassList("skill-chip-active");
                     }
                     chip.AddToClassList("skill-chip-active");
+                });
+            }
+
+            /// <summary>T-INP-09: кнопка [ИЗУЧИТЬ НАВЫК] в CharacterWindow → открывает SkillTreeWindow overlay.</summary>
+            private void InitOpenSkillTreeButton()
+            {
+                var root = _root;
+                if (root == null) return;
+                var btn = root.Q<VisualElement>("open-skill-tree-btn");
+                if (btn == null) return;
+                btn.RegisterCallback<ClickEvent>(_ => {
+                    var stw = ProjectC.Skills.UI.SkillTreeWindow.Instance;
+                    if (stw != null)
+                    {
+                        stw.Show();
+                    }
+                    else if (Debug.isDebugBuild)
+                    {
+                        Debug.LogWarning("[CharacterWindow] SkillTreeWindow.Instance==null (auto-spawn not yet run)");
+                    }
                 });
             }
 

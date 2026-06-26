@@ -75,18 +75,11 @@
     </ui:VisualElement>
    </ui:VisualElement>
    <ui:VisualElement class="progression-col skills-col">
-    <ui:Label text="Боевые навыки" class="progression-col-title" />
-    <ui:VisualElement name="skill-combat-chip-row" class="skill-chip-row">
-     <ui:Label name="chip-all" text="Все" class="skill-chip skill-chip-active" />
-     <ui:Label name="chip-melee" text="⚔ Melee" class="skill-chip" />
-     <ui:Label name="chip-ranged" text="🏹 Ranged" class="skill-chip" />
-     <ui:Label name="chip-explosives" text="💣 Explosives" class="skill-chip" />
-     <ui:Label name="chip-antigrav" text="🌌 Antigrav" class="skill-chip" />
-     <ui:Label name="chip-defense" text="🛡 Defense" class="skill-chip" />
-    </ui:VisualElement>
+    <ui:Label text="Изученные боевые навыки" class="progression-col-title" />
     <ui:ScrollView name="skills-combat-scroll" class="skills-scroll">
      <ui:VisualElement name="skills-combat-container" class="skills-container" />
     </ui:ScrollView>
+    <ui:Label name="open-skill-tree-btn" text="ИЗУЧИТЬ НАВЫК" class="open-skill-tree-btn" />
    </ui:VisualElement>
    <ui:VisualElement class="progression-col skills-col">
     <ui:Label text="Социальные навыки" class="progression-col-title" />

@@ -163,6 +163,72 @@
 | `docs/Character/Skills/Battle/50_UI_DESIGN_PLAN.md` | design-doc (без изменений) |
 
 
+---
+
+## Сессия #4 (2026-06-26) — SkillTreeWindow overlay (полная реализация)
+
+**План:** `docs/Character/Skills/Battle/60_SKILL_TREE_WINDOW_DESIGN.md`
+**Trigger:** текущий CharacterWindow → "Боевые навыки" перегружен — 30 навыков в 40% колонке, кнопки Изучить/Забыть клипаются, prereq-строки не помещаются, невозможно понять что даёт навык.
+
+**Решение:** новый полноэкранный overlay `SkillTreeWindow` (720×500) с 6 chip-фильтрами, поиском по имени+эффектам, детальной панелью. CharacterWindow → combat-блок оставлен ТОЛЬКО для просмотра изученных навыков + кнопка `[ИЗУЧИТЬ НАВЫК]` → открывает overlay.
+
+### Что сделано (14 шагов)
+
+| # | Файл | Что |
+|---|---|---|
+| 1 | `Assets/_Project/Scripts/Skills/UI/SkillTreeWindow.cs` (новый, 634 строк) | Класс-обёртка. 4 фикса из UI_TOOLKIT_GUIDE (pickingMode, layout fallback, cursor, MarkDirtyRepaint), Esc-handler, OnEnable+Start idempotency, lazy-subscribe |
+| 2 | `Assets/_Project/Resources/UI/SkillTreeWindow.uxml` (новый, 62 строк) | Top (title+chips+search) + Middle (list 40% + detail 60%) + Bottom (close). Все inline `style="display: none;"` для тоггл-кнопок |
+| 3 | `Assets/_Project/UI/Resources/UI/SkillTreePanelSettings.asset` (новый) | Копия CharacterPanelSettings (proven themeUss) с sortingOrder=300 через MCP CopyAsset + SerializedObject |
+| 4 | `Assets/_Project/Resources/UI/SkillTreeWindow.uss` (новый, 302 строк) | Все стили `!important`. NO `cursor: link` (UGUI 6 spam fix). Background hover вместо cursor |
+| 5 | `Assets/_Project/Scripts/Core/NetworkManagerController.cs` | Добавлен `using ProjectC.Skills.UI` + `CreateSkillTreeWindow()` метод + вызов в Awake (auto-spawn как root GO) |
+| 6 | (covered by Task 5) | Scene-placed не нужен — NMC auto-spawn fallback с idempotency check |
+| 7 | `CharacterWindow.uxml` + `.uss` | Кнопка `open-skill-tree-btn` (label `ИЗУЧИТЬ НАВЫК`). Title изменён на "Изученные боевые навыки". Chip-row удалён (фильтр в SkillTreeWindow) |
+| 8 | `CharacterWindow.cs` | `RefreshSkillsCache` упрощён: combat = ТОЛЬКО LEARNED. Без prereq-строк и action-кнопок. Social оставлен как был. Добавлен `InitOpenSkillTreeButton()` метод. **Bug fix:** InitSkillFilterChips() НЕ вызывался — вызов добавлен рядом с InitOpenSkillTreeButton() |
+| 9-12 | (в Task 1) | `RefreshAllSkillsList`, `OnSkillSelected`, `UpdateDetailPanel`, `OnLearnClicked`, `OnForgetClicked` — все реализованы в SkillTreeWindow.cs (Task 1, единым блоком) |
+| 13 | Compile verify | `refresh_unity scope=all` + `read_console` → 0 моих errors. Reflection smoke test: SkillTreeWindow класс загружен, SkillDisciplineFilter enum 6 значений |
+| 14 | (этот блок) | Changelog |
+
+### Применённые lessons (UI_TOOLKIT_GUIDE)
+
+- **4 фикса на Show/Hide**: `pickingMode=Position`/`Ignore` (FIX 1), `ApplyInlineFallbackStyles` для frame-1 layout (FIX 2), `Cursor.lockState=None`/`Locked` (FIX 3), `MarkDirtyRepaint` + `schedule.Execute(...).StartingIn(50)` (FIX 4)
+- **Esc-handler ДО NetworkManager guard** — нельзя блокировать Esc на `if (nm == null) return`
+- **UIDocument auto-load race** — `CloneTree()` + `Clear()` + `Add(_rootContainer)` pattern
+- **PanelSettings** — копия через MCP `CopyAsset` (НЕ `CreateInstance` — `themeUss=null` баг)
+- **display toggles inline C#** — НЕ `!important` в USS
+- **NO `cursor: link`** — UGUI 6 спам (исправлено в сессии #3)
+- **Manual rows в ScrollView** — не ListView (≤30 items)
+- **Background hover вместо cursor** для clickability hint
+
+### Reflection smoke test (compile clean)
+
+```
+SkillTreeWindow: FOUND
+  Show: True
+  Hide: True
+  Toggle: True
+  SkillDisciplineFilter enum: FOUND
+    values (6): All, Melee, Ranged, Explosives, Antigrav, Defense
+```
+
+### Что тестировать в Play Mode
+
+1. `StartHost` → P → "ПЕРСОНАЖ" → секция "Изученные боевые навыки" пустая (LEARNED=0) + кнопка `ИЗУЧИТЬ НАВЫК`
+2. Клик `ИЗУЧИТЬ НАВЫК` → overlay 720×500, cursor свободен
+3. 6 chip-фильтров сверху, search field, слева 30 навыков, справа "Выберите навык"
+4. Клик на чип → список фильтруется
+5. Поиск "STR" → навыки с бонусом к силе
+6. Клик на `GreatSword` в списке → детали: name + effects + cost + prereq `→ BasicSword` + dependents
+7. Клик `Изучить` → Console: `RequestLearnSkillRpc: skillId=melee_great_sword`. После snapshot → строка показывает LEARNED, кнопка переключается на `Забыть`
+8. Закрыть Esc → cursor lock. CharacterWindow → "Изученные боевые навыки" → появилась строка `GreatSword`
+
+### Что осталось (явно)
+
+- Drag-to-slot для привязки навыка к Slot1-4 клавишам
+- Painter2D skill tree graph (полноценный DAG, T-P19)
+- CombatDiscipline поле в SkillNodeConfig (T-CB02) — пока substring фильтр
+- Real `Receive*TargetRpc` вместо reflection (T-CB07)
+
+
 ## История документа
 
 | Дата | Сессия | Изменения |

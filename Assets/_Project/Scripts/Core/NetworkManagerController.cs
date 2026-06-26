@@ -8,6 +8,7 @@ using ProjectC.Player;
 using ProjectC.Stats;
 using ProjectC.Equipment;
 using ProjectC.Skills;
+using ProjectC.Skills.UI;  // T-INP-09: SkillTreeWindow
 
 namespace ProjectC.Core
 {
@@ -144,6 +145,8 @@ namespace ProjectC.Core
             // Принимает DamageResultDto от CombatServer (T-RTC06) через AttackLandedTargetRpc.
             // Подписка на events OnAttackLanded/OnDamageDealt/OnEntityKilled — будущий T-RTC10 (UI).
             CreateCombatClientState();
+            // T-INP-09: SkillTreeWindow overlay
+            CreateSkillTreeWindow();
 
             // Автоматический запуск Dedicated Server
             if (IsDedicatedServerMode())
@@ -494,6 +497,35 @@ namespace ProjectC.Core
             var go = new GameObject("[CombatClientState]");
             go.AddComponent<ProjectC.Combat.Client.CombatClientState>();
             Debug.Log("[NMC] Created [CombatClientState] as root GameObject");
+        }
+
+        /// <summary>
+        /// T-INP-09: Создать SkillTreeWindow как root GameObject с UIDocument.
+        /// Scene-placed GO в BootstrapScene предпочтительнее, но auto-spawn fallback
+        /// на случай если scene load минует этот шаг.
+        /// </summary>
+        private void CreateSkillTreeWindow()
+        {
+            var existing = FindObjectsByType<SkillTreeWindow>(FindObjectsInactive.Include);
+            foreach (var inst in existing)
+            {
+                if (inst != null && inst.transform.parent == null)
+                {
+                    Debug.Log("[NMC] SkillTreeWindow already root, skipping creation");
+                    return;
+                }
+            }
+            if (existing.Length > 0)
+            {
+                Debug.LogWarning($"[NMC] Found {existing.Length} non-root SkillTreeWindow in scene — DontDestroyOnLoad would fail. Creating root replacement.");
+            }
+            var go = new GameObject("[SkillTreeWindow]");
+            var doc = go.AddComponent<UnityEngine.UIElements.UIDocument>();
+            doc.panelSettings = Resources.Load<UnityEngine.UIElements.PanelSettings>("UI/SkillTreePanelSettings");
+            // T-INP-09 fix: НЕ ставим visualTreeAsset — UIDocument auto-load конфликтует с CloneTree()
+            // в SkillTreeWindow.EnsureBuilt(). Let SkillTreeWindow клонирует сам через CloneTree + Add.
+            go.AddComponent<SkillTreeWindow>();
+            Debug.Log("[NMC] Created [SkillTreeWindow] as root GameObject");
         }
 
         private void Start()

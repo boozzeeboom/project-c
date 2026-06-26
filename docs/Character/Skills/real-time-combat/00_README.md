@@ -1,8 +1,9 @@
 # Real-Time Combat Engine — пеший бой + extensible на ship combat
 
 > **Подсистема:** Real-Time Combat Engine (пеший бой MVP, ship combat future)
-> **Статус:** ✅ **MVP РЕАЛИЗОВАН** (T-RTC01..T-RTC09, v0.1.4, 2026-06-25). End-to-end combat flow работает: hit/miss/crit/defense/cooldown/kill.
-> **Следующий этап:** T-CB01..T-CB09 (навыки) — см. `60_NEXT_STEPS_T-CB01.md`.
+> **Статус:** ✅ **MVP РЕАЛИЗОВАН** (T-RTC01..T-RTC09 + T-CB03/06/07/08, v0.3, 2026-06-25). End-to-end combat flow работает: hit/miss/crit/defense/cooldown/kill/skills.
+> **Следующий этап:** 📝 **NPC Enemies** (T-NPC-01..10) — см. `70_NPC_ENEMIES.md`. Дизайн готов, код не написан.
+> **Следующая фаза:** T-CB09 (UI filter), T-RTC10 (UI damage numbers), PvP, Ship Combat.
 > **Ключевая идея:** строим **combat-engine сначала**, навыки подключаются как **opt-in** слой через hooks. Engine **extensible** для будущего ship combat (без рефакторинга) через **abstractions + composition**.
 
 ---
@@ -41,6 +42,7 @@
 | **#8** (2026-06-25) | Playtest #5 + corpse delay v0.1.4 | `NpcTarget.ApplyDamage`: при HP=0 → `Destroy(gameObject, 3.0f)` (3 сек corpse delay). |
 | **#9** (2026-06-25) | T-CB03 — WeaponItemData | 4 weapon .asset, WeaponDamageSource, патчи PlayerAttacker + EquipmentServer + InventoryTab + EquipmentWorld. ✅ Play Mode — работает. |
 | **#10** (2026-06-25) | T-CB06 + T-CB07 + T-CB08 — armorDefense + skillMult + 23 skills | Код готов. Runtime verify — после NPC-AI. |
+| **#11** (2026-06-26) | NPC Enemies — дизайн + roadmap | `70_NPC_ENEMIES.md` (10 тикетов T-NPC-01..10, ~11-13 ч реализации, разделено на P0/P1/P2 приоритеты). Код НЕ написан. |
 
 **Подробный changelog:** `50_IMPL_CHANGELOG.md`.
 

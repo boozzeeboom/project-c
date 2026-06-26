@@ -53,26 +53,28 @@ namespace ProjectC.Combat
         /// <summary>
         /// T-CB07 hook: skillMult = product(1.0 + eff.multiplier) для всех StatMod-эффектов
         /// изученных навыков атакующего. Без cap per answer 2.18.
-        ///
-        /// v0.1 (T-CB03): возвращает 1.0. Реальная интеграция — в T-CB07 (следующий этап).
         /// </summary>
         public float GetSkillMultiplier(ulong attackerId)
         {
-            // TODO T-CB07:
-            // var learned = ProjectC.Skills.SkillsWorld.Instance?.GetLearnedSkillIds(attackerId);
-            // if (learned == null) return 1.0f;
-            // float mult = 1.0f;
-            // foreach (var skillId in learned) {
-            //     if (!ProjectC.Skills.SkillsWorld.Instance.TryGetSkill(skillId, out var skill)) continue;
-            //     if (skill.effects == null) continue;
-            //     foreach (var eff in skill.effects) {
-            //         if (eff.type == ProjectC.Skills.SkillEffect.Type.StatMod && eff.multiplier > 0f) {
-            //             mult *= (1.0f + eff.multiplier);
-            //         }
-            //     }
-            // }
-            // return mult;
-            return 1.0f;
+            // T-CB07: реальная интеграция с SkillsWorld.
+            // До T-CB07 возвращал 1.0 (stub).
+            if (ProjectC.Skills.SkillsWorld.Instance == null) return 1.0f;
+            var learned = ProjectC.Skills.SkillsWorld.Instance.GetLearnedSkillIds(attackerId);
+            if (learned == null || learned.Count == 0) return 1.0f;
+            float mult = 1.0f;
+            foreach (var skillId in learned)
+            {
+                if (!ProjectC.Skills.SkillsWorld.Instance.TryGetSkill(skillId, out var skill)) continue;
+                if (skill.effects == null) continue;
+                foreach (var eff in skill.effects)
+                {
+                    if (eff.type == ProjectC.Skills.SkillEffect.Type.StatMod && eff.multiplier > 0f)
+                    {
+                        mult *= (1.0f + eff.multiplier);
+                    }
+                }
+            }
+            return mult;
         }
     }
 }

@@ -62,10 +62,32 @@ namespace ProjectC.Combat
 
         public int GetArmorDefense()
         {
-            // TODO (post T-CB06): sum armorDefense из экипированной ClothingItemData.
-            // Сейчас поля armorDefense в ClothingItemData ещё нет (T-CB06).
-            // Возвращаем 0 → в MVP защиты нет, NPC получают полный урон.
-            return 0;
+            // T-CB06: реальный подсчёт armorDefense из экипированной одежды.
+            // До T-CB06 возвращал 0.
+            if (EquipmentWorld.Instance == null || InventoryWorld.Instance == null) return 0;
+            var equip = EquipmentWorld.Instance.GetEquipment(_clientId);
+            int total = 0;
+            // Armor slots: Head, Chest, Legs, Feet, Back. Module slots (Module1-3) — нет.
+            // Hands/Accessory1-2 — оставим для будущего (может быть щит/кольцо).
+            var armorSlots = new[] {
+                ProjectC.Equipment.EquipSlot.Head,
+                ProjectC.Equipment.EquipSlot.Chest,
+                ProjectC.Equipment.EquipSlot.Legs,
+                ProjectC.Equipment.EquipSlot.Feet,
+                ProjectC.Equipment.EquipSlot.Back,
+            };
+            foreach (var slot in armorSlots)
+            {
+                if (equip.TryGetItemId(slot, out int itemId) && itemId > 0)
+                {
+                    var data = InventoryWorld.Instance.GetItemDefinition(itemId);
+                    if (data is ProjectC.Equipment.ClothingItemData c)
+                    {
+                        total += c.armorDefense;
+                    }
+                }
+            }
+            return total;
         }
 
         public bool IsAlive() => _currentHp.Value > 0;

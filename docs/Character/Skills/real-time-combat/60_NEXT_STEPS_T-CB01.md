@@ -1,8 +1,8 @@
 # Next Steps — T-CB01..T-CB09 (навыки + skill hook)
 
-> **Статус (2026-06-25):** ✅ T-CB03 завершён. ⏸ Остальное — в работе.
-> **Combat MVP** (T-RTC01..T-RTC09) — ✅ работает. WeaponItemData + WeaponDamageSource + InventoryTab equip — ✅.
-> **Что в этой сессии:** T-CB06 (armorDefense) + T-CB07 (skillMult hook) — ~2 ч.
+> **Статус (2026-06-25, v0.3):** ✅ T-CB03, T-CB06, T-CB07, T-CB08 завершены. ⏸ T-CB09 (UI filter) — optional.
+> **Combat MVP** (T-RTC01..T-RTC09) + **Skills** (T-CB01..T-CB08) — ✅ работает.
+> **Что блокирует полное end-to-end тестирование:** NPC-AI (отдельная подсистема, не в скоупе combat).
 > **Полный roadmap:** `docs/dev/SKILLS_ROADMAP_T-CB.md`.
 
 ---

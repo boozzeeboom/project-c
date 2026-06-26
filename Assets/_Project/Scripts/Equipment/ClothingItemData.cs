@@ -46,6 +46,11 @@ namespace ProjectC.Equipment
         [Tooltip("Множитель Intelligence. [Range(0,5)] = ×1..×6 final value.")]
         [Range(0f, 5f)] public float intelligenceMultiplier;
 
+        [Header("Armor (T-CB06)")]
+        [Tooltip("Физическая защита. Combat-движок: armor × typeMultiplier = effectiveDefense. " +
+                 "Antigrav: ×0.5 (g-волна частично игнорирует). Mesium: ×0.0 (токсин не блокируется).")]
+        [Range(0, 50)] public int armorDefense = 0;
+
         [Header("Skill Requirements")]
         [Tooltip("Все указанные навыки должны быть изучены для надевания. " +
                  "Q2.3: hard requirement — нельзя надеть без навыка. (T-P11 добавит RequirementType.RequirementType.Soft).")]

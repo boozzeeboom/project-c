@@ -1,0 +1,50 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 25688cb068b64e44cbc704a012513162, type: 3}
+  m_Name: NpcSpawner_Default
+  m_EditorClassIdentifier: Assembly-CSharp::ProjectC.AI.NpcSpawnerConfig
+  npcPrefab: {fileID: 3856242148590983311, guid: 66676f0230dd44b479d8956d60243844, type: 3}
+  spawnRadiusMin: 20
+  spawnRadiusMax: 60
+  maxAliveCount: 5
+  spawnCheckInterval: 4
+  spawnChance: 0.5
+  maxSpawnsPerPlayerPerMinute: 8
+  groundMask:
+    serializedVersion: 2
+    m_Bits: 4294967295
+  groundRaycastDistance: 30
+  minDistanceFromOtherNpc: 5
+  difficultyByDistance:
+    serializedVersion: 2
+    m_Curve:
+    - serializedVersion: 3
+      time: 0
+      value: 1
+      inSlope: 0
+      outSlope: 0
+      tangentMode: 0
+      weightedMode: 0
+      inWeight: 0
+      outWeight: 0
+    - serializedVersion: 3
+      time: 1
+      value: 1
+      inSlope: 0
+      outSlope: 0
+      tangentMode: 0
+      weightedMode: 0
+      inWeight: 0
+      outWeight: 0
+    m_PreInfinity: 2
+    m_PostInfinity: 2
+    m_RotationOrder: 4

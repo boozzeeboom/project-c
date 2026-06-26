@@ -22,6 +22,9 @@ namespace ProjectC.Combat
         [Tooltip("Stable id для RPC. Default = GetInstanceID. Переопредели если NPC спавнится динамически.")]
         [SerializeField] private ulong _attackerIdOverride = 0;
 
+        /// <summary>Public accessor для AI/subsystem access (T-NPC-01: NpcBrain читает cooldown/data).</summary>
+        public NpcCombatData Data => _data;
+
         private IDamageSource _defaultSource;
         private float _lastAttackTime = float.NegativeInfinity;
         private int _currentHpCache;  // mirror NpcTarget._currentHp для IsAlive()

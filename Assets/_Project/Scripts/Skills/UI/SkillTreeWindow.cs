@@ -41,6 +41,8 @@ namespace ProjectC.Skills.UI
         private bool _isPanning = false;
         private Vector2 _panStartMouse;
         private Vector2 _panStartScroll;
+        // Zoom (T-INP-13): plain wheel. transform.scale on _treeContent. No fit, no layout changes.
+        private float _zoom = 1.0f;
         private VisualElement _detailName;
         private Label _detailDesc;
         private Label _detailEffects;
@@ -527,10 +529,12 @@ namespace ProjectC.Skills.UI
 
         private void RegisterTreePan()
         {
-            if (_treeContent == null) return;
+            if (_treeContent == null || _treeScroll == null) return;
             _treeContent.RegisterCallback<PointerDownEvent>(OnCanvasPointerDown);
             _treeContent.RegisterCallback<PointerMoveEvent>(OnCanvasPointerMove);
             _treeContent.RegisterCallback<PointerUpEvent>(OnCanvasPointerUp);
+            // Zoom: register on ScrollView so we can stopPropagation cleanly
+            _treeScroll.RegisterCallback<WheelEvent>(OnCanvasWheel);
         }
 
         private void OnCanvasPointerDown(PointerDownEvent evt)
@@ -557,6 +561,26 @@ namespace ProjectC.Skills.UI
             if (!_isPanning) return;
             if (evt.button != 0 && evt.button != -1) return;
             _isPanning = false;
+        }
+
+        // =================== Zoom (T-INP-13) ===================
+        // Ctrl+wheel only. Plain wheel = native scroll. transform.scale on _treeContent.
+
+        private const float MIN_ZOOM = 0.5f;
+        private const float MAX_ZOOM = 2.0f;
+        private const float ZOOM_STEP = 0.1f;
+
+        private void OnCanvasWheel(WheelEvent evt)
+        {
+            // Plain wheel = zoom (no Ctrl modifier)
+            if (_treeContent == null) return;
+            evt.StopPropagation();
+            float delta = evt.delta.y > 0 ? -ZOOM_STEP : ZOOM_STEP;
+            float newZoom = Mathf.Clamp(_zoom + delta, MIN_ZOOM, MAX_ZOOM);
+            if (Mathf.Approximately(newZoom, _zoom)) return;
+            _zoom = newZoom;
+            _treeContent.transform.scale = new Vector3(_zoom, _zoom, 1f);
+            _treeContent.MarkDirtyRepaint();
         }
     }
 }

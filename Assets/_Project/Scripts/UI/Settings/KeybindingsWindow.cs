@@ -107,12 +107,12 @@ namespace ProjectC.UI.Settings
                     if (mouse.middleButton.wasPressedThisFrame) { ApplyRebind(_listeningFor.Value, Key.None, 3); return; }
                 }
                 // Keyboard keys (skip Escape — used for cancel)
-                foreach (Key key in System.Enum.GetValues(typeof(Key)))
+                foreach (var keyControl in kb.allKeys)
                 {
-                    if (key == Key.None || key == Key.Escape) continue;
-                    if (kb[key].wasPressedThisFrame)
+                    if (keyControl.keyCode == Key.Escape) continue;
+                    if (keyControl.wasPressedThisFrame)
                     {
-                        ApplyRebind(_listeningFor.Value, key, 0);
+                        ApplyRebind(_listeningFor.Value, keyControl.keyCode, 0);
                         return;
                     }
                 }

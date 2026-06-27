@@ -13,6 +13,7 @@ using ProjectC.Trade.Dto;
 using ProjectC.Trade.Network;
 using ProjectC.UI;
 using ProjectC.Skills;  // T-INP-01: SkillInputService
+using ProjectC.Input;   // T-INP-14: InputBindingsConfig
 using ProjectC.World.Streaming;
 using ProjectC.World.Chest;
 using System.Collections.Generic;
@@ -574,12 +575,12 @@ namespace ProjectC.Player
             {
                 // Пеший режим
                 _moveInput = Vector2.zero;
-                if (Keyboard.current.wKey.isPressed) _moveInput.y += 1;
-                if (Keyboard.current.sKey.isPressed) _moveInput.y -= 1;
-                if (Keyboard.current.aKey.isPressed) _moveInput.x -= 1;
-                if (Keyboard.current.dKey.isPressed) _moveInput.x += 1;
-                _jumpPressed = Keyboard.current.spaceKey.wasPressedThisFrame;
-                _runPressed = Keyboard.current.leftShiftKey.isPressed;
+                if (IsActionHeld(InputBindingsConfig.GameAction.MoveForward))  _moveInput.y += 1;
+                if (IsActionHeld(InputBindingsConfig.GameAction.MoveBackward)) _moveInput.y -= 1;
+                if (IsActionHeld(InputBindingsConfig.GameAction.MoveLeft))     _moveInput.x -= 1;
+                if (IsActionHeld(InputBindingsConfig.GameAction.MoveRight))    _moveInput.x += 1;
+                _jumpPressed = IsActionJustPressed(InputBindingsConfig.GameAction.Jump);
+                _runPressed = IsActionHeld(InputBindingsConfig.GameAction.Run);
 
                 // T-P05: owner-only jump notification → server → StatsServer → DEX XP
                 if (_jumpPressed && IsOwner)
@@ -1673,6 +1674,50 @@ namespace ProjectC.Player
                 transform.localScale = _originalScale * (1.0f + amp * t);
                 yield return null;
             }
+        }
+
+        // ==================== INPUT BINDINGS HELPERS (T-INP-14) ====================
+        // Читают клавиши из InputBindingsConfig вместо хардкода.
+        // Позволяют игроку переназначать клавиши движения.
+
+        private bool IsActionHeld(InputBindingsConfig.GameAction action)
+        {
+            var rt = ProjectC.Input.InputBindingsRuntime.Instance;
+            var cfg = rt?.Config;
+            if (cfg == null) return false;
+            var binding = cfg.FindActionBinding(action);
+            if (binding == null) return false;
+            var b = binding.Value;
+
+            // Mouse button held
+            if (b.mouseButtonRaw != 0 && Mouse.current != null)
+            {
+                if (b.mouseButtonRaw == 1 && Mouse.current.leftButton.isPressed) return true;
+                if (b.mouseButtonRaw == 2 && Mouse.current.rightButton.isPressed) return true;
+                if (b.mouseButtonRaw == 3 && Mouse.current.middleButton.isPressed) return true;
+            }
+            // Keyboard key held
+            if (b.key != Key.None && Keyboard.current != null && Keyboard.current[b.key].isPressed) return true;
+            return false;
+        }
+
+        private bool IsActionJustPressed(InputBindingsConfig.GameAction action)
+        {
+            var rt = ProjectC.Input.InputBindingsRuntime.Instance;
+            var cfg = rt?.Config;
+            if (cfg == null) return false;
+            var binding = cfg.FindActionBinding(action);
+            if (binding == null) return false;
+            var b = binding.Value;
+
+            if (b.mouseButtonRaw != 0 && Mouse.current != null)
+            {
+                if (b.mouseButtonRaw == 1 && Mouse.current.leftButton.wasPressedThisFrame) return true;
+                if (b.mouseButtonRaw == 2 && Mouse.current.rightButton.wasPressedThisFrame) return true;
+                if (b.mouseButtonRaw == 3 && Mouse.current.middleButton.wasPressedThisFrame) return true;
+            }
+            if (b.key != Key.None && Keyboard.current != null && Keyboard.current[b.key].wasPressedThisFrame) return true;
+            return false;
         }
     }
 }

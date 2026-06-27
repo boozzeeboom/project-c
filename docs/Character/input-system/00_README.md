@@ -26,31 +26,32 @@
 | `40_MIGRATION_PLAN.md` | безопасный план миграции (3 фазы) |
 | `50_OPEN_QUESTIONS.md` | что НЕ решено (будущие фазы) |
 | `60_PHASE_1_5_SUMMARY.md` | сводка Phase 1 + Phase 1.5 — что сделано, что работает, roadmap |
+| `70_PHASE_2_SUMMARY.md` | сводка Phase 2 — EscMenu, KeybindingsWindow, rebind, движение через конфиг |
 
 ---
 
 ## TL;DR — что менять
 
-**НЕ ТРОГАТЬ (уже корректные):**
-- Движение (WASD), прыжок (Space), бег (Shift) в PlayerInputReader + NetworkPlayer
-- Посадка/выход корабля (F), управление кораблём (W/S/A/D/Q/E + MouseY + Shift)
+**НЕ ТРОГАТЬ (уже корректные, но теперь читаются из InputBindingsConfig):**
+- Движение (WASD → MoveForward/Backward/Left/Right), прыжок (Space → Jump), бег (Shift → Run)
+- Теперь читаются через `IsActionHeld()`/`IsActionJustPressed()` из `InputBindingsConfig`
+- Можно переназначать через UI (EscMenu → [НАСТРОЙКИ] → клик на строку → нажать клавишу)
+
+**СДЕЛАНО (Phase 1 — 2.2):**
+- InputBindingsConfig ScriptableObject + InputBindingsRuntime singleton
+- SkillInputService.Update() polling для combat skills (10 биндов)
+- EscMenuWindow (главное меню по Esc с кнопкой [НАСТРОЙКИ])
+- KeybindingsWindow (список биндов + click-to-rebind)
+- UIManager (стек панелей, Esc → CloseTopPanel)
+- Движение через InputBindingsConfig (Phase 2.5 начало)
+- Bug-001 задокументирован (Esc после CharacterWindow)
+
+**НЕ ТРОГАТЬ (остаётся хардкод):**
+- Посадка/выход корабля (F), управление кораблём (ShipInputReader)
 - Подбор/инвентарь/рынок (E), диалог NPC (E)
 - Сбор ресурса (F), crafting (F), дверь (F)
 - Docking/CommPanel (T), F3/F4 debug HUD
-- Esc закрытие в окнах (CharacterWindow, SkillTreeWindow, CraftingWindow, DialogWindow)
-
-**СОЗДАТЬ НОВОЕ:**
-- `InputBindingsConfig.cs` ScriptableObject (дефолты через инспектор)
-- 1 `.asset` файл в `Assets/_Project/Resources/InputBindingsConfig.asset`
-
-**ДОБАВИТЬ (минимально-инвазивно):**
-- `SkillInputBindings` модуль в SkillInputService (читает из InputBindingsConfig)
-- 1 extension method `TryActivateFromInput()` в SkillInputService для горячих комбинаций (ЛКМ / ПКМ / Ctrl+ЛКМ / ...)
-
-**НЕ ТРОГАТЬ (явно):**
-- NetworkPlayer Update (только добавить вызов в нужную точку)
-- PlayerInputReader (оставить как есть — он не для боя)
-- Все UI-окна (Esc-handlers оставить как есть)
+- Esc закрытие в CharacterWindow (сам себе)
 
 ---
 
@@ -58,4 +59,8 @@
 
 | Дата | Сессия | Изменения |
 |------|--------|-----------|
-| 2026-06-28 | #6 | Первая версия. Карта ввода собрана, план миграции утверждён, ждёт реализации в сессии #7+. |
+|| 2026-06-28 | #6 | Первая версия. Карта ввода собрана, план миграции утверждён, ждёт реализации в сессии #7+. |
+|| 2026-06-28 | #7 (Phase 1) | InputBindingsConfig + InputBindingsRuntime + SkillInputService.Update() polling (10 combat skills). |
+|| 2026-06-28 | #7 (Phase 2.1) | EscMenuWindow + KeybindingsWindow (read-only) + UIManager стек/логика. |
+|| 2026-06-28 | #7 (Phase 2.2) | KeybindingsWindow: click-to-rebind (runtime). InputBindingsRuntime: RebindAction/RebindSkill API. |
+|| 2026-06-28 | #7 (Phase 2.5 start) | NetworkPlayer: движение (WASD/Space/Shift) читается из InputBindingsConfig через IsActionHeld(). Rebind работает сразу. |

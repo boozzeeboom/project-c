@@ -16,10 +16,13 @@
 
 ---
 
-## Фаза 1 — MVP (1 сессия, ~2-3ч)
+## Фаза 1 — MVP ✅ СДЕЛАНО (сессия #7)
 
 ### Цель
 Включить 6 биндов боевых навыков (ЛКМ, ПКМ, Ctrl+ЛКМ, Ctrl+ПКМ, Shift+ЛКМ, Shift+ПКМ) через InputBindingsConfig.
+
+### Результат
+✅ Все 6 биндов работают через SkillInputService.Update() polling.
 
 ### Шаги
 
@@ -49,10 +52,20 @@
 
 ---
 
-## Фаза 2 — UI Rebind (~3-4ч, отдельная сессия)
+## Фаза 2 — UI Rebind ✅ СДЕЛАНО (сессия #7)
 
 ### Цель
-Дать игроку меню настроек: Settings UI → нажал "Изменить" → нажал клавишу → bind сохранён.
+Дать игроку меню настроек: EscMenu → [НАСТРОЙКИ] → клик на бинд → нажать клавишу → rebind.
+
+### Результат
+✅ EscMenuWindow (главное меню по Esc)  
+✅ KeybindingsWindow (окно настроек клавиш с click-to-rebind)  
+✅ InputBindingsRuntime.RebindAction / RebindSkill API  
+✅ Изменения применяются сразу (без перезапуска)
+
+### Что НЕ сделано
+❌ PlayerPrefs persistence (Phase 2.3)  
+❌ UI настройки сортировки (ActionCategory группировка уже есть)
 
 ### Шаги
 
@@ -64,6 +77,15 @@
 | 4 | `SettingsWindow.uxml/.uss/.cs` | NEW (по образцу CharacterWindow) | ~150 |
 | 5 | Кнопка `[Настройки]` в NetworkUI (главное меню) | EDIT `NetworkUI.cs` | +10 |
 | 6 | Compile + Play Mode verify | — | — |
+
+---
+
+## Фаза 2.5 — Action Bindings Polling 🟡 В ПРОЦЕССЕ (сессия #7)
+
+**Что сделано:** движение (WASD → MoveForward/Backward/Left/Right, Jump, Run) читается из `InputBindingsConfig`.
+Методы `IsActionHeld()`/`IsActionJustPressed()` в `NetworkPlayer.cs`.
+
+**Осталось перевести:** корабельные контролы, взаимодействие (E), посадка (F), CommPanel (T), F3/F4.
 
 ---
 

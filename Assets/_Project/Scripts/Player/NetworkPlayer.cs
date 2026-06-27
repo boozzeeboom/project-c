@@ -444,7 +444,7 @@ namespace ProjectC.Player
             // F — переключение режимов
             // Guard: пропускаем RPC если NGO не готов или игрок не спавнен
             // (защита от NRE в __endSendRpc при scene transition / domain reload / shutdown)
-            if (Keyboard.current.fKey.wasPressedThisFrame
+            if (IsActionJustPressed(InputBindingsConfig.GameAction.ModeSwitch)
                 && NetworkManager.Singleton != null
                 && IsSpawned)
             {
@@ -511,7 +511,7 @@ namespace ProjectC.Player
 
             // P — открыть/закрыть CharacterWindow ("P"ress / "P"rofile / "P"erson)
             // (CharacterMenu v1, 2026-06-05: docs/Character-menu/00_OVERVIEW.md §7)
-            if (Keyboard.current.pKey.wasPressedThisFrame
+            if (IsActionJustPressed(InputBindingsConfig.GameAction.OpenCharacter)
                 && NetworkManager.Singleton != null
                 && IsSpawned)
             {
@@ -520,7 +520,7 @@ namespace ProjectC.Player
             }
 
             // T-DOCK-08: T — CommPanel (Dispatch). Q10: только если пилотирует.
-            if (Keyboard.current.tKey.wasPressedThisFrame
+            if (IsActionJustPressed(InputBindingsConfig.GameAction.CommPanel)
                 && NetworkManager.Singleton != null
                 && IsSpawned)
             {
@@ -538,22 +538,22 @@ namespace ProjectC.Player
             {
                 // Управление кораблём
                 float thrust = 0;
-                if (Keyboard.current.wKey.isPressed) thrust += 1;
-                if (Keyboard.current.sKey.isPressed) thrust -= 1;
+                if (IsActionHeld(InputBindingsConfig.GameAction.ShipThrustForward)) thrust += 1;
+                if (IsActionHeld(InputBindingsConfig.GameAction.ShipThrustBackward)) thrust -= 1;
 
                 float yaw = 0;
-                if (Keyboard.current.dKey.isPressed) yaw += 1;
-                if (Keyboard.current.aKey.isPressed) yaw -= 1;
+                if (IsActionHeld(InputBindingsConfig.GameAction.ShipYawRight)) yaw += 1;
+                if (IsActionHeld(InputBindingsConfig.GameAction.ShipYawLeft)) yaw -= 1;
 
                 float pitch = 0;
                 if (Mouse.current.delta.y.ReadValue() > 1) pitch += 1;
                 if (Mouse.current.delta.y.ReadValue() < -1) pitch -= 1;
 
                 float vertical = 0;
-                if (Keyboard.current.eKey.isPressed) vertical += 1;
-                if (Keyboard.current.qKey.isPressed) vertical -= 1;
+                if (IsActionHeld(InputBindingsConfig.GameAction.ShipVerticalUp)) vertical += 1;
+                if (IsActionHeld(InputBindingsConfig.GameAction.ShipVerticalDown)) vertical -= 1;
 
-                bool boost = Keyboard.current.leftShiftKey.isPressed;
+                bool boost = IsActionHeld(InputBindingsConfig.GameAction.ShipBoost);
 
                 // Guard: пропускаем ship input если NGO/корабль не готовы
                 // (защита от NRE в __endSendRpc при scene transition / shutdown)
@@ -566,7 +566,7 @@ namespace ProjectC.Player
                 }
 
                 // E в корабле — пока ничего
-                if (Keyboard.current.eKey.wasPressedThisFrame && Keyboard.current.qKey.isPressed == false)
+                if (IsActionJustPressed(InputBindingsConfig.GameAction.Interact) && Keyboard.current.qKey.isPressed == false)
                 {
                     // Reserved for future: docking/refueling
                 }
@@ -591,7 +591,7 @@ namespace ProjectC.Player
                 ProcessMovement(_moveInput, _jumpPressed, _runPressed);
 
                 // E — подбор ИЛИ открыть рынок (если в MarketZone и рядом нет сундука)
-                if (Keyboard.current.eKey.wasPressedThisFrame)
+                if (IsActionJustPressed(InputBindingsConfig.GameAction.Interact))
                 {
                     // MetaRequirement Subsystem (R2-META-REQ-001): если рядом есть
                     // не-корабельный interactable с MetaRequirement (например, LockBox),

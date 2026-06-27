@@ -1,7 +1,7 @@
-# Phase 1.5 — Summary
+# Phase 1.5 + 2 + 2.5 — Summary
 
-> **Дата:** 2026-06-28 (сессия #7)
-> **Статус:** ✅ compile clean, reflection smoke test passed
+> **Дата:** 2026-06-28 (сессии #6 → #7)
+> **Статус:** ✅ Phase 1, 1.5, 2.1, 2.2, 2.5 — DONE. Phase 2.3 (persist), Phase 3 (InputActionAsset) — TODO.
 > **Репозиторий:** branch не закоммичен (см. `git status`)
 
 ---
@@ -19,7 +19,7 @@
 | `Assets/_Project/Scripts/Player/NetworkPlayer.cs` | EDIT | -10 / +6 | K + ЛКМ handlers закомментированы (теперь в SkillInputService) |
 | `Assets/_Project/Scripts/Core/NetworkManagerController.cs` | EDIT | +22 | `CreateInputBindingsRuntime()` auto-spawn после `CreateSkillTreeWindow()` |
 
-**Итого: +355 / -10 строк кода, 1 новый asset, 1 новая папка `Scripts/Input/`.**
+**Итого Phase 1+1.5: +355 / -10 строк кода, 1 новый asset, 1 новая папка `Scripts/Input/`.**
 
 ---
 
@@ -239,3 +239,239 @@
 | Esc | Закрывает окна |
 
 **Все старые бинды должны работать как раньше.**
+
+---
+
+# Phase 2 — UI Rebind
+
+## Что сделано (сессия #7)
+
+### Файлы созданы / изменены
+
+| Файл | Тип | LOC | Назначение |
+|------|-----|-----|------------|
+| `Assets/_Project/Scripts/UI/UIManager.cs` | EDIT | +~50 | Стек панелей, Esc → CloseTopPanel, `_escConsumedThisFrame` флаг |
+| `Assets/_Project/Scripts/UI/EscMenu/EscMenuWindow.cs` | NEW | ~150 | Главное меню по Esc с кнопкой [НАСТРОЙКИ] |
+| `Assets/_Project/Scripts/UI/Settings/KeybindingsWindow.cs` | NEW | ~250 | Read-only список всех 31 биндов + click-to-rebind |
+| `Assets/_Project/Scripts/UI/Settings/RebindPromptWindow.cs` | NEW | ~110 | Модальное окно-подсказка «Нажмите клавишу» |
+| `Assets/_Project/Resources/UI/EscMenuWindow.uxml` | NEW | ~12 | Layout: title + 1 button |
+| `Assets/_Project/Resources/UI/KeybindingsWindow.uxml` | NEW | ~14 | Layout: 2 scroll (skills + actions) |
+| `Assets/_Project/Resources/UI/RebindPromptWindow.uxml` | NEW | ~13 | Modal: title + hint + cancel hint |
+| `Assets/_Project/Resources/UI/EscMenuStyles.uss` | NEW | ~45 | Стили EscMenu (центр, размер, hover) |
+| `Assets/_Project/Resources/UI/KeybindingsWindow.uss` | NEW | ~70 | Стили списков биндов |
+| `Assets/_Project/Resources/UI/RebindPromptStyles.uss` | NEW | ~45 | Стили модального prompt (затемнение, центрирование) |
+| `Assets/_Project/Resources/UI/EscMenuPanelSettings.asset` | NEW | — | Копия CharacterPanelSettings (themeUss) |
+| `Assets/_Project/Resources/UI/KeybindingsPanelSettings.asset` | NEW | — | Копия CharacterPanelSettings (themeUss) |
+| `Assets/_Project/Resources/UI/RebindPromptPanelSettings.asset` | NEW | — | Копия CharacterPanelSettings (themeUss) |
+| `Assets/_Project/Scripts/Core/NetworkManagerController.cs` | EDIT | +~70 | CreateUIManager + CreateEscMenuWindow + CreateKeybindingsWindow |
+| `Assets/_Project/Scripts/Input/InputBindingsRuntime.cs` | EXTENDED | +~60 | RebindAction / RebindSkill / GetDisplayName API |
+
+**Итого Phase 2: +~900 строк кода, 3 новых asset'а PanelSettings, 6 новых файлов UI, 1 новый RebindPrompt.**
+
+---
+
+## Архитектура
+
+```
+InputBindingsConfig.asset (31 бинд)
+        │
+        ▼
+InputBindingsRuntime (singleton)
+        │
+        ├── SkillInputService.Update()  → combat skills (10 биндов)
+        │
+        ├── NetworkPlayer.IsActionHeld() → движение (6 биндов)
+        │
+        └── KeybindingsWindow (rebind UI)
+                │
+                ├── click row → StartListening() → RebindPromptWindow.Show()
+                │
+                ├── ApplyRebind() → Config изменён → RebindPromptWindow.Hide()
+                │
+                └── CancelListening() → RebindPromptWindow.Hide()
+
+UIManager (стек панелей)
+        ├── EscMenuWindow (главное меню)
+        └── KeybindingsWindow (настройки)
+                └── RebindPromptWindow (модалка поверх всех)
+```
+
+---
+
+## Esc-логика
+
+```
+Esc нажат
+   │
+   ├─ UIManager._openPanels.Count > 0? → CloseTopPanel (KeybindingsWindow/EscMenu)
+   │       │
+   │       └── стек пуст → EscMenu.Toggle()
+   │
+   └─ EscMenuWindow.Update() — fallback:
+           ├─ _escConsumedThisFrame = true? → return
+           ├─ Non-stack окно (CharacterWindow) видно? → return
+           └─ ничего нет → Toggle()
+```
+
+`_escConsumedThisFrame` — флаг, UIManager ставит в `true` когда закрыл стековую панель.
+EscMenuWindow проверяет — не открывать меню повторно.
+
+---
+
+## Rebind flow
+
+```
+Esc → [НАСТРОЙКИ] → клик на строку "MoveForward"
+        │
+        ▼
+RebindPromptWindow.Show("Движение вперёд")
+        │
+        ├─ окно "Нажмите клавишу для переназначения"
+        │
+        ├─ Пользователь нажимает [W] / [LMB] / любую клавишу
+        │       │
+        │       ▼
+        │   ApplyRebind(state, key, mouseButtonRaw)
+        │       │
+        │       ├── InputBindingsRuntime.RebindAction/MoveForward
+        │       ├── RebuildLists() — обновляет display в окне
+        │       └── RebindPromptWindow.Hide()
+        │
+        └─ Esc → CancelListening()
+                │
+                ├── _listeningFor = null
+                ├── RebuildLists()
+                └── RebindPromptWindow.Hide()
+```
+
+---
+
+## Verification
+
+**Compile clean:** 0 CS errors (verified через MCP `read_console` filter `error CS`).
+
+**Reflection smoke test (сессия #7):**
+- `EscMenuWindow` загружен ✅
+- `KeybindingsWindow` загружен ✅
+- `RebindPromptWindow` загружен ✅
+- `UIManager.Instance` создаётся ✅
+- `SkillInputService.Update()` присутствует ✅
+
+**Runtime verified (по отчётам пользователя):**
+- EscMenu открывается по Esc ✅
+- Кнопка [НАСТРОЙКИ] → KeybindingsWindow ✅
+- Клик на строку → RebindPromptWindow с «Нажмите клавишу» ✅
+- Клавиша → rebind применяется мгновенно ✅
+- Движение через Config работает (WASD rebindable) ✅
+
+---
+
+# Phase 2.5 — Action Bindings (начало)
+
+## Цель
+Заменить хардкод `Keyboard.current.wKey.isPressed` в NetworkPlayer.Update на чтение из InputBindingsConfig.
+Сделано для движения (WASD/Space/Shift). Остальное — отдельные сессии.
+
+## Что сделано
+
+### NetworkPlayer: новые helpers
+
+```csharp
+private bool IsActionHeld(InputBindingsConfig.GameAction action)
+{
+    // читает Config, проверяет mouseButtonRaw (1/2/3) и key (Key.W/Key.Space/etc)
+}
+
+private bool IsActionJustPressed(InputBindingsConfig.GameAction action)
+{
+    // то же но wasPressedThisFrame для jump
+}
+```
+
+### Заменено в Update()
+
+| Действие | Было | Стало |
+|----------|------|-------|
+| MoveForward | `Keyboard.current.wKey.isPressed` | `IsActionHeld(MoveForward)` |
+| MoveBackward | `Keyboard.current.sKey.isPressed` | `IsActionHeld(MoveBackward)` |
+| MoveLeft | `Keyboard.current.aKey.isPressed` | `IsActionHeld(MoveLeft)` |
+| MoveRight | `Keyboard.current.dKey.isPressed` | `IsActionHeld(MoveRight)` |
+| Jump | `Keyboard.current.spaceKey.wasPressedThisFrame` | `IsActionJustPressed(Jump)` |
+| Run | `Keyboard.current.leftShiftKey.isPressed` | `IsActionHeld(Run)` |
+
+### НЕ сделано (Phase 2.5+)
+
+| Действие | Файл |
+|----------|------|
+| Interact (E) | NetworkPlayer.Update (~str 593-616) |
+| Board (F) | NetworkPlayer.Update (~str 446-509) |
+| CommPanel (T) | NetworkUI |
+| Ship controls | ShipController / ShipInputReader |
+
+**Оставлены хардкод** — чтобы не сломать работу в Play Mode.
+
+---
+
+# Phase 3 — InputActionAsset (опционально)
+
+## Цель
+Перейти от low-level `Keyboard.current.*` на полноценные Input Actions с rebinding support из коробки.
+Позволяет:
+- Complex bindings (combo chains, double-tap, hold-for-X-seconds)
+- Built-in UI rebinding через `InputActionRebindingExtension`
+- Hardware-agnostic (gamepad/touch/keyboard автоматически)
+
+## Когда делать
+
+**НЕ срочно.** Текущий InputBindingsConfig + RebindPromptWindow покрывает 99% случаев.
+Если понадобятся complex bindings — тогда Phase 3.
+
+## Что нужно будет сделать
+
+1. Создать `Assets/_Project/Input/ProjectC.inputactions` asset
+2. Определить Action Map: "Player" + "UI" + "Ship"
+3. Добавить bindings для каждого GameAction (MoveForward → `<Keyboard>/w` + `<Mouse>/leftButton` + ...)
+4. Заменить `IsActionHeld()` в NetworkPlayer на чтение из `PlayerInput.actions["Move"]`
+5. Заменить `RebindAction()` в InputBindingsRuntime на `InputActionRebindingExtension.PerformInteractiveRebinding()`
+6. Удалить InputBindingsConfig (Input Actions становятся источником правды)
+7. Сохранение: `InputActionAsset.SaveBindingOverridesAsJson()` → PlayerPrefs
+
+## Трудозатраты
+
+**~5-8 часов** на полный переход + тестирование.
+
+**Риски:**
+- NetworkPlayer.Update много мест с чтением клавиш — нужно аккуратно мигрировать
+- SkillInputService тоже использует polling — переход на events
+- Возможны регрессии в combat skills (10 биндов на ЛКМ/ПКМ/Ctrl/Shift/1-4)
+
+## Альтернатива (более быстрый вариант)
+
+**Phase 2.5 + 2.3 (PlayerPrefs):** дописать хардкод→Config для остальных клавиш (E, F, T, Ship), сохранять rebind в PlayerPrefs.
+Это **~2-3 часа** и покроет 95% случаев.
+
+---
+
+# Known Issues
+
+| Issue | Файл | Приоритет |
+|-------|------|-----------|
+| **BUG-001:** Esc после CharacterWindow → открывает EscMenu | `docs/UI/BUGS_PHASE_2.md` | Medium |
+| Rebind не сохраняется между сессиями | `InputBindingsRuntime.cs` | Medium (Phase 2.3) |
+| Interact/Board/CommPanel — хардкод | `NetworkPlayer.cs`, `NetworkUI.cs` | Low (Phase 2.5+) |
+| Ship controls — хардкод | `ShipController.cs` | Low (Phase 2.5+) |
+| PlayerInputReader — мёртвый код | `Player/PlayerInputReader.cs` | Cleanup |
+| Cursor не восстанавливается после KeybindingsWindow | `KeybindingsWindow.cs` Hide() | Cosmetic |
+
+---
+
+# Next Steps
+
+| # | Действие | Приоритет | Время |
+|---|----------|-----------|-------|
+| 1 | Phase 2.3: PlayerPrefs persistence | 🔥 High | 1-2h |
+| 2 | BUG-001 fix (Esc + CharacterWindow) | 🟡 Medium | 1-2h |
+| 3 | Phase 2.5: перевести Interact/Board/CommPanel на Config | 🟡 Medium | 2-3h |
+| 4 | Phase 2.5: Ship controls через Config | 🟢 Low | 2-3h |
+| 5 | Phase 3: InputActionAsset (если понадобится) | ⚪ Optional | 5-8h |
+| 6 | Удалить PlayerInputReader (мёртвый код) | 🟢 Low | 30min |

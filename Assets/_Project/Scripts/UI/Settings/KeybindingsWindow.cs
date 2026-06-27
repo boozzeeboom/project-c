@@ -36,6 +36,7 @@ namespace ProjectC.UI.Settings
         public void EnsureBuilt()
         {
             if (_built) return;
+            if (_doc == null) _doc = GetComponent<UIDocument>();
             if (_doc == null || _doc.rootVisualElement == null) return;
 
             if (kbUxml == null) kbUxml = Resources.Load<VisualTreeAsset>("UI/KeybindingsWindow");
@@ -52,6 +53,46 @@ namespace ProjectC.UI.Settings
 
             _skillListScroll = _root.Q<ScrollView>("skill-list-scroll");
             _actionListScroll = _root.Q<ScrollView>("action-list-scroll");
+
+            // Кнопки header
+            var saveBtn = _root.Q<Button>("save-btn");
+            if (saveBtn != null)
+            {
+                saveBtn.clicked += () =>
+                {
+                    if (InputBindingsRuntime.Instance != null)
+                    {
+                        InputBindingsRuntime.Instance.Save();
+                        Debug.Log("[KeybindingsWindow] Manual Save → PlayerPrefs");
+                    }
+                };
+            }
+            var reloadBtn = _root.Q<Button>("reload-btn");
+            if (reloadBtn != null)
+            {
+                reloadBtn.clicked += () =>
+                {
+                    if (InputBindingsRuntime.Instance != null)
+                    {
+                        InputBindingsRuntime.Instance.Load();
+                        RebuildLists();
+                        Debug.Log("[KeybindingsWindow] Manual Reload from PlayerPrefs");
+                    }
+                };
+            }
+            var resetBtn = _root.Q<Button>("reset-defaults-btn");
+            if (resetBtn != null)
+            {
+                resetBtn.clicked += () =>
+                {
+                    if (InputBindingsRuntime.Instance != null)
+                    {
+                        InputBindingsRuntime.Instance.ResetToDefaults();
+                        RebuildLists();
+                        Debug.Log("[KeybindingsWindow] Reset to defaults applied");
+                    }
+                };
+            }
 
             _built = true;
             SetOpen(false);

@@ -1,5 +1,5 @@
-/* KeybindingsWindow.uss — Phase 2.1
-   Read-only список биндов из InputBindingsConfig.
+/* KeybindingsWindow.uss — Phase 2.3
+   Read-only список биндов + [СБРОСИТЬ] кнопка в header.
 */
 
 .kb-root {
@@ -21,25 +21,82 @@
     flex-direction: column !important;
 }
 
-.kb-title {
-    color: rgb(220, 220, 220) !important;
-    font-size: 20px !important;
-    -unity-font-style: bold !important;
-    -unity-text-align: middle-center !important;
+/* HEADER: row с title слева + 3 кнопки справа */
+.kb-header {
+    flex-direction: row !important;
+    justify-content: space-between !important;
+    align-items: center !important;
     margin-bottom: 12px !important;
+    flex-shrink: 0 !important;
+}
+
+.kb-header-buttons {
+    flex-direction: row !important;
+    flex-shrink: 0 !important;
+}
+
+.kb-action-btn {
+    height: 28px !important;
+    min-width: 64px !important;
+    border-width: 1px !important;
+    border-radius: 4px !important;
+    padding: 0 8px !important;
+    margin-left: 6px !important;
+    font-size: 12px !important;
+    -unity-font-style: bold !important;
+}
+
+.kb-save-btn {
+    background-color: rgb(50, 80, 60) !important;
+    color: rgb(200, 220, 200) !important;
+    border-color: rgb(80, 130, 90) !important;
+}
+.kb-save-btn:hover {
+    background-color: rgb(70, 110, 80) !important;
+}
+
+.kb-reload-btn {
+    background-color: rgb(50, 60, 90) !important;
+    color: rgb(200, 210, 240) !important;
+    border-color: rgb(80, 100, 140) !important;
+}
+.kb-reload-btn:hover {
+    background-color: rgb(70, 80, 120) !important;
+}
+
+.kb-reset-btn {
+    background-color: rgb(80, 60, 50) !important;
+    color: rgb(220, 200, 180) !important;
+    border-color: rgb(140, 100, 80) !important;
+}
+.kb-reset-btn:hover {
+    background-color: rgb(120, 80, 60) !important;
+}
+
+.kb-columns {
+    flex-direction: row !important;
+    flex-grow: 1 !important;
+    flex-shrink: 1 !important;
+}
+
+.kb-column {
+    flex-grow: 1 !important;
+    flex-basis: 0 !important;
+    flex-direction: column !important;
+    margin: 0 4px !important;
 }
 
 .kb-section-title {
     color: rgb(180, 200, 240) !important;
     font-size: 14px !important;
     -unity-font-style: bold !important;
-    margin-top: 8px !important;
+    margin-top: 4px !important;
     margin-bottom: 4px !important;
+    flex-shrink: 0 !important;
 }
 
 .kb-scroll {
     flex-grow: 1 !important;
-    max-height: 200px !important;
     background-color: rgba(8, 12, 20, 0.6) !important;
     border-width: 1px !important;
     border-color: rgb(50, 60, 90) !important;
@@ -48,19 +105,28 @@
     margin-bottom: 8px !important;
 }
 
-.kb-cat-header {
-    color: rgb(160, 180, 200) !important;
-    font-size: 12px !important;
-    -unity-font-style: italic !important;
-    margin-top: 6px !important;
+.kb-header-buttons {
+    flex-direction: row !important;
+    flex-shrink: 0 !important;
 }
 
-.kb-row {
+.kb-title {
+    color: rgb(220, 220, 220) !important;
+    font-size: 20px !important;
+    -unity-font-style: bold !important;
+    -unity-text-align: middle-center !important;
+}
+
+.kb-action-btn {
     flex-direction: row !important;
     justify-content: space-between !important;
     padding: 4px 8px !important;
     border-width: 0 0 1px 0 !important;
     border-color: rgba(60, 70, 90, 0.5) !important;
+}
+
+.kb-row:hover {
+    background-color: rgba(60, 80, 120, 0.3) !important;
 }
 
 .kb-row-action {
@@ -72,4 +138,12 @@
     color: rgb(140, 200, 255) !important;
     font-size: 13px !important;
     -unity-font-style: bold !important;
+}
+
+.kb-footer {
+    color: rgb(140, 140, 150) !important;
+    font-size: 11px !important;
+    -unity-text-align: middle-center !important;
+    margin-top: 8px !important;
+    flex-shrink: 0 !important;
 }

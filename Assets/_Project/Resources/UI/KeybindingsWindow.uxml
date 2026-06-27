@@ -3,11 +3,25 @@
     <Style src="UI/KeybindingsWindow" />
     <ui:VisualElement name="keybindings-root" class="kb-root">
         <ui:VisualElement name="kb-window" class="kb-window">
-            <ui:Label name="kb-title" text="НАСТРОЙКИ КЛАВИШ" class="kb-title" />
-            <ui:Label text="Боевые навыки" class="kb-section-title" />
-            <ui:ScrollView name="skill-list-scroll" class="kb-scroll" />
-            <ui:Label text="Действия" class="kb-section-title" />
-            <ui:ScrollView name="action-list-scroll" class="kb-scroll" />
+            <ui:VisualElement class="kb-header">
+                <ui:Label text="Настройки клавиш" class="kb-title" />
+                <ui:VisualElement class="kb-header-buttons">
+                    <ui:Button name="save-btn" text="СОХР" tooltip="Сохранить в PlayerPrefs" class="kb-action-btn kb-save-btn" />
+                    <ui:Button name="reload-btn" text="ЗАГР" tooltip="Перезагрузить из PlayerPrefs" class="kb-action-btn kb-reload-btn" />
+                    <ui:Button name="reset-defaults-btn" text="СБРОС" tooltip="Сбросить к дефолтам" class="kb-action-btn kb-reset-btn" />
+                </ui:VisualElement>
+            </ui:VisualElement>
+            <ui:VisualElement class="kb-columns">
+                <ui:VisualElement class="kb-column">
+                    <ui:Label text="Боевые навыки" class="kb-section-title" />
+                    <ui:ScrollView name="skill-list-scroll" class="kb-scroll" />
+                </ui:VisualElement>
+                <ui:VisualElement class="kb-column">
+                    <ui:Label text="Действия" class="kb-section-title" />
+                    <ui:ScrollView name="action-list-scroll" class="kb-scroll" />
+                </ui:VisualElement>
+            </ui:VisualElement>
+            <ui:Label text="Сохранение автоматическое. Кликните строку чтобы изменить клавишу." class="kb-footer" />
         </ui:VisualElement>
     </ui:VisualElement>
 </ui:UXML>

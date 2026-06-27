@@ -16,10 +16,12 @@
 // Design: docs/Character/Skills/AUDIT_2026-06-26_CURRENT_STATE_AND_NEXT_STEPS.md §3.O-7 + §4.
 
 using UnityEngine;
+using UnityEngine.InputSystem;
 using Unity.Netcode;
 using ProjectC.Combat;
 using ProjectC.Combat.Core;
 using ProjectC.Player;  // NetworkPlayer
+using ProjectC.Input;  // InputBindingsRuntime
 
 namespace ProjectC.Skills
 {
@@ -92,6 +94,78 @@ namespace ProjectC.Skills
             TargetFinder = targetFinder;
             if (owner != null) _animator = owner.GetComponentInChildren<Animator>();
         }
+
+        // ==================== INPUT POLLING (Phase 1) ====================
+        //
+        // Update() опрашивает InputBindingsRuntime.Config.combatSkills и триггерит TryActivate.
+        // Это ЗАМЕНЯЕТ прямые ЛКМ/K хендлеры в NetworkPlayer.Update (см. docs/Character/input-system/40_MIGRATION_PLAN.md).
+        //
+        // Приоритет: первый матч в списке (Primary идёт первым → ЛКМ без модификатора → break).
+
+        private void Update()
+        {
+            // 1) Owner-only guard.
+            if (_ownerPlayer == null || !_ownerPlayer.IsSpawned) return;
+
+            // 2) Получить binding config (может быть null если InputBindingsRuntime ещё не загрузился).
+            var runtime = InputBindingsRuntime.Instance;
+            if (runtime == null || runtime.Config == null) return;
+            var cfg = runtime.Config;
+
+            // 3) Poll each binding; fire TryActivate on first match.
+            for (int i = 0; i < cfg.combatSkills.Count; i++)
+            {
+                var b = cfg.combatSkills[i];
+                if (IsBindingPressed(b))
+                {
+                    TryActivate(b.slot);
+                    break; // один слот за кадр — приоритет первого матча в списке
+                }
+            }
+        }
+
+        /// <summary>
+        /// Проверить, нажата ли комбинация в этом кадре.
+        /// mouseButtonRaw: 0=None, 1=LeftMouse, 2=RightMouse, 3=MiddleMouse.
+        /// Если модификатор задан — он должен быть зажат (isPressed, не wasPressed).
+        /// </summary>
+        private bool IsBindingPressed(InputBindingsConfig.SkillKeyBinding b)
+        {
+            // onlyOnFoot: если в корабле — игнорируем (для Q/R, см. Q-INP-11).
+            if (b.onlyOnFoot && _ownerPlayer != null && _ownerPlayer.IsInShip) return false;
+
+            var mouse = Mouse.current;
+            var kb = Keyboard.current;
+
+            // Модификатор (если задан — должен быть зажат прямо сейчас).
+            if (b.modifier != Key.None)
+            {
+                if (kb == null || !kb[b.modifier].isPressed) return false;
+            }
+
+            // Кнопка мыши (wasPressedThisFrame — только момент клика).
+            if (b.mouseButtonRaw != 0 && mouse != null)
+            {
+                bool mousePressed = false;
+                switch (b.mouseButtonRaw)
+                {
+                    case 1: mousePressed = mouse.leftButton.wasPressedThisFrame; break;
+                    case 2: mousePressed = mouse.rightButton.wasPressedThisFrame; break;
+                    case 3: mousePressed = mouse.middleButton.wasPressedThisFrame; break;
+                }
+                if (mousePressed) return true;
+            }
+
+            // Fallback клавиша (wasPressedThisFrame).
+            if (b.fallbackKey != Key.None && kb != null)
+            {
+                if (kb[b.fallbackKey].wasPressedThisFrame) return true;
+            }
+
+            return false;
+        }
+
+        // ==================== END INPUT POLLING ====================
 
         // === Public API ===
 

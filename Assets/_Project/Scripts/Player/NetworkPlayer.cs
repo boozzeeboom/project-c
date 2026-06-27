@@ -617,19 +617,14 @@ namespace ProjectC.Player
 
                 // T-RTC06 (DEBUG): K — debug-attack nearest NPC. ВРЕМЕННЫЙ (только для verify).
                 // Найти ближайший NpcTarget в радиусе 5м → RequestAttackRpc.
-                if (Keyboard.current.kKey.wasPressedThisFrame
-                    && NetworkManager.Singleton != null
-                    && IsSpawned
-                    && CombatServer.Instance != null)
-                {
-                    // T-INP-02: K-fallback для primary attack. Делегирует в SkillInputService.
-                    // ЛКМ (mouse 0) обрабатывается в Patch 5.
-                    // Animation trigger тоже делает SkillInputService.TryActivate.
-                    HandlePrimaryAttackInput();
-                }
+                // T-INP-02: K-fallback для primary attack — теперь обрабатывается в SkillInputService.Update
+                // (через InputBindingsConfig.fallbackKey=K для Primary slot). См. docs/Character/input-system/40_MIGRATION_PLAN.md.
+                // ЛКМ (mouse 0) тоже обрабатывается там же.
+                // Оставлен ТОЛЬКО legacy DebugAttackNearestNpc для обратной совместимости тестов.
 
-                // T-INP-03: ЛКМ (Mouse 0) как primary attack — parallel к K-fallback.
-                // Guard: только owner, IsSpawned, CombatServer жив.
+                // T-INP-03: ЛКМ (Mouse 0) как primary attack — тоже обрабатывается в SkillInputService.Update.
+                // Старый путь оставлен закомментированным для reference.
+                /*
                 if (Mouse.current != null && Mouse.current.leftButton.wasPressedThisFrame
                     && NetworkManager.Singleton != null
                     && IsSpawned
@@ -637,6 +632,7 @@ namespace ProjectC.Player
                 {
                     HandlePrimaryAttackInput();
                 }
+                */
 
                 FindNearestInteractable();
                 

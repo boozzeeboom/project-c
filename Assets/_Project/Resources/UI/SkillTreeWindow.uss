@@ -80,7 +80,7 @@
     min-height: 0 !important;
 }
 .stw-list-col {
-    width: 40% !important;
+    width: 80% !important;
     flex-direction: column !important;
     margin-right: 4px !important;
     flex-shrink: 0 !important;

@@ -10,19 +10,17 @@ namespace ProjectC.UI
     /// - Управляет приоритетами ввода (верхняя панель получает ввод)
     /// - Unified close (Escape закрывает верхнюю панель)
     /// - Cursor lock/unlock автоматически
-    /// 
-    /// Esc-handler: только для панелей в стеке (EscMenu, KeybindingsWindow).
-    /// Окна вне стека (CharacterWindow) обрабатывают Esc сами.
-    /// 
+    ///
+    /// DefaultExecutionOrder = -200 — Update бежит ДО CharacterWindow.
+    /// Это позволяет UIManager первым проверить Esc и решить:
+    /// открыто ли CharacterWindow (через IsVisible ДО того, как он сам обработает Esc).
+    ///
     /// Спринт 3: Задачи 3.2 + 3.6
     /// </summary>
+    [DefaultExecutionOrder(-200)]
     public class UIManager : MonoBehaviour
     {
         public static UIManager Instance { get; private set; }
-
-        // Флаг — на этом кадре UIManager уже обработал Esc.
-        // EscMenuWindow проверяет его, чтобы не открывать меню на том же кадре.
-        internal bool _escConsumedThisFrame = false;
 
         [Header("Input Settings")]
         [Tooltip("Клавиша для закрытия верхней панели")]
@@ -89,32 +87,57 @@ namespace ProjectC.UI
 
         private void Update()
         {
-            // Сбрасываем флаг в начале каждого кадра.
-            _escConsumedThisFrame = false;
+            var kb = UnityEngine.InputSystem.Keyboard.current;
+            if (kb != null && kb.escapeKey.wasPressedThisFrame)
+            {
+                Debug.Log($"[UIManager] Esc detected in Update. _openPanels={_openPanels.Count}");
+            }
             HandleGlobalInput();
         }
 
         /// <summary>
-        /// Обработка Esc. Только для стековых панелей (EscMenu, KeybindingsWindow).
-        /// Non-stack окна (CharacterWindow) обрабатывают Esc сами.
+        /// Проверка CharacterWindow напрямую (без зависимости от порядка Update'ов).
+        /// </summary>
+        private static bool IsCharacterWindowVisible()
+        {
+            var cw = ProjectC.UI.Client.CharacterWindow.Instance;
+            if (cw == null) return false;
+            try { return cw.IsVisible(); }
+            catch { return false; }
+        }
+
+        /// <summary>
+        /// Единственный Esc-handler в проекте.
+        /// 1. Стек UIManager не пуст → CloseTopPanel (EscMenu, KeybindingsWindow)
+        /// 2. CharacterWindow видна → НИЧЕГО (она сама обработает Esc в своём Update)
+        /// 3. Ничего не открыто → Toggle EscMenu
         /// </summary>
         private void HandleGlobalInput()
         {
-            if (Keyboard.current == null) return;
-            var key = KeyCodeToInputKey(CloseKey);
-            if (key == UnityEngine.InputSystem.Key.None) return;
-            if (!Keyboard.current[key].wasPressedThisFrame) return;
+            var kb = UnityEngine.InputSystem.Keyboard.current;
+            if (kb == null) return;
+            if (!kb.escapeKey.wasPressedThisFrame) return;
 
+            // 1. Стековая панель → закрыть
             if (_openPanels.Count > 0)
             {
-                Debug.Log($"[UIManager] CloseTopPanel: {_openPanels[0].PanelName}");
                 CloseTopPanel();
-                _escConsumedThisFrame = true;
                 return;
             }
 
-            // Non-stack окна — не наше дело (они сами обработают Esc).
-            // EscMenuWindow.Update() откроет меню если ничего не открыто.
+            // 2. CharacterWindow видна → НЕ трогаем, она закроется сама.
+            if (IsCharacterWindowVisible())
+            {
+                Debug.Log("[UIManager] Esc: CharacterWindow visible → nothing");
+                return;
+            }
+
+            // 3. Открыть/закрыть EscMenu
+            if (ProjectC.UI.EscMenu.EscMenuWindow.Instance != null)
+            {
+                Debug.Log($"[UIManager] Esc: toggle EscMenu (currently open={ProjectC.UI.EscMenu.EscMenuWindow.Instance.IsOpen()})");
+                ProjectC.UI.EscMenu.EscMenuWindow.Instance.Toggle();
+            }
         }
 
         /// <summary>

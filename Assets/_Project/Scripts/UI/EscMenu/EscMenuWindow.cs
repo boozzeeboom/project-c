@@ -82,34 +82,10 @@ namespace ProjectC.UI.EscMenu
 
         public bool IsOpen() => _built && _root != null && _root.style.display.value == DisplayStyle.Flex;
 
-        private void Update()
-        {
-            var kb = Keyboard.current;
-            if (kb == null || !kb.escapeKey.wasPressedThisFrame) return;
-
-            // Если UIManager только что закрыл стековую панель — не мешаем.
-            if (UIManager.Instance != null && UIManager.Instance._escConsumedThisFrame) return;
-
-            // Всё остальное — просто Toggle.
-            // Если CharacterWindow была открыта, она уже закрылась в своём Update (или закроется).
-            // Toggle() сам проверит: если меню открыто → закроет, если закрыто → откроет.
-            Toggle();
-        }
-
-        private void LateUpdate()
-        {
-            _externalWasVisible = IsAnyExternalWindowOpen();
-        }
-
-        private bool _externalWasVisible = false;
-
-        private static bool IsAnyExternalWindowOpen()
-        {
-            if (ProjectC.UI.Client.CharacterWindow.Instance != null
-                && ProjectC.UI.Client.CharacterWindow.Instance.IsVisible())
-                return true;
-            return false;
-        }
+        // Esc-handler полностью удалён отсюда.
+        // UIManager.HandleGlobalInput сам открывает меню через Toggle()
+        // когда _openPanels пуст и CharacterWindow не видна.
+        // Это убирает циклическую проблему с порядком Update'ов.
 
         private void InitSettingsButton()
         {

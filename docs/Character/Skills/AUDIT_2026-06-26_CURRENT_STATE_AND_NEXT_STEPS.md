@@ -564,3 +564,134 @@ ls Assets/_Project/Resources/Skills/Skill_*.asset | wc -l
 | Дата | Автор | Изменения |
 |---|---|---|
 | 2026-06-26 | Mavis (аудит) | Первая версия. Read-only аудит состояния. Зафиксированы O-1..O-8. Roadmap сессий #1..#12+. |
+| 2026-06-28 | Mavis (отчёт) | §7 добавлен: SkillTreeWindow overlay + 2D граф навыков реализованы. §4, §5 обновлены статусы. |
+
+---
+
+## 7. Реализовано (сессии #4-5) — SkillTreeWindow overlay + 2D граф навыков
+
+> **Сессии:** #4 (SkillTreeWindow), #5 (2D граф)
+> **Дизайн:** `Battle/60_SKILL_TREE_WINDOW_DESIGN.md`, `Battle/70_SKILL_TREE_2D_GRAPH.md`
+> **Дата:** 2026-06-28
+
+### 7.1 SkillTreeWindow — полноценное overlay-окно для всех навыков
+
+**Файлы:**
+
+| Файл | LOC | Назначение |
+|---|---|---|
+| `Assets/_Project/Scripts/Skills/UI/SkillTreeWindow.cs` | ~640 | Instance-синглтон, Show/Hide, EnsureBuilt, 4 фикса UI_TOOLKIT_GUIDE, Esc-handler, RefreshAllSkillsList, OnSkillSelected, UpdateDetailPanel, InitFilterChips, InitSearchField, InitActionButtons |
+| `Assets/_Project/Resources/UI/SkillTreeWindow.uxml` | ~70 | Layout: top (title+6 chips+search) + middle (left scroll-list + right detail panel) + bottom (close) |
+| `Assets/_Project/UI/Resources/UI/SkillTreePanelSettings.asset` | — | PanelSettings (копия CharacterPanelSettings, sortingOrder=300) |
+| `Assets/_Project/Resources/UI/SkillTreeWindow.uss` | ~300 | Стили: chips/active, search, scroll, detail panel, btn-learn/forget/close |
+
+**Детали реализации:**
+- **Стандартный UIDocument singleton** (как CharacterWindow), auto-spawn через `NetworkManagerController.CreateSkillTreeWindow()`
+- **6 chip-фильтров** (Все/Melee/Ranged/Explosives/Antigrav/Defense) — фильтрация по subtree prefix
+- **Поиск** по skillId, displayName, effect type name, floatValue, multiplier
+- **Детальная панель** при клике: name, description, effects (formatted как `+STR+2×1.15`), cost, INT tier, prereq (кто нужен), dependents (кого откроет)
+- **Кнопки Изучить/Забыть** — inline toggle display через C#, не USS `!important`
+- **Авто-позиционирование**: USS `left: 50%; translate: -50% 0; width: 760px`
+- **Combat-only кнопка** в CharacterWindow: `[ИЗУЧИТЬ НАВЫК]` открывает SkillTreeWindow
+- **CharacterWindow combat-блок** очищен: только LEARNED навыки без action-кнопок
+
+**UI_TOOLKIT_GUIDE фиксы применены:**
+- `pickingMode=Position/Ignore` (FIX 1)
+- `Cursor.lockState` переключение (FIX 2)
+- `MarkDirtyRepaint` + `schedule.Execute(...).StartingIn(50)` (FIX 3)
+- `CloneTree()` + `Clear()` + `Add(_rootContainer)` (FIX 4)
+- Esc-handler ДО NetworkManager guard
+
+### 7.2 2D граф навыков (Painter2D)
+
+**Архитектура:**
+
+```
+SkillTreeWindow
+├── ScrollView ("tree-canvas-scroll")     ← native scroll + pan
+│   └── VisualElement ("tree-content")     ← 2000×2000 px canvas
+│       ├── [Node: BasicSword]            ← position: absolute по treeX/treeY
+│       ├── [Node: GreatSword]            ← с state-рамкой (зел/жёлт/сер)
+│       ├── [Node: ...]
+│       └── generateVisualContent         ← Painter2D линии prereq→навык
+```
+
+**Ключевые особенности:**
+- **Canvas 2000×2000 px** с абсолютным позиционированием узлов по `treeX/treeY` (scale ×2.5 + padding)
+- **Узлы** = VisualElement 160×36, state-цвета рамки (зелёный ✅ / жёлтый ○ / серый ✕)
+- **Линии** через `generateVisualContent` → `ctx.painter2D` (Unity 6 API):
+  - lineWidth=2, цвет по state родительского навыка
+  - Стрелка от prereq → skill (MoveTo → LineTo)
+  - Рисуются относительно resolvedStyle узлов
+- **Filter + Search** скрывают несоответствующие узлы и их рёбра
+- **Pan/Scroll**: через ScrollView (native UI Toolkit)
+- **Клик на узел** → SelectSkill(skillId) → обновление детальной панели
+- **Выбранный узел**: выделен классом `.tree-node-selected` (яркая рамка 3px)
+
+**Стили узлов:**
+
+```css
+.tree-node { position: absolute; width: 160px; min-height: 36px; ... }
+.tree-node-learned    { border-color: rgb(80, 200, 120); }
+.tree-node-available  { border-color: rgb(180, 200, 60); }
+.tree-node-locked     { border-color: rgba(100, 100, 110, 0.5); }
+.tree-node-selected   { border-color: rgb(100, 180, 255); border-width: 3px; }
+```
+
+### 7.3 Что было исправлено/улучшено по ходу
+
+| № | Проблема | Фикс | Дата |
+|---|---|---|---|
+| 1 | `_rootContainer` full-screen синий фон закрывал весь экран | Убран `_rootContainer.style.backgroundColor` (был debug fallback) | 2026-06-28 |
+| 2 | `right: 0` / `bottom: 0` из `EnsureBuilt()` конфликтовали с `left: 50%` | Оставлено как есть (USS `translate` переопределяет) | 2026-06-28 |
+| 3 | Размер окна был нестабильным | USS `width: 760px` + `left: 50%; translate: -50% 0` | 2026-06-28 |
+
+### 7.4 Открыто / не реализовано
+
+- ❌ `SkillNodeConfig.CombatDiscipline` поле (T-CB02) — фильтр по substring prefix
+- ❌ `SkillEffect.Type` runtime handler (T-CB07) — enum расширен, handler no-op
+- ❌ Drag-to-slot (skill → slot bar) — Phase 2
+- ❌ Toasts на learn/forget — пока Debug.Log
+- ❌ Полноценная анимация переходов между узлами — Phase 2
+- ❌ Узлы с иконками дисциплин — сейчас только текст
+
+### 7.5 Текущее состояние в Play Mode
+
+1. P → CharacterWindow → "Изученные боевые навыки" (только LEARNED) + кнопка `[ИЗУЧИТЬ НАВЫК]`
+2. Клик → открывается SkillTreeWindow (760px centered, cursor unlock)
+3. 6 chip-фильтров + поиск + граф слева + детальная панель справа
+4. Клик на узел → детали
+5. Изучить/Забыть — работают через reflection RPC
+
+---
+
+**Update to §4 (Next steps — originally from audit §4):**
+
+Из §4 «Что предлагаю делать следующим»:
+- ✅ Шаги #1-4 (SkillInputService + ЛКМ) — сделаны в сессии #2
+- ✅ Шаг #5 (SkillEffect.Type расширение) — сделано (T-CB01)
+- ✅ Шаг #6 (EquipmentServer warning) — сделано
+- ✅ Шаг #7 (Combat фильтр + SkillTreeWindow) — сделано (+ 2D граф)
+- ✅ Шаг #8 (документ LOG) — сделан
+
+**Что теперь предлагаю делать вместо §4:**
+
+| # | Шаг | Почему |
+|---|---|---|
+| 1 | Добавить `SkillNodeConfig.CombatDiscipline` поле (T-CB02) | Фильтр будет точным, а не по substring |
+| 2 | Toasts на learn/forget | UX без Debug.Log |
+| 3 | `ApplySkillEffects` runtime handler для новых Type (T-CB07) | Proficiency gate начнёт работать |
+| 4 | Raycast targeting вместо nearest NpcTarget | Для ranged/aim |
+| 5 | Удалить `DebugAttackNearestNpc` | Чистка tech-debt |
+
+---
+
+**Update to §5 (Roadmap status):**
+
+| Сессия | Тема | Статус |
+|---|---|---|
+| #1 (аудит) | Аудит | ✅ DONE |
+| #2 | SkillInputService + ЛКМ + T-CB* | ✅ DONE |
+| #3 | Battle Skills UI (CharacterWindow) | ✅ DONE |
+| #4 | SkillTreeWindow overlay | ✅ DONE |
+| #5 | 2D граф навыков (Painter2D) | ✅ DONE |

@@ -1,6 +1,6 @@
 # Skill Tree 2D Graph — Implementation Plan
 
-> **Дата:** 2026-06-26 (сессия #5)
+> **Дата:** 2026-06-26 (сессия #5) → **РЕАЛИЗОВАНО 2026-06-28**
 > **База:** SkillTreeWindow overlay, docs/Character/Skills/Battle/20_SKILL_TREES.md
 
 ## Архитектура

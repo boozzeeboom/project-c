@@ -1,6 +1,6 @@
 # SkillTreeWindow — Design & Implementation Plan
 
-> **Дата:** 2026-06-26 (сессия #4)
+> **Дата:** 2026-06-26 (сессия #4) → **РЕАЛИЗОВАНО 2026-06-28**
 > **Подсистема:** Character Progression → Skill Tree UI (overlay)
 > **База:** `docs/Character/Skills/AUDIT_2026-06-26_CURRENT_STATE_AND_NEXT_STEPS.md`, `docs/Character/Skills/Battle/50_UI_DESIGN_PLAN.md`
 > **Проблема:** текущий CharacterWindow → "Боевые навыки" — перегружен и нефункционален: узлы в маленькой колонке 40%, prereq-строки и кнопки [Изучить]/[Забыть] не помещаются, фильтры визуально есть но семантика неочевидна. Игрок не может понять что даёт навык и зачем его учить.

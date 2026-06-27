@@ -233,4 +233,43 @@ SkillTreeWindow: FOUND
 
 | Дата | Сессия | Изменения |
 |---|---|---|
-| 2026-06-26 | #2 (эта) | Первая пачка из 8 шагов. SkillInputService + ЛКМ/K-attack unified flow + SkillEffect.Type expansion + warning-only proficiency + combat-filter API. Все 8 шагов compile clean. |
+|| 2026-06-26 | #2 (эта) | Первая пачка из 8 шагов. SkillInputService + ЛКМ/K-attack unified flow + SkillEffect.Type expansion + warning-only proficiency + combat-filter API. Все 8 шагов compile clean. |
+| 2026-06-28 | #5 (эта) | 2D граф навыков Painter2D (T-P19). Canvas 2000×2000 px, absolute-позиционированные узлы, Painter2D линии, filter/search, scroll-to-selected. USS стили для state-цвета и selected. Синий фон _rootContainer debug-баг зафиксирован и исправлен. |
+
+---
+
+## Сессия #5 (2026-06-28) — 2D граф навыков Painter2D
+
+**План:** `docs/Character/Skills/Battle/70_SKILL_TREE_2D_GRAPH.md`
+**База:** SkillTreeWindow overlay (сессия #4)
+
+### Что сделано
+
+1. **Canvas** — list-container заменён на ScrollView + tree-content (2000×2000 px)
+2. **Узлы** — VisualElement для каждого навыка, absolute позиционирование по treeX/treeY (scale ×2.5 + padding)
+3. **State-цвета** — `tree-node-learned` (зелёная рамка), `tree-node-available` (жёлтая), `tree-node-locked` (серая)
+4. **Выбор узла** — класс `tree-node-selected` (голубая рамка 3px)
+5. **Линии** — `generateVisualContent` → `ctx.painter2D` (lineWidth=2, цвет по state родителя, MoveTo→LineTo от prereq → skill)
+6. **Filter + Search** — скрывают несоответствующие узлы и их рёбра
+7. **ScrollTo** — при клике/выборе из поиска, ScrollView скроллит к узлу
+
+### Блоки и фиксы в этой сессии
+
+| № | Проблема | Фикс |
+|---|---|---|
+| 1 | Синий фон `_rootContainer` закрывал весь экран | Убран `_rootContainer.style.backgroundColor` (был debug fallback `Color(0.08f, 0.12f, 0.18f)`) |
+| 2 | Размер окна нестабилен | USS `width: 760px` + `left: 50%; translate: -50% 0` |
+| 3 | Full-screen stretch конфликтовал с центровкой | Оставлен USS-путь (C# не менялся после коммита `4d87d99`) |
+
+### Compile verification
+
+- `refresh_unity mode=force compile=request` → 0 errors
+- `read_console` → 0 новых ошибок
+
+### Что осталось
+
+- ✅ Painter2D skill tree graph (T-P19) — **отмести из «осталось»**, сделано
+- ❌ CombatDiscipline поле в SkillNodeConfig (T-CB02) — фильтр по substring
+- ❌ Real Receive*TargetRpc вместо reflection
+- ❌ Drag-to-slot — Phase 2
+- ❌ Toasts на learn/forget — пока Debug.Log

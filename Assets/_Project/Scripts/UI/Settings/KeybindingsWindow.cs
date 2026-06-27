@@ -82,13 +82,84 @@ namespace ProjectC.UI.Settings
 
         private void Update()
         {
-            // Esc закрывает это окно (UIManager не всегда успевает).
             var kb = UnityEngine.InputSystem.Keyboard.current;
-            if (kb != null && kb.escapeKey.wasPressedThisFrame && IsOpen())
+            if (kb == null) return;
+
+            // Esc закрывает это окно (UIManager не всегда успевает).
+            if (kb.escapeKey.wasPressedThisFrame && IsOpen())
             {
+                // Если в режиме прослушивания — выходим без закрытия.
+                if (_listeningFor != null) { CancelListening(); return; }
                 Debug.Log("[KeybindingsWindow] self-close on Esc");
                 SetOpen(false);
+                return;
             }
+
+            // Режим прослушивания — ждём нажатия.
+            if (_listeningFor != null)
+            {
+                // Mouse buttons
+                var mouse = Mouse.current;
+                if (mouse != null)
+                {
+                    if (mouse.leftButton.wasPressedThisFrame)   { ApplyRebind(_listeningFor.Value, Key.None, 1); return; }
+                    if (mouse.rightButton.wasPressedThisFrame)  { ApplyRebind(_listeningFor.Value, Key.None, 2); return; }
+                    if (mouse.middleButton.wasPressedThisFrame) { ApplyRebind(_listeningFor.Value, Key.None, 3); return; }
+                }
+                // Keyboard keys (skip Escape — used for cancel)
+                foreach (Key key in System.Enum.GetValues(typeof(Key)))
+                {
+                    if (key == Key.None || key == Key.Escape) continue;
+                    if (kb[key].wasPressedThisFrame)
+                    {
+                        ApplyRebind(_listeningFor.Value, key, 0);
+                        return;
+                    }
+                }
+            }
+        }
+
+        // ===== Rebind State =====
+
+        private struct ListeningState
+        {
+            public bool isSkill; // false = action binding
+            public ProjectC.Skills.SkillInputSlot skillSlot;
+            public InputBindingsConfig.GameAction action;
+        }
+        private ListeningState? _listeningFor = null;
+
+        private void StartListening(ListeningState state)
+        {
+            _listeningFor = state;
+            Debug.Log($"[KeybindingsWindow] Listening for: {(state.isSkill ? state.skillSlot.ToString() : state.action.ToString())}");
+        }
+
+        private void CancelListening()
+        {
+            Debug.Log("[KeybindingsWindow] Cancel rebind");
+            _listeningFor = null;
+            RebuildLists();
+        }
+
+        private void ApplyRebind(ListeningState state, Key key, int mouseButtonRaw)
+        {
+            var rt = InputBindingsRuntime.Instance;
+            if (rt == null) return;
+
+            bool ok = false;
+            if (state.isSkill)
+                ok = rt.RebindSkill(state.skillSlot, mouseButtonRaw, Key.None, key);
+            else
+                ok = rt.RebindAction(state.action, key, mouseButtonRaw);
+
+            if (ok)
+                Debug.Log($"[KeybindingsWindow] Rebound: {(state.isSkill ? state.skillSlot.ToString() : state.action.ToString())} → key={key} mouse={mouseButtonRaw}");
+            else
+                Debug.LogWarning($"[KeybindingsWindow] Rebind failed for: {(state.isSkill ? state.skillSlot.ToString() : state.action.ToString())}");
+
+            _listeningFor = null;
+            RebuildLists();
         }
 
         private void RebuildLists()
@@ -125,7 +196,26 @@ namespace ProjectC.UI.Settings
             var row = new VisualElement(); row.AddToClassList("kb-row");
             var l = new Label($"{b.slot}"); l.AddToClassList("kb-row-action"); row.Add(l);
             var k = new Label(b.displayName); k.AddToClassList("kb-row-key"); row.Add(k);
+            MakeRowClickable(row, b.slot);
             return row;
+        }
+
+        private static void MakeRowClickable(VisualElement row, ProjectC.Skills.SkillInputSlot slot)
+        {
+            // При клике: регистрируем в Instance что мы слушаем.
+            row.RegisterCallback<ClickEvent>(_ =>
+            {
+                var inst = UnityEngine.Object.FindObjectOfType<KeybindingsWindow>();
+                if (inst != null)
+                {
+                    inst.StartListening(new ListeningState
+                    {
+                        isSkill = true,
+                        skillSlot = slot,
+                        action = default
+                    });
+                }
+            });
         }
 
         private static VisualElement MakeActionRow(InputBindingsConfig.ActionBinding a)
@@ -139,7 +229,25 @@ namespace ProjectC.UI.Settings
             else if (a.mouseButtonRaw == 0 && a.key != Key.None) keyStr = a.key.ToString();
             else if (a.mouseButtonRaw != 0) keyStr = $"Mouse{a.mouseButtonRaw}";
             var k = new Label(keyStr); k.AddToClassList("kb-row-key"); row.Add(k);
+            MakeRowClickable(row, a.action);
             return row;
+        }
+
+        private static void MakeRowClickable(VisualElement row, InputBindingsConfig.GameAction action)
+        {
+            row.RegisterCallback<ClickEvent>(_ =>
+            {
+                var inst = UnityEngine.Object.FindObjectOfType<KeybindingsWindow>();
+                if (inst != null)
+                {
+                    inst.StartListening(new ListeningState
+                    {
+                        isSkill = false,
+                        skillSlot = default,
+                        action = action
+                    });
+                }
+            });
         }
     }
 }

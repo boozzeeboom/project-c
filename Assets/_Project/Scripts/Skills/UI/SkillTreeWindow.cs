@@ -97,7 +97,7 @@ namespace ProjectC.Skills.UI
             _doc.rootVisualElement.Add(_rootContainer);
 
             // DEBUG: background fallback if USS doesn't load
-            _rootContainer.style.backgroundColor = new StyleColor(new Color(0.08f, 0.12f, 0.18f));
+            // (убрано — .stw-root из USS задаёт свой фон)
             // Stretch positioning (USS will refine)
             _rootContainer.style.position = Position.Absolute;
             _rootContainer.style.left = 0;

@@ -9,7 +9,12 @@
 /* === Root container (full-screen overlay) === */
 .stw-root {
     position: absolute !important;
-    top: 0 !important; left: 0 !important; right: 0 !important; bottom: 0 !important;
+    top: 4% !important;
+    left: 50% !important;
+    translate: -50% 0 !important;
+    width: 760px !important;
+    max-width: 92% !important;
+    max-height: 92% !important;
     background-color: rgba(15, 20, 30, 0.96) !important;
     border-width: 1px !important;
     border-color: rgba(80, 100, 130, 0.5) !important;

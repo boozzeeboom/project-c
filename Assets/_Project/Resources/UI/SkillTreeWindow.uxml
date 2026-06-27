@@ -23,8 +23,8 @@
    <!-- LEFT: list of skills -->
    <ui:VisualElement class="stw-list-col">
     <ui:Label text="Навыки" class="stw-section-title" />
-    <ui:ScrollView name="skill-list-scroll" class="stw-scroll">
-     <ui:VisualElement name="skill-list-container" class="stw-list-container" />
+    <ui:ScrollView name="tree-canvas-scroll" class="stw-scroll" mode="HorizontalAndVertical">
+     <ui:VisualElement name="tree-content" class="tree-content" />
     </ui:ScrollView>
    </ui:VisualElement>
 

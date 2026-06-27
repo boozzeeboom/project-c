@@ -34,6 +34,8 @@ namespace ProjectC.Skills.UI
         private string _searchQuery = "";
 
         private VisualElement _skillListContainer;
+        private VisualElement _treeContent;
+        private readonly Dictionary<string, VisualElement> _treeNodeRefs = new Dictionary<string, VisualElement>();
         private VisualElement _detailName;
         private Label _detailDesc;
         private Label _detailEffects;
@@ -101,6 +103,8 @@ namespace ProjectC.Skills.UI
             // Cache UI refs
             _rootInner = _rootContainer.Q<VisualElement>("skill-tree-root");
             _skillListContainer = _rootContainer.Q<VisualElement>("skill-list-container");
+            _treeContent = _rootContainer.Q<VisualElement>("tree-content");
+            _treeContent.generateVisualContent += OnTreePaintEdges;
             _detailName = _rootContainer.Q<VisualElement>("detail-name");
             _detailDesc = _rootContainer.Q<Label>("detail-desc");
             _detailEffects = _rootContainer.Q<Label>("detail-effects");
@@ -290,32 +294,102 @@ namespace ProjectC.Skills.UI
             if (_btnForget != null) _btnForget.RegisterCallback<ClickEvent>(_ => OnForgetClicked());
         }
 
-        private void RebuildSkillList()
+        private void RebuildSkillList() => RebuildSkillTree();
+
+        private void RebuildSkillTree()
         {
-            if (_skillListContainer == null) return;
-            _skillListContainer.Clear();
+            if (_treeContent == null) return;
+            _treeContent.Clear();
+            _treeNodeRefs.Clear();
+
             var learned = SkillsClientState.Instance?.CurrentSkills ?? new HashSet<string>();
+
+            // Position scale: treeX*2.5 + offset for 140x28 node center
+            const float SCALE = 2.5f;
+            const float PAD_X = 10f;
+            const float PAD_Y = 10f;
+            const float NODE_W = 140f;
+            const float NODE_H = 28f;
+
+            float maxX = 1000f, maxY = 1000f;
             foreach (var s in _filteredSkills)
-                _skillListContainer.Add(MakeSkillRow(s, learned));
+            {
+                var node = MakeTreeNode(s, learned);
+                node.style.left = s.treeX * SCALE + PAD_X;
+                node.style.top = s.treeY * SCALE + PAD_Y;
+                if (node.style.left.value.value + NODE_W > maxX) maxX = node.style.left.value.value + NODE_W + 100f;
+                if (node.style.top.value.value + NODE_H > maxY) maxY = node.style.top.value.value + NODE_H + 100f;
+                _treeContent.Add(node);
+                _treeNodeRefs[s.skillId] = node;
+            }
+
+            // Resize content to fit
+            _treeContent.style.width = maxX;
+            _treeContent.style.height = maxY;
+
+            // Trigger edge repaint
+            _treeContent.MarkDirtyRepaint();
         }
 
-        private VisualElement MakeSkillRow(SkillNodeConfig s, HashSet<string> learned)
+        private VisualElement MakeTreeNode(SkillNodeConfig s, HashSet<string> learned)
         {
-            var row = new VisualElement();
-            row.AddToClassList("stw-row");
-            bool learned_b = learned.Contains(s.skillId);
-            row.AddToClassList(learned_b ? "stw-row-learned" : "stw-row-locked");
-            var badge = new Label { name = "row-state", text = learned_b ? "✓" : "✕" };
-            badge.AddToClassList("stw-row-state"); row.Add(badge);
-            var title = new Label { name = "row-title", text = s.displayName ?? s.skillId };
-            title.AddToClassList("stw-row-title"); row.Add(title);
-            var cost = new Label { name = "row-cost", text = s.LearnXpCost > 0 ? $"{s.LearnXpCost:F0} XP" : "Free" };
-            cost.AddToClassList("stw-row-cost"); row.Add(cost);
-            var tier = new Label { name = "row-tier", text = $"T{s.RequiredIntelligenceTier}" };
-            tier.AddToClassList("stw-row-tier"); row.Add(tier);
+            var node = new VisualElement();
+            node.AddToClassList("tree-node");
+            bool isLearned = learned.Contains(s.skillId);
+            bool isAvailable = !isLearned && CanLearn(s, learned);
+            node.AddToClassList(isLearned ? "tree-node-learned" : (isAvailable ? "tree-node-available" : "tree-node-locked"));
+            node.name = "tree-node-" + s.skillId;
+
+            var badge = new Label { text = isLearned ? "✓" : (isAvailable ? "○" : "✕") };
+            badge.AddToClassList("tree-node-badge");
+            node.Add(badge);
+
+            var title = new Label { text = s.displayName ?? s.skillId };
+            title.AddToClassList("tree-node-title");
+            node.Add(title);
+
             var capturedId = s.skillId;
-            row.RegisterCallback<ClickEvent>(_ => SelectSkill(capturedId));
-            return row;
+            node.RegisterCallback<ClickEvent>(_ => SelectSkill(capturedId));
+            return node;
+        }
+
+        // Paint edges (prereq -> skill) as straight lines.
+        // Called by UI Toolkit when _treeContent needs repaint (e.g. MarkDirtyRepaint).
+        private void OnTreePaintEdges(MeshGenerationContext ctx)
+        {
+            if (_treeContent == null || _treeNodeRefs.Count == 0) return;
+            var learned = SkillsClientState.Instance?.CurrentSkills ?? new HashSet<string>();
+            var painter = ctx.painter2D;
+            if (painter == null) return;
+            painter.lineWidth = 2f;
+
+            foreach (var s in _filteredSkills)
+            {
+                if (s.prerequisites == null) continue;
+                foreach (var prereq in s.prerequisites)
+                {
+                    if (prereq == null) continue;
+                    if (!_treeNodeRefs.TryGetValue(prereq.skillId, out var fromNode)) continue;
+                    if (!_treeNodeRefs.TryGetValue(s.skillId, out var toNode)) continue;
+                    // Edge from bottom-center of prereq to top-center of dependent
+                    var fromLayout = fromNode.layout;
+                    var toLayout = toNode.layout;
+                    float x1 = fromLayout.x + fromLayout.width * 0.5f;
+                    float y1 = fromLayout.y + fromLayout.height;
+                    float x2 = toLayout.x + toLayout.width * 0.5f;
+                    float y2 = toLayout.y;
+
+                    // Color: green if prereq learned, gray if not (dim the connection)
+                    bool fromLearned = learned.Contains(prereq.skillId);
+                    painter.strokeColor = fromLearned
+                        ? new Color(0.4f, 0.85f, 0.5f, 0.9f)
+                        : new Color(0.4f, 0.4f, 0.45f, 0.5f);
+                    painter.BeginPath();
+                    painter.MoveTo(new Vector2(x1, y1));
+                    painter.LineTo(new Vector2(x2, y2));
+                    painter.Stroke();
+                }
+            }
         }
 
         private void SelectSkill(string skillId)

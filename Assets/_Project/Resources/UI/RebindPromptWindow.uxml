@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?>
+<ui:UXML xmlns:ui="UnityEngine.UIElements">
+    <Style src="UI/RebindPromptStyles" />
+    <ui:VisualElement name="prompt-root" class="prompt-root">
+        <ui:VisualElement name="prompt-window" class="prompt-window" picking-mode="Position">
+            <ui:Label name="prompt-title" text="Переназначение клавиши:" class="prompt-title" />
+            <ui:Label name="prompt-hint" text="нажмите клавишу" class="prompt-hint" />
+            <ui:Label name="prompt-cancel" text="(Esc — отмена)" class="prompt-cancel" />
+        </ui:VisualElement>
+    </ui:VisualElement>
+</ui:UXML>

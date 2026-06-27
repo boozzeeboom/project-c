@@ -132,13 +132,18 @@ namespace ProjectC.UI.Settings
         private void StartListening(ListeningState state)
         {
             _listeningFor = state;
-            Debug.Log($"[KeybindingsWindow] Listening for: {(state.isSkill ? state.skillSlot.ToString() : state.action.ToString())}");
+            string name = state.isSkill
+                ? InputBindingsRuntime.Instance?.GetSkillDisplayName(state.skillSlot) ?? state.skillSlot.ToString()
+                : InputBindingsRuntime.Instance?.GetActionDisplayName(state.action) ?? state.action.ToString();
+            RebindPromptWindow.Show(name, state.isSkill);
+            Debug.Log($"[KeybindingsWindow] Listening for: {name}");
         }
 
         private void CancelListening()
         {
             Debug.Log("[KeybindingsWindow] Cancel rebind");
             _listeningFor = null;
+            RebindPromptWindow.Hide();
             RebuildLists();
         }
 
@@ -153,12 +158,14 @@ namespace ProjectC.UI.Settings
             else
                 ok = rt.RebindAction(state.action, key, mouseButtonRaw);
 
+            string name = state.isSkill ? state.skillSlot.ToString() : state.action.ToString();
             if (ok)
-                Debug.Log($"[KeybindingsWindow] Rebound: {(state.isSkill ? state.skillSlot.ToString() : state.action.ToString())} → key={key} mouse={mouseButtonRaw}");
+                Debug.Log($"[KeybindingsWindow] Rebound: {name} → key={key} mouse={mouseButtonRaw}");
             else
-                Debug.LogWarning($"[KeybindingsWindow] Rebind failed for: {(state.isSkill ? state.skillSlot.ToString() : state.action.ToString())}");
+                Debug.LogWarning($"[KeybindingsWindow] Rebind failed for: {name}");
 
             _listeningFor = null;
+            RebindPromptWindow.Hide();
             RebuildLists();
         }
 

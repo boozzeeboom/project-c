@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="utf-8"?>
+<ui:UXML xmlns:ui="UnityEngine.UIElements">
+    <Style src="UI/EscMenuStyles" />
+    <ui:VisualElement name="esc-menu-root" class="esc-root">
+        <ui:VisualElement name="esc-window" class="esc-window">
+            <ui:Label name="esc-title" text="МЕНЮ" class="esc-title" />
+            <ui:VisualElement name="esc-buttons" class="esc-buttons">
+                <ui:Label name="esc-settings-btn" text="НАСТРОЙКИ" class="esc-btn" />
+            </ui:VisualElement>
+        </ui:VisualElement>
+    </ui:VisualElement>
+</ui:UXML>

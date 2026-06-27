@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="utf-8"?>
+<ui:UXML xmlns:ui="UnityEngine.UIElements">
+    <Style src="UI/KeybindingsWindow" />
+    <ui:VisualElement name="keybindings-root" class="kb-root">
+        <ui:VisualElement name="kb-window" class="kb-window">
+            <ui:Label name="kb-title" text="НАСТРОЙКИ КЛАВИШ" class="kb-title" />
+            <ui:Label text="Боевые навыки" class="kb-section-title" />
+            <ui:ScrollView name="skill-list-scroll" class="kb-scroll" />
+            <ui:Label text="Действия" class="kb-section-title" />
+            <ui:ScrollView name="action-list-scroll" class="kb-scroll" />
+        </ui:VisualElement>
+    </ui:VisualElement>
+</ui:UXML>

@@ -149,6 +149,11 @@ namespace ProjectC.Core
             CreateSkillTreeWindow();
             // T-INP-13: InputBindingsRuntime singleton (нужен ДО SkillInputService.Update polling)
             CreateInputBindingsRuntime();
+            // T-INP-14: EscMenu + KeybindingsWindow (Phase 2.1)
+            CreateEscMenuWindow();
+            CreateKeybindingsWindow();
+            // T-INP-14: UIManager — глобальный Esc-handler (DefaultExecutionOrder = -100).
+            CreateUIManager();
 
             // Автоматический запуск Dedicated Server
             if (IsDedicatedServerMode())
@@ -547,6 +552,53 @@ namespace ProjectC.Core
             DontDestroyOnLoad(go);
             go.AddComponent<ProjectC.Input.InputBindingsRuntime>();
             Debug.Log("[NMC] Created [InputBindingsRuntime] as root GameObject");
+        }
+
+        /// <summary>
+        /// T-INP-14: EscMenuWindow — главное меню по Esc (когда нет открытых окон).
+        /// </summary>
+        /// <summary>
+        /// T-INP-14: EscMenuWindow — главное меню по Esc.
+        /// </summary>
+        private void CreateEscMenuWindow()
+        {
+            var existing = FindObjectsByType<ProjectC.UI.EscMenu.EscMenuWindow>(FindObjectsInactive.Include);
+            foreach (var inst in existing) { if (inst != null) DestroyImmediate(inst.gameObject); }
+            var go = new GameObject("[EscMenuWindow]");
+            DontDestroyOnLoad(go);
+            var doc = go.AddComponent<UnityEngine.UIElements.UIDocument>();
+            doc.panelSettings = UnityEngine.Resources.Load<UnityEngine.UIElements.PanelSettings>("UI/EscMenuPanelSettings");
+            go.AddComponent<ProjectC.UI.EscMenu.EscMenuWindow>();
+            Debug.Log("[NMC] Created [EscMenuWindow]");
+        }
+
+        /// <summary>
+        /// T-INP-14: KeybindingsWindow — окно настроек клавиш.
+        /// </summary>
+        private void CreateKeybindingsWindow()
+        {
+            var existing = FindObjectsByType<ProjectC.UI.Settings.KeybindingsWindow>(FindObjectsInactive.Include);
+            foreach (var inst in existing) { if (inst != null) DestroyImmediate(inst.gameObject); }
+            var go = new GameObject("[KeybindingsWindow]");
+            DontDestroyOnLoad(go);
+            var doc = go.AddComponent<UnityEngine.UIElements.UIDocument>();
+            doc.panelSettings = UnityEngine.Resources.Load<UnityEngine.UIElements.PanelSettings>("UI/KeybindingsPanelSettings");
+            go.AddComponent<ProjectC.UI.Settings.KeybindingsWindow>();
+            Debug.Log("[NMC] Created [KeybindingsWindow]");
+        }
+
+        /// <summary>
+        /// T-INP-14: UIManager с DefaultExecutionOrder(-100).
+        /// Без него Esc-handler не работает.
+        /// </summary>
+        private void CreateUIManager()
+        {
+            var existing = FindObjectsByType<ProjectC.UI.UIManager>(FindObjectsInactive.Include);
+            foreach (var inst in existing) { if (inst != null) DestroyImmediate(inst.gameObject); }
+            var go = new GameObject("[UIManager]");
+            DontDestroyOnLoad(go);
+            go.AddComponent<ProjectC.UI.UIManager>();
+            Debug.Log("[NMC] Created [UIManager]");
         }
 
         private void Start()

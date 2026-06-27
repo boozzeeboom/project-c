@@ -1,0 +1,145 @@
+// Project C: Input System — Phase 2.1
+// KeybindingsWindow по CharacterWindow/SkillTreeWindow паттерну (рабочий).
+using System.Collections.Generic;
+using UnityEngine;
+using UnityEngine.InputSystem;
+using UnityEngine.UIElements;
+using ProjectC.Input;
+
+namespace ProjectC.UI.Settings
+{
+    [RequireComponent(typeof(UIDocument))]
+    public class KeybindingsWindow : MonoBehaviour
+    {
+        public static KeybindingsWindow Instance { get; private set; }
+
+        [SerializeField] private VisualTreeAsset kbUxml;
+        [SerializeField] private StyleSheet kbUss;
+
+        private UIDocument _doc;
+        private VisualElement _root;
+        private ScrollView _skillListScroll;
+        private ScrollView _actionListScroll;
+        private bool _built = false;
+
+        private void Awake()
+        {
+            if (Instance != null && Instance != this) { Destroy(gameObject); return; }
+            Instance = this;
+            _doc = GetComponent<UIDocument>();
+        }
+
+        private void OnDestroy() { if (Instance == this) Instance = null; }
+        private void OnEnable() { EnsureBuilt(); }
+        private void Start() { EnsureBuilt(); }
+
+        public void EnsureBuilt()
+        {
+            if (_built) return;
+            if (_doc == null || _doc.rootVisualElement == null) return;
+
+            if (kbUxml == null) kbUxml = Resources.Load<VisualTreeAsset>("UI/KeybindingsWindow");
+            if (kbUss  == null) kbUss  = Resources.Load<StyleSheet>("UI/KeybindingsWindow");
+            if (kbUxml == null) { Debug.LogError("[KeybindingsWindow] UXML not found"); return; }
+
+            _doc.rootVisualElement.Clear();
+            if (kbUss != null) _doc.rootVisualElement.styleSheets.Add(kbUss);
+            _root = kbUxml.CloneTree();
+            _root.style.position = Position.Absolute;
+            _root.style.left = 0; _root.style.top = 0; _root.style.right = 0; _root.style.bottom = 0;
+            _root.pickingMode = PickingMode.Ignore;
+            _doc.rootVisualElement.Add(_root);
+
+            _skillListScroll = _root.Q<ScrollView>("skill-list-scroll");
+            _actionListScroll = _root.Q<ScrollView>("action-list-scroll");
+
+            _built = true;
+            SetOpen(false);
+            Debug.Log($"[KeybindingsWindow] Built. uxml={kbUxml.name} uss={(kbUss != null ? kbUss.name : "null")}");
+        }
+
+        public void Toggle() { if (IsOpen()) SetOpen(false); else SetOpen(true); }
+        public void Show() => SetOpen(true);
+        public void Hide() => SetOpen(false);
+
+        private void SetOpen(bool open)
+        {
+            if (!_built) EnsureBuilt();
+            if (_root == null) return;
+            _root.style.display = open ? DisplayStyle.Flex : DisplayStyle.None;
+            _root.pickingMode = open ? PickingMode.Position : PickingMode.Ignore;
+            if (open)
+            {
+                UnityEngine.Cursor.lockState = CursorLockMode.None; UnityEngine.Cursor.visible = true;
+                _root.MarkDirtyRepaint();
+                _root.schedule.Execute(() => _root.MarkDirtyRepaint()).StartingIn(50);
+                UIManager.EnsureExists().OpenPanel("KeybindingsWindow", 200, Hide, gameObject);
+                RebuildLists();
+            }
+        }
+
+        public bool IsOpen() => _built && _root != null && _root.style.display.value == DisplayStyle.Flex;
+
+        private void Update()
+        {
+            // Esc закрывает это окно (UIManager не всегда успевает).
+            var kb = UnityEngine.InputSystem.Keyboard.current;
+            if (kb != null && kb.escapeKey.wasPressedThisFrame && IsOpen())
+            {
+                Debug.Log("[KeybindingsWindow] self-close on Esc");
+                SetOpen(false);
+            }
+        }
+
+        private void RebuildLists()
+        {
+            var cfg = InputBindingsRuntime.Instance?.Config;
+            if (cfg == null) { Debug.LogWarning("[KeybindingsWindow] InputBindingsConfig not loaded"); return; }
+
+            if (_skillListScroll != null && cfg.combatSkills != null)
+            {
+                _skillListScroll.Clear();
+                foreach (var b in cfg.combatSkills) _skillListScroll.Add(MakeSkillRow(b));
+            }
+            if (_actionListScroll != null && cfg.actions != null)
+            {
+                _actionListScroll.Clear();
+                var byCat = new Dictionary<InputBindingsConfig.ActionCategory, List<InputBindingsConfig.ActionBinding>>();
+                foreach (var a in cfg.actions)
+                {
+                    if (!byCat.TryGetValue(a.category, out var list)) { list = new List<InputBindingsConfig.ActionBinding>(); byCat[a.category] = list; }
+                    list.Add(a);
+                }
+                foreach (var kvp in byCat)
+                {
+                    var h = new Label($"--- {kvp.Key} ---");
+                    h.AddToClassList("kb-cat-header");
+                    _actionListScroll.Add(h);
+                    foreach (var a in kvp.Value) _actionListScroll.Add(MakeActionRow(a));
+                }
+            }
+        }
+
+        private static VisualElement MakeSkillRow(InputBindingsConfig.SkillKeyBinding b)
+        {
+            var row = new VisualElement(); row.AddToClassList("kb-row");
+            var l = new Label($"{b.slot}"); l.AddToClassList("kb-row-action"); row.Add(l);
+            var k = new Label(b.displayName); k.AddToClassList("kb-row-key"); row.Add(k);
+            return row;
+        }
+
+        private static VisualElement MakeActionRow(InputBindingsConfig.ActionBinding a)
+        {
+            var row = new VisualElement(); row.AddToClassList("kb-row");
+            var label = new Label(a.displayName); label.AddToClassList("kb-row-action"); row.Add(label);
+            string keyStr = "";
+            if (a.mouseButtonRaw == 1) keyStr = "ЛКМ";
+            else if (a.mouseButtonRaw == 2) keyStr = "ПКМ";
+            else if (a.mouseButtonRaw == 3) keyStr = "СКМ";
+            else if (a.mouseButtonRaw == 0 && a.key != Key.None) keyStr = a.key.ToString();
+            else if (a.mouseButtonRaw != 0) keyStr = $"Mouse{a.mouseButtonRaw}";
+            var k = new Label(keyStr); k.AddToClassList("kb-row-key"); row.Add(k);
+            return row;
+        }
+    }
+}

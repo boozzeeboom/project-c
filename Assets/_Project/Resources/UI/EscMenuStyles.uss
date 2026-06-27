@@ -1,0 +1,57 @@
+/* EscMenuWindow.uss — Phase 2.1
+   Главное меню по Esc. Центрированное окно 360x280.
+*/
+
+.esc-root {
+    position: absolute !important;
+    left: 50% !important;
+    top: 50% !important;
+    translate: -50% -50% !important;
+    width: 360px !important;
+    height: 280px !important;
+    background-color: rgba(18, 22, 32, 0.95) !important;
+    border-width: 2px !important;
+    border-color: rgb(80, 100, 140) !important;
+    border-radius: 8px !important;
+    padding: 16px !important;
+    align-items: center !important;
+    justify-content: center !important;
+}
+
+.esc-window {
+    flex-grow: 1 !important;
+    flex-direction: column !important;
+    align-items: center !important;
+    justify-content: center !important;
+}
+
+.esc-title {
+    color: rgb(220, 220, 220) !important;
+    font-size: 22px !important;
+    -unity-font-style: bold !important;
+    -unity-text-align: middle-center !important;
+    margin-bottom: 24px !important;
+}
+
+.esc-buttons {
+    flex-direction: column !important;
+    align-items: stretch !important;
+    width: 240px !important;
+}
+
+.esc-btn {
+    color: rgb(220, 220, 220) !important;
+    background-color: rgba(40, 50, 70, 0.9) !important;
+    border-width: 1px !important;
+    border-color: rgb(80, 100, 140) !important;
+    border-radius: 4px !important;
+    padding: 10px 16px !important;
+    margin-bottom: 8px !important;
+    -unity-text-align: middle-center !important;
+    -unity-font-style: bold !important;
+}
+
+.esc-btn:hover {
+    background-color: rgba(70, 110, 160, 0.95) !important;
+    border-color: rgb(140, 180, 240) !important;
+}

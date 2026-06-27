@@ -11,11 +11,18 @@ namespace ProjectC.UI
     /// - Unified close (Escape закрывает верхнюю панель)
     /// - Cursor lock/unlock автоматически
     /// 
+    /// Esc-handler: только для панелей в стеке (EscMenu, KeybindingsWindow).
+    /// Окна вне стека (CharacterWindow) обрабатывают Esc сами.
+    /// 
     /// Спринт 3: Задачи 3.2 + 3.6
     /// </summary>
     public class UIManager : MonoBehaviour
     {
         public static UIManager Instance { get; private set; }
+
+        // Флаг — на этом кадре UIManager уже обработал Esc.
+        // EscMenuWindow проверяет его, чтобы не открывать меню на том же кадре.
+        internal bool _escConsumedThisFrame = false;
 
         [Header("Input Settings")]
         [Tooltip("Клавиша для закрытия верхней панели")]
@@ -59,13 +66,16 @@ namespace ProjectC.UI
 
         private void Awake()
         {
+            Debug.Log($"[UIManager] Awake called on {gameObject.name}, Instance={Instance}");
             if (Instance == null)
             {
                 Instance = this;
                 DontDestroyOnLoad(gameObject);
+                Debug.Log($"[UIManager] Instance set, DontDestroyOnLoad done");
             }
             else
             {
+                Debug.LogWarning($"[UIManager] Duplicate detected, destroying {gameObject.name}");
                 Destroy(gameObject);
                 return;
             }
@@ -74,29 +84,37 @@ namespace ProjectC.UI
             _audioSource = gameObject.AddComponent<AudioSource>();
             _audioSource.playOnAwake = false;
             _audioSource.outputAudioMixerGroup = null;
+            Debug.Log("[UIManager] Awake complete");
         }
 
         private void Update()
         {
+            // Сбрасываем флаг в начале каждого кадра.
+            _escConsumedThisFrame = false;
             HandleGlobalInput();
         }
 
         /// <summary>
-        /// Обработка глобального ввода (Escape для закрытия)
+        /// Обработка Esc. Только для стековых панелей (EscMenu, KeybindingsWindow).
+        /// Non-stack окна (CharacterWindow) обрабатывают Esc сами.
         /// </summary>
         private void HandleGlobalInput()
         {
-            if (_openPanels.Count == 0) return;
-
             if (Keyboard.current == null) return;
-
             var key = KeyCodeToInputKey(CloseKey);
             if (key == UnityEngine.InputSystem.Key.None) return;
+            if (!Keyboard.current[key].wasPressedThisFrame) return;
 
-            if (Keyboard.current[key].wasPressedThisFrame)
+            if (_openPanels.Count > 0)
             {
+                Debug.Log($"[UIManager] CloseTopPanel: {_openPanels[0].PanelName}");
                 CloseTopPanel();
+                _escConsumedThisFrame = true;
+                return;
             }
+
+            // Non-stack окна — не наше дело (они сами обработают Esc).
+            // EscMenuWindow.Update() откроет меню если ничего не открыто.
         }
 
         /// <summary>

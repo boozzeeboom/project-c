@@ -73,3 +73,109 @@ MonoBehaviour:
     fallbackKey: 44
     displayName: 4
     onlyOnFoot: 0
+  actions:
+  - action: 0
+    category: 0
+    mouseButtonRaw: 0
+    key: 37
+    displayName: W
+  - action: 1
+    category: 0
+    mouseButtonRaw: 0
+    key: 33
+    displayName: S
+  - action: 2
+    category: 0
+    mouseButtonRaw: 0
+    key: 15
+    displayName: A
+  - action: 3
+    category: 0
+    mouseButtonRaw: 0
+    key: 18
+    displayName: D
+  - action: 4
+    category: 0
+    mouseButtonRaw: 0
+    key: 1
+    displayName: Space
+  - action: 5
+    category: 0
+    mouseButtonRaw: 0
+    key: 51
+    displayName: Shift
+  - action: 6
+    category: 1
+    mouseButtonRaw: 0
+    key: 19
+    displayName: E
+  - action: 7
+    category: 1
+    mouseButtonRaw: 0
+    key: 20
+    displayName: F
+  - action: 8
+    category: 1
+    mouseButtonRaw: 0
+    key: 30
+    displayName: P
+  - action: 10
+    category: 1
+    mouseButtonRaw: 0
+    key: 3
+    displayName: Tab
+  - action: 11
+    category: 2
+    mouseButtonRaw: 0
+    key: 37
+    displayName: W
+  - action: 12
+    category: 2
+    mouseButtonRaw: 0
+    key: 33
+    displayName: S
+  - action: 13
+    category: 2
+    mouseButtonRaw: 0
+    key: 15
+    displayName: A
+  - action: 14
+    category: 2
+    mouseButtonRaw: 0
+    key: 18
+    displayName: D
+  - action: 15
+    category: 2
+    mouseButtonRaw: 0
+    key: 19
+    displayName: E
+  - action: 16
+    category: 2
+    mouseButtonRaw: 0
+    key: 31
+    displayName: Q
+  - action: 17
+    category: 2
+    mouseButtonRaw: 0
+    key: 51
+    displayName: Shift
+  - action: 18
+    category: 3
+    mouseButtonRaw: 0
+    key: 34
+    displayName: T
+  - action: 19
+    category: 4
+    mouseButtonRaw: 0
+    key: 96
+    displayName: F3
+  - action: 20
+    category: 4
+    mouseButtonRaw: 0
+    key: 97
+    displayName: F4
+  - action: 21
+    category: 5
+    mouseButtonRaw: 0
+    key: 60
+    displayName: Esc

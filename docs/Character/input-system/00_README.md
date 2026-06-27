@@ -25,6 +25,7 @@
 | `30_INPUT_BINDINGS_CONFIG_DESIGN.md` | дизайн InputBindingsConfig ScriptableObject |
 | `40_MIGRATION_PLAN.md` | безопасный план миграции (3 фазы) |
 | `50_OPEN_QUESTIONS.md` | что НЕ решено (будущие фазы) |
+| `60_PHASE_1_5_SUMMARY.md` | сводка Phase 1 + Phase 1.5 — что сделано, что работает, roadmap |
 
 ---
 

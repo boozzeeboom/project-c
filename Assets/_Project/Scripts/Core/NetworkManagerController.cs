@@ -147,6 +147,8 @@ namespace ProjectC.Core
             CreateCombatClientState();
             // T-INP-09: SkillTreeWindow overlay
             CreateSkillTreeWindow();
+            // T-INP-13: InputBindingsRuntime singleton (нужен ДО SkillInputService.Update polling)
+            CreateInputBindingsRuntime();
 
             // Автоматический запуск Dedicated Server
             if (IsDedicatedServerMode())
@@ -526,6 +528,25 @@ namespace ProjectC.Core
             // в SkillTreeWindow.EnsureBuilt(). Let SkillTreeWindow клонирует сам через CloneTree + Add.
             go.AddComponent<SkillTreeWindow>();
             Debug.Log("[NMC] Created [SkillTreeWindow] as root GameObject");
+        }
+
+        /// <summary>
+        /// T-INP-13: InputBindingsRuntime — singleton loader для InputBindingsConfig.
+        /// Без него SkillInputService.Update не найдёт Config и скиллы не сработают.
+        /// </summary>
+        private void CreateInputBindingsRuntime()
+        {
+            // Idempotency check (тот же шаблон что для SkillTreeWindow).
+            var existing = FindObjectsByType<ProjectC.Input.InputBindingsRuntime>(FindObjectsInactive.Include);
+            if (existing != null && existing.Length > 0)
+            {
+                Debug.Log("[NMC] InputBindingsRuntime already exists, skipping creation");
+                return;
+            }
+            var go = new GameObject("[InputBindingsRuntime]");
+            DontDestroyOnLoad(go);
+            go.AddComponent<ProjectC.Input.InputBindingsRuntime>();
+            Debug.Log("[NMC] Created [InputBindingsRuntime] as root GameObject");
         }
 
         private void Start()

@@ -36,6 +36,11 @@ namespace ProjectC.Skills.UI
         private VisualElement _skillListContainer;
         private VisualElement _treeContent;
         private readonly Dictionary<string, VisualElement> _treeNodeRefs = new Dictionary<string, VisualElement>();
+        // Pan (T-INP-12): minimal drag-to-pan, no zoom/fit. Only changes scrollOffset.
+        private ScrollView _treeScroll;
+        private bool _isPanning = false;
+        private Vector2 _panStartMouse;
+        private Vector2 _panStartScroll;
         private VisualElement _detailName;
         private Label _detailDesc;
         private Label _detailEffects;
@@ -105,6 +110,8 @@ namespace ProjectC.Skills.UI
             _skillListContainer = _rootContainer.Q<VisualElement>("skill-list-container");
             _treeContent = _rootContainer.Q<VisualElement>("tree-content");
             _treeContent.generateVisualContent += OnTreePaintEdges;
+            _treeScroll = _rootContainer.Q<ScrollView>("tree-canvas-scroll");
+            RegisterTreePan();
             _detailName = _rootContainer.Q<VisualElement>("detail-name");
             _detailDesc = _rootContainer.Q<Label>("detail-desc");
             _detailEffects = _rootContainer.Q<Label>("detail-effects");
@@ -512,6 +519,44 @@ namespace ProjectC.Skills.UI
                 Debug.Log($"[SkillTreeWindow] RequestForgetSkillRpc: skillId={_selectedSkillId}");
             }
             catch (Exception ex) { Debug.LogWarning($"[SkillTreeWindow] OnForgetClicked error: {ex.Message}"); }
+        }
+
+        // =================== Pan (T-INP-12) ===================
+        // Minimal drag-to-pan: pointer down on _treeContent background → drag → updates scrollOffset.
+        // No zoom, no fit, no CapturePointer. Works with native ScrollView.
+
+        private void RegisterTreePan()
+        {
+            if (_treeContent == null) return;
+            _treeContent.RegisterCallback<PointerDownEvent>(OnCanvasPointerDown);
+            _treeContent.RegisterCallback<PointerMoveEvent>(OnCanvasPointerMove);
+            _treeContent.RegisterCallback<PointerUpEvent>(OnCanvasPointerUp);
+        }
+
+        private void OnCanvasPointerDown(PointerDownEvent evt)
+        {
+            if (evt.button != 0) return;  // only LMB
+            if (_treeScroll == null || _treeContent == null) return;
+            _isPanning = true;
+            _panStartMouse = evt.position;
+            _panStartScroll = _treeScroll.scrollOffset;
+            evt.StopPropagation();
+        }
+
+        private void OnCanvasPointerMove(PointerMoveEvent evt)
+        {
+            if (!_isPanning) return;
+            if (_treeScroll == null) return;
+            Vector2 delta = (Vector2)evt.position - _panStartMouse;
+            _treeScroll.scrollOffset = _panStartScroll - delta;
+            evt.StopPropagation();
+        }
+
+        private void OnCanvasPointerUp(PointerUpEvent evt)
+        {
+            if (!_isPanning) return;
+            if (evt.button != 0 && evt.button != -1) return;
+            _isPanning = false;
         }
     }
 }

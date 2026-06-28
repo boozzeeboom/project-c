@@ -50,6 +50,13 @@
     <ui:VisualElement class="stw-detail-actions">
      <ui:Label name="btn-learn"  text="Изучить"  class="stw-btn stw-btn-learn"  style="display: none;" />
      <ui:Label name="btn-forget" text="Забыть"   class="stw-btn stw-btn-forget" style="display: none;" />
+     <!-- Phase 3: BindSlot buttons -->
+     <ui:Label name="btn-bind-primary"  text="→ Primary"   class="stw-btn stw-btn-bind" style="display: none;" />
+     <ui:Label name="btn-bind-secondary" text="→ Secondary" class="stw-btn stw-btn-bind" style="display: none;" />
+     <ui:Label name="btn-bind-slot1"    text="→ Slot1"     class="stw-btn stw-btn-bind" style="display: none;" />
+     <ui:Label name="btn-bind-slot2"    text="→ Slot2"     class="stw-btn stw-btn-bind" style="display: none;" />
+     <ui:Label name="btn-bind-slot3"    text="→ Slot3"     class="stw-btn stw-btn-bind" style="display: none;" />
+     <ui:Label name="btn-bind-slot4"    text="→ Slot4"     class="stw-btn stw-btn-bind" style="display: none;" />
     </ui:VisualElement>
    </ui:VisualElement>
   </ui:VisualElement>

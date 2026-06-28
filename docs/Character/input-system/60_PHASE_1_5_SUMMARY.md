@@ -142,11 +142,11 @@
 
 ### Phase 2 — UI Rebind (~3-4ч, отдельная сессия)
 
-- [ ] `InputBindingsRuntime.Apply(GameAction, Key/Mouse)` — изменить binding runtime
-- [ ] `InputBindingsRuntime.Save()` / `Load()` — PlayerPrefs persistence
-- [ ] `RebindListView.cs` — UI Toolkit component с listview всех биндов
-- [ ] `SettingsWindow.uxml/.uss/.cs` — окно настроек
-- [ ] Кнопка `[Settings]` в NetworkUI (главное меню)
+- [ ✅] `InputBindingsRuntime.Apply(GameAction, Key/Mouse)` — изменить binding runtime
+- [✅ ] `InputBindingsRuntime.Save()` / `Load()` — PlayerPrefs persistence
+- [✅ ] `RebindListView.cs` — UI Toolkit component с listview всех биндов
+- [ ✅] `SettingsWindow.uxml/.uss/.cs` — окно настроек
+- [ ✅] Кнопка `[Settings]` в NetworkUI (главное меню)
 
 ### Phase 2.5 — Action Bindings Polling (~2ч)
 

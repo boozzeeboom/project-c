@@ -52,7 +52,15 @@ namespace ProjectC.Skills.UI
         private VisualElement _detailDepsContainer;
         private VisualElement _btnLearn;
         private VisualElement _btnForget;
-        private TextField _searchField;
+        // Phase 3: BindSlot buttons (like _btnLearn/_btnForget)
+        private VisualElement _btnBindPrimary;
+        private VisualElement _btnBindSecondary;
+        private VisualElement _btnBindSlot1;
+        private VisualElement _btnBindSlot2;
+        private VisualElement _btnBindSlot3;
+        private VisualElement _btnBindSlot4;
+        // Phase 3: BindSlot buttons
+                private TextField _searchField;
         private readonly Dictionary<SkillDisciplineFilter, VisualElement> _chipRefs = new Dictionary<SkillDisciplineFilter, VisualElement>();
 
         private enum SkillDisciplineFilter { All, Melee, Ranged, Explosives, Antigrav, Defense }
@@ -123,6 +131,12 @@ namespace ProjectC.Skills.UI
             _detailDepsContainer = _rootContainer.Q<VisualElement>("detail-deps-container");
             _btnLearn = _rootContainer.Q<VisualElement>("btn-learn");
             _btnForget = _rootContainer.Q<VisualElement>("btn-forget");
+            _btnBindPrimary   = _rootContainer.Q<VisualElement>("btn-bind-primary");
+            _btnBindSecondary = _rootContainer.Q<VisualElement>("btn-bind-secondary");
+            _btnBindSlot1     = _rootContainer.Q<VisualElement>("btn-bind-slot1");
+            _btnBindSlot2     = _rootContainer.Q<VisualElement>("btn-bind-slot2");
+            _btnBindSlot3     = _rootContainer.Q<VisualElement>("btn-bind-slot3");
+            _btnBindSlot4     = _rootContainer.Q<VisualElement>("btn-bind-slot4");
             _searchField = _rootContainer.Q<TextField>("skill-search");
 
             InitFilterChips();
@@ -301,6 +315,13 @@ namespace ProjectC.Skills.UI
             if (btnClose != null) btnClose.RegisterCallback<ClickEvent>(_ => SetOpen(false));
             if (_btnLearn != null) _btnLearn.RegisterCallback<ClickEvent>(_ => OnLearnClicked());
             if (_btnForget != null) _btnForget.RegisterCallback<ClickEvent>(_ => OnForgetClicked());
+            if (_btnBindPrimary   != null) _btnBindPrimary  .RegisterCallback<ClickEvent>(_ => OnBindSlotClicked(Skills.SkillInputSlot.Primary));
+            if (_btnBindSecondary != null) _btnBindSecondary.RegisterCallback<ClickEvent>(_ => OnBindSlotClicked(Skills.SkillInputSlot.Secondary));
+            if (_btnBindSlot1     != null) _btnBindSlot1    .RegisterCallback<ClickEvent>(_ => OnBindSlotClicked(Skills.SkillInputSlot.Slot1));
+            if (_btnBindSlot2     != null) _btnBindSlot2    .RegisterCallback<ClickEvent>(_ => OnBindSlotClicked(Skills.SkillInputSlot.Slot2));
+            if (_btnBindSlot3     != null) _btnBindSlot3    .RegisterCallback<ClickEvent>(_ => OnBindSlotClicked(Skills.SkillInputSlot.Slot3));
+            if (_btnBindSlot4     != null) _btnBindSlot4    .RegisterCallback<ClickEvent>(_ => OnBindSlotClicked(Skills.SkillInputSlot.Slot4));
+            
         }
 
         private void RebuildSkillList() => RebuildSkillTree();
@@ -424,6 +445,39 @@ namespace ProjectC.Skills.UI
             if (_detailDepsContainer != null) RebuildDependentsList(s);
             if (_btnLearn != null) _btnLearn.style.display = (canLearn && !isLearned) ? DisplayStyle.Flex : DisplayStyle.None;
             if (_btnForget != null) _btnForget.style.display = isLearned ? DisplayStyle.Flex : DisplayStyle.None;
+            // Phase 3: bind buttons visible for learned skills only
+            var showBinds = isLearned;
+            if (_btnBindPrimary   != null) _btnBindPrimary  .style.display = showBinds ? DisplayStyle.Flex : DisplayStyle.None;
+            if (_btnBindSecondary != null) _btnBindSecondary.style.display = showBinds ? DisplayStyle.Flex : DisplayStyle.None;
+            if (_btnBindSlot1     != null) _btnBindSlot1    .style.display = showBinds ? DisplayStyle.Flex : DisplayStyle.None;
+            if (_btnBindSlot2     != null) _btnBindSlot2    .style.display = showBinds ? DisplayStyle.Flex : DisplayStyle.None;
+            if (_btnBindSlot3     != null) _btnBindSlot3    .style.display = showBinds ? DisplayStyle.Flex : DisplayStyle.None;
+            if (_btnBindSlot4     != null) _btnBindSlot4    .style.display = showBinds ? DisplayStyle.Flex : DisplayStyle.None;
+        }
+
+        private void OnBindSlotClicked(Skills.SkillInputSlot slot)
+        {
+            var skillId = _selectedSkillId;
+            if (string.IsNullOrEmpty(skillId)) return;
+            var sis = Skills.SkillInputService.Instance;
+            if (sis == null) return;
+            // Если этот навык уже привязан к другому слоту — отвязываем оттуда
+            Skills.SkillInputSlot? oldSlot = null;
+            foreach (var kvp in sis.GetAllBindings())
+                if (kvp.Value == skillId) { oldSlot = kvp.Key; break; }
+            if (oldSlot.HasValue && oldSlot.Value != slot) sis.BindSlot(oldSlot.Value, "");
+            sis.BindSlot(slot, skillId);
+            Debug.Log($"[SkillTreeWindow] Bound {skillId} → {slot}");
+            // Re-render to update button text
+            var learned = SkillsClientState.Instance?.CurrentSkills ?? new HashSet<string>();
+            foreach (var sk in _filteredSkills)
+            {
+                if (sk.skillId == skillId)
+                {
+                    SelectSkill(skillId);
+                    break;
+                }
+            }
         }
 
         private bool CanLearn(SkillNodeConfig s, HashSet<string> learned)

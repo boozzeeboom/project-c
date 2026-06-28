@@ -15,6 +15,7 @@
 //
 // Design: docs/Character/Skills/AUDIT_2026-06-26_CURRENT_STATE_AND_NEXT_STEPS.md §3.O-7 + §4.
 
+using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.InputSystem;
 using Unity.Netcode;
@@ -280,17 +281,30 @@ namespace ProjectC.Skills
             {
                 _slotToSkillId[slot] = skillId;
             }
-            if (Debug.isDebugBuild)
-            {
-                Debug.Log($"[SkillInputService] BindSlot: slot={slot} skill='{skillId ?? "(unbind)"}'");
-            }
+            Debug.Log($"[SkillInputService] BindSlot: slot={slot} skill='{skillId ?? "(unbind)"}'");
         }
 
+        /// <summary>Получить все известные skillId (из Server/SkillsClientState).</summary>
+        public IReadOnlyList<string> GetAllSkillIds() => _allSkillIds;
+
+        /// <summary>Текущая привязка slot → skillId.</summary>
         public string GetSkillForSlot(SkillInputSlot slot)
         {
-            _slotToSkillId.TryGetValue(slot, out var id);
-            return id;
+            if (_slotToSkillId.TryGetValue(slot, out var id)) return id;
+            return "";
         }
+
+        /// <summary>Список всех привязанных slot'ов (для UI).</summary>
+        public IReadOnlyDictionary<SkillInputSlot, string> GetAllBindings() => _slotToSkillId;
+
+        /// <summary>Установить список известных навыков (вызывается при старте из ClientState).</summary>
+        public void SetKnownSkills(IEnumerable<string> skillIds)
+        {
+            _allSkillIds.Clear();
+            if (skillIds != null) _allSkillIds.AddRange(skillIds);
+        }
+
+        private readonly System.Collections.Generic.List<string> _allSkillIds = new();
 
         public bool IsSlotBound(SkillInputSlot slot) => _slotToSkillId.ContainsKey(slot);
 

@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="utf-8"?>
+<ui:UXML xmlns:ui="UnityEngine.UIElements">
+    <Style src="UI/SkillBindingWindow" />
+    <ui:VisualElement name="sk-root" class="sk-root">
+        <ui:VisualElement name="sk-window" class="sk-window">
+            <ui:VisualElement class="sk-header">
+                <ui:Label text="Навыки на слотах" class="sk-title" />
+                <ui:Button name="sk-close-btn" text="✕" class="sk-close-btn" />
+            </ui:VisualElement>
+            <ui:Label text="Кликните ✎ на слоте чтобы выбрать навык для него. ✕ очищает слот." class="sk-subtitle" />
+            <ui:ScrollView name="slots-scroll" class="sk-scroll sk-slots-list" />
+
+            <!-- Modal overlay (hidden by default) -->
+            <ui:VisualElement name="modal-overlay" class="sk-modal-overlay" style="display: none;">
+                <ui:VisualElement class="sk-modal-window">
+                    <ui:VisualElement class="sk-header">
+                        <ui:Label name="modal-title" text="Выберите навык" class="sk-title" />
+                        <ui:Button name="modal-close-btn" text="✕" class="sk-close-btn" />
+                    </ui:VisualElement>
+                    <ui:ScrollView name="skills-scroll" class="sk-scroll" />
+                </ui:VisualElement>
+            </ui:VisualElement>
+        </ui:VisualElement>
+    </ui:UXML>

@@ -85,12 +85,13 @@
     min-height: 0 !important;
 }
 .stw-list-col {
-    width: 80% !important;
+    width: 70% !important;
     flex-direction: column !important;
     margin-right: 4px !important;
     flex-shrink: 0 !important;
 }
 .stw-detail-col {
+    overflow-y: auto !important;
     flex-grow: 1 !important;
     flex-shrink: 1 !important;
     min-width: 0 !important;
@@ -148,7 +149,7 @@
     font-size: 11px !important;
     color: rgb(220, 220, 230) !important;
     white-space: nowrap !important;
-    overflow: hidden !important;
+    
     text-overflow: ellipsis !important;
     -unity-text-align: middle-left !important;
 }
@@ -251,13 +252,19 @@
 }
 .stw-detail-actions {
     flex-direction: row !important;
+    flex-wrap: wrap !important;
     flex-shrink: 0 !important;
-    margin-top: auto !important;
+    justify-content: center !important;
+    align-items: center !important;
     padding-top: 6px !important;
     border-top-width: 1px !important;
     border-top-color: rgba(80, 100, 130, 0.3) !important;
-    gap: 6px !important;
+    gap: 4px !important;
+    min-height: 80px !important;
+    overflow-y: auto !important;
 }
+
+
 
 /* === Buttons (VisualElement, no cursor: link) === */
 .stw-btn {
@@ -285,6 +292,21 @@
 }
 .stw-btn-forget:hover {
     background-color: rgba(220, 100, 80, 0.8) !important;
+}
+
+/* Phase 3: Bind slot buttons */
+.stw-btn-bind {
+    background-color: rgba(60, 90, 70, 0.5) !important;
+    border-color: rgba(80, 130, 100, 0.5) !important;
+    color: rgb(200, 230, 200) !important;
+    min-width: 60px !important;
+    max-width: 90px !important;
+    padding: 2px 6px !important;
+    font-size: 10px !important;
+    border-radius: 3px !important;
+}
+.stw-btn-bind:hover {
+    background-color: rgba(80, 130, 100, 0.8) !important;
 }
 .stw-btn-close {
     background-color: rgba(60, 80, 110, 0.6) !important;
@@ -352,7 +374,7 @@
     font-size: 10px !important;
     color: rgb(220, 220, 230) !important;
     white-space: nowrap !important;
-    overflow: hidden !important;
+    
     text-overflow: ellipsis !important;
     flex-grow: 1 !important;
 }

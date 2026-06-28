@@ -14,10 +14,10 @@
 |---|---|---|---|---|---|
 | ✅ Done | PanelSettings fix (Reference Resolution 1200x800) | (был 🔴 блокер) | ✅ merged | (pre-Pass-1) | 15 мин |
 | ✅ **Pass 1** | CombatDiscipline enum + ApplySkillEffects + ClassCatalogs | T-CB02 + T-CB07 + T-CB05 | ✅ merged | `3b2016e` | ~2 ч |
-| **Pass 2** | Raycast targeting + cleanup DebugAttackNearestNpc | T-RTC10 + cleanup | ⏳ NEXT | — | ~1.5-2 ч |
+| ✅ **Pass 2** | Raycast targeting + cleanup DebugAttackNearestNpc | T-RTC10 + cleanup | ✅ merged | `71e7229` | ~1 ч |
 | Phase 2 | SkillTreeWindow Fit + auto-fit + CenterOnSelected | UX polish | ⏳ later | — | ~30 мин |
 
-**ИТОГО MVP+1 combat (пеший, с дисциплинами, с прицеливанием): ~3.5-4.5 ч** (после Pass 2).
+**ИТОГО MVP+1 combat (пеший, с дисциплинами, с прицеливанием): ~3 ч** ✅ DONE.
 
 ---
 
@@ -60,6 +60,65 @@
 2. **Explosives prefix = `expl_`**, не `explosives_` (legacy naming в существующих .asset). Mapping добавлен dual-prefix.
 3. **MCP refresh_unity** работает даже когда `state=stale_status` — это не блокер, если `read_console` чисто.
 4. **Auto-discover через execute_code + SerializedObject.ApplyModifiedProperties** — надёжнее чем ручная правка 27 .asset через OnValidate (которая срабатывает только при ручном импорте).
+
+---
+
+## ✅ Pass 2 — COMPLETED (2026-06-28)
+
+### Что сделано
+
+| Тикет | Описание | Файлы | Diff | Merge |
+|---|---|---|---|---|
+| **T-RTC10** | `TargetingService` (Combat/Core/) — static raycast helper. 3 метода: `TryGetTarget`, `TryGetTargetFromCamera`, `TryGetTargetFromTransform`. Использует `Physics.Raycast` + `GetComponentInParent<IDamageTarget>`. QueryTriggerInteraction.Ignore. | `TargetingService.cs` (NEW, +97 строк), `NetworkPlayer.cs` (-77 строк) | 3 файла, +114 строк, -62 | `71e7229` |
+| **Cleanup** | Удалён `DebugAttackNearestNpc` (legacy "nearest NpcTarget в 15м"). Удалены dead-comments (19 строк закомментированного T-RTC06/T-INP-02/T-INP-03 кода). | `NetworkPlayer.cs` | (см. выше) | `71e7229` |
+
+### Архитектура решения
+
+- **`TargetingService` — статический helper** (без state, без MonoBehaviour).
+- **`NetworkPlayer.InitializeSkillInputService`** — TargetFinder lambda теперь raycast от `Camera.main.forward`:
+  ```
+  System.Func<ulong> targetFinder = () =>
+  {
+      var cam = Camera.main;
+      if (TargetingService.TryGetTargetFromCamera(cam, transform, 30f, ~0, out var target, out _))
+          return target.GetTargetId();
+      return 0UL;  // miss → CombatServer skip
+  };
+  ```
+- **`SkillInputService`** уже имеет hook `TargetFinder` (line 229-235) — никаких изменений не нужно.
+- **`CombatServer.RequestAttackRpc(targetId, sourceId)`** поддерживает targetId != 0 (line 198). При targetId=0 → no-op.
+
+### Verification результаты
+
+- ✅ `refresh_unity scope=scripts` → **0 errors**
+- ✅ Reflection smoke test: `TargetingService.TryGetTarget`, `TryGetTargetFromCamera`, `TryGetTargetFromTransform` — все 3 метода загружены
+- ✅ NetworkPlayer.cs: -77 строк legacy → +15 строк raycast hook = -62 net
+- ✅ Compile чисто (single edit через execute_code, чтобы избежать patch tool indentation issues)
+
+### Что тестировать в Play Mode (Pass 2)
+
+1. **Базовый случай** — ЛКМ или K на NPC (в зоне видимости камеры, ~10-30м):
+   - NPC должен получить урон
+   - Console: `[CombatServer] ResolveAttack: target X registered`, `[PlayerTarget] client=X took Y damage from attacker=Z`
+   - Damage trigger на Animator
+2. **Miss в воздух** — ЛКМ или K в небо / стену (без IDamageTarget):
+   - Никаких ошибок, targetId=0 → CombatServer no-op
+   - Если Debug.isDebugBuild: warning "[CombatServer] ResolveAttack: target 0 not registered"
+3. **Дальняя дистанция** — NPC дальше 30м (DefaultMaxDistance):
+   - Raycast miss → targetId=0 → no-op
+4. **Multi-player** — два игрока в сцене, каждый aim на разных NPC:
+   - Каждый получает свои targets (через GetTargetId() per-player)
+5. **Регрессия** — ЛКМ и K обе работают (dual binding через InputBindingsConfig)
+6. **Без NPC** — запустить Play Mode без NPC → ЛКМ не падает
+
+### Lessons learned (Pass 2)
+
+1. **patch tool ломает indentation** на multi-line insertions (per skill `unity-mcp-orchestrator` v2.11.0).
+   Workaround: `execute_code` через MCP с C# file rewrite — самый надёжный для больших блоков.
+2. **Doc-комментарий + method body при replace**: важно покрыть весь блок включая `/// <summary>.../// </summary>`,
+   иначе получается дублирование или missing close brace.
+3. **`DebugAttackNearestNpc` нигде не вызывался** — был мёртвый код (по комментарию "Оставлен ТОЛЬКО legacy ... для обратной совместимости тестов"). Безопасно удалить.
+4. **`NpcTarget` collider placement** — raycast требует Collider на GameObject с NpcTarget (или дочернем). Если NPC scene-placed без Collider — нужно добавить CapsuleCollider вручную.
 
 ---
 

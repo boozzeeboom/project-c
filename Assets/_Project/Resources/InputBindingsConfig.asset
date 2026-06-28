@@ -49,30 +49,6 @@ MonoBehaviour:
     fallbackKey: 0
     displayName: "Shift+\u041F\u041A\u041C"
     onlyOnFoot: 0
-  - slot: 10
-    mouseButtonRaw: 0
-    modifier: 0
-    fallbackKey: 41
-    displayName: 1
-    onlyOnFoot: 0
-  - slot: 11
-    mouseButtonRaw: 0
-    modifier: 0
-    fallbackKey: 42
-    displayName: 2
-    onlyOnFoot: 0
-  - slot: 12
-    mouseButtonRaw: 0
-    modifier: 0
-    fallbackKey: 43
-    displayName: 3
-    onlyOnFoot: 0
-  - slot: 13
-    mouseButtonRaw: 0
-    modifier: 0
-    fallbackKey: 44
-    displayName: 4
-    onlyOnFoot: 0
   actions:
   - action: 0
     category: 0

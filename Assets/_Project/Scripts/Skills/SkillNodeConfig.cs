@@ -124,6 +124,16 @@ namespace ProjectC.Skills
         [Tooltip("Ширина линии/бокса в метрах (Line/Box only). Для Cone и Sphere = 0.")]
         [Min(0f)] public float aoeWidth = 0f;
 
+        // === T-INP-06: AOE Debug Visualization ===
+        [Header("AOE Debug Visualization (T-INP-06)")]
+        [Tooltip("Если включено — при активации этого навыка в Play Mode на время каста рисуется 3D wireframe " +
+                 "AOE-зоны (Cone/Sphere/Line/Box) в позиции атакующего. Полезно для подгонки aoeSize/aoeConeAngleDeg/aoeWidth " +
+                 "под VFX и анимации. Editor-only toggle, в build'е игнорируется.")]
+        public bool debugVisualizeAoe = false;
+
+        [Tooltip("Длительность показа wireframe в секундах. 0.3 = быстрый flash, 1.0 = видно дольше.")]
+        [Range(0.1f, 3.0f)] public float debugVisualizeDuration = 0.6f;
+
         // === Public read-only API ===
 
         public float LearnXpCost => _learnXpCost;

@@ -31,23 +31,27 @@
 
    <!-- RIGHT: detail panel -->
    <ui:VisualElement class="stw-detail-col">
-    <ui:VisualElement class="stw-detail-header">
-     <ui:Label name="detail-name" text="Выберите навык слева" class="stw-detail-name" />
-     <ui:Label name="detail-desc" text="" class="stw-detail-desc" />
-    </ui:VisualElement>
-    <ui:VisualElement class="stw-detail-stats">
-     <ui:Label name="detail-effects" text="" class="stw-detail-effects" />
-     <ui:Label name="detail-cost"    text="" class="stw-detail-cost" />
-     <ui:Label name="detail-tier"    text="" class="stw-detail-tier" />
-    </ui:VisualElement>
-    <ui:VisualElement class="stw-detail-prereq">
-     <ui:Label text="Требуется:" class="stw-detail-prereq-title" />
-     <ui:VisualElement name="detail-prereq-container" class="stw-detail-prereq-container" />
-    </ui:VisualElement>
-    <ui:VisualElement class="stw-detail-deps">
-     <ui:Label text="Откроет:" class="stw-detail-deps-title" />
-     <ui:VisualElement name="detail-deps-container" class="stw-detail-deps-container" />
-    </ui:VisualElement>
+    <!-- Scrollable area: header + stats + prereq + deps. height = flex-grow 1, overflow-y = auto. -->
+    <ui:ScrollView name="detail-scroll" class="stw-detail-scroll" mode="Vertical">
+     <ui:VisualElement class="stw-detail-header">
+      <ui:Label name="detail-name" text="Выберите навык слева" class="stw-detail-name" />
+      <ui:Label name="detail-desc" text="" class="stw-detail-desc" />
+     </ui:VisualElement>
+     <ui:VisualElement class="stw-detail-stats">
+      <ui:Label name="detail-effects" text="" class="stw-detail-effects" />
+      <ui:Label name="detail-cost"    text="" class="stw-detail-cost" />
+      <ui:Label name="detail-tier"    text="" class="stw-detail-tier" />
+     </ui:VisualElement>
+     <ui:VisualElement class="stw-detail-prereq">
+      <ui:Label text="Требуется:" class="stw-detail-prereq-title" />
+      <ui:VisualElement name="detail-prereq-container" class="stw-detail-prereq-container" />
+     </ui:VisualElement>
+     <ui:VisualElement class="stw-detail-deps">
+      <ui:Label text="Откроет:" class="stw-detail-deps-title" />
+      <ui:VisualElement name="detail-deps-container" class="stw-detail-deps-container" />
+     </ui:VisualElement>
+    </ui:ScrollView>
+    <!-- Fixed bottom: action buttons (learn/forget + bind slots). Не скроллится, всегда виден. -->
     <ui:VisualElement class="stw-detail-actions">
      <ui:Label name="btn-learn"  text="Изучить"  class="stw-btn stw-btn-learn"  style="display: none;" />
      <ui:Label name="btn-forget" text="Забыть"   class="stw-btn stw-btn-forget" style="display: none;" />

@@ -61,7 +61,9 @@ namespace ProjectC.Input
         }
 
         [Header("Combat Skills (Q-INP-02)")]
-        [Tooltip("10 биндов: 6 мышиных + 4 цифровых для Slot1-4")]
+        [Tooltip("6 биндов: ЛКМ/ПКМ (с модификаторами и без) → Primary/Secondary/Slot1-4. " +
+                 "Фолбэк-клавиши (Digit1..4) удалены — Slot1-4 доступны ТОЛЬКО через Ctrl/Shift+мышь, " +
+                 "чтобы не конкурировать с фолбэком Primary (K) и не путать игрока.")]
         public List<SkillKeyBinding> combatSkills = new List<SkillKeyBinding>
         {
             new SkillKeyBinding { slot = SkillInputSlot.Primary,   mouseButtonRaw = 1, modifier = Key.None,       fallbackKey = Key.K,      displayName = "ЛКМ",         onlyOnFoot = false },
@@ -70,10 +72,6 @@ namespace ProjectC.Input
             new SkillKeyBinding { slot = SkillInputSlot.Slot2,     mouseButtonRaw = 2, modifier = Key.LeftCtrl,  fallbackKey = Key.None,   displayName = "Ctrl+ПКМ",    onlyOnFoot = false },
             new SkillKeyBinding { slot = SkillInputSlot.Slot3,     mouseButtonRaw = 1, modifier = Key.LeftShift, fallbackKey = Key.None,   displayName = "Shift+ЛКМ",   onlyOnFoot = false },
             new SkillKeyBinding { slot = SkillInputSlot.Slot4,     mouseButtonRaw = 2, modifier = Key.LeftShift, fallbackKey = Key.None,   displayName = "Shift+ПКМ",   onlyOnFoot = false },
-            new SkillKeyBinding { slot = SkillInputSlot.Slot1, mouseButtonRaw = 0, modifier = Key.None, fallbackKey = Key.Digit1, displayName = "1", onlyOnFoot = false },
-            new SkillKeyBinding { slot = SkillInputSlot.Slot2, mouseButtonRaw = 0, modifier = Key.None, fallbackKey = Key.Digit2, displayName = "2", onlyOnFoot = false },
-            new SkillKeyBinding { slot = SkillInputSlot.Slot3, mouseButtonRaw = 0, modifier = Key.None, fallbackKey = Key.Digit3, displayName = "3", onlyOnFoot = false },
-            new SkillKeyBinding { slot = SkillInputSlot.Slot4, mouseButtonRaw = 0, modifier = Key.None, fallbackKey = Key.Digit4, displayName = "4", onlyOnFoot = false },
         };
 
         // ==================== Generic Action Binding ====================

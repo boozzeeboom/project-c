@@ -101,7 +101,9 @@ namespace ProjectC.Skills
         // Update() опрашивает InputBindingsRuntime.Config.combatSkills и триггерит TryActivate.
         // Это ЗАМЕНЯЕТ прямые ЛКМ/K хендлеры в NetworkPlayer.Update (см. docs/Character/input-system/40_MIGRATION_PLAN.md).
         //
-        // Приоритет: первый матч в списке (Primary идёт первым → ЛКМ без модификатора → break).
+        // Приоритет: самый СПЕЦИФИЧНЫЙ матч в кадре (modifier+button > button alone > fallback key).
+        // Например, Ctrl+ЛКМ должен попасть в Slot1 (modifier=LeftCtrl), а НЕ в Primary (modifier=None),
+        // даже если Primary идёт раньше в списке.
 
         private void Update()
         {
@@ -113,16 +115,39 @@ namespace ProjectC.Skills
             if (runtime == null || runtime.Config == null) return;
             var cfg = runtime.Config;
 
-            // 3) Poll each binding; fire TryActivate on first match.
+            // 3) Найти самый специфичный матч. Specificity score:
+            //    modifier+button = 100, button only = 50, fallback key = 10.
+            //    Если несколько биндингов матчатся с одинаковым score — берём первый.
+            SkillInputSlot bestSlot = SkillInputSlot.None;
+            int bestScore = 0;
             for (int i = 0; i < cfg.combatSkills.Count; i++)
             {
                 var b = cfg.combatSkills[i];
-                if (IsBindingPressed(b))
+                if (!IsBindingPressed(b)) continue;
+                int score = ScoreBinding(b);
+                if (score > bestScore)
                 {
-                    TryActivate(b.slot);
-                    break; // один слот за кадр — приоритет первого матча в списке
+                    bestScore = score;
+                    bestSlot = b.slot;
                 }
             }
+            if (bestSlot != SkillInputSlot.None)
+            {
+                TryActivate(bestSlot);
+            }
+        }
+
+        /// <summary>
+        /// Specificity score: modifier+button = 100, button only = 50, fallback key = 10.
+        /// Гарантирует, что Ctrl+ЛКМ (100) перебивает просто ЛКМ (50).
+        /// </summary>
+        private int ScoreBinding(InputBindingsConfig.SkillKeyBinding b)
+        {
+            int score = 0;
+            if (b.mouseButtonRaw != 0) score += 50;
+            if (b.modifier != Key.None) score += 50; // поверх mouse-button = 100
+            else if (b.fallbackKey != Key.None) score += 10;
+            return score;
         }
 
         /// <summary>
@@ -300,6 +325,19 @@ namespace ProjectC.Skills
 
             // 9) Set local cooldown (placeholder 0.5s; в будущем — из SkillNodeConfig.cooldownSeconds)
             _slotCooldownUntil[slot] = Time.unscaledTime + 0.5f;
+
+            // T-INP-06: AOE debug visualization hook. Editor/Dev build only.
+            // Если в SkillNodeConfig включён debugVisualizeAoe — показать wireframe.
+            if (skillConfig != null && skillConfig.debugVisualizeAoe && _ownerPlayer != null)
+            {
+                var viz = ProjectC.Skills.DebugVisualization.SkillAoeDebugVisualizer.EnsureExists();
+                if (viz != null)
+                {
+                    Vector3 origin = _ownerPlayer.transform.position + Vector3.up * 1.2f;
+                    Vector3 forward = _ownerPlayer.transform.forward;
+                    viz.OnSkillActivated(skillConfig, origin, forward);
+                }
+            }
 
             if (Debug.isDebugBuild)
             {

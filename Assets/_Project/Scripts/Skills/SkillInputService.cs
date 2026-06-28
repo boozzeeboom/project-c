@@ -235,9 +235,41 @@ namespace ProjectC.Skills
                 }
             }
 
-            // 6) Получить SkillNodeConfig для animationTrigger
-            string trigger = _defaultAttackTrigger;
-            // TODO(T-INP-02+): прочитать skillConfig.attackAnimationTrigger когда поле добавлено.
+            // 6) Получить SkillNodeConfig (T-INP-02: теперь есть навыки с isActive + animation trigger + AOE formula).
+            // Phase 1: Resources.LoadAll<SkillNodeConfig> — SO лежат в Resources/Skills, доступны клиенту.
+            // Phase 2: заменить на SkillsClientState cache (per T-P12).
+            SkillNodeConfig skillConfig = null;
+            if (hasBind && !string.IsNullOrEmpty(skillId))
+            {
+                try
+                {
+                    var allSkills = Resources.LoadAll<SkillNodeConfig>("Skills");
+                    foreach (var s in allSkills)
+                    {
+                        if (s != null && s.skillId == skillId) { skillConfig = s; break; }
+                    }
+                }
+                catch (System.Exception ex)
+                {
+                    Debug.LogWarning($"[SkillInputService] Resources.LoadAll<SkillNodeConfig> failed: {ex.Message}");
+                }
+            }
+
+            // 6.5) Animation trigger (T-INP-02/04): skill-specific trigger если задан, иначе default.
+            string trigger = (skillConfig != null && !string.IsNullOrEmpty(skillConfig.attackAnimationTrigger))
+                ? skillConfig.attackAnimationTrigger
+                : _defaultAttackTrigger;
+
+            // 6.6) Active guard (T-INP-02): пассивные навыки нельзя активировать через TryActivate.
+            // Они применяются автоматически через SkillsServer.ApplySkillEffects на learn.
+            if (skillConfig != null && !skillConfig.isActive)
+            {
+                if (Debug.isDebugBuild)
+                {
+                    Debug.LogWarning($"[SkillInputService] slot={slot} skill='{skillId}' is passive — can't activate (auto-applied on learn)");
+                }
+                return false;
+            }
 
             // 7) Локальная анимация (owner-side prediction, визуально сразу)
             if (_animator != null)
@@ -245,15 +277,24 @@ namespace ProjectC.Skills
                 _animator.SetTrigger(trigger);
             }
 
-            // 8) RPC на сервер (targetId=0 = server ищет nearest сам, MVP)
-            //    sourceId=0 = Unarmed/WeaponMain первое доступное (server-side выбор по PlayerAttacker.GetDamageSource).
+            // 8) RPC на сервер.
+            // T-INP-03: если skill имеет AOE формулу (не SingleTarget) — посылаем skill-based RPC.
+            // Иначе legacy single-target RPC (targetId=0 = server ищет nearest сам).
+            // sourceId=0 = Unarmed/WeaponMain первое доступное (server-side выбор по PlayerAttacker.GetDamageSource).
             try
             {
-                server.RequestAttackRpc(targetId, 0UL);
+                if (skillConfig != null && skillConfig.aoeFormula != ProjectC.Skills.AoeFormula.SingleTarget)
+                {
+                    server.RequestSkillCastRpc(skillId, targetId, 0UL);
+                }
+                else
+                {
+                    server.RequestAttackRpc(targetId, 0UL);
+                }
             }
             catch (System.Exception ex)
             {
-                Debug.LogError($"[SkillInputService] RequestAttackRpc failed: {ex.Message}");
+                Debug.LogError($"[SkillInputService] RPC failed: {ex.Message}");
                 return false;
             }
 
@@ -262,7 +303,8 @@ namespace ProjectC.Skills
 
             if (Debug.isDebugBuild)
             {
-                Debug.Log($"[SkillInputService] TryActivate: slot={slot} skill='{skillId}' target={targetId} trigger='{trigger}'");
+                string aoeInfo = skillConfig != null ? $" aoe={skillConfig.aoeFormula}/{skillConfig.aoeSize}m" : "";
+                Debug.Log($"[SkillInputService] TryActivate: slot={slot} skill='{skillId}' target={targetId} trigger='{trigger}'{aoeInfo}");
             }
             return true;
         }

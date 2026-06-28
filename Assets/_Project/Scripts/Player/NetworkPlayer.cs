@@ -219,6 +219,11 @@ namespace ProjectC.Player
 
                 // T-INP-01: SkillInputService (owner-only). Единая точка "нажата кнопка → выполнить навык".
                 InitializeSkillInputService();
+
+                // T-INP-08: SkillAnimationPlayer (owner-only). Проигрывает AnimationClip из SkillNodeConfig.attackClip
+                // через AnimatorOverrideController. Animation Event OnAttackImpact на 60% клипа вызывает
+                // SkillInputService.TryActivate(slot, skipAnimation:true) для RPC на сервер.
+                InitializeSkillAnimationPlayer();
             }
             else
             {
@@ -326,6 +331,45 @@ namespace ProjectC.Player
             if (Debug.isDebugBuild)
             {
                 Debug.Log("[NetworkPlayer] InitializeSkillInputService: SkillInputService ready (owner-only, T-RTC10 raycast)");
+            }
+        }
+
+        /// <summary>
+        /// T-INP-08: Инициализация SkillAnimationPlayer (owner-only).
+        /// AddComponent идемпотентен. Animation Event OnAttackImpact должен быть вызван на компоненте,
+        /// который сидит рядом с Animator (т.к. Unity вызывает метод на GameObject с Animator).
+        /// </summary>
+        private void InitializeSkillAnimationPlayer()
+        {
+            var animPlayer = GetComponent<SkillAnimationPlayer>();
+            if (animPlayer == null) animPlayer = gameObject.AddComponent<SkillAnimationPlayer>();
+
+            // T-INP-08: Animation Event из клипа вызывается Unity на GameObject с Animator.
+            // Если Animator на child mesh — добавляем passthrough-компонент на child с непустым controller.
+            // Это идемпотентно (AddComponent не дублирует).
+            UnityEngine.Animator animatorOnChild = null;
+            var animators = GetComponentsInChildren<UnityEngine.Animator>(true);
+            foreach (var a in animators)
+            {
+                if (a != null && a.runtimeAnimatorController != null)
+                {
+                    animatorOnChild = a;
+                    break;
+                }
+            }
+            if (animatorOnChild != null && animatorOnChild.gameObject != gameObject)
+            {
+                var passthrough = animatorOnChild.gameObject.GetComponent<SkillAnimationEventPassthrough>();
+                if (passthrough == null) passthrough = animatorOnChild.gameObject.AddComponent<SkillAnimationEventPassthrough>();
+                passthrough.SetTarget(this);
+                if (Debug.isDebugBuild)
+                {
+                    Debug.Log($"[NetworkPlayer] InitializeSkillAnimationPlayer: SkillAnimationEventPassthrough added on '{animatorOnChild.gameObject.name}' (target=NetworkPlayer).");
+                }
+            }
+            if (Debug.isDebugBuild)
+            {
+                Debug.Log("[NetworkPlayer] InitializeSkillAnimationPlayer: SkillAnimationPlayer ready (owner-only, T-INP-08).");
             }
         }
 

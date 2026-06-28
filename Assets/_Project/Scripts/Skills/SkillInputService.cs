@@ -200,7 +200,9 @@ namespace ProjectC.Skills
         /// Returns true если RPC отправлен (или skill не привязан — false без side-effects).
         /// Returns false если slot пуст, нет owner, на cooldown, нет target, нет server.
         /// </summary>
-        public bool TryActivate(SkillInputSlot slot)
+        /// <param name="slot">Skill slot для активации</param>
+        /// <param name="skipAnimation">true если вызов из OnAttackImpact event — не дёргать SkillAnimationPlayer.Play() заново.</param>
+        public bool TryActivate(SkillInputSlot slot, bool skipAnimation = false)
         {
             if (slot == SkillInputSlot.None) return false;
 
@@ -296,7 +298,36 @@ namespace ProjectC.Skills
                 return false;
             }
 
-            // 7) Локальная анимация (owner-side prediction, визуально сразу)
+            // 7) Animation: T-INP-08 data-driven path preferred.
+            //    Если в SkillNodeConfig задан attackClip → SkillAnimationPlayer.Play() проиграет клип;
+            //    OnAttackImpact event на 60% клипа вызовет TryActivate заново и пошлёт RPC.
+            //    Fallback (legacy path): SetTrigger(string) — если attackClip == null.
+            bool usedClip = false;
+            if (!skipAnimation && skillConfig != null && skillConfig.attackClip != null)
+            {
+                var animPlayer = _ownerPlayer != null ? _ownerPlayer.GetComponent<SkillAnimationPlayer>() : null;
+                if (animPlayer != null)
+                {
+                    animPlayer.Play(skillConfig, slot);
+                    usedClip = true;
+                    // RPC уйдёт через OnAttackImpact event (или fallback timeout в SkillAnimationPlayer).
+                    // Не отправляем RPC здесь — иначе двойной удар.
+                    // 9) Set local cooldown (чтобы не спамить нажатиями)
+                    _slotCooldownUntil[slot] = Time.unscaledTime + 0.5f;
+                    if (Debug.isDebugBuild)
+                    {
+                        Debug.Log($"[SkillInputService] TryActivate: slot={slot} skill='{skillId}' [T-INP-08 clip-path] attackClip='{skillConfig.attackClip.name}' — RPC will fire from OnAttackImpact event");
+                    }
+                    return true;
+                }
+                // Если SkillAnimationPlayer не добавлен — fallback на SetTrigger ниже + warning.
+                if (Debug.isDebugBuild)
+                {
+                    Debug.LogWarning($"[SkillInputService] Skill '{skillId}' has attackClip='{skillConfig.attackClip.name}' but SkillAnimationPlayer not found on owner. Falling back to legacy SetTrigger.");
+                }
+            }
+
+            // Legacy path: SetTrigger (без attackClip, или SkillAnimationPlayer missing)
             if (_animator != null)
             {
                 _animator.SetTrigger(trigger);

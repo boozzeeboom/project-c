@@ -103,6 +103,18 @@ namespace ProjectC.Skills
                  "Используется ТОЛЬКО для active skills.")]
         public string attackAnimationTrigger = "Attack";
 
+        // === T-INP-08: AnimationClip reference (data-driven, designer-friendly) ===
+        [Header("Animation Clip (T-INP-08) — preferred over trigger string")]
+        [Tooltip("Drag-and-drop AnimationClip (.anim или клип из .fbx). " +
+                 "Если задан — проигрывается через SkillAnimationPlayer (AnimatorOverrideController), " +
+                 "НЕ требует ручной правки Animator Controller на каждый скилл. " +
+                 "Оставьте пустым, чтобы использовать старый путь через attackAnimationTrigger (строку).")]
+        public AnimationClip attackClip;
+
+        [Tooltip("Скорость проигрывания клипа. 1.0 = нормальная, 2.0 = в 2 раза быстрее, 0.5 = в 2 раза медленнее. " +
+                 "Полезно для быстрых лёгких атак (1.2) или медленных тяжёлых ударов (0.8).")]
+        [Range(0.1f, 3.0f)] public float attackClipSpeed = 1.0f;
+
         // === T-INP-02: AOE Formula ===
         [Header("AOE Formula (T-INP-02, active skills only)")]
         [Tooltip("SingleTarget = одиночная цель (raycast от камеры). " +

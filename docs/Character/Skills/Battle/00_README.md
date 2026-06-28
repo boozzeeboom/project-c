@@ -1,19 +1,28 @@
 # Battle Skills — боевые навыки поверх существующей skill tree
 
 > **Подсистема:** Character Progression → Skill Tree → Combat branch
-> **Статус:** 🟡 Проектирование (v0.3, 2026-06-25) — **новый sequencing, реверс v0.2**
+> **Статус:** ✅ **MVP+1 реализован (2026-06-28)** — см. `docs/Character/Skills/Battle/IMPLEMENTATION_PLAN_2026.md`
+> **Последние merge:** `3b2016e` (T-CB02/05/07), `220b529` (T-RTC10 hybrid targeting + cleanup)
 > **Базовый документ:** `docs/Character/06_SKILL_TREE.md` (T-P11..T-P14 уже реализовано)
 > **Коллаборация с ERPR:** `ERPR_collaboration.md` (damage dice + crit + hit location, без магии, без сетки, без пошаговости)
 > **Связанный документ (MVP):** `../real-time-combat/` — **Real-Time Combat Engine**, который переиспользует ERPR damage-формулу (см. `Battle/10_DESIGN.md §7`).
-> **Scope сессии:** research + design-doc only. **Без кода.** Реализация навыков — T-CB01..T-CB09 (отложены в roadmap, после T-RTC01..T-RTC09).
 > **Turn-based battles** (`turn-based-battles/`) — **PARKING** (отложен на неопределённый срок). ЗБТ может пересмотреть.
 
 ---
 
 ## TL;DR
 
-Сегодня Combat-навыки в проекте — это 4 placeholder-ноды в `docs/Character/06_SKILL_TREE.md §1.3`:
-`BasicStrike (+2 STR)`, `DodgeRoll (+3 DEX)`, `HeavySwing`, `PrecisionStrike`. Все четыре — обычные `SkillEffect.StatMod`, **не привязаны к оружию**. CHANGELOG 2026-06-17 фиксирует: *«Skills click handlers deferred до battle system»*. Combat-системы как таковой в коде нет: `WeaponItemData` не существует, `EquipSlot.WeaponMain/Off` объявлены, но реальное оружие не описано; `CombatWorld/CombatServer` отсутствуют.
+Combat-система **реализована** — см. `IMPLEMENTATION_PLAN_2026.md` полный список.
+Кратко:
+- ✅ SkillInputService + InputBindingsConfig (ЛКМ/K dual-binding, 10 боевых биндов)
+- ✅ 27 навыков (4 Combat, 5 Melee, 3 Ranged, 3 Explosives, 3 Antigrav, 3 Defense, 4 Social)
+- ✅ SkillTreeWindow — 2D граф + pan + zoom + learn/forget RPC
+- ✅ CombatDiscipline enum (7 значений) — auto-set по prefix, 27 .asset заполнены
+- ✅ ApplySkillEffects runtime handler — learn/forget хуки, Phase 2 unlock логика
+- ✅ WeaponClassCatalog + ArmorClassCatalog + WeaponTechniqueCatalog (SO lookup)
+- ✅ Raycast targeting (с hybrid nearest fallback)
+- ✅ T-RTC10: удалён DebugAttackNearestNpc
+- ✅ PanelSettings fix (SkillTreeWindow 1200x800)
 
 **Решение сессии (v0.3, после ответов пользователя) — новый sequencing:**
 - **Real-Time Combat Engine** (`../real-time-combat/`) = **MVP**. Движок делаем **сначала**, навыки подключаются позже («когда уже можно будет»).
@@ -134,32 +143,33 @@ docs/Character/Skills/turn-based-battles/
 
 ---
 
-## Roadmap реализации (обновлён v0.3, новый sequencing)
+## Roadmap реализации (актуальный статус на 2026-06-28)
 
-**Sequencing (v0.3):** Real-Time Combat Engine (MVP) → навыки (MVP+1) → PvP-duel (Phase 2) → ship combat (Phase 3) → turn-based (PARKING).
+**Sequencing:** Real-Time Combat Engine (MVP) → навыки (MVP+1, ✅ DONE) → PvP-duel (Phase 2) → ship combat (Phase 3) → turn-based (PARKING).
 
-| # | Тикет | Что | Зависимости | Сложность |
+| # | Тикет | Что | Статус | Merge |
 |---|---|---|---|---|
-| **T-RTC01..T-RTC09** | **Real-Time Combat Engine (MVP)** | **см. `../real-time-combat/`** | **самодостаточный** | **~23-32 ч (3-4 сессии)** |
-| T-CB01 | Расширить `SkillEffect` enum | 5 новых Type | T-P11 уже есть | ~1-2 ч |
-| T-CB02 | Добавить `CombatDiscipline` enum + поле в `SkillNodeConfig` | display + filter | T-P11 уже есть | ~0.5 ч |
-| T-CB03 | `WeaponItemData` SO (extends ItemData) **+ 3 ERPR-поля** | новый тип предмета + ERPR | T-P07 pattern | ~2 ч |
-| T-CB04 | `ExplosiveItemData` SO (extends ItemData) | гранаты/мины | T-P07 pattern | ~1.5 ч |
-| T-CB05 | `WeaponClass` + `ArmorClass` + `WeaponTechnique` lookup SOs | справочники | новые | ~2 ч |
-| T-CB06 | `EquipmentServer.TryEquip` + `ClothingItemData.armorDefense` | reuse Q2.3 + ERPR | T-P07+T-P09 | ~2 ч |
-| T-CB07 | `SkillsServer.ApplySkillEffects` — обработка новых Type | reuse T-P13 | T-CB01 | ~2 ч |
-| T-CB08 | `Resources/Skills/Combat/*.asset` — 5 веток, 35 нод **с damage-параметрами** | контент | T-CB01..07 | ~4-5 ч |
-| T-CB09 | `CharacterWindow` — фильтр по `CombatDiscipline` в combat-sub-tab | UI | T-CB02 | ~1.5 ч |
-| T-RTC11..T-RTC15 | PvP-дуэль flow (Phase 2) | duel invite, accept, duel HUD | T-RTC* | ~15-20 ч |
-| T-RTC16..T-RTC20 | Ship combat (Phase 3, после ЗБТ) | `ShipAttacker`, `Turret`, `ShipRangePolicy` | T-RTC* | ~25-33 ч |
-| T-TB01..T-TB14 | **Turn-based battles (PARKING, отложен)** | см. `../turn-based-battles/` | T-CB01..T-CB09 | ~46 ч (отложено) |
+| **T-RTC01..T-RTC09** | **Real-Time Combat Engine (MVP)** | **см. `../real-time-combat/`** | ✅ (из предыдущих сессий) | pre-Pass-1 |
+| T-CB01 | Расширить `SkillEffect` enum (5 новых Type) | ✅ сделан | `2a4862a` |
+| **T-CB02** | `CombatDiscipline` enum + поле в `SkillNodeConfig` | ✅ merged | `2a4862a` |
+| T-CB03 | `WeaponItemData` SO + 3 ERPR-поля | ✅ (из предыдущих сессий) | pre-Pass-1 |
+| T-CB04 | `ExplosiveItemData` SO | ❌ Phase 2 | — |
+| **T-CB05** | `WeaponClassCatalog` + `ArmorClassCatalog` + `WeaponTechniqueCatalog` | ✅ merged | `3b2016e` |
+| T-CB06 | `ClothingItemData.armorDefense` + TryEquip proficiency gate | ✅ (из предыдущих сессий) | pre-Pass-1 |
+| **T-CB07** | `SkillsServer.ApplySkillEffects` runtime handler | ✅ merged | `68793ea` |
+| T-CB08 | 35 нод навыков контентом | ❌ Phase 2 (~4-5 ч) | — |
+| T-CB09 | CharacterWindow фильтр по discipline | ❌ Phase 2 | — |
+| **T-RTC10** | Raycast targeting + cleanup DebugAttackNearestNpc | ✅ merged | `71e7229` + `220b529` |
+| T-RTC11..T-RTC15 | PvP-дуэль flow (Phase 2) | ❌ Phase 2 | — |
+| T-RTC16..T-RTC20 | Ship combat (Phase 3) | ❌ Phase 3 | — |
+| T-TB01..T-TB14 | **Turn-based battles** | 🅿️ PARKING | — |
 
-**Оценка (v0.3, фокус — MVP):**
-- **MVP (пеший combat без навыков):** T-RTC01..T-RTC09 = **~23-32 ч** (3-4 сессии).
-- **MVP+1 (пеший + навыки):** T-CB01..T-CB09 = **~16-21 ч** (2-3 сессии).
-- **Phase 2 (PvP-дуэль + UI + NPC-AI):** ~30-40 ч.
-- **Phase 3 (ship combat + ЗБТ):** ~25-33 ч.
-- **PARKING (turn-based):** ~46 ч (отложено).
+**Итого (факт):**
+- ✅ **MVP (пеший combat):** ~23-32 ч (из предыдущих сессий + T-RTC10)
+- ✅ **MVP+1 (пеший + навыки):** ~8 ч фактически (T-CB02/05/07 + T-RTC10)
+- **Phase 2 (PvP + UI + контент):** ~30-40 ч
+- **Phase 3 (ship combat + ЗБТ):** ~25-33 ч
+- **PARKING (turn-based):** ~46 ч (отложено)
 
 **ИТОГО до играбельного combat (пеший MVP + skills):** **~40-53 ч** (5-7 сессий).
 **ИТОГО до играбельного combat (включая ship + PvP):** **~95-126 ч** (12-17 сессий).

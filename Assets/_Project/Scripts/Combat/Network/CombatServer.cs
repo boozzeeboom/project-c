@@ -186,6 +186,22 @@ namespace ProjectC.Combat
             ResolveAttack(attackerId, targetId, sourceId);
         }
 
+        // === T-INP-03: Skill-based AOE cast ===
+
+        /// <summary>
+        /// T-INP-03: RPC для active skill'а с AOE (или single-target) формулой.
+        /// Сервер резолвит SO через <see cref="SkillsWorld.GetSkillById(string)"/>, читает AOE параметры,
+        /// собирает IDamageTarget через <see cref="TargetingService.CollectAoeTargets"/>, для каждой считает
+        /// damage и применяет. Аналогично <see cref="ResolveAttack"/> но multi-target.
+        /// </summary>
+        [Rpc(SendTo.Server, RequireOwnership = true)]
+        public void RequestSkillCastRpc(string skillId, ulong primaryTargetId, ulong sourceId, RpcParams rpcParams = default)
+        {
+            ulong attackerId = rpcParams.Receive.SenderClientId;
+            if (!RateLimit(attackerId)) return;
+            ResolveSkillCast(attackerId, skillId, primaryTargetId, sourceId);
+        }
+
         // === Server-side damage flow ===
 
         public void ResolveAttack(ulong attackerId, ulong targetId, ulong sourceId)
@@ -316,6 +332,170 @@ namespace ProjectC.Combat
             var rpcParams = new RpcParams { Send = new RpcSendParams { Target = RpcTarget.Single(clientId, RpcTargetUse.Temp) } };
             AttackErrorTargetRpc(clientId, code, rpcParams);
             if (Debug.isDebugBuild) Debug.Log($"[CombatServer] AttackError → client={clientId}: {code}");
+        }
+
+        // === T-INP-03: Server-side skill cast resolution ===
+
+        /// <summary>
+        /// Резолвит skillId → SkillNodeConfig, собирает AOE цели, для каждой считает damage.
+        /// Поведение максимально близко к <see cref="ResolveAttack"/> — но без primary target и с multi-hit.
+        /// </summary>
+        public void ResolveSkillCast(ulong attackerId, string skillId, ulong primaryTargetId, ulong sourceId)
+        {
+            if (string.IsNullOrEmpty(skillId))
+            {
+                SendErrorToClient(attackerId, "EmptySkillId");
+                return;
+            }
+
+            if (!_attackers.TryGetValue(attackerId, out var attacker))
+            {
+                if (Debug.isDebugBuild) Debug.LogWarning($"[CombatServer] ResolveSkillCast: attacker {attackerId} not registered.");
+                return;
+            }
+
+            if (!attacker.IsAlive())
+            {
+                if (Debug.isDebugBuild) Debug.LogWarning($"[CombatServer] ResolveSkillCast: attacker {attackerId} not alive.");
+                return;
+            }
+
+            // Resolve SkillNodeConfig server-side (SkillsWorld — authoritative source of truth)
+            var skillsWorld = ProjectC.Skills.SkillsWorld.Instance;
+            if (skillsWorld == null)
+            {
+                SendErrorToClient(attackerId, "SkillsWorldMissing");
+                return;
+            }
+            if (!skillsWorld.TryGetSkill(skillId, out var skillConfig) || skillConfig == null)
+            {
+                if (Debug.isDebugBuild) Debug.LogWarning($"[CombatServer] ResolveSkillCast: skillId '{skillId}' not found.");
+                SendErrorToClient(attackerId, "UnknownSkill");
+                return;
+            }
+            if (!skillConfig.isActive)
+            {
+                SendErrorToClient(attackerId, "SkillNotActive");
+                return;
+            }
+
+            var source = attacker.GetDamageSource(sourceId);
+            if (source == null)
+            {
+                SendErrorToClient(attackerId, "InvalidSource");
+                return;
+            }
+
+            float now = Time.unscaledTime;
+            if (!attacker.CanAttack(source, now))
+            {
+                SendErrorToClient(attackerId, "OnCooldown");
+                return;
+            }
+
+            // === AOE origin + direction ===
+            // Prefer attacker's transform.forward (PlayerAttacker/NpcAttacker). Fallback на Vector3.forward.
+            Vector3 origin = attacker.GetPosition() + Vector3.up * 1.2f;  // chest height
+            Vector3 forward = Vector3.forward;
+            if (attacker is MonoBehaviour mb && mb.transform != null)
+            {
+                forward = mb.transform.forward;
+            }
+
+            // === Collect targets via AOE formula ===
+            var results = new System.Collections.Generic.List<ProjectC.Combat.Core.IDamageTarget>();
+            var hitPoints = new System.Collections.Generic.List<Vector3>();
+
+            // SingleTarget → use legacy raycast against primaryTargetId's position OR TryGetTarget
+            if (skillConfig.aoeFormula == ProjectC.Skills.AoeFormula.SingleTarget)
+            {
+                if (primaryTargetId != 0 && _targets.TryGetValue(primaryTargetId, out var primary))
+                {
+                    results.Add(primary);
+                    hitPoints.Add(primary.GetPosition());
+                }
+                else if (!ProjectC.Combat.Core.TargetingService.TryGetTarget(
+                    origin, forward, ProjectC.Combat.Core.TargetingService.DefaultMaxDistance,
+                    ProjectC.Combat.Core.TargetingService.DefaultMask,
+                    out var hit, out var hp))
+                {
+                    if (Debug.isDebugBuild) Debug.Log($"[CombatServer] ResolveSkillCast: no target in range.");
+                    return;
+                }
+                else
+                {
+                    results.Add(hit);
+                    hitPoints.Add(hp);
+                }
+            }
+            else
+            {
+                ProjectC.Combat.Core.TargetingService.CollectAoeTargets(
+                    origin, forward,
+                    skillConfig.aoeFormula, skillConfig.aoeSize, skillConfig.aoeConeAngleDeg, skillConfig.aoeWidth,
+                    ProjectC.Combat.Core.TargetingService.DefaultMaxDistance,
+                    ProjectC.Combat.Core.TargetingService.DefaultMask,
+                    results, hitPoints);
+            }
+
+            if (results.Count == 0)
+            {
+                if (Debug.isDebugBuild) Debug.Log($"[CombatServer] ResolveSkillCast: no targets in AOE for skill '{skillId}'.");
+                return;
+            }
+
+            // === Set cooldown ONCE (per cast, не per hit) ===
+            attacker.SetCooldown(source, now + source.GetCooldownSeconds());
+
+            // === Apply damage to each ===
+            int hitsLanded = 0;
+            for (int i = 0; i < results.Count; i++)
+            {
+                var target = results[i];
+                if (target == null) continue;
+                if (!target.IsAlive()) continue;
+
+                // Range policy per target (один и тот же source может бить мечом по нескольким целям в радиусе)
+                IRangePolicy rangePolicy = source.GetRange() < 3.0f
+                    ? (IRangePolicy)new MeleeRangePolicy()
+                    : new RangedRangePolicy();
+                if (!rangePolicy.IsInRange(attacker, target, source)) continue;
+
+                var result = DamageCalculator.Calculate(attacker, target, source, rangePolicy);
+
+                if (Debug.isDebugBuild)
+                {
+                    if (result.isHit)
+                    {
+                        Debug.Log($"[DamageCalculator/AOE] attacker={attackerId} → target={target.GetTargetId()}, skill='{skillId}', source={source.GetDisplayName()}: preDefense={result.preDefenseDamage}, final={result.finalDamage}, isCrit={result.isCrit}");
+                    }
+                }
+
+                if (result.isHit)
+                {
+                    target.ApplyDamage(result, attackerId);
+                    hitsLanded++;
+                }
+
+                // Broadcast per-target
+                var dto = DamageResultDto.FromResult(result);
+                var rpcParams = new RpcParams { Send = new RpcSendParams { Target = RpcTarget.Everyone } };
+                AttackLandedTargetRpc(dto, rpcParams);
+
+                // Events per-target
+                WorldEventBus.Publish(new AttackLandedEvent { PlayerId = attackerId, Result = result });
+                if (result.isHit) WorldEventBus.Publish(new DamageDealtEvent { PlayerId = attackerId, Result = result });
+                if (result.isHit && !target.IsAlive())
+                {
+                    WorldEventBus.Publish(new EntityKilledEvent { PlayerId = attackerId, Result = result });
+                    EntityKilledTargetRpc(dto, rpcParams);
+                }
+            }
+
+            if (Debug.isDebugBuild)
+            {
+                Debug.Log($"[CombatServer] ResolveSkillCast: skill='{skillId}' formula={skillConfig.aoeFormula} targets={results.Count} hits={hitsLanded} attacker={attackerId}");
+            }
         }
     }
 }

@@ -70,23 +70,37 @@
 | Тикет | Описание | Файлы | Diff | Merge |
 |---|---|---|---|---|
 | **T-RTC10** | `TargetingService` (Combat/Core/) — static raycast helper. 3 метода: `TryGetTarget`, `TryGetTargetFromCamera`, `TryGetTargetFromTransform`. Использует `Physics.Raycast` + `GetComponentInParent<IDamageTarget>`. QueryTriggerInteraction.Ignore. | `TargetingService.cs` (NEW, +97 строк), `NetworkPlayer.cs` (-77 строк) | 3 файла, +114 строк, -62 | `71e7229` |
-| **Cleanup** | Удалён `DebugAttackNearestNpc` (legacy "nearest NpcTarget в 15м"). Удалены dead-comments (19 строк закомментированного T-RTC06/T-INP-02/T-INP-03 кода). | `NetworkPlayer.cs` | (см. выше) | `71e7229` |
+| **Hotfix** | Hybrid targeting: raycast + nearest fallback 15м. Если raycast miss — падает на legacy nearest NpcTarget. Крайний случай: 0 если ничего нет. | `NetworkPlayer.cs` | +8 net | `220b529` |
+| **Cleanup** | Удалён `DebugAttackNearestNpc` (legacy "nearest NpcTarget в 15м"). Удалены dead-comments (19 строк закомментированного T-RTC06/T-INP-02/T-INP-03 кода). | `NetworkPlayer.cs` | (см. T-RTC10) | `71e7229` |
 
 ### Архитектура решения
 
 - **`TargetingService` — статический helper** (без state, без MonoBehaviour).
-- **`NetworkPlayer.InitializeSkillInputService`** — TargetFinder lambda теперь raycast от `Camera.main.forward`:
+- **`NetworkPlayer.InitializeSkillInputService`** — TargetFinder lambda теперь 2-step hybrid:
   ```
   System.Func<ulong> targetFinder = () =>
   {
+      // 1) Raycast от камеры (точное прицеливание)
       var cam = Camera.main;
-      if (TargetingService.TryGetTargetFromCamera(cam, transform, 30f, ~0, out var target, out _))
-          return target.GetTargetId();
-      return 0UL;  // miss → CombatServer skip
+      if (TargetingService.TryGetTargetFromCamera(cam, transform, 30f, ~0, out var rayTarget, out _))
+          return rayTarget.GetTargetId();
+
+      // 2) Fallback: ближайший NpcTarget в 15м
+      foreach (var npc in FindObjectsByType<NpcTarget>(...))
+          if (alive && distance < best) nearest = npc;
+      if (nearest != null) return nearest.GetTargetId();
+
+      return 0UL;  // ничего нет
   };
   ```
 - **`SkillInputService`** уже имеет hook `TargetFinder` (line 229-235) — никаких изменений не нужно.
 - **`CombatServer.RequestAttackRpc(targetId, sourceId)`** поддерживает targetId != 0 (line 198). При targetId=0 → no-op.
+
+### Почему не чистый raycast
+
+После плейтеста выяснилось: при беге рядом с мобами raycast часто miss (игрок не успевает прицелиться).  
+Решение: **гибрид** — raycast при прицеливании, nearest fallback при простом нажатии.  
+✅ ЛКМ работает и при точном аиме, и вблизи без цели.
 
 ### Verification результаты
 
@@ -119,8 +133,35 @@
    иначе получается дублирование или missing close brace.
 3. **`DebugAttackNearestNpc` нигде не вызывался** — был мёртвый код (по комментарию "Оставлен ТОЛЬКО legacy ... для обратной совместимости тестов"). Безопасно удалить.
 4. **`NpcTarget` collider placement** — raycast требует Collider на GameObject с NpcTarget (или дочернем). Если NPC scene-placed без Collider — нужно добавить CapsuleCollider вручную.
+5. **Чистый raycast неудобен для ближнего боя**: при беге рядом с мобами raycast часто miss.
+   **Решение:** hybrid — raycast + nearest fallback. `/docs/dev/SKILLS_NEXT_STEPS_T-CB_LOG.md` commit `220b529`.
 
 ---
+
+## Что дальше
+
+**MVP+1 combat завершён.** Итоговый список реализованного:
+
+| Компонент | Тикеты | Статус |
+|---|---|---|
+| SkillInputService + InputBindingsConfig + WeaponClass/ItemData | T-INP-01..03, T-CB03, T-CB06 | ✅ с предыдущих сессий |
+| CombatDiscipline enum (7 discipline) | T-CB02 | ✅ merged `2a4862a` |
+| ApplySkillEffects runtime handler | T-CB07 | ✅ merged `68793ea` |
+| WeaponClassCatalog + ArmorClassCatalog + WeaponTechniqueCatalog | T-CB05 | ✅ merged `3b2016e` |
+| Raycast targeting + hybrid nearest fallback + cleanup | T-RTC10 + hotfix | ✅ merged `71e7229` + `220b529` |
+| PanelSettings fix (SkillTreeWindow 1200x800) | (был блокер) | ✅ pre-Pass-1 |
+| SkillTreeWindow — 2D граф + pan + zoom | — | ✅ `ea1077a` base |
+
+**Остаётся (Phase 2 опционально):**
+- SkillTreeWindow Fit + auto-fit + CenterOnSelected (~30 мин)
+- T-CB08: наполнение 35 нод навыков контентом (~4-5 ч, контентная работа)
+- T-CB09: CharacterWindow фильтр по discipline (~1.5 ч)
+- T-CB04: ExplosiveItemData SO (~30 мин)
+- PvP / Ship combat (Phase 2-3)
+
+---
+
+## TL;DR (итоговый)
 
 ## Контекст: что УЖЕ работает (saving time)
 

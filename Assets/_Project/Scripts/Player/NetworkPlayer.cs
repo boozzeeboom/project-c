@@ -285,67 +285,39 @@ namespace ProjectC.Player
         }
 
         /// <summary>
-        /// T-RTC06 (DEBUG): Найти ближайший NpcTarget в радиусе 5м и отправить RequestAttackRpc.
-        /// ВРЕМЕННЫЙ код — только для verify CombatEngine в Play Mode. Удалить в Phase 2
-        /// (когда будет нормальный targeting через raycast + UI).
-        /// </summary>
-        private void DebugAttackNearestNpc()
-        {
-            const float MAX_RANGE = 15.0f;  // T-CB03: увеличено с 5м (playground ~ 6-12м от NPC до player после walking)
-            NpcTarget nearest = null;
-            float bestDistSq = MAX_RANGE * MAX_RANGE;
-
-            foreach (var npc in FindObjectsByType<NpcTarget>(FindObjectsSortMode.None))
-            {
-                if (npc == null || !npc.IsAlive()) continue;
-                float dSq = (npc.transform.position - transform.position).sqrMagnitude;
-                if (dSq < bestDistSq)
-                {
-                    bestDistSq = dSq;
-                    nearest = npc;
-                }
-            }
-
-            if (nearest == null)
-            {
-                Debug.Log($"[NetworkPlayer] K-attack: no NpcTarget within {MAX_RANGE}м.");
-                return;
-            }
-
-            // sourceId = 0 (первый source в PlayerAttacker; после T-CB03 — реальный weapon id).
-            ulong targetId = nearest.GetTargetId();
-            Debug.Log($"[NetworkPlayer] K-attack: targetId={targetId}, dist={Mathf.Sqrt(bestDistSq):F2}м");
-            CombatServer.Instance.RequestAttackRpc(targetId, 0UL);
-        }
-
         /// <summary>
         /// T-INP-01: Инициализация SkillInputService (owner-only).
         /// AddComponent идемпотентен — повторный вызов безопасен (reconnect).
-        /// Target finder: "nearest NpcTarget в 15м" (legacy DebugAttackNearestNpc).
+        /// T-RTC10: Target finder теперь raycast от Camera.main.forward (было: nearest NpcTarget).
         /// </summary>
         private void InitializeSkillInputService()
         {
             var svc = GetComponent<SkillInputService>();
             if (svc == null) svc = gameObject.AddComponent<SkillInputService>();
 
+            // T-RTC10: raycast targeting (заменил legacy "nearest NpcTarget в 15м").
+            // Использует TargetingService.TryGetTargetFromCamera — прицеливание туда,
+            // куда смотрит Main Camera (для NPC/Player/Ship таргетов).
             System.Func<ulong> targetFinder = () =>
             {
-                const float MAX_RANGE = 15.0f;
-                NpcTarget nearest = null;
-                float bestDistSq = MAX_RANGE * MAX_RANGE;
-                foreach (var npc in FindObjectsByType<NpcTarget>(FindObjectsSortMode.None))
+                var cam = Camera.main;
+                if (ProjectC.Combat.Core.TargetingService.TryGetTargetFromCamera(
+                        cam,
+                        transform,
+                        ProjectC.Combat.Core.TargetingService.DefaultMaxDistance,
+                        ProjectC.Combat.Core.TargetingService.DefaultMask,
+                        out var target,
+                        out _))
                 {
-                    if (npc == null || !npc.IsAlive()) continue;
-                    float dSq = (npc.transform.position - transform.position).sqrMagnitude;
-                    if (dSq < bestDistSq) { bestDistSq = dSq; nearest = npc; }
+                    return target.GetTargetId();
                 }
-                return nearest != null ? nearest.GetTargetId() : 0UL;
+                return 0UL;  // 0 = no target (combat server skip)
             };
 
             svc.Initialize(this, targetFinder);
             if (Debug.isDebugBuild)
             {
-                Debug.Log("[NetworkPlayer] InitializeSkillInputService: SkillInputService ready (owner-only)");
+                Debug.Log("[NetworkPlayer] InitializeSkillInputService: SkillInputService ready (owner-only, T-RTC10 raycast)");
             }
         }
 
@@ -615,25 +587,6 @@ namespace ProjectC.Player
                         }
                     }
                 }
-
-                // T-RTC06 (DEBUG): K — debug-attack nearest NPC. ВРЕМЕННЫЙ (только для verify).
-                // Найти ближайший NpcTarget в радиусе 5м → RequestAttackRpc.
-                // T-INP-02: K-fallback для primary attack — теперь обрабатывается в SkillInputService.Update
-                // (через InputBindingsConfig.fallbackKey=K для Primary slot). См. docs/Character/input-system/40_MIGRATION_PLAN.md.
-                // ЛКМ (mouse 0) тоже обрабатывается там же.
-                // Оставлен ТОЛЬКО legacy DebugAttackNearestNpc для обратной совместимости тестов.
-
-                // T-INP-03: ЛКМ (Mouse 0) как primary attack — тоже обрабатывается в SkillInputService.Update.
-                // Старый путь оставлен закомментированным для reference.
-                /*
-                if (Mouse.current != null && Mouse.current.leftButton.wasPressedThisFrame
-                    && NetworkManager.Singleton != null
-                    && IsSpawned
-                    && CombatServer.Instance != null)
-                {
-                    HandlePrimaryAttackInput();
-                }
-                */
 
                 FindNearestInteractable();
                 

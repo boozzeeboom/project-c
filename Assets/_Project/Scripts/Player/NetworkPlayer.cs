@@ -295,25 +295,33 @@ namespace ProjectC.Player
             var svc = GetComponent<SkillInputService>();
             if (svc == null) svc = gameObject.AddComponent<SkillInputService>();
 
-            // T-RTC10: raycast targeting (заменил legacy "nearest NpcTarget в 15м").
-            // Использует TargetingService.TryGetTargetFromCamera — прицеливание туда,
-            // куда смотрит Main Camera (для NPC/Player/Ship таргетов).
+            // T-RTC10 hybrid: сначала raycast (прицеливание), если мимо — nearest в 15м.
             System.Func<ulong> targetFinder = () =>
             {
+                // 1) Raycast от камеры (точное прицеливание)
                 var cam = Camera.main;
                 if (ProjectC.Combat.Core.TargetingService.TryGetTargetFromCamera(
-                        cam,
-                        transform,
-                        ProjectC.Combat.Core.TargetingService.DefaultMaxDistance,
-                        ProjectC.Combat.Core.TargetingService.DefaultMask,
-                        out var target,
-                        out _))
+                        cam, transform,
+                        30f, (UnityEngine.LayerMask)(~0),
+                        out var rayTarget, out _))
                 {
-                    return target.GetTargetId();
+                    return rayTarget.GetTargetId();
                 }
-                return 0UL;  // 0 = no target (combat server skip)
-            };
 
+                // 2) Fallback: ближайший IDamageTarget в 15м (если смотрит в другую сторону)
+                const float FALLBACK_RANGE = 15f;
+                ProjectC.Combat.Core.IDamageTarget nearest = null;
+                float bestSq = FALLBACK_RANGE * FALLBACK_RANGE;
+                foreach (var npc in UnityEngine.Object.FindObjectsByType<ProjectC.Combat.NpcTarget>(UnityEngine.FindObjectsSortMode.None))
+                {
+                    if (npc == null || !npc.IsAlive()) continue;
+                    float dSq = (npc.transform.position - transform.position).sqrMagnitude;
+                    if (dSq < bestSq) { bestSq = dSq; nearest = npc; }
+                }
+                if (nearest != null) return nearest.GetTargetId();
+
+                return 0UL;  // ничего нет
+            };
             svc.Initialize(this, targetFinder);
             if (Debug.isDebugBuild)
             {

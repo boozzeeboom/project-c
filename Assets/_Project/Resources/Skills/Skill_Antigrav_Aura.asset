@@ -29,3 +29,9 @@ MonoBehaviour:
   _requiredIntelligenceTier: 4
   treeX: 100
   treeY: 650
+  isActive: 1
+  attackAnimationTrigger: CastHeal
+  aoeFormula: 2
+  aoeSize: 4
+  aoeConeAngleDeg: 60
+  aoeWidth: 0

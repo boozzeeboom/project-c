@@ -29,3 +29,9 @@ MonoBehaviour:
   _requiredIntelligenceTier: 0
   treeX: 100
   treeY: 100
+  isActive: 1
+  attackAnimationTrigger: Dodge
+  aoeFormula: 0
+  aoeSize: 0
+  aoeConeAngleDeg: 60
+  aoeWidth: 0

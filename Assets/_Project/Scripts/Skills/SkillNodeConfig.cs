@@ -34,6 +34,20 @@ namespace ProjectC.Skills
         Defense = 6,     // броня/стойки
     }
 
+    /// <summary>
+    /// T-INP-02: AOE формула для active skill'ов. Семантика aoeSize/aoeConeAngleDeg/aoeWidth
+    /// зависит от выбранной формулы (см. Tooltip'ы на SkillNodeConfig).
+    /// SingleTarget = legacy mode (raycast → 1 цель). Cone/Sphere/Line/Box = multi-target.
+    /// </summary>
+    public enum AoeFormula : byte
+    {
+        SingleTarget = 0,  // raycast (default)
+        Cone          = 1, // конус вперёд (меч, копьё, тяжёлый удар)
+        Sphere        = 2, // радиус вокруг персонажа (AoE-спелл, ультимейт)
+        Line          = 3, // узкая линия вперёд (копьё, древко)
+        Box           = 4, // box volume (бросок в зону)
+    }
+
     [CreateAssetMenu(fileName = "Skill_", menuName = "Project C/Skill Node", order = 13)]
     public class SkillNodeConfig : ScriptableObject
     {
@@ -77,6 +91,39 @@ namespace ProjectC.Skills
         [Tooltip("Position Y в skill tree layout (pixels).")]
         public int treeY;
 
+        // === T-INP-02: Active vs Passive ===
+        [Header("Active vs Passive (T-INP-02)")]
+        [Tooltip("Active = биндится на слот (Primary/Secondary/Slot1..4), триггерит анимацию, может иметь AOE. " +
+                 "Passive = даёт статы / unlock'и через SkillEffect, невидим в skill bar, не bindable, всегда \"работает\".")]
+        public bool isActive = true;
+
+        [Header("Animation (T-INP-02)")]
+        [Tooltip("Animator trigger (e.g. \"Attack\", \"HeavySwing\", \"CastHeal\"). " +
+                 "Пусто = fallback на SkillInputService._defaultAttackTrigger (\"Attack\"). " +
+                 "Используется ТОЛЬКО для active skills.")]
+        public string attackAnimationTrigger = "Attack";
+
+        // === T-INP-02: AOE Formula ===
+        [Header("AOE Formula (T-INP-02, active skills only)")]
+        [Tooltip("SingleTarget = одиночная цель (raycast от камеры). " +
+                 "Cone = конус вперёд (меч/копьё/тяжёлый удар). " +
+                 "Sphere = радиус вокруг персонажа (AoE-спелл, ультимейт). " +
+                 "Line = узкая линия вперёд (копьё, древко). " +
+                 "Box = box volume (бросок в зону).")]
+        public AoeFormula aoeFormula = AoeFormula.SingleTarget;
+
+        [Tooltip("Размер AOE в метрах. Семантика по aoeFormula: " +
+                 "SingleTarget = 0 (не используется). " +
+                 "Cone / Line / Box → длина вперёд. " +
+                 "Sphere → радиус вокруг персонажа.")]
+        [Min(0f)] public float aoeSize = 0f;
+
+        [Tooltip("Угол конуса в градусах (Cone only). 60 = широкий, 30 = узкий кинжал, 120 = меч по кругу.")]
+        [Range(0f, 360f)] public float aoeConeAngleDeg = 60f;
+
+        [Tooltip("Ширина линии/бокса в метрах (Line/Box only). Для Cone и Sphere = 0.")]
+        [Min(0f)] public float aoeWidth = 0f;
+
         // === Public read-only API ===
 
         public float LearnXpCost => _learnXpCost;
@@ -89,6 +136,9 @@ namespace ProjectC.Skills
         {
             // T-CB02: auto-set discipline по skillId prefix (additive, backward-compat)
             AutoSetDisciplineFromPrefix();
+
+            // T-INP-02: backward-compat migration — существующие SO получают дефолты
+            if (string.IsNullOrEmpty(attackAnimationTrigger)) attackAnimationTrigger = "Attack";
 
             if (prerequisites == null || prerequisites.Length == 0) return;
             var visited = new HashSet<SkillNodeConfig>();

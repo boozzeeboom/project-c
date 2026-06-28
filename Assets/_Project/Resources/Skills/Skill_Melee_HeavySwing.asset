@@ -29,3 +29,9 @@ MonoBehaviour:
   _requiredIntelligenceTier: 2
   treeX: 100
   treeY: 50
+  isActive: 1
+  attackAnimationTrigger: HeavySwing
+  aoeFormula: 1
+  aoeSize: 2.5
+  aoeConeAngleDeg: 120
+  aoeWidth: 0

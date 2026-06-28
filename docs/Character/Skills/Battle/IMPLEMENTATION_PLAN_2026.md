@@ -15,6 +15,7 @@
 | ✅ Done | PanelSettings fix (Reference Resolution 1200x800) | (был 🔴 блокер) | ✅ merged | (pre-Pass-1) | 15 мин |
 | ✅ **Pass 1** | CombatDiscipline enum + ApplySkillEffects + ClassCatalogs | T-CB02 + T-CB07 + T-CB05 | ✅ merged | `3b2016e` | ~2 ч |
 | ✅ **Pass 2** | Raycast targeting + cleanup DebugAttackNearestNpc | T-RTC10 + cleanup | ✅ merged | `71e7229` | ~1 ч |
+| 📋 **Pass 3 (NEXT)** | Active/Passive split + AOE formulas (Cone/Sphere/Line/Box) + Inspector-driven animation triggers | T-INP-02 + T-INP-03 + T-INP-04 + T-INP-05 | 📋 planned | — | ~2.5 ч |
 | Phase 2 | SkillTreeWindow Fit + auto-fit + CenterOnSelected | UX polish | ⏳ later | — | ~30 мин |
 
 **ИТОГО MVP+1 combat (пеший, с дисциплинами, с прицеливанием): ~3 ч** ✅ DONE.
@@ -636,6 +637,254 @@ git commit -m "refactor(player): cleanup DebugAttackNearestNpc legacy"
 ```
 
 **ВАЖНО:** каждый коммит — отдельная ветка + playtest перед merge. Если что-то ломается — `git checkout main` без потери работы.
+
+---
+
+## Pass 3 — Active/Passive split + AOE formulas + animation hooks (NEXT)
+
+### Контекст (что есть сегодня)
+
+| Аспект | Реализовано | Зачем дальше |
+|---|---|---|
+| **Active/Passive split** | `SkillCategory { Social, Combat }` (display-only, runtime-agnostic) | Поле `SkillNodeConfig.isActive` — active → биндится на слот/Primary/Secondary; passive → даёт бонусы и unlock'и, не bindable |
+| **Slot binding** | `SkillInputSlot { Primary, Secondary, Slot1..4 }`, runtime API `BindSlot()` — работает | UI drag-and-drop должен фильтровать только active skills; passive skills не должны попадать в список кандидатов |
+| **AOE** | `TargetingService` — single-target raycast + nearest fallback; `CombatServer.ResolveAttack` — single target | AOE-формулы: конус (кинжал вперёд), радиус вокруг (меч по кругу), линия (копьё), сферический удар вокруг персонажа |
+| **Animation** | `SkillInputService._defaultAttackTrigger = "Attack"` — HARDCODED, одинаковый для всех скиллов | Поле `SkillNodeConfig.attackAnimationTrigger` — дизайнер в Inspector задаёт конкретный триггер на каждый навык |
+
+### Принципы дизайна (Pass 3)
+
+1. **Каждый навык либо active, либо passive — не оба.** Определяется полем `isActive` на SO (T-INP-02).
+2. **AOE — это параметр навыка, не тип навыка.** Один и тот же active skill может быть single-target для одного оружия и AOE для другого (skill-параметры × weapon-параметры).
+3. **Animation hook — Inspector-driven, не code-driven.** Дизайнер вешает `Animator.triggerName` в SO, код только читает.
+4. **Backward-compat:** все 27 существующих SO получают `isActive=true, attackAnimationTrigger="Attack"` в OnValidate (default-migration).
+
+### Тикеты Pass 3
+
+#### T-INP-02: Active/Passive split на SkillNodeConfig (~20 мин)
+
+```csharp
+[Header("Active vs Passive (T-INP-02)")]
+[Tooltip("Active = биндится на слот, триггерит анимацию, может иметь AOE. " +
+         "Passive = даёт статы/unlock'и, невидим в skill bar, всегда \"работает\".")]
+public bool isActive = true;
+
+[Header("Animation (T-INP-02)")]
+[Tooltip("Animator trigger (e.g. \"Attack\", \"HeavySwing\", \"CastHeal\"). " +
+         "Пусто/null = fallback на SkillInputService default (\"Attack\").")]
+public string attackAnimationTrigger = "Attack";
+
+[Header("AOE Formula (T-INP-03, active skills only)")]
+[Tooltip("SingleTarget = одиночная цель (raycast). Cone = конус вперёд. " +
+         "Sphere = радиус вокруг персонажа. Line = линия вперёд (копьё/древко). " +
+         "Box = box volume (area of effect zone).")]
+public AoeFormula aoeFormula = AoeFormula.SingleTarget;
+
+[Tooltip("Размер AOE в метрах. Семантика по aoeFormula: " +
+         "Cone→длина, Sphere→радиус, Line→длина, Box→half-extent X. " +
+         "SingleTarget = 0 (не используется).")]
+[Min(0f)] public float aoeSize = 0f;
+
+[Tooltip("Угол конуса в градусах (Cone only). 60 = широкий, 30 = узкий кинжал, 90 = меч по кругу.")]
+[Range(0f, 360f)] public float aoeConeAngleDeg = 60f;
+
+[Tooltip("Ширина линии/бокса в метрах (Line/Box only).")]
+[Min(0f)] public float aoeWidth = 0f;
+```
+
+```csharp
+public enum AoeFormula : byte
+{
+    SingleTarget = 0,  // raycast (default)
+    Cone          = 1, // конус вперёд (меч, копьё, тяжёлый удар)
+    Sphere        = 2, // радиус вокруг персонажа (AoE-спелл, ультимейт)
+    Line          = 3, // узкая линия вперёд (копьё, древко)
+    Box           = 4, // box volume (бросок в зону)
+}
+```
+
+**OnValidate migration:**
+```csharp
+// Backward-compat: существующие SO получают isActive=true, trigger="Attack"
+if (string.IsNullOrEmpty(attackAnimationTrigger)) attackAnimationTrigger = "Attack";
+if (aoeFormula == 0 && IsWeaponSkill()) aoeFormula = AoeFormula.Cone; // для melee — конус
+```
+
+#### T-INP-03: AOE execution в TargetingService + CombatServer (~1.5 ч)
+
+**`TargetingService` extension:**
+
+```csharp
+// Возвращает список IDamageTarget в AOE
+public static int CollectAoeTargets(
+    Vector3 origin, Vector3 forward,
+    AoeFormula formula, float size, float coneAngleDeg, float width,
+    float maxDistance, LayerMask mask,
+    List<IDamageTarget> outResults, List<Vector3> outHitPoints)
+{
+    outResults.Clear();
+    outHitPoints.Clear();
+
+    switch (formula)
+    {
+        case AoeFormula.SingleTarget:
+            if (TryGetTarget(origin, forward, maxDistance, mask, out var t, out var hp))
+            {
+                outResults.Add(t); outHitPoints.Add(hp); return 1;
+            }
+            return 0;
+
+        case AoeFormula.Cone:
+            return CollectCone(origin, forward, size, coneAngleDeg, mask, outResults, outHitPoints);
+
+        case AoeFormula.Sphere:
+            return CollectSphere(origin, size, mask, outResults, outHitPoints);
+
+        case AoeFormula.Line:
+            return CollectLine(origin, forward, size, width, mask, outResults, outHitPoints);
+
+        case AoeFormula.Box:
+            return CollectBox(origin, forward, size, width, maxDistance, mask, outResults, outHitPoints);
+    }
+    return 0;
+}
+
+// Helpers (server-authoritative: не raycast, а OverlapSphere/BoxAll + filter):
+private static int CollectCone(...) // OverlapSphere + dot-product filter (forward · toTarget > cos(angle/2))
+private static int CollectSphere(...) // OverlapSphere(origin, size, mask) → GetComponentInParent<IDamageTarget>
+private static int CollectLine(...) // BoxCast или два OverlapSphere в начале и конце
+private static int CollectBox(...) // OverlapBox(halfExtents, mask)
+```
+
+**`CombatServer` extension:**
+
+```csharp
+// Существующий single-target RPC остаётся для backward-compat
+[ServerRpc] public void RequestAttackRpc(ulong targetId, ulong sourceId) { ... }
+
+// Новый: skill-based AOE (Phase 1 — ServerRpc с skillId; server резолвит SO → AOE-параметры)
+[ServerRpc] public void RequestSkillCastRpc(string skillId, ulong primaryTargetId, ulong sourceId)
+{
+    var skillConfig = SkillsClientState.GetSkillById(skillId); // server-side lookup
+    if (skillConfig == null || !skillConfig.isActive) { /* log + drop */ return; }
+
+    var aoeSize = skillConfig.aoeSize;
+    var playerTransform = NetworkManager.ConnectedClients[clientId].PlayerObject.transform;
+    var forward = playerTransform.forward;
+    var origin = playerTransform.position + Vector3.up * 1.2f; // chest height
+
+    TargetingService.CollectAoeTargets(
+        origin, forward, skillConfig.aoeFormula, aoeSize, skillConfig.aoeConeAngleDeg, skillConfig.aoeWidth,
+        TargetingService.DefaultMaxDistance, TargetingService.DefaultMask,
+        var results, var hitPoints);
+
+    // Один удар — multi-hit
+    var source = PlayerAttacker.GetDamageSource(clientId, sourceId);
+    var damage = source.GetDamageRoll(); // STR-based dice
+    for (int i = 0; i < results.Count; i++)
+    {
+        var t = results[i];
+        if (t == null) continue;
+        t.ApplyDamage(damage, hitPoints[i], clientId);
+        // broadcast animation/vfx event (ClientRpc)
+        NotifyHitClientRpc(t.GetTargetId(), hitPoints[i]);
+    }
+}
+```
+
+**`SkillInputService.TryActivate` change (Phase 1 minimal):**
+
+```csharp
+// 6) Получить SkillNodeConfig (новая строка)
+SkillNodeConfig skillConfig = null;
+if (hasBind)
+{
+    skillConfig = SkillsClientState.GetSkillById(skillId); // client-side cache
+}
+
+// 6.5) Animation: skill-specific trigger если задан, иначе default
+string trigger = (skillConfig != null && !string.IsNullOrEmpty(skillConfig.attackAnimationTrigger))
+    ? skillConfig.attackAnimationTrigger
+    : _defaultAttackTrigger;
+
+// 6.6) Active guard: пассивные нельзя активировать через TryActivate (но они уже работают через ApplySkillEffects)
+if (skillConfig != null && !skillConfig.isActive)
+{
+    Debug.LogWarning($"[SkillInputService] slot={slot} skill='{skillId}' is passive, can't activate");
+    return false;
+}
+
+// 7) RPC: если есть skillConfig и есть AOE — посылаем skill-based RPC; иначе legacy single-target
+if (skillConfig != null && skillConfig.aoeFormula != AoeFormula.SingleTarget)
+{
+    server.RequestSkillCastRpc(skillId, targetId, 0UL);
+}
+else
+{
+    server.RequestAttackRpc(targetId, 0UL);
+}
+```
+
+#### T-INP-04: Animation hooks — Animator.SetTrigger из SO (~15 мин)
+
+**Уже покрыто в T-INP-02 через `attackAnimationTrigger` поле + Step 6.5 в TryActivate.**
+
+Дополнительно:
+- `SkillInputService._defaultAttackTrigger = "Attack"` остаётся как fallback.
+- Animator cache в `SkillInputService` уже есть (line 70: `_animator`).
+- **Не требуется новый код** — только поле SO + чтение в TryActivate.
+
+#### T-INP-05: UI — фильтр active в SkillTreeWindow (~30 мин)
+
+В `SkillTreeWindow.RebuildSkillTree`:
+- Показывать **badge** на узле: 🎯 Active / ⚙ Passive (по `isActive`).
+- При drag-and-drop в SkillBar (CharacterWindow): список кандидатов = только `isActive=true`.
+- При клике "Учить": показать tooltip "Этот навык даёт +2 STR и +10 HP, **пассивный — применится автоматически**".
+
+### Зависимости и порядок
+
+```
+T-INP-02 (SO field) ──→ T-INP-03 (AOE exec) ──→ T-INP-04 (anim hook) ──→ T-INP-05 (UI)
+        │                                                                       │
+        └─ backward-compat: existing SO migrate via OnValidate ──────────────────┘
+```
+
+| Тикет | Файлы | Оценка | Блокер? |
+|---|---|---|---|
+| **T-INP-02** | `SkillNodeConfig.cs` (+`AoeFormula` enum, +6 полей) | 20 мин | 🟡 Нужен для T-INP-03/04/05 |
+| **T-INP-03** | `TargetingService.cs` (+5 helpers), `CombatServer.cs` (+1 RPC), `SkillInputService.cs` (TryActivate change) | 1.5 ч | 🟡 Phase 1 minimal — single-tier AOE, no damage falloff |
+| **T-INP-04** | (покрыто T-INP-02 + SkillInputService) | 15 мин | ⚪ Тривиально |
+| **T-INP-05** | `SkillTreeWindow.cs` (badge), `CharacterWindow.cs` (filter) | 30 мин | ⚪ UI polish, можно отложить |
+
+**Итого Pass 3:** ~2.5 ч, **3 feature-ветки** (`feat/inp02-active-passive`, `feat/inp03-aoe`, `feat/inp05-ui-filter`), Animator hooks встроены в T-INP-02/03.
+
+### AOE formulas — примеры (вдохновение для дизайнера)
+
+| Навык | weaponClass | aoeFormula | aoeSize | aoeCone | aoeWidth | Поведение |
+|---|---|---|---|---|---|---|
+| `melee_basic_strike` | Sword | Cone | 2.5м | 60° | 0 | Удар перед собой, широкий |
+| `melee_precise_strike` | Dagger | Cone | 1.8м | **20°** | 0 | Узкий тычок вперёд |
+| `melee_spear_reach` | Spear | **Line** | 3.5м | 0 | **0.4м** | Древко вперёд |
+| `melee_sweep` | Sword | Cone | 2.5м | **120°** | 0 | Удар по кругу |
+| `ranged_basic_bow` | Bow | SingleTarget | 0 | 0 | 0 | Стрела в одну цель |
+| `expl_basic_bomb` | Thrown | **Sphere** | 5м | 0 | 0 | Взрыв в зоне бросания |
+| `expl_grenade` | Thrown | Sphere | 8м | 0 | 0 | Большой радиус |
+| `combat_dodge` | None | SingleTarget | 0 | 0 | 0 | Уворот (без урона) |
+| `def_basic_armor` | None | SingleTarget | 0 | 0 | 0 | Пассив (auto-apply) |
+
+### Lessons learned (применить)
+
+1. **Backward-compat через OnValidate** — старые SO получают default-значения при следующем сохранении.
+2. **Не дублировать RPC** — `RequestSkillCastRpc` рядом с `RequestAttackRpc`, не вместо.
+3. **server-authoritative AOE** — клиент не фильтрует, сервер собирает цели через `Physics.OverlapSphere/Box`.
+4. **AOE навык может попасть по своим** (friendly fire) — в Phase 2 добавить `FactionComponent` фильтр, сейчас — все попадают.
+
+### Что НЕ входит в Pass 3
+
+- Damage falloff (урон по дистанции от центра) — Phase 2.
+- DOT (damage over time) — T-CB08.
+- Buff/debuff через AOE — T-CB09.
+- Friendly fire / faction system — Phase 3.
+- Animation blending / upper-body layer — Phase 3 (сейчас full-body Animator).
 
 ---
 

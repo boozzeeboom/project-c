@@ -15,7 +15,8 @@
 | ✅ Done | PanelSettings fix (Reference Resolution 1200x800) | (был 🔴 блокер) | ✅ merged | (pre-Pass-1) | 15 мин |
 | ✅ **Pass 1** | CombatDiscipline enum + ApplySkillEffects + ClassCatalogs | T-CB02 + T-CB07 + T-CB05 | ✅ merged | `3b2016e` | ~2 ч |
 | ✅ **Pass 2** | Raycast targeting + cleanup DebugAttackNearestNpc | T-RTC10 + cleanup | ✅ merged | `71e7229` | ~1 ч |
-| 📋 **Pass 3 (NEXT)** | Active/Passive split + AOE formulas (Cone/Sphere/Line/Box) + Inspector-driven animation triggers | T-INP-02 + T-INP-03 + T-INP-04 + T-INP-05 | 📋 planned | — | ~2.5 ч |
+| ✅ **Pass 3** | Active/Passive split + AOE formulas (Cone/Sphere/Line/Box) + Inspector-driven animation triggers | T-INP-02 + T-INP-03 + T-INP-04 | ✅ merged | `90109b8` | ~1.5 ч |
+| 📋 **Pass 3.5 (NEXT)** | UI badges Active/Passive + drag-drop filter active-only в SkillTreeWindow | T-INP-05 | 📋 planned | — | ~30 мин |
 | Phase 2 | SkillTreeWindow Fit + auto-fit + CenterOnSelected | UX polish | ⏳ later | — | ~30 мин |
 
 **ИТОГО MVP+1 combat (пеший, с дисциплинами, с прицеливанием): ~3 ч** ✅ DONE.

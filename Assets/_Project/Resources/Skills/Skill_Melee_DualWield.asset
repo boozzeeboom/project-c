@@ -17,6 +17,7 @@ MonoBehaviour:
   description: Test skill.
   icon: {fileID: 0}
   category: 1
+  discipline: 2
   prerequisites: []
   effects:
   - type: 0

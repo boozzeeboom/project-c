@@ -18,6 +18,22 @@ namespace ProjectC.Skills
         Combat = 1,
     }
 
+    /// <summary>
+    /// T-CB02: Combat discipline для фильтрации + future CharacterWindow sub-tabs.
+    /// None = социальные / non-combat навыки.
+    /// Auto-set по skillId prefix в OnValidate (Editor) — additive, backward-compat.
+    /// </summary>
+    public enum CombatDiscipline : byte
+    {
+        None = 0,        // social / non-combat
+        Combat = 1,      // универсальные (DodgeRoll, PrecisionStrike)
+        Melee = 2,       // мечи/копья/кинжалы
+        Ranged = 3,      // луки/арбалеты
+        Explosives = 4,  // гранаты/мины
+        Antigrav = 5,    // антиграв. техники
+        Defense = 6,     // броня/стойки
+    }
+
     [CreateAssetMenu(fileName = "Skill_", menuName = "Project C/Skill Node", order = 13)]
     public class SkillNodeConfig : ScriptableObject
     {
@@ -30,6 +46,12 @@ namespace ProjectC.Skills
         [Header("Category (display + future combat/social split)")]
         [Tooltip("Display-only. Runtime effects НЕ зависят от category (combat навык может дать +INT для tactical).")]
         public SkillCategory category = SkillCategory.Social;
+
+        [Header("Combat Discipline (T-CB02)")]
+        [Tooltip("Фильтр для CharacterWindow + Phase 2 (skill tree sub-tabs). " +
+                 "Auto-set по skillId prefix в OnValidate (melee_ → Melee и т.п.). " +
+                 "None = социальный / non-combat навык.")]
+        public CombatDiscipline discipline = CombatDiscipline.None;
 
         [Header("Prerequisites (DAG, no cycles)")]
         [Tooltip("Все указанные skills должны быть изучены для learn этого. Cycle detection в OnValidate (Editor).")]
@@ -65,6 +87,9 @@ namespace ProjectC.Skills
 #if UNITY_EDITOR
         private void OnValidate()
         {
+            // T-CB02: auto-set discipline по skillId prefix (additive, backward-compat)
+            AutoSetDisciplineFromPrefix();
+
             if (prerequisites == null || prerequisites.Length == 0) return;
             var visited = new HashSet<SkillNodeConfig>();
             var recursionStack = new HashSet<SkillNodeConfig>();
@@ -75,6 +100,28 @@ namespace ProjectC.Skills
                     "Remove one of the edges. Cycles will cause infinite recursion in TryLearnSkill.",
                     this);
             }
+        }
+
+        /// <summary>
+        /// T-CB02: auto-set discipline по skillId prefix.
+        /// Не перезаписывает уже выставленное вручную значение, если prefix не совпал ни с одним.
+        /// </summary>
+        private void AutoSetDisciplineFromPrefix()
+        {
+            if (string.IsNullOrEmpty(skillId)) return;
+            CombatDiscipline newDiscipline;
+            if (skillId.StartsWith("melee_"))            newDiscipline = CombatDiscipline.Melee;
+            else if (skillId.StartsWith("ranged_"))      newDiscipline = CombatDiscipline.Ranged;
+            else if (skillId.StartsWith("expl_") || skillId.StartsWith("explosives_")) newDiscipline = CombatDiscipline.Explosives;
+            else if (skillId.StartsWith("antigrav_"))    newDiscipline = CombatDiscipline.Antigrav;
+            else if (skillId.StartsWith("defense_"))      newDiscipline = CombatDiscipline.Defense;
+            else if (skillId.StartsWith("combat_"))      newDiscipline = CombatDiscipline.Combat;
+            else if (skillId.StartsWith("social_"))      newDiscipline = CombatDiscipline.None;
+            else return;  // неизвестный prefix — оставляем как есть
+
+            // Не перезаписываем, если уже выставлено вручную (отличается от prefix-mapping)
+            // Для существующих .asset — всегда проставится правильно при первом OnValidate.
+            discipline = newDiscipline;
         }
 
         private static bool HasCycle(SkillNodeConfig node, HashSet<SkillNodeConfig> visited, HashSet<SkillNodeConfig> stack)

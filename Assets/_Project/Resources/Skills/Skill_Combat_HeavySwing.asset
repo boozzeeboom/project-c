@@ -17,6 +17,7 @@ MonoBehaviour:
   description: Tactical bonus
   icon: {fileID: 0}
   category: 1
+  discipline: 1
   prerequisites:
   - {fileID: 11400000, guid: cbd752fe70f4a6149bfa6aa608f32933, type: 2}
   effects:

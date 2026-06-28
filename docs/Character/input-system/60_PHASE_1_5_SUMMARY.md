@@ -160,9 +160,9 @@
 
 ### Phase 3 — Drag-to-Slot (UI для SkillInputService.BindSlot)
 
-- [ ] В SkillTreeWindow добавить кнопку `[Назначить на слот N]` для каждого навыка
-- [ ] При клике — `SkillInputService.Instance.BindSlot(slot, skillId)`
-- [ ] UI для drag-and-drop скилла на слот
+- [ ✅] В SkillTreeWindow добавить кнопку `[Назначить на слот N]` для каждого навыка
+- [ ✅] При клике — `SkillInputService.Instance.BindSlot(slot, skillId)`
+- [ ✅] UI для drag-and-drop скилла на слот
 
 ### Phase 4 — InputActionAsset (опционально, ~5-8ч)
 

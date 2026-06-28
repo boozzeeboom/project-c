@@ -27,6 +27,7 @@
 | `50_OPEN_QUESTIONS.md` | что НЕ решено (будущие фазы) |
 | `60_PHASE_1_5_SUMMARY.md` | сводка Phase 1 + Phase 1.5 — что сделано, что работает, roadmap |
 | `70_PHASE_2_SUMMARY.md` | сводка Phase 2 — EscMenu, KeybindingsWindow, rebind, движение через конфиг |
+| `80_PHASE_3_SUMMARY.md` | сводка Phase 3 — BindSlot UI в SkillTreeWindow |
 
 ---
 
@@ -37,21 +38,21 @@
 - Теперь читаются через `IsActionHeld()`/`IsActionJustPressed()` из `InputBindingsConfig`
 - Можно переназначать через UI (EscMenu → [НАСТРОЙКИ] → клик на строку → нажать клавишу)
 
-**СДЕЛАНО (Phase 1 — 2.2):**
+**СДЕЛАНО (Phase 1 — 2.5 + 3):**
 - InputBindingsConfig ScriptableObject + InputBindingsRuntime singleton
 - SkillInputService.Update() polling для combat skills (10 биндов)
 - EscMenuWindow (главное меню по Esc с кнопкой [НАСТРОЙКИ])
-- KeybindingsWindow (список биндов + click-to-rebind)
+- KeybindingsWindow (список биндов + click-to-rebind + RebindPromptWindow)
 - UIManager (стек панелей, Esc → CloseTopPanel)
-- Движение через InputBindingsConfig (Phase 2.5 начало)
-- Bug-001 задокументирован (Esc после CharacterWindow)
+- ВЕСЬ ввод из InputBindingsConfig: WASD, Space, Shift, E, F, P, T, ship controls (W/S/A/D/E/Q/Shift)
+- PlayerPrefs persistence + кнопки [СОХР]/[ЗАГР]/[СБРОС]
+- Phase 3: BindSlot UI в SkillTreeWindow — назначение навыков на Primary/Secondary/Slot1-4
+- Bug-001 ✅ Esc после CharacterWindow не открывает меню
 
 **НЕ ТРОГАТЬ (остаётся хардкод):**
-- Посадка/выход корабля (F), управление кораблём (ShipInputReader)
-- Подбор/инвентарь/рынок (E), диалог NPC (E)
-- Сбор ресурса (F), crafting (F), дверь (F)
-- Docking/CommPanel (T), F3/F4 debug HUD
-- Esc закрытие в CharacterWindow (сам себе)
+- Посадка/выход корабля (F) — теперь через InputBindingsConfig (ModeSwitch)
+- Корабль — через InputBindingsConfig (ShipThrustForward и т.д.)
+- Esc закрытие в CharacterWindow (сам себе) — ✅ BUG-001 фикс
 
 ---
 
@@ -64,3 +65,6 @@
 || 2026-06-28 | #7 (Phase 2.1) | EscMenuWindow + KeybindingsWindow (read-only) + UIManager стек/логика. |
 || 2026-06-28 | #7 (Phase 2.2) | KeybindingsWindow: click-to-rebind (runtime). InputBindingsRuntime: RebindAction/RebindSkill API. |
 || 2026-06-28 | #7 (Phase 2.5 start) | NetworkPlayer: движение (WASD/Space/Shift) читается из InputBindingsConfig через IsActionHeld(). Rebind работает сразу. |
+|| 2026-06-28 | #7 (Phase 2.5 complete) | Весь ввод через Config (E/F/P/T/Ship/Interact/ModeSwitch). BUG-001 фикс. |
+|| 2026-06-28 | #7 (Phase 2.3) | PlayerPrefs persistence + кнопки СОХР/ЗАГР/СБРОС в KeybindingsWindow. |
+|| 2026-06-28 | #7 (Phase 3) | BindSlot UI в SkillTreeWindow — привязка навыков на Primary/Secondary/Slot1-4. |

@@ -431,5 +431,6 @@ private void InitOpenSkillTreeButton() {
 ## 10. История документа
 
 | Дата | Изменения |
-|---|---|
+|------|-----------|
 | 2026-06-26 | Первая версия. Plan нового SkillTreeWindow overlay + правки CharacterWindow. Применены lessons UI_TOOLKIT_GUIDE (4 фикса, manual rows, cursor fix, display inline toggle). |
+| 2026-06-28 | Phase 3: добавлены 6 кнопок `btn-bind-primary/secondary/slot1-4` для BindSlot в секцию `stw-detail-actions`. `SkillInputService.BindSlot()` + API. |

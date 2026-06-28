@@ -10,16 +10,56 @@
 
 ## TL;DR
 
-| Pass | Что | Тикеты | Оценка | Зависимости |
+| Pass | Что | Тикеты | Статус | Merge commit | Оценка |
+|---|---|---|---|---|---|
+| ✅ Done | PanelSettings fix (Reference Resolution 1200x800) | (был 🔴 блокер) | ✅ merged | (pre-Pass-1) | 15 мин |
+| ✅ **Pass 1** | CombatDiscipline enum + ApplySkillEffects + ClassCatalogs | T-CB02 + T-CB07 + T-CB05 | ✅ merged | `3b2016e` | ~2 ч |
+| **Pass 2** | Raycast targeting + cleanup DebugAttackNearestNpc | T-RTC10 + cleanup | ⏳ NEXT | — | ~1.5-2 ч |
+| Phase 2 | SkillTreeWindow Fit + auto-fit + CenterOnSelected | UX polish | ⏳ later | — | ~30 мин |
+
+**ИТОГО MVP+1 combat (пеший, с дисциплинами, с прицеливанием): ~3.5-4.5 ч** (после Pass 2).
+
+---
+
+## ✅ Pass 1 — COMPLETED (2026-06-28)
+
+### Что сделано
+
+| Тикет | Описание | Файлы | Diff | Merge |
 |---|---|---|---|---|
-| ✅ Done | PanelSettings fix | (был 🔴 блокер) | 15 мин | — |
-| **Pass 1** | CombatDiscipline enum + ApplySkillEffects + WeaponClassCatalog | T-CB02 + T-CB07 + T-CB05 | ~2 ч | — |
-| **Pass 2** | Raycast targeting + cleanup DebugAttackNearestNpc | T-RTC10 + cleanup | ~1.5-2 ч | Pass 1 (для дисциплин в UI) |
-| Phase 2 | SkillTreeWindow Fit + auto-fit + CenterOnSelected | UX polish | ~30 мин | — |
+| **T-CB02** | `CombatDiscipline` enum (None/Combat/Melee/Ranged/Explosives/Antigrav/Defense) + auto-set по skillId prefix в `OnValidate` | `SkillNodeConfig.cs` (+47 строк), 27 .asset auto-discover | 28 файлов, +74 строки | `2a4862a` |
+| **T-CB07** | `ApplySkillEffects()` + `ApplySingleEffect()` + `TriggerEquipmentRecheck()` хуки в `RequestLearnSkillRpc`/`RequestForgetSkillRpc`. Поддержка новых T-CB01 типов (WeaponProficiencyUnlock, ArmorProficiencyUnlock, WeaponTechniqueUnlock, ExplosiveRecipeUnlock, AntigravTechniqueUnlock). Phase 2 stubs — логируют в Debug. | `SkillsServer.cs` (+76 строк) | 1 файл, +76 строк | `68793ea` |
+| **T-CB05** | 3 SO-каталога для дизайнера: `WeaponClassCatalog` (8 классов populated), `ArmorClassCatalog` (stub), `WeaponTechniqueCatalog` (stub). Helpers: `GetRequiredProficiency` + `IsUnlocked`. | 3 new .cs файла + meta в `Combat/Lookup/` | 7 файлов, +183 строки | `3b2016e` |
 
-**ИТОГО MVP+1 combat (пеший, с дисциплинами, с прицеливанием): ~3.5-4.5 ч.**
+### Verification результаты
 
-После этого можно начинать наполнять `Resources/Skills/Combat/*.asset` (T-CB08, ~4-5 ч).
+- ✅ `refresh_unity scope=scripts` → **0 errors** (после фикса `SkillEffect` struct-check)
+- ✅ 27/27 SkillNodeConfig .asset получили правильный discipline:
+  - 4 Combat (combat_*)
+  - 5 Melee (melee_*)
+  - 3 Ranged (ranged_*)
+  - 3 Explosives (expl_* — нестандартный prefix, добавлен в mapping)
+  - 3 Antigrav (antigrav_*)
+  - 3 Defense (defense_*)
+  - 4 None (social_*)
+- ✅ T-CB07 default-struct fix: `SkillEffect` это struct, заменено `effect == null` на default-check
+
+### Что тестировать в Play Mode (Pass 1)
+
+См. раздел **"🎮 Что тестировать в Play Mode"** в саммари после Pass 1:
+1. SkillTreeWindow → Learn любой навык → Console: `[SkillsServer/T-CB07] Learned stat-affecting effect ...`
+2. Forget → Console: `[SkillsServer/T-CB07] Forgot ...`
+3. Inspector любого .asset навыка → поле `Combat Discipline` = правильный enum
+4. Stats пересчитываются (STR/DEX/INT через StatMod)
+5. Без падений и null-ref
+6. Через `execute_code`: `Resources.Load<WeaponClassCatalog>("Combat/WeaponClassCatalog")` → 8 entries
+
+### Lessons learned (Pass 1)
+
+1. **`SkillEffect` is struct**, не class. `effect == null` → compile error CS0019. Use default-check.
+2. **Explosives prefix = `expl_`**, не `explosives_` (legacy naming в существующих .asset). Mapping добавлен dual-prefix.
+3. **MCP refresh_unity** работает даже когда `state=stale_status` — это не блокер, если `read_console` чисто.
+4. **Auto-discover через execute_code + SerializedObject.ApplyModifiedProperties** — надёжнее чем ручная правка 27 .asset через OnValidate (которая срабатывает только при ручном импорте).
 
 ---
 

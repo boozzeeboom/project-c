@@ -368,6 +368,10 @@ namespace ProjectC.Skills.UI
             bool isLearned = learned.Contains(s.skillId);
             bool isAvailable = !isLearned && CanLearn(s, learned);
             node.AddToClassList(isLearned ? "tree-node-learned" : (isAvailable ? "tree-node-available" : "tree-node-locked"));
+
+            // T-INP-05: Active vs Passive accent на весь узел
+            node.AddToClassList(s.isActive ? "tree-node-active" : "tree-node-passive");
+
             node.name = "tree-node-" + s.skillId;
 
             var badge = new Label { text = isLearned ? "✓" : (isAvailable ? "○" : "✕") };
@@ -377,6 +381,13 @@ namespace ProjectC.Skills.UI
             var title = new Label { text = s.displayName ?? s.skillId };
             title.AddToClassList("tree-node-title");
             node.Add(title);
+
+            // T-INP-05: badge [A]/[P] справа — показывает тип навыка
+            var typeBadge = new Label { text = s.isActive ? "A" : "P" };
+            typeBadge.AddToClassList("tree-node-type-badge");
+            typeBadge.AddToClassList(s.isActive ? "tree-node-type-active" : "tree-node-type-passive");
+            typeBadge.tooltip = s.isActive ? "Активный (биндится на слот)" : "Пассивный (применяется автоматически)";
+            node.Add(typeBadge);
 
             var capturedId = s.skillId;
             node.RegisterCallback<ClickEvent>(_ => SelectSkill(capturedId));
@@ -438,7 +449,20 @@ namespace ProjectC.Skills.UI
             bool canLearn = CanLearn(s, learned);
             if (_detailName != null) _detailName.Q<Label>()!.text = s.displayName ?? s.skillId;
             if (_detailDesc != null) _detailDesc.text = s.description ?? "(нет описания)";
-            if (_detailEffects != null) _detailEffects.text = "Эффекты: " + FormatEffectsText(s);
+
+            // T-INP-05: тип навыка (A/P) — первая строка в stats
+            // + AOE зона (если есть)
+            string typeStr = s.isActive ? "Активный (биндится на слот)" : "Пассивный (применяется автоматически)";
+            string animStr = !string.IsNullOrEmpty(s.attackAnimationTrigger) ? $" | Анимация: {s.attackAnimationTrigger}" : "";
+            string typeLine = $"Тип: {typeStr}{animStr}";
+
+            string aoeStr = FormatAoeText(s);
+            string effectsLine = $"Эффекты: {FormatEffectsText(s)}";
+            string typeAndAoe = aoeStr.Length > 0
+                ? $"{typeLine}\n{aoeStr}\n{effectsLine}"
+                : $"{typeLine}\n{effectsLine}";
+            if (_detailEffects != null) _detailEffects.text = typeAndAoe;
+
             if (_detailCost != null) _detailCost.text = $"Стоимость: {(s.LearnXpCost > 0 ? s.LearnXpCost.ToString("F0") + " XP" : "Free")}";
             if (_detailTier != null) _detailTier.text = $"Требуемый INT тир: {s.RequiredIntelligenceTier}";
             if (_detailPrereqContainer != null) RebuildPrereqList(s, learned);
@@ -487,6 +511,31 @@ namespace ProjectC.Skills.UI
                 foreach (var p in s.prerequisites)
                     if (p != null && !learned.Contains(p.skillId)) return false;
             return true;
+        }
+
+        /// <summary>
+        /// T-INP-05: Форматирует AOE-параметры навыка в человекочитаемую строку.
+        /// Cone → "Конус 60°×2.5м". Sphere → "Сфера 8м радиус". Line → "Линия 3.5м×0.4м". Box → "Бокс...".
+        /// SingleTarget → "" (не показываем секцию).
+        /// </summary>
+        private string FormatAoeText(SkillNodeConfig s)
+        {
+            if (!s.isActive) return "";  // пассивные не имеют AOE
+            switch (s.aoeFormula)
+            {
+                case AoeFormula.SingleTarget:
+                    return "";
+                case AoeFormula.Cone:
+                    return $"⚔ Зона: Конус {s.aoeConeAngleDeg:F0}° × {s.aoeSize:F1}м вперёд";
+                case AoeFormula.Sphere:
+                    return $"💥 Зона: Сфера {s.aoeSize:F1}м радиус (вокруг персонажа)";
+                case AoeFormula.Line:
+                    return $"➤ Зона: Линия {s.aoeSize:F1}м × {s.aoeWidth:F1}м (древко)";
+                case AoeFormula.Box:
+                    return $"▣ Зона: Бокс {s.aoeSize:F1}м × {s.aoeWidth:F1}м";
+                default:
+                    return "";
+            }
         }
 
         private string FormatEffectsText(SkillNodeConfig s)

@@ -400,7 +400,45 @@
     font-size: 10px !important;
     color: rgb(220, 220, 230) !important;
     white-space: nowrap !important;
-    
+
     text-overflow: ellipsis !important;
     flex-grow: 1 !important;
+}
+
+/* === T-INP-05: Active/Passive indicator on tree nodes === */
+.tree-node-active {
+    /* Active = синий акцент сверху (border-top) */
+    border-top-color: rgb(100, 180, 255) !important;
+}
+.tree-node-passive {
+    /* Passive = жёлтый/янтарный акцент */
+    border-top-color: rgb(220, 170, 60) !important;
+    background-color: rgba(35, 32, 22, 0.85) !important;
+}
+.tree-node-type-badge {
+    width: 16px !important;
+    height: 16px !important;
+    font-size: 9px !important;
+    -unity-font-style: bold !important;
+    -unity-text-align: middle-center !important;
+    border-width: 1px !important;
+    border-radius: 8px !important;
+    flex-shrink: 0 !important;
+    margin-left: 3px !important;
+}
+.tree-node-type-active {
+    background-color: rgba(60, 140, 220, 0.85) !important;
+    border-color: rgb(100, 180, 255) !important;
+    color: rgb(230, 245, 255) !important;
+}
+.tree-node-type-passive {
+    background-color: rgba(180, 130, 40, 0.85) !important;
+    border-color: rgb(220, 170, 60) !important;
+    color: rgb(255, 240, 200) !important;
+}
+
+/* === T-INP-05: AOE info в детальном блоке (отображается в .stw-detail-effects через "\\n") === */
+.stw-detail-effects {
+    /* override existing */
+    white-space: normal !important;
 }

@@ -115,7 +115,11 @@ namespace ProjectC.Skills
                 return;
             }
 
+            // T-CB07: получить узел для ApplySkillEffects
+            var learnedSkill = _world.TryGetSkill(skillId, out var s) ? s : null;
             SendSkillResult(clientId, SkillResultDto.Learned(skillId));
+            ApplySkillEffects(clientId, learnedSkill, isLearn: true);
+            TriggerEquipmentRecheck(clientId);
             // Recompute effective stats (T-P09 already calls this on equip/unequip)
             TriggerStatsRecompute(clientId);
             SendSnapshotToOwner(clientId);
@@ -137,7 +141,11 @@ namespace ProjectC.Skills
                 return;
             }
 
+            // T-CB07: получить узел для ApplySkillEffects (откат)
+            var forgottenSkill = _world.TryGetSkill(skillId, out var s2) ? s2 : null;
             SendSkillResult(clientId, SkillResultDto.Forgotten(skillId));
+            ApplySkillEffects(clientId, forgottenSkill, isLearn: false);
+            TriggerEquipmentRecheck(clientId);
             TriggerStatsRecompute(clientId);
             SendSnapshotToOwner(clientId);
         }
@@ -201,6 +209,74 @@ namespace ProjectC.Skills
             if (inst == null) return;
             var method = ssType.GetMethod("RecomputeAndSendSnapshot");
             method?.Invoke(inst, new object[] { clientId });
+        }
+
+        // === T-CB07: ApplySkillEffects + EquipmentRecheck ===
+
+        /// <summary>
+        /// T-CB07: обработчик effects при learn/forget навыка.
+        /// StatMod уже обрабатывается StatsServer.RecomputeAndSendSnapshot.
+        /// Для новых типов (WeaponProficiencyUnlock и т.п.) — пока log + stub.
+        /// Phase 2: реализовать unlock в реестрах (WeaponClassCatalog и т.п.).
+        /// </summary>
+        private void ApplySkillEffects(ulong clientId, SkillNodeConfig skill, bool isLearn)
+        {
+            if (skill == null) return;
+            if (skill.effects == null || skill.effects.Length == 0) return;
+
+            foreach (var effect in skill.effects)
+            {
+                // SkillEffect — struct, не может быть null. Проверяем default.
+                if (effect.type == SkillEffect.Type.StatMod && effect.floatValue == 0 && effect.multiplier == 0 && string.IsNullOrEmpty(effect.stringParam)) continue;
+                ApplySingleEffect(clientId, skill, effect, isLearn);
+            }
+        }
+
+        private void ApplySingleEffect(ulong clientId, SkillNodeConfig skill, SkillEffect effect, bool isLearn)
+        {
+            string verb = isLearn ? "Learned" : "Forgot";
+
+            // Новые типы (Phase 2 — реальная логика unlock)
+            switch (effect.type)
+            {
+                case SkillEffect.Type.WeaponProficiencyUnlock:
+                case SkillEffect.Type.ArmorProficiencyUnlock:
+                case SkillEffect.Type.WeaponTechniqueUnlock:
+                case SkillEffect.Type.ExplosiveRecipeUnlock:
+                case SkillEffect.Type.AntigravTechniqueUnlock:
+                    if (Debug.isDebugBuild)
+                    {
+                        Debug.Log($"[SkillsServer/T-CB07] {verb} {effect.type} from skill='{skill.skillId}' for client={clientId} (Phase 2 will implement unlock registry)");
+                    }
+                    break;
+
+                // StatMod / Damage / Heal — обрабатываются StatsServer.RecomputeAndSendSnapshot
+                default:
+                    if (Debug.isDebugBuild)
+                    {
+                        Debug.Log($"[SkillsServer/T-CB07] {verb} stat-affecting effect {effect.type} from skill='{skill.skillId}' for client={clientId} (StatsServer will recompute)");
+                    }
+                    break;
+            }
+        }
+
+        /// <summary>
+        /// T-CB07: после learn/forget — recheck надетых предметов.
+        /// Phase 2: force-unequip оружия/брони, если required skill больше не learned.
+        /// Сейчас — no-op (TryEquip уже имеет hard gate, повторный equip заблокируется).
+        /// </summary>
+        private void TriggerEquipmentRecheck(ulong clientId)
+        {
+            var ewType = System.Type.GetType("ProjectC.Equipment.EquipmentWorld, Assembly-CSharp");
+            if (ewType == null) return;
+            var instProp = ewType.GetProperty("Instance");
+            var inst = instProp?.GetValue(null);
+            if (inst == null) return;
+
+            if (Debug.isDebugBuild)
+            {
+                Debug.Log($"[SkillsServer/T-CB07] Equipment recheck triggered for client={clientId} (Phase 2 will add force-unequip)");
+            }
         }
     }
 }

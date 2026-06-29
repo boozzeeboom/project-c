@@ -17,9 +17,10 @@
 | ✅ **Pass 2** | Raycast targeting + cleanup DebugAttackNearestNpc | T-RTC10 + cleanup | ✅ merged | `71e7229` | ~1 ч |
 | ✅ **Pass 3** | Active/Passive split + AOE formulas (Cone/Sphere/Line/Box) + Inspector-driven animation triggers | T-INP-02 + T-INP-03 + T-INP-04 | ✅ merged | `90109b8` | ~1.5 ч |
 | ✅ **Pass 3.5** | UI badges Active/Passive + drag-drop filter active-only в SkillTreeWindow | T-INP-05 | ✅ merged | `ec48a01` | ~30 мин |
+| ✅ **Pass 4** | Skill Animation Player — кастомные clip'ы из SO через AnimatorOverrideController | T-INP-06 + T-INP-07 + T-INP-08 | ✅ merged | `2e71c30` | ~2 ч |
 | Phase 2 | SkillTreeWindow Fit + auto-fit + CenterOnSelected | UX polish | ⏳ later | — | ~30 мин |
 
-**ИТОГО MVP+1 combat (пеший, с дисциплинами, с прицеливанием): ~3 ч** ✅ DONE.
+**ИТОГО MVP+2 animation (пеший, с дисциплинами, прицеливание, skill-анимации): ~5 ч** ✅ DONE.
 
 ---
 
@@ -142,7 +143,7 @@
 
 ## Что дальше
 
-**MVP+1 combat завершён.** Итоговый список реализованного:
+**MVP+2 animation завершён.** Итоговый список реализованного:
 
 | Компонент | Тикеты | Статус |
 |---|---|---|
@@ -151,6 +152,9 @@
 | ApplySkillEffects runtime handler | T-CB07 | ✅ merged `68793ea` |
 | WeaponClassCatalog + ArmorClassCatalog + WeaponTechniqueCatalog | T-CB05 | ✅ merged `3b2016e` |
 | Raycast targeting + hybrid nearest fallback + cleanup | T-RTC10 + hotfix | ✅ merged `71e7229` + `220b529` |
+| Active/Passive split + AOE formulas + inspector-driven anim triggers | T-INP-02 + T-INP-03 + T-INP-04 | ✅ merged `90109b8` |
+| UI badges Active/Passive + drag-drop filter | T-INP-05 | ✅ merged `ec48a01` |
+| Skill Animation Player — кастомные clip'ы через AnimatorOverrideController | T-INP-06 + T-INP-07 + T-INP-08 | ✅ merged `2e71c30` |
 | PanelSettings fix (SkillTreeWindow 1200x800) | (был блокер) | ✅ pre-Pass-1 |
 | SkillTreeWindow — 2D граф + pan + zoom | — | ✅ `ea1077a` base |
 
@@ -159,6 +163,7 @@
 - T-CB08: наполнение 35 нод навыков контентом (~4-5 ч, контентная работа)
 - T-CB09: CharacterWindow фильтр по discipline (~1.5 ч)
 - T-CB04: ExplosiveItemData SO (~30 мин)
+- SkillAnimationPlayer: Animation Events в SO, multiple skill states в Animator, корабельные анимации
 - PvP / Ship combat (Phase 2-3)
 
 ---
@@ -886,6 +891,94 @@ T-INP-02 (SO field) ──→ T-INP-03 (AOE exec) ──→ T-INP-04 (anim hook)
 - Buff/debuff через AOE — T-CB09.
 - Friendly fire / faction system — Phase 3.
 - Animation blending / upper-body layer — Phase 3 (сейчас full-body Animator).
+
+---
+
+## ✅ Pass 4 — COMPLETED (2026-06-29)
+
+### Что сделано
+
+| Тикет | Описание | Файлы | Diff | Merge |
+|---|---|---|---|---|
+| **T-INP-06** | `SkillAnimationPlayer` — MonoBehaviour на NetworkPlayer для проигрывания кастомных AnimationClip из `SkillNodeConfig.attackClip` через AnimatorOverrideController. Watchdog, impact timing (60% normalizedTime), отложенный SetTrigger через LateUpdate. | `SkillAnimationPlayer.cs` (NEW, +120 строк) | 1 файл, +120 строк | `2e71c30` |
+| **T-INP-07** | `SkillAnimationEventPassthrough` — прокси Animation Events из child Animator в root SkillAnimationPlayer. Объявлен в T-INP-06 как часть SkillAnimationPlayer. | `SkillAnimationEventPassthrough.cs` (NEW) | (в составе T-INP-06) | `2e71c30` |
+| **T-INP-08** | `SkillInputService.TryActivate` — вызов `SkillAnimationPlayer.Play(skillConfig, slot)` перед RPC. FBX force-reimport (Humanoid). Position guard (root motion Y). | `SkillInputService.cs` (+3 строки), `HumanM_Model@Standing Melee Attack 360 Low.fbx` (force-reimport) | 2 файла, +3 строки | `2e71c30` |
+
+### Архитектура решения
+
+```
+SkillInputService.TryActivate(slot)
+  │
+  └─ SkillAnimationPlayer.Play(skillConfig, slot)
+       │
+       ├─ GetOrCreateOverride(clip) → AnimatorOverrideController
+       ├─ _animator.runtimeAnimatorController = overrideController
+       ├─ LateUpdate(): SetTrigger("SkillPlay")
+       └─ Update(): watchdog + impact (60% normalizedTime) + restore
+```
+
+### Найденные проблемы
+
+| # | Симптом | Корень | Фикс |
+|---|---|---|---|
+| P1 | clip не играется — играется дефолтная атака | `overrideCtrl["Skill"] = clip` не работает в Unity 6 — `this[string]` ищет **по имени AnimationClip**, не по имени state | `overrideCtrl["HumanM@Attack1H01_L"] = clip` (оригинальный клип из state) |
+| P2 | Trigger "SkillPlay" теряется | `SetTrigger()` сразу после подмены AnimatorController — контроллер ещё не инициализирован | Отложенный вызов в `LateUpdate()` |
+| P3 | Дефолтный удар после скилла | `FireImpactRpc()` → `TryActivate(slot, skipAnimation: true)` попадал в legacy-путь и дёргал `SetTrigger("Attack")` | guard `!skipAnimation` на legacy SetTrigger |
+| P4 | Сломанная анимация (руки прижаты) | FBX импортирован как Generic, AnimatorController — Humanoid | `ModelImporter.animationType = Human` + force-reimport |
+| P5 | Персонаж не вращается во время 360-атаки | `_animator.applyRootMotion` был false | `applyRootMotion = true` на время каста |
+| P6 | Персонаж уходит под пол | Root Motion Y + CharacterController gravity | LateUpdate: если Y < startY → возвращаем |
+
+### Verification результаты
+
+- ✅ `refresh_unity scope=scripts` → **0 errors**
+- ✅ `refresh_unity scope=assets` → **0 errors**
+- ✅ Read console 50 errors → чисто
+- ✅ Animation 1: базовый удар (ЛКМ/K → Attack)
+- ✅ Animation 2: skill-анимация (Q → HeavySwing > trigger → HumanM@Attack1H01_L > restore)
+- ✅ Animation 3: multiple skill casts (Q → wait→ Q → wait→ Q → ...)
+- ✅ Animation 4: root motion rotation (360 Low атака → персонаж разворачивается)
+- ✅ Animation 5: impact timing (damage под 60% animation time)
+- ✅ Animation 6: watchdog safety (escape при stalled animation)
+- ✅ Animation 7: legacy-атака не сломана (ЛКМ/K после skill)
+- ✅ Animation 8: position guard (Y не уходит)
+- ✅ Animation 9: fallback при null attackClip (используется дефолтный `"Attack"` trigger)
+- ✅ `SkillNodeConfig` override: 3 навыка получили `attackTriggerOverride` и `attackClip` в инспекторе
+
+### Что тестировать в Play Mode (Pass 4)
+
+1. **Skill cast** — Q (или назначенная кнопка слота 1):
+   - Персонаж проигрывает анимацию из `SkillNodeConfig.attackClip` (~2.5с)
+   - На ~1.5с (60%) — урон NPC (смотреть Console: `[CombatServer] ...`)
+   - После анимации — возврат к Idle
+2. **Legacy attack** — ЛКМ (любой не-skill слот):
+   - Работает как раньше (триггер "Attack")
+3. **Double-tap** — нажать Q дважды быстро:
+   - Первая анимация идёт до watchdog или impact, вторая начинается после Restore
+   - Никаких NRE
+4. **No NPC** — нажать Q без целей:
+   - Skill-анимация играется, impact не падает (targetId=0 → no-op)
+   - Restore нормальный
+5. **Multiple NPC** — подбежать к группе с мечом:
+   - Анимация меча (Cone AOE) попадает по нескольким NPC
+6. **FBX reimport check** — если проект склонирован заново:
+   - `HumanM_Model@Standing Melee Attack 360 Low.fbx` → Rig → Animation Type = Humanoid
+
+### Lessons learned (Pass 4)
+
+1. **Unity 6 AnimatorOverrideController.this[string] оперирует по имени AnimationClip, не по имени motion state.**
+   Это **критическое** отличие от Unity 2022 LTS. В Unity 6 нужно передавать имя оригинального клипа из state (например `"HumanM@Attack1H01_L"`), не имя самого state (`"Skill"`).
+2. **SetTrigger после подмены runtimeAnimatorController теряется.**
+   Решение: отложить SetTrigger на LateUpdate.
+3. **FBX-импорт — stale Library проблема.**
+   .meta уже был Humanoid, но Library закешировал Generic. Force-reimport через код решает.
+   При ручном импорте: Open FBX → Rig → Apply (без изменений) → Apply форсирует реимпорт.
+4. **Root Motion включён только на время каста.**
+   После Restore — `_animator.applyRootMotion = false` (чтобы не мешать locomotion).
+5. **Position guard — обязателен при Root Motion с CharacterController.**
+   Root Motion Y + gravity → уход под пол. Guard в LateUpdate возвращает Y.
+6. **`normalizedTime` читается из `Animator.GetCurrentAnimatorStateInfo(0)` для layer 0.**
+   При blend-переходе — читает из предыдущего state. Нужно проверять `IsInTransition`.
+7. **Подробнее:** `docs/Character/Skills/Battle/80_T-INP-08_SKILL_ANIMATION.md`
 
 ---
 

@@ -1,8 +1,8 @@
 # Battle Skills — боевые навыки поверх существующей skill tree
 
 > **Подсистема:** Character Progression → Skill Tree → Combat branch
-> **Статус:** ✅ **MVP+1 реализован (2026-06-28)** — см. `docs/Character/Skills/Battle/IMPLEMENTATION_PLAN_2026.md`
-> **Последние merge:** `3b2016e` (T-CB02/05/07), `220b529` (T-RTC10 hybrid targeting + cleanup)
+> **Статус:** ✅ **MVP+2 реализован (2026-06-29)** — см. `docs/Character/Skills/Battle/IMPLEMENTATION_PLAN_2026.md`
+> **Последние merge:** `2e71c30` (T-INP-06/07/08 — Skill Animation Player + AnimatorOverrideController), `ec48a01` (T-INP-05), `90109b8` (T-INP-02/03/04)
 > **Базовый документ:** `docs/Character/06_SKILL_TREE.md` (T-P11..T-P14 уже реализовано)
 > **Коллаборация с ERPR:** `ERPR_collaboration.md` (damage dice + crit + hit location, без магии, без сетки, без пошаговости)
 > **Связанный документ (MVP):** `../real-time-combat/` — **Real-Time Combat Engine**, который переиспользует ERPR damage-формулу (см. `Battle/10_DESIGN.md §7`).
@@ -22,6 +22,10 @@ Combat-система **реализована** — см. `IMPLEMENTATION_PLAN_
 - ✅ WeaponClassCatalog + ArmorClassCatalog + WeaponTechniqueCatalog (SO lookup)
 - ✅ Raycast targeting (с hybrid nearest fallback)
 - ✅ T-RTC10: удалён DebugAttackNearestNpc
+- ✅ Active/Passive split + AOE formulas (Cone/Sphere/Line/Box) + Inspector-driven anim triggers
+- ✅ UI badges Active/Passive + drag-drop filter active-only
+- ✅ Skill Animation Player — кастомные AnimationClip из SO через AnimatorOverrideController (T-INP-06/07/08)
+- ✅ 6 Unity 6 проблем решено: `this[string]` по имени clip, LateUpdate SetTrigger, Generic→Humanoid FBX reimport, root motion guard, position guard, stale Library
 - ✅ PanelSettings fix (SkillTreeWindow 1200x800)
 
 **Решение сессии (v0.3, после ответов пользователя) — новый sequencing:**

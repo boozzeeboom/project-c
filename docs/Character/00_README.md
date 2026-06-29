@@ -47,6 +47,11 @@ docs/Character/
 ├── 08_ROADMAP.md                   (тикеты T-P01..T-P18, milestones, оценка)
 ├── 09_OPEN_QUESTIONS.md            (10 разделов, 30+ вопросов для тебя)
 └── 10_REFERENCES.md                (file:line индекс всех прочитанных файлов)
+└── EquipmentVisual/                (Phase 1+2 — 3D-меши для предметов + надевание на M)
+    ├── 00_DESIGN.md                  (TL;DR + архитектура, начать отсюда)
+    ├── 01_DATA_MODEL.md              (.cs-сигнатуры ItemData visualPrefab + attach-полей)
+    ├── 02_CHARACTER_APPLIER.md       (CharacterEquipmentVisualApplier — полный код + edge cases)
+    └── 03_PHASES.md                  (пошаговый план Phase 1 → Phase 2 с командами верификации)
 ```
 
 ---

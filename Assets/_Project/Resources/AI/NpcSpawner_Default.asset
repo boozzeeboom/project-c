@@ -49,7 +49,7 @@ MonoBehaviour:
     m_PreInfinity: 2
     m_PostInfinity: 2
     m_RotationOrder: 4
-  visualConfig: {fileID: 11400000, guid: 836c429369883d345818eeda74e158d6, type: 2}
-  behaviorType: 0  # T-NPC-14: Aggressive по умолчанию (как раньше — атакует по proximity)
+  behaviorType: 1
   passiveAggroHpThreshold: 25
-  passiveMaxHitsPerMinute: 3
+  passiveMaxHitsPerMinute: 2
+  visualConfig: {fileID: 11400000, guid: 836c429369883d345818eeda74e158d6, type: 2}

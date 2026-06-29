@@ -93,16 +93,23 @@ namespace ProjectC.Player
         private ulong _pendingCanUseInteractableId = ulong.MaxValue;
         private const float CAN_USE_REQUEST_TIMEOUT = 1.5f;
 
-        // T-G07: Player gather animation — пульсация scale во время сбора
-        [Header("Gather Animation")]
-        [Tooltip("Амплитуда пульсации scale персонажа при сборе (0 = без анимации).")]
-        [SerializeField] private float _gatherScaleAmplitude = 0.08f;
-        [Tooltip("Период пульсации scale в секундах.")]
+        // T-G07: Player gather animation
+        // T-G09: hardcoded scale-pulse (T-G07) заменён на Animator.SetTrigger по типу узла.
+        //        _gatherScaleAmplitude/_gatherPulsePeriod оставлены как FALLBACK на случай,
+        //        если Animator/Controller не настроен (ранний dev, CI без моделей).
+        [Header("Gather Animation (FALLBACK only — Animator-driven в норме)")]
+        [Tooltip("FALLBACK: амплитуда пульсации scale при сборе, если Animator/AnimatorController не сконфигурирован. " +
+                 "Нормальный путь — Animator SetTrigger(MinePlay/LumberPlay/GatherPlay) на PlayerAnimation controller. " +
+                 "0 = fallback отключён.")]
+        [SerializeField] private float _gatherScaleAmplitude = 0f;  // T-G09: по умолчанию выключен, приоритет у Animator
+        [Tooltip("FALLBACK: период пульсации scale (см. tooltip выше).")]
         [SerializeField] [Range(0.1f, 1.5f)] private float _gatherPulsePeriod = 0.6f;
         private Coroutine _gatherPulseCoroutine;
         private Vector3 _originalScale;
         private bool _subscribedToGather = false;
         private bool _gatherActive = false;
+        // T-G09: последний триггер, чтобы не повторять SetTrigger каждый tick (Animator держит state до exit-transition)
+        private string _activeGatherTrigger;
 
 
 
@@ -1630,26 +1637,83 @@ namespace ProjectC.Player
 
         private void OnGatherProgress(float progress)
         {
-            if (!_gatherActive)
+            if (_gatherActive) return;
+            _gatherActive = true;
+            _originalScale = transform.localScale;
+
+            // T-G09: основной путь — Animator.SetTrigger по типу узла.
+            // PlayerAnimation.controller имеет state'ы Mine/Lumber/Gather (по триггерам MinePlay/LumberPlay/GatherPlay),
+            // каждый из них возвращается в Idle по exitTime=0.95 → цикл повторяется на следующий progress-tick.
+            // (SetTrigger ставится ОДИН раз — Animator держит state до exit-transition и пересобирается триггером,
+            // но мы не повторяем — иначе цикл сбросится на каждом 0.5s tick.)
+            string trigger = ResolveGatherTriggerForCurrentNode();
+            if (_animator != null && !string.IsNullOrEmpty(trigger))
             {
-                _gatherActive = true;
-                _originalScale = transform.localScale;
-                StartGatherPulse();
+                if (_activeGatherTrigger != trigger)
+                {
+                    // Первый запуск сбора этого типа — SetTrigger
+                    if (!string.IsNullOrEmpty(_activeGatherTrigger))
+                        _animator.ResetTrigger(_activeGatherTrigger);  // сбросить предыдущий тип (если был)
+                    _activeGatherTrigger = trigger;
+                    _animator.SetTrigger(trigger);
+                }
+                // Анимация уже играет (state активен) — на следующих tick-ах ничего не делаем.
+                return;
+            }
+
+            // FALLBACK: Animator не настроен или GatherType не определён → старый scale-pulse.
+            StartGatherPulse();
+        }
+
+        /// <summary>
+        /// T-G09: Найти ResourceNode, на котором сейчас идёт сбор (GatheringClientState.CurrentNodeNetId),
+        /// и вернуть имя Animator-trigger'а по его GatherType.
+        /// null если нод не найден или Animator отсутствует (→ fallback на scale-pulse).
+        /// </summary>
+        private string ResolveGatherTriggerForCurrentNode()
+        {
+            var clientState = ProjectC.ResourceNode.GatheringClientState.Instance;
+            if (clientState == null) return null;
+            ulong nodeNetId = clientState.CurrentNodeNetId;
+            if (nodeNetId == 0) return null;
+            var nm = Unity.Netcode.NetworkManager.Singleton;
+            if (nm == null || nm.SpawnManager == null) return null;
+            if (!nm.SpawnManager.SpawnedObjects.TryGetValue(nodeNetId, out var no)) return null;
+            if (no == null) return null;
+            var node = no.GetComponent<ProjectC.ResourceNode.ResourceNode>();
+            if (node == null || node.Config == null) return null;
+            switch (node.Config.GatherType)
+            {
+                case ProjectC.ResourceNode.GatherType.Mining: return "MinePlay";
+                case ProjectC.ResourceNode.GatherType.Lambering: return "LumberPlay";
+                case ProjectC.ResourceNode.GatherType.Gathering: return "GatherPlay";
+                default: return null;
             }
         }
 
         private void OnGatherEnded(string _unused1, int _unused2, bool _unused3)
         {
-            if (_gatherActive) StopGatherPulse();
+            EndGatherAnim();
         }
 
         private void OnGatherEnded(string _unused)
         {
-            if (_gatherActive) StopGatherPulse();
+            EndGatherAnim();
         }
 
         private void OnGatherCancelled()
         {
+            EndGatherAnim();
+        }
+
+        private void EndGatherAnim()
+        {
+            // T-G09: общий cleanup — сбрасывает и Animator-trigger, и fallback scale-pulse.
+            if (_animator != null && !string.IsNullOrEmpty(_activeGatherTrigger))
+            {
+                _animator.ResetTrigger(_activeGatherTrigger);
+                _activeGatherTrigger = null;
+            }
             if (_gatherActive) StopGatherPulse();
         }
 

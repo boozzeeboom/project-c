@@ -445,7 +445,7 @@ git add -A && git commit -m "feat(scene): ResourceNode prefab + placement in Wor
 - [ ] Tool durability (consume tool on gather)
 - [ ] Multi-player on same node (queue / split)
 - [ ] Node tiering (Tier 1/2/3 с разными инструментами)
-- [ ] **T-G09+: Player gather animation per GatherType (Mining/Lambering/Gathering)** — см. T-G08 ниже
+- [ ] ✅ **T-G09: Player gather animation per GatherType** (см. ниже) — готово 2026-06-29
 - [ ] Gather skill (уровень влияет на скорость)
 - [ ] Random yield (1-3 предмета за сбор)
 - [ ] Persistence (сохранение состояния узла)
@@ -503,9 +503,68 @@ git add -A && git commit -m "feat(scene): ResourceNode prefab + placement in Wor
 
 ### T-G09+ backlog (что нужно решить)
 
-1. **Архитектура подвешивания анимации** — варианты (см. обсуждение в CHANGELOG):
-   - A) `AnimatorOverrideController` + `Skill state` (как `SkillAnimationPlayer`) — без правок `.controller`.
-   - B) Новые state'ы Mine/Lumber/Gather в `PlayerAnimation.controller` + transition-ы.
-2. **Откуда брать `AnimationClip` для типа** — отдельные `miningClip/lamberingClip/gatheringClip` в `ResourceNodeConfig` (тип-специфичные, выбор по `GatherType`), или общий SO `GatherAnimationConfig` с 3-мя clip'ами (выбор по индексу).
-3. **Совместимость с `SkillAnimationPlayer`** — текущий gather-pulse живёт в `NetworkPlayer.cs:1631-1684`. Куда перенести логику `OnGatherProgress → Play(anim)` — в `SkillAnimationPlayer` (расширить под Gather) или отдельный `GatherAnimationPlayer`?
+1. ~~**Архитектура подвешивания анимации** — варианты:~~
+   - ✅ A) Новые state'ы Mine/Lumber/Gather в `PlayerAnimation.controller` + transitions (по триггерам MinePlay/LumberPlay/GatherPlay). Реализовано в T-G09.
+   - ~~B) AnimatorOverrideController + Skill state — отклонён (state накладывался бы на attack).~~
+2. **Опционально**: вынести `miningClip/lamberingClip/gatheringClip` в `ResourceNodeConfig` для дизайнерского override'а per-node. Сейчас clip фиксирован в base controller'е — дизайнер может подменить через `PlayerAnimation_Default.overrideController` (34 slot'а).
+3. **Анимация рук/инструмента во время сбора** — пока играется общая gather-анимация персонажа. Если в будущем нужно чтобы кирка/топор визуально двигались в руке (IK на prop) — отдельный тикет.
+
+---
+
+## Фаза T-G09: Player gather animation per GatherType (~1 ч) ✅ 2026-06-29
+
+### Что сделано
+
+**1. `Assets/_Project/Animations/PlayerAnimation.controller`** (через Editor API `execute_code`, **НЕ через YAML-patch**):
+- Добавлены 3 AnimatorState: `Mine`, `Lumber`, `Gather`.
+- Motion: `HumanM@MiningOneHand01_R - Ground`, `Standing Melee Attack Downward`, `HumanM@Gathering02` соответственно.
+- Добавлены 3 trigger-параметра: `MinePlay`, `LumberPlay`, `GatherPlay`.
+- 3 AnyStateTransitions: `AnyState → Mine/Lumber/Gather` по триггерам (duration 0.05, hasExitTime=false, canTransitionToSelf=false — как `SkillPlay`).
+- 3 exit-transitions: `Mine/Lumber/Gather → Idle` (hasExitTime=true, exitTime=0.95, duration=0.2 — как у `Skill`, `Attack1H`).
+- Состояний в Base Layer: 14 → 17. Параметров: 12 → 15. Существующие state'ы и transitions **не тронуты** (in-place extension через `sm.AddState()` сохраняет fileID).
+
+**2. `Assets/_Project/Animations/PlayerAnimation_Default.overrideController`** (пересоздан):
+- 34 slot'а в инспекторе (был пустой m_Clips:[]). Теперь дизайнер может drag-and-drop подменить clip для каждого state'а через override, не трогая base controller.
+- Ссылка из `NetworkPlayer.prefab` (m_Controller) сохранена — guid остался `338e6f98c539c104ab75f7b10ca83003`.
+
+**3. `Assets/_Project/Scripts/Player/NetworkPlayer.cs`**:
+- В `OnGatherProgress` теперь основной путь: `ResolveGatherTriggerForCurrentNode()` → `_animator.SetTrigger("MinePlay"|"LumberPlay"|"GatherPlay")` по `node.Config.GatherType`.
+- `SetTrigger` вызывается ОДИН раз на старт сбора (если тип изменился — сброс старого через `ResetTrigger`); на следующих progress-tick'ах ничего не делается — Animator сам переключается Mine/Lumber/Gather → Idle по exit-transition.
+- `OnGatherCompleted/Interrupted/Denied/Cancelled` → новый `EndGatherAnim()` → `ResetTrigger(activeTrigger)` + остановка fallback'а.
+- Fallback `GatherPulseLoop()` (scale-pulse) **сохранён** на случай если Animator/AnimatorController не сконфигурирован. `_gatherScaleAmplitude` теперь default 0 = fallback выключён по умолчанию.
+
+### Verification
+
+```bash
+# 1. Compile
+# Open Unity Editor → Console → 0 errors (только preexisting warnings, см. log)
+
+# 2. Animator Inspector (важно!)
+# Открыть Assets/_Project/Animations/PlayerAnimation.controller
+# В Animator tab должны быть видны 3 новых box'а: Mine, Lumber, Gather
+# Parameters: MinePlay, LumberPlay, GatherPlay (тип Trigger)
+# Каждый state имеет Motion (Mine=Mining clip, Lumber=Attack Downward, Gather=Gathering02)
+# Exit transitions на Idle с exitTime=0.95
+
+# 3. Override Inspector
+# Открыть PlayerAnimation_Default.overrideController
+# Список override slots должен включать:
+#   - HumanM@Gathering02
+#   - HumanM@MiningOneHand01_R - Ground
+#   - Standing Melee Attack Downward
+# Designer может drag-and-drop подменить clip для каждого типа
+
+# 4. Play Mode (хост + подойти к узлу)
+# a) PlantHerb (Gather) → F → персонаж играет HumanM@Gathering02 (плавный сбор руками)
+# b) IronVein/CopperVein (Mine, с киркой) → F → персонаж играет HumanM@MiningOneHand01_R (mining swing)
+# c) Сейчас нет нодов с Lambering (нужно создать ResourceNode_*.asset с _gatherType=1)
+# d) F не нажат → персонаж стоит в Idle (не должно быть залипания в Mine/Lumber/Gather)
+# e) Во время сбора (TickInterval=0.5s) анимация НЕ сбрасывается — exit-transition сам
+```
+
+### Что не делал (по запросу)
+
+- ❌ Не вынес `miningClip/lamberingClip/gatheringClip` в `ResourceNodeConfig` — clip фиксирован в controller'е. Если дизайнер захочет per-нод override — это +1 поле в SO, отдельный тикет.
+- ❌ Не создавал Lambering-нодов (нужен sample asset + scene placement) — пользователь может создать сам по аналогии с PlantHerb.
+- ❌ Не трогал `SkillAnimationPlayer` — gather-логика идёт через `Animator.SetTrigger` напрямую, без override-controller (clip'ы разные для разных state'ов, поэтому override не нужен).
 

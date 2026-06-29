@@ -18,10 +18,17 @@
    <ui:TextField name="skill-search" placeholder-text="Поиск по имени или эффекту (STR, +2)..." class="stw-search" />
   </ui:VisualElement>
 
-  <!-- MIDDLE: list (left 70%) + detail (right 30%) -->
+  <!-- MIDDLE: slot overview (left ~15%) + list (center ~55%) + detail (right ~30%) -->
   <ui:VisualElement class="stw-middle">
 
-   <!-- LEFT: tree -->
+   <!-- T-INP-10: LEFT-most — Slot Overview (что на каком слоте).
+        Read-only индикатор биндов (assign делается в правой панели через bind-кнопки). -->
+   <ui:VisualElement class="stw-slot-overview-col">
+    <ui:Label text="Слоты" class="stw-section-title" />
+    <ui:VisualElement name="slot-overview-container" class="stw-slot-overview-container" />
+   </ui:VisualElement>
+
+   <!-- LEFT-CENTER: tree -->
    <ui:VisualElement class="stw-list-col">
     <ui:Label text="Навыки" class="stw-section-title" />
     <ui:ScrollView name="tree-canvas-scroll" class="stw-scroll" mode="HorizontalAndVertical">

@@ -12,8 +12,8 @@
     top: 4% !important;
     left: 50% !important;
     translate: -50% 0 !important;
-    width: 760px !important;
-    max-width: 92% !important;
+    width: 880px !important;  /* T-INP-10 hotfix: 920 → 880 (slot-col 150→75, освободили 75px+ отступ) */
+    max-width: 96% !important;
     max-height: 92% !important;
     background-color: rgba(15, 20, 30, 0.96) !important;
     border-width: 1px !important;
@@ -77,18 +77,69 @@
     font-size: 11px !important;
 }
 
-/* === MIDDLE (list + detail) === */
+/* === MIDDLE (slot overview + list + detail) === */
 .stw-middle {
     flex-direction: row !important;
     flex-grow: 1 !important;
     flex-shrink: 1 !important;
     min-height: 0 !important;
 }
+/* T-INP-10: slot overview column (leftmost, read-only) */
+.stw-slot-overview-col {
+    width: 75px !important;  /* T-INP-10 hotfix: было 150, ужато ~в 2 раза для дерева */
+    flex-shrink: 0 !important;
+    flex-direction: column !important;
+    margin-right: 6px !important;
+    background-color: rgba(20, 26, 40, 0.5) !important;
+    border-radius: 3px !important;
+    border-width: 1px !important;
+    border-color: rgba(80, 100, 130, 0.3) !important;
+    padding: 4px !important;
+}
+.stw-slot-overview-container {
+    flex-direction: column !important;
+    flex-grow: 1 !important;
+    flex-shrink: 1 !important;
+    min-height: 0 !important;
+    gap: 4px !important;
+    margin-top: 2px !important;
+}
+.stw-slot-cell {
+    flex-direction: column !important;
+    flex-shrink: 0 !important;
+    padding: 3px 4px !important;
+    background-color: rgba(35, 45, 65, 0.4) !important;
+    border-width: 1px !important;
+    border-radius: 2px !important;
+    min-height: 32px !important;
+}
+.stw-slot-cell-key {
+    font-size: 10px !important;
+    color: rgb(150, 180, 200) !important;
+    -unity-font-style: bold !important;
+    margin-bottom: 2px !important;
+    -unity-text-align: middle-left !important;
+    white-space: nowrap !important;
+    text-overflow: ellipsis !important;
+}
+.stw-slot-cell-skill {
+    font-size: 10px !important;
+    color: rgb(220, 220, 230) !important;
+    -unity-text-align: middle-left !important;
+    white-space: nowrap !important;
+    text-overflow: ellipsis !important;
+}
+.stw-slot-cell-skill.stw-slot-cell-empty {
+    color: rgba(160, 160, 170, 0.5) !important;
+    -unity-font-style: italic !important;
+}
 .stw-list-col {
-    width: 70% !important;
+    flex-grow: 2 !important;       /* T-INP-10 hotfix v2: 65/35 дерево/описание (было 50/50) */
+    flex-shrink: 1 !important;
+    flex-basis: 0 !important;
+    min-width: 0 !important;
     flex-direction: column !important;
     margin-right: 4px !important;
-    flex-shrink: 0 !important;
 }
 .stw-detail-col {
     overflow: hidden !important;

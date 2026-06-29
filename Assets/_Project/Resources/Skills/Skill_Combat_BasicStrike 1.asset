@@ -18,6 +18,7 @@ MonoBehaviour:
   icon: {fileID: 0}
   category: 1
   discipline: 1
+  requiredWeaponMask: 1
   prerequisites: []
   effects:
   - type: 0

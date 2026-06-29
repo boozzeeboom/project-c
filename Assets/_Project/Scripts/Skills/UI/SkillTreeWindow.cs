@@ -36,6 +36,13 @@ namespace ProjectC.Skills.UI
         private VisualElement _skillListContainer;
         private VisualElement _treeContent;
         private readonly Dictionary<string, VisualElement> _treeNodeRefs = new Dictionary<string, VisualElement>();
+        // T-INP-10: slot overview (read-only индикатор 6 биндов слева)
+        private VisualElement _slotOverviewContainer;
+        private static readonly Skills.SkillInputSlot[] _overviewSlotsOrdered = new[]
+        {
+            Skills.SkillInputSlot.Primary, Skills.SkillInputSlot.Secondary,
+            Skills.SkillInputSlot.Slot1, Skills.SkillInputSlot.Slot2, Skills.SkillInputSlot.Slot3, Skills.SkillInputSlot.Slot4,
+        };
         // Pan (T-INP-12): minimal drag-to-pan, no zoom/fit. Only changes scrollOffset.
         private ScrollView _treeScroll;
         private bool _isPanning = false;
@@ -138,6 +145,8 @@ namespace ProjectC.Skills.UI
             _btnBindSlot3     = _rootContainer.Q<VisualElement>("btn-bind-slot3");
             _btnBindSlot4     = _rootContainer.Q<VisualElement>("btn-bind-slot4");
             _searchField = _rootContainer.Q<TextField>("skill-search");
+            // T-INP-10: slot overview container
+            _slotOverviewContainer = _rootContainer.Q<VisualElement>("slot-overview-container");
 
             InitFilterChips();
             InitSearchField();
@@ -167,6 +176,7 @@ namespace ProjectC.Skills.UI
                 _rootContainer.schedule.Execute(() => _rootContainer.MarkDirtyRepaint()).StartingIn(50);
                 LoadAllSkills();
                 ApplyFilterAndSearch();
+                RebuildSlotOverview();  // T-INP-10
             }
             else
             {
@@ -206,6 +216,7 @@ namespace ProjectC.Skills.UI
         private void HandleSkillsUpdated(HashSet<string> learned)
         {
             if (IsOpen()) ApplyFilterAndSearch();
+            if (IsOpen()) RebuildSlotOverview();  // T-INP-10: новый изученный скилл — обновить ячейки
             if (!string.IsNullOrEmpty(_selectedSkillId))
             {
                 var cfg = _allSkillConfigs.Find(s => s != null && s.skillId == _selectedSkillId);
@@ -503,6 +514,7 @@ namespace ProjectC.Skills.UI
                     break;
                 }
             }
+            RebuildSlotOverview();  // T-INP-10: обновить ячейку бинда слева
         }
 
         private bool CanLearn(SkillNodeConfig s, HashSet<string> learned)
@@ -554,6 +566,59 @@ namespace ProjectC.Skills.UI
                     parts.Add($"[{e.stringParam}]");
             }
             return parts.Count > 0 ? string.Join(" ", parts) : "(нет)";
+        }
+
+        // =================== T-INP-10: Slot Overview (read-only слева) ===================
+        // 6 ячеек по числу SkillInputSlot (Primary/Secondary/Slot1-4).
+        // Каждая: 2 строки — название бинда (из InputBindingsConfig.displayName) + имя привязанного скилла.
+        // Пустой слот = "(пусто)" italic gray. Назначение — через существующие bind-кнопки справа.
+
+        private void RebuildSlotOverview()
+        {
+            if (_slotOverviewContainer == null) return;
+            _slotOverviewContainer.Clear();
+
+            var sis = Skills.SkillInputService.Instance;
+            var bindings = sis != null ? sis.GetAllBindings() : new Dictionary<Skills.SkillInputSlot, string>();
+            var inputRuntime = ProjectC.Input.InputBindingsRuntime.Instance;
+
+            foreach (var slot in _overviewSlotsOrdered)
+            {
+                var cell = new VisualElement();
+                cell.AddToClassList("stw-slot-cell");
+
+                var keyLabel = new Label();
+                keyLabel.AddToClassList("stw-slot-cell-key");
+                // Берём displayName из InputBindingsConfig (тот же источник, что и при rebind).
+                // Fallback на enum.ToString() если config ещё не загрузился.
+                keyLabel.text = inputRuntime != null
+                    ? inputRuntime.GetSkillDisplayName(slot)
+                    : slot.ToString();
+                cell.Add(keyLabel);
+
+                var skillLabel = new Label();
+                skillLabel.AddToClassList("stw-slot-cell-skill");
+                if (bindings.TryGetValue(slot, out var skillId) && !string.IsNullOrEmpty(skillId))
+                {
+                    skillLabel.text = GetDisplayNameForSkillId(skillId);
+                }
+                else
+                {
+                    skillLabel.text = "(пусто)";
+                    skillLabel.AddToClassList("stw-slot-cell-empty");
+                }
+                cell.Add(skillLabel);
+
+                _slotOverviewContainer.Add(cell);
+            }
+        }
+
+        private string GetDisplayNameForSkillId(string skillId)
+        {
+            if (string.IsNullOrEmpty(skillId)) return "(пусто)";
+            var cfg = _allSkillConfigs.Find(s => s != null && s.skillId == skillId);
+            if (cfg != null && !string.IsNullOrEmpty(cfg.displayName)) return cfg.displayName;
+            return skillId;  // fallback на raw id
         }
 
         private void RebuildPrereqList(SkillNodeConfig s, HashSet<string> learned)

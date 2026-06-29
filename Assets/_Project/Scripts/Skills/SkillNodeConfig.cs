@@ -7,6 +7,7 @@
 
 using System;
 using System.Collections.Generic;
+using ProjectC.Equipment;
 using ProjectC.Stats;
 using UnityEngine;
 
@@ -66,6 +67,14 @@ namespace ProjectC.Skills
                  "Auto-set по skillId prefix в OnValidate (melee_ → Melee и т.п.). " +
                  "None = социальный / non-combat навык.")]
         public CombatDiscipline discipline = CombatDiscipline.None;
+
+        [Header("Weapon Requirement (T-INP-09)")]
+        [Tooltip("Битовая маска допустимых WeaponClass для активации навыка. " +
+                 "None (0) = без ограничения (default, backward-compat). " +
+                 "AnyWeapon = требуется хоть какое-то оружие в WeaponMain/WeaponOff. " +
+                 "AnyMelee = меч/кинжал/копьё/булава. AnyRanged = арбалет/пневматика. " +
+                 "Проверяется клиент-сайд в SkillInputService.TryActivate (T-INP-09).")]
+        public WeaponClassMask requiredWeaponMask = WeaponClassMask.None;
 
         [Header("Prerequisites (DAG, no cycles)")]
         [Tooltip("Все указанные skills должны быть изучены для learn этого. Cycle detection в OnValidate (Editor).")]

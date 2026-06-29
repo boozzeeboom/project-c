@@ -8,8 +8,9 @@
 //   - OnEquipResult: ack/deny от TryEquip/TryUnequip (toast)
 
 using System;
-using UnityEngine;
 using ProjectC.Equipment.Dto;
+using ProjectC.Items;
+using UnityEngine;
 
 namespace ProjectC.Equipment
 {
@@ -91,6 +92,34 @@ namespace ProjectC.Equipment
         public void ClearState()
         {
             CurrentSnapshot = null;
+        }
+
+        /// <summary>
+        /// T-INP-09: вернуть WeaponItemData из указанного слота (WeaponMain/WeaponOff).
+        /// null если слот пуст, нет snapshot, item не оружие, или InventoryWorld не загружен.
+        /// Используется SkillInputService.CheckWeaponMask (T-INP-09) для гейтинга skill cast по типу оружия.
+        /// </summary>
+        public WeaponItemData GetWeaponInSlot(EquipSlot slot)
+        {
+            if (CurrentSnapshot == null) return null;
+            if (!CurrentSnapshot.Value.equip.TryGetItemId(slot, out int itemId) || itemId <= 0) return null;
+
+            var inv = ProjectC.Items.InventoryWorld.Instance;
+            if (inv == null) return null;
+
+            var def = inv.GetItemDefinition(itemId);
+            return def as WeaponItemData;
+        }
+
+        /// <summary>
+        /// T-INP-09: первое оружие в WeaponMain ИЛИ WeaponOff (приоритет Main).
+        /// null если ни в одном слоте нет оружия. Используется CheckWeaponMask.
+        /// </summary>
+        public WeaponItemData GetActiveWeapon()
+        {
+            var w = GetWeaponInSlot(EquipSlot.WeaponMain);
+            if (w != null) return w;
+            return GetWeaponInSlot(EquipSlot.WeaponOff);
         }
     }
 }

@@ -21,6 +21,7 @@ using UnityEngine.InputSystem;
 using Unity.Netcode;
 using ProjectC.Combat;
 using ProjectC.Combat.Core;
+using ProjectC.Equipment;  // T-INP-09: EquipmentClientState для GetActiveWeapon()
 using ProjectC.Player;  // NetworkPlayer
 using ProjectC.Input;  // InputBindingsRuntime
 
@@ -303,6 +304,22 @@ namespace ProjectC.Skills
                 return false;
             }
 
+            // 6.7) T-INP-09: weapon-mask gate. Если навык требует конкретный WeaponClass —
+            // проверяем EquipmentClientState.GetActiveWeapon() против requiredWeaponMask.
+            // requiredWeaponMask == None (default) = backward-compat: пропускаем проверку.
+            // Unarmed attack (Primary/Secondary без bind, skillId == "") — пропускаем (нет weapon requirement).
+            if (skillConfig != null && skillConfig.requiredWeaponMask != WeaponClassMask.None && hasBind)
+            {
+                if (!CheckWeaponMask(skillConfig, out string denyReason))
+                {
+                    if (Debug.isDebugBuild)
+                    {
+                        Debug.LogWarning($"[SkillInputService/T-INP-09] slot={slot} skill='{skillId}' blocked: {denyReason} (requiredMask={skillConfig.requiredWeaponMask})");
+                    }
+                    return false;
+                }
+            }
+
             // 7) Animation: T-INP-08 data-driven path preferred.
             //    Если в SkillNodeConfig задан attackClip → SkillAnimationPlayer.Play() проиграет клип;
             //    OnAttackImpact event на 60% клипа вызовет TryActivate заново и пошлёт RPC.
@@ -426,6 +443,55 @@ namespace ProjectC.Skills
         public bool IsSlotBound(SkillInputSlot slot) => _slotToSkillId.ContainsKey(slot);
 
         // === Helpers ===
+
+        // T-INP-09: weapon-mask gate. Проверяет что EquipmentClientState.GetActiveWeapon().weaponClass
+        // попадает в skillConfig.requiredWeaponMask. Возвращает false + denyReason если:
+        //  - EquipmentClientState.Instance == null (не spawned)
+        //  - Нет оружия в WeaponMain/WeaponOff (для AnyWeapon)
+        //  - weaponClass не входит в маску (для конкретных классов)
+        // Семантика AnyWeapon: требует ЛЮБОЕ оружие (хоть кулак, хоть меч).
+        // Семантика конкретного класса: требует именно этот класс (или любой из набора).
+        private bool CheckWeaponMask(SkillNodeConfig skillConfig, out string denyReason)
+        {
+            denyReason = "";
+            if (skillConfig == null) { denyReason = "no skillConfig"; return false; }
+
+            var ecs = EquipmentClientState.Instance;
+            if (ecs == null) { denyReason = "EquipmentClientState не инициализирован"; return false; }
+
+            var activeWeapon = ecs.GetActiveWeapon();
+            if (activeWeapon == null) { denyReason = "Нет оружия в WeaponMain/WeaponOff"; return false; }
+
+            // (mask & weaponClass bit) != 0 → weaponClass попадает в маску.
+            WeaponClassMask weaponBit = (WeaponClassMask)(1 << (int)activeWeapon.weaponClass);
+            if ((skillConfig.requiredWeaponMask & weaponBit) == 0)
+            {
+                denyReason = $"Требуется {DescribeMaskShort(skillConfig.requiredWeaponMask)}, в руке {activeWeapon.weaponClass}";
+                return false;
+            }
+            return true;
+        }
+
+        // T-INP-09: человекочитаемое описание маски для Debug.Log / будущего toast.
+        // Показывает только явно заданные биты (не computed aliases).
+        private static string DescribeMaskShort(WeaponClassMask mask)
+        {
+            if (mask == WeaponClassMask.None) return "(нет ограничения)";
+            if (mask == WeaponClassMask.AnyWeapon) return "любое оружие";
+            if (mask == WeaponClassMask.AnyMelee) return "ближнее оружие";
+            if (mask == WeaponClassMask.AnyRanged) return "дальнобойное оружие";
+
+            var parts = new List<string>();
+            if ((mask & WeaponClassMask.Sword) != 0)         parts.Add("меч");
+            if ((mask & WeaponClassMask.Dagger) != 0)        parts.Add("кинжал");
+            if ((mask & WeaponClassMask.Spear) != 0)         parts.Add("копьё");
+            if ((mask & WeaponClassMask.Mace) != 0)          parts.Add("булава");
+            if ((mask & WeaponClassMask.Crossbow) != 0)      parts.Add("арбалет");
+            if ((mask & WeaponClassMask.Pneumatic) != 0)     parts.Add("пневматика");
+            if ((mask & WeaponClassMask.AntigravBlade) != 0) parts.Add("антиграв клинок");
+            if ((mask & WeaponClassMask.MesiumRifle) != 0)   parts.Add("мезиевая винтовка");
+            return parts.Count == 0 ? mask.ToString() : string.Join(" или ", parts);
+        }
 
         public bool IsOnCooldown(SkillInputSlot slot)
         {

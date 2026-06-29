@@ -18,6 +18,7 @@
 | ✅ **Pass 3** | Active/Passive split + AOE formulas (Cone/Sphere/Line/Box) + Inspector-driven animation triggers | T-INP-02 + T-INP-03 + T-INP-04 | ✅ merged | `90109b8` | ~1.5 ч |
 | ✅ **Pass 3.5** | UI badges Active/Passive + drag-drop filter active-only в SkillTreeWindow | T-INP-05 | ✅ merged | `ec48a01` | ~30 мин |
 | ✅ **Pass 4** | Skill Animation Player — кастомные clip'ы из SO через AnimatorOverrideController | T-INP-06 + T-INP-07 + T-INP-08 | ✅ merged | `2e71c30` | ~2 ч |
+| **Pass 5** | **Weapon-mask requirement для skill cast (тип надетого оружия)** | **T-INP-09** | ✅ merged | (pending) | ~1.5 ч |
 | Phase 2 | SkillTreeWindow Fit + auto-fit + CenterOnSelected | UX polish | ⏳ later | — | ~30 мин |
 
 **ИТОГО MVP+2 animation (пеший, с дисциплинами, прицеливание, skill-анимации): ~5 ч** ✅ DONE.
@@ -982,6 +983,79 @@ SkillInputService.TryActivate(slot)
 
 ---
 
+## ✅ Pass 5 — COMPLETED (2026-06-29)
+
+### Что сделано
+
+| Тикет | Описание | Файлы | Diff | Merge |
+|---|---|---|---|---|
+| **T-INP-09** | Weapon-mask requirement для skill cast: `[Flags] enum WeaponClassMask` в `WeaponItemData.cs` (8 флагов + 3 alias: AnyMelee/AnyRanged/AnyWeapon), поле `requiredWeaponMask` в `SkillNodeConfig.cs` (default=0 = «без ограничения», backward-compat для всех 29 .asset), helper'ы `GetWeaponInSlot(EquipSlot)` + `GetActiveWeapon()` в `EquipmentClientState.cs`, gate `CheckWeaponMask` + `DescribeMaskShort` в `SkillInputService.cs` (вызов в `TryActivate` между passive-guard и animation). | `WeaponItemData.cs`, `SkillNodeConfig.cs`, `EquipmentClientState.cs`, `SkillInputService.cs` | 4 файла, +~110 строк | (pending — user commit) |
+
+### Архитектура решения
+
+```
+SkillNodeConfig.requiredWeaponMask : WeaponClassMask
+                          │ (None = без ограничения, default для всех 29 .asset)
+                          ▼
+SkillInputService.TryActivate (step 6.7)
+    └─→ if (mask != None && hasBind) CheckWeaponMask(skillConfig)
+            ├─→ EquipmentClientState.Instance.GetActiveWeapon()
+            │       └─→ GetWeaponInSlot(WeaponMain) ?? GetWeaponInSlot(WeaponOff)
+            │              └─→ CurrentSnapshot.equip.TryGetItemId → InventoryWorld.GetItemDefinition → as WeaponItemData
+            └─→ if (weaponClass bit & mask) == 0 → return false + Debug.LogWarning(denyReason)
+```
+
+**Семантика масок (любые OR-комбинации работают «бесплатно»):**
+- `None` (0) — без ограничения (default, backward-compat)
+- `AnyWeapon` (255) — требуется ЛЮБОЕ оружие (хоть кулак, хоть меч)
+- `AnyMelee` (15) — меч/кинжал/копьё/булава
+- `AnyRanged` (48) — арбалет/пневматика
+- Конкретные классы: `Sword`, `AntigravBlade`, etc. (по одному)
+- Комбинации: `Sword | Spear | Mace` = «древковое или рубящее»
+
+**Что НЕ затронуто (явно):**
+- `CombatServer.RequestAttackRpc` — не валидирует weapon type (тот же gap, что был до T-INP-09). Если нужен server-side gate — отдельный тикет T-CB12 (Phase 2, после playtest покажет нужен ли).
+- `EquipmentWorld.TryEquip` — не трогали, `requiredProficiency` (single-skill) гейт equip'а остаётся как был.
+- `SkillsServer.ApplySkillEffects` — без изменений, новых `SkillEffect.Type` не вводили.
+- Designer НЕ проставлял маски в .asset — это Phase 2 (T-CB08 контентное наполнение). Сейчас все 29 .asset имеют `requiredWeaponMask = None` = «как было».
+
+### Verification результаты
+
+- ✅ `refresh_unity force` → **0 errors** в наших 4 файлах
+- ✅ Warnings только pre-existing (CombatServer, NetworkPlayer, DebugQuadSetup — не наши)
+- ✅ Third-party errors: `McpLog.cs` (MCP plugin) + Unity toolbar warning — не наши
+- ✅ Reflection smoke test:
+  - `WeaponClassMask` enum: 12 значений, `[Flags]` атрибут присутствует
+  - `AnyWeapon = 255`, `AnyMelee = 15`, `AnyRanged = 48` (точно как рассчитано)
+  - `SkillNodeConfig.requiredWeaponMask` поле существует
+  - `EquipmentClientState.GetWeaponInSlot(EquipSlot)` + `GetActiveWeapon()` → return `WeaponItemData`
+  - `SkillInputService.CheckWeaponMask` + `DescribeMaskShort` (private) → visible via reflection
+  - `Resources.LoadAll<SkillNodeConfig>("Skills")` → 29 .asset, **29/29 с `requiredWeaponMask = 0`** (backward-compat подтверждён)
+
+### Что тестировать в Play Mode (Pass 5)
+
+**Гейт НЕ активен** пока дизайнер не проставит `requiredWeaponMask != None` в .asset. Чтобы включить проверку:
+1. Открыть любой `Skill_Melee_*.asset` в Inspector
+2. В секции "Weapon Requirement (T-INP-09)" выбрать `AnyMelee` или `Sword`
+3. Ctrl+S, переключиться в Play Mode
+4. Нажать ЛКМ/K без оружия в слотах → Console: `[SkillInputService/T-INP-09] slot=Primary skill='melee_...' blocked: Нет оружия в WeaponMain/WeaponOff (requiredMask=AnyMelee)`
+5. Экипировать меч (через CharacterWindow Inventory tab) → повторить → скилл должен сработать
+
+**Регрессия (важно):**
+- Все 29 навыков **без маски** = ведут себя как до T-INP-09 (никаких изменений в UX)
+- Unarmed-атака (Primary/Secondary без bind) → `hasBind = false` → gate **пропускается** (как и задумано)
+- Существующие навыки с `attackClip` (T-INP-08 path) → gate срабатывает **до** `SkillAnimationPlayer.Play()` (нет «выстрелил анимацию, потом отменили»)
+
+### Lessons learned (Pass 5)
+
+1. **`[Flags] enum` с `1 << (byte)`** даёт OR-семантику бесплатно. `1 << (int)WeaponClass.Sword` работает потому что `WeaponClass : byte`. Если бы был `sbyte` или `short` — приведение к int обязательно.
+2. **Backward-compat через default = 0** — самая дешёвая страховка. 29 .asset загружаются без миграции, дизайнер сам решает когда включать.
+3. **`describe-only-flags` функция полезна для Debug.Log** — `parts.Add("меч")` вместо сырого `Sword=1`. Удобно для playtest'ов и будущих toast-уведомлений.
+4. **Helper на `EquipmentClientState`, не в `SkillInputService`** — следующий гейт (например, по `requiredDamageType` или `requiredTier`) тоже пойдёт через `GetActiveWeapon()`, не дублируя snapshot-traversal.
+5. **Клиент-сайд гейт = UX-фидбек без round-trip.** Если позже game-designer скажет «хочу server-authoritative» — добавим `EquipmentWorld.CanCastSkill` параллельно, не ломая этот gate (вариант B из verdict'а, ~3-4 ч).
+
+---
+
 ## Связанные документы
 
 - `00_README.md` — базовый манифест Battle
@@ -990,5 +1064,5 @@ SkillInputService.TryActivate(slot)
 - `30_PITFALLS_AND_OPEN_QUESTIONS.md` — антипаттерны
 - `40_REFERENCES.md` — file:line индекс
 - `../AUDIT_2026-06-26_CURRENT_STATE_AND_NEXT_STEPS.md` — большой аудит
-- `../input-system/40_MIGRATION_PLAN.md` — InputBindingsConfig migration (Phase 1.5)
+
 - `../../../Combat/Core/IDamageTarget.cs` — Combat interfaces

@@ -40,6 +40,31 @@ namespace ProjectC.Equipment
         MesiumRifle = 7,     // d10, base=5, range=50м, Mesium
     }
 
+    /// <summary>
+    /// T-INP-09: битовая маска WeaponClass для требования навыка к типу оружия.
+    /// None = 0 = «без ограничения» (backward-compat для всех 27 существующих SkillNodeConfig .asset).
+    /// AnyWeapon = все 8 бит = «любое оружие» (навык требует хоть что-то в WeaponMain или WeaponOff).
+    /// Композиция: MeleeOrRanged = Sword|Dagger|Spear|Mace|Crossbow|Pneumatic (OR-семантика бесплатно).
+    /// 8 значений WeaponClass → ushort (16 бит) — запас на будущие GreatSword/AntigravHammer/...
+    /// </summary>
+    [System.Flags]
+    public enum WeaponClassMask : ushort
+    {
+        None         = 0,
+        Sword        = 1 << WeaponClass.Sword,        // 1
+        Dagger       = 1 << WeaponClass.Dagger,       // 2
+        Spear        = 1 << WeaponClass.Spear,        // 4
+        Mace         = 1 << WeaponClass.Mace,         // 8
+        Crossbow     = 1 << WeaponClass.Crossbow,     // 16
+        Pneumatic    = 1 << WeaponClass.Pneumatic,    // 32
+        AntigravBlade= 1 << WeaponClass.AntigravBlade,// 64
+        MesiumRifle  = 1 << WeaponClass.MesiumRifle,  // 128
+        // Convenience aliases (designer-friendly в Inspector через [Flags] dropdown)
+        AnyMelee     = Sword | Dagger | Spear | Mace,
+        AnyRanged    = Crossbow | Pneumatic,
+        AnyWeapon    = AnyMelee | AnyRanged | AntigravBlade | MesiumRifle, // 255
+    }
+
     [CreateAssetMenu(fileName = "Weapon_", menuName = "Project C/Equipment/Weapon", order = 12)]
     public class WeaponItemData : ItemData
     {

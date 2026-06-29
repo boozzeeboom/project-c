@@ -453,7 +453,8 @@ namespace ProjectC.Skills.UI
             // T-INP-05: тип навыка (A/P) — первая строка в stats
             // + AOE зона (если есть)
             string typeStr = s.isActive ? "Активный (биндится на слот)" : "Пассивный (применяется автоматически)";
-            string animStr = !string.IsNullOrEmpty(s.attackAnimationTrigger) ? $" | Анимация: {s.attackAnimationTrigger}" : "";
+            // T-INP-08: показываем имя AnimationClip (если задан) или ничего.
+            string animStr = s.attackClip != null ? $" | Анимация: {s.attackClip.name}" : "";
             string typeLine = $"Тип: {typeStr}{animStr}";
 
             string aoeStr = FormatAoeText(s);

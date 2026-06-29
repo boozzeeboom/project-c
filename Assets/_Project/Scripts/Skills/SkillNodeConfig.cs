@@ -97,18 +97,11 @@ namespace ProjectC.Skills
                  "Passive = даёт статы / unlock'и через SkillEffect, невидим в skill bar, не bindable, всегда \"работает\".")]
         public bool isActive = true;
 
-        [Header("Animation (T-INP-02)")]
-        [Tooltip("Animator trigger (e.g. \"Attack\", \"HeavySwing\", \"CastHeal\"). " +
-                 "Пусто = fallback на SkillInputService._defaultAttackTrigger (\"Attack\"). " +
-                 "Используется ТОЛЬКО для active skills.")]
-        public string attackAnimationTrigger = "Attack";
-
-        // === T-INP-08: AnimationClip reference (data-driven, designer-friendly) ===
-        [Header("Animation Clip (T-INP-08) — preferred over trigger string")]
+        [Header("Animation (T-INP-08) — AnimationClip reference (data-driven, designer-friendly)")]
         [Tooltip("Drag-and-drop AnimationClip (.anim или клип из .fbx). " +
-                 "Если задан — проигрывается через SkillAnimationPlayer (AnimatorOverrideController), " +
+                 "Если задан — проигрывается через SkillAnimationPlayer (AnimatorOverrideController на state 'Skill'), " +
                  "НЕ требует ручной правки Animator Controller на каждый скилл. " +
-                 "Оставьте пустым, чтобы использовать старый путь через attackAnimationTrigger (строку).")]
+                 "Оставьте пустым для Primary/Secondary bare-fist (использует 'Attack' триггер → state Attack1H).")]
         public AnimationClip attackClip;
 
         [Tooltip("Скорость проигрывания клипа. 1.0 = нормальная, 2.0 = в 2 раза быстрее, 0.5 = в 2 раза медленнее. " +
@@ -159,8 +152,7 @@ namespace ProjectC.Skills
             // T-CB02: auto-set discipline по skillId prefix (additive, backward-compat)
             AutoSetDisciplineFromPrefix();
 
-            // T-INP-02: backward-compat migration — существующие SO получают дефолты
-            if (string.IsNullOrEmpty(attackAnimationTrigger)) attackAnimationTrigger = "Attack";
+            // T-INP-02: backward-compat migration removed (attackAnimationTrigger field deleted in T-INP-08).
 
             if (prerequisites == null || prerequisites.Length == 0) return;
             var visited = new HashSet<SkillNodeConfig>();

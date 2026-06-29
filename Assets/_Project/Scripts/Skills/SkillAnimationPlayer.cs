@@ -1,310 +1,307 @@
-// Project C: Skills/Battle — T-INP-08
-// SkillAnimationPlayer: data-driven проигрывание AnimationClip из SkillNodeConfig.attackClip.
+// Project C: Skills/Battle — T-INP-08 (v2, self-sufficient)
+// SkillAnimationPlayer: проигрывает AnimationClip из SkillNodeConfig.attackClip через Animator state machine.
+//
+// v2 changes (2026-06-29):
+//   - Time-based watchdog вместо зависимости от Animation Events (clip может не иметь событий).
+//   - Auto-restore фикс: exit transition (0.95) больше не блокирует восстановление.
+//   - Перехват `_isCasting` навсегда решён: watchdog + принудительное восстановление.
+//   - Animation Events (OnSkillAnimationEnd / OnAttackImpact) = опция (более точный тайминг).
 //
 // Контракт:
-//   - SkillNodeConfig.attackClip != null → используем AnimatorOverrideController:
-//     1. Создаём/кешируем override (по InstanceID клипа), подменяем Motion в state "Skill" AnimatorController'а
-//        на attackClip.
-//     2. Выставляем триггер "SkillPlay" → Animator переходит в state Skill, проигрывает подменённый клип.
-//     3. По окончании клипа (normalizedTime >= 1) Animator сам возвращается в Locomotion через
-//        transition Skill → Locomotion с Duration = 0.2 (настроено в префабе).
-//   - Если attackClip == null → fallback: ничего не делаем (legacy attackAnimationTrigger путь в SkillInputService).
+//   - SkillNodeConfig.attackClip != null →
+//     1. Создаём AnimatorOverrideController (кешируем по InstanceID клипа).
+//     2. Подменяем Motion в state "Skill" на attackClip.
+//     3. SetTrigger("SkillPlay") → Animator переходит в state Skill, проигрывает клип.
+//   - attackClip == null → no-op (legacy fallback SetTrigger("Attack") через SkillInputService).
 //
-// Animation Event "OnAttackImpact" на 60% клипа вызывает NetworkPlayer.OnAttackImpact →
-// SkillInputService.TryActivate с originalSlot → RPC на сервер.
+// Завершение (без событий):
+//   a) Watchdog: Time.unscaledTime - _castingStartTime >= _castMaxDuration → Restore()
+//   b) Transition: IsInTransition && nextState != Skill → Restore()
+//   c) Post-state: currentState != Skill && !IsInTransition → Restore()
 //
-// Design: docs/dev/INP08_ANIMATOR_CLIP_PIPELINE.md
+// С событиями:
+//   - OnSkillAnimationEnd() → Restore() (более точное, но не обязательное).
+//   - OnAttackImpact() → FireImpactRpc() (более точный impact, fallback по normalizedTime).
+//
+// Требования к Animator Controller (уже настроены):
+//   - state "Skill" с motion placeholder
+//   - AnyState → Skill по trigger "SkillPlay"
+//   - Skill → Idle по exit (0.95, 0.2s duration)
 
 using System.Collections.Generic;
 using UnityEngine;
-#if UNITY_EDITOR
-using UnityEditor.Animations;  // Editor-only — нужен для доступа к state.motion в AnimatorController
-#endif
 
 namespace ProjectC.Skills
 {
-    /// <summary>
-    /// T-INP-08: проигрывает AnimationClip на NetworkPlayer через AnimatorOverrideController.
-    /// Не сетевой компонент, owner-only MonoBehaviour. AddComponent в NetworkPlayer.InitializeSkillInputService.
-    /// </summary>
-    [RequireComponent(typeof(Animator))]
     public class SkillAnimationPlayer : MonoBehaviour
     {
-        [Header("Animator")]
-        [Tooltip("Animator на NetworkPlayer. Если null — берётся GetComponentInChildren в Awake.")]
         [SerializeField] private Animator _animator;
-
-        [Header("State names (должны совпадать с Animator Controller на префабе)")]
-        [Tooltip("Имя состояния в Animator Controller, Motion которого подменяем через OverrideController. " +
-                 "Default: 'Attack1H' (уже есть в PlayerAnimation.controller, имеет trigger 'Attack' и переход в Idle по exit time).")]
-        [SerializeField] private string _skillStateName = "Attack1H";
-
-        [Tooltip("Имя trigger-параметра Animator Controller для перехода в Skill state. " +
-                 "Default: 'Attack' (уже есть в PlayerAnimation.controller, transition AnyState → Attack1H).")]
-        [SerializeField] private string _skillTriggerName = "Attack";
-
-        [Header("Behavior")]
-        [Tooltip("Если true — не прерывать текущий Skill, ждать окончания. Иначе — прерывать сразу.")]
+        [SerializeField] private string _skillStateName = "Skill";
+        [SerializeField] private string _skillTriggerName = "SkillPlay";
+        [SerializeField] private float _impactNormalizedTime = 0.6f;
         [SerializeField] private bool _waitForFinish = true;
 
-        // Кеш override-контроллеров по InstanceID клипа. Чтобы не создавать новый на каждый каст (GC).
-        private readonly Dictionary<int, AnimatorOverrideController> _overrideCache =
-            new Dictionary<int, AnimatorOverrideController>();
+        [Header("Safety (v2)")]
+        [SerializeField, Tooltip("Буфер времени после окончания клипа до принудительного Restore(). Секунды.")]
+        private float _restoreTimeBuffer = 0.5f;
 
-        // Текущий исполняемый skill (для OnAttackImpact event handler'а).
+        [Header("Override")]
+        [SerializeField, Tooltip("Имя оригинального клипа для state Skill в корневом AnimatorController. В Unity 6 AnimatorOverrideController.this[] ищет ТОЛЬКО по имени клипа, не по имени состояния. Заполняется автоматически в Editor (Awake).")]
+        private string _defaultSkillClipName = "HumanM@Attack1H01_L";
+
+        // Cache AnimatorOverrideController'ов по InstanceID клипа (избегаем GC).
+        private readonly Dictionary<int, AnimatorOverrideController> _overrideCache = new Dictionary<int, AnimatorOverrideController>();
+
+        // Текущее состояние.
         public SkillNodeConfig CurrentSkill { get; private set; }
-
-        // Slot, который юзер нажал (для TryActivate из Animation Event).
         public SkillInputSlot OriginalSlot { get; private set; }
-
-        // Флаг: ждём ли сейчас Impact event (чтобы не уйти в fallback, если event не пришёл вовремя).
-        private bool _waitingForImpact;
-        private float _impactDeadlineRealtime;
-        private const float IMPACT_FALLBACK_TIMEOUT = 0.5f; // если за 0.5с не было event — RPC всё равно уходит
-
-        // Флаг: текущий клип в state Skill (чтобы Update знал когда закончился).
+        public bool IsCasting => _isCasting;
         private bool _isCasting;
+        private float _castingStartTime;
+        private float _castMaxDuration; // clip.length / speed + buffer
+        private int _skillStateHash;
 
-        // === Lifecycle ===
+        // Оригинальный controller для восстановления.
+        private RuntimeAnimatorController _originalController;
+
+        // Состояние applyRootMotion до подмены.
+        private bool _savedApplyRootMotion;
+
+        // Impact timing.
+        private bool _impactFired;
+
+        // Trigger schedule: после подмены контроллера ждём LateUpdate для SetTrigger.
+        private bool _triggerScheduled;
+
+        // Позиция Y персонажа перед началом каста (для предотвращения ухода под пол).
+        private float _castStartY;
 
         private void Awake()
         {
+            _skillStateHash = Animator.StringToHash(_skillStateName);
             if (_animator == null)
             {
-                // Find first Animator with non-null runtimeAnimatorController. Skip empty Animators
-                // (NetworkPlayer sometimes has one without controller, real one is on child Visual_Model).
-                var animators = GetComponentsInChildren<Animator>(true);
-                foreach (var a in animators)
+                foreach (var a in GetComponentsInChildren<Animator>(true))
                 {
-                    if (a != null && a.runtimeAnimatorController != null)
+                    if (a != null && a.runtimeAnimatorController != null) { _animator = a; break; }
+                }
+            }
+
+#if UNITY_EDITOR
+            AutoDetectDefaultSkillClip();
+#endif
+        }
+
+#if UNITY_EDITOR
+        private void AutoDetectDefaultSkillClip()
+        {
+            if (_animator == null || _animator.runtimeAnimatorController == null) return;
+
+            // Поднимаемся по цепочке AnimatorOverrideController → ... → AnimatorController
+            RuntimeAnimatorController rootCtrl = _animator.runtimeAnimatorController;
+            while (rootCtrl is AnimatorOverrideController aoc)
+                rootCtrl = aoc.runtimeAnimatorController;
+
+            if (rootCtrl is UnityEditor.Animations.AnimatorController editorCtrl)
+            {
+                foreach (var layer in editorCtrl.layers)
+                {
+                    foreach (var state in layer.stateMachine.states)
                     {
-                        _animator = a;
-                        break;
+                        if (state.state.name == _skillStateName && state.state.motion != null)
+                        {
+                            _defaultSkillClipName = state.state.motion.name;
+                            if (Debug.isDebugBuild)
+                                Debug.Log($"[SkillAnimationPlayer] Auto-detected defaultSkillClip='{_defaultSkillClipName}' for state '{_skillStateName}'");
+                            return;
+                        }
                     }
                 }
-                if (_animator == null && animators.Length > 0) _animator = animators[0]; // fallback
+                Debug.LogWarning($"[SkillAnimationPlayer] State '{_skillStateName}' not found in root controller '{rootCtrl.name}'");
+            }
+        }
+#endif
+
+        private void LateUpdate()
+        {
+            if (_triggerScheduled)
+            {
+                _triggerScheduled = false;
+                _animator.ResetTrigger(_skillTriggerName);
+                _animator.SetTrigger(_skillTriggerName);
+                if (Debug.isDebugBuild)
+                    Debug.Log($"[SkillAnimationPlayer] Delayed SkillPlay trigger fired");
+            }
+
+            // Position guard: предотвращаем уход персонажа под пол во время каста.
+            // Анимация может сместить корневую кость (hips) по Y, CharacterController
+            // продолжает Apply gravity, и персонаж "проваливается".
+            if (_isCasting)
+            {
+                Vector3 pos = transform.position;
+                if (pos.y < _castStartY - 0.01f)
+                {
+                    pos.y = _castStartY;
+                    transform.position = pos;
+                    if (Debug.isDebugBuild)
+                        Debug.Log($"[SkillAnimationPlayer] Position guard: snapped Y back to {_castStartY:F2} (was {pos.y:F2})");
+                }
             }
         }
 
         private void Update()
         {
-            // Impact fallback: если event не пришёл в течение timeout — принудительно fire RPC.
-            if (_waitingForImpact && Time.unscaledTime > _impactDeadlineRealtime)
+            if (!_isCasting || _animator == null || CurrentSkill == null || CurrentSkill.attackClip == null) return;
+
+            float now = Time.unscaledTime;
+            float elapsed = now - _castingStartTime;
+
+            // === Watchdog (v2): принудительное восстановление по таймеру ===
+            if (elapsed >= _castMaxDuration)
             {
                 if (Debug.isDebugBuild)
-                {
-                    Debug.LogWarning($"[SkillAnimationPlayer] OnAttackImpact event not received within {IMPACT_FALLBACK_TIMEOUT:F2}s for skill='{CurrentSkill?.skillId}'. Falling back to immediate RPC.");
-                }
-                FireImpactRpc();
-            }
-        }
-
-        // === Public API ===
-
-        /// <summary>
-        /// Проиграть клип из SkillNodeConfig.attackClip. No-op если attackClip == null.
-        /// </summary>
-        /// <param name="skill">SkillNodeConfig с attackClip (опционально)</param>
-        /// <param name="originalSlot">Slot, который был нажат (для Impact RPC)</param>
-        public void Play(SkillNodeConfig skill, SkillInputSlot originalSlot)
-        {
-            if (skill == null || skill.attackClip == null) return;
-
-            // Если уже кастим и _waitForFinish — skip (по дизайн-решению юзера).
-            if (_waitForFinish && _isCasting)
-            {
-                if (Debug.isDebugBuild)
-                {
-                    Debug.Log($"[SkillAnimationPlayer] Already casting '{CurrentSkill?.skillId}' — wait for finish (skill='{skill.skillId}' skipped).");
-                }
+                    Debug.Log($"[SkillAnimationPlayer] Watchdog: elapsed={elapsed:F2} >= max={_castMaxDuration:F2} — restoring");
+                Restore();
                 return;
             }
 
-            if (_animator == null || _animator.runtimeAnimatorController == null)
+            var si = _animator.GetCurrentAnimatorStateInfo(0);
+            bool inSkillState = si.shortNameHash == _skillStateHash || si.IsName(_skillStateName);
+
+            // === Ждём, пока аниматор войдёт в Skill state ===
+            // После подмены контроллера нужно время, чтобы trigger сработал.
+            // Вместо мгновенного Restore() — ждём появления в Skill.
+            if (!inSkillState && !_animator.IsInTransition(0))
+            {
+                return; // Ещё не началось — ждём
+            }
+
+            // === Transition ===
+            if (_animator.IsInTransition(0))
+            {
+                var nextState = _animator.GetNextAnimatorStateInfo(0);
+                bool nextIsSkill = nextState.shortNameHash == _skillStateHash || nextState.IsName(_skillStateName);
+                if (nextIsSkill) return; // Переход В Skill — ждём завершения
+                // Переход ИЗ Skill (exit transition) — анимация закончена
+                if (Debug.isDebugBuild)
+                    Debug.Log($"[SkillAnimationPlayer] Transition away from Skill — restoring");
+                Restore();
+                return;
+            }
+
+            // === В Skill state — активная фаза ===
+
+            // Impact timing: если AnimationEvent не сработал — fire RPC по normalizedTime
+            if (!_impactFired && si.normalizedTime >= _impactNormalizedTime)
+            {
+                _impactFired = true;
+                FireImpactRpc();
+            }
+
+            // NormalizedTime >= 1 — анимация завершена (без transition — маловероятно, но safety)
+            if (si.normalizedTime >= 1.0f)
+            {
+                Restore();
+            }
+        }
+
+        public void Play(SkillNodeConfig skill, SkillInputSlot originalSlot)
+        {
+            if (skill == null || skill.attackClip == null) return;
+            if (_animator == null || _animator.runtimeAnimatorController == null) return;
+            if (_waitForFinish && _isCasting)
             {
                 if (Debug.isDebugBuild)
-                {
-                    Debug.LogWarning("[SkillAnimationPlayer] Animator or RuntimeAnimatorController is null. Cannot play skill animation.");
-                }
+                    Debug.Log($"[SkillAnimationPlayer] Busy, ignoring Play('{skill.skillId}')");
                 return;
             }
 
             CurrentSkill = skill;
             OriginalSlot = originalSlot;
+            _impactFired = false;
+            _isCasting = true;
+            _castingStartTime = Time.unscaledTime;
 
-            // 1. Получить/создать override controller
+            // Вычисляем максимальную длительность: clip.length / speed + буфер
+            float clipLength = skill.attackClip.length;
+            float speed = Mathf.Max(0.01f, skill.attackClipSpeed);
+            _castMaxDuration = (clipLength / speed) + _restoreTimeBuffer;
+
+            // Создаём override-controller для этого клипа (кешируем).
             var overrideController = GetOrCreateOverride(skill.attackClip);
 
-            // 2. Применить speed (через Animator.speed? нет — это общая скорость Animator. Используем clip.frameRate)
-            //    На самом деле speed модифицируется через overrideController["stateName"].speed,
-            //    но это не AnimationClip API. Простой способ — модифицировать _animator.speed временно? Нет, это сломает locomotion.
-            //    Решение: используем AnimationClipPlayable НЕТ — мы уже в OverrideController пайплайне.
-            //    Workaround: меняем _animator.speed на время клипа (восстанавливаем после).
-            //    Лучше: выставляем state.Speed в AnimatorController через код — но это требует runtime AnimatorController API.
-            //    Для простоты — оставляем speed=1.0 на клипе, attackClipSpeed применяется как множитель _animator.speed на время.
-            if (Mathf.Abs(skill.attackClipSpeed - 1.0f) > 0.001f)
-            {
-                _animator.speed = skill.attackClipSpeed;
-            }
+            // Сохраняем оригинал (один раз).
+            if (_originalController == null) _originalController = _animator.runtimeAnimatorController;
 
-            // 3. Подменить controller и выставить триггер
+            // Включаем applyRootMotion — кастомные клипы могут содержать вращение
+            // (Standing Melee Attack 360 Low) и горизонтальное движение.
+            _savedApplyRootMotion = _animator.applyRootMotion;
+            _animator.applyRootMotion = true;
+
+            // Сохраняем Y позиции для защиты от ухода под пол (Root Transform Position Y в клипе).
+            _castStartY = transform.position.y;
+
+            // Подменяем контроллер.
             _animator.runtimeAnimatorController = overrideController;
-            _animator.ResetTrigger(_skillTriggerName);
-            _animator.SetTrigger(_skillTriggerName);
 
-            // 4. Ждём OnAttackImpact event (или fallback timeout)
-            _isCasting = true;
-            _waitingForImpact = true;
-            _impactDeadlineRealtime = Time.unscaledTime + IMPACT_FALLBACK_TIMEOUT;
+            // Триггер НЕ ставим сразу — откладываем на LateUpdate,
+            // чтобы контроллер успел инициализироваться после подмены.
+            _triggerScheduled = true;
 
             if (Debug.isDebugBuild)
-            {
-                Debug.Log($"[SkillAnimationPlayer] Playing '{skill.skillId}' with clip='{skill.attackClip.name}' speed={skill.attackClipSpeed:F2} (slot={originalSlot}, waiting for OnAttackImpact event up to {IMPACT_FALLBACK_TIMEOUT:F2}s)");
-            }
+                Debug.Log($"[SkillAnimationPlayer] Playing '{skill.skillId}' clip='{skill.attackClip.name}' len={clipLength:F2}s speed={speed:F2} maxDuration={_castMaxDuration:F2} — trigger scheduled for LateUpdate");
         }
 
-        /// <summary>
-        /// Animation Event handler — вызывается из AnimationClip на 60% (или другой timing, настроенный в клипе).
-        /// Должен быть public методом на компоненте, на котором висит Animator (или на child с Animator).
-        /// </summary>
+        /// <summary>Вызывается из Animation Event в клипе (если есть).</summary>
+        public void OnSkillAnimationEnd() => Restore();
+
+        /// <summary>Вызывается из Animation Event в клипе (если есть).</summary>
         public void OnAttackImpact()
         {
-            if (!_waitingForImpact) return; // уже fired (или это event для другого клипа)
+            if (!_isCasting || _impactFired) return;
+            _impactFired = true;
             FireImpactRpc();
         }
 
-        /// <summary>
-        /// Animation Event handler — вызывается когда клип полностью проигрался (если дизайнер добавит event на конце).
-        /// Опционально. Если не добавлен — isCasting сбрасывается вручную через state machine check в Update.
-        /// </summary>
-        public void OnSkillAnimationEnd()
+        private void Restore()
         {
+            if (!_isCasting) return;
             _isCasting = false;
-            // Restore Animator speed
-            if (_animator != null && Mathf.Abs(_animator.speed - 1.0f) > 0.001f)
+            if (_animator != null && _originalController != null && _animator.runtimeAnimatorController != _originalController)
             {
-                // Возвращаем 1.0 только если НЕ сейчас кастим с другим speed
-                _animator.speed = 1.0f;
+                _animator.runtimeAnimatorController = _originalController;
+                _animator.applyRootMotion = _savedApplyRootMotion;
+                if (Debug.isDebugBuild)
+                    Debug.Log($"[SkillAnimationPlayer] Restored original controller");
             }
-            if (Debug.isDebugBuild)
-            {
-                Debug.Log($"[SkillAnimationPlayer] Animation ended for skill='{CurrentSkill?.skillId}'");
-            }
+            _originalController = null;
+            CurrentSkill = null;
+            OriginalSlot = SkillInputSlot.None;
         }
-
-        // === Internal ===
 
         private void FireImpactRpc()
         {
-            _waitingForImpact = false;
-            var skill = CurrentSkill;
-            var slot = OriginalSlot;
-
-            // Restore speed (не критично, но аккуратно)
-            if (_animator != null && _animator.speed != 1.0f) _animator.speed = 1.0f;
-
-            // Дёрнуть RPC через SkillInputService.TryActivate. Это вызовет RequestAttackRpc / RequestSkillCastRpc.
-            // Важно: TryActivate теперь вызывает visualizer и animation player; чтобы не зациклиться,
-            // animation player.Play(...) проверяет _isCasting и скипает повторный вызов.
             var sis = SkillInputService.Instance;
-            if (sis != null)
-            {
-                sis.TryActivate(slot, skipAnimation: true); // impact fire — только RPC, без re-trigger анимации
-            }
-
-            if (Debug.isDebugBuild)
-            {
-                Debug.Log($"[SkillAnimationPlayer] FireImpactRpc: skill='{skill?.skillId}' slot={slot}");
-            }
+            if (sis != null) sis.TryActivate(OriginalSlot, skipAnimation: true);
         }
 
         private AnimatorOverrideController GetOrCreateOverride(AnimationClip clip)
         {
             int key = clip.GetInstanceID();
-            if (_overrideCache.TryGetValue(key, out var cached))
-            {
-                return cached;
-            }
+            if (_overrideCache.TryGetValue(key, out var cached)) return cached;
 
             var baseCtrl = _animator.runtimeAnimatorController;
-            if (baseCtrl == null)
-            {
-                if (Debug.isDebugBuild)
-                {
-                    Debug.LogWarning("[SkillAnimationPlayer] Animator has no runtimeAnimatorController. Cannot play skill animation.");
-                }
-                return null;
-            }
+            var overrideCtrl = new AnimatorOverrideController(baseCtrl);
 
-#if UNITY_EDITOR || DEVELOPMENT_BUILD
-            // Editor / dev build: идём глубже через Override → Override → ... → AnimatorController.
-            // Нужен AnimatorController (не OverrideController), потому что у него есть прямой
-            // доступ к state.motion через layers[0].stateMachine.FindState(name).
-            AnimatorController baseAc = baseCtrl as AnimatorController;
-            while (baseAc == null && baseCtrl is UnityEngine.AnimatorOverrideController oc)
-            {
-                baseCtrl = oc.runtimeAnimatorController;
-                baseAc = baseCtrl as AnimatorController;
-            }
-            if (baseAc != null)
-            {
-                // Создаём СВЕЖИЙ AnimatorOverrideController от чистого base AnimatorController
-                // (минуя существующий PlayerAnimation_Default — он всё равно null'ит все клипы).
-                var overrideCtrl = new UnityEngine.AnimatorOverrideController(baseAc);
+            // Unity 6: AnimatorOverrideController.this[string] работает ТОЛЬКО по имени клипа,
+            // не по имени состояния (T-INP-08). Используем имя оригинального клипа для Skill state.
+            if (!string.IsNullOrEmpty(_defaultSkillClipName))
+                overrideCtrl[_defaultSkillClipName] = clip;
+            else
+                overrideCtrl[_skillStateName] = clip; // fallback (старые версии Unity)
 
-                var overrides = new System.Collections.Generic.List<System.Collections.Generic.KeyValuePair<UnityEngine.AnimationClip, UnityEngine.AnimationClip>>(overrideCtrl.overridesCount);
-                overrideCtrl.GetOverrides(overrides);
-
-                // Найти motion в target state через AnimatorController (точное соответствие).
-                AnimationClip placeholderKey = null;
-                var sm = baseAc.layers[0].stateMachine;
-                if (sm != null)
-                {
-                    foreach (var cs in sm.states)
-                    {
-                        if (cs.state != null && cs.state.name == _skillStateName)
-                        {
-                            placeholderKey = cs.state.motion as AnimationClip;
-                            break;
-                        }
-                    }
-                }
-
-                bool replaced = false;
-                if (placeholderKey != null)
-                {
-                    for (int i = 0; i < overrides.Count; i++)
-                    {
-                        if (overrides[i].Key == placeholderKey)
-                        {
-                            overrides[i] = new System.Collections.Generic.KeyValuePair<UnityEngine.AnimationClip, UnityEngine.AnimationClip>(placeholderKey, clip);
-                            replaced = true;
-                            break;
-                        }
-                    }
-                }
-
-                if (!replaced)
-                {
-                    // BlendTree или state без motion — fallback на Unity API.
-                    overrideCtrl[_skillStateName] = clip;
-                }
-                else
-                {
-                    overrideCtrl.ApplyOverrides(overrides);
-                }
-
-                _overrideCache[key] = overrideCtrl;
-                return overrideCtrl;
-            }
-#endif
-
-            // Runtime / fallback path: создаём override от текущего controller (OverrideController или AnimatorController)
-            // и подменяем по имени state. Работает только если override controller не замапил это state в null.
-            var fallbackCtrl = new UnityEngine.AnimatorOverrideController(baseCtrl);
-            fallbackCtrl[_skillStateName] = clip;
-            _overrideCache[key] = fallbackCtrl;
-            return fallbackCtrl;
+            _overrideCache[key] = overrideCtrl;
+            return overrideCtrl;
         }
     }
 }

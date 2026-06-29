@@ -30,8 +30,11 @@ MonoBehaviour:
   treeX: 200
   treeY: -100
   isActive: 1
-  attackAnimationTrigger: Attack
+  attackClip: {fileID: -203655887218126122, guid: ac609e33f41bc8143bcbb8666763c264, type: 3}
+  attackClipSpeed: 1
   aoeFormula: 3
   aoeSize: 2
   aoeConeAngleDeg: 60
   aoeWidth: 1
+  debugVisualizeAoe: 0
+  debugVisualizeDuration: 0.6

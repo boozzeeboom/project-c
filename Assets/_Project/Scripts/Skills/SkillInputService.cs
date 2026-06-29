@@ -93,7 +93,13 @@ namespace ProjectC.Skills
         {
             _ownerPlayer = owner;
             TargetFinder = targetFinder;
-            if (owner != null) _animator = owner.GetComponentInChildren<Animator>();
+            // T-INP-08 fix: используем уже-resolved _animator из NetworkPlayer (который знает про пустой Animator на root).
+            if (owner != null)
+            {
+                var ownerAnim = typeof(NetworkPlayer).GetField("_animator", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
+                _animator = ownerAnim != null ? ownerAnim.GetValue(owner) as Animator : owner.GetComponentInChildren<Animator>();
+                if (_animator == null) _animator = owner.GetComponentInChildren<Animator>();
+            }
         }
 
         // ==================== INPUT POLLING (Phase 1) ====================
@@ -282,10 +288,9 @@ namespace ProjectC.Skills
                 }
             }
 
-            // 6.5) Animation trigger (T-INP-02/04): skill-specific trigger если задан, иначе default.
-            string trigger = (skillConfig != null && !string.IsNullOrEmpty(skillConfig.attackAnimationTrigger))
-                ? skillConfig.attackAnimationTrigger
-                : _defaultAttackTrigger;
+            // 6.5) Animation trigger (T-INP-08): hardcoded default "Attack" (AnyState → Attack1H).
+            //    T-INP-02 attackAnimationTrigger field REMOVED — data-driven через attackClip.
+            string trigger = _defaultAttackTrigger;
 
             // 6.6) Active guard (T-INP-02): пассивные навыки нельзя активировать через TryActivate.
             // Они применяются автоматически через SkillsServer.ApplySkillEffects на learn.
@@ -328,7 +333,8 @@ namespace ProjectC.Skills
             }
 
             // Legacy path: SetTrigger (без attackClip, или SkillAnimationPlayer missing)
-            if (_animator != null)
+            // skipAnimation=true (вызов из OnAttackImpact) — только RPC, без SetTrigger.
+            if (!skipAnimation && _animator != null)
             {
                 _animator.SetTrigger(trigger);
             }

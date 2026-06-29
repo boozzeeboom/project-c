@@ -151,7 +151,9 @@ namespace ProjectC.Player
 
             networkObject = GetComponent<NetworkObject>();
             _controller = GetComponent<CharacterController>();
-            _animator = GetComponentInChildren<Animator>();
+            // T-INP-08 fix: на префабе первый Animator (на root) часто без controller.
+            // Skip empty Animators — ищем первый с непустым runtimeAnimatorController (Visual_Model).
+            _animator = FindFirstValidAnimator();
 
             // ПРИМЕЧАНИЕ: NetworkTransform.InterpolatePosition/Rotation/Scale
             // отключаются ВРУЧНУЮ в Unity Editor на префабе Player.prefab
@@ -1723,6 +1725,25 @@ namespace ProjectC.Player
             }
             if (b.key != Key.None && Keyboard.current != null && Keyboard.current[b.key].wasPressedThisFrame) return true;
             return false;
+        }
+
+        /// <summary>
+        /// T-INP-08 fix: ищет первый Animator с непустым runtimeAnimatorController.
+        /// На префабе NetworkPlayer первый Animator (на root) часто без controller —
+        /// реальный Animator на child mesh (Visual_Model). Без этого fallback SetTrigger
+        /// попадает в пустой Animator и триггер не срабатывает.
+        /// </summary>
+        private Animator FindFirstValidAnimator()
+        {
+            var animators = GetComponentsInChildren<Animator>(true);
+            Animator fallback = null;
+            foreach (var a in animators)
+            {
+                if (a == null) continue;
+                if (a.runtimeAnimatorController != null) return a; // первый непустой — winner
+                if (fallback == null) fallback = a; // запоминаем на крайний случай
+            }
+            return fallback;
         }
     }
 }

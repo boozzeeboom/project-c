@@ -12,6 +12,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 7cc8640948322db4b968053a5978b2f9, type: 3}
   m_Name: ResourceNode_IronVein
   m_EditorClassIdentifier: Assembly-CSharp::ProjectC.ResourceNode.ResourceNodeConfig
+  _gatherType: 0
   _resultItem: {fileID: 11400000, guid: 10934e605266fbf469b37c1985c3ccf0, type: 2}
   _resultItemType: 0
   _requiredTool: {fileID: 11400000, guid: 36a037a47987858458db216142622a14, type: 2}

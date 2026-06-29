@@ -27,9 +27,30 @@ using ProjectC.Items;
 
 namespace ProjectC.ResourceNode
 {
+    /// <summary>
+    /// Категория сбора. Определяет подтип действия на узле — нужно для будущей
+    /// (T-G09+) разводки анимаций игрока (mining swing / lambering chop / gathering pull).
+    /// T-G08: enum + инспектор; анимации подвешиваются отдельным тикетом.
+    /// </summary>
+    public enum GatherType : byte
+    {
+        /// <summary>Добыча руды/кристаллов киркой. (default для обратной совместимости со старыми .asset'ами.)</summary>
+        Mining = 0,
+        /// <summary>Рубка дерева топором.</summary>
+        Lambering = 1,
+        /// <summary>Сбор трав/ягод руками.</summary>
+        Gathering = 2,
+    }
+
     [CreateAssetMenu(fileName = "ResourceNode_", menuName = "Project C/Resource Node Config", order = 2)]
     public class ResourceNodeConfig : ScriptableObject
     {
+        [Header("Gather Type")]
+        [Tooltip("Категория сбора (Mining / Lambering / Gathering). " +
+                 "Определяет подтип действия — для будущей (T-G09+) разводки анимаций игрока " +
+                 "на разные blend-клипы по типу узла. Сейчас (T-G08) только enum, анимации подключаются отдельно.")]
+        [SerializeField] private GatherType _gatherType = GatherType.Mining;
+
         [Header("Result")]
         [Tooltip("Предмет, который игрок получает после сбора (ItemData SO).")]
         [SerializeField] private ItemData _resultItem;
@@ -83,6 +104,9 @@ namespace ProjectC.ResourceNode
         private int _requiredToolId = -1;
 
         // === Публичный API ===
+
+        /// <summary>Категория сбора. T-G08: enum-only, анимации подключаются отдельным тикетом (T-G09+).</summary>
+        public GatherType GatherType => _gatherType;
 
         public ItemData ResultItem => _resultItem;
         public ItemData RequiredTool => _requiredTool;

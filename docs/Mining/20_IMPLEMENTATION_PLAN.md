@@ -445,8 +445,67 @@ git add -A && git commit -m "feat(scene): ResourceNode prefab + placement in Wor
 - [ ] Tool durability (consume tool on gather)
 - [ ] Multi-player on same node (queue / split)
 - [ ] Node tiering (Tier 1/2/3 с разными инструментами)
-- [ ] Player gather animation (StateHasher → PlayerGatherState)
+- [ ] **T-G09+: Player gather animation per GatherType (Mining/Lambering/Gathering)** — см. T-G08 ниже
 - [ ] Gather skill (уровень влияет на скорость)
 - [ ] Random yield (1-3 предмета за сбор)
 - [ ] Persistence (сохранение состояния узла)
 - [ ] ResourceNode как world-pickup (spawnable)
+
+---
+
+## Фаза T-G08: GatherType enum в ResourceNodeConfig (~0.3 ч) ✅ 2026-06-29
+
+### Контекст
+
+Текущая анимация игрока при сборе — hardcoded `GatherPulseLoop()` в `NetworkPlayer.cs` (scale-pulse через transform.localScale, без Animator). Анимация самого узла (`ResourceNode.OnReplicatedStateChanged` → `GatherPulse`/`Disappear` coroutines) — работает хорошо и не меняется.
+
+Цель T-G08: **минимально** ввести enum `GatherType` (Mining/Lambering/Gathering) в `ResourceNodeConfig`, чтобы в инспекторе можно было **сразу** выбирать категорию для каждого узла. Логика выбора анимации игрока по `GatherType` — отдельный тикет T-G09+ (будет решать, как именно подвешивать `AnimatorOverrideController` / новые state в `PlayerAnimation.controller`).
+
+### Что сделано
+
+**1. `Assets/_Project/Scripts/ResourceNode/ResourceNodeConfig.cs`**
+- Добавлен `public enum GatherType : byte { Mining = 0, Lambering = 1, Gathering = 2 }` (в namespace `ProjectC.ResourceNode`).
+- Добавлено `[SerializeField] private GatherType _gatherType = GatherType.Mining;` с `[Header("Gather Type")]` и tooltip.
+- Добавлен public getter `public GatherType GatherType => _gatherType;`.
+- `Mining = 0` (default) выбран осознанно для обратной совместимости со старыми `.asset`'ами — Unity сериализует новое поле как `0`, и старые ассеты автоматически открываются как Mining без миграции.
+
+**2. `Resources/ResourceNodes/*.asset`** — все 3 существующих ассета расширены (через `manage_scriptable_object` `modify`, без `overwrite`, чтобы не задеть ссылки на `ItemData`):
+| .asset | _gatherType | Комментарий |
+|--------|-------------|-------------|
+| `ResourceNode_IronVein.asset` | `0` (Mining) | кирка |
+| `ResourceNode_CopperVein.asset` | `0` (Mining) | кирка |
+| `ResourceNode_PlantHerb.asset` | `2` (Gathering) | руками |
+
+Все ссылки на `_resultItem`/`_requiredTool`/`_nodeDisplayName`/anim-параметры **сохранены** (проверено через `read_file` на YAML).
+
+### Чего НЕ сделано (намеренно)
+
+- ❌ Не добавлено поле `AnimationClip` в `ResourceNodeConfig` — на данный момент нет ни Mining/Lambering/Gathering blend-клипов в `Assets/_Project/Animations/`. Когда появятся (T-G09+), добавим в этот же SO отдельными полями `miningClip/lamberingClip/gatheringClip`.
+- ❌ Не дёргается `Animator.SetTrigger` / `AnimatorOverrideController` по типу — это T-G09+ (после согласования архитектуры: override vs new state в controller).
+- ❌ Не удалён `GatherPulseLoop()` в `NetworkPlayer.cs` — это hardcoded-заглушка, убирается когда появится реальная анимация.
+
+### Verification
+
+```bash
+# Compile
+# Open Unity Editor → Console → 0 errors
+
+# Inspector check
+# Выбрать Assets/_Project/Resources/ResourceNodes/ResourceNode_PlantHerb.asset
+# В Inspector должен появиться новый раздел "GATHER TYPE" с enum-dropdown (значение: Gathering)
+# Аналогично для IronVein/CopperVein (значение: Mining)
+
+# Play Mode
+# Запустить host → подойти к IronVein → F (с киркой) → сбор работает как раньше
+# Подойти к PlantHerb → F → сбор работает как раньше
+# (поведение не изменилось — только поле в инспекторе и property в коде)
+```
+
+### T-G09+ backlog (что нужно решить)
+
+1. **Архитектура подвешивания анимации** — варианты (см. обсуждение в CHANGELOG):
+   - A) `AnimatorOverrideController` + `Skill state` (как `SkillAnimationPlayer`) — без правок `.controller`.
+   - B) Новые state'ы Mine/Lumber/Gather в `PlayerAnimation.controller` + transition-ы.
+2. **Откуда брать `AnimationClip` для типа** — отдельные `miningClip/lamberingClip/gatheringClip` в `ResourceNodeConfig` (тип-специфичные, выбор по `GatherType`), или общий SO `GatherAnimationConfig` с 3-мя clip'ами (выбор по индексу).
+3. **Совместимость с `SkillAnimationPlayer`** — текущий gather-pulse живёт в `NetworkPlayer.cs:1631-1684`. Куда перенести логику `OnGatherProgress → Play(anim)` — в `SkillAnimationPlayer` (расширить под Gather) или отдельный `GatherAnimationPlayer`?
+

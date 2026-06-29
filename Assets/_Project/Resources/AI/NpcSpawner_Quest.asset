@@ -49,7 +49,7 @@ MonoBehaviour:
     m_PreInfinity: 2
     m_PostInfinity: 2
     m_RotationOrder: 4
+  behaviorType: 1
+  passiveAggroHpThreshold: 25
+  passiveMaxHitsPerMinute: 3
   visualConfig: {fileID: 0}
-  behaviorType: 1  # T-NPC-14: Passive — мирный квестовый NPC
-  passiveAggroHpThreshold: 25  # при потере 25% HP — становится агрессивным
-  passiveMaxHitsPerMinute: 3    # или при 3 ударах за 60 сек

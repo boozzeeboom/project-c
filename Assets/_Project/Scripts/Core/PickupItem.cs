@@ -51,17 +51,65 @@ namespace ProjectC.Items
         public Vector3 Position => transform.position;
 
         private void Start()
-        {
-            _startPosition = transform.position;
+                {
+                    _startPosition = transform.position;
 
-            // Ensure trigger collider exists
-            var collider = GetComponent<Collider>();
-            if (collider == null)
-            {
-                collider = gameObject.AddComponent<SphereCollider>();
-            }
-            collider.isTrigger = true;
-        }
+                    // Ensure trigger collider exists
+                    var collider = GetComponent<Collider>();
+                    if (collider == null)
+                    {
+                        collider = gameObject.AddComponent<SphereCollider>();
+                    }
+                    collider.isTrigger = true;
+
+                    // Equipment Visual System (Phase 1, 2026-06-29):
+                    // Если на пикапе нет ни одного child-renderer (visual по старинке лежит в сцене),
+                    // но у itemData задан visualPrefab — спавним копию как child.
+                    // Это даёт designer'у единый путь: назначить visualPrefab на ItemData один раз,
+                    // и любой дроп (server-spawn через InventoryServer.RequestDropRpc) будет иметь меш.
+                    EnsureVisualFromItemData();
+                }
+
+                /// <summary>
+                /// Phase 1 (Equipment Visual System): если на этом GO нет child-renderer и
+                /// у itemData есть visualPrefab — спавнит копию как child. Если в сцене уже
+                /// есть visual (back-compat: scene-placed pickup) — не трогает.
+                /// </summary>
+                private void EnsureVisualFromItemData()
+                {
+                    if (itemData == null || itemData.visualPrefab == null) return;
+
+                    // Back-compat: если уже есть child с Renderer — дизайнер положил visual в сцену.
+                    // НЕ перезаписываем (важно для существующих scene-placed pickup'ов).
+                    var existingRenderers = GetComponentsInChildren<Renderer>(true);
+                    foreach (var r in existingRenderers)
+                    {
+                        if (r == null) continue;
+                        // Skip сам PickupItem GameObject (там нет renderer'a, но на всякий случай).
+                        if (r.gameObject == gameObject) continue;
+                        return; // нашли — выходим
+                    }
+
+                    // Нет visual — спавним из itemData.visualPrefab.
+                    var visualGo = Instantiate(itemData.visualPrefab, transform);
+                    visualGo.name = $"Visual_{itemData.itemName}";
+                    // localPosition/Rotation/Scale = identity: префаб уже позиционирован, дизайнер
+                    // мог настроить transform внутри visualPrefab через Inspector.
+                    visualGo.transform.localPosition = Vector3.zero;
+                    visualGo.transform.localRotation = Quaternion.identity;
+                    visualGo.transform.localScale = Vector3.one;
+
+                    // Disable все коллайдеры внутри visualPrefab (иначе будет конфликт с нашим trigger).
+                    foreach (var col in visualGo.GetComponentsInChildren<Collider>(true))
+                    {
+                        if (col != null) col.enabled = false;
+                    }
+
+                    if (Debug.isDebugBuild)
+                    {
+                        Debug.Log($"[PickupItem] Spawned visual '{visualGo.name}' from itemData.visualPrefab for '{itemData.itemName}'.");
+                    }
+                }
 
         private void Update()
         {

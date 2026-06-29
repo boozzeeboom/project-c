@@ -14,6 +14,7 @@ GameObject:
   - component: {fileID: 1161926159966955946}
   - component: {fileID: -8638653109892984551}
   - component: {fileID: -2566205779895230594}
+  - component: {fileID: 6282014175540454529}
   m_Layer: 0
   m_Name: NetworkPlayer
   m_TagString: Player
@@ -172,6 +173,20 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::ProjectC.Player.PlayerInputReader
   mouseSensitivityX: 2
   mouseSensitivityY: 2
+--- !u!114 &6282014175540454529
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 100000}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 5e2a3ca49c9134241ba88fc10759baef, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::ProjectC.Player.CharacterEquipmentVisualApplier
+  _animator: {fileID: 7681697311616221365}
+  _logWarnings: 1
 --- !u!1001 &4319034130499501348
 PrefabInstance:
   m_ObjectHideFlags: 0
@@ -240,5 +255,10 @@ PrefabInstance:
 --- !u!4 &4358063689606666959 stripped
 Transform:
   m_CorrespondingSourceObject: {fileID: -8679921383154817045, guid: 2faa610713d3b3c439473daa55e8c60a, type: 3}
+  m_PrefabInstance: {fileID: 4319034130499501348}
+  m_PrefabAsset: {fileID: 0}
+--- !u!95 &7681697311616221365 stripped
+Animator:
+  m_CorrespondingSourceObject: {fileID: 5866666021909216657, guid: 2faa610713d3b3c439473daa55e8c60a, type: 3}
   m_PrefabInstance: {fileID: 4319034130499501348}
   m_PrefabAsset: {fileID: 0}

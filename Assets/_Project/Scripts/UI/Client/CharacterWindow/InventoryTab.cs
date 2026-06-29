@@ -628,17 +628,30 @@ namespace ProjectC.UI.Client
                     if (isEquipped) equipBtn.AddToClassList("equipped");
 
                     string capturedDisplayName = item.displayName;
-                    string capturedItemId = item.itemId;
-                    bool capturedIsEquipped = isEquipped;
-                    equipBtn.UnregisterCallback<ClickEvent>(OnInventoryEquipBtnClick);
-                    equipBtn.RegisterCallback<ClickEvent>(evt =>
-                    {
+                        string capturedItemId = item.itemId;
+                        bool capturedIsEquipped = isEquipped;
+
+                        // T-EV-002 (2026-06-29): идемпотентный unregister через userData.
+                        // Раньше здесь было UnregisterCallback<ClickEvent>(OnInventoryEquipBtnClick)
+                        // — но это unregister'ило placeholder-метод, не реальный lambda. При каждом
+                        // refresh ListView добавлялся новый callback, старый оставался → один клик
+                        // вызывал N handlers → N RequestEquipRpc → rate limit "Слишком быстро".
+                        // Fix: храним callback в userData, unregister'им именно его перед register.
+                        var prevCb = equipBtn.userData as UnityEngine.UIElements.EventCallback<UnityEngine.UIElements.ClickEvent>;
+                        if (prevCb != null)
+                        {
+                        equipBtn.UnregisterCallback<UnityEngine.UIElements.ClickEvent>(prevCb);
+                        }
+                        UnityEngine.UIElements.EventCallback<UnityEngine.UIElements.ClickEvent> newCb = evt =>
+                        {
                         if (capturedIsEquipped)
-                            OnUnequipFromInventoryClicked(capturedItemId, capturedDisplayName);
+                        OnUnequipFromInventoryClicked(capturedItemId, capturedDisplayName);
                         else
-                            OnEquipFromInventoryClicked(capturedItemId, capturedDisplayName);
+                        OnEquipFromInventoryClicked(capturedItemId, capturedDisplayName);
                         evt.StopPropagation();
-                    });
+                        };
+                        equipBtn.userData = newCb;
+                        equipBtn.RegisterCallback<UnityEngine.UIElements.ClickEvent>(newCb);
                 }
                 else
                 {

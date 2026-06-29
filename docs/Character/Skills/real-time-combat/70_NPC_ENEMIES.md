@@ -66,6 +66,29 @@
   - Если dist <= AttackRange → `Attack` → `CombatServer.Instance.RequestAttackRpc(playerNetId, sourceId=0)`.
 - **Группирование (grouping)**: NPC одного типа помогают друг другу. Если NPC_A в `Attack` состоянии — все NPC_A в радиусе 15м агрятся на ту же цель (агрессия заразна). Реализуется через shared `AggroTable` в `NpcSpawner` (server-side Dictionary<ulong targetId, List<NpcBrain>>).
 
+### 2.3.1 Passive / Aggressive / Neutral behavior (T-NPC-14)
+
+`NpcBrain` имеет 3 типа поведения (выбирается дизайнером в Inspector):
+
+| Тип | Поведение | Когда использовать |
+|---|---|---|
+| **Aggressive** | Атакует игрока по proximity (aggroRange). | Базовые мобы-враги (гоблины, бандиты). |
+| **Passive** | Стоит мирно. Атакует только после удара игрока при выполнении ОДНОГО из условий: (1) cumulativeDamage% ≥ aggroHpThreshold ИЛИ (2) hits за последние 60с ≥ maxHitsPerMinute. | Квестовые NPC (квестодатели, торговцы с квестом). Дизайнер хочет, чтобы игрок мог поговорить и сдать квест, и только при агрессии получил в ответ. |
+| **Neutral** | Никогда не атакует (даже после удара). | Декорации (манекены, тренировочные болваны). |
+
+**Inspector (на префабе NPC_Goblin):**
+- `Behavior Type` — enum (Aggressive / Passive / Neutral).
+- `Aggro Hp Threshold` (только Passive) — % от maxHp, default 25.
+- `Max Hits Per Minute` (только Passive) — fallback, default 3.
+
+**Анти-рестриктивное:** спавнер **НЕ подтирает** поля на префабе. Он вызывает `NpcBrain.ApplySpawnerBehavior(...)` ПОСЛЕ Instantiate через `NpcSpawnerConfig.behaviorType / passiveAggroHpThreshold / passiveMaxHitsPerMinute`. Один и тот же префаб может быть Aggressive по умолчанию (с `behaviorType=0` в самом префабе), а в квестовом лагере (отдельный спавнер с `NpcSpawner_Quest.asset` где `behaviorType=1`) — Passive.
+
+**HP tracking:** `NpcTarget` выбрасывает server-side `event Action<int,int> OnHpChanged` (newHp, deltaHp). `NpcBrain` подписывается в `OnNetworkSpawn` / отписывается в `OnNetworkDespawn`. Queue<float> хранит timestamps ударов за последние 60с (sliding window).
+
+**Примеры конфигов:**
+- `Assets/_Project/Resources/AI/NpcSpawner_Default.asset` — `behaviorType=0` (Aggressive).
+- `Assets/_Project/Resources/AI/NpcSpawner_Quest.asset` — `behaviorType=1` (Passive, 25%/3hit).
+
 ### 2.4 Визуал + анимация (Kevin Iglesias Human Animations)
 - **Префаб NPC:** `Assets/_Project/Prefabs/AI/Npc_Goblin.prefab` (server-authoritative spawn):
   - root: `NetworkObject` + `CharacterController` + `NpcBrain` + `NpcAttacker` + `NpcTarget`.

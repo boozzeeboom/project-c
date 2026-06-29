@@ -237,6 +237,30 @@ namespace ProjectC.AI
                 if (applier == null) applier = go.AddComponent<NpcVisualApplier>();
                 applier.Apply(_config.visualConfig);
             }
+
+            // T-NPC-14: behavior override из SpawnerConfig (Aggressive/Passive/Neutral).
+            // НЕ подтирает поле _behaviorType на префабе — пробрасывает override в рантайме.
+            // Это позволяет одному префабу быть Aggressive по умолчанию, но в квестовом
+            // лагере (отдельный spawner + config) стать Passive.
+            if (_config != null)
+            {
+                var brain = go.GetComponent<NpcBrain>();
+                if (brain != null)
+                {
+                    // passiveAggroHpThreshold=0 → fallback к префабу; =-1 у maxHitsPerMinute → fallback к префабу.
+                    float hpThreshold = _config.passiveAggroHpThreshold > 0f
+                        ? _config.passiveAggroHpThreshold
+                        : 0f;  // sentinel для brain.ApplySpawnerBehavior
+                    int maxHits = _config.passiveMaxHitsPerMinute >= 0
+                        ? _config.passiveMaxHitsPerMinute
+                        : -1;
+                    brain.ApplySpawnerBehavior(_config.behaviorType, hpThreshold, maxHits);
+                    if (Debug.isDebugBuild)
+                    {
+                        Debug.Log($"[NpcSpawner] Applied behavior {_config.behaviorType} to {go.name} (hpThresh={hpThreshold}, maxHits={maxHits})");
+                    }
+                }
+            }
             return true;
         }
 

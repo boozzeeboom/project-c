@@ -1,22 +1,31 @@
-// Project C: Real-Time Combat Engine — T-NPC-01
-// NpcBrain: server-side Finite State Machine для пешего NPC-врага.
+// Project C: Real-Time Combat Engine — T-NPC-01 / T-NPC-14
+// NpcBrain: server-side Finite State Machine для пешего NPC (враг/пассивный).
 // Design: docs/Character/Skills/real-time-combat/70_NPC_ENEMIES.md §2.3.
 //
 // States (server-side only):
-//   [Idle]    --player in AggroRange (10м)--> [Chase]
+//   [Idle]    --player in AggroRange (10м) AND aggrod--> [Chase]
 //   [Chase]   --dist <= AttackRange (2м)-->   [Attack]
 //   [Chase]   --dist > LeashRange (40м)-->    [Idle] (return to spawnPoint)
 //   [Attack]  --cooldownElapsed + dist<=AttackRange--> [Attack]
 //   [Any]     --HP<=0-->                      [Dead]
 //
+// T-NPC-14 Passive behavior:
+//   - behaviorType = Passive: NPC мирный, не агрится по proximity, атакует только
+//     после удара игрока при выполнении одного из условий:
+//       1. cumulativeDamage / maxHp * 100 >= aggroHpThreshold (default 25%)
+//       2. hits in last 60s >= maxHitsPerMinute (default 3, fallback)
+//   - behaviorType = Aggressive: классическое поведение (агро по proximity)
+//   - behaviorType = Neutral: никогда не атакует (для декораций)
+//
 // Movement: NavMeshAgent (server-authoritative, replicates via NetworkTransform).
 // Attacks: вызывает CombatServer.Instance.ResolveAttack напрямую (server-side call, не RPC).
 //
-// MVP scope: базовый 1v1 chase + melee attack. Без группирования (post-MVP), без flee,
-// без patrol. Расширение — через NpcBrainState pattern или наследники (post-MVP).
+// MVP scope: базовый 1v1 chase + melee attack + passive/aggro split. Без группирования,
+// без flee, без patrol. Расширение — через NpcBrainState pattern или наследники (post-MVP).
 //
-// v0.1 (T-NPC-01): singleton per-NPC, hard-coded config. Designer-override через
-// NpcCombatData (после T-NPC-02 — NpcSpawnerConfig параметры).
+// v0.1 (T-NPC-01): singleton per-NPC, hard-coded config.
+// v0.2 (T-NPC-02): designer-override через NpcSpawnerConfig (post-spawn apply).
+// v0.3 (T-NPC-14): passive/aggressive/neutral behavior + aggro-by-damage thresholds.
 //
 // Анти-рестриктивное: NpcBrain НЕ знает о Player/NPC конкретно — работает с
 // IDamageTarget (любой объект, реализующий интерфейс).
@@ -44,6 +53,36 @@ namespace ProjectC.AI
             Attack,
             Dead,
         }
+
+        public enum BehaviorType
+        {
+            /// <summary>Классика: агрится по proximity (aggroRange).</summary>
+            Aggressive,
+            /// <summary>T-NPC-14: мирный NPC (квестодатель). Атакует только после удара игрока,
+            /// при выполнении одного из условий: cumulativeDamage% >= aggroHpThreshold
+            /// или hits in 60s >= maxHitsPerMinute.</summary>
+            Passive,
+            /// <summary>Декорация: никогда не атакует даже после удара (для тренировочных манекенов).</summary>
+            Neutral,
+        }
+
+        [Header("Behavior (T-NPC-14)")]
+        [Tooltip("Aggressive = атакует по proximity (стандарт).\n" +
+                 "Passive = мирный NPC (квестодатель), атакует только после удара игрока " +
+                 "при выполнении aggroHpThreshold или maxHitsPerMinute.\n" +
+                 "Neutral = никогда не атакует (декорация).")]
+        [SerializeField] private BehaviorType _behaviorType = BehaviorType.Aggressive;
+
+        [Tooltip("Passive-only: % от maxHp, после которого NPC становится агрессивным. " +
+                 "Например, 25 = при потере 25% HP NPC переходит в Chase. " +
+                 "Применяется только если behaviorType == Passive. " +
+                 "Fallback: если за 60с получено hits >= maxHitsPerMinute — тоже агрится.")]
+        [Range(1f, 100f)] [SerializeField] private float _aggroHpThreshold = 25f;
+
+        [Tooltip("Passive-only: за сколько ударов в минуту NPC точно станет агрессивным " +
+                 "(даже если cumulativeDamage% < aggroHpThreshold). Fallback для защиты от " +
+                 "фарма квестовых NPC мелкими ударами. 0 = отключить fallback.")]
+        [Range(0, 20)] [SerializeField] private int _maxHitsPerMinute = 3;
 
         [Header("Refs (auto-resolve)")]
         [SerializeField] private NpcAttacker _attacker;
@@ -74,8 +113,37 @@ namespace ProjectC.AI
         private float _nextTickTime;
         private float _lastAttackTime = -10f;
 
+        // T-NPC-14: passive aggro tracking.
+        private bool _isAggrod;
+        private float _aggroDamageAccumulator;   // cumulative damage с последнего reset (post-death или resetAggro).
+        private readonly System.Collections.Generic.Queue<float> _recentHitTimes = new System.Collections.Generic.Queue<float>(); // timestamps за последние 60с.
+
         public BrainState CurrentState => _state;
         public Vector3 SpawnPoint => _spawnPoint;
+        public BehaviorType CurrentBehavior => _behaviorType;
+        public bool IsAggrod => _isAggrod;
+        public float AggroDamagePercent => _target != null && _target.GetMaxHp() > 0f
+            ? (_aggroDamageAccumulator / _target.GetMaxHp()) * 100f
+            : 0f;
+
+        /// <summary>T-NPC-14: вызывается из NpcSpawner после Instantiate для применения
+        /// параметров агрессии из SpawnerConfig. Anti-restrictive: спавнер задаёт
+        /// только behavior-related поля, остальные ranges/HPS остаются от префаба.</summary>
+        public void ApplySpawnerBehavior(BehaviorType behavior, float aggroHpThreshold, int maxHitsPerMinute)
+        {
+            if (!IsServer) return;
+            _behaviorType = behavior;
+            if (aggroHpThreshold > 0f) _aggroHpThreshold = aggroHpThreshold;
+            if (maxHitsPerMinute >= 0) _maxHitsPerMinute = maxHitsPerMinute;
+            ResetAggroState();
+        }
+
+        private void ResetAggroState()
+        {
+            _isAggrod = false;
+            _aggroDamageAccumulator = 0f;
+            _recentHitTimes.Clear();
+        }
 
         public override void OnNetworkSpawn()
         {
@@ -86,6 +154,13 @@ namespace ProjectC.AI
             _agent = GetComponent<NavMeshAgent>();
             _animator = GetComponentInChildren<Animator>();
             _spawnPoint = transform.position;
+
+            // T-NPC-14: подписка на изменение HP для passive aggro tracking.
+            if (_target != null)
+            {
+                _target.OnHpChanged += OnNpcHpChanged;
+            }
+
             if (_agent != null)
             {
                 _agent.speed = moveSpeed;
@@ -94,6 +169,61 @@ namespace ProjectC.AI
                 _agent.autoBraking = true;
             }
             EnterIdle();
+        }
+
+        public override void OnNetworkDespawn()
+        {
+            base.OnNetworkDespawn();
+            if (_target != null)
+            {
+                _target.OnHpChanged -= OnNpcHpChanged;
+            }
+        }
+
+        // T-NPC-14: server-side обработчик удара по NPC.
+        private void OnNpcHpChanged(int newHp, int deltaHp)
+        {
+            if (!IsServer) return;
+            if (_state == BrainState.Dead) return;
+            if (deltaHp <= 0) return;  // только damage (не healing)
+            if (_behaviorType != BehaviorType.Passive) return;
+            if (_isAggrod) return;     // уже агрессивный — копим дальше, но триггерим уже сработавший
+
+            // Логируем удар в очередь (timestamps старше 60с — отбрасываем).
+            float now = Time.unscaledTime;
+            _recentHitTimes.Enqueue(now);
+            while (_recentHitTimes.Count > 0 && now - _recentHitTimes.Peek() > 60f)
+            {
+                _recentHitTimes.Dequeue();
+            }
+            _aggroDamageAccumulator += deltaHp;
+
+            // Проверяем условия перехода в Aggro:
+            // 1) cumulativeDamage% >= aggroHpThreshold
+            // 2) hits in 60s >= maxHitsPerMinute (fallback при мелких ударах)
+            bool thresholdReached = AggroDamagePercent >= _aggroHpThreshold;
+            bool hitsReached = _maxHitsPerMinute > 0 && _recentHitTimes.Count >= _maxHitsPerMinute;
+
+            if (thresholdReached || hitsReached)
+            {
+                _isAggrod = true;
+                if (Debug.isDebugBuild)
+                {
+                    Debug.Log($"[NpcBrain] {gameObject.name} (Passive→Aggro): " +
+                        $"damage%={AggroDamagePercent:F1}/{_aggroHpThreshold}, " +
+                        $"hits={_recentHitTimes.Count}/{_maxHitsPerMinute}, reason={(thresholdReached ? "threshold" : "hits")}");
+                }
+                // Если игрок в aggroRange — сразу Chase, иначе дождёмся в Idle.
+                // _aggroTarget может быть ещё не выбран (если игрок далеко) — Tick его подберёт.
+                if (_aggroTarget == null)
+                {
+                    _aggroTarget = FindNearestPlayerTarget(aggroRange * 2f);  // чуть шире для подбора цели после удара
+                }
+                if (_aggroTarget != null && _state == BrainState.Idle)
+                {
+                    EnterChase();
+                }
+            }
         }
 
         private void Update()
@@ -157,6 +287,16 @@ namespace ProjectC.AI
 
         private void HandleIdle()
         {
+            // T-NPC-14: Passive NPC (не агрившийся) не ищет target по proximity.
+            if (_behaviorType == BehaviorType.Passive && !_isAggrod)
+            {
+                return;  // стоит мирно, ждёт удара
+            }
+            // Neutral NPC никогда не реагирует — остаётся в Idle всегда (кроме Dead).
+            if (_behaviorType == BehaviorType.Neutral)
+            {
+                return;
+            }
             if (_aggroTarget == null) return;
             if (Vector3.Distance(transform.position, _aggroTarget.GetPosition()) > aggroRange) { _aggroTarget = null; return; }
             EnterChase();
@@ -237,6 +377,8 @@ namespace ProjectC.AI
 
         private void TryAttack()
         {
+            // T-NPC-14: Neutral NPC не атакует в принципе.
+            if (_behaviorType == BehaviorType.Neutral) return;
             if (_aggroTarget == null) return;
             if (CombatServer.Instance == null) return;
             ulong attackerId = _attacker.GetAttackerId();

@@ -2,6 +2,7 @@
 // NpcTarget: реализация IDamageTarget для NPC-врага. NetworkBehaviour с NetworkVariable<int> HP.
 // Design: docs/Character/Skills/real-time-combat/10_DESIGN.md §3.4.
 
+using System;
 using UnityEngine;
 using Unity.Netcode;
 using ProjectC.Combat.Core;
@@ -16,6 +17,10 @@ namespace ProjectC.Combat
         private NetworkVariable<int> _currentHp = new NetworkVariable<int>(30);
         private NetworkVariable<int> _maxHp = new NetworkVariable<int>(30);
         private ulong _targetId;  // = NetworkObjectId по дизайну, но у нас override
+
+        // T-NPC-14: событие изменения HP (server-side). Подписывается NpcBrain для
+        // отслеживания cumulative damage / passive aggro. Параметры: (newHp, deltaHp).
+        public event Action<int, int> OnHpChanged;
 
         public void Initialize(NpcCombatData data, ulong targetId)
         {
@@ -89,7 +94,9 @@ namespace ProjectC.Combat
             if (_currentHp.Value <= 0) return;
 
             int newHp = Mathf.Max(0, _currentHp.Value - result.finalDamage);
+            int delta = _currentHp.Value - newHp;  // positive = damage taken
             _currentHp.Value = newHp;
+            OnHpChanged?.Invoke(newHp, delta);  // T-NPC-14: passive aggro tracking
 
             if (Debug.isDebugBuild)
             {

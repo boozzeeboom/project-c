@@ -10,21 +10,21 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 25688cb068b64e44cbc704a012513162, type: 3}
-  m_Name: NpcSpawner_Default
+  m_Name: NpcSpawner_Quest
   m_EditorClassIdentifier: Assembly-CSharp::ProjectC.AI.NpcSpawnerConfig
   npcPrefab: {fileID: 3856242148590983311, guid: 66676f0230dd44b479d8956d60243844, type: 3}
-  spawnRadiusMin: 5
-  spawnRadiusMax: 20
-  activationRadius: 0
-  maxAliveCount: 5
-  spawnCheckInterval: 4
-  spawnChance: 0.5
-  maxSpawnsPerPlayerPerMinute: 8
+  spawnRadiusMin: 3
+  spawnRadiusMax: 5
+  activationRadius: 30
+  maxAliveCount: 1
+  spawnCheckInterval: 10
+  spawnChance: 1
+  maxSpawnsPerPlayerPerMinute: 1
   groundMask:
     serializedVersion: 2
     m_Bits: 4294967295
   groundRaycastDistance: 30
-  minDistanceFromOtherNpc: 3
+  minDistanceFromOtherNpc: 10
   difficultyByDistance:
     serializedVersion: 2
     m_Curve:
@@ -49,7 +49,7 @@ MonoBehaviour:
     m_PreInfinity: 2
     m_PostInfinity: 2
     m_RotationOrder: 4
-  visualConfig: {fileID: 11400000, guid: 836c429369883d345818eeda74e158d6, type: 2}
-  behaviorType: 0  # T-NPC-14: Aggressive по умолчанию (как раньше — атакует по proximity)
-  passiveAggroHpThreshold: 25
-  passiveMaxHitsPerMinute: 3
+  visualConfig: {fileID: 0}
+  behaviorType: 1  # T-NPC-14: Passive — мирный квестовый NPC
+  passiveAggroHpThreshold: 25  # при потере 25% HP — становится агрессивным
+  passiveMaxHitsPerMinute: 3    # или при 3 ударах за 60 сек

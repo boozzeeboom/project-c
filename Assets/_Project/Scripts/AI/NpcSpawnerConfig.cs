@@ -46,6 +46,27 @@ namespace ProjectC.AI
                  "X=0 = возле игрока (легче), X=1 = на границе радиуса (сложнее).")]
         public AnimationCurve difficultyByDistance = AnimationCurve.Linear(0, 1f, 1, 1f);
 
+        [Header("Behavior (T-NPC-14)")]
+        [Tooltip("Aggressive = атакует по proximity (стандартный враг).\n" +
+                 "Passive = мирный квестовый NPC. Агрится только после удара игрока.\n" +
+                 "Neutral = никогда не атакует (декорация).\n\n" +
+                 "ВАЖНО: спавнер НЕ подтирает поле behaviorType на префабе — он вызывает " +
+                 "NpcBrain.ApplySpawnerBehavior() после Instantiate. Это значит, что префаб " +
+                 "сохраняет свой baseline (например Aggressive), а спавнер задаёт только " +
+                 "оверрайд для конкретного региона (например, мирный квестовый лагерь).")]
+        public NpcBrain.BehaviorType behaviorType = NpcBrain.BehaviorType.Aggressive;
+
+        [Tooltip("T-NPC-14 (только для Passive): % от maxHp, после которого NPC " +
+                 "становится агрессивным. 25 = при потере 25% HP NPC переходит в Chase.\n" +
+                 "Если 0 — fallback к значению из префаба NPC.")]
+        [Range(0f, 100f)] public float passiveAggroHpThreshold = 25f;
+
+        [Tooltip("T-NPC-14 (только для Passive): за сколько ударов в минуту NPC точно " +
+                 "станет агрессивным (даже если cumulativeDamage% < passiveAggroHpThreshold). " +
+                 "Fallback для защиты от фарма квестовых NPC мелкими ударами.\n" +
+                 "0 = отключить fallback (только threshold). Если -1 — fallback к префабу.")]
+        [Range(-1, 20)] public int passiveMaxHitsPerMinute = 3;
+
         [Header("Visual (anti-restrictive T-NPC-05)")]
         [Tooltip("Опционально. Применяется к NPC при спавне (материал/цвет/масштаб/имя). " +
                  "Если null — дефолтный вид из префаба (HumanM_Model без изменений). " +

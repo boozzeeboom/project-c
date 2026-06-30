@@ -10,6 +10,7 @@
 // (learnedSkillIds/dialogCooldowns) — JsonUtility их сериализует как есть.
 
 using System;
+using ProjectC.Customisation;  // T-CUS-01: additive — CustomisationSave секция
 
 namespace ProjectC.Stats.Persistence
 {
@@ -24,6 +25,9 @@ namespace ProjectC.Stats.Persistence
         public EquipmentSave equipment = new EquipmentSave();
         // T-P12: skills persistence (learned skill IDs). Полная версия в T-P13 (StatsServer owns persistence).
         public SkillsSave skills = new SkillsSave();
+        // T-CUS-01: Customisation (additive — body type/preset/proportions/colors/hair/clothing overrides).
+        // Backward-compat: старые .json без этого поля загружаются с default = Male, identity colors.
+        public CustomisationSave customisation = new CustomisationSave();
     }
 
     /// <summary>

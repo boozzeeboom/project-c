@@ -151,6 +151,8 @@ namespace ProjectC.Core
             CreateInputBindingsRuntime();
             // T-INP-14: EscMenu + KeybindingsWindow (Phase 2.1)
             CreateEscMenuWindow();
+            // T-CUS-06: CustomisationWindow overlay (вызывается по кнопке в CharacterWindow header)
+            CreateCustomisationWindow();
             CreateKeybindingsWindow();
             // T-INP-14: UIManager — глобальный Esc-handler (DefaultExecutionOrder = -100).
             CreateUIManager();
@@ -570,6 +572,34 @@ namespace ProjectC.Core
             doc.panelSettings = UnityEngine.Resources.Load<UnityEngine.UIElements.PanelSettings>("UI/EscMenuPanelSettings");
             go.AddComponent<ProjectC.UI.EscMenu.EscMenuWindow>();
             Debug.Log("[NMC] Created [EscMenuWindow]");
+        }
+
+        /// <summary>
+        /// T-CUS-06: CustomisationWindow overlay — вызывается из CharacterWindow по кнопке "ИЗМЕНИТЬ ВНЕШНОСТЬ".
+        /// Variant A (client-only persistence): окно создаётся в DontDestroyOnLoad для удобства lifecycle.
+        /// </summary>
+        private void CreateCustomisationWindow()
+        {
+            var existing = FindObjectsByType<ProjectC.Customisation.UI.CustomisationWindow>(FindObjectsInactive.Include);
+            foreach (var inst in existing)
+            {
+                if (inst != null && inst.transform.parent == null)
+                {
+                    Debug.Log("[NMC] CustomisationWindow already root, skipping creation");
+                    return;
+                }
+            }
+            if (existing.Length > 0)
+            {
+                Debug.LogWarning($"[NMC] Found {existing.Length} non-root CustomisationWindow in scene — DontDestroyOnLoad would fail. Creating root replacement.");
+            }
+            var go = new GameObject("[CustomisationWindow]");
+            DontDestroyOnLoad(go);
+            var doc = go.AddComponent<UnityEngine.UIElements.UIDocument>();
+            doc.panelSettings = UnityEngine.Resources.Load<UnityEngine.UIElements.PanelSettings>("UI/CustomisationPanelSettings");
+            // T-CUS-06: не ставим visualTreeAsset — UIDocument auto-load конфликтует с CloneTree() в EnsureBuilt.
+            go.AddComponent<ProjectC.Customisation.UI.CustomisationWindow>();
+            Debug.Log("[NMC] Created [CustomisationWindow]");
         }
 
         /// <summary>

@@ -1,0 +1,95 @@
+/*
+ CustomisationWindow.uss — T-CUS-06.
+ Стили для CustomisationWindow.uxml.
+ Цветовая палитра согласована с CharacterWindow.uss (тёмно-синий фон + teal accents).
+*/
+
+.cw-root {
+    flex-grow: 1; flex-direction: column;
+    background-color: rgba(12, 18, 28, 0.97);
+    border-width: 2px; border-color: rgba(80, 130, 170, 0.6);
+    border-radius: 6px;
+    padding: 12px;
+    min-width: 360px; min-height: 280px;
+    max-width: 720px; max-height: 600px;
+}
+
+.cw-top { flex-direction: row; justify-content: center; padding-bottom: 10px; flex-shrink: 0; }
+.cw-title {
+    font-size: 18px; -unity-font-style: bold;
+    color: rgb(220, 230, 245);
+}
+
+.cw-middle { flex-grow: 1; flex-direction: column; flex-shrink: 1; min-height: 0; }
+
+.cw-section { flex-grow: 1; flex-direction: column; padding: 8px 4px; }
+.cw-section-title {
+    font-size: 13px; -unity-font-style: bold;
+    color: rgb(170, 200, 230);
+    padding-bottom: 6px;
+}
+
+.cw-body-row {
+    flex-direction: row;
+    flex-grow: 1; flex-shrink: 1; min-height: 0;
+    justify-content: space-around;
+    align-items: stretch;
+}
+
+.cw-body-card {
+    flex-grow: 1; flex-shrink: 1; flex-basis: 0;
+    margin: 0 8px;
+    background-color: rgba(30, 45, 65, 0.5);
+    border-width: 2px; border-color: rgba(80, 100, 130, 0.4);
+    border-radius: 5px;
+    padding: 16px 12px;
+    align-items: center; justify-content: center;
+    cursor: link;
+}
+.cw-body-card:hover {
+    border-color: rgb(120, 180, 220);
+    background-color: rgba(45, 70, 100, 0.7);
+}
+.cw-body-card.cw-body-card-active {
+    border-color: rgb(80, 200, 140);
+    background-color: rgba(50, 110, 90, 0.6);
+}
+.cw-body-card.cw-body-card-active:hover { border-color: rgb(80, 200, 140); }
+
+.cw-body-card-title {
+    font-size: 16px; -unity-font-style: bold;
+    color: rgb(230, 240, 250);
+    padding-bottom: 6px;
+}
+.cw-body-card-desc {
+    font-size: 11px;
+    color: rgba(180, 200, 220, 0.85);
+    -unity-text-align: middle-center;
+    white-space: normal;
+}
+
+.cw-message-row { padding-top: 8px; }
+.cw-message {
+    font-size: 11px; -unity-font-style: italic;
+    color: rgba(200, 220, 240, 0.75);
+}
+
+.cw-bottom {
+    flex-direction: row; justify-content: flex-end;
+    padding-top: 10px; flex-shrink: 0;
+    border-top-width: 1px; border-top-color: rgba(80, 100, 130, 0.3);
+}
+
+.cw-btn {
+    height: 32px; min-width: 100px;
+    padding: 0 16px;
+    border-width: 1px; border-radius: 3px;
+    -unity-text-align: middle-center;
+    color: rgb(220, 230, 240);
+    cursor: link;
+}
+.cw-btn-close {
+    background-color: rgba(80, 100, 130, 0.5);
+    border-color: rgba(120, 150, 180, 0.7);
+}
+.cw-btn-close:hover { background-color: rgba(100, 130, 170, 0.7); }

@@ -1,0 +1,46 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+ CustomisationWindow.uxml — T-CUS-06.
+ Полноэкранный overlay по аналогии со SkillTreeWindow.uxml.
+ Контент: секция "Пол" с двумя кнопками (М/Ж) + нижняя кнопка закрыть.
+ L3/L4 (рост, вес, цвета) добавляются в следующих тикетах.
+-->
+<ui:UXML xmlns:ui="UnityEngine.UIElements" xmlns:uie="UnityEditor.UIElements" editor-extension-mode="False">
+ <ui:VisualElement name="customisation-root" class="cw-root">
+
+  <!-- TOP: title -->
+  <ui:VisualElement class="cw-top">
+   <ui:Label text="Внешность" class="cw-title" />
+  </ui:VisualElement>
+
+  <!-- MIDDLE: body type section -->
+  <ui:VisualElement class="cw-middle">
+
+   <ui:VisualElement class="cw-section">
+    <ui:Label text="Пол" class="cw-section-title" />
+
+    <ui:VisualElement class="cw-body-row">
+     <ui:VisualElement name="cw-male-card"   class="cw-body-card">
+      <ui:Label text="МУЖСКОЙ" class="cw-body-card-title" />
+      <ui:Label text="Базовая модель HumanM" class="cw-body-card-desc" />
+     </ui:VisualElement>
+
+     <ui:VisualElement name="cw-female-card" class="cw-body-card">
+      <ui:Label text="ЖЕНСКИЙ" class="cw-body-card-title" />
+      <ui:Label text="Базовая модель HumanF" class="cw-body-card-desc" />
+     </ui:VisualElement>
+    </ui:VisualElement>
+
+    <ui:VisualElement class="cw-message-row">
+     <ui:Label name="cw-message" text="" class="cw-message" />
+    </ui:VisualElement>
+   </ui:VisualElement>
+
+  </ui:VisualElement>
+
+  <!-- BOTTOM: close -->
+  <ui:VisualElement class="cw-bottom">
+   <ui:Label name="btn-close" text="ЗАКРЫТЬ" class="cw-btn cw-btn-close" />
+  </ui:VisualElement>
+ </ui:VisualElement>
+</ui:UXML>

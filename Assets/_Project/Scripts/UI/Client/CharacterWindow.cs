@@ -672,6 +672,8 @@ namespace ProjectC.UI.Client
             InitSkillFilterChips();
             // T-INP-09: кнопка [ИЗУЧИТЬ НАВЫК] → SkillTreeWindow overlay
             InitOpenSkillTreeButton();
+            // T-CUS-06: кнопка [ИЗМЕНИТЬ ВНЕШНОСТЬ] → CustomisationWindow overlay (выбор М/Ж + L3/L4)
+            InitOpenCustomisationButton();
 
             // ---- Filter change callback (общий для Contracts и Inventory) ----
             if (_filterSearch != null)
@@ -2376,6 +2378,27 @@ namespace ProjectC.UI.Client
                     else if (Debug.isDebugBuild)
                     {
                         Debug.LogWarning("[CharacterWindow] SkillTreeWindow.Instance==null (auto-spawn not yet run)");
+                    }
+                });
+            }
+
+            /// <summary>T-CUS-06: кнопка [ИЗМЕНИТЬ ВНЕШНОСТЬ] в CharacterWindow header → открывает CustomisationWindow overlay.</summary>
+            private void InitOpenCustomisationButton()
+            {
+                var root = _root;
+                if (root == null) return;
+                var btn = root.Q<VisualElement>("open-customisation-btn");
+                if (btn == null) return;
+                btn.RegisterCallback<ClickEvent>(_ =>
+                {
+                    var cw = ProjectC.Customisation.UI.CustomisationWindow.Instance;
+                    if (cw != null)
+                    {
+                        cw.Show();
+                    }
+                    else if (Debug.isDebugBuild)
+                    {
+                        Debug.LogWarning("[CharacterWindow] CustomisationWindow.Instance==null (auto-spawn not yet run)");
                     }
                 });
             }

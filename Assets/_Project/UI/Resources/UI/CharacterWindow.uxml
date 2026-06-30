@@ -9,8 +9,12 @@
  <ui:VisualElement name="main-container" class="character-window">
 
  <ui:VisualElement class="header">
-  <ui:Label name="character-name-label" text="Игрок" class="character-name" />
-  <ui:Label name="time-info-label" text="—" class="time-label" />
+  <ui:VisualElement class="header-row">
+   <ui:Label name="character-name-label" text="Игрок" class="character-name" />
+   <ui:Label name="time-info-label" text="—" class="time-label" />
+  </ui:VisualElement>
+  <!-- T-CUS-06: кнопка открытия CustomisationWindow (выбор М/Ж + L3 слайдеры + L4 цвета). -->
+  <ui:Label name="open-customisation-btn" text="ИЗМЕНИТЬ ВНЕШНОСТЬ" class="open-customisation-btn" />
  </ui:VisualElement>
 
  <ui:VisualElement class="info-bar">

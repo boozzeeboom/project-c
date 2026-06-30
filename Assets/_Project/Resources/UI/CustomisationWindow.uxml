@@ -39,14 +39,14 @@
 
     <ui:VisualElement class="cw-slider-row">
      <ui:Label text="Рост" class="cw-slider-label" />
-     <ui:Slider name="cw-height-slider" low-value="0.85" high-value="1.15" value="1" show-input-field="false"
+     <ui:Slider name="cw-height-slider" low-value="0.7" high-value="1.3" value="1" show-input-field="false"
                 class="cw-slider cw-slider-flex" />
      <ui:Label name="cw-height-value" text="1.00" class="cw-slider-value" />
     </ui:VisualElement>
 
     <ui:VisualElement class="cw-slider-row">
      <ui:Label text="Полнота" class="cw-slider-label" />
-     <ui:Slider name="cw-width-slider" low-value="0.85" high-value="1.15" value="1" show-input-field="false"
+     <ui:Slider name="cw-width-slider" low-value="0.7" high-value="1.3" value="1" show-input-field="false"
                 class="cw-slider cw-slider-flex" />
      <ui:Label name="cw-width-value" text="1.00" class="cw-slider-value" />
     </ui:VisualElement>

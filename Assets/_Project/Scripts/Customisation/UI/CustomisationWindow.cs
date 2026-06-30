@@ -13,7 +13,6 @@
 using System;
 using ProjectC.Customisation;
 using ProjectC.Customisation.Dto;
-using ProjectC.Stats.Persistence;
 using Unity.Netcode;
 using UnityEngine;
 using UnityEngine.InputSystem;
@@ -180,20 +179,35 @@ namespace ProjectC.Customisation.UI
             }
         }
 
-        // === Persistence (Variant A — client-only) ===
+        // === Persistence (Variant A — client-only, отдельный файл) ===
+        // Используем customisation_<clientId>.json, НЕ CharacterSaveData (который StatsServer может перезаписать).
+
+        private string GetCustomisationPath(ulong clientId)
+        {
+            string folder = System.IO.Path.Combine(Application.persistentDataPath, "Customisation");
+            if (!System.IO.Directory.Exists(folder))
+                System.IO.Directory.CreateDirectory(folder);
+            return System.IO.Path.Combine(folder, $"customisation_{clientId}.json");
+        }
 
         private void LoadWorkingFromSave()
         {
+            _working = new CustomisationSave(); // default бэкап: Male, scale=1, цвета=white
             var nm = NetworkManager.Singleton;
             ulong clientId = (nm != null && nm.IsListening) ? nm.LocalClientId : 0UL;
-            var repo = new JsonCharacterDataRepository();
-            if (repo.TryLoad(clientId, out var data) && data.customisation != null)
+            var path = GetCustomisationPath(clientId);
+            try
             {
-                _working = data.customisation;
+                if (System.IO.File.Exists(path))
+                {
+                    var json = System.IO.File.ReadAllText(path);
+                    var parsed = JsonUtility.FromJson<CustomisationSave>(json);
+                    if (parsed != null) _working = parsed;
+                }
             }
-            else
+            catch (System.Exception ex)
             {
-                _working = new CustomisationSave();
+                Debug.LogWarning($"[CustomisationWindow] Load failed for client {clientId}: {ex.Message}. Using defaults.");
             }
         }
 
@@ -201,17 +215,23 @@ namespace ProjectC.Customisation.UI
         {
             var nm = NetworkManager.Singleton;
             ulong clientId = (nm != null && nm.IsListening) ? nm.LocalClientId : 0UL;
-            var repo = new JsonCharacterDataRepository();
-            if (!repo.TryLoad(clientId, out var data))
+            var path = GetCustomisationPath(clientId);
+            try
             {
-                data = new CharacterSaveData();
-            }
-            data.customisation = _working;
-            repo.Save(clientId, data);
+                var tmpPath = path + ".tmp";
+                var json = JsonUtility.ToJson(_working, prettyPrint: false);
+                System.IO.File.WriteAllText(tmpPath, json);
+                if (System.IO.File.Exists(path)) System.IO.File.Delete(path);
+                System.IO.File.Move(tmpPath, path);
 
-            // Применяем через ClientState → applier подхватит.
-            var snap = SnapshotFromSave(_working);
-            CustomisationClientState.Instance?.ApplyCustomisationSnapshot(snap);
+                // Применяем через ClientState → applier подхватит.
+                var snap = SnapshotFromSave(_working);
+                CustomisationClientState.Instance?.ApplyCustomisationSnapshot(snap);
+            }
+            catch (System.Exception ex)
+            {
+                Debug.LogError($"[CustomisationWindow] Save failed for client {clientId}: {ex.Message}");
+            }
         }
 
         private static CustomisationSnapshotDto SnapshotFromSave(CustomisationSave s)
@@ -281,7 +301,7 @@ namespace ProjectC.Customisation.UI
         private void OnHeightSliderChanged(float newValue)
         {
             if (_working == null) _working = new CustomisationSave();
-            _working.heightScale = Mathf.Clamp(newValue, 0.85f, 1.15f);
+            _working.heightScale = Mathf.Clamp(newValue, 0.7f, 1.3f);
             if (_heightValueLabel != null) _heightValueLabel.text = _working.heightScale.ToString("F2");
             SaveWorking();
         }
@@ -289,7 +309,7 @@ namespace ProjectC.Customisation.UI
         private void OnWidthSliderChanged(float newValue)
         {
             if (_working == null) _working = new CustomisationSave();
-            _working.widthScale = Mathf.Clamp(newValue, 0.85f, 1.15f);
+            _working.widthScale = Mathf.Clamp(newValue, 0.7f, 1.3f);
             if (_widthValueLabel != null) _widthValueLabel.text = _working.widthScale.ToString("F2");
             SaveWorking();
         }

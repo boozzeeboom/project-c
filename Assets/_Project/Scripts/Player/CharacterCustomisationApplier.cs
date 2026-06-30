@@ -100,25 +100,81 @@ namespace ProjectC.Player
             }
             _clientState.OnCustomisationUpdated += OnCustomisationUpdated;
 
-            // T-CUS-06 fix v2 (стартовый персонаж мелкий): всегда применяем при OnEnable,
-            // даже если snapshot — struct default (heightScale=0, widthScale=0 → плохо).
-            // Подменяем default-значения на (1, 1) чтобы scale не схлопнулся.
-            var snap = _clientState.CurrentSnapshot;
-            if (snap.heightScale < 0.5f || snap.widthScale < 0.5f)
+            // T-CUS-09 fix v2 (pitch: при старте персонаж сбрасывается на дефолт М,
+            // хотя JSON сохранён): пробуем загрузить сохранённый customisation_<clientId>.json
+            // на старте, чтобы не ждать пока CustomisationWindow прочитает его.
+            var snap = LoadSnapshotFromDisk();
+            if (snap.HasValue)
             {
-                // struct default или повреждённый snapshot — используем safe defaults.
-                snap.heightScale = 1f;
-                snap.widthScale = 1f;
-                if (snap.skinColorR < 0.01f && snap.skinColorG < 0.01f && snap.skinColorB < 0.01f)
+                // Сохранённые настройки есть — пихаем в ClientState (для UI) и применяем.
+                _clientState.ApplyCustomisationSnapshot(snap.Value);
+            }
+            else
+            {
+                // JSON нет — используем safe defaults (не struct default с heightScale=0).
+                var fallback = _clientState.CurrentSnapshot;
+                if (fallback.heightScale < 0.5f || fallback.widthScale < 0.5f)
                 {
-                    snap.skinColorR = 1f; snap.skinColorG = 1f; snap.skinColorB = 1f; snap.skinColorA = 1f;
+                    fallback.heightScale = 1f;
+                    fallback.widthScale = 1f;
                 }
-                if (snap.hairColorR < 0.01f && snap.hairColorG < 0.01f && snap.hairColorB < 0.01f)
+                _clientState.ApplyCustomisationSnapshot(fallback);
+            }
+        }
+
+        /// <summary>
+        /// T-CUS-09 fix v2: загрузить customisation_&lt;clientId&gt;.json и смаппить в snapshot.
+        /// Возвращает null если файла нет или он битый.
+        /// </summary>
+        private CustomisationSnapshotDto? LoadSnapshotFromDisk()
+        {
+            var nm = Unity.Netcode.NetworkManager.Singleton;
+            ulong clientId = (nm != null && nm.IsListening) ? nm.LocalClientId : 0UL;
+            string folder = System.IO.Path.Combine(Application.persistentDataPath, "Customisation");
+            string path = System.IO.Path.Combine(folder, $"customisation_{clientId}.json");
+            try
+            {
+                if (System.IO.File.Exists(path))
                 {
-                    snap.hairColorR = 1f; snap.hairColorG = 1f; snap.hairColorB = 1f; snap.hairColorA = 1f;
+                    var json = System.IO.File.ReadAllText(path);
+                    var save = JsonUtility.FromJson<CustomisationSave>(json);
+                    if (save != null)
+                    {
+                        if (Debug.isDebugBuild)
+                            Debug.Log($"[CharacterCustomisationApplier] Loaded customisation from disk: body={save.bodyType}, h={save.heightScale:F2}, w={save.widthScale:F2}");
+                        return SnapshotFromSave(save);
+                    }
                 }
             }
-            OnCustomisationUpdated(snap);
+            catch (System.Exception ex)
+            {
+                Debug.LogWarning($"[CharacterCustomisationApplier] Load failed: {ex.Message}");
+            }
+            return null;
+        }
+
+        private static CustomisationSnapshotDto SnapshotFromSave(CustomisationSave s)
+        {
+            ClothingColorOverrideDto[] overrides = null;
+            if (s.clothingColorOverrides != null && s.clothingColorOverrides.Length > 0)
+            {
+                overrides = new ClothingColorOverrideDto[s.clothingColorOverrides.Length];
+                for (int i = 0; i < s.clothingColorOverrides.Length; i++)
+                {
+                    overrides[i] = ClothingColorOverrideDto.FromSave(s.clothingColorOverrides[i]);
+                }
+            }
+            return new CustomisationSnapshotDto
+            {
+                bodyType    = s.bodyType,
+                presetId    = s.presetId,
+                heightScale = s.heightScale,
+                widthScale  = s.widthScale,
+                skinColorR  = s.skinColorR, skinColorG = s.skinColorG, skinColorB = s.skinColorB, skinColorA = s.skinColorA,
+                hairColorR  = s.hairColorR, hairColorG = s.hairColorG, hairColorB = s.hairColorB, hairColorA = s.hairColorA,
+                hairStyle   = s.hairStyle,
+                clothingOverrides = overrides,
+            };
         }
 
         private void OnDisable()
@@ -221,8 +277,8 @@ namespace ProjectC.Player
         {
             if (_visualRoot == null) return;
             // Clamp в разумных пределах (защита от случайных значений в JSON).
-            float h = Mathf.Clamp(heightScale, 0.5f, 1.5f);
-            float w = Mathf.Clamp(widthScale,  0.5f, 1.5f);
+            float h = Mathf.Clamp(heightScale, 0.4f, 1.6f);
+            float w = Mathf.Clamp(widthScale,  0.4f, 1.6f);
             _visualRoot.localScale = new Vector3(w, h, w);
 
             if (Debug.isDebugBuild)

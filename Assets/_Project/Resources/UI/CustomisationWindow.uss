@@ -125,6 +125,16 @@
     border-width: 0;
 }
 
+/* === L4 (T-CUS-10): skin color preview swatch === */
+.cw-skin-preview {
+    width: 28px; height: 28px;
+    flex-shrink: 0;
+    margin-right: 6px;
+    border-width: 1px; border-color: rgba(0, 0, 0, 0.5);
+    border-radius: 3px;
+    /* Цвет фона обновляется из C# через .style.backgroundColor. */
+}
+
 .cw-bottom {
     flex-direction: row; align-items: center;
     padding-top: 10px; flex-shrink: 0;

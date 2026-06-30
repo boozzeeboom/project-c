@@ -285,18 +285,16 @@ namespace ProjectC.Player
                 Debug.Log($"[CharacterCustomisationApplier] Applied proportions: h={h:F2}, w={w:F2}.", this);
         }
 
-        // === L4: ApplyColors (skin + hair base) ===
+        // === L4: ApplyColors (skin color only — MVP, T-CUS-10) ===
+        // Hair color / clothing overrides отложены для post-MVP.
 
         private static bool ColorsDiffer(CustomisationSnapshotDto a, CustomisationSnapshotDto b)
         {
+            // T-CUS-10: сравниваем только skin color. Hair/clothing — заглушки пока.
             return Mathf.Abs(a.skinColorR - b.skinColorR) > 0.001f
                 || Mathf.Abs(a.skinColorG - b.skinColorG) > 0.001f
                 || Mathf.Abs(a.skinColorB - b.skinColorB) > 0.001f
-                || Mathf.Abs(a.skinColorA - b.skinColorA) > 0.001f
-                || Mathf.Abs(a.hairColorR - b.hairColorR) > 0.001f
-                || Mathf.Abs(a.hairColorG - b.hairColorG) > 0.001f
-                || Mathf.Abs(a.hairColorB - b.hairColorB) > 0.001f
-                || Mathf.Abs(a.hairColorA - b.hairColorA) > 0.001f;
+                || Mathf.Abs(a.skinColorA - b.skinColorA) > 0.001f;
         }
 
         private void ApplyColors(CustomisationSnapshotDto snapshot)
@@ -306,11 +304,12 @@ namespace ProjectC.Player
             var mpb = new MaterialPropertyBlock();
             _bodyRenderer.GetPropertyBlock(mpb);
 
+            // T-CUS-10: только skin color. Material на NetworkPlayer.prefab у нас default URP Lit
+            // (Kevin Iglesias FREE не имеет своего материала), поэтому пишем ТОЛЬКО в _BaseColor.
+            // _Color оставлен закомментированным на случай legacy материалов.
             Color skin = snapshot.GetSkinColor();
-            // Пишем в оба property: URP/Lit использует _BaseColor, legacy Standard — _Color.
-            // MaterialPropertyBlock.SetColor работает для обеих, но материал может иметь только одну из них.
             mpb.SetColor(_baseColorId, skin);
-            mpb.SetColor(_colorId,     skin);
+            // mpb.SetColor(_colorId, skin); // legacy Standard — отключено для MVP
 
             _bodyRenderer.SetPropertyBlock(mpb);
 

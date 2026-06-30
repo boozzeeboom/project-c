@@ -1,9 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <!--
- CustomisationWindow.uxml — T-CUS-06 (L1 + L3).
- L1: секция "Пол" с двумя карточками (М/Ж).
- L3 (T-CUS-09): секция "Пропорции" с двумя слайдерами (Рост, Полнота).
- L4 (T-CUS-10): секция "Цвета" — добавляется следующим тикетом.
+ CustomisationWindow.uxml — T-CUS-06 (L1 + L3) + T-CUS-10 (L4 skin color).
+ MVP: только Skin color. Hair color / clothing overrides — отложены.
 -->
 <ui:UXML xmlns:ui="UnityEngine.UIElements" xmlns:uie="UnityEditor.UIElements" editor-extension-mode="False">
  <ui:VisualElement name="customisation-root" class="cw-root">
@@ -13,7 +11,7 @@
    <ui:Label text="Внешность" class="cw-title" />
   </ui:VisualElement>
 
-  <!-- MIDDLE: body type + proportions -->
+  <!-- MIDDLE: body type + proportions + skin color -->
   <ui:VisualElement class="cw-middle">
 
    <!-- L1: body type -->
@@ -53,6 +51,38 @@
 
     <ui:VisualElement class="cw-slider-row">
      <ui:Label name="cw-reset-proportions" text="СБРОСИТЬ" class="cw-btn-reset" />
+    </ui:VisualElement>
+   </ui:VisualElement>
+
+   <!-- L4 (T-CUS-10): skin color -->
+   <ui:VisualElement class="cw-section">
+    <ui:Label text="Цвет кожи" class="cw-section-title" />
+
+    <ui:VisualElement class="cw-slider-row">
+     <ui:Label text="R" class="cw-slider-label" />
+     <ui:Slider name="cw-skin-r-slider" low-value="0" high-value="1" value="1" show-input-field="false"
+                class="cw-slider cw-slider-flex" />
+     <ui:Label name="cw-skin-r-value" text="255" class="cw-slider-value" />
+    </ui:VisualElement>
+
+    <ui:VisualElement class="cw-slider-row">
+     <ui:Label text="G" class="cw-slider-label" />
+     <ui:Slider name="cw-skin-g-slider" low-value="0" high-value="1" value="0.8" show-input-field="false"
+                class="cw-slider cw-slider-flex" />
+     <ui:Label name="cw-skin-g-value" text="204" class="cw-slider-value" />
+    </ui:VisualElement>
+
+    <ui:VisualElement class="cw-slider-row">
+     <ui:Label text="B" class="cw-slider-label" />
+     <ui:Slider name="cw-skin-b-slider" low-value="0" high-value="1" value="0.6" show-input-field="false"
+                class="cw-slider cw-slider-flex" />
+     <ui:Label name="cw-skin-b-value" text="153" class="cw-slider-value" />
+    </ui:VisualElement>
+
+    <ui:VisualElement class="cw-slider-row">
+     <ui:VisualElement name="cw-skin-preview" class="cw-skin-preview" />
+     <ui:VisualElement class="cw-slider-flex" />
+     <ui:Label name="cw-reset-skin" text="СБРОСИТЬ ЦВЕТ" class="cw-btn-reset" />
     </ui:VisualElement>
    </ui:VisualElement>
 

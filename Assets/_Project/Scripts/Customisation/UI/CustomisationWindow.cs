@@ -39,6 +39,14 @@ namespace ProjectC.Customisation.UI
         private Slider _widthSlider;
         private Label _heightValueLabel;
         private Label _widthValueLabel;
+        // T-CUS-10 (L4): skin color.
+        private Slider _skinRSlider;
+        private Slider _skinGSlider;
+        private Slider _skinBSlider;
+        private Label _skinRValueLabel;
+        private Label _skinGValueLabel;
+        private Label _skinBValueLabel;
+        private VisualElement _skinPreview;
         private Label _messageLabel;
         private bool _built;
 
@@ -116,6 +124,15 @@ namespace ProjectC.Customisation.UI
             _heightValueLabel = _rootContainer.Q<Label>("cw-height-value");
             _widthValueLabel  = _rootContainer.Q<Label>("cw-width-value");
 
+            // T-CUS-10 (L4): skin color sliders + preview.
+            _skinRSlider = _rootContainer.Q<Slider>("cw-skin-r-slider");
+            _skinGSlider = _rootContainer.Q<Slider>("cw-skin-g-slider");
+            _skinBSlider = _rootContainer.Q<Slider>("cw-skin-b-slider");
+            _skinRValueLabel = _rootContainer.Q<Label>("cw-skin-r-value");
+            _skinGValueLabel = _rootContainer.Q<Label>("cw-skin-g-value");
+            _skinBValueLabel = _rootContainer.Q<Label>("cw-skin-b-value");
+            _skinPreview = _rootContainer.Q<VisualElement>("cw-skin-preview");
+
             InitActionButtons();
             LoadWorkingFromSave();
 
@@ -148,6 +165,13 @@ namespace ProjectC.Customisation.UI
             }
             var btnReset = _rootContainer.Q<VisualElement>("cw-reset-proportions");
             if (btnReset != null) btnReset.RegisterCallback<ClickEvent>(_ => OnResetProportionsClicked());
+
+            // T-CUS-10 (L4): skin color sliders + reset button.
+            if (_skinRSlider != null) _skinRSlider.RegisterValueChangedCallback(evt => OnSkinRSliderChanged(evt.newValue));
+            if (_skinGSlider != null) _skinGSlider.RegisterValueChangedCallback(evt => OnSkinGSliderChanged(evt.newValue));
+            if (_skinBSlider != null) _skinBSlider.RegisterValueChangedCallback(evt => OnSkinBSliderChanged(evt.newValue));
+            var btnResetSkin = _rootContainer.Q<VisualElement>("cw-reset-skin");
+            if (btnResetSkin != null) btnResetSkin.RegisterCallback<ClickEvent>(_ => OnResetSkinClicked());
         }
 
         private void SetOpen(bool open)
@@ -288,6 +312,19 @@ namespace ProjectC.Customisation.UI
             if (_heightValueLabel != null) _heightValueLabel.text = _working.heightScale.ToString("F2");
             if (_widthValueLabel  != null) _widthValueLabel.text  = _working.widthScale.ToString("F2");
 
+            // T-CUS-10 (L4): skin color sliders + preview swatch.
+            // Слайдеры работают в диапазоне [0, 1], а UI labels показывают 0-255 (прозрачно для пользователя).
+            if (_skinRSlider != null && !Mathf.Approximately(_skinRSlider.value, _working.skinColorR))
+                _skinRSlider.SetValueWithoutNotify(_working.skinColorR);
+            if (_skinGSlider != null && !Mathf.Approximately(_skinGSlider.value, _working.skinColorG))
+                _skinGSlider.SetValueWithoutNotify(_working.skinColorG);
+            if (_skinBSlider != null && !Mathf.Approximately(_skinBSlider.value, _working.skinColorB))
+                _skinBSlider.SetValueWithoutNotify(_working.skinColorB);
+            if (_skinRValueLabel != null) _skinRValueLabel.text = Mathf.RoundToInt(_working.skinColorR * 255f).ToString();
+            if (_skinGValueLabel != null) _skinGValueLabel.text = Mathf.RoundToInt(_working.skinColorG * 255f).ToString();
+            if (_skinBValueLabel != null) _skinBValueLabel.text = Mathf.RoundToInt(_working.skinColorB * 255f).ToString();
+            if (_skinPreview != null) _skinPreview.style.backgroundColor = new Color(_working.skinColorR, _working.skinColorG, _working.skinColorB, 1f);
+
             if (_messageLabel != null)
             {
                 _messageLabel.text = _working.bodyType == CharacterBodyType.Female
@@ -327,6 +364,56 @@ namespace ProjectC.Customisation.UI
             SaveWorking();
             if (Debug.isDebugBuild)
                 Debug.Log("[CustomisationWindow] Proportions reset to defaults.", this);
+        }
+
+        // === T-CUS-10 (L4): skin color slider actions ===
+
+        private void OnSkinRSliderChanged(float newValue)
+        {
+            if (_working == null) _working = new CustomisationSave();
+            _working.skinColorR = Mathf.Clamp01(newValue);
+            UpdateSkinPreviewAndLabel();
+            SaveWorking();
+        }
+
+        private void OnSkinGSliderChanged(float newValue)
+        {
+            if (_working == null) _working = new CustomisationSave();
+            _working.skinColorG = Mathf.Clamp01(newValue);
+            UpdateSkinPreviewAndLabel();
+            SaveWorking();
+        }
+
+        private void OnSkinBSliderChanged(float newValue)
+        {
+            if (_working == null) _working = new CustomisationSave();
+            _working.skinColorB = Mathf.Clamp01(newValue);
+            UpdateSkinPreviewAndLabel();
+            SaveWorking();
+        }
+
+        private void UpdateSkinPreviewAndLabel()
+        {
+            if (_skinRValueLabel != null) _skinRValueLabel.text = Mathf.RoundToInt(_working.skinColorR * 255f).ToString();
+            if (_skinGValueLabel != null) _skinGValueLabel.text = Mathf.RoundToInt(_working.skinColorG * 255f).ToString();
+            if (_skinBValueLabel != null) _skinBValueLabel.text = Mathf.RoundToInt(_working.skinColorB * 255f).ToString();
+            if (_skinPreview != null) _skinPreview.style.backgroundColor = new Color(_working.skinColorR, _working.skinColorG, _working.skinColorB, 1f);
+        }
+
+        private void OnResetSkinClicked()
+        {
+            if (_working == null) _working = new CustomisationSave();
+            // Default skin — светлый (1.0, 0.8, 0.6) для visibility против тёмно-серого (50%) URP Lit.
+            _working.skinColorR = 1.0f;
+            _working.skinColorG = 0.8f;
+            _working.skinColorB = 0.6f;
+            if (_skinRSlider != null) _skinRSlider.SetValueWithoutNotify(1.0f);
+            if (_skinGSlider != null) _skinGSlider.SetValueWithoutNotify(0.8f);
+            if (_skinBSlider != null) _skinBSlider.SetValueWithoutNotify(0.6f);
+            UpdateSkinPreviewAndLabel();
+            SaveWorking();
+            if (Debug.isDebugBuild)
+                Debug.Log("[CustomisationWindow] Skin color reset to default (1.0, 0.8, 0.6).", this);
         }
 
         // === Actions ===

@@ -195,60 +195,54 @@ private void ApplyProportions(float heightScale, float widthScale)
 
 ---
 
-## L4 — Покраска (skin / hair / clothing colors)
+## L4 — Покраска (skin color only — MVP)
 
-### Что даёт
+### Что даёт (MVP)
 
-- **Цвет кожи:** RGB picker на основной SMR персонажа.
-- **Цвет волос:** RGB picker на hair mesh (или на специальной зоне SMR, если mesh поддерживает material slots).
-- **Цвет одежды:** per-`EquipSlot` override — игрок выбирает цвет уже надетой одежды (перекрашивает MaterialPropertyBlock на spawned visualPrefab).
+- **Цвет кожи:** RGB слайдеры 0..1 (UI labels 0-255) + preview swatch.
+- Применяется через `MaterialPropertyBlock` на SkinnedMeshRenderer персонажа (`_BaseColor` URP/Lit shader property).
+- Изменения в realtime при движении ползунка.
+- Кнопка "СБРОСИТЬ ЦВЕТ" → (1.0, 0.8, 0.6) — светлый skin.
 
-### Как реализуется
+### Что НЕ вошло в MVP
 
-**Через `MaterialPropertyBlock` (НЕ инстанцируем материал):**
+- ❌ **Цвет волос** — deferred. Сначала нужен hair mesh asset.
+- ❌ **Цвет одежды** — deferred. Требует расширения `CharacterEquipmentVisualApplier` для per-EquipSlot color override.
+- ❌ **Палитра (цветовые пресеты)** — deferred. В MVP используются слайдеры RGB.
+
+### Как реализуется (сделано)
+
+**В UI (3 слайдера + preview):**
+
+```xml
+<ui:Slider name="cw-skin-r-slider" low-value="0" high-value="1" value="1" .../>
+<ui:Slider name="cw-skin-g-slider" low-value="0" high-value="1" value="0.8" .../>
+<ui:Slider name="cw-skin-b-slider" low-value="0" high-value="1" value="0.6" .../>
+<ui:VisualElement name="cw-skin-preview" class="cw-skin-preview" />
+<!-- CSS: .cw-skin-preview { width:28px; height:28px; border-radius:3px; background-color обновляется из C# } -->
+```
+
+**В C# (handler):**
+
+```csharp
+private void OnSkinRSliderChanged(float newValue)
+{
+    _working.skinColorR = Mathf.Clamp01(newValue);
+    UpdateSkinPreviewAndLabel();  // обновить swatch + RGB labels
+    SaveWorking();                // JSON + ApplyCustomisationSnapshot → ApplyColors
+}
+```
+
+**В applier (MaterialPropertyBlock):**
 
 ```csharp
 private void ApplyColors(CustomisationSnapshotDto snapshot)
 {
-    if (_bodyRenderer == null) return;
-    if (_mpb == null) _mpb = new MaterialPropertyBlock();
-    _bodyRenderer.GetPropertyBlock(_mpb);
-
-    Color skin = snapshot.GetSkinColor();
-    _mpb.SetColor(_baseColorId, skin);  // URP Lit: "_BaseColor"
-    _mpb.SetColor(_colorId, skin);      // Standard: "_Color" (legacy fallback)
-
-    _bodyRenderer.SetPropertyBlock(_mpb);
-
-    // Hair color (если есть отдельный hair mesh)
-    if (_spawnedHair != null)
-    {
-        var hairRenderer = _spawnedHair.GetComponentInChildren<Renderer>();
-        if (hairRenderer != null)
-        {
-            hairRenderer.GetPropertyBlock(_mpb);
-            _mpb.SetColor(_baseColorId, snapshot.GetHairColor());
-            hairRenderer.SetPropertyBlock(_mpb);
-        }
-    }
-}
-```
-
-**Для одежды (equipment visuals):**
-
-`CharacterEquipmentVisualApplier` нужно **расширить** (опционально) — применить color override из CustomisationSave к spawned visual по EquipSlot:
-
-```csharp
-// В CharacterEquipmentVisualApplier (опциональное расширение, additive):
-private void ApplyColorOverride(GameObject spawnedVisual, EquipSlot slot, Color? color)
-{
-    if (!color.HasValue || spawnedVisual == null) return;
-    var renderer = spawnedVisual.GetComponentInChildren<Renderer>();
-    if (renderer == null) return;
     var mpb = new MaterialPropertyBlock();
-    renderer.GetPropertyBlock(mpb);
-    mpb.SetColor("_BaseColor", color.Value);
-    renderer.SetPropertyBlock(mpb);
+    _bodyRenderer.GetPropertyBlock(mpb);
+    Color skin = snapshot.GetSkinColor();
+    mpb.SetColor(_baseColorId, skin);  // _BaseColor для URP/Lit
+    _bodyRenderer.SetPropertyBlock(mpb);
 }
 ```
 
@@ -346,18 +340,18 @@ private void ApplyColorOverride(GameObject spawnedVisual, EquipSlot slot, Color?
 | **L2** | snapshot.presetId | `ApplyPreset` — blend shapes или mesh variant | `CustomisationSave.presetId` | Dropdown |
 | **L3** | snapshot.heightScale/widthScale | `ApplyProportions` — transform.localScale + CharacterController.height | `CustomisationSave.heightScale/widthScale` | 2 Slider'а |
 | **L4** | snapshot.skinColor/hairColor/clothingOverrides | `ApplyColors` + `ApplyHair` + extension в `CharacterEquipmentVisualApplier` — MaterialPropertyBlock | RGBA поля + массив overrides | 3 ColorPicker'а + per-slot override |
-| **L5** | snapshot.dnaValues[] | `ApplyDna` — blend shape weights per DNA slot | `float[] dnaValues` | N Slider'ов (N = DNA count) |
+| **L4** | snapshot.skinColorR/G/B | `ApplyColors` — MaterialPropertyBlock на SMR body (_BaseColor) | RGBA поля | 3 RGB Slider'а + preview swatch |
 
 ---
 
-## Что делать в первую очередь
+## Что сделано (июнь 2026)
 
-| Приоритет | Уровень | Обоснование |
+| Приоритет | Уровень | Статус |
 |---|---|---|
-| 🥇 **L1** | М↔Ж | Максимальный "wow" эффект для игрока. Минимальная сложность. Все ассеты уже в проекте. |
-| 🥈 **L4** | Покраска | Сильно увеличивает cosmetic-разнообразие. Не требует доп. ассетов. |
-| 🥉 **L3 (transform.localScale)** | Слайдеры тела | Простая реализация, вау-эффект. |
-| 4 | L2 | Пресеты — nice-to-have, но не критично (L3 покрывает большую часть кейса). |
-| 5 | L5 | Большая работа, дорогие ассеты. Post-MVP. |
+| 🥇 **L1** | М↔Ж | **✅ Done** |
+| 🥈 **L4 (MVP)** | Покраска skin | **✅ Done** |
+| 🥉 **L3** | Слайдеры тела (transform.localScale) | **✅ Done** |
+| 4 | L2 | Отложен (требует доп. mesh ассетов или blend shapes) |
+| 5 | L5 | Отложен (требует SDK или доп. ассеты) |
 
-**Финальная рекомендация:** **L1 → L4 → L3 (transform.localScale)**. L2 и L5 — отложить.
+**Финальный результат:** L1 → L4 (skin) → L3 — **✅ всё реализовано (июнь 2026)**.

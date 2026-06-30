@@ -1,10 +1,12 @@
 # Customisation — обзор системного анализа
 
-> **Подсистема:** Character Customisation (поверх существующих Stats / Equipment / Skills)
+> **Подсистема:** Character Customisation (additive layer поверх Stats / Equipment / Skills)
 > **Дата:** 2026-06-30
+> **Статус:** ✅ **L1 (M↔F) + L3 (рост/полнота) + L4 skin color — реализовано (июнь 2026)**
 > **Базируется на:** `docs/Character/00_README.md`, `EquipmentVisual/*`, `02_V2_ARCHITECTURE.md`, `04_STATS_PROGRESSION.md`, существующий `NetworkPlayer` + `PlayerAnimation.controller`.
 > **Цель:** оценить сложность и архитектуру подсистемы кастомизации персонажа игроком — от простого переключения М↔Ж до сложной системы слайдеров тела/лица/покраски. **БЕЗ переписывания существующих подсистем** — только additive layer.
 > **Скоуп документа:** design-only аналитика + phased roadmap. Код пишется в следующих сессиях по тикетам из `05_PHASES_ROADMAP.md`.
+> **Реализованные тикеты:** T-CUS-01..06 (L1), T-CUS-09 (L3), T-CUS-10 (L4 skin).
 
 ---
 
@@ -17,11 +19,11 @@
 | **Базовый факт №1** | В `Assets/Kevin Iglesias/Human Animations/Models/` лежат **обе модели** — `HumanM_Model.fbx` и `HumanF_Model.fbx`. Скелет — generic Humanoid (одинаковый набор костей, Unity `HumanBodyBones` enum покрывает оба). |
 | **Базовый факт №2** | В `Assets/Kevin Iglesias/Human Animations/Animations/Female/` есть **полный набор locomotion-клипов** для F: `HumanF@Walk01_Forward`, `HumanF@Run01_Forward`, `HumanF@Sprint01_Forward`, `HumanF@Idle01/02`, `HumanF@Turn01_Left/Right`, `HumanF@Jump01`, `HumanF@Fall01`, `HumanF@Land01`. Имена совпадают с M, отличается только префикс `HumanF@` vs `HumanM@`. Это значит AnimatorOverrideController может их подменить без правок стейт-машины. |
 | **Базовый факт №3** | В коде уже есть инфраструктура для визуальных подмен: `CharacterEquipmentVisualApplier` (parent к `HumanBodyBones`), `EquipSlotToBone` (таблица маппинга EquipSlot → bone), `ItemData.visualPrefab`. Шаблон — additive, по аналогии с `NpcVisualApplier` (T-NPC-05). |
-| **M ↔ F переключение** | **Тривиально**. ~3-5 дней работы одного разработчика. Animator Override Controller с двумя наборами клипов (M / F), runtime-swap `SkinnedMeshRenderer.sharedMesh` или `Animator.runtimeAnimatorController`. Никакого нового кода в подсистемах движения/скиллов. |
-| **Кастомизация рост/вес/телосложение** | Средняя сложность. Через `SkinnedMeshRenderer` blend shapes (если модель их поддерживает) ИЛИ runtime mesh-morph через `BlendShape` weights. У Kevin Iglesias HumanM/HumanF blend shapes **не входят в FREE-пак** — нужна или PRO-версия или своя mesh-morph подсистема. |
-| **Лицевая настройка** | **Сложно**. Стандартное решение — UMA 2 / Morph3D / CC3 (Character Creator 3). Требует интеграции отдельного SDK. ~2-4 недели на настройку pipeline. |
-| **Покраска (hair/skin/clothing colors)** | Средняя сложность. Через `MaterialPropertyBlock` + `_BaseColor` shader property на URP/Lit. Для одежды — расширение `ItemData` (материал override). Для кожи/волос — расширение CustomisationData. |
-| **Persistence** | Уже есть `CharacterSaveData` + `JsonCharacterDataRepository` (T-P06). Достаточно **добавить секцию** `CustomisationSave` (пол, рост, вес, цвет кожи/волос). **Additive-only**, не ломает старые .json. |
+|| **M ↔ F переключение** | **✅ Реализовано (T-CUS-01..06)**. ~3-5 дней работы одного разработчика. Animator Override Controller с двумя наборами клипов (M / F), runtime-swap `SkinnedMeshRenderer.sharedMesh` или `Animator.runtimeAnimatorController`. Никакого нового кода в подсистемах движения/скиллов. |
+|| **Кастомизация рост/вес/телосложение** | **✅ Реализовано (T-CUS-09)** через `Visual_Model.localScale = (width, height, width)`. Диапазон 0.7–1.3. Слайдеры с auto-save и кнопкой СБРОСИТЬ. |
+|| **Лицевая настройка** | **Сложно**. Стандартное решение — UMA 2 / Morph3D / CC3 (Character Creator 3). Требует интеграции отдельного SDK. ~2-4 недели на настройку pipeline. (post-MVP) |
+|| **Покраска (skin color — MVP)** | **✅ Реализовано (T-CUS-10)**: skin color через RGB слайдеры + MaterialPropertyBlock на SMR (`_BaseColor`). Hair/clothing deferred. |
+|| **Persistence** | **✅ Реализовано**: отдельный файл `persistentDataPath/Customisation/customisation_<clientId>.json`. Изолирован от StatsServer. |
 | **Скиллы и combat** | Полностью отделены от визуала через `SkillAnimationPlayer` + `AnimatorOverrideController`. SkillAnimationPlayer подменяет motion в state "Skill" — если мы подменим runtimeAnimatorController на F-версию, Skill-клипы подменятся автоматически (при условии что F-версия state-machine идентична). **Разница только в idle/walk/run** — как раз то, что нужно. |
 | **UI** | `CharacterWindow.cs` уже имеет 6 top-level табов + sub-tabs в "ПРОГРЕССИЯ". Кастомизация логично встаёт как **ещё один sub-tab** "ВНЕШНОСТЬ" рядом со Статами/Одеждой/Модулями/Навыками. Или как **отдельный top-level таб** "ВНЕШНОСТЬ" — на UX-выбор. |
 | **Multiplayer sync** | Выбор персонажа (пол/тело/цвета) — это **client-only** (каждый игрок видит только себя + других со своим customisation). Альтернатива — реплицировать выбор через `NetworkVariable<byte>` (1 байт на пол). Минимальное изменение, см. §6 roadmap. |
@@ -36,13 +38,13 @@
 |---|---|---|---|
 | **L1: Выбор М/Ж** | Переключение базовой модели. Скиллы, статы, прогрессия — общие. | Mesh swap + Animator Override Controller swap | **~3-5 дней** |
 | **L2: + Базовые пресеты** | 2-4 пресета лица/тела на выбор (молодой/старый, толстый/худой). | Blend shapes или 2-4 mesh-варианта | **+5-7 дней** |
-| **L3: + Слайдеры тела** | Рост, полнота, мускулистость — слайдерами. | Blend shapes (если есть) или runtime mesh-morph | **+7-14 дней** |
-| **L4: + Покраска** | Цвет кожи, волос, одежды (через `MaterialPropertyBlock`). | Shader properties + UI palette picker | **+3-5 дней** |
+|| **L3: + Слайдеры тела** | Рост, полнота — слайдерами (реализовано через `Visual_Model.localScale`). | `transform.localScale` + CharacterController height | **✅ Done** |
+|| **L4: + Покраска (skin — MVP)** | Цвет кожи (через `MaterialPropertyBlock`). Hair/clothing отложены. | Shader properties + RGB слайдеры UI | **✅ Done** (MVP: skin only) |
 | **L5: + Лицевая настройка** | Слайдеры черт лица (нос, глаза, рот, подбородок). | UMA 2 / Morph3D / CC3 SDK | **+2-4 недели** |
 
 **Итого максимум: ~6-8 недель** одного разработчика на полную систему.
 
-**Рекомендуемая стартовая точка:** **L1 → L2 → L4** (пропустить L3 и L5 в MVP).
+**Рекомендуемая стартовая точка:** **L1 → L3 → L4 (skin)** — **✅ всё реализовано** (июнь 2026).
 
 ---
 

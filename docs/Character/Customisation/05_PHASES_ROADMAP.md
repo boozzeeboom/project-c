@@ -23,7 +23,7 @@
 | Milestone | Тикеты | Уровни | Трудоёмкость | Статус |
 |---|---|---|---|---|
 | **M1: L1 (M↔F swap)** | T-CUS-01, T-CUS-02, T-CUS-03, T-CUS-04, T-CUS-05, T-CUS-06 | L1 | ~5-7 дней | **✅ DONE** (2026-06-30) |
-| **M2: L3 (sliders) + L4 (color)** | T-CUS-09, T-CUS-10 | L3, L4 | ~5-7 дней | **✅ T-CUS-09 done** (L3, 2026-06-30); T-CUS-10 pending |
+| **M2: L3 (sliders) + L4 (color)** | T-CUS-09, T-CUS-10 | L3, L4 | ~5-7 дней | **✅ DONE** (2026-06-30) |
 | **M3: L2 (presets) + L5 (face) + sync** | T-CUS-07, T-CUS-08, T-CUS-11, T-CUS-12 | L2, L5 | ~3-6 недель | pending |
 
 **T-CUS-07/08 делаются параллельно с M1 если нужны раньше.**

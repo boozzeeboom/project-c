@@ -35,6 +35,11 @@ namespace ProjectC.Customisation.UI
         private VisualElement _rootContainer;
         private VisualElement _maleCard;
         private VisualElement _femaleCard;
+        // T-CUS-09 (L3):
+        private Slider _heightSlider;
+        private Slider _widthSlider;
+        private Label _heightValueLabel;
+        private Label _widthValueLabel;
         private Label _messageLabel;
         private bool _built;
 
@@ -106,6 +111,12 @@ namespace ProjectC.Customisation.UI
             _femaleCard = _rootContainer.Q<VisualElement>("cw-female-card");
             _messageLabel = _rootContainer.Q<Label>("cw-message");
 
+            // T-CUS-09 (L3): слайдеры пропорций.
+            _heightSlider = _rootContainer.Q<Slider>("cw-height-slider");
+            _widthSlider  = _rootContainer.Q<Slider>("cw-width-slider");
+            _heightValueLabel = _rootContainer.Q<Label>("cw-height-value");
+            _widthValueLabel  = _rootContainer.Q<Label>("cw-width-value");
+
             InitActionButtons();
             LoadWorkingFromSave();
 
@@ -126,6 +137,18 @@ namespace ProjectC.Customisation.UI
             }
             var btnClose = _rootContainer.Q<VisualElement>("btn-close");
             if (btnClose != null) btnClose.RegisterCallback<ClickEvent>(_ => SetOpen(false));
+
+            // T-CUS-09 (L3): слайдеры пропорций — slider.RegisterValueChangedCallback (continuous, не дёргать при Show).
+            if (_heightSlider != null)
+            {
+                _heightSlider.RegisterValueChangedCallback(evt => OnHeightSliderChanged(evt.newValue));
+            }
+            if (_widthSlider != null)
+            {
+                _widthSlider.RegisterValueChangedCallback(evt => OnWidthSliderChanged(evt.newValue));
+            }
+            var btnReset = _rootContainer.Q<VisualElement>("cw-reset-proportions");
+            if (btnReset != null) btnReset.RegisterCallback<ClickEvent>(_ => OnResetProportionsClicked());
         }
 
         private void SetOpen(bool open)
@@ -227,12 +250,63 @@ namespace ProjectC.Customisation.UI
             {
                 _femaleCard.EnableInClassList("cw-body-card-active", _working.bodyType == CharacterBodyType.Female);
             }
+
+            // T-CUS-09 (L3): подтянуть значения слайдеров из _working.
+            // SetValueWithoutNotify — чтобы не вызывать OnHeightSliderChanged → SaveWorking ping-pong во время Show().
+            if (_heightSlider != null)
+            {
+                float clampedH = Mathf.Clamp(_working.heightScale, _heightSlider.lowValue, _heightSlider.highValue);
+                if (!Mathf.Approximately(_heightSlider.value, clampedH))
+                    _heightSlider.SetValueWithoutNotify(clampedH);
+            }
+            if (_widthSlider != null)
+            {
+                float clampedW = Mathf.Clamp(_working.widthScale, _widthSlider.lowValue, _widthSlider.highValue);
+                if (!Mathf.Approximately(_widthSlider.value, clampedW))
+                    _widthSlider.SetValueWithoutNotify(clampedW);
+            }
+            if (_heightValueLabel != null) _heightValueLabel.text = _working.heightScale.ToString("F2");
+            if (_widthValueLabel  != null) _widthValueLabel.text  = _working.widthScale.ToString("F2");
+
             if (_messageLabel != null)
             {
                 _messageLabel.text = _working.bodyType == CharacterBodyType.Female
-                    ? "Текущий выбор: Женский. Персонаж переключится при закрытии окна."
-                    : "Текущий выбор: Мужской. Персонаж переключится при закрытии окна.";
+                    ? "Текущий выбор: Женский. Изменения применяются сразу."
+                    : "Текущий выбор: Мужской. Изменения применяются сразу.";
             }
+        }
+
+        // === T-CUS-09 (L3): slider actions ===
+
+        private void OnHeightSliderChanged(float newValue)
+        {
+            if (_working == null) _working = new CustomisationSave();
+            _working.heightScale = Mathf.Clamp(newValue, 0.85f, 1.15f);
+            if (_heightValueLabel != null) _heightValueLabel.text = _working.heightScale.ToString("F2");
+            SaveWorking();
+        }
+
+        private void OnWidthSliderChanged(float newValue)
+        {
+            if (_working == null) _working = new CustomisationSave();
+            _working.widthScale = Mathf.Clamp(newValue, 0.85f, 1.15f);
+            if (_widthValueLabel != null) _widthValueLabel.text = _working.widthScale.ToString("F2");
+            SaveWorking();
+        }
+
+        private void OnResetProportionsClicked()
+        {
+            if (_working == null) _working = new CustomisationSave();
+            _working.heightScale = 1.0f;
+            _working.widthScale = 1.0f;
+            // Обновить UI без триггера callback → пересобрать value, потом tick SaveWorking.
+            if (_heightSlider != null) _heightSlider.SetValueWithoutNotify(1.0f);
+            if (_widthSlider  != null) _widthSlider.SetValueWithoutNotify(1.0f);
+            if (_heightValueLabel != null) _heightValueLabel.text = "1.00";
+            if (_widthValueLabel  != null) _widthValueLabel.text  = "1.00";
+            SaveWorking();
+            if (Debug.isDebugBuild)
+                Debug.Log("[CustomisationWindow] Proportions reset to defaults.", this);
         }
 
         // === Actions ===

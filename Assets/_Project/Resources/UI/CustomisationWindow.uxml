@@ -1,9 +1,9 @@
 <?xml version="1.0" encoding="utf-8"?>
 <!--
- CustomisationWindow.uxml — T-CUS-06.
- Полноэкранный overlay по аналогии со SkillTreeWindow.uxml.
- Контент: секция "Пол" с двумя кнопками (М/Ж) + нижняя кнопка закрыть.
- L3/L4 (рост, вес, цвета) добавляются в следующих тикетах.
+ CustomisationWindow.uxml — T-CUS-06 (L1 + L3).
+ L1: секция "Пол" с двумя карточками (М/Ж).
+ L3 (T-CUS-09): секция "Пропорции" с двумя слайдерами (Рост, Полнота).
+ L4 (T-CUS-10): секция "Цвета" — добавляется следующим тикетом.
 -->
 <ui:UXML xmlns:ui="UnityEngine.UIElements" xmlns:uie="UnityEditor.UIElements" editor-extension-mode="False">
  <ui:VisualElement name="customisation-root" class="cw-root">
@@ -13,9 +13,10 @@
    <ui:Label text="Внешность" class="cw-title" />
   </ui:VisualElement>
 
-  <!-- MIDDLE: body type section -->
+  <!-- MIDDLE: body type + proportions -->
   <ui:VisualElement class="cw-middle">
 
+   <!-- L1: body type -->
    <ui:VisualElement class="cw-section">
     <ui:Label text="Пол" class="cw-section-title" />
 
@@ -30,9 +31,28 @@
       <ui:Label text="Базовая модель HumanF" class="cw-body-card-desc" />
      </ui:VisualElement>
     </ui:VisualElement>
+   </ui:VisualElement>
 
-    <ui:VisualElement class="cw-message-row">
-     <ui:Label name="cw-message" text="" class="cw-message" />
+   <!-- L3 (T-CUS-09): proportions -->
+   <ui:VisualElement class="cw-section">
+    <ui:Label text="Пропорции" class="cw-section-title" />
+
+    <ui:VisualElement class="cw-slider-row">
+     <ui:Label text="Рост" class="cw-slider-label" />
+     <ui:Slider name="cw-height-slider" low-value="0.85" high-value="1.15" value="1" show-input-field="false"
+                class="cw-slider cw-slider-flex" />
+     <ui:Label name="cw-height-value" text="1.00" class="cw-slider-value" />
+    </ui:VisualElement>
+
+    <ui:VisualElement class="cw-slider-row">
+     <ui:Label text="Полнота" class="cw-slider-label" />
+     <ui:Slider name="cw-width-slider" low-value="0.85" high-value="1.15" value="1" show-input-field="false"
+                class="cw-slider cw-slider-flex" />
+     <ui:Label name="cw-width-value" text="1.00" class="cw-slider-value" />
+    </ui:VisualElement>
+
+    <ui:VisualElement class="cw-slider-row">
+     <ui:Label name="cw-reset-proportions" text="СБРОСИТЬ" class="cw-btn-reset" />
     </ui:VisualElement>
    </ui:VisualElement>
 
@@ -40,6 +60,8 @@
 
   <!-- BOTTOM: close -->
   <ui:VisualElement class="cw-bottom">
+   <ui:Label name="cw-message" text="" class="cw-message" />
+   <ui:VisualElement class="cw-bottom-spacer" />
    <ui:Label name="btn-close" text="ЗАКРЫТЬ" class="cw-btn cw-btn-close" />
   </ui:VisualElement>
  </ui:VisualElement>

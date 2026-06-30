@@ -99,15 +99,26 @@ namespace ProjectC.Player
                 return;
             }
             _clientState.OnCustomisationUpdated += OnCustomisationUpdated;
-            // Если snapshot уже пришёл до OnEnable — применить немедленно.
-            if (_currentSnapshot.bodyType != CharacterBodyType.Male
-                || _currentSnapshot.heightScale != 1f
-                || _currentSnapshot.widthScale  != 1f
-                || _currentSnapshot.hairStyle   != HairStyleId.Short)
+
+            // T-CUS-06 fix v2 (стартовый персонаж мелкий): всегда применяем при OnEnable,
+            // даже если snapshot — struct default (heightScale=0, widthScale=0 → плохо).
+            // Подменяем default-значения на (1, 1) чтобы scale не схлопнулся.
+            var snap = _clientState.CurrentSnapshot;
+            if (snap.heightScale < 0.5f || snap.widthScale < 0.5f)
             {
-                // Не первый запуск — есть non-default snapshot, применяем.
-                OnCustomisationUpdated(_clientState.CurrentSnapshot);
+                // struct default или повреждённый snapshot — используем safe defaults.
+                snap.heightScale = 1f;
+                snap.widthScale = 1f;
+                if (snap.skinColorR < 0.01f && snap.skinColorG < 0.01f && snap.skinColorB < 0.01f)
+                {
+                    snap.skinColorR = 1f; snap.skinColorG = 1f; snap.skinColorB = 1f; snap.skinColorA = 1f;
+                }
+                if (snap.hairColorR < 0.01f && snap.hairColorG < 0.01f && snap.hairColorB < 0.01f)
+                {
+                    snap.hairColorR = 1f; snap.hairColorG = 1f; snap.hairColorB = 1f; snap.hairColorA = 1f;
+                }
             }
+            OnCustomisationUpdated(snap);
         }
 
         private void OnDisable()

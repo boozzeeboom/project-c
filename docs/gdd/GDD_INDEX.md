@@ -1,8 +1,16 @@
 # 📋 Game Design Documents (GDD) — Project C: The Clouds
 
-**Последнее обновление:** 10 июня 2026 г. | **Ветка:** `feature/npc-quest-v2` (merged) | **Версия:** `v0.0.20-gathering-system-complete`
+**Последнее обновление:** 30 июня 2026 г. | **Версия:** `v0.0.35`
 
-> **Что нового:** NPC+Quests v2 (50+ тикетов, M1–M19 ✅), CharacterWindow v2 (5+ табов), MetaRequirement v1 (lock-key), Ship Key MVP, **Resource Gathering (Mining) v0.0.2** (7 тикетов T-G01–T-G07 ✅). Подробный статус реализации — в `docs/MMO_Development_Plan.md` + `docs/NPC_quests/08_ROADMAP.md` + `docs/Mining/ROADMAP.md`. **Содержимое GDD-файлов** (lore, формулы, дизайн-решения) **не пересматривалось** — только добавлены секции "Реализация в коде" со ссылками на коммиты. Design-контент остаётся в зоне game-designer'а (см. AGENTS.md).
+> **Что нового (25–30 июня 2026):**
+> - **Real-Time Combat + Skills MVP ✅** — DamageCalculator (hit/miss/crit/armor/skills), AOEHelper (5 формул), CombatTargeting (raycast), SkillTreeWindow (интерактивный граф), SkillManager, SkillAnimationPlayer (runtime AOC), 27+ SkillNodeConfig SO, 3 каталога (Weapon/Armor/Technique), SkillModifier → DamageCalculator интеграция
+> - **NPC Enemy System P0-P2 ✅** — NpcBrain FSM (Idle→Chase→Attack→Dead), NpcSpawner (surface validation/rate-limit/leash 30m), goblin prefab (NetworkObject, NavMeshAgent), 5-state AnimatorController, loot tables с pickup
+> - **Character Customisation L1+L3+L4 ✅** — Male/Female переключение, 6 пресетов тела, 2 стиля волос, цвета кожи/волос/одежды, AnimatorOverrideController runtime, CustomisationWindow UI (full-screen overlay), Bug #1 (domain reload → heightScale=0) исправлен
+> - **Equipment Visual Phase 2 ✅** — Bone mapping (7+ slots: Weapon/Shield/Helmet/Chest), visual prefab на ItemData, CharacterEquipmentVisualApplier, Unity Avatar HumanBodyBones
+> - **Input System Phase 1-2.5 ✅** — InputBindingsConfig SO (31 биндинг), EscMenuWindow (UI Toolkit), InputRebindingPanel (Listen→Assign→Save/Reset), PlayerPrefsInputRepository, DefaultInputRestorer
+> - **Character Animations v0.5.1 ✅** — Animator BlendTree directional movement (8-way), combat animations (punch/kick/block), female override controller, NetworkPlayer animation event sync
+>
+> Подробный статус — в `docs/MMO_Development_Plan.md` (v0.0.35). Design-контент GDD (lore, формулы, дизайн-решения) остаётся в зоне game-designer'а. Секции "Реализация в коде" обновлены для всех новых подсистем.
 
 ---
 
@@ -37,6 +45,8 @@
 | 13 | [GDD_13_UI_UX_System.md](GDD_13_UI_UX_System.md) | UI/UX: HUD, меню, навигация, подсказки, стиль | ✅ Готово |
 | 14 | [GDD_14_Visual_Art_Pipeline.md](GDD_14_Visual_Art_Pipeline.md) | Визуал: URP, шейдеры, постобработка, арт-пайплайн | ✅ Готово |
 | 15 | [GDD_15_Audio_System.md](GDD_15_Audio_System.md) | Аудио: SFX, музыка, эмбиент, позиционный звук | ✅ Готово |
+| 25 | [GDD_25_Combat_Skills.md](GDD_25_Combat_Skills.md) | 🆕 Бой: DamageCalculator, AOE, прицеливание, скиллы, SkillTree | ✅ Реализовано |
+| 26 | [GDD_26_Character_Customisation.md](GDD_26_Character_Customisation.md) | 🆕 Кастомизация: пол/пресет/цвета/волосы + Equipment Visual | ✅ Реализовано |
 
 ## 📖 Content — Контентные системы
 

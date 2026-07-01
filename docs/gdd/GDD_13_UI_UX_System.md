@@ -542,13 +542,90 @@ if (!UIManager.CanReceiveInput("TradeUI")) return;
 ### X.7 Где смотреть актуальный статус
 
 - **`docs/Character-menu/00_OVERVIEW.md`** + `refactor_log_2026-06-05.md` — CharacterWindow
-- **`docs/Character-menu/sub_inventory-tab/00_OVERVIEW.md`** — sub_inventory-tab
-- **`docs/NPC_quests/old_session_log/T-Q11b_c_session_log_2026-06-08.md`** — DialogWindow 9 bugs
-- **`docs/NPC_quests/old_session_log/T-Q12_DESIGN_NOTE.md`** — QuestTracker
-- **`docs/NPC_quests/old_session_log/M15_DESIGN_NOTE.md`** — QuestToast
-- **`docs/Ships/Key-subsystem/00_OVERVIEW.md`** — ShipKeyToast
-- **`docs/MetaRequirement/00_OVERVIEW.md`** — MetaRequirementToast
-- **`docs/MMO_Development_Plan.md`** §1.7 — общий план UI
+|- **`docs/Character-menu/sub_inventory-tab/00_OVERVIEW.md`** — sub_inventory-tab
+|- **`docs/NPC_quests/old_session_log/T-Q11b_c_session_log_2026-06-08.md`** — DialogWindow 9 bugs
+|- **`docs/NPC_quests/old_session_log/T-Q12_DESIGN_NOTE.md`** — QuestTracker
+|- **`docs/NPC_quests/old_session_log/M15_DESIGN_NOTE.md`** — QuestToast
+|- **`docs/Ships/Key-subsystem/00_OVERVIEW.md`** — ShipKeyToast
+|- **`docs/MetaRequirement/00_OVERVIEW.md`** — MetaRequirementToast
+|- **`docs/MMO_Development_Plan.md`** §1.7 — общий план UI
+
+### X.8 SkillTreeWindow (T-CB-23, 2026-06-27)
+
+**Концепция:** UIDocument overlay-окно для интерактивного графа навыков: zoom/pan, node states, подсветка path.
+
+| Компонент | Файл | Назначение |
+|-----------|------|------------|
+| `SkillTreeWindow` | `Scripts/Skills/UI/SkillTreeWindow.cs` | Overlay UIDocument: Clear+CloneTree+Add, 27+ skill nodes |
+| `SkillNodeVisualElement` | `Scripts/Skills/UI/SkillNodeVisualElement.cs` | VisualElement per node: locked/unlocked/available/highlighted |
+| `SkillGraphView` | `Scripts/Skills/UI/SkillGraphView.cs` | Zoom/pan, edge connections, node layout |
+| `SkillTooltip` | `Scripts/Skills/UI/SkillTooltip.cs` | Hover tooltip: name, description, SP cost, effects |
+| `SkillTreeWindow.uxml/uss` | `Resources/UI/` | UXML + USS шаблоны (по паттерну CharacterWindow) |
+
+**Поток:** P → CharacterWindow → таб "Навыки" → SkillTreeWindow → граф навыков → выбор/изучение.
+
+**Ключевые решения:**
+- `SkillTreeWindow` использует CharacterWindow паттерн (Clear+CloneTree+Add, Resources.Load fallback)
+- Node states: Locked (серый) → Available (подсвечен) → Unlocked (зелёный)
+- Привязан к сети через `NetworkSkillTree` (`NetworkVariable<SkillTreeSnapshot>`)
+- 4 FIX UI Toolkit применены: pickingMode, styleSheets.Add, cursor lock, MarkDirtyRepaint
+
+### X.9 CustomisationWindow (T-CUS, 2026-06-27..28)
+
+**Концепция:** Full-screen overlay для изменения внешности персонажа: пол, пресет тела, цвета, волосы, одежда.
+
+| Компонент | Файл | Назначение |
+|-----------|------|------------|
+| `CustomisationWindow` | `Scripts/Customisation/UI/CustomisationWindow.cs` | MonoBehaviour full-screen overlay (по паттерну SkillTreeWindow) |
+| `CustomisationWindow.uxml/uss` | `Resources/UI/` | UXML + USS шаблоны |
+| `CustomisationClientState` | `Scripts/Customisation/CustomisationClientState.cs` | Singleton: `CurrentSnapshot`, `ApplyCustomisationSnapshot` |
+
+**Разделы UI:**
+- Пол: Male / Female (радио-кнопки)
+- Пресет тела: 6 вариантов (Default/Athletic/Heavy/Slim/Elder/Young)
+- Цвет кожи: Color picker
+- Цвет волос: Color picker
+- Причёска: 2 стиля (Bald/Short, с preview)
+- Цвет одежды: Color override
+
+**Поток:** P → CharacterWindow → таб "Внешность" → CustomisationWindow → выбор → Apply → Broadcast через NetworkPlayer.
+
+### X.10 InputRebinding + EscMenu (2026-06-25..26)
+
+**Концепция:** Escape → EscMenu → Settings/Controls → InputRebindingPanel → Listen+Assign+Save/Reset.
+
+| Компонент | Файл | Назначение |
+|-----------|------|------------|
+| `EscMenuWindow` | `Scripts/UI/EscMenuWindow.cs` | Overlay-пауза: 3 кнопки (Settings, Controls, Quit) |
+| `InputRebindingPanel` | `Scripts/UI/InputRebindingPanel.cs` | Listen → Assign → Save/Reset workflow |
+| `InputBindingsConfig` (SO) | `Data/Input/InputBindingsConfig.asset` | 31 binding: move/action/combat/UI |
+| `PlayerPrefsInputRepository` | `Scripts/Player/PlayerPrefsInputRepository.cs` | JSON override → PlayerPrefs |
+| `DefaultInputRestorer` | `Scripts/Player/DefaultInputRestorer.cs` | Сброс на заводские defaults |
+
+**UX:**
+1. Escape → EscMenu открывается, игра на паузе (Time.timeScale = 0)
+2. "Settings" → пока заглушка
+3. "Controls" → InputRebindingPanel: список всех 31 биндингов
+4. Клик на биндинг → Listen mode → Press key → Assign
+5. "Reset to Defaults" → PlayerPrefs delete key, Apply
+6. "Quit" → Quit to Desktop
+
+### X.11 Что НЕ реализовано ⏳ (UI)
+
+| # | Задача | Milestone | Приоритет |
+|---|--------|:---:|---:|
+| 1 | `ProgressInfo` multi-item tooltip в MetaRequirementToast | M7+ | 🟠 MEDIUM |
+| 2 | Display HUD репутации в header | M5 | 🟢 Low |
+| 3 | Звуковая обратная связь в UI | Sprint 4 | 🟡 Med |
+| 4 | Локализация всех строк UI | post-MVP | 🟢 Low |
+| 5 | SettingsWindow (не заглушка) | post-MVP | 🟢 Low |
+| 6 | Keybindings → показать current key + conflict detection | post-MVP | 🟡 Med |
+
+### X.12 Где смотреть актуальный статус (UI, дополнение)
+
+- **`docs/Character/Skills/20_IMPLEMENTATION.md`** §3 — SkillTreeWindow design
+- **`docs/Character/Customisation/`** — CustomisationWindow implementation
+- **`docs/Character/Input/`** — InputRebinding + EscMenu documentation
 
 ---
 

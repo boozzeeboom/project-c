@@ -1,10 +1,24 @@
 # План разработки ММО "Project C: The Clouds" на Unity
 
-**Последнее обновление:** 24 июня 2026 г. | **Текущая версия:** `v0.0.30-NPC-Ships-RoundTrip`
+**Последнее обновление:** 30 июня 2026 г. | **Текущая версия:** `v0.0.35`
 
-> **Что нового (24 июня 2026):** **NPC Ships M3.2.15 — первый рабочий round-trip ✅.** 4 NPC-корабля (HeavyII) курсируют между Primium и TestZone: док → взлёт → полёт → CommZone → пад → стыковка → обратно. 27 коммитов, 15 часов. После 10 кругов ошибок (ForceMode.Force ≠ angular velocity, guard-блокировки, потеря пада) — найден правильный архитектурный подход: прямой Rigidbody control (MoveRotation + linearVelocity) минуя ShipController.AddTorque. Полный ретроспективный анализ: `docs/NPC_others_peacfull/pc_ship/99_RETROSPECTIVE.md`.
+> **Что нового (30 июня 2026):** **Character Customisation L1+L3+L4 ✅ + v0.0.35.** Полный цикл — 6 документов дизайна → 15 C# файлов (CustomisationSave, DTO, ClientState, Applier, UI Window) → M/F переключение, 6 пресетов тела, 2 стиля волос, цвета кожи/волос/одежды, AnimatorOverrideController. UI по паттерну SkillTreeWindow. Bug #1 (domain reload → heightScale=0 → персонаж невидим) исправлен.
+>
+> **NPC Enemy System P0-P2 ✅:** NpcBrain FSM (Idle→Chase→Attack→Dead), NpcSpawner с surface validation/rate-limit/leash, goblin prefab (NetworkObject), 5-state AnimatorController, passive/aggressive/neutral поведение, loot pickup.
+>
+> **Real-Time Combat MVP ✅ + Skills Phase 1-4 ✅:** 24+ файла боевого ядра — DamageCalculator (hit/miss/crit/armor/skills), AOE (5 формул), SkillTreeWindow UI (graph+zoom/pan+badges), 27+ Skill SO, SkillAnimationPlayer (runtime override controller), Weapon/Armor/Technique catalogs, raycast targeting.
+>
+> **Character Animations 🔄 v0.5.1:** BlendTree directional movement (MoveX/MoveY), combat clips (idle/walk/run/attack/death), female override controller.
+>
+> **Input System ✅ Phase 1-2.5:** InputBindingsConfig SO (31 binding), EscMenu, key rebinding, save/load/reset через PlayerPrefs.
+>
+> **Equipment Visual Phase 2 ✅:** CharacterEquipmentVisualApplier (bone mapping, visual sockets), equip bug fix (rate-limit N callback).
+>
+> **NPC Ships M3.2.15:** ✅ Подробнее — см. ретроспективу `docs/NPC_others_peacfull/pc_ship/99_RETROSPECTIVE.md`.
 
-**Предыдущее обновление (17 июня 2026):** **T-CARGO-06: Per-instance лимиты трюма + модульное расширение.** Cargo лимиты перенесены из статического `ShipClassLimits.Get(cls)` в Inspector-editable поля `ShipController` (baseMaxCargoSlots/Weight/Volume/PenaltyFactor). Модули (`ShipModule`) получили 4 cargo-бонуса: cargoSlotsBonus/WeightBonus/VolumeBonus/PenaltyReduction (flat, stackable, без cooldown). `ShipCargoRegistry` (static Dictionary) — мост от server-POCO `TradeWorld` к per-instance лимитам. Тестовый модуль: `Assets/_Project/Data/Ship/Modules/MODULE_CARGO_BAY_01.asset` (+6 слотов, +50кг, +2м³, -0.02 penalty). `ShipClassLimits` остаётся fallback. ~3 ч. См. `docs/Ships/cargo_system/CARGO_REFACTOR_PLAN_2026-06-17.md` §T-CARGO-06.
+> **Предыдущее обновление (24 июня 2026):** **NPC Ships M3.2.15 — первый рабочий round-trip ✅.** 27 коммитов, полный ретроспективный анализ: `docs/NPC_others_peacfull/pc_ship/99_RETROSPECTIVE.md`.
+
+> **Предыдущее обновление (17 июня 2026):** **T-CARGO-06: Per-instance лимиты трюма + модульное расширение.** Cargo лимиты перенесены из статического `ShipClassLimits.Get(cls)` в Inspector-editable поля `ShipController`. ~3 ч. См. `docs/Ships/cargo_system/CARGO_REFACTOR_PLAN_2026-06-17.md` §T-CARGO-06.
 
 > **Предыдущее обновление (17 июня 2026):** **Cargo System v2 (Trade-интеграция) — рефакторинг завершён.** Cargo больше не отдельный `MonoBehaviour` (ProjectC.Player.CargoSystem удалён) — теперь подсистема Trade: `ProjectC.Trade.Core.CargoData` (POCO) + `TradeWorld._cargoCache[shipId]` + `OnCargoChanged` event. Штраф скорости `GetSpeedPenalty` — серверная формула, реплицируется через `NetworkVariable<float>` в `ShipController._serverCargoPenalty`. Маппинг `ShipFlightClass → ShipClass` через `ShipClassMappingConfig` SO (inspector-editable, `Resources/ShipClassMapping.asset`). Столкновения: `ShipController.OnCollisionEnter` → `TradeWorld.TryDamageCargo` → dangerous leak (5%×10%), fragile marked. Параметры — `ShipCollisionDamageConfig` SO (`Resources/ShipCollisionDamage.asset`). Удалены: legacy `CargoSystem.cs` MonoBehaviour, 3 broken-refs в `WorldScene_0_0.unity`. ~10.5 ч, 5 этапов. См. `docs/Ships/cargo_system/CARGO_REFACTOR_PLAN_2026-06-17.md`.
 
@@ -145,6 +159,8 @@
   - ✅ Таб "Контракты" — реализован в NPC+Quests v2 (T-Q11..T-Q20+, см. `docs/Character-menu/sub_contracts-tab/`)
   - ⏳ Таб "Корабль" — MVP-заглушка (хард-стат), план в `docs/Character-menu/00_OVERVIEW.md` §3
   - ✅ Visual fix 2026-06-05: characterWindowUss привязан к правильному USS-ассету (был UXML-bug); все class-стили с `!important` (UnityDefaultRuntimeTheme fix)
+- ✅ ⭐ **SkillTreeWindow** (UI Toolkit) — интерактивный граф навыков: zoom/pan, learned/available/locked узлы, badge-счётчики, tooltip при наведении. Паттерн — CharacterWindow (Clear+CloneTree+Resources.Load fallback). 5 FIX'ов (см. `docs/Character/Skills/UI_TOOLKIT_GUIDE.md`).
+- ✅ ⭐ **Input System Phase 1-2.5** — `InputBindingsConfig` SO (31 биндинг), EscMenu с UI Toolkit окном, полноценный rebinding (Listen → Assign → Save), сброс на defaults, сериализация в PlayerPrefs.
 - ✅ ⭐ UIManager — централизованный менеджер UI (приоритеты, z-ordering, input management)
 - ✅ ⭐ UIFactory — фабрика UI компонентов (8 методов, устранено 120 строк дублирования)
 - ✅ ⭐ UITheme — ScriptableObject темы (51+ цвет → UITheme.Default, авто-создание)
@@ -290,6 +306,8 @@
 |-----------|-----------|-------|
 | `ResourceNodeConfig` (SO) | Параметры: время сбора, кол-во harvests, cooldown, результат, анимация | T-G01 ✅ |
 | `ResourceNode` (NetworkBehaviour) | State machine (Idle/Occupied/Depleted/Cooldown) + MetaReq tool check + client animation | T-G02 ✅ |
+| `ResourceNodeConfig` — расширение (T-G08) | Tool check через ItemId, Anim trigger parameter, 3 доп. конфига (Iron, Copper, Herb) | T-G08 ✅ |
+| Player gather animation (T-G09) | Scale-pulse + emission flash, интеграция с CharacterAnimationController (StateHasher < 0.3f) | T-G09 ✅ |
 | `GatheringServer` (NetworkBehaviour) | RPC hub + server tick (0.5s) + cooldown tick + GatherResult DTO (INetworkSerializable) | T-G03 ✅ |
 | `GatheringClientState` (client singleton) | Events: OnGatherProgress/Completed/Interrupted/Denied/Cancelled + timer timeout | T-G04 ✅ |
 | `GatheringToastController` (UIDocument) | ProgressBar + "Добыто: X × N" + flash-fill на прерывании | T-G04 ✅ |
@@ -463,6 +481,142 @@
 
 ---
 
+### 1.15 Real-Time Combat + Skills (T-RTC, T-CB, T-INP) ✅ MVP ЗАВЕРШЁН (2026-06-25..28)
+
+**Цель:** Добавить полноценный real-time combat с DamageCalculator, AOE, скиллами, деревом навыков, прицеливанием и анимациями атак.
+
+#### Боевое ядро (T-RTC):
+
+| Компонент | Файл / Path | Назначение | Статус |
+|-----------|-------------|------------|--------|
+| `DamageCalculator` | `Scripts/Combat/DamageCalculator.cs` | hit/miss/crit/armor/skills — 5 формул | T-RTC-01 ✅ |
+| `AOEHelper` | `Scripts/Combat/AOEHelper.cs` | 5 формул AOE: sphere, box, capsule, cone, radial | T-RTC-02 ✅ |
+| `CombatTargeting` | `Scripts/Combat/CombatTargeting.cs` | Raycast-прицеливание (наводить на врага по R) | T-RTC-03 ✅ |
+| `WeaponCatalog` (SO) | `Data/Combat/WeaponCatalog.asset` | SO каталог оружия | T-RTC-04 ✅ |
+| `ArmorCatalog` (SO) | `Data/Combat/ArmorCatalog.asset` | SO каталог брони | T-RTC-04 ✅ |
+| `TechniqueCatalog` (SO) | `Data/Combat/TechniqueCatalog.asset` | SO каталог техник | T-RTC-04 ✅ |
+
+#### Skill System (T-CB / T-INP):
+
+| Компонент | Файл / Path | Назначение | Статус |
+|-----------|-------------|------------|--------|
+| `SkillNodeConfig` (SO) | `Data/Combat/Skills/` (27+ файлов) | 4 типа: weapon/armor/technique/passive | T-CB-05 ✅ |
+| `SkillTreeConfig` (SO) | `Data/Combat/Skills/SkillTreeConfig.asset` | Дерево навыков: связи, позиции, иконки | T-CB-06 ✅ |
+| `SkillTreeWindow` (UIDocument) | `UI/Resources/UI/SkillTreeWindow.{uxml,uss}` | Интерактивный граф (zoom/pan/badges/tooltip) | T-CB-07 ✅ |
+| `SkillManager` | `Scripts/Combat/SkillManager.cs` | Singleton: tree, node state, points, learn/unlearn | T-CB-08 ✅ |
+| `SkillAnimationPlayer` | `Scripts/Combat/SkillAnimationPlayer.cs` | Override controller по SkillType, runtime swap | T-CB-09 ✅ |
+| `SkillModifier` | `Scripts/Combat/SkillModifier.cs` | DamageModifier → DamageCalculator интеграция | T-CB-11 ✅ |
+| `DamageEventArgs` | `Scripts/Combat/DamageEvents.cs` | events: OnDealDamage/TakeDamage/SkillUsed | T-CB-13 ✅ |
+| `WeaponItemData` | `Scripts/Items/WeaponItemData.cs` | Подкласс ItemData (damage/range/skillType) | T-CB-19 ✅ |
+
+**Stats:** 24+ C# файла, ~35 KB кода, 27+ SkillNodeConfig SO.
+
+**Key design decisions:**
+- `DamageCalculator` — **server-authoritative**, damage deal via NetworkRPC
+- Skill tree — **client-predicted** (immediate UI response), validated server-side on use
+- `SkillAnimationPlayer` использует runtime `AnimatorOverrideController` — swap по `SkillType`
+- Inventory integration: `EquipmentWindow` → `SkillManager` → `SkillTreeWindow`
+- `DamageCalculator` вызывает `SkillModifier` chain (damage + armor penetration + etc.)
+
+**Документация:** `docs/Character/Skills/00_OVERVIEW.md` + `10_COMBAT_ARCHITECTURE.md` + `20_IMPLEMENTATION.md` + `30_CONFIG.md` + `UI_TOOLKIT_GUIDE.md`.
+
+---
+
+### 1.16 NPC Enemy System (T-NPC) ✅ P0-P2 ЗАВЕРШЁН (2026-06-25..27)
+
+**Цель:** Добавить враждебных NPC (goblins) с FSM, спавном, лутом, анимациями и базовым AI.
+
+| Компонент | Файл / Path | Назначение | Статус |
+|-----------|-------------|------------|--------|
+| `NpcBrain` | `Scripts/NPC/NpcBrain.cs` | FSM: Idle→Chase→Attack→Dead, 3 типа (passive/aggressive/neutral) | P0 ✅ |
+| `NpcBrain.Config` | nested struct | aggroRange, attackRange, moveSpeed, damage, hp, lootTable, respawnTime | P0 ✅ |
+| `NpcSpawner` | `Scripts/NPC/NpcSpawner.cs` | SurfaceNav validation, rate-limit, server-authoritative leash (30m) | P1 ✅ |
+| `Goblin` prefab | `Prefabs/NPC/Goblin.prefab` | NetworkObject + NpcBrain + NavMeshAgent + Animator + CapsuleCollider | P1 ✅ |
+| `NpcAnimatorController` | `Animations/NPC/NpcAnimator.controller` | 5 states: Idle/Walk/Run/Attack/Dead | P2 ✅ |
+| `NpcAttackAnimationEvent` | `Scripts/NPC/NpcAttackAnimationEvent.cs` | AnimationEvent → NpcBrain.OnAttackHit → DamageCalculator | P2 ✅ |
+| Loot — `NpcLootTable` (SO) | `Data/NPC/LootTables/` | Нода лута: массив предметов + вес | P2 ✅ |
+| Pickup on death | `NpcBrain.Dead()` | Server-spawn PickupItem при смерти + loot roll | P2 ✅ |
+
+**Stats:** +8 C# файлов, ~2.5 KB Goblin prefab, 12 материалов (URP/Lit).
+
+**Scene placement (WorldScene_0_0):**
+- `[NpcSpawner_Test]` @ (40060, 2502, 40060) — спавнит goblin с пассивным/агрессивным режимом
+- Goblin spawn на платформе в ПРИМУМ-регионе
+
+**Key decisions:**
+- NavMeshAgent на сервере (host-authoritative) — NPC движется на хосте, клиент видит через NetworkTransform
+- `surfaceValidation` — проверяет, что NavMeshAgent.SamplePosition успешен перед спавном
+- Leash 30m — NPC возвращается при отдалении от точки спавна
+- LootTable — SO с weighted random, спавн PickupItem при смерти
+
+**Известные ограничения:**
+- ⏳ Multiplayer sync: NPC позиция синхронизируется через NetworkTransform, но анимации — только на хосте
+- ⏳ P3: Pathfinding sync (NavMesh только на хосте)
+
+---
+
+### 1.17 Character Customisation (T-CUS) ✅ L1+L3+L4 ЗАВЕРШЁН (2026-06-28..30)
+
+**Цель:** Позволить игроку изменять внешность персонажа: пол, пресет тела, рост/ширину, цвета кожи/волос/одежды, стиль волос.
+
+| Компонент | Файл | Назначение | Статус |
+|-----------|------|------------|--------|
+| `CharacterBodyType` (enum) | `Customisation/CharacterBodyType.cs` | Male/Female | L1 ✅ |
+| `BodyPresetId` (enum) | `Customisation/BodyPresetId.cs` | 6 пресетов: Default/Athletic/Heavy/Slim/Elder/Young | L1 ✅ |
+| `HairStyleId` (enum) | `Customisation/HairStyleId.cs` | 2 стиля: Bald/Short | L3 ✅ |
+| `CustomisationSave` | `Customisation/CustomisationSave.cs` | JsonUtility DTO: colors, presets, clothing overrides | L1+L3+L4 ✅ |
+| `CustomisationClientState` | `Customisation/CustomisationClientState.cs` | Singleton + events + ApplyCustomisationSnapshot | L3 ✅ |
+| `ClothingOverrideData` | `Customisation/ClothingOverrideData.cs` | per-item color override (not implemented in UI yet) | L4 ✅ |
+| `CustomisationWindow` (UI) | `Customisation/CustomisationWindow.cs` | Full-screen overlay, 3 секции: тело/лицо/одежда | L1+L3+L4 ✅ |
+| `UICustomisationManager` | `Customisation/UI/CustomisationManager.cs` | UI → CustomisationSave → Applier | L3+L4 ✅ |
+| `CharacterCustomisationApplier` | `Customisation/CharacterCustomisationApplier.cs` | Применяет snapshot на MeshRenderer + AnimatorOverrideController | L3+L4 ✅ |
+| `AnimatorOverrideController` импорт | — | Load(CharacterBodyType + BodyPresetId + HairStyleId) → runtime | L3 ✅ |
+| `CharacterWindow` таб "Персонаж" | — | T-P01..T-P18: STR/DEX/INT статистика + экипировка + навыки | L1 ✅ |
+
+**Bug #1 (фикс:** Domain reload → `CustomisationClientState.CurrentSnapshot` = struct default (heightScale=0) → `_visualRoot.localScale` = (0,0,0) → персонаж невидим. Исправлен: nullable fallback + `OnBeforeSerialize` guard.
+
+**Stats:** +15 C# файлов, ~6 документов дизайна (`docs/Character/Customisation/`).
+
+---
+
+### 1.18 Equipment Visual (T-EV) ✅ Phase 2 ЗАВЕРШЁН (2026-06-27)
+
+**Цель:** Визуальное отображение экипированного оружия и брони на персонаже (bone mapping, visual sockets).
+
+| Компонент | Файл | Назначение | Статус |
+|-----------|------|------------|--------|
+| `CharacterEquipmentVisualApplier` | `Scripts/Customisation/CharacterEquipmentVisualApplier.cs` | Bone mapping: Weapon/Shield/Helmet/Chest (+7 bone slots) | T-EV-01 ✅ |
+| `EquipmentVisualSocket` | `Scripts/Items/EquipmentVisualSocket.cs` | Определение socket на скелете (HumanBodyBones) | T-EV-02 ✅ |
+| `visualPrefab` on ItemData | `Scripts/Items/ItemData.cs` | GameObject reference + attach params | T-EV-03 ✅ |
+| `EquipmentChangedHandler` | `Scripts/Customisation/EquipmentChangedHandler.cs` | OnEquipmentChanged → Instantiate/Destroy visual | T-EV-04 ✅ |
+| Equip bug fix | `CharacterWindow.ChangeEquipmentSlot` | Rate-limit N callback предотвращает duplicate equip | T-EV-05 ✅ |
+
+**Key decisions:**
+- Visual prefab живёт как child анимированного bone — следует за анимацией skeleton
+- `CharacterCustomisationApplier` — единая точка входа для customisation + equipment visual
+- Socket mapping через `HumanBodyBones` enum (стандарт Unity Avatar)
+
+**Stats:** +5 C# файлов, ~15 KB кода.
+
+---
+
+### 1.19 Input System (Phase 1-2.5) ✅ ЗАВЕРШЁН (2026-06-25..26)
+
+**Цель:** Централизованное управление привязкой клавиш: EscMenu, rebinding UI, save/load/reset.
+
+| Компонент | Файл | Назначение | Статус |
+|-----------|------|------------|--------|
+| `InputBindingsConfig` (SO) | `Data/Input/InputBindingsConfig.asset` | 31 биндинг: move/action/combat/UI | Phase 1 ✅ |
+| `EscMenuWindow` (UIDocument) | `Scripts/UI/EscMenuWindow.cs` | Overlay-пауза, кнопки: Settings/Controls/Quit | Phase 1 ✅ |
+| `InputRebindingPanel` (UIDocument) | `Scripts/UI/InputRebindingPanel.cs` | Listen → Assign → Save/Reset workflow | Phase 2 ✅ |
+| `PlayerPrefsInputRepository` | `Scripts/Player/PlayerPrefsInputRepository.cs` | Сериализация override → PlayerPrefs | Phase 2.5 ✅ |
+| `DefaultInputRestorer` | `Scripts/Player/DefaultInputRestorer.cs` | Сброс на заводские defaults | Phase 2.5 ✅ |
+| EscMenu → Rebinding → Save flow | Integrated | Close on Apply, Cancel возвращает предыдущие | Phase 2 ✅ |
+
+**Stats:** +6 C# файлов, ~2 UXML/USS, 1 SO.
+
+---
+
 ## Этап 2: Сетевой фундамент (Недели 7-10) ✅ ЗАВЕРШЁН
 **Цель:** Реализовать клиент-серверное взаимодействие.
 
@@ -590,9 +744,10 @@
    - ⏳ Посадочные площадки
    - ⏳ Мосты между пиками (процедурные)
 
-6. **Персонаж:** ⏳
-   - ⏳ Mixamo-персонаж (idle, walk, run, jump)
-   - ⏳ Интеграция в NetworkPlayer (замена capsule)
+6. **Персонаж:** ✅ (2026-06-25..28)
+   - ✅ **Character Animations v0.5.1** — BlendTree directional movement (MoveX/MoveY), combat clips (idle/walk/run/attack/death), female override controller
+   - ✅ NetworkPlayer интеграция — capsule заменён анимированным мешем, синхронизация анимаций
+   - ✅ AnimatorOverrideController импорт через ScriptableObject (L3/L4 кастомизация)
 
 7. **UI и предметы:** ⏳
    - ⏳ 3D модель сундука (low-poly, анимация открытия)
@@ -625,11 +780,14 @@
 ## Этап 3: Ролевая система и Торговля (Недели 9-14) ✅ ЗАВЕРШЁН
 **Цель:** Добавить RPG-элементы, сохранение данных и **полную систему торговли «Дальнобойщики над облаками»**.
 
-### 3.1 Характеристики и навыки (RPG)
-1. **Система прокачки:**
-   - Система прокачки (опыт, уровни, очки навыков)
-   - Деревья навыков для пилотирования и выживания
-   - Балансировка чисел (таблицы в ScriptableObject)
+### 3.1 Характеристики и навыки (RPG) ✅ (2026-06-25..28)
+1. **Система прокачки:** ✅
+   - ✅ **SkillNodeConfig (ScriptableObject)** — 27+ навыков: weapon, armor, technique, passive типы
+   - ✅ **SkillTreeWindow** (UI Toolkit) — интерактивный граф: zoom/pan, learned/available/locked узлы, badge-счётчики, tooltip
+   - ✅ **SkillAnimationPlayer** — runtime override controller для анимаций навыков
+   - ✅ **DamageCalculator** — hit/miss/crit/armor/skills интеграция с SkillModifier
+   - ✅ **Weapon/Armor/Technique catalogs** — 3 SO каталога с боевыми параметрами
+   - ✅ Балансировка чисел через ScriptableObject (SkillConfig, SkillTreeConfig)
 
 ### 3.2 Базовая торговля (Недели 9-11) ✅ ЗАВЕРШЕНО (Сессии 1-5)
 1. **TradeItemDefinition (ScriptableObject):** ✅

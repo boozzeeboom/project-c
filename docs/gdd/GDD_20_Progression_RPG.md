@@ -743,7 +743,7 @@ Reward = base_reward × difficulty × reputation_modifier × completion_bonus
 |---|---|---|---|
 | 1 | **XP система** (формулы, sources, multipliers) | M-NPC+Quests post-MVP | 🟡 Med |
 | 2 | **Leveling** (1-50, milestone unlocks) | M-NPC+Quests post-MVP | 🟡 Med |
-| 3 | **Skill trees** (Pilot / Merchant / Explorer) | M-NPC+Quests post-MVP | 🟡 Med |
+| 3 | **Skill trees** (Pilot / Merchant / Explorer) | ✅ **DONE** (T-CB-22 + T-CB-23, 2026-06-27 — SkillManager + SkillTreeWindow, 27+ SkillNodeConfig SO) | 🟢 Done |
 | 4 | **Character stats** (Endurance/Nav/Mechanics/Luck) | M-NPC+Quests post-MVP | 🟡 Med |
 | 5 | **Co-op progression** (XP distribution) | M-NPC+Quests post-MVP | 🟢 Low |
 | 6 | **Prestige system** (reset + bonus) | Future | 🟢 Low |
@@ -759,6 +759,50 @@ Reward = base_reward × difficulty × reputation_modifier × completion_bonus
 - **`docs/NPC_quests/08_ROADMAP.md`** §8.3 T-Q01, T-Q13, T-Q16 — roadmap
 - **`docs/MMO_Development_Plan.md`** §3.5 — общий план фракций
 
+### X.5 Skill Tree Implementation (T-CB-22 + T-CB-23, 2026-06-27)
+
+**Новое:** Skill Tree MVP — граф навыков с 27+ узлами, runtime AOC integration, server-authoritative.
+
+#### X.5.1 SkillManager (T-CB-22)
+
+| Компонент | Файл | Назначение |
+|-----------|------|------------|
+| `SkillManager` | `Scripts/Skills/SkillManager.cs` | Server-side singleton: learn/unlock/validate, track learned skills |
+| `SkillNodeConfig` (SO) | `Data/Skills/SkillNodeConfig.asset` | Skill node: name, description, SP cost, prerequisites, SkillModifier[] |
+| `SkillModifier` | `Scripts/Skills/SkillModifier.cs` | chain → DamageCalculator: multiplier or flat bonus per skill type |
+| `SkillAnimationPlayer` | `Scripts/Skills/SkillAnimationPlayer.cs` | Runtime AOC: load weapon/combat animations by skill type |
+| `NetworkSkillTree` | `Scripts/Network/NetworkSkillTree.cs` | `NetworkVariable<SkillTreeSnapshot>` sync host→client |
+| `SkillTreeSnapshot` | `Scripts/Skills/SkillTreeSnapshot.cs` | Serialize/deserialize для NetworkVariable |
+
+**Каталоги:**
+- `Data/Combat/WeaponCatalog.asset` — 9+ видов оружия
+- `Data/Combat/ArmorCatalog.asset` — 5+ видов брони
+- `Data/Combat/TechniqueCatalog.asset` — 13+ техник/заклинаний
+
+**Поток изучения навыка:**
+1. Клиент открывает SkillTreeWindow → кликает node
+2. `NetworkSkillTree.RequestLearnRpc(nodeId)` → сервер
+3. `SkillManager.TryLearn(clientId, nodeId)` → проверка SP, prerequisites
+4. Если OK → `_learnedSkills[clientId].Add(nodeId)`, `SkillTreeSnapshot` broadcast
+5. Клиент получает `OnSkillTreeUpdated` → `SkillAnimationPlayer` перезагружает AOC
+
+#### X.5.2 SkillModifier → DamageCalculator интеграция
+
+Каждый `SkillNodeConfig` содержит массив `SkillModifier[]`:
+- `TargetSkill` (SkillType) — какой скилл модифицирует
+- `ModifierType` (Multiplier / Flat)
+- `Value` — числовое значение (1.1 = +10% / 10 = +10 flat)
+
+`DamageCalculator` при расчёте запрашивает `SkillManager.GetModifiers(clientId, skillType)` и применяет цепочку.
+
+**Key design decisions:**
+- `SkillManager` — **server-only**, data не утекает на клиент без разрешения
+- `SkillAnimationPlayer` загружает AOC по типу скилла из `Resources.Load` (папка `Animations/Combat/`)
+- `NetworkSkillTree` использует `NetworkVariable<SkillTreeSnapshot>` — deltas sync automatically
+- `SkillNodeConfig` SO редактируется дизайнером: dependencies, SP cost, modifiers
+
+**Stats:** +7 C# файлов, 3 SO каталога, ~12 KB кода.
+
 ---
 
-*Документ создан для Project C: The Clouds. Дизайн-контент (XP, leveling, skill trees, milestones) остаётся в зоне game-designer'а. MVP foundation для Reputation + NpcAttitude реализован (2026-06-08) и отражён в §X.*
+*Документ создан для Project C: The Clouds.*

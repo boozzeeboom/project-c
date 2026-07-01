@@ -460,7 +460,45 @@ public class ItemRegistry : ScriptableObject
 
 **Changelog:** `docs/Ships/Key-subsystem/99_CHANGELOG.md` (v1–v20).
 
+### X.5 WeaponItemData + Equipment Visual (T-CB-19 + T-EV, 2026-06-27..28)
+
+**Новое:** Подкласс `ItemData` для оружия + визуальное отображение экипированных предметов на персонаже через bone mapping.
+
+#### X.5.1 WeaponItemData
+
+| Поле | Тип | Описание |
+|------|-----|----------|
+| `damage` | float | Базовый урон оружия |
+| `range` | float | Дальность атаки (м) |
+| `attackSpeed` | float | Скорость атаки (атак/сек) |
+| `skillType` | SkillType | Тип навыка для анимации (Punch/Kick/Block/Sword/...) |
+| `weaponVisualPrefab` | GameObject | 3D-модель оружия для отображения на персонаже |
+
+**Реализация:** `Assets/_Project/Scripts/Items/WeaponItemData.cs` — наследует `ItemData`, добавляет боевые параметры.
+
+#### X.5.2 Equipment Visual System (T-EV Phase 2)
+
+| Компонент | Файл | Назначение | 
+|-----------|------|------------|
+| `CharacterEquipmentVisualApplier` | `Scripts/Customisation/CharacterEquipmentVisualApplier.cs` | Bone mapping: Weapon/Shield/Helmet/Chest (+7 bone slots) |
+| `EquipmentVisualSocket` | `Scripts/Items/EquipmentVisualSocket.cs` | Определение socket на скелете (HumanBodyBones) |
+| `visualPrefab` on ItemData | `Scripts/Items/ItemData.cs` | GameObject reference + attach params (position/rotation/scale) |
+| `EquipmentChangedHandler` | `Scripts/Customisation/EquipmentChangedHandler.cs` | OnEquipmentChanged → Instantiate/Destroy visual |
+| Equip bug fix | `CharacterWindow.ChangeEquipmentSlot` | Rate-limit N callback предотвращает duplicate equip |
+
+**Key decisions:**
+- Visual prefab живёт как child анимированного bone — следует за анимацией skeleton
+- `CharacterCustomisationApplier` — единая точка входа для customisation + equipment visual
+- Socket mapping через `HumanBodyBones` enum (стандарт Unity Avatar): Weapon → RightHand, Shield → LeftHand, Helmet → Head, Chest → Spine
+- `attachBoneOverride` + `attachPositionOffset/Rotation/Scale` — per-item настройки позиционирования
+
+**Stats:** +5 C# файлов, ~15 KB кода.
+
+### X.6 Где смотреть актуальный статус (дополнение)
+
+- **`docs/Character/Skills/`** — WeaponItemData + Equipment Visual дизайн
+- **`docs/Character/Customisation/`** — Customisation + Equipment Visual implementation
 
 ---
 
-**Связанные документы:** [GDD_INDEX.md](GDD_INDEX.md) | [INVENTORY_SYSTEM.md](../INVENTORY_SYSTEM.md) | [`docs/Character-menu/sub_inventory-tab/00_OVERVIEW.md`](../Character-menu/sub_inventory-tab/00_OVERVIEW.md) | [`docs/MetaRequirement/00_OVERVIEW.md`](../MetaRequirement/00_OVERVIEW.md)
+**Связанные документы:**

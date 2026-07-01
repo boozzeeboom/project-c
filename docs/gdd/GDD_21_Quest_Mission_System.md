@@ -1153,6 +1153,60 @@ Fail_Chance = 1.0 - (player_skill / required_skill)
 - **Writer-документация:** `docs/NPC_quests/M19_CSV_PIPELINE_v2.md` (26 KB, 7 разделов для content writer'a)
 - **Тестовые данные:** 106 NPC, 802 квеста — 1 кнопка импорт
 
+### 16.6 NPC Enemy System (T-NPC-ENEMY, 2026-06-27..28)
+
+**Новое:** Hostile NPC (goblins) с FSM-логикой, спавном, анимацией и лутом. Потенциальная интеграция с боевой системой (T-RTC) и квестами.
+
+**Архитектура:**
+
+| Компонент | Файл | Назначение | Статус |
+|-----------|------|------------|--------|
+| `NpcBrain` | `Scripts/World/Npc/NpcBrain.cs` | FSM (Idle→Chase→Attack→Dead), 4 RPC: OnDeath/OnRage/OnCombatStart/OnCombatEnd | T-NPC-ENEMY-P0 ✅ |
+| `NpcSpawner` | `Scripts/World/Npc/NpcSpawner.cs` | Surface validation, rate-limit, leash 30m, batch spawn | T-NPC-ENEMY-P1 ✅ |
+| `NpcSpawnPoint` (SO) | `Data/Npc/NpcSpawnPoints.asset` | Position/rotation/type configs | T-NPC-ENEMY-P1 ✅ |
+| `NpcStatConfig` (SO) | `Data/Npc/NpcStatConfig.asset` | Health/damage/speed/aggroRange/attackRange | T-NPC-ENEMY-P1 ✅ |
+| `GoblinEnemy` prefab | `Prefabs/Npc/GoblinEnemy.prefab` | NetworkObject + NavMeshAgent + NpcBrain + Animator | T-NPC-ENEMY-P0 ✅ |
+| `GoblinAnimatorController` | `Animations/Npc/Goblin.controller` | 5-state: Idle/Walk/Run/Attack/Die | T-NPC-ENEMY-P2 ✅ |
+| `NpcLootTable` (SO) | `Data/Npc/NpcLootTable.asset` | Item drop lists per NPC type | T-NPC-ENEMY-P2 ✅ |
+| `LootPicker` | `Scripts/World/Npc/LootPicker.cs` | Drop items on death, pickup interaction | T-NPC-ENEMY-P2 ✅ |
+| `NpcNetworkState` | `Scripts/Network/NpcNetworkState.cs` | NetworkVariable sync: health/state/position | T-NPC-ENEMY-P2 ✅ |
+
+**FSM State Machine (NpcBrain):**
+
+```
+Idle ──[playerInAggroRange]──→ Chase ──[inAttackRange]──→ Attack ──[health≤0]──→ Dead
+  ↑                              ↑                            │
+  └──[leashExceeded]─────────────┘                            └──[outOfRange]──→ Chase
+```
+
+- Idle: random idle animation, rotation toward player if looking
+- Chase: NavMeshAgent.SetDestination(player), run animation, leash check (30m)
+- Attack: face target, play attack animation, damage on trigger (через Animation Event)
+- Dead: disables NavMeshAgent, plays death anim, body remains N секунд, then despawn
+
+**Спавн (NpcSpawner):**
+- `Surface Validation` — Raycast check: must be walkable terrain (walkable layer mask)
+- `Rate Limit` — Max N spawns per second (конфиг)
+- `Leash` — Max distance from spawn point (30m default)
+- `Batch Spawn` — Spawn group in radius on startup
+
+**Loot:**
+- `NpcLootTable` — weighted item list, drop chance, quantity range
+- `LootPicker` — OnDeath → Instantiate pickups in radius, interactable with E
+
+**Key design decisions:**
+- Goblin — first NPC тип, Architecture позволяет добавлять новые (Orc/Slime/etc.) через NpcType enum
+- Все NPC — `NetworkObject`, spawner через `ScenePlacedObjectSpawner`
+- NpcBrain FSM — `Update()` driven, NOT coroutine (для NetworkObject совместимости)
+- Loot — физические pickups в мире; не появляются если нет игрока в радиусе (оптимизация)
+
+**Stats:** +9 C# файлов, 3 SO конфига, 1 prefab, 1 AnimatorController, ~12 KB кода.
+
+### 16.7 Где смотреть актуальный статус (NPC Enemy)
+
+- **`docs/Character/EnemyNPC/`** — NPC Enemy дизайн и implementation logs
+- **`docs/MMO_Development_Plan.md`** §1.16 — план NPC Enemy System
+
 ---
 
-*Документ создан для Project C: The Clouds. Дизайн-контент (типы квестов, формулы, генерация) остаётся в зоне game-designer'а. Реализация v2 (M1–M19) сделана в 2026-06-07..09 сессиях и отражена в §16.*
+*Документ создан для Project C: The Clouds.*

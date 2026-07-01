@@ -301,4 +301,64 @@
 
 ---
 
+### X.4 Real-Time Combat System (T-RTC, 2026-06-25..28)
+
+**Новое:** Полноценная real-time боевая система для пешего режима: DamageCalculator с формулами, AOE, raycast-прицеливание.
+
+**Компоненты:**
+
+| Компонент | Файл | Назначение |
+|-----------|------|------------|
+| `DamageCalculator` | `Scripts/Combat/DamageCalculator.cs` | hit/miss/crit/armor/skills — 5 формул, server-authoritative |
+| `AOEHelper` | `Scripts/Combat/AOEHelper.cs` | 5 формул AOE: sphere, box, capsule, cone, radial |
+| `CombatTargeting` | `Scripts/Combat/CombatTargeting.cs` | Raycast-прицеливание по R-клавише, подсветка цели |
+| `WeaponCatalog` (SO) | `Data/Combat/WeaponCatalog.asset` | SO-каталог оружия (damage, range, attackSpeed) |
+| `ArmorCatalog` (SO) | `Data/Combat/ArmorCatalog.asset` | SO-каталог брони (armor, weight, slot) |
+| `TechniqueCatalog` (SO) | `Data/Combat/TechniqueCatalog.asset` | SO-каталог техник (skillType, damage, cooldown) |
+
+**DamageCalculator формулы:**
+- **Hit:** `(attacker.dex + weapon.accuracy) vs (defender.agi + armor.evasion)` — если roll > threshold, miss
+- **Crit:** `(attacker.luck + weapon.critChance) * 0.01` — double damage on roll
+- **Base damage:** `weapon.damage + (attacker.str * 0.5)` — flat damage before armor
+- **Armor reduction:** `max(1, damage - armor.rating * 0.3)` — flat DR с min 1
+- **Skill modifier:** `damage * skillModifier.multiplier` — через SkillModifier chain
+
+**Key design decisions:**
+- `DamageCalculator` — **server-authoritative**, damage deal через NetworkRPC
+- `AOEHelper` — pure C#, 5 формул, no Unity dependencies, используется и сервером и клиентом
+- `CombatTargeting` — рейкаст с камеры, подсветка цели через outline-эффект, R-переключение цели
+
+**Документация:** `docs/Character/Skills/20_IMPLEMENTATION.md` §2.
+
+### X.5 Input System — Rebinding (Phase 1-2.5, 2026-06-25..26)
+
+**Новое:** Полноценная система переназначения клавиш: EscMenu, rebinding UI, save/load/reset.
+
+| Компонент | Файл | Назначение |
+|-----------|------|------------|
+| `InputBindingsConfig` (SO) | `Data/Input/InputBindingsConfig.asset` | 31 биндинг: move/action/combat/UI |
+| `EscMenuWindow` | `Scripts/UI/EscMenuWindow.cs` | Overlay-пауза, кнопки Settings/Controls/Quit |
+| `InputRebindingPanel` | `Scripts/UI/InputRebindingPanel.cs` | Listen → Assign → Save/Reset workflow |
+| `PlayerPrefsInputRepository` | `Scripts/Player/PlayerPrefsInputRepository.cs` | Сериализация override → PlayerPrefs |
+| `DefaultInputRestorer` | `Scripts/Player/DefaultInputRestorer.cs` | Сброс на заводские defaults |
+
+**Поток:** Escape → EscMenu → Settings/Controls → InputRebindingPanel → Listen-нажатие → Assign → Save → Apply
+
+**Key decisions:**
+- `InputBindingsConfig` SO как центральный реестр (31 binding) → редактируется дизайнером
+- `PlayerPrefsInputRepository` для persistence (JSON string)
+- `DefaultInputRestorer` не удаляет SO, а сбрасывает override в PlayerPrefs
+
+---
+
+## 9. Acceptance Criteria (обновление 2026-06-30)
+
+| # | Критерий | Как проверить | Статус |
+|---|----------|--------------|--------|
+| 17 | **Бой:** DamageCalculator считает hit/miss/crit/armor/skill | Запустить хост, выполнить атаку → консоль "Damage: X (hit/crit/miss)" | 🟢 DONE (T-RTC) |
+| 18 | **Бой:** AOEHelper 5 формул (sphere/box/capsule/cone/radial) | Через ExecuteCode: AOEHelper.SphereDamage(origin, radius, dmg) → список целей | 🟢 DONE (T-RTC) |
+| 19 | **Прицеливание:** R-клавиша → подсветка цели | Нажать R → outline на враге, повтор R → сброс | 🟢 DONE (T-RTC) |
+| 20 | **Input rebinding:** Escape → EscMenu → Controls → Listen → Assign → Save | В Play Mode: Esc → Controls → клик биндинга → новая клавиша → Save → Restart → проверка | 🟢 DONE (Phase 2.5) |
+| 21 | **EscMenu:** Settings (заглушка), Controls (rebinding), Quit | Открыть EscMenu → 3 кнопки работают | 🟢 DONE (Phase 1) |
+
 **Связанные документы:** [GDD_INDEX.md](GDD_INDEX.md) | [CONTROLS.md](../CONTROLS.md) | [SHIP_SYSTEM_DOCUMENTATION.md](../SHIP_SYSTEM_DOCUMENTATION.md) | [`docs/Ships/Key-subsystem/00_OVERVIEW.md`](../Ships/Key-subsystem/00_OVERVIEW.md) | [`docs/NPC_quests/08_ROADMAP.md`](../NPC_quests/08_ROADMAP.md) | [`docs/Character-menu/00_OVERVIEW.md`](../Character-menu/00_OVERVIEW.md)

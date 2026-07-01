@@ -154,6 +154,9 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::ProjectC.AI.NpcBrain
   ShowTopMostFoldoutHeaderGroup: 1
+  _behaviorType: 0
+  _aggroHpThreshold: 25
+  _maxHitsPerMinute: 3
   _attacker: {fileID: 4447634377190294989}
   _target: {fileID: 3466550445724365706}
   aggroRange: 10
@@ -162,6 +165,15 @@ MonoBehaviour:
   moveSpeed: 3.5
   angularSpeed: 360
   tickRate: 10
+  _platformCarryEnabled: 1
+  _platformMask:
+    serializedVersion: 2
+    m_Bits: 64
+  _platformProbeUp: 0.5
+  _platformProbeDistance: 0.6
+  _platformProbeRadius: 0.3
+  _carryYaw: 1
+  _platformMissFramesToClear: 3
 --- !u!114 &2725879449892794617
 MonoBehaviour:
   m_ObjectHideFlags: 0

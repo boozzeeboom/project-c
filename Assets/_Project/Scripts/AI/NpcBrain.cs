@@ -118,8 +118,9 @@ namespace ProjectC.AI
         [SerializeField] private float _platformProbeRadius = 0.3f;
         [Tooltip("Переносить курсовой поворот (yaw) палубы. Pitch/roll НЕ переносятся.")]
         [SerializeField] private bool _carryYaw = true;
-        [Tooltip("Гистерезис схода с платформы (кадры без опоры).")]
         [Min(1)] [SerializeField] private int _platformMissFramesToClear = 3;
+        [Tooltip("На кораблях с NetworkObject приклеивать NPC через TrySetParent (надёжнее carry). Fallback — carry без NetworkObject.")]
+        [SerializeField] private bool _useParentingOnShips = true;
 
 
         // --- runtime ---
@@ -141,6 +142,9 @@ namespace ProjectC.AI
         private NavMeshAgent _proxyAgent;
         private GameObject _proxyGo;
         private bool _deckNavActive;
+        private Vector3 _proxyLastPos;
+        private NetworkObject _netObject;
+        private bool _parentedToShip;
 
 
         // T-NPC-14: passive aggro tracking.
@@ -289,14 +293,17 @@ namespace ProjectC.AI
 
             if (platform != _ridePlatform) { BeginRide(platform); return; }
 
-            // T-CREW-03: если у палубы есть готовый ShipDeckNav — навигация прокси-агентом
-            // в локальных координатах палубы; позиция/поворот берутся из прокси (carry не нужен).
-            if (_deckNavActive && _proxyAgent != null && _state != BrainState.Dead)
+            // T-CREW-03/parent: если NPC приклеен к кораблю (parenting), палубу держит NGO —
+            // carry не нужен; только локальная навигация прокси-агентом.
+            if (_parentedToShip)
             {
-                DriveDeckNav();
+                if (_deckNavActive && _proxyAgent != null && _state != BrainState.Dead) DriveDeckNav();
+                _rideLastPos = platform.position;
+                _rideLastRot = platform.rotation;
                 return;
             }
 
+            // Fallback (платформа без NetworkObject): carry Фазы 1.
             Vector3 deltaPos = PlatformRideHelper.ComputeCarryDelta(
                 platform, transform.position, _rideLastPos, _rideLastRot, _carryYaw, out float deltaYaw);
 
@@ -313,8 +320,7 @@ namespace ProjectC.AI
             _ridePlatform = platform;
             _rideLastPos = platform.position;
             _rideLastRot = platform.rotation;
-            // Пока на палубе — NavMeshAgent не должен сам управлять позицией/поворотом
-            // (мировой NavMesh под кораблём тянул бы NPC назад).
+            // Пока на палубе — NavMeshAgent не должен сам управлять позицией/поворотом.
             if (_agent != null && !_agentAutoDrivePaused)
             {
                 _agent.updatePosition = false;
@@ -322,7 +328,18 @@ namespace ProjectC.AI
                 _agentAutoDrivePaused = true;
             }
 
-            // T-CREW-03: если корабль имеет готовый ShipDeckNav — навигация по палубе через прокси.
+            // Parenting: приклеиваем NPC к кораблю через NGO (надёжнее carry, реплицируется автоматически).
+            if (_netObject == null) _netObject = GetComponent<NetworkObject>();
+            NetworkObject shipNo = platform.GetComponentInParent<NetworkObject>();
+            _parentedToShip = false;
+            if (_useParentingOnShips && _netObject != null && shipNo != null && shipNo.IsSpawned)
+            {
+                if (_netObject.transform.parent != shipNo.transform)
+                    _netObject.TrySetParent(shipNo, true);
+                _parentedToShip = _netObject.transform.parent == shipNo.transform;
+            }
+
+            // Навигация по палубе через прокси (если запечён ShipDeckNav).
             _deckNav = platform.GetComponentInParent<ShipDeckNav>();
             if (_deckNav != null && _deckNav.IsReady)
             {
@@ -334,16 +351,21 @@ namespace ProjectC.AI
                 }
             }
 
-            if (Debug.isDebugBuild) Debug.Log($"[NpcBrain] {gameObject.name} entered moving platform '{platform.name}' (deckNav={_deckNavActive})");
+            if (Debug.isDebugBuild) Debug.Log($"[NpcBrain] {gameObject.name} entered '{platform.name}' (parented={_parentedToShip}, deckNav={_deckNavActive})");
         }
 
         private void EndRide()
         {
             if (Debug.isDebugBuild && _ridePlatform != null)
-                Debug.Log($"[NpcBrain] {gameObject.name} left moving platform '{_ridePlatform.name}'");
+                Debug.Log($"[NpcBrain] {gameObject.name} left '{_ridePlatform.name}'");
             _ridePlatform = null;
 
-            // T-CREW-03: выключить нав по палубе.
+            // Отцепить от корабля.
+            if (_parentedToShip && _netObject != null)
+                _netObject.TrySetParent((Transform)null, true);
+            _parentedToShip = false;
+
+            // Выключить нав по палубе.
             _deckNavActive = false;
             _deckNav = null;
             if (_proxyGo != null) _proxyGo.SetActive(false);
@@ -386,11 +408,13 @@ namespace ProjectC.AI
         private void WarpProxyToNpc()
         {
             if (_proxyAgent == null || _deckNav == null) return;
-            Vector3 navPos = _deckNav.DeckLocalToNav(_deckNav.WorldToDeckLocal(transform.position));
+            Vector3 deckLocal = _parentedToShip ? transform.localPosition : _deckNav.WorldToDeckLocal(transform.position);
+            Vector3 navPos = _deckNav.DeckLocalToNav(deckLocal);
             if (NavMesh.SamplePosition(navPos, out NavMeshHit hit, 5f, NavMesh.AllAreas))
                 _proxyAgent.Warp(hit.position);
             else
                 _proxyAgent.Warp(navPos);
+            _proxyLastPos = _proxyAgent.transform.position;
         }
 
         private void DriveDeckNav()
@@ -398,33 +422,44 @@ namespace ProjectC.AI
             if (_proxyAgent == null || _deckNav == null) return;
             if (!_proxyAgent.isOnNavMesh) { WarpProxyToNpc(); return; }
 
-            // Цель преследования → в нав-фрейм палубы.
+            // Цель преследования → deck-local → нав-фрейм.
             if (_state == BrainState.Chase && _aggroTarget != null)
             {
-                Vector3 targetNav = _deckNav.DeckLocalToNav(_deckNav.WorldToDeckLocal(_aggroTarget.GetPosition()));
+                Vector3 tgtLocal = _parentedToShip
+                    ? _deckNav.transform.InverseTransformPoint(_aggroTarget.GetPosition())
+                    : _deckNav.WorldToDeckLocal(_aggroTarget.GetPosition());
                 _proxyAgent.isStopped = false;
-                _proxyAgent.SetDestination(targetNav);
+                _proxyAgent.SetDestination(_deckNav.DeckLocalToNav(tgtLocal));
             }
             else
             {
-                // Idle/Attack — стоим (позиция всё равно едет с кораблём через TransformPoint).
                 _proxyAgent.isStopped = true;
             }
 
-            // Мировая поза NPC из локальной позиции прокси на палубе.
-            Vector3 deckLocal = _deckNav.NavToDeckLocal(_proxyAgent.transform.position);
-            transform.position = _deckNav.DeckLocalToWorld(deckLocal);
+            // Инкремент перемещения прокси (в осях палубы) — добавляем к локальной позе NPC.
+            // Так даже при неидеальном bake NPC не телепортируется мимо палубы (parenting держит).
+            Vector3 proxyDelta = _proxyAgent.transform.position - _proxyLastPos;
+            _proxyLastPos = _proxyAgent.transform.position;
 
-            // Поворот по направлению движения прокси (в мировых осях палубы).
-            Vector3 v = _proxyAgent.velocity;
-            if (v.sqrMagnitude > 0.01f)
+            if (_parentedToShip)
             {
-                Vector3 worldDir = _deckNav.transform.TransformVector(v);
-                worldDir.y = 0f;
-                if (worldDir.sqrMagnitude > 0.0001f)
+                if (proxyDelta.sqrMagnitude > 0f) transform.localPosition += proxyDelta;
+                Vector3 flat = proxyDelta; flat.y = 0f;
+                if (flat.sqrMagnitude > 1e-6f)
                 {
-                    Quaternion targetRot = Quaternion.LookRotation(worldDir);
-                    transform.rotation = Quaternion.RotateTowards(transform.rotation, targetRot, angularSpeed * Time.fixedDeltaTime);
+                    Quaternion look = Quaternion.LookRotation(flat);
+                    transform.localRotation = Quaternion.RotateTowards(transform.localRotation, look, angularSpeed * Time.fixedDeltaTime);
+                }
+            }
+            else
+            {
+                Vector3 worldDelta = _deckNav.transform.TransformVector(proxyDelta);
+                if (worldDelta.sqrMagnitude > 0f) transform.position += worldDelta;
+                Vector3 flat = worldDelta; flat.y = 0f;
+                if (flat.sqrMagnitude > 1e-6f)
+                {
+                    Quaternion look = Quaternion.LookRotation(flat);
+                    transform.rotation = Quaternion.RotateTowards(transform.rotation, look, angularSpeed * Time.fixedDeltaTime);
                 }
             }
         }

@@ -37,6 +37,7 @@ using ProjectC.Combat;
 using ProjectC.Combat.Core;
 using System.Linq;
 using ProjectC.Core;
+using ProjectC.Ship;
 
 namespace ProjectC.AI
 {
@@ -135,6 +136,11 @@ namespace ProjectC.AI
         private Quaternion _rideLastRot;
         private int _rideMissFrames;
         private bool _agentAutoDrivePaused;
+        // Deck navigation (T-CREW-03): прокси-агент в нав-фрейме ShipDeckNav
+        private ShipDeckNav _deckNav;
+        private NavMeshAgent _proxyAgent;
+        private GameObject _proxyGo;
+        private bool _deckNavActive;
 
 
         // T-NPC-14: passive aggro tracking.
@@ -202,6 +208,7 @@ namespace ProjectC.AI
             {
                 _target.OnHpChanged -= OnNpcHpChanged;
             }
+            if (_proxyGo != null) { Destroy(_proxyGo); _proxyGo = null; _proxyAgent = null; }
         }
 
         // T-NPC-14: server-side обработчик удара по NPC.
@@ -282,6 +289,14 @@ namespace ProjectC.AI
 
             if (platform != _ridePlatform) { BeginRide(platform); return; }
 
+            // T-CREW-03: если у палубы есть готовый ShipDeckNav — навигация прокси-агентом
+            // в локальных координатах палубы; позиция/поворот берутся из прокси (carry не нужен).
+            if (_deckNavActive && _proxyAgent != null && _state != BrainState.Dead)
+            {
+                DriveDeckNav();
+                return;
+            }
+
             Vector3 deltaPos = PlatformRideHelper.ComputeCarryDelta(
                 platform, transform.position, _rideLastPos, _rideLastRot, _carryYaw, out float deltaYaw);
 
@@ -306,7 +321,20 @@ namespace ProjectC.AI
                 _agent.updateRotation = false;
                 _agentAutoDrivePaused = true;
             }
-            if (Debug.isDebugBuild) Debug.Log($"[NpcBrain] {gameObject.name} entered moving platform '{platform.name}'");
+
+            // T-CREW-03: если корабль имеет готовый ShipDeckNav — навигация по палубе через прокси.
+            _deckNav = platform.GetComponentInParent<ShipDeckNav>();
+            if (_deckNav != null && _deckNav.IsReady)
+            {
+                EnsureProxy();
+                if (_proxyAgent != null)
+                {
+                    WarpProxyToNpc();
+                    _deckNavActive = true;
+                }
+            }
+
+            if (Debug.isDebugBuild) Debug.Log($"[NpcBrain] {gameObject.name} entered moving platform '{platform.name}' (deckNav={_deckNavActive})");
         }
 
         private void EndRide()
@@ -314,6 +342,12 @@ namespace ProjectC.AI
             if (Debug.isDebugBuild && _ridePlatform != null)
                 Debug.Log($"[NpcBrain] {gameObject.name} left moving platform '{_ridePlatform.name}'");
             _ridePlatform = null;
+
+            // T-CREW-03: выключить нав по палубе.
+            _deckNavActive = false;
+            _deckNav = null;
+            if (_proxyGo != null) _proxyGo.SetActive(false);
+
             // Вернуть управление агенту и ресинхронизировать с NavMesh.
             if (_agent != null && _agentAutoDrivePaused)
             {
@@ -321,6 +355,77 @@ namespace ProjectC.AI
                 _agent.updateRotation = true;
                 _agentAutoDrivePaused = false;
                 if (_agent.isOnNavMesh) _agent.Warp(transform.position);
+            }
+        }
+
+        // === Deck navigation via proxy agent (T-CREW-03) ===
+        // Прокси-агент живёт в фиксированном нав-фрейме ShipDeckNav и ходит по статичному
+        // навмешу палубы в ЛОКАЛЬНЫХ координатах. Мировая поза NPC = ShipRoot.TransformPoint(local),
+        // поэтому NPC корректно едет с кораблём (вкл. крен) без пере-регистрации навмеша.
+        private void EnsureProxy()
+        {
+            if (_proxyGo != null) { _proxyGo.SetActive(true); return; }
+            _proxyGo = new GameObject($"NpcDeckNavProxy_{name}");
+            _proxyGo.hideFlags = HideFlags.HideAndDontSave;
+            _proxyAgent = _proxyGo.AddComponent<NavMeshAgent>();
+            if (_agent != null)
+            {
+                _proxyAgent.agentTypeID = _agent.agentTypeID;
+                _proxyAgent.radius = _agent.radius;
+                _proxyAgent.height = _agent.height;
+                _proxyAgent.speed = _agent.speed;
+                _proxyAgent.angularSpeed = _agent.angularSpeed;
+                _proxyAgent.acceleration = _agent.acceleration;
+                _proxyAgent.stoppingDistance = _agent.stoppingDistance;
+                _proxyAgent.autoBraking = _agent.autoBraking;
+            }
+            _proxyAgent.updateRotation = false; // поворот NPC считаем сами
+            _proxyAgent.updateUpAxis = false;
+        }
+
+        private void WarpProxyToNpc()
+        {
+            if (_proxyAgent == null || _deckNav == null) return;
+            Vector3 navPos = _deckNav.DeckLocalToNav(_deckNav.WorldToDeckLocal(transform.position));
+            if (NavMesh.SamplePosition(navPos, out NavMeshHit hit, 5f, NavMesh.AllAreas))
+                _proxyAgent.Warp(hit.position);
+            else
+                _proxyAgent.Warp(navPos);
+        }
+
+        private void DriveDeckNav()
+        {
+            if (_proxyAgent == null || _deckNav == null) return;
+            if (!_proxyAgent.isOnNavMesh) { WarpProxyToNpc(); return; }
+
+            // Цель преследования → в нав-фрейм палубы.
+            if (_state == BrainState.Chase && _aggroTarget != null)
+            {
+                Vector3 targetNav = _deckNav.DeckLocalToNav(_deckNav.WorldToDeckLocal(_aggroTarget.GetPosition()));
+                _proxyAgent.isStopped = false;
+                _proxyAgent.SetDestination(targetNav);
+            }
+            else
+            {
+                // Idle/Attack — стоим (позиция всё равно едет с кораблём через TransformPoint).
+                _proxyAgent.isStopped = true;
+            }
+
+            // Мировая поза NPC из локальной позиции прокси на палубе.
+            Vector3 deckLocal = _deckNav.NavToDeckLocal(_proxyAgent.transform.position);
+            transform.position = _deckNav.DeckLocalToWorld(deckLocal);
+
+            // Поворот по направлению движения прокси (в мировых осях палубы).
+            Vector3 v = _proxyAgent.velocity;
+            if (v.sqrMagnitude > 0.01f)
+            {
+                Vector3 worldDir = _deckNav.transform.TransformVector(v);
+                worldDir.y = 0f;
+                if (worldDir.sqrMagnitude > 0.0001f)
+                {
+                    Quaternion targetRot = Quaternion.LookRotation(worldDir);
+                    transform.rotation = Quaternion.RotateTowards(transform.rotation, targetRot, angularSpeed * Time.fixedDeltaTime);
+                }
             }
         }
 
@@ -407,7 +512,7 @@ namespace ProjectC.AI
             float dist = Vector3.Distance(transform.position, targetPos);
 
             // Leash: слишком далеко от spawn → возврат.
-            if (Vector3.Distance(_spawnPoint, targetPos) > leashRange)
+            if (!_deckNavActive && Vector3.Distance(_spawnPoint, targetPos) > leashRange)
             {
                 _aggroTarget = null;
                 EnterIdle();
@@ -521,7 +626,8 @@ namespace ProjectC.AI
         {
             if (_animator == null) return;
             float speed = 0f;
-            if (_agent != null && _agent.isOnNavMesh && !_agent.isStopped) speed = _agent.velocity.magnitude;
+            if (_deckNavActive && _proxyAgent != null) speed = _proxyAgent.velocity.magnitude;
+            else if (_agent != null && _agent.isOnNavMesh && !_agent.isStopped) speed = _agent.velocity.magnitude;
             _animator.SetFloat("Speed", speed);
             _animator.SetBool("IsAttacking", _state == BrainState.Attack);
             _animator.SetBool("IsGrounded", true); // T-NPC-13: NPC всегда на NavMesh

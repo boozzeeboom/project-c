@@ -85,6 +85,8 @@ namespace ProjectC.Player
         private Vector3 _platformLastPos;
         private Quaternion _platformLastRot;
         private int _platformMissFrames;
+        private Vector3 _platformDelta;
+        private bool _onPlatform;
         private bool _platformMaskWarned;
         // Ветер: сглаженная горизонтальная скорость сноса (инерция порывов)
         private Vector3 _windVelocity = Vector3.zero;
@@ -725,7 +727,10 @@ namespace ProjectC.Player
             ApplyPlatformCarry();
 
             _isGrounded = _controller.isGrounded;
-            if (_isGrounded && _velocity.y < 0) _velocity.y = -2f;
+            // На движущейся платформе считаем персонажа «на земле»: палуба NPC может
+            // колебаться по вертикали (altHold) → isGrounded мигает и персонаж «подпрыгивает».
+            bool groundedForMovement = _isGrounded || _onPlatform;
+            if (groundedForMovement && _velocity.y < 0) _velocity.y = -2f;
 
             // R2-NONE: animator parameters
             if (_animator != null)
@@ -779,9 +784,9 @@ namespace ProjectC.Player
             //  • на земле при движении — ветер мешает/помогает бежать (добавляется к локомоции);
             //  • стоя на земле без ввода — НЕ сносим (иначе воспринимается как баг-дрейф).
             Vector3 windVel = Vector3.zero;
-            if (!_isGrounded || hasInput) windVel = _windVelocity;
+            if (!groundedForMovement || hasInput) windVel = _windVelocity;
 
-            if (_isGrounded && jump)
+            if (groundedForMovement && jump)
             {
                 _velocity.y = Mathf.Sqrt(jumpForce * -2f * gravity);
                 if (_animator != null) _animator.SetTrigger("Jump");
@@ -793,7 +798,7 @@ namespace ProjectC.Player
             // Y держит keep-grounded (-2) — нет подпрыгивания от отдельных Move.
             Vector3 motion = horizontalVel + windVel;
             motion.y += _velocity.y;
-            _controller.Move(motion * Time.deltaTime);
+            _controller.Move(motion * Time.deltaTime + _platformDelta);
         }
 
         // ==================== MOVING-PLATFORM CARRY ====================
@@ -831,6 +836,9 @@ namespace ProjectC.Player
         /// </summary>
         private void ApplyPlatformCarry()
         {
+            _platformDelta = Vector3.zero;
+            _onPlatform = false;
+
             if (!_platformCarryEnabled) return;
             if (_controller == null || !_controller.enabled) return;
 
@@ -858,6 +866,7 @@ namespace ProjectC.Player
             }
 
             _platformMissFrames = 0;
+            _onPlatform = true;
 
             // Смена/первичная привязка платформы — инициализируем кэш без рывка.
             if (platform != _currentPlatform)
@@ -888,8 +897,9 @@ namespace ProjectC.Player
                 }
             }
 
-            if (deltaPos.sqrMagnitude > 0f)
-                _controller.Move(deltaPos);
+            // НЕ двигаем контроллер здесь — дельта уходит в ЕДИНЫЙ Move в ProcessMovement
+            // (два отдельных Move за кадр заставляли isGrounded мигать → «подпрыгивание»).
+            _platformDelta = deltaPos;
 
             _platformLastPos = platform.position;
             _platformLastRot = platform.rotation;

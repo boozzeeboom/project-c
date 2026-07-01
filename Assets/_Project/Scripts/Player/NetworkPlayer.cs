@@ -40,6 +40,21 @@ namespace ProjectC.Player
         [SerializeField] private float jumpForce = 8f;
         [SerializeField] private float gravity = -20f;
 
+        [Header("Движущиеся платформы (moving-platform carry)")]
+        [Tooltip("Переносить персонажа вместе с движущейся платформой под ногами (палуба корабля, лифт и т.п.). См. docs/NPC_others_peacfull/npc_ship/09_MOVING_PLATFORM_CHARACTER_PHYSICS.md")]
+        [SerializeField] private bool _platformCarryEnabled = true;
+        [Tooltip("Слои, считающиеся движущимися платформами. Пусто (0) = carry не работает.")]
+        [SerializeField] private LayerMask _platformMask = ~0;
+        [Tooltip("Добавочная дальность probe вниз ниже подошвы контроллера (м).")]
+        [SerializeField] private float _platformProbeDistance = 0.5f;
+        [Tooltip("Радиус SphereCast для поиска платформы (м). Обычно ~радиус капсулы.")]
+        [SerializeField] private float _platformProbeRadius = 0.35f;
+        [Tooltip("Переносить курсовой поворот (yaw) платформы на персонажа. Pitch/roll НЕ переносятся никогда.")]
+        [SerializeField] private bool _carryYaw = true;
+        [Tooltip("Сколько кадров без опоры терпим, прежде чем считать что сошли с платформы (гистерезис).")]
+        [Min(1)] [SerializeField] private int _platformMissFramesToClear = 3;
+
+
         [Header("Ветер (WindManager)")]
         [Tooltip("Разрешить глобальному ветру сносить персонажа в пешем режиме.")]
         [SerializeField] private bool _globalWindEnabled = true;
@@ -65,6 +80,12 @@ namespace ProjectC.Player
         private Animator _animator;
         private Vector3 _velocity;
         private bool _isGrounded;
+        // Moving-platform carry state (owner-only, пеший режим)
+        private Transform _currentPlatform;
+        private Vector3 _platformLastPos;
+        private Quaternion _platformLastRot;
+        private int _platformMissFrames;
+        private bool _platformMaskWarned;
         // Ветер: сглаженная горизонтальная скорость сноса (инерция порывов)
         private Vector3 _windVelocity = Vector3.zero;
         private Vector3 _windVelocitySmooth = Vector3.zero;
@@ -699,6 +720,10 @@ namespace ProjectC.Player
 
         private void ProcessMovement(Vector2 moveInput, bool jump, bool run)
         {
+            // Moving-platform carry: тащим персонажа за движущейся палубой ДО локомоции,
+            // чтобы его не сдувало с летящего/поворачивающего корабля.
+            ApplyPlatformCarry();
+
             _isGrounded = _controller.isGrounded;
             if (_isGrounded && _velocity.y < 0) _velocity.y = -2f;
 
@@ -769,6 +794,105 @@ namespace ProjectC.Player
             Vector3 motion = horizontalVel + windVel;
             motion.y += _velocity.y;
             _controller.Move(motion * Time.deltaTime);
+        }
+
+        // ==================== MOVING-PLATFORM CARRY ====================
+        // См. docs/NPC_others_peacfull/npc_ship/09_MOVING_PLATFORM_CHARACTER_PHYSICS.md
+        // CharacterController не наследует движение платформы под ногами. NPC-корабли
+        // двигаются прямой записью rb.linearVelocity/MoveRotation в NavTick, поэтому
+        // палуба уезжает из-под ног. Считаем на owner-клиенте по ДЕЛЬТЕ transform платформы
+        // (её velocity на клиенте недоступен из-за server-auth NetworkTransform).
+
+        /// <summary>
+        /// Probe вниз по _platformMask. Возвращает корневой Transform движущейся платформы
+        /// под ногами (attachedRigidbody, иначе сам collider), или null.
+        /// </summary>
+        private Transform DetectGroundPlatform()
+        {
+            if (_controller == null) return null;
+
+            Vector3 origin = transform.position + _controller.center;
+            float radius = _platformProbeRadius > 0f ? _platformProbeRadius : _controller.radius;
+            float castDist = (_controller.height * 0.5f) + _platformProbeDistance;
+
+            if (Physics.SphereCast(origin, radius, Vector3.down, out RaycastHit hit,
+                    castDist, _platformMask, QueryTriggerInteraction.Ignore))
+            {
+                var rb = hit.collider.attachedRigidbody;
+                return rb != null ? rb.transform : hit.collider.transform;
+            }
+            return null;
+        }
+
+        /// <summary>
+        /// Переносит персонажа вместе с движущейся платформой под ногами: позиция + yaw
+        /// (курсовой поворот вокруг мировой оси Y). Pitch/roll платформы игнорируются.
+        /// Owner-only, пеший режим. Вызывается в начале ProcessMovement.
+        /// </summary>
+        private void ApplyPlatformCarry()
+        {
+            if (!_platformCarryEnabled) return;
+            if (_controller == null || !_controller.enabled) return;
+
+            if (_platformMask == 0)
+            {
+                if (!_platformMaskWarned)
+                {
+                    Debug.LogWarning($"[NetworkPlayer:{OwnerClientId}] _platformMask пуст — moving-platform carry не работает. Назначь слои палуб/платформ в инспекторе.");
+                    _platformMaskWarned = true;
+                }
+                return;
+            }
+
+            Transform platform = DetectGroundPlatform();
+
+            if (platform == null)
+            {
+                _platformMissFrames++;
+                if (_platformMissFrames >= _platformMissFramesToClear && _currentPlatform != null)
+                {
+                    Debug.Log($"[NetworkPlayer:{OwnerClientId}] left moving platform '{_currentPlatform.name}'");
+                    _currentPlatform = null;
+                }
+                return;
+            }
+
+            _platformMissFrames = 0;
+
+            // Смена/первичная привязка платформы — инициализируем кэш без рывка.
+            if (platform != _currentPlatform)
+            {
+                _currentPlatform = platform;
+                _platformLastPos = platform.position;
+                _platformLastRot = platform.rotation;
+                Debug.Log($"[NetworkPlayer:{OwnerClientId}] entered moving platform '{platform.name}'");
+                return;
+            }
+
+            // Δ позиции палубы (включая вертикаль — держит на палубе при взлёте/снижении).
+            Vector3 deltaPos = platform.position - _platformLastPos;
+
+            // Δ yaw вокруг мировой оси Y (pitch/roll платформы НЕ переносим).
+            if (_carryYaw)
+            {
+                float deltaYaw = Mathf.DeltaAngle(_platformLastRot.eulerAngles.y, platform.rotation.eulerAngles.y);
+                if (Mathf.Abs(deltaYaw) > 0.0001f)
+                {
+                    // Орбитальное смещение вокруг оси платформы, чтобы при повороте не сносило вбок.
+                    Vector3 offset = transform.position - platform.position;
+                    offset.y = 0f;
+                    Vector3 rotatedOffset = Quaternion.AngleAxis(deltaYaw, Vector3.up) * offset;
+                    deltaPos += rotatedOffset - offset;
+                    // Доворот самого персонажа за палубой.
+                    transform.rotation = Quaternion.AngleAxis(deltaYaw, Vector3.up) * transform.rotation;
+                }
+            }
+
+            if (deltaPos.sqrMagnitude > 0f)
+                _controller.Move(deltaPos);
+
+            _platformLastPos = platform.position;
+            _platformLastRot = platform.rotation;
         }
 
         /// <summary>
@@ -877,6 +1001,11 @@ namespace ProjectC.Player
                 // Renderer'ы остаются включены — игрок стоит в кресле/у штурвала.
                 // В будущем — анимация сидения.
                 _controller.enabled = false;
+
+                // Moving-platform carry: сбрасываем опору, чтобы после выхода из корабля
+                // не было скачка от устаревшей дельты платформы.
+                _currentPlatform = null;
+                _platformMissFrames = 0;
 
                 // COMPOSITE SHIP (Phase 1): парентим игрока к корню корабля.
                 // worldPositionStays=true — игрок сохраняет мировую позицию (своё место в кресле).

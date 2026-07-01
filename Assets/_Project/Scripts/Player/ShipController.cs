@@ -206,6 +206,16 @@ namespace ProjectC.Player
         [Tooltip("Время затухания ветра при выходе из зоны")]
         [SerializeField] private float windDecayTime = 1.5f;
 
+        [Header("Глобальный Ветер (WindManager)")]
+        [Tooltip("Включить влияние глобального ветра (WindManager) на этот корабль. Локальные WindZone работают независимо и складываются аддитивно.")]
+        [SerializeField] private bool _globalWindEnabled = true;
+        [Tooltip("Коэффициент силы глобального ветра: ньютонов на 1 м/с скорости ветра. Итоговая сила = dir * speed * этот коэффициент, затем * windInfluence * windExposure.")]
+        [SerializeField] private float _globalWindForceScale = 8f;
+        [Range(0f, 1f)]
+        [Tooltip("Доля вертикальной составляющей глобального ветра (0 = только горизонт, не конфликтует с коридорами высот; 1 = полный 3D-снос).")]
+        [SerializeField] private float _globalWindVerticalFactor = 0f;
+
+
         [Header("Cargo (T-CARGO-06, базовые лимиты)")]
         [Tooltip("Базовое максимальное количество грузовых слотов. Модули с cargoSlotsBonus добавляют flat.")]
         [Min(0)] [SerializeField] private int baseMaxCargoSlots = 4;
@@ -287,6 +297,11 @@ namespace ProjectC.Player
         // Wind state — зарегистрированные зоны
         private List<ProjectC.Ship.WindZone> _activeWindZones = new();
         private Vector3 _currentWindForce;
+
+        // Глобальный ветер (WindManager) — сглаженная текущая сила и дроссель логов
+        private Vector3 _currentGlobalWindForce = Vector3.zero;
+        private float _lastGlobalWindLogTime = -10f;
+
 
         private void Awake()
         {
@@ -1063,6 +1078,10 @@ namespace ProjectC.Player
             // 9.6. Ветер (Сессия 3)
             ApplyWind(dt);
 
+            // 9.65. Глобальный ветер из WindManager (аддитивно к зонам)
+            ApplyGlobalWind(dt);
+
+
             // 10. Ограничение скорости (с учётом штрафа дозаправки)
             ClampVelocity(isRefueling);
 
@@ -1775,6 +1794,65 @@ namespace ProjectC.Player
                 _rb.AddForce(windEffect, ForceMode.Force);
             }
         }
+
+        /// <summary>
+        /// Применить глобальный ветер из WindManager (в дополнение к локальным WindZone).
+        /// Все силы настраиваются в инспекторе: _globalWindForceScale (Н на м/с),
+        /// windInfluence, windExposure. Server-only (вызывается из server-блока FixedUpdate).
+        /// </summary>
+        private void ApplyGlobalWind(float dt)
+        {
+            float decay = Mathf.Max(0.01f, windDecayTime);
+
+            // Выключено — плавно гасим накопленную силу и выходим.
+            if (!_globalWindEnabled)
+            {
+                _currentGlobalWindForce = Vector3.Lerp(_currentGlobalWindForce, Vector3.zero, dt / decay);
+                return;
+            }
+
+            var wind = Core.WindManager.Instance;
+            if (wind == null)
+            {
+                if (Time.time - _lastGlobalWindLogTime > 1f)
+                {
+                    _lastGlobalWindLogTime = Time.time;
+                    Debug.LogWarning($"[ShipController:{name}] Global wind enabled, но WindManager.Instance == null — глобальный ветер не применяется.");
+                }
+                _currentGlobalWindForce = Vector3.Lerp(_currentGlobalWindForce, Vector3.zero, dt / decay);
+                return;
+            }
+
+            // Направление: приглушаем вертикаль, чтобы не конфликтовать с системой коридоров высот.
+            Vector3 dir = wind.CurrentWindDirection;
+            dir.y *= _globalWindVerticalFactor;
+            if (dir.sqrMagnitude > 0.0001f)
+                dir.Normalize();
+            else
+                dir = Vector3.zero;
+
+            // Целевая сила (Н) = направление * скорость(м/с) * коэффициент(Н на м/с).
+            Vector3 targetForce = dir * wind.CurrentWindSpeed * _globalWindForceScale;
+
+            // Плавный переход (как у зон).
+            _currentGlobalWindForce = Vector3.Lerp(_currentGlobalWindForce, targetForce, dt / decay);
+
+            // Классовая экспозиция + модификатор модулей — те же множители, что и у WindZone.
+            float effectiveWindExposure = windExposure + _moduleWindExposureMod;
+            Vector3 windEffect = _currentGlobalWindForce * windInfluence * effectiveWindExposure;
+
+            if (windEffect.sqrMagnitude > 0.01f)
+            {
+                _rb.AddForce(windEffect, ForceMode.Force);
+            }
+
+            if (Time.time - _lastGlobalWindLogTime > 1f)
+            {
+                _lastGlobalWindLogTime = Time.time;
+                Debug.Log($"[ShipController:{name}] GlobalWind dir={dir} speed={wind.CurrentWindSpeed:F1} force={windEffect.magnitude:F1}N");
+            }
+        }
+
 
         // ==================== COMPOSITE SHIP (Phase 0) ====================
 

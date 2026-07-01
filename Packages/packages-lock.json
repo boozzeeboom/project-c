@@ -8,7 +8,7 @@
         "com.unity.inputsystem": "1.1.1",
         "com.unity.cloud.gltfast": "6.12.1"
       },
-      "hash": "bb50b24949b88bf02af22bb35324d87aa22d0a12"
+      "hash": "620446adff3fa0b064fdea90ee35100370006146"
     },
     "com.coplaydev.unity-mcp": {
       "version": "https://github.com/CoplayDev/unity-mcp.git?path=/MCPForUnity#main",
@@ -25,7 +25,17 @@
         "com.unity.nuget.newtonsoft-json": "3.0.2",
         "com.unity.test-framework": "1.1.31"
       },
-      "hash": "85c101f5329ec1b0c6f70cba44614166dd78f53c"
+      "hash": "11836003a5e2ffcb7715ecec7e1fbb9d9cdb5bb8"
+    },
+    "com.ramenvr.aura-unity": {
+      "version": "https://github.com/ramenvr/AuraForUnityPlugin.git",
+      "depth": 0,
+      "source": "git",
+      "dependencies": {
+        "com.unity.inputsystem": "1.1.1",
+        "com.unity.cloud.gltfast": "6.12.1"
+      },
+      "hash": "c4669ac5cbd98525fc00fdf925203388ee78c75c"
     },
     "com.unity.2d.sprite": {
       "version": "1.0.0",

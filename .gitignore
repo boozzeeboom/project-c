@@ -82,6 +82,9 @@ docs/archive/
 .vscode/
 #hermes
 *.hermes/
+#Aura
+*.Aura
+[Pp]ackages/Aura
 
 
 # Graphify output (generated, per-session)
@@ -122,3 +125,5 @@ Assets/_Project/ScriptableObjects/DayNight/MoonMaterial.mat*
 Assets/_Project/Materials/Moon/MoonMaterial.mat*
 #humanbasic_free
 /[Aa]ssets/Kevin Iglesias*
+Packages/manifest.json
+Packages/packages-lock.json

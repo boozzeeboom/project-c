@@ -252,6 +252,21 @@ namespace ProjectC.PeacefulShip.Stations
         public string AssignedPadId { get; set; }
         public bool useNewNavTick = true;
 
+        // === Control authority (handoff): игрок vs NPC-автопилот (см. 08_CONTROL_AUTHORITY_AND_PHYSICS.md) ===
+        public enum ControlAuthority : byte { None, NpcAutopilot, HumanPilot }
+        private bool _playerControlled;
+        /// <summary>true, пока управление у живого пилота (NavTick уступает силовому конвейеру).</summary>
+        public bool IsPlayerControlled => _playerControlled;
+        /// <summary>Кто сейчас управляет кораблём.</summary>
+        public ControlAuthority Authority
+        {
+            get
+            {
+                var ship = Ship;
+                return (ship != null && ship.PilotCount > 0) ? ControlAuthority.HumanPilot : ControlAuthority.NpcAutopilot;
+            }
+        }
+
         // === T-NS-AV02: ship-to-ship proximity avoidance (07_SHIP_PROXIMITY_AVOIDANCE.md) ===
         [Header("Ship avoidance maneuver (server-only)")]
         [Tooltip("Скорость расхождения от соседа (м/с).")]
@@ -299,6 +314,27 @@ namespace ProjectC.PeacefulShip.Stations
             if (ship == null) return;
             // M3.2.10: guard — если спавн тайминг или IsDocked до NavMode, синхронизируем.
             // НО НЕ делаем return — Docked handler должен дойти до dwell-check.
+            // Control authority: живой пилот на борту → NPC уступает управление силовому конвейеру игрока.
+            if (ship.PilotCount > 0)
+            {
+                if (!_playerControlled)
+                {
+                    _playerControlled = true;
+                    Debug.Log($"[NpcShipController:NPC:{npcInstanceId:X}] Player took control — NPC autopilot yielding");
+                }
+                return; // ничего не пишем в Rigidbody — рулит игрок
+            }
+            if (_playerControlled)
+            {
+                // Игрок только что вышел — возвращаем NPC-автопилот
+                _playerControlled = false;
+                Debug.Log($"[NpcShipController:NPC:{npcInstanceId:X}] Player released control — NPC autopilot resuming");
+                if (CurrentMode == NavMode.Docked && !ship.IsDocked) SetMode(NavMode.Cruising);
+                var resumeStation = ResolveTargetStation();
+                if (resumeStation.HasValue) CruiseTargetPos = resumeStation.Value;
+                _avoidOther = null;
+            }
+
             if (ship.IsDocked && CurrentMode != NavMode.Docked) {
                 SetMode(NavMode.Docked);
                 return;

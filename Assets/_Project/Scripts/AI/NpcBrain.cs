@@ -36,6 +36,7 @@ using Unity.Netcode;
 using ProjectC.Combat;
 using ProjectC.Combat.Core;
 using System.Linq;
+using ProjectC.Core;
 
 namespace ProjectC.AI
 {
@@ -103,6 +104,22 @@ namespace ProjectC.AI
         [Header("Tick (server-side)")]
         [Tooltip("AI tick rate (server-side Update). 30 = ~2× в сек @ 60fps.")]
         [Range(1, 60)] public int tickRate = 10;
+        [Header("Платформа (moving-platform carry, server-side)")]
+        [Tooltip("Возить NPC вместе с движущейся палубой корабля (не сдувать). См. docs/Character/Skills/real-time-combat/npc-enemy/01_CREW_ON_MOVING_SHIP.md")]
+        [SerializeField] private bool _platformCarryEnabled = true;
+        [Tooltip("Слои палуб/движущихся платформ. Пусто (0) = carry выключен.")]
+        [SerializeField] private LayerMask _platformMask;
+        [Tooltip("Высота точки старта probe над пивотом NPC (м).")]
+        [SerializeField] private float _platformProbeUp = 0.5f;
+        [Tooltip("Добавочная дальность probe вниз ниже пивота (м).")]
+        [SerializeField] private float _platformProbeDistance = 0.6f;
+        [Tooltip("Радиус SphereCast для поиска палубы (м).")]
+        [SerializeField] private float _platformProbeRadius = 0.3f;
+        [Tooltip("Переносить курсовой поворот (yaw) палубы. Pitch/roll НЕ переносятся.")]
+        [SerializeField] private bool _carryYaw = true;
+        [Tooltip("Гистерезис схода с платформы (кадры без опоры).")]
+        [Min(1)] [SerializeField] private int _platformMissFramesToClear = 3;
+
 
         // --- runtime ---
         private NavMeshAgent _agent;
@@ -112,6 +129,13 @@ namespace ProjectC.AI
         private IDamageTarget _aggroTarget;
         private float _nextTickTime;
         private float _lastAttackTime = -10f;
+        // Moving-platform carry (server-side)
+        private Transform _ridePlatform;
+        private Vector3 _rideLastPos;
+        private Quaternion _rideLastRot;
+        private int _rideMissFrames;
+        private bool _agentAutoDrivePaused;
+
 
         // T-NPC-14: passive aggro tracking.
         private bool _isAggrod;
@@ -234,6 +258,72 @@ namespace ProjectC.AI
             _nextTickTime = Time.unscaledTime + (1f / Mathf.Max(1, tickRate));
             Tick();
         }
+        // === Moving-platform carry (server-side, T-CREW-01) ===
+        // NavMeshAgent привязан к мировому NavMesh и не движется с палубой, поэтому на
+        // движущемся корабле NPC "сдувает". Возим NPC за палубой на сервере (transform
+        // авторитетен и реплицируется NetworkTransform). Формула — общий PlatformRideHelper.
+        private void FixedUpdate()
+        {
+            if (!IsServer || !_platformCarryEnabled) return;
+            if (_platformMask == 0) return;
+
+            Vector3 origin = transform.position + Vector3.up * _platformProbeUp;
+            float castDist = _platformProbeUp + _platformProbeDistance;
+            Transform platform = PlatformRideHelper.DetectPlatform(origin, _platformProbeRadius, castDist, _platformMask);
+
+            if (platform == null)
+            {
+                _rideMissFrames++;
+                if (_rideMissFrames >= _platformMissFramesToClear && _ridePlatform != null) EndRide();
+                return;
+            }
+
+            _rideMissFrames = 0;
+
+            if (platform != _ridePlatform) { BeginRide(platform); return; }
+
+            Vector3 deltaPos = PlatformRideHelper.ComputeCarryDelta(
+                platform, transform.position, _rideLastPos, _rideLastRot, _carryYaw, out float deltaYaw);
+
+            if (deltaPos.sqrMagnitude > 0f) transform.position += deltaPos;
+            if (Mathf.Abs(deltaYaw) > 0.0001f)
+                transform.rotation = Quaternion.AngleAxis(deltaYaw, Vector3.up) * transform.rotation;
+
+            _rideLastPos = platform.position;
+            _rideLastRot = platform.rotation;
+        }
+
+        private void BeginRide(Transform platform)
+        {
+            _ridePlatform = platform;
+            _rideLastPos = platform.position;
+            _rideLastRot = platform.rotation;
+            // Пока на палубе — NavMeshAgent не должен сам управлять позицией/поворотом
+            // (мировой NavMesh под кораблём тянул бы NPC назад).
+            if (_agent != null && !_agentAutoDrivePaused)
+            {
+                _agent.updatePosition = false;
+                _agent.updateRotation = false;
+                _agentAutoDrivePaused = true;
+            }
+            if (Debug.isDebugBuild) Debug.Log($"[NpcBrain] {gameObject.name} entered moving platform '{platform.name}'");
+        }
+
+        private void EndRide()
+        {
+            if (Debug.isDebugBuild && _ridePlatform != null)
+                Debug.Log($"[NpcBrain] {gameObject.name} left moving platform '{_ridePlatform.name}'");
+            _ridePlatform = null;
+            // Вернуть управление агенту и ресинхронизировать с NavMesh.
+            if (_agent != null && _agentAutoDrivePaused)
+            {
+                _agent.updatePosition = true;
+                _agent.updateRotation = true;
+                _agentAutoDrivePaused = false;
+                if (_agent.isOnNavMesh) _agent.Warp(transform.position);
+            }
+        }
+
 
         private void Tick()
         {

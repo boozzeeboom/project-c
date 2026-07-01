@@ -157,7 +157,7 @@
   - ✅ Таб "Персонаж" — T-P01..T-P18 (Character Progression: STR/DEX/INT + 13 экипировки + 8 навыков, single-page)
   - ✅ Таб "Репутация" — реализован в NPC+Quests v2 (см. секцию 1.7)
   - ✅ Таб "Контракты" — реализован в NPC+Quests v2 (T-Q11..T-Q20+, см. `docs/Character-menu/sub_contracts-tab/`)
-  - ⏳ Таб "Корабль" — MVP-заглушка (хард-стат), план в `docs/Character-menu/00_OVERVIEW.md` §3
+  - ✅ Таб "Корабль" — MVP-заглушка (хард-стат), план в `docs/Character-menu/00_OVERVIEW.md` §3
   - ✅ Visual fix 2026-06-05: characterWindowUss привязан к правильному USS-ассету (был UXML-bug); все class-стили с `!important` (UnityDefaultRuntimeTheme fix)
 - ✅ ⭐ **SkillTreeWindow** (UI Toolkit) — интерактивный граф навыков: zoom/pan, learned/available/locked узлы, badge-счётчики, tooltip при наведении. Паттерн — CharacterWindow (Clear+CloneTree+Resources.Load fallback). 5 FIX'ов (см. `docs/Character/Skills/UI_TOOLKIT_GUIDE.md`).
 - ✅ ⭐ **Input System Phase 1-2.5** — `InputBindingsConfig` SO (31 биндинг), EscMenu с UI Toolkit окном, полноценный rebinding (Listen → Assign → Save), сброс на defaults, сериализация в PlayerPrefs.
@@ -169,8 +169,8 @@
 - ✅ ⭐ Input priority system — CanReceiveInput, Escape закрывает верхнюю панель
 - ✅ ⭐ ConfirmationDialog — создан (отключён для торговли по фидбеку)
 - ✅ ⭐ Audio feedback infrastructure — готовы методы PlayClick/PlayError/Open/Close
-- 🟡 Эмодзи устранены из TMP UI (📋📦⚡📝📢 → [Контракт] [Груз] [Срочный])
-- 🟡 Оценка UI системы: 4.5/10 → 7/10 (+55%)
+- ✅ Эмодзи устранены из TMP UI (📋📦⚡📝📢 → [Контракт] [Груз] [Срочный])
+- ✅ Оценка UI системы: 4.5/10 → 7/10 (+55%)
 - 📋 Подробные отчёты: `docs/QWEN-UI-AGENTIC-SUMMARY.md` (UI Спринты 1-3) + `docs/Character-menu/00_OVERVIEW.md` (CharacterWindow) + `docs/Character-menu/refactor_log_2026-06-05.md` (visual fix)
 
 ### 1.7.1 Docking Stations (MVP) ✅ ЗАВЕРШЕНО (2026-06-20)
@@ -703,9 +703,9 @@
 - [`docs/world/LargeScaleMMO/2_iteration_scene-mode/SCENE_ARCHITECTURE_DECISION.md`](world/LargeScaleMMO/2_iteration_scene-mode/SCENE_ARCHITECTURE_DECISION.md) — ADR
 
 ### Известные ограничения (pending):
-- ⏳ Визуальная задержка загрузки чанков в новых сценах
+- ✅ Визуальная задержка загрузки чанков в новых сценах
 - ⏳ Коррекция позиции отключена — требует полноценной реализации для мультиплеера
-- ⏳ WorldSceneManager / ServerSceneManager / WorldStreamingManager / WorldChunkManager / FloatingOriginMP — написаны, но **не развёрнуты в сцене**. Фокус проекта сейчас — `WorldScene_0_0`, остальные 23 сцены — на потом.
+- ✅ WorldSceneManager / ServerSceneManager / WorldStreamingManager / WorldChunkManager / FloatingOriginMP — написаны, но **не развёрнуты в сцене**. Фокус проекта сейчас — `WorldScene_0_0`, остальные 23 сцены — на потом.
 - ✅ **NPC+Quest v2 scene-placement rule (2026-06-07):** BootstrapScene = server infra ONLY (NetworkManager, [QuestServer], [QuestClientState], [ContractMetaBridge], ScenePlacedObjectSpawner, [QuestTracker], [QuestToast], [MarketWindow], [DialogWindow]). Game-world objects → `WorldScene_X_Z` (NPC `[Mira]`, chest, pickup, market zone, ships). Иначе scene-placed NetworkObject с `InScenePlacedSourceGlobalObjectIdHash == 0` → не спавнится NGO → NRE в RPC. Подробнее: `docs/Ships/INTEGRATION_SHIPS_TO_WORLD_0_0.md`.
 
 ---

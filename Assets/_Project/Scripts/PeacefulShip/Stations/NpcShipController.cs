@@ -252,7 +252,45 @@ namespace ProjectC.PeacefulShip.Stations
         public string AssignedPadId { get; set; }
         public bool useNewNavTick = true;
 
-        public enum NavMode : byte { Docked, Lifting, Yawing, Cruising, Berthing }
+        // === T-NS-AV02: ship-to-ship proximity avoidance (07_SHIP_PROXIMITY_AVOIDANCE.md) ===
+        [Header("Ship avoidance maneuver (server-only)")]
+        [Tooltip("Скорость расхождения от соседа (м/с).")]
+        [SerializeField] private float avoidSeparateSpeed = 8f;
+        [Tooltip("Длительность фазы расхождения (с).")]
+        [SerializeField] private float avoidSeparateTime = 1.5f;
+        [Tooltip("Пауза после расхождения (с).")]
+        [SerializeField] private float avoidStopTime = 0.7f;
+        [Tooltip("Скорость отъезда (м/с).")]
+        [SerializeField] private float avoidBackOffSpeed = 5f;
+        [Tooltip("Длительность отъезда (с).")]
+        [SerializeField] private float avoidBackOffTime = 1.0f;
+        [Tooltip("Предохранитель: максимум времени в манёвре (с).")]
+        [SerializeField] private float avoidTimeout = 8f;
+
+        private enum AvoidPhase : byte { Separate, Stop, BackOff }
+        private AvoidPhase _avoidPhase;
+        private float _avoidPhaseEnteredAt;
+        private float _avoidStartedAt;
+        private NavMode _resumeMode = NavMode.Cruising;
+        private NpcShipController _avoidOther;
+
+        private NpcProximityZone _proximityZone;
+        private bool _proximityZoneResolved;
+        /// <summary>Ленивая ссылка на зону расхождения (может отсутствовать — тогда манёвр выключен).</summary>
+        public NpcProximityZone ProximityZone
+        {
+            get
+            {
+                if (!_proximityZoneResolved)
+                {
+                    _proximityZone = GetComponent<NpcProximityZone>();
+                    _proximityZoneResolved = true;
+                }
+                return _proximityZone;
+            }
+        }
+
+        public enum NavMode : byte { Docked, Lifting, Yawing, Cruising, Berthing, Avoiding }
 
         /// <summary>Вызывается из NpcShipWorld.Update каждый FixedUpdate.</summary>
         public void NavTick(float dt) {
@@ -292,11 +330,23 @@ namespace ProjectC.PeacefulShip.Stations
                 return;
             }
 
+            // T-NS-AV02: расхождение NPC-кораблей — только в свободном круизе.
+            if (CurrentMode == NavMode.Cruising)
+            {
+                var pz = ProximityZone;
+                if (pz != null)
+                {
+                    var intruder = pz.FindClosestConflict(out _);
+                    if (intruder != null) EnterAvoid(rb, intruder);
+                }
+            }
+
             switch (CurrentMode) {
                 case NavMode.Lifting: TickLift(rb); break;
                 case NavMode.Yawing: TickYaw(rb); break;
                 case NavMode.Cruising: TickCruise(rb); break;
                 case NavMode.Berthing: TickBerth(rb); break;
+                case NavMode.Avoiding: TickAvoid(rb); break;
             }
         }
 
@@ -513,5 +563,70 @@ namespace ProjectC.PeacefulShip.Stations
             _scheduleAdvancedAfterDock = true;  // M3.2.11: не дать Docked handlerу advance снова
             Debug.Log($"[NpcShipController:NPC:{npcInstanceId:X}] Schedule advanced to {state.CurrentRoute.toLocationId}");
         }
+
+// === T-NS-AV02: ship-to-ship avoidance maneuver ===
+
+        void EnterAvoid(Rigidbody rb, NpcShipController other) {
+            _resumeMode = (CurrentMode == NavMode.Avoiding) ? NavMode.Cruising : CurrentMode;
+            _avoidOther = other;
+            _avoidPhase = AvoidPhase.Separate;
+            _avoidPhaseEnteredAt = Time.time;
+            _avoidStartedAt = Time.time;
+            SetMode(NavMode.Avoiding);
+        }
+
+        void TickAvoid(Rigidbody rb) {
+            // Предохранитель — не зависаем в манёвре
+            if (Time.time - _avoidStartedAt > avoidTimeout) { ResumeFromAvoid(rb); return; }
+
+            // Горизонтальный вектор "от соседа"
+            Vector3 away = Vector3.zero;
+            if (_avoidOther != null) {
+                away = rb.position - _avoidOther.transform.position;
+                away.y = 0f;
+            }
+            if (away.sqrMagnitude < 0.01f) away = -transform.forward;
+            away.Normalize();
+
+            float t = Time.time - _avoidPhaseEnteredAt;
+            switch (_avoidPhase) {
+                case AvoidPhase.Separate:
+                    rb.linearVelocity = new Vector3(away.x * avoidSeparateSpeed, 0f, away.z * avoidSeparateSpeed);
+                    rb.angularVelocity = Vector3.zero;
+                    if (t >= avoidSeparateTime) { _avoidPhase = AvoidPhase.Stop; _avoidPhaseEnteredAt = Time.time; }
+                    break;
+                case AvoidPhase.Stop:
+                    rb.linearVelocity = Vector3.zero;
+                    rb.angularVelocity = Vector3.zero;
+                    if (t >= avoidStopTime) { _avoidPhase = AvoidPhase.BackOff; _avoidPhaseEnteredAt = Time.time; }
+                    break;
+                case AvoidPhase.BackOff:
+                    rb.linearVelocity = new Vector3(away.x * avoidBackOffSpeed, 0f, away.z * avoidBackOffSpeed);
+                    rb.angularVelocity = Vector3.zero;
+                    if (t >= avoidBackOffTime) {
+                        if (IsClearOfConflict()) ResumeFromAvoid(rb);
+                        else { _avoidPhase = AvoidPhase.Separate; _avoidPhaseEnteredAt = Time.time; }
+                    }
+                    break;
+            }
+        }
+
+        bool IsClearOfConflict() {
+            if (_avoidOther == null) return true;
+            var pz = ProximityZone;
+            if (pz == null) return true;
+            float d = Vector3.Distance(transform.position, _avoidOther.transform.position);
+            float otherAvoid = _avoidOther.ProximityZone != null ? _avoidOther.ProximityZone.AvoidanceRadius : 0f;
+            return d >= pz.ClearRadius + otherAvoid;
+        }
+
+        void ResumeFromAvoid(Rigidbody rb) {
+            rb.linearVelocity = Vector3.zero;
+            rb.angularVelocity = Vector3.zero;
+            _avoidOther = null;
+            // Возврат на прошлый маршрут: прежний режим + прежняя CruiseTargetPos (не менялась)
+            SetMode(_resumeMode == NavMode.Avoiding ? NavMode.Cruising : _resumeMode);
+        }
+
     }
 }

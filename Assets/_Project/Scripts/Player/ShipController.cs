@@ -1832,7 +1832,8 @@ namespace ProjectC.Player
                 dir = Vector3.zero;
 
             // Целевая сила (Н) = направление * скорость(м/с) * коэффициент(Н на м/с).
-            Vector3 targetForce = dir * wind.CurrentWindSpeed * _globalWindForceScale;
+                        // Множитель с WindManager (глобальный тюнинг влияния ветра на все корабли).
+            Vector3 targetForce = dir * wind.CurrentWindSpeed * _globalWindForceScale * wind.ShipWindMultiplier;
 
             // Плавный переход (как у зон).
             _currentGlobalWindForce = Vector3.Lerp(_currentGlobalWindForce, targetForce, dt / decay);

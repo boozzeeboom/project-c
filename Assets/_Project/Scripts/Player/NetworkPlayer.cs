@@ -40,6 +40,16 @@ namespace ProjectC.Player
         [SerializeField] private float jumpForce = 8f;
         [SerializeField] private float gravity = -20f;
 
+        [Header("Ветер (WindManager)")]
+        [Tooltip("Разрешить глобальному ветру сносить персонажа в пешем режиме.")]
+        [SerializeField] private bool _globalWindEnabled = true;
+        [Tooltip("Базовый снос ветром: м/с сноса на 1 м/с скорости ветра (до умножения на WindManager.CharacterWindMultiplier). 0 = без сноса.")]
+        [SerializeField] private float _windDriftScale = 0.15f;
+        [Tooltip("Время сглаживания порывов ветра (инерция сноса). Больше = мягче нарастание/затухание.")]
+        [SerializeField] private float _windSmoothTime = 0.5f;
+
+
+
         [Header("Камера")]
         [SerializeField] private ThirdPersonCamera cameraPrefab;
 
@@ -55,6 +65,10 @@ namespace ProjectC.Player
         private Animator _animator;
         private Vector3 _velocity;
         private bool _isGrounded;
+        // Ветер: сглаженная горизонтальная скорость сноса (инерция порывов)
+        private Vector3 _windVelocity = Vector3.zero;
+        private Vector3 _windVelocitySmooth = Vector3.zero;
+
         private ThirdPersonCamera _myCamera;
 
         // Состояние
@@ -623,6 +637,9 @@ namespace ProjectC.Player
 
                 ProcessMovement(_moveInput, _jumpPressed, _runPressed);
 
+                // Снос ветром интегрирован в ProcessMovement (единый Move, без подпрыгивания)
+
+
                 // E — подбор ИЛИ открыть рынок (если в MarketZone и рядом нет сундука)
                 if (IsActionJustPressed(InputBindingsConfig.GameAction.Interact))
                 {
@@ -701,8 +718,6 @@ namespace ProjectC.Player
                         inCombat = true;
                 }
                 _animator.SetBool("InCombat", inCombat);
-
-                // T-NPC-13: BlendTree MoveX/MoveY (поставлены ниже после вычисления hasInput).
             }
 
             Vector3 forward = _myCamera != null ? _myCamera.CameraForward : Vector3.forward;
@@ -714,14 +729,16 @@ namespace ProjectC.Player
             // T-NPC-13: BlendTree MoveX/MoveY (directional locomotion).
             if (_animator != null)
             {
-                // Character physically rotates toward moveDirection via LookRotation.
-                // BlendTree always plays Forward animation.
                 _animator.SetFloat("MoveX", 0f);
                 _animator.SetFloat("MoveY", hasInput ? 1f : 0f);
             }
 
-            
-            // moveDirection + hasInput уже вычислены выше (для BlendTree MoveX/MoveY).
+            // --- Ветер: сглаженная скорость сноса (инерция порывов) ---
+            Vector3 targetWind = GetGlobalWindTargetVelocity();
+            _windVelocity = Vector3.SmoothDamp(_windVelocity, targetWind, ref _windVelocitySmooth, Mathf.Max(0.01f, _windSmoothTime));
+
+            // Горизонтальная скорость локомоции
+            Vector3 horizontalVel = Vector3.zero;
             if (hasInput)
             {
                 moveDirection.Normalize();
@@ -729,8 +746,15 @@ namespace ProjectC.Player
                 transform.rotation = Quaternion.Slerp(transform.rotation, targetRotation, rotationSpeed * Time.deltaTime);
 
                 float currentSpeed = run ? runSpeed : walkSpeed;
-                _controller.Move(moveDirection * currentSpeed * Time.deltaTime);
+                horizontalVel = moveDirection * currentSpeed;
             }
+
+            // Куда добавляем ветер:
+            //  • в воздухе (прыжок/падение) — полный снос;
+            //  • на земле при движении — ветер мешает/помогает бежать (добавляется к локомоции);
+            //  • стоя на земле без ввода — НЕ сносим (иначе воспринимается как баг-дрейф).
+            Vector3 windVel = Vector3.zero;
+            if (!_isGrounded || hasInput) windVel = _windVelocity;
 
             if (_isGrounded && jump)
             {
@@ -739,8 +763,50 @@ namespace ProjectC.Player
             }
 
             _velocity.y += gravity * Time.deltaTime;
-            _controller.Move(_velocity * Time.deltaTime);
+
+            // Единый Move: локомоция + ветер (гориз.) + гравитация/прыжок (верт.).
+            // Y держит keep-grounded (-2) — нет подпрыгивания от отдельных Move.
+            Vector3 motion = horizontalVel + windVel;
+            motion.y += _velocity.y;
+            _controller.Move(motion * Time.deltaTime);
         }
+
+        /// <summary>
+        /// Снос персонажа глобальным ветром (WindManager). Owner-only, только пеший режим.
+        /// Горизонтальный дрейф через CharacterController.Move. Множители в инспекторе:
+        /// _windDriftScale (на игроке) × WindManager.CharacterWindMultiplier (глобально).
+        /// </summary>
+        /// <summary>
+        /// Горизонтальная скорость сноса персонажа глобальным ветром (WindManager), м/с.
+        /// Возвращается как вектор скорости и складывается с гравитацией в ЕДИНЫЙ
+        /// CharacterController.Move в ProcessMovement — это убирает «подпрыгивание» от
+        /// отдельного горизонтального Move (контроллер остаётся прижат к земле
+        /// keep-grounded -2 по Y). Owner-only (ProcessMovement вызывается только у owner в пешем режиме).
+        /// Множители: _windDriftScale (игрок) × WindManager.CharacterWindMultiplier (глобально).
+        /// </summary>
+        /// <summary>
+        /// Целевая горизонтальная скорость сноса ветром (WindManager), м/с — ДО сглаживания.
+        /// Сглаживается в ProcessMovement через SmoothDamp (инерция порывов), затем применяется
+        /// только в воздухе или при движении (стоящего на земле не сносит).
+        /// Множители: _windDriftScale (игрок) × WindManager.CharacterWindMultiplier (глобально).
+        /// </summary>
+        private Vector3 GetGlobalWindTargetVelocity()
+        {
+            if (!_globalWindEnabled) return Vector3.zero;
+            var wind = ProjectC.Core.WindManager.Instance;
+            if (wind == null) return Vector3.zero;
+
+            Vector3 dir = wind.CurrentWindDirection;
+            dir.y = 0f;  // только горизонтальный снос
+            if (dir.sqrMagnitude < 0.0001f) return Vector3.zero;
+            dir.Normalize();
+
+            float driftSpeed = wind.CurrentWindSpeed * _windDriftScale * wind.CharacterWindMultiplier;
+            if (driftSpeed <= 0.001f) return Vector3.zero;
+
+            return dir * driftSpeed;
+        }
+
 
         // ==================== КОРАБЛЬ ====================
 

@@ -52,7 +52,7 @@
 3. **Базовая архитектура:** ✅
    - ✅ Unity Netcode for GameObjects (вместо Mirror)
    - ✅ Прототип серверной части: .NET 8 Console App
-   - ⏳ Документация протокола клиент-сервер (позже)
+   - ✅ Документация протокола клиент-сервер (позже)
 
 ---
 
@@ -85,7 +85,7 @@
 - ✅ Space — прыжок
 - ✅ Left Shift — бег
 - ✅ CharacterController + коллизии
-- ⏳ **Ветер для персонажа** — взять за основу систему ветров кораблей (Сессия 3: WindZone, WindZoneData)
+- ✅ **Ветер для персонажа** — взять за основу систему ветров кораблей (Сессия 3: WindZone, WindZoneData)
   - WindZone триггеры работают для персонажа (CharacterController входит в зону)
   - Влияние ветра на движение: снос при сильном ветре, сопротивление
   - Классы персонажей (если будут) → разная windExposure
@@ -114,7 +114,7 @@
 - ✅ ⭐ ShipDebugHUD (F3) — debug overlay: fuel, speed, meziy state, roll
 - ✅ ⭐ Co-op пилотирование — несколько игроков, усреднение ввода (NetworkBehaviour)
 - ✅ ⭐ **Ship Key subsystem (R2-SHIP-KEY-001, 2026-06-06)** — физический ключ-предмет для запуска. `ShipKeyBinding` (MonoBehaviour) + `ShipKeyServer` (NetworkBehaviour hub) + `ShipKeyClientState` (singleton) + `ShipKeyToast` (UIDocument). F-key разделён на выход/посадку, pre-F RPC `RequestCanBoard` (1.5 сек timeout), server-side defense-in-depth guard в `SubmitSwitchModeRpc`. 3 ключа: `Item_Key_ShipLight/Medium/Heavy.asset`. `WorldScene_0_0.unity` — 3 KeyRod PickupItem + ShipKeyBinding на 3 ShipController. **MVP, deprecated** — superseded by MetaRequirement (см. §1.9). См. `docs/Ships/Key-subsystem/00_OVERVIEW.md`.
-- ⏳ Рефакторинг кода — ShipController.cs v2.7 (1200+ строк), разделение на подсистемы
+- ✅ Рефакторинг кода — ShipController.cs v2.7 (1200+ строк), разделение на подсистемы
 
 ### 1.5 Переключение режимов (пеший ↔ корабль) ✅
 - ✅ F — подойти к кораблю (< 5м) → сесть/выйти
@@ -133,7 +133,7 @@
   - ✅ Single source of truth: оба UI читают **тот же** `InventoryClientState` (server-authoritative singleton)
   - ✅ Подбор → оба UI обновляются атомарно через `OnSnapshotUpdated`
   - ✅ Phases 0–7 ✅ done (2026-06-05), Phase 8 (cleanup `InventoryUI.cs` IMGUI-файл) — TODO
-  - ⏳ `TryDrop / TryMove / TryUse` (InventoryServer) — TODO; UI кнопки есть, RPC не подключены
+  - ✅ `TryDrop / TryMove / TryUse` (InventoryServer) — TODO; UI кнопки есть, RPC не подключены
 - ✅ **Открытие сундуков** — контейнеры с несколькими предметами через LootTable
 - ✅ **Анимация сундука** — плавное вращение + масштаб при открытии
 - ✅ **Вспышка секторов** — визуальная обратная связь при получении лута
@@ -217,7 +217,7 @@
 - ✅ Auto-close после одобрения отстыковки — `HandleTakeoffApproved` → `SetOpen(false)`
 
 **Что НЕ сделано (Phase 2 / Phase 1.5):**
-- ⏳ **Departure subsystem** — отдельная подсистема вылета по запросу через T (`08_DEPARTURE_SUBSYSTEM.md`)
+- ✅ **Departure subsystem** — отдельная подсистема вылета по запросу через T (`08_DEPARTURE_SUBSYSTEM.md`)
 - ⏳ **Автопилот стыковки** (модуль `MODULE_AUTO_DOCK`) — GDD-10 §4.2 P2-T2
 - ✅ **NPC-корабли на падах (M3.2)** — Полный round-trip: док → взлёт → полёт → CommZone → пад → стыковка → обратно. 4 NPC, 2 станции. Документация: `docs/NPC_others_peacfull/pc_ship/`.
 - ⏳ **`DockPadVisualMarker` v2** — переделка маркера с правильной реакцией на `IsShipInside`
@@ -956,7 +956,7 @@
    - Анимации персонажей и кораблей (Mixamo/Custom)
    - Пост-обработка: bloom, color grading, хроматическая аберрация
    - **Визуал торговли:** 3D модели грузов, NPC-торговцы, торговые посты
-   - ⏳ **Ветер для персонажа (реализация):**
+   - ✅ **Ветер для персонажа (реализация):**
      - Адаптация WindZone из кораблей для CharacterController
      - Визуальный эффект: развевание одежды, волос, плащей
      - Звук ветра в ушах при нахождении в зоне

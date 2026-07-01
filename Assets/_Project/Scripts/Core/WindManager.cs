@@ -21,6 +21,18 @@ namespace ProjectC.Core
         [Header("Debug")]
         [SerializeField] private bool _logWindChanges = true;
 
+        [Header("Влияние на геймплей (множители)")]
+        [Tooltip("Глобальный множитель силы ветра, действующей на корабли (ShipController). 1 = как задано на корабле, 0 = ветер не влияет на корабли.")]
+        [SerializeField] private float _shipWindMultiplier = 1f;
+        [Tooltip("Глобальный множитель сноса ветром для персонажей (NetworkPlayer). 1 = базовый снос, 0 = персонажей ветром не сносит.")]
+        [SerializeField] private float _characterWindMultiplier = 1f;
+
+        /// <summary>Глобальный множитель влияния ветра на корабли (настраивается в инспекторе WindManager).</summary>
+        public float ShipWindMultiplier => _shipWindMultiplier;
+        /// <summary>Глобальный множитель влияния ветра на персонажей (настраивается в инспекторе WindManager).</summary>
+        public float CharacterWindMultiplier => _characterWindMultiplier;
+
+
         private Vector3 _targetDirection;
         private float _targetSpeed;
         private Vector3 _lastLoggedDirection;

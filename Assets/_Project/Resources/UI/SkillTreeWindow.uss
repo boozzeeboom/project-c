@@ -505,3 +505,61 @@
     /* override existing */
     white-space: normal !important;
 }
+
+/* === T-CARGO-UI-SCROLL: тонкие скролбары === */
+.unity-scroll-view .unity-scroller {
+    width: 6px !important;
+    max-width: 6px !important;
+    background-color: transparent !important;
+    padding: 0 !important;
+    margin: 0 !important;
+}
+.unity-scroll-view .unity-scroller--vertical {
+    width: 6px !important;
+    max-width: 6px !important;
+}
+.unity-scroll-view .unity-scroller--horizontal {
+    height: 6px !important;
+    max-height: 6px !important;
+}
+.unity-scroll-view .unity-scroller__low-button,
+.unity-scroll-view .unity-scroller__high-button {
+    display: none !important;
+    width: 0 !important;
+    height: 0 !important;
+    min-width: 0 !important;
+    min-height: 0 !important;
+    padding: 0 !important;
+    margin: 0 !important;
+}
+.unity-scroll-view .unity-scroller__slider {
+    background-color: transparent !important;
+    padding: 0 !important;
+    margin: 0 !important;
+}
+.unity-scroll-view .unity-slider__input {
+    background-color: transparent !important;
+}
+.unity-scroll-view .unity-base-slider__drag-container {
+    background-color: transparent !important;
+}
+.unity-scroll-view .unity-base-slider__tracker {
+    background-color: transparent !important;
+}
+.unity-scroll-view .unity-base-slider__dragger-border {
+    display: none !important;
+    width: 0 !important;
+    height: 0 !important;
+}
+.unity-scroll-view .unity-base-slider__dragger {
+    background-color: rgba(100, 160, 220, 0.4) !important;
+    border-radius: 3px !important;
+    width: 4px !important;
+    max-width: 4px !important;
+    min-width: 4px !important;
+    min-height: 24px !important;
+    border-width: 0 !important;
+}
+.unity-scroll-view .unity-base-slider__dragger:hover {
+    background-color: rgba(120, 180, 240, 0.6) !important;
+}

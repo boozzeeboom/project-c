@@ -1016,6 +1016,56 @@
     flex-grow: 1 !important;
 }
 
+/* T-CARGO-UI-01: детальный список груза (itemId + displayName + qty + unit weight) */
+.ship-cargo-scroll {
+    flex-grow: 0 !important;
+    flex-shrink: 1 !important;
+    min-height: 32px !important;
+    max-height: 25% !important;
+    background-color: rgba(20, 28, 44, 0.4) !important;
+    border-width: 1px !important;
+    border-color: rgba(80, 100, 130, 0.3) !important;
+    border-radius: 3px !important;
+    margin-bottom: 8px !important;
+}
+.ship-cargo-container {
+    padding: 2px !important;
+}
+.ship-cargo-row {
+    flex-direction: row !important;
+    align-items: center !important;
+    padding: 2px 4px !important;
+    border-bottom-width: 1px !important;
+    border-bottom-color: rgba(80, 100, 130, 0.15) !important;
+}
+.ship-cargo-row.dangerous {
+    background-color: rgba(220, 80, 60, 0.12) !important;
+}
+.ship-cargo-row.fragile {
+    background-color: rgba(220, 180, 60, 0.10) !important;
+}
+.ship-cargo-name {
+    font-size: 11px !important;
+    color: rgb(200, 210, 220) !important;
+    flex-grow: 1 !important;
+    white-space: nowrap !important;
+    overflow: hidden !important;
+    text-overflow: ellipsis !important;
+}
+.ship-cargo-qty {
+    font-size: 10px !important;
+    color: rgb(150, 170, 190) !important;
+    -unity-text-align: middle-right !important;
+    flex-shrink: 0 !important;
+    margin-left: 6px !important;
+}
+.ship-cargo-empty {
+    font-size: 11px !important;
+    color: rgb(140, 140, 140) !important;
+    -unity-font-style: italic !important;
+    padding: 4px !important;
+}
+
 
 /* === Open SkillTreeWindow button (T-INP-09) === */
 .open-skill-tree-btn {

@@ -707,15 +707,59 @@ namespace ProjectC.Player
                 fuelNormalized = fuelSystem.CurrentFuel / Mathf.Max(fuelMax, 1f);
             }
 
-            // Cargo (если зарегистрирован в TradeWorld)
-            int cargoUsed = 0;
-            int cargoMax = 0;
+            // T-CARGO-UI-01: cargo — серверный push деталей в telemetry.
+            // cargoUsed = sum(qty * slots) — соответствует GDD-логике slot-ёмкости.
+            // cargoMax = GetEffectiveCargoLimits().maxSlots (per-instance + модули).
+            // cargoDetail[] = список items с displayName/weight/dangerous/fragile.
+            int cargoUsedSlots = 0;
+            int cargoMaxSlots = 0;
+            ProjectC.Ship.Network.CargoDetailDto[] cargoDetail = System.Array.Empty<ProjectC.Ship.Network.CargoDetailDto>();
+
             if (TradeWorld.Instance != null)
             {
                 var cargo = TradeWorld.Instance.GetOrLoadCargo(NetworkObjectId, _resolvedCargoClass);
                 if (cargo != null)
                 {
-                    cargoUsed = cargo.Items.Count;
+                    // T-CARGO-UI-01: cargoMax через ShipCargoRegistry (per-instance + module bonuses).
+                    // Fallback на статический ShipClassLimits если корабль не зарегистрирован.
+                    var effLimits = ShipCargoRegistry.GetEffectiveLimits(NetworkObjectId);
+                    cargoMaxSlots = effLimits?.maxSlots
+                                    ?? ShipClassLimits.Get(_resolvedCargoClass).maxSlots;
+                    cargoUsedSlots = cargo.ComputeTotalSlots(TradeWorld.Instance.Resolver);
+
+                    // T-CARGO-UI-01: cargoDetail (cap 32, см. ShipTelemetryState doc).
+                    var items = cargo.Items;
+                    if (items != null && items.Count > 0)
+                    {
+                        const int CARGO_DETAIL_CAP = 32;
+                        int cap = System.Math.Min(items.Count, CARGO_DETAIL_CAP);
+                        cargoDetail = new ProjectC.Ship.Network.CargoDetailDto[cap];
+                        var resolver = TradeWorld.Instance.Resolver;
+                        for (int i = 0; i < cap; i++)
+                        {
+                            var e = items[i];
+                            ProjectC.Trade.TradeItemDefinition def = null;
+                            bool hasDef = resolver != null && resolver.TryGet(e.itemId, out def) && def != null;
+                            byte flags = 0;
+                            string dn = e.itemId;
+                            float uw = 0f;
+                            if (hasDef)
+                            {
+                                if (def.isDangerous) flags |= 0x01;
+                                if (def.isFragile)   flags |= 0x02;
+                                if (!string.IsNullOrEmpty(def.displayName)) dn = def.displayName;
+                                uw = def.weight;
+                            }
+                            cargoDetail[i] = new ProjectC.Ship.Network.CargoDetailDto
+                            {
+                                itemId      = e.itemId ?? string.Empty,
+                                displayName = new Unity.Collections.FixedString64Bytes(dn.Length > 60 ? dn.Substring(0, 60) : dn),
+                                quantity    = e.quantity,
+                                unitWeight  = uw,
+                                flags       = flags,
+                            };
+                        }
+                    }
                 }
             }
 
@@ -729,14 +773,15 @@ namespace ProjectC.Player
                 rotationEuler         = transform.rotation.eulerAngles,
                 fuelNormalized        = fuelNormalized,
                 fuelMax               = fuelMax,
-                cargoUsed             = cargoUsed,
-                cargoMax              = cargoMax,
+                cargoUsed             = cargoUsedSlots,
+                cargoMax              = cargoMaxSlots,
                 moduleCount           = moduleManager != null && moduleManager.slots != null ? moduleManager.slots.Count : 0,
                 state                 = 0,  // (byte)CurrentState — пока 0, расширим в Phase 2
                 ownerClientId         = ownerId,
                 lastUpdateServerTime  = NetworkManager != null && NetworkManager.ServerTime.Time > 0
                     ? NetworkManager.ServerTime.Time
                     : Time.timeAsDouble,
+                cargoDetail           = cargoDetail, // T-CARGO-UI-01
             };
         }
 

@@ -110,6 +110,10 @@
    <ui:Label text="Груз" class="ship-info-header" />
    <ui:ProgressBar name="ship-cargo-bar" value="0" low-value="0" high-value="100" class="ship-cargo-bar" />
    <ui:Label name="ship-cargo-text" text="—" class="ship-info-row" />
+   <!-- T-CARGO-UI-01: детальный список items (itemId + displayName + qty + weight) -->
+   <ui:ScrollView name="ship-cargo-scroll" class="ship-cargo-scroll">
+    <ui:VisualElement name="ship-cargo-container" class="ship-cargo-container" />
+   </ui:ScrollView>
    <ui:Label text="Установленные модули" class="ship-info-header" />
    <ui:ScrollView name="ship-modules-scroll" class="ship-modules-scroll">
     <ui:VisualElement name="ship-modules-container" class="ship-modules-container" />

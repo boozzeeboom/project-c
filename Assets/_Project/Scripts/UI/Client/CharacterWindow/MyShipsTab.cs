@@ -38,6 +38,10 @@ namespace ProjectC.UI.Client
         private VisualElement _modulesContainer;
         private VisualElement _modulesScroll;
 
+        // T-CARGO-UI-01: детальный список items в трюме
+        private VisualElement _cargoContainer;
+        private VisualElement _cargoScroll;
+
         // ===== Данные =====
         /// <summary>Пары (displayName, itemId) для dropdown.</summary>
         private readonly List<string> _choices = new List<string>();
@@ -76,6 +80,10 @@ namespace ProjectC.UI.Client
 
             _modulesScroll     = root.Q<VisualElement>("ship-modules-scroll");
             _modulesContainer  = root.Q<VisualElement>("ship-modules-container");
+
+            // T-CARGO-UI-01: bind cargo detail list
+            _cargoScroll       = root.Q<VisualElement>("ship-cargo-scroll");
+            _cargoContainer    = root.Q<VisualElement>("ship-cargo-container");
 
             if (_selector != null)
             {
@@ -332,6 +340,9 @@ namespace ProjectC.UI.Client
                     ? $"Груз: {telemetry.cargoUsed}/{telemetry.cargoMax}"
                     : $"Груз: — (нет данных)";
 
+            // T-CARGO-UI-01: детальный список items
+            RenderCargoDetail(telemetry.cargoDetail);
+
             // Modules
             RenderModules(sc);
 
@@ -372,6 +383,61 @@ namespace ProjectC.UI.Client
                 row.Add(lbl);
 
                 _modulesContainer.Add(row);
+            }
+        }
+
+        /// <summary>
+        /// T-CARGO-UI-01: рендер детального списка items в трюме.
+        /// Источник — telemetry.cargoDetail (сервер-pushed, обновление 5 Hz).
+        /// </summary>
+        private void RenderCargoDetail(ProjectC.Ship.Network.CargoDetailDto[] items)
+        {
+            if (_cargoContainer == null) return;
+            _cargoContainer.Clear();
+
+            // Скрыть ScrollView если вообще нет данных (trully empty, не null)
+            bool isEmpty = items == null || items.Length == 0;
+            if (_cargoScroll != null)
+            {
+                _cargoScroll.style.display = isEmpty ? DisplayStyle.None : DisplayStyle.Flex;
+            }
+
+            if (isEmpty)
+            {
+                var empty = new Label("Трюм пуст");
+                empty.AddToClassList("ship-cargo-empty");
+                _cargoContainer.Add(empty);
+                return;
+            }
+
+            foreach (var it in items)
+            {
+                var row = new VisualElement();
+                row.AddToClassList("ship-cargo-row");
+
+                // Имя (с префиксом ⚠ для dangerous / ❄ для fragile — лёгкий визуал без иконок)
+                string dn = it.displayName.ToString();
+                if (string.IsNullOrEmpty(dn)) dn = it.itemId;
+                if (it.IsDangerous) dn = "⚠ " + dn;
+                else if (it.IsFragile) dn = "❄ " + dn;
+
+                var nameLbl = new Label(dn);
+                nameLbl.AddToClassList("ship-cargo-name");
+                row.Add(nameLbl);
+
+                // qty + суммарный вес (если unitWeight > 0)
+                string qtyStr = it.unitWeight > 0f
+                    ? $"×{it.quantity} ({it.quantity * it.unitWeight:F0} кг)"
+                    : $"×{it.quantity}";
+                var qtyLbl = new Label(qtyStr);
+                qtyLbl.AddToClassList("ship-cargo-qty");
+                row.Add(qtyLbl);
+
+                // Warning-цвет фона для опасного/хрупкого
+                if (it.IsDangerous) row.AddToClassList("dangerous");
+                else if (it.IsFragile) row.AddToClassList("fragile");
+
+                _cargoContainer.Add(row);
             }
         }
 
@@ -465,7 +531,8 @@ namespace ProjectC.UI.Client
             // Получить текущее состояние через ShipController (NetworkVariable.Value)
             var currentState = sc.TelemetryState;
 
-            // Throttle: если fuel/cargo изменились незначительно — пропускаем
+            // Throttle: если fuel/cargo изменились незначительно — пропускаем.
+            // T-CARGO-UI-01: cargoDetail тоже проверяем (qty может измениться без изменения slots).
             if (_hasLastDisplayed && ShipTelemetryStateEqualsApprox(_lastDisplayed, currentState)) return;
             _lastDisplayed = currentState;
             _hasLastDisplayed = true;
@@ -478,13 +545,23 @@ namespace ProjectC.UI.Client
             ProjectC.Ship.Network.ShipTelemetryState b)
         {
             const float eps = 0.01f;
-            return Mathf.Abs(a.fuelNormalized - b.fuelNormalized) < eps
-                && Mathf.Abs(a.fuelMax - b.fuelMax) < eps
-                && a.cargoUsed == b.cargoUsed
-                && a.cargoMax == b.cargoMax
-                && a.moduleCount == b.moduleCount
-                && a.state == b.state
-                && Vector3.Distance(a.position, b.position) < 0.1f;
+            if (Mathf.Abs(a.fuelNormalized - b.fuelNormalized) >= eps) return false;
+            if (Mathf.Abs(a.fuelMax - b.fuelMax) >= eps) return false;
+            if (a.cargoUsed != b.cargoUsed) return false;
+            if (a.cargoMax != b.cargoMax) return false;
+            if (a.moduleCount != b.moduleCount) return false;
+            if (a.state != b.state) return false;
+            if (Vector3.Distance(a.position, b.position) >= 0.1f) return false;
+
+            // T-CARGO-UI-01: cargoDetail — если длина разная, кто-то добавил/убрал item.
+            int aLen = a.cargoDetail != null ? a.cargoDetail.Length : 0;
+            int bLen = b.cargoDetail != null ? b.cargoDetail.Length : 0;
+            if (aLen != bLen) return false;
+            for (int i = 0; i < aLen; i++)
+            {
+                if (!a.cargoDetail[i].Equals(b.cargoDetail[i])) return false;
+            }
+            return true;
         }
 
         // ===== Helpers =====

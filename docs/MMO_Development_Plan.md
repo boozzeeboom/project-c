@@ -1,8 +1,10 @@
 # План разработки ММО "Project C: The Clouds" на Unity
 
-**Последнее обновление:** 30 июня 2026 г. | **Текущая версия:** `v0.0.35`
+**Последнее обновление:** 2 июля 2026 г. | **Текущая версия:** `v0.0.36`
 
-> **Что нового (30 июня 2026):** **Character Customisation L1+L3+L4 ✅ + v0.0.35.** Полный цикл — 6 документов дизайна → 15 C# файлов (CustomisationSave, DTO, ClientState, Applier, UI Window) → M/F переключение, 6 пресетов тела, 2 стиля волос, цвета кожи/волос/одежды, AnimatorOverrideController. UI по паттерну SkillTreeWindow. Bug #1 (domain reload → heightScale=0 → персонаж невидим) исправлен.
+> **Что нового (2 июля 2026):** **T-CARGO-UI-01: детальный список груза в CharacterWindow ✅.** `MyShipsTab` теперь показывает **что лежит в трюме** (itemId + displayName + qty + unit weight + dangerous/fragile flags), а не только progress bar. Сервер-push через `ShipTelemetryState.cargoDetail[]` (cap 32, 5 Hz синхронизация). Бонусом — **фикс бага `cargoMax = 0`** (теперь корректно через `ShipCargoRegistry.GetEffectiveLimits` per-instance + module bonuses). Диздок: `docs/Ships/cargo_system/CARGO_UI_01_DESIGN_2026-07-02.md`. Сводный план 4 эпиков: `docs/Ships/cargo_system/CARGO_REMAINING_WORK_2026-07-02.md`. 5 файлов, 271/29 строк, 0 compile errors.
+
+> **Предыдущее обновление (30 июня 2026):** **Character Customisation L1+L3+L4 ✅ + v0.0.35.** Полный цикл — 6 документов дизайна → 15 C# файлов (CustomisationSave, DTO, ClientState, Applier, UI Window) → M/F переключение, 6 пресетов тела, 2 стиля волос, цвета кожи/волос/одежды, AnimatorOverrideController. UI по паттерну SkillTreeWindow. Bug #1 (domain reload → heightScale=0 → персонаж невидим) исправлен.
 >
 > **NPC Enemy System P0-P2 ✅:** NpcBrain FSM (Idle→Chase→Attack→Dead), NpcSpawner с surface validation/rate-limit/leash, goblin prefab (NetworkObject), 5-state AnimatorController, passive/aggressive/neutral поведение, loot pickup.
 >

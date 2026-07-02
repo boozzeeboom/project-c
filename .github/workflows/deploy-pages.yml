@@ -29,6 +29,9 @@ jobs:
         with:
           # Весь docs/ — и Fun/index.html, и roadmap.html, и остальное
           path: docs
+          # Короткий retention, чтобы старые artifact'ы не копились
+          # и не ломали deploy-pages (баг: Multiple artifacts found)
+          retention-days: 1
 
       - name: Deploy to GitHub Pages
         id: deployment

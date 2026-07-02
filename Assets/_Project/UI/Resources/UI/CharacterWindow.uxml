@@ -101,27 +101,47 @@
   <ui:DropdownField name="ship-selector" label="Корабль" class="ship-selector" />
   <ui:Label name="ship-empty-label" text="Нет доступных кораблей. Найдите ключ в мире." class="ship-empty" />
   <ui:VisualElement name="ship-info" class="ship-info">
-   <ui:Label name="ship-info-name" text="—" class="ship-info-name" />
-   <ui:Label name="ship-info-class" text="—" class="ship-info-class" />
+
+   <!-- T-CARGO-UI-01-2: компактный header — name + class в одну строку, key-id отдельно -->
+   <ui:VisualElement class="ship-header-row">
+    <ui:Label name="ship-info-name" text="—" class="ship-info-name" />
+    <ui:Label name="ship-info-class" text="—" class="ship-info-class-inline" />
+   </ui:VisualElement>
    <ui:Label name="ship-info-key-id" text="—" class="ship-info-key-id" />
-   <ui:Label text="Топливо" class="ship-info-header" />
+
+   <!-- Тонкая полоса топлива сразу под header -->
    <ui:ProgressBar name="ship-fuel-bar" value="0" low-value="0" high-value="100" class="ship-fuel-bar" />
-   <ui:Label name="ship-fuel-text" text="—" class="ship-info-row" />
-   <ui:Label text="Груз" class="ship-info-header" />
-   <ui:ProgressBar name="ship-cargo-bar" value="0" low-value="0" high-value="100" class="ship-cargo-bar" />
-   <ui:Label name="ship-cargo-text" text="—" class="ship-info-row" />
-   <!-- T-CARGO-UI-01: детальный список items (itemId + displayName + qty + weight) -->
-   <ui:ScrollView name="ship-cargo-scroll" class="ship-cargo-scroll">
-    <ui:VisualElement name="ship-cargo-container" class="ship-cargo-container" />
-   </ui:ScrollView>
-   <ui:Label text="Установленные модули" class="ship-info-header" />
-   <ui:ScrollView name="ship-modules-scroll" class="ship-modules-scroll">
-    <ui:VisualElement name="ship-modules-container" class="ship-modules-container" />
-   </ui:ScrollView>
-   <ui:Label text="Позиция" class="ship-info-header" />
-   <ui:Label name="ship-info-position" text="—" class="ship-info-row" />
-   <ui:Label text="Состояние" class="ship-info-header" />
-   <ui:Label name="ship-info-state" text="—" class="ship-info-row" />
+   <ui:Label name="ship-fuel-text" text="—" class="ship-info-row ship-info-row-compact" />
+
+   <!-- T-CARGO-UI-01-2: 2 колонки — Груз (список) | Модули. 80-90% секции. -->
+   <ui:VisualElement class="ship-cols">
+
+    <!-- Левая колонка: Груз -->
+    <ui:VisualElement class="ship-col ship-col-cargo">
+     <ui:Label text="Груз" class="ship-info-header ship-col-header" />
+     <ui:ProgressBar name="ship-cargo-bar" value="0" low-value="0" high-value="100" class="ship-cargo-bar" />
+     <ui:Label name="ship-cargo-text" text="—" class="ship-info-row ship-info-row-compact" />
+     <ui:ScrollView name="ship-cargo-scroll" class="ship-cargo-scroll">
+      <ui:VisualElement name="ship-cargo-container" class="ship-cargo-container" />
+     </ui:ScrollView>
+    </ui:VisualElement>
+
+    <!-- Правая колонка: Модули -->
+    <ui:VisualElement class="ship-col ship-col-modules">
+     <ui:Label text="Установленные модули" class="ship-info-header ship-col-header" />
+     <ui:ScrollView name="ship-modules-scroll" class="ship-modules-scroll">
+      <ui:VisualElement name="ship-modules-container" class="ship-modules-container" />
+     </ui:ScrollView>
+    </ui:VisualElement>
+
+   </ui:VisualElement>
+
+   <!-- Подвал: позиция + состояние в одну строку -->
+   <ui:VisualElement class="ship-footer-row">
+    <ui:Label name="ship-info-position" text="—" class="ship-info-row ship-info-row-compact" />
+    <ui:Label name="ship-info-state" text="—" class="ship-info-row ship-info-row-compact" />
+   </ui:VisualElement>
+
   </ui:VisualElement>
  </ui:VisualElement>
  <ui:VisualElement name="reputation-section" class="list-section" style="display: none;">

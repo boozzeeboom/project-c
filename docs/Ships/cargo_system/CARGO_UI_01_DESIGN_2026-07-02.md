@@ -360,3 +360,4 @@ filter CARGO-UI-01 → 0 entries
 | Дата | Сессия | Изменения |
 |---|---|---|
 | 2026-07-02 | T-CARGO-UI-01 | Диздок → код → verify (compile OK 0 errors). Сервер-push `cargoDetail[]` через `ShipTelemetryState`. UI-рендер в MyShipsTab. Фикс бага `cargoMax=0`. |
+| 2026-07-02 | T-CARGO-UI-01-2 | **Рефакторинг вёрстки MyShipsTab по фидбеку пользователя.** Header стал компактным: name + class inline в одну строку, key-id отдельной строкой, тонкая полоса топлива (6px). Cargo + Modules переехали в 2 колонки (`ship-cols`, 50/50 flex). Полоска cargo bar уменьшена до 5px. Подвал: position + state в одну строку. ScrollView в колонках управляются `flex-grow:1` (вместо `max-height`), заполняют всё доступное место. `CharacterWindow.uxml` (+24/-14) + `CharacterWindow.uss` (rewrite секции ship). 0 compile errors. |

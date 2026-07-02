@@ -942,8 +942,10 @@
     margin-top: 8px !important;
     flex-shrink: 0 !important;
 }
+
+/* T-CARGO-UI-01-2: ship-info — flex-column, header (10-15%) + cols (80-90%) + footer */
 .ship-info {
-    padding: 8px !important;
+    padding: 6px 8px !important;
     background-color: rgba(30, 40, 60, 0.25) !important;
     border-radius: 3px !important;
     border-width: 1px !important;
@@ -952,29 +954,58 @@
     flex-shrink: 1 !important;
     min-height: 0 !important;
 }
+
+/* header row: name (grow) + class (auto) inline */
+.ship-header-row {
+    flex-direction: row !important;
+    align-items: baseline !important;
+    flex-shrink: 0 !important;
+    margin-bottom: 1px !important;
+}
 .ship-info-name {
-    font-size: 16px !important;
+    font-size: 13px !important;
     -unity-font-style: bold !important;
     color: rgb(220, 230, 240) !important;
-    margin-bottom: 2px !important;
+    flex-grow: 1 !important;
+    flex-shrink: 1 !important;
+    white-space: nowrap !important;
+    overflow: hidden !important;
+    text-overflow: ellipsis !important;
+    margin-bottom: 0 !important;
 }
-.ship-info-class {
-    font-size: 12px !important;
+.ship-info-class-inline {
+    font-size: 11px !important;
     color: rgb(180, 200, 220) !important;
-    margin-bottom: 8px !important;
+    flex-shrink: 0 !important;
+    margin-left: 6px !important;
+    margin-bottom: 0 !important;
 }
 .ship-info-key-id {
-    font-size: 10px !important;
+    font-size: 9px !important;
     color: rgb(140, 160, 180) !important;
-    margin-bottom: 12px !important;
+    margin-bottom: 4px !important;
+    flex-shrink: 0 !important;
+}
+
+/* Тонкая полоса топлива + маленький текст */
+.ship-fuel-bar {
+    height: 6px !important;
+    margin-top: 2px !important;
+    margin-bottom: 1px !important;
+    flex-shrink: 0 !important;
 }
 .ship-info-header {
     font-size: 11px !important;
     -unity-font-style: bold !important;
     color: rgb(180, 200, 220) !important;
-    margin-top: 8px !important;
-    margin-bottom: 2px !important;
+    margin-top: 4px !important;
+    margin-bottom: 1px !important;
     flex-shrink: 0 !important;
+}
+.ship-col-header {
+    margin-top: 0 !important;
+    font-size: 10px !important;
+    -unity-text-align: middle-left !important;
 }
 .ship-info-row {
     font-size: 12px !important;
@@ -983,50 +1014,67 @@
     flex-shrink: 0 !important;
     white-space: normal !important;
 }
-.ship-fuel-bar,
-.ship-cargo-bar {
-    height: 14px !important;
-    margin-bottom: 4px !important;
-    flex-shrink: 0 !important;
+.ship-info-row-compact {
+    font-size: 10px !important;
+    margin-bottom: 1px !important;
+    color: rgb(160, 175, 195) !important;
 }
-.ship-modules-scroll {
-    flex-grow: 1 !important;
-    flex-shrink: 1 !important;
-    min-height: 60px !important;
-    max-height: 33% !important;
-    background-color: rgba(20, 28, 44, 0.4) !important;
-    border-width: 1px !important;
-    border-color: rgba(80, 100, 130, 0.3) !important;
-    border-radius: 3px !important;
-    margin-bottom: 4px !important;
-}
-.ship-modules-container {
-    padding: 4px !important;
-}
-.ship-module-row {
+
+/* footer row: position + state inline */
+.ship-footer-row {
     flex-direction: row !important;
     align-items: center !important;
-    padding: 2px 4px !important;
-    border-bottom-width: 1px !important;
-    border-bottom-color: rgba(80, 100, 130, 0.15) !important;
+    flex-shrink: 0 !important;
+    margin-top: 4px !important;
+    padding-top: 4px !important;
+    border-top-width: 1px !important;
+    border-top-color: rgba(80, 100, 130, 0.15) !important;
 }
-.ship-module-name {
-    font-size: 11px !important;
-    color: rgb(200, 210, 220) !important;
+.ship-footer-row .ship-info-row-compact {
     flex-grow: 1 !important;
 }
 
-/* T-CARGO-UI-01: детальный список груза (itemId + displayName + qty + unit weight) */
-.ship-cargo-scroll {
-    flex-grow: 0 !important;
+/* T-CARGO-UI-01-2: 2 колонки — Груз | Модули. flex-row, ~50/50. */
+.ship-cols {
+    flex-direction: row !important;
+    flex-grow: 1 !important;
     flex-shrink: 1 !important;
-    min-height: 32px !important;
-    max-height: 25% !important;
+    min-height: 0 !important;
+    margin-top: 2px !important;
+}
+.ship-col {
+    flex-direction: column !important;
+    flex-grow: 1 !important;
+    flex-shrink: 1 !important;
+    flex-basis: 0 !important;
+    min-height: 0 !important;
+    min-width: 0 !important;
+}
+.ship-col-cargo {
+    margin-right: 6px !important;
+}
+.ship-col-modules {
+    margin-left: 6px !important;
+}
+
+/* cargo progress bar в колонке */
+.ship-cargo-bar {
+    height: 5px !important;
+    margin-top: 1px !important;
+    margin-bottom: 1px !important;
+    flex-shrink: 0 !important;
+}
+
+/* Список груза (левая колонка) */
+.ship-cargo-scroll {
+    flex-grow: 1 !important;
+    flex-shrink: 1 !important;
+    min-height: 0 !important;
     background-color: rgba(20, 28, 44, 0.4) !important;
     border-width: 1px !important;
     border-color: rgba(80, 100, 130, 0.3) !important;
     border-radius: 3px !important;
-    margin-bottom: 8px !important;
+    margin-top: 2px !important;
 }
 .ship-cargo-container {
     padding: 2px !important;
@@ -1064,6 +1112,33 @@
     color: rgb(140, 140, 140) !important;
     -unity-font-style: italic !important;
     padding: 4px !important;
+}
+
+/* Список модулей (правая колонка) */
+.ship-modules-scroll {
+    flex-grow: 1 !important;
+    flex-shrink: 1 !important;
+    min-height: 0 !important;
+    background-color: rgba(20, 28, 44, 0.4) !important;
+    border-width: 1px !important;
+    border-color: rgba(80, 100, 130, 0.3) !important;
+    border-radius: 3px !important;
+    margin-top: 2px !important;
+}
+.ship-modules-container {
+    padding: 4px !important;
+}
+.ship-module-row {
+    flex-direction: row !important;
+    align-items: center !important;
+    padding: 2px 4px !important;
+    border-bottom-width: 1px !important;
+    border-bottom-color: rgba(80, 100, 130, 0.15) !important;
+}
+.ship-module-name {
+    font-size: 11px !important;
+    color: rgb(200, 210, 220) !important;
+    flex-grow: 1 !important;
 }
 
 

@@ -931,10 +931,78 @@
 
 
 /* T-KEY-08: MyShipsTab — вкладка КОРАБЛЬ */
-.ship-selector {
-    margin-bottom: 8px !important;
+
+/* T-CARGO-UI-01-5: CustomDropdown — полностью стилизуемый VisualElement */
+.custom-dropdown {
+    flex-direction: column !important;
+    flex-shrink: 0 !important;
+    min-height: 24px !important;
+    margin-bottom: 6px !important;
+    position: relative !important;
+}
+.custom-dropdown__button {
+    flex-direction: row !important;
+    align-items: center !important;
+    flex-grow: 1 !important;
+    padding: 2px 8px !important;
+    background-color: rgba(30, 45, 70, 0.5) !important;
+    border-radius: 4px !important;
+    cursor: pointer !important;
+    min-height: 22px !important;
+    -unity-text-align: middle-left !important;
+}
+.custom-dropdown__button:hover {
+    background-color: rgba(40, 60, 100, 0.5) !important;
+}
+.custom-dropdown__text {
+    flex-grow: 1 !important;
+    font-size: 13px !important;
+    color: rgb(200, 220, 255) !important;
+    white-space: nowrap !important;
+    overflow: hidden !important;
+    text-overflow: ellipsis !important;
+    -unity-text-align: middle-left !important;
+}
+.custom-dropdown__arrow {
+    font-size: 10px !important;
+    color: rgb(160, 185, 220) !important;
+    margin-left: 6px !important;
+    flex-shrink: 0 !important;
+    -unity-text-align: middle-center !important;
+}
+
+/* Popup — overlay на panel root, position absolute */
+.custom-dropdown__popup {
+    position: absolute !important;
+    background-color: rgba(25, 40, 65, 0.95) !important;
+    border-width: 1px !important;
+    border-color: rgba(80, 100, 130, 0.4) !important;
+    border-radius: 4px !important;
+    padding: 4px !important;
+    max-height: 200px !important;
+    flex-direction: column !important;
+    overflow-y: auto !important;
+    z-index: 1000 !important;
+}
+.custom-dropdown__item {
+    padding: 6px 10px !important;
+    font-size: 12px !important;
+    color: rgb(200, 220, 255) !important;
+    border-bottom-width: 1px !important;
+    border-bottom-color: rgba(80, 100, 130, 0.15) !important;
+    cursor: pointer !important;
+    -unity-text-align: middle-left !important;
     flex-shrink: 0 !important;
 }
+.custom-dropdown__item.hovered,
+.custom-dropdown__item:hover {
+    background-color: rgba(60, 100, 160, 0.6) !important;
+}
+.custom-dropdown__item.selected {
+    background-color: rgba(50, 90, 150, 0.4) !important;
+    -unity-font-style: bold !important;
+}
+
 .ship-empty {
     font-size: 11px !important;
     color: rgb(150, 150, 150) !important;
@@ -987,12 +1055,33 @@
     flex-shrink: 0 !important;
 }
 
-/* Тонкая полоса топлива + маленький текст */
-.ship-fuel-bar {
-    height: 6px !important;
+/* T-CARGO-UI-01-3: кастомный тонкий бар (bg+fill) — стиль как MarketWindow.cargo-bar */
+.ship-bar-bg {
+    flex-grow: 0 !important;
+    flex-shrink: 0 !important;
+    height: 8px !important;
+    background-color: rgba(40, 55, 85, 0.6) !important;
+    border-radius: 4px !important;
+    overflow: hidden !important;
+    min-width: 30px !important;
     margin-top: 2px !important;
     margin-bottom: 1px !important;
-    flex-shrink: 0 !important;
+}
+.ship-bar-fill {
+    width: 0% !important;
+    height: 100% !important;
+    background-color: rgba(100, 200, 255, 0.85) !important;
+    border-radius: 4px !important;
+    transition-property: width !important;
+    transition-duration: 0.3s !important;
+}
+.ship-bar-fill-fuel {
+    /* Топливо — зеленоватый (полон = ok) */
+    background-color: rgba(120, 220, 150, 0.85) !important;
+}
+.ship-bar-fill-cargo {
+    /* Груз — голубой (как в MarketWindow) */
+    background-color: rgba(100, 200, 255, 0.85) !important;
 }
 .ship-info-header {
     font-size: 11px !important;
@@ -1057,13 +1146,7 @@
     margin-left: 6px !important;
 }
 
-/* cargo progress bar в колонке */
-.ship-cargo-bar {
-    height: 5px !important;
-    margin-top: 1px !important;
-    margin-bottom: 1px !important;
-    flex-shrink: 0 !important;
-}
+/* cargo progress bar в колонке (использует общий .ship-bar-bg + .ship-bar-fill-cargo) — не дублируем */
 
 /* Список груза (левая колонка) */
 .ship-cargo-scroll {

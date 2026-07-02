@@ -20,7 +20,7 @@ namespace ProjectC.UI.Client
     public class MyShipsTab
     {
         // ===== UI элементы =====
-        private DropdownField _selector;
+        private CustomDropdown _selector;       // T-CARGO-UI-01-5: кастомный дропдаун (VisualElement)
         private Label _emptyLabel;
         private VisualElement _infoPanel;
 
@@ -32,8 +32,8 @@ namespace ProjectC.UI.Client
         private Label _position;
         private Label _state;
 
-        private ProgressBar _fuelBar;
-        private ProgressBar _cargoBar;
+        private VisualElement _fuelBarFill;     // T-CARGO-UI-01-3: кастомный бар (bg+fill)
+        private VisualElement _cargoBarFill;
 
         private VisualElement _modulesContainer;
         private VisualElement _modulesScroll;
@@ -63,20 +63,15 @@ namespace ProjectC.UI.Client
         /// <summary>Привязывает UI элементы. Вызывается из CharacterWindow.EnsureBuilt().</summary>
         public void BuildUI(CharacterWindow owner, VisualElement root)
         {
-            _selector     = root.Q<DropdownField>("ship-selector");
+            // T-CARGO-UI-01-5: DropdownField заменён на CustomDropdown (создаётся ниже)
             _emptyLabel   = root.Q<Label>("ship-empty-label");
             _infoPanel    = root.Q<VisualElement>("ship-info");
 
-            _name         = root.Q<Label>("ship-info-name");
-            _class        = root.Q<Label>("ship-info-class");
             _keyId        = root.Q<Label>("ship-info-key-id");
             _fuelText     = root.Q<Label>("ship-fuel-text");
             _cargoText    = root.Q<Label>("ship-cargo-text");
             _position     = root.Q<Label>("ship-info-position");
             _state        = root.Q<Label>("ship-info-state");
-
-            _fuelBar      = root.Q<ProgressBar>("ship-fuel-bar");
-            _cargoBar     = root.Q<ProgressBar>("ship-cargo-bar");
 
             _modulesScroll     = root.Q<VisualElement>("ship-modules-scroll");
             _modulesContainer  = root.Q<VisualElement>("ship-modules-container");
@@ -85,10 +80,17 @@ namespace ProjectC.UI.Client
             _cargoScroll       = root.Q<VisualElement>("ship-cargo-scroll");
             _cargoContainer    = root.Q<VisualElement>("ship-cargo-container");
 
-            if (_selector != null)
+            // T-CARGO-UI-01-3: bind кастомные бары (bg+fill) — стиль как MarketWindow
+            _fuelBarFill       = root.Q<VisualElement>("ship-fuel-bar-fill");
+            _cargoBarFill      = root.Q<VisualElement>("ship-cargo-bar-fill");
+
+            // T-CARGO-UI-01-5: кастомный дропдаун — вставляем в #ship-selector-container
+            var containerEl = root.Q<VisualElement>("ship-selector-container");
+            if (containerEl != null)
             {
-                _selector.choices = _choices;
-                _selector.RegisterValueChangedCallback(OnSelectorChanged);
+                _selector = new CustomDropdown();
+                containerEl.Add(_selector);
+                _selector.OnSelectionChanged += OnSelectorChanged;
             }
 
             UpdateVisibility();
@@ -136,6 +138,10 @@ namespace ProjectC.UI.Client
                     inv.OnSnapshotUpdated -= HandleInventorySnapshotUpdated;
                 _isInventorySubscribed = false;
             }
+
+            // T-CARGO-UI-01-5: закрыть popup при уничтожении окна
+            if (_selector != null)
+                _selector.Cleanup();
         }
 
         private void TrySubscribeTelemetry()
@@ -245,21 +251,14 @@ namespace ProjectC.UI.Client
                 }
             }
 
-            // Обновить dropdown UI
+            // T-CARGO-UI-01-5: обновить CustomDropdown choices
             if (_selector != null)
             {
-                _selector.choices = _choices;
-                if (_choices.Count > 0)
-                {
-                    if (_selectedIndex < 0 || _selectedIndex >= _choices.Count)
-                        _selectedIndex = 0;
-                    _selector.SetValueWithoutNotify(_choices[_selectedIndex]);
-                }
-                else
-                {
-                    _selectedIndex = -1;
-                    _selector.SetValueWithoutNotify(string.Empty);
-                }
+                int defaultIdx = (_choices.Count > 0 && _selectedIndex >= 0 && _selectedIndex < _choices.Count)
+                    ? _selectedIndex : (_choices.Count > 0 ? 0 : -1);
+                _selector.SetChoices(_choices, defaultIdx);
+                // Синхронизируем _selectedIndex обратно — SetChoices мог изменить его внутри
+                _selectedIndex = _selector.SelectedIndex;
             }
 
             UpdateVisibility();
@@ -284,11 +283,9 @@ namespace ProjectC.UI.Client
                 _infoPanel.style.display = hasShips ? DisplayStyle.Flex : DisplayStyle.None;
         }
 
-        private void OnSelectorChanged(ChangeEvent<string> evt)
+        private void OnSelectorChanged(int index)
         {
-            int idx = _choices.IndexOf(evt.newValue);
-            if (idx < 0) return;
-            _selectedIndex = idx;
+            _selectedIndex = index;
             RenderSelectedShip();
         }
 
@@ -305,40 +302,38 @@ namespace ProjectC.UI.Client
             _lastDisplayed = telemetry;
             _hasLastDisplayed = true;
 
-            // Name + class
-            string displayName = telemetry.displayName.ToString();
-            if (string.IsNullOrEmpty(displayName))
-                displayName = ResolveShipDisplayName(sc);
-            if (_name != null) _name.text = $"🚀 {displayName}";
-
-            if (_class != null)
-                _class.text = string.IsNullOrEmpty(telemetry.className.ToString())
-                    ? "Класс: —"
-                    : $"Класс: {telemetry.className}";
-
+            // T-CARGO-UI-01-3: имя только в селекторе, дублирующийся header удалён.
+            // key-id (единственная header-информация, если нужно)
             if (_keyId != null)
                 _keyId.text = $"🔑 Key itemId={itemId}, instanceId={telemetry.keyInstanceId}";
 
-            // Fuel
-            if (_fuelBar != null)
+            // T-CARGO-UI-01-3: кастомный fuel bar (bg+fill) — стиль как MarketWindow
+            if (_fuelBarFill != null)
             {
-                _fuelBar.value = telemetry.fuelNormalized * 100f;
-                _fuelBar.title = $"{telemetry.fuelNormalized * 100f:F0}%";
+                float fuelPct = telemetry.fuelMax > 0f
+                    ? Mathf.Clamp01(telemetry.fuelNormalized) * 100f
+                    : 0f;
+                _fuelBarFill.style.width = new StyleLength(new Length(fuelPct, LengthUnit.Percent));
             }
             if (_fuelText != null)
-                _fuelText.text = $"Топливо: {telemetry.fuelNormalized * 100f:F1}% ({telemetry.fuelMax:F0} max)";
+            {
+                _fuelText.text = telemetry.fuelMax > 0f
+                    ? $"Топливо: {telemetry.fuelNormalized * 100f:F1}% ({telemetry.fuelMax:F0} max)"
+                    : "Топливо: —";
+            }
 
-            // Cargo
-            if (_cargoBar != null && telemetry.cargoMax > 0)
+            // T-CARGO-UI-01-3: кастомный cargo bar (bg+fill)
+            if (_cargoBarFill != null && telemetry.cargoMax > 0)
             {
                 float cargoPct = (float)telemetry.cargoUsed / telemetry.cargoMax * 100f;
-                _cargoBar.value = cargoPct;
-                _cargoBar.title = $"{cargoPct:F0}%";
+                _cargoBarFill.style.width = new StyleLength(new Length(cargoPct, LengthUnit.Percent));
             }
             if (_cargoText != null)
+            {
                 _cargoText.text = telemetry.cargoMax > 0
                     ? $"Груз: {telemetry.cargoUsed}/{telemetry.cargoMax}"
-                    : $"Груз: — (нет данных)";
+                    : "Груз: — (нет данных)";
+            }
 
             // T-CARGO-UI-01: детальный список items
             RenderCargoDetail(telemetry.cargoDetail);

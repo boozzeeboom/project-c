@@ -98,19 +98,18 @@
  <!-- Other sections (unchanged) -->
  <ui:VisualElement name="ship-section" class="list-section" style="display: none;">
   <ui:Label text="Мои корабли" class="section-title" />
-  <ui:DropdownField name="ship-selector" label="Корабль" class="ship-selector" />
+  <!-- T-CARGO-UI-01-5: контейнер для CustomDropdown (без класса — сам дропдаун его добавляет) -->
+  <ui:VisualElement name="ship-selector-container" />
   <ui:Label name="ship-empty-label" text="Нет доступных кораблей. Найдите ключ в мире." class="ship-empty" />
   <ui:VisualElement name="ship-info" class="ship-info">
 
-   <!-- T-CARGO-UI-01-2: компактный header — name + class в одну строку, key-id отдельно -->
-   <ui:VisualElement class="ship-header-row">
-    <ui:Label name="ship-info-name" text="—" class="ship-info-name" />
-    <ui:Label name="ship-info-class" text="—" class="ship-info-class-inline" />
-   </ui:VisualElement>
-   <ui:Label name="ship-info-key-id" text="—" class="ship-info-key-id" />
+  <!-- key-id (единственный header-текст, дублирующееся имя убрано T-CARGO-UI-01-3) -->
+  <ui:Label name="ship-info-key-id" text="—" class="ship-info-key-id" />
 
-   <!-- Тонкая полоса топлива сразу под header -->
-   <ui:ProgressBar name="ship-fuel-bar" value="0" low-value="0" high-value="100" class="ship-fuel-bar" />
+   <!-- T-CARGO-UI-01-3: кастомный fuel bar (bg+fill) — стиль как в MarketWindow -->
+   <ui:VisualElement class="ship-bar-bg">
+    <ui:VisualElement name="ship-fuel-bar-fill" class="ship-bar-fill ship-bar-fill-fuel" />
+   </ui:VisualElement>
    <ui:Label name="ship-fuel-text" text="—" class="ship-info-row ship-info-row-compact" />
 
    <!-- T-CARGO-UI-01-2: 2 колонки — Груз (список) | Модули. 80-90% секции. -->
@@ -119,7 +118,10 @@
     <!-- Левая колонка: Груз -->
     <ui:VisualElement class="ship-col ship-col-cargo">
      <ui:Label text="Груз" class="ship-info-header ship-col-header" />
-     <ui:ProgressBar name="ship-cargo-bar" value="0" low-value="0" high-value="100" class="ship-cargo-bar" />
+     <!-- T-CARGO-UI-01-3: кастомный cargo bar (bg+fill) -->
+     <ui:VisualElement class="ship-bar-bg">
+      <ui:VisualElement name="ship-cargo-bar-fill" class="ship-bar-fill ship-bar-fill-cargo" />
+     </ui:VisualElement>
      <ui:Label name="ship-cargo-text" text="—" class="ship-info-row ship-info-row-compact" />
      <ui:ScrollView name="ship-cargo-scroll" class="ship-cargo-scroll">
       <ui:VisualElement name="ship-cargo-container" class="ship-cargo-container" />

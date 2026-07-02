@@ -405,15 +405,52 @@ namespace ProjectC.AI
             _proxyAgent.updateUpAxis = false;
         }
 
+        // T-CREW-03/fix: каскадный SamplePosition с нарастающим радиусом + троттленный лог.
+        // Без слепого Warp(navPos) — иначе NavMeshAgent вне навмеша плодит warning
+        // "Failed to create agent because it is not close enough to the NavMesh"
+        // каждый FixedUpdate. Диагностический лог — раз в 2с, не каждый кадр.
+        private float _warpWarnCooldown;
+        private const float WARP_WARN_INTERVAL = 2f;
         private void WarpProxyToNpc()
         {
             if (_proxyAgent == null || _deckNav == null) return;
             Vector3 deckLocal = _parentedToShip ? transform.localPosition : _deckNav.WorldToDeckLocal(transform.position);
             Vector3 navPos = _deckNav.DeckLocalToNav(deckLocal);
-            if (NavMesh.SamplePosition(navPos, out NavMeshHit hit, 5f, NavMesh.AllAreas))
+
+            // Каскад радиусов: 2 → 10 → 50м. Если не нашли вообще — НЕ варпим
+            // (агент остаётся вне навмеша, но DriveDeckNav пропустит этот кадр без warning'а).
+            float[] radii = { 2f, 10f, 50f };
+            NavMeshHit hit = default;
+            bool found = false;
+            for (int i = 0; i < radii.Length; i++)
+            {
+                if (NavMesh.SamplePosition(navPos, out hit, radii[i], NavMesh.AllAreas))
+                {
+                    found = true;
+                    break;
+                }
+            }
+
+            if (found)
+            {
                 _proxyAgent.Warp(hit.position);
-            else
-                _proxyAgent.Warp(navPos);
+            }
+            else if (Time.unscaledTime >= _warpWarnCooldown)
+            {
+                _warpWarnCooldown = Time.unscaledTime + WARP_WARN_INTERVAL;
+                // Диагностика: где искали навмеш и что вокруг.
+                float nearestMiss = -1f;
+                NavMeshHit probe = default;
+                if (NavMesh.SamplePosition(navPos, out probe, 200f, NavMesh.AllAreas))
+                    nearestMiss = Vector3.Distance(navPos, probe.position);
+                Debug.LogWarning(
+                    $"[NpcBrain] {gameObject.name}: deckNav Warp miss — navPos={navPos:F2}, deckLocal={deckLocal:F2}, " +
+                    $"agentTypeID={_proxyAgent.agentTypeID}, navmesh-nearest={nearestMiss:F2}m. " +
+                    $"Причины: (1) NavMesh палубы не запечён/не назначен в ShipDeckNav.DeckNavData; " +
+                    $"(2) AgentType NPC-префаба не совпадает с AgentType запечённого навмеша; " +
+                    $"(3) точка спавна NPC вне навмеша (deck edge).");
+            }
+
             _proxyLastPos = _proxyAgent.transform.position;
         }
 

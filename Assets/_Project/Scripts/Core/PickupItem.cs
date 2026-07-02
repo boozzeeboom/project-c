@@ -40,7 +40,12 @@ namespace ProjectC.Items
         [Tooltip("Радиус взаимодействия (используется IInteractable)")]
         public float interactionRadius = 3f;
 
+        // T-PICKUP-RIDE-01: если pickup лежит на движущейся палубе — бобаинг
+        // работает в local space палубы (PickupDeckRide ставит local parent).
+        // Базовая точка хранится либо в мире (_startPosition, parent==null),
+        // либо в local space относительно палубы (читается из _deckRide._localStartPos).
         private Vector3 _startPosition;
+        private Core.PickupDeckRide _deckRide;
         private bool _isCollected = false;
         private bool _isAwaitingServer = false;   // защита от двойного E
 
@@ -61,6 +66,17 @@ namespace ProjectC.Items
                         collider = gameObject.AddComponent<SphereCollider>();
                     }
                     collider.isTrigger = true;
+
+                    // T-PICKUP-RIDE-01: добавить PickupDeckRide (local carry на палубе корабля).
+                    // Если компонент уже есть (например, на scene-placed pickup'е) — оставляем.
+                    if (GetComponent<Core.PickupDeckRide>() == null)
+                    {
+                        _deckRide = gameObject.AddComponent<Core.PickupDeckRide>();
+                    }
+                    else
+                    {
+                        _deckRide = GetComponent<Core.PickupDeckRide>();
+                    }
 
                     // Equipment Visual System (Phase 1, 2026-06-29):
                     // Если на пикапе нет ни одного child-renderer (visual по старинке лежит в сцене),
@@ -116,7 +132,20 @@ namespace ProjectC.Items
             // Visual bobbing (остановлено если собран)
             if (!_isCollected)
             {
-                transform.position = _startPosition + Vector3.up * Mathf.Sin(Time.time * floatSpeed) * floatAmplitude;
+                // T-PICKUP-RIDE-01 final fix (2026-07-02):
+                // На палубе НЕ трогаем transform.position — LateUpdate PickupDeckRide сам
+                // двигает его за палубой через carry-формулу. Любая запись в position здесь
+                // рвёт carry (Update возвращает в _startPosition когда DeckParent==null
+                // и pickup сошёл с палубы).
+                // В свободном режиме: сначала RefreshWorldBase (фиксирует текущую мировую),
+                // потом бобаинг вокруг этой базы. Без RefreshWorldBase pickup «прыгает» обратно
+                // в старую _startPosition и дрейфит.
+                if (_deckRide == null || _deckRide.DeckParent == null)
+                {
+                    _deckRide?.RefreshWorldBase();
+                    Vector3 bob = Vector3.up * Mathf.Sin(Time.time * floatSpeed) * floatAmplitude;
+                    transform.position = _deckRide.WorldBasePosition + bob;
+                }
                 transform.Rotate(Vector3.up, 30f * Time.deltaTime);
             }
         }

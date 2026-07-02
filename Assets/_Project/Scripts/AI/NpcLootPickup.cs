@@ -47,6 +47,8 @@ namespace ProjectC.AI
 
         private Vector3 _startPosition;
         private bool _collected = false;
+        // T-PICKUP-RIDE-01: pickup едет с палубой движущегося корабля (L3 в carry-цепочке)
+        private Core.PickupDeckRide _deckRide;
 
         // === IInteractable ===
         public string InstanceId => gameObject.name + "_" + GetHashCode();
@@ -64,6 +66,17 @@ namespace ProjectC.AI
             if (col == null) col = gameObject.AddComponent<SphereCollider>();
             col.isTrigger = true;
 
+            // T-PICKUP-RIDE-01: добавить PickupDeckRide на loot pickup
+            // (L3 carry — loot, выпавший с моба на корабле, едет с кораблём).
+            if (GetComponent<Core.PickupDeckRide>() == null)
+            {
+                _deckRide = gameObject.AddComponent<Core.PickupDeckRide>();
+            }
+            else
+            {
+                _deckRide = GetComponent<Core.PickupDeckRide>();
+            }
+
             // Auto-despawn (server-side)
             if (IsServer && autoDespawnSeconds > 0)
             {
@@ -76,7 +89,15 @@ namespace ProjectC.AI
             // Visual bobbing (client + server, cheap).
             if (!_collected)
             {
-                transform.position = _startPosition + Vector3.up * Mathf.Sin(Time.time * floatSpeed) * floatAmplitude;
+                // T-PICKUP-RIDE-01 final fix (2026-07-02):
+                // На палубе НЕ пишем transform.position (carry сам двигает за палубой).
+                // В свободном режиме RefreshWorldBase + bob вокруг актуальной базы.
+                if (_deckRide == null || _deckRide.DeckParent == null)
+                {
+                    _deckRide?.RefreshWorldBase();
+                    Vector3 bob = Vector3.up * Mathf.Sin(Time.time * floatSpeed) * floatAmplitude;
+                    transform.position = _deckRide.WorldBasePosition + bob;
+                }
             }
         }
 

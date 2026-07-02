@@ -3,214 +3,174 @@
 > **Тикет:** T-CARGO-UI-01-5
 > **Автор:** Mavis
 > **Дата:** 2026-07-02
-**Статус:** ✅ **СДЕЛАНО** (2026-07-02, ~3 ч)
-**Связано:** [SHIP_WINDOW.md](SHIP_WINDOW.md) — корабельная секция CharacterWindow
+> **Статус:** ✅ **СДЕЛАНО** (2026-07-02, ~3 ч)
+> **Связано:** [SHIP_WINDOW.md](SHIP_WINDOW.md) — корабельная секция CharacterWindow
 
 ---
 
-## 1. Общее решение
+## TL;DR
 
-Создать кастомный компонент `CustomDropdown` (VisualElement), который:
+`DropdownField` в Unity 6 runtime использует `GenericDropdownMenu` (не VisualElement) — выпадающий список **не стилизуется USS**. Написан `CustomDropdown` — полностью VisualElement-based, все части стилизуются через USS.
 
-- **Кнопка** — `Label` + стрелка `▼`, клик → открывает popup
-- **Popup** — `VisualElement` с `ListView`, состоящий из `Label`-items
-- **Полностью стилизуемый USS** — все части VisualElement
-- **Легковесный** — без лишних зависимостей, ~150 LOC
-- **Переиспользуемый** — можно использовать в других окнах (MarketWindow и т.д.)
+Заменены селекторы:
+- CharacterWindow → таб «Корабль» (выбор своих кораблей) ✅
+- MarketWindow → селектор корабля (выбор nearby ships) ✅
+- CharacterWindow фильтры (`filter-source`, `filter-state`) — пропущены (сложная интеграция с ContractsTab/InventoryTab)
 
 ---
 
-## 2. Структура UXML (визуальная)
+## 1. Архитектура
 
 ```
 CustomDropdown (VisualElement)
-├── #dropdown-button (Label, clickable)        ← видимая кнопка с именем + ▼
-└── #dropdown-popup (VisualElement, hidden)    ← popup-контейнер (overlay)
-    └── ListView (#dropdown-list)               ← список choices
-        └── Label (item)                        ← каждый choice
+├── .custom-dropdown__button (VisualElement, clickable)
+│   ├── .custom-dropdown__text (Label — выбранное значение)
+│   └── .custom-dropdown__arrow (Label — ▼)
+└── .custom-dropdown__popup (VisualElement, overlay на main-container, position absolute)
+    └── .custom-dropdown__item (Label × N — items списка)
 ```
 
-**Временно** создаётся programmatic (через C#), но может быть вынесен в UXML.
+### 1.1 Popup позиционирование
+
+Popup добавляется на **`main-container`** (корень UIDocument), а не на `panel.visualTree`. Координаты:
+
+```csharp
+var mainContainer = FindMainContainer(); // parent-chain walk до main-container
+var worldPos = _button.LocalToWorld(Vector2.zero);
+var localPos = mainContainer.WorldToLocal(worldPos);
+_popupContainer.style.left = localPos.x;
+_popupContainer.style.top = localPos.y + btnHeight;
+```
+
+`FindMainContainer()` — ручной обход `parent`-цепочки, т.к. `GetFirstAncestorWhere()` не существует в Unity 6 (API появился позже).
+
+### 1.2 Закрытие popup'а
+
+При открытии регистрируется `PointerDownEvent` на `mainContainer` с `TrickleDown`. Проверка закрытия — через `_popupContainer.Contains(target)` (иерархия VisualElement, не координаты):
+
+```csharp
+if (target != null && _popupContainer.Contains(target)) return; // внутри popup — не закрываем
+if (target != null && _button.Contains(target)) return;          // внутри кнопки — не закрываем
+ClosePopup();
+```
+
+`Contains(target)` — проверка является ли target дочерним элементом popup'а (работает независимо от системы координат).
 
 ---
 
-## 3. Классы USS
+## 2. Проблемы и их решения
 
-| Класс | Назначение |
-|---|---|
-| `.custom-dropdown` | Корневой контейнер (flex-row, выравнивание) |
-| `.custom-dropdown__button` | Кнопка (текст + стрелка inline) |
-| `.custom-dropdown__text` | Текст выбранного значения |
-| `.custom-dropdown__arrow` | Стрелка `▼` |
-| `.custom-dropdown__popup` | Popup-контейнер (overlay, position absolute) |
-| `.custom-dropdown__popup .custom-dropdown__item` | Item в списке (Label) |
-| `.custom-dropdown__popup .custom-dropdown__item:hover` | Hover, active |
+### 2.1 GenericDropdownMenu — не VisualElement
+
+**Проблема:** `DropdownField` в Unity 6 runtime использует `GenericDropdownMenu` (наследует `AbstractGenericMenu`, не `VisualElement`). Popup — системный уровень, USS не применим.
+
+**Решение:** `CustomDropdown` — полностью свой VisualElement.
+
+### 2.2 overflow: hidden родителя обрезает popup
+
+**Проблема:** `list-section` (родитель дропдауна) имеет `overflow: hidden`. Popup как дочерний элемент обрезается.
+
+**Решение:** Popup добавляется на `main-container` (корневой контейнер без `overflow: hidden`), позиционируется абсолютно.
+
+### 2.3 Двойной класс custom-dropdown
+
+**Проблема:** UXML контейнер имел `class="custom-dropdown"` И `CustomDropdown` в конструкторе тоже добавляет этот класс. Двойное наслоение → min-height 48px вместо 24px, кривая верстка.
+
+**Решение:** В UXML контейнер без класса. Только сам `CustomDropdown` добавляет `custom-dropdown`.
+
+### 2.4 Координаты popup при закрытии
+
+**Проблема (v1):** `OnRootPointerDown` использовал `evt.localPosition` (корневая система координат) для `ContainsPoint()`. Не совпадало с локальной системой popup'а → popup закрывался сразу после открытия.
+
+**Решение:** Заменил координатную математику на `_popupContainer.Contains(target)` — проверка по иерархии VisualElement.
+
+### 2.5 SetChoices сбрасывал выбранный индекс
+
+**Проблема:** `SetChoices(list)` без `defaultIndex` всегда взывал `_selectedIndex = 0`. При каждом снепшоте рынка выбор юзера сбрасывался на первый корабль.
+
+**Решение (v2):** Передавать текущий `_selectedShipIndex` как defaultIndex:
+```csharp
+_shipSelector.SetChoices(choices, _selectedShipIndex);
+```
+
+### 2.6 Initial selection не дёргал событие
+
+**Проблема:** Старый `DropdownField.value = choices[0]` дёргал `RegisterValueChangedCallback`. Новый `SetSelectedIndex(0)` не дёргал `OnSelectionChanged` → cargo не подгружался при первом открытии.
+
+**Решение:** `SetSelectedIndex(0, fireEvent: true)` при начальной загрузке.
 
 ---
 
-## 4. C# API
+## 3. C# API
 
 ```csharp
 namespace ProjectC.UI.Client
 {
     public class CustomDropdown : VisualElement
     {
-        // === События ===
         public event Action<int> OnSelectionChanged; // index выбранного
 
-        // === Публичные методы ===
-        public void SetChoices(List<string> choices);   // список имён
-        public void SetSelectedIndex(int index);        // выбрать item
-        public int SelectedIndex { get; private set; }
+        public void SetChoices(List<string> choices, int defaultIndex = -1);
+        //   defaultIndex = -1: если _choices пуст → _selectedIndex = 0,
+        //   иначе сохраняет переданный defaultIndex.
+        //   Для синхронизации с внешним selectedIndex передавать его явно.
+
+        public void SetSelectedIndex(int index, bool fireEvent = false);
+        public int SelectedIndex { get; }
         public string SelectedText { get; }
 
-        // === Factory ===
-        public static CustomDropdown Create(List<string> choices, int defaultIndex, Action<int> onSelect);
+        public void Cleanup(); // закрыть popup при уничтожении окна
     }
 }
 ```
 
 ---
 
-## 5. Логика
+## 4. Где используется
 
-**Открытие:** клик по `#dropdown-button` → вычисляем положение на экране (через `parent.LocalToWorld`) → `#dropdown-popup` становится `position: absolute; display: flex` с правильными координатами.
+| Файл | Контекст | Состояние |
+|---|---|---|
+| `Assets/_Project/Scripts/UI/Client/CharacterWindow/CustomDropdown.cs` | Реализация | ✅ |
+| `Assets/_Project/Scripts/UI/Client/CharacterWindow/MyShipsTab.cs` | Таб «Корабль» | ✅ |
+| `Assets/_Project/UI/Resources/UI/CharacterWindow.uss` | Стили для CharacterWindow | ✅ |
+| `Assets/_Project/Trade/Scripts/Client/MarketWindow.cs` | Селектор корабля в рынке | ✅ |
+| `Assets/_Project/Trade/Resources/UI/MarketWindow.uss` | Стили для MarketWindow | ✅ |
 
-**Закрытие:** клик вне popup'а → `RegisterCallback<PointerDownEvent>` на панели → закрыть; выбор item → `OnSelectionChanged` + закрыть.
-
-**Scroll:** `ListView` внутри popup'а — если choices > 6, появляется скролл (через макс-высоту).
-
-**Highlight:** выбранный item имеет класс `.selected`.
-
----
-
-## 6. Интеграция в MyShipsTab
-
-**Замена:** `DropdownField _selector` → `CustomDropdown _selector`.
-
-**BuildUI (MyShipsTab.cs):**
-
-```csharp
-// было:
-_selector = root.Q<DropdownField>("ship-selector");
-
-// стало:
-_selector = new CustomDropdown();
-_selector.name = "ship-selector";
-root.Q<VisualElement>("ship-selector-container").Add(_selector); // или вставить рядом
-```
-
-**RefreshShipList:**
-```csharp
-_selector.SetChoices(_choices);
-_selector.SetSelectedIndex(_selectedIndex >= 0 ? _selectedIndex : 0);
-_selector.OnSelectionChanged += OnSelectorChanged;
-```
-
-**OnSelectorChanged:**
-```csharp
-private void OnSelectorChanged(int index)
-{
-    _selectedIndex = index;
-    RenderSelectedShip();
-}
-```
-
-**UXML:** убрать `<ui:DropdownField name="ship-selector"/>`, вместо него `<ui:VisualElement class="custom-dropdown-wrapper" />`.
+**Не заменены:** `filter-source` / `filter-state` в CharacterWindow (передаются в ContractsTab и InventoryTab) — сложная цепочка зависимостей, отложено.
 
 ---
 
-## 7. Стили (USS)
+## 5. Стили USS (актуальные)
 
-```css
-.custom-dropdown {
-    flex-direction: row;
-    align-items: center;
-    min-height: 24px;
-    flex-shrink: 0;
-}
-.custom-dropdown__button {
-    flex-direction: row;
-    align-items: center;
-    flex-grow: 1;
-    padding: 2px 8px;
-    background-color: rgba(30, 45, 70, 0.5);
-    border-radius: 4px;
-    cursor: pointer;
-}
-.custom-dropdown__text {
-    flex-grow: 1;
-    font-size: 13px;
-    color: rgb(200, 220, 255);
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
-}
-.custom-dropdown__arrow {
-    font-size: 10px;
-    color: rgb(160, 185, 220);
-    margin-left: 6px;
-    flex-shrink: 0;
-}
+Стили живут в двух USS файлах (одинаковые правила, отличаются размеры под контекст):
 
-/* Popup - overlay */
-.custom-dropdown__popup {
-    position: absolute;
-    left: 0;
-    top: 100%;
-    min-width: 200px;
-    max-height: 200px;
-    background-color: rgba(25, 40, 65, 0.95);
-    border-width: 1px;
-    border-color: rgba(80, 100, 130, 0.4);
-    border-radius: 4px;
-    padding: 4px;
-    overflow-y: auto;
-    z-index: 100;
-}
-.custom-dropdown__item {
-    padding: 6px 10px;
-    font-size: 12px;
-    color: rgb(200, 220, 255);
-    border-bottom-width: 1px;
-    border-bottom-color: rgba(80, 100, 130, 0.15);
-    cursor: pointer;
-}
-.custom-dropdown__item:hover {
-    background-color: rgba(60, 100, 160, 0.6);
-}
-.custom-dropdown__item.selected {
-    background-color: rgba(50, 90, 150, 0.4);
-    -unity-font-style: bold;
-}
-```
+| Свойство | CharacterWindow (таб Корабль) | MarketWindow (селектор) |
+|---|---|---|
+| `.custom-dropdown__button` | `min-height: 24px; font-size: 13px` | `height: 26px; font-size: 12px` |
+| `.custom-dropdown__text` | `font-size: 13px` | `font-size: 12px; line-height: 14px` |
+| `.custom-dropdown__arrow` | `font-size: 10px` | `font-size: 9px` |
+
+Оба используют `!important` для переопределения Unity runtime theme.
 
 ---
 
-## 8. Файлы
+## 6. Трудности при реализации (pitfalls)
 
-| Файл | Действие |
+1. **Unity 6 API gaps** — `GetFirstAncestorWhere()` не существует. Ручной parent-chain walk.
+2. **USS specificity** — Unity runtime theme имеет высокий приоритет, требуется `!important`.
+3. **CustomDropdown не должен дублировать класс контейнера** — иначе двойные размеры.
+4. **`containsPoint()` vs `Contains(target)`** — первый оперирует в локальной системе координат и легко ошибиться; второй надёжнее.
+5. **`SetChoices` без defaultIndex = сброс** — всегда передавать текущий selectedIndex.
+6. **FireEvent при SetSelectedIndex** — по умолчанию false, для initial selection нужно true.
+7. **Popup на main-container, а не на panel.visualTree** — panel.visualTree может иметь другую систему координат.
+8. **`evt.StopPropagation()` на item'ах** — обязательно, иначе `OnRootPointerDown` (TrickleDown) закроет popup до обработки клика по item'у.
+
+---
+
+## 7. История изменений
+
+| Дата | Что |
 |---|---|
-| `Assets/_Project/Scripts/UI/Client/CharacterWindow/CustomDropdown.cs` | Новый — кастомный дропдаун |
-| `Assets/_Project/UI/Resources/UI/CharacterWindow.uxml` | Изменить — убрать `DropdownField`, добавить `VisualElement.custom-dropdown-wrapper` |
-| `Assets/_Project/UI/Resources/UI/CharacterWindow.uss` | Изменить — стили `.custom-dropdown*`, удалить `.ship-selector` |
-| `Assets/_Project/Scripts/UI/Client/CharacterWindow/MyShipsTab.cs` | Изменить — `DropdownField` → `CustomDropdown` |
-| `docs/UI/SHIP_WINDOW.md` | Обновить — custom dropdown секция |
-
----
-
-## 9. Оценка
-
-~2-3 часа (1 файл + интеграция + тест).
-
----
-
-## 10. Verification (для пользователя)
-
-**Compile:** `refresh_unity` → 0 errors. Проверить все окна где был `DropdownField` (CharacterWindow — таб Корабль).
-
-**Play Mode:**
-- CharacterWindow → таб Корабль → селектор показывает список кораблей
-- Клик → popup тёмный, со скруглениями, hover подсветка
-- Выбор → кнопка обновляется, UI перерисовывается
-- Клик вне popup'а → popup закрывается
+| 2026-07-02 | T-CARGO-UI-01-5: CustomDropdown создан, заменён селектор в MyShipsTab |
+| 2026-07-02 | Замена в MarketWindow ship-selector |
+| 2026-07-02 | Документация + сводка трудностей |

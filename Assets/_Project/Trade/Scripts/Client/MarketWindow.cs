@@ -56,7 +56,7 @@ namespace ProjectC.Trade.Client
         private VisualElement _cargoSection;       // FIX: wrapper вокруг cargo-list + title
         private VisualElement _contractsSection;   // C2-refactor
         private VisualElement _shipSelectorContainer;
-        private DropdownField _shipSelector;
+        private ProjectC.UI.Client.CustomDropdown _shipSelector;
         private Button _buyBtn;
         private Button _sellBtn;
         private Button _loadBtn;
@@ -234,7 +234,14 @@ namespace ProjectC.Trade.Client
             _packBtn = _root.Q<Button>("pack-btn");
             _unpackBtn = _root.Q<Button>("unpack-btn");
             _shipSelectorContainer = _root.Q<VisualElement>("ship-selector-container");
-            _shipSelector = _root.Q<DropdownField>("ship-selector");
+            // T-CARGO-UI-01-5: CustomDropdown вместо DropdownField
+            var selectorEl = _root.Q<VisualElement>("ship-selector");
+            if (selectorEl != null)
+            {
+                _shipSelector = new ProjectC.UI.Client.CustomDropdown();
+                selectorEl.Add(_shipSelector);
+                _shipSelector.OnSelectionChanged += OnShipSelectorChanged;
+            }
             _buyBtn = _root.Q<Button>("buy-btn");
             _sellBtn = _root.Q<Button>("sell-btn");
             _loadBtn = _root.Q<Button>("load-btn");
@@ -410,36 +417,7 @@ namespace ProjectC.Trade.Client
 
             if (_shipSelector != null)
             {
-                _shipSelector.RegisterValueChangedCallback(evt =>
-                {
-                    var snap = _state?.CurrentSnapshot;
-                    if (!snap.HasValue) return;
-                    var ships = snap.Value.nearbyShips;
-                    for (int i = 0; i < ships.Length; i++)
-                    {
-                        if (ships[i].displayName == evt.newValue)
-                        {
-                            _selectedShipIndex = i;
-                            ulong newShipId = ships[i].shipNetworkObjectId;
-
-                            // FIX (2026-06-05): мгновенное переключение cargo из
-                            // per-ship клиентского кэша MarketClientState.CurrentShipCargos.
-                            // Раньше _cargoCache обновлялся ТОЛЬКО по приходу snapshot
-                            // (каждые ~5 мин тика) или по TradeResult.updatedCargoSnapshot
-                            // (после успешной операции). При простом переключении
-                            // ship-selector без других действий — кэш оставался
-                            // cargo предыдущего корабля → баг "switch light→medium→light
-                            // показывает пусто". Теперь: мгновенный UI-апдейт из
-                            // локального кэша + отправка RPC (safety net: сервер
-                            // пришлёт свежий snapshot, если корабль не был в кэше).
-                            ApplySelectedShipCargoFromCache(newShipId);
-                            RefreshCargoInfo();
-
-                            _state?.RequestSetSelectedShip(snap.Value.locationId, newShipId);
-                            return;
-                        }
-                    }
-                });
+                // подписка уже установлена в BuildUI — не дублируем
             }
 
             _state = MarketClientState.Instance;
@@ -631,6 +609,25 @@ namespace ProjectC.Trade.Client
         // STATE PROJECTION
         // ========================================================
 
+        /// <summary>T-CARGO-UI-01-5: кастомный дропдаун → выбор корабля.</summary>
+        private void OnShipSelectorChanged(int index)
+        {
+            var snap = _state?.CurrentSnapshot;
+            if (!snap.HasValue) return;
+            var ships = snap.Value.nearbyShips;
+            if (index < 0 || index >= ships.Length) return;
+
+            _selectedShipIndex = index;
+            ulong newShipId = ships[index].shipNetworkObjectId;
+
+            // FIX (2026-06-05): мгновенное переключение cargo из
+            // per-ship клиентского кэша MarketClientState.CurrentShipCargos.
+            ApplySelectedShipCargoFromCache(newShipId);
+            RefreshCargoInfo();
+
+            _state?.RequestSetSelectedShip(snap.Value.locationId, newShipId);
+        }
+
         private void HandleSnapshot(MarketSnapshotDto snap)
         {
             if (_locationLabel != null) _locationLabel.text = $"Рынок: {snap.displayName}";
@@ -691,20 +688,18 @@ namespace ProjectC.Trade.Client
             // Cargo info panel (вес, слоты, прогресс-бар)
             RefreshCargoInfo();
 
-            // Ship selector
+            // T-CARGO-UI-01-5: CustomDropdown choices
             if (_shipSelector != null && snap.nearbyShips != null)
             {
                 var choices = new List<string>();
                 foreach (var s in snap.nearbyShips) choices.Add(s.displayName);
-                _shipSelector.choices = choices;
-                if (choices.Count > 0 && _shipSelector.value == "")
+                // Передаём текущий _selectedShipIndex — SetChoices сохранит его если в пределах списка
+                _shipSelector.SetChoices(choices, _selectedShipIndex >= 0 && _selectedShipIndex < choices.Count ? _selectedShipIndex : 0);
+                if (choices.Count > 0 && _shipSelector.SelectedIndex < 0)
                 {
-                    _shipSelector.value = choices[0];
-                    _selectedShipIndex = 0;
-                    // FIX (2026-06-04): Сообщить серверу о начальном выборе корабля, чтобы
-                    // он включил cargo этого корабля в следующий snapshot (на случай,
-                    // если сервер не выбрал дефолт сам).
-                    _state?.RequestSetSelectedShip(snap.locationId, snap.nearbyShips[0].shipNetworkObjectId);
+                    // T-CARGO-UI-01-5: fireEvent:true — дёргает OnShipSelectorChanged
+                    // (применяет cargo из кэша, обновляет UI, сообщает серверу)
+                    _shipSelector.SetSelectedIndex(0, fireEvent: true);
                 }
                 // Показываем селектор только если кораблей > 1
                 if (_shipSelectorContainer != null)

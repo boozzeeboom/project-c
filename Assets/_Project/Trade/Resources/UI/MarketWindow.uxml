@@ -103,7 +103,7 @@
         <!-- Multi-ship selector -->
         <ui:VisualElement name="ship-selector-container" class="ship-selector-container" style="display: none;">
             <ui:Label text="Корабль:" class="ship-selector-label" />
-            <ui:DropdownField name="ship-selector" class="ship-selector" />
+            <ui:VisualElement name="ship-selector" />
         </ui:VisualElement>
 
         <!-- Кнопки действий -->

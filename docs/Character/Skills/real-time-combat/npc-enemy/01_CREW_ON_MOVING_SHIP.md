@@ -141,9 +141,105 @@
 
 ## 8. Roadmap
 
-- **T-CREW-01** — carry «не сдувает» (`PlatformRideHelper` + `NpcBrain.FixedUpdate`). ✅ **DONE**.
-- **T-CREW-02** — `ShipDeckNav` (регистрация навмеша в фикс. нав-фрейме, конвертации, `SampleOnDeck`). ✅ **DONE**.
-- **T-CREW-03** — прокси-агент в `NpcBrain`: навигация по палубе, отключение carry на время нав-движения,
-  deck-aware leash, анимация от прокси. ✅ **DONE (код)**; нужен per-ship bake + PIE-тест.
-- **T-CREW-04** — контр-поворот визуала для вертикали (опц.).
-- **T-CREW-05** — тест: враг забегает на летящий корабль, преследует игрока по палубе, не сваливается.
+| **T-CREW-01** — carry «не сдувает» (`PlatformRideHelper` + `NpcBrain.FixedUpdate`). ✅ **DONE**.
+|- **T-CREW-02** — `ShipDeckNav` (регистрация навмеша в фикс. нав-фрейме, конвертации, `SampleOnDeck`). ✅ **DONE**.
+|- **T-CREW-03** — прокси-агент в `NpcBrain`: навигация по палубе, отключение carry на время нав-движения,
+|  deck-aware leash, анимация от прокси. ✅ **DONE (код)**; нужен per-ship bake + PIE-тест.
+|- **T-CREW-04** — контр-поворот визуала для вертикали (опц.).
+|- **T-CREW-05** — тест: враг забегает на летящий корабль, преследует игрока по палубе, не сваливается.
+|  **DONE 2026-07-02**: NPC на `NPC_Ship_HeavyII_03` спавнятся, агрятся от удара, преследуют игрока по палубе,
+|  едут с кораблём при его движении. Bake `NavMesh-DeckNavSurface.asset` сделан, `ShipDeckNav` фикс см. §8.
+|
+|---
+|
+|## 8. T-CREW-05/fix — навмеш под движущимся кораблём (2026-07-02)
+|
+|**Проблема (открыта при первом Play Mode-тесте):** NPC заходили на борт (`BeginRide` отрабатывал,
+|`_deckNavActive=true`), но **не двигались** — `WarpProxyToNpc` падал с `deckNav Warp miss`,
+|`SamplePosition` возвращал FAIL.
+|
+|**Корень:** `ShipDeckNav.Register` использовал slot-based origin:
+|```csharp
+|_navFrameOrigin = new Vector3(_nextSlot++ * _navFrameSeparation, 0f, 0f); // (0,0,0), (5000,0,0), ...
+|_instance = NavMesh.AddNavMeshData(_deckNavMeshData, _navFrameOrigin, Quaternion.identity);
+|```
+|
+|Этот дизайн (см. §4.2) предполагает, что корабль **в origin/identity** во время bake. **У движущегося корабля**
+|(позиция в мире `(40320, 2502, 39812)` и т.п.) формула конвертации работает, но навмеш лежит в (0,0,0),
+|а `navPos = navFrameOrigin + InverseTransformPoint(worldPos) = (0,0,0) + (180, 2.5, -924) ≈ (180, 2.5, -924)` —
+|в **900+ метрах** от навмеша. `SamplePosition` → MISS → `_proxyAgent.isOnNavMesh=false` → NPC стоит.
+|
+|**Был вторичный симптом:** в логах сыпались `Failed to create agent ... not close enough to the NavMesh`
+|(из `NavMeshSurface:AddData` в `Internal_CallOnNavMeshPreUpdate`). Это побочный эффект **пустого
+|NavMeshData** (см. §9).
+|
+|**Фикс:** навмеш привязывается к **мировой позиции ShipRoot в момент Register**. Для движущегося корабля
+|`LateUpdate` следит за сдвигом и при выходе за `_navFrameSeparation/2` делает `Remove + AddNavMeshData`
+|в новой точке (на медленном корабле и большом slot'е это раз в несколько минут, пути агентов внутри
+|слота не рвутся):
+|```csharp
+|if (_registerUnderShip) {
+|    _navFrameOrigin = transform.position;  // навмеш "под" кораблём в момент Register
+|}
+|// LateUpdate:
+|Vector3 delta = transform.position - _lastRegisteredShipPos;
+|delta.y = 0f;
+|if (delta.sqrMagnitude > (_navFrameSeparation * 0.5f) * (_navFrameSeparation * 0.5f)) {
+|    Unregister(); Register();  // пере-регистрация в новой мировой точке
+|}
+|```
+|
+|Новая опция `_registerUnderShip` (по умолчанию `true`): новый режим. Если есть корабли, остающиеся
+|в origin — выставить `false` для обратной совместимости (legacy slot-based режим).
+|
+|**Конвертации** (см. §4.2 шаг 3) **не изменились**:
+|`deck-local p → nav-world = navFrameOrigin + p` — теперь работает корректно, потому что
+|`navFrameOrigin` отсчитывается от ShipRoot, а не от мирового (0,0,0).
+|
+|**Что нужно для каждого корабля:**
+|- Префаб корабля: `NavMeshSurface` (Bake в origin/identity) + `ShipDeckNav` с назначенным `Deck NavMesh Data`.
+|- На NPC-префабе: `NavMeshAgent.AgentType` совпадает с Agent Type запечённого навмеша.
+|- Если у нескольких кораблей один bake-ассет — навмеши на сцене не пересекутся, потому что у каждого
+|  ShipDeckNav свой `_navFrameOrigin` (мировая позиция ShipRoot).
+|
+|**Verification (2026-07-02):** NPC на `NPC_Ship_HeavyII_03` спавнятся, агрятся, преследуют игрока по
+|палубе; `WarpProxyToNpc` логи пропали (`Warp miss` больше нет). В Console только `[NpcBrain] ... entered ... (parented=True, deckNav=True)`.
+|
+|**Что осталось:**
+|- На 4 из 5 кораблей в `WorldScene_0_0` (`NPC_Ship_HeavyII_01/02/04`, `[KeyRod_ShipHeavyIInpc03]`)
+|  **нет `ShipDeckNav`** — NPC на них работают по обычному мировому навмешу (`_deckNavActive=false`).
+|  Чтобы NPC ходили по палубам всех кораблей — добавить `ShipDeckNav` + bake `NavMeshData` в каждый
+|  префаб по §5.
+|- `NpcAttacker.GetAttackerId = ulong.MaxValue - N` (вне `CombatServer` registry, `IsAlive=False`)
+|  на большинстве NPC — отдельный баг регистрации в CombatServer; влияет на атаку, не на движение.
+|
+|---
+|
+|## 9. Bake-fix: пустой NavMeshData из-за layer mismatch (2026-07-02)
+|
+|**Симптом:** `_deckNavMeshData` назначен, `ShipDeckNav.IsReady=true`, но `WarpProxyToNpc` логировал
+|`navmesh-nearest=-1` (`SamplePosition` в радиусе 200м ничего не находил).
+|
+|**Корень:** префаб корабля `NPC_Ship_HeavyII_03` имел `NavMeshSurface.m_LayerMask.m_Bits = 64` (только
+|Layer 6), а `Cube` (палуба) — на **Layer 0** (Default). Плюс `Use Geometry = RenderMeshes`.
+|`NavMeshSurface.BuildNavMesh` собирал **0 треугольников**, `sourceBounds.Extents = (0,0,0)`.
+|При runtime-вызове `NavMeshSurface.UpdateActive()` Unity пытался зарегистрировать пустой навмеш →
+|warning `Failed to create agent because it is not close enough to the NavMesh`.
+|
+|**Фикс (через MCP execute_code, без ручного открытия Editor):**
+|- `NavMeshSurface.m_LayerMask.m_Bits = 1` (Default layer, где лежит Cube).
+|- `NavMeshSurface.m_UseGeometry = 0` (`PhysicsColliders` — надёжнее для Unity primitives).
+|- Собрать навмеш **вручную через `NavMeshBuilder.BuildNavMeshData`** (потому что
+|  `NavMeshSurface.BuildNavMesh()` в prefab contents не отрабатывает), собирая все `BoxCollider`
+|  из prefab-иерархии с `agentRadius=0.5, agentHeight=2`.
+|- Полученный `NavMeshData` (`sourceBounds = Center:(0, 0.84, 0.4), Extents:(7.65, 1.84, 11.97)`) —
+|  сохранить в `Assets/_Project/Prefabs/NPC_Ship_HeavyII_03/NavMesh-DeckNavSurface.asset`
+|  (тот же path, перезапись).
+|- Назначить в `ShipDeckNav._deckNavMeshData` (GUID сохранился: `58c957cc8d9c1c24197c01e48730742e`).
+|- `NavMeshSurface.m_Enabled = false` (раньше уже был 0, оставлено).
+|- Сохранить префаб.
+|
+|**Изменённые файлы:** `NPC_Ship_HeavyII_03.prefab` (настройки NavMeshSurface), `NavMesh-DeckNavSurface.asset` (пересоздан с реальной геометрией).
+|
+|**Verification:** `_deckNavMeshData.sourceBounds.Extents` теперь `(7.65, 1.84, 11.97)`, покрывает
+|палубу 15×22м. NPC на корабле находят прокси-агентом навмеш, `_proxyAgent.isOnNavMesh=true`.

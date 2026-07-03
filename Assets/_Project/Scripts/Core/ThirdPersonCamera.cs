@@ -256,6 +256,7 @@ namespace ProjectC.Core
         private void LateUpdate()
         {
             if (target == null) return;
+            if (Cursor.lockState != CursorLockMode.Locked) return;
 
             _lookInput = _lookAction.ReadValue<Vector2>();
 

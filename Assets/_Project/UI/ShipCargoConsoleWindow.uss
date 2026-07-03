@@ -1,99 +1,138 @@
-.main-container {
-    width: 600px;
-    background-color: rgba(20, 22, 28, 0.95);
-    border-width: 2px;
-    border-color: rgb(60, 120, 200);
-    border-radius: 8px;
-    padding: 12px;
-    position: absolute;
-    top: 50%;
-    left: 50%;
-    translate: -50% -50%;
+/* ============================================
+   ShipCargoConsoleWindow.uss — T-CARGO-UI-02
+   Паттерн: CharacterWindow (полноэкранный backdrop + панель сверху)
+   ============================================ */
+
+/* Full-screen backdrop */
+.cargo-console-root {
+    position: absolute !important;
+    top: 0 !important;
+    left: 0 !important;
+    right: 0 !important;
+    bottom: 0 !important;
+    align-items: flex-start !important;
+    justify-content: center !important;
+    background-color: rgba(0, 0, 0, 0.4) !important;
+    display: flex !important;
 }
 
-.title-bar {
-    flex-direction: row;
-    justify-content: space-between;
-    align-items: center;
-    margin-bottom: 12px;
+/* Panel — как CharacterWindow: сверху, по центру */
+.cargo-console-panel {
+    position: absolute !important;
+    top: 4% !important;
+    left: 50% !important;
+    translate: -50% 0 !important;
+    width: 640px !important;
+    max-width: 92% !important;
+    background-color: rgb(20, 25, 35) !important;
+    border-width: 2px !important;
+    border-color: rgb(60, 120, 200) !important;
+    border-radius: 6px !important;
+    padding: 12px 16px !important;
+    flex-direction: column !important;
+    flex-shrink: 0 !important;
 }
 
-.title-label {
-    font-size: 18px;
-    color: rgb(180, 210, 255);
-    -unity-font-style: bold;
+/* Title bar */
+.cargo-console-title-bar {
+    flex-direction: row !important;
+    justify-content: space-between !important;
+    align-items: center !important;
+    margin-bottom: 10px !important;
+    flex-shrink: 0 !important;
 }
 
-.close-btn {
-    width: 28px;
-    height: 28px;
-    font-size: 14px;
-    background-color: rgba(255, 60, 60, 0.6);
-    color: white;
-    border-radius: 4px;
+.cargo-console-title-label {
+    font-size: 18px !important;
+    color: rgb(180, 210, 255) !important;
+    -unity-font-style: bold !important;
 }
 
-.panels-container {
-    flex-direction: row;
-    flex-grow: 1;
+.cargo-console-close-btn {
+    width: 28px !important;
+    height: 28px !important;
+    font-size: 14px !important;
+    background-color: rgba(255, 60, 60, 0.6) !important;
+    color: white !important;
+    border-radius: 4px !important;
+    border-width: 0 !important;
 }
 
-.panel {
-    flex-grow: 1;
-    width: 50%;
-    padding: 8px;
-    margin: 4px;
-    background-color: rgba(30, 34, 42, 0.8);
-    border-radius: 6px;
+/* Two-column layout */
+.cargo-console-panels {
+    flex-direction: row !important;
+    flex-grow: 1 !important;
+    min-height: 0 !important;
 }
 
-.panel-header {
-    font-size: 14px;
-    color: rgb(140, 170, 220);
-    margin-bottom: 8px;
-    -unity-font-style: bold;
+.cargo-console-col {
+    flex-grow: 1 !important;
+    width: 50% !important;
+    flex-basis: 0 !important;
+    padding: 6px !important;
+    margin: 4px !important;
+    background-color: rgba(30, 34, 42, 0.8) !important;
+    border-radius: 6px !important;
+    flex-direction: column !important;
+    min-height: 0 !important;
 }
 
-.item-list {
-    flex-grow: 1;
-    height: 200px;
-    background-color: rgba(15, 18, 24, 0.6);
-    border-radius: 4px;
-    margin-bottom: 8px;
+.cargo-console-col-header {
+    font-size: 14px !important;
+    color: rgb(140, 170, 220) !important;
+    margin-bottom: 6px !important;
+    -unity-font-style: bold !important;
+    flex-shrink: 0 !important;
 }
 
-.item-list .unity-list-view__item {
-    padding: 4px 8px;
-    font-size: 13px;
-    color: rgb(200, 210, 230);
+/* ListView */
+.cargo-console-list {
+    flex-grow: 1 !important;
+    flex-shrink: 1 !important;
+    min-height: 0 !important;
+    height: 180px !important;
+    background-color: rgba(15, 18, 24, 0.6) !important;
+    border-radius: 4px !important;
+    margin-bottom: 6px !important;
 }
 
-.item-list .unity-list-view__item:hover {
-    background-color: rgba(60, 120, 200, 0.3);
+.cargo-console-list .unity-list-view__item {
+    padding: 4px 8px !important;
+    font-size: 13px !important;
+    color: rgb(200, 210, 230) !important;
 }
 
-.item-list .unity-list-view__item--selected {
-    background-color: rgba(60, 120, 200, 0.5);
+.cargo-console-list .unity-list-view__item:hover {
+    background-color: rgba(60, 120, 200, 0.3) !important;
 }
 
-.action-btn {
-    height: 32px;
-    font-size: 14px;
-    background-color: rgba(50, 100, 170, 0.7);
-    color: white;
-    border-radius: 4px;
-    -unity-font-style: bold;
+.cargo-console-list .unity-list-view__item--selected {
+    background-color: rgba(60, 120, 200, 0.5) !important;
 }
 
-.action-btn:hover {
-    background-color: rgba(70, 130, 210, 0.9);
+/* Action buttons */
+.cargo-console-action-btn {
+    height: 30px !important;
+    font-size: 14px !important;
+    background-color: rgb(50, 100, 170) !important;
+    color: white !important;
+    border-radius: 4px !important;
+    border-width: 0 !important;
+    -unity-font-style: bold !important;
+    flex-shrink: 0 !important;
 }
 
-.status-label {
-    font-size: 12px;
-    color: rgb(150, 170, 200);
-    margin-top: 8px;
-    padding: 4px 8px;
-    background-color: rgba(15, 18, 24, 0.5);
-    border-radius: 4px;
+.cargo-console-action-btn:hover {
+    background-color: rgb(70, 130, 210) !important;
+}
+
+/* Status bar */
+.cargo-console-status {
+    font-size: 12px !important;
+    color: rgb(150, 170, 200) !important;
+    margin-top: 6px !important;
+    padding: 4px 8px !important;
+    background-color: rgba(15, 18, 24, 0.5) !important;
+    border-radius: 4px !important;
+    flex-shrink: 0 !important;
 }

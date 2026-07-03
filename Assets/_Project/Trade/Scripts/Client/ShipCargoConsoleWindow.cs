@@ -1,18 +1,24 @@
 // =====================================================================================
 // ShipCargoConsoleWindow.cs — UI Toolkit окно грузового отсека (T-CARGO-UI-02)
 // =====================================================================================
-// Паттерн: MarketWindow (UI Toolkit + singleton, канон из docs/UI/UI_TOOLKIT_GUIDE.md).
-// Левая панель = инвентарь игрока, правая = cargo корабля.
-// Кнопки: «В трюм», «Из трюма».
+// Паттерн: ExchangeServer + MarketWindow ExchangerTab (обмен ЧЕРЕЗ курс).
+// Левая панель = инвентарь игрока (только packable), правая = cargo корабля (ящики).
+// Кнопки: «→ В трюм» (pack), «← Из трюма» (unpack).
+//
+// ОБЯЗАТЕЛЬНО использует ResourceExchangeResolver.Default (DefaultExchangeRate.asset).
+// Без курса предметы не показываются — НЕТ прямого 1:1 переноса.
 // =====================================================================================
 
 using System;
 using System.Collections.Generic;
 using ProjectC.Items.Client;
 using ProjectC.Ship.Client;
+using ProjectC.Trade.Config;
+using ProjectC.Trade.Core;
 using ProjectC.Trade.Dto;
 using ProjectC.Trade.Network;
 using UnityEngine;
+using UnityEngine.InputSystem;
 using UnityEngine.UIElements;
 
 namespace ProjectC.Trade.Client
@@ -28,7 +34,8 @@ namespace ProjectC.Trade.Client
 
         private UIDocument _doc;
         private VisualElement _root;
-        private VisualElement _container;
+        private VisualElement _backdrop;
+        private VisualElement _panel;
         private Label _titleLabel;
         private ListView _invList;
         private ListView _cargoList;
@@ -56,14 +63,15 @@ namespace ProjectC.Trade.Client
             public int itemId;
             public string displayName;
             public int count;
+            public ExchangeRateEntry rate;
         }
 
         private struct CargoEntry
         {
-            public string itemId;
-            public string displayName;
-            public int count;
-            public int inventoryItemId;
+            public string itemId;       // warehouseItemId
+            public string displayName;  // из rate
+            public int count;           // количество в трюме
+            public ExchangeRateEntry rate;
         }
 
         // ============================================================
@@ -77,13 +85,19 @@ namespace ProjectC.Trade.Client
 
             _doc = GetComponent<UIDocument>();
 
-            // UXML fallback на Resources (VisualTreeAsset работает)
             if (_uxml == null)
                 _uxml = Resources.Load<VisualTreeAsset>("UI/ShipCargoConsoleWindow");
-            // USS fallback НЕ делаем — см. UI_TOOLKIT_GUIDE.md §2 Ошибка 1
         }
 
         private void OnEnable() => EnsureBuilt();
+
+        private void Update()
+        {
+            if (IsVisible() && Keyboard.current != null && Keyboard.current.escapeKey.wasPressedThisFrame)
+            {
+                Hide();
+            }
+        }
 
         private void OnDisable()
         {
@@ -106,60 +120,63 @@ namespace ProjectC.Trade.Client
             if (_built) return;
             if (_doc == null) _doc = GetComponent<UIDocument>();
             if (_doc == null || _doc.rootVisualElement == null) return;
-            if (_uxml == null)
-            {
-                Debug.LogError("[ShipCargoConsoleWindow] UXML не назначен!", this);
-                return;
-            }
 
             _root = _doc.rootVisualElement;
-            _root.Clear();
 
-            // Добавляем USS один раз
             if (_uss != null && !_root.styleSheets.Contains(_uss))
                 _root.styleSheets.Add(_uss);
 
             _doc.sortingOrder = 10;
 
-            // Клонируем UXML
-            _container = _uxml.CloneTree();
-            _root.Add(_container);
+            _backdrop = _root.Q<VisualElement>("root") ?? _root;
+            _panel = _root.Q<VisualElement>("panel");
+            _titleLabel = _root.Q<Label>("title-label");
+            _invList = _root.Q<ListView>("inv-list");
+            _cargoList = _root.Q<ListView>("cargo-list");
+            _storeBtn = _root.Q<Button>("store-btn");
+            _retrieveBtn = _root.Q<Button>("retrieve-btn");
+            _closeBtn = _root.Q<Button>("close-btn");
+            _statusLabel = _root.Q<Label>("status-label");
 
-            // Ищем элементы
-            _titleLabel = _container.Q<Label>("title-label");
-            _invList = _container.Q<ListView>("inv-list");
-            _cargoList = _container.Q<ListView>("cargo-list");
-            _storeBtn = _container.Q<Button>("store-btn");
-            _retrieveBtn = _container.Q<Button>("retrieve-btn");
-            _closeBtn = _container.Q<Button>("close-btn");
-            _statusLabel = _container.Q<Label>("status-label");
-
-            // ListView setup
+            // Inventory ListView
             if (_invList != null)
             {
-                _invList.makeItem = () => new Label();
+                _invList.makeItem = () =>
+                {
+                    var lbl = new Label();
+                    lbl.AddToClassList("cargo-console-list-item");
+                    return lbl;
+                };
                 _invList.bindItem = (e, i) =>
                 {
                     if (i < 0 || i >= _invCache.Count) return;
                     var lbl = e as Label;
                     if (lbl == null) return;
                     var entry = _invCache[i];
-                    lbl.text = $"{entry.displayName} ×{entry.count}";
+                    int packs = entry.count / entry.rate.inventoryQty;
+                    lbl.text = $"{entry.displayName}  ×{entry.count}  (→ {packs} ящ.)";
                 };
                 _invList.itemsSource = _invCache;
                 _invList.selectionChanged += _ => _selectedInvIndex = _invList.selectedIndex;
             }
 
+            // Cargo ListView
             if (_cargoList != null)
             {
-                _cargoList.makeItem = () => new Label();
+                _cargoList.makeItem = () =>
+                {
+                    var lbl = new Label();
+                    lbl.AddToClassList("cargo-console-list-item");
+                    return lbl;
+                };
                 _cargoList.bindItem = (e, i) =>
                 {
                     if (i < 0 || i >= _cargoCache.Count) return;
                     var lbl = e as Label;
                     if (lbl == null) return;
                     var entry = _cargoCache[i];
-                    lbl.text = $"{entry.displayName} ×{entry.count}";
+                    int unpacks = entry.count / entry.rate.warehouseQty;
+                    lbl.text = $"{entry.displayName}  ×{entry.count}  (→ {unpacks * entry.rate.inventoryQty} шт.)";
                 };
                 _cargoList.itemsSource = _cargoCache;
                 _cargoList.selectionChanged += _ => _selectedCargoIndex = _cargoList.selectedIndex;
@@ -178,7 +195,7 @@ namespace ProjectC.Trade.Client
 
         private void SetVisible(bool visible)
         {
-            var target = _container ?? _root;
+            var target = _backdrop ?? _panel ?? _root;
             if (target == null) return;
             target.style.display = visible ? DisplayStyle.Flex : DisplayStyle.None;
             target.pickingMode = visible ? PickingMode.Position : PickingMode.Ignore;
@@ -199,6 +216,9 @@ namespace ProjectC.Trade.Client
             if (_titleLabel != null)
                 _titleLabel.text = $"Грузовой отсек: {_shipName}";
 
+            UnityEngine.Cursor.lockState = CursorLockMode.None;
+            UnityEngine.Cursor.visible = true;
+
             SetVisible(true);
             TrySubscribe();
             RefreshData();
@@ -211,12 +231,19 @@ namespace ProjectC.Trade.Client
             _invCache.Clear();
             _cargoCache.Clear();
             _shipNetId = 0;
+
+            var nm = Unity.Netcode.NetworkManager.Singleton;
+            if (nm != null && nm.IsListening)
+            {
+                UnityEngine.Cursor.lockState = CursorLockMode.Locked;
+                UnityEngine.Cursor.visible = false;
+            }
         }
 
         public bool IsVisible()
         {
             if (!_built) return false;
-            var target = _container ?? _root;
+            var target = _backdrop ?? _panel ?? _root;
             return target != null && target.style.display == DisplayStyle.Flex;
         }
 
@@ -249,7 +276,7 @@ namespace ProjectC.Trade.Client
         }
 
         // ============================================================
-        // Data Refresh
+        // Data Refresh (через ResourceExchangeResolver)
         // ============================================================
 
         private void RefreshData(Items.Dto.InventorySnapshotDto _ = default)
@@ -261,15 +288,24 @@ namespace ProjectC.Trade.Client
         private void RefreshInventory()
         {
             _invCache.Clear();
+            var resolver = ResourceExchangeResolver.Default;
+            if (resolver == null) return;
+
             var invState = InventoryClientState.Instance;
             if (invState == null) return;
 
             var items = invState.GetItems();
             if (items == null) return;
 
+            // Группируем по itemId, только те что имеют курс обмена
             var grouped = new Dictionary<int, int>();
             foreach (var inv in items)
             {
+                var def = invState.GetItemDefinition(inv.itemId);
+                if (def == null) continue;
+                var rate = resolver.FindRateForItemName(def.itemName);
+                if (rate == null) continue; // нет курса → не показываем
+
                 if (!grouped.ContainsKey(inv.itemId)) grouped[inv.itemId] = 0;
                 grouped[inv.itemId]++;
             }
@@ -277,11 +313,15 @@ namespace ProjectC.Trade.Client
             foreach (var kvp in grouped)
             {
                 var def = invState.GetItemDefinition(kvp.Key);
+                var rate = resolver.FindRateForItemName(def.itemName);
+                if (rate == null) continue;
+
                 _invCache.Add(new InvEntry
                 {
                     itemId = kvp.Key,
-                    displayName = def != null ? def.itemName : $"#{kvp.Key}",
+                    displayName = def.itemName,
                     count = kvp.Value,
+                    rate = rate.Value,
                 });
             }
 
@@ -292,6 +332,9 @@ namespace ProjectC.Trade.Client
         {
             _cargoCache.Clear();
             if (_shipNetId == 0) return;
+
+            var resolver = ResourceExchangeResolver.Default;
+            if (resolver == null) return;
 
             var telemetry = ShipTelemetryClientState.Instance;
             if (telemetry == null) return;
@@ -305,31 +348,20 @@ namespace ProjectC.Trade.Client
             foreach (var cd in cargoDetail)
             {
                 if (cd.quantity <= 0) continue;
+
+                var rate = resolver.FindRateForWarehouseItem(cd.itemId);
+                if (rate == null) continue; // нет курса → не показываем
+
                 _cargoCache.Add(new CargoEntry
                 {
                     itemId = cd.itemId,
-                    displayName = cd.displayName.ToString(),
+                    displayName = rate.Value.displayName,
                     count = cd.quantity,
-                    inventoryItemId = ResolveInventoryItemId(cd.itemId),
+                    rate = rate.Value,
                 });
             }
 
             _cargoList?.Rebuild();
-        }
-
-        private int ResolveInventoryItemId(string cargoItemId)
-        {
-            if (string.IsNullOrEmpty(cargoItemId)) return 0;
-            var invState = InventoryClientState.Instance;
-            if (invState == null) return 0;
-            var items = invState.GetItems();
-            if (items == null) return 0;
-            foreach (var inv in items)
-            {
-                var def = invState.GetItemDefinition(inv.itemId);
-                if (def != null && def.itemName == cargoItemId) return inv.itemId;
-            }
-            return 0;
         }
 
         // ============================================================
@@ -339,29 +371,45 @@ namespace ProjectC.Trade.Client
         private void OnStoreClicked()
         {
             if (_shipNetId == 0) return;
-            if (_selectedInvIndex < 0 || _selectedInvIndex >= _invCache.Count) { SetStatus("Выберите предмет в инвентаре", false); return; }
+            if (_selectedInvIndex < 0 || _selectedInvIndex >= _invCache.Count)
+            {
+                SetStatus("Выберите предмет в инвентаре", false);
+                return;
+            }
 
             var entry = _invCache[_selectedInvIndex];
             var server = ShipCargoServer.Instance;
             if (server == null) { SetStatus("Сервер грузового отсека не доступен", false); return; }
 
-            server.RequestStoreToCargoRpc(_shipNetId, entry.itemId, entry.count);
-            SetStatus($"Отправка {entry.displayName} ×{entry.count} в трюм...", true);
+            // Отправляем rate.inventoryQty (кратно курсу, обычно 100)
+            int countToSend = entry.rate.inventoryQty;
+            if (countToSend > entry.count) countToSend = (entry.count / entry.rate.inventoryQty) * entry.rate.inventoryQty;
+            if (countToSend <= 0) { SetStatus($"Недостаточно для упаковки (нужно {entry.rate.inventoryQty})", false); return; }
+
+            server.RequestStoreToCargoRpc(_shipNetId, entry.itemId, countToSend);
+            SetStatus($"Упаковка {entry.displayName} ×{countToSend} в трюм...", true);
         }
 
         private void OnRetrieveClicked()
         {
             if (_shipNetId == 0) return;
-            if (_selectedCargoIndex < 0 || _selectedCargoIndex >= _cargoCache.Count) { SetStatus("Выберите предмет в трюме", false); return; }
+            if (_selectedCargoIndex < 0 || _selectedCargoIndex >= _cargoCache.Count)
+            {
+                SetStatus("Выберите ящик в трюме", false);
+                return;
+            }
 
             var entry = _cargoCache[_selectedCargoIndex];
-            if (entry.inventoryItemId <= 0) { SetStatus($"Не удалось сопоставить '{entry.itemId}' с предметом инвентаря", false); return; }
-
             var server = ShipCargoServer.Instance;
             if (server == null) { SetStatus("Сервер грузового отсека не доступен", false); return; }
 
-            server.RequestRetrieveFromCargoRpc(_shipNetId, entry.itemId, entry.count, entry.inventoryItemId);
-            SetStatus($"Извлечение {entry.displayName} ×{entry.count} из трюма...", true);
+            // Отправляем rate.warehouseQty (кратно курсу, обычно 1 ящик)
+            int countToSend = entry.rate.warehouseQty;
+            if (countToSend > entry.count) countToSend = (entry.count / entry.rate.warehouseQty) * entry.rate.warehouseQty;
+            if (countToSend <= 0) { SetStatus($"Недостаточно для распаковки (нужно {entry.rate.warehouseQty})", false); return; }
+
+            server.RequestRetrieveFromCargoRpc(_shipNetId, entry.itemId, countToSend);
+            SetStatus($"Распаковка {entry.displayName} ×{countToSend} из трюма...", true);
         }
 
         // ============================================================

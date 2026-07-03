@@ -2,23 +2,26 @@
 // ShipCargoServer.cs — серверный NetworkBehaviour для cargo-операций на корабле (T-CARGO-UI-02)
 // =====================================================================================
 // Назначение: принимает RPC от клиента для перемещения предметов между
-// инвентарём игрока и трюмом корабля (inventory ↔ ship cargo).
+// инвентарём игрока и трюмом корабля (inventory ↔ ship cargo) ЧЕРЕЗ ОБМЕННЫЙ КУРС.
 //
-// Паттерн: ExchangeServer (Trade/Exchange/Network/). Ставится в BootstrapScene
-// рядом с NetworkManager. DontDestroyOnLoad.
+// ПАТТЕРН: ExchangeServer (Trade/Exchange/Network/) + ExchangeWorld.Pack/Unpack.
+// ОБЯЗАТЕЛЬНО использует ResourceExchangeResolver + ExchangeRateConfig (DefaultExchangeRate.asset).
+// Без курса операция отклоняется — НЕТ прямого 1:1 переноса.
 //
 // Операции:
-//   StoreToCargo  — забрать предметы из инвентаря → положить в трюм корабля
-//   RetrieveFromCargo — забрать из трюма → положить в инвентарь
+//   StoreToCargo  — N×rate.inventoryQty pickable → M×rate.warehouseQty boxes в трюм
+//   RetrieveFromCargo — N×rate.warehouseQty boxes → M×rate.inventoryQty pickable в инвентарь
 //
 // Зависимости:
 //   • InventoryWorld (должен быть инициализирован InventoryServer)
 //   • TradeWorld (должен быть инициализирован MarketServer)
+//   • ExchangeRateConfig (назначить в инспекторе!)
 // =====================================================================================
 
 using System.Collections.Generic;
 using ProjectC.Items;
 using ProjectC.Player;
+using ProjectC.Trade.Config;
 using ProjectC.Trade.Core;
 using ProjectC.Trade.Dto;
 using Unity.Netcode;
@@ -31,11 +34,15 @@ namespace ProjectC.Trade.Network
     {
         public static ShipCargoServer Instance { get; private set; }
 
+        [Header("Exchange Rate Config (ОБЯЗАТЕЛЬНО)")]
+        [Tooltip("DefaultExchangeRate.asset — без него операции отклоняются.")]
+        [SerializeField] private ExchangeRateConfig _exchangeRateConfig;
+
         [Header("Rate Limiting")]
         [Tooltip("Макс операций в минуту на клиента (0 = без лимита)")]
         [SerializeField] private int _maxOpsPerMinute = 30;
 
-        // Per-client rate limiting
+        private ResourceExchangeResolver _resolver;
         private readonly Dictionary<ulong, List<float>> _opTimestamps = new Dictionary<ulong, List<float>>();
 
         public override void OnNetworkSpawn()
@@ -49,12 +56,21 @@ namespace ProjectC.Trade.Network
                 return;
             }
 
-            Debug.Log("[ShipCargoServer] OnNetworkSpawn: ready");
+            if (_exchangeRateConfig == null)
+            {
+                Debug.LogError("[ShipCargoServer] exchangeRateConfig не присвоен! ShipCargoServer отключён.");
+                enabled = false;
+                return;
+            }
+
+            _resolver = new ResourceExchangeResolver(_exchangeRateConfig);
+            Debug.Log($"[ShipCargoServer] OnNetworkSpawn: rates={_exchangeRateConfig.rates?.Count ?? 0}");
         }
 
         public override void OnNetworkDespawn()
         {
             base.OnNetworkDespawn();
+            _resolver = null;
             if (Instance == this) Instance = null;
         }
 
@@ -63,7 +79,8 @@ namespace ProjectC.Trade.Network
         // ========================================================
 
         /// <summary>
-        /// Переместить предметы из инвентаря игрока в трюм корабля.
+        /// Упаковать pickable предметы из инвентаря в cargo-ящики корабля (через курс).
+        /// count должен быть кратен rate.inventoryQty (обычно 100).
         /// </summary>
         [Rpc(SendTo.Server, InvokePermission = RpcInvokePermission.Owner)]
         public void RequestStoreToCargoRpc(
@@ -80,14 +97,12 @@ namespace ProjectC.Trade.Network
                 if (!IsReadyOrResult(clientId, 0)) return;
                 if (!CheckRateLimitOrResult(clientId, 0)) return;
 
-                // --- Валидация ---
                 if (shipNetId == 0 || inventoryItemId <= 0 || count <= 0)
                 {
                     SendResult(clientId, CreateFailResult("Неверные параметры", 0));
                     return;
                 }
 
-                // Найти корабль
                 var ship = FindShipController(shipNetId);
                 if (ship == null)
                 {
@@ -95,7 +110,6 @@ namespace ProjectC.Trade.Network
                     return;
                 }
 
-                // Получить ShipClass
                 var shipClass = ProjectC.Ship.ShipClassMappingConfig.Default.Resolve(ship.ShipFlightClass)
                                 ?? ShipClass.Medium;
                 var tradeWorld = TradeWorld.Instance;
@@ -112,16 +126,35 @@ namespace ProjectC.Trade.Network
                     return;
                 }
 
-                // Узнаём itemId и itemType из ItemDatabase
-                // Для этого нужно найти itemData в InventoryWorld.ItemDatabase
-                // InventoryWorld хранит Dictionary<int, ItemData>
-                // ItemData имеет поле itemType
-                var itemData = invWorld.GetItemDefinition(inventoryItemId);
-                if (itemData == null)
+                // --- Резолвим itemName → ExchangeRateEntry ---
+                string itemName = _resolver.GetInventoryItemName(inventoryItemId);
+                if (string.IsNullOrEmpty(itemName))
                 {
-                    SendResult(clientId, CreateFailResult("Предмет не найден в базе", 0));
+                    SendResult(clientId, CreateFailResult("Предмет не найден в БД", 0));
                     return;
                 }
+
+                var rate = _resolver.FindRateForItemName(itemName);
+                if (rate == null)
+                {
+                    SendResult(clientId, CreateFailResult(
+                        $"Предмет '{itemName}' не поддерживает упаковку в трюм", 0));
+                    return;
+                }
+
+                var r = rate.Value;
+
+                // Валидация кратности
+                if (count % r.inventoryQty != 0)
+                {
+                    SendResult(clientId, CreateFailResult(
+                        $"Количество должно быть кратно {r.inventoryQty} (курс: {r.inventoryQty} шт = {r.warehouseQty} ящик)", 0));
+                    return;
+                }
+
+                int boxesToAdd = (count / r.inventoryQty) * r.warehouseQty;
+
+                var itemData = invWorld.GetItemDefinition(inventoryItemId);
 
                 // --- Шаг 1: забрать из инвентаря ---
                 var invResult = invWorld.RemoveItems(clientId, inventoryItemId, itemData.itemType, count);
@@ -132,13 +165,9 @@ namespace ProjectC.Trade.Network
                     return;
                 }
 
-                // --- Шаг 2: положить в трюм ---
-                // Cargo использует строковые itemId. Используем itemData.itemName
-                // (то же имя что и в TradeItemDefinition.itemId для совместимости).
-                string cargoItemId = itemData.itemName;
-
+                // --- Шаг 2: положить в трюм (warehouseItemId — id ящика) ---
                 var cargo = tradeWorld.GetOrLoadCargo(shipNetId, shipClass);
-                if (!cargo.TryAdd(cargoItemId, count, tradeWorld.Resolver, out var cargoFail))
+                if (!cargo.TryAdd(r.warehouseItemId, boxesToAdd, tradeWorld.Resolver, out var cargoFail))
                 {
                     // ROLLBACK: вернуть в инвентарь
                     RollbackAddItems(invWorld, clientId, inventoryItemId, itemData.itemType, count);
@@ -148,19 +177,16 @@ namespace ProjectC.Trade.Network
 
                 // --- Шаг 3: персист ---
                 tradeWorld.Repository.SetCargo(shipNetId, cargo.SaveToList());
-                // OnCargoChanged вызывается изнутри TradeWorld; ShipController.UpdateTelemetryState
-                // (5 Hz) подхватит изменения в течение 200ms.
 
-                // Push inventory snapshot
                 if (Items.Network.InventoryServer.Instance != null)
                     Items.Network.InventoryServer.Instance.PushSnapshot(clientId);
 
                 SendResult(clientId, new ShipCargoResultDto
                 {
                     success = true,
-                    message = $"+{count} '{itemData.itemName}' в трюме",
+                    message = $"+{boxesToAdd} '{r.displayName}' в трюме\n(упаковано {count} × {itemName})",
                     op = 0,
-                    cargoDelta = count,
+                    cargoDelta = boxesToAdd,
                     inventoryDelta = -count,
                 });
             }
@@ -172,25 +198,25 @@ namespace ProjectC.Trade.Network
         }
 
         /// <summary>
-        /// Переместить предметы из трюма корабля в инвентарь игрока.
+        /// Распаковать cargo-ящики корабля в pickable предметы инвентаря (через курс).
+        /// count должен быть кратен rate.warehouseQty (обычно 1).
         /// </summary>
         [Rpc(SendTo.Server, InvokePermission = RpcInvokePermission.Owner)]
         public void RequestRetrieveFromCargoRpc(
             ulong shipNetId,
             string cargoItemId,
             int count,
-            int inventoryItemId,
             RpcParams rpcParams = default)
         {
             ulong clientId = rpcParams.Receive.SenderClientId;
-            Debug.Log($"[ShipCargoServer][RetrieveFromCargo] ENTER clientId={clientId} ship={shipNetId} cargoItem={cargoItemId} count={count} invItemId={inventoryItemId}");
+            Debug.Log($"[ShipCargoServer][RetrieveFromCargo] ENTER clientId={clientId} ship={shipNetId} cargoItem={cargoItemId} count={count}");
 
             try
             {
                 if (!IsReadyOrResult(clientId, 1)) return;
                 if (!CheckRateLimitOrResult(clientId, 1)) return;
 
-                if (shipNetId == 0 || string.IsNullOrEmpty(cargoItemId) || count <= 0 || inventoryItemId <= 0)
+                if (shipNetId == 0 || string.IsNullOrEmpty(cargoItemId) || count <= 0)
                 {
                     SendResult(clientId, CreateFailResult("Неверные параметры", 1));
                     return;
@@ -219,12 +245,37 @@ namespace ProjectC.Trade.Network
                     return;
                 }
 
-                var itemData = invWorld.GetItemDefinition(inventoryItemId);
-                if (itemData == null)
+                // --- Резолвим warehouseItemId → ExchangeRateEntry ---
+                var rate = _resolver.FindRateForWarehouseItem(cargoItemId);
+                if (rate == null)
                 {
-                    SendResult(clientId, CreateFailResult("Предмет не найден в базе", 1));
+                    SendResult(clientId, CreateFailResult(
+                        $"Товар '{cargoItemId}' не поддерживает распаковку из трюма", 1));
                     return;
                 }
+
+                var r = rate.Value;
+
+                // Валидация кратности
+                if (count % r.warehouseQty != 0)
+                {
+                    SendResult(clientId, CreateFailResult(
+                        $"Количество должно быть кратно {r.warehouseQty} (курс: {r.warehouseQty} ящик = {r.inventoryQty} шт)", 1));
+                    return;
+                }
+
+                int itemsToAdd = (count / r.warehouseQty) * r.inventoryQty;
+
+                // Разрешаем inventoryItemId из itemName
+                int inventoryItemId = _resolver.ResolveInventoryItemId(r.inventoryItemName);
+                if (inventoryItemId <= 0)
+                {
+                    SendResult(clientId, CreateFailResult(
+                        $"Предмет '{r.inventoryItemName}' не найден в БД", 1));
+                    return;
+                }
+
+                var itemType = _resolver.GetItemType(inventoryItemId);
 
                 // --- Шаг 1: забрать из трюма ---
                 var cargo = tradeWorld.GetOrLoadCargo(shipNetId, shipClass);
@@ -234,16 +285,16 @@ namespace ProjectC.Trade.Network
                     return;
                 }
 
-                // --- Шаг 2: положить в инвентарь ---
+                // --- Шаг 2: положить в инвентарь (с rollback) ---
                 int added = 0;
-                for (int i = 0; i < count; i++)
+                for (int i = 0; i < itemsToAdd; i++)
                 {
-                    var addResult = invWorld.AddItemDirect(clientId, inventoryItemId, itemData.itemType);
+                    var addResult = invWorld.AddItemDirect(clientId, inventoryItemId, itemType);
                     if (!addResult.IsSuccess)
                     {
                         // ROLLBACK: вернуть в трюм + откатить уже добавленное
                         cargo.TryAdd(cargoItemId, count, tradeWorld.Resolver, out _);
-                        RollbackAddItems(invWorld, clientId, inventoryItemId, itemData.itemType, added);
+                        RollbackAddItems(invWorld, clientId, inventoryItemId, itemType, added);
                         SendResult(clientId, CreateFailResult(
                             $"Инвентарь полон: {addResult.message ?? "ошибка"}", 1));
                         return;
@@ -253,8 +304,6 @@ namespace ProjectC.Trade.Network
 
                 // --- Шаг 3: персист ---
                 tradeWorld.Repository.SetCargo(shipNetId, cargo.SaveToList());
-                // OnCargoChanged вызывается изнутри TradeWorld; ShipController.UpdateTelemetryState
-                // (5 Hz) подхватит изменения в течение 200ms.
 
                 if (Items.Network.InventoryServer.Instance != null)
                     Items.Network.InventoryServer.Instance.PushSnapshot(clientId);
@@ -262,10 +311,10 @@ namespace ProjectC.Trade.Network
                 SendResult(clientId, new ShipCargoResultDto
                 {
                     success = true,
-                    message = $"+{count} '{itemData.itemName}' в инвентаре",
+                    message = $"+{itemsToAdd} '{r.inventoryItemName}' в инвентаре\n(распаковано {count} × {r.displayName})",
                     op = 1,
                     cargoDelta = -count,
-                    inventoryDelta = count,
+                    inventoryDelta = itemsToAdd,
                 });
             }
             catch (System.Exception ex)
@@ -281,6 +330,11 @@ namespace ProjectC.Trade.Network
 
         private bool IsReadyOrResult(ulong clientId, byte op)
         {
+            if (_resolver == null)
+            {
+                SendResult(clientId, CreateFailResult("Сервер cargo-обменника ещё не готов", op));
+                return false;
+            }
             if (TradeWorld.Instance == null)
             {
                 SendResult(clientId, CreateFailResult("Сервер торговли ещё не готов", op));

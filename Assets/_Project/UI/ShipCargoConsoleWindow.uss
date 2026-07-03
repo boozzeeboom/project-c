@@ -1,0 +1,99 @@
+.main-container {
+    width: 600px;
+    background-color: rgba(20, 22, 28, 0.95);
+    border-width: 2px;
+    border-color: rgb(60, 120, 200);
+    border-radius: 8px;
+    padding: 12px;
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    translate: -50% -50%;
+}
+
+.title-bar {
+    flex-direction: row;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 12px;
+}
+
+.title-label {
+    font-size: 18px;
+    color: rgb(180, 210, 255);
+    -unity-font-style: bold;
+}
+
+.close-btn {
+    width: 28px;
+    height: 28px;
+    font-size: 14px;
+    background-color: rgba(255, 60, 60, 0.6);
+    color: white;
+    border-radius: 4px;
+}
+
+.panels-container {
+    flex-direction: row;
+    flex-grow: 1;
+}
+
+.panel {
+    flex-grow: 1;
+    width: 50%;
+    padding: 8px;
+    margin: 4px;
+    background-color: rgba(30, 34, 42, 0.8);
+    border-radius: 6px;
+}
+
+.panel-header {
+    font-size: 14px;
+    color: rgb(140, 170, 220);
+    margin-bottom: 8px;
+    -unity-font-style: bold;
+}
+
+.item-list {
+    flex-grow: 1;
+    height: 200px;
+    background-color: rgba(15, 18, 24, 0.6);
+    border-radius: 4px;
+    margin-bottom: 8px;
+}
+
+.item-list .unity-list-view__item {
+    padding: 4px 8px;
+    font-size: 13px;
+    color: rgb(200, 210, 230);
+}
+
+.item-list .unity-list-view__item:hover {
+    background-color: rgba(60, 120, 200, 0.3);
+}
+
+.item-list .unity-list-view__item--selected {
+    background-color: rgba(60, 120, 200, 0.5);
+}
+
+.action-btn {
+    height: 32px;
+    font-size: 14px;
+    background-color: rgba(50, 100, 170, 0.7);
+    color: white;
+    border-radius: 4px;
+    -unity-font-style: bold;
+}
+
+.action-btn:hover {
+    background-color: rgba(70, 130, 210, 0.9);
+}
+
+.status-label {
+    font-size: 12px;
+    color: rgb(150, 170, 200);
+    margin-top: 8px;
+    padding: 4px 8px;
+    background-color: rgba(15, 18, 24, 0.5);
+    border-radius: 4px;
+}

@@ -4,6 +4,7 @@ using ProjectC.Items;
 using ProjectC.AI;  // T-NPC-03: NpcLootPickup
 using ProjectC.Player;
 using ProjectC.Ship;
+using ProjectC.Ship.Cargo;  // T-CARGO-UI-02: ShipCargoConsole
 
 namespace ProjectC.Core
 {
@@ -22,6 +23,7 @@ namespace ProjectC.Core
         private static readonly List<ShipController> _ships = new List<ShipController>(8);
         private static readonly List<ProjectC.ResourceNode.ResourceNode> _resourceNodes = new List<ProjectC.ResourceNode.ResourceNode>(16);
         private static readonly List<ProjectC.Crafting.CraftingStation> _craftingStations = new List<ProjectC.Crafting.CraftingStation>(8);
+        private static readonly List<ProjectC.Ship.Cargo.ShipCargoConsole> _shipCargoConsoles = new List<ProjectC.Ship.Cargo.ShipCargoConsole>(8);
 
         /// <summary>
                 /// Register a pickup item when it enters player's trigger.
@@ -224,6 +226,34 @@ namespace ProjectC.Core
             return nearest;
         }
 
+        // ==========================================================
+        // ShipCargoConsole (T-CARGO-UI-02)
+        // ==========================================================
+
+        public static void RegisterShipCargoConsole(ProjectC.Ship.Cargo.ShipCargoConsole console)
+        {
+            if (console != null && !_shipCargoConsoles.Contains(console)) _shipCargoConsoles.Add(console);
+        }
+
+        public static void UnregisterShipCargoConsole(ProjectC.Ship.Cargo.ShipCargoConsole console)
+        {
+            if (console != null) _shipCargoConsoles.Remove(console);
+        }
+
+        public static ProjectC.Ship.Cargo.ShipCargoConsole FindNearestShipCargoConsole(Vector3 position, float range)
+        {
+            ProjectC.Ship.Cargo.ShipCargoConsole nearest = null;
+            float minDist = float.MaxValue;
+            for (int i = 0; i < _shipCargoConsoles.Count; i++)
+            {
+                var c = _shipCargoConsoles[i];
+                if (c == null || !c.gameObject.activeSelf) continue;
+                float dist = Vector3.Distance(position, c.transform.position);
+                if (dist < range && dist < minDist) { minDist = dist; nearest = c; }
+            }
+            return nearest;
+        }
+
         /// <summary>
         /// Clear all cached references. Call when scene changes.
         /// T-Q19: _npcs clear removed.
@@ -235,6 +265,7 @@ namespace ProjectC.Core
             _ships.Clear();
             _resourceNodes.Clear();
             _craftingStations.Clear();
+            _shipCargoConsoles.Clear();
         }
 
         /// <summary>

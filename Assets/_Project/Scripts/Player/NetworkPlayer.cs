@@ -540,6 +540,12 @@ namespace ProjectC.Player
                 {
                     // Запрос отправлен; окно откроется в OnSnapshotReceived (T-C05/T-C06 wire-in).
                 }
+                // T-CARGO-UI-02: ShipCargoConsole — приоритет между crafting и door.
+                // F на грузовой консоли открывает ShipCargoConsoleWindow.
+                else if (!_inShip && TryInteractNearestShipCargoConsole())
+                {
+                    // Окно открыто; запрос отправлен
+                }
                 // COMPOSITE SHIP (Phase 3): Door interaction — приоритет выше ship boarding,
                 // ниже crafting. F на двери открывает/закрывает (Toggle).
                 else if (!_inShip && TryInteractNearestDoor())
@@ -1208,6 +1214,35 @@ namespace ProjectC.Player
             return true;
         }
 
+        // T-CARGO-UI-02: ShipCargoConsole interaction. F → открыть ShipCargoConsoleWindow.
+        private bool TryInteractNearestShipCargoConsole()
+        {
+            if (_inShip) return false;
+            var nearest = InteractableManager.FindNearestShipCargoConsole(GetEffectivePosition(), pickupRange);
+            if (nearest == null) return false;
+
+            var ship = nearest.Ship;
+            if (ship == null)
+            {
+                Debug.LogWarning("[NetworkPlayer] ShipCargoConsole found but ShipController is null");
+                return false;
+            }
+
+            Debug.Log($"[NetworkPlayer] F-cargo-console: found console on ship {ship.NetworkObjectId} '{ship.ShipDisplayName}'");
+
+            // Открыть окно
+            var wnd = ProjectC.Trade.Client.ShipCargoConsoleWindow.Instance;
+            if (wnd != null)
+            {
+                wnd.Show(ship.NetworkObjectId, ship.ShipDisplayName);
+            }
+            else
+            {
+                Debug.LogWarning("[NetworkPlayer] ShipCargoConsoleWindow.Instance == null");
+            }
+            return true;
+        }
+
         // COMPOSITE SHIP (Phase 3): Door interaction. F → найти ближайшую дверь → Toggle().
         private bool TryInteractNearestDoor()
         {
@@ -1770,6 +1805,13 @@ namespace ProjectC.Player
         public void ReceiveExchangeResultTargetRpc(ProjectC.Trade.Dto.ExchangeResultDto result, RpcParams rpcParams = default)
         {
             ProjectC.Trade.Client.ExchangeClientState.Instance?.OnExchangeResultReceived(result);
+        }
+
+        // T-CARGO-UI-02: ShipCargo result receiver.
+        [Rpc(SendTo.Owner)]
+        public void ReceiveShipCargoResultTargetRpc(ProjectC.Trade.Dto.ShipCargoResultDto result, RpcParams rpcParams = default)
+        {
+            ProjectC.Trade.Client.ShipCargoClientState.Instance?.OnShipCargoResultReceived(result);
         }
 
         // ==================== DIALOG V2 RPC TARGETS ====================

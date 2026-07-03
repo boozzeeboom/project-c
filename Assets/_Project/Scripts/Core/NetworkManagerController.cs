@@ -121,6 +121,10 @@ namespace ProjectC.Core
             // Принимает результат Pack/Unpack от ExchangeServer.
             CreateExchangeClientState();
 
+            // T-CARGO-UI-02: ShipCargoClientState — клиентская проекция cargo-операций.
+            // Принимает ShipCargoResultDto от ShipCargoServer.
+            CreateShipCargoClientState();
+
             // T-P06: StatsClientState — клиентская проекция Character Progression stats.
             // Принимает StatsSnapshotDto от StatsServer (T-P05) через NetworkPlayer.ReceiveStatsSnapshotTargetRpc.
             // Подписка в CharacterWindow (T-P16) на event OnStatsUpdated.
@@ -386,6 +390,29 @@ namespace ProjectC.Core
             var go = new GameObject("[ExchangeClientState]");
             go.AddComponent<ProjectC.Trade.Client.ExchangeClientState>();
             Debug.Log("[NMC] Created [ExchangeClientState] as root GameObject");
+        }
+
+        /// <summary>
+        /// T-CARGO-UI-02: ShipCargoClientState singleton. Паттерн идентичен CreateExchangeClientState.
+        /// </summary>
+        private void CreateShipCargoClientState()
+        {
+            var existing = FindObjectsByType<ProjectC.Trade.Client.ShipCargoClientState>(FindObjectsInactive.Include);
+            foreach (var inst in existing)
+            {
+                if (inst != null && inst.transform.parent == null)
+                {
+                    Debug.Log("[NMC] ShipCargoClientState already root, skipping creation");
+                    return;
+                }
+            }
+            if (existing.Length > 0)
+            {
+                Debug.LogWarning($"[NMC] Found {existing.Length} non-root ShipCargoClientState in scene — DontDestroyOnLoad would fail. Creating root replacement.");
+            }
+            var go = new GameObject("[ShipCargoClientState]");
+            go.AddComponent<ProjectC.Trade.Client.ShipCargoClientState>();
+            Debug.Log("[NMC] Created [ShipCargoClientState] as root GameObject");
         }
 
         /// <summary>

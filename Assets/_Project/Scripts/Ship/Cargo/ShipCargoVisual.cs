@@ -292,7 +292,8 @@ namespace ProjectC.Ship.Cargo
         /// </summary>
         public void RefreshVisual(int targetBoxCount)
         {
-            int clamped = Mathf.Clamp(targetBoxCount, 0, _maxVisibleBoxes);
+            int effectiveMax = Mathf.Min(_maxVisibleBoxes, GetMaxBoxesInZone());
+            int clamped = Mathf.Clamp(targetBoxCount, 0, effectiveMax);
 
             if (clamped == _currentBoxCount) return;
 
@@ -326,7 +327,8 @@ namespace ProjectC.Ship.Cargo
         /// </summary>
         public void SetOverflowVisible(int realCargoUsed)
         {
-            bool shouldShow = _showOverflowIndicator && realCargoUsed > _maxVisibleBoxes;
+            int effectiveMax = Mathf.Min(_maxVisibleBoxes, GetMaxBoxesInZone());
+            bool shouldShow = _showOverflowIndicator && realCargoUsed > effectiveMax;
 
             if (shouldShow && _overflowInstance == null)
             {
@@ -447,6 +449,24 @@ namespace ProjectC.Ship.Cargo
             float minDim = Mathf.Min(zoneSize.x, zoneSize.y, zoneSize.z);
             float autoSize = minDim / Mathf.Max(1, Mathf.CeilToInt(Mathf.Pow(_maxVisibleBoxes, 1f / 3f)));
             return Mathf.Max(0.1f, autoSize);
+        }
+
+        /// <summary>
+        /// Сколько ящиков физически помещается в _spawnZone
+        /// (cols × rows × layers по XYZ).
+        /// </summary>
+        private int GetMaxBoxesInZone()
+        {
+            if (_spawnZone == null) return _maxVisibleBoxes;
+
+            float boxSize = GetEffectiveBoxSize();
+            Vector3 zoneSize = _spawnZone.size;
+
+            int cols = Mathf.Max(1, Mathf.FloorToInt(zoneSize.x / boxSize));
+            int rows = Mathf.Max(1, Mathf.FloorToInt(zoneSize.z / boxSize));
+            int layers = Mathf.Max(1, Mathf.FloorToInt(zoneSize.y / boxSize));
+
+            return cols * rows * layers;
         }
 
         // ===========================================================

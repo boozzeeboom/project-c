@@ -1,7 +1,7 @@
 // =====================================================================================
 // ShipCargoConsoleWindow.cs — UI Toolkit окно грузового отсека (T-CARGO-UI-02)
 // =====================================================================================
-// Паттерн: MarketWindow (UI Toolkit + singleton).
+// Паттерн: MarketWindow (UI Toolkit + singleton, канон из docs/UI/UI_TOOLKIT_GUIDE.md).
 // Левая панель = инвентарь игрока, правая = cargo корабля.
 // Кнопки: «В трюм», «Из трюма».
 // =====================================================================================
@@ -17,15 +17,18 @@ using UnityEngine.UIElements;
 
 namespace ProjectC.Trade.Client
 {
+    [RequireComponent(typeof(UIDocument))]
     public class ShipCargoConsoleWindow : MonoBehaviour
     {
         public static ShipCargoConsoleWindow Instance { get; private set; }
 
-        [Header("UI Document")]
-        [SerializeField] private UIDocument _uiDocument;
+        [Header("UI Assets (назначить в Inspector)")]
+        [SerializeField] private VisualTreeAsset _uxml;
+        [SerializeField] private StyleSheet _uss;
 
-        // Кэш UI элементов
+        private UIDocument _doc;
         private VisualElement _root;
+        private VisualElement _container;
         private Label _titleLabel;
         private ListView _invList;
         private ListView _cargoList;
@@ -33,22 +36,22 @@ namespace ProjectC.Trade.Client
         private Button _retrieveBtn;
         private Button _closeBtn;
         private Label _statusLabel;
+        private bool _built;
 
         // Данные
-        private List<InventoryEntry> _invCache = new List<InventoryEntry>();
-        private List<CargoEntry> _cargoCache = new List<CargoEntry>();
+        private readonly List<InvEntry> _invCache = new List<InvEntry>();
+        private readonly List<CargoEntry> _cargoCache = new List<CargoEntry>();
         private int _selectedInvIndex = -1;
         private int _selectedCargoIndex = -1;
-
-        // Текущий корабль
         private ulong _shipNetId;
         private string _shipName;
+        private bool _subscribed;
 
         // ============================================================
         // Data model
         // ============================================================
 
-        private struct InventoryEntry
+        private struct InvEntry
         {
             public int itemId;
             public string displayName;
@@ -60,7 +63,7 @@ namespace ProjectC.Trade.Client
             public string itemId;
             public string displayName;
             public int count;
-            public int inventoryItemId; // для обратного Retrieve
+            public int inventoryItemId;
         }
 
         // ============================================================
@@ -69,59 +72,69 @@ namespace ProjectC.Trade.Client
 
         private void Awake()
         {
-            if (Instance != null && Instance != this)
-            {
-                Destroy(gameObject);
-                return;
-            }
+            if (Instance != null && Instance != this) { Destroy(gameObject); return; }
             Instance = this;
+
+            _doc = GetComponent<UIDocument>();
+
+            // UXML fallback на Resources (VisualTreeAsset работает)
+            if (_uxml == null)
+                _uxml = Resources.Load<VisualTreeAsset>("UI/ShipCargoConsoleWindow");
+            // USS fallback НЕ делаем — см. UI_TOOLKIT_GUIDE.md §2 Ошибка 1
+        }
+
+        private void OnEnable() => EnsureBuilt();
+
+        private void OnDisable()
+        {
+            TryUnsubscribe();
+            if (_built) SetVisible(false);
         }
 
         private void OnDestroy()
         {
+            TryUnsubscribe();
             if (Instance == this) Instance = null;
         }
 
-        private void OnEnable()
-        {
-            BuildUI();
-            Hide();
-        }
-
-        private void OnDisable()
-        {
-            var invState = InventoryClientState.Instance;
-            if (invState != null)
-                invState.OnSnapshotUpdated -= RefreshData;
-
-            var cargoState = ShipCargoClientState.Instance;
-            if (cargoState != null)
-                cargoState.OnResultReceived -= HandleResult;
-        }
-
         // ============================================================
-        // Build UI
+        // Build UI (канон: UI_TOOLKIT_GUIDE.md §3)
         // ============================================================
 
-        private void BuildUI()
+        private void EnsureBuilt()
         {
-            if (_uiDocument == null)
+            if (_built) return;
+            if (_doc == null) _doc = GetComponent<UIDocument>();
+            if (_doc == null || _doc.rootVisualElement == null) return;
+            if (_uxml == null)
             {
-                Debug.LogError("[ShipCargoConsoleWindow] UIDocument not assigned");
+                Debug.LogError("[ShipCargoConsoleWindow] UXML не назначен!", this);
                 return;
             }
 
-            _root = _uiDocument.rootVisualElement;
-            if (_root == null) return;
+            _root = _doc.rootVisualElement;
+            _root.Clear();
 
-            _titleLabel = _root.Q<Label>("title-label");
-            _invList = _root.Q<ListView>("inv-list");
-            _cargoList = _root.Q<ListView>("cargo-list");
-            _storeBtn = _root.Q<Button>("store-btn");
-            _retrieveBtn = _root.Q<Button>("retrieve-btn");
-            _closeBtn = _root.Q<Button>("close-btn");
-            _statusLabel = _root.Q<Label>("status-label");
+            // Добавляем USS один раз
+            if (_uss != null && !_root.styleSheets.Contains(_uss))
+                _root.styleSheets.Add(_uss);
 
+            _doc.sortingOrder = 10;
+
+            // Клонируем UXML
+            _container = _uxml.CloneTree();
+            _root.Add(_container);
+
+            // Ищем элементы
+            _titleLabel = _container.Q<Label>("title-label");
+            _invList = _container.Q<ListView>("inv-list");
+            _cargoList = _container.Q<ListView>("cargo-list");
+            _storeBtn = _container.Q<Button>("store-btn");
+            _retrieveBtn = _container.Q<Button>("retrieve-btn");
+            _closeBtn = _container.Q<Button>("close-btn");
+            _statusLabel = _container.Q<Label>("status-label");
+
+            // ListView setup
             if (_invList != null)
             {
                 _invList.makeItem = () => new Label();
@@ -134,10 +147,7 @@ namespace ProjectC.Trade.Client
                     lbl.text = $"{entry.displayName} ×{entry.count}";
                 };
                 _invList.itemsSource = _invCache;
-                _invList.selectionChanged += sel =>
-                {
-                    _selectedInvIndex = _invList.selectedIndex;
-                };
+                _invList.selectionChanged += _ => _selectedInvIndex = _invList.selectedIndex;
             }
 
             if (_cargoList != null)
@@ -152,15 +162,26 @@ namespace ProjectC.Trade.Client
                     lbl.text = $"{entry.displayName} ×{entry.count}";
                 };
                 _cargoList.itemsSource = _cargoCache;
-                _cargoList.selectionChanged += sel =>
-                {
-                    _selectedCargoIndex = _cargoList.selectedIndex;
-                };
+                _cargoList.selectionChanged += _ => _selectedCargoIndex = _cargoList.selectedIndex;
             }
 
-            if (_storeBtn != null) _storeBtn.clicked += OnStoreClicked;
-            if (_retrieveBtn != null) _retrieveBtn.clicked += OnRetrieveClicked;
-            if (_closeBtn != null) _closeBtn.clicked += Hide;
+            // De-dup подписок
+            if (_storeBtn != null) { _storeBtn.clicked -= OnStoreClicked; _storeBtn.clicked += OnStoreClicked; }
+            if (_retrieveBtn != null) { _retrieveBtn.clicked -= OnRetrieveClicked; _retrieveBtn.clicked += OnRetrieveClicked; }
+            if (_closeBtn != null) { _closeBtn.clicked -= Hide; _closeBtn.clicked += Hide; }
+
+            _built = true;
+            SetVisible(false);
+
+            Debug.Log($"[ShipCargoConsoleWindow] Built: root.children={_root.childCount}, styleSheets={_root.styleSheets.count}");
+        }
+
+        private void SetVisible(bool visible)
+        {
+            var target = _container ?? _root;
+            if (target == null) return;
+            target.style.display = visible ? DisplayStyle.Flex : DisplayStyle.None;
+            target.pickingMode = visible ? PickingMode.Position : PickingMode.Ignore;
         }
 
         // ============================================================
@@ -169,48 +190,63 @@ namespace ProjectC.Trade.Client
 
         public void Show(ulong shipNetId, string shipDisplayName)
         {
+            if (!_built) EnsureBuilt();
+            if (!_built) return;
+
             _shipNetId = shipNetId;
             _shipName = shipDisplayName;
-
-            if (_root == null) BuildUI();
-            if (_root == null) return;
 
             if (_titleLabel != null)
                 _titleLabel.text = $"Грузовой отсек: {_shipName}";
 
-            _root.style.display = DisplayStyle.Flex;
-
-            // Подписки
-            var invState = InventoryClientState.Instance;
-            if (invState != null)
-                invState.OnSnapshotUpdated += RefreshData;
-
-            var cargoState = ShipCargoClientState.Instance;
-            if (cargoState != null)
-                cargoState.OnResultReceived += HandleResult;
-
+            SetVisible(true);
+            TrySubscribe();
             RefreshData();
         }
 
         public void Hide()
         {
-            if (_root != null)
-                _root.style.display = DisplayStyle.None;
-
-            var invState = InventoryClientState.Instance;
-            if (invState != null)
-                invState.OnSnapshotUpdated -= RefreshData;
-
-            var cargoState = ShipCargoClientState.Instance;
-            if (cargoState != null)
-                cargoState.OnResultReceived -= HandleResult;
-
+            TryUnsubscribe();
+            SetVisible(false);
             _invCache.Clear();
             _cargoCache.Clear();
             _shipNetId = 0;
         }
 
-        public bool IsVisible() => _root != null && _root.style.display == DisplayStyle.Flex;
+        public bool IsVisible()
+        {
+            if (!_built) return false;
+            var target = _container ?? _root;
+            return target != null && target.style.display == DisplayStyle.Flex;
+        }
+
+        // ============================================================
+        // Subscribe / Unsubscribe
+        // ============================================================
+
+        private void TrySubscribe()
+        {
+            if (_subscribed) return;
+            _subscribed = true;
+
+            var invState = InventoryClientState.Instance;
+            if (invState != null) invState.OnSnapshotUpdated += RefreshData;
+
+            var cargoState = ShipCargoClientState.Instance;
+            if (cargoState != null) cargoState.OnResultReceived += HandleResult;
+        }
+
+        private void TryUnsubscribe()
+        {
+            if (!_subscribed) return;
+            _subscribed = false;
+
+            var invState = InventoryClientState.Instance;
+            if (invState != null) invState.OnSnapshotUpdated -= RefreshData;
+
+            var cargoState = ShipCargoClientState.Instance;
+            if (cargoState != null) cargoState.OnResultReceived -= HandleResult;
+        }
 
         // ============================================================
         // Data Refresh
@@ -231,7 +267,6 @@ namespace ProjectC.Trade.Client
             var items = invState.GetItems();
             if (items == null) return;
 
-            // Группируем по itemId
             var grouped = new Dictionary<int, int>();
             foreach (var inv in items)
             {
@@ -242,7 +277,7 @@ namespace ProjectC.Trade.Client
             foreach (var kvp in grouped)
             {
                 var def = invState.GetItemDefinition(kvp.Key);
-                _invCache.Add(new InventoryEntry
+                _invCache.Add(new InvEntry
                 {
                     itemId = kvp.Key,
                     displayName = def != null ? def.itemName : $"#{kvp.Key}",
@@ -270,40 +305,29 @@ namespace ProjectC.Trade.Client
             foreach (var cd in cargoDetail)
             {
                 if (cd.quantity <= 0) continue;
-
-                // Пытаемся найти inventoryItemId по имени предмета
-                int invItemId = ResolveInventoryItemId(cd.itemId);
-
                 _cargoCache.Add(new CargoEntry
                 {
                     itemId = cd.itemId,
                     displayName = cd.displayName.ToString(),
                     count = cd.quantity,
-                    inventoryItemId = invItemId,
+                    inventoryItemId = ResolveInventoryItemId(cd.itemId),
                 });
             }
 
             _cargoList?.Rebuild();
         }
 
-        /// <summary>
-        /// Резолвим строковый cargo itemId в числовой inventory itemId.
-        /// Ищем в ItemDatabase по имени.
-        /// </summary>
         private int ResolveInventoryItemId(string cargoItemId)
         {
             if (string.IsNullOrEmpty(cargoItemId)) return 0;
             var invState = InventoryClientState.Instance;
             if (invState == null) return 0;
-
             var items = invState.GetItems();
             if (items == null) return 0;
-
             foreach (var inv in items)
             {
                 var def = invState.GetItemDefinition(inv.itemId);
-                if (def != null && def.itemName == cargoItemId)
-                    return inv.itemId;
+                if (def != null && def.itemName == cargoItemId) return inv.itemId;
             }
             return 0;
         }
@@ -315,20 +339,11 @@ namespace ProjectC.Trade.Client
         private void OnStoreClicked()
         {
             if (_shipNetId == 0) return;
-
-            if (_selectedInvIndex < 0 || _selectedInvIndex >= _invCache.Count)
-            {
-                SetStatus("Выберите предмет в инвентаре", false);
-                return;
-            }
+            if (_selectedInvIndex < 0 || _selectedInvIndex >= _invCache.Count) { SetStatus("Выберите предмет в инвентаре", false); return; }
 
             var entry = _invCache[_selectedInvIndex];
             var server = ShipCargoServer.Instance;
-            if (server == null)
-            {
-                SetStatus("Сервер грузового отсека не доступен", false);
-                return;
-            }
+            if (server == null) { SetStatus("Сервер грузового отсека не доступен", false); return; }
 
             server.RequestStoreToCargoRpc(_shipNetId, entry.itemId, entry.count);
             SetStatus($"Отправка {entry.displayName} ×{entry.count} в трюм...", true);
@@ -337,26 +352,13 @@ namespace ProjectC.Trade.Client
         private void OnRetrieveClicked()
         {
             if (_shipNetId == 0) return;
-
-            if (_selectedCargoIndex < 0 || _selectedCargoIndex >= _cargoCache.Count)
-            {
-                SetStatus("Выберите предмет в трюме", false);
-                return;
-            }
+            if (_selectedCargoIndex < 0 || _selectedCargoIndex >= _cargoCache.Count) { SetStatus("Выберите предмет в трюме", false); return; }
 
             var entry = _cargoCache[_selectedCargoIndex];
-            if (entry.inventoryItemId <= 0)
-            {
-                SetStatus($"Не удалось сопоставить '{entry.itemId}' с предметом инвентаря", false);
-                return;
-            }
+            if (entry.inventoryItemId <= 0) { SetStatus($"Не удалось сопоставить '{entry.itemId}' с предметом инвентаря", false); return; }
 
             var server = ShipCargoServer.Instance;
-            if (server == null)
-            {
-                SetStatus("Сервер грузового отсека не доступен", false);
-                return;
-            }
+            if (server == null) { SetStatus("Сервер грузового отсека не доступен", false); return; }
 
             server.RequestRetrieveFromCargoRpc(_shipNetId, entry.itemId, entry.count, entry.inventoryItemId);
             SetStatus($"Извлечение {entry.displayName} ×{entry.count} из трюма...", true);

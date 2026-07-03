@@ -16,6 +16,7 @@ using UnityEngine;
 using UnityEngine.UIElements;
 using ProjectC.Player;
 using ProjectC.Ship.Key;
+using ProjectC.UI.Client;
 
 namespace ProjectC.Ship.UI
 {
@@ -275,7 +276,7 @@ namespace ProjectC.Ship.UI
             if (_shipDropdownContainer == null) return;
             _shipDropdownContainer.Clear();
 
-            var dd = new CustomDropdown("Выберите корабль...");
+            var dd = new CustomDropdown();
             var choices = new List<string>();
             foreach (int id in _keyInstanceIds)
             {
@@ -306,7 +307,7 @@ namespace ProjectC.Ship.UI
             var mm = sc.ShipModuleManager;
             if (mm == null || mm.slots == null || mm.slots.Count == 0) return;
 
-            var dd = new CustomDropdown("Выберите слот...");
+            var dd = new CustomDropdown();
             var choices = new List<string>();
             var slotNames = new List<string>();
             foreach (var slot in mm.slots)
@@ -616,76 +617,6 @@ namespace ProjectC.Ship.UI
                     RenderCompatibleModules(_selectedSlotName);
                 if (_statusLabel != null)
                     _statusLabel.text = "Готово ✓";
-            }
-        }
-
-        // ============================================================
-        // Custom Dropdown
-        // ============================================================
-
-        private class CustomDropdown : VisualElement
-        {
-            private readonly PopupElement _popup;
-            private readonly Label _label;
-            private int _selectedIdx = -1;
-            private List<string> _choices = new List<string>();
-
-            public int SelectedIndex => _selectedIdx;
-            public System.Action<int> OnSelectionChanged;
-
-            public CustomDropdown(string placeholder)
-            {
-                AddToClassList("repair-dropdown");
-                _label = new Label(placeholder);
-                _label.AddToClassList("repair-dropdown-label");
-                Add(_label);
-
-                _popup = new PopupElement();
-                _popup.style.display = DisplayStyle.None;
-                Add(_popup);
-
-                _label.RegisterCallback<ClickEvent>(evt =>
-                {
-                    _popup.style.display = _popup.style.display == DisplayStyle.Flex
-                        ? DisplayStyle.None : DisplayStyle.Flex;
-                    evt.StopPropagation();
-                });
-            }
-
-            public void SetChoices(List<string> choices, int defaultIdx)
-            {
-                _choices = choices;
-                _popup.Clear();
-                for (int i = 0; i < choices.Count; i++)
-                {
-                    int idx = i;
-                    var item = new Label(choices[i]);
-                    item.AddToClassList("repair-dropdown-item");
-                    item.RegisterCallback<ClickEvent>(evt =>
-                    {
-                        _selectedIdx = idx;
-                        _label.text = choices[idx];
-                        _popup.style.display = DisplayStyle.None;
-                        OnSelectionChanged?.Invoke(idx);
-                        evt.StopPropagation();
-                    });
-                    _popup.Add(item);
-                }
-                if (defaultIdx >= 0 && defaultIdx < choices.Count)
-                {
-                    _selectedIdx = defaultIdx;
-                    _label.text = choices[defaultIdx];
-                }
-            }
-
-            public void Cleanup() { _popup.Clear(); }
-        }
-
-        private class PopupElement : VisualElement
-        {
-            public PopupElement()
-            {
-                AddToClassList("repair-dropdown-popup");
             }
         }
 

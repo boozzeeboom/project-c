@@ -189,41 +189,67 @@
     color: rgb(255, 230, 180) !important;
 }
 
-/* === Dropdown === */
-.repair-dropdown {
+/* === Dropdown (как в CharacterWindow — CustomDropdown) === */
+.custom-dropdown {
+    flex-direction: column !important;
     flex-shrink: 0 !important;
+    min-width: 180px !important;
     position: relative !important;
 }
-.repair-dropdown-label {
-    font-size: 13px !important;
-    color: rgb(180, 200, 220) !important;
+.custom-dropdown__button {
+    flex-direction: row !important;
+    align-items: center !important;
     padding: 6px 10px !important;
-    background-color: rgb(25, 35, 50) !important;
+    min-height: 28px !important;
+    background-color: rgba(20, 35, 55, 0.9) !important;
     border-width: 1px !important;
-    border-color: rgb(60, 80, 110) !important;
+    border-color: rgb(60, 85, 120) !important;
     border-radius: 4px !important;
+    -unity-text-align: middle-left !important;
 }
-.repair-dropdown-popup {
+.custom-dropdown__button:hover {
+    background-color: rgba(40, 60, 100, 0.5) !important;
+}
+.custom-dropdown__text {
+    flex-grow: 1 !important;
+    font-size: 13px !important;
+    color: rgb(200, 215, 230) !important;
+    overflow: hidden !important;
+    margin-right: 8px !important;
+    -unity-text-align: middle-left !important;
+}
+.custom-dropdown__arrow {
+    font-size: 10px !important;
+    color: rgb(160, 185, 220) !important;
+    flex-shrink: 0 !important;
+    -unity-text-align: middle-center !important;
+    width: 14px !important;
+}
+.custom-dropdown__popup {
     position: absolute !important;
-    top: 100% !important;
-    left: 0 !important;
-    min-width: 100% !important;
-    background-color: rgb(18, 28, 42) !important;
+    background-color: rgba(25, 40, 65, 0.95) !important;
     border-width: 1px !important;
-    border-color: rgb(70, 95, 125) !important;
+    border-color: rgb(70, 110, 170) !important;
     border-radius: 4px !important;
     flex-direction: column !important;
-    max-height: 220px !important;
+    max-height: 240px !important;
     overflow: auto !important;
+    z-index: 1000 !important;
 }
-.repair-dropdown-item {
-    font-size: 13px !important;
-    color: rgb(180, 200, 220) !important;
-    padding: 6px 12px !important;
+.custom-dropdown__item {
+    padding: 6px 10px !important;
+    font-size: 12px !important;
+    color: rgb(190, 205, 225) !important;
+    background-color: transparent !important;
     flex-shrink: 0 !important;
 }
-.repair-dropdown-item:hover {
-    background-color: rgb(45, 65, 95) !important;
+.custom-dropdown__item.hovered,
+.custom-dropdown__item:hover {
+    background-color: rgba(60, 100, 160, 0.6) !important;
+}
+.custom-dropdown__item.selected {
+    background-color: rgba(50, 90, 150, 0.4) !important;
+    -unity-font-style: bold !important;
 }
 
 /* === Footer === */
@@ -251,4 +277,58 @@
     font-size: 13px !important;
     color: rgb(100, 110, 130) !important;
     padding: 8px !important;
+}
+
+/* === Thin scrollbar (как в CharacterWindow/EscMenu) === */
+.unity-scroll-view .unity-scroller {
+    width: 6px !important;
+    max-width: 6px !important;
+    min-width: 6px !important;
+    margin: 0 !important;
+}
+.unity-scroll-view .unity-scroller--vertical {
+    width: 6px !important;
+    max-width: 6px !important;
+}
+.unity-scroll-view .unity-scroller--horizontal {
+    height: 6px !important;
+    max-height: 6px !important;
+}
+.unity-scroll-view .unity-scroller__low-button,
+.unity-scroll-view .unity-scroller__high-button {
+    display: none !important;
+    width: 0 !important;
+    height: 0 !important;
+    padding: 0 !important;
+    margin: 0 !important;
+}
+.unity-scroll-view .unity-scroller__slider {
+    background-color: transparent !important;
+    padding: 0 !important;
+    margin: 0 !important;
+}
+.unity-scroll-view .unity-slider__input {
+    background-color: transparent !important;
+}
+.unity-scroll-view .unity-base-slider__drag-container {
+    background-color: transparent !important;
+}
+.unity-scroll-view .unity-base-slider__tracker {
+    background-color: transparent !important;
+}
+.unity-scroll-view .unity-base-slider__dragger-border {
+    display: none !important;
+    width: 0 !important;
+    height: 0 !important;
+}
+.unity-scroll-view .unity-base-slider__dragger {
+    background-color: rgba(100, 160, 220, 0.4) !important;
+    border-radius: 3px !important;
+    min-width: 6px !important;
+    max-width: 6px !important;
+    min-height: 12px !important;
+    border-width: 0 !important;
+}
+.unity-scroll-view .unity-base-slider__dragger:hover {
+    background-color: rgba(120, 180, 240, 0.6) !important;
 }

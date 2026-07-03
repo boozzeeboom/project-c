@@ -358,27 +358,45 @@ namespace ProjectC.UI.Client
             if (_modulesContainer == null) return;
             _modulesContainer.Clear();
 
-            // Получить имена модулей через reflection (без прямой зависимости от ShipModuleManager)
-            var moduleNames = TryGetModuleNames(sc);
-            if (moduleNames == null || moduleNames.Count == 0)
+            var mm = sc != null ? sc.ShipModuleManager : null;
+            if (mm == null || mm.slots == null || mm.slots.Count == 0)
             {
-                var row = new Label($"Модулей: {0}");
+                var row = new Label("Модулей: 0");
                 row.AddToClassList("ship-info-row");
                 _modulesContainer.Add(row);
                 return;
             }
 
-            foreach (var name in moduleNames)
+            var slots = mm.slots;
+            int installedCount = 0;
+            foreach (var slot in slots)
             {
+                if (slot == null) continue;
+
+                bool occupied = slot.isOccupied;
+                string moduleName = occupied ? slot.installedModule.displayName : "пусто";
+                if (string.IsNullOrEmpty(moduleName) && occupied)
+                    moduleName = slot.installedModule.moduleId; // fallback to tech ID
+
+                if (occupied) installedCount++;
+
                 var row = new VisualElement();
                 row.AddToClassList("ship-module-row");
 
-                var lbl = new Label(name);
-                lbl.AddToClassList("ship-module-name");
-                row.Add(lbl);
+                var slotLbl = new Label(slot.gameObject.name);
+                slotLbl.AddToClassList("ship-module-slot");
+                row.Add(slotLbl);
+
+                var modLbl = new Label(moduleName);
+                modLbl.AddToClassList("ship-module-name");
+                if (!occupied)
+                    modLbl.AddToClassList("ship-module-empty");
+                row.Add(modLbl);
 
                 _modulesContainer.Add(row);
             }
+
+            Debug.Log($"[MyShipsTab] Modules: {slots.Count} slots, {installedCount} installed");
         }
 
         /// <summary>
@@ -436,84 +454,7 @@ namespace ProjectC.UI.Client
             }
         }
 
-        private static List<string> TryGetModuleNames(ProjectC.Player.ShipController sc)
-        {
-            var result = new List<string>();
-            if (sc == null) return result;
 
-            // Попытка 1: публичное свойство Modules / InstalledModules
-            var prop = sc.GetType().GetProperty("InstalledModules",
-                System.Reflection.BindingFlags.Instance |
-                System.Reflection.BindingFlags.Public |
-                System.Reflection.BindingFlags.NonPublic);
-            if (prop != null)
-            {
-                var val = prop.GetValue(sc) as System.Collections.IEnumerable;
-                if (val != null)
-                {
-                    foreach (var m in val)
-                    {
-                        if (m == null) continue;
-                        string name = TryGetNameField(m);
-                        if (!string.IsNullOrEmpty(name)) result.Add(name);
-                    }
-                    if (result.Count > 0) return result;
-                }
-            }
-
-            // Попытка 2: поле _modules (List<...>)
-            var field = sc.GetType().GetField("_modules",
-                System.Reflection.BindingFlags.Instance |
-                System.Reflection.BindingFlags.NonPublic);
-            if (field != null)
-            {
-                var val = field.GetValue(sc) as System.Collections.IEnumerable;
-                if (val != null)
-                {
-                    foreach (var m in val)
-                    {
-                        if (m == null) continue;
-                        string name = TryGetNameField(m);
-                        if (!string.IsNullOrEmpty(name)) result.Add(name);
-                    }
-                }
-            }
-            return result;
-        }
-
-        private static string TryGetNameField(object module)
-        {
-            var t = module.GetType();
-            var nf = t.GetProperty("Name",
-                System.Reflection.BindingFlags.Instance |
-                System.Reflection.BindingFlags.Public |
-                System.Reflection.BindingFlags.NonPublic);
-            if (nf != null && nf.PropertyType == typeof(string))
-            {
-                var v = (string)nf.GetValue(module);
-                if (!string.IsNullOrEmpty(v)) return v;
-            }
-            var sf = t.GetField("name",
-                System.Reflection.BindingFlags.Instance |
-                System.Reflection.BindingFlags.Public |
-                System.Reflection.BindingFlags.NonPublic);
-            if (sf != null && sf.FieldType == typeof(string))
-            {
-                var v = (string)sf.GetValue(module);
-                if (!string.IsNullOrEmpty(v)) return v;
-            }
-            var df = t.GetProperty("displayName",
-                System.Reflection.BindingFlags.Instance |
-                System.Reflection.BindingFlags.Public |
-                System.Reflection.BindingFlags.NonPublic);
-            if (df != null)
-            {
-                var v = df.GetValue(module)?.ToString();
-                if (!string.IsNullOrEmpty(v)) return v;
-            }
-            // Последний fallback — type name
-            return t.Name;
-        }
 
         private void HandleShipStateChanged(ulong shipNetId)
         {

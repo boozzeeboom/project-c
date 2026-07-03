@@ -261,6 +261,11 @@ namespace ProjectC.Trade.Client
 
             var cargoState = ShipCargoClientState.Instance;
             if (cargoState != null) cargoState.OnResultReceived += HandleResult;
+
+            // Телеметрия корабля: NetworkVariable sync ~100-200ms, но OnShipStateChanged
+            // срабатывает сразу при получении обновления — обновляем трюм без задержки.
+            var telemetry = ShipTelemetryClientState.Instance;
+            if (telemetry != null) telemetry.OnShipStateChanged += OnTelemetryUpdated;
         }
 
         private void TryUnsubscribe()
@@ -273,6 +278,15 @@ namespace ProjectC.Trade.Client
 
             var cargoState = ShipCargoClientState.Instance;
             if (cargoState != null) cargoState.OnResultReceived -= HandleResult;
+
+            var telemetry = ShipTelemetryClientState.Instance;
+            if (telemetry != null) telemetry.OnShipStateChanged -= OnTelemetryUpdated;
+        }
+
+        private void OnTelemetryUpdated(ulong shipNetId)
+        {
+            if (shipNetId == _shipNetId)
+                RefreshCargo();
         }
 
         // ============================================================

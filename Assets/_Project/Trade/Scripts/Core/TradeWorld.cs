@@ -49,6 +49,16 @@ namespace ProjectC.Trade.Core
         // ========================================================
         public event Action<ulong> OnCargoChanged;
 
+        /// <summary>
+        /// T-CARGO-UI-02: Публичный доступ для внешних систем (ShipCargoServer),
+        /// которые мутируют CargoData напрямую. Вызывает OnCargoChanged →
+        /// ShipController.UpdateTelemetryState → NetworkVariable sync → UI.
+        /// </summary>
+        public void NotifyCargoChanged(ulong shipNetworkObjectId)
+        {
+            OnCargoChanged?.Invoke(shipNetworkObjectId);
+        }
+
         // ========================================================
         // INITIALIZATION
         // ========================================================

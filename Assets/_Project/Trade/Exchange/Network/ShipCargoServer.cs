@@ -177,6 +177,7 @@ namespace ProjectC.Trade.Network
 
                 // --- Шаг 3: персист ---
                 tradeWorld.Repository.SetCargo(shipNetId, cargo.SaveToList());
+                tradeWorld.NotifyCargoChanged(shipNetId);
 
                 if (Items.Network.InventoryServer.Instance != null)
                     Items.Network.InventoryServer.Instance.PushSnapshot(clientId);
@@ -304,6 +305,7 @@ namespace ProjectC.Trade.Network
 
                 // --- Шаг 3: персист ---
                 tradeWorld.Repository.SetCargo(shipNetId, cargo.SaveToList());
+                tradeWorld.NotifyCargoChanged(shipNetId);
 
                 if (Items.Network.InventoryServer.Instance != null)
                     Items.Network.InventoryServer.Instance.PushSnapshot(clientId);

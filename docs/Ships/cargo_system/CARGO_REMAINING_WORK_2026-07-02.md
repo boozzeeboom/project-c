@@ -3,22 +3,22 @@
 > **Автор:** Mavis (Mavis)
 > **Назначение:** сводный план оставшейся работы по cargo-подсистеме после T-CARGO-01..06.
 > **Связано с:** [CARGO_DIAGNOSIS_2026-06-17.md](CARGO_DIAGNOSIS_2026-06-17.md) (диагноз), [CARGO_REFACTOR_PLAN_2026-06-17.md](CARGO_REFACTOR_PLAN_2026-06-17.md) (что уже сделано)
-> **Статус:** 📋 План на согласование пользователем. **Делать НЕ начинаю** — нужна явная команда «погнали» по конкретному эпику.
+> **Статус:** ✅ ВСЕ 4 ЭПИКА ЗАВЕРШЕНЫ (2026-07-03). Cargo-подсистема полностью реализована.
 
 ---
 
 ## TL;DR
 
-Серверная cargo-логика (Trade v2 + T-CARGO-06) **готова и протестирована**: CargoData POCO, TradeWorld._cargoCache, IPlayerDataRepository, NetworkVariable<float> cargoPenalty, ShipCollisionDamageConfig, OnCargoChanged event, ShipTelemetryState.cargoUsed/cargoMax — всё это **уже работает**.
+Серверная cargo-логика (Trade v2 + T-CARGO-06) **готова и протестирована**. Все 4 эпика **ВЫПОЛНЕНЫ**.
 
-**Что осталось — 4 эпика UI/визуала/расширения:**
+**Все 4 эпика завершены:**
 
 1. **T-CARGO-UI-01: детальный список груза игрока** ✅ **СДЕЛАНО 2026-07-02** — в CharacterWindow, таб «Корабль»: `CargoDetailDto[]` в `ShipTelemetryState`, push через NetworkVariable (5 Hz), рендер `RenderCargoDetail()` в `MyShipsTab`, фикс `cargoMax=0`, 2-колоночная вёрстка (cargo + модули). См. [CARGO_UI_01_DESIGN_2026-07-02.md](CARGO_UI_01_DESIGN_2026-07-02.md).
 2. **T-CARGO-UI-02: cargo manager (Exchanger-стиль консоль) на корабле** ✅ **СДЕЛАНО 2026-07-03** — UI-окно для просмотра/правки cargo в любой момент (без рынка), по аналогии с ResourcesExchanger. Включает: ShipCargoConsoleWindow (UI Toolkit), ShipCargoServer (RPC-хаб), обменный курс через ResourceExchangeResolver, qty-кнопки min/-10/-1/+1/+10/max.
-3. **T-CARGO-VIS-01: 3D визуал наполнения трюма** — наполняемость блоками/ящиками на палубе (visual representation).
-4. **T-CARGO-NPC-01: универсальная cargo для NPC-кораблей** — расширить NpcShipCargoManifest (сейчас пустой hook) до полноценной системы, чтобы NPC могли реально перевозить товар (тот же TradeWorld, те же API).
+3. **T-CARGO-VIS-01: 3D визуал наполнения трюма** ✅ **СДЕЛАНО 2026-07-02** — `ShipCargoVisual` (MonoBehaviour), grid-размещение ящиков, object pool, overflow-индикатор. См. [CARGO_VIS_01_DESIGN_2026-07-02.md](CARGO_VIS_01_DESIGN_2026-07-02.md).
+4. **T-CARGO-NPC-01: универсальная cargo для NPC-кораблей** ✅ **СДЕЛАНО 2026-07-03** — `NpcCargoService` (server-only), `NpcCargoTradeListConfig`, `TryNpcBuy`/`TryNpcSell` в TradeWorld, интеграция в `NpcShipController.NavTick` (Docked → dwell-trade), авто-сбор MarketConfig из сцен (MARKET-ID-REFACTOR). См. [IMPLEMENTATION_2026-07-03.md](../../NPC_others_peacfull/npc_ship/CARGO/IMPLEMENTATION_2026-07-03.md).
 
-Эпики 2-4 — **входы в roadmap на следующие спринты**, готовы к старту по команде.
+**🚀 Все 4 этапа cargo-системы завершены.**
 
 ---
 
@@ -155,9 +155,11 @@
 
 ---
 
-### 2.4 T-CARGO-NPC-01: универсальная cargo для NPC-кораблей
+### 2.4 T-CARGO-NPC-01: универсальная cargo для NPC-кораблей ✅ СДЕЛАНО 2026-07-03
 
-**Проблема.** `NpcShipCargoManifest` (PeacefulShip/Core) — **пустой hook**: `capacitySlots=0, capacityWeight=0, items=null`. NPC-корабли в `WorldScene_0_0` летают, швартуются, но **реального груза не возят**. GDD задумывал «NPC traders» — корабли, привозящие товар от одного рынка к другому. Сейчас это невозможно.
+**Статус: ЗАВЕРШЁН.** Документация: [IMPLEMENTATION_2026-07-03.md](../../NPC_others_peacfull/npc_ship/CARGO/IMPLEMENTATION_2026-07-03.md).
+
+**Проблема.** (было) `NpcShipCargoManifest` (PeacefulShip/Core) — **пустой hook**: `capacitySlots=0, capacityWeight=0, items=null`. NPC-корабли в `WorldScene_0_0` летают, швартуются, но **реального груза не возят**. GDD задумывал «NPC traders» — корабли, привозящие товар от одного рынка к другому. Сейчас это невозможно.
 
 **Требование пользователя (явное):** «мы используем npc корабли такие же как игрока, чтобы они тоже потом могли обладать cargo system (именно перевозить груз)».
 
@@ -176,20 +178,16 @@
 
 ---
 
-## 3. Сводный roadmap (предлагаемый порядок)
+## 3. Сводный roadmap — ВСЕ ЭПИКИ ЗАВЕРШЕНЫ ✅
 
-| # | Epic | ~Часы | Блоки | Триггер от юзера |
-|---|---|---|---|---|
-| **0** | (текущее) ничего | — | — | — |
-| **1** | T-CARGO-UI-01 (список items) | ✅ 2026-07-02 | — | «давай UI трюма» |
-| **2** | T-CARGO-UI-02 (cargo manager) | ✅ 2026-07-03 | — | «открыть груз в полёте» |
-| **3** | T-CARGO-VIS-01 (3D ящики) | ✅ 2026-07-02 | — | «ящики на палубе» |
-| **4** | T-CARGO-NPC-01 (NPC cargo) | 6-10 | частично #3 | «NPC трейдеры» |
+| # | Epic | Статус | Дата |
+|---|---|---|---|
+| **1** | T-CARGO-UI-01 (список items) | ✅ | 2026-07-02 |
+| **2** | T-CARGO-UI-02 (cargo manager) | ✅ | 2026-07-03 |
+| **3** | T-CARGO-VIS-01 (3D ящики) | ✅ | 2026-07-02 |
+| **4** | T-CARGO-NPC-01 (NPC cargo) | ✅ | 2026-07-03 |
 
-**Альтернативный порядок** (если пользователь хочет сначала NPC):
-1. T-CARGO-NPC-01 (базовый, без 3D визуала) → 2. T-CARGO-VIS-01 (покрывает и player, и NPC) → 3. T-CARGO-UI-01 → 4. T-CARGO-UI-02.
-
-**Принцип: каждый эпик = отдельная сессия** (по правилу AGENTS.md «1-2 тикета за сессию»). Начинаю только по явной команде.
+**Cargo-подсистема полностью реализована.** Дальнейшие улучшения — в отдельных эпиках по мере необходимости.
 
 ---
 

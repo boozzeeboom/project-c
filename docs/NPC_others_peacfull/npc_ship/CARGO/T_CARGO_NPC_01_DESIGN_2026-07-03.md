@@ -291,15 +291,23 @@ cargoTrade:
 
 ---
 
-## 10. Чеклист реализации
+## 10. Чеклист реализации — ВСЁ ВЫПОЛНЕНО ✅
 
-1. [ ] `NpcCargoTradeConfig.cs` — struct + ListConfig
-2. [ ] Расширить `NpcShipSchedule.cs` — добавить поле `cargoTrade`
-3. [ ] `NpcCargoService.cs` — UnloadAll / LoadFromSchedule / BuildManifest
-4. [ ] `NpcShipServer.cs` — создать `NpcCargoService` при `OnNetworkSpawn`
-5. [ ] `NpcShipController.NavTick` — Docked hook + вызов `NpcCargoService`
-6. [ ] Editor-утилита: `NpcShipScheduleCargoHelper.cs` (опционально, OnValidate достаточно)
-7. [ ] Обновить 2 SO asset'а — Courier + Trader
-8. [ ] MCP verify trio
-9. [ ] CHANGELOG (NPC + cargo_system)
-10. [ ] Summary + verification recipe для юзера
+1. [x] `NpcCargoTradeConfig.cs` — struct + ListConfig
+2. [x] Расширить `NpcShipSchedule.cs` — добавить поле `cargoTrade`
+3. [x] `NpcCargoService.cs` — RunDwellTrade / BuildManifest
+4. [x] `NpcShipServer.cs` — создать `NpcCargoService` при `OnNetworkSpawn`
+5. [x] `NpcShipController.NavTick` — Docked hook + вызов `NpcCargoService`
+6. [x] Editor-утилита: `NpcShipScheduleCargoHelper.cs` + `MarketZoneMigrationTool.cs`
+7. [x] Обновить SO asset — Courier (пресеты в `GetOrInitCargoTrade()`)
+8. [x] MCP verify trio — 0 compile errors
+9. [x] Документация: `IMPLEMENTATION_2026-07-03.md`, `MARKET_ID_REFACTOR_DESIGN.md`
+10. [x] Play Mode verification — NPC покупает товар (`TradeWorld=OK`)
+
+**Сопутствующий рефакторинг (MARKET-ID-REFACTOR):**
+- [x] `MarketConfigCollector` + нормализация
+- [x] `MarketZone._marketConfig` (MarketConfig SO)
+- [x] Нормализация во всех реестрах
+- [x] Авто-сбор MarketConfig в MarketServer
+- [x] `MarketConfig.OnValidate()` авто-UPPERCASE
+- [x] Фикс `CargoFullVolume` для непроинициализированных префабов

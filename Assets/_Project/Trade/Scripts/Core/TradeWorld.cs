@@ -573,6 +573,20 @@ namespace ProjectC.Trade.Core
 
             if (Resolver == null) return false; // нечем посчитать вес/объём
 
+            // MARKET-ID-REFACTOR fix: если effective limits совпадают с Light-дефолтом
+            // (префаб не настроен), а shipClass тяжелее — игнорируем, используем статику.
+            var staticLimits = ShipClassLimits.Get(cargo.shipClass);
+            var eff = effLimits.Value;
+            if (cargo.shipClass != ShipClass.Light &&
+                eff.maxSlots <= 4 && eff.maxWeight <= 101f && eff.maxVolume <= 4f)
+            {
+                // Префаб не настроен — fallback на статические лимиты
+                eff.maxSlots = staticLimits.maxSlots;
+                eff.maxWeight = staticLimits.maxWeight;
+                eff.maxVolume = staticLimits.maxVolume;
+                eff.penaltyFactor = staticLimits.penaltyFactor;
+            }
+
             int itemSlots = Resolver.GetSlots(itemId);
             float itemWeight = Resolver.GetWeight(itemId);
             float itemVolume = Resolver.GetVolume(itemId);
@@ -581,18 +595,18 @@ namespace ProjectC.Trade.Core
             float newVolume = cargo.ComputeTotalVolume(Resolver) + itemVolume * quantity;
             int newSlots = cargo.ComputeTotalSlots(Resolver) + itemSlots * quantity;
 
-            if (newWeight > effLimits.Value.maxWeight) { failReason = "cargo_max_weight"; return true; }
-            if (newVolume > effLimits.Value.maxVolume) { failReason = "cargo_max_volume"; return true; }
-            if (newSlots > effLimits.Value.maxSlots) { failReason = "cargo_max_slots"; return true; }
+            if (newWeight > eff.maxWeight) { failReason = "cargo_max_weight"; return true; }
+            if (newVolume > eff.maxVolume) { failReason = "cargo_max_volume"; return true; }
+            if (newSlots > eff.maxSlots) { failReason = "cargo_max_slots"; return true; }
 
             // Check passed — устанавливаем effective лимиты на cargo, чтобы
             // cargo.TryAdd (сразу после pre-check) использовал их вместо статики.
             cargo.SetLimitsOverride(new ShipClassLimits.Limits
             {
-                maxSlots = effLimits.Value.maxSlots,
-                maxWeight = effLimits.Value.maxWeight,
-                maxVolume = effLimits.Value.maxVolume,
-                penaltyFactor = effLimits.Value.penaltyFactor,
+                maxSlots = eff.maxSlots,
+                maxWeight = eff.maxWeight,
+                maxVolume = eff.maxVolume,
+                penaltyFactor = eff.penaltyFactor,
             });
             return false;
         }

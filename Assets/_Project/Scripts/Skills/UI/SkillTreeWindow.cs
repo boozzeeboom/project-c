@@ -187,7 +187,7 @@ namespace ProjectC.Skills.UI
             }
         }
 
-        private bool IsOpen() => _rootContainer != null && _rootContainer.style.display.value == DisplayStyle.Flex;
+        public bool IsOpen() => _rootContainer != null && _rootContainer.style.display.value == DisplayStyle.Flex;
 
         private void Update()
         {

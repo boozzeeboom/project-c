@@ -110,7 +110,8 @@ namespace ProjectC.UI
         /// Единственный Esc-handler в проекте.
         /// 1. Стек UIManager не пуст → CloseTopPanel (EscMenu, KeybindingsWindow)
         /// 2. CharacterWindow видна → НИЧЕГО (она сама обработает Esc в своём Update)
-        /// 3. Ничего не открыто → Toggle EscMenu
+        /// 3. Любое другое окно открыто (Crafting, Customisation, SkillTree) → НИЧЕГО (закроются сами)
+        /// 4. Ничего не открыто → Toggle EscMenu
         /// </summary>
         private void HandleGlobalInput()
         {
@@ -132,12 +133,77 @@ namespace ProjectC.UI
                 return;
             }
 
-            // 3. Открыть/закрыть EscMenu
+            // 3. Любое внешнее окно открыто → НЕ трогаем, закроется в своём Update.
+            if (IsAnyExternalWindowOpen())
+            {
+                Debug.Log("[UIManager] Esc: external window open → nothing");
+                return;
+            }
+
+            // 4. Открыть/закрыть EscMenu
             if (ProjectC.UI.EscMenu.EscMenuWindow.Instance != null)
             {
                 Debug.Log($"[UIManager] Esc: toggle EscMenu (currently open={ProjectC.UI.EscMenu.EscMenuWindow.Instance.IsOpen()})");
                 ProjectC.UI.EscMenu.EscMenuWindow.Instance.Toggle();
             }
+        }
+
+        /// <summary>
+        /// Проверяет, открыто ли любое окно, которое само обрабатывает Esc
+        /// (MarketWindow, DialogWindow, InventoryUI, CommPanelWindow,
+        ///  CraftingWindow, CustomisationWindow, SkillTreeWindow).
+        /// </summary>
+        private static bool IsAnyExternalWindowOpen()
+        {
+            // MarketWindow (рынок)
+            try
+            {
+                var mw = ProjectC.Trade.Client.MarketWindow.Instance;
+                if (mw != null && mw.IsVisible()) return true;
+            }
+            catch { }
+
+            // DialogWindow (диалоги/квесты)
+            try
+            {
+                var dw = ProjectC.Quests.UI.DialogWindow.Instance;
+                if (dw != null && dw.IsOpen) return true;
+            }
+            catch { }
+
+            // InventoryUI (Tab-колесо инвентаря)
+            try
+            {
+                var inv = ProjectC.UI.Client.InventoryUI.Instance;
+                if (inv != null && inv.IsVisible()) return true;
+            }
+            catch { }
+
+
+            try
+            {
+                var cw = ProjectC.Crafting.UI.CraftingWindow.Instance;
+                if (cw != null && cw.IsOpen) return true;
+            }
+            catch { }
+
+            // CustomisationWindow
+            try
+            {
+                var cust = ProjectC.Customisation.UI.CustomisationWindow.Instance;
+                if (cust != null && cust.IsOpen()) return true;
+            }
+            catch { }
+
+            // SkillTreeWindow
+            try
+            {
+                var st = ProjectC.Skills.UI.SkillTreeWindow.Instance;
+                if (st != null && st.IsOpen()) return true;
+            }
+            catch { }
+
+            return false;
         }
 
         /// <summary>

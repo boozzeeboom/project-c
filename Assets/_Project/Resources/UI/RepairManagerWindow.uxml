@@ -5,7 +5,7 @@
     <!-- RepairManagerWindow — окно ремонтного менеджера -->
     <ui:VisualElement name="repair-root" class="repair-root">
 
-        <ui:VisualElement name="repair-panel" class="repair-panel">
+        <ui:VisualElement name="main-container" class="repair-panel">
 
             <!-- Header -->
             <ui:VisualElement name="repair-header" class="repair-header">

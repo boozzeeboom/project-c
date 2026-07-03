@@ -82,7 +82,7 @@ namespace ProjectC.Trade.Network
         /// Упаковать pickable предметы из инвентаря в cargo-ящики корабля (через курс).
         /// count должен быть кратен rate.inventoryQty (обычно 100).
         /// </summary>
-        [Rpc(SendTo.Server, InvokePermission = RpcInvokePermission.Owner)]
+        [Rpc(SendTo.Server, InvokePermission = RpcInvokePermission.Everyone)]
         public void RequestStoreToCargoRpc(
             ulong shipNetId,
             int inventoryItemId,
@@ -169,8 +169,8 @@ namespace ProjectC.Trade.Network
                 var cargo = tradeWorld.GetOrLoadCargo(shipNetId, shipClass);
                 if (!cargo.TryAdd(r.warehouseItemId, boxesToAdd, tradeWorld.Resolver, out var cargoFail))
                 {
-                    // ROLLBACK: вернуть в инвентарь
-                    RollbackAddItems(invWorld, clientId, inventoryItemId, itemData.itemType, count);
+                    // ROLLBACK: вернуть предметы в инвентарь (AddItemDirect, НЕ RemoveItems)
+                    RollbackReturnItems(invWorld, clientId, inventoryItemId, itemData.itemType, count);
                     SendResult(clientId, CreateFailResult($"Трюм полон: {cargoFail}", 0));
                     return;
                 }
@@ -202,7 +202,7 @@ namespace ProjectC.Trade.Network
         /// Распаковать cargo-ящики корабля в pickable предметы инвентаря (через курс).
         /// count должен быть кратен rate.warehouseQty (обычно 1).
         /// </summary>
-        [Rpc(SendTo.Server, InvokePermission = RpcInvokePermission.Owner)]
+        [Rpc(SendTo.Server, InvokePermission = RpcInvokePermission.Everyone)]
         public void RequestRetrieveFromCargoRpc(
             ulong shipNetId,
             string cargoItemId,
@@ -295,7 +295,7 @@ namespace ProjectC.Trade.Network
                     {
                         // ROLLBACK: вернуть в трюм + откатить уже добавленное
                         cargo.TryAdd(cargoItemId, count, tradeWorld.Resolver, out _);
-                        RollbackAddItems(invWorld, clientId, inventoryItemId, itemType, added);
+                        RollbackRemoveItems(invWorld, clientId, inventoryItemId, itemType, added);
                         SendResult(clientId, CreateFailResult(
                             $"Инвентарь полон: {addResult.message ?? "ошибка"}", 1));
                         return;
@@ -408,14 +408,30 @@ namespace ProjectC.Trade.Network
             };
         }
 
-        private static void RollbackAddItems(InventoryWorld invWorld, ulong clientId,
+        /// <summary>Rollback REMOVE: добавить предметы обратно в инвентарь (для StoreToCargo).</summary>
+        private static void RollbackReturnItems(InventoryWorld invWorld, ulong clientId,
+            int itemId, ItemType itemType, int count)
+        {
+            if (count <= 0) return;
+            for (int i = 0; i < count; i++)
+            {
+                var result = invWorld.AddItemDirect(clientId, itemId, itemType);
+                if (!result.IsSuccess)
+                {
+                    Debug.LogWarning($"[ShipCargoServer] RollbackReturnItems [{i}/{count}]: {result.message}");
+                }
+            }
+        }
+
+        /// <summary>Rollback ADD: удалить из инвентаря (для RetrieveFromCargo).</summary>
+        private static void RollbackRemoveItems(InventoryWorld invWorld, ulong clientId,
             int itemId, ItemType itemType, int count)
         {
             if (count <= 0) return;
             var rollbackResult = invWorld.RemoveItems(clientId, itemId, itemType, count);
             if (!rollbackResult.IsSuccess)
             {
-                Debug.LogWarning($"[ShipCargoServer] Rollback не удался: {rollbackResult.message}");
+                Debug.LogWarning($"[ShipCargoServer] RollbackRemoveItems не удался: {rollbackResult.message}");
             }
         }
     }

@@ -374,11 +374,6 @@ namespace ProjectC.UI.Client
                 return;
             }
 
-            var installBtn = new Button(() => OpenRepairManager());
-            installBtn.text = "🛠 Установить модуль";
-            installBtn.AddToClassList("ship-module-install-btn");
-            _modulesContainer.Add(installBtn);
-
             var slots = mm.slots;
             int installedCount = 0;
             foreach (var slot in slots)

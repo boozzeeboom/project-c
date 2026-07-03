@@ -1,6 +1,6 @@
 /* RepairManagerWindow.uss — стили окна ремонтного менеджера */
 
-/* === Root overlay === */
+/* === Root overlay (fullscreen, dimmed, inhales clicks) === */
 .repair-root {
     position: absolute !important;
     top: 0 !important;
@@ -9,8 +9,22 @@
     bottom: 0 !important;
     align-items: center !important;
     justify-content: center !important;
-    background-color: rgba(0, 0, 0, 0.5) !important;
+    background-color: rgba(0, 0, 0, 0.55) !important;
     display: flex !important;
+}
+
+/* === Content panel (solid, centred in overlay) === */
+.repair-panel {
+    width: 680px !important;
+    max-width: 94% !important;
+    max-height: 92% !important;
+    flex-direction: column !important;
+    flex-shrink: 0 !important;
+    background-color: rgb(18, 28, 40) !important;
+    border-width: 2px !important;
+    border-color: rgb(60, 85, 115) !important;
+    border-radius: 8px !important;
+    overflow: hidden !important;
 }
 
 /* === Header === */

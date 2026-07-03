@@ -10,6 +10,7 @@
 //   - Установка / снятие модуля через ShipModuleServer RPC
 // =====================================================================================
 
+using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.UIElements;
@@ -327,6 +328,7 @@ namespace ProjectC.Ship.UI
 
                 _popup = new PopupElement();
                 _popup.style.display = DisplayStyle.None;
+                Add(_popup);
 
                 _label.RegisterCallback<ClickEvent>(evt =>
                 {
@@ -480,6 +482,9 @@ namespace ProjectC.Ship.UI
                 server.RequestRemoveModule(_selectedKeyId, slotName);
                 if (_statusLabel != null)
                     _statusLabel.text = $"Запрос на снятие модуля из '{slotName}' отправлен...";
+
+                // Автообновление через ~0.5с (RPC ещё в пути)
+                StartCoroutine(DelayedRefresh(0.5f));
             }
             else
             {
@@ -617,6 +622,9 @@ namespace ProjectC.Ship.UI
                 server.RequestInstallModule(_selectedKeyId, slotName, moduleId);
                 if (_statusLabel != null)
                     _statusLabel.text = $"Запрос на установку '{moduleId}' в '{slotName}' отправлен...";
+
+                // Автообновление через ~0.5с (RPC ещё в пути)
+                StartCoroutine(DelayedRefresh(0.5f));
             }
             else
             {
@@ -628,6 +636,19 @@ namespace ProjectC.Ship.UI
         {
             if (_modulesContainer != null) _modulesContainer.Clear();
             if (_modulesHeader != null) _modulesHeader.text = "Доступные модули:";
+        }
+
+        private IEnumerator DelayedRefresh(float delay)
+        {
+            yield return new WaitForSeconds(delay);
+            if (IsOpen && _selectedKeyId > 0)
+            {
+                RenderShip();
+                if (!string.IsNullOrEmpty(_selectedSlotName))
+                    RenderCompatibleModules(_selectedSlotName);
+                if (_statusLabel != null)
+                    _statusLabel.text = "Готово ✓";
+            }
         }
 
         // ============================================================

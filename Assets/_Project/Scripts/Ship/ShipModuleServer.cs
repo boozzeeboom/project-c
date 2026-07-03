@@ -1,0 +1,316 @@
+using System;
+using System.Collections.Generic;
+using Unity.Netcode;
+using UnityEngine;
+using ProjectC.Ship.Key;
+
+namespace ProjectC.Ship
+{
+    /// <summary>
+    /// ShipModuleServer — NetworkBehaviour на корне корабля.
+    /// Обрабатывает серверные RPC для установки/снятия модулей в рантайме.
+    ///
+    /// Валидация на сервере:
+    ///   1. Владение ключом (KeyRodInstanceWorld.IsOwnerOfInstance)
+    ///   2. Корабль пристыкован (ShipController.IsDocked)
+    ///   3. Совместимость + энергия (ShipModuleManager)
+    ///
+    /// После установки/снятия — ClientRpc синхронизирует изменение всем клиентам.
+    /// </summary>
+    [RequireComponent(typeof(NetworkObject))]
+    public class ShipModuleServer : NetworkBehaviour
+    {
+        [Header("Каталог модулей (для lookup по moduleId)")]
+        [Tooltip("Ссылка на базу модулей. Используется для поиска ShipModule по moduleId на клиенте после RPC.")]
+        [SerializeField] private ModuleShopDatabase _shopDatabase;
+
+        // Ссылки на компоненты корабля
+        private ProjectC.Player.ShipController _shipController;
+        private ShipModuleManager _moduleManager;
+        private NetworkObject _netObj;
+
+        // Событие для UI (вызывается на клиенте после синхронизации)
+        public static event Action<ulong /*shipNetId*/> OnModuleChanged;
+
+        private void Awake()
+        {
+            _shipController = GetComponent<ProjectC.Player.ShipController>();
+            _moduleManager = GetComponent<ShipModuleManager>();
+            _netObj = GetComponent<NetworkObject>();
+        }
+
+        // ============================================================
+        // Public API (для RepairManagerWindow)
+        // ============================================================
+
+        /// <summary>Клиент отправляет запрос на установку модуля.</summary>
+        public void RequestInstallModule(int keyInstanceId, string slotName, string moduleId)
+        {
+            if (!IsClient) return;
+            RequestInstallModuleRpc(keyInstanceId, slotName, moduleId);
+        }
+
+        /// <summary>Клиент отправляет запрос на снятие модуля.</summary>
+        public void RequestRemoveModule(int keyInstanceId, string slotName)
+        {
+            if (!IsClient) return;
+            RequestRemoveModuleRpc(keyInstanceId, slotName);
+        }
+
+        // ============================================================
+        // Server RPC
+        // ============================================================
+
+        [Rpc(SendTo.Server)]
+        private void RequestInstallModuleRpc(int keyInstanceId, string slotName, string moduleId,
+            RpcParams rpcParams = default)
+        {
+            if (!IsServer) return;
+            ulong clientId = rpcParams.Receive.SenderClientId;
+
+            Debug.Log($"[ShipModuleServer] Install request: client={clientId}, keyInstance={keyInstanceId}, " +
+                      $"slot='{slotName}', module='{moduleId}'");
+
+            // --- Валидация 1: владение ключом ---
+            if (!KeyRodInstanceWorld.IsInitialized ||
+                !KeyRodInstanceWorld.IsOwnerOfInstance(clientId, keyInstanceId))
+            {
+                NotifyClientError(clientId, "У вас нет ключа от этого корабля.");
+                return;
+            }
+
+            // Проверка: ключ привязан к ЭТОМУ кораблю
+            var instance = KeyRodInstanceWorld.GetInstance(keyInstanceId);
+            if (instance == null || instance.registeredShipId != _netObj.NetworkObjectId)
+            {
+                NotifyClientError(clientId, "Ключ не подходит к этому кораблю.");
+                return;
+            }
+
+            // --- Валидация 2: корабль пристыкован ---
+            if (_shipController != null && !_shipController.IsDocked)
+            {
+                NotifyClientError(clientId, "Корабль не в доке. Установка модулей возможна только в доке.");
+                return;
+            }
+
+            // --- Валидация 3: найти слот ---
+            if (_moduleManager == null)
+            {
+                NotifyClientError(clientId, "Менеджер модулей не найден на корабле.");
+                return;
+            }
+
+            ModuleSlot targetSlot = null;
+            foreach (var slot in _moduleManager.slots)
+            {
+                if (slot != null && slot.gameObject.name == slotName)
+                {
+                    targetSlot = slot;
+                    break;
+                }
+            }
+            if (targetSlot == null)
+            {
+                NotifyClientError(clientId, $"Слот '{slotName}' не найден на корабле.");
+                return;
+            }
+
+            // --- Валидация 4: найти модуль ---
+            ShipModule module = FindModuleById(moduleId);
+            if (module == null)
+            {
+                NotifyClientError(clientId, $"Модуль '{moduleId}' не найден в каталоге.");
+                return;
+            }
+
+            // --- Валидация 5: совместимость + энергия + требования ---
+            // Если слот занят — сначала снимаем старый для проверки энергии
+            ShipModule oldModule = targetSlot.installedModule;
+            if (oldModule != null)
+            {
+                targetSlot.RemoveModule();
+            }
+
+            bool installOk = _moduleManager.InstallModule(targetSlot, module);
+            if (!installOk)
+            {
+                // Восстановить старый модуль
+                if (oldModule != null)
+                    targetSlot.InstallModule(oldModule);
+                NotifyClientError(clientId, $"Не удалось установить модуль '{module.displayName}'. " +
+                    "Проверьте совместимость, энергию и требования.");
+                return;
+            }
+
+            // --- Успех: синхронизировать клиентов ---
+            Debug.Log($"[ShipModuleServer] Module '{moduleId}' installed in slot '{slotName}' " +
+                      $"on ship {_netObj.NetworkObjectId}");
+
+            NotifyClientSuccess(clientId, slotName, moduleId, isInstall: true);
+            OnModuleChangedClientRpc(slotName, moduleId, isInstall: true);
+        }
+
+        [Rpc(SendTo.Server)]
+        private void RequestRemoveModuleRpc(int keyInstanceId, string slotName,
+            RpcParams rpcParams = default)
+        {
+            if (!IsServer) return;
+            ulong clientId = rpcParams.Receive.SenderClientId;
+
+            Debug.Log($"[ShipModuleServer] Remove request: client={clientId}, keyInstance={keyInstanceId}, " +
+                      $"slot='{slotName}'");
+
+            // --- Валидация 1: владение ключом ---
+            if (!KeyRodInstanceWorld.IsInitialized ||
+                !KeyRodInstanceWorld.IsOwnerOfInstance(clientId, keyInstanceId))
+            {
+                NotifyClientError(clientId, "У вас нет ключа от этого корабля.");
+                return;
+            }
+
+            var instance = KeyRodInstanceWorld.GetInstance(keyInstanceId);
+            if (instance == null || instance.registeredShipId != _netObj.NetworkObjectId)
+            {
+                NotifyClientError(clientId, "Ключ не подходит к этому кораблю.");
+                return;
+            }
+
+            // --- Валидация 2: корабль пристыкован ---
+            if (_shipController != null && !_shipController.IsDocked)
+            {
+                NotifyClientError(clientId, "Корабль не в доке.");
+                return;
+            }
+
+            // --- Валидация 3: найти слот ---
+            if (_moduleManager == null)
+            {
+                NotifyClientError(clientId, "Менеджер модулей не найден.");
+                return;
+            }
+
+            ModuleSlot targetSlot = null;
+            foreach (var slot in _moduleManager.slots)
+            {
+                if (slot != null && slot.gameObject.name == slotName)
+                {
+                    targetSlot = slot;
+                    break;
+                }
+            }
+            if (targetSlot == null)
+            {
+                NotifyClientError(clientId, $"Слот '{slotName}' не найден.");
+                return;
+            }
+
+            if (!targetSlot.isOccupied)
+            {
+                NotifyClientError(clientId, $"Слот '{slotName}' уже пуст.");
+                return;
+            }
+
+            string removedModuleId = targetSlot.installedModuleId;
+            _moduleManager.RemoveModule(targetSlot);
+
+            Debug.Log($"[ShipModuleServer] Module removed from slot '{slotName}' on ship {_netObj.NetworkObjectId}");
+
+            NotifyClientSuccess(clientId, slotName, removedModuleId, isInstall: false);
+            OnModuleChangedClientRpc(slotName, string.Empty, isInstall: false);
+        }
+
+        // ============================================================
+        // Client RPC (синхронизация всем клиентам)
+        // ============================================================
+
+        [Rpc(SendTo.Everyone)]
+        private void OnModuleChangedClientRpc(string slotName, string moduleId, bool isInstall)
+        {
+            Debug.Log($"[ShipModuleServer] ClientRpc: slot='{slotName}', module='{moduleId}', install={isInstall}");
+
+            if (_moduleManager == null) return;
+
+            ModuleSlot targetSlot = null;
+            foreach (var slot in _moduleManager.slots)
+            {
+                if (slot != null && slot.gameObject.name == slotName)
+                {
+                    targetSlot = slot;
+                    break;
+                }
+            }
+            if (targetSlot == null) return;
+
+            if (isInstall)
+            {
+                ShipModule module = FindModuleById(moduleId);
+                if (module != null)
+                {
+                    // Если слот занят — сначала снять
+                    if (targetSlot.isOccupied)
+                        targetSlot.RemoveModule();
+                    targetSlot.InstallModule(module);
+                }
+            }
+            else
+            {
+                if (targetSlot.isOccupied)
+                    targetSlot.RemoveModule();
+            }
+
+            OnModuleChanged?.Invoke(_netObj != null ? _netObj.NetworkObjectId : 0);
+        }
+
+        // ============================================================
+        // Notifications (TargetRpc)
+        // ============================================================
+
+        private void NotifyClientError(ulong targetClientId, string message)
+        {
+            Debug.LogWarning($"[ShipModuleServer] Denied client {targetClientId}: {message}");
+            // TODO: TargetRpc для показа toast/уведомления клиенту.
+            // Пока используем ClientRpc с проверкой localClientId.
+            NotifyErrorClientRpc(targetClientId, message);
+        }
+
+        private void NotifyClientSuccess(ulong targetClientId, string slotName, string moduleId, bool isInstall)
+        {
+            NotifySuccessClientRpc(targetClientId, slotName, moduleId, isInstall);
+        }
+
+        [Rpc(SendTo.Everyone)]
+        private void NotifyErrorClientRpc(ulong targetClientId, string message)
+        {
+            if (NetworkManager.Singleton != null &&
+                NetworkManager.Singleton.LocalClientId == targetClientId)
+            {
+                Debug.LogWarning($"[ShipModuleServer] ERROR: {message}");
+                // UI toast будет добавлен в RepairManagerWindow
+            }
+        }
+
+        [Rpc(SendTo.Everyone)]
+        private void NotifySuccessClientRpc(ulong targetClientId, string slotName, string moduleId, bool isInstall)
+        {
+            // Клиент, отправивший запрос, увидит toast
+        }
+
+        // ============================================================
+        // Helpers
+        // ============================================================
+
+        /// <summary>Поиск ShipModule по moduleId через каталог.</summary>
+        private ShipModule FindModuleById(string moduleId)
+        {
+            if (_shopDatabase != null)
+            {
+                var entry = _shopDatabase.FindEntry(moduleId);
+                if (entry != null)
+                    return entry.module;
+            }
+            // Fallback: поиск через ShipModuleCatalog (статический реестр)
+            return ShipModuleCatalog.Find(moduleId);
+        }
+    }
+}

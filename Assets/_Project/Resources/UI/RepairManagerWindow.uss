@@ -1,0 +1,210 @@
+/* RepairManagerWindow.uss — стили окна ремонтного менеджера */
+
+/* === Root overlay === */
+.repair-root {
+    position: absolute !important;
+    top: 0 !important;
+    left: 0 !important;
+    right: 0 !important;
+    bottom: 0 !important;
+    align-items: center !important;
+    justify-content: center !important;
+    background-color: rgba(0, 0, 0, 0.5) !important;
+    display: flex !important;
+}
+
+/* === Header === */
+.repair-header {
+    flex-direction: row !important;
+    justify-content: space-between !important;
+    align-items: center !important;
+    padding: 12px 16px !important;
+    flex-shrink: 0 !important;
+    background-color: rgb(15, 25, 38) !important;
+    border-bottom-width: 1px !important;
+    border-bottom-color: rgb(60, 80, 110) !important;
+}
+.repair-title {
+    font-size: 18px !important;
+    -unity-font-style: bold !important;
+    color: rgb(220, 230, 245) !important;
+}
+.repair-close-btn {
+    font-size: 18px !important;
+    width: 28px !important;
+    height: 28px !important;
+    background-color: rgba(0,0,0,0) !important;
+    color: rgb(160, 170, 190) !important;
+    border-width: 0 !important;
+}
+
+/* === Panel (основной контейнер) === */
+/* В UXML нет отдельной панели — всё внутри repair-root.
+   Эти стили применяются через inline на секции */
+
+/* === Sections === */
+.repair-section {
+    flex-shrink: 0 !important;
+    padding: 8px 16px !important;
+}
+.repair-section-label {
+    font-size: 14px !important;
+    -unity-font-style: bold !important;
+    color: rgb(160, 180, 200) !important;
+    margin-bottom: 4px !important;
+}
+
+/* === Ship info bar === */
+.repair-ship-info {
+    flex-direction: row !important;
+    flex-shrink: 0 !important;
+    padding: 4px 16px !important;
+}
+.repair-info-label {
+    font-size: 12px !important;
+    color: rgb(140, 160, 180) !important;
+    margin-right: 16px !important;
+}
+
+/* === Scroll === */
+.repair-scroll {
+    flex-grow: 1 !important;
+    min-height: 0 !important;
+    overflow: auto !important;
+    max-height: 200px !important;
+}
+
+/* === Slot row === */
+.repair-slot-row {
+    flex-direction: row !important;
+    justify-content: space-between !important;
+    align-items: center !important;
+    padding: 4px 8px !important;
+    border-bottom-width: 1px !important;
+    border-bottom-color: rgba(60, 80, 110, 0.3) !important;
+    flex-shrink: 0 !important;
+}
+.repair-slot-name {
+    font-size: 13px !important;
+    color: rgb(200, 210, 225) !important;
+    flex-grow: 1 !important;
+}
+.repair-slot-empty {
+    color: rgb(100, 110, 130) !important;
+}
+.repair-slot-btns {
+    flex-direction: row !important;
+    flex-shrink: 0 !important;
+}
+
+/* === Module row === */
+.repair-module-row {
+    flex-direction: row !important;
+    align-items: center !important;
+    padding: 4px 8px !important;
+    border-bottom-width: 1px !important;
+    border-bottom-color: rgba(60, 80, 110, 0.3) !important;
+    flex-shrink: 0 !important;
+}
+.repair-module-tier {
+    font-size: 12px !important;
+    color: rgb(220, 180, 60) !important;
+    width: 60px !important;
+    flex-shrink: 0 !important;
+}
+.repair-module-info {
+    flex-grow: 1 !important;
+    flex-direction: column !important;
+}
+.repair-module-name {
+    font-size: 13px !important;
+    color: rgb(200, 210, 225) !important;
+    -unity-font-style: bold !important;
+}
+.repair-module-price {
+    font-size: 11px !important;
+    color: rgb(140, 160, 180) !important;
+}
+
+/* === Buttons === */
+.repair-btn {
+    font-size: 12px !important;
+    padding: 2px 10px !important;
+    height: 24px !important;
+    border-width: 0 !important;
+    border-radius: 3px !important;
+    margin-left: 4px !important;
+    flex-shrink: 0 !important;
+}
+.repair-btn-select {
+    background-color: rgb(60, 90, 130) !important;
+    color: rgb(220, 230, 245) !important;
+}
+.repair-btn-remove {
+    background-color: rgb(160, 50, 50) !important;
+    color: rgb(240, 200, 200) !important;
+}
+.repair-btn-install {
+    background-color: rgb(50, 130, 70) !important;
+    color: rgb(200, 240, 210) !important;
+}
+
+/* === Dropdown === */
+.repair-dropdown {
+    flex-shrink: 0 !important;
+}
+.repair-dropdown-label {
+    font-size: 14px !important;
+    color: rgb(180, 200, 220) !important;
+    padding: 4px 8px !important;
+    background-color: rgb(25, 35, 50) !important;
+    border-width: 1px !important;
+    border-color: rgb(60, 80, 110) !important;
+    border-radius: 3px !important;
+    cursor: pointer !important;
+}
+.repair-dropdown-popup {
+    position: absolute !important;
+    background-color: rgb(20, 30, 45) !important;
+    border-width: 1px !important;
+    border-color: rgb(60, 80, 110) !important;
+    border-radius: 3px !important;
+    flex-direction: column !important;
+    z-index: 100 !important;
+}
+.repair-dropdown-item {
+    font-size: 13px !important;
+    color: rgb(180, 200, 220) !important;
+    padding: 4px 12px !important;
+    cursor: pointer !important;
+}
+.repair-dropdown-item:hover {
+    background-color: rgb(50, 70, 100) !important;
+}
+
+/* === Footer === */
+.repair-footer {
+    flex-direction: row !important;
+    justify-content: space-between !important;
+    align-items: center !important;
+    padding: 8px 16px !important;
+    flex-shrink: 0 !important;
+    background-color: rgb(15, 25, 38) !important;
+    border-top-width: 1px !important;
+    border-top-color: rgb(60, 80, 110) !important;
+}
+.repair-credits-label {
+    font-size: 13px !important;
+    color: rgb(180, 200, 50) !important;
+}
+.repair-status-label {
+    font-size: 12px !important;
+    color: rgb(140, 160, 180) !important;
+}
+
+/* === Empty states === */
+.repair-empty-label {
+    font-size: 13px !important;
+    color: rgb(100, 110, 130) !important;
+    padding: 8px !important;
+}

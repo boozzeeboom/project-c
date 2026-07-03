@@ -677,6 +677,9 @@ namespace ProjectC.Player
                     // — RequestCanUse. Иначе fallback на chest/pickup/market.
                     if (TryInteractNearestMetaRequirement()) return;
 
+                    // RepairManager: открыть окно ремонтного менеджера в доке.
+                    if (TryInteractNearestRepairManager()) return;
+
                     // T-Q11b: NPC interact (higher priority than market) — открыть диалог.
                     if (TryInteractNearestNpc()) return;
 
@@ -1211,6 +1214,18 @@ namespace ProjectC.Player
                 wnd.SwitchStation(nearest.NetworkObjectId, nearest.Config);
             }
             ProjectC.Crafting.CraftingClientState.Instance?.RequestSubscribe(nearest.NetworkObjectId);
+            return true;
+        }
+
+        // RepairManager: E-key → открыть окно ремонтного менеджера в доке.
+        private bool TryInteractNearestRepairManager()
+        {
+            if (_inShip) return false;
+            var nearest = InteractableManager.FindNearestRepairManager(GetEffectivePosition(), pickupRange);
+            if (nearest == null) return false;
+
+            Debug.Log($"[NetworkPlayer] E-repair: found RepairManager '{nearest.DisplayName}' at {nearest.transform.position}");
+            nearest.Interact();
             return true;
         }
 

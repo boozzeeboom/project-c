@@ -118,6 +118,40 @@ namespace ProjectC.Ship
         }
 
         /// <summary>
+        /// Заменить модуль в слоте: снять старый + установить новый одной операцией.
+        /// Атомарно (если новый несовместим — старый остаётся).
+        /// </summary>
+        /// <returns>true если замена успешна</returns>
+        public bool ReplaceModule(ModuleSlot slot, ShipModule newModule)
+        {
+            if (slot == null || newModule == null)
+            {
+                Debug.LogWarning("[ShipModuleManager] ReplaceModule: slot or module is null.");
+                return false;
+            }
+
+            // Запоминаем старый модуль
+            ShipModule oldModule = slot.installedModule;
+
+            // Снимаем старый (для проверки энергии)
+            if (oldModule != null)
+            {
+                slot.RemoveModule();
+                RecalculatePowerUsage();
+            }
+
+            // Пробуем установить новый
+            bool success = InstallModule(slot, newModule);
+            if (!success && oldModule != null)
+            {
+                // Восстанавливаем старый
+                slot.InstallModule(oldModule);
+                RecalculatePowerUsage();
+            }
+            return success;
+        }
+
+        /// <summary>
         /// Получить суммарный множитель тяги от всех модулей.
         /// </summary>
         public float GetThrustMultiplier()

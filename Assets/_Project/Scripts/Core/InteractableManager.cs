@@ -24,6 +24,7 @@ namespace ProjectC.Core
         private static readonly List<ProjectC.ResourceNode.ResourceNode> _resourceNodes = new List<ProjectC.ResourceNode.ResourceNode>(16);
         private static readonly List<ProjectC.Crafting.CraftingStation> _craftingStations = new List<ProjectC.Crafting.CraftingStation>(8);
         private static readonly List<ProjectC.Ship.Cargo.ShipCargoConsole> _shipCargoConsoles = new List<ProjectC.Ship.Cargo.ShipCargoConsole>(8);
+        private static readonly List<ProjectC.Ship.RepairManager> _repairManagers = new List<ProjectC.Ship.RepairManager>(4);
 
         /// <summary>
                 /// Register a pickup item when it enters player's trigger.
@@ -258,6 +259,30 @@ namespace ProjectC.Core
         /// Clear all cached references. Call when scene changes.
         /// T-Q19: _npcs clear removed.
         /// </summary>
+        public static void RegisterRepairManager(ProjectC.Ship.RepairManager rm)
+        {
+            if (rm != null && !_repairManagers.Contains(rm)) _repairManagers.Add(rm);
+        }
+
+        public static void UnregisterRepairManager(ProjectC.Ship.RepairManager rm)
+        {
+            if (rm != null) _repairManagers.Remove(rm);
+        }
+
+        public static ProjectC.Ship.RepairManager FindNearestRepairManager(Vector3 position, float range)
+        {
+            ProjectC.Ship.RepairManager nearest = null;
+            float minDist = float.MaxValue;
+            for (int i = 0; i < _repairManagers.Count; i++)
+            {
+                var rm = _repairManagers[i];
+                if (rm == null || !rm.gameObject.activeSelf) continue;
+                float dist = Vector3.Distance(position, rm.transform.position);
+                if (dist < range && dist < minDist) { minDist = dist; nearest = rm; }
+            }
+            return nearest;
+        }
+
         public static void ClearAll()
         {
             _pickups.Clear();
@@ -266,6 +291,7 @@ namespace ProjectC.Core
             _resourceNodes.Clear();
             _craftingStations.Clear();
             _shipCargoConsoles.Clear();
+            _repairManagers.Clear();
         }
 
         /// <summary>

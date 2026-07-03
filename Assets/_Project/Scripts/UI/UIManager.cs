@@ -203,6 +203,14 @@ namespace ProjectC.UI
             }
             catch { }
 
+            // RepairManagerWindow (ремонтный менеджер в доке)
+            try
+            {
+                var rmw = ProjectC.Ship.UI.RepairManagerWindow.Instance;
+                if (rmw != null && rmw.IsOpen) return true;
+            }
+            catch { }
+
             return false;
         }
 

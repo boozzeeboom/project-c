@@ -353,6 +353,13 @@ namespace ProjectC.UI.Client
             }
         }
 
+
+
+        /// <summary>
+        /// T-CARGO-UI-01: рендер детального списка items в трюме.
+        /// Источник — telemetry.cargoDetail (сервер-pushed, обновление 5 Hz).
+        /// </summary>
+
         private void RenderModules(ProjectC.Player.ShipController sc)
         {
             if (_modulesContainer == null) return;
@@ -367,6 +374,11 @@ namespace ProjectC.UI.Client
                 return;
             }
 
+            var installBtn = new Button(() => OpenRepairManager());
+            installBtn.text = "🛠 Установить модуль";
+            installBtn.AddToClassList("ship-module-install-btn");
+            _modulesContainer.Add(installBtn);
+
             var slots = mm.slots;
             int installedCount = 0;
             foreach (var slot in slots)
@@ -376,7 +388,7 @@ namespace ProjectC.UI.Client
                 bool occupied = slot.isOccupied;
                 string moduleName = occupied ? slot.installedModule.displayName : "пусто";
                 if (string.IsNullOrEmpty(moduleName) && occupied)
-                    moduleName = slot.installedModule.moduleId; // fallback to tech ID
+                    moduleName = slot.installedModule.moduleId;
 
                 if (occupied) installedCount++;
 
@@ -399,10 +411,22 @@ namespace ProjectC.UI.Client
             Debug.Log($"[MyShipsTab] Modules: {slots.Count} slots, {installedCount} installed");
         }
 
-        /// <summary>
-        /// T-CARGO-UI-01: рендер детального списка items в трюме.
-        /// Источник — telemetry.cargoDetail (сервер-pushed, обновление 5 Hz).
-        /// </summary>
+        private void OpenRepairManager()
+        {
+            if (_selectedIndex < 0 || _selectedIndex >= _itemIds.Count) return;
+            int keyInstanceId = _itemIds[_selectedIndex];
+
+            var window = ProjectC.Ship.UI.RepairManagerWindow.Instance;
+            if (window == null)
+            {
+                Debug.LogWarning("[MyShipsTab] RepairManagerWindow.Instance is null.");
+                return;
+            }
+
+            window.PreselectShip(keyInstanceId);
+            window.Show(null);
+        }
+
         private void RenderCargoDetail(ProjectC.Ship.Network.CargoDetailDto[] items)
         {
             if (_cargoContainer == null) return;

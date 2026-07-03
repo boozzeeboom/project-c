@@ -1,0 +1,49 @@
+<ui:UXML xmlns:ui="UnityEngine.UIElements" xmlns:uie="UnityEditor.UIElements"
+         xsi="http://www.w3.org/2001/XMLSchema-instance"
+         engine="UnityEngine.UIElements" editor="UnityEditor.UIElements">
+
+    <!-- RepairManagerWindow — окно ремонтного менеджера -->
+    <ui:VisualElement name="repair-root" class="repair-root">
+
+        <!-- Header -->
+        <ui:VisualElement name="repair-header" class="repair-header">
+            <ui:Label name="repair-title" text="🛠 Ремонтный Менеджер" class="repair-title" />
+            <ui:Button name="repair-close-btn" text="✕" class="repair-close-btn" />
+        </ui:VisualElement>
+
+        <!-- Ship selector -->
+        <ui:VisualElement name="repair-ship-selector" class="repair-section">
+            <ui:Label text="Корабль:" class="repair-section-label" />
+            <ui:VisualElement name="repair-ship-dropdown-container" class="repair-dropdown-container" />
+        </ui:VisualElement>
+
+        <!-- Ship info bar -->
+        <ui:VisualElement name="repair-ship-info" class="repair-ship-info">
+            <ui:Label name="repair-ship-class" text="Класс: —" class="repair-info-label" />
+            <ui:Label name="repair-ship-power" text="Энергия: —" class="repair-info-label" />
+        </ui:VisualElement>
+
+        <!-- Slots list -->
+        <ui:VisualElement name="repair-slots-section" class="repair-section">
+            <ui:Label text="Слоты модулей:" class="repair-section-label" />
+            <ui:ScrollView name="repair-slots-scroll" class="repair-scroll">
+                <ui:VisualElement name="repair-slots-container" class="repair-slots-container" />
+            </ui:ScrollView>
+        </ui:VisualElement>
+
+        <!-- Available modules list -->
+        <ui:VisualElement name="repair-modules-section" class="repair-section">
+            <ui:Label name="repair-modules-header" text="Доступные модули:" class="repair-section-label" />
+            <ui:ScrollView name="repair-modules-scroll" class="repair-scroll">
+                <ui:VisualElement name="repair-modules-container" class="repair-modules-container" />
+            </ui:ScrollView>
+        </ui:VisualElement>
+
+        <!-- Footer: credits -->
+        <ui:VisualElement name="repair-footer" class="repair-footer">
+            <ui:Label name="repair-credits-label" text="💰 Кредиты: —" class="repair-credits-label" />
+            <ui:Label name="repair-status-label" text="" class="repair-status-label" />
+        </ui:VisualElement>
+
+    </ui:VisualElement>
+</ui:UXML>

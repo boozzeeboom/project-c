@@ -22,9 +22,15 @@ MonoBehaviour:
     flightDurationSec: 120
     preferredShipClass: 3
     demandCategory: 0
-    cruiseAltitude: 0
   meanArrivalIntervalSec: 480
   arrivalIntervalStdDev: 90
   minArrivalSpacingSec: 60
   minDwellTimeSec: 60
   maxDwellTimeSec: 90
+  cargoTrade:
+    useUnlimitedCredits: 1
+    maxLoadSlots: 8000
+    maxLoadWeightKg: 9999999
+    sellAllOnArrival: 1
+    buyConfiguredItemsAfterSell: 1
+    buyItems: []

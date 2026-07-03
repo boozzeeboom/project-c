@@ -74,10 +74,55 @@ namespace ProjectC.PeacefulShip.Stations
 
         // T-CARGO-NPC-01: legacy asset'ы (созданные до эпика) имеют cargoTrade=null после десериализации.
         // OnEnable — Unity hook, вызывается при load SO. Восстанавливаем default.
+        // Также auto-fill buyItems дефолтным набором, чтобы NPC возил груз сразу после
+        // domain reload без необходимости запускать Editor-команду Fill NpcShipSchedule Cargo Trade.
+        // По scheduleId матчим пресет: SCH-NPC-001 (Courier) или SCH-NPC-002 (Trader).
         private void OnEnable()
         {
             if (cargoTrade == null)
                 cargoTrade = new NpcCargoTradeListConfig();
+
+            // Auto-fill только если buyItems пуст/null И scheduleId матчит известный пресет.
+            // Это даёт zero-touch опыт: юзер не обязан запускать Editor-команду.
+            if (cargoTrade.buyItems == null || cargoTrade.buyItems.Length == 0)
+                TryAutoFillBuyItems();
+        }
+
+        private void TryAutoFillBuyItems()
+        {
+            // Сопоставление scheduleId → дефолтный buyItems.
+            // ItemId взяты из MarketConfig_Primium (проверено 2026-07-03).
+            NpcCargoTradeConfig[] preset = null;
+            if (scheduleId == "SCH-NPC-001") // Courier
+            {
+                preset = new NpcCargoTradeConfig[]
+                {
+                    new NpcCargoTradeConfig { itemId = "resource_mezium_box",   desiredQuantity = 3, sellOnArrival = true, maxKeepQuantity = 0 },
+                    new NpcCargoTradeConfig { itemId = "resource_antigrav_box", desiredQuantity = 2, sellOnArrival = true, maxKeepQuantity = 0 },
+                };
+                cargoTrade.maxLoadSlots = 8;
+                cargoTrade.maxLoadWeightKg = 200f;
+            }
+            else if (scheduleId == "SCH-NPC-002") // Trader
+            {
+                preset = new NpcCargoTradeConfig[]
+                {
+                    new NpcCargoTradeConfig { itemId = "resource_copper_wire_box", desiredQuantity = 5, sellOnArrival = true, maxKeepQuantity = 0 },
+                    new NpcCargoTradeConfig { itemId = "resource_brass_sheet_box", desiredQuantity = 4, sellOnArrival = true, maxKeepQuantity = 0 },
+                };
+                cargoTrade.maxLoadSlots = 10;
+                cargoTrade.maxLoadWeightKg = 400f;
+            }
+
+            if (preset != null)
+            {
+                cargoTrade.buyItems = preset;
+                cargoTrade.useUnlimitedCredits = true;
+                cargoTrade.sellAllOnArrival = true;
+                cargoTrade.buyConfiguredItemsAfterSell = true;
+                Debug.Log($"[NpcShipSchedule:{name}] T-CARGO-NPC-01 auto-filled buyItems from scheduleId='{scheduleId}' preset " +
+                          $"(items={preset.Length}, maxLoad={cargoTrade.maxLoadSlots}slots/{cargoTrade.maxLoadWeightKg:F0}kg)");
+            }
         }
 
 #if UNITY_EDITOR

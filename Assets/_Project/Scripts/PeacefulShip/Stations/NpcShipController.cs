@@ -626,9 +626,12 @@ namespace ProjectC.PeacefulShip.Stations
             var ship = Ship;
             if (ship == null) return;
 
-            // locationId = текущая станция (CurrentRoute.toLocationId — куда NPC долетел).
-            // ВНИМАНИЕ: route.toLocationId — это целевая станция (где мы сейчас docked).
-            string locationId = state.CurrentRoute.toLocationId;
+            // locationId = текущая станция (где NPC docked прямо сейчас).
+            // ВАЖНО: AdvanceScheduleForCurrentNpc() сработал выше и переключил CurrentRoute
+            // на СЛЕДУЮЩИЙ leg — значит CurrentRoute.fromLocationId теперь = текущая станция
+            // (откуда летим дальше), а CurrentRoute.toLocationId = следующая.
+            // Берём fromLocationId (post-advance), иначе будем торговать на чужой станции.
+            string locationId = state.CurrentRoute.fromLocationId;
             if (string.IsNullOrEmpty(locationId)) return;
 
             // ShipClass — из ResolvedCargoClass (для CargoData/CargoLimits).

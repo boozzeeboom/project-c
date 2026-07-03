@@ -167,7 +167,7 @@ namespace ProjectC.UI.Client
                 private MyShipsTab _myShipsTab;
 
         private int _selectedContractItem = -1;
-        private int _selectedInventoryItem = -1;
+
 
         // T-P19: ContractsTab — вынесенная вкладка контрактов
         private ContractsTab _contractsTab;
@@ -3418,7 +3418,7 @@ namespace ProjectC.UI.Client
         private void FindLocalPlayer()
         {
             // Копия логики из MarketInteractor.FindLocalPlayer — тот же ghost-фильтр (сцен-placed PlayerSpawner).
-            var players = FindObjectsByType<NetworkPlayer>(FindObjectsInactive.Exclude, FindObjectsSortMode.None);
+            var players = FindObjectsByType<NetworkPlayer>(FindObjectsInactive.Exclude);
             for (int i = 0; i < players.Length; i++)
             {
                 if (players[i] == null || !players[i].IsOwner) continue;

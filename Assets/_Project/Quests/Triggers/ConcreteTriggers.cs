@@ -120,7 +120,7 @@ namespace ProjectC.Quests.Triggers
             var ctrl = DayNightController.Instance;
             if (ctrl == null)
             {
-                ctrl = UnityEngine.Object.FindObjectOfType<DayNightController>();
+                ctrl = UnityEngine.Object.FindAnyObjectByType<DayNightController>();
             }
             if (ctrl == null) return false;
             return ctrl.CurrentPhase != null && ctrl.CurrentPhase.phaseName == RequiredPhaseName;

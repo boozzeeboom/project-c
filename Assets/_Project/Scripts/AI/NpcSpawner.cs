@@ -375,7 +375,7 @@ namespace ProjectC.AI
                 if ((no.transform.position - pos).sqrMagnitude < minDistSq) return true;
             }
             // 2) любые другие NPC в сцене (анти-наложение для scene-placed + других spawner'ов).
-            var others = Object.FindObjectsByType<NpcBrain>(FindObjectsSortMode.None);
+            var others = Object.FindObjectsByType<NpcBrain>();
             foreach (var n in others)
             {
                 if (n == null || !n.isActiveAndEnabled) continue;

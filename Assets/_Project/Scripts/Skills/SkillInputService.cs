@@ -324,14 +324,13 @@ namespace ProjectC.Skills
             //    Если в SkillNodeConfig задан attackClip → SkillAnimationPlayer.Play() проиграет клип;
             //    OnAttackImpact event на 60% клипа вызовет TryActivate заново и пошлёт RPC.
             //    Fallback (legacy path): SetTrigger(string) — если attackClip == null.
-            bool usedClip = false;
+
             if (!skipAnimation && skillConfig != null && skillConfig.attackClip != null)
             {
                 var animPlayer = _ownerPlayer != null ? _ownerPlayer.GetComponent<SkillAnimationPlayer>() : null;
                 if (animPlayer != null)
                 {
                     animPlayer.Play(skillConfig, slot);
-                    usedClip = true;
                     // RPC уйдёт через OnAttackImpact event (или fallback timeout в SkillAnimationPlayer).
                     // Не отправляем RPC здесь — иначе двойной удар.
                     // 9) Set local cooldown (чтобы не спамить нажатиями)

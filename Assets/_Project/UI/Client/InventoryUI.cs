@@ -456,7 +456,7 @@ namespace ProjectC.UI.Client
             if (invWorld == null) return baseName;
 
             var bindings = UnityEngine.Object.FindObjectsByType(bindingType,
-                FindObjectsInactive.Include, FindObjectsSortMode.None);
+                FindObjectsInactive.Include);
 
             foreach (var binding in bindings)
             {
@@ -519,7 +519,7 @@ namespace ProjectC.UI.Client
                 SetMessage("Сеть не запущена", true);
                 return;
             }
-            var localPlayer = FindFirstObjectByType<ProjectC.Player.NetworkPlayer>();
+            var localPlayer = FindAnyObjectByType<ProjectC.Player.NetworkPlayer>();
             if (localPlayer == null)
             {
                 SetMessage("Игрок не найден", true);

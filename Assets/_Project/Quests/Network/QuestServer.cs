@@ -1207,7 +1207,7 @@ namespace ProjectC.Quests
                 case DialogueConditionType.TimeOfDayIn:
                 {
                     var ctrl = DayNightController.Instance;
-                    if (ctrl == null) ctrl = UnityEngine.Object.FindObjectOfType<DayNightController>();
+                    if (ctrl == null) ctrl = UnityEngine.Object.FindAnyObjectByType<DayNightController>();
                     return ctrl != null && ctrl.CurrentPhase != null && ctrl.CurrentPhase.phaseName == c.stringParam;
                 }
                 default:

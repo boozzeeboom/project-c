@@ -253,7 +253,7 @@ namespace ProjectC.UI.Settings
             // При клике: регистрируем в Instance что мы слушаем.
             row.RegisterCallback<ClickEvent>(_ =>
             {
-                var inst = UnityEngine.Object.FindObjectOfType<KeybindingsWindow>();
+                var inst = UnityEngine.Object.FindAnyObjectByType<KeybindingsWindow>();
                 if (inst != null)
                 {
                     inst.StartListening(new ListeningState
@@ -285,7 +285,7 @@ namespace ProjectC.UI.Settings
         {
             row.RegisterCallback<ClickEvent>(_ =>
             {
-                var inst = UnityEngine.Object.FindObjectOfType<KeybindingsWindow>();
+                var inst = UnityEngine.Object.FindAnyObjectByType<KeybindingsWindow>();
                 if (inst != null)
                 {
                     inst.StartListening(new ListeningState

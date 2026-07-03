@@ -64,7 +64,6 @@ namespace ProjectC.Quests.UI
 
  public bool IsOpen { get; private set; }
 
- private bool _built = false;
 
  private void Awake()
  {
@@ -247,7 +246,6 @@ namespace ProjectC.Quests.UI
  _textLabel.RegisterCallback<PointerDownEvent>(OnTextPointerDown);
  }
 
- _built = true;
  if (Debug.isDebugBuild)
  Debug.Log($"[DialogWindow] Built: rootVE.children={_doc.rootVisualElement.childCount}, styleSheets={_doc.rootVisualElement.styleSheets.count}");
  }

@@ -363,7 +363,7 @@ namespace ProjectC.Player
                 const float FALLBACK_RANGE = 15f;
                 ProjectC.Combat.Core.IDamageTarget nearest = null;
                 float bestSq = FALLBACK_RANGE * FALLBACK_RANGE;
-                foreach (var npc in UnityEngine.Object.FindObjectsByType<ProjectC.Combat.NpcTarget>(UnityEngine.FindObjectsSortMode.None))
+                foreach (var npc in UnityEngine.Object.FindObjectsByType<ProjectC.Combat.NpcTarget>())
                 {
                     if (npc == null || !npc.IsAlive()) continue;
                     float dSq = (npc.transform.position - transform.position).sqrMagnitude;
@@ -1381,11 +1381,11 @@ namespace ProjectC.Player
         }
 
         // T-NPC-03: client → server RPC для сбора NpcLootPickup credits.
-        [Rpc(SendTo.Server, RequireOwnership = true)]
+        [Rpc(SendTo.Server, InvokePermission = RpcInvokePermission.Owner)]
         private void CollectNpcLootServerRpc(ulong lootNetId, RpcParams rpcParams = default)
         {
             // Найти NpcLootPickup по NetworkObjectId.
-            var loot = FindObjectsByType<ProjectC.AI.NpcLootPickup>(FindObjectsSortMode.None);
+            var loot = FindObjectsByType<ProjectC.AI.NpcLootPickup>();
             foreach (var l in loot)
             {
                 if (l.NetworkObjectId == lootNetId && l.IsSpawned)
@@ -1479,7 +1479,7 @@ namespace ProjectC.Player
         /// owner client когда _jumpPressed=true. Публикует PlayerJumpedEvent, StatsServer
         /// подписан и начисляет DEX XP.
         /// </summary>
-        [Rpc(SendTo.Server, RequireOwnership = true)]
+        [Rpc(SendTo.Server, InvokePermission = RpcInvokePermission.Owner)]
         public void SubmitJumpRpc(RpcParams rpcParams = default)
         {
             ulong clientId = rpcParams.Receive.SenderClientId;

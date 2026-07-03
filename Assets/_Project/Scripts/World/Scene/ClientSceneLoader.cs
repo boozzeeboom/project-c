@@ -79,7 +79,7 @@ namespace ProjectC.World.Scene
         private Vector3 _lastPlayerPos;
         private Vector3 _teleportTarget;
         private float _lastTeleportTime;
-        private bool _initialLoadHadNoSceneLoadedYet = false;
+
 
         private const float SCENE_SIZE = 79999f;
         #endregion

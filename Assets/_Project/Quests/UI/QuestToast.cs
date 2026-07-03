@@ -23,9 +23,6 @@ namespace ProjectC.Quests.UI
         [Tooltip("Длительность показа тоста в секундах.")]
         [SerializeField] private float _duration = 2.5f;
 
-        [Tooltip("Cooldown между показами (защита от дублей).")]
-        [SerializeField] private float _cooldown = 0.3f;
-
         [Tooltip("T-Q25 fix: delay между последовательными toast'ами в queue (несколько rewards подряд).")]
         [SerializeField] private float _queueDelay = 1.2f;
 

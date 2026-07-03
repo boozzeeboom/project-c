@@ -76,7 +76,7 @@ namespace ProjectC.Trade.Client
             if (localPlayer == null)
             {
                 // DIAG: почему не нашли local player?
-                var allPlayers = Object.FindObjectsByType<ProjectC.Player.NetworkPlayer>(FindObjectsInactive.Include, FindObjectsSortMode.None);
+                var allPlayers = Object.FindObjectsByType<ProjectC.Player.NetworkPlayer>(FindObjectsInactive.Include);
                 int total = allPlayers.Length;
                 int owners = 0, spawned = 0;
                 for (int i = 0; i < total; i++)
@@ -116,7 +116,7 @@ namespace ProjectC.Trade.Client
 
         private static ProjectC.Player.NetworkPlayer FindLocalPlayer()
         {
-            var players = Object.FindObjectsByType<ProjectC.Player.NetworkPlayer>(FindObjectsInactive.Exclude, FindObjectsSortMode.None);
+            var players = Object.FindObjectsByType<ProjectC.Player.NetworkPlayer>(FindObjectsInactive.Exclude);
             for (int i = 0; i < players.Length; i++)
             {
                 if (players[i] == null || !players[i].IsOwner) continue;

@@ -684,13 +684,12 @@ namespace ProjectC.Items.Editor
                         if (itemRef != null && csvInvNames.Contains(itemRef.itemName)) continue;
 
                         // Decide: SKIP / DELETE.
-                        bool shouldDelete = false;
                         string reason = null;
+                        bool shouldDelete = false;
                         if (itemRef == null)
                         {
                             // Orphan entry (objectReferenceValue is null) — always delete.
                             shouldDelete = true;
-                            reason = "orphan entry (no ItemData)";
                         }
                         else if (mode == "orphan" && referencedItemNames.Contains(itemRef.itemName))
                         {

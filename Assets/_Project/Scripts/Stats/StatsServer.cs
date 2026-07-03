@@ -504,7 +504,7 @@ namespace ProjectC.Stats
             // MaxWalkDeltaPerFixedUpdate метров за 1/50 сек. Защита от teleport/scene-load спайков
             // которые раньше давали 10M+ XP за один кадр.
             const float MaxWalkDeltaPerFixedUpdate = 5.0f; // 5 m/frame = 250 m/s — всё равно слишком быстро
-            const float MaxPilotDeltaPerFixedUpdate = 20.0f;
+
 
             foreach (var clientId in NetworkManager.Singleton.ConnectedClientsIds)
             {

@@ -27,7 +27,7 @@ namespace ProjectC.Trade.Config
         public static List<MarketConfig> CollectFromLoadedScenes()
         {
             var zones = Object.FindObjectsByType<MarketZone>(
-                FindObjectsInactive.Include, FindObjectsSortMode.None);
+                FindObjectsInactive.Include);
             var seen = new HashSet<string>();
             var configs = new List<MarketConfig>();
             foreach (var zone in zones)

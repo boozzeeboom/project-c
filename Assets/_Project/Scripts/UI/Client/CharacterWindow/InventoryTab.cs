@@ -54,7 +54,7 @@ namespace ProjectC.UI.Client
 
         // Caches
         private List<InventoryListItem> _inventoryCache = new List<InventoryListItem>();
-        private int _selectedInventoryItem = -1;
+
         private List<string> _inventoryFilterSourceOptionsCache; // динамически по ItemType
         private List<string> _inventoryFilterStateOptions = new List<string> { "Все типы" };
 
@@ -491,7 +491,7 @@ namespace ProjectC.UI.Client
         {
             if (shipNetId == 0) return null;
             foreach (var sc in UnityEngine.Object.FindObjectsByType<ProjectC.Player.ShipController>(
-                UnityEngine.FindObjectsInactive.Include, UnityEngine.FindObjectsSortMode.None))
+                UnityEngine.FindObjectsInactive.Include))
             {
                 if (sc.NetworkObjectId == shipNetId)
                 {

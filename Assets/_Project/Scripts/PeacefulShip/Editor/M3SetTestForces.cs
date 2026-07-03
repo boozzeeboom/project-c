@@ -33,7 +33,7 @@ public static class M3SetTestForces
         const float PITCH = 0f;
         const float AGRAV = 1f;
 
-        var npcs = Object.FindObjectsByType<NpcShipController>(FindObjectsInactive.Include, FindObjectsSortMode.None);
+        var npcs = Object.FindObjectsByType<NpcShipController>(FindObjectsInactive.Include);
         if (npcs.Length == 0)
         {
             Debug.LogError("[M3.1.6] No NpcShipController found in scene");

@@ -86,7 +86,7 @@ namespace ProjectC.Combat
         /// </summary>
         private void RecoverExistingEntities()
         {
-            var playerAttackers = FindObjectsByType<PlayerAttacker>(FindObjectsSortMode.None);
+            var playerAttackers = FindObjectsByType<PlayerAttacker>();
             foreach (var pa in playerAttackers)
             {
                 if (pa == null) continue;
@@ -98,7 +98,7 @@ namespace ProjectC.Combat
                 }
             }
 
-            var playerTargets = FindObjectsByType<PlayerTarget>(FindObjectsSortMode.None);
+            var playerTargets = FindObjectsByType<PlayerTarget>();
             foreach (var pt in playerTargets)
             {
                 if (pt == null) continue;
@@ -110,7 +110,7 @@ namespace ProjectC.Combat
                 }
             }
 
-            var npcAttackers = FindObjectsByType<NpcAttacker>(FindObjectsSortMode.None);
+            var npcAttackers = FindObjectsByType<NpcAttacker>();
             foreach (var na in npcAttackers)
             {
                 if (na == null) continue;
@@ -123,7 +123,7 @@ namespace ProjectC.Combat
                 }
             }
 
-            var npcTargets = FindObjectsByType<NpcTarget>(FindObjectsSortMode.None);
+            var npcTargets = FindObjectsByType<NpcTarget>();
             foreach (var nt in npcTargets)
             {
                 if (nt == null) continue;
@@ -182,7 +182,7 @@ namespace ProjectC.Combat
 
         // === Client → Server RPC ===
 
-        [Rpc(SendTo.Server, RequireOwnership = true)]
+        [Rpc(SendTo.Server, InvokePermission = RpcInvokePermission.Owner)]
         public void RequestAttackRpc(ulong targetId, ulong sourceId, RpcParams rpcParams = default)
         {
             ulong attackerId = rpcParams.Receive.SenderClientId;
@@ -198,7 +198,7 @@ namespace ProjectC.Combat
         /// собирает IDamageTarget через <see cref="TargetingService.CollectAoeTargets"/>, для каждой считает
         /// damage и применяет. Аналогично <see cref="ResolveAttack"/> но multi-target.
         /// </summary>
-        [Rpc(SendTo.Server, RequireOwnership = true)]
+        [Rpc(SendTo.Server, InvokePermission = RpcInvokePermission.Owner)]
         public void RequestSkillCastRpc(string skillId, ulong primaryTargetId, ulong sourceId, RpcParams rpcParams = default)
         {
             ulong attackerId = rpcParams.Receive.SenderClientId;

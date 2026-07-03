@@ -47,7 +47,6 @@ namespace ProjectC.Ship.Key
         [SerializeField] private ItemData _keyItemData;
 
         [Header("Debug (read-only)")]
-        [SerializeField] private int _debugInstanceId = 0;
 
         // ===========================================================
         // State

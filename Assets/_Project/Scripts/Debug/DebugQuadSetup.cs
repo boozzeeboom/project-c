@@ -7,7 +7,7 @@ public class DebugQuadSetup : MonoBehaviour
     void Start()
     {
         // Get DistantCloudManager data
-        var managers = Object.FindObjectsOfType<ProjectC.Core.DistantCloudManager>();
+        var managers = Object.FindObjectsByType<ProjectC.Core.DistantCloudManager>();
         Material useMat = DebugMaterial;
         Texture2D useTex = null;
         

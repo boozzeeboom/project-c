@@ -748,7 +748,7 @@ namespace ProjectC.Skills.UI
             float newZoom = Mathf.Clamp(_zoom + delta, MIN_ZOOM, MAX_ZOOM);
             if (Mathf.Approximately(newZoom, _zoom)) return;
             _zoom = newZoom;
-            _treeContent.transform.scale = new Vector3(_zoom, _zoom, 1f);
+            _treeContent.style.scale = new UnityEngine.UIElements.Scale(new Vector3(_zoom, _zoom, 1f));
             _treeContent.MarkDirtyRepaint();
         }
     }

@@ -97,7 +97,7 @@ namespace ProjectC.Trade.Editor
             var bootstrapPath = "Assets/_Project/Scenes/BootstrapScene.unity";
             var bootstrapScene = EditorSceneManager.OpenScene(bootstrapPath, OpenSceneMode.Additive);
             var marketServers = Object.FindObjectsByType<ProjectC.Trade.Network.MarketServer>(
-                FindObjectsInactive.Include, FindObjectsSortMode.None);
+                FindObjectsInactive.Include);
 
             foreach (var ms in marketServers)
             {

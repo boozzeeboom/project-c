@@ -200,11 +200,18 @@ namespace ProjectC.Trade.Client
                     var lbl = e as Label;
                     if (lbl == null) return;
                     var entry = _cargoCache[i];
-                    int unpacks = entry.count / entry.rate.warehouseQty;
-                    lbl.text = $"{entry.displayName}  ×{entry.count}  (→ {unpacks * entry.rate.inventoryQty} шт.)";
+                    if (entry.rate.warehouseQty > 0)
+                    {
+                        int unpacks = entry.count / entry.rate.warehouseQty;
+                        lbl.text = $"{entry.displayName}  ×{entry.count}  (→ {unpacks * entry.rate.inventoryQty} шт.)";
+                    }
+                    else
+                    {
+                        lbl.text = $"{entry.displayName}  ×{entry.count}  (нет курса)";
+                    }
                 };
                 _cargoList.itemsSource = _cargoCache;
-                _cargoList.selectionChanged += _ => { _selectedCargoIndex = _cargoList.selectedIndex; _cargoQty = 1; UpdateCargoQtyLabel(); };
+                _cargoList.selectionChanged += _ => { _selectedCargoIndex = _cargoList.selectedIndex; _cargoQty = GetCargoQtyMax() > 0 ? 1 : 0; UpdateCargoQtyLabel(); };
             }
 
             // De-dup подписок
@@ -344,26 +351,61 @@ namespace ProjectC.Trade.Client
         {
             _invCache.Clear();
             var resolver = ResourceExchangeResolver.Default;
-            if (resolver == null) return;
+            if (resolver == null)
+            {
+                Debug.LogWarning("[ShipCargoConsoleWindow] RefreshInventory: resolver == null (DefaultExchangeRate не загружен?)");
+                return;
+            }
 
             var invState = InventoryClientState.Instance;
-            if (invState == null) return;
+            if (invState == null)
+            {
+                Debug.LogWarning("[ShipCargoConsoleWindow] RefreshInventory: invState == null");
+                return;
+            }
 
             var items = invState.GetItems();
-            if (items == null) return;
+            if (items == null || items.Count == 0)
+            {
+#if UNITY_EDITOR
+                Debug.Log($"[ShipCargoConsoleWindow] RefreshInventory: items={(items != null ? items.Count : 0)} шт в инвентаре");
+#endif
+                _invList?.Rebuild();
+                return;
+            }
+
+#if UNITY_EDITOR
+            Debug.Log($"[ShipCargoConsoleWindow] RefreshInventory: всего {items.Count} слотов инвентаря");
+#endif
 
             // Группируем по itemId, только те что имеют курс обмена
             var grouped = new Dictionary<int, int>();
             foreach (var inv in items)
             {
                 var def = invState.GetItemDefinition(inv.itemId);
-                if (def == null) continue;
+                if (def == null)
+                {
+#if UNITY_EDITOR
+                    Debug.Log($"[ShipCargoConsoleWindow]   skip itemId={inv.itemId}: def==null");
+#endif
+                    continue;
+                }
                 var rate = resolver.FindRateForItemName(def.itemName);
-                if (rate == null) continue; // нет курса → не показываем
+                if (rate == null)
+                {
+#if UNITY_EDITOR
+                    Debug.Log($"[ShipCargoConsoleWindow]   skip '{def.itemName}': rate==null");
+#endif
+                    continue;
+                }
 
                 if (!grouped.ContainsKey(inv.itemId)) grouped[inv.itemId] = 0;
                 grouped[inv.itemId]++;
             }
+
+#if UNITY_EDITOR
+            Debug.Log($"[ShipCargoConsoleWindow] RefreshInventory: после фильтра {grouped.Count} типов предметов");
+#endif
 
             foreach (var kvp in grouped)
             {
@@ -386,36 +428,82 @@ namespace ProjectC.Trade.Client
         private void RefreshCargo()
         {
             _cargoCache.Clear();
-            if (_shipNetId == 0) return;
+            if (_shipNetId == 0)
+            {
+                Debug.LogWarning("[ShipCargoConsoleWindow] RefreshCargo: _shipNetId == 0");
+                return;
+            }
 
             var resolver = ResourceExchangeResolver.Default;
-            if (resolver == null) return;
+            if (resolver == null)
+            {
+                Debug.LogWarning("[ShipCargoConsoleWindow] RefreshCargo: resolver == null");
+                return;
+            }
 
             var telemetry = ShipTelemetryClientState.Instance;
-            if (telemetry == null) return;
+            if (telemetry == null)
+            {
+                Debug.LogWarning("[ShipCargoConsoleWindow] RefreshCargo: telemetry == null");
+                return;
+            }
 
             var state = telemetry.GetShipState(_shipNetId);
-            if (state == null) return;
+            if (state == null)
+            {
+                Debug.LogWarning($"[ShipCargoConsoleWindow] RefreshCargo: ship {_shipNetId} NOT in telemetry (tracked={telemetry.TrackedShipCount})");
+                return;
+            }
+
+#if UNITY_EDITOR
+            Debug.Log($"[ShipCargoConsoleWindow] RefreshCargo: ship {_shipNetId} telemetry: cargoUsed={state.Value.cargoUsed}/{state.Value.cargoMax}, cargoDetail.Length={(state.Value.cargoDetail != null ? state.Value.cargoDetail.Length : -1)}");
+#endif
 
             var cargoDetail = state.Value.cargoDetail;
-            if (cargoDetail == null) return;
+            if (cargoDetail == null || cargoDetail.Length == 0)
+            {
+#if UNITY_EDITOR
+                Debug.Log($"[ShipCargoConsoleWindow] RefreshCargo: cargoDetail is {(cargoDetail == null ? "null" : "empty")}");
+#endif
+                _cargoList?.Rebuild();
+                return;
+            }
 
             foreach (var cd in cargoDetail)
             {
                 if (cd.quantity <= 0) continue;
 
+#if UNITY_EDITOR
+                Debug.Log($"[ShipCargoConsoleWindow]   cargo item: id='{cd.itemId}' qty={cd.quantity} name='{cd.displayName}'");
+#endif
+
+                // Ищем курс по warehouseItemId (из ExchangeRateConfig). Если нет —
+                // показываем предмет БЕЗ курса (display-only, распаковка недоступна).
                 var rate = resolver.FindRateForWarehouseItem(cd.itemId);
-                if (rate == null) continue; // нет курса → не показываем
+
+                var displayName = cd.displayName.ToString();
+                if (string.IsNullOrWhiteSpace(displayName))
+                    displayName = cd.itemId.ToString();
 
                 _cargoCache.Add(new CargoEntry
                 {
-                    itemId = cd.itemId,
-                    displayName = rate.Value.displayName,
+                    itemId = cd.itemId.ToString(),
+                    displayName = rate != null ? rate.Value.displayName : displayName,
                     count = cd.quantity,
-                    rate = rate.Value,
+                    rate = rate ?? default,
                 });
+
+                if (rate == null)
+                {
+#if UNITY_EDITOR
+                    Debug.Log($"[ShipCargoConsoleWindow]   cargo '{cd.itemId}': rate не найден → display-only, распаковка заблокирована");
+#endif
+                }
             }
 
+#if UNITY_EDITOR
+            Debug.Log($"[ShipCargoConsoleWindow] RefreshCargo: _cargoCache.Count={_cargoCache.Count}");
+#endif
             _cargoList?.Rebuild();
         }
 
@@ -455,6 +543,12 @@ namespace ProjectC.Trade.Client
             }
 
             var entry = _cargoCache[_selectedCargoIndex];
+            if (entry.rate.warehouseQty <= 0)
+            {
+                SetStatus("Распаковка недоступна: нет курса обмена для этого товара", false);
+                return;
+            }
+
             var server = ShipCargoServer.Instance;
             if (server == null) { SetStatus("Сервер грузового отсека не доступен", false); return; }
 
@@ -491,17 +585,19 @@ namespace ProjectC.Trade.Client
         private void AdjustCargoQty(int delta)
         {
             int max = GetCargoQtyMax();
+            if (max <= 0) { _cargoQty = 0; UpdateCargoQtyLabel(); return; }
             _cargoQty = Mathf.Clamp(_cargoQty + delta, 1, max);
             UpdateCargoQtyLabel();
         }
-        private void SetCargoQty(int v) { int max = GetCargoQtyMax(); _cargoQty = Mathf.Clamp(v, 1, max); UpdateCargoQtyLabel(); }
-        private void SetCargoQtyMax() { _cargoQty = GetCargoQtyMax(); UpdateCargoQtyLabel(); }
+        private void SetCargoQty(int v) { int max = GetCargoQtyMax(); if (max <= 0) { _cargoQty = 0; } else _cargoQty = Mathf.Clamp(v, 1, max); UpdateCargoQtyLabel(); }
+        private void SetCargoQtyMax() { int max = GetCargoQtyMax(); _cargoQty = max > 0 ? max : 0; UpdateCargoQtyLabel(); }
         private void UpdateCargoQtyLabel() { if (_cargoQtyLabel != null) _cargoQtyLabel.text = _cargoQty.ToString(); }
 
         private int GetCargoQtyMax()
         {
             if (_selectedCargoIndex < 0 || _selectedCargoIndex >= _cargoCache.Count) return 1;
             var entry = _cargoCache[_selectedCargoIndex];
+            if (entry.rate.warehouseQty <= 0) return 0; // нет курса
             return entry.count / entry.rate.warehouseQty;
         }
 

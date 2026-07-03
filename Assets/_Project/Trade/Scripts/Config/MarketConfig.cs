@@ -38,5 +38,13 @@ namespace ProjectC.Trade.Config
             }
             return null;
         }
+
+#if UNITY_EDITOR
+        private void OnValidate()
+        {
+            if (!string.IsNullOrEmpty(locationId))
+                locationId = locationId.ToUpperInvariant();
+        }
+#endif
     }
 }

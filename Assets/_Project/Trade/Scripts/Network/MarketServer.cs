@@ -87,8 +87,10 @@ namespace ProjectC.Trade.Network
             // 2. Resolver
             _resolver = new DatabaseResolver(tradeDatabase);
 
-            // 3. TradeWorld
-            TradeWorld.CreateAndInitialize(marketConfigs, _repository, _resolver);
+            // 3. TradeWorld — авто-сбор MarketConfig из сцен + fallback на ручной список
+            var sceneConfigs = MarketConfigCollector.CollectFromLoadedScenes();
+            var mergedConfigs = MarketConfigCollector.MergeWithManualList(sceneConfigs, marketConfigs);
+            TradeWorld.CreateAndInitialize(mergedConfigs, _repository, _resolver);
 
             // 4. TimeService — найти или создать
             _timeService = MarketTimeService.Instance;
@@ -102,7 +104,7 @@ namespace ProjectC.Trade.Network
 
             // 5. Force-collect первый снепшот
             BroadcastSnapshotsToAll();
-            Debug.Log($"[MarketServer] инициализирован: markets={marketConfigs?.Count ?? 0}, repository={_repository.GetType().Name}");
+            Debug.Log($"[MarketServer] инициализирован: markets={mergedConfigs?.Count ?? 0} (scene={sceneConfigs.Count}, manual={marketConfigs?.Count ?? 0}), repository={_repository.GetType().Name}");
         }
 
         public override void OnNetworkDespawn()

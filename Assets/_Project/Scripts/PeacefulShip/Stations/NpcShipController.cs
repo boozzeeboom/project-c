@@ -20,6 +20,8 @@ using ProjectC.Docking.Zones;
 using ProjectC.PeacefulShip.Core;
 using ProjectC.PeacefulShip.Network;
 using ProjectC.Player;
+using ProjectC.Trade.Config; // MARKET-ID-REFACTOR: MarketConfigCollector.NormalizeLocationId
+using ProjectC.Trade.Core; // T-CARGO-NPC-01 fix #5: TradeWorld.Instance post-check
 using Unity.Netcode;
 using UnityEngine;
 
@@ -661,10 +663,22 @@ namespace ProjectC.PeacefulShip.Stations
             int buyItemCount = trade.buyItems != null ? trade.buyItems.Length : 0;
             Debug.Log($"[NpcShipController:NPC:{npcInstanceId:X}] T-CARGO-NPC-01 DwellTrade START: loc='{locationId}' " +
                       $"shipClass={shipClass} buyItems={buyItemCount} sellAll={trade.sellAllOnArrival} " +
-                      $"buyConfigured={trade.buyConfiguredItemsAfterSell} unlimited={trade.useUnlimitedCredits}");
+                      $"buyConfigured={trade.buyConfiguredItemsAfterSell} unlimited={trade.useUnlimitedCredits} " +
+                      $"scheduleId='{schedule.scheduleId}' cargo='{trade.GetType().Name}'");
 
             NpcCargoService.Instance.RunDwellTrade(
                 npcInstanceId, ship.NetworkObjectId, shipClass, locationId, trade);
+
+            // T-CARGO-NPC-01 fix #5 (2026-07-03): пост-лог с резюме. Юзеру видна причина skip'а
+            // даже если service вернул пустой отчёт.
+            // MARKET-ID-REFACTOR: нормализуем locationId для проверки.
+            var tw = TradeWorld.Instance;
+            string normLocId = MarketConfigCollector.NormalizeLocationId(locationId);
+            string twStatus = tw == null ? "NULL (MarketServer not spawned?)" :
+                              tw.Markets != null && tw.Markets.ContainsKey(normLocId) ? $"OK ({tw.Markets.Count} markets)" :
+                              $"MISSING (locationId='{locationId}' not in any MarketConfig)";
+            Debug.Log($"[NpcShipController:NPC:{npcInstanceId:X}] T-CARGO-NPC-01 DwellTrade END: loc='{locationId}' " +
+                      $"TradeWorld={twStatus}");
         }
 
 // === T-NS-AV02: ship-to-ship avoidance maneuver ===

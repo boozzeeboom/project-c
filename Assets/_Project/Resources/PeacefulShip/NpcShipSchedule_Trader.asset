@@ -16,8 +16,8 @@ MonoBehaviour:
   displayName: "\u0422\u043E\u0440\u0433\u043E\u0432\u0435\u0446 \u0422\u0435\u0441\u0442\u0417\u043E\u043D\u0430-\u041F\u0440\u0438\u043C\u0443\u043C"
   scheduleType: 0
   routes:
-  - fromLocationId: PRIMIUM_TEST_ZONE_2
-    toLocationId: STN-PRM-001
+  - fromLocationId: STN-PRM-001
+    toLocationId: PRIMIUM_TEST_ZONE
     dwellTimeSec: 90
     flightDurationSec: 120
     preferredShipClass: 3
@@ -27,3 +27,18 @@ MonoBehaviour:
   minArrivalSpacingSec: 90
   minDwellTimeSec: 60
   maxDwellTimeSec: 120
+  cargoTrade:
+    useUnlimitedCredits: 1
+    maxLoadSlots: 10
+    maxLoadWeightKg: 400
+    sellAllOnArrival: 1
+    buyConfiguredItemsAfterSell: 1
+    buyItems:
+    - itemId: resource_copper_wire_box
+      desiredQuantity: 5
+      sellOnArrival: 1
+      maxKeepQuantity: 0
+    - itemId: resource_brass_sheet_box
+      desiredQuantity: 4
+      sellOnArrival: 1
+      maxKeepQuantity: 0

@@ -140,7 +140,9 @@ namespace ProjectC.Trade.Core
             if (!IsNpcDockedAtStation(npcShipNetworkObjectId, locationId))
                 return TradeResult.Fail(TradeResultCode.NotInZone, $"npc {npcShipNetworkObjectId} not docked at station '{locationId}'", 0f, null, null);
 
-            var market = _markets[locationId];
+            var market = GetMarket(locationId);
+            if (market == null)
+                return TradeResult.Fail(TradeResultCode.MarketNotFound, $"market '{locationId}' lost after check", 0f, null, null);
             var item = market.GetItem(itemId);
             if (item == null || item.config == null)
                 return TradeResult.Fail(TradeResultCode.ItemNotInMarket, "item not in market", 0f, null, null);
@@ -225,7 +227,9 @@ namespace ProjectC.Trade.Core
             if (!IsNpcDockedAtStation(npcShipNetworkObjectId, locationId))
                 return TradeResult.Fail(TradeResultCode.NotInZone, $"npc {npcShipNetworkObjectId} not docked at station '{locationId}'", 0f, null, null);
 
-            var market = _markets[locationId];
+            var market = GetMarket(locationId);
+            if (market == null)
+                return TradeResult.Fail(TradeResultCode.MarketNotFound, $"market '{locationId}' lost after check", 0f, null, null);
             var item = market.GetItem(itemId);
             if (item == null || item.config == null)
                 return TradeResult.Fail(TradeResultCode.ItemNotInMarket, "item not in market", 0f, null, null);
@@ -307,14 +311,15 @@ namespace ProjectC.Trade.Core
                 foreach (var cfg in configs)
                 {
                     if (cfg == null || string.IsNullOrEmpty(cfg.locationId)) continue;
-                    if (_markets.ContainsKey(cfg.locationId))
+                    var key = MarketConfigCollector.NormalizeLocationId(cfg.locationId);
+                    if (_markets.ContainsKey(key))
                     {
                         Debug.LogWarning($"[TradeWorld] дубликат locationId: {cfg.locationId}, пропускаю");
                         continue;
                     }
                     var state = new MarketState(cfg.locationId, cfg);
                     state.Initialize();
-                    _markets[cfg.locationId] = state;
+                    _markets[key] = state;
                 }
             }
 
@@ -384,12 +389,17 @@ namespace ProjectC.Trade.Core
 
         public MarketState GetMarket(string locationId)
         {
-            if (string.IsNullOrEmpty(locationId)) return null;
-            _markets.TryGetValue(locationId, out var m);
+            var key = MarketConfigCollector.NormalizeLocationId(locationId);
+            if (string.IsNullOrEmpty(key)) return null;
+            _markets.TryGetValue(key, out var m);
             return m;
         }
 
-        public bool MarketExists(string locationId) => !string.IsNullOrEmpty(locationId) && _markets.ContainsKey(locationId);
+        public bool MarketExists(string locationId)
+        {
+            var key = MarketConfigCollector.NormalizeLocationId(locationId);
+            return !string.IsNullOrEmpty(key) && _markets.ContainsKey(key);
+        }
 
         // ========================================================
         // TRADE OPERATIONS
@@ -408,7 +418,9 @@ namespace ProjectC.Trade.Core
             if (!MarketExists(locationId))
                 return TradeResult.Fail(TradeResultCode.MarketNotFound, $"market '{locationId}' not found", Repository.GetCredits(clientId), null, null);
 
-            var market = _markets[locationId];
+            var market = GetMarket(locationId);
+            if (market == null)
+                return TradeResult.Fail(TradeResultCode.MarketNotFound, "market lost after check", Repository.GetCredits(clientId), null, null);
             var item = market.GetItem(itemId);
             if (item == null || item.config == null)
                 return TradeResult.Fail(TradeResultCode.ItemNotInMarket, "item not in market", Repository.GetCredits(clientId), null, null);
@@ -464,7 +476,9 @@ namespace ProjectC.Trade.Core
             if (!MarketExists(locationId))
                 return TradeResult.Fail(TradeResultCode.MarketNotFound, $"market '{locationId}' not found", Repository.GetCredits(clientId), null, null);
 
-            var market = _markets[locationId];
+            var market = GetMarket(locationId);
+            if (market == null)
+                return TradeResult.Fail(TradeResultCode.MarketNotFound, "market lost after check", Repository.GetCredits(clientId), null, null);
             var item = market.GetItem(itemId);
             if (item == null || item.config == null)
                 return TradeResult.Fail(TradeResultCode.ItemNotInMarket, "item not in market", Repository.GetCredits(clientId), null, null);

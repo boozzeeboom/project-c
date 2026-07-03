@@ -16,7 +16,7 @@ MonoBehaviour:
   displayName: "\u041A\u0443\u0440\u044C\u0435\u0440 \u041F\u0440\u0438\u043C\u0443\u043C-\u0422\u0435\u0441\u0442"
   scheduleType: 0
   routes:
-  - fromLocationId: PRIMIUM
+  - fromLocationId: STN-PRM-001
     toLocationId: PRIMIUM_TEST_ZONE
     dwellTimeSec: 60
     flightDurationSec: 120
@@ -29,8 +29,16 @@ MonoBehaviour:
   maxDwellTimeSec: 90
   cargoTrade:
     useUnlimitedCredits: 1
-    maxLoadSlots: 8000
-    maxLoadWeightKg: 9999999
+    maxLoadSlots: 8
+    maxLoadWeightKg: 200
     sellAllOnArrival: 1
     buyConfiguredItemsAfterSell: 1
-    buyItems: []
+    buyItems:
+    - itemId: resource_mezium_box
+      desiredQuantity: 3
+      sellOnArrival: 1
+      maxKeepQuantity: 0
+    - itemId: resource_antigrav_box
+      desiredQuantity: 2
+      sellOnArrival: 1
+      maxKeepQuantity: 0

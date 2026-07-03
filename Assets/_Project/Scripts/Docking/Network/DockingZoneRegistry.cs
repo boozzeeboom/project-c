@@ -23,6 +23,9 @@ namespace ProjectC.Docking.Network
 
         public static IReadOnlyDictionary<string, DockStationController> All => _stationsById;
 
+        private static string Norm(string id) =>
+            string.IsNullOrEmpty(id) ? id : id.ToUpperInvariant();
+
         public static void Register(DockStationController station)
         {
             if (station == null) return;
@@ -33,8 +36,9 @@ namespace ProjectC.Docking.Network
                 return;
             }
             _stationsById[def.StationId] = station;
-            if (!string.IsNullOrEmpty(def.LocationId))
-                _stationsByLocation[def.LocationId] = station;
+            var locKey = Norm(def.LocationId);
+            if (!string.IsNullOrEmpty(locKey))
+                _stationsByLocation[locKey] = station;
         }
 
         public static void Unregister(DockStationController station)
@@ -44,10 +48,11 @@ namespace ProjectC.Docking.Network
             if (def == null) return;
             if (_stationsById.TryGetValue(def.StationId, out var existing) && existing == station)
                 _stationsById.Remove(def.StationId);
-            if (!string.IsNullOrEmpty(def.LocationId)
-                && _stationsByLocation.TryGetValue(def.LocationId, out var existingLoc)
+            var locKey = Norm(def.LocationId);
+            if (!string.IsNullOrEmpty(locKey)
+                && _stationsByLocation.TryGetValue(locKey, out var existingLoc)
                 && existingLoc == station)
-                _stationsByLocation.Remove(def.LocationId);
+                _stationsByLocation.Remove(locKey);
             if (LocalPlayerStation == station) LocalPlayerStation = null;
             if (LocalPlayerShipStation == station) LocalPlayerShipStation = null;
         }
@@ -61,8 +66,9 @@ namespace ProjectC.Docking.Network
 
         public static DockStationController GetByLocation(string locationId)
         {
-            if (string.IsNullOrEmpty(locationId)) return null;
-            _stationsByLocation.TryGetValue(locationId, out var s);
+            var key = Norm(locationId);
+            if (string.IsNullOrEmpty(key)) return null;
+            _stationsByLocation.TryGetValue(key, out var s);
             return s;
         }
 

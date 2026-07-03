@@ -1,10 +1,12 @@
 using System.Collections.Generic;
+using ProjectC.Trade.Config;
 using UnityEngine;
 
 namespace ProjectC.Trade.Network
 {
     /// <summary>
     /// Реестр всех <see cref="MarketZone"/> в сцене.
+    /// MARKET-ID-REFACTOR: ключи нормализуются через <see cref="MarketConfigCollector.NormalizeLocationId"/>.
     ///
     /// Серверная часть: при OnEnable на сервере MarketZone регистрирует себя здесь.
     /// Используется <see cref="MarketServer"/> для валидации позиции игрока при RPC
@@ -33,22 +35,27 @@ namespace ProjectC.Trade.Network
 
         public static void Register(MarketZone zone)
         {
-            if (zone == null || string.IsNullOrEmpty(zone.LocationId)) return;
-            _zones[zone.LocationId] = zone;
+            if (zone == null) return;
+            var key = MarketConfigCollector.NormalizeLocationId(zone.LocationId);
+            if (string.IsNullOrEmpty(key)) return;
+            _zones[key] = zone;
         }
 
         public static void Unregister(MarketZone zone)
         {
-            if (zone == null || string.IsNullOrEmpty(zone.LocationId)) return;
-            if (_zones.TryGetValue(zone.LocationId, out var existing) && existing == zone)
-                _zones.Remove(zone.LocationId);
+            if (zone == null) return;
+            var key = MarketConfigCollector.NormalizeLocationId(zone.LocationId);
+            if (string.IsNullOrEmpty(key)) return;
+            if (_zones.TryGetValue(key, out var existing) && existing == zone)
+                _zones.Remove(key);
             if (_localPlayerZone == zone) _localPlayerZone = null;
         }
 
         public static MarketZone Get(string locationId)
         {
-            if (string.IsNullOrEmpty(locationId)) return null;
-            _zones.TryGetValue(locationId, out var z);
+            var key = MarketConfigCollector.NormalizeLocationId(locationId);
+            if (string.IsNullOrEmpty(key)) return null;
+            _zones.TryGetValue(key, out var z);
             return z;
         }
 

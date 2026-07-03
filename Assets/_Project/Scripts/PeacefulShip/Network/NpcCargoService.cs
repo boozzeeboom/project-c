@@ -219,7 +219,7 @@ namespace ProjectC.PeacefulShip.Network
                 }
             }
 
-            if (debugMode && report.HasAnyActivity)
+            if (debugMode)
             {
                 var sb = new StringBuilder();
                 sb.Append($"[NpcCargoService] DwellTrade npc={npcInstanceId:X} loc={locationId} ship={shipNetworkObjectId}: ");
@@ -241,6 +241,10 @@ namespace ProjectC.PeacefulShip.Network
                 {
                     sb.Append(" SKIP[").AppendJoin(",", report.skipReasons).Append("]");
                 }
+                // T-CARGO-NPC-01 fix #5 (2026-07-03): emit ЛОГ ВСЕГДА, даже если активности не было.
+                // Без этого при пустом отчёте (early return) юзер не видит причину.
+                if (!report.HasAnyActivity)
+                    sb.Append(" (no activity)");
                 Debug.Log(sb.ToString());
             }
 

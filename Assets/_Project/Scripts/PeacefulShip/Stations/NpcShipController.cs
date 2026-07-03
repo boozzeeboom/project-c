@@ -66,7 +66,7 @@ namespace ProjectC.PeacefulShip.Stations
         [Range(0f, 1.5f)] [SerializeField] private float antiGravityBoostValue = 1.5f;
 
         [Header("Debug")]
-        [SerializeField] private bool debugMode = true;
+        [SerializeField] private bool debugMode = false;
 
         // === Public API ===
         public NpcShipSchedule Schedule => schedule;
@@ -325,7 +325,7 @@ namespace ProjectC.PeacefulShip.Stations
                 if (!_playerControlled)
                 {
                     _playerControlled = true;
-                    Debug.Log($"[NpcShipController:NPC:{npcInstanceId:X}] Player took control — NPC autopilot yielding");
+                    if (debugMode) Debug.Log($"[NpcShipController:NPC:{npcInstanceId:X}] Player took control — NPC autopilot yielding");
                 }
                 return; // ничего не пишем в Rigidbody — рулит игрок
             }
@@ -333,7 +333,7 @@ namespace ProjectC.PeacefulShip.Stations
             {
                 // Игрок только что вышел — возвращаем NPC-автопилот
                 _playerControlled = false;
-                Debug.Log($"[NpcShipController:NPC:{npcInstanceId:X}] Player released control — NPC autopilot resuming");
+                if (debugMode) Debug.Log($"[NpcShipController:NPC:{npcInstanceId:X}] Player released control — NPC autopilot resuming");
                 if (CurrentMode == NavMode.Docked && !ship.IsDocked) SetMode(NavMode.Cruising);
                 var resumeStation = ResolveTargetStation();
                 if (resumeStation.HasValue) CruiseTargetPos = resumeStation.Value;
@@ -436,7 +436,7 @@ namespace ProjectC.PeacefulShip.Stations
                 var rb = GetComponent<Rigidbody>();
                 if (rb != null) rb.detectCollisions = true;
             }
-            Debug.Log($"[NpcShipController:NPC:{npcInstanceId:X}] NavMode {old} → {m}");
+            if (debugMode) Debug.Log($"[NpcShipController:NPC:{npcInstanceId:X}] NavMode {old} → {m}");
         }
 
         void TickLift(Rigidbody rb) {
@@ -616,7 +616,7 @@ namespace ProjectC.PeacefulShip.Stations
                 state.CurrentRoute = route;
             }
             _scheduleAdvancedAfterDock = true;  // M3.2.11: не дать Docked handlerу advance снова
-            Debug.Log($"[NpcShipController:NPC:{npcInstanceId:X}] Schedule advanced to {state.CurrentRoute.toLocationId}");
+            if (debugMode) Debug.Log($"[NpcShipController:NPC:{npcInstanceId:X}] Schedule advanced to {state.CurrentRoute.toLocationId}");
         }
 
         // === T-CARGO-NPC-01: dwell cargo trade (unload + load) ===
@@ -661,7 +661,7 @@ namespace ProjectC.PeacefulShip.Stations
             var shipClass = ship.ResolvedCargoClass;
 
             int buyItemCount = trade.buyItems != null ? trade.buyItems.Length : 0;
-            Debug.Log($"[NpcShipController:NPC:{npcInstanceId:X}] T-CARGO-NPC-01 DwellTrade START: loc='{locationId}' " +
+            if (debugMode) Debug.Log($"[NpcShipController:NPC:{npcInstanceId:X}] T-CARGO-NPC-01 DwellTrade START: loc='{locationId}' " +
                       $"shipClass={shipClass} buyItems={buyItemCount} sellAll={trade.sellAllOnArrival} " +
                       $"buyConfigured={trade.buyConfiguredItemsAfterSell} unlimited={trade.useUnlimitedCredits} " +
                       $"scheduleId='{schedule.scheduleId}' cargo='{trade.GetType().Name}'");
@@ -677,7 +677,7 @@ namespace ProjectC.PeacefulShip.Stations
             string twStatus = tw == null ? "NULL (MarketServer not spawned?)" :
                               tw.Markets != null && tw.Markets.ContainsKey(normLocId) ? $"OK ({tw.Markets.Count} markets)" :
                               $"MISSING (locationId='{locationId}' not in any MarketConfig)";
-            Debug.Log($"[NpcShipController:NPC:{npcInstanceId:X}] T-CARGO-NPC-01 DwellTrade END: loc='{locationId}' " +
+            if (debugMode) Debug.Log($"[NpcShipController:NPC:{npcInstanceId:X}] T-CARGO-NPC-01 DwellTrade END: loc='{locationId}' " +
                       $"TradeWorld={twStatus}");
         }
 

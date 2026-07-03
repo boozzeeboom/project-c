@@ -48,6 +48,10 @@ namespace ProjectC.Player
         public ShipFlightClass ShipFlightClass => shipFlightClass;
 
 
+        [Header("Debug")]
+        [Tooltip("Включить подробные логи в консоль.")]
+        [SerializeField] private bool _debugLog = false;
+
         [Header("Display Name (R2-SHIP-KEY-003, Q6)")]
         [Tooltip("Человекочитаемое имя корабля для UI/HUD/toast'ов. " +
                  "Если пусто — клиент сгенерирует fallback из класса (Light/Medium/Heavy/HeavyII). " +
@@ -81,7 +85,7 @@ namespace ProjectC.Player
                         _rb.angularVelocity = Vector3.zero;
                         _rb.isKinematic = true;
                     }
-                    Debug.Log($"[ShipController:{name}] EnterDocked — engine locked");
+                    if (_debugLog) Debug.Log($"[ShipController:{name}] EnterDocked — engine locked");
                 }
 
                 /// <summary>Вызвать на сервере при отстыковке.</summary>
@@ -94,7 +98,7 @@ namespace ProjectC.Player
                     {
                         _rb.isKinematic = false;
                     }
-                    Debug.Log($"[ShipController:{name}] ExitDocked — engine unlocked");
+                    if (_debugLog) Debug.Log($"[ShipController:{name}] ExitDocked — engine unlocked");
                 }
 
                 // === T-NS01 (Q1, Q2): NPC-pilot API ===
@@ -353,7 +357,7 @@ namespace ProjectC.Player
             if (GetComponent<ProjectC.Ship.Key.ShipOwnershipRequirement>() == null)
             {
                 gameObject.AddComponent<ProjectC.Ship.Key.ShipOwnershipRequirement>();
-                Debug.Log($"[ShipController] Auto-added ShipOwnershipRequirement on {gameObject.name}");
+                if (_debugLog) Debug.Log($"[ShipController] Auto-added ShipOwnershipRequirement on {gameObject.name}");
             }
         }
 
@@ -431,7 +435,7 @@ namespace ProjectC.Player
 
             if (processed && (leaked > 0 || damaged > 0))
             {
-                Debug.Log($"[ShipController] damage applied shipId={NetworkObjectId} energy={energy:F1} leaked={leaked} damaged={damaged} class={_resolvedCargoClass}");
+                if (_debugLog) Debug.Log($"[ShipController] damage applied shipId={NetworkObjectId} energy={energy:F1} leaked={leaked} damaged={damaged} class={_resolvedCargoClass}");
                 // _serverCargoPenalty обновится автоматически через OnCargoChanged → RecalculateCargoPenalty
             }
         }
@@ -586,7 +590,7 @@ namespace ProjectC.Player
             if (IsServer && _cargoRegistered && TradeWorld.Instance != null)
             {
                 TradeWorld.Instance.InvalidateCargo(NetworkObjectId);
-                Debug.Log($"[ShipController] OnNetworkDespawn: invalidate cargo shipId={NetworkObjectId} class={_resolvedCargoClass}");
+                if (_debugLog) Debug.Log($"[ShipController] OnNetworkDespawn: invalidate cargo shipId={NetworkObjectId} class={_resolvedCargoClass}");
                 _cargoRegistered = false;
             }
             // T-CARGO-03: отписка от event
@@ -618,7 +622,7 @@ namespace ProjectC.Player
 
             if (_cargoRegistered)
             {
-                Debug.Log($"[ShipController] OnNetworkSpawn: registered cargo shipId={NetworkObjectId} class={_resolvedCargoClass} items={cargo.Items.Count}");
+                if (_debugLog) Debug.Log($"[ShipController] OnNetworkSpawn: registered cargo shipId={NetworkObjectId} class={_resolvedCargoClass} items={cargo.Items.Count}");
                 // T-CARGO-03: сразу считаем penalty (1.0 если пусто, иначе по формуле)
                 RecalculateCargoPenalty(NetworkObjectId);
             }
@@ -819,7 +823,7 @@ namespace ProjectC.Player
             if (!Mathf.Approximately(oldPenalty, newPenalty))
             {
                 _serverCargoPenalty.Value = newPenalty;
-                Debug.Log($"[ShipController] cargoPenalty shipId={NetworkObjectId} {oldPenalty:F3}→{newPenalty:F3} class={_resolvedCargoClass}");
+                if (_debugLog) Debug.Log($"[ShipController] cargoPenalty shipId={NetworkObjectId} {oldPenalty:F3}→{newPenalty:F3} class={_resolvedCargoClass}");
             }
         }
 
@@ -1394,7 +1398,7 @@ namespace ProjectC.Player
                     // Warning — показываем предупреждение (будет в UI)
                     // Эффекты пока не применяем
                     if (_pilots.Count > 0)
-                        Debug.LogWarning($"[ShipController] Altitude Warning: {_currentAltitudeStatus} at {currentAlt:F0}m");
+                        if (_debugLog) Debug.LogWarning($"[ShipController] Altitude Warning: {_currentAltitudeStatus} at {currentAlt:F0}m");
                     break;
 
                 case AltitudeStatus.DangerLower:
@@ -1422,7 +1426,7 @@ namespace ProjectC.Player
             // Применяем турбулентность
             _turbulence.Update(severity, dt);
 
-            Debug.LogWarning($"[ShipController] TURBULENCE! Alt: {currentAlt:F0}m, Severity: {severity:F2}");
+            if (_debugLog) Debug.LogWarning($"[ShipController] TURBULENCE! Alt: {currentAlt:F0}m, Severity: {severity:F2}");
         }
 
         /// <summary>
@@ -1444,7 +1448,7 @@ namespace ProjectC.Player
             // Применяем дополнительное сопротивление
             _degradation.ApplyExtraDrag(severity);
 
-            Debug.LogWarning($"[ShipController] DEGRADATION! Alt: {currentAlt:F0}m, Severity: {severity:F2}, Thrust: {_currentDegradationModifiers.thrust:F2}");
+            if (_debugLog) Debug.LogWarning($"[ShipController] DEGRADATION! Alt: {currentAlt:F0}m, Severity: {severity:F2}, Thrust: {_currentDegradationModifiers.thrust:F2}");
         }
 
         public float CurrentSpeed => _rb != null ? _rb.linearVelocity.magnitude : 0f;
@@ -1705,7 +1709,7 @@ namespace ProjectC.Player
             if (fuelSystem != null)
             {
                 fuelSystem.Initialize(shipFlightClass);
-                Debug.Log($"[ShipController] Fuel system initialized. Fuel: {fuelSystem.CurrentFuel}/{fuelSystem.MaxFuel}");
+                if (_debugLog) Debug.Log($"[ShipController] Fuel system initialized. Fuel: {fuelSystem.CurrentFuel}/{fuelSystem.MaxFuel}");
             }
             else
             {
@@ -1895,7 +1899,7 @@ namespace ProjectC.Player
             if (Time.time - _lastGlobalWindLogTime > 1f)
             {
                 _lastGlobalWindLogTime = Time.time;
-                Debug.Log($"[ShipController:{name}] GlobalWind dir={dir} speed={wind.CurrentWindSpeed:F1} force={windEffect.magnitude:F1}N");
+                if (_debugLog) Debug.Log($"[ShipController:{name}] GlobalWind dir={dir} speed={wind.CurrentWindSpeed:F1} force={windEffect.magnitude:F1}N");
             }
         }
 

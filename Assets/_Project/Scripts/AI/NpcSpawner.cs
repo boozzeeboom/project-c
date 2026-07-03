@@ -38,7 +38,7 @@ namespace ProjectC.AI
         [SerializeField] private Transform _anchor;
 
         [Header("Debug")]
-        [SerializeField] private bool _showDebugLogs = true;
+        [SerializeField] private bool _showDebugLogs = false;
 
         [Header("Activation (when to spawn at all)")]
         [Tooltip("Игрок должен быть в этом радиусе от спавнера чтобы спавнить NPC. " +
@@ -255,7 +255,7 @@ namespace ProjectC.AI
                         ? _config.passiveMaxHitsPerMinute
                         : -1;
                     brain.ApplySpawnerBehavior(_config.behaviorType, hpThreshold, maxHits);
-                    if (Debug.isDebugBuild)
+                    if (_showDebugLogs)
                     {
                         Debug.Log($"[NpcSpawner] Applied behavior {_config.behaviorType} to {go.name} (hpThresh={hpThreshold}, maxHits={maxHits})");
                     }

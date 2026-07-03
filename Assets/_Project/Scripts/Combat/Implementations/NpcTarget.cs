@@ -14,6 +14,10 @@ namespace ProjectC.Combat
         [SerializeField] private NpcCombatData _data;
         [SerializeField] private int _maxHpOverride = 0;  // если >0 — переопределяет _data.maxHp
 
+        [Header("Debug")]
+        [Tooltip("Включить подробные логи в консоль.")]
+        [SerializeField] private bool _debugLog = false;
+
         private NetworkVariable<int> _currentHp = new NetworkVariable<int>(30);
         private NetworkVariable<int> _maxHp = new NetworkVariable<int>(30);
         private ulong _targetId;  // = NetworkObjectId по дизайну, но у нас override
@@ -48,7 +52,7 @@ namespace ProjectC.Combat
                 _maxHp.Value = hp;
                 _currentHp.Value = hp;
                 _targetId = NetworkObjectId;  // используем реальный NetworkObjectId
-                if (Debug.isDebugBuild) Debug.Log($"[NpcTarget] OnNetworkSpawn fallback-init: name={gameObject.name}, targetId={_targetId}, HP={hp}");
+                if (_debugLog) Debug.Log($"[NpcTarget] OnNetworkSpawn fallback-init: name={gameObject.name}, targetId={_targetId}, HP={hp}");
             }
 
             if (CombatServer.Instance != null)
@@ -98,7 +102,7 @@ namespace ProjectC.Combat
             _currentHp.Value = newHp;
             OnHpChanged?.Invoke(newHp, delta);  // T-NPC-14: passive aggro tracking
 
-            if (Debug.isDebugBuild)
+            if (_debugLog)
             {
                 Debug.Log($"[NpcTarget] npc={_targetId} took {result.finalDamage} from attacker={attackerClientId} (HP {_currentHp.Value + result.finalDamage} → {newHp}, isCrit={result.isCrit}, type={result.damageType})");
             }
@@ -123,7 +127,7 @@ namespace ProjectC.Combat
             // T-NPC-01 v0.2: при смерти — death animation + loot spawn + 3s corpse delay.
             if (newHp == 0)
             {
-                if (Debug.isDebugBuild) Debug.Log($"[NpcTarget] npc={_targetId} killed. Spawning loot + Destroy in 3s.");
+                if (_debugLog) Debug.Log($"[NpcTarget] npc={_targetId} killed. Spawning loot + Destroy in 3s.");
                 OnKilled(attackerClientId);
                 Destroy(gameObject, 3.0f);
             }

@@ -68,6 +68,10 @@ namespace ProjectC.AI
             Neutral,
         }
 
+        [Header("Debug")]
+        [Tooltip("Включить подробные логи в консоль.")]
+        [SerializeField] private bool _debugLog = false;
+
         [Header("Behavior (T-NPC-14)")]
         [Tooltip("Aggressive = атакует по proximity (стандарт).\n" +
                  "Passive = мирный NPC (квестодатель), атакует только после удара игрока " +
@@ -242,7 +246,7 @@ namespace ProjectC.AI
             if (thresholdReached || hitsReached)
             {
                 _isAggrod = true;
-                if (Debug.isDebugBuild)
+                if (_debugLog)
                 {
                     Debug.Log($"[NpcBrain] {gameObject.name} (Passive→Aggro): " +
                         $"damage%={AggroDamagePercent:F1}/{_aggroHpThreshold}, " +
@@ -351,12 +355,12 @@ namespace ProjectC.AI
                 }
             }
 
-            if (Debug.isDebugBuild) Debug.Log($"[NpcBrain] {gameObject.name} entered '{platform.name}' (parented={_parentedToShip}, deckNav={_deckNavActive})");
+            if (_debugLog) Debug.Log($"[NpcBrain] {gameObject.name} entered '{platform.name}' (parented={_parentedToShip}, deckNav={_deckNavActive})");
         }
 
         private void EndRide()
         {
-            if (Debug.isDebugBuild && _ridePlatform != null)
+            if (_debugLog && _ridePlatform != null)
                 Debug.Log($"[NpcBrain] {gameObject.name} left '{_ridePlatform.name}'");
             _ridePlatform = null;
 

@@ -59,20 +59,20 @@
 /* === Sections === */
 .repair-section {
     flex-shrink: 0 !important;
-    padding: 8px 16px !important;
+    padding: 6px 16px !important;
 }
 .repair-section-label {
-    font-size: 14px !important;
+    font-size: 13px !important;
     -unity-font-style: bold !important;
-    color: rgb(160, 180, 200) !important;
-    margin-bottom: 4px !important;
+    color: rgb(150, 170, 195) !important;
+    margin-bottom: 3px !important;
 }
 
 /* === Ship info bar === */
 .repair-ship-info {
     flex-direction: row !important;
     flex-shrink: 0 !important;
-    padding: 4px 16px !important;
+    padding: 2px 16px !important;
 }
 .repair-info-label {
     font-size: 12px !important;
@@ -80,12 +80,34 @@
     margin-right: 16px !important;
 }
 
+/* === Installed module row === */
+.repair-installed-row {
+    flex-direction: row !important;
+    align-items: center !important;
+    flex-shrink: 0 !important;
+    padding: 4px 16px !important;
+}
+.repair-installed-actions {
+    flex-direction: row !important;
+    flex-shrink: 0 !important;
+    margin-left: auto !important;
+}
+
+/* === Modules section (flex-grow, takes remaining height) === */
+.repair-modules-section {
+    flex-grow: 1 !important;
+    flex-shrink: 1 !important;
+    min-height: 0 !important;
+    padding: 4px 16px 8px 16px !important;
+    flex-direction: column !important;
+    overflow: hidden !important;
+}
+
 /* === Scroll === */
 .repair-scroll {
     flex-grow: 1 !important;
     min-height: 0 !important;
     overflow: auto !important;
-    max-height: 200px !important;
 }
 
 /* === Slot row === */
@@ -162,38 +184,46 @@
     background-color: rgb(50, 130, 70) !important;
     color: rgb(200, 240, 210) !important;
 }
+.repair-btn-sell {
+    background-color: rgb(180, 120, 30) !important;
+    color: rgb(255, 230, 180) !important;
+}
 
 /* === Dropdown === */
 .repair-dropdown {
     flex-shrink: 0 !important;
+    position: relative !important;
 }
 .repair-dropdown-label {
-    font-size: 14px !important;
+    font-size: 13px !important;
     color: rgb(180, 200, 220) !important;
-    padding: 4px 8px !important;
+    padding: 6px 10px !important;
     background-color: rgb(25, 35, 50) !important;
     border-width: 1px !important;
     border-color: rgb(60, 80, 110) !important;
-    border-radius: 3px !important;
-    cursor: pointer !important;
+    border-radius: 4px !important;
 }
 .repair-dropdown-popup {
     position: absolute !important;
-    background-color: rgb(20, 30, 45) !important;
+    top: 100% !important;
+    left: 0 !important;
+    min-width: 100% !important;
+    background-color: rgb(18, 28, 42) !important;
     border-width: 1px !important;
-    border-color: rgb(60, 80, 110) !important;
-    border-radius: 3px !important;
+    border-color: rgb(70, 95, 125) !important;
+    border-radius: 4px !important;
     flex-direction: column !important;
-    z-index: 100 !important;
+    max-height: 220px !important;
+    overflow: auto !important;
 }
 .repair-dropdown-item {
     font-size: 13px !important;
     color: rgb(180, 200, 220) !important;
-    padding: 4px 12px !important;
-    cursor: pointer !important;
+    padding: 6px 12px !important;
+    flex-shrink: 0 !important;
 }
 .repair-dropdown-item:hover {
-    background-color: rgb(50, 70, 100) !important;
+    background-color: rgb(45, 65, 95) !important;
 }
 
 /* === Footer === */

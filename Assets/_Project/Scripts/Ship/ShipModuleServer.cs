@@ -220,6 +220,88 @@ namespace ProjectC.Ship
             OnModuleChangedClientRpc(slotName, string.Empty, isInstall: false);
         }
 
+        /// <summary>Клиент отправляет запрос на продажу модуля (снятие + кредиты).</summary>
+        public void RequestSellModule(int keyInstanceId, string slotName, int sellCredits)
+        {
+            if (!IsClient) return;
+            RequestSellModuleRpc(keyInstanceId, slotName, sellCredits);
+        }
+
+        [Rpc(SendTo.Server)]
+        private void RequestSellModuleRpc(int keyInstanceId, string slotName, int sellCredits,
+            RpcParams rpcParams = default)
+        {
+            if (!IsServer) return;
+            ulong clientId = rpcParams.Receive.SenderClientId;
+
+            // --- Validation (same as remove) ---
+            if (!KeyRodInstanceWorld.IsInitialized ||
+                !KeyRodInstanceWorld.IsOwnerOfInstance(clientId, keyInstanceId))
+            {
+                NotifyClientError(clientId, "У вас нет ключа от этого корабля.");
+                return;
+            }
+
+            var instance = KeyRodInstanceWorld.GetInstance(keyInstanceId);
+            if (instance == null || instance.registeredShipId != _netObj.NetworkObjectId)
+            {
+                NotifyClientError(clientId, "Ключ не подходит к этому кораблю.");
+                return;
+            }
+
+            if (_shipController != null && !_shipController.IsDocked)
+            {
+                NotifyClientError(clientId, "Корабль не в доке.");
+                return;
+            }
+
+            if (_moduleManager == null)
+            {
+                NotifyClientError(clientId, "Менеджер модулей не найден.");
+                return;
+            }
+
+            ModuleSlot targetSlot = null;
+            foreach (var slot in _moduleManager.slots)
+            {
+                if (slot != null && slot.gameObject.name == slotName)
+                {
+                    targetSlot = slot;
+                    break;
+                }
+            }
+            if (targetSlot == null)
+            {
+                NotifyClientError(clientId, $"Слот '{slotName}' не найден.");
+                return;
+            }
+
+            if (!targetSlot.isOccupied)
+            {
+                NotifyClientError(clientId, $"Слот '{slotName}' уже пуст.");
+                return;
+            }
+
+            string removedModuleId = targetSlot.installedModuleId;
+            _moduleManager.RemoveModule(targetSlot);
+
+            // --- Give credits ---
+            if (sellCredits > 0)
+            {
+                var trade = ProjectC.Trade.Core.TradeWorld.Instance;
+                if (trade?.Repository != null)
+                {
+                    if (trade.Repository.TryModifyCredits(clientId, sellCredits, out float newCredits, out _))
+                    {
+                        Debug.Log($"[ShipModuleServer] Player {clientId} sold '{removedModuleId}' for {sellCredits} CR (new={newCredits:F0})");
+                    }
+                }
+            }
+
+            NotifyClientSuccess(clientId, slotName, removedModuleId, isInstall: false);
+            OnModuleChangedClientRpc(slotName, string.Empty, isInstall: false);
+        }
+
         // ============================================================
         // Client RPC (синхронизация всем клиентам)
         // ============================================================

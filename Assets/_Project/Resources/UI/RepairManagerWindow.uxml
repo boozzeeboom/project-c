@@ -5,7 +5,6 @@
     <!-- RepairManagerWindow — окно ремонтного менеджера -->
     <ui:VisualElement name="repair-root" class="repair-root">
 
-        <!-- Panel — centred solid-content wrapper -->
         <ui:VisualElement name="repair-panel" class="repair-panel">
 
             <!-- Header -->
@@ -14,7 +13,7 @@
                 <ui:Button name="repair-close-btn" text="✕" class="repair-close-btn" />
             </ui:VisualElement>
 
-            <!-- Ship selector -->
+            <!-- Ship selector (dropdown) -->
             <ui:VisualElement name="repair-ship-selector" class="repair-section">
                 <ui:Label text="Корабль:" class="repair-section-label" />
                 <ui:VisualElement name="repair-ship-dropdown-container" class="repair-dropdown-container" />
@@ -26,23 +25,27 @@
                 <ui:Label name="repair-ship-power" text="Энергия: —" class="repair-info-label" />
             </ui:VisualElement>
 
-            <!-- Slots list -->
-            <ui:VisualElement name="repair-slots-section" class="repair-section">
-                <ui:Label text="Слоты модулей:" class="repair-section-label" />
-                <ui:ScrollView name="repair-slots-scroll" class="repair-scroll">
-                    <ui:VisualElement name="repair-slots-container" class="repair-slots-container" />
-                </ui:ScrollView>
+            <!-- Slot selector (dropdown) -->
+            <ui:VisualElement name="repair-slot-selector" class="repair-section">
+                <ui:Label text="Слот модуля:" class="repair-section-label" />
+                <ui:VisualElement name="repair-slot-dropdown-container" class="repair-dropdown-container" />
             </ui:VisualElement>
 
-            <!-- Available modules list -->
-            <ui:VisualElement name="repair-modules-section" class="repair-section">
+            <!-- Installed module info + sell button -->
+            <ui:VisualElement name="repair-installed-row" class="repair-installed-row">
+                <ui:Label name="repair-installed-label" text="Установлено: —" class="repair-info-label" />
+                <ui:VisualElement name="repair-installed-actions" class="repair-installed-actions" />
+            </ui:VisualElement>
+
+            <!-- Available modules list — full width, takes remaining height -->
+            <ui:VisualElement name="repair-modules-section" class="repair-modules-section">
                 <ui:Label name="repair-modules-header" text="Доступные модули:" class="repair-section-label" />
                 <ui:ScrollView name="repair-modules-scroll" class="repair-scroll">
                     <ui:VisualElement name="repair-modules-container" class="repair-modules-container" />
                 </ui:ScrollView>
             </ui:VisualElement>
 
-            <!-- Footer: credits -->
+            <!-- Footer -->
             <ui:VisualElement name="repair-footer" class="repair-footer">
                 <ui:Label name="repair-credits-label" text="💰 Кредиты: —" class="repair-credits-label" />
                 <ui:Label name="repair-status-label" text="" class="repair-status-label" />

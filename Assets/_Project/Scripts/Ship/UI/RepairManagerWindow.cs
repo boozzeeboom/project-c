@@ -5,9 +5,9 @@
 //
 // Функции:
 //   - Выбор корабля игрока (по ключам в инвентаре)
-//   - Просмотр слотов модулей выбранного корабля
-//   - Список совместимых модулей из каталога (ModuleShopDatabase)
-//   - Установка / снятие модуля через ShipModuleServer RPC
+//   - Выбор слота модуля из дропдауна
+//   - Список совместимых модулей из каталога (занимает основную площадь)
+//   - Установка / продажа модуля через ShipModuleServer RPC
 // =====================================================================================
 
 using System.Collections;
@@ -31,15 +31,17 @@ namespace ProjectC.Ship.UI
         [Header("Каталог модулей")]
         [SerializeField] private ModuleShopDatabase shopDatabase;
 
-        // UI refs (инициализируются в EnsureBuilt)
+        // UI refs
         private UIDocument _doc;
         private VisualElement _root;
         private VisualElement _container;
         private Button _closeBtn;
         private VisualElement _shipDropdownContainer;
+        private VisualElement _slotDropdownContainer;
+        private Label _installedLabel;
+        private VisualElement _installedActions;
         private Label _shipClassLabel;
         private Label _shipPowerLabel;
-        private VisualElement _slotsContainer;
         private VisualElement _modulesContainer;
         private Label _modulesHeader;
         private Label _creditsLabel;
@@ -57,11 +59,10 @@ namespace ProjectC.Ship.UI
         // Выбранный слот
         private string _selectedSlotName;
 
-        // IsOpen property
         public bool IsOpen { get; private set; }
 
         // ============================================================
-        // Lifecycle (канон §3)
+        // Lifecycle
         // ============================================================
 
         private void Awake()
@@ -72,10 +73,8 @@ namespace ProjectC.Ship.UI
             _doc = GetComponent<UIDocument>();
             if (_doc == null) _doc = gameObject.AddComponent<UIDocument>();
 
-            // UXML fallback на Resources (VisualTreeAsset работает)
             if (repairUxml == null)
                 repairUxml = Resources.Load<VisualTreeAsset>("UI/RepairManagerWindow");
-            // USS fallback НЕ делаем — см. UI_TOOLKIT_GUIDE.md §2 Ошибка 1
         }
 
         private void OnEnable()
@@ -86,8 +85,7 @@ namespace ProjectC.Ship.UI
 
         private void OnDisable()
         {
-            if (IsOpen)
-                SetOpen(false);
+            if (IsOpen) SetOpen(false);
         }
 
         private void OnDestroy()
@@ -99,7 +97,6 @@ namespace ProjectC.Ship.UI
         {
             if (!IsOpen || !_built) return;
 
-            // ESC — закрыть окно (паттерн из BUGS_PHASE_2.md: каждый window сам обрабатывает ESC)
             if (UnityEngine.InputSystem.Keyboard.current != null &&
                 UnityEngine.InputSystem.Keyboard.current.escapeKey.wasPressedThisFrame)
             {
@@ -108,7 +105,7 @@ namespace ProjectC.Ship.UI
         }
 
         // ============================================================
-        // Build (канон §3)
+        // Build
         // ============================================================
 
         private void EnsureBuilt()
@@ -122,29 +119,26 @@ namespace ProjectC.Ship.UI
                 return;
             }
 
-            // ✅ Используем rootVisualElement от UIDocument — он САМ подгрузил UXML
             _root = _doc.rootVisualElement;
 
-            // ✅ Добавляем USS ОДИН раз
             if (repairUss != null && !_root.styleSheets.Contains(repairUss))
                 _root.styleSheets.Add(repairUss);
 
-            // ✅ sortingOrder — окно поверх других UI
             _doc.sortingOrder = 10;
 
-            // ✅ Ищем элементы через Q<T>
             _container = _root.Q<VisualElement>("repair-root");
             _closeBtn = _root.Q<Button>("repair-close-btn");
             _shipDropdownContainer = _root.Q<VisualElement>("repair-ship-dropdown-container");
+            _slotDropdownContainer = _root.Q<VisualElement>("repair-slot-dropdown-container");
+            _installedLabel = _root.Q<Label>("repair-installed-label");
+            _installedActions = _root.Q<VisualElement>("repair-installed-actions");
             _shipClassLabel = _root.Q<Label>("repair-ship-class");
             _shipPowerLabel = _root.Q<Label>("repair-ship-power");
-            _slotsContainer = _root.Q<VisualElement>("repair-slots-container");
             _modulesContainer = _root.Q<VisualElement>("repair-modules-container");
             _modulesHeader = _root.Q<Label>("repair-modules-header");
             _creditsLabel = _root.Q<Label>("repair-credits-label");
             _statusLabel = _root.Q<Label>("repair-status-label");
 
-            // De-dup подписок
             if (_closeBtn != null)
             {
                 _closeBtn.clicked -= OnCloseClicked;
@@ -152,11 +146,8 @@ namespace ProjectC.Ship.UI
             }
 
             _built = true;
-
-            // ✅ Окно СКРЫТО по умолчанию
             SetOpen(false);
 
-            // Инициализировать каталог модулей
             if (shopDatabase != null)
                 ShipModuleCatalog.Initialize(shopDatabase);
 
@@ -164,7 +155,7 @@ namespace ProjectC.Ship.UI
         }
 
         // ============================================================
-        // Show / Hide (канон §3 — SetOpen+IsOpen+pickingMode+cursor)
+        // Show / Hide
         // ============================================================
 
         public void SetOpen(bool open)
@@ -181,7 +172,6 @@ namespace ProjectC.Ship.UI
 
             IsOpen = open;
 
-            // Cursor
             if (open)
             {
                 UnityEngine.Cursor.lockState = CursorLockMode.None;
@@ -189,7 +179,6 @@ namespace ProjectC.Ship.UI
             }
             else
             {
-                // Восстанавливаем locked только если в игре (не в главном меню)
                 if (Unity.Netcode.NetworkManager.Singleton != null &&
                     Unity.Netcode.NetworkManager.Singleton.IsListening)
                 {
@@ -216,7 +205,6 @@ namespace ProjectC.Ship.UI
 
         private void OnCloseClicked() => Hide();
 
-        /// <summary>Предвыбрать корабль (вызывается из MyShipsTab).</summary>
         public void PreselectShip(int keyInstanceId)
         {
             _selectedKeyId = keyInstanceId;
@@ -250,7 +238,6 @@ namespace ProjectC.Ship.UI
                 }
             }
 
-            // Fallback: через KeyRodInstanceWorld
             if (_keyInstanceIds.Count == 0 && KeyRodInstanceWorld.IsInitialized)
             {
                 var instanceIds = KeyRodInstanceWorld.GetInstancesForPlayer(myId);
@@ -270,7 +257,6 @@ namespace ProjectC.Ship.UI
 
             BuildShipDropdown();
 
-            // Автовыбор
             if (_keyInstanceIds.Count > 0)
             {
                 int idx = _selectedKeyId > 0 ? _keyInstanceIds.IndexOf(_selectedKeyId) : -1;
@@ -289,7 +275,7 @@ namespace ProjectC.Ship.UI
             if (_shipDropdownContainer == null) return;
             _shipDropdownContainer.Clear();
 
-            var dd = new CustomDropdown();
+            var dd = new CustomDropdown("Выберите корабль...");
             var choices = new List<string>();
             foreach (int id in _keyInstanceIds)
             {
@@ -308,69 +294,38 @@ namespace ProjectC.Ship.UI
             _shipDropdownContainer.Add(dd);
         }
 
-        /// <summary>Кастомный дропдаун как в MyShipsTab.</summary>
-        private class CustomDropdown : VisualElement
+        // ============================================================
+        // Slot Dropdown
+        // ============================================================
+
+        private void BuildSlotDropdown(ShipController sc)
         {
-            private readonly PopupElement _popup;
-            private readonly Label _label;
-            private int _selectedIdx = -1;
-            private List<string> _choices = new List<string>();
+            if (_slotDropdownContainer == null) return;
+            _slotDropdownContainer.Clear();
 
-            public int SelectedIndex => _selectedIdx;
-            public System.Action<int> OnSelectionChanged;
+            var mm = sc.ShipModuleManager;
+            if (mm == null || mm.slots == null || mm.slots.Count == 0) return;
 
-            public CustomDropdown()
+            var dd = new CustomDropdown("Выберите слот...");
+            var choices = new List<string>();
+            var slotNames = new List<string>();
+            foreach (var slot in mm.slots)
             {
-                AddToClassList("repair-dropdown");
-                _label = new Label("Выберите корабль...");
-                _label.AddToClassList("repair-dropdown-label");
-                Add(_label);
-
-                _popup = new PopupElement();
-                _popup.style.display = DisplayStyle.None;
-                Add(_popup);
-
-                _label.RegisterCallback<ClickEvent>(evt =>
-                {
-                    _popup.style.display = _popup.style.display == DisplayStyle.Flex
-                        ? DisplayStyle.None : DisplayStyle.Flex;
-                });
+                if (slot == null) continue;
+                string name = slot.gameObject.name;
+                string suffix = slot.isOccupied ? $" [✓ {slot.installedModule.displayName}]" : " [пусто]";
+                choices.Add($"🔧 {name}{suffix}");
+                slotNames.Add(name);
             }
 
-            public void SetChoices(List<string> choices, int defaultIdx)
+            dd.SetChoices(choices, -1);
+            dd.OnSelectionChanged += (idx) =>
             {
-                _choices = choices;
-                _popup.Clear();
-                for (int i = 0; i < choices.Count; i++)
-                {
-                    int idx = i;
-                    var item = new Label(choices[i]);
-                    item.AddToClassList("repair-dropdown-item");
-                    item.RegisterCallback<ClickEvent>(evt =>
-                    {
-                        _selectedIdx = idx;
-                        _label.text = choices[idx];
-                        _popup.style.display = DisplayStyle.None;
-                        OnSelectionChanged?.Invoke(idx);
-                    });
-                    _popup.Add(item);
-                }
-                if (defaultIdx >= 0 && defaultIdx < choices.Count)
-                {
-                    _selectedIdx = defaultIdx;
-                    _label.text = choices[defaultIdx];
-                }
-            }
+                if (idx >= 0 && idx < slotNames.Count)
+                    OnSlotSelected(slotNames[idx]);
+            };
 
-            public void Cleanup() { _popup.Clear(); }
-        }
-
-        private class PopupElement : VisualElement
-        {
-            public PopupElement()
-            {
-                AddToClassList("repair-dropdown-popup");
-            }
+            _slotDropdownContainer.Add(dd);
         }
 
         // ============================================================
@@ -395,8 +350,9 @@ namespace ProjectC.Ship.UI
             if (_shipPowerLabel != null && mm != null)
                 _shipPowerLabel.text = $"Энергия: {mm.currentPowerUsage}/{mm.availablePower}";
 
-            RenderSlots(sc);
+            BuildSlotDropdown(sc);
             _selectedSlotName = null;
+            UpdateInstalledInfo();
             ClearModulesView();
         }
 
@@ -404,74 +360,69 @@ namespace ProjectC.Ship.UI
         {
             if (_shipClassLabel != null) _shipClassLabel.text = "Класс: —";
             if (_shipPowerLabel != null) _shipPowerLabel.text = "Энергия: —";
-            if (_slotsContainer != null) _slotsContainer.Clear();
+            if (_slotDropdownContainer != null) _slotDropdownContainer.Clear();
+            if (_installedLabel != null) _installedLabel.text = "Установлено: —";
+            if (_installedActions != null) _installedActions.Clear();
             ClearModulesView();
         }
 
         // ============================================================
-        // Slots
+        // Installed Module Info + Sell Button
         // ============================================================
 
-        private void RenderSlots(ShipController sc)
+        private void UpdateInstalledInfo()
         {
-            if (_slotsContainer == null) return;
-            _slotsContainer.Clear();
+            if (_installedLabel == null || _installedActions == null) return;
+            _installedActions.Clear();
 
-            var mm = sc.ShipModuleManager;
-            if (mm == null || mm.slots == null || mm.slots.Count == 0)
+            if (string.IsNullOrEmpty(_selectedSlotName) || _selectedKeyId <= 0)
             {
-                var empty = new Label("Слоты не найдены");
-                empty.AddToClassList("repair-empty-label");
-                _slotsContainer.Add(empty);
+                _installedLabel.text = "Установлено: —";
                 return;
             }
 
+            if (!_shipByKeyId.TryGetValue(_selectedKeyId, out var sc)) return;
+            var mm = sc.ShipModuleManager;
+            if (mm == null) { _installedLabel.text = "Установлено: —"; return; }
+
+            ModuleSlot targetSlot = null;
             foreach (var slot in mm.slots)
             {
-                if (slot == null) continue;
-
-                var row = new VisualElement();
-                row.AddToClassList("repair-slot-row");
-
-                string slotName = slot.gameObject.name;
-                bool occupied = slot.isOccupied;
-                string modName = occupied ? slot.installedModule.displayName : "пусто";
-
-                var nameLbl = new Label($"{slotName}: {modName}");
-                nameLbl.AddToClassList("repair-slot-name");
-                if (!occupied) nameLbl.AddToClassList("repair-slot-empty");
-                row.Add(nameLbl);
-
-                var btnRow = new VisualElement();
-                btnRow.AddToClassList("repair-slot-btns");
-
-                if (occupied)
-                {
-                    var removeBtn = new Button(() => OnRemoveClicked(slotName));
-                    removeBtn.text = "Снять";
-                    removeBtn.AddToClassList("repair-btn");
-                    removeBtn.AddToClassList("repair-btn-remove");
-                    btnRow.Add(removeBtn);
-                }
-
-                var selectBtn = new Button(() => OnSlotSelected(slotName));
-                selectBtn.text = "Выбрать";
-                selectBtn.AddToClassList("repair-btn");
-                selectBtn.AddToClassList("repair-btn-select");
-                btnRow.Add(selectBtn);
-
-                row.Add(btnRow);
-                _slotsContainer.Add(row);
+                if (slot != null && slot.gameObject.name == _selectedSlotName)
+                { targetSlot = slot; break; }
             }
+
+            if (targetSlot == null || !targetSlot.isOccupied)
+            {
+                _installedLabel.text = "Установлено: пусто";
+                return;
+            }
+
+            var mod = targetSlot.installedModule;
+            _installedLabel.text = $"Установлено: {mod.displayName} (★{mod.tier})";
+
+            // Найти цену продажи
+            int sellPrice = ComputeSellPrice(mod.moduleId);
+
+            var sellBtn = new Button(() => OnSellClicked(_selectedSlotName, sellPrice));
+            sellBtn.text = $"💰 Продать (+{sellPrice} кр.)";
+            sellBtn.AddToClassList("repair-btn");
+            sellBtn.AddToClassList("repair-btn-sell");
+            _installedActions.Add(sellBtn);
         }
 
-        private void OnSlotSelected(string slotName)
+        private int ComputeSellPrice(string moduleId)
         {
-            _selectedSlotName = slotName;
-            RenderCompatibleModules(slotName);
+            if (_activeDatabase == null) return 0;
+            foreach (var entry in _activeDatabase.entries)
+            {
+                if (entry != null && entry.module != null && entry.module.moduleId == moduleId)
+                    return Mathf.Max(1, entry.costCredits / 2);
+            }
+            return 0;
         }
 
-        private void OnRemoveClicked(string slotName)
+        private void OnSellClicked(string slotName, int sellCredits)
         {
             if (_selectedKeyId <= 0) return;
 
@@ -479,17 +430,26 @@ namespace ProjectC.Ship.UI
             var server = sc.GetComponent<ShipModuleServer>();
             if (server != null)
             {
-                server.RequestRemoveModule(_selectedKeyId, slotName);
+                server.RequestSellModule(_selectedKeyId, slotName, sellCredits);
                 if (_statusLabel != null)
-                    _statusLabel.text = $"Запрос на снятие модуля из '{slotName}' отправлен...";
-
-                // Автообновление через ~0.5с (RPC ещё в пути)
+                    _statusLabel.text = $"Продажа модуля из '{slotName}' (+{sellCredits} кр.)...";
                 StartCoroutine(DelayedRefresh(0.5f));
             }
             else
             {
                 Debug.LogWarning("[RepairManagerWindow] ShipModuleServer not found on ship");
             }
+        }
+
+        // ============================================================
+        // Slot Selection → Modules
+        // ============================================================
+
+        private void OnSlotSelected(string slotName)
+        {
+            _selectedSlotName = slotName;
+            UpdateInstalledInfo();
+            RenderCompatibleModules(slotName);
         }
 
         // ============================================================
@@ -535,12 +495,15 @@ namespace ProjectC.Ship.UI
 
                 var mod = entry.module;
 
+                // Совместимость со слотом
                 if (targetSlot != null && !targetSlot.ValidateCompatibility(mod))
                     continue;
 
+                // Совместимость с классом корабля
                 if (!mod.IsCompatibleWithClass(sc.ShipFlightClass))
                     continue;
 
+                // Уже установлен в этом слоте
                 if (targetSlot != null && targetSlot.isOccupied &&
                     targetSlot.installedModuleId == mod.moduleId)
                     continue;
@@ -550,11 +513,13 @@ namespace ProjectC.Ship.UI
                 var row = new VisualElement();
                 row.AddToClassList("repair-module-row");
 
+                // Tier
                 string tierStr = new string('★', mod.tier);
                 var tierLbl = new Label(tierStr);
                 tierLbl.AddToClassList("repair-module-tier");
                 row.Add(tierLbl);
 
+                // Info
                 var infoCol = new VisualElement();
                 infoCol.AddToClassList("repair-module-info");
 
@@ -562,6 +527,7 @@ namespace ProjectC.Ship.UI
                 nameLbl.AddToClassList("repair-module-name");
                 infoCol.Add(nameLbl);
 
+                // Price + power
                 string priceStr = $"💰 {entry.costCredits} кр.";
                 if (entry.requiredResources != null && entry.requiredResources.Length > 0)
                 {
@@ -574,7 +540,10 @@ namespace ProjectC.Ship.UI
                 if (mod.powerConsumption > 0)
                 {
                     int avail = mm != null ? mm.GetAvailablePower() : 0;
-                    priceStr += $" ⚡ {mod.powerConsumption} (доступно {avail})";
+                    // Если слот занят — старый модуль освободит энергию
+                    if (targetSlot != null && targetSlot.isOccupied)
+                        avail += targetSlot.installedModule.powerConsumption;
+                    priceStr += $" ⚡ {mod.powerConsumption} (свободно {avail})";
                 }
 
                 var priceLbl = new Label(priceStr);
@@ -583,6 +552,7 @@ namespace ProjectC.Ship.UI
 
                 row.Add(infoCol);
 
+                // Install button
                 var installBtn = new Button(() => OnInstallClicked(slotName, mod.moduleId));
                 installBtn.text = "Установить";
                 installBtn.AddToClassList("repair-btn");
@@ -622,8 +592,6 @@ namespace ProjectC.Ship.UI
                 server.RequestInstallModule(_selectedKeyId, slotName, moduleId);
                 if (_statusLabel != null)
                     _statusLabel.text = $"Запрос на установку '{moduleId}' в '{slotName}' отправлен...";
-
-                // Автообновление через ~0.5с (RPC ещё в пути)
                 StartCoroutine(DelayedRefresh(0.5f));
             }
             else
@@ -648,6 +616,76 @@ namespace ProjectC.Ship.UI
                     RenderCompatibleModules(_selectedSlotName);
                 if (_statusLabel != null)
                     _statusLabel.text = "Готово ✓";
+            }
+        }
+
+        // ============================================================
+        // Custom Dropdown
+        // ============================================================
+
+        private class CustomDropdown : VisualElement
+        {
+            private readonly PopupElement _popup;
+            private readonly Label _label;
+            private int _selectedIdx = -1;
+            private List<string> _choices = new List<string>();
+
+            public int SelectedIndex => _selectedIdx;
+            public System.Action<int> OnSelectionChanged;
+
+            public CustomDropdown(string placeholder)
+            {
+                AddToClassList("repair-dropdown");
+                _label = new Label(placeholder);
+                _label.AddToClassList("repair-dropdown-label");
+                Add(_label);
+
+                _popup = new PopupElement();
+                _popup.style.display = DisplayStyle.None;
+                Add(_popup);
+
+                _label.RegisterCallback<ClickEvent>(evt =>
+                {
+                    _popup.style.display = _popup.style.display == DisplayStyle.Flex
+                        ? DisplayStyle.None : DisplayStyle.Flex;
+                    evt.StopPropagation();
+                });
+            }
+
+            public void SetChoices(List<string> choices, int defaultIdx)
+            {
+                _choices = choices;
+                _popup.Clear();
+                for (int i = 0; i < choices.Count; i++)
+                {
+                    int idx = i;
+                    var item = new Label(choices[i]);
+                    item.AddToClassList("repair-dropdown-item");
+                    item.RegisterCallback<ClickEvent>(evt =>
+                    {
+                        _selectedIdx = idx;
+                        _label.text = choices[idx];
+                        _popup.style.display = DisplayStyle.None;
+                        OnSelectionChanged?.Invoke(idx);
+                        evt.StopPropagation();
+                    });
+                    _popup.Add(item);
+                }
+                if (defaultIdx >= 0 && defaultIdx < choices.Count)
+                {
+                    _selectedIdx = defaultIdx;
+                    _label.text = choices[defaultIdx];
+                }
+            }
+
+            public void Cleanup() { _popup.Clear(); }
+        }
+
+        private class PopupElement : VisualElement
+        {
+            public PopupElement()
+            {
+                AddToClassList("repair-dropdown-popup");
             }
         }
 

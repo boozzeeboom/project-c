@@ -60,6 +60,168 @@ namespace ProjectC.Trade.Core
         }
 
         // ========================================================
+        // T-CARGO-NPC-01: Server-only NPC trader API.
+        // ========================================================
+        // Отдельные методы (не перегрузки TryBuy/TrySell), потому что:
+        //   1. NPC не имеет warehouse на этой станции — товар идёт market.stock ↔ cargo.
+        //   2. useUnlimitedCredits=true скипает проверку кредитов (PlayerPrefsRepository
+        //      клампит к 0 и не любит Infinity; см. D33 в T_CARGO_NPC_01_DESIGN_2026-07-03.md).
+        //   3. Минимальный surface change — существующий TryBuy/TrySell контракт НЕ ломается.
+        //   4. Symmetric: TryNpcBuy (market.stock → cargo) + TryNpcSell (cargo → market.stock).
+        // ========================================================
+
+        /// <summary>
+        /// NPC-курьер покупает qty единиц itemId с рынка locationId в cargo своего корабля.
+        /// Товар списывается с market.availableStock и кладётся в cargo напрямую
+        /// (минуя warehouse, которого у NPC нет). credits не списываются.
+        /// Returns: TradeResult (как TryBuy), но с npcClientId подставленным в result-структуру.
+        /// </summary>
+        public TradeResult TryNpcBuy(
+            ulong npcClientId,
+            string locationId,
+            string itemId,
+            int quantity,
+            ulong npcShipNetworkObjectId,
+            ShipClass shipClass,
+            bool useUnlimitedCredits)
+        {
+            // 1. Валидация (аналогично TryBuy)
+            if (string.IsNullOrEmpty(itemId) || quantity <= 0)
+                return TradeResult.Fail(TradeResultCode.InvalidArgs, "invalid_args", 0f, null, null);
+            if (string.IsNullOrEmpty(locationId))
+                return TradeResult.Fail(TradeResultCode.NotInZone, "no_location", 0f, null, null);
+            if (npcShipNetworkObjectId == 0)
+                return TradeResult.Fail(TradeResultCode.InvalidArgs, "invalid_args_npc_ship_id", 0f, null, null);
+            if (!MarketExists(locationId))
+                return TradeResult.Fail(TradeResultCode.MarketNotFound, $"market '{locationId}' not found", 0f, null, null);
+            if (npcClientId == 0)
+                return TradeResult.Fail(TradeResultCode.InvalidArgs, "npcClientId==0 reserved for server", 0f, null, null);
+
+            var market = _markets[locationId];
+            var item = market.GetItem(itemId);
+            if (item == null || item.config == null)
+                return TradeResult.Fail(TradeResultCode.ItemNotInMarket, "item not in market", 0f, null, null);
+            if (!item.config.allowBuy)
+                return TradeResult.Fail(TradeResultCode.ItemBuyDisabled, "buy disabled", 0f, null, null);
+
+            // 2. Stock check
+            item.RecalculatePrice();
+            if (item.currentPrice <= 0f)
+                return TradeResult.Fail(TradeResultCode.PriceInvalid, "price=0", 0f, null, null);
+            if (item.availableStock < quantity)
+                return TradeResult.Fail(TradeResultCode.InsufficientStock, "stock", 0f, null, null);
+
+            // 3. Credits check — скипаем если useUnlimitedCredits
+            //    Иначе — стандартная проверка через Repository (для будущей экономики NPC).
+            float totalCost = item.currentPrice * quantity;
+            if (!useUnlimitedCredits)
+            {
+                float currentCredits = Repository.GetCredits(npcClientId);
+                if (currentCredits < totalCost)
+                    return TradeResult.Fail(TradeResultCode.InsufficientCredits,
+                        $"need {totalCost:F0}, have {currentCredits:F0}", currentCredits, null, null);
+                if (!Repository.TryModifyCredits(npcClientId, -totalCost, out _, out var credFail))
+                    return TradeResult.Fail(TradeResultCode.InsufficientCredits, credFail, currentCredits, null, null);
+            }
+
+            // 4. Cargo NPC-корабля
+            var cargo = GetOrLoadCargo(npcShipNetworkObjectId, shipClass);
+            if (cargo == null)
+                return TradeResult.Fail(TradeResultCode.InvalidArgs, "cargo=null (npc ship not registered?)", 0f, null, null);
+
+            // 5. Pre-check cargo limits (force-register через NetworkManager если ещё не в реестре)
+            if (TryCheckEffectiveCargoLimits(npcShipNetworkObjectId, cargo, itemId, quantity, out var effFail))
+            {
+                return TradeResult.Fail(MapCargoFail(effFail), effFail, 0f, null, cargo);
+            }
+
+            if (!cargo.TryAdd(itemId, quantity, Resolver, out var cargoFail))
+            {
+                return TradeResult.Fail(MapCargoFail(cargoFail), cargoFail, 0f, null, cargo);
+            }
+
+            // 6. Commit: stock update + price formula + persist cargo
+            item.availableStock -= quantity;
+            PriceFormula.ApplyBuy(item, quantity);
+            Repository.SetCargo(npcShipNetworkObjectId, cargo.SaveToList());
+
+            OnCargoChanged?.Invoke(npcShipNetworkObjectId);
+            Debug.Log($"[TradeWorld] NPC_BUY npc={npcClientId:X} loc={locationId} ship={npcShipNetworkObjectId} item={itemId} qty={quantity} cost={totalCost:F0} (unlimited={useUnlimitedCredits})");
+            return TradeResult.Ok(useUnlimitedCredits ? float.PositiveInfinity : Repository.GetCredits(npcClientId),
+                item.availableStock, null, cargo);
+        }
+
+        /// <summary>
+        /// NPC-курьер продаёт qty единиц itemId из cargo своего корабля на рынок locationId.
+        /// Товар списывается из cargo и добавляется в market.availableStock.
+        /// credits НЕ начисляются (useUnlimitedCredits=true → кошелёк бесполезен).
+        /// Returns: TradeResult.
+        /// </summary>
+        public TradeResult TryNpcSell(
+            ulong npcClientId,
+            string locationId,
+            string itemId,
+            int quantity,
+            ulong npcShipNetworkObjectId,
+            ShipClass shipClass,
+            bool useUnlimitedCredits)
+        {
+            // 1. Валидация
+            if (string.IsNullOrEmpty(itemId) || quantity <= 0)
+                return TradeResult.Fail(TradeResultCode.InvalidArgs, "invalid_args", 0f, null, null);
+            if (string.IsNullOrEmpty(locationId))
+                return TradeResult.Fail(TradeResultCode.NotInZone, "no_location", 0f, null, null);
+            if (npcShipNetworkObjectId == 0)
+                return TradeResult.Fail(TradeResultCode.InvalidArgs, "invalid_args_npc_ship_id", 0f, null, null);
+            if (!MarketExists(locationId))
+                return TradeResult.Fail(TradeResultCode.MarketNotFound, $"market '{locationId}' not found", 0f, null, null);
+            if (npcClientId == 0)
+                return TradeResult.Fail(TradeResultCode.InvalidArgs, "npcClientId==0 reserved for server", 0f, null, null);
+
+            var market = _markets[locationId];
+            var item = market.GetItem(itemId);
+            if (item == null || item.config == null)
+                return TradeResult.Fail(TradeResultCode.ItemNotInMarket, "item not in market", 0f, null, null);
+            if (!item.config.allowSell)
+                return TradeResult.Fail(TradeResultCode.ItemSellDisabled, "sell disabled", 0f, null, null);
+
+            // 2. Cargo remove
+            var cargo = GetOrLoadCargo(npcShipNetworkObjectId, shipClass);
+            if (cargo == null)
+                return TradeResult.Fail(TradeResultCode.InvalidArgs, "cargo=null (npc ship not registered?)", 0f, null, null);
+
+            if (!cargo.TryRemove(itemId, quantity, out var cargoFail))
+                return TradeResult.Fail(MapCargoFail(cargoFail), cargoFail, 0f, null, cargo);
+
+            // 3. Market update + price formula
+            item.RecalculatePrice();
+            if (item.currentPrice <= 0f)
+            {
+                // откат cargo
+                cargo.TryAdd(itemId, quantity, Resolver, out _);
+                return TradeResult.Fail(TradeResultCode.PriceInvalid, "price=0", 0f, null, cargo);
+            }
+
+            // 4. Stock update + price formula + persist
+            item.availableStock += quantity;
+            PriceFormula.ApplySell(item, quantity);
+            Repository.SetCargo(npcShipNetworkObjectId, cargo.SaveToList());
+
+            // 5. Credits — начисляем только если НЕ unlimited (для будущей экономики NPC).
+            //    Сейчас не начисляем (у нас useUnlimited=true), но код пишем готовый.
+            float revenue = item.currentPrice * quantity * 0.8f; // 80% от цены (NPC-маржа)
+            if (!useUnlimitedCredits)
+            {
+                Repository.TryModifyCredits(npcClientId, revenue, out _, out _);
+            }
+
+            OnCargoChanged?.Invoke(npcShipNetworkObjectId);
+            Debug.Log($"[TradeWorld] NPC_SELL npc={npcClientId:X} loc={locationId} ship={npcShipNetworkObjectId} item={itemId} qty={quantity} revenue={revenue:F0} (unlimited={useUnlimitedCredits})");
+            return TradeResult.Ok(useUnlimitedCredits ? float.PositiveInfinity : Repository.GetCredits(npcClientId),
+                item.availableStock, null, cargo);
+        }
+
+        // ========================================================
         // INITIALIZATION
         // ========================================================
 

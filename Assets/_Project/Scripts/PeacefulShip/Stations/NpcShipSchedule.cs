@@ -1,9 +1,14 @@
 // T-NS02: NpcShipSchedule — ScriptableObject с маршрутами и параметрами Gaussian shaping.
 // Pattern: DockStationDefinition (Docking/Core/DockStationDefinition.cs), MarketConfig (Trade/Config/).
 // Convention: один class = один .cs файл (Unity 6: T-DOCK-13c fix).
+//
+// T-CARGO-NPC-01: добавлена секция cargoTrade (что NPC покупает/продаёт на станциях).
+// D29: cargoTrade = вложенный [Serializable] class внутри SO, по аналогии с NpcShipRoute[].
 
 using UnityEngine;
 using ProjectC.PeacefulShip.Core;
+// T-CARGO-NPC-01: TradeItemDefinitionResolver — runtime-only, в OnValidate недоступен.
+// D30: валидация itemId делается в NpcCargoService при первом trade (см. T_CARGO_NPC_01_DESIGN §4.2).
 
 namespace ProjectC.PeacefulShip.Stations
 {
@@ -13,6 +18,7 @@ namespace ProjectC.PeacefulShip.Stations
     /// - Какие маршруты (stops) NPC обходит
     /// - Тип цикла (RoundTrip / Loop / RandomFromPool)
     /// - Параметры Gaussian shaping (meanArrivalIntervalSec + stdDev + minSpacing)
+    /// - cargoTrade (T-CARGO-NPC-01): что NPC покупает/продаёт на станциях
     /// См. docs/NPC_others_peacfull/pc_ship/04_LIVING_BEHAVIOR.md §3.
     /// </summary>
     [CreateAssetMenu(fileName = "NpcShipSchedule_", menuName = "ProjectC/PeacefulShip/NpcShipSchedule", order = 110)]
@@ -61,6 +67,19 @@ namespace ProjectC.PeacefulShip.Stations
         [Tooltip("Макс. dwell time на станции, сек. Default 90 = 1.5 мин (Q5).")]
         [Min(0f)] public float maxDwellTimeSec = 90f;
 
+        [Header("NPC Cargo Trade (T-CARGO-NPC-01)")]
+        [Tooltip("Что NPC покупает/продаёт на станциях. D26-D30. " +
+                 "Пустой/null конфиг = NPC ничего не грузит (поведение как до эпика, M3.2 no-op Loading).")]
+        public NpcCargoTradeListConfig cargoTrade = new NpcCargoTradeListConfig();
+
+        // T-CARGO-NPC-01: legacy asset'ы (созданные до эпика) имеют cargoTrade=null после десериализации.
+        // OnEnable — Unity hook, вызывается при load SO. Восстанавливаем default.
+        private void OnEnable()
+        {
+            if (cargoTrade == null)
+                cargoTrade = new NpcCargoTradeListConfig();
+        }
+
 #if UNITY_EDITOR
         private void OnValidate()
         {
@@ -90,6 +109,31 @@ namespace ProjectC.PeacefulShip.Stations
                     }
                 }
             }
+
+            // T-CARGO-NPC-01: validate cargoTrade.buyItems (itemId known to TradeDatabase)
+            if (cargoTrade == null) return; // допустимо: NPC без cargo trade
+            if (cargoTrade.buyItems == null || cargoTrade.buyItems.Length == 0) return;
+
+            // OnValidate не имеет доступа к TradeWorld.Instance (он создан в runtime).
+            // Валидируем itemId через Resources.Load — fallback на TradeDatabase, если возможно.
+            // D30: DatabaseResolver.TryGet — runtime-only. В Editor только warning о пустых itemId.
+            for (int i = 0; i < cargoTrade.buyItems.Length; i++)
+            {
+                var item = cargoTrade.buyItems[i];
+                if (string.IsNullOrEmpty(item.itemId))
+                {
+                    Debug.LogError($"[NpcShipSchedule:{name}] cargoTrade.buyItems[{i}].itemId is empty", this);
+                }
+                else if (item.desiredQuantity < 0)
+                {
+                    Debug.LogError($"[NpcShipSchedule:{name}] cargoTrade.buyItems[{i}].desiredQuantity < 0", this);
+                }
+            }
+
+            if (cargoTrade.maxLoadSlots < 0)
+                Debug.LogError($"[NpcShipSchedule:{name}] cargoTrade.maxLoadSlots < 0", this);
+            if (cargoTrade.maxLoadWeightKg < 0f)
+                Debug.LogError($"[NpcShipSchedule:{name}] cargoTrade.maxLoadWeightKg < 0", this);
         }
 #endif
     }

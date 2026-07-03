@@ -50,6 +50,7 @@ namespace ProjectC.PeacefulShip.Network
             // Init server state
             NpcShipWorld.CreateAndInitialize();
             NpcShipTrafficManager.CreateAndInitialize();
+            NpcCargoService.CreateAndInitialize(); // T-CARGO-NPC-01: NPC trader service
 
             // Подписка на загрузку сцен (через уже существующий механизм ScenePlacedObjectSpawner)
             // NPC-корабли на сцене спавнятся автоматически через ScenePlacedObjectSpawner.
@@ -57,7 +58,7 @@ namespace ProjectC.PeacefulShip.Network
             StartCoroutine(DiscoverNpcShipsDelayed());
 
             if (debugMode)
-                Debug.Log("[NpcShipServer] OnNetworkSpawn — NpcShipWorld + NpcShipTrafficManager initialized");
+                Debug.Log("[NpcShipServer] OnNetworkSpawn — NpcShipWorld + NpcShipTrafficManager + NpcCargoService initialized");
         }
 
         public override void OnNetworkDespawn()
@@ -66,6 +67,7 @@ namespace ProjectC.PeacefulShip.Network
 
             if (IsServer)
             {
+                NpcCargoService.Shutdown(); // T-CARGO-NPC-01
                 NpcShipTrafficManager.Shutdown();
                 NpcShipWorld.Shutdown();
                 NpcShipZoneRegistry.Clear();

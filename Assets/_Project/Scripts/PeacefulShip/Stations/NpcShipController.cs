@@ -251,6 +251,9 @@ namespace ProjectC.PeacefulShip.Stations
         private bool _scheduleAdvancedAfterDock = true; // true = первый Docked не двигаем schedule
         public string AssignedPadId { get; set; }
         public bool useNewNavTick = true;
+        // T-CARGO-NPC-01: флаг одноразового выполнения dwell-trade (unload+load) за docking.
+        // Сбрасывается в false при lift (см. NavTick Docked-блок).
+        private bool _cargoTradeDone = true;
 
         // === Control authority (handoff): игрок vs NPC-автопилот (см. 08_CONTROL_AUTHORITY_AND_PHYSICS.md) ===
         public enum ControlAuthority : byte { None, NpcAutopilot, HumanPilot }
@@ -355,11 +358,18 @@ namespace ProjectC.PeacefulShip.Stations
                     _scheduleAdvancedAfterDock = true;
                 }
                 if (!rb.isKinematic) rb.isKinematic = true;
+                // T-CARGO-NPC-01: dwell trade (unload + load) выполняется ОДИН раз за docking.
+                // Запускаем сразу после schedule advance (~1s в Docked), чтобы не задерживать lift.
+                if (DockedSinceTime > 1f && !_cargoTradeDone) {
+                    RunDwellCargoTrade();
+                    _cargoTradeDone = true;
+                }
                 if (Time.time - DockedSinceTime > DwellTime) {
                     LiftStartY = ship.transform.position.y;
                     rb.isKinematic = false;
                     ship.ExitDocked();
                     _scheduleAdvancedAfterDock = false;
+                    _cargoTradeDone = false; // сброс для следующего docking
                     SetMode(NavMode.Lifting);
                     return;
                 }
@@ -598,6 +608,34 @@ namespace ProjectC.PeacefulShip.Stations
             }
             _scheduleAdvancedAfterDock = true;  // M3.2.11: не дать Docked handlerу advance снова
             Debug.Log($"[NpcShipController:NPC:{npcInstanceId:X}] Schedule advanced to {state.CurrentRoute.toLocationId}");
+        }
+
+        // === T-CARGO-NPC-01: dwell cargo trade (unload + load) ===
+        // Вызывается из NavTick.Docked ровно ОДИН раз за docking (флаг _cargoTradeDone).
+        // Делегирует всю работу NpcCargoService.RunDwellTrade (D31: unload → load).
+        // Backward compat: если schedule.cargoTrade == null → no-op (старое M3.2 поведение).
+        void RunDwellCargoTrade() {
+            if (NpcCargoService.Instance == null) return;
+            var schedule = NpcShipWorld.Instance?.GetSchedule(npcInstanceId);
+            if (schedule == null) return;
+            var trade = schedule.cargoTrade;
+            if (trade == null) return; // M3.2 backward compat
+
+            var state = NpcShipWorld.Instance?.GetNpc(npcInstanceId);
+            if (state == null) return;
+            var ship = Ship;
+            if (ship == null) return;
+
+            // locationId = текущая станция (CurrentRoute.toLocationId — куда NPC долетел).
+            // ВНИМАНИЕ: route.toLocationId — это целевая станция (где мы сейчас docked).
+            string locationId = state.CurrentRoute.toLocationId;
+            if (string.IsNullOrEmpty(locationId)) return;
+
+            // ShipClass — из ResolvedCargoClass (для CargoData/CargoLimits).
+            var shipClass = ship.ResolvedCargoClass;
+
+            NpcCargoService.Instance.RunDwellTrade(
+                npcInstanceId, ship.NetworkObjectId, shipClass, locationId, trade);
         }
 
 // === T-NS-AV02: ship-to-ship avoidance maneuver ===

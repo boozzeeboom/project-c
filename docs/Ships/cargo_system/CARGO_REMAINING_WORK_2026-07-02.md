@@ -13,8 +13,8 @@
 
 **Что осталось — 4 эпика UI/визуала/расширения:**
 
-1. **T-CARGO-UI-01: детальный список груза игрока** — в CharacterWindow, таб «Корабль» (или «Груз»), показать items[], а не только progress bar. ✅ **СДЕЛАНО 2026-07-02** (см. [CARGO_UI_01_DESIGN_2026-07-02.md](CARGO_UI_01_DESIGN_2026-07-02.md))
-2. **T-CARGO-UI-02: cargo manager (Exchanger-стиль консоль) на корабле** — UI-окно для просмотра/правки cargo в любой момент (без рынка), подход по аналогии с ResourcesExchanger (4-я вкладка MarketWindow).
+1. **T-CARGO-UI-01: детальный список груза игрока** ✅ **СДЕЛАНО 2026-07-02** — в CharacterWindow, таб «Корабль»: `CargoDetailDto[]` в `ShipTelemetryState`, push через NetworkVariable (5 Hz), рендер `RenderCargoDetail()` в `MyShipsTab`, фикс `cargoMax=0`, 2-колоночная вёрстка (cargo + модули). См. [CARGO_UI_01_DESIGN_2026-07-02.md](CARGO_UI_01_DESIGN_2026-07-02.md).
+2. **T-CARGO-UI-02: cargo manager (Exchanger-стиль консоль) на корабле** ✅ **СДЕЛАНО 2026-07-03** — UI-окно для просмотра/правки cargo в любой момент (без рынка), по аналогии с ResourcesExchanger. Включает: ShipCargoConsoleWindow (UI Toolkit), ShipCargoServer (RPC-хаб), обменный курс через ResourceExchangeResolver, qty-кнопки min/-10/-1/+1/+10/max.
 3. **T-CARGO-VIS-01: 3D визуал наполнения трюма** — наполняемость блоками/ящиками на палубе (visual representation).
 4. **T-CARGO-NPC-01: универсальная cargo для NPC-кораблей** — расширить NpcShipCargoManifest (сейчас пустой hook) до полноценной системы, чтобы NPC могли реально перевозить товар (тот же TradeWorld, те же API).
 
@@ -43,7 +43,7 @@
 | `ShipController.OnCollisionEnter → TryDamageCargo` | ✅ | `Scripts/Player/ShipController.cs:405-428` |
 | `MarketSnapshotDto.cargo + shipCargos[]` (multi-ship) | ✅ | `Trade/Scripts/Dto/MarketSnapshotDto.cs:49,57,144` |
 | MarketWindow показ cargo (в зоне рынка) | ✅ | `Trade/Scripts/Client/MarketWindow.cs` |
-| `MyShipsTab` (CharacterWindow таб «Корабль») — заглушка с progress bar | ⚠️ плейсхолдер | `Scripts/UI/Client/CharacterWindow/MyShipsTab.cs` |
+| `MyShipsTab` (CharacterWindow таб «Корабль») — детальный список + 2-колонки | ✅ T-CARGO-UI-01 | `Scripts/UI/Client/CharacterWindow/MyShipsTab.cs` |
 | `NpcShipCargoManifest` (hook, пустой) | ⏳ M1-пустышка | `Scripts/PeacefulShip/Core/NpcShipCargoManifest.cs` |
 | `ExchangerTab` (4-я вкладка MarketWindow) | ✅ | `Trade/Scripts/Client/MarketWindow.cs` + `Trade/Exchange/*` |
 
@@ -53,53 +53,105 @@
 
 ## 2. Что НЕ доделано (4 эпика)
 
-### 2.1 T-CARGO-UI-01: детальный список груза игрока в CharacterWindow
+### 2.1 T-CARGO-UI-01: детальный список груза игрока в CharacterWindow ✅
 
-**Проблема.** `MyShipsTab` сейчас показывает только progress bar (`cargoUsed / cargoMax`) через `ShipTelemetryState`. Самого списка items **нет** — игрок видит «Груз: 6/10», но не знает что именно лежит.
+**Статус: СДЕЛАНО 2026-07-02** (подробности в [CARGO_UI_01_DESIGN_2026-07-02.md](CARGO_UI_01_DESIGN_2026-07-02.md)).
 
-**Что нужно (без деталей реализации — отсечка).**
-- В `MyShipsTab` (CharacterWindow, таб «Корабль») добавить **список содержимого трюма**: itemIcon + displayName + quantity, по строкам, под progress bar.
-- Источник: расширить `ShipTelemetryState` (или сделать отдельный `ShipCargoDetailState` NetworkVariable) чтобы синхронизировать не только counts, но и массив `(itemId, displayName, quantity)`.
-- Альтернатива: не плодить NetworkVariable, а добавить RPC `RequestShipCargoRpc(shipNetworkObjectId) → ShipCargoDetailDto` в существующий серверный hub (по аналогии с MarketServer). **Нужно решение пользователя: push (NetworkVariable) vs pull (RPC).**
-- UI-паттерн: реюз `InventoryTab` row-template (icon + name + type + qty) из `Scripts/UI/Client/CharacterWindow/InventoryTab.cs` — не изобретать новый layout.
+**Что реализовано:**
+- Расширен `ShipTelemetryState` — добавлен `CargoDetailDto[] cargoDetail` (массив до 32 items: itemId, displayName, quantity, unitWeight, flags byte [dangerous/fragile]).
+- Push-подход: данные синхронизируются через существующий NetworkVariable (5 Hz), без новых RPC.
+- `ShipController.UpdateTelemetryState`: фикс бага `cargoMax=0` (теперь через `ShipCargoRegistry.GetEffectiveLimits`), `cargoUsed = ComputeTotalSlots` (не `Items.Count`).
+- `MyShipsTab.RenderCargoDetail()` — рендер списка в ScrollView с строками: name + quantity × weight, warning-цвет для dangerous/fragile.
+- 2-колоночная вёрстка (cargo слева, modules справа) с гибкими ScrollView.
+- Throttle `ShipTelemetryStateEqualsApprox` расширен для учёта `cargoDetail`.
 
-**Триггер сессии:** когда пользователь явно скажет «делаем T-CARGO-UI-01» / «давай UI трюма» / т.п.
+**Архитектурные решения:** D19-D25 (см. дизайн-док).
 
-**Оценка:** ~2-3 ч (1-2 тикета). **Блокируется:** ничем. **Зависимости:** `ShipTelemetryState` уже синхронизирует cargo, остаётся только расширить payload.
+**Оценка (факт):** ~2.5 ч. **Блокируется:** ничем.
 
 ---
 
-### 2.2 T-CARGO-UI-02: cargo manager — Exchanger-стиль консоль на корабле
+### 2.2 T-CARGO-UI-02: cargo manager — Exchanger-стиль консоль на корабле ✅
 
-**Проблема.** `MarketWindow` позволяет грузить/разгружать cargo **только в зоне рынка** (`MarketZone` радиус + RPC хаб). Если игрок хочет переложить вещи из инвентаря в трюм посреди полёта — **негде**. Exchanger (4-я вкладка MarketWindow) — единственный «standalone» UI для pack/unpack, но он тоже **в окне рынка**.
+**Статус: СДЕЛАНО 2026-07-03.**
 
-**Что нужно (отсечка).**
-- Отдельное UI-окно `ShipCargoConsoleWindow` (UI Toolkit, по паттерну ExchangerTab): левая панель = инвентарь игрока, правая = cargo корабля, кнопки «[ → В трюм ]» / «[ ← Из трюма ]» + «[ Упаковать ]» / «[ Распаковать ]» (reюз `ExchangeServer`).
-- Вызов: либо новая кнопка в MyShipsTab «[ Открыть консоль груза ]», либо шорт-кат, **либо интерактивный объект** на палубе корабля (как CraftingStation).
-- Серверная сторона: переиспользуем `TradeWorld.TryLoadToShip / TryUnloadFromShip` + `ExchangeServer.RequestPack/UnpackRpc` — **новой серверной логики почти не нужно**, только клиентский UI + пере-выборка владельца корабля.
-- Требование пользователя: «exchanger в маркете наш» — то есть паттерн (4-я вкладка) подтверждён как образец. UI по аналогии, не новый дизайн.
+**Реализовано:**
+- `ShipCargoConsoleWindow` — UI Toolkit окно (полноэкранный backdrop + панель сверху, как CharacterWindow). Левая панель = инвентарь игрока, правая = трюм корабля. Кнопки «→ В трюм» / «← Из трюма». Закрытие: ✕ кнопка + ESC.
+- `ShipCargoServer` — NetworkBehaviour (BootstrapScene), принимает RPC от клиента: `RequestStoreToCargoRpc` / `RequestRetrieveFromCargoRpc`.
+- **Обменный курс обязателен.** Обе операции идут через `ResourceExchangeResolver` + `ExchangeRateConfig` (DefaultExchangeRate.asset): 100 pickable-слитков = 1 cargo-ящик. Без курса операция отклоняется. Прямой 1:1 перенос исключён.
+- **Упаковка (StoreToCargo):** `FindRateForItemName(itemName)` → удалить `rate.inventoryQty × qty` из инвентаря → добавить `rate.warehouseQty × qty` ящиков (`rate.warehouseItemId`) в `CargoData`.
+- **Распаковка (RetrieveFromCargo):** `FindRateForWarehouseItem(cargoItemId)` → удалить `rate.warehouseQty × qty` из трюма → добавить `rate.inventoryQty × qty` предметов в инвентарь.
+- **Qty-кнопки:** min/-10/-1/лейбл/+1/+10/max для каждой панели (как MarketWindow). Qty = число «паков» (rate-юнитов). MAX = floor(count / rate.qty).
+- `TradeWorld.NotifyCargoChanged(shipNetId)` — публичный метод для внешних систем, мутирующих CargoData напрямую. Без него ShipController не обновляет `NetworkVariable<ShipTelemetryState>` и клиент не видит изменений трюма.
+- Интерактивный объект `ShipCargoConsole` (MonoBehaviour) на дочернем GO корабля + `SphereCollider` (IsTrigger). `InteractableManager` регистрирует консоли, `NetworkPlayer` вызывает `TryInteractNearestShipCargoConsole()` по клавише F.
+- `ShipCargoClientState` — клиентский синглтон приёма результата (OnResultReceived). `ShipCargoResultDto` — DTO результата.
+- Курсор: при открытии разблокируется (`CursorLockMode.None`), при закрытии возвращается в Locked (если сеть активна).
+- Телеметрия трюма: подписка на `ShipTelemetryClientState.OnShipStateChanged` для мгновенного обновления UI после операций.
+
+**Архитектурное решение:** вместо изобретения нового 1:1 обменника — полный реюз существующего `ResourceExchangeResolver` + `ExchangeRateConfig`. Это предотвращает эксплойт «распаковал 1 ящик на рынке → получил 100 слитков → положил 100 слитков в трюм как 100 ящиков».
+
+**Новые файлы (11):**
+
+| Файл | Назначение |
+|------|-----------|
+| `Trade/Exchange/Network/ShipCargoServer.cs` | NetworkBehaviour, RPC-хаб (Store/Retrieve) |
+| `Trade/Scripts/Client/ShipCargoConsoleWindow.cs` | UI Toolkit окно (канон) |
+| `Trade/Scripts/Client/ShipCargoClientState.cs` | Клиентская проекция результата |
+| `Trade/Scripts/Dto/ShipCargoResultDto.cs` | DTO результата |
+| `Scripts/Ship/Cargo/ShipCargoConsole.cs` | Interactable-компонент на корабле |
+| `UI/ShipCargoConsoleWindow.uxml` | UXML разметка (backdrop + 2 панели + qty-строки) |
+| `UI/ShipCargoConsoleWindow.uss` | Стили (!important, qty-кнопки) |
+| `Trade/Resources/UI/ShipCargoPanelSettings.asset` | PanelSettings (копия MarketPanelSettings) |
+
+**Изменённые файлы (5):**
+
+| Файл | Изменение |
+|------|-----------|
+| `Trade/Scripts/Core/TradeWorld.cs` | +`NotifyCargoChanged(ulong)` публичный метод |
+| `Scripts/Player/InteractableManager.cs` | +`_shipCargoConsoles` список + Register/Unregister/FindNearest |
+| `Scripts/Player/NetworkPlayer.cs` | +`TryInteractNearestShipCargoConsole()` в F-цепочке + `ReceiveShipCargoResultTargetRpc` |
+| `Scripts/Network/NetworkManagerController.cs` | +`CreateShipCargoClientState()` при коннекте |
+| `Scenes/BootstrapScene.unity` | +`[ShipCargoConsoleWindow]` GO (UIDocument + скрипт) + `[ShipCargoServer]` GO (NetworkObject + ExchangeRateConfig) |
+
+**Что осталось настроить вручную:**
+- На каждый корабль (префаб) повесить дочерний GO с `ShipCargoConsole` + `SphereCollider` (IsTrigger, радиус ~3м).
 
 **Триггер сессии:** когда пользователь явно скажет «делаем cargo manager на корабле» / «T-CARGO-UI-02» / «открыть груз в полёте».
 
-**Оценка:** ~4-6 ч (2-3 тикета). **Блокируется:** ничем. **Зависимости:** T-CARGO-UI-01 желателен (чтобы было что показывать в деталях), но не блок.
+**Оценка (факт):** ~8-10 ч (4 тикета + отладка). **Блокируется:** ничем. **Зависимости:** T-CARGO-UI-01 желателен, но не блок.
 
 ---
 
-### 2.3 T-CARGO-VIS-01: 3D визуал наполнения трюма (ящики/блоки)
+### 2.3 T-CARGO-VIS-01: 3D визуал наполнения трюма (ящики/блоки) ✅
 
-**Проблема.** Cargo — это «голые данные» в `TradeWorld._cargoCache`. На палубе корабля **не отображается** ничего: ни ящиков, ни слотов, ни индикации перегруза. Игрок видит ship с пустой палубой, а в cargo может лежать 5 т руды.
+**Статус: СДЕЛАНО 2026-07-02.** См. [CARGO_VIS_01_DESIGN_2026-07-02.md](CARGO_VIS_01_DESIGN_2026-07-02.md).
 
-**Что нужно (отсечка).**
-- Новый компонент `ShipCargoVisual` (MonoBehaviour), цепляется на `ShipController`/`ShipRoot`.
-- На каждую запись `(itemId, quantity)` в `TradeWorld._cargoCache[shipId]` — спавнить префаб «ящик/бочка/контейнер» на `Transform[]` (пул точек привязки на палубе, настраивается в инспекторе префаба корабля).
-- Префабы: per-itemId (через `ItemData.visualPrefab`?) или общий «crate/canister» с цветом/иконкой itemId.
-- Реактивность: подписка на `TradeWorld.OnCargoChanged` → пересчитать количество визуальных ящиков на палубе (incr/decr, не пересоздавать всё).
-- Скрытие/показ: при посадке игрока (PilotSeat) — видно, при виде от 3-го лица — видно, при непилотном корабле — **тоже видно** (для UX NPC-кораблей и для подсветки «у этого корабля есть cargo»).
-- Лимит: если `quantity > capacity` — показать overflow-индикатор (красный мигающий ящик поверх стопки).
+**Что реализовано:**
+- `ShipCargoVisual` (MonoBehaviour) — client-side компонент, вешается на дочерний GO корабля.
+- Подписка на `ShipTelemetryClientState.OnShipStateChanged` — реагирует на изменения `cargoUsed`.
+- Grid-размещение ящиков внутри `BoxCollider` (`_spawnZone`), снизу вверх.
+- Object pool: инкрементальное обновление (Δ), без Destroy/Instantiate на каждый tick.
+- Массив `_boxPrefabs[]` — случайный выбор визуала на каждый ящик.
+- Overflow-индикатор: красный мигающий ящик при `cargoUsed > _maxVisibleBoxes`.
+- Ленивая подписка: ждёт `ShipTelemetryClientState.Instance` (NGO инициализацию).
 
-**Триггер сессии:** когда пользователь явно скажет «давай визуал cargo» / «ящики на палубе» / «T-CARGO-VIS-01».
+**Новые файлы (1):**
+| Файл | Назначение |
+|------|-----------|
+| `Assets/_Project/Scripts/Ship/Cargo/ShipCargoVisual.cs` | MonoBehaviour: grid-спавн, object pool, overflow |
 
-**Оценка:** ~4-6 ч (2-3 тикета). **Блокируется:** T-CARGO-NPC-01 частично (если хотим чтобы NPC cargo тоже визуализировался — нужна универсальная точка подписки). **Зависимости:** `ItemData.visualPrefab` уже есть (см. memory: «ItemData SO fields: ... visualPrefab»).
+**Изменённые файлы (0):** Additive-only, существующий код не тронут.
+
+**Что осталось настроить вручную:**
+- На каждый корабль добавить дочерний GO `ShipCargoVisual` с `BoxCollider` (IsTrigger) и `ShipCargoVisual` компонентом.
+- В инспекторе: перетащить `_spawnZone` (BoxCollider), заполнить `_boxPrefabs[]` (префаб ящика).
+- Создать префаб ящика (`Assets/_Project/Prefabs/Cargo/Box_Default.prefab`).
+
+**Известные баги (fixed):**
+- ~~shipNetId=0 — NGO не инициализирован на момент Awake~~ → ленивый ре-резолв в `TrySubscribe()`
+- ~~Ящики вне коллайдера~~ → убрана двойная `TransformPoint`/`InverseTransformPoint`, используется `_spawnZone.center`/`size` напрямую
+
+**Оценка (факт):** ~3 ч. **Блокируется:** ничем.
 
 ---
 
@@ -129,9 +181,9 @@
 | # | Epic | ~Часы | Блоки | Триггер от юзера |
 |---|---|---|---|---|
 | **0** | (текущее) ничего | — | — | — |
-| **1** | T-CARGO-UI-01 (список items) | 2-3 | — | «давай UI трюма» |
-| **2** | T-CARGO-UI-02 (cargo manager) | 4-6 | — | «открыть груз в полёте» |
-| **3** | T-CARGO-VIS-01 (3D ящики) | 4-6 | — | «ящики на палубе» |
+| **1** | T-CARGO-UI-01 (список items) | ✅ 2026-07-02 | — | «давай UI трюма» |
+| **2** | T-CARGO-UI-02 (cargo manager) | ✅ 2026-07-03 | — | «открыть груз в полёте» |
+| **3** | T-CARGO-VIS-01 (3D ящики) | ✅ 2026-07-02 | — | «ящики на палубе» |
 | **4** | T-CARGO-NPC-01 (NPC cargo) | 6-10 | частично #3 | «NPC трейдеры» |
 
 **Альтернативный порядок** (если пользователь хочет сначала NPC):
@@ -163,7 +215,7 @@
 | Epic | Новые | Изменяемые |
 |---|---|---|
 | T-CARGO-UI-01 | — | `MyShipsTab.cs`, `ShipTelemetryState.cs` (или новый RPC) |
-| T-CARGO-UI-02 | `ShipCargoConsoleWindow.uxml/uss/cs` | `CharacterWindow.cs` (или `MyShipsTab.cs`), возможно новый `ShipCargoServer.cs` (reюз `ExchangeServer`?) |
+| T-CARGO-UI-02 ✅ | `ShipCargoConsoleWindow.uxml/uss/cs`, `ShipCargoServer.cs`, `ShipCargoResultDto.cs`, `ShipCargoClientState.cs`, `ShipCargoConsole.cs` (interactable) | `TradeWorld.cs` (+NotifyCargoChanged), `InteractableManager.cs`, `NetworkPlayer.cs`, `NetworkManagerController.cs`, `BootstrapScene.unity` |
 | T-CARGO-VIS-01 | `ShipCargoVisual.cs`, префабы ящиков | `ShipController.cs` (подписка), `ItemData` (visualPrefab уже есть) |
 | T-CARGO-NPC-01 | возможно `NpcCargoService.cs` (server-only) | `NpcShipController.cs`, `NpcShipWorld.cs`, `TradeWorld.cs` (новый API `TryNpcLoad/Unload/Sell`), `NpcShipSnapshotDto.cs` (заполнение) |
 

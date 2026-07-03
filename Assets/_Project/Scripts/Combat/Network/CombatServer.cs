@@ -21,6 +21,10 @@ namespace ProjectC.Combat
     {
         public static CombatServer Instance { get; private set; }
 
+        [Header("Debug")]
+        [Tooltip("Включить подробные логи в консоль.")]
+        [SerializeField] private bool _debugLog = false;
+
         // === Registries (server-side only) ===
         private readonly Dictionary<ulong, IAttacker> _attackers = new Dictionary<ulong, IAttacker>();
         private readonly Dictionary<ulong, IDamageTarget> _targets = new Dictionary<ulong, IDamageTarget>();
@@ -50,7 +54,7 @@ namespace ProjectC.Combat
                 Debug.LogWarning("[CombatServer] OnNetworkSpawn: another Instance already set. Replacing.");
             }
             Instance = this;
-            Debug.Log("[CombatServer] OnNetworkSpawn: Instance set, IsServer=True.");
+            if (_debugLog) Debug.Log("[CombatServer] OnNetworkSpawn: Instance set, IsServer=True.");
 
             // T-RTC06 (v0.1 fix): Push-down registration — подобрать всех PlayerAttacker/NpcAttacker/
             // PlayerTarget/NpcTarget в сцене, которые уже NetworkSpawn'нулись, но не зарегистрированы
@@ -90,7 +94,7 @@ namespace ProjectC.Combat
                 if (!_attackers.ContainsKey(id))
                 {
                     _attackers[id] = pa;
-                    if (Debug.isDebugBuild) Debug.Log($"[CombatServer] RecoverExistingEntities: registered PlayerAttacker id={id}");
+                    if (_debugLog) Debug.Log($"[CombatServer] RecoverExistingEntities: registered PlayerAttacker id={id}");
                 }
             }
 
@@ -102,7 +106,7 @@ namespace ProjectC.Combat
                 if (!_targets.ContainsKey(id))
                 {
                     _targets[id] = pt;
-                    if (Debug.isDebugBuild) Debug.Log($"[CombatServer] RecoverExistingEntities: registered PlayerTarget id={id}");
+                    if (_debugLog) Debug.Log($"[CombatServer] RecoverExistingEntities: registered PlayerTarget id={id}");
                 }
             }
 
@@ -115,7 +119,7 @@ namespace ProjectC.Combat
                 if (!_attackers.ContainsKey(id))
                 {
                     _attackers[id] = na;
-                    if (Debug.isDebugBuild) Debug.Log($"[CombatServer] RecoverExistingEntities: registered NpcAttacker id={id}");
+                    if (_debugLog) Debug.Log($"[CombatServer] RecoverExistingEntities: registered NpcAttacker id={id}");
                 }
             }
 
@@ -128,11 +132,11 @@ namespace ProjectC.Combat
                 if (!_targets.ContainsKey(id))
                 {
                     _targets[id] = nt;
-                    if (Debug.isDebugBuild) Debug.Log($"[CombatServer] RecoverExistingEntities: registered NpcTarget id={id}");
+                    if (_debugLog) Debug.Log($"[CombatServer] RecoverExistingEntities: registered NpcTarget id={id}");
                 }
             }
 
-            if (Debug.isDebugBuild)
+            if (_debugLog)
             {
                 Debug.Log($"[CombatServer] RecoverExistingEntities done: attackers={_attackers.Count}, targets={_targets.Count}");
             }
@@ -144,14 +148,14 @@ namespace ProjectC.Combat
         {
             if (attacker == null) return;
             _attackers[id] = attacker;
-            if (Debug.isDebugBuild) Debug.Log($"[CombatServer] Registered attacker id={id} ({attacker.GetType().Name})");
+            if (_debugLog) Debug.Log($"[CombatServer] Registered attacker id={id} ({attacker.GetType().Name})");
         }
 
         public void RegisterTarget(ulong id, IDamageTarget target)
         {
             if (target == null) return;
             _targets[id] = target;
-            if (Debug.isDebugBuild) Debug.Log($"[CombatServer] Registered target id={id} ({target.GetType().Name})");
+            if (_debugLog) Debug.Log($"[CombatServer] Registered target id={id} ({target.GetType().Name})");
         }
 
         public void UnregisterAttacker(ulong id)
@@ -208,12 +212,12 @@ namespace ProjectC.Combat
         {
             if (!_attackers.TryGetValue(attackerId, out var attacker))
             {
-                if (Debug.isDebugBuild) Debug.LogWarning($"[CombatServer] ResolveAttack: attacker {attackerId} not registered.");
+                if (_debugLog) Debug.LogWarning($"[CombatServer] ResolveAttack: attacker {attackerId} not registered.");
                 return;
             }
             if (!_targets.TryGetValue(targetId, out var target))
             {
-                if (Debug.isDebugBuild) Debug.LogWarning($"[CombatServer] ResolveAttack: target {targetId} not registered.");
+                if (_debugLog) Debug.LogWarning($"[CombatServer] ResolveAttack: target {targetId} not registered.");
                 return;
             }
             if (!target.IsAlive())
@@ -223,7 +227,7 @@ namespace ProjectC.Combat
             }
             if (!attacker.IsAlive())
             {
-                if (Debug.isDebugBuild) Debug.LogWarning($"[CombatServer] ResolveAttack: attacker {attackerId} not alive.");
+                if (_debugLog) Debug.LogWarning($"[CombatServer] ResolveAttack: attacker {attackerId} not alive.");
                 return;
             }
 
@@ -259,7 +263,7 @@ namespace ProjectC.Combat
             attacker.SetCooldown(source, now + source.GetCooldownSeconds());
 
             // === Damage log (verify) ===
-            if (Debug.isDebugBuild)
+            if (_debugLog)
             {
                 if (result.isHit)
                 {
@@ -331,7 +335,7 @@ namespace ProjectC.Combat
         {
             var rpcParams = new RpcParams { Send = new RpcSendParams { Target = RpcTarget.Single(clientId, RpcTargetUse.Temp) } };
             AttackErrorTargetRpc(clientId, code, rpcParams);
-            if (Debug.isDebugBuild) Debug.Log($"[CombatServer] AttackError → client={clientId}: {code}");
+            if (_debugLog) Debug.Log($"[CombatServer] AttackError → client={clientId}: {code}");
         }
 
         // === T-INP-03: Server-side skill cast resolution ===
@@ -350,13 +354,13 @@ namespace ProjectC.Combat
 
             if (!_attackers.TryGetValue(attackerId, out var attacker))
             {
-                if (Debug.isDebugBuild) Debug.LogWarning($"[CombatServer] ResolveSkillCast: attacker {attackerId} not registered.");
+                if (_debugLog) Debug.LogWarning($"[CombatServer] ResolveSkillCast: attacker {attackerId} not registered.");
                 return;
             }
 
             if (!attacker.IsAlive())
             {
-                if (Debug.isDebugBuild) Debug.LogWarning($"[CombatServer] ResolveSkillCast: attacker {attackerId} not alive.");
+                if (_debugLog) Debug.LogWarning($"[CombatServer] ResolveSkillCast: attacker {attackerId} not alive.");
                 return;
             }
 
@@ -369,7 +373,7 @@ namespace ProjectC.Combat
             }
             if (!skillsWorld.TryGetSkill(skillId, out var skillConfig) || skillConfig == null)
             {
-                if (Debug.isDebugBuild) Debug.LogWarning($"[CombatServer] ResolveSkillCast: skillId '{skillId}' not found.");
+                if (_debugLog) Debug.LogWarning($"[CombatServer] ResolveSkillCast: skillId '{skillId}' not found.");
                 SendErrorToClient(attackerId, "UnknownSkill");
                 return;
             }
@@ -419,7 +423,7 @@ namespace ProjectC.Combat
                     ProjectC.Combat.Core.TargetingService.DefaultMask,
                     out var hit, out var hp))
                 {
-                    if (Debug.isDebugBuild) Debug.Log($"[CombatServer] ResolveSkillCast: no target in range.");
+                    if (_debugLog) Debug.Log($"[CombatServer] ResolveSkillCast: no target in range.");
                     return;
                 }
                 else
@@ -440,7 +444,7 @@ namespace ProjectC.Combat
 
             if (results.Count == 0)
             {
-                if (Debug.isDebugBuild) Debug.Log($"[CombatServer] ResolveSkillCast: no targets in AOE for skill '{skillId}'.");
+                if (_debugLog) Debug.Log($"[CombatServer] ResolveSkillCast: no targets in AOE for skill '{skillId}'.");
                 return;
             }
 
@@ -463,7 +467,7 @@ namespace ProjectC.Combat
 
                 var result = DamageCalculator.Calculate(attacker, target, source, rangePolicy);
 
-                if (Debug.isDebugBuild)
+                if (_debugLog)
                 {
                     if (result.isHit)
                     {
@@ -492,7 +496,7 @@ namespace ProjectC.Combat
                 }
             }
 
-            if (Debug.isDebugBuild)
+            if (_debugLog)
             {
                 Debug.Log($"[CombatServer] ResolveSkillCast: skill='{skillId}' formula={skillConfig.aoeFormula} targets={results.Count} hits={hitsLanded} attacker={attackerId}");
             }

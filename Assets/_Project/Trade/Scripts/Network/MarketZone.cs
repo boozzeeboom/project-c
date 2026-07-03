@@ -34,6 +34,10 @@ namespace ProjectC.Trade.Network
         [Tooltip("MarketConfig ScriptableObject — определяет locationId, displayName и набор товаров.")]
         [SerializeField] private MarketConfig _marketConfig;
 
+        [Header("Debug")]
+        [Tooltip("Включить подробные логи в консоль.")]
+        [SerializeField] private bool _debugLog = false;
+
         [Header("Zone")]
         [SerializeField, Min(0.1f)] private float tradeRadius = 5f;
         [SerializeField, Min(0.1f)] private float shipDockRadius = 30f;
@@ -184,7 +188,7 @@ namespace ProjectC.Trade.Network
                         if (allPlayers[i].IsSpawned) spawned++;
                         if (allPlayers[i].IsOwner) owners++;
                     }
-                    Debug.Log($"[MarketZone:{LocationId}] DIAG PollLocalPlayerZone: FindLocalPlayer=null (total NetworkPlayers in scene={total}, IsSpawned={spawned}, IsOwner={owners})");
+                    if (_debugLog) Debug.Log($"[MarketZone:{LocationId}] DIAG PollLocalPlayerZone: FindLocalPlayer=null (total NetworkPlayers in scene={total}, IsSpawned={spawned}, IsOwner={owners})");
                 }
                 return;
             }
@@ -199,7 +203,7 @@ namespace ProjectC.Trade.Network
                 if (MarketZoneRegistry.LocalPlayerZone != this)
                 {
                     MarketZoneRegistry.LocalPlayerZone = this;
-                    Debug.Log($"[MarketZone:{LocationId}] client: local player entered zone (dist={dist:F1})");
+                    if (_debugLog) Debug.Log($"[MarketZone:{LocationId}] client: local player entered zone (dist={dist:F1})");
                 }
             }
             else
@@ -207,12 +211,12 @@ namespace ProjectC.Trade.Network
                 if (MarketZoneRegistry.LocalPlayerZone == this)
                 {
                     MarketZoneRegistry.LocalPlayerZone = null;
-                    Debug.Log($"[MarketZone:{LocationId}] client: local player left zone (dist={dist:F1})");
+                    if (_debugLog) Debug.Log($"[MarketZone:{LocationId}] client: local player left zone (dist={dist:F1})");
                 }
                 // DIAG: раз в ~5 сек, когда игрок ВНЕ зоны, логируем дистанцию
                 if (_diagTickCounter % 20 == 0)
                 {
-                    Debug.Log($"[MarketZone:{LocationId}] DIAG PollLocalPlayerZone: outside zone, dist={dist:F1}, tradeRadius={tradeRadius:F1}, localPlayerPos={localPlayer.transform.position}, zonePos={transform.position}");
+                    if (_debugLog) Debug.Log($"[MarketZone:{LocationId}] DIAG PollLocalPlayerZone: outside zone, dist={dist:F1}, tradeRadius={tradeRadius:F1}, localPlayerPos={localPlayer.transform.position}, zonePos={transform.position}");
                 }
             }
         }
@@ -254,7 +258,7 @@ namespace ProjectC.Trade.Network
                 if (_playersInZone.Add(id))
                 {
                     _missingTicks.Remove(id);
-                    Debug.Log($"[MarketZone:{LocationId}] server detected player in zone: clientId={id}");
+                    if (_debugLog) Debug.Log($"[MarketZone:{LocationId}] server detected player in zone: clientId={id}");
                 }
             }
             // FIX: debounce на diff-remove. Раньше удаляли за один тик — один
@@ -282,7 +286,7 @@ namespace ProjectC.Trade.Network
             {
                 _playersInZone.Remove(id);
                 _missingTicks.Remove(id);
-                Debug.Log($"[MarketZone:{LocationId}] server: player {id} left zone (after {MISS_THRESHOLD} missed polls)");
+                if (_debugLog) Debug.Log($"[MarketZone:{LocationId}] server: player {id} left zone (after {MISS_THRESHOLD} missed polls)");
             }
         }
 

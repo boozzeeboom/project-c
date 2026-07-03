@@ -49,6 +49,10 @@ namespace ProjectC.Ship.Cargo
         [Tooltip("Максимальное количество отображаемых ящиков (perf).")]
         [SerializeField] private int _maxVisibleBoxes = 50;
 
+        [Header("Debug")]
+        [Tooltip("Включить подробные логи в консоль.")]
+        [SerializeField] private bool _debugLog = false;
+
         [Header("Overflow")]
         [Tooltip("Показывать индикатор перегруза (красный мигающий ящик).")]
         [SerializeField] private bool _showOverflowIndicator = true;
@@ -232,14 +236,16 @@ namespace ProjectC.Ship.Cargo
             clientState.OnShipStateChanged += OnShipStateChanged;
             _subscribed = true;
 
-            Debug.Log($"[ShipCargoVisual] '{name}': subscribed. shipNetId={_shipNetId}, " +
-                      $"spawnZone={(_spawnZone != null)}, prefabs={(_boxPrefabs != null ? _boxPrefabs.Length : 0)}");
+            if (_debugLog)
+                Debug.Log($"[ShipCargoVisual] '{name}': subscribed. shipNetId={_shipNetId}, " +
+                          $"spawnZone={(_spawnZone != null)}, prefabs={(_boxPrefabs != null ? _boxPrefabs.Length : 0)}");
 
             var state = clientState.GetShipState(_shipNetId);
             if (state.HasValue)
             {
                 int realCargoUsed = state.Value.cargoUsed;
-                Debug.Log($"[ShipCargoVisual] '{name}': initial cargoUsed={realCargoUsed}, cargoMax={state.Value.cargoMax}");
+                if (_debugLog)
+                    Debug.Log($"[ShipCargoVisual] '{name}': initial cargoUsed={realCargoUsed}, cargoMax={state.Value.cargoMax}");
                 RefreshVisual(realCargoUsed);
                 SetOverflowVisible(realCargoUsed);
             }
@@ -277,7 +283,8 @@ namespace ProjectC.Ship.Cargo
             if (!state.HasValue) return;
 
             int realCargoUsed = state.Value.cargoUsed;
-            Debug.Log($"[ShipCargoVisual] '{name}': OnShipStateChanged cargoUsed={realCargoUsed} (current boxes={_currentBoxCount})");
+            if (_debugLog)
+                Debug.Log($"[ShipCargoVisual] '{name}': OnShipStateChanged cargoUsed={realCargoUsed} (current boxes={_currentBoxCount})");
             RefreshVisual(realCargoUsed);
             SetOverflowVisible(realCargoUsed);
         }

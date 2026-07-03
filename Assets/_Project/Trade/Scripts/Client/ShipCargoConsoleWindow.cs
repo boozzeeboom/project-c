@@ -45,6 +45,13 @@ namespace ProjectC.Trade.Client
         private Label _statusLabel;
         private bool _built;
 
+        // Qty buttons
+        private Button _invQtyMin, _invQtyMinus10, _invQtyMinus1, _invQtyPlus1, _invQtyPlus10, _invQtyMax;
+        private Button _cargoQtyMin, _cargoQtyMinus10, _cargoQtyMinus1, _cargoQtyPlus1, _cargoQtyPlus10, _cargoQtyMax;
+        private Label _invQtyLabel, _cargoQtyLabel;
+        private int _invQty = 1;
+        private int _cargoQty = 1;
+
         // Данные
         private readonly List<InvEntry> _invCache = new List<InvEntry>();
         private readonly List<CargoEntry> _cargoCache = new List<CargoEntry>();
@@ -138,6 +145,24 @@ namespace ProjectC.Trade.Client
             _closeBtn = _root.Q<Button>("close-btn");
             _statusLabel = _root.Q<Label>("status-label");
 
+            // Qty buttons — INV
+            _invQtyMin     = _root.Q<Button>("inv-qty-min");
+            _invQtyMinus10 = _root.Q<Button>("inv-qty-minus10");
+            _invQtyMinus1  = _root.Q<Button>("inv-qty-minus1");
+            _invQtyPlus1   = _root.Q<Button>("inv-qty-plus1");
+            _invQtyPlus10  = _root.Q<Button>("inv-qty-plus10");
+            _invQtyMax     = _root.Q<Button>("inv-qty-max");
+            _invQtyLabel   = _root.Q<Label>("inv-qty-label-value");
+
+            // Qty buttons — CARGO
+            _cargoQtyMin     = _root.Q<Button>("cargo-qty-min");
+            _cargoQtyMinus10 = _root.Q<Button>("cargo-qty-minus10");
+            _cargoQtyMinus1  = _root.Q<Button>("cargo-qty-minus1");
+            _cargoQtyPlus1   = _root.Q<Button>("cargo-qty-plus1");
+            _cargoQtyPlus10  = _root.Q<Button>("cargo-qty-plus10");
+            _cargoQtyMax     = _root.Q<Button>("cargo-qty-max");
+            _cargoQtyLabel   = _root.Q<Label>("cargo-qty-label-value");
+
             // Inventory ListView
             if (_invList != null)
             {
@@ -157,7 +182,7 @@ namespace ProjectC.Trade.Client
                     lbl.text = $"{entry.displayName}  ×{entry.count}  (→ {packs} ящ.)";
                 };
                 _invList.itemsSource = _invCache;
-                _invList.selectionChanged += _ => _selectedInvIndex = _invList.selectedIndex;
+                _invList.selectionChanged += _ => { _selectedInvIndex = _invList.selectedIndex; _invQty = 1; UpdateInvQtyLabel(); };
             }
 
             // Cargo ListView
@@ -179,13 +204,29 @@ namespace ProjectC.Trade.Client
                     lbl.text = $"{entry.displayName}  ×{entry.count}  (→ {unpacks * entry.rate.inventoryQty} шт.)";
                 };
                 _cargoList.itemsSource = _cargoCache;
-                _cargoList.selectionChanged += _ => _selectedCargoIndex = _cargoList.selectedIndex;
+                _cargoList.selectionChanged += _ => { _selectedCargoIndex = _cargoList.selectedIndex; _cargoQty = 1; UpdateCargoQtyLabel(); };
             }
 
             // De-dup подписок
             if (_storeBtn != null) { _storeBtn.clicked -= OnStoreClicked; _storeBtn.clicked += OnStoreClicked; }
             if (_retrieveBtn != null) { _retrieveBtn.clicked -= OnRetrieveClicked; _retrieveBtn.clicked += OnRetrieveClicked; }
             if (_closeBtn != null) { _closeBtn.clicked -= Hide; _closeBtn.clicked += Hide; }
+
+            // Qty button handlers — INV
+            if (_invQtyMin     != null) _invQtyMin.clicked     += () => SetInvQty(1);
+            if (_invQtyMinus10 != null) _invQtyMinus10.clicked += () => AdjustInvQty(-10);
+            if (_invQtyMinus1  != null) _invQtyMinus1.clicked  += () => AdjustInvQty(-1);
+            if (_invQtyPlus1   != null) _invQtyPlus1.clicked   += () => AdjustInvQty(1);
+            if (_invQtyPlus10  != null) _invQtyPlus10.clicked  += () => AdjustInvQty(10);
+            if (_invQtyMax     != null) _invQtyMax.clicked     += SetInvQtyMax;
+
+            // Qty button handlers — CARGO
+            if (_cargoQtyMin     != null) _cargoQtyMin.clicked     += () => SetCargoQty(1);
+            if (_cargoQtyMinus10 != null) _cargoQtyMinus10.clicked += () => AdjustCargoQty(-10);
+            if (_cargoQtyMinus1  != null) _cargoQtyMinus1.clicked  += () => AdjustCargoQty(-1);
+            if (_cargoQtyPlus1   != null) _cargoQtyPlus1.clicked   += () => AdjustCargoQty(1);
+            if (_cargoQtyPlus10  != null) _cargoQtyPlus10.clicked  += () => AdjustCargoQty(10);
+            if (_cargoQtyMax     != null) _cargoQtyMax.clicked     += SetCargoQtyMax;
 
             _built = true;
             SetVisible(false);
@@ -395,13 +436,13 @@ namespace ProjectC.Trade.Client
             var server = ShipCargoServer.Instance;
             if (server == null) { SetStatus("Сервер грузового отсека не доступен", false); return; }
 
-            // Отправляем rate.inventoryQty (кратно курсу, обычно 100)
-            int countToSend = entry.rate.inventoryQty;
-            if (countToSend > entry.count) countToSend = (entry.count / entry.rate.inventoryQty) * entry.rate.inventoryQty;
-            if (countToSend <= 0) { SetStatus($"Недостаточно для упаковки (нужно {entry.rate.inventoryQty})", false); return; }
+            int itemsToSend = _invQty * entry.rate.inventoryQty;
+            if (itemsToSend > entry.count) { SetStatus($"Недостаточно (есть {entry.count}, нужно {itemsToSend})", false); return; }
 
-            server.RequestStoreToCargoRpc(_shipNetId, entry.itemId, countToSend);
-            SetStatus($"Упаковка {entry.displayName} ×{countToSend} в трюм...", true);
+            server.RequestStoreToCargoRpc(_shipNetId, entry.itemId, itemsToSend);
+            int boxes = _invQty * entry.rate.warehouseQty;
+            SetStatus($"Упаковка {_invQty}× ({entry.displayName} ×{itemsToSend}) → {boxes} ящ. в трюм...", true);
+            _invQty = 1; UpdateInvQtyLabel();
         }
 
         private void OnRetrieveClicked()
@@ -417,13 +458,51 @@ namespace ProjectC.Trade.Client
             var server = ShipCargoServer.Instance;
             if (server == null) { SetStatus("Сервер грузового отсека не доступен", false); return; }
 
-            // Отправляем rate.warehouseQty (кратно курсу, обычно 1 ящик)
-            int countToSend = entry.rate.warehouseQty;
-            if (countToSend > entry.count) countToSend = (entry.count / entry.rate.warehouseQty) * entry.rate.warehouseQty;
-            if (countToSend <= 0) { SetStatus($"Недостаточно для распаковки (нужно {entry.rate.warehouseQty})", false); return; }
+            int boxesToSend = _cargoQty * entry.rate.warehouseQty;
+            if (boxesToSend > entry.count) { SetStatus($"Недостаточно (есть {entry.count}, нужно {boxesToSend})", false); return; }
 
-            server.RequestRetrieveFromCargoRpc(_shipNetId, entry.itemId, countToSend);
-            SetStatus($"Распаковка {entry.displayName} ×{countToSend} из трюма...", true);
+            server.RequestRetrieveFromCargoRpc(_shipNetId, entry.itemId, boxesToSend);
+            int items = _cargoQty * entry.rate.inventoryQty;
+            SetStatus($"Распаковка {_cargoQty}× ({entry.displayName} ×{boxesToSend}) → {items} шт. в инвентарь...", true);
+            _cargoQty = 1; UpdateCargoQtyLabel();
+        }
+
+        // ============================================================
+        // Qty adjustment (min/-10/-1/+1/+10/max)
+        // ============================================================
+
+        private void AdjustInvQty(int delta)
+        {
+            int max = GetInvQtyMax();
+            _invQty = Mathf.Clamp(_invQty + delta, 1, max);
+            UpdateInvQtyLabel();
+        }
+        private void SetInvQty(int v) { int max = GetInvQtyMax(); _invQty = Mathf.Clamp(v, 1, max); UpdateInvQtyLabel(); }
+        private void SetInvQtyMax() { _invQty = GetInvQtyMax(); UpdateInvQtyLabel(); }
+        private void UpdateInvQtyLabel() { if (_invQtyLabel != null) _invQtyLabel.text = _invQty.ToString(); }
+
+        private int GetInvQtyMax()
+        {
+            if (_selectedInvIndex < 0 || _selectedInvIndex >= _invCache.Count) return 1;
+            var entry = _invCache[_selectedInvIndex];
+            return entry.count / entry.rate.inventoryQty;
+        }
+
+        private void AdjustCargoQty(int delta)
+        {
+            int max = GetCargoQtyMax();
+            _cargoQty = Mathf.Clamp(_cargoQty + delta, 1, max);
+            UpdateCargoQtyLabel();
+        }
+        private void SetCargoQty(int v) { int max = GetCargoQtyMax(); _cargoQty = Mathf.Clamp(v, 1, max); UpdateCargoQtyLabel(); }
+        private void SetCargoQtyMax() { _cargoQty = GetCargoQtyMax(); UpdateCargoQtyLabel(); }
+        private void UpdateCargoQtyLabel() { if (_cargoQtyLabel != null) _cargoQtyLabel.text = _cargoQty.ToString(); }
+
+        private int GetCargoQtyMax()
+        {
+            if (_selectedCargoIndex < 0 || _selectedCargoIndex >= _cargoCache.Count) return 1;
+            var entry = _cargoCache[_selectedCargoIndex];
+            return entry.count / entry.rate.warehouseQty;
         }
 
         // ============================================================

@@ -22,8 +22,8 @@
     top: 4% !important;
     left: 50% !important;
     translate: -50% 0 !important;
-    width: 640px !important;
-    max-width: 92% !important;
+    width: 700px !important;
+    max-width: 94% !important;
     background-color: rgb(20, 25, 35) !important;
     border-width: 2px !important;
     border-color: rgb(60, 120, 200) !important;
@@ -38,7 +38,7 @@
     flex-direction: row !important;
     justify-content: space-between !important;
     align-items: center !important;
-    margin-bottom: 10px !important;
+    margin-bottom: 8px !important;
     flex-shrink: 0 !important;
 }
 
@@ -78,9 +78,9 @@
 }
 
 .cargo-console-col-header {
-    font-size: 14px !important;
+    font-size: 13px !important;
     color: rgb(140, 170, 220) !important;
-    margin-bottom: 6px !important;
+    margin-bottom: 4px !important;
     -unity-font-style: bold !important;
     flex-shrink: 0 !important;
 }
@@ -90,30 +90,65 @@
     flex-grow: 1 !important;
     flex-shrink: 1 !important;
     min-height: 0 !important;
-    height: 180px !important;
+    height: 150px !important;
     background-color: rgba(15, 18, 24, 0.6) !important;
     border-radius: 4px !important;
-    margin-bottom: 6px !important;
+    margin-bottom: 4px !important;
 }
 
-.cargo-console-list .unity-list-view__item {
-    padding: 4px 8px !important;
-    font-size: 13px !important;
+.cargo-console-list-item {
+    padding: 3px 6px !important;
+    font-size: 12px !important;
     color: rgb(200, 210, 230) !important;
 }
 
-.cargo-console-list .unity-list-view__item:hover {
-    background-color: rgba(60, 120, 200, 0.3) !important;
+/* Qty row */
+.cargo-qty-row {
+    flex-direction: row !important;
+    align-items: center !important;
+    justify-content: center !important;
+    flex-shrink: 0 !important;
+    margin-bottom: 4px !important;
 }
 
-.cargo-console-list .unity-list-view__item--selected {
-    background-color: rgba(60, 120, 200, 0.5) !important;
+.qty-btn {
+    width: 28px !important;
+    height: 20px !important;
+    font-size: 10px !important;
+    margin-left: 1px !important;
+    margin-right: 1px !important;
+    padding: 0 !important;
+    border-width: 1px !important;
+    border-radius: 3px !important;
+    -unity-text-align: middle-center !important;
+}
+
+.qty-btn-min  { background-color: rgba(180, 60, 60, 0.6) !important; color: white !important; }
+.qty-btn-max  { background-color: rgba(60, 160, 80, 0.6) !important; color: white !important; }
+.qty-btn-minus { background-color: rgba(60, 90, 140, 0.5) !important; color: rgb(180, 200, 230) !important; }
+.qty-btn-plus  { background-color: rgba(60, 90, 140, 0.5) !important; color: rgb(180, 200, 230) !important; }
+
+.qty-label {
+    font-size: 10px !important;
+    color: rgb(180, 190, 210) !important;
+    margin-left: 4px !important;
+    margin-right: 2px !important;
+}
+
+.qty-label-value {
+    font-size: 12px !important;
+    color: rgb(220, 230, 255) !important;
+    -unity-font-style: bold !important;
+    -unity-text-align: middle-center !important;
+    min-width: 24px !important;
+    margin-left: 2px !important;
+    margin-right: 2px !important;
 }
 
 /* Action buttons */
 .cargo-console-action-btn {
-    height: 30px !important;
-    font-size: 14px !important;
+    height: 28px !important;
+    font-size: 13px !important;
     background-color: rgb(50, 100, 170) !important;
     color: white !important;
     border-radius: 4px !important;
@@ -130,8 +165,8 @@
 .cargo-console-status {
     font-size: 12px !important;
     color: rgb(150, 170, 200) !important;
-    margin-top: 6px !important;
-    padding: 4px 8px !important;
+    margin-top: 4px !important;
+    padding: 3px 8px !important;
     background-color: rgba(15, 18, 24, 0.5) !important;
     border-radius: 4px !important;
     flex-shrink: 0 !important;

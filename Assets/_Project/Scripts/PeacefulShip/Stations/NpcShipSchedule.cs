@@ -72,6 +72,21 @@ namespace ProjectC.PeacefulShip.Stations
                  "Пустой/null конфиг = NPC ничего не грузит (поведение как до эпика, M3.2 no-op Loading).")]
         public NpcCargoTradeListConfig cargoTrade = new NpcCargoTradeListConfig();
 
+        /// <summary>
+        /// T-CARGO-NPC-01: lazy accessor — гарантирует что cargoTrade != null И buyItems заполнены
+        /// (если scheduleId матчит пресет). Вызывается из NpcShipController.RunDwellCargoTrade
+        /// перед передачей в NpcCargoService. Надёжнее, чем OnEnable: работает даже если
+        /// SO был загружен до добавления auto-fill логики в код.
+        /// </summary>
+        public NpcCargoTradeListConfig GetOrInitCargoTrade()
+        {
+            if (cargoTrade == null)
+                cargoTrade = new NpcCargoTradeListConfig();
+            if (cargoTrade.buyItems == null || cargoTrade.buyItems.Length == 0)
+                TryAutoFillBuyItems();
+            return cargoTrade;
+        }
+
         // T-CARGO-NPC-01: legacy asset'ы (созданные до эпика) имеют cargoTrade=null после десериализации.
         // OnEnable — Unity hook, вызывается при load SO. Восстанавливаем default.
         // Также auto-fill buyItems дефолтным набором, чтобы NPC возил груз сразу после

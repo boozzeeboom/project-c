@@ -369,7 +369,7 @@ namespace ProjectC.PeacefulShip.Stations
                     rb.isKinematic = false;
                     ship.ExitDocked();
                     _scheduleAdvancedAfterDock = false;
-                    _cargoTradeDone = false; // сброс для следующего docking
+                    // _cargoTradeDone сбрасывается в SetMode(Docked) — здесь не нужно.
                     SetMode(NavMode.Lifting);
                     return;
                 }
@@ -402,6 +402,13 @@ namespace ProjectC.PeacefulShip.Stations
             CurrentMode = m;
             if (m == NavMode.Docked) {
                 DockedSinceTime = Time.time;
+                // T-CARGO-NPC-01: сбрасываем _cargoTradeDone в false при КАЖДОМ входе в Docked.
+                // Без этого флаг остался бы = true с момента инициализации (default)
+                // и trade никогда бы не выполнился на первом docking'е.
+                // Сбрасываем здесь, а не в Lifting-блоке (старый код), потому что SetMode(Docked)
+                // вызывается из разных путей: из Berthing (нормальный) и из isDocked sync guard
+                // (если NPC родился уже docked).
+                _cargoTradeDone = false;
                 if (old == NavMode.Berthing) {
                     _scheduleAdvancedAfterDock = false; // после полёта — advance на след тике
                     AdvanceScheduleForCurrentNpc();
@@ -615,11 +622,20 @@ namespace ProjectC.PeacefulShip.Stations
         // Делегирует всю работу NpcCargoService.RunDwellTrade (D31: unload → load).
         // Backward compat: если schedule.cargoTrade == null → no-op (старое M3.2 поведение).
         void RunDwellCargoTrade() {
-            if (NpcCargoService.Instance == null) return;
+            if (NpcCargoService.Instance == null) {
+                Debug.LogWarning($"[NpcShipController:NPC:{npcInstanceId:X}] T-CARGO-NPC-01 SKIP: NpcCargoService.Instance==null");
+                return;
+            }
             var schedule = NpcShipWorld.Instance?.GetSchedule(npcInstanceId);
-            if (schedule == null) return;
-            var trade = schedule.cargoTrade;
-            if (trade == null) return; // M3.2 backward compat
+            if (schedule == null) {
+                Debug.LogWarning($"[NpcShipController:NPC:{npcInstanceId:X}] T-CARGO-NPC-01 SKIP: schedule==null");
+                return;
+            }
+
+            // T-CARGO-NPC-01 fix #2 (2026-07-03): lazy-init через GetOrInitCargoTrade().
+            // Работает даже если SO был загружен до auto-fill логики (OnEnable пропустил).
+            var trade = schedule.GetOrInitCargoTrade();
+            if (trade == null) return; // M3.2 backward compat (недостижимо — GetOrInit всегда != null)
 
             var state = NpcShipWorld.Instance?.GetNpc(npcInstanceId);
             if (state == null) return;
@@ -632,10 +648,20 @@ namespace ProjectC.PeacefulShip.Stations
             // (откуда летим дальше), а CurrentRoute.toLocationId = следующая.
             // Берём fromLocationId (post-advance), иначе будем торговать на чужой станции.
             string locationId = state.CurrentRoute.fromLocationId;
-            if (string.IsNullOrEmpty(locationId)) return;
+            if (string.IsNullOrEmpty(locationId)) {
+                Debug.LogWarning($"[NpcShipController:NPC:{npcInstanceId:X}] T-CARGO-NPC-01 SKIP: locationId empty " +
+                                 $"(route.from='{state.CurrentRoute.fromLocationId}' route.to='{state.CurrentRoute.toLocationId}', " +
+                                 $"scheduleId='{schedule.scheduleId}')");
+                return;
+            }
 
             // ShipClass — из ResolvedCargoClass (для CargoData/CargoLimits).
             var shipClass = ship.ResolvedCargoClass;
+
+            int buyItemCount = trade.buyItems != null ? trade.buyItems.Length : 0;
+            Debug.Log($"[NpcShipController:NPC:{npcInstanceId:X}] T-CARGO-NPC-01 DwellTrade START: loc='{locationId}' " +
+                      $"shipClass={shipClass} buyItems={buyItemCount} sellAll={trade.sellAllOnArrival} " +
+                      $"buyConfigured={trade.buyConfiguredItemsAfterSell} unlimited={trade.useUnlimitedCredits}");
 
             NpcCargoService.Instance.RunDwellTrade(
                 npcInstanceId, ship.NetworkObjectId, shipClass, locationId, trade);

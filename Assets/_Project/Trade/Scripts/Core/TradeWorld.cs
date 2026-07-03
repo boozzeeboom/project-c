@@ -69,6 +69,42 @@ namespace ProjectC.Trade.Core
         //   3. Минимальный surface change — существующий TryBuy/TrySell контракт НЕ ломается.
         //   4. Symmetric: TryNpcBuy (market.stock → cargo) + TryNpcSell (cargo → market.stock).
         // ========================================================
+        // Проверка доступа к рынку (T-CARGO-NPC-01 fix #4, 2026-07-03):
+        //   - Для ИГРОКА: MarketServer.RequestBuyRpc → MarketZone.IsPlayerInZone(clientId)
+        //     (радиус Zone.TradeRadius, обычно ~50м).
+        //   - Для NPC: MarketZone не используется (NPC не имеет clientId).
+        //     Доступ гарантируется FSM-инвариантом: NpcShipController.NavTick вызывает
+        //     RunDwellCargoTrade ТОЛЬКО из блока CurrentMode == Docked, где
+        //     ShipController.IsDocked == true (т.е. NPC физически на паде станции).
+        //     Доп. guard ниже — defense-in-depth на случай прямого вызова из неправильного места.
+        // ========================================================
+
+        /// <summary>
+        /// Server-only: проверить, что NPC-корабль реально docked на станции с этим locationId.
+        /// Использует ShipController.IsDocked (физический контакт с падом) + lookup станции
+        /// через DockingZoneRegistry (станция docked-корабля == станция с этим locationId).
+        /// Returns: true если NPC на паде станции с этим locationId.
+        /// </summary>
+        public static bool IsNpcDockedAtStation(ulong npcShipNetworkObjectId, string locationId)
+        {
+            if (npcShipNetworkObjectId == 0 || string.IsNullOrEmpty(locationId)) return false;
+            var nm = Unity.Netcode.NetworkManager.Singleton;
+            if (nm == null || nm.SpawnManager == null) return false;
+            if (!nm.SpawnManager.SpawnedObjects.TryGetValue(npcShipNetworkObjectId, out var no)) return false;
+            if (no == null) return false;
+            var ship = no.GetComponent<Player.ShipController>();
+            if (ship == null || !ship.IsDocked) return false;
+            // Смотрим станцию docked-корабля
+            var station = Docking.Network.DockingZoneRegistry.GetByLocation(locationId);
+            if (station == null) return false;
+            // ship.transform.position в радиусе станции (ShipDockRadius) — здесь простая
+            // distance-check, потому что у нас уже есть IsDocked (физический контакт с падом).
+            // Если IsDocked == true, NPC на паде. Доп. distance-check для over-engineering-safety.
+            // Reuse static const (если есть) или hardcode 100m (типичный max радиус станции).
+            const float kMaxStationRadiusM = 200f; // 2× типичного ShipDockRadius
+            float distSq = (ship.transform.position - station.transform.position).sqrMagnitude;
+            return distSq <= kMaxStationRadiusM * kMaxStationRadiusM;
+        }
 
         /// <summary>
         /// NPC-курьер покупает qty единиц itemId с рынка locationId в cargo своего корабля.
@@ -96,6 +132,13 @@ namespace ProjectC.Trade.Core
                 return TradeResult.Fail(TradeResultCode.MarketNotFound, $"market '{locationId}' not found", 0f, null, null);
             if (npcClientId == 0)
                 return TradeResult.Fail(TradeResultCode.InvalidArgs, "npcClientId==0 reserved for server", 0f, null, null);
+
+            // T-CARGO-NPC-01 fix #4 (2026-07-03): defense-in-depth — проверить что NPC
+            // физически docked на станции с этим locationId. FSM должна это гарантировать
+            // (RunDwellCargoTrade вызывается только из Docked-блока), но на случай
+            // будущих изменений — явный guard. Стоит ~0.01ms.
+            if (!IsNpcDockedAtStation(npcShipNetworkObjectId, locationId))
+                return TradeResult.Fail(TradeResultCode.NotInZone, $"npc {npcShipNetworkObjectId} not docked at station '{locationId}'", 0f, null, null);
 
             var market = _markets[locationId];
             var item = market.GetItem(itemId);
@@ -177,6 +220,10 @@ namespace ProjectC.Trade.Core
                 return TradeResult.Fail(TradeResultCode.MarketNotFound, $"market '{locationId}' not found", 0f, null, null);
             if (npcClientId == 0)
                 return TradeResult.Fail(TradeResultCode.InvalidArgs, "npcClientId==0 reserved for server", 0f, null, null);
+
+            // T-CARGO-NPC-01 fix #4 (2026-07-03): см. TryNpcBuy — defense-in-depth.
+            if (!IsNpcDockedAtStation(npcShipNetworkObjectId, locationId))
+                return TradeResult.Fail(TradeResultCode.NotInZone, $"npc {npcShipNetworkObjectId} not docked at station '{locationId}'", 0f, null, null);
 
             var market = _markets[locationId];
             var item = market.GetItem(itemId);

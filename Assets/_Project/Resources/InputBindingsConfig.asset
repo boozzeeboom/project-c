@@ -155,3 +155,8 @@ MonoBehaviour:
     mouseButtonRaw: 0
     key: 60
     displayName: Esc
+  - action: 22
+    category: 2
+    mouseButtonRaw: 0
+    key: 2
+    displayName: Enter

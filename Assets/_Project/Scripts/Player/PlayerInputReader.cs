@@ -37,6 +37,9 @@ namespace ProjectC.Player
         // Делегат: () => void. Никаких параметров — handler сам решает.
         public event System.Action OnAttackPressed;
 
+        // ENGINE-STATE: запуск/остановка двигателя (Enter)
+        public event System.Action OnShipToggleEnginePressed;
+
         // Состояние ввода
         private Vector2 _moveInput;
         private bool _jumpPressed;
@@ -125,6 +128,12 @@ namespace ProjectC.Player
                 {
                     OnMouseDelta?.Invoke(_mouseDelta);
                 }
+            }
+
+            // ===== SHIP TOGGLE ENGINE (Enter) — ENGINE-STATE =====
+            if (Keyboard.current != null && Keyboard.current.enterKey.wasPressedThisFrame)
+            {
+                OnShipToggleEnginePressed?.Invoke();
             }
 
             // ===== ATTACK (T-INP-04) — ЛКМ + K, parallel к legacy =====

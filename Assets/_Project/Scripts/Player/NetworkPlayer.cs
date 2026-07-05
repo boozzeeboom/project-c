@@ -641,6 +641,16 @@ namespace ProjectC.Player
                     _currentShip.SendShipInput(thrust, yaw, pitch, vertical, boost);
                 }
 
+                // ENGINE-STATE: Enter — запуск/остановка двигателя (только в кресле пилота)
+                if (IsActionJustPressed(InputBindingsConfig.GameAction.ShipToggleEngine))
+                {
+                    if (_currentShip != null && _currentShip.IsSpawned
+                        && NetworkManager.Singleton != null && NetworkManager.Singleton.IsListening)
+                    {
+                        _currentShip.ToggleEngineServerRpc();
+                    }
+                }
+
                 // E в корабле — пока ничего
                 if (IsActionJustPressed(InputBindingsConfig.GameAction.Interact) && Keyboard.current.qKey.isPressed == false)
                 {
@@ -987,8 +997,8 @@ namespace ProjectC.Player
                 // Выход из корабля
                 if (_currentShip == null) return;
 
-                // Проверка: можно ли выйти
-                if (!_currentShip.IsGrounded && _currentShip.CurrentSpeed > 2f) return;
+                // ENGINE-STATE: выход разрешён всегда, независимо от скорости.
+                // Двигатель остаётся в текущем состоянии (вкл/выкл).
 
                 // Телепорт на палубу
                 transform.position = _currentShip.GetExitPosition();

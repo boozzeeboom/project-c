@@ -68,6 +68,17 @@ namespace ProjectC.Player
         private readonly NetworkVariable<bool> _netIsDocked = new NetworkVariable<bool>(
             false, NetworkVariableReadPermission.Everyone, NetworkVariableWritePermission.Server);
 
+        // ENGINE-STATE: состояние двигателя (включён/выключен).
+        /// <summary>Сервер-авторитативный NetworkVariable: запущен ли двигатель.</summary>
+        private readonly NetworkVariable<bool> _netEngineRunning = new NetworkVariable<bool>(
+            false, NetworkVariableReadPermission.Everyone, NetworkVariableWritePermission.Server);
+
+        /// <summary>Локальный кеш _netEngineRunning (server-only).</summary>
+        private bool _engineRunning = false;
+
+        /// <summary>Публичный геттер. Клиент видит NetworkVariable, сервер — локальный кеш.</summary>
+        public bool IsEngineRunning => _netEngineRunning.Value;
+
         /// <summary>Быстрый геттер (локальное значение, синхронизированное).</summary>
         public bool IsDocked => _netIsDocked.Value;
 
@@ -116,6 +127,7 @@ namespace ProjectC.Player
                     if (!IsServer) return;
                     if (_netIsDocked.Value) return;   // T-DOCK-09: docked-blocks
                     if (_rb == null || _rb.isKinematic) return;  // safety
+                    if (!_engineRunning && !_hasNpcPilot) return; // ENGINE-STATE: двигатель выключен
 
                     _sumThrust += thrust;
                     _sumYaw += yaw;
@@ -134,6 +146,49 @@ namespace ProjectC.Player
                 {
                     if (!IsServer) return;
                     _hasNpcPilot = enable;
+                }
+
+                // === ENGINE-STATE: запуск/остановка двигателя ===
+
+                /// <summary>
+                /// Сервер-only: установить состояние двигателя.
+                /// Вызывается из ToggleEngineServerRpc и NpcShipController.
+                /// </summary>
+                public void SetEngineRunning(bool value)
+                {
+                    if (!IsServer) return;
+                    _engineRunning = value;
+                    _netEngineRunning.Value = value;
+                    if (_debugLog) Debug.Log($"[ShipController:{name}] Engine {(value ? "ON" : "OFF")}");
+                }
+
+                /// <summary>
+                /// ServerRpc: переключить двигатель (только для текущего пилота).
+                /// При включении тратит startEngineConsumption топлива.
+                /// При недостатке топлива — двигатель не включается.
+                /// </summary>
+                [Rpc(SendTo.Server)]
+                public void ToggleEngineServerRpc(RpcParams rpcParams = default)
+                {
+                    if (!_pilots.Contains(rpcParams.Receive.SenderClientId)) return;
+
+                    if (_engineRunning)
+                    {
+                        SetEngineRunning(false);
+                        return;
+                    }
+
+                    // Включение — проверка топлива
+                    if (fuelSystem != null)
+                    {
+                        float cost = fuelSystem.MaxFuel * fuelSystem.StartEngineConsumption;
+                        if (!fuelSystem.ConsumeFuel(cost))
+                        {
+                            if (_debugLog) Debug.Log($"[ShipController:{name}] Engine start FAILED: not enough fuel (need {cost:F1}, have {fuelSystem.CurrentFuel:F1})");
+                            return;
+                        }
+                    }
+                    SetEngineRunning(true);
                 }
 
         [Header("Тяга")]
@@ -885,7 +940,16 @@ namespace ProjectC.Player
             if (IsServer) UpdateTelemetryState();
 
             if (!IsServer) return;
-            if (_pilots.Count == 0 && !_hasNpcPilot) return;  // T-NS01 (Q2): NPC-pilot bypasses pilot gate
+
+            // ENGINE-STATE: если двигатель выключен И нет NPC-пилота.
+            // Если пилотов нет — чистый return (корабль падает сам).
+            // Если пилоты есть — обнуляем ввод, antiGravity будет пропущен.
+            if (!_engineRunning && !_hasNpcPilot)
+            {
+                if (_pilots.Count == 0) return;
+                // Пилоты есть, но двигатель выключен — обнуляем ввод.
+                // antiGravity пропускается в ApplyAntiGravity().
+            }
 
             // M3.2: если NPC-pilot активен и нет пилотов-игроков — вся физика через NavTick.
             // ShipController.ApplyServerInput -> SmoothDamp -> AddTorque(ForceMode.Force)
@@ -893,15 +957,25 @@ namespace ProjectC.Player
             // NavTick управляет Rigidbody напрямую: MoveRotation + linearVelocity.
             if (_hasNpcPilot && _pilots.Count == 0) return;
 
+            // IDLE: двигатель включён, пилотов нет, NPC нет — корабль завис.
+            // antiGravity работает, idle топливо тратится, ветер применяется.
+            bool isIdle = _engineRunning && _pilots.Count == 0 && !_hasNpcPilot;
+
             float dt = Time.fixedDeltaTime;
 
             // 1. Усредняем ввод от всех пилотов
             int n = Mathf.Max(1, _inputCount);
-            float avgThrust = _sumThrust / n;
-            float avgYaw = _sumYaw / n;
-            float avgPitch = _sumPitch / n;
-            float avgVertical = _sumVertical / n;
-            bool anyBoost = _boostCount > 0;
+            float avgThrust = isIdle ? 0f : _sumThrust / n;
+            float avgYaw = isIdle ? 0f : _sumYaw / n;
+            float avgPitch = isIdle ? 0f : _sumPitch / n;
+            float avgVertical = isIdle ? 0f : _sumVertical / n;
+            bool anyBoost = isIdle ? false : _boostCount > 0;
+
+            // Если двигатель выключен — обнуляем ввод принудительно
+            if (!_engineRunning && !_hasNpcPilot)
+            {
+                avgThrust = 0f; avgYaw = 0f; avgPitch = 0f; avgVertical = 0f; anyBoost = false;
+            }
 
             // 1.5. Применяем модификаторы модулей (Сессия 4)
             ApplyModuleModifiers();
@@ -922,6 +996,19 @@ namespace ProjectC.Player
                 avgPitch = 0f;
                 avgVertical = 0f;
                 anyBoost = false;
+
+                // ENGINE-STATE: авто-выключение при пустом топливе
+                if (_engineRunning && fuelSystem.IsEmpty)
+                {
+                    SetEngineRunning(false);
+                    if (_debugLog) Debug.Log($"[ShipController:{name}] Engine auto-OFF: fuel depleted");
+                }
+            }
+
+            // ENGINE-STATE: idle расход топлива (двигатель включён, ввода нет)
+            if (_engineRunning && !_hasNpcPilot && fuelSystem != null && !engineStalled && isIdle)
+            {
+                fuelSystem.ConsumeFuel(fuelSystem.IdleConsumptionRate * dt);
             }
 
             // 1.8. Атмосферная дозаправка (клавиша L, Сессия 5)
@@ -1189,6 +1276,8 @@ namespace ProjectC.Player
         private void ApplyAntiGravity()
         {
             if (antiGravity <= 0f) return;
+            // ENGINE-STATE: без двигателя (и без NPC) — не компенсируем гравитацию
+            if (!_engineRunning && !_hasNpcPilot) return;
             float gravityCompensation = _rb.mass * Mathf.Abs(Physics.gravity.y) * antiGravity;
             _rb.AddForce(Vector3.up * gravityCompensation, ForceMode.Force);
         }
@@ -1508,7 +1597,8 @@ namespace ProjectC.Player
         private void RemovePilotRpc(ulong clientId, RpcParams rpcParams = default)
         {
             _pilots.Remove(clientId);
-            if (_pilots.Count == 0) enabled = false;
+            // ENGINE-STATE: не глушим enabled — idle-режим или NPC
+            // должны продолжать работу. FixedUpdate gate сам разрулит.
         }
 
         /// <summary>

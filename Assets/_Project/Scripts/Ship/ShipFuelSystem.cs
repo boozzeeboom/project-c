@@ -41,6 +41,14 @@ namespace ProjectC.Ship
         [Tooltip("Скорость восстановления топлива на idle (тяга = 0)")]
         [SerializeField] private float fuelRegenRate = 0.3f;
 
+        [Header("Запуск двигателя")]
+        [Tooltip("Расход топлива при запуске двигателя (доля от maxFuel, 0..1)")]
+        [SerializeField] [Range(0f, 1f)] private float startEngineConsumption = 0.10f;
+
+        [Header("Холостой ход")]
+        [Tooltip("Расход топлива в секунду когда двигатель включён, но ввода нет")]
+        [SerializeField] private float idleConsumptionRate = 0.05f;
+
         [Header("Атмосферная дозаправка (клавиша L)")]
         [Tooltip("Скорость дозаправки из атмосферы (fuel/s)")]
         [SerializeField] private float atmosphericRefuelRate = 2.0f;
@@ -85,6 +93,16 @@ namespace ProjectC.Ship
         /// Скорость атмосферной дозаправки (для HUD).
         /// </summary>
         public float AtmosphericRefuelRate => atmosphericRefuelRate;
+
+        /// <summary>
+        /// Доля топлива, расходуемая при запуске двигателя (0..1).
+        /// </summary>
+        public float StartEngineConsumption => startEngineConsumption;
+
+        /// <summary>
+        /// Расход топлива в секунду на холостом ходу.
+        /// </summary>
+        public float IdleConsumptionRate => idleConsumptionRate;
 
         /// <summary>
         /// Идёт ли сейчас атмосферная дозаправка.

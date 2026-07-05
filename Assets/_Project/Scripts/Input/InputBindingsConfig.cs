@@ -111,6 +111,9 @@ namespace ProjectC.Input
 
             // UI
             CloseTopPanel,   // Esc
+
+            // Ship (продолжение — новые действия добавлять ТОЛЬКО в конец, не ломать сериализацию!)
+            ShipToggleEngine, // ENTER — запуск/остановка двигателя
         }
 
         /// <summary>
@@ -169,6 +172,9 @@ namespace ProjectC.Input
 
             // ---- UI ----
             new ActionBinding { action = GameAction.CloseTopPanel,  category = ActionCategory.UI, key = Key.Escape, mouseButtonRaw = 0, displayName = "Esc" },
+
+            // ---- Ship (продолжение) — новые действия в конец, не ломать сериализацию! ----
+            new ActionBinding { action = GameAction.ShipToggleEngine,   category = ActionCategory.Ship, key = Key.Enter,    mouseButtonRaw = 0, displayName = "Enter" },
         };
 
         // ==================== Helper Lookup ====================

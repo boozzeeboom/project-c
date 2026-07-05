@@ -110,6 +110,8 @@ namespace ProjectC.PeacefulShip.Stations
             if (ship != null)
             {
                 ship.EnableNpcPilot(true);
+                // ENGINE-STATE: NPC всегда с включённым двигателем
+                ship.SetEngineRunning(true);
             }
             else
             {
@@ -333,6 +335,8 @@ namespace ProjectC.PeacefulShip.Stations
             {
                 // Игрок только что вышел — возвращаем NPC-автопилот
                 _playerControlled = false;
+                // ENGINE-STATE: NPC всегда восстанавливает включённый двигатель
+                ship.SetEngineRunning(true);
                 if (debugMode) Debug.Log($"[NpcShipController:NPC:{npcInstanceId:X}] Player released control — NPC autopilot resuming");
                 if (CurrentMode == NavMode.Docked && !ship.IsDocked) SetMode(NavMode.Cruising);
                 var resumeStation = ResolveTargetStation();

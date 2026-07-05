@@ -62,6 +62,9 @@ namespace ProjectC.Ship.UI
         private VisualElement _refuelDot;   // зелёный кружок при заправке
         private Label _refuelLabel;          // "REFUEL +2.0/s"
 
+        // ENGINE-STATE: статус двигателя под топливом (K3-c)
+        private Label _engineStatusLabel;
+
         // S-HUD-03c: Flight column (K2) — 4 строки LIFT/TURN/PITCH/BANK
         // Каждый элемент — массив [lift, turn, pitch, bank]
         private Label[] _flightLabels;     // левая часть "LIFT" / "TURN" / ...
@@ -365,6 +368,14 @@ namespace ProjectC.Ship.UI
             refuelRow.Add(_refuelLabel);
 
             _colSpeed.Add(refuelRow);
+
+            // ── ENGINE STATUS (под FUEL/REFUEL) ──
+            _engineStatusLabel = new Label { name = "engine-status" };
+            _engineStatusLabel.text = "ENGINE OFF";
+            _engineStatusLabel.style.fontSize = 8;
+            _engineStatusLabel.style.unityTextAlign = TextAnchor.MiddleCenter;
+            _engineStatusLabel.style.marginTop = 2;
+            _colSpeed.Add(_engineStatusLabel);
         }
 
         /// <summary>
@@ -417,6 +428,16 @@ namespace ProjectC.Ship.UI
                         _refuelLabel.text = $"REFUEL +{fs.AtmosphericRefuelRate:F1}/s";
                     }
                 }
+            }
+
+            // ── ENGINE STATUS ──
+            if (_engineStatusLabel != null)
+            {
+                bool engineOn = ship.IsEngineRunning;
+                _engineStatusLabel.text = engineOn ? "ENGINE ON" : "ENGINE OFF";
+                _engineStatusLabel.style.color = engineOn
+                    ? new Color(0.31f, 0.78f, 0.47f)   // зелёный
+                    : new Color(0.86f, 0.31f, 0.31f);   // красный
             }
         }
 

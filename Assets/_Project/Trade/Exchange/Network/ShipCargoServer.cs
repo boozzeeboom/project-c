@@ -21,6 +21,7 @@
 using System.Collections.Generic;
 using ProjectC.Items;
 using ProjectC.Player;
+using ProjectC.Ship.Key;
 using ProjectC.Trade.Config;
 using ProjectC.Trade.Core;
 using ProjectC.Trade.Dto;
@@ -107,6 +108,13 @@ namespace ProjectC.Trade.Network
                 if (ship == null)
                 {
                     SendResult(clientId, CreateFailResult("Корабль не найден", 0));
+                    return;
+                }
+
+                // P5: ownership guard — только владелец может грузить в трюм
+                if (!KeyRodInstanceWorld.IsOwnerOfShip(clientId, shipNetId))
+                {
+                    SendResult(clientId, CreateFailResult("Вы не владелец этого корабля", 0));
                     return;
                 }
 
@@ -227,6 +235,13 @@ namespace ProjectC.Trade.Network
                 if (ship == null)
                 {
                     SendResult(clientId, CreateFailResult("Корабль не найден", 1));
+                    return;
+                }
+
+                // P5: ownership guard — только владелец может разгружать трюм
+                if (!KeyRodInstanceWorld.IsOwnerOfShip(clientId, shipNetId))
+                {
+                    SendResult(clientId, CreateFailResult("Вы не владелец этого корабля", 1));
                     return;
                 }
 

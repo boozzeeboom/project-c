@@ -1,5 +1,6 @@
 using System.Collections.Generic;
 using ProjectC.Player;
+using ProjectC.Ship.Key;
 using ProjectC.Trade.Config;
 using ProjectC.Trade.Core;
 using ProjectC.Trade.Dto;
@@ -170,6 +171,12 @@ namespace ProjectC.Trade.Network
                 SendTradeResultToOwner(clientId, TradeResultDto_Fail(TradeResultCode.ShipNotInZone, TradeOp.LoadToShip, locationId, itemId, quantity, shipNetworkObjectId, clientId, 0));
                 return;
             }
+            // P5: ownership guard — только владелец может грузить на корабль
+            if (!KeyRodInstanceWorld.IsOwnerOfShip(clientId, shipNetworkObjectId))
+            {
+                SendTradeResultToOwner(clientId, TradeResultDto_Fail(TradeResultCode.NotOwner, TradeOp.LoadToShip, locationId, itemId, quantity, shipNetworkObjectId, clientId, 0));
+                return;
+            }
             var shipClass = ResolveShipClass(shipNetworkObjectId);
             var r = TradeWorld.Instance.TryLoadToShip(clientId, locationId, itemId, quantity, shipNetworkObjectId, shipClass);
             var dto = BuildTradeResultDto(r, TradeOp.LoadToShip, locationId, itemId, quantity, shipNetworkObjectId, clientId);
@@ -190,6 +197,12 @@ namespace ProjectC.Trade.Network
             if (!zone.IsShipInZone(shipNetworkObjectId))
             {
                 SendTradeResultToOwner(clientId, TradeResultDto_Fail(TradeResultCode.ShipNotInZone, TradeOp.UnloadFromShip, locationId, itemId, quantity, shipNetworkObjectId, clientId, 0));
+                return;
+            }
+            // P5: ownership guard — только владелец может разгружать корабль
+            if (!KeyRodInstanceWorld.IsOwnerOfShip(clientId, shipNetworkObjectId))
+            {
+                SendTradeResultToOwner(clientId, TradeResultDto_Fail(TradeResultCode.NotOwner, TradeOp.UnloadFromShip, locationId, itemId, quantity, shipNetworkObjectId, clientId, 0));
                 return;
             }
             var shipClass = ResolveShipClass(shipNetworkObjectId);

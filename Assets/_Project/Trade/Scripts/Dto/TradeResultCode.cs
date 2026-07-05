@@ -37,6 +37,9 @@ namespace ProjectC.Trade
         CargoFullVolume = 34,
         CargoFullSlots = 35,
 
+        // Безопасность
+        NotOwner = 36,
+
         // Финансы
         InsufficientCredits = 40,
     }

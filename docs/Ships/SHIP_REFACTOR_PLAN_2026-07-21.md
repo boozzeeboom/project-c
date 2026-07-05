@@ -23,7 +23,6 @@
 | **P3** | Обновление документации | 2h → **done** | P1, P2 | ✅ Complete (2026-07-21) |
 | **P4** | L1 Customisation (Module Visual) | 8h → **done** | — | ✅ Complete (2026-07-21) |
 | **P5** | Cargo ownership/security | 4h | — | 🟡 Mid |
-| **P6** | Визуализация + polish | 6h | P1, P4 | 🟢 Mid |
 
 **Total effort:** ~36 часов (4.5 рабочих дней)
 

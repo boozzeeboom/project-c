@@ -15,6 +15,27 @@ namespace ProjectC.Ship
     }
 
     /// <summary>
+    /// Ориентация визуала модуля относительно reference-вектора.
+    /// </summary>
+    public enum ModuleAttachAxis
+    {
+        Slot,        // Локальная ориентация слота (default)
+        ShipForward, // Вдоль forward-вектора корабля
+        ShipDown,    // Вниз (к земле)
+        WorldUp      // Мировой вверх
+    }
+
+    /// <summary>
+    /// Режим коллайдеров на визуале модуля.
+    /// </summary>
+    public enum ModuleColliderMode
+    {
+        None,    // Все коллайдеры отключены (как у персонажа, default)
+        Trigger, // Коллайдеры → isTrigger (для raycast)
+        Solid    // Коллайдеры включены, влияют на физику
+    }
+
+    /// <summary>
     /// ShipModule — ScriptableObject определяющий модуль корабля.
     /// Модули устанавливаются в слоты и изменяют характеристики корабля.
     /// Сессия 4: Module System Foundation.
@@ -99,6 +120,28 @@ namespace ProjectC.Ship
 
         [Tooltip("Стоимость топлива за активацию")]
         public float meziyFuelCost = 0f;
+
+        [Header("Visual (L1 — module visualPrefab)")]
+        [Tooltip("Префаб меша модуля. При install — спавнится как child слота; при remove — уничтожается. Если null — модуль без визуала.")]
+        public GameObject visualPrefab;
+
+        [Tooltip("Путь к дочернему socket'у внутри слота (например 'Socket_A'). Пусто = сам слот.")]
+        public string visualSocketPath = "";
+
+        [Tooltip("Локальный offset от слота/socket'а к визуалу (local space родителя).")]
+        public Vector3 attachPositionOffset = Vector3.zero;
+
+        [Tooltip("Локальное вращение визуала относительно слота/socket'а (Euler degrees).")]
+        public Vector3 attachRotationOffset = Vector3.zero;
+
+        [Tooltip("Локальный масштаб визуала. (1,1,1) = без изменений. x=-1 зеркалирует.")]
+        public Vector3 attachScale = Vector3.one;
+
+        [Tooltip("Ориентация визуала относительно reference-вектора (Slot/ShipForward/ShipDown/WorldUp).")]
+        public ModuleAttachAxis attachAxis = ModuleAttachAxis.Slot;
+
+        [Tooltip("Режим коллайдеров на визуале (None=отключены, Trigger=isTrigger, Solid=включены).")]
+        public ModuleColliderMode colliderMode = ModuleColliderMode.None;
 
         /// <summary>
         /// Проверить совместимость модуля с классом корабля.

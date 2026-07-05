@@ -122,8 +122,16 @@ namespace ProjectC.Ship.UI
 
             _root = _doc.rootVisualElement;
 
-            if (repairUss != null && !_root.styleSheets.Contains(repairUss))
-                _root.styleSheets.Add(repairUss);
+            // USS должен быть и на _root (основное дерево), и на panel.visualTree (попапы дропдаунов)
+            if (repairUss != null)
+            {
+                if (!_root.styleSheets.Contains(repairUss))
+                    _root.styleSheets.Add(repairUss);
+
+                var panelRoot = _root.panel?.visualTree;
+                if (panelRoot != null && panelRoot != _root && !panelRoot.styleSheets.Contains(repairUss))
+                    panelRoot.styleSheets.Add(repairUss);
+            }
 
             _doc.sortingOrder = 10;
 

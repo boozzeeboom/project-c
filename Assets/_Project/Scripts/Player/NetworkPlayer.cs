@@ -552,10 +552,8 @@ namespace ProjectC.Player
                 {
                     // DoorController.Toggle() вызван
                 }
-                // Ship Key Subsystem: разделение выхода/посадки.
-                // - Выход (_inShip == true) — без проверки ключа (он уже сидит).
-                // - Посадка (_inShip == false) — требуется ключ → шлём RequestCanBoardRpc
-                //   и ждём ответа через ReceiveShipKeyCanBoardResponseTargetRpc.
+                // Выход (_inShip == true) — без проверки ключа (он уже сидит).
+                // Посадка (_inShip == false) — требуется ключ → MetaRequirementClientState.
                 else if (_inShip)
                 {
                     SubmitSwitchModeRpc();
@@ -572,8 +570,7 @@ namespace ProjectC.Player
                     }
                     _lastCanBoardRequestTime = Time.unscaledTime;
                     _pendingCanBoardShipId = nearestShip.NetworkObjectId;
-                    // T-KEY-06: direct call to MetaRequirementClientState (ownership-priority).
-                    // ShipKeyClientState оставлен как legacy [Obsolete] alias, не используем.
+                    // P1-refactor: прямой вызов MetaRequirementClientState (ownership-priority).
                     if (MetaRequirementClientState.Instance != null)
                     {
                         MetaRequirementClientState.Instance.RequestCanUse(nearestShip.NetworkObjectId);
@@ -1663,27 +1660,6 @@ namespace ProjectC.Player
         public void ReceiveInventoryResultTargetRpc(ProjectC.Items.Dto.InventoryResultDto result, RpcParams rpcParams = default)
         {
             ProjectC.Items.Client.InventoryClientState.Instance?.OnResultReceived(result);
-        }
-
-        // ==================== SHIP KEY RPCs (Target, Owner) ====================
-        // Доставка ответа от ShipKeyServer (после RequestCanBoardRpc) и реестра привязок.
-        // Вызываются через netPlayer.ReceiveShipKeyCanBoardResponseTargetRpc(...)
-        // из ProjectC.Ship.Key.ShipKeyServer.
-
-        [Rpc(SendTo.Owner)]
-        public void ReceiveShipKeyCanBoardResponseTargetRpc(ulong shipNetworkObjectId, bool allowed, string reason, RpcParams rpcParams = default)
-        {
-            // Сбрасываем race-protection. Клиентский SubmitSwitchModeRpc дёргается изнутри
-            // ShipKeyClientState.OnCanBoardResponse (если allowed).
-            _pendingCanBoardShipId = ulong.MaxValue;
-            _lastCanBoardRequestTime = -10f;
-            ProjectC.Ship.Key.ShipKeyClientState.Instance?.OnCanBoardResponse(shipNetworkObjectId, allowed, reason);
-        }
-
-        [Rpc(SendTo.Owner)]
-        public void ReceiveShipKeyBindingsTargetRpc(ulong[] shipNetIds, int[] keyItemIds, Unity.Collections.FixedString64Bytes[] displayNames, RpcParams rpcParams = default)
-        {
-            ProjectC.Ship.Key.ShipKeyClientState.Instance?.OnBindingsPushed(shipNetIds, keyItemIds, displayNames);
         }
 
         // ==================== META REQUIREMENT RPCs (Target, Owner) ====================

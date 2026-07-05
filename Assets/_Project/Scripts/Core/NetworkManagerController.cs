@@ -91,20 +91,13 @@ namespace ProjectC.Core
             // (см. FIX 2026-06-04 — на child DontDestroyOnLoad падает, singleton теряется).
             CreateInventoryClientState();
 
-            // Ship Key Subsystem (docs/Ships/Key-subsystem/00_OVERVIEW.md):
-                        // ShipKeyClientState — клиентская проекция привязок корабль↔ключ.
-                        // Тот же паттерн, что и InventoryClientState.
-                        CreateShipKeyClientState();
-
-                        // T-KEY-07: ShipTelemetryClientState — клиентский агрегатор ship telemetry + ownership.
+            // T-KEY-07: ShipTelemetryClientState — клиентский агрегатор ship telemetry + ownership.
                         CreateShipTelemetryClientState();
 
             // MetaRequirement Subsystem (docs/MetaRequirement/00_OVERVIEW.md, R2-META-REQ-001):
             // MetaRequirementClientState — клиентская проекция требований для ЛЮБЫХ
             // interactable'ов (корабли, блоки, двери, NPC и т.д.).
-            // Оба singleton'а сосуществуют — ShipKeyClientState продолжает обслуживать
-            // старые Target RPC от ShipKeyServer, а MetaRequirementClientState — новые
-            // Target RPC от MetaRequirementRegistry. Через 1-2 релиз-цикла первый удалим.
+            // P1-refactor: ShipKeyClientState удалён — больше не нужен.
             CreateMetaRequirementClientState();
 
             // T-G04: GatheringClientState — клиентская проекция сбора ресурсов.
@@ -248,31 +241,6 @@ namespace ProjectC.Core
             Debug.Log("[NMC] Created [InventoryClientState] as root GameObject");
         }
 
-        /// <summary>
-        /// Ship Key Subsystem: Создать ShipKeyClientState как root GameObject.
-        /// Паттерн идентичен CreateInventoryClientState.
-        /// ShipKeyClientState — клиентская проекция привязок корабль↔ключ; UI toast
-        /// (ShipKeyToast) подписывается на её события.
-        /// </summary>
-        private void CreateShipKeyClientState()
-        {
-            var existing = FindObjectsByType<ProjectC.Ship.Key.ShipKeyClientState>(FindObjectsInactive.Include);
-            foreach (var inst in existing)
-            {
-                if (inst != null && inst.transform.parent == null)
-                {
-                    Debug.Log("[NMC] ShipKeyClientState already root, skipping creation");
-                    return;
-                }
-            }
-            if (existing.Length > 0)
-            {
-                Debug.LogWarning($"[NMC] Found {existing.Length} non-root ShipKeyClientState in scene — DontDestroyOnLoad would fail. Creating root replacement.");
-            }
-            var go = new GameObject("[ShipKeyClientState]");
-            go.AddComponent<ProjectC.Ship.Key.ShipKeyClientState>();
-            Debug.Log("[NMC] Created [ShipKeyClientState] as root GameObject");
-        }
         /// <summary>
         /// T-KEY-07: ShipTelemetryClientState — клиентский агрегатор ship telemetry + ownership cache.
         /// Подписывается на NetworkVariable всех ShipController и ShipOwnershipRegistry.

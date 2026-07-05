@@ -1,0 +1,116 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Project C: The Clouds</title>
+<link href="https://fonts.googleapis.com/css2?family=M+PLUS+Rounded+1c:wght@400;500;700&family=Orbitron:wght@400;700&display=swap" rel="stylesheet">
+<style>
+*, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+:root {
+  --bg-top: #1a1a2e;
+  --bg-bot: #16213e;
+  --accent: #7FDBDA;
+  --accent-glow: rgba(127,219,218,0.2);
+  --text: #FFF8E7;
+  --text-dim: #9e9eb8;
+  --card-bg: rgba(255,255,255,0.04);
+  --card-border: rgba(127,219,218,0.15);
+}
+body {
+  font-family: 'M PLUS Rounded', 'Segoe UI', Tahoma, sans-serif;
+  background: linear-gradient(160deg, var(--bg-top), var(--bg-bot));
+  min-height: 100vh;
+  color: var(--text);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 2rem;
+}
+h1 {
+  font-family: 'Orbitron', monospace;
+  font-size: 2rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  background: linear-gradient(135deg, var(--accent), #4FC3F7);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  margin-bottom: 0.5rem;
+}
+.subtitle {
+  color: var(--text-dim);
+  font-size: 1rem;
+  margin-bottom: 2.5rem;
+  text-align: center;
+}
+.cards {
+  display: flex;
+  gap: 1.5rem;
+  flex-wrap: wrap;
+  justify-content: center;
+  max-width: 600px;
+}
+.card {
+  background: var(--card-bg);
+  border: 1px solid var(--card-border);
+  border-radius: 16px;
+  padding: 2rem;
+  width: 260px;
+  text-decoration: none;
+  color: var(--text);
+  transition: all 0.3s ease;
+  text-align: center;
+}
+.card:hover {
+  background: rgba(127,219,218,0.08);
+  border-color: var(--accent);
+  transform: translateY(-4px);
+  box-shadow: 0 8px 32px var(--accent-glow);
+}
+.card-icon {
+  font-size: 2.5rem;
+  margin-bottom: 1rem;
+}
+.card-title {
+  font-family: 'Orbitron', monospace;
+  font-size: 1.1rem;
+  font-weight: 700;
+  color: var(--accent);
+  margin-bottom: 0.5rem;
+}
+.card-desc {
+  color: var(--text-dim);
+  font-size: 0.9rem;
+  line-height: 1.5;
+}
+.footer {
+  margin-top: 3rem;
+  color: var(--text-dim);
+  font-size: 0.8rem;
+  opacity: 0.6;
+}
+</style>
+</head>
+<body>
+  <h1>Project C: The Clouds</h1>
+  <p class="subtitle">MMO-sandbox в мире постапокалиптического неба</p>
+
+  <div class="cards">
+    <a class="card" href="Fun/index.html">
+      <div class="card-icon">☁️</div>
+      <div class="card-title">CloudTrader</div>
+      <div class="card-desc">Интерактивная демка — HUD, рынок, диалоги, день/ночь</div>
+    </a>
+    <a class="card" href="roadmap.html">
+      <div class="card-icon">🗺️</div>
+      <div class="card-title">Roadmap</div>
+      <div class="card-desc">План разработки, статус систем и чеклисты</div>
+    </a>
+  </div>
+
+  <p class="footer">Project C &middot; Built with Unity 6</p>
+</body>
+</html>

@@ -20,9 +20,14 @@ MonoBehaviour:
   thrustMultiplier: 1
   yawMultiplier: 1
   pitchMultiplier: 1
+  rollMultiplier: 1
   liftMultiplier: 1
   maxSpeedModifier: 0
   windExposureModifier: 0
+  cargoSlotsBonus: 0
+  cargoWeightBonus: 0
+  cargoVolumeBonus: 0
+  cargoPenaltyReduction: 0
   powerConsumption: 15
   compatibleClasses: 00000000010000000200000003000000
   requiredModules: []
@@ -32,3 +37,10 @@ MonoBehaviour:
   meziyDuration: 0.5
   meziyCooldown: 15
   meziyFuelCost: 5
+  visualPrefab: {fileID: 919132149155446097, guid: 74f69cab71b2aad4c9f4bbe3852a9ffa, type: 3}
+  visualSocketPath: 
+  attachPositionOffset: {x: 0, y: 0, z: 0}
+  attachRotationOffset: {x: 0, y: 0, z: 0}
+  attachScale: {x: 1, y: 1, z: 1}
+  attachAxis: 2
+  colliderMode: 0

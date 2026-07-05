@@ -7,6 +7,7 @@ using ProjectC.Ship.Network;  // T-KEY-07: ShipTelemetryState
 using ProjectC.Ship.Key;     // T-KEY-07: KeyRodInstanceWorld
 using ProjectC.Ship.Client;  // T-KEY-07: ShipTelemetryClientState
 using ProjectC.Trade.Core; // T-CARGO-02: ShipClass, TradeWorld, ShipClassLimits
+using ProjectC.Ship.Combat; // T-HULL: ShipHull, ShipDamageConfig, HullState
 
 namespace ProjectC.Player
 {
@@ -76,6 +77,19 @@ namespace ProjectC.Player
         /// <summary>Локальный кеш _netEngineRunning (server-only).</summary>
         private bool _engineRunning = false;
 
+        // === T-HULL: Damage subsystem ===
+        /// <summary>Кеш ShipHull на этом корабле (server-only).</summary>
+        private ShipHull _hull;
+
+        /// <summary>Серверный флаг: корпус сломан (0 HP). Умножает скорости на brokenSpeedMultiplier.</summary>
+        private bool _hullBroken = false;
+
+        /// <summary>Публичный геттер для ShipModuleServer.</summary>
+        public bool IsHullBroken => _hullBroken;
+
+        /// <summary>Публичный геттер ShipHull (может быть null если компонент не добавлен).</summary>
+        public ShipHull Hull => _hull;
+
         /// <summary>Публичный геттер. Клиент видит NetworkVariable, сервер — локальный кеш.</summary>
         public bool IsEngineRunning => _netEngineRunning.Value;
 
@@ -111,6 +125,59 @@ namespace ProjectC.Player
                     }
                     if (_debugLog) Debug.Log($"[ShipController:{name}] ExitDocked — engine unlocked");
                 }
+
+        // ========================================================
+        // T-HULL: Damage subsystem — реакция на изменение HP корпуса
+        // ========================================================
+
+        /// <summary>
+        /// Server-only обработчик события ShipHull.OnHullChanged.
+        /// При 0 HP: корабль «сломан» — скорости ×0.1, груз обнулён.
+        /// При ремонте: снимает состояние «сломан».
+        /// </summary>
+        private void OnHullChanged(int newHull, int deltaHp, HullState state)
+        {
+            if (!IsServer) return;
+
+            if (state == HullState.Broken && !_hullBroken)
+            {
+                _hullBroken = true;
+                Debug.Log($"[ShipController:{name}] HULL BROKEN — speeds ×{_hull.Config.brokenSpeedMultiplier}, cargo wiped");
+
+                // Обнулить груз через TradeWorld
+                WipeCargo();
+            }
+            else if (state == HullState.Operational && _hullBroken)
+            {
+                _hullBroken = false;
+                Debug.Log($"[ShipController:{name}] HULL REPAIRED — operational");
+            }
+        }
+
+        /// <summary>
+        /// Server-only: обнулить груз корабля (вызывается при поломке корпуса).
+        /// </summary>
+        private void WipeCargo()
+        {
+            if (TradeWorld.Instance == null) return;
+            var cargo = TradeWorld.Instance.GetOrLoadCargo(NetworkObjectId, _resolvedCargoClass);
+            if (cargo == null) return;
+            if (cargo.Items.Count > 0)
+            {
+                cargo.Clear();
+                TradeWorld.Instance.NotifyCargoChanged(NetworkObjectId);
+                Debug.Log($"[ShipController:{name}] Cargo wiped (ship broken)");
+            }
+        }
+
+        /// <summary>
+        /// Server-only: снять состояние «сломан» (вызывается из ShipModuleServer после ремонта).
+        /// </summary>
+        public void ClearHullBroken()
+        {
+            if (!IsServer) return;
+            _hullBroken = false;
+        }
 
                 // === T-NS01 (Q1, Q2): NPC-pilot API ===
                 // Server-only методы для мирных NPC-кораблей (ProjectC.PeacefulShip).
@@ -510,6 +577,12 @@ namespace ProjectC.Player
                 if (_debugLog) Debug.Log($"[ShipController] damage applied shipId={NetworkObjectId} energy={energy:F1} leaked={leaked} damaged={damaged} class={_resolvedCargoClass}");
                 // _serverCargoPenalty обновится автоматически через OnCargoChanged → RecalculateCargoPenalty
             }
+
+            // T-HULL: урон корпусу от столкновения
+            if (_hull != null)
+            {
+                _hull.ApplyCollisionDamage(energy);
+            }
         }
 
         /// <summary>
@@ -633,6 +706,13 @@ namespace ProjectC.Player
             // T-CARGO-06: регистрация в ShipCargoRegistry — TradeWorld читает лимиты
             // через этот реестр (per-instance, с учётом модулей).
             ShipCargoRegistry.Register(this);
+
+            // T-HULL: кешируем ShipHull и подписываемся на изменения HP
+            _hull = GetComponent<ShipHull>();
+            if (_hull != null)
+            {
+                _hull.OnHullChanged += OnHullChanged;
+            }
 
             // T-CARGO-03: подписка на OnCargoChanged — реагируем на мутации cargo
             // (Load/Unload/Damage). Подписка ДО корутины, т.к. GetOrLoadCargo
@@ -1226,27 +1306,30 @@ namespace ProjectC.Player
                 }
             }
 
+            // T-HULL: если корпус сломан — множитель скоростей
+            float hullSpeedMult = _hullBroken ? _hull.Config.brokenSpeedMultiplier : 1f;
+
             // 2. Smooth thrust ramp-up (0.3s до полной тяги)
             // thrustPenalty применяется при дозаправке отдельно в ClampVelocity
-            float targetThrust = avgThrust * thrustForce * _moduleThrustMult;
+            float targetThrust = avgThrust * thrustForce * _moduleThrustMult * hullSpeedMult;
             _currentThrust = Mathf.SmoothDamp(_currentThrust, targetThrust, ref _thrustVelocitySmooth, thrustSmoothTime);
 
             // 3. Smooth yaw с затуханием (0.6s smooth, 1.0s decay)
-            float targetYawRate = avgYaw * yawForce * _moduleYawMult;
+            float targetYawRate = avgYaw * yawForce * _moduleYawMult * hullSpeedMult;
             bool hasYawInput = Mathf.Abs(avgYaw) > 0.01f;
             _currentYawRate = hasYawInput
                 ? Mathf.SmoothDamp(_currentYawRate, targetYawRate, ref _yawVelocitySmooth, yawSmoothTime)
                 : Mathf.SmoothDamp(_currentYawRate, 0f, ref _yawVelocitySmooth, yawDecayTime);
 
             // 4. Smooth pitch с затуханием (0.7s smooth, 0.8s decay)
-            float targetPitchRate = avgPitch * pitchForce * _modulePitchMult;
+            float targetPitchRate = avgPitch * pitchForce * _modulePitchMult * hullSpeedMult;
             bool hasPitchInput = Mathf.Abs(avgPitch) > 0.01f;
             _currentPitchRate = hasPitchInput
                 ? Mathf.SmoothDamp(_currentPitchRate, targetPitchRate, ref _pitchVelocitySmooth, pitchSmoothTime)
                 : Mathf.SmoothDamp(_currentPitchRate, 0f, ref _pitchVelocitySmooth, pitchDecayTime);
 
             // 5. Smooth lift (очень медленно, 1.0s)
-            float targetLift = avgVertical * verticalForce * _moduleLiftMult;
+            float targetLift = avgVertical * verticalForce * _moduleLiftMult * hullSpeedMult;
             _currentLiftForce = Mathf.SmoothDamp(_currentLiftForce, targetLift, ref _liftVelocitySmooth, liftSmoothTime);
             // Clamp к максимальной скорости лифта (Сессия 2: используем активный коридор)
             float maxLiftSpeed = (_activeCorridor != null && _activeCorridor.corridorId == "global") ? 2.5f : 2.0f;
@@ -1513,7 +1596,7 @@ namespace ProjectC.Player
         private void ClampVelocity(bool isRefueling = false)
         {
             // Базовая maxSpeed + модификатор от модулей
-            float effectiveMaxSpeed = maxSpeed + _moduleMaxSpeedMod;
+            float effectiveMaxSpeed = (maxSpeed + _moduleMaxSpeedMod) * (_hullBroken ? _hull.Config.brokenSpeedMultiplier : 1f);
 
             // Штраф к скорости при атмосферной дозаправке
             if (isRefueling && fuelSystem != null)

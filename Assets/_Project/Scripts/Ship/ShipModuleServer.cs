@@ -454,6 +454,92 @@ namespace ProjectC.Ship
         }
 
         // ============================================================
+        // Hull Repair (T-HULL)
+        // ============================================================
+
+        /// <summary>Клиент отправляет запрос на ремонт корпуса.</summary>
+        public void RequestRepairHull(int keyInstanceId)
+        {
+            if (!IsClient) return;
+            RequestRepairHullRpc(keyInstanceId);
+        }
+
+        [Rpc(SendTo.Server)]
+        private void RequestRepairHullRpc(int keyInstanceId,
+            RpcParams rpcParams = default)
+        {
+            if (!IsServer) return;
+            ulong clientId = rpcParams.Receive.SenderClientId;
+
+            Debug.Log($"[ShipModuleServer] RepairHull request: client={clientId}, keyInstance={keyInstanceId}");
+
+            // --- Валидация 1: владение ключом ---
+            if (!KeyRodInstanceWorld.IsInitialized ||
+                !KeyRodInstanceWorld.IsOwnerOfInstance(clientId, keyInstanceId))
+            {
+                NotifyClientError(clientId, "У вас нет ключа от этого корабля.");
+                return;
+            }
+
+            var instance = KeyRodInstanceWorld.GetInstance(keyInstanceId);
+            if (instance == null || instance.registeredShipId != _netObj.NetworkObjectId)
+            {
+                NotifyClientError(clientId, "Ключ не подходит к этому кораблю.");
+                return;
+            }
+
+            // --- Валидация 2: корабль пристыкован ---
+            if (_shipController != null && !_shipController.IsDocked)
+            {
+                NotifyClientError(clientId, "Корабль не в доке. Ремонт возможен только в доке.");
+                return;
+            }
+
+            // --- Валидация 3: ShipHull компонент ---
+            var hull = _shipController != null ? _shipController.Hull : null;
+            if (hull == null)
+            {
+                NotifyClientError(clientId, "Корпус корабля не найден (ShipHull не установлен).");
+                return;
+            }
+
+            // --- Проверка: нужен ли ремонт ---
+            if (hull.CurrentHull >= hull.MaxHull)
+            {
+                NotifyClientError(clientId, "Корпус не нуждается в ремонте.");
+                return;
+            }
+
+            // --- Списание кредитов ---
+            var cfg = ProjectC.Ship.Combat.ShipDamageConfig.Default;
+            int cost = cfg.repairCostCredits;
+            if (cost > 0)
+            {
+                var trade = ProjectC.Trade.Core.TradeWorld.Instance;
+                if (trade?.Repository != null)
+                {
+                    if (!trade.Repository.TryModifyCredits(clientId, -cost, out float newCredits, out string failReason))
+                    {
+                        NotifyClientError(clientId, $"Недостаточно кредитов: {failReason}");
+                        return;
+                    }
+                    Debug.Log($"[ShipModuleServer] Player {clientId} paid {cost} CR for hull repair (new={newCredits:F0})");
+                }
+            }
+
+            // --- Ремонт ---
+            hull.RepairFull();
+            if (_shipController != null)
+            {
+                _shipController.ClearHullBroken();
+            }
+
+            Debug.Log($"[ShipModuleServer] Hull repaired on ship {_netObj.NetworkObjectId} (HP → {hull.MaxHull})");
+
+            NotifyClientSuccess(clientId, string.Empty, "hull_repair", isInstall: true);
+        }
+
+        // ============================================================
         // Helpers
         // ============================================================
 

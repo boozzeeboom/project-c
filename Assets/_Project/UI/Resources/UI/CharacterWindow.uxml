@@ -111,6 +111,7 @@
     <ui:VisualElement name="ship-fuel-bar-fill" class="ship-bar-fill ship-bar-fill-fuel" />
    </ui:VisualElement>
    <ui:Label name="ship-fuel-text" text="—" class="ship-info-row ship-info-row-compact" />
+   <ui:Label name="ship-engine-status" text="—" class="ship-info-row ship-info-row-compact" />
 
    <!-- T-CARGO-UI-01-2: 2 колонки — Груз (список) | Модули. 80-90% секции. -->
    <ui:VisualElement class="ship-cols">

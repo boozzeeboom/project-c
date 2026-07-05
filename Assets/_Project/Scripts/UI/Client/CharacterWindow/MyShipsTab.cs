@@ -31,6 +31,7 @@ namespace ProjectC.UI.Client
         private Label _cargoText;
         private Label _position;
         private Label _state;
+        private Label _engineStatusLabel;    // ENGINE ON/OFF под топливной полоской
 
         private VisualElement _fuelBarFill;     // T-CARGO-UI-01-3: кастомный бар (bg+fill)
         private VisualElement _cargoBarFill;
@@ -70,8 +71,13 @@ namespace ProjectC.UI.Client
             _keyId        = root.Q<Label>("ship-info-key-id");
             _fuelText     = root.Q<Label>("ship-fuel-text");
             _cargoText    = root.Q<Label>("ship-cargo-text");
-            _position     = root.Q<Label>("ship-info-position");
-            _state        = root.Q<Label>("ship-info-state");
+            _position          = root.Q<Label>("ship-info-position");
+            _state             = root.Q<Label>("ship-info-state");
+            _engineStatusLabel = root.Q<Label>("ship-engine-status");
+
+            // "Состояние: Active" больше не нужно — скрываем
+            if (_state != null)
+                _state.style.display = DisplayStyle.None;
 
             _modulesScroll     = root.Q<VisualElement>("ship-modules-scroll");
             _modulesContainer  = root.Q<VisualElement>("ship-modules-container");
@@ -345,11 +351,14 @@ namespace ProjectC.UI.Client
             if (_position != null)
                 _position.text = $"📍 ({telemetry.position.x:F1}, {telemetry.position.y:F1}, {telemetry.position.z:F1})";
 
-            // State
-            if (_state != null)
+            // Engine status — зелёный ON / красный OFF (данные из ShipController.IsEngineRunning)
+            if (_engineStatusLabel != null)
             {
-                string stateStr = ResolveShipState(telemetry.state);
-                _state.text = $"Состояние: {stateStr}";
+                bool engineRunning = sc != null && sc.IsEngineRunning;
+                _engineStatusLabel.text = engineRunning ? "ENGINE ON" : "ENGINE OFF";
+                _engineStatusLabel.style.color = engineRunning
+                    ? new StyleColor(new Color(0.3f, 1f, 0.3f))   // зелёный
+                    : new StyleColor(new Color(1f, 0.3f, 0.3f));  // красный
             }
         }
 

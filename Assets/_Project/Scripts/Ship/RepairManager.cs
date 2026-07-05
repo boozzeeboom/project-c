@@ -19,7 +19,12 @@ namespace ProjectC.Ship
         [Tooltip("База данных модулей с ценами и ресурсами. Будет передана в RepairManagerWindow.")]
         [SerializeField] private ModuleShopDatabase _shopDatabase;
 
+        [Header("Покраска")]
+        [Tooltip("Стоимость покраски корабля в кредитах.")]
+        [SerializeField] private int _repaintCost = 500;
+
         [Header("Interaction")]
+
         [Tooltip("Радиус взаимодействия с NPC")]
         [SerializeField] private float _interactionRadius = 3f;
 
@@ -62,8 +67,9 @@ namespace ProjectC.Ship
                 return;
             }
 
-            RepairManagerWindow.Instance.Show(_shopDatabase);
+            RepairManagerWindow.Instance.Show(_shopDatabase, _repaintCost);
             Debug.Log("[RepairManager] RepairManagerWindow opened");
+
         }
 
         /// <summary>Закрыть окно (можно вызвать извне).</summary>

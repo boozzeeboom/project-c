@@ -12245,7 +12245,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::ProjectC.Ship.UI.RepairManagerWindow
   repairUxml: {fileID: 9197481963319205126, guid: 7e75bfc7baa94d842946e0d0bce85135, type: 3}
-  repairUss: {fileID: 0}
+  repairUss: {fileID: 7433441132597879392, guid: f6cc890f63546734599df9ae62765f6f, type: 3}
   shopDatabase: {fileID: 11400000, guid: e95e359cc484f184cadcf9fff794f96b, type: 2}
 --- !u!114 &922958211
 MonoBehaviour:

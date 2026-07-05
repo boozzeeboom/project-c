@@ -85,6 +85,12 @@ namespace ProjectC.Ship.Network
         // Cap = 32 items (Light=4 / Medium=10 / Heavy=20 / HeavyII=30 + ~6-12 module-bonus slots).
         public CargoDetailDto[] cargoDetail;
 
+        // Ship repainting: RGB цвет корабля (0,0,0 = не задан/дефолт)
+        public byte shipColorR;
+        public byte shipColorG;
+        public byte shipColorB;
+
+
         public void NetworkSerialize<T>(BufferSerializer<T> serializer) where T : IReaderWriter
         {
             serializer.SerializeValue(ref shipNetworkObjectId);
@@ -101,8 +107,12 @@ namespace ProjectC.Ship.Network
             serializer.SerializeValue(ref state);
             serializer.SerializeValue(ref ownerClientId);
             serializer.SerializeValue(ref lastUpdateServerTime);
+            serializer.SerializeValue(ref shipColorR);
+            serializer.SerializeValue(ref shipColorG);
+            serializer.SerializeValue(ref shipColorB);
 
             // T-CARGO-UI-01: cargoDetail array. NGO 2.x pattern: re-create on reader, copy on writer.
+
             int len = cargoDetail != null ? cargoDetail.Length : 0;
             serializer.SerializeValue(ref len);
             if (serializer.IsReader && len > 0)
@@ -130,8 +140,12 @@ namespace ProjectC.Ship.Network
             if (moduleCount != other.moduleCount) return false;
             if (state != other.state) return false;
             if (ownerClientId != other.ownerClientId) return false;
+            if (shipColorR != other.shipColorR) return false;
+            if (shipColorG != other.shipColorG) return false;
+            if (shipColorB != other.shipColorB) return false;
             // T-CARGO-UI-01: cargoDetail включаем в Equals — иначе NetworkVariable
             // не увидит изменение items и не пошлёт delta. Сравнение по длине + поэлементно.
+
             int thisLen = cargoDetail != null ? cargoDetail.Length : 0;
             int otherLen = other.cargoDetail != null ? other.cargoDetail.Length : 0;
             if (thisLen != otherLen) return false;
@@ -162,7 +176,11 @@ namespace ProjectC.Ship.Network
                 hash = hash * 31 + moduleCount;
                 hash = hash * 31 + state;
                 hash = hash * 31 + ownerClientId.GetHashCode();
+                hash = hash * 31 + shipColorR;
+                hash = hash * 31 + shipColorG;
+                hash = hash * 31 + shipColorB;
                 return hash;
+
             }
         }
 

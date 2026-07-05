@@ -55,7 +55,15 @@ namespace ProjectC.Ship.UI
         private Camera _playerCam;
         private VisualElement _cameraArrows;
 
+        // Ship repainting
+        private int _repaintCost;
+        private Color? _selectedPaintColor;
+        private VisualElement _paintSection;
+        private Button _paintApplyBtn;
+        private Label _paintCostLabel;
+
         // State
+
         private bool _built;
         private ModuleShopDatabase _activeDatabase;
 
@@ -173,15 +181,24 @@ namespace ProjectC.Ship.UI
             // Camera arrows
             _cameraArrows = _root.Q<VisualElement>("camera-arrows");
 
+            // Paint section
+            _paintSection = _root.Q<VisualElement>("repair-paint-section");
+            _paintApplyBtn = _root.Q<Button>("repair-paint-apply-btn");
+            _paintCostLabel = _root.Q<Label>("repair-paint-cost-label");
+
             if (_closeBtn != null)
+
             {
                 _closeBtn.clicked -= OnCloseClicked;
                 _closeBtn.clicked += OnCloseClicked;
             }
 
             WireCameraArrows();
+            BuildPaintPalette();
+            WirePaintApplyButton();
 
             _built = true;
+
             SetOpen(false);
 
             if (shopDatabase != null)
@@ -231,9 +248,10 @@ namespace ProjectC.Ship.UI
             }
         }
 
-        public void Show(ModuleShopDatabase database)
+        public void Show(ModuleShopDatabase database, int repaintCost = 0)
         {
             _activeDatabase = database ?? shopDatabase;
+            _repaintCost = repaintCost;
 
             if (_activeDatabase != null)
                 ShipModuleCatalog.Initialize(_activeDatabase);
@@ -241,6 +259,7 @@ namespace ProjectC.Ship.UI
             RefreshShipList();
             SetOpen(true);
         }
+
 
         public void Hide() => SetOpen(false);
 
@@ -774,5 +793,109 @@ namespace ProjectC.Ship.UI
             float speed = 60f; // градусов/сек
             _obsCamera.Rotate(yawDelta * speed * Time.deltaTime, pitchDelta * speed * Time.deltaTime);
         }
+
+        // ============================================================
+        // Ship Repainting — Color Palette
+        // ============================================================
+
+        private static readonly (string name, Color color)[] PaintPresets =
+        {
+            ("⚪ Белый",     new Color(0.9f, 0.9f, 0.9f)),
+            ("🔘 Серый",     new Color(0.5f, 0.5f, 0.5f)),
+            ("⚫ Чёрный",    new Color(0.15f, 0.15f, 0.15f)),
+            ("🔴 Красный",   new Color(0.85f, 0.2f, 0.2f)),
+            ("🔵 Синий",     new Color(0.2f, 0.4f, 0.85f)),
+            ("🟢 Зелёный",   new Color(0.2f, 0.75f, 0.35f)),
+            ("🟡 Жёлтый",    new Color(0.9f, 0.8f, 0.15f)),
+            ("🟠 Оранжевый", new Color(0.9f, 0.5f, 0.1f)),
+            ("🟣 Фиолетовый",new Color(0.6f, 0.2f, 0.8f)),
+            ("🔷 Бирюзовый", new Color(0.1f, 0.7f, 0.7f)),
+        };
+
+        private void BuildPaintPalette()
+        {
+            if (_paintSection == null) return;
+
+            // Найти или создать контейнер для кнопок-цветов
+            var paletteContainer = _paintSection.Q<VisualElement>("repair-paint-palette");
+            if (paletteContainer == null) return;
+            paletteContainer.Clear();
+
+            foreach (var (name, color) in PaintPresets)
+            {
+                var btn = new Button();
+                btn.text = name;
+                btn.AddToClassList("paint-color-btn");
+                btn.style.backgroundColor = new StyleColor(color);
+                btn.tooltip = name;
+                btn.userData = color;
+
+                btn.clicked += () =>
+                {
+                    _selectedPaintColor = (Color)btn.userData;
+                    UpdatePaintUI();
+                };
+
+                paletteContainer.Add(btn);
+            }
+
+            UpdatePaintUI();
+        }
+
+        private void WirePaintApplyButton()
+        {
+            if (_paintApplyBtn != null)
+            {
+                _paintApplyBtn.clicked -= OnPaintClicked;
+                _paintApplyBtn.clicked += OnPaintClicked;
+            }
+        }
+
+        private void UpdatePaintUI()
+        {
+            if (_paintCostLabel != null)
+                _paintCostLabel.text = _repaintCost > 0 ? $"Стоимость: {_repaintCost} кр." : "Бесплатно";
+
+            if (_paintApplyBtn != null)
+            {
+                _paintApplyBtn.SetEnabled(_selectedPaintColor.HasValue && _selectedKeyId > 0);
+                string label = _selectedPaintColor.HasValue ? $"🎨 Покрасить ({_repaintCost} кр.)" : "🎨 Выберите цвет";
+                _paintApplyBtn.text = label;
+            }
+
+            // Подсветка активного цвета
+            var paletteContainer = _paintSection?.Q<VisualElement>("repair-paint-palette");
+            if (paletteContainer != null)
+            {
+                foreach (var child in paletteContainer.Children())
+                {
+                    var btn = child as Button;
+                    if (btn == null) continue;
+                    bool isSelected = _selectedPaintColor.HasValue &&
+                        ((Color)btn.userData) == _selectedPaintColor.Value;
+                    btn.EnableInClassList("paint-color-btn--selected", isSelected);
+                }
+            }
+        }
+
+        private void OnPaintClicked()
+        {
+            if (!_selectedPaintColor.HasValue || _selectedKeyId <= 0) return;
+            if (!_shipByKeyId.TryGetValue(_selectedKeyId, out var sc)) return;
+
+            var server = sc.GetComponent<ShipModuleServer>();
+            if (server != null)
+            {
+                server.RequestRepaintShip(_selectedKeyId, _selectedPaintColor.Value, _repaintCost);
+                if (_statusLabel != null)
+                    _statusLabel.text = $"Запрос на покраску отправлен...";
+                StartCoroutine(DelayedRefresh(0.5f));
+            }
+            else
+            {
+                Debug.LogWarning("[RepairManagerWindow] ShipModuleServer not found on ship");
+            }
+        }
     }
 }
+

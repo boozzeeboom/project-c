@@ -64,8 +64,19 @@
                 </ui:ScrollView>
             </ui:VisualElement>
 
+            <!-- Paint section -->
+            <ui:VisualElement name="repair-paint-section" class="repair-section">
+                <ui:Label text="🎨 Цвет корабля:" class="repair-section-label" />
+                <ui:VisualElement name="repair-paint-palette" class="repair-paint-palette" />
+                <ui:VisualElement class="repair-paint-actions">
+                    <ui:Label name="repair-paint-cost-label" text="Стоимость: —" class="repair-info-label" />
+                    <ui:Button name="repair-paint-apply-btn" text="🎨 Покрасить" class="repair-btn repair-btn-install" />
+                </ui:VisualElement>
+            </ui:VisualElement>
+
             <!-- Footer -->
             <ui:VisualElement name="repair-footer" class="repair-footer">
+
                 <ui:Label name="repair-credits-label" text="💰 Кредиты: —" class="repair-credits-label" />
                 <ui:Label name="repair-status-label" text="" class="repair-status-label" />
             </ui:VisualElement>

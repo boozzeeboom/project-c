@@ -379,10 +379,86 @@ namespace ProjectC.Ship
         }
 
         // ============================================================
+        // Ship Repainting
+        // ============================================================
+
+        public void RequestRepaintShip(int keyInstanceId, Color color, int cost)
+        {
+            if (!IsClient) return;
+            RequestRepaintShipRpc(keyInstanceId, (byte)(color.r * 255), (byte)(color.g * 255), (byte)(color.b * 255), cost);
+        }
+
+        [Rpc(SendTo.Server)]
+        private void RequestRepaintShipRpc(int keyInstanceId, byte r, byte g, byte b, int cost,
+            RpcParams rpcParams = default)
+        {
+            if (!IsServer) return;
+            ulong clientId = rpcParams.Receive.SenderClientId;
+
+            Debug.Log($"[ShipModuleServer] Repaint request: client={clientId}, keyInstance={keyInstanceId}, " +
+                      $"color=({r},{g},{b}), cost={cost}");
+
+            // --- Валидация 1: владение ключом ---
+            if (!KeyRodInstanceWorld.IsInitialized ||
+                !KeyRodInstanceWorld.IsOwnerOfInstance(clientId, keyInstanceId))
+            {
+                NotifyClientError(clientId, "У вас нет ключа от этого корабля.");
+                return;
+            }
+
+            var instance = KeyRodInstanceWorld.GetInstance(keyInstanceId);
+            if (instance == null || instance.registeredShipId != _netObj.NetworkObjectId)
+            {
+                NotifyClientError(clientId, "Ключ не подходит к этому кораблю.");
+                return;
+            }
+
+            // --- Валидация 2: корабль пристыкован ---
+            if (_shipController != null && !_shipController.IsDocked)
+            {
+                NotifyClientError(clientId, "Корабль не в доке. Покраска возможна только в доке.");
+                return;
+            }
+
+            // --- Списание кредитов ---
+            if (cost > 0)
+            {
+                var trade = ProjectC.Trade.Core.TradeWorld.Instance;
+                if (trade?.Repository != null)
+                {
+                    if (!trade.Repository.TryModifyCredits(clientId, -cost, out float newCredits, out string failReason))
+                    {
+                        NotifyClientError(clientId, $"Недостаточно кредитов: {failReason}");
+                        return;
+                    }
+                    Debug.Log($"[ShipModuleServer] Player {clientId} paid {cost} CR for repaint (new={newCredits:F0})");
+                }
+            }
+
+            // --- Применить цвет ---
+            Color shipColor = new Color32(r, g, b, 255);
+            _shipController.SetShipColor(shipColor);
+            _shipController.ApplyShipColor(shipColor);
+
+            // Синхронизировать всем клиентам
+            ApplyPaintClientRpc(r, g, b);
+
+            NotifyClientSuccess(clientId, string.Empty, $"color({r},{g},{b})", isInstall: true);
+        }
+
+        [Rpc(SendTo.Everyone)]
+        private void ApplyPaintClientRpc(byte r, byte g, byte b)
+        {
+            if (_shipController != null)
+                _shipController.ApplyShipColor(new Color32(r, g, b, 255));
+        }
+
+        // ============================================================
         // Helpers
         // ============================================================
 
         /// <summary>Поиск ShipModule по moduleId через каталог.</summary>
+
         private ShipModule FindModuleById(string moduleId)
         {
             if (_shopDatabase != null)

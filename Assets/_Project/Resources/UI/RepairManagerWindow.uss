@@ -378,3 +378,46 @@
 .cam-arrow-btn:active {
     background-color: rgba(80, 140, 220, 0.85) !important;
 }
+
+/* === Paint Palette === */
+.repair-paint-palette {
+    flex-direction: row !important;
+    flex-wrap: wrap !important;
+    flex-shrink: 0 !important;
+    padding: 4px 0 !important;
+}
+
+.paint-color-btn {
+    width: 32px !important;
+    height: 32px !important;
+    min-width: 32px !important;
+    border-radius: 4px !important;
+    border-width: 1px !important;
+    border-color: rgba(80, 110, 160, 0.4) !important;
+    margin: 2px !important;
+    padding: 0 !important;
+    font-size: 0 !important;
+    flex-shrink: 0 !important;
+}
+
+.paint-color-btn:hover {
+    border-color: rgba(180, 200, 240, 0.8) !important;
+    border-width: 2px !important;
+}
+
+.paint-color-btn--selected {
+    border-color: rgb(255, 255, 255) !important;
+    border-width: 2px !important;
+}
+
+.repair-paint-actions {
+    flex-direction: row !important;
+    align-items: center !important;
+    flex-shrink: 0 !important;
+    padding-top: 4px !important;
+}
+
+.repair-paint-actions .repair-info-label {
+    flex-grow: 1 !important;
+}
+

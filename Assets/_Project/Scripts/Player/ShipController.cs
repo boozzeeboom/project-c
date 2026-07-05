@@ -650,8 +650,14 @@ namespace ProjectC.Player
             if (IsClient)
             {
                 ShipTelemetryClientState.Instance?.SubscribeToShip(this);
+
+                // Применить сохранённый цвет корабля (если есть)
+                var ts = TelemetryState;
+                if (ts.shipColorR != 0 || ts.shipColorG != 0 || ts.shipColorB != 0)
+                    ApplyShipColor(new Color32(ts.shipColorR, ts.shipColorG, ts.shipColorB, 255));
             }
         }
+
 
         public override void OnNetworkDespawn()
         {
@@ -735,6 +741,10 @@ namespace ProjectC.Player
         /// Подписка из ShipTelemetryClientState.SubscribeToShip().</summary>
         public event System.Action<ShipTelemetryState, ShipTelemetryState> OnTelemetryStateChanged;
 
+        // Ship repainting: локальный кеш цвета (server-authoritative)
+        private Color _shipColor = Color.black;
+
+
         // ========================================================
         // T-KEY-07: подписка на _telemetryState.OnValueChanged (клиент-сайд).
         // Вызывается в Awake() ниже (после _rb = GetComponent&lt;Rigidbody&gt;()).
@@ -743,11 +753,67 @@ namespace ProjectC.Player
         {
             // Срабатывает на клиенте при server delta. Forward в user-facing event.
             OnTelemetryStateChanged?.Invoke(prev, next);
+
+            // Ship repainting: применить цвет если изменился
+            if (prev.shipColorR != next.shipColorR ||
+                prev.shipColorG != next.shipColorG ||
+                prev.shipColorB != next.shipColorB)
+            {
+                if (next.shipColorR != 0 || next.shipColorG != 0 || next.shipColorB != 0)
+                    ApplyShipColor(new Color32(next.shipColorR, next.shipColorG, next.shipColorB, 255));
+            }
+        }
+
+
+        // ========================================================
+        // Ship Repainting
+        // ========================================================
+
+        /// <summary>Server-only: установить цвет корабля. Триггерит UpdateTelemetryState.</summary>
+        public void SetShipColor(Color color)
+        {
+            if (!IsServer) return;
+            _shipColor = color;
+            // Форсируем немедленное обновление telemetry (сброс throttle)
+            _lastTelemetryUpdate = -10f;
+        }
+
+        /// <summary>Применить цвет ко всем MeshRenderer на корабле (клиент + сервер).</summary>
+        public void ApplyShipColor(Color color)
+        {
+            var renderers = GetComponentsInChildren<MeshRenderer>(true);
+            if (renderers == null || renderers.Length == 0)
+            {
+                // Fallback: попробовать SkinnedMeshRenderer (если корабль — скелетная модель)
+                var skinned = GetComponentsInChildren<SkinnedMeshRenderer>(true);
+                foreach (var smr in skinned)
+                {
+                    var mpb = new MaterialPropertyBlock();
+                    smr.GetPropertyBlock(mpb);
+                    mpb.SetColor("_BaseColor", color); // URP
+                    mpb.SetColor("_Color", color);     // Built-in fallback
+                    smr.SetPropertyBlock(mpb);
+                }
+                return;
+            }
+
+            foreach (var r in renderers)
+            {
+                var mpb = new MaterialPropertyBlock();
+                r.GetPropertyBlock(mpb);
+                mpb.SetColor("_BaseColor", color); // URP Lit shader
+                mpb.SetColor("_Color", color);     // Built-in Standard shader fallback
+                r.SetPropertyBlock(mpb);
+            }
+
+            if (_debugLog)
+                Debug.Log($"[ShipController:{name}] ApplyShipColor: rgb({color.r:F2},{color.g:F2},{color.b:F2}) to {renderers.Length} renderers");
         }
 
         // Throttle для UpdateTelemetryState (5 Hz = 200ms interval)
         private float _lastTelemetryUpdate = -10f;
         private const float TELEMETRY_UPDATE_INTERVAL = 0.2f;
+
 
         /// <summary>Server-only: обновление telemetry state. Throttled до 5 Hz чтобы
         /// не грузить сеть. Читает fuel/cargo/modules из существующих систем.</summary>
@@ -858,6 +924,10 @@ namespace ProjectC.Player
                     ? NetworkManager.ServerTime.Time
                     : Time.timeAsDouble,
                 cargoDetail           = cargoDetail, // T-CARGO-UI-01
+                shipColorR            = (byte)(_shipColor.r * 255),
+                shipColorG            = (byte)(_shipColor.g * 255),
+                shipColorB            = (byte)(_shipColor.b * 255),
+
             };
         }
 

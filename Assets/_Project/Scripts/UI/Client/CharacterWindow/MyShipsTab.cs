@@ -35,6 +35,8 @@ namespace ProjectC.UI.Client
 
         private VisualElement _fuelBarFill;     // T-CARGO-UI-01-3: кастомный бар (bg+fill)
         private VisualElement _cargoBarFill;
+        private VisualElement _hullBarFill;     // T-HULL: полоска прочности корпуса
+        private Label _hullText;
 
         private VisualElement _modulesContainer;
         private VisualElement _modulesScroll;
@@ -89,6 +91,8 @@ namespace ProjectC.UI.Client
             // T-CARGO-UI-01-3: bind кастомные бары (bg+fill) — стиль как MarketWindow
             _fuelBarFill       = root.Q<VisualElement>("ship-fuel-bar-fill");
             _cargoBarFill      = root.Q<VisualElement>("ship-cargo-bar-fill");
+            _hullBarFill       = root.Q<VisualElement>("ship-hull-bar-fill");
+            _hullText          = root.Q<Label>("ship-hull-text");
 
             // T-CARGO-UI-01-5: кастомный дропдаун — вставляем в #ship-selector-container
             var containerEl = root.Q<VisualElement>("ship-selector-container");
@@ -313,6 +317,40 @@ namespace ProjectC.UI.Client
             if (_keyId != null)
                 _keyId.text = $"🔑 Key itemId={itemId}, instanceId={telemetry.keyInstanceId}";
 
+            // T-HULL: полоска прочности корпуса (над топливом)
+            if (_hullBarFill != null)
+            {
+                if (telemetry.hullMax > 0)
+                {
+                    float hullPct = Mathf.Clamp01((float)telemetry.hullCurrent / telemetry.hullMax);
+                    _hullBarFill.style.width = new StyleLength(new Length(hullPct * 100f, LengthUnit.Percent));
+
+                    // Цвет по %: зелёный > 0.5, жёлтый > 0.25, красный ≤ 0.25
+                    Color hullColor;
+                    if (hullPct > 0.5f) hullColor = new Color(0.47f, 0.86f, 0.59f, 0.9f);
+                    else if (hullPct > 0.25f) hullColor = new Color(0.94f, 0.78f, 0.31f, 0.9f);
+                    else hullColor = new Color(0.86f, 0.31f, 0.31f, 0.9f);
+                    _hullBarFill.style.backgroundColor = hullColor;
+                }
+                else
+                {
+                    _hullBarFill.style.width = new StyleLength(new Length(0f, LengthUnit.Percent));
+                }
+            }
+            if (_hullText != null)
+            {
+                if (telemetry.hullMax > 0)
+                {
+                    _hullText.text = telemetry.hullCurrent <= 0
+                        ? "Прочность: СЛОМАН"
+                        : $"Прочность: {telemetry.hullCurrent}/{telemetry.hullMax}";
+                }
+                else
+                {
+                    _hullText.text = "Прочность: —";
+                }
+            }
+
             // T-CARGO-UI-01-3: кастомный fuel bar (bg+fill) — стиль как MarketWindow
             if (_fuelBarFill != null)
             {
@@ -511,6 +549,8 @@ namespace ProjectC.UI.Client
             const float eps = 0.01f;
             if (Mathf.Abs(a.fuelNormalized - b.fuelNormalized) >= eps) return false;
             if (Mathf.Abs(a.fuelMax - b.fuelMax) >= eps) return false;
+            if (a.hullCurrent != b.hullCurrent) return false;
+            if (a.hullMax != b.hullMax) return false;
             if (a.cargoUsed != b.cargoUsed) return false;
             if (a.cargoMax != b.cargoMax) return false;
             if (a.moduleCount != b.moduleCount) return false;

@@ -16,6 +16,11 @@
 //
 // IsAlive() всегда true — CombatServer не должен публиковать EntityKilledEvent
 // для корабля (корабль не «труп», он сломан).
+//
+// Защиты от ложных ударов (T-HULL):
+//   - minCollisionRelativeSpeed: фильтр в ShipController перед вызовом
+//   - postUndockGraceSeconds: игнор урона N сек после отстыковки
+//   - IsDocked guard: в доке урон не наносится
 // =====================================================================================
 using System;
 using UnityEngine;
@@ -103,7 +108,8 @@ namespace ProjectC.Ship.Combat
 
         /// <summary>
         /// Применить урон от столкновения (server-only).
-        /// Вызывается из ShipController.OnCollisionEnter.
+        /// Вызывается из ShipController.OnCollisionEnter (уже отфильтрован по relativeVelocity).
+        /// Дополнительные защиты: IsDocked, postUndockGraceSeconds.
         /// Формула: hullDamage = floor((energy - threshold) * coefficient), capped.
         /// </summary>
         /// <param name="impactEnergy">col.impulse.magnitude</param>
@@ -113,6 +119,14 @@ namespace ProjectC.Ship.Combat
             if (_hull.Value <= 0) return; // уже сломан
 
             var cfg = ResolvedConfig;
+
+            // Защита: игнорировать урон если корабль в доке
+            if (_shipController != null && _shipController.IsDocked) return;
+
+            // Защита: грейс-период после отстыковки (физика выталкивает корабль из геометрии)
+            if (_shipController != null &&
+                Time.time - _shipController.LastUndockTime < cfg.postUndockGraceSeconds) return;
+
             if (impactEnergy < cfg.collisionEnergyThreshold) return;
 
             int damage = Mathf.FloorToInt((impactEnergy - cfg.collisionEnergyThreshold)

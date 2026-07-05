@@ -1083,6 +1083,10 @@
     /* Груз — голубой (как в MarketWindow) */
     background-color: rgba(100, 200, 255, 0.85) !important;
 }
+.ship-bar-fill-hull {
+    /* T-HULL: прочность корпуса — стально-голубой (цвет меняется в коде по %) */
+    background-color: rgba(140, 190, 215, 0.9) !important;
+}
 .ship-info-header {
     font-size: 11px !important;
     -unity-font-style: bold !important;

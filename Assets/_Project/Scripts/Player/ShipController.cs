@@ -113,11 +113,18 @@ namespace ProjectC.Player
                     if (_debugLog) Debug.Log($"[ShipController:{name}] EnterDocked — engine locked");
                 }
 
+                /// <summary>Server-only: время последней отстыковки (для грейс-периода урона корпусу).</summary>
+                private float _lastUndockTime = -999f;
+
+                /// <summary>Публичный геттер для ShipHull — грейс-период урона после отстыковки.</summary>
+                public float LastUndockTime => _lastUndockTime;
+
                 /// <summary>Вызвать на сервере при отстыковке.</summary>
                 public void ExitDocked()
                 {
                     if (!IsServer) return;
                     _netIsDocked.Value = false;
+                    _lastUndockTime = Time.time; // T-HULL: старт грейс-периода урона корпусу
                     // T-DOCK-09: снимаем kinematic — корабль снова под управлением.
                     if (_rb != null)
                     {
@@ -578,10 +585,16 @@ namespace ProjectC.Player
                 // _serverCargoPenalty обновится автоматически через OnCargoChanged → RecalculateCargoPenalty
             }
 
-            // T-HULL: урон корпусу от столкновения
+            // T-HULL: урон корпусу от столкновения (с защитами)
             if (_hull != null)
             {
-                _hull.ApplyCollisionDamage(energy);
+                var dmgCfg = ShipDamageConfig.Default;
+                // Фильтр: мин. скорость сближения для real удара (не penetration resolution)
+                float relSpeed = col.relativeVelocity.magnitude;
+                if (relSpeed >= dmgCfg.minCollisionRelativeSpeed)
+                {
+                    _hull.ApplyCollisionDamage(energy);
+                }
             }
         }
 
@@ -929,6 +942,15 @@ namespace ProjectC.Player
                 fuelNormalized = fuelSystem.CurrentFuel / Mathf.Max(fuelMax, 1f);
             }
 
+            // T-HULL: hull HP (-1/0 если ShipHull не установлен)
+            int hullCurrent = -1;
+            int hullMax = 0;
+            if (_hull != null)
+            {
+                hullCurrent = _hull.CurrentHull;
+                hullMax = _hull.MaxHull;
+            }
+
             // T-CARGO-UI-01: cargo — серверный push деталей в telemetry.
             // cargoUsed = sum(qty * slots) — соответствует GDD-логике slot-ёмкости.
             // cargoMax = GetEffectiveCargoLimits().maxSlots (per-instance + модули).
@@ -995,6 +1017,8 @@ namespace ProjectC.Player
                 rotationEuler         = transform.rotation.eulerAngles,
                 fuelNormalized        = fuelNormalized,
                 fuelMax               = fuelMax,
+                hullCurrent           = hullCurrent,
+                hullMax               = hullMax,
                 cargoUsed             = cargoUsedSlots,
                 cargoMax              = cargoMaxSlots,
                 moduleCount           = moduleManager != null && moduleManager.slots != null ? moduleManager.slots.Count : 0,

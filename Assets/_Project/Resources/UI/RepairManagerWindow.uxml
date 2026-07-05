@@ -44,6 +44,17 @@
                 <ui:Label name="repair-ship-power" text="Энергия: —" class="repair-info-label" />
             </ui:VisualElement>
 
+            <!-- T-HULL: hull durability bar + repair button -->
+            <ui:VisualElement name="repair-hull-section" class="repair-section">
+                <ui:VisualElement class="repair-hull-row">
+                    <ui:Label name="repair-hull-label" text="Прочность: —" class="repair-info-label" />
+                    <ui:Button name="repair-hull-btn" text="🔧 Починить" class="repair-btn repair-btn-install" />
+                </ui:VisualElement>
+                <ui:VisualElement class="repair-hull-bar-bg">
+                    <ui:VisualElement name="repair-hull-bar-fill" class="repair-hull-bar-fill" />
+                </ui:VisualElement>
+            </ui:VisualElement>
+
             <!-- Slot selector (dropdown) -->
             <ui:VisualElement name="repair-slot-selector" class="repair-section">
                 <ui:Label text="Слот модуля:" class="repair-section-label" />

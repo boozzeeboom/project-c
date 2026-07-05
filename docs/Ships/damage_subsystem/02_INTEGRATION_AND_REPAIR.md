@@ -158,6 +158,14 @@ CombatServer.Instance.RegisterTarget(GetTargetId(), this);
 | `Assets/_Project/Scripts/Ship/Combat/ShipHull.cs` | **Новый** — NetworkBehaviour, IDamageTarget |
 | `Assets/_Project/Scripts/Player/ShipController.cs` | **Edit** — `_hull` кеш, `_hullBroken`, `OnHullChanged`, `WipeCargo`, `ClearHullBroken`, множители в FixedUpdate, collision → hull |
 | `Assets/_Project/Scripts/Ship/ShipModuleServer.cs` | **Edit** — `RequestRepairHull` / `RequestRepairHullRpc` |
+| `Assets/_Project/Scripts/Ship/UI/RepairManagerWindow.cs` | **Edit** — +hull bar/button, +`RefreshCredits`, +`OnRepairHullClicked` |
+| `Assets/_Project/Resources/UI/RepairManagerWindow.uxml` | **Edit** — +hull-секция (бар + кнопка «Починить») |
+| `Assets/_Project/Resources/UI/RepairManagerWindow.uss` | **Edit** — +стили `.repair-hull-*` |
+| `Assets/_Project/UI/Resources/UI/CharacterWindow.uxml` | **Edit** — +hull-бар над топливной полоской |
+| `Assets/_Project/UI/Resources/UI/CharacterWindow.uss` | **Edit** — +`.ship-bar-fill-hull` |
+| `Assets/_Project/Scripts/UI/Client/CharacterWindow/MyShipsTab.cs` | **Edit** — +hull бар/label bind + update |
+| `Assets/_Project/Scripts/Ship/Network/ShipTelemetryState.cs` | **Edit** — +`hullCurrent`, `hullMax` |
+| `Assets/_Project/Scripts/Ship/UI/ShipHudController.cs` | **Edit** — +HULL полоска в K3 (Speed) |
 | `Assets/_Project/Resources/ShipDamage.asset` | **Создать в редакторе** — SO экземпляр |
 
 ---
@@ -166,12 +174,16 @@ CombatServer.Instance.RegisterTarget(GetTargetId(), this);
 
 1. На `Ship_Root` добавить `ShipHull` + создать `Resources/ShipDamage.asset`
 2. Войти в PIE (host)
-3. **Столкновение:** столкнуть корабль с препятствием на скорости → в консоли `[ShipHull] Collision damage: hull X → Y`. Лёгкий контакт (< 8 импульс) урона не наносит.
-4. **Поломка:** свести hull к 0 (многократные столкновения) → `[ShipController] HULL BROKEN — speeds ×0.1, cargo wiped`. Корабль движется на 10% скоростей. Груз обнулён.
-5. **Не уничтожение:** корабль не деспаунится, `IsAlive() = true`, `EntityKilledEvent` не публикуется.
-6. **Ремонт:** пристыковаться в доке → `RepairManagerWindow` → кнопка ремонта → `[ShipModuleServer] Hull repaired` → hull = max, скорости восстановлены, `_hullBroken = false`.
-7. **Клиент:** на не-хост клиенте `ShipHull.CurrentHull` реплицируется через `NetworkVariable` (сервер — истина).
-8. **Боевое оружие:** атаковать корабль оружием через `CombatServer` → `[ShipHull] Combat damage: hull X → Y (dmg=N, attacker=...)`.
+3. **Столкновение:** столкнуть корабль с препятствием на скорости (>3 м/с relativeVelocity) → в консоли `[ShipHull] Collision damage: hull X → Y`. Лёгкий контакт (relativeVelocity < 3 м/с или impulse < threshold) урона не наносит.
+4. **Отстыковка без урона:** пристыковаться → отстыковаться → корабль **не должен** получить урон (грейс-период 3 сек + relativeVelocity фильтр + IsDocked guard).
+5. **Поломка:** свести hull к 0 (многократные столкновения) → `[ShipController] HULL BROKEN — speeds ×0.1, cargo wiped`. Корабль движется на 10% скоростей. Груз обнулён.
+6. **Не уничтожение:** корабль не деспаунится, `IsAlive() = true`, `EntityKilledEvent` не публикуется.
+7. **Ремонт:** пристыковаться в доке → `RepairManagerWindow` → видна полоска прочности + кнопка «🔧 Починить (N кр.)» → нажать → `[ShipModuleServer] Hull repaired` → hull = max, кредиты списаны, `_hullBroken = false`, кнопка показывает «✓ Целый».
+8. **Кредиты в RepairManager:** окно показывает актуальный баланс в футере `💰 Кредиты: N`. После ремонта баланс обновляется.
+9. **Клиент:** на не-хост клиенте `ShipHull.CurrentHull` реплицируется через `NetworkVariable` (сервер — истина).
+10. **Боевое оружие:** атаковать корабль оружием через `CombatServer` → `[ShipHull] Combat damage: hull X → Y (dmg=N, attacker=...)`.
+11. **CharacterWindow вкладка Корабль:** полоска прочности над топливом, цвет по %HP, текст «Прочность: СЛОМАН» при 0 HP.
+12. **HUD корабля:** полоска HULL между Speed и Fuel в центральной колонке.
 
 ---
 

@@ -511,8 +511,7 @@ namespace ProjectC.Ship
             }
 
             // --- Списание кредитов ---
-            var cfg = ProjectC.Ship.Combat.ShipDamageConfig.Default;
-            int cost = cfg.repairCostCredits;
+            int cost = hull.Config != null ? hull.Config.repairCostCredits : 0;
             if (cost > 0)
             {
                 var trade = ProjectC.Trade.Core.TradeWorld.Instance;

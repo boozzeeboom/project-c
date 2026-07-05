@@ -56,6 +56,10 @@ namespace ProjectC.Ship.UI
         private VisualElement _speedBarFill;
         private Label _maxSpeedLabel;
 
+        // Hull display between speed and fuel (T-HULL)
+        private VisualElement _hullBarFill;
+        private Label _hullLabel;
+
         // Fuel display under speed (K3-b)
         private VisualElement _fuelBarFill;
         private Label _fuelLabel;
@@ -309,6 +313,35 @@ namespace ProjectC.Ship.UI
             _maxSpeedLabel.style.marginTop = 1;
             _colSpeed.Add(_maxSpeedLabel);
 
+            // ── HULL bar (T-HULL: между скоростью и топливом) ──
+            var hullTrack = new VisualElement { name = "hull-bar-track" };
+            hullTrack.style.height = 3;
+            hullTrack.style.minHeight = 3;
+            hullTrack.style.marginTop = 2;
+            hullTrack.style.backgroundColor = new Color(0.08f, 0.10f, 0.14f, 0.8f);
+            hullTrack.style.borderTopLeftRadius = 2;
+            hullTrack.style.borderTopRightRadius = 2;
+            hullTrack.style.borderBottomLeftRadius = 2;
+            hullTrack.style.borderBottomRightRadius = 2;
+            hullTrack.style.overflow = Overflow.Hidden;
+            hullTrack.style.flexShrink = 0;
+
+            _hullBarFill = new VisualElement { name = "hull-bar-fill" };
+            _hullBarFill.style.height = Length.Percent(100);
+            _hullBarFill.style.width = Length.Percent(100);
+            _hullBarFill.style.backgroundColor = new Color(0.55f, 0.75f, 0.85f); // стально-голубой
+            hullTrack.Add(_hullBarFill);
+            _colSpeed.Add(hullTrack);
+
+            // HULL текст
+            _hullLabel = new Label { name = "hull-label" };
+            _hullLabel.text = "HULL 100/100";
+            _hullLabel.style.fontSize = 8;
+            _hullLabel.style.color = new Color(1, 1, 1, 0.85f);
+            _hullLabel.style.unityTextAlign = TextAnchor.MiddleCenter;
+            _hullLabel.style.marginTop = 1;
+            _colSpeed.Add(_hullLabel);
+
             // ── FUEL bar (под MAX) ──
             var fuelTrack = new VisualElement { name = "fuel-bar-track" };
             fuelTrack.style.height = 3;
@@ -400,6 +433,34 @@ namespace ProjectC.Ship.UI
             else if (fill < 0.8f) barColor = new Color(0.94f, 0.78f, 0.31f);
             else barColor = new Color(0.86f, 0.31f, 0.31f);
             _speedBarFill.style.backgroundColor = barColor;
+
+            // ── HULL: bar + label (T-HULL) ──
+            var hull = ship.Hull;
+            if (hull != null && _hullBarFill != null)
+            {
+                int cur = hull.CurrentHull;
+                int max = hull.MaxHull;
+                float hullPct = max > 0 ? Mathf.Clamp01((float)cur / max) : 0f;
+                _hullBarFill.style.width = Length.Percent(hullPct * 100f);
+
+                // Цвет: зелёный > 0.5, жёлтый > 0.25, красный ≤ 0.25 (0 = сломан)
+                Color hullColor;
+                if (hullPct > 0.5f) hullColor = new Color(0.31f, 0.78f, 0.47f);
+                else if (hullPct > 0.25f) hullColor = new Color(0.94f, 0.78f, 0.31f);
+                else hullColor = new Color(0.86f, 0.31f, 0.31f);
+                _hullBarFill.style.backgroundColor = hullColor;
+
+                _hullLabel.text = hull.IsBroken ? $"HULL СЛОМАН" : $"HULL {cur}/{max}";
+                _hullLabel.style.color = hull.IsBroken
+                    ? new Color(0.86f, 0.31f, 0.31f)
+                    : new Color(1, 1, 1, 0.85f);
+            }
+            else if (_hullBarFill != null)
+            {
+                // Нет ShipHull — скрываем полоску
+                _hullBarFill.style.width = Length.Percent(0);
+                if (_hullLabel != null) _hullLabel.text = "HULL —";
+            }
 
             // ── FUEL: bar + label + refuel indicator ──
             var fs = ship.FuelSystem;

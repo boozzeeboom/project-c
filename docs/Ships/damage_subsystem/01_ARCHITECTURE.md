@@ -289,6 +289,8 @@ public static ShipDamageConfig Default
 | `collisionEnergyThreshold` | float | 8 | Мин. импульс для урона |
 | `collisionDamageCoefficient` | float | 0.5 | energy → HP |
 | `collisionDamageCap` | int | 50 | Макс. урон за удар |
+| `minCollisionRelativeSpeed` | float | 3 | Мин. скорость сближения (м/с) для урона |
+| `postUndockGraceSeconds` | float | 3 | Грейс-период после отстыковки (сек) |
 | `brokenSpeedMultiplier` | float | 0.1 | Множитель скоростей при 0 HP |
 | `repairCostCredits` | int | 300 | Стоимость ремонта |
 | `verboseLogging` | bool | true | Подробные логи |

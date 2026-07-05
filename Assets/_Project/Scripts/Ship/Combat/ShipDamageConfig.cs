@@ -47,6 +47,15 @@ namespace ProjectC.Ship.Combat
         [Tooltip("Максимальный урон от одного столкновения (cap, чтобы один удар не уничтожил корабль).")]
         [Min(1)] public int collisionDamageCap = 50;
 
+        [Tooltip("Минимальная скорость сближения (col.relativeVelocity.magnitude, м/с) для урона. " +
+                 "Отсекает 'ложные' удары при выталкивании из геометрии (penetration resolution) на отстыковке, " +
+                 "когда impulse огромный, но реального сближения нет.")]
+        [Min(0f)] public float minCollisionRelativeSpeed = 3f;
+
+        [Tooltip("Грейс-период (сек) после отстыковки, в течение которого урон корпусу от столкновений игнорируется. " +
+                 "Даёт физике 'осесть' после снятия kinematic, не ломая корабль о док.")]
+        [Min(0f)] public float postUndockGraceSeconds = 3f;
+
         [Header("Поломка (0 HP)")]
         [Tooltip("Множитель скоростей при поломке (0 HP). 0.1 = 10% от нормальных скоростей.")]
         [Range(0f, 1f)] public float brokenSpeedMultiplier = 0.1f;

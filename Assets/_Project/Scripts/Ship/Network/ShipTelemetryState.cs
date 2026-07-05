@@ -73,6 +73,8 @@ namespace ProjectC.Ship.Network
         public Vector3 rotationEuler;
         public float  fuelNormalized;         // 0..1
         public float  fuelMax;                // абсолютный максимум
+        public int    hullCurrent;            // T-HULL: текущий HP корпуса (-1 = ShipHull не установлен)
+        public int    hullMax;                // T-HULL: max HP корпуса (0 = ShipHull не установлен)
         public int    cargoUsed;              // T-CARGO-UI-01: теперь = sum(qty * slots), не Items.Count
         public int    cargoMax;               // T-CARGO-UI-01: фикс — был всегда 0, теперь через GetEffectiveCargoLimits()
         public int    moduleCount;
@@ -101,6 +103,8 @@ namespace ProjectC.Ship.Network
             serializer.SerializeValue(ref rotationEuler);
             serializer.SerializeValue(ref fuelNormalized);
             serializer.SerializeValue(ref fuelMax);
+            serializer.SerializeValue(ref hullCurrent);
+            serializer.SerializeValue(ref hullMax);
             serializer.SerializeValue(ref cargoUsed);
             serializer.SerializeValue(ref cargoMax);
             serializer.SerializeValue(ref moduleCount);
@@ -135,6 +139,8 @@ namespace ProjectC.Ship.Network
             if (rotationEuler != other.rotationEuler) return false;
             if (!Mathf.Approximately(fuelNormalized, other.fuelNormalized)) return false;
             if (!Mathf.Approximately(fuelMax, other.fuelMax)) return false;
+            if (hullCurrent != other.hullCurrent) return false;
+            if (hullMax != other.hullMax) return false;
             if (cargoUsed != other.cargoUsed) return false;
             if (cargoMax != other.cargoMax) return false;
             if (moduleCount != other.moduleCount) return false;
@@ -171,6 +177,8 @@ namespace ProjectC.Ship.Network
                 hash = hash * 31 + rotationEuler.GetHashCode();
                 hash = hash * 31 + fuelNormalized.GetHashCode();
                 hash = hash * 31 + fuelMax.GetHashCode();
+                hash = hash * 31 + hullCurrent;
+                hash = hash * 31 + hullMax;
                 hash = hash * 31 + cargoUsed;
                 hash = hash * 31 + cargoMax;
                 hash = hash * 31 + moduleCount;

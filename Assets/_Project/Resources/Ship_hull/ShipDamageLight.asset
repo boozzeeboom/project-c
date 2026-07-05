@@ -18,8 +18,10 @@ MonoBehaviour:
   maxHullHeavyII: 600
   armorHull: 5
   collisionEnergyThreshold: 8
-  collisionDamageCoefficient: 0.5
-  collisionDamageCap: 50
+  collisionDamageCoefficient: 0.05
+  collisionDamageCap: 5
+  minCollisionRelativeSpeed: 3
+  postUndockGraceSeconds: 3
   brokenSpeedMultiplier: 0.1
   repairCostCredits: 300
   verboseLogging: 1

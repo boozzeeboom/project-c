@@ -65,6 +65,16 @@ effectiveDefense = round(armorHull * typeMultiplier)
 
 `armorHull = 5` (по умолчанию) — вычитается из `preDefenseDamage` после множителя типа.
 
+### 2.3 Защиты от ложных ударов при стыковке/отстыковке
+
+При отстыковке физика выталкивает корабль из геометрии дока — `impulse` огромный (1994+), но `relativeVelocity ≈ 0` (реального сближения нет). Три уровня защиты:
+
+| Защита | Параметр | Default | Где |
+|--------|----------|---------|-----|
+| Мин. скорость сближения | `minCollisionRelativeSpeed` | 3 м/с | `ShipController.OnCollisionEnter` — фильтр ДО вызова `ShipHull` |
+| Грейс-период отстыковки | `postUndockGraceSeconds` | 3 сек | `ShipHull.ApplyCollisionDamage` — `Time.time - LastUndockTime < grace` |
+| В доке | — | — | `ShipHull.ApplyCollisionDamage` — `IsDocked → return` |
+
 ---
 
 ## 3. HP по классу корабля

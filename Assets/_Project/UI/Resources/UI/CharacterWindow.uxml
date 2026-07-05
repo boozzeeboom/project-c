@@ -106,6 +106,12 @@
   <!-- key-id (единственный header-текст, дублирующееся имя убрано T-CARGO-UI-01-3) -->
   <ui:Label name="ship-info-key-id" text="—" class="ship-info-key-id" />
 
+   <!-- T-HULL: полоска прочности корпуса (над топливом) -->
+   <ui:VisualElement class="ship-bar-bg">
+    <ui:VisualElement name="ship-hull-bar-fill" class="ship-bar-fill ship-bar-fill-hull" />
+   </ui:VisualElement>
+   <ui:Label name="ship-hull-text" text="—" class="ship-info-row ship-info-row-compact" />
+
    <!-- T-CARGO-UI-01-3: кастомный fuel bar (bg+fill) — стиль как в MarketWindow -->
    <ui:VisualElement class="ship-bar-bg">
     <ui:VisualElement name="ship-fuel-bar-fill" class="ship-bar-fill ship-bar-fill-fuel" />

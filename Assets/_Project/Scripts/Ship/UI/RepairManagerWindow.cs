@@ -45,6 +45,9 @@ namespace ProjectC.Ship.UI
         private VisualElement _installedActions;
         private Label _shipClassLabel;
         private Label _shipPowerLabel;
+        private Label _hullLabel;          // T-HULL
+        private VisualElement _hullBarFill;
+        private Button _hullBtn;
         private VisualElement _modulesContainer;
         private Label _modulesHeader;
         private Label _creditsLabel;
@@ -173,6 +176,9 @@ namespace ProjectC.Ship.UI
             _installedActions = _root.Q<VisualElement>("repair-installed-actions");
             _shipClassLabel = _root.Q<Label>("repair-ship-class");
             _shipPowerLabel = _root.Q<Label>("repair-ship-power");
+            _hullLabel = _root.Q<Label>("repair-hull-label");
+            _hullBarFill = _root.Q<VisualElement>("repair-hull-bar-fill");
+            _hullBtn = _root.Q<Button>("repair-hull-btn");
             _modulesContainer = _root.Q<VisualElement>("repair-modules-container");
             _modulesHeader = _root.Q<Label>("repair-modules-header");
             _creditsLabel = _root.Q<Label>("repair-credits-label");
@@ -191,6 +197,12 @@ namespace ProjectC.Ship.UI
             {
                 _closeBtn.clicked -= OnCloseClicked;
                 _closeBtn.clicked += OnCloseClicked;
+            }
+
+            if (_hullBtn != null)
+            {
+                _hullBtn.clicked -= OnRepairHullClicked;
+                _hullBtn.clicked += OnRepairHullClicked;
             }
 
             WireCameraArrows();
@@ -257,7 +269,22 @@ namespace ProjectC.Ship.UI
                 ShipModuleCatalog.Initialize(_activeDatabase);
 
             RefreshShipList();
+            RefreshCredits();
             SetOpen(true);
+        }
+
+        private void RefreshCredits()
+        {
+            if (_creditsLabel == null) return;
+            float credits = 0f;
+            var trade = ProjectC.Trade.Core.TradeWorld.Instance;
+            if (trade?.Repository != null)
+            {
+                ulong myId = Unity.Netcode.NetworkManager.Singleton != null
+                    ? Unity.Netcode.NetworkManager.Singleton.LocalClientId : 0;
+                credits = trade.Repository.GetCredits(myId);
+            }
+            _creditsLabel.text = $"💰 Кредиты: {credits:F0}";
         }
 
 
@@ -421,16 +448,91 @@ namespace ProjectC.Ship.UI
             if (_shipPowerLabel != null && mm != null)
                 _shipPowerLabel.text = $"Энергия: {mm.currentPowerUsage}/{mm.availablePower}";
 
+            UpdateHullInfo(sc);
+
             BuildSlotDropdown(sc);
             _selectedSlotName = null;
             UpdateInstalledInfo();
             ClearModulesView();
         }
 
+        // ============================================================
+        // T-HULL: Hull durability + repair
+        // ============================================================
+
+        private void UpdateHullInfo(ShipController sc)
+        {
+            var hull = sc != null ? sc.Hull : null;
+
+            if (hull == null)
+            {
+                if (_hullLabel != null) _hullLabel.text = "Прочность: —";
+                if (_hullBarFill != null) _hullBarFill.style.width = Length.Percent(0);
+                if (_hullBtn != null) _hullBtn.SetEnabled(false);
+                return;
+            }
+
+            int cur = hull.CurrentHull;
+            int max = hull.MaxHull;
+            float pct = max > 0 ? Mathf.Clamp01((float)cur / max) : 0f;
+
+            if (_hullBarFill != null)
+            {
+                _hullBarFill.style.width = Length.Percent(pct * 100f);
+                Color c;
+                if (pct > 0.5f) c = new Color(0.47f, 0.86f, 0.59f, 0.9f);
+                else if (pct > 0.25f) c = new Color(0.94f, 0.78f, 0.31f, 0.9f);
+                else c = new Color(0.86f, 0.31f, 0.31f, 0.9f);
+                _hullBarFill.style.backgroundColor = c;
+            }
+
+            int cost = hull.Config != null ? hull.Config.repairCostCredits : 0;
+
+            if (_hullLabel != null)
+            {
+                _hullLabel.text = hull.IsBroken
+                    ? $"Прочность: СЛОМАН ({cur}/{max})"
+                    : $"Прочность: {cur}/{max}";
+            }
+
+            if (_hullBtn != null)
+            {
+                bool needsRepair = cur < max;
+                bool isDocked = sc.IsDocked;
+                _hullBtn.SetEnabled(needsRepair && isDocked);
+                _hullBtn.text = needsRepair
+                    ? $"🔧 Починить ({cost} кр.)"
+                    : "✓ Целый";
+                _hullBtn.tooltip = !isDocked ? "Корабль должен быть в доке" : string.Empty;
+            }
+        }
+
+        private void OnRepairHullClicked()
+        {
+            if (_selectedKeyId <= 0) return;
+            if (!_shipByKeyId.TryGetValue(_selectedKeyId, out var sc)) return;
+
+            var server = sc.GetComponent<ShipModuleServer>();
+            if (server != null)
+            {
+                server.RequestRepairHull(_selectedKeyId);
+                if (_statusLabel != null)
+                    _statusLabel.text = "Запрос на ремонт корпуса отправлен...";
+                StartCoroutine(DelayedRefresh(0.5f));
+            }
+            else
+            {
+                Debug.LogWarning("[RepairManagerWindow] ShipModuleServer not found on ship");
+            }
+        }
+
         private void ClearShipView()
         {
             if (_shipClassLabel != null) _shipClassLabel.text = "Класс: —";
             if (_shipPowerLabel != null) _shipPowerLabel.text = "Энергия: —";
+            if (_hullLabel != null) _hullLabel.text = "Прочность: —";
+            if (_hullBarFill != null) _hullBarFill.style.width = Length.Percent(0);
+            if (_hullBtn != null) _hullBtn.SetEnabled(false);
             if (_slotDropdownContainer != null) _slotDropdownContainer.Clear();
             if (_installedLabel != null) _installedLabel.text = "Установлено: —";
             if (_installedActions != null) _installedActions.Clear();
@@ -682,6 +784,7 @@ namespace ProjectC.Ship.UI
             yield return new WaitForSeconds(delay);
             if (IsOpen && _selectedKeyId > 0)
             {
+                RefreshCredits();
                 RenderShip();
                 if (!string.IsNullOrEmpty(_selectedSlotName))
                     RenderCompatibleModules(_selectedSlotName);

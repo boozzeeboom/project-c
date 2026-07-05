@@ -83,6 +83,29 @@
     margin-right: 16px !important;
 }
 
+/* === T-HULL: hull durability === */
+.repair-hull-row {
+    flex-direction: row !important;
+    align-items: center !important;
+    justify-content: space-between !important;
+    margin-bottom: 4px !important;
+}
+.repair-hull-bar-bg {
+    flex-shrink: 0 !important;
+    height: 10px !important;
+    background-color: rgba(40, 55, 85, 0.6) !important;
+    border-radius: 5px !important;
+    overflow: hidden !important;
+}
+.repair-hull-bar-fill {
+    width: 100% !important;
+    height: 100% !important;
+    background-color: rgba(140, 190, 215, 0.9) !important;
+    border-radius: 5px !important;
+    transition-property: width !important;
+    transition-duration: 0.3s !important;
+}
+
 /* === Installed module row === */
 .repair-installed-row {
     flex-direction: row !important;

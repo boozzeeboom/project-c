@@ -47,3 +47,29 @@
 - Key-subsystem/00_OVERVIEW.md §12: миграция MetaRequirement — ЗАВЕРШЕНА
 
 **Итог:** P2 закрыт без изменений кода (всё уже реализовано). P3: 3 документа актуализированы.
+
+---
+
+## Итерация от 2026-07-21 (P5)
+
+**Задача:** P5 — Cargo ownership/security guard
+
+**Ветка:** main (прямой коммит)
+
+**Коммит:** `f4d2c9f` — feat(ship): P5 — cargo ownership guard (ShipCargoServer + MarketServer)
+
+**Изменения:**
+- `TradeResultCode.cs`: +`NotOwner = 36`
+- `ShipCargoServer.cs`: `IsOwnerOfShip` guard в `RequestStoreToCargoRpc` + `RequestRetrieveFromCargoRpc`
+- `MarketServer.cs`: `IsOwnerOfShip` guard в `RequestLoadToShipRpc` + `RequestUnloadFromShipRpc`
+- `CARGO_OWNERSHIP_DESIGN.md`: диздок (новый)
+
+**4 метода защищены:**
+| Файл | Метод | Ошибка |
+|------|-------|--------|
+| ShipCargoServer | RequestStoreToCargoRpc | "Вы не владелец этого корабля" |
+| ShipCargoServer | RequestRetrieveFromCargoRpc | "Вы не владелец этого корабля" |
+| MarketServer | RequestLoadToShipRpc | TradeResultCode.NotOwner |
+| MarketServer | RequestUnloadFromShipRpc | TradeResultCode.NotOwner |
+
+**Итог:** +~40 строк, 4 ownership guard'а. Без циклических зависимостей.

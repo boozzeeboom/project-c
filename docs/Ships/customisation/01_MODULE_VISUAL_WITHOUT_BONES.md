@@ -314,6 +314,36 @@ Transform ResolveSocket(ModuleSlot slot, ShipModule module)
 
 **Сравнение с персонажем:** у персонажа нет точного аналога. Ближайшее — `attachBoneOverride` (когда default маппинг не подходит). У корабля — явный путь к дочернему socket. **Более мощно и читаемо**, чем humanoid override.
 
+#### Как настроить `visualSocketPath` — пошагово
+
+`visualSocketPath` — это **имя дочернего GameObject** под `ModuleSlot`, к которому крепится визуал. По умолчанию пусто → крепится к самому слоту.
+
+**Пошагово:**
+
+```
+1. В префабе корабля под слотом (например Engine_Left) создай пустой GameObject —
+   назови его Socket_Nozzle. Это и есть «socket».
+
+        Engine_Left
+        ├── ModuleSlot (компонент)
+        └── Socket_Nozzle ← Transform сюда
+
+2. В ShipModule SO пропиши visualSocketPath = "Socket_Nozzle"
+
+3. В инспекторе ModuleSlot → жми ▶ Preview — визуал появится на Socket_Nozzle
+
+4. Если Socket_Nozzle не найден — визуал упадёт на сам слот (fallback)
+```
+
+**Когда это нужно:**
+- Один слот имеет несколько точек крепления (левое/правое/центральное сопло)
+- Визуал должен быть смещён относительно «якоря» слота, но не через offset
+- Разные модули в одном слоте крепятся к разным дочерним Transform'ам
+
+**Когда НЕ нужно:**
+- Слот один и визуал один → `visualSocketPath = ""` (default)
+- Нужен простой сдвиг → используй `attachPositionOffset` (Vector3)
+
 ### 4.5 Случай: модуль заменяет весь меш слота (а не добавляет)
 
 **Пример:** вместо стандартного `Engine_Standard.prefab` ставим `Engine_Meziy_Heavy.prefab` — он больше и перекрывает весь engine mount.
@@ -446,3 +476,53 @@ public Vector3 attachScale = Vector3.one;
 | `docs/Ships/00_COMPOSITE_SHIP_SUMMARY.md` | Иерархия корабля (root + children) |
 | `00_SUMMARY.md` | Общая сводка кастомизации (L0-L6) |
 | `project-c-composite-object-architecture` skill | Паттерн marker + locator для composite ships |
+
+---
+
+## 11. Статус реализации (2026-07-04)
+
+### ✅ Реализовано
+
+| Компонент | Файл | Статус |
+|---|---|---|
+| Визуальные поля в SO | `ShipModule.cs` (+7 полей + 2 enum'а) | ✅ |
+| Applier на root корабля | `ShipModuleVisualApplier.cs` | ✅ |
+| Editor-превью | `Editor/ModuleSlotEditor.cs` | ✅ |
+| USS фикс для попапов | `RepairManagerWindow.cs` | ✅ |
+
+### Поля `ShipModule.cs` (L1 Visual)
+
+```csharp
+[Header("Visual (L1 — module visualPrefab)")]
+public GameObject visualPrefab;           // Префаб меша модуля
+public string visualSocketPath = "";      // Дочерний socket ("" = сам слот)
+public Vector3 attachPositionOffset;      // Локальный сдвиг
+public Vector3 attachRotationOffset;      // Локальное вращение (Euler)
+public Vector3 attachScale = Vector3.one; // Масштаб (x=-1 = зеркало)
+public ModuleAttachAxis attachAxis;       // Ориентация (Slot/ShipForward/ShipDown/WorldUp)
+public ModuleColliderMode colliderMode;   // Коллайдеры (None/Trigger/Solid)
+```
+
+### `ShipModuleVisualApplier.cs`
+
+- `[DisallowMultipleComponent]`, `NetworkBehaviour`
+- Подписка на `ShipModuleServer.OnModuleChanged` (статический event)
+- Спавн `visualPrefab` под `slot.transform` (или `visualSocketPath`)
+- Применение: `localPosition`, `localEulerAngles`, `localScale`, `attachAxis`, `colliderMode`
+- `ApplyAllFromManager()` при late-join (`OnNetworkSpawn`)
+- Анти-restrictive: если `visualPrefab == null` или `socket` не найден → skip
+
+### `Editor/ModuleSlotEditor.cs`
+
+- Поле «Preview Module» — drag ShipModule SO
+- Кнопки: ▶ Preview / ↻ Refresh / ✕ Clear
+- Quick-edit offsets прямо в инспекторе (авто-обновление превью)
+- `HideFlags.DontSave` — превью не сохраняется в сцену
+
+### Не реализовано (L2+)
+
+| Задача | Причина |
+|---|---|
+| Сложная анимация модуля (Animator внутри prefab) | Нет контента — ждёт дизайнера |
+| `ModuleActivationAnimator` (внешнее управление) | Нет контента |
+| L6 slot composition | Отдельная подсистема |

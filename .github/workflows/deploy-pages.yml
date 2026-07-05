@@ -24,14 +24,27 @@ jobs:
       - name: Setup Pages
         uses: actions/configure-pages@v5
 
+      # Удаляем старые artifact'ы "github-pages" из предыдущих запусков,
+      # чтобы deploy-pages не находил два и не падал с Multiple artifacts found.
+      - name: Delete stale github-pages artifacts
+        run: |
+          ids=$(gh api "/repos/${GITHUB_REPOSITORY}/actions/artifacts?name=github-pages&per_page=100" \
+            --jq '.artifacts[] | .id')
+          if [ -z "$ids" ]; then
+            echo "No stale artifacts found"
+            exit 0
+          fi
+          count=$(echo "$ids" | wc -l)
+          echo "$ids" | xargs -I {} gh api -X DELETE "/repos/${GITHUB_REPOSITORY}/actions/artifacts/{}"
+          echo "Deleted $count stale artifact(s): $(echo "$ids" | paste -sd ' ')"
+        env:
+          GH_TOKEN: ${{ github.token }}
+
       - name: Upload artifact
         uses: actions/upload-pages-artifact@v3
         with:
           # Весь docs/ — и Fun/index.html, и roadmap.html, и остальное
           path: docs
-          # Короткий retention, чтобы старые artifact'ы не копились
-          # и не ломали deploy-pages (баг: Multiple artifacts found)
-          retention-days: 1
 
       - name: Deploy to GitHub Pages
         id: deployment

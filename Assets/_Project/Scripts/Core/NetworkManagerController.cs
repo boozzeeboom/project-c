@@ -242,8 +242,8 @@ namespace ProjectC.Core
         }
 
         /// <summary>
-        /// T-KEY-07: ShipTelemetryClientState — клиентский агрегатор ship telemetry + ownership cache.
-        /// Подписывается на NetworkVariable всех ShipController и ShipOwnershipRegistry.
+        /// P1-refactor: ShipTelemetryClientState — клиентский агрегатор ship telemetry.
+        /// Ownership из ShipTelemetryState.ownerClientId (ShipOwnershipRegistry удалён).
         /// </summary>
         private void CreateShipTelemetryClientState()
         {

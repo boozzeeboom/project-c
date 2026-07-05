@@ -1,35 +1,23 @@
 // =====================================================================================
 // ShipTelemetryClientState.cs — client-side агрегатор ship telemetry (R2-SHIP-KEY-003, T-KEY-07)
 // =====================================================================================
-// Документация:
-//   • docs/Ships/Key-subsystem/22_SHIP_TELEMETRY_PLAN.md §2.5
-//   • docs/Ships/Key-subsystem/23_ROADMAP.md T-KEY-07
-//
-// Назначение: client-side singleton, агрегирует ShipTelemetryState со всех кораблей
-// и OwnershipEntry из ShipOwnershipRegistry. UI/HUD подписывается на OnShipStateChanged.
-//
-// Клиент НЕ получает telemetry для ВСЕХ кораблей автоматически — только когда
-// клиент подписан через NetworkVariable (который синхронизируется только на
-// клиентов с активным NetworkObject). Сейчас NGO синхронизирует NetworkVariable
-// всем клиентам по умолчанию (см. plan §2.4 — фильтрация делается клиентом).
-//
-// Если в будущем понадобится отфильтровать сервер-сайд (только владельцу),
-// это будет Phase 2 (см. plan §5 "Открытые вопросы").
+// P1-refactor: ownership читается из ShipTelemetryState.ownerClientId,
+// ShipOwnershipRegistry удалён (дублировал KeyRodInstanceWorld).
 // =====================================================================================
 
 using System;
 using System.Collections.Generic;
-using Unity.Collections;
 using Unity.Netcode;
 using UnityEngine;
-using ProjectC.Ship.Network;          // ShipTelemetryState, ShipOwnershipRegistry
+using ProjectC.Ship.Network;          // ShipTelemetryState
 using ProjectC.Player;                // ShipController
 
 namespace ProjectC.Ship.Client
 {
     /// <summary>
-    /// Client-side агрегатор ship telemetry + ownership cache.
+    /// Client-side агрегатор ship telemetry + ownership filter.
     /// Singleton, MonoBehaviour (НЕ NetworkBehaviour — клиент-сайд).
+    /// P1-refactor: ownership из ShipTelemetryState.ownerClientId (не из отдельного registry).
     /// </summary>
     public class ShipTelemetryClientState : MonoBehaviour
     {
@@ -40,11 +28,8 @@ namespace ProjectC.Ship.Client
         // ===========================================================
 
         /// <summary>shipNetId → последний известный state. Агрегируется через
-        /// подписки на NetworkVariable каждого ShipController (см. SubscribeToShip).</summary>
+        /// подписки на NetworkVariable каждого ShipController.</summary>
         private readonly Dictionary<ulong, ShipTelemetryState> _allShips = new Dictionary<ulong, ShipTelemetryState>();
-
-        /// <summary>shipNetId → owner (кэш из ShipOwnershipRegistry.OnOwnershipListChanged).</summary>
-        private readonly Dictionary<ulong, ulong> _ownershipCache = new Dictionary<ulong, ulong>();
 
         // ===========================================================
         // Events
@@ -53,14 +38,14 @@ namespace ProjectC.Ship.Client
         /// <summary>Изменился state конкретного корабля. Аргумент: shipNetId.</summary>
         public event Action<ulong> OnShipStateChanged;
 
-        /// <summary>Обновился ownership список (после любого ShipOwnershipRegistry change).</summary>
+        /// <summary>Изменился ownership (при изменении ownerClientId в telemetry любого корабля).</summary>
         public event Action OnOwnershipUpdated;
 
         // ===========================================================
         // Public API
         // ===========================================================
 
-        /// <summary>Все корабли текущего клиента (по ownership filter).</summary>
+        /// <summary>Все корабли текущего клиента (по ownerClientId в telemetry).</summary>
         public IEnumerable<KeyValuePair<ulong, ShipTelemetryState>> MyShips
         {
             get
@@ -68,10 +53,8 @@ namespace ProjectC.Ship.Client
                 ulong myClientId = LocalClientId;
                 foreach (var kvp in _allShips)
                 {
-                    if (_ownershipCache.TryGetValue(kvp.Key, out var owner) && owner == myClientId)
-                    {
+                    if (kvp.Value.ownerClientId == myClientId)
                         yield return kvp;
-                    }
                 }
             }
         }
@@ -83,11 +66,12 @@ namespace ProjectC.Ship.Client
             return null;
         }
 
-        /// <summary>True если этот клиент владеет кораблем (есть key в инвентаре).</summary>
+        /// <summary>True если этот клиент владеет кораблем (есть key в инвентаре).
+        /// P1-refactor: читает из telemetry, не из отдельного registry.</summary>
         public bool IsMyShip(ulong shipNetId)
         {
             ulong myClientId = LocalClientId;
-            return _ownershipCache.TryGetValue(shipNetId, out var owner) && owner == myClientId;
+            return _allShips.TryGetValue(shipNetId, out var s) && s.ownerClientId == myClientId;
         }
 
         /// <summary>Total ships в кэше (для отладки).</summary>
@@ -97,15 +81,12 @@ namespace ProjectC.Ship.Client
         // Client-side subscription API
         // ===========================================================
 
-        /// <summary>Подписаться на NetworkVariable конкретного корабля (вызывается из
-        /// клиента при спавне ShipController — обычно NGO делает автоматически, но для
-        /// полноты можно вызывать вручную).</summary>
+        /// <summary>Подписаться на NetworkVariable конкретного корабля.</summary>
         public void SubscribeToShip(ShipController ship)
         {
             if (ship == null) return;
             ulong shipNetId = ship.NetworkObjectId;
 
-            // Подписка на NetworkVariable (ShipTelemetryState)
             ship.OnTelemetryStateChanged += (prev, next) => OnShipTelemetryUpdated(shipNetId, next);
             var initial = ship.TelemetryState;
             _allShips[shipNetId] = initial;
@@ -116,22 +97,7 @@ namespace ProjectC.Ship.Client
         public void UnsubscribeFromShip(ulong shipNetId)
         {
             if (_allShips.Remove(shipNetId))
-            {
                 Debug.Log($"[ShipTelemetryClientState] UnsubscribeFromShip: ship={shipNetId}");
-            }
-        }
-
-        /// <summary>Подписаться на ShipOwnershipRegistry NetworkList.</summary>
-        public void SubscribeToRegistry(ShipOwnershipRegistry registry)
-        {
-            if (registry == null) return;
-            registry.OnOwnershipListChanged += HandleOwnershipListChanged;
-            // Initial snapshot
-            foreach (var entry in registry.OwnershipList)
-            {
-                _ownershipCache[entry.shipNetworkObjectId] = entry.ownerClientId;
-            }
-            Debug.Log($"[ShipTelemetryClientState] SubscribeToRegistry: {_ownershipCache.Count} entries loaded");
         }
 
         // ===========================================================
@@ -158,33 +124,20 @@ namespace ProjectC.Ship.Client
             {
                 var nm = NetworkManager.Singleton;
                 if (nm == null) return 0;
-                if (nm.IsListening)
-                {
-                    return nm.LocalClientId;
-                }
+                if (nm.IsListening) return nm.LocalClientId;
                 return 0;
             }
         }
 
         private void OnShipTelemetryUpdated(ulong shipNetId, ShipTelemetryState newState)
         {
+            ulong oldOwner = _allShips.TryGetValue(shipNetId, out var prev) ? prev.ownerClientId : ulong.MaxValue;
             _allShips[shipNetId] = newState;
             OnShipStateChanged?.Invoke(shipNetId);
-        }
 
-        private void HandleOwnershipListChanged()
-        {
-            // NetworkList изменился на клиенте — обновить кэш
-            var registry = ShipOwnershipRegistry.Instance;
-            if (registry == null) return;
-
-            _ownershipCache.Clear();
-            foreach (var entry in registry.OwnershipList)
-            {
-                _ownershipCache[entry.shipNetworkObjectId] = entry.ownerClientId;
-            }
-            Debug.Log($"[ShipTelemetryClientState] Ownership updated: {_ownershipCache.Count} entries");
-            OnOwnershipUpdated?.Invoke();
+            // P1-refactor: детектим ownership change из telemetry (вместо отдельного NetworkList)
+            if (oldOwner != newState.ownerClientId)
+                OnOwnershipUpdated?.Invoke();
         }
     }
 }

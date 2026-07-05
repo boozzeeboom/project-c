@@ -22,3 +22,28 @@
 - Обновлено: 00_OVERVIEW.md, 99_CHANGELOG.md
 
 **Итог:** -1139 строк, +651 строк (net -488). 0 reflection. 1 source of truth.
+
+---
+
+## Итерация от 2026-07-21 (P2+P3)
+
+**Задача:** P2 — анализ speed penalty fix + удаление CargoSystem; P3 — актуализация документации
+
+**Ветка:** `refactor/p3-doc-update` → merged to main
+
+**Коммит:** `3e7aa92` — docs(ship): P3 — актуализация документации (CargoSystem, Key-subsystem, roadmap)
+
+**P2 Анализ (без изменений кода):**
+- CargoSystem.cs уже удалён (T-CARGO-05)
+- ShipController уже использует _serverCargoPenalty NetworkVariable (T-CARGO-03)
+- Цепочка penalty: TradeWorld.GetSpeedPenalty → OnCargoChanged → RecalculateCargoPenalty → _serverCargoPenalty → ApplyThrustForce
+- ShipCargoRegistry для per-instance лимитов (T-CARGO-06)
+- cargoPenalty не применяется к ClampSpeed — осознанное решение (влияет только на разгон)
+- Ссылок CargoSystem в .unity/.prefab нет
+
+**P3 Изменения:**
+- roadmap-integration.md: T-CARGO-01..05 → T-CARGO-01..06, +ShipCargoRegistry
+- legacy/AGENTS_SHIP_SYSTEM_SUMMARY.md: +ссылка на SHIP_REFACTOR_PLAN_2026-07-21.md
+- Key-subsystem/00_OVERVIEW.md §12: миграция MetaRequirement — ЗАВЕРШЕНА
+
+**Итог:** P2 закрыт без изменений кода (всё уже реализовано). P3: 3 документа актуализированы.

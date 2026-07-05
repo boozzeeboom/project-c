@@ -8,24 +8,44 @@
     right: 0 !important;
     bottom: 0 !important;
     align-items: center !important;
-    justify-content: center !important;
+    justify-content: flex-start !important;
     background-color: rgba(0, 0, 0, 0.55) !important;
     display: flex !important;
+
+
+/* === Content panel (solid, left-aligned) === */
+=======
+    flex-direction: row !important;
 }
 
-/* === Content panel (solid, centred in overlay) === */
+/* === Content panel (solid, left-aligned) === */
+
+=======
+
+
+/* === Content panel (solid, left-aligned) === */
 .repair-panel {
     width: 680px !important;
     max-width: 94% !important;
     max-height: 92% !important;
+    margin-left: 40px !important;
     flex-direction: column !important;
     flex-shrink: 0 !important;
     background-color: rgb(18, 28, 40) !important;
     border-width: 2px !important;
     border-color: rgb(60, 85, 115) !important;
     border-radius: 8px !important;
+
+
+/* === Header === */
+=======
     overflow: hidden !important;
 }
+
+/* === Header === */
+
+=======
+
 
 /* === Header === */
 .repair-header {
@@ -332,3 +352,50 @@
 .unity-scroll-view .unity-base-slider__dragger:hover {
     background-color: rgba(120, 180, 240, 0.6) !important;
 }
+
+/* === Camera Arrows (right side of screen, outside manager panel) === */
+.camera-arrows {
+    position: absolute !important;
+    right: 24px !important;
+    top: 50% !important;
+    flex-direction: column !important;
+    align-items: center !important;
+    justify-content: center !important;
+    padding: 8px !important;
+    background-color: rgba(10, 18, 28, 0.75) !important;
+    border-radius: 8px !important;
+    border-width: 1px !important;
+    border-color: rgba(60, 85, 115, 0.4) !important;
+}
+
+.cam-arrows-horiz {
+    flex-direction: row !important;
+    align-items: center !important;
+}
+
+.cam-arrow-btn {
+    width: 48px !important;
+    height: 48px !important;
+    font-size: 20px !important;
+    background-color: rgba(30, 50, 80, 0.6) !important;
+    color: rgb(180, 200, 230) !important;
+    border-width: 1px !important;
+    border-color: rgba(80, 110, 160, 0.5) !important;
+    border-radius: 6px !important;
+    margin: 3px !important;
+    flex-shrink: 0 !important;
+    -unity-text-align: middle-center !important;
+}
+
+.cam-arrow-btn:hover {
+    background-color: rgba(60, 100, 180, 0.7) !important;
+    border-color: rgba(120, 160, 220, 0.8) !important;
+}
+
+.cam-arrow-btn:active {
+=======
+    background-color: rgba(80, 140, 220, 0.85) !important;
+}
+
+=======
+

@@ -8,6 +8,7 @@
 //   - Выбор слота модуля из дропдауна
 //   - Список совместимых модулей из каталога (занимает основную площадь)
 //   - Установка / продажа модуля через ShipModuleServer RPC
+//   - Камера наблюдения корабля (ShipObservationCamera)
 // =====================================================================================
 
 using System.Collections;
@@ -17,6 +18,7 @@ using UnityEngine.UIElements;
 using ProjectC.Player;
 using ProjectC.Ship.Key;
 using ProjectC.UI.Client;
+using ProjectC.Core;
 
 namespace ProjectC.Ship.UI
 {
@@ -48,6 +50,11 @@ namespace ProjectC.Ship.UI
         private Label _creditsLabel;
         private Label _statusLabel;
 
+        // Camera observation
+        private ShipObservationCamera _obsCamera;
+        private Camera _playerCam;
+        private VisualElement _cameraArrows;
+
         // State
         private bool _built;
         private ModuleShopDatabase _activeDatabase;
@@ -76,6 +83,17 @@ namespace ProjectC.Ship.UI
 
             if (repairUxml == null)
                 repairUxml = Resources.Load<VisualTreeAsset>("UI/RepairManagerWindow");
+
+            // Создать камеру наблюдения если ещё нет
+            if (_obsCamera == null)
+            {
+                var camGo = new GameObject("[ShipObservationCamera]");
+                camGo.transform.SetParent(transform, false);
+                _obsCamera = camGo.AddComponent<ShipObservationCamera>();
+            }
+
+            // Кэшировать камеру игрока
+            CachePlayerCamera();
         }
 
         private void OnEnable()
@@ -102,7 +120,11 @@ namespace ProjectC.Ship.UI
                 UnityEngine.InputSystem.Keyboard.current.escapeKey.wasPressedThisFrame)
             {
                 Hide();
+                return;
             }
+
+            // Вращение камеры наблюдения при зажатых стрелках
+            HandleCameraArrowHeld();
         }
 
         // ============================================================
@@ -148,11 +170,16 @@ namespace ProjectC.Ship.UI
             _creditsLabel = _root.Q<Label>("repair-credits-label");
             _statusLabel = _root.Q<Label>("repair-status-label");
 
+            // Camera arrows
+            _cameraArrows = _root.Q<VisualElement>("camera-arrows");
+
             if (_closeBtn != null)
             {
                 _closeBtn.clicked -= OnCloseClicked;
                 _closeBtn.clicked += OnCloseClicked;
             }
+
+            WireCameraArrows();
 
             _built = true;
             SetOpen(false);
@@ -185,9 +212,16 @@ namespace ProjectC.Ship.UI
             {
                 UnityEngine.Cursor.lockState = CursorLockMode.None;
                 UnityEngine.Cursor.visible = true;
+
+                // Кэшируем камеру игрока при открытии
+                CachePlayerCamera();
             }
             else
             {
+                // Возвращаем камеру к игроку
+                if (_obsCamera != null && _obsCamera.IsActive)
+                    _obsCamera.ReturnToPlayer();
+
                 if (Unity.Netcode.NetworkManager.Singleton != null &&
                     Unity.Netcode.NetworkManager.Singleton.IsListening)
                 {
@@ -345,6 +379,15 @@ namespace ProjectC.Ship.UI
         {
             if (index < 0 || index >= _keyInstanceIds.Count) return;
             _selectedKeyId = _keyInstanceIds[index];
+
+            // Камера: переключиться на выбранный корабль
+            if (_shipByKeyId.TryGetValue(_selectedKeyId, out var sc) && sc != null)
+            {
+                CachePlayerCamera();
+                if (_obsCamera != null && _playerCam != null)
+                    _obsCamera.FlyToShip(sc.transform, _playerCam);
+            }
+
             RenderShip();
         }
 
@@ -638,6 +681,98 @@ namespace ProjectC.Ship.UI
             string n = sc.CustomDisplayName;
             if (!string.IsNullOrEmpty(n)) return n;
             return sc.GetType().Name;
+        }
+
+        // ============================================================
+        // Camera Observation Helpers
+        // ============================================================
+
+        /// <summary>Найти и закэшировать камеру игрока (ThirdPersonCamera).</summary>
+        private void CachePlayerCamera()
+        {
+            if (_playerCam != null) return;
+
+            var tpc = FindAnyObjectByType<ThirdPersonCamera>();
+            if (tpc != null)
+                _playerCam = tpc.GetComponent<Camera>();
+        }
+
+        /// <summary>Подписаться на PointerDown/PointerUp для стрелок камеры.</summary>
+        private void WireCameraArrows()
+        {
+            if (_cameraArrows == null) return;
+
+            WireArrowButton("cam-arrow-up");
+            WireArrowButton("cam-arrow-down");
+            WireArrowButton("cam-arrow-left");
+            WireArrowButton("cam-arrow-right");
+        }
+
+        private void WireArrowButton(string btnName)
+        {
+            var btn = _cameraArrows.Q<Button>(btnName);
+            if (btn == null) return;
+
+            btn.RegisterCallback<PointerDownEvent>(OnArrowDown, TrickleDown.TrickleDown);
+            btn.RegisterCallback<PointerUpEvent>(OnArrowUp, TrickleDown.TrickleDown);
+            btn.RegisterCallback<PointerLeaveEvent>(OnArrowLeave, TrickleDown.TrickleDown);
+        }
+
+        // Отслеживание зажатых стрелок
+        private bool _arrowUpHeld;
+        private bool _arrowDownHeld;
+        private bool _arrowLeftHeld;
+        private bool _arrowRightHeld;
+
+        private void OnArrowDown(PointerDownEvent evt)
+        {
+            var btn = evt.target as Button;
+            if (btn == null) return;
+            SetArrowHeld(btn.name, true);
+        }
+
+        private void OnArrowUp(PointerUpEvent evt)
+        {
+            var btn = evt.target as Button;
+            if (btn == null) return;
+            SetArrowHeld(btn.name, false);
+        }
+
+        private void OnArrowLeave(PointerLeaveEvent evt)
+        {
+            var btn = evt.target as Button;
+            if (btn == null) return;
+            SetArrowHeld(btn.name, false);
+        }
+
+        private void SetArrowHeld(string btnName, bool held)
+        {
+            switch (btnName)
+            {
+                case "cam-arrow-up":    _arrowUpHeld = held; break;
+                case "cam-arrow-down":  _arrowDownHeld = held; break;
+                case "cam-arrow-left":  _arrowLeftHeld = held; break;
+                case "cam-arrow-right": _arrowRightHeld = held; break;
+            }
+        }
+
+        private void HandleCameraArrowHeld()
+        {
+            if (_obsCamera == null || !_obsCamera.IsActive) return;
+
+            float yawDelta = 0f;
+            float pitchDelta = 0f;
+
+            if (_arrowLeftHeld)  yawDelta -= 1f;
+            if (_arrowRightHeld) yawDelta += 1f;
+            if (_arrowUpHeld)    pitchDelta += 1f;
+            if (_arrowDownHeld)  pitchDelta -= 1f;
+
+            if (Mathf.Approximately(yawDelta, 0f) && Mathf.Approximately(pitchDelta, 0f))
+                return;
+
+            float speed = 60f; // градусов/сек
+            _obsCamera.Rotate(yawDelta * speed * Time.deltaTime, pitchDelta * speed * Time.deltaTime);
         }
     }
 }

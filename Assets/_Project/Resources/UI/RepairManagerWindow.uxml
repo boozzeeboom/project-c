@@ -5,7 +5,26 @@
     <!-- RepairManagerWindow — окно ремонтного менеджера -->
     <ui:VisualElement name="repair-root" class="repair-root">
 
+        <!-- Camera rotation arrows (right side, outside panel) -->
+        <ui:VisualElement name="camera-arrows" class="camera-arrows">
+            <ui:Button name="cam-arrow-up"    text="▲" class="cam-arrow-btn" />
+            <ui:VisualElement class="cam-arrows-horiz">
+                <ui:Button name="cam-arrow-left"  text="◀" class="cam-arrow-btn" />
+                <ui:Button name="cam-arrow-right" text="▶" class="cam-arrow-btn" />
+            </ui:VisualElement>
+            <ui:Button name="cam-arrow-down"  text="▼" class="cam-arrow-btn" />
+        </ui:VisualElement>
+
+
+
+            <!-- Header -->
+=======
         <ui:VisualElement name="main-container" class="repair-panel">
+
+            <!-- Header -->
+
+=======
+
 
             <!-- Header -->
             <ui:VisualElement name="repair-header" class="repair-header">

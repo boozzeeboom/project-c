@@ -60,6 +60,7 @@
 **Механика:** При приближении к городу сервер проверяет регистрацию корабля. Если корабль зарегистрирован — ему разрешается коридор города. Если нет — глобальный.
 
 ### 2.3 Серверная Валидация Высоты
+
 ```
 Каждые 0.5 сек (сервер):
   currentAlt = ship.transform.position.y
@@ -75,8 +76,10 @@
     → Warning: "Приближение к верхней границе коридора"
   if currentAlt > corridor.max + 200m:
     → Alert: "ВНИМАНИЕ: Критическая высота!"
-    → Apply system degradation (future: freeze)
+    → Apply system degradation
 ```
+
+> **Реализация (2026-07-05):** ⚠️ Не server-тик 0.5с, а per-frame (ShipController._evaluateAltitude + AltitudeCorridorSystem.GetActiveCorridor()). TurbulenceEffect и SystemDegradationEffect применяются в каждом FixedUpdate.
 
 ### 2.4 Зоны Вне Коридора
 | Зона | Эффект | Реализация |
@@ -200,10 +203,15 @@ F_angularDrag = -rb.angularVelocity * angularDrag  // угловое
 | **maxRollAngle** | 0° (15° с мод.) | 0° (10° с мод.) | 0° (5° с мод.) | 0° |
 | **liftSpeed** | 120 | 100 | 80 | 60 |
 | **liftSmoothTime** | 0.8s | 0.9s | 1.0s | 1.2s |
-| **linearDrag** | 0.4 | 0.5 | 0.6 | 0.7 |
-| **angularDrag** | 3.5 | 4.0 | 4.5 | 5.0 |
 | **maxSpeed** | 35-45 м/с | 25-35 м/с | 15-22 м/с | 10-18 м/с |
-| **mass** | 0.8-1.2 | 2.0-3.0 | 4.0-6.0 | 6.0-10.0 |
+| **mass (до множителя ×10 → rb.mass)** | 800 → 80 | 1000 → 100 | 1500 → 150 | 2000 → 200 |
+| **linearDrag** | 0.4 (все классы — единое значение) | — | — | — |
+| **angularDrag** | 8.0 (все классы — единое значение) | — | — | — |
+| **stabilizationForce (pitch)** | 15.0 (все классы — единое значение) | — | — | — |
+| **stabilizationForce (roll)** | 20.0 (все классы — единое значение) | — | — | — |
+| **thrustForce** | 650 (все классы — единое значение) | — | — | — |
+
+> **Примечание (2026-07-05):** В текущем коде большая часть параметров — единые для всех классов. Класс-зависимы только масса (через massLight/massMedium/massHeavy/massHeavyII с massMultiplier=10) и windExposure. Остальные GDD-спеки (класс-зависимые yawSpeed, pitchSpeed, angularDrag и т.д.) — целевые для будущих итераций. Числовые значения в строках выше — из ShipController.cs на момент 2026-07-05.
 
 ### 3.3 Влияние Ветра и Облаков
 
@@ -257,7 +265,7 @@ ShipModule (ScriptableObject)
 ├── compatibleShipClasses: ShipClass[]
 ├── incompatibleShips: string[] (конкретные shipId)
 ├── effects: ModuleEffect[]
-├── powerRequirement: float
+├── powerRequirement: float                     // ⚠️ ТОЛЬКО В GDD — в ShipModule.cs поле отсутствует. Система не реализована. См. summary_05.07.2026.md §4.
 ├── unlockTier: int (1 = базовый, 4 = очень редкий)
 └── description: string
 ```
@@ -341,7 +349,7 @@ public class KeyRodData : ScriptableObject {
     public string registeredShipId;
     public string ownerPlayerId;
     public bool isDuplicate; // true = нелегальная копия
-    public KeyRodAccessLevel accessLevel; // Full, Limited, OneTime
+    public KeyRodAccessLevel accessLevel; // Full, Limited, OneTime — ⚠️ В коде отсутствует. Текущий реализован только Full через KeyRodState (Active/Stolen/Consumed/Destroyed).
 }
 ```
 
@@ -393,7 +401,7 @@ public class KeyRodData : ScriptableObject {
 
 ## 7. Стыковка и Диспетчер
 
-> **Статус (2026-06-20):** ✅ **MVP реализован.** Подробности в `docs/Docking_stations/`. ⚠️ Визуальные маркеры падов (`DockPadVisualMarker`) требуют переработки. ⏳ Departure — отдельная подсистема Phase 1.5.
+> **Статус (2026-07-05):** ✅ **MVP реализован — цикл Docked→Loading→Undocking→Departing.** Подробности в `docs/Docking_stations/` и `docs/NPC_others_peacfull/`. ⚠️ Визуальные маркеры падов (`DockPadVisualMarker`) требуют переработки.
 
 ### 7.1 Поток Стыковки (как реализовано)
 
@@ -445,9 +453,14 @@ public struct DockingAssignmentDto : INetworkSerializable {
 
 ### 7.3 Подсистемы (Phase 2 / Phase 1.5)
 
-#### 7.3.1 Departure — отдельная подсистема (`docs/Docking_stations/08_DEPARTURE_SUBSYSTEM.md`)
+#### 7.3.1 Departure — вылет из зоны
 
-Вылет из зоны по запросу через T → ожидание → разрешение. Не блокируется в MVP, **НЕ** toast-предупреждается. Реализация — Phase 1.5 (T-DEPART-00..05).
+Реализован как часть NPC Ship FSM и Player Docking:
+- **NPC:** NpcShipWorld FSM — Docked → Loading → Undocking → **Departing** (anti-gravity boost, вертикальный набор 5с, переход в Lifting → Cruising)
+- **Player:** DockingServer.RequestTakeoffRpc → ExitDocked → корабль свободен для маневра
+- Anti-gravity boost (10-сек) через ShipController.AntiGravity setter
+
+> Отдельного T-DEPART-* нет. Функционал покрыт NpcShipController.cs + DockingServer.cs.
 
 #### 7.3.2 Автопилот стыковки (`MODULE_AUTO_DOCK`)
 
@@ -509,77 +522,81 @@ public struct DockingAssignmentDto : INetworkSerializable {
 
 ## 10. План Реализации
 
-### Фаза 1: Переписывание Core Movement (Текущий спринт)
-| # | Задача | Приоритет | Ответственный |
-|---|--------|-----------|--------------|
-| 1.1 | Переписать ShipController.cs с новой физикой | P0 | engine-programmer |
-| 1.2 | Smooth yaw — убрать резкость, добавить Lerp | P0 | gameplay-programmer |
-| 1.3 | Smooth pitch — ограничить ±20°, замедлить | P0 | gameplay-programmer |
-| 1.4 | Smooth lift — очень медленно, 1.5-2.5 м/с | P0 | gameplay-programmer |
-| 1.5 | Auto-stabilization — возврат к горизонту | P0 | engine-programmer |
-| 1.6 | Angular drag ×3-5 — гасить вращение | P0 | engine-programmer |
-| 1.7 | Unity тесты: проверить плавность | P1 | unity-specialist |
+### Фаза 1: Core Movement (✅ Done)
+| # | Задача | Приоритет | Статус (2026-07-05) |
+|---|--------|-----------|--------------------|
+| 1.1 | ShipController.cs переписан с SmoothDamp-физикой | P0 | ✅ Done |
+| 1.2 | Smooth yaw — yawSmoothTime=0.6 + yawDecayTime=1.0 | P0 | ✅ Done |
+| 1.3 | Smooth pitch — maxPitchAngle=20°, pitchSmoothTime=0.7 | P0 | ✅ Done |
+| 1.4 | Smooth lift — liftSmoothTime=1.0, maxLiftSpeed=2.5 м/с | P0 | ✅ Done |
+| 1.5 | Auto-stabilization — pitchStabForce=15, rollStabForce=20 | P0 | ✅ Done |
+| 1.6 | Angular drag=8.0 (выше спеки 3-5) | P0 | ✅ Done |
+| 1.7 | Unity тесты: проверить плавность | P1 | ⏳ TODO |
 
 ### Фаза 2: Altitude Corridor System
-| # | Задача | Приоритет | Ответственный |
-|---|--------|-----------|--------------|
-| 2.1 | AltitudeCorridorSystem.cs (ScriptableObject + runtime) | P0 | engine-programmer |
-| 2.2 | City corridor data: 5 городов | P0 | game-designer |
-| 2.3 | Server altitude validation (каждые 0.5с) | P0 | devops-engineer |
-| 2.4 | Warning UI: предупреждения высоты | P1 | ui-programmer |
-| 2.5 | Unity тесты: corridor boundaries | P1 | unity-specialist |
+| # | Задача | Приоритет | Ответственный | Статус (2026-07-05) |
+|---|--------|-----------|--------------|--------------------|
+| 2.1 | AltitudeCorridorSystem.cs (ScriptableObject + runtime) | P0 | engine-programmer | ✅ Done |
+| 2.2 | City corridor data: 5 городов | P0 | game-designer | ✅ Done (9 SO assets) |
+| 2.3 | Server altitude validation (per-frame) | P0 | engine-programmer | ✅ Done (ShipController._evaluateAltitude + AltitudeCorridorSystem, не server-тик) |
+| 2.4 | Warning UI: предупреждения высоты | P1 | ui-programmer | ⏳ TODO |
+| 2.5 | Unity тесты: corridor boundaries | P1 | unity-specialist | ⏳ TODO |
 
-### Фаза 3: Wind & Turbulence
-| # | Задача | Приоритет | Ответственный |
-|---|--------|-----------|--------------|
-| 3.1 | WindZone.cs (объёмные зоны ветра) | P1 | engine-programmer |
-| 3.2 | Wind force application на корабль | P1 | gameplay-programmer |
-| 3.3 | Turbulence near Veil (тряска + Random force) | P1 | engine-programmer |
-| 3.4 | Cinemachine Impulse для камеры | P2 | unity-specialist |
+### Фаза 3: Wind & Turbulence (✅ Done)
+| # | Задача | Приоритет | Статус (2026-07-05) |
+|---|--------|-----------|--------------------|
+| 3.1 | WindZone + WindManager (глобальные и локальные зоны) | P1 | ✅ Done |
+| 3.2 | Wind force application на корабль | P1 | ✅ Done (аддитивно с локальными зонами) |
+| 3.3 | Turbulence near Veil (TurbulenceEffect) | P1 | ✅ Done |
+| 3.4 | Cinemachine Impulse для камеры | P2 | ⏳ TODO |
 
-### Фаза 4: Module System Foundation
-| # | Задача | Приоритет | Ответственный |
-|---|--------|-----------|--------------|
-| 4.1 | ShipModule ScriptableObject architecture | P0 | lead-programmer |
-| 4.2 | ModuleSlot на кораблях | P0 | engine-programmer |
-| 4.3 | MODULE_YAW_ENH, PITCH_ENH, LIFT_ENH (тир 1) | P1 | gameplay-programmer |
-| 4.4 | MODULE_MEZIY_THRUST (burst maneuvers) | P1 | gameplay-programmer |
-| 4.5 | ShipRegistry.md наполнение | P1 | game-designer |
+### Фаза 4: Module System Foundation (✅ Done)
+| # | Задача | Приоритет | Статус (2026-07-05) |
+|---|--------|-----------|--------------------|
+| 4.1 | ShipModule ScriptableObject architecture | P0 | ✅ Done |
+| 4.2 | ModuleSlot на кораблях | P0 | ✅ Done (через ShipModuleManager) |
+| 4.3 | MODULE_YAW_ENH, PITCH_ENH, LIFT_ENH, ROLL (тир 1) | P1 | ✅ Done (8 ShipModule + 8 ShopEntry) |
+| 4.4 | MODULE_MEZIY_* (burst maneuvers) | P1 | ✅ Done (MeziyModuleActivator + visual) |
+| 4.5 | ShipRegistry.md наполнение | P1 | ⏳ Partially
 
-### Фаза 5: Co-Op & Docking
-| # | Задача | Приоритет | Ответственный |
-|---|--------|-----------|--------------|
-| 5.1 | KeyRod system (ScriptableObject + validation) | P1 | lead-programmer |
-| 5.2 | Adaptive multi-pilot input | P1 | gameplay-programmer |
-| 5.3 | DockingDispatcher.cs | P2 | engine-programmer |
-| 5.4 | CommPanel UI (Elite Dangerous style) | P2 | ui-programmer |
-| 5.5 | SOL zone warnings | P2 | game-designer |
+### Фаза 5: Co-Op & Docking (✅ Phase 1 Done)
+| # | Задача | Приоритет | Статус (2026-07-05) |
+|---|--------|-----------|--------------------|
+| 5.1 | KeyRod system (Phase 1 — scene-placed + persistence + ownership) | P1 | ✅ Done (KeyRodInstanceWorld + JSON persistence) |
+| 5.2 | Adaptive multi-pilot input | P1 | ✅ Done (_pilots HashSet + input summing/averaging) |
+| 5.3 | DockingDispatcher + DockingServer | P2 | ✅ Done (pad assignment + NPC + player cycles) |
+| 5.4 | CommPanel UI (Elite Dangerous style) | P2 | ⏳ TODO |
+| 5.5 | SOL zone warnings | P2 | ⏳ TODO |
 
-### Фаза 6: Advanced (Будущее)
-| # | Задача | Приоритет | Ответственный |
-|---|--------|-----------|--------------|
-| 6.1 | Veil penetration mechanics | P3 | engine-programmer |
-| 6.2 | Space freeze mechanics | P3 | engine-programmer |
-| 6.3 | MODULE_AUTO_DOCK (автопилот) | P3 | engine-programmer |
-| 6.4 | Damage/crash system | P4 | game-designer |
-| 6.5 | MODULE_STEALTH (counter-SOL) | P3 | gameplay-programmer |
+> **Key Phase 2** (TBD): Crafting copies, NPC key sales, trade UI, access levels (Limited/OneTime), quest integration — см. §§ 13.3 TODO.
+
+### Фаза 6: Advanced (Будущее — ⏳ P3+)
+| # | Задача | Приоритет | Статус (2026-07-05) |
+|---|--------|-----------|--------------------|
+| 6.1 | Veil penetration mechanics | P3 | ⏳ TODO |
+| 6.2 | Space freeze mechanics | P3 | ⏳ TODO |
+| 6.3 | MODULE_AUTO_DOCK (автопилот) | P3 | ⏳ TODO |
+| 6.4 | Damage/crash system | P4 | ⏳ TODO (collision damage done, full crash = P4) |
+| 6.5 | MODULE_STEALTH (counter-SOL) | P3 | ⏳ TODO |
 
 ---
 
 ## 11. Технические Спецификации
 
-### 11.1 Текущие vs Целевые Параметры ShipController.cs
+### 11.1 Текущие vs Целевые Параметры ShipController.cs (на момент 2026-07-05)
 
-| Параметр | Сейчас | Цель (LIGHT) | Цель (HEAVY) | Изменение |
-|----------|--------|-------------|-------------|-----------|
-| thrustForce | 500 | 350 | 200 | ×0.7 / ×0.4 |
-| maxSpeed | 30 м/с | 40 м/с | 18 м/с | Класс-зависимый |
-| yawForce | 30 | ×0.4 (12) | ×0.25 (7.5) | РЕЗКО медленнее |
-| pitchForce | 40 | ×0.5 (20) | ×0.35 (14) | Значительно медленнее |
-| verticalForce | 300 | 120 | 80 | ×0.4 / ×0.27 |
-| stabilizationForce | 50 | 30 | 25 | Мягче |
-| linearDrag | 1.0 | 0.4 | 0.6 | Меньше (плавнее) |
-| angularDrag | 2.0 | 3.5 | 4.5 | ×1.75 / ×2.25 |
+| Параметр | Code (ShipController.cs) | Цель (LIGHT) | Цель (HEAVY) | Статус |
+|----------|--------------------------|-------------|-------------|--------|
+| thrustForce | 650 | 350 | 200 | Выше — требует ребаланса |
+| maxSpeed | 40 | 40 | 18 | Light ✅; Heavy не класс-зависим |
+| yawForce | 25 | ×0.4 (10) | ×0.25 (6.25) | ⚠️ Не CLASS-зависим |
+| pitchForce | 20 | ×0.5 (10) | ×0.35 (7) | ⚠️ Не CLASS-зависим |
+| verticalForce | 120 | 120 | 80 | Light ✅; Heavy ⚠️ не класс-зависим |
+| linearDrag | 0.4 | 0.4 | 0.6 | Единое значение для всех классов |
+| angularDrag | 8.0 | 3.5 | 4.5 | ×2.3 от спецификации, единое значение |
+| pitchStabForce | 15.0 | 2.5 | — | ×6 от спецификации |
+| rollStabForce | 20.0 | 4.0 | — | ×5 от спецификации |
+| mass (rb.mass) | 80/100/150/200 | "0.8-1.2" | "4.0-6.0" | Scale different — massMultiplier=10 |
 
 ### 11.2 Новые Параметры для Добавления
 
@@ -910,4 +927,4 @@ Ship_Root (Rigidbody + NetworkObject + ShipController)
 
 ---
 
-*Документ создан: Апрель 2026 | Агенты: @technical-director, @game-designer, @lead-programmer, @engine-programmer, @gameplay-programmer, @unity-specialist | Дополнено Mavis 2026-06-10 (раздел реализации Key + MetaRequirement), 2026-06-17 (Composite Ship Architecture), 2026-06-19 (R2-SHIP-KEY-003 §13.3 — уникальные экземпляры ключей)*
+*Документ создан: Апрель 2026 | Агенты: @technical-director, @game-designer, @lead-programmer, @engine-programmer, @gameplay-programmer, @unity-specialist | Дополнено Mavis 2026-06-10 (раздел реализации Key + MetaRequirement), 2026-06-17 (Composite Ship Architecture), 2026-06-19 (R2-SHIP-KEY-003 §13.3 — уникальные экземпляры ключей), 2026-07-05 (коррекция по коду: §3.2, §4.1, §5.4, §7.3.1, §11.1, план реализации) *

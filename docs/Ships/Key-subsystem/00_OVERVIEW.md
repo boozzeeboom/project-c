@@ -329,11 +329,11 @@ if (!_inShip) {  // посадка
 
 ## 12. Migration to MetaRequirement (Этап 1)
 
-**Статус:** 📋 Планируется (см. подробный план в `SHIP_KEY_TO_META_REQUIREMENT_MIGRATION.md`)
+**Статус:** ✅ ЗАВЕРШЕНА (P1, 2026-07-21). См. `docs/Ships/SHIP_REFACTOR_PLAN_2026-07-21.md` P1.
 
-**Суть:** текущая подсистема (1 корабль ↔ 1 ключ) — вырожденный случай более общей системы `MetaRequirement` (любой `Interactable` ↔ N требуемых предметов с AND/OR/AtLeastN логикой).
+**Суть:** текущая подсистема (1 корабль ↔ 1 ключ) — вырожденный случай более общей системы `MetaRequirement` (любой `Interactable` ↔ N требуемых предметов с AND/OR/AtLeastN логикой). Миграция выполнена: `ShipKeyBinding/Server/ClientState/Toast` удалены, заменены на `MetaRequirement*`, `ShipOwnershipRequirement` + `KeyRodInstanceWorld`.
 
-**Когда начинать:** в любой момент (Этап 1 оценён в 3-4 часа, с backward-compat алиасами).
+**Результат:** 1 источник правды (KeyRodInstanceWorld), 0 reflection, ~5 активных файлов.
 
 **Что останется** (не трогаем):
 - `InventoryWorld` core (только extension-методы)

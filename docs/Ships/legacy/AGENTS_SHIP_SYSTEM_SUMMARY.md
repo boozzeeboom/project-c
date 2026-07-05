@@ -174,3 +174,9 @@
 
 *Документ оркестрации создан: Апрель 2026*
 *Агенты: @technical-director, @game-designer, @lead-programmer, @engine-programmer, @gameplay-programmer, @unity-specialist, @devops-engineer*
+
+---
+
+## Связанные документы
+
+- **SHIP_REFACTOR_PLAN_2026-07-21.md** — комплексный план рефакторинга ship-подсистем (P1: Key Subsystem ✅, P2: CargoSystem удаление ✅, P3-P6: документация/кастомизация/безопасность/визуализация).

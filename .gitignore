@@ -127,3 +127,4 @@ Assets/_Project/Materials/Moon/MoonMaterial.mat*
 /[Aa]ssets/Kevin Iglesias*
 Packages/manifest.json
 Packages/packages-lock.json
+*.aura_temp

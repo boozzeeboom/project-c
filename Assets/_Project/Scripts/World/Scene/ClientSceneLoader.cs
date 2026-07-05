@@ -15,22 +15,22 @@ namespace ProjectC.World.Scene
 
         private void Awake()
         {
-            if (logSingleton) Debug.Log($"[CSL] Awake: START, _instance={(object)(_instance != null ? _instance.gameObject : null)?.GetInstanceID()}, this={gameObject.GetInstanceID()}");
+            if (logSingleton) Debug.Log($"[CSL] Awake: START, _instance={(object)(_instance != null ? _instance.gameObject : null)?.GetEntityId()}, this={gameObject.GetEntityId()}");
 
             if (_instance != null && _instance != this)
             {
-                if (logSingleton) Debug.LogWarning($"[CSL] DUPLICATE! Destroying this={gameObject.GetInstanceID()}, keeping instance={_instance.gameObject.GetInstanceID()}");
+                if (logSingleton) Debug.LogWarning($"[CSL] DUPLICATE! Destroying this={gameObject.GetEntityId()}, keeping instance={_instance.gameObject.GetEntityId()}");
                 Destroy(gameObject);
                 return;
             }
 
             if (_instance == this)
             {
-                if (logSingleton) Debug.Log($"[CSL] Awake: ALREADY SET, possible duplicate OnDestroy issue! _instance={_instance?.gameObject?.GetInstanceID()}");
+                if (logSingleton) Debug.Log($"[CSL] Awake: ALREADY SET, possible duplicate OnDestroy issue! _instance={_instance?.gameObject?.GetEntityId()}");
             }
 
             _instance = this;
-            if (logSingleton) Debug.Log($"[CSL] Awake: Singleton set, instanceId={gameObject.GetInstanceID()}");
+            if (logSingleton) Debug.Log($"[CSL] Awake: Singleton set, instanceId={gameObject.GetEntityId()}");
             DontDestroyOnLoad(gameObject);
 
             if (sceneRegistry == null)
@@ -43,7 +43,7 @@ namespace ProjectC.World.Scene
 
         private void OnDestroy()
         {
-            if (logSingleton) Debug.Log($"[CSL] OnDestroy: instanceId={gameObject.GetInstanceID()}, _instance==this: {_instance == this}");
+            if (logSingleton) Debug.Log($"[CSL] OnDestroy: instanceId={gameObject.GetEntityId()}, _instance==this: {_instance == this}");
             if (_instance == this)
                 _instance = null;
         }
@@ -113,7 +113,7 @@ private void Update()
         {
             if (Time.frameCount % 120 == 0 && logUpdate)
             {
-                Debug.Log($"[CSL] Update: this={gameObject.GetInstanceID()}, _instance={_instance?.gameObject?.GetInstanceID()}, _currentScene={_currentScene}, loaded={_loadedScenes.Count}");
+                Debug.Log($"[CSL] Update: this={gameObject.GetEntityId()}, _instance={_instance?.gameObject?.GetEntityId()}, _currentScene={_currentScene}, loaded={_loadedScenes.Count}");
             }
 
             if (playerTransform == null)

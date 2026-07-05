@@ -31,7 +31,7 @@ namespace ProjectC.Combat
 
         public NpcTarget Target { get; set; }  // wired в NpcAttacker.Initialize или через инспектор
 
-        public ulong GetAttackerId() => _attackerIdOverride != 0 ? _attackerIdOverride : (ulong)GetInstanceID();
+        public ulong GetAttackerId() => _attackerIdOverride != 0 ? _attackerIdOverride : EntityId.ToULong(GetEntityId());
 
         public void Initialize(NpcCombatData data, NpcTarget target)
         {

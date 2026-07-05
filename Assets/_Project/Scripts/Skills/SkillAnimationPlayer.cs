@@ -287,7 +287,7 @@ namespace ProjectC.Skills
 
         private AnimatorOverrideController GetOrCreateOverride(AnimationClip clip)
         {
-            int key = clip.GetInstanceID();
+            int key = (int)EntityId.ToULong(clip.GetEntityId());
             if (_overrideCache.TryGetValue(key, out var cached)) return cached;
 
             var baseCtrl = _animator.runtimeAnimatorController;

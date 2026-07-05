@@ -132,7 +132,7 @@ namespace ProjectC.Quests.Editor
                 {
                     if (q == null) continue;
                     questItems.Add(new TreeViewItemData<ExplorerItem>(
-                        q.GetInstanceID(),
+                        (int)EntityId.ToULong(q.GetEntityId()),
                         new ExplorerItem { Kind = ExplorerKind.Quest, Asset = q, DisplayName = $"{q.questId} — {q.displayName}" }
                     ));
                 }
@@ -147,7 +147,7 @@ namespace ProjectC.Quests.Editor
                 {
                     if (d == null) continue;
                     dialogItems.Add(new TreeViewItemData<ExplorerItem>(
-                        d.GetInstanceID(),
+                        (int)EntityId.ToULong(d.GetEntityId()),
                         new ExplorerItem { Kind = ExplorerKind.Dialog, Asset = d, DisplayName = d.treeId }
                     ));
                 }
@@ -162,7 +162,7 @@ namespace ProjectC.Quests.Editor
                 {
                     if (n == null) continue;
                     npcItems.Add(new TreeViewItemData<ExplorerItem>(
-                        n.GetInstanceID(),
+                        (int)EntityId.ToULong(n.GetEntityId()),
                         new ExplorerItem { Kind = ExplorerKind.Npc, Asset = n, DisplayName = $"{n.npcId} — {n.displayName}" }
                     ));
                 }
@@ -177,7 +177,7 @@ namespace ProjectC.Quests.Editor
                 {
                     if (f == null) continue;
                     factionItems.Add(new TreeViewItemData<ExplorerItem>(
-                        f.GetInstanceID(),
+                        (int)EntityId.ToULong(f.GetEntityId()),
                         new ExplorerItem { Kind = ExplorerKind.Faction, Asset = f, DisplayName = f.factionId.ToString() }
                     ));
                 }

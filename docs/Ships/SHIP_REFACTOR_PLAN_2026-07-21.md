@@ -19,9 +19,9 @@
 | # | Фаза | Часы | Зависит от | Критичность |
 |---|------|------|-----------|-------------|
 | **P1** | Рефакторинг Key Subsystem | 13h → **5h done** | — | ✅ Complete (2026-07-21) |
-| **P2** | Удаление legacy CargoSystem + speed penalty fix | 3h | — | 🔴 Critical |
-| **P3** | Обновление документации | 2h | P1, P2 | 🟡 High (P1 done) |
-| **P4** | L1 Customisation (Module Visual) | 8h | — | 🟡 High |
+| **P2** | Удаление legacy CargoSystem + speed penalty fix | 3h → **0h (already done)** | — | ✅ Complete (2026-07-21) |
+| **P3** | Обновление документации | 2h → **done** | P1, P2 | ✅ Complete (2026-07-21) |
+| **P4** | L1 Customisation (Module Visual) | 8h → **done** | — | ✅ Complete (2026-07-21) |
 | **P5** | Cargo ownership/security | 4h | — | 🟡 Mid |
 | **P6** | Визуализация + polish | 6h | P1, P4 | 🟢 Mid |
 

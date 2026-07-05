@@ -746,17 +746,10 @@ namespace ProjectC.Player
             // Регистрация в TradeWorld — отложенная (TradeWorld может быть не готов)
             StartCoroutine(RegisterCargoWhenReady());
 
-            // P1-refactor: создать KeyRodInstance для этого корабля (вместо KeyRodInstanceBinding).
-            if (_keyItemData != null && KeyRodInstanceWorld.IsInitialized)
-            {
-                int itemId = ProjectC.Items.InventoryWorld.Instance != null
-                    ? ProjectC.Items.InventoryWorld.Instance.GetOrRegisterItemId(_keyItemData) : -1;
-                if (itemId > 0)
-                {
-                    int instId = KeyRodInstanceWorld.CreateInstance(itemId, NetworkObjectId, KeyRodInstance.OWNER_NONE);
-                    if (_debugLog) Debug.Log($"[ShipController] Created KeyRodInstance: id={instId}, ship={NetworkObjectId}, item={_keyItemData.name}");
-                }
-            }
+            // P1-refactor: создать KeyRodInstance (с ожиданием инициализации KeyRodInstanceWorld).
+            // KeyRodInstanceWorld может быть ещё не готов — отложенное создание через корутину.
+            if (_keyItemData != null)
+                StartCoroutine(CreateKeyInstanceWhenReady());
 
             // T-KEY-07: клиент-сайд подписка на ShipTelemetryClientState
             // Выполняется и на Host (т.к. IsClient true), и на чистом клиенте.
@@ -790,6 +783,33 @@ namespace ProjectC.Player
                 TradeWorld.Instance.OnCargoChanged -= RecalculateCargoPenalty;
             }
             base.OnNetworkDespawn();
+        }
+
+        /// <summary>P1-refactor: ожидает готовности KeyRodInstanceWorld и создаёт instance.</summary>
+        private System.Collections.IEnumerator CreateKeyInstanceWhenReady()
+        {
+            float timeout = 5f;
+            while (!KeyRodInstanceWorld.IsInitialized && timeout > 0f)
+            {
+                yield return null;
+                timeout -= Time.deltaTime;
+            }
+
+            if (!KeyRodInstanceWorld.IsInitialized)
+            {
+                Debug.LogWarning($"[ShipController] KeyRodInstanceWorld not initialized after 5s. ship={NetworkObjectId}");
+                yield break;
+            }
+
+            if (_keyItemData == null) yield break;
+
+            int itemId = ProjectC.Items.InventoryWorld.Instance != null
+                ? ProjectC.Items.InventoryWorld.Instance.GetOrRegisterItemId(_keyItemData) : -1;
+            if (itemId > 0)
+            {
+                int instId = KeyRodInstanceWorld.CreateInstance(itemId, NetworkObjectId, KeyRodInstance.OWNER_NONE);
+                Debug.Log($"[ShipController] Created KeyRodInstance: id={instId}, ship={NetworkObjectId}, item={_keyItemData.name}");
+            }
         }
 
         private IEnumerator RegisterCargoWhenReady()

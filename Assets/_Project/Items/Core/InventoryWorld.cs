@@ -338,6 +338,15 @@ namespace ProjectC.Items
                         // T-KEY-09: для Key-предметов — защита от дубликата, реактивация Lost instance
             if (itemType == ItemType.Key)
             {
+                // P1-fix: проверяем что у игрока ещё нет ключа с таким itemId
+                // (persistence мог восстановить ключ, а scene-placed PickupItem всё ещё на полу)
+                var existingKeyIds = data.GetIdsForType(ItemType.Key);
+                if (existingKeyIds != null && existingKeyIds.Contains(itemId))
+                {
+                    return Fail(InventoryResultCode.InventoryFull,
+                        $"Ключ (ID={itemId}) уже есть в инвентаре", itemId, -1);
+                }
+
                 // Если instanceId уже есть (scene-placed binding) — проверяем дубликат
                 if (instanceId > 0 && data.HasKeyInstance(instanceId))
                 {

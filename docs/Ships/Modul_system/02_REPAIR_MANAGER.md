@@ -112,4 +112,56 @@ AssetDatabase.Refresh();
 
 ---
 
+## 5. Ship Observation Camera (2026-07-19)
+
+При открытии RepairManagerWindow камера переключается на наблюдение выбранного корабля.
+
+### 5.1 Как работает
+
+| Событие | Поведение |
+|---------|-----------|
+| Открытие окна (E на NPC) | UI-панель слева, камера на игроке (без изменений) |
+| Выбор корабля в дропдауне | Камера «улетает» от персонажа и фиксируется на корабле (угол ~45° сверху-сбоку) |
+| Стрелки справа (▲▼◀▶) | Вращение камеры вокруг корабля, ориджин — корабль, камера всегда смотрит на него |
+| Закрытие окна (Esc / ✕) | Камера возвращается к персонажу, ThirdPersonCamera активна |
+
+### 5.2 Архитектура
+
+```
+RepairManagerWindow (UIDocument)
+  └── [ShipObservationCamera] (GameObject, создаётся в Awake)
+        └── Camera (своя, disabled изначально)
+```
+
+- **`ShipObservationCamera`** (`Assets/_Project/Scripts/Ship/UI/ShipObservationCamera.cs`) — отдельная камера, не зависит от `ThirdPersonCamera`.
+  - `FlyToShip(Transform ship, Camera playerCam)` — отключает камеру игрока, включает свою.
+  - `ReturnToPlayer()` — возвращает управление камере игрока.
+  - `Rotate(yawDelta, pitchDelta)` — орбитальное вращение.
+  - Аудиолистенер **не создаёт** — остаётся на камере игрока (избегает спама «2 audio listeners»).
+
+- **`RepairManagerWindow`** — интеграция:
+  - `Awake()` — создаёт `ShipObservationCamera` дочерним объектом.
+  - `SelectShip()` → `_obsCamera.FlyToShip(sc.transform, _playerCam)`.
+  - `SetOpen(false)` → `_obsCamera.ReturnToPlayer()`.
+  - `Update()` → `HandleCameraArrowHeld()` — зажатие стрелок вращает камеру.
+
+### 5.3 UI-вёрстка
+
+- `.repair-root`: `align-items: flex-start` (панель слева), `justify-content: center` (вертикальный центр).
+- `.repair-panel`: `width: 580px`, `margin-left: 40px`.
+- `.camera-arrows`: `position: absolute; right: 24px; top: 50%` — вне потока, не влияет на панель.
+- Кнопки-стрелки (`cam-arrow-btn`): 48×48px, полупрозрачный фон, hover/active эффекты.
+
+### 5.4 Файлы
+
+| Файл | Роль |
+|------|------|
+| `Assets/_Project/Scripts/Ship/UI/ShipObservationCamera.cs` | Новая камера наблюдения |
+| `Assets/_Project/Scripts/Ship/UI/RepairManagerWindow.cs` | Интеграция камеры + стрелок |
+| `Assets/_Project/Resources/UI/RepairManagerWindow.uxml` | Блок `camera-arrows` с кнопками |
+| `Assets/_Project/Resources/UI/RepairManagerWindow.uss` | Левый layout + стили стрелок |
+
+---
+
 *Документация ведётся агентом Aura. 2026-07-19*
+

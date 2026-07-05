@@ -52,15 +52,12 @@ namespace ProjectC.Ship.UI
             _cam.farClipPlane = 1000000f;
             _cam.nearClipPlane = 0.5f;
 
-            // Аудиолистенер — только один должен быть активен.
-            var listener = GetComponent<AudioListener>();
-            if (listener == null)
-                listener = gameObject.AddComponent<AudioListener>();
-            listener.enabled = false;
+            // Аудиолистенер НЕ нужен — остаётся на камере игрока.
+            // Добавление второго AudioListener вызывает спам "2 audio listeners in the scene".
 
-            // Скрываем флаги, чтобы не мешать
             gameObject.hideFlags = HideFlags.DontSave;
         }
+
 
         private void LateUpdate()
         {
@@ -84,12 +81,9 @@ namespace ProjectC.Ship.UI
         {
             // Безопасность: если уничтожаемся — возвращаем камеру игроку
             if (_playerCam != null)
-            {
                 _playerCam.enabled = true;
-                var playerListener = _playerCam.GetComponent<AudioListener>();
-                if (playerListener != null) playerListener.enabled = true;
-            }
         }
+
 
         // ============================================================
         // Public API
@@ -115,21 +109,13 @@ namespace ProjectC.Ship.UI
             _pitch = 45f;
             _pitch = Mathf.Clamp(_pitch, _minPitch, _maxPitch);
 
-            // Отключаем камеру игрока
+            // Отключаем камеру игрока, включаем свою (аудиолистенер остаётся на игроке)
             if (_playerCam != null)
-            {
                 _playerCam.enabled = false;
-                var playerListener = _playerCam.GetComponent<AudioListener>();
-                if (playerListener != null) playerListener.enabled = false;
-            }
 
-            // Включаем свою камеру
             if (_cam != null)
-            {
                 _cam.enabled = true;
-                var listener = GetComponent<AudioListener>();
-                if (listener != null) listener.enabled = true;
-            }
+
 
             Debug.Log($"[ShipObservationCamera] FlyToShip: target='{shipTarget.name}', yaw={_yaw:F1}, pitch={_pitch:F1}");
         }
@@ -140,24 +126,17 @@ namespace ProjectC.Ship.UI
         public void ReturnToPlayer()
         {
             if (_cam != null)
-            {
                 _cam.enabled = false;
-                var listener = GetComponent<AudioListener>();
-                if (listener != null) listener.enabled = false;
-            }
 
             if (_playerCam != null)
-            {
                 _playerCam.enabled = true;
-                var playerListener = _playerCam.GetComponent<AudioListener>();
-                if (playerListener != null) playerListener.enabled = true;
-            }
 
             _target = null;
             _playerCam = null;
 
             Debug.Log("[ShipObservationCamera] ReturnToPlayer");
         }
+
 
         /// <summary>
         /// Повернуть камеру вокруг корабля.

@@ -53,6 +53,10 @@ namespace ProjectC.Player
         [Tooltip("Включить подробные логи в консоль.")]
         [SerializeField] private bool _debugLog = false;
 
+        [Header("Key (R2-SHIP-KEY-003, P1-refactor)")]
+        [Tooltip("ItemData ключа для этого корабля. OnNetworkSpawn создаёт KeyRodInstance.")]
+        [SerializeField] private ProjectC.Items.ItemData _keyItemData;
+
         [Header("Display Name (R2-SHIP-KEY-003, Q6)")]
         [Tooltip("Человекочитаемое имя корабля для UI/HUD/toast'ов. " +
                  "Если пусто — клиент сгенерирует fallback из класса (Light/Medium/Heavy/HeavyII). " +
@@ -741,6 +745,18 @@ namespace ProjectC.Player
 
             // Регистрация в TradeWorld — отложенная (TradeWorld может быть не готов)
             StartCoroutine(RegisterCargoWhenReady());
+
+            // P1-refactor: создать KeyRodInstance для этого корабля (вместо KeyRodInstanceBinding).
+            if (_keyItemData != null && KeyRodInstanceWorld.IsInitialized)
+            {
+                int itemId = ProjectC.Items.InventoryWorld.Instance != null
+                    ? ProjectC.Items.InventoryWorld.Instance.GetOrRegisterItemId(_keyItemData) : -1;
+                if (itemId > 0)
+                {
+                    int instId = KeyRodInstanceWorld.CreateInstance(itemId, NetworkObjectId, KeyRodInstance.OWNER_NONE);
+                    if (_debugLog) Debug.Log($"[ShipController] Created KeyRodInstance: id={instId}, ship={NetworkObjectId}, item={_keyItemData.name}");
+                }
+            }
 
             // T-KEY-07: клиент-сайд подписка на ShipTelemetryClientState
             // Выполняется и на Host (т.к. IsClient true), и на чистом клиенте.

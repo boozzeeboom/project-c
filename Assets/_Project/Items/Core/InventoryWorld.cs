@@ -381,6 +381,28 @@ namespace ProjectC.Items
                         Debug.LogWarning($"[InventoryWorld] FindLostInstance error: {ex.Message}");
                     }
 
+                    // P1-refactor: поиск Active instance с owner=NONE (ключ в мире, создан ShipController)
+                    if (instanceId <= 0)
+                    {
+                        var allActive = ProjectC.Ship.Key.KeyRodInstanceWorld.GetAllInstances();
+                        foreach (var worldKey in allActive)
+                        {
+                            if (worldKey.itemId == itemId
+                                && worldKey.state == ProjectC.Ship.Key.KeyRodInstanceState.Active
+                                && worldKey.ownerPlayerId == ProjectC.Ship.Key.KeyRodInstance.OWNER_NONE)
+                            {
+                                bool transferred = ProjectC.Ship.Key.KeyRodInstanceWorld.TransferInstance(
+                                    worldKey.instanceId, worldKey.ownerPlayerId, clientId);
+                                if (transferred)
+                                {
+                                    instanceId = worldKey.instanceId;
+                                    Debug.Log($"[InventoryWorld] Claimed world KeyRodInstance: instanceId={worldKey.instanceId}, itemId={itemId}, shipId={worldKey.registeredShipId}");
+                                    break;
+                                }
+                            }
+                        }
+                    }
+
                     // Всё ещё нет instanceId — создаём новый (fallback, крайне редко)
                     if (instanceId <= 0)
                     {

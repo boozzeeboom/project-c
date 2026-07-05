@@ -202,13 +202,9 @@ namespace ProjectC.Items
                 return;
             }
 
-            // T-KEY-05: читаем instanceId из KeyRodInstanceBinding (если есть)
+            // P1-refactor: instanceId=0 (KeyRodInstanceBinding удалён).
+            // TryPickup сам найдёт Active+NONE instance через KeyRodInstanceWorld.
             int instanceId = 0;
-            var keyBinding = GetComponent<ProjectC.Ship.Key.KeyRodInstanceBinding>();
-            if (keyBinding != null)
-            {
-                keyBinding.TryGetInstanceId(out instanceId);
-            }
 
             // Попробовать отправить запрос через новый v2 client state
             var clientState = ProjectC.Items.Client.InventoryClientState.Instance;

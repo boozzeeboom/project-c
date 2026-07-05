@@ -51,7 +51,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: d5a57f767e5e46a458fc5d3c628d0cbb, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Unity.Netcode.Runtime::Unity.Netcode.NetworkObject
-  GlobalObjectIdHash: 3381727993
+  GlobalObjectIdHash: 186599647
   InScenePlacedSourceGlobalObjectIdHash: 0
   DeferredDespawnTick: 0
   Ownership: 1
@@ -124,10 +124,21 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::ProjectC.Player.NetworkPlayer
   ShowTopMostFoldoutHeaderGroup: 1
   walkSpeed: 5
-  runSpeed: 50
+  runSpeed: 10
   rotationSpeed: 12
   jumpForce: 8
   gravity: -20
+  _platformCarryEnabled: 1
+  _platformMask:
+    serializedVersion: 2
+    m_Bits: 4294967295
+  _platformProbeDistance: 0.5
+  _platformProbeRadius: 0.35
+  _carryYaw: 1
+  _platformMissFramesToClear: 3
+  _globalWindEnabled: 1
+  _windDriftScale: 0.15
+  _windSmoothTime: 0.5
   cameraPrefab: {fileID: 5405426399639928988, guid: 020b4cd7c3349134b8c1de87bed1f706, type: 3}
   boardDistance: 5
   pickupRange: 3

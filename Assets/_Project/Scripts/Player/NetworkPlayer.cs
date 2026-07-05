@@ -739,6 +739,32 @@ namespace ProjectC.Player
             transform.rotation = Quaternion.Slerp(transform.rotation, transform.rotation, rotationSpeed * Time.fixedDeltaTime);
         }
 
+        /// <summary>
+        /// Защита от расталкивания кораблей CharacterController'ом.
+        /// Основная защита — большая масса корабля (massMultiplier).
+        /// Дополнительно: при контакте с кораблём гасим горизонтальную скорость
+        /// персонажа в сторону корабля, чтобы импульс от CharacterController.Move()
+        /// не передавался Rigidbody корабля.
+        /// </summary>
+        private void OnControllerColliderHit(ControllerColliderHit hit)
+        {
+            if (_inShip) return;
+
+            var ship = hit.collider.GetComponentInParent<ShipController>();
+            if (ship == null) return;
+
+            // Гасим горизонтальную скорость персонажа в сторону корабля.
+            // Без этого CharacterController.Move() передаёт impulse Rigidbody
+            // корабля как от тела с бесконечной массой → корабль «бумажный».
+            Vector3 horizontalVel = _velocity;
+            horizontalVel.y = 0f;
+            float approachSpeed = Vector3.Dot(horizontalVel, -hit.normal);
+            if (approachSpeed > 0.1f)
+            {
+                _velocity -= hit.normal * approachSpeed;
+            }
+        }
+
         private void ProcessMovement(Vector2 moveInput, bool jump, bool run)
         {
             // Moving-platform carry: тащим персонажа за движущейся палубой ДО локомоции,

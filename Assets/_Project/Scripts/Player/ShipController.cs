@@ -235,6 +235,23 @@ namespace ProjectC.Player
             set => antiGravity = Mathf.Clamp(value, 0f, 1.5f);
         }
 
+        [Header("Масса")]
+        [Tooltip("Множитель массы для всех классов. 1.0 = стандарт, 5.0 = защита от толчков игрока.")]
+        [SerializeField] private float massMultiplier = 10f;
+
+        [Tooltip("Базовая масса Light класса (до множителя)")]
+        [SerializeField] private float massLight = 800f;
+        [Tooltip("Базовая масса Medium класса (до множителя)")]
+        [SerializeField] private float massMedium = 1000f;
+        [Tooltip("Базовая масса Heavy класса (до множителя)")]
+        [SerializeField] private float massHeavy = 1500f;
+        [Tooltip("Базовая масса HeavyII класса (до множителя)")]
+        [SerializeField] private float massHeavyII = 2000f;
+
+        [Header("Физические ограничения")]
+        [Tooltip("Ограничения Rigidbody. FreezePositionXZ = корабль не сдвинуть горизонтально толчками.")]
+        [SerializeField] private RigidbodyConstraints shipConstraints = RigidbodyConstraints.None;
+
         // === T-NS01 (Q2): NPC-pilot mode ===
         // Сервер-only флаг. Когда true — FixedUpdate применяет _sumXxx даже без _pilots.
         private bool _hasNpcPilot = false;
@@ -370,7 +387,7 @@ namespace ProjectC.Player
                 _rb.linearDamping = linearDrag;
                 _rb.angularDamping = angularDrag;
                 _rb.useGravity = true;
-                _rb.constraints = RigidbodyConstraints.None;
+                _rb.constraints = shipConstraints;
 
                 // T-KEY-07: подписка на _telemetryState.OnValueChanged — клиент получает deltas от сервера
                 _telemetryState.OnValueChanged += HandleTelemetryValueChanged;
@@ -544,7 +561,7 @@ namespace ProjectC.Player
                     thrustSmoothTime = 0.2f;
                     yawDecayTime = 0.8f;
                     windExposure = 1.2f;
-                    if (_rb != null) _rb.mass = 800f;
+                    if (_rb != null) _rb.mass = massLight * massMultiplier;
                     break;
 
                 case ShipFlightClass.Medium:
@@ -555,7 +572,7 @@ namespace ProjectC.Player
                     thrustSmoothTime = 0.3f;
                     yawDecayTime = 1.0f;
                     windExposure = 1.0f;
-                    if (_rb != null) _rb.mass = 1000f;
+                    if (_rb != null) _rb.mass = massMedium * massMultiplier;
                     break;
 
                 case ShipFlightClass.Heavy:
@@ -566,7 +583,7 @@ namespace ProjectC.Player
                     thrustSmoothTime = 0.4f;
                     yawDecayTime = 1.5f;
                     windExposure = 0.7f;
-                    if (_rb != null) _rb.mass = 1500f;
+                    if (_rb != null) _rb.mass = massHeavy * massMultiplier;
                     break;
 
                 case ShipFlightClass.HeavyII:
@@ -577,7 +594,7 @@ namespace ProjectC.Player
                     thrustSmoothTime = 0.5f;
                     yawDecayTime = 2.0f;
                     windExposure = 0.5f;
-                    if (_rb != null) _rb.mass = 2000f;
+                    if (_rb != null) _rb.mass = massHeavyII * massMultiplier;
                     break;
             }
 

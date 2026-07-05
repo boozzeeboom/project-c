@@ -2,8 +2,8 @@
 
 **Подсистема:** Корабли — физический ключ для запуска
 **Тег:** `ship-key`, `key_rod`, `key-binding`, `server-authoritative`
-| **Статус:** ✅ MVP (F-посадка). ✅ MetaRequirement (R2-META-REQ-001). 📋 Unique Key Instance (R2-SHIP-KEY-003, дизайн готов, код не начат). |
-| **Дата:** 2026-06-06 (MVP) → 2026-06-18 (Unique Key Instance дизайн) |
+| **Статус:** ✅ MVP. ✅ MetaRequirement. ✅ Unique Key Instance. ✅ P1 Refactor (2026-07-21). |
+| **Дата:** 2026-06-06 (MVP) → 2026-07-21 (P1 complete) |
 
 ---
 
@@ -89,124 +89,97 @@
 
 ---
 
-## 2. Архитектура
+## 2. Архитектура (P1 Refactor, 2026-07-21)
 
-### 2.1 Серверная часть (источник истины)
+### 2.1 Серверная часть — Single Source of Truth
 
-- `ShipKeyBinding` (server-only singleton, POCO) — реестр связей `shipId ↔ keyItemId`.
-  - Заполняется **на сервере** при `StartHost()` из списка зарегистрированных кораблей (`ShipController` в загруженных сценах).
-  - Каждый корабль, у которого в инспекторе задан `keyItemId` (либо `0` для авто-генерации), получает запись.
-  - На сервере — `Dictionary<ulong /*networkObjectId*/, int /*keyItemId*/>`.
-- `ShipKeyServer` (NetworkBehaviour) — RPC-хэб:
-  - `RequestCanBoardRpc(ulong clientId, ulong shipNetworkObjectId)` → `CanBoardResponse { bool allowed, string reason }`.
-  - Содержит server-side логику: проверить, есть ли в инвентаре игрока предмет с `itemId == keyItemId`.
-- `InventoryWorld.HasItem(ulong clientId, int itemId)` — **новый** helper, дополняющий v2-инвентарь (сейчас есть только `GetOrCreate/Has/AddItemDirect/...`).
+**KeyRodInstanceWorld** (`static class`, server-only) — единственный источник правды:
+- `Dictionary<int, KeyRodInstance> _instancesById`
+- `Dictionary<ulong, int> _primaryInstanceByShipId` — shipNetId → instanceId (1:1)
+- `Dictionary<ulong, List<int>> _instancesByPlayer` — clientId → instanceIds
+- Event `OnOwnershipChanged` (для внутренней подписки)
+- Persistence через `IKeyRodInstanceRepository` (`KeyRodInstances.json`)
 
-### 2.2 Клиентская часть (UI/feedback)
+**ShipController.OnNetworkSpawn** (сервер):
+- Читает `_keyItemData` (ItemData, inspector field)
+- Корутина `CreateKeyInstanceWhenReady()` ждёт инициализации `KeyRodInstanceWorld`
+- Создаёт `KeyRodInstance` → `CreateInstance(itemId, shipNetId, OWNER_NONE)`
 
-- `ShipKeyClientState` (singleton) — клиентская проекция для UI:
-  - хранит `Dictionary<ulong /*shipId*/, int /*keyItemId*/>` (получено от сервера при входе на хост);
-  - событие `OnBindingsUpdated` для UI.
-- `ShipKeyToast` (MonoBehaviour, `UIDocument` scene-placed) — простая UI-подсказка в нижней части экрана:
-  - показывает `string message` в течение `duration` секунд;
-  - использует UI Toolkit (`<ui:Label>` поверх остального UI);
-  - **не блокирует** другие UI (picking-mode=Ignore).
-- Логика блокировки F:
-  - Клиент (owner) при нажатии F → шлёт `RequestCanBoardRpc` серверу.
-  - Сервер → проверяет инвентарь → отвечает `CanBoardResponse`.
-  - Если `allowed == false` → клиент показывает toast; **НЕ** отправляет `SubmitSwitchModeRpc` (предотвращаем двойной-RPC).
-  - Если `allowed == true` → клиент отправляет `SubmitSwitchModeRpc` (нормальный путь).
+**ShipOwnershipRequirement** (NetworkBehaviour на каждом ShipController):
+- Server-only проверка: `KeyRodInstanceWorld.IsOwnerOfShip(clientId, shipNetId)`
+- Регистрируется в `MetaRequirementRegistry` как приоритетный handler
 
-### 2.3 Данные (ScriptableObject)
+**MetaRequirementRegistry** (NetworkBehaviour, BootstrapScene):
+- Универсальный хаб проверок: ShipOwnershipRequirement → MetaRequirement → default allow
+- RPC: `RequestCanUseRpc` → `NetworkPlayer.ReceiveMetaRequirementResponseTargetRpc`
 
-`ItemData` (`Assets/_Project/Scripts/Core/ItemType.cs`) уже имеет нужные поля:
-- `itemName` (string) — `"Ключ-стержень: Light"` и т.п.;
-- `itemType` (ItemType) — переиспользуем `Equipment` (новый тип не нужен в MVP);
-- `description` (string) — пояснение, что ключ подходит к конкретному кораблю;
-- `maxStack` (int) = `1` (ключ не стакается);
-- `weightKg` (float) — минимальный (0.05).
+### 2.2 Клиентская часть
 
-**Без нового ItemType** — `Equipment` достаточно семантически (ключ = экипировка/инструмент). Если потребуется фильтрация по типу «Key» в UI, добавим `Key` в `ItemType` (см. TODO).
+**ShipTelemetryClientState** (MonoBehaviour singleton):
+- Агрегирует `ShipTelemetryState` со всех кораблей через `NetworkVariable`
+- Ownership: читает `ownerClientId` из `ShipTelemetryState` напрямую
+- `MyShips` / `IsMyShip` — фильтрация по `ownerClientId == LocalClientId`
 
-**Без отдельного SO для ключа** — корабли, не ключи, хранят свою привязку. `ShipKeyBinding` маппит `shipId → keyItemId`, а ключ — это просто `ItemData` с уникальным именем/иконкой (например, ярко-золотой цвет).
+**MetaRequirementClientState** (MonoBehaviour singleton):
+- Клиентская проекция требований для ЛЮБЫХ interactable'ов
+- F-key: `RequestCanUse` → `MetaRequirementRegistry.RequestCanUseRpc`
 
-**⚠️ КРИТИЧНО:** `ItemData` для ключей должны лежать **в корне `Assets/_Project/Resources/Items/`,** а НЕ в подпапках. `Resources.LoadAll<ItemData>("Items")` в `InventoryWorld.RegisterAllItems()` **не рекурсивен** — подпапки игнорируются. См. `KNOWN_ISSUES.md` §"Баг: ключи в подпапке" для подробностей.
+**MetaRequirementToast** (UIDocument):
+- Показывает toast при отказе доступа
 
----
+### 2.3 Файлы (актуальный состав)
 
-## 3. Wire-протокол (RPC)
+| Файл | Назначение |
+|------|-----------|
+| `KeyRodInstance.cs` | POCO: itemId, instanceId, registeredShipId, ownerPlayerId, state |
+| `KeyRodInstanceWorld.cs` | Static facade, server-only, 3 индекса + persistence |
+| `KeyRodInstanceRepository.cs` | JSON-персистентность |
+| `ShipOwnershipRequirement.cs` | NetworkBehaviour, проверка владения |
+| `ShipTelemetryState.cs` | INetworkSerializable struct (14 полей + ownerClientId) |
+| `ShipTelemetryClientState.cs` | Клиентский агрегатор telemetry |
 
-### 3.1 Server → Client (один раз на респаун клиента)
+### 2.4 Удалённые файлы (P1)
 
-`PushBindingsRpc(ulong[] shipIds, int[] keyItemIds)`:
-- Отправляется **target** клиенту через `NetworkPlayer.ReceiveShipKeyBindingsTargetRpc`.
-- Содержит весь текущий реестр (в будущем — диффы, но MVP = bulk).
-- Идемпотентно: можно вызывать при переподключении, scene-load.
-
-### 3.2 Client → Server
-
-`RequestCanBoardRpc(ulong shipNetworkObjectId, ServerRpcParams)`:
-- Клиент (owner NetworkPlayer) вызывает при F рядом с кораблём **до** отправки `SubmitSwitchModeRpc`.
-- Серверная лямбда:
-  1. Проверить: `ShipKeyServer.TryGetKeyFor(shipId, out int keyItemId)`.
-  2. Проверить: `InventoryWorld.Has(clientId, keyItemId)`.
-  3. Ответить `CanBoardResponseRpc { bool allowed, string reason }`.
-
-### 3.3 Server → Client (ответ)
-
-`CanBoardResponseRpc(ulong shipNetworkObjectId, bool allowed, string reason, RpcParams)`:
-- Target — отправитель (client owner).
-- Если `allowed == false` → клиент показывает toast и НЕ шлёт `SubmitSwitchModeRpc`.
-- Если `allowed == true` → клиент шлёт `SubmitSwitchModeRpc` штатно.
-
-### 3.4 DTO
-
-```csharp
-public struct ShipKeyBindingDto : INetworkSerializable
-{
-    public ulong shipNetworkObjectId;
-    public int   keyItemId;     // 0 = "нет ключа, доступ свободный" (TODO?)
-    public FixedString64Bytes shipDisplayName;
-}
-```
-
-> **Примечание:** `FixedString64Bytes` используем, чтобы не аллоцировать на каждом RPC. Можно заменить на `string`, если профилирование покажет отсутствие проблем.
+| Файл | Причина удаления |
+|------|-----------------|
+| ❌ `ShipKeyBinding.cs` | Obsolete alias → MetaRequirement |
+| ❌ `ShipKeyServer.cs` | Заменён на MetaRequirementRegistry |
+| ❌ `ShipKeyClientState.cs` | Заменён на MetaRequirementClientState |
+| ❌ `ShipKeyToast.cs` | Заменён на MetaRequirementToast |
+| ❌ `ShipOwnershipRegistry.cs` | Дублировал KeyRodInstanceWorld |
+| ❌ `KeyRodInstanceBinding.cs` | Scene-placed binding с retry-loop |
 
 ---
 
-## 4. Идентификация кораблей
+## 3. Wire-протокол (актуальный)
 
-### 4.1 `shipId`
+### 3.1 Client → Server (F-key)
 
-В Project C `NetworkObject.NetworkObjectId` — стабильный ulong, уникальный в пределах серверного рантайма. Это и есть `shipId`.
+`MetaRequirementClientState.RequestCanUse(shipNetId)` → `MetaRequirementRegistry.RequestCanUseRpc`:
+1. Проверка ShipOwnershipRequirement → `KeyRodInstanceWorld.IsOwnerOfShip`
+2. Проверка MetaRequirement (для блоков/дверей)
+3. Default allow
 
-**Альтернатива** — кастомное поле на `ShipController` (например, `public string ShipInstanceId`). Минусы: редактор должен следить за уникальностью, плюсы: стабильно между сессиями. **Решение MVP:** используем `NetworkObjectId`. Документируем как TODO для именованных/сохранённых кораблей.
+### 3.2 Server → Client (ответ)
 
-### 4.2 `keyItemId`
+`NetworkPlayer.ReceiveMetaRequirementResponseTargetRpc`:
+- allowed → `SubmitSwitchModeRpc`
+- denied → `MetaRequirementToast`
 
-Стандартный `InventoryWorld.GetOrRegisterItemId(itemData)`. На сервере при `StartHost()` каждый корабль имеет `ShipKeyBinding` с:
-- `[SerializeField] ItemData _keyItemData` — какой ключ к нему подходит (заполняется в инспекторе сцены);
-- `int KeyItemId` — резолвится сервером из `_keyItemData` при `StartHost` через `InventoryWorld.GetOrRegisterItemId`.
+### 3.3 Telemetry (Server → Client)
 
-**Гарантия 1:1:** один `keyItemData` — один `keyItemId`. Если два корабля случайно получат один `keyItemData`, проверка наличия ключа сработает на обоих — это баг дизайнера. В коде — `Debug.Assert(_keyItemData != null)` + `OnValidate` в `ShipKeyBinding` для детекта дублей в сцене.
+`ShipController._telemetryState` (NetworkVariable, 5Hz throttle):
+- `ShipTelemetryClientState.SubscribeToShip()` читает deltas
+- `ownerClientId` встроен прямо в telemetry
 
 ---
 
-## 5. Точки вставки в существующий код
+## 4. Идентификация
 
-| Файл | Что меняем | Зачем |
-|---|---|---|
-| `Assets/_Project/Items/Core/InventoryWorld.cs` | Добавляем `bool HasItem(ulong clientId, int itemId)` | Серверная проверка наличия ключа |
-| `Assets/_Project/Items/Network/InventoryServer.cs` | (опц.) Прокидываем `HasItem` через RPC | Нужен только если проверка идёт с клиента — у нас server-side |
-| `Assets/_Project/Scripts/Player/NetworkPlayer.cs` | В `Update` блок F → добавляем pre-check `RequestCanBoardRpc` перед `SubmitSwitchModeRpc` | Предотвращаем отправку boarding RPC без ключа |
-| **Новый** `Assets/_Project/Scripts/Ship/Key/ShipKeyBinding.cs` | NetworkBehaviour-singleton, реестр | Серверный источник истины |
-| **Новый** `Assets/_Project/Scripts/Ship/Key/ShipKeyClientState.cs` | MonoBehaviour-singleton, проекция на клиента | UI + cache |
-| **Новый** `Assets/_Project/Scripts/UI/ShipKeyToast.cs` | Простой UIDocument-компонент | Тост «нет ключа» |
-| **Новые** `Assets/_Project/Resources/Items/Item_Key_*.asset` | 3 SO ключа | Предметы-ключи для теста |
-| **Новые** GameObject'ы в `WorldScene_0_0.unity` | 3 ключа-PickupItem + 1 контейнер-декор | Визуальные пикапы |
-| `WorldScene_0_0.unity` | Прописываем `keyItemData` в каждый `ShipController` (через ShipKeyBinding) | Связываем корабли с ключами |
-| `BootstrapScene.unity` | Добавляем `[ShipKeyServer]` GameObject с компонентом `ShipKeyBinding` | NetworkBehaviour-hub |
-| `Assets/_Project/UI/...` | UXML/USS для тоста | Минимальная UI-структура |
+- `shipId` = `NetworkObject.NetworkObjectId` (ulong, стабилен в сессии)
+- `keyItemId` = `InventoryWorld.GetOrRegisterItemId(itemData)` (int)
+- `instanceId` = монотонный счётчик `KeyRodInstanceWorld._nextInstanceId` (int, эфемерный)
+- Связь: `ShipController._keyItemData` → резолвится в itemId → `CreateInstance(itemId, shipNetId, OWNER_NONE)`
 
 **Что НЕ меняем** (по AGENTS.md «Don't touch»):
 - `docs/gdd/`, `docs/WORLD_LORE_BOOK.md` — дизайн-документ держим в `docs/Ships/Key-subsystem/`.

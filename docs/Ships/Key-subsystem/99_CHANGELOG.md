@@ -4,6 +4,34 @@
 
 ---
 
+## 2026-07-21 — P1 Refactor Complete (ветка `refactor/key-subsystem-p1-2026-07-21`)
+
+**Контекст**: полный рефакторинг по плану `SHIP_REFACTOR_PLAN_2026-07-21.md`.
+
+**Что изменилось в коде**:
+
+| Шаг | Коммит | Что |
+|-----|--------|-----|
+| 1 | `d04c5e8` | Удалены 4 Obsolete-файла: ShipKeyBinding, ShipKeyServer, ShipKeyClientState, ShipKeyToast. Убран CreateShipKeyClientState из NetworkManagerController. Убраны ReceiveShipKey*TargetRpc из NetworkPlayer. |
+| 2 | `f97bdcf` | Fix registeredShipId=0: поиск shipId из существующих instance-ов при fallback CreateInstance. |
+| 3 | `37f25a2` | Удалён ShipOwnershipRegistry (200+ строк, дублировал KeyRodInstanceWorld). ShipTelemetryClientState читает ownerClientId из ShipTelemetryState напрямую. |
+| 4 | `6742a84` | Удалён KeyRodInstanceBinding (retry-loop). ShipController создаёт KeyRodInstance через корутину CreateKeyInstanceWhenReady. TryPickup ищет Active+NONE instance. |
+| fix | `01a4d13` | Guard от дубликата ключа при pickup. Корутина с таймаутом 5с для CreateKeyInstance. |
+
+**Итог**:
+- Удалено 7 файлов (~850 строк)
+- 0 reflection
+- 1 source of truth: KeyRodInstanceWorld
+- ShipController._keyItemData — inspector field для привязки ключ→корабль
+
+**Документация обновлена**:
+- `00_OVERVIEW.md` — переписан §2-§4 (архитектура, wire-протокол, идентификация)
+- `99_CHANGELOG.md` — эта запись
+- `31_KEY_ANALYSIS_2026-07-21.md` — анализ перед рефакторингом
+- `SHIP_REFACTOR_PLAN_2026-07-21.md` — P1 отмечен как complete
+
+---
+
 ## 2026-06-18 — R2-SHIP-KEY-003 v10 (T-KEY-07: ShipTelemetry — NetworkVariable-based)
 
 **Контекст**: восьмой тикет R2-SHIP-KEY-003 после T-KEY-06. Самый большой тикет — реализация ship telemetry через NetworkVariable. HUD/UI получают актуальные данные без polling RPC.

@@ -549,6 +549,10 @@ namespace ProjectC.Player
             if (!IsServer) return;
             if (TradeWorld.Instance == null) return;
 
+            // T-HULL/NPC: NPC-пилот без игроков — столкновения не наносят урон ни грузу, ни корпусу.
+            // Когда игрок садится за штурвал (_pilots.Count > 0) — полный урон применяется.
+            if (_hasNpcPilot && _pilots.Count == 0) return;
+
             // Ленивая регистрация если корутина ещё не отработала
             if (!_cargoRegistered)
             {

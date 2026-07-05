@@ -388,8 +388,21 @@ namespace ProjectC.Items
                         {
                             // T-KEY-09 fix: поиск существующего Active instance чтобы не создать дубль
                             int newInstId = ProjectC.Ship.Key.KeyRodInstanceWorld.FindActiveKeyInstance(clientId, itemId);
-                            if (newInstId <= 0) {
-                                newInstId = ProjectC.Ship.Key.KeyRodInstanceWorld.CreateInstance(itemId, (ulong)0, clientId);
+                            if (newInstId <= 0)
+                            {
+                                // P1-fix: ищем shipId из любого существующего instance с таким itemId
+                                // (чтобы не потерять привязку ключ→корабль при повреждённом persistence)
+                                ulong fallbackShipId = 0;
+                                var allExisting = ProjectC.Ship.Key.KeyRodInstanceWorld.GetAllInstances();
+                                foreach (var existing in allExisting)
+                                {
+                                    if (existing.itemId == itemId && existing.registeredShipId != 0)
+                                    {
+                                        fallbackShipId = existing.registeredShipId;
+                                        break;
+                                    }
+                                }
+                                newInstId = ProjectC.Ship.Key.KeyRodInstanceWorld.CreateInstance(itemId, fallbackShipId, clientId);
                             }
                             if (newInstId > 0)
                             {

@@ -1,6 +1,6 @@
 # GDD_10: Ship System v4.1
 
-**Версия:** 4.2 | **Дата:** 19 июня 2026 г. (дизайн-контент без изменений с Апрель 2026; добавлена §13 «Реализация в коде») | **Статус:** 🟢 В разработке → частично реализовано (Key + MetaRequirement)
+**Версия:** 4.3 | **Дата:** 6 июля 2026 г. | **Статус:** 🟢 В разработке — §9 (Damage), §8 (Engine states), §13 (Obsolete cleanup) актуализированы по коду
 **Ветка:** `qwen-gamestudio-agent-dev` (дизайн), `feature/npc-quest-v2` (merged) (реализация)
 
 ---
@@ -496,27 +496,38 @@ public struct DockingAssignmentDto : INetworkSerializable {
 
 | Состояние | Описание | Триггер Входа | Триггер Выхода | Реализация |
 |-----------|----------|---------------|----------------|------------|
-| **EngineOff** | Все системы неактивны | KeyRod извлечён | KeyRod вставлен | Phase 5 (KeyRod subsystem) |
-| **Idle** | Антиграв активен, зависание | KeyRod вставлен, нет ввода | Ввод обнаружен | ✅ |
+| **EngineOff** | Все системы неактивны, антиграв выключен, корабль падает | Enter (пилот в кресле) или fuel=0 | Enter (если топливо ≥10%) | ✅ (2026-07-05: `_netEngineRunning` NetworkVariable, ToggleEngineServerRpc) |
+| **Idle** | Антиграв активен, зависание, idle-расход 0.05 fuel/s | Engine ON, пилотов нет | Пилот сел (ввод) | ✅ (2026-07-05: IDLE с fuel-логикой) |
 | **Flying** | Под управлением пилота | Ввод от пилота | Все пилоты вышли | ✅ |
 | **Docking** | Следует инструкциям диспетчера | Docking accepted | Landed / Cancelled | Phase 2 (автопилот) |
 | **Docked** | Заблокирован на платформе | `DockingWorld.ConfirmTouchdown` → `ShipController.EnterDocked()` | `RequestTakeoffRpc` → `ExitDocked()` | ✅ (`_netIsDocked=true`, `rb.isKinematic=true`, `SendShipInput` blocked) |
-| **AutoHover** | Зависание (все пилоты вышли) | PilotCount = 0 | PilotCount > 0 | ✅ |
+| **AutoHover** | Зависание (все пилоты вышли) = Engine ON Idle с расходом топлива | PilotCount = 0 | PilotCount > 0 | ✅ (2026-07-05: IDLE с fuel-логикой, выход F на любой скорости) |
 | **⚠️ VeilTurbulence** | Ниже коридора | Alt < minAlt | Alt >= minAlt + 50 | ✅ |
 | **⚠️ SystemDegrade** | Выше коридора | Alt > maxAlt + 100 | Alt <= maxAlt | ✅ |
 | **⚠️ SOLLock** | СОЛ блокирует | SOL violation timeout | Оплата штрафа / модуль Stealth | Phase 4 |
 
 ---
 
-## 9. Повреждения и Крушения (Будущее — Низкий Приоритет)
+## 9. Повреждения и Ремонт ✅ Реализовано (MVP, 2026-07-05)
 
-Записать, но **НЕ реализовывать** до Этапа 5+:
+> **Статус:** ✅ MVP. См. `docs/Ships/damage_subsystem/00_DESIGN.md`.
 
-- Столкновение с пиком → урон корпусу, возможное разрушение
-- Критический урон → корабль теряет управление, падает
-- Падение на поверхность Земли (под Завесой) → разрушение
-- Ремонт на верфях (Тертиус)
-- Потеря груза при крушении (частичная)
+**Архитектура:** `ShipHull` (NetworkBehaviour, `IDamageTarget`) + `ShipDamageConfig` SO.
+
+**Два источника урона:**
+- Столкновения: `ShipController.OnCollisionEnter` → `ShipHull.ApplyCollisionDamage(energy)`. Формула: `min(floor((energy−8)×0.5), 50)`. Три защиты от ложных ударов при стыковке (minRelativeSpeed 3 м/с + postUndockGrace 3 сек + IsDocked guard).
+- Боевое оружие: `CombatServer.ResolveAttack` → `ShipHull.ApplyDamage(DamageResult)`.
+
+**HP по классам:** Light=100, Medium=200, Heavy=400, HeavyII=600. armorHull=5.
+
+**0 HP = «сломан»:** скорости ×0.1, груз обнулён, `IsAlive()=true` (корабль не деспаунится). Ремонт в доке за 300 кр.
+
+**Что НЕ входит в MVP (post-MVP):**
+- Визуальные эффекты (дым, искры, деформация)
+- Щиты как отдельный ресурс
+- Урон по отдельным модулям/слотам
+- Градации деградации (сейчас только 0/1)
+- Саморемонт в полёте
 
 ---
 
@@ -576,7 +587,7 @@ public struct DockingAssignmentDto : INetworkSerializable {
 | 6.1 | Veil penetration mechanics | P3 | ⏳ TODO |
 | 6.2 | Space freeze mechanics | P3 | ⏳ TODO |
 | 6.3 | MODULE_AUTO_DOCK (автопилот) | P3 | ⏳ TODO |
-| 6.4 | Damage/crash system | P4 | ⏳ TODO (collision damage done, full crash = P4) |
+| 6.4 | Damage/crash system | P4 | ✅ MVP (ShipHull + collision damage + repair, 2026-07-05). Full crash/visual = P4. |
 | 6.5 | MODULE_STEALTH (counter-SOL) | P3 | ⏳ TODO |
 
 ---
@@ -730,9 +741,7 @@ UI:
 - ✅ `NetworkPlayer.TryInteractNearestMetaRequirement()` (E-key entry point для НЕ-кораблей)
 
 **Алиасы (backward compat):**
-- ⏳ `ShipKeyBinding.cs` — `[Obsolete]` empty subclass → `MetaRequirement`
-- ⏳ `ShipKeyServer.cs` / `ShipKeyClientState.cs` — legacy API сохранён, `[Obsolete]`
-- ⏳ TODO (через 1-2 релиз-цикла): удалить алиасы после миграции всех сцен
+- ✅ **Удалены в P1 рефакторинге (2026-07-05):** `ShipKeyBinding.cs`, `ShipKeyServer.cs`, `ShipKeyClientState.cs`, `ShipKeyToast.cs`. `NetworkManagerController` больше не создаёт `ShipKeyClientState`. `NetworkPlayer` — убраны `ReceiveShipKey*TargetRpc`. См. `docs/Ships/SHIP_REFACTOR_PLAN_2026-07-21.md`.
 
 **Тестовые ассеты (R2-META-REQ-001 verification):**
 - ✅ 3 SO `ItemData`: `Item_Key_Blue/Red/Green.asset`
@@ -817,14 +826,15 @@ CLIENT:
 
 **Ключевые компоненты (новые/обновлённые):**
 - ✅ `KeyRodInstance` — POCO: instanceId, itemId, registeredShipId (shipNetId), ownerPlayerId, originalOwnerId, state (Active/Lost/Destroyed)
-- ✅ `KeyRodInstanceWorld` — server-only static facade с persistence
-- ✅ `KeyRodInstanceBinding` — scene-placed MonoBehaviour (auto-register с retry 1.0s × 15)
-- ✅ `ShipOwnershipRequirement` — auto-attach на ShipController.Awake (не требует ручной настройки)
+- ✅ `KeyRodInstanceWorld` — server-only static facade с persistence (единственный источник правды, 0 reflection)
+- ✅ `KeyRodInstanceBinding` — ~~scene-placed MonoBehaviour (auto-register с retry 1.0s × 15)~~ **Удалён в P1 (2026-07-05).** ShipController создаёт KeyRodInstance в OnNetworkSpawn.
+- ✅ `ShipOwnershipRequirement` — auto-attach на ShipController.Awake
+- ✅ `ShipOwnershipRegistry` — **Удалён в P1 (2026-07-05).** ShipTelemetryClientState читает ownerClientId из telemetry напрямую.
 - ✅ `MyShipsTab` — UI вкладка в CharacterWindow с dropdown + telemetry
 - ✅ `JsonKeyRodInstanceRepository` — JSON persistence (`KeyRodInstances.json`)
 
 **Backward compatibility:**
-- `ShipKeyBinding`/`ShipKeyServer`/`ShipKeyClientState` — остаются как `[Obsolete]` алиасы
+- ✅ `ShipKeyBinding`/`ShipKeyServer`/`ShipKeyClientState`/`ShipKeyToast` — **Удалены в P1 (2026-07-05).** 0 ссылок в коде и сценах.
 - `MetaRequirement` — продолжает работать как generic требование (двери, контейнеры)
 - ShipKey теперь построен поверх MetaRequirement для boarding check
 

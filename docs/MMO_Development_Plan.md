@@ -1,8 +1,32 @@
 # План разработки ММО "Project C: The Clouds" на Unity
 
-**Последнее обновление:** 2 июля 2026 г. | **Текущая версия:** `v0.0.36`
+**Последнее обновление:** 6 июля 2026 г. | **Текущая версия:** `v0.0.40 — repair manager`
 
-> **Что нового (2 июля 2026):** **T-CARGO-UI-01: детальный список груза в CharacterWindow ✅.** `MyShipsTab` теперь показывает **что лежит в трюме** (itemId + displayName + qty + unit weight + dangerous/fragile flags), а не только progress bar. Сервер-push через `ShipTelemetryState.cargoDetail[]` (cap 32, 5 Hz синхронизация). Бонусом — **фикс бага `cargoMax = 0`** (теперь корректно через `ShipCargoRegistry.GetEffectiveLimits` per-instance + module bonuses). Диздок: `docs/Ships/cargo_system/CARGO_UI_01_DESIGN_2026-07-02.md`. Сводный план 4 эпиков: `docs/Ships/cargo_system/CARGO_REMAINING_WORK_2026-07-02.md`. 5 файлов, 271/29 строк, 0 compile errors.
+> **Что нового (1–6 июля 2026):** **67 коммитов, 13 подсистем.** Подробное саммари: `docs/dev/summary_01-06_july_2026.md`.
+>
+> **🌬 Ветер:** полноценно на корабли и персонажа (`WindManager` + `WindZone`). Персонаж сносится на палубе/в полёте.
+>
+> **🧍 Персонаж на палубе:** не скользит — единый `Move` + `PlatformRideHelper`. `groundedForMovement = _isGrounded || _onPlatform`. Pickup'ы едут с кораблём (`PickupDeckRide`, carry-формула + `RefreshWorldBase`).
+>
+> **👾 NPC на палубе:** ходят по движущемуся кораблю, преследуют игрока. `NpcBrain` — прокси-агент + `DriveDeckNav` + NavMesh fix (пустой NavMeshData в префабе). Три уровня carry: L1 (персонаж), L2 (NPC), L3 (pickup).
+>
+> **📦 Cargo — все 4 эпика завершены:** ✅ UI-01 (детальный список в CharacterWindow — `CargoDetailDto[]`, `RenderCargoDetail`, `CustomDropdown`, 2-колоночная вёрстка). ✅ UI-02 (Cargo Manager — консоль на корабле: `ShipCargoServer` + `ShipCargoConsoleWindow`, обмен через `ResourceExchangeResolver`, qty-кнопки, упаковка/распаковка). ✅ VIS-01 (3D визуал наполнения трюма: `ShipCargoVisual`, grid-размещение, object pool, overflow-индикатор). ✅ NPC-01 (NPC-корабли торгуют: `NpcCargoService`, `TryNpcBuy`/`TryNpcSell` в `TradeWorld`, `NpcCargoTradeListConfig`, интеграция в `NavTick`).
+>
+> **🏪 MARKET-ID-REFACTOR:** `MarketZone` → `_marketConfig` (MarketConfig SO вместо строки `locationId`). `MarketConfigCollector` — авто-сбор из сцен. Нормализация `ToUpperInvariant()` во всех реестрах. «Разместил MarketZone в сцене → рынок работает».
+>
+> **🧹 Большая чистка:** warnings ×15 файлов (FindObjectsSortMode → FindObjectsByType, RPC атрибуты, неиспользуемые переменные). Debug логи. Reflection → прямой доступ (`MyShipsTab`, -77 строк). Esc bugfix (все окна в `IsAnyExternalWindowOpen`).
+>
+> **🔧 Repair Manager (доковый менеджер):** `ModuleShopEntry`/`ModuleShopDatabase`/`ShipModuleCatalog`/`ShipModuleServer` (RPC install/remove/sell/repaint). `RepairManagerWindow` (UI Toolkit). **Ship Observation Camera** — FlyToShip + орбитальное вращение (▲▼◀▶). **Ship Repainting** — цвет из палитры + credit payment. **Module Visual Preview** — Editor tool: ▶ Preview, `HideFlags.DontSave`.
+>
+> **🚀 Двигатель ON/OFF + IDLE:** Enter — включить/выключить. `_netEngineRunning` NetworkVariable. IDLE-расход 0.05 fuel/s. Выход (F) на любой скорости. NPC всегда ENGINE ON. HUD индикатор в K3.
+>
+> **💥 Повреждения корабля:** `ShipHull` (NetworkBehaviour, `IDamageTarget`). Два источника: столкновения + боевое оружие. `ShipDamageConfig` SO. 0 HP = «сломан» (скорости ×0.1, груз обнулён, `IsAlive()=true`). Ремонт в доке за 300 кр. Три защиты от ложных ударов при стыковке.
+>
+> **🔄 SHIP_REFACTOR_PLAN P1–P5:** ✅ P1 — Key Subsystem refactor (-1139/+651 строк, 7 файлов удалено, 0 reflection, 1 источник правды `KeyRodInstanceWorld`). ✅ P2 — CargoSystem.cs удалён. ✅ P3 — документация актуализирована. ✅ P4 — Module Visual L1. ✅ P5 — Cargo ownership guard (4 метода).
+>
+> **🎮 Unity 6000.5.2f1** — миграция завершена.
+>
+> **Документация:** `docs/dev/summary_01-06_july_2026.md` (560 строк, 17 перекрёстных ссылок), `docs/Ships/ITERATIONS.md`.
 
 > **Предыдущее обновление (30 июня 2026):** **Character Customisation L1+L3+L4 ✅ + v0.0.35.** Полный цикл — 6 документов дизайна → 15 C# файлов (CustomisationSave, DTO, ClientState, Applier, UI Window) → M/F переключение, 6 пресетов тела, 2 стиля волос, цвета кожи/волос/одежды, AnimatorOverrideController. UI по паттерну SkillTreeWindow. Bug #1 (domain reload → heightScale=0 → персонаж невидим) исправлен.
 >
@@ -87,12 +111,7 @@
 - ✅ Space — прыжок
 - ✅ Left Shift — бег
 - ✅ CharacterController + коллизии
-- ✅ **Ветер для персонажа** — взять за основу систему ветров кораблей (Сессия 3: WindZone, WindZoneData)
-  - WindZone триггеры работают для персонажа (CharacterController входит в зону)
-  - Влияние ветра на движение: снос при сильном ветре, сопротивление
-  - Классы персонажей (если будут) → разная windExposure
-  - Профили ветра: Constant, Gust, Shear — переиспользовать WindZoneData
-  - Связь с GDD_02 (Погода) и GDD_01 (Физика персонажа)
+- ✅ **Ветер для персонажа (✅ 2026-07-01)** — `WindManager` + `WindZone` применяются к персонажу через `NetworkPlayer.ProcessMovement`. Правила по состоянию: на палубе/на земле/в прыжке — ветер с разными коэффициентами. Профили: Constant, Gust, Shear.
 
 ### 1.4 Контроллер корабля ✅ ЗАВЕРШЕНО (Сессии 1-5_4: 12 апреля 2026)
 - ✅ Smooth movement — Mathf.SmoothDamp для frame-rate независимого сглаживания
@@ -115,14 +134,17 @@
 - ✅ ⭐ MeziyThrusterVisual — URP-совместимые частицы, авто-создание
 - ✅ ⭐ ShipDebugHUD (F3) — debug overlay: fuel, speed, meziy state, roll
 - ✅ ⭐ Co-op пилотирование — несколько игроков, усреднение ввода (NetworkBehaviour)
-- ✅ ⭐ **Ship Key subsystem (R2-SHIP-KEY-001, 2026-06-06)** — физический ключ-предмет для запуска. `ShipKeyBinding` (MonoBehaviour) + `ShipKeyServer` (NetworkBehaviour hub) + `ShipKeyClientState` (singleton) + `ShipKeyToast` (UIDocument). F-key разделён на выход/посадку, pre-F RPC `RequestCanBoard` (1.5 сек timeout), server-side defense-in-depth guard в `SubmitSwitchModeRpc`. 3 ключа: `Item_Key_ShipLight/Medium/Heavy.asset`. `WorldScene_0_0.unity` — 3 KeyRod PickupItem + ShipKeyBinding на 3 ShipController. **MVP, deprecated** — superseded by MetaRequirement (см. §1.9). См. `docs/Ships/Key-subsystem/00_OVERVIEW.md`.
-- ✅ Рефакторинг кода — ShipController.cs v2.7 (1200+ строк), разделение на подсистемы
+- ✅ ⭐ **Engine ON/OFF + IDLE (2026-07-05)** — `_netEngineRunning` NetworkVariable. Enter — включить/выключить. IDLE-расход 0.05 fuel/s (корабль «завис» без пилота). Выход (F) разрешён всегда на любой скорости. NPC всегда ENGINE ON. HUD индикатор в K3. См. `docs/Ships/ENGINE_POWER_STATE.md`.
+- ✅ ⭐ **Ship Damage Subsystem (2026-07-05)** — `ShipHull` (NetworkBehaviour, `IDamageTarget`). HP по классам (100/200/400/600), armorHull=5. Два источника: столкновения (формула `(energy−8)×0.5`, cap 50) + боевое оружие. 0 HP = «сломан» (скорости ×0.1, груз обнулён, `IsAlive()=true` — корабль не деспаунится). Ремонт в доке за 300 кр. Три защиты от ложных ударов при стыковке (minRelativeSpeed 3 м/с + postUndockGrace 3 сек + IsDocked guard). См. `docs/Ships/damage_subsystem/`.
+- ✅ ⭐ **Repair Manager (2026-07-04..05)** — доковый менеджер модулей: `ShipModuleServer` (RPC install/remove/sell/repaint/hull-repair), `RepairManagerWindow` (UI Toolkit), Ship Observation Camera (FlyToShip + ▲▼◀▶), Ship Repainting (цвет + кредиты), Module Visual Preview (Editor tool). См. `docs/Ships/Modul_system/`.
+- ✅ ⭐ **Ship Key subsystem (R2-SHIP-KEY-001, 2026-06-06)** — ~~физический ключ-предмет для запуска. `ShipKeyBinding` + `ShipKeyServer` + `ShipKeyClientState` + `ShipKeyToast`.~~ **Obsolete — удалено в P1 рефакторинге (2026-07-05).** Заменено на `KeyRodInstanceWorld` (static facade, 0 reflection, 1 источник правды) + `MetaRequirementRegistry`. См. `docs/Ships/Key-subsystem/` + `docs/Ships/SHIP_REFACTOR_PLAN_2026-07-21.md`.
+- ✅ Рефакторинг кода — ShipController.cs (2000+ строк), разделение на подсистемы
 
 ### 1.5 Переключение режимов (пеший ↔ корабль) ✅
 - ✅ F — подойти к кораблю (< 5м) → сесть/выйти
 - ✅ PlayerStateMachine — управление состояниями
 - ✅ Камера адаптируется к режиму
-- ✅ Проверка при выходе: корабль на земле ИЛИ скорость < 2 м/с
+- ✅ Проверка при выходе: ~~корабль на земле ИЛИ скорость < 2 м/с~~ → **снято (2026-07-05):** выход разрешён всегда, на любой скорости (двигатель остаётся в текущем состоянии — ON=зависнет, OFF=упадёт)
 - ✅ ⭐ **Server-side key validation (R2-SHIP-KEY-001, 2026-06-06)** — F-посадка блокируется, если в инвентаре пилота нет нужного ключа. Pre-F RPC `RequestCanBoard` (1.5 сек timeout) → `ShipKeyServer.InventoryWorld.HasItem` → вернуть CanPlayerBoard result + reason. Defense-in-depth: повторная проверка внутри `SubmitSwitchModeRpc` (на случай bypass через прямой RPC). `ShipKeyToast` UI: "Нужен ключ X для корабля Y" + fade-out 3 сек. **Сейчас superseded by MetaRequirement** (см. §1.9) — единый generic механизм для всех Interactable-объектов.
 
 ### 1.6 Подбор предметов и инвентарь ✅
@@ -262,10 +284,8 @@
 - ✅ `NetworkPlayer.ReceiveMetaRequirementResponseTargetRpc` + `ReceiveMetaRequirementBindingsTargetRpc`
 
 **Алиасы (backward compat):**
-- ⏳ `ShipKeyBinding.cs` — `[Obsolete]` empty subclass → `MetaRequirement`
-- ⏳ `ShipKeyServer.cs` / `ShipKeyClientState.cs` — legacy API сохранён, `[Obsolete]`
-- ⏳ `ShipKeyToast.cs` — НЕ `[Obsolete]`, legacy functional
-- ⏳ **TODO (через 1-2 релиз-цикла):** удалить алиасы после миграции всех сцен
+- ✅ **Удалены в P1 рефакторинге (2026-07-05)** — `ShipKeyBinding.cs`, `ShipKeyServer.cs`, `ShipKeyClientState.cs`, `ShipKeyToast.cs`, `ShipOwnershipRegistry.cs`, `KeyRodInstanceBinding.cs` (7 файлов, -1139 строк). `NetworkManagerController` больше не создаёт `ShipKeyClientState`. `NetworkPlayer` — убраны `ReceiveShipKey*TargetRpc`.
+- ✅ Единый источник правды: `KeyRodInstanceWorld` (static facade, 0 reflection). `ShipController` создаёт `KeyRodInstance` в `OnNetworkSpawn`. См. `docs/Ships/Key-subsystem/31_KEY_ANALYSIS_2026-07-21.md` + `docs/Ships/SHIP_REFACTOR_PLAN_2026-07-21.md`.
 
 **Тестовые ассеты (R2-META-REQ-001 verification, 2026-06-06):**
 - ✅ 3 SO `ItemData`: `Item_Key_Blue.asset` / `Item_Key_Red.asset` / `Item_Key_Green.asset`
@@ -795,10 +815,18 @@
 1. **TradeItemDefinition (ScriptableObject):** ✅
    - ✅ Определение всех товаров: id, цена, вес, объём, иконка
    - ✅ Флаги: опасный, хрупкий, контрабанда
-2. **CargoSystem — груз корабля:** ✅
-   - ✅ Отдельный от личного инвентаря
-   - ✅ Слоты, вес, объём, влияние на скорость
-   - ✅ Проверка опасного груза (протечка мезия)
+2. **CargoSystem — груз корабля:** ✅ (Trade v2, 2026-06-17 + рефакторинг 2026-07-03)
+   - ✅ `CargoData` POCO + `TradeWorld._cargoCache[shipId]` — единый источник правды
+   - ✅ `ShipCargoRegistry.GetEffectiveLimits()` — per-instance лимиты + модульные бонусы (T-CARGO-06)
+   - ✅ Скоростной штраф: `GetSpeedPenalty` → `_serverCargoPenalty` NetworkVariable<float>
+   - ✅ Столкновения: `ShipController.OnCollisionEnter` → `TradeWorld.TryDamageCargo` (dangerous leak 5%×10%, fragile marked)
+   - ✅ `ShipCollisionDamageConfig` SO (`Resources/ShipCollisionDamage.asset`)
+   - ✅ Штраф от столкновений **наложен на HP корпуса** (ShipHull.ApplyCollisionDamage, 2026-07-05)
+   - ✅ **NPC Cargo (2026-07-03):** `NpcCargoService` + `TryNpcBuy`/`TryNpcSell` + `NpcCargoTradeListConfig`
+   - ✅ **Cargo UI (2026-07-02..03):** детальный список в CharacterWindow + Cargo Manager консоль + 3D визуал
+   - ✅ **Cargo ownership guard (2026-07-06):** `IsOwnerOfShip` в ShipCargoServer + MarketServer (P5)
+   - ❌ Legacy `CargoSystem.cs` MonoBehaviour — **удалён (P2, 2026-07-05)**
+   - ❌ 3 broken-refs в `WorldScene_0_0.unity` — **убраны**
 3. **LocationMarket — рынок локации:** ✅
    - ✅ demand_factor, supply_factor, текущие цены
    - ✅ ScriptableObject с начальными данными
@@ -865,7 +893,83 @@
 
 **Результат:** ✅ Сохранение прогресса между сессиями, **ПОЛНАЯ система торговли с динамической экономикой, контрактами НП и долговой системой**.
 
-**Документация:**
+### 3.4.5 Июль 2026: Crew, Market Refactor, Repair Manager, Engine, Damage, Refactor ✅ ЗАВЕРШЕНО (1–6 июля)
+
+**Цель:** Закрыть критические пробелы: NPC на палубе, товарооборот NPC-кораблей, доковый менеджер модулей, двигатель ON/OFF, повреждения корабля, большой рефакторинг Key/Cargo/документации.
+
+#### 3.4.5.1 NPC Crew на движущемся корабле (T-CREW) — 1–2 июля
+
+| Компонент | Назначение | Статус |
+|-----------|-----------|--------|
+| `PlatformRideHelper` | Общий хелпер probe + carry-формула | ✅ |
+| `NetworkPlayer.ApplyPlatformCarry` | Единый Move: `motion*dt + _platformDelta` (не 2 Move за кадр) | ✅ |
+| `groundedForMovement` | `_isGrounded \|\| _onPlatform` — без подскоков | ✅ |
+| `NpcBrain.DriveDeckNav` | Прокси-агент: относительное смещение через `DeckLocalToWorld` | ✅ |
+| `PickupDeckRide` | L3 carry для pickup'ов: carry-формула + `RefreshWorldBase()` (4 попытки) | ✅ |
+
+**Документация:** `docs/NPC_others_peacfull/npc_ship/09_MOVING_PLATFORM_CHARACTER_PHYSICS.md`.
+
+#### 3.4.5.2 MARKET-ID-REFACTOR — 3 июля
+
+**Проблема → Решение:**
+- `locationId` в разных регистрах (primium vs PRIMIUM) → `ToUpperInvariant()` везде
+- Ручной список MarketConfig в BootstrapScene → `MarketConfigCollector.CollectFromLoadedScenes()` — авто-сбор
+- 5 ручных шагов для добавления рынка → «Разместил MarketZone → рынок работает»
+
+**Документация:** `docs/Markets/MARKET_ID_REFACTOR_DESIGN.md`.
+
+#### 3.4.5.3 Repair Manager + Ship Customisation — 4–5 июля
+
+| Компонент | Назначение | Статус |
+|-----------|-----------|--------|
+| `ModuleShopEntry` / `ModuleShopDatabase` | SO: модуль + цена + ресурсы | ✅ |
+| `ShipModuleServer` | NetworkBehaviour: RPC install/remove/sell/repaint/repair-hull | ✅ |
+| `RepairManagerWindow` | UI Toolkit окно (CustomDropdown, qty-кнопки, скролбары) | ✅ |
+| `ShipObservationCamera` | FlyToShip + орбита (▲▼◀▶), отдельная Camera без AudioListener | ✅ |
+| Ship Repainting | Цвет из палитры → credit payment, `ShipTelemetryState.shipColorR/G/B` | ✅ |
+| Module Visual Preview | Editor tool: ▶ Preview с `HideFlags.DontSave` | ✅ |
+
+**Документация:** `docs/Ships/Modul_system/01_ARCHITECTURE.md`, `02_REPAIR_MANAGER.md`, `03_REPAINT_PLAN.md`.
+
+#### 3.4.5.4 Engine ON/OFF + IDLE — 5 июля
+
+- `_netEngineRunning` NetworkVariable<bool> — сервер-авторитативный
+- Enter — включить/выключить (только когда пилот в кресле)
+- IDLE: без пилота — antiGravity работает, idle-расход 0.05 fuel/s
+- Выход (F) разрешён всегда, на любой скорости
+- При `fuel == 0` — авто-выключение
+- NPC всегда ENGINE ON
+
+**Документация:** `docs/Ships/ENGINE_POWER_STATE.md`.
+
+#### 3.4.5.5 Ship Damage Subsystem — 5 июля
+
+- `ShipHull` (NetworkBehaviour, `IDamageTarget`) — `NetworkVariable<int>` hull/maxHull
+- `ShipDamageConfig` SO: maxHull по классам (100/200/400/600), armorHull=5
+- Два источника урона: столкновения + боевое оружие (через CombatServer)
+- 0 HP = «сломан»: скорости ×0.1, груз обнулён, `IsAlive()=true`
+- Три защиты от ложных ударов при стыковке/отстыковке
+- Ремонт в доке: `ключ + IsDocked + TryModifyCredits(-300)` → `RepairFull()`
+
+**Документация:** `docs/Ships/damage_subsystem/00_DESIGN.md`, `01_ARCHITECTURE.md`, `02_INTEGRATION_AND_REPAIR.md`.
+
+#### 3.4.5.6 SHIP_REFACTOR_PLAN P1–P5 — 5–6 июля
+
+| Фаза | Описание | Статус |
+|------|----------|--------|
+| **P1** | Рефакторинг Key Subsystem: -1139/+651 строк, 7 файлов удалено, 0 reflection | ✅ |
+| **P2** | Удаление legacy CargoSystem.cs + speed penalty fix | ✅ |
+| **P3** | Актуализация документации (CargoSystem, Key-subsystem, roadmap) | ✅ |
+| **P4** | L1 Customisation — Module Visual (visualPrefab + Editor preview) | ✅ |
+| **P5** | Cargo ownership guard (4 метода в ShipCargoServer + MarketServer) | ✅ |
+
+**Документация:** `docs/Ships/SHIP_REFACTOR_PLAN_2026-07-21.md`, `docs/Ships/ITERATIONS.md`.
+
+---
+
+**Известные проблемы (P0-P1):**
+=======
+REPLACE
 - [`docs/TRADE_SYSTEM_RAG.md`](TRADE_SYSTEM_RAG.md) — ⭐⭐ RAG документация (архитектура, потоки, формулы)
 - [`docs/TRADE_DEBUG_GUIDE.md`](TRADE_DEBUG_GUIDE.md) — отладка (симптомы → решения)
 - [`docs/gdd/GDD_22_Economy_Trading.md`](gdd/GDD_22_Economy_Trading.md) — GDD экономики (v3.0)
@@ -881,8 +985,8 @@
 - 🔴 P0: ScriptableObject state → MarketConfig + MarketState (Сессия 10). **В NPC+Quests v2 — решён частично:** `QuestDatabase` SO (registry, не state) + `ItemRegistry` SO (id↔item mapping, не state).
 - 🟡 P1: Валидация позиции в RPC (Сессия 10)
 - 🟡 P1: Clamp quantity + rate limit (Сессия 10) — **В NPC+Quests v2 — решён:** QuestServer rate limit 30 ops/min/client.
-- 🟠 MEDIUM: **R3-INV-DROP-001 (2026-06-06) — Drop теряет визуальное представление предмета** (см. `docs/Character-menu/sub_inventory-tab/60_KNOWN_ISSUES.md`). Игрок подбирает цветной ключ с emission → drop → появляется базовая белая сфера. **Не блокер** для текущего контента, но визуально сбивает.
-- 🟠 MEDIUM: **MetaRequirement TODO (R2-META-REQ-001, Этап 2)** — `_consumeOnUse` логика, `ProgressInfo` UI, disconnect-reconnect race fix (см. `docs/MetaRequirement/50_KNOWN_ISSUES.md` §"TODO").
+- ✅ **R3-INV-DROP-001 (Drop visual):** исправлен — `PickupDeckRide` + `RefreshWorldBase()` (2026-07-02). Pickup'ы больше не прыгают при отлипании от палубы.
+- 🟢 **MetaRequirement TODO (R2-META-REQ-001, Этап 2):** частично закрыто P1 рефакторингом (удалены 7 obsolete файлов, 0 reflection). Оставшиеся пункты: `_consumeOnUse` логика, `ProgressInfo` UI, disconnect-reconnect race fix (см. `docs/MetaRequirement/50_KNOWN_ISSUES.md`).
 - 🟡 UI: Контракты не сдаются с грузом на корабле (Спринт 3.3 — MVC рефакторинг)
 
 ---
@@ -1050,7 +1154,7 @@
 ---
 
 ## Инструменты и зависимости:
-- **Клиент:** Unity 6, URP, Netcode for GameObjects, DOTween (анимации), Cinemachine (камера)
+- **Клиент:** Unity 6000.5.2f1, URP, Netcode for GameObjects, DOTween (анимации), Cinemachine (камера)
 - **Сервер:** .NET 8, WebSocket/Netty, PostgreSQL, Redis, Docker/K8s
 - **DevOps:** GitHub Actions (CI/CD), Sentry (ошибки), Prometheus (мониторинг)
 - **Ассеты:**
@@ -1061,9 +1165,9 @@
   - Krita / Materialize (текстуры)
   - FMOD/Wwise (звук)
 - **Кастомные шейдеры:** CloudGhibli (URP Unlit + noise + rim glow)
-- **Система ветров (Сессия 3):** WindZone, WindZoneData — объёмные триггеры с профилями (Constant, Gust, Shear)
+- **Система ветров (Сессия 3 + 2026-07-01):** WindZone, WindZoneData — объёмные триггеры с профилями (Constant, Gust, Shear)
   - ✅ Реализовано для кораблей (ShipController v2.2)
-  - ⏳ Запланировано для персонажа (адаптация CharacterController)
+  - ✅ Реализовано для персонажа (2026-07-01) — `NetworkPlayer.ProcessMovement`, правила по состоянию
 - **Art Bible:** [`docs/ART_BIBLE.md`](docs/ART_BIBLE.md)
 
 ### Критические риски и меры:

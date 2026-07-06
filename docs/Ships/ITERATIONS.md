@@ -1,6 +1,34 @@
 # Project C — Iterations Log
 
+## Итерация от 2026-07-06 (Сводка периода 1–6 июля)
+
+**Задача:** Подробное саммари периода 1–6 июля: анализ 67 коммитов, перекрёстная документация, сводка в `docs/dev/summary_01-06_july_2026.md`
+
+**Коммит:** `b399b77` — docs: сводка разработки 1–6 июля 2026
+
+**Файл:** `docs/dev/summary_01-06_july_2026.md` (560 строк, 27 KB)
+
+**Охваченные подсистемы (13):**
+- Ветер на корабли и персонажа
+- Физика персонажа на палубе (PlatformRideHelper, единый Move)
+- NPC на палубе (прокси-агент, NavMesh fix, anchor)
+- Cargo: 4 эпика (UI-01, UI-02, VIS-01, NPC-01)
+- MARKET-ID-REFACTOR (нормализация + авто-сбор)
+- Cleanup (warnings ×15 файлов, debug логи, reflection → прямой доступ)
+- Repair Manager (модули, камера наблюдения, repaint)
+- Module Visual Preview (Editor tool)
+- Двигатель ON/OFF + IDLE
+- Ship Damage Subsystem (HP, столкновения, ремонт)
+- SHIP_REFACTOR_PLAN P1–P5
+- Переход на Unity 6000.5.2f1
+
+**Ссылки на документацию:** 17 документов перекрёстно связаны в саммари.
+
+---
+
 ## Итерация от 2026-07-21
+=======
+REPLACE
 
 **Задача:** P1 Refactor Key Subsystem — удаление 7 obsolete/дублирующих файлов, приведение к single source of truth (KeyRodInstanceWorld)
 

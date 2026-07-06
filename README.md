@@ -6,20 +6,22 @@
 
 | Стек | Версия |
 |------|--------|
-| Unity Editor | **6000.4.1f1** |
+| Unity Editor | **6000.5.2f1** |
 | Render Pipeline | **URP 17.0.3** (CloudGhibli стиль) |
 | Netcode | **NGO 2.11.0** |
 | Cinemachine | **3.1.6** |
 
-**Текущий этап:** 2.5 — Визуальный прототип (v0.0.35, 30 июня 2026)
+**Текущий этап:** 2.5 — Визуальный прототип (v0.0.40, 6 июля 2026)
 
 ```
 Реализованные магистральные подсистемы:
-  NPC+Quests v2 ✅  Mining v0.0.2 ✅  Crafting ✅  Exchange ✅
-  Character Progression ✅  Composite Ship ✅  Docking Stations MVP ✅
+  NPC+Quests v2 ✅  Mining ✅  Crafting ✅  Exchange ✅
+  Character Progression ✅  Composite Ship ✅  Docking Stations ✅
   NPC Ships M3.2 ✅  Real-Time Combat + Skills ✅  NPC Enemy P0-P2 ✅
-  Character Customisation L1+L3+L4 ✅  Equipment Visual Ph.2 ✅
-  Input System Ph.1-2.5 ✅  Character Animations v0.5.1 ✅
+  Character Customisation ✅  Equipment Visual ✅  Input System ✅
+  Cargo System v2 ✅  NPC Cargo Trade ✅  Market Refactor ✅
+  Repair Manager ✅  Engine ON/OFF ✅  Ship Damage ✅
+  Wind (ship+char) ✅  NPC Crew on Ship ✅  Key Subsystem P1 ✅
 ```
 
 > **Детально по каждой:** [`docs/MMO_Development_Plan.md`](docs/MMO_Development_Plan.md)
@@ -165,7 +167,7 @@ C:\UNITY_PROJECTS\ProjectC_client\
 
 | Компонент | Технология |
 |-----------|-----------|
-| **Клиент** | Unity 6000.4.1f1, URP 17.0.3 |
+| **Клиент** | Unity 6000.5.2f1, URP 17.0.3 |
 | **Сеть** | Netcode for GameObjects 2.11.0 |
 | **UI** | Unity UI Toolkit |
 | **Анимации** | AnimatorController + BlendTree (8-way movement) |

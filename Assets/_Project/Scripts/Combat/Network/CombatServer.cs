@@ -506,18 +506,13 @@ namespace ProjectC.Combat
 
                 var result = DamageCalculator.Calculate(attacker, target, source, rangePolicyForCalc);
 
-                if (_debugLog)
-                {
-                    if (result.isHit)
-                    {
-                        Debug.Log($"[DamageCalculator/AOE] attacker={attackerId} → target={target.GetTargetId()}, skill='{skillId}', source={source.GetDisplayName()}: preDefense={result.preDefenseDamage}, final={result.finalDamage}, isCrit={result.isCrit}");
-                    }
-                }
+                Debug.Log($"[DamageCalculator/AOE] attacker={attackerId} → target={target.GetTargetId()} ({target.GetDisplayName()}), skill='{skillId}', source={source.GetDisplayName()}: isHit={result.isHit} preDefense={result.preDefenseDamage} final={result.finalDamage} isCrit={result.isCrit}");
 
                 if (result.isHit)
                 {
                     target.ApplyDamage(result, attackerId);
                     hitsLanded++;
+                    Debug.Log($"[CombatServer] AOE damage applied: target={target.GetDisplayName()} hpAfter={target.GetCurrentHp()}/{target.GetMaxHp()}");
                 }
 
                 // Broadcast per-target

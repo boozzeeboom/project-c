@@ -17,6 +17,7 @@ MonoBehaviour:
   description: Antigravitational grenade. g-wave destabilizes targets. Partially
     ignores armor.
   icon: {fileID: 0}
+  equipSlot: 7
   maxStack: 1
   weightKg: 0.1
   visualPrefab: {fileID: 919132149155446097, guid: dd926c5593e86fe468b5c00ce4d1456f, type: 3}
@@ -24,6 +25,7 @@ MonoBehaviour:
   attachPositionOffset: {x: 0, y: 0, z: 0}
   attachRotationOffset: {x: 0, y: 0, z: 0}
   attachScale: {x: 1, y: 1, z: 1}
+  equipSlot: 7
   explosionRadius: 3
   damageDice: 8
   baseDamage: 4

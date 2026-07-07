@@ -22,11 +22,16 @@ namespace ProjectC.Items
     [CreateAssetMenu(fileName = "NewItem", menuName = "Project C/Item Data", order = 1)]
     public class ItemData : ScriptableObject
     {
+        [Header("Identity")]
         public string itemName;
         public ItemType itemType;
         [TextArea]
         public string description;
         public Sprite icon;
+
+        [Header("Equip")]
+        [Tooltip("В какой слот экипируется предмет. None = нельзя надеть. WeaponMain/WeaponOff = оружие. Head..Accessory2 = броня.")]
+        public ProjectC.Equipment.EquipSlot equipSlot = ProjectC.Equipment.EquipSlot.None;
 
         // Phase 6 (INVENTORY_V2_REFACTOR.md): доп-поля для stack + weight.
         // maxStack = 1 значит non-stackable (по умолчанию, обратная совместимость с

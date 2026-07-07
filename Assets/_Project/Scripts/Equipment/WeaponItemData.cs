@@ -68,10 +68,6 @@ namespace ProjectC.Equipment
     [CreateAssetMenu(fileName = "Weapon_", menuName = "Project C/Equipment/Weapon", order = 12)]
     public class WeaponItemData : ItemData
     {
-        [Header("Equip Slot")]
-        [Tooltip("В какой слот экипируется оружие. WeaponMain — правая рука, WeaponOff — левая.")]
-        public EquipSlot equipSlot = EquipSlot.WeaponMain;
-
         [Header("Weapon class")]
         [Tooltip("Sword / Dagger / Spear / Mace / Crossbow / Pneumatic / AntigravBlade / MesiumRifle. " +
                  "OnValidate ставит defaults автоматически.")]
@@ -114,6 +110,12 @@ namespace ProjectC.Equipment
             if (itemType != ItemType.Equipment)
             {
                 itemType = ItemType.Equipment;
+            }
+
+            // equipSlot = WeaponMain (наследуется от ItemData, default=None)
+            if (equipSlot == EquipSlot.None)
+            {
+                equipSlot = EquipSlot.WeaponMain;
             }
 
             // Auto-set defaults по weaponClass (только если пользователь не правил руками)

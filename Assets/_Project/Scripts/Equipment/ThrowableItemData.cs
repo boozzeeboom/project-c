@@ -24,10 +24,6 @@ namespace ProjectC.Equipment
     [CreateAssetMenu(fileName = "Throwable_", menuName = "Project C/Equipment/Throwable", order = 13)]
     public class ThrowableItemData : ItemData
     {
-        [Header("Equip Slot")]
-        [Tooltip("В какой слот экипируется (WeaponMain / None). WeaponMain = можно надеть в руку и бросать через skill.")]
-        public EquipSlot equipSlot = EquipSlot.WeaponMain;
-
         [Header("Explosion")]
         [Tooltip("Радиус AOE в метрах (Sphere).")]
         [Range(0.5f, 20f)] public float explosionRadius = 3f;
@@ -63,6 +59,10 @@ namespace ProjectC.Equipment
             if (itemType != ItemType.Equipment)
             {
                 itemType = ItemType.Equipment;
+            }
+            if (equipSlot == EquipSlot.None)
+            {
+                equipSlot = EquipSlot.WeaponMain;
             }
         }
 #endif

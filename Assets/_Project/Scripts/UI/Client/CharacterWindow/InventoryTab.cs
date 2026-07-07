@@ -698,14 +698,15 @@ namespace ProjectC.UI.Client
                     return;
                 }
 
-                ProjectC.Equipment.EquipSlot slot = ProjectC.Equipment.EquipSlot.None;
+                // Слот определяется самим предметом (поле equipSlot в базовом ItemData).
+                // Для ClothingItemData/ModuleItemData — приоритет у их собственного поля slot.
+                ProjectC.Equipment.EquipSlot slot;
                 if (def is ProjectC.Equipment.ClothingItemData c) slot = c.slot;
                 else if (def is ProjectC.Equipment.ModuleItemData m) slot = m.slot;
-                else if (def is ProjectC.Equipment.WeaponItemData w) slot = w.equipSlot;
-                else if (def is ProjectC.Equipment.ThrowableItemData t) slot = t.equipSlot;
+                else slot = def.equipSlot;
                 if (slot == ProjectC.Equipment.EquipSlot.None)
                 {
-                    Debug.LogWarning($"[InventoryTab] item not equipable: type={def.GetType().Name}, name='{def.itemName}'");
+                    Debug.LogWarning($"[InventoryTab] item not equipable: type={def.GetType().Name}, name='{def.itemName}', slot={slot}");
                     return;
                 }
 

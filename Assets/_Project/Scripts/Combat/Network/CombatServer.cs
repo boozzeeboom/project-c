@@ -533,8 +533,8 @@ namespace ProjectC.Combat
                 }
             }
 
-            // R4: consume throwable from inventory after successful cast
-            if (useTargetPoint && hitsLanded > 0)
+            // R4: consume throwable from inventory — always (бросок всегда тратит предмет)
+            if (useTargetPoint)
             {
                 ConsumeThrowableFromInventory(attackerId);
             }

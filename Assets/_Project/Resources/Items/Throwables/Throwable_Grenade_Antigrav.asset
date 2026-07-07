@@ -13,13 +13,13 @@ MonoBehaviour:
   m_Name: Throwable_Grenade_Antigrav
   m_EditorClassIdentifier: Assembly-CSharp::ProjectC.Equipment.ThrowableItemData
   itemName: Antigrav Grenade
-  itemType: 0
+  itemType: 1
   description: Antigravitational grenade. g-wave destabilizes targets. Partially
     ignores armor.
   icon: {fileID: 0}
   maxStack: 1
   weightKg: 0.1
-  visualPrefab: {fileID: 0}
+  visualPrefab: {fileID: 919132149155446097, guid: dd926c5593e86fe468b5c00ce4d1456f, type: 3}
   attachBoneOverride: 55
   attachPositionOffset: {x: 0, y: 0, z: 0}
   attachRotationOffset: {x: 0, y: 0, z: 0}

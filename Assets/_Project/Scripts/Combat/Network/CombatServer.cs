@@ -500,9 +500,19 @@ namespace ProjectC.Combat
                         : new RangedRangePolicy();
                     if (!rangePolicy.IsInRange(attacker, target, source)) continue;
                 }
-                IRangePolicy rangePolicyForCalc = source.GetRange() < 3.0f
-                    ? (IRangePolicy)new MeleeRangePolicy()
-                    : new RangedRangePolicy();
+                // T-SKILL-REF-01: для thrown skills (useTargetPoint) — auto-hit (AOE),
+                // иначе обычный ranged/melee hit roll.
+                IRangePolicy rangePolicyForCalc;
+                if (useTargetPoint)
+                {
+                    rangePolicyForCalc = new AoeRangePolicy();
+                }
+                else
+                {
+                    rangePolicyForCalc = source.GetRange() < 3.0f
+                        ? (IRangePolicy)new MeleeRangePolicy()
+                        : new RangedRangePolicy();
+                }
 
                 var result = DamageCalculator.Calculate(attacker, target, source, rangePolicyForCalc);
 

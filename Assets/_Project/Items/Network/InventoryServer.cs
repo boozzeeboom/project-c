@@ -337,13 +337,25 @@ namespace ProjectC.Items.Network
                     NetworkManager.OnClientConnectedCallback += HandleClientConnectedServer;
                 }
             }
-            // Кэш ItemData — заполняем из InventoryWorld (для клиентского UI)
-            if (InventoryWorld.Instance != null)
+            // R2-fix: Кэш ItemData заполняем из ItemRegistry (единый источник ID).
+            // ItemRegistry accessible на обеих сторонах (Resources SO), гарантирует
+            // что itemId в снапшоте совпадает с ID в клиентском кэше.
+            _itemCache.Clear();
+            var registry = Resources.Load<ProjectC.Items.ItemRegistry>("ItemRegistry");
+            if (registry == null)
+                registry = Resources.Load<ProjectC.Items.ItemRegistry>("Items/Data/ItemRegistry");
+            if (registry != null)
             {
-                _itemCache.Clear();
-                // Доступ к _itemDatabase через рефлексию (приватный) — для MVP ОК.
-                // Альтернатива: добавить public Enumerator в InventoryWorld. Phase 2+.
-                // Сейчас — сериализуем через Resources:
+                registry.EnsureLoaded();
+                foreach (var entry in registry.GetEntries())
+                {
+                    if (entry.item != null)
+                        _itemCache[entry.id] = entry.item;
+                }
+            }
+            // Fallback: если ItemRegistry недоступен — грузим из Resources/Items/
+            if (_itemCache.Count == 0)
+            {
                 var allItems = Resources.LoadAll<ItemData>("Items");
                 int id = 1;
                 foreach (var item in allItems)

@@ -4023,7 +4023,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 64ad0ed89bec3d443bf54dd55338b5a1, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::ProjectC.Items.PickupItem
-  itemData: {fileID: 11400000, guid: 0e79268c6c29f68429f60f3e73dfe13d, type: 2}
+  itemData: {fileID: 11400000, guid: 41c339b8962728d4890777d0a7c7299f, type: 2}
   itemId: 0
   floatSpeed: 1
   floatAmplitude: 0.2

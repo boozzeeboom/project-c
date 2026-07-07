@@ -16,6 +16,7 @@
 // Design: docs/Character/Skills/AUDIT_2026-06-26_CURRENT_STATE_AND_NEXT_STEPS.md §3.O-7 + §4.
 
 using System.Collections.Generic;
+using System.IO;
 using UnityEngine;
 using UnityEngine.InputSystem;
 using Unity.Netcode;
@@ -103,6 +104,7 @@ namespace ProjectC.Skills
                 _animator = ownerAnim != null ? ownerAnim.GetValue(owner) as Animator : owner.GetComponentInChildren<Animator>();
                 if (_animator == null) _animator = owner.GetComponentInChildren<Animator>();
             }
+            LoadSlotBindings();
         }
 
         // ==================== INPUT POLLING (Phase 1) ====================
@@ -498,6 +500,7 @@ namespace ProjectC.Skills
                 _slotToSkillId[slot] = skillId;
             }
             Debug.Log($"[SkillInputService] BindSlot: slot={slot} skill='{skillId ?? "(unbind)"}'");
+            SaveSlotBindings();
         }
 
         /// <summary>Получить все известные skillId (из Server/SkillsClientState).</summary>
@@ -674,6 +677,79 @@ namespace ProjectC.Skills
         public void ClearAllCooldowns()
         {
             _slotCooldownUntil.Clear();
+        }
+
+        // ==================== Slot Bindings Persistence ====================
+
+        /// <summary>Вызывается из Initialize — восстанавливает бинды с диска.</summary>
+        private void LoadSlotBindings()
+        {
+            if (_ownerPlayer == null) return;
+            var save = SlotBindingsSave.Load(_ownerPlayer.OwnerClientId);
+            if (save?.entries == null) return;
+
+            foreach (var e in save.entries)
+            {
+                if (e.slot != SkillInputSlot.None && !string.IsNullOrEmpty(e.skillId))
+                {
+                    _slotToSkillId[e.slot] = e.skillId;
+                    Debug.Log($"[SkillInputService] Loaded binding: {e.slot} → {e.skillId}");
+                }
+            }
+        }
+
+        /// <summary>Вызывается из BindSlot — сохраняет все бинды на диск.</summary>
+        private void SaveSlotBindings()
+        {
+            if (_ownerPlayer == null) return;
+            var save = new SlotBindingsSave();
+            var list = new List<SlotBindingEntry>();
+            foreach (var kv in _slotToSkillId)
+            {
+                list.Add(new SlotBindingEntry { slot = kv.Key, skillId = kv.Value });
+            }
+            save.entries = list.ToArray();
+            save.Save(_ownerPlayer.OwnerClientId);
+        }
+    }
+
+    [System.Serializable]
+    public struct SlotBindingEntry
+    {
+        public SkillInputSlot slot;
+        public string skillId;
+    }
+
+    [System.Serializable]
+    public class SlotBindingsSave
+    {
+        public SlotBindingEntry[] entries = new SlotBindingEntry[0];
+
+        private static string GetPath(ulong clientId) =>
+            Path.Combine(Application.persistentDataPath, "Skills", $"slot_bindings_{clientId}.json");
+
+        public void Save(ulong clientId)
+        {
+            try
+            {
+                var dir = Path.GetDirectoryName(GetPath(clientId));
+                if (!Directory.Exists(dir)) Directory.CreateDirectory(dir);
+                var json = JsonUtility.ToJson(this, true);
+                File.WriteAllText(GetPath(clientId), json);
+            }
+            catch (System.Exception ex) { Debug.LogWarning($"[SlotBindingsSave] Save failed: {ex.Message}"); }
+        }
+
+        public static SlotBindingsSave Load(ulong clientId)
+        {
+            try
+            {
+                var path = GetPath(clientId);
+                if (!File.Exists(path)) return null;
+                var json = File.ReadAllText(path);
+                return JsonUtility.FromJson<SlotBindingsSave>(json);
+            }
+            catch (System.Exception ex) { Debug.LogWarning($"[SlotBindingsSave] Load failed: {ex.Message}"); return null; }
         }
     }
 }

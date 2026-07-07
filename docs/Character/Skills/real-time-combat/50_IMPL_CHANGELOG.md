@@ -201,8 +201,6 @@ NPC умирает → 3 сек → капсула пропадает. ✓
 
 ---
 
-## Summary таблица
-
 | Версия | Дата | Что | Файлов |
 |---|---|---|---|
 | v0.0 | 2026-06-25 | Design doc (8 файлов .md) | 8 |
@@ -213,9 +211,130 @@ NPC умирает → 3 сек → капсула пропадает. ✓
 | v0.1.2 | 2026-06-25 | Fix: убран skip id==0, second-chance recovery | 1 |
 | v0.1.3 | 2026-06-25 | Fix: EnsureUnarmedFallback | 1 |
 | v0.1.4 | 2026-06-25 | Fix: corpse delay 3s | 1 |
-| **ИТОГО** | | **21 файл .cs + 2 SO + 2 scenes + 3 add-only** | |
+| v0.5 | 2026-07-24 | T-WPN-01-REF-02: Weapon unification (R1-R5) + inventory DTO fix | 12 .cs + 4 .asset |
+| v0.6 | 2026-07-25 | Grenade system bugfix: throw direction, AOE debug, damage source, consumption | 2 .cs |
+| **ИТОГО** | | **35 файлов .cs + 6 SO + 2 scenes + 3 add-only** | |
 
 ---
+
+---
+
+## v0.5 — 2026-07-24 (Weapon Unification Refactor — T-WPN-01-REF-02)
+
+**Коммиты:** `ac4e8a7` → `0698138` → `e2ad10c` → `8391461`
+
+### Мотивация
+
+До рефакторинга существовало **3 несвязанные иерархии предметов**: `ItemData` (581 шт.), `WeaponItemData` (7 шт.), `ThrowableItemData` (2 шт.). Базовый `ItemData` (например, Hunting Crossbow) не мог быть оружием без смены Script-типа в инспекторе. Предмет `Crossbow` лежал в папке `Throwables/` по ошибке. `equipSlot` был в `ItemData`, но `ClothingItemData`/`ModuleItemData` использовали своё поле `slot` — два поля с одинаковым смыслом.
+
+### R1: Унификация оружия
+
+- **🗑 `ThrowableItemData.cs` удалён.** Всё оружие теперь `WeaponItemData`.
+- Добавлены поля: `WeaponHandling` enum (`Melee/Ranged/Thrown/Placed`), `WeaponClass.Throwable`, `WeaponClassMask.Throwable`, `explosionRadius`, `throwRange`, `fuseTimeSec`.
+- 4 `.asset` конвертированы из `Throwables/` → `Weapons/`: `Weapon_Grenade_Basic.asset`, `Weapon_Grenade_Antigrav.asset`, `Weapon_Grenade_Antigrav_V2.asset`, `Weapon_Hunting Crossbow.asset`.
+- `Hunting Crossbow` исправлен: `weaponClass=Crossbow`, `handling=Ranged`.
+- `WeaponClassCatalog` дополнен `Throwable` записью.
+
+### R2: Единая регистрация предметов
+
+- `InventoryWorld` получил публичные методы: `GetItemId()`, `IsItemRegistered()`, `RegisterIfMissing()`, `GetAllItems()`.
+- `EquipmentServer.RegisterEquipmentAssets` переписан без reflection — использует `InventoryWorld.Instance?.RegisterIfMissing()`.
+- `FindItemIdByName` убран в пользу `GetItemId()`.
+
+### R3: Гранаты — расходники
+
+- `equipSlot = None` для всех предметов с `handling = Throwable` — гранаты не экипируются.
+- `EquipmentServer` не регистрирует их в Equipment слотах.
+
+### R4: Client-side skill кэш
+
+- `SkillsClientState` кэширует конфиги навыков (вместо `Resources.LoadAll` каждый кадр).
+- `SkillInputService.TryActivate` использует кэш; `DescribeMaskShort` дополнен `Throwable`.
+
+### R5: Прямые вызовы вместо reflection
+
+Убраны 5 reflection-вызовов:
+- `SkillsServer` → прямой вызов `StatsServer.Instance.ApplyXpDirect()`
+- `SkillsWorld` → прямой вызов `StatsServer.Instance.ApplyXpDirect()`
+- `SkillsServer` → прямой вызов `EquipmentWorld.Instance.TryEquip()`
+- `EquipmentServer` → прямой вызов `SkillsWorld.Instance`
+- `EquipmentWorld` → прямой вызов `SkillsWorld.Instance.TryEquipSkill()`
+
+### Fix 1: Клиентский _itemCache пуст на чистом клиенте
+
+**Симптом:** все предметы в UI показывались как "Welding Mask".
+
+**Корень:** `InventoryServer._itemCache` заполнялся только при `InventoryWorld.Instance != null` (т.е. только на сервере/Host). На чистом клиенте `InventoryWorld` не создаётся → кэш пуст → `GetCachedDefinition(itemId)` всегда null.
+
+**Fix:** `_itemCache` заполняется из `ItemRegistry.asset` (Resources SO, доступен на обеих сторонах):
+```csharp
+var registry = Resources.Load<ItemRegistry>("ItemRegistry");
+registry.EnsureLoaded();
+foreach (var entry in registry.GetEntries())
+    _itemCache[entry.id] = entry.item;
+```
+
+### Fix 2: ID-коллизия в GetOrRegisterItemId
+
+**Симптом:** граната показывает "Antigrav Cable", арбалет — "Antigrav Brass AGL-8".
+
+**Корень:** `GetOrRegisterItemId` создавал ID = `_itemDatabase.Count + 1`, что коллидировало с существующими ID из `ItemRegistry`. Сервер перезаписывал запись, но клиентский `_itemCache` (из ItemRegistry) сохранял старую → рассинхрон имён.
+
+**Fix:** 
+1. Поиск следующего свободного ID: `while (_itemDatabase.ContainsKey(newId)) newId++`
+2. Поиск по `itemName` как fallback (разные SO-инстансы одного предмета на сцене)
+3. `(Clone)`-suffix обработка для instantiated prefabs
+
+### Fix 3: itemName в снапшоте DTO
+
+**Корень:** снапшот нёс только `itemId` (int). Клиент должен был лезть в кэш за именем, но кэш не синхронизирован с динамическими ID сервера.
+
+**Fix:** `itemName` добавлен в `InventoryItemDto`. Сервер заполняет его из `_itemDatabase` при `BuildSnapshot`. `InventoryTab` использует `first.itemName` напрямую вместо `GetItemDefinition()`.
+
+### Файлы
+
+**Изменено:** `WeaponItemData.cs`, `InventoryWorld.cs`, `EquipmentServer.cs`, `EquipmentWorld.cs`, `SkillsServer.cs`, `SkillsWorld.cs`, `SkillsClientState.cs`, `SkillInputService.cs`, `ICombatDamageProvider.cs`, `WeaponClassCatalog.cs`, `InventoryServer.cs`, `InventoryItemDto.cs`, `InventoryTab.cs`
+
+**Удалено:** `ThrowableItemData.cs`, `Throwable_Grenade_Antigrav.asset`, `Throwable_Grenade_Basic.asset`
+
+
+## Известные баги / TODO
+=======
+## v0.6 — 2026-07-25 (Grenade System Bugfix & Refactor)
+
+**Коммит:** `T-INP-06-grenade-system-refactor`
+
+### Мотивация
+
+Система гранат/throwables была реализована в v0.5, но не работала в runtime: визуальный наводчик показывал неверное направление, AOE debug рисовался вокруг игрока вместо точки броска, урон считался от "Unarmed" (d6+1 вместо d10+5), гранаты не расходовались.
+
+### Fix 1: Направление броска — character-centric
+
+- `SkillInputService.FindThrowTargetPoint()` переписан: raycast всегда от `_ownerPlayer.transform.forward` (не от камеры)
+- Убран fallback на глобальный `Vector3.forward`
+- Добавлен `throwRange` параметр (из `GetActiveThrowableRange()`)
+
+### Fix 2: AOE Debug — целевая точка
+
+- Для thrown-навыков `SkillAoeDebugVisualizer.ShowAoe()` вызывается с `origin=targetPoint` (куда летит граната)
+- Melee AOE по-прежнему от позиции игрока
+
+### Fix 3: DamageSource из инвентаря
+
+- `CombatServer.ResolveThrowableSourceFromInventory()` — ищет `WeaponItemData` с `weaponClass=Throwable` в `InventoryWorld`
+- Создаёт `WeaponDamageSource` с реальными статами (d10+5, Explosive, explosionRadius=3м)
+- Раньше использовался fallback `DefaultDamageSource("Unarmed", d6+1)`
+
+### Fix 4: Расходование гранат
+
+- `CombatServer.ConsumeThrowableFromInventory()` — после успешного AOE-каста (hitsLanded>0) удаляет 1 шт. через `InventoryWorld.RemoveItems()`
+- Клиент: `GetActiveThrowableRange()` — ищет Throwable в `InventoryWorld.GetAllItems()` для получения `throwRange`
+
+### Файлы
+
+**Изменено:** `SkillInputService.cs` (направление + AOE debug + GetActiveThrowableRange), `CombatServer.cs` (ResolveThrowableSource + ConsumeThrowable)
+
+=======
 
 ## Известные баги / TODO
 

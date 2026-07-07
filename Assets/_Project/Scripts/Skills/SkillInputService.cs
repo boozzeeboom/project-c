@@ -363,7 +363,7 @@ namespace ProjectC.Skills
             }
 
             // 8) RPC на сервер.
-            // Phase T3: Thrown skills (Sphere/Box AOE) → raycast target point → ThrowArcVisual → RequestSkillCastAtPointRpc.
+            // R4: Thrown skills (Sphere/Box AOE) → character-forward raycast → ThrowArcVisual → RequestSkillCastAtPointRpc.
             // Melee AOE skills (Cone/Line) → RequestSkillCastRpc (AOE at attacker).
             // Single-target → RequestAttackRpc.
             try
@@ -376,8 +376,9 @@ namespace ProjectC.Skills
 
                 if (isThrownAoe)
                 {
-                    // Find target point via raycast
-                    Vector3 targetPoint = FindThrowTargetPoint();
+                    // R4: Find target point via character-forward raycast
+                    float throwRange = GetActiveThrowableRange();
+                    Vector3 targetPoint = FindThrowTargetPoint(throwRange);
                     float flightTime = Mathf.Clamp(Vector3.Distance(_ownerPlayer.transform.position, targetPoint) / 20f, 0.3f, 1.5f);
 
                     // Client-side throw arc visual
@@ -388,6 +389,18 @@ namespace ProjectC.Skills
                         _ownerPlayer.transform.position, targetPoint, flightTime,
                         skillConfig.aoeSize, arcColor);
 
+                    // T-INP-06 fix: show AOE debug at targetPoint (where grenade lands),
+                    // NOT at player position.
+                    if (skillConfig.debugVisualizeAoe)
+                    {
+                        var viz = ProjectC.Skills.DebugVisualization.SkillAoeDebugVisualizer.EnsureExists();
+                        if (viz != null)
+                        {
+                            viz.ShowAoe(targetPoint, Vector3.up, skillConfig);
+                        }
+                    }
+
+                    // R4: server resolves throwable damage source from inventory
                     server.RequestSkillCastAtPointRpc(skillId, targetPoint, 0UL);
                 }
                 else if (skillConfig != null && skillConfig.aoeFormula != ProjectC.Skills.AoeFormula.SingleTarget)
@@ -409,15 +422,23 @@ namespace ProjectC.Skills
             _slotCooldownUntil[slot] = Time.unscaledTime + 0.5f;
 
             // T-INP-06: AOE debug visualization hook. Editor/Dev build only.
-            // Если в SkillNodeConfig включён debugVisualizeAoe — показать wireframe.
+            // Для thrown-навыков AOE показывается в точке броска (см. блок isThrownAoe выше).
+            // Здесь — только для melee AOE (Cone/Line) от позиции игрока.
             if (skillConfig != null && skillConfig.debugVisualizeAoe && _ownerPlayer != null)
             {
-                var viz = ProjectC.Skills.DebugVisualization.SkillAoeDebugVisualizer.EnsureExists();
-                if (viz != null)
+                bool isThrown = skillConfig.isActive
+                    && (skillConfig.aoeFormula == ProjectC.Skills.AoeFormula.Sphere
+                        || skillConfig.aoeFormula == ProjectC.Skills.AoeFormula.Box)
+                    && skillConfig.aoeSize > 0f;
+                if (!isThrown)
                 {
-                    Vector3 origin = _ownerPlayer.transform.position + Vector3.up * 1.2f;
-                    Vector3 forward = _ownerPlayer.transform.forward;
-                    viz.OnSkillActivated(skillConfig, origin, forward);
+                    var viz = ProjectC.Skills.DebugVisualization.SkillAoeDebugVisualizer.EnsureExists();
+                    if (viz != null)
+                    {
+                        Vector3 origin = _ownerPlayer.transform.position + Vector3.up * 1.2f;
+                        Vector3 forward = _ownerPlayer.transform.forward;
+                        viz.OnSkillActivated(skillConfig, origin, forward);
+                    }
                 }
             }
 
@@ -523,38 +544,50 @@ namespace ProjectC.Skills
         }
 
         /// <summary>
-        /// Phase T3: Find target point for thrown items via camera raycast.
-        /// Falls back to (playerPos + forward * 15f) for ground/obstacle hits.
+        /// R4: Find target point for thrown items using character-forward raycast.
+        /// Бросок всегда в направлении персонажа (не камеры) — character-centric throw.
+        /// Fallback: playerPos + characterForward * throwRange.
         /// </summary>
-        private Vector3 FindThrowTargetPoint()
+        private Vector3 FindThrowTargetPoint(float throwRange = 15f)
         {
             if (_ownerPlayer == null) return Vector3.zero;
 
-            var cam = Camera.main;
-            Vector3 origin, forward;
-            if (cam != null)
-            {
-                origin = cam.transform.position;
-                forward = cam.transform.forward;
-            }
-            else
-            {
-                origin = _ownerPlayer.transform.position + Vector3.up * 1.5f;
-                forward = _ownerPlayer.transform.forward;
-            }
+            Vector3 origin = _ownerPlayer.transform.position + Vector3.up * 1.5f;
+            Vector3 forward = _ownerPlayer.transform.forward;
 
-            if (Physics.Raycast(origin, forward, out RaycastHit hit, 50f, ~0, QueryTriggerInteraction.Ignore))
+            if (Physics.Raycast(origin, forward, out RaycastHit hit, Mathf.Max(throwRange, 50f), ~0, QueryTriggerInteraction.Ignore))
             {
                 return hit.point;
             }
 
-            // Fallback: ground plane at player Y
+            // Fallback: flat ground plane in character's facing direction
             Vector3 flatDir = forward;
             flatDir.y = 0;
-            if (flatDir.sqrMagnitude < 0.001f) flatDir = Vector3.forward;
+            if (flatDir.sqrMagnitude < 0.001f) flatDir = _ownerPlayer.transform.forward;
             flatDir.Normalize();
 
-            return _ownerPlayer.transform.position + flatDir * 15f;
+            return _ownerPlayer.transform.position + flatDir * throwRange;
+        }
+
+        /// <summary>
+        /// R4: Get throwRange from the active throwable weapon.
+        /// Throwables have equipSlot=None (not in WeaponMain/WeaponOff) —
+        /// look up via InventoryWorld if available, else default 25m.
+        /// </summary>
+        private float GetActiveThrowableRange()
+        {
+            // Try inventory lookup for Throwable items
+            var inv = ProjectC.Items.InventoryWorld.Instance;
+            if (inv != null && _ownerPlayer != null)
+            {
+                foreach (var kvp in inv.GetAllItems())
+                {
+                    var def = inv.GetItemDefinition(kvp.Key);
+                    if (def is WeaponItemData w && w.weaponClass == WeaponClass.Throwable)
+                        return w.throwRange;
+                }
+            }
+            return 25f; // default: matches Weapon_Grenade_Basic.throwRange
         }
 
         public bool IsOnCooldown(SkillInputSlot slot)

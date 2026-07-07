@@ -1,18 +1,20 @@
 # Ranged Combat & Throwables — Implementation
 
-> **Дата:** 2026-07-20  
-> **Статус:** ✅ Реализовано (Phase R1-R3, T1-T3)  
+> **Дата:** 2026-07-20 (обновлено 2026-07-24)  
+> **Статус:** ✅ Реализовано (Phase R1-R3, T1-T3) + ✅ Унификация оружия (T-WPN-01-REF-02)  
 > **Базовый дизайн:** `docs/Character/Skills/Battle/20_SKILL_TREES.md`
 
 ---
 
 ## TL;DR
 
-Реализованы: дальний бой (projectile visual), бросковые навыки (ThrowArcVisual + target-point AOE), новые типы предметов (ThrowableItemData).
+Реализованы: дальний бой (projectile visual), бросковые навыки (ThrowArcVisual + target-point AOE).
+
+**⚠️ Обновление 2026-07-24:** `ThrowableItemData` удалён — всё оружие унифицировано в `WeaponItemData`. Гранаты теперь `WeaponItemData` с `handling=Thrown`, лежат в `Items/Weapons/`.
 
 Добавленные файлы (новые): 5  
 Изменённые файлы (patch): 3  
-Создано .asset: 5
+Создано .asset: 5 (позже мигрированы в Weapons/)
 
 ---
 
@@ -26,26 +28,24 @@
 | `Weapon_Pneumatic.asset` | Pneumatic | d8+3 | 50м | Ballistic |
 | `Weapon_MesiumRifle.asset` | MesiumRifle | d10+5 | 50м | Mesium |
 
-### 1.2 Метательное (`Resources/Items/Throwables/`)
+### 1.2 Метательное (`Resources/Items/Weapons/` — бывш. Throwables/)
 
 | Файл | Тип | Damage | Radius | DamageType |
 |---|---|---|---|---|
-| `Throwable_Grenade_Basic.asset` | Grenade | d10+5 | 3м (Sphere) | Explosive |
-| `Throwable_Grenade_Antigrav.asset` | Antigrav Grenade | d8+4 | 3м (Sphere) | Antigrav (crit+15) |
+| `Weapon_Grenade_Basic.asset` | Grenade | d10+5 | 3м (Sphere) | Explosive |
+| `Weapon_Grenade_Antigrav.asset` | Antigrav Grenade | d8+4 | 3м (Sphere) | Antigrav (crit+15) |
+
+> ⚠️ **2026-07-24:** ThrowableItemData удалён. Гранаты — `WeaponItemData` с `handling=Thrown`, `weaponClass=Throwable`, `equipSlot=None`. Папка `Throwables/` удалена, все `.asset` в `Weapons/`.
 
 ---
 
 ## 2. Новые C# файлы
 
-### 2.1 `ThrowableItemData.cs` — ScriptableObject для метательных предметов
+### 2.1 `ThrowableItemData.cs` — 🗑 УДАЛЁН (2026-07-24, T-WPN-01-REF-02)
 
-```
-Assets/_Project/Scripts/Equipment/ThrowableItemData.cs
-```
+Заменён на `WeaponItemData` с полями: `handling=Thrown`, `weaponClass=Throwable`, `explosionRadius`, `throwRange`, `fuseTimeSec`.
 
-Наследует `ItemData`. Поля: `explosionRadius`, `damageDice`, `baseDamage`, `damageType`, `critModifier`, `fuseTimeSec`, `throwRange`, `aoeFormula`.
-
-Регистрируется в `EquipmentServer.RegisterEquipmentAssets` через папку `Items/Throwables`.
+Все throwable-поля (`explosionRadius`, `damageDice`, `baseDamage`, `damageType`, `critModifier`, `fuseTimeSec`, `throwRange`, `aoeFormula`) теперь в `WeaponItemData`.
 
 ### 2.2 `ProjectileVisual.cs` — Визуал полёта стрелы/болта/пули
 
@@ -85,10 +85,12 @@ Client-side only. Параболическая дуга полёта, сфера
 
 - При `HandleAttackLanded` для Ballistic/Mesium — спавнит `ProjectileVisual`
 
-### 3.4 `EquipmentServer.cs` — ThrowableItemData регистрация
+### 3.4 `EquipmentServer.cs` — ThrowableItemData регистрация (обновлено 2026-07-24)
 
-- Добавлена папка `Items/Throwables` в `equipFolders[]`
-- Добавлена загрузка `ThrowableItemData` через `Resources.LoadAll`
+- ~~Добавлена папка `Items/Throwables` в `equipFolders[]`~~ — удалено
+- ~~Добавлена загрузка `ThrowableItemData` через `Resources.LoadAll`~~ — удалено
+- `RegisterEquipmentAssets` переписан без reflection (R2): использует `InventoryWorld.Instance.RegisterIfMissing()`
+- Гранаты (`handling=Thrown`) не экипируются: `equipSlot=None` (R3)
 
 ---
 
@@ -159,12 +161,16 @@ Slot1 (grenade skill) → SkillInputService.TryActivate
 
 ## 6. Открытые вопросы / Дальнейшие шаги
 
-- ❌ **ExplosiveItemData** (T-CB04) не нужен — заменён на `ThrowableItemData`
+- ❌ **ExplosiveItemData** (T-CB04) не нужен — заменён на `WeaponItemData.Throwable`
+- ✅ **Расходуемость** — v0.6: `ConsumeThrowableFromInventory()` в `CombatServer`, гранаты тратятся при успешном касте
+- ✅ **Направление броска** — v0.6: character-forward raycast вместо camera-centric
+- ✅ **AOE Debug позиция** — v0.6: для thrown навыков рисуется в targetPoint
+- ✅ **DamageSource гранат** — v0.6: `ResolveThrowableSourceFromInventory()` создаёт `WeaponDamageSource` из инвентаря
 - ❌ **Aim preview arc** (дуга до броска) — Phase 2 UX
-- ❌ **Спавн гранаты как предмета в мире** — нужно создать префаб с `PickupItem` + `ThrowableItemData`
-- ❌ **Расходуемость**: сейчас гранаты бесконечны. Нужен inventory-check в TryActivate
+- ❌ **Спавн гранаты как предмета в мире** — нужно создать префаб с `PickupItem` + `WeaponItemData`
 - ❌ **Визуальный префаб** для оружия (3D модель арбалета в руке) — `visualPrefab` уже есть в `ItemData`
 - ❌ **Звуки** выстрела/взрыва — отдельная задача
+- ❌ **Серверная валидация наличия throwable в инвентаре ДО каста** — сейчас `RemoveItems` фейлится молча если нет предмета
 
 ---
 
@@ -173,3 +179,5 @@ Slot1 (grenade skill) → SkillInputService.TryActivate
 | Дата | Автор | Изменения |
 |---|---|---|
 | 2026-07-20 | Aura | Фазы R1-R3, T1-T3: ranged weapons, projectile/throw visuals, target-point AOE |
+| 2026-07-24 | Aura | T-WPN-01-REF-02: ThrowableItemData удалён, унификация в WeaponItemData. inventory DTO fix (itemName). ID-коллизия fix. |
+| 2026-07-25 | Aura | v0.6: grenade bugfix — throw direction (character-forward), AOE debug at targetPoint, inventory damage source (d10+5), consumption |

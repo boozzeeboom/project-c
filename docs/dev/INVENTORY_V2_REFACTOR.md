@@ -775,6 +775,21 @@ grep -n "InventoryClientState" Assets/_Project/Scripts/UI/Client/CharacterWindow
 - `Assets/_Project/Scripts/Core/NetworkInventory.cs` — файл живёт, используется в NetworkChestContainer (TODO: мигрировать на InventoryServer в Phase 8)
 - Старые `Item_Type1..8` (заглушки) — живут рядом с новыми 24 .asset'ами
 
+
+**Phase 9 (2026-07-24, T-WPN-01-REF-02 fixes) — ✅**
+
+- `InventoryItemDto.itemName` — новое поле в DTO. Сервер заполняет его в `BuildSnapshot` из `_itemDatabase`. Клиент больше не делает lookup по `itemId` для имени.
+- `InventoryWorld.GetOrRegisterItemId` — fix: поиск следующего свободного ID (`while ContainsKey`), поиск по `itemName` как fallback.
+- `InventoryWorld.RegisterIfMissing` — fix: тот же паттерн поиска свободного ID.
+- `InventoryServer.OnNetworkSpawn` — fix: `_itemCache` заполняется из `ItemRegistry` на обеих сторонах (не только при `InventoryWorld.Instance != null`).
+- `InventoryTab.RefreshInventoryCache` — fix: использует `first.itemName` из DTO вместо `GetItemDefinition(first.itemId)`.
+- `PickupItem.Collect` — `GetOrRegisterItemId` теперь корректно находит существующие предметы по имени, не создавая дубликатов.
+
+**Исправленные баги:**
+1. Все предметы в UI показывались как "Welding Mask" — клиентский `_itemCache` был пуст.
+2. Разные предметы показывали случайные имена из ItemRegistry (Antigrav Cable, Brass) — ID-коллизия.
+3. Динамически зарегистрированные предметы не имели правильного имени в UI — `itemName` не было в DTO.
+
 ### 11.4 Что осталось (отдельные сессии)
 - **Cleanup-сессия:** удалить `Inventory.cs`, `InventoryUI.cs` (IMGUI), `ItemPickupSystem.cs`, `NetworkInventory.cs`, `Item_Type1..8` (после проверки что LootTable'ы на них не ссылаются).
 - **Phase 8 (следующая большая сессия):**

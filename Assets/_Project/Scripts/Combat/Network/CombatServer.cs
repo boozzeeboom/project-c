@@ -393,6 +393,14 @@ namespace ProjectC.Combat
             }
 
             var source = attacker.GetDamageSource(sourceId);
+            
+            // R4: for thrown skills, resolve damage source from inventory (throwables are not equipped)
+            bool useTargetPoint = targetPoint.HasValue && targetPoint.Value.sqrMagnitude > 0.01f;
+            if (useTargetPoint && (source == null || source.GetDisplayName() == "Unarmed"))
+            {
+                source = ResolveThrowableSourceFromInventory(attackerId);
+            }
+            
             if (source == null)
             {
                 SendErrorToClient(attackerId, "InvalidSource");
@@ -409,7 +417,6 @@ namespace ProjectC.Combat
             // === AOE origin + direction ===
             // Phase T2: если targetPoint задан (grenade throw), AOE от точки броска.
             // Иначе от атакующего (melee/self-cast).
-            bool useTargetPoint = targetPoint.HasValue && targetPoint.Value.sqrMagnitude > 0.01f;
             Vector3 aoeOrigin;
             if (useTargetPoint)
             {
@@ -524,10 +531,62 @@ namespace ProjectC.Combat
                 }
             }
 
+            // R4: consume throwable from inventory after successful cast
+            if (useTargetPoint && hitsLanded > 0)
+            {
+                ConsumeThrowableFromInventory(attackerId);
+            }
+
             if (_debugLog)
             {
                 Debug.Log($"[CombatServer] ResolveSkillCast: skill='{skillId}' formula={skillConfig.aoeFormula} targets={results.Count} hits={hitsLanded} attacker={attackerId}");
             }
+        }
+
+        /// <summary>
+        /// R4: Find a Throwable weapon from attacker's inventory and return WeaponDamageSource.
+        /// Returns null if no throwable found.
+        /// </summary>
+        private IDamageSource ResolveThrowableSourceFromInventory(ulong attackerId)
+        {
+            var inv = ProjectC.Items.InventoryWorld.Instance;
+            if (inv == null) return null;
+
+            foreach (var kvp in inv.GetAllItems())
+            {
+                var def = inv.GetItemDefinition(kvp.Key);
+                if (def is ProjectC.Equipment.WeaponItemData w && w.weaponClass == ProjectC.Equipment.WeaponClass.Throwable)
+                {
+                    if (_debugLog) Debug.Log($"[CombatServer] ResolveThrowableSourceFromInventory: found {w.itemName} (id={kvp.Key}, dmg={w.damageDice}+{w.baseDamage}, radius={w.explosionRadius}m)");
+                    return new ProjectC.Combat.WeaponDamageSource(w, (ulong)kvp.Key);
+                }
+            }
+            if (_debugLog) Debug.LogWarning("[CombatServer] ResolveThrowableSourceFromInventory: no Throwable weapon found in inventory.");
+            return null;
+        }
+
+        /// <summary>
+        /// R4: Remove 1 throwable item from attacker's inventory after grenade throw.
+        /// </summary>
+        private void ConsumeThrowableFromInventory(ulong attackerId)
+        {
+            var inv = ProjectC.Items.InventoryWorld.Instance;
+            if (inv == null) return;
+
+            foreach (var kvp in inv.GetAllItems())
+            {
+                var def = inv.GetItemDefinition(kvp.Key);
+                if (def is ProjectC.Equipment.WeaponItemData w && w.weaponClass == ProjectC.Equipment.WeaponClass.Throwable)
+                {
+                    var result = inv.RemoveItems(attackerId, kvp.Key, def.itemType, 1);
+                    if (_debugLog)
+                    {
+                        Debug.Log($"[CombatServer] ConsumeThrowableFromInventory: removed {def.itemName} (id={kvp.Key}) code={result.code} msg={result.message}");
+                    }
+                    return;
+                }
+            }
+            if (_debugLog) Debug.LogWarning("[CombatServer] ConsumeThrowableFromInventory: no throwable to consume.");
         }
     }
 }

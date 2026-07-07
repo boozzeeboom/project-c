@@ -86,9 +86,7 @@ namespace ProjectC.Combat.Client
             // Arc: height = sin(π*t) * arcHeight
             pos.y += Mathf.Sin(t * Mathf.PI) * _arcHeight;
 
-            // Add slight horizontal arc for visual appeal
-            Vector3 right = Vector3.Cross(Vector3.up, flatDir.normalized);
-            pos += right * Mathf.Sin(t * Mathf.PI) * (flatDist * 0.08f);
+
 
             transform.position = pos;
 

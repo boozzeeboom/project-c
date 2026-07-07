@@ -701,14 +701,11 @@ namespace ProjectC.UI.Client
                 ProjectC.Equipment.EquipSlot slot = ProjectC.Equipment.EquipSlot.None;
                 if (def is ProjectC.Equipment.ClothingItemData c) slot = c.slot;
                 else if (def is ProjectC.Equipment.ModuleItemData m) slot = m.slot;
-                else if (def is ProjectC.Equipment.WeaponItemData)
-                {
-                    // T-CB03: weapon → WeaponMain по умолчанию
-                    slot = ProjectC.Equipment.EquipSlot.WeaponMain;
-                }
+                else if (def is ProjectC.Equipment.WeaponItemData w) slot = w.equipSlot;
+                else if (def is ProjectC.Equipment.ThrowableItemData t) slot = t.equipSlot;
                 if (slot == ProjectC.Equipment.EquipSlot.None)
                 {
-                    Debug.LogWarning("[InventoryTab] item not equipable");
+                    Debug.LogWarning($"[InventoryTab] item not equipable: type={def.GetType().Name}, name='{def.itemName}'");
                     return;
                 }
 

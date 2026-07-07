@@ -26,7 +26,9 @@ MonoBehaviour:
     floatValue: 2
     multiplier: 0.3
     stringParam: 
-  _learnXpCost: 50
+  _learnXpCost: 0
+  _requiredStrengthTier: 0
+  _requiredDexterityTier: 0
   _requiredIntelligenceTier: 0
   treeX: 50
   treeY: 400
@@ -37,5 +39,5 @@ MonoBehaviour:
   aoeSize: 8
   aoeConeAngleDeg: 60
   aoeWidth: 0
-  debugVisualizeAoe: 0
+  debugVisualizeAoe: 1
   debugVisualizeDuration: 0.6

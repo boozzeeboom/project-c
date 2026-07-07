@@ -60,6 +60,8 @@ namespace ProjectC.Combat.Client
                 Color trailColor = result.damageType == DamageType.Mesium
                     ? new Color(0.2f, 1f, 0.5f)  // green (mesium)
                     : new Color(1f, 0.85f, 0.3f); // yellow/orange (bolt/bullet)
+                if (Debug.isDebugBuild)
+                    Debug.Log($"[CombatClientState] Spawning ProjectileVisual: type={result.damageType}, from={result.attackerPosition}, to={result.targetPosition}");
                 ProjectileVisual.Fire(result.attackerPosition, result.targetPosition, _projectileTravelTime, trailColor);
             }
 

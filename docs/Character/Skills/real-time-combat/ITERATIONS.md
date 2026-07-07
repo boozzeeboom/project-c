@@ -107,3 +107,17 @@
 **Проблема:** сервер динамически присваивает ID, клиентский кэш (ItemRegistry) не знает о них → UI показывает случайные имена.
 
 **Fix:** `itemName` добавлен в `InventoryItemDto`. Сервер заполняет в `BuildSnapshot`. `InventoryTab` использует `first.itemName` напрямую.
+
+---
+
+## Итерация от 2026-07-25 (Grenade System Bugfix & Refactor — v0.6)
+
+**Задача:** Исправление и отладка системы гранат: направление броска, AOE debug, damage source из инвентаря, расходование
+
+**Коммит:** `f00b222` — T-GRN01: grenade system bugfix — throw direction, AOE debug, damage source, consumption
+
+**Изменения:**
+- `Assets/_Project/Scripts/Skills/SkillInputService.cs` — MOD: `FindThrowTargetPoint` character-forward raycast, AOE debug at targetPoint для thrown, `GetActiveThrowableRange` из InventoryWorld
+- `Assets/_Project/Scripts/Combat/Network/CombatServer.cs` — MOD: `ResolveThrowableSourceFromInventory` (WeaponDamageSource из инвентаря вместо Unarmed), `ConsumeThrowableFromInventory` (RemoveItems после каста)
+- `docs/Character/Skills/real-time-combat/50_IMPL_CHANGELOG.md` — MOD: +v0.6 entry
+- `docs/Character/Skills/real-time-combat/90_RANGED_AND_THROWABLES.md` — MOD: обновление статусов (4 ✅)

@@ -215,22 +215,11 @@ namespace ProjectC.Equipment
             return true;
         }
 
-        /// <summary>
-        /// Safe access к SkillsWorld.Instance.GetLearnedSkillIds (ещё не существует — T-P13).
-        /// Через reflection чтобы избежать hard dependency.
-        /// </summary>
+        /// <summary>R5: прямой вызов SkillsWorld (без reflection).</summary>
         private static HashSet<string> GetLearnedSkillIdsSafe(ulong clientId)
         {
-            var skillsWorldType = System.Type.GetType("ProjectC.Skills.SkillsWorld, Assembly-CSharp");
-            if (skillsWorldType == null) return new HashSet<string>();  // T-P13 ещё не создан
-            var instanceProp = skillsWorldType.GetProperty("Instance");
-            if (instanceProp == null) return new HashSet<string>();
-            var instance = instanceProp.GetValue(null);
-            if (instance == null) return new HashSet<string>();
-            var method = skillsWorldType.GetMethod("GetLearnedSkillIds");
-            if (method == null) return new HashSet<string>();
-            var result = method.Invoke(instance, new object[] { clientId });
-            return result as HashSet<string> ?? new HashSet<string>();
+            return ProjectC.Skills.SkillsWorld.Instance?.GetLearnedSkillIds(clientId)
+                ?? new HashSet<string>();
         }
 
         // === Persistence (stub-готов к T-P06 + extension) ===

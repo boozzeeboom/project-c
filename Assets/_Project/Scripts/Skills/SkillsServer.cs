@@ -196,19 +196,10 @@ namespace ProjectC.Skills
             }
         }
 
-        /// <summary>
-        /// Cross-NetworkObject: после learn/forget — recompute effective stats.
-        /// Null-safe (T-P05 уже добавил RecomputeAndSendSnapshot, T-P09 уже подключил).
-        /// </summary>
+        /// <summary>R5: прямой вызов StatsServer (без reflection).</summary>
         private void TriggerStatsRecompute(ulong clientId)
         {
-            var ssType = System.Type.GetType("ProjectC.Stats.StatsServer, Assembly-CSharp");
-            if (ssType == null) return;
-            var instProp = ssType.GetProperty("Instance");
-            var inst = instProp?.GetValue(null);
-            if (inst == null) return;
-            var method = ssType.GetMethod("RecomputeAndSendSnapshot");
-            method?.Invoke(inst, new object[] { clientId });
+            ProjectC.Stats.StatsServer.Instance?.RecomputeAndSendSnapshot(clientId);
         }
 
         // === T-CB07: ApplySkillEffects + EquipmentRecheck ===
@@ -260,18 +251,10 @@ namespace ProjectC.Skills
             }
         }
 
-        /// <summary>
-        /// T-CB07: после learn/forget — recheck надетых предметов.
-        /// Phase 2: force-unequip оружия/брони, если required skill больше не learned.
-        /// Сейчас — no-op (TryEquip уже имеет hard gate, повторный equip заблокируется).
-        /// </summary>
+        /// <summary>R5: прямой вызов EquipmentWorld (без reflection).</summary>
         private void TriggerEquipmentRecheck(ulong clientId)
         {
-            var ewType = System.Type.GetType("ProjectC.Equipment.EquipmentWorld, Assembly-CSharp");
-            if (ewType == null) return;
-            var instProp = ewType.GetProperty("Instance");
-            var inst = instProp?.GetValue(null);
-            if (inst == null) return;
+            if (ProjectC.Equipment.EquipmentWorld.Instance == null) return;
 
             if (Debug.isDebugBuild)
             {

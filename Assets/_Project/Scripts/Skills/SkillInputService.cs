@@ -269,23 +269,30 @@ namespace ProjectC.Skills
                 }
             }
 
-            // 6) Получить SkillNodeConfig (T-INP-02: теперь есть навыки с isActive + animation trigger + AOE formula).
-            // Phase 1: Resources.LoadAll<SkillNodeConfig> — SO лежат в Resources/Skills, доступны клиенту.
-            // Phase 2: заменить на SkillsClientState cache (per T-P12).
+            // 6) Получить SkillNodeConfig из клиентского кэша (R4: SkillsClientState.TryGetSkillConfig)
             SkillNodeConfig skillConfig = null;
             if (hasBind && !string.IsNullOrEmpty(skillId))
             {
-                try
+                var skillsCache = SkillsClientState.Instance;
+                if (skillsCache != null && skillsCache.TryGetSkillConfig(skillId, out var cached))
                 {
-                    var allSkills = Resources.LoadAll<SkillNodeConfig>("Skills");
-                    foreach (var s in allSkills)
-                    {
-                        if (s != null && s.skillId == skillId) { skillConfig = s; break; }
-                    }
+                    skillConfig = cached;
                 }
-                catch (System.Exception ex)
+                else
                 {
-                    Debug.LogWarning($"[SkillInputService] Resources.LoadAll<SkillNodeConfig> failed: {ex.Message}");
+                    // Fallback: Resources.LoadAll (если SkillsClientState ещё не инициализирован)
+                    try
+                    {
+                        var allSkills = Resources.LoadAll<SkillNodeConfig>("Skills");
+                        foreach (var s in allSkills)
+                        {
+                            if (s != null && s.skillId == skillId) { skillConfig = s; break; }
+                        }
+                    }
+                    catch (System.Exception ex)
+                    {
+                        Debug.LogWarning($"[SkillInputService] Resources.LoadAll<SkillNodeConfig> failed: {ex.Message}");
+                    }
                 }
             }
 
@@ -511,6 +518,7 @@ namespace ProjectC.Skills
             if ((mask & WeaponClassMask.Pneumatic) != 0)     parts.Add("пневматика");
             if ((mask & WeaponClassMask.AntigravBlade) != 0) parts.Add("антиграв клинок");
             if ((mask & WeaponClassMask.MesiumRifle) != 0)   parts.Add("мезиевая винтовка");
+            if ((mask & WeaponClassMask.Throwable) != 0)     parts.Add("метательное");
             return parts.Count == 0 ? mask.ToString() : string.Join(" или ", parts);
         }
 

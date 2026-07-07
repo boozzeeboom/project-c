@@ -26,7 +26,21 @@ using ProjectC.Skills;
 namespace ProjectC.Equipment
 {
     /// <summary>
+    /// Способ применения оружия. Определяет какие поля активны и как оружие используется в бою.
+    /// Melee/Ranged — стандартная атака через ResolveAttack. Thrown — бросок через ResolveSkillCast.
+    /// Placed — установка (мина/ловушка).
+    /// </summary>
+    public enum WeaponHandling : byte
+    {
+        Melee = 0,    // ближний бой (range < 3м)
+        Ranged = 1,   // дальний бой (range ≥ 3м)
+        Thrown = 2,   // метательное (граната, нож, топор)
+        Placed = 3,   // устанавливаемое (мина, ловушка)
+    }
+
+    /// <summary>
     /// Класс оружия (ERPR §3.5). Designer выбирает в инспекторе — OnValidate ставит defaults.
+    /// R1-refactor: добавлен Throwable (8) для метательного оружия.
     /// </summary>
     public enum WeaponClass : byte
     {
@@ -38,6 +52,7 @@ namespace ProjectC.Equipment
         Pneumatic = 5,       // d8, base=3, range=50м, Ballistic
         AntigravBlade = 6,   // d8, base=3, critMod=+10, range=2.0м, Antigrav
         MesiumRifle = 7,     // d10, base=5, range=50м, Mesium
+        Throwable = 8,       // R1: гранаты/метательные ножи/etc. d10, base=5, throwRange=25м, Explosive/Antigrav
     }
 
     /// <summary>
@@ -59,19 +74,25 @@ namespace ProjectC.Equipment
         Pneumatic    = 1 << WeaponClass.Pneumatic,    // 32
         AntigravBlade= 1 << WeaponClass.AntigravBlade,// 64
         MesiumRifle  = 1 << WeaponClass.MesiumRifle,  // 128
+        Throwable    = 1 << WeaponClass.Throwable,    // 256  (R1)
         // Convenience aliases (designer-friendly в Inspector через [Flags] dropdown)
         AnyMelee     = Sword | Dagger | Spear | Mace,
         AnyRanged    = Crossbow | Pneumatic,
-        AnyWeapon    = AnyMelee | AnyRanged | AntigravBlade | MesiumRifle, // 255
+        AnyThrown    = Throwable,                     // R1
+        AnyWeapon    = AnyMelee | AnyRanged | AntigravBlade | MesiumRifle | Throwable, // 511
     }
 
     [CreateAssetMenu(fileName = "Weapon_", menuName = "Project C/Equipment/Weapon", order = 12)]
     public class WeaponItemData : ItemData, ProjectC.Combat.ICombatDamageProvider
     {
         [Header("Weapon class")]
-        [Tooltip("Sword / Dagger / Spear / Mace / Crossbow / Pneumatic / AntigravBlade / MesiumRifle. " +
+        [Tooltip("Sword / Dagger / Spear / Mace / Crossbow / Pneumatic / AntigravBlade / MesiumRifle / Throwable. " +
                  "OnValidate ставит defaults автоматически.")]
         public WeaponClass weaponClass = WeaponClass.Sword;
+
+        [Header("Weapon handling (R1)")]
+        [Tooltip("Melee — ближний бой. Ranged — дальний бой. Thrown — метательное (граната/нож). Placed — мина/ловушка.")]
+        public WeaponHandling handling = WeaponHandling.Melee;
 
         [Header("ERPR-пакет (T-CB03, см. Battle/10_DESIGN.md §3.1)")]
         [Tooltip("Damage dice. d4-d20 (ERPR §3.1).")]
@@ -93,6 +114,16 @@ namespace ProjectC.Equipment
                  "Antigrav: armor × 0.5; Mesium: armor × 0.")]
         public ProjectC.Combat.Core.DamageType damageType = ProjectC.Combat.Core.DamageType.Physical;
 
+        [Header("Thrown / Placed (R1 — активно при handling = Thrown или Placed)")]
+        [Tooltip("Радиус AOE в метрах (для гранат/мин). 0 = single-target (метательный нож).")]
+        [Range(0f, 20f)] public float explosionRadius = 0f;
+
+        [Tooltip("Максимальная дистанция броска (метры). Используется только для Thrown.")]
+        [Range(1f, 100f)] public float throwRange = 25f;
+
+        [Tooltip("Задержка до взрыва после броска (сек). 0 = мгновенно при попадании.")]
+        [Range(0f, 10f)] public float fuseTimeSec = 0f;
+
         [Header("Proficiency gate (T-CB06, optional)")]
         [Tooltip("Минимальный навык для использования (proficiency gate). " +
                  "Если null — gate отсутствует (default для MVP).")]
@@ -106,7 +137,8 @@ namespace ProjectC.Equipment
         ProjectC.Combat.Core.DamageDice ProjectC.Combat.ICombatDamageProvider.GetDamageDice() => damageDice;
         int ProjectC.Combat.ICombatDamageProvider.GetBaseDamage() => baseDamage;
         int ProjectC.Combat.ICombatDamageProvider.GetCritModifier() => critModifier;
-        float ProjectC.Combat.ICombatDamageProvider.GetRange() => range;
+        /// <summary>Для Thrown возвращает throwRange, иначе range.</summary>
+        float ProjectC.Combat.ICombatDamageProvider.GetRange() => handling == WeaponHandling.Thrown ? throwRange : range;
         ProjectC.Combat.Core.DamageType ProjectC.Combat.ICombatDamageProvider.GetDamageType() => damageType;
         string ProjectC.Combat.ICombatDamageProvider.GetDisplayName() => itemName;
 
@@ -121,10 +153,30 @@ namespace ProjectC.Equipment
                 itemType = ItemType.Equipment;
             }
 
-            // equipSlot = WeaponMain (наследуется от ItemData, default=None)
+            // R3: equipSlot = WeaponMain для оружия, None для Throwable (расходник из инвентаря)
             if (equipSlot == EquipSlot.None)
             {
-                equipSlot = EquipSlot.WeaponMain;
+                equipSlot = weaponClass == WeaponClass.Throwable ? EquipSlot.None : EquipSlot.WeaponMain;
+            }
+
+            // Auto-set handling по weaponClass
+            switch (weaponClass)
+            {
+                case WeaponClass.Sword:
+                case WeaponClass.Dagger:
+                case WeaponClass.Spear:
+                case WeaponClass.Mace:
+                case WeaponClass.AntigravBlade:
+                    handling = WeaponHandling.Melee;
+                    break;
+                case WeaponClass.Crossbow:
+                case WeaponClass.Pneumatic:
+                case WeaponClass.MesiumRifle:
+                    handling = WeaponHandling.Ranged;
+                    break;
+                case WeaponClass.Throwable:
+                    handling = WeaponHandling.Thrown;
+                    break;
             }
 
             // Auto-set defaults по weaponClass (только если пользователь не правил руками)
@@ -180,6 +232,13 @@ namespace ProjectC.Equipment
                     if (baseDamage == 1) baseDamage = 5;
                     if (range == 2.0f) range = 50.0f;
                     damageType = DamageType.Mesium;
+                    break;
+                case WeaponClass.Throwable:
+                    if (damageDice == DamageDice.d6) damageDice = DamageDice.d10;
+                    if (baseDamage == 1) baseDamage = 5;
+                    if (throwRange == 25f) throwRange = 25f;
+                    if (range == 2.0f) range = 0f;           // не используется в ResolveAttack
+                    damageType = DamageType.Explosive;
                     break;
             }
         }

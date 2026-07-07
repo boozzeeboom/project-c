@@ -172,25 +172,14 @@ namespace ProjectC.Skills
                     reason = $"Не хватает XP (нужно {skill.LearnXpCost:F0})";
                     return false;
                 }
-                // Spend XP via reflection (StatsServer instance not guaranteed at T-P12 standalone)
-                var ssType = System.Type.GetType("ProjectC.Stats.StatsServer, Assembly-CSharp");
-                if (ssType != null)
+                // R5: прямой вызов StatsServer.ApplyXpDirect (без reflection)
+                var ss = ProjectC.Stats.StatsServer.Instance;
+                if (ss != null)
                 {
-                    var instProp = ssType.GetProperty("Instance");
-                    var inst = instProp?.GetValue(null);
-                    if (inst != null)
+                    if (!ss.ApplyXpDirect(clientId, ProjectC.Stats.StatType.Intelligence, -skill.LearnXpCost, out var xpReason))
                     {
-                        var method = ssType.GetMethod("ApplyXpDirect");
-                        if (method != null)
-                        {
-                            var args = new object[] { clientId, ProjectC.Stats.StatType.Intelligence, -skill.LearnXpCost, null };
-                            var result = method.Invoke(inst, args);
-                            if (result is bool ok && !ok)
-                            {
-                                reason = args[3] as string ?? "Не удалось потратить XP";
-                                return false;
-                            }
-                        }
+                        reason = xpReason ?? "Не удалось потратить XP";
+                        return false;
                     }
                 }
             }

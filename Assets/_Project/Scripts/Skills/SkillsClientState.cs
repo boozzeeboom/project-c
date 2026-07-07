@@ -28,6 +28,9 @@ namespace ProjectC.Skills
         /// <summary>Current set of learned skill IDs (mirrors server state).</summary>
         public HashSet<string> CurrentSkills { get; private set; } = new HashSet<string>();
 
+        // R4: client-side skill config cache (избегает Resources.LoadAll на каждый клик)
+        private readonly Dictionary<string, SkillNodeConfig> _skillConfigCache = new Dictionary<string, SkillNodeConfig>();
+
         // ============ Events для UI ============
         /// <summary>Data event: новый snapshot пришёл. UI вызывает RefreshDisplay.</summary>
         public event Action<HashSet<string>> OnSkillsUpdated;
@@ -41,11 +44,39 @@ namespace ProjectC.Skills
             {
                 Instance = this;
                 if (dontDestroyOnLoad) DontDestroyOnLoad(gameObject);
+                LoadSkillConfigs();  // R4: pre-load all skill configs once
             }
             else if (Instance != this)
             {
                 Destroy(gameObject);
             }
+        }
+
+        /// <summary>R4: загрузить все SkillNodeConfig из Resources один раз при старте.</summary>
+        private void LoadSkillConfigs()
+        {
+            _skillConfigCache.Clear();
+            var allSkills = Resources.LoadAll<SkillNodeConfig>("Skills");
+            foreach (var s in allSkills)
+            {
+                if (s == null || string.IsNullOrEmpty(s.skillId)) continue;
+                _skillConfigCache[s.skillId] = s;
+            }
+            if (Debug.isDebugBuild)
+            {
+                Debug.Log($"[SkillsClientState/R4] Cached {_skillConfigCache.Count} skill configs");
+            }
+        }
+
+        /// <summary>R4: получить SkillNodeConfig по skillId из кэша (без Resources.LoadAll).</summary>
+        public bool TryGetSkillConfig(string skillId, out SkillNodeConfig config)
+        {
+            if (string.IsNullOrEmpty(skillId))
+            {
+                config = null;
+                return false;
+            }
+            return _skillConfigCache.TryGetValue(skillId, out config);
         }
 
         private void OnDestroy()

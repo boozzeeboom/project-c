@@ -67,73 +67,50 @@ namespace ProjectC.Equipment
             }
         }
 
+        /// <summary>
+        /// R2: гарантировать что все ClothingItemData/ModuleItemData/WeaponItemData
+        /// зарегистрированы в InventoryWorld._itemDatabase.
+        /// Использует публичный API (RegisterIfMissing) вместо reflection-хака.
+        /// ItemRegistry — основной источник; эта подгрузка — страховка если ItemRegistry не полон.
+        /// </summary>
         private void RegisterEquipmentAssets()
         {
             try
             {
                 var inv = ProjectC.Items.InventoryWorld.Instance;
                 if (inv == null) return;
-                var field = typeof(ProjectC.Items.InventoryWorld).GetField("_itemDatabase", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
-                var db = field?.GetValue(inv) as System.Collections.Generic.Dictionary<int, ProjectC.Items.ItemData>;
-                if (db == null) return;
 
-                // SESSION 2 fix: грузим ClothingItemData/ModuleItemData по подпапкам явно.
-                // Resources.LoadAll<ItemData>("Items") НЕ подхватывает подклассы — только базовый ItemData.
-                // Resources.LoadAll<T>(path) фильтрует по ТОЧНОМУ типу, поэтому загружаем по подпапкам.
                 int registered = 0;
-                int nextId = 0;
-                foreach (var k in db.Keys) { if (k >= nextId) nextId = k + 1; }
-
-                // Известные подпапки с экипировкой
                 var equipFolders = new[] {
                     "Items/Clothing",
                     "Items/Modules",
                     "Items/Equipment",
-                    "Items/Weapons",   // T-CB03: WeaponItemData
-                    "Items/Throwables"  // Phase T1: ThrowableItemData
+                    "Items/Weapons",
                 };
                 foreach (var folder in equipFolders)
                 {
-                    var cloth = Resources.LoadAll<ProjectC.Equipment.ClothingItemData>(folder);
-                    foreach (var c in cloth)
+                    // ClothingItemData
+                    foreach (var c in Resources.LoadAll<ProjectC.Equipment.ClothingItemData>(folder))
                     {
                         if (c == null) continue;
-                        // Не дублируем: ищем по itemName
-                        bool already = false;
-                        foreach (var kvp in db) { if (kvp.Value == c) { already = true; break; } }
-                        if (!already) { db[nextId++] = c; registered++; }
+                        if (inv.RegisterIfMissing(c) >= 0) registered++;
                     }
-                    var mods = Resources.LoadAll<ProjectC.Equipment.ModuleItemData>(folder);
-                    foreach (var m in mods)
+                    // ModuleItemData
+                    foreach (var m in Resources.LoadAll<ProjectC.Equipment.ModuleItemData>(folder))
                     {
                         if (m == null) continue;
-                        bool already = false;
-                        foreach (var kvp in db) { if (kvp.Value == m) { already = true; break; } }
-                        if (!already) { db[nextId++] = m; registered++; }
+                        if (inv.RegisterIfMissing(m) >= 0) registered++;
                     }
-                    // T-CB03: WeaponItemData (extends ItemData). Resources.LoadAll<T> фильтрует
-                    // по ТОЧНОМУ типу — нужна явная загрузка.
-                    var weapons = Resources.LoadAll<ProjectC.Equipment.WeaponItemData>(folder);
-                    foreach (var w in weapons)
+                    // WeaponItemData
+                    foreach (var w in Resources.LoadAll<ProjectC.Equipment.WeaponItemData>(folder))
                     {
                         if (w == null) continue;
-                        bool already = false;
-                        foreach (var kvp in db) { if (kvp.Value == w) { already = true; break; } }
-                        if (!already) { db[nextId++] = w; registered++; }
-                    }
-                    // Phase T1: ThrowableItemData (grenades, mines, charges)
-                    var throwables = Resources.LoadAll<ProjectC.Equipment.ThrowableItemData>(folder);
-                    foreach (var t in throwables)
-                    {
-                        if (t == null) continue;
-                        bool already = false;
-                        foreach (var kvp in db) { if (kvp.Value == t) { already = true; break; } }
-                        if (!already) { db[nextId++] = t; registered++; }
+                        if (inv.RegisterIfMissing(w) >= 0) registered++;
                     }
                 }
                 if (Debug.isDebugBuild && registered > 0)
                 {
-                    Debug.Log($"[EquipmentServer] Registered {registered} clothing+module assets");
+                    Debug.Log($"[EquipmentServer] Registered {registered} equipment assets (R2: public API)");
                 }
             }
             catch (System.Exception ex)
@@ -143,8 +120,7 @@ namespace ProjectC.Equipment
         }
 
         /// <summary>
-        /// SESSION 2: найти itemId по имени предмета в _itemDatabase.
-        /// Используется в seed вместо хардкода ID.
+        /// R2: найти itemId по имени предмета через публичный API InventoryWorld.
         /// </summary>
         private int FindItemIdByName(string itemName)
         {
@@ -152,10 +128,7 @@ namespace ProjectC.Equipment
             {
                 var inv = ProjectC.Items.InventoryWorld.Instance;
                 if (inv == null) return -1;
-                var field = typeof(ProjectC.Items.InventoryWorld).GetField("_itemDatabase", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
-                var db = field?.GetValue(inv) as System.Collections.Generic.Dictionary<int, ProjectC.Items.ItemData>;
-                if (db == null) return -1;
-                foreach (var kvp in db)
+                foreach (var kvp in inv.GetAllItems())
                 {
                     if (kvp.Value != null && kvp.Value.itemName == itemName) return kvp.Key;
                 }
@@ -291,13 +264,11 @@ namespace ProjectC.Equipment
             var inv = ProjectC.Items.InventoryWorld.Instance;
             if (inv != null)
             {
-                // SESSION 2: try RemoveItems с id, если ItemNotFound — fallback по slot+type.
+                // R2: resolve correctId через публичный API если itemId не в базе
                 int correctId = itemId;
-                var invDbField = typeof(ProjectC.Items.InventoryWorld).GetField("_itemDatabase", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
-                var invDb = invDbField?.GetValue(inv) as System.Collections.Generic.Dictionary<int, ProjectC.Items.ItemData>;
-                if (invDb != null && !invDb.ContainsKey(itemId))
+                if (inv.GetItemDefinition(itemId) == null)
                 {
-                    foreach (var kvp in invDb)
+                    foreach (var kvp in inv.GetAllItems())
                     {
                         if (kvp.Value is ProjectC.Equipment.ClothingItemData c && c.slot == slot) { correctId = kvp.Key; break; }
                         else if (kvp.Value is ProjectC.Equipment.ModuleItemData m && m.slot == slot) { correctId = kvp.Key; break; }
@@ -344,35 +315,14 @@ namespace ProjectC.Equipment
                 var inv = ProjectC.Items.InventoryWorld.Instance;
                 if (inv != null)
                 {
-                    // SESSION 2 CRITICAL FIX: AddItemDirect принимает ТОЛЬКО ID из _itemDatabase.
-                    // Если id пришёл из `EquipmentData.slotItemIds[idx]` (seed ID) но RegisterEquipmentAssets
-                    // переместил ClothingItemData в другой ID (1300+) — AddItemDirect падает с ItemNotFound.
-                    // Резолвим правильный ID через reference equality.
+                    // R2: resolve correctId через публичный API
                     int correctId = itemId;
-                    var invDbField = typeof(ProjectC.Items.InventoryWorld).GetField("_itemDatabase", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
-                    var invDb = invDbField?.GetValue(inv) as System.Collections.Generic.Dictionary<int, ProjectC.Items.ItemData>;
-                    if (invDb != null)
+                    if (inv.GetItemDefinition(itemId) == null)
                     {
-                        // Попытка 1: сначала проверяем что id существует в _itemDatabase
-                        if (!invDb.ContainsKey(itemId))
+                        foreach (var kvp in inv.GetAllItems())
                         {
-                            // Попытка 2: itemId не найден — ищем по slot+itemName (через EquipData)
-                            // Слот уже известен, itemName в EquipData не хранится → ищем в _itemDatabase
-                            // одежду/модуль для этого слота.
-                            // Простой fallback: первый ClothingItemData/ModuleItemData с таким slot.
-                            foreach (var kvp in invDb)
-                            {
-                                if (kvp.Value is ProjectC.Equipment.ClothingItemData c && c.slot == slot)
-                                {
-                                    correctId = kvp.Key;
-                                    break;
-                                }
-                                else if (kvp.Value is ProjectC.Equipment.ModuleItemData m && m.slot == slot)
-                                {
-                                    correctId = kvp.Key;
-                                    break;
-                                }
-                            }
+                            if (kvp.Value is ProjectC.Equipment.ClothingItemData c && c.slot == slot) { correctId = kvp.Key; break; }
+                            else if (kvp.Value is ProjectC.Equipment.ModuleItemData m && m.slot == slot) { correctId = kvp.Key; break; }
                         }
                     }
                     // SESSION 2: addItem возвращает InventoryResultDto. Проверяем успех.
@@ -443,15 +393,10 @@ namespace ProjectC.Equipment
         /// Cross-NetworkObject: после equip/unequip — recompute effective stats в StatsServer.
         /// Null-safe (T-P09 standalone, StatsServer из M1 уже на месте — но reflection fallback).
         /// </summary>
+        /// <summary>R5: прямой вызов StatsServer (без reflection).</summary>
         private void TriggerStatsRecompute(ulong clientId)
         {
-            var ssType = System.Type.GetType("ProjectC.Stats.StatsServer, Assembly-CSharp");
-            if (ssType == null) return;
-            var instProp = ssType.GetProperty("Instance");
-            var inst = instProp?.GetValue(null);
-            if (inst == null) return;
-            var method = ssType.GetMethod("RecomputeAndSendSnapshot");
-            method?.Invoke(inst, new object[] { clientId });
+            ProjectC.Stats.StatsServer.Instance?.RecomputeAndSendSnapshot(clientId);
         }
     }
 }

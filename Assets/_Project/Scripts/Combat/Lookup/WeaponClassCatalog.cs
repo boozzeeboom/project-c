@@ -39,6 +39,7 @@ namespace ProjectC.Combat.Lookup
             new Entry { weaponClass = WeaponClass.Pneumatic,      requiredProficiency = null },
             new Entry { weaponClass = WeaponClass.AntigravBlade,  requiredProficiency = null },
             new Entry { weaponClass = WeaponClass.MesiumRifle,    requiredProficiency = null },
+            new Entry { weaponClass = WeaponClass.Throwable,      requiredProficiency = null },  // R1
         };
 
         /// <summary>Получить required proficiency для данного WeaponClass. null = нет gate.</summary>

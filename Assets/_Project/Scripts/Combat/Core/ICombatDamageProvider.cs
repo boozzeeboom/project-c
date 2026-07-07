@@ -1,7 +1,7 @@
 // Project C: Real-Time Combat Engine — T-RTC04 + T-CB03
 // ICombatDamageProvider: универсальный интерфейс для любого предмета, способного наносить урон.
 //
-// Реализуется WeaponItemData и ThrowableItemData (уже имеют все нужные поля).
+// Реализуется WeaponItemData (R1: ThrowableItemData упразднён, всё в WeaponItemData).
 // Используется в PlayerAttacker.RebuildSources (вместо is WeaponItemData hard check)
 // и в WeaponDamageSource (вместо прямого ref на WeaponItemData).
 //

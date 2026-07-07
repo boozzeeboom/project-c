@@ -174,6 +174,29 @@ namespace ProjectC.Items
         {
             return _itemDatabase.TryGetValue(id, out var d) ? d : null;
         }
+        /// <summary>R2: найти id для ItemData (по reference equality). -1 если не найден.</summary>
+        public int GetItemId(ItemData item)
+        {
+            if (item == null) return -1;
+            foreach (var kvp in _itemDatabase)
+                if (kvp.Value == item) return kvp.Key;
+            return -1;
+        }
+        /// <summary>R2: зарегистрирован ли уже этот ItemData (по reference equality).</summary>
+        public bool IsItemRegistered(ItemData item)
+        {
+            return GetItemId(item) >= 0;
+        }
+        /// <summary>R2: зарегистрировать предмет если ещё нет. Возвращает id (существующий или новый).</summary>
+        public int RegisterIfMissing(ItemData item)
+        {
+            if (item == null) return -1;
+            int existing = GetItemId(item);
+            if (existing >= 0) return existing;
+            int newId = _itemDatabase.Count + 1;
+            RegisterItem(newId, item);
+            return newId;
+        }
         /// <summary>Количество зарегистрированных ItemData.</summary>
         public int GetItemCount() => _itemDatabase.Count;
         /// <summary>Итерация по всем зарегистрированным предметам (id → ItemData).</summary>

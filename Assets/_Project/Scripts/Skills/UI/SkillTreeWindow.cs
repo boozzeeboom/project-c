@@ -70,7 +70,7 @@ namespace ProjectC.Skills.UI
                 private TextField _searchField;
         private readonly Dictionary<SkillDisciplineFilter, VisualElement> _chipRefs = new Dictionary<SkillDisciplineFilter, VisualElement>();
 
-        private enum SkillDisciplineFilter { All, Melee, Ranged, Explosives, Antigrav, Defense }
+        private enum SkillDisciplineFilter { All, Melee, Ranged, Defense, Placed }
         private bool _isSkillsSubscribed;
 
         private void Awake()
@@ -247,26 +247,25 @@ namespace ProjectC.Skills.UI
             foreach (var s in _allSkillConfigs)
             {
                 if (s == null) continue;
-                if (!MatchesDiscipline(s.skillId)) continue;
+                if (!MatchesDiscipline(s)) continue;
                 if (!MatchesSearch(s)) continue;
                 _filteredSkills.Add(s);
             }
             RebuildSkillList();
         }
 
-        private bool MatchesDiscipline(string skillId)
+        private bool MatchesDiscipline(SkillNodeConfig s)
         {
             if (_activeFilter == SkillDisciplineFilter.All) return true;
-            if (string.IsNullOrEmpty(skillId)) return false;
-            switch (_activeFilter)
+            if (s == null) return false;
+            return _activeFilter switch
             {
-                case SkillDisciplineFilter.Melee:      return skillId.StartsWith("melee") || skillId == "combat_basic_strike" || skillId == "combat_heavy_swing" || skillId == "combat_precision_strike";
-                case SkillDisciplineFilter.Ranged:     return skillId.StartsWith("ranged");
-                case SkillDisciplineFilter.Explosives: return skillId.StartsWith("expl") || skillId.StartsWith("explosives");
-                case SkillDisciplineFilter.Antigrav:   return skillId.StartsWith("antigrav");
-                case SkillDisciplineFilter.Defense:    return skillId.StartsWith("defense");
-                default: return true;
-            }
+                SkillDisciplineFilter.Melee   => s.discipline == CombatDiscipline.Melee || s.discipline == CombatDiscipline.Combat,
+                SkillDisciplineFilter.Ranged  => s.discipline == CombatDiscipline.Ranged,
+                SkillDisciplineFilter.Defense => s.discipline == CombatDiscipline.Defense,
+                SkillDisciplineFilter.Placed  => s.discipline == CombatDiscipline.Placed,
+                _ => true
+            };
         }
 
         private bool MatchesSearch(SkillNodeConfig s)
@@ -292,9 +291,8 @@ namespace ProjectC.Skills.UI
             BindChip("chip-all", SkillDisciplineFilter.All);
             BindChip("chip-melee", SkillDisciplineFilter.Melee);
             BindChip("chip-ranged", SkillDisciplineFilter.Ranged);
-            BindChip("chip-explosives", SkillDisciplineFilter.Explosives);
-            BindChip("chip-antigrav", SkillDisciplineFilter.Antigrav);
             BindChip("chip-defense", SkillDisciplineFilter.Defense);
+            BindChip("chip-placed", SkillDisciplineFilter.Placed);
         }
 
         private void BindChip(string chipName, SkillDisciplineFilter filter)

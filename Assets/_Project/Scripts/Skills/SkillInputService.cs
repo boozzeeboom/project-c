@@ -368,40 +368,57 @@ namespace ProjectC.Skills
             // Single-target → RequestAttackRpc.
             try
             {
+                // REFACTOR 2026-07-26: thrown detection by explicit subtype, not heuristic
                 bool isThrownAoe = skillConfig != null
-                    && skillConfig.isActive
-                    && (skillConfig.aoeFormula == ProjectC.Skills.AoeFormula.Sphere
-                        || skillConfig.aoeFormula == ProjectC.Skills.AoeFormula.Box)
-                    && skillConfig.aoeSize > 0f;
+                    && skillConfig.subtype == ProjectC.Skills.CombatSubtype.Throwables
+                    && skillConfig.isActive;
 
                 if (isThrownAoe)
                 {
                     // R4: Find target point via character-forward raycast
-                    float throwRange = GetActiveThrowableRange();
-                    Vector3 targetPoint = FindThrowTargetPoint(throwRange);
-                    float flightTime = Mathf.Clamp(Vector3.Distance(_ownerPlayer.transform.position, targetPoint) / 20f, 0.3f, 1.5f);
+                    float throwRange = skillConfig.throwRange;
+                    Vector3 baseTargetPoint = FindThrowTargetPoint(throwRange);
+                    int throwCount = Mathf.Max(1, skillConfig.throwCount);
 
-                    // Client-side throw arc visual
-                    Color arcColor = skillConfig.subtype == ProjectC.Skills.CombatSubtype.Throwables
-                        ? new Color(1f, 0.4f, 0.1f)  // orange for throwables
-                        : new Color(0.3f, 0.7f, 1f);   // blue for other AOE
-                    ProjectC.Combat.Client.ThrowArcVisual.Fire(
-                        _ownerPlayer.transform.position, targetPoint, flightTime,
-                        skillConfig.aoeSize, arcColor);
-
-                    // T-INP-06 fix: show AOE debug at targetPoint (where grenade lands),
-                    // NOT at player position.
-                    if (skillConfig.debugVisualizeAoe)
+                    for (int i = 0; i < throwCount; i++)
                     {
-                        var viz = ProjectC.Skills.DebugVisualization.SkillAoeDebugVisualizer.EnsureExists();
-                        if (viz != null)
+                        // Scatter offset (D6): throwScatter=6 → точный бросок, throwScatter=1 → сильный разброс
+                        Vector3 scatterOffset = Vector3.zero;
+                        if (throwCount > 1 || skillConfig.throwScatter < 6)
                         {
-                            viz.ShowAoe(targetPoint, Vector3.up, skillConfig);
+                            int scatterRoll = Random.Range(1, 7); // D6
+                            float scatterFactor = Mathf.Max(0f, (float)(scatterRoll - skillConfig.throwScatter) / 6f);
+                            if (scatterFactor > 0.01f)
+                            {
+                                Vector3 perp = Vector3.Cross(_ownerPlayer.transform.forward, Vector3.up).normalized;
+                                scatterOffset = (perp * Random.Range(-1f, 1f) + _ownerPlayer.transform.forward * Random.Range(-0.3f, 0.3f))
+                                    * scatterFactor * throwRange * 0.5f;
+                            }
                         }
-                    }
+                        Vector3 targetPoint = baseTargetPoint + scatterOffset;
 
-                    // R4: server resolves throwable damage source from inventory
-                    server.RequestSkillCastAtPointRpc(skillId, targetPoint, 0UL);
+                        float dist = Vector3.Distance(_ownerPlayer.transform.position, targetPoint);
+                        float flightTime = Mathf.Clamp(dist / 20f, 0.3f, 1.5f);
+
+                        // Client-side throw arc visual
+                        Color arcColor = new Color(1f, 0.4f, 0.1f);  // orange for throwables
+                        ProjectC.Combat.Client.ThrowArcVisual.Fire(
+                            _ownerPlayer.transform.position, targetPoint, flightTime,
+                            skillConfig.aoeSize, arcColor);
+
+                        // T-INP-06 fix: show AOE debug at targetPoint
+                        if (skillConfig.debugVisualizeAoe)
+                        {
+                            var viz = ProjectC.Skills.DebugVisualization.SkillAoeDebugVisualizer.EnsureExists();
+                            if (viz != null)
+                            {
+                                viz.ShowAoe(targetPoint, Vector3.up, skillConfig);
+                            }
+                        }
+
+                        // R4: server resolves throwable damage source from inventory
+                        server.RequestSkillCastAtPointRpc(skillId, targetPoint, 0UL);
+                    }
                 }
                 else if (skillConfig != null && skillConfig.aoeFormula != ProjectC.Skills.AoeFormula.SingleTarget)
                 {
@@ -426,10 +443,8 @@ namespace ProjectC.Skills
             // Здесь — только для melee AOE (Cone/Line) от позиции игрока.
             if (skillConfig != null && skillConfig.debugVisualizeAoe && _ownerPlayer != null)
             {
-                bool isThrown = skillConfig.isActive
-                    && (skillConfig.aoeFormula == ProjectC.Skills.AoeFormula.Sphere
-                        || skillConfig.aoeFormula == ProjectC.Skills.AoeFormula.Box)
-                    && skillConfig.aoeSize > 0f;
+                bool isThrown = skillConfig.subtype == ProjectC.Skills.CombatSubtype.Throwables
+                    && skillConfig.isActive;
                 if (!isThrown)
                 {
                     var viz = ProjectC.Skills.DebugVisualization.SkillAoeDebugVisualizer.EnsureExists();
@@ -567,27 +582,6 @@ namespace ProjectC.Skills
             flatDir.Normalize();
 
             return _ownerPlayer.transform.position + flatDir * throwRange;
-        }
-
-        /// <summary>
-        /// R4: Get throwRange from the active throwable weapon.
-        /// Throwables have equipSlot=None (not in WeaponMain/WeaponOff) —
-        /// look up via InventoryWorld if available, else default 25m.
-        /// </summary>
-        private float GetActiveThrowableRange()
-        {
-            // Try inventory lookup for Throwable items
-            var inv = ProjectC.Items.InventoryWorld.Instance;
-            if (inv != null && _ownerPlayer != null)
-            {
-                foreach (var kvp in inv.GetAllItems())
-                {
-                    var def = inv.GetItemDefinition(kvp.Key);
-                    if (def is WeaponItemData w && w.weaponClass == WeaponClass.Throwable)
-                        return w.throwRange;
-                }
-            }
-            return 25f; // default: matches Weapon_Grenade_Basic.throwRange
         }
 
         public bool IsOnCooldown(SkillInputSlot slot)

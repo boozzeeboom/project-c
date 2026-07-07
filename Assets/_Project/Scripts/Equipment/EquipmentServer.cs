@@ -89,7 +89,8 @@ namespace ProjectC.Equipment
                     "Items/Clothing",
                     "Items/Modules",
                     "Items/Equipment",
-                    "Items/Weapons"  // T-CB03: WeaponItemData
+                    "Items/Weapons",   // T-CB03: WeaponItemData
+                    "Items/Throwables"  // Phase T1: ThrowableItemData
                 };
                 foreach (var folder in equipFolders)
                 {
@@ -119,6 +120,15 @@ namespace ProjectC.Equipment
                         bool already = false;
                         foreach (var kvp in db) { if (kvp.Value == w) { already = true; break; } }
                         if (!already) { db[nextId++] = w; registered++; }
+                    }
+                    // Phase T1: ThrowableItemData (grenades, mines, charges)
+                    var throwables = Resources.LoadAll<ProjectC.Equipment.ThrowableItemData>(folder);
+                    foreach (var t in throwables)
+                    {
+                        if (t == null) continue;
+                        bool already = false;
+                        foreach (var kvp in db) { if (kvp.Value == t) { already = true; break; } }
+                        if (!already) { db[nextId++] = t; registered++; }
                     }
                 }
                 if (Debug.isDebugBuild && registered > 0)

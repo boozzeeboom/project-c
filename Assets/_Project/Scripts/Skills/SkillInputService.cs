@@ -356,12 +356,34 @@ namespace ProjectC.Skills
             }
 
             // 8) RPC на сервер.
-            // T-INP-03: если skill имеет AOE формулу (не SingleTarget) — посылаем skill-based RPC.
-            // Иначе legacy single-target RPC (targetId=0 = server ищет nearest сам).
-            // sourceId=0 = Unarmed/WeaponMain первое доступное (server-side выбор по PlayerAttacker.GetDamageSource).
+            // Phase T3: Thrown skills (Sphere/Box AOE) → raycast target point → ThrowArcVisual → RequestSkillCastAtPointRpc.
+            // Melee AOE skills (Cone/Line) → RequestSkillCastRpc (AOE at attacker).
+            // Single-target → RequestAttackRpc.
             try
             {
-                if (skillConfig != null && skillConfig.aoeFormula != ProjectC.Skills.AoeFormula.SingleTarget)
+                bool isThrownAoe = skillConfig != null
+                    && skillConfig.isActive
+                    && (skillConfig.aoeFormula == ProjectC.Skills.AoeFormula.Sphere
+                        || skillConfig.aoeFormula == ProjectC.Skills.AoeFormula.Box)
+                    && skillConfig.aoeSize > 0f;
+
+                if (isThrownAoe)
+                {
+                    // Find target point via raycast
+                    Vector3 targetPoint = FindThrowTargetPoint();
+                    float flightTime = Mathf.Clamp(Vector3.Distance(_ownerPlayer.transform.position, targetPoint) / 20f, 0.3f, 1.5f);
+
+                    // Client-side throw arc visual
+                    Color arcColor = skillConfig.discipline == ProjectC.Skills.CombatDiscipline.Explosives
+                        ? new Color(1f, 0.4f, 0.1f)  // orange for explosives
+                        : new Color(0.3f, 0.7f, 1f);   // blue for antigrav
+                    ProjectC.Combat.Client.ThrowArcVisual.Fire(
+                        _ownerPlayer.transform.position, targetPoint, flightTime,
+                        skillConfig.aoeSize, arcColor);
+
+                    server.RequestSkillCastAtPointRpc(skillId, targetPoint, 0UL);
+                }
+                else if (skillConfig != null && skillConfig.aoeFormula != ProjectC.Skills.AoeFormula.SingleTarget)
                 {
                     server.RequestSkillCastRpc(skillId, targetId, 0UL);
                 }
@@ -490,6 +512,41 @@ namespace ProjectC.Skills
             if ((mask & WeaponClassMask.AntigravBlade) != 0) parts.Add("антиграв клинок");
             if ((mask & WeaponClassMask.MesiumRifle) != 0)   parts.Add("мезиевая винтовка");
             return parts.Count == 0 ? mask.ToString() : string.Join(" или ", parts);
+        }
+
+        /// <summary>
+        /// Phase T3: Find target point for thrown items via camera raycast.
+        /// Falls back to (playerPos + forward * 15f) for ground/obstacle hits.
+        /// </summary>
+        private Vector3 FindThrowTargetPoint()
+        {
+            if (_ownerPlayer == null) return Vector3.zero;
+
+            var cam = Camera.main;
+            Vector3 origin, forward;
+            if (cam != null)
+            {
+                origin = cam.transform.position;
+                forward = cam.transform.forward;
+            }
+            else
+            {
+                origin = _ownerPlayer.transform.position + Vector3.up * 1.5f;
+                forward = _ownerPlayer.transform.forward;
+            }
+
+            if (Physics.Raycast(origin, forward, out RaycastHit hit, 50f, ~0, QueryTriggerInteraction.Ignore))
+            {
+                return hit.point;
+            }
+
+            // Fallback: ground plane at player Y
+            Vector3 flatDir = forward;
+            flatDir.y = 0;
+            if (flatDir.sqrMagnitude < 0.001f) flatDir = Vector3.forward;
+            flatDir.Normalize();
+
+            return _ownerPlayer.transform.position + flatDir * 15f;
         }
 
         public bool IsOnCooldown(SkillInputSlot slot)

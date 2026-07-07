@@ -45,10 +45,23 @@ namespace ProjectC.Combat.Client
 
         // === Server → Client handlers ===
 
+        [Header("Projectile")]
+        [Tooltip("Время полёта снаряда (сек). Меньше = быстрее.")]
+        [SerializeField] private float _projectileTravelTime = 0.25f;
+
         public void HandleAttackLanded(DamageResultDto dto)
         {
             var result = ToResult(dto);
             OnAttackLanded?.Invoke(result);
+
+            // Phase R2: ProjectileVisual для ranged атак (Ballistic/Mesium).
+            if (result.isHit && (result.damageType == DamageType.Ballistic || result.damageType == DamageType.Mesium))
+            {
+                Color trailColor = result.damageType == DamageType.Mesium
+                    ? new Color(0.2f, 1f, 0.5f)  // green (mesium)
+                    : new Color(1f, 0.85f, 0.3f); // yellow/orange (bolt/bullet)
+                ProjectileVisual.Fire(result.attackerPosition, result.targetPosition, _projectileTravelTime, trailColor);
+            }
 
             if (Debug.isDebugBuild)
             {

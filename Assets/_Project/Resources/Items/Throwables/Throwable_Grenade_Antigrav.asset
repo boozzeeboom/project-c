@@ -1,0 +1,34 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 132d3149b907d4b498903329c147dbd6, type: 3}
+  m_Name: Throwable_Grenade_Antigrav
+  m_EditorClassIdentifier: Assembly-CSharp::ProjectC.Equipment.ThrowableItemData
+  itemName: Antigrav Grenade
+  itemType: 0
+  description: Antigravitational grenade. g-wave destabilizes targets. Partially
+    ignores armor.
+  icon: {fileID: 0}
+  maxStack: 1
+  weightKg: 0.1
+  visualPrefab: {fileID: 0}
+  attachBoneOverride: 55
+  attachPositionOffset: {x: 0, y: 0, z: 0}
+  attachRotationOffset: {x: 0, y: 0, z: 0}
+  attachScale: {x: 1, y: 1, z: 1}
+  explosionRadius: 3
+  damageDice: 8
+  baseDamage: 4
+  damageType: 2
+  critModifier: 15
+  throwRange: 25
+  fuseTimeSec: 1.5
+  aoeFormula: 2

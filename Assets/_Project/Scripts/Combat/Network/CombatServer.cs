@@ -203,7 +203,16 @@ namespace ProjectC.Combat
         {
             ulong attackerId = rpcParams.Receive.SenderClientId;
             if (!RateLimit(attackerId)) return;
-            ResolveSkillCast(attackerId, skillId, primaryTargetId, sourceId);
+            ResolveSkillCast(attackerId, skillId, primaryTargetId, sourceId, null);
+        }
+
+        // Phase T2: Thrown/grenade variant — accepts impact point for AOE origin.
+        [Rpc(SendTo.Server, InvokePermission = RpcInvokePermission.Owner)]
+        public void RequestSkillCastAtPointRpc(string skillId, Vector3 targetPoint, ulong sourceId, RpcParams rpcParams = default)
+        {
+            ulong attackerId = rpcParams.Receive.SenderClientId;
+            if (!RateLimit(attackerId)) return;
+            ResolveSkillCast(attackerId, skillId, 0UL, sourceId, targetPoint);
         }
 
         // === Server-side damage flow ===
@@ -344,7 +353,7 @@ namespace ProjectC.Combat
         /// Резолвит skillId → SkillNodeConfig, собирает AOE цели, для каждой считает damage.
         /// Поведение максимально близко к <see cref="ResolveAttack"/> — но без primary target и с multi-hit.
         /// </summary>
-        public void ResolveSkillCast(ulong attackerId, string skillId, ulong primaryTargetId, ulong sourceId)
+        public void ResolveSkillCast(ulong attackerId, string skillId, ulong primaryTargetId, ulong sourceId, Vector3? targetPoint = null)
         {
             if (string.IsNullOrEmpty(skillId))
             {
@@ -398,8 +407,19 @@ namespace ProjectC.Combat
             }
 
             // === AOE origin + direction ===
-            // Prefer attacker's transform.forward (PlayerAttacker/NpcAttacker). Fallback на Vector3.forward.
-            Vector3 origin = attacker.GetPosition() + Vector3.up * 1.2f;  // chest height
+            // Phase T2: если targetPoint задан (grenade throw), AOE от точки броска.
+            // Иначе от атакующего (melee/self-cast).
+            bool useTargetPoint = targetPoint.HasValue && targetPoint.Value.sqrMagnitude > 0.01f;
+            Vector3 aoeOrigin;
+            if (useTargetPoint)
+            {
+                aoeOrigin = targetPoint.Value;
+            }
+            else
+            {
+                // Prefer attacker's transform.forward (PlayerAttacker/NpcAttacker). Fallback на Vector3.forward.
+            aoeOrigin = attacker.GetPosition() + Vector3.up * 1.2f;  // chest height
+            }
             Vector3 forward = Vector3.forward;
             if (attacker is MonoBehaviour mb && mb.transform != null)
             {
@@ -419,7 +439,7 @@ namespace ProjectC.Combat
                     hitPoints.Add(primary.GetPosition());
                 }
                 else if (!ProjectC.Combat.Core.TargetingService.TryGetTarget(
-                    origin, forward, ProjectC.Combat.Core.TargetingService.DefaultMaxDistance,
+                    aoeOrigin, forward, ProjectC.Combat.Core.TargetingService.DefaultMaxDistance,
                     ProjectC.Combat.Core.TargetingService.DefaultMask,
                     out var hit, out var hp))
                 {
@@ -435,7 +455,7 @@ namespace ProjectC.Combat
             else
             {
                 ProjectC.Combat.Core.TargetingService.CollectAoeTargets(
-                    origin, forward,
+                    aoeOrigin, forward,
                     skillConfig.aoeFormula, skillConfig.aoeSize, skillConfig.aoeConeAngleDeg, skillConfig.aoeWidth,
                     ProjectC.Combat.Core.TargetingService.DefaultMaxDistance,
                     ProjectC.Combat.Core.TargetingService.DefaultMask,
@@ -459,13 +479,21 @@ namespace ProjectC.Combat
                 if (target == null) continue;
                 if (!target.IsAlive()) continue;
 
-                // Range policy per target (один и тот же source может бить мечом по нескольким целям в радиусе)
-                IRangePolicy rangePolicy = source.GetRange() < 3.0f
+                // Range policy per target.
+                // Phase T2: для thrown навыков (useTargetPoint) пропускаем attacker-distance check —
+                // цели уже отфильтрованы AOE-радиусом от targetPoint.
+                if (!useTargetPoint)
+                {
+                    IRangePolicy rangePolicy = source.GetRange() < 3.0f
+                        ? (IRangePolicy)new MeleeRangePolicy()
+                        : new RangedRangePolicy();
+                    if (!rangePolicy.IsInRange(attacker, target, source)) continue;
+                }
+                IRangePolicy rangePolicyForCalc = source.GetRange() < 3.0f
                     ? (IRangePolicy)new MeleeRangePolicy()
                     : new RangedRangePolicy();
-                if (!rangePolicy.IsInRange(attacker, target, source)) continue;
 
-                var result = DamageCalculator.Calculate(attacker, target, source, rangePolicy);
+                var result = DamageCalculator.Calculate(attacker, target, source, rangePolicyForCalc);
 
                 if (_debugLog)
                 {

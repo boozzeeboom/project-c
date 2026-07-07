@@ -557,11 +557,14 @@ namespace ProjectC.Combat
             System.Collections.Generic.List<Vector3> outHitPoints)
         {
             var seen = new HashSet<ulong>();
+            int totalChecked = 0, aliveCount = 0, inRangeCount = 0;
             foreach (var kvp in _targets)
             {
                 var target = kvp.Value;
                 if (target == null) continue;
+                totalChecked++;
                 if (!target.IsAlive()) continue;
+                aliveCount++;
 
                 Vector3 targetPos = target.GetPosition();
                 Vector3 toTarget = targetPos - origin;
@@ -595,14 +598,16 @@ namespace ProjectC.Combat
                         float halfW = Mathf.Max(0.1f, width * 0.5f);
                         float halfL = size * 0.5f;
                         Vector3 center = origin + forward * halfL;
-                        // Transform to local box space
                         Vector3 local = Quaternion.Inverse(Quaternion.LookRotation(forward)) * (targetPos - center);
                         inAoe = Mathf.Abs(local.x) <= halfW && Mathf.Abs(local.y) <= halfW && Mathf.Abs(local.z) <= halfL;
                         break;
                     }
                 }
 
+                if (_debugLog) Debug.Log($"[CombatServer] AOE check: target='{target.GetDisplayName()}' pos={targetPos} dist={dist:F1}m inAoe={inAoe} (origin={origin}, size={size})");
+
                 if (!inAoe) continue;
+                inRangeCount++;
 
                 ulong id = target.GetTargetId();
                 if (!seen.Add(id)) continue;
@@ -611,7 +616,7 @@ namespace ProjectC.Combat
                 outHitPoints.Add(targetPos);
             }
 
-            if (_debugLog) Debug.Log($"[CombatServer] CollectAoeTargetsFromRegistry: formula={formula} size={size} found={outResults.Count}");
+            if (_debugLog) Debug.Log($"[CombatServer] CollectAoeTargetsFromRegistry: formula={formula} size={size} totalTargets={totalChecked} alive={aliveCount} inRange={inRangeCount} uniqueFound={outResults.Count}");
         }
 
         private static Vector3 ClosestPointOnSegment(Vector3 a, Vector3 b, Vector3 point)

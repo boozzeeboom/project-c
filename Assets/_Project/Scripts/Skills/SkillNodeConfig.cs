@@ -20,19 +20,33 @@ namespace ProjectC.Skills
     }
 
     /// <summary>
-    /// T-CB02: Combat discipline для фильтрации + future CharacterWindow sub-tabs.
+    /// T-CB02 → REFACTOR 2026-07-26: Combat discipline для фильтрации + future CharacterWindow sub-tabs.
     /// None = социальные / non-combat навыки.
+    /// Сокращено до 4 базовых дисциплин (Melee/Ranged/Defense/Placed) — соответствует WeaponHandling (R1).
+    /// Explosives и Antigrav удалены — навыки распределены по новым дисциплинам + подтипам.
     /// Auto-set по skillId prefix в OnValidate (Editor) — additive, backward-compat.
     /// </summary>
     public enum CombatDiscipline : byte
     {
-        None = 0,        // social / non-combat
-        Combat = 1,      // универсальные (DodgeRoll, PrecisionStrike)
-        Melee = 2,       // мечи/копья/кинжалы
-        Ranged = 3,      // луки/арбалеты
-        Explosives = 4,  // гранаты/мины
-        Antigrav = 5,    // антиграв. техники
-        Defense = 6,     // броня/стойки
+        None = 0,      // social / non-combat
+        Combat = 1,    // универсальные (DodgeRoll, BasicStrike)
+        Melee = 2,     // ближний бой (мечи, копья, кинжалы)
+        Ranged = 3,    // дальний бой (луки, арбалеты, throwables)
+        Defense = 4,   // защита (броня, стойки, щиты, ауры)
+        Placed = 5,    // устанавливаемое (мины, ловушки, турели)
+    }
+
+    /// <summary>
+    /// REFACTOR 2026-07-26: Подтип боевого навыка внутри дисциплины.
+    /// Виден только дизайнеру в инспекторе. Игроку не показывается.
+    /// Определяет какие дополнительные поля активны в инспекторе и в runtime.
+    /// </summary>
+    public enum CombatSubtype : byte
+    {
+        None = 0,        // обычный навык (большинство)
+        Throwables = 1,  // бросаемые предметы (гранаты, ножи, топоры)
+        Traps = 2,       // ловушки/мины (пример подтипа, не фокусируемся)
+        // Будущие: AntigravWeapon = 3, Shield = 4, ...
     }
 
     /// <summary>
@@ -62,11 +76,16 @@ namespace ProjectC.Skills
         [Tooltip("Display-only. Runtime effects НЕ зависят от category (combat навык может дать +INT для tactical).")]
         public SkillCategory category = SkillCategory.Social;
 
-        [Header("Combat Discipline (T-CB02)")]
+        [Header("Combat Discipline (T-CB02 → REFACTOR 2026-07-26)")]
         [Tooltip("Фильтр для CharacterWindow + Phase 2 (skill tree sub-tabs). " +
                  "Auto-set по skillId prefix в OnValidate (melee_ → Melee и т.п.). " +
                  "None = социальный / non-combat навык.")]
         public CombatDiscipline discipline = CombatDiscipline.None;
+
+        [Header("Combat Subtype (REFACTOR 2026-07-26)")]
+        [Tooltip("Подтип внутри дисциплины. Виден только дизайнеру. " +
+                 "Определяет доп. настройки: Throwables → throwRange/throwScatter/throwCount, Traps → будущие поля.")]
+        public CombatSubtype subtype = CombatSubtype.None;
 
         [Header("Weapon Requirement (T-INP-09)")]
         [Tooltip("Битовая маска допустимых WeaponClass для активации навыка. " +
@@ -154,6 +173,19 @@ namespace ProjectC.Skills
         [Tooltip("Длительность показа wireframe в секундах. 0.3 = быстрый flash, 1.0 = видно дольше.")]
         [Range(0.1f, 3.0f)] public float debugVisualizeDuration = 0.6f;
 
+        // === REFACTOR 2026-07-26: Throwables-specific fields ===
+        [Header("Throwables (активно при subtype = Throwables)")]
+        [Tooltip("Максимальная дальность броска в метрах.")]
+        [Range(1f, 100f)] public float throwRange = 25f;
+
+        [Tooltip("Разброс броска: D6. Чем выше значение навыка — тем точнее бросок. " +
+                 "1 = граната может взорваться в руках (критический промах). 6 = снайперская точность.")]
+        [Range(1, 6)] public int throwScatter = 3;
+
+        [Tooltip("Кол-во одновременно брошенных предметов. Умножает расход TROWN-предметов из инвентаря. " +
+                 "Визуально создаются отдельные траектории для каждого броска.")]
+        [Range(1, 10)] public int throwCount = 1;
+
         // === Public read-only API ===
 
         public float LearnXpCost => _learnXpCost;
@@ -193,9 +225,10 @@ namespace ProjectC.Skills
             CombatDiscipline newDiscipline;
             if (skillId.StartsWith("melee_"))            newDiscipline = CombatDiscipline.Melee;
             else if (skillId.StartsWith("ranged_"))      newDiscipline = CombatDiscipline.Ranged;
-            else if (skillId.StartsWith("expl_") || skillId.StartsWith("explosives_")) newDiscipline = CombatDiscipline.Explosives;
-            else if (skillId.StartsWith("antigrav_"))    newDiscipline = CombatDiscipline.Antigrav;
+            // expl_ / explosives_ — больше не авто-мапятся. Мигрируются через Editor-скрипт или вручную.
+            // antigrav_ — больше не авто-мапятся. Мигрируются через Editor-скрипт или вручную.
             else if (skillId.StartsWith("defense_"))      newDiscipline = CombatDiscipline.Defense;
+            else if (skillId.StartsWith("placed_"))       newDiscipline = CombatDiscipline.Placed;
             else if (skillId.StartsWith("combat_"))      newDiscipline = CombatDiscipline.Combat;
             else if (skillId.StartsWith("social_"))      newDiscipline = CombatDiscipline.None;
             else return;  // неизвестный prefix — оставляем как есть

@@ -17,7 +17,8 @@ MonoBehaviour:
   description: Test skill.
   icon: {fileID: 0}
   category: 1
-  discipline: 4
+  discipline: 3
+  subtype: 1
   requiredWeaponMask: 0
   prerequisites: []
   effects:
@@ -27,6 +28,8 @@ MonoBehaviour:
     multiplier: 0.2
     stringParam: 
   _learnXpCost: 50
+  _requiredStrengthTier: 0
+  _requiredDexterityTier: 0
   _requiredIntelligenceTier: 0
   treeX: 0
   treeY: 350
@@ -39,3 +42,6 @@ MonoBehaviour:
   aoeWidth: 0
   debugVisualizeAoe: 0
   debugVisualizeDuration: 0.6
+  throwRange: 25
+  throwScatter: 3
+  throwCount: 1

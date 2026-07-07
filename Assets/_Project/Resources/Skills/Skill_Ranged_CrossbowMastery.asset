@@ -18,6 +18,7 @@ MonoBehaviour:
   icon: {fileID: 0}
   category: 1
   discipline: 3
+  subtype: 0
   requiredWeaponMask: 0
   prerequisites: []
   effects:
@@ -41,3 +42,6 @@ MonoBehaviour:
   aoeWidth: 0
   debugVisualizeAoe: 1
   debugVisualizeDuration: 0.6
+  throwRange: 25
+  throwScatter: 3
+  throwCount: 1

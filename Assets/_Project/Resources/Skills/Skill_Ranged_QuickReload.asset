@@ -18,6 +18,8 @@ MonoBehaviour:
   icon: {fileID: 0}
   category: 1
   discipline: 3
+  subtype: 0
+  requiredWeaponMask: 0
   prerequisites: []
   effects:
   - type: 0
@@ -26,6 +28,20 @@ MonoBehaviour:
     multiplier: 0.1
     stringParam: 
   _learnXpCost: 80
+  _requiredStrengthTier: 0
+  _requiredDexterityTier: 0
   _requiredIntelligenceTier: 2
   treeX: 100
   treeY: 250
+  isActive: 1
+  attackClip: {fileID: 0}
+  attackClipSpeed: 1
+  aoeFormula: 0
+  aoeSize: 0
+  aoeConeAngleDeg: 60
+  aoeWidth: 0
+  debugVisualizeAoe: 0
+  debugVisualizeDuration: 0.6
+  throwRange: 25
+  throwScatter: 3
+  throwCount: 1

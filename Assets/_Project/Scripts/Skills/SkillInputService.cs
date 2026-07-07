@@ -382,9 +382,9 @@ namespace ProjectC.Skills
                     float flightTime = Mathf.Clamp(Vector3.Distance(_ownerPlayer.transform.position, targetPoint) / 20f, 0.3f, 1.5f);
 
                     // Client-side throw arc visual
-                    Color arcColor = skillConfig.discipline == ProjectC.Skills.CombatDiscipline.Explosives
-                        ? new Color(1f, 0.4f, 0.1f)  // orange for explosives
-                        : new Color(0.3f, 0.7f, 1f);   // blue for antigrav
+                    Color arcColor = skillConfig.subtype == ProjectC.Skills.CombatSubtype.Throwables
+                        ? new Color(1f, 0.4f, 0.1f)  // orange for throwables
+                        : new Color(0.3f, 0.7f, 1f);   // blue for other AOE
                     ProjectC.Combat.Client.ThrowArcVisual.Fire(
                         _ownerPlayer.transform.position, targetPoint, flightTime,
                         skillConfig.aoeSize, arcColor);

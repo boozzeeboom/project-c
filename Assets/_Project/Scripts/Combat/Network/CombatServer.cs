@@ -415,6 +415,13 @@ namespace ProjectC.Combat
                 return;
             }
 
+            // R4: consume throwable(s) BEFORE target collection — гранаты потрачены в любом случае
+            if (useTargetPoint)
+            {
+                int consumeCount = Mathf.Max(1, skillConfig.throwCount);
+                ConsumeThrowableFromInventory(attackerId, consumeCount);
+            }
+
             // === AOE origin + direction ===
             // Phase T2: если targetPoint задан (grenade throw), AOE от точки броска.
             // Иначе от атакующего (melee/self-cast).
@@ -540,12 +547,6 @@ namespace ProjectC.Combat
                 }
             }
 
-            // R4: consume throwable from inventory — always (бросок всегда тратит предмет)
-            if (useTargetPoint)
-            {
-                ConsumeThrowableFromInventory(attackerId);
-            }
-
             if (_debugLog)
             {
                 Debug.Log($"[CombatServer] ResolveSkillCast: skill='{skillId}' formula={skillConfig.aoeFormula} targets={results.Count} hits={hitsLanded} attacker={attackerId}");
@@ -663,13 +664,16 @@ namespace ProjectC.Combat
         }
 
         /// <summary>
-        /// R4: Remove 1 throwable item from attacker's inventory after grenade throw.
+        /// R4: Remove <paramref name="count"/> throwable items from attacker's inventory.
+        /// Consumes from the first found throwable stack, up to available quantity.
+        /// If one stack doesn't have enough, continues to next stacks.
         /// </summary>
-        private void ConsumeThrowableFromInventory(ulong attackerId)
+        private void ConsumeThrowableFromInventory(ulong attackerId, int count)
         {
             var inv = ProjectC.Items.InventoryWorld.Instance;
             if (inv == null) { if (_debugLog) Debug.LogWarning("[CombatServer] ConsumeThrowableFromInventory: InventoryWorld.Instance is null."); return; }
 
+            int remaining = count;
             var data = inv.GetOrCreate(attackerId);
             foreach (ItemType type in System.Enum.GetValues(typeof(ItemType)))
             {
@@ -680,20 +684,28 @@ namespace ProjectC.Combat
                     var def = inv.GetItemDefinition(itemId);
                     if (def is ProjectC.Equipment.WeaponItemData w && w.weaponClass == ProjectC.Equipment.WeaponClass.Throwable)
                     {
-                        var result = inv.RemoveItems(attackerId, itemId, def.itemType, 1);
+                        int available = inv.CountOf(attackerId, itemId);
+                        if (available <= 0) continue;
+                        int toRemove = Mathf.Min(remaining, available);
+                        var result = inv.RemoveItems(attackerId, itemId, def.itemType, toRemove);
                         if (_debugLog)
-                            Debug.Log($"[CombatServer] ConsumeThrowableFromInventory: removed {def.itemName} (id={itemId}) code={result.code} msg={result.message}");
-
-                        // Push updated inventory snapshot to client (so UI refreshes immediately)
-                        if (result.IsSuccess && ProjectC.Items.Network.InventoryServer.Instance != null)
+                            Debug.Log($"[CombatServer] ConsumeThrowableFromInventory: removed {toRemove}x {def.itemName} (id={itemId}) code={result.code} msg={result.message}");
+                        remaining -= toRemove;
+                        if (remaining <= 0)
                         {
-                            ProjectC.Items.Network.InventoryServer.Instance.PushSnapshot(attackerId);
+                            // Push updated inventory snapshot to client
+                            if (ProjectC.Items.Network.InventoryServer.Instance != null)
+                                ProjectC.Items.Network.InventoryServer.Instance.PushSnapshot(attackerId);
+                            return;
                         }
-                        return;
                     }
                 }
             }
-            if (_debugLog) Debug.LogWarning("[CombatServer] ConsumeThrowableFromInventory: no throwable to consume.");
+            // Push snapshot even if partial consumption
+            if (remaining < count && ProjectC.Items.Network.InventoryServer.Instance != null)
+                ProjectC.Items.Network.InventoryServer.Instance.PushSnapshot(attackerId);
+            if (_debugLog && remaining > 0)
+                Debug.LogWarning($"[CombatServer] ConsumeThrowableFromInventory: could only consume {count - remaining}/{count} throwables.");
         }
     }
 }

@@ -326,7 +326,8 @@ namespace ProjectC.Skills
 
                 if (isThrowableSkill)
                 {
-                    if (!HasThrowableInInventory(out string denyReason))
+                    int requiredCount = Mathf.Max(1, skillConfig.throwCount);
+                    if (!HasThrowableInInventory(requiredCount, out string denyReason))
                     {
                         if (Debug.isDebugBuild)
                             Debug.LogWarning($"[SkillInputService/T-INP-09] slot={slot} skill='{skillId}' blocked: {denyReason}");
@@ -580,9 +581,10 @@ namespace ProjectC.Skills
         /// Используется вместо CheckWeaponMask для навыков с subtype=Throwables — 
         /// throwables не экипируются в слоты оружия (equipSlot=None), лежат в инвентаре.
         /// </summary>
-        private bool HasThrowableInInventory(out string denyReason)
+        private bool HasThrowableInInventory(int requiredCount, out string denyReason)
         {
             denyReason = "";
+            int foundCount = 0;
 
             // Client-side: prefer InventoryClientState snapshot (authoritative projection)
             var clientState = ProjectC.Items.Client.InventoryClientState.Instance;
@@ -593,37 +595,44 @@ namespace ProjectC.Skills
                 {
                     foreach (var item in snapshot.items)
                     {
-                        // Check via InventoryWorld item database for WeaponClass
                         var inv = ProjectC.Items.InventoryWorld.Instance;
                         if (inv != null)
                         {
                             var def = inv.GetItemDefinition(item.itemId);
                             if (def is WeaponItemData w && w.weaponClass == WeaponClass.Throwable)
-                                return true;
+                                foundCount += item.quantity;
                         }
                     }
                 }
             }
 
             // Fallback: try InventoryWorld directly (works in host mode)
-            var invDir = ProjectC.Items.InventoryWorld.Instance;
-            if (invDir != null && _ownerPlayer != null)
+            if (foundCount == 0)
             {
-                var data = invDir.GetOrCreate(_ownerPlayer.OwnerClientId);
-                foreach (ItemType type in System.Enum.GetValues(typeof(ItemType)))
+                var invDir = ProjectC.Items.InventoryWorld.Instance;
+                if (invDir != null && _ownerPlayer != null)
                 {
-                    var ids = data.GetIdsForType(type);
-                    if (ids == null) continue;
-                    foreach (int itemId in ids)
+                    var data = invDir.GetOrCreate(_ownerPlayer.OwnerClientId);
+                    foreach (ItemType type in System.Enum.GetValues(typeof(ItemType)))
                     {
-                        var def = invDir.GetItemDefinition(itemId);
-                        if (def is WeaponItemData w && w.weaponClass == WeaponClass.Throwable)
-                            return true;
+                        var ids = data.GetIdsForType(type);
+                        if (ids == null) continue;
+                        foreach (int itemId in ids)
+                        {
+                            var def = invDir.GetItemDefinition(itemId);
+                            if (def is WeaponItemData w && w.weaponClass == WeaponClass.Throwable)
+                                foundCount += invDir.CountOf(_ownerPlayer.OwnerClientId, itemId);
+                        }
                     }
                 }
             }
 
-            denyReason = "Нет метательных предметов в инвентаре (нужен Throwable)";
+            if (foundCount >= requiredCount)
+                return true;
+
+            denyReason = foundCount > 0
+                ? $"Нужно {requiredCount} метательных предметов, есть только {foundCount}"
+                : "Нет метательных предметов в инвентаре (нужен Throwable)";
             return false;
         }
 

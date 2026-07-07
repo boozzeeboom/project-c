@@ -40,12 +40,6 @@ namespace ProjectC.Combat
 
         // === Lifecycle ===
 
-        /// <summary>
-        /// T-RTC06 (v0.1.2): Second-chance recovery через 1 сек после OnNetworkSpawn.
-        /// Race condition: если Player.NetworkObject spawned'ится ПОЗЖЕ CombatServer,
-        /// push-down в OnNetworkSpawn его не ловит (Player ещё не в сцене FindObjectsByType
-        /// на момент OnNetworkSpawn). Invoke через 1 сек повторяет find — подхватывает.
-        /// </summary>
         public override void OnNetworkSpawn()
         {
             base.OnNetworkSpawn();
@@ -57,14 +51,8 @@ namespace ProjectC.Combat
             Instance = this;
             if (_debugLog) Debug.Log("[CombatServer] OnNetworkSpawn: Instance set, IsServer=True.");
 
-            // T-RTC06 (v0.1 fix): Push-down registration — подобрать всех PlayerAttacker/NpcAttacker/
-            // PlayerTarget/NpcTarget в сцене, которые уже NetworkSpawn'нулись, но не зарегистрированы
-            // (race condition: их OnNetworkSpawn мог сработать раньше нашего Instance = this).
-            // После этого — все combat entities синхронизированы.
             RecoverExistingEntities();
 
-            // T-RTC06 (v0.1.2): Second-chance через 1 сек — для Player, чей NetworkObject
-            // spawned'ится ПОЗЖЕ CombatServer (push-down в OnNetworkSpawn его не ловит).
             if (IsInvoking(nameof(RecoverExistingEntities)))
             {
                 CancelInvoke(nameof(RecoverExistingEntities));
@@ -78,20 +66,13 @@ namespace ProjectC.Combat
             if (Instance == this) Instance = null;
         }
 
-        /// <summary>
-        /// T-RTC06 (v0.1 fix): Подобрать уже-спавненные IAttacker/IDamageTarget в сцене
-        /// и зарегистрировать тех, кто ещё не зарегистрирован. Страховка от race condition.
-        /// v0.1.2 fix: убран skip `if (id == 0) continue;` для Player (0 = валидный clientId для host).
-        /// v0.1.2 fix: добавлен second-chance recovery через Start (для Player, чей NetworkObject
-        /// spawned'ится ПОЗЖЕ CombatServer — push-down в OnNetworkSpawn его не ловит).
-        /// </summary>
         private void RecoverExistingEntities()
         {
             var playerAttackers = FindObjectsByType<PlayerAttacker>();
             foreach (var pa in playerAttackers)
             {
                 if (pa == null) continue;
-                ulong id = pa.ClientId;  // 0 = host player, ВАЛИДНО
+                ulong id = pa.ClientId;
                 if (!_attackers.ContainsKey(id))
                 {
                     _attackers[id] = pa;
@@ -103,7 +84,7 @@ namespace ProjectC.Combat
             foreach (var pt in playerTargets)
             {
                 if (pt == null) continue;
-                ulong id = pt.ClientId;  // 0 = host player, ВАЛИДНО
+                ulong id = pt.ClientId;
                 if (!_targets.ContainsKey(id))
                 {
                     _targets[id] = pt;
@@ -116,7 +97,7 @@ namespace ProjectC.Combat
             {
                 if (na == null) continue;
                 ulong id = na.GetAttackerId();
-                if (id == 0) continue;  // для NPC id==0 = не инициализирован
+                if (id == 0) continue;
                 if (!_attackers.ContainsKey(id))
                 {
                     _attackers[id] = na;
@@ -129,7 +110,7 @@ namespace ProjectC.Combat
             {
                 if (nt == null) continue;
                 ulong id = nt.GetTargetId();
-                if (id == 0) continue;  // для NPC id==0 = не инициализирован
+                if (id == 0) continue;
                 if (!_targets.ContainsKey(id))
                 {
                     _targets[id] = nt;
@@ -142,8 +123,6 @@ namespace ProjectC.Combat
                 Debug.Log($"[CombatServer] RecoverExistingEntities done: attackers={_attackers.Count}, targets={_targets.Count}");
             }
         }
-
-        // === Registration (called by PlayerAttacker/NpcAttacker at spawn) ===
 
         public void RegisterAttacker(ulong id, IAttacker attacker)
         {
@@ -159,17 +138,8 @@ namespace ProjectC.Combat
             if (_debugLog) Debug.Log($"[CombatServer] Registered target id={id} ({target.GetType().Name})");
         }
 
-        public void UnregisterAttacker(ulong id)
-        {
-            _attackers.Remove(id);
-        }
-
-        public void UnregisterTarget(ulong id)
-        {
-            _targets.Remove(id);
-        }
-
-        // === Cooldown API (для IAttacker.CanAttack/SetCooldown) ===
+        public void UnregisterAttacker(ulong id) { _attackers.Remove(id); }
+        public void UnregisterTarget(ulong id) { _targets.Remove(id); }
 
         public bool IsCooldownReady(ulong attackerId, ulong sourceId, float now)
         {
@@ -181,8 +151,6 @@ namespace ProjectC.Combat
             _cooldowns[(attackerId, sourceId)] = until;
         }
 
-        // === Client → Server RPC ===
-
         [Rpc(SendTo.Server, InvokePermission = RpcInvokePermission.Owner)]
         public void RequestAttackRpc(ulong targetId, ulong sourceId, RpcParams rpcParams = default)
         {
@@ -191,14 +159,6 @@ namespace ProjectC.Combat
             ResolveAttack(attackerId, targetId, sourceId);
         }
 
-        // === T-INP-03: Skill-based AOE cast ===
-
-        /// <summary>
-        /// T-INP-03: RPC для active skill'а с AOE (или single-target) формулой.
-        /// Сервер резолвит SO через <see cref="SkillsWorld.GetSkillById(string)"/>, читает AOE параметры,
-        /// собирает IDamageTarget через <see cref="TargetingService.CollectAoeTargets"/>, для каждой считает
-        /// damage и применяет. Аналогично <see cref="ResolveAttack"/> но multi-target.
-        /// </summary>
         [Rpc(SendTo.Server, InvokePermission = RpcInvokePermission.Owner)]
         public void RequestSkillCastRpc(string skillId, ulong primaryTargetId, ulong sourceId, RpcParams rpcParams = default)
         {
@@ -207,7 +167,6 @@ namespace ProjectC.Combat
             ResolveSkillCast(attackerId, skillId, primaryTargetId, sourceId, null);
         }
 
-        // Phase T2: Thrown/grenade variant — accepts impact point for AOE origin.
         [Rpc(SendTo.Server, InvokePermission = RpcInvokePermission.Owner)]
         public void RequestSkillCastAtPointRpc(string skillId, Vector3 targetPoint, ulong sourceId, RpcParams rpcParams = default)
         {
@@ -215,8 +174,6 @@ namespace ProjectC.Combat
             if (!RateLimit(attackerId)) return;
             ResolveSkillCast(attackerId, skillId, 0UL, sourceId, targetPoint);
         }
-
-        // === Server-side damage flow ===
 
         public void ResolveAttack(ulong attackerId, ulong targetId, ulong sourceId)
         {
@@ -230,32 +187,15 @@ namespace ProjectC.Combat
                 if (_debugLog) Debug.LogWarning($"[CombatServer] ResolveAttack: target {targetId} not registered.");
                 return;
             }
-            if (!target.IsAlive())
-            {
-                SendErrorToClient(attackerId, "AlreadyDead");
-                return;
-            }
-            if (!attacker.IsAlive())
-            {
-                if (_debugLog) Debug.LogWarning($"[CombatServer] ResolveAttack: attacker {attackerId} not alive.");
-                return;
-            }
+            if (!target.IsAlive()) { SendErrorToClient(attackerId, "AlreadyDead"); return; }
+            if (!attacker.IsAlive()) return;
 
             var source = attacker.GetDamageSource(sourceId);
-            if (source == null)
-            {
-                SendErrorToClient(attackerId, "InvalidSource");
-                return;
-            }
+            if (source == null) { SendErrorToClient(attackerId, "InvalidSource"); return; }
 
             float now = Time.unscaledTime;
-            if (!attacker.CanAttack(source, now))
-            {
-                SendErrorToClient(attackerId, "OnCooldown");
-                return;
-            }
+            if (!attacker.CanAttack(source, now)) { SendErrorToClient(attackerId, "OnCooldown"); return; }
 
-            // Range policy: melee if range < 3м, else ranged
             IRangePolicy rangePolicy = source.GetRange() < 3.0f
                 ? (IRangePolicy)new MeleeRangePolicy()
                 : new RangedRangePolicy();
@@ -266,46 +206,31 @@ namespace ProjectC.Combat
                 return;
             }
 
-            // === Calculate damage (server rolls dice) ===
             var result = DamageCalculator.Calculate(attacker, target, source, rangePolicy);
-
-            // Set cooldown
             attacker.SetCooldown(source, now + source.GetCooldownSeconds());
 
-            // === Damage log (verify) ===
             if (_debugLog)
             {
                 if (result.isHit)
-                {
                     Debug.Log($"[DamageCalculator] attacker={attackerId} → target={targetId}, source={source.GetDisplayName()}: baseAttack={result.baseAttack}, hitChance={result.hitChance:F2}, isHit=True, isCrit={result.isCrit}, preDefense={result.preDefenseDamage}, defense={result.effectiveDefense}, final={result.finalDamage}, type={result.damageType}");
-                }
                 else
-                {
                     Debug.Log($"[DamageCalculator] attacker={attackerId} → target={targetId}, source={source.GetDisplayName()}: MISS (hitChance={result.hitChance:F2})");
-                }
             }
 
-            // === Apply damage (server-side authoritative) ===
             if (result.isHit) target.ApplyDamage(result, attackerId);
 
-            // === Broadcast (multicast) ===
             var dto = DamageResultDto.FromResult(result);
             var rpcParams = new RpcParams { Send = new RpcSendParams { Target = RpcTarget.Everyone } };
             AttackLandedTargetRpc(dto, rpcParams);
 
-            // === World events ===
             WorldEventBus.Publish(new AttackLandedEvent { PlayerId = attackerId, Result = result });
             if (result.isHit) WorldEventBus.Publish(new DamageDealtEvent { PlayerId = attackerId, Result = result });
-            if (result.isHit && !target.IsAlive()) WorldEventBus.Publish(new EntityKilledEvent { PlayerId = attackerId, Result = result });
-
-            // === Server → client notification for death (separate RPC, simpler) ===
             if (result.isHit && !target.IsAlive())
             {
+                WorldEventBus.Publish(new EntityKilledEvent { PlayerId = attackerId, Result = result });
                 EntityKilledTargetRpc(dto, rpcParams);
             }
         }
-
-        // === Server → Client TargetRPCs (multicast) ===
 
         [Rpc(SendTo.SpecifiedInParams)]
         public void AttackLandedTargetRpc(DamageResultDto dto, RpcParams rpcParams)
@@ -328,15 +253,10 @@ namespace ProjectC.Combat
             if (state != null) state.HandleError(code);
         }
 
-        // === Helpers ===
-
         private bool RateLimit(ulong clientId)
         {
             float now = Time.unscaledTime;
-            if (_nextAllowedTime.TryGetValue(clientId, out float next) && now < next)
-            {
-                return false;
-            }
+            if (_nextAllowedTime.TryGetValue(clientId, out float next) && now < next) return false;
             _nextAllowedTime[clientId] = now + RATE_LIMIT_INTERVAL;
             return true;
         }
@@ -348,12 +268,6 @@ namespace ProjectC.Combat
             if (_debugLog) Debug.Log($"[CombatServer] AttackError → client={clientId}: {code}");
         }
 
-        // === T-INP-03: Server-side skill cast resolution ===
-
-        /// <summary>
-        /// Резолвит skillId → SkillNodeConfig, собирает AOE цели, для каждой считает damage.
-        /// Поведение максимально близко к <see cref="ResolveAttack"/> — но без primary target и с multi-hit.
-        /// </summary>
         public void ResolveSkillCast(ulong attackerId, string skillId, ulong primaryTargetId, ulong sourceId, Vector3? targetPoint = null)
         {
             if (string.IsNullOrEmpty(skillId))
@@ -374,7 +288,6 @@ namespace ProjectC.Combat
                 return;
             }
 
-            // Resolve SkillNodeConfig server-side (SkillsWorld — authoritative source of truth)
             var skillsWorld = ProjectC.Skills.SkillsWorld.Instance;
             if (skillsWorld == null)
             {
@@ -395,6 +308,19 @@ namespace ProjectC.Combat
 
             var source = attacker.GetDamageSource(sourceId);
             
+            // R5: If source not found but sourceId looks like an equipped weapon (non-zero, non-thrown),
+            // try rebuilding PlayerAttacker sources — RebuildSources may have run before equipment was loaded.
+            if (source == null && sourceId != 0)
+            {
+                if (attacker is PlayerAttacker pa)
+                {
+                    pa.RebuildSources();
+                    source = attacker.GetDamageSource(sourceId);
+                    if (source != null && _debugLog)
+                        Debug.Log($"[CombatServer/R5] RebuildSources recovered: sourceId={sourceId} → {source.GetDisplayName()}");
+                }
+            }
+            
             // R4: for thrown skills, resolve damage source from inventory (throwables are not equipped)
             bool useTargetPoint = targetPoint.HasValue && targetPoint.Value.sqrMagnitude > 0.01f;
             if (useTargetPoint && (source == null || source.GetDisplayName() == "Unarmed"))
@@ -404,6 +330,7 @@ namespace ProjectC.Combat
             
             if (source == null)
             {
+                Debug.LogWarning($"[CombatServer] ResolveSkillCast: InvalidSource — sourceId={sourceId} not found in attacker's active sources (count={attacker.GetActiveDamageSources().Count}). skill='{skillId}'");
                 SendErrorToClient(attackerId, "InvalidSource");
                 return;
             }
@@ -415,40 +342,26 @@ namespace ProjectC.Combat
                 return;
             }
 
-            // R4: consume throwable(s) BEFORE target collection — гранаты потрачены в любом случае
+            // R4: consume throwable(s) BEFORE target collection
             if (useTargetPoint)
             {
                 int consumeCount = Mathf.Max(1, skillConfig.throwCount);
                 ConsumeThrowableFromInventory(attackerId, consumeCount);
             }
 
-            // === AOE origin + direction ===
-            // Phase T2: если targetPoint задан (grenade throw), AOE от точки броска.
-            // Иначе от атакующего (melee/self-cast).
             Vector3 aoeOrigin;
-            if (useTargetPoint)
-            {
-                aoeOrigin = targetPoint.Value;
-            }
-            else
-            {
-                // Prefer attacker's transform.forward (PlayerAttacker/NpcAttacker). Fallback на Vector3.forward.
-            aoeOrigin = attacker.GetPosition() + Vector3.up * 1.2f;  // chest height
-            }
+            if (useTargetPoint) { aoeOrigin = targetPoint.Value; }
+            else { aoeOrigin = attacker.GetPosition() + Vector3.up * 1.2f; }
+
             Vector3 forward = Vector3.forward;
-            if (attacker is MonoBehaviour mb && mb.transform != null)
-            {
-                forward = mb.transform.forward;
-            }
+            if (attacker is MonoBehaviour mb && mb.transform != null) { forward = mb.transform.forward; }
 
             Debug.Log($"[CombatServer] ResolveSkillCast: skill='{skillId}' aoeOrigin={aoeOrigin} aoeSize={skillConfig.aoeSize} useTargetPoint={useTargetPoint} targetsInRegistry={_targets.Count}");
 
-            // === Collect targets via AOE formula ===
             var results = new System.Collections.Generic.List<ProjectC.Combat.Core.IDamageTarget>();
             var hitPoints = new System.Collections.Generic.List<Vector3>();
 
-            // R5: For ranged single-target skills, source should be an equipped weapon (not throwable).
-            // Log the resolved source for debugging.
+            // R5: For ranged single-target skills, log the resolved source for debugging.
             bool isRangedSingleTarget = skillConfig.discipline == ProjectC.Skills.CombatDiscipline.Ranged
                 && skillConfig.subtype != ProjectC.Skills.CombatSubtype.Throwables
                 && skillConfig.aoeFormula == ProjectC.Skills.AoeFormula.SingleTarget;
@@ -458,7 +371,6 @@ namespace ProjectC.Combat
                 Debug.Log($"[CombatServer/R5] Ranged single-target: skill='{skillId}' sourceId={sourceId} source={source?.GetDisplayName() ?? "NULL"} sourceType={source?.GetDamageType().ToString() ?? "N/A"} sourceRange={source?.GetRange() ?? 0f:F1}m");
             }
 
-            // SingleTarget → use legacy raycast against primaryTargetId's position OR TryGetTarget
             if (skillConfig.aoeFormula == ProjectC.Skills.AoeFormula.SingleTarget)
             {
                 if (primaryTargetId != 0 && _targets.TryGetValue(primaryTargetId, out var primary))
@@ -482,11 +394,7 @@ namespace ProjectC.Combat
             }
             else
             {
-                // REFACTOR 2026-07-26: registry-based AOE вместо Physics.OverlapSphere.
-                // CharacterController не наследует Collider и невидим для OverlapSphere.
-                // Поэтому собираем цели из _targets dict (уже зарегистрированы через RegisterTarget).
-                CollectAoeTargetsFromRegistry(
-                    aoeOrigin, forward,
+                CollectAoeTargetsFromRegistry(aoeOrigin, forward,
                     skillConfig.aoeFormula, skillConfig.aoeSize, skillConfig.aoeConeAngleDeg, skillConfig.aoeWidth,
                     results, hitPoints);
             }
@@ -498,10 +406,8 @@ namespace ProjectC.Combat
                 return;
             }
 
-            // === Set cooldown ONCE (per cast, не per hit) ===
             attacker.SetCooldown(source, now + source.GetCooldownSeconds());
 
-            // === Apply damage to each ===
             int hitsLanded = 0;
             for (int i = 0; i < results.Count; i++)
             {
@@ -509,9 +415,6 @@ namespace ProjectC.Combat
                 if (target == null) continue;
                 if (!target.IsAlive()) continue;
 
-                // Range policy per target.
-                // Phase T2: для thrown навыков (useTargetPoint) пропускаем attacker-distance check —
-                // цели уже отфильтрованы AOE-радиусом от targetPoint.
                 if (!useTargetPoint)
                 {
                     IRangePolicy rangePolicy = source.GetRange() < 3.0f
@@ -519,13 +422,9 @@ namespace ProjectC.Combat
                         : new RangedRangePolicy();
                     if (!rangePolicy.IsInRange(attacker, target, source)) continue;
                 }
-                // T-SKILL-REF-01: для thrown skills (useTargetPoint) — auto-hit (AOE),
-                // иначе обычный ranged/melee hit roll.
+
                 IRangePolicy rangePolicyForCalc;
-                if (useTargetPoint)
-                {
-                    rangePolicyForCalc = new AoeRangePolicy();
-                }
+                if (useTargetPoint) { rangePolicyForCalc = new AoeRangePolicy(); }
                 else
                 {
                     rangePolicyForCalc = source.GetRange() < 3.0f
@@ -544,12 +443,10 @@ namespace ProjectC.Combat
                     Debug.Log($"[CombatServer] AOE damage applied: target={target.GetDisplayName()} hpAfter={target.GetCurrentHp()}/{target.GetMaxHp()}");
                 }
 
-                // Broadcast per-target
                 var dto = DamageResultDto.FromResult(result);
                 var rpcParams = new RpcParams { Send = new RpcSendParams { Target = RpcTarget.Everyone } };
                 AttackLandedTargetRpc(dto, rpcParams);
 
-                // Events per-target
                 WorldEventBus.Publish(new AttackLandedEvent { PlayerId = attackerId, Result = result });
                 if (result.isHit) WorldEventBus.Publish(new DamageDealtEvent { PlayerId = attackerId, Result = result });
                 if (result.isHit && !target.IsAlive())
@@ -565,11 +462,6 @@ namespace ProjectC.Combat
             }
         }
 
-        /// <summary>
-        /// REFACTOR 2026-07-26: Registry-based AOE target collection.
-        /// Использует _targets dictionary вместо Physics.OverlapSphere,
-        /// потому что CharacterController не наследует Collider и невидим для OverlapSphere.
-        /// </summary>
         private void CollectAoeTargetsFromRegistry(
             Vector3 origin, Vector3 forward,
             ProjectC.Skills.AoeFormula formula, float size, float coneAngleDeg, float width,
@@ -647,10 +539,6 @@ namespace ProjectC.Combat
             return a + t * ab;
         }
 
-        /// <summary>
-        /// R4: Find a Throwable weapon from attacker's inventory and return WeaponDamageSource.
-        /// Returns null if no throwable found.
-        /// </summary>
         private IDamageSource ResolveThrowableSourceFromInventory(ulong attackerId)
         {
             var inv = ProjectC.Items.InventoryWorld.Instance;
@@ -675,11 +563,6 @@ namespace ProjectC.Combat
             return null;
         }
 
-        /// <summary>
-        /// R4: Remove <paramref name="count"/> throwable items from attacker's inventory.
-        /// Consumes from the first found throwable stack, up to available quantity.
-        /// If one stack doesn't have enough, continues to next stacks.
-        /// </summary>
         private void ConsumeThrowableFromInventory(ulong attackerId, int count)
         {
             var inv = ProjectC.Items.InventoryWorld.Instance;
@@ -705,7 +588,6 @@ namespace ProjectC.Combat
                         remaining -= toRemove;
                         if (remaining <= 0)
                         {
-                            // Push updated inventory snapshot to client
                             if (ProjectC.Items.Network.InventoryServer.Instance != null)
                                 ProjectC.Items.Network.InventoryServer.Instance.PushSnapshot(attackerId);
                             return;
@@ -713,7 +595,6 @@ namespace ProjectC.Combat
                     }
                 }
             }
-            // Push snapshot even if partial consumption
             if (remaining < count && ProjectC.Items.Network.InventoryServer.Instance != null)
                 ProjectC.Items.Network.InventoryServer.Instance.PushSnapshot(attackerId);
             if (_debugLog && remaining > 0)

@@ -462,11 +462,12 @@ namespace ProjectC.Combat
             }
             else
             {
-                ProjectC.Combat.Core.TargetingService.CollectAoeTargets(
+                // REFACTOR 2026-07-26: registry-based AOE вместо Physics.OverlapSphere.
+                // CharacterController не наследует Collider и невидим для OverlapSphere.
+                // Поэтому собираем цели из _targets dict (уже зарегистрированы через RegisterTarget).
+                CollectAoeTargetsFromRegistry(
                     aoeOrigin, forward,
                     skillConfig.aoeFormula, skillConfig.aoeSize, skillConfig.aoeConeAngleDeg, skillConfig.aoeWidth,
-                    ProjectC.Combat.Core.TargetingService.DefaultMaxDistance,
-                    ProjectC.Combat.Core.TargetingService.DefaultMask,
                     results, hitPoints);
             }
 
@@ -542,6 +543,83 @@ namespace ProjectC.Combat
             {
                 Debug.Log($"[CombatServer] ResolveSkillCast: skill='{skillId}' formula={skillConfig.aoeFormula} targets={results.Count} hits={hitsLanded} attacker={attackerId}");
             }
+        }
+
+        /// <summary>
+        /// REFACTOR 2026-07-26: Registry-based AOE target collection.
+        /// Использует _targets dictionary вместо Physics.OverlapSphere,
+        /// потому что CharacterController не наследует Collider и невидим для OverlapSphere.
+        /// </summary>
+        private void CollectAoeTargetsFromRegistry(
+            Vector3 origin, Vector3 forward,
+            ProjectC.Skills.AoeFormula formula, float size, float coneAngleDeg, float width,
+            System.Collections.Generic.List<ProjectC.Combat.Core.IDamageTarget> outResults,
+            System.Collections.Generic.List<Vector3> outHitPoints)
+        {
+            var seen = new HashSet<ulong>();
+            foreach (var kvp in _targets)
+            {
+                var target = kvp.Value;
+                if (target == null) continue;
+                if (!target.IsAlive()) continue;
+
+                Vector3 targetPos = target.GetPosition();
+                Vector3 toTarget = targetPos - origin;
+                float dist = toTarget.magnitude;
+
+                bool inAoe = false;
+                switch (formula)
+                {
+                    case ProjectC.Skills.AoeFormula.Sphere:
+                        inAoe = dist <= size;
+                        break;
+                    case ProjectC.Skills.AoeFormula.Cone:
+                        if (dist <= size && dist > 0.001f)
+                        {
+                            float dot = Vector3.Dot(toTarget.normalized, forward);
+                            float cosHalfAngle = Mathf.Cos(coneAngleDeg * 0.5f * Mathf.Deg2Rad);
+                            inAoe = dot >= cosHalfAngle;
+                        }
+                        break;
+                    case ProjectC.Skills.AoeFormula.Line:
+                    {
+                        float halfW = Mathf.Max(0.1f, width * 0.5f);
+                        Vector3 lineEnd = origin + forward * size;
+                        Vector3 closest = ClosestPointOnSegment(origin, lineEnd, targetPos);
+                        float lateralDist = Vector3.Distance(targetPos, closest);
+                        inAoe = lateralDist <= halfW && dist <= size + halfW;
+                        break;
+                    }
+                    case ProjectC.Skills.AoeFormula.Box:
+                    {
+                        float halfW = Mathf.Max(0.1f, width * 0.5f);
+                        float halfL = size * 0.5f;
+                        Vector3 center = origin + forward * halfL;
+                        // Transform to local box space
+                        Vector3 local = Quaternion.Inverse(Quaternion.LookRotation(forward)) * (targetPos - center);
+                        inAoe = Mathf.Abs(local.x) <= halfW && Mathf.Abs(local.y) <= halfW && Mathf.Abs(local.z) <= halfL;
+                        break;
+                    }
+                }
+
+                if (!inAoe) continue;
+
+                ulong id = target.GetTargetId();
+                if (!seen.Add(id)) continue;
+
+                outResults.Add(target);
+                outHitPoints.Add(targetPos);
+            }
+
+            if (_debugLog) Debug.Log($"[CombatServer] CollectAoeTargetsFromRegistry: formula={formula} size={size} found={outResults.Count}");
+        }
+
+        private static Vector3 ClosestPointOnSegment(Vector3 a, Vector3 b, Vector3 point)
+        {
+            Vector3 ab = b - a;
+            float t = Vector3.Dot(point - a, ab) / ab.sqrMagnitude;
+            t = Mathf.Clamp01(t);
+            return a + t * ab;
         }
 
         /// <summary>

@@ -671,6 +671,12 @@ namespace ProjectC.Combat
                         var result = inv.RemoveItems(attackerId, itemId, def.itemType, 1);
                         if (_debugLog)
                             Debug.Log($"[CombatServer] ConsumeThrowableFromInventory: removed {def.itemName} (id={itemId}) code={result.code} msg={result.message}");
+
+                        // Push updated inventory snapshot to client (so UI refreshes immediately)
+                        if (result.IsSuccess && ProjectC.Items.Network.InventoryServer.Instance != null)
+                        {
+                            ProjectC.Items.Network.InventoryServer.Instance.PushSnapshot(attackerId);
+                        }
                         return;
                     }
                 }

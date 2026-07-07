@@ -26,11 +26,12 @@ namespace ProjectC.Items.Dto
     [Serializable]
     public struct InventoryItemDto : INetworkSerializable, IEquatable<InventoryItemDto>
     {
-        public int  itemId;
-        public byte type;        // (byte)ItemType
-        public int  quantity;
-        public int  slotIndex;
-        public int  instanceId;  // T-KEY-02: 0 = non-instance, >0 = KeyRodInstance.instanceId
+        public int    itemId;
+        public byte   type;        // (byte)ItemType
+        public int    quantity;
+        public int    slotIndex;
+        public int    instanceId;  // T-KEY-02: 0 = non-instance, >0 = KeyRodInstance.instanceId
+        public string itemName;    // R2-fix: имя предмета прямо в DTO (не зависит от клиентского кэша)
 
         public void NetworkSerialize<T>(BufferSerializer<T> serializer) where T : IReaderWriter
         {
@@ -39,6 +40,7 @@ namespace ProjectC.Items.Dto
             serializer.SerializeValue(ref quantity);
             serializer.SerializeValue(ref slotIndex);
             serializer.SerializeValue(ref instanceId);
+            serializer.SerializeValue(ref itemName);
         }
 
         public bool Equals(InventoryItemDto other)
@@ -47,7 +49,8 @@ namespace ProjectC.Items.Dto
                 && type == other.type
                 && quantity == other.quantity
                 && slotIndex == other.slotIndex
-                && instanceId == other.instanceId;
+                && instanceId == other.instanceId
+                && itemName == other.itemName;
         }
 
         public override bool Equals(object obj) => obj is InventoryItemDto o && Equals(o);
@@ -61,6 +64,7 @@ namespace ProjectC.Items.Dto
                 hash = hash * 31 + quantity;
                 hash = hash * 31 + slotIndex;
                 hash = hash * 31 + instanceId;
+                hash = hash * 31 + (itemName?.GetHashCode() ?? 0);
                 return hash;
             }
         }

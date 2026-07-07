@@ -793,12 +793,17 @@ namespace ProjectC.Items
                     if (ids == null) { idsNull++; continue; }
                     foreach (int id in ids)
                     {
+                        // R2-fix: включаем itemName в DTO — клиент не должен гадать по кэшу
+                        string name = null;
+                        if (_itemDatabase.TryGetValue(id, out var def))
+                            name = def.itemName;
                         items.Add(new InventoryItemDto
                         {
                             itemId    = id,
                             type      = (byte)type,
                             quantity  = 1,
                             slotIndex = slotIndex++,
+                            itemName  = name ?? $"Item#{id}",
                         });
                     }
                 }

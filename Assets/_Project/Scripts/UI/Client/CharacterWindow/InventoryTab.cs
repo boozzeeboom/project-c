@@ -382,12 +382,18 @@ namespace ProjectC.UI.Client
             foreach (var kvp in groups)
             {
                 var first = kvp.Value.first;
+                // R2-fix: itemName идёт прямо в DTO — не нужен GetItemDefinition для имени
+                string baseName = !string.IsNullOrEmpty(first.itemName) ? first.itemName : $"Item#{first.itemId}";
+                string displayName = (ItemType)first.type == ItemType.Key
+                    ? ResolveKeyItemNameForType(baseName, first)
+                    : baseName;
+                // Иконка — из кэша (опционально, не критично для отображения)
                 ItemData def = invState.GetItemDefinition(first.itemId);
                 _inventoryCache.Add(new InventoryListItem
                 {
                     itemId = first.itemId.ToString(),
                     instanceId = first.instanceId,
-                    displayName = ResolveKeyItemDisplayName(def, first),
+                    displayName = displayName,
                     type = (ItemType)first.type,
                     quantity = kvp.Value.totalQty,
                     icon = def != null ? def.icon : null,
@@ -439,6 +445,19 @@ namespace ProjectC.UI.Client
             string persistedName = TryGetShipNameByItemId(first.itemId);
             if (persistedName != null) return $"🚀 {persistedName}";
 
+            return baseName;
+        }
+
+        /// <summary>R2-fix: упрощённая версия — baseName уже из DTO, не нужен ItemData.</summary>
+        private string ResolveKeyItemNameForType(string baseName, InventoryItemDto first)
+        {
+            if ((ItemType)first.type != ItemType.Key) return baseName;
+            string telemetryName = TryGetShipNameFromTelemetry(first.instanceId);
+            if (telemetryName != null) return $"🚀 {telemetryName}";
+            string hostName = TryGetShipNameFromKeyWorld(first.instanceId);
+            if (hostName != null) return $"🚀 {hostName}";
+            string persistedName = TryGetShipNameByItemId(first.itemId);
+            if (persistedName != null) return $"🚀 {persistedName}";
             return baseName;
         }
 

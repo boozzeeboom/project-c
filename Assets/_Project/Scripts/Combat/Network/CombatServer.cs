@@ -434,6 +434,8 @@ namespace ProjectC.Combat
                 forward = mb.transform.forward;
             }
 
+            Debug.Log($"[CombatServer] ResolveSkillCast: skill='{skillId}' aoeOrigin={aoeOrigin} aoeSize={skillConfig.aoeSize} useTargetPoint={useTargetPoint} targetsInRegistry={_targets.Count}");
+
             // === Collect targets via AOE formula ===
             var results = new System.Collections.Generic.List<ProjectC.Combat.Core.IDamageTarget>();
             var hitPoints = new System.Collections.Generic.List<Vector3>();
@@ -473,7 +475,7 @@ namespace ProjectC.Combat
 
             if (results.Count == 0)
             {
-                if (_debugLog) Debug.Log($"[CombatServer] ResolveSkillCast: no targets in AOE for skill '{skillId}'.");
+                Debug.LogWarning($"[CombatServer] ResolveSkillCast: NO targets in AOE! skill='{skillId}' origin={aoeOrigin} size={skillConfig.aoeSize} registryTargets={_targets.Count}");
                 return;
             }
 
@@ -604,7 +606,7 @@ namespace ProjectC.Combat
                     }
                 }
 
-                if (_debugLog) Debug.Log($"[CombatServer] AOE check: target='{target.GetDisplayName()}' pos={targetPos} dist={dist:F1}m inAoe={inAoe} (origin={origin}, size={size})");
+                Debug.Log($"[CombatServer] AOE check: target='{target.GetDisplayName()}' pos={targetPos} dist={dist:F1}m inAoe={inAoe} (origin={origin}, size={size})");
 
                 if (!inAoe) continue;
                 inRangeCount++;
@@ -616,7 +618,7 @@ namespace ProjectC.Combat
                 outHitPoints.Add(targetPos);
             }
 
-            if (_debugLog) Debug.Log($"[CombatServer] CollectAoeTargetsFromRegistry: formula={formula} size={size} totalTargets={totalChecked} alive={aliveCount} inRange={inRangeCount} uniqueFound={outResults.Count}");
+            Debug.Log($"[CombatServer] CollectAoeTargetsFromRegistry: formula={formula} size={size} totalTargets={totalChecked} alive={aliveCount} inRange={inRangeCount} uniqueFound={outResults.Count}");
         }
 
         private static Vector3 ClosestPointOnSegment(Vector3 a, Vector3 b, Vector3 point)

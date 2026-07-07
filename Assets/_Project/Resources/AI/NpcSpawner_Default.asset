@@ -16,9 +16,9 @@ MonoBehaviour:
   spawnRadiusMin: 5
   spawnRadiusMax: 20
   activationRadius: 0
-  maxAliveCount: 5
-  spawnCheckInterval: 4
-  spawnChance: 0.5
+  maxAliveCount: 50
+  spawnCheckInterval: 0.5
+  spawnChance: 1
   maxSpawnsPerPlayerPerMinute: 8
   groundMask:
     serializedVersion: 2

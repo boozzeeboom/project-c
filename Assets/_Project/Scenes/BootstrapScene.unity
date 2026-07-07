@@ -13959,7 +13959,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::ProjectC.Combat.CombatServer
   ShowTopMostFoldoutHeaderGroup: 1
-  _debugLog: 0
+  _debugLog: 1
 --- !u!1 &1109248175
 GameObject:
   m_ObjectHideFlags: 0

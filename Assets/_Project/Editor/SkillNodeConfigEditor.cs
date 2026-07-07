@@ -1,15 +1,20 @@
-// Project C: Skill System Refactor — Phase C
+// Project C: Skill System Refactor — Phase C (v2)
 // SkillNodeConfigEditor: Custom Editor с адаптивными секциями инспектора.
 //
-// Правила видимости полей:
-//   - Всегда: Identity (skillId, displayName, description, icon)
-//   - Всегда: Category, Discipline
-//   - category == Combat → Subtype, requiredWeaponMask
-//   - Всегда: Prerequisites, Effects, XP Cost, Tier Requirements, UI Layout
-//   - Всегда: isActive
-//   - isActive == true → AOE Formula, AOE Size, Cone Angle, Width, Attack Clip, Debug Viz
-//   - subtype == Throwables → throwRange, throwScatter, throwCount
-//   - subtype == Traps → (будущие поля — пока placeholder)
+// Правила:
+//   Social (category=Social):
+//     - Только: Identity, Prerequisites, Effects, XP Cost, Tier Req, UI Layout
+//     - НЕТ: discipline, subtype, weaponMask, isActive, AOE, Animation, throw/trap
+//   Combat (category=Combat):
+//     - Дисциплина: dropdown из 4 значений (Melee/Ranged/Defense/Placed)
+//     - Подтип: фильтрованный dropdown по дисциплине
+//       - Melee → None
+//       - Ranged → None, Throwables
+//       - Defense → None
+//       - Placed → None, Traps
+//     - isActive → AOE/Animation/Debug (только active)
+//     - subtype=Throwables → throwRange/throwScatter/throwCount
+//     - subtype=Traps → placeholder
 
 #if UNITY_EDITOR
 using UnityEditor;
@@ -70,10 +75,25 @@ namespace ProjectC.Editor.Skills
         private SerializedProperty _throwScatter;
         private SerializedProperty _throwCount;
 
-        // Cached enum values for conditional visibility
+        // Cached state
         private SkillCategory _cachedCategory;
+        private CombatDiscipline _cachedDiscipline;
         private CombatSubtype _cachedSubtype;
         private bool _cachedIsActive;
+
+        // Discipline dropdown: только 4 боевых значения
+        private static readonly string[] DisciplineNames = { "Melee", "Ranged", "Defense", "Placed" };
+        private static readonly int[] DisciplineValues = { (int)CombatDiscipline.Melee, (int)CombatDiscipline.Ranged, (int)CombatDiscipline.Defense, (int)CombatDiscipline.Placed };
+
+        // Subtype options per discipline
+        private static readonly string[] SubtypesNone = { "None" };
+        private static readonly int[] SubtypeValuesNone = { (int)CombatSubtype.None };
+
+        private static readonly string[] SubtypesRanged = { "None", "Throwables" };
+        private static readonly int[] SubtypeValuesRanged = { (int)CombatSubtype.None, (int)CombatSubtype.Throwables };
+
+        private static readonly string[] SubtypesPlaced = { "None", "Traps" };
+        private static readonly int[] SubtypeValuesPlaced = { (int)CombatSubtype.None, (int)CombatSubtype.Traps };
 
         private void OnEnable()
         {
@@ -120,10 +140,12 @@ namespace ProjectC.Editor.Skills
         {
             serializedObject.Update();
 
-            // Refresh cached values
             _cachedCategory = (SkillCategory)_category.enumValueIndex;
+            _cachedDiscipline = (CombatDiscipline)_discipline.enumValueIndex;
             _cachedSubtype = (CombatSubtype)_subtype.enumValueIndex;
             _cachedIsActive = _isActive.boolValue;
+
+            bool isCombat = _cachedCategory == SkillCategory.Combat;
 
             // ===== Identity (always) =====
             EditorGUILayout.LabelField("Identity", EditorStyles.boldLabel);
@@ -133,17 +155,97 @@ namespace ProjectC.Editor.Skills
             EditorGUILayout.PropertyField(_icon);
             EditorGUILayout.Space();
 
-            // ===== Category + Discipline (always) =====
-            EditorGUILayout.LabelField("Category & Discipline", EditorStyles.boldLabel);
+            // ===== Category (always) =====
             EditorGUILayout.PropertyField(_category);
-            EditorGUILayout.PropertyField(_discipline);
 
-            // Subtype + Weapon Mask (only for Combat)
-            if (_cachedCategory == SkillCategory.Combat)
+            // ===== Combat section (only for Combat) =====
+            if (isCombat)
             {
-                EditorGUILayout.PropertyField(_subtype);
+                EditorGUILayout.Space();
+                EditorGUILayout.LabelField("Combat Discipline", EditorStyles.boldLabel);
+
+                // Discipline: custom dropdown — только 4 значения
+                int discIdx = System.Array.IndexOf(DisciplineValues, (int)_cachedDiscipline);
+                if (discIdx < 0) discIdx = 0;
+                int newDiscIdx = EditorGUILayout.Popup("Discipline", discIdx, DisciplineNames);
+                if (newDiscIdx != discIdx)
+                {
+                    _discipline.enumValueIndex = DisciplineValues[newDiscIdx];
+                    // При смене дисциплины — сбрасываем subtype на None (если текущий не подходит)
+                    _cachedDiscipline = (CombatDiscipline)DisciplineValues[newDiscIdx];
+                }
+
+                // Subtype: filtered per discipline
+                string[] subtypeNames;
+                int[] subtypeVals;
+                GetSubtypeOptions(_cachedDiscipline, out subtypeNames, out subtypeVals);
+
+                int subIdx = System.Array.IndexOf(subtypeVals, (int)_cachedSubtype);
+                if (subIdx < 0) subIdx = 0;
+                int newSubIdx = EditorGUILayout.Popup("Subtype", subIdx, subtypeNames);
+                if (newSubIdx != subIdx)
+                {
+                    _subtype.enumValueIndex = subtypeVals[newSubIdx];
+                    _cachedSubtype = (CombatSubtype)subtypeVals[newSubIdx];
+                }
+
+                // Weapon mask
                 EditorGUILayout.PropertyField(_requiredWeaponMask);
+
+                EditorGUILayout.Space();
+
+                // ===== Active / Passive =====
+                EditorGUILayout.LabelField("Active vs Passive", EditorStyles.boldLabel);
+                EditorGUILayout.PropertyField(_isActive);
+
+                // AOE + Animation (only for Active skills)
+                if (_isActive.boolValue)
+                {
+                    EditorGUILayout.Space();
+                    EditorGUILayout.LabelField("Animation", EditorStyles.boldLabel);
+                    EditorGUILayout.PropertyField(_attackClip);
+                    EditorGUILayout.PropertyField(_attackClipSpeed);
+
+                    EditorGUILayout.Space();
+                    EditorGUILayout.LabelField("AOE Formula", EditorStyles.boldLabel);
+                    EditorGUILayout.PropertyField(_aoeFormula);
+
+                    var aoe = (AoeFormula)_aoeFormula.enumValueIndex;
+                    if (aoe != AoeFormula.SingleTarget)
+                    {
+                        EditorGUILayout.PropertyField(_aoeSize);
+                        if (aoe == AoeFormula.Cone)
+                            EditorGUILayout.PropertyField(_aoeConeAngleDeg);
+                        if (aoe == AoeFormula.Line || aoe == AoeFormula.Box)
+                            EditorGUILayout.PropertyField(_aoeWidth);
+                    }
+
+                    EditorGUILayout.Space();
+                    EditorGUILayout.LabelField("Debug", EditorStyles.boldLabel);
+                    EditorGUILayout.PropertyField(_debugVisualizeAoe);
+                    if (_debugVisualizeAoe.boolValue)
+                        EditorGUILayout.PropertyField(_debugVisualizeDuration);
+                }
+
+                // ===== Type-specific settings =====
+                if (_cachedSubtype == CombatSubtype.Throwables)
+                {
+                    EditorGUILayout.Space();
+                    EditorGUILayout.LabelField("Throwables Settings", EditorStyles.boldLabel);
+                    EditorGUILayout.HelpBox("Дальность, разброс (D6) и кол-во предметов за бросок.", MessageType.Info);
+                    EditorGUILayout.PropertyField(_throwRange);
+                    EditorGUILayout.PropertyField(_throwScatter);
+                    EditorGUILayout.PropertyField(_throwCount);
+                }
+
+                if (_cachedSubtype == CombatSubtype.Traps)
+                {
+                    EditorGUILayout.Space();
+                    EditorGUILayout.LabelField("Traps Settings", EditorStyles.boldLabel);
+                    EditorGUILayout.HelpBox("Подтип Traps. Поля для ловушек — в будущих итерациях.", MessageType.Info);
+                }
             }
+
             EditorGUILayout.Space();
 
             // ===== Prerequisites & Effects (always) =====
@@ -164,75 +266,27 @@ namespace ProjectC.Editor.Skills
             EditorGUILayout.LabelField("UI Layout", EditorStyles.boldLabel);
             EditorGUILayout.PropertyField(_treeX);
             EditorGUILayout.PropertyField(_treeY);
-            EditorGUILayout.Space();
-
-            // ===== Active vs Passive (always) =====
-            EditorGUILayout.LabelField("Active vs Passive", EditorStyles.boldLabel);
-            EditorGUILayout.PropertyField(_isActive);
-
-            // AOE + Animation (only for Active skills)
-            if (_cachedIsActive)
-            {
-                EditorGUILayout.Space();
-                EditorGUILayout.LabelField("Animation", EditorStyles.boldLabel);
-                EditorGUILayout.PropertyField(_attackClip);
-                EditorGUILayout.PropertyField(_attackClipSpeed);
-
-                EditorGUILayout.Space();
-                EditorGUILayout.LabelField("AOE Formula", EditorStyles.boldLabel);
-                EditorGUILayout.PropertyField(_aoeFormula);
-
-                // Show context-dependent AOE fields
-                var aoe = (AoeFormula)_aoeFormula.enumValueIndex;
-                if (aoe != AoeFormula.SingleTarget)
-                {
-                    EditorGUILayout.PropertyField(_aoeSize);
-
-                    if (aoe == AoeFormula.Cone)
-                    {
-                        EditorGUILayout.PropertyField(_aoeConeAngleDeg);
-                    }
-
-                    if (aoe == AoeFormula.Line || aoe == AoeFormula.Box)
-                    {
-                        EditorGUILayout.PropertyField(_aoeWidth);
-                    }
-                }
-
-                EditorGUILayout.Space();
-                EditorGUILayout.LabelField("Debug", EditorStyles.boldLabel);
-                EditorGUILayout.PropertyField(_debugVisualizeAoe);
-                if (_debugVisualizeAoe.boolValue)
-                {
-                    EditorGUILayout.PropertyField(_debugVisualizeDuration);
-                }
-            }
-
-            // ===== Throwables-specific (subtype == Throwables) =====
-            if (_cachedSubtype == CombatSubtype.Throwables)
-            {
-                EditorGUILayout.Space();
-                EditorGUILayout.LabelField("Throwables Settings", EditorStyles.boldLabel);
-                EditorGUILayout.HelpBox(
-                    "Эти поля активны только для навыков с подтипом Throwables.\n" +
-                    "Дальность, разброс (D6) и кол-во предметов за бросок.",
-                    MessageType.Info);
-                EditorGUILayout.PropertyField(_throwRange);
-                EditorGUILayout.PropertyField(_throwScatter);
-                EditorGUILayout.PropertyField(_throwCount);
-            }
-
-            // ===== Traps-specific (subtype == Traps) — placeholder =====
-            if (_cachedSubtype == CombatSubtype.Traps)
-            {
-                EditorGUILayout.Space();
-                EditorGUILayout.LabelField("Traps Settings (PLACEHOLDER)", EditorStyles.boldLabel);
-                EditorGUILayout.HelpBox(
-                    "Подтип Traps — пример. Поля для ловушек будут добавлены в будущих итерациях.",
-                    MessageType.Info);
-            }
 
             serializedObject.ApplyModifiedProperties();
+        }
+
+        private static void GetSubtypeOptions(CombatDiscipline disc, out string[] names, out int[] values)
+        {
+            switch (disc)
+            {
+                case CombatDiscipline.Ranged:
+                    names = SubtypesRanged;
+                    values = SubtypeValuesRanged;
+                    break;
+                case CombatDiscipline.Placed:
+                    names = SubtypesPlaced;
+                    values = SubtypeValuesPlaced;
+                    break;
+                default: // Melee, Defense
+                    names = SubtypesNone;
+                    values = SubtypeValuesNone;
+                    break;
+            }
         }
     }
 }

@@ -427,3 +427,4 @@ Color arcColor = skillConfig.subtype == CombatSubtype.Throwables
 |------|-------|-----------|
 | 2026-07-26 | Aura | Первичный план на основе анализа кода и документации |
 | 2026-07-26 | Aura | Фаза A+B: enum refactor + миграция 29 .asset. Коммит `f6cfac5` |
+| 2026-07-26 | Aura | Фаза C+D+E: CustomEditor, фильтры, runtime. Коммит `b63cb35` |

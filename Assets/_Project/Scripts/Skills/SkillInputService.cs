@@ -384,14 +384,24 @@ namespace ProjectC.Skills
 
             // 8) RPC на сервер.
             // R4: Thrown skills (Sphere/Box AOE) → character-forward raycast → ThrowArcVisual → RequestSkillCastAtPointRpc.
+            // R5: Ranged projectile skills (bows/crossbows/guns, SingleTarget) → RequestSkillCastRpc with equipped weapon sourceId.
             // Melee AOE skills (Cone/Line) → RequestSkillCastRpc (AOE at attacker).
-            // Single-target → RequestAttackRpc.
+            // Single-target unarmed/melee → RequestAttackRpc.
             try
             {
                 // REFACTOR 2026-07-26: thrown detection by explicit subtype, not heuristic
                 bool isThrownAoe = skillConfig != null
                     && skillConfig.subtype == ProjectC.Skills.CombatSubtype.Throwables
                     && skillConfig.isActive;
+
+                // R5: Ranged projectile detection (bows, crossbows, pneumatic, mesium rifles)
+                // Routes through ResolveSkillCast → attacker.GetDamageSource(sourceId) finds equipped weapon.
+                bool isRangedProjectile = skillConfig != null
+                    && skillConfig.discipline == CombatDiscipline.Ranged
+                    && skillConfig.subtype != CombatSubtype.Throwables
+                    && skillConfig.aoeFormula == ProjectC.Skills.AoeFormula.SingleTarget
+                    && skillConfig.isActive
+                    && hasBind;
 
                 if (isThrownAoe)
                 {
@@ -439,6 +449,17 @@ namespace ProjectC.Skills
                         // R4: server resolves throwable damage source from inventory
                         server.RequestSkillCastAtPointRpc(skillId, targetPoint, 0UL);
                     }
+                }
+                else if (isRangedProjectile)
+                {
+                    // R5: Ranged projectile (bow/crossbow/gun) — resolve equipped weapon sourceId
+                    ulong weaponSourceId = ResolveEquippedWeaponSourceId();
+                    if (Debug.isDebugBuild)
+                    {
+                        Debug.Log($"[SkillInputService/R5] Ranged projectile: skill='{skillId}' target={targetId} weaponSourceId={weaponSourceId} — routing to RequestSkillCastRpc");
+                    }
+                    // Route through ResolveSkillCast → attacker.GetDamageSource(weaponSourceId) finds WeaponDamageSource
+                    server.RequestSkillCastRpc(skillId, targetId, weaponSourceId);
                 }
                 else if (skillConfig != null && skillConfig.aoeFormula != ProjectC.Skills.AoeFormula.SingleTarget)
                 {
@@ -637,6 +658,32 @@ namespace ProjectC.Skills
                 ? $"Нужно {requiredCount} метательных предметов, есть только {foundCount}"
                 : "Нет метательных предметов в инвентаре (нужен Throwable)";
             return false;
+        }
+
+        /// <summary>
+        /// R5: Resolve equipped weapon's itemId as sourceId for ranged projectile skills.
+        /// Reads EquipmentClientState snapshot → WeaponMain/WeaponOff → itemId.
+        /// Returns 0UL if no weapon equipped (server will return InvalidSource).
+        /// </summary>
+        private ulong ResolveEquippedWeaponSourceId()
+        {
+            var ecs = EquipmentClientState.Instance;
+            if (ecs?.CurrentSnapshot != null)
+            {
+                var snap = ecs.CurrentSnapshot.Value;
+                if (snap.equip.TryGetItemId(EquipSlot.WeaponMain, out int itemId) && itemId > 0)
+                {
+                    if (Debug.isDebugBuild) Debug.Log($"[SkillInputService/R5] ResolveEquippedWeaponSourceId: WeaponMain itemId={itemId}");
+                    return (ulong)itemId;
+                }
+                if (snap.equip.TryGetItemId(EquipSlot.WeaponOff, out itemId) && itemId > 0)
+                {
+                    if (Debug.isDebugBuild) Debug.Log($"[SkillInputService/R5] ResolveEquippedWeaponSourceId: WeaponOff itemId={itemId}");
+                    return (ulong)itemId;
+                }
+            }
+            if (Debug.isDebugBuild) Debug.LogWarning("[SkillInputService/R5] ResolveEquippedWeaponSourceId: no weapon in slots, sourceId=0");
+            return 0UL;
         }
 
         /// <summary>

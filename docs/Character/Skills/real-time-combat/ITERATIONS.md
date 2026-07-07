@@ -121,3 +121,22 @@
 - `Assets/_Project/Scripts/Combat/Network/CombatServer.cs` — MOD: `ResolveThrowableSourceFromInventory` (WeaponDamageSource из инвентаря вместо Unarmed), `ConsumeThrowableFromInventory` (RemoveItems после каста)
 - `docs/Character/Skills/real-time-combat/50_IMPL_CHANGELOG.md` — MOD: +v0.6 entry
 - `docs/Character/Skills/real-time-combat/90_RANGED_AND_THROWABLES.md` — MOD: обновление статусов (4 ✅)
+
+---
+
+## Итерация от 2026-07-26 (R5: Ranged Projectile Fix)
+
+**Задача:** Починить дальнюю атаку стрелковым оружием (луки, арбалеты, ружья) — навыки не наносили урона из-за sourceId=0 в RequestAttackRpc.
+
+**Коммит:** `5d17c0e` — T-RTC-R5: ranged projectile fix — навыки луков/арбалетов/ружей работают через ResolveSkillCast
+
+**Корневая причина:**
+- Ranged single-target скиллы уходили через `RequestAttackRpc(targetId, 0UL)` → `GetDamageSource(0)` возвращал null → `InvalidSource`
+- В отличие от throwables, у ranged не было своего routing'а с резолвингом damage source
+- `EnsureUnarmedFallback()` добавляет sourceId=0 только если нет оружия — с экипированным арбалетом sourceId=0 не матчился
+
+**Изменения:**
+- `Assets/_Project/Scripts/Skills/SkillInputService.cs` — MOD: +`isRangedProjectile` detection (discipline==Ranged, subtype!=Throwables, SingleTarget, hasBind); routing через `RequestSkillCastRpc(skillId, targetId, weaponSourceId)`; +`ResolveEquippedWeaponSourceId()` helper для получения itemId из EquipmentClientState snapshot
+- `Assets/_Project/Scripts/Combat/Network/CombatServer.cs` — MOD: +`isRangedSingleTarget` detection и debug logging в `ResolveSkillCast`; контекстный warning "NO target found (SingleTarget)" вместо "NO targets in AOE"
+- `docs/Character/Skills/real-time-combat/90_RANGED_AND_THROWABLES.md` — MOD: +запись в истории изменений
+======= REPLACE

@@ -447,6 +447,17 @@ namespace ProjectC.Combat
             var results = new System.Collections.Generic.List<ProjectC.Combat.Core.IDamageTarget>();
             var hitPoints = new System.Collections.Generic.List<Vector3>();
 
+            // R5: For ranged single-target skills, source should be an equipped weapon (not throwable).
+            // Log the resolved source for debugging.
+            bool isRangedSingleTarget = skillConfig.discipline == ProjectC.Skills.CombatDiscipline.Ranged
+                && skillConfig.subtype != ProjectC.Skills.CombatSubtype.Throwables
+                && skillConfig.aoeFormula == ProjectC.Skills.AoeFormula.SingleTarget;
+
+            if (isRangedSingleTarget)
+            {
+                Debug.Log($"[CombatServer/R5] Ranged single-target: skill='{skillId}' sourceId={sourceId} source={source?.GetDisplayName() ?? "NULL"} sourceType={source?.GetDamageType().ToString() ?? "N/A"} sourceRange={source?.GetRange() ?? 0f:F1}m");
+            }
+
             // SingleTarget → use legacy raycast against primaryTargetId's position OR TryGetTarget
             if (skillConfig.aoeFormula == ProjectC.Skills.AoeFormula.SingleTarget)
             {
@@ -482,7 +493,8 @@ namespace ProjectC.Combat
 
             if (results.Count == 0)
             {
-                Debug.LogWarning($"[CombatServer] ResolveSkillCast: NO targets in AOE! skill='{skillId}' origin={aoeOrigin} size={skillConfig.aoeSize} registryTargets={_targets.Count}");
+                string context = isRangedSingleTarget ? "NO target found (SingleTarget)" : "NO targets in AOE";
+                Debug.LogWarning($"[CombatServer] ResolveSkillCast: {context}! skill='{skillId}' origin={aoeOrigin} size={skillConfig.aoeSize} registryTargets={_targets.Count}");
                 return;
             }
 

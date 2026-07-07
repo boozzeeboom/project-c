@@ -230,3 +230,5 @@ Slot1 (grenade skill) → SkillInputService.TryActivate
 | 2026-07-20 | Aura | Фазы R1-R3, T1-T3: ranged weapons, projectile/throw visuals, target-point AOE |
 | 2026-07-24 | Aura | T-WPN-01-REF-02: ThrowableItemData удалён, унификация в WeaponItemData. inventory DTO fix (itemName). ID-коллизия fix. |
 | 2026-07-25 | Aura | v0.6: grenade bugfix — throw direction (character-forward), AOE debug at targetPoint, inventory damage source (d10+5), consumption |
+| 2026-07-26 | Aura | R5: ranged projectile fix — skills (bows/crossbows/guns) route через ResolveSkillCast с equipped weapon sourceId, не через RequestAttackRpc(sourceId=0). SkillInputService.TryActivate: detection по discipline==Ranged + SingleTarget. CombatServer.ResolveSkillCast: debug logging для ranged single-target. |
+======= REPLACE

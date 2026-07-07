@@ -14,6 +14,7 @@ using ProjectC.Combat.Client;
 using ProjectC.Combat.Core;
 using ProjectC.Combat.Network;
 using ProjectC.Core;
+using ProjectC.Items;
 
 namespace ProjectC.Combat
 {
@@ -550,18 +551,24 @@ namespace ProjectC.Combat
         private IDamageSource ResolveThrowableSourceFromInventory(ulong attackerId)
         {
             var inv = ProjectC.Items.InventoryWorld.Instance;
-            if (inv == null) return null;
+            if (inv == null) { if (_debugLog) Debug.LogWarning("[CombatServer] ResolveThrowableSourceFromInventory: InventoryWorld.Instance is null."); return null; }
 
-            foreach (var kvp in inv.GetAllItems())
+            var data = inv.GetOrCreate(attackerId);
+            foreach (ItemType type in System.Enum.GetValues(typeof(ItemType)))
             {
-                var def = inv.GetItemDefinition(kvp.Key);
-                if (def is ProjectC.Equipment.WeaponItemData w && w.weaponClass == ProjectC.Equipment.WeaponClass.Throwable)
+                var ids = data.GetIdsForType(type);
+                if (ids == null) continue;
+                foreach (int itemId in ids)
                 {
-                    if (_debugLog) Debug.Log($"[CombatServer] ResolveThrowableSourceFromInventory: found {w.itemName} (id={kvp.Key}, dmg={w.damageDice}+{w.baseDamage}, radius={w.explosionRadius}m)");
-                    return new ProjectC.Combat.WeaponDamageSource(w, (ulong)kvp.Key);
+                    var def = inv.GetItemDefinition(itemId);
+                    if (def is ProjectC.Equipment.WeaponItemData w && w.weaponClass == ProjectC.Equipment.WeaponClass.Throwable)
+                    {
+                        if (_debugLog) Debug.Log($"[CombatServer] ResolveThrowableSourceFromInventory: found {w.itemName} (id={itemId}, dmg={w.damageDice}+{w.baseDamage}, radius={w.explosionRadius}m)");
+                        return new ProjectC.Combat.WeaponDamageSource(w, (ulong)itemId);
+                    }
                 }
             }
-            if (_debugLog) Debug.LogWarning("[CombatServer] ResolveThrowableSourceFromInventory: no Throwable weapon found in inventory.");
+            if (_debugLog) Debug.LogWarning("[CombatServer] ResolveThrowableSourceFromInventory: no Throwable weapon found in player inventory.");
             return null;
         }
 
@@ -571,19 +578,23 @@ namespace ProjectC.Combat
         private void ConsumeThrowableFromInventory(ulong attackerId)
         {
             var inv = ProjectC.Items.InventoryWorld.Instance;
-            if (inv == null) return;
+            if (inv == null) { if (_debugLog) Debug.LogWarning("[CombatServer] ConsumeThrowableFromInventory: InventoryWorld.Instance is null."); return; }
 
-            foreach (var kvp in inv.GetAllItems())
+            var data = inv.GetOrCreate(attackerId);
+            foreach (ItemType type in System.Enum.GetValues(typeof(ItemType)))
             {
-                var def = inv.GetItemDefinition(kvp.Key);
-                if (def is ProjectC.Equipment.WeaponItemData w && w.weaponClass == ProjectC.Equipment.WeaponClass.Throwable)
+                var ids = data.GetIdsForType(type);
+                if (ids == null) continue;
+                foreach (int itemId in ids)
                 {
-                    var result = inv.RemoveItems(attackerId, kvp.Key, def.itemType, 1);
-                    if (_debugLog)
+                    var def = inv.GetItemDefinition(itemId);
+                    if (def is ProjectC.Equipment.WeaponItemData w && w.weaponClass == ProjectC.Equipment.WeaponClass.Throwable)
                     {
-                        Debug.Log($"[CombatServer] ConsumeThrowableFromInventory: removed {def.itemName} (id={kvp.Key}) code={result.code} msg={result.message}");
+                        var result = inv.RemoveItems(attackerId, itemId, def.itemType, 1);
+                        if (_debugLog)
+                            Debug.Log($"[CombatServer] ConsumeThrowableFromInventory: removed {def.itemName} (id={itemId}) code={result.code} msg={result.message}");
+                        return;
                     }
-                    return;
                 }
             }
             if (_debugLog) Debug.LogWarning("[CombatServer] ConsumeThrowableFromInventory: no throwable to consume.");

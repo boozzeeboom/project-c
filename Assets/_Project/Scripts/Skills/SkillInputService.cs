@@ -24,6 +24,8 @@ using ProjectC.Combat.Core;
 using ProjectC.Equipment;  // T-INP-09: EquipmentClientState для GetActiveWeapon()
 using ProjectC.Player;  // NetworkPlayer
 using ProjectC.Input;  // InputBindingsRuntime
+using ProjectC.Items;  // ItemType, InventoryWorld
+using ProjectC.Items.Client;  // InventoryClientState
 
 namespace ProjectC.Skills
 {
@@ -581,20 +583,43 @@ namespace ProjectC.Skills
         private bool HasThrowableInInventory(out string denyReason)
         {
             denyReason = "";
-            var inv = ProjectC.Items.InventoryWorld.Instance;
-            if (inv == null)
+
+            // Client-side: prefer InventoryClientState snapshot (authoritative projection)
+            var clientState = ProjectC.Items.Client.InventoryClientState.Instance;
+            if (clientState != null && clientState.CurrentSnapshot.HasValue)
             {
-                denyReason = "Инвентарь не инициализирован";
-                return false;
+                var snapshot = clientState.CurrentSnapshot.Value;
+                if (snapshot.items != null)
+                {
+                    foreach (var item in snapshot.items)
+                    {
+                        // Check via InventoryWorld item database for WeaponClass
+                        var inv = ProjectC.Items.InventoryWorld.Instance;
+                        if (inv != null)
+                        {
+                            var def = inv.GetItemDefinition(item.itemId);
+                            if (def is WeaponItemData w && w.weaponClass == WeaponClass.Throwable)
+                                return true;
+                        }
+                    }
+                }
             }
 
-            foreach (var kvp in inv.GetAllItems())
+            // Fallback: try InventoryWorld directly (works in host mode)
+            var invDir = ProjectC.Items.InventoryWorld.Instance;
+            if (invDir != null && _ownerPlayer != null)
             {
-                var def = inv.GetItemDefinition(kvp.Key);
-                if (def is WeaponItemData w && w.weaponClass == WeaponClass.Throwable)
+                var data = invDir.GetOrCreate(_ownerPlayer.OwnerClientId);
+                foreach (ItemType type in System.Enum.GetValues(typeof(ItemType)))
                 {
-                    // Берём первый попавшийся Throwable — любой сойдёт
-                    return true;
+                    var ids = data.GetIdsForType(type);
+                    if (ids == null) continue;
+                    foreach (int itemId in ids)
+                    {
+                        var def = invDir.GetItemDefinition(itemId);
+                        if (def is WeaponItemData w && w.weaponClass == WeaponClass.Throwable)
+                            return true;
+                    }
                 }
             }
 

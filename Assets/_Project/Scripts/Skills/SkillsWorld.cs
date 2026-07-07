@@ -137,13 +137,26 @@ namespace ProjectC.Skills
                 }
             }
 
-            // 4. Intelligence tier requirement? (StatsWorld)
+            // 4. Stat tier requirements? (StatsWorld) — STR, DEX, INT.
             var statsNullable = ProjectC.Stats.StatsWorld.Instance?.GetOrCreateStats(clientId);
             var stats = statsNullable.GetValueOrDefault();
-            if (statsNullable.HasValue && stats.intelligenceTier < skill.RequiredIntelligenceTier)
+            if (statsNullable.HasValue)
             {
-                reason = $"Требуется Интеллект тир {skill.RequiredIntelligenceTier}+";
-                return false;
+                if (stats.strengthTier < skill.RequiredStrengthTier)
+                {
+                    reason = $"Требуется Сила тир {skill.RequiredStrengthTier}+";
+                    return false;
+                }
+                if (stats.dexterityTier < skill.RequiredDexterityTier)
+                {
+                    reason = $"Требуется Ловкость тир {skill.RequiredDexterityTier}+";
+                    return false;
+                }
+                if (stats.intelligenceTier < skill.RequiredIntelligenceTier)
+                {
+                    reason = $"Требуется Интеллект тир {skill.RequiredIntelligenceTier}+";
+                    return false;
+                }
             }
 
             // 5. XP cost (spend from Intelligence pool)? → StatsServer.ApplyXpDirect

@@ -476,7 +476,16 @@ namespace ProjectC.Skills.UI
             if (_detailEffects != null) _detailEffects.text = typeAndAoe;
 
             if (_detailCost != null) _detailCost.text = $"Стоимость: {(s.LearnXpCost > 0 ? s.LearnXpCost.ToString("F0") + " XP" : "Free")}";
-            if (_detailTier != null) _detailTier.text = $"Требуемый INT тир: {s.RequiredIntelligenceTier}";
+            if (_detailTier != null)
+            {
+                var parts = new System.Collections.Generic.List<string>();
+                if (s.RequiredStrengthTier > 0) parts.Add($"STR {s.RequiredStrengthTier}+");
+                if (s.RequiredDexterityTier > 0) parts.Add($"DEX {s.RequiredDexterityTier}+");
+                if (s.RequiredIntelligenceTier > 0) parts.Add($"INT {s.RequiredIntelligenceTier}+");
+                _detailTier.text = parts.Count > 0
+                    ? $"Требования: {string.Join(", ", parts)}"
+                    : "Требования: нет";
+            }
             if (_detailPrereqContainer != null) RebuildPrereqList(s, learned);
             if (_detailDepsContainer != null) RebuildDependentsList(s);
             if (_btnLearn != null) _btnLearn.style.display = (canLearn && !isLearned) ? DisplayStyle.Flex : DisplayStyle.None;

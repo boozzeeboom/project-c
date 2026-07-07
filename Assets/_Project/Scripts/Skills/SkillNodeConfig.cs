@@ -89,7 +89,13 @@ namespace ProjectC.Skills
                  "0 = free (starter skill).")]
         [SerializeField, Min(0f)] private float _learnXpCost = 50f;
 
-        [Header("Tier Requirement (optional)")]
+        [Header("Stat Tier Requirements (optional)")]
+        [Tooltip("Minimum Strength tier. 0 = no requirement.")]
+        [SerializeField, Min(0)] private int _requiredStrengthTier = 0;
+
+        [Tooltip("Minimum Dexterity tier. 0 = no requirement.")]
+        [SerializeField, Min(0)] private int _requiredDexterityTier = 0;
+
         [Tooltip("Minimum Intelligence tier. 0 = no requirement.")]
         [SerializeField, Min(0)] private int _requiredIntelligenceTier = 0;
 
@@ -151,6 +157,8 @@ namespace ProjectC.Skills
         // === Public read-only API ===
 
         public float LearnXpCost => _learnXpCost;
+        public int RequiredStrengthTier => _requiredStrengthTier;
+        public int RequiredDexterityTier => _requiredDexterityTier;
         public int RequiredIntelligenceTier => _requiredIntelligenceTier;
 
         // === OnValidate: cycle detection (Editor-only) ===

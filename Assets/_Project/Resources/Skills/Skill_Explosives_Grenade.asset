@@ -19,7 +19,7 @@ MonoBehaviour:
   category: 1
   discipline: 3
   subtype: 1
-  requiredWeaponMask: 0
+  requiredWeaponMask: 256
   prerequisites: []
   effects:
   - type: 0

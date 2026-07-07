@@ -315,15 +315,30 @@ namespace ProjectC.Skills
             // проверяем EquipmentClientState.GetActiveWeapon() против requiredWeaponMask.
             // requiredWeaponMask == None (default) = backward-compat: пропускаем проверку.
             // Unarmed attack (Primary/Secondary без bind, skillId == "") — пропускаем (нет weapon requirement).
+            //
+            // REFACTOR 2026-07-26: Throwables subtype — проверяется НЕ через слоты оружия,
+            // а через наличие Throwable предметов в инвентаре (equipSlot=None).
             if (skillConfig != null && skillConfig.requiredWeaponMask != WeaponClassMask.None && hasBind)
             {
-                if (!CheckWeaponMask(skillConfig, out string denyReason))
+                bool isThrowableSkill = skillConfig.subtype == CombatSubtype.Throwables;
+
+                if (isThrowableSkill)
                 {
-                    if (Debug.isDebugBuild)
+                    if (!HasThrowableInInventory(out string denyReason))
                     {
-                        Debug.LogWarning($"[SkillInputService/T-INP-09] slot={slot} skill='{skillId}' blocked: {denyReason} (requiredMask={skillConfig.requiredWeaponMask})");
+                        if (Debug.isDebugBuild)
+                            Debug.LogWarning($"[SkillInputService/T-INP-09] slot={slot} skill='{skillId}' blocked: {denyReason}");
+                        return false;
                     }
-                    return false;
+                }
+                else
+                {
+                    if (!CheckWeaponMask(skillConfig, out string denyReason))
+                    {
+                        if (Debug.isDebugBuild)
+                            Debug.LogWarning($"[SkillInputService/T-INP-09] slot={slot} skill='{skillId}' blocked: {denyReason} (requiredMask={skillConfig.requiredWeaponMask})");
+                        return false;
+                    }
                 }
             }
 
@@ -556,6 +571,35 @@ namespace ProjectC.Skills
             if ((mask & WeaponClassMask.MesiumRifle) != 0)   parts.Add("мезиевая винтовка");
             if ((mask & WeaponClassMask.Throwable) != 0)     parts.Add("метательное");
             return parts.Count == 0 ? mask.ToString() : string.Join(" или ", parts);
+        }
+
+        /// <summary>
+        /// REFACTOR 2026-07-26: Проверить наличие Throwable-предметов в инвентаре.
+        /// Используется вместо CheckWeaponMask для навыков с subtype=Throwables — 
+        /// throwables не экипируются в слоты оружия (equipSlot=None), лежат в инвентаре.
+        /// </summary>
+        private bool HasThrowableInInventory(out string denyReason)
+        {
+            denyReason = "";
+            var inv = ProjectC.Items.InventoryWorld.Instance;
+            if (inv == null)
+            {
+                denyReason = "Инвентарь не инициализирован";
+                return false;
+            }
+
+            foreach (var kvp in inv.GetAllItems())
+            {
+                var def = inv.GetItemDefinition(kvp.Key);
+                if (def is WeaponItemData w && w.weaponClass == WeaponClass.Throwable)
+                {
+                    // Берём первый попавшийся Throwable — любой сойдёт
+                    return true;
+                }
+            }
+
+            denyReason = "Нет метательных предметов в инвентаре (нужен Throwable)";
+            return false;
         }
 
         /// <summary>

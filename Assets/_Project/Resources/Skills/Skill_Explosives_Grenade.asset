@@ -42,6 +42,6 @@ MonoBehaviour:
   aoeWidth: 0
   debugVisualizeAoe: 1
   debugVisualizeDuration: 0.6
-  throwRange: 25
+  throwRange: 50.3
   throwScatter: 3
-  throwCount: 1
+  throwCount: 10

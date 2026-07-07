@@ -216,20 +216,33 @@ namespace ProjectC.Skills
 
         public SkillsSave BuildSaveData(ulong clientId)
         {
-            return new SkillsSave
+            var learned = GetLearnedSkillIds(clientId);
+            var save = new SkillsSave
             {
-                learnedSkillIds = new List<string>(GetLearnedSkillIds(clientId)).ToArray(),
+                learnedSkillIds = new List<string>(learned).ToArray(),
             };
+            Debug.Log($"[SkillsWorld.BuildSaveData] client={clientId} learnedCount={learned.Count} ids=[{string.Join(",", learned)}]");
+            return save;
         }
 
         public void LoadPlayer(ulong clientId, CharacterSaveData data)
         {
-            if (data == null || data.skills == null) return;
+            if (data == null || data.skills == null)
+            {
+                Debug.Log($"[SkillsWorld.LoadPlayer] client={clientId} SKIP: data={data != null} skills={data?.skills != null}");
+                return;
+            }
             var learned = GetLearnedSkillIds(clientId);
             learned.Clear();
             if (data.skills.learnedSkillIds != null)
             {
-                foreach (var id in data.skills.learnedSkillIds) learned.Add(id);
+                foreach (var id in data.skills.learnedSkillIds)
+                    if (!string.IsNullOrEmpty(id)) learned.Add(id);
+                Debug.Log($"[SkillsWorld.LoadPlayer] client={clientId} loaded {learned.Count} skills: [{string.Join(",", learned)}]");
+            }
+            else
+            {
+                Debug.Log($"[SkillsWorld.LoadPlayer] client={clientId} data.skills.learnedSkillIds is null");
             }
         }
 

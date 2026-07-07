@@ -260,7 +260,7 @@ namespace ProjectC.Skills.UI
             if (s == null) return false;
             return _activeFilter switch
             {
-                SkillDisciplineFilter.Melee   => s.discipline == CombatDiscipline.Melee || s.discipline == CombatDiscipline.Combat,
+                SkillDisciplineFilter.Melee   => s.discipline == CombatDiscipline.Melee,
                 SkillDisciplineFilter.Ranged  => s.discipline == CombatDiscipline.Ranged,
                 SkillDisciplineFilter.Defense => s.discipline == CombatDiscipline.Defense,
                 SkillDisciplineFilter.Placed  => s.discipline == CombatDiscipline.Placed,

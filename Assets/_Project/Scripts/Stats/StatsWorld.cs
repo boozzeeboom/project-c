@@ -102,6 +102,24 @@ namespace ProjectC.Stats
             {
                 data.stats = PlayerStatsSave.FromPlayerStats(stats);
             }
+            // T-P12/T-P13: include skills from SkillsWorld
+            var skillsWorld = ProjectC.Skills.SkillsWorld.Instance;
+            if (skillsWorld != null)
+            {
+                data.skills = skillsWorld.BuildSaveData(clientId);
+                Debug.Log($"[StatsWorld.BuildSaveData] client={clientId} skillsCount={data.skills?.learnedSkillIds?.Length ?? 0}");
+                if (data.skills?.learnedSkillIds != null)
+                    foreach (var id in data.skills.learnedSkillIds)
+                        Debug.Log($"[StatsWorld.BuildSaveData]   skill: {id}");
+            }
+            else
+            {
+                Debug.LogWarning($"[StatsWorld.BuildSaveData] client={clientId} SkillsWorld.Instance is NULL — skills NOT saved!");
+            }
+            // T-P09: include equipment from EquipmentWorld
+            var eqWorld = ProjectC.Equipment.EquipmentWorld.Instance;
+            if (eqWorld != null)
+                data.equipment = eqWorld.BuildSaveData(clientId);
             return data;
         }
 

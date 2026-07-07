@@ -8,12 +8,11 @@
     <ui:Label text="Дерево навыков" class="stw-title" />
    </ui:VisualElement>
    <ui:VisualElement class="stw-chip-row">
-    <ui:Label name="chip-all"        text="Все"          class="stw-chip stw-chip-active" />
-    <ui:Label name="chip-melee"      text="⚔ Melee"     class="stw-chip" />
-    <ui:Label name="chip-ranged"     text="🏹 Ranged"   class="stw-chip" />
-    <ui:Label name="chip-explosives" text="💣 Explosives" class="stw-chip" />
-    <ui:Label name="chip-antigrav"   text="🌌 Antigrav" class="stw-chip" />
-    <ui:Label name="chip-defense"    text="🛡 Defense"  class="stw-chip" />
+    <ui:Label name="chip-all"      text="Все"        class="stw-chip stw-chip-active" />
+    <ui:Label name="chip-melee"    text="⚔ Melee"   class="stw-chip" />
+    <ui:Label name="chip-ranged"   text="🏹 Ranged"  class="stw-chip" />
+    <ui:Label name="chip-defense"  text="🛡 Defense" class="stw-chip" />
+    <ui:Label name="chip-placed"   text="📍 Placed"  class="stw-chip" />
    </ui:VisualElement>
    <ui:TextField name="skill-search" placeholder-text="Поиск по имени или эффекту (STR, +2)..." class="stw-search" />
   </ui:VisualElement>

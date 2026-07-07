@@ -76,7 +76,8 @@ namespace ProjectC.Skills
         public override void OnNetworkDespawn()
         {
             if (!IsServer) return;
-            SkillsWorld.Reset();
+            // NOTE: SkillsWorld.Reset() moved to StatsServer.OnNetworkDespawn
+            // (runs AFTER flush save, when SkillsWorld is still alive)
             if (Instance == this) Instance = null;
         }
 
@@ -123,6 +124,8 @@ namespace ProjectC.Skills
             // Recompute effective stats (T-P09 already calls this on equip/unequip)
             TriggerStatsRecompute(clientId);
             SendSnapshotToOwner(clientId);
+            // T-P13: immediate persistence — не ждём auto-save/disconnect
+            ProjectC.Stats.StatsServer.Instance?.SaveCharacter(clientId);
         }
 
         [Rpc(SendTo.Server, InvokePermission = RpcInvokePermission.Owner)]
@@ -148,6 +151,8 @@ namespace ProjectC.Skills
             TriggerEquipmentRecheck(clientId);
             TriggerStatsRecompute(clientId);
             SendSnapshotToOwner(clientId);
+            // T-P13: immediate persistence — не ждём auto-save/disconnect
+            ProjectC.Stats.StatsServer.Instance?.SaveCharacter(clientId);
         }
 
         // === Server → Client (TargetRPCs через NetworkPlayer) ===
@@ -172,7 +177,7 @@ namespace ProjectC.Skills
             }
         }
 
-        private void SendSnapshotToOwner(ulong clientId)
+        public void SendSnapshotToOwner(ulong clientId)
         {
             if (NetworkManager.Singleton == null) return;
             if (!NetworkManager.Singleton.ConnectedClients.TryGetValue(clientId, out var client)) return;

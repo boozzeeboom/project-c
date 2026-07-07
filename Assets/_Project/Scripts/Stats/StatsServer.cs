@@ -169,6 +169,7 @@ namespace ProjectC.Stats
             if (_handleJumped != null)         WorldEventBus.Unsubscribe(_handleJumped);
 
             StatsWorld.Reset();
+            ProjectC.Skills.SkillsWorld.Reset();
             if (Instance == this) Instance = null;
         }
 
@@ -180,6 +181,34 @@ namespace ProjectC.Stats
             if (_repo.TryLoad(clientId, out var data))
             {
                 _world.LoadPlayer(clientId, data);
+                // T-P12/T-P13: also load skills
+                var skillsWorld = ProjectC.Skills.SkillsWorld.Instance;
+                if (skillsWorld != null)
+                {
+                    Debug.Log($"[StatsServer.OnClientConnectedForStats] Loading skills: learnedSkillIds in JSON = {(data.skills?.learnedSkillIds != null ? string.Join(",", data.skills.learnedSkillIds) : "null")}");
+                    skillsWorld.LoadPlayer(clientId, data);
+                    var loadedCount = skillsWorld.GetLearnedSkillIds(clientId)?.Count ?? 0;
+                    Debug.Log($"[StatsServer.OnClientConnectedForStats] After LoadPlayer: {loadedCount} skills loaded");
+                    // Push loaded skills to client (mirrors SendSnapshotToOwner after load)
+                    var ss = ProjectC.Skills.SkillsServer.Instance;
+                    if (ss != null)
+                    {
+                        ss.SendSnapshotToOwner(clientId);
+                        Debug.Log($"[StatsServer.OnClientConnectedForStats] SendSnapshotToOwner called");
+                    }
+                    else
+                    {
+                        Debug.LogWarning($"[StatsServer.OnClientConnectedForStats] SkillsServer.Instance is NULL — snapshot NOT sent!");
+                    }
+                }
+                else
+                {
+                    Debug.LogWarning($"[StatsServer.OnClientConnectedForStats] SkillsWorld.Instance is NULL — skills NOT loaded!");
+                }
+                // T-P09: also load equipment
+                var eqWorld = ProjectC.Equipment.EquipmentWorld.Instance;
+                if (eqWorld != null)
+                    eqWorld.LoadPlayer(clientId, data);
                 if (_config != null && _config.DebugLogging)
                 {
                     var stats = _world.GetOrCreateStats(clientId);
@@ -590,6 +619,23 @@ namespace ProjectC.Stats
 
         public PlayerStats GetPlayerStats(ulong clientId) =>
             _world != null ? _world.GetOrCreateStats(clientId) : PlayerStats.Default;
+
+        /// <summary>
+        /// T-P13: Trigger immediate save for a player (called by SkillsServer after learn/forget).
+        /// Builds full CharacterSaveData (stats + skills + equipment) and writes to disk.
+        /// </summary>
+        public void SaveCharacter(ulong clientId)
+        {
+            if (_repo == null || _world == null)
+            {
+                Debug.LogWarning($"[StatsServer.SaveCharacter] client={clientId} SKIP: _repo={_repo != null} _world={_world != null}");
+                return;
+            }
+            var data = _world.BuildSaveData(clientId);
+            Debug.Log($"[StatsServer.SaveCharacter] client={clientId} saving... skillsCount={data?.skills?.learnedSkillIds?.Length ?? 0}");
+            _repo.Save(clientId, data);
+            Debug.Log($"[StatsServer.SaveCharacter] client={clientId} SAVED to {_repo.GetSavePath(clientId)}");
+        }
 
         /// <summary>Disconnect cleanup (T-P18 hook через NetworkManagerController).</summary>
         public void OnPlayerDisconnected(ulong clientId)

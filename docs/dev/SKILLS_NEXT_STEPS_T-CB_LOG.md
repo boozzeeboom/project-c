@@ -237,6 +237,7 @@ SkillTreeWindow: FOUND
 | 2026-06-28 | #5 (эта) | 2D граф навыков Painter2D (T-P19). Canvas 2000×2000 px, absolute-позиционированные узлы, Painter2D линии, filter/search, scroll-to-selected. USS стили для state-цвета и selected. Синий фон _rootContainer debug-баг зафиксирован и исправлен. |
 | **2026-07-07** | **#6** | **T-SKILL-03:** Исправлены фильтры SkillTreeWindow (4 чипа: melee/ranged/defense/placed вместо 6 с explosives/antigrav). Реализована полная persistence изученных навыков (JSON save/load через CharacterSaveData). StatsWorld.BuildSaveData теперь собирает полный DTO (stats + skills + equipment). StatsServer.OnClientConnectedForStats загружает скиллы и шлёт начальный снапшот клиенту. SkillsServer сохраняет мгновенно после learn/forget. КРИТИЧЕСКИЙ ФИКС: SkillsWorld.Reset() перенесён из SkillsServer.OnNetworkDespawn в StatsServer.OnNetworkDespawn (после flush-save). |
 | **2026-07-08** | **#7** | **T-SKILL-04:** throwCount consumption. `HasThrowableInInventory` теперь проверяет суммарное количество Throwable-предметов (≥ requiredCount). `ConsumeThrowableFromInventory` принимает count и потребляет до N штук (добирает из следующих стаков). Потребление перенесено ДО target collection — гранаты списываются независимо от попадания. |
+| **2026-07-08** | **#8** | **T-SKILL-05:** slot bindings persistence. `SkillInputService` теперь сохраняет бинды слотов (Primary/Secondary/Slot1-4) в `Skills/slot_bindings_{clientId}.json` при каждом `BindSlot`. Загружаются при `Initialize`. JsonUtility DTO: `SlotBindingsSave` + `SlotBindingEntry[]`. |
 
 ---
 

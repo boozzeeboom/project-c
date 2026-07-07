@@ -193,7 +193,9 @@ namespace ProjectC.Items
             if (item == null) return -1;
             int existing = GetItemId(item);
             if (existing >= 0) return existing;
-            int newId = _itemDatabase.Count + 1;
+            // R2-fix: следующий свободный ID вместо Count+1
+            int newId = 1;
+            while (_itemDatabase.ContainsKey(newId)) newId++;
             RegisterItem(newId, item);
             return newId;
         }
@@ -212,11 +214,23 @@ namespace ProjectC.Items
         public int GetOrRegisterItemId(ItemData item)
         {
             if (item == null) return -1;
+            // R2-fix: поиск по reference (один SO-инстанс)
             foreach (var kvp in _itemDatabase)
             {
                 if (kvp.Value == item) return kvp.Key;
             }
-            int newId = _itemDatabase.Count + 1;
+            // R2-fix: поиск по itemName (разные инстансы одного предмета на сцене)
+            string itemName = item.itemName;
+            if (!string.IsNullOrEmpty(itemName) && itemName.EndsWith("(Clone)"))
+                itemName = itemName.Substring(0, itemName.Length - 7).TrimEnd();
+            foreach (var kvp in _itemDatabase)
+            {
+                if (kvp.Value != null && kvp.Value.itemName == itemName)
+                    return kvp.Key;
+            }
+            // R2-fix: следующий свободный ID, а не Count+1 (может коллидировать)
+            int newId = 1;
+            while (_itemDatabase.ContainsKey(newId)) newId++;
             RegisterItem(newId, item);
             Debug.Log($"[InventoryWorld] Авто-регистрация: ID {newId} - {item.itemName}");
             return newId;

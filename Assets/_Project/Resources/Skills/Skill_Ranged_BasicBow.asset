@@ -40,7 +40,7 @@ MonoBehaviour:
   aoeSize: 0
   aoeConeAngleDeg: 60
   aoeWidth: 0
-  debugVisualizeAoe: 0
+  debugVisualizeAoe: 1
   debugVisualizeDuration: 0.6
   throwRange: 25
   throwScatter: 3

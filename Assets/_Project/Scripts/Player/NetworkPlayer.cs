@@ -346,13 +346,15 @@ namespace ProjectC.Player
             var svc = GetComponent<SkillInputService>();
             if (svc == null) svc = gameObject.AddComponent<SkillInputService>();
 
-            // T-RTC10 hybrid: сначала raycast (прицеливание), если мимо — nearest в 15м.
+            // T-RTC10 hybrid: сначала raycast от персонажа (character-forward), если мимо — nearest в 15м.
+            // R5: character-forward вместо camera-forward — для TPS камеры сверху-сзади,
+            // camera-forward смотрит в пол, а character-forward — туда куда персонаж целится.
             System.Func<ulong> targetFinder = () =>
             {
-                // 1) Raycast от камеры (точное прицеливание)
-                var cam = Camera.main;
-                if (ProjectC.Combat.Core.TargetingService.TryGetTargetFromCamera(
-                        cam, transform,
+                // 1) Raycast от персонажа вперёд (character-forward прицеливание)
+                Vector3 origin = transform.position + Vector3.up * 1.5f;
+                if (ProjectC.Combat.Core.TargetingService.TryGetTarget(
+                        origin, transform.forward,
                         30f, (UnityEngine.LayerMask)(~0),
                         out var rayTarget, out _))
                 {

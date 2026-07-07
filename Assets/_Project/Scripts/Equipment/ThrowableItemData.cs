@@ -22,7 +22,7 @@ using ProjectC.Skills;
 namespace ProjectC.Equipment
 {
     [CreateAssetMenu(fileName = "Throwable_", menuName = "Project C/Equipment/Throwable", order = 13)]
-    public class ThrowableItemData : ItemData
+    public class ThrowableItemData : ItemData, ProjectC.Combat.ICombatDamageProvider
     {
         [Header("Explosion")]
         [Tooltip("Радиус AOE в метрах (Sphere).")]
@@ -51,6 +51,15 @@ namespace ProjectC.Equipment
         [Header("AOE")]
         [Tooltip("Формула AOE. Sphere = круговой взрыв, Box = прямоугольная зона (мина).")]
         public ProjectC.Skills.AoeFormula aoeFormula = ProjectC.Skills.AoeFormula.Sphere;
+
+        // === ICombatDamageProvider ===
+
+        ProjectC.Combat.Core.DamageDice ProjectC.Combat.ICombatDamageProvider.GetDamageDice() => damageDice;
+        int ProjectC.Combat.ICombatDamageProvider.GetBaseDamage() => baseDamage;
+        int ProjectC.Combat.ICombatDamageProvider.GetCritModifier() => critModifier;
+        float ProjectC.Combat.ICombatDamageProvider.GetRange() => throwRange;
+        ProjectC.Combat.Core.DamageType ProjectC.Combat.ICombatDamageProvider.GetDamageType() => damageType;
+        string ProjectC.Combat.ICombatDamageProvider.GetDisplayName() => itemName;
 
         // === OnValidate: auto-set itemType ===
 #if UNITY_EDITOR

@@ -13,12 +13,13 @@ MonoBehaviour:
   m_Name: Weapon_Crossbow
   m_EditorClassIdentifier: Assembly-CSharp::ProjectC.Equipment.WeaponItemData
   itemName: Crossbow
-  itemType: 0
+  itemType: 1
   description: Standard crossbow. Bolts deal moderate damage at range.
   icon: {fileID: 0}
+  equipSlot: 9
   maxStack: 1
   weightKg: 0.1
-  visualPrefab: {fileID: 0}
+  visualPrefab: {fileID: 2128364397589329185, guid: 156e98d4f4451e047a931b77481a40e6, type: 3}
   attachBoneOverride: 55
   attachPositionOffset: {x: 0, y: 0, z: 0}
   attachRotationOffset: {x: 0, y: 0, z: 0}

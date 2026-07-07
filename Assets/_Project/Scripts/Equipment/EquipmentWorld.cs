@@ -121,9 +121,11 @@ namespace ProjectC.Equipment
                 }
             }
 
-            // 2. Item is clothing/module?
+            // 2. Resolve required slot + skill requirements.
+            //    Clothing/Module → свой slot field. Всё остальное → equipSlot из ItemData.
+            //    Любой предмет с equipSlot != None — надевается. Никакого хардкода по типам.
             EquipSlot requiredSlot;
-            SkillNodeConfig[] requiredSkills;
+            SkillNodeConfig[] requiredSkills = null;
             if (itemData is ClothingItemData clothing)
             {
                 requiredSlot = clothing.slot;
@@ -134,24 +136,11 @@ namespace ProjectC.Equipment
                 requiredSlot = module.slot;
                 requiredSkills = module.requiredSkills;
             }
-            // T-CB03: WeaponItemData — в слот WeaponMain или WeaponOff (берётся из caller)
-            else if (itemData is WeaponItemData weapon)
-            {
-                requiredSlot = slot;  // caller уже знает слот (WeaponMain/WeaponOff). Принимаем как есть.
-                requiredSkills = weapon.requiredProficiency != null
-                    ? new SkillNodeConfig[] { weapon.requiredProficiency }
-                    : null;
-
-                // T-INP-06: warning-only proficiency log (variant A per audit §4).
-                // Hard gate ниже (requiredSkills check) уже работает для hard proficiency.
-                if (Debug.isDebugBuild)
-                {
-                    var learnedSafe = GetLearnedSkillIdsSafe(clientId);
-                    bool hasProf = weapon.requiredProficiency == null || learnedSafe.Contains(weapon.requiredProficiency.skillId);
-                    Debug.Log($"[EquipmentWorld] Weapon equip attempt: client={clientId} weapon='{weapon.itemName}' class={weapon.weaponClass} proficiency='{weapon.requiredProficiency?.skillId ?? "<none>"}' hasProficiency={hasProf}");
-                }
-            }
             else
+            {
+                requiredSlot = itemData.equipSlot;
+            }
+            if (requiredSlot == EquipSlot.None)
             {
                 reason = "Этот предмет не надевается";
                 return false;

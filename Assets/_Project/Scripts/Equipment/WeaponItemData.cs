@@ -66,7 +66,7 @@ namespace ProjectC.Equipment
     }
 
     [CreateAssetMenu(fileName = "Weapon_", menuName = "Project C/Equipment/Weapon", order = 12)]
-    public class WeaponItemData : ItemData
+    public class WeaponItemData : ItemData, ProjectC.Combat.ICombatDamageProvider
     {
         [Header("Weapon class")]
         [Tooltip("Sword / Dagger / Spear / Mace / Crossbow / Pneumatic / AntigravBlade / MesiumRifle. " +
@@ -100,6 +100,15 @@ namespace ProjectC.Equipment
 
         [Header("Min INT tier")]
         [Range(0, 10)] public int minTier = 0;
+
+        // === ICombatDamageProvider ===
+
+        ProjectC.Combat.Core.DamageDice ProjectC.Combat.ICombatDamageProvider.GetDamageDice() => damageDice;
+        int ProjectC.Combat.ICombatDamageProvider.GetBaseDamage() => baseDamage;
+        int ProjectC.Combat.ICombatDamageProvider.GetCritModifier() => critModifier;
+        float ProjectC.Combat.ICombatDamageProvider.GetRange() => range;
+        ProjectC.Combat.Core.DamageType ProjectC.Combat.ICombatDamageProvider.GetDamageType() => damageType;
+        string ProjectC.Combat.ICombatDamageProvider.GetDisplayName() => itemName;
 
         // === OnValidate: auto-set defaults per weaponClass (per answer 2.14) ===
 

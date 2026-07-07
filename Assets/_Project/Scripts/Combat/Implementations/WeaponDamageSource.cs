@@ -19,22 +19,22 @@ namespace ProjectC.Combat
     /// </summary>
     public sealed class WeaponDamageSource : IDamageSource
     {
-        private readonly ProjectC.Equipment.WeaponItemData _weapon;
+        private readonly ICombatDamageProvider _provider;
         private readonly ulong _sourceId;
 
-        public WeaponDamageSource(ProjectC.Equipment.WeaponItemData weapon, ulong sourceId)
+        public WeaponDamageSource(ICombatDamageProvider provider, ulong sourceId)
         {
-            _weapon = weapon;
+            _provider = provider;
             _sourceId = sourceId;
         }
 
         public ulong GetSourceId() => _sourceId;
-        public DamageType GetDamageType() => _weapon.damageType;
-        public DamageDice GetDamageDice() => _weapon.damageDice;
-        public int GetBaseDamage() => _weapon.baseDamage;
-        public int GetCritModifier() => _weapon.critModifier;
-        public float GetRange() => _weapon.range;
-        public string GetDisplayName() => _weapon.itemName;
+        public DamageType GetDamageType() => _provider.GetDamageType();
+        public DamageDice GetDamageDice() => _provider.GetDamageDice();
+        public int GetBaseDamage() => _provider.GetBaseDamage();
+        public int GetCritModifier() => _provider.GetCritModifier();
+        public float GetRange() => _provider.GetRange();
+        public string GetDisplayName() => _provider.GetDisplayName();
 
         /// <summary>
         /// Cooldown per damage dice tier (per design):
@@ -42,7 +42,7 @@ namespace ProjectC.Combat
         ///   d8/d10 → 1.5s
         ///   d12/d20 → 2.5s
         /// </summary>
-        public float GetCooldownSeconds() => _weapon.damageDice switch
+        public float GetCooldownSeconds() => _provider.GetDamageDice() switch
         {
             DamageDice.d4 or DamageDice.d6 => 1.0f,
             DamageDice.d8 or DamageDice.d10 => 1.5f,

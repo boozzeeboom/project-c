@@ -3,6 +3,7 @@
 ## Итерация от 2026-07-27
 
 **Задача:** Подсвечивание цели (outline), переключение целей Q/E, obstruction check  
+**Коммит:** `e303a68` — T-TGT01: подсвечивание цели (outline), переключение Q/E, obstruction check  
 **Документ:** `docs/Character/Skills/real-time-combat/100_TARGET_HIGHLIGHT_AND_SWITCHING.md`
 
 **Изменения:**

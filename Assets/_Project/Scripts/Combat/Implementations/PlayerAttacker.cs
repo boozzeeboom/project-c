@@ -116,15 +116,20 @@ namespace ProjectC.Combat
         }
 
         /// <summary>
-        /// v0.1.3: Гарантировать наличие хотя бы одного IDamageSource (unarmed fallback).
-        /// Если WeaponMain + WeaponOff пусты, добавить DefaultDamageSource(0, "Unarmed") —
-        /// debug-K-key шлёт sourceId=0, иначе ResolveAttack вернёт InvalidSource.
+        /// v0.1.3: Гарантировать наличие unarmed fallback (sourceId=0).
+        /// Primary/Secondary без скилла шлют RequestAttackRpc(targetId, 0UL) —
+        /// если sourceId=0 нет в _activeSources, сервер вернёт InvalidSource.
+        /// Поэтому unarmed fallback добавляется ВСЕГДА, даже если есть оружие.
         /// </summary>
         private void EnsureUnarmedFallback()
         {
-            if (_activeSources.Count > 0) return;
+            // Always ensure sourceId=0 exists — needed for unarmed attacks even when weapons equipped.
+            for (int i = 0; i < _activeSources.Count; i++)
+            {
+                if (_activeSources[i].GetSourceId() == 0UL) return; // already present
+            }
             _activeSources.Add(new DefaultDamageSource(0UL, "Unarmed"));
-            if (Debug.isDebugBuild) Debug.Log($"[PlayerAttacker] No weapon equipped — added Unarmed fallback source (id=0). clientId={_clientId}");
+            if (Debug.isDebugBuild) Debug.Log($"[PlayerAttacker] Added Unarmed fallback source (id=0). clientId={_clientId}");
         }
 
         public Vector3 GetPosition() => transform.position;

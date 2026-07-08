@@ -245,8 +245,10 @@ namespace ProjectC.Skills
                 skillId = "";
             }
 
-            // 2) Cooldown (локальный, для отзывчивости)
-            if (IsOnCooldown(slot))
+            // 2) Cooldown (локальный, для отзывчивости).
+            //    Пропускаем если skipAnimation=true — это повторный вызов из FireImpactRpc,
+            //    cooldown уже учтён в первом вызове TryActivate.
+            if (!skipAnimation && IsOnCooldown(slot))
             {
                 if (Debug.isDebugBuild)
                 {

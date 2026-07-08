@@ -58,6 +58,28 @@ NpcBrain.OnNetworkSpawn() искал NpcSocialBrain до его добавлен
 
 ---
 
+## Итерация от 2026-07-27 — NPC Skill Assignment (T-NPC-SKILL01..05)
+
+**Задача:** Назначение скилов игрока (SkillNodeConfig) на NPC с оверрайдами (cooldown, animation, damage, range).
+План: `docs/Character/Skills/real-time-combat/npc-enemy/06_NPC_SKILL_ASSIGNMENT_PLAN.md`
+
+**Коммит:** `7ebfb9a` — T-NPC-SKILL02..05: Фазы B-E — multi-source NpcAttacker + skill selection + example asset
+
+**Изменения:**
+- `NpcSkillSet.cs` — (NEW) ScriptableObject: массив NpcSkillOverride + SelectionMode + HP-фильтр
+- `NpcAttacker.cs` — (+230 строк) multi-source: NpcSkillDamageSource[] вместо NpcDefaultDamageSource; per-source cooldown; SetSkillSet() API; backward compat
+- `NpcBrain.cs` — (+120 строк) TryAttack() → PickSkillSource(); PlaySkillAnimation() через AnimatorOverrideController; RoundRobin cursor
+- `NpcSpawnerConfig.cs` — add-only: поле npcSkillSet
+- `NpcSpawner.cs` — (+8 строк) SetSkillSet() при спавне ДО Spawn()
+- `CreateNpcSkillSetGoblin.cs` — (NEW) Editor-скрипт для создания .asset
+- `NpcSkillSet_Goblin.asset` — (NEW) пример: BasicSword + HeavySwing с кастомными анимациями
+- `NpcSpawner_Default.asset` — привязан NpcSkillSet_Goblin
+
+**Фазы:** A ✅ | B ✅ | C ✅ | D ✅ | E ✅
+
+---
+
+=======
 ## Итерация от 2026-07-15 — Phase 2: «Социальная группа»
 
 **Задача:** Реализация Phase 2 (P1) согласно `04_UNIFIED_BEHAVIOR_ARCHITECTURE.md`:

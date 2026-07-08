@@ -34,6 +34,7 @@ MonoBehaviour:
   treeX: 0
   treeY: 200
   isActive: 1
+  cooldownSeconds: 0.1
   attackClip: {fileID: 0}
   attackClipSpeed: 1
   aoeFormula: 0

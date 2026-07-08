@@ -138,5 +138,80 @@
 **Изменения:**
 - `Assets/_Project/Scripts/Skills/SkillInputService.cs` — MOD: +`isRangedProjectile` detection (discipline==Ranged, subtype!=Throwables, SingleTarget, hasBind); routing через `RequestSkillCastRpc(skillId, targetId, weaponSourceId)`; +`ResolveEquippedWeaponSourceId()` helper для получения itemId из EquipmentClientState snapshot
 - `Assets/_Project/Scripts/Combat/Network/CombatServer.cs` — MOD: +`isRangedSingleTarget` detection и debug logging в `ResolveSkillCast`; контекстный warning "NO target found (SingleTarget)" вместо "NO targets in AOE"
+=======
 - `docs/Character/Skills/real-time-combat/90_RANGED_AND_THROWABLES.md` — MOD: +запись в истории изменений
+
+---
+
+## Итерация от 2026-07-27 (R5: Ranged Projectile Fix v2)
+
+**Задача:** Ranged projectile fix v2: замена роутинга с RequestAttackRpc на RequestSkillCastRpc с резолвингом equipped weapon sourceId.
+
+**Коммит:** `695656f` — T-RTC-R5: ranged projectile fix
+
+**Изменения:**
+- `SkillInputService.cs` — +`isRangedProjectile` detection, routing через `RequestSkillCastRpc`, +`ResolveEquippedWeaponSourceId()`
+- `CombatServer.cs` — +`isRangedSingleTarget` detection + debug logging; контекстный warning «NO target found (SingleTarget)»
+
+---
+
+## Итерация от 2026-07-27 (R5: RebuildSources Fallback)
+
+**Задача:** Fix race condition — экипировка может загрузиться позже чем RebuildSources → InvalidSource.
+
+**Коммит:** `7698458` — T-RTC-R5-fix: RebuildSources fallback при race condition загрузки экипировки
+
+**Изменения:**
+- `CombatServer.cs` — в `ResolveSkillCast`: если `source==null && sourceId!=0` → повторный `RebuildSources()` + перезапрос `GetDamageSource(sourceId)`. Попутно -154 строки (удалены устаревшие XML-комментарии, упрощены однострочники)
+
+---
+
+## Итерация от 2026-07-28 (R5: Character-forward Targeting)
+
+**Задача:** Замена camera-forward raycast на character-forward raycast для прицеливания.
+
+**Коммит:** `acf95df` — T-RTC-R5-targeting: character-forward raycast вместо camera-forward
+
+**Причина:** TPS камера сверху-сзади смотрит в пол, character-forward направлен туда куда персонаж целится.
+
+**Изменения:**
+- `NetworkPlayer.cs` — `TryGetTargetFromCamera(cam, ...)` → `TryGetTarget(transform.position + up*1.5f, transform.forward, 30f)`
+
+---
+
+## Итерация от 2026-07-28 (R5: Bows/Crossbows Subtypes + D100)
+
+**Задача:** Добавить подкатегории Bows/Crossbows в CombatSubtype, D100 hit/damage механику, поля rangedMaxRange/rangedHitChance.
+
+**Коммит:** `b537677` — T-RTC-R5-bows-crossbows: подкатегории Bows/Crossbows + D100 + rangedMaxRange
+
+**Изменения:**
+- `SkillNodeConfig.cs` — enum `CombatSubtype`: +`Bows=3`, +`Crossbows=4`. Поля: +`rangedMaxRange` (1–200m), +`rangedHitChance` (0–100%)
+- `SkillInputService.cs` — +`FindNearestNpcInRange(rangedMaxRange)` — fallback когда raycast не нашёл цель
+- `CombatServer.cs` — +D100: `d100Roll <= hitChance` → `damage *= d100Roll/100`; `d100Roll > hitChance` → `isHit=false`
+
+---
+
+## Итерация от 2026-07-30 (R5: Fix Custom Editor)
+
+**Задача:** Починить переключение discipline в кастом инспекторе (сломалось после добавления Bows/Crossbows).
+
+**Коммит:** `a79ea91` — T-RTC-R5-fix: fix custom editor discipline switching + stale subtype arrays
+
+**Изменения:**
+- `SkillNodeConfig.cs` — `OnValidate` → `AutoSetDisciplineFromPrefix` только при `discipline==None`
+- `SkillNodeConfigEditor.cs` — `SubtypesRanged` +Bows/Crossbows; секция Bows/Crossbows Settings; сброс subtype при смене discipline
+
+---
+
+## Итерация от 2026-07-30 (Configurable Cooldown)
+
+**Задача:** Заменить хардкод 0.5f cooldown на настраиваемое поле в SkillNodeConfig.
+
+**Коммит:** `6f871e7` — T-SKILL-06: configurable cooldown per skill
+
+**Изменения:**
+- `SkillNodeConfig.cs` — поле `cooldownSeconds` (float, 0.5f default, Range 0.1–30)
+- `SkillInputService.cs` — `0.5f` → `skillConfig.cooldownSeconds` / `skillConfig?.cooldownSeconds ?? 0.5f`
+- `SkillNodeConfigEditor.cs` — `PropertyField` в секции Active vs Passive
 ======= REPLACE

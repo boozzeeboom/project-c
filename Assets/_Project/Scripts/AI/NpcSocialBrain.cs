@@ -907,14 +907,24 @@ namespace ProjectC.AI
                     NpcVocalCue.Taunt => "Taunt", NpcVocalCue.FearCry => "FearCry", NpcVocalCue.VictoryRoar => "VictoryRoar",
                     _ => "AlertCall",
                 };
-                anim.SetTrigger(tn);
+                if (HasAnimatorParam(anim, tn))
+                    anim.SetTrigger(tn);
             }
+
             if (Group != null) Group.OnVocalCue(this, cue);
+        }
+
+        private static bool HasAnimatorParam(Animator anim, string paramName)
+        {
+            foreach (var p in anim.parameters)
+                if (p.name == paramName) return true;
+            return false;
         }
 
         // ==================== Public morale API (T-NPC-S11 fix) ====================
 
         public void HearFearCry() { _morale.OnFearCryHeard(); }
+
         public void HearVictoryRoar() { _morale.OnVictoryRoarHeard(); }
         public void HearEnemyVictoryRoar() { _morale.OnEnemyVictoryRoarHeard(); }
         public void OnLeaderDied() { _morale.OnLeaderDied(); }

@@ -1,6 +1,8 @@
 // Project C: Real-Time Combat Engine — Damage Numbers
 // DamageNumberInstance: компонент на world-space TMP GameObject.
 // Анимирует всплытие + затухание, затем возвращает себя в пул.
+// Использует существующий Billboard.cs для поворота к камере.
+// Масштабирует canvas по расстоянию для унифицированного размера.
 // Design: docs/Character/Skills/real-time-combat/110_DAMAGE_NUMBERS.md
 
 using System;
@@ -20,8 +22,16 @@ namespace ProjectC.Combat.Client
         [SerializeField] private Canvas _canvas;
         [SerializeField] private RectTransform _rectTransform;
 
+        [Header("Distance Scaling")]
+        [Tooltip("Эталонное расстояние (метры), на котором canvas имеет исходный размер.")]
+        [SerializeField] private float _referenceDistance = 10f;
+        [Tooltip("Базовый scale canvas (при _referenceDistance метров от камеры).")]
+        [SerializeField] private Vector3 _baseScale = new Vector3(0.01f, 0.01f, 0.01f);
+
         private Coroutine _animRoutine;
         private Action<DamageNumberInstance> _onComplete;
+        private ProjectC.UI.Billboard _billboard;
+        private Vector3 _baseScaleActual;
 
         // === Lifecycle ===
 
@@ -31,18 +41,21 @@ namespace ProjectC.Combat.Client
             if (_tmpText == null) _tmpText = GetComponentInChildren<TextMeshProUGUI>();
             if (_canvas == null) _canvas = GetComponent<Canvas>();
             if (_rectTransform == null) _rectTransform = GetComponent<RectTransform>();
+
+            // Billboard: используем существующий компонент из ProjectC.UI
+            _billboard = GetComponent<ProjectC.UI.Billboard>();
+            if (_billboard == null)
+            {
+                _billboard = gameObject.AddComponent<ProjectC.UI.Billboard>();
+                _billboard.keepVertical = true;
+            }
+
+            _baseScaleActual = _baseScale;
         }
 
         /// <summary>
         /// Инициализировать и запустить анимацию.
         /// </summary>
-        /// <param name="config">DamageNumberConfig с цветами/размерами.</param>
-        /// <param name="worldPos">Мировая позиция (центр над целью с учётом offset + spread).</param>
-        /// <param name="damage">Финальный урон.</param>
-        /// <param name="isCrit">Критический удар?</param>
-        /// <param name="damageType">Тип урона (для цвета).</param>
-        /// <param name="duration">Длительность анимации (из CombatConfig).</param>
-        /// <param name="onComplete">Callback при завершении (возврат в пул).</param>
         public void Spawn(
             Config.DamageNumberConfig config,
             Vector3 worldPos,
@@ -60,8 +73,6 @@ namespace ProjectC.Combat.Client
             }
 
             _onComplete = onComplete;
-
-            // Позиция
             transform.position = worldPos;
 
             // Текст
@@ -71,14 +82,14 @@ namespace ProjectC.Combat.Client
 
             // Цвет
             Color color = config.GetEffectiveColor(damageType, isCrit);
-            color.a = 1f; // начало полностью непрозрачное
+            color.a = 1f;
             _tmpText.color = color;
 
-            // Размер
+            // Размер шрифта
             _tmpText.fontSize = config.GetEffectiveFontSize(isCrit);
 
-            // Всегда смотрим на камеру (billboard effect)
-            _canvas.transform.rotation = Quaternion.identity;
+            // Сброс scale перед стартом
+            transform.localScale = _baseScaleActual;
 
             gameObject.SetActive(true);
 
@@ -104,19 +115,30 @@ namespace ProjectC.Combat.Client
                 c.a = config.fadeCurve.Evaluate(t);
                 _tmpText.color = c;
 
-                // Billboard: смотреть на камеру
-                if (Camera.main != null)
-                {
-                    _canvas.transform.LookAt(
-                        _canvas.transform.position + Camera.main.transform.forward,
-                        Camera.main.transform.up);
-                }
+                // Унифицированный размер: scale ∝ distance от камеры
+                ApplyDistanceScale();
 
                 yield return null;
             }
 
-            // Завершение
             Complete();
+        }
+
+        private void ApplyDistanceScale()
+        {
+            Transform cam = ProjectC.UI.Billboard.ActiveCamera;
+            if (cam == null)
+            {
+                var mainCam = Camera.main;
+                if (mainCam != null) cam = mainCam.transform;
+            }
+            if (cam == null) return;
+
+            float dist = Vector3.Distance(cam.position, transform.position);
+            if (dist < 0.1f) dist = 0.1f;
+
+            float scaleMult = dist / _referenceDistance;
+            transform.localScale = _baseScaleActual * scaleMult;
         }
 
         private void Complete()
@@ -134,7 +156,6 @@ namespace ProjectC.Combat.Client
 
         private void OnDisable()
         {
-            // Если выключили до завершения анимации — просто завершаем.
             if (_animRoutine != null)
             {
                 StopCoroutine(_animRoutine);

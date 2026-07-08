@@ -1,5 +1,5 @@
-// Editor script: creates DamageNumberConfig_Default.asset + PF_DamageNumber.prefab
-// Run once via execute_script.
+// Editor script: creates/updates PF_DamageNumber.prefab with Billboard component.
+// Run via execute_script.
 
 using UnityEngine;
 using UnityEditor;
@@ -10,10 +10,10 @@ public static class DamageNumberAssetsCreator
     public static void Execute()
     {
         CreateConfig();
-        CreatePrefab();
+        RecreatePrefab();
         AssetDatabase.SaveAssets();
         AssetDatabase.Refresh();
-        Debug.Log("[DamageNumberAssetsCreator] Done: Config + Prefab created.");
+        Debug.Log("[DamageNumberAssetsCreator] Done.");
     }
 
     private static void CreateConfig()
@@ -37,7 +37,7 @@ public static class DamageNumberAssetsCreator
         Debug.Log("[DamageNumberAssetsCreator] Created DamageNumberConfig_Default.asset");
     }
 
-    private static void CreatePrefab()
+    private static void RecreatePrefab()
     {
         string dir = "Assets/_Project/Resources/Prefabs";
         if (!AssetDatabase.IsValidFolder(dir))
@@ -47,10 +47,13 @@ public static class DamageNumberAssetsCreator
         }
 
         string prefabPath = dir + "/PF_DamageNumber.prefab";
-        if (AssetDatabase.LoadAssetAtPath<GameObject>(prefabPath) != null)
+
+        // Delete old prefab if exists
+        var existing = AssetDatabase.LoadAssetAtPath<GameObject>(prefabPath);
+        if (existing != null)
         {
-            Debug.Log("[DamageNumberAssetsCreator] PF_DamageNumber.prefab already exists, skipping.");
-            return;
+            AssetDatabase.DeleteAsset(prefabPath);
+            Debug.Log("[DamageNumberAssetsCreator] Deleted old PF_DamageNumber.prefab");
         }
 
         // Root GO
@@ -59,12 +62,15 @@ public static class DamageNumberAssetsCreator
         // World Space Canvas
         var canvas = root.AddComponent<Canvas>();
         canvas.renderMode = RenderMode.WorldSpace;
-        canvas.worldCamera = Camera.main;
-        canvas.sortingOrder = 100; // above most UI
+        canvas.sortingOrder = 100;
 
         var rectTransform = root.GetComponent<RectTransform>();
         rectTransform.sizeDelta = new Vector2(200f, 60f);
-        rectTransform.localScale = Vector3.one * 0.01f; // world-space canvas scale
+        rectTransform.localScale = new Vector3(0.01f, 0.01f, 0.01f);
+
+        // Billboard component (from ProjectC.UI)
+        var billboard = root.AddComponent<ProjectC.UI.Billboard>();
+        billboard.keepVertical = true;
 
         // TMP Text child
         var textGo = new GameObject("DamageText");
@@ -75,6 +81,9 @@ public static class DamageNumberAssetsCreator
         tmp.alignment = TMPro.TextAlignmentOptions.Center;
         tmp.color = Color.white;
         tmp.fontStyle = TMPro.FontStyles.Bold;
+        // Рекомендуем SDF-шрифт для масштабирования без потери качества
+        var defaultFont = Resources.Load<TMP_FontAsset>("Fonts & Materials/LiberationSans SDF");
+        if (defaultFont != null) tmp.font = defaultFont;
 
         var textRt = textGo.GetComponent<RectTransform>();
         textRt.anchorMin = new Vector2(0f, 0f);
@@ -96,6 +105,6 @@ public static class DamageNumberAssetsCreator
         var prefab = PrefabUtility.SaveAsPrefabAsset(root, prefabPath);
         Object.DestroyImmediate(root);
 
-        Debug.Log("[DamageNumberAssetsCreator] Created PF_DamageNumber.prefab with " + (prefab != null ? "success" : "failure"));
+        Debug.Log("[DamageNumberAssetsCreator] Recreated PF_DamageNumber.prefab (with Billboard)");
     }
 }

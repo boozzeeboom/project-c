@@ -56,10 +56,7 @@ MonoBehaviour:
   socialEnabled: 1
   defaultIdleActivity: 1
   patrolPattern: 0
-  patrolWaypoints:
-  - {x: 40007.48, y: 2502.77, z: 39984.94}
-  - {x: 39909.6, y: 2502.77, z: 40030.81}
-  - {x: 39970.4, y: 2502.77, z: 40030.81}
+  patrolWaypoints: []
   idleAtWaypointSec: 3
   wanderRadius: 8
   canFlee: 1

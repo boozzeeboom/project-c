@@ -36,4 +36,17 @@ NpcBrain.OnNetworkSpawn() искал NpcSocialBrain до его добавлен
 
 ---
 
-**Статус Phase 1:** ✅ Полностью завершён и проверен. 2 коммита, 7 новых/изменённых файлов, +800 строк.
+## Итерация от 2026-07-15 — Phase 1 UX: patrol waypoint markers
+
+**Задача:** Ручной ввод Vector3 координат для patrol waypoints неудобен.
+Решение: Transform[] маркеры прямо на NpcSpawner (drag-and-drop Empty из сцены).
+
+**Коммит:** `af99f10` — patrol waypoint markers — Transform[] на NpcSpawner вместо ручных координат
+
+**Изменения:**
+- `NpcSpawner.cs` — поле `patrolWaypointMarkers` (Transform[]), конвертация в Vector3[] при спавне
+- `NpcSocialBrain.cs` — `ApplySpawnerConfig(config, waypointsOverride=null)` — маркеры переопределяют конфиг
+
+---
+
+**Статус Phase 1:** ✅ Полностью завершён. 4 коммита, 8 файлов, +850 строк.

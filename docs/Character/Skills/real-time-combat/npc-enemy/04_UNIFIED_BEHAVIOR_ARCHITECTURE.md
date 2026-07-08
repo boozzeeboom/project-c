@@ -1,7 +1,7 @@
-# 04 — Unified NPC Behavior Architecture: синтез двух анализов
+﻿# 04 — Unified NPC Behavior Architecture: синтез двух анализов
 
 > **Дата:** 2026-07-15
-> **Статус:** ✅ Дизайн утверждён — это целевой документ для реализации
+> **Статус:** ✅ Дизайн утверждён | ✅ Phase 1 реализован (T-NPC-S01..S06) | ⬜ Phase 2 в очереди
 > **Источники:**
 > - `02_SOCIAL_HUMAN_BEHAVIOR.md` — модульная архитектура, 4 слоя поведения, ~44-62 ч
 > - `03_SOCIAL_HUMAN_BEHAVIOR_ANALYSIS.md` — соц-псих theories, personality, emotion, ~37.5 ч
@@ -448,7 +448,7 @@ public class SocialRoleConfig : ScriptableObject
 
 ## 10. Фазы реализации (объединённый план)
 
-### Phase 1 — «Живой NPC» (P0, ~10 часов)
+### Phase 1 — «Живой NPC» (P0, ~10 часов) ✅ **ВЫПОЛНЕНО** (коммиты bcc3795, 0219850)
 
 | Тикет | Название | Источник | Оценка |
 |---|---|---|---|
@@ -600,12 +600,12 @@ Assets/_Project/Scripts/AI/
 
 ## 15. Чек-лист перед началом реализации
 
-- [ ] `NpcBrain.cs` закоммичен (baseline)
-- [ ] `NpcSocialBrain` создан как пустой MonoBehaviour на тестовом префабе
-- [ ] `NpcSpawnerConfig` расширен (add-only поля)
+- [x] `NpcBrain.cs` закоммичен (baseline) — v0.4 с API
+- [x] `NpcSocialBrain` создан (~400 строк, Patrol/Flee/Grudge)
+- [x] `NpcSpawnerConfig` расширен (+35 строк add-only)
 - [ ] Создан 1 `.asset` `NpcPersonality_BanditNovice`
-- [ ] Дефолтные значения всех новых полей → backward compat (NPC без конфига = старое поведение)
-- [ ] `socialEnabled = false` → NPC ведёт себя как сейчас (playtest)
+- [x] Дефолтные значения → backward compat (socialEnabled=true на префабе, false в конфиге = старый FSM)
+- [x] `socialEnabled = false` → NPC ведёт себя как сейчас (SPAWN_TEST ✅)
 
 ---
 

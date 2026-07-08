@@ -89,6 +89,12 @@ namespace ProjectC.AI
         // Кэш ChunkLoader (найден в OnNetworkSpawn, используется в handlers).
         private ChunkLoader _chunkLoader;
 
+        // T-NPC-S00 fix: group formation tracking.
+        private readonly List<NpcSocialBrain> _ungroupedBrains = new List<NpcSocialBrain>();
+        private float _nextGroupCheckTime;
+        private const float GROUP_CHECK_INTERVAL = 6f;
+
+
         public override void OnNetworkSpawn()
         {
             base.OnNetworkSpawn();
@@ -148,10 +154,79 @@ namespace ProjectC.AI
         {
             if (!IsServer) return;
             if (_prefab == null) return;
+
+            // T-NPC-S00 fix: периодическая проверка и формирование групп.
+            if (Time.unscaledTime >= _nextGroupCheckTime)
+            {
+                _nextGroupCheckTime = Time.unscaledTime + GROUP_CHECK_INTERVAL;
+                TryFormGroups();
+            }
+
             if (Time.unscaledTime < _nextCheckTime) return;
             _nextCheckTime = Time.unscaledTime + _spawnInterval;
             TickSpawn();
         }
+
+        /// <summary>
+        /// T-NPC-S00 fix: сканирует негруппированных NPC и создаёт NpcGroupController для кластеров.
+        /// </summary>
+        private void TryFormGroups()
+        {
+            // Очищаем мёртвых и уже сгруппированных.
+            for (int i = _ungroupedBrains.Count - 1; i >= 0; i--)
+            {
+                var b = _ungroupedBrains[i];
+                if (b == null || b.IsDead || b.Group != null)
+                    _ungroupedBrains.RemoveAt(i);
+            }
+
+            if (_ungroupedBrains.Count < 2) return;
+
+            float radius = _config != null ? _config.groupSpawnRadius : 25f;
+            float radiusSq = radius * radius;
+            var visited = new System.Collections.Generic.HashSet<NpcSocialBrain>();
+
+            foreach (var seed in _ungroupedBrains)
+            {
+                if (visited.Contains(seed)) continue;
+
+                // Собираем кластер: все ungrouped NPC в радиусе от seed.
+                var cluster = new System.Collections.Generic.List<NpcSocialBrain> { seed };
+                visited.Add(seed);
+                for (int i = 0; i < cluster.Count; i++)
+                {
+                    foreach (var other in _ungroupedBrains)
+                    {
+                        if (visited.Contains(other)) continue;
+                        if ((cluster[i].transform.position - other.transform.position).sqrMagnitude <= radiusSq)
+                        {
+                            cluster.Add(other);
+                            visited.Add(other);
+                        }
+                    }
+                }
+
+                if (cluster.Count < 2) continue;
+                if (!_config.assignGroupOnSpawn) continue;
+
+                // Создаём NpcGroupController.
+                var groupGo = new GameObject($"NpcGroup_{cluster[0].name}_{cluster.Count}");
+                var netObj = groupGo.AddComponent<Unity.Netcode.NetworkObject>();
+                var controller = groupGo.AddComponent<NpcGroupController>();
+                controller.formationType = FormationType.Line;
+                netObj.Spawn(destroyWithScene: true);
+
+                foreach (var member in cluster)
+                    controller.AddMember(member);
+
+                if (_showDebugLogs)
+                    Debug.Log($"[NpcSpawner] Formed group of {cluster.Count} NPCs, leader={controller.leader?.name}");
+            }
+
+            // Убираем сгруппированных из ungrouped.
+            _ungroupedBrains.RemoveAll(b => b == null || b.Group != null);
+        }
+
 
         private void TickSpawn()
         {
@@ -271,6 +346,11 @@ namespace ProjectC.AI
             _spawned.Add(netObj);
             spawned = netObj;
 
+            // T-NPC-S00 fix: track ungrouped NPC for group formation.
+            var spawnedBrain = go.GetComponent<NpcSocialBrain>();
+            if (spawnedBrain != null && spawnedBrain.Group == null)
+                _ungroupedBrains.Add(spawnedBrain);
+
             if (attributedClientId != 0) RegisterSpawnTimestamp(attributedClientId);
 
             if (_showDebugLogs && _config != null)
@@ -279,6 +359,7 @@ namespace ProjectC.AI
             }
             return true;
         }
+
 
         // === T-NPC-09: chunk handlers ===
 

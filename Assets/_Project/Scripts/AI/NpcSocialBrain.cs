@@ -96,6 +96,9 @@ namespace ProjectC.AI
         private int _patrolIndex;
         private bool _patrolPingPongForward = true;
         private float _patrolWaitUntil;
+        private float _patrolStuckTimer;
+        private const float PATROL_STUCK_TIMEOUT = 15f;
+
         private Vector3 _wanderTarget;
         private float _wanderCooldown;
         private bool _isFleeing;
@@ -442,15 +445,36 @@ namespace ProjectC.AI
             if (Vector3.Distance(transform.position, tgt) < 1.5f)
             {
                 _patrolWaitUntil = Time.unscaledTime + idleAtWaypointSec;
+                _patrolStuckTimer = 0f;
                 AdvancePatrolIndex();
                 if (_agent.isOnNavMesh) { _agent.isStopped = true; _agent.ResetPath(); }
                 return;
             }
+
+            // T-NPC-S00 fix: anti-stuck timeout. Если агент не может добраться до waypoint >15с — пропускаем.
+            if (_agent.pathPending || _agent.remainingDistance > 1.5f)
+            {
+                _patrolStuckTimer += 0.5f; // SocialTick interval.
+                if (_patrolStuckTimer > PATROL_STUCK_TIMEOUT)
+                {
+                    if (_debugLog) Debug.Log($"[NpcSocialBrain] {name}: patrol stuck at waypoint {_patrolIndex}, skipping.");
+                    _patrolStuckTimer = 0f;
+                    _patrolWaitUntil = Time.unscaledTime + 1f;
+                    AdvancePatrolIndex();
+                    return;
+                }
+            }
+            else
+            {
+                _patrolStuckTimer = 0f;
+            }
+
             float speed = patrolSpeed > 0f ? patrolSpeed : _brain.moveSpeed;
             if (_agent.speed != speed) _agent.speed = speed;
             _agent.isStopped = false;
             _agent.SetDestination(tgt);
         }
+
 
         private void AdvancePatrolIndex()
         {
@@ -581,6 +605,7 @@ namespace ProjectC.AI
                 if (m == this || m == null || !m.IsDead) continue;
                 if (Vector3.Distance(transform.position, m.transform.position) > allyDeathRadius) continue;
                 killerTarget = m._brain?.CurrentAggroTarget ?? FindNearestPlayerInRange(allyDeathRadius * 1.5f);
+                killerClientId = ResolvePlayerClientId(killerTarget);
                 if (killerTarget != null)
                 {
                     if (enableVengeanceMemory && faction != null && VengeanceMemory.Instance != null && killerClientId != 0)
@@ -594,6 +619,20 @@ namespace ProjectC.AI
             }
             return false;
         }
+
+        private ulong ResolvePlayerClientId(IDamageTarget target)
+        {
+            if (target == null) return 0;
+            if (Unity.Netcode.NetworkManager.Singleton == null) return 0;
+            foreach (var c in Unity.Netcode.NetworkManager.Singleton.ConnectedClientsList)
+            {
+                if (c?.PlayerObject == null) continue;
+                var pt = c.PlayerObject.GetComponent<ProjectC.Combat.PlayerTarget>();
+                if (pt != null && pt == target) return c.ClientId;
+            }
+            return 0;
+        }
+
 
         private bool CheckLeaderAggrod(out IDamageTarget target)
         {
@@ -855,5 +894,14 @@ namespace ProjectC.AI
             }
             if (Group != null) Group.OnVocalCue(this, cue);
         }
+
+        // ==================== Public morale API (T-NPC-S11 fix) ====================
+
+        public void HearFearCry() { _morale.OnFearCryHeard(); }
+        public void HearVictoryRoar() { _morale.OnVictoryRoarHeard(); }
+        public void HearEnemyVictoryRoar() { _morale.OnEnemyVictoryRoarHeard(); }
+        public void OnLeaderDied() { _morale.OnLeaderDied(); }
+        public float MoraleValue => _morale.current;
     }
 }
+

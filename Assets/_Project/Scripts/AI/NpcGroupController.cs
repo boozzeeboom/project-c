@@ -162,20 +162,20 @@ namespace ProjectC.AI
             if (_debugLog)
                 Debug.Log($"[NpcGroupController] Member killed: {victim.name}, alive={AliveCount}");
 
-            // Если умер лидер — выбираем нового.
-            if (victim == leader)
+            // Если умер лидер — выбираем нового и наносим удар по морали группы.
+            bool wasLeader = (victim == leader);
+            if (wasLeader)
                 ElectNewLeader();
 
-            // Эффект на группу: -0.3 morale если умер лидер.
-            if (victim == leader)
+            if (wasLeader)
             {
                 foreach (var member in members)
                 {
                     if (member == victim || member == null || member.IsDead) continue;
-                    // NpcMoraleData — struct, нужен доступ через рефлексию или публичный метод.
-                    // Пока — опосредованно через NpcSocialBrain (будет в Phase 3).
+                    member.OnLeaderDied();
                 }
             }
+
 
             // DeathScream от умершего (если ещё не вызван).
             victim.DispatchVocalCue(NpcVocalCue.DeathScream);
@@ -257,15 +257,20 @@ namespace ProjectC.AI
                     case NpcVocalCue.DeathScream:
                         break;
                     case NpcVocalCue.FearCry:
-                        // T-NPC-S15: FearCry деморализует группу.
-                        // Доступ через NpcSocialBrain (morale — internal struct, нужен публичный API).
+                        member.HearFearCry();
                         break;
                     case NpcVocalCue.VictoryRoar:
-                        // T-NPC-S15: VictoryRoar воодушевляет группу (+0.1 morale).
+                        // Союзники воодушевляются, враги деморализуются.
+                        if (member.faction != null && source.faction != null && member.faction.IsAllied(source.faction))
+                            member.HearVictoryRoar();
+                        else if (member.faction != null && source.faction != null && member.faction.IsHostile(source.faction))
+                            member.HearEnemyVictoryRoar();
                         break;
                     case NpcVocalCue.Taunt:
+                        // Taunt: дебафф цели (TODO: применить дебафф через combat system).
                         break;
                 }
+
             }
         }
 

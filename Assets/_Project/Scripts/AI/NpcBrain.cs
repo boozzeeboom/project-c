@@ -250,6 +250,26 @@ namespace ProjectC.AI
             if (!IsServer) return;
             if (_state == BrainState.Dead) return;
             if (deltaHp <= 0) return;
+
+            // T-NPC-S00 fix: записать обидчика в GrudgeTable (RecordPlayerHit).
+            if (_socialBrain != null && _socialBrain.enableGrudgeMemory)
+            {
+                var nearestPlayer = FindNearestPlayerTarget(aggroRange * 3f);
+                if (nearestPlayer is ProjectC.Combat.PlayerTarget pt)
+                {
+                    // Найти clientId этого PlayerTarget.
+                    if (NetworkManager.Singleton != null)
+                    {
+                        foreach (var c in NetworkManager.Singleton.ConnectedClientsList)
+                        {
+                            if (c?.PlayerObject == null) continue;
+                            var cpt = c.PlayerObject.GetComponent<ProjectC.Combat.PlayerTarget>();
+                            if (cpt == pt) { _socialBrain.RecordPlayerHit(c.ClientId); break; }
+                        }
+                    }
+                }
+            }
+
             if (_behaviorType != BehaviorType.Passive) return;
             if (_isAggrod) return;
 
@@ -271,6 +291,7 @@ namespace ProjectC.AI
                     EnterChase();
             }
         }
+
 
         private void Update()
         {
@@ -680,7 +701,12 @@ namespace ProjectC.AI
             _state = BrainState.Dead;
             if (_agent != null && _agent.isOnNavMesh) _agent.isStopped = true;
             if (_animator != null) _animator.SetTrigger("Death");
+
+            // T-NPC-S00 fix: уведомить группу о смерти (OnMemberKilled → DeathScream + leader re-election).
+            _socialBrain?.DispatchVocalCue(NpcVocalCue.DeathScream);
+            _socialBrain?.Group?.OnMemberKilled(_socialBrain);
         }
+
 
         // === Surrendered (T-NPC-S16) ===
 

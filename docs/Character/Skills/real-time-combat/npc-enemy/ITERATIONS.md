@@ -1,3 +1,8 @@
+=======
+=======
+=======
+=======
+=======
 # Итерации реализации Unified NPC Behavior Architecture
 
 ## Итерация от 2026-07-15 — Phase 1: «Живой NPC»
@@ -128,7 +133,36 @@ FactionSystem, VengeanceMemory, Full Idle Activities (Socialize/Work/Sit/Sleep).
 - `ed524bc` — IsTargetValid(): защита от destroyed NpcTarget
 - `68ff672` — target-lock + post-combat guard пауза 4-6с
 
+
+=======
+
+=======
+
+=======
+=======
 **Итог фазы 4:** NPC-vs-NPC бой полностью функционален.
+
+---
+
+## Итерация от 2026-07-15 — Полное код-ревью
+
+**Задача:** Провести полный аудит кода Unified NPC Behavior Architecture после завершения Phase 1–4.
+Выявить критические баги, пробелы, места для рефакторинга.
+
+**Коммит:** `bbd81f9` — T-NPC-S00: код-ревью Unified NPC Behavior Architecture — 3 P0, 2 P1, 3 P2
+
+**Изменения:**
+- `docs/Character/Skills/real-time-combat/npc-enemy/05_CODE_REVIEW_FINDINGS.md` — (NEW) документ с 8 находками
+
+**Ключевые находки (подробно в 05_CODE_REVIEW_FINDINGS.md):**
+1. 🔴 P0: NpcSpawner не создаёт группы — вся групповая логика dead code
+2. 🔴 P0: CheckAllyKilled killerClientId всегда 0 — vengeance сломана
+3. 🔴 P0: OnMemberKilled не вызывается — DeathScream + leader re-election не работают
+4. 🟠 P1: RecordPlayerHit не вызывается — grudge пуст
+5. 🟠 P1: FearCry/VictoryRoar/Taunt без gameplay-эффектов
+6. 🟡 P2: FindObjectsByType спам
+7. 🟡 P2: Patrol unreachable waypoint — нет таймаута
+8. 🟡 P3: NpcSocialBrain монолит 1664 строк (порог превышен)
 =======
 
 =======

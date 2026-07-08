@@ -204,6 +204,9 @@ namespace ProjectC.AI
             if (!IsServer) { enabled = false; return; }
             if (_attacker == null) _attacker = GetComponent<NpcAttacker>();
             if (_target == null) _target = GetComponent<NpcTarget>();
+            // T-NPC-S19 fix: NpcAttacker.Target must be set for IsAlive().
+            if (_attacker != null && _attacker.Target == null && _target != null)
+                _attacker.Target = _target;
             _agent = GetComponent<NavMeshAgent>();
             _animator = GetComponentInChildren<Animator>();
             _spawnPoint = transform.position;

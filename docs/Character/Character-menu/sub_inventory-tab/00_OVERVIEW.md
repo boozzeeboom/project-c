@@ -152,7 +152,7 @@ InventoryUI (TAB-колесо) ⊂ CharacterWindow.tab-inventory ⊂ InventoryCl
 | InventoryClientState (singleton) | ✅ Готово |
 | InventoryServer (RPC hub) | ✅ Готово, 5 RPC'шек |
 | InventoryUI (TAB-колесо, UI Toolkit) | ✅ Готово, sublist, hover/select |
-| CharacterWindow.tab-inventory | ✅ Готово, подписка на ClientState |
+| CharacterWindow.tab-inventory | ✅ Готово, подписка на ClientState + кнопка «БРОСИТЬ» |
 | PickupItem → RequestPickup | ✅ Готово, server confirmation |
 | NetworkChestContainer → InventoryServer.AddItem | ✅ **РЕШЕНО (R3-005)** | v2 migration + InvokePermission + правильный clientId |
 | Multi-client sync | ⚠️ НЕ проверено (требует ParrelSync) |

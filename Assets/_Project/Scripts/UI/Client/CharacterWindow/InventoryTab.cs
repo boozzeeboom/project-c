@@ -73,6 +73,7 @@ namespace ProjectC.UI.Client
             public string displayName;
             public ItemType type;
             public int quantity;
+            public int slotIndex;  // для RequestDrop (slot в inventory server)
             public Sprite icon;
         }
 
@@ -396,6 +397,7 @@ namespace ProjectC.UI.Client
                     displayName = displayName,
                     type = (ItemType)first.type,
                     quantity = kvp.Value.totalQty,
+                    slotIndex = first.slotIndex,
                     icon = def != null ? def.icon : null,
                 });
             }
@@ -608,6 +610,13 @@ namespace ProjectC.UI.Client
             equipLabel.AddToClassList("inventory-equip-label");
             equipBtn.Add(equipLabel);
             row.Add(equipBtn);
+            // Кнопка БРОСИТЬ — аналог drop-btn из TAB-колеса (InventoryUI.OnDropClicked)
+            var dropBtn = new VisualElement { name = "row-drop-btn" };
+            dropBtn.AddToClassList("inventory-drop-btn");
+            var dropLabel = new Label { name = "row-drop-label", text = "БРОСИТЬ" };
+            dropLabel.AddToClassList("inventory-drop-label");
+            dropBtn.Add(dropLabel);
+            row.Add(dropBtn);
             return row;
         }
 
@@ -676,10 +685,60 @@ namespace ProjectC.UI.Client
                 {
                     equipBtn.style.display = DisplayStyle.None;
                 }
+
+                // [БРОСИТЬ] — для ВСЕХ предметов (аналог drop-btn из TAB-колеса)
+                var dropBtn = row.Q<VisualElement>("row-drop-btn");
+                if (dropBtn != null)
+                {
+                    dropBtn.style.display = DisplayStyle.Flex;
+                    int capturedSlotIndex = item.slotIndex;
+                    string capturedDropDisplayName = item.displayName;
+
+                    var prevDropCb = dropBtn.userData as UnityEngine.UIElements.EventCallback<UnityEngine.UIElements.ClickEvent>;
+                    if (prevDropCb != null)
+                        dropBtn.UnregisterCallback<UnityEngine.UIElements.ClickEvent>(prevDropCb);
+
+                    UnityEngine.UIElements.EventCallback<UnityEngine.UIElements.ClickEvent> dropCb = evt =>
+                    {
+                        OnDropFromInventoryClicked(capturedSlotIndex, capturedDropDisplayName);
+                        evt.StopPropagation();
+                    };
+                    dropBtn.userData = dropCb;
+                    dropBtn.RegisterCallback<UnityEngine.UIElements.ClickEvent>(dropCb);
+                }
             }
         }
 
         private void OnInventoryEquipBtnClick(ClickEvent evt) { /* placeholder for Unregister */ }
+
+        /// <summary>
+        /// БРОСИТЬ предмет из инвентаря в мир (аналог InventoryUI.OnDropClicked из TAB-колеса).
+        /// Сервер уберёт из инвентаря + заспавнит PickupItem в 1.5м перед игроком.
+        /// </summary>
+        private void OnDropFromInventoryClicked(int slotIndex, string displayName)
+        {
+            if (slotIndex < 0)
+            {
+                Debug.LogWarning("[InventoryTab] OnDropFromInventoryClicked: invalid slotIndex");
+                return;
+            }
+            var state = ProjectC.Items.Client.InventoryClientState.Instance;
+            if (state == null)
+            {
+                Debug.LogWarning("[InventoryTab] InventoryClientState not available");
+                return;
+            }
+            var localPlayer = UnityEngine.Object.FindAnyObjectByType<ProjectC.Player.NetworkPlayer>();
+            if (localPlayer == null)
+            {
+                Debug.LogWarning("[InventoryTab] NetworkPlayer not found");
+                return;
+            }
+            Vector3 playerPos = localPlayer.GetEffectivePosition();
+            Vector3 dropPos = playerPos + localPlayer.transform.forward * 1.5f;
+            state.RequestDrop(slotIndex, 1, dropPos, playerPos);
+            Debug.Log($"[InventoryTab] RequestDrop: slot={slotIndex} '{displayName}' at {dropPos}");
+        }
 
         /// <summary>
         /// T-P19: проверяет, надет ли предмет с inventory itemId.

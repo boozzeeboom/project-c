@@ -673,6 +673,26 @@
     color: rgb(230, 255, 230) !important;
 }
 
+/* Drop button — красный, тот же паттерн что equip-btn */
+.inventory-drop-btn {
+    width: 60px !important;
+    height: 22px !important;
+    margin-left: 4px !important;
+    background-color: rgba(160, 50, 50, 0.6) !important;
+    border-width: 1px !important;
+    border-color: rgba(200, 70, 70, 0.5) !important;
+    border-radius: 3px !important;
+    flex-shrink: 0 !important;
+    cursor: link !important;
+}
+.inventory-drop-btn:hover { background-color: rgba(200, 70, 70, 0.85) !important; }
+.inventory-drop-label {
+    flex-grow: 1 !important;
+    -unity-text-align: middle-center !important;
+    font-size: 10px !important;
+    color: rgb(255, 220, 220) !important;
+}
+
 /* === SESSION 2: Inventory split layout (list | detail) === */
 .inventory-layout {
     flex-direction: row !important;

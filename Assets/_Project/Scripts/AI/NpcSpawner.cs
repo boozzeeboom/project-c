@@ -28,6 +28,7 @@ using System.Collections.Generic;
 using UnityEngine;
 using Unity.Netcode;
 using ProjectC.World.Streaming;
+using ProjectC.Combat;
 
 namespace ProjectC.AI
 {
@@ -304,6 +305,14 @@ namespace ProjectC.AI
                 var applier = go.GetComponent<NpcVisualApplier>();
                 if (applier == null) applier = go.AddComponent<NpcVisualApplier>();
                 applier.Apply(_config.visualConfig);
+            }
+
+            // T-NPC-SKILL-04: skill set override.
+            if (_config != null && _config.npcSkillSet != null)
+            {
+                var attacker = go.GetComponent<NpcAttacker>();
+                if (attacker != null)
+                    attacker.SetSkillSet(_config.npcSkillSet);
             }
 
             // T-NPC-14: behavior override.

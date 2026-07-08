@@ -73,6 +73,12 @@ namespace ProjectC.AI
                  "Anti-restrictive: позволяет иметь один префаб и разные фракции через разные .asset.")]
         public NpcVisualConfig visualConfig;
 
+        [Header("Skills (T-NPC-SKILL-04)")]
+        [Tooltip("Набор скилов NPC (SkillNodeConfig с оверрайдами). " +
+                 "Если null — NPC использует дефолтную атаку из NpcCombatData (backward compat). " +
+                 "Применяется к NpcAttacker при спавне — НЕ подтирает префаб.")]
+        public NpcSkillSet npcSkillSet;
+
         // ============================================================
         // Phase 1-2: Social Behavior (T-NPC-S06/S07) — add-only, backward compat
         // ============================================================

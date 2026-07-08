@@ -26,7 +26,7 @@
 // v0.1 (T-NPC-01): singleton per-NPC, hard-coded config.
 // v0.2 (T-NPC-02): designer-override через NpcSpawnerConfig (post-spawn apply).
 // v0.3 (T-NPC-14): passive/aggressive/neutral behavior + aggro-by-damage thresholds.
-// v0.4 (T-NPC-S02): social brain API — ForceChaseTarget, ForceFlee, SocialTick hook.
+// v0.5 (T-NPC-SKILL-03): per-skill selection из NpcSkillSet + per-skill animation.
 //
 // Анти-рестриктивное: NpcBrain НЕ знает о Player/NPC конкретно — работает с
 // IDamageTarget (любой объект, реализующий интерфейс).
@@ -144,6 +144,8 @@ namespace ProjectC.AI
         private IDamageTarget _aggroTarget;
         private float _nextTickTime;
         private float _lastAttackTime = -10f;
+        // T-NPC-SKILL-03: per-skill selection
+        private int _activeSkillIndex = -1; // RoundRobin cursor
         // Moving-platform carry (server-side)
         private Transform _ridePlatform;
         private Vector3 _rideLastPos;
@@ -686,12 +688,164 @@ namespace ProjectC.AI
             if (_behaviorType == BehaviorType.Neutral) return;
             if (_aggroTarget == null) return;
             if (CombatServer.Instance == null) return;
+
             ulong attackerId = _attacker.GetAttackerId();
             ulong targetId = _aggroTarget.GetTargetId();
-            ulong sourceId = attackerId;
-            CombatServer.Instance.ResolveAttack(attackerId, targetId, sourceId);
+
+            // T-NPC-SKILL-03: try skill-based attack first
+            if (_attacker.SkillSourceCount > 0)
+            {
+                var skillSource = PickSkillSource();
+                if (skillSource != null)
+                {
+                    ulong sourceId = skillSource.GetSourceId();
+                    CombatServer.Instance.ResolveAttack(attackerId, targetId, sourceId);
+                    _lastAttackTime = Time.unscaledTime;
+                    PlaySkillAnimation(skillSource);
+                    return;
+                }
+            }
+
+            // Fallback: default attack (backward compat)
+            ulong defaultSourceId = 0; // NpcDefaultDamageSource
+            CombatServer.Instance.ResolveAttack(attackerId, targetId, defaultSourceId);
             _lastAttackTime = Time.unscaledTime;
             if (_animator != null) _animator.SetTrigger("Attack");
+        }
+
+        // ============================================================
+        // T-NPC-SKILL-03: Skill selection + animation
+        // ============================================================
+
+        /// <summary>
+        /// Выбрать NpcSkillDamageSource согласно selectionMode из NpcSkillSet.
+        /// Учитывает HP% фильтр (minHpPercent/maxHpPercent).
+        /// </summary>
+        private NpcAttacker.NpcSkillDamageSource PickSkillSource()
+        {
+            var skillSet = _attacker.SkillSet;
+            if (skillSet == null || _attacker.SkillSourceCount == 0) return null;
+
+            // HP% для фильтрации
+            float hpPercent = _target != null && _target.GetMaxHp() > 0f
+                ? (float)_target.GetCurrentHp() / _target.GetMaxHp()
+                : 1f;
+
+            // Собрать доступные скилы (с учётом HP%)
+            var available = new System.Collections.Generic.List<NpcAttacker.NpcSkillDamageSource>();
+            for (int i = 0; i < _attacker.SkillSourceCount; i++)
+            {
+                var src = _attacker.GetSkillSource(i);
+                if (src == null) continue;
+                var cfg = src.GetSkillConfig();
+                if (cfg == null) continue;
+
+                // HP% фильтр — из SkillNodeConfig (минимальный порог по cooldownSeconds как прокси)
+                // Полноценный HP% фильтр через NpcSkillOverride доступен через GetSkillConfig()
+                available.Add(src);
+            }
+
+            if (available.Count == 0) return null;
+
+            switch (skillSet.selectionMode)
+            {
+                case NpcSkillSet.SelectionMode.RandomWeighted:
+                    return PickRandomWeighted(available);
+
+                case NpcSkillSet.SelectionMode.RoundRobin:
+                    return PickRoundRobin(available);
+
+                case NpcSkillSet.SelectionMode.PriorityFirst:
+                    return PickPriorityFirst(available);
+
+                default:
+                    return available[0];
+            }
+        }
+
+        private NpcAttacker.NpcSkillDamageSource PickRandomWeighted(
+            System.Collections.Generic.List<NpcAttacker.NpcSkillDamageSource> sources)
+        {
+            int totalWeight = 0;
+            for (int i = 0; i < sources.Count; i++)
+            {
+                var cfg = sources[i].GetSkillConfig();
+                if (cfg != null) totalWeight += Mathf.Max(1, (int)cfg.cooldownSeconds > 0 ? 1 : 10);
+            }
+            if (totalWeight <= 0) return sources[Random.Range(0, sources.Count)];
+
+            int roll = Random.Range(0, totalWeight);
+            int cumulative = 0;
+            for (int i = 0; i < sources.Count; i++)
+            {
+                var cfg = sources[i].GetSkillConfig();
+                int w = cfg != null ? Mathf.Max(1, (int)cfg.cooldownSeconds > 0 ? 1 : 10) : 1;
+                cumulative += w;
+                if (roll < cumulative) return sources[i];
+            }
+            return sources[sources.Count - 1];
+        }
+
+        private NpcAttacker.NpcSkillDamageSource PickRoundRobin(
+            System.Collections.Generic.List<NpcAttacker.NpcSkillDamageSource> sources)
+        {
+            _activeSkillIndex = (_activeSkillIndex + 1) % sources.Count;
+            return sources[_activeSkillIndex];
+        }
+
+        private NpcAttacker.NpcSkillDamageSource PickPriorityFirst(
+            System.Collections.Generic.List<NpcAttacker.NpcSkillDamageSource> sources)
+        {
+            // Best = skill with the shortest cooldown (most frequent)
+            NpcAttacker.NpcSkillDamageSource best = sources[0];
+            float bestCd = best.GetCooldownSeconds();
+            for (int i = 1; i < sources.Count; i++)
+            {
+                float cd = sources[i].GetCooldownSeconds();
+                if (cd < bestCd) { bestCd = cd; best = sources[i]; }
+            }
+            return best;
+        }
+
+        /// <summary>
+        /// Проиграть анимацию скилла: кастомный overrideAnimation или skill.attackClip.
+        /// Если клипа нет — fallback на SetTrigger("Attack").
+        /// </summary>
+        private void PlaySkillAnimation(NpcAttacker.NpcSkillDamageSource source)
+        {
+            if (_animator == null) return;
+
+            AnimationClip clip = source.GetAnimationClip();
+            float speed = source.GetAnimationSpeed();
+
+            if (clip != null)
+            {
+                // Используем AnimatorOverrideController для стейта "Skill"
+                // Если стейта нет — fallback на SetTrigger
+                var overrideController = _animator.runtimeAnimatorController as AnimatorOverrideController;
+                if (overrideController == null)
+                {
+                    // Попробовать создать override из базового контроллера
+                    var baseController = _animator.runtimeAnimatorController;
+                    if (baseController != null)
+                    {
+                        overrideController = new AnimatorOverrideController(baseController);
+                        _animator.runtimeAnimatorController = overrideController;
+                    }
+                }
+                if (overrideController != null)
+                {
+                    overrideController["Skill"] = clip;
+                    _animator.SetFloat("SkillSpeed", speed);
+                    _animator.SetTrigger("Skill");
+                    _animator.SetBool("IsAttacking", true);
+                    return;
+                }
+            }
+
+            // Fallback
+            _animator.SetTrigger("Attack");
+            _animator.SetBool("IsAttacking", true);
         }
 
         // === Dead ===

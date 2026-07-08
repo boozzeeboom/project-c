@@ -146,14 +146,14 @@ namespace ProjectC.Combat.Client
             if (targetId == 0UL) return Vector3.zero;
 
             // Search NpcTarget
-            foreach (var npc in FindObjectsByType<NpcTarget>(FindObjectsSortMode.None))
+            foreach (var npc in FindObjectsByType<NpcTarget>(FindObjectsInactive.Exclude))
             {
                 if (npc != null && npc.GetTargetId() == targetId)
                     return npc.transform.position;
             }
 
             // Search PlayerTarget
-            foreach (var pt in FindObjectsByType<PlayerTarget>(FindObjectsSortMode.None))
+            foreach (var pt in FindObjectsByType<PlayerTarget>(FindObjectsInactive.Exclude))
             {
                 if (pt != null && pt.GetTargetId() == targetId)
                     return pt.transform.position;

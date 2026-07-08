@@ -46,7 +46,8 @@ namespace ProjectC.Skills
         None = 0,        // обычный навык (большинство)
         Throwables = 1,  // бросаемые предметы (гранаты, ножи, топоры)
         Traps = 2,       // ловушки/мины (пример подтипа, не фокусируемся)
-        // Будущие: AntigravWeapon = 3, Shield = 4, ...
+        Bows = 3,        // R5: лук — character-forward raycast + D100 hit/damage
+        Crossbows = 4,   // R5: арбалет — character-forward raycast + D100 hit/damage
     }
 
     /// <summary>
@@ -84,7 +85,8 @@ namespace ProjectC.Skills
 
         [Header("Combat Subtype (REFACTOR 2026-07-26)")]
         [Tooltip("Подтип внутри дисциплины. Виден только дизайнеру. " +
-                 "Определяет доп. настройки: Throwables → throwRange/throwScatter/throwCount, Traps → будущие поля.")]
+                 "Определяет доп. настройки: Throwables → throwRange/throwScatter/throwCount, " +
+                 "Bows/Crossbows → rangedMaxRange/rangedHitChance, Traps → будущие поля.")]
         public CombatSubtype subtype = CombatSubtype.None;
 
         [Header("Weapon Requirement (T-INP-09)")]
@@ -185,6 +187,14 @@ namespace ProjectC.Skills
         [Tooltip("Кол-во одновременно брошенных предметов. Умножает расход TROWN-предметов из инвентаря. " +
                  "Визуально создаются отдельные траектории для каждого броска.")]
         [Range(1, 10)] public int throwCount = 1;
+
+        // === R5: Bows/Crossbows-specific fields ===
+        [Header("Bows/Crossbows (активно при subtype = Bows или Crossbows)")]
+        [Tooltip("Максимальная дальность в метрах для fallback-поиска ближайшего NPC. Если character-forward raycast не попал в цель, ищется ближайший живой NPC в этом радиусе.")]
+        [Range(1f, 200f)] public float rangedMaxRange = 30f;
+
+        [Tooltip("Шанс попадания D100. При каждом выстреле бросается D100: если roll <= rangedHitChance — попадание с уроном roll% от базового (1-100%). Если roll > rangedHitChance — промах.")]
+        [Range(0f, 100f)] public float rangedHitChance = 70f;
 
         // === Public read-only API ===
 

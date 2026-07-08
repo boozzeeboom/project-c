@@ -347,10 +347,20 @@ namespace ProjectC.Skills
                 }
             }
 
+            // 6.8) R5: Bows/Crossbows fallback — если character-forward raycast не нашёл цель,
+            // ищем ближайшего NPC в радиусе rangedMaxRange (настраивается в инспекторе навыка).
+            if (targetId == 0UL && skillConfig != null
+                && (skillConfig.subtype == CombatSubtype.Bows || skillConfig.subtype == CombatSubtype.Crossbows)
+                && skillConfig.rangedMaxRange > 0f)
+            {
+                targetId = FindNearestNpcInRange(skillConfig.rangedMaxRange);
+                if (targetId != 0UL && Debug.isDebugBuild)
+                {
+                    Debug.Log($"[SkillInputService/R5] Bows/Crossbows fallback: found target {targetId} within {skillConfig.rangedMaxRange}m (skill='{skillId}')");
+                }
+            }
+
             // 7) Animation: T-INP-08 data-driven path preferred.
-            //    Если в SkillNodeConfig задан attackClip → SkillAnimationPlayer.Play() проиграет клип;
-            //    OnAttackImpact event на 60% клипа вызовет TryActivate заново и пошлёт RPC.
-            //    Fallback (legacy path): SetTrigger(string) — если attackClip == null.
 
             if (!skipAnimation && skillConfig != null && skillConfig.attackClip != null)
             {
@@ -358,9 +368,6 @@ namespace ProjectC.Skills
                 if (animPlayer != null)
                 {
                     animPlayer.Play(skillConfig, slot);
-                    // RPC уйдёт через OnAttackImpact event (или fallback timeout в SkillAnimationPlayer).
-                    // Не отправляем RPC здесь — иначе двойной удар.
-                    // 9) Set local cooldown (чтобы не спамить нажатиями)
                     _slotCooldownUntil[slot] = Time.unscaledTime + 0.5f;
                     if (Debug.isDebugBuild)
                     {
@@ -368,7 +375,6 @@ namespace ProjectC.Skills
                     }
                     return true;
                 }
-                // Если SkillAnimationPlayer не добавлен — fallback на SetTrigger ниже + warning.
                 if (Debug.isDebugBuild)
                 {
                     Debug.LogWarning($"[SkillInputService] Skill '{skillId}' has attackClip='{skillConfig.attackClip.name}' but SkillAnimationPlayer not found on owner. Falling back to legacy SetTrigger.");
@@ -376,26 +382,18 @@ namespace ProjectC.Skills
             }
 
             // Legacy path: SetTrigger (без attackClip, или SkillAnimationPlayer missing)
-            // skipAnimation=true (вызов из OnAttackImpact) — только RPC, без SetTrigger.
             if (!skipAnimation && _animator != null)
             {
                 _animator.SetTrigger(trigger);
             }
 
             // 8) RPC на сервер.
-            // R4: Thrown skills (Sphere/Box AOE) → character-forward raycast → ThrowArcVisual → RequestSkillCastAtPointRpc.
-            // R5: Ranged projectile skills (bows/crossbows/guns, SingleTarget) → RequestSkillCastRpc with equipped weapon sourceId.
-            // Melee AOE skills (Cone/Line) → RequestSkillCastRpc (AOE at attacker).
-            // Single-target unarmed/melee → RequestAttackRpc.
             try
             {
-                // REFACTOR 2026-07-26: thrown detection by explicit subtype, not heuristic
                 bool isThrownAoe = skillConfig != null
                     && skillConfig.subtype == ProjectC.Skills.CombatSubtype.Throwables
                     && skillConfig.isActive;
 
-                // R5: Ranged projectile detection (bows, crossbows, pneumatic, mesium rifles)
-                // Routes through ResolveSkillCast → attacker.GetDamageSource(sourceId) finds equipped weapon.
                 bool isRangedProjectile = skillConfig != null
                     && skillConfig.discipline == CombatDiscipline.Ranged
                     && skillConfig.subtype != CombatSubtype.Throwables
@@ -405,18 +403,16 @@ namespace ProjectC.Skills
 
                 if (isThrownAoe)
                 {
-                    // R4: Find target point via character-forward raycast
                     float throwRange = skillConfig.throwRange;
                     Vector3 baseTargetPoint = FindThrowTargetPoint(throwRange);
                     int throwCount = Mathf.Max(1, skillConfig.throwCount);
 
                     for (int i = 0; i < throwCount; i++)
                     {
-                        // Scatter offset (D6): throwScatter=6 → точный бросок, throwScatter=1 → сильный разброс
                         Vector3 scatterOffset = Vector3.zero;
                         if (throwCount > 1 || skillConfig.throwScatter < 6)
                         {
-                            int scatterRoll = Random.Range(1, 7); // D6
+                            int scatterRoll = Random.Range(1, 7);
                             float scatterFactor = Mathf.Max(0f, (float)(scatterRoll - skillConfig.throwScatter) / 6f);
                             if (scatterFactor > 0.01f)
                             {
@@ -430,13 +426,11 @@ namespace ProjectC.Skills
                         float dist = Vector3.Distance(_ownerPlayer.transform.position, targetPoint);
                         float flightTime = Mathf.Clamp(dist / 20f, 0.3f, 1.5f);
 
-                        // Client-side throw arc visual
-                        Color arcColor = new Color(1f, 0.4f, 0.1f);  // orange for throwables
+                        Color arcColor = new Color(1f, 0.4f, 0.1f);
                         ProjectC.Combat.Client.ThrowArcVisual.Fire(
                             _ownerPlayer.transform.position, targetPoint, flightTime,
                             skillConfig.aoeSize, arcColor);
 
-                        // T-INP-06 fix: show AOE debug at targetPoint
                         if (skillConfig.debugVisualizeAoe)
                         {
                             var viz = ProjectC.Skills.DebugVisualization.SkillAoeDebugVisualizer.EnsureExists();
@@ -446,19 +440,16 @@ namespace ProjectC.Skills
                             }
                         }
 
-                        // R4: server resolves throwable damage source from inventory
                         server.RequestSkillCastAtPointRpc(skillId, targetPoint, 0UL);
                     }
                 }
                 else if (isRangedProjectile)
                 {
-                    // R5: Ranged projectile (bow/crossbow/gun) — resolve equipped weapon sourceId
                     ulong weaponSourceId = ResolveEquippedWeaponSourceId();
                     if (Debug.isDebugBuild)
                     {
                         Debug.Log($"[SkillInputService/R5] Ranged projectile: skill='{skillId}' target={targetId} weaponSourceId={weaponSourceId} — routing to RequestSkillCastRpc");
                     }
-                    // Route through ResolveSkillCast → attacker.GetDamageSource(weaponSourceId) finds WeaponDamageSource
                     server.RequestSkillCastRpc(skillId, targetId, weaponSourceId);
                 }
                 else if (skillConfig != null && skillConfig.aoeFormula != ProjectC.Skills.AoeFormula.SingleTarget)
@@ -476,12 +467,8 @@ namespace ProjectC.Skills
                 return false;
             }
 
-            // 9) Set local cooldown (placeholder 0.5s; в будущем — из SkillNodeConfig.cooldownSeconds)
             _slotCooldownUntil[slot] = Time.unscaledTime + 0.5f;
 
-            // T-INP-06: AOE debug visualization hook. Editor/Dev build only.
-            // Для thrown-навыков AOE показывается в точке броска (см. блок isThrownAoe выше).
-            // Здесь — только для melee AOE (Cone/Line) от позиции игрока.
             if (skillConfig != null && skillConfig.debugVisualizeAoe && _ownerPlayer != null)
             {
                 bool isThrown = skillConfig.subtype == ProjectC.Skills.CombatSubtype.Throwables
@@ -508,7 +495,6 @@ namespace ProjectC.Skills
 
         // === Slot mapping API (для CharacterWindow drag-and-drop) ===
 
-        /// <summary>Привязать skill к слоту. Перезаписывает предыдущую привязку.</summary>
         public void BindSlot(SkillInputSlot slot, string skillId)
         {
             if (slot == SkillInputSlot.None) return;
@@ -524,20 +510,16 @@ namespace ProjectC.Skills
             SaveSlotBindings();
         }
 
-        /// <summary>Получить все известные skillId (из Server/SkillsClientState).</summary>
         public IReadOnlyList<string> GetAllSkillIds() => _allSkillIds;
 
-        /// <summary>Текущая привязка slot → skillId.</summary>
         public string GetSkillForSlot(SkillInputSlot slot)
         {
             if (_slotToSkillId.TryGetValue(slot, out var id)) return id;
             return "";
         }
 
-        /// <summary>Список всех привязанных slot'ов (для UI).</summary>
         public IReadOnlyDictionary<SkillInputSlot, string> GetAllBindings() => _slotToSkillId;
 
-        /// <summary>Установить список известных навыков (вызывается при старте из ClientState).</summary>
         public void SetKnownSkills(IEnumerable<string> skillIds)
         {
             _allSkillIds.Clear();
@@ -550,13 +532,6 @@ namespace ProjectC.Skills
 
         // === Helpers ===
 
-        // T-INP-09: weapon-mask gate. Проверяет что EquipmentClientState.GetActiveWeapon().weaponClass
-        // попадает в skillConfig.requiredWeaponMask. Возвращает false + denyReason если:
-        //  - EquipmentClientState.Instance == null (не spawned)
-        //  - Нет оружия в WeaponMain/WeaponOff (для AnyWeapon)
-        //  - weaponClass не входит в маску (для конкретных классов)
-        // Семантика AnyWeapon: требует ЛЮБОЕ оружие (хоть кулак, хоть меч).
-        // Семантика конкретного класса: требует именно этот класс (или любой из набора).
         private bool CheckWeaponMask(SkillNodeConfig skillConfig, out string denyReason)
         {
             denyReason = "";
@@ -568,7 +543,6 @@ namespace ProjectC.Skills
             var activeWeapon = ecs.GetActiveWeapon();
             if (activeWeapon == null) { denyReason = "Нет оружия в WeaponMain/WeaponOff"; return false; }
 
-            // (mask & weaponClass bit) != 0 → weaponClass попадает в маску.
             WeaponClassMask weaponBit = (WeaponClassMask)(1 << (int)activeWeapon.weaponClass);
             if ((skillConfig.requiredWeaponMask & weaponBit) == 0)
             {
@@ -578,8 +552,6 @@ namespace ProjectC.Skills
             return true;
         }
 
-        // T-INP-09: человекочитаемое описание маски для Debug.Log / будущего toast.
-        // Показывает только явно заданные биты (не computed aliases).
         private static string DescribeMaskShort(WeaponClassMask mask)
         {
             if (mask == WeaponClassMask.None) return "(нет ограничения)";
@@ -600,17 +572,11 @@ namespace ProjectC.Skills
             return parts.Count == 0 ? mask.ToString() : string.Join(" или ", parts);
         }
 
-        /// <summary>
-        /// REFACTOR 2026-07-26: Проверить наличие Throwable-предметов в инвентаре.
-        /// Используется вместо CheckWeaponMask для навыков с subtype=Throwables — 
-        /// throwables не экипируются в слоты оружия (equipSlot=None), лежат в инвентаре.
-        /// </summary>
         private bool HasThrowableInInventory(int requiredCount, out string denyReason)
         {
             denyReason = "";
             int foundCount = 0;
 
-            // Client-side: prefer InventoryClientState snapshot (authoritative projection)
             var clientState = ProjectC.Items.Client.InventoryClientState.Instance;
             if (clientState != null && clientState.CurrentSnapshot.HasValue)
             {
@@ -630,7 +596,6 @@ namespace ProjectC.Skills
                 }
             }
 
-            // Fallback: try InventoryWorld directly (works in host mode)
             if (foundCount == 0)
             {
                 var invDir = ProjectC.Items.InventoryWorld.Instance;
@@ -661,6 +626,24 @@ namespace ProjectC.Skills
         }
 
         /// <summary>
+        /// R5: Find nearest alive NpcTarget within range. Returns targetId or 0UL.
+        /// Used for Bows/Crossbows fallback when character-forward raycast misses.
+        /// </summary>
+        private ulong FindNearestNpcInRange(float range)
+        {
+            ProjectC.Combat.Core.IDamageTarget nearest = null;
+            float bestSq = range * range;
+            Vector3 pos = _ownerPlayer != null ? _ownerPlayer.transform.position : transform.position;
+            foreach (var npc in UnityEngine.Object.FindObjectsByType<ProjectC.Combat.NpcTarget>())
+            {
+                if (npc == null || !npc.IsAlive()) continue;
+                float dSq = (npc.transform.position - pos).sqrMagnitude;
+                if (dSq < bestSq) { bestSq = dSq; nearest = npc; }
+            }
+            return nearest != null ? nearest.GetTargetId() : 0UL;
+        }
+
+        /// <summary>
         /// R5: Resolve equipped weapon's itemId as sourceId for ranged projectile skills.
         /// Reads EquipmentClientState snapshot → WeaponMain/WeaponOff → itemId.
         /// Returns 0UL if no weapon equipped (server will return InvalidSource).
@@ -686,11 +669,6 @@ namespace ProjectC.Skills
             return 0UL;
         }
 
-        /// <summary>
-        /// R4: Find target point for thrown items using character-forward raycast.
-        /// Бросок всегда в направлении персонажа (не камеры) — character-centric throw.
-        /// Fallback: playerPos + characterForward * throwRange.
-        /// </summary>
         private Vector3 FindThrowTargetPoint(float throwRange = 15f)
         {
             if (_ownerPlayer == null) return Vector3.zero;
@@ -703,7 +681,6 @@ namespace ProjectC.Skills
                 return hit.point;
             }
 
-            // Fallback: flat ground plane in character's facing direction
             Vector3 flatDir = forward;
             flatDir.y = 0;
             if (flatDir.sqrMagnitude < 0.001f) flatDir = _ownerPlayer.transform.forward;
@@ -728,7 +705,6 @@ namespace ProjectC.Skills
 
         // ==================== Slot Bindings Persistence ====================
 
-        /// <summary>Вызывается из Initialize — восстанавливает бинды с диска.</summary>
         private void LoadSlotBindings()
         {
             if (_ownerPlayer == null) return;
@@ -745,7 +721,6 @@ namespace ProjectC.Skills
             }
         }
 
-        /// <summary>Вызывается из BindSlot — сохраняет все бинды на диск.</summary>
         private void SaveSlotBindings()
         {
             if (_ownerPlayer == null) return;

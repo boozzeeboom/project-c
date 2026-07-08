@@ -434,6 +434,33 @@ namespace ProjectC.Combat
 
                 var result = DamageCalculator.Calculate(attacker, target, source, rangePolicyForCalc);
 
+                // R5: Bows/Crossbows D100 hit/damage scaling.
+                // Roll D100: if roll <= rangedHitChance → hit with roll% of base damage (1-100%).
+                // If roll > rangedHitChance → miss.
+                bool isRangedWeaponSkill = skillConfig != null
+                    && (skillConfig.subtype == ProjectC.Skills.CombatSubtype.Bows
+                        || skillConfig.subtype == ProjectC.Skills.CombatSubtype.Crossbows);
+                if (isRangedWeaponSkill && result.isHit)
+                {
+                    int d100Roll = Random.Range(1, 101); // 1..100
+                    float hitChance = Mathf.Clamp(skillConfig.rangedHitChance, 0f, 100f);
+                    if (d100Roll <= hitChance)
+                    {
+                        float dmgPct = d100Roll / 100f; // 0.01..1.00
+                        int unscaledPre = result.preDefenseDamage;
+                        int unscaledFinal = result.finalDamage;
+                        result.preDefenseDamage = Mathf.Max(1, (int)(unscaledPre * dmgPct));
+                        result.finalDamage = Mathf.Max(1, (int)(unscaledFinal * dmgPct));
+                        Debug.Log($"[CombatServer/R5-D100] skill='{skillId}' d100={d100Roll} <= hitChance={hitChance} → HIT, dmgPct={dmgPct:F2}, preDefense: {unscaledPre}→{result.preDefenseDamage}, final: {unscaledFinal}→{result.finalDamage}");
+                    }
+                    else
+                    {
+                        result.isHit = false;
+                        result.finalDamage = 0;
+                        Debug.Log($"[CombatServer/R5-D100] skill='{skillId}' d100={d100Roll} > hitChance={hitChance} → MISS");
+                    }
+                }
+
                 Debug.Log($"[DamageCalculator/AOE] attacker={attackerId} → target={target.GetTargetId()} ({target.GetDisplayName()}), skill='{skillId}', source={source.GetDisplayName()}: isHit={result.isHit} preDefense={result.preDefenseDamage} final={result.finalDamage} isCrit={result.isCrit}");
 
                 if (result.isHit)

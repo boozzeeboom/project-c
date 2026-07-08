@@ -14,8 +14,7 @@
 
 .dialog-panel {
     width: 800px !important;
-    min-height: 400px !important;
-    max-height: 85vh !important;
+    height: 520px !important;
     background-color: rgb(31, 31, 46) !important;
     border-color: rgb(102, 178, 255) !important;
     border-width: 2px !important;

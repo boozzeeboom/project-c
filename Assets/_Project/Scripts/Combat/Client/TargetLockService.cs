@@ -13,6 +13,19 @@ using ProjectC.Combat.Core;
 namespace ProjectC.Combat.Client
 {
     /// <summary>
+    /// Режим сортировки целей для Q/E cycling.
+    /// В будущем — настройка игрока в UI Settings.
+    /// </summary>
+    public enum TargetCycleSortMode : byte
+    {
+        /// <summary>Ближайшая к персонажу цель — первая. CycleNext → дальше, CyclePrev → ближе.</summary>
+        ByDistance = 0,
+
+        /// <summary>Слева-направо по экрану (от camera.transform.right). CycleNext → правее, CyclePrev → левее.</summary>
+        ByScreenAngle = 1,
+    }
+
+    /// <summary>
     /// Client-only singleton. Maintains a persistent lock on one IDamageTarget.
     /// Created in NetworkManagerController alongside TargetHighlightService.
     /// </summary>
@@ -26,6 +39,9 @@ namespace ProjectC.Combat.Client
 
         [Tooltip("How often (seconds) the target cache refreshes.")]
         [SerializeField] private float _cacheRefreshInterval = 0.3f;
+
+        [Tooltip("Режим сортировки целей для Q/E. ByDistance = ближайшая первая (дефолт). ByScreenAngle = слева-направо по экрану.")]
+        [SerializeField] private TargetCycleSortMode _sortMode = TargetCycleSortMode.ByDistance;
 
         /// <summary>Currently locked target ID. 0 = no lock.</summary>
         public ulong LockedTargetId { get; private set; }
@@ -46,7 +62,7 @@ namespace ProjectC.Combat.Client
             public GameObject gameObject;
             public IDamageTarget damageTarget;
             public Vector3 position;
-            public float screenAngle; // radians, relative to camera forward
+            public float sortKey; // distance (метры) для ByDistance, screenAngle (radians) для ByScreenAngle
         }
 
         // === Lifecycle ===
@@ -82,7 +98,7 @@ namespace ProjectC.Combat.Client
                         float dist = Vector3.Distance(
                             LockedTargetObject.transform.position,
                             GetPlayerPosition());
-                        if (dist <= _maxCycleRange * 1.5f) // slightly more tolerant than cycle range
+                        if (dist <= _maxCycleRange * 1.5f)
                         {
                             valid = true;
                         }
@@ -91,7 +107,6 @@ namespace ProjectC.Combat.Client
                 if (!valid)
                 {
                     Unlock();
-                    // Auto-advance to next target if current died.
                     CycleNext();
                 }
             }
@@ -110,7 +125,6 @@ namespace ProjectC.Combat.Client
                 return;
             }
 
-            // Toggle: if already locked on this target, unlock.
             if (targetId == LockedTargetId)
             {
                 Unlock();
@@ -145,20 +159,20 @@ namespace ProjectC.Combat.Client
         }
 
         /// <summary>
-        /// Cycle to the previous target (left in screen space, i.e. higher angle).
+        /// Cycle to the previous target (closer / more-left depending on sort mode).
         /// </summary>
         public void CyclePrev()
         {
             RefreshCache();
             if (_cachedTargets.Count == 0) return;
 
-            SortByScreenAngle();
+            SortTargets();
 
             int currentIndex = FindCurrentIndex();
             int newIndex;
             if (currentIndex < 0)
             {
-                // No current lock — pick last in list (wraps to "previous").
+                // No current lock — pick last in sorted list.
                 newIndex = _cachedTargets.Count - 1;
             }
             else
@@ -167,44 +181,30 @@ namespace ProjectC.Combat.Client
                 if (newIndex < 0) newIndex = _cachedTargets.Count - 1;
             }
 
-            // Skip the locked target itself.
-            if (_cachedTargets[newIndex].targetId == LockedTargetId && _cachedTargets.Count > 1)
-            {
-                newIndex = newIndex - 1;
-                if (newIndex < 0) newIndex = _cachedTargets.Count - 1;
-            }
-
             var entry = _cachedTargets[newIndex];
             SetLockedTarget(entry.targetId, entry.gameObject);
         }
 
         /// <summary>
-        /// Cycle to the next target (right in screen space, i.e. lower angle).
+        /// Cycle to the next target (further / more-right depending on sort mode).
         /// </summary>
         public void CycleNext()
         {
             RefreshCache();
             if (_cachedTargets.Count == 0) return;
 
-            SortByScreenAngle();
+            SortTargets();
 
             int currentIndex = FindCurrentIndex();
             int newIndex;
             if (currentIndex < 0)
             {
-                // No current lock — pick first in list.
+                // No current lock — pick first in sorted list (closest / most-right).
                 newIndex = 0;
             }
             else
             {
                 newIndex = currentIndex + 1;
-                if (newIndex >= _cachedTargets.Count) newIndex = 0;
-            }
-
-            // Skip the locked target itself.
-            if (_cachedTargets[newIndex].targetId == LockedTargetId && _cachedTargets.Count > 1)
-            {
-                newIndex = newIndex + 1;
                 if (newIndex >= _cachedTargets.Count) newIndex = 0;
             }
 
@@ -220,7 +220,6 @@ namespace ProjectC.Combat.Client
             LockedTargetId = targetId;
             LockedTargetObject = targetObj;
 
-            // Highlight with infinite duration (persistent lock).
             TargetHighlightService.Instance?.Highlight(targetObj, 0f);
 
             OnTargetChanged?.Invoke(oldTarget, targetObj);
@@ -228,7 +227,10 @@ namespace ProjectC.Combat.Client
             if (Debug.isDebugBuild)
             {
                 var dt = targetObj != null ? targetObj.GetComponentInParent<IDamageTarget>() : null;
-                Debug.Log($"[TargetLockService] Lock: targetId={targetId} displayName='{dt?.GetDisplayName() ?? "?"}'");
+                float dist = targetObj != null
+                    ? Vector3.Distance(targetObj.transform.position, GetPlayerPosition())
+                    : 0f;
+                Debug.Log($"[TargetLockService] Lock: targetId={targetId} displayName='{dt?.GetDisplayName() ?? "?"}' dist={dist:F1}m mode={_sortMode}");
             }
         }
 
@@ -242,27 +244,40 @@ namespace ProjectC.Combat.Client
             return -1;
         }
 
-        private void SortByScreenAngle()
+        private void SortTargets()
         {
-            var cam = Camera.main;
-            Vector3 camForward = cam != null ? cam.transform.forward : Vector3.forward;
-            Vector3 camRight = cam != null ? cam.transform.right : Vector3.right;
             Vector3 playerPos = GetPlayerPosition();
 
-            // Compute screen-space angle for each target.
-            for (int i = 0; i < _cachedTargets.Count; i++)
+            switch (_sortMode)
             {
-                var e = _cachedTargets[i];
-                Vector3 toTarget = (e.position - playerPos).normalized;
-                // Horizontal angle: dot with camRight → -1 (left) to +1 (right).
-                float dotRight = Vector3.Dot(toTarget, camRight);
-                float dotForward = Vector3.Dot(toTarget, camForward);
-                e.screenAngle = Mathf.Atan2(dotRight, dotForward);
-                _cachedTargets[i] = e;
-            }
+                case TargetCycleSortMode.ByDistance:
+                    // Sort closest-first.
+                    for (int i = 0; i < _cachedTargets.Count; i++)
+                    {
+                        var e = _cachedTargets[i];
+                        e.sortKey = Vector3.Distance(e.position, playerPos);
+                        _cachedTargets[i] = e;
+                    }
+                    _cachedTargets.Sort((a, b) => a.sortKey.CompareTo(b.sortKey));
+                    break;
 
-            // Sort left-to-right: smallest angle (most right) first.
-            _cachedTargets.Sort((a, b) => a.screenAngle.CompareTo(b.screenAngle));
+                case TargetCycleSortMode.ByScreenAngle:
+                    // Sort left-to-right by horizontal screen angle.
+                    var cam = Camera.main;
+                    Vector3 camForward = cam != null ? cam.transform.forward : Vector3.forward;
+                    Vector3 camRight = cam != null ? cam.transform.right : Vector3.right;
+                    for (int i = 0; i < _cachedTargets.Count; i++)
+                    {
+                        var e = _cachedTargets[i];
+                        Vector3 toTarget = (e.position - playerPos).normalized;
+                        float dotRight = Vector3.Dot(toTarget, camRight);
+                        float dotForward = Vector3.Dot(toTarget, camForward);
+                        e.sortKey = Mathf.Atan2(dotRight, dotForward);
+                        _cachedTargets[i] = e;
+                    }
+                    _cachedTargets.Sort((a, b) => a.sortKey.CompareTo(b.sortKey));
+                    break;
+            }
         }
 
         private void RefreshCache()
@@ -275,7 +290,6 @@ namespace ProjectC.Combat.Client
             Vector3 playerPos = GetPlayerPosition();
             float rangeSq = _maxCycleRange * _maxCycleRange;
 
-            // Collect NpcTargets
             foreach (var npc in FindObjectsByType<NpcTarget>(FindObjectsSortMode.None))
             {
                 if (npc == null || !npc.IsAlive()) continue;
@@ -290,11 +304,10 @@ namespace ProjectC.Combat.Client
                 });
             }
 
-            // Collect PlayerTargets (skip self)
             foreach (var pt in FindObjectsByType<PlayerTarget>(FindObjectsSortMode.None))
             {
                 if (pt == null || !pt.IsAlive()) continue;
-                if (pt.GetTargetId() == GetLocalPlayerId()) continue; // skip self
+                if (pt.GetTargetId() == GetLocalPlayerId()) continue;
                 float dSq = (pt.transform.position - playerPos).sqrMagnitude;
                 if (dSq > rangeSq) continue;
                 _cachedTargets.Add(new TargetEntry

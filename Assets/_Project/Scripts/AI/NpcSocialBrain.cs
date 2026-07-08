@@ -141,6 +141,9 @@ namespace ProjectC.AI
             if (CheckGrudgeTrigger()) return;
             if (CheckFleeConditions()) return;
 
+            // T-NPC-S19: проверяем вражеских NPC других фракций.
+            if (CheckHostileNpcNearby()) return;
+
             if (_activeTriggers.Count > 0 && EvaluateThreatBeforeCombat()) return;
             if (CheckCover()) return;
             if (CheckSurrender()) return;
@@ -156,6 +159,34 @@ namespace ProjectC.AI
             if (!enableGrudgeMemory) return;
             _grudgeTable.RecordHit(playerClientId);
             if (_debugLog) Debug.Log($"[NpcSocialBrain] {name}: recorded grudge against player {playerClientId}");
+        }
+
+        // ==================== S19: Hostile NPC detection ====================
+        private bool CheckHostileNpcNearby()
+        {
+            if (faction == null || _brain == null) return false;
+            if (_brain.CurrentState != NpcBrain.BrainState.Idle) return false;
+
+            // Ищем NPC враждебных фракций в aggroRange.
+            foreach (var o in FindObjectsByType<NpcSocialBrain>(FindObjectsSortMode.None))
+            {
+                if (o == this || o == null || o.IsDead || o._brain == null || o.faction == null) continue;
+                if (!faction.IsHostile(o.faction)) continue;
+                float d = Vector3.Distance(transform.position, o.transform.position);
+                if (d <= _brain.aggroRange)
+                {
+                    // Нашли врага! Агримся через его NpcTarget.
+                    var enemyTarget = o.GetComponent<NpcTarget>();
+                    if (enemyTarget != null && enemyTarget.IsAlive())
+                    {
+                        if (_debugLog)
+                            Debug.Log($"[NpcSocialBrain] {name} (faction={faction.factionId}) aggro on {o.name} (faction={o.faction.factionId}), dist={d:F1}");
+                        _brain.ForceChaseTarget(enemyTarget);
+                        return true;
+                    }
+                }
+            }
+            return false;
         }
 
         // ==================== S20: Vengeance ====================

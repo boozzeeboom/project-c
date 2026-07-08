@@ -70,3 +70,14 @@ MonoBehaviour:
   groupSpawnRadius: 25
   enableGrudgeMemory: 1
   grudgeDurationSec: 300
+  threatEvaluationRange: 30
+  coverSeekRadius: 25
+  coverHpThreshold: 0.5
+  surrenderHpThreshold: 0.1
+  canSurrender: 1
+  enablePostCombat: 1
+  woundedDuration: 15
+  healHpThreshold: 0.4
+  socialRole: {fileID: 11400000, guid: 04b6b91529c7a004988d2da2334e63cd, type: 2}
+  faction: {fileID: 11400000, guid: 42a12103b0432c94eaf41010f0d6993f, type: 2}
+  enableVengeanceMemory: 1

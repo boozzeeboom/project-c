@@ -12,14 +12,14 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 25688cb068b64e44cbc704a012513162, type: 3}
   m_Name: NpcSpawner_Quest
   m_EditorClassIdentifier: Assembly-CSharp::ProjectC.AI.NpcSpawnerConfig
-  npcPrefab: {fileID: 3856242148590983311, guid: 66676f0230dd44b479d8956d60243844, type: 3}
+  npcPrefab: {fileID: 3856242148590983311, guid: 6bd79345e39535a4c876dbecdf904793, type: 3}
   spawnRadiusMin: 3
-  spawnRadiusMax: 5
-  activationRadius: 30
-  maxAliveCount: 1
+  spawnRadiusMax: 54.7
+  activationRadius: 147
+  maxAliveCount: 50
   spawnCheckInterval: 10
   spawnChance: 1
-  maxSpawnsPerPlayerPerMinute: 1
+  maxSpawnsPerPlayerPerMinute: 60
   groundMask:
     serializedVersion: 2
     m_Bits: 4294967295
@@ -49,7 +49,35 @@ MonoBehaviour:
     m_PreInfinity: 2
     m_PostInfinity: 2
     m_RotationOrder: 4
-  behaviorType: 1
+  behaviorType: 0
   passiveAggroHpThreshold: 25
   passiveMaxHitsPerMinute: 3
-  visualConfig: {fileID: 0}
+  visualConfig: {fileID: 11400000, guid: fc4d8d684dd9e7a469841aa9bc0e802b, type: 2}
+  socialEnabled: 1
+  personalityConfig: {fileID: 0}
+  defaultIdleActivity: 0
+  patrolPattern: 0
+  patrolWaypoints: []
+  idleAtWaypointSec: 3
+  wanderRadius: 8
+  canFlee: 1
+  fleeHpThreshold: 0.25
+  fleeAllySeekRadius: 30
+  alarmRadius: 15
+  allyDeathRadius: 20
+  isGuard: 0
+  assignGroupOnSpawn: 1
+  groupSpawnRadius: 25
+  enableGrudgeMemory: 1
+  grudgeDurationSec: 300
+  threatEvaluationRange: 30
+  coverSeekRadius: 25
+  coverHpThreshold: 0.5
+  surrenderHpThreshold: 0.1
+  canSurrender: 1
+  enablePostCombat: 1
+  woundedDuration: 15
+  healHpThreshold: 0.4
+  socialRole: {fileID: 11400000, guid: 04b6b91529c7a004988d2da2334e63cd, type: 2}
+  faction: {fileID: 11400000, guid: 9d04bc8ae32d31446b15ee6c18a4b916, type: 2}
+  enableVengeanceMemory: 1

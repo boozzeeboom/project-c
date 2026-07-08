@@ -538,7 +538,7 @@ namespace ProjectC.AI
                 }
 
                 if (_aggroTarget == null)
-                    _aggroTarget = FindNearestPlayerTarget(aggroRange);
+                    _aggroTarget = FindNearestHostileTarget(aggroRange);
             }
 
             switch (_state)
@@ -712,6 +712,46 @@ namespace ProjectC.AI
                 float d = (client.PlayerObject.transform.position - transform.position).sqrMagnitude;
                 if (d <= bestDistSq) { bestDistSq = d; best = tgt; }
             }
+            return best;
+        }
+
+        /// <summary>
+        /// T-NPC-S19: поиск ближайшей вражеской цели — игроки ИЛИ NPC враждебных фракций.
+        /// Заменяет FindNearestPlayerTarget для faction-aware поведения.
+        /// </summary>
+        private IDamageTarget FindNearestHostileTarget(float range)
+        {
+            IDamageTarget best = null;
+            float bestDistSq = range * range;
+            Vector3 myPos = transform.position;
+
+            // 1. Ищем игроков (всегда hostile).
+            if (NetworkManager.Singleton != null)
+            {
+                foreach (var client in NetworkManager.Singleton.ConnectedClientsList)
+                {
+                    if (client?.PlayerObject == null) continue;
+                    var pt = client.PlayerObject.GetComponent<ProjectC.Combat.PlayerTarget>();
+                    if (pt == null || !pt.IsAlive()) continue;
+                    float d = (client.PlayerObject.transform.position - myPos).sqrMagnitude;
+                    if (d <= bestDistSq) { bestDistSq = d; best = pt; }
+                }
+            }
+
+            // 2. Ищем NPC враждебных фракций (T-NPC-S19).
+            if (_socialBrain != null && _socialBrain.faction != null)
+            {
+                foreach (var npc in FindObjectsByType<NpcSocialBrain>(FindObjectsSortMode.None))
+                {
+                    if (npc == null || npc == _socialBrain || npc.IsDead || npc._brain == null || npc.faction == null) continue;
+                    if (!_socialBrain.faction.IsHostile(npc.faction)) continue;
+                    var nt = npc.GetComponent<NpcTarget>();
+                    if (nt == null || !nt.IsAlive()) continue;
+                    float d = (npc.transform.position - myPos).sqrMagnitude;
+                    if (d <= bestDistSq) { bestDistSq = d; best = nt; }
+                }
+            }
+
             return best;
         }
 

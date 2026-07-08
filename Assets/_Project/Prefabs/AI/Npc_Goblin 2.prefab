@@ -17,7 +17,7 @@ GameObject:
   - component: {fileID: 9065076845823180037}
   - component: {fileID: 2725879449892794617}
   m_Layer: 0
-  m_Name: Npc_Goblin
+  m_Name: Npc_Goblin 2
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -51,7 +51,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: d5a57f767e5e46a458fc5d3c628d0cbb, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Unity.Netcode.Runtime::Unity.Netcode.NetworkObject
-  GlobalObjectIdHash: 3360900214
+  GlobalObjectIdHash: 367998008
   InScenePlacedSourceGlobalObjectIdHash: 1158540882
   DeferredDespawnTick: 0
   Ownership: 1
@@ -251,7 +251,7 @@ Transform:
   m_GameObject: {fileID: 4162135491790752910}
   serializedVersion: 2
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: 0, y: 0.14, z: 0}
+  m_LocalPosition: {x: 0, y: 0.142, z: 0}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children:

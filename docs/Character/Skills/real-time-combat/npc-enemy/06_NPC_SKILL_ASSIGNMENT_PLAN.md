@@ -351,3 +351,41 @@ NPC (HumanM_Model) и игрок — оба используют Kevin Iglesias 
 - **Throwable-скилы NPC (гранаты):** NPC не имеют инвентаря — отдельная подсистема
 - **Skill-дерево для NPC:** NPC не «изучают» скилы — они получают их от `NpcSkillSet`
 - **Визуальные эффекты скилов (VFX):** текущий `SkillNodeConfig` не имеет VFX-полей — отдельный тикет
+
+---
+
+## 8. Что осталось доделать (после реализации)
+
+### 8.1 🔴 Стейт «Skill» в NpcAnimator_Goblin
+
+`NpcBrain.PlaySkillAnimation()` пытается использовать `AnimatorOverrideController` на стейт `"Skill"`. Если стейта нет — fallback на `SetTrigger("Attack")`. **Нужно добавить стейт «Skill»** в `NpcAnimator_Goblin.overrideController`:
+
+- Создать empty state `"Skill"` в Base Layer (с пустым motion)
+- Добавить parameter `"Skill"` (Trigger)
+- Добавить parameter `"SkillSpeed"` (Float)
+- Transition: AnyState → Skill (по триггеру), Skill → Idle (по `Exit Time = 1.0`)
+
+Без этого override-анимация не работает — всегда играет дефолтный Attack.
+
+### 8.2 🟡 HP% фильтр не подключён к NpcSkillOverride
+
+Поля `minHpPercent` / `maxHpPercent` объявлены в `NpcSkillOverride`, но `NpcBrain.PickSkillSource()` читает только `GetSkillConfig()` и не фильтрует по HP%. Нужно:
+
+- В `NpcSkillSet.GetAvailableSkillIndices(hpPercent)` — уже готово
+- Вызывать `GetAvailableSkillIndices()` в `NpcBrain.PickSkillSource()` вместо ручного сбора
+
+### 8.3 🟡 NpcSkillSetEditor (кастомный инспектор)
+
+`NpcSkillOverride` — struct, в инспекторе отображается неудобно (все поля разом). Нужен `[CustomEditor(typeof(NpcSkillSet))]` для:
+
+- Список скилов с preview: displayName, cooldown, priority
+- Визуальное разделение override-полей от AI-полей
+- Индикация «используется default / переопределено»
+
+### 8.4 🟢 AOE для NPC-скилов (отдельный тикет)
+
+Текущий `IDamageSource` не содержит AOE-полей. Для работы Cone/Sphere/Line/Box у NPC нужно либо расширить интерфейс, либо передавать AOE-параметры отдельным каналом в `CombatServer.ResolveAttack`.
+
+### 8.5 🟢 Удалить Editor-скрипт после использования
+
+`Assets/_Project/Editor/CreateNpcSkillSetGoblin.cs` — one-shot скрипт. Можно удалить после верификации (или оставить как пример для других NPC-типов).

@@ -53,6 +53,7 @@ MonoBehaviour:
   passiveAggroHpThreshold: 25
   passiveMaxHitsPerMinute: 3
   visualConfig: {fileID: 11400000, guid: fc4d8d684dd9e7a469841aa9bc0e802b, type: 2}
+  npcSkillSet: {fileID: 11400000, guid: 8149764943971cc4cbf60688846682d2, type: 2}
   socialEnabled: 1
   personalityConfig: {fileID: 0}
   defaultIdleActivity: 0

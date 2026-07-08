@@ -243,9 +243,10 @@ namespace ProjectC.Skills
             else if (skillId.StartsWith("social_"))      newDiscipline = CombatDiscipline.None;
             else return;  // неизвестный prefix — оставляем как есть
 
-            // Не перезаписываем, если уже выставлено вручную (отличается от prefix-mapping)
-            // Для существующих .asset — всегда проставится правильно при первом OnValidate.
-            discipline = newDiscipline;
+            // BUG-FIX: только первичная инициализация (discipline ещё None).
+            // После того как дизайнер выставил discipline вручную — не перезаписываем.
+            if (discipline == CombatDiscipline.None)
+                discipline = newDiscipline;
         }
 
         private static bool HasCycle(SkillNodeConfig node, HashSet<SkillNodeConfig> visited, HashSet<SkillNodeConfig> stack)

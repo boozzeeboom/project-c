@@ -9,7 +9,7 @@
 //     - Дисциплина: dropdown из 4 значений (Melee/Ranged/Defense/Placed)
 //     - Подтип: фильтрованный dropdown по дисциплине
 //       - Melee → None
-//       - Ranged → None, Throwables
+//       - Ranged → None, Throwables, Bows, Crossbows
 //       - Defense → None
 //       - Placed → None, Traps
 //     - isActive → AOE/Animation/Debug (только active)
@@ -75,6 +75,10 @@ namespace ProjectC.Editor.Skills
         private SerializedProperty _throwScatter;
         private SerializedProperty _throwCount;
 
+        // Bows/Crossbows (R5)
+        private SerializedProperty _rangedMaxRange;
+        private SerializedProperty _rangedHitChance;
+
         // Cached state
         private SkillCategory _cachedCategory;
         private CombatDiscipline _cachedDiscipline;
@@ -89,8 +93,8 @@ namespace ProjectC.Editor.Skills
         private static readonly string[] SubtypesNone = { "None" };
         private static readonly int[] SubtypeValuesNone = { (int)CombatSubtype.None };
 
-        private static readonly string[] SubtypesRanged = { "None", "Throwables" };
-        private static readonly int[] SubtypeValuesRanged = { (int)CombatSubtype.None, (int)CombatSubtype.Throwables };
+        private static readonly string[] SubtypesRanged = { "None", "Throwables", "Bows", "Crossbows" };
+        private static readonly int[] SubtypeValuesRanged = { (int)CombatSubtype.None, (int)CombatSubtype.Throwables, (int)CombatSubtype.Bows, (int)CombatSubtype.Crossbows };
 
         private static readonly string[] SubtypesPlaced = { "None", "Traps" };
         private static readonly int[] SubtypeValuesPlaced = { (int)CombatSubtype.None, (int)CombatSubtype.Traps };
@@ -134,6 +138,9 @@ namespace ProjectC.Editor.Skills
             _throwRange = serializedObject.FindProperty("throwRange");
             _throwScatter = serializedObject.FindProperty("throwScatter");
             _throwCount = serializedObject.FindProperty("throwCount");
+
+            _rangedMaxRange = serializedObject.FindProperty("rangedMaxRange");
+            _rangedHitChance = serializedObject.FindProperty("rangedHitChance");
         }
 
         public override void OnInspectorGUI()
@@ -171,8 +178,10 @@ namespace ProjectC.Editor.Skills
                 if (newDiscIdx != discIdx)
                 {
                     _discipline.enumValueIndex = DisciplineValues[newDiscIdx];
-                    // При смене дисциплины — сбрасываем subtype на None (если текущий не подходит)
                     _cachedDiscipline = (CombatDiscipline)DisciplineValues[newDiscIdx];
+                    // При смене дисциплины — сбрасываем subtype на None
+                    _subtype.enumValueIndex = (int)CombatSubtype.None;
+                    _cachedSubtype = CombatSubtype.None;
                 }
 
                 // Subtype: filtered per discipline
@@ -236,6 +245,15 @@ namespace ProjectC.Editor.Skills
                     EditorGUILayout.PropertyField(_throwRange);
                     EditorGUILayout.PropertyField(_throwScatter);
                     EditorGUILayout.PropertyField(_throwCount);
+                }
+
+                if (_cachedSubtype == CombatSubtype.Bows || _cachedSubtype == CombatSubtype.Crossbows)
+                {
+                    EditorGUILayout.Space();
+                    EditorGUILayout.LabelField("Bows / Crossbows Settings", EditorStyles.boldLabel);
+                    EditorGUILayout.HelpBox("Дальность и шанс попадания D100 для луков/арбалетов.", MessageType.Info);
+                    EditorGUILayout.PropertyField(_rangedMaxRange);
+                    EditorGUILayout.PropertyField(_rangedHitChance);
                 }
 
                 if (_cachedSubtype == CombatSubtype.Traps)

@@ -21,6 +21,7 @@ using UnityEngine;
 using UnityEngine.InputSystem;
 using Unity.Netcode;
 using ProjectC.Combat;
+using ProjectC.Combat.Client;  // T-HIGHLIGHT-01: TargetHighlightService
 using ProjectC.Combat.Core;
 using ProjectC.Equipment;  // T-INP-09: EquipmentClientState для GetActiveWeapon()
 using ProjectC.Player;  // NetworkPlayer
@@ -146,6 +147,19 @@ namespace ProjectC.Skills
             {
                 TryActivate(bestSlot);
             }
+
+            // 4) T-LOCK-01: Target cycling (Q/E, only on foot — не мешает кораблю).
+            if (!_ownerPlayer.IsInShip && TargetLockService.Instance != null)
+            {
+                var kb = Keyboard.current;
+                if (kb != null)
+                {
+                    if (kb[cfg.targetPrevKey].wasPressedThisFrame)
+                        TargetLockService.Instance.CyclePrev();
+                    if (kb[cfg.targetNextKey].wasPressedThisFrame)
+                        TargetLockService.Instance.CycleNext();
+                }
+            }
         }
 
         /// <summary>
@@ -262,9 +276,30 @@ namespace ProjectC.Skills
                 return false;
             }
 
-            // 5) Найти target (через делегат из NetworkPlayer)
+            // 5) T-LOCK-01: Найти target.
+            //    Приоритет 1: Locked target (Q/E) — для ВСЕХ скиллов (Primary/Secondary/Slot1-4).
+            //    Приоритет 2: TargetFinder (raycast + fallback) — только если нет лока.
             ulong targetId = 0UL;
-            if (TargetFinder != null)
+
+            if (TargetLockService.Instance != null && TargetLockService.Instance.LockedTargetId != 0UL)
+            {
+                var lockedObj = TargetLockService.Instance.LockedTargetObject;
+                if (lockedObj != null)
+                {
+                    var lockedDt = lockedObj.GetComponentInParent<IDamageTarget>();
+                    if (lockedDt != null && lockedDt.IsAlive())
+                    {
+                        targetId = TargetLockService.Instance.LockedTargetId;
+                    }
+                    else
+                    {
+                        // Цель умерла — снимаем лок.
+                        TargetLockService.Instance.Unlock();
+                    }
+                }
+            }
+
+            if (targetId == 0UL && TargetFinder != null)
             {
                 try { targetId = TargetFinder(); }
                 catch (System.Exception ex)
@@ -357,6 +392,16 @@ namespace ProjectC.Skills
                 if (targetId != 0UL && Debug.isDebugBuild)
                 {
                     Debug.Log($"[SkillInputService/R5] Bows/Crossbows fallback: found target {targetId} within {skillConfig.rangedMaxRange}m (skill='{skillId}')");
+                }
+            }
+
+            // 6.9) T-HIGHLIGHT-01: Подсветить найденную цель outline'ом.
+            if (targetId != 0UL)
+            {
+                var targetObj = FindGameObjectByTargetId(targetId);
+                if (targetObj != null)
+                {
+                    ProjectC.Combat.Client.TargetHighlightService.Instance?.Highlight(targetObj, 1.5f);
                 }
             }
 
@@ -641,6 +686,32 @@ namespace ProjectC.Skills
                 if (dSq < bestSq) { bestSq = dSq; nearest = npc; }
             }
             return nearest != null ? nearest.GetTargetId() : 0UL;
+        }
+
+        /// <summary>
+        /// T-HIGHLIGHT-01: Find a GameObject by targetId.
+        /// Searches all NpcTarget + PlayerTarget components in scene.
+        /// Returns the root GameObject of the target, or null.
+        /// </summary>
+        private GameObject FindGameObjectByTargetId(ulong targetId)
+        {
+            if (targetId == 0UL) return null;
+
+            // Search NpcTargets
+            foreach (var npc in UnityEngine.Object.FindObjectsByType<ProjectC.Combat.NpcTarget>())
+            {
+                if (npc != null && npc.GetTargetId() == targetId)
+                    return npc.gameObject;
+            }
+
+            // Search PlayerTargets
+            foreach (var pt in UnityEngine.Object.FindObjectsByType<ProjectC.Combat.PlayerTarget>())
+            {
+                if (pt != null && pt.GetTargetId() == targetId)
+                    return pt.gameObject;
+            }
+
+            return null;
         }
 
         /// <summary>

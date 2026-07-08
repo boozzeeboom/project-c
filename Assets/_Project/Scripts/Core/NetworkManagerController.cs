@@ -142,6 +142,10 @@ namespace ProjectC.Core
             // Принимает DamageResultDto от CombatServer (T-RTC06) через AttackLandedTargetRpc.
             // Подписка на events OnAttackLanded/OnDamageDealt/OnEntityKilled — будущий T-RTC10 (UI).
             CreateCombatClientState();
+            // T-HIGHLIGHT-01: TargetHighlightService — client-side outline highlighting for locked targets.
+            CreateTargetHighlightService();
+            // T-LOCK-01: TargetLockService — client-side persistent target lock with Q/E cycling.
+            CreateTargetLockService();
             // T-INP-09: SkillTreeWindow overlay
             CreateSkillTreeWindow();
             // T-INP-13: InputBindingsRuntime singleton (нужен ДО SkillInputService.Update polling)
@@ -501,6 +505,56 @@ namespace ProjectC.Core
             var go = new GameObject("[CombatClientState]");
             go.AddComponent<ProjectC.Combat.Client.CombatClientState>();
             Debug.Log("[NMC] Created [CombatClientState] as root GameObject");
+        }
+
+        /// <summary>
+        /// T-HIGHLIGHT-01: Создать TargetHighlightService как root GameObject.
+        /// Client-side singleton для подсветки целей outline'ом.
+        /// Паттерн идентичен CreateCombatClientState.
+        /// </summary>
+        private void CreateTargetHighlightService()
+        {
+            var existing = FindObjectsByType<ProjectC.Combat.Client.TargetHighlightService>(FindObjectsInactive.Include);
+            foreach (var inst in existing)
+            {
+                if (inst != null && inst.transform.parent == null)
+                {
+                    Debug.Log("[NMC] TargetHighlightService already root, skipping creation");
+                    return;
+                }
+            }
+            if (existing.Length > 0)
+            {
+                Debug.LogWarning($"[NMC] Found {existing.Length} non-root TargetHighlightService in scene — DontDestroyOnLoad would fail. Creating root replacement.");
+            }
+            var go = new GameObject("[TargetHighlightService]");
+            go.AddComponent<ProjectC.Combat.Client.TargetHighlightService>();
+            Debug.Log("[NMC] Created [TargetHighlightService] as root GameObject");
+        }
+
+        /// <summary>
+        /// T-LOCK-01: Создать TargetLockService как root GameObject.
+        /// Client-side singleton для persistent target lock и Q/E cycling.
+        /// Паттерн идентичен CreateTargetHighlightService.
+        /// </summary>
+        private void CreateTargetLockService()
+        {
+            var existing = FindObjectsByType<ProjectC.Combat.Client.TargetLockService>(FindObjectsInactive.Include);
+            foreach (var inst in existing)
+            {
+                if (inst != null && inst.transform.parent == null)
+                {
+                    Debug.Log("[NMC] TargetLockService already root, skipping creation");
+                    return;
+                }
+            }
+            if (existing.Length > 0)
+            {
+                Debug.LogWarning($"[NMC] Found {existing.Length} non-root TargetLockService in scene — DontDestroyOnLoad would fail. Creating root replacement.");
+            }
+            var go = new GameObject("[TargetLockService]");
+            go.AddComponent<ProjectC.Combat.Client.TargetLockService>();
+            Debug.Log("[NMC] Created [TargetLockService] as root GameObject");
         }
 
         /// <summary>

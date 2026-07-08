@@ -60,6 +60,12 @@ namespace ProjectC.Input
             public bool onlyOnFoot;
         }
 
+        [Header("Target Cycling (Q/E on foot, T-LOCK-01)")]
+        [Tooltip("Клавиша для предыдущей цели. Только на суше (не в корабле).")]
+        public Key targetPrevKey = Key.Q;
+        [Tooltip("Клавиша для следующей цели. Только на суше (не в корабле).")]
+        public Key targetNextKey = Key.E;
+
         [Header("Combat Skills (Q-INP-02)")]
         [Tooltip("6 биндов: ЛКМ/ПКМ (с модификаторами и без) → Primary/Secondary/Slot1-4. " +
                  "Фолбэк-клавиши (Digit1..4) удалены — Slot1-4 доступны ТОЛЬКО через Ctrl/Shift+мышь, " +

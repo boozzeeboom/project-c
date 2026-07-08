@@ -373,10 +373,47 @@ namespace ProjectC.Combat
 
             if (skillConfig.aoeFormula == ProjectC.Skills.AoeFormula.SingleTarget)
             {
-                if (primaryTargetId != 0 && _targets.TryGetValue(primaryTargetId, out var primary))
+                // T-LOCK-01: Obstruction check for locked/primary target.
+                // Server-side raycast: attacker → preferredTarget.
+                // If obstruction = another IDamageTarget → redirect damage.
+                // If obstruction = non-damageable (wall) → miss.
+                if (primaryTargetId != 0 && _targets.TryGetValue(primaryTargetId, out var preferredTarget))
                 {
-                    results.Add(primary);
-                    hitPoints.Add(primary.GetPosition());
+                    Vector3 attackerPos = attacker.GetPosition() + Vector3.up * 1.2f;
+                    Vector3 toPreferred = preferredTarget.GetPosition() - attackerPos;
+                    float dist = toPreferred.magnitude;
+
+                    if (dist > 0.01f && Physics.Raycast(attackerPos, toPreferred.normalized,
+                        out RaycastHit obstructionHit, dist, ~0, QueryTriggerInteraction.Ignore))
+                    {
+                        var obstruction = obstructionHit.collider.GetComponentInParent<ProjectC.Combat.Core.IDamageTarget>();
+                        if (obstruction != null && obstruction.GetTargetId() != primaryTargetId)
+                        {
+                            // Obstruction is another damageable — redirect damage to it.
+                            Debug.Log($"[CombatServer/Obstruction] skill='{skillId}': preferred={preferredTarget.GetDisplayName()} blocked by {obstruction.GetDisplayName()}, redirecting damage");
+                            results.Add(obstruction);
+                            hitPoints.Add(obstructionHit.point);
+                        }
+                        else if (obstruction == null)
+                        {
+                            // Raycast hit a wall/terrain — shot blocked, miss.
+                            Debug.Log($"[CombatServer/Obstruction] skill='{skillId}': preferred={preferredTarget.GetDisplayName()} blocked by non-damageable ({obstructionHit.collider.name}), MISS");
+                            SendErrorToClient(attackerId, "LineOfSightBlocked");
+                            return;
+                        }
+                        else
+                        {
+                            // obstruction == preferredTarget — raycast hit the target directly, OK.
+                            results.Add(preferredTarget);
+                            hitPoints.Add(preferredTarget.GetPosition());
+                        }
+                    }
+                    else
+                    {
+                        // No obstruction — raycast missed everything (or dist too small), target is clear.
+                        results.Add(preferredTarget);
+                        hitPoints.Add(preferredTarget.GetPosition());
+                    }
                 }
                 else if (!ProjectC.Combat.Core.TargetingService.TryGetTarget(
                     aoeOrigin, forward, ProjectC.Combat.Core.TargetingService.DefaultMaxDistance,
@@ -421,6 +458,34 @@ namespace ProjectC.Combat
                         ? (IRangePolicy)new MeleeRangePolicy()
                         : new RangedRangePolicy();
                     if (!rangePolicy.IsInRange(attacker, target, source)) continue;
+                }
+
+                // T-LOCK-01: Per-target obstruction check for AOE skills.
+                // Raycast from attacker to each target. If another IDamageTarget blocks → redirect.
+                // If non-damageable blocks → skip this target.
+                if (!useTargetPoint)
+                {
+                    Vector3 attackerPos = attacker.GetPosition() + Vector3.up * 1.2f;
+                    Vector3 toTarget = target.GetPosition() - attackerPos;
+                    float tDist = toTarget.magnitude;
+                    if (tDist > 0.01f && Physics.Raycast(attackerPos, toTarget.normalized,
+                        out RaycastHit aoeObsHit, tDist, ~0, QueryTriggerInteraction.Ignore))
+                    {
+                        var aoeObs = aoeObsHit.collider.GetComponentInParent<ProjectC.Combat.Core.IDamageTarget>();
+                        if (aoeObs != null && aoeObs.GetTargetId() != target.GetTargetId())
+                        {
+                            // Redirect damage to obstruction instead.
+                            Debug.Log($"[CombatServer/AOE-Obstruction] skill='{skillId}': target={target.GetDisplayName()} blocked by {aoeObs.GetDisplayName()}, redirecting");
+                            target = aoeObs;
+                        }
+                        else if (aoeObs == null)
+                        {
+                            // Wall/terrain — skip this target entirely.
+                            Debug.Log($"[CombatServer/AOE-Obstruction] skill='{skillId}': target={target.GetDisplayName()} blocked by non-damageable ({aoeObsHit.collider.name}), skipping");
+                            continue;
+                        }
+                        // else: aoeObs == target — raycast hit the target, OK.
+                    }
                 }
 
                 IRangePolicy rangePolicyForCalc;

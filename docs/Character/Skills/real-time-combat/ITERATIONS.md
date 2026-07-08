@@ -1,5 +1,25 @@
 # Итерации реализации — Ranged & Throwables
 
+## Итерация от 2026-07-27
+
+**Задача:** Подсвечивание цели (outline), переключение целей Q/E, obstruction check  
+**Документ:** `docs/Character/Skills/real-time-combat/100_TARGET_HIGHLIGHT_AND_SWITCHING.md`
+
+**Изменения:**
+- `Assets/_Project/Shaders/TargetOutline.shader` — NEW: URP inverted-hull outline shader
+- `Assets/_Project/Resources/Materials/M_TargetOutline.mat` — NEW: материал outline (оранжевый)
+- `Assets/_Project/Scripts/Combat/Client/TargetHighlightService.cs` — NEW: client-side singleton для outline highlighting
+- `Assets/_Project/Scripts/Combat/Client/TargetLockService.cs` — NEW: persistent target lock + Q/E cycling
+- `Assets/_Project/Scripts/Core/NetworkManagerController.cs` — add CreateTargetHighlightService + CreateTargetLockService
+- `Assets/_Project/Scripts/Input/InputBindingsConfig.cs` — add targetPrevKey(Q)/targetNextKey(E)
+- `Assets/_Project/Scripts/Skills/SkillInputService.cs` — highlight on target found, Q/E polling, locked target priority
+- `Assets/_Project/Scripts/Combat/Network/CombatServer.cs` — obstruction check: SingleTarget redirect + AOE per-target
+
+**Flow:**
+1. Q/E (пеший режим) → TargetLockService.CycleNext/CyclePrev → lock + infinite outline
+2. Любой скилл (ЛКМ/ПКМ/Ctrl/Shift) → TryActivate → locked target priority → RPC
+3. Сервер → raycast attacker→target → redirect на obstruction или miss через стену
+
 ## Итерация от 2026-07-20
 
 **Задача:** Реализация дальнего боя и бросковых навыков (Ranged + Thrown/Explosive)  

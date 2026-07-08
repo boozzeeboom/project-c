@@ -59,6 +59,7 @@
 - `003557b`: `PlayerAttacker.EnsureUnarmedFallback` — sourceId=0 всегда присутствует, даже при наличии оружия. Primary/Secondary без скилла больше не падают с InvalidSource.
 - `edc9db4`: `CombatServer.ResolveAttack` — obstruction check добавлен для unarmed/melee атак (ранее был только в ResolveSkillCast).
 - `7da14f5`: `SkillInputService.TryActivate` — cooldown guard пропускается при skipAnimation=true (повторный вызов из FireImpactRpc). Primary со скиллами с attackClip теперь наносит урон.
+- `4d90fb3`: `SkillInputService.GetThrowTarget` — throwables (гранаты) учитывают locked target (Q/E): цель в радиусе → точный бросок; цель дальше → бросок в её направлении на throwRange; без лока → forward fallback.
 
 ## Итерация от 2026-07-20
 

@@ -196,6 +196,33 @@ namespace ProjectC.Combat
             float now = Time.unscaledTime;
             if (!attacker.CanAttack(source, now)) { SendErrorToClient(attackerId, "OnCooldown"); return; }
 
+            // T-LOCK-01: Obstruction check для unarmed/melee (ResolveAttack).
+            // Серверный raycast от атакующего к цели. Если другой IDamageTarget на пути —
+            // перенаправляем урон в него. Если стена — miss.
+            {
+                Vector3 attackerPos = attacker.GetPosition() + Vector3.up * 1.2f;
+                Vector3 toTarget = target.GetPosition() - attackerPos;
+                float tDist = toTarget.magnitude;
+                if (tDist > 0.01f && Physics.Raycast(attackerPos, toTarget.normalized,
+                    out RaycastHit obsHit, tDist, ~0, QueryTriggerInteraction.Ignore))
+                {
+                    var obstruction = obsHit.collider.GetComponentInParent<IDamageTarget>();
+                    if (obstruction != null && obstruction.GetTargetId() != targetId)
+                    {
+                        Debug.Log($"[CombatServer/Obstruction] ResolveAttack: target={target.GetDisplayName()} blocked by {obstruction.GetDisplayName()}, redirecting damage");
+                        target = obstruction;
+                        targetId = target.GetTargetId();
+                    }
+                    else if (obstruction == null)
+                    {
+                        Debug.Log($"[CombatServer/Obstruction] ResolveAttack: target={target.GetDisplayName()} blocked by non-damageable ({obsHit.collider.name}), MISS");
+                        SendErrorToClient(attackerId, "LineOfSightBlocked");
+                        return;
+                    }
+                    // else: obstruction == target — OK.
+                }
+            }
+
             IRangePolicy rangePolicy = source.GetRange() < 3.0f
                 ? (IRangePolicy)new MeleeRangePolicy()
                 : new RangedRangePolicy();

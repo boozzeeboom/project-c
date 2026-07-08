@@ -179,7 +179,16 @@ namespace ProjectC.AI
             : 0f;
 
         // T-NPC-S02: public accessor для NpcSocialBrain (читает приватное _aggroTarget).
-        public IDamageTarget CurrentAggroTarget => _aggroTarget;
+        // T-NPC-S19 fix: авто-очистка destroyed reference чтобы NpcSocialBrain не крашился.
+        public IDamageTarget CurrentAggroTarget
+        {
+            get
+            {
+                if (_aggroTarget != null && !IsTargetValid(_aggroTarget))
+                    _aggroTarget = null;
+                return _aggroTarget;
+            }
+        }
         public bool IsSocialEnabled => _socialEnabled;
 
         public void ApplySpawnerBehavior(BehaviorType behavior, float aggroHpThreshold, int maxHitsPerMinute)
@@ -552,6 +561,11 @@ namespace ProjectC.AI
                 case BrainState.Surrendered: HandleSurrendered(); break;
             }
 
+            // T-NPC-S19 fix: сбрасываем _aggroTarget если цель уничтожена (MissingReference).
+            // IDamageTarget может быть destroyed UnityObject — IsAlive() кинет MissingReferenceException.
+            if (_aggroTarget != null && !IsTargetValid(_aggroTarget))
+                _aggroTarget = null;
+
             UpdateAnimator();
 
             // T-NPC-S02: SocialTick — throttled внутри NpcSocialBrain (~0.5с).
@@ -581,7 +595,7 @@ namespace ProjectC.AI
         {
             if (_behaviorType == BehaviorType.Passive && !_isAggrod) return;
             if (_behaviorType == BehaviorType.Neutral) return;
-            if (_aggroTarget == null) return;
+            if (_aggroTarget == null || !IsTargetValid(_aggroTarget)) { _aggroTarget = null; return; }
             if (Vector3.Distance(transform.position, _aggroTarget.GetPosition()) > aggroRange) { _aggroTarget = null; return; }
             EnterChase();
         }
@@ -596,7 +610,7 @@ namespace ProjectC.AI
 
         private void HandleChase()
         {
-            if (_aggroTarget == null) { EnterIdle(); return; }
+            if (_aggroTarget == null || !IsTargetValid(_aggroTarget)) { _aggroTarget = null; EnterIdle(); return; }
             Vector3 targetPos = _aggroTarget.GetPosition();
             float dist = Vector3.Distance(transform.position, targetPos);
 
@@ -633,7 +647,7 @@ namespace ProjectC.AI
 
         private void HandleAttack()
         {
-            if (_aggroTarget == null) { EnterIdle(); return; }
+            if (_aggroTarget == null || !IsTargetValid(_aggroTarget)) { _aggroTarget = null; EnterIdle(); return; }
             if (!_aggroTarget.IsAlive()) { _aggroTarget = null; EnterIdle(); return; }
 
             float dist = Vector3.Distance(transform.position, _aggroTarget.GetPosition());
@@ -756,6 +770,17 @@ namespace ProjectC.AI
             }
 
             return best;
+        }
+
+        /// <summary>
+        /// T-NPC-S19: проверка что IDamageTarget всё ещё валиден (не destroyed UnityObject).
+        /// Интерфейс IDamageTarget не наследует UnityEngine.Object → == null не ловит destroyed.
+        /// </summary>
+        private static bool IsTargetValid(IDamageTarget tgt)
+        {
+            if (tgt is UnityEngine.Object uobj && uobj == null) return false;
+            try { return tgt.IsAlive(); }
+            catch (MissingReferenceException) { return false; }
         }
 
         private void FaceTarget(Vector3 targetPos)

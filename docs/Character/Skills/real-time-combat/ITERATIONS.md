@@ -1,5 +1,26 @@
 # Итерации реализации — Ranged & Throwables
 
+## Итерация от 2026-07-28
+
+**Задача:** Всплывающие цифры урона (World Space TMP) — для всех типов атак, AOE, критов
+**Коммит:** `4eb0296` — T-DMGNUM01: всплывающие цифры урона (World Space TMP)
+**Документ:** `docs/Character/Skills/real-time-combat/110_DAMAGE_NUMBERS.md`
+
+**Изменения:**
+- `Assets/_Project/Scripts/Combat/Config/DamageNumberConfig.cs` — NEW: SO-конфиг (цвета по типам урона, размеры, кривая фейда)
+- `Assets/_Project/Resources/Combat/DamageNumberConfig_Default.asset` — NEW: дефолтный конфиг
+- `Assets/_Project/Scripts/Combat/Client/DamageNumberInstance.cs` — NEW: компонент анимации на world-space TMP (всплытие + затухание)
+- `Assets/_Project/Scripts/Combat/Client/DamageNumberService.cs` — NEW: client-side singleton + object pool
+- `Assets/_Project/Resources/Prefabs/PF_DamageNumber.prefab` — NEW: префаб (World Space Canvas + TMP)
+- `Assets/_Project/Scripts/Core/NetworkManagerController.cs` — MOD: CreateDamageNumberService()
+- `Assets/_Editor/DamageNumberAssetsCreator.cs` — NEW: Editor-скрипт создания SO + префаба
+
+**Flow:**
+1. CombatClientState.OnDamageDealt → DamageNumberService.OnDamageDealt
+2. DamageNumberService: проверка showDamageNumbers → поиск позиции цели → спавн из пула
+3. DamageNumberInstance: анимация (float up + fade по кривой) → возврат в пул
+4. AOE: каждая цель получает отдельный RPC → отдельная цифра — естественно
+
 ## Итерация от 2026-07-27
 
 **Задача:** Подсвечивание цели (outline), переключение целей Q/E, obstruction check  

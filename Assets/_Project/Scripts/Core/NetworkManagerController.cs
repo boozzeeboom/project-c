@@ -146,6 +146,8 @@ namespace ProjectC.Core
             CreateTargetHighlightService();
             // T-LOCK-01: TargetLockService — client-side persistent target lock with Q/E cycling.
             CreateTargetLockService();
+            // T-DMGNUM-01: DamageNumberService — client-side floating damage numbers.
+            CreateDamageNumberService();
             // T-INP-09: SkillTreeWindow overlay
             CreateSkillTreeWindow();
             // T-INP-13: InputBindingsRuntime singleton (нужен ДО SkillInputService.Update polling)
@@ -555,6 +557,31 @@ namespace ProjectC.Core
             var go = new GameObject("[TargetLockService]");
             go.AddComponent<ProjectC.Combat.Client.TargetLockService>();
             Debug.Log("[NMC] Created [TargetLockService] as root GameObject");
+        }
+
+        /// <summary>
+        /// T-DMGNUM-01: Создать DamageNumberService как root GameObject.
+        /// Client-side singleton для всплывающих цифр урона.
+        /// Паттерн идентичен CreateTargetLockService.
+        /// </summary>
+        private void CreateDamageNumberService()
+        {
+            var existing = FindObjectsByType<ProjectC.Combat.Client.DamageNumberService>(FindObjectsInactive.Include);
+            foreach (var inst in existing)
+            {
+                if (inst != null && inst.transform.parent == null)
+                {
+                    Debug.Log("[NMC] DamageNumberService already root, skipping creation");
+                    return;
+                }
+            }
+            if (existing.Length > 0)
+            {
+                Debug.LogWarning($"[NMC] Found {existing.Length} non-root DamageNumberService in scene — DontDestroyOnLoad would fail. Creating root replacement.");
+            }
+            var go = new GameObject("[DamageNumberService]");
+            go.AddComponent<ProjectC.Combat.Client.DamageNumberService>();
+            Debug.Log("[NMC] Created [DamageNumberService] as root GameObject");
         }
 
         /// <summary>

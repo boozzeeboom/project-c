@@ -109,7 +109,28 @@ FactionSystem, VengeanceMemory, Full Idle Activities (Socialize/Work/Sit/Sleep).
 **Тикеты:** T-NPC-S19, T-NPC-S20, T-NPC-S21
 **Пропущен:** T-NPC-S22 (рефакторинг на модули — опциональный, отложен)
 
-**Статус Phase 4:** ✅ Реализация завершена. ⬜ Требуется игровое тестирование.
+=======
+
+## Итерация от 2026-07-15 — Phase 4 fixes: NPC-vs-NPC combat debug
+
+**Проблемы после реализации Phase 4:**
+1. NPC разных фракций не видели друг друга (NpcBrain.FindNearestPlayerTarget только игроки)
+2. NpcAttacker.Target = null → IsAlive()=false → атака отбрасывалась молча
+3. NpcAttacker._defaultSource = null → InvalidSource
+4. Destroyed NpcTarget → MissingReferenceException (спам + лаги)
+5. ResolveActiveTriggers переключал цель посреди боя → дрифт
+6. После боя NPC сразу бежал в патруль → дрифт
+
+**Коммиты:**
+- `b77b84e` — FindNearestHostileTarget: игроки + вражеские NPC
+- `99c858f` — NpcAttacker.Target = _target
+- `acd59e6` — EnsureDefaultSource(): ленивое создание _defaultSource
+- `ed524bc` — IsTargetValid(): защита от destroyed NpcTarget
+- `68ff672` — target-lock + post-combat guard пауза 4-6с
+
+**Итог фазы 4:** NPC-vs-NPC бой полностью функционален.
+=======
+
 =======
 
 =======

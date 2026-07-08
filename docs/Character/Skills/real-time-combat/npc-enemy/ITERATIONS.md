@@ -50,3 +50,27 @@ NpcBrain.OnNetworkSpawn() искал NpcSocialBrain до его добавлен
 ---
 
 **Статус Phase 1:** ✅ Полностью завершён. 4 коммита, 8 файлов, +850 строк.
+
+---
+
+## Итерация от 2026-07-15 — Phase 2: «Социальная группа»
+
+**Задача:** Реализация Phase 2 (P1) согласно `04_UNIFIED_BEHAVIOR_ARCHITECTURE.md`:
+NPC координируются в группе, эмоционально реагируют, зовут на помощь, оплакивают союзников.
+
+**Коммит:** `6a2e54e` — T-NPC-S07..S12: Phase 2 — эмоции, мораль, социальные триггеры, групповой контроллер, vocal cues
+
+**Изменения:**
+- `NpcEmotion.cs` — (NEW) enum NpcEmotion (Calm/Alert/Fear/Anger/Despair/Victory) + class NpcEmotionState
+- `NpcPersonalityConfig.cs` — (NEW) ScriptableObject: 5 traits (courage/aggression/loyalty/recklessness/mercy)
+- `NpcMoraleData.cs` — (NEW) struct: расчёт морали (0..1), модификаторы, ShouldFlee, ShouldSurrender, DamageMultiplier
+- `NpcGroupController.cs` — (NEW) NetworkBehaviour: групповой координатор (Alarm broadcast, MemberKilled, Retreat, VocalCues, ElectLeader)
+- `NpcVocalCue.cs` — (NEW) enum: 5 голосовых сигналов (AlertCall/DeathScream/Taunt/FearCry/VictoryRoar)
+- `NpcSocialBrain.cs` — расширен: UpdateEmotion, EvaluateTriggers, ResolveActiveTriggers, CheckAllyKilled/LeaderAggrod/AllyInCombat/Outnumbered/ReinforcementNearby, DispatchVocalCue
+- `NpcSpawnerConfig.cs` — add-only: поле personalityConfig
+
+**Тикеты:** T-NPC-S07, T-NPC-S08, T-NPC-S09, T-NPC-S10, T-NPC-S11, T-NPC-S12
+
+**Статус Phase 2:** ✅ Реализация завершена. ⬜ Требуется игровое тестирование.
+=======
+

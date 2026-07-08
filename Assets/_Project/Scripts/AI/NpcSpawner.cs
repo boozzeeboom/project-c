@@ -1,4 +1,4 @@
-// Project C: Real-Time Combat Engine — T-NPC-02
+﻿// Project C: Real-Time Combat Engine — T-NPC-02
 // NpcSpawner: server-side spawner NPC-врагов вокруг ближайшего игрока.
 // Design: docs/Character/Skills/real-time-combat/70_NPC_ENEMIES.md §2.1.
 //
@@ -38,6 +38,10 @@ namespace ProjectC.AI
         [SerializeField] private NpcSpawnerConfig _config;
         [Tooltip("Точка якорь (по умолчанию — transform.position спавнера).")]
         [SerializeField] private Transform _anchor;
+
+        [Header("Patrol Waypoints (scene markers)")]
+        [Tooltip("Transform-маркеры для патруля. Ставишь Empty в сцену, перетаскиваешь сюда. Если заданы — переопределяют patrolWaypoints из NpcSpawnerConfig.")]
+        public Transform[] patrolWaypointMarkers;
 
         [Header("Debug")]
         [SerializeField] private bool _showDebugLogs = false;
@@ -246,7 +250,17 @@ namespace ProjectC.AI
                     var socialBrain = go.GetComponent<NpcSocialBrain>();
                     if (socialBrain == null)
                         socialBrain = go.AddComponent<NpcSocialBrain>();
-                    socialBrain.ApplySpawnerConfig(_config);
+                    Vector3[] markerPositions = null;
+                    if (patrolWaypointMarkers != null && patrolWaypointMarkers.Length > 0)
+                    {
+                        markerPositions = new Vector3[patrolWaypointMarkers.Length];
+                        for (int m = 0; m < patrolWaypointMarkers.Length; m++)
+                        {
+                            if (patrolWaypointMarkers[m] != null)
+                                markerPositions[m] = patrolWaypointMarkers[m].position;
+                        }
+                    }
+                    socialBrain.ApplySpawnerConfig(_config, markerPositions);
                     if (_showDebugLogs)
                         Debug.Log($"[NpcSpawner] Applied social config to {go.name}: idle={_config.defaultIdleActivity}, flee={_config.canFlee}, grudge={_config.enableGrudgeMemory}");
                 }

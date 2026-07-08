@@ -1,4 +1,4 @@
-// Project C: Real-Time Combat Engine — T-NPC-S01
+﻿// Project C: Real-Time Combat Engine — T-NPC-S01
 // NpcSocialBrain: companion MonoBehaviour для NpcBrain.
 // Добавляет patrol, flee, grudge memory поверх существующего FSM (add-only).
 // Design: docs/Character/Skills/real-time-combat/npc-enemy/04_UNIFIED_BEHAVIOR_ARCHITECTURE.md §1.
@@ -394,12 +394,12 @@ namespace ProjectC.AI
         public bool IsDead => _brain != null && _brain.CurrentState == NpcBrain.BrainState.Dead;
 
         /// <summary>Применить конфигурацию из NpcSpawnerConfig (вызывается NpcSpawner после спавна).</summary>
-        public void ApplySpawnerConfig(NpcSpawnerConfig config)
+        public void ApplySpawnerConfig(NpcSpawnerConfig config, Vector3[] waypointsOverride = null)
         {
             if (config == null) return;
             idleActivity = config.defaultIdleActivity;
             patrolPattern = config.patrolPattern;
-            patrolWaypoints = config.patrolWaypoints;
+            patrolWaypoints = (waypointsOverride != null && waypointsOverride.Length > 0) ? waypointsOverride : config.patrolWaypoints;
             idleAtWaypointSec = config.idleAtWaypointSec;
             wanderRadius = config.wanderRadius;
             canFlee = config.canFlee;

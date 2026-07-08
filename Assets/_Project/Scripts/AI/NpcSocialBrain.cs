@@ -76,6 +76,9 @@ namespace ProjectC.AI
         [Range(0.01f, 0.2f)] public float healRegenRate = 0.05f;
         [Range(20f, 80f)] public float reinforcementSeekRadius = 50f;
 
+        // T-NPC-S19: короткая пауза после боя перед возобновлением idle.
+        private float _postCombatGuardUntil;
+
         private enum PostCombatState { None, Wounded, Healing, SeekingReinforcement }
         private PostCombatState _postCombat = PostCombatState.None;
         private float _postCombatTimer;
@@ -150,6 +153,14 @@ namespace ProjectC.AI
 
             CheckPostCombat();
 
+            // T-NPC-S19: при выходе из боя ставим guard-паузу на 4-6 сек.
+            if (_wasInCombat && _brain.CurrentState == NpcBrain.BrainState.Idle
+                && _postCombat == PostCombatState.None && Time.unscaledTime > _postCombatGuardUntil)
+            {
+                _postCombatGuardUntil = Time.unscaledTime + Random.Range(4f, 6f);
+                _wasInCombat = false;
+            }
+
             if (ResolveActiveTriggers()) return;
             if (_brain.CurrentState == NpcBrain.BrainState.Idle) ExecuteIdleActivity();
         }
@@ -165,7 +176,9 @@ namespace ProjectC.AI
         private bool CheckHostileNpcNearby()
         {
             if (faction == null || _brain == null) return false;
+            // T-NPC-S19 fix: проверяем врагов только из Idle. Если уже есть цель — не переключаемся.
             if (_brain.CurrentState != NpcBrain.BrainState.Idle) return false;
+            if (_brain.CurrentAggroTarget != null) return false;
 
             // Ищем NPC враждебных фракций в aggroRange.
             foreach (var o in FindObjectsByType<NpcSocialBrain>(FindObjectsSortMode.None))
@@ -297,6 +310,13 @@ namespace ProjectC.AI
         // ==================== S21: All Idle Activities ====================
         private void ExecuteIdleActivity()
         {
+            // T-NPC-S19: если недавно вышел из боя — стоим на страже, не патрулируем.
+            if (Time.unscaledTime < _postCombatGuardUntil)
+            {
+                if (_agent != null && _agent.isOnNavMesh) _agent.isStopped = true;
+                return;
+            }
+
             switch (idleActivity)
             {
                 case NpcIdleActivity.StandStill: ExecuteStandStill(); break;
@@ -536,6 +556,14 @@ namespace ProjectC.AI
         private bool ResolveActiveTriggers()
         {
             if (_activeTriggers.Count == 0) return false;
+
+            // T-NPC-S19 fix: если уже дерёмся с живой целью — не переключаемся.
+            if (_brain.CurrentState == NpcBrain.BrainState.Chase ||
+                _brain.CurrentState == NpcBrain.BrainState.Attack)
+            {
+                if (_brain.CurrentAggroTarget != null) return false;
+            }
+
             SocialTriggerType bestType = SocialTriggerType.ReinforcementNearby;
             SocialTriggerData bestTrigger = default;
             foreach (var t in _activeTriggers) if (t.Type >= bestType) { bestType = t.Type; bestTrigger = t; }

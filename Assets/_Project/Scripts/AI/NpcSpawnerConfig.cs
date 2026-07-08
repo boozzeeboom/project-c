@@ -74,12 +74,16 @@ namespace ProjectC.AI
         public NpcVisualConfig visualConfig;
 
         // ============================================================
-        // Phase 1: Social Behavior (T-NPC-S06) — add-only, backward compat
+        // Phase 1-2: Social Behavior (T-NPC-S06/S07) — add-only, backward compat
         // ============================================================
 
         [Header("Social Behavior (T-NPC-S01+)")]
         [Tooltip("Включает NpcSocialBrain при спавне. Если false — NPC использует только старый FSM.")]
         public bool socialEnabled = true;
+
+        [Header("Personality (T-NPC-S07)")]
+        [Tooltip("Конфиг личности NPC. Если null — используются дефолты (courage=0.7 и т.д.).")]
+        public NpcPersonalityConfig personalityConfig;
 
         [Header("Idle Activity")]
         [Tooltip("Тип idle-активности по умолчанию. StandStill = текущее поведение (backward compat).")]

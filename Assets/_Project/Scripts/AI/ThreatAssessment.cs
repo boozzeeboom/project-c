@@ -144,7 +144,8 @@ namespace ProjectC.AI
             }
 
             // Fallback: поиск nearby NPC (дорогой путь — только если группы нет).
-            foreach (var npc in Object.FindObjectsByType<NpcSocialBrain>(FindObjectsSortMode.None))
+            foreach (var npc in NpcSocialBrain.AllBrains)
+
             {
                 if (npc == null || npc.IsDead) continue;
                 float dSq = (npc.transform.position - origin).sqrMagnitude;

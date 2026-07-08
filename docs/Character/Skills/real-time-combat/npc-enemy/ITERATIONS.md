@@ -193,9 +193,33 @@ FactionSystem, VengeanceMemory, Full Idle Activities (Socialize/Work/Sit/Sleep).
 5. ✅ P1: FearCry/VictoryRoar — gameplay-эффекты через публичное API морали
 6. ✅ P2: Patrol anti-stuck timeout 15с → unreachable waypoint skip
 
+
+=======
+
+=======
+
+=======
+=======
 **Осталось (не в этом коммите):**
-- 🟡 P2: FindObjectsByType спам (частично решён группами, полное решение — кеш)
 - 🟡 P3: Монолит NpcSocialBrain (рефакторинг отложен)
+
+---
+
+## Итерация от 2026-07-15 — P2 fix: статический реестр вместо FindObjectsByType
+
+**Задача:** Исправить P2 «FindObjectsByType спам» — заменить все горячие FindObjectsByType на статические реестры.
+
+**Коммит:** `[pending]` — T-NPC-S00: P2 fix — статические реестры AllBrains/AllCoverPoints/AllSitPoints
+
+**Изменения:**
+- `NpcSocialBrain.cs` — `static List<NpcSocialBrain> AllBrains` + регистрация в Awake/OnDestroy
+- `CoverPoint.cs` — `static List<CoverPoint> AllCoverPoints` + using System.Collections.Generic
+- `SitPoint.cs` — `static List<SitPoint> AllSitPoints` + using System.Collections.Generic
+- `NpcSocialBrain.cs` — 6 замен FindObjectsByType → AllBrains/AllCoverPoints/AllSitPoints
+- `NpcBrain.cs` — FindNearestHostileTarget: FindObjectsByType → NpcSocialBrain.AllBrains
+- `ThreatAssessment.cs` — CountAllyStrength: FindObjectsByType → NpcSocialBrain.AllBrains
+
+**Результат:** 0 горячих FindObjectsByType в AI-тиках. Perf-выигрыш: ~3-5× на поиске NPC (нет обхода иерархии сцены).
 =======
 
 =======

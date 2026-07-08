@@ -15,7 +15,11 @@ namespace ProjectC.AI
 {
     public class NpcSocialBrain : MonoBehaviour
     {
+        // T-NPC-S00 P2 fix: статический реестр всех NpcSocialBrain — заменяет FindObjectsByType.
+        public static readonly List<NpcSocialBrain> AllBrains = new List<NpcSocialBrain>();
+
         [Header("Debug")]
+
         [SerializeField] private bool _debugLog = false;
 
         [Header("Faction (T-NPC-S19)")]
@@ -123,6 +127,7 @@ namespace ProjectC.AI
 
         private void Awake()
         {
+            AllBrains.Add(this);
             _brain = GetComponent<NpcBrain>();
             _agent = GetComponent<NavMeshAgent>();
             _target = GetComponent<NpcTarget>();
@@ -130,6 +135,12 @@ namespace ProjectC.AI
             _morale.Initialize(personalityConfig);
             _emotion.Reset();
         }
+
+        private void OnDestroy()
+        {
+            AllBrains.Remove(this);
+        }
+
 
         public void Tick(NpcBrain brain)
         {
@@ -184,7 +195,8 @@ namespace ProjectC.AI
             if (_brain.CurrentAggroTarget != null) return false;
 
             // Ищем NPC враждебных фракций в aggroRange.
-            foreach (var o in FindObjectsByType<NpcSocialBrain>(FindObjectsSortMode.None))
+            foreach (var o in AllBrains)
+
             {
                 if (o == this || o == null || o.IsDead || o._brain == null || o.faction == null) continue;
                 if (!faction.IsHostile(o.faction)) continue;
@@ -300,7 +312,7 @@ namespace ProjectC.AI
         {
             Vector3 best = Vector3.zero;
             float bestD = fleeAllySeekRadius * fleeAllySeekRadius;
-            foreach (var o in FindObjectsByType<NpcSocialBrain>(FindObjectsSortMode.None))
+            foreach (var o in AllBrains)
             {
                 if (o == this || o._brain == null || o._brain.CurrentState == NpcBrain.BrainState.Dead) continue;
                 if (faction != null && o.faction != null && !faction.IsAllied(o.faction)) continue;
@@ -308,6 +320,7 @@ namespace ProjectC.AI
                 if (d < bestD && d > 0.01f) { bestD = d; best = o.transform.position; }
             }
             return best;
+
         }
 
         // ==================== S21: All Idle Activities ====================
@@ -367,7 +380,7 @@ namespace ProjectC.AI
         {
             NpcSocialBrain best = null;
             float bestD = 15f * 15f;
-            foreach (var o in FindObjectsByType<NpcSocialBrain>(FindObjectsSortMode.None))
+            foreach (var o in AllBrains)
             {
                 if (o == this || o == null || o.IsDead || o._brain == null) continue;
                 if (faction != null && o.faction != null && !faction.IsAllied(o.faction)) continue;
@@ -376,6 +389,7 @@ namespace ProjectC.AI
                 if (d < bestD && d > 0.01f) { bestD = d; best = o; }
             }
             return best;
+
         }
 
         private void ExecuteWork()
@@ -401,7 +415,8 @@ namespace ProjectC.AI
             _sitSearchCooldown = Time.unscaledTime + 5f;
             SitPoint best = null;
             float bestD = 25f * 25f;
-            foreach (var sp in FindObjectsByType<SitPoint>(FindObjectsSortMode.None))
+            foreach (var sp in SitPoint.AllSitPoints)
+
             {
                 if (sp == null || sp.IsOccupied) continue;
                 float d = (transform.position - sp.SitPosition).sqrMagnitude;
@@ -661,10 +676,11 @@ namespace ProjectC.AI
             }
             if (faction != null)
             {
-                foreach (var o in FindObjectsByType<NpcSocialBrain>(FindObjectsSortMode.None))
+                foreach (var o in AllBrains)
                 {
                     if (o == this || o == null || o._brain == null) continue;
                     if (o.faction == null || !faction.IsAllied(o.faction)) continue;
+
                     bool inCombat = o._brain.CurrentState == NpcBrain.BrainState.Chase || o._brain.CurrentState == NpcBrain.BrainState.Attack;
                     if (!inCombat || Vector3.Distance(transform.position, o.transform.position) > 15f) continue;
                     target = o._brain.CurrentAggroTarget;
@@ -735,7 +751,8 @@ namespace ProjectC.AI
             if (_agent == null || !_agent.isOnNavMesh) return;
             CoverPoint best = null;
             float bestScore = float.MaxValue;
-            foreach (var cp in FindObjectsByType<CoverPoint>(FindObjectsSortMode.None))
+            foreach (var cp in CoverPoint.AllCoverPoints)
+
             {
                 if (cp == null || cp == _currentCover || cp.IsOccupied) continue;
                 float d = Vector3.Distance(transform.position, cp.StandPosition);

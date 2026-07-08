@@ -784,7 +784,8 @@ namespace ProjectC.AI
             // 2. Ищем NPC враждебных фракций (T-NPC-S19).
             if (_socialBrain != null && _socialBrain.faction != null)
             {
-                foreach (var npc in FindObjectsByType<NpcSocialBrain>(FindObjectsSortMode.None))
+                foreach (var npc in NpcSocialBrain.AllBrains)
+
                 {
                     if (npc == null || npc == _socialBrain || npc.IsDead || npc._brain == null || npc.faction == null) continue;
                     if (!_socialBrain.faction.IsHostile(npc.faction)) continue;

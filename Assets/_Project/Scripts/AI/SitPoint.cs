@@ -3,9 +3,11 @@
 // Используется NpcSocialBrain при idle-активности Sit.
 // Design: docs/Character/Skills/real-time-combat/npc-enemy/04_UNIFIED_BEHAVIOR_ARCHITECTURE.md §4 T-NPC-S21
 
+using System.Collections.Generic;
 using UnityEngine;
 
 namespace ProjectC.AI
+
 {
     /// <summary>
     /// Маркер точки для сидения (Sit idle-активность).
@@ -13,7 +15,14 @@ namespace ProjectC.AI
     /// </summary>
     public class SitPoint : MonoBehaviour
     {
+        // T-NPC-S00 P2 fix: статический реестр.
+        public static readonly List<SitPoint> AllSitPoints = new List<SitPoint>();
+
+        private void Awake() { AllSitPoints.Add(this); }
+        private void OnDestroy() { AllSitPoints.Remove(this); }
+
         [Tooltip("Занято ли это место другим NPC.")]
+
         public bool IsOccupied
         {
             get

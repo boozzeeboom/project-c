@@ -3,9 +3,11 @@
 // Design: docs/Character/Skills/real-time-combat/npc-enemy/04_UNIFIED_BEHAVIOR_ARCHITECTURE.md §4 T-NPC-S14
 //          + 02_SOCIAL_HUMAN_BEHAVIOR.md §2.3.2
 
+using System.Collections.Generic;
 using UnityEngine;
 
 namespace ProjectC.AI
+
 {
     /// <summary>
     /// Ручной маркер точки укрытия.
@@ -14,7 +16,11 @@ namespace ProjectC.AI
     /// </summary>
     public class CoverPoint : MonoBehaviour
     {
+        // T-NPC-S00 P2 fix: статический реестр.
+        public static readonly List<CoverPoint> AllCoverPoints = new List<CoverPoint>();
+
         [Header("Cover Properties")]
+
         [Tooltip("Приоритет укрытия (0=низкий, 10=высокий). Высокий приоритет выбирается первым.")]
         [Range(0, 10)] public int priority = 5;
 
@@ -30,7 +36,11 @@ namespace ProjectC.AI
         [Tooltip("Направление, куда NPC смотрит из укрытия (локальное).")]
         public Vector3 lookDirection = Vector3.forward;
 
+        private void Awake() { AllCoverPoints.Add(this); }
+        private void OnDestroy() { AllCoverPoints.Remove(this); }
+
         /// <summary>Занято ли это укрытие другим NPC?</summary>
+
         public bool IsOccupied
         {
             get

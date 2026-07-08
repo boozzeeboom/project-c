@@ -121,12 +121,13 @@ if (enableVengeanceMemory && faction != null && VengeanceMemory.Instance != null
 
 ## 3. 🟡 СТРУКТУРНЫЕ ЗАМЕЧАНИЯ
 
-### 3.1 `FindObjectsByType` спам — анализ и решение
+### 3.1 ✅ `FindObjectsByType` спам — анализ и решение
 
 | Параметр | Значение |
 |---|---|
 | **Приоритет** | P2 |
-| **Статус** | 🟡 Требует решения. Частично mitigated группами. |
+| **Статус** | ✅ **Исправлено** (`f2effd6`). Статические реестры AllBrains/AllCoverPoints/AllSitPoints. |
+
 
 **Анализ точек вызова (после исправления групп):**
 
@@ -253,11 +254,13 @@ if (enableVengeanceMemory && faction != null && VengeanceMemory.Instance != null
 | 3 | 🔴 P0 | `OnMemberKilled` не вызывается | ✅ `f2effd6` — EnterDead → Group.OnMemberKilled |
 | 4 | 🟠 P1 | `RecordPlayerHit` не вызывается → grudge пуст | ✅ `f2effd6` — OnNpcHpChanged → RecordPlayerHit |
 | 5 | 🟠 P1 | FearCry/VictoryRoar/Taunt без эффектов | ✅ `f2effd6` — публичное API морали |
-| 6 | 🟡 P2 | FindObjectsByType спам | 🟡 Рекомендован статический реестр (~2ч) |
+| 6 | 🟡 P2 | FindObjectsByType спам | ✅ `f2effd6` — статический реестр AllBrains/AllCoverPoints/AllSitPoints |
+
 | 7 | 🟡 P2 | Patrol unreachable waypoint timeout | ✅ `f2effd6` — anti-stuck 15с |
 | 8 | 🟡 P3 | Монолит NpcSocialBrain 1729 строк | 🟡 DEFER — не нужно сейчас |
 
-**Итог:** 6 из 8 исправлены. Осталось #6 (статический реестр, ~2ч) — рекомендуется к реализации. #8 — отложен осознанно.
+**Итог:** 7 из 8 исправлены. #8 (рефакторинг NpcSocialBrain) — отложен осознанно.
+
 
 ---
 

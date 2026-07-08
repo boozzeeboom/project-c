@@ -3,23 +3,36 @@
 ## Итерация от 2026-07-28
 
 **Задача:** Всплывающие цифры урона (World Space TMP) — для всех типов атак, AOE, критов
-**Коммит:** `4eb0296` — T-DMGNUM01: всплывающие цифры урона (World Space TMP)
 **Документ:** `docs/Character/Skills/real-time-combat/110_DAMAGE_NUMBERS.md`
 
-**Изменения:**
-- `Assets/_Project/Scripts/Combat/Config/DamageNumberConfig.cs` — NEW: SO-конфиг (цвета по типам урона, размеры, кривая фейда)
+### Коммит 1: `e81221a` — T-DMGNUM01: базовая реализация
+- `Assets/_Project/Scripts/Combat/Config/DamageNumberConfig.cs` — NEW: SO-конфиг (цвета по 5 типам урона, размеры normal/crit, кривая фейда, смещение)
 - `Assets/_Project/Resources/Combat/DamageNumberConfig_Default.asset` — NEW: дефолтный конфиг
-- `Assets/_Project/Scripts/Combat/Client/DamageNumberInstance.cs` — NEW: компонент анимации на world-space TMP (всплытие + затухание)
-- `Assets/_Project/Scripts/Combat/Client/DamageNumberService.cs` — NEW: client-side singleton + object pool
-- `Assets/_Project/Resources/Prefabs/PF_DamageNumber.prefab` — NEW: префаб (World Space Canvas + TMP)
-- `Assets/_Project/Scripts/Core/NetworkManagerController.cs` — MOD: CreateDamageNumberService()
+- `Assets/_Project/Scripts/Combat/Client/DamageNumberInstance.cs` — NEW: компонент анимации (корутина float-up + fade)
+- `Assets/_Project/Scripts/Combat/Client/DamageNumberService.cs` — NEW: client-side singleton + object pool (prewarm 10, expandable)
+- `Assets/_Project/Resources/Prefabs/PF_DamageNumber.prefab` — NEW: World Space Canvas + TMP
+- `Assets/_Project/Scripts/Core/NetworkManagerController.cs` — MOD: +CreateDamageNumberService() по паттерну TargetLockService
 - `Assets/_Editor/DamageNumberAssetsCreator.cs` — NEW: Editor-скрипт создания SO + префаба
+
+### Коммит 2: `1b5ca18` — фикс deprecation warnings
+- `DamageNumberService.cs`: FindObjectsByType(FindObjectsSortMode) → FindObjectsByType(FindObjectsInactive)
+
+### Коммит 3: `1bdbba5` — billboard + унифицированный размер + пересоздан префаб
+- `DamageNumberInstance.cs`: замена ручного LookAt на существующий `ProjectC.UI.Billboard` (keepVertical=true)
+- `DamageNumberInstance.cs`: distance scaling — `scale *= (distance / 10м)` → размер одинаков на любом расстоянии
+- `PF_DamageNumber.prefab` пересоздан: добавлен Billboard компонент, SDF-шрифт LiberationSans
+- `DamageNumberAssetsCreator.cs`: обновлён для включения Billboard и SDF-шрифта в префаб
+
+### Диагностика
+- **CombatServer.Instance==null в Edit Mode** — штатное поведение. Сервер существует только в Play Mode при StartHost. SkillInputService.Update работает каждый кадр и логирует отсутствие сервера.
+- **Где править цвета/шрифт:** `Assets/_Project/Resources/Combat/DamageNumberConfig_Default.asset` → Inspector
 
 **Flow:**
 1. CombatClientState.OnDamageDealt → DamageNumberService.OnDamageDealt
-2. DamageNumberService: проверка showDamageNumbers → поиск позиции цели → спавн из пула
-3. DamageNumberInstance: анимация (float up + fade по кривой) → возврат в пул
-4. AOE: каждая цель получает отдельный RPC → отдельная цифра — естественно
+2. DamageNumberService: проверка `CombatConfig.showDamageNumbers` → поиск позиции цели по targetId → спавн из пула
+3. DamageNumberInstance: Billboard (авто-камера через ThirdPersonCamera) + анимация (float-up + fade по AnimationCurve) + distance scaling → возврат в пул
+4. AOE: каждая цель получает отдельный AttackLandedTargetRpc → OnDamageDealt дёргается N раз — без доп. логики
+5. Глобальное отключение: `CombatConfig.showDamageNumbers = false`
 
 ## Итерация от 2026-07-27
 

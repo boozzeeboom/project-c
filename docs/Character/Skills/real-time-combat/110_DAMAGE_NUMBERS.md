@@ -273,6 +273,32 @@ void ReturnToPool(DamageNumberInstance instance)
 
 ---
 
+## 5. Commit History
+
+| Коммит | Описание |
+|--------|----------|
+| `e81221a` | Базовая реализация: DamageNumberConfig, DamageNumberInstance, DamageNumberService, префаб, NetworkManagerController |
+| `1b5ca18` | Фикс deprecation: FindObjectsByType(FindObjectsSortMode) → FindObjectsInactive |
+| `1bdbba5` | Billboard (ProjectC.UI.Billboard), унифицированный размер (distance scaling), пересоздан префаб с SDF-шрифтом |
+
+---
+
+## 6. Как настраивать
+
+1. **Цвета, шрифт, анимация:** `Assets/_Project/Resources/Combat/DamageNumberConfig_Default.asset` → Inspector
+   - `physicalColor` / `ballisticColor` / ... — цвет цифр по типу урона
+   - `normalFontSize` / `critFontSizeMultiplier` — размер шрифта
+   - `floatSpeed` — скорость всплытия (м/с)
+   - `fadeCurve` — кривая прозрачности (X=0..1 время, Y=alpha)
+   - `worldOffsetY` — высота над головой цели
+   - `randomSpreadX` — случайный горизонтальный разброс
+
+2. **Глобальное вкл/выкл:** `CombatConfig.showDamageNumbers` (в `Assets/_Project/Resources/Combat/CombatConfig_Default.asset`)
+
+3. **Длительность показа:** `CombatConfig.damageNumberDuration` (там же)
+
+4. **Эталонное расстояние (uniform size):** `_referenceDistance` на префабе `PF_DamageNumber`
+
 ## 5. Файлы (план)
 
 | Файл | Действие | Назначение |

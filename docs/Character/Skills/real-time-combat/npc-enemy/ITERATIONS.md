@@ -1,19 +1,22 @@
-# Итерации реализации — NPC Social Behavior
+# Итерации реализации Unified NPC Behavior Architecture
 
-## Итерация от 2026-07-15
+## Итерация от 2026-07-15 — Phase 1: «Живой NPC»
 
-**Задача:** Глубокий анализ и проектирование расширения поведенческой модели NPC — реалистичные социальные паттерны для «человека социального»
-**Коммит:** `6365a8f` — T-NPC-S00: анализ и проектирование социального поведения NPC
+**Задача:** Реализация Phase 1 (P0) согласно `04_UNIFIED_BEHAVIOR_ARCHITECTURE.md`:
+NPC ходят дозором (Patrol), убегают (Flee), помнят обидчика (Grudge).
+Минимальные add-only изменения в NpcBrain.
 
-**Документы:**
-- `02_SOCIAL_HUMAN_BEHAVIOR.md` — модульная архитектура (NpcBehaviorModule), 4 слоя поведения, приоритетная арбитражная система, план ~44-62 ч
-- `03_SOCIAL_HUMAN_BEHAVIOR_ANALYSIS.md` — теоретическая база (6 соц-псих теорий), эмоциональная система (NpcEmotion), личностные черты (NpcPersonalityConfig), социальные триггеры, vocal cues
-- `04_UNIFIED_BEHAVIOR_ARCHITECTURE.md` — **синтез (целевой документ)**: composition-first архитектура (NpcSocialBrain), объединённый план 4 фаз, ~54 ч
+**Коммит:** `bcc3795` — T-NPC-S01..S06: Phase 1 Unified NPC Behavior Architecture — NpcSocialBrain, Patrol, Flee, Grudge
 
-**Ключевые решения:**
-- Composition-first: NpcBrain не трогаем, вся новая логика в NpcSocialBrain
-- Эмоции (6) + Personality (5 traits) из 03
-- 7 Social Triggers + 5 Vocal Cues из 03
-- Patrol/Flee/Alarm/Grudge — Phase 1 P0
-- GroupCoordinator + Morale — Phase 2 P1
-- Cover/Surrender/Post-combat — Phase 3 P2
+**Изменения:**
+- `NpcBrain.cs` — add-only API: CurrentAggroTarget, ForceChaseTarget, ForceFlee, SocialTick, _socialOverrideLock (+40 строк)
+- `NpcSocialBrain.cs` — (NEW) companion MonoBehaviour: Patrol/Flee/Grudge/SocialTick dispatch (~400 строк)
+- `NpcSpawnerConfig.cs` — add-only: social/personality/idle/flee/alarm/group/memory поля (+35 строк)
+- `NpcSpawner.cs` — проброс social-конфига при спавне через ApplySpawnerConfig (+15 строк)
+- `NpcIdleActivity.cs` — (NEW) enum: StandStill/Patrol/LookAround/Socialize/Work/Sit/Sleep/Wander + PatrolPattern
+- `GrudgeTable.cs` — (NEW) struct: playerId→timestamp память обидчиков
+- `SocialTrigger.cs` — (NEW) enum: 7 триггеров с приоритетами (Phase 2 prep)
+
+**Тикеты:** T-NPC-S01, T-NPC-S02, T-NPC-S03, T-NPC-S04, T-NPC-S05, T-NPC-S06
+
+**Статус:** ✅ Компиляция чистая, Phase 1 завершён

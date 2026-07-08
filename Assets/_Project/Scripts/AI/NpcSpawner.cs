@@ -22,6 +22,7 @@
 //   - spawn всё равно проходит через TrySpawnAtPoint (DRY: surface validation + rate-limit общие).
 //   - при выгрузке чанка NGO сам деспавнит NPC (потому что destroyWithScene=true).
 // v0.3 (T-NPC-S06): social config override — NpcSocialBrain.ApplySpawnerConfig.
+// v0.3.1 fix: конфиги применяются ДО Spawn() чтобы OnNetworkSpawn видел NpcSocialBrain.
 
 using System.Collections.Generic;
 using UnityEngine;
@@ -170,7 +171,6 @@ namespace ProjectC.AI
                 float distToPlayer = Vector3.Distance(spawnerPos, playerObj.transform.position);
                 if (distToPlayer > activationRadius)
                 {
-                    // Игрок далеко → no spawn. Существующие NPC не despawn (можно отдельно).
                     return;
                 }
             }
@@ -181,7 +181,6 @@ namespace ProjectC.AI
             if (Random.value > _spawnChance) return;
 
             // T-NPC-08 v0.2: Spawn point — вокруг СПАВНЕРА (не вокруг игрока).
-            // Это даёт зонирование — NPC спавнятся только в конкретной зоне.
             if (!TryFindSpawnPoint(spawnerPos, out Vector3 spawnPos)) return;
 
             // Validate distance от других NPC.
@@ -195,27 +194,19 @@ namespace ProjectC.AI
         }
 
         /// <summary>
-        /// T-NPC-09: публичный API для внешнего запроса спавна NPC в конкретной точке.
-        /// Используется chunk handlers (при загрузке чанка), а также может быть вызван
-        /// из других систем (квесты, события, dev-commands). DRY: вся spawn-логика
-        /// (instantiate, NetworkObject.Spawn, visual override, alive-tracking) в одном месте.
+        /// T-NPC-09 / T-NPC-S06: spawn NPC в конкретной точке.
+        /// ВАЖНО (v0.3.1 fix): все конфиги (behavior, visual, social) применяются ДО Spawn(),
+        /// чтобы NpcBrain.OnNetworkSpawn() видел NpcSocialBrain компонент.
         /// </summary>
-        /// <param name="anchorPos">Точка-центр, вокруг которой ищем место спавна (chunk center или spawner anchor).</param>
-        /// <param name="attributedClientId">ClientId, к которому привязать rate-limit. 0 = chunk spawn (не привязан к игроку).</param>
-        /// <param name="spawned">Выходной параметр — заспавненный NetworkObject (для трекинга), null при отказе.</param>
-        /// <returns>true если NPC заспавнен, false при любом отказе (prefab=null, max alive, no surface, etc).</returns>
         public bool TrySpawnAtPoint(Vector3 anchorPos, ulong attributedClientId, out NetworkObject spawned)
         {
             spawned = null;
             if (!IsServer || _prefab == null) return false;
             if (_spawned.Count >= _maxAlive) return false;
 
-            // Surface validation вокруг anchorPos (тот же TryFindSpawnPoint, что и для zone-spawn).
             if (!TryFindSpawnPoint(anchorPos, out Vector3 spawnPos)) return false;
-            // Distance от других NPC.
             if (IsTooCloseToOtherNpc(spawnPos)) return false;
 
-            // Spawn!
             var go = Instantiate(_prefab, spawnPos, Quaternion.identity);
             var netObj = go.GetComponent<NetworkObject>();
             if (netObj == null)
@@ -224,14 +215,11 @@ namespace ProjectC.AI
                 Destroy(go);
                 return false;
             }
-            netObj.Spawn(destroyWithScene: true);
-            _spawned.Add(netObj);
-            spawned = netObj;
 
-            // Rate-limit tracking (для zone-spawn — per player; для chunk — attributedClientId=0).
-            if (attributedClientId != 0) RegisterSpawnTimestamp(attributedClientId);
+            // --- ПРИМЕНИТЬ ВСЕ КОНФИГИ ДО Spawn() (v0.3.1 fix) ---
+            // Порядок важен: NpcBrain.OnNetworkSpawn() должен увидеть NpcSocialBrain.
 
-            // T-NPC-05: visual override (если задан в NpcSpawnerConfig).
+            // T-NPC-05: visual override.
             if (_config != null && _config.visualConfig != null)
             {
                 var applier = go.GetComponent<NpcVisualApplier>();
@@ -239,43 +227,41 @@ namespace ProjectC.AI
                 applier.Apply(_config.visualConfig);
             }
 
-            // T-NPC-14: behavior override из SpawnerConfig (Aggressive/Passive/Neutral).
-            // НЕ подтирает поле _behaviorType на префабе — пробрасывает override в рантайме.
-            // Это позволяет одному префабу быть Aggressive по умолчанию, но в квестовом
-            // лагере (отдельный spawner + config) стать Passive.
+            // T-NPC-14: behavior override.
             if (_config != null)
             {
                 var brain = go.GetComponent<NpcBrain>();
                 if (brain != null)
                 {
-                    // passiveAggroHpThreshold=0 → fallback к префабу; =-1 у maxHitsPerMinute → fallback к префабу.
                     float hpThreshold = _config.passiveAggroHpThreshold > 0f
-                        ? _config.passiveAggroHpThreshold
-                        : 0f;  // sentinel для brain.ApplySpawnerBehavior
+                        ? _config.passiveAggroHpThreshold : 0f;
                     int maxHits = _config.passiveMaxHitsPerMinute >= 0
-                        ? _config.passiveMaxHitsPerMinute
-                        : -1;
+                        ? _config.passiveMaxHitsPerMinute : -1;
                     brain.ApplySpawnerBehavior(_config.behaviorType, hpThreshold, maxHits);
-                    if (_showDebugLogs)
-                    {
-                        Debug.Log($"[NpcSpawner] Applied behavior {_config.behaviorType} to {go.name} (hpThresh={hpThreshold}, maxHits={maxHits})");
-                    }
                 }
 
-                // T-NPC-S06: social config override (Phase 1: patrol, flee, grudge).
+                // T-NPC-S06: social config — добавить NpcSocialBrain ДО Spawn()!
                 if (_config.socialEnabled)
                 {
                     var socialBrain = go.GetComponent<NpcSocialBrain>();
                     if (socialBrain == null)
-                    {
                         socialBrain = go.AddComponent<NpcSocialBrain>();
-                    }
                     socialBrain.ApplySpawnerConfig(_config);
                     if (_showDebugLogs)
-                    {
                         Debug.Log($"[NpcSpawner] Applied social config to {go.name}: idle={_config.defaultIdleActivity}, flee={_config.canFlee}, grudge={_config.enableGrudgeMemory}");
-                    }
                 }
+            }
+
+            // --- ТЕПЕРЬ Spawn (OnNetworkSpawn увидит все компоненты) ---
+            netObj.Spawn(destroyWithScene: true);
+            _spawned.Add(netObj);
+            spawned = netObj;
+
+            if (attributedClientId != 0) RegisterSpawnTimestamp(attributedClientId);
+
+            if (_showDebugLogs && _config != null)
+            {
+                Debug.Log($"[NpcSpawner] Spawned NPC '{_prefab.name}' (behavior={_config.behaviorType}, social={_config.socialEnabled})");
             }
             return true;
         }
@@ -286,7 +272,6 @@ namespace ProjectC.AI
         {
             if (!IsServer || _prefab == null || _maxAlivePerChunk <= 0) return;
 
-            // Инициализировать счётчик для этого чанка.
             _chunkAliveCount.TryGetValue(chunkId, out int existing);
             if (existing >= _maxAlivePerChunk)
             {
@@ -294,7 +279,6 @@ namespace ProjectC.AI
                 return;
             }
 
-            // Центр чанка — берём из WorldChunkManager.
             var chunkManager = FindAnyObjectByType<WorldChunkManager>();
             if (chunkManager == null)
             {
@@ -309,37 +293,30 @@ namespace ProjectC.AI
             }
 
             Vector3 chunkCenter = chunk.WorldBounds.center;
-            int spawned = 0;
+            int spawnedCnt = 0;
             int attempts = 0;
-            int maxAttempts = _maxAlivePerChunk * 3; // allow 3× попыток на нужное количество
-            while (spawned < _maxAlivePerChunk && attempts < maxAttempts)
+            int maxAttempts = _maxAlivePerChunk * 3;
+            while (spawnedCnt < _maxAlivePerChunk && attempts < maxAttempts)
             {
                 attempts++;
-                // Подменим anchor для surface validation на chunk center (TrySpawnAtPoint ищет вокруг anchor).
-                // Чтобы не попасть в стену в самом центре — используем chunk center + случайный оффсет внутри _chunkSpawnRadius.
                 Vector3 anchor = chunkCenter + new Vector3(
                     Random.Range(-_chunkSpawnRadius, _chunkSpawnRadius), 0,
                     Random.Range(-_chunkSpawnRadius, _chunkSpawnRadius));
                 if (TrySpawnAtPoint(anchor, attributedClientId: 0, out var no))
                 {
-                    spawned++;
-                    _chunkAliveCount[chunkId] = existing + spawned;
+                    spawnedCnt++;
+                    _chunkAliveCount[chunkId] = existing + spawnedCnt;
                 }
             }
-            if (_showDebugLogs) Debug.Log($"[NpcSpawner] Chunk {chunkId} loaded → spawned {spawned}/{_maxAlivePerChunk} NPC (attempts={attempts}, alive global={_spawned.Count}/{_maxAlive})");
+            if (_showDebugLogs) Debug.Log($"[NpcSpawner] Chunk {chunkId} loaded → spawned {spawnedCnt}/{_maxAlivePerChunk} NPC (attempts={attempts}, alive global={_spawned.Count}/{_maxAlive})");
         }
 
         private void OnChunkUnloaded_CleanupCount(ChunkId chunkId)
         {
-            // NGO сам деспавнит NPC (destroyWithScene=true).
-            // Мы только сбрасываем счётчик для повторной загрузки чанка.
             _chunkAliveCount.Remove(chunkId);
             if (_showDebugLogs) Debug.Log($"[NpcSpawner] Chunk {chunkId} unloaded → counter cleared.");
         }
 
-        /// <summary>
-        /// T-NPC-09: external query для тестов/дебага.
-        /// </summary>
         public int GetChunkAliveCount(ChunkId chunkId)
         {
             return _chunkAliveCount.TryGetValue(chunkId, out int c) ? c : 0;
@@ -364,12 +341,11 @@ namespace ProjectC.AI
 
         private bool TryFindSpawnPoint(Vector3 anchorPos, out Vector3 result)
         {
-            for (int attempt = 0; attempt < 6; attempt++)  // 6 попыток на surface
+            for (int attempt = 0; attempt < 6; attempt++)
             {
                 Vector2 disc = Random.insideUnitCircle * _spawnRadiusMax;
                 if (disc.magnitude < _spawnRadiusMin) disc = disc.normalized * _spawnRadiusMin;
                 Vector3 candidate = anchorPos + new Vector3(disc.x, 0, disc.y);
-                // Raycast down чтобы найти поверхность.
                 if (Physics.Raycast(candidate + Vector3.up * (_groundRaycastDistance * 0.5f), Vector3.down,
                     out RaycastHit hit, _groundRaycastDistance, _groundMask, QueryTriggerInteraction.Ignore))
                 {
@@ -384,13 +360,11 @@ namespace ProjectC.AI
         private bool IsTooCloseToOtherNpc(Vector3 pos)
         {
             float minDistSq = _minDistanceFromOtherNpc * _minDistanceFromOtherNpc;
-            // 1) наши spawn'ы.
             foreach (var no in _spawned)
             {
                 if (no == null) continue;
                 if ((no.transform.position - pos).sqrMagnitude < minDistSq) return true;
             }
-            // 2) любые другие NPC в сцене (анти-наложение для scene-placed + других spawner'ов).
             var others = Object.FindObjectsByType<NpcBrain>();
             foreach (var n in others)
             {

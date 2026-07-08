@@ -53,3 +53,22 @@ MonoBehaviour:
   passiveAggroHpThreshold: 25
   passiveMaxHitsPerMinute: 2
   visualConfig: {fileID: 11400000, guid: 836c429369883d345818eeda74e158d6, type: 2}
+  socialEnabled: 1
+  defaultIdleActivity: 1
+  patrolPattern: 0
+  patrolWaypoints:
+  - {x: 40007.48, y: 2502.77, z: 39984.94}
+  - {x: 39909.6, y: 2502.77, z: 40030.81}
+  - {x: 39970.4, y: 2502.77, z: 40030.81}
+  idleAtWaypointSec: 3
+  wanderRadius: 8
+  canFlee: 1
+  fleeHpThreshold: 0.25
+  fleeAllySeekRadius: 30
+  alarmRadius: 15
+  allyDeathRadius: 20
+  isGuard: 0
+  assignGroupOnSpawn: 1
+  groupSpawnRadius: 25
+  enableGrudgeMemory: 1
+  grudgeDurationSec: 300

@@ -165,8 +165,8 @@ namespace ProjectC.AI
 
         // T-NPC-14: passive aggro tracking.
         private bool _isAggrod;
-        private float _aggroDamageAccumulator;   // cumulative damage с последнего reset (post-death или resetAggro).
-        private readonly System.Collections.Generic.Queue<float> _recentHitTimes = new System.Collections.Generic.Queue<float>(); // timestamps за последние 60с.
+        private float _aggroDamageAccumulator;
+        private readonly System.Collections.Generic.Queue<float> _recentHitTimes = new System.Collections.Generic.Queue<float>();
 
         public BrainState CurrentState => _state;
         public Vector3 SpawnPoint => _spawnPoint;
@@ -180,9 +180,6 @@ namespace ProjectC.AI
         public IDamageTarget CurrentAggroTarget => _aggroTarget;
         public bool IsSocialEnabled => _socialEnabled;
 
-        /// <summary>T-NPC-14: вызывается из NpcSpawner после Instantiate для применения
-        /// параметров агрессии из SpawnerConfig. Anti-restrictive: спавнер задаёт
-        /// только behavior-related поля, остальные ranges/HPS остаются от префаба.</summary>
         public void ApplySpawnerBehavior(BehaviorType behavior, float aggroHpThreshold, int maxHitsPerMinute)
         {
             if (!IsServer) return;
@@ -213,11 +210,8 @@ namespace ProjectC.AI
             if (_socialEnabled)
                 _socialBrain = GetComponent<NpcSocialBrain>();
 
-            // T-NPC-14: подписка на изменение HP для passive aggro tracking.
             if (_target != null)
-            {
                 _target.OnHpChanged += OnNpcHpChanged;
-            }
 
             if (_agent != null)
             {
@@ -233,70 +227,45 @@ namespace ProjectC.AI
         {
             base.OnNetworkDespawn();
             if (_target != null)
-            {
                 _target.OnHpChanged -= OnNpcHpChanged;
-            }
             if (_proxyGo != null) { Destroy(_proxyGo); _proxyGo = null; _proxyAgent = null; }
         }
 
-        // T-NPC-14: server-side обработчик удара по NPC.
         private void OnNpcHpChanged(int newHp, int deltaHp)
         {
             if (!IsServer) return;
             if (_state == BrainState.Dead) return;
-            if (deltaHp <= 0) return;  // только damage (не healing)
+            if (deltaHp <= 0) return;
             if (_behaviorType != BehaviorType.Passive) return;
-            if (_isAggrod) return;     // уже агрессивный — копим дальше, но триггерим уже сработавший
+            if (_isAggrod) return;
 
-            // Логируем удар в очередь (timestamps старше 60с — отбрасываем).
             float now = Time.unscaledTime;
             _recentHitTimes.Enqueue(now);
             while (_recentHitTimes.Count > 0 && now - _recentHitTimes.Peek() > 60f)
-            {
                 _recentHitTimes.Dequeue();
-            }
             _aggroDamageAccumulator += deltaHp;
 
-            // Проверяем условия перехода в Aggro:
-            // 1) cumulativeDamage% >= aggroHpThreshold
-            // 2) hits in 60s >= maxHitsPerMinute (fallback при мелких ударах)
             bool thresholdReached = AggroDamagePercent >= _aggroHpThreshold;
             bool hitsReached = _maxHitsPerMinute > 0 && _recentHitTimes.Count >= _maxHitsPerMinute;
 
             if (thresholdReached || hitsReached)
             {
                 _isAggrod = true;
-                if (_debugLog)
-                {
-                    Debug.Log($"[NpcBrain] {gameObject.name} (Passive→Aggro): " +
-                        $"damage%={AggroDamagePercent:F1}/{_aggroHpThreshold}, " +
-                        $"hits={_recentHitTimes.Count}/{_maxHitsPerMinute}, reason={(thresholdReached ? "threshold" : "hits")}");
-                }
-                // Если игрок в aggroRange — сразу Chase, иначе дождёмся в Idle.
-                // _aggroTarget может быть ещё не выбран (если игрок далеко) — Tick его подберёт.
                 if (_aggroTarget == null)
-                {
-                    _aggroTarget = FindNearestPlayerTarget(aggroRange * 2f);  // чуть шире для подбора цели после удара
-                }
+                    _aggroTarget = FindNearestPlayerTarget(aggroRange * 2f);
                 if (_aggroTarget != null && _state == BrainState.Idle)
-                {
                     EnterChase();
-                }
             }
         }
 
         private void Update()
         {
             if (!IsServer || _state == BrainState.Dead) return;
-            // Server-side throttling (избегаем лишних FindObjects каждые frame).
             if (Time.unscaledTime < _nextTickTime) return;
             _nextTickTime = Time.unscaledTime + (1f / Mathf.Max(1, tickRate));
             Tick();
         }
-        // === Moving-platform carry (server-side, T-CREW-01) ===
-        // NavMeshAgent привязан к мировому NavMesh и не движется с палубой, поэтому на
-        // движущемся корабле NPC "сдувает". Возим NPC за палубой на сервере (transform
-        // авторитетен и реплицируется NetworkTransform). Формула — общий PlatformRideHelper.
+
         private void FixedUpdate()
         {
             if (!IsServer || !_platformCarryEnabled) return;
@@ -314,11 +283,8 @@ namespace ProjectC.AI
             }
 
             _rideMissFrames = 0;
-
             if (platform != _ridePlatform) { BeginRide(platform); return; }
 
-            // T-CREW-03/parent: если NPC приклеен к кораблю (parenting), палубу держит NGO —
-            // carry не нужен; только локальная навигация прокси-агентом.
             if (_parentedToShip)
             {
                 if (_deckNavActive && _proxyAgent != null && _state != BrainState.Dead) DriveDeckNav();
@@ -327,7 +293,6 @@ namespace ProjectC.AI
                 return;
             }
 
-            // Fallback (платформа без NetworkObject): carry Фазы 1.
             Vector3 deltaPos = PlatformRideHelper.ComputeCarryDelta(
                 platform, transform.position, _rideLastPos, _rideLastRot, _carryYaw, out float deltaYaw);
 
@@ -344,7 +309,6 @@ namespace ProjectC.AI
             _ridePlatform = platform;
             _rideLastPos = platform.position;
             _rideLastRot = platform.rotation;
-            // Пока на палубе — NavMeshAgent не должен сам управлять позицией/поворотом.
             if (_agent != null && !_agentAutoDrivePaused)
             {
                 _agent.updatePosition = false;
@@ -352,7 +316,6 @@ namespace ProjectC.AI
                 _agentAutoDrivePaused = true;
             }
 
-            // Parenting: приклеиваем NPC к кораблю через NGO (надёжнее carry, реплицируется автоматически).
             if (_netObject == null) _netObject = GetComponent<NetworkObject>();
             NetworkObject shipNo = platform.GetComponentInParent<NetworkObject>();
             _parentedToShip = false;
@@ -363,7 +326,6 @@ namespace ProjectC.AI
                 _parentedToShip = _netObject.transform.parent == shipNo.transform;
             }
 
-            // Навигация по палубе через прокси (если запечён ShipDeckNav).
             _deckNav = platform.GetComponentInParent<ShipDeckNav>();
             if (_deckNav != null && _deckNav.IsReady)
             {
@@ -374,27 +336,18 @@ namespace ProjectC.AI
                     _deckNavActive = true;
                 }
             }
-
-            if (_debugLog) Debug.Log($"[NpcBrain] {gameObject.name} entered '{platform.name}' (parented={_parentedToShip}, deckNav={_deckNavActive})");
         }
 
         private void EndRide()
         {
-            if (_debugLog && _ridePlatform != null)
-                Debug.Log($"[NpcBrain] {gameObject.name} left '{_ridePlatform.name}'");
             _ridePlatform = null;
-
-            // Отцепить от корабля.
             if (_parentedToShip && _netObject != null)
                 _netObject.TrySetParent((Transform)null, true);
             _parentedToShip = false;
-
-            // Выключить нав по палубе.
             _deckNavActive = false;
             _deckNav = null;
             if (_proxyGo != null) _proxyGo.SetActive(false);
 
-            // Вернуть управление агенту и ресинхронизировать с NavMesh.
             if (_agent != null && _agentAutoDrivePaused)
             {
                 _agent.updatePosition = true;
@@ -404,10 +357,6 @@ namespace ProjectC.AI
             }
         }
 
-        // === Deck navigation via proxy agent (T-CREW-03) ===
-        // Прокси-агент живёт в фиксированном нав-фрейме ShipDeckNav и ходит по статичному
-        // навмешу палубы в ЛОКАЛЬНЫХ координатах. Мировая поза NPC = ShipRoot.TransformPoint(local),
-        // поэтому NPC корректно едет с кораблём (вкл. крен) без пере-регистрации навмеша.
         private void EnsureProxy()
         {
             if (_proxyGo != null) { _proxyGo.SetActive(true); return; }
@@ -425,14 +374,10 @@ namespace ProjectC.AI
                 _proxyAgent.stoppingDistance = _agent.stoppingDistance;
                 _proxyAgent.autoBraking = _agent.autoBraking;
             }
-            _proxyAgent.updateRotation = false; // поворот NPC считаем сами
+            _proxyAgent.updateRotation = false;
             _proxyAgent.updateUpAxis = false;
         }
 
-        // T-CREW-03/fix: каскадный SamplePosition с нарастающим радиусом + троттленный лог.
-        // Без слепого Warp(navPos) — иначе NavMeshAgent вне навмеша плодит warning
-        // "Failed to create agent because it is not close enough to the NavMesh"
-        // каждый FixedUpdate. Диагностический лог — раз в 2с, не каждый кадр.
         private float _warpWarnCooldown;
         private const float WARP_WARN_INTERVAL = 2f;
         private void WarpProxyToNpc()
@@ -441,8 +386,6 @@ namespace ProjectC.AI
             Vector3 deckLocal = _parentedToShip ? transform.localPosition : _deckNav.WorldToDeckLocal(transform.position);
             Vector3 navPos = _deckNav.DeckLocalToNav(deckLocal);
 
-            // Каскад радиусов: 2 → 10 → 50м. Если не нашли вообще — НЕ варпим
-            // (агент остаётся вне навмеша, но DriveDeckNav пропустит этот кадр без warning'а).
             float[] radii = { 2f, 10f, 50f };
             NavMeshHit hit = default;
             bool found = false;
@@ -462,17 +405,13 @@ namespace ProjectC.AI
             else if (Time.unscaledTime >= _warpWarnCooldown)
             {
                 _warpWarnCooldown = Time.unscaledTime + WARP_WARN_INTERVAL;
-                // Диагностика: где искали навмеш и что вокруг.
                 float nearestMiss = -1f;
                 NavMeshHit probe = default;
                 if (NavMesh.SamplePosition(navPos, out probe, 200f, NavMesh.AllAreas))
                     nearestMiss = Vector3.Distance(navPos, probe.position);
                 Debug.LogWarning(
                     $"[NpcBrain] {gameObject.name}: deckNav Warp miss — navPos={navPos:F2}, deckLocal={deckLocal:F2}, " +
-                    $"agentTypeID={_proxyAgent.agentTypeID}, navmesh-nearest={nearestMiss:F2}m. " +
-                    $"Причины: (1) NavMesh палубы не запечён/не назначен в ShipDeckNav.DeckNavData; " +
-                    $"(2) AgentType NPC-префаба не совпадает с AgentType запечённого навмеша; " +
-                    $"(3) точка спавна NPC вне навмеша (deck edge).");
+                    $"agentTypeID={_proxyAgent.agentTypeID}, navmesh-nearest={nearestMiss:F2}m.");
             }
 
             _proxyLastPos = _proxyAgent.transform.position;
@@ -483,7 +422,6 @@ namespace ProjectC.AI
             if (_proxyAgent == null || _deckNav == null) return;
             if (!_proxyAgent.isOnNavMesh) { WarpProxyToNpc(); return; }
 
-            // Цель преследования → deck-local → нав-фрейм.
             if (_state == BrainState.Chase && _aggroTarget != null)
             {
                 Vector3 tgtLocal = _parentedToShip
@@ -497,8 +435,6 @@ namespace ProjectC.AI
                 _proxyAgent.isStopped = true;
             }
 
-            // Инкремент перемещения прокси (в осях палубы) — добавляем к локальной позе NPC.
-            // Так даже при неидеальном bake NPC не телепортируется мимо палубы (parenting держит).
             Vector3 proxyDelta = _proxyAgent.transform.position - _proxyLastPos;
             _proxyLastPos = _proxyAgent.transform.position;
 
@@ -529,11 +465,6 @@ namespace ProjectC.AI
         // T-NPC-S02: Social Brain API (add-only, Phase 1)
         // ============================================================
 
-        /// <summary>
-        /// T-NPC-S02: принудительный Chase на указанную цель.
-        /// Вызывается NpcSocialBrain при GrudgeTrigger или AllyInCombat.
-        /// DeckNav-aware: на корабле ставит destination в proxy-агент.
-        /// </summary>
         public void ForceChaseTarget(IDamageTarget target)
         {
             if (target == null) return;
@@ -553,18 +484,12 @@ namespace ProjectC.AI
             EnterChase();
         }
 
-        /// <summary>
-        /// T-NPC-S02: принудительное бегство от указанной позиции.
-        /// Вызывается NpcSocialBrain при Fear emotion + low HP.
-        /// </summary>
         public void ForceFlee(Vector3 fromPosition)
         {
             _socialOverrideLock = true;
             _socialOverrideLockExpireTime = Time.unscaledTime + SOCIAL_OVERRIDE_TIMEOUT;
-            // Бежим в направлении от угрозы к spawnPoint.
             Vector3 fleeDir = (transform.position - fromPosition).normalized;
             Vector3 fleeTarget = transform.position + fleeDir * 20f;
-            // Предпочитаем spawnPoint если он дальше от угрозы.
             float spawnDistToThreat = Vector3.Distance(_spawnPoint, fromPosition);
             float fleeDistToThreat = Vector3.Distance(fleeTarget, fromPosition);
             if (spawnDistToThreat > fleeDistToThreat)
@@ -588,16 +513,6 @@ namespace ProjectC.AI
             _aggroTarget = null;
         }
 
-        /// <summary>
-        /// T-NPC-S02: SocialTick hook — вызывается с reduced rate (~каждые 0.5с)
-        /// для снижения нагрузки FindObjects в социальных триггерах.
-        /// </summary>
-        private void SocialTick()
-        {
-            if (!_socialEnabled || _socialBrain == null) return;
-            _socialBrain.Tick(this);
-        }
-
         // --- Main Tick (FSM core) ---
 
         private void Tick()
@@ -607,53 +522,40 @@ namespace ProjectC.AI
 
             float distFromSpawn = Vector3.Distance(transform.position, _spawnPoint);
 
-            // T-NPC-S02: если social override активен — не трогаем _aggroTarget.
             if (_socialOverrideLock)
             {
-                // Таймаут: если NpcSocialBrain не обновил override за отведённое время — снимаем.
                 if (Time.unscaledTime > _socialOverrideLockExpireTime)
-                {
                     _socialOverrideLock = false;
-                }
             }
             else
             {
-                // Сначала смотрим текущего aggro target (если ещё жив и в зоне leash).
                 if (_aggroTarget != null)
                 {
                     if (!_aggroTarget.IsAlive() || distFromSpawn > leashRange * 1.5f)
-                    {
                         _aggroTarget = null;
-                    }
                 }
 
-                // Ищем ближайшего player в aggroRange.
                 if (_aggroTarget == null)
-                {
                     _aggroTarget = FindNearestPlayerTarget(aggroRange);
-                }
             }
 
             switch (_state)
             {
-                case BrainState.Idle:
-                    HandleIdle();
-                    break;
-                case BrainState.Chase:
-                    HandleChase();
-                    break;
-                case BrainState.Attack:
-                    HandleAttack();
-                    break;
+                case BrainState.Idle: HandleIdle(); break;
+                case BrainState.Chase: HandleChase(); break;
+                case BrainState.Attack: HandleAttack(); break;
             }
 
             UpdateAnimator();
 
-            // T-NPC-S02: SocialTick — каждый 5-й AI-тик (~0.5с при tickRate=10).
-            // Проверяем по _nextTickTime чтобы не дёргать каждый кадр.
-            if (_socialBrain != null && _socialEnabled)
+            // T-NPC-S02: SocialTick — throttled внутри NpcSocialBrain (~0.5с).
+            if (_socialEnabled)
             {
-                _socialBrain.Tick(this);
+                // Lazy init: если компонент добавлен после OnNetworkSpawn (edge case).
+                if (_socialBrain == null)
+                    _socialBrain = GetComponent<NpcSocialBrain>();
+                if (_socialBrain != null)
+                    _socialBrain.Tick(this);
             }
         }
 
@@ -671,16 +573,8 @@ namespace ProjectC.AI
 
         private void HandleIdle()
         {
-            // T-NPC-14: Passive NPC (не агрившийся) не ищет target по proximity.
-            if (_behaviorType == BehaviorType.Passive && !_isAggrod)
-            {
-                return;  // стоит мирно, ждёт удара
-            }
-            // Neutral NPC никогда не реагирует — остаётся в Idle всегда (кроме Dead).
-            if (_behaviorType == BehaviorType.Neutral)
-            {
-                return;
-            }
+            if (_behaviorType == BehaviorType.Passive && !_isAggrod) return;
+            if (_behaviorType == BehaviorType.Neutral) return;
             if (_aggroTarget == null) return;
             if (Vector3.Distance(transform.position, _aggroTarget.GetPosition()) > aggroRange) { _aggroTarget = null; return; }
             EnterChase();
@@ -700,7 +594,6 @@ namespace ProjectC.AI
             Vector3 targetPos = _aggroTarget.GetPosition();
             float dist = Vector3.Distance(transform.position, targetPos);
 
-            // Leash: слишком далеко от spawn → возврат.
             if (!_deckNavActive && Vector3.Distance(_spawnPoint, targetPos) > leashRange)
             {
                 _aggroTarget = null;
@@ -713,14 +606,10 @@ namespace ProjectC.AI
                 return;
             }
 
-            // Перешли в attack range?
             if (dist <= attackRange) { EnterAttack(); return; }
 
-            // Update destination (player может двигаться).
             if (_agent != null && _agent.isOnNavMesh)
-            {
                 _agent.SetDestination(targetPos);
-            }
         }
 
         // === Attack ===
@@ -733,7 +622,6 @@ namespace ProjectC.AI
                 _agent.isStopped = true;
                 _agent.ResetPath();
             }
-            // Первая попытка атаки — сразу.
             TryAttack();
         }
 
@@ -743,34 +631,25 @@ namespace ProjectC.AI
             if (!_aggroTarget.IsAlive()) { _aggroTarget = null; EnterIdle(); return; }
 
             float dist = Vector3.Distance(transform.position, _aggroTarget.GetPosition());
-            // Цель отошла → Chase снова.
             if (dist > attackRange * 1.3f) { EnterChase(); return; }
 
-            // Cooldown готов → атака.
             float now = Time.unscaledTime;
             if (now >= _lastAttackTime + (_attacker != null && _attacker.Data != null ? _attacker.Data.cooldownSeconds : 1.5f))
-            {
                 TryAttack();
-            }
             else
-            {
-                // Face target (плавный разворот к цели).
                 FaceTarget(_aggroTarget.GetPosition());
-            }
         }
 
         private void TryAttack()
         {
-            // T-NPC-14: Neutral NPC не атакует в принципе.
             if (_behaviorType == BehaviorType.Neutral) return;
             if (_aggroTarget == null) return;
             if (CombatServer.Instance == null) return;
             ulong attackerId = _attacker.GetAttackerId();
             ulong targetId = _aggroTarget.GetTargetId();
-            ulong sourceId = attackerId; // MVP: NPC использует default source id = attacker id (1 source per NPC).
+            ulong sourceId = attackerId;
             CombatServer.Instance.ResolveAttack(attackerId, targetId, sourceId);
             _lastAttackTime = Time.unscaledTime;
-            // Animation: kick "Attack" trigger (Animator должен иметь trigger "Attack" с коротким состоянием).
             if (_animator != null) _animator.SetTrigger("Attack");
         }
 
@@ -781,7 +660,6 @@ namespace ProjectC.AI
             _state = BrainState.Dead;
             if (_agent != null && _agent.isOnNavMesh) _agent.isStopped = true;
             if (_animator != null) _animator.SetTrigger("Death");
-            // Death anim + loot будет в T-NPC-04 (post-MVP). Пока — NpcTarget уже Destroy(go, 3s).
         }
 
         // === Helpers ===
@@ -819,7 +697,7 @@ namespace ProjectC.AI
             else if (_agent != null && _agent.isOnNavMesh && !_agent.isStopped) speed = _agent.velocity.magnitude;
             _animator.SetFloat("Speed", speed);
             _animator.SetBool("IsAttacking", _state == BrainState.Attack);
-            _animator.SetBool("IsGrounded", true); // T-NPC-13: NPC всегда на NavMesh
+            _animator.SetBool("IsGrounded", true);
         }
     }
 }

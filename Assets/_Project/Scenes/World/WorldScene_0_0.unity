@@ -15292,6 +15292,14 @@ PrefabInstance:
       value: SPAWN_TEST
       objectReference: {fileID: 0}
     - target: {fileID: 5161824931232467223, guid: 5f4dcf8edbc15014d83fd2bcd92d3f67, type: 3}
+      propertyPath: m_LocalScale.x
+      value: 80
+      objectReference: {fileID: 0}
+    - target: {fileID: 5161824931232467223, guid: 5f4dcf8edbc15014d83fd2bcd92d3f67, type: 3}
+      propertyPath: m_LocalScale.z
+      value: 80
+      objectReference: {fileID: 0}
+    - target: {fileID: 5161824931232467223, guid: 5f4dcf8edbc15014d83fd2bcd92d3f67, type: 3}
       propertyPath: m_LocalPosition.x
       value: 39902.5
       objectReference: {fileID: 0}
@@ -15331,6 +15339,10 @@ PrefabInstance:
       propertyPath: m_LocalEulerAnglesHint.z
       value: 0
       objectReference: {fileID: 0}
+    - target: {fileID: 6094612734519687248, guid: 5f4dcf8edbc15014d83fd2bcd92d3f67, type: 3}
+      propertyPath: m_NavMeshData
+      value: 
+      objectReference: {fileID: 23800000, guid: 54e6c355d4c528241953c81ded6c0691, type: 2}
     - target: {fileID: 8487516448356851170, guid: 5f4dcf8edbc15014d83fd2bcd92d3f67, type: 3}
       propertyPath: m_Enabled
       value: 0

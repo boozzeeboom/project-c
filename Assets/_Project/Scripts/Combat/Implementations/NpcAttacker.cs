@@ -71,10 +71,20 @@ namespace ProjectC.Combat
         public IReadOnlyList<IDamageSource> GetActiveDamageSources() =>
             _defaultSource != null ? new IDamageSource[] { _defaultSource } : System.Array.Empty<IDamageSource>();
 
-        public IDamageSource GetDamageSource(ulong sourceId) =>
-            _defaultSource != null && _defaultSource.GetSourceId() == sourceId ? _defaultSource : null;
+        public IDamageSource GetDamageSource(ulong sourceId)
+        {
+            EnsureDefaultSource();
+            return _defaultSource != null && _defaultSource.GetSourceId() == sourceId ? _defaultSource : null;
+        }
 
         public bool IsAlive() => Target != null && Target.IsAlive();
+
+        private void EnsureDefaultSource()
+        {
+            if (_defaultSource != null) return;
+            if (_data == null) _data = GetComponent<NpcCombatData>();
+            _defaultSource = new NpcDefaultDamageSource(this);
+        }
         public bool IsPlayer() => false;
 
         public bool CanAttack(IDamageSource source, float now) =>

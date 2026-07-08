@@ -55,6 +55,8 @@ namespace ProjectC.AI
             Chase,
             Attack,
             Dead,
+            /// <summary>T-NPC-S16: NPC сдался. Не атакует, ждёт решения игрока.</summary>
+            Surrendered,
         }
 
         public enum BehaviorType
@@ -260,7 +262,7 @@ namespace ProjectC.AI
 
         private void Update()
         {
-            if (!IsServer || _state == BrainState.Dead) return;
+            if (!IsServer || _state == BrainState.Dead || _state == BrainState.Surrendered) return;
             if (Time.unscaledTime < _nextTickTime) return;
             _nextTickTime = Time.unscaledTime + (1f / Mathf.Max(1, tickRate));
             Tick();
@@ -544,6 +546,7 @@ namespace ProjectC.AI
                 case BrainState.Idle: HandleIdle(); break;
                 case BrainState.Chase: HandleChase(); break;
                 case BrainState.Attack: HandleAttack(); break;
+                case BrainState.Surrendered: HandleSurrendered(); break;
             }
 
             UpdateAnimator();
@@ -660,6 +663,38 @@ namespace ProjectC.AI
             _state = BrainState.Dead;
             if (_agent != null && _agent.isOnNavMesh) _agent.isStopped = true;
             if (_animator != null) _animator.SetTrigger("Death");
+        }
+
+        // === Surrendered (T-NPC-S16) ===
+
+        private void EnterSurrendered()
+        {
+            _state = BrainState.Surrendered;
+            _aggroTarget = null;
+            _socialOverrideLock = false;
+            if (_agent != null && _agent.isOnNavMesh)
+            {
+                _agent.isStopped = true;
+                _agent.ResetPath();
+            }
+            if (_animator != null) _animator.SetTrigger("Surrender");
+        }
+
+        private void HandleSurrendered()
+        {
+            // Surrendered — пассивное состояние. Ничего не делаем.
+            // Выход из Surrender — только через внешний API (ForceChaseTarget) или смерть.
+            if (!_target.IsAlive()) { EnterDead(); return; }
+        }
+
+        /// <summary>
+        /// T-NPC-S16: Принудительно перевести NPC в состояние Surrendered.
+        /// Вызывается NpcSocialBrain при выполнении условий сдачи.
+        /// </summary>
+        public void ForceSurrender()
+        {
+            if (_state == BrainState.Dead || _state == BrainState.Surrendered) return;
+            EnterSurrendered();
         }
 
         // === Helpers ===

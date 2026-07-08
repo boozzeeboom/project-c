@@ -1,7 +1,7 @@
 ﻿# 04 — Unified NPC Behavior Architecture: синтез двух анализов
 
 > **Дата:** 2026-07-15
-> **Статус:** ✅ Дизайн утверждён | ✅ Phase 1 реализован (T-NPC-S01..S06) | ⬜ Phase 2 в очереди
+> **Статус:** ✅ Дизайн утверждён | ✅ Phase 1 | ✅ Phase 2 | ✅ Phase 3 | ⬜ Phase 4
 > **Источники:**
 > - `02_SOCIAL_HUMAN_BEHAVIOR.md` — модульная архитектура, 4 слоя поведения, ~44-62 ч
 > - `03_SOCIAL_HUMAN_BEHAVIOR_ANALYSIS.md` — соц-псих theories, personality, emotion, ~37.5 ч

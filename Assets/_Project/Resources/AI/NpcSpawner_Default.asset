@@ -54,6 +54,7 @@ MonoBehaviour:
   passiveMaxHitsPerMinute: 2
   visualConfig: {fileID: 11400000, guid: 836c429369883d345818eeda74e158d6, type: 2}
   socialEnabled: 1
+  personalityConfig: {fileID: 11400000, guid: 5eeeab5ec2482894cba9160753de8816, type: 2}
   defaultIdleActivity: 1
   patrolPattern: 0
   patrolWaypoints: []

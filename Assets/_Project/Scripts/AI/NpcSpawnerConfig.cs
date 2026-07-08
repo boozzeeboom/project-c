@@ -124,5 +124,33 @@ namespace ProjectC.AI
         public bool enableGrudgeMemory = true;
         [Tooltip("Длительность памяти обидчика (сек).")]
         public float grudgeDurationSec = 300f;
+
+        [Header("Threat Assessment (T-NPC-S13)")]
+        [Tooltip("Радиус оценки соотношения сил перед боем. 0 = использовать дефолт из NpcSocialBrain.")]
+        [Range(0f, 100f)] public float threatEvaluationRange = 30f;
+
+        [Header("Cover (T-NPC-S14)")]
+        [Tooltip("Радиус поиска укрытий. 0 = отключить cover-seeking.")]
+        [Range(0f, 50f)] public float coverSeekRadius = 25f;
+        [Tooltip("NPC ищет укрытие при HP ниже этого порога (0..1).")]
+        [Range(0f, 1f)] public float coverHpThreshold = 0.5f;
+
+        [Header("Surrender (T-NPC-S16)")]
+        [Tooltip("Порог HP (доля 0..1), ниже которого NPC может сдаться. 0 = никогда.")]
+        [Range(0f, 1f)] public float surrenderHpThreshold = 0.10f;
+        [Tooltip("Может ли NPC сдаться.")]
+        public bool canSurrender = true;
+
+        [Header("Post-Combat (T-NPC-S17)")]
+        [Tooltip("Включает post-combat поведение (wounded/heal/reinforcement).")]
+        public bool enablePostCombat = true;
+        [Tooltip("Длительность wounded-состояния (сек).")]
+        [Range(5f, 30f)] public float woundedDuration = 15f;
+        [Tooltip("Порог HP для heal (доля 0..1).")]
+        [Range(0f, 1f)] public float healHpThreshold = 0.4f;
+
+        [Header("Social Role (T-NPC-S18)")]
+        [Tooltip("Пресет социальной роли (Guard, Civilian, Merchant, etc). Если null — используется personalityConfig.")]
+        public SocialRoleConfig socialRole;
     }
 }

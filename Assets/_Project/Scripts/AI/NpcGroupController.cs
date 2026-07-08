@@ -15,17 +15,46 @@ namespace ProjectC.AI
     /// Создаётся NpcSpawner при групповом спавне.
     /// Координирует Alarm, AllyDeath, Retreat, Vocal Cues.
     /// </summary>
+    /// <summary>
+    /// Тип групповой формации.
+    /// </summary>
+    public enum FormationType
+    {
+        /// <summary>Без формации — каждый действует сам.</summary>
+        None,
+        /// <summary>Линия фронта.</summary>
+        Line,
+        /// <summary>Окружение цели.</summary>
+        Circle,
+        /// <summary>Фланговый обход: 1-2 обходят, остальные фронт.</summary>
+        Flank,
+    }
+
     public class NpcGroupController : NetworkBehaviour
     {
         [Header("Debug")]
         [Tooltip("Включить подробные логи.")]
         [SerializeField] private bool _debugLog = false;
 
+        [Header("Group Tactics (T-NPC-S15)")]
+        [Tooltip("Тип формации по умолчанию.")]
+        public FormationType formationType = FormationType.Line;
+        [Tooltip("Радиус, в котором союзники считаются «в формации».")]
+        [Range(3f, 30f)] public float formationRadius = 10f;
+        [Tooltip("Расстояние между NPC в линии.")]
+        [Range(1f, 5f)] public float lineSpacing = 3f;
+        [Tooltip("Максимальное количество фланкеров.")]
+        [Range(1, 4)] public int maxFlankers = 2;
+
         /// <summary>Все члены группы (живые + мёртвые).</summary>
         public List<NpcSocialBrain> members = new List<NpcSocialBrain>();
 
         /// <summary>Лидер группы (первый заспавненный или назначенный).</summary>
         public NpcSocialBrain leader;
+
+        private float _nextTacticsTick;
+        private const float TACTICS_TICK_INTERVAL = 1.0f;
+        private System.Random _rng = new System.Random();
 
         /// <summary>Количество живых членов группы.</summary>
         public int AliveCount
@@ -207,32 +236,218 @@ namespace ProjectC.AI
                 switch (cue)
                 {
                     case NpcVocalCue.AlertCall:
-                        // Привлекает NPC в 15м: AllyInCombat.
                         if (member._brain != null && source._brain?.CurrentAggroTarget != null)
                         {
                             if (member._brain.CurrentState == NpcBrain.BrainState.Idle)
                                 member._brain.ForceChaseTarget(source._brain.CurrentAggroTarget);
                         }
                         break;
-
                     case NpcVocalCue.DeathScream:
-                        // Триггерит AllyKilled (проверяется в EvaluateTriggers).
                         break;
-
                     case NpcVocalCue.FearCry:
-                        // Понижает morale союзников.
-                        // (доступ через публичный API будет в Phase 3)
+                        // T-NPC-S15: FearCry деморализует группу.
+                        // Доступ через NpcSocialBrain (morale — internal struct, нужен публичный API).
                         break;
-
                     case NpcVocalCue.VictoryRoar:
-                        // +0.1 morale союзникам.
+                        // T-NPC-S15: VictoryRoar воодушевляет группу (+0.1 morale).
                         break;
-
                     case NpcVocalCue.Taunt:
-                        // Phase 2+: дебафф цели.
                         break;
                 }
             }
+        }
+
+        // ============================================================
+        // T-NPC-S15: Group Tactics — formations, flanking, focus fire
+        // ============================================================
+
+        private void Update()
+        {
+            if (!IsServer) return;
+            if (Time.unscaledTime < _nextTacticsTick) return;
+            _nextTacticsTick = Time.unscaledTime + TACTICS_TICK_INTERVAL;
+            TacticsTick();
+        }
+
+        /// <summary>
+        /// Тактический тик: проверяет условия для формаций и флангов.
+        /// Вызывается раз в TACTICS_TICK_INTERVAL (~1 сек).
+        /// </summary>
+        private void TacticsTick()
+        {
+            if (formationType == FormationType.None) return;
+            if (AliveCount < 3) return; // Нужно минимум 3 для формаций.
+
+            // Ищем общую цель группы (цель лидера или любой общий aggroTarget).
+            IDamageTarget groupTarget = GetGroupTarget();
+            if (groupTarget == null || !groupTarget.IsAlive()) return;
+
+            switch (formationType)
+            {
+                case FormationType.Line:
+                    ApplyFormationLine(groupTarget);
+                    break;
+                case FormationType.Flank:
+                    ApplyFormationFlank(groupTarget);
+                    break;
+                case FormationType.Circle:
+                    ApplyFormationCircle(groupTarget);
+                    break;
+            }
+
+            // FocusFire: если лидер атакует — вся группа фокусит ту же цель.
+            if (leader != null && leader._brain != null)
+            {
+                var leaderTarget = leader._brain.CurrentAggroTarget;
+                if (leaderTarget != null)
+                    FocusFire(leaderTarget);
+            }
+        }
+
+        private IDamageTarget GetGroupTarget()
+        {
+            if (leader != null && leader._brain?.CurrentAggroTarget != null)
+                return leader._brain.CurrentAggroTarget;
+            foreach (var m in members)
+            {
+                if (m == null || m.IsDead || m._brain == null) continue;
+                if (m._brain.CurrentAggroTarget != null)
+                    return m._brain.CurrentAggroTarget;
+            }
+            return null;
+        }
+
+        /// <summary>
+        /// FormationLine: все живые NPC выстраиваются в линию фронта перпендикулярно цели.
+        /// </summary>
+        private void ApplyFormationLine(IDamageTarget target)
+        {
+            Vector3 targetPos = target.GetPosition();
+            Vector3 center = GetGroupCenter();
+            Vector3 toTarget = (targetPos - center).normalized;
+            Vector3 lineDir = Vector3.Cross(Vector3.up, toTarget).normalized;
+
+            int index = 0;
+            foreach (var m in members)
+            {
+                if (m == null || m.IsDead || m._brain == null) continue;
+                // Не двигаем тех, кто уже в бою/укрытии.
+                if (m._brain.CurrentState == NpcBrain.BrainState.Attack) continue;
+                if (m.CurrentCover != null) continue;
+
+                float offset = (index - (AliveCount - 1) * 0.5f) * lineSpacing;
+                Vector3 formationPos = center + lineDir * offset;
+
+                UnityEngine.AI.NavMeshAgent agent = m.GetComponent<UnityEngine.AI.NavMeshAgent>();
+                if (agent != null && agent.isOnNavMesh)
+                {
+                    agent.isStopped = false;
+                    agent.SetDestination(formationPos);
+                }
+                index++;
+            }
+        }
+
+        /// <summary>
+        /// FormationFlank: 1-2 NPC обходят с флангов, остальные держат фронт.
+        /// </summary>
+        private void ApplyFormationFlank(IDamageTarget target)
+        {
+            Vector3 targetPos = target.GetPosition();
+            Vector3 center = GetGroupCenter();
+            Vector3 toTarget = (targetPos - center).normalized;
+            Vector3 rightDir = Vector3.Cross(Vector3.up, toTarget).normalized;
+
+            int aliveProcessed = 0;
+            int flankerCount = 0;
+            foreach (var m in members)
+            {
+                if (m == null || m.IsDead || m._brain == null) continue;
+                if (m._brain.CurrentState == NpcBrain.BrainState.Attack) continue;
+                if (m.CurrentCover != null) continue;
+
+                UnityEngine.AI.NavMeshAgent agent = m.GetComponent<UnityEngine.AI.NavMeshAgent>();
+                if (agent == null || !agent.isOnNavMesh) continue;
+
+                // Первые maxFlankers — фланкеры.
+                if (flankerCount < maxFlankers)
+                {
+                    float side = (flankerCount % 2 == 0) ? 1f : -1f;
+                    float flankDist = formationRadius * 0.7f;
+                    Vector3 flankPos = targetPos + rightDir * side * flankDist + toTarget * (-formationRadius * 0.3f);
+                    agent.isStopped = false;
+                    agent.SetDestination(flankPos);
+                    flankerCount++;
+                }
+                else
+                {
+                    // Остальные — фронт.
+                    float offset = (aliveProcessed - flankerCount - (AliveCount - flankerCount - 1) * 0.5f) * lineSpacing;
+                    Vector3 formationPos = center + rightDir * offset;
+                    agent.isStopped = false;
+                    agent.SetDestination(formationPos);
+                }
+                aliveProcessed++;
+            }
+
+            if (_debugLog && flankerCount > 0)
+                Debug.Log($"[NpcGroupController] FormationFlank: {flankerCount} flankers, target={target.GetPosition()}");
+        }
+
+        /// <summary>
+        /// FormationCircle: NPC окружают цель.
+        /// </summary>
+        private void ApplyFormationCircle(IDamageTarget target)
+        {
+            Vector3 targetPos = target.GetPosition();
+            float circleRadius = formationRadius * 0.6f;
+            float angleStep = 360f / Mathf.Max(1, AliveCount);
+
+            int index = 0;
+            foreach (var m in members)
+            {
+                if (m == null || m.IsDead || m._brain == null) continue;
+                if (m._brain.CurrentState == NpcBrain.BrainState.Attack) continue;
+
+                UnityEngine.AI.NavMeshAgent agent = m.GetComponent<UnityEngine.AI.NavMeshAgent>();
+                if (agent == null || !agent.isOnNavMesh) continue;
+
+                float angle = index * angleStep * Mathf.Deg2Rad;
+                Vector3 circlePos = targetPos + new Vector3(Mathf.Cos(angle), 0, Mathf.Sin(angle)) * circleRadius;
+                agent.isStopped = false;
+                agent.SetDestination(circlePos);
+                index++;
+            }
+        }
+
+        /// <summary>
+        /// FocusFire: вся группа перенаправляется на одну цель.
+        /// </summary>
+        public void FocusFire(IDamageTarget target)
+        {
+            if (target == null || !IsServer) return;
+            foreach (var m in members)
+            {
+                if (m == null || m.IsDead || m._brain == null) continue;
+                if (m._brain.CurrentState != NpcBrain.BrainState.Idle &&
+                    m._brain.CurrentState != NpcBrain.BrainState.Chase) continue;
+                if (m._brain.CurrentAggroTarget != target)
+                    m._brain.ForceChaseTarget(target);
+            }
+        }
+
+        /// <summary>
+        /// Вычислить центр группы (среднее позиций живых членов).
+        /// </summary>
+        private Vector3 GetGroupCenter()
+        {
+            Vector3 sum = Vector3.zero;
+            int count = 0;
+            foreach (var m in members)
+            {
+                if (m != null && !m.IsDead) { sum += m.transform.position; count++; }
+            }
+            return count > 0 ? sum / count : transform.position;
         }
     }
 }

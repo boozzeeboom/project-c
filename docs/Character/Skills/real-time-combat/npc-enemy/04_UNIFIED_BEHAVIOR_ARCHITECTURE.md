@@ -1,7 +1,8 @@
 ﻿# 04 — Unified NPC Behavior Architecture: синтез двух анализов
 
 > **Дата:** 2026-07-15
-> **Статус:** ✅ Дизайн утверждён | ✅ Phase 1 | ✅ Phase 2 | ✅ Phase 3 | ✅ Phase 4
+> **Статус:** ✅ Дизайн утверждён | ✅ Phase 1 | ✅ Phase 2 | ✅ Phase 3 | ✅ Phase 4 | ✅ P0/P1/P2 fixes (`34c27ee`)
+
 > **Источники:**
 > - `02_SOCIAL_HUMAN_BEHAVIOR.md` — модульная архитектура, 4 слоя поведения, ~44-62 ч
 > - `03_SOCIAL_HUMAN_BEHAVIOR_ANALYSIS.md` — соц-псих theories, personality, emotion, ~37.5 ч
@@ -626,3 +627,37 @@ Assets/_Project/Scripts/AI/
 
 *Документ создан: 2026-07-15. Синтез 02_SOCIAL_HUMAN_BEHAVIOR.md + 03_SOCIAL_HUMAN_BEHAVIOR_ANALYSIS.md.*
 *Это целевой документ для реализации. Все решения мотивированы и не противоречат друг другу.*
+
+---
+
+## 17. Результаты код-ревью и исправления (2026-07-15)
+
+После завершения Phase 1–4 проведено полное код-ревью. Результаты задокументированы в `05_CODE_REVIEW_FINDINGS.md`.
+
+**Найдено 8 проблем:** 3 P0 (критические), 2 P1 (фрагментация), 3 P2/P3 (структурные).
+
+**Исправлено (7 из 8):**
+
+| # | Приоритет | Проблема | Коммит |
+|---|---|---|---|
+| 1 | P0 | NpcSpawner не создавал группы | `f2effd6` — TryFormGroups() |
+| 2 | P0 | killerClientId всегда 0 → vengeance сломана | `f2effd6` — ResolvePlayerClientId() |
+| 3 | P0 | OnMemberKilled не вызывался | `f2effd6` — EnterDead → Group |
+| 4 | P1 | RecordPlayerHit не вызывался → grudge пуст | `f2effd6` — OnNpcHpChanged |
+| 5 | P1 | FearCry/VictoryRoar без эффектов | `f2effd6` — публичное API морали |
+| 6 | P2 | Patrol unreachable waypoint timeout | `f2effd6` — anti-stuck 15с |
+| 7 | P2 | FindObjectsByType спам | `34c27ee` — статические реестры |
+
+**Отложено (1 из 8):**
+
+| # | Приоритет | Проблема | Причина |
+|---|---|---|---|
+| 8 | P3 | Монолит NpcSocialBrain 1729 строк | Рефакторинг не нужен сейчас: код организован, новых idle-активностей не планируется. Будет проведён при превышении 1100 строк в NpcSocialBrain или добавлении 9-й idle-активности. |
+
+**Ключевые архитектурные изменения относительно исходного дизайна:**
+- `NpcGroupController` создаётся динамически спавнером (в дизайне не был детализирован механизм создания)
+- Добавлен `static List<NpcSocialBrain> AllBrains` для замены `FindObjectsByType` (perf-оптимизация)
+- Публичное API морали в `NpcSocialBrain`: `HearFearCry()`, `HearVictoryRoar()`, `HearEnemyVictoryRoar()`, `OnLeaderDied()`, `MoraleValue`
+- `NpcBrain.EnterDead()` уведомляет группу + dispatch'ит DeathScream
+- `NpcBrain.OnNpcHpChanged()` записывает обидчика в GrudgeTable
+

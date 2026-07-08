@@ -242,6 +242,28 @@ FactionSystem, VengeanceMemory, Full Idle Activities (Socialize/Work/Sit/Sleep).
 - `ThreatAssessment.cs` — CountAllyStrength: FindObjectsByType → NpcSocialBrain.AllBrains
 
 **Результат:** 0 горячих FindObjectsByType в AI-тиках. Perf-выигрыш: ~3-5× на поиске NPC (нет обхода иерархии сцены).
+
+---
+
+## Итерация от 2026-07-15 — Hotfix: Animator VocalCue warning
+
+**Проблема:** `Animator.SetTrigger("AlertCall")` — параметр не существует в Animator-контроллере NPC. Warning при каждом срабатывании CheckAllyKilled.
+
+**Коммит:** `8ef886c` — HasAnimatorParam: проверка существования параметра перед SetTrigger
+
+**Изменения:**
+- `NpcSocialBrain.cs` — `HasAnimatorParam()` helper + проверка перед `SetTrigger` в `DispatchVocalCue`
+- Если параметра нет — молча пропускаем анимацию. Gameplay-эффекты (мораль, alarm) не затронуты.
+
+---
+
+## Итерация от 2026-07-15 — Документирование исправлений
+
+**Коммит:** `290a0dc` — обновление 04_UNIFIED_BEHAVIOR_ARCHITECTURE.md + 05_CODE_REVIEW_FINDINGS.md
+
+**Изменения:**
+- `04_UNIFIED_BEHAVIOR_ARCHITECTURE.md` — статус обновлён, добавлена §17 с таблицей исправлений и архитектурными изменениями
+- `05_CODE_REVIEW_FINDINGS.md` — статус обновлён: 7 из 8 исправлены
 =======
 
 =======

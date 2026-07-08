@@ -162,7 +162,40 @@ FactionSystem, VengeanceMemory, Full Idle Activities (Socialize/Work/Sit/Sleep).
 5. 🟠 P1: FearCry/VictoryRoar/Taunt без gameplay-эффектов
 6. 🟡 P2: FindObjectsByType спам
 7. 🟡 P2: Patrol unreachable waypoint — нет таймаута
+
+=======
+
+=======
+
+=======
+=======
 8. 🟡 P3: NpcSocialBrain монолит 1664 строк (порог превышен)
+
+---
+
+## Итерация от 2026-07-15 — Исправление P0/P1/P2 багов код-ревью
+
+**Задача:** Исправить 3 P0 + 2 P1 + 1 P2 бага из `05_CODE_REVIEW_FINDINGS.md`.
+
+**Коммит:** `f2effd6` — T-NPC-S00: исправления код-ревью — группы, vengeance, vocal cues, grudge, patrol timeout
+
+**Изменения:**
+- `NpcSpawner.cs` — (+81 строк) TryFormGroups(): создание NpcGroupController для кластеров NPC по groupSpawnRadius
+- `NpcBrain.cs` — (+26 строк) EnterDead → OnMemberKilled + DeathScream; OnNpcHpChanged → RecordPlayerHit
+- `NpcSocialBrain.cs` — (+48 строк) CheckAllyKilled killerClientId fix; ResolvePlayerClientId(); публичное API морали; patrol anti-stuck timeout
+- `NpcGroupController.cs` — (9 строк изменено) OnVocalCue: FearCry/VictoryRoar эффекты; OnMemberKilled: лидерская смерть morale penalty
+
+**Исправленные баги:**
+1. ✅ P0: Spawner создаёт группы → групповая координация работает
+2. ✅ P0: killerClientId заполняется → vengeance-память работает
+3. ✅ P0: OnMemberKilled вызывается → DeathScream + leader re-election
+4. ✅ P1: RecordPlayerHit вызывается → grudge работает
+5. ✅ P1: FearCry/VictoryRoar — gameplay-эффекты через публичное API морали
+6. ✅ P2: Patrol anti-stuck timeout 15с → unreachable waypoint skip
+
+**Осталось (не в этом коммите):**
+- 🟡 P2: FindObjectsByType спам (частично решён группами, полное решение — кеш)
+- 🟡 P3: Монолит NpcSocialBrain (рефакторинг отложен)
 =======
 
 =======

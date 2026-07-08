@@ -8,7 +8,9 @@
             <ui:ScrollView name="text-scroll" class="dialog-text-scroll">
                 <ui:Label name="text" class="dialog-text" text="" />
             </ui:ScrollView>
-            <ui:VisualElement name="options" class="dialog-options" />
+            <ui:ScrollView name="options-scroll" class="dialog-options-scroll">
+                <ui:VisualElement name="options" class="dialog-options" />
+            </ui:ScrollView>
             <ui:Label name="toast" class="dialog-toast" text="" />
         </ui:VisualElement>
     </ui:VisualElement>

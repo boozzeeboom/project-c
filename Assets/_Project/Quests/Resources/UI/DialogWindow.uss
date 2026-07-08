@@ -14,7 +14,8 @@
 
 .dialog-panel {
     width: 800px !important;
-    height: 400px !important;
+    min-height: 400px !important;
+    max-height: 85vh !important;
     background-color: rgb(31, 31, 46) !important;
     border-color: rgb(102, 178, 255) !important;
     border-width: 2px !important;
@@ -47,6 +48,8 @@
 
 .dialog-text-scroll {
     flex-grow: 1 !important;
+    flex-shrink: 0 !important;
+    min-height: 80px !important;
     margin-bottom: 12px !important;
     background-color: rgba(0, 0, 0, 0.2) !important;
     border-radius: 4px !important;
@@ -59,9 +62,13 @@
     white-space: normal !important;
 }
 
+.dialog-options-scroll {
+    flex-shrink: 0 !important;
+    max-height: 220px !important;
+    margin-bottom: 8px !important;
+}
 .dialog-options {
     flex-direction: column !important;
-    margin-bottom: 8px !important;
 }
 
 .dialog-button {

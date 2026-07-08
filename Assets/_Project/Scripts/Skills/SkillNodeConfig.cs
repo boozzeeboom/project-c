@@ -133,6 +133,10 @@ namespace ProjectC.Skills
                  "Passive = даёт статы / unlock'и через SkillEffect, невидим в skill bar, не bindable, всегда \"работает\".")]
         public bool isActive = true;
 
+        [Header("Cooldown (seconds)")]
+        [Tooltip("Время (в секундах) между последовательными активациями навыка. 0.5 = быстрое, 5.0 = ультимейт.")]
+        [Range(0.1f, 30f)] public float cooldownSeconds = 0.5f;
+
         [Header("Animation (T-INP-08) — AnimationClip reference (data-driven, designer-friendly)")]
         [Tooltip("Drag-and-drop AnimationClip (.anim или клип из .fbx). " +
                  "Если задан — проигрывается через SkillAnimationPlayer (AnimatorOverrideController на state 'Skill'), " +

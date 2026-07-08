@@ -55,6 +55,7 @@ namespace ProjectC.Editor.Skills
 
         // Active / Passive
         private SerializedProperty _isActive;
+        private SerializedProperty _cooldownSeconds;
 
         // Animation
         private SerializedProperty _attackClip;
@@ -123,6 +124,7 @@ namespace ProjectC.Editor.Skills
             _treeY = serializedObject.FindProperty("treeY");
 
             _isActive = serializedObject.FindProperty("isActive");
+            _cooldownSeconds = serializedObject.FindProperty("cooldownSeconds");
 
             _attackClip = serializedObject.FindProperty("attackClip");
             _attackClipSpeed = serializedObject.FindProperty("attackClipSpeed");
@@ -206,6 +208,7 @@ namespace ProjectC.Editor.Skills
                 // ===== Active / Passive =====
                 EditorGUILayout.LabelField("Active vs Passive", EditorStyles.boldLabel);
                 EditorGUILayout.PropertyField(_isActive);
+                EditorGUILayout.PropertyField(_cooldownSeconds);
 
                 // AOE + Animation (only for Active skills)
                 if (_isActive.boolValue)

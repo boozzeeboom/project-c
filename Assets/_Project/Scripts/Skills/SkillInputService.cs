@@ -368,10 +368,10 @@ namespace ProjectC.Skills
                 if (animPlayer != null)
                 {
                     animPlayer.Play(skillConfig, slot);
-                    _slotCooldownUntil[slot] = Time.unscaledTime + 0.5f;
+                    _slotCooldownUntil[slot] = Time.unscaledTime + skillConfig.cooldownSeconds;
                     if (Debug.isDebugBuild)
                     {
-                        Debug.Log($"[SkillInputService] TryActivate: slot={slot} skill='{skillId}' [T-INP-08 clip-path] attackClip='{skillConfig.attackClip.name}' — RPC will fire from OnAttackImpact event");
+                        Debug.Log($"[SkillInputService] TryActivate: slot={slot} skill='{skillId}' [T-INP-08 clip-path] attackClip='{skillConfig.attackClip.name}' cooldown={skillConfig.cooldownSeconds:F1}s — RPC will fire from OnAttackImpact event");
                     }
                     return true;
                 }
@@ -467,7 +467,7 @@ namespace ProjectC.Skills
                 return false;
             }
 
-            _slotCooldownUntil[slot] = Time.unscaledTime + 0.5f;
+            _slotCooldownUntil[slot] = Time.unscaledTime + (skillConfig?.cooldownSeconds ?? 0.5f);
 
             if (skillConfig != null && skillConfig.debugVisualizeAoe && _ownerPlayer != null)
             {

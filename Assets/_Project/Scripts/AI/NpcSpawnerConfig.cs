@@ -72,5 +72,53 @@ namespace ProjectC.AI
                  "Если null — дефолтный вид из префаба (HumanM_Model без изменений). " +
                  "Anti-restrictive: позволяет иметь один префаб и разные фракции через разные .asset.")]
         public NpcVisualConfig visualConfig;
+
+        // ============================================================
+        // Phase 1: Social Behavior (T-NPC-S06) — add-only, backward compat
+        // ============================================================
+
+        [Header("Social Behavior (T-NPC-S01+)")]
+        [Tooltip("Включает NpcSocialBrain при спавне. Если false — NPC использует только старый FSM.")]
+        public bool socialEnabled = true;
+
+        [Header("Idle Activity")]
+        [Tooltip("Тип idle-активности по умолчанию. StandStill = текущее поведение (backward compat).")]
+        public NpcIdleActivity defaultIdleActivity = NpcIdleActivity.StandStill;
+        [Tooltip("Паттерн патрулирования: Loop = по кругу, PingPong = туда-обратно, Random = случайный выбор.")]
+        public PatrolPattern patrolPattern = PatrolPattern.Loop;
+        [Tooltip("Точки патруля (ручная расстановка). Если пусто — activity = StandStill.")]
+        public Vector3[] patrolWaypoints;
+        [Tooltip("Секунд ожидания на каждой точке патруля.")]
+        public float idleAtWaypointSec = 3f;
+        [Tooltip("Радиус случайного блуждания (Wander).")]
+        public float wanderRadius = 8f;
+
+        [Header("Flee")]
+        [Tooltip("Может ли NPC убегать при низком HP.")]
+        public bool canFlee = true;
+        [Tooltip("Порог HP (доля 0..1), ниже которого NPC начинает Flee.")]
+        [Range(0f, 1f)] public float fleeHpThreshold = 0.25f;
+        [Tooltip("Радиус поиска союзников для бегства к ним.")]
+        public float fleeAllySeekRadius = 30f;
+
+        [Header("Alarm")]
+        [Tooltip("Радиус тревоги: NPC в этом радиусе реагируют на Alarm.")]
+        public float alarmRadius = 15f;
+        [Tooltip("Радиус реакции на смерть союзника.")]
+        public float allyDeathRadius = 20f;
+        [Tooltip("Этот NPC — стражник (реагирует на Alarm → Chase, а не Investigate).")]
+        public bool isGuard = false;
+
+        [Header("Group")]
+        [Tooltip("Назначать NPC в группу при спавне нескольких в groupSpawnRadius.")]
+        public bool assignGroupOnSpawn = true;
+        [Tooltip("Радиус группировки: NPC в этом радиусе попадают в одну группу.")]
+        public float groupSpawnRadius = 25f;
+
+        [Header("Memory")]
+        [Tooltip("NPC помнит обидчика и агрится при повторной встрече.")]
+        public bool enableGrudgeMemory = true;
+        [Tooltip("Длительность памяти обидчика (сек).")]
+        public float grudgeDurationSec = 300f;
     }
 }

@@ -21,6 +21,7 @@
 //   - при загрузке чанка → спавнит NPC в радиусе вокруг центра чанка (до maxAlivePerChunk).
 //   - spawn всё равно проходит через TrySpawnAtPoint (DRY: surface validation + rate-limit общие).
 //   - при выгрузке чанка NGO сам деспавнит NPC (потому что destroyWithScene=true).
+// v0.3 (T-NPC-S06): social config override — NpcSocialBrain.ApplySpawnerConfig.
 
 using System.Collections.Generic;
 using UnityEngine;
@@ -258,6 +259,21 @@ namespace ProjectC.AI
                     if (_showDebugLogs)
                     {
                         Debug.Log($"[NpcSpawner] Applied behavior {_config.behaviorType} to {go.name} (hpThresh={hpThreshold}, maxHits={maxHits})");
+                    }
+                }
+
+                // T-NPC-S06: social config override (Phase 1: patrol, flee, grudge).
+                if (_config.socialEnabled)
+                {
+                    var socialBrain = go.GetComponent<NpcSocialBrain>();
+                    if (socialBrain == null)
+                    {
+                        socialBrain = go.AddComponent<NpcSocialBrain>();
+                    }
+                    socialBrain.ApplySpawnerConfig(_config);
+                    if (_showDebugLogs)
+                    {
+                        Debug.Log($"[NpcSpawner] Applied social config to {go.name}: idle={_config.defaultIdleActivity}, flee={_config.canFlee}, grudge={_config.enableGrudgeMemory}");
                     }
                 }
             }

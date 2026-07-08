@@ -26,6 +26,7 @@
 // v0.1 (T-NPC-01): singleton per-NPC, hard-coded config.
 // v0.2 (T-NPC-02): designer-override через NpcSpawnerConfig (post-spawn apply).
 // v0.3 (T-NPC-14): passive/aggressive/neutral behavior + aggro-by-damage thresholds.
+// v0.4 (T-NPC-S02): social brain API — ForceChaseTarget, ForceFlee, SocialTick hook.
 //
 // Анти-рестриктивное: NpcBrain НЕ знает о Player/NPC конкретно — работает с
 // IDamageTarget (любой объект, реализующий интерфейс).
@@ -109,6 +110,12 @@ namespace ProjectC.AI
         [Header("Tick (server-side)")]
         [Tooltip("AI tick rate (server-side Update). 30 = ~2× в сек @ 60fps.")]
         [Range(1, 60)] public int tickRate = 10;
+
+        [Header("Social Brain (T-NPC-S01)")]
+        [Tooltip("Включает NpcSocialBrain — patrol, flee, grudge, social triggers. " +
+                 "Если false — NPC использует только старый FSM (backward compat).")]
+        [SerializeField] private bool _socialEnabled = true;
+
         [Header("Платформа (moving-platform carry, server-side)")]
         [Tooltip("Возить NPC вместе с движущейся палубой корабля (не сдувать). См. docs/Character/Skills/real-time-combat/npc-enemy/01_CREW_ON_MOVING_SHIP.md")]
         [SerializeField] private bool _platformCarryEnabled = true;
@@ -150,6 +157,11 @@ namespace ProjectC.AI
         private NetworkObject _netObject;
         private bool _parentedToShip;
 
+        // T-NPC-S02: social brain companion
+        private NpcSocialBrain _socialBrain;
+        private bool _socialOverrideLock;
+        private float _socialOverrideLockExpireTime;
+        private const float SOCIAL_OVERRIDE_TIMEOUT = 1.5f;
 
         // T-NPC-14: passive aggro tracking.
         private bool _isAggrod;
@@ -163,6 +175,10 @@ namespace ProjectC.AI
         public float AggroDamagePercent => _target != null && _target.GetMaxHp() > 0f
             ? (_aggroDamageAccumulator / _target.GetMaxHp()) * 100f
             : 0f;
+
+        // T-NPC-S02: public accessor для NpcSocialBrain (читает приватное _aggroTarget).
+        public IDamageTarget CurrentAggroTarget => _aggroTarget;
+        public bool IsSocialEnabled => _socialEnabled;
 
         /// <summary>T-NPC-14: вызывается из NpcSpawner после Instantiate для применения
         /// параметров агрессии из SpawnerConfig. Anti-restrictive: спавнер задаёт
@@ -192,6 +208,10 @@ namespace ProjectC.AI
             _agent = GetComponent<NavMeshAgent>();
             _animator = GetComponentInChildren<Animator>();
             _spawnPoint = transform.position;
+
+            // T-NPC-S02: ищем NpcSocialBrain компаньона (если social enabled).
+            if (_socialEnabled)
+                _socialBrain = GetComponent<NpcSocialBrain>();
 
             // T-NPC-14: подписка на изменение HP для passive aggro tracking.
             if (_target != null)
@@ -505,6 +525,80 @@ namespace ProjectC.AI
             }
         }
 
+        // ============================================================
+        // T-NPC-S02: Social Brain API (add-only, Phase 1)
+        // ============================================================
+
+        /// <summary>
+        /// T-NPC-S02: принудительный Chase на указанную цель.
+        /// Вызывается NpcSocialBrain при GrudgeTrigger или AllyInCombat.
+        /// DeckNav-aware: на корабле ставит destination в proxy-агент.
+        /// </summary>
+        public void ForceChaseTarget(IDamageTarget target)
+        {
+            if (target == null) return;
+            _aggroTarget = target;
+            _socialOverrideLock = true;
+            _socialOverrideLockExpireTime = Time.unscaledTime + SOCIAL_OVERRIDE_TIMEOUT;
+            if (_deckNavActive)
+            {
+                EnsureProxy();
+                if (_proxyAgent != null)
+                {
+                    Vector3 tgtLocal = _deckNav.WorldToDeckLocal(target.GetPosition());
+                    _proxyAgent.SetDestination(_deckNav.DeckLocalToNav(tgtLocal));
+                    _proxyAgent.isStopped = false;
+                }
+            }
+            EnterChase();
+        }
+
+        /// <summary>
+        /// T-NPC-S02: принудительное бегство от указанной позиции.
+        /// Вызывается NpcSocialBrain при Fear emotion + low HP.
+        /// </summary>
+        public void ForceFlee(Vector3 fromPosition)
+        {
+            _socialOverrideLock = true;
+            _socialOverrideLockExpireTime = Time.unscaledTime + SOCIAL_OVERRIDE_TIMEOUT;
+            // Бежим в направлении от угрозы к spawnPoint.
+            Vector3 fleeDir = (transform.position - fromPosition).normalized;
+            Vector3 fleeTarget = transform.position + fleeDir * 20f;
+            // Предпочитаем spawnPoint если он дальше от угрозы.
+            float spawnDistToThreat = Vector3.Distance(_spawnPoint, fromPosition);
+            float fleeDistToThreat = Vector3.Distance(fleeTarget, fromPosition);
+            if (spawnDistToThreat > fleeDistToThreat)
+                fleeTarget = _spawnPoint;
+
+            if (_deckNavActive)
+            {
+                EnsureProxy();
+                if (_proxyAgent != null)
+                {
+                    Vector3 fleeLocal = _deckNav.WorldToDeckLocal(fleeTarget);
+                    _proxyAgent.SetDestination(_deckNav.DeckLocalToNav(fleeLocal));
+                    _proxyAgent.isStopped = false;
+                }
+            }
+            else if (_agent != null && _agent.isOnNavMesh)
+            {
+                _agent.isStopped = false;
+                _agent.SetDestination(fleeTarget);
+            }
+            _aggroTarget = null;
+        }
+
+        /// <summary>
+        /// T-NPC-S02: SocialTick hook — вызывается с reduced rate (~каждые 0.5с)
+        /// для снижения нагрузки FindObjects в социальных триггерах.
+        /// </summary>
+        private void SocialTick()
+        {
+            if (!_socialEnabled || _socialBrain == null) return;
+            _socialBrain.Tick(this);
+        }
+
+        // --- Main Tick (FSM core) ---
 
         private void Tick()
         {
@@ -513,19 +607,31 @@ namespace ProjectC.AI
 
             float distFromSpawn = Vector3.Distance(transform.position, _spawnPoint);
 
-            // Сначала смотрим текущего aggro target (если ещё жив и в зоне leash).
-            if (_aggroTarget != null)
+            // T-NPC-S02: если social override активен — не трогаем _aggroTarget.
+            if (_socialOverrideLock)
             {
-                if (!_aggroTarget.IsAlive() || distFromSpawn > leashRange * 1.5f)
+                // Таймаут: если NpcSocialBrain не обновил override за отведённое время — снимаем.
+                if (Time.unscaledTime > _socialOverrideLockExpireTime)
                 {
-                    _aggroTarget = null;
+                    _socialOverrideLock = false;
                 }
             }
-
-            // Ищем ближайшего player в aggroRange.
-            if (_aggroTarget == null)
+            else
             {
-                _aggroTarget = FindNearestPlayerTarget(aggroRange);
+                // Сначала смотрим текущего aggro target (если ещё жив и в зоне leash).
+                if (_aggroTarget != null)
+                {
+                    if (!_aggroTarget.IsAlive() || distFromSpawn > leashRange * 1.5f)
+                    {
+                        _aggroTarget = null;
+                    }
+                }
+
+                // Ищем ближайшего player в aggroRange.
+                if (_aggroTarget == null)
+                {
+                    _aggroTarget = FindNearestPlayerTarget(aggroRange);
+                }
             }
 
             switch (_state)
@@ -542,6 +648,13 @@ namespace ProjectC.AI
             }
 
             UpdateAnimator();
+
+            // T-NPC-S02: SocialTick — каждый 5-й AI-тик (~0.5с при tickRate=10).
+            // Проверяем по _nextTickTime чтобы не дёргать каждый кадр.
+            if (_socialBrain != null && _socialEnabled)
+            {
+                _socialBrain.Tick(this);
+            }
         }
 
         // === Idle ===

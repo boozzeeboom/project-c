@@ -1,6 +1,8 @@
 // Project C: Real-Time Combat Engine — T-NPC-S01
 // NpcSocialBrain: companion MonoBehaviour для NpcBrain.
 // Phase 2: emotion, morale, social triggers, vocal cues, group coordination.
+// Phase 3: threat, cover, surrender, post-combat, social roles.
+// Phase 4: faction, vengeance, full idle activities.
 // Design: docs/Character/Skills/real-time-combat/npc-enemy/04_UNIFIED_BEHAVIOR_ARCHITECTURE.md
 
 using System.Collections.Generic;
@@ -15,6 +17,9 @@ namespace ProjectC.AI
     {
         [Header("Debug")]
         [SerializeField] private bool _debugLog = false;
+
+        [Header("Faction (T-NPC-S19)")]
+        public NpcFaction faction;
 
         [Header("Personality (T-NPC-S07)")]
         public NpcPersonalityConfig personalityConfig;
@@ -44,48 +49,36 @@ namespace ProjectC.AI
         public bool isGuard = false;
 
         [Header("Threat Assessment (T-NPC-S13)")]
-        [Tooltip("Радиус оценки соотношения сил (считает врагов и союзников).")]
         [Range(10f, 100f)] public float threatEvaluationRange = 30f;
-        [Tooltip("Результат последней оценки угрозы (ReadOnly, для дебага).")]
         [SerializeField] private ThreatResult _lastThreatResult = ThreatResult.Confident;
 
         [Header("Cover (T-NPC-S14)")]
-        [Tooltip("Радиус поиска укрытий.")]
         [Range(5f, 50f)] public float coverSeekRadius = 25f;
-        [Tooltip("Время в укрытии перед сменой позиции (сек).")]
         [Range(2f, 15f)] public float coverSwitchInterval = 8f;
-        [Tooltip("NPC ищет укрытие при HP ниже этого порога.")]
         [Range(0f, 1f)] public float coverHpThreshold = 0.5f;
-        [Tooltip("Текущее укрытие (ReadOnly, для дебага).")]
         [SerializeField] private CoverPoint _currentCover;
         private float _coverEnterTime;
         private float _coverSwitchCooldown;
 
         [Header("Surrender (T-NPC-S16)")]
-        [Tooltip("Порог HP (доля 0..1), ниже которого NPC может сдаться.")]
         [Range(0f, 1f)] public float surrenderHpThreshold = 0.10f;
-        [Tooltip("Радиус проверки союзников: если союзников нет — NPC сдаётся.")]
         [Range(5f, 50f)] public float surrenderAllyRadius = 20f;
-        [Tooltip("Может ли этот NPC сдаться (зависит от personality.mercy).")]
         public bool canSurrender = true;
         private bool _hasSurrendered;
 
+        [Header("Vengeance (T-NPC-S20)")]
+        public bool enableVengeanceMemory = true;
+
         [Header("Post-Combat (T-NPC-S17)")]
-        [Tooltip("Если true — NPC уходит в wounded retreat при HP<60% после боя.")]
         public bool enablePostCombat = true;
-        [Tooltip("Длительность wounded-состояния после выхода из боя (сек).")]
         [Range(5f, 30f)] public float woundedDuration = 15f;
-        [Tooltip("Порог HP для попытки heal (доля 0..1).")]
         [Range(0f, 1f)] public float healHpThreshold = 0.4f;
-        [Tooltip("Скорость HP regen при heal (% от maxHp в секунду).")]
         [Range(0.01f, 0.2f)] public float healRegenRate = 0.05f;
-        [Tooltip("Радиус поиска подкрепления после боя.")]
         [Range(20f, 80f)] public float reinforcementSeekRadius = 50f;
 
         private enum PostCombatState { None, Wounded, Healing, SeekingReinforcement }
         private PostCombatState _postCombat = PostCombatState.None;
         private float _postCombatTimer;
-        private float _postCombatHpSnapshot;
         private bool _wasInCombat;
         private bool _postCombatAggroBlock;
 
@@ -107,8 +100,20 @@ namespace ProjectC.AI
         private Vector3 _fleeTarget;
         private float _nextSocialTick;
 
+        // S21: Idle activity fields
+        private float _socializeCooldown;
+        private NpcSocialBrain _socializePartner;
+        private float _workAnimTimer;
+        private SitPoint _sitPoint;
+        private float _sitSearchCooldown;
+        private float _sleepWakeTime;
+        private bool _sleepInitialized;
+
         public bool IsFleeing => _isFleeing;
         public GrudgeTable Grudge => _grudgeTable;
+        public bool IsDead => _brain != null && _brain.CurrentState == NpcBrain.BrainState.Dead;
+        public bool IsPostCombatAggroBlocked => _postCombatAggroBlock;
+        public CoverPoint CurrentCover => _currentCover;
 
         private void Awake()
         {
@@ -131,19 +136,15 @@ namespace ProjectC.AI
             _emotion.Tick();
             UpdateEmotion();
             EvaluateTriggers();
+
+            if (CheckVengeanceTrigger()) return;
             if (CheckGrudgeTrigger()) return;
             if (CheckFleeConditions()) return;
 
-            // T-NPC-S13: Threat assessment перед входом в бой.
             if (_activeTriggers.Count > 0 && EvaluateThreatBeforeCombat()) return;
-
-            // T-NPC-S14: Cover seeking — если под огнём и HP низкий.
             if (CheckCover()) return;
-
-            // T-NPC-S16: Surrender — если HP критический и нет союзников.
             if (CheckSurrender()) return;
 
-            // T-NPC-S17: Post-combat — wounded retreat, heal, reinforcement.
             CheckPostCombat();
 
             if (ResolveActiveTriggers()) return;
@@ -157,6 +158,33 @@ namespace ProjectC.AI
             if (_debugLog) Debug.Log($"[NpcSocialBrain] {name}: recorded grudge against player {playerClientId}");
         }
 
+        // ==================== S20: Vengeance ====================
+        private bool CheckVengeanceTrigger()
+        {
+            if (!enableVengeanceMemory) return false;
+            if (faction == null || string.IsNullOrEmpty(faction.factionId)) return false;
+            if (VengeanceMemory.Instance == null) return false;
+            if (_brain.CurrentState != NpcBrain.BrainState.Idle) return false;
+
+            if (Unity.Netcode.NetworkManager.Singleton == null) return false;
+            foreach (var client in Unity.Netcode.NetworkManager.Singleton.ConnectedClientsList)
+            {
+                if (client?.PlayerObject == null) continue;
+                if (!VengeanceMemory.Instance.HasVengeance(faction.factionId, client.ClientId)) continue;
+                var pt = client.PlayerObject.GetComponent<ProjectC.Combat.PlayerTarget>();
+                if (pt == null || !pt.IsAlive()) continue;
+                float dist = Vector3.Distance(transform.position, client.PlayerObject.transform.position);
+                if (dist <= VengeanceMemory.Instance.vengeanceTriggerRadius)
+                {
+                    if (_debugLog) Debug.Log($"[NpcSocialBrain] {name}: VengeanceTrigger player {client.ClientId} faction={faction.factionId}");
+                    _brain.ForceChaseTarget(pt);
+                    return true;
+                }
+            }
+            return false;
+        }
+
+        // ==================== S05: Grudge ====================
         private bool CheckGrudgeTrigger()
         {
             if (!enableGrudgeMemory) return false;
@@ -178,6 +206,7 @@ namespace ProjectC.AI
             return false;
         }
 
+        // ==================== S04: Flee ====================
         private bool CheckFleeConditions()
         {
             if (!canFlee) return false;
@@ -227,18 +256,129 @@ namespace ProjectC.AI
             foreach (var o in FindObjectsByType<NpcSocialBrain>(FindObjectsSortMode.None))
             {
                 if (o == this || o._brain == null || o._brain.CurrentState == NpcBrain.BrainState.Dead) continue;
+                if (faction != null && o.faction != null && !faction.IsAllied(o.faction)) continue;
                 float d = (o.transform.position - transform.position).sqrMagnitude;
                 if (d < bestD && d > 0.01f) { bestD = d; best = o.transform.position; }
             }
             return best;
         }
 
+        // ==================== S21: All Idle Activities ====================
         private void ExecuteIdleActivity()
         {
             switch (idleActivity)
             {
+                case NpcIdleActivity.StandStill: ExecuteStandStill(); break;
                 case NpcIdleActivity.Patrol: ExecutePatrol(); break;
                 case NpcIdleActivity.Wander: ExecuteWander(); break;
+                case NpcIdleActivity.LookAround: ExecuteLookAround(); break;
+                case NpcIdleActivity.Socialize: ExecuteSocialize(); break;
+                case NpcIdleActivity.Work: ExecuteWork(); break;
+                case NpcIdleActivity.Sit: ExecuteSit(); break;
+                case NpcIdleActivity.Sleep: ExecuteSleep(); break;
+            }
+        }
+
+        private void ExecuteStandStill()
+        {
+            if (_agent != null && _agent.isOnNavMesh) { _agent.isStopped = true; _agent.ResetPath(); }
+        }
+
+        private void ExecuteLookAround()
+        {
+            if (_agent != null && _agent.isOnNavMesh) _agent.isStopped = true;
+        }
+
+        private void ExecuteSocialize()
+        {
+            if (_agent == null || !_agent.isOnNavMesh) return;
+            if (Time.unscaledTime < _socializeCooldown) return;
+            if (_socializePartner == null || _socializePartner.IsDead ||
+                Vector3.Distance(transform.position, _socializePartner.transform.position) > 15f)
+                _socializePartner = FindSocializePartner();
+            if (_socializePartner != null)
+            {
+                Vector3 midPoint = (transform.position + _socializePartner.transform.position) * 0.5f;
+                if (Vector3.Distance(transform.position, midPoint) > 2f)
+                {
+                    _agent.isStopped = false;
+                    _agent.SetDestination(midPoint);
+                }
+                else { _agent.isStopped = true; FaceTarget(_socializePartner.transform.position); }
+            }
+            _socializeCooldown = Time.unscaledTime + Random.Range(3f, 6f);
+        }
+
+        private NpcSocialBrain FindSocializePartner()
+        {
+            NpcSocialBrain best = null;
+            float bestD = 15f * 15f;
+            foreach (var o in FindObjectsByType<NpcSocialBrain>(FindObjectsSortMode.None))
+            {
+                if (o == this || o == null || o.IsDead || o._brain == null) continue;
+                if (faction != null && o.faction != null && !faction.IsAllied(o.faction)) continue;
+                if (o._brain.CurrentState != NpcBrain.BrainState.Idle) continue;
+                float d = (o.transform.position - transform.position).sqrMagnitude;
+                if (d < bestD && d > 0.01f) { bestD = d; best = o; }
+            }
+            return best;
+        }
+
+        private void ExecuteWork()
+        {
+            if (_agent != null && _agent.isOnNavMesh) _agent.isStopped = true;
+            if (Time.unscaledTime > _workAnimTimer)
+            {
+                var anim = GetComponentInChildren<Animator>();
+                if (anim != null) { anim.SetInteger("WorkVariant", Random.Range(0, 3)); anim.SetTrigger("Work"); }
+                _workAnimTimer = Time.unscaledTime + Random.Range(5f, 15f);
+            }
+        }
+
+        private void ExecuteSit()
+        {
+            if (_agent == null || !_agent.isOnNavMesh) return;
+            if (_sitPoint != null)
+            {
+                if (_sitPoint.IsOccupied && _sitPoint._currentOccupant != this) _sitPoint = null;
+                else { _agent.isStopped = true; return; }
+            }
+            if (Time.unscaledTime < _sitSearchCooldown) return;
+            _sitSearchCooldown = Time.unscaledTime + 5f;
+            SitPoint best = null;
+            float bestD = 25f * 25f;
+            foreach (var sp in FindObjectsByType<SitPoint>(FindObjectsSortMode.None))
+            {
+                if (sp == null || sp.IsOccupied) continue;
+                float d = (transform.position - sp.SitPosition).sqrMagnitude;
+                if (d < bestD) { bestD = d; best = sp; }
+            }
+            if (best != null)
+            {
+                _sitPoint = best;
+                _sitPoint._currentOccupant = this;
+                _agent.isStopped = false;
+                _agent.SetDestination(best.SitPosition);
+            }
+            else _agent.isStopped = true;
+        }
+
+        private void ExecuteSleep()
+        {
+            if (!_sleepInitialized)
+            {
+                _sleepInitialized = true;
+                _sleepWakeTime = Time.unscaledTime + Random.Range(30f, 120f);
+                var anim = GetComponentInChildren<Animator>();
+                if (anim != null) anim.SetBool("IsSleeping", true);
+                if (_agent != null && _agent.isOnNavMesh) _agent.isStopped = true;
+            }
+            if (Time.unscaledTime > _sleepWakeTime)
+            {
+                _sleepInitialized = false;
+                idleActivity = NpcIdleActivity.StandStill;
+                var anim = GetComponentInChildren<Animator>();
+                if (anim != null) anim.SetBool("IsSleeping", false);
             }
         }
 
@@ -292,8 +432,14 @@ namespace ProjectC.AI
             }
         }
 
-        public bool IsDead => _brain != null && _brain.CurrentState == NpcBrain.BrainState.Dead;
+        private void FaceTarget(Vector3 targetPos)
+        {
+            Vector3 dir = targetPos - transform.position; dir.y = 0;
+            if (dir.sqrMagnitude < 0.01f) return;
+            transform.rotation = Quaternion.RotateTowards(transform.rotation, Quaternion.LookRotation(dir), 180f * Time.deltaTime);
+        }
 
+        // ==================== Config ====================
         public void ApplySpawnerConfig(NpcSpawnerConfig config, Vector3[] waypointsOverride = null)
         {
             if (config == null) return;
@@ -316,16 +462,15 @@ namespace ProjectC.AI
             enablePostCombat = config.enablePostCombat;
             if (config.woundedDuration > 0f) woundedDuration = config.woundedDuration;
             if (config.healHpThreshold > 0f) healHpThreshold = config.healHpThreshold;
-
-            // T-NPC-S18: Применяем SocialRoleConfig последним (переопределяет поля выше).
-            if (config.socialRole != null)
-                config.socialRole.ApplyTo(this);
+            if (config.socialRole != null) config.socialRole.ApplyTo(this);
+            if (config.faction != null) faction = config.faction;
             enableGrudgeMemory = config.enableGrudgeMemory;
             grudgeDurationSec = config.grudgeDurationSec;
             if (_grudgeTable != null) _grudgeTable.grudgeDurationSec = grudgeDurationSec;
             if (config.personalityConfig != null) { personalityConfig = config.personalityConfig; _morale.Initialize(personalityConfig); }
         }
 
+        // ==================== S07: Emotion ====================
         private void UpdateEmotion()
         {
             if (_target == null) return;
@@ -341,10 +486,9 @@ namespace ProjectC.AI
             else if (_morale.ShouldFlee(personalityConfig) && hp < 0.5f) target = NpcEmotion.Fear;
             else target = NpcEmotion.Calm;
             _emotion.Set(target);
-            if (_debugLog && target != NpcEmotion.Calm && Time.frameCount % 60 == 0)
-                Debug.Log($"[NpcSocialBrain] {name}: emotion={target}, morale={_morale.current:F2}");
         }
 
+        // ==================== S09: Social Triggers ====================
         private void EvaluateTriggers()
         {
             _activeTriggers.Clear();
@@ -380,6 +524,8 @@ namespace ProjectC.AI
                 killerTarget = m._brain?.CurrentAggroTarget ?? FindNearestPlayerInRange(allyDeathRadius * 1.5f);
                 if (killerTarget != null)
                 {
+                    if (enableVengeanceMemory && faction != null && VengeanceMemory.Instance != null && killerClientId != 0)
+                        VengeanceMemory.Instance.RegisterKill(faction.factionId, killerClientId);
                     float loyalty = personalityConfig != null ? personalityConfig.loyalty : 0.8f;
                     _emotion.Set(loyalty > 0.7f ? NpcEmotion.Anger : NpcEmotion.Fear);
                     _morale.OnAllyKilled(personalityConfig);
@@ -404,14 +550,28 @@ namespace ProjectC.AI
         private bool CheckAllyInCombat(out IDamageTarget target)
         {
             target = null;
-            if (Group == null) return false;
-            foreach (var m in Group.members)
+            if (Group != null)
             {
-                if (m == this || m == null || m._brain == null) continue;
-                bool inCombat = m._brain.CurrentState == NpcBrain.BrainState.Chase || m._brain.CurrentState == NpcBrain.BrainState.Attack;
-                if (!inCombat || Vector3.Distance(transform.position, m.transform.position) > 15f) continue;
-                target = m._brain.CurrentAggroTarget;
-                if (target != null) { _emotion.Set(NpcEmotion.Alert); return true; }
+                foreach (var m in Group.members)
+                {
+                    if (m == this || m == null || m._brain == null) continue;
+                    bool inCombat = m._brain.CurrentState == NpcBrain.BrainState.Chase || m._brain.CurrentState == NpcBrain.BrainState.Attack;
+                    if (!inCombat || Vector3.Distance(transform.position, m.transform.position) > 15f) continue;
+                    target = m._brain.CurrentAggroTarget;
+                    if (target != null) { _emotion.Set(NpcEmotion.Alert); return true; }
+                }
+            }
+            if (faction != null)
+            {
+                foreach (var o in FindObjectsByType<NpcSocialBrain>(FindObjectsSortMode.None))
+                {
+                    if (o == this || o == null || o._brain == null) continue;
+                    if (o.faction == null || !faction.IsAllied(o.faction)) continue;
+                    bool inCombat = o._brain.CurrentState == NpcBrain.BrainState.Chase || o._brain.CurrentState == NpcBrain.BrainState.Attack;
+                    if (!inCombat || Vector3.Distance(transform.position, o.transform.position) > 15f) continue;
+                    target = o._brain.CurrentAggroTarget;
+                    if (target != null) { _emotion.Set(NpcEmotion.Alert); return true; }
+                }
             }
             return false;
         }
@@ -426,186 +586,96 @@ namespace ProjectC.AI
 
         private bool CheckReinforcementNearby() { return Group != null && Group.AliveCount >= 3; }
 
-        // T-NPC-S13: Threat assessment перед переходом в Chase.
-        // Если odds не в пользу NPC — может отступить вместо атаки.
+        // ==================== S13: Threat Assessment ====================
         private bool EvaluateThreatBeforeCombat()
         {
             if (_brain == null) return false;
             var ta = ThreatAssessment.Evaluate(_brain, Group, threatEvaluationRange);
             _lastThreatResult = ta.result;
-
             switch (ta.result)
             {
-                case ThreatResult.Confident:
-                    // Уверены — продолжаем обычный путь (ResolveActiveTriggers → ForceChase).
-                    return false;
-
+                case ThreatResult.Confident: return false;
                 case ThreatResult.Cautious:
-                    // Осторожны: если есть personality, reckless > 0.7 игнорирует осторожность.
-                    if (personalityConfig != null && personalityConfig.recklessness > 0.7f)
-                        return false;
-                    // Иначе: пропускаем этот тик (ждём подкрепления/лучших условий).
-                    if (_debugLog && Time.frameCount % 60 == 0)
-                        Debug.Log($"[NpcSocialBrain] {name}: Cautious — threatScore={ta.threatScore:F2}, waiting");
+                    if (personalityConfig != null && personalityConfig.recklessness > 0.7f) return false;
                     return true;
-
                 case ThreatResult.Afraid:
-                    // Боимся: Flee или CallForHelp.
-                    // Если recklessness > 0.8 — всё равно лезет в бой.
-                    if (personalityConfig != null && personalityConfig.recklessness > 0.8f)
-                        return false;
-                    // Иначе — форсируем Flee.
-                    if (canFlee && !_isFleeing && _brain.CurrentAggroTarget != null)
-                    {
-                        if (_debugLog)
-                            Debug.Log($"[NpcSocialBrain] {name}: Afraid — threatScore={ta.threatScore:F2}, fleeing");
-                        StartFlee();
-                        return true;
-                    }
-                    // Если не можем flee — Dispatch AlertCall для привлечения союзников.
+                    if (personalityConfig != null && personalityConfig.recklessness > 0.8f) return false;
+                    if (canFlee && !_isFleeing && _brain.CurrentAggroTarget != null) { StartFlee(); return true; }
                     DispatchVocalCue(NpcVocalCue.AlertCall);
                     return true;
-
-                default:
-                    return false;
+                default: return false;
             }
         }
 
-        // T-NPC-S14: Cover seeking — ищет укрытие при низком HP или под огнём.
+        // ==================== S14: Cover ====================
         private bool CheckCover()
         {
-            if (_target == null || _brain == null || _agent == null) return false;
-            if (!_agent.isOnNavMesh) return false;
-
-            // Если уже в укрытии:
+            if (_target == null || _brain == null || _agent == null || !_agent.isOnNavMesh) return false;
             if (_currentCover != null)
             {
-                // Проверяем, пора ли сменить укрытие.
                 if (Time.unscaledTime - _coverEnterTime > coverSwitchInterval)
                 {
-                    // Меняем укрытие если всё ещё под угрозой.
-                    if (IsUnderThreat())
-                    {
-                        _coverSwitchCooldown = Time.unscaledTime + coverSwitchInterval * 0.5f;
-                        SeekCover();
-                    }
-                    else
-                    {
-                        LeaveCover();
-                    }
+                    if (IsUnderThreat()) { _coverSwitchCooldown = Time.unscaledTime + coverSwitchInterval * 0.5f; SeekCover(); }
+                    else LeaveCover();
                 }
-                return true; // В укрытии — не делаем другие действия.
+                return true;
             }
-
-            // Нужно ли искать укрытие?
             float hpPercent = _target.GetMaxHp() > 0 ? (float)_target.GetCurrentHp() / _target.GetMaxHp() : 1f;
-            bool lowHp = hpPercent <= coverHpThreshold;
-            bool underThreat = IsUnderThreat();
-
-            if (lowHp && underThreat && Time.unscaledTime > _coverSwitchCooldown)
-            {
-                SeekCover();
-                return _currentCover != null;
-            }
-
+            if (hpPercent <= coverHpThreshold && IsUnderThreat() && Time.unscaledTime > _coverSwitchCooldown)
+            { SeekCover(); return _currentCover != null; }
             return false;
         }
 
         private bool IsUnderThreat()
         {
             if (_brain.CurrentAggroTarget != null) return true;
-            // Проверяем, есть ли враг в aggroRange.
             return ThreatAssessment.HasEnemiesInRange(transform.position, _brain.aggroRange);
         }
 
         private void SeekCover()
         {
             if (_agent == null || !_agent.isOnNavMesh) return;
-
             CoverPoint best = null;
             float bestScore = float.MaxValue;
-
-            // Поиск ближайшего укрытия (ручные CoverPoint маркеры).
             foreach (var cp in FindObjectsByType<CoverPoint>(FindObjectsSortMode.None))
             {
-                if (cp == null || cp == _currentCover) continue;
-                if (cp.IsOccupied) continue;
-
+                if (cp == null || cp == _currentCover || cp.IsOccupied) continue;
                 float d = Vector3.Distance(transform.position, cp.StandPosition);
                 if (d > coverSeekRadius) continue;
-
-                // Score = distance / priority (выше приоритет = меньше score).
                 float score = d / Mathf.Max(0.1f, cp.priority);
-                if (score < bestScore)
-                {
-                    bestScore = score;
-                    best = cp;
-                }
+                if (score < bestScore) { bestScore = score; best = cp; }
             }
-
             if (best != null)
             {
-                // Покидаем текущее укрытие.
-                if (_currentCover != null)
-                    _currentCover._currentOccupant = null;
-
-                _currentCover = best;
-                _currentCover._currentOccupant = this;
+                if (_currentCover != null) _currentCover._currentOccupant = null;
+                _currentCover = best; _currentCover._currentOccupant = this;
                 _coverEnterTime = Time.unscaledTime;
-
-                // Двигаемся к позиции укрытия.
                 _agent.isStopped = false;
                 _agent.SetDestination(best.StandPosition);
-
-                if (_debugLog)
-                    Debug.Log($"[NpcSocialBrain] {name}: seek cover → {best.name} (dist={Vector3.Distance(transform.position, best.StandPosition):F1}, priority={best.priority})");
             }
             else
             {
-                // Нет ручных маркеров — пробуем auto-detect через raycast.
                 Vector3? autoCover = AutoDetectCover();
-                if (autoCover.HasValue)
-                {
-                    _agent.isStopped = false;
-                    _agent.SetDestination(autoCover.Value);
-                    _coverSwitchCooldown = Time.unscaledTime + coverSwitchInterval;
-                    if (_debugLog)
-                        Debug.Log($"[NpcSocialBrain] {name}: auto-cover → {autoCover.Value}");
-                }
+                if (autoCover.HasValue) { _agent.isStopped = false; _agent.SetDestination(autoCover.Value); _coverSwitchCooldown = Time.unscaledTime + coverSwitchInterval; }
             }
         }
 
-        /// <summary>
-        /// Auto-detect cover by raycasting toward threat and finding walls.
-        /// Fallback когда нет ручных CoverPoint маркеров.
-        /// </summary>
         private Vector3? AutoDetectCover()
         {
-            Vector3 threatPos = _brain.CurrentAggroTarget != null
-                ? _brain.CurrentAggroTarget.GetPosition()
-                : transform.position + transform.forward * 10f;
-
+            Vector3 threatPos = _brain.CurrentAggroTarget != null ? _brain.CurrentAggroTarget.GetPosition() : transform.position + transform.forward * 10f;
             Vector3 awayFromThreat = (transform.position - threatPos).normalized;
-
-            // Веером проверяем направления от угрозы: прямо, ±30°, ±60°.
             float[] angles = { 0f, 30f, -30f, 60f, -60f };
             foreach (float angle in angles)
             {
                 Vector3 dir = Quaternion.AngleAxis(angle, Vector3.up) * awayFromThreat;
                 Vector3 checkPos = transform.position + dir * coverSeekRadius * 0.7f;
-
-                // Raycast вниз для проверки земли.
                 if (Physics.Raycast(checkPos + Vector3.up * 2f, Vector3.down, out RaycastHit groundHit, 10f, ~0, QueryTriggerInteraction.Ignore))
                 {
-                    // Raycast от угрозы к проверяемой позиции — есть ли препятствие?
                     Vector3 toThreat = threatPos - groundHit.point;
                     if (Physics.Raycast(groundHit.point, toThreat.normalized, out RaycastHit wallHit, toThreat.magnitude, ~0, QueryTriggerInteraction.Ignore))
                     {
-                        // Есть стена между точкой и угрозой — хорошее укрытие!
-                        if (UnityEngine.AI.NavMesh.SamplePosition(groundHit.point, out UnityEngine.AI.NavMeshHit navHit, 2f, UnityEngine.AI.NavMesh.AllAreas))
-                        {
+                        if (NavMesh.SamplePosition(groundHit.point, out NavMeshHit navHit, 2f, NavMesh.AllAreas))
                             return navHit.position;
-                        }
                     }
                 }
             }
@@ -614,220 +684,85 @@ namespace ProjectC.AI
 
         private void LeaveCover()
         {
-            if (_currentCover != null)
-            {
-                _currentCover._currentOccupant = null;
-                _currentCover = null;
-            }
+            if (_currentCover != null) { _currentCover._currentOccupant = null; _currentCover = null; }
             _coverEnterTime = 0f;
-            if (_debugLog)
-                Debug.Log($"[NpcSocialBrain] {name}: leaving cover");
         }
 
-        /// <summary>Публичный доступ к текущему укрытию (для Group Tactics).</summary>
-        public CoverPoint CurrentCover => _currentCover;
-
-        // T-NPC-S16: Surrender — проверка условий и вход в состояние сдачи.
+        // ==================== S16: Surrender ====================
         private bool CheckSurrender()
         {
-            if (!canSurrender) return false;
-            if (_hasSurrendered) return false;
-            if (_target == null || _brain == null) return false;
-
+            if (!canSurrender || _hasSurrendered || _target == null || _brain == null) return false;
             float hpPercent = _target.GetMaxHp() > 0 ? (float)_target.GetCurrentHp() / _target.GetMaxHp() : 1f;
             if (hpPercent > surrenderHpThreshold) return false;
-
-            // Проверяем, есть ли союзники рядом.
             bool hasNearbyAlly = false;
             if (Group != null)
             {
                 foreach (var m in Group.members)
-                {
-                    if (m == this || m == null || m.IsDead) continue;
-                    if (Vector3.Distance(transform.position, m.transform.position) <= surrenderAllyRadius)
-                    {
-                        hasNearbyAlly = true;
-                        break;
-                    }
-                }
+                { if (m != this && m != null && !m.IsDead && Vector3.Distance(transform.position, m.transform.position) <= surrenderAllyRadius) { hasNearbyAlly = true; break; } }
             }
-
-            // Сдаёмся если HP < порог И нет союзников рядом.
             if (hasNearbyAlly) return false;
-
-            // Учитываем personality.mercy: высокий mercy → NPC сам склонен к сдаче.
-            // Низкий mercy → NPC не сдаётся (дерётся до смерти).
             float mercy = personalityConfig != null ? personalityConfig.mercy : 0.2f;
-            if (mercy < 0.15f) return false; // Не сдаётся никогда.
-
-            EnterSurrender();
+            if (mercy < 0.15f) return false;
+            _hasSurrendered = true;
+            if (_brain != null) _brain.ForceSurrender();
             return true;
         }
 
-        private void EnterSurrender()
-        {
-            _hasSurrendered = true;
-            if (_brain != null)
-                _brain.ForceSurrender();
-
-            if (_debugLog)
-                Debug.Log($"[NpcSocialBrain] {name}: surrendered (HP critical, no allies nearby)");
-        }
-
-        // T-NPC-S17: Post-combat behavior — Wounded/Heal/CallReinforcement.
+        // ==================== S17: Post-Combat ====================
         private void CheckPostCombat()
         {
-            if (!enablePostCombat) return;
-            if (_brain == null || _target == null) return;
-
-            bool inCombat = _brain.CurrentState == NpcBrain.BrainState.Chase ||
-                            _brain.CurrentState == NpcBrain.BrainState.Attack;
-
-            // Детектируем выход из боя.
+            if (!enablePostCombat || _brain == null || _target == null) return;
+            bool inCombat = _brain.CurrentState == NpcBrain.BrainState.Chase || _brain.CurrentState == NpcBrain.BrainState.Attack;
             if (_wasInCombat && !inCombat && _postCombat == PostCombatState.None)
             {
                 float hpPercent = _target.GetMaxHp() > 0 ? (float)_target.GetCurrentHp() / _target.GetMaxHp() : 1f;
-
-                if (hpPercent < healHpThreshold && HasNearbyDeadAllies())
-                {
-                    // AllDead nearby + есть союзники в 50м → бежим за подмогой.
-                    StartPostCombat(PostCombatState.SeekingReinforcement);
-                }
-                else if (hpPercent < healHpThreshold)
-                {
-                    // HP < 40% → пытаемся лечиться.
-                    StartPostCombat(PostCombatState.Healing);
-                }
-                else if (hpPercent < 0.6f)
-                {
-                    // HP < 60% → wounded retreat.
-                    StartPostCombat(PostCombatState.Wounded);
-                }
+                if (hpPercent < healHpThreshold && HasNearbyDeadAllies()) StartPostCombat(PostCombatState.SeekingReinforcement);
+                else if (hpPercent < healHpThreshold) StartPostCombat(PostCombatState.Healing);
+                else if (hpPercent < 0.6f) StartPostCombat(PostCombatState.Wounded);
             }
-
             _wasInCombat = inCombat;
-
-            // Tick текущего post-combat состояния.
             switch (_postCombat)
             {
-                case PostCombatState.Wounded:
-                    TickWounded();
-                    break;
-                case PostCombatState.Healing:
-                    TickHealing();
-                    break;
-                case PostCombatState.SeekingReinforcement:
-                    TickSeekingReinforcement();
-                    break;
+                case PostCombatState.Wounded: TickWounded(); break;
+                case PostCombatState.Healing: TickHealing(); break;
+                case PostCombatState.SeekingReinforcement: TickSeekingReinforcement(); break;
             }
         }
 
-        private void StartPostCombat(PostCombatState state)
-        {
-            _postCombat = state;
-            _postCombatTimer = Time.unscaledTime;
-            _postCombatAggroBlock = true;
-            _postCombatHpSnapshot = _target != null && _target.GetMaxHp() > 0
-                ? (float)_target.GetCurrentHp() / _target.GetMaxHp()
-                : 1f;
-
-            if (_debugLog)
-                Debug.Log($"[NpcSocialBrain] {name}: post-combat → {state}, hp={_postCombatHpSnapshot:F1}");
-        }
-
-        private void EndPostCombat()
-        {
-            _postCombat = PostCombatState.None;
-            _postCombatAggroBlock = false;
-            _morale.OnSuccessfulRetreat();
-
-            if (_debugLog)
-                Debug.Log($"[NpcSocialBrain] {name}: post-combat ended, resuming activity");
-        }
+        private void StartPostCombat(PostCombatState s) { _postCombat = s; _postCombatTimer = Time.unscaledTime; _postCombatAggroBlock = true; }
+        private void EndPostCombat() { _postCombat = PostCombatState.None; _postCombatAggroBlock = false; _morale.OnSuccessfulRetreat(); }
 
         private void TickWounded()
         {
-            // Идём к spawnPoint, не агримся.
             if (_agent != null && _agent.isOnNavMesh && !_agent.isStopped)
             {
-                float distToSpawn = Vector3.Distance(transform.position, _brain.SpawnPoint);
-                if (distToSpawn > 2f)
-                {
-                    _agent.SetDestination(_brain.SpawnPoint);
-                }
-                else if (_agent.remainingDistance < 1f)
-                {
-                    _agent.isStopped = true;
-                }
+                if (Vector3.Distance(transform.position, _brain.SpawnPoint) > 2f) _agent.SetDestination(_brain.SpawnPoint);
+                else if (_agent.remainingDistance < 1f) _agent.isStopped = true;
             }
-
-            if (Time.unscaledTime - _postCombatTimer > woundedDuration)
-                EndPostCombat();
+            if (Time.unscaledTime - _postCombatTimer > woundedDuration) EndPostCombat();
         }
 
         private void TickHealing()
         {
-            // Стоим на месте, лечимся.
-            if (_agent != null && _agent.isOnNavMesh)
-                _agent.isStopped = true;
-
-            if (_target != null && _target.GetMaxHp() > 0)
-            {
-                float hpPercent = (float)_target.GetCurrentHp() / _target.GetMaxHp();
-                // Лечимся до 60% HP.
-                if (hpPercent < 0.6f)
-                {
-                    int healAmount = Mathf.CeilToInt(_target.GetMaxHp() * healRegenRate * 0.5f); // 0.5 = SocialTick interval
-                    if (healAmount > 0 && _target.GetCurrentHp() < _target.GetMaxHp())
-                    {
-                        // HP regen через ModifyHp.
-                        // NOTE: требуется метод на NpcTarget для лечения. Пока — placeholder.
-                    }
-                }
-                else
-                {
-                    EndPostCombat();
-                }
-            }
-
-            if (Time.unscaledTime - _postCombatTimer > woundedDuration * 1.5f)
-                EndPostCombat();
+            if (_agent != null && _agent.isOnNavMesh) _agent.isStopped = true;
+            if (Time.unscaledTime - _postCombatTimer > woundedDuration * 1.5f) EndPostCombat();
         }
 
         private void TickSeekingReinforcement()
         {
-            // Бежим к ближайшему живому союзнику.
             Vector3 allyPos = FindNearestAlly();
-            if (allyPos.sqrMagnitude > 0.1f && _agent != null && _agent.isOnNavMesh)
-            {
-                _agent.isStopped = false;
-                _agent.SetDestination(allyPos);
-            }
-            else
-            {
-                // Нет союзников — просто ранен.
-                _postCombat = PostCombatState.Wounded;
-                _postCombatTimer = Time.unscaledTime;
-            }
-
-            if (Time.unscaledTime - _postCombatTimer > woundedDuration * 2f)
-                EndPostCombat();
+            if (allyPos.sqrMagnitude > 0.1f && _agent != null && _agent.isOnNavMesh) { _agent.isStopped = false; _agent.SetDestination(allyPos); }
+            else { _postCombat = PostCombatState.Wounded; _postCombatTimer = Time.unscaledTime; }
+            if (Time.unscaledTime - _postCombatTimer > woundedDuration * 2f) EndPostCombat();
         }
 
         private bool HasNearbyDeadAllies()
         {
             if (Group == null) return false;
             foreach (var m in Group.members)
-            {
-                if (m == this || m == null || !m.IsDead) continue;
-                if (Vector3.Distance(transform.position, m.transform.position) <= allyDeathRadius)
-                    return true;
-            }
+            { if (m != this && m != null && m.IsDead && Vector3.Distance(transform.position, m.transform.position) <= allyDeathRadius) return true; }
             return false;
         }
-
-        /// <summary>Блокирует ли post-combat состояние агрессию?</summary>
-        public bool IsPostCombatAggroBlocked => _postCombatAggroBlock;
 
         private IDamageTarget FindNearestPlayerInRange(float range)
         {
@@ -853,17 +788,13 @@ namespace ProjectC.AI
             {
                 string tn = cue switch
                 {
-                    NpcVocalCue.AlertCall => "AlertCall",
-                    NpcVocalCue.DeathScream => "DeathScream",
-                    NpcVocalCue.Taunt => "Taunt",
-                    NpcVocalCue.FearCry => "FearCry",
-                    NpcVocalCue.VictoryRoar => "VictoryRoar",
+                    NpcVocalCue.AlertCall => "AlertCall", NpcVocalCue.DeathScream => "DeathScream",
+                    NpcVocalCue.Taunt => "Taunt", NpcVocalCue.FearCry => "FearCry", NpcVocalCue.VictoryRoar => "VictoryRoar",
                     _ => "AlertCall",
                 };
                 anim.SetTrigger(tn);
             }
             if (Group != null) Group.OnVocalCue(this, cue);
-            if (_debugLog) Debug.Log($"[NpcSocialBrain] {name}: VocalCue {cue}");
         }
     }
 }

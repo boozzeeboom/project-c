@@ -90,11 +90,23 @@ namespace ProjectC.AI
         public void AddMember(NpcSocialBrain brain)
         {
             if (brain == null || members.Contains(brain)) return;
+
+            // T-NPC-S19: проверяем совместимость фракций. В группе — только Allied.
+            if (members.Count > 0 && members[0] != null && members[0].faction != null && brain.faction != null)
+            {
+                if (!members[0].faction.IsAllied(brain.faction))
+                {
+                    if (_debugLog)
+                        Debug.Log($"[NpcGroupController] {brain.name} rejected: faction mismatch ({brain.faction?.factionId} vs {members[0].faction?.factionId})");
+                    return;
+                }
+            }
+
             members.Add(brain);
             brain.Group = this;
 
-            // Назначаем лидера, если ещё нет.
-            if (leader == null)
+            // Назначаем лидера (предпочитаем isLeader=true).
+            if (leader == null || (brain.isGuard && leader != null && !leader.isGuard))
             {
                 leader = brain;
                 if (_debugLog)

@@ -152,5 +152,13 @@ namespace ProjectC.AI
         [Header("Social Role (T-NPC-S18)")]
         [Tooltip("Пресет социальной роли (Guard, Civilian, Merchant, etc). Если null — используется personalityConfig.")]
         public SocialRoleConfig socialRole;
+
+        [Header("Faction (T-NPC-S19)")]
+        [Tooltip("Фракция NPC. Определяет отношения «свой/чужой».")]
+        public NpcFaction faction;
+
+        [Header("Vengeance (T-NPC-S20)")]
+        [Tooltip("Включает кросс-спавн vengeance-память.")]
+        public bool enableVengeanceMemory = true;
     }
 }

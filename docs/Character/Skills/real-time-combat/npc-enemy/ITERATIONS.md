@@ -90,7 +90,28 @@ ThreatAssessment, CoverModule, Group Tactics, Surrender, Post-Combat, SocialRole
 
 **Тикеты:** T-NPC-S13, T-NPC-S14, T-NPC-S15, T-NPC-S16, T-NPC-S17, T-NPC-S18
 
-**Статус Phase 3:** ✅ Реализация завершена. ⬜ Требуется игровое тестирование.
+=======
+
+## Итерация от 2026-07-15 — Phase 4: «Социум»
+
+**Задача:** Реализация Phase 4 (P3) согласно `04_UNIFIED_BEHAVIOR_ARCHITECTURE.md`:
+FactionSystem, VengeanceMemory, Full Idle Activities (Socialize/Work/Sit/Sleep).
+
+**Изменения:**
+- `NpcFaction.cs` — (NEW) ScriptableObject: factionId, FactionRelation (Allied/Neutral/Hostile), GetRelation/IsAllied/IsHostile/SetRelation
+- `VengeanceMemory.cs` — (NEW) NetworkBehaviour singleton: кросс-спавн память обидчиков, RegisterKill/HasVengeance/ClearVengeance/GetVengeanceBuff
+- `SitPoint.cs` — (NEW) маркер места для сидения: IsOccupied, SitPosition/SitRotation, Gizmos
+- `NpcSocialBrain.cs` — расширен: faction-aware FindNearestAlly/CheckAllyInCombat/FindSocializePartner, CheckVengeanceTrigger, ExecuteSocialize/Work/Sit/Sleep/LookAround
+- `NpcGroupController.cs` — расширен: faction-check в AddMember, предпочтение isGuard для лидера
+- `NpcSpawnerConfig.cs` — add-only: faction, enableVengeanceMemory
+- `Resources/AI/NpcFaction_*.asset` — (NEW) 5 файлов фракций
+
+**Тикеты:** T-NPC-S19, T-NPC-S20, T-NPC-S21
+**Пропущен:** T-NPC-S22 (рефакторинг на модули — опциональный, отложен)
+
+**Статус Phase 4:** ✅ Реализация завершена. ⬜ Требуется игровое тестирование.
+=======
+
 =======
 
 =======

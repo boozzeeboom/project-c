@@ -451,7 +451,7 @@ namespace ProjectC.Skills
                 if (isThrownAoe)
                 {
                     float throwRange = skillConfig.throwRange;
-                    Vector3 baseTargetPoint = FindThrowTargetPoint(throwRange);
+                    Vector3 baseTargetPoint = GetThrowTarget(throwRange, targetId);
                     int throwCount = Mathf.Max(1, skillConfig.throwCount);
 
                     for (int i = 0; i < throwCount; i++)
@@ -740,6 +740,52 @@ namespace ProjectC.Skills
             }
             if (Debug.isDebugBuild) Debug.LogWarning("[SkillInputService/R5] ResolveEquippedWeaponSourceId: no weapon in slots, sourceId=0");
             return 0UL;
+        }
+
+        /// <summary>
+        /// T-LOCK-01: точка кидка для throwables.
+        /// Если есть locked target (Q/E) — кидаем в её сторону:
+        ///   - цель в радиусе throwRange → точный бросок в позицию цели
+        ///   - цель дальше → бросок в направлении цели на throwRange
+        /// Если locked target нет — fallback на FindThrowTargetPoint (raycast/forward).
+        /// </summary>
+        private Vector3 GetThrowTarget(float throwRange, ulong targetId)
+        {
+            if (_ownerPlayer == null) return Vector3.zero;
+
+            // Проверяем locked target (Q/E).
+            if (targetId != 0UL && TargetLockService.Instance != null)
+            {
+                var lockedObj = TargetLockService.Instance.LockedTargetObject;
+                if (lockedObj != null)
+                {
+                    var lockedDt = lockedObj.GetComponentInParent<ProjectC.Combat.Core.IDamageTarget>();
+                    if (lockedDt != null && lockedDt.IsAlive())
+                    {
+                        Vector3 playerPos = _ownerPlayer.transform.position;
+                        Vector3 toTarget = lockedDt.GetPosition() - playerPos;
+                        float dist = toTarget.magnitude;
+
+                        if (dist <= throwRange)
+                        {
+                            // Цель в радиусе — кидаем прямо в неё.
+                            return lockedDt.GetPosition();
+                        }
+                        else
+                        {
+                            // Цель дальше радиуса — кидаем в её направлении на throwRange.
+                            Vector3 flatDir = toTarget;
+                            flatDir.y = 0;
+                            if (flatDir.sqrMagnitude < 0.001f) flatDir = _ownerPlayer.transform.forward;
+                            flatDir.Normalize();
+                            return playerPos + flatDir * throwRange;
+                        }
+                    }
+                }
+            }
+
+            // Fallback: текущая логика (вперёд по камере).
+            return FindThrowTargetPoint(throwRange);
         }
 
         private Vector3 FindThrowTargetPoint(float throwRange = 15f)

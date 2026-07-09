@@ -226,7 +226,7 @@ public int GetStrength() => _data != null ? _data.strength : 10;
 | Q0 | P0, P6 | ✅ DONE |
 | Q1 | P5, P7 | ✅ DONE |
 | Q2 | P1, P4 | P4 ✅, P1 ⏳ |
-| Q3 | P3/P9, P8 | ⏳ |
+| Q3 | P3/P9, P8 | P3/P9 ✅, P8 ⏳ |
 | Q4 | P10 | ✅ DONE |
 
 **Рекомендация для следующей сессии:** начать с P1 (замена flat struct на dict) — самый трудоёмкий рефакторинг, затрагивает ~11 файлов.

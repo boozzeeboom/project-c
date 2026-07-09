@@ -5,6 +5,23 @@
 
 ---
 
+## 2026-07-09 — P3/P9: Unify Player/NPC stat formula
+
+**Сессия:** P3/P9 из `13_SESSION_CONTINUATION.md` — NPC-статы теперь используют ту же формулу `StatsToFlat(tier)`, что и Player.
+
+### Изменения
+- `NpcCombatData.cs` — `strength/dexterity/intelligence` (flat int, 1..30) → `strengthTier/dexterityTier/intelligenceTier` (tier, 0..20) с `[FormerlySerializedAs]`
+- `NpcAttacker.cs` — `_data.strength` → `PlayerStats.StatsToFlat(_data.strengthTier)` (аналогично DEX/INT)
+- `Npc_Goblin.asset` — старые flat-значения (10/10/8) сконвертированы в tiers (0/0/0) = STR 10/DEX 10/INT 10
+
+### Формула (единая для Player и NPC)
+```
+combatStat = StatsToFlat(tier) = tier * 5 + 10
+tier 0 = 10, tier 1 = 15, tier 2 = 20, ...
+```
+
+---
+
 ## 2026-07-09 — P8: Equipment multipliers applied (d609dbb)
 
 **Сессия:** P8 из `13_SESSION_CONTINUATION.md` — множители экипировки теперь учитываются.

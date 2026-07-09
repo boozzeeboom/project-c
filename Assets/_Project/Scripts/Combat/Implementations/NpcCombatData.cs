@@ -6,6 +6,7 @@
 // в инспекторе. Реальный NPC-AI (агрессия, flee) — отдельная подсистема (out of scope).
 
 using UnityEngine;
+using UnityEngine.Serialization;
 using ProjectC.Combat.Core;
 
 namespace ProjectC.Combat
@@ -17,10 +18,11 @@ namespace ProjectC.Combat
         public string displayName = "Goblin";
         [Range(1, 1000)] public int maxHp = 30;
 
-        [Header("Stats (default 10, как у PlayerStats tier0)")]
-        [Range(1, 30)] public int strength = 10;
-        [Range(1, 30)] public int dexterity = 10;
-        [Range(1, 30)] public int intelligence = 10;
+        [Header("Stats (tier-based, formula: StatsToFlat(tier) = tier*5+10). P3/P9: unified with Player.")]
+        [Tooltip("Tier 0 = STR 10, tier 2 = STR 20, etc. (same formula as PlayerStats.StatsToFlat).")]
+        [FormerlySerializedAs("strength")] [Range(0, 20)] public int strengthTier = 0;
+        [FormerlySerializedAs("dexterity")] [Range(0, 20)] public int dexterityTier = 0;
+        [FormerlySerializedAs("intelligence")] [Range(0, 20)] public int intelligenceTier = 0;
 
         [Header("Default weapon (до T-CB03 — все NPC используют эти параметры)")]
         public DamageType damageType = DamageType.Physical;

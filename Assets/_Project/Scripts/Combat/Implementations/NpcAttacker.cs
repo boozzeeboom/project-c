@@ -15,6 +15,7 @@ using Unity.Netcode;
 using ProjectC.Combat.Core;
 using ProjectC.Skills;
 using ProjectC.AI;
+using ProjectC.Stats;
 
 namespace ProjectC.Combat
 {
@@ -80,9 +81,10 @@ namespace ProjectC.Combat
         }
 
         public Vector3 GetPosition() => transform.position;
-        public int GetStrength() => _data != null ? _data.strength : 10;
-        public int GetDexterity() => _data != null ? _data.dexterity : 10;
-        public int GetIntelligence() => _data != null ? _data.intelligence : 10;
+        /// <summary>P3/P9: Unified formula — same StatsToFlat(tier) as PlayerAttacker.</summary>
+        public int GetStrength() => PlayerStats.StatsToFlat(_data != null ? _data.strengthTier : 0);
+        public int GetDexterity() => PlayerStats.StatsToFlat(_data != null ? _data.dexterityTier : 0);
+        public int GetIntelligence() => PlayerStats.StatsToFlat(_data != null ? _data.intelligenceTier : 0);
 
         /// <summary>
         /// Все активные источники урона: скилы из NpcSkillSet + fallback default.

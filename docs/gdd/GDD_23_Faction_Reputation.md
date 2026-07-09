@@ -1,7 +1,7 @@
 # GDD-23: Faction & Reputation — Project C: The Clouds
 
-**Версия:** 2.1 | **Дата:** 10 июня 2026 г. (дизайн-контент без изменений с 6 апреля 2026 г.; добавлена §X «Реализация в коде») | **Статус:** 🟡 Запланировано → частично реализовано (MVP foundation)
-**Автор:** Qwen Code (Game Studio: @world-builder + @game-designer + @economy-designer) — дизайн, Mavis 2026-06-10 — раздел реализации
+**Версия:** 2.2 | **Дата:** 31 июля 2026 г. | **Статус:** 🟡 Запланировано → частично реализовано (MVP foundation + FactionSystem из NPC Unified Behavior Phase 4)
+**Автор:** Qwen Code (Game Studio) — дизайн, Mavis 2026-06-10 — раздел реализации, Aura 2026-07-31 — актуализация
 
 ---
 
@@ -402,6 +402,21 @@
 - **`docs/NPC_quests/old_session_log/T-Q13_DESIGN_NOTE.md`** — Reputation+NpcAttitude design
 - **`docs/NPC_quests/08_ROADMAP.md`** §8.3 T-Q01, T-Q13, T-Q16 — roadmap
 - **`docs/MMO_Development_Plan.md`** §3.5 — общий план фракций
+- **`docs/Character/Skills/real-time-combat/npc-enemy/04_UNIFIED_BEHAVIOR_ARCHITECTURE.md`** — NPC FactionSystem (T-NPC-S19, июль 2026) ✅
+
+---
+
+## X.4 NPC FactionSystem (T-NPC-S19, июль 2026) ✅
+
+**Контекст:** В рамках Phase 4 Unified NPC Behavior Architecture реализована `FactionSystem` — фракционная принадлежность NPC и определение hostile/neutral/friendly отношений между NPC разных фракций. **Это runtime-система для NPC-vs-NPC взаимодействий** (отдельно от player reputation).
+
+**Компоненты:**
+- `FactionSystem` — отношение между фракциями (hostile/neutral/friendly)
+- `VengeanceMemory` — память о врагах между сессиями
+- NPC-vs-NPC hostile faction combat (фикс: `b77b84e`)
+- Интеграция в `NpcSocialBrain` через Phase 4
+
+**Связано:** `docs/Character/Skills/real-time-combat/npc-enemy/04_UNIFIED_BEHAVIOR_ARCHITECTURE.md`, `docs/dev/retrospective_d1850f6c_to_HEAD.md` §2.11.
 
 ---
 

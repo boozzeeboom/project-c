@@ -11,7 +11,8 @@ body:
 
         Спасибо, что хотите помочь Project C! Заполните форму — мы рассмотрим ассет и добавим в игру с указанием авторства.
 
-        Подробнее о контрибьюции: [docs/COLABORATION.md](https://github.com/boozzeeboom/project-c/blob/main/docs/COLABORATION.md)
+        **Важно:** с версии 0.0.50 все ассеты принимаются с передачей прав (CLA).
+        Подробнее: [docs/COLABORATION.md](https://github.com/boozzeeboom/project-c/blob/main/docs/COLABORATION.md)
 
         ---
 
@@ -125,7 +126,7 @@ body:
       options:
         - label: "📌 **Код / Code:** я согласен(а) распространять его под **MIT**"
           required: false
-        - label: "🎨 **Ассет / Asset (3D, музыка, текстуры, VFX):** я согласен(а) распространять его под **CC BY-NC-ND 4.0**"
+        - label: "🎨 **Ассет / Asset (3D, музыка, текстуры, VFX):** я передаю права проекту (**CLA**, см. COLABORATION.md)"
           required: false
         - label: "✅ Я подтверждаю, что это моя оригинальная работа / I confirm this is my original work"
           required: true

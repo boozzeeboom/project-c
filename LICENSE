@@ -2,6 +2,10 @@
 
 **Copyright (c) 2024-2026 Малков Леонид Андреевич (Malkov Leonid Andreevich). All Rights Reserved.**
 
+**С версии 0.0.50 (июль 2026) / As of version 0.0.50 (July 2026):**
+только исходный код остаётся под MIT; весь остальной контент — All Rights Reserved.
+Only source code remains MIT; all other content — All Rights Reserved.
+
 This repository contains multiple types of content, each governed by its own
 license. See the sections below for details.
 
@@ -12,21 +16,25 @@ license. See the sections below for details.
 | Component          | License              | Study | Fork | Modify | Use Commercially |
 |--------------------|----------------------|-------|------|--------|------------------|
 | Source Code (.cs)  | MIT                  |   ✅  |  ✅  |   ✅   |        ✅        |
-| Game Assets        | CC BY-NC-ND 4.0      |   ✅  |  ✅  |   ❌   |        ❌        |
+| Game Assets        | All Rights Reserved  |   ✅  |  ❌  |   ❌   |        ❌        |
 | Narrative / Lore   | All Rights Reserved  |   ✅  |  ❌  |   ❌   |        ❌        |
-| Design Documents   | CC BY-NC 4.0         |   ✅  |  ✅  |   ✅   |        ❌        |
+| Design Documents   | All Rights Reserved  |   ✅  |  ❌  |   ❌   |        ❌        |
 
 ✅ **You CAN:**
 - Read and study the source code
-- Fork the repository and experiment locally
+- Fork the repository and experiment locally with your own code changes
 - Write tutorials, reviews, or analysis of this project
-- Contribute via pull requests
+- Contribute via pull requests (see COLABORATION.md for terms)
+- Create mods and derivative projects using the MIT-licensed code
 
 ❌ **You CANNOT:**
-- Use game assets (models, textures, shaders, audio) in your own projects
+- Redistribute game assets (models, textures, shaders, audio) in any form
 - Use the story, characters, world-building, or lore in your own work
+- Use design documents, GDDs, or technical plans in your own projects
 - Create a commercial competing game using this repository's content
 - Sell or redistribute any part of this project as your own
+- Use the names "Project C: The Clouds", "Bruno Arendt", "Integral Pyavitsa"
+  (Интеграл Пьявица), or any faction/character names in your own work
 
 ---
 
@@ -34,6 +42,9 @@ license. See the sections below for details.
 
 All source code files (`.cs` files under `Assets/` and related directories) are
 licensed under the **MIT License**.
+
+This is the **only** MIT-licensed portion of the repository. Everything else is
+All Rights Reserved.
 
 ---
 
@@ -63,19 +74,23 @@ SOFTWARE.
 
 ## 2. Game Assets (3D Models, Textures, Shaders, Audio, Animations)
 
+**ALL RIGHTS RESERVED.**
+
 All game assets, including but not limited to 3D models, textures, shaders,
-audio files, animations, prefabs, materials, and visual art assets, are licensed
-under the **Creative Commons Attribution-NonCommercial-NoDerivatives 4.0
-International License (CC BY-NC-ND 4.0)**.
+audio files, animations, prefabs, materials, VFX graphs, URP settings, and
+visual art assets, are protected by copyright law. No part of these assets
+may be reproduced, distributed, modified, or transmitted in any form without
+the prior written permission of the copyright holder.
 
-**Summary:** You may share these assets with attribution, but you may NOT use
-them commercially or create derivative works.
-
-Full license text: https://creativecommons.org/licenses/by-nc-nd/4.0/legalcode
+**Prior to version 0.0.50,** game assets were licensed under CC BY-NC-ND 4.0.
+**As of version 0.0.50 (July 2026),** all game assets are All Rights Reserved.
+Copies of the repository made before this version retain their original
+CC BY-NC-ND 4.0 rights for those specific assets as they existed at that time.
 
 ### Exceptions — Third-Party Assets
 
-Some assets are sourced from third parties and retain their original licenses:
+Some assets are sourced from third parties and retain their original licenses.
+These are **not** governed by the ARR terms above:
 
 | Source       | License                | Location                         |
 |--------------|------------------------|----------------------------------|
@@ -83,8 +98,7 @@ Some assets are sourced from third parties and retain their original licenses:
 | Mixamo       | Adobe Mixamo License   | Character animations             |
 | game-icons.net | CC BY 3.0            | UI icons                         |
 
-These third-party assets are governed by their respective licenses, not by
-CC BY-NC-ND 4.0.
+These third-party assets are governed by their respective licenses as indicated.
 
 ---
 
@@ -102,34 +116,28 @@ or other electronic or mechanical methods, without the prior written permission
 of the copyright holder, except in the case of brief quotations embodied in
 critical reviews and certain other noncommercial uses permitted by copyright law.
 
-### What this means:
-- You may **read** the lore documents in this repository
-- You may **not** use the story, characters, world, or lore in your own projects
-- You may **not** create derivative works based on this universe
-- You may **not** use the names "Project C: The Clouds", "Bruno Arendt",
-  "Integral Pyavitsa", or any faction/character names in your own work
-
 For permissions regarding narrative content usage, contact the copyright holder.
 
 ---
 
 ## 4. Design Documents (GDD, Art Bible, Development Plans, Technical Docs)
 
+**ALL RIGHTS RESERVED.**
+
 All design documents, including Game Design Documents (GDD), Art Bible,
 development plans, session reports, and technical documentation (files under
-`docs/` excluding narrative/lore), are licensed under the **Creative Commons
-Attribution-NonCommercial 4.0 International License (CC BY-NC 4.0)**.
+`docs/` excluding narrative/lore), are protected by copyright law. No part
+of these documents may be reproduced, distributed, or adapted without the
+prior written permission of the copyright holder.
 
-**Summary:** You may share and adapt these documents with attribution, but NOT
-for commercial purposes.
-
-Full license text: https://creativecommons.org/licenses/by-nc/4.0/legalcode
+**Prior to version 0.0.50,** design documents were licensed under CC BY-NC 4.0.
+**As of version 0.0.50 (July 2026),** all design documents are All Rights Reserved.
 
 ### What this means:
-- You may **study** our design decisions and architecture
-- You may **reference** these documents in your own projects (with attribution)
-- You may **adapt** ideas for non-commercial projects
-- You may **not** use these documents to create a commercial competing product
+- You may **read** the design documents in this repository
+- You may **reference** them in discussions about the project
+- You may **not** copy, adapt, or redistribute them
+- You may **not** use them to create a competing project
 
 ---
 
@@ -163,13 +171,14 @@ use requests, contact the copyright holder through the GitHub repository:
 
 ## 7. License Version
 
-This composite license file was created on 12 April 2026 and applies to
-all content in the Project C: The Clouds repository.
+This composite license file was originally created on 12 April 2026.
+**Updated on July 2026 for version 0.0.50** — tightened asset and documentation
+licensing to All Rights Reserved while keeping source code under MIT.
 
 - Source Code: MIT License (standard, OSI-approved)
-- Game Assets: CC BY-NC-ND 4.0 (Creative Commons, standard)
+- Game Assets: All Rights Reserved (changed from CC BY-NC-ND 4.0 in v0.0.50)
 - Narrative: All Rights Reserved (automatic copyright protection)
-- Design Docs: CC BY-NC 4.0 (Creative Commons, standard)
+- Design Documents: All Rights Reserved (changed from CC BY-NC 4.0 in v0.0.50)
 
 ---
 

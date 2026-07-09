@@ -1,7 +1,7 @@
 # GDD-11: Inventory & Items — Project C: The Clouds
 
-**Версия:** 1.1 | **Дата:** 10 июня 2026 г. (дизайн-контент без изменений с 6 апреля 2026 г.; добавлена §X «Реализация в коде») | **Статус:** 🟢 Документировано + реализовано (v2)
-**Автор:** Qwen Code (Game Studio: @gameplay-programmer + @systems-designer) — дизайн, Mavis 2026-06-10 — раздел реализации
+**Версия:** 2.0 | **Дата:** 31 июля 2026 г. | **Статус:** 🟢 Документировано + реализовано (v2 + Weapon Unification)
+**Автор:** Qwen Code (Game Studio) — дизайн, Mavis 2026-06-10 — раздел реализации, Aura 2026-07-31 — актуализация
 
 ---
 
@@ -498,6 +498,27 @@ public class ItemRegistry : ScriptableObject
 
 - **`docs/Character/Skills/`** — WeaponItemData + Equipment Visual дизайн
 - **`docs/Character/Customisation/`** — Customisation + Equipment Visual implementation
+
+---
+
+## X.7 Weapon & Item Unification (T-WPN-01-REF-02, июль 2026) ✅
+
+**Контекст:** Три несвязанные иерархии предметов (`ItemData` — 581 шт., `WeaponItemData` — 7 шт., `ThrowableItemData` — 2 шт.) + хардкод `is TypeCheck` в 5+ файлах.
+
+**Решение:**
+- `ICombatDamageProvider` — интерфейс боевого предмета (GetDamage/DamageType/WeaponHandling/Range/Cooldown)
+- `WeaponItemData + ThrowableItemData → единый класс` (ThrowableItemData удалён)
+- `equipSlot` унифицирован в `ItemData` (базовый класс) + OnValidate auto-set
+- 2 иерархии вместо 3: `ItemData` + `WeaponItemData`
+- InventoryTab: слот читается из `ItemData.equipSlot` (без хардкода)
+- Кросс-серверная связность через прямые вызовы (без reflection)
+
+**Фиксы:**
+- Клиентский `_itemCache` заполняется из `ItemRegistry`
+- ID-коллизия: `while (_itemDatabase.ContainsKey(newId)) newId++`
+- `itemName` в снапшоте DTO вместо lookup по кэшу
+
+**Документация:** `docs/Character/Skills/ITERATIONS.md`, `docs/Character/Skills/AUDIT_2026-07-24_ITEM_WEAPON_REFACTOR.md`.
 
 ---
 

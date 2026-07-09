@@ -1,32 +1,32 @@
 # План разработки ММО "Project C: The Clouds" на Unity
 
-**Последнее обновление:** 6 июля 2026 г. | **Текущая версия:** `v0.0.40 — repair manager`
+**Последнее обновление:** 31 июля 2026 г. | **Текущая версия:** `v0.0.50 — NPC Unified Behavior + Stats Refactor + VFX`
 
-> **Что нового (1–6 июля 2026):** **67 коммитов, 13 подсистем.** Подробное саммари: `docs/dev/summary_01-06_july_2026.md`.
+> **Что нового (7–31 июля 2026):** **134 коммита, 17 эпиков.** Подробная ретроспектива: `docs/dev/retrospective_d1850f6c_to_HEAD.md`.
 >
-> **🌬 Ветер:** полноценно на корабли и персонажа (`WindManager` + `WindZone`). Персонаж сносится на палубе/в полёте.
+> **⚔️ Боевая система:** Полный цикл ranged/throwables (луки, арбалеты, ружья, гранаты) + projectile/throw visuals. Унификация иерархии оружия (3→2 типа). Skill Tree: persistence, cooldown per skill, slot bindings save/load, throwCount consumption. Targeting: Q/E cycling, outline highlight (URP shader), obstruction check.
 >
-> **🧍 Персонаж на палубе:** не скользит — единый `Move` + `PlatformRideHelper`. `groundedForMovement = _isGrounded || _onPlatform`. Pickup'ы едут с кораблём (`PickupDeckRide`, carry-формула + `RefreshWorldBase`).
+> **🎯 VFX System (Phase 0-2):** Data model (11 полей в SkillNodeConfig) → Runtime (ISkillVfxProvider + SkillVfxService + ObjectPool) → 4 primitive prefabs + назначение на 27 скиллов. NPC VFX унификация.
 >
-> **👾 NPC на палубе:** ходят по движущемуся кораблю, преследуют игрока. `NpcBrain` — прокси-агент + `DriveDeckNav` + NavMesh fix (пустой NavMeshData в префабе). Три уровня carry: L1 (персонаж), L2 (NPC), L3 (pickup).
+> **💥 Damage Numbers:** World Space TMP + pool + Billboard + distance scaling для всех типов атак, AOE и критов.
 >
-> **📦 Cargo — все 4 эпика завершены:** ✅ UI-01 (детальный список в CharacterWindow — `CargoDetailDto[]`, `RenderCargoDetail`, `CustomDropdown`, 2-колоночная вёрстка). ✅ UI-02 (Cargo Manager — консоль на корабле: `ShipCargoServer` + `ShipCargoConsoleWindow`, обмен через `ResourceExchangeResolver`, qty-кнопки, упаковка/распаковка). ✅ VIS-01 (3D визуал наполнения трюма: `ShipCargoVisual`, grid-размещение, object pool, overflow-индикатор). ✅ NPC-01 (NPC-корабли торгуют: `NpcCargoService`, `TryNpcBuy`/`TryNpcSell` в `TradeWorld`, `NpcCargoTradeListConfig`, интеграция в `NavTick`).
+> **📊 Stats Architecture Refactoring (T-STAT01..05):** Аудит (10 проблем) → 5 этапов исправлений. Единая формула Player/NPC: `StatsToFlat(tier) = tier * 5 + 10`. StatBucket вместо flat struct. StatsConfig → 3 SO. Equipment multipliers applied.
 >
-> **🏪 MARKET-ID-REFACTOR:** `MarketZone` → `_marketConfig` (MarketConfig SO вместо строки `locationId`). `MarketConfigCollector` — авто-сбор из сцен. Нормализация `ToUpperInvariant()` во всех реестрах. «Разместил MarketZone в сцене → рынок работает».
+> **👾 NPC Unified Behavior (Phase 1-4, S01-S21):** NpcSocialBrain — центральный контроллер. Patrol, Flee, Grudge, Emotions, Morality, Group Tactics, Cover, Surrender, FactionSystem, VengeanceMemory, Full Idle. Код-ревью: 3 P0 + 2 P1 + 3 P2 исправлено. Статические реестры (AllBrains/AllCoverPoints/AllSitPoints) вместо FindObjectsByType.
 >
-> **🧹 Большая чистка:** warnings ×15 файлов (FindObjectsSortMode → FindObjectsByType, RPC атрибуты, неиспользуемые переменные). Debug логи. Reflection → прямой доступ (`MyShipsTab`, -77 строк). Esc bugfix (все окна в `IsAnyExternalWindowOpen`).
+> **🎓 NPC Skills:** NpcSkillSet + NpcSkillOverride (data layer) + multi-source assignment + NpcSkillSetEditor.
 >
-> **🔧 Repair Manager (доковый менеджер):** `ModuleShopEntry`/`ModuleShopDatabase`/`ShipModuleCatalog`/`ShipModuleServer` (RPC install/remove/sell/repaint). `RepairManagerWindow` (UI Toolkit). **Ship Observation Camera** — FlyToShip + орбитальное вращение (▲▼◀▶). **Ship Repainting** — цвет из палитры + credit payment. **Module Visual Preview** — Editor tool: ▶ Preview, `HideFlags.DontSave`.
+> **⚙️ NPC Systems:** Spawn Cycle Control (конечные волны + перезапуск), Loot Config (визуал + лут-таблица в инспекторе), NPC AOE/Ranged/Throwables + Debug visualization.
 >
-> **🚀 Двигатель ON/OFF + IDLE:** Enter — включить/выключить. `_netEngineRunning` NetworkVariable. IDLE-расход 0.05 fuel/s. Выход (F) на любой скорости. NPC всегда ENGINE ON. HUD индикатор в K3.
+> **🔧 Crafting:** Глубокий аудит → 12/12 fixes (5 критических + 7 техдолгов).
 >
-> **💥 Повреждения корабля:** `ShipHull` (NetworkBehaviour, `IDamageTarget`). Два источника: столкновения + боевое оружие. `ShipDamageConfig` SO. 0 HP = «сломан» (скорости ×0.1, груз обнулён, `IsAlive()=true`). Ремонт в доке за 300 кр. Три защиты от ложных ударов при стыковке.
+> **⛏️ Mining:** Аудит + критические fixes (disconnect handler, WorldEventBus XP path, copy-paste bug).
 >
-> **🔄 SHIP_REFACTOR_PLAN P1–P5:** ✅ P1 — Key Subsystem refactor (-1139/+651 строк, 7 файлов удалено, 0 reflection, 1 источник правды `KeyRodInstanceWorld`). ✅ P2 — CargoSystem.cs удалён. ✅ P3 — документация актуализирована. ✅ P4 — Module Visual L1. ✅ P5 — Cargo ownership guard (4 метода).
+> **📜 Quests:** Двойной аудит → диагностика утерянных ассетов (FactionDefinition, NpcDefinition, QuestDefinition).
 >
-> **🎮 Unity 6000.5.2f1** — миграция завершена.
+> **🖥️ UI:** Переработка блока характеристик (цвета per-stat, tier-рамки, font-size 11px). DialogWindow fix. Кнопка «БРОСИТЬ» в инвентаре. Pickup перенесён с E на F.
 >
-> **Документация:** `docs/dev/summary_01-06_july_2026.md` (560 строк, 17 перекрёстных ссылок), `docs/Ships/ITERATIONS.md`.
+> **📚 Документация:** `docs/dev/retrospective_d1850f6c_to_HEAD.md`, `docs/dev/ITERATIONS.md`, 6 аудитов, 15+ итерационных логов.
 
 > **Предыдущее обновление (30 июня 2026):** **Character Customisation L1+L3+L4 ✅ + v0.0.35.** Полный цикл — 6 документов дизайна → 15 C# файлов (CustomisationSave, DTO, ClientState, Applier, UI Window) → M/F переключение, 6 пресетов тела, 2 стиля волос, цвета кожи/волос/одежды, AnimatorOverrideController. UI по паттерну SkillTreeWindow. Bug #1 (domain reload → heightScale=0 → персонаж невидим) исправлен.
 >
@@ -318,7 +318,7 @@
 
 ---
 
-### 1.10 Сбор ресурсов (Resource Gathering / Mining) ✅ MVP ЗАВЕРШЁН (T-G01–T-G07, 2026-06-10)
+### 1.10 Сбор ресурсов (Resource Gathering / Mining) ✅ MVP + CRITICAL Fixes (T-G01–T-G07, 2026-06-10 + T-MINE01, июль 2026)
 
 **Новая подсистема:** интерактивные 3D-объекты в мире — подойти и нажать F → сбор N секунд → предмет в инвентарь.
 
@@ -352,9 +352,11 @@
 - **Без distance check** во время сбора (пусть бегает и рубит)
 - **ProgressBar** через UI Toolkit runtime-constructed VisualElement
 
-**Документация:** `docs/Mining/00_OVERVIEW.md` + `10_DESIGN.md` + `20_IMPLEMENTATION_PLAN.md` + `ROADMAP.md` + `99_CHANGELOG.md`.
+**Документация:** `docs/Mining/00_OVERVIEW.md` + `10_DESIGN.md` + `20_IMPLEMENTATION_PLAN.md` + `ROADMAP.md` + `99_CHANGELOG.md` + `AUDIT_2026-07-11.md` + `AUDIT_2026-07-12_DEEP.md`.
 
-### 1.11 Крафт-система (Crafting) ✅ MVP ЗАВЕРШЁН (T-C01–T-C07c, 2026-06-11)
+**Фиксы (T-MINE01, июль 2026):** disconnect handler, WorldEventBus XP path, copy-paste XP Quantity bug, prefab update, Tree.asset, StatsConfig deprecation. См. `docs/dev/retrospective_d1850f6c_to_HEAD.md` §2.16.
+
+### 1.11 Крафт-система (Crafting) ✅ MVP + 12/12 Fixes (T-C01–T-C07c, 2026-06-11 + T-CRAFT01, июль 2026)
 
 **Цель:** Позволить игроку превращать ресурсы в полезные предметы через крафт-станции.
 
@@ -390,7 +392,9 @@
 
 **Паттерн:** копия Gathering/Mining (ResourceNode → CraftingStation, GatheringServer → CraftingServer, GatheringToast → CraftingProgress). 9 тикетов, ~12-15 ч работы.
 
-**Документация:** `docs/Crafting_system/00_OVERVIEW.md` + `10_DESIGN.md` + `ROADMAP.md`.
+**Фиксы (T-CRAFT01, июль 2026):** Глубокий аудит → 5 критических багов (B1-B5) + 7 техдолгов (T1-T7) = 12/12 исправлено. L1: `CraftingCompletedEvent` в `WorldEventBus`. См. `docs/Crafting_system/AUDIT_2026-07-09.md`, `docs/Crafting_system/ITERATIONS.md`.
+
+**Документация:** `docs/Crafting_system/00_OVERVIEW.md` + `10_DESIGN.md` + `ROADMAP.md` + `AUDIT_2026-07-09.md`.
 
 ---
 
@@ -440,7 +444,7 @@
 
 **Документация:** `docs/Markets/Resources_exchanger/01_ANALYSIS.md` + `02_IMPLEMENTATION.md` + `03_FIXES_HISTORY.md`.
 
-### 1.13 NPC + Quests v2 (полная подсистема) ✅ ЗАВЕРШЕНО (M1–M19, 2026-06-09..13)
+### 1.13 NPC + Quests v2 (полная подсистема) ✅ ЗАВЕРШЕНО (M1–M19, 2026-06-09..13) + Аудиты + Dialog Fixes (июль 2026)
 **Цель:** Полноценная система квестов и диалогов с NPC, от создания данных до выполнения в игре и редакторского инструментария.
 
 | Компонент | Описание | Статус |
@@ -460,7 +464,11 @@
 | CSV Import/Export | 3 входа (quests + npcs + dialogs), 1 кнопка | ✅ M19 |
 
 **Stats:** ~8400 строк кода, 106 NPC, 802 квеста, 2 DialogTree, 6 CSV файлов.
-**Документация:** `docs/NPC_quests/08_ROADMAP.md` + `docs/NPC_quests/M19_CSV_PIPELINE_v2.md`.
+
+**Аудиты (июль 2026):** Двойной глубокий аудит → критическое открытие: квестовые ассеты (FactionDefinition, NpcDefinition, QuestDefinition) утеряны — GUIDs в QuestDatabase висят в никуда. См. `docs/NPC_quests/DEEP_AUDIT_2026-07-09.md` + `DEEP_AUDIT_2026-07-13.md`.
+**DialogWindow fix (T-UI04):** Текст NPC всегда виден сверху, кнопки квестов прокручиваются. Fix: 85vh → 520px (vh не поддерживается Unity USS).
+
+**Документация:** `docs/NPC_quests/08_ROADMAP.md` + `docs/NPC_quests/M19_CSV_PIPELINE_v2.md` + `docs/NPC_quests/ITERATIONS.md`.
 
 ### 1.14 Composite Ship Architecture (Phase 0–1) ✅ MVP ЗАВЕРШЁН (2026-06-17)
 
@@ -503,7 +511,7 @@
 
 ---
 
-### 1.15 Real-Time Combat + Skills (T-RTC, T-CB, T-INP) ✅ MVP ЗАВЕРШЁН (2026-06-25..28)
+### 1.15 Real-Time Combat + Skills (T-RTC, T-CB, T-INP) ✅ MVP ЗАВЕРШЁН (2026-06-25..28) + Расширения (июль 2026)
 
 **Цель:** Добавить полноценный real-time combat с DamageCalculator, AOE, скиллами, деревом навыков, прицеливанием и анимациями атак.
 
@@ -540,11 +548,11 @@
 - Inventory integration: `EquipmentWindow` → `SkillManager` → `SkillTreeWindow`
 - `DamageCalculator` вызывает `SkillModifier` chain (damage + armor penetration + etc.)
 
-**Документация:** `docs/Character/Skills/00_OVERVIEW.md` + `10_COMBAT_ARCHITECTURE.md` + `20_IMPLEMENTATION.md` + `30_CONFIG.md` + `UI_TOOLKIT_GUIDE.md`.
+**Документация:** `docs/Character/Skills/`, `docs/Character/Skills/real-time-combat/90_RANGED_AND_THROWABLES.md`, `100_TARGET_HIGHLIGHT_AND_SWITCHING.md`, `110_DAMAGE_NUMBERS.md`, `docs/Character/Skills/Battle/85_VFX_DESIGN.md`, `docs/dev/retrospective_d1850f6c_to_HEAD.md`.
 
 ---
 
-### 1.16 NPC Enemy System (T-NPC) ✅ P0-P2 ЗАВЕРШЁН (2026-06-25..27)
+### 1.16 NPC Enemy System (T-NPC) ✅ P0-P2 + Unified Behavior Architecture + Skills + Spawn/Loot (Июнь–Июль 2026)
 
 **Цель:** Добавить враждебных NPC (goblins) с FSM, спавном, лутом, анимациями и базовым AI.
 
@@ -802,7 +810,7 @@
 ## Этап 3: Ролевая система и Торговля (Недели 9-14) ✅ ЗАВЕРШЁН
 **Цель:** Добавить RPG-элементы, сохранение данных и **полную систему торговли «Дальнобойщики над облаками»**.
 
-### 3.1 Характеристики и навыки (RPG) ✅ (2026-06-25..28)
+### 3.1 Характеристики и навыки (RPG) ✅ + Stats Architecture Refactoring (июнь–июль 2026)
 1. **Система прокачки:** ✅
    - ✅ **SkillNodeConfig (ScriptableObject)** — 27+ навыков: weapon, armor, technique, passive типы
    - ✅ **SkillTreeWindow** (UI Toolkit) — интерактивный граф: zoom/pan, learned/available/locked узлы, badge-счётчики, tooltip
@@ -810,6 +818,16 @@
    - ✅ **DamageCalculator** — hit/miss/crit/armor/skills интеграция с SkillModifier
    - ✅ **Weapon/Armor/Technique catalogs** — 3 SO каталога с боевыми параметрами
    - ✅ Балансировка чисел через ScriptableObject (SkillConfig, SkillTreeConfig)
+
+2. **Stats Architecture Refactoring (T-STAT01..05, июль 2026):** ✅
+   - ✅ **Аудит (T-STAT01):** 10 структурных проблем (P0-P10) — дублирование статов в 21 файле, equip bonuses не работали, две системы Player/NPC
+   - ✅ **T-STATS02:** P0 fix — Combat использует effective stats (tier + equip + skill bonuses)
+   - ✅ **T-STATS03:** StatsConfig разделён на 3 SO: `ExperienceConfig`, `StatSourceMapConfig`, `StatDebugConfig`
+   - ✅ **P1:** `PlayerStats` flat struct → `StatBucket` + static ref accessors (PlayerStatsRef удалён)
+   - ✅ **P8:** Equipment multipliers applied: `effective = (StatsToFlat(tier) + flatBonus) * (1.0 + sumMultipliers)`
+   - ✅ **T-STATS04 (P3/P9):** Единая формула Player/NPC: `StatsToFlat(tier) = tier * 5 + 10`
+   - ✅ **T-STATS05:** StatsServer config wiring + full playtest guide (P0-P10)
+   - 📋 См. `docs/Character/11_STATS_ARCHITECTURE_AUDIT.md`, `12_STATS_ARCHITECTURE_AUDIT_V2.md`, `13_SESSION_CONTINUATION.md`, `14_PLAYTESTS_STATS_AUDIT.md`, `docs/Character/CHANGELOG.md`
 
 ### 3.2 Базовая торговля (Недели 9-11) ✅ ЗАВЕРШЕНО (Сессии 1-5)
 1. **TradeItemDefinition (ScriptableObject):** ✅
@@ -968,8 +986,6 @@
 ---
 
 **Известные проблемы (P0-P1):**
-=======
-REPLACE
 - [`docs/TRADE_SYSTEM_RAG.md`](TRADE_SYSTEM_RAG.md) — ⭐⭐ RAG документация (архитектура, потоки, формулы)
 - [`docs/TRADE_DEBUG_GUIDE.md`](TRADE_DEBUG_GUIDE.md) — отладка (симптомы → решения)
 - [`docs/gdd/GDD_22_Economy_Trading.md`](gdd/GDD_22_Economy_Trading.md) — GDD экономики (v3.0)

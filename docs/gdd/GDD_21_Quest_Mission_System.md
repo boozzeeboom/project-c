@@ -1,10 +1,10 @@
 # GDD 21: Quest & Mission System
 
 **Game:** Project C: The Clouds
-**Version:** 1.2
-**Status:** 🟢 Реализовано (M1–M19 CSV pipeline финал, 2026-06-13)
-**Last Updated:** 13.06.2026 (добавлен §16.5 CSV Pipeline финал M19)
-**Author:** Game Design AI (дизайн), Mavis 2026-06-13 (раздел реализации + CSV pipeline)
+**Version:** 1.3
+**Status:** 🟢 Реализовано (M1–M19) + Двойной аудит (июль 2026)
+**Last Updated:** 31.07.2026
+**Author:** Game Design AI (дизайн), Mavis 2026-06-13 (раздел реализации + CSV pipeline), Aura 2026-07-31 (аудиты)
 
 ---
 
@@ -1206,6 +1206,21 @@ Idle ──[playerInAggroRange]──→ Chase ──[inAttackRange]──→ At
 
 - **`docs/Character/EnemyNPC/`** — NPC Enemy дизайн и implementation logs
 - **`docs/MMO_Development_Plan.md`** §1.16 — план NPC Enemy System
+
+---
+
+## 17. Аудиты системы квестов (июль 2026)
+
+**Двойной глубокий аудит (T-QAUDIT):**
+
+| Аудит | Дата | Файл | Ключевые находки |
+|-------|------|------|-----------------|
+| Первый | 2026-07-09 | `docs/NPC_quests/DEEP_AUDIT_2026-07-09.md` | Архитектура, стабы, дублирование, интеграции |
+| Повторный | 2026-07-13 | `docs/NPC_quests/DEEP_AUDIT_2026-07-13.md` | Сравнение с предыдущим, регрессы |
+
+**Критическое открытие:** Квестовые ассеты (FactionDefinition, NpcDefinition, QuestDefinition) утеряны — файлы отсутствуют, GUIDs в QuestDatabase висят в никуда. Требуется восстановление из CSV-бэкапов.
+
+**DialogWindow fix (T-UI04, `aa2a1ec`):** Текст NPC всегда виден сверху, кнопки квестов прокручиваются. Fix: 85vh → 520px (vh не поддерживается Unity USS).
 
 ---
 

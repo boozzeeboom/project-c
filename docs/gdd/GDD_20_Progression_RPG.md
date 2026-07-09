@@ -1,9 +1,9 @@
 # GDD 20: Progression & RPG System
 
 **Game:** Project C: The Clouds
-**Version:** 1.1
-**Status:** 🟡 Запланировано (Этап 3-4) → частично реализован MVP foundation (Reputation + NpcAttitude + Quest rewards)
-**Last Updated:** 06.04.2026  
+**Version:** 2.0
+**Status:** 🟢 Реализовано (Character Progression T-P01..T-P18 + Stats Architecture Refactoring T-STAT01..05)
+**Last Updated:** 31.07.2026
 **Author:** Game Design AI  
 
 ---
@@ -802,6 +802,32 @@ Reward = base_reward × difficulty × reputation_modifier × completion_bonus
 - `SkillNodeConfig` SO редактируется дизайнером: dependencies, SP cost, modifiers
 
 **Stats:** +7 C# файлов, 3 SO каталога, ~12 KB кода.
+
+---
+
+## X.6 Stats Architecture Refactoring (T-STAT01..05, июль 2026) ✅
+
+**Контекст:** Глубокий аудит архитектуры статов (STR/DEX/INT) выявил 10 структурных проблем (P0-P10): дублирование в 21 файле, equip bonuses не применялись в combat, две раздельные системы Player/NPC.
+
+**5 этапов исправлений:**
+
+| Этап | Коммит | Содержание |
+|------|--------|-----------|
+| **T-STAT01** | `857f442` | Архитектурный аудит: 10 проблем, диаграмма потоков, план |
+| **T-STATS02** | `8c49ee1` | P0/P5/P6/P7/P10: Combat использует effective stats, DamageResultDto с breakdown |
+| **T-STATS03** | `7b8460c` | P4: StatsConfig → 3 SO (ExperienceConfig, StatSourceMapConfig, StatDebugConfig) |
+| **P1** | `f4ca1af` | Flat struct → StatBucket + static ref accessors, PlayerStatsRef удалён |
+| **P8** | `d609dbb` | Equipment multipliers: `effective = (StatsToFlat(tier) + flatBonus) * (1.0 + sumMultipliers)` |
+| **T-STATS04** | `2b977ec` | P3/P9: Единая формула Player/NPC — `StatsToFlat(tier) = tier * 5 + 10` |
+| **T-STATS05** | `20c26cf` | StatsServer config wiring + full playtest guide |
+
+**Ключевые решения:**
+- `StatBucket` struct — 3 стата × 3 поля (xp/tier/totalXp) вместо 9 плоских полей
+- `PlayerStats` со static ref accessors (`PlayerStats.Xp(StatType)`, `PlayerStats.Tier(StatType)`)
+- `NpcCombatData`: flat int (1..30) → tier (0..20) с `[FormerlySerializedAs]`
+- Единая формула: `combatStat = tier * 5 + 10` (tier 0=10, tier 1=15, ...)
+
+**Документация:** `docs/Character/11_STATS_ARCHITECTURE_AUDIT.md`, `12_STATS_ARCHITECTURE_AUDIT_V2.md`, `13_SESSION_CONTINUATION.md`, `14_PLAYTESTS_STATS_AUDIT.md`.
 
 ---
 

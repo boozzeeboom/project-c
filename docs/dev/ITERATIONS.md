@@ -1,5 +1,14 @@
 # Итерации разработки
 
+## Итерация от 2026-07-09
+
+**Задача:** Исправить USS и CS0618 варнинги в CharacterWindow.
+**Коммит:** `d815235` — T-UI03: исправлены USS и CS0618 варнинги в CharacterWindow
+**Изменения:**
+- `Assets/_Project/UI/Resources/UI/CharacterWindow.uss` — удалены неподдерживаемые свойства (text-decoration, cursor, gap, overflow-y, z-index, inherit, align-items:baseline)
+- `Assets/_Project/Scripts/UI/Client/CharacterWindow.cs` — удалён [Obsolete] `_inventoryCache`, ссылки перенаправлены на `InventoryTab.InventoryCache`
+- `Assets/_Project/Scripts/UI/Client/CharacterWindow/InventoryTab.cs` — `InventoryListItem` сделан public, добавлен public accessor `InventoryCache`
+
 ## Итерация от 2026-07-16
 
 **Задача:** Переработка блока характеристик в CharacterWindow — фикс полосок, цветов и позиционирования текста.

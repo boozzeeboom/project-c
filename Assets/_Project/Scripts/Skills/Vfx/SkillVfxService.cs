@@ -18,11 +18,28 @@ namespace ProjectC.Skills.Vfx
     /// </summary>
     public class SkillVfxService : MonoBehaviour
     {
-        public static SkillVfxService Instance { get; private set; }
+        private static SkillVfxService _instance;
 
-        [Header("Pool")]
-        [Tooltip("Максимальное количество prewarm-объектов на префаб.")]
-        [SerializeField] private int _poolPrewarm = 5;
+        /// <summary>
+        /// Self-healing singleton: если NMC не создал — находим существующий или создаём новый.
+        /// </summary>
+        public static SkillVfxService Instance
+        {
+            get
+            {
+                if (_instance == null)
+                {
+                    _instance = FindObjectOfType<SkillVfxService>();
+                    if (_instance == null)
+                    {
+                        var go = new GameObject("[SkillVfxService]");
+                        _instance = go.AddComponent<SkillVfxService>();
+                        Debug.Log("[SkillVfxService] Lazy-initialized (NMC didn't create — self-spawned)");
+                    }
+                }
+                return _instance;
+            }
+        }
 
         private ISkillVfxProvider _provider;
         private VfxObjectPool _pool;
@@ -31,13 +48,13 @@ namespace ProjectC.Skills.Vfx
 
         private void Awake()
         {
-            if (Instance != null && Instance != this)
+            if (_instance != null && _instance != this)
             {
                 Debug.LogWarning("[SkillVfxService] Duplicate instance, destroying.");
-                Destroy(this);
+                Destroy(gameObject);
                 return;
             }
-            Instance = this;
+            _instance = this;
             DontDestroyOnLoad(gameObject);
 
             // Создаём пул с корневым объектом для хранения неактивных экземпляров.
@@ -46,16 +63,14 @@ namespace ProjectC.Skills.Vfx
             _pool = new VfxObjectPool(poolRoot);
 
             // Дефолтный провайдер — ParticleSystem-based.
-            // В Phase 3 заменится на SpriteVfxProvider или HybridVfxProvider.
             _provider = new ParticleSystemVfxProvider(_pool, this);
 
-            if (Debug.isDebugBuild)
-                Debug.Log("[SkillVfxService] Awake: singleton created, provider=ParticleSystemVfxProvider");
+            Debug.Log("[SkillVfxService] Awake: singleton created, provider=ParticleSystemVfxProvider");
         }
 
         private void OnDestroy()
         {
-            if (Instance == this) Instance = null;
+            if (_instance == this) _instance = null;
             _pool?.Clear();
         }
 
@@ -92,10 +107,30 @@ namespace ProjectC.Skills.Vfx
 
         /// <summary>
         /// Проиграть impact VFX. Вызывается из CombatClientState.HandleAttackLanded.
+        /// Если config=null — использует generic impact (melee sparks).
         /// </summary>
         public void PlayImpactVfx(SkillNodeConfig config, Vector3 position, DamageType damageType, bool isCrit)
         {
-            if (config == null) return;
+            // Generic impact: если config не передан — используем дефолтный impact (melee sparks).
+            if (config == null)
+            {
+                // Спавним примитивную сферу-вспышку (fallback когда нет skill-конфига)
+                var go = GameObject.CreatePrimitive(PrimitiveType.Sphere);
+                go.transform.position = position;
+                go.transform.localScale = Vector3.one * 0.3f;
+                var rend = go.GetComponent<MeshRenderer>();
+                if (rend != null)
+                {
+                    rend.material = new Material(Shader.Find("Universal Render Pipeline/Unlit"));
+                    rend.material.color = DamageTypeColors.Get(damageType);
+                }
+                Object.Destroy(go.GetComponent<Collider>());
+                Object.Destroy(go, 0.3f);
+                if (Debug.isDebugBuild)
+                    Debug.Log($"[SkillVfxService] PlayImpactVfx: GENERIC (no config) pos={position} dmgType={damageType}");
+                return;
+            }
+
             if (config.impactVfxPrefab == null && config.twoDVfxAnimation == null) return;
 
             if (Debug.isDebugBuild)

@@ -14,26 +14,6 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::ProjectC.AI.NpcSkillSet
   selectionMode: 0
   skills:
-  - skillConfig: {fileID: 11400000, guid: 654668828d5849d4b83e38353284a0d8, type: 2}
-    overrideCooldown: 1.2
-    overrideAnimation: {fileID: 0}
-    overrideAnimationSpeed: 0
-    overrideDamageDice: 0
-    overrideBaseDamage: 0
-    overrideRange: 0
-    priority: 50
-    minHpPercent: 0
-    maxHpPercent: 1
-  - skillConfig: {fileID: 11400000, guid: 48adda20f7866b142bbe8e2b80aa17c0, type: 2}
-    overrideCooldown: 3
-    overrideAnimation: {fileID: 0}
-    overrideAnimationSpeed: 0
-    overrideDamageDice: 0
-    overrideBaseDamage: 0
-    overrideRange: 0
-    priority: 30
-    minHpPercent: 0.3
-    maxHpPercent: 1
   - skillConfig: {fileID: 11400000, guid: a175c411236ace54382258e3806aa0d5, type: 2}
     overrideCooldown: 4
     overrideAnimation: {fileID: 0}

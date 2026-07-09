@@ -650,7 +650,8 @@ namespace ProjectC.AI
                 return;
             }
 
-            if (dist <= attackRange) { EnterAttack(); return; }
+            float effectiveRange = GetEffectiveAttackRange();
+            if (dist <= effectiveRange) { EnterAttack(); return; }
 
             if (_agent != null && _agent.isOnNavMesh)
                 _agent.SetDestination(targetPos);
@@ -675,7 +676,8 @@ namespace ProjectC.AI
             if (!_aggroTarget.IsAlive()) { _aggroTarget = null; EnterIdle(); return; }
 
             float dist = Vector3.Distance(transform.position, _aggroTarget.GetPosition());
-            if (dist > attackRange * 1.3f) { EnterChase(); return; }
+            float effectiveRange = GetEffectiveAttackRange();
+            if (dist > effectiveRange * 1.3f) { EnterChase(); return; }
 
             float now = Time.unscaledTime;
             if (now >= _lastAttackTime + (_attacker != null && _attacker.Data != null ? _attacker.Data.cooldownSeconds : 1.5f))
@@ -782,6 +784,38 @@ namespace ProjectC.AI
                     return npcPos + toTarget.normalized * throwRange;
             }
             return npcPos + transform.forward * throwRange;
+        }
+
+        /// <summary>
+        /// Вычислить эффективную дальность атаки NPC с учётом всех доступных скилов.
+        /// Используется в HandleChase (когда входить в Attack) и HandleAttack (когда выходить).
+        /// Берёт максимум из attackRange + всех скилов из NpcSkillSet.
+        /// </summary>
+        private float GetEffectiveAttackRange()
+        {
+            float bestRange = attackRange;
+            if (_attacker != null && _attacker.Data != null)
+                bestRange = Mathf.Max(bestRange, _attacker.Data.range);
+
+            if (_attacker != null && _attacker.SkillSourceCount > 0)
+            {
+                for (int i = 0; i < _attacker.SkillSourceCount; i++)
+                {
+                    var src = _attacker.GetSkillSource(i);
+                    if (src == null) continue;
+                    var cfg = src.GetSkillConfig();
+                    if (cfg == null) continue;
+
+                    float skillRange = src.GetRange(); // overrideRange или из SkillNodeConfig
+                    if (cfg.subtype == CombatSubtype.Throwables && cfg.throwRange > 0f)
+                        skillRange = Mathf.Max(skillRange, cfg.throwRange);
+                    if ((cfg.subtype == CombatSubtype.Bows || cfg.subtype == CombatSubtype.Crossbows) && cfg.rangedMaxRange > 0f)
+                        skillRange = Mathf.Max(skillRange, cfg.rangedMaxRange);
+
+                    bestRange = Mathf.Max(bestRange, skillRange);
+                }
+            }
+            return bestRange;
         }
 
         // ============================================================

@@ -32,10 +32,15 @@ namespace ProjectC.Stats
     {
         public static StatsServer Instance { get; private set; }
 
-        [Header("Config")]
-        [Tooltip("StatsConfig.asset: per-source XP multipliers, формула роста, global multiplier. " +
-                 "Загружается в OnNetworkSpawn через Resources.Load.")]
-        [SerializeField] private StatsConfig _config;
+        [Header("Config (P4 refactor: split StatsConfig → 3 SO)")]
+        [Tooltip("ExperienceConfig.asset: per-source XP multipliers, формула роста, global multiplier.")]
+        [SerializeField] private ExperienceConfig _expConfig;
+
+        [Tooltip("StatSourceMapConfig.asset: XpSource → StatType mapping.")]
+        [SerializeField] private StatSourceMapConfig _sourceMapConfig;
+
+        [Tooltip("StatDebugConfig.asset: debug logging, distance thresholds, announce tier-up.")]
+        [SerializeField] private StatDebugConfig _debugConfig;
 
         // === WorldEventBus subscriber handles (cached для Unsubscribe) ===
         private Action<MiningCompletedEvent> _handleMining;
@@ -77,15 +82,24 @@ namespace ProjectC.Stats
             }
             Instance = this;
 
-            // Load config (допускаем null в MVP: ручной wire-up в инспекторе, fallback на default)
-            if (_config == null)
+            // P4 refactor: load 3 split configs. Допускаем null — wire-up в инспекторе или Resources.Load fallback.
+            if (_expConfig == null)
             {
-                _config = Resources.Load<StatsConfig>("Stats/StatsConfig_Default");
-                if (_config == null)
-                {
-                    Debug.LogWarning("[StatsServer] StatsConfig not assigned and Resources/Stats/StatsConfig_Default.asset not found. " +
-                                     "Stats will not gain XP until config is wired up. (see T-P01)");
-                }
+                _expConfig = Resources.Load<ExperienceConfig>("Stats/ExperienceConfig_Default");
+                if (_expConfig == null)
+                    Debug.LogWarning("[StatsServer] ExperienceConfig not assigned/found. XP formula will not work.");
+            }
+            if (_sourceMapConfig == null)
+            {
+                _sourceMapConfig = Resources.Load<StatSourceMapConfig>("Stats/StatSourceMapConfig_Default");
+                if (_sourceMapConfig == null)
+                    Debug.LogWarning("[StatsServer] StatSourceMapConfig not assigned/found. Source→Stat mapping will default to INT.");
+            }
+            if (_debugConfig == null)
+            {
+                _debugConfig = Resources.Load<StatDebugConfig>("Stats/StatDebugConfig_Default");
+                if (_debugConfig == null)
+                    Debug.LogWarning("[StatsServer] StatDebugConfig not assigned/found. Debug settings default to off.");
             }
 
             // StatsWorld singleton (server-only)
@@ -119,10 +133,10 @@ namespace ProjectC.Stats
             WorldEventBus.Subscribe(_handlePilot);
             WorldEventBus.Subscribe(_handleJumped);
 
-            if (_config != null && _config.DebugLogging)
+            if (_debugConfig != null && _debugConfig.DebugLogging)
             {
                 Debug.Log($"[StatsServer] OnNetworkSpawn — subscribed to 9 WorldEventBus events. " +
-                          $"Config: base={_config.TierBaseXp} growth={_config.TierGrowthRate} globalMult={_config.GlobalMultiplier}");
+                          $"Config: base={(_expConfig != null ? _expConfig.TierBaseXp : 100f)} growth={(_expConfig != null ? _expConfig.TierGrowthRate : 1.5f)} globalMult={(_expConfig != null ? _expConfig.GlobalMultiplier : 1f)}");
             }
         }
 
@@ -209,7 +223,7 @@ namespace ProjectC.Stats
                 var eqWorld = ProjectC.Equipment.EquipmentWorld.Instance;
                 if (eqWorld != null)
                     eqWorld.LoadPlayer(clientId, data);
-                if (_config != null && _config.DebugLogging)
+                if (_debugConfig != null && _debugConfig.DebugLogging)
                 {
                     var stats = _world.GetOrCreateStats(clientId);
                     Debug.Log($"[StatsServer] OnClientConnectedForStats: client={clientId} — loaded " +
@@ -219,7 +233,7 @@ namespace ProjectC.Stats
             }
             else
             {
-                if (_config != null && _config.DebugLogging)
+                if (_debugConfig != null && _debugConfig.DebugLogging)
                 {
                     Debug.Log($"[StatsServer] OnClientConnectedForStats: client={clientId} — no save file, starting fresh");
                 }
@@ -234,7 +248,7 @@ namespace ProjectC.Stats
             // Build save DTO from current state + atomic save
             var data = _world.BuildSaveData(clientId);
             _repo.Save(clientId, data);
-            if (_config != null && _config.DebugLogging)
+            if (_debugConfig != null && _debugConfig.DebugLogging)
             {
                 Debug.Log($"[StatsServer] OnClientDisconnectedForStats: client={clientId} — saved to {_repo.GetSavePath(clientId)}");
             }
@@ -246,72 +260,72 @@ namespace ProjectC.Stats
         private void OnMiningCompleted(MiningCompletedEvent ev)
         {
             if (ev.PlayerId == 0 || ev.Quantity <= 0) return;
-            var stat = _config.GetStatFor(XpSource.Mining);
-            float xp = _config.GetBaseXp(XpSource.Mining) * ev.Quantity;
+            var stat = _sourceMapConfig != null ? _sourceMapConfig.GetStatFor(XpSource.Mining) : StatType.Intelligence;
+            float xp = _expConfig != null ? _expConfig.GetBaseXp(XpSource.Mining) : 0f * ev.Quantity;
             ApplyXp(ev.PlayerId, stat, xp, $"Mining ×{ev.Quantity}");
         }
 
         private void OnCraftingCompleted(CraftingCompletedEvent ev)
         {
             if (ev.PlayerId == 0 || ev.Quantity <= 0) return;
-            var stat = _config.GetStatFor(XpSource.Crafting);
-            float xp = _config.GetBaseXp(XpSource.Crafting) * ev.Quantity;
+            var stat = _sourceMapConfig != null ? _sourceMapConfig.GetStatFor(XpSource.Crafting) : StatType.Intelligence;
+            float xp = _expConfig != null ? _expConfig.GetBaseXp(XpSource.Crafting) : 0f * ev.Quantity;
             ApplyXp(ev.PlayerId, stat, xp, $"Crafting ×{ev.Quantity}");
         }
 
         private void OnExchangeCompleted(ExchangeCompletedEvent ev)
         {
             if (ev.PlayerId == 0 || ev.Quantity <= 0) return;
-            var stat = _config.GetStatFor(XpSource.Exchange);
-            float xp = _config.GetBaseXp(XpSource.Exchange) * ev.Quantity;
+            var stat = _sourceMapConfig != null ? _sourceMapConfig.GetStatFor(XpSource.Exchange) : StatType.Intelligence;
+            float xp = _expConfig != null ? _expConfig.GetBaseXp(XpSource.Exchange) : 0f * ev.Quantity;
             ApplyXp(ev.PlayerId, stat, xp, $"Exchange({ev.Op}) ×{ev.Quantity}");
         }
 
         private void OnMarketTraded(MarketTradedEvent ev)
         {
             if (ev.PlayerId == 0 || ev.Quantity <= 0) return;
-            var stat = _config.GetStatFor(XpSource.Market);
-            float xp = _config.GetBaseXp(XpSource.Market) * ev.Quantity;
+            var stat = _sourceMapConfig != null ? _sourceMapConfig.GetStatFor(XpSource.Market) : StatType.Intelligence;
+            float xp = _expConfig != null ? _expConfig.GetBaseXp(XpSource.Market) : 0f * ev.Quantity;
             ApplyXp(ev.PlayerId, stat, xp, $"Market({ev.Op}) ×{ev.Quantity}");
         }
 
         private void OnQuestAccepted(QuestAcceptedEvent ev)
         {
             if (ev.PlayerId == 0 || string.IsNullOrEmpty(ev.QuestId)) return;
-            var stat = _config.GetStatFor(XpSource.QuestAccepted);
-            float xp = _config.GetBaseXp(XpSource.QuestAccepted);
+            var stat = _sourceMapConfig != null ? _sourceMapConfig.GetStatFor(XpSource.QuestAccepted) : StatType.Intelligence;
+            float xp = _expConfig != null ? _expConfig.GetBaseXp(XpSource.QuestAccepted) : 0f;
             ApplyXp(ev.PlayerId, stat, xp, $"QuestAccepted:{ev.QuestId}");
         }
 
         private void OnQuestCompleted(QuestCompletedEvent ev)
         {
             if (ev.PlayerId == 0 || string.IsNullOrEmpty(ev.QuestId)) return;
-            var stat = _config.GetStatFor(XpSource.QuestCompleted);
-            float xp = _config.GetBaseXp(XpSource.QuestCompleted);
+            var stat = _sourceMapConfig != null ? _sourceMapConfig.GetStatFor(XpSource.QuestCompleted) : StatType.Intelligence;
+            float xp = _expConfig != null ? _expConfig.GetBaseXp(XpSource.QuestCompleted) : 0f;
             ApplyXp(ev.PlayerId, stat, xp, $"QuestCompleted:{ev.QuestId}");
         }
 
         private void OnDialogVisited(DialogVisitedEvent ev)
         {
             if (ev.PlayerId == 0 || string.IsNullOrEmpty(ev.NpcId)) return;
-            if (_config == null) return;
+            if (_expConfig == null) return;
 
             // Q1.4: unique-event tracking. eventKey включает NodeId если есть.
             string eventKey = string.IsNullOrEmpty(ev.NodeId) ? ev.NpcId : $"{ev.NpcId}:{ev.NodeId}";
             if (!IsUniqueDialogEvent(ev.PlayerId, eventKey))
             {
-                if (_config.DebugLogging)
+                if (_debugConfig != null && _debugConfig.DebugLogging)
                 {
                     Debug.Log($"[StatsServer] Player {ev.PlayerId} repeat dialog '{eventKey}' — no XP");
                 }
                 return;
             }
 
-            var stat = _config.GetStatFor(XpSource.Dialog);
-            float xp = _config.GetBaseXp(XpSource.Dialog);
+            var stat = _sourceMapConfig != null ? _sourceMapConfig.GetStatFor(XpSource.Dialog) : StatType.Intelligence;
+            float xp = _expConfig != null ? _expConfig.GetBaseXp(XpSource.Dialog) : 0f;
             ApplyXp(ev.PlayerId, stat, xp, $"Dialog '{eventKey}' (unique)");
 
-            if (_config.DebugLogging)
+            if (_debugConfig != null && _debugConfig.DebugLogging)
             {
                 Debug.Log($"[StatsServer] Player {ev.PlayerId} NEW unique dialog '{eventKey}' → +{xp} INT");
             }
@@ -319,10 +333,10 @@ namespace ProjectC.Stats
 
         private void OnPilotTick(ShipPilotTickEvent ev)
         {
-            if (ev.PlayerId == 0 || ev.DeltaDistance <= 0f || _config == null) return;
+            if (ev.PlayerId == 0 || ev.DeltaDistance <= 0f || _sourceMapConfig == null) return;
 
             // Q1.5: total piloted distance
-            if (_config.TrackTotalDistance)
+            if ((_debugConfig != null && _debugConfig.TrackTotalDistance))
             {
                 if (!_totalPilotedDistance.TryGetValue(ev.PlayerId, out var total)) total = 0f;
                 total += ev.DeltaDistance;
@@ -331,11 +345,11 @@ namespace ProjectC.Stats
 
             if (!_pilotDistanceBuffer.TryGetValue(ev.PlayerId, out var buffer)) buffer = 0f;
             buffer += ev.DeltaDistance;
-            if (buffer >= _config.PilotDistanceXpThreshold)
+            if (buffer >= (_debugConfig != null ? _debugConfig.PilotDistanceXpThreshold : 10f))
             {
-                float overshoot = buffer - _config.PilotDistanceXpThreshold;
-                float xp = _config.GetBaseXp(XpSource.Pilot) * (buffer / _config.PilotDistanceXpThreshold);
-                var stat = _config.GetStatFor(XpSource.Pilot);
+                float overshoot = buffer - (_debugConfig != null ? _debugConfig.PilotDistanceXpThreshold : 10f);
+                float xp = _expConfig != null ? _expConfig.GetBaseXp(XpSource.Pilot) : 0f * (buffer / (_debugConfig != null ? _debugConfig.PilotDistanceXpThreshold : 10f));
+                var stat = _sourceMapConfig != null ? _sourceMapConfig.GetStatFor(XpSource.Pilot) : StatType.Intelligence;
                 ApplyXp(ev.PlayerId, stat, xp, $"Pilot +{buffer:F1}m");
                 _pilotDistanceBuffer[ev.PlayerId] = overshoot;
             }
@@ -347,9 +361,9 @@ namespace ProjectC.Stats
 
         private void OnJumped(PlayerJumpedEvent ev)
         {
-            if (ev.PlayerId == 0 || _config == null) return;
-            var stat = _config.GetStatFor(XpSource.Jump);
-            float xp = _config.GetBaseXp(XpSource.Jump);
+            if (ev.PlayerId == 0 || _expConfig == null) return;
+            var stat = _sourceMapConfig != null ? _sourceMapConfig.GetStatFor(XpSource.Jump) : StatType.Intelligence;
+            float xp = _expConfig != null ? _expConfig.GetBaseXp(XpSource.Jump) : 0f;
             ApplyXp(ev.PlayerId, stat, xp, "Jump");
         }
 
@@ -360,14 +374,14 @@ namespace ProjectC.Stats
         /// </summary>
         public void ApplyXp(ulong clientId, StatType stat, float rawXp, string reasonForLog = null)
         {
-            if (_config == null || rawXp == 0f) return;
+            if (_expConfig == null || rawXp == 0f) return;
 
-            if (_config.DebugLogging)
+            if (_debugConfig != null && _debugConfig.DebugLogging)
             {
                 Debug.Log($"[StatsServer] ApplyXp: client={clientId} stat={stat} xp={rawXp:F2} reason='{reasonForLog}'");
             }
 
-            float xp = _config.ApplyGlobalMultiplier(rawXp);
+            float xp = _expConfig != null ? _expConfig.ApplyGlobalMultiplier(rawXp) : rawXp;
             if (xp <= 0f) return;
 
             var stats = _world.GetOrCreateStats(clientId);
@@ -380,20 +394,20 @@ namespace ProjectC.Stats
 
             // Tier promotion loop (no cap by design)
             int promotionsThisCall = 0;
-            while (currentXp >= _config.XpForNextTier(currentTier))
+            while (currentXp >= (_expConfig != null ? _expConfig.XpForNextTier(currentTier) : 100f))
             {
-                currentXp -= _config.XpForNextTier(currentTier);
+                currentXp -= (_expConfig != null ? _expConfig.XpForNextTier(currentTier) : 100f);
                 currentTier++;
                 promotionsThisCall++;
             }
 
             _world.SetStats(clientId, stats);
 
-            if (_config.DebugLogging)
+            if (_debugConfig != null && _debugConfig.DebugLogging)
             {
                 string reason = string.IsNullOrEmpty(reasonForLog) ? "" : $" ({reasonForLog})";
                 Debug.Log($"[StatsServer] Player {clientId} gained {xp:F1} XP {stat}{reason}. " +
-                          $"Now {currentXp:F1}/{_config.XpForNextTier(currentTier):F1} T{currentTier}, total={totalXp:F1}" +
+                          $"Now {currentXp:F1}/{(_expConfig != null ? _expConfig.XpForNextTier(currentTier) : 100f):F1} T{currentTier}, total={totalXp:F1}" +
                           (promotionsThisCall > 0 ? $", PROMOTED ×{promotionsThisCall}!" : ""));
             }
 
@@ -408,7 +422,7 @@ namespace ProjectC.Stats
         public bool ApplyXpDirect(ulong clientId, StatType stat, float xpDelta, out string reason)
         {
             reason = "";
-            if (_config == null) { reason = "StatsServer config not ready"; return false; }
+            if (_expConfig == null) { reason = "StatsServer config not ready"; return false; }
             if (xpDelta >= 0f) { reason = "ApplyXpDirect only for spending (negative delta)"; return false; }
 
             var stats = _world.GetOrCreateStats(clientId);
@@ -471,9 +485,9 @@ namespace ProjectC.Stats
                 strengthTier              = stats.strengthTier,
                 dexterityTier             = stats.dexterityTier,
                 intelligenceTier          = stats.intelligenceTier,
-                strengthXpForNextTier     = _config != null ? _config.XpForNextTier(stats.strengthTier) : 0f,
-                dexterityXpForNextTier    = _config != null ? _config.XpForNextTier(stats.dexterityTier) : 0f,
-                intelligenceXpForNextTier = _config != null ? _config.XpForNextTier(stats.intelligenceTier) : 0f,
+                strengthXpForNextTier     = _expConfig != null ? _expConfig.XpForNextTier(stats.strengthTier) : 0f,
+                dexterityXpForNextTier    = _expConfig != null ? _expConfig.XpForNextTier(stats.dexterityTier) : 0f,
+                intelligenceXpForNextTier = _expConfig != null ? _expConfig.XpForNextTier(stats.intelligenceTier) : 0f,
                 strengthTotalXp           = stats.strengthTotalXp,
                 dexterityTotalXp          = stats.dexterityTotalXp,
                 intelligenceTotalXp       = stats.intelligenceTotalXp,
@@ -495,7 +509,7 @@ namespace ProjectC.Stats
                 var defaultRpcParams = System.Activator.CreateInstance(typeof(RpcParams));
                 mi.Invoke(netPlayer, new object[] { snap, defaultRpcParams });
             }
-            else if (_config != null && _config.DebugLogging)
+            else if (_debugConfig != null && _debugConfig.DebugLogging)
             {
                 Debug.Log($"[StatsServer] snapshot built for client {clientId} but RPC not found: " +
                           $"STR={snap.strength:F1}/T{snap.strengthTier} DEX={snap.dexterity:F1}/T{snap.dexterityTier} " +
@@ -507,7 +521,7 @@ namespace ProjectC.Stats
 
         private void FixedUpdate()
         {
-            if (!IsServer || _config == null) return;
+            if (!IsServer || _debugConfig == null) return;
             if (NetworkManager.Singleton == null) return;
 
             // SESSION 1 fix: periodic auto-save (каждые AutoSaveInterval секунд).
@@ -562,7 +576,7 @@ namespace ProjectC.Stats
                     {
                         // Телепорт или scene load — обновить lastPos без XP
                         _lastWalkPosPerPlayer[clientId] = currentPos;
-                        if (_config.DebugLogging) Debug.Log($"[StatsServer] Walk delta {dist:F1}m ignored (likely teleport/scene-load)");
+                        if (_debugConfig != null && _debugConfig.DebugLogging) Debug.Log($"[StatsServer] Walk delta {dist:F1}m ignored (likely teleport/scene-load)");
                     }
                 }
                 _lastWalkPosPerPlayer[clientId] = currentPos;
@@ -572,7 +586,7 @@ namespace ProjectC.Stats
         private void AccumulateWalkedXp(ulong clientId, float deltaDistance)
         {
             // Q1.5: total walked distance
-            if (_config.TrackTotalDistance)
+            if ((_debugConfig != null && _debugConfig.TrackTotalDistance))
             {
                 if (!_totalWalkedDistance.TryGetValue(clientId, out var total)) total = 0f;
                 total += deltaDistance;
@@ -581,11 +595,11 @@ namespace ProjectC.Stats
 
             if (!_walkDistanceBuffer.TryGetValue(clientId, out var buffer)) buffer = 0f;
             buffer += deltaDistance;
-            if (buffer >= _config.WalkDistanceXpThreshold)
+            if (buffer >= (_debugConfig != null ? _debugConfig.WalkDistanceXpThreshold : 1f))
             {
-                float overshoot = buffer - _config.WalkDistanceXpThreshold;
-                float xp = _config.GetBaseXp(XpSource.Walk) * (buffer / _config.WalkDistanceXpThreshold);
-                var stat = _config.GetStatFor(XpSource.Walk);
+                float overshoot = buffer - (_debugConfig != null ? _debugConfig.WalkDistanceXpThreshold : 1f);
+                float xp = _expConfig != null ? _expConfig.GetBaseXp(XpSource.Walk) : 0f * (buffer / (_debugConfig != null ? _debugConfig.WalkDistanceXpThreshold : 1f));
+                var stat = _sourceMapConfig != null ? _sourceMapConfig.GetStatFor(XpSource.Walk) : StatType.Intelligence;
                 ApplyXp(clientId, stat, xp, $"Walk +{buffer:F2}m");
                 _walkDistanceBuffer[clientId] = overshoot;
             }
@@ -621,7 +635,7 @@ namespace ProjectC.Stats
             _world != null ? _world.GetOrCreateStats(clientId) : PlayerStats.Default;
 
         /// <summary>P5 fix: expose config stat mapping for external callers (GatheringServer).</summary>
-        public StatType GetStatFor(XpSource source) => _config != null ? _config.GetStatFor(source) : StatType.Strength;
+        public StatType GetStatFor(XpSource source) => _sourceMapConfig != null ? _sourceMapConfig.GetStatFor(source) : StatType.Strength;
 
         /// <summary>
         /// T-P13: Trigger immediate save for a player (called by SkillsServer after learn/forget).

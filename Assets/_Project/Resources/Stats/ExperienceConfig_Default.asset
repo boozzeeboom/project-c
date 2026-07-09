@@ -1,0 +1,27 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 71e0b39ffd24dd544a44548af549dd6a, type: 3}
+  m_Name: ExperienceConfig_Default
+  m_EditorClassIdentifier: Assembly-CSharp::ProjectC.Stats.ExperienceConfig
+  _miningXpPerItem: 1
+  _craftingXpPerItem: 5
+  _exchangeXpPerOp: 2
+  _marketXpPerOp: 1
+  _questAcceptedXp: 3
+  _questCompletedXp: 10
+  _dialogXpPerVisit: 1
+  _jumpXp: 0.5
+  _walkXpPerMeter: 1
+  _pilotXpPerMeter: 1
+  _globalMultiplier: 1
+  _tierBaseXp: 100
+  _tierGrowthRate: 1.5

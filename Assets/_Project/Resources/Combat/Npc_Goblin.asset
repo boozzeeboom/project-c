@@ -14,9 +14,9 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::ProjectC.Combat.NpcCombatData
   displayName: Goblin Test
   maxHp: 20
-  strength: 10
-  dexterity: 10
-  intelligence: 8
+  strengthTier: 0
+  dexterityTier: 0
+  intelligenceTier: 0
   damageType: 0
   damageDice: 6
   baseDamage: 2

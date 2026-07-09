@@ -4368,7 +4368,9 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::ProjectC.Stats.StatsServer
   ShowTopMostFoldoutHeaderGroup: 1
-  _config: {fileID: 11400000, guid: 66695c686c9008f45a30bcaa54d9431b, type: 2}
+  _expConfig: {fileID: 11400000, guid: ee825697bef37224f9f6ea0153cf442e, type: 2}
+  _sourceMapConfig: {fileID: 11400000, guid: b5db92f42aa69f44b855fc0f7c75b90a, type: 2}
+  _debugConfig: {fileID: 11400000, guid: fc24e92a28b539d4ab7efe0da7b90121, type: 2}
 --- !u!1 &302907655
 GameObject:
   m_ObjectHideFlags: 0

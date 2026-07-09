@@ -26,6 +26,7 @@
 //   - Нет мультиплеера на одном узле (один активный сбор на сервере)
 // =====================================================================================
 
+using System;
 using System.Collections.Generic;
 using Unity.Netcode;
 using UnityEngine;
@@ -91,6 +92,9 @@ namespace ProjectC.ResourceNode
                 return;
             }
 
+            // AUDIT_2026-07-12 CRITICAL 3: disconnect cleanup — освобождаем узел при отключении клиента
+            NetworkManager.OnClientDisconnectCallback += OnClientDisconnected;
+
             if (_debugMode) Debug.Log("[GatheringServer] OnNetworkSpawn — IsServer=true, tickInterval=" + _tickInterval + "s");
         }
 
@@ -99,6 +103,9 @@ namespace ProjectC.ResourceNode
             base.OnNetworkDespawn();
             if (IsServer)
             {
+                // AUDIT_2026-07-12 CRITICAL 3: unhook disconnect callback
+                if (NetworkManager != null)
+                    NetworkManager.OnClientDisconnectCallback -= OnClientDisconnected;
                 _activeGathers.Clear();
                 _nodes.Clear();
                 _opTimestamps.Clear();
@@ -160,17 +167,19 @@ namespace ProjectC.ResourceNode
                         _activeGathers.Remove(clientId);
                         SendGatherResultToClient(clientId, GatherResult.Completed(result.ItemName, result.Quantity, result.IsDepleted));
 
-                        // SESSION 1 refactor: прямой вызов StatsServer (не через WorldEventBus) — надёжнее, нет race-conditions.
+                        // AUDIT_2026-07-12 CRITICAL 2, 4: публикуем MiningCompletedEvent через WorldEventBus
+                        // StatsServer подписан и начислит XP (единый паттерн с Crafting/Exchange/Market)
                         try {
-                            var ss = ProjectC.Stats.StatsServer.Instance;
-                            if (ss != null) {
-                                var statType = ss.GetStatFor(ProjectC.Stats.XpSource.Mining);
-                                ss.ApplyXp(clientId, statType, (float)result.Quantity * 1.0f, $"Mining ×{result.Quantity} {result.ItemName}");
-                            } else if (_debugMode) {
-                                Debug.LogWarning("[GatheringServer] XP grant: StatsServer.Instance==null (server not spawned yet) — xp will be missed");
-                            }
-                        } catch (System.Exception ex) {
-                            if (_debugMode) Debug.LogWarning("[GatheringServer] XP grant failed: " + ex.Message);
+                            WorldEventBus.Publish(new MiningCompletedEvent
+                            {
+                                PlayerId = clientId,
+                                ItemName = result.ItemName,
+                                Quantity = result.Quantity,
+                                IsDepleted = result.IsDepleted,
+                                TimestampUnix = DateTimeOffset.UtcNow.ToUnixTimeSeconds(),
+                            });
+                        } catch (Exception ex) {
+                            if (_debugMode) Debug.LogWarning("[GatheringServer] Failed to publish MiningCompletedEvent: " + ex.Message);
                         }
                         if (_debugMode) Debug.Log("[GatheringServer] Gather COMPLETED: client=" + clientId + " item=" + result.ItemName + " qty=" + result.Quantity + " depleted=" + result.IsDepleted);
                         break;
@@ -302,6 +311,28 @@ namespace ProjectC.ResourceNode
             if (NetworkManager == null) return null;
             if (!NetworkManager.ConnectedClients.TryGetValue(clientId, out var cc)) return null;
             return cc.PlayerObject != null ? cc.PlayerObject.GetComponent<NetworkPlayer>() : null;
+        }
+
+        // ==========================================================
+        // Disconnect cleanup (AUDIT_2026-07-12 CRITICAL 3)
+        // ==========================================================
+
+        private void OnClientDisconnected(ulong clientId)
+        {
+            if (!IsServer) return;
+
+            if (_activeGathers.TryGetValue(clientId, out var job))
+            {
+                if (_nodes.TryGetValue(job.NodeNetId, out var node) && node != null)
+                {
+                    node.CancelGather();
+                }
+                _activeGathers.Remove(clientId);
+                if (_debugMode) Debug.Log($"[GatheringServer] Client {clientId} disconnected during gather — cancelled, node released");
+            }
+
+            // Clean up rate-limit data
+            _opTimestamps.Remove(clientId);
         }
 
         // ==========================================================

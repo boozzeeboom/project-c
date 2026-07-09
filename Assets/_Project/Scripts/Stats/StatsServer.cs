@@ -261,7 +261,7 @@ namespace ProjectC.Stats
         {
             if (ev.PlayerId == 0 || ev.Quantity <= 0) return;
             var stat = _sourceMapConfig != null ? _sourceMapConfig.GetStatFor(XpSource.Mining) : StatType.Intelligence;
-            float xp = _expConfig != null ? _expConfig.GetBaseXp(XpSource.Mining) : 0f * ev.Quantity;
+            float xp = (_expConfig != null ? _expConfig.GetBaseXp(XpSource.Mining) : 0f) * ev.Quantity;
             ApplyXp(ev.PlayerId, stat, xp, $"Mining ×{ev.Quantity}");
         }
 
@@ -269,7 +269,7 @@ namespace ProjectC.Stats
         {
             if (ev.PlayerId == 0 || ev.Quantity <= 0) return;
             var stat = _sourceMapConfig != null ? _sourceMapConfig.GetStatFor(XpSource.Crafting) : StatType.Intelligence;
-            float xp = _expConfig != null ? _expConfig.GetBaseXp(XpSource.Crafting) : 0f * ev.Quantity;
+            float xp = (_expConfig != null ? _expConfig.GetBaseXp(XpSource.Crafting) : 0f) * ev.Quantity;
             ApplyXp(ev.PlayerId, stat, xp, $"Crafting ×{ev.Quantity}");
         }
 
@@ -277,7 +277,7 @@ namespace ProjectC.Stats
         {
             if (ev.PlayerId == 0 || ev.Quantity <= 0) return;
             var stat = _sourceMapConfig != null ? _sourceMapConfig.GetStatFor(XpSource.Exchange) : StatType.Intelligence;
-            float xp = _expConfig != null ? _expConfig.GetBaseXp(XpSource.Exchange) : 0f * ev.Quantity;
+            float xp = (_expConfig != null ? _expConfig.GetBaseXp(XpSource.Exchange) : 0f) * ev.Quantity;
             ApplyXp(ev.PlayerId, stat, xp, $"Exchange({ev.Op}) ×{ev.Quantity}");
         }
 
@@ -285,7 +285,7 @@ namespace ProjectC.Stats
         {
             if (ev.PlayerId == 0 || ev.Quantity <= 0) return;
             var stat = _sourceMapConfig != null ? _sourceMapConfig.GetStatFor(XpSource.Market) : StatType.Intelligence;
-            float xp = _expConfig != null ? _expConfig.GetBaseXp(XpSource.Market) : 0f * ev.Quantity;
+            float xp = (_expConfig != null ? _expConfig.GetBaseXp(XpSource.Market) : 0f) * ev.Quantity;
             ApplyXp(ev.PlayerId, stat, xp, $"Market({ev.Op}) ×{ev.Quantity}");
         }
 
@@ -348,7 +348,7 @@ namespace ProjectC.Stats
             if (buffer >= (_debugConfig != null ? _debugConfig.PilotDistanceXpThreshold : 10f))
             {
                 float overshoot = buffer - (_debugConfig != null ? _debugConfig.PilotDistanceXpThreshold : 10f);
-                float xp = _expConfig != null ? _expConfig.GetBaseXp(XpSource.Pilot) : 0f * (buffer / (_debugConfig != null ? _debugConfig.PilotDistanceXpThreshold : 10f));
+                float xp = (_expConfig != null ? _expConfig.GetBaseXp(XpSource.Pilot) : 0f) * (buffer / (_debugConfig != null ? _debugConfig.PilotDistanceXpThreshold : 10f));
                 var stat = _sourceMapConfig != null ? _sourceMapConfig.GetStatFor(XpSource.Pilot) : StatType.Intelligence;
                 ApplyXp(ev.PlayerId, stat, xp, $"Pilot +{buffer:F1}m");
                 _pilotDistanceBuffer[ev.PlayerId] = overshoot;

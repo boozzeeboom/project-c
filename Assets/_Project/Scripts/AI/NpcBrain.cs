@@ -36,6 +36,7 @@ using UnityEngine.AI;
 using Unity.Netcode;
 using ProjectC.Combat;
 using ProjectC.Combat.Core;
+using ProjectC.Skills;
 using System.Linq;
 using ProjectC.Core;
 using ProjectC.Ship;
@@ -698,10 +699,7 @@ namespace ProjectC.AI
                 var skillSource = PickSkillSource();
                 if (skillSource != null)
                 {
-                    ulong sourceId = skillSource.GetSourceId();
-                    CombatServer.Instance.ResolveAttack(attackerId, targetId, sourceId);
-                    _lastAttackTime = Time.unscaledTime;
-                    PlaySkillAnimation(skillSource);
+                    ExecuteSkillAttack(skillSource, attackerId, targetId);
                     return;
                 }
             }
@@ -711,6 +709,79 @@ namespace ProjectC.AI
             CombatServer.Instance.ResolveAttack(attackerId, targetId, defaultSourceId);
             _lastAttackTime = Time.unscaledTime;
             if (_animator != null) _animator.SetTrigger("Attack");
+        }
+
+        /// <summary>
+        /// T-NPC-AOE: маршрутизация атаки в ResolveSkillCast или ResolveAttack
+        /// в зависимости от типа скилла (AOE / Throwable / Ranged / Melee).
+        /// </summary>
+        private void ExecuteSkillAttack(NpcAttacker.NpcSkillDamageSource skillSource, ulong attackerId, ulong targetId)
+        {
+            var skillConfig = skillSource.GetSkillConfig();
+            string skillId = skillConfig.skillId;
+            ulong sourceId = skillSource.GetSourceId();
+
+            bool isAoe = skillConfig.aoeFormula != AoeFormula.SingleTarget;
+            bool isThrowable = skillConfig.subtype == CombatSubtype.Throwables;
+            bool isRanged = skillConfig.subtype == CombatSubtype.Bows
+                         || skillConfig.subtype == CombatSubtype.Crossbows;
+
+            if (isThrowable)
+            {
+                Vector3 targetPoint = CalculateThrowTarget(skillConfig.throwRange);
+                CombatServer.Instance.ResolveSkillCast(attackerId, skillId, 0UL, sourceId, targetPoint);
+
+#if UNITY_EDITOR || DEVELOPMENT_BUILD
+                // R4: ThrowArcVisual для визуальной отладки
+                float flightTime = Vector3.Distance(transform.position, targetPoint) / 15f;
+                ProjectC.Combat.Client.ThrowArcVisual.Fire(
+                    transform.position, targetPoint, flightTime,
+                    skillConfig.aoeSize, new Color(1f, 0.4f, 0.2f, 0.8f));
+#endif
+            }
+            else if (isAoe || isRanged)
+            {
+                CombatServer.Instance.ResolveSkillCast(attackerId, skillId, targetId, sourceId);
+            }
+            else
+            {
+                CombatServer.Instance.ResolveAttack(attackerId, targetId, sourceId);
+            }
+
+            _lastAttackTime = Time.unscaledTime;
+            PlaySkillAnimation(skillSource);
+
+            // E1: AOE debug visualization (Editor/Dev only)
+#if UNITY_EDITOR || DEVELOPMENT_BUILD
+            if (skillConfig.debugVisualizeAoe)
+            {
+                var viz = ProjectC.Skills.DebugVisualization.SkillAoeDebugVisualizer.EnsureExists();
+                Vector3 vizOrigin = isThrowable
+                    ? CalculateThrowTarget(skillConfig.throwRange)
+                    : (transform.position + Vector3.up * 1.2f);
+                viz.ShowAoe(vizOrigin, transform.forward, skillConfig);
+            }
+#endif
+        }
+
+        /// <summary>
+        /// Вычислить точку броска для throwable-скилла NPC.
+        /// Если цель в радиусе throwRange — кидаем в неё.
+        /// Иначе — в направлении цели на throwRange.
+        /// </summary>
+        private Vector3 CalculateThrowTarget(float throwRange)
+        {
+            Vector3 npcPos = transform.position;
+            if (_aggroTarget != null)
+            {
+                Vector3 toTarget = _aggroTarget.GetPosition() - npcPos;
+                float dist = toTarget.magnitude;
+                if (dist <= throwRange && dist > 0.01f)
+                    return _aggroTarget.GetPosition() + Vector3.up * 0.5f;
+                if (dist > 0.01f)
+                    return npcPos + toTarget.normalized * throwRange;
+            }
+            return npcPos + transform.forward * throwRange;
         }
 
         // ============================================================
@@ -739,9 +810,7 @@ namespace ProjectC.AI
                 if (src == null) continue;
                 var cfg = src.GetSkillConfig();
                 if (cfg == null) continue;
-
-                // HP% фильтр — из SkillNodeConfig (минимальный порог по cooldownSeconds как прокси)
-                // Полноценный HP% фильтр через NpcSkillOverride доступен через GetSkillConfig()
+                if (!src.IsHpAvailable(hpPercent)) continue;
                 available.Add(src);
             }
 

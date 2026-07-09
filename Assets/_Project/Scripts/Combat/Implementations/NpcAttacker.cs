@@ -303,6 +303,12 @@ namespace ProjectC.Combat
 
             /// <summary>SkillNodeConfig для доступа к AOE/дисциплине/подтипу.</summary>
             public SkillNodeConfig GetSkillConfig() => Skill;
+
+            /// <summary>Доступен ли этот скилл при текущем % HP (фильтр minHpPercent/maxHpPercent).</summary>
+            public bool IsHpAvailable(float hpPercent)
+            {
+                return hpPercent >= _override.minHpPercent && hpPercent <= _override.maxHpPercent;
+            }
         }
 
         // ============================================================

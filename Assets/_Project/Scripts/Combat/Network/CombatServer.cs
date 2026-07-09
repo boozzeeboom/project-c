@@ -348,9 +348,10 @@ namespace ProjectC.Combat
                 }
             }
             
-            // R4: for thrown skills, resolve damage source from inventory (throwables are not equipped)
+            // R4: for thrown skills, resolve damage source from inventory (throwables are not equipped).
+            // NPCs provide their own NpcSkillDamageSource — skip inventory lookup.
             bool useTargetPoint = targetPoint.HasValue && targetPoint.Value.sqrMagnitude > 0.01f;
-            if (useTargetPoint && (source == null || source.GetDisplayName() == "Unarmed"))
+            if (useTargetPoint && (source == null || source.GetDisplayName() == "Unarmed") && attacker.IsPlayer())
             {
                 source = ResolveThrowableSourceFromInventory(attackerId);
             }
@@ -369,8 +370,9 @@ namespace ProjectC.Combat
                 return;
             }
 
-            // R4: consume throwable(s) BEFORE target collection
-            if (useTargetPoint)
+            // R4: consume throwable(s) BEFORE target collection.
+            // NPCs have unlimited ammo — skip inventory consumption.
+            if (useTargetPoint && attacker.IsPlayer())
             {
                 int consumeCount = Mathf.Max(1, skillConfig.throwCount);
                 ConsumeThrowableFromInventory(attackerId, consumeCount);

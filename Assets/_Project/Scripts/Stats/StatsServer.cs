@@ -227,8 +227,8 @@ namespace ProjectC.Stats
                 {
                     var stats = _world.GetOrCreateStats(clientId);
                     Debug.Log($"[StatsServer] OnClientConnectedForStats: client={clientId} — loaded " +
-                              $"STR={stats.strength:F1}/T{stats.strengthTier} DEX={stats.dexterity:F1}/T{stats.dexterityTier} " +
-                              $"INT={stats.intelligence:F1}/T{stats.intelligenceTier}");
+                              $"STR={stats.strength.xp:F1}/T{stats.strength.tier} DEX={stats.dexterity.xp:F1}/T{stats.dexterity.tier} " +
+                              $"INT={stats.intelligence.xp:F1}/T{stats.intelligence.tier}");
                 }
             }
             else
@@ -385,9 +385,9 @@ namespace ProjectC.Stats
             if (xp <= 0f) return;
 
             var stats = _world.GetOrCreateStats(clientId);
-            ref float currentXp   = ref PlayerStatsRef.GetXpRef(ref stats, stat);
-            ref int   currentTier = ref PlayerStatsRef.GetTierRef(ref stats, stat);
-            ref float totalXp     = ref PlayerStatsRef.GetTotalXpRef(ref stats, stat);
+            ref float currentXp   = ref PlayerStats.Xp(ref stats, stat);
+            ref int   currentTier = ref PlayerStats.Tier(ref stats, stat);
+            ref float totalXp     = ref PlayerStats.TotalXp(ref stats, stat);
 
             currentXp += xp;
             totalXp   += xp;
@@ -426,7 +426,7 @@ namespace ProjectC.Stats
             if (xpDelta >= 0f) { reason = "ApplyXpDirect only for spending (negative delta)"; return false; }
 
             var stats = _world.GetOrCreateStats(clientId);
-            ref float currentXp = ref PlayerStatsRef.GetXpRef(ref stats, stat);
+            ref float currentXp = ref PlayerStats.Xp(ref stats, stat);
             if (currentXp < -xpDelta)
             {
                 reason = $"Не хватает XP (есть {currentXp:F1}, нужно {-xpDelta:F1})";
@@ -479,21 +479,21 @@ namespace ProjectC.Stats
             }
             var snap = new StatsSnapshotDto
             {
-                strength                  = stats.strength,
-                dexterity                 = stats.dexterity,
-                intelligence              = stats.intelligence,
-                strengthTier              = stats.strengthTier,
-                dexterityTier             = stats.dexterityTier,
-                intelligenceTier          = stats.intelligenceTier,
-                strengthXpForNextTier     = _expConfig != null ? _expConfig.XpForNextTier(stats.strengthTier) : 0f,
-                dexterityXpForNextTier    = _expConfig != null ? _expConfig.XpForNextTier(stats.dexterityTier) : 0f,
-                intelligenceXpForNextTier = _expConfig != null ? _expConfig.XpForNextTier(stats.intelligenceTier) : 0f,
-                strengthTotalXp           = stats.strengthTotalXp,
-                dexterityTotalXp          = stats.dexterityTotalXp,
-                intelligenceTotalXp       = stats.intelligenceTotalXp,
-                effectiveStrength         = PlayerStats.StatsToFlat(stats.strengthTier) + bonusStr,
-                effectiveDexterity        = PlayerStats.StatsToFlat(stats.dexterityTier) + bonusDex,
-                effectiveIntelligence     = PlayerStats.StatsToFlat(stats.intelligenceTier) + bonusInt,
+                strength                  = stats.strength.xp,
+                dexterity                 = stats.dexterity.xp,
+                intelligence              = stats.intelligence.xp,
+                strengthTier              = stats.strength.tier,
+                dexterityTier             = stats.dexterity.tier,
+                intelligenceTier          = stats.intelligence.tier,
+                strengthXpForNextTier     = _expConfig != null ? _expConfig.XpForNextTier(stats.strength.tier) : 0f,
+                dexterityXpForNextTier    = _expConfig != null ? _expConfig.XpForNextTier(stats.dexterity.tier) : 0f,
+                intelligenceXpForNextTier = _expConfig != null ? _expConfig.XpForNextTier(stats.intelligence.tier) : 0f,
+                strengthTotalXp           = stats.strength.totalXp,
+                dexterityTotalXp          = stats.dexterity.totalXp,
+                intelligenceTotalXp       = stats.intelligence.totalXp,
+                effectiveStrength         = PlayerStats.StatsToFlat(stats.strength.tier) + bonusStr,
+                effectiveDexterity        = PlayerStats.StatsToFlat(stats.dexterity.tier) + bonusDex,
+                effectiveIntelligence     = PlayerStats.StatsToFlat(stats.intelligence.tier) + bonusInt,
             };
 
             // T-P06: ReceiveStatsSnapshotTargetRpc добавлен в NetworkPlayer (owner→server).

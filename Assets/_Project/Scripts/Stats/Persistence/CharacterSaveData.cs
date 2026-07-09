@@ -31,48 +31,30 @@ namespace ProjectC.Stats.Persistence
     }
 
     /// <summary>
-    /// PlayerStatsSave: parallel DTO к PlayerStats (3 floats + 3 ints + 3 floats).
-    /// JsonUtility сериализует public fields.
+    /// PlayerStatsSave: P1 refactor — 3 StatBuckets вместо 9 flat fields.
+    /// JsonUtility сериализует массив [Serializable] структур.
+    /// Индексы: [0]=Strength, [1]=Dexterity, [2]=Intelligence.
     /// </summary>
     [Serializable]
     public class PlayerStatsSave
     {
-        public float strength;
-        public float dexterity;
-        public float intelligence;
-
-        public int strengthTier;
-        public int dexterityTier;
-        public int intelligenceTier;
-
-        public float strengthTotalXp;
-        public float dexterityTotalXp;
-        public float intelligenceTotalXp;
+        public StatBucket[] buckets = new StatBucket[3];
 
         public static PlayerStatsSave FromPlayerStats(PlayerStats s) => new PlayerStatsSave
         {
-            strength = s.strength,
-            dexterity = s.dexterity,
-            intelligence = s.intelligence,
-            strengthTier = s.strengthTier,
-            dexterityTier = s.dexterityTier,
-            intelligenceTier = s.intelligenceTier,
-            strengthTotalXp = s.strengthTotalXp,
-            dexterityTotalXp = s.dexterityTotalXp,
-            intelligenceTotalXp = s.intelligenceTotalXp,
+            buckets = new StatBucket[]
+            {
+                s.strength,
+                s.dexterity,
+                s.intelligence,
+            },
         };
 
         public PlayerStats ToPlayerStats() => new PlayerStats
         {
-            strength = strength,
-            dexterity = dexterity,
-            intelligence = intelligence,
-            strengthTier = strengthTier,
-            dexterityTier = dexterityTier,
-            intelligenceTier = intelligenceTier,
-            strengthTotalXp = strengthTotalXp,
-            dexterityTotalXp = dexterityTotalXp,
-            intelligenceTotalXp = intelligenceTotalXp,
+            strength    = buckets != null && buckets.Length > 0 ? buckets[0] : StatBucket.Default,
+            dexterity   = buckets != null && buckets.Length > 1 ? buckets[1] : StatBucket.Default,
+            intelligence = buckets != null && buckets.Length > 2 ? buckets[2] : StatBucket.Default,
         };
     }
 }

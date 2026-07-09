@@ -142,17 +142,17 @@ namespace ProjectC.Skills
             var stats = statsNullable.GetValueOrDefault();
             if (statsNullable.HasValue)
             {
-                if (stats.strengthTier < skill.RequiredStrengthTier)
+                if (ProjectC.Stats.PlayerStats.GetTier(stats, ProjectC.Stats.StatType.Strength) < skill.RequiredStrengthTier)
                 {
                     reason = $"Требуется Сила тир {skill.RequiredStrengthTier}+";
                     return false;
                 }
-                if (stats.dexterityTier < skill.RequiredDexterityTier)
+                if (ProjectC.Stats.PlayerStats.GetTier(stats, ProjectC.Stats.StatType.Dexterity) < skill.RequiredDexterityTier)
                 {
                     reason = $"Требуется Ловкость тир {skill.RequiredDexterityTier}+";
                     return false;
                 }
-                if (stats.intelligenceTier < skill.RequiredIntelligenceTier)
+                if (ProjectC.Stats.PlayerStats.GetTier(stats, ProjectC.Stats.StatType.Intelligence) < skill.RequiredIntelligenceTier)
                 {
                     reason = $"Требуется Интеллект тир {skill.RequiredIntelligenceTier}+";
                     return false;
@@ -167,7 +167,7 @@ namespace ProjectC.Skills
                     reason = "Неизвестна статистика";
                     return false;
                 }
-                if (stats.intelligence < skill.LearnXpCost)
+                if (ProjectC.Stats.PlayerStats.GetXp(stats, ProjectC.Stats.StatType.Intelligence) < skill.LearnXpCost)
                 {
                     reason = $"Не хватает XP (нужно {skill.LearnXpCost:F0})";
                     return false;

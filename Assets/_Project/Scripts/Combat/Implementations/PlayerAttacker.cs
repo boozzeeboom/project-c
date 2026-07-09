@@ -136,7 +136,7 @@ namespace ProjectC.Combat
         public Vector3 GetPosition() => transform.position;
         public int GetStrength()
         {
-            int tier = StatsWorld.Instance?.GetOrCreateStats(_clientId).strengthTier ?? 0;
+            int tier = PlayerStats.GetTier(StatsWorld.Instance?.GetOrCreateStats(_clientId) ?? default, StatType.Strength);
             int fromTier = PlayerStats.StatsToFlat(tier);
             float s = 0f, skillS = 0f;
             EquipmentWorld.Instance?.GetEquipStatBonuses(_clientId, out s, out _, out _);
@@ -145,7 +145,7 @@ namespace ProjectC.Combat
         }
         public int GetDexterity()
         {
-            int tier = StatsWorld.Instance?.GetOrCreateStats(_clientId).dexterityTier ?? 0;
+            int tier = PlayerStats.GetTier(StatsWorld.Instance?.GetOrCreateStats(_clientId) ?? default, StatType.Dexterity);
             int fromTier = PlayerStats.StatsToFlat(tier);
             float d = 0f, skillD = 0f;
             EquipmentWorld.Instance?.GetEquipStatBonuses(_clientId, out _, out d, out _);
@@ -154,7 +154,7 @@ namespace ProjectC.Combat
         }
         public int GetIntelligence()
         {
-            int tier = StatsWorld.Instance?.GetOrCreateStats(_clientId).intelligenceTier ?? 0;
+            int tier = PlayerStats.GetTier(StatsWorld.Instance?.GetOrCreateStats(_clientId) ?? default, StatType.Intelligence);
             int fromTier = PlayerStats.StatsToFlat(tier);
             float i = 0f, skillI = 0f;
             EquipmentWorld.Instance?.GetEquipStatBonuses(_clientId, out _, out _, out i);

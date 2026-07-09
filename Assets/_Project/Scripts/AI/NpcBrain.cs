@@ -733,12 +733,28 @@ namespace ProjectC.AI
                 Vector3 targetPoint = CalculateThrowTarget(skillConfig.throwRange);
                 CombatServer.Instance.ResolveSkillCast(attackerId, skillId, 0UL, sourceId, targetPoint);
 
+                // T-VFX01: Projectile VFX для NPC-гранат
+                var vfxService = ProjectC.Skills.Vfx.SkillVfxService.Instance;
+                if (vfxService != null)
+                {
+                    var impactCfg = skillConfig;
+                    Vector3 impactPos = targetPoint;
+                    vfxService.PlayProjectileVfx(impactCfg, transform.position, targetPoint,
+                        onArrived: () =>
+                        {
+                            vfxService.PlayImpactVfx(impactCfg, impactPos,
+                                ProjectC.Combat.Core.DamageType.Explosive, false);
+                        });
+                }
 #if UNITY_EDITOR || DEVELOPMENT_BUILD
-                // R4: ThrowArcVisual для визуальной отладки
-                float flightTime = Vector3.Distance(transform.position, targetPoint) / 15f;
-                ProjectC.Combat.Client.ThrowArcVisual.Fire(
-                    transform.position, targetPoint, flightTime,
-                    skillConfig.aoeSize, new Color(1f, 0.4f, 0.2f, 0.8f));
+                else
+                {
+                    // Fallback: старый ThrowArcVisual (editor only)
+                    float flightTime = Vector3.Distance(transform.position, targetPoint) / 15f;
+                    ProjectC.Combat.Client.ThrowArcVisual.Fire(
+                        transform.position, targetPoint, flightTime,
+                        skillConfig.aoeSize, new Color(1f, 0.4f, 0.2f, 0.8f));
+                }
 #endif
             }
             else if (isAoe || isRanged)
@@ -751,6 +767,14 @@ namespace ProjectC.AI
             }
 
             _lastAttackTime = Time.unscaledTime;
+
+            // T-VFX01: Cast VFX для NPC (muzzle flash / заряд) — перед анимацией
+            var npcVfxService = ProjectC.Skills.Vfx.SkillVfxService.Instance;
+            if (npcVfxService != null && skillConfig != null)
+            {
+                npcVfxService.PlayCastVfx(skillConfig, transform);
+            }
+
             PlaySkillAnimation(skillSource);
 
             // E1: AOE debug visualization (Editor/Dev only)

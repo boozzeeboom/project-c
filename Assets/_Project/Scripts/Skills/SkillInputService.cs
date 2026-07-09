@@ -485,12 +485,20 @@ namespace ProjectC.Skills
                         float dist = Vector3.Distance(_ownerPlayer.transform.position, targetPoint);
                         float flightTime = Mathf.Clamp(dist / 20f, 0.3f, 1.5f);
 
-                        // T-VFX01: Projectile VFX через SkillVfxService (вместо ThrowArcVisual).
+                        // T-VFX01: Projectile VFX через SkillVfxService.
                         var vfxService = SkillVfxService.Instance;
                         if (vfxService != null)
                         {
+                            // onArrived: при приземлении снаряда → impact VFX
+                            Vector3 impactPos = targetPoint;
+                            var impactConfig = skillConfig;
                             vfxService.PlayProjectileVfx(skillConfig,
-                                _ownerPlayer.transform.position, targetPoint);
+                                _ownerPlayer.transform.position, targetPoint,
+                                onArrived: () =>
+                                {
+                                    vfxService.PlayImpactVfx(impactConfig, impactPos,
+                                        ProjectC.Combat.Core.DamageType.Explosive, false);
+                                });
                         }
                         else
                         {

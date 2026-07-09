@@ -1,7 +1,7 @@
 // Project C: Skills VFX — Phase 1
 // VfxObjectPool: общий пул GameObject'ов для VFX.
 // По паттерну DamageNumberService — prewarm при старте, expandable.
-// Один пул на префаб (ключ — InstanceID префаба).
+// Ключ — сам префаб (GameObject reference).
 //
 // 2D-ready: в Phase 3 появится SpriteVfxPool с аналогичным интерфейсом.
 
@@ -15,11 +15,10 @@ namespace ProjectC.Skills.Vfx
     /// </summary>
     public class VfxObjectPool
     {
-        private readonly Dictionary<int, Queue<GameObject>> _pools = new Dictionary<int, Queue<GameObject>>();
+        private readonly Dictionary<GameObject, Queue<GameObject>> _pools = new Dictionary<GameObject, Queue<GameObject>>();
         private readonly Transform _poolRoot;
 
-        private const int DefaultPrewarm = 5;
-        private const int MaxPoolSize = 20;
+        private const int DefaultPrewarm = 3;
 
         public VfxObjectPool(Transform poolRoot)
         {
@@ -31,13 +30,16 @@ namespace ProjectC.Skills.Vfx
         /// </summary>
         public GameObject Get(GameObject prefab, Vector3 position, Quaternion rotation)
         {
-            if (prefab == null) return null;
+            if (prefab == null)
+            {
+                Debug.LogWarning("[VfxObjectPool] Get: prefab is null");
+                return null;
+            }
 
-            int key = (int)EntityId.ToULong(prefab.GetEntityId());
-            if (!_pools.TryGetValue(key, out var queue))
+            if (!_pools.TryGetValue(prefab, out var queue))
             {
                 queue = new Queue<GameObject>();
-                _pools[key] = queue;
+                _pools[prefab] = queue;
                 Prewarm(prefab, queue, DefaultPrewarm);
             }
 
@@ -45,13 +47,24 @@ namespace ProjectC.Skills.Vfx
             if (queue.Count > 0)
             {
                 instance = queue.Dequeue();
-                instance.transform.SetPositionAndRotation(position, rotation);
-                instance.SetActive(true);
+                if (instance != null)
+                {
+                    instance.transform.SetPositionAndRotation(position, rotation);
+                    instance.SetActive(true);
+                }
+                else
+                {
+                    // Stale reference — создаём новый
+                    instance = Object.Instantiate(prefab, position, rotation, _poolRoot);
+                }
             }
             else
             {
                 instance = Object.Instantiate(prefab, position, rotation, _poolRoot);
             }
+
+            if (instance == null)
+                Debug.LogWarning($"[VfxObjectPool] Get: failed to instantiate prefab '{prefab.name}'");
 
             return instance;
         }
@@ -64,12 +77,6 @@ namespace ProjectC.Skills.Vfx
             if (instance == null) return;
             instance.SetActive(false);
             instance.transform.SetParent(_poolRoot);
-
-            // Определяем ключ по имени префаба (убираем "(Clone)")
-            // Fallback: просто деактивируем, не пытаемся положить в конкретную очередь.
-            // Проще: вместо поиска ключа — просто деактивируем и оставляем в _poolRoot.
-            // При следующем Get — если очередь пуста, создастся новый.
-            // Это не идеальный pool, но покрывает 90% случаев без сложного tracking'а.
         }
 
         /// <summary>
@@ -93,8 +100,11 @@ namespace ProjectC.Skills.Vfx
             for (int i = 0; i < count; i++)
             {
                 var instance = Object.Instantiate(prefab, Vector3.zero, Quaternion.identity, _poolRoot);
-                instance.SetActive(false);
-                queue.Enqueue(instance);
+                if (instance != null)
+                {
+                    instance.SetActive(false);
+                    queue.Enqueue(instance);
+                }
             }
         }
     }

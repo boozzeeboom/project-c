@@ -181,9 +181,13 @@ namespace ProjectC.AI
                 _minDistanceFromOtherNpc = _config.minDistanceFromOtherNpc;
                 // T-NPC-08 v0.2: read activationRadius too.
                 activationRadius = _config.activationRadius;
-                // T-NPC-11: spawn cycle.
-                _spawnMode = _config.spawnMode;
-                _totalSpawnLimit = _config.totalSpawnLimit;
+                // T-NPC-11: spawn cycle — only override from SO if explicitly non-default.
+                // Designer can set _spawnMode/_totalSpawnLimit directly on the component;
+                // the SO only wins when it has a meaningful non-default value.
+                if (_config.spawnMode != SpawnMode.Infinite)
+                    _spawnMode = _config.spawnMode;
+                if (_config.totalSpawnLimit > 0)
+                    _totalSpawnLimit = _config.totalSpawnLimit;
             }
         }
 

@@ -1669,6 +1669,52 @@ SphereCollider:
   serializedVersion: 3
   m_Radius: 1
   m_Center: {x: 0, y: 0, z: 0}
+--- !u!1 &208563499
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 208563501}
+  - component: {fileID: 208563500}
+  m_Layer: 0
+  m_Name: SPawntimer
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!114 &208563500
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 208563499}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: cda0b79abc1a274468bab3c6f0b4eb01, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::ProjectC.AI.SpawnRestartTimer
+  delaySeconds: 30
+  startOnAwake: 0
+--- !u!4 &208563501
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 208563499}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 2977119022265116453}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!21 &228203403
 Material:
   serializedVersion: 8
@@ -2701,6 +2747,9 @@ MonoBehaviour:
   _autoPopulateChunks: 0
   _chunkSpawnRadius: 30
   _maxAlivePerChunk: 20
+  _spawnMode: 0
+  _totalSpawnLimit: 0
+  _restartTriggers: []
 --- !u!114 &391879216
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -13677,6 +13726,66 @@ MeshFilter:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 1782230265}
   m_Mesh: {fileID: 10209, guid: 0000000000000000e000000000000000, type: 0}
+--- !u!1 &1786462385
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 1786462387}
+  - component: {fileID: 1786462386}
+  m_Layer: 0
+  m_Name: Spawnevent
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!114 &1786462386
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1786462385}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: c2f96318e15bfe8409bf0f12fd1db892, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::ProjectC.AI.SpawnRestartUnityEvent
+  onRestartRequested:
+    m_PersistentCalls:
+      m_Calls:
+      - m_Target: {fileID: 1642752979}
+        m_TargetAssemblyTypeName: 
+        m_MethodName: 
+        m_Mode: 0
+        m_Arguments:
+          m_ObjectArgument: {fileID: 0}
+          m_ObjectArgumentAssemblyTypeName: 
+          m_IntArgument: 0
+          m_FloatArgument: 0
+          m_StringArgument: 
+          m_BoolArgument: 0
+        m_CallState: 2
+  resetOnCycleStart: 1
+--- !u!4 &1786462387
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1786462385}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 2977119022265116453}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1 &1796687223
 GameObject:
   m_ObjectHideFlags: 0
@@ -15555,6 +15664,12 @@ PrefabInstance:
     - targetCorrespondingSourceObject: {fileID: 5161824931232467223, guid: 5f4dcf8edbc15014d83fd2bcd92d3f67, type: 3}
       insertIndex: -1
       addedObject: {fileID: 121584561}
+    - targetCorrespondingSourceObject: {fileID: 5161824931232467223, guid: 5f4dcf8edbc15014d83fd2bcd92d3f67, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 208563501}
+    - targetCorrespondingSourceObject: {fileID: 5161824931232467223, guid: 5f4dcf8edbc15014d83fd2bcd92d3f67, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 1786462387}
     m_AddedComponents:
     - targetCorrespondingSourceObject: {fileID: 4649566693282215820, guid: 5f4dcf8edbc15014d83fd2bcd92d3f67, type: 3}
       insertIndex: -1
@@ -15617,6 +15732,11 @@ MonoBehaviour:
   _autoPopulateChunks: 0
   _chunkSpawnRadius: 30
   _maxAlivePerChunk: 20
+  _spawnMode: 1
+  _totalSpawnLimit: 4
+  _restartTriggers:
+  - {fileID: 208563500}
+  - {fileID: 1786462386}
 --- !u!4 &2977119022265116453 stripped
 Transform:
   m_CorrespondingSourceObject: {fileID: 5161824931232467223, guid: 5f4dcf8edbc15014d83fd2bcd92d3f67, type: 3}

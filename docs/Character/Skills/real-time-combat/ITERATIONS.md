@@ -1,5 +1,22 @@
 # Итерации реализации — Ranged & Throwables
 
+## Итерация от 2026-07-31 (#2)
+
+**Задача:** VFX Phase 1 — Runtime инфраструктура (ISkillVfxProvider + SkillVfxService + Pool)
+**Документ:** `docs/Character/Skills/Battle/85_VFX_DESIGN.md`
+**Коммит:** `2712819` — T-VFX01: Phase 1 — VFX runtime infrastructure
+
+**Изменения:**
+- `Assets/_Project/Scripts/Skills/Vfx/ISkillVfxProvider.cs` — NEW: интерфейс абстракции
+- `Assets/_Project/Scripts/Skills/Vfx/ParticleSystemVfxProvider.cs` — NEW: 3D-реализация
+- `Assets/_Project/Scripts/Skills/Vfx/SkillVfxService.cs` — NEW: синглтон-сервис
+- `Assets/_Project/Scripts/Skills/Vfx/VfxObjectPool.cs` — NEW: object pool
+- `Assets/_Project/Scripts/Skills/Vfx/VfxBoneResolver.cs` — NEW: резолв костей
+- `Assets/_Project/Scripts/Skills/Vfx/DamageTypeColors.cs` — NEW: маппинг DamageType→Color
+- `Assets/_Project/Scripts/Skills/SkillInputService.cs` — +cast VFX, +VFX-провайдер в throw-пути
+- `Assets/_Project/Scripts/Combat/Client/CombatClientState.cs` — +impact VFX
+- `Assets/_Project/Scripts/Core/NetworkManagerController.cs` — +CreateSkillVfxService()
+
 ## Итерация от 2026-07-31
 
 **Задача:** VFX Phase 0 — Data Model: поля в SkillNodeConfig + Editor + SpriteAnimationAsset stub

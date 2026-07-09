@@ -34,6 +34,7 @@ MonoBehaviour:
   treeX: 50
   treeY: 400
   isActive: 1
+  cooldownSeconds: 0.5
   attackClip: {fileID: 0}
   attackClipSpeed: 1
   aoeFormula: 2
@@ -45,3 +46,19 @@ MonoBehaviour:
   throwRange: 50.3
   throwScatter: 3
   throwCount: 10
+  rangedMaxRange: 30
+  rangedHitChance: 70
+  castVfxPrefab: {fileID: 8141890110321190011, guid: fbc39aa31aa806848bc1a22189c1a8b4, type: 3}
+  castSpawnPoint: 0
+  castVfxDuration: 0.2
+  castVfxDelay: 0
+  projectileVfxPrefab: {fileID: 3916579401547798723, guid: da6423e8dd3ef914abd17928fc68ed82, type: 3}
+  projectileSpeed: 20
+  projectileArcHeight: 4
+  projectileTrailMaterial: {fileID: 0}
+  impactVfxPrefab: {fileID: 4541538890110885610, guid: 16873b309edd5eb4da1622d0f30e44a2, type: 3}
+  impactScaleByDamage: 0
+  impactColorByDamageType: 1
+  impactVfxDuration: 0.4
+  twoDVfxAnimation: {fileID: 0}
+  twoDFps: 12

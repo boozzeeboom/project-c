@@ -5,6 +5,28 @@
 =======
 # Итерации реализации Unified NPC Behavior Architecture
 
+## Итерация от 2026-07-29 — Spawn Cycle Control
+
+**Задача:** Управление циклами спавна: конечные волны мобов с настраиваемыми условиями перезапуска.
+Дизайнер может в Editor собрать условия из готовых компонентов (таймер, триггер-зона, UnityEvent)
+и подключить к спавнеру drag-and-drop.
+
+**Коммит:** `b16db62` — T-NPC-11: Spawn Cycle Control — конечные волны и перезапуск спавна через ISpawnRestartTrigger
+
+**Изменения:**
+- `NpcSpawner.cs` — SpawnMode enum (Infinite/Finite/FiniteCycle), cycle FSM, интеграция ISpawnRestartTrigger
+- `NpcSpawnerConfig.cs` — +spawnMode, +totalSpawnLimit
+- `ISpawnRestartTrigger.cs` — (NEW) интерфейс для компонентов перезапуска
+- `SpawnRestartTimer.cs` — (NEW) перезапуск через N секунд после exhaust
+- `SpawnRestartTriggerZone.cs` — (NEW) перезапуск по входу/выходу в триггер-зону
+- `SpawnRestartUnityEvent.cs` — (NEW) ручной перезапуск через Restart() из скрипта/инспектора
+- `SpawnRestartGate.cs` — (NEW) AND/OR-композитор нескольких триггеров
+- `07_SPAWN_CYCLE_CONTROL.md` — (NEW) архитектурный документ
+
+**Тикеты:** T-NPC-11a, T-NPC-11b, T-NPC-11c
+
+---
+
 ## Итерация от 2026-07-15 — Phase 1: «Живой NPC»
 
 **Задача:** Реализация Phase 1 (P0) согласно `04_UNIFIED_BEHAVIOR_ARCHITECTURE.md`:

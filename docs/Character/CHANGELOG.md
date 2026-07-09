@@ -5,6 +5,23 @@
 
 ---
 
+## 2026-07-09 — P8: Equipment multipliers applied (d609dbb)
+
+**Сессия:** P8 из `13_SESSION_CONTINUATION.md` — множители экипировки теперь учитываются.
+
+### Формула
+```
+effective = (StatsToFlat(tier) + flatBonus) * (1.0 + sumMultipliers)
+combatDmg = (tierFlat + equipFlat + skillFlat) * (1.0 + equipMult)
+```
+
+### Изменённые файлы (3)
+- `EquipmentWorld.cs` — `GetEquipStatBonuses` с 6 out-параметрами (flat + mult) + backward-compat overload
+- `StatsServer.cs` — `SendSnapshotToOwner` / `RecomputeAndSendSnapshot`: effective с multiplier
+- `PlayerAttacker.cs` — `GetStrength/Dex/Int`: combat damage с multiplier
+
+---
+
 ## 2026-07-09 — P1: PlayerStats flat struct → StatBucket (f4ca1af)
 
 **Сессия:** P1 из `13_SESSION_CONTINUATION.md` — замена 3×3 flat struct на StatBucket группировку.

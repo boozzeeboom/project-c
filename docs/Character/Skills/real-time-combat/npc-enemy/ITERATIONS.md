@@ -1,4 +1,29 @@
 **Осталось (не в этом коммите):**
+- 🟡 P3: Монолит NpcSocialBrain (рефакторинг отложен)=======
+=======
+=======
+=======
+# Итерации реализации Unified NPC Behavior Architecture
+=======
+=======
+**Осталось (не в этом коммите):**
+- 🟡 P3: Монолит NpcSocialBrain (рефакторинг отложен)
+
+=======
+## Итерация от 2026-07-30 (fix) — GetEffectiveAttackRange по скилам
+
+**Задача:** NPC с дальними скилами (Grenade/Bow) подходили в упор — `HandleChase` использовал фиксированный `attackRange` (2.5м).
+
+**Коммит:** `bb98e13` — fix NPC approach range
+
+**Изменения:**
+- `NpcBrain.cs` — `GetEffectiveAttackRange()`: max из `attackRange` + всех `skillSource.GetRange()` + `throwRange` + `rangedMaxRange`
+- `HandleChase`: `dist <= GetEffectiveAttackRange()` вместо `dist <= attackRange`
+- `HandleAttack`: `dist > GetEffectiveAttackRange() * 1.3f` вместо `dist > attackRange * 1.3f`
+
+**Результат:** NPC с Grenade (throwRange=50м) останавливается на 50м и бросает. NPC с Bow (200м) атакует с дистанции.
+
+=======**Осталось (не в этом коммите):**
 - 🟡 P3: Монолит NpcSocialBrain (рефакторинг отложен)
 =======
 =======

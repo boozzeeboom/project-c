@@ -534,46 +534,67 @@
     padding: 2px !important;
 }
 .stat-row-compact {
-    flex-direction: column !important;
-    align-items: stretch !important;
+    flex-direction: row !important;
+    align-items: center !important;
     margin-bottom: 3px !important;
-    padding: 3px 4px !important;
+    padding: 3px 5px !important;
     background-color: rgba(30, 40, 60, 0.5) !important;
     border-radius: 3px !important;
+    border-width: 1px !important;
+    border-color: rgba(80, 100, 140, 0.25) !important;
+    min-height: 26px !important;
 }
 .stat-label-compact {
+    width: 30px !important;
     font-size: 10px !important;
     color: rgb(220, 220, 240) !important;
-    margin-bottom: 1px !important;
     -unity-font-style: bold !important;
+    flex-shrink: 0 !important;
+    -unity-text-align: middle-left !important;
 }
-.stat-bar-compact {
-    height: 12px !important;
-    margin-bottom: 1px !important;
-    border-width: 1px !important;
-    border-color: rgba(80, 100, 130, 0.5) !important;
-    border-radius: 2px !important;
-    background-color: rgba(20, 25, 35, 0.6) !important;
-}
+/* Per-stat label tint */
+.stat-label-str { color: rgb(255, 130, 110) !important; }
+.stat-label-dex { color: rgb(130, 230, 130) !important; }
+.stat-label-int { color: rgb(130, 170, 255) !important; }
+
 .stat-value-compact {
-    font-size: 10px !important;
+    width: 105px !important;
+    font-size: 9px !important;
     color: rgb(200, 220, 200) !important;
     -unity-text-align: middle-right !important;
-    -unity-font-style: bold !important;
+    flex-shrink: 0 !important;
+    white-space: nowrap !important;
 }
 
-/* ProgressBar internal fill (Unity UI Toolkit) */
-.stat-bar-compact > .unity-progress-bar__container {
-    background-color: rgba(20, 25, 35, 0.8) !important;
+/* Stat bar — custom bg+fill (same pattern as ship-bar) */
+.stat-bar-bg {
+    flex-grow: 1 !important;
+    flex-shrink: 1 !important;
+    height: 10px !important;
+    background-color: rgba(40, 55, 85, 0.6) !important;
+    border-radius: 4px !important;
+    overflow: hidden !important;
+    min-width: 30px !important;
+    margin-left: 5px !important;
+    margin-right: 5px !important;
+}
+.stat-bar-fill {
+    width: 0% !important;
     height: 100% !important;
-    border-radius: 2px !important;
-    margin: 0 !important;
+    border-radius: 4px !important;
+    transition-property: width !important;
+    transition-duration: 0.3s !important;
 }
-.stat-bar-compact > .unity-progress-bar__container > .unity-progress-bar__progress {
-    background-color: rgb(120, 180, 140) !important;
-    border-radius: 2px !important;
-    min-width: 4px !important;
-}
+/* Per-stat fill colors — always visible */
+.stat-bar-fill-str { background-color: rgb(210, 65, 60) !important; }
+.stat-bar-fill-dex { background-color: rgb(55, 175, 65) !important; }
+.stat-bar-fill-int { background-color: rgb(60, 100, 210) !important; }
+
+/* Tier-override glow classes (applied via C# ApplyTierClass) — subtle border, no color override */
+.stat-row-tier-low  { border-color: rgba(120, 120, 120, 0.4) !important; }
+.stat-row-tier-mid  { border-color: rgba(150, 180, 220, 0.5) !important; }
+.stat-row-tier-high { border-color: rgba(200, 150, 255, 0.5) !important; }
+.stat-row-tier-master { border-color: rgba(255, 215, 60, 0.7) !important; background-color: rgba(50, 40, 20, 0.6) !important; }
 
 /* === Actions / Message === */
 .actions {

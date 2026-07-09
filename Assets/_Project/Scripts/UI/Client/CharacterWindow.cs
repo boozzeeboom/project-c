@@ -113,11 +113,11 @@ namespace ProjectC.UI.Client
         private ListView _questsFailedList;
         private ListView _questsDiscoveredList;
 
-        private ProgressBar _statStrBar;
+        private VisualElement _statStrBarFill;
         private Label _statStrValue;
-        private ProgressBar _statDexBar;
+        private VisualElement _statDexBarFill;
         private Label _statDexValue;
-        private ProgressBar _statIntBar;
+        private VisualElement _statIntBarFill;
         private Label _statIntValue;
         private VisualElement _statStrRow;
         private VisualElement _statDexRow;
@@ -534,16 +534,18 @@ namespace ProjectC.UI.Client
             _questsSection = _root.Q<VisualElement>("quests-section");
             _filtersRow = _root.Q<VisualElement>("filters-row");
 
-            // T-P16: stat-row-progress refs (3 stat bars + 3 value labels)
-            _statStrBar = _root.Q<ProgressBar>("stat-str-bar");
+            // T-P16: stat-row-progress refs (3 stat bars + 3 value labels) — custom fill VisualElements
+            _statStrBarFill = _root.Q<VisualElement>("stat-str-bar-fill");
             _statStrValue = _root.Q<Label>("stat-str-value");
-            _statDexBar = _root.Q<ProgressBar>("stat-dex-bar");
+            _statDexBarFill = _root.Q<VisualElement>("stat-dex-bar-fill");
             _statDexValue = _root.Q<Label>("stat-dex-value");
-            _statIntBar = _root.Q<ProgressBar>("stat-int-bar");
+            _statIntBarFill = _root.Q<VisualElement>("stat-int-bar-fill");
             _statIntValue = _root.Q<Label>("stat-int-value");
-            _statStrRow = _statStrBar != null ? _statStrBar.parent as VisualElement : null;
-            _statDexRow = _statDexBar != null ? _statDexBar.parent as VisualElement : null;
-            _statIntRow = _statIntBar != null ? _statIntBar.parent as VisualElement : null;
+            _statStrRow = _statStrBarFill != null ? _statStrBarFill.parent?.parent as VisualElement : null;
+            _statDexRow = _statDexBarFill != null ? _statDexBarFill.parent?.parent as VisualElement : null;
+            _statIntRow = _statIntBarFill != null ? _statIntBarFill.parent?.parent as VisualElement : null;
+
+            // Per-stat bar colors now via USS classes (stat-bar-fill-str/dex/int) — no inline overrides needed.
 
             // T-P17: clothing/modules containers (SESSION 2: ручные rows вместо ListView)
             _clothingContainer = _root.Q<VisualElement>("clothing-container");
@@ -1926,7 +1928,7 @@ namespace ProjectC.UI.Client
 
             private void HandleStatsSnapshot(ProjectC.Stats.Dto.StatsSnapshotDto snap)
             {
-                if (_debugLogging) Debug.Log($"[CharacterWindow] HandleStatsSnapshot: STR={snap.strength:F2} DEX={snap.dexterity:F2} INT={snap.intelligence:F2} | refs: strBar={_statStrBar!=null} dexBar={_statDexBar!=null} intBar={_statIntBar!=null} strVal={_statStrValue!=null}");
+                if (_debugLogging) Debug.Log($"[CharacterWindow] HandleStatsSnapshot: STR={snap.strength:F2} DEX={snap.dexterity:F2} INT={snap.intelligence:F2} | refs: strBar={_statStrBarFill!=null} dexBar={_statDexBarFill!=null} intBar={_statIntBarFill!=null} strVal={_statStrValue!=null}");
                 RefreshStatsDisplay(snap);
             }
 
@@ -1936,79 +1938,72 @@ namespace ProjectC.UI.Client
             /// </summary>
             private void RefreshStatsDisplay(ProjectC.Stats.Dto.StatsSnapshotDto snap)
             {
-                // STR (effective = base + equip bonus)
-                if (_statStrBar != null)
+                // STR — bar uses current XP / XP-for-next-tier (within-tier progress)
+                if (_statStrBarFill != null)
                 {
-                    float maxStr = snap.strengthXpForNextTier > 0 ? snap.strengthXpForNextTier : 100f;
-                    _statStrBar.value = Mathf.Clamp01(snap.effectiveStrength / maxStr);
-                    ApplyTierClass(_statStrBar, snap.strengthTier);
+                    float maxXp = snap.strengthXpForNextTier > 0 ? snap.strengthXpForNextTier : 100f;
+                    float pct = Mathf.Clamp01(snap.strength / maxXp) * 100f;
+                    _statStrBarFill.style.width = new StyleLength(new Length(pct, LengthUnit.Percent));
+                    ApplyTierClass(_statStrRow, snap.strengthTier);
                 }
                 if (_statStrValue != null)
                 {
                     string bonusStr = (snap.effectiveStrength - snap.strength > 0.01f) ? $" (+{snap.effectiveStrength - snap.strength:F0})" : "";
-                    _statStrValue.text = $"{snap.effectiveStrength:F1}/{snap.strengthXpForNextTier:F0} T{snap.strengthTier}{bonusStr}";
+                    _statStrValue.text = $"{snap.effectiveStrength:F1}  {snap.strength:F0}/{snap.strengthXpForNextTier:F0}  T{snap.strengthTier}{bonusStr}";
                 }
-                if (_statStrRow != null) ApplyRowClass(_statStrRow, snap.strengthTier);
 
                 // DEX
-                if (_statDexBar != null)
+                if (_statDexBarFill != null)
                 {
-                    float maxDex = snap.dexterityXpForNextTier > 0 ? snap.dexterityXpForNextTier : 100f;
-                    _statDexBar.value = Mathf.Clamp01(snap.effectiveDexterity / maxDex);
-                    ApplyTierClass(_statDexBar, snap.dexterityTier);
+                    float maxXp = snap.dexterityXpForNextTier > 0 ? snap.dexterityXpForNextTier : 100f;
+                    float pct = Mathf.Clamp01(snap.dexterity / maxXp) * 100f;
+                    _statDexBarFill.style.width = new StyleLength(new Length(pct, LengthUnit.Percent));
+                    ApplyTierClass(_statDexRow, snap.dexterityTier);
                 }
                 if (_statDexValue != null)
                 {
                     string bonusDex = (snap.effectiveDexterity - snap.dexterity > 0.01f) ? $" (+{snap.effectiveDexterity - snap.dexterity:F0})" : "";
-                    _statDexValue.text = $"{snap.effectiveDexterity:F1}/{snap.dexterityXpForNextTier:F0} T{snap.dexterityTier}{bonusDex}";
+                    _statDexValue.text = $"{snap.effectiveDexterity:F1}  {snap.dexterity:F0}/{snap.dexterityXpForNextTier:F0}  T{snap.dexterityTier}{bonusDex}";
                 }
-                if (_statDexRow != null) ApplyRowClass(_statDexRow, snap.dexterityTier);
 
                 // INT
-                if (_statIntBar != null)
+                if (_statIntBarFill != null)
                 {
-                    float maxInt = snap.intelligenceXpForNextTier > 0 ? snap.intelligenceXpForNextTier : 100f;
-                    _statIntBar.value = Mathf.Clamp01(snap.effectiveIntelligence / maxInt);
-                    ApplyTierClass(_statIntBar, snap.intelligenceTier);
+                    float maxXp = snap.intelligenceXpForNextTier > 0 ? snap.intelligenceXpForNextTier : 100f;
+                    float pct = Mathf.Clamp01(snap.intelligence / maxXp) * 100f;
+                    _statIntBarFill.style.width = new StyleLength(new Length(pct, LengthUnit.Percent));
+                    ApplyTierClass(_statIntRow, snap.intelligenceTier);
                 }
                 if (_statIntValue != null)
                 {
                     string bonusInt = (snap.effectiveIntelligence - snap.intelligence > 0.01f) ? $" (+{snap.effectiveIntelligence - snap.intelligence:F0})" : "";
-                    _statIntValue.text = $"{snap.effectiveIntelligence:F1}/{snap.intelligenceXpForNextTier:F0} T{snap.intelligenceTier}{bonusInt}";
+                    _statIntValue.text = $"{snap.effectiveIntelligence:F1}  {snap.intelligence:F0}/{snap.intelligenceXpForNextTier:F0}  T{snap.intelligenceTier}{bonusInt}";
                 }
-                if (_statIntRow != null) ApplyRowClass(_statIntRow, snap.intelligenceTier);
             }
 
             /// <summary>
-            /// Apply tier-low/mid/high/master CSS class к ProgressBar's inner fill (per roadmap Q4.3 + T-P15 USS).
+            /// Apply tier-based CSS class to the stat row (border glow, no fill-color override).
             /// Thresholds: low=T0-T2, mid=T3-T5, high=T6-T9, master=T10+.
+            /// Per-stat fill colors (red/green/blue) come from USS and are never overridden.
             /// </summary>
-            private void ApplyTierClass(UnityEngine.UIElements.ProgressBar bar, int tier)
-            {
-                if (bar == null) return;
-                // ProgressBar в Unity 6: fill через `bar.Q<VisualElement>(className: "unity-progress-bar__progress")`
-                // Или просто на сам bar — T-P15 USS имеет `.stat-progress-fill.tier-*` для внутреннего fill.
-                // Apply к bar (для cascading) — USS применится к inner fill через `.stat-progress-fill` selector
-                bar.RemoveFromClassList("tier-low");
-                bar.RemoveFromClassList("tier-mid");
-                bar.RemoveFromClassList("tier-high");
-                bar.RemoveFromClassList("tier-master");
-                string tierClass = tier switch
-                {
-                    <= 2 => "tier-low",
-                    <= 5 => "tier-mid",
-                    <= 9 => "tier-high",
-                    _    => "tier-master",
-                };
-                bar.AddToClassList(tierClass);
-            }
-
-            private void ApplyRowClass(UnityEngine.UIElements.VisualElement row, int tier)
+            private void ApplyTierClass(VisualElement row, int tier)
             {
                 if (row == null) return;
-                row.RemoveFromClassList("tier-promoted");
-                if (tier > 0) row.AddToClassList("tier-promoted"); // visual marker на T>0
+                row.RemoveFromClassList("stat-row-tier-low");
+                row.RemoveFromClassList("stat-row-tier-mid");
+                row.RemoveFromClassList("stat-row-tier-high");
+                row.RemoveFromClassList("stat-row-tier-master");
+                string cls = tier switch
+                {
+                    <= 2 => "stat-row-tier-low",
+                    <= 5 => "stat-row-tier-mid",
+                    <= 9 => "stat-row-tier-high",
+                    _    => "stat-row-tier-master",
+                };
+                row.AddToClassList(cls);
             }
+
+            // ApplyRowClass removed — merged into ApplyTierClass above.
 
             /// <summary>
             /// FIX 2026-06-17: pre-fill equipment cache с пустыми слотами (до первого snapshot).

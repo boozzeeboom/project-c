@@ -7,6 +7,7 @@
 // resolve via GetComponentInParent in T-C04 hooks.
 using System.Collections.Generic;
 using UnityEngine;
+using ProjectC.Core;
 
 namespace ProjectC.Crafting
 {
@@ -123,7 +124,28 @@ namespace ProjectC.Crafting
                     {
                         // T1: прямой вызов вместо reflection (CraftingStation.CompleteCraft уже public)
                         var cs = st as CraftingStation;
-                        if (cs != null) cs.CompleteCraft();
+                        if (cs != null)
+                        {
+                            cs.CompleteCraft();
+
+                            // L1: публикуем WorldEvent для StatsServer (XP за крафт)
+                            var recipe = GetRecipe(job.RecipeId);
+                            int totalQty = 0;
+                            if (recipe != null && recipe.Outputs != null)
+                            {
+                                foreach (var o in recipe.Outputs)
+                                    if (o.item != null) totalQty += o.quantity;
+                            }
+                            WorldEventBus.Publish(new CraftingCompletedEvent
+                            {
+                                PlayerId = job.OwnerClientId,
+                                StationNetId = job.StationNetId,
+                                RecipeId = job.RecipeId.ToString(),
+                                ResultItemName = job.ResultItemName ?? "",
+                                Quantity = totalQty,
+                                TimestampUnix = System.DateTimeOffset.UtcNow.ToUnixTimeSeconds()
+                            });
+                        }
                     }
                 }
             }

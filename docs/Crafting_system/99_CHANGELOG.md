@@ -96,6 +96,7 @@
 - ✅ **T7** — удалён мёртвый файл `Dto/CraftingDtos.cs`
 - ✅ **T5** — `CollectRpc`: выдача предметов обёрнута в try-finally, `ServerCollect()` в finally (`CraftingServer.cs`)
 - ✅ Добавлены недостающие using'и (`ProjectC.Core`, `ProjectC.Items`)
+- ✅ **L1** — публикация `CraftingCompletedEvent` через `WorldEventBus.Publish()` в `CraftingWorld.OnTick()` при завершении крафта (`CraftingWorld.cs`)
 
 **Компиляция:** 0 errors ✅
 

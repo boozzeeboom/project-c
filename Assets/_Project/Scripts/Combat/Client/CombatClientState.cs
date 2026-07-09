@@ -9,6 +9,7 @@ using System;
 using UnityEngine;
 using ProjectC.Combat.Core;
 using ProjectC.Combat.Network;
+using ProjectC.Skills.Vfx;  // T-VFX01: SkillVfxService
 
 namespace ProjectC.Combat.Client
 {
@@ -53,6 +54,20 @@ namespace ProjectC.Combat.Client
         {
             var result = ToResult(dto);
             OnAttackLanded?.Invoke(result);
+
+            // T-VFX01: Impact VFX для всех попаданий.
+            if (result.isHit)
+            {
+                var vfxService = SkillVfxService.Instance;
+                if (vfxService != null)
+                {
+                    // Ищем SkillNodeConfig по skillId из DTO (если передан).
+                    // DTO пока не несёт skillId — impact будет без config'а (generic).
+                    // В Phase 2 добавим skillId в DamageResultDto.
+                    vfxService.PlayImpactVfx(null, result.targetPosition,
+                        result.damageType, result.isCrit);
+                }
+            }
 
             // Phase R2: ProjectileVisual для ranged атак (Ballistic/Mesium).
             if (result.isHit && (result.damageType == DamageType.Ballistic || result.damageType == DamageType.Mesium))

@@ -28,6 +28,7 @@ using ProjectC.Player;  // NetworkPlayer
 using ProjectC.Input;  // InputBindingsRuntime
 using ProjectC.Items;  // ItemType, InventoryWorld
 using ProjectC.Items.Client;  // InventoryClientState
+using ProjectC.Skills.Vfx;  // T-VFX01: SkillVfxService
 
 namespace ProjectC.Skills
 {
@@ -434,6 +435,17 @@ namespace ProjectC.Skills
                 _animator.SetTrigger(trigger);
             }
 
+            // 7.5) T-VFX01: Cast VFX (muzzle flash / заряд) — сразу после анимации, до RPC.
+            if (!skipAnimation && skillConfig != null)
+            {
+                var vfxService = SkillVfxService.Instance;
+                if (vfxService != null)
+                {
+                    Transform character = _ownerPlayer != null ? _ownerPlayer.transform : transform;
+                    vfxService.PlayCastVfx(skillConfig, character);
+                }
+            }
+
             // 8) RPC на сервер.
             try
             {
@@ -473,10 +485,21 @@ namespace ProjectC.Skills
                         float dist = Vector3.Distance(_ownerPlayer.transform.position, targetPoint);
                         float flightTime = Mathf.Clamp(dist / 20f, 0.3f, 1.5f);
 
-                        Color arcColor = new Color(1f, 0.4f, 0.1f);
-                        ProjectC.Combat.Client.ThrowArcVisual.Fire(
-                            _ownerPlayer.transform.position, targetPoint, flightTime,
-                            skillConfig.aoeSize, arcColor);
+                        // T-VFX01: Projectile VFX через SkillVfxService (вместо ThrowArcVisual).
+                        var vfxService = SkillVfxService.Instance;
+                        if (vfxService != null)
+                        {
+                            vfxService.PlayProjectileVfx(skillConfig,
+                                _ownerPlayer.transform.position, targetPoint);
+                        }
+                        else
+                        {
+                            // Fallback: старый примитивный ThrowArcVisual.
+                            Color arcColor = new Color(1f, 0.4f, 0.1f);
+                            ProjectC.Combat.Client.ThrowArcVisual.Fire(
+                                _ownerPlayer.transform.position, targetPoint, flightTime,
+                                skillConfig.aoeSize, arcColor);
+                        }
 
                         if (skillConfig.debugVisualizeAoe)
                         {

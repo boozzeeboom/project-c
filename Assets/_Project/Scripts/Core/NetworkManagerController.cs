@@ -148,6 +148,8 @@ namespace ProjectC.Core
             CreateTargetLockService();
             // T-DMGNUM-01: DamageNumberService — client-side floating damage numbers.
             CreateDamageNumberService();
+            // T-VFX01: SkillVfxService — client-side VFX (cast/projectile/impact).
+            CreateSkillVfxService();
             // T-INP-09: SkillTreeWindow overlay
             CreateSkillTreeWindow();
             // T-INP-13: InputBindingsRuntime singleton (нужен ДО SkillInputService.Update polling)
@@ -582,6 +584,31 @@ namespace ProjectC.Core
             var go = new GameObject("[DamageNumberService]");
             go.AddComponent<ProjectC.Combat.Client.DamageNumberService>();
             Debug.Log("[NMC] Created [DamageNumberService] as root GameObject");
+        }
+
+        /// <summary>
+        /// T-VFX01: Создать SkillVfxService как root GameObject.
+        /// Client-side singleton для VFX скилов (cast/projectile/impact).
+        /// Паттерн идентичен CreateDamageNumberService.
+        /// </summary>
+        private void CreateSkillVfxService()
+        {
+            var existing = FindObjectsByType<ProjectC.Skills.Vfx.SkillVfxService>(FindObjectsInactive.Include);
+            foreach (var inst in existing)
+            {
+                if (inst != null && inst.transform.parent == null)
+                {
+                    Debug.Log("[NMC] SkillVfxService already root, skipping creation");
+                    return;
+                }
+            }
+            if (existing.Length > 0)
+            {
+                Debug.LogWarning($"[NMC] Found {existing.Length} non-root SkillVfxService in scene — DontDestroyOnLoad would fail. Creating root replacement.");
+            }
+            var go = new GameObject("[SkillVfxService]");
+            go.AddComponent<ProjectC.Skills.Vfx.SkillVfxService>();
+            Debug.Log("[NMC] Created [SkillVfxService] as root GameObject");
         }
 
         /// <summary>

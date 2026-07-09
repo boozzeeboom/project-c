@@ -1,5 +1,17 @@
 # Итерации реализации — Ranged & Throwables
 
+## Итерация от 2026-07-31
+
+**Задача:** VFX Phase 0 — Data Model: поля в SkillNodeConfig + Editor + SpriteAnimationAsset stub
+**Документ:** `docs/Character/Skills/Battle/85_VFX_DESIGN.md`
+**Коммит:** `8c1471f` — T-VFX00: Phase 0 — VFX data model
+
+**Изменения:**
+- `Assets/_Project/Scripts/Skills/SkillNodeConfig.cs` — +VfxAttachPoint enum, +11 VFX-полей (cast/projectile/impact/2D)
+- `Assets/_Project/Editor/SkillNodeConfigEditor.cs` — +VFX-секции в инспекторе (Cast/Projectile/Impact/2D Future)
+- `Assets/_Project/Scripts/Skills/Vfx/SpriteAnimationAsset.cs` — NEW: заглушка SO для 2D-анимации
+- `docs/Character/Skills/Battle/85_VFX_DESIGN.md` — NEW: полный дизайн-документ (архитектура, фазы, 2D-ready)
+
 ## Итерация от 2026-07-28
 
 **Задача:** Всплывающие цифры урона (World Space TMP) — для всех типов атак, AOE, критов

@@ -1,4 +1,34 @@
+**Осталось (не в этом коммите):**
+- 🟡 P3: Монолит NpcSocialBrain (рефакторинг отложен)
 =======
+=======
+## Итерация от 2026-07-30 — AOE / Throwables / Ranged + Debug для NPC
+
+**Задача:** Дать NPC AOE-навыки, Throwables (безлимитный боекомплект), Ranged-атаки. Включить визуальную отладку зон поражения.
+
+**Коммит:** `3eed335` — T-NPC-AOE01: NPC AOE / Throwables / Ranged + Debug visualization
+
+**Изменения:**
+- `NpcAnimatorController.controller` — +Skill (Trigger) +SkillSpeed (Float) params, +Skill state, AnyState→Skill + Skill→Idle transitions
+- `CombatServer.cs` — skip ConsumeThrowableFromInventory + ResolveThrowableSourceFromInventory для NPC (guard `attacker.IsPlayer()`)
+- `NpcAttacker.cs` — +IsHpAvailable(hpPercent) метод в NpcSkillDamageSource
+- `NpcBrain.cs` — ExecuteSkillAttack: маршрутизация AOE/Ranged → ResolveSkillCast, Throwables → ResolveSkillCast с targetPoint
+- `NpcBrain.cs` — CalculateThrowTarget: точка броска в направлении aggroTarget на throwRange
+- `NpcBrain.cs` — PickSkillSource: HP% фильтр через IsHpAvailable
+- `NpcBrain.cs` — хук SkillAoeDebugVisualizer.ShowAoe + ThrowArcVisual.Fire
+
+**Flow:**
+- NpcBrain.TryAttack → PickSkillSource (HP% фильтр) → ExecuteSkillAttack
+  - AOE (Cone/Sphere/Line/Box): ResolveSkillCast → CollectAoeTargetsFromRegistry
+  - Ranged (Bows/Crossbows): ResolveSkillCast → D100 hit/damage scaling
+  - Throwables: ResolveSkillCast(targetPoint) → NPC skip inventory consume (IsPlayer guard)
+  - Default: ResolveAttack (single-target melee, backward-compat)
+
+**Тикеты:** T-NPC-AOE01
+
+=======
+**Осталось (не в этом коммите):**
+- 🟡 P3: Монолит NpcSocialBrain (рефакторинг отложен)=======
 =======
 =======
 =======

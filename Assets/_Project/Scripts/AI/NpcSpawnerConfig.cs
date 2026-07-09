@@ -33,6 +33,16 @@ namespace ProjectC.AI
         [Tooltip("Лимит спавнов на игрока в минуту (rate-limit, анти-спам).")]
         [Range(1, 60)] public int maxSpawnsPerPlayerPerMinute = 8;
 
+        [Header("Spawn Cycle (T-NPC-11)")]
+        [Tooltip("Infinite = текущее поведение (рефилл бесконечно). " +
+                 "Finite = спавнить totalSpawnLimit и остановиться навсегда. " +
+                 "FiniteCycle = спавнить totalSpawnLimit за цикл, ждать restart trigger.")]
+        public SpawnMode spawnMode = SpawnMode.Infinite;
+
+        [Tooltip("Лимит NPC за цикл (для Finite/FiniteCycle). " +
+                 "0 = без лимита (используется только maxAliveCount, backward compat).")]
+        [Range(0, 100)] public int totalSpawnLimit = 0;
+
         [Header("Surface validation")]
         [Tooltip("LayerMask террейна для raycast вниз (точка должна попасть на поверхность).")]
         public LayerMask groundMask = 1; // default layer

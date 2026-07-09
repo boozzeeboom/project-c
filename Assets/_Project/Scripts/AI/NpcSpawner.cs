@@ -32,6 +32,16 @@ using ProjectC.Combat;
 
 namespace ProjectC.AI
 {
+    /// <summary>
+    /// T-NPC-11: режим цикла спавна.
+    /// </summary>
+    public enum SpawnMode : byte
+    {
+        Infinite    = 0,  // текущее поведение: бесконечный рефилл (backward compat)
+        Finite      = 1,  // спавнить N и остановиться навсегда (квестовый лагерь)
+        FiniteCycle = 2   // спавнить N за цикл, ждать restart trigger(s) (экипаж корабля)
+    }
+
     public class NpcSpawner : NetworkBehaviour
     {
         [Header("Config (designer-tunable)")]
@@ -67,6 +77,19 @@ namespace ProjectC.AI
                  "Если 0 — chunk-spawn выключен даже при _autoPopulateChunks=true.")]
         [Range(0, 20)] [SerializeField] private int _maxAlivePerChunk = 3;
 
+        [Header("Spawn Cycle (T-NPC-11)")]
+        [Tooltip("Infinite = текущее поведение. Finite = спавнить N и остановиться. FiniteCycle = волны с перезапуском.")]
+        [SerializeField] private SpawnMode _spawnMode = SpawnMode.Infinite;
+
+        [Tooltip("Сколько всего NPC спавнить за цикл (для Finite/FiniteCycle). " +
+                 "При 0 = использовать _maxAlive (backward compat).")]
+        [Range(0, 50)] [SerializeField] private int _totalSpawnLimit = 0;
+
+        [Tooltip("GameObject'ы с компонентами ISpawnRestartTrigger. " +
+                 "Перезапускают цикл когда ВСЕ сработали. " +
+                 "Для AND/OR композиции — используй SpawnRestartGate.")]
+        [SerializeField] private List<MonoBehaviour> _restartTriggers = new List<MonoBehaviour>();
+
         // Spawned NPCs (server-only) — для alive-count tracking.
         private readonly List<NetworkObject> _spawned = new List<NetworkObject>();
         private float _nextCheckTime;
@@ -95,6 +118,13 @@ namespace ProjectC.AI
         private float _nextGroupCheckTime;
         private const float GROUP_CHECK_INTERVAL = 6f;
 
+        // T-NPC-11: spawn cycle state.
+        private int _totalSpawnedThisCycle;
+        private bool _cycleExhausted;
+        private List<ISpawnRestartTrigger> _resolvedTriggers;
+        private float _nextRestartCheckTime;
+        private const float RESTART_CHECK_INTERVAL = 1f;
+
 
         public override void OnNetworkSpawn()
         {
@@ -103,8 +133,9 @@ namespace ProjectC.AI
 
             if (_anchor == null) _anchor = transform;
             ApplyConfig();
+            ResolveTriggers();
             _nextCheckTime = Time.unscaledTime + _spawnInterval;
-            if (_showDebugLogs) Debug.Log($"[NpcSpawner] Initialized. prefab={(_prefab != null ? _prefab.name : "null")}, max={_maxAlive}, interval={_spawnInterval}s, radius=[{_spawnRadiusMin},{_spawnRadiusMax}]");
+            if (_showDebugLogs) Debug.Log($"[NpcSpawner] Initialized. prefab={(_prefab != null ? _prefab.name : "null")}, max={_maxAlive}, mode={_spawnMode}, limit={EffectiveSpawnLimit()}, interval={_spawnInterval}s, radius=[{_spawnRadiusMin},{_spawnRadiusMax}]");
 
             // T-NPC-09: chunk integration — опциональная подписка.
             if (_autoPopulateChunks && _maxAlivePerChunk > 0)
@@ -130,6 +161,8 @@ namespace ProjectC.AI
                 _chunkLoader.OnChunkLoaded -= OnChunkLoaded_SpawnNpcs;
                 _chunkLoader.OnChunkUnloaded -= OnChunkUnloaded_CleanupCount;
             }
+            _resolvedTriggers?.Clear();
+            _resolvedTriggers = null;
             base.OnNetworkDespawn();
         }
 
@@ -148,6 +181,9 @@ namespace ProjectC.AI
                 _minDistanceFromOtherNpc = _config.minDistanceFromOtherNpc;
                 // T-NPC-08 v0.2: read activationRadius too.
                 activationRadius = _config.activationRadius;
+                // T-NPC-11: spawn cycle.
+                _spawnMode = _config.spawnMode;
+                _totalSpawnLimit = _config.totalSpawnLimit;
             }
         }
 
@@ -161,6 +197,13 @@ namespace ProjectC.AI
             {
                 _nextGroupCheckTime = Time.unscaledTime + GROUP_CHECK_INTERVAL;
                 TryFormGroups();
+            }
+
+            // T-NPC-11: если цикл исчерпан — опрашиваем триггеры перезапуска.
+            if (_cycleExhausted)
+            {
+                CheckRestartTriggers();
+                return;
             }
 
             if (Time.unscaledTime < _nextCheckTime) return;
@@ -238,6 +281,23 @@ namespace ProjectC.AI
                 if (no == null || !no.IsSpawned) _spawned.RemoveAt(i);
             }
 
+            // T-NPC-11: детект исчерпания цикла.
+            int effectiveLimit = EffectiveSpawnLimit();
+            if (_spawnMode != SpawnMode.Infinite
+                && _spawned.Count == 0
+                && _totalSpawnedThisCycle >= effectiveLimit)
+            {
+                ExhaustCycle();
+                return;
+            }
+
+            // T-NPC-11: не превышаем лимит волны.
+            if (_spawnMode != SpawnMode.Infinite
+                && _totalSpawnedThisCycle >= effectiveLimit)
+            {
+                return;
+            }
+
             if (_spawned.Count >= _maxAlive) return;
 
             // Найти ближайшего игрока.
@@ -269,7 +329,7 @@ namespace ProjectC.AI
             // Spawn! (DRY: общий путь для zone-spawn и chunk-spawn через TrySpawnAtPoint)
             if (TrySpawnAtPoint(spawnerPos, clientId, out _))
             {
-                if (_showDebugLogs) Debug.Log($"[NpcSpawner] Spawned NPC '{_prefab.name}' at {spawnPos:F1} (zone-center={spawnerPos:F1}, distToPlayer={Vector3.Distance(spawnerPos, playerObj.transform.position):F1}, alive={_spawned.Count}/{_maxAlive})");
+                if (_showDebugLogs) Debug.Log($"[NpcSpawner] Spawned NPC '{_prefab.name}' at {spawnPos:F1} (zone-center={spawnerPos:F1}, distToPlayer={Vector3.Distance(spawnerPos, playerObj.transform.position):F1}, alive={_spawned.Count}/{_maxAlive}, cycleTotal={_totalSpawnedThisCycle}/{effectiveLimit})");
             }
         }
 
@@ -353,6 +413,7 @@ namespace ProjectC.AI
             // --- ТЕПЕРЬ Spawn (OnNetworkSpawn увидит все компоненты) ---
             netObj.Spawn(destroyWithScene: true);
             _spawned.Add(netObj);
+            _totalSpawnedThisCycle++;
             spawned = netObj;
 
             // T-NPC-S00 fix: track ungrouped NPC for group formation.
@@ -369,6 +430,101 @@ namespace ProjectC.AI
             return true;
         }
 
+
+        // === T-NPC-11: cycle control ===
+
+        /// <summary>
+        /// Эффективный лимит спавна за цикл.
+        /// Если _totalSpawnLimit = 0 → используется _maxAlive (backward compat).
+        /// </summary>
+        private int EffectiveSpawnLimit()
+        {
+            return _totalSpawnLimit > 0 ? _totalSpawnLimit : _maxAlive;
+        }
+
+        /// <summary>
+        /// Исчерпание цикла: все заспавненные NPC мертвы, больше спавнить не будем.
+        /// Оповещаем все restart trigger'ы.
+        /// </summary>
+        private void ExhaustCycle()
+        {
+            _cycleExhausted = true;
+            _totalSpawnedThisCycle = 0;
+
+            if (_resolvedTriggers != null)
+            {
+                foreach (var t in _resolvedTriggers)
+                {
+                    if (t != null && ((MonoBehaviour)t).isActiveAndEnabled)
+                        t.OnCycleExhausted();
+                }
+            }
+
+            if (_showDebugLogs)
+                Debug.Log($"[NpcSpawner] Cycle exhausted (mode={_spawnMode}). Waiting for restart triggers...");
+        }
+
+        /// <summary>
+        /// Опрос restart trigger'ов. Если все сработали — перезапускаем цикл.
+        /// </summary>
+        private void CheckRestartTriggers()
+        {
+            if (_resolvedTriggers == null || _resolvedTriggers.Count == 0)
+                return; // нет триггеров → никогда не перезапустится (дизайнер явно не настроил)
+
+            if (Time.unscaledTime < _nextRestartCheckTime) return;
+            _nextRestartCheckTime = Time.unscaledTime + RESTART_CHECK_INTERVAL;
+
+            bool allTriggered = true;
+            foreach (var t in _resolvedTriggers)
+            {
+                if (t == null || !((MonoBehaviour)t).isActiveAndEnabled) continue;
+                if (!t.IsTriggered) { allTriggered = false; break; }
+            }
+
+            if (!allTriggered) return;
+
+            // Все триггеры сработали → перезапуск!
+            _cycleExhausted = false;
+            _totalSpawnedThisCycle = 0;
+            _spawned.Clear();
+
+            foreach (var t in _resolvedTriggers)
+            {
+                if (t != null && ((MonoBehaviour)t).isActiveAndEnabled)
+                    t.OnCycleStarted();
+            }
+
+            _nextCheckTime = Time.unscaledTime + _spawnInterval;
+
+            if (_showDebugLogs)
+                Debug.Log("[NpcSpawner] All restart triggers fired — new cycle started.");
+        }
+
+        /// <summary>
+        /// Резолв _restartTriggers (MonoBehaviour) → кэш ISpawnRestartTrigger.
+        /// Вызывается один раз в OnNetworkSpawn.
+        /// </summary>
+        private void ResolveTriggers()
+        {
+            _resolvedTriggers = new List<ISpawnRestartTrigger>();
+            foreach (var mb in _restartTriggers)
+            {
+                if (mb == null) continue;
+                if (mb is ISpawnRestartTrigger trigger)
+                {
+                    trigger.OnRegistered(this);
+                    _resolvedTriggers.Add(trigger);
+                }
+                else
+                {
+                    Debug.LogWarning($"[NpcSpawner] {mb.name} doesn't implement ISpawnRestartTrigger, skipping.", mb);
+                }
+            }
+
+            if (_showDebugLogs && _resolvedTriggers.Count > 0)
+                Debug.Log($"[NpcSpawner] Resolved {_resolvedTriggers.Count} restart trigger(s).");
+        }
 
         // === T-NPC-09: chunk handlers ===
 

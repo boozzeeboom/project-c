@@ -9,7 +9,10 @@
 
 **Задача:** Вынос визуала дропа и лут-таблицы из хардкода `NpcTarget.SpawnLootPickup()` в инспектор `NpcSpawner` + `NpcSpawnerConfig`.
 
-**Коммит:** `8960493` — T-NPC-12: Loot Config — вынос визуала дропа и лут-таблицы в инспектор спавнера
+**Коммиты:** `8960493` (основной) + `a830345` (fix: предметы из GenerateLoot)
+
+**Fix:** Первая версия вызывала только `GenerateCredits()` — предметы из `GenerateLoot()` игнорировались.
+Исправлено: `NpcTarget.SpawnLootPickup()` вызывает `GenerateLoot()`, `NpcLootPickup` доставляет предметы через `InventoryServer.AddItem()`.
 
 **Изменения:**
 - `LootTable.cs` — +minCredits/maxCredits + GenerateCredits()

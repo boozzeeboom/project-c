@@ -46,7 +46,9 @@ docs/Character/
 ├── 07_UI_TABS_IN_CHARACTER_WINDOW.md (расширение CharacterWindow, sub-tabs, row-patterns)
 ├── 08_ROADMAP.md                   (тикеты T-P01..T-P18, milestones, оценка)
 ├── 09_OPEN_QUESTIONS.md            (10 разделов, 30+ вопросов для тебя)
-└── 10_REFERENCES.md                (file:line индекс всех прочитанных файлов)
+├── 10_REFERENCES.md                (file:line индекс всех прочитанных файлов)
+└── 11_STATS_ARCHITECTURE_AUDIT.md  (2026-07-26: аудит архитектуры статов — 7 проблем + план рефакторинга)
+
 └── EquipmentVisual/                (Phase 1+2 — 3D-меши для предметов + надевание на M)
     ├── 00_DESIGN.md                  (TL;DR + архитектура, начать отсюда)
     ├── 01_DATA_MODEL.md              (.cs-сигнатуры ItemData visualPrefab + attach-полей)

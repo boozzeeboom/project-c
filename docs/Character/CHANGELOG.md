@@ -5,6 +5,29 @@
 
 ---
 
+## 2026-07-26 — Stats Architecture Audit (deep analysis)
+
+**Сессия:** Полный аудит архитектуры статов (str/dex/int) — код + документация. Выявлены структурные проблемы и предложен план рефакторинга.
+
+### Ключевые находки
+
+| # | Проблема | Severity |
+|---|---------|----------|
+| P0 | Equip/skill stat bonuses не влияют на combat — `PlayerAttacker` использует только tier, игнорируя effective stats | 🔴 Blocker |
+| P1 | Hardcoded stat explosion: 3 стата × N полей дублируются в 21 файле | 🔴 Structural |
+| P2 | `PlayerStatsRef` — workaround для hardcoded полей (60 строк switch) | 🟡 |
+| P3 | NPC-статы — полностью дублированная система (`NpcCombatData` vs `PlayerStats`) | 🟡 |
+| P4 | `IAttacker` фиксирует сигнатуру под 3 стата (`GetStrength/GetDexterity/GetIntelligence`) | 🟡 |
+| P5 | `StatsSnapshotDto`: effective поля только для UI, не потребляются combat | 🟡 |
+| P6 | Equipment multipliers — dead data (нигде не применяются) | 🟡 |
+
+### Новые файлы
+
+| Файл | Назначение |
+|------|-----------|
+| `docs/Character/11_STATS_ARCHITECTURE_AUDIT.md` | Полный аудит: текущая архитектура, диаграмма потоков, 7 проблем, план рефакторинга |
+
+---
 ## 2026-06-15..17 — S2: Полная реализация Character Progression (18 тикетов)
 
 **Сессия:** Имплементация T-P01..T-P18 по `08_ROADMAP.md`. ~30 часов кодинга, 4 фазы, 50+ .cs файлов, 20+ .asset файлов.

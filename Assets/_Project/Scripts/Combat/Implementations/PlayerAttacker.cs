@@ -138,28 +138,28 @@ namespace ProjectC.Combat
         {
             int tier = PlayerStats.GetTier(StatsWorld.Instance?.GetOrCreateStats(_clientId) ?? default, StatType.Strength);
             int fromTier = PlayerStats.StatsToFlat(tier);
-            float s = 0f, skillS = 0f;
-            EquipmentWorld.Instance?.GetEquipStatBonuses(_clientId, out s, out _, out _);
+            float s = 0f, skillS = 0f, multS = 0f;
+            EquipmentWorld.Instance?.GetEquipStatBonuses(_clientId, out s, out _, out _, out multS, out _, out _);
             SkillsWorld.Instance?.GetStatModBonuses(_clientId, out skillS, out _, out _);
-            return fromTier + Mathf.RoundToInt(s + skillS);
+            return Mathf.RoundToInt((fromTier + s + skillS) * (1f + multS));
         }
         public int GetDexterity()
         {
             int tier = PlayerStats.GetTier(StatsWorld.Instance?.GetOrCreateStats(_clientId) ?? default, StatType.Dexterity);
             int fromTier = PlayerStats.StatsToFlat(tier);
-            float d = 0f, skillD = 0f;
-            EquipmentWorld.Instance?.GetEquipStatBonuses(_clientId, out _, out d, out _);
+            float d = 0f, skillD = 0f, multD = 0f;
+            EquipmentWorld.Instance?.GetEquipStatBonuses(_clientId, out _, out d, out _, out _, out multD, out _);
             SkillsWorld.Instance?.GetStatModBonuses(_clientId, out _, out skillD, out _);
-            return fromTier + Mathf.RoundToInt(d + skillD);
+            return Mathf.RoundToInt((fromTier + d + skillD) * (1f + multD));
         }
         public int GetIntelligence()
         {
             int tier = PlayerStats.GetTier(StatsWorld.Instance?.GetOrCreateStats(_clientId) ?? default, StatType.Intelligence);
             int fromTier = PlayerStats.StatsToFlat(tier);
-            float i = 0f, skillI = 0f;
-            EquipmentWorld.Instance?.GetEquipStatBonuses(_clientId, out _, out _, out i);
+            float i = 0f, skillI = 0f, multI = 0f;
+            EquipmentWorld.Instance?.GetEquipStatBonuses(_clientId, out _, out _, out i, out _, out _, out multI);
             SkillsWorld.Instance?.GetStatModBonuses(_clientId, out _, out _, out skillI);
-            return fromTier + Mathf.RoundToInt(i + skillI);
+            return Mathf.RoundToInt((fromTier + i + skillI) * (1f + multI));
         }
 
         public IReadOnlyList<IDamageSource> GetActiveDamageSources() => _activeSources;

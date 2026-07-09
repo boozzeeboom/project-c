@@ -446,10 +446,13 @@ namespace ProjectC.Stats
             var stats = _world.GetOrCreateStats(clientId);
             // Берём бонусы от экипировки (EquipmentWorld — singleton)
             float bonusStr = 0f, bonusDex = 0f, bonusInt = 0f;
+            float multStr = 0f, multDex = 0f, multInt = 0f;
             var eqWorld = ProjectC.Equipment.EquipmentWorld.Instance;
             if (eqWorld != null)
             {
-                eqWorld.GetEquipStatBonuses(clientId, out bonusStr, out bonusDex, out bonusInt);
+                eqWorld.GetEquipStatBonuses(clientId,
+                    out bonusStr, out bonusDex, out bonusInt,
+                    out multStr, out multDex, out multInt);
             }
             _pendingEquipBonus[clientId] = (bonusStr, bonusDex, bonusInt);
             if (Debug.isDebugBuild)
@@ -470,12 +473,15 @@ namespace ProjectC.Stats
             if (netPlayer == null) return;
 
             var stats = _world.GetOrCreateStats(clientId);
-            // SESSION 2: всегда вычисляем equip bonuses inline (не rely на cache).
+            // P8: equip bonuses + multipliers. effective = (base + flat) * (1 + mult).
             float bonusStr = 0f, bonusDex = 0f, bonusInt = 0f;
+            float multStr = 0f, multDex = 0f, multInt = 0f;
             var eqWorld = ProjectC.Equipment.EquipmentWorld.Instance;
             if (eqWorld != null)
             {
-                eqWorld.GetEquipStatBonuses(clientId, out bonusStr, out bonusDex, out bonusInt);
+                eqWorld.GetEquipStatBonuses(clientId,
+                    out bonusStr, out bonusDex, out bonusInt,
+                    out multStr, out multDex, out multInt);
             }
             var snap = new StatsSnapshotDto
             {
@@ -491,9 +497,9 @@ namespace ProjectC.Stats
                 strengthTotalXp           = stats.strength.totalXp,
                 dexterityTotalXp          = stats.dexterity.totalXp,
                 intelligenceTotalXp       = stats.intelligence.totalXp,
-                effectiveStrength         = PlayerStats.StatsToFlat(stats.strength.tier) + bonusStr,
-                effectiveDexterity        = PlayerStats.StatsToFlat(stats.dexterity.tier) + bonusDex,
-                effectiveIntelligence     = PlayerStats.StatsToFlat(stats.intelligence.tier) + bonusInt,
+                effectiveStrength         = (PlayerStats.StatsToFlat(stats.strength.tier) + bonusStr) * (1f + multStr),
+                effectiveDexterity        = (PlayerStats.StatsToFlat(stats.dexterity.tier) + bonusDex) * (1f + multDex),
+                effectiveIntelligence     = (PlayerStats.StatsToFlat(stats.intelligence.tier) + bonusInt) * (1f + multInt),
             };
 
             // T-P06: ReceiveStatsSnapshotTargetRpc добавлен в NetworkPlayer (owner→server).

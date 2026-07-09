@@ -60,13 +60,16 @@ namespace ProjectC.Equipment
         public bool HasEquipment(ulong clientId) => _perPlayer.ContainsKey(clientId);
 
         /// <summary>
-        /// SESSION 2: effective stat bonuses from equipped items.
-        /// Sum across all slots of ClothingItemData/ModuleItemData bonuses.
-        /// Out: bonusStrength, bonusDexterity, bonusIntelligence (flat add).
+        /// P8: effective stat bonuses + multipliers from equipped items.
+        /// Sum across all slots of ClothingItemData/ModuleItemData.
+        /// Flat bonuses are additive; multipliers sum and apply as ×(1.0 + sum).
         /// </summary>
-        public void GetEquipStatBonuses(ulong clientId, out float bonusStrength, out float bonusDexterity, out float bonusIntelligence)
+        public void GetEquipStatBonuses(ulong clientId,
+            out float bonusStrength, out float bonusDexterity, out float bonusIntelligence,
+            out float multStrength, out float multDexterity, out float multIntelligence)
         {
             bonusStrength = 0f; bonusDexterity = 0f; bonusIntelligence = 0f;
+            multStrength = 0f; multDexterity = 0f; multIntelligence = 0f;
             var equip = GetEquipment(clientId);
             var inv = ProjectC.Items.InventoryWorld.Instance;
             if (inv == null) return;
@@ -80,14 +83,26 @@ namespace ProjectC.Equipment
                     bonusStrength += c.strengthBonus;
                     bonusDexterity += c.dexterityBonus;
                     bonusIntelligence += c.intelligenceBonus;
+                    multStrength += c.strengthMultiplier;
+                    multDexterity += c.dexterityMultiplier;
+                    multIntelligence += c.intelligenceMultiplier;
                 }
                 else if (data is ProjectC.Equipment.ModuleItemData m)
                 {
                     bonusStrength += m.strengthBonus;
                     bonusDexterity += m.dexterityBonus;
                     bonusIntelligence += m.intelligenceBonus;
+                    // ModuleItemData has no multipliers (only flat bonuses for Utility type)
                 }
             }
+        }
+
+        /// <summary>Backward-compat overload (3 out params, no multipliers).</summary>
+        public void GetEquipStatBonuses(ulong clientId, out float bonusStrength, out float bonusDexterity, out float bonusIntelligence)
+        {
+            GetEquipStatBonuses(clientId,
+                out bonusStrength, out bonusDexterity, out bonusIntelligence,
+                out _, out _, out _);
         }
 
         // === Write API ===

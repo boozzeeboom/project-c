@@ -618,6 +618,29 @@ A docs/Mining/ROADMAP.md (T-G01 ✅ DONE)
 
 **Обновлено 2026-06-10:** T-G01 ✅ T-G02 ✅ T-G03 ✅ T-G04 ✅ T-G05 ✅ T-G06 ✅ T-G07 ✅. **Все 7 тикетов закрыты.**
 
+**2026-07-12 — AUDIT_2026-07-12_DEEP fixes (T-MINE01):**
+- Phase 1 CRITICAL: disconnect handler, WorldEventBus XP path, copy-paste XP Quantity bug, hardcoded 1.0f multiplier → configurable
+- Phase 2 MEDIUM: `ResourceNode_Default.prefab`, `ResourceNode_Tree.asset` (Lambering), `StatsConfig` [Obsolete] + удалён .asset
+
+### §7.6 T-MINE01 — CRITICAL fixes + Phase 2 (2026-07-12)
+
+**Verify:**
+- ✅ Compile: 0 errors
+- ✅ `GatheringServer` — disconnect handler (освобождает узел при disconnect)
+- ✅ `GatheringServer` — `WorldEventBus.Publish(MiningCompletedEvent)` вместо прямого `StatsServer.ApplyXp`
+- ✅ `StatsServer` — `(GetBaseXp(...) : 0f) * ev.Quantity` во всех 5 обработчиках
+- ✅ `ResourceNode_Default.prefab` в `Assets/_Project/Prefabs/`
+- ✅ WorldScene_0_0: 3 ResourceNode теперь prefab instances
+- ✅ `ResourceNode_Tree.asset` (GatherType=Lambering, "Дерево")
+- ✅ `StatsConfig` — `[Obsolete]` + удалён `StatsConfig_Default.asset`
+
+**Key Lessons:**
+- StatsConfig был split в P4 на ExperienceConfig + StatSourceMapConfig + StatDebugConfig, но оригинал не удалили.
+- `.asset` лежал в Resources (загружался при старте), хотя никто не делал `Resources.Load<StatsConfig>()`.
+- XP path теперь единый (WorldEventBus) — как Crafting/Exchange/Market. Больше нет прямых вызовов StatsServer из GatheringServer.
+
+**Commit:** `8a4d5b5` — T-MINE01: CRITICAL fixes.
+
 ---
 
 *См. `00_OVERVIEW.md` для обзора архитектуры, `10_DESIGN.md` для детального дизайна, `20_IMPLEMENTATION_PLAN.md` для пошагового плана.*

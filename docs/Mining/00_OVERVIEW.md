@@ -1,8 +1,8 @@
 # Resource Gathering System — Обзор
 
 > **Подсистема:** Сбор ресурсов (mining / harvesting / gathering)
-> **Версия:** `v0.0.1-analysis` (2026-06-10)
-> **Статус:** 📋 Анализ завершён, решения приняты, план готов
+> **Версия:** `v0.1.0` (2026-07-12)
+> **Статус:** ✅ MVP завершён. Phase 1 CRITICAL fixes применены (WorldEventBus, disconnect handler, XP). Phase 2: префаб создан, Tree.asset добавлен, StatsConfig deprecation.
 > **Связанные подсистемы:** `docs/MetaRequirement/` (lock-key), `docs/Character-menu/sub_inventory-tab/` (Inventory v2), `docs/Crafting_system/` (craft — следующая фаза после сбора)
 > **Game Design:** `docs/gdd/GDD_11_Inventory_Items.md` (ресурсы как тип предметов)
 

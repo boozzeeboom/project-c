@@ -20,7 +20,12 @@ namespace ProjectC.Stats
     // StatType enum переехал в PlayerStats.cs (T-P02) — тот же namespace, те же значения.
     // Тут только ссылка через `using ProjectC.Stats` неявно (мы в том же namespace).
 
-    [CreateAssetMenu(fileName = "StatsConfig", menuName = "Project C/Stats/Stats Config", order = 10)]
+    // P4 refactor: разбит на ExperienceConfig + StatSourceMapConfig + StatDebugConfig.
+    // Этот SO больше не используется — все поля и методы мигрированы в новые классы.
+    // StatsServer использует ExperienceConfig (_expConfig) / StatSourceMapConfig (_sourceMapConfig) / StatDebugConfig (_debugConfig).
+    // AUDIT_2026-07-12_DEEP.md §2 MEDIUM 4, 7.
+    [System.Obsolete("Use ExperienceConfig instead. StatsConfig was split into ExperienceConfig + StatSourceMapConfig + StatDebugConfig in P4 refactor.")]
+    [CreateAssetMenu(fileName = "StatsConfig", menuName = "Project C/Stats/Stats Config (OBSOLETE)", order = 10)]
     public class StatsConfig : ScriptableObject
     {
         [Header("Per-action multipliers (per-source XP gain)")]

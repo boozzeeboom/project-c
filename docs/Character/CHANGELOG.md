@@ -5,6 +5,33 @@
 
 ---
 
+## 2026-07-09 — P1: PlayerStats flat struct → StatBucket (f4ca1af)
+
+**Сессия:** P1 из `13_SESSION_CONTINUATION.md` — замена 3×3 flat struct на StatBucket группировку.
+
+### Выполнено
+
+| # | Проблема | Статус | Коммит |
+|---|---------|--------|--------|
+| P1 | Flat 3×3 struct → StatBucket | ✅ Fixed | `f4ca1af` |
+| P2 | PlayerStatsRef workaround | ✅ Удалён | `f4ca1af` |
+
+### Изменённые файлы (7)
+- `PlayerStats.cs` — StatBucket struct + PlayerStats со static ref accessors (Xp/Tier/TotalXp/GetBucket)
+- `PlayerStatsRef.cs` — УДАЛЁН (методы перенесены в PlayerStats как static)
+- `CharacterSaveData.cs` — PlayerStatsSave: 9 плоских полей → StatBucket[3]
+- `StatsServer.cs` — PlayerStatsRef вызовы → PlayerStats.Xp/Tier/TotalXp
+- `PlayerAttacker.cs` — .strengthTier → PlayerStats.GetTier(StatType)
+- `SkillsWorld.cs` — .strengthTier/.intelligence → PlayerStats.GetTier/GetXp
+
+### Не затронуты (NGO/ScriptableObject constraints)
+- `StatsSnapshotDto` — 18 flat полей сохранены (NGO INetworkSerializable требует фиксированные поля)
+- `ClothingItemData.cs`, `ModuleItemData.cs` — поля остаются публичными для Unity Inspector
+- `EquipmentWorld.GetEquipStatBonuses` — out params без изменений (публичный API)
+- `CharacterWindow.cs`, `StatsClientState.cs` — используют StatsSnapshotDto поля, не изменились
+
+---
+
 ## 2026-07-09 — Stats Architecture Audit V2 fixes (Q0+Q1+Q2.P4)
 
 **Сессия:** Поэтапное исправление проблем согласно сводному аудиту `12_STATS_ARCHITECTURE_AUDIT_V2.md`. Два коммита: T-STATS02 (P0/P5/P6/P7/P10) и T-STATS03 (P4).

@@ -18,8 +18,8 @@
 
 | # | Проблема | Приоритет | Файлов |
 |---|---------|----------|--------|
-| **P1** | Flat 3×3 struct → Dictionary | 🔴 Q2 | ~11 |
-| P2 | PlayerStatsRef workaround | 🟢 авто-P1 | 1 |
+| **P1** | Flat 3×3 struct → Dictionary | 🔴 Q2 | ✅ `f4ca1af` |
+| P2 | PlayerStatsRef workaround | 🟢 авто-P1 | ✅ `f4ca1af` |
 | P3/P9 | Unify Player/NPC stat formula | 🟡 Q3 | ~5 |
 | P8 | Equipment multipliers | 🟢 Q3 | 2 |
 

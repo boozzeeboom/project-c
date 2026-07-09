@@ -5,6 +5,22 @@
 =======
 # Итерации реализации Unified NPC Behavior Architecture
 
+## Итерация от 2026-07-29 — Loot Config
+
+**Задача:** Вынос визуала дропа и лут-таблицы из хардкода `NpcTarget.SpawnLootPickup()` в инспектор `NpcSpawner` + `NpcSpawnerConfig`.
+
+**Коммит:** `8960493` — T-NPC-12: Loot Config — вынос визуала дропа и лут-таблицы в инспектор спавнера
+
+**Изменения:**
+- `LootTable.cs` — +minCredits/maxCredits + GenerateCredits()
+- `NpcSpawnerConfig.cs` — +lootPrefab, +lootTable (add-only)
+- `NpcSpawner.cs` — +_lootPrefab/_lootTable + ApplyConfig + проброс в TrySpawnAtPoint
+- `NpcTarget.cs` — SetLootConfig() + SpawnLootPickup() использует prefab/table вместо хардкода
+
+**Flow:** дизайнер перетаскивает префаб дропа и LootTable SO в инспектор спавнера →
+при смерти NPC спавнится дроп из префаба с credits из таблицы (или fallback к жёлтой сфере + maxHp/4)
+
+---
 ## Итерация от 2026-07-29 — Spawn Cycle Control
 
 **Задача:** Управление циклами спавна: конечные волны мобов с настраиваемыми условиями перезапуска.

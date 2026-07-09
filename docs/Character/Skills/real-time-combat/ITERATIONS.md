@@ -1,5 +1,19 @@
 # Итерации реализации — Ranged & Throwables
 
+## Итерация от 2026-07-31 (#4)
+
+**Задача:** VFX Fix — NPC унификация + player impact + robust pool
+**Коммиты:** `413a425` (self-healing Instance), `9cf2cdf` (NPC + impact + pool)
+
+**Исправления:**
+- `SkillVfxService.Instance` — lazy-init: если NMC не создал → auto-create
+- `SkillVfxService.PlayImpactVfx` — обрабатывает config=null (generic sphere flash)
+- `SkillInputService.TryActivate` — `onArrived` callback → `PlayImpactVfx` при приземлении
+- `NpcBrain.ExecuteSkillAttack` — +`PlayProjectileVfx` для throwables, +`PlayCastVfx` перед анимацией
+- `VfxObjectPool` — `Dictionary<GameObject,Queue<GameObject>>` вместо `EntityId.ToULong`, +null-warnings
+
+**Результат:** VFX работают и для игрока и для NPC. Cast→projectile→impact полный цикл.
+
 ## Итерация от 2026-07-31 (#3)
 
 **Задача:** VFX Phase 2 — Примитивные VFX-префабы + назначение на все навыки

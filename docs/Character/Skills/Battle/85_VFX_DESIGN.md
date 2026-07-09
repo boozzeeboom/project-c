@@ -667,3 +667,5 @@ Impact VFX в `CombatClientState.HandleAttackLanded` вызывает `PlayImpac
 | 2026-07-31 | Aura | Phase 1 (runtime + инжекция) реализован: `2712819` |
 | 2026-07-31 | Aura | Phase 2 (префабы + назначение) реализован: `ad1f5bd` |
 | 2026-07-31 | Aura | §10: полный статус реализации + 7 gap'ов для 2D-интеграции |
+| 2026-07-31 | Aura | Fix 1: self-healing Instance + generic impact: `413a425` |
+| 2026-07-31 | Aura | Fix 2: NPC VFX + player impact + robust pool: `9cf2cdf` |

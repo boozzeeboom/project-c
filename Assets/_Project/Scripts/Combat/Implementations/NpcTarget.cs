@@ -191,8 +191,14 @@ namespace ProjectC.Combat
                     credits = Mathf.Max(5, _data.maxHp / 4);
             }
 
+            // Если нет ни кредитов, ни таблицы — не спавним.
             if (credits <= 0 && _lootTable == null) return;
-            // Если credits=0 но lootTable есть — всё равно спавним (могут быть items).
+
+            // T-NPC-12: generate items ДО создания pickup (нужно для проверки).
+            var lootItems = _lootTable != null ? _lootTable.GenerateLoot() : new System.Collections.Generic.List<Items.ItemData>();
+
+            // Если нет ни кредитов, ни предметов — не спавним пустой пикап.
+            if (credits <= 0 && (lootItems == null || lootItems.Count == 0)) return;
 
             GameObject loot;
 
@@ -231,6 +237,7 @@ namespace ProjectC.Combat
                 pickup = loot.AddComponent<ProjectC.AI.NpcLootPickup>();
 
             pickup.creditsAmount = credits;
+            pickup.items = lootItems;
             pickup.displayName = _data != null ? $"{_data.displayName} Loot" : "Loot";
             pickup.interactionRadius = 2.0f;
             pickup.autoDespawnSeconds = 120f;

@@ -2750,6 +2750,8 @@ MonoBehaviour:
   _spawnMode: 0
   _totalSpawnLimit: 0
   _restartTriggers: []
+  _lootPrefab: {fileID: 0}
+  _lootTable: {fileID: 0}
 --- !u!114 &391879216
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -15736,6 +15738,8 @@ MonoBehaviour:
   _totalSpawnLimit: 4
   _restartTriggers:
   - {fileID: 208563500}
+  _lootPrefab: {fileID: 7022669804436992285, guid: eb894e4441d86e34e9a7b20a1c14ad00, type: 3}
+  _lootTable: {fileID: 11400000, guid: 57aceb4b99cd4ad47932bef51c94ae85, type: 2}
 --- !u!4 &2977119022265116453 stripped
 Transform:
   m_CorrespondingSourceObject: {fileID: 5161824931232467223, guid: 5f4dcf8edbc15014d83fd2bcd92d3f67, type: 3}

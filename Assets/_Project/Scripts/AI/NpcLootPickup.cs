@@ -11,6 +11,7 @@
 //
 // MVP (T-NPC-03): только credits, без items. Items добавляются в T-NPC-04 (LootTable extension).
 
+using System.Collections.Generic;
 using UnityEngine;
 using Unity.Netcode;
 
@@ -30,6 +31,9 @@ namespace ProjectC.AI
         [Header("Loot payload (server-side)")]
         [Tooltip("Количество кредитов в этом пикапе.")]
         [Range(0, 10000)] public int creditsAmount = 50;
+
+        [Tooltip("Предметы из LootTable (T-NPC-12). Заполняется NpcTarget при спавне.")]
+        [HideInInspector] public List<Items.ItemData> items = new List<Items.ItemData>();
 
         [Tooltip("Display name для UI ('Coins', 'Gold Pouch', etc).")]
         public string displayName = "Loot";
@@ -52,7 +56,18 @@ namespace ProjectC.AI
 
         // === IInteractable ===
         public string InstanceId => gameObject.name + "_" + GetHashCode();
-        public string DisplayName => $"{displayName} ({creditsAmount} CR)";
+        public string DisplayName
+        {
+            get
+            {
+                int itemCount = items != null ? items.Count : 0;
+                string cr = creditsAmount > 0 ? $"{creditsAmount} CR" : "";
+                string it = itemCount > 0 ? $"{itemCount} items" : "";
+                string sep = (creditsAmount > 0 && itemCount > 0) ? " + " : "";
+                string payload = cr + sep + it;
+                return string.IsNullOrEmpty(payload) ? displayName : $"{displayName} ({payload})";
+            }
+        }
         public float InteractionRadius => interactionRadius;
         public Vector3 Position => transform.position;
 
@@ -135,6 +150,42 @@ namespace ProjectC.AI
             }
             if (_collected) return;
             _collected = true;
+
+            // T-NPC-12: выдать предметы из LootTable через InventoryServer.
+            if (items != null && items.Count > 0)
+            {
+                try
+                {
+                    var inventoryServer = ProjectC.Items.Network.InventoryServer.Instance;
+                    var inventoryWorld = ProjectC.Items.InventoryWorld.Instance;
+                    if (inventoryServer != null && inventoryWorld != null)
+                    {
+                        int added = 0;
+                        foreach (var item in items)
+                        {
+                            if (item == null) continue;
+                            int itemId = inventoryWorld.GetOrRegisterItemId(item);
+                            if (itemId < 0)
+                            {
+                                Debug.LogWarning($"[NpcLootPickup] InventoryWorld has no id for {item.name} — skipping");
+                                continue;
+                            }
+                            if (inventoryServer.AddItem(playerClientId, itemId, item.itemType))
+                                added++;
+                        }
+                        if (added > 0)
+                            Debug.Log($"[NpcLootPickup] Player {playerClientId} collected {added}/{items.Count} items.");
+                    }
+                    else
+                    {
+                        Debug.LogWarning("[NpcLootPickup] InventoryServer/InventoryWorld unavailable — items not delivered.");
+                    }
+                }
+                catch (System.Exception ex)
+                {
+                    Debug.LogError($"[NpcLootPickup] Items exception: {ex.Message}");
+                }
+            }
 
             // Начислить кредиты через IPlayerDataRepository.
             try

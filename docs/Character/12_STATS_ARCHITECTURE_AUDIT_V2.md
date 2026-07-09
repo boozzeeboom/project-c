@@ -185,8 +185,8 @@ public int GetStrength() => _data != null ? _data.strength : 10;
 
 ## 4. Рекомендации (взвешенные, по приоритету)
 
-### Q0 — Немедленно (до следующего коммита)
-1. **P0**: `PlayerAttacker.GetStrength()` должен включать `EquipmentWorld.GetEquipStatBonuses`. Патч — 1 файл:
+### Q0 — Немедленно (до следующего коммита) ✅ DONE (T-STATS02, 8c49ee1)
+1. **P0**: ✅ `PlayerAttacker.GetStrength()` включает `EquipmentWorld.GetEquipStatBonuses` + `SkillsWorld.GetStatModBonuses`.
    ```csharp
    // PlayerAttacker.cs
    public int GetStrength()
@@ -200,43 +200,37 @@ public int GetStrength() => _data != null ? _data.strength : 10;
    ```
    Аналогично для DEX и INT.
 
-2. **P6**: В `StatsServer.SendSnapshotToOwner` заменить `effectiveStrength = stats.strength + bonusStr` на:
-   ```csharp
-   float tierBase = StatsToFlat(stats.strengthTier); // если StatsToFlat — shared helper
-   effectiveStrength = tierBase + bonusStr;
-   ```
-   Либо добавить константу `BASE_STAT = 10` и формулу `strengthTier * 5 + BASE_STAT`.
+2. **P6**: ✅ `effectiveStrength = PlayerStats.StatsToFlat(stats.strengthTier) + bonusStr`.
 
-### Q1 — В текущем спринте
-3. **P5**: `GatheringServer.cs:167` — заменить прямой вызов `StatType.Strength` на `_config.GetStatFor(XpSource.Mining)`.
+### Q1 — В текущем спринте ✅ DONE (T-STATS02, 8c49ee1)
+3. **P5**: ✅ `GatheringServer.cs:167` — `ss.GetStatFor(XpSource.Mining)` через StatsServer.
+4. **P7**: ✅ `SkillsWorld.GetStatModBonuses()` + чтение в `PlayerAttacker`.
 
-4. **P7**: Добавить в `SkillsServer` вызов `StatsServer.RecomputeAndSendSnapshot` после `LearnSkill` / `ForgetSkill`. Или, лучше, добавить метод `GetStatModBonuses(ulong clientId)` в `SkillsWorld`, и читать его в `PlayerAttacker.GetStrength()`.
-
-### Q2 — В следующем спринте
-5. **P1**: Рассмотреть замену `PlayerStats` struct на `SerializableDictionary<StatType, float>` + `StatsSnapshotDto` на авто-генерируемый через рефлексию (или code-gen). **Trade-off:** сложность NetworkSerialize vs гибкость.
-
-6. **P4**: Разделить `StatsConfig` на 3 отдельных SO:
-   - `ExperienceConfig` (TierBaseXp, TierGrowthRate, GlobalMultiplier)
-   - `StatSourceMapConfig` (source → stat mapping, можно разный для режимов)
-   - `StatDebugConfig` (DebugLogging, Distance thresholds)
+### Q2 — В следующем спринте (P4 done, P1 pending)
+5. **P1**: ⏳ Замена `PlayerStats` struct на `Dictionary<StatType, float>` — **следующая сессия**.
+6. **P4**: ✅ DONE (T-STATS03, 7b8460c) — разделён на `ExperienceConfig`, `StatSourceMapConfig`, `StatDebugConfig`.
 
 ### Q3 — Фаза 3
-7. **P3/P9**: Унифицировать Player и NPC stat провайдеры общей формулой. `NpcCombatData` мог бы содержать `baseStats` + `effectiveTier` = фейковый tier для масштабирования с игроком.
-
-8. **P8**: Добавить мультипликаторную поддержку в `GetEquipStatBonuses`.
+7. **P3/P9**: ⏳ Унифицировать Player/NPC stat провайдеры — после P1.
+8. **P8**: ⏳ Multiplier support в `GetEquipStatBonuses`.
 
 ### Q4 — Не срочно
-9. **P10**: Добавить в `DamageResultDto` поля `strengthContribution`, `baseContribution`, `diceContribution`.
+9. **P10**: ✅ DONE (T-STATS02) — `diceRoll`, `strengthContribution`, `baseContribution` в `DamageResult/Dto`.
 
 ---
 
-## 5. Критические баги (P0, P6) — proof of patchness
+## 5. Статус выполнения (2026-07-09)
 
-Проверка, которую пользователь может выполнить в Play Mode:
+| Q | Проблемы | Статус |
+|---|---------|--------|
+| Q0 | P0, P6 | ✅ DONE |
+| Q1 | P5, P7 | ✅ DONE |
+| Q2 | P1, P4 | P4 ✅, P1 ⏳ |
+| Q3 | P3/P9, P8 | ⏳ |
+| Q4 | P10 | ✅ DONE |
 
-1. **P0 test**: Зайти в игру → экипировать предмет с `strengthBonus = +10` → ударить NPC → урон не изменится (если tier не изменился). **Должен** измениться.
-2. **P6 test**: Открыть UI stats → показатель STR = `stats.strength` (XP в тире) ≠ `tier*5+10`. Несовпадение UI с реальностью.
+**Рекомендация для следующей сессии:** начать с P1 (замена flat struct на dict) — самый трудоёмкий рефакторинг, затрагивает ~11 файлов.
 
 ---
 
-*Документ добавлен в репозиторий. Рекомендуется исправить P0 и P6 до следующего игрового теста.*
+*Документ обновлён 2026-07-09: добавлены отметки выполнения.*

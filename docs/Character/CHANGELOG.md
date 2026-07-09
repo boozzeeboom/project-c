@@ -5,6 +5,63 @@
 
 ---
 
+## 2026-07-09 — Stats Architecture Audit V2 fixes (Q0+Q1+Q2.P4)
+
+**Сессия:** Поэтапное исправление проблем согласно сводному аудиту `12_STATS_ARCHITECTURE_AUDIT_V2.md`. Два коммита: T-STATS02 (P0/P5/P6/P7/P10) и T-STATS03 (P4).
+
+### Выполнено (6 из 10 проблем)
+
+| # | Проблема | Severity | Статус | Коммит |
+|---|---------|----------|--------|--------|
+| P0 | Combat bypasses equip bonuses | 🔴 Critical | ✅ Fixed | `8c49ee1` |
+| P5 | GatheringServer mapping bypass | 🟡 Medium | ✅ Fixed | `8c49ee1` |
+| P6 | Effective stat formula inconsistency | 🔴 Critical | ✅ Fixed | `8c49ee1` |
+| P7 | Skill stat bonuses never applied | 🟡 Medium | ✅ Fixed | `8c49ee1` |
+| P10 | DamageResultDto lacks stat breakdown | 🟢 Low | ✅ Fixed | `8c49ee1` |
+| P4 | StatsConfig overload (4 responsibilities) | 🟡 Medium | ✅ Fixed | `7b8460c` |
+
+### T-STATS02 — P0/P5/P6/P7/P10 (8c49ee1)
+
+**Изменённые файлы:**
+- `Assets/_Project/Scripts/Combat/Implementations/PlayerAttacker.cs` — GetStrength/Dex/Int: tier + equip bonus + skill bonus
+- `Assets/_Project/Scripts/Stats/PlayerStats.cs` — public static StatsToFlat(tier)
+- `Assets/_Project/Scripts/Stats/StatsServer.cs` — effective stat = StatsToFlat(tier) + bonus (P6); GetStatFor(XpSource) (P5 helper)
+- `Assets/_Project/Scripts/ResourceNode/GatheringServer.cs` — StatType.Strength → ss.GetStatFor(XpSource.Mining)
+- `Assets/_Project/Scripts/Skills/SkillsWorld.cs` — новый GetStatModBonuses(clientId, out str, dex, intl)
+- `Assets/_Project/Scripts/Combat/Core/DamageResult.cs` — поля diceRoll/strengthContrib/baseContrib
+- `Assets/_Project/Scripts/Combat/Network/DamageResultDto.cs` — поля + serialize + FromResult
+- `Assets/_Project/Scripts/Combat/DamageCalculator.cs` — заполнение новых полей
+- `docs/Character/12_STATS_ARCHITECTURE_AUDIT_V2.md` — новый
+
+### T-STATS03 — P4 StatsConfig Split (7b8460c)
+
+**Новые файлы:**
+- `Assets/_Project/Scripts/Stats/ExperienceConfig.cs` — per-source XP, TierBaseXp, TierGrowthRate, GlobalMultiplier
+- `Assets/_Project/Scripts/Stats/StatSourceMapConfig.cs` — XpSource → StatType mapping
+- `Assets/_Project/Scripts/Stats/StatDebugConfig.cs` — DebugLogging, Distance thresholds, AnnounceTierUp
+- `Assets/_Project/Resources/Stats/ExperienceConfig_Default.asset`
+- `Assets/_Project/Resources/Stats/StatSourceMapConfig_Default.asset`
+- `Assets/_Project/Resources/Stats/StatDebugConfig_Default.asset`
+
+**Изменённые файлы:**
+- `Assets/_Project/Scripts/Stats/StatsServer.cs` — `_config` → `_expConfig` / `_sourceMapConfig` / `_debugConfig`
+
+### Осталось (P1/P2/P3/P8/P9 — следующие сессии)
+
+| # | Проблема | Severity | План |
+|---|---------|----------|------|
+| P1 | Flat 3×3 struct — rigid for expansion | 🟡 Medium | Q2 — заменить на Dictionary<StatType, float> |
+| P2 | PlayerStatsRef — workaround for P1 | 🟢 Low | Автоматически решится при P1 |
+| P3 | Two stat systems (Player vs NPC) | 🟡 Medium | Q3 — унифицировать формулой |
+| P8 | Equipment multipliers silently ignored | 🟢 Low | Q3 — GetEquipStatBonuses |
+| P9 | NPC stats not linked to any formula | 🟢 Low | Q3 — вместе с P3 |
+
+### Планы в Assets/.Aura/plans/
+- `stats_audit_fixes_q0_q1_v1.md` — ✅ выполнено (T-STATS02)
+- `stats_audit_q2_p4_statsconfig_split_v1.md` — ✅ выполнено (T-STATS03)
+
+---
+
 ## 2026-07-26 — Stats Architecture Audit (deep analysis)
 
 **Сессия:** Полный аудит архитектуры статов (str/dex/int) — код + документация. Выявлены структурные проблемы и предложен план рефакторинга.

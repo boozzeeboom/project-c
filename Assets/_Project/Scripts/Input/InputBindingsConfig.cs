@@ -120,6 +120,9 @@ namespace ProjectC.Input
 
             // Ship (продолжение — новые действия добавлять ТОЛЬКО в конец, не ломать сериализацию!)
             ShipToggleEngine, // ENTER — запуск/остановка двигателя
+
+            // Interaction (продолжение)
+            PickupItem,       // F — подбор предметов (высший приоритет на F)
         }
 
         /// <summary>
@@ -181,6 +184,9 @@ namespace ProjectC.Input
 
             // ---- Ship (продолжение) — новые действия в конец, не ломать сериализацию! ----
             new ActionBinding { action = GameAction.ShipToggleEngine,   category = ActionCategory.Ship, key = Key.Enter,    mouseButtonRaw = 0, displayName = "Enter" },
+
+            // ---- Interaction (продолжение) ----
+            new ActionBinding { action = GameAction.PickupItem,     category = ActionCategory.Interaction,  key = Key.F,        mouseButtonRaw = 0, displayName = "F" },
         };
 
         // ==================== Helper Lookup ====================

@@ -12,6 +12,8 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 9372bd25d42b58048a89252ae81d7069, type: 3}
   m_Name: InputBindingsConfig
   m_EditorClassIdentifier: Assembly-CSharp::ProjectC.Input.InputBindingsConfig
+  targetPrevKey: 31
+  targetNextKey: 19
   combatSkills:
   - slot: 1
     mouseButtonRaw: 1
@@ -160,3 +162,8 @@ MonoBehaviour:
     mouseButtonRaw: 0
     key: 2
     displayName: Enter
+  - action: 23
+    category: 1
+    mouseButtonRaw: 0
+    key: 20
+    displayName: F

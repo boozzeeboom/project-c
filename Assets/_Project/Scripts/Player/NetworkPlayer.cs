@@ -513,7 +513,17 @@ namespace ProjectC.Player
             }
             
 
-            // F — переключение режимов
+            // F — подбор предметов (высший приоритет на F, перед ModeSwitch)
+            if (!_inShip
+                && IsActionJustPressed(InputBindingsConfig.GameAction.PickupItem)
+                && NetworkManager.Singleton != null
+                && IsSpawned)
+            {
+                FindNearestInteractable();
+                TryPickup();
+            }
+
+            // F — переключение режимов (посадка/выход/сбор/крафт/двери)
             // Guard: пропускаем RPC если NGO не готов или игрок не спавнен
             // (защита от NRE в __endSendRpc при scene transition / domain reload / shutdown)
             if (IsActionJustPressed(InputBindingsConfig.GameAction.ModeSwitch)
@@ -678,7 +688,8 @@ namespace ProjectC.Player
                 // Снос ветром интегрирован в ProcessMovement (единый Move, без подпрыгивания)
 
 
-                // E — подбор ИЛИ открыть рынок (если в MarketZone и рядом нет сундука)
+                // E — взаимодействие: MetaRequirement / Repair / NPC / сундук / рынок
+                // (подбор предметов перенесён на F — PickupItem)
                 if (IsActionJustPressed(InputBindingsConfig.GameAction.Interact))
                 {
                     // MetaRequirement Subsystem (R2-META-REQ-001): если рядом есть
@@ -695,15 +706,13 @@ namespace ProjectC.Player
                     FindNearestInteractable();
                     if (_nearestChest != null || _nearestNetworkChest != null)
                     {
-                        TryPickup();
+                        if (_nearestNetworkChest != null)
+                            _nearestNetworkChest.TryOpen();
                     }
                     else
                     {
-                        // Сначала пробуем открыть рынок; если не в зоне — TryPickup
-                        if (!ProjectC.Trade.Client.MarketInteractor.TryOpenMarket())
-                        {
-                            TryPickup();
-                        }
+                        // Пробуем открыть рынок
+                        ProjectC.Trade.Client.MarketInteractor.TryOpenMarket();
                     }
                 }
 

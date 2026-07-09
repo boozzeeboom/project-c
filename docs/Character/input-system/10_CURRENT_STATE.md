@@ -113,8 +113,8 @@ public enum SkillInputSlot : byte {
 | A/D | Движение влево/вправо | NetworkPlayer.cs:579-580 | IsOwner |
 | Space | Прыжок → SubmitJumpRpc | NetworkPlayer.cs:581, 585-588 | IsOwner |
 | LShift | Run (bool флаг, не event) | NetworkPlayer.cs:582 | IsOwner |
-| E | Interact (pickup/chest/market/npc) | NetworkPlayer.cs:593-616 | IsOwner |
-| F | Mode switch (board/exit/gather/crafting/door) | NetworkPlayer.cs:446-509 | IsOwner + NM ready |
+| E | Interact (chest/market/npc/repair/meta) | NetworkPlayer.cs:693-717 | IsOwner |
+| F | 🥇 PickupItem (подбор), затем ModeSwitch (board/exit/gather/crafting/door) | NetworkPlayer.cs:516-584 | IsOwner + NM ready |
 | P | Toggle CharacterWindow | NetworkPlayer.cs:513-519 | IsOwner + NM ready |
 | T | CommPanel (только если пилот) | NetworkPlayer.cs:522-534 | IsOwner + NM + piloting |
 | K | Primary attack (SkillInputService) | NetworkPlayer.cs:620-629 | IsOwner + NM + CombatServer |

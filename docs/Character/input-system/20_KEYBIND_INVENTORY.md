@@ -15,9 +15,9 @@
 | **D** | Движение вправо (пеший) | Walk/Run | NetworkPlayer.cs:580 + ShipInputReader.cs:80 | ЛОМАЕТ |
 | **Space** | Прыжок (пеший) → SubmitJumpRpc | Walk | NetworkPlayer.cs:581-588 | ЛОМАЕТ DEX XP |
 | **LShift / RShift** | Бег (пеший) + Boost (корабль) + Meziy модификатор | Walk/Ship | NetworkPlayer.cs:582, 555 + ShipInputReader.cs:69-70 | ЛОМАЕТ |
-| **E** | Interact (pickup/chest/market/npc) | Walk | NetworkPlayer.cs:593-616 | ЛОМАЕТ много подсистем |
+| **E** | Interact (chest/market/npc/repair/meta) | Walk | NetworkPlayer.cs:693-717 | ЛОМАЕТ много подсистем |
 | **E** (зажата) | Vertical up (корабль) | Ship | NetworkPlayer.cs:552 | ЛОМАЕТ ship movement |
-| **F** | Mode switch (board/exit/gather/crafting/door) | Walk | NetworkPlayer.cs:446-509 | ЛОМАЕТ boarding/gathering |
+| **F** | 🥇 PickupItem (подбор) → ModeSwitch (board/exit/gather/crafting/door) | Walk | NetworkPlayer.cs:516-584 | ЛОМАЕТ boarding/gathering |
 | **T** | CommPanel toggle (только пилот) | Walk/Ship | NetworkPlayer.cs:522-534 | ЛОМАЕТ docking |
 | **P** | CharacterWindow toggle | Walk | NetworkPlayer.cs:513-519 | ЛОМАЕТ UI |
 | **K** | Primary attack (K-fallback) | Walk | NetworkPlayer.cs:620-629 | ЛОМАЕТ combat |

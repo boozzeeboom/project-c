@@ -80,6 +80,28 @@ namespace ProjectC.Editor.Skills
         private SerializedProperty _rangedMaxRange;
         private SerializedProperty _rangedHitChance;
 
+        // VFX: Cast
+        private SerializedProperty _castVfxPrefab;
+        private SerializedProperty _castSpawnPoint;
+        private SerializedProperty _castVfxDuration;
+        private SerializedProperty _castVfxDelay;
+
+        // VFX: Projectile
+        private SerializedProperty _projectileVfxPrefab;
+        private SerializedProperty _projectileSpeed;
+        private SerializedProperty _projectileArcHeight;
+        private SerializedProperty _projectileTrailMaterial;
+
+        // VFX: Impact
+        private SerializedProperty _impactVfxPrefab;
+        private SerializedProperty _impactScaleByDamage;
+        private SerializedProperty _impactColorByDamageType;
+        private SerializedProperty _impactVfxDuration;
+
+        // VFX: 2D (future)
+        private SerializedProperty _twoDVfxAnimation;
+        private SerializedProperty _twoDFps;
+
         // Cached state
         private SkillCategory _cachedCategory;
         private CombatDiscipline _cachedDiscipline;
@@ -143,6 +165,24 @@ namespace ProjectC.Editor.Skills
 
             _rangedMaxRange = serializedObject.FindProperty("rangedMaxRange");
             _rangedHitChance = serializedObject.FindProperty("rangedHitChance");
+
+            _castVfxPrefab = serializedObject.FindProperty("castVfxPrefab");
+            _castSpawnPoint = serializedObject.FindProperty("castSpawnPoint");
+            _castVfxDuration = serializedObject.FindProperty("castVfxDuration");
+            _castVfxDelay = serializedObject.FindProperty("castVfxDelay");
+
+            _projectileVfxPrefab = serializedObject.FindProperty("projectileVfxPrefab");
+            _projectileSpeed = serializedObject.FindProperty("projectileSpeed");
+            _projectileArcHeight = serializedObject.FindProperty("projectileArcHeight");
+            _projectileTrailMaterial = serializedObject.FindProperty("projectileTrailMaterial");
+
+            _impactVfxPrefab = serializedObject.FindProperty("impactVfxPrefab");
+            _impactScaleByDamage = serializedObject.FindProperty("impactScaleByDamage");
+            _impactColorByDamageType = serializedObject.FindProperty("impactColorByDamageType");
+            _impactVfxDuration = serializedObject.FindProperty("impactVfxDuration");
+
+            _twoDVfxAnimation = serializedObject.FindProperty("twoDVfxAnimation");
+            _twoDFps = serializedObject.FindProperty("twoDFps");
         }
 
         public override void OnInspectorGUI()
@@ -264,6 +304,54 @@ namespace ProjectC.Editor.Skills
                     EditorGUILayout.Space();
                     EditorGUILayout.LabelField("Traps Settings", EditorStyles.boldLabel);
                     EditorGUILayout.HelpBox("Подтип Traps. Поля для ловушек — в будущих итерациях.", MessageType.Info);
+                }
+
+                // ===== VFX (Phase 0: data model) =====
+                if (_isActive.boolValue)
+                {
+                    EditorGUILayout.Space();
+                    EditorGUILayout.LabelField("VFX: Cast", EditorStyles.boldLabel);
+                    EditorGUILayout.HelpBox("Muzzle flash, заряд, свечение — срабатывает в начале каста.", MessageType.None);
+                    EditorGUILayout.PropertyField(_castVfxPrefab);
+                    if (_castVfxPrefab.objectReferenceValue != null)
+                    {
+                        EditorGUILayout.PropertyField(_castSpawnPoint);
+                        EditorGUILayout.PropertyField(_castVfxDuration);
+                        EditorGUILayout.PropertyField(_castVfxDelay);
+                    }
+
+                    // Projectile VFX: показываем для Ranged/Throwables, скрываем для Melee/Defense
+                    bool showProjectile = _cachedDiscipline == CombatDiscipline.Ranged
+                        || _cachedSubtype == CombatSubtype.Throwables;
+                    if (showProjectile)
+                    {
+                        EditorGUILayout.Space();
+                        EditorGUILayout.LabelField("VFX: Projectile", EditorStyles.boldLabel);
+                        EditorGUILayout.HelpBox("Снаряд / граната в полёте. Trail, дуга, скорость.", MessageType.None);
+                        EditorGUILayout.PropertyField(_projectileVfxPrefab);
+                        EditorGUILayout.PropertyField(_projectileSpeed);
+                        if (_cachedSubtype == CombatSubtype.Throwables)
+                            EditorGUILayout.PropertyField(_projectileArcHeight);
+                        EditorGUILayout.PropertyField(_projectileTrailMaterial);
+                    }
+
+                    EditorGUILayout.Space();
+                    EditorGUILayout.LabelField("VFX: Impact", EditorStyles.boldLabel);
+                    EditorGUILayout.HelpBox("Взрыв, искры, blood splat — при попадании в цель.", MessageType.None);
+                    EditorGUILayout.PropertyField(_impactVfxPrefab);
+                    if (_impactVfxPrefab.objectReferenceValue != null)
+                    {
+                        EditorGUILayout.PropertyField(_impactScaleByDamage);
+                        EditorGUILayout.PropertyField(_impactColorByDamageType);
+                        EditorGUILayout.PropertyField(_impactVfxDuration);
+                    }
+
+                    EditorGUILayout.Space();
+                    EditorGUILayout.LabelField("VFX: 2D (Future)", EditorStyles.boldLabel);
+                    EditorGUILayout.HelpBox("Покадровая 2D-анимация вместо ParticleSystem. Реализация — Phase 3.", MessageType.None);
+                    EditorGUILayout.PropertyField(_twoDVfxAnimation);
+                    if (_twoDVfxAnimation.objectReferenceValue != null)
+                        EditorGUILayout.PropertyField(_twoDFps);
                 }
             }
 

@@ -64,6 +64,19 @@ namespace ProjectC.Skills
         Box           = 4, // box volume (бросок в зону)
     }
 
+    /// <summary>
+    /// VFX Phase 0: точка спавна cast VFX на персонаже.
+    /// Используется SkillVfxService для определения позиции/вращения эффекта.
+    /// </summary>
+    public enum VfxAttachPoint : byte
+    {
+        WeaponMain = 0,  // основное оружие (hand_r)
+        WeaponOff  = 1,  // off-hand (hand_l)
+        Chest      = 2,  // центр персонажа
+        Head       = 3,  // голова
+        Root       = 4,  // корень (feet)
+    }
+
     [CreateAssetMenu(fileName = "Skill_", menuName = "Project C/Skill Node", order = 13)]
     public class SkillNodeConfig : ScriptableObject
     {
@@ -199,6 +212,56 @@ namespace ProjectC.Skills
 
         [Tooltip("Шанс попадания D100. При каждом выстреле бросается D100: если roll <= rangedHitChance — попадание с уроном roll% от базового (1-100%). Если roll > rangedHitChance — промах.")]
         [Range(0f, 100f)] public float rangedHitChance = 70f;
+
+        // === VFX: Cast (muzzle flash / заряд) ===
+        [Header("VFX: Cast")]
+        [Tooltip("Префаб эффекта каста (muzzle flash, заряд, свечение). Если null — эффект не проигрывается.")]
+        public GameObject castVfxPrefab;
+
+        [Tooltip("Точка спавна на персонаже.")]
+        public VfxAttachPoint castSpawnPoint = VfxAttachPoint.WeaponMain;
+
+        [Tooltip("Длительность эффекта каста (сек). После — авто-destroy или возврат в pool.")]
+        [Range(0.05f, 2f)] public float castVfxDuration = 0.3f;
+
+        [Tooltip("Задержка перед спавном cast VFX (сек). Позволяет синхронизировать с анимацией.")]
+        [Range(0f, 1f)] public float castVfxDelay = 0f;
+
+        // === VFX: Projectile ===
+        [Header("VFX: Projectile")]
+        [Tooltip("Префаб снаряда. Если null — используется встроенный примитив (MVP fallback).")]
+        public GameObject projectileVfxPrefab;
+
+        [Tooltip("Скорость полёта (м/с).")]
+        [Range(5f, 100f)] public float projectileSpeed = 30f;
+
+        [Tooltip("Высота дуги для throwables (метры). 0 = прямой полёт.")]
+        [Range(0f, 15f)] public float projectileArcHeight = 0f;
+
+        [Tooltip("Материал trail (LineRenderer). Если null — trail не рисуется.")]
+        public Material projectileTrailMaterial;
+
+        // === VFX: Impact ===
+        [Header("VFX: Impact")]
+        [Tooltip("Префаб эффекта при попадании (взрыв, искры, blood splat). Если null — эффект не проигрывается.")]
+        public GameObject impactVfxPrefab;
+
+        [Tooltip("Масштабировать эффект пропорционально нанесённому урону.")]
+        public bool impactScaleByDamage = false;
+
+        [Tooltip("Окрашивать эффект по типу урона (Physical=красный, Explosive=оранжевый, Mesium=фиолетовый).")]
+        public bool impactColorByDamageType = true;
+
+        [Tooltip("Длительность impact VFX (сек).")]
+        [Range(0.1f, 3f)] public float impactVfxDuration = 0.5f;
+
+        // === VFX: 2D Animation (Future — Phase 3) ===
+        [Header("VFX: 2D (Future)")]
+        [Tooltip("SpriteAnimationAsset для 2D-покадровой анимации. Если задан — используется вместо ParticleSystem. (Phase 3)")]
+        public SpriteAnimationAsset twoDVfxAnimation;
+
+        [Tooltip("FPS для 2D-анимации.")]
+        [Range(4, 60)] public int twoDFps = 12;
 
         // === Public read-only API ===
 

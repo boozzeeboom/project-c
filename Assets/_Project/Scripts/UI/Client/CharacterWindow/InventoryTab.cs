@@ -54,6 +54,7 @@ namespace ProjectC.UI.Client
 
         // Caches
         private List<InventoryListItem> _inventoryCache = new List<InventoryListItem>();
+        public List<InventoryListItem> InventoryCache => _inventoryCache;
 
         private List<string> _inventoryFilterSourceOptionsCache; // динамически по ItemType
         private List<string> _inventoryFilterStateOptions = new List<string> { "Все типы" };
@@ -64,7 +65,7 @@ namespace ProjectC.UI.Client
         // ============================================================
         // DTO-проекция для ListView
         // ============================================================
-        private struct InventoryListItem
+        public struct InventoryListItem
         {
             public string itemId;
             // T-KEY-08 fix: instanceId для уникальной идентификации Key-предметов.

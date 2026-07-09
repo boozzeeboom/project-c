@@ -173,8 +173,6 @@ namespace ProjectC.UI.Client
         private ContractsTab _contractsTab;
 
         private ContractDto[] _contractsCache = Array.Empty<ContractDto>();
-        [Obsolete("Переехало в InventoryTab._inventoryCache — удалить при следующем рефакторе")]
-        private List<InventoryListItem> _inventoryCache = new List<InventoryListItem>();
         private List<ReputationListItem> _reputationCache = new List<ReputationListItem>();
         private List<NpcAttitudeListItem> _npcAttitudeCache = new List<NpcAttitudeListItem>(); // T-Q13
         private List<QuestListItem> _questsActiveCache = new List<QuestListItem>();
@@ -223,15 +221,6 @@ namespace ProjectC.UI.Client
         // ============================================================
         // DTO-проекции для ListView
         // ============================================================
-        private struct InventoryListItem
-        {
-            public string  itemId;
-            public string  displayName;
-            public ItemType type;
-            public int     quantity;
-            public Sprite  icon;
-        }
-
         private struct ReputationListItem
         {
         public string factionId;
@@ -1129,7 +1118,7 @@ namespace ProjectC.UI.Client
 
         private void RefreshInventoryCache()
         {
-            _inventoryCache.Clear();
+            _inventoryTab.InventoryCache.Clear();
             if (_localPlayer == null) FindLocalPlayer();
 
             var invState = ProjectC.Items.Client.InventoryClientState.Instance;
@@ -1139,8 +1128,8 @@ namespace ProjectC.UI.Client
                 // СESSION 2 ROLLBACK: вернулись к ListView (было рабочее)
                 if (_inventoryList != null)
                 {
-                    if (!ReferenceEquals(_inventoryList.itemsSource, _inventoryCache))
-                        _inventoryList.itemsSource = _inventoryCache;
+                    if (!ReferenceEquals(_inventoryList.itemsSource, _inventoryTab.InventoryCache))
+                        _inventoryList.itemsSource = _inventoryTab.InventoryCache;
                     _inventoryList.RefreshItems();
                 }
                 return;
@@ -1152,8 +1141,8 @@ namespace ProjectC.UI.Client
             {
                 if (_inventoryList != null)
                 {
-                    if (!ReferenceEquals(_inventoryList.itemsSource, _inventoryCache))
-                        _inventoryList.itemsSource = _inventoryCache;
+                    if (!ReferenceEquals(_inventoryList.itemsSource, _inventoryTab.InventoryCache))
+                        _inventoryList.itemsSource = _inventoryTab.InventoryCache;
                     _inventoryList.RefreshItems();
                 }
                 return;
@@ -1191,7 +1180,7 @@ namespace ProjectC.UI.Client
             {
                 var first = entry.Value.first;
                 ItemData def = invState.GetItemDefinition(first.itemId);
-                _inventoryCache.Add(new InventoryListItem
+                _inventoryTab.InventoryCache.Add(new InventoryTab.InventoryListItem
                 {
                     itemId      = first.itemId.ToString(),
                     displayName = def != null ? def.itemName : $"Item#{first.itemId}",
@@ -1204,8 +1193,8 @@ namespace ProjectC.UI.Client
             // СESSION 2 ROLLBACK: ListView itemsSource
             if (_inventoryList != null)
             {
-                if (!ReferenceEquals(_inventoryList.itemsSource, _inventoryCache))
-                    _inventoryList.itemsSource = _inventoryCache;
+                if (!ReferenceEquals(_inventoryList.itemsSource, _inventoryTab.InventoryCache))
+                    _inventoryList.itemsSource = _inventoryTab.InventoryCache;
                 _inventoryList.RefreshItems();
             }
         }
@@ -1218,7 +1207,7 @@ namespace ProjectC.UI.Client
         {
             // DIAG (bug report 2026-06-05): P-таб пуст при chest-add, но TAB обновляется.
             // Логируем чтобы понять — cache заполняется, _inventoryList != null?
-            Debug.Log($"[CharacterWindow] HandleInventorySnapshotUpdated: items={(snap.items!=null?snap.items.Length:0)}, activeTab={_activeTab}, _inventoryList={(_inventoryList!=null?"OK":"NULL")}, cacheBefore={_inventoryCache.Count}");
+            Debug.Log($"[CharacterWindow] HandleInventorySnapshotUpdated: items={(snap.items!=null?snap.items.Length:0)}, activeTab={_activeTab}, _inventoryList={(_inventoryList!=null?"OK":"NULL")}, cacheBefore={_inventoryTab.InventoryCache.Count}");
 
             // Cross-tab: обновляем общий credits в header, если есть
             if (_creditsLabel != null)
@@ -1364,12 +1353,12 @@ namespace ProjectC.UI.Client
             if (selectedItems == null) return;
             if (_inventoryList == null) return;
             int selectedIdx = _inventoryList.selectedIndex;
-            if (selectedIdx < 0 || selectedIdx >= _inventoryCache.Count)
+            if (selectedIdx < 0 || selectedIdx >= _inventoryTab.InventoryCache.Count)
             {
                 ClearInventoryDetail();
                 return;
             }
-            var item = _inventoryCache[selectedIdx];
+            var item = _inventoryTab.InventoryCache[selectedIdx];
             UpdateInventoryDetail(item);
         }
 
@@ -1382,7 +1371,7 @@ namespace ProjectC.UI.Client
             if (_invDetailDesc != null) _invDetailDesc.text = "—";
         }
 
-        private void UpdateInventoryDetail(InventoryListItem item)
+        private void UpdateInventoryDetail(InventoryTab.InventoryListItem item)
         {
             // Резолвим ItemData для деталей
             ProjectC.Items.ItemData def = null;
@@ -1465,7 +1454,7 @@ namespace ProjectC.UI.Client
         {
             if (_inventoryList == null) return;
             var src = _inventoryList.itemsSource;
-            if (src is List<InventoryListItem> list)
+            if (src is List<InventoryTab.InventoryListItem> list)
             {
                 if (index < 0 || index >= list.Count) return;
                 var item = list[index];
@@ -1772,7 +1761,7 @@ namespace ProjectC.UI.Client
         private void ApplyInventoryFilters()
         {
             if (_inventoryList == null) return;
-            IEnumerable<InventoryListItem> src = _inventoryCache;
+            IEnumerable<InventoryTab.InventoryListItem> src = _inventoryTab.InventoryCache;
 
             string source = _filterSource != null ? _filterSource.value : "Все типы";
             if (source != "Все типы")

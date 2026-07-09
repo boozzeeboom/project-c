@@ -539,6 +539,7 @@
     flex-direction: row !important;
     align-items: center !important;
     align-self: stretch !important;
+    position: relative !important;
     padding: 4px 6px !important;
     background-color: rgba(30, 40, 60, 0.5) !important;
     border-radius: 3px !important;
@@ -551,7 +552,6 @@
 .stat-label-compact {
     width: 24px !important;
     font-size: 10px !important;
-    color: rgb(220, 220, 240) !important;
     -unity-font-style: bold !important;
     flex-shrink: 0 !important;
     -unity-text-align: middle-left !important;
@@ -562,27 +562,27 @@
 .stat-label-int { color: rgb(130, 170, 255) !important; }
 
 .stat-value-compact {
-    width: 92px !important;
     font-size: 8px !important;
-    color: rgb(200, 220, 200) !important;
+    color: rgb(220, 240, 220) !important;
     -unity-text-align: middle-right !important;
     flex-shrink: 0 !important;
     white-space: nowrap !important;
-    overflow: hidden !important;
-    text-overflow: ellipsis !important;
+    margin-left: auto !important;
+    background-color: rgba(0, 0, 0, 0.45) !important;
+    padding: 2px 5px !important;
+    border-radius: 2px !important;
 }
 
-/* Stat bar — custom bg+fill */
+/* Stat bar — absolute behind label+value, full row width */
 .stat-bar-bg {
-    flex-grow: 1 !important;
-    flex-shrink: 1 !important;
-    height: 12px !important;
+    position: absolute !important;
+    left: 0 !important;
+    right: 0 !important;
+    top: 0 !important;
+    bottom: 0 !important;
     background-color: rgba(40, 55, 85, 0.6) !important;
-    border-radius: 4px !important;
+    border-radius: 3px !important;
     overflow: hidden !important;
-    min-width: 24px !important;
-    margin-left: 5px !important;
-    margin-right: 6px !important;
 }
 .stat-bar-fill {
     width: 0% !important;

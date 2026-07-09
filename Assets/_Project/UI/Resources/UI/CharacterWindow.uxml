@@ -3,11 +3,11 @@
  CharacterWindow.uxml — 2026-06-16 REWRITE.
  Layout (simple grid, 2 rows × columns):
   Row 1: ОДЕЖДА (50%) | МОДУЛИ (50%) — full slots, 10 clothing + 3 module rows, scrollable
-  Row 2: ХАРАКТЕРИСТИКИ (20%) | БОЕВЫЕ (40%) | СОЦИАЛЬНЫЕ (40%) — compact, no scroll
+  Row 2: ХАРАКТЕРИСТИКИ (28%) | БОЕВЫЕ (36%) | СОЦИАЛЬНЫЕ (36%) — compact, no scroll
 -->
 <ui:UXML xmlns:ui="UnityEngine.UIElements" xmlns:uie="UnityEditor.UIElements">
  <ui:VisualElement name="main-container" class="character-window">
-	
+		
  <ui:VisualElement class="header">
   <ui:VisualElement class="header-row">
    <ui:Label name="character-name-label" text="Игрок" class="character-name" />
@@ -16,12 +16,12 @@
   <!-- T-CUS-06: кнопка открытия CustomisationWindow (выбор М/Ж + L3 слайдеры + L4 цвета). -->
   <ui:Label name="open-customisation-btn" text="ИЗМЕНИТЬ ВНЕШНОСТЬ" class="open-customisation-btn" />
  </ui:VisualElement>
-	
+		
  <ui:VisualElement class="info-bar">
   <ui:Label name="credits-label" text="Кредиты: 0 CR" class="credits-label" />
   <ui:Label name="location-label" text="Локация: —" class="location-info" />
  </ui:VisualElement>
-	
+		
  <ui:VisualElement class="tabs">
   <ui:Button name="tab-character" text="ПЕРСОНАЖ" class="tab-btn" />
   <ui:Button name="tab-ship" text="КОРАБЛЬ" class="tab-btn" />
@@ -30,16 +30,16 @@
   <ui:Button name="tab-inventory" text="ИНВЕНТАРЬ" class="tab-btn" />
   <ui:Button name="tab-quests" text="КВЕСТЫ" class="tab-btn" />
  </ui:VisualElement>
-	
+		
  <ui:VisualElement name="filters-row" class="filters-row" style="display: none;">
   <ui:DropdownField name="filter-source" class="filter-dd" />
   <ui:DropdownField name="filter-state" class="filter-dd" />
   <ui:TextField name="filter-search" class="filter-search" placeholder="поиск..." />
  </ui:VisualElement>
-	
+		
  <!-- Character section: single-page with 2 rows × columns -->
  <ui:VisualElement name="character-section" class="list-section progression-root">
-	
+		
   <!-- Row 1: Одежда | Модули -->
   <ui:VisualElement class="progression-row equip-row">
    <ui:VisualElement class="progression-col equip-col">
@@ -55,31 +55,31 @@
     </ui:ScrollView>
    </ui:VisualElement>
   </ui:VisualElement>
-	
-  <!-- Row 2: Характеристики (20%) | Боевые (40%) | Социальные (40%) -->
+		
+  <!-- Row 2: Характеристики (28%) | Боевые (36%) | Социальные (36%) -->
   <ui:VisualElement class="progression-row stats-row">
    <ui:VisualElement class="progression-col stats-col">
     <ui:Label text="Характеристики" class="progression-col-title" />
     <ui:VisualElement class="stats-grid">
      <ui:VisualElement class="stat-row-compact">
-      <ui:Label text="STR" class="stat-label-compact stat-label-str" />
       <ui:VisualElement class="stat-bar-bg">
        <ui:VisualElement name="stat-str-bar-fill" class="stat-bar-fill stat-bar-fill-str" />
       </ui:VisualElement>
+      <ui:Label text="STR" class="stat-label-compact stat-label-str" />
       <ui:Label name="stat-str-value" text="—" class="stat-value-compact" />
      </ui:VisualElement>
      <ui:VisualElement class="stat-row-compact">
-      <ui:Label text="DEX" class="stat-label-compact stat-label-dex" />
       <ui:VisualElement class="stat-bar-bg">
        <ui:VisualElement name="stat-dex-bar-fill" class="stat-bar-fill stat-bar-fill-dex" />
       </ui:VisualElement>
+      <ui:Label text="DEX" class="stat-label-compact stat-label-dex" />
       <ui:Label name="stat-dex-value" text="—" class="stat-value-compact" />
      </ui:VisualElement>
      <ui:VisualElement class="stat-row-compact">
-      <ui:Label text="INT" class="stat-label-compact stat-label-int" />
       <ui:VisualElement class="stat-bar-bg">
        <ui:VisualElement name="stat-int-bar-fill" class="stat-bar-fill stat-bar-fill-int" />
       </ui:VisualElement>
+      <ui:Label text="INT" class="stat-label-compact stat-label-int" />
       <ui:Label name="stat-int-value" text="—" class="stat-value-compact" />
      </ui:VisualElement>
     </ui:VisualElement>
@@ -98,9 +98,9 @@
     </ui:ScrollView>
    </ui:VisualElement>
   </ui:VisualElement>
-	
+		
  </ui:VisualElement>
-	
+		
  <!-- Other sections (unchanged) -->
  <ui:VisualElement name="ship-section" class="list-section" style="display: none;">
   <ui:Label text="Мои корабли" class="section-title" />
@@ -108,26 +108,26 @@
   <ui:VisualElement name="ship-selector-container" />
   <ui:Label name="ship-empty-label" text="Нет доступных кораблей. Найдите ключ в мире." class="ship-empty" />
   <ui:VisualElement name="ship-info" class="ship-info">
-	
+		
   <!-- key-id (единственный header-текст, дублирующееся имя убрано T-CARGO-UI-01-3) -->
   <ui:Label name="ship-info-key-id" text="—" class="ship-info-key-id" />
-	
+		
    <!-- T-HULL: полоска прочности корпуса (над топливом) -->
    <ui:VisualElement class="ship-bar-bg">
     <ui:VisualElement name="ship-hull-bar-fill" class="ship-bar-fill ship-bar-fill-hull" />
    </ui:VisualElement>
    <ui:Label name="ship-hull-text" text="—" class="ship-info-row ship-info-row-compact" />
-	
+		
    <!-- T-CARGO-UI-01-3: кастомный fuel bar (bg+fill) — стиль как в MarketWindow -->
    <ui:VisualElement class="ship-bar-bg">
     <ui:VisualElement name="ship-fuel-bar-fill" class="ship-bar-fill ship-bar-fill-fuel" />
    </ui:VisualElement>
    <ui:Label name="ship-fuel-text" text="—" class="ship-info-row ship-info-row-compact" />
    <ui:Label name="ship-engine-status" text="—" class="ship-info-row ship-info-row-compact" />
-	
+		
    <!-- T-CARGO-UI-01-2: 2 колонки — Груз (список) | Модули. 80-90% секции. -->
    <ui:VisualElement class="ship-cols">
-	
+		
     <!-- Левая колонка: Груз -->
     <ui:VisualElement class="ship-col ship-col-cargo">
      <ui:Label text="Груз" class="ship-info-header ship-col-header" />
@@ -140,7 +140,7 @@
       <ui:VisualElement name="ship-cargo-container" class="ship-cargo-container" />
      </ui:ScrollView>
     </ui:VisualElement>
-	
+		
     <!-- Правая колонка: Модули -->
     <ui:VisualElement class="ship-col ship-col-modules">
      <ui:Label text="Установленные модули" class="ship-info-header ship-col-header" />
@@ -148,15 +148,15 @@
       <ui:VisualElement name="ship-modules-container" class="ship-modules-container" />
      </ui:ScrollView>
     </ui:VisualElement>
-	
+		
    </ui:VisualElement>
-	
+		
    <!-- Подвал: позиция + состояние в одну строку -->
    <ui:VisualElement class="ship-footer-row">
     <ui:Label name="ship-info-position" text="—" class="ship-info-row ship-info-row-compact" />
     <ui:Label name="ship-info-state" text="—" class="ship-info-row ship-info-row-compact" />
    </ui:VisualElement>
-	
+		
   </ui:VisualElement>
  </ui:VisualElement>
  <ui:VisualElement name="reputation-section" class="list-section" style="display: none;">
@@ -193,13 +193,13 @@
    <ui:ListView name="quests-discovered-list" class="item-list quest-list quest-list-full" />
   </ui:ScrollView>
  </ui:VisualElement>
-	
+		
  <ui:VisualElement class="actions">
   <ui:Button name="reject-quest-btn" text="ОТКАЗАТЬСЯ" class="action-btn reject" style="display: none;" />
   <ui:Button name="accept-quest-btn" text="ПРИНЯТЬ" class="action-btn accept" style="display: none;" />
   <ui:Button name="close-btn" text="ЗАКРЫТЬ" class="action-btn close" />
  </ui:VisualElement>
-	
+		
  <ui:Label name="message-label" text="Откройте меню персонажа" class="message-label" />
  </ui:VisualElement>
 </ui:UXML>

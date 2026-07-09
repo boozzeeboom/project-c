@@ -90,6 +90,13 @@ namespace ProjectC.AI
                  "Для AND/OR композиции — используй SpawnRestartGate.")]
         [SerializeField] private List<MonoBehaviour> _restartTriggers = new List<MonoBehaviour>();
 
+        [Header("Loot (T-NPC-12)")]
+        [Tooltip("Префаб дропа (визуал). Если null — programmatic жёлтая сфера (backward compat).")]
+        [SerializeField] private GameObject _lootPrefab;
+
+        [Tooltip("Таблица дропа (items + credits). Если null — fallback к формуле maxHp/4 credits (backward compat).")]
+        [SerializeField] private Items.LootTable _lootTable;
+
         // Spawned NPCs (server-only) — для alive-count tracking.
         private readonly List<NetworkObject> _spawned = new List<NetworkObject>();
         private float _nextCheckTime;
@@ -188,6 +195,11 @@ namespace ProjectC.AI
                     _spawnMode = _config.spawnMode;
                 if (_config.totalSpawnLimit > 0)
                     _totalSpawnLimit = _config.totalSpawnLimit;
+                // T-NPC-12: loot config — only override from SO if explicitly set.
+                if (_config.lootPrefab != null)
+                    _lootPrefab = _config.lootPrefab;
+                if (_config.lootTable != null)
+                    _lootTable = _config.lootTable;
             }
         }
 
@@ -390,6 +402,13 @@ namespace ProjectC.AI
                     int maxHits = _config.passiveMaxHitsPerMinute >= 0
                         ? _config.passiveMaxHitsPerMinute : -1;
                     brain.ApplySpawnerBehavior(_config.behaviorType, hpThreshold, maxHits);
+                }
+
+                // T-NPC-12: loot config — пробросить на NpcTarget ДО Spawn().
+                var target = go.GetComponent<ProjectC.Combat.NpcTarget>();
+                if (target != null)
+                {
+                    target.SetLootConfig(_lootPrefab, _lootTable);
                 }
 
                 // T-NPC-S06: social config — добавить NpcSocialBrain ДО Spawn()!

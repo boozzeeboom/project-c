@@ -15736,7 +15736,6 @@ MonoBehaviour:
   _totalSpawnLimit: 4
   _restartTriggers:
   - {fileID: 208563500}
-  - {fileID: 1786462386}
 --- !u!4 &2977119022265116453 stripped
 Transform:
   m_CorrespondingSourceObject: {fileID: 5161824931232467223, guid: 5f4dcf8edbc15014d83fd2bcd92d3f67, type: 3}

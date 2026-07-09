@@ -29,6 +29,25 @@ namespace ProjectC.Items
         [Tooltip("Гарантированные предметы (игнорируют шанс)")]
         public List<ItemData> guaranteedItems = new List<ItemData>();
 
+        [Header("Credits (T-NPC-12)")]
+        [Tooltip("Минимальное количество кредитов. Если min=max=0 — кредиты не выпадают.")]
+        [Range(0, 10000)] public int minCredits = 0;
+
+        [Tooltip("Максимальное количество кредитов.")]
+        [Range(0, 10000)] public int maxCredits = 0;
+
+        /// <summary>
+        /// Сгенерировать случайное количество кредитов из [minCredits, maxCredits].
+        /// Если оба 0 — возвращает 0 (no credits).
+        /// </summary>
+        public int GenerateCredits()
+        {
+            if (minCredits <= 0 && maxCredits <= 0) return 0;
+            int lo = Mathf.Max(0, minCredits);
+            int hi = Mathf.Max(lo, maxCredits);
+            return Random.Range(lo, hi + 1);
+        }
+
         /// <summary>
         /// Сгенерировать список предметов из таблицы.
         /// </summary>

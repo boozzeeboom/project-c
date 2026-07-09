@@ -176,5 +176,12 @@ namespace ProjectC.AI
         [Header("Vengeance (T-NPC-S20)")]
         [Tooltip("Включает кросс-спавн vengeance-память.")]
         public bool enableVengeanceMemory = true;
+
+        [Header("Loot (T-NPC-12)")]
+        [Tooltip("Префаб дропа (визуал). Если null — programmatic жёлтая сфера (backward compat).")]
+        public GameObject lootPrefab;
+
+        [Tooltip("Таблица дропа (items + credits). Если null — fallback к формуле maxHp/4 credits (backward compat).")]
+        public Items.LootTable lootTable;
     }
 }

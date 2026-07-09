@@ -22,6 +22,10 @@ namespace ProjectC.Combat
         private NetworkVariable<int> _maxHp = new NetworkVariable<int>(30);
         private ulong _targetId;  // = NetworkObjectId по дизайну, но у нас override
 
+        // T-NPC-12: loot config from spawner.
+        private GameObject _lootPrefab;
+        private Items.LootTable _lootTable;
+
         // T-NPC-14: событие изменения HP (server-side). Подписывается NpcBrain для
         // отслеживания cumulative damage / passive aggro. Параметры: (newHp, deltaHp).
         public event Action<int, int> OnHpChanged;
@@ -158,48 +162,83 @@ namespace ProjectC.Combat
         }
 
         /// <summary>
-        /// T-NPC-03 + T-NPC-04: server-only spawn NpcLootPickup на текущей позиции NPC.
-        /// Использует NpcLootPickup prefab (если зарегистрирован) иначе — спавнит programmatic.
+        /// T-NPC-12: установить конфиг лута от спавнера.
+        /// Вызывается NpcSpawner'ом ДО NetworkObject.Spawn().
+        /// </summary>
+        public void SetLootConfig(GameObject lootPrefab, Items.LootTable lootTable)
+        {
+            _lootPrefab = lootPrefab;
+            _lootTable = lootTable;
+        }
+
+        /// <summary>
+        /// T-NPC-03 + T-NPC-04 v2 (T-NPC-12): server-only spawn loot на текущей позиции NPC.
+        /// Использует: _lootTable для credits (GenerateCredits), _lootPrefab для визуала.
+        /// Fallback: если оба null — programmatic жёлтая сфера + credits = maxHp/4 (backward compat).
         /// </summary>
         private void SpawnLootPickup(ulong attackerClientId)
         {
-            // Credits из _data (placeholder: фиксированный value до T-NPC-04 LootTable extension).
+            // Определяем credits.
             int credits = 0;
-            if (_data != null)
+            if (_lootTable != null)
             {
-                // До T-NPC-04: простой fixed credits based on NPC maxHp (scaling).
-                // T-NPC-04: заменить на _data.loot.GenerateCredits().
-                credits = Mathf.Max(5, _data.maxHp / 4);  // HP=20 → 5 CR; HP=100 → 25 CR
+                credits = _lootTable.GenerateCredits();
+            }
+            else
+            {
+                // Backward compat: formula maxHp/4.
+                if (_data != null)
+                    credits = Mathf.Max(5, _data.maxHp / 4);
             }
 
-            if (credits <= 0) return;
+            if (credits <= 0 && _lootTable == null) return;
+            // Если credits=0 но lootTable есть — всё равно спавним (могут быть items).
 
-            // Программное создание NpcLootPickup (без prefab asset для MVP).
-            var loot = new GameObject($"Loot_{_data?.displayName ?? "NPC"}_CR{credits}");
-            loot.transform.position = transform.position + Vector3.up * 0.5f;  // поднимаем над землёй
+            GameObject loot;
 
-            var netObj = loot.AddComponent<Unity.Netcode.NetworkObject>();
-            var pickup = loot.AddComponent<ProjectC.AI.NpcLootPickup>();
+            if (_lootPrefab != null)
+            {
+                // Инстанциируем префаб дропа.
+                loot = Instantiate(_lootPrefab, transform.position + Vector3.up * 0.5f, Quaternion.identity);
+                loot.name = $"Loot_{_data?.displayName ?? "NPC"}";
+            }
+            else
+            {
+                // Backward compat: programmatic создание.
+                loot = new GameObject($"Loot_{_data?.displayName ?? "NPC"}_CR{credits}");
+                loot.transform.position = transform.position + Vector3.up * 0.5f;
+
+                // Visual: small yellow sphere (placeholder).
+                var visual = GameObject.CreatePrimitive(PrimitiveType.Sphere);
+                visual.name = "VisualMarker";
+                visual.transform.SetParent(loot.transform, false);
+                visual.transform.localPosition = Vector3.zero;
+                visual.transform.localScale = new Vector3(0.3f, 0.3f, 0.3f);
+                var col = visual.GetComponent<Collider>();
+                if (col != null) UnityEngine.Object.DestroyImmediate(col);
+                var mr = visual.GetComponent<Renderer>();
+                var shader = Shader.Find("Universal Render Pipeline/Lit");
+                if (shader == null) shader = Shader.Find("Standard");
+                var mat = new Material(shader);
+                mat.color = new Color(1f, 0.85f, 0.2f, 1f);
+                if (mat.HasProperty("_BaseColor")) mat.SetColor("_BaseColor", mat.color);
+                mr.sharedMaterial = mat;
+            }
+
+            // NpcLootPickup: если на префабе уже есть — используем, иначе добавляем.
+            var pickup = loot.GetComponent<ProjectC.AI.NpcLootPickup>();
+            if (pickup == null)
+                pickup = loot.AddComponent<ProjectC.AI.NpcLootPickup>();
+
             pickup.creditsAmount = credits;
             pickup.displayName = _data != null ? $"{_data.displayName} Loot" : "Loot";
             pickup.interactionRadius = 2.0f;
-            pickup.autoDespawnSeconds = 120f;  // 2 мин
+            pickup.autoDespawnSeconds = 120f;
 
-            // Visual: small yellow sphere (placeholder — gold coins vibe).
-            var visual = GameObject.CreatePrimitive(PrimitiveType.Sphere);
-            visual.name = "VisualMarker";
-            visual.transform.SetParent(loot.transform, false);
-            visual.transform.localPosition = Vector3.zero;
-            visual.transform.localScale = new Vector3(0.3f, 0.3f, 0.3f);
-            var col = visual.GetComponent<Collider>();
-            if (col != null) UnityEngine.Object.DestroyImmediate(col);
-            var mr = visual.GetComponent<Renderer>();
-            var shader = Shader.Find("Universal Render Pipeline/Lit");
-            if (shader == null) shader = Shader.Find("Standard");
-            var mat = new Material(shader);
-            mat.color = new Color(1f, 0.85f, 0.2f, 1f);  // gold
-            if (mat.HasProperty("_BaseColor")) mat.SetColor("_BaseColor", mat.color);
-            mr.sharedMaterial = mat;
+            // NetworkObject: если на префабе уже есть — используем, иначе добавляем.
+            var netObj = loot.GetComponent<Unity.Netcode.NetworkObject>();
+            if (netObj == null)
+                netObj = loot.AddComponent<Unity.Netcode.NetworkObject>();
 
             netObj.Spawn(destroyWithScene: true);
         }

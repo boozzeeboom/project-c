@@ -531,19 +531,21 @@
 /* === Compact stat bars (20% column) === */
 .stats-grid {
     flex-direction: column !important;
+    flex-grow: 1 !important;
+    justify-content: space-evenly !important;
     padding: 2px !important;
 }
 .stat-row-compact {
     flex-direction: row !important;
     align-items: center !important;
     align-self: stretch !important;
-    margin-bottom: 3px !important;
     padding: 4px 6px !important;
     background-color: rgba(30, 40, 60, 0.5) !important;
     border-radius: 3px !important;
     border-width: 1px !important;
     border-color: rgba(80, 100, 140, 0.25) !important;
-    min-height: 28px !important;
+    min-height: 30px !important;
+    flex-grow: 1 !important;
     overflow: hidden !important;
 }
 .stat-label-compact {
@@ -560,6 +562,7 @@
 .stat-label-int { color: rgb(130, 170, 255) !important; }
 
 .stat-value-compact {
+    width: 92px !important;
     font-size: 8px !important;
     color: rgb(200, 220, 200) !important;
     -unity-text-align: middle-right !important;

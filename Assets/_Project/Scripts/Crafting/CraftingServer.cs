@@ -4,6 +4,7 @@
 using System.Collections.Generic;
 using Unity.Netcode;
 using UnityEngine;
+using ProjectC.Core;
 using ProjectC.Player;
 using ProjectC.Items;
 using ProjectC.Items.Dto;
@@ -186,7 +187,7 @@ namespace ProjectC.Crafting
             if (job.OwnerClientId != 0 && job.OwnerClientId != clientId) { SendResultToClient(clientId, CraftingResultDto.Denied(CraftingResultCode.NotOwner, "Станция занята другим игроком", stationNetId)); return; }
 
             // T-C07b: списать предметы из инвентаря
-            var itemData = CraftingWorld.GetItem(itemId);
+            var itemData = InventoryWorld.Instance?.GetItemDefinition(itemId);
             if (itemData == null) { SendResultToClient(clientId, CraftingResultDto.Denied(CraftingResultCode.NotFound, "Предмет не найден", stationNetId)); return; }
 
             var invWorld = InventoryWorld.Instance;
@@ -237,10 +238,25 @@ namespace ProjectC.Crafting
             // T-C07c: валидация buffer — должен быть не пуст
             if (job.Buffer.Count == 0) { SendResultToClient(clientId, CraftingResultDto.Denied(CraftingResultCode.InvalidArgs, "Нет ингредиентов на станции", stationNetId)); return; }
 
+            // B3: валидация buffer → recipe (предотвращает крафт "мусора" по любому рецепту)
+            if (!ValidateBufferMatchesRecipe(job, recipe, out string validationReason))
+            {
+                SendResultToClient(clientId, CraftingResultDto.Denied(CraftingResultCode.InvalidArgs, validationReason, stationNetId));
+                return;
+            }
+
             // FIX T-C07: вызываем станцию, а не мутируем job напрямую.
             // station.ServerStartCraft синхронизирует и _replicatedState (NetworkVariable) и job в CraftingWorld.
             var station = CraftingWorld.GetStationRaw(stationNetId);
             if (station == null) { SendResultToClient(clientId, CraftingResultDto.Denied(CraftingResultCode.NotFound, "Станция не найдена", stationNetId)); return; }
+
+            // B4: MetaRequirement tool check (станция с требованиями по инструменту)
+            var csComponent = station.GetComponent<ProjectC.Crafting.CraftingStation>();
+            if (csComponent != null && !csComponent.CanStartCraft(clientId, out string metaReason))
+            {
+                SendResultToClient(clientId, CraftingResultDto.Denied(CraftingResultCode.MetaReqDenied, metaReason ?? "Требования не выполнены", stationNetId));
+                return;
+            }
 
             // Подготовить committed из buffer (передаётся по значению через список)
             var committedItems = new System.Collections.Generic.List<ProjectC.Crafting.CommittedIngredientDto>();
@@ -254,13 +270,14 @@ namespace ProjectC.Crafting
             }
 
             float startTime = NetworkManager != null ? (float)NetworkManager.ServerTime.Time : Time.realtimeSinceStartup;
-            float duration = Mathf.Max(0.5f, recipe.CraftSeconds / 1f); // speedMult=1f hardcode пока
+            // B5: используем CraftSpeedMultiplier из конфига станции
+            float speedMult = Mathf.Max(0.1f, csComponent != null && csComponent.Config != null ? csComponent.Config.CraftSpeedMultiplier : 1f);
+            float duration = Mathf.Max(0.5f, recipe.CraftSeconds / speedMult);
 
-            // Find CraftingStation component (station is MonoBehaviour)
-            var cs = station.GetComponent<ProjectC.Crafting.CraftingStation>();
-            if (cs != null)
+            // B4+B3 done above via csComponent; reuse it (no double GetComponent)
+            if (csComponent != null)
             {
-                cs.ServerStartCraft(clientId, recipeId, startTime, duration, committedItems, recipe.DisplayName);
+                csComponent.ServerStartCraft(clientId, recipeId, startTime, duration, committedItems, recipe.DisplayName);
                 job.Buffer.Clear(); // committed already set inside ServerStartCraft
             }
             else
@@ -292,23 +309,43 @@ namespace ProjectC.Crafting
             var station = CraftingWorld.GetStationRaw(stationNetId);
             if (station == null) return;
 
-            // T-C07b: вернуть предметы в инвентарь ДО ServerCancelCraft
+            // B2: вернуть ВСЕ ресурсы (Buffer + Committed) в инвентарь один раз ДО ServerCancelCraft.
+            // ServerCancelCraft больше не копирует Committed→Buffer (дубль был здесь).
             var job = CraftingWorld.GetJob(stationNetId);
-            if (job != null && job.State == CraftingJobState.InProgress)
+
+            // T4: owner-guard — только владелец может отменить крафт
+            if (job != null && job.OwnerClientId != clientId)
+            {
+                SendResultToClient(clientId, CraftingResultDto.Denied(CraftingResultCode.NotOwner, "Только заказчик может отменить", stationNetId));
+                return;
+            }
+
+            if (job != null && (job.State == CraftingJobState.InProgress || job.State == CraftingJobState.Buffered))
             {
                 var invWorld = InventoryWorld.Instance;
                 if (invWorld != null)
                 {
+                    // Сначала возвращаем Buffer (ингредиенты, которые ещё не committed)
+                    foreach (var b in job.Buffer)
+                    {
+                        var itemData = InventoryWorld.Instance?.GetItemDefinition(b.itemId);
+                        if (itemData == null) continue;
+                        int invItemId = invWorld.GetOrRegisterItemId(itemData);
+                        if (invItemId < 0) continue;
+                        for (int n = 0; n < b.quantity; n++)
+                            invWorld.AddItemDirect(clientId, invItemId, itemData.itemType);
+                    }
+                    // Затем возвращаем Committed
                     foreach (var c in job.Committed)
                     {
-                        var itemData = CraftingWorld.GetItem(c.itemId);
+                        var itemData = InventoryWorld.Instance?.GetItemDefinition(c.itemId);
                         if (itemData == null) continue;
                         int invItemId = invWorld.GetOrRegisterItemId(itemData);
                         if (invItemId < 0) continue;
                         for (int n = 0; n < c.quantity; n++)
                             invWorld.AddItemDirect(clientId, invItemId, itemData.itemType);
                     }
-                    Debug.Log($"[CraftingServer] CancelCraft return: client={clientId} station={stationNetId} items={job.Committed.Count}");
+                    Debug.Log($"[CraftingServer] CancelCraft return: client={clientId} station={stationNetId} buffer={job.Buffer.Count} committed={job.Committed.Count}");
                 }
             }
 
@@ -333,8 +370,17 @@ namespace ProjectC.Crafting
             var station = CraftingWorld.GetStationRaw(stationNetId);
             if (station == null) return;
 
-            // T-C07b: выдать результат в инвентарь ДО ServerCollect (ServerCollect очищает job.State)
+            // T-C07b + T5: выдать результат с try-finally — ServerCollect сбрасывает state даже при ошибке выдачи
             var job = CraftingWorld.GetJob(stationNetId);
+
+            // B1: owner-guard — только владелец может забрать результат
+            if (job != null && job.OwnerClientId != clientId)
+            {
+                Debug.LogWarning($"[CraftingServer] CollectRpc denied for {clientId}: not owner (owner={job.OwnerClientId})");
+                SendResultToClient(clientId, CraftingResultDto.Denied(CraftingResultCode.NotOwner, "Только заказчик может забрать результат", stationNetId));
+                return;
+            }
+
             if (job != null && job.State == CraftingJobState.Completed)
             {
                 var recipe = CraftingWorld.GetRecipe(job.RecipeId);
@@ -343,29 +389,44 @@ namespace ProjectC.Crafting
                     var invWorld = InventoryWorld.Instance;
                     if (invWorld != null)
                     {
-                        foreach (var output in recipe.Outputs)
+                        try
                         {
-                            if (output.item == null) continue;
-                            int invItemId = invWorld.GetOrRegisterItemId(output.item);
-                            if (invItemId < 0) continue;
-                            for (int n = 0; n < output.quantity; n++)
+                            foreach (var output in recipe.Outputs)
                             {
-                                invWorld.AddItemDirect(clientId, invItemId, output.item.itemType);
+                                if (output.item == null) continue;
+                                int invItemId = invWorld.GetOrRegisterItemId(output.item);
+                                if (invItemId < 0) continue;
+                                for (int n = 0; n < output.quantity; n++)
+                                {
+                                    invWorld.AddItemDirect(clientId, invItemId, output.item.itemType);
+                                }
+                                Debug.Log($"[CraftingServer] Collect grant: client={clientId} item={output.item.itemName} qty={output.quantity}");
                             }
-                            Debug.Log($"[CraftingServer] Collect grant: client={clientId} item={output.item.itemName} qty={output.quantity}");
+                        }
+                        finally
+                        {
+                            // T5: сбрасываем state ДАЖЕ если выдача упала — иначе job зависнет в Completed навсегда
+                            var cs = station.GetComponent<ProjectC.Crafting.CraftingStation>();
+                            if (cs != null) cs.ServerCollect();
                         }
                     }
                     else
                     {
                         Debug.LogWarning("[CraftingServer] InventoryWorld.Instance==null — не выдаём предметы");
+                        var csFallback = station.GetComponent<ProjectC.Crafting.CraftingStation>();
+                        if (csFallback != null) csFallback.ServerCollect();
                     }
                 }
+                else
+                {
+                    var csNoRecipe = station.GetComponent<ProjectC.Crafting.CraftingStation>();
+                    if (csNoRecipe != null) csNoRecipe.ServerCollect();
+                }
             }
-
-            var cs = station.GetComponent<ProjectC.Crafting.CraftingStation>();
-            if (cs != null)
+            else if (job == null || job.State != CraftingJobState.Completed)
             {
-                cs.ServerCollect();
+                var csNotCompleted = station.GetComponent<ProjectC.Crafting.CraftingStation>();
+                // Не Completed — всё равно нужно ответить snapshot'ом (но не сбрасывать)
             }
 
             SendResultToClient(clientId, CraftingResultDto.Ok(stationNetId));
@@ -425,14 +486,65 @@ namespace ProjectC.Crafting
         // ==========================================================
         // Helpers
         // ==========================================================
+
+        /// <summary>B3: проверяет что содержимое буфера соответствует рецепту (itemId + quantity).</summary>
+        private bool ValidateBufferMatchesRecipe(CraftingJob job, RecipeData recipe, out string reason)
+        {
+            reason = null;
+            if (job.Buffer.Count == 0)
+            {
+                reason = "Буфер пуст";
+                return false;
+            }
+            if (recipe.Ingredients == null || recipe.Ingredients.Length == 0)
+            {
+                reason = "Рецепт не содержит ингредиентов";
+                return false;
+            }
+            if (job.Buffer.Count != recipe.Ingredients.Length)
+            {
+                reason = $"Требуется {recipe.Ingredients.Length} ингредиентов, в буфере {job.Buffer.Count}";
+                return false;
+            }
+
+            // Строим lookup buffer'а: itemId → total quantity
+            var bufferLookup = new Dictionary<int, int>();
+            foreach (var b in job.Buffer)
+            {
+                bufferLookup.TryGetValue(b.itemId, out var cur);
+                bufferLookup[b.itemId] = cur + b.quantity;
+            }
+
+            // Сверяем с каждым ингредиентом рецепта
+            foreach (var ing in recipe.Ingredients)
+            {
+                if (ing.item == null)
+                {
+                    reason = "Рецепт содержит пустой ингредиент";
+                    return false;
+                }
+                int itemId = InventoryWorld.Instance != null ? InventoryWorld.Instance.GetOrRegisterItemId(ing.item) : -1;
+                if (itemId <= 0)
+                {
+                    reason = $"Предмет '{ing.item.itemName}' не зарегистрирован в CraftingWorld";
+                    return false;
+                }
+                if (!bufferLookup.TryGetValue(itemId, out var qty) || qty < ing.quantity)
+                {
+                    reason = $"Не хватает {ing.item.itemName} (нужно {ing.quantity}, в буфере {qty})";
+                    return false;
+                }
+            }
+
+            return true;
+        }
+
         private bool CheckDistance(ulong clientId, MonoBehaviour station)
         {
             var netPlayer = FindNetworkPlayer(clientId);
             if (netPlayer == null) return false;
-            // T-C04 exposes InteractRadius — use reflection-safe fallback 4f
-            float radius = 4f;
-            var mi = station.GetType().GetMethod("GetInteractRadius");
-            if (mi != null) { try { radius = (float)mi.Invoke(station, null); } catch { /* keep default */ } }
+            // T6: прямой доступ через IInteractable вместо reflection
+            float radius = (station as IInteractable)?.InteractionRadius ?? 4f;
             float dist = Vector3.Distance(netPlayer.transform.position, station.transform.position);
             return dist <= radius + 0.5f;
         }

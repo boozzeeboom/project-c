@@ -73,3 +73,31 @@
 - ❌ Никаких изменений кода (план на следующие сессии)
 - ❌ Не затронуты фьючеры (очередь, drag-and-drop, cargo, persistence) — это Phase 2+
 - ❌ Не сдвинут ROADMAP (ожидает завершения баг-фиксов)
+
+---
+
+## v0.1.1-fixes-session1+2 (2026-07-09)
+
+**Сессия:** Исправление критических багов и техдолга по плану AUDIT_2026-07-09.md.
+
+**Что сделано — Сессия 1 (критические баги):**
+- ✅ **B1** — owner-guard в `CollectRpc`: проверка `job.OwnerClientId != clientId`, возврат `NotOwner` (`CraftingServer.cs`)
+- ✅ **B2** — двойной возврат ресурсов: `CancelCraftRpc` возвращает Buffer+Committed один раз; `ServerCancelCraft()` больше не копирует Committed→Buffer (`CraftingServer.cs`, `CraftingStation.cs`)
+- ✅ **B3** — валидация buffer→recipe: новый метод `ValidateBufferMatchesRecipe`, вызов в `StartCraftRpc` (`CraftingServer.cs`)
+- ✅ **B4** — MetaReq tool check: вызов `station.CanStartCraft()` в `StartCraftRpc` (`CraftingServer.cs`)
+- ✅ **B5** — CraftSpeedMultiplier: `recipe.CraftSeconds / station.Config.CraftSpeedMultiplier` вместо хардкода `1f` (`CraftingServer.cs`)
+- ✅ **T4** — owner-guard в `CancelCraftRpc`: проверка `job.OwnerClientId != clientId` (`CraftingServer.cs`)
+- ✅ **T1** — замена reflection `GetMethod("CompleteCraft")` на прямой вызов `cs.CompleteCraft()` (`CraftingWorld.cs`)
+
+**Что сделано — Сессия 2 (техдолг):**
+- ✅ **T2** — удалён двойной реестр ItemId из `CraftingWorld`: поля `_itemsById`, `_idsByItem`, `_nextItemId` удалены; методы `RegisterItem()`, `GetItemId()`, `GetItem()` удалены; все вызовы заменены на `InventoryWorld.Instance` (`CraftingWorld.cs`, `CraftingServer.cs`, `CraftingStation.cs`)
+- ✅ **T3** — клиентский кеш рецептов/предметов в `CraftingClientState`: методы `GetRecipe()`, `GetRecipeDisplayName()`, `GetItemId()`, `GetItem()`; `CraftingWindow` обновлён использовать `CraftingClientState` вместо `CraftingWorld` (`CraftingClientState.cs`, `CraftingWindow.cs`)
+- ✅ **T6** — замена reflection `GetMethod("GetInteractRadius")` на `(station as IInteractable)?.InteractionRadius` (`CraftingServer.cs`)
+- ✅ **T7** — удалён мёртвый файл `Dto/CraftingDtos.cs`
+- ✅ **T5** — `CollectRpc`: выдача предметов обёрнута в try-finally, `ServerCollect()` в finally (`CraftingServer.cs`)
+- ✅ Добавлены недостающие using'и (`ProjectC.Core`, `ProjectC.Items`)
+
+**Компиляция:** 0 errors ✅
+
+**Файлы изменены:** `CraftingServer.cs`, `CraftingStation.cs`, `CraftingWorld.cs`, `CraftingClientState.cs`, `CraftingWindow.cs`
+**Файлы удалены:** `Dto/CraftingDtos.cs`

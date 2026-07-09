@@ -3,6 +3,7 @@
 using Unity.Netcode;
 using UnityEngine;
 using ProjectC.Core;
+using ProjectC.Items;
 using MetaReq = ProjectC.MetaRequirement.MetaRequirement;
 
 namespace ProjectC.Crafting
@@ -60,8 +61,9 @@ namespace ProjectC.Crafting
                 {
                     if (r == null) continue;
                     CraftingWorld.RegisterRecipe(r);
-                    foreach (var ing in r.Ingredients) { if (ing.item != null) CraftingWorld.RegisterItem(ing.item); }
-                    foreach (var outItem in r.Outputs) { if (outItem.item != null) CraftingWorld.RegisterItem(outItem.item); }
+                    // T2: регистрируем itemId через InventoryWorld (единый реестр)
+                    foreach (var ing in r.Ingredients) { if (ing.item != null) InventoryWorld.Instance?.GetOrRegisterItemId(ing.item); }
+                    foreach (var outItem in r.Outputs) { if (outItem.item != null) InventoryWorld.Instance?.GetOrRegisterItemId(outItem.item); }
                 }
             }
 
@@ -157,11 +159,9 @@ namespace ProjectC.Crafting
             var job = CraftingWorld.GetJob(NetworkObjectId);
             if (job != null)
             {
+                // B2: ресурсы возвращены в CancelCraftRpc. Здесь только сброс состояния.
+                // Больше НЕ копируем Committed→Buffer (был источник дублирования).
                 job.Buffer.Clear();
-                for (int i = 0; i < job.Committed.Count; i++)
-                {
-                    job.Buffer.Add(new BufferedIngredientDto { itemId = job.Committed[i].itemId, quantity = job.Committed[i].quantity, source = (byte)CraftingSourceType.Inventory, ownerClientId = job.Committed[i].ownerClientId });
-                }
                 job.Committed.Clear();
                 job.State = CraftingJobState.Buffered;
                 job.RecipeId = -1;

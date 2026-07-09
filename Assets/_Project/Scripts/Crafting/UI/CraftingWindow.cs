@@ -289,7 +289,10 @@ namespace ProjectC.Crafting.UI
                 var r = _currentConfig.AllowedRecipes[i];
                 if (r == null) continue;
                 int recipeId = CraftingWorld.RegisterRecipe(r);
-                list.Add(new KeyValuePair<int, string>(recipeId, $"{r.DisplayName} ({r.CraftSeconds:0.#}с)"));
+                string displayName = CraftingClientState.Instance != null
+                    ? CraftingClientState.Instance.GetRecipeDisplayName(recipeId)
+                    : r.DisplayName;
+                list.Add(new KeyValuePair<int, string>(recipeId, $"{displayName} ({r.CraftSeconds:0.#}с)"));
             }
             return list;
         }
@@ -301,7 +304,9 @@ namespace ProjectC.Crafting.UI
                 if (s is KeyValuePair<int, string> pair)
                 {
                     _selectedRecipeId = pair.Key;
-                    var recipe = CraftingWorld.GetRecipe(_selectedRecipeId);
+                    var recipe = CraftingClientState.Instance != null
+                        ? CraftingClientState.Instance.GetRecipe(_selectedRecipeId)
+                        : CraftingWorld.GetRecipe(_selectedRecipeId);
                     if (recipe != null) BuildIngredientsPanel(recipe);
                     return;
                 }
@@ -351,11 +356,9 @@ namespace ProjectC.Crafting.UI
         private void OnAddIngredientClicked(ProjectC.Items.ItemData item, int qty)
         {
             if (item == null) return;
-            int itemId = CraftingWorld.GetItemId(item);
-            if (itemId < 0)
-            {
-                itemId = CraftingWorld.RegisterItem(item);
-            }
+            // T3: используем CraftingClientState для получения itemId (InventoryWorld на клиенте)
+            if (CraftingClientState.Instance == null) return;
+            int itemId = CraftingClientState.Instance.GetItemId(item);
             if (itemId < 0) return;
             if (_currentStationNetId == 0) return;
             CraftingClientState.Instance?.RequestAddIngredient(_currentStationNetId, itemId, qty);
@@ -370,7 +373,8 @@ namespace ProjectC.Crafting.UI
             for (int i = 0; i < snap.buffer.Length; i++)
             {
                 var b = snap.buffer[i];
-                var item = CraftingWorld.GetItem(b.itemId);
+                // T3: используем CraftingClientState (InventoryWorld через него)
+                var item = CraftingClientState.Instance?.GetItem(b.itemId);
                 var row = new VisualElement();
                 row.AddToClassList("crafting-buffer-row");
                 var lbl = new Label { text = $"{item?.itemName ?? "?"} × {b.quantity}", pickingMode = PickingMode.Ignore };

@@ -51,6 +51,10 @@ namespace ProjectC.Crafting
         /// <summary>Кеш последнего snapshot'а для каждой подписанной станции. UI читает отсюда при открытии окна.</summary>
         private readonly Dictionary<ulong, CraftingSnapshotDto> _snapshots = new Dictionary<ulong, CraftingSnapshotDto>();
 
+        /// <summary>T3: клиентский кеш рецептов (загружается из Resources один раз).</summary>
+        private readonly Dictionary<int, RecipeData> _recipeCache = new Dictionary<int, RecipeData>();
+        private bool _recipesLoaded;
+
         /// <summary>Текущая станция, с которой работает игрок (выбрана через F).</summary>
         public ulong CurrentStationNetId { get; private set; }
 
@@ -127,6 +131,61 @@ namespace ProjectC.Crafting
             if (CraftingServer.Instance == null) return;
             CraftingServer.Instance.CancelCraftRpc(stationNetId);
         }
+
+        // ==========================================================
+        // T3: Client-side recipe & item cache (вместо прямых вызовов CraftingWorld)
+        // ==========================================================
+
+        /// <summary>Загрузить рецепты из Resources один раз.</summary>
+        private void EnsureRecipesLoaded()
+        {
+            if (_recipesLoaded) return;
+            var all = Resources.LoadAll<RecipeData>("Crafting/Recipes");
+            foreach (var r in all)
+            {
+                if (r == null) continue;
+                int recipeId = CraftingWorld.RegisterRecipe(r);
+                if (!_recipeCache.ContainsKey(recipeId))
+                    _recipeCache[recipeId] = r;
+            }
+            _recipesLoaded = true;
+        }
+
+        /// <summary>Получить RecipeData по id (из клиентского кеша).</summary>
+        public RecipeData GetRecipe(int recipeId)
+        {
+            EnsureRecipesLoaded();
+            _recipeCache.TryGetValue(recipeId, out var r);
+            return r;
+        }
+
+        /// <summary>Получить отображаемое имя рецепта (для UI).</summary>
+        public string GetRecipeDisplayName(int recipeId)
+        {
+            var r = GetRecipe(recipeId);
+            return r != null ? r.DisplayName : "?";
+        }
+
+        /// <summary>ItemId для предмета (через InventoryWorld — работает и на клиенте).</summary>
+        public int GetItemId(ProjectC.Items.ItemData item)
+        {
+            if (item == null) return -1;
+            var inv = ProjectC.Items.InventoryWorld.Instance;
+            if (inv == null) return -1;
+            return inv.GetOrRegisterItemId(item);
+        }
+
+        /// <summary>ItemData по id (через InventoryWorld — работает и на клиенте).</summary>
+        public ProjectC.Items.ItemData GetItem(int itemId)
+        {
+            var inv = ProjectC.Items.InventoryWorld.Instance;
+            if (inv == null) return null;
+            return inv.GetItemDefinition(itemId);
+        }
+
+        // ==========================================================
+        // Outgoing (continued)
+        // ==========================================================
 
         public void RequestCollect(ulong stationNetId)
         {

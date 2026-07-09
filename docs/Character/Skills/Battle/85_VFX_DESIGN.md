@@ -473,7 +473,7 @@ Debug.Log($"[SkillVfxService] PlayCastVfx: skill='{config.skillId}' prefab='{con
 
 | # | Вопрос | Статус |
 |---|--------|--------|
-| **Q1** | Где брать VFX-ассеты? Генерировать (через AI) или ждать художника? | 🔴 Требует решения: без ассетов Phase 2 невозможен |
+| **Q1** | Где брать VFX-ассеты? Генерировать (через AI) или ждать художника? | ✅ Решено: созданы 4 примитивных ParticleSystem-префаба (Phase 2) |
 | **Q2** | Нужен ли preview VFX в инспекторе SkillNodeConfig? | 🟡 Nice-to-have (как preview анимаций) |
 | **Q3** | Как 2D-анимации взаимодействуют с 3D-камерой? (billboarding?) | 🟡 Phase 3 решит — SpriteVfxProvider включает Billboard |
 | **Q4** | VFX для NPC — те же префабы или отдельные? | 🟡 Навыки общие → VFX те же. NPC могут иметь уменьшенный scale |
@@ -501,8 +501,169 @@ Debug.Log($"[SkillVfxService] PlayCastVfx: skill='{config.skillId}' prefab='{con
 
 ---
 
-## 10. История изменений
+## 10. Статус реализации (Phases 0–2)
+
+> **Дата фиксации:** 2026-07-31  
+> **Реализовано:** Phase 0, Phase 1, Phase 2  
+> **НЕ реализовано:** Phase 3 (2D Animation), Phase 4 (Polish)
+
+### 10.1 Что сделано: полный список файлов и артефактов
+
+#### Data Model (Phase 0)
+
+| Файл | Что |
+|------|-----|
+| `Assets/_Project/Scripts/Skills/SkillNodeConfig.cs` | `VfxAttachPoint` enum (WeaponMain/WeaponOff/Chest/Head/Root). 11 VFX-полей: `castVfxPrefab` (GameObject), `castSpawnPoint`, `castVfxDuration`, `castVfxDelay`, `projectileVfxPrefab` (GameObject), `projectileSpeed`, `projectileArcHeight`, `projectileTrailMaterial`, `impactVfxPrefab` (GameObject), `impactScaleByDamage`, `impactColorByDamageType`, `impactVfxDuration`. 2D-поля: `twoDVfxAnimation` (SpriteAnimationAsset), `twoDFps`. |
+| `Assets/_Project/Editor/SkillNodeConfigEditor.cs` | 4 VFX-секции в инспекторе: Cast (всегда для active), Projectile (Ranged/Throwables), Impact (всегда), 2D Future (всегда). Условное отображение: если префаб не задан — поля скрыты. |
+| `Assets/_Project/Scripts/Skills/Vfx/SpriteAnimationAsset.cs` | **Заглушка** SO-типа: `Sprite[] frames`, `int fps`, `bool loop`. Создан чтобы `twoDVfxAnimation` компилировался. **Не используется в runtime.** |
+
+#### Runtime Infrastructure (Phase 1)
+
+| Файл | Что |
+|------|-----|
+| `Assets/_Project/Scripts/Skills/Vfx/ISkillVfxProvider.cs` | Интерфейс: `PlayCastVfx(SkillNodeConfig, Transform)`, `PlayProjectileVfx(SkillNodeConfig, Vector3, Vector3, Action)`, `PlayImpactVfx(SkillNodeConfig, Vector3, DamageType, bool)`. **Ключевая абстракция для 2D-готовности.** |
+| `Assets/_Project/Scripts/Skills/Vfx/ParticleSystemVfxProvider.cs` | Реализация `ISkillVfxProvider` через ParticleSystem/GameObject. Содержит `PrimitiveProjectileRoutine` — fallback для случая когда префаб не задан (создаёт сферу + LineRenderer на лету). |
+| `Assets/_Project/Scripts/Skills/Vfx/SkillVfxService.cs` | Client-side singleton MonoBehaviour. Создаётся в `NetworkManagerController` как root GO с `DontDestroyOnLoad`. Содержит метод `SetProvider(ISkillVfxProvider)` для будущего свапа 3D→2D. |
+| `Assets/_Project/Scripts/Skills/Vfx/VfxObjectPool.cs` | Object pool: prewarm 5 экземпляров на префаб, возврат через `Return()`. Ключ — `EntityId` префаба. Метод `Clear()` для очистки. |
+| `Assets/_Project/Scripts/Skills/Vfx/VfxBoneResolver.cs` | Статический хелпер: `Resolve(Transform, VfxAttachPoint)` → Vector3. Ищет кости по имени (hand_r/hand_l) с fallback на позицию персонажа + смещение. |
+| `Assets/_Project/Scripts/Skills/Vfx/DamageTypeColors.cs` | Статический хелпер: `Get(DamageType)` → Color. 5 типов урона → 5 цветов. |
+
+#### Инжекция в существующий код (Phase 1)
+
+| Файл | Изменение |
+|------|-----------|
+| `Assets/_Project/Scripts/Skills/SkillInputService.cs` | `using ProjectC.Skills.Vfx`. После анимации (шаг 7.5): `SkillVfxService.Instance?.PlayCastVfx(skillConfig, character)`. В throwable-path: замена `ThrowArcVisual.Fire` на `SkillVfxService.PlayProjectileVfx` с fallback на старый примитив. |
+| `Assets/_Project/Scripts/Combat/Client/CombatClientState.cs` | `using ProjectC.Skills.Vfx`. В `HandleAttackLanded`: `SkillVfxService.Instance?.PlayImpactVfx(null, targetPosition, damageType, isCrit)`. **Конфиг = null** — impact работает только если задан `impactVfxPrefab` в навыке (для generic-атак — no-op). |
+| `Assets/_Project/Scripts/Core/NetworkManagerController.cs` | `CreateSkillVfxService()` — создаёт `[SkillVfxService]` root GO после `CreateDamageNumberService()`. |
+
+#### Примитивные VFX-префабы (Phase 2)
+
+| Префаб | `Resources/Vfx/` | Тип | Параметры |
+|--------|------------------|-----|-----------|
+| `PF_VFX_MuzzleFlash_Basic.prefab` | ✅ | Cast | ParticleSystem: Burst 8 частиц, конус 25°, lifetime 0.12s, startSize 0.3, жёлто-оранжевый. |
+| `PF_VFX_Impact_Melee.prefab` | ✅ | Impact | ParticleSystem: Burst 12 частиц, сфера radius 0.1, lifetime 0.18s, color-over-lifetime жёлтый→красный→чёрный. |
+| `PF_VFX_Impact_Explosion.prefab` | ✅ | Impact | 2 ParticleSystem: основной (20 частиц, расширение sphere, оранжевый→чёрный) + дым (8 частиц, серый, медленный). |
+| `PF_VFX_Projectile_Arrow.prefab` | ✅ | Projectile | ParticleSystem: Stretch-режим, rate 20/сек, lifetime 0.15s, trail. Loop=true (управляется скриптом). |
+
+#### Editor-скрипты (Phase 2)
+
+| Файл | Что |
+|------|-----|
+| `Assets/_Project/Editor/CreateVfxPrefabs.cs` | Меню **Project C > VFX > Create Primitive VFX Prefabs**. Создаёт 4 префаба в `Resources/Vfx/`. Идемпотентен (перезаписывает). |
+| `Assets/_Project/Editor/AssignVfxToSkills.cs` | Меню **Project C > VFX > Assign VFX to All Skills**. Назначает VFX-префабы на все 27 `.asset` навыков по правилам: Melee→muzzle+impact_melee, Ranged→muzzle+arrow+impact_melee, Throwables→muzzle+arrow_arc+impact_explosion, Defense→muzzle_chest. |
+
+#### Навыки с назначенными VFX (27 `.asset`)
+
+| Subtype | Кол-во | castVfxPrefab | projectileVfxPrefab | impactVfxPrefab |
+|---------|--------|--------------|--------------------|-----------------|
+| None (Melee) | 6 | MuzzleFlash | — | Impact_Melee |
+| None (Ranged) | 3 | MuzzleFlash | Projectile_Arrow | Impact_Melee |
+| Throwables | 2 | MuzzleFlash | Projectile_Arrow (arc=4) | Impact_Explosion |
+| Bows | 1 | MuzzleFlash | Projectile_Arrow | Impact_Melee |
+| Crossbows | 1 | MuzzleFlash | Projectile_Arrow | Impact_Melee |
+| None (Defense) | 3 | MuzzleFlash (chest) | — | — |
+| Traps (Placed) | 1 | MuzzleFlash | — | — |
+| None (Combat) | 4 | MuzzleFlash | — | Impact_Melee |
+| Social (пассивные) | 4 | — | — | — |
+
+---
+
+### 10.2 2D-готовность: что именно оставлено как gap
+
+Этот раздел — прямой ответ на требование: «не делать противоречий для будущих 2D-анимаций».
+
+#### Gap 1: `SpriteVfxProvider` — НЕ реализован
+
+`ISkillVfxProvider` имеет одну реализацию: `ParticleSystemVfxProvider`. Для 2D нужен второй провайдер:
+
+```csharp
+// БУДУЩЕЕ (Phase 3) — НЕ РЕАЛИЗОВАНО:
+public class SpriteVfxProvider : ISkillVfxProvider
+{
+    // PlayCastVfx:    спавнит SpriteRenderer с SpriteAnimationAsset,
+    //                 проецирует 3D-позицию кости → screen-space/world-space canvas
+    // PlayProjectileVfx:  интерполирует SpriteRenderer от from к to,
+    //                      меняет спрайт каждый 1/fps секунд
+    // PlayImpactVfx:   спавнит SpriteRenderer, проигрывает анимацию,
+    //                  auto-return в SpriteVfxPool
+}
+```
+
+**Почему текущий код не противоречит:** метод `SkillVfxService.SetProvider()` уже существует. Переключение 3D→2D — одна строка: `SkillVfxService.Instance.SetProvider(new SpriteVfxProvider(...))`.
+
+#### Gap 2: `SpriteAnimationAsset` — только заглушка
+
+Содержит поля (`Sprite[] frames`, `int fps`, `bool loop`), но:
+- Нет метода `GetFrame(float elapsed)` для покадрового воспроизведения
+- Нет валидации (пустой массив, fps=0)
+- Не используется ни в одном провайдере
+
+**Почему текущий код не противоречит:** поле `twoDVfxAnimation` уже есть в `SkillNodeConfig` и отображается в инспекторе. Дизайнер может начать назначать спрайт-листы уже сейчас — они сохранятся в `.asset`.
+
+#### Gap 3: `VfxObjectPool` — только для GameObject
+
+Текущий пул работает с `GameObject` и `Object.Instantiate`. Для 2D нужен `SpriteVfxPool`, который:
+- Хранит префабы `GameObject` со `SpriteRenderer` (не ParticleSystem)
+- При спавне НЕ запускает ParticleSystem (нет вызова `ps.Play()`)
+- Вместо этого запускает покадровую корутину на `SpriteRenderer.sprite`
+
+**Почему текущий код не противоречит:** `VfxObjectPool.Get/Return` принимают `GameObject` — это может быть префаб с любым компонентом. `ParticleSystemVfxProvider.ApplyColor` уже обрабатывает и ParticleSystem, и Renderer (material.SetColor). SpriteRenderer — это тоже Renderer.
+
+#### Gap 4: Позиционирование 2D-спрайтов в 3D-мире
+
+`VfxBoneResolver.Resolve` возвращает `Vector3` в world-space. Для 2D это нужно спроецировать:
+- **World-space canvas** (рекомендуется): SpriteRenderer на отдельном GameObject, позиция = world-space кости, скейл корректируется под расстояние до камеры
+- **Screen-space overlay**: Camera.WorldToScreenPoint → UI позиция, но теряется глубина/перекрытие
+
+**Почему текущий код не противоречит:** `VfxBoneResolver` возвращает абстрактный `Vector3` — проекция выполняется в `SpriteVfxProvider`, который ещё не написан.
+
+#### Gap 5: Trail для 2D-снарядов
+
+3D-снаряды используют `ParticleSystemRenderMode.Stretch` или `LineRenderer`. 2D-аналог:
+- Последовательность спрайтов вдоль траектории (как «шлейф»)
+- Или `TrailRenderer` с Material на основе спрайта (Unity 6 поддерживает)
+
+**Почему текущий код не противоречит:** `projectileTrailMaterial` — это `Material`, а не `ParticleSystem`. В 2D в этот же слот можно положить материал со спрайтом.
+
+#### Gap 6: `DamageResultDto` не несёт `skillId`
+
+Impact VFX в `CombatClientState.HandleAttackLanded` вызывает `PlayImpactVfx(null, ...)` — конфиг = null. Это значит:
+- Generic-атаки (Primary/Secondary без навыка) — impact VFX **не проигрывается**
+- Атаки через навык — impact тоже не проигрывается (потому что сервер не шлёт skillId)
+
+**Решение в Phase 2.5 или 4:** добавить `string skillId` в `DamageResultDto`, сервер заполняет при `ResolveSkillCast`. Клиент делает lookup в `SkillsClientState.TryGetSkillConfig(skillId)` и получает `impactVfxPrefab`.
+
+**Почему это не блокер:** cast VFX и projectile VFX **уже работают** (они client-side, срабатывают ДО RPC). Impact VFX для throwables тоже работает — `ThrowArcVisual` + колбэк `onArrived` вызывает impact локально в `ParticleSystemVfxProvider`.
+
+#### Gap 7: Нет pooled-версии для 2D-спрайтов
+
+`VfxObjectPool` использует `Object.Instantiate(prefab)`. Для 2D понадобится префаб со `SpriteRenderer` вместо `ParticleSystem`. Структурно пул тот же — нужно только создать префабы.
+
+**Почему текущий код не противоречит:** интерфейс пула (`Get`/`Return`) универсален. `ParticleSystemVfxProvider` не делает `GetComponent<ParticleSystem>()` на объектах из пула — он использует `GetComponentsInChildren` только в `ApplyColor`.
+
+---
+
+### 10.3 Проверка: правила «не противоречить 2D»
+
+| Правило | Статус | Доказательство |
+|--------|--------|---------------|
+| Тип VFX-полей — `GameObject`, не `ParticleSystem` | ✅ | `castVfxPrefab`, `projectileVfxPrefab`, `impactVfxPrefab` — все `GameObject` |
+| Абстракция рендера через интерфейс | ✅ | `ISkillVfxProvider` — код скилов вызывает только интерфейс |
+| Свап провайдера возможен | ✅ | `SkillVfxService.SetProvider()` — одна строка |
+| Нет хардкода `ParticleSystem.main` в сервисе | ✅ | Только внутри `ParticleSystemVfxProvider.ApplyColor` (опционально) |
+| Нет 3D-коллайдеров для детекта impact | ✅ | Impact позиция приходит из `DamageResultDto.targetPosition` |
+| 2D-поле уже в data-модели | ✅ | `twoDVfxAnimation` (SpriteAnimationAsset) + `twoDFps` |
+| 2D-поле видно в инспекторе | ✅ | Секция «VFX: 2D (Future)» в `SkillNodeConfigEditor` |
+| Object pool не завязан на ParticleSystem | ✅ | `VfxObjectPool.Get/Return` работают с `GameObject` |
+
+---
+
+## 11. История изменений
 
 | Дата | Автор | Изменения |
 |------|-------|-----------|
-| 2026-07-31 | Aura | Первая версия: анализ текущего состояния, целевая архитектура, фазы реализации |
+| 2026-07-31 | Aura | Первая версия: анализ, архитектура, фазы |
+| 2026-07-31 | Aura | Phase 0 (data model) реализован: `8c1471f` |
+| 2026-07-31 | Aura | Phase 1 (runtime + инжекция) реализован: `2712819` |
+| 2026-07-31 | Aura | Phase 2 (префабы + назначение) реализован: `ad1f5bd` |
+| 2026-07-31 | Aura | §10: полный статус реализации + 7 gap'ов для 2D-интеграции |

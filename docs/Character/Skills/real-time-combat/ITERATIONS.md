@@ -1,5 +1,20 @@
 # Итерации реализации — Ranged & Throwables
 
+## Итерация от 2026-07-31 (#3)
+
+**Задача:** VFX Phase 2 — Примитивные VFX-префабы + назначение на все навыки
+**Документ:** `docs/Character/Skills/Battle/85_VFX_DESIGN.md`
+**Коммит:** `ad1f5bd` — T-VFX02: Phase 2 — примитивные VFX-префабы
+
+**Изменения:**
+- `Assets/_Project/Editor/CreateVfxPrefabs.cs` — NEW: Editor-скрипт (меню Project C > VFX)
+- `Assets/_Project/Editor/AssignVfxToSkills.cs` — NEW: Editor-скрипт назначения VFX
+- `Assets/_Project/Resources/Vfx/PF_VFX_MuzzleFlash_Basic.prefab` — NEW: вспышка (8 частиц, конус)
+- `Assets/_Project/Resources/Vfx/PF_VFX_Impact_Melee.prefab` — NEW: искры (12 частиц, fade)
+- `Assets/_Project/Resources/Vfx/PF_VFX_Impact_Explosion.prefab` — NEW: взрыв (20 частиц + дым)
+- `Assets/_Project/Resources/Vfx/PF_VFX_Projectile_Arrow.prefab` — NEW: стрела (stretch particles)
+- 27 SkillNodeConfig .asset: VFX-поля заполнены по subtype
+
 ## Итерация от 2026-07-31 (#2)
 
 **Задача:** VFX Phase 1 — Runtime инфраструктура (ISkillVfxProvider + SkillVfxService + Pool)

@@ -164,7 +164,8 @@ namespace ProjectC.ResourceNode
                         try {
                             var ss = ProjectC.Stats.StatsServer.Instance;
                             if (ss != null) {
-                                ss.ApplyXp(clientId, ProjectC.Stats.StatType.Strength, (float)result.Quantity * 1.0f, $"Mining ×{result.Quantity} {result.ItemName}");
+                                var statType = ss.GetStatFor(ProjectC.Stats.XpSource.Mining);
+                                ss.ApplyXp(clientId, statType, (float)result.Quantity * 1.0f, $"Mining ×{result.Quantity} {result.ItemName}");
                             } else if (_debugMode) {
                                 Debug.LogWarning("[GatheringServer] XP grant: StatsServer.Instance==null (server not spawned yet) — xp will be missed");
                             }

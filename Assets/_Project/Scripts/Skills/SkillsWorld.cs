@@ -247,5 +247,31 @@ namespace ProjectC.Skills
         }
 
         public void RemovePlayer(ulong clientId) => _learnedPerPlayer.Remove(clientId);
+
+        /// <summary>
+        /// P7 fix: sum additive StatMod bonuses from learned skills for combat path.
+        /// Iterates all learned skills, accumulates floatValue per StatType.
+        /// </summary>
+        public void GetStatModBonuses(ulong clientId, out float bonusStr, out float bonusDex, out float bonusInt)
+        {
+            bonusStr = 0f; bonusDex = 0f; bonusInt = 0f;
+            var learnedIds = GetLearnedSkillIds(clientId);
+            if (learnedIds == null || learnedIds.Count == 0) return;
+
+            foreach (var skillId in learnedIds)
+            {
+                if (!TryGetSkill(skillId, out var skill) || skill.effects == null) continue;
+                foreach (var eff in skill.effects)
+                {
+                    if (eff.type != SkillEffect.Type.StatMod || eff.floatValue == 0f) continue;
+                    switch (eff.statType)
+                    {
+                        case ProjectC.Stats.StatType.Strength:     bonusStr += eff.floatValue; break;
+                        case ProjectC.Stats.StatType.Dexterity:    bonusDex += eff.floatValue; break;
+                        case ProjectC.Stats.StatType.Intelligence: bonusInt += eff.floatValue; break;
+                    }
+                }
+            }
+        }
     }
 }

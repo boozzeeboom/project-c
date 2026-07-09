@@ -56,5 +56,8 @@ namespace ProjectC.Stats
             strengthTier = 0, dexterityTier = 0, intelligenceTier = 0,
             strengthTotalXp = 0f, dexterityTotalXp = 0f, intelligenceTotalXp = 0f,
         };
+
+        /// <summary>tier * 5 + 10: tier0=10, tier1=15, tier2=20, ... (per design 10_DESIGN §3.1).</summary>
+        public static int StatsToFlat(int tier) => tier * 5 + 10;
     }
 }

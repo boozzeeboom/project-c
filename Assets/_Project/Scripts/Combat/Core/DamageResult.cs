@@ -23,6 +23,9 @@ namespace ProjectC.Combat.Core
     {
         // === Raw damage ===
         public int baseAttack;          // 1dN + base + STR
+        public int diceRoll;            // P10: исходный бросок кубика
+        public int strengthContribution;// P10: вклад стата STR
+        public int baseContribution;    // P10: вклад base damage источника
         public float locMult;            // 1.0 в real-time (отключён per 2.17)
         public float critMult;           // 2.0 при crit, иначе 1.0
         public float skillMult;          // от навыков, opt-in, БЕЗ cap (per 2.18)

@@ -477,9 +477,9 @@ namespace ProjectC.Stats
                 strengthTotalXp           = stats.strengthTotalXp,
                 dexterityTotalXp          = stats.dexterityTotalXp,
                 intelligenceTotalXp       = stats.intelligenceTotalXp,
-                effectiveStrength         = stats.strength + bonusStr,
-                effectiveDexterity        = stats.dexterity + bonusDex,
-                effectiveIntelligence     = stats.intelligence + bonusInt,
+                effectiveStrength         = PlayerStats.StatsToFlat(stats.strengthTier) + bonusStr,
+                effectiveDexterity        = PlayerStats.StatsToFlat(stats.dexterityTier) + bonusDex,
+                effectiveIntelligence     = PlayerStats.StatsToFlat(stats.intelligenceTier) + bonusInt,
             };
 
             // T-P06: ReceiveStatsSnapshotTargetRpc добавлен в NetworkPlayer (owner→server).
@@ -619,6 +619,9 @@ namespace ProjectC.Stats
 
         public PlayerStats GetPlayerStats(ulong clientId) =>
             _world != null ? _world.GetOrCreateStats(clientId) : PlayerStats.Default;
+
+        /// <summary>P5 fix: expose config stat mapping for external callers (GatheringServer).</summary>
+        public StatType GetStatFor(XpSource source) => _config != null ? _config.GetStatFor(source) : StatType.Strength;
 
         /// <summary>
         /// T-P13: Trigger immediate save for a player (called by SkillsServer after learn/forget).

@@ -13,6 +13,9 @@ namespace ProjectC.Combat.Network
     public struct DamageResultDto : INetworkSerializable
     {
         public int baseAttack;
+        public int diceRoll;            // P10
+        public int strengthContribution;// P10
+        public int baseContribution;    // P10
         public float locMult;
         public float critMult;
         public float skillMult;
@@ -33,6 +36,9 @@ namespace ProjectC.Combat.Network
         public void NetworkSerialize<T>(BufferSerializer<T> serializer) where T : IReaderWriter
         {
             serializer.SerializeValue(ref baseAttack);
+            serializer.SerializeValue(ref diceRoll);
+            serializer.SerializeValue(ref strengthContribution);
+            serializer.SerializeValue(ref baseContribution);
             serializer.SerializeValue(ref locMult);
             serializer.SerializeValue(ref critMult);
             serializer.SerializeValue(ref skillMult);
@@ -56,6 +62,9 @@ namespace ProjectC.Combat.Network
             return new DamageResultDto
             {
                 baseAttack = r.baseAttack,
+                diceRoll = r.diceRoll,
+                strengthContribution = r.strengthContribution,
+                baseContribution = r.baseContribution,
                 locMult = r.locMult,
                 critMult = r.critMult,
                 skillMult = r.skillMult,

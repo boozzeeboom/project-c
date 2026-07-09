@@ -87,6 +87,9 @@ namespace ProjectC.Combat
             return new DamageResult
             {
                 baseAttack = baseAttack,
+                diceRoll = roll,
+                strengthContribution = attacker.GetStrength(),
+                baseContribution = source.GetBaseDamage(),
                 locMult = locMult,
                 critMult = critMult,
                 skillMult = skillMult,

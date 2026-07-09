@@ -1949,7 +1949,7 @@ namespace ProjectC.UI.Client
                 if (_statStrValue != null)
                 {
                     string bonusStr = (snap.effectiveStrength - snap.strength > 0.01f) ? $" (+{snap.effectiveStrength - snap.strength:F0})" : "";
-                    _statStrValue.text = $"{snap.effectiveStrength:F1}  {snap.strength:F0}/{snap.strengthXpForNextTier:F0}  T{snap.strengthTier}{bonusStr}";
+                    _statStrValue.text = $"{snap.effectiveStrength:F1} {snap.strength:F0}/{snap.strengthXpForNextTier:F0} T{snap.strengthTier}{bonusStr}";
                 }
 
                 // DEX
@@ -1963,7 +1963,7 @@ namespace ProjectC.UI.Client
                 if (_statDexValue != null)
                 {
                     string bonusDex = (snap.effectiveDexterity - snap.dexterity > 0.01f) ? $" (+{snap.effectiveDexterity - snap.dexterity:F0})" : "";
-                    _statDexValue.text = $"{snap.effectiveDexterity:F1}  {snap.dexterity:F0}/{snap.dexterityXpForNextTier:F0}  T{snap.dexterityTier}{bonusDex}";
+                    _statDexValue.text = $"{snap.effectiveDexterity:F1} {snap.dexterity:F0}/{snap.dexterityXpForNextTier:F0} T{snap.dexterityTier}{bonusDex}";
                 }
 
                 // INT
@@ -1977,7 +1977,7 @@ namespace ProjectC.UI.Client
                 if (_statIntValue != null)
                 {
                     string bonusInt = (snap.effectiveIntelligence - snap.intelligence > 0.01f) ? $" (+{snap.effectiveIntelligence - snap.intelligence:F0})" : "";
-                    _statIntValue.text = $"{snap.effectiveIntelligence:F1}  {snap.intelligence:F0}/{snap.intelligenceXpForNextTier:F0}  T{snap.intelligenceTier}{bonusInt}";
+                    _statIntValue.text = $"{snap.effectiveIntelligence:F1} {snap.intelligence:F0}/{snap.intelligenceXpForNextTier:F0} T{snap.intelligenceTier}{bonusInt}";
                 }
             }
 

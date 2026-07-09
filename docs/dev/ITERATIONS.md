@@ -1,20 +1,10 @@
-## Итерация от 2026-07-30 (#2)
+# Итерации разработки
 
-**Задача:** Configurable cooldown per skill — замена хардкода 0.5f
-**Коммит:** `6f871e7` — T-SKILL-06: configurable cooldown per skill
+## Итерация от 2026-07-16
+
+**Задача:** Переработка блока характеристик в CharacterWindow — фикс полосок, цветов и позиционирования текста.
+**Коммит:** `354e3d2` — T-UI04: переработка блока характеристик в CharacterWindow — фикс полосок, цветов и текста
 **Изменения:**
-- `Assets/_Project/Scripts/Skills/SkillNodeConfig.cs` — поле `cooldownSeconds` (float, 0.5f default, Range 0.1–30)
-- `Assets/_Project/Scripts/Skills/SkillInputService.cs` — замена `0.5f` на `skillConfig.cooldownSeconds` / `skillConfig?.cooldownSeconds ?? 0.5f`
-- `Assets/_Project/Editor/SkillNodeConfigEditor.cs` — PropertyField для `_cooldownSeconds` в секции Active vs Passive
-
----
-
-## Итерация от 2026-07-30
-
-**Задача:** Bugfix: custom editor discipline switching broke after adding Bows/Crossbows subtypes
-**Коммит:** `a79ea91` — T-RTC-R5-fix: fix custom editor discipline switching + stale subtype arrays
-**Изменения:**
-- `Assets/_Project/Scripts/Skills/SkillNodeConfig.cs` — OnValidate: AutoSetDisciplineFromPrefix только при discipline=None
-- `Assets/_Project/Editor/SkillNodeConfigEditor.cs` — SubtypesRanged + Bows/Crossbows; секция Bows/Crossbows; сброс subtype при смене discipline
-- `Assets/_Project/Resources/Skills/Skill_Ranged_BasicBow.asset` — subtype None→Bows + новые поля
-- `Assets/_Project/Resources/Skills/Skill_Ranged_CrossbowMastery.asset` — новые поля rangedMaxRange/rangedHitChance
+- `Assets/_Project/Scripts/UI/Client/CharacterWindow.cs` — фикс формулы бара (strength вместо effectiveStrength), новый формат текста, ApplyTierClass через CSS-классы
+- `Assets/_Project/UI/Resources/UI/CharacterWindow.uss` — per-stat цвета fill-баров, tier-рамки, горизонтальный layout строк
+- `Assets/_Project/UI/Resources/UI/CharacterWindow.uxml` — добавлены per-stat классы на fill-бары и лейблы, горизонтальная структура stat-row

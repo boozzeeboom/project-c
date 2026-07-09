@@ -21,8 +21,30 @@
 - `HandleChase`: `dist <= GetEffectiveAttackRange()` вместо `dist <= attackRange`
 - `HandleAttack`: `dist > GetEffectiveAttackRange() * 1.3f` вместо `dist > attackRange * 1.3f`
 
+=======
 **Результат:** NPC с Grenade (throwRange=50м) останавливается на 50м и бросает. NPC с Bow (200м) атакует с дистанции.
 
+=======
+## Итерация от 2026-07-30 — NpcSkillSetEditor (кастомный инспектор)
+
+**Задача:** `NpcSkillOverride` (struct из 11 полей) в дефолтном инспекторе неудобен: нет preview, поля вперемешку, нет индикации default/override, HP% как сырые float.
+
+**Коммит:** `e6f6f85` — T-NPC-AOE-EDITOR
+
+**Изменения:**
+- `NpcSkillSetEditor.cs` — (NEW) `[CustomEditor(typeof(NpcSkillSet))]`, ~280 строк
+
+**Фичи инспектора:**
+- **Header-строка:** `[0] 💣 Граната — cd=4s` с иконкой типа (🗡melee/⚔AOE/💣throwable/🏹ranged)
+- **Preview-секция** (read-only из SkillNodeConfig): discipline, subtype, AOE formula+size, throwRange, rangedMaxRange
+- **Override-секция:** каждая строка — зелёный `OVERRIDE` маркер или серый `default: 0.5s`
+- **DamageDice:** `d4` = не переопределено
+- **AI Selection:** Priority слайдер 0-100 + HP% min-max слайдер с процентом
+- **Effective-строка:** computed `cd=Xs dmg=1dX+Y range=Zm throwRange=Wm`
+- **Кнопки:** `+ Add Skill`, `✕ Remove [N]`
+- **Валидация:** warning если 0 валидных скилов
+
+=======**Осталось (не в этом коммите):**
 =======**Осталось (не в этом коммите):**
 - 🟡 P3: Монолит NpcSocialBrain (рефакторинг отложен)
 =======

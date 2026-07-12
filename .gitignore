@@ -60,6 +60,8 @@ mono_crash.*
 /[Aa]ssets/_Project/Quests/Data/Factions
 /[Aa]ssets/_Project/Quests/Data/Npcs
 /[Aa]ssets/_Project/Quests/Data/Import
+/[Aa]ssets/Generated_Images*
+/[Aa]Assets/Generated_Models*
 
 # Dev memory (local session state)
 .dev-memory/
@@ -128,3 +130,4 @@ Assets/_Project/Materials/Moon/MoonMaterial.mat*
 Packages/manifest.json
 Packages/packages-lock.json
 *.aura_temp
+.gitignore

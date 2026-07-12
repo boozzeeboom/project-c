@@ -21,6 +21,8 @@
     --done:      #4ade80;
     --future:    #333345;
     --radius:    12px;
+    --code:      #4ade80;
+    --visual:    #a78bfa;
   }
 
   html { scroll-behavior: smooth; }
@@ -67,7 +69,6 @@
     border-bottom: 1px solid var(--border);
     padding: 0 20px;
   }
-  
   .top-bar__inner {
     max-width: 1100px;
     margin: 0 auto;
@@ -76,7 +77,6 @@
     gap: 16px;
     height: 56px;
   }
-
   .top-bar__logo {
     font-size: 1.1rem;
     font-weight: 800;
@@ -86,18 +86,12 @@
   }
   .top-bar__logo span { color: var(--accent); }
 
-  .top-bar__divider {
-    width: 1px;
-    height: 24px;
-    background: var(--border);
-    flex-shrink: 0;
-  }
-
   /* ===== SEARCH ===== */
   .search-box {
     flex: 1;
     max-width: 320px;
     position: relative;
+    margin-left: auto;
   }
   .search-box__input {
     width: 100%;
@@ -142,30 +136,7 @@
   .search-box__clear:hover { background: var(--text-dim); color: #fff; }
   .search-box--active .search-box__clear { display: flex; }
 
-  /* ===== FILTER TABS ===== */
-  .filter-tabs {
-    display: flex;
-    gap: 4px;
-    flex-shrink: 0;
-  }
-  .filter-tab {
-    padding: 6px 12px;
-    font-size: .78rem;
-    font-weight: 600;
-    color: var(--text-dim);
-    background: transparent;
-    border: 1px solid transparent;
-    border-radius: 6px;
-    cursor: pointer;
-    transition: all .2s;
-    white-space: nowrap;
-  }
-  .filter-tab:hover { color: var(--text); border-color: var(--border); }
-  .filter-tab--active { color: var(--accent); border-color: var(--accent); background: rgba(74,222,128,.1); }
-  .filter-tab--done.filter-tab--active { color: var(--done); border-color: var(--done); background: rgba(74,222,128,.1); }
-  .filter-tab--active.filter-tab--active { color: var(--warning); border-color: var(--warning); background: rgba(250,204,21,.1); }
-
-  /* ===== CONTENT AREA ===== */
+  /* ===== CONTENT ===== */
   .content-area {
     position: relative;
     z-index: 1;
@@ -177,9 +148,8 @@
   /* ===== HEADER ===== */
   .header {
     text-align: center;
-    margin-bottom: 32px;
+    margin-bottom: 24px;
     animation: fadeDown .6s ease both;
-    position: relative;
   }
   .header__badge {
     display: inline-block;
@@ -191,7 +161,7 @@
     border: 1px solid var(--accent);
     border-radius: 999px;
     padding: 6px 18px;
-    margin-bottom: 16px;
+    margin-bottom: 12px;
   }
   .header__title {
     font-size: clamp(1.8rem, 4vw, 2.5rem);
@@ -202,10 +172,10 @@
   }
   .header__title span { color: var(--accent); }
 
-  /* ===== OVERALL PROGRESS BAR ===== */
+  /* ===== OVERALL PROGRESS ===== */
   .overall-progress {
-    margin-bottom: 20px;
-    padding: 0 40px;
+    margin-bottom: 32px;
+    padding: 0 20px;
   }
   .overall-progress__label {
     font-size: .72rem;
@@ -273,9 +243,10 @@
     color: var(--text-dim);
   }
   .overall-progress__tasks {
-    font-size: .72rem;
+    font-size: .75rem;
     color: var(--text-dim);
     margin-top: 8px;
+    text-align: center;
   }
   .overall-progress__tasks span { color: var(--accent); font-weight: 700; }
 
@@ -288,9 +259,9 @@
     50% { filter: drop-shadow(0 0 14px rgba(74,222,128,1)); }
   }
 
-  /* ===== COMMIT BLOCK (compact) ===== */
+  /* ===== COMMIT ===== */
   .commit-block {
-    margin-bottom: 24px;
+    margin-bottom: 28px;
     text-align: center;
     animation: fadeDown .6s .1s ease both;
   }
@@ -307,10 +278,7 @@
     color: inherit;
     transition: all .2s;
   }
-  .commit-block__inner:hover {
-    border-color: var(--accent);
-    background: rgba(74,222,128,.05);
-  }
+  .commit-block__inner:hover { border-color: var(--accent); background: rgba(74,222,128,.05); }
   .commit-block__hash {
     font-family: 'Fira Code', 'Consolas', monospace;
     font-weight: 600;
@@ -327,83 +295,272 @@
     text-overflow: ellipsis;
   }
   .commit-block__time { color: var(--accent); font-weight: 600; }
-  .commit-block__loading {
-    color: var(--text-dim);
-    font-size: .78rem;
-  }
-  .commit-block__error {
-    color: #f87171;
-    font-size: .78rem;
-  }
+  .commit-block__loading { color: var(--text-dim); font-size: .78rem; }
+  .commit-block__error { color: #f87171; font-size: .78rem; }
 
-  /* ===== GROUP TABS ===== */
-  .group-tabs {
+  /* ===== MAIN CARDS (CODE + VISUAL) ===== */
+  .main-cards {
     display: flex;
-    gap: 8px;
-    margin-bottom: 24px;
-    flex-wrap: wrap;
-    animation: fadeDown .6s .15s ease both;
+    flex-direction: column;
+    gap: 16px;
+    margin-bottom: 32px;
   }
-  .group-tab {
-    display: flex;
-    align-items: center;
-    gap: 6px;
-    padding: 10px 18px;
-    font-size: .85rem;
-    font-weight: 600;
-    color: var(--text-dim);
+  .main-card {
     background: var(--surface);
     border: 1px solid var(--border);
-    border-radius: 8px;
-    cursor: pointer;
-    transition: all .2s;
+    border-radius: var(--radius);
+    overflow: hidden;
+    transition: border-color .3s;
+    opacity: 0;
+    transform: translateY(20px);
+    animation: fadeUp .6s ease both;
   }
-  .group-tab:hover { border-color: var(--text-dim); color: var(--text); }
-  .group-tab--active { color: var(--accent); border-color: var(--accent); background: rgba(74,222,128,.08); }
-  .group-tab__count {
-    font-size: .72rem;
+  .main-card--code { border-left: 4px solid var(--code); }
+  .main-card--visual { border-left: 4px solid var(--visual); }
+  .main-card--code .main-card__icon-color { color: var(--code); }
+  .main-card--visual .main-card__icon-color { color: var(--visual); }
+  .main-card--code .main-card__fill { background: linear-gradient(90deg, var(--code), #6ee7b7); }
+  .main-card--visual .main-card__fill { background: linear-gradient(90deg, var(--visual), #c084fc); }
+
+  .main-card__header {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    padding: 18px 22px;
+    cursor: pointer;
+    user-select: none;
+    transition: background .2s;
+  }
+  .main-card__header:hover { background: rgba(255,255,255,.02); }
+
+  .main-card__icon {
+    font-size: 26px;
+    flex-shrink: 0;
+    width: 44px;
+    height: 44px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: rgba(255,255,255,.03);
+    border-radius: 10px;
+    border: 1px solid var(--border);
+  }
+  .main-card--code .main-card__icon { border-color: rgba(74,222,128,.3); background: rgba(74,222,128,.08); }
+  .main-card--visual .main-card__icon { border-color: rgba(167,139,250,.3); background: rgba(167,139,250,.08); }
+
+  .main-card__info { flex: 1; min-width: 0; }
+
+  .main-card__title-row {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    flex-wrap: wrap;
+  }
+  .main-card__title {
+    font-size: 1.05rem;
     font-weight: 700;
-    padding: 2px 8px;
+    color: #fff;
+  }
+  .main-card__count {
+    font-size: .72rem;
+    font-weight: 600;
+    padding: 2px 10px;
     border-radius: 999px;
     background: rgba(255,255,255,.05);
-  }
-  .group-tab--active .group-tab__count { background: rgba(74,222,128,.15); }
-
-  /* ===== NO RESULTS ===== */
-  .no-results {
-    text-align: center;
-    padding: 60px 20px;
     color: var(--text-dim);
-    display: none;
+    white-space: nowrap;
   }
-  .no-results__icon { font-size: 3rem; margin-bottom: 16px; opacity: .5; }
-  .no-results__text { font-size: 1rem; margin-bottom: 8px; }
-  .no-results__hint { font-size: .85rem; opacity: .7; }
-  .no-results--visible { display: block; }
+  .main-card--code .main-card__count { background: rgba(74,222,128,.1); color: var(--code); }
+  .main-card--visual .main-card__count { background: rgba(167,139,250,.1); color: var(--visual); }
 
-  /* ===== PHASE CARDS ===== */
+  .main-card__pct {
+    font-size: 1.4rem;
+    font-weight: 800;
+    min-width: 60px;
+    text-align: right;
+    flex-shrink: 0;
+  }
+  .main-card--code .main-card__pct { color: var(--code); }
+  .main-card--visual .main-card__pct { color: var(--visual); }
+
+  .main-card__bar-wrap {
+    margin-top: 6px;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+  .main-card__bar {
+    flex: 1;
+    height: 6px;
+    background: var(--future);
+    border-radius: 999px;
+    overflow: hidden;
+  }
+  .main-card__fill {
+    height: 100%;
+    border-radius: 999px;
+    width: 0;
+    transition: width 1.2s ease;
+  }
+  .main-card__sub {
+    font-size: .75rem;
+    color: var(--text-dim);
+    flex-shrink: 0;
+  }
+
+  .main-card__arrow {
+    width: 22px;
+    height: 22px;
+    fill: var(--text-dim);
+    flex-shrink: 0;
+    transition: transform .3s;
+  }
+  .main-card--open .main-card__arrow { transform: rotate(180deg); }
+
+  .main-card__body {
+    max-height: 0;
+    overflow: hidden;
+    transition: max-height .5s ease;
+    padding: 0 22px;
+  }
+  .main-card--open .main-card__body { max-height: 5000px; padding: 0 22px 22px; }
+
+  /* — subsystem groups inside cards — */
+  .subsystem-group { margin-bottom: 16px; }
+  .subsystem-group:last-child { margin-bottom: 0; }
+
+  .subsystem-group__header {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 8px 12px;
+    background: rgba(255,255,255,.02);
+    border-radius: 8px;
+    margin-bottom: 6px;
+  }
+  .subsystem-group__dot {
+    width: 8px; height: 8px;
+    border-radius: 50%;
+    flex-shrink: 0;
+  }
+  .subsystem-group__dot--done { background: var(--done); box-shadow: 0 0 6px rgba(74,222,128,.4); }
+  .subsystem-group__dot--active { background: var(--accent); box-shadow: 0 0 6px rgba(74,222,128,.4); animation: pulse 2s ease-in-out infinite; }
+  .subsystem-group__dot--future { background: var(--future); }
+
+  .subsystem-group__name {
+    flex: 1;
+    font-size: .85rem;
+    font-weight: 600;
+    color: #fff;
+  }
+  .subsystem-group__pct {
+    font-size: .78rem;
+    font-weight: 700;
+    min-width: 36px;
+    text-align: right;
+  }
+  .subsystem-group__pct--done { color: var(--done); }
+  .subsystem-group__pct--active { color: var(--accent); }
+
+  .subsystem-group__bar {
+    width: 60px;
+    height: 3px;
+    background: var(--future);
+    border-radius: 999px;
+    overflow: hidden;
+  }
+  .subsystem-group__bar-fill {
+    height: 100%;
+    border-radius: 999px;
+    background: var(--accent);
+    transition: width 1s ease;
+  }
+  .subsystem-group__bar-fill--done { background: var(--done); }
+
+  .subsystem-group__tasks {
+    list-style: none;
+    padding-left: 12px;
+  }
+  .subsystem-group__task {
+    display: flex;
+    align-items: flex-start;
+    gap: 8px;
+    font-size: .82rem;
+    color: var(--text);
+    padding: 3px 8px;
+    border-radius: 4px;
+    line-height: 1.4;
+  }
+  .subsystem-group__task:hover { background: rgba(255,255,255,.02); }
+  .subsystem-group__task--done { color: var(--text-dim); text-decoration: line-through; }
+  .subsystem-group__task--future { color: var(--text-dim); }
+  .subsystem-group__task-dot {
+    width: 5px; height: 5px;
+    border-radius: 50%;
+    flex-shrink: 0;
+    margin-top: 6px;
+    background: var(--accent);
+  }
+  .subsystem-group__task--done .subsystem-group__task-dot { background: var(--done); }
+  .subsystem-group__task--future .subsystem-group__task-dot { background: var(--warning); }
+
+  .subsystem-group__task-text { flex: 1; }
+
+  /* ===== FULL ROADMAP TOGGLE ===== */
+  .toggle-full-wrap {
+    text-align: center;
+    margin-bottom: 24px;
+  }
+  .toggle-full-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 10px;
+    padding: 12px 24px;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    color: var(--text-dim);
+    font-size: .85rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all .25s;
+    font-family: inherit;
+  }
+  .toggle-full-btn:hover {
+    border-color: var(--accent);
+    color: var(--accent);
+    background: rgba(74,222,128,.05);
+    transform: scale(1.02);
+  }
+  .toggle-full-btn__icon { font-size: 18px; }
+  .toggle-full-btn__arrow {
+    width: 18px; height: 18px;
+    fill: currentColor;
+    transition: transform .3s;
+  }
+  .toggle-full-btn--open .toggle-full-btn__arrow { transform: rotate(180deg); }
+
+  /* ===== FULL ROADMAP (скрытые секции) ===== */
+  .full-roadmap {
+    max-height: 0;
+    overflow: hidden;
+    transition: max-height .5s ease;
+  }
+  .full-roadmap--open { max-height: 100000px; }
+
+  /* ===== PHASE CARDS (прежняя структура) ===== */
   .phase-card {
     background: var(--surface);
     border: 1px solid var(--border);
     border-radius: var(--radius);
     margin-bottom: 16px;
     overflow: hidden;
-    opacity: 0;
-    transform: translateY(20px);
-    transition: opacity .5s, transform .5s, border-color .3s;
-    animation: fadeUp .6s ease both;
-  }
-  .phase-card.visible {
-    opacity: 1;
-    transform: translateY(0);
+    transition: border-color .3s;
   }
   .phase-card--done { border-left: 3px solid var(--done); }
   .phase-card--active { border-left: 3px solid var(--accent); }
   .phase-card--future { border-left: 3px solid var(--future); }
-
   .phase-card--hidden { display: none; }
-  .phase-card.search-hidden { display: none; }
-  .phase-card.filter-hidden { display: none; }
 
   .phase-card__header {
     display: flex;
@@ -426,10 +583,7 @@
   .phase-card--done .phase-card__dot { background: var(--done); box-shadow: 0 0 8px rgba(74,222,128,.5); }
   .phase-card--active .phase-card__dot { background: var(--accent); box-shadow: 0 0 8px rgba(74,222,128,.6); animation: pulse 2s ease-in-out infinite; }
 
-  .phase-card__meta {
-    flex: 1;
-    min-width: 0;
-  }
+  .phase-card__meta { flex: 1; min-width: 0; }
   .phase-card__tag {
     font-size: .72rem;
     font-weight: 700;
@@ -440,7 +594,6 @@
   }
   .phase-card--done .phase-card__tag { color: var(--done); }
   .phase-card--active .phase-card__tag { color: var(--accent); }
-
   .phase-card__title {
     font-size: 1rem;
     font-weight: 700;
@@ -449,7 +602,6 @@
     overflow: hidden;
     text-overflow: ellipsis;
   }
-
   .phase-card__progress-wrap {
     display: flex;
     align-items: center;
@@ -465,7 +617,6 @@
   }
   .phase-card--done .phase-card__pct { color: var(--done); }
   .phase-card--active .phase-card__pct { color: var(--accent); }
-
   .phase-card__progress-bar {
     width: 80px;
     height: 4px;
@@ -481,16 +632,13 @@
     transition: width 1s ease;
   }
   .phase-card--done .phase-card__progress-fill { background: var(--done); }
-
   .phase-card__arrow {
-    width: 20px;
-    height: 20px;
+    width: 20px; height: 20px;
     fill: var(--text-dim);
     flex-shrink: 0;
     transition: transform .3s;
   }
   .phase-card--open .phase-card__arrow { transform: rotate(180deg); }
-
   .phase-card__body {
     max-height: 0;
     overflow: hidden;
@@ -498,7 +646,6 @@
     padding: 0 20px;
   }
   .phase-card--open .phase-card__body { max-height: 2000px; padding: 0 20px 20px; }
-
   .phase-card__goal {
     font-size: .85rem;
     color: var(--text-dim);
@@ -507,7 +654,6 @@
     margin-bottom: 16px;
   }
 
-  /* ===== TASK LIST ===== */
   .task-list {
     list-style: none;
     display: flex;
@@ -528,19 +674,15 @@
   .task-list__item--done { color: var(--text-dim); text-decoration: line-through; }
   .task-list__item--done .task-list__dot { background: var(--done) !important; }
   .task-list__item--future .task-list__dot { background: var(--warning); }
-
   .task-list__dot {
-    width: 6px;
-    height: 6px;
+    width: 6px; height: 6px;
     border-radius: 50%;
     flex-shrink: 0;
     margin-top: 7px;
     background: var(--accent);
   }
-
   .task-list__text { flex: 1; }
 
-  /* ===== SPECIAL SECTIONS ===== */
   .phase-card__result {
     margin-top: 16px;
     padding: 12px 16px;
@@ -551,10 +693,7 @@
     color: var(--text);
   }
   .phase-card__result strong { color: var(--accent); }
-
-  .phase-card__docs, .phase-card__issues, .phase-card__deferred {
-    margin-top: 12px;
-  }
+  .phase-card__docs, .phase-card__issues, .phase-card__deferred { margin-top: 12px; }
   .phase-card__docs summary, .phase-card__issues summary, .phase-card__deferred summary {
     cursor: pointer;
     font-size: .82rem;
@@ -565,7 +704,6 @@
   .phase-card__docs summary { color: var(--accent2); }
   .phase-card__issues summary { color: #f87171; }
   .phase-card__deferred summary { color: var(--warning); }
-
   .phase-card__docs ul, .phase-card__issues ul, .phase-card__deferred ul {
     list-style: none;
     margin-top: 8px;
@@ -578,7 +716,6 @@
     color: var(--text-dim);
     padding: 4px 0;
   }
-
   .phase-card__version {
     margin-top: 12px;
     font-size: .75rem;
@@ -590,19 +727,14 @@
     display: inline-block;
   }
 
-  /* ===== MD CONTENT (extra sections) ===== */
+  /* ===== EXTRA SECTIONS (risks, tools, etc) ===== */
   .md-section {
     background: var(--surface);
     border: 1px solid var(--border);
     border-radius: var(--radius);
     margin-bottom: 16px;
     overflow: hidden;
-    opacity: 0;
-    transform: translateY(20px);
-    animation: fadeUp .6s ease both;
   }
-  .md-section--hidden { display: none; }
-
   .md-section__toggle {
     display: flex;
     align-items: center;
@@ -613,19 +745,13 @@
     transition: background .2s;
   }
   .md-section__toggle:hover { background: rgba(255,255,255,.02); }
-  .md-section__toggle h2 {
-    font-size: 1rem;
-    font-weight: 700;
-    color: #fff;
-  }
+  .md-section__toggle h2 { font-size: 1rem; font-weight: 700; color: #fff; }
   .md-section__arrow {
-    width: 20px;
-    height: 20px;
+    width: 20px; height: 20px;
     fill: var(--text-dim);
     transition: transform .3s;
   }
   .md-section--open .md-section__arrow { transform: rotate(180deg); }
-
   .md-section__body {
     max-height: 0;
     overflow: hidden;
@@ -633,18 +759,13 @@
     padding: 0 20px;
   }
   .md-section--open .md-section__body { max-height: 2000px; padding: 0 20px 20px; }
-
-  /* MD content styling */
   .md-section__body h2 { font-size: 1.1rem; font-weight: 700; color: #fff; margin-bottom: 12px; }
   .md-section__body h3 { font-size: .95rem; font-weight: 600; color: var(--accent); margin: 16px 0 8px; }
-  .md-section__body p { font-size: .88rem; color: var(--text-dim); margin-bottom: 10px; line-height: 1.6; }
+  .md-section__body p { font-size: .88rem; color: var(--text-dim); margin-bottom: 10px; }
   .md-section__body p strong { color: var(--text); }
   .md-section__body ul { list-style: none; margin-bottom: 12px; }
   .md-section__body ul li { font-size: .88rem; color: var(--text); padding: 4px 0 4px 16px; position: relative; }
   .md-section__body ul li::before { content: '•'; position: absolute; left: 0; color: var(--accent); font-weight: 700; }
-  .md-section__body ul li ul { margin-top: 4px; }
-  .md-section__body ul li ul li { font-size: .82rem; color: var(--text-dim); }
-  .md-section__body ul li ul li::before { content: '›'; color: var(--text-dim); }
   .md-section__body code { font-family: 'Fira Code', 'Consolas', monospace; background: rgba(56,189,248,.08); color: var(--accent2); padding: 2px 6px; border-radius: 4px; font-size: .8rem; }
   .md-section__body blockquote { border-left: 3px solid var(--accent); padding-left: 14px; margin: 12px 0; color: var(--text-dim); font-size: .88rem; font-style: italic; }
   .md-section__body table { width: 100%; border-collapse: collapse; margin: 12px 0; font-size: .82rem; }
@@ -652,207 +773,13 @@
   .md-section__body td { padding: 6px 12px; border-bottom: 1px solid var(--border); color: var(--text); }
   .md-section__body a { color: var(--accent2); text-decoration: none; }
   .md-section__body a:hover { text-decoration: underline; }
-  .md-section__body pre { background: rgba(0,0,0,.3); border: 1px solid var(--border); border-radius: 6px; padding: 12px 16px; overflow-x: auto; margin: 12px 0; }
-  .md-section__body pre code { background: none; padding: 0; color: var(--text); font-size: .8rem; }
-  .md-section__body hr { border: none; height: 1px; background: var(--border); margin: 20px 0; }
 
-  /* ===== CLOUD VISUALIZER BUTTON ===== */
-  .cloudvis-btn {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    margin: 32px auto 0;
-    padding: 10px 20px;
-    background: var(--surface);
-    border: 1px solid var(--border);
-    border-radius: 8px;
-    color: var(--text-dim);
-    text-decoration: none;
-    font-size: .82rem;
-    font-weight: 600;
-    transition: all .25s;
-    width: fit-content;
-  }
-  .cloudvis-btn:hover {
-    border-color: var(--accent);
-    color: var(--accent);
-    transform: scale(1.02);
-  }
-  .cloudvis-btn__icon { font-size: 18px; }
-
-  /* ===== CLOUDENGINE SECTION ===== */
-  .cloudengine-section {
-    margin-top: 40px;
-    padding: 24px;
-    background: var(--surface);
-    border: 1px solid var(--border);
-    border-radius: var(--radius);
-    position: relative;
-    overflow: hidden;
-  }
-  .cloudengine-section::before {
-    content: '';
-    position: absolute;
-    top: 0;
-    left: 0;
-    right: 0;
-    height: 2px;
-    background: linear-gradient(90deg, var(--accent), var(--accent2), #a78bfa);
-  }
-  .cloudengine-section--hidden { display: none; }
-
-  /* Collapsible: header is the toggle, body slides open */
-  .cloudengine-section__toggle {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    cursor: pointer;
-    user-select: none;
-    padding: 4px 4px 4px 0;
-    transition: opacity .2s;
-  }
-  .cloudengine-section__toggle:hover { opacity: .85; }
-  .cloudengine-section__arrow {
-    width: 22px;
-    height: 22px;
-    fill: var(--text-dim);
-    transition: transform .3s;
-    flex-shrink: 0;
-    margin-left: 12px;
-  }
-  .cloudengine-section--open .cloudengine-section__arrow { transform: rotate(180deg); }
-
-  .cloudengine-section__body {
-    max-height: 0;
-    overflow: hidden;
-    transition: max-height .4s ease;
-  }
-  .cloudengine-section--open .cloudengine-section__body { max-height: 2000px; }
-
-  .cloudengine-header {
-    display: flex;
-    align-items: center;
-    gap: 16px;
-    margin-bottom: 0;
-  }
-  .cloudengine-badge {
-    font-size: .65rem;
-    font-weight: 700;
-    letter-spacing: 1px;
-    text-transform: uppercase;
-    color: var(--accent);
-    background: rgba(74,222,128,.1);
-    border: 1px solid rgba(74,222,128,.3);
-    padding: 4px 10px;
-    border-radius: 4px;
-  }
-  .cloudengine-title {
-    font-size: 1.2rem;
-    font-weight: 800;
-    color: #fff;
-    letter-spacing: -0.5px;
-  }
-  .cloudengine-subtitle {
-    font-size: .8rem;
-    color: var(--text-dim);
-    margin-top: 4px;
-  }
-
-  .cloudengine-tech {
-    margin-bottom: 20px;
-  }
-  .cloudengine-tech__title {
-    font-size: .78rem;
-    font-weight: 700;
-    letter-spacing: 1px;
-    text-transform: uppercase;
-    color: var(--text-dim);
-    margin-bottom: 12px;
-  }
-  .cloudengine-tech__chips {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 8px;
-  }
-  .chip {
-    font-size: .72rem;
-    font-weight: 600;
-    padding: 4px 10px;
-    background: rgba(255,255,255,.03);
-    border: 1px solid var(--border);
-    border-radius: 6px;
-    color: var(--text);
-  }
-
-  .cloudengine-migration {
-    margin-bottom: 20px;
-  }
-  .cloudengine-migration__title {
-    font-size: .78rem;
-    font-weight: 700;
-    letter-spacing: 1px;
-    text-transform: uppercase;
-    color: var(--text-dim);
-    margin-bottom: 12px;
-  }
-  .cloudengine-migration__table {
-    display: flex;
-    flex-direction: column;
-    gap: 8px;
-  }
-  .migration-row {
-    display: flex;
-    align-items: center;
-    gap: 12px;
-    font-size: .82rem;
-  }
-  .migration-from {
-    color: var(--text-dim);
-    text-decoration: line-through;
-  }
-  .migration-arrow { color: var(--accent); font-weight: 700; }
-  .migration-to { color: var(--accent2); font-weight: 600; }
-
-  .cloudengine-roadmap__title {
-    font-size: .78rem;
-    font-weight: 700;
-    letter-spacing: 1px;
-    text-transform: uppercase;
-    color: var(--text-dim);
-    margin-bottom: 12px;
-  }
-  .cloudengine-roadmap__items {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 12px;
-  }
-  .roadmap-item {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    font-size: .82rem;
-    font-weight: 600;
-    color: var(--text-dim);
-  }
-  .roadmap-item--done .roadmap-item__dot { background: var(--done); box-shadow: 0 0 6px rgba(74,222,128,.5); }
-  .roadmap-item--active .roadmap-item__dot { background: var(--accent); box-shadow: 0 0 6px rgba(74,222,128,.5); animation: pulse 2s ease-in-out infinite; }
-  .roadmap-item--future .roadmap-item__dot { background: var(--future); }
-  .roadmap-item__dot {
-    width: 10px;
-    height: 10px;
-    border-radius: 50%;
-  }
-  .roadmap-item__text { color: var(--text); }
-  .roadmap-item--future .roadmap-item__text { color: var(--text-dim); }
-
-  /* ===== GDD GRID ===== */
+  /* ===== GDD ===== */
   .gdd-section {
     margin-top: 40px;
     padding-top: 32px;
     border-top: 1px solid var(--border);
   }
-  .gdd-section--hidden { display: none; }
-
   .gdd-section__title {
     font-size: .8rem;
     font-weight: 700;
@@ -864,8 +791,6 @@
     align-items: center;
     gap: 8px;
   }
-  .gdd-section__title svg { width: 16px; height: 16px; fill: var(--accent2); }
-
   .gdd-grid {
     display: grid;
     grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
@@ -883,14 +808,30 @@
     color: inherit;
     transition: all .2s;
   }
-  .gdd-card:hover {
-    border-color: var(--accent2);
-    transform: translateY(-2px);
-    box-shadow: 0 6px 20px rgba(56,189,248,.1);
-  }
+  .gdd-card:hover { border-color: var(--accent2); transform: translateY(-2px); box-shadow: 0 6px 20px rgba(56,189,248,.1); }
   .gdd-card__id { font-size: .68rem; font-weight: 700; color: var(--accent2); letter-spacing: 1px; }
   .gdd-card__name { font-size: .85rem; font-weight: 600; color: #fff; line-height: 1.3; }
   .gdd-card__desc { font-size: .72rem; color: var(--text-dim); line-height: 1.4; }
+
+  /* ===== CLOUD VISUALIZER BUTTON ===== */
+  .cloudvis-btn {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin: 24px auto 0;
+    padding: 10px 20px;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    color: var(--text-dim);
+    text-decoration: none;
+    font-size: .82rem;
+    font-weight: 600;
+    transition: all .25s;
+    width: fit-content;
+  }
+  .cloudvis-btn:hover { border-color: var(--accent); color: var(--accent); transform: scale(1.02); }
+  .cloudvis-btn__icon { font-size: 18px; }
 
   /* ===== GRAPH SECTION ===== */
   .graph-section {
@@ -900,8 +841,6 @@
     margin-top: 40px;
     overflow: hidden;
   }
-  .graph-section--hidden { display: none; }
-
   .graph-section__toggle {
     display: flex;
     align-items: center;
@@ -909,269 +848,95 @@
     padding: 16px 20px;
     cursor: pointer;
     user-select: none;
-    transition: background .2s, border-color .2s;
+    transition: background .2s;
   }
-  .graph-section__toggle:hover {
-    background: rgba(74,222,128,.03);
-    border-color: var(--accent);
-  }
-  .graph-section__toggle-left {
-    display: flex;
-    align-items: center;
-    gap: 12px;
-  }
+  .graph-section__toggle:hover { background: rgba(74,222,128,.03); }
+  .graph-section__toggle-left { display: flex; align-items: center; gap: 12px; }
   .graph-section__icon {
-    width: 36px;
-    height: 36px;
+    width: 36px; height: 36px;
     background: rgba(74,222,128,.1);
     border: 1px solid rgba(74,222,128,.25);
     border-radius: 8px;
     display: flex;
-    align-items: center;
-    justify-content: center;
+    align-items: center; justify-content: center;
     font-size: 16px;
     flex-shrink: 0;
   }
   .graph-section__toggle-text h2 { font-size: .95rem; font-weight: 700; color: #fff; }
   .graph-section__toggle-text p { font-size: .75rem; color: var(--text-dim); margin-top: 2px; }
-  .graph-section__arrow { width: 20px; height: 20px; fill: var(--text-dim); transition: transform .3s; }
+  .graph-section__arrow {
+    width: 20px; height: 20px;
+    fill: var(--text-dim);
+    transition: transform .3s;
+  }
   .graph-section--open .graph-section__arrow { transform: rotate(180deg); }
-
-  .graph-section__body {
-    max-height: 0;
-    overflow: hidden;
-    transition: max-height .4s ease;
-  }
+  .graph-section__body { max-height: 0; overflow: hidden; transition: max-height .4s ease; }
   .graph-section--open .graph-section__body { max-height: 100vh; }
-
-  .graph-section__embed {
-    width: 100%;
-    height: calc(100vh - 120px);
-    border: none;
-    display: block;
-  }
-  .graph-section__loading {
-    text-align: center;
-    padding: 40px 20px;
-    color: var(--text-dim);
-    font-size: .85rem;
-  }
-  .graph-section__footer {
-    padding: 12px 20px;
-    border-top: 1px solid var(--border);
-    font-size: .7rem;
-    color: var(--text-dim);
-    text-align: center;
-  }
+  .graph-section__embed { width: 100%; height: calc(100vh - 120px); border: none; display: block; }
+  .graph-section__loading { text-align: center; padding: 40px 20px; color: var(--text-dim); font-size: .85rem; }
+  .graph-section__footer { padding: 12px 20px; border-top: 1px solid var(--border); font-size: .7rem; color: var(--text-dim); text-align: center; }
   .graph-section__footer a { color: var(--accent2); text-decoration: none; }
-  .graph-section__footer a:hover { text-decoration: underline; }
 
-  /* ===== COLLAB SECTION ===== */
-  .collab-section {
+  /* ===== CLOUDENGINE SECTION ===== */
+  .cloudengine-section {
+    margin-top: 40px;
+    padding: 24px;
     background: var(--surface);
     border: 1px solid var(--border);
     border-radius: var(--radius);
-    margin-top: 40px;
-    overflow: hidden;
     position: relative;
+    overflow: hidden;
   }
-  .collab-section::before {
+  .cloudengine-section::before {
     content: '';
-    position: absolute;
-    top: 0;
-    left: 0;
-    right: 0;
+    position: absolute; top: 0; left: 0; right: 0;
     height: 2px;
-    background: linear-gradient(90deg, #a78bfa, #c084fc, #e879f9);
+    background: linear-gradient(90deg, var(--accent), var(--accent2), #a78bfa);
   }
-  .collab-section--hidden { display: none; }
-  .collab-section__toggle {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    padding: 16px 20px;
-    cursor: pointer;
-    user-select: none;
-    transition: background .2s, border-color .2s;
+  .cloudengine-section__toggle {
+    display: flex; align-items: center; justify-content: space-between;
+    cursor: pointer; user-select: none;
+    padding: 4px 4px 4px 0;
+    transition: opacity .2s;
   }
-  .collab-section__toggle:hover { background: rgba(167,139,250,.03); }
-  .collab-section__toggle-left {
-    display: flex;
-    align-items: center;
-    gap: 12px;
-  }
-  .collab-section__icon {
-    width: 36px;
-    height: 36px;
-    background: rgba(167,139,250,.1);
-    border: 1px solid rgba(167,139,250,.25);
-    border-radius: 8px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-size: 16px;
+  .cloudengine-section__toggle:hover { opacity: .85; }
+  .cloudengine-section__arrow {
+    width: 22px; height: 22px;
+    fill: var(--text-dim);
+    transition: transform .3s;
     flex-shrink: 0;
   }
-  .collab-section__toggle-text h2 { font-size: .95rem; font-weight: 700; color: #fff; margin: 0; }
-  .collab-section__toggle-text p { font-size: .75rem; color: var(--text-dim); margin-top: 2px; }
-  .collab-section__arrow { width: 20px; height: 20px; fill: var(--text-dim); transition: transform .3s; flex-shrink: 0; }
-  .collab-section--open .collab-section__arrow { transform: rotate(180deg); }
-  .collab-section__body {
-    max-height: 0;
-    overflow: hidden;
-    transition: max-height .4s ease;
-  }
-  .collab-section--open .collab-section__body { max-height: 0; }
-  .collab-section--open.is-loaded .collab-section__body { max-height: 10000px; }
-  .collab-section__content {
-    padding: 0 20px 20px;
-  }
-  .collab-section__content h1 { font-size: 1.3rem; font-weight: 800; color: #fff; margin: 0 0 16px; }
-  .collab-section__content h2 { font-size: 1.1rem; font-weight: 700; color: #fff; margin: 0 0 12px; }
-  .collab-section__content h3 { font-size: .95rem; font-weight: 600; color: #c084fc; margin: 16px 0 8px; }
-  .collab-section__content p { font-size: .88rem; color: var(--text-dim); margin-bottom: 10px; line-height: 1.6; }
-  .collab-section__content p strong { color: var(--text); }
-  .collab-section__content ul { list-style: none; margin-bottom: 12px; }
-  .collab-section__content ul li { font-size: .88rem; color: var(--text); padding: 4px 0 4px 16px; position: relative; }
-  .collab-section__content ul li::before { content: '•'; position: absolute; left: 0; color: #c084fc; font-weight: 700; }
-  .collab-section__content ul li ul { margin-top: 4px; }
-  .collab-section__content ul li ul li { font-size: .82rem; color: var(--text-dim); }
-  .collab-section__content ul li ul li::before { content: '›'; color: var(--text-dim); }
-  .collab-section__content code { font-family: 'Fira Code', 'Consolas', monospace; background: rgba(192,132,252,.08); color: #c084fc; padding: 2px 6px; border-radius: 4px; font-size: .8rem; }
-  .collab-section__content blockquote { border-left: 3px solid #a78bfa; padding-left: 14px; margin: 12px 0; color: var(--text-dim); font-size: .88rem; font-style: italic; }
-  .collab-section__content table { width: 100%; border-collapse: collapse; margin: 12px 0; font-size: .82rem; }
-  .collab-section__content th { background: rgba(167,139,250,.08); color: #c084fc; font-weight: 700; text-align: left; padding: 8px 12px; border-bottom: 2px solid var(--border); }
-  .collab-section__content td { padding: 6px 12px; border-bottom: 1px solid var(--border); color: var(--text); }
-  .collab-section__content a { color: #c084fc; text-decoration: none; }
-  .collab-section__content a:hover { text-decoration: underline; }
-  .collab-section__content pre { background: rgba(0,0,0,.3); border: 1px solid var(--border); border-radius: 6px; padding: 12px 16px; overflow-x: auto; margin: 12px 0; }
-  .collab-section__content pre code { background: none; padding: 0; color: var(--text); font-size: .8rem; }
-  .collab-section__content hr { border: none; height: 1px; background: var(--border); margin: 20px 0; }
-  .collab-section__loading, .collab-section__error {
-    text-align: center;
-    padding: 40px 20px;
-    color: var(--text-dim);
-    font-size: .85rem;
-  }
-  .collab-section__error { color: #f87171; }
+  .cloudengine-section--open .cloudengine-section__arrow { transform: rotate(180deg); }
+  .cloudengine-section__body { max-height: 0; overflow: hidden; transition: max-height .4s ease; }
+  .cloudengine-section--open .cloudengine-section__body { max-height: 2000px; }
 
-  /* ===== FLOATING CLOUD GENERATOR BUTTON ===== */
-  .cloud-btn {
-    position: fixed;
-    top: 70px;
-    right: 12px;
-    z-index: 1002;
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    padding: 12px 20px;
-    background: linear-gradient(135deg, #12121a 0%, #1e1e2e 100%);
-    border: 2px solid rgba(74,222,128,.6);
-    border-radius: 50px;
-    color: #4ade80;
-    text-decoration: none;
-    font-size: .82rem;
-    font-weight: 700;
-    box-shadow: 0 4px 20px rgba(74,222,128,.15);
-    transition: all .3s;
-    backdrop-filter: blur(8px);
+  .cloudengine-header { display: flex; align-items: center; gap: 16px; margin-bottom: 0; }
+  .cloudengine-badge {
+    font-size: .65rem; font-weight: 700; letter-spacing: 1px; text-transform: uppercase;
+    color: var(--accent); background: rgba(74,222,128,.1);
+    border: 1px solid rgba(74,222,128,.3); padding: 4px 10px; border-radius: 4px;
   }
-  .cloud-btn:hover {
-    transform: scale(1.05);
-    box-shadow: 0 6px 30px rgba(74,222,128,.3);
-    border-color: #4ade80;
-    color: #fff;
-  }
-  .cloud-btn__icon { font-size: 16px; animation: float 2s ease-in-out infinite; }
-  .cloud-btn__text { letter-spacing: 0.5px; }
-  @media (max-width: 600px) {
-    .cloud-btn { top: 140px; right: 8px; padding: 8px 14px; font-size: 11px; }
-    .cloud-btn__text { display: none; }
-  }
-
-  /* ===== FLOATING BUTTONS ===== */
-  .fun-btn {
-    position: fixed;
-    top: 12px;
-    right: 12px;
-    z-index: 1001;
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    padding: 12px 20px;
-    background: linear-gradient(135deg, #1a1a3e 0%, #2d2d5a 100%);
-    border: 2px solid rgba(79,195,247,.6);
-    border-radius: 50px;
-    color: #4FC3F7;
-    text-decoration: none;
-    font-size: .82rem;
-    font-weight: 700;
-    box-shadow: 0 4px 20px rgba(79,195,247,.2);
-    transition: all .3s;
-    backdrop-filter: blur(8px);
-  }
-  .fun-btn:hover {
-    transform: scale(1.05);
-    box-shadow: 0 6px 30px rgba(79,195,247,.35);
-    border-color: #4FC3F7;
-    color: #fff;
-  }
-  .fun-btn__icon { font-size: 16px; animation: float 2s ease-in-out infinite; }
-  @media (max-width: 600px) {
-    .fun-btn { top: 84px; right: 8px; padding: 8px 14px; font-size: 11px; }
-    .fun-btn > span:not(.fun-btn__icon) { display: none; }
-  }
-  @keyframes float {
-    0%, 100% { transform: translateY(0); }
-    50% { transform: translateY(-4px); }
-  }
-
-  /* ===== COLLAB BUTTON ===== */
-  .collab-btn {
-    position: fixed;
-    top: 128px;
-    right: 12px;
-    z-index: 1002;
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    padding: 12px 20px;
-    background: linear-gradient(135deg, #1a1a2e 0%, #2d1b4e 100%);
-    border: 2px solid rgba(167, 139, 250, .4);
-    border-radius: 50px;
-    color: #a78bfa;
-    font-size: .82rem;
-    font-weight: 700;
-    box-shadow: 0 4px 20px rgba(167, 139, 250, .15);
-    transition: all .3s;
-    backdrop-filter: blur(8px);
-    cursor: pointer;
-    animation: pulseBorder 2s ease-in-out infinite;
-    font-family: inherit;
-    text-decoration: none;
-  }
-  .collab-btn:hover {
-    transform: scale(1.05) translateY(-2px);
-    box-shadow: 0 6px 30px rgba(167, 139, 250, .4);
-    border-color: #a78bfa;
-    color: #fff;
-    animation: none;
-  }
-  .collab-btn__icon { font-size: 16px; animation: wave 2s ease-in-out infinite; display: inline-block; }
-  .collab-btn__text { letter-spacing: 0.5px; }
-  @media (max-width: 600px) {
-    .collab-btn { top: 196px; right: 8px; padding: 8px 14px; font-size: 11px; }
-    .collab-btn__text { display: none; }
-  }
-  @keyframes pulseBorder {
-    0%, 100% { box-shadow: 0 4px 20px rgba(167, 139, 250, .15); border-color: rgba(167, 139, 250, .4); }
-    50% { box-shadow: 0 4px 30px rgba(167, 139, 250, .5); border-color: rgba(167, 139, 250, .9); }
-  }
-  @keyframes wave {
-    0%, 100% { transform: rotate(0deg); }
-    25% { transform: rotate(-12deg); }
-    75% { transform: rotate(12deg); }
-  }
+  .cloudengine-title { font-size: 1.2rem; font-weight: 800; color: #fff; letter-spacing: -0.5px; }
+  .cloudengine-subtitle { font-size: .8rem; color: var(--text-dim); margin-top: 4px; }
+  .cloudengine-tech { margin-bottom: 20px; }
+  .cloudengine-tech__title { font-size: .78rem; font-weight: 700; letter-spacing: 1px; text-transform: uppercase; color: var(--text-dim); margin-bottom: 12px; }
+  .cloudengine-tech__chips { display: flex; flex-wrap: wrap; gap: 8px; }
+  .chip { font-size: .72rem; font-weight: 600; padding: 4px 10px; background: rgba(255,255,255,.03); border: 1px solid var(--border); border-radius: 6px; color: var(--text); }
+  .cloudengine-migration { margin-bottom: 20px; }
+  .cloudengine-migration__title { font-size: .78rem; font-weight: 700; letter-spacing: 1px; text-transform: uppercase; color: var(--text-dim); margin-bottom: 12px; }
+  .migration-row { display: flex; align-items: center; gap: 12px; font-size: .82rem; }
+  .migration-from { color: var(--text-dim); text-decoration: line-through; }
+  .migration-arrow { color: var(--accent); font-weight: 700; }
+  .migration-to { color: var(--accent2); font-weight: 600; }
+  .cloudengine-roadmap__title { font-size: .78rem; font-weight: 700; letter-spacing: 1px; text-transform: uppercase; color: var(--text-dim); margin-bottom: 12px; }
+  .cloudengine-roadmap__items { display: flex; flex-wrap: wrap; gap: 12px; }
+  .roadmap-item { display: flex; align-items: center; gap: 8px; font-size: .82rem; font-weight: 600; color: var(--text-dim); }
+  .roadmap-item--done .roadmap-item__dot { background: var(--done); box-shadow: 0 0 6px rgba(74,222,128,.5); }
+  .roadmap-item--active .roadmap-item__dot { background: var(--accent); box-shadow: 0 0 6px rgba(74,222,128,.5); animation: pulse 2s ease-in-out infinite; }
+  .roadmap-item--future .roadmap-item__dot { background: var(--future); }
+  .roadmap-item__dot { width: 10px; height: 10px; border-radius: 50%; }
+  .roadmap-item__text { color: var(--text); }
+  .roadmap-item--future .roadmap-item__text { color: var(--text-dim); }
 
   /* ===== FOOTER ===== */
   .footer {
@@ -1184,13 +949,21 @@
   .footer__links { display: flex; justify-content: center; gap: 16px; flex-wrap: wrap; margin-bottom: 24px; }
   .footer__links a { color: var(--text); text-decoration: none; font-size: .85rem; font-weight: 500; transition: color .2s; }
   .footer__links a:hover { color: var(--accent); }
-
   .license-footer { margin-top: 24px; padding-top: 20px; border-top: 1px solid var(--border); }
   .license-footer__text { font-size: .72rem; color: var(--text-dim); line-height: 1.6; max-width: 500px; margin: 0 auto 12px; }
   .license-footer__text a { color: var(--accent2); text-decoration: none; }
   .license-footer__text a:hover { text-decoration: underline; }
   .license-footer__badges { display: flex; justify-content: center; gap: 8px; flex-wrap: wrap; }
   .license-badge { font-size: .65rem; font-weight: 600; padding: 3px 10px; border-radius: 999px; background: rgba(255,255,255,.03); border: 1px solid var(--border); color: var(--text-dim); }
+
+  /* ===== NO RESULTS ===== */
+  .no-results {
+    text-align: center;
+    padding: 40px 20px;
+    color: var(--text-dim);
+    display: none;
+  }
+  .no-results--visible { display: block; }
 
   /* ===== ANIMATIONS ===== */
   @keyframes fadeDown {
@@ -1206,22 +979,17 @@
     50%      { box-shadow: 0 0 16px rgba(74,222,128,.9); }
   }
 
-  /* ===== RESPONSIVE ===== */
   @media (max-width: 768px) {
     .top-bar__inner { flex-wrap: wrap; height: auto; padding: 12px 0; gap: 10px; }
-    .top-bar__divider { display: none; }
-    .search-box { max-width: 100%; order: 10; }
-    .filter-tabs { order: 11; }
+    .search-box { max-width: 100%; }
     .content-area { padding: 20px 12px; }
     .commit-block__msg { max-width: 150px; }
-    .group-tabs { gap: 6px; }
-    .group-tab { padding: 8px 12px; font-size: .78rem; }
-    .phase-card__progress-wrap { display: none; }
+    .main-card__title-row { flex-wrap: wrap; }
+    .main-card__bar-wrap { flex-wrap: wrap; }
     .gdd-grid { grid-template-columns: 1fr 1fr; }
   }
   @media (max-width: 480px) {
     .gdd-grid { grid-template-columns: 1fr; }
-    .filter-tabs { display: none; }
   }
 </style>
 </head>
@@ -1237,43 +1005,14 @@
 <!-- TOP BAR -->
 <div class="top-bar">
   <div class="top-bar__inner">
-    <a href="#header" class="top-bar__logo">Project <span>C</span></a>
-    <div class="top-bar__divider"></div>
-    
-    <!-- Search -->
+    <a href="#" class="top-bar__logo">Project <span>C</span></a>
     <div class="search-box" id="search-box">
       <svg class="search-box__icon" viewBox="0 0 24 24"><path d="M15.5 14h-.79l-.28-.27C15.41 12.59 16 11.11 16 9.5 16 5.91 13.09 3 9.5 3S3 5.91 3 9.5 5.91 16 9.5 16c1.61 0 3.09-.59 4.23-1.57l.27.28v.79l5 4.99L20.49 19l-4.99-5zm-6 0C7.01 14 5 11.99 5 9.5S7.01 5 9.5 5 14 7.01 14 9.5 11.99 14 9.5 14z"/></svg>
       <input type="text" class="search-box__input" id="search-input" placeholder="Search tasks...">
       <button class="search-box__clear" id="search-clear">✕</button>
     </div>
-
-    <!-- Filter Tabs -->
-    <div class="filter-tabs">
-      <button class="filter-tab filter-tab--active" data-filter="all">All</button>
-      <button class="filter-tab" data-filter="done">Done</button>
-      <button class="filter-tab" data-filter="active">In Progress</button>
-      <button class="filter-tab" data-filter="future">Planned</button>
-    </div>
   </div>
 </div>
-
-<!-- FLOATING GAME BUTTON -->
-<a href="Fun/index.html" target="_top" class="fun-btn" title="Мини-игра: Грузоперевозки над облаками">
-  <span class="fun-btn__icon">🚀</span>
-  <span>CloudTrader</span>
-</a>
-
-<!-- FLOATING CLOUD GENERATOR BUTTON -->
-<a href="https://boozzeeboom.github.io/project-c/CLOUD_VISUALISER/web/visualizer3d.html" target="_blank" class="cloud-btn" title="3D Cloud Generator — визуализатор облаков">
-  <span class="cloud-btn__icon">☁️</span>
-  <span class="cloud-btn__text">CloudGen</span>
-</a>
-
-<!-- FLOATING COLLAB BUTTON -->
-<button class="collab-btn" onclick="toggleCollab()" title="Присоединиться к команде">
-  <span class="collab-btn__icon">🤝</span>
-  <span class="collab-btn__text">В команду</span>
-</button>
 
 <!-- CONTENT AREA -->
 <div class="content-area">
@@ -1282,8 +1021,8 @@
   <header id="header" class="header">
     <div class="header__badge" id="header-badge">Pre-Alpha</div>
     <h1 class="header__title">Project <span>C</span> — Roadmap</h1>
-    
-    <!-- OVERALL PROGRESS BAR -->
+
+    <!-- OVERALL PROGRESS -->
     <div class="overall-progress" id="overall-progress">
       <div class="overall-progress__label">
         <span>Общий прогресс</span>
@@ -1305,102 +1044,71 @@
     </div>
   </header>
 
-  <!-- COMMIT BLOCK (compact) -->
+  <!-- COMMIT BLOCK -->
   <div id="commit-block" class="commit-block">
     <div class="commit-block__loading">Загрузка...</div>
   </div>
 
-  <!-- GROUP TABS -->
-  <div class="group-tabs" id="group-tabs">
-    <button class="group-tab group-tab--active" data-group="phases">
-      <span>📋</span> Этапы <span class="group-tab__count" id="count-phases">0</span>
-    </button>
-    <button class="group-tab" data-group="extra">
-      <span>⚠️</span> Риски и инструменты <span class="group-tab__count" id="count-extra">0</span>
-    </button>
-    <button class="group-tab" data-group="cloudengine">
-      <span>☁️</span> CloudEngine <span class="group-tab__count" id="count-ce">1</span>
-    </button>
-    <button class="group-tab" data-group="gdd">
-      <span>📚</span> GDD <span class="group-tab__count" id="count-gdd">16</span>
-    </button>
-    <button class="group-tab" data-group="all">
-      <span>🌐</span> Всё <span class="group-tab__count" id="count-all">0</span>
+  <!-- === MAIN CARDS: CODE + VISUAL === -->
+  <div class="main-cards" id="main-cards"></div>
+
+  <!-- === TOGGLE FULL ROADMAP === -->
+  <div class="toggle-full-wrap">
+    <button class="toggle-full-btn" id="toggle-full-btn" onclick="toggleFullRoadmap()">
+      <span class="toggle-full-btn__icon">📋</span>
+      <span>Полный roadmap (все этапы)</span>
+      <svg class="toggle-full-btn__arrow" viewBox="0 0 24 24"><path d="M7.41 8.59L12 13.17l4.59-4.58L18 10l-6 6-6-6 1.41-1.41z"/></svg>
     </button>
   </div>
 
-  <!-- NO RESULTS -->
-  <div class="no-results" id="no-results">
-    <div class="no-results__icon">🔍</div>
-    <div class="no-results__text">Ничего не найдено</div>
-    <div class="no-results__hint">Попробуйте изменить запрос или фильтр</div>
-  </div>
+  <!-- === FULL ROADMAP (скрыт по умолчанию) === -->
+  <div class="full-roadmap" id="full-roadmap">
 
-  <!-- PHASES CONTAINER -->
-  <div id="phases-container"></div>
+    <!-- PHASES CONTAINER -->
+    <div id="phases-container"></div>
 
-  <!-- EXTRA CONTENT (risks, tools) -->
-  <div id="extra-container"></div>
+    <!-- EXTRA CONTENT (risks, tools) -->
+    <div id="extra-container"></div>
 
-  <!-- CLOUD VISUALIZER BUTTON -->
-  <div style="text-align:center;">
-    <a href="cloud_visualizer_v8.3.zip" class="cloudvis-btn">
-      <span class="cloudvis-btn__icon">☁️</span>
-      <span>Cloud Visualizer v8.3 (download)</span>
-    </a>
-  </div>
-
-  <!-- CLOUDENGINE SECTION — moved below collab section, made collapsible -->
-
-  <!-- GDD SECTION -->
-  <div class="gdd-section" id="gdd-section" style="display:none;">
-    <div class="gdd-section__title">
-      <svg viewBox="0 0 24 24"><path d="M6 2a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8l-6-6H6zM8 12h8v1.5H8V12zm0 3h8v1.5H8V15zm0 3h5v1.5H8V18z"/></svg>
-      Game Design Documents
+    <!-- CLOUD VISUALIZER BUTTON -->
+    <div style="text-align:center;">
+      <a href="cloud_visualizer_v8.3.zip" class="cloudvis-btn">
+        <span class="cloudvis-btn__icon">☁️</span>
+        <span>Cloud Visualizer v8.3 (download)</span>
+      </a>
     </div>
-    <div class="gdd-grid" id="gdd-grid"></div>
-  </div>
 
-  <!-- GRAPH SECTION -->
-  <div class="graph-section" id="graph-section">
-    <div class="graph-section__toggle" onclick="toggleGraph()">
-      <div class="graph-section__toggle-left">
-        <div class="graph-section__icon">🕸️</div>
-        <div class="graph-section__toggle-text">
-          <h2>Knowledge Graph</h2>
-          <p>Интерактивная карта архитектуры codebase</p>
+    <!-- GDD SECTION -->
+    <div class="gdd-section" id="gdd-section" style="display:none;">
+      <div class="gdd-section__title">
+        <svg viewBox="0 0 24 24" style="width:16px;height:16px;fill:var(--accent2)"><path d="M6 2a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8l-6-6H6zM8 12h8v1.5H8V12zm0 3h8v1.5H8V15zm0 3h5v1.5H8V18z"/></svg>
+        Game Design Documents
+      </div>
+      <div class="gdd-grid" id="gdd-grid"></div>
+    </div>
+
+    <!-- GRAPH SECTION -->
+    <div class="graph-section" id="graph-section">
+      <div class="graph-section__toggle" onclick="toggleGraph()">
+        <div class="graph-section__toggle-left">
+          <div class="graph-section__icon">🕸️</div>
+          <div class="graph-section__toggle-text">
+            <h2>Knowledge Graph</h2>
+            <p>Интерактивная карта архитектуры codebase</p>
+          </div>
+        </div>
+        <svg class="graph-section__arrow" viewBox="0 0 24 24"><path d="M7.41 8.59L12 13.17l4.59-4.58L18 10l-6 6-6-6 1.41-1.41z"/></svg>
+      </div>
+      <div class="graph-section__body">
+        <div id="graph-loading" class="graph-section__loading">Загрузка графа...</div>
+        <iframe id="graph-iframe" class="graph-section__embed" style="display:none;" sandbox="allow-scripts allow-same-origin"></iframe>
+        <div class="graph-section__footer">
+          <a href="https://github.com/boozzeeboom/project-c/blob/main/graphify-out/GRAPH_REPORT.md" target="_blank">GRAPH_REPORT.md</a>
         </div>
       </div>
-      <svg class="graph-section__arrow" viewBox="0 0 24 24"><path d="M7.41 8.59L12 13.17l4.59-4.58L18 10l-6 6-6-6 1.41-1.41z"/></svg>
-    </div>
-    <div class="graph-section__body">
-      <div id="graph-loading" class="graph-section__loading">Загрузка графа...</div>
-      <iframe id="graph-iframe" class="graph-section__embed" style="display:none;" sandbox="allow-scripts allow-same-origin"></iframe>
-      <div class="graph-section__footer">
-        <a href="https://github.com/boozzeeboom/project-c/blob/main/graphify-out/GRAPH_REPORT.md" target="_blank">GRAPH_REPORT.md</a>
-      </div>
-    </div>
     </div>
 
-    <!-- COLLAB SECTION -->
-    <div class="collab-section" id="team">
-    <div class="collab-section__toggle" onclick="toggleCollab()">
-      <div class="collab-section__toggle-left">
-        <div class="collab-section__icon">🤝</div>
-        <div class="collab-section__toggle-text">
-          <h2>Присоединиться к команде</h2>
-          <p>Project C: The Clouds — открытая разработка, ищем таланты</p>
-        </div>
-      </div>
-      <svg class="collab-section__arrow" viewBox="0 0 24 24"><path d="M7.41 8.59L12 13.17l4.59-4.58L18 10l-6 6-6-6 1.41-1.41z"/></svg>
-    </div>
-    <div class="collab-section__body" id="collab-body">
-      <div id="collab-loading" class="collab-section__loading">Нажмите, чтобы открыть</div>
-      <div id="collab-content" class="collab-section__content" style="display:none;"></div>
-    </div>
-    </div>
-
-    <!-- CLOUDENGINE SECTION (collapsible, collapsed by default) -->
+    <!-- CLOUDENGINE SECTION -->
     <div class="cloudengine-section" id="cloudengine-section">
       <div class="cloudengine-section__toggle" onclick="toggleCloudEngine()">
         <div class="cloudengine-header">
@@ -1425,62 +1133,31 @@
             <span class="chip">CMake</span>
           </div>
         </div>
-
         <div class="cloudengine-migration">
           <div class="cloudengine-migration__title">Миграция Unity → CLOUDENGINE</div>
           <div class="cloudengine-migration__table">
-            <div class="migration-row">
-              <span class="migration-from">Unity MonoBehaviour</span>
-              <span class="migration-arrow">→</span>
-              <span class="migration-to">ECS System + Component</span>
-            </div>
-            <div class="migration-row">
-              <span class="migration-from">ScriptableObject</span>
-              <span class="migration-arrow">→</span>
-              <span class="migration-to">ECS Archetype / Data Asset</span>
-            </div>
-            <div class="migration-row">
-              <span class="migration-from">NetworkVariable</span>
-              <span class="migration-arrow">→</span>
-              <span class="migration-to">NetworkTransform + serialization</span>
-            </div>
-            <div class="migration-row">
-              <span class="migration-from">ServerRpc/ClientRpc</span>
-              <span class="migration-arrow">→</span>
-              <span class="migration-to">Custom Rpc system</span>
-            </div>
+            <div class="migration-row"><span class="migration-from">Unity MonoBehaviour</span><span class="migration-arrow">→</span><span class="migration-to">ECS System + Component</span></div>
+            <div class="migration-row"><span class="migration-from">ScriptableObject</span><span class="migration-arrow">→</span><span class="migration-to">ECS Archetype / Data Asset</span></div>
+            <div class="migration-row"><span class="migration-from">NetworkVariable</span><span class="migration-arrow">→</span><span class="migration-to">NetworkTransform + serialization</span></div>
+            <div class="migration-row"><span class="migration-from">ServerRpc/ClientRpc</span><span class="migration-arrow">→</span><span class="migration-to">Custom Rpc system</span></div>
           </div>
         </div>
-
         <div class="cloudengine-roadmap">
           <div class="cloudengine-roadmap__title">Roadmap</div>
           <div class="cloudengine-roadmap__items">
-            <div class="roadmap-item roadmap-item--done">
-              <span class="roadmap-item__dot"></span>
-              <span class="roadmap-item__text">Phase 1: Tech Debt Fix</span>
-            </div>
-            <div class="roadmap-item roadmap-item--active">
-              <span class="roadmap-item__dot"></span>
-              <span class="roadmap-item__text">Phase 2: Ship Physics MVP</span>
-            </div>
-            <div class="roadmap-item roadmap-item--future">
-              <span class="roadmap-item__dot"></span>
-              <span class="roadmap-item__text">Phase 3: Asset System (glTF loader)</span>
-            </div>
-            <div class="roadmap-item roadmap-item--future">
-              <span class="roadmap-item__dot"></span>
-              <span class="roadmap-item__text">Phase 4: UI System (OpenGL HUD)</span>
-            </div>
-            <div class="roadmap-item roadmap-item--future">
-              <span class="roadmap-item__dot"></span>
-              <span class="roadmap-item__text">Phase 5: Polish & Optimization</span>
-            </div>
+            <div class="roadmap-item roadmap-item--done"><span class="roadmap-item__dot"></span><span class="roadmap-item__text">Phase 1: Tech Debt Fix</span></div>
+            <div class="roadmap-item roadmap-item--active"><span class="roadmap-item__dot"></span><span class="roadmap-item__text">Phase 2: Ship Physics MVP</span></div>
+            <div class="roadmap-item roadmap-item--future"><span class="roadmap-item__dot"></span><span class="roadmap-item__text">Phase 3: Asset System (glTF loader)</span></div>
+            <div class="roadmap-item roadmap-item--future"><span class="roadmap-item__dot"></span><span class="roadmap-item__text">Phase 4: UI System (OpenGL HUD)</span></div>
+            <div class="roadmap-item roadmap-item--future"><span class="roadmap-item__dot"></span><span class="roadmap-item__text">Phase 5: Polish & Optimization</span></div>
           </div>
         </div>
       </div>
     </div>
 
-    <!-- FOOTER -->
+  </div><!-- /full-roadmap -->
+
+  <!-- FOOTER -->
   <footer class="footer">
     <p class="footer__text" id="footer-text">Открытая разработка · Все коммиты на GitHub</p>
     <div class="footer__links">
@@ -1489,14 +1166,14 @@
     </div>
     <div class="license-footer">
       <p class="license-footer__text">
-        © 2024–2026 leon7. Исходный код — <a href="https://github.com/boozzeeboom/project-c/blob/main/LICENSE" target="_blank">MIT</a> ·
-        Ассеты — <a href="https://creativecommons.org/licenses/by-nc-nd/4.0/" target="_blank">CC BY-NC-ND 4.0</a> ·
-        GDD — <a href="https://creativecommons.org/licenses/by-nc/4.0/" target="_blank">CC BY-NC 4.0</a>
+        &copy; 2024-2026 leon7. Исходный код &mdash; <a href="https://github.com/boozzeeboom/project-c/blob/main/LICENSE" target="_blank">MIT</a> &middot;
+        Ассеты &mdash; <a href="https://creativecommons.org/licenses/by-nc-nd/4.0/" target="_blank">CC BY-NC-ND 4.0</a> &middot;
+        GDD &mdash; <a href="https://creativecommons.org/licenses/by-nc/4.0/" target="_blank">CC BY-NC 4.0</a>
       </p>
       <div class="license-footer__badges">
-        <span class="license-badge">📝 Код: MIT</span>
-        <span class="license-badge">🎨 CC BY-NC-ND</span>
-        <span class="license-badge">📋 GDD: CC BY-NC</span>
+        <span class="license-badge">&copy; Код: MIT</span>
+        <span class="license-badge">&copy; CC BY-NC-ND</span>
+        <span class="license-badge">&copy; GDD: CC BY-NC</span>
       </div>
     </div>
   </footer>
@@ -1505,57 +1182,119 @@
 
 <script>
 /* ================================================================
-   1. GITHUB COMMITS
+   HELPERS
+   ================================================================ */
+function escHtml(str) {
+  if (!str) return '';
+  return str.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+}
+
+function timeAgo(dateStr) {
+  const now = new Date();
+  const date = new Date(dateStr);
+  const seconds = Math.floor((now - date) / 1000);
+  const intervals = [
+    { label: 'лет', seconds: 31536000 },
+    { label: 'мес', seconds: 2592000 },
+    { label: 'дн', seconds: 86400 },
+    { label: 'ч', seconds: 3600 },
+    { label: 'мин', seconds: 60 },
+  ];
+  for (const i of intervals) {
+    const count = Math.floor(seconds / i.seconds);
+    if (count >= 1) return count + ' ' + i.label + ' назад';
+  }
+  return 'только что';
+}
+
+/* ================================================================
+   CLASSIFY TASK: code or visual
+   ================================================================ */
+/* Visual keywords: only what is VISIBLE on screen — shaders, models, textures,
+   animations, character appearance, art style. NOT: infrastructure, settings,
+   URP config, procedural generation logic, UI code, or generic code terms. */
+const VISUAL_KEYWORDS = [
+  'визуал', 'визуальный', 'визуальное', 'графика',
+  'шейдер', 'shader',
+  'анимаци', 'animation', 'animator',
+  'текстур', 'texture',
+  'skybox', 'moon', 'constellation',
+  'кастомизация', 'customisation', 'customization',
+  'equipment visual',
+  'арт', 'art', 'ghibli', 'cloudghibli',
+  'иконк', 'icon',
+  'fbx', 'blender', 'low-poly', 'low poly',
+  'пост-процесс', 'post-process',
+  'bloom', 'color grading',
+  '3d модель',
+];
+
+/* Known visual-heavy subsystem titles — only pure visual subsystems */
+const VISUAL_SUBSYSTEMS = [
+  '1.17 Character Customisation',
+  '1.18 Equipment Visual',
+  'Этап 2.5: Визуальный прототип',
+  'Character Animations',
+  'Модели кораблей',
+  'Окружение',
+  'Облака (Ghibli-стиль)',
+  'Визуальные улучшения',
+];
+
+function classifyTask(taskText, sectionTitle) {
+  /* Check section title first */
+  if (sectionTitle) {
+    const st = sectionTitle.toLowerCase();
+    for (const vs of VISUAL_SUBSYSTEMS) {
+      if (st.includes(vs.toLowerCase())) return 'visual';
+    }
+    /* Если секция — "Визуальный прототип", всё её содержимое visual */
+    if (st.includes('визуальный прототип')) return 'visual';
+    /* Если это секция про кастомизацию/анимации персонажа — visual */
+    if (st.includes('customisation') || st.includes('кастомизац') || st.includes('equipment visual')) return 'visual';
+    /* Если секция явно про облака/шейдеры — visual */
+    if ((st.includes('облак') || st.includes('cloud')) && (st.includes('шейдер') || st.includes('shader') || st.includes('ghibli'))) return 'visual';
+  }
+
+  /* Check task text */
+  if (!taskText) return 'code';
+  const tt = taskText.toLowerCase();
+
+  for (const kw of VISUAL_KEYWORDS) {
+    if (tt.includes(kw)) return 'visual';
+  }
+
+  return 'code';
+}
+
+/* ================================================================
+   LOAD COMMITS
    ================================================================ */
 (function loadCommits() {
   const container = document.getElementById('commit-block');
   const REPO_URL = 'https://api.github.com/repos/boozzeeboom/project-c/commits?per_page=1&sha=main';
 
-  function timeAgo(dateStr) {
-    const now = new Date();
-    const date = new Date(dateStr);
-    const seconds = Math.floor((now - date) / 1000);
-    const intervals = [
-      { label: 'лет', seconds: 31536000 },
-      { label: 'мес', seconds: 2592000 },
-      { label: 'дн', seconds: 86400 },
-      { label: 'ч', seconds: 3600 },
-      { label: 'мин', seconds: 60 },
-    ];
-    for (const i of intervals) {
-      const count = Math.floor(seconds / i.seconds);
-      if (count >= 1) return `${count} ${i.label} назад`;
-    }
-    return 'только что';
-  }
-
-  function escHtml(str) {
-    if (!str) return '';
-    return str.replace(/&/g, '&').replace(/</g, '<').replace(/>/g, '>');
-  }
-
   fetch(REPO_URL + '&_=' + Date.now(), { cache: 'no-store' })
-    .then(res => { if (!res.ok) throw new Error(`HTTP ${res.status}`); return res.json(); })
+    .then(res => { if (!res.ok) throw new Error('HTTP ' + res.status); return res.json(); })
     .then(commits => {
       if (!commits.length) {
         container.innerHTML = '<div class="commit-block__error">Нет коммитов</div>';
         return;
       }
       const c = commits[0];
-      container.innerHTML = `
-        <a href="${c.html_url}" target="_blank" rel="noopener" class="commit-block__inner">
-          <span class="commit-block__hash">${escHtml(c.sha.substring(0, 7))}</span>
-          <span class="commit-block__msg">${escHtml(c.commit.message.split('\n')[0])}</span>
-          <span class="commit-block__time">${timeAgo(c.commit.author.date)}</span>
-        </a>`;
+      container.innerHTML =
+        '<a href="' + c.html_url + '" target="_blank" rel="noopener" class="commit-block__inner">' +
+        '<span class="commit-block__hash">' + escHtml(c.sha.substring(0, 7)) + '</span>' +
+        '<span class="commit-block__msg">' + escHtml(c.commit.message.split('\n')[0]) + '</span>' +
+        '<span class="commit-block__time">' + timeAgo(c.commit.author.date) + '</span></a>';
     })
-    .catch(err => {
-      container.innerHTML = `<div class="commit-block__error">Ошибка загрузки. <a href="https://github.com/boozzeeboom/project-c/commits" target="_blank">GitHub →</a></div>`;
+    .catch(function(err) {
+      container.innerHTML = '<div class="commit-block__error">Ошибка загрузки. <a href="https://github.com/boozzeeboom/project-c/commits" target="_blank">GitHub &rarr;</a></div>';
     });
 })();
 
 /* ================================================================
-   2. LOAD & PARSE MARKDOWN
+   LOAD & PARSE MARKDOWN
    ================================================================ */
 (function loadRoadmap() {
   const MD_URL = 'https://raw.githubusercontent.com/boozzeeboom/project-c/main/docs/MMO_Development_Plan.md?_=' + Date.now();
@@ -1563,49 +1302,43 @@
   const extraContainer = document.getElementById('extra-container');
   const gddSection = document.getElementById('gdd-section');
   const gddGrid = document.getElementById('gdd-grid');
-  const cloudEngineSection = document.getElementById('cloudengine-section');
 
   fetch(MD_URL, { cache: 'no-store' })
-    .then(res => { if (!res.ok) throw new Error(`HTTP ${res.status}`); return res.text(); })
-    .then(md => {
+    .then(res => { if (!res.ok) throw new Error('HTTP ' + res.status); return res.text(); })
+    .then(function(md) {
       parseAndRender(md);
       initSearch();
-      initFilters();
-      initGroupTabs();
     })
-    .catch(err => {
+    .catch(function(err) {
       console.error('MD load error:', err);
-      phasesContainer.innerHTML = `<div style="text-align:center;padding:40px;color:#f87171;">Ошибка загрузки. <a href="https://github.com/boozzeeboom/project-c/blob/main/docs/MMO_Development_Plan.md" target="_blank">Открыть на GitHub →</a></div>`;
+      phasesContainer.innerHTML = '<div style="text-align:center;padding:40px;color:#f87171;">Ошибка загрузки. <a href="https://github.com/boozzeeboom/project-c/blob/main/docs/MMO_Development_Plan.md" target="_blank">Открыть на GitHub &rarr;</a></div>';
     });
 
-  function escHtml(str) {
-    if (!str) return '';
-    return str.replace(/&/g, '&').replace(/</g, '<').replace(/>/g, '>');
-  }
-
   function parseAndRender(md) {
-    /* -- Extract meta -- */
-    const versionMatch = md.match(/\*\*Текущая версия:\*\*\s*`([^`]+)`/);
-    if (versionMatch) document.getElementById('header-badge').textContent = `Pre-Alpha · ${versionMatch[1]}`;
+    /* Extract version */
+    var versionMatch = md.match(/\*\*Текущая версия:\*\*\s*`([^`]+)`/);
+    if (versionMatch) document.getElementById('header-badge').textContent = 'Pre-Alpha \u00b7 ' + versionMatch[1];
 
-    /* -- Parse sections -- */
-    const lines = md.split('\n');
-    const sections = [];
-    let currentSection = null;
-    let beforeFirstH2 = true;
+    var lines = md.split('\n');
+    var sections = [];
+    var currentSection = null;
+    var beforeFirstH2 = true;
 
-    const skipTitles = ['🚢 Система кораблей', '📋 Game Design Documents'];
-    const extraTitles = ['Критические риски', 'Инструменты и зависимости'];
+    var skipTitles = ['\uD83D\uDEA2 Система кораблей', '\uD83D\uDCCB Game Design Documents'];
+    var extraTitles = ['Критические риски', 'Инструменты и зависимости'];
 
-    for (const line of lines) {
+    for (var i = 0; i < lines.length; i++) {
+      var line = lines[i];
       if (line.startsWith('## ')) {
         beforeFirstH2 = false;
-        const title = line.replace('## ', '').trim();
-        const shouldSkip = skipTitles.some(t => title.includes(t));
-        const isExtra = extraTitles.some(t => title.includes(t));
+        var title = line.replace('## ', '').trim();
+        var shouldSkip = false;
+        for (var sk = 0; sk < skipTitles.length; sk++) { if (title.includes(skipTitles[sk])) { shouldSkip = true; break; } }
+        var isExtra = false;
+        for (var ek = 0; ek < extraTitles.length; ek++) { if (title.includes(extraTitles[ek])) { isExtra = true; break; } }
 
         if (!shouldSkip) {
-          currentSection = { title, lines: [], isExtra };
+          currentSection = { title: title, lines: [], isExtra: isExtra, startIdx: i };
           sections.push(currentSection);
         } else {
           currentSection = null;
@@ -1615,50 +1348,200 @@
       }
     }
 
-    /* -- Counters -- */
-    let totalTasks = 0, doneTasks = 0;
+    /* ============================
+       Collect ALL tasks with classification
+       ============================ */
+    var allTasks = [];      // { text, done, category, subsystem }
+    var codeTasks = [];
+    var visualTasks = [];
+    var overallTotal = 0, overallDone = 0;
 
-    /* -- Render phases -- */
-    sections.filter(s => !s.isExtra).forEach((section, phaseIdx) => {
-      const { html, tasks, done, status } = renderPhase(section, phaseIdx);
-      totalTasks += tasks;
-      doneTasks += done;
-      phasesContainer.innerHTML += html;
+    /* Subsystem groupings for the compact view */
+    var codeGroups = {};
+    var visualGroups = {};
+
+    function classifyAndPush(taskText, done, subsystem, sectionTitle) {
+      var cat = classifyTask(taskText, sectionTitle);
+      var task = { text: taskText, done: done, category: cat, subsystem: subsystem };
+
+      allTasks.push(task);
+      if (done) overallDone++;
+      overallTotal++;
+
+      if (cat === 'code') {
+        codeTasks.push(task);
+        if (!codeGroups[subsystem]) codeGroups[subsystem] = { name: subsystem, tasks: [], sectionTitle: sectionTitle };
+        codeGroups[subsystem].tasks.push(task);
+      } else {
+        visualTasks.push(task);
+        if (!visualGroups[subsystem]) visualGroups[subsystem] = { name: subsystem, tasks: [], sectionTitle: sectionTitle };
+        visualGroups[subsystem].tasks.push(task);
+      }
+    }
+
+    /* Parse sections for tasks */
+    for (var si = 0; si < sections.length; si++) {
+      var sec = sections[si];
+      if (sec.isExtra) continue;
+
+      var secTitle = sec.title;
+      var secText = sec.lines.join('\n');
+
+      /* Determine which "subsystem" this section covers */
+      var subsystem = secTitle.replace(/✅|🔄|⏳|\u2705|\ud83d\udd04|\u23f3/g, '').trim();
+      subsystem = subsystem.replace(/\s*ЗАВЕРШЁН\s*/gi, '').trim();
+      subsystem = subsystem.replace(/\s*В ПРОЦЕССЕ\s*/gi, '').trim();
+      var colonIdx2 = subsystem.indexOf(':');
+      if (colonIdx2 > 0) subsystem = subsystem.substring(0, colonIdx2).trim() + ' — ' + subsystem.substring(colonIdx2 + 1).trim();
+
+      /* Extract tasks: checkbox items [x] / [ ] */
+      var checkboxRe = /^\s*-\s*\[([ x])\]\s*(.+)$/gm;
+      var m;
+      while ((m = checkboxRe.exec(secText)) !== null) {
+        classifyAndPush(m[2].trim(), m[1] === 'x', subsystem, secTitle);
+      }
+
+      /* Extract bullet items (as sub-tasks) */
+      var bulletRe = /^\s*[-*]\s+(.+)$/gm;
+      while ((m = bulletRe.exec(secText)) !== null) {
+        var raw = m[1].trim();
+        if (raw.startsWith('[')) continue;
+        if (/^(Результат:|Версия:|⏳\s*Отложено)/.test(raw)) continue;
+        if (/^\*\*/.test(raw)) continue;
+        var isDone = raw.startsWith('✅');
+        var isFuture = raw.startsWith('⏳');
+        var cleanText = raw.replace(/^(✅|⏳)\s*/, '').replace(/^⭐\s*/, '').trim();
+        if (!cleanText) continue;
+        classifyAndPush(cleanText, isDone && !isFuture, subsystem, secTitle);
+      }
+
+      /* NOTE: h3/h4 sub-headings are NOT parsed separately to avoid double-counting.
+         All tasks are extracted at the section (h2) level only.
+         The "subsystem" name for grouping uses the h2 section title.
+         Individual task lines under h3 headings are still found by checkboxRe/bulletRe above. */
+    }
+
+    /* ============================
+       RENDER MAIN CARDS
+       ============================ */
+    var mainCards = document.getElementById('main-cards');
+
+    function renderCard(category, tasks, groups) {
+      var total = tasks.length;
+      var done = tasks.filter(function(t) { return t.done; }).length;
+      var pct = total > 0 ? Math.round(done / total * 100) : 0;
+      var isCode = category === 'code';
+      var cardClass = isCode ? 'main-card--code' : 'main-card--visual';
+      var icon = isCode ? '💻' : '🎨';
+      var title = isCode ? 'Разработка (Code)' : 'Визуал / Арт (Visual)';
+      var label = isCode ? 'code' : 'visual';
+
+      /* Build group list */
+      var groupsHtml = '';
+      var groupNames = Object.keys(groups).sort();
+      for (var gi = 0; gi < groupNames.length; gi++) {
+        var g = groups[groupNames[gi]];
+        var gTotal = g.tasks.length;
+        var gDone = g.tasks.filter(function(t) { return t.done; }).length;
+        var gPct = Math.round(gDone / gTotal * 100);
+        var gStatus = gPct >= 90 ? 'done' : gPct > 0 ? 'active' : 'future';
+
+        var tasksHtml = '';
+        for (var ti = 0; ti < g.tasks.length; ti++) {
+          var t = g.tasks[ti];
+          var tClass = t.done ? 'subsystem-group__task--done' : '';
+          tasksHtml += '<li class="subsystem-group__task ' + tClass + '">' +
+            '<span class="subsystem-group__task-dot"></span>' +
+            '<span class="subsystem-group__task-text">' + escHtml(t.text) + '</span></li>';
+        }
+
+        groupsHtml +=
+          '<div class="subsystem-group">' +
+          '<div class="subsystem-group__header">' +
+          '<span class="subsystem-group__dot subsystem-group__dot--' + gStatus + '"></span>' +
+          '<span class="subsystem-group__name">' + escHtml(g.name) + '</span>' +
+          '<div class="subsystem-group__bar"><div class="subsystem-group__bar-fill subsystem-group__bar-fill--' + gStatus + '" style="width:' + gPct + '%"></div></div>' +
+          '<span class="subsystem-group__pct subsystem-group__pct--' + gStatus + '">' + gPct + '%</span>' +
+          '</div>' +
+          '<ul class="subsystem-group__tasks">' + tasksHtml + '</ul></div>';
+      }
+
+      if (!groupsHtml) {
+        groupsHtml = '<div style="padding:16px;color:var(--text-dim);font-size:.85rem;">Нет задач в этой категории</div>';
+      }
+
+      var cardHtml =
+        '<div class="main-card ' + cardClass + '" data-category="' + label + '">' +
+        '<div class="main-card__header" onclick="this.closest(\'.main-card\').classList.toggle(\'main-card--open\')">' +
+        '<div class="main-card__icon">' + icon + '</div>' +
+        '<div class="main-card__info">' +
+        '<div class="main-card__title-row">' +
+        '<span class="main-card__title">' + title + '</span>' +
+        '<span class="main-card__count">' + done + '/' + total + '</span>' +
+        '<span class="main-card__pct">' + pct + '%</span>' +
+        '</div>' +
+        '<div class="main-card__bar-wrap">' +
+        '<div class="main-card__bar"><div class="main-card__fill" data-width="' + pct + '"></div></div>' +
+        '<span class="main-card__sub">' + pct + '% выполнено</span>' +
+        '</div>' +
+        '</div>' +
+        '<svg class="main-card__arrow" viewBox="0 0 24 24"><path d="M7.41 8.59L12 13.17l4.59-4.58L18 10l-6 6-6-6 1.41-1.41z"/></svg>' +
+        '</div>' +
+        '<div class="main-card__body">' + groupsHtml + '</div>' +
+        '</div>';
+
+      return { html: cardHtml, total: total, done: done, pct: pct };
+    }
+
+    var codeResult = renderCard('code', codeTasks, codeGroups);
+    var visualResult = renderCard('visual', visualTasks, visualGroups);
+
+    mainCards.innerHTML = codeResult.html + visualResult.html;
+
+    /* Animate bars after insert */
+    setTimeout(function() {
+      var fills = mainCards.querySelectorAll('.main-card__fill');
+      for (var fi = 0; fi < fills.length; fi++) {
+        fills[fi].style.width = fills[fi].dataset.width + '%';
+      }
+    }, 500);
+
+    /* ============================
+       RENDER PHASE CARDS (full mode)
+       ============================ */
+    var totalTasks = 0, doneTasks = 0;
+
+    sections.filter(function(s) { return !s.isExtra; }).forEach(function(section, phaseIdx) {
+      var result = renderPhase(section, phaseIdx);
+      totalTasks += result.tasks;
+      doneTasks += result.done;
+      phasesContainer.innerHTML += result.html;
     });
 
-    /* -- Render extra content -- */
-    const extraSections = sections.filter(s => s.isExtra);
-    document.getElementById('count-extra').textContent = extraSections.length;
-
-    extraSections.forEach((section, i) => {
-      const content = section.lines.join('\n').trim();
+    /* Extra content (risks, tools) */
+    var extraSections = sections.filter(function(s) { return s.isExtra; });
+    document.getElementById('count-extra') && extraSections.forEach(function(section) {
+      var content = section.lines.join('\n').trim();
       if (!content) return;
-
-      const div = document.createElement('div');
+      var div = document.createElement('div');
       div.className = 'md-section';
-      div.innerHTML = `
-        <div class="md-section__toggle">
-          <h2>${escHtml(section.title)}</h2>
-          <svg class="md-section__arrow" viewBox="0 0 24 24"><path d="M7.41 8.59L12 13.17l4.59-4.58L18 10l-6 6-6-6 1.41-1.41z"/></svg>
-        </div>
-        <div class="md-section__body">${marked.parse(content)}</div>
-      `;
-      div.querySelector('.md-section__toggle').addEventListener('click', () => {
-        div.classList.toggle('md-section--open');
-      });
+      div.innerHTML = '<div class="md-section__toggle" onclick="this.closest(\'.md-section\').classList.toggle(\'md-section--open\')">' +
+        '<h2>' + escHtml(section.title) + '</h2>' +
+        '<svg class="md-section__arrow" viewBox="0 0 24 24"><path d="M7.41 8.59L12 13.17l4.59-4.58L18 10l-6 6-6-6 1.41-1.41z"/></svg></div>' +
+        '<div class="md-section__body">' + marked.parse(content) + '</div>';
       extraContainer.appendChild(div);
     });
 
-    /* -- GDD Links -- */
+    /* GDD */
     gddSection.style.display = '';
-    const gddLinks = [
+    var gddLinks = [
       { id: 'GDD-00', name: 'Game Overview', desc: 'Концепция, пиллары, USP', filename: 'GDD_00_Overview.md' },
       { id: 'GDD-01', name: 'Core Gameplay', desc: 'Core Loop, управление, физика', filename: 'GDD_01_Core_Gameplay.md' },
       { id: 'GDD-02', name: 'World & Environment', desc: 'Мир, пики, города, погода', filename: 'GDD_02_World_Environment.md' },
       { id: 'GDD-10', name: 'Ship System', desc: '4 класса кораблей, физика', filename: 'GDD_10_Ship_System.md' },
       { id: 'GDD-11', name: 'Inventory & Items', desc: '8 типов, круговое колесо', filename: 'GDD_11_Inventory_Items.md' },
       { id: 'GDD-12', name: 'Network & Multiplayer', desc: 'NGO, RPC, реконнект', filename: 'GDD_12_Network_Multiplayer.md' },
-      { id: 'GDD-12.1', name: 'Scene Streaming', desc: '24 сцены, 4×6 grid', filename: 'GDD_12_1_Scene_World_Streaming.md' },
+      { id: 'GDD-12.1', name: 'Scene Streaming', desc: '24 сцены, 4\u00d76 grid', filename: 'GDD_12_1_Scene_World_Streaming.md' },
       { id: 'GDD-13', name: 'UI/UX System', desc: 'HUD, Ghibli стиль', filename: 'GDD_13_UI_UX_System.md' },
       { id: 'GDD-14', name: 'Visual & Art Pipeline', desc: 'URP, CloudGhibli шейдеры', filename: 'GDD_14_Visual_Art_Pipeline.md' },
       { id: 'GDD-15', name: 'Audio System', desc: 'AudioMixer, SFX, 3D звук', filename: 'GDD_15_Audio_System.md' },
@@ -1669,296 +1552,202 @@
       { id: 'GDD-24', name: 'Narrative & World Lore', desc: 'Хронология, глоссарий', filename: 'GDD_24_Narrative_World_Lore.md' },
       { id: 'GDD-25', name: 'Trade Routes', desc: 'Маршруты, конвои', filename: 'GDD_25_Trade_Routes.md' },
     ];
-    gddGrid.innerHTML = gddLinks.map(g => `
-      <a href="https://github.com/boozzeeboom/project-c/blob/main/docs/gdd/${g.filename}" target="_blank" class="gdd-card">
-        <span class="gdd-card__id">${g.id}</span>
-        <span class="gdd-card__name">${g.name}</span>
-        <span class="gdd-card__desc">${g.desc}</span>
-      </a>
-    `).join('');
+    gddGrid.innerHTML = gddLinks.map(function(g) {
+      return '<a href="https://github.com/boozzeeboom/project-c/blob/main/docs/gdd/' + g.filename + '" target="_blank" class="gdd-card">' +
+        '<span class="gdd-card__id">' + g.id + '</span>' +
+        '<span class="gdd-card__name">' + g.name + '</span>' +
+        '<span class="gdd-card__desc">' + g.desc + '</span></a>';
+    }).join('');
 
-    /* -- Update overall progress -- */
-    const phasesCount = sections.filter(s => !s.isExtra).length;
-    document.getElementById('count-phases').textContent = phasesCount;
-    document.getElementById('count-all').textContent = phasesCount + extraSections.length + 1;
-
-    const overallPct = totalTasks > 0 ? Math.round((doneTasks / totalTasks) * 100) : 0;
+    /* Overall progress (from all counted tasks) */
+    var overallPct = totalTasks > 0 ? Math.round(doneTasks / totalTasks * 100) : 0;
     document.getElementById('overall-pct').textContent = overallPct + '%';
     document.getElementById('overall-fill').style.width = overallPct + '%';
     document.getElementById('overall-ship-wrap').style.left = overallPct + '%';
-    document.getElementById('overall-tasks').innerHTML = `<span>${doneTasks}</span> из <span>${totalTasks}</span> задач выполнено`;
+    document.getElementById('overall-tasks').innerHTML = '<span>' + doneTasks + '</span> из <span>' + totalTasks + '</span> задач выполнено';
 
-    /* -- Init toggle handlers -- */
-    document.querySelectorAll('.phase-card__header').forEach(header => {
-      header.addEventListener('click', () => {
+    /* Phase card toggle handlers */
+    document.querySelectorAll('.phase-card__header').forEach(function(header) {
+      header.addEventListener('click', function() {
         header.closest('.phase-card').classList.toggle('phase-card--open');
       });
     });
 
-    /* -- Init visibility animations -- */
-    initAnimations();
+    /* Animate phase bar fills */
+    setTimeout(function() {
+      document.querySelectorAll('.phase-card__progress-fill').forEach(function(bar) {
+        bar.style.width = bar.dataset.width + '%';
+      });
+    }, 600);
   }
 
+  /* Phase render (reused from original) */
   function renderPhase(section, phaseIdx) {
-    const titleText = section.title;
-    const hasCheck = titleText.includes('✅');
-    const hasSpinner = titleText.includes('🔄');
+    var titleText = section.title;
+    var hasCheck = titleText.includes('✅');
+    var hasSpinner = titleText.includes('🔄');
 
-    let status = 'future';
+    var status = 'future';
     if (hasCheck) status = 'done';
     else if (hasSpinner) status = 'active';
 
-    let cleanTitle = titleText.replace(/✅|🔄|⏳/g, '').trim();
+    var cleanTitle = titleText.replace(/✅|🔄|⏳/g, '').trim();
     cleanTitle = cleanTitle.replace(/\s*ЗАВЕРШЁН\s*/gi, '').trim();
     cleanTitle = cleanTitle.replace(/\s*В ПРОЦЕССЕ\s*/gi, '').trim();
 
-    const colonIdx = cleanTitle.indexOf(':');
-    let tag = '', displayTitle = cleanTitle;
+    var colonIdx = cleanTitle.indexOf(':');
+    var tag = '', displayTitle = cleanTitle;
     if (colonIdx > 0) {
       tag = cleanTitle.substring(0, colonIdx).trim();
       displayTitle = cleanTitle.substring(colonIdx + 1).trim();
       displayTitle = displayTitle.replace(/\s*\(Недели[\s\w–-]*\)\s*/gi, '').trim();
     }
 
-    /* -- Parse tasks -- */
-    const sectionText = section.lines.join('\n');
-    const allTasks = [];
+    var sectionText = section.lines.join('\n');
 
-    const checkboxRe = /^(\s*)-\s*\[([ x])\]\s*(.+)$/gm;
-    let m;
+    /* Parse tasks */
+    var allTasks = [];
+    var checkboxRe = /^\s*-\s*\[([ x])\]\s*(.+)$/gm;
+    var m;
     while ((m = checkboxRe.exec(sectionText)) !== null) {
-      allTasks.push({ text: m[3].trim(), done: m[2] === 'x', indent: m[1].length });
+      allTasks.push({ text: m[2].trim(), done: m[1] === 'x', indent: 0 });
     }
 
-    const bulletRe = /^[-*]\s+(.+)$/gm;
+    var bulletRe = /^\s*[-*]\s+(.+)$/gm;
     while ((m = bulletRe.exec(sectionText)) !== null) {
-      const raw = m[1].trim();
+      var raw = m[1].trim();
       if (raw.startsWith('[')) continue;
       if (/^(Результат:|Версия:|⏳\s*Отложено)/.test(raw)) continue;
-      const isDone = raw.startsWith('✅');
-      const isFuture = raw.startsWith('⏳');
-      const cleanText = raw.replace(/^(✅|⏳)\s*/, '').replace(/^⭐\s*/, '').trim();
+      var isDone = raw.startsWith('✅');
+      var isFuture = raw.startsWith('⏳');
+      var cleanText = raw.replace(/^(✅|⏳)\s*/, '').replace(/^⭐\s*/, '').trim();
       if (!cleanText) continue;
       allTasks.push({ text: cleanText, done: isDone && !isFuture, indent: 0 });
     }
 
-    const subBulletRe = /^(\s{2,})[-*]\s+(.+)$/gm;
-    while ((m = subBulletRe.exec(sectionText)) !== null) {
-      const raw = m[2].trim();
-      if (raw.startsWith('[')) continue;
-      if (/^(Результат:|Версия:)/.test(raw)) continue;
-      const isDone = raw.startsWith('✅');
-      const isFuture = raw.startsWith('⏳');
-      const cleanText = raw.replace(/^(✅|⏳)\s*/, '').replace(/^⭐\s*/, '').trim();
-      if (!cleanText) continue;
-      allTasks.push({ text: cleanText, done: isDone && !isFuture, indent: m[1].length });
-    }
-
-    const total = allTasks.length || 1;
-    const done = allTasks.filter(t => t.done).length;
-    const pct = Math.round((done / total) * 100);
+    var total = allTasks.length || 1;
+    var done = allTasks.filter(function(t) { return t.done; }).length;
+    var pct = Math.round(done / total * 100);
 
     if (!hasCheck && !hasSpinner) {
       if (pct >= 90) { status = 'done'; }
       else if (pct > 0) { status = 'active'; }
     }
 
-    let tasksHtml = '';
+    var tasksHtml = '';
     if (allTasks.length > 0) {
       tasksHtml = '<ul class="task-list">';
-      allTasks.forEach((t, i) => {
-        const isDone = t.done;
-        const isFuture = t.text.match(/^⏳/);
-        const cleanTaskText = t.text.replace(/^⏳\s*/, '');
-        tasksHtml += `<li class="task-list__item ${isDone ? 'task-list__item--done' : isFuture ? 'task-list__item--future' : ''}">
-          <span class="task-list__dot"></span>
-          <span class="task-list__text">${escHtml(cleanTaskText)}</span>
-        </li>`;
+      allTasks.forEach(function(t) {
+        var isDFuture = t.text.match(/^⏳/);
+        var cleanTaskText = t.text.replace(/^⏳\s*/, '');
+        tasksHtml += '<li class="task-list__item ' + (t.done ? 'task-list__item--done' : isDFuture ? 'task-list__item--future' : '') + '">' +
+          '<span class="task-list__dot"></span>' +
+          '<span class="task-list__text">' + escHtml(cleanTaskText) + '</span></li>';
       });
       tasksHtml += '</ul>';
     }
 
-    const goalMatch = sectionText.match(/\*\*Цель:\*\*\s*(.+)/);
-    const goalHtml = goalMatch ? `<div class="phase-card__goal">${escHtml(goalMatch[1].replace(/\*\*/g, ''))}</div>` : '';
+    var goalMatch = sectionText.match(/\*\*Цель:\*\*\s*(.+)/);
+    var goalHtml = goalMatch ? '<div class="phase-card__goal">' + escHtml(goalMatch[1].replace(/\*\*/g, '')) + '</div>' : '';
 
-    let specialHtml = '';
-    const resultMatch = sectionText.match(/\*\*Результат:\*\*\s*(.+?)(?=\n\n|\*\*Версия:|$)/s);
-    if (resultMatch) specialHtml += `<div class="phase-card__result"><strong>Результат:</strong> ${escHtml(resultMatch[1].trim())}</div>`;
+    var specialHtml = '';
+    var resultMatch = sectionText.match(/\*\*Результат:\*\*\s*(.+?)(?=\n\n|\*\*Версия:|$)/s);
+    if (resultMatch) specialHtml += '<div class="phase-card__result"><strong>Результат:</strong> ' + escHtml(resultMatch[1].trim()) + '</div>';
 
-    const versionMatch = sectionText.match(/\*\*Версия:\*\*\s*`([^`]+)`/);
-    if (versionMatch) specialHtml += `<div class="phase-card__version">${escHtml(versionMatch[1])}</div>`;
+    var versionMatch2 = sectionText.match(/\*\*Версия:\*\*\s*`([^`]+)`/);
+    if (versionMatch2) specialHtml += '<div class="phase-card__version">' + escHtml(versionMatch2[1]) + '</div>';
 
-    const docsMatch = sectionText.match(/^- [`\[].+$/gm);
+    /* Docs */
+    var docsMatch = sectionText.match(/^- [`\[].+$/gm);
     if (docsMatch && docsMatch.length > 0) {
-      let docsHtml = '<details class="phase-card__docs"><summary>📚 Документы</summary><ul>';
-      docsMatch.forEach(doc => {
-        const docText = doc.replace(/^[-*]\s+/, '').trim();
-        const linkMatch = docText.match(/\[(.+?)\]\((.+?)\)/);
+      var docsHtml = '<details class="phase-card__docs"><summary>\uD83D\uDCDA Документы</summary><ul>';
+      docsMatch.forEach(function(doc) {
+        var docText = doc.replace(/^[-*]\s+/, '').trim();
+        var linkMatch = docText.match(/\[(.+?)\]\((.+?)\)/);
         if (linkMatch) {
-          docsHtml += `<li><a href="${escHtml(linkMatch[2])}" target="_blank" style="color:var(--accent2)">${escHtml(linkMatch[1])}</a></li>`;
+          docsHtml += '<li><a href="' + escHtml(linkMatch[2]) + '" target="_blank" style="color:var(--accent2)">' + escHtml(linkMatch[1]) + '</a></li>';
         } else {
-          docsHtml += `<li>${escHtml(docText)}</li>`;
+          docsHtml += '<li>' + escHtml(docText) + '</li>';
         }
       });
       docsHtml += '</ul></details>';
       specialHtml += docsHtml;
     }
 
-    const html = `
-      <div class="phase-card phase-card--${status}" data-phase="${phaseIdx}" data-status="${status}" data-search="${escHtml(displayTitle + ' ' + tag).toLowerCase()}">
-        <div class="phase-card__header">
-          <div class="phase-card__dot"></div>
-          <div class="phase-card__meta">
-            <div class="phase-card__tag">${escHtml(tag)}</div>
-            <div class="phase-card__title">${escHtml(displayTitle)}</div>
-          </div>
-          <div class="phase-card__progress-wrap">
-            <span class="phase-card__pct">${pct}%</span>
-            <div class="phase-card__progress-bar">
-              <div class="phase-card__progress-fill" data-width="${pct}"></div>
-            </div>
-          </div>
-          <svg class="phase-card__arrow" viewBox="0 0 24 24"><path d="M7.41 8.59L12 13.17l4.59-4.58L18 10l-6 6-6-6 1.41-1.41z"/></svg>
-        </div>
-        <div class="phase-card__body">
-          ${goalHtml}
-          ${tasksHtml}
-          ${specialHtml}
-        </div>
-      </div>
-    `;
+    var html = '<div class="phase-card phase-card--' + status + '" data-phase="' + phaseIdx + '" data-status="' + status + '">' +
+      '<div class="phase-card__header">' +
+      '<div class="phase-card__dot"></div>' +
+      '<div class="phase-card__meta">' +
+      '<div class="phase-card__tag">' + escHtml(tag) + '</div>' +
+      '<div class="phase-card__title">' + escHtml(displayTitle) + '</div>' +
+      '</div>' +
+      '<div class="phase-card__progress-wrap">' +
+      '<span class="phase-card__pct">' + pct + '%</span>' +
+      '<div class="phase-card__progress-bar">' +
+      '<div class="phase-card__progress-fill" data-width="' + pct + '"></div></div></div>' +
+      '<svg class="phase-card__arrow" viewBox="0 0 24 24"><path d="M7.41 8.59L12 13.17l4.59-4.58L18 10l-6 6-6-6 1.41-1.41z"/></svg>' +
+      '</div>' +
+      '<div class="phase-card__body">' + goalHtml + tasksHtml + specialHtml + '</div></div>';
 
-    return { html, tasks: total, done, status };
+    return { html: html, tasks: total, done: done, status: status };
   }
 
-  /* -- Search -- */
+  /* ================================================================
+     SEARCH
+     ================================================================ */
   function initSearch() {
-    const input = document.getElementById('search-input');
-    const clearBtn = document.getElementById('search-clear');
-    const searchBox = document.getElementById('search-box');
-    const noResults = document.getElementById('no-results');
+    var input = document.getElementById('search-input');
+    var clearBtn = document.getElementById('search-clear');
+    var searchBox = document.getElementById('search-box');
 
-    input.addEventListener('input', () => {
-      const query = input.value.trim().toLowerCase();
+    input.addEventListener('input', function() {
+      var query = input.value.trim().toLowerCase();
       searchBox.classList.toggle('search-box--active', query.length > 0);
 
-      const cards = document.querySelectorAll('.phase-card');
-      let visibleCount = 0;
-
-      cards.forEach(card => {
-        const searchText = card.dataset.search || '';
-        const match = query.length === 0 || searchText.includes(query);
-        card.classList.toggle('search-hidden', !match);
-        if (match) visibleCount++;
+      /* Search in main card tasks */
+      document.querySelectorAll('.subsystem-group__task').forEach(function(task) {
+        var text = task.textContent.toLowerCase();
+        var match = query.length === 0 || text.includes(query);
+        task.style.display = match ? '' : 'none';
       });
 
-      document.querySelectorAll('.md-section').forEach(section => {
-        const title = section.querySelector('h2')?.textContent?.toLowerCase() || '';
-        const match = query.length === 0 || title.includes(query);
-        section.classList.toggle('md-section--hidden', !match);
-        if (match) visibleCount++;
+      /* Search in phase cards (full mode) */
+      document.querySelectorAll('.phase-card').forEach(function(card) {
+        var text = card.textContent.toLowerCase();
+        var match = query.length === 0 || text.includes(query);
+        card.style.display = match ? '' : 'none';
       });
-
-      noResults.classList.toggle('no-results--visible', visibleCount === 0);
     });
 
-    clearBtn.addEventListener('click', () => {
+    clearBtn.addEventListener('click', function() {
       input.value = '';
       input.dispatchEvent(new Event('input'));
       input.focus();
     });
   }
-
-  /* -- Filters -- */
-  function initFilters() {
-    const filterTabs = document.querySelectorAll('.filter-tab');
-
-    filterTabs.forEach(tab => {
-      tab.addEventListener('click', () => {
-        filterTabs.forEach(t => t.classList.remove('filter-tab--active'));
-        tab.classList.add('filter-tab--active');
-
-        const filter = tab.dataset.filter;
-        document.querySelectorAll('.phase-card').forEach(card => {
-          const status = card.dataset.status;
-          const show = filter === 'all' || status === filter;
-          card.classList.toggle('filter-hidden', !show);
-        });
-
-        document.querySelectorAll('.md-section').forEach(section => {
-          section.classList.toggle('md-section--hidden', filter !== 'all');
-        });
-
-        const visible = document.querySelectorAll('.phase-card:not(.filter-hidden):not(.search-hidden)').length;
-        document.getElementById('no-results').classList.toggle('no-results--visible', visible === 0);
-      });
-    });
-  }
-
-  /* -- Group Tabs -- */
-  function initGroupTabs() {
-    const groupTabs = document.querySelectorAll('.group-tab');
-    const phasesContainer = document.getElementById('phases-container');
-    const extraContainer = document.getElementById('extra-container');
-    const gddSection = document.getElementById('gdd-section');
-    const cloudEngineSection = document.getElementById('cloudengine-section');
-    const graphSection = document.getElementById('graph-section');
-    const cloudVisBtn = document.querySelector('.cloudvis-btn');
-
-    groupTabs.forEach(tab => {
-      tab.addEventListener('click', () => {
-        groupTabs.forEach(t => t.classList.remove('group-tab--active'));
-        tab.classList.add('group-tab--active');
-
-        const group = tab.dataset.group;
-
-        phasesContainer.style.display = group === 'phases' || group === 'all' ? '' : 'none';
-        extraContainer.style.display = group === 'extra' || group === 'all' ? '' : 'none';
-        cloudEngineSection.style.display = group === 'cloudengine' || group === 'all' ? '' : 'none';
-        gddSection.style.display = group === 'gdd' || group === 'all' ? '' : 'none';
-        graphSection.style.display = group === 'all' ? '' : 'none';
-        cloudVisBtn.parentElement.style.display = group === 'all' ? '' : 'none';
-
-        document.getElementById('search-input').value = '';
-        document.getElementById('search-clear').parentElement.classList.remove('search-box--active');
-        document.querySelectorAll('.phase-card').forEach(c => c.classList.remove('search-hidden'));
-        document.querySelectorAll('.md-section').forEach(s => s.classList.remove('md-section--hidden'));
-      });
-    });
-  }
-
-  /* -- Animations -- */
-  function initAnimations() {
-    const observer = new IntersectionObserver((entries) => {
-      entries.forEach(entry => {
-        if (entry.isIntersecting) {
-          entry.target.classList.add('visible');
-          const bar = entry.target.querySelector('.phase-card__progress-fill');
-          if (bar) {
-            setTimeout(() => { bar.style.width = bar.dataset.width + '%'; }, 300);
-          }
-          observer.unobserve(entry.target);
-        }
-      });
-    }, { threshold: 0.1 });
-
-    document.querySelectorAll('.phase-card, .md-section').forEach(el => {
-      observer.observe(el);
-    });
-  }
 })();
 
 /* ================================================================
-   3. KNOWLEDGE GRAPH
+   FULL ROADMAP TOGGLE
+   ================================================================ */
+function toggleFullRoadmap() {
+  var container = document.getElementById('full-roadmap');
+  var btn = document.getElementById('toggle-full-btn');
+  container.classList.toggle('full-roadmap--open');
+  btn.classList.toggle('toggle-full-btn--open');
+}
+
+/* ================================================================
+   GRAPH
    ================================================================ */
 (function() {
-  const SECTION = document.getElementById('graph-section');
-  const IFRAME = document.getElementById('graph-iframe');
-  const LOADING = document.getElementById('graph-loading');
+  var SECTION = document.getElementById('graph-section');
+  var IFRAME = document.getElementById('graph-iframe');
+  var LOADING = document.getElementById('graph-loading');
   if (!SECTION) return;
 
   window.toggleGraph = function() {
-    const isOpen = SECTION.classList.contains('graph-section--open');
+    var isOpen = SECTION.classList.contains('graph-section--open');
     if (!isOpen && !IFRAME.src) {
       IFRAME.src = 'graph.html';
     }
@@ -1969,133 +1758,16 @@
 })();
 
 /* ================================================================
-   3b. CLOUDENGINE SECTION (collapsible, no lazy loading)
+   CLOUDENGINE TOGGLE
    ================================================================ */
 (function() {
-  const SECTION = document.getElementById('cloudengine-section');
+  var SECTION = document.getElementById('cloudengine-section');
   if (!SECTION) return;
-
   window.toggleCloudEngine = function() {
     SECTION.classList.toggle('cloudengine-section--open');
   };
 })();
 
-/* ================================================================
-   4. COLLAB SECTION (COLABORATION.md)
-   ================================================================ */
-(function() {
-  var SECTION = document.getElementById('team');
-  var LOADING = document.getElementById('collab-loading');
-  var CONTENT = document.getElementById('collab-content');
-  if (!SECTION) return;
-
-  var loaded = false;
-
-  function setHash(hash, title) {
-    /* Set hash on current page */
-    if (history.pushState) {
-      history.pushState(null, '', hash || (location.pathname + location.search));
-    }
-    /* Try parent frame (same-origin) */
-    try {
-      if (window.parent && window.parent !== window && window.parent.history.pushState) {
-        window.parent.history.pushState(null, title || '', hash || (window.parent.location.pathname + window.parent.location.search));
-      }
-    } catch(e) { /* cross-origin — silent */ }
-    /* Notify parent frame (cross-origin) */
-    try {
-      if (window.parent && window.parent !== window) {
-        window.parent.postMessage({ type: 'collab-hash', hash: hash }, '*');
-      }
-    } catch(e) {}
-  }
-
-  /* Listen for postMessage from parent (WordPress + GitHub Pages bridge) */
-  window.addEventListener('message', function(ev) {
-    if (ev.data && ev.data.type === 'collab-open') {
-      window.toggleCollab();
-    }
-  });
-
-  window.toggleCollab = function() {
-    var isOpen = SECTION.classList.contains('collab-section--open');
-    if (!isOpen && !loaded) {
-      var MD_URL = 'https://raw.githubusercontent.com/boozzeeboom/project-c/main/docs/COLABORATION.md?_=' + Date.now();
-      LOADING.textContent = 'Загрузка...';
-      LOADING.style.display = '';
-      CONTENT.style.display = 'none';
-      fetch(MD_URL, { cache: 'no-store' })
-        .then(function(res) {
-          if (!res.ok) throw new Error('HTTP ' + res.status);
-          return res.text();
-        })
-        .then(function(md) {
-          CONTENT.innerHTML = marked.parse(md);
-          LOADING.style.display = 'none';
-          CONTENT.style.display = '';
-          loaded = true;
-          SECTION.classList.add('is-loaded');
-        })
-        .catch(function(err) {
-          LOADING.innerHTML = 'Ошибка загрузки. <a href="https://github.com/boozzeeboom/project-c/blob/main/docs/COLABORATION.md" target="_blank" style="color:var(--accent2)">Открыть на GitHub →</a>';
-        });
-    }
-    SECTION.classList.toggle('collab-section--open');
-
-    if (SECTION.classList.contains('collab-section--open')) {
-      setTimeout(function() {
-        SECTION.scrollIntoView({ behavior: 'smooth', block: 'start' });
-      }, 100);
-      setHash('#team', 'Project C — команда');
-      /* Notify parent (WordPress iframe) to scroll this iframe into view */
-      try {
-        if (window.parent && window.parent !== window) {
-          var rect = SECTION.getBoundingClientRect();
-          window.parent.postMessage({
-            type: 'collab-scroll',
-            offsetTop: rect.top + window.scrollY,
-            height: rect.height
-          }, '*');
-        }
-      } catch(e) {}
-    } else {
-      setHash(null);
-    }
-  };
-
-  /* Listen for parent postMessage: tell us to scroll to #team */
-  window.addEventListener('message', function(ev) {
-    if (ev.data && ev.data.type === 'collab-scroll-to') {
-      SECTION.scrollIntoView({ behavior: 'smooth', block: 'start' });
-    }
-  });
-
-  /* Detect #team hash from current page OR parent frame */
-  function detectTeamHash() {
-    /* Check own hash */
-    if (location.hash === '#team') return true;
-    /* Check parent hash (same-origin) */
-    try {
-      if (window.parent && window.parent !== window && window.parent.location.hash === '#team') return true;
-    } catch(e) { /* cross-origin — ignore */ }
-    return false;
-  }
-
-  /* Auto-open if #team detected */
-  if (detectTeamHash()) {
-    setTimeout(function() { window.toggleCollab(); }, 500);
-  }
-
-  /* Watch for hash changes (same page or same-origin parent) */
-  window.addEventListener('hashchange', function() {
-    if (location.hash === '#team') {
-      /* If not already open, open it */
-      if (!SECTION.classList.contains('collab-section--open')) {
-        window.toggleCollab();
-      }
-    }
-  });
-})();
 </script>
 
 </body>

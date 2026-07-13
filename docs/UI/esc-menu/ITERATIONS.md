@@ -41,3 +41,11 @@
 **Изменения:**
 - `Assets/_Project/Scripts/UI/EscMenu/EscMenuWindow.cs` — диалог подтверждения, Shutdown, LoadScene, AnimateEntrance
 - `Assets/_Project/Resources/UI/EscMenuStyles.uss` — animation classes (stagger/visible)
+
+## Итерация от 2026-07-13 (5)
+
+**Задача:** Этап 3d — KeybindingsWindow как sub-page внутри EscMenu
+**Коммит:** `5e85ece` — T-ESC03d: KeybindingsWindow как sub-page
+**Изменения:**
+- `Assets/_Project/Scripts/UI/Settings/KeybindingsWindow.cs` — GetPageRoot(), OnBackRequested, embedded Esc
+- `Assets/_Project/Scripts/UI/EscMenu/EscMenuWindow.cs` — OpenKeybindingsSubPage через GetPageRoot

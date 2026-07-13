@@ -86,6 +86,10 @@ namespace ProjectC.Core
         private Vector2 _lookInput;
         private float _scrollInput;
 
+        // SettingsManager bridge (T-ESC03c)
+        private float _cachedMouseSensitivity = 3f;
+        private bool _cachedInvertY = false;
+
         private void Awake()
         {
             // КРИТИЧНО: Far Clip Plane для бесшовного мира 350,000 units
@@ -228,6 +232,19 @@ namespace ProjectC.Core
 
             // Создаём UI подсказок автоматически, если нет на сцене
             CreateControlHintsUI();
+
+            // T-ESC03c: подписка на изменения настроек
+            RefreshSettings();
+            SettingsManager.OnMouseSensitivityChanged += OnSensitivityChanged;
+            SettingsManager.OnInvertYChanged += OnInvertChanged;
+        }
+
+        private void OnSensitivityChanged(float v) => _cachedMouseSensitivity = v;
+        private void OnInvertChanged(bool v) => _cachedInvertY = v;
+        private void RefreshSettings()
+        {
+            _cachedMouseSensitivity = SettingsManager.MouseSensitivity;
+            _cachedInvertY = SettingsManager.InvertY;
         }
 
         /// <summary>
@@ -441,8 +458,10 @@ namespace ProjectC.Core
         /// </summary>
         private void HandleRotation()
         {
-            currentX += _lookInput.x * mouseSensitivityX;
-            currentY -= _lookInput.y * mouseSensitivityY;
+            float sens = _cachedMouseSensitivity;
+            float invert = _cachedInvertY ? -1f : 1f;
+            currentX += _lookInput.x * sens;
+            currentY -= _lookInput.y * sens * invert;
             currentY = Mathf.Clamp(currentY, minVerticalAngle, maxVerticalAngle);
 
             // В режиме следования за персонажем — не вращаем саму камеру, 

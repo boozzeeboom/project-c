@@ -63,6 +63,10 @@ namespace ProjectC.Core
         private ProjectC.UI.ControlHintsUI _cachedControlHintsUI;
         private Canvas _cachedCanvas;
 
+        // SettingsManager bridge (T-ESC03c)
+        private float _cachedMouseSensitivity = 3f;
+        private bool _cachedInvertY = false;
+
         /// <summary>
         /// Горизонтальное направление камеры (куда бежит персонаж по W)
         /// </summary>
@@ -168,6 +172,19 @@ namespace ProjectC.Core
 
             // R2-XXX: Регистрируем камеру для Billboard (имена над персонажами)
             Billboard.ActiveCamera = transform;
+
+            // T-ESC03c: подписка на изменения настроек
+            RefreshSettings();
+            SettingsManager.OnMouseSensitivityChanged += OnSensitivityChanged;
+            SettingsManager.OnInvertYChanged += OnInvertChanged;
+        }
+
+        private void OnSensitivityChanged(float v) => _cachedMouseSensitivity = v;
+        private void OnInvertChanged(bool v) => _cachedInvertY = v;
+        private void RefreshSettings()
+        {
+            _cachedMouseSensitivity = SettingsManager.MouseSensitivity;
+            _cachedInvertY = SettingsManager.InvertY;
         }
 
         /// <summary>
@@ -260,8 +277,10 @@ namespace ProjectC.Core
 
             _lookInput = _lookAction.ReadValue<Vector2>();
 
-            _yaw += _lookInput.x * mouseSensitivityX;
-            _pitch -= _lookInput.y * mouseSensitivityY;
+            float sens = _cachedMouseSensitivity;
+            float invert = _cachedInvertY ? -1f : 1f;
+            _yaw += _lookInput.x * sens;
+            _pitch -= _lookInput.y * sens * invert;
             _pitch = Mathf.Clamp(_pitch, minVerticalAngle, maxVerticalAngle);
 
             UpdateCameraPosition();

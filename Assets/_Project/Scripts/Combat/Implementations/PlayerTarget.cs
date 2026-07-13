@@ -180,11 +180,14 @@ namespace ProjectC.Combat
             if (!_hpInitialized)
             {
                 TryInitializeHp();
-                // T-HP01: fallback — если StatsServer всё ещё не готов, ставим дефолтные 100 HP
+                // T-HP01: fallback — если StatsServer не готов, ставим 100 HP и фиксируем
                 if (!_hpInitialized)
                 {
                     _maxHp.Value = 100;
                     _currentHp.Value = 100;
+                    _hpInitialized = true;
+                    if (_hpInitCoroutine != null) { StopCoroutine(_hpInitCoroutine); _hpInitCoroutine = null; }
+                    Debug.LogWarning($"[PlayerTarget] HP fallback 100 used for client={_clientId} (StatsServer not ready)");
                 }
             }
 
@@ -195,7 +198,15 @@ namespace ProjectC.Combat
 
             // T-HP01: push updated HP to StatsServer → snapshot → CharacterWindow UI
             var ss = ProjectC.Stats.StatsServer.Instance;
-            if (ss != null) ss.RecomputeAndSendSnapshot(_clientId);
+            if (ss != null)
+            {
+                ss.RecomputeAndSendSnapshot(_clientId);
+                Debug.Log($"[PlayerTarget] Snapshot sent after damage: HP={newHp}/{_maxHp.Value}, client={_clientId}");
+            }
+            else
+            {
+                Debug.LogWarning($"[PlayerTarget] StatsServer.Instance is null — cannot send HP snapshot");
+            }
 
             // T-HP01: disable input/movement on death
             if (newHp <= 0)

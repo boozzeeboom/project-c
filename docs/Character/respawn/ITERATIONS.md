@@ -33,3 +33,33 @@
 - `Assets/_Project/Scripts/Skills/SkillInputService.cs` — попутные
 - `docs/Character/respawn/T-HP01-respawn-fix.md` — документация всех 4 итераций debugging
 - `docs/Character/respawn/ITERATIONS.md` — перенесён из Assets/_Project/Docs
+
+---
+
+## Итерация от 2026-07-13
+
+**Задача:** Аудит архитектуры систем HP / Damage / Death / Respawn.
+
+**Коммит:** `1ae3690` (рабочих изменений нет, только документация)
+
+**Изменения:**
+- `docs/Character/respawn/03_ARCHITECTURE_AUDIT.md` — полный аудит
+
+**Ключевые находки:**
+1. 🔴 Три разных `IsServer` паттерна — `PlayerRespawnTracker.Update()` всё ещё на `NB.IsServer`
+2. 🔴 Два канала синхронизации HP (NetworkVariable + StatsSnapshotDto)
+3. 🟡 `RespawnWithHpRestore` не вызывает `ResetFallTimer()` — риск double-respawn
+4. 🟡 Fallback HP=100 при race condition не пересчитывается
+5. 🟡 Циклическая зависимость Stats ↔ Combat через GetComponent
+
+**Рекомендация:** рефакторинг R4+R6 из аудита перед следующим этапом.
+
+---
+
+## История изменений
+
+| Дата | Сессия | Изменения |
+|------|--------|-----------|
+| 2026-07-21 | T-HP01 | Первая имплементация: HealthConfig, HP=base+STR×multiplier, death→respawn |
+| 2026-07-16 | T-HP01 fix | 4 итерации debug: IsServer→NM.IsServer, timer вместо coroutine |
+| 2026-07-13 | Аудит | 03_ARCHITECTURE_AUDIT.md — 9 дефектов, анализ as-built |

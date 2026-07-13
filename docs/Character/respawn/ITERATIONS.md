@@ -63,3 +63,19 @@
 | 2026-07-21 | T-HP01 | Первая имплементация: HealthConfig, HP=base+STR×multiplier, death→respawn |
 | 2026-07-16 | T-HP01 fix | 4 итерации debug: IsServer→NM.IsServer, timer вместо coroutine |
 | 2026-07-13 | Аудит | 03_ARCHITECTURE_AUDIT.md — 9 дефектов, анализ as-built |
+| 2026-07-13 | T-AUDIT01 | Исправление 4 архитектурных расхождений (R1-R4) |
+
+---
+
+## Итерация от 2026-07-13 (T-AUDIT01 fix)
+
+**Задача:** Применить 4 немедленные правки из аудита 03_ARCHITECTURE_AUDIT.md
+
+**Коммит:** `f12e8dc` — T-AUDIT01: исправление 4 архитектурных расхождений HP/Death/Respawn
+
+**Изменения:**
+- `Assets/_Project/Scripts/Combat/Implementations/NpcTarget.cs` — R1: IsServer → NM.Singleton.IsServer
+- `Assets/_Project/Scripts/Player/PlayerRespawnTracker.cs` — R1: IsServer в Update(), R2: ResetFallTimer() в RespawnWithHpRestore
+- `Assets/_Project/Scripts/Combat/Implementations/PlayerTarget.cs` — R3: _hpFallbackUsed + retry-loop продолжается после fallback=100
+- `Assets/_Project/Scripts/UI/Client/CharacterWindow.cs` — R4: RefreshHpFromNetworkVariable() читает HP из PlayerTarget напрямую
+- `docs/Character/respawn/03_ARCHITECTURE_AUDIT.md` — статус исправлений

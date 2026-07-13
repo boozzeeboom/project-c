@@ -202,21 +202,19 @@ namespace ProjectC.Combat
 
         public void ApplyDamage(DamageResult result, ulong attackerClientId)
         {
-            // T-HP01 fix: авто-резолв _clientId если Initialize не был вызван (предсуществующий баг)
-            if (_clientId == 0 && NetworkObject != null)
-            {
+            // T-HP01 fix: авто-резолв _clientId (предсуществующий баг — Initialize может не вызваться)
+            if (_clientId == 0 && NetworkObject != null && NetworkObject.OwnerClientId != 0)
                 _clientId = NetworkObject.OwnerClientId;
-                if (_clientId != 0 && !_hpInitialized)
-                    TryInitializeHp();
-            }
 
-            if (!IsServer)
-            {
-                Debug.LogWarning($"[PlayerTarget] ApplyDamage called on non-server. client={_clientId}, attacker={attackerClientId}");
-                return;
-            }
+            // T-HP01 fix: ApplyDamage всегда вызывается из server-side кода (CombatServer/NpcBrain).
+            // Проверка IsServer убрана — для scene-placed/поздно-спавненых экземпляров NetworkObject.IsServer = false.
             if (!result.isHit) return;
-            if (_currentHp.Value <= 0) return;  // already dead
+
+            // T-HP01: если HP ещё не инициализирован — вычисляем сейчас (защита от 0 HP)
+            if (!_hpInitialized)
+                TryInitializeHp();
+
+            if (_currentHp.Value <= 0 && _hpInitialized) return;  // already dead (only if HP was initialized)
 
             int newHp = Mathf.Max(0, _currentHp.Value - result.finalDamage);
             _currentHp.Value = newHp;

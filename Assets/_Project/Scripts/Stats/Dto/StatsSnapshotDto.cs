@@ -45,6 +45,10 @@ namespace ProjectC.Stats.Dto
         public float effectiveDexterity;
         public float effectiveIntelligence;
 
+        // T-HP01: health fields (server-computed, sent to client for UI)
+        public int currentHp;
+        public int maxHp;
+
         public void NetworkSerialize<T>(BufferSerializer<T> serializer) where T : IReaderWriter
         {
             serializer.SerializeValue(ref strength);
@@ -66,6 +70,9 @@ namespace ProjectC.Stats.Dto
             serializer.SerializeValue(ref effectiveStrength);
             serializer.SerializeValue(ref effectiveDexterity);
             serializer.SerializeValue(ref effectiveIntelligence);
+
+            serializer.SerializeValue(ref currentHp);
+            serializer.SerializeValue(ref maxHp);
         }
 
         public bool Equals(StatsSnapshotDto other)
@@ -81,7 +88,9 @@ namespace ProjectC.Stats.Dto
                 && intelligenceXpForNextTier == other.intelligenceXpForNextTier
                 && strengthTotalXp == other.strengthTotalXp
                 && dexterityTotalXp == other.dexterityTotalXp
-                && intelligenceTotalXp == other.intelligenceTotalXp;
+                && intelligenceTotalXp == other.intelligenceTotalXp
+                && currentHp == other.currentHp
+                && maxHp == other.maxHp;
         }
 
         public override bool Equals(object obj) => obj is StatsSnapshotDto o && Equals(o);
@@ -105,6 +114,8 @@ namespace ProjectC.Stats.Dto
                 hash = hash * 31 + strengthTotalXp.GetHashCode();
                 hash = hash * 31 + dexterityTotalXp.GetHashCode();
                 hash = hash * 31 + intelligenceTotalXp.GetHashCode();
+                hash = hash * 31 + currentHp;
+                hash = hash * 31 + maxHp;
                 return hash;
             }
         }

@@ -82,6 +82,14 @@
       <ui:Label text="INT" class="stat-label-compact stat-label-int" />
       <ui:Label name="stat-int-value" text="—" class="stat-value-compact" />
      </ui:VisualElement>
+     <!-- T-HP01: HP bar -->
+     <ui:VisualElement class="stat-row-compact">
+      <ui:VisualElement class="stat-bar-bg">
+       <ui:VisualElement name="stat-hp-bar-fill" class="stat-bar-fill stat-bar-fill-hp" />
+      </ui:VisualElement>
+      <ui:Label text="HP" class="stat-label-compact stat-label-hp" />
+      <ui:Label name="stat-hp-value" text="—" class="stat-value-compact" />
+     </ui:VisualElement>
     </ui:VisualElement>
    </ui:VisualElement>
    <ui:VisualElement class="progression-col skills-col">

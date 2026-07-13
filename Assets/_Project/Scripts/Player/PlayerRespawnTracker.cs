@@ -174,5 +174,25 @@ namespace ProjectC.Player
         {
             PerformRespawn();
         }
+
+        /// <summary>
+        /// T-HP01: Респавн с восстановлением HP до процента от максимума.
+        /// Вызывается из PlayerTarget.ApplyDamage при смерти (серверный код).
+        /// Выполняет стандартный телепорт + восстанавливает HP на PlayerTarget.
+        /// </summary>
+        public void RespawnWithHpRestore(float hpPercent)
+        {
+            if (!IsServer) return;
+            PerformRespawn();
+
+            var playerTarget = GetComponent<ProjectC.Combat.PlayerTarget>();
+            if (playerTarget != null)
+            {
+                int restoreHp = Mathf.Max(1, Mathf.RoundToInt(playerTarget.GetMaxHp() * hpPercent));
+                playerTarget.SetHp(restoreHp);
+                if (_debugLog)
+                    Debug.Log($"[PlayerRespawnTracker] HP restored to {restoreHp}/{playerTarget.GetMaxHp()} ({hpPercent:P0}) for client={OwnerClientId}");
+            }
+        }
     }
 }

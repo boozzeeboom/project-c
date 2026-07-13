@@ -42,6 +42,10 @@ namespace ProjectC.Stats
         [Tooltip("StatDebugConfig.asset: debug logging, distance thresholds, announce tier-up.")]
         [SerializeField] private StatDebugConfig _debugConfig;
 
+        [Header("Health (T-HP01)")]
+        [Tooltip("HealthConfig.asset: base HP, STR→HP multiplier, respawn HP %.")]
+        [SerializeField] private HealthConfig _healthConfig;
+
         // === WorldEventBus subscriber handles (cached для Unsubscribe) ===
         private Action<MiningCompletedEvent> _handleMining;
         private Action<CraftingCompletedEvent> _handleCrafting;
@@ -100,6 +104,12 @@ namespace ProjectC.Stats
                 _debugConfig = Resources.Load<StatDebugConfig>("Stats/StatDebugConfig_Default");
                 if (_debugConfig == null)
                     Debug.LogWarning("[StatsServer] StatDebugConfig not assigned/found. Debug settings default to off.");
+            }
+            if (_healthConfig == null)
+            {
+                _healthConfig = Resources.Load<HealthConfig>("Stats/HealthConfig_Default");
+                if (_healthConfig == null)
+                    Debug.LogWarning("[StatsServer] HealthConfig not assigned/found. HP will use defaults (base=100, multiplier=10).");
             }
 
             // StatsWorld singleton (server-only)
@@ -483,6 +493,16 @@ namespace ProjectC.Stats
                     out bonusStr, out bonusDex, out bonusInt,
                     out multStr, out multDex, out multInt);
             }
+            // T-HP01: read HP from PlayerTarget (server-side), fallback to computed max if not spawned yet.
+            int currentHp = 0, maxHp = 0;
+            var pt = netPlayer.GetComponent<ProjectC.Combat.PlayerTarget>();
+            if (pt != null)
+            {
+                currentHp = pt.GetCurrentHp();
+                maxHp = pt.GetMaxHp();
+            }
+            if (maxHp <= 0) maxHp = ComputeMaxHp(clientId);
+
             var snap = new StatsSnapshotDto
             {
                 strength                  = stats.strength.xp,
@@ -500,6 +520,8 @@ namespace ProjectC.Stats
                 effectiveStrength         = (PlayerStats.StatsToFlat(stats.strength.tier) + bonusStr) * (1f + multStr),
                 effectiveDexterity        = (PlayerStats.StatsToFlat(stats.dexterity.tier) + bonusDex) * (1f + multDex),
                 effectiveIntelligence     = (PlayerStats.StatsToFlat(stats.intelligence.tier) + bonusInt) * (1f + multInt),
+                currentHp                 = currentHp,
+                maxHp                     = maxHp,
             };
 
             // T-P06: ReceiveStatsSnapshotTargetRpc добавлен в NetworkPlayer (owner→server).
@@ -642,6 +664,27 @@ namespace ProjectC.Stats
 
         /// <summary>P5 fix: expose config stat mapping for external callers (GatheringServer).</summary>
         public StatType GetStatFor(XpSource source) => _sourceMapConfig != null ? _sourceMapConfig.GetStatFor(source) : StatType.Strength;
+
+        /// <summary>T-HP01: Public access to HealthConfig for PlayerTarget/PlayerRespawnTracker.</summary>
+        public HealthConfig HealthConfig => _healthConfig;
+
+        /// <summary>
+        /// T-HP01: Вычислить максимальное HP для игрока по STR tier.
+        /// Использует HealthConfig формулу: baseHp + STR_flat × multiplier.
+        /// Если HealthConfig не назначен — fallback на дефолт (100 + tier*5+10 * 10).
+        /// </summary>
+        public int ComputeMaxHp(ulong clientId)
+        {
+            if (_world == null) return 0;
+            var stats = _world.GetOrCreateStats(clientId);
+            int strFlat = PlayerStats.StatsToFlat(stats.strength.tier);
+
+            if (_healthConfig != null)
+                return _healthConfig.ComputeMaxHp(strFlat);
+
+            // Fallback defaults (если HealthConfig не загружен)
+            return Mathf.Max(1, Mathf.RoundToInt(100f + strFlat * 10f));
+        }
 
         /// <summary>
         /// T-P13: Trigger immediate save for a player (called by SkillsServer after learn/forget).

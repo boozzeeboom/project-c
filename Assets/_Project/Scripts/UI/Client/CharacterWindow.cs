@@ -122,6 +122,9 @@ namespace ProjectC.UI.Client
         private VisualElement _statStrRow;
         private VisualElement _statDexRow;
         private VisualElement _statIntRow;
+        // T-HP01: HP bar elements
+        private VisualElement _statHpBarFill;
+        private Label _statHpValue;
 
         // --- Action buttons ---
         private Button _acceptBtn;
@@ -533,6 +536,10 @@ namespace ProjectC.UI.Client
             _statStrRow = _statStrBarFill != null ? _statStrBarFill.parent?.parent as VisualElement : null;
             _statDexRow = _statDexBarFill != null ? _statDexBarFill.parent?.parent as VisualElement : null;
             _statIntRow = _statIntBarFill != null ? _statIntBarFill.parent?.parent as VisualElement : null;
+
+            // T-HP01: HP bar refs
+            _statHpBarFill = _root.Q<VisualElement>("stat-hp-bar-fill");
+            _statHpValue = _root.Q<Label>("stat-hp-value");
 
             // Per-stat bar colors now via USS classes (stat-bar-fill-str/dex/int) — no inline overrides needed.
 
@@ -1967,6 +1974,17 @@ namespace ProjectC.UI.Client
                 {
                     string bonusInt = (snap.effectiveIntelligence - snap.intelligence > 0.01f) ? $" (+{snap.effectiveIntelligence - snap.intelligence:F0})" : "";
                     _statIntValue.text = $"{snap.effectiveIntelligence:F1} {snap.intelligence:F0}/{snap.intelligenceXpForNextTier:F0} T{snap.intelligenceTier}{bonusInt}";
+                }
+
+                // T-HP01: HP bar
+                if (_statHpBarFill != null)
+                {
+                    float hpPct = snap.maxHp > 0 ? Mathf.Clamp01((float)snap.currentHp / snap.maxHp) * 100f : 0f;
+                    _statHpBarFill.style.width = new StyleLength(new Length(hpPct, LengthUnit.Percent));
+                }
+                if (_statHpValue != null)
+                {
+                    _statHpValue.text = $"{snap.currentHp}/{snap.maxHp}";
                 }
             }
 

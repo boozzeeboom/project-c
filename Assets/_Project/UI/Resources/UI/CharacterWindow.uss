@@ -592,6 +592,8 @@
 .stat-bar-fill-str { background-color: rgb(210, 65, 60) !important; }
 .stat-bar-fill-dex { background-color: rgb(55, 175, 65) !important; }
 .stat-bar-fill-int { background-color: rgb(60, 100, 210) !important; }
+.stat-bar-fill-hp { background-color: rgb(200, 40, 40) !important; }
+.stat-label-hp { color: rgb(200, 80, 80) !important; }
 
 /* Tier-override glow classes (applied via C# ApplyTierClass) — subtle border, no color override */
 .stat-row-tier-low  { border-color: rgba(120, 120, 120, 0.4) !important; }

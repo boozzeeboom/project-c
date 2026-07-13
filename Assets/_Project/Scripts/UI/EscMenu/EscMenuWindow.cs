@@ -125,10 +125,10 @@ namespace ProjectC.UI.EscMenu
         /// <summary>Игрок в игре: загружена хотя бы одна WorldScene.</summary>
         private static bool IsInGame()
         {
-            var sm = UnityEngine.SceneManagement.SceneManager;
-            for (int i = 0; i < sm.sceneCount; i++)
+            int count = UnityEngine.SceneManagement.SceneManager.sceneCount;
+            for (int i = 0; i < count; i++)
             {
-                if (sm.GetSceneAt(i).name.StartsWith("WorldScene"))
+                if (UnityEngine.SceneManagement.SceneManager.GetSceneAt(i).name.StartsWith("WorldScene"))
                     return true;
             }
             return false;

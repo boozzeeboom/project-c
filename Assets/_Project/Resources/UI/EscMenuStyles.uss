@@ -1,5 +1,5 @@
 /* EscMenuStyles.uss — Phase 3 (extended)
-   Размер 480x440, ScrollView, back-btn, section headers.
+   Размер 480x440, ScrollView, back-btn, section headers, animations.
    Все !important защищают от переопределения UnityDefaultRuntimeTheme.
 */
 
@@ -178,4 +178,35 @@
 }
 .unity-scroll-view .unity-base-slider__dragger:hover {
     background-color: rgba(120, 180, 240, 0.6) !important;
+}
+
+/* ===== Phase 5: Animations ===== */
+
+/* Root fade-in при открытии меню */
+.esc-root {
+    transition: opacity 0.15s ease !important;
+}
+
+/* Кнопки — начальное состояние для stagger (скрыты, сдвинуты вверх) */
+.esc-btn.esc-btn-stagger {
+    opacity: 0 !important;
+    translate: 0 -8px !important;
+    transition: opacity 0.15s ease, translate 0.15s ease !important;
+}
+
+/* Кнопки — финальное состояние (проявляются) */
+.esc-btn.esc-btn-stagger.esc-btn-visible {
+    opacity: 1 !important;
+    translate: 0 0 !important;
+}
+
+/* Setting rows — stagger entrance */
+.esc-setting-row.esc-row-stagger {
+    opacity: 0 !important;
+    translate: 0 -6px !important;
+    transition: opacity 0.12s ease, translate 0.12s ease !important;
+}
+.esc-setting-row.esc-row-stagger.esc-row-visible {
+    opacity: 1 !important;
+    translate: 0 0 !important;
 }

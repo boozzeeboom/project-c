@@ -165,6 +165,27 @@ namespace ProjectC.UI.EscMenu
             if (title != null && _titleLabel != null)
                 _titleLabel.text = title;
             UpdateBackButton();
+
+            // Stagger-анимация для кнопок/строк нового экрана
+            AnimateEntrance(panel);
+        }
+
+        private void AnimateEntrance(VisualElement panel)
+        {
+            var children = panel.Children();
+            float delay = 0f;
+            foreach (var child in children)
+            {
+                var childClass = child.ClassListContains("esc-btn") ? "esc-btn-stagger" : "esc-row-stagger";
+                var visibleClass = child.ClassListContains("esc-btn") ? "esc-btn-visible" : "esc-row-visible";
+                child.AddToClassList(childClass);
+                float d = delay;
+                child.schedule.Execute(() =>
+                {
+                    child.AddToClassList(visibleClass);
+                }).StartingIn((long)(d * 1000));
+                delay += 0.04f;
+            }
         }
 
         /// <summary>Вернуться на уровень выше.</summary>
@@ -271,8 +292,61 @@ namespace ProjectC.UI.EscMenu
 
         private void OnExitToMenuClicked()
         {
-            Debug.Log("[EscMenuWindow] Exit to menu (Stage 4 pending)");
+            ShowExitConfirmation();
+        }
+
+        private void ShowExitConfirmation()
+        {
+            var panel = new VisualElement();
+            panel.style.flexDirection = FlexDirection.Column;
+            panel.style.alignItems = Align.Center;
+            panel.style.justifyContent = Justify.Center;
+            panel.style.flexGrow = 1;
+
+            var message = new Label("Вы уверены, что хотите выйти в главное меню?\nНесохранённый прогресс будет потерян.");
+            message.style.color = new Color(0.85f, 0.85f, 0.85f);
+            message.style.fontSize = 14;
+            message.style.marginBottom = 20;
+            message.style.unityTextAlign = TextAnchor.MiddleCenter;
+            message.style.whiteSpace = WhiteSpace.Normal;
+            panel.Add(message);
+
+            var btnRow = new VisualElement();
+            btnRow.style.flexDirection = FlexDirection.Row;
+            btnRow.style.justifyContent = Justify.Center;
+
+            var confirmBtn = new Button(ExecuteExitToMenu) { text = "ВЫЙТИ" };
+            confirmBtn.AddToClassList("esc-btn");
+            confirmBtn.AddToClassList("esc-btn-warning");
+            confirmBtn.style.width = 140;
+            confirmBtn.style.marginRight = 12;
+            btnRow.Add(confirmBtn);
+
+            var cancelBtn = new Button(NavigateBack) { text = "ОТМЕНА" };
+            cancelBtn.AddToClassList("esc-btn");
+            cancelBtn.style.width = 140;
+            btnRow.Add(cancelBtn);
+
+            panel.Add(btnRow);
+
+            NavigateTo(panel, "ВЫХОД");
+        }
+
+        private void ExecuteExitToMenu()
+        {
+            Debug.Log("[EscMenuWindow] Exit to menu confirmed");
+
+            // Сетевой shutdown
+            if (NetworkManager.Singleton != null && NetworkManager.Singleton.IsListening)
+            {
+                NetworkManager.Singleton.Shutdown();
+            }
+
+            // Закрыть меню перед загрузкой
             Hide();
+
+            // Загрузить BootstrapScene
+            UnityEngine.SceneManagement.SceneManager.LoadScene("BootstrapScene");
         }
     }
 }

@@ -114,7 +114,19 @@ namespace ProjectC.UI.EscMenu
 
         // ==================== Public API (КРАСНЫЕ ЛИНИИ — НЕ МЕНЯТЬ СИГНАТУРЫ) ====================
 
-        public void Toggle() { if (IsOpen()) SetOpen(false); else SetOpen(true); }
+        public void Toggle()
+        {
+            if (IsOpen()) { SetOpen(false); return; }
+            // EscMenu не должен открываться в BootstrapScene (экран загрузки)
+            if (!IsInGame()) return;
+            SetOpen(true);
+        }
+
+        private static bool IsInGame()
+        {
+            var s = UnityEngine.SceneManagement.SceneManager.GetActiveScene();
+            return !s.name.Contains("Bootstrap");
+        }
         public void Show() => SetOpen(true);
         public void Hide() => SetOpen(false);
 

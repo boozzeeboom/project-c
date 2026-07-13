@@ -91,6 +91,18 @@ namespace ProjectC.Player
             _isRespawning = true;
             _fallStartTime = float.MaxValue;
 
+            // T-HP01: защита от null если RespawnManager не найден в сцене
+            if (_respawnManager == null)
+            {
+                _respawnManager = FindAnyObjectByType<RespawnManager>();
+                if (_respawnManager == null)
+                {
+                    Debug.LogWarning($"[PlayerRespawnTracker] RespawnManager not found — teleport skipped, restoring HP on the spot");
+                    _isRespawning = false;
+                    return;
+                }
+            }
+
             // Если точка не назначена — используем fallback (индекс 0)
             int index = _currentRespawnIndex >= 0 ? _currentRespawnIndex : 0;
             Vector3 targetPos = _respawnManager.GetEffectivePosition(index);
@@ -101,6 +113,15 @@ namespace ProjectC.Player
             }
 
             TeleportToClientRpc(targetPos);
+
+            // T-HP01: сброс флага на сервере (ClientRpc не доходит до dedicated server)
+            if (IsServer && !IsClient)
+                Invoke(nameof(ResetRespawningFlag), 0.5f);
+        }
+
+        private void ResetRespawningFlag()
+        {
+            _isRespawning = false;
         }
 
         [ClientRpc]
@@ -193,6 +214,11 @@ namespace ProjectC.Player
                 if (_debugLog)
                     Debug.Log($"[PlayerRespawnTracker] HP restored to {restoreHp}/{playerTarget.GetMaxHp()} ({hpPercent:P0}) for client={OwnerClientId}");
             }
+
+            // T-HP01: перевключить управление после респавна
+            var np = GetComponent<NetworkPlayer>();
+            if (np != null)
+                np.SetInputEnabled(true);
         }
     }
 }

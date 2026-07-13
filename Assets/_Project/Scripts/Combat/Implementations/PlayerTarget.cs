@@ -41,7 +41,6 @@ namespace ProjectC.Combat
         public void Initialize(ulong clientId)
         {
             _clientId = clientId;
-            // T-HP01: try immediate HP init, then retry loop if not ready
             if (IsServer && !_hpInitialized)
             {
                 TryInitializeHp();
@@ -50,15 +49,11 @@ namespace ProjectC.Combat
             }
         }
 
-        /// <summary>
-        /// T-RTC06: Self-register в CombatServer при NetworkSpawn (server-side only).
-        /// </summary>
         public override void OnNetworkSpawn()
         {
             base.OnNetworkSpawn();
             if (!IsServer) return;
 
-            // T-HP01 fix: авто-резолв _clientId если Initialize не был вызван (предсуществующий баг)
             if (_clientId == 0 && NetworkObject != null && NetworkObject.OwnerClientId != 0)
                 _clientId = NetworkObject.OwnerClientId;
 
@@ -66,7 +61,6 @@ namespace ProjectC.Combat
             {
                 CombatServer.Instance.RegisterTarget(_clientId, this);
             }
-            // T-HP01: если Initialize ещё не вызывалась — запустим retry loop из OnNetworkSpawn
             if (!_hpInitialized && _clientId != 0 && _hpInitCoroutine == null)
             {
                 TryInitializeHp();
@@ -90,10 +84,6 @@ namespace ProjectC.Combat
             }
         }
 
-        /// <summary>
-        /// T-HP01: Coroutine retry loop — пытается инициализировать HP каждые 0.1с
-        /// до 20 попыток (2 секунды). Защищает от любых race conditions спавна.
-        /// </summary>
         private IEnumerator InitHpRetryLoop()
         {
             for (int attempt = 0; attempt < 20; attempt++)
@@ -110,10 +100,6 @@ namespace ProjectC.Combat
             Debug.LogWarning($"[PlayerTarget] HP init FAILED after 20 retries for client={_clientId}");
         }
 
-        /// <summary>
-        /// T-HP01: Инициализирует HP из StatsServer (STR-based formula).
-        /// Идемпотентен.
-        /// </summary>
         private void TryInitializeHp()
         {
             if (_hpInitialized) return;
@@ -133,10 +119,6 @@ namespace ProjectC.Combat
                 Debug.Log($"[PlayerTarget] HP initialized: {maxHp}/{maxHp} for client={_clientId}");
         }
 
-        /// <summary>
-        /// T-HP01: Публичный setter для HP (используется PlayerRespawnTracker при респавне).
-        /// Server-only.
-        /// </summary>
         public void SetHp(int hp)
         {
             if (!IsServer) return;
@@ -149,13 +131,9 @@ namespace ProjectC.Combat
 
         public int GetArmorDefense()
         {
-            // T-CB06: реальный подсчёт armorDefense из экипированной одежды.
-            // До T-CB06 возвращал 0.
             if (EquipmentWorld.Instance == null || InventoryWorld.Instance == null) return 0;
             var equip = EquipmentWorld.Instance.GetEquipment(_clientId);
             int total = 0;
-            // Armor slots: Head, Chest, Legs, Feet, Back. Module slots (Module1-3) — нет.
-            // Hands/Accessory1-2 — оставим для будущего (может быть щит/кольцо).
             var armorSlots = new[] {
                 ProjectC.Equipment.EquipSlot.Head,
                 ProjectC.Equipment.EquipSlot.Chest,
@@ -177,18 +155,10 @@ namespace ProjectC.Combat
             return total;
         }
 
-        /// <summary>
-        /// T-HP01: Игрок считается живым пока HP не проинициализирован (защита от race condition).
-        /// После инициализации — стандартная проверка currentHp > 0.
-        /// </summary>
         public bool IsAlive() => !_hpInitialized || _currentHp.Value > 0;
         public bool IsPlayer() => true;
         public string GetDisplayName() => $"Player {ResolvedClientId}";
 
-        /// <summary>
-        /// T-HP01 fix: авто-резолв clientId если Initialize не был вызван.
-        /// Использует NetworkObject.OwnerClientId как fallback.
-        /// </summary>
         private ulong ResolvedClientId
         {
             get
@@ -202,29 +172,35 @@ namespace ProjectC.Combat
 
         public void ApplyDamage(DamageResult result, ulong attackerClientId)
         {
-            // T-HP01 fix: авто-резолв _clientId (предсуществующий баг — Initialize может не вызваться)
             if (_clientId == 0 && NetworkObject != null && NetworkObject.OwnerClientId != 0)
                 _clientId = NetworkObject.OwnerClientId;
 
-            // T-HP01 fix: ApplyDamage всегда вызывается из server-side кода (CombatServer/NpcBrain).
-            // Проверка IsServer убрана — для scene-placed/поздно-спавненых экземпляров NetworkObject.IsServer = false.
             if (!result.isHit) return;
 
-            // T-HP01: если HP ещё не инициализирован — вычисляем сейчас (защита от 0 HP)
             if (!_hpInitialized)
                 TryInitializeHp();
 
-            if (_currentHp.Value <= 0 && _hpInitialized) return;  // already dead (only if HP was initialized)
+            if (_currentHp.Value <= 0 && _hpInitialized) return;
 
             int newHp = Mathf.Max(0, _currentHp.Value - result.finalDamage);
             _currentHp.Value = newHp;
+
+            // T-HP01: push updated HP to StatsServer → snapshot → CharacterWindow UI
+            var ss = ProjectC.Stats.StatsServer.Instance;
+            if (ss != null) ss.RecomputeAndSendSnapshot(_clientId);
+
+            // T-HP01: disable input/movement on death
+            if (newHp <= 0)
+            {
+                var np = GetComponent<ProjectC.Player.NetworkPlayer>();
+                if (np != null) np.SetInputEnabled(false);
+            }
 
             if (_debugLog || Debug.isDebugBuild)
             {
                 Debug.Log($"[PlayerTarget] client={_clientId} took {result.finalDamage} from attacker={attackerClientId} (HP {_currentHp.Value + result.finalDamage} → {newHp}, isCrit={result.isCrit}, type={result.damageType})");
             }
 
-            // T-NPC-12: Damage trigger на Animator (если жив). Death trigger если убит.
             var anim = GetComponentInChildren<Animator>();
             if (anim != null && anim.runtimeAnimatorController != null)
             {
@@ -250,7 +226,6 @@ namespace ProjectC.Combat
                         }
                     }
 
-                    // T-HP01: Death → delayed respawn with HP restore.
                     if (_deathRespawnDelay > 0f)
                         Invoke(nameof(TriggerDeathRespawn), _deathRespawnDelay);
                     else
@@ -259,15 +234,10 @@ namespace ProjectC.Combat
             }
             else if (newHp <= 0)
             {
-                // No animator — respawn immediately.
                 TriggerDeathRespawn();
             }
         }
 
-        /// <summary>
-        /// T-HP01: Вызывает респавн с восстановлением HP после смерти.
-        /// Читает RespawnHpPercent из HealthConfig (StatsServer).
-        /// </summary>
         private void TriggerDeathRespawn()
         {
             if (!IsServer) return;

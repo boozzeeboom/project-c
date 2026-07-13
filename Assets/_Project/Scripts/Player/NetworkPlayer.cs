@@ -198,6 +198,17 @@ namespace ProjectC.Player
             _velocity = Vector3.zero;
         }
 
+        /// <summary>
+        /// T-HP01: Включить/выключить управление персонажем.
+        /// При смерти отключает CharacterController — персонаж не может двигаться.
+        /// При респавне включает обратно.
+        /// </summary>
+        public void SetInputEnabled(bool enabled)
+        {
+            if (_controller != null)
+                _controller.enabled = enabled;
+        }
+
         public override void OnNetworkSpawn()
         {
             base.OnNetworkSpawn();

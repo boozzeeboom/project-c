@@ -84,6 +84,7 @@ namespace ProjectC.Editor
             CreateEventSystem();
             CreateNetworkManager();
             CreatePlayerSpawner();
+            CreateRespawnManager();
             CreateSceneManagement();
             CreateCameraSystem();
             CreateWorldSystems();
@@ -228,6 +229,22 @@ private void CreatePlayerSpawner()
             }
 
             Debug.Log($"[BootstrapSceneGenerator] PlayerSpawner created at scene(0,0) center: {spawnPos}");
+        }
+
+        private void CreateRespawnManager()
+        {
+            GameObject respawnObj = new GameObject("RespawnManager");
+            respawnObj.transform.position = Vector3.zero;
+
+            var respawnManager = respawnObj.AddComponent<RespawnManager>();
+
+            // Добавляем fallback-точку по умолчанию (центр WorldScene_0_0)
+            respawnManager.AddPoint(); // индекс 0 — fallback
+            var defaultPoint = respawnManager.GetPoint(0);
+            defaultPoint.fallbackPosition = new Vector3(39992f, 2502.77f, 40000f);
+            respawnManager.SetPoint(0, defaultPoint);
+
+            Debug.Log($"[BootstrapSceneGenerator] RespawnManager created with fallback point at {defaultPoint.fallbackPosition}");
         }
 
         private void CreateSceneManagement()

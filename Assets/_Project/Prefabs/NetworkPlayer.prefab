@@ -16,6 +16,7 @@ GameObject:
   - component: {fileID: -2566205779895230594}
   - component: {fileID: 6282014175540454529}
   - component: {fileID: 7502381017870049175}
+  - component: {fileID: 6524090672888431913}
   m_Layer: 0
   m_Name: NetworkPlayer
   m_TagString: Player
@@ -57,6 +58,7 @@ MonoBehaviour:
   Ownership: 1
   AlwaysReplicateAsRoot: 0
   SynchronizeTransform: 1
+  <InScenePlaced>k__BackingField: 0
   ActiveSceneSynchronization: 0
   SceneMigrationSynchronization: 1
   SpawnWithObservers: 1
@@ -219,6 +221,22 @@ MonoBehaviour:
   _maleController: {fileID: 22100000, guid: 338e6f98c539c104ab75f7b10ca83003, type: 2}
   _femaleController: {fileID: 22100000, guid: 2b25a6d3b7b061943aaab184f6d4bea6, type: 2}
   _logWarnings: 1
+--- !u!114 &6524090672888431913
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 100000}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: a0c353eed11e41148a4ea4925daa88cc, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::ProjectC.Player.PlayerRespawnTracker
+  ShowTopMostFoldoutHeaderGroup: 1
+  _deathY: 0
+  _respawnDelay: 0.5
+  _debugLog: 1
 --- !u!1001 &4319034130499501348
 PrefabInstance:
   m_ObjectHideFlags: 0

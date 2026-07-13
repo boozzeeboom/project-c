@@ -189,6 +189,15 @@ namespace ProjectC.Player
             return transform.position;
         }
 
+        /// <summary>
+        /// Сброс скорости (velocity) до нуля.
+        /// Используется PlayerRespawnTracker при телепорте чтобы не продолжить падение.
+        /// </summary>
+        public void ResetVelocity()
+        {
+            _velocity = Vector3.zero;
+        }
+
         public override void OnNetworkSpawn()
         {
             base.OnNetworkSpawn();

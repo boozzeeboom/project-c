@@ -244,35 +244,27 @@ namespace ProjectC.UI.EscMenu
 
         private void OpenKeybindingsSubPage()
         {
-            var p = MakePlaceholder("Управление — Этап 3d");
-            NavigateTo(p, "УПРАВЛЕНИЕ");
+            // Этап 3d: интеграция KeybindingsWindow как sub-page
+            var placeholder = new Label("Управление — Этап 3d");
+            placeholder.style.color = Color.gray;
+            placeholder.style.marginTop = 20;
+            placeholder.style.unityTextAlign = TextAnchor.MiddleCenter;
+            NavigateTo(placeholder, "УПРАВЛЕНИЕ");
         }
 
         private void NavigateToGraphics()
         {
-            var p = MakePlaceholder("Графика — Этап 3a");
-            NavigateTo(p, "ГРАФИКА");
+            NavigateTo(GraphicsSettingsSection.Create(), "ГРАФИКА");
         }
 
         private void NavigateToAudio()
         {
-            var p = MakePlaceholder("Звук — Этап 3b");
-            NavigateTo(p, "ЗВУК");
+            NavigateTo(AudioSettingsSection.Create(), "ЗВУК");
         }
 
         private void NavigateToGameplay()
         {
-            var p = MakePlaceholder("Геймплей — Этап 3c");
-            NavigateTo(p, "ГЕЙМПЛЕЙ");
-        }
-
-        private static VisualElement MakePlaceholder(string text)
-        {
-            var el = new Label(text);
-            el.style.color = Color.gray;
-            el.style.marginTop = 20;
-            el.style.unityTextAlign = TextAnchor.MiddleCenter;
-            return el;
+            NavigateTo(GameplaySettingsSection.Create(), "ГЕЙМПЛЕЙ");
         }
 
         // ==================== Exit to Menu ====================

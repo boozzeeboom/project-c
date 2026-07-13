@@ -23,3 +23,21 @@
 - `Assets/_Project/Resources/UI/EscMenuSettingsStyles.uss` — стили виджетов
 - `Assets/_Project/Scripts/Core/NetworkManagerController.cs` — ApplyAll() при старте
 - `Assets/_Project/Scripts/UI/EscMenu/EscMenuWindow.cs` — загрузка EscMenuSettingsStyles.uss
+
+## Итерация от 2026-07-13 (3)
+
+**Задача:** Этап 3a-c — страницы настроек: Графика, Звук, Геймплей
+**Коммит:** `6169958` — T-ESC03: Этап 3a-c — страницы настроек
+**Изменения:**
+- `Assets/_Project/Scripts/UI/EscMenu/GraphicsSettingsSection.cs` — качество, разрешение, экран, VSync, AA
+- `Assets/_Project/Scripts/UI/EscMenu/AudioSettingsSection.cs` — громкость + placeholder-каналы
+- `Assets/_Project/Scripts/UI/EscMenu/GameplaySettingsSection.cs` — чувств. мыши, инверт Y, субтитры
+- `Assets/_Project/Scripts/UI/EscMenu/EscMenuWindow.cs` — секции подключены
+
+## Итерация от 2026-07-13 (4)
+
+**Задача:** Этапы 4-5 — выход в меню + анимации переходов
+**Коммит:** `13ced8b` — T-ESC04: Этапы 4-5 — выход в меню + анимации
+**Изменения:**
+- `Assets/_Project/Scripts/UI/EscMenu/EscMenuWindow.cs` — диалог подтверждения, Shutdown, LoadScene, AnimateEntrance
+- `Assets/_Project/Resources/UI/EscMenuStyles.uss` — animation classes (stagger/visible)

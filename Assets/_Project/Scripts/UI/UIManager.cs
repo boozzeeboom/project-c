@@ -127,6 +127,12 @@ namespace ProjectC.UI
                     && EscMenu.EscMenuWindow.Instance != null
                     && EscMenu.EscMenuWindow.Instance.IsInSubmenu())
                 {
+                    // KeybindingsWindow мог поглотить Esc (CancelListening) — тогда не NavigateBack
+                    if (Settings.KeybindingsWindow.EscConsumedThisFrame)
+                    {
+                        Settings.KeybindingsWindow.EscConsumedThisFrame = false;
+                        return;
+                    }
                     EscMenu.EscMenuWindow.Instance.NavigateBack();
                     return;
                 }

@@ -8,9 +8,17 @@ using ProjectC.Input;
 
 namespace ProjectC.UI.Settings
 {
+    /// <summary>
+    /// DefaultExecutionOrder = -205: ДО UIManager(-200).
+    /// CancelListening по Esc должен отработать до того, как UIManager вызовет NavigateBack.
+    /// </summary>
+    [DefaultExecutionOrder(-205)]
     [RequireComponent(typeof(UIDocument))]
     public class KeybindingsWindow : MonoBehaviour
     {
+        /// <summary>Флаг: этот кадр Esc был поглощён (CancelListening) — EscMenuWindow должен пропустить.</summary>
+        public static bool EscConsumedThisFrame { get; set; }
+
         public static KeybindingsWindow Instance { get; private set; }
 
         [SerializeField] private VisualTreeAsset kbUxml;
@@ -22,10 +30,7 @@ namespace ProjectC.UI.Settings
         private ScrollView _actionListScroll;
         private bool _built = false;
 
-        /// <summary>Callback для Esc при embedded-режиме (возврат в меню настроек).</summary>
         public System.Action OnBackRequested;
-        /// <summary>USS для загрузки родительским UIDocument при встраивании.</summary>
-        public StyleSheet StyleSheet => kbUss;
         private bool _isEmbedded = false;
 
         private void Awake()
@@ -60,7 +65,6 @@ namespace ProjectC.UI.Settings
             _skillListScroll = _root.Q<ScrollView>("skill-list-scroll");
             _actionListScroll = _root.Q<ScrollView>("action-list-scroll");
 
-            // Кнопки header
             var saveBtn = _root.Q<Button>("save-btn");
             if (saveBtn != null)
             {
@@ -127,10 +131,6 @@ namespace ProjectC.UI.Settings
 
         public bool IsOpen() => _built && _root != null && _root.style.display.value == DisplayStyle.Flex;
 
-        /// <summary>
-        /// Создаёт чистый контейнер с содержимым KeybindingsWindow для встраивания в EscMenu.
-        /// Без chrome (.kb-root) — только header, колонки, footer.
-        /// </summary>
         public VisualElement BuildEmbeddedContent()
         {
             EnsureBuilt();
@@ -141,7 +141,6 @@ namespace ProjectC.UI.Settings
             container.style.flexGrow = 1;
             container.AddToClassList("kb-embedded");
 
-            // Header row: title + buttons
             var header = new VisualElement();
             header.AddToClassList("kb-embedded-header");
 
@@ -193,11 +192,9 @@ namespace ProjectC.UI.Settings
             header.Add(btnRow);
             container.Add(header);
 
-            // Two-column layout
             var columns = new VisualElement();
             columns.AddToClassList("kb-embedded-columns");
 
-            // Skills column
             var skillCol = new VisualElement();
             skillCol.AddToClassList("kb-embedded-col");
             var skillLabel = new Label("Боевые навыки");
@@ -207,11 +204,10 @@ namespace ProjectC.UI.Settings
             var skillScroll = new ScrollView();
             skillScroll.AddToClassList("kb-embedded-scroll");
             skillScroll.name = "skill-list-scroll-embedded";
-            _skillListScroll = skillScroll; // reuse RebuildLists ref
+            _skillListScroll = skillScroll;
             skillCol.Add(skillScroll);
             columns.Add(skillCol);
 
-            // Actions column
             var actionCol = new VisualElement();
             actionCol.AddToClassList("kb-embedded-col");
             var actionLabel = new Label("Действия");
@@ -221,13 +217,12 @@ namespace ProjectC.UI.Settings
             var actionScroll = new ScrollView();
             actionScroll.AddToClassList("kb-embedded-scroll");
             actionScroll.name = "action-list-scroll-embedded";
-            _actionListScroll = actionScroll; // reuse RebuildLists ref
+            _actionListScroll = actionScroll;
             actionCol.Add(actionScroll);
             columns.Add(actionCol);
 
             container.Add(columns);
 
-            // Footer
             var footer = new Label("Сохранение автоматическое. Кликните строку чтобы изменить клавишу.");
             footer.AddToClassList("kb-embedded-footer");
             container.Add(footer);
@@ -244,10 +239,14 @@ namespace ProjectC.UI.Settings
 
             bool active = IsOpen() || _isEmbedded;
 
-            // Esc: embedded → OnBackRequested, standalone → SetOpen(false)
             if (kb.escapeKey.wasPressedThisFrame && active)
             {
-                if (_listeningFor != null) { CancelListening(); return; }
+                if (_listeningFor != null)
+                {
+                    CancelListening();
+                    if (_isEmbedded) EscConsumedThisFrame = true;
+                    return;
+                }
                 if (_isEmbedded && OnBackRequested != null)
                 {
                     Debug.Log("[KeybindingsWindow] Esc in embedded mode → OnBackRequested");
@@ -259,10 +258,8 @@ namespace ProjectC.UI.Settings
                 return;
             }
 
-            // Режим прослушивания — ждём нажатия. Работает и в embedded, и в standalone.
             if (_listeningFor != null)
             {
-                // Mouse buttons
                 var mouse = Mouse.current;
                 if (mouse != null)
                 {
@@ -270,7 +267,6 @@ namespace ProjectC.UI.Settings
                     if (mouse.rightButton.wasPressedThisFrame)  { ApplyRebind(_listeningFor.Value, Key.None, 2); return; }
                     if (mouse.middleButton.wasPressedThisFrame) { ApplyRebind(_listeningFor.Value, Key.None, 3); return; }
                 }
-                // Keyboard keys (skip Escape — used for cancel)
                 foreach (var keyControl in kb.allKeys)
                 {
                     if (keyControl.keyCode == Key.Escape) continue;
@@ -287,7 +283,7 @@ namespace ProjectC.UI.Settings
 
         private struct ListeningState
         {
-            public bool isSkill; // false = action binding
+            public bool isSkill;
             public ProjectC.Skills.SkillInputSlot skillSlot;
             public InputBindingsConfig.GameAction action;
         }

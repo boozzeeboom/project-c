@@ -1,5 +1,5 @@
-// Project C: Input System — Phase 2.1
-// KeybindingsWindow по CharacterWindow/SkillTreeWindow паттерну (рабочий).
+// Project C: Input System — Phase 2.1 → Phase 3 (embedded sub-page support)
+// KeybindingsWindow — standalone + embedded режимы.
 using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.InputSystem;
@@ -21,6 +21,10 @@ namespace ProjectC.UI.Settings
         private ScrollView _skillListScroll;
         private ScrollView _actionListScroll;
         private bool _built = false;
+
+        /// <summary>Callback для Esc при embedded-режиме (возврат в меню настроек).</summary>
+        public System.Action OnBackRequested;
+        private bool _isEmbedded = false;
 
         private void Awake()
         {
@@ -121,16 +125,49 @@ namespace ProjectC.UI.Settings
 
         public bool IsOpen() => _built && _root != null && _root.style.display.value == DisplayStyle.Flex;
 
+        /// <summary>
+        /// Возвращает VisualElement для встраивания в EscMenu (sub-page).
+        /// Снимает абсолютное позиционирование, заменяет на flex-контейнер.
+        /// </summary>
+        public VisualElement GetPageRoot()
+        {
+            EnsureBuilt();
+            if (_root == null) return null;
+
+            _isEmbedded = true;
+
+            // Снимаем абсолютное позиционирование для встраивания
+            _root.style.position = StyleKeyword.None;
+            _root.style.left = StyleKeyword.None;
+            _root.style.top = StyleKeyword.None;
+            _root.style.right = StyleKeyword.None;
+            _root.style.bottom = StyleKeyword.None;
+            _root.style.translate = StyleKeyword.None;
+            _root.style.width = StyleKeyword.None;
+            _root.style.height = StyleKeyword.None;
+            _root.style.display = DisplayStyle.Flex;
+            _root.pickingMode = PickingMode.Position;
+
+            RebuildLists();
+            Debug.Log("[KeybindingsWindow] GetPageRoot: embedded mode ready");
+            return _root;
+        }
+
         private void Update()
         {
             var kb = UnityEngine.InputSystem.Keyboard.current;
             if (kb == null) return;
 
-            // Esc закрывает это окно (UIManager не всегда успевает).
+            // Esc: embedded → OnBackRequested, standalone → SetOpen(false)
             if (kb.escapeKey.wasPressedThisFrame && IsOpen())
             {
-                // Если в режиме прослушивания — выходим без закрытия.
                 if (_listeningFor != null) { CancelListening(); return; }
+                if (_isEmbedded && OnBackRequested != null)
+                {
+                    Debug.Log("[KeybindingsWindow] Esc in embedded mode → OnBackRequested");
+                    OnBackRequested.Invoke();
+                    return;
+                }
                 Debug.Log("[KeybindingsWindow] self-close on Esc");
                 SetOpen(false);
                 return;
@@ -250,7 +287,6 @@ namespace ProjectC.UI.Settings
 
         private static void MakeRowClickable(VisualElement row, ProjectC.Skills.SkillInputSlot slot)
         {
-            // При клике: регистрируем в Instance что мы слушаем.
             row.RegisterCallback<ClickEvent>(_ =>
             {
                 var inst = UnityEngine.Object.FindAnyObjectByType<KeybindingsWindow>();

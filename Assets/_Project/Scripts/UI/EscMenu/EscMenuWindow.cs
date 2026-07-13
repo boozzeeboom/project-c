@@ -265,12 +265,16 @@ namespace ProjectC.UI.EscMenu
 
         private void OpenKeybindingsSubPage()
         {
-            // Этап 3d: интеграция KeybindingsWindow как sub-page
-            var placeholder = new Label("Управление — Этап 3d");
-            placeholder.style.color = Color.gray;
-            placeholder.style.marginTop = 20;
-            placeholder.style.unityTextAlign = TextAnchor.MiddleCenter;
-            NavigateTo(placeholder, "УПРАВЛЕНИЕ");
+            var kbw = Settings.KeybindingsWindow.Instance;
+            if (kbw == null)
+            {
+                Debug.LogError("[EscMenuWindow] KeybindingsWindow.Instance == null");
+                return;
+            }
+            kbw.OnBackRequested = NavigateBack;
+            var page = kbw.GetPageRoot();
+            if (page != null)
+                NavigateTo(page, "УПРАВЛЕНИЕ");
         }
 
         private void NavigateToGraphics()

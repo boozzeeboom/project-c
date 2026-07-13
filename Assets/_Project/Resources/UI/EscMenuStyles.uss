@@ -1,5 +1,6 @@
-/* EscMenuWindow.uss — Phase 2.1
-   Главное меню по Esc. Центрированное окно 360x280.
+/* EscMenuStyles.uss — Phase 3 (extended)
+   Размер 480x440, ScrollView, back-btn, section headers.
+   Все !important защищают от переопределения UnityDefaultRuntimeTheme.
 */
 
 .esc-root {
@@ -7,22 +8,30 @@
     left: 50% !important;
     top: 50% !important;
     translate: -50% -50% !important;
-    width: 360px !important;
-    height: 280px !important;
+    width: 480px !important;
+    height: 440px !important;
     background-color: rgba(18, 22, 32, 0.95) !important;
     border-width: 2px !important;
     border-color: rgb(80, 100, 140) !important;
     border-radius: 8px !important;
-    padding: 16px !important;
+    padding: 0 !important;
     align-items: center !important;
-    justify-content: center !important;
+    justify-content: flex-start !important;
 }
 
 .esc-window {
     flex-grow: 1 !important;
     flex-direction: column !important;
+    align-items: stretch !important;
+    width: 100% !important;
+}
+
+/* ===== Header ===== */
+.esc-header {
+    flex-direction: row !important;
     align-items: center !important;
-    justify-content: center !important;
+    padding: 12px 16px 8px 16px !important;
+    flex-shrink: 0 !important;
 }
 
 .esc-title {
@@ -30,13 +39,44 @@
     font-size: 22px !important;
     -unity-font-style: bold !important;
     -unity-text-align: middle-center !important;
-    margin-bottom: 24px !important;
+    flex-grow: 1 !important;
+    margin-bottom: 0 !important;
 }
 
+/* Back button — hidden by default, shown in submenus */
+.esc-back-btn {
+    color: rgb(160, 180, 210) !important;
+    background-color: transparent !important;
+    border-width: 1px !important;
+    border-color: rgba(80, 100, 140, 0.6) !important;
+    border-radius: 4px !important;
+    padding: 4px 12px !important;
+    font-size: 13px !important;
+    -unity-font-style: bold !important;
+    margin-right: 8px !important;
+    display: none !important;
+}
+.esc-back-btn:hover {
+    background-color: rgba(50, 60, 85, 0.9) !important;
+    border-color: rgb(120, 150, 200) !important;
+    color: rgb(210, 225, 250) !important;
+}
+
+/* ===== ScrollView Content ===== */
+.esc-content {
+    flex-grow: 1 !important;
+    width: 100% !important;
+    padding: 8px 16px 16px 16px !important;
+}
+.esc-content > .unity-scroll-view__content-container {
+    padding: 0 !important;
+}
+
+/* ===== Buttons ===== */
 .esc-buttons {
     flex-direction: column !important;
     align-items: stretch !important;
-    width: 240px !important;
+    width: 100% !important;
 }
 
 .esc-btn {
@@ -49,14 +89,40 @@
     margin-bottom: 8px !important;
     -unity-text-align: middle-center !important;
     -unity-font-style: bold !important;
+    font-size: 15px !important;
 }
-
 .esc-btn:hover {
     background-color: rgba(70, 110, 160, 0.95) !important;
     border-color: rgb(140, 180, 240) !important;
 }
 
-/* === T-CARGO-UI-SCROLL: тонкие скролбары === */
+/* Warning/exit button */
+.esc-btn-warning {
+    color: rgb(240, 180, 140) !important;
+    border-color: rgb(160, 100, 60) !important;
+}
+.esc-btn-warning:hover {
+    background-color: rgba(180, 80, 40, 0.85) !important;
+    border-color: rgb(240, 140, 80) !important;
+    color: rgb(255, 210, 180) !important;
+}
+
+/* ===== Section Headers (for settings pages) ===== */
+.esc-section-header {
+    color: rgb(160, 180, 210) !important;
+    font-size: 14px !important;
+    -unity-font-style: bold !important;
+    margin-top: 16px !important;
+    margin-bottom: 6px !important;
+    padding-bottom: 4px !important;
+    border-bottom-width: 1px !important;
+    border-bottom-color: rgba(80, 100, 140, 0.4) !important;
+}
+.esc-section-header:first-child {
+    margin-top: 0 !important;
+}
+
+/* ===== T-CARGO-UI-SCROLL ===== */
 .unity-scroll-view .unity-scroller {
     width: 6px !important;
     max-width: 6px !important;

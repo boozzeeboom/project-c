@@ -3,10 +3,19 @@
     <Style src="UI/EscMenuStyles" />
     <ui:VisualElement name="esc-menu-root" class="esc-root">
         <ui:VisualElement name="esc-window" class="esc-window">
-            <ui:Label name="esc-title" text="МЕНЮ" class="esc-title" />
-            <ui:VisualElement name="esc-buttons" class="esc-buttons">
-                <ui:Label name="esc-settings-btn" text="НАСТРОЙКИ" class="esc-btn" />
+            <!-- Header -->
+            <ui:VisualElement name="esc-header" class="esc-header">
+                <ui:Button name="esc-back-btn" text="← НАЗАД" class="esc-back-btn" />
+                <ui:Label name="esc-title" text="МЕНЮ" class="esc-title" />
             </ui:VisualElement>
+            <!-- Content: ScrollView -->
+            <ui:ScrollView name="esc-content" class="esc-content">
+                <ui:VisualElement name="esc-buttons" class="esc-buttons">
+                    <ui:Button name="esc-continue-btn" text="ПРОДОЛЖИТЬ" class="esc-btn" />
+                    <ui:Button name="esc-settings-btn" text="НАСТРОЙКИ" class="esc-btn" />
+                    <ui:Button name="esc-exit-btn" text="ВЫХОД В МЕНЮ" class="esc-btn esc-btn-warning" />
+                </ui:VisualElement>
+            </ui:ScrollView>
         </ui:VisualElement>
     </ui:VisualElement>
 </ui:UXML>

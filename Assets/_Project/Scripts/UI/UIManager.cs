@@ -122,6 +122,14 @@ namespace ProjectC.UI
             // 1. Стековая панель → закрыть
             if (_openPanels.Count > 0)
             {
+                // EscMenu: если подменю открыто → NavigateBack, иначе обычный CloseTopPanel
+                if (_openPanels[0].PanelName == "EscMenu"
+                    && EscMenu.EscMenuWindow.Instance != null
+                    && EscMenu.EscMenuWindow.Instance.IsInSubmenu())
+                {
+                    EscMenu.EscMenuWindow.Instance.NavigateBack();
+                    return;
+                }
                 CloseTopPanel();
                 return;
             }

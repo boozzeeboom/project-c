@@ -102,9 +102,13 @@ namespace ProjectC.Combat
             }
             _hpInitCoroutine = null;
             if (_hpFallbackUsed)
-                Debug.LogWarning($"[PlayerTarget] HP still on fallback=100 after 20 retries for client={_clientId} (StatsServer never loaded?)");
+            {
+                if (_debugLog) Debug.LogWarning($"[PlayerTarget] HP still on fallback=100 after 20 retries for client={_clientId} (StatsServer never loaded?)");
+            }
             else
+            {
                 Debug.LogWarning($"[PlayerTarget] HP init FAILED after 20 retries for client={_clientId}");
+            }
         }
 
         private void TryInitializeHp()
@@ -187,7 +191,7 @@ namespace ProjectC.Combat
             if (Time.time < _deathRespawnTimer) return;
 
             _deathRespawnTimer = -1f;
-            Debug.Log($"[PlayerTarget] Death timer elapsed at t={Time.time:F1}, calling TriggerDeathRespawn. client={_clientId}");
+            if (_debugLog) Debug.Log($"[PlayerTarget] Death timer elapsed at t={Time.time:F1}, calling TriggerDeathRespawn. client={_clientId}");
             TriggerDeathRespawn();
         }
 
@@ -220,7 +224,7 @@ namespace ProjectC.Combat
                     _hpFallbackUsed = true;  // R3: флаг — HP будет пересчитан когда StatsServer загрузится
                     if (_hpInitCoroutine != null) StopCoroutine(_hpInitCoroutine);
                     _hpInitCoroutine = StartCoroutine(InitHpRetryLoop());  // R3: продолжаем пытаться
-                    Debug.LogWarning($"[PlayerTarget] HP fallback 100 used for client={_clientId} (StatsServer not ready, retrying...)");
+                    if (_debugLog) Debug.LogWarning($"[PlayerTarget] HP fallback 100 used for client={_clientId} (StatsServer not ready, retrying...)");
                 }
             }
 
@@ -233,17 +237,15 @@ namespace ProjectC.Combat
             if (ss != null)
             {
                 ss.RecomputeAndSendSnapshot(_clientId);
-                Debug.Log($"[PlayerTarget] Snapshot sent after damage: HP={newHp}/{_maxHp.Value}, client={_clientId}");
+                if (_debugLog) Debug.Log($"[PlayerTarget] Snapshot sent after damage: HP={newHp}/{_maxHp.Value}, client={_clientId}");
             }
             else
             {
                 Debug.LogWarning($"[PlayerTarget] StatsServer.Instance is null — cannot send HP snapshot");
             }
 
-            if (_debugLog || Debug.isDebugBuild)
-            {
+            if (_debugLog)
                 Debug.Log($"[PlayerTarget] client={_clientId} took {result.finalDamage} from attacker={attackerClientId} (HP {_currentHp.Value + result.finalDamage} → {newHp}, isCrit={result.isCrit}, type={result.damageType})");
-            }
 
             if (newHp <= 0)
             {
@@ -265,7 +267,7 @@ namespace ProjectC.Combat
                     }
                 }
 
-                Debug.Log($"[PlayerTarget] DEATH: HP=0, scheduling respawn in {_deathRespawnDelay}s via timer. client={_clientId}, IsServer={IsServer}");
+                if (_debugLog) Debug.Log($"[PlayerTarget] DEATH: HP=0, scheduling respawn in {_deathRespawnDelay}s via timer. client={_clientId}, IsServer={IsServer}");
                 _deathRespawnTimer = Time.time + _deathRespawnDelay;
             }
         }
@@ -282,7 +284,7 @@ namespace ProjectC.Combat
             bool isServer = Unity.Netcode.NetworkManager.Singleton != null
                          && Unity.Netcode.NetworkManager.Singleton.IsServer;
 
-            Debug.Log($"[PlayerTarget] TriggerDeathRespawn CALLED. NM.IsServer={isServer}, NB.IsServer={IsServer}, IsSpawned={IsSpawned}, client={_clientId}");
+            if (_debugLog) Debug.Log($"[PlayerTarget] TriggerDeathRespawn CALLED. NM.IsServer={isServer}, NB.IsServer={IsServer}, IsSpawned={IsSpawned}, client={_clientId}");
 
             if (!isServer)
             {
@@ -295,12 +297,12 @@ namespace ProjectC.Combat
             if (statsServer != null && statsServer.HealthConfig != null)
                 hpPercent = statsServer.HealthConfig.RespawnHpPercent;
 
-            Debug.Log($"[PlayerTarget] TriggerDeathRespawn: hpPercent={hpPercent:F2}, looking for PlayerRespawnTracker...");
+            if (_debugLog) Debug.Log($"[PlayerTarget] TriggerDeathRespawn: hpPercent={hpPercent:F2}, looking for PlayerRespawnTracker...");
 
             var tracker = GetComponent<ProjectC.Player.PlayerRespawnTracker>();
             if (tracker != null)
             {
-                Debug.Log($"[PlayerTarget] TriggerDeathRespawn: tracker found, calling RespawnWithHpRestore. client={_clientId}");
+                if (_debugLog) Debug.Log($"[PlayerTarget] TriggerDeathRespawn: tracker found, calling RespawnWithHpRestore. client={_clientId}");
                 tracker.RespawnWithHpRestore(hpPercent);
             }
             else
@@ -313,7 +315,7 @@ namespace ProjectC.Combat
                 if (statsServer != null) statsServer.RecomputeAndSendSnapshot(_clientId);
             }
 
-            Debug.Log($"[PlayerTarget] TriggerDeathRespawn DONE. client={_clientId}");
+            if (_debugLog) Debug.Log($"[PlayerTarget] TriggerDeathRespawn DONE. client={_clientId}");
         }
     }
 }

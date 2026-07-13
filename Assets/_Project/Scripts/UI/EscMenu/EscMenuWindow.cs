@@ -272,6 +272,11 @@ namespace ProjectC.UI.EscMenu
                 return;
             }
             kbw.OnBackRequested = NavigateBack;
+
+            // Загружаем USS KeybindingsWindow в наш rootVisualElement (стили иначе теряются при перемещении)
+            if (kbw.StyleSheet != null && !_doc.rootVisualElement.styleSheets.Contains(kbw.StyleSheet))
+                _doc.rootVisualElement.styleSheets.Add(kbw.StyleSheet);
+
             var page = kbw.GetPageRoot();
             if (page != null)
                 NavigateTo(page, "УПРАВЛЕНИЕ");

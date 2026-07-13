@@ -24,6 +24,8 @@ namespace ProjectC.UI.Settings
 
         /// <summary>Callback для Esc при embedded-режиме (возврат в меню настроек).</summary>
         public System.Action OnBackRequested;
+        /// <summary>USS для загрузки родительским UIDocument при встраивании.</summary>
+        public StyleSheet StyleSheet => kbUss;
         private bool _isEmbedded = false;
 
         private void Awake()
@@ -136,15 +138,17 @@ namespace ProjectC.UI.Settings
 
             _isEmbedded = true;
 
-            // Снимаем абсолютное позиционирование для встраивания
-            _root.style.position = StyleKeyword.None;
-            _root.style.left = StyleKeyword.None;
-            _root.style.top = StyleKeyword.None;
-            _root.style.right = StyleKeyword.None;
-            _root.style.bottom = StyleKeyword.None;
-            _root.style.translate = StyleKeyword.None;
-            _root.style.width = StyleKeyword.None;
-            _root.style.height = StyleKeyword.None;
+            // Снимаем абсолютное позиционирование для встраивания (inline override USS !important)
+            _root.style.position = Position.Relative;
+            _root.style.left = StyleKeyword.Initial;
+            _root.style.top = StyleKeyword.Initial;
+            _root.style.right = StyleKeyword.Initial;
+            _root.style.bottom = StyleKeyword.Initial;
+            _root.style.translate = StyleKeyword.Initial;
+            _root.style.width = new StyleLength(StyleKeyword.Auto);
+            _root.style.height = new StyleLength(StyleKeyword.Auto);
+            _root.style.maxWidth = new StyleLength(StyleKeyword.None);
+            _root.style.maxHeight = new StyleLength(StyleKeyword.None);
             _root.style.display = DisplayStyle.Flex;
             _root.pickingMode = PickingMode.Position;
 

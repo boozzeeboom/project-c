@@ -35,7 +35,7 @@ namespace ProjectC.Combat
         private bool _hpInitialized;
         private Coroutine _hpInitCoroutine;
 
-        public ulong GetTargetId() => _clientId;
+        public ulong GetTargetId() => ResolvedClientId;
         public ulong ClientId => _clientId;
 
         public void Initialize(ulong clientId)
@@ -57,6 +57,11 @@ namespace ProjectC.Combat
         {
             base.OnNetworkSpawn();
             if (!IsServer) return;
+
+            // T-HP01 fix: авто-резолв _clientId если Initialize не был вызван (предсуществующий баг)
+            if (_clientId == 0 && NetworkObject != null && NetworkObject.OwnerClientId != 0)
+                _clientId = NetworkObject.OwnerClientId;
+
             if (_clientId != 0 && CombatServer.Instance != null)
             {
                 CombatServer.Instance.RegisterTarget(_clientId, this);
@@ -178,10 +183,33 @@ namespace ProjectC.Combat
         /// </summary>
         public bool IsAlive() => !_hpInitialized || _currentHp.Value > 0;
         public bool IsPlayer() => true;
-        public string GetDisplayName() => $"Player {_clientId}";
+        public string GetDisplayName() => $"Player {ResolvedClientId}";
+
+        /// <summary>
+        /// T-HP01 fix: авто-резолв clientId если Initialize не был вызван.
+        /// Использует NetworkObject.OwnerClientId как fallback.
+        /// </summary>
+        private ulong ResolvedClientId
+        {
+            get
+            {
+                if (_clientId != 0) return _clientId;
+                if (NetworkObject != null && NetworkObject.OwnerClientId != 0)
+                    return NetworkObject.OwnerClientId;
+                return 0;
+            }
+        }
 
         public void ApplyDamage(DamageResult result, ulong attackerClientId)
         {
+            // T-HP01 fix: авто-резолв _clientId если Initialize не был вызван (предсуществующий баг)
+            if (_clientId == 0 && NetworkObject != null)
+            {
+                _clientId = NetworkObject.OwnerClientId;
+                if (_clientId != 0 && !_hpInitialized)
+                    TryInitializeHp();
+            }
+
             if (!IsServer)
             {
                 Debug.LogWarning($"[PlayerTarget] ApplyDamage called on non-server. client={_clientId}, attacker={attackerClientId}");

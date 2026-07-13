@@ -178,7 +178,15 @@ namespace ProjectC.Combat
             if (!result.isHit) return;
 
             if (!_hpInitialized)
+            {
                 TryInitializeHp();
+                // T-HP01: fallback — если StatsServer всё ещё не готов, ставим дефолтные 100 HP
+                if (!_hpInitialized)
+                {
+                    _maxHp.Value = 100;
+                    _currentHp.Value = 100;
+                }
+            }
 
             if (_currentHp.Value <= 0 && _hpInitialized) return;
 
@@ -242,20 +250,27 @@ namespace ProjectC.Combat
         {
             if (!IsServer) return;
 
-            var tracker = GetComponent<ProjectC.Player.PlayerRespawnTracker>();
-            if (tracker != null)
-            {
-                float hpPercent = 0.3f;
-                var statsServer = ProjectC.Stats.StatsServer.Instance;
-                if (statsServer != null && statsServer.HealthConfig != null)
-                    hpPercent = statsServer.HealthConfig.RespawnHpPercent;
+            float hpPercent = 0.3f;
+            var statsServer = ProjectC.Stats.StatsServer.Instance;
+            if (statsServer != null && statsServer.HealthConfig != null)
+                hpPercent = statsServer.HealthConfig.RespawnHpPercent;
 
-                tracker.RespawnWithHpRestore(hpPercent);
-            }
-            else
-            {
-                Debug.LogWarning($"[PlayerTarget] PlayerRespawnTracker not found on same GameObject — cannot respawn client={_clientId}");
-            }
+            int restoreHp = Mathf.Max(1, Mathf.RoundToInt(_maxHp.Value * hpPercent));
+            _currentHp.Value = restoreHp;
+
+            // Re-enable input
+            var np = GetComponent<ProjectC.Player.NetworkPlayer>();
+            if (np != null) np.SetInputEnabled(true);
+
+            // Reset fall timer on PlayerRespawnTracker (чтобы не тригерилось сразу после респавна)
+            var tracker = GetComponent<ProjectC.Player.PlayerRespawnTracker>();
+            if (tracker != null) tracker.ResetFallTimer();
+
+            // Push updated HP to UI
+            if (statsServer != null) statsServer.RecomputeAndSendSnapshot(_clientId);
+
+            if (_debugLog)
+                Debug.Log($"[PlayerTarget] Death respawn: HP={restoreHp}/{_maxHp.Value}, input=enabled, client={_clientId}");
         }
     }
 }

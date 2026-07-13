@@ -179,6 +179,14 @@ namespace ProjectC.Player
         }
 
         /// <summary>
+        /// T-HP01: Сброс таймера падения. Вызывается после респавна чтобы не тригерился мгновенно.
+        /// </summary>
+        public void ResetFallTimer()
+        {
+            _fallStartTime = float.MaxValue;
+        }
+
+        /// <summary>
         /// Публичный метод для принудительной установки индекса респавна из кода.
         /// </summary>
         public void SetRespawnIndex(RespawnManager manager, int index)

@@ -795,6 +795,9 @@ namespace ProjectC.Player
 
         private void ProcessMovement(Vector2 moveInput, bool jump, bool run)
         {
+            // T-HP01: CharacterController может быть выключен (смерть) — не двигаем
+            if (_controller == null || !_controller.enabled) return;
+
             // Moving-platform carry: тащим персонажа за движущейся палубой ДО локомоции,
             // чтобы его не сдувало с летящего/поворачивающего корабля.
             ApplyPlatformCarry();

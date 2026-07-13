@@ -128,33 +128,113 @@ namespace ProjectC.UI.Settings
         public bool IsOpen() => _built && _root != null && _root.style.display.value == DisplayStyle.Flex;
 
         /// <summary>
-        /// Возвращает VisualElement для встраивания в EscMenu (sub-page).
-        /// Снимает абсолютное позиционирование, заменяет на flex-контейнер.
+        /// Создаёт чистый контейнер с содержимым KeybindingsWindow для встраивания в EscMenu.
+        /// Без chrome (.kb-root) — только header, колонки, footer.
         /// </summary>
-        public VisualElement GetPageRoot()
+        public VisualElement BuildEmbeddedContent()
         {
             EnsureBuilt();
-            if (_root == null) return null;
-
             _isEmbedded = true;
 
-            // Снимаем абсолютное позиционирование для встраивания (inline override USS !important)
-            _root.style.position = Position.Relative;
-            _root.style.left = StyleKeyword.Initial;
-            _root.style.top = StyleKeyword.Initial;
-            _root.style.right = StyleKeyword.Initial;
-            _root.style.bottom = StyleKeyword.Initial;
-            _root.style.translate = StyleKeyword.Initial;
-            _root.style.width = new StyleLength(StyleKeyword.Auto);
-            _root.style.height = new StyleLength(StyleKeyword.Auto);
-            _root.style.maxWidth = new StyleLength(StyleKeyword.None);
-            _root.style.maxHeight = new StyleLength(StyleKeyword.None);
-            _root.style.display = DisplayStyle.Flex;
-            _root.pickingMode = PickingMode.Position;
+            var container = new VisualElement();
+            container.style.flexDirection = FlexDirection.Column;
+            container.style.flexGrow = 1;
+            container.AddToClassList("kb-embedded");
+
+            // Header row: title + buttons
+            var header = new VisualElement();
+            header.AddToClassList("kb-embedded-header");
+
+            var title = new Label("Настройки клавиш");
+            title.AddToClassList("kb-embedded-title");
+            header.Add(title);
+
+            var btnRow = new VisualElement();
+            btnRow.AddToClassList("kb-embedded-buttons");
+
+            var saveBtn = new Button(() =>
+            {
+                if (InputBindingsRuntime.Instance != null)
+                {
+                    InputBindingsRuntime.Instance.Save();
+                    Debug.Log("[KeybindingsWindow] Manual Save → PlayerPrefs");
+                }
+            }) { text = "СОХР" };
+            saveBtn.AddToClassList("kb-embedded-btn");
+            saveBtn.AddToClassList("kb-embedded-btn-save");
+            btnRow.Add(saveBtn);
+
+            var reloadBtn = new Button(() =>
+            {
+                if (InputBindingsRuntime.Instance != null)
+                {
+                    InputBindingsRuntime.Instance.Load();
+                    RebuildLists();
+                    Debug.Log("[KeybindingsWindow] Manual Reload from PlayerPrefs");
+                }
+            }) { text = "ЗАГР" };
+            reloadBtn.AddToClassList("kb-embedded-btn");
+            reloadBtn.AddToClassList("kb-embedded-btn-reload");
+            btnRow.Add(reloadBtn);
+
+            var resetBtn = new Button(() =>
+            {
+                if (InputBindingsRuntime.Instance != null)
+                {
+                    InputBindingsRuntime.Instance.ResetToDefaults();
+                    RebuildLists();
+                    Debug.Log("[KeybindingsWindow] Reset to defaults applied");
+                }
+            }) { text = "СБРОС" };
+            resetBtn.AddToClassList("kb-embedded-btn");
+            resetBtn.AddToClassList("kb-embedded-btn-reset");
+            btnRow.Add(resetBtn);
+
+            header.Add(btnRow);
+            container.Add(header);
+
+            // Two-column layout
+            var columns = new VisualElement();
+            columns.AddToClassList("kb-embedded-columns");
+
+            // Skills column
+            var skillCol = new VisualElement();
+            skillCol.AddToClassList("kb-embedded-col");
+            var skillLabel = new Label("Боевые навыки");
+            skillLabel.AddToClassList("kb-embedded-section");
+            skillCol.Add(skillLabel);
+
+            var skillScroll = new ScrollView();
+            skillScroll.AddToClassList("kb-embedded-scroll");
+            skillScroll.name = "skill-list-scroll-embedded";
+            _skillListScroll = skillScroll; // reuse RebuildLists ref
+            skillCol.Add(skillScroll);
+            columns.Add(skillCol);
+
+            // Actions column
+            var actionCol = new VisualElement();
+            actionCol.AddToClassList("kb-embedded-col");
+            var actionLabel = new Label("Действия");
+            actionLabel.AddToClassList("kb-embedded-section");
+            actionCol.Add(actionLabel);
+
+            var actionScroll = new ScrollView();
+            actionScroll.AddToClassList("kb-embedded-scroll");
+            actionScroll.name = "action-list-scroll-embedded";
+            _actionListScroll = actionScroll; // reuse RebuildLists ref
+            actionCol.Add(actionScroll);
+            columns.Add(actionCol);
+
+            container.Add(columns);
+
+            // Footer
+            var footer = new Label("Сохранение автоматическое. Кликните строку чтобы изменить клавишу.");
+            footer.AddToClassList("kb-embedded-footer");
+            container.Add(footer);
 
             RebuildLists();
-            Debug.Log("[KeybindingsWindow] GetPageRoot: embedded mode ready");
-            return _root;
+            Debug.Log("[KeybindingsWindow] BuildEmbeddedContent ready");
+            return container;
         }
 
         private void Update()
@@ -162,8 +242,10 @@ namespace ProjectC.UI.Settings
             var kb = UnityEngine.InputSystem.Keyboard.current;
             if (kb == null) return;
 
+            bool active = IsOpen() || _isEmbedded;
+
             // Esc: embedded → OnBackRequested, standalone → SetOpen(false)
-            if (kb.escapeKey.wasPressedThisFrame && IsOpen())
+            if (kb.escapeKey.wasPressedThisFrame && active)
             {
                 if (_listeningFor != null) { CancelListening(); return; }
                 if (_isEmbedded && OnBackRequested != null)
@@ -177,7 +259,7 @@ namespace ProjectC.UI.Settings
                 return;
             }
 
-            // Режим прослушивания — ждём нажатия.
+            // Режим прослушивания — ждём нажатия. Работает и в embedded, и в standalone.
             if (_listeningFor != null)
             {
                 // Mouse buttons

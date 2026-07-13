@@ -456,6 +456,13 @@ namespace ProjectC.UI.Client
                 }
             }
 
+            // R4 (ARCHITECTURE_AUDIT): прямой опрос HP из PlayerTarget NetworkVariable
+            // каждый кадр когда окно видимо — первичный источник HP для UI.
+            if (_built && IsVisible() && _activeTab == "character")
+            {
+                RefreshHpFromNetworkVariable();
+            }
+
             // BUGFIX T-P19: Esc проверяем ДО guard'а NetworkManager, чтобы закрытие
             // работало независимо от состояния сети (был баг: Esc не закрывал окно).
             var kb = UnityEngine.InputSystem.Keyboard.current;
@@ -3427,6 +3434,33 @@ namespace ProjectC.UI.Client
                 if (players[i].GetComponent<NetworkPlayerSpawner>() != null) continue;
                 _localPlayer = players[i];
                 return;
+            }
+        }
+
+        /// <summary>
+        /// R4 (ARCHITECTURE_AUDIT): читать HP напрямую из NetworkVariable PlayerTarget,
+        /// а не только из StatsSnapshotDto. Устраняет дуальную синхронизацию.
+        /// </summary>
+        private void RefreshHpFromNetworkVariable()
+        {
+            if (_statHpBarFill == null && _statHpValue == null) return;
+            if (_localPlayer == null) FindLocalPlayer();
+            if (_localPlayer == null) return;
+
+            var pt = _localPlayer.GetComponent<ProjectC.Combat.PlayerTarget>();
+            if (pt == null) return;
+
+            int curHp = pt.GetCurrentHp();
+            int maxHp = pt.GetMaxHp();
+
+            if (_statHpBarFill != null)
+            {
+                float hpPct = maxHp > 0 ? Mathf.Clamp01((float)curHp / maxHp) * 100f : 0f;
+                _statHpBarFill.style.width = new StyleLength(new Length(hpPct, LengthUnit.Percent));
+            }
+            if (_statHpValue != null)
+            {
+                _statHpValue.text = $"{curHp}/{maxHp}";
             }
         }
 

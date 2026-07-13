@@ -33,6 +33,7 @@ namespace ProjectC.Combat
 
         private ulong _clientId;
         private bool _hpInitialized;
+        private bool _hpFallbackUsed;        // R3: true если HP был инициализирован fallback=100
         private Coroutine _hpInitCoroutine;
         private float _deathRespawnTimer = -1f;
 
@@ -92,19 +93,24 @@ namespace ProjectC.Combat
             {
                 yield return new WaitForSeconds(0.1f);
                 TryInitializeHp();
-                if (_hpInitialized)
+                // R3: если был fallback — продолжаем пытаться пока StatsServer не загрузится
+                if (_hpInitialized && !_hpFallbackUsed)
                 {
                     _hpInitCoroutine = null;
                     yield break;
                 }
             }
             _hpInitCoroutine = null;
-            Debug.LogWarning($"[PlayerTarget] HP init FAILED after 20 retries for client={_clientId}");
+            if (_hpFallbackUsed)
+                Debug.LogWarning($"[PlayerTarget] HP still on fallback=100 after 20 retries for client={_clientId} (StatsServer never loaded?)");
+            else
+                Debug.LogWarning($"[PlayerTarget] HP init FAILED after 20 retries for client={_clientId}");
         }
 
         private void TryInitializeHp()
         {
-            if (_hpInitialized) return;
+            // R3: разрешаем пересчёт если был fallback (StatsServer мог загрузиться позже)
+            if (_hpInitialized && !_hpFallbackUsed) return;
             if (_clientId == 0) return;
 
             var statsServer = ProjectC.Stats.StatsServer.Instance;
@@ -113,12 +119,19 @@ namespace ProjectC.Combat
             int maxHp = statsServer.ComputeMaxHp(_clientId);
             if (maxHp <= 0) return;
 
+            // R3: если был fallback и игрок получил урон — не перезаписываем currentHp на max
+            if (_hpFallbackUsed)
+                _currentHp.Value = Mathf.Min(_currentHp.Value, maxHp);
+
             _maxHp.Value = maxHp;
-            _currentHp.Value = maxHp;
+            if (!_hpFallbackUsed)
+                _currentHp.Value = maxHp;
+
             _hpInitialized = true;
+            _hpFallbackUsed = false;
 
             if (_debugLog)
-                Debug.Log($"[PlayerTarget] HP initialized: {maxHp}/{maxHp} for client={_clientId}");
+                Debug.Log($"[PlayerTarget] HP initialized: {_currentHp.Value}/{maxHp} for client={_clientId}");
         }
 
         public void SetHp(int hp)
@@ -204,8 +217,10 @@ namespace ProjectC.Combat
                     _maxHp.Value = 100;
                     _currentHp.Value = 100;
                     _hpInitialized = true;
-                    if (_hpInitCoroutine != null) { StopCoroutine(_hpInitCoroutine); _hpInitCoroutine = null; }
-                    Debug.LogWarning($"[PlayerTarget] HP fallback 100 used for client={_clientId} (StatsServer not ready)");
+                    _hpFallbackUsed = true;  // R3: флаг — HP будет пересчитан когда StatsServer загрузится
+                    if (_hpInitCoroutine != null) StopCoroutine(_hpInitCoroutine);
+                    _hpInitCoroutine = StartCoroutine(InitHpRetryLoop());  // R3: продолжаем пытаться
+                    Debug.LogWarning($"[PlayerTarget] HP fallback 100 used for client={_clientId} (StatsServer not ready, retrying...)");
                 }
             }
 

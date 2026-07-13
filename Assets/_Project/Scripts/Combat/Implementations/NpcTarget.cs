@@ -93,7 +93,11 @@ namespace ProjectC.Combat
 
         public void ApplyDamage(DamageResult result, ulong attackerClientId)
         {
-            if (!IsServer)
+            // R1 (ARCHITECTURE_AUDIT): унифицированный IsServer guard — NM.Singleton.IsServer
+            // вместо NB.IsServer (тот же баг NGO 2.x, что был в PlayerTarget).
+            bool isServer = Unity.Netcode.NetworkManager.Singleton != null
+                         && Unity.Netcode.NetworkManager.Singleton.IsServer;
+            if (!isServer)
             {
                 Debug.LogWarning("[NpcTarget] ApplyDamage called on non-server.");
                 return;

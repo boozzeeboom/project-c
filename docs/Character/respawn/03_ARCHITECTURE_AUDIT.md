@@ -5,6 +5,13 @@
 **Версия кода:** commit `1ae3690` (T-HP01: fix death respawn)  
 **Охваченные коммиты:** `89273db` (T-RESP01) → `d73322f` (T-HP01) → `1ae3690` (T-HP01 fix)
 
+**Статус исправлений (2026-07-13):**
+- ✅ **R1** — IsServer унифицирован (NpcTarget.ApplyDamage, PlayerRespawnTracker.Update)
+- ✅ **R2** — ResetFallTimer() добавлен в RespawnWithHpRestore
+- ✅ **R3** — fallback HP=100 → retry-цикл продолжается, HP пересчитывается при загрузке StatsServer
+- ✅ **R4** — CharacterWindow читает HP из PlayerTarget.GetCurrentHp() напрямую (первичный источник)
+- ⬜ R5-R8 — среднесрочные/стратегические (не в скоупе текущего спринта)
+
 ---
 
 ## 1. Структура системы (as-built)

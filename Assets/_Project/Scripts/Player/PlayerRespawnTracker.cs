@@ -59,8 +59,11 @@ namespace ProjectC.Player
 
         private void Update()
         {
-            // Только сервер проверяет падение
-            if (!IsServer) return;
+            // R1 (ARCHITECTURE_AUDIT): унифицированный IsServer guard — NM.Singleton.IsServer
+            // вместо NB.IsServer (тот же баг NGO 2.x, что был в PlayerTarget).
+            bool isServer = Unity.Netcode.NetworkManager.Singleton != null
+                         && Unity.Netcode.NetworkManager.Singleton.IsServer;
+            if (!isServer) return;
             if (_isRespawning) return;
             if (_respawnManager == null) return;
 
@@ -238,6 +241,10 @@ namespace ProjectC.Player
                 Debug.LogError($"[PlayerRespawnTracker] RespawnWithHpRestore ABORTED: PerformRespawn failed. HP and input NOT restored. client={OwnerClientId}");
                 return;
             }
+
+            // R2 (ARCHITECTURE_AUDIT): сброс таймера падения после успешного телепорта.
+            // Если точка респавна ниже _deathY, без сброса игрок мгновенно упадёт снова.
+            ResetFallTimer();
 
             // T-HP01-fix: сбросить Death-анимацию, иначе персонаж продолжит лежать трупом.
             var anim = GetComponentInChildren<Animator>();

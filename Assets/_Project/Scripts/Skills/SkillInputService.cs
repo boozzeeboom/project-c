@@ -123,6 +123,12 @@ namespace ProjectC.Skills
             // 1) Owner-only guard.
             if (_ownerPlayer == null || !_ownerPlayer.IsSpawned) return;
 
+            // T-HP01-fix: defence-in-depth — не обрабатываем ввод если игрок мёртв.
+            // Основной блок — SetInputEnabled(false) отключает весь компонент,
+            // но эта проверка страхует от edge-cases (например, ручное включение).
+            if (_ownerPlayer.TryGetComponent<ProjectC.Combat.PlayerTarget>(out var pt) && !pt.IsAlive())
+                return;
+
             // 2) Получить binding config (может быть null если InputBindingsRuntime ещё не загрузился).
             var runtime = InputBindingsRuntime.Instance;
             if (runtime == null || runtime.Config == null) return;

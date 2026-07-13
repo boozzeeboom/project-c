@@ -166,7 +166,15 @@ namespace ProjectC.Combat
         public IDamageSource GetDamageSource(ulong sourceId) =>
             _activeSources.Find(s => s.GetSourceId() == sourceId);
 
-        public bool IsAlive() => true;  // PlayerTarget.IsAlive() — server reads оттуда. Для attacker — stub.
+        /// <summary>
+        /// T-HP01-fix: читает реальное состояние из PlayerTarget.
+        /// Было: хардкод true — мёртвый игрок мог кастовать скиллы через CombatServer.
+        /// </summary>
+        public bool IsAlive()
+        {
+            var pt = GetComponent<PlayerTarget>();
+            return pt != null && pt.IsAlive();
+        }
         public bool IsPlayer() => true;
 
         // === Cooldown через CombatServer (централизованно per 2.3) ===

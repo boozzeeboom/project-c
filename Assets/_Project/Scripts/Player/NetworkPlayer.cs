@@ -104,6 +104,7 @@ namespace ProjectC.Player
         private Vector2 _moveInput;
         private bool _jumpPressed;
         private bool _runPressed;
+        private bool _inputEnabled = true;  // T-HP01-fix: блокирует весь ввод после смерти
 
         // Поиск ближайшего объекта
         private PickupItem _nearestPickup;
@@ -200,13 +201,20 @@ namespace ProjectC.Player
 
         /// <summary>
         /// T-HP01: Включить/выключить управление персонажем.
-        /// При смерти отключает CharacterController — персонаж не может двигаться.
+        /// При смерти отключает CharacterController + блокирует весь ввод в Update().
         /// При респавне включает обратно.
         /// </summary>
         public void SetInputEnabled(bool enabled)
         {
+            _inputEnabled = enabled;
             if (_controller != null)
                 _controller.enabled = enabled;
+
+            // T-HP01-fix: отключаем SkillInputService целиком, иначе его собственный
+            // Update() продолжает обрабатывать клавиши независимо от _inputEnabled.
+            var skillInput = GetComponent<ProjectC.Skills.SkillInputService>();
+            if (skillInput != null)
+                skillInput.enabled = enabled;
         }
 
         public override void OnNetworkSpawn()
@@ -525,6 +533,10 @@ namespace ProjectC.Player
         private void Update()
         {
             if (!IsOwner) return;
+
+            // T-HP01-fix: после смерти блокируем ВЕСЬ ввод (движение, скиллы, F/E, всё).
+            // Было: SetInputEnabled(false) отключал только CharacterController — скиллы работали.
+            if (!_inputEnabled) return;
 
             // Update PlayerChunkTracker for server-side chunk streaming
             if (_playerChunkTracker != null)

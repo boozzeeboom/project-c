@@ -85,9 +85,18 @@ namespace ProjectC.Player
             }
         }
 
-        private void PerformRespawn()
+        /// <summary>
+        /// Выполнить телепорт на точку респавна.
+        /// Возвращает true если телепорт был инициирован, false если пропущен
+        /// (RespawnManager не найден, или уже в процессе респавна).
+        /// </summary>
+        private bool PerformRespawn()
         {
-            if (_isRespawning) return;
+            if (_isRespawning)
+            {
+                Debug.LogWarning($"[PlayerRespawnTracker] PerformRespawn skipped: already respawning (client={OwnerClientId})");
+                return false;
+            }
             _isRespawning = true;
             _fallStartTime = float.MaxValue;
 
@@ -97,9 +106,9 @@ namespace ProjectC.Player
                 _respawnManager = FindAnyObjectByType<RespawnManager>();
                 if (_respawnManager == null)
                 {
-                    Debug.LogWarning($"[PlayerRespawnTracker] RespawnManager not found — teleport skipped, restoring HP on the spot");
+                    Debug.LogError($"[PlayerRespawnTracker] CRITICAL: RespawnManager not found in any loaded scene! Teleport skipped. client={OwnerClientId}");
                     _isRespawning = false;
-                    return;
+                    return false;
                 }
             }
 
@@ -107,16 +116,15 @@ namespace ProjectC.Player
             int index = _currentRespawnIndex >= 0 ? _currentRespawnIndex : 0;
             Vector3 targetPos = _respawnManager.GetEffectivePosition(index);
 
-            if (_debugLog)
-            {
-                Debug.Log($"[PlayerRespawnTracker] Respawning player {OwnerClientId} to index={index} pos={targetPos}");
-            }
+            Debug.Log($"[PlayerRespawnTracker] Respawning player {OwnerClientId} to index={index} pos={targetPos} (respawnPoints.Count={_respawnManager.Count})");
 
             TeleportToClientRpc(targetPos);
 
             // T-HP01: сброс флага на сервере (ClientRpc не доходит до dedicated server)
             if (IsServer && !IsClient)
                 Invoke(nameof(ResetRespawningFlag), 0.5f);
+
+            return true;
         }
 
         private void ResetRespawningFlag()
@@ -211,22 +219,53 @@ namespace ProjectC.Player
         /// </summary>
         public void RespawnWithHpRestore(float hpPercent)
         {
-            if (!IsServer) return;
-            PerformRespawn();
+            bool isServer = Unity.Netcode.NetworkManager.Singleton != null
+                         && Unity.Netcode.NetworkManager.Singleton.IsServer;
+
+            if (!isServer)
+            {
+                Debug.LogError($"[PlayerRespawnTracker] RespawnWithHpRestore: not server. Aborting. client={OwnerClientId}");
+                return;
+            }
+
+            Debug.Log($"[PlayerRespawnTracker] RespawnWithHpRestore START: hpPercent={hpPercent:F2}, client={OwnerClientId}");
+
+            bool teleported = PerformRespawn();
+            if (!teleported)
+            {
+                // Телепорт не удался — НЕ восстанавливаем HP и НЕ включаем ввод.
+                // Иначе персонаж оживёт на месте смерти без перемещения.
+                Debug.LogError($"[PlayerRespawnTracker] RespawnWithHpRestore ABORTED: PerformRespawn failed. HP and input NOT restored. client={OwnerClientId}");
+                return;
+            }
+
+            // T-HP01-fix: сбросить Death-анимацию, иначе персонаж продолжит лежать трупом.
+            var anim = GetComponentInChildren<Animator>();
+            if (anim != null && anim.runtimeAnimatorController != null)
+            {
+                anim.ResetTrigger("Death");
+                if (anim.HasState(0, Animator.StringToHash("Idle")))
+                    anim.Play("Idle", 0, 0f);
+                Debug.Log($"[PlayerRespawnTracker] Animator: Death reset, Idle played. client={OwnerClientId}");
+            }
 
             var playerTarget = GetComponent<ProjectC.Combat.PlayerTarget>();
             if (playerTarget != null)
             {
                 int restoreHp = Mathf.Max(1, Mathf.RoundToInt(playerTarget.GetMaxHp() * hpPercent));
                 playerTarget.SetHp(restoreHp);
-                if (_debugLog)
-                    Debug.Log($"[PlayerRespawnTracker] HP restored to {restoreHp}/{playerTarget.GetMaxHp()} ({hpPercent:P0}) for client={OwnerClientId}");
+                Debug.Log($"[PlayerRespawnTracker] HP restored to {restoreHp}/{playerTarget.GetMaxHp()} ({hpPercent:P0}) for client={OwnerClientId}");
             }
 
             // T-HP01: перевключить управление после респавна
             var np = GetComponent<NetworkPlayer>();
             if (np != null)
+            {
                 np.SetInputEnabled(true);
+                Debug.Log($"[PlayerRespawnTracker] Input ENABLED. client={OwnerClientId}");
+            }
+
+            Debug.Log($"[PlayerRespawnTracker] RespawnWithHpRestore COMPLETE. client={OwnerClientId}");
         }
     }
 }

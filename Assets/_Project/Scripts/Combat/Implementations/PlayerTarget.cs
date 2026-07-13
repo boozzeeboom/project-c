@@ -34,6 +34,7 @@ namespace ProjectC.Combat
         private ulong _clientId;
         private bool _hpInitialized;
         private Coroutine _hpInitCoroutine;
+        private float _deathRespawnTimer = -1f;
 
         public ulong GetTargetId() => ResolvedClientId;
         public ulong ClientId => _clientId;
@@ -78,6 +79,7 @@ namespace ProjectC.Combat
                 StopCoroutine(_hpInitCoroutine);
                 _hpInitCoroutine = null;
             }
+            _deathRespawnTimer = -1f;
             if (CombatServer.Instance != null && _clientId != 0)
             {
                 CombatServer.Instance.UnregisterTarget(_clientId);
@@ -121,7 +123,10 @@ namespace ProjectC.Combat
 
         public void SetHp(int hp)
         {
-            if (!IsServer) return;
+            // T-HP01-fix: NetworkManager.IsServer вместо NB.IsServer (тот же баг NGO 2.x)
+            bool isServer = Unity.Netcode.NetworkManager.Singleton != null
+                         && Unity.Netcode.NetworkManager.Singleton.IsServer;
+            if (!isServer) return;
             _currentHp.Value = Mathf.Clamp(hp, 0, _maxHp.Value);
         }
 
@@ -159,6 +164,20 @@ namespace ProjectC.Combat
         public bool IsPlayer() => true;
         public string GetDisplayName() => $"Player {ResolvedClientId}";
 
+        /// <summary>
+        /// T-HP01-fix: Timer-based death respawn (вместо Coroutine — таймер в Update надёжнее,
+        /// т.к. корутина на NetworkBehaviour теряет контекст IsServer).
+        /// </summary>
+        private void Update()
+        {
+            if (_deathRespawnTimer < 0f) return;
+            if (Time.time < _deathRespawnTimer) return;
+
+            _deathRespawnTimer = -1f;
+            Debug.Log($"[PlayerTarget] Death timer elapsed at t={Time.time:F1}, calling TriggerDeathRespawn. client={_clientId}");
+            TriggerDeathRespawn();
+        }
+
         private ulong ResolvedClientId
         {
             get
@@ -180,7 +199,6 @@ namespace ProjectC.Combat
             if (!_hpInitialized)
             {
                 TryInitializeHp();
-                // T-HP01: fallback — если StatsServer не готов, ставим 100 HP и фиксируем
                 if (!_hpInitialized)
                 {
                     _maxHp.Value = 100;
@@ -196,7 +214,6 @@ namespace ProjectC.Combat
             int newHp = Mathf.Max(0, _currentHp.Value - result.finalDamage);
             _currentHp.Value = newHp;
 
-            // T-HP01: push updated HP to StatsServer → snapshot → CharacterWindow UI
             var ss = ProjectC.Stats.StatsServer.Instance;
             if (ss != null)
             {
@@ -208,33 +225,20 @@ namespace ProjectC.Combat
                 Debug.LogWarning($"[PlayerTarget] StatsServer.Instance is null — cannot send HP snapshot");
             }
 
-            // T-HP01: disable input/movement on death
-            if (newHp <= 0)
-            {
-                var np = GetComponent<ProjectC.Player.NetworkPlayer>();
-                if (np != null) np.SetInputEnabled(false);
-            }
-
             if (_debugLog || Debug.isDebugBuild)
             {
                 Debug.Log($"[PlayerTarget] client={_clientId} took {result.finalDamage} from attacker={attackerClientId} (HP {_currentHp.Value + result.finalDamage} → {newHp}, isCrit={result.isCrit}, type={result.damageType})");
             }
 
-            var anim = GetComponentInChildren<Animator>();
-            if (anim != null && anim.runtimeAnimatorController != null)
+            if (newHp <= 0)
             {
-                if (newHp > 0)
-                {
-                    foreach (var p in anim.parameters)
-                    {
-                        if (p.type == AnimatorControllerParameterType.Trigger && p.name == "Damage")
-                        {
-                            anim.SetTrigger("Damage");
-                            break;
-                        }
-                    }
-                }
-                else
+                // T-HP01: disable input/movement on death
+                var np = GetComponent<ProjectC.Player.NetworkPlayer>();
+                if (np != null) np.SetInputEnabled(false);
+
+                // Trigger death animation + schedule respawn
+                var anim = GetComponentInChildren<Animator>();
+                if (anim != null && anim.runtimeAnimatorController != null)
                 {
                     foreach (var p in anim.parameters)
                     {
@@ -244,44 +248,57 @@ namespace ProjectC.Combat
                             break;
                         }
                     }
-
-                    if (_deathRespawnDelay > 0f)
-                        Invoke(nameof(TriggerDeathRespawn), _deathRespawnDelay);
-                    else
-                        TriggerDeathRespawn();
                 }
-            }
-            else if (newHp <= 0)
-            {
-                TriggerDeathRespawn();
+
+                Debug.Log($"[PlayerTarget] DEATH: HP=0, scheduling respawn in {_deathRespawnDelay}s via timer. client={_clientId}, IsServer={IsServer}");
+                _deathRespawnTimer = Time.time + _deathRespawnDelay;
             }
         }
 
+        /// <summary>
+        /// T-HP01-fix: Death → teleport + HP restore.
+        /// Делегирует в PlayerRespawnTracker.RespawnWithHpRestore, который выполняет
+        /// телепорт на точку респавна, восстанавливает HP, сбрасывает аниматор и включает управление.
+        /// </summary>
         private void TriggerDeathRespawn()
         {
-            if (!IsServer) return;
+            // T-HP01-fix: NetworkManager.Singleton.IsServer вместо NetworkBehaviour.IsServer —
+            // NB.IsServer может быть false в корутине/timer'е из-за бага NGO 2.x.
+            bool isServer = Unity.Netcode.NetworkManager.Singleton != null
+                         && Unity.Netcode.NetworkManager.Singleton.IsServer;
+
+            Debug.Log($"[PlayerTarget] TriggerDeathRespawn CALLED. NM.IsServer={isServer}, NB.IsServer={IsServer}, IsSpawned={IsSpawned}, client={_clientId}");
+
+            if (!isServer)
+            {
+                Debug.LogError($"[PlayerTarget] TriggerDeathRespawn: not server (NetworkManager). Aborting.");
+                return;
+            }
 
             float hpPercent = 0.3f;
             var statsServer = ProjectC.Stats.StatsServer.Instance;
             if (statsServer != null && statsServer.HealthConfig != null)
                 hpPercent = statsServer.HealthConfig.RespawnHpPercent;
 
-            int restoreHp = Mathf.Max(1, Mathf.RoundToInt(_maxHp.Value * hpPercent));
-            _currentHp.Value = restoreHp;
+            Debug.Log($"[PlayerTarget] TriggerDeathRespawn: hpPercent={hpPercent:F2}, looking for PlayerRespawnTracker...");
 
-            // Re-enable input
-            var np = GetComponent<ProjectC.Player.NetworkPlayer>();
-            if (np != null) np.SetInputEnabled(true);
-
-            // Reset fall timer on PlayerRespawnTracker (чтобы не тригерилось сразу после респавна)
             var tracker = GetComponent<ProjectC.Player.PlayerRespawnTracker>();
-            if (tracker != null) tracker.ResetFallTimer();
+            if (tracker != null)
+            {
+                Debug.Log($"[PlayerTarget] TriggerDeathRespawn: tracker found, calling RespawnWithHpRestore. client={_clientId}");
+                tracker.RespawnWithHpRestore(hpPercent);
+            }
+            else
+            {
+                Debug.LogError($"[PlayerTarget] TriggerDeathRespawn: PlayerRespawnTracker NOT FOUND! Using fallback. client={_clientId}");
+                int restoreHp = Mathf.Max(1, Mathf.RoundToInt(_maxHp.Value * hpPercent));
+                _currentHp.Value = restoreHp;
+                var np = GetComponent<ProjectC.Player.NetworkPlayer>();
+                if (np != null) np.SetInputEnabled(true);
+                if (statsServer != null) statsServer.RecomputeAndSendSnapshot(_clientId);
+            }
 
-            // Push updated HP to UI
-            if (statsServer != null) statsServer.RecomputeAndSendSnapshot(_clientId);
-
-            if (_debugLog)
-                Debug.Log($"[PlayerTarget] Death respawn: HP={restoreHp}/{_maxHp.Value}, input=enabled, client={_clientId}");
+            Debug.Log($"[PlayerTarget] TriggerDeathRespawn DONE. client={_clientId}");
         }
     }
 }

@@ -122,10 +122,16 @@ namespace ProjectC.UI.EscMenu
             SetOpen(true);
         }
 
+        /// <summary>Игрок в игре: загружена хотя бы одна WorldScene.</summary>
         private static bool IsInGame()
         {
-            var s = UnityEngine.SceneManagement.SceneManager.GetActiveScene();
-            return !s.name.Contains("Bootstrap");
+            var sm = UnityEngine.SceneManagement.SceneManager;
+            for (int i = 0; i < sm.sceneCount; i++)
+            {
+                if (sm.GetSceneAt(i).name.StartsWith("WorldScene"))
+                    return true;
+            }
+            return false;
         }
         public void Show() => SetOpen(true);
         public void Hide() => SetOpen(false);

@@ -22,6 +22,7 @@ namespace ProjectC.UI.EscMenu
         [Header("UI Assets")]
         [SerializeField] private VisualTreeAsset escUxml;
         [SerializeField] private StyleSheet escUss;
+        [SerializeField] private StyleSheet escSettingsUss;
 
         private UIDocument _doc;
         private VisualElement _root;
@@ -60,6 +61,8 @@ namespace ProjectC.UI.EscMenu
 
             _doc.rootVisualElement.Clear();
             if (escUss != null) _doc.rootVisualElement.styleSheets.Add(escUss);
+            if (escSettingsUss == null) escSettingsUss = Resources.Load<StyleSheet>("UI/EscMenuSettingsStyles");
+            if (escSettingsUss != null) _doc.rootVisualElement.styleSheets.Add(escSettingsUss);
             _root = escUxml.CloneTree();
             _root.style.position = Position.Absolute;
             _root.style.left = 0; _root.style.top = 0; _root.style.right = 0; _root.style.bottom = 0;

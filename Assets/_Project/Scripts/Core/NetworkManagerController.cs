@@ -162,6 +162,8 @@ namespace ProjectC.Core
             // T-INP-14: UIManager — глобальный Esc-handler (DefaultExecutionOrder = -100).
             CreateUIManager();
 
+            // T-ESC02: Применить все настройки при старте
+            SettingsManager.ApplyAll();
             // Автоматический запуск Dedicated Server
             if (IsDedicatedServerMode())
             {

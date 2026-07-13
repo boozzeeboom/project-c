@@ -12,3 +12,14 @@
 - `docs/UI/esc-menu/01_implementation_plan.md` — план (rev.3)
 - `docs/UI/esc-menu/02_audit_notes.md` — аудит кода и gaps
 - `docs/UI/esc-menu/03_stage1_log.md` — лог ошибок и решений этапа 1
+
+## Итерация от 2026-07-13 (2)
+
+**Задача:** Этап 2 — SettingsManager + SettingsWidgets: PlayerPrefs-хранилище, фабрика виджетов, стили
+**Коммит:** `6d429d1` — T-ESC02: Этап 2 — SettingsManager + SettingsWidgets + USS
+**Изменения:**
+- `Assets/_Project/Scripts/Core/SettingsManager.cs` — статический Singleton (PlayerPrefs, события)
+- `Assets/_Project/Scripts/UI/EscMenu/SettingsWidgets.cs` — фабрика CreateSlider/Toggle/Dropdown/SectionHeader
+- `Assets/_Project/Resources/UI/EscMenuSettingsStyles.uss` — стили виджетов
+- `Assets/_Project/Scripts/Core/NetworkManagerController.cs` — ApplyAll() при старте
+- `Assets/_Project/Scripts/UI/EscMenu/EscMenuWindow.cs` — загрузка EscMenuSettingsStyles.uss

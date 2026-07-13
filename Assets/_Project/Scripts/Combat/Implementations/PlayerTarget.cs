@@ -9,6 +9,7 @@
 // TODO (post T-CB06): заменить GetArmorDefense() на реальный подсчёт суммы armorDefense
 // из экипированной ClothingItemData (Head+Chest+Legs+Feet+Back).
 
+using System.Collections;
 using UnityEngine;
 using Unity.Netcode;
 using ProjectC.Combat.Core;
@@ -32,6 +33,7 @@ namespace ProjectC.Combat
 
         private ulong _clientId;
         private bool _hpInitialized;
+        private Coroutine _hpInitCoroutine;
 
         public ulong GetTargetId() => _clientId;
         public ulong ClientId => _clientId;
@@ -39,15 +41,17 @@ namespace ProjectC.Combat
         public void Initialize(ulong clientId)
         {
             _clientId = clientId;
-            // T-HP01: try immediate HP init (StatsServer may be ready)
-            TryInitializeHp();
+            // T-HP01: try immediate HP init, then retry loop if not ready
+            if (IsServer && !_hpInitialized)
+            {
+                TryInitializeHp();
+                if (!_hpInitialized && _hpInitCoroutine == null)
+                    _hpInitCoroutine = StartCoroutine(InitHpRetryLoop());
+            }
         }
 
         /// <summary>
         /// T-RTC06: Self-register в CombatServer при NetworkSpawn (server-side only).
-        /// Решает race condition: NetworkPlayer.OnNetworkSpawn может сработать РАНЬШЕ
-        /// CombatServer.OnNetworkSpawn. Push-down в CombatServer.OnNetworkSpawn страхует.
-        /// T-HP01: также инициализирует HP из StatsServer (с retry если ещё не готов).
         /// </summary>
         public override void OnNetworkSpawn()
         {
@@ -57,12 +61,12 @@ namespace ProjectC.Combat
             {
                 CombatServer.Instance.RegisterTarget(_clientId, this);
             }
-            // T-HP01: schedule HP init retry (StatsServer may spawn after PlayerTarget)
-            if (!_hpInitialized)
+            // T-HP01: если Initialize ещё не вызывалась — запустим retry loop из OnNetworkSpawn
+            if (!_hpInitialized && _clientId != 0 && _hpInitCoroutine == null)
             {
                 TryInitializeHp();
                 if (!_hpInitialized)
-                    Invoke(nameof(TryInitializeHp), 0.5f);
+                    _hpInitCoroutine = StartCoroutine(InitHpRetryLoop());
             }
         }
 
@@ -70,6 +74,11 @@ namespace ProjectC.Combat
         {
             base.OnNetworkDespawn();
             if (!IsServer) return;
+            if (_hpInitCoroutine != null)
+            {
+                StopCoroutine(_hpInitCoroutine);
+                _hpInitCoroutine = null;
+            }
             if (CombatServer.Instance != null && _clientId != 0)
             {
                 CombatServer.Instance.UnregisterTarget(_clientId);
@@ -77,9 +86,28 @@ namespace ProjectC.Combat
         }
 
         /// <summary>
+        /// T-HP01: Coroutine retry loop — пытается инициализировать HP каждые 0.1с
+        /// до 20 попыток (2 секунды). Защищает от любых race conditions спавна.
+        /// </summary>
+        private IEnumerator InitHpRetryLoop()
+        {
+            for (int attempt = 0; attempt < 20; attempt++)
+            {
+                yield return new WaitForSeconds(0.1f);
+                TryInitializeHp();
+                if (_hpInitialized)
+                {
+                    _hpInitCoroutine = null;
+                    yield break;
+                }
+            }
+            _hpInitCoroutine = null;
+            Debug.LogWarning($"[PlayerTarget] HP init FAILED after 20 retries for client={_clientId}");
+        }
+
+        /// <summary>
         /// T-HP01: Инициализирует HP из StatsServer (STR-based formula).
-        /// Идемпотентен — если HP уже инициализирован, ничего не делает.
-        /// Если StatsServer ещё не готов — возвращает false (вызывающий должен retry).
+        /// Идемпотентен.
         /// </summary>
         private void TryInitializeHp()
         {
@@ -90,7 +118,7 @@ namespace ProjectC.Combat
             if (statsServer == null) return;
 
             int maxHp = statsServer.ComputeMaxHp(_clientId);
-            if (maxHp <= 0) return; // STR tier not loaded yet
+            if (maxHp <= 0) return;
 
             _maxHp.Value = maxHp;
             _currentHp.Value = maxHp;
@@ -144,7 +172,11 @@ namespace ProjectC.Combat
             return total;
         }
 
-        public bool IsAlive() => _currentHp.Value > 0;
+        /// <summary>
+        /// T-HP01: Игрок считается живым пока HP не проинициализирован (защита от race condition).
+        /// После инициализации — стандартная проверка currentHp > 0.
+        /// </summary>
+        public bool IsAlive() => !_hpInitialized || _currentHp.Value > 0;
         public bool IsPlayer() => true;
         public string GetDisplayName() => $"Player {_clientId}";
 

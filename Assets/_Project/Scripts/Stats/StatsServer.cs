@@ -493,7 +493,8 @@ namespace ProjectC.Stats
                     out bonusStr, out bonusDex, out bonusInt,
                     out multStr, out multDex, out multInt);
             }
-            // T-HP01: read HP from PlayerTarget (server-side), fallback to computed max if not spawned yet.
+            // T-HP01: read HP from PlayerTarget (server-side).
+            // Если HP ещё не проинициализирован (0) — вычисляем maxHp из STR и считаем что полное.
             int currentHp = 0, maxHp = 0;
             var pt = netPlayer.GetComponent<ProjectC.Combat.PlayerTarget>();
             if (pt != null)
@@ -501,7 +502,11 @@ namespace ProjectC.Stats
                 currentHp = pt.GetCurrentHp();
                 maxHp = pt.GetMaxHp();
             }
-            if (maxHp <= 0) maxHp = ComputeMaxHp(clientId);
+            if (maxHp <= 0)
+            {
+                maxHp = ComputeMaxHp(clientId);
+                currentHp = maxHp; // fresh spawn = full HP
+            }
 
             var snap = new StatsSnapshotDto
             {

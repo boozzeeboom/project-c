@@ -4028,6 +4028,7 @@ MonoBehaviour:
   _positionAmplitude: {x: 0.01, y: 0.01, z: 0.02}
   _rotationAmplitude: {x: 0.5, y: 0.3, z: 0.5}
   _thrustThreshold: 0.05
+  _smoothTime: 0.4
   _rootRef: {fileID: 542104703}
 --- !u!1 &556370871
 GameObject:
@@ -7911,6 +7912,7 @@ MonoBehaviour:
   _positionAmplitude: {x: 0.01, y: 0.01, z: 0.02}
   _rotationAmplitude: {x: 0.5, y: 0.3, z: 0.5}
   _thrustThreshold: 0.05
+  _smoothTime: 1.5
   _rootRef: {fileID: 1531988025}
 --- !u!1 &1074490788
 GameObject:

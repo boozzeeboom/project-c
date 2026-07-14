@@ -4419,6 +4419,7 @@ MonoBehaviour:
   _expConfig: {fileID: 11400000, guid: ee825697bef37224f9f6ea0153cf442e, type: 2}
   _sourceMapConfig: {fileID: 11400000, guid: b5db92f42aa69f44b855fc0f7c75b90a, type: 2}
   _debugConfig: {fileID: 11400000, guid: fc24e92a28b539d4ab7efe0da7b90121, type: 2}
+  _healthConfig: {fileID: 0}
 --- !u!1 &302907655
 GameObject:
   m_ObjectHideFlags: 0
@@ -18303,7 +18304,7 @@ MonoBehaviour:
   CurrentWindSpeed: 79.49
   _interpolationSpeed: 0.05
   _logWindChanges: 0
-  _shipWindMultiplier: 1
+  _shipWindMultiplier: 10
   _characterWindMultiplier: 0.01
 --- !u!4 &1471737522
 Transform:

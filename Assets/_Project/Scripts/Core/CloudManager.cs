@@ -15,6 +15,8 @@ namespace ProjectC.Core
         public float UpperMinCloudSize = 80f;
         public float UpperMaxCloudSize = 150f;
         public float UpperSizeRandomCoeff = 0.3f;
+        [Tooltip("✦ BILLBOARD MODE: When true, clouds use camera-facing quads instead of 3D spheres. Eliminates the onion-layer (soap bubble) effect. Ideal for Upper layer where parallax is imperceptible.")]
+        public bool UpperUseBillboardQuad = true;
         [Tooltip("Per-layer material override. If null, falls back to CloudMaterial below. Use this to give each layer a distinct look (e.g. wispy cirrus up top, dense stratus below).")]
         public Material UpperCloudMaterial;
 
@@ -103,6 +105,7 @@ namespace ProjectC.Core
                 UpperLayer.MinCloudSize = UpperMinCloudSize;
                 UpperLayer.MaxCloudSize = UpperMaxCloudSize;
                 UpperLayer.SizeRandomCoefficient = UpperSizeRandomCoeff;
+                UpperLayer.UseBillboardQuad = UpperUseBillboardQuad;
                 UpperLayer.Initialize();
                 UpperLayer.Generate(playerPos);
             }

@@ -33,6 +33,10 @@ namespace ProjectC.Core
         [Header("Mesh Variants")]
         public MeshEntry[] MeshEntries;
 
+        [Header("Billboard Mode")]
+        [Tooltip("When checked, default mesh is a camera-facing quad (billboard) instead of a sphere. Eliminates the 'soap bubble' onion-layer effect by removing 3D volume.")]
+        public bool UseBillboardQuad = false;
+
         [Header("Debug Logging")]
         public bool logInitialization = false;
 
@@ -217,6 +221,14 @@ namespace ProjectC.Core
         {
             if (_currentCount == 0) return;
 
+            // ✦ BILLBOARD MODE: reorient quads to face camera each frame
+            Vector3 camPos = Vector3.zero;
+            if (UseBillboardQuad)
+            {
+                var cam = Camera.main;
+                if (cam != null) camPos = cam.transform.position;
+            }
+
             for (int m = 0; m < _meshCount; m++)
             {
                 int count = 0;
@@ -226,7 +238,21 @@ namespace ProjectC.Core
                 {
                     if (_clouds[i].MeshIndex == m)
                     {
-                        matrices[count++] = _clouds[i].Matrix;
+                        Matrix4x4 mat = _clouds[i].Matrix;
+                        if (UseBillboardQuad)
+                        {
+                            // Rebuild matrix with camera-facing rotation
+                            Vector3 pos = mat.GetColumn(3);
+                            Vector3 scale = _clouds[i].Scale;
+                            Vector3 toCam = (camPos - pos).normalized;
+                            // Ignore vertical for billboard: keep quad upright
+                            toCam.y = 0f;
+                            if (toCam.sqrMagnitude < 0.0001f) toCam = Vector3.forward;
+                            toCam.Normalize();
+                            Quaternion billRot = Quaternion.LookRotation(toCam, Vector3.up);
+                            mat = Matrix4x4.TRS(pos, billRot, scale);
+                        }
+                        matrices[count++] = mat;
                     }
                 }
 
@@ -251,12 +277,23 @@ namespace ProjectC.Core
 
         private Mesh CreateDefaultMesh()
         {
-            var go = GameObject.CreatePrimitive(PrimitiveType.Sphere);
-            var mesh = Instantiate(go.GetComponent<MeshFilter>().sharedMesh);
-            mesh.name = "CloudMesh";
+            Mesh mesh;
+            if (UseBillboardQuad)
+            {
+                var go = GameObject.CreatePrimitive(PrimitiveType.Quad);
+                mesh = Instantiate(go.GetComponent<MeshFilter>().sharedMesh);
+                mesh.name = "CloudBillboardQuad";
+                Destroy(go);
+            }
+            else
+            {
+                var go = GameObject.CreatePrimitive(PrimitiveType.Sphere);
+                mesh = Instantiate(go.GetComponent<MeshFilter>().sharedMesh);
+                mesh.name = "CloudMeshSphere";
+                Destroy(go);
+            }
             Bounds b = new Bounds(Vector3.zero, new Vector3(20000, 20000, 20000));
             mesh.bounds = b;
-            Destroy(go);
             return mesh;
         }
 

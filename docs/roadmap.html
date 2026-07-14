@@ -1166,14 +1166,14 @@
     </div>
     <div class="license-footer">
       <p class="license-footer__text">
-        &copy; 2024-2026 leon7. Исходный код &mdash; <a href="https://github.com/boozzeeboom/project-c/blob/main/LICENSE" target="_blank">MIT</a> &middot;
-        Ассеты &mdash; <a href="https://creativecommons.org/licenses/by-nc-nd/4.0/" target="_blank">CC BY-NC-ND 4.0</a> &middot;
-        GDD &mdash; <a href="https://creativecommons.org/licenses/by-nc/4.0/" target="_blank">CC BY-NC 4.0</a>
+        &copy; 2024-2026 Малков Леонид Андреевич. Исходный код &mdash; <a href="https://github.com/boozzeeboom/project-c/blob/main/LICENSE" target="_blank">MIT</a> &middot;
+        Ассеты &mdash; All Rights Reserved &middot;
+        GDD и документация &mdash; All Rights Reserved
       </p>
       <div class="license-footer__badges">
         <span class="license-badge">&copy; Код: MIT</span>
-        <span class="license-badge">&copy; CC BY-NC-ND</span>
-        <span class="license-badge">&copy; GDD: CC BY-NC</span>
+        <span class="license-badge">&copy; Assets: ARR</span>
+        <span class="license-badge">&copy; GDD: ARR</span>
       </div>
     </div>
   </footer>
@@ -1239,6 +1239,8 @@ const VISUAL_SUBSYSTEMS = [
   'Окружение',
   'Облака (Ghibli-стиль)',
   'Визуальные улучшения',
+  'Визуальные задачи',
+  'Visual Tasks',
 ];
 
 function classifyTask(taskText, sectionTitle) {
@@ -1408,8 +1410,15 @@ function classifyTask(taskText, sectionTitle) {
         if (raw.startsWith('[')) continue;
         if (/^(Результат:|Версия:|⏳\s*Отложено)/.test(raw)) continue;
         if (/^\*\*/.test(raw)) continue;
+        /* Skip non-task lines: markdown links, stats, known-issues */
+        if (/^\[.+?\]\(.+?\)/.test(raw)) continue;
+        if (/^\+?\d+\s/.test(raw)) continue;
+        if (/^[🔴🟡🟢❌⬜]/.test(raw)) continue;
+        /* Only count lines with explicit task markers: ✅ ⏳ ⭐ */
         var isDone = raw.startsWith('✅');
         var isFuture = raw.startsWith('⏳');
+        var isStar = raw.startsWith('⭐');
+        if (!isDone && !isFuture && !isStar) continue;
         var cleanText = raw.replace(/^(✅|⏳)\s*/, '').replace(/^⭐\s*/, '').trim();
         if (!cleanText) continue;
         classifyAndPush(cleanText, isDone && !isFuture, subsystem, secTitle);
@@ -1618,8 +1627,15 @@ function classifyTask(taskText, sectionTitle) {
       var raw = m[1].trim();
       if (raw.startsWith('[')) continue;
       if (/^(Результат:|Версия:|⏳\s*Отложено)/.test(raw)) continue;
+      /* Skip non-task lines */
+      if (/^\[.+?\]\(.+?\)/.test(raw)) continue;
+      if (/^\+?\d+\s/.test(raw)) continue;
+      if (/^[🔴🟡🟢❌⬜]/.test(raw)) continue;
+      /* Only count lines with explicit task markers */
       var isDone = raw.startsWith('✅');
       var isFuture = raw.startsWith('⏳');
+      var isStar = raw.startsWith('⭐');
+      if (!isDone && !isFuture && !isStar) continue;
       var cleanText = raw.replace(/^(✅|⏳)\s*/, '').replace(/^⭐\s*/, '').trim();
       if (!cleanText) continue;
       allTasks.push({ text: cleanText, done: isDone && !isFuture, indent: 0 });

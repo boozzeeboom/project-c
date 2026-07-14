@@ -10364,6 +10364,7 @@ MonoBehaviour:
   MeshEntries:
   - Mesh: {fileID: 10207, guid: 0000000000000000e000000000000000, type: 0}
     Weight: 0
+  UseBillboardQuad: 0
   logInitialization: 0
   RotationX: {x: 360, y: 0}
   RotationY: {x: 0, y: 360}
@@ -11931,6 +11932,7 @@ MonoBehaviour:
   UpperMinCloudSize: 80
   UpperMaxCloudSize: 150
   UpperSizeRandomCoeff: 0.3
+  UpperUseBillboardQuad: 1
   UpperCloudMaterial: {fileID: 2100000, guid: c14586ce79d2bc54699674e55b7e5154, type: 2}
   MiddleLayer: {fileID: 1624092369}
   MiddleCount: 80
@@ -17110,11 +17112,12 @@ MonoBehaviour:
   CloudSize: 100
   CloudMaterial: {fileID: 2100000, guid: c14586ce79d2bc54699674e55b7e5154, type: 2}
   MinCloudSize: 50
-  MaxCloudSize: 150
-  SizeRandomCoefficient: 0.605
+  MaxCloudSize: 431.6
+  SizeRandomCoefficient: 2
   MeshEntries:
-  - Mesh: {fileID: 10206, guid: 0000000000000000e000000000000000, type: 0}
+  - Mesh: {fileID: 10207, guid: 0000000000000000e000000000000000, type: 0}
     Weight: 0
+  UseBillboardQuad: 1
   logInitialization: 0
   RotationX: {x: 0, y: 0}
   RotationY: {x: 0, y: 360}
@@ -20078,6 +20081,7 @@ MonoBehaviour:
   MeshEntries:
   - Mesh: {fileID: 10207, guid: 0000000000000000e000000000000000, type: 0}
     Weight: 0
+  UseBillboardQuad: 0
   logInitialization: 0
   RotationX: {x: 0, y: 0}
   RotationY: {x: 0, y: 360}

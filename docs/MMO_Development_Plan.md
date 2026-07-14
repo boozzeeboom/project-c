@@ -195,7 +195,6 @@
 - ✅ ⭐ Audio feedback infrastructure — готовы методы PlayClick/PlayError/Open/Close
 - ✅ Эмодзи устранены из TMP UI (📋📦⚡📝📢 → [Контракт] [Груз] [Срочный])
 - ✅ Оценка UI системы: 4.5/10 → 7/10 (+55%)
-- 📋 Подробные отчёты: `docs/QWEN-UI-AGENTIC-SUMMARY.md` (UI Спринты 1-3) + `docs/Character-menu/00_OVERVIEW.md` (CharacterWindow) + `docs/Character-menu/refactor_log_2026-06-05.md` (visual fix)
 
 ### 1.7.1 Docking Stations (MVP) ✅ ЗАВЕРШЕНО (2026-06-20)
 
@@ -1256,116 +1255,295 @@
 
 ---
 
-## Мини-игры CloudTrader (docs/Fun/index.html)
+## 🎨 Визуальные задачи (Visual Tasks)
 
-**Версия:** v1.1.11 | **Файл:** `docs/Fun/index.html` (~4,034 строк) | **Стек:** Чистый HTML/JS/CSS, Canvas API, Google Fonts
+Полный перечень визуального контента, необходимого для минимальной версии игры. Каждая «штука» требует набора компонентов: 3D-модель, материал(ы), текстура(ы), VFX, анимация.
 
-> В рамках прототипирования MMO "Project C: The Clouds" параллельно разработана полноценная standalone HTML-игра **CloudTrader** — trading/adventure в стиле Ghibli над облаками. Цель: накопить **50,000 CR** через торговлю, контракты и управление кораблём.
+**Прогресс:** ~11% (36/332)
 
-### Системы мини-игр
+---
 
-| # | Система | Описание |
-|---|---------|----------|
-| 1 | **Торговля** | 34 товара, динамические цены (спрос/предложение), 6 городов, 5% налог на продажу |
-| 2 | **Корабли** | 4 класса (Шлюпка→Карго-лайнер), модули C/B/A/S-tier (груз/скорость) |
-| 3 | **Топливо и прочность** | Ремонт, заправка, деградация при полёте |
-| 4 | **Контракты** | Доставка груза, награда × расстояние, долг при провале |
-| 5 | **Контрабанда** | 5 запрещённых товаров, 13% шанс ареста |
-| 6 | **Бар** | 15 ветвящихся сценариев (кости, драки, чёрный рынок, истории) |
-| 7 | **Тюрьма** | 10 сценариев, 3 исхода (освобождение/побег/смерть) |
-| 8 | **Пираты** | Top-down shooter на Canvas (800×600), волны врагов, boss fights |
-| 9 | **Случайные события** | 10 ивентов (штормы, дефицит, рейды, караваны) |
-| 10 | **День/ночь** | 4 фазы, CSS-переходы, молнии ночью |
-| 11 | **Владение портами** | Апгрейд городов (1-10 ур.), пассивный доход, скидка на топливо |
-| 12 | **Журнал** | Последние 10 событий, полный log |
+### 🚢 Корабли игрока (4 класса × 5 компонентов = 20)
 
-### Пиратский Комбат (подробно)
+#### Light Ship
+- [ ] 3D-модель (FBX, 5-8k tri)
+- [ ] Материалы (корпус, стекло, emissive)
+- [ ] Текстуры (Albedo, Normal, Emissive, AO)
+- [ ] VFX (антиграв-свечение двигателей)
+- [ ] Анимация (ветровые лопасти)
 
-**Механика:**
-- Trigger: 13% базовый + 2% за каждую единицу расстояния
-- Boss chance: 5% при distance ≥ 4
-- Countdown: 5-4-3-2-1 перед боем
-- Враги спавнятся сверху (y: -50 to -100) и летят к игроку
+#### Medium Ship
+- [ ] 3D-модель (FBX, 8-12k tri)
+- [ ] Материалы (корпус, окна, emissive)
+- [ ] Текстуры (Albedo, Normal, Emissive, AO)
+- [ ] VFX (антиграв-свечение)
+- [ ] Анимация (ветровые лопасти)
 
-**Управление:**
-| Платформа | Движение | Прицеливание | Стрельба |
-|-----------|----------|--------------|----------|
-| PC | WASD / Стрелки | Мышь | Клик / Пробел |
-| Mobile | D-pad кнопки | Drag по aim-зоне | Автовыстрел при aim |
+#### Heavy Ship
+- [ ] 3D-модель (FBX, 12-18k tri)
+- [ ] Материалы (корпус, окна, emissive, детали)
+- [ ] Текстуры (Albedo, Normal, Emissive, AO)
+- [ ] VFX (антиграв-свечение, выхлоп)
+- [ ] Анимация (ветровые лопасти)
 
-**Враги:**
-- Обычные: 2 HP, 0.8-2.0 speed, 1.8s shoot interval
-- Boss: 10 HP, 1.2 speed, 0.8s shoot interval, ×5 награда
+#### Heavy-II Ship
+- [x] 3D-модель (FBX, 15-20k tri) — NPC_Ship_HeavyII_03.prefab
+- [ ] Материалы (корпус, окна, emissive)
+- [ ] Текстуры (Albedo, Normal, Emissive, AO)
+- [ ] VFX (антиграв-свечение, выхлоп)
+- [ ] Анимация (ветровые лопасти)
 
-**Награда:** `50 + score` CR при победе
+---
 
-### Архитектура
+### 🚢 Корабли NPC (4 фракции × 3 компонента = 12)
 
-```
-docs/Fun/index.html (4,034 строк)
-├── HTML/CSS (~300 строк)
-│   ├── CSS Variables (Ghibli palette)
-│   ├── Mobile responsive
-│   └── All screens/menus
-├── Game State (~100 строк init)
-│   └── state object (credits, cargo, ship, cities, etc.)
-├── Core Loop (~200 строк)
-│   ├── update() — tick system
-│   ├── renderMap() — Canvas sky/clouds/cities
-│   └── renderAll() — UI sync
-├── Trading System (~300 строк)
-│   ├── buyItem() / sellItem()
-│   ├── calculatePrice()
-│   └── MarketState per city
-├── Ship System (~200 строк)
-│   ├── refuel() / repair()
-│   ├── upgradeShip() / equipModule()
-│   └── travel() with damage calculation
-├── Events (~150 строк)
-│   ├── triggerRandomEvent()
-│   ├── 10 event handlers
-│   └── applyEventEffect()
-├── Bar System (~400 строк)
-│   └── 15 scenarios with choices
-├── Prison System (~350 строк)
-│   └── 10 scenarios, 3 outcomes
-├── Pirate Combat (~600 строк)
-│   ├── pirateGameLoop() — RAF
-│   ├── updatePirateCombat() — movement/shooting
-│   ├── renderPirateCombat() — Canvas draw
-│   ├── bindPirateControls() — PC + Mobile handlers
-│   └── enemy AI (chase + shoot)
-└── Utils (~200 строк)
-    ├── localStorage save/load
-    ├── notify() — toast messages
-    └── logEvent()
-```
+#### Trader Ship
+- [ ] 3D-модель (FBX)
+- [ ] Материалы
+- [ ] Текстуры
 
-### Что реализовано
+#### Pirate Ship
+- [ ] 3D-модель (FBX)
+- [ ] Материалы
+- [ ] Текстуры
 
-- ✅ Полный торговый цикл (6 городов, 34 товара, динамика)
-- ✅ 4 корабли + 8 модулей
-- ✅ Система топлива/урон/ремонт
-- ✅ Контракты с долгами
-- ✅ Контрабанда + тюрьма
-- ✅ Бар (15 сценариев)
-- ✅ Пиратский комбат (PC + Mobile)
-- ✅ Случайные события (10)
-- ✅ День/ночь с молниями
-- ✅ 6 городов с уникальным товарами
-- ✅ Порты с апгрейдом (1-10)
-- ✅ Журнал событий
-- ✅ localStorage save/load
-- ✅ Mobile D-pad controls
-- ✅ v1.1.11 version tag
+#### Guard Ship
+- [ ] 3D-модель (FBX)
+- [ ] Материалы
+- [ ] Текстуры
 
-### Ключевые решения
+#### Cultist Ship
+- [ ] 3D-модель (FBX)
+- [ ] Материалы
+- [ ] Текстуры
 
-- **Single HTML file** — zero dependencies, portable
-- **Canvas API** — map + combat (no WebGL)
-- **CSS Variables** — theming + day/night cycle
-- **Mobile-first responsive** — D-pad + aim zone for touch
-- **Ghibli palette** — cream/amber/soft-cyan/purple
+---
+
+### 🏙 Города (5 городов, ~31 задача)
+
+#### Primus
+- [ ] 3D-модели зданий (5 типов: жилое, торговое, административное, док, храм)
+- [ ] Материалы (кирпич, металл, стекло, дерево)
+- [ ] Текстуры (Albedo, Normal)
+- [ ] Платформы и мосты (модели + материалы)
+- [ ] Визуальные детали (флаги, огни, трубы)
+
+#### Tertius
+- [ ] 3D-модели зданий (5 типов)
+- [ ] Материалы
+- [ ] Текстуры
+- [ ] Платформы и мосты
+- [ ] Визуальные детали
+
+#### Quartus
+- [ ] 3D-модели зданий (4 типа)
+- [ ] Материалы
+- [ ] Текстуры
+- [ ] Платформа
+- [ ] Визуальные детали
+
+#### Kilimanjaro
+- [ ] 3D-модели зданий (4 типа)
+- [ ] Материалы
+- [ ] Текстуры
+- [ ] Платформа
+- [ ] Визуальные детали
+
+#### Secundus
+- [ ] 3D-модели зданий (3 типа)
+- [ ] Материалы
+- [ ] Текстуры
+- [ ] Док
+- [ ] Визуальные детали
+
+---
+
+### 🌍 Окружение (6 задач)
+
+- [x] Облака (3 слоя: Upper/Middle/Lower) — шейдер CloudGhibli, генерация, движение
+- [ ] Skybox (материал + шейдер, закатный градиент)
+- [ ] Террасы и фермы (модели + материалы)
+- [x] Фоновые пики (ProceduralNoiseGenerator, IslandMaterial)
+- [ ] Дальние платформы (модели + материалы)
+- [ ] Завеса (VeilRaymarch.shader + VFX)
+
+---
+
+### 👤 Персонаж игрока (84 задачи)
+
+#### Базовая модель
+- [x] 3D-модель (Mixamo FBX) — есть character_URP.mat
+- [ ] 4 базовые анимации (Idle, Walk, Run, Jump)
+- [x] Материал (character_URP.mat)
+- [ ] Текстуры персонажа (Albedo, Normal, Emissive)
+
+#### Боевые анимации (21 тип)
+- [ ] Melee: LightAttack01, LightAttack02, HeavyAttack, ComboFinisher
+- [ ] Ranged: Shoot_Bow, Shoot_Crossbow, Shoot_Rifle, Reload
+- [ ] Throw: Throw_Grenade, Throw_Knife
+- [ ] Magic/Skills: Cast_01..Cast_04
+- [ ] Defensive: Block, Dodge, Parry, Roll
+- [ ] Stun, Death, GetUp
+
+#### VFX навыков (21 скилл × cast + impact = 42)
+- [x] VFX Impact_Melee — PF_VFX_Impact_Melee.prefab
+- [x] VFX Impact_Explosion — PF_VFX_Impact_Explosion.prefab
+- [x] VFX MuzzleFlash_Basic — PF_VFX_MuzzleFlash_Basic.prefab
+- [x] VFX Projectile_Arrow — PF_VFX_Projectile_Arrow.prefab
+- [ ] VFX Cast_Heal, Cast_Buff, Cast_Shield
+- [ ] VFX Slash, Pierce, Crush
+- [ ] VFX Fire, Ice, Lightning
+- [ ] VFX Poison, Bleed, Vampire
+- [ ] VFX Silence, Stun, Fear
+- [ ] VFX Teleport, Invisibility, Slow
+- [ ] VFX AOE: Explosion, Shockwave, HolyGround
+
+#### Кастомизация (8 задач)
+- [ ] 6 пресетов тела (Default, Athletic, Heavy, Slim, Elder, Young) — 3D-модели
+- [ ] 2 причёски (Bald, Short) — 3D-модели
+- [ ] Текстуры кожи (3 тона)
+- [ ] Текстуры волос (3 цвета)
+- [ ] UI preview для пресетов
+- [ ] UI preview для причёсок
+- [ ] Color picker UI
+- [ ] Синхронизация кастомизации по сети (через NetworkPlayer)
+
+#### Equipment Visual (8 слотов)
+- [ ] Weapon — 3D-модели (меч, топор, булава, кинжал, лук, арбалет, ружьё)
+- [ ] Shield — модель щита
+- [ ] Helmet — модель шлема
+- [ ] Chest — модель нагрудника
+- [ ] Shoulders — модель наплечников
+- [ ] Gloves — модель перчаток
+- [ ] Boots — модель сапог
+- [ ] Belt — модель пояса
+
+---
+
+### ⚔ Оружие и броня (24 задачи)
+
+#### Melee (4 × 2 = 8)
+- [ ] Sword: модель + материал
+- [ ] Axe: модель + материал
+- [ ] Mace: модель + материал
+- [ ] Dagger: модель + материал
+
+#### Ranged (4 × 2 = 8)
+- [ ] Bow: модель + материал
+- [ ] Crossbow: модель + материал
+- [ ] Pneumatic Rifle: модель + материал
+- [ ] Mesium Rifle: модель + материал
+
+#### Throwables (2 × 3 = 6)
+- [ ] Grenade Basic: модель + материал + VFX взрыва
+- [ ] Grenade Antigrav: модель + материал + VFX взрыва
+
+#### Armor Sets (5 сетов)
+- [ ] Light armor set
+- [ ] Medium armor set
+- [ ] Heavy armor set
+- [ ] Merchant armor set
+- [ ] Cultist armor set
+
+---
+
+### 👾 Враги (4 фракции × 6 = 24)
+
+#### Goblin
+- [x] 3D-модель (Npc_Goblin.prefab)
+- [x] Материал (Npc_Goblin)
+- [x] Анимации placeholder (Idle, Walk, Run, Attack, Death)
+- [ ] VFX спавна
+- [ ] VFX смерти
+- [ ] Оружие гоблина (модель)
+
+#### Bandit
+- [ ] 3D-модель
+- [ ] Материал
+- [ ] Анимации (Idle, Walk, Run, Attack, Death)
+- [ ] VFX спавна
+- [ ] VFX смерти
+- [ ] Оружие бандита
+
+#### Pirate
+- [ ] 3D-модель
+- [ ] Материал
+- [ ] Анимации (Idle, Walk, Run, Attack, Death)
+- [ ] VFX спавна
+- [ ] VFX смерти
+- [ ] Оружие пирата
+
+#### Cultist
+- [ ] 3D-модель
+- [ ] Материал
+- [ ] Анимации (Idle, Walk, Run, Attack, Death)
+- [ ] VFX спавна
+- [ ] VFX смерти
+- [ ] Оружие культиста
+
+---
+
+### ✨ VFX и частицы (12 задач)
+
+- [ ] Ship Light — антиграв-свечение (Particle System)
+- [ ] Ship Medium — антиграв-свечение
+- [ ] Ship Heavy — антиграв-свечение
+- [ ] Ship Heavy-II — антиграв-свечение
+- [x] Молнии Завесы (VeilRaymarch.shader + VeilRaymarchMesh.shader)
+- [ ] Пыль при беге по платформе
+- [ ] Дождь (Particle System)
+- [ ] Посадка/взлёт корабля (облако пыли/пара)
+- [ ] God rays — лучи сквозь облака (Fake или URP Volume)
+- [ ] Ветер (трава, флаги) — Shader Graph
+- [ ] Огоньки в городах (ночью)
+- [ ] Пар/дым из труб зданий
+
+---
+
+### 🔮 Кастомные шейдеры (6 задач)
+
+- [x] CloudGhibli.shader — облака (noise + rim glow + vertex displacement)
+- [ ] URP Character shader — персонаж (Mixamo + skin)
+- [ ] URP Ship shader — корабль (металл, свечение)
+- [ ] Water/Ocean shader — вода/Завеса
+- [ ] Building shader — здания (градиент, детали)
+- [ ] Holographic shader — голографические элементы
+- [ ] Terrain shader — террасы, фермы
+
+---
+
+### 🎛 Пост-процессинг (URP Volume, 7 задач)
+
+- [ ] Bloom (Threshold: 0.8, Intensity: 0.5)
+- [ ] Tonemapping (Mode: ACE)
+- [ ] Vignette (Intensity: 0.2)
+- [ ] Film Grain (Intensity: 0.05)
+- [ ] Chromatic Aberration (Intensity: 0.03)
+- [ ] Color Grading (Temperature, Tint)
+- [ ] Fog (Exponential, цвет Завесы)
+
+---
+
+### 🖼 UI иконки (~80 задач)
+
+- [ ] Иконки ресурсов (34 товара: древесина, металл, мезий, еда и т.д.)
+- [ ] Иконки навыков (27 скиллов)
+- [ ] Иконки оружия (9 видов)
+- [ ] Иконки брони (5 сетов)
+- [ ] Иконки расходников (зелья, гранаты, патроны)
+- [ ] Иконки квестов (5 типов)
+- [ ] Иконки фракций (5 гильдий)
+- [ ] UI спрайты: кнопки, панели, фоны
+- [ ] UI спрайты: рамки предметов (по редкости)
+- [ ] UI спрайты: портреты NPC (4 фракции)
+- [ ] UI спрайты: миникарта, компас
+- [ ] UI спрайты: загрузочные экраны (5 городов)
+
+---
+
+## Мини-игра CloudTrader ✅
+
+В рамках прототипирования разработана standalone HTML-игра **CloudTrader** (v1.1.11) — `docs/Fun/index.html`. Полный цикл: торговля, корабли, контракты, контрабанда, пиратский комбат. Реализовано.
 
 ---
 

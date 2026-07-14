@@ -12,9 +12,10 @@ namespace ProjectC.Ship.Engine
     /// Алгоритм:
     ///   1. Читает CurrentThrust / CurrentYaw из ShipInputReader (работает когда локальный игрок — пилот).
     ///   2. Вращает _propeller вокруг _rotationAxis пропорционально thrust.
-    ///   3. Отклоняет transform.localRotation по Y пропорционально yaw.
+    ///   3. Отклоняет _pivotTransform (или transform) по Y пропорционально yaw.
     ///   4. При _maxDeflectionAngle = 0 — отклонение отключено.
     ///   5. При _maxRpm = 0 — вращение отключено.
+    ///   6. _pivotTransform задаёт точку вращения (дочерний объект в точке крепления).
     /// </summary>
     public class EngineThrusterVisual : MonoBehaviour
     {
@@ -34,6 +35,10 @@ namespace ProjectC.Ship.Engine
 
         [Tooltip("Плавность следования отклонения (сек).")]
         [SerializeField] private float _deflectionSmoothTime = 0.3f;
+
+        [Tooltip("Точка вращения двигателя (дочерний Transform). Если null — вращается сам слот. "
+               + "Размести Pivot в точке крепления двигателя к кораблю.")]
+        [SerializeField] private Transform _pivotTransform;
 
         [Header("Dependencies")]
         [Tooltip("ShipRootReference на этой или родительской части корабля. Авто-поиск если null.")]
@@ -99,7 +104,9 @@ namespace ProjectC.Ship.Engine
             {
                 float targetAngle = yawNorm * _maxDeflectionAngle;
                 _currentAngle = Mathf.SmoothDamp(_currentAngle, targetAngle, ref _angleVelocity, _deflectionSmoothTime);
-                transform.localRotation = Quaternion.Euler(0f, _currentAngle, 0f);
+
+                Transform deflectionTarget = _pivotTransform != null ? _pivotTransform : transform;
+                deflectionTarget.localRotation = Quaternion.Euler(0f, _currentAngle, 0f);
             }
         }
 

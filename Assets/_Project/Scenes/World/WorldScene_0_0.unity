@@ -1599,6 +1599,7 @@ Transform:
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children:
+  - {fileID: 362608641}
   - {fileID: 1110956426}
   m_Father: {fileID: 1054724403}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
@@ -2696,12 +2697,12 @@ Transform:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 362608640}
   serializedVersion: 2
-  m_LocalRotation: {x: 0.7071068, y: 0, z: 0, w: 0.7071068}
-  m_LocalPosition: {x: -0.72, y: 0, z: -7.88}
+  m_LocalRotation: {x: 0.7071068, y: -0, z: -0, w: 0.7071068}
+  m_LocalPosition: {x: -1.13875, y: 0, z: -16.831375}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []
-  m_Father: {fileID: 1054724403}
+  m_Father: {fileID: 191522081}
   m_LocalEulerAnglesHint: {x: 90, y: 0, z: 0}
 --- !u!136 &362608642
 CapsuleCollider:
@@ -7753,7 +7754,6 @@ Transform:
   m_LocalScale: {x: 0.16666667, y: 1.1111112, z: 0.083333336}
   m_ConstrainProportionsScale: 0
   m_Children:
-  - {fileID: 362608641}
   - {fileID: 191522081}
   m_Father: {fileID: 1531988013}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
@@ -7788,7 +7788,8 @@ MonoBehaviour:
   _rotationAxis: {x: 0, y: 0, z: 1}
   _maxDeflectionAngle: 40
   _deflectionSmoothTime: 0.3
-  _pivotTransform: {fileID: 191522081}
+  _pivotOffset: {x: 0.42, y: 0, z: 8.95}
+  _visualRoot: {fileID: 191522081}
   _rootRef: {fileID: 1531988025}
 --- !u!1 &1074490788
 GameObject:
@@ -9618,7 +9619,8 @@ MonoBehaviour:
   _rotationAxis: {x: 0, y: 0, z: 1}
   _maxDeflectionAngle: 40
   _deflectionSmoothTime: 0.3
-  _pivotTransform: {fileID: 651685326}
+  _pivotOffset: {x: 0, y: 0, z: 0}
+  _visualRoot: {fileID: 651685326}
   _rootRef: {fileID: 1531988025}
 --- !u!1 &1282638022
 GameObject:

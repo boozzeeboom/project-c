@@ -1,5 +1,14 @@
 # Итерации — sub_inventory-tab
 
+## Итерация от 2026-07-05
+
+**Задача:** fix NRE при сериализации InventoryItemDto (itemName=null для Key-предметов)
+**Коммит:** `81bf170` — T-INV05: fix NRE при сериализации InventoryItemDto (itemName=null для Key-предметов)
+**Изменения:**
+- `Assets/_Project/Items/Dto/InventoryItemDto.cs` — null-safe string serialization
+- `Assets/_Project/Items/Core/InventoryWorld.cs` — itemName для Key-слотов
+- `docs/Character/Character-menu/sub_inventory-tab/bugfix_null_itemname_crash.md` — баг-репорт
+
 ## Итерация от 2026-07-02
 
 **Задача:** Добавить кнопку «БРОСИТЬ» в CharacterWindow → вкладка «Инвентарь» (аналог drop-btn из TAB-колеса).

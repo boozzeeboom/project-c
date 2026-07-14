@@ -1075,8 +1075,8 @@ namespace ProjectC.Player
                 // COMPOSITE SHIP (Phase 1): отпарентить от корабля
                 transform.SetParent(null);
 
-                // Включаем управление — игрок снова может ходить
-                _controller.enabled = true;
+                // Включаем управление — игрок снова может ходить и использовать скиллы
+                SetInputEnabled(true);
 
                 // Снимаем пилота (себя)
                 _currentShip.RemovePilot(OwnerClientId);
@@ -1095,10 +1095,11 @@ namespace ProjectC.Player
                 _inShip = true;
 
                 // COMPOSITE SHIP (Phase 1): игрок НЕ пропадает.
-                // _controller отключается чтобы не мог ходить во время пилотирования.
+                // SetInputEnabled(false) отключает и движение (CharacterController),
+                // и скиллы (SkillInputService), и весь ввод (Update возвращает early).
                 // Renderer'ы остаются включены — игрок стоит в кресле/у штурвала.
                 // В будущем — анимация сидения.
-                _controller.enabled = false;
+                SetInputEnabled(false);
 
                 // Moving-platform carry: сбрасываем опору, чтобы после выхода из корабля
                 // не было скачка от устаревшей дельты платформы.

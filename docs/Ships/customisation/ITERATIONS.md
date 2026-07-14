@@ -1,5 +1,27 @@
 # Итерации реализации — Engine Visual System
 
+## Итерация от 2026-07-21
+
+**Задача:** T-SHIP-SHAKE — визуальный дребезг частей корабля при тяге (W/S)
+**Коммит:** `49621a8` — T-SHIP-SHAKE: ShipPartShake — визуальный дребезг частей корабля при тяге (W/S)
+**Изменения:**
+- `Assets/_Project/Scripts/Ship/ShipPartShake.cs` — новый компонент (дребезг визуала через AnimationCurve)
+- `docs/Ships/customisation/SHIP_PART_SHAKE.md` — документация
+
+**Что сделано:**
+1. `ShipPartShake` — MonoBehaviour, вешается на любой визуал корабля
+2. Читает `ShipInputReader.CurrentThrust` (abs) через `ShipRootReference`
+3. AnimationCurve для настройки формы колебаний (по умолчанию синусоида)
+4. Раздельные амплитуды позиции (Vector3) и вращения (Vector3, градусы)
+5. Порог `_thrustThreshold` для фильтрации мёртвой зоны
+6. `OnDisable()` сбрасывает трансформ к базовым значениям
+
+**Проверки:**
+- 0 ошибок компиляции ✅
+- `ShipController.cs` без изменений ✅
+
+---
+
 ## Итерация от 2026-07-14
 
 **Задача:** T-ENG02 — Engine Visual System (этапы 1-2 + настройка сцены)

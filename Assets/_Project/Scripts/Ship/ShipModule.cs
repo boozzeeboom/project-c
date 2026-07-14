@@ -11,7 +11,8 @@ namespace ProjectC.Ship
     {
         Propulsion,   // Движение (yaw, pitch, lift enhancement)
         Utility,      // Утилиты (roll, veil, stealth)
-        Special       // Специальные (auto-dock, auto-nav, space)
+        Special,      // Специальные (auto-dock, auto-nav, space)
+        Engine        // Визуальные двигатели (T-ENG02)
     }
 
     /// <summary>

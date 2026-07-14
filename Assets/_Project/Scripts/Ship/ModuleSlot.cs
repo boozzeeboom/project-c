@@ -9,7 +9,8 @@ namespace ProjectC.Ship
     {
         Propulsion,   // Слот для модулей движения
         Utility,      // Слот для утилит
-        Special       // Слот для специальных модулей
+        Special,      // Слот для специальных модулей
+        Engine        // Слот для визуальных двигателей (T-ENG02)
     }
 
     /// <summary>

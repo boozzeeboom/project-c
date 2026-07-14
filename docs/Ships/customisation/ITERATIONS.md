@@ -22,6 +22,34 @@
 
 ---
 
+## Итерация от 2026-07-21 (fix 1)
+
+**Задача:** T-SHIP-SHAKE — баг: плоская кривая → нулевая интенсивность
+**Коммит:** `8271a5a` — fix — плоская кривая по умолчанию заменена на синусоиду через EnsureSineCurve()
+
+**Проблема:** `_shakeCurve` инициализировался как `AnimationCurve.EaseInOut(0,0,1,0)` — два keyframe на y=0. `intensity = thrustNorm × curveValue = 0` всегда.
+
+**Решение:**
+- Поле по умолчанию → `null`
+- `EnsureSineCurve()` проверяет не только `length == 0`, но и амплитуду keyframe'ов: если все значения `|y| < 0.001` → замена на 5-keyframe синусоиду (±1)
+- Вызывается в `Start()` (runtime), `OnValidate()` (editor reload), `Reset()` (component reset)
+
+---
+
+## Итерация от 2026-07-21 (fix 2)
+
+**Задача:** T-SHIP-SHAKE — резкий старт/стоп дрожи при нажатии/отпускании W
+**Коммит:** `dda0f7e` — сглаживание thrust через SmoothDamp (_smoothTime)
+
+**Проблема:** `thrustNorm` менялся 0↔1 мгновенно → дрожь включалась/выключалась резко, кривая формы волны не помогала.
+
+**Решение:**
+- `Mathf.SmoothDamp(_smoothThrust, targetThrust, ref _smoothVelocity, _smoothTime)`
+- Новое поле `_smoothTime` (по умолчанию 0.4 сек) — настраиваемая плавность атаки/затухания
+- Интенсивность = `_smoothThrust × curveValue` (вместо сырого thrustNorm)
+
+---
+
 ## Итерация от 2026-07-14
 
 **Задача:** T-ENG02 — Engine Visual System (этапы 1-2 + настройка сцены)

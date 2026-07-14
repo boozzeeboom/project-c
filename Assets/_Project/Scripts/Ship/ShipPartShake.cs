@@ -20,7 +20,7 @@ namespace ProjectC.Ship
     {
         [Header("Shake Profile")]
         [Tooltip("Кривая формы колебаний. Ось X = фаза (0-1), ось Y = амплитуда (-1..1). По умолчанию синусоида.")]
-        [SerializeField] private AnimationCurve _shakeCurve = AnimationCurve.EaseInOut(0f, 0f, 1f, 0f);
+        [SerializeField] private AnimationCurve _shakeCurve;
 
         [Tooltip("Частота вибрации (Гц).")]
         [SerializeField] private float _frequency = 15f;
@@ -57,8 +57,7 @@ namespace ProjectC.Ship
             ResolveDependencies();
 
             // Если кривая не настроена — ставим дефолтную синусоиду
-            if (_shakeCurve == null || _shakeCurve.length == 0)
-                _shakeCurve = AnimationCurve.EaseInOut(0f, 0f, 1f, 0f);
+            EnsureSineCurve();
         }
 
         private void ResolveDependencies()
@@ -119,28 +118,47 @@ namespace ProjectC.Ship
             }
         }
 
+        /// <summary>
+        /// Проверяет что кривая задаёт реальные колебания (не плоская).
+        /// Если плоская — ставит синусоиду по умолчанию.
+        /// </summary>
+        private void EnsureSineCurve()
+        {
+            bool isFlat = _shakeCurve == null || _shakeCurve.length == 0;
+            if (!isFlat && _shakeCurve.length > 0)
+            {
+                float maxAbs = 0f;
+                for (int i = 0; i < _shakeCurve.length; i++)
+                    maxAbs = Mathf.Max(maxAbs, Mathf.Abs(_shakeCurve[i].value));
+                isFlat = maxAbs < 0.001f;
+            }
+
+            if (isFlat)
+            {
+                _shakeCurve = new AnimationCurve(
+                    new Keyframe(0f, 0f, 1.5708f, 1.5708f),     // sin(0)=0, cos(0)=1
+                    new Keyframe(0.25f, 1f, 0f, 0f),             // sin(π/2)=1
+                    new Keyframe(0.5f, 0f, -1.5708f, -1.5708f),  // sin(π)=0
+                    new Keyframe(0.75f, -1f, 0f, 0f),            // sin(3π/2)=-1
+                    new Keyframe(1f, 0f, 1.5708f, 1.5708f)       // sin(2π)=0
+                );
+            }
+        }
+
 #if UNITY_EDITOR
         private void OnValidate()
         {
             if (_rootRef == null)
                 _rootRef = GetComponentInParent<ShipRootReference>();
 
-            // Инициализация дефолтной кривой синусоиды если пустая
-            if (_shakeCurve == null || _shakeCurve.length == 0)
-            {
-                _shakeCurve = new AnimationCurve(
-                    new Keyframe(0f, 0f, 1.5708f, 1.5708f),   // sin(0) = 0, производная = cos(0) = 1
-                    new Keyframe(0.25f, 1f, 0f, 0f),           // sin(π/2) = 1
-                    new Keyframe(0.5f, 0f, -1.5708f, -1.5708f),// sin(π) = 0
-                    new Keyframe(0.75f, -1f, 0f, 0f),          // sin(3π/2) = -1
-                    new Keyframe(1f, 0f, 1.5708f, 1.5708f)     // sin(2π) = 0
-                );
-            }
+            EnsureSineCurve();
         }
 
         private void Reset()
         {
             _rootRef = GetComponentInParent<ShipRootReference>();
+            _shakeCurve = null;
+            EnsureSineCurve();
         }
 #endif
     }

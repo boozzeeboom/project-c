@@ -3827,6 +3827,7 @@ GameObject:
   - component: {fileID: 542104705}
   - component: {fileID: 542104704}
   - component: {fileID: 542104703}
+  - component: {fileID: 542104708}
   m_Layer: 0
   m_Name: Door
   m_TagString: Untagged
@@ -3960,6 +3961,47 @@ MeshFilter:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 542104701}
   m_Mesh: {fileID: 10202, guid: 0000000000000000e000000000000000, type: 0}
+--- !u!114 &542104708
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 542104701}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: ebb06e148c324e946ade8923d97931b6, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::ProjectC.Ship.ShipPartShake
+  _shakeCurve:
+    serializedVersion: 2
+    m_Curve:
+    - serializedVersion: 3
+      time: 0
+      value: 0
+      inSlope: 0
+      outSlope: 0
+      tangentMode: 0
+      weightedMode: 0
+      inWeight: 0
+      outWeight: 0
+    - serializedVersion: 3
+      time: 1
+      value: 0
+      inSlope: 0
+      outSlope: 0
+      tangentMode: 0
+      weightedMode: 0
+      inWeight: 0
+      outWeight: 0
+    m_PreInfinity: 2
+    m_PostInfinity: 2
+    m_RotationOrder: 4
+  _frequency: 150
+  _positionAmplitude: {x: 0.01, y: 0.01, z: 0.02}
+  _rotationAmplitude: {x: 0.5, y: 0.3, z: 0.5}
+  _thrustThreshold: 0.05
+  _rootRef: {fileID: 542104703}
 --- !u!1 &556370871
 GameObject:
   m_ObjectHideFlags: 0
@@ -7734,6 +7776,7 @@ GameObject:
   - component: {fileID: 1054724403}
   - component: {fileID: 1054724404}
   - component: {fileID: 1054724405}
+  - component: {fileID: 1054724406}
   m_Layer: 0
   m_Name: Slot_Engine_Right
   m_TagString: Untagged
@@ -7791,6 +7834,47 @@ MonoBehaviour:
   _deflectionSmoothTime: 0.3
   _pivotPoint: {fileID: 2070075316}
   _visuals: {fileID: 191522081}
+  _rootRef: {fileID: 1531988025}
+--- !u!114 &1054724406
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1054724402}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: ebb06e148c324e946ade8923d97931b6, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::ProjectC.Ship.ShipPartShake
+  _shakeCurve:
+    serializedVersion: 2
+    m_Curve:
+    - serializedVersion: 3
+      time: -0.006236434
+      value: -0.000361586
+      inSlope: 0.08712125
+      outSlope: 0.08712125
+      tangentMode: 0
+      weightedMode: 0
+      inWeight: 0
+      outWeight: 0.3308138
+    - serializedVersion: 3
+      time: 1
+      value: 0
+      inSlope: -0.059893657
+      outSlope: -0.059893657
+      tangentMode: 0
+      weightedMode: 0
+      inWeight: 0.693976
+      outWeight: 0
+    m_PreInfinity: 2
+    m_PostInfinity: 2
+    m_RotationOrder: 4
+  _frequency: 15
+  _positionAmplitude: {x: 0.01, y: 0.01, z: 0.02}
+  _rotationAmplitude: {x: 0.5, y: 0.3, z: 0.5}
+  _thrustThreshold: 0.05
   _rootRef: {fileID: 1531988025}
 --- !u!1 &1074490788
 GameObject:

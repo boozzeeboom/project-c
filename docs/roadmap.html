@@ -1396,32 +1396,48 @@ function classifyTask(taskText, sectionTitle) {
       var colonIdx2 = subsystem.indexOf(':');
       if (colonIdx2 > 0) subsystem = subsystem.substring(0, colonIdx2).trim() + ' — ' + subsystem.substring(colonIdx2 + 1).trim();
 
-      /* Extract tasks: checkbox items [x] / [ ] */
-      var checkboxRe = /^\s*-\s*\[([ x])\]\s*(.+)$/gm;
-      var m;
-      while ((m = checkboxRe.exec(secText)) !== null) {
-        classifyAndPush(m[2].trim(), m[1] === 'x', subsystem, secTitle);
-      }
+      /* For visual tasks section, track h3/h4 subheadings as separate groups */
+      var isVisualSection = secTitle.toLowerCase().includes('визуальные задачи') || secTitle.toLowerCase().includes('visual tasks');
+      var currentSubsystem = subsystem;
 
-      /* Extract bullet items (as sub-tasks) */
-      var bulletRe = /^\s*[-*]\s+(.+)$/gm;
-      while ((m = bulletRe.exec(secText)) !== null) {
-        var raw = m[1].trim();
-        if (raw.startsWith('[')) continue;
-        if (/^(Результат:|Версия:|⏳\s*Отложено)/.test(raw)) continue;
-        if (/^\*\*/.test(raw)) continue;
-        /* Skip non-task lines: markdown links, stats, known-issues */
-        if (/^\[.+?\]\(.+?\)/.test(raw)) continue;
-        if (/^\+?\d+\s/.test(raw)) continue;
-        if (/^[🔴🟡🟢❌⬜]/.test(raw)) continue;
-        /* Only count lines with explicit task markers: ✅ ⏳ ⭐ */
-        var isDone = raw.startsWith('✅');
-        var isFuture = raw.startsWith('⏳');
-        var isStar = raw.startsWith('⭐');
-        if (!isDone && !isFuture && !isStar) continue;
-        var cleanText = raw.replace(/^(✅|⏳)\s*/, '').replace(/^⭐\s*/, '').trim();
-        if (!cleanText) continue;
-        classifyAndPush(cleanText, isDone && !isFuture, subsystem, secTitle);
+      /* Process lines one by one to track subheadings */
+      for (var _li = 0; _li < sec.lines.length; _li++) {
+        var _line = sec.lines[_li];
+
+        /* Track h3/h4 subheadings in visual section */
+        if (isVisualSection && (_line.startsWith('### ') || _line.startsWith('#### '))) {
+          currentSubsystem = _line.replace(/^#{1,4}\s*/, '').replace(/\([\d\s×\+]+.*?\)/g, '').trim();
+          currentSubsystem = currentSubsystem.replace(/[\u{1F300}-\u{1FAFF}]/gu, '').trim(); /* remove emoji */
+          currentSubsystem = currentSubsystem.replace(/\s{2,}/g, ' ').trim();
+          if (!currentSubsystem) currentSubsystem = subsystem;
+          continue;
+        }
+
+        /* Checkbox items [x] / [ ] */
+        var _checkMatch = _line.match(/^\s*-\s*\[([ x])\]\s*(.+)$/);
+        if (_checkMatch) {
+          classifyAndPush(_checkMatch[2].trim(), _checkMatch[1] === 'x', currentSubsystem, secTitle);
+          continue;
+        }
+
+        /* Bullet items with markers (✅ ⏳ ⭐) */
+        var _bulletMatch = _line.match(/^\s*[-*]\s+(.+)$/);
+        if (_bulletMatch) {
+          var raw = _bulletMatch[1].trim();
+          if (raw.startsWith('[')) continue;
+          if (/^(Результат:|Версия:|⏳\s*Отложено)/.test(raw)) continue;
+          if (/^\*\*/.test(raw)) continue;
+          if (/^\[.+?\]\(.+?\)/.test(raw)) continue;
+          if (/^\+?\d+\s/.test(raw)) continue;
+          if (/^[🔴🟡🟢❌⬜]/.test(raw)) continue;
+          var isDone = raw.startsWith('✅');
+          var isFuture = raw.startsWith('⏳');
+          var isStar = raw.startsWith('⭐');
+          if (!isDone && !isFuture && !isStar) continue;
+          var cleanText = raw.replace(/^(✅|⏳)\s*/, '').replace(/^⭐\s*/, '').trim();
+          if (!cleanText) continue;
+          classifyAndPush(cleanText, isDone && !isFuture, currentSubsystem, secTitle);
+        }
       }
 
       /* NOTE: h3/h4 sub-headings are NOT parsed separately to avoid double-counting.

@@ -6,17 +6,18 @@ namespace ProjectC.Ship.Engine
     /// <summary>
     /// T-ENG02: EngineThrusterVisual — клиентский визуальный компонент двигателя.
     /// Размещается на ModuleSlot GameObject (тип Engine).
-    /// Использует ShipRootReference для доступа к ShipController и ShipInputReader.
-    /// Никаких RPC, никакой модификации Rigidbody. Client-side only.
+    ///
+    /// Как настроить:
+    ///   1. Создай дочерний GameObject "Visuals" под слотом.
+    ///   2. Под "Visuals" положи Body и Blade (_propeller).
+    ///   3. Назначь _pivotTransform = "Visuals".
+    ///   4. _pivotOffset (0,0,0) — подстрой если нужно сместить точку вращения.
     ///
     /// Иерархия:
-    ///   Slot_Engine (этот компонент)
-    ///   └── Visuals (_visualRoot — поворачивается кодом вокруг _pivotOffset)
-    ///       ├── Body (корпус)
-    ///       └── Blade (_propeller — вращается)
-    ///
-    /// Настройка pivot:
-    ///   _pivotOffset задаётся числом в инспекторе — двигать иерархию не нужно.
+    ///   Slot_Engine (этот компонент, НЕ вращается)
+    ///   └── Visuals (_pivotTransform — вращается вокруг своей позиции + _pivotOffset)
+    ///       ├── Body
+    ///       └── Blade (_propeller)
     /// </summary>
     public class EngineThrusterVisual : MonoBehaviour
     {
@@ -37,13 +38,13 @@ namespace ProjectC.Ship.Engine
         [Tooltip("Плавность следования отклонения (сек).")]
         [SerializeField] private float _deflectionSmoothTime = 0.3f;
 
-        [Tooltip("Точка вращения в локальных координатах слота. (0,0,0) = центр слота. "
-               + "Меняй число — двигать иерархию не нужно.")]
-        [SerializeField] private Vector3 _pivotOffset = Vector3.zero;
+        [Tooltip("Transform-контейнер визуалов (Body + Blade под ним). Вращается целиком. "
+               + "Перемести его = изменишь позицию визуалов И точку вращения.")]
+        [SerializeField] private Transform _pivotTransform;
 
-        [Tooltip("Transform-рут всех визуалов (корпус + блейд). Вращается вокруг _pivotOffset. "
-               + "Если null — вращается сам слот.")]
-        [SerializeField] private Transform _visualRoot;
+        [Tooltip("Дополнительное смещение точки вращения относительно позиции _pivotTransform. "
+               + "(0,0,0) = вращение вокруг центра _pivotTransform. Меняй число — визуалы не сдвинутся.")]
+        [SerializeField] private Vector3 _pivotOffset = Vector3.zero;
 
         [Header("Dependencies")]
         [Tooltip("ShipRootReference на этой или родительской части корабля. Авто-поиск если null.")]
@@ -59,14 +60,14 @@ namespace ProjectC.Ship.Engine
         private float _currentRpm;
         private float _rpmVelocity;
 
-        // Сохранённая базовая позиция/вращение visualRoot (до отклонения)
-        private Vector3 _visualRootBaseLocalPos;
-        private Quaternion _visualRootBaseLocalRot;
+        // Сохранённая базовая позиция/вращение pivotTransform (до отклонения)
+        private Vector3 _pivotBaseLocalPos;
+        private Quaternion _pivotBaseLocalRot;
 
         private void Start()
         {
             ResolveDependencies();
-            SaveVisualRootBase();
+            SavePivotBase();
         }
 
         private void ResolveDependencies()
@@ -82,16 +83,15 @@ namespace ProjectC.Ship.Engine
             }
 
             if (_shipController == null)
-                Debug.LogWarning($"[EngineThrusterVisual] '{name}': ShipController не найден через ShipRootReference. " +
-                    "Убедись, что ShipRootReference присутствует на корне корабля.", this);
+                Debug.LogWarning($"[EngineThrusterVisual] '{name}': ShipController не найден через ShipRootReference.", this);
         }
 
-        private void SaveVisualRootBase()
+        private void SavePivotBase()
         {
-            if (_visualRoot != null)
+            if (_pivotTransform != null)
             {
-                _visualRootBaseLocalPos = _visualRoot.localPosition;
-                _visualRootBaseLocalRot = _visualRoot.localRotation;
+                _pivotBaseLocalPos = _pivotTransform.localPosition;
+                _pivotBaseLocalRot = _pivotTransform.localRotation;
             }
         }
 
@@ -100,13 +100,11 @@ namespace ProjectC.Ship.Engine
             if (_shipController == null || _inputReader == null)
                 return;
 
-            // Двигатель должен быть запущен
             if (!_shipController.IsEngineRunning)
                 return;
 
-            // Читаем локальный ввод (работает когда локальный игрок — пилот)
-            float thrustNorm = Mathf.Abs(_inputReader.CurrentThrust); // 0..1
-            float yawNorm = _inputReader.CurrentYaw;                  // -1..1
+            float thrustNorm = Mathf.Abs(_inputReader.CurrentThrust);
+            float yawNorm = _inputReader.CurrentYaw;
 
             // --- Propeller rotation ---
             if (_maxRpm != 0f && _propeller != null)
@@ -126,17 +124,13 @@ namespace ProjectC.Ship.Engine
 
                 Quaternion rot = Quaternion.Euler(0f, _currentAngle, 0f);
 
-                if (_visualRoot != null)
+                if (_pivotTransform != null)
                 {
-                    // Вращаем visualRoot вокруг _pivotOffset
-                    Vector3 offset = _visualRootBaseLocalPos - _pivotOffset;
-                    _visualRoot.localPosition = _pivotOffset + rot * offset;
-                    _visualRoot.localRotation = _visualRootBaseLocalRot * rot;
-                }
-                else
-                {
-                    // Fallback: вращаем сам слот
-                    transform.localRotation = rot;
+                    // Точка вращения = базовая позиция pivot + _pivotOffset
+                    Vector3 rotationCenter = _pivotBaseLocalPos + _pivotOffset;
+                    Vector3 offset = _pivotBaseLocalPos - rotationCenter;
+                    _pivotTransform.localPosition = rotationCenter + rot * offset;
+                    _pivotTransform.localRotation = _pivotBaseLocalRot * rot;
                 }
             }
         }

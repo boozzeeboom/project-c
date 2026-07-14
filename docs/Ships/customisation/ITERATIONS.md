@@ -31,3 +31,18 @@
 - `BootstrapScene` не тронут ✅
 - `ShipController.cs` без изменений ✅
 - 0 ошибок компиляции ✅
+
+---
+
+## Итерация от 2026-07-14 (fix)
+
+**Задача:** T-ENG02 — исправление: ShipInputReader + Slot_Engine_Left + постмортем
+**Коммит:** `c00f766` — T-ENG02: фикс — ShipInputReader на корабль + Slot_Engine_Left + постмортем
+**Изменения:**
+- `Assets/_Project/Scenes/World/WorldScene_0_0.unity` — ShipInputReader добавлен, Slot_Engine_Left пересоздан
+- `docs/Ships/customisation/T-ENG01_ShipEngineVisual_PostMortem.md` — корневая причина исправлена
+
+**Причины неработоспособности визуала:**
+1. `ShipInputReader` отсутствовал на `Ship_Light_root` — `EngineThrusterVisual._inputReader` был null
+2. `Slot_Engine_Left` пропал (сцена не сохранилась в прошлый раз)
+3. Постмортем T-ENG01 неверно указывал GlobalObjectIdHash как корневую причину — реальная: модуль с множителями 0

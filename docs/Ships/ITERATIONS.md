@@ -101,3 +101,37 @@ REPLACE
 | MarketServer | RequestUnloadFromShipRpc | TradeResultCode.NotOwner |
 
 **Итог:** +~40 строк, 4 ownership guard'а. Без циклических зависимостей.
+
+---
+
+## Итерация от 2026-07-14 (T-ENG02 — анализ engine visual)
+
+**Задача:** Глубокий анализ подсистем для проектирования modular engine visual. Предотвращение повторения ошибок T-ENG01.
+
+**Файл:** `docs/Ships/customisation/02_ENGINE_VISUAL_ANALYSIS_AND_PLAN.md`
+
+**Анализ (8 подсистем):**
+| Подсистема | Статус | Вывод |
+|---|---|---|
+| SlotType / ModuleType enums | ✅ Есть, нужно добавить Engine | Добавить в конец обоих (позиция 3) |
+| ShipModule (SO) visual поля | ✅ Уже есть (visualPrefab, offsets, attachAxis) | Использовать как есть |
+| ShipModuleVisualApplier (L1) | ✅ Уже есть (196 строк, спавн/уничтожение) | Автоматически заспавнит prefab на Engine-слоте |
+| ShipController thrust chain | ✅ Работает, server-authoritative | Читать через ShipInputReader, НЕ через ShipController |
+| ShipInputReader | 🟡 Нет публичных геттеров | Добавить ThrustNormalized / YawNormalized |
+| ShipTelemetryState | 🟡 Нет thrustNormalized | Опционально, отдельным тикетом |
+| EngineThrusterVisual | ❌ Новый компонент | Создать, client-side only, без Rigidbody |
+| BootstrapScene | 🚫 НЕ ТРОГАТЬ | Залочена. Вся работа — в WorldScene. |
+
+**Главные изменения:**
+- Создан `02_ENGINE_VISUAL_ANALYSIS_AND_PLAN.md` (308 строк) — полный анализ архитектуры
+- Определён паттерн: `EngineThrusterVisual` на `ModuleSlot` → `ShipRootReference` → `ShipInputReader` (read-only)
+- Правило: НЕ модифицировать Transform/Rigidbody/RPC в EngineThrusterVisual
+- Правило: НЕ трогать BootstrapScene
+- Определён чеклист проверки (14 пунктов)
+
+**Решение по архитектуре (ticket-based):**
+- T-ENG02a: SlotType.Engine + ModuleType.Engine (enums)
+- T-ENG02b: ShipInputReader публичные геттеры
+- T-ENG02c: EngineThrusterVisual компонент
+- T-ENG02d: ShipTelemetryState.thrustNormalized (опционально)
+- T-ENG02e: Настройка в сцене (WorldScene_0_0)

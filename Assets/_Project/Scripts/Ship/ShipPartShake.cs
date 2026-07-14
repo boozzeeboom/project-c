@@ -35,6 +35,9 @@ namespace ProjectC.Ship
         [Range(0f, 1f)]
         [SerializeField] private float _thrustThreshold = 0.05f;
 
+        [Tooltip("Время сглаживания атаки/затухания (сек). Чтобы дрожь нарастала и спадала плавно.")]
+        [SerializeField] private float _smoothTime = 0.4f;
+
         [Header("Dependencies")]
         [Tooltip("ShipRootReference на этой или родительской части корабля. Авто-поиск если null.")]
         [SerializeField] private ShipRootReference _rootRef;
@@ -49,6 +52,10 @@ namespace ProjectC.Ship
 
         // Текущая фаза синусоиды (накапливается)
         private float _phase;
+
+        // Сглаженное значение thrust (attack/release)
+        private float _smoothThrust;
+        private float _smoothVelocity;
 
         private void Start()
         {
@@ -84,9 +91,12 @@ namespace ProjectC.Ship
             if (!_shipController.IsEngineRunning)
                 return;
 
-            float thrustNorm = Mathf.Abs(_inputReader.CurrentThrust);
+            float targetThrust = Mathf.Abs(_inputReader.CurrentThrust);
 
-            if (thrustNorm < _thrustThreshold)
+            // Сглаживаем thrust для плавной атаки/затухания
+            _smoothThrust = Mathf.SmoothDamp(_smoothThrust, targetThrust, ref _smoothVelocity, _smoothTime);
+
+            if (_smoothThrust < _thrustThreshold)
                 return;
 
             // Накапливаем фазу
@@ -97,7 +107,7 @@ namespace ProjectC.Ship
             float curveValue = _shakeCurve.Evaluate(phase01);
 
             // Масштабируем на thrust и амплитуды
-            float intensity = thrustNorm * curveValue;
+            float intensity = _smoothThrust * curveValue;
 
             // Позиционное смещение
             Vector3 posOffset = Vector3.Scale(_positionAmplitude, new Vector3(intensity, intensity, intensity));

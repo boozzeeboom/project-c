@@ -40,7 +40,19 @@ namespace ProjectC.Items.Dto
             serializer.SerializeValue(ref quantity);
             serializer.SerializeValue(ref slotIndex);
             serializer.SerializeValue(ref instanceId);
-            serializer.SerializeValue(ref itemName);
+
+            // R2-fix: null-safe string serialization (FastBufferWriter не терпит null)
+            bool hasName = !string.IsNullOrEmpty(itemName);
+            serializer.SerializeValue(ref hasName);
+            if (hasName)
+            {
+                if (serializer.IsReader) itemName = string.Empty;
+                serializer.SerializeValue(ref itemName);
+            }
+            else
+            {
+                if (serializer.IsReader) itemName = null;
+            }
         }
 
         public bool Equals(InventoryItemDto other)

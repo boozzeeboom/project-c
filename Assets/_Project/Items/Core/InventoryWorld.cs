@@ -776,6 +776,10 @@ namespace ProjectC.Items
                     for (int ki = 0; ki < keyCount; ki++)
                     {
                         var slot = data.GetKeySlotAt(ki);
+                        // R2-fix: itemName для Key-предметов (null крашит сериализацию)
+                        string keyName = null;
+                        if (_itemDatabase.TryGetValue(slot.itemId, out var keyDef))
+                            keyName = keyDef.itemName;
                         items.Add(new InventoryItemDto
                         {
                             itemId     = slot.itemId,
@@ -783,6 +787,7 @@ namespace ProjectC.Items
                             quantity   = 1,
                             slotIndex  = slotIndex++,
                             instanceId = slot.instanceId,
+                            itemName   = keyName ?? $"Key#{slot.itemId}",
                         });
                     }
                     Debug.Log($"[InventoryWorld.BuildSnapshot] Key type: added {keyCount} slots");

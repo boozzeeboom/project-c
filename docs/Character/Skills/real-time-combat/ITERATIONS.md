@@ -3,12 +3,13 @@
 ## Итерация от 2026-07-31 (#6)
 
 **Задача:** Отключение атак при посадке в кресло пилота — замена `_controller.enabled` на `SetInputEnabled`
-**Коммит:** `63628fd` — T-CB09
+**Коммиты:** `63628fd` (initial), `814b6fc` (fix) — T-CB09
 
 **Изменения:**
 - `Assets/_Project/Scripts/Player/NetworkPlayer.cs`:
-  - `SubmitSwitchModeRpc` посадка: `SetInputEnabled(false)` вместо `_controller.enabled = false`
-  - `SubmitSwitchModeRpc` выход: `SetInputEnabled(true)` вместо `_controller.enabled = true`
+  - `SubmitSwitchModeRpc` посадка: `_controller.enabled = false` + `SkillInputService.enabled = false`
+  - `SubmitSwitchModeRpc` выход: `_controller.enabled = true` + `SkillInputService.enabled = true`
+  - F (выход), T (диспетчер), управление кораблём — продолжают работать
 - `docs/Character/Skills/real-time-combat/ITERATIONS.md` — запись #5, #6
 
 ## Итерация от 2026-07-31 (#5)

@@ -141,6 +141,11 @@ namespace ProjectC.Skills
         public int treeY;
 
         // === T-INP-02: Active vs Passive ===
+        [Header("Self Damage")]
+        [Tooltip("Если включено — скилл может наносить урон самому кастеру (например, взрывчатка). " +
+                 "По умолчанию ВЫКЛ — атакующий исключается из AOE-списка целей.")]
+        [SerializeField] private bool _allowSelfDamage = false;
+
         [Header("Active vs Passive (T-INP-02)")]
         [Tooltip("Active = биндится на слот (Primary/Secondary/Slot1..4), триггерит анимацию, может иметь AOE. " +
                  "Passive = даёт статы / unlock'и через SkillEffect, невидим в skill bar, не bindable, всегда \"работает\".")]
@@ -264,6 +269,8 @@ namespace ProjectC.Skills
         [Range(4, 60)] public int twoDFps = 12;
 
         // === Public read-only API ===
+
+        public bool AllowSelfDamage => _allowSelfDamage;
 
         public float LearnXpCost => _learnXpCost;
         public int RequiredStrengthTier => _requiredStrengthTier;

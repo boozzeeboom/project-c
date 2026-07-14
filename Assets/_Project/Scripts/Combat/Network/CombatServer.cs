@@ -190,6 +190,13 @@ namespace ProjectC.Combat
             if (!target.IsAlive()) { SendErrorToClient(attackerId, "AlreadyDead"); return; }
             if (!attacker.IsAlive()) return;
 
+            // Self-damage guard: basic attacks should never hit the attacker.
+            if (targetId == attackerId)
+            {
+                if (_debugLog) Debug.LogWarning($"[CombatServer] ResolveAttack: attacker {attackerId} targeted self — blocked.");
+                return;
+            }
+
             var source = attacker.GetDamageSource(sourceId);
             if (source == null) { SendErrorToClient(attackerId, "InvalidSource"); return; }
 
@@ -462,7 +469,8 @@ namespace ProjectC.Combat
             {
                 CollectAoeTargetsFromRegistry(aoeOrigin, forward,
                     skillConfig.aoeFormula, skillConfig.aoeSize, skillConfig.aoeConeAngleDeg, skillConfig.aoeWidth,
-                    results, hitPoints);
+                    results, hitPoints,
+                    attackerId, skillConfig.AllowSelfDamage);
             }
 
             if (results.Count == 0)
@@ -587,7 +595,8 @@ namespace ProjectC.Combat
             Vector3 origin, Vector3 forward,
             ProjectC.Skills.AoeFormula formula, float size, float coneAngleDeg, float width,
             System.Collections.Generic.List<ProjectC.Combat.Core.IDamageTarget> outResults,
-            System.Collections.Generic.List<Vector3> outHitPoints)
+            System.Collections.Generic.List<Vector3> outHitPoints,
+            ulong attackerId = 0, bool allowSelfDamage = false)
         {
             var seen = new HashSet<ulong>();
             int totalChecked = 0, aliveCount = 0, inRangeCount = 0;
@@ -598,6 +607,10 @@ namespace ProjectC.Combat
                 totalChecked++;
                 if (!target.IsAlive()) continue;
                 aliveCount++;
+
+                // Self-damage filter: skip the attacker unless the skill explicitly allows self-damage.
+                if (!allowSelfDamage && attackerId != 0 && target.GetTargetId() == attackerId)
+                    continue;
 
                 Vector3 targetPos = target.GetPosition();
                 Vector3 toTarget = targetPos - origin;

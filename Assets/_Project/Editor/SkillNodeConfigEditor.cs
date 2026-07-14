@@ -57,6 +57,9 @@ namespace ProjectC.Editor.Skills
         private SerializedProperty _isActive;
         private SerializedProperty _cooldownSeconds;
 
+        // Self Damage
+        private SerializedProperty _allowSelfDamage;
+
         // Animation
         private SerializedProperty _attackClip;
         private SerializedProperty _attackClipSpeed;
@@ -147,6 +150,8 @@ namespace ProjectC.Editor.Skills
 
             _isActive = serializedObject.FindProperty("isActive");
             _cooldownSeconds = serializedObject.FindProperty("cooldownSeconds");
+
+            _allowSelfDamage = serializedObject.FindProperty("_allowSelfDamage");
 
             _attackClip = serializedObject.FindProperty("attackClip");
             _attackClipSpeed = serializedObject.FindProperty("attackClipSpeed");
@@ -249,6 +254,13 @@ namespace ProjectC.Editor.Skills
                 EditorGUILayout.LabelField("Active vs Passive", EditorStyles.boldLabel);
                 EditorGUILayout.PropertyField(_isActive);
                 EditorGUILayout.PropertyField(_cooldownSeconds);
+
+                if (_isActive.boolValue)
+                {
+                    EditorGUILayout.PropertyField(_allowSelfDamage, new GUIContent("Allow Self Damage",
+                        "Если включено — скилл может наносить урон самому кастеру (например, взрывчатка). " +
+                        "По умолчанию ВЫКЛ — атакующий исключается из AOE-списка целей."));
+                }
 
                 // AOE + Animation (only for Active skills)
                 if (_isActive.boolValue)

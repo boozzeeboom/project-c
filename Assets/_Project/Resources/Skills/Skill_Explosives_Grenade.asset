@@ -33,6 +33,7 @@ MonoBehaviour:
   _requiredIntelligenceTier: 0
   treeX: 50
   treeY: 400
+  _allowSelfDamage: 1
   isActive: 1
   cooldownSeconds: 0.5
   attackClip: {fileID: 0}

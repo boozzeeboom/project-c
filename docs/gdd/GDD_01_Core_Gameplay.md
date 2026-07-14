@@ -1,7 +1,7 @@
 # GDD-01: Core Gameplay & Controls — Project C: The Clouds
 
-**Версия:** 1.1 | **Дата:** 10 июня 2026 г. (дизайн-контент без изменений с 6 апреля 2026 г.; добавлена §X «Реализация в коде») | **Статус:** ✅ Документировано + реализовано (CharacterWindow, NPC dialog, F-key key)
-**Автор:** Qwen Code (Game Studio: @game-designer + @gameplay-programmer) — дизайн, Mavis 2026-06-10 — раздел реализации
+**Версия:** 1.2 | **Дата:** 14 июля 2026 г. | **Статус:** ✅ Документировано + реализовано (Combat MVP, SkillTree, Input rebinding, Customisation, Crafting)
+**Автор:** Малков Леонид Андреевич
 
 ---
 
@@ -44,7 +44,7 @@
 
 | Режим | Ощущение | Ключевые механики |
 |-------|----------|-------------------|
-| **Пеший** | Исследование, взаимодействие с миром | Ходьба, бег, прыжки, подбор, сундуки, NPC (future) |
+| **Пеший** | Исследование, взаимодействие с миром | Ходьба, бег, прыжки, подбор, сундуки, NPC диалоги |
 | **Корабль** | Свобода полёта, навигация в 3D | Антигравитация, тяга, тангаж, рыскание, лифт |
 | **Свободная камера** | Наблюдение, обход мира (dev) | Полёт в любом направлении, телепорт к пикам |
 
@@ -54,7 +54,7 @@
 
 ### 3.1 Пеший режим (Walking State)
 
-**Персонаж:** capsule [🔴 Запланировано: Mixamo модель]
+**Персонаж:** capsule (модель заменена на Mixamo-анимированную)
 **Камера:** ThirdPersonCamera, расстояние 5м, орбитальная
 
 **Физика движения:**
@@ -119,7 +119,12 @@
 | **F** | Сесть в корабль | radius < 5м | 🔴 Core |
 | **E** | Подобрать предмет / сундук | radius < 3м | 🔴 Core |
 | **Tab** | Круговой инвентарь | toggle | 🔴 Core |
-| **Escape** | Toggle Disconnect UI | toggle | 🟡 Network |
+| **P** | CharacterWindow (личный кабинет) | 5+ табов | 🔴 Core |
+| **Escape** | EscMenu (настройки, controls, выход) | overlay-пауза | 🔴 Core |
+| **R** | Target Lock (бой) | Lock-on врага | 🟡 Combat |
+| **Q / E** | Cycle targets prev/next (бой) | Перебор целей | 🟡 Combat |
+| **1-9** | Skill slots (бой) | Быстрые слоты навыков | 🟡 Combat |
+| **K** | SkillTree | Дерево навыков | 🟡 Core |
 
 ### Режим корабля
 
@@ -134,19 +139,20 @@
 | Мышь Y | Тангаж | pitchSpeed = 45°/s | 🔴 Core |
 | Left Shift | Буст (x2 тяга) | thrustMultiplier = 2.0 | 🟡 Core |
 | **F** | Выйти из корабля | height < 3м, speed < 1м/с | 🔴 Core |
-| **Escape** | Toggle Disconnect UI | toggle | 🟡 Network |
+| **Escape** | EscMenu (настройки, controls, выход) | overlay-пауза | 🔴 Core |
+| **P** | CharacterWindow (личный кабинет) | 5+ табов | 🔴 Core |
+| **R** | Target Lock (бой) | Lock-on врага | 🟡 Combat |
+| **K** | SkillTree | Дерево навыков | 🟡 Core |
 
 ### Зарезервированные клавиши (future)
 
 | Клавиша | Назначение | Этап |
 |---------|-----------|------|
-| I | Открыть инвентарь (полный) | Этап 3 |
-| C | Открыть чат | Этап 4 |
 | M | Открыть карту | Этап 4 |
-| J | Журнал квестов | Этап 4 |
-| 1-9 | Быстрые слоты | Этап 3 |
+| C | Открыть чат | Этап 4 |
 | Ctrl | Присесть | Этап 2.5 |
 | Right Shift | Прицеливание | Этап 3 |
+| F1 | Помощь / туториал | Future |
 
 ---
 
@@ -274,7 +280,7 @@
 
 ## X. Реализация в коде (дополнения 2026-06-05..09)
 
-> **Секция добавлена Mavis 2026-06-10.** Дизайн-контент (Core Loop, режимы, управление) остаётся в зоне game-designer'а. Здесь — **только статус реализации** F-boarding с ключом, CharacterWindow, NPC dialog.
+> **Секция добавлена Mavis 2026-06-10, обновлена 2026-07-14.** Дизайн-контент (Core Loop, режимы, управление) остаётся в зоне game-designer'а. Здесь — **статус реализации**: F-boarding, CharacterWindow, NPC dialog, Combat, Input rebinding, SkillTree, Customisation, Crafting.
 
 ### X.1 F-boarding с физическим ключом (R2-SHIP-KEY-001, 2026-06-06)
 
@@ -301,64 +307,174 @@
 
 ---
 
-### X.4 Real-Time Combat System (T-RTC, 2026-06-25..28)
+### X.4 Real-Time Combat System (T-RTC, 2026-06-25..28, updated 2026-07-14)
 
-**Новое:** Полноценная real-time боевая система для пешего режима: DamageCalculator с формулами, AOE, raycast-прицеливание.
+**Статус:** ✅ MVP DONE. Реализован полный real-time combat pipeline: DamageCalculator (ERPR), TargetLockService, AOE-формулы, Damage Numbers, Projectile/Throw visuals.
 
-**Компоненты:**
+**Архитектура:**
+```
+Assets/_Project/Scripts/Combat/
+├── Core/          — IAcker, IDamageTarget, IDamageSource, IRangePolicy, DamageResult
+├── Implementations/ — MeleeRangePolicy, RangedRangePolicy, AoeRangePolicy,
+│                      PlayerAttacker, PlayerTarget, NpcAttacker, NpcTarget, WeaponDamageSource
+├── Client/        — TargetLockService, TargetHighlightService, DamageNumberService,
+│                      DamageNumberInstance, ProjectileVisual, ThrowArcVisual
+├── Config/        — CombatConfig, DamageNumberConfig
+├── Lookup/        — WeaponClassCatalog, ArmorClassCatalog, WeaponTechniqueCatalog
+├── Network/       — CombatServer, DamageResultDto
+└── DamageCalculator.cs — статический класс, server-authoritative
+```
 
-| Компонент | Файл | Назначение |
-|-----------|------|------------|
-| `DamageCalculator` | `Scripts/Combat/DamageCalculator.cs` | hit/miss/crit/armor/skills — 5 формул, server-authoritative |
-| `AOEHelper` | `Scripts/Combat/AOEHelper.cs` | 5 формул AOE: sphere, box, capsule, cone, radial |
-| `CombatTargeting` | `Scripts/Combat/CombatTargeting.cs` | Raycast-прицеливание по R-клавише, подсветка цели |
-| `WeaponCatalog` (SO) | `Data/Combat/WeaponCatalog.asset` | SO-каталог оружия (damage, range, attackSpeed) |
-| `ArmorCatalog` (SO) | `Data/Combat/ArmorCatalog.asset` | SO-каталог брони (armor, weight, slot) |
-| `TechniqueCatalog` (SO) | `Data/Combat/TechniqueCatalog.asset` | SO-каталог техник (skillType, damage, cooldown) |
+**DamageCalculator (ERPR формула):**
+```
+final = max(0, (1dN + base + STR) × locMult × critMult × skillMult) − effectiveDefense
+```
+- `locMult = 1.0` (отключён в real-time per 2.17)
+- `critMult = 2.0` если (1d100 + critMod) ≥ 100, иначе 1.0
+- `skillMult = 1.0` (навыки opt-in, после T-CB01..T-CB09)
+- `effectiveDefense = armorDefense × typeMultiplier` (Physical/Ballistic=1.0, Antigrav=0.5, Explosive=0.7, Mesium=0.0)
+- HitChance через `IRangePolicy.CalculateHitChance()` — melee (высокий) / ranged (средний)
 
-**DamageCalculator формулы:**
-- **Hit:** `(attacker.dex + weapon.accuracy) vs (defender.agi + armor.evasion)` — если roll > threshold, miss
-- **Crit:** `(attacker.luck + weapon.critChance) * 0.01` — double damage on roll
-- **Base damage:** `weapon.damage + (attacker.str * 0.5)` — flat damage before armor
-- **Armor reduction:** `max(1, damage - armor.rating * 0.3)` — flat DR с min 1
-- **Skill modifier:** `damage * skillModifier.multiplier` — через SkillModifier chain
+**AOE формулы (AoeRangePolicy):**
+- `SphereDamage(Vector3 origin, float radius, float damage)` — сфера
+- `BoxDamage(Vector3 center, Vector3 halfExtents, float damage)` — параллелепипед
+- `CapsuleDamage(Vector3 start, Vector3 end, float radius, float damage)` — капсула
+- `ConeDamage(Vector3 origin, Vector3 direction, float angle, float maxDistance, float damage)` — конус
+- `RadialDamage(Vector3 origin, float innerRadius, float outerRadius, float innerDamage, float outerDamage)` — радиальное затухание
+
+**TargetLockService (клиент):**
+- `R` — Lock-on: ищет ближайшего IDamageTarget в радиусе, фиксирует
+- `Q` / `E` — Cycle targets: перебор целей по расстоянию / углу экрана
+- Client-only singleton, создаётся в NetworkManagerController
+
+**TargetHighlightService (клиент):**
+- Подсветка цели материалом M_TargetOutline
+- Auto-expire через configurable duration
+
+**DamageNumberService (клиент):**
+- World Space Damage Numbers (UI World Canvas)
+- Цвета по типу урона (Physical=white, Critical=red, Miss=gray)
+
+**Ranged/Throw Visuals:**
+- `ProjectileVisual` — для ranged оружия (летит от стрелка к цели)
+- `ThrowArcVisual` — для гранат/метательного оружия (баллистическая траектория)
 
 **Key design decisions:**
-- `DamageCalculator` — **server-authoritative**, damage deal через NetworkRPC
-- `AOEHelper` — pure C#, 5 формул, no Unity dependencies, используется и сервером и клиентом
-- `CombatTargeting` — рейкаст с камеры, подсветка цели через outline-эффект, R-переключение цели
+- `DamageCalculator` — **server-authoritative**, все броски кубов на сервере
+- `CombatServer` — обработка атак, применение урона через NetworkVariable
+- Не требует GDD_25 — вся реализация документирована в `docs/Character/Skills/real-time-combat/`
 
-**Документация:** `docs/Character/Skills/20_IMPLEMENTATION.md` §2.
+### X.5 Input System — Rebinding (Phase 1-2.3, 2026-06-25..26, updated 2026-07-14)
 
-### X.5 Input System — Rebinding (Phase 1-2.5, 2026-06-25..26)
+**Статус:** ✅ Phase 2.3 DONE. Полноценная система переназначения клавиш: InputBindingsConfig SO, InputBindingsRuntime с PlayerPrefs persistence, EscMenuWindow, InputRebindingPanel/SkillBindingWindow.
 
-**Новое:** Полноценная система переназначения клавиш: EscMenu, rebinding UI, save/load/reset.
+**Архитектура:**
 
 | Компонент | Файл | Назначение |
 |-----------|------|------------|
-| `InputBindingsConfig` (SO) | `Data/Input/InputBindingsConfig.asset` | 31 биндинг: move/action/combat/UI |
-| `EscMenuWindow` | `Scripts/UI/EscMenuWindow.cs` | Overlay-пауза, кнопки Settings/Controls/Quit |
-| `InputRebindingPanel` | `Scripts/UI/InputRebindingPanel.cs` | Listen → Assign → Save/Reset workflow |
-| `PlayerPrefsInputRepository` | `Scripts/Player/PlayerPrefsInputRepository.cs` | Сериализация override → PlayerPrefs |
-| `DefaultInputRestorer` | `Scripts/Player/DefaultInputRestorer.cs` | Сброс на заводские defaults |
+| `InputBindingsConfig` (SO) | `Assets/_Project/Scripts/Input/InputBindingsConfig.cs` | 31+ binding: move/action/combat/UI. Редактируется дизайнером |
+| `InputBindingsRuntime` | `Assets/_Project/Scripts/Input/InputBindingsRuntime.cs` | Runtime singleton: rebind + PlayerPrefs persistence (Save/Load/ResetToDefaults) |
+| `EscMenuWindow` | `Assets/_Project/Scripts/UI/EscMenu/EscMenuWindow.cs` | Overlay-пауза + AudioSettings/GameplaySettings/GraphicsSettings секции |
+| `RebindPromptWindow` | `Assets/_Project/Scripts/UI/Settings/RebindPromptWindow.cs` | Listen → Assign → Save workflow |
+| `SkillBindingWindow` | `Assets/_Project/Scripts/UI/Settings/SkillBindingWindow.cs` | Биндинг скиллов (1-9 слоты) |
 
-**Поток:** Escape → EscMenu → Settings/Controls → InputRebindingPanel → Listen-нажатие → Assign → Save → Apply
+**Поток:** Escape → EscMenu → Controls → RebindPromptWindow → Listen-нажатие → Assign → Save → Apply
+
+**PlayerPrefs Persistence:**
+- `InputBindingsRuntime.Save()` — сериализует текущие бинды в JSON → `PlayerPrefs.SetString(PREFS_KEY)`
+- `InputBindingsRuntime.Load()` — читает из PlayerPrefs, восстанавливает
+- `InputBindingsRuntime.ResetToDefaults()` — копирует DefaultConfig (загруженный из Resources) в runtime config → Save
+- Ключ PlayerPrefs: `"InputBindingsRuntime_Overrides"`
 
 **Key decisions:**
-- `InputBindingsConfig` SO как центральный реестр (31 binding) → редактируется дизайнером
-- `PlayerPrefsInputRepository` для persistence (JSON string)
-- `DefaultInputRestorer` не удаляет SO, а сбрасывает override в PlayerPrefs
+- `InputBindingsConfig` SO как центральный реестр (~31 binding) → редактируется дизайнером
+- `InputBindingsRuntime` объединяет rebind + persistence (нет отдельных PlayerPrefsInputRepository/DefaultInputRestorer)
+- Phase 1.5: чтение клавиш напрямую через Keyboard.current.* (хардкод в NetworkPlayer.Update)
+- Phase 2.x: InputAction events + rebind UI
+- Все настройки (audio/graphics/controls/gameplay) — в EscMenuWindow через отдельные Section-компоненты
+
+### X.6 SkillTree (K-key, T-P11, 2026-06-29..07-05)
+
+**Статус:** ✅ DONE. Полное дерево навыков: SkillTreeWindow, SkillsServer, SkillsConfig, 27+ SkillNodeConfig.
+
+**Архитектура:**
+```
+Assets/_Project/Scripts/Skills/
+├── SkillNodeConfig.cs        — SO одного узла (category, discipline, effects, costs, cycle detection)
+├── SkillsConfig.cs           — SO со списком всех узлов
+├── SkillsWorld.cs            — Server-side skill state + progression
+├── SkillsServer.cs           — Network RPC: learn, refund, check
+├── SkillsClientState.cs      — Client-side snapshot
+├── SkillInputService.cs      — Skill activation (1-9 slots)
+├── SkillEffect.cs            — Эффекты навыков
+├── UI/SkillTreeWindow.cs     — UXML/USS окно дерева
+├── Vfx/                      — VFX сервис (ParticleSystem, пул объектов)
+└── Dto/SkillsDto.cs          — Data transfer objects
+```
+
+**Key design decisions:**
+- `SkillNodeConfig` SO — один узел = один SO, редактируется дизайнером
+- Prerequisites — через список ссылок на другие SkillNodeConfig (DFS cycle detection в OnValidate)
+- SkillCategory: Social/Combat. CombatDiscipline: Melee/Ranged/Defense/Placed
+- Server-authoritative: SkillsServer.Learn()/Refund() через RPC
+- Персистентность через SkillsSave
+
+### X.7 Character Customisation (T-CUS, 2026-07-05..14)
+
+**Статус:** ✅ DONE (Phase 1-3). Смена пола/внешности персонажа через CustomisationWindow.
+
+**Компоненты:**
+- `CustomisationWindow` (`Scripts/Customisation/UI/CustomisationWindow.cs`) — UI Toolkit overlay
+- `CustomisationClientState` — client-only state management
+- `CharacterCustomisationApplier` (`Scripts/Player/`) — применяет визуал на модель
+- `BodyPresetId`, `HairStyleId`, `CharacterBodyType` — enum-типы
+- `CustomisationSave` — persistence (JsonCharacterDataRepository)
+
+**Phases:**
+- **Phase 1 (L1):** body type (Male/Female) ✅
+- **Phase 2 (L3):** heightScale/widthScale sliders ✅
+- **Phase 3 (L4):** [🔴 Запланировано] skin/hair colors + clothing overrides
+- **Trigger:** кнопка "ИЗМЕНИТЬ ВНЕШНОСТЬ" в CharacterWindow header → Show()
+
+### X.8 Crafting System (T-CRAFT, 2026-07-10..14)
+
+**Статус:** ⏳ Stage 1 DONE. Базовая система крафта: станции, рецепты, прогресс, UI.
+
+**Компоненты:**
+```
+Assets/_Project/Scripts/Crafting/
+├── CraftingStation.cs        — MonoBehaviour на станции крафта (триггер зона)
+├── CraftingStationConfig.cs  — Конфиг станции (какие рецепты доступны)
+├── CraftingWorld.cs          — Server-side crafting state
+├── CraftingServer.cs         — Network RPC: start/cancel/complete
+├── CraftingClientState.cs    — Client-side snapshot
+├── CraftingProgressController.cs — Визуализация прогресса
+├── CraftingTimeService.cs    — Timer-сервис
+├── RecipeData.cs             — SO с рецептом (ингредиенты → результат, время)
+├── UI/CraftingWindow.cs      — UI Toolkit окно крафта
+└── Dto/                      — Data transfer objects
+```
+
+**Key design decisions:**
+- Server-authoritative: крафт идёт на сервере, клиент получает прогресс
+- Recipe-based: ингредиенты + время = результат
+- CraftingStation как триггер-зона в мире
 
 ---
 
-## 9. Acceptance Criteria (обновление 2026-06-30)
+## 9. Acceptance Criteria (обновление 2026-07-14)
 
 | # | Критерий | Как проверить | Статус |
 |---|----------|--------------|--------|
-| 17 | **Бой:** DamageCalculator считает hit/miss/crit/armor/skill | Запустить хост, выполнить атаку → консоль "Damage: X (hit/crit/miss)" | 🟢 DONE (T-RTC) |
-| 18 | **Бой:** AOEHelper 5 формул (sphere/box/capsule/cone/radial) | Через ExecuteCode: AOEHelper.SphereDamage(origin, radius, dmg) → список целей | 🟢 DONE (T-RTC) |
-| 19 | **Прицеливание:** R-клавиша → подсветка цели | Нажать R → outline на враге, повтор R → сброс | 🟢 DONE (T-RTC) |
-| 20 | **Input rebinding:** Escape → EscMenu → Controls → Listen → Assign → Save | В Play Mode: Esc → Controls → клик биндинга → новая клавиша → Save → Restart → проверка | 🟢 DONE (Phase 2.5) |
-| 21 | **EscMenu:** Settings (заглушка), Controls (rebinding), Quit | Открыть EscMenu → 3 кнопки работают | 🟢 DONE (Phase 1) |
+| 17 | **Бой:** DamageCalculator считает hit/miss/crit/armor | Host → атака → консоль "Damage: X (hit/crit/miss)" | 🟢 DONE (T-RTC) |
+| 18 | **Бой:** AOE 5 формул (sphere/box/capsule/cone/radial) | AoeRangePolicy — через код в хост-режиме | 🟢 DONE (T-RTC) |
+| 19 | **Target Lock:** R-клавиша lock-on, Q/E cycle | Нажать R → блокировка цели, Q/E → перебор | 🟢 DONE (T-LOCK) |
+| 20 | **Target Highlight:** outline на цели | R → подсветка M_TargetOutline, сброс при смене цели | 🟢 DONE (T-HIGHLIGHT) |
+| 21 | **Damage Numbers:** World Space урон | Атака → цифры урона над целью | 🟢 DONE (T-DNG-01) |
+| 22 | **Input rebinding:** Escape → Controls → Rebind → Save → Load | Esc → Controls → клик биндинга → новая клавиша → Save → Restart | 🟢 DONE (Phase 2.3) |
+| 23 | **EscMenu:** Settings (audio/graphics/gameplay), Controls (rebinding), Quit | Открыть EscMenu → 4 секции работают | 🟢 DONE (Phase 1-2) |
+| 24 | **SkillTree (K-key):** дерево навыков | K → SkillTreeWindow → узлы, тратят очки, подсветка | 🟢 DONE (T-P11) |
+| 25 | **Character Customisation:** P → кнопка "Изменить внешность" | P → кнопка → CustomisationWindow → пол/внешность | 🟢 DONE (T-CUS-06) |
+| 26 | **Crafting:** CraftingStation → CraftingWindow → создать предмет | Подойти к станции → окно крафта → рецепт → создать | 🟢 DONE (T-CRAFT) |
 
 **Связанные документы:** [GDD_INDEX.md](GDD_INDEX.md) | [CONTROLS.md](../CONTROLS.md) | [SHIP_SYSTEM_DOCUMENTATION.md](../SHIP_SYSTEM_DOCUMENTATION.md) | [`docs/Ships/Key-subsystem/00_OVERVIEW.md`](../Ships/Key-subsystem/00_OVERVIEW.md) | [`docs/NPC_quests/08_ROADMAP.md`](../NPC_quests/08_ROADMAP.md) | [`docs/Character-menu/00_OVERVIEW.md`](../Character-menu/00_OVERVIEW.md)

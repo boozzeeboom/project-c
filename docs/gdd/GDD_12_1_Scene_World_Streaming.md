@@ -1,8 +1,13 @@
 # GDD_12.1: Scene-Based World Streaming System
 
-**Статус:** ✅ Реализовано
-**Дата:** 1 мая 2026
-**Версия:** v0.0.17
+**Статус:** ⚠️ Код написан, но не развёрнут
+**Автор:** Малков Леонид Андреевич
+**Дата:** 14 июля 2026 г.
+**Версия:** v2.0
+
+---
+
+> ⚠️ **ВАЖНОЕ ПРИМЕЧАНИЕ:** Система Scene-Based World Streaming (24 сцены) **НЕ развёрнута**. Код компонентов (ClientSceneLoader, ServerSceneManager, SceneID, SceneRegistry) написан и существует в репозитории, но не подключён к BootstrapScene. Фокус проекта — единственная активная сцена **WorldScene_0_0**. См. раздел 6 для подробностей.
 
 ---
 
@@ -26,7 +31,7 @@ Z→3 │ 0_3  │ 1_3  │ 2_3  │ 3_3  │ 4_3  │ 5_3  │
 ```
 
 **Ключевые характеристики:**
-- **Всего сцен:** 24
+- **Всего сцен:** 24 (запланировано, развёрнута только WorldScene_0_0)
 - **Размер сцены:** 79,999 × 79,999 units
 - **Общий размер мира:** ~480,000 × ~320,000 units
 - **Именование:** `WorldScene_{GridX}_{GridZ}` (напр., `WorldScene_0_0`)
@@ -63,11 +68,13 @@ SceneID.FromWorldPosition(position)
 
 | Компонент | Файл | Назначение |
 |-----------|------|------------|
-| `ClientSceneLoader` | `Scripts/World/Scene/ClientSceneLoader.cs` | Основной клиентский загрузчик |
-| `ServerSceneManager` | `Scripts/World/Scene/ServerSceneManager.cs` | Серверное отслеживание позиций |
+| `ClientSceneLoader` | `Scripts/World/Scene/ClientSceneLoader.cs` | Основной клиентский загрузчик (40KB) |
+| `ServerSceneManager` | `Scripts/World/Scene/ServerSceneManager.cs` | Серверное отслеживание позиций (18KB) |
 | `SceneID` | `Scripts/World/Scene/SceneID.cs` | Структура координат сцены |
 | `SceneRegistry` | `Scripts/World/Scene/SceneRegistry.cs` | ScriptableObject с метаданными |
 | `WorldSceneManager` | `Scripts/World/WorldSceneManager.cs` | Центральный координатор |
+| `ScenePlacedObjectSpawner` | `Scripts/World/Scene/ScenePlacedObjectSpawner.cs` | Спавн scene-placed NetworkObject |
+| `SceneBoundNetworkObject` | `Scripts/World/Scene/SceneBoundNetworkObject.cs` | NetworkObject с привязкой к сцене |
 
 ### 3.1 ClientSceneLoader
 
@@ -122,7 +129,7 @@ ScriptableObject содержащий:
 
 ---
 
-## 5. Поток загрузки
+## 5. Поток загрузки (как спроектировано)
 
 ```
 1. Игрок пересекает границу сцены
@@ -141,32 +148,63 @@ ScriptableObject содержащий:
    - Проверка далёких сцен → выгрузка
 ```
 
+> **Примечание:** Данный поток **не активен** в текущей сборке. См. раздел 6.
+
 ---
 
-## 6. Конфигурация сцены
+## 6. Статус развёртывания ⚠️
+
+### Текущее состояние
+
+| Компонент | Статус |
+|-----------|--------|
+| WorldScene_0_0.unity | ✅ Активна, единственная загружаемая сцена |
+| WorldScene_{1-5}_{0-3}.unity | 🔴 Не созданы / не используются |
+| BootstrapScene | ❌ Scene streaming НЕ подключён |
+| ClientSceneLoader.cs | 📝 Код существует, не используется в рантайме |
+| ServerSceneManager.cs | 📝 Код существует, не используется в рантайме |
+| SceneRegistry (ScriptableObject) | 📝 Существует, не подключён |
+| FloatingOriginMP.cs | ✅ Активен (для WorldScene_0_0) |
+
+### Причина
+
+Текущий фокус проекта — разработка и тестирование контента на единственной сцене **WorldScene_0_0**. Полноценный Scene-Based World Streaming (24 сцены) запланирован на следующий этап разработки, когда контент будет готов к масштабированию.
+
+### План развёртывания
+
+1. Создание недостающих сцен WorldScene_{1-5}_{0-3}
+2. Подключение ClientSceneLoader к BootstrapScene
+3. Интеграция ServerSceneManager с NetworkManagerController
+4. Тестирование переходов между сценами
+5. Оптимизация Time-to-Travel между сценами
+
+---
+
+## 7. Конфигурация сцены
 
 **Расположение:** `Assets/_Project/Scenes/World/`
 
 **Именование:** `WorldScene_{GridX}_{GridZ}.unity`
 
 **Примеры:**
-- `WorldScene_0_0.unity` — колонка 0, ряд 0
-- `WorldScene_2_3.unity` — колонка 2, ряд 3
-- `WorldScene_5_3.unity` — последняя сцена
+- `WorldScene_0_0.unity` — ✅ Единственная активная сцена
+- `WorldScene_2_3.unity` — 🔴 Не создана
+- `WorldScene_5_3.unity` — 🔴 Не создана
 
 ---
 
-## 7. Известные ограничения
+## 8. Известные ограничения
 
 | # | Ограничение | Приоритет | План |
 |---|-------------|-----------|------|
-| 1 | Визуальная задержка загрузки чанков в новых сценах | P2 | Оптимизация LOD и пулинг объектов |
-| 2 | Коррекция позиции отключена (threshold=99999) | P2 | Полноценная реализация для мультиплеера |
-| 3 | Y спавна = 3000 (для тестирования) | P3 | Вернуть к нормальному значению (Y≈3) |
+| 1 | System not deployed (24 scenes) | P0 | Следующий этап |
+| 2 | Визуальная задержка загрузки чанков в новых сценах | P2 | Оптимизация LOD и пулинг объектов |
+| 3 | Коррекция позиции отключена (threshold=99999) | P2 | Полноценная реализация для мультиплеера |
+| 4 | Y спавна = 3000 (для тестирования) | P3 | Вернуть к нормальному значению (Y≈3) |
 
 ---
 
-## 8. Тестирование
+## 9. Тестирование (когда развёрнуто)
 
 1. Launch as Host в Unity
 2. Игрок спавнится в Scene(0,0) center: (39999, 3000, 39999)
@@ -176,7 +214,7 @@ ScriptableObject содержащий:
 
 ---
 
-## 9. Связь с GDD
+## 10. Связь с GDD
 
 - **GDD_12:** Network & Multiplayer — базовая сетевая архитектура
 - **GDD_02:** World & Environment — устройство мира (15 пиков, 4 города)
@@ -184,7 +222,7 @@ ScriptableObject содержащий:
 
 ---
 
-## 10. Git Commits
+## 11. Git Commits
 
 ```
 9b36e47 - Iteration 2 complete: Scene-based world streaming
@@ -194,3 +232,7 @@ d8fdcce - Fix: distance-based unloading
 2438a34 - Fix: FindLocalPlayer uses PlayerSpawner
 7eda914 - Fix: ClientSceneLoader singleton
 ```
+
+---
+
+**Связанные документы:** [GDD_INDEX.md](GDD_INDEX.md) | [GDD_12_Network_Multiplayer.md](GDD_12_Network_Multiplayer.md) | [GDD_02_World_Environment.md](GDD_02_World_Environment.md)

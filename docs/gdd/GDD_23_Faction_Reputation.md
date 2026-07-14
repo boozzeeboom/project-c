@@ -1,82 +1,119 @@
 # GDD-23: Faction & Reputation — Project C: The Clouds
 
-**Версия:** 2.2 | **Дата:** 31 июля 2026 г. | **Статус:** 🟡 Запланировано → частично реализовано (MVP foundation + FactionSystem из NPC Unified Behavior Phase 4)
-**Автор:** Qwen Code (Game Studio) — дизайн, Mavis 2026-06-10 — раздел реализации, Aura 2026-07-31 — актуализация
+**Версия:** 3.0 | **Дата:** 14 июля 2026 г. | **Статус:** 🟢 Stage 1 реализован (FactionId, NpcAttitude, ReputationClientState, DialogActions) + NPC FactionSystem (Phase 4)
+**Автор:** Малков Леонид Андреевич
 
 ---
 
 ## 1. Overview
 
-Система фракций и репутации определяет **взаимоотношения игрока** с 5 Гильдиями, подпольными организациями, Правительством, **мануфактурами** и **военными анклавами**. Репутация влияет на доступ к миссиям, **торговые цены**, снаряжение, территории и **контрактные маршруты**.
+Система фракций и репутации определяет **взаимоотношения игрока** с гильдиями, подпольными организациями, Правительством, мануфактурами и военными анклавами. Репутация влияет на доступ к миссиям, торговые цены, снаряжение, территории и контрактные маршруты.
 
-**Этап реализации:** Этап 3-4
+**Архитектура:** Код разделён на два независимых слоя:
+1. **Player ↔ Faction Reputation** (QuestWorld.ModifyReputation, ReputationClientState) — per-player reputation с фракциями
+2. **NPC ↔ NPC FactionSystem** (Phase 4, NPC Unified Behavior) — runtime hostile/neutral/friendly между NPC разных фракций
 
-**Связанный документ:** [GDD_25_Trade_Routes.md](GDD_25_Trade_Routes.md) — торговые фракции, контракты, маршруты
+**Связанные документы:** [GDD_25_Trade_Routes.md](GDD_25_Trade_Routes.md), [GDD_22_Economy_Trading.md](GDD_22_Economy_Trading.md), `docs/NPC_quests/02_V2_ARCHITECTURE.md`
 
 ---
 
 ## 2. Faction Overview
 
-### 5 Гильдий
+### 2.1 FactionId enum (реализовано, 11 lore значений)
 
-| Гильдия | Сфера | Цвет | Штаб-квартира | Описание |
-|---------|-------|------|---------------|----------|
-| **Гильдия Мысли** | Наука, образование | Синий `#1E88E5` | Квартус (Мак-Кинли) | Исследования, библиотеки, технологии |
-| **Гильдия Созидания** | Инженерия, строительство | Оранжевый `#FF9800` | Примум (Эверест) | Корабли, здания, инфраструктура |
-| **Гильдия Силы** | Охрана, военное дело | Красный `#F44336` | Секунд (К2) | Патрули, защита, тюрьма |
-| **Гильдия Тайн** | Разведка, шифрование | Фиолетовый `#9C27B0` | Квартус (Мак-Кинли) | Шпионаж, коды, секреты |
-| **Гильдия Успеха** | Экономика, торговля | Зелёный `#4CAF50` | Тертиус (Аконкагуа) | Рынок, банки, контракты |
+```csharp
+enum FactionId {
+    None = 0,
+    GuildOfThoughts = 1,   // Гильдия Мысли — наука, артефакты
+    GuildOfCreation = 2,   // Гильдия Созидания — инженерия, модули
+    GuildOfStrength = 3,   // Гильдия Силы — бой, охрана
+    GuildOfSecrets = 4,    // Гильдия Тайн — разведка, шифры
+    GuildOfSuccess = 5,    // Гильдия Успеха — торговля, коммерция
+    Underground = 6,       // Подполье — контрабандисты
+    Resistance = 7,        // Сопротивление — борцы за свободу
+    FreeTraders = 8,       // Свободные торговцы — нейтральные купцы
+    SOL_Patrol = 9,        // Патруль СОЛ — враждебная власть
+    Pirates = 10,          // Пираты — рейдеры
+    Neutral = 11,          // Нейтральные
+}
+```
 
-### Новое Правительство (НП)
+Числовые значения совместимы с v1 `NpcFaction` (помечен `[Obsolete]` с алиасом).
+
+> **Отличие от GDD-дизайна:** Вместо 12 заявленных значений (с 5 Guilds + Pirates/Smugglers/FreeTraders/Military/Mercenaries/Neutral/None) — **11** (другие названия и grouping). `Smugglers` → `Underground`; `Mercenaries` и `Military` → нет отдельных значений, покрываются `SOL_Patrol` + `Pirates`. `GuildOfExploration` и `GuildOfPreservation` отсутствуют, заменены на `GuildOfSecrets` + `GuildOfStrength`.
+
+### 2.2 5 Гильдий (design)
+
+| Гильдия | Сфера | Цвет | Штаб-квартира | FactionId |
+|---------|-------|------|---------------|-----------|
+| **Гильдия Мысли** | Наука, образование | Синий `#1E88E5` | Квартус (Мак-Кинли) | GuildOfThoughts (1) |
+| **Гильдия Созидания** | Инженерия, строительство | Оранжевый `#FF9800` | Примум (Эверест) | GuildOfCreation (2) |
+| **Гильдия Силы** | Охрана, военное дело | Красный `#F44336` | Секунд (К2) | GuildOfStrength (3) |
+| **Гильдия Тайн** | Разведка, шифрование | Фиолетовый `#9C27B0` | Квартус (Мак-Кинли) | GuildOfSecrets (4) |
+| **Гильдия Успеха** | Экономика, торговля | Зелёный `#4CAF50` | Тертиус (Аконкагуа) | GuildOfSuccess (5) |
+
+### 2.3 Новое Правительство (НП)
 
 | Параметр | Описание |
 |----------|----------|
 | Тип | Тоталитарное правительство |
 | Контроль | Система СОЛ (идентификация), монополия на торговлю |
 | Методы | Цензура, репрессии, патрули, налоговая проверка |
-| Отношение к игроку | Нейтральное → Лояльное (контракты) / Враждебное (контрабанда) |
-| **Торговая роль** | Основной работодатель: контракты, товар «под расписку», конвои |
+| FactionId | SOL_Patrol (9) |
 
-### Мануфактуры — Независимые производители
+### 2.4 Подпольные организации (design)
 
-Независимые производства, возникшие из **аристократии прошлой цивилизации**. Каждая мануфактура — отдельная фракция со своей репутацией.
+| Организация | Цель | FactionId |
+|-------------|------|-----------|
+| **Сопротивление** | Свержение НП | Resistance (7) |
+| **Свободные торговцы** | Свободный рынок | FreeTraders (8) |
+| **Подполье** | Контрабанда, чёрный рынок | Underground (6) |
 
-| Мануфактура | Город | Товар | Бонус при репутации +80 | Цвет |
-|-------------|-------|-------|------------------------|------|
-| **Аврора** | Примум | Антигравийные двигатели | Двигатели +20% эффективность | `#f0c27a` |
-| **Титан** | Секунд | Военные модули, броня | Броня +15% защита | `#F44336` |
-| **Гермес** | Тертиус | Текстиль, латекс, бытовые товары | Латекс -30% цена | `#4CAF50` |
-| **Прометей** | Квартус | МНП, научные разработки | МНП +25% эффект | `#9C27B0` |
+> **Примечание:** Культ Фрейхейта (из v1 GDD) — заменён на Underground.
 
-**Отношения мануфактур с НП:**
-- **Напряжённые**: НП хочет монополизировать, мануфактуры хотят свободы
-- Мануфактуры платят налог НП за использование воздушного пространства
-- Игрок может **выбрать сторону**: работать на НП или помогать мануфактурам обходить ограничения
-- Контрабанда компонентов мануфактур = максимальная прибыль, но -репутация НП
+### 2.5 Военные анклавы (design)
 
-### Подпольные организации
+Не имеют отдельного FactionId. Покрываются `Pirates` (10) + `SOL_Patrol` (9) для hostile factions. Полная имплементация — post-MVP.
 
-| Организация | Цель | Методы | Отношение к НП | Торговая роль |
-|-------------|------|--------|---------------|--------------|
-| **Сопротивление** | Свержение НП | Диверсии, пропаганда | Враждебное | Военные квесты, диверсии |
-| **Свободные торговцы** | Свободный рынок | Контрабанда, чёрный рынок | Враждебное | Чёрный рынок, без налога |
-| **Культ Фрейхейта** | Свобода от Завесы | Ритуалы, экспедиции | Нейтральное | Секреты Завесы, маршруты |
+### 2.6 Мануфактуры (design)
 
-### Военные анклавы
+4 независимые производства. На данный момент **не имеют отдельных FactionId** в enum'е. Интеграция через репутацию мануфактур — post-MVP (T-X2 design discussion).
 
-| Параметр | Описание |
-|----------|----------|
-| **Происхождение** | Бывшие военные подразделения, отколовшиеся от НП |
-| **Расположение** | Приграничные пики, зоны рядом с Завесой |
-| **Цвет** | Тёмно-красный `#8b0000` |
-| **Торговая роль** | Опасные маршруты, военные контракты, ×2-3 награда |
-| **Вступление** | Выполнить военный контракт, репутация +40 |
+| Мануфактура | Город | Товар |
+|-------------|-------|-------|
+| **Аврора** | Примум | Антигравийные двигатели |
+| **Титан** | Секунд | Военные модули, броня |
+| **Гермес** | Тертиус | Текстиль, латекс, бытовые товары |
+| **Прометей** | Квартус | МНП, научные разработки |
 
 ---
 
-## 3. Reputation System
+## 3. Reputation System (реализация)
 
-### Шкала репутации
+### 3.1 Архитектура
+
+```
+Player Action (quest, dialog, contract)
+  → QuestWorld.ModifyReputation(clientId, FactionId, delta)
+    → Reputation изменяется
+    → Broadcast event через OnReputationUpdated
+    → Persist в JsonQuestStateRepository
+
+ReputationClientState (singleton, AutoSpawn)
+  → OnReputationUpdated event
+  → CharacterWindow → таб «Репутация»
+```
+
+### 3.2 Хранение
+
+```csharp
+// В QuestWorld:
+Dictionary<(ulong clientId, FactionId factionId), int> _reputation;
+
+// Persistence в JsonQuestStateRepository.ReputationSaveEntry[]
+```
+
+### 3.3 Шкала репутации (design)
 
 | Параметр | Значение |
 |----------|----------|
@@ -84,9 +121,8 @@
 | Начальное значение | 0 (нейтральный) |
 | Изменение за квест | ±5 … ±25 |
 | Изменение за провал | -10 … -30 |
-| Затухание | -1 в день бездействия |
 
-### Уровни репутации
+### 3.4 Уровни репутации (design)
 
 | Ранг | Диапазон | Привилегии |
 |------|----------|-----------|
@@ -99,325 +135,185 @@
 
 ---
 
-## 4. Faction Ranks
+## 4. NpcAttitude System (реализация)
 
-### Система рангов Гильдий
+### 4.1 NpcAttitude struct
 
-| Ранг | Репутация | Требования | Привилегии |
-|------|-----------|-----------|-----------|
-| **Новичок** | 0 | Начало | Базовый доступ |
-| **Ученик** | +20 | 5 квестов | Скидка 5% |
-| **Специалист** | +40 | 15 квестов | Скидка 10%, редкие квесты |
-| **Эксперт** | +60 | 30 квестов | Скидка 15%, уникальные квесты |
-| **Мастер** | +80 | 50 квестов | Скидка 20%, лидерство |
-| **Лидер** | +100 | 100 квестов, спец. задание | Скидка 30%, управление |
+```csharp
+readonly struct NpcAttitude : IEquatable<NpcAttitude> {
+    const int MinValue = -100;   // hostile
+    const int MaxValue = +200;   // revered (asymmetric — positive stronger)
+    
+    string NpcId;
+    int Value;  // clamp в ctor: [MinValue, MaxValue]
+}
+```
 
----
+Отдельная шкала для отношений с конкретным NPC (независимо от faction reputation).
 
-## 5. Faction Quests
+### 4.2 Хранение
 
-### Квесты Гильдий
+```csharp
+// В QuestWorld:
+Dictionary<(ulong clientId, string npcId), int> _npcAttitude;
 
-| Гильдия | Типы квестов | Награды |
-|---------|-------------|---------|
-| **Мысли** | Исследование, сбор данных, расшифровка | XP, чертежи, технологии |
-| **Созидания** | Доставка материалов, ремонт, строительство | Ресурсы, чертежи кораблей |
-| **Силы** | Патрулирование, зачистка, сопровождение | Оружие, броня, кредиты |
-| **Тайн** | Шпионаж, кража документов, обход СОЛ | Коды СОЛ, секреты, кредиты |
-| **Успеха** | Торговля, контрабанда, доставка | Кредиты, репутация |
+// NpcAttitudeClientState (singleton, AutoSpawn)
+// → OnNpcAttitudeUpdated event
+```
 
----
+### 4.3 Cross-faction influence (MVP stub)
 
-## 6. Inter-Faction Relations
-
-### Таблица отношений (Гильдии + Подполье)
-
-| | Мысли | Созидания | Силы | Тайн | Успеха | Сопротивление | Торговцы | Культ |
-|--|-------|-----------|------|------|--------|--------------|----------|-------|
-| **Мысли** | — | + | 0 | - | 0 | - | 0 | 0 |
-| **Созидания** | + | — | + | 0 | + | 0 | 0 | 0 |
-| **Силы** | 0 | + | — | - | + | - | - | 0 |
-| **Тайн** | - | 0 | - | — | 0 | + | + | + |
-| **Успеха** | 0 | + | + | 0 | — | 0 | + | 0 |
-| **Сопротивление** | - | 0 | - | + | 0 | — | + | + |
-| **Торговцы** | 0 | 0 | - | + | + | + | — | 0 |
-| **Культ** | 0 | 0 | 0 | + | 0 | + | 0 | — |
-
-### Таблица отношений (НП + Мануфактуры + Анклавы)
-
-| | НП | Аврора | Титан | Гермес | Прометей | Свободные торговцы | Военные анклавы |
-|--|-----|--------|-------|--------|----------|-------------------|----------------|
-| **НП** | — | - | + | 0 | 0 | - | - |
-| **Аврора** | - | — | + | + | + | 0 | 0 |
-| **Титан** | + | + | — | 0 | 0 | - | + |
-| **Гермес** | 0 | + | 0 | — | + | + | 0 |
-| **Прометей** | 0 | + | 0 | + | — | + | 0 |
-| **Св. торговцы** | - | 0 | - | + | + | — | + |
-| **Военные анклавы** | - | 0 | + | 0 | 0 | + | — |
-
-**Обозначения:** `+` = союзники, `0` = нейтральные, `-` = враждебные/напряжённые
-
-### Влияние на репутацию
-
-| Действие | Эффект |
-|----------|--------|
-| Помощь союзнику | +репутация обоим |
-| Помощь врагу | -репутация другому |
-| Провал квеста Гильдии | -репутация у союзников |
+При изменении attitude одного NPC через `ModifyNpcAttitude`, рассчитывается влияние на faction reputation через `NpcDefinition.attitudeLinks[]`. Полная реализация — v2.
 
 ---
 
-## 7. Reputation Effects
+## 5. FactionDefinition + NpcDefinition (реализовано)
 
-### Эффекты репутации
+### 5.1 FactionDefinition (ScriptableObject)
 
-| Эффект | Нейтральный | Дружелюбный | Мастер | Враг |
-|--------|-------------|-------------|--------|------|
-| **Цены** | 100% | 90% | 70% | 200% |
-| **Доступ к квестам** | Базовые | +Редкие | +Уникальные | Нет |
-| **Территория** | Свободный | Свободный | Свободный + VIP | Атака |
-| **Снаряжение** | Базовое | +Улучшенное | +Уникальное | Нет |
-| **NPC отношение** | Нейтральное | Дружелюбное | Восторженное | Враждебное |
+| Поле | Описание |
+|------|----------|
+| factionId | FactionId |
+| displayName | Локализованное имя |
+| loreDescription | Описание лора |
+| attitudeLinks[] | Cross-faction influence |
 
----
+### 5.2 NpcDefinition (ScriptableObject)
 
-## 7.1 Торговые репутации
-
-Каждая торговая фракция имеет **отдельную репутацию**, влияющую на экономику:
-
-| Фракция | Репутация влияет на... |
-|---------|----------------------|
-| **НП** | Доступ к контрактам, налог (скидка до 50%), товар «под расписку», долговая система |
-| **Мануфактура «Аврора»** | Скидка на двигатели, эксклюзивные контракты, бонус эффективности |
-| **Мануфактура «Титан»** | Скидка на военные товары, доступ к анклавам, бонус брони |
-| **Мануфактура «Гермес»** | Скидка на латекс/текстиль, бонусы в Тертиусе |
-| **Мануфактура «Прометей»** | Скидка на МНП, доступ к научным контрактам, бонус эффекта МНП |
-| **Свободные торговцы** | Доступ к чёрному рынку, контрабанда, отсутствие налогов |
-| **Военные анклавы** | Доступ к военным контрактам, опасные маршруты, ×2-3 награда |
-
-### Перекрёстное влияние (торговля)
-
-| Действие | НП | Мануфактура | Свободные торговцы | Военные анклавы |
-|----------|-----|-------------|-------------------|----------------|
-| Выполнил НП-контракт | +15 | 0 | -5 | 0 |
-| Выполнил контракт мануфактуры | -5 | +20 | +5 | 0 |
-| Продал на чёрном рынке | -10 | +5 | +15 | 0 |
-| Пойман на контрабанде | -25 | +10 | -10 | 0 |
-| Защитил конвой НП | +20 | +5 | -15 | 0 |
-| Выполнил военный контракт | -10 | +5 | +5 | +20 |
+| Поле | Описание |
+|------|----------|
+| npcId | Уникальный ID (string) |
+| displayName | Имя NPC |
+| faction | FactionId |
+| questOffers[] | Какие квесты предлагает |
+| questTurnIns[] | Какие квесты принимает |
+| attitudeLinks[] | Cross-faction influence конфиги |
 
 ---
 
-## 8. Reputation Loss
+## 6. Dialog Integration (реализовано)
 
-### Потеря репутации
+### 6.1 DialogueAction (17 типов)
 
-| Действие | Потеря |
-|----------|--------|
-| Провал квеста | -10 … -30 |
-| Атака NPC Гильдии | -20 … -50 |
-| Контрабанда (обнаружена) | -15 … -40 |
-| Обход СОЛ (обнаружен) | -10 … -25 |
-| Предательство | -50 … -100 |
-| Бездействие (затухание) | -1 в день |
+Связанные с фракциями:
 
-### [🔴 Запланировано] Восстановление репутации
+| Action | Описание |
+|--------|----------|
+| AddReputation(factionId, delta) | +репутация фракции |
+| AddNpcAttitude(npcId, delta) | +отношение NPC |
+| GiveCredits(amount) | Выдать кредиты |
+| TakeItem(itemId, quantity) | Забрать предмет |
 
-| Метод | Описание |
-|-------|----------|
-| Квесты искупления | Специальные квесты после провала |
-| Пожертвования | Ресурсы/кредиты в пользу Гильдии |
-| Время | Затухание негативной репутации |
+### 6.2 DialogueCondition (12 типов)
 
----
+| Condition | Описание |
+|-----------|----------|
+| HasItem(itemId, quantity) | Есть предмет |
+| ReputationAtLeast(factionId, min) | Репутация ≥ N |
+| NpcAttitudeAtLeast(npcId, min) | Отношение ≥ N |
+| QuestStateEquals(questId, state) | Статус квеста |
 
-## 9. Underground Factions
+### 6.3 Example flow (M11 Mira E2E)
 
-### Подпольные организации
-
-| Организация | Вступление | Секретность | Награды |
-|-------------|-----------|-------------|---------|
-| **Сопротивление** | По квесту, репутация +30 | Высокая | Оружие, информация |
-| **Свободные торговцы** | Через контрабанду | Средняя | Чёрный рынок, скидки |
-| **Культ Фрейхейта** | Через ритуал | Высокая | Секреты Завесы |
-
-### Обнаружение
-
-| Параметр | Описание |
-|----------|----------|
-| Обнаружение подполья | Если СОЛ обнаружит → штраф репутации |
-| Стелс-механика | Обход СОЛ-патрулей, выключение транспондера |
-| Последствия | При обнаружении: атака патрулей, штраф |
+```
+complete_thanks node:
+  → AddReputation(GuildOfThoughts, +25)
+  → AddNpcAttitude(mira_01, +10)
+  → Broadcast клиенту → Mira E2E получает +25 репутации и +10 отношения
+```
 
 ---
 
-## 10. SOL System
+## 7. NPC FactionSystem (T-NPC-S19, июль 2026)
 
-### Система идентификации
+Реализован в рамках Phase 4 Unified NPC Behavior Architecture.
 
-| Параметр | Описание |
-|----------|----------|
-| СОЛ | Система Обнаружения Личности |
-| Функция | Гравитационное сканирование граждан |
-| Патрули | Дроны и корабли СОЛ |
-| Обход | Выключение транспондера, стелс-маршруты |
+### 7.1 Компоненты
 
-### [🔴 Запланировано] Стелс-механика
+| Компонент | Описание |
+|-----------|----------|
+| `FactionSystem` | Отношения между фракциями (hostile/neutral/friendly) |
+| `VengeanceMemory` | Память о врагах между сессиями |
+| NPC-vs-NPC hostile faction combat | Фикс `b77b84e` |
+| Интеграция в NpcSocialBrain | Через Phase 4 |
 
-| Действие | Риск обнаружения |
-|----------|-----------------|
-| Выключить транспондер | Низкий |
-| Лететь через Завесу | Средний |
-| Поддельные коды | Низкий (если не проверят) |
-| Прямой обход патруля | Высокий |
+### 7.2 Отличие от Player Reputation
+
+- **Player → Faction Reputation:** Персистентная, per-player, влияет на цены/доступ/квесты
+- **NPC → NPC FactionSystem:** Runtime, per-NPC instance, определяет hostile/neutral/friendly в AI поведении
 
 ---
 
-## 11. Formulas
+## 8. Что реализовано (Stage 1)
 
-| Формула | Описание |
-|---------|----------|
-| `rep_change = base × difficulty × faction_mod` | Изменение репутации |
-| `price_mod = 1.0 - (rep / 100) × 0.3` | Модификатор цен от репутации |
-| `decay = -1 per day` | Затухание бездействия |
-| `quest_access = rep >= threshold` | Доступ к квестам |
-| `ally_rep_change = rep_change × 0.5` | Изменение у союзников |
+| Компонент | Статус |
+|-----------|--------|
+| **FactionId enum** (11 lore values) | ✅ DONE |
+| **NpcAttitude struct** (readonly, −100..+200) | ✅ DONE |
+| **NpcFaction → FactionId** migration (`[Obsolete]` alias) | ✅ DONE |
+| **FactionDefinition SO** (factionId, displayName, lore, attitudeLinks) | ✅ DONE |
+| **NpcDefinition SO** (npcId, faction, questOffers, questTurnIns, attitudeLinks) | ✅ DONE |
+| **ReputationClientState** (singleton, AutoSpawn, OnReputationUpdated) | ✅ DONE |
+| **NpcAttitudeClientState** (singleton, AutoSpawn, OnNpcAttitudeUpdated) | ✅ DONE |
+| **QuestWorld.ModifyReputation** (server-side, broadcast + event + persist) | ✅ DONE |
+| **QuestWorld.ModifyNpcAttitude** (server-side, broadcast + event + cross-faction MVP stub) | ✅ DONE |
+| **DialogAction.AddReputation** (T-Q16) | ✅ DONE |
+| **DialogAction.AddNpcAttitude** (T-Q16) | ✅ DONE |
+| **CharacterWindow → таб «Репутация»** (T-Q13) | ✅ DONE |
+| **Persistence** (JsonQuestStateRepository) | ✅ DONE |
+| **NPC FactionSystem** (Phase 4, July 2026) | ✅ DONE |
 
----
+## 9. Что открыто / TODO
 
-## 12. Edge Cases
-
-| Ситуация | Поведение |
-|----------|-----------|
-| **Репутация с несколькими фракциями** | Отслеживается отдельно для каждой |
-| **Конфликт квестов** | Нельзя принять квесты враждующих Гильдий одновременно |
-| **Предательство** | Мгновенная потеря репутации у всех союзников |
-| **Дисконнект при квесте** | Прогресс сохранён, таймаут приостановлен |
-| **Репутация упала до «Враг»** | Атака при виде, нужен квест искупления |
-
----
-
-## 13. Tuning Knobs
-
-| Параметр | Мин | Макс | Текущее | Влияние |
-|----------|-----|------|---------|---------|
-| `base_rep_change` | 5 | 50 | 15 | Базовое изменение |
-| `decay_rate` | 0 | 5 | 1 | Затухание в день |
-| `ally_modifier` | 0.1 | 1.0 | 0.5 | Влияние на союзников |
-| `price_discount_max` | 0.1 | 0.5 | 0.3 | Макс. скидка |
-| `quest_rep_multiplier` | 1.0 | 3.0 | 1.5 | Множитель репутации за квесты |
-| `trade_rep_contract_np` | 5 | 30 | 15 | Репутация НП за контракт |
-| `trade_rep_manufacture` | 5 | 30 | 20 | Репутация мануфактуры за контракт |
-| `trade_rep_contraband_caught` | -40 | -5 | -25 | Пойман на контрабанде |
-| `trade_rep_black_market` | 5 | 25 | 15 | Продажа на чёрном рынке |
-| `debt_decay_per_day` | 0.001 | 0.05 | 0.01 | Затухание долга в день |
+| # | Задача | GDD-секция | Приоритет |
+|---|--------|-----------|-----------|
+| 1 | **4 мануфактуры** (Aurora/Titan/Hermes/Prometheus) как отдельные FactionId | §2, §7.1 | 🟡 Med (T-X2) |
+| 2 | **Cross-faction influence — полная реализация** | §6 | 🟢 Low (MVP stub достаточно) |
+| 3 | **TradeItemDefinition.Faction → FactionId migration** | §2 | 🟡 design discussion |
+| 4 | **Display HUD репутации в header** | §7 | 🟢 Low |
+| 5 | **Чёрный рынок** (вступление через контрабанду) | §7, §6 | 🟢 Low |
+| 6 | **Военные анклавы** | §2, §7 | 🟢 Low |
+| 7 | **СОЛ-стелс** | post-MVP | 🟢 Low |
+| 8 | **Затухание репутации** (decay -1 в день) | §8 | 🟢 Low |
+| 9 | **Квесты искупления** (reputation recovery) | §8 | 🟢 Low |
 
 ---
 
-## 14. Acceptance Criteria
+## 10. Формулы
 
-| # | Критерий | Как проверить | Статус |
-|---|----------|--------------|--------|
-| 1 | Репутация отображается | UI с шкалой -100…+100 | 🔴 |
-| 2 | Квесты изменяют репутацию | Выполнить квест → проверить | 🔴 |
-| 3 | Цены зависят от репутации | Сравнить цены при разной репутации | 🔴 |
-| 4 | Доступ к квестам от ранга | Проверить на разных рангах | 🔴 |
-| 5 | Отношения между фракциями | Помочь одной → проверить другую | 🔴 |
-| 6 | Подпольные организации | Вступить, получить квесты | 🔴 |
-| 7 | СОЛ-стелс работает | Обход патрулей | 🔴 |
-| 8 | Затухание репутации | Бездействие → проверка | 🔴 |
-| 9 | Репутация мануфактур | Выполнить контракт → проверить | 🔴 |
-| 10 | Перекрёстное влияние | Помочь НП → проверить мануфактуры | 🔴 |
-| 11 | Долговая система НП | Не доставить → долг | 🔴 |
-| 12 | Чёрный рынок доступен | Репутация +30 → проверить | 🔴 |
-| 13 | Военные анклавы | Выполнить контракт → доступ | 🔴 |
-| 14 | **ReputationClientState + NpcAttitudeClientState** (T-Q13) | см. §X ниже | 🟢 DONE (2026-06-08) |
-| 15 | **`FactionId` enum** (12 lore значений) | см. §X ниже | 🟢 DONE (2026-06-08) |
-| 16 | **`NpcAttitude` struct** (per-NPC) | см. §X ниже | 🟢 DONE (2026-06-08) |
-| 17 | **`AddReputation` / `AddNpcAttitude` dialog actions** (T-Q16) | см. §X ниже | 🟢 DONE (2026-06-08) |
+| Формула | Описание | Статус |
+|---------|----------|--------|
+| `rep_change = base × difficulty × faction_mod` | Изменение репутации | design |
+| `price_mod = 1.0 - (rep / 100) × 0.3` | Модификатор цен | 🟡 (через T-Q15 интеграцию) |
+| `decay = -1 per day` | Затухание | 🔴 |
+| `quest_access = rep >= threshold` | Доступ к квестам | ✅ (в DialogueCondition) |
+| `ally_rep_change = rep_change × 0.5` | Изменение у союзников | 🔴 (MVP stub) |
 
 ---
 
-## X. Реализация в коде (v2, 2026-06-08)
+## 11. Файлы (C#)
 
-> **Секция добавлена Mavis 2026-06-10.** Дизайн-контент (5 гильдий, 4 мануфактуры, ранги, формулы decay) остаётся в зоне game-designer'а. Здесь — **только статус реализации** MVP foundation: enum, struct, client states, dialog actions.
+```
+Quests/Factions/
+├── FactionDefinition.cs     — SO: factionId, displayName, loreDescription, attitudeLinks[]
+├── FactionId.cs             — enum: 11 lore значений
+└── NpcAttitude.cs           — struct: -100..+200, IEquatable
 
-### X.1 Что реализовано ✅
+Quests/Npcs/
+└── NpcDefinition.cs         — SO: npcId, displayName, faction, questOffers[], attitudeLinks[]
 
-#### FactionId enum (T-Q01)
-- ✅ **`ProjectC.Factions.FactionId`** — promoted enum, 12 lore значений:
-  - `GuildOfThoughts`, `GuildOfCreation`, `GuildOfSecrets`, `GuildOfExploration`, `GuildOfPreservation`
-  - `Pirates`, `Smugglers`, `FreeTraders`, `Military`, `Mercenaries`, `Neutral`, `None`
-- ✅ Числовые значения идентичны v1 `NpcFaction` (backward compat)
-- ✅ `NpcFaction` помечен `[Obsolete]` с алиасом на `FactionId`
-- ✅ **Namespace `ProjectC.Factions`** создан
+Client states:
+├── Quests/Client/QuestClientState.cs  — Reputation + NpcAttitude projection
+├── Quests/Dto/ReputationSnapshotDto.cs
+└── Scripts/Reputation/ (если есть — отдельный namespace)
 
-#### NpcAttitude struct (T-Q01)
-- ✅ **`NpcAttitude`** — readonly struct, `IEquatable<NpcAttitude>`, range −100..+200, clamp в ctor
-- ✅ Per-NPC reputation slot (отдельно от faction reputation)
-- ✅ Используется в `QuestWorld._npcAttitude`, `NpcAttitudeClientState`, `DialogAction.AddNpcAttitude`
-
-#### FactionDefinition + NpcDefinition SO (T-Q02)
-- ✅ **`FactionDefinition.cs`** (ScriptableObject) — `factionId`, `displayName`, `loreDescription`, `attitudeLinks[]` (cross-faction influence)
-- ✅ **`NpcDefinition.cs`** (ScriptableObject) — `npcId`, `displayName`, `faction`, `questOffers[]`, `questTurnIns[]`, `attitudeLinks[]`
-- ✅ Test assets: `GuildOfThoughts.asset` + `Mira.asset` (npcId=mira_01, faction=GuildOfThoughts)
-
-#### Client states (T-Q13)
-- ✅ **`ReputationClientState`** (singleton, AutoSpawn) — `OnReputationUpdated` event
-- ✅ **`NpcAttitudeClientState`** (singleton, AutoSpawn) — `OnNpcAttitudeUpdated` event
-- ✅ DTO: `ReputationSnapshotDto`, `ReputationEntryDto`, `NpcAttitudeSnapshotDto`, `NpcAttitudeEntryDto`
-- ✅ TargetRpc в `NetworkPlayer.cs` → route через `QuestClientState.Raise*`
-- ✅ `QuestWorld.ModifyReputation` + `ModifyNpcAttitude` (server-side, broadcast + event)
-
-#### Cross-faction influence (T-Q13)
-- ✅ MVP stub в `QuestWorld.ModifyNpcAttitude` — при изменении attitude одного NPC, рассчитывается влияние на faction
-- ✅ Полная реализация → v2 (когда будут полные таблицы influence)
-
-#### Dialog actions (T-Q16)
-- ✅ **`QuestServer.FireDialogAction.AddReputation(factionId, delta)`** — `QuestWorld.ModifyReputation` (broadcast + event)
-- ✅ **`QuestServer.FireDialogAction.AddNpcAttitude(npcId, delta)`** — `QuestWorld.ModifyNpcAttitude` (broadcast + event + cross-faction)
-- ✅ Интеграция с M11 Mira E2E: dialog tree вызывает `AddRep 25 + AddAtt 10` на `complete_thanks` node
-
-#### CharacterWindow integration
-- ✅ CharacterWindow → таб «Репутация» (T-Q13) — под-раздел Reputation + NpcAttitude
-- ✅ Cross-link: улучшить Mira → factionRep[GuildOfCreation] уменьшается (с конфигом)
-
-### X.2 Что открыто ⏳
-
-| # | Задача | GDD-секция | Milestone | Приоритет |
-|---|---|---|---|---|
-| 1 | **Rep-таблица** (12 guilds, tier thresholds, display messages) | §3, §4 | M5 (NPC+Quests) | 🟡 Med (нужен контент от game-designer'а) |
-| 2 | **Кросс-фракционные influence — полная реализация** | §6 | M5 (NPC+Quests) | 🟢 Low (MVP stub достаточно) |
-| 3 | **Display HUD репутации в header** (deferred с T-Q10) | §7 | M5 | 🟢 Low |
-| 4 | **4 мануфактуры** (Aurora/Titan/Hermes/Prometheus) | §2, §7.1 | Этап 3.5 | 🟡 Med |
-| 5 | **Чёрный рынок** (вступление через контрабанду) | §7, §6 | Этап 3.5 | 🟢 Low |
-| 6 | **Военные анклавы** | §2, §7 | Этап 3.5 | 🟢 Low |
-| 7 | **СОЛ-стелс** | §7 | post-MVP | 🟢 Low |
-| 8 | **Затухание репутации** | §8 | post-MVP | 🟢 Low |
-| 9 | **T-X2 — Faction migration** (`TradeItemDefinition.Faction` → `FactionId`) | §2 | M9 (NPC+Quests) | 🟡 design discussion |
-
-### X.3 Где смотреть актуальный статус
-
-- **`docs/NPC_quests/02_V2_ARCHITECTURE.md`** §1, §2 — namespace layout, `FactionId` design
-- **`docs/NPC_quests/old_session_log/T-Q13_DESIGN_NOTE.md`** — Reputation+NpcAttitude design
-- **`docs/NPC_quests/08_ROADMAP.md`** §8.3 T-Q01, T-Q13, T-Q16 — roadmap
-- **`docs/MMO_Development_Plan.md`** §3.5 — общий план фракций
-- **`docs/Character/Skills/real-time-combat/npc-enemy/04_UNIFIED_BEHAVIOR_ARCHITECTURE.md`** — NPC FactionSystem (T-NPC-S19, июль 2026) ✅
+NPC FactionSystem:
+├── Scripts/AI/FactionSystem.cs
+├── Scripts/AI/VengeanceMemory.cs
+└── (в NPC Unified Behavior Phase 4)
+```
 
 ---
 
-## X.4 NPC FactionSystem (T-NPC-S19, июль 2026) ✅
-
-**Контекст:** В рамках Phase 4 Unified NPC Behavior Architecture реализована `FactionSystem` — фракционная принадлежность NPC и определение hostile/neutral/friendly отношений между NPC разных фракций. **Это runtime-система для NPC-vs-NPC взаимодействий** (отдельно от player reputation).
-
-**Компоненты:**
-- `FactionSystem` — отношение между фракциями (hostile/neutral/friendly)
-- `VengeanceMemory` — память о врагах между сессиями
-- NPC-vs-NPC hostile faction combat (фикс: `b77b84e`)
-- Интеграция в `NpcSocialBrain` через Phase 4
-
-**Связано:** `docs/Character/Skills/real-time-combat/npc-enemy/04_UNIFIED_BEHAVIOR_ARCHITECTURE.md`, `docs/dev/retrospective_d1850f6c_to_HEAD.md` §2.11.
-
----
-
-**Связанные документы:** [GDD_INDEX.md](GDD_INDEX.md) | [GDD_22_Economy_Trading.md](GDD_22_Economy_Trading.md) | [GDD_25_Trade_Routes.md](GDD_25_Trade_Routes.md) | [WORLD_LORE_BOOK.md](../WORLD_LORE_BOOK.md) | [`docs/NPC_quests/02_V2_ARCHITECTURE.md`](../NPC_quests/02_V2_ARCHITECTURE.md)
+*Документ создан для Project C: The Clouds.*
+**Связанные документы:** [GDD_INDEX.md](GDD_INDEX.md) | [GDD_22_Economy_Trading.md](GDD_22_Economy_Trading.md) | [GDD_25_Trade_Routes.md](GDD_25_Trade_Routes.md) | [`docs/NPC_quests/02_V2_ARCHITECTURE.md`](../NPC_quests/02_V2_ARCHITECTURE.md)

@@ -1,20 +1,22 @@
 # GDD-14: Visual & Art Pipeline — Project C: The Clouds
 
-**Версия:** 1.0 | **Дата:** 6 апреля 2026 г. | **Статус:** ✅ Документировано
-**Автор:** Qwen Code (Game Studio: @art-director + @unity-shader-specialist)
+**Версия:** 1.1 | **Дата:** 14 июля 2026 г. | **Статус:** ✅ Документировано
+**Автор:** Малков Леонид Андреевич
 
 ---
 
 ## 1. Overview
 
-Визуальная система Project C: The Clouds построена на **Unity 6 URP 17.4.0** с кастомными шейдерами и процедурной генерацией. Стиль — **Sci-Fi + Ghibli**: промышленный дизайн + мягкие облака, градиенты, объёмный свет.
+Визуальная система Project C: The Clouds построена на **Unity 6 URP 17.0.3** с кастомными шейдерами и процедурной генерацией. Стиль — **Sci-Fi + Ghibli**: промышленный дизайн + мягкие облака, градиенты, объёмный свет.
 
 ### Ключевые особенности
-- **URP Pipeline** — Universal Render Pipeline 17.4.0
-- **CloudGhibli.shader** — кастомный URP Unlit (noise + rim glow + vertex displacement)
+- **URP Pipeline** — Universal Render Pipeline 17.0.3
+- **CloudGhibli.shader** — кастомный URP Unlit (noise + rim glow + vertex displacement) — `Assets/_Project/Art/Shaders/CloudGhibli.shader`
 - **ProceduralNoiseGenerator** — FBM noise текстуры 512x512
 - **MaterialURPConverter** — авто-конвертация Standard → URP
 - **3 слоя облаков** — Upper/Middle/Lower, движение, морфинг
+- **Day/Night Cycle** — URP Volume Profiles (Day, Night, Twilight) с Bloom, Color Grading, Temperature Filter
+- **Veil System** — Raymarch-шейдеры для Завесы (VeilRaymarch.shader, VeilShader.shader)
 
 ---
 
@@ -55,11 +57,11 @@
 
 | Параметр | Значение |
 |----------|----------|
-| Версия URP | 17.4.0 |
-| Pipeline Asset | UniversalRenderPipelineAsset |
-| Renderer | UniversalRendererData (URP 14+) |
+| Версия URP | 17.0.3 |
+| Pipeline Asset | ProjectC_URP (Assets/_Project/Settings/ProjectC_URP.asset) |
+| Renderer | ProjectC_URP_Renderer (Assets/_Project/Settings/ProjectC_URP_Renderer.asset) |
 | Render Type | Forward |
-| Depth Priming | [🔴 Запланировано] |
+| Depth Priming | ✅ Не требуется (URP 17+ управляет автоматически) |
 
 ### Настройка (критично!)
 
@@ -82,7 +84,7 @@
 
 ## 4. Shader Library
 
-### CloudGhibli.shader
+### CloudGhibli.shader — `Assets/_Project/Art/Shaders/CloudGhibli.shader`
 
 | Фича | Описание | Реализация |
 |------|----------|-----------|
@@ -91,8 +93,23 @@
 | **Vertex Displacement** | Смещение вершин по noise | morphAmount |
 | **Morph** | Анимация формы облаков | _Time-based |
 | **URP Unlit** | Без освещения | Unlit includes |
+| **Отдельная папка** | Шейдеры в `Assets/_Project/Art/Shaders/` | ✅ |
 
-### Параметры CloudGhibli
+### Актуальные шейдеры проекта
+
+| Шейдер | Путь | Статус |
+|--------|------|--------|
+| **CloudGhibli.shader** | `Assets/_Project/Art/Shaders/` | ✅ Реализован |
+| **CloudGhibli_OutlineV5.shader** | `Assets/_Project/Art/Shaders/` | ✅ Реализован |
+| **DistantCloudHSV.shader** | `Assets/_Project/Shaders/` | ✅ Реализован |
+| **Stars.shader** | `Assets/_Project/Shaders/` | ✅ Реализован |
+| **VeilRaymarch.shader** | `Assets/_Project/Shaders/` | ✅ Завеса-шейдер (ray marching) |
+| **VeilShader.shader** | `Assets/_Project/Shaders/` | ✅ Завеса-шейдер |
+| **VeilRaymarchMesh.shader** | `Assets/_Project/Shaders/` | ✅ Меш-шейдер Завесы |
+| **TargetOutline.shader** | `Assets/_Project/Shaders/` | ✅ Outline для таргетинга |
+| **DistantCloudDebug.shader** | `Assets/_Project/Shaders/` | ✅ Дебаг облаков |
+
+### [🔴 Запланировано] Будущие шейдеры
 
 | Параметр | Тип | Описание |
 |----------|-----|----------|
@@ -137,19 +154,26 @@
 
 ### Текущие материалы
 
-| Материал | Шейдер | Статус |
-|----------|--------|--------|
-| character_URP.mat | URP/Lit | ✅ |
-| CloudMaterial_URP.mat | CloudGhibli | ✅ |
-| IslandMaterial.mat | URP/Lit | ✅ |
-| character.mat | Legacy Standard | ⚠️ (конвертируется при запуске) |
-| CloudMaterial.mat | Legacy Standard | ⚠️ (конвертируется при запуске) |
+| Материал | Шейдер | Путь | Статус |
+|----------|--------|------|--------|
+| character_URP.mat | URP/Lit | `Assets/_Project/Materials/Material/` | ✅ |
+| CloudMaterial_URP.mat | CloudGhibli | `Assets/_Project/Materials/Material/` | ✅ |
+| IslandMaterial.mat | URP/Lit | `Assets/_Project/Art/` | ✅ |
+| Material_Cloud_Upper.mat | CloudGhibli | `Assets/_Project/Materials/Clouds/` | ✅ |
+| Material_Cloud_Middle.mat | CloudGhibli | `Assets/_Project/Materials/Clouds/` | ✅ |
+| Material_Cloud_Lower.mat | CloudGhibli | `Assets/_Project/Materials/Clouds/` | ✅ |
+| DistantCloud.mat | DistantCloudHSV | `Assets/_Project/Materials/Clouds/` | ✅ |
+| character.mat | Legacy Standard | `Assets/_Project/Materials/Material/` | ⚠️ (конвертируется при запуске) |
+| CloudMaterial.mat | Legacy Standard | `Assets/_Project/Materials/Material/` | ⚠️ (конвертируется при запуске) |
+| Rock\_*.mat (5 биомов) | URP/Lit | `Assets/_Project/Materials/World/` | ✅ |
+| VeilRaymarch.mat | VeilRaymarch | `Assets/_Project/Materials/Clouds/` | ✅ |
+| TestMat_OutlineV2.mat | CloudGhibli_OutlineV2 | `Assets/_Project/Materials/Clouds/` | ✅ |
 
 ---
 
 ## 6. Procedural Generation Art
 
-### ProceduralNoiseGenerator
+### ProceduralNoiseGenerator — `Assets/_Project/Scripts/Core/ProceduralNoiseGenerator.cs`
 
 | Параметр | Значение |
 |----------|----------|
@@ -157,49 +181,96 @@
 | Алгоритм | FBM (Fractal Brownian Motion) |
 | Слои шума | 2 (крупные формы + мелкие детали) |
 | Кеширование | Да, ClearCache() для перегенерации |
+| Noise-текстуры | `Assets/_Project/Art/Textures/Cloud_Noise*.png` |
+
+### Генерация мира — `Assets/_Project/Scripts/Core/WorldGenerator.cs`
+
+| Компонент | Файл | Назначение |
+|-----------|------|------------|
+| WorldGenerator | `Scripts/Core/WorldGenerator.cs` | Генерация мира с пиками и облаками |
+| WorldGenerationSettings | `Scripts/Core/WorldGenerationSettings.cs` | Настройки генерации |
+| MountainMeshBuilder | `Scripts/World/Generation/MountainMeshBuilder.cs` | Генерация мешей гор |
+| NoiseUtils | `Scripts/World/Generation/NoiseUtils.cs` | Утилиты шума |
+| CloudLayerConfig | `Data/Clouds/CloudLayerConfig_Upper.asset` и др. | Конфиги слоёв облаков |
+| Biome профили | `Data/World/BiomeProfiles/` | 5 биомов (African, Alaskan, Alpine, Andean, Himalayan) |
+| CloudLayerConfig | `Art/CloudLayerConfig.asset` | Конфигурация облаков |
 
 ### Облака
 
 | Параметр | Значение |
 |----------|----------|
-| Слои | 3 (Upper/Middle/Lower) |
-| Общее количество | 890+ |
-| Форма | Сферы/Planes |
-| Движение | Скорость по слою |
+| Слои | 3 (Upper/Middle/Lower) + Distant |
+| Форма | Сферы/Planes с морфингом |
+| Движение | Скорость по слою через сервер (WindManager) |
 | Морфинг | Анимация формы через shader |
+| Дальние облака | DistantCloudManager с DistantCloudHSV.shader |
+| Конфигурация слоёв | CloudLayerConfig_Lower/Middle/Upper.asset |
+| Облачные префабы | `Assets/_Project/Data/Clouds/` |
 
 ### Горные пики
 
 | Параметр | Метод |
 |----------|-------|
-| Форма | Perlin noise конусы |
-| Распределение | Золотой угол (137.5°) |
-| Материал | URP/Lit (серый камень) |
-| [🔴 Запланировано] Текстуры | Poly Haven CC0 |
+| Форма | Perlin noise конусы (MountainMeshBuilder) |
+| Подход | V2: MountainMeshBuilderV2 — процедурная网格 |
+| Материал | URP/Lit (Rock\_*.mat по биомам) |
+| Биомы | 5 биомов (African, Alaskan, Alpine, Andean, Himalayan) |
+| Снег | Snow_Generic.mat для вершин |
+| Текстуры гор | Poly Haven CC0 (запланировано) |
 
 ---
 
 ## 7. Post-Processing Stack
 
-### [🔴 Запланировано] URP Volume Profile
+### ✅ URP Volume Profiles — Реализовано
 
-| Эффект | Настройки | Этап |
-|--------|-----------|------|
-| **Bloom** | Threshold: 0.9, Intensity: 0.5 | Этап 2.5 |
-| **Tonemapping** | Mode: ACE | Этап 2.5 |
-| **Vignette** | Intensity: 0.3, Smoothness: 0.5 | Этап 2.5 |
-| **Film Grain** | Intensity: 0.1 | Этап 2.5 |
-| **Chromatic Aberration** | Intensity: 0.05 | Этап 2.5 |
-| **Color Grading** | Temperature, Tint | Этап 2.5 |
-| **Fog** | Exponential, Color: `#2d1b4e` (Завеса) | Этап 2.5 |
+Day/Night цикл использует 3 VolumeProfile через `DayNightController.cs`:
 
-### DefaultVolumeProfile
+| Профиль | Путь | Назначение |
+|---------|------|------------|
+| **DayVolumeProfile** | `Assets/_Project/ScriptableObjects/DayNight/Volumes/DayVolumeProfile.asset` | День (Morning, Midday, Evening) |
+| **NightVolumeProfile** | `Assets/_Project/ScriptableObjects/DayNight/Volumes/NightVolumeProfile.asset` | Ночь (Twilight, Night) |
+| **TwilightVolumeProfile** | `Assets/_Project/ScriptableObjects/DayNight/Volumes/TwilightVolumeProfile.asset` | Переходные состояния |
+
+### Override-параметры в `TimeOfDayPhase` (пофазово)
+
+Каждая фаза цикла (Morning, Midday, Evening, Twilight, Night) переопределяет:
+
+| Параметр | Тип | Описание |
+|----------|-----|----------|
+| **Bloom Intensity** | Float (0.3 default) | Интенсивность Bloom |
+| **Bloom Threshold** | Float (0.8 default) | Порог Bloom |
+| **Saturation Offset** | Float | Коррекция насыщенности |
+| **Exposure Offset** | Float (EV) | Коррекция экспозиции |
+| **Contrast Offset** | Float | Коррекция контраста |
+| **Color Tint Overlay** | Color | Цветовая накладка |
+| **Temperature Filter** | Bool/Float | Температурный фильтр (по погоде) |
+
+### Система Volume Blending
+
+`DayNightController` использует **Volume Weight** для плавного перехода между профилями:
+- `DayVolumeProfile.weight` → `NightVolumeProfile.weight` по времени суток
+- `TwilightVolumeProfile` активируется в переходные периоды
+- Blend через `useVolumeBlending = true`
+
+### Активные Volume-эффекты в проекте
+
+| Эффект | День | Ночь | Сумерки | Реализация |
+|--------|------|------|---------|------------|
+| **Bloom** | ✅ Threshold: 0.8, Intensity: 0.3 | ✅ Threshold: 0.7, Intensity: 0.5 | ✅ Threshold: 0.75, Intensity: 0.4 | VolumeProfile override |
+| **Tonemapping** | ✅ Mode: ACES | ✅ Mode: ACES | ✅ Mode: ACES | VolumeProfile |
+| **Vignette** | ✅ | ✅ | ✅ | VolumeProfile |
+| **Color Adjustments** | ✅ Post-Exposure: 0 | ✅ Post-Exposure: -0.5 | ✅ Post-Exposure: -0.2 | Volume + TimeOfDayPhase |
+| **Temperature Filter** | ✅ По времени суток | ✅ Холодный тон | ✅ Тёплый тон | TemperatureFilterConfig |
+| **Fog** | ✅ Exponential | ✅ Exponential | ✅ Exponential | Render Pipeline + Volume |
+
+### Global Volume
 
 | Параметр | Описание |
 |----------|----------|
-| Файл | DefaultVolumeProfile.asset |
-| Назначение | Базовые настройки post-processing |
-| Global Volume | [🔴 Запланировано] |
+| Компонент | `Volume` на Global Volume GameObject |
+| Mode | Global |
+| Profile | Переключается между Day/Night/Twilight через DayNightController |
 
 ---
 
@@ -218,21 +289,40 @@
 
 ```
 Assets/_Project/
-├── Art/              # 3D модели, текстуры
-│   └── IslandMaterial.mat
-├── Material/         # Материалы
-│   ├── character_URP.mat
-│   ├── CloudMaterial_URP.mat
-│   ├── character.mat (legacy)
-│   └── CloudMaterial.mat (legacy)
-├── Shaders/          # Шейдеры
-│   └── CloudGhibli.shader
-├── Prefabs/          # Префабы
+├── Art/                  # 3D модели, текстуры
+│   ├── CloudLayerConfig.asset
+│   ├── IslandMaterial.mat
+│   ├── Textures/         # Noise-текстуры (Cloud_Noise*.png)
+│   └── Shaders/          # CloudGhibli (все варианты Outline)
+├── Materials/            # Материалы по категориям
+│   ├── Clouds/           # Cloud, Veil, Distant материалы
+│   ├── Material/         # character_URP, CloudMaterial_URP
+│   ├── Moon/             # Материалы луны
+│   ├── Ship/             # Материалы кораблей
+│   ├── Skybox/           # Скайбоксы
+│   ├── Stars/            # Материалы звёзд
+│   └── World/            # Rock_*.mat по биомам, Snow, Ground
+├── Shaders/              # Системные шейдеры URP
+│   ├── CloudGhibli.shader (ссылка?)
+│   ├── DistantCloud*.shader
+│   ├── Veil*.shader
+│   ├── TargetOutline.shader
+│   └── Stars.shader
+├── ScriptableObjects/    # Volume Profiles, конфиги
+│   └── DayNight/Volumes/  # DayVolumeProfile, NightVolume, TwilightVolume
+├── Prefabs/
 │   ├── NetworkPlayer.prefab
 │   ├── CloudSystem.prefab
+│   ├── Npc_Goblin.prefab
 │   └── ...
-├── Items/            # ScriptableObject предметов
-└── Settings/         # Настройки (WorldGenerationSettings, CloudLayerConfig)
+├── Scripts/
+│   ├── Core/             # ProceduralNoiseGenerator, WorldGenerator, DayNightController
+│   ├── Customisation/    # CharacterCustomisationApplier
+│   └── ...
+├── Items/                # ScriptableObject предметов
+├── Data/                 # CloudLayerConfig, BiomeProfiles, Scene
+├── Settings/             # ProjectC_URP.asset, Renderer
+└── Volumes/              # DayNight/ (GameObject Volume)
 ```
 
 ### [🔴 Запланировано] Именование ассетов
@@ -249,24 +339,41 @@ Assets/_Project/
 
 ## 9. Character Pipeline
 
-### [🔴 Запланировано] Модель персонажа
+### ✅ Модель персонажа — Реализовано
 
-| Параметр | Описание | Этап |
-|----------|----------|------|
-| Источник | Mixamo | Этап 2.5 |
-| Формат | FBX | Этап 2.5 |
-| Анимации | Idle, Walk, Run, Jump | Этап 2.5 |
-| Шейдер | URP/Lit (Character) | Этап 2.5 |
-| Замена | Capsule → Mixamo модель | Этап 2.5 |
+| Параметр | Описание | Статус |
+|----------|----------|--------|
+| Источник | Mixamo | ✅ |
+| Формат | FBX | ✅ |
+| Анимации | Idle, Walk, Run, Jump через AnimatorController | ✅ |
+| Шейдер | URP/Lit (Character) через character_URP.mat | ✅ |
+| Customisation | CharacterCustomisationApplier + EquipmentVisualApplier | ✅ |
+| AnimatorOverrideController | PlayerAnimation_Default.overrideController + PlayerAnimation_Female.overrideController | ✅ |
+| Blend Trees | PlayerAnimation.controller с Blend Tree | ✅ |
+| Network | NetworkPlayer.prefab с NetworkObject | ✅ |
 
-### Анимации
+### Система кастомизации
 
-| Анимация | Источник | Описание |
-|----------|----------|----------|
-| Idle | Mixamo | Стойка покоя |
-| Walk | Mixamo | Ходьба |
-| Run | Mixamo | Бег |
-| Jump | Mixamo | Прыжок |
+| Компонент | Путь | Назначение |
+|-----------|------|------------|
+| CharacterCustomisationApplier | `Scripts/Player/CharacterCustomisationApplier.cs` | Применение кастомизации к модели |
+| CharacterEquipmentVisualApplier | `Scripts/Player/CharacterEquipmentVisualApplier.cs` | Визуализация экипировки |
+| CustomisationClientState | `Scripts/Customisation/CustomisationClientState.cs` | Состояние кастомизации клиента |
+| CustomisationSave | `Scripts/Customisation/CustomisationSave.cs` | Сохранение кастомизации |
+| CharacterBodyType | `Scripts/Customisation/CharacterBodyType.cs` | Типы телосложения |
+| HairStyleId | `Scripts/Customisation/HairStyleId.cs` | ID причёсок |
+| BodyPresetId | `Scripts/Customisation/BodyPresetId.cs` | ID пресетов тела |
+
+### Анимации — Animator System
+
+| Анимация | Контроллер | Описание |
+|----------|-----------|----------|
+| Idle | PlayerAnimation.controller | Стойка покоя |
+| Walk | PlayerAnimation.controller + Blend Tree | Ходьба |
+| Run | PlayerAnimation.controller + Blend Tree | Бег |
+| Jump | PlayerAnimation.controller | Прыжок |
+| Override (Default) | PlayerAnimation_Default.overrideController | Базовая замена анимаций |
+| Override (Female) | PlayerAnimation_Female.overrideController | Женская замена анимаций |
 
 ---
 
@@ -295,15 +402,24 @@ Assets/_Project/
 
 ## 11. Particle Systems
 
-### [🔴 Запланировано] Частицы
+### ⚡ Частично реализовано
 
-| Система | Описание | Этап |
-|---------|----------|------|
-| Пыль при беге | Частицы при беге по земле | Этап 2.5 |
-| Двигатели корабля | Голубое свечение `#4FC3F7` | Этап 2.5 |
-| Дождь | URP Particles | Этап 2.5 |
-| Молнии Завесы | Фиолетовые вспышки | Этап 3 |
-| Посадка/взлёт | Пыль/пар при посадке | Этап 3 |
+VFX-система использует **Visual Effect Graph 17.4.0** и стандартные Particle Systems.
+
+| Система | Путь/Компонент | Статус |
+|---------|----------------|--------|
+| Explosion Impact | `Assets/_Project/Resources/Vfx/PF_VFX_Impact_Explosion.prefab` | ✅ |
+| Melee Impact | `Assets/_Project/Resources/Vfx/PF_VFX_Impact_Melee.prefab` | ✅ |
+| Muzzle Flash | `Assets/_Project/Resources/Vfx/PF_VFX_MuzzleFlash_Basic.prefab` | ✅ |
+| Arrow Projectile | `Assets/_Project/Resources/Vfx/PF_VFX_Projectile_Arrow.prefab` | ✅ |
+| ParticleSystemVfxProvider | `Scripts/Skills/Vfx/ParticleSystemVfxProvider.cs` | ✅ |
+| CreateVfxPrefabs Editor | `Editor/CreateVfxPrefabs.cs` | ✅ |
+| AssignVfxToSkills Editor | `Editor/AssignVfxToSkills.cs` | ✅ |
+| Пыль при беге | — | 🔴 |
+| Двигатели корабля | — | 🔴 |
+| Дождь | — | 🔴 |
+| Молнии Завесы | — | 🔴 |
+| Посадка/взлёт | — | 🔴 |
 
 ---
 
@@ -311,23 +427,26 @@ Assets/_Project/
 
 ### Целевые показатели
 
-| Параметр | Цель | Описание |
-|----------|------|----------|
+| Параметр | Цель | Текущее состояние |
+|----------|------|------------------|
 | FPS | 60 | Целевой кадррейт |
-| Draw calls | < 2000 | Общее количество |
-| Полигоны | < 500k | Общее количество на сцене |
-| Текстуры | 512x512 max | Размер текстур |
-| Облака | 890+ | Оптимизированы |
-| Пики | 15 | Low-poly конусы |
+| Draw calls | < 2000 | 24 streaming scenes |
+| Полигоны | < 500k на сцену | Low-poly стиль |
+| Текстуры | 512x512 max | Noise-текстуры 512x512 |
+| Облака | 3 слоя + Distant | Оптимизированы через GPU Instancing |
+| Пики | Процедурные (MountainMeshBuilderV2) | Low-poly конусы с биомами |
+| VFX | Particle + VEG 17.4.0 | Impact/Muzzle/Projectile VFX |
 
-### [🔴 Запланировано] Оптимизация
+### Оптимизация
 
-| Метод | Описание |
-|-------|----------|
-| LOD | Уровни детализации |
-| Occlusion Culling | Отсечение закрытых объектов |
-| GPU Instancing | Для облаков |
-| Object Pooling | Переиспользование |
+| Метод | Описание | Статус |
+|-------|----------|--------|
+| LOD | BillboardEffect — для дальних объектов | ⚡ Тестируется |
+| Occlusion Culling | Отсечение закрытых объектов | 🔴 |
+| GPU Instancing | Для облаков | ⚡ Проверяется |
+| Object Pooling | Переиспользование объектов | 🔴 |
+| Streaming Scenes | 24 сцены 6×4, аддитивная загрузка | ✅ |
+| FloatingOriginMP | Сдвиг мира при удалении от центра | ✅ Написан, не развёрнут |
 
 ---
 
@@ -339,16 +458,16 @@ Assets/_Project/
 | 2 | CloudGhibli.shader работает | Rim glow на облаках | ✅ |
 | 3 | Procedural Noise генерируется | Текстуры 512x512 | ✅ |
 | 4 | Материалы URP | Нет розовых материалов | ✅ |
-| 5 | Облака двигаются | 3 слоя, движение | ✅ |
-| 6 | Цикл дня/ночи | Смена освещения | ✅ |
-| 7 | Мир генерируется | 15 пиков, 890+ облаков | ✅ |
-| 8 | Post-Processing | [🔴 Запланировано] | 🔴 |
-| 9 | Модель персонажа (Mixamo) | [🔴 Запланировано] | 🔴 |
+| 5 | Облака двигаются | 3 слоя + Distant, движение | ✅ |
+| 6 | Цикл дня/ночи | Смена освещения, Volume Profiles | ✅ |
+| 7 | Мир генерируется | Процедурные пики с биомами | ✅ |
+| 8 | Post-Processing (Bloom, Vignette, Color Adjustments) | DayVolume, NightVolume, TwilightVolume активны | ✅ |
+| 9 | Модель персонажа (Mixamo) | NetworkPlayer.prefab с Customisation | ✅ |
 | 10 | Модель корабля (FBX) | [🔴 Запланировано] | 🔴 |
 | 11 | Текстуры Poly Haven | [🔴 Запланировано] | 🔴 |
-| 12 | Частицы (пыль, двигатели) | [🔴 Запланировано] | 🔴 |
-| 13 | Bloom, Vignette | [🔴 Запланировано] | 🔴 |
-| 14 | Fog (Завеса) | [🔴 Запланировано] | 🔴 |
+| 12 | Частицы (VFX Impact) | PF_VFX_Impact_* префабы | ⚡ Частично |
+| 13 | AnimatorOverrideController | PlayerAnimation_*.overrideController | ✅ |
+| 14 | Fog (Завеса) | Exponential fog через Volume | ✅ |
 
 ---
 

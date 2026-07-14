@@ -1,7 +1,7 @@
 # GDD-00: Game Overview — Project C: The Clouds
 
-**Версия:** 1.0 | **Дата:** 6 апреля 2026 г. | **Статус:** ✅ Документировано
-**Автор:** Qwen Code (Game Studio: @creative-director + @game-designer)
+**Версия:** 1.1 | **Дата:** 14 июля 2026 г. | **Статус:** ✅ Документировано
+**Автор:** Малков Леонид Андреевич
 
 ---
 
@@ -18,10 +18,10 @@
 | # | Пиллар | Описание | Пример реализации |
 |---|--------|----------|------------------|
 | 1 | **Свобода полёта** | Корабли — не истребители, а баржи. Плавный, медитативный полёт с инерцией и стабилизацией | ShipController: антигравитация, медленный разгон, нет крена |
-| 2 | **Исследование над боем** | Основной геймплей — исследование мира, а не сражения. Бой — через стелс и избегание | Завеса как опасность, СОЛ-система обхода |
-| 3 | **Кооперативное взаимодействие** | Несколько игроков в одном корабле, разделение ролей, общая цель | Кооп-пилотирование: усреднение ввода через ServerRpc |
+| 2 | **Исследование над боем** | Основной геймплей — исследование мира, а не сражения. Бой — через стелс и избегание | Завеса как опасность, [🔴 Запланировано] СОЛ-система обхода |
+| 3 | **Кооперативное взаимодействие** | Несколько игроков в одном корабле, разделение ролей, общая цель | [🔴 Запланировано] Кооп-пилотирование: усреднение ввода через ServerRpc |
 | 4 | **Sci-Fi + Ghibli эстетика** | Промышленный дизайн + мягкие облака, градиенты, объёмный свет | CloudGhibli.shader, URP, цветовая палитра |
-| 5 | **Всё на технологии, ничего магического** | Антигравий, мезий, МАГ — научно объяснимые технологии | WORLD_LORE_BOOK.md: физика антигравия |
+| 5 | **Всё на технологии, ничего магического** | Антигравий, мезий, МАГ — научно объяснимые технологии | RAG БД (PostgreSQL 192.168.31.227:5432, таблица book_chunks): физика антигравия |
 
 ### Target Audience
 
@@ -51,8 +51,8 @@
 | **Платформа** | PC (Windows) |
 | **Тип** | MMO с открытым миром |
 | **Реалистичный охват** | Кооп 2-4 игрока → полноценная MMO (масштабирование) |
-| **Движок** | Unity 6, URP 17.4.0 |
-| **Сетевая модель** | Авторитарный сервер (.NET 8), NGO клиент |
+| **Движок** | Unity 6, URP 17.0.3 |
+| **Сетевая модель** | Авторитарный хост (Unity NGO), NGO клиент |
 | **Рендер** | Universal Render Pipeline |
 
 ### Technical Stack
@@ -61,7 +61,6 @@
 |-----------|-----------|
 | Клиент | Unity 6, URP, Input System |
 | Сеть | Netcode for GameObjects (NGO) |
-| Сервер | .NET 8 (авторитарный) |
 | Язык | C# |
 | Контроль версий | Git + Git LFS |
 
@@ -161,7 +160,6 @@
 
 | Зависит от | Описание |
 |-----------|----------|
-| WORLD_LORE_BOOK.md | Лор мира, фракции, технологии |
 | CONTROLS.md | Карта клавиш |
 | SHIP_SYSTEM_DOCUMENTATION.md | Текущая реализация кораблей |
 | NETWORK_ARCHITECTURE.md | Сетевая архитектура |
@@ -189,15 +187,23 @@
 | # | Критерий | Как проверить |
 |---|----------|--------------|
 | 1 | Игрок может ходить/бегать/прыгать | WASD + Shift + Space в пешем режиме |
-| 2 | Игрок может сесть/выйти из корабля | F, радиус < 5м, проверка скорости. **🟡 Требуется ключ** (см. §6 ниже + `docs/Ships/Key-subsystem/`) |
+| 2 | Игрок может сесть/выйти из корабля | F, радиус < 5м, проверка скорости. **🟡 Требуется MetaRequirement** (ключ/ownership в инвентаре) |
 | 3 | Корабль летает плавно, с инерцией | WASD + мышь, отсутствие резких рывков |
-| 4 | Кооп-пилотирование работает | 2+ игрока, ввод усредняется |
+| 4 | [🔴 Запланировано] Кооп-пилотирование работает | 2+ игрока, ввод усредняется |
 | 5 | Камера адаптируется при смене режима | Плавный переход distance 5м → 18м |
-| 6 | Инвентарь работает (подбор, сундуки) | E подбирает, Tab открывает колесо, P → таб «Инвентарь» (sub_inventory-tab) |
+| 6 | Инвентарь работает (подбор, сундуки) | E подбирает, Tab открывает колесо, P → таб «Инвентарь» |
 | 7 | Сетевой мультиплеер работает | Host + Client, синхронизация движения |
 | 8 | Reconneкт работает | Обрыв → авто-подключение, инвентарь сохранён |
 | 9 | Визуал соответствует Ghibli-стилю | Облака с rim glow, мягкие цвета |
-| 10 | Core Loop работает | Контракт → полёт → выполнение → награда. **🟢 Дополнено квестами (M11 Mira E2E, см. `docs/NPC_quests/08_ROADMAP.md`)** |
+| 10 | Core Loop работает | Контракт → полёт → выполнение → награда. **🟢 Дополнено квестами (M11 Mira E2E)** |
+| 11 | **NPC диалоги + квесты** | Подойти к NPC → E → DialogWindow → диалог → квест. E2E: M11 Mira |
+| 12 | **Combat MVP:** DamageCalculator | Host → атака → консоль "Damage: X (hit/crit/miss)" |
+| 13 | **Combat:** TargetLockService (Q/E cycle, R lock) | Нажать R → блокировка, Q/E → циклический перебор целей |
+| 14 | **Input rebinding:** Escape → Controls → Rebind → Save | Esc → Controls → клик биндинга → новая клавиша → Save → Restart |
+| 15 | **CharacterWindow (P-key)** | P → 5+ табов (Персонаж/Корабль/Репутация/Контракты/Инвентарь/Квесты) |
+| 16 | **Character Customisation** | P → "Изменить внешность" → CustomisationWindow (пол, внешность) |
+| 17 | **SkillTree (K-key)** | K → SkillTreeWindow → дерево навыков (27+ узлов) |
+| 18 | **Crafting system** | Подойти к CraftingStation → открыть CraftingWindow → создать предмет |
 
 ---
 
@@ -210,22 +216,26 @@
 | Подсистема | GDD | Код | Документация | Статус |
 |---|---|---|---|---|
 | **NPC + Quests v2** | [GDD_21](GDD_21_Quest_Mission_System.md) | `Assets/_Project/Quests/` (~8400 строк, 7 namespaces) | `docs/NPC_quests/` (10+ файлов, M1–M19 ✅) | ✅ DONE |
-| **CharacterWindow v2** | [GDD_13](GDD_13_UI_UX_System.md) | `Assets/_Project/UI/Client/CharacterWindow.cs` (1345+ LOC) + UXML/USS | `docs/Character-menu/00_OVERVIEW.md` + `sub_inventory-tab/` | ✅ DONE (5+ табов) |
-| **MetaRequirement v1 (lock-key)** | [GDD_10](GDD_10_Ship_System.md) + [GDD_11](GDD_11_Inventory_Items.md) | `Assets/_Project/Scripts/MetaRequirement/` (7 файлов, ~50 KB) | `docs/MetaRequirement/` (9 файлов) | ✅ Stage 1 DONE |
-| **Ship Key MVP** | [GDD_10](GDD_10_Ship_System.md) | `Assets/_Project/Scripts/Ship/Key/` (4 файла) | `docs/Ships/Key-subsystem/00_OVERVIEW.md` | ✅ DONE (deprecated, superseded by MetaRequirement) |
-| **Inventory v2** | [GDD_11](GDD_11_Inventory_Items.md) | `InventoryWorld` + `InventoryServer` + `InventoryClientState` | `docs/Character-menu/sub_inventory-tab/` | ✅ DONE (Phases 0-7) |
+| **CharacterWindow v2** | [GDD_13](GDD_13_UI_UX_System.md) | `Assets/_Project/Scripts/UI/Client/CharacterWindow.cs` + UXML/USS | `docs/Character-menu/00_OVERVIEW.md` + `sub_inventory-tab/` | ✅ DONE (5+ табов) |
+| **MetaRequirement v1 (lock-key)** | [GDD_10](GDD_10_Ship_System.md) + [GDD_11](GDD_11_Inventory_Items.md) | `Assets/_Project/Scripts/MetaRequirement/` (8 файлов, ~50 KB) | `docs/MetaRequirement/` (9 файлов) | ✅ Stage 1 DONE |
+| **Ship Key MVP** | [GDD_10](GDD_10_Ship_System.md) | `Assets/_Project/Scripts/Ship/Key/` (ShipOwnershipRequirement.cs) | `docs/Ships/Key-subsystem/00_OVERVIEW.md` | ✅ DONE (deprecated, superseded by MetaRequirement) |
+| **Inventory v2** | [GDD_11](GDD_11_Inventory_Items.md) | `Assets/_Project/Items/Core/InventoryWorld.cs` + `InventoryServer` + `InventoryClientState` | `docs/Character-menu/sub_inventory-tab/` | ✅ DONE (Phases 0-7) |
 | **ItemRegistry** | [GDD_11](GDD_11_Inventory_Items.md) | `Assets/_Project/Items/Core/ItemRegistry.cs` (32 items) | `docs/NPC_quests/old_session_log/M14_DESIGN_NOTE.md` | ✅ DONE (M14) |
 | **DialogWindow** | [GDD_13](GDD_13_UI_UX_System.md) | `Assets/_Project/Quests/UI/DialogWindow.cs` (typewriter, F-skip) | `docs/NPC_quests/old_session_log/T-Q11b_c_session_log_2026-06-08.md` | ✅ DONE |
 | **QuestTracker (HUD)** | [GDD_13](GDD_13_UI_UX_System.md) | `Assets/_Project/Quests/UI/QuestTracker.cs` | `docs/NPC_quests/old_session_log/T-Q12_DESIGN_NOTE.md` | ✅ DONE |
 | **Toast notifications** | [GDD_13](GDD_13_UI_UX_System.md) | `Assets/_Project/UI/Toast/` + `QuestToast.cs` (M15) | `docs/NPC_quests/old_session_log/M15_DESIGN_NOTE.md` | ✅ DONE |
 | **FactionId / Reputation / NpcAttitude** | [GDD_23](GDD_23_Faction_Reputation.md) | `ProjectC.Factions`, `ProjectC.Reputation` namespaces | `docs/NPC_quests/02_V2_ARCHITECTURE.md` | ✅ Stage 1 DONE |
 | **Contract → Quest bridge** | [GDD_22](GDD_22_Economy_Trading.md) + [GDD_21](GDD_21_Quest_Mission_System.md) | `ContractMetaBridge` (T-X5, T-Q15) | `docs/NPC_quests/old_session_log/T-Q15_DESIGN_NOTE.md` | ✅ DONE |
+| **Combat MVP** | [GDD_25](GDD_25_Combat_System.md) | `Assets/_Project/Scripts/Combat/` (~50 файлов, 5 namespaces) | `docs/Character/Skills/real-time-combat/` (T-RTC) | ✅ DONE |
+| **SkillTree** | [GDD_13](GDD_13_UI_UX_System.md) | `Assets/_Project/Scripts/Skills/` (SkillTreeWindow, SkillsServer, 27+ SkillNodeConfig) | `docs/Character/` | ✅ DONE |
+| **Input rebinding** | [GDD_01](GDD_01_Core_Gameplay.md) | `Assets/_Project/Scripts/Input/InputBindingsRuntime.cs` (PlayerPrefs persistence) + `EscMenuWindow` + `InputBindingsConfig` SO | `docs/Character/input-system/` | ✅ DONE (Phase 2.3) |
+| **Character Customisation** | [GDD_13](GDD_13_UI_UX_System.md) | `Assets/_Project/Scripts/Customisation/` (CustomisationWindow, 6 presets, colors) + `CharacterCustomisationApplier` | `docs/Character/` | ✅ DONE (Phase 1-3) |
+| **Crafting system** | [GDD_22](GDD_22_Economy_Trading.md) | `Assets/_Project/Scripts/Crafting/` (~15 файлов, CraftingWindow, CraftingServer, RecipeData) | — | ⏳ Stage 1 DONE |
 
 ### 6.2 Что открыто ⏳
 
 | Задача | GDD | Milestone | Приоритет |
 |---|---|---|---|
-| M12 — Input remap (F = pickup, E = NPC) | GDD_01, GDD_10 | M12 | 🟡 Med (~45 мин) |
 | M17 polish — edges always visible в QuestGraphView | GDD_13 (editor) | M17 | 🟢 Low (~1 ч) |
 | T-X2 — Faction migration (TradeItemDefinition → FactionId) | GDD_22, GDD_23 | M9 | 🟡 design discussion |
 | T-Q09b — GraphView sub-tab внутри QuestDatabaseWindow | GDD_13 (editor) | M10 | ⏭️ DEFERRED (покрыт M17) |
@@ -233,15 +243,20 @@
 | Localization (строки в .po) | GDD_13, GDD_21, GDD_22 | post-MVP | 🟢 Low |
 | MetaRequirement `_consumeOnUse` логика | GDD_10, GDD_11 | M7+ | 🟠 MEDIUM |
 | Daily/Weekly Challenges | GDD_21 | Future | 🟢 Low |
+| Customisation Phase 4 (skin/hair colors, clothing overrides) | GDD_13 | L4 | 🟠 MEDIUM |
+| Crafting UI polish + recipes content | GDD_22 | post-MVP | 🟡 Med |
+| Характеристики (STATS) — STR/DEX/AGI/LUK имплементация | GDD_13 | M18 | 🟡 Med |
 
 ### 6.3 Где смотреть актуальный статус
 
 - **`docs/NPC_quests/08_ROADMAP.md`** — главный roadmap квестовой подсистемы (50+ тикетов, 19 milestones, сессионные логи, риски)
 - **`docs/MMO_Development_Plan.md`** — общий план проекта (Этап 1, 1.4, 1.5, 1.6, 1.7, 1.9 + NPC+Quests)
 - **`docs/Character-menu/00_OVERVIEW.md`** + `sub_inventory-tab/` — CharacterWindow + инвентарь
+- **`docs/Character/Skills/real-time-combat/`** — Combat system (T-RTC)
+- **`docs/Character/input-system/`** — Input rebinding system
 - **`docs/Ships/Key-subsystem/SHIP_KEY_TO_META_REQUIREMENT_MIGRATION.md`** — миграция Ship Key → MetaRequirement
 - **`docs/MetaRequirement/99_CHANGELOG.md`** — changelog MetaRequirement
 
 ---
 
-**Связанные документы:** [GDD_INDEX.md](GDD_INDEX.md) | [README.md](../README.md) | [WORLD_LORE_BOOK.md](../WORLD_LORE_BOOK.md)
+**Связанные документы:** [GDD_INDEX.md](GDD_INDEX.md) | [README.md](../README.md) | [AGENTS.md](../../AGENTS.md)

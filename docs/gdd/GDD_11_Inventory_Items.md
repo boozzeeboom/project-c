@@ -1,73 +1,162 @@
 # GDD-11: Inventory & Items — Project C: The Clouds
 
-**Версия:** 2.0 | **Дата:** 31 июля 2026 г. | **Статус:** 🟢 Документировано + реализовано (v2 + Weapon Unification)
-**Автор:** Qwen Code (Game Studio) — дизайн, Mavis 2026-06-10 — раздел реализации, Aura 2026-07-31 — актуализация
+**Версия:** 3.0 | **Дата:** 14 июля 2026 г. | **Статус:** 🟢 Актуализировано по коду — §1-§12 переписаны под Inventory v2 (ItemRegistry, InventoryWorld, NetworkList-синхронизация), §2 (типы предметов обновлены: Type1-Type8 → конкретные), §6 (круговое колесо → CharacterWindow + таб Инвентарь)
+**Автор:** Малков Леонид Андреевич
 
 ---
 
 ## 1. Overview
 
-Система инвентаря Project C: The Clouds включает **подбор предметов**, **сундуки с LootTable**, **круговое колесо инвентаря** и **сетевую синхронизацию** подбора. Предметы сгруппированы по 8 типам.
+Система инвентаря Project C: The Clouds включает **сервер-авторитативное хранение предметов**, **подбор/дроп через RPC**, **синхронизацию через NetworkList** и **UI через CharacterWindow**. Предметы имеют конкретные типы (не Type1-Type8) и могут экипироваться в слоты персонажа.
 
 ### Ключевые особенности
-- **8 типов предметов** — ItemType enum
-- **Круговое колесо** — стиль GTA 5, GL-рендер, 8 секторов
-- **LootTable** — ScriptableObject с шансами и min/max count
-- **Сетевая синхронизация** — HidePickupRpc, OpenChestRpc (SendTo.Everyone)
-- **Сохранение** — PlayerPrefs при Disconnect/Reconnect
+- **9 типов предметов** — ItemType enum: Resources, Equipment, Food, Fuel, Antigrav, Meziy, Medical, Tech, Key
+- **ItemRegistry** — ScriptableObject, единый источник истины для id↔ItemData mapping (32 registered items)
+- **Сервер-авторитативное** — все мутации только на сервере через `InventoryWorld.TryPickup`/`TryDrop`/`AddItemDirect`/`TryRemove`
+- **NetworkList синхронизация** — `InventoryServer` → `InventoryClientState.OnSnapshotUpdated`
+- **CharacterWindow UI** — P → таб «Инвентарь» (вместо старого кругового колеса GTA-style)
+- **JSON persistence** — per-client JSON в `persistentDataPath` через `JsonInventoryRepository`
+- **ICombatDamageProvider** — WeaponItemData унифицирован (ThrownItemData удалён)
+
+### История изменений
+
+| Версия | Дата | Изменения |
+|--------|------|-----------|
+| 1.0 | Апрель 2026 | Первая версия: Dictionary<ItemType,int>, 8 типов, круговое колесо, PlayerPrefs |
+| 2.0 | 31 июля 2026 | Инвентарь v2: сервер-авторитативный, JsonInventoryRepository, CharacterWindow таб |
+| 3.0 | 14 июля 2026 | Переписаны §1-§12 под актуальную архитектуру v2; Weapon Unification (ThrownItemData → WeaponItemData) |
 
 ---
 
 ## 2. Item Types
 
-### 8 типов предметов
+### 9 типов предметов
 
 | ID | Тип | Название (лор) | Описание | Примеры |
 |----|-----|---------------|----------|---------|
-| 1 | Type1 | Тестовый предмет | [🔴 Будет заменено] | «Говно» (тест) |
-| 2 | Type2 | Ресурсы | Строительные материалы | Металл, доски, тросы |
-| 3 | Type3 | Еда | Пища и вода | Консервы, фильтры воды |
-| 4 | Type4 | Топливо | Мезий для двигателей | Жидкий мезий, канистры |
-| 5 | Type5 | Антигравий | Компоненты двигателей | Антигравиевые кристаллы |
-| 6 | Type6 | Мезий | Яд/топливо, ключевой ресурс | Мезий-картриджи |
-| 7 | Type7 | МНП | Мезий-антигравиевый препарат | Медикаменты, стимуляторы |
-| 8 | Type8 | Латекс | Технический ресурс | Изоляция, уплотнители |
+| 0 | Resources | Ресурсы | Строительные материалы, руда | Металл, доски, тросы |
+| 1 | Equipment | Экипировка | Оружие, броня, инструменты | Меч, щит, шлем |
+| 2 | Food | Еда | Пища и вода | Консервы, фильтры воды |
+| 3 | Fuel | Топливо | Мезий для двигателей | Жидкий мезий, канистры |
+| 4 | Antigrav | Антигравий | Компоненты антиграв-двигателей | Антигравиевые кристаллы |
+| 5 | Meziy | Мезий | Яд/топливо, ключевой ресурс | Мезий-картриджи |
+| 6 | Medical | МНП/Медикаменты | Мезий-антигравиевый препарат | Медикаменты, стимуляторы |
+| 7 | Tech | Латекс/Тех. | Технический ресурс | Изоляция, уплотнители |
+| 8 | Key | Ключи | Ключ-стержни для кораблей (R2-SHIP-KEY-003) | ShipLight Key, ShipMedium Key |
+
+> **Примечание:** В версии 1.0 (legacy) типы назывались Type1-Type8. При миграции на v2 типы получили осмысленные имена. Тип Key (8) добавлен в R2-SHIP-KEY-003 для отдельного типа ключей кораблей.
 
 ### ItemData (ScriptableObject)
 
+| Поле | Тип | Описание | Статус |
+|------|-----|----------|--------|
+| `itemName` | string | Название предмета | ✅ |
+| `itemType` | ItemType | Тип (Resources/Equipment/...) | ✅ |
+| `description` | string | Описание предмета | ✅ |
+| `icon` | Sprite | Иконка | ✅ (планировалось) |
+| `maxStack` | int | Максимальное количество в стаке (1 = non-stackable) | ✅ |
+| `weightKg` | float | Вес предмета в кг (для будущей cargo-системы) | ✅ |
+| `equipSlot` | EquipSlot | В какой слот экипируется (None = нельзя надеть) | ✅ |
+| `visualPrefab` | GameObject | 3D-меш для отображения в мире и на персонаже | ✅ (Phase 1-2) |
+| `attachBoneOverride` | HumanBodyBones | Кость для прикрепления (LastBone = default) | ✅ (Phase 2) |
+| `attachPositionOffset` | Vector3 | Локальный offset от кости | ✅ |
+| `attachRotationOffset` | Vector3 | Локальное вращение | ✅ |
+| `attachScale` | Vector3 | Локальный масштаб | ✅ |
+
+### EquipSlot (13 слотов)
+
+| Слот | Значение | Описание |
+|------|----------|----------|
+| None | 0 | Нельзя надеть |
+| Head | 1 | Голова |
+| Chest | 2 | Грудь |
+| Legs | 3 | Ноги |
+| Feet | 4 | Ступни |
+| Back | 5 | Спина |
+| Hands | 6 | Руки |
+| Accessory1 | 7 | Аксессуар 1 |
+| Accessory2 | 8 | Аксессуар 2 |
+| WeaponMain | 9 | Основное оружие |
+| WeaponOff | 10 | Доп. оружие |
+| Module1 | 20 | Модуль 1 |
+| Module2 | 21 | Модуль 2 |
+| Module3 | 22 | Модуль 3 |
+
+### WeaponItemData (подкласс ItemData)
+
 | Поле | Тип | Описание |
 |------|-----|----------|
-| `itemName` | string | Название предмета |
-| `itemType` | ItemType | Тип (Type1-Type8) |
-| `description` | string | Описание |
-| `icon` | Sprite | Иконка 128x128 [🔴 Запланировано] |
-| `stackSize` | int | Максимальный стак [🔴 Запланировано] |
-| `weight` | float | Вес предмета [🔴 Запланировано] |
+| `weaponClass` | WeaponClass | Класс оружия (Sword/Dagger/Spear/Mace/Crossbow/...) |
+| `handling` | WeaponHandling | Melee/Ranged/Thrown/Placed |
+| `damageDice` | DamageDice | Dice урона (d4-d20) |
+| `baseDamage` | int | Flat-бонус к урону |
+| `critModifier` | int | Модификатор крита (1d100+crit >= 100 → crit ×2) |
+| `range` | float | Дальность (м) |
+| `damageType` | DamageType | Physical/Ballistic/Antigrav/Explosive/Mesium |
+| `explosionRadius` | float | Радиус AOE (для Thrown/Placed) |
+| `throwRange` | float | Макс. дистанция броска (Thrown) |
+| `fuseTimeSec` | float | Задержка до взрыва (сек) |
+| `requiredProficiency` | SkillNodeConfig | Минимальный навык (gate) |
+| `minTier` | int | Минимальный INT tier |
+
+> **Weapon Unification (T-WPN-01-REF-02, июль 2026):** `ThrowableItemData` удалён — функционал перемещён в `WeaponItemData` с полем `WeaponHandling.Thrown`. Теперь 2 иерархии: `ItemData` + `WeaponItemData`.
 
 ---
 
-## 3. Inventory System
+## 3. Inventory System (v2)
 
-### Хранение по типам
+### Архитектура
+
+```
+SERVER (host):
+[InventoryServer] : NetworkBehaviour (BootstrapScene, DontDestroyOnLoad)
+    ├── InventoryWorld (POCO singleton) — бизнес-логика
+    │     ├── ItemDatabase: Dictionary<int, ItemData> — id → definition
+    │     ├── Dictionary<ulong, InventoryData> — per-player state
+    │     ├── TryPickup / TryDrop / TryMove / TryUse → InventoryResultDto
+    │     ├── BuildSnapshot(clientId) → InventorySnapshotDto → NetworkList-синхронизация
+    │     └── 4 extensions: HasAllItems, HasAnyItem, CountOf, GetMissingItems
+    └── IInventoryRepository (interface) — abstract storage
+          └── JsonInventoryRepository (default, per-client JSON)
+
+CLIENT:
+[InventoryClientState] (singleton, RuntimeInitializeOnLoadMethod)
+    └── OnSnapshotUpdated event → UI подписано
+          └── CharacterWindow → таб «Инвентарь» (sub_inventory-tab)
+```
+
+### Хранение
 
 | Параметр | Описание |
 |----------|----------|
-| Структура | `Dictionary<ItemType, int>` — тип → количество |
-| Ячейки | 8 (по одной на тип) |
-| Группировка | Автоматическая — одинаковые предметы складываются |
-| Лимит | [🔴 Запланировано] Максимальный вес/объём |
-| Singleton | Inventory.Instance — глобальный доступ |
+| Структура | `Dictionary<int, int>` (itemId → count) + `_keySlots` для Key-предметов (itemId + instanceId) |
+| Персистентность | JSON per-client (`JsonInventoryRepository`), атомарная запись |
+| Singleton | `InventoryWorld.Instance` — глобальный server-side доступ |
+| Инициализация | `InventoryWorld.CreateAndInitialize()` в `InventoryServer.OnNetworkSpawn` |
+| Регистрация предметов | `ItemRegistry.Instance` (32 entries) + fallback на `Resources.LoadAll` |
 
 ### Операции
 
-| Метод | Описание |
-|-------|----------|
-| `AddItem(ItemData item)` | Добавить 1 предмет |
-| `AddMultipleItems(ItemData item, int count)` | Добавить N предметов |
-| `RemoveItem(ItemType type, int count)` | Удалить N предметов |
-| `GetCount(ItemType type)` | Получить количество |
-| `SaveToPrefs()` | Сохранить в PlayerPrefs (для реконнекта) |
-| `LoadFromPrefs()` | Загрузить из PlayerPrefs |
+| Метод | Описание | Server-only |
+|-------|----------|-------------|
+| `TryPickup(clientId, itemId, type, worldPos, instanceId?)` | Подобрать предмет (с проверкой дистанции 5м) | ✅ |
+| `TryDrop(clientId, itemId, count, worldPos)` | Выбросить предмет | ✅ |
+| `TryMove(clientId, fromSlot, toSlot)` | Переместить в инвентаре | ✅ |
+| `TryUse(clientId, itemId)` | Использовать предмет | ✅ |
+| `AddItemDirect(clientId, itemId, count)` | Прямая выдача (для крафта/квестов) | ✅ |
+| `TryRemove(clientId, itemId, count)` | Удалить предметы | ✅ |
+| `HasAllItems(clientId, int[] itemIds)` | AND-логика (MetaRequirement) | ✅ |
+| `HasAnyItem(clientId, int[] itemIds)` | OR-логика (MetaRequirement) | ✅ |
+| `CountOf(clientId, int itemId)` | Подсчёт предметов | ✅ |
+| `GetMissingItems(clientId, int[] itemIds)` | Массив недостающих | ✅ |
+| `AddKeyItem(clientId, itemId, instanceId)` | Добавить Key-предмет с instanceId | ✅ |
+| `BuildSnapshot(clientId)` | Построить DTO для клиента | ✅ |
+
+### Rate Limiting
+
+- Серверный rate limit в `InventoryServer.CheckRateLimit()` — защита от спама запросами
+- Проверка дистанции в `TryPickup`: `Vector3.Distance(worldPos, playerPos) <= PICKUP_RANGE_M (5м)`
+- Ownership-проверка в `TryDrop`: предмет должен быть в инвентаре клиента
 
 ---
 
@@ -78,27 +167,33 @@
 | Параметр | Значение |
 |----------|----------|
 | Клавиша | E |
-| Радиус | 3м |
+| Радиус | 5м (серверная валидация) |
 | Приоритет | Сундуки > предметы |
 | Режим | Только пеший режим |
-| Реализация | ItemPickupSystem.cs |
+| Реализация | `InventoryServer.RequestPickupRpc` → `InventoryWorld.TryPickup` |
 
 ### PickupItem (компонент на сцене)
 
 | Поле | Тип | Описание |
 |------|-----|----------|
 | `itemData` | ItemData | Ссылка на предмет |
+| `instanceId` | int | ID экземпляра (для KeyRod) |
 | `bobSpeed` | float | Скорость покачивания |
-| `Collect()` | method | Подбор предмета |
-| `HidePickupRpc()` | Rpc | Скрытие у всех игроков |
+| `Collect()` | method | Подбор предмета → `RequestPickupRpc` |
 
-### Визуализация
+### Поток подбора (v2)
 
-| Элемент | Описание |
-|---------|----------|
-| Покачивание | Синусоидальное движение вверх-вниз |
-| Радиус | Gizmos в редакторе |
-| Подсветка | [🔴 Запланировано] При приближении игрока |
+```csharp
+1. Player нажимает E
+2. NetworkPlayer.RequestPickupRpc(itemId, type, instanceId, pos)
+3. InventoryServer на сервере:
+   - Валидация дистанции: Distance(worldPos, playerPos) <= 5м
+   - Rate limit проверка
+   - InventoryWorld.TryPickup(clientId, itemId, type, pos, instanceId)
+4. InventoryWorld создаёт/обновляет InventoryData
+5. Snapshot отправляется клиенту через NetworkList
+6. PickupItem.HidePickupRpc() — предмет исчезает у всех
+```
 
 ---
 
@@ -113,7 +208,6 @@
 | Анимация | Поворот + масштаб |
 | LootTable | ScriptableObject |
 | Синхронизация | OpenChestRpc (SendTo.Everyone) |
-| Автоуничтожение | После открытия [🔴 Запланировано] |
 
 ### LootTable (ScriptableObject)
 
@@ -131,170 +225,132 @@
 | `minCount` | int | Минимальное количество |
 | `maxCount` | int | Максимальное количество |
 
-### Формулы лута
-
-| Формула | Описание |
-|---------|----------|
-| `roll = Random.Range(0f, 1f)` | Бросок шанса |
-| `if (roll <= entry.chance) → add` | Проверка выпадения |
-| `count = Random.Range(minCount, maxCount + 1)` | Количество |
-
 ---
 
 ## 6. Inventory UI
 
-### Круговое колесо (InventoryUI.cs)
+### CharacterWindow → таб «Инвентарь» (sub_inventory-tab)
 
 | Параметр | Описание |
 |----------|----------|
-| Активация | Tab — открыть/закрыть |
-| Секторы | 8 (по типам предметов) |
-| Рендер | GL-линии |
-| Цвета | Зелёный = есть предметы, серый = пусто |
-| Hover | Подсветка сектора мышью |
-| Подсписки | При наведении на сектор с >1 предметом |
-| Вспышка | При получении лута |
+| Активация | P — открыть CharacterWindow |
+| Таб | «Инвентарь» (левый таб в окне персонажа) |
+| Фильтры | По типу предметов (Resources/Equipment/Food/...) |
+| Слоты | Визуализация equip-слотов (Head, Chest, WeaponMain, WeaponOff, ...) |
+| Детали | Клик по предмету → подробная карточка с описанием, статами, иконкой |
+| Дроп | Кнопка «Выбросить» в карточке предмета |
 
-### Визуальное оформление
+### Circular Wheel (GTA-style) — УДАЛЁН
 
-| Элемент | Описание |
-|---------|----------|
-| Радиус колеса | 120px |
-| Ширина сектора | 45° (360°/8) |
-| Цвет активного | `#4CAF50` (зелёный) |
-| Цвет пустого | `#666666` (серый) |
-| Текст | Название типа + количество |
-| Вспышка | Кратковременная подсветка при AddItem |
+> **Историческое примечание:** В версии 1.0 использовалось круговое колесо (8 секторов, GL-линии, Tab-активация). Заменено на CharacterWindow с табом «Инвентарь» в Inventory v2 (Phases 0-7, 2026-06-05).
 
-### ControlHintsUI
+### CharacterEquipmentVisualApplier
 
-| Подсказка | Расположение | Обновление |
-|-----------|-------------|------------|
-| E — подобрать | Левый верхний угол | Каждый кадр |
-| F — сесть/выйти | Левый верхний угол | Каждый кадр |
-| Tab — инвентарь | Левый верхний угол | Каждый кадр |
-| Сундук с иконкой | Левый верхний угол | Статический |
+| Компонент | Файл | Назначение |
+|-----------|------|------------|
+| `CharacterEquipmentVisualApplier` | `Scripts/Customisation/` | Bone mapping для визуала экипировки |
+| `EquipmentVisualSocket` | `Scripts/Items/` | Определение socket на скелете (HumanBodyBones) |
+| `visualPrefab` на ItemData | `Scripts/Items/ItemData.cs` | 3D-модель + параметры прикрепления |
+| `EquipmentChangedHandler` | `Scripts/Customisation/` | Instantiate/Destroy визуала при смене экипировки |
 
 ---
 
 ## 7. Item Persistence
 
-### Сохранение инвентаря
+### Сохранение инвентаря (v2)
 
 | Метод | Описание |
 |-------|----------|
-| `SaveToPrefs()` | Сохраняет CSV ID предметов в PlayerPrefs |
-| `LoadFromPrefs()` | Загружает из PlayerPrefs при реконнекте |
-| Trigger | Disconnect → Save, Reconnect → Load |
-| Формат | CSV: `itemID,count;itemID,count;...` |
+| `JsonInventoryRepository.Save(clientId, InventoryData)` | Атомарная запись JSON в persistentDataPath |
+| `JsonInventoryRepository.Load(clientId)` | Загрузка из JSON при коннекте |
+| Trigger | `OnClientConnectedCallback` → Load, `Shutdown` → Save всех dirty игроков |
+| Формат | JSON: `{items: [{itemId, count, instanceId?}], keys: [...]}` |
 
-### ItemDatabaseInitializer
+### Legacy (v1)
 
-| Функция | Описание |
-|---------|----------|
-| Авто-регистрация | При старте: Resources/Items/, PickupItem, LootTable |
-| ScriptableObject | Загрузка всех ItemData из Resources |
-| **Crafting (крафт)** | **✅ Реализован (T-C01–T-C07c). Списание/выдача через `InventoryWorld.RemoveItems`/`AddItemDirect`. См. `docs/Crafting_system/ROADMAP.md`** |
-| Сцена | Регистрация PickupItem компонентов |
+| Метод | Описание | Статус |
+|-------|----------|--------|
+| `SaveToPrefs()` | Сохранял CSV ID предметов в PlayerPrefs | ❌ Заменён на JSON |
+| `LoadFromPrefs()` | Загружал из PlayerPrefs при реконнекте | ❌ Заменён на JSON |
 
 ---
 
 ## 8. Network Sync
 
-### Синхронизация подбора
+### Синхронизация инвентаря (v2)
 
 | Метод | Target | Описание |
 |-------|--------|----------|
-| `HidePickupRpc()` | SendTo.Everyone | Предмет исчезает у всех |
-| `OpenChestRpc()` | SendTo.Everyone | Сундук открывается у всех |
+| `InventoryServer.OnSnapshotUpdated` | NetworkList | Сервер шлёт снапшот инвентаря клиенту |
+| `InventoryClientState.OnSnapshotUpdated` | Event | Клиентский singleton, UI подписаны |
+| `RequestPickupRpc` | ServerRpc | Запрос на подбор предмета |
+| `RequestDropRpc` | ServerRpc | Запрос на выбрасывание |
+| `RequestMoveRpc` | ServerRpc | Перемещение в инвентаре |
 
-### Текущие ограничения
+### Формат снапшота
 
-| Ограничение | Описание |
-|-------------|----------|
-| Инвентарь НЕ синхронизируется | Каждый игрок видит только свои предметы |
-| NetworkInventory | [⚠️ Частично] NetworkVariable<string> не работает в NGO |
-| Серверная валидация | [🔴 Запланировано] Этап 3 |
+```csharp
+public struct InventorySnapshotDto : INetworkSerializable
+{
+    public InventoryItemDto[] items;  // Массив предметов (itemId, count, instanceId?)
+    public int totalCount;            // Общее количество
+}
+```
+
+### Анти-чит / Безопасность
+
+| Механизм | Описание |
+|----------|----------|
+| Server-authoritative | Все мутации только на сервере |
+| Distance check | TryPickup проверяет дистанцию 5м |
+| Rate limit | InventoryServer.CheckRateLimit() |
+| Ownership check | TryDrop проверяет, что предмет у клиента |
+| Item ID validation | Фильтрация невалидных itemId из старых сохранений |
 
 ---
 
-## 9. Future Features
+## 9. Реализованные функции (бывшие Future Features)
 
-### [🔴 Запланировано] Этап 3
+| Функция | Статус | Описание |
+|---------|--------|----------|
+| ItemRegistry (32 items) | ✅ DONE (M14, 2026-06-09) | Single source of truth id↔ItemData |
+| Полная NetworkList синхронизация | ✅ DONE (v2) | InventoryServer → ClientState |
+| Серверная валидация | ✅ DONE (v2) | Distance, ownership, rate limit |
+| InventoryTab (CharacterWindow) | ✅ DONE (Phases 0-7) | Замена кругового колеса |
+| MetaRequirement extensions | ✅ DONE (R2-META-REQ-001) | HasAllItems/HasAnyItem/CountOf/GetMissingItems |
+| Ship Key v2 (экземпляры) | ✅ DONE (R2-SHIP-KEY-003) | KeyRodInstanceWorld + itemId↔instanceId |
+| WeaponItemData + Equipment Visual | ✅ DONE (T-CB-19 + T-EV) | Weapon stats, bone mapping, visualPrefab |
+| Weapon & Item Unification | ✅ DONE (T-WPN-01-REF-02) | ThrowableItemData → WeaponItemData |
+| Крафт предметов | ✅ DONE (T-C01–T-C07c) | Списание через InventoryWorld.RemoveItems |
+| JSON persistence | ✅ DONE (v2) | JsonInventoryRepository |
+
+### [🔴 Запланировано] Будущее
 
 | Фича | Описание |
 |------|----------|
-| Слот 9 (центр) | Ключевой предмет/квестовый |
-| Полная синхронизация | NetworkVariable/NetworkList для инвентаря |
-| Торговля между игроками | UI обмена предметами |
-| Крафт предметов | Рецепты, верстак, ресурсы |
-| Лимит веса | Максимальный груз |
-| Иконки 128x128 | game-icons.net или кастомные |
-| «Облачный» дизайн колеса | Ghibli-эстетика |
+| Лимит веса/объёма | Интеграция с ShipCargoLimitsConfig |
+| Иконки 128x128 | game-icons.net или кастомные (Phase 6) |
+| Торговля между игроками | UI обмена через TradeWorld |
+| «Облачный» дизайн UI | Ghibli-эстетика для окон |
 
 ---
 
-## 10. Formulas
-
-| Формула | Описание |
-|---------|----------|
-| `lootChance = Random.Range(0f, 1f) <= entry.chance` | Шанс выпадения |
-| `lootCount = Random.Range(entry.minCount, entry.maxCount + 1)` | Количество |
-| `pickupDistance = Vector3.Distance(player, item) < 3f` | Радиус подбора |
-| `chestOpenDistance = Vector3.Distance(player, chest) < 3f` | Радиус сундука |
-| `inventoryCount[type] += count` | Добавление в инвентарь |
-
----
-
-## 11. Edge Cases
-
-| Ситуация | Поведение | Реализация |
-|----------|-----------|-----------|
-| **Два игрока подбирают одновременно** | Сервер определяет порядок | ✅ HidePickupRpc |
-| **Сундук уже открыт** | [🔴 Запланировано] Не открывается повторно | — |
-| **Инвентарь полон** | [🔴 Запланировано] Предмет остаётся на земле | — |
-| **Дисконнект при подборе** | Инвентарь сохранён в PlayerPrefs | ✅ NetworkManagerController |
-| **Предмет застрял в текстуре** | [🔴 Запланировано] Автоудаление через таймаут | — |
-| **LootTable пустой** | Ничего не выпадает | ✅ Проверка entries.count |
-
----
-
-## 12. Tuning Knobs
-
-| Параметр | Мин | Макс | Текущее | Влияние |
-|----------|-----|------|---------|---------|
-| `pickupRadius` | 1 | 10 | 3 | Радиус подбора |
-| `chestOpenRadius` | 1 | 10 | 3 | Радиус сундука |
-| `bobSpeed` | 0.5 | 5.0 | 2.0 | Скорость покачивания |
-| `wheelRadius` | 80 | 200 | 120 | Радиус колеса UI |
-| `flashDuration` | 0.1 | 2.0 | 0.5 | Длительность вспышки |
-
----
-
-## 13. Acceptance Criteria
+## 10. Acceptance Criteria (актуализировано)
 
 | # | Критерий | Как проверить | Статус |
 |---|----------|--------------|--------|
-| 1 | E подбирает предмет (< 3м) | Подойти, нажать E | ✅ |
-| 2 | E открывает сундук | Подойти к сундуку, нажать E | ✅ |
-| 3 | Tab открывает круговое колесо | Нажать Tab | ✅ |
-| 4 | Секторы отображают типы предметов | Проверить 8 секторов | ✅ |
-| 5 | Зелёные сектора = есть предметы | Проверить цвета | ✅ |
-| 6 | Hover подсвечивает сектор | Навести мышь | ✅ |
-| 7 | Подсписки при >1 предмете | Навести на сектор с несколькими | ✅ |
-| 8 | Вспышка при получении лута | Подобрать предмет | ✅ |
-| 9 | Предмет исчезает у всех после подбора | 2 игрока, проверить | ✅ |
-| 10 | Сундук открывается у всех | 2 игрока, проверить | ✅ |
-| 11 | Инвентарь сохраняется при дисконнекте | Отключиться, подключиться | ✅ |
-| 12 | ItemDatabaseInitializer регистрирует предметы | Проверить при старте | ✅ |
-| 13 | Иконки предметов 128x128 | [🔴 Запланировано] | 🔴 |
-| 14 | Торговля между игроками | [🔴 Запланировано] | 🔴 |
-| 15 | Крафт предметов | [🔴 Запланировано] | 🔴 |
-| 16 | **sub_inventory-tab (P → таб «Инвентарь»)** | P → таб в CharacterWindow, фильтры по типу. См. `docs/Character-menu/sub_inventory-tab/` | 🟢 DONE (Phases 0-7, 2026-06-05) |
-| 17 | **MetaRequirement extensions** (`HasAllItems` / `HasAnyItem` / `CountOf` / `GetMissingItems`) | см. §X ниже | 🟢 DONE (R2-META-REQ-001, 2026-06-06) |
-| 18 | **ItemRegistry** (single source of truth для item IDs) | см. §X ниже | 🟢 DONE (M14, 2026-06-09) |
-| 19 | **MetaRequirement v1 (lock-key)** | см. §X ниже | 🟢 DONE (R2-META-REQ-001) |
-| 20 | **Ship Key v2 (уникальные экземпляры)** | см. §X.4 ниже + GDD_10 §13.3 | 🟢 DONE (R2-SHIP-KEY-003, v18-v20) |
+| 1 | E подбирает предмет (< 5м) | Подойти, нажать E | ✅ v2 |
+| 2 | E открывает сундук | Подойти к сундуку, нажать E | ✅ v2 |
+| 3 | P открывает CharacterWindow → таб Инвентарь | Нажать P, проверить таб | ✅ v2 |
+| 4 | Список предметов по типам | Отфильтровать в табе | ✅ v2 |
+| 5 | Сервер-авторитативный подбор | Два игрока — один подбирает | ✅ v2 |
+| 6 | ItemRegistry: 32 registered items | Проверить ItemRegistry.asset | ✅ |
+| 7 | JSON persistence при дисконнекте | Отключиться, подключиться, проверить инвентарь | ✅ v2 |
+| 8 | Drop в мир (server-spawn PickupItem) | Выбросить предмет, подобрать снова | ✅ (R3-INV-DROP-001) |
+| 9 | WeaponItemData: combat stats | Проверить поля damageDice/baseDamage/... | ✅ |
+| 10 | Equipment Visual: визуал на персонаже | Экипировать предмет → 3D-модель на кости | ✅ Phase 2 |
+| 11 | Key-предметы с instanceId | Подобрать KeyRod, проверить instanceId в инвентаре | ✅ R2-SHIP-KEY-003 |
+| 12 | Rate limit на PickupRpc | Спам запросами → сервер отклоняет | ✅ v2 |
 
 ---
 
@@ -474,7 +530,7 @@ public class ItemRegistry : ScriptableObject
 | `skillType` | SkillType | Тип навыка для анимации (Punch/Kick/Block/Sword/...) |
 | `weaponVisualPrefab` | GameObject | 3D-модель оружия для отображения на персонаже |
 
-**Реализация:** `Assets/_Project/Scripts/Items/WeaponItemData.cs` — наследует `ItemData`, добавляет боевые параметры.
+**Реализация:** `Assets/_Project/Scripts/Equipment/WeaponItemData.cs` — наследует `ItemData`, добавляет боевые параметры.
 
 #### X.5.2 Equipment Visual System (T-EV Phase 2)
 
@@ -499,9 +555,7 @@ public class ItemRegistry : ScriptableObject
 - **`docs/Character/Skills/`** — WeaponItemData + Equipment Visual дизайн
 - **`docs/Character/Customisation/`** — Customisation + Equipment Visual implementation
 
----
-
-## X.7 Weapon & Item Unification (T-WPN-01-REF-02, июль 2026) ✅
+### X.7 Weapon & Item Unification (T-WPN-01-REF-02, июль 2026) ✅
 
 **Контекст:** Три несвязанные иерархии предметов (`ItemData` — 581 шт., `WeaponItemData` — 7 шт., `ThrowableItemData` — 2 шт.) + хардкод `is TypeCheck` в 5+ файлах.
 
@@ -523,3 +577,18 @@ public class ItemRegistry : ScriptableObject
 ---
 
 **Связанные документы:**
+
+| Документ | Путь | Описание |
+|----------|------|----------|
+| Ship System | `gdd/GDD_10_Ship_System.md` | Корабли, модули, груз, ключи |
+| Crafting System | `docs/Crafting_system/ROADMAP.md` | Крафт предметов (T-C01–T-C07c) |
+| MetaRequirement | `../MetaRequirement/00_OVERVIEW.md` | Система требований для Interactable |
+| Inventory v2 | `docs/Character-menu/sub_inventory-tab/00_OVERVIEW.md` | Детальный дизайн инвентаря v2 |
+| Combat Engine | `docs/Character/Skills/real-time-combat/` | Боевая система (WeaponItemData) |
+| Equipment Visual | `docs/Character/Customisation/` | Визуал экипировки на персонаже |
+| MMO Plan | `docs/MMO_Development_Plan.md` §1.6, §1.9 | Общий план |
+| Lore Book | RAG БД (лоре) | Лор мира из книги |
+
+---
+
+*Документ создан: Апрель 2026 | Агенты: @game-designer, @lead-programmer, @unity-specialist | Дополнено Mavis 2026-06-10 (раздел X реализации), 2026-06-19 (R2-SHIP-KEY-003 §X.4), 2026-06-27 (X.5 WeaponItemData + Equipment Visual), 2026-07-14 (полная переписка §1-§12 под v2; Weapon Unification §X.7) *

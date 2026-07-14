@@ -1,6 +1,7 @@
 # GDD_10: Ship System v4.1
 
-**Версия:** 4.3 | **Дата:** 6 июля 2026 г. | **Статус:** 🟢 В разработке — §9 (Damage), §8 (Engine states), §13 (Obsolete cleanup) актуализированы по коду
+**Версия:** 5.0 | **Дата:** 14 июля 2026 г. | **Статус:** 🟢 Актуализировано по коду — §5 (Ship Key deprecated → MetaRequirement), §2 (Altitude Corridor ✅), §4 (Modules ✅), §X.5 (Wind ✅), §X.6 (Cargo ✅), §X.7 (Combat ✅)
+**Автор:** Малков Леонид Андреевич
 **Ветка:** `qwen-gamestudio-agent-dev` (дизайн), `feature/npc-quest-v2` (merged) (реализация)
 
 ---
@@ -84,12 +85,12 @@
 ### 2.4 Зоны Вне Коридора
 | Зона | Эффект | Реализация |
 |------|--------|------------|
-| **100м ниже минимума** | Лёгкая турбулентность, предупреждение | Фаза 3 |
-| **Ниже минимума** | Сильная тряска, видимость ~0, SOL | Фаза 3 |
-| **Под Завесой** | Тряска + урон + отключение систем | Фаза 5 |
-| **100м выше максимума** | Лёгкое падение тяги | Фаза 3 |
-| **Выше максимума + 200м** | Системы начинают отказывать | Фаза 5 |
-| **> 6000м (космос)** | Замерзание систем, падение | Фаза 5 (поздно) |
+| **100м ниже минимума** | Лёгкая турбулентность, предупреждение | ✅ Реализовано (TurbulenceEffect) |
+| **Ниже минимума** | Сильная тряска, видимость ~0, SOL | ✅ Реализовано (TurbulenceEffect) |
+| **Под Завесой** | Тряска + урон + отключение систем | ⏳ Phase 5 (частично: тряска есть) |
+| **100м выше максимума** | Лёгкое падение тяги | ✅ Реализовано (SystemDegradationEffect) |
+| **Выше максимума + 200м** | Системы начинают отказывать | ✅ Реализовано (SystemDegradationEffect) |
+| **> 6000м (космос)** | Замерзание систем, падение | ⏳ Phase 5 (поздно)
 
 ---
 
@@ -265,7 +266,7 @@ ShipModule (ScriptableObject)
 ├── compatibleShipClasses: ShipClass[]
 ├── incompatibleShips: string[] (конкретные shipId)
 ├── effects: ModuleEffect[]
-├── powerRequirement: float                     // ⚠️ ТОЛЬКО В GDD — в ShipModule.cs поле отсутствует. Система не реализована. См. summary_05.07.2026.md §4.
+├── powerConsumption: int                    // Реализовано в ShipModule.cs (с 2026-07, поле присутствует)
 ├── unlockTier: int (1 = базовый, 4 = очень редкий)
 └── description: string
 ```
@@ -319,9 +320,15 @@ if (meziyPitchActive) {
 
 ---
 
-## 5. Ключ-Стержень Система
+## 5. Ключ-Стержень Система (DEPRECATED)
 
-### 5.1 Механика
+> ⚠️ **Ship Key Subsystem (v1) полностью заменён на MetaRequirement (2026-07-05).**
+> Все `ShipKeyBinding.cs`, `ShipKeyServer.cs`, `ShipKeyClientState.cs`, `ShipKeyToast.cs` удалены в P1 рефакторинге.
+> **Текущая имплементация:** универсальная `MetaRequirement` (см. §13.2) — реестр требований для любых Interactable.
+> Key-специфичная логика (уникальные экземпляры ключей) живёт в `KeyRodInstanceWorld` (§13.3).
+> Данный раздел оставлен для исторической справки и понимания дизайн-эволюции.
+
+### 5.1 Механика (Legacy)
 - **Ключ-стержень** (KeyRod) — физический предмет, вставляется в пульт корабля
 - Каждый корабль имеет **registeredOwnerId** — владелец
 - Ключ-стержень можно **передать**, **украсть**, **скопировать** (нелегально)
@@ -544,8 +551,8 @@ public struct DockingAssignmentDto : INetworkSerializable {
 | 1.6 | Angular drag=8.0 (выше спеки 3-5) | P0 | ✅ Done |
 | 1.7 | Unity тесты: проверить плавность | P1 | ⏳ TODO |
 
-### Фаза 2: Altitude Corridor System
-| # | Задача | Приоритет | Ответственный | Статус (2026-07-05) |
+### Фаза 2: Altitude Corridor System (✅ Done)
+| # | Задача | Приоритет | Ответственный | Статус (2026-07-14) |
 |---|--------|-----------|--------------|--------------------|
 | 2.1 | AltitudeCorridorSystem.cs (ScriptableObject + runtime) | P0 | engine-programmer | ✅ Done |
 | 2.2 | City corridor data: 5 городов | P0 | game-designer | ✅ Done (9 SO assets) |
@@ -554,21 +561,25 @@ public struct DockingAssignmentDto : INetworkSerializable {
 | 2.5 | Unity тесты: corridor boundaries | P1 | unity-specialist | ⏳ TODO |
 
 ### Фаза 3: Wind & Turbulence (✅ Done)
-| # | Задача | Приоритет | Статус (2026-07-05) |
+| # | Задача | Приоритет | Статус (2026-07-14) |
 |---|--------|-----------|--------------------|
-| 3.1 | WindZone + WindManager (глобальные и локальные зоны) | P1 | ✅ Done |
+| 3.1 | WindZone + WindManager (глобальные и локальные зоны) | P1 | ✅ Done (WindZone.cs, WindZoneData.cs) |
 | 3.2 | Wind force application на корабль | P1 | ✅ Done (аддитивно с локальными зонами) |
-| 3.3 | Turbulence near Veil (TurbulenceEffect) | P1 | ✅ Done |
-| 3.4 | Cinemachine Impulse для камеры | P2 | ⏳ TODO |
+| 3.3 | Turbulence near Veil (TurbulenceEffect) | P1 | ✅ Done (TurbulenceEffect.cs) |
+| 3.4 | System degradation at high altitude | P1 | ✅ Done (SystemDegradationEffect.cs) |
+| 3.5 | Cinemachine Impulse для камеры | P2 | ⏳ TODO |
 
 ### Фаза 4: Module System Foundation (✅ Done)
-| # | Задача | Приоритет | Статус (2026-07-05) |
+| # | Задача | Приоритет | Статус (2026-07-14) |
 |---|--------|-----------|--------------------|
-| 4.1 | ShipModule ScriptableObject architecture | P0 | ✅ Done |
-| 4.2 | ModuleSlot на кораблях | P0 | ✅ Done (через ShipModuleManager) |
-| 4.3 | MODULE_YAW_ENH, PITCH_ENH, LIFT_ENH, ROLL (тир 1) | P1 | ✅ Done (8 ShipModule + 8 ShopEntry) |
-| 4.4 | MODULE_MEZIY_* (burst maneuvers) | P1 | ✅ Done (MeziyModuleActivator + visual) |
-| 4.5 | ShipRegistry.md наполнение | P1 | ⏳ Partially
+| 4.1 | ShipModule ScriptableObject architecture | P0 | ✅ Done (ShipModule.cs) |
+| 4.2 | ModuleSlot на кораблях | P0 | ✅ Done (через ShipModuleManager.cs) |
+| 4.3 | Module catalog | P0 | ✅ Done (ShipModuleCatalog.cs) |
+| 4.4 | Module server authorization | P0 | ✅ Done (ShipModuleServer.cs) |
+| 4.5 | Module visual applier | P0 | ✅ Done (ShipModuleVisualApplier.cs) |
+| 4.6 | MODULE_YAW_ENH, PITCH_ENH, LIFT_ENH, ROLL (тир 1) | P1 | ✅ Done (8 ShipModule + 8 ShopEntry) |
+| 4.7 | MODULE_MEZIY_* (burst maneuvers) | P1 | ✅ Done (MeziyModuleActivator + visual) |
+| 4.8 | ShipRegistry.md наполнение | P1 | ⏳ Partially
 
 ### Фаза 5: Co-Op & Docking (✅ Phase 1 Done)
 | # | Задача | Приоритет | Статус (2026-07-05) |
@@ -649,11 +660,15 @@ public struct DockingAssignmentDto : INetworkSerializable {
 | **Core Gameplay** | `gdd/GDD_01_Core_Gameplay.md` | Core Loop, управление |
 | **Implementation Plan** | `../Ships/SHIP_MOVEMENT_IMPLEMENTATION_PLAN.md` | План тестов и код |
 | **Agent Summary** | `../Ships/AGENTS_SHIP_SYSTEM_SUMMARY.md` | Оркестрация и roadmap |
-| **Lore Book** | `WORLD_LORE_BOOK.md` | Лор мира из книги |
+| **Lore Book** | RAG БД (лоре) | Лор мира из книги |
 | **Ship Lore** | `SHIP_LORE_AND_MECHANICS.md` | Лор кораблей |
 | **Ship Key Subsystem** | `../Ships/Key-subsystem/00_OVERVIEW.md` | Физический ключ-предмет для запуска (R2-SHIP-KEY-001, 2026-06-06) |
 | **MetaRequirement** | `../MetaRequirement/00_OVERVIEW.md` | Универсальная система требований (R2-META-REQ-001, 2026-06-06) |
 | **NPC + Quests v2** | `../NPC_quests/08_ROADMAP.md` | Квесты используют MetaRequirement pattern (post-MVP, T-Q??) |
+| **Wind System** | `../Ships/Wind/WindZone.cs` | Ветровые течения и зоны ветра |
+| **Ship Cargo** | `../Ships/Cargo/ShipCargoRegistry.md` | Грузовая система кораблей (T-CARGO-06) |
+| **Ship Combat** | `../Ships/damage_subsystem/00_DESIGN.md` | Повреждения, бой и ремонт |
+| **Ship Modules** | `../../Assets/_Project/Scripts/Ship/ShipModule.cs` | Модульная система кораблей (каталог, менеджер, сервер)
 
 ---
 
@@ -875,6 +890,49 @@ CLIENT:
 
 ---
 
+### X.5 Wind System — Реализация (2026-07) ✅
+
+**Файлы:** `Assets/_Project/Scripts/Ship/WindZone.cs`, `WindZoneData.cs`
+
+**Архитектура:**
+- `WindZoneData` — ScriptableObject с параметрами зоны ветра: `windDirection`, `windStrength`, `windExposureCoefficient`, `zoneCenter`, `zoneRadius`, `isGlobal`.
+- `WindZone` — MonoBehaviour, размещается в сцене. В `FixedUpdate` применяет ветровую силу к `ShipController` через `GetComponentInParent<Rigidbody>()`.
+- Ветер — аддитивная сила в определённых зонах мира. Области ветра между пиками создают «воздушные коридоры».
+- `windExposureCoefficient` зависит от класса корабля: Лёгкий 0.7 (сильнее сносит), Тяжёлый 0.3 (менее чувствителен).
+
+**Как используется:** ShipController.FixedUpdate включает ветровую силу в расчёт физики (аддитивно с локальными зонами).
+
+**Статус:** ✅ **Реализовано** (глобальные и локальные зоны, аддитивное применение).
+
+### X.6 Ship Cargo — Реализация (T-CARGO-06, 2026-07) ✅
+
+**Файлы:** `Assets/_Project/Scripts/Ship/ShipCargoLimitsConfig.cs`, `ShipCargoRegistry.cs`
+
+**Архитектура:**
+- `ShipCargoLimitsConfig` — ScriptableObject: список лимитов для всех классов (Light/Medium/HeavyI/HeavyII). Параметры: `maxSlots`, `maxWeight`, `maxVolume`, `penaltyFactor`. Загружается из `Resources/ShipCargoLimits.asset` + fallback.
+- `ShipCargoRegistry` — статический server-side реестр `Dictionary<ulong, ShipController>` по `NetworkObjectId`. Мост для `TradeWorld` — получает `GetEffectiveCargoLimits()` с учётом base-параметров и бонусов модулей.
+- `ShipCargoLimitsEntry` — struct: `shipClass`, `maxSlots`, `maxWeight`, `maxVolume`, `penaltyFactor`.
+
+**Модульная интеграция:** ShipModule добавляет cargo-бонусы: `cargoSlotsBonus`, `cargoWeightBonus`, `cargoVolumeBonus`, `cargoPenaltyReduction`.
+
+**Статус:** ✅ **Реализовано** (per-instance лимиты, модульные бонусы, TradeWorld интеграция).
+
+### X.7 Ship Combat — Реализация (MVP, 2026-07-05) ✅
+
+**Файлы:** `Assets/_Project/Scripts/Ship/Combat/ShipHull.cs`, `ShipDamageConfig.cs`
+
+**Архитектура:**
+- `ShipHull` — NetworkBehaviour, `IDamageTarget`. Два источника урона:
+  - **Столкновения:** `ShipController.OnCollisionEnter` → `ShipHull.ApplyCollisionDamage(energy)`. Формула: `min(floor((energy-8)×0.5), 50)`. Три защиты от ложных ударов (minRelativeSpeed 3 м/с + postUndockGrace 3 сек + IsDocked guard).
+  - **Боевое оружие:** `CombatServer.ResolveAttack` → `ShipHull.ApplyDamage(DamageResult)`.
+- `ShipDamageConfig` — SO конфиг с параметрами урона.
+- **HP по классам:** Light=100, Medium=200, Heavy=400, HeavyII=600. armorHull=5.
+- **0 HP = «сломан»:** скорости ×0.1, груз обнулён, `IsAlive()=true`. Ремонт в доке за 300 кр.
+
+**Статус:** ✅ **MVP Реализовано.** См. `docs/Ships/damage_subsystem/00_DESIGN.md`.
+
+---
+
 ## 14. Composite Ship Architecture (Phase 0–1, 2026-06-17)
 
 > **Секция добавлена 2026-06-17.** Реализация составного корабля — фундамент для всех будущих ship-систем.
@@ -937,4 +995,4 @@ Ship_Root (Rigidbody + NetworkObject + ShipController)
 
 ---
 
-*Документ создан: Апрель 2026 | Агенты: @technical-director, @game-designer, @lead-programmer, @engine-programmer, @gameplay-programmer, @unity-specialist | Дополнено Mavis 2026-06-10 (раздел реализации Key + MetaRequirement), 2026-06-17 (Composite Ship Architecture), 2026-06-19 (R2-SHIP-KEY-003 §13.3 — уникальные экземпляры ключей), 2026-07-05 (коррекция по коду: §3.2, §4.1, §5.4, §7.3.1, §11.1, план реализации) *
+*Документ создан: Апрель 2026 | Агенты: @technical-director, @game-designer, @lead-programmer, @engine-programmer, @gameplay-programmer, @unity-specialist | Дополнено Mavis 2026-06-10 (раздел реализации Key + MetaRequirement), 2026-06-17 (Composite Ship Architecture), 2026-06-19 (R2-SHIP-KEY-003 §13.3 — уникальные экземпляры ключей), 2026-07-05 (коррекция по коду: §3.2, §4.1, §5.4, §7.3.1, §11.1, план реализации), 2026-07-14 (§5 deprecated → MetaRequirement, §2/§4 статусы, §X.5-X.7) *

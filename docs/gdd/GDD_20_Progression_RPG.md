@@ -1,43 +1,47 @@
 # GDD 20: Progression & RPG System
 
 **Game:** Project C: The Clouds
-**Version:** 2.0
-**Status:** 🟢 Реализовано (Character Progression T-P01..T-P18 + Stats Architecture Refactoring T-STAT01..05)
-**Last Updated:** 31.07.2026
-**Author:** Game Design AI  
+**Version:** 3.0
+**Status:** 🟢 Реализовано (T-P01..T-P18 + T-STAT01..05 + T-CB-22/23 + T-HP01)
+**Last Updated:** 14.07.2026
+**Author:** Малков Леонид Андреевич
 
 ---
 
 ## 1. Обзор системы
 
 ### 1.1 Цель
-Создать глубокую RPG-прогрессию, которая даёт игрокам ощущение постоянного роста и развития. Система охватывает опыт, уровни, навыки, характеристики и предоставляет долгосрочные цели через 50 уровней и систему престижа.
+
+Создать систему прогрессии, где рост персонажа основан на **per-stat tier'ах** (Strength/Dexterity/Intelligence) и **графе навыков (Skill Tree)** вместо традиционных уровней. Игрок получает XP за действия (майнинг, крафт, квесты, торговля, ходьба, полёт), XP накапливается в пуле соответствующей характеристики, и при достижении порога — повышается tier характеристики.
 
 ### 1.2 Объём
-- Experience System — получение XP из всех активностей
-- Leveling System — 50 уровней с наградами и разблокировками
-- Skill Trees — 3 ветки (пилот, торговец, исследователь)
-- Character Stats — 4 базовые характеристики
-- Progression Pace — баланс скорости прогрессии
-- Co-op Progression — работа в кооп-режиме
-- Prestige System — future, после макс. уровня
+
+- **Experience System** — 10 источников XP (Mining, Crafting, Exchange, Market, QuestAccepted, QuestCompleted, Dialog, Jump, Walk, Pilot)
+- **Tier System** — 3 характеристики (STR/DEX/INT), каждая со своим XP-пулом и tier
+- **Skill Tree** — граф навыков (SkillNodeConfig SO), server-authoritative
+- **Character Stats** — 3 базовые характеристики с единой формулой `tier × 5 + 10`
+- **Equipment Bonuses** — flat + multiplier поверх base stats
+- **Prestige System** — future, после заполнения всех систем
 
 ### 1.3 Этапы реализации
 
-| Этап | Система | Приоритет | Зависимости |
-|------|---------|-----------|-------------|
-| Этап 3 | XP + Leveling базовый | Высокий | Контрактная система |
-| Этап 3 | Character Stats базовые | Высокий | Leveling |
-| Этап 3 | Progression Pace tuning | Средний | XP + Leveling |
-| Этап 4 | Skill Trees полный | Высокий | Character Stats |
-| Этап 4 | Milestones & Unlocks | Высокий | Leveling |
-| Этап 4 | Co-op Progression | Средний | Multiplayer |
-| Future | Prestige System | Низкий | Всё остальное |
+| Этап | Система | Статус |
+|------|---------|--------|
+| T-P01..T-P05 | Stats Architecture (StatBucket, StatsWorld, StatsServer, ApplyXp) | ✅ DONE |
+| T-P06 | Persistence (JsonCharacterDataRepository) | ✅ DONE |
+| T-P07..T-P13 | Skills (SkillsWorld, SkillsServer, SkillTreeWindow) | ✅ DONE |
+| T-P14..T-P18 | Integration, scene-placement, CharacterWindow | ✅ DONE |
+| T-STAT01..05 | Stats Architecture Refactoring (аудит, StatBucket, StatsConfig→3 SO) | ✅ DONE |
+| T-CB-22/23 | Skill Tree MVP (27+ нод, AOC integration) | ✅ DONE |
+| T-HP01 | Health System (HealthConfig, PlayerTarget) | ✅ DONE |
+| Prestige | Система престижа | ⏳ Future |
 
 ### 1.4 Связанные документы
+
 - GDD_21_Quest_Mission_System.md
-- GDD_18_Reputation_Faction_System.md
-- GDD_XX_Economy_System.md
+- GDD_23_Faction_Reputation.md
+- GDD_22_Economy_Trading.md
+- `docs/Character/` — архитектурные доки
 
 ---
 
@@ -45,160 +49,125 @@
 
 ### 2.1 Источники XP
 
-| Активность | Базовый XP | Множитель | Примечание |
-|------------|------------|-----------|------------|
-| Завершение контракта | 50-500 | difficulty | Зависит от типа и сложности |
-| Доставка груза | 30-200 | distance * cargo_value | Бонус за скорость |
-| Разведка новой локации | 100-300 | discovery_bonus | Первый визит ×2 |
-| Сопровождение | 80-400 | waves_survived | За каждую волну |
-| Контрабанда | 100-600 | risk_level | Успешный проход через СОЛ |
-| Торговая сделка | 5-50 | profit_amount | 1 XP за каждые 10 кредитов прибыли |
-| Поиск артефактов | 150-500 | rarity | Редкость артефакта |
-| Ежедневные испытания | 200-1000 | completion_time | Бонус за скорость |
-| Еженедельные испытания | 500-2000 | — | Крупные награды |
-| PvP (future) | 100-800 | opponent_level | За победу над другими игроками |
+| XpSource | Значение enum | Описание | Binding stat |
+|----------|--------------|----------|--------------|
+| Mining | 0 | Добыча ресурсов (за 1 единицу) | Настраивается в StatSourceMapConfig |
+| Crafting | 1 | Завершённый крафт (за 1 единицу) | Настраивается |
+| Exchange | 2 | Операция обмена (Pack/Unpack) | Настраивается |
+| Market | 3 | Покупка/продажа | Настраивается |
+| QuestAccepted | 4 | Принятие квеста | Настраивается |
+| QuestCompleted | 5 | Завершение квеста | Настраивается |
+| Dialog | 6 | Уникальный диалог (1 раз per player/npc/node) | Настраивается |
+| Jump | 7 | Прыжок | Настраивается |
+| Walk | 8 | Ходьба (за 1 метр) | Настраивается |
+| Pilot | 9 | Пилотирование (за 1 метр) | Настраивается |
 
-### 2.2 Формулы XP
+### 2.2 Per-source XP (ExperienceConfig)
 
-**Базовый XP за контракт:**
 ```
-XP_contract = base_XP × difficulty_multiplier × completion_quality
-```
-
-**Множитель сложности:**
-| Difficulty | Множитель |
-|------------|-----------|
-| Easy | 1.0 |
-| Medium | 1.5 |
-| Hard | 2.2 |
-| Expert | 3.5 |
-| Master | 5.0 |
-
-**Качество выполнения:**
-```
-completion_quality = 1.0 + (time_bonus × 0.3) + (no_damage_bonus × 0.2) + (cargo_intact_bonus × 0.2)
-```
-где time_bonus = 1 если выполнено за <80% таймера, иначе 0
-
-**XP за исследование:**
-```
-XP_explore = base_discovery_XP × area_level × first_visit_multiplier
-first_visit_multiplier = 2.0 (первый раз) / 1.0 (повторно)
+GetBaseXp(XpSource) → float
 ```
 
-**XP за торговлю:**
+| Source | Default XP | Примечание |
+|--------|-----------|------------|
+| Mining | 1.0 | за 1 единицу |
+| Crafting | 5.0 | за 1 единицу |
+| Exchange | 2.0 | за операцию |
+| Market | 1.0 | за операцию |
+| QuestAccepted | 3.0 | за принятие |
+| QuestCompleted | 10.0 | за завершение |
+| Dialog | 1.0 | уникальный визит |
+| Jump | 0.5 | за прыжок |
+| Walk | 1.0 | за метр |
+| Pilot | 1.0 | за метр |
+
+Глобальный множитель (`_globalMultiplier`, default 1.0) применяется ко всем источникам.
+
+### 2.3 Формула tier-прогрессии
+
 ```
-XP_trade = floor(profit_credits / 10) × reputation_modifier
-reputation_modifier = 1.0 + (faction_reputation / 1000) × 0.3
+XpForNextTier(currentTier) = TierBaseXp × TierGrowthRate^currentTier
+Default: TierBaseXp = 100, TierGrowthRate = 1.5
 ```
 
-**Общий полученный XP:**
+Tier promotion loop: при каждом получении XP, если XP >= порога — вычитается порог, tier повышается. Без капа.
+
+### 2.4 Архитектура (xP flow)
+
 ```
-XP_total = sum(all_activities) × co_op_bonus × event_bonus
-co_op_bonus = 1.15 (2 игрока) / 1.25 (3 игрока) / 1.35 (4 игрока)
-event_bonus = 1.0-2.0 (во время ивентов)
+WorldEventBus Event (MiningCompleted, etc.)
+  → StatsServer.OnEvent()
+    → ApplyXp(clientId, statType, rawXp)
+      → PlayerStats.Xp += rawXp × globalMultiplier
+      → while (Xp >= XpForNextTier(tier)): Xp -= XpForNextTier(tier); tier++
+      → SendSnapshotToOwner()
 ```
 
-### 2.3 Потеря XP
+### 2.5 Client State
 
-- **Смерть:** -2% от текущего XP уровня (НЕ от общего XP)
-- **Уничтожение корабля:** -5% XP текущего уровня
-- **Провал контракта:** -1% XP текущего уровня
-- **Минимальный XP:** 0 (никогда не ниже нуля)
+`StatsClientState` (singleton, AutoSpawn) — получает `StatsSnapshotDto` от StatsServer:
+- `strength`, `dexterity`, `intelligence` — tier, xp, totalXp
+- `effectiveStr/Dex/Int` — с учётом экипировки
+- `maxHp`, `currentHp` — от HealthConfig
 
 ---
 
-## 3. Leveling System
+## 3. Character Stats
 
-### 3.1 Формула порога уровня
+### 3.1 Три характеристики
 
-**XP для следующего уровня:**
-```
-XP_to_next(level) = floor(100 × level^1.5)
-```
+| StatType | Enum | Описание | Combat formula |
+|----------|------|----------|----------------|
+| Strength | 0 | Сила — физическая мощь | tier × 5 + 10 |
+| Dexterity | 1 | Ловкость — точность и скорость | tier × 5 + 10 |
+| Intelligence | 2 | Интеллект — XP для изучения навыков | tier × 5 + 10 |
 
-**Накопительный XP для уровня N:**
-```
-XP_total(N) = sum(floor(100 × i^1.5) for i in 1..N)
-```
+Формула: `combatStat = tier × 5 + 10` (tier 0=10, tier 1=15, tier 2=20, ...)
 
-### 3.2 Таблица уровней 1-50
-
-| Уровень | XP для уровня | Накопленный XP | Награда |
-|---------|---------------|----------------|---------|
-| 1 | 100 | 100 | Базовые навыки |
-| 2 | 283 | 383 | +1 Skill Point |
-| 3 | 520 | 903 | Доступ: Medium контракты |
-| 4 | 800 | 1,703 | +1 Skill Point |
-| 5 | 1,118 | 2,821 | Новый корабль: Scout |
-| 6 | 1,470 | 4,291 | +1 Skill Point |
-| 7 | 1,852 | 6,143 | Доступ: Hard контракты |
-| 8 | 2,263 | 8,406 | +1 Skill Point |
-| 9 | 2,700 | 11,106 | Навык: Boost Repair |
-| 10 | 3,162 | 14,268 | **Milestone:** Доступ к гильдиям |
-| 11 | 3,648 | 17,916 | +1 Skill Point |
-| 12 | 4,157 | 22,073 | Новый корабль: Hauler |
-| 13 | 4,687 | 26,760 | +1 Skill Point |
-| 14 | 5,238 | 31,998 | Доступ: Expert контракты |
-| 15 | 5,809 | 37,807 | **Milestone:** Faction missions |
-| 16 | 6,400 | 44,207 | +1 Skill Point |
-| 17 | 7,009 | 51,216 | Новый модуль: Scanner+ |
-| 18 | 7,637 | 58,853 | +1 Skill Point |
-| 19 | 8,282 | 67,135 | Навык: Emergency Shield |
-| 20 | 8,944 | 76,079 | **Milestone:** Подпольные организации |
-| 21 | 9,623 | 85,702 | +1 Skill Point |
-| 22 | 10,319 | 96,021 | Новый корабль: Fighter |
-| 23 | 11,031 | 107,052 | +1 Skill Point |
-| 24 | 11,758 | 118,810 | Доступ: Master контракты |
-| 25 | 12,500 | 131,310 | **Milestone:** Элитные корабли |
-| 26 | 13,257 | 144,567 | +1 Skill Point |
-| 27 | 14,029 | 158,596 | Новый модуль: Cargo+ |
-| 28 | 14,816 | 173,412 | +1 Skill Point |
-| 29 | 15,617 | 189,029 | Навык: Stealth Mode |
-| 30 | 16,432 | 205,461 | **Milestone:** Кооп-рейды |
-| 31 | 17,260 | 222,721 | +1 Skill Point |
-| 32 | 18,102 | 240,823 | Новый корабль: Cruiser |
-| 33 | 18,957 | 259,780 | +1 Skill Point |
-| 34 | 19,826 | 279,606 | Улучшение репутации ×1.2 |
-| 35 | 20,708 | 300,314 | **Milestone:** Лидер гильдии |
-| 36 | 21,603 | 321,917 | +1 Skill Point |
-| 37 | 22,512 | 344,429 | Новый модуль: Engine+ |
-| 38 | 23,434 | 367,863 | +1 Skill Point |
-| 39 | 24,369 | 392,232 | Навык: Overdrive |
-| 40 | 25,317 | 417,549 | **Milestone:** Титул "Ветеран" |
-| 41 | 26,278 | 443,827 | +1 Skill Point |
-| 42 | 27,252 | 471,079 | Новый корабль: Capital |
-| 43 | 28,238 | 499,317 | +1 Skill Point |
-| 44 | 29,238 | 528,555 | Улучшение репутации ×1.3 |
-| 45 | 30,250 | 558,805 | **Milestone:** Легендарные квесты |
-| 46 | 31,276 | 590,081 | +1 Skill Point |
-| 47 | 32,313 | 622,394 | Новый модуль: Ultimate Scanner |
-| 48 | 33,364 | 655,758 | +1 Skill Point |
-| 49 | 34,427 | 690,185 | Навык: Phoenix Protocol |
-| 50 | 35,503 | 725,688 | **Milestone:** Max Level, Prestige доступен |
-
-### 3.3 Награды за уровень
-
-**Каждый уровень:**
-- XP отображается в HUD
-- Уведомление о повышении
-- +1 Skill Point (на каждом уровне)
-
-**Каждые 5 уровней (Milestone):**
-- Доступ к новому контенту (корабли, контракты, локации)
-- Уникальная награда (титул, скин, модуль)
-
-**Каждые 10 уровней:**
-- Крупный сюжетный milestone
-- Доступ к новым гильдиям/фракциям
-- Разблокировка кооп-режима
-
-### 3.4 Loss of XP при смерти
+### 3.2 StatBucket
 
 ```
-XP_loss_on_death = current_level_XP × 0.02
-XP_after_death = max(0, current_XP - XP_loss_on_death)
+struct StatBucket {
+    float xp;        // текущий XP в этом tier
+    int tier;        // текущий tier (0+)
+    float totalXp;   // накопленный XP за всё время
+}
 ```
+
+3 StatBucket'а: `strength`, `dexterity`, `intelligence` — внутри `PlayerStats` struct.
+
+### 3.3 PlayerStats struct
+
+```
+struct PlayerStats {
+    StatBucket strength;
+    StatBucket dexterity;
+    StatBucket intelligence;
+    
+    static StatsToFlat(int tier) => tier × 5 + 10;
+    static Default => all tiers = 0, xp = 0
+}
+```
+
+### 3.4 Взаимодействие со Skills
+
+Интеллект (Intelligence XP pool) тратится на изучение навыков в Skill Tree:
+- `SkillsWorld.TryLearnSkill()` проверяет `PlayerStats.Intelligence.xp >= cost`
+- `StatsServer.ApplyXpDirect(clientId, StatType.Intelligence, -cost)` списывает XP
+
+Требования по tier для навыков:
+- `RequiredStrengthTier` — минимальный tier силы
+- `RequiredDexterityTier` — минимальный tier ловкости
+- `RequiredIntelligenceTier` — минимальный tier интеллекта
+
+### 3.5 Equipment Bonuses
+
+Экипировка даёт flat бонусы и мультипликаторы:
+```
+effective = (base_tier_stat + equip_flatBonus) × (1.0 + equip_multiplierSum)
+```
+
+EquipmentWorld.GetEquipStatBonuses() возвращает `(bonusStr, bonusDex, bonusInt, multStr, multDex, multInt)`.
 
 ---
 
@@ -206,628 +175,302 @@ XP_after_death = max(0, current_XP - XP_loss_on_death)
 
 ### 4.1 Структура
 
-**3 ветки навыков:**
-1. **Пилот** (Pilot) — боевые и маневренные навыки
-2. **Торговец** (Merchant) — экономика и торговля
-3. **Исследователь** (Explorer) — разведка и обнаружение
+В отличие от GDD-дизайна (3 ветки «пилот/торговец/исследователь»), реализована **двухкатегорийная система** с combat-дисциплинами:
 
-**Каждая ветка:**
-- 5 уровней навыков (1-5)
-- 3-4 навыка на каждом уровне
-- Требуется вложить N очков для перехода на следующий уровень ветки
-- Всего: ~60-70 уникальных навыков
-
-### 4.2 Ветка Пилота
-
-| Уровень | Навык | Эффект | Очков |
-|---------|-------|--------|-------|
-| 1 | Maneuver +5% | Скорость поворота корабля | 1 |
-| 1 | Boost +10% | Длительность ускорения | 1 |
-| 1 | Shield Regen +3% | Восстановление щита | 1 |
-| 2 | Weapon Damage +8% | Урон оружия | 2 |
-| 2 | Evasion +5% | Шанс уклонения | 2 |
-| 2 | Hull Repair +10% | Скорость ремонта корпуса | 2 |
-| 3 | Overdrive +15% | Максимальная скорость | 3 |
-| 3 | Critical Hit +10% | Шанс критического удара | 3 |
-| 3 | Counter-Attack +20% | Урон после уклонения | 3 |
-| 4 | Stealth +25% | Снижение заметности | 4 |
-| 4 | Phoenix +50% | Шанс выжить при 0 HP (1 раз) | 4 |
-| 5 | ACE PILOT | Все боевые +25% | 5 |
-| 5 | PHANTOM | Невидимость на 5 сек (кулдаун 60с) | 5 |
-
-### 4.3 Ветка Торговца
-
-| Уровень | Навык | Эффект | Очков |
-|---------|-------|--------|-------|
-| 1 | Haggling +5% | Лучшие цены покупки | 1 |
-| 1 | Cargo +10% | Вместимость груза | 1 |
-| 1 | Trade Routes +5% | Доход от торговых путей | 1 |
-| 2 | Market Insight +10% | Предсказание цен | 2 |
-| 2 | Smuggling +15% | Шанс пройти проверку СОЛ | 2 |
-| 2 | Business +8% | Доход от инвестиций | 2 |
-| 3 | Monopoly +20% | Доход от монопольных сделок | 3 |
-| 3 | Black Market +25% | Доступ к чёрному рынку | 3 |
-| 3 | Fleet Bonus +15% | Бонус за группу кораблей | 3 |
-| 4 | Trade Empire +30% | Множитель всех торговых доходов | 4 |
-| 4 | Insider Info +20% | Информация о редких товарах | 4 |
-| 5 | TYCOON | Все торговые +50% | 5 |
-| 5 | GOLDEN TOUCH | Шанс ×3 прибыли (кулдаун 120с) | 5 |
-
-### 4.4 Ветка Исследователя
-
-| Уровень | Навык | Эффект | Очков |
-|---------|-------|--------|-------|
-| 1 | Scan Range +10% | Дальность сканера | 1 |
-| 1 | Analysis Speed +15% | Скорость анализа | 1 |
-| 1 | Navigation +5% | Точность навигации | 1 |
-| 2 | Rare Find +10% | Шанс найти редкие предметы | 2 |
-| 2 | Terrain Bonus +10% | Бонус в сложных зонах | 2 |
-| 2 | Discovery XP +20% | XP за открытия | 2 |
-| 3 | Deep Scan +25% | Обнаружение скрытых объектов | 3 |
-| 3 | Anomaly Bonus +30% | Доход от аномалий | 3 |
-| 3 | Pathfinding +15% | Сокращение времени пути | 3 |
-| 4 | Treasure Hunter +35% | Шанс найти легендарные предметы | 4 |
-| 4 | Cartographer +20% | Бонус за исследование карты | 4 |
-| 5 | EXPLORER | Все исследования +50% | 5 |
-| 5 | LEGENDARY SIGHT | Обнаружение всех скрытых объектов 30с | 5 |
-
-### 4.5 Очки навыков
-
-**Получение очков:**
 ```
-Skill_Points_total = Level + Guild_Bonus + Achievement_Bonus
-Guild_Bonus = floor(guild_reputation / 1000)
-Achievement_Bonus = count(completed_achievements) / 10
+SkillCategory: Social (0), Combat (1)
+  └─ CombatDiscipline: None, Combat, Melee, Ranged, Defense, Placed
+      └─ CombatSubtype: None, Throwables, Traps, Bows, Crossbows
 ```
 
-**Пример:** Уровень 25, репутация гильдии 5000, 30 достижений
+### 4.2 SkillNodeConfig (ScriptableObject)
+
+Каждый навык — отдельный SO:
+
+| Поле | Тип | Описание |
+|------|-----|----------|
+| skillId | string | Уникальный ID (префикс: `melee_`, `ranged_`, `social_`, ...) |
+| displayName | string | Имя навыка |
+| description | string | Описание (2-4 строки) |
+| icon | Sprite | Иконка |
+| category | SkillCategory | Social / Combat |
+| discipline | CombatDiscipline | Auto-set по skillId prefix в OnValidate |
+| subtype | CombatSubtype | Подтип (Throwables/Bows/Crossbows) |
+| requiredWeaponMask | WeaponClassMask | Какое оружие нужно для активации |
+| prerequisites | SkillNodeConfig[] | DAG зависимостей (cycle detection в OnValidate) |
+| effects | SkillEffect[] | Эффекты при изучении (stat bonuses, unlocks) |
+| learnXpCost | float | XP Intelligence cost (0 = free) |
+| requiredStrengthTier | int | Мин. tier силы |
+| requiredDexterityTier | int | Мин. tier ловкости |
+| requiredIntelligenceTier | int | Мин. tier интеллекта |
+| isActive | bool | Active (bindable) vs Passive |
+| cooldownSeconds | float | Кулдаун для active навыков |
+| attackClip | AnimationClip | Анимация атаки (data-driven) |
+| aoeFormula | AoeFormula | SingleTarget/Cone/Sphere/Line/Box |
+| aoeSize / aoeConeAngleDeg / aoeWidth | float | Параметры AOE |
+| VFX поля | GameObject, Material | Cast/Projectile/Impact VFX |
+
+### 4.3 Каталоги (3 ScriptableObject)
+
+- `WeaponCatalog.asset` — 9+ видов оружия
+- `ArmorCatalog.asset` — 5+ видов брони
+- `TechniqueCatalog.asset` — 13+ техник/заклинаний
+
+### 4.4 Flow изучения навыка
+
 ```
-SP = 25 + floor(5000/1000) + floor(30/10) = 25 + 5 + 3 = 33 очка
+SkillTreeWindow (UI Toolkit)
+  → NetworkSkillTree.RequestLearnRpc(skillId)
+  → SkillsServer.RequestLearnSkillRpc (Rate limit 5 ops/sec)
+  → SkillsWorld.TryLearnSkill (5-step validation):
+      1. SkillId exists?
+      2. Already learned?
+      3. Prerequisites met? (BFS по DAG)
+      4. Stat tiers sufficient? (STR/DEX/INT)
+      5. XP cost sufficient? → StatsServer.ApplyXpDirect
+  → On success: _learnedSkills.Add(), SkillEffect.Apply()
+  → SkillTreeSnapshot broadcast → SkillAnimationPlayer reload AOC
 ```
 
-**Требования для веток:**
-| Переход | Требуется очков в ветке |
-|---------|------------------------|
-| Уровень 1 → 2 | 3 очка |
-| Уровень 2 → 3 | 8 очков |
-| Уровень 3 → 4 | 15 очков |
-| Уровень 4 → 5 | 25 очков |
+### 4.5 SkillEffect
 
-### 4.6 Перераспределение навыков
+```
+enum SkillEffect.Type {
+    StatMod,          // стат бонус (Strength +2)
+    Damage,           // модификатор урона
+    Heal,             // модификатор лечения
+    WeaponProficiencyUnlock,  // Phase 2 stub
+    ArmorProficiencyUnlock,
+    WeaponTechniqueUnlock,
+    ExplosiveRecipeUnlock,
+    AntigravTechniqueUnlock,
+}
+```
 
-- **Бесплатно:** 1 раз при создании персонажа
-- **Стоимость перераспределения:**
-  - Уровень 1-10: 500 кредитов
-  - Уровень 11-25: 2000 кредитов
-  - Уровень 26-40: 5000 кредитов
-  - Уровень 41-50: 10000 кредитов
-- **Кулдаун:** 24 часа между перераспределениями
+### 4.6 Skill Animation System
+
+- `SkillAnimationPlayer` — загружает AOC (AnimatorOverrideController) из `Resources/Animations/Combat/`
+- `SkillInputService` — клиентский сервис для активации навыков
+- `SkillAnimationEventPassthrough` — Animation Event → damage/detection
+
+### 4.7 Перераспределение навыков
+
+- Q3.4: Free respec (без возврата XP). `TryForgetSkill()` — удаляет навык из learned set.
+- XP за навык НЕ возвращается (user decision: XP ≠ currency).
 
 ---
 
-## 5. Character Stats
+## 5. Persistence
 
-### 5.1 Базовые характеристики
+### 5.1 CharacterSaveData
 
-| Характеристика | Описание | Влияет на | Базовое значение |
-|----------------|----------|-----------|------------------|
-| **Выносливость** (Endurance) | Жизнеспособность и сопротивление | HP, регенерация, выживаемость | 10 |
-| **Навигация** (Navigation) | Точность пути и маневрирование | Скорость, уклонение, топливо | 10 |
-| **Механика** (Mechanics) | Ремонт и обслуживание корабля | Ремонт, модификации, аптайм | 10 |
-| **Удача** (Luck) | Везение и редкие находки | Шанс критического, лут, торговля | 10 |
-
-### 5.2 Формулы характеристик
-
-**HP корабля:**
-```
-Max_HP = base_ship_HP + (Endurance × 50)
-```
-
-**Регенерация щита:**
-```
-Shield_Regen_Per_Sec = base_regen + (Endurance × 0.5)
-```
-
-**Скорость корабля:**
-```
-Speed_Multiplier = 1.0 + (Navigation × 0.02)
-```
-
-**Расход топлива:**
-```
-Fuel_Consumption = base_consumption × (1 - Navigation × 0.005)
-```
-
-**Скорость ремонта:**
-```
-Repair_Speed = base_repair × (1 + Mechanics × 0.03)
-```
-
-**Шанс критического попадания:**
-```
-Critical_Chance = base_crit + (Luck × 0.5)%
-max Critical_Chance = 40%
-```
-
-**Бонус к торговле:**
-```
-Trade_Bonus = 1.0 + (Luck × 0.01)
-```
-
-**Шанс найти редкий предмет:**
-```
-Rare_Find_Chance = (Luck × 0.8)% + skill_bonus
-```
-
-### 5.3 Увеличение характеристик
-
-**За уровень:**
-- +2 очка характеристик на каждом уровне
-- Можно распределить между 4 характеристиками
-- Максимум одной характеристики: `10 + level × 2`
-
-**Пример распределения:**
-| Уровень | Очков | Max/Stat | Пример распределения |
-|---------|-------|----------|---------------------|
-| 1 | 2 | 12 | End: 11, Nav: 11, Mec: 10, Luc: 10 |
-| 5 | 10 | 20 | End: 13, Nav: 14, Mec: 12, Luc: 13 |
-| 10 | 20 | 30 | End: 16, Nav: 18, Mec: 14, Luc: 16 |
-| 25 | 50 | 60 | End: 25, Nav: 30, Mec: 20, Luc: 25 |
-| 50 | 100 | 110 | End: 40, Nav: 45, Mec: 35, Luc: 40 |
-
-### 5.4 Взаимодействие с навыками
+Единый JSON-файл на игрока:
 
 ```
-Final_Stat = Base_Stat + Level_Points + Skill_Bonus + Equipment_Bonus
+CharacterSaveData {
+    PlayerStatsSave stats;   // 3 StatBucket'а
+    SkillsSave skills;       // learnedSkillIds[]
+    EquipmentSave equipment; // equipped items
+}
 ```
 
-**Пример:**
-```
-Endurance_Final = 10 (base) + 30 (level) + 15 (skill) + 5 (equipment) = 60
-Max_HP = base_ship_HP + (60 × 50) = base_ship_HP + 3000
-```
+### 5.2 Lifecycle
+
+- `OnClientConnectedCallback` → LoadPlayer (stats + skills + equipment)
+- `OnClientDisconnectCallback` → BuildSaveData → Save (atomic JSON через tmp→rename)
+- `OnNetworkDespawn` → FLUSH save для всех игроков перед shutdown
 
 ---
 
-## 6. Progression Pace
+## 6. Logging & Debug
 
-### 6.1 Целевая скорость прогрессии
+### 6.1 StatDebugConfig (ScriptableObject)
 
-| Цель | Часы игры | Дней при 2ч/день | Примечание |
-|------|-----------|-------------------|------------|
-| Уровень 10 | 8-12 часов | 4-6 дней | Открытие гильдий |
-| Уровень 20 | 20-30 часов | 10-15 дней | Подпольные организации |
-| Уровень 25 | 30-40 часов | 15-20 дней | Элитные корабли |
-| Уровень 30 | 40-55 часов | 20-28 дней | Кооп-рейды |
-| Уровень 40 | 65-85 часов | 33-43 дня | Титул "Ветеран" |
-| Уровень 50 | 100-130 часов | 50-65 дней | Max Level |
+- `DebugLogging` — включить подробный лог XP/tier
+- `TrackTotalDistance` — трекать общую дистанцию ходьбы/полёта
+- `WalkDistanceXpThreshold` — порог для начисления XP за ходьбу (default 10m)
+- `PilotDistanceXpThreshold` — порог для начисления XP за полёт
 
-### 6.2 XP Rate
+### 6.2 AOE Debug Visualization
 
-| Период | XP Multiplier | Причина |
-|--------|---------------|---------|
-| Неделя 1 | 1.2x | New Player Boost |
-| Недели 2-4 | 1.0x | Standard |
-| Double XP Event | 2.0x | Ивенты (2 раза в месяц) |
-| Weekend Boost | 1.3x | Суббота-Воскресенье |
-| Co-op (4 игрока) | 1.35x | Командный бонус |
-
-### 6.3 Баланс активности
-
-| Активность | XP/час | % от общего XP |
-|------------|--------|----------------|
-| Контракты | 200-500 | 40% |
-| Торговля | 100-300 | 20% |
-| Исследование | 150-400 | 15% |
-| Бой/PvP | 200-600 | 15% |
-| Квесты/Ивенты | 300-800 | 10% |
-
-### 6.4 Tuning Knobs
-
-| Параметр | Значение по умолчанию | Диапазон | Описание |
-|----------|----------------------|----------|----------|
-| `xp_multiplier` | 1.0 | 0.5-3.0 | Глобальный множитель XP |
-| `skill_point_rate` | 1.0 | 0.5-2.0 | Скорость получения очков навыков |
-| `stat_point_rate` | 2.0 | 1-5 | Очков характеристик за уровень |
-| `level_cap` | 50 | 10-100 | Максимальный уровень |
-| `xp_curve_exponent` | 1.5 | 1.0-2.5 | Крутизна кривой уровней |
-| `death_xp_penalty` | 0.02 | 0-0.1 | Потеря XP при смерти |
-| `co_op_bonus_2p` | 1.15 | 1.0-1.5 | Бонус за 2 игрока |
-| `co_op_bonus_3p` | 1.25 | 1.0-1.5 | Бонус за 3 игрока |
-| `co_op_bonus_4p` | 1.35 | 1.0-1.5 | Бонус за 4 игрока |
+- `SkillNodeConfig.debugVisualizeAoe` — в Editor режиме рисует 3D wireframe AOE зоны
+- `SkillAoeDebugVisualizer` — компонент для отладки
 
 ---
 
-## 7. Milestones & Unlocks
+## 7. Prestige System (Future)
 
-### 7.1 Таблица разблокировок
-
-| Уровень | Разблокировка | Тип | Описание |
-|---------|---------------|-----|----------|
-| 1 | Базовый корабль | Корабль | Стартовый корабль игрока |
-| 3 | Medium контракты | Контракты | Контракты средней сложности |
-| 5 | Scout корабль | Корабль | Быстрый разведывательный корабль |
-| 7 | Hard контракты | Контракты | Сложные контракты с высоким риском |
-| 10 | **Гильдии** | Фракция | Доступ к 5 гильдиям |
-| 12 | Hauler корабль | Корабль | Грузовой корабль |
-| 14 | Expert контракты | Контракты | Экспертные контракты |
-| 15 | Faction missions | Фракция | Миссии фракций |
-| 20 | **Подполье** | Фракция | Доступ к подпольным организациям |
-| 22 | Fighter корабль | Корабль | Боевой корабль |
-| 24 | Master контракты | Контракты | Мастер-контракты |
-| 25 | **Элитные корабли** | Корабль | Улучшенные версии кораблей |
-| 30 | **Кооп-рейды** | Мультиплеер | Групповые рейды на 4 игрока |
-| 32 | Cruiser корабль | Корабль | Крейсер |
-| 35 | Лидер гильдии | Фракция | Возможность создать гильдию |
-| 40 | Титул "Ветеран" | Титул | Уникальный титул |
-| 42 | Capital корабль | Корабль | Капитальный корабль |
-| 45 | Легендарные квесты | Квесты | Сверхсложные квесты |
-| 50 | **Prestige** | Престиж | Доступ к системе престижа |
-
-### 7.2 Новые локации по уровням
-
-| Уровень | Локация | Описание |
-|---------|---------|----------|
-| 1 | Стартовая станция | Безопасная зона новичков |
-| 5 | Торговый хаб | Центральная торговая зона |
-| 10 | Облачные поля | Зона средних контрактов |
-| 15 | Облака бури | Зона повышенного риска |
-| 20 | Зона СОЛ | Территория нового правительства |
-| 25 | Пиратские острова | Зона пиратских контрактов |
-| 30 | Глубокие облака | Элитная зона рейдов |
-| 35 | Руины предтеч | Зона артефактов |
-| 40 | Секретная зона | Зона подпольных организаций |
-| 45 | Легендарные руины | Зона легендарных квестов |
-| 50 | Облачный рай | Финальная зона |
+Не реализовано. Запланировано как post-MVP фича:
+- Сброс tier'ов до 0
+- Сохранение навыков, экипировки, репутации
+- Получение Prestige Points за уникальные достижения
 
 ---
 
-## 8. Co-op Progression
+## 8. Tuning Knobs
 
-### 8.1 Модели прогрессии
+### ExperienceConfig
 
-**Индивидуальный XP (по умолчанию):**
-- Каждый игрок получает XP за свои действия
-- Бонус за кооп: +15%/+25%/+35% за 2/3/4 игрока
-- Личная статистика сохраняется
+| Параметр | Default | Описание |
+|----------|---------|----------|
+| MiningXpPerItem | 1.0 | XP за единицу майнинга |
+| CraftingXpPerItem | 5.0 | XP за единицу крафта |
+| ExchangeXpPerOp | 2.0 | XP за обмен |
+| MarketXpPerOp | 1.0 | XP за торговлю |
+| QuestAcceptedXp | 3.0 | XP за принятие квеста |
+| QuestCompletedXp | 10.0 | XP за завершение квеста |
+| DialogXpPerVisit | 1.0 | XP за уникальный диалог |
+| JumpXp | 0.5 | XP за прыжок |
+| WalkXpPerMeter | 1.0 | XP за метр ходьбы |
+| PilotXpPerMeter | 1.0 | XP за метр полёта |
+| GlobalMultiplier | 1.0 | Множитель ко всем XP |
+| TierBaseXp | 100 | Базовый XP для порога |
+| TierGrowthRate | 1.5 | Рост между тирами |
 
-**Общий XP (опция для групп):**
-- XP делится поровну между участниками
-- Формула: `XP_each = total_XP / player_count × co_op_bonus`
-- Подходит для групп с разным уровнем
+### SkillsConfig
 
-### 8.2 Совместные награды
+| Параметр | Default | Описание |
+|----------|---------|----------|
+| defaultSkills | empty | Стартовые навыки (Q3.2: пусто) |
+| MaxOpsPerSec | 5 | Rate limit learn/forget |
+| SkillsResourcesPath | "Skills" | Путь в Resources/ для SO |
 
-| Награда | Тип | Распределение |
-|---------|-----|---------------|
-| Кредиты | Индивидуальная | Каждый получает свою долю |
-| Ресурсы | Индивидуальная | Лут на каждого игрока |
-| Репутация | Индивидуальная | Каждый получает свою |
-| XP | Общий/Индивидуальный | Настройка группы |
-| Уникальные предметы | Индивидуальная | Личный лут |
-| Титулы | Индивидуальная | За личные достижения |
+### HealthConfig
 
-### 8.3 Синхронизация прогресса
-
-- Прогресс квестов синхронизирован для всех участников
-- Если один игрок выполнил квест, другие могут сдать его позже
-- Провал квеста влияет на всех участников
-- Дисконнект: прогресс сохраняется для переподключения в течение 5 минут
-
-### 8.4 Групповые бонусы
-
-| Размер группы | XP Бонус | Кредит Бонус | Репутация Бонус |
-|---------------|----------|--------------|-----------------|
-| 1 игрок | 1.0x | 1.0x | 1.0x |
-| 2 игрока | 1.15x | 1.1x | 1.05x |
-| 3 игрока | 1.25x | 1.2x | 1.1x |
-| 4 игрока | 1.35x | 1.3x | 1.15x |
+| Параметр | Default | Описание |
+|----------|---------|----------|
+| baseHp | 100 | Базовая HP |
+| strToHpMultiplier | 10 | HP за tier силы |
+| respawnHpPercent | 0.5 | HP при респавне |
 
 ---
 
-## 9. Prestige System (Future)
+## 9. Реализация в коде (v3, актуальная)
 
-### 9.1 Концепция
+### 9.1 Ключевые отличия от v2 GDD
 
-После достижения 50 уровня игроки могут активировать престиж:
-- Сброс уровня до 1
-- Сброс очков навыков и характеристик
-- Сохранение: репутация, корабли, предметы, достижения
-- Получение: **Prestige Points (PP)** и уникальный титул
+| Аспект | GDD 2.0 (дизайн) | Реализация (код) |
+|--------|-------------------|------------------|
+| Skill Trees | 3 ветки: пилот/торговец/исследователь, ~60-70 навыков | 2 категории (Social/Combat), 5 Discipline, CombatSubtype |
+| XP/Leveling | 50 уровней, XP_to_next = floor(100 × level^1.5) | Per-stat tier'ы, XP_for_tier = 100 × 1.5^tier |
+| Character Stats | 4: Endurance/Navigation/Mechanics/Luck | 3: Strength/Dexterity/Intelligence |
+| Skill Points | +1 SP per level, respec за кредиты | XP-стоимость (Intelligence pool), free respec |
+| Milestones | Levels 3/5/7/10/... разблокируют контент | Не реализованы |
+| XP Sources | Контракты, доставка, разведка, сопровождение, контрабанда, торговля, артефакты | Mining, Crafting, Exchange, Market, Quests, Dialog, Jump, Walk, Pilot |
 
-### 9.2 Prestige Points
-
-**Формула:**
-```
-PP = floor(level / 10) + floor(guild_reputation / 5000) + achievements_count
-```
-
-**Пример:**
-```
-PP = floor(50/10) + floor(8000/5000) + 45 = 5 + 1 + 45 = 51 PP
-```
-
-### 9.3 Использование PP
-
-| Покупка | Стоимость | Эффект |
-|---------|-----------|--------|
-| XP Boost | 10 PP | +50% XP навсегда |
-| Skill Boost | 15 PP | +1 Skill Point |
-| Stat Boost | 20 PP | +2 Character Stats |
-| Unique Title | 25 PP | Уникальный престиж-титул |
-| Cosmetic | 30 PP | Уникальный скин корабля |
-| Legendary Item | 50 PP | Легендарный предмет |
-
-### 9.4 Уровни престижа
-
-| Престиж | Требуется PP | Титул | Бонус |
-|---------|--------------|-------|-------|
-| 1 | 50 PP | "Облачный Странник" | +5% XP |
-| 2 | 100 PP | "Небесный Воин" | +10% XP |
-| 3 | 200 PP | "Повелитель Облаков" | +15% XP |
-| 4 | 350 PP | "Легенда Небес" | +20% XP |
-| 5 | 500 PP | "Вечный Облачный" | +25% XP, уникальный корабль |
-
----
-
-## 10. Формулы и Расчёты
-
-### 10.1 Основные формулы
+### 9.2 Архитектура Stats
 
 ```
-# XP для уровня
-XP_to_next(level) = floor(100 × level^1.5)
+┌──────────────────────────────────────────────────────────┐
+│ StatsServer (NetworkBehaviour, BootstrapScene)           │
+│ • Subscribe к 9 WorldEventBus событиям                    │
+│ • ApplyXp / ApplyXpDirect                                │
+│ • RecomputeAndSendSnapshot (после equip/unequip)          │
+│ • Walk/Pilot distance tracker (FixedUpdate)              │
+│ • Unique dialog tracking (per player/npc/node)           │
+│ • Persistence hooks (OnClientConnected/Disconnected)     │
+└──────────────────────────────────────────────────────────┘
 
-# Накопленный XP
-XP_total(N) = sum(floor(100 × i^1.5) for i in 1..N)
+┌──────────────────────────────────────────────────────────┐
+│ StatsWorld (POCO singleton, server-only)                 │
+│ • Dictionary<ulong, PlayerStats>                         │
+│ • GetOrCreateStats / SetStats / RemovePlayer             │
+│ • BuildSaveData / LoadPlayer                             │
+└──────────────────────────────────────────────────────────┘
 
-# Общий XP за активность
-XP_total = base_XP × difficulty × quality × co_op × event
-
-# Очки навыков
-SP = Level + floor(guild_rep / 1000) + floor(achievements / 10)
-
-# HP корабля
-Max_HP = base_ship_HP + (Endurance × 50)
-
-# Скорость
-Speed = base_speed × (1 + Navigation × 0.02)
-
-# Критический удар
-Crit_Chance = min(40%, base_crit + Luck × 0.5)
-
-# Награда за контракт (связь с GDD_21)
-Reward = base_reward × difficulty × reputation_modifier × completion_bonus
+┌──────────────────────────────────────────────────────────┐
+│ StatsClientState (singleton, AutoSpawn)                  │
+│ • CurrentSnapshot (StatsSnapshotDto)                     │
+│ • OnStatsUpdated event                                   │
+└──────────────────────────────────────────────────────────┘
 ```
 
-### 10.2 Балансировочные коэффициенты
+### 9.3 Архитектура Skills
 
-| Коэффициент | Значение | Описание |
-|-------------|----------|----------|
-| `xp_curve_exponent` | 1.5 | Крутизна кривой уровней |
-| `base_xp_per_level` | 100 | Базовый XP для формулы |
-| `stat_point_per_level` | 2 | Очков характеристик за уровень |
-| `skill_point_per_level` | 1 | Очков навыков за уровень |
-| `max_stat_value` | `10 + level × 2` | Максимум одной характеристики |
-| `death_xp_penalty` | 0.02 | 2% XP текущего уровня |
-| `respec_cost_base` | 500 | Базовая стоимость перераспределения |
+```
+┌──────────────────────────────────────────────────────────┐
+│ SkillsServer (NetworkBehaviour, BootstrapScene)          │
+│ • RPC: RequestLearnSkillRpc / RequestForgetSkillRpc      │
+│ • Rate limit 5 ops/sec/client                            │
+│ • SendSkillResult / SendSnapshotToOwner                  │
+│ • ApplySkillEffects (StatMod, WeaponProficiency, etc.)   │
+└──────────────────────────────────────────────────────────┘
 
----
+┌──────────────────────────────────────────────────────────┐
+│ SkillsWorld (POCO singleton, server-only)                │
+│ • _skillsById: Dictionary<string, SkillNodeConfig>       │
+│ • _learnedPerPlayer: Dictionary<ulong, HashSet<string>>  │
+│ • LoadAllSkills / GrantDefaultSkills                     │
+│ • TryLearnSkill (5-step) / TryForgetSkill                │
+│ • GetStatModBonuses (P7 fix)                             │
+│ • BuildSaveData / LoadPlayer                             │
+└──────────────────────────────────────────────────────────┘
 
-## 11. Edge Cases и Обработка ошибок
+┌──────────────────────────────────────────────────────────┐
+│ SkillTreeWindow (UI Toolkit)                             │
+│ • SkillsClientState → OnSkillTreeUpdated event           │
+│ • Таб в CharacterWindow                                  │
+└──────────────────────────────────────────────────────────┘
+```
 
-### 11.1 Дисконнект
+### 9.4 Файлы (C#)
 
-| Ситуация | Поведение |
-|----------|-----------|
-| Дисконнект во время квеста | Прогресс сохраняется, 5 минут на переподключение |
-| Дисконнект во время боя | Корабль переходит в AI-режим, пытается выжить |
-| Дисконнект при торговле | Сделка отменяется, ресурсы возвращаются |
-| Дисконнект при получении XP | XP начисляется после переподключения |
-| Длительный дисконнект (>24ч) | Активные квесты проваливаются |
+**Stats:**
+- `Scripts/Stats/PlayerStats.cs` — struct с 3 StatBucket'ами
+- `Scripts/Stats/StatsWorld.cs` — server-side state
+- `Scripts/Stats/StatsServer.cs` — XP hub, 9 WorldEventBus подписок
+- `Scripts/Stats/StatsClientState.cs` — клиентская проекция
+- `Scripts/Stats/StatsConfig.cs` — (устарел, split в v4)
+- `Scripts/Stats/ExperienceConfig.cs` — per-source XP + tier formula
+- `Scripts/Stats/StatSourceMapConfig.cs` — XpSource → StatType mapping
+- `Scripts/Stats/StatDebugConfig.cs` — debug logging
+- `Scripts/Stats/HealthConfig.cs` — HP formula
+- `Scripts/Stats/XpSource.cs` — enum 10 источников
+- `Scripts/Stats/Dto/StatsSnapshotDto.cs` — DTO
+- `Scripts/Stats/Persistence/CharacterSaveData.cs`, `EquipmentSave.cs`, `SkillsSave.cs`
+- `Scripts/Stats/Persistence/JsonCharacterDataRepository.cs`
 
-### 11.2 Откат уровня
+**Skills:**
+- `Scripts/Skills/SkillNodeConfig.cs` — SO (343 строки)
+- `Scripts/Skills/SkillEffect.cs` — struct
+- `Scripts/Skills/SkillsServer.cs` — NetworkBehaviour RPC hub
+- `Scripts/Skills/SkillsWorld.cs` — POCO singleton
+- `Scripts/Skills/SkillsConfig.cs` — SO config
+- `Scripts/Skills/SkillsClientState.cs` — client projection
+- `Scripts/Skills/SkillManager.cs` — удалён (логика в SkillsWorld)
+- `Scripts/Skills/SkillAnimationPlayer.cs` — AOC integration
+- `Scripts/Skills/SkillInputService.cs` — client activation
+- `Scripts/Skills/SkillAnimationEventPassthrough.cs` — animation events
+- `Scripts/Skills/UI/SkillTreeWindow.cs` — UI Toolkit window
+- `Scripts/Skills/Vfx/ISkillVfxProvider.cs`, `SkillVfxService.cs` — VFX
+- `Scripts/Skills/Dto/SkillsDto.cs` — DTO
+- `Scripts/Skills/Debug/SkillAoeDebugVisualizer.cs` — debug viz
 
-| Причина | Действие |
-|---------|----------|
-| Читы/эксплойты | Откат до последнего легитимного уровня |
-| Баг сервера | Восстановление из бэкапа |
-| Ошибка начисления | Корректировка XP вручную |
-| Добровольный откат | Только через prestige систему |
+### 9.5 Что открыто
 
-### 11.3 Защита от читов
-
-| Метод | Описание |
-|-------|----------|
-| Серверная валидация | Все XP проверяются на сервере |
-| Rate limiting | Максимум XP/час ограничен |
-| Аномалии | Подозрительная активность логируется |
-| Верификация | Критические действия требуют подтверждения |
-| Анти-бот | Обнаружение автоматизации |
-
-### 11.4 Конфликты коопа
-
-| Ситуация | Решение |
-|----------|---------|
-| Игроки разного уровня | XP масштабируется для каждого |
-| Один игрок покидает группу | Прогресс сохраняется, оставшиеся продолжают |
-| Конфликт наград | Награды делятся поровну или по вкладу |
-| Двойной квест | Квест может быть выполнен только один раз на группу |
-
----
-
-## 12. Tuning Knobs
-
-### 12.1 Параметры для настройки
-
-| Параметр | Тип | По умолчанию | Мин | Макс | Описание |
-|----------|-----|--------------|-----|------|----------|
-| `xp_multiplier` | float | 1.0 | 0.5 | 3.0 | Глобальный множитель XP |
-| `skill_point_rate` | float | 1.0 | 0.5 | 2.0 | Скорость получения SP |
-| `stat_point_rate` | int | 2 | 1 | 5 | Очков статов за уровень |
-| `level_cap` | int | 50 | 10 | 100 | Максимальный уровень |
-| `xp_curve_exponent` | float | 1.5 | 1.0 | 2.5 | Крутизна кривой |
-| `base_xp_per_level` | int | 100 | 50 | 500 | Базовый XP |
-| `death_xp_penalty` | float | 0.02 | 0 | 0.1 | Штраф за смерть |
-| `co_op_bonus_2p` | float | 1.15 | 1.0 | 1.5 | Бонус 2 игроков |
-| `co_op_bonus_3p` | float | 1.25 | 1.0 | 1.5 | Бонус 3 игроков |
-| `co_op_bonus_4p` | float | 1.35 | 1.0 | 1.5 | Бонус 4 игроков |
-| `respec_cooldown_hours` | int | 24 | 1 | 168 | Кулдаун перераспределения |
-| `max_stat_per_level` | formula | `10+level×2` | — | — | Максимум стата |
-| `prestige_enabled` | bool | false | — | — | Включить престиж |
-
-### 12.2 Профили балансировки
-
-| Профиль | XP Multiplier | Curve Exponent | Level Cap | Часы до 50 |
-|---------|---------------|----------------|-----------|------------|
-| Casual | 1.3 | 1.3 | 40 | 80-100 |
-| Standard | 1.0 | 1.5 | 50 | 100-130 |
-| Hardcore | 0.8 | 1.8 | 60 | 150-200 |
-| Speed Run | 1.5 | 1.2 | 30 | 40-60 |
+| # | Задача | Приоритет |
+|---|--------|-----------|
+| 1 | **Global character levels** (1-50 с milestone unlocks) — заменено на per-stat tiers | 🟢 Backlog |
+| 2 | **Prestige System** (reset + PP) | 🟢 Low |
+| 3 | **Milestone unlocks** (new ships, contracts, zones by tier) | 🟡 Med |
+| 4 | **Co-op XP distribution** (shared party XP) | 🟢 Low |
+| 5 | **Achievement system** (статы/трекинг) | 🟢 Low |
+| 6 | **Per-active skill cooldown tracking** в HUD | 🟡 Med |
 
 ---
 
-## 13. Приложения
-
-### 13.1 Глоссарий
+## 10. Глоссарий
 
 | Термин | Определение |
 |--------|-------------|
-| XP | Experience Points, очки опыта |
-| SP | Skill Points, очки навыков |
-| Co-op | Cooperative multiplayer, совместная игра |
-| Prestige | Система сброса прогресса с бонусами |
-| Respec | Перераспределение очков навыков |
-| Milestone | Ключевая точка прогрессии |
-| Tuning Knob | Параметр для настройки баланса |
-
-### 13.2 История изменений
-
-| Версия | Дата | Изменение | Автор |
-|--------|------|-----------|-------|
-| 1.0 | 06.04.2026 | Инициализация документа | Game Design AI |
-| 1.1 | 10.06.2026 | Добавлена §X «Реализация в коде» (Reputation + NpcAttitude MVP foundation). Дизайн-контент без изменений. | Mavis |
-
----
-
-## X. Реализация в коде (дополнения 2026-06-08)
-
-> **Секция добавлена Mavis 2026-06-10.** Дизайн-контент (XP формулы, skill trees, milestones, prestige) остаётся в зоне game-designer'а. Здесь — **только статус реализации** Reputation + NpcAttitude (MVP foundation для Faction-квестов).
-
-### X.1 Reputation + NpcAttitude (T-Q01 + T-Q13, 2026-06-08)
-
-**Контекст:** для quest reward'ов (`AddReputation` / `AddNpcAttitude` dialog actions, T-Q16) нужна runtime-система репутации.
-
-**Реализация:**
-- ✅ **`ProjectC.Factions.FactionId`** enum (12 lore значений) — promoted из `World.Npc.NpcFaction` (помечен `[Obsolete]`)
-- ✅ **`NpcAttitude`** struct — readonly, `IEquatable<NpcAttitude>`, range −100..+200, clamp в ctor (per-NPC)
-- ✅ **`ReputationClientState`** (singleton, AutoSpawn) — `OnReputationUpdated` event
-- ✅ **`NpcAttitudeClientState`** (singleton, AutoSpawn) — `OnNpcAttitudeUpdated` event
-- ✅ **`QuestWorld.ModifyReputation(clientId, factionId, delta)`** (server-side, broadcast + event)
-- ✅ **`QuestWorld.ModifyNpcAttitude(clientId, npcId, delta)`** (server-side, broadcast + event + cross-faction MVP stub)
-- ✅ **`FactionDefinition` / `NpcDefinition`** ScriptableObject'ы (T-Q02)
-- ✅ Persistence: `JsonQuestStateRepository` (M8, T-Q18) — atomic JSON в `persistentDataPath`, immediate save
-- ✅ **Dialog actions** (T-Q16): `AddReputation` / `AddNpcAttitude` в `QuestServer.FireDialogAction`
-- ✅ **M11 Mira E2E**: `complete_thanks` node вызывает `AddRep 25 + AddAtt 10` → broadcast клиенту → Mira E2E получает `+25 GuildOfThoughts, +10 mira_01`
-
-**Деталь:** см. `docs/NPC_quests/02_V2_ARCHITECTURE.md` §1, §2 + `docs/NPC_quests/old_session_log/T-Q13_DESIGN_NOTE.md` + см. GDD_23 §X.
-
-### X.2 CharacterWindow integration
-
-- ✅ CharacterWindow → таб «Репутация» (T-Q13) — под-раздел Reputation + NpcAttitude
-- ✅ Cross-link: улучшить Mira → factionRep[GuildOfCreation] уменьшается (с конфигом)
-
-### X.3 Что НЕ реализовано ⏳
-
-| # | Задача | Milestone | Приоритет |
-|---|---|---|---|
-| 1 | **XP система** (формулы, sources, multipliers) | M-NPC+Quests post-MVP | 🟡 Med |
-| 2 | **Leveling** (1-50, milestone unlocks) | M-NPC+Quests post-MVP | 🟡 Med |
-| 3 | **Skill trees** (Pilot / Merchant / Explorer) | ✅ **DONE** (T-CB-22 + T-CB-23, 2026-06-27 — SkillManager + SkillTreeWindow, 27+ SkillNodeConfig SO) | 🟢 Done |
-| 4 | **Character stats** (Endurance/Nav/Mechanics/Luck) | M-NPC+Quests post-MVP | 🟡 Med |
-| 5 | **Co-op progression** (XP distribution) | M-NPC+Quests post-MVP | 🟢 Low |
-| 6 | **Prestige system** (reset + bonus) | Future | 🟢 Low |
-| 7 | **Reputation table** (12 guilds, tier thresholds, display messages) | M5 | 🟡 Med (нужен контент от game-designer'а) |
-| 8 | **Cross-faction influence — полная реализация** | M5 | 🟢 Low (MVP stub достаточно) |
-| 9 | **Display HUD репутации в header** (deferred с T-Q10) | M5 | 🟢 Low |
-| 10 | **4 мануфактуры** (Aurora/Titan/Hermes/Prometheus) | Этап 3.5 | 🟡 Med |
-
-### X.4 Где смотреть актуальный статус
-
-- **`docs/NPC_quests/02_V2_ARCHITECTURE.md`** §1, §2 — namespace layout, `FactionId` design
-- **`docs/NPC_quests/old_session_log/T-Q13_DESIGN_NOTE.md`** — Reputation+NpcAttitude design
-- **`docs/NPC_quests/08_ROADMAP.md`** §8.3 T-Q01, T-Q13, T-Q16 — roadmap
-- **`docs/MMO_Development_Plan.md`** §3.5 — общий план фракций
-
-### X.5 Skill Tree Implementation (T-CB-22 + T-CB-23, 2026-06-27)
-
-**Новое:** Skill Tree MVP — граф навыков с 27+ узлами, runtime AOC integration, server-authoritative.
-
-#### X.5.1 SkillManager (T-CB-22)
-
-| Компонент | Файл | Назначение |
-|-----------|------|------------|
-| `SkillManager` | `Scripts/Skills/SkillManager.cs` | Server-side singleton: learn/unlock/validate, track learned skills |
-| `SkillNodeConfig` (SO) | `Data/Skills/SkillNodeConfig.asset` | Skill node: name, description, SP cost, prerequisites, SkillModifier[] |
-| `SkillModifier` | `Scripts/Skills/SkillModifier.cs` | chain → DamageCalculator: multiplier or flat bonus per skill type |
-| `SkillAnimationPlayer` | `Scripts/Skills/SkillAnimationPlayer.cs` | Runtime AOC: load weapon/combat animations by skill type |
-| `NetworkSkillTree` | `Scripts/Network/NetworkSkillTree.cs` | `NetworkVariable<SkillTreeSnapshot>` sync host→client |
-| `SkillTreeSnapshot` | `Scripts/Skills/SkillTreeSnapshot.cs` | Serialize/deserialize для NetworkVariable |
-
-**Каталоги:**
-- `Data/Combat/WeaponCatalog.asset` — 9+ видов оружия
-- `Data/Combat/ArmorCatalog.asset` — 5+ видов брони
-- `Data/Combat/TechniqueCatalog.asset` — 13+ техник/заклинаний
-
-**Поток изучения навыка:**
-1. Клиент открывает SkillTreeWindow → кликает node
-2. `NetworkSkillTree.RequestLearnRpc(nodeId)` → сервер
-3. `SkillManager.TryLearn(clientId, nodeId)` → проверка SP, prerequisites
-4. Если OK → `_learnedSkills[clientId].Add(nodeId)`, `SkillTreeSnapshot` broadcast
-5. Клиент получает `OnSkillTreeUpdated` → `SkillAnimationPlayer` перезагружает AOC
-
-#### X.5.2 SkillModifier → DamageCalculator интеграция
-
-Каждый `SkillNodeConfig` содержит массив `SkillModifier[]`:
-- `TargetSkill` (SkillType) — какой скилл модифицирует
-- `ModifierType` (Multiplier / Flat)
-- `Value` — числовое значение (1.1 = +10% / 10 = +10 flat)
-
-`DamageCalculator` при расчёте запрашивает `SkillManager.GetModifiers(clientId, skillType)` и применяет цепочку.
-
-**Key design decisions:**
-- `SkillManager` — **server-only**, data не утекает на клиент без разрешения
-- `SkillAnimationPlayer` загружает AOC по типу скилла из `Resources.Load` (папка `Animations/Combat/`)
-- `NetworkSkillTree` использует `NetworkVariable<SkillTreeSnapshot>` — deltas sync automatically
-- `SkillNodeConfig` SO редактируется дизайнером: dependencies, SP cost, modifiers
-
-**Stats:** +7 C# файлов, 3 SO каталога, ~12 KB кода.
-
----
-
-## X.6 Stats Architecture Refactoring (T-STAT01..05, июль 2026) ✅
-
-**Контекст:** Глубокий аудит архитектуры статов (STR/DEX/INT) выявил 10 структурных проблем (P0-P10): дублирование в 21 файле, equip bonuses не применялись в combat, две раздельные системы Player/NPC.
-
-**5 этапов исправлений:**
-
-| Этап | Коммит | Содержание |
-|------|--------|-----------|
-| **T-STAT01** | `857f442` | Архитектурный аудит: 10 проблем, диаграмма потоков, план |
-| **T-STATS02** | `8c49ee1` | P0/P5/P6/P7/P10: Combat использует effective stats, DamageResultDto с breakdown |
-| **T-STATS03** | `7b8460c` | P4: StatsConfig → 3 SO (ExperienceConfig, StatSourceMapConfig, StatDebugConfig) |
-| **P1** | `f4ca1af` | Flat struct → StatBucket + static ref accessors, PlayerStatsRef удалён |
-| **P8** | `d609dbb` | Equipment multipliers: `effective = (StatsToFlat(tier) + flatBonus) * (1.0 + sumMultipliers)` |
-| **T-STATS04** | `2b977ec` | P3/P9: Единая формула Player/NPC — `StatsToFlat(tier) = tier * 5 + 10` |
-| **T-STATS05** | `20c26cf` | StatsServer config wiring + full playtest guide |
-
-**Ключевые решения:**
-- `StatBucket` struct — 3 стата × 3 поля (xp/tier/totalXp) вместо 9 плоских полей
-- `PlayerStats` со static ref accessors (`PlayerStats.Xp(StatType)`, `PlayerStats.Tier(StatType)`)
-- `NpcCombatData`: flat int (1..30) → tier (0..20) с `[FormerlySerializedAs]`
-- Единая формула: `combatStat = tier * 5 + 10` (tier 0=10, tier 1=15, ...)
-
-**Документация:** `docs/Character/11_STATS_ARCHITECTURE_AUDIT.md`, `12_STATS_ARCHITECTURE_AUDIT_V2.md`, `13_SESSION_CONTINUATION.md`, `14_PLAYTESTS_STATS_AUDIT.md`.
+| StatBucket | struct: tier + xp в tier + totalXp для одной характеристики |
+| Tier | Уровень характеристики (STR tier 5 = combatStat 35) |
+| ApplyXp | Центральная функция начисления XP с tier promotion loop |
+| SkillNodeConfig | SO — узел графа навыков |
+| SkillEffect | struct — эффект изучения навыка (StatMod, unlock и т.п.) |
+| CombatDiscipline | Melee/Ranged/Defense/Placed/Combat |
+| AOC | AnimatorOverrideController — смена анимаций под навык |
+| Free Respec | Бесплатное перераспределение (Q3.4) |
 
 ---
 

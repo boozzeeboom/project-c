@@ -1,7 +1,7 @@
 # GDD-02: World & Environment — Project C: The Clouds
 
-**Версия:** 1.1 | **Дата:** 10 июня 2026 г. (дизайн-контент без изменений с 6 апреля 2026 г.; добавлена §X «Реализация в коде») | **Статус:** ✅ Документировано + NPC + квестовые зоны реализованы
-**Автор:** Qwen Code (Game Studio: @world-builder + @art-director) — дизайн, Mavis 2026-06-10 — раздел реализации
+**Версия:** 1.2 | **Дата:** 14 июля 2026 г. | **Статус:** ✅ Документировано + NPC + квестовые зоны + Veil + Day/Night + Wind реализованы
+**Автор:** Малков Леонид Андреевич
 
 ---
 
@@ -135,14 +135,18 @@
 | Видимость | Нулевая внутри |
 | Молнии | Фиолетовые, случайные |
 
-### [🔴 Запланировано] Визуальные эффекты Завесы
+### Реализованные визуальные эффекты Завесы
 
-| Эффект | Описание | Реализация |
-|--------|----------|-----------|
-| Туман | URP Fog Exponential, цвет `#2d1b4e` | Volume Profile |
-| Молнии | Партиклы, случайные вспышки | VFX Graph / Particle System |
-| Звук | Низкочастотный гул | Audio (future) |
-| Опасность | Урон при входе, визуальный warning | Collider триггер |
+| Эффект | Описание | Реализация | Статус |
+|--------|----------|-----------|--------|
+| Плоскость завесы | Plane Y=12.0, материал VeilShader | `VeilSystem.cs` | ✅ |
+| Raymarch веил | Blit-эффект для Horizon Veil | `VeilRaymarchBlit.cs`, `HorizonVeilRenderer.cs` | ✅ |
+| Под-завесный туман | URP Exponential Fog, плотность, отдельный Volume | `VeilSystem` sub-veil fog | ✅ |
+| Молнии | Particle System, случайные интервалы (20-60с), цвет `#b366ff` | `VeilSystem.lightningParticles` | ✅ |
+| Дополнительные модули | Server-controlled pluggable veil pieces | `AdditionalVeilModule.cs` | ✅ |
+| Звук | Низкочастотный гул | Audio (future) | 🔴 |
+| Опасность | Collider триггер, урон при входе | Триггер / `OnTriggerEnter` | 🔴 |
+| Цвет | `#2d1b4e` (тёмно-фиолетовый) | В материалах завесы | ✅ |
 
 ---
 
@@ -197,16 +201,17 @@
 | Облака 3 слоя | ✅ Реализовано | Upper/Middle/Lower, движение, морфинг |
 | Цикл дня/ночи | ✅ Реализовано | Движение солнца, окраска облаков |
 | Procedural Noise | ✅ Реализовано | FBM noise 512x512 для облаков |
+| **Ветер (Wind)** | ✅ Реализовано | `ServerWeatherController` — authoritative broadcast (0.5 Hz), `WindManager` — единый источник (direction/speed), вариация направления (до ±15°) и скорости (±20%), множители влияния на корабли и персонажей |
 
-### [🔴 Запланировано] Будущая погода
+### [🟡 Частично / 🔴 Запланировано] Будущая погода
 
-| Элемент | Описание | Этап |
-|---------|----------|------|
-| **Ветер** | Влияние на корабли (сдвиг курса, турбулентность). Wind lanes между пиками. WindExposure зависит от класса корабля | Этап 3 |
-| Дождь | URP Particles, капли, всплески | Этап 2.5 |
-| Гроза | Молнии, гром, ливень | Этап 3 |
-| Туман | Локальная видимость | Этап 3 |
-| Снег | На высоких пиках | Этап 3 |
+| Элемент | Описание | Статус |
+|---------|----------|--------|
+| **Ветер на геймплей** | Влияние на корабли (сдвиг курса, турбулентность). Wind lanes между пиками. WindExposure зависит от класса корабля | 🟡 WindManager реализован + broadcast; влияние на физику — Этап 3 |
+| Дождь | URP Particles, капли, всплески | 🔴 Этап 2.5 |
+| Гроза | Молнии, гром, ливень | 🔴 Этап 3 |
+| Туман | Локальная видимость | 🔴 Этап 3 |
+| Снег | На высоких пиках | 🔴 Этап 3 |
 
 ---
 
@@ -282,14 +287,25 @@
 
 ## 8.5 Atmosphere System
 
-### Завеса (Veil) — Реализовано
+### Завеса (Veil) — Реализовано ✅
+
+**Файлы:** `Assets/_Project/Scripts/World/Clouds/VeilSystem.cs`, `HorizonVeilRenderer.cs`, `VeilRaymarchBlit.cs`, `AdditionalVeilModule.cs`
 
 | Параметр | Значение |
 |----------|----------|
 | Цвет | `#2d1b4e` (тёмно-фиолетовый) |
-| Высота | Ниже самого низкого пика (~1200м) |
+| Высота | Plane Y=12.0 (ниже самого низкого пика) |
 | Опасность | Смертельна (пары мезия) |
-| Молнии | Фиолетовые (Particle System) |
+| Молнии | Particle System, цвет `#b366ff`, интервал 20-60с |
+| Под-завесный туман | URP Exponential Fog, отдельный Volume |
+| Raymarch | Blit-эффект для Horizon Veil |
+| Доп. модули | Server-controlled pluggable veil pieces (событийные) |
+| Размер плоскости | 20000×20000 |
+
+**Компоненты:**
+- `VeilSystem` — основная система (plane, молнии, под-завесный туман, Volume)
+- `HorizonVeilRenderer` + `VeilRaymarchBlit` — raymarch эффект горизонта
+- `AdditionalVeilModule` — сервер-контролируемые дополнительные куски завесы
 
 ### CloudGhibli Shader
 
@@ -419,9 +435,9 @@
 | 5 | CloudGhibli шейдер работает | Rim glow, noise на облаках | ✅ |
 | 6 | Мелкие острова есть | Облететь мир | ✅ |
 | 7 | WorldCamera позволяет облететь | V/N/B/R/H | ✅ |
-| 8 | Текстуры пиков | [🔴 Запланировано] | 🔴 |
+| 8 | Текстуры пиков (Poly Haven) | [🔴 Запланировано] | 🔴 |
 | 9 | Модульные здания | [🔴 Запланировано] | 🔴 |
-| 10 | Погода (дождь, ветер) | [🔴 Запланировано] | 🔴 |
+| 10 | Погода (дождь, ветер) | Ветер ✅ (WindManager + ServerWeatherController broadcast). Дождь/гроза/снег — 🔴 | 🟡 Частично |
 | 11 | **NPC scene-placement** (NpcController + scene-placed [Mira]) | см. §X ниже | 🟢 DONE (T-Q11b, 2026-06-08) |
 | 12 | **Quest trigger zones** (auto-discover, StandOnTrigger objective) | см. §X ниже | 🟢 DONE (M13, 2026-06-08) |
 | 13 | **Mira в WorldScene_0_0** (40007, 2502.77, 39985) | координаты [Mira] | 🟢 DONE (2026-06-08) |
@@ -463,4 +479,4 @@
 
 ---
 
-**Связанные документы:** [GDD_INDEX.md](GDD_INDEX.md) | [WORLD_LORE_BOOK.md](../WORLD_LORE_BOOK.md) | [ART_BIBLE.md](../ART_BIBLE.md) | [`docs/NPC_quests/08_ROADMAP.md`](../NPC_quests/08_ROADMAP.md)
+**Связанные документы:** [GDD_INDEX.md](GDD_INDEX.md) | RAG БД: lore (PostgreSQL 192.168.31.227:5432) | [ART_BIBLE.md](../ART_BIBLE.md) | [`docs/NPC_quests/08_ROADMAP.md`](../NPC_quests/08_ROADMAP.md)

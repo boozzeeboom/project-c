@@ -1,16 +1,15 @@
 # 📋 Game Design Documents (GDD) — Project C: The Clouds
 
-**Последнее обновление:** 30 июня 2026 г. | **Версия:** `v0.0.35`
+**Последнее обновление:** 14 июля 2026 г. | **Версия:** `v1.0`
 
-> **Что нового (25–30 июня 2026):**
-> - **Real-Time Combat + Skills MVP ✅** — DamageCalculator (hit/miss/crit/armor/skills), AOEHelper (5 формул), CombatTargeting (raycast), SkillTreeWindow (интерактивный граф), SkillManager, SkillAnimationPlayer (runtime AOC), 27+ SkillNodeConfig SO, 3 каталога (Weapon/Armor/Technique), SkillModifier → DamageCalculator интеграция
-> - **NPC Enemy System P0-P2 ✅** — NpcBrain FSM (Idle→Chase→Attack→Dead), NpcSpawner (surface validation/rate-limit/leash 30m), goblin prefab (NetworkObject, NavMeshAgent), 5-state AnimatorController, loot tables с pickup
-> - **Character Customisation L1+L3+L4 ✅** — Male/Female переключение, 6 пресетов тела, 2 стиля волос, цвета кожи/волос/одежды, AnimatorOverrideController runtime, CustomisationWindow UI (full-screen overlay), Bug #1 (domain reload → heightScale=0) исправлен
-> - **Equipment Visual Phase 2 ✅** — Bone mapping (7+ slots: Weapon/Shield/Helmet/Chest), visual prefab на ItemData, CharacterEquipmentVisualApplier, Unity Avatar HumanBodyBones
-> - **Input System Phase 1-2.5 ✅** — InputBindingsConfig SO (31 биндинг), EscMenuWindow (UI Toolkit), InputRebindingPanel (Listen→Assign→Save/Reset), PlayerPrefsInputRepository, DefaultInputRestorer
-> - **Character Animations v0.5.1 ✅** — Animator BlendTree directional movement (8-way), combat animations (punch/kick/block), female override controller, NetworkPlayer animation event sync
+> **Что нового (14 июля 2026):**
+> - **Актуализация всех GDD под код** — все 19 документов переписаны в соответствии с фактической реализацией
+> - **Автор:** Малков Леонид Андреевич (замена Qwen Code / Game Design AI во всех документах)
+> - **GDD_25_Trade_Routes.md** — добавлен в индекс (ранее отсутствовал)
+> - **Убраны ссылки на WORLD_LORE_BOOK.md** — файл утрачен, лор доступен через RAG-базу
+> - **Статусы приведены к фактическим**: реализовано / частично / запланировано
 >
-> Подробный статус — в `docs/MMO_Development_Plan.md` (v0.0.35). Design-контент GDD (lore, формулы, дизайн-решения) остаётся в зоне game-designer'а. Секции "Реализация в коде" обновлены для всех новых подсистем.
+> Полный список изменений — в каждом GDD индивидуально.
 
 ---
 
@@ -30,33 +29,34 @@
 
 | # | Файл | Описание | Статус |
 |---|------|----------|--------|
-| 00 | [GDD_00_Overview.md](GDD_00_Overview.md) | Обзор игры: концепция, пиллары, целевая аудитория, USP | ✅ Готово |
-| 01 | [GDD_01_Core_Gameplay.md](GDD_01_Core_Gameplay.md) | Core Loop, геймплей, управление, режимы, физика | ✅ Готово |
-| 02 | [GDD_02_World_Environment.md](GDD_02_World_Environment.md) | Мир: города, пики, фермы, Завеса, погода, цикл дня | ✅ Готово |
+| 00 | [GDD_00_Overview.md](GDD_00_Overview.md) | Обзор игры: концепция, пиллары, целевая аудитория, USP | ✅ Актуально |
+| 01 | [GDD_01_Core_Gameplay.md](GDD_01_Core_Gameplay.md) | Core Loop, геймплей, управление, режимы, физика | ✅ Актуально |
+| 02 | [GDD_02_World_Environment.md](GDD_02_World_Environment.md) | Мир: города, пики, фермы, Завеса, погода, цикл дня | ✅ Актуально |
 
 ## 🔧 Systems — Технические системы
 
 | # | Файл | Описание | Статус |
 |---|------|----------|--------|
-| 10 | [GDD_10_Ship_System.md](GDD_10_Ship_System.md) | Корабли: классы, физика, управление, кооп-пилотирование | ✅ Готово |
-| 11 | [GDD_11_Inventory_Items.md](GDD_11_Inventory_Items.md) | Инвентарь: предметы, сундуки, подбор, круговое колесо | ✅ Готово |
-| 12 | [GDD_12_Network_Multiplayer.md](GDD_12_Network_Multiplayer.md) | Сеть: архитектура, синхронизация, реконнект, сервер | ✅ Готово |
-| 12.1 | [GDD_12_1_Scene_World_Streaming.md](GDD_12_1_Scene_World_Streaming.md) | Мир: 24 сцены, 4×6 grid, boundary-based loading | ✅ Готово |
-| 13 | [GDD_13_UI_UX_System.md](GDD_13_UI_UX_System.md) | UI/UX: HUD, меню, навигация, подсказки, стиль | ✅ Готово |
-| 14 | [GDD_14_Visual_Art_Pipeline.md](GDD_14_Visual_Art_Pipeline.md) | Визуал: URP, шейдеры, постобработка, арт-пайплайн | ✅ Готово |
-| 15 | [GDD_15_Audio_System.md](GDD_15_Audio_System.md) | Аудио: SFX, музыка, эмбиент, позиционный звук | ✅ Готово |
-| 25 | [GDD_25_Combat_Skills.md](GDD_25_Combat_Skills.md) | 🆕 Бой: DamageCalculator, AOE, прицеливание, скиллы, SkillTree | ✅ Реализовано |
-| 26 | [GDD_26_Character_Customisation.md](GDD_26_Character_Customisation.md) | 🆕 Кастомизация: пол/пресет/цвета/волосы + Equipment Visual | ✅ Реализовано |
+| 10 | [GDD_10_Ship_System.md](GDD_10_Ship_System.md) | Корабли: классы, физика, управление, AltitudeCorridor, модули | ✅ Актуально |
+| 11 | [GDD_11_Inventory_Items.md](GDD_11_Inventory_Items.md) | Инвентарь v2: ItemRegistry, NetworkList, типы предметов | ✅ Актуально |
+| 12 | [GDD_12_Network_Multiplayer.md](GDD_12_Network_Multiplayer.md) | Сеть: NGO 2.x, Host/Client, scene-placed spawn | ✅ Актуально |
+| 12.1 | [GDD_12_1_Scene_World_Streaming.md](GDD_12_1_Scene_World_Streaming.md) | Мир: 24 сцены, 4×6 grid, boundary-based loading | ⚠️ Код готов, не deployed |
+| 13 | [GDD_13_UI_UX_System.md](GDD_13_UI_UX_System.md) | UI/UX: HUD, CharacterWindow, DialogWindow, EscMenu, UI Toolkit | ✅ Актуально |
+| 14 | [GDD_14_Visual_Art_Pipeline.md](GDD_14_Visual_Art_Pipeline.md) | Визуал: URP 17.0.3, шейдеры, постобработка, Day/Night Volume | ✅ Актуально |
+| 15 | [GDD_15_Audio_System.md](GDD_15_Audio_System.md) | Аудио: SFX, музыка, эмбиент, позиционный звук | 🔴 Запланировано |
+| 25 | [GDD_25_Combat_Skills.md](GDD_25_Combat_Skills.md) | Бой: ERPR damage, AOE, Ranged/Throwables, TargetLock, SkillTree | ✅ Реализовано |
+| 25.1 | [GDD_25_Trade_Routes.md](GDD_25_Trade_Routes.md) | 🆕 Торговля: маршруты, контракты, контрабанда, логистика | 🟡 Частично |
+| 26 | [GDD_26_Character_Customisation.md](GDD_26_Character_Customisation.md) | Кастомизация: пол/пресет/цвета/волосы + Equipment Visual | ✅ Реализовано |
 
 ## 📖 Content — Контентные системы
 
 | # | Файл | Описание | Статус |
 |---|------|----------|--------|
-| 20 | [GDD_20_Progression_RPG.md](GDD_20_Progression_RPG.md) | Прогрессия: уровни, навыки, характеристики, деревья | ✅ Готово |
-| 21 | [GDD_21_Quest_Mission_System.md](GDD_21_Quest_Mission_System.md) | Квесты: типы, генерация, награды, цепочки | ✅ Готово |
-| 22 | [GDD_22_Economy_Trading.md](GDD_22_Economy_Trading.md) | Экономика: валюта, цены, торговля, рынок | ✅ Готово |
-| 23 | [GDD_23_Faction_Reputation.md](GDD_23_Faction_Reputation.md) | Фракции: гильдии, репутация, ранги, отношения | ✅ Готово |
-| 24 | [GDD_24_Narrative_World_Lore.md](GDD_24_Narrative_World_Lore.md) | Нарратив: лор, история, персонажи, сюжет | ✅ Готово |
+| 20 | [GDD_20_Progression_RPG.md](GDD_20_Progression_RPG.md) | Прогрессия: уровни, навыки, SkillTree, характеристики | ✅ Актуально |
+| 21 | [GDD_21_Quest_Mission_System.md](GDD_21_Quest_Mission_System.md) | Квесты: NPC диалоги, цепочки, триггеры, награды | ✅ Реализовано (M1–M19) |
+| 22 | [GDD_22_Economy_Trading.md](GDD_22_Economy_Trading.md) | Экономика: Trade v2, валюта, цены, контракты | ✅ Актуально |
+| 23 | [GDD_23_Faction_Reputation.md](GDD_23_Faction_Reputation.md) | Фракции: гильдии, репутация, ранги, отношения | 🟡 Частично (Stage 1) |
+| 24 | [GDD_24_Narrative_World_Lore.md](GDD_24_Narrative_World_Lore.md) | Нарратив: лор, история, персонажи, сюжет | 🟡 Частично (NPC диалоги) |
 
 ### 🆕 v0.0.20 — Ресурсная система (Mining)
 
@@ -74,16 +74,27 @@
 
 | GDD | Связанные документы |
 |-----|-------------------|
-| GDD_00 | README.md, WORLD_LORE_BOOK.md |
-| GDD_01 | CONTROLS.md, SHIP_CONTROLLER_PLAN.md |
-| GDD_02 | WORLD_LORE_BOOK.md, SHIP_LORE_AND_MECHANICS.md |
-| GDD_10 | SHIP_SYSTEM_DOCUMENTATION.md, SHIP_LORE_AND_MECHANICS.md |
-| GDD_11 | INVENTORY_SYSTEM.md |
-| GDD_12 | NETWORK_ARCHITECTURE.md, NETWORK_PHASE2_PLAN.md |
-| GDD_13 | CONTROLS.md |
-| GDD_14 | ART_BIBLE.md, unity6/UNITY6_URP_SETUP.md |
+| GDD_00 | README.md |
+| GDD_01 | CONTROLS.md, docs/Ships/Key-subsystem/ |
+| GDD_02 | docs/world/, docs/DayNight/ |
+| GDD_10 | docs/Ships/, SHIP_LORE_AND_MECHANICS.md |
+| GDD_11 | docs/Character-menu/sub_inventory-tab/, docs/MetaRequirement/ |
+| GDD_12 | NETWORK_ARCHITECTURE.md, docs/dev/INTEGRATION_SHIPS_TO_WORLD_0_0.md |
+| GDD_13 | docs/Character-menu/, docs/UI/ |
+| GDD_14 | ART_BIBLE.md, docs/unity6/UNITY6_URP_SETUP.md |
 | GDD_15 | — (будущий документ) |
-| GDD_20-24 | MMO_Development_Plan.md, WORLD_LORE_BOOK.md |
+| GDD_20 | docs/Character/Skills/, docs/Stats/ |
+| GDD_21 | docs/NPC_quests/08_ROADMAP.md |
+| GDD_22 | docs/Markets/, GDD_25_Trade_Routes.md |
+| GDD_23 | docs/NPC_quests/02_V2_ARCHITECTURE.md |
+| GDD_24 | RAG-база книги (PostgreSQL: 192.168.31.227:5432/agency_contacts, таблица book_chunks) |
+| GDD_25 | docs/Character/Skills/20_IMPLEMENTATION.md |
+| GDD_25.1 | docs/Markets/TRADE_V2_DESIGN.md, GDD_22_Economy_Trading.md |
+| GDD_26 | docs/Character/Customisation/ |
+
+**Лор-книга:** WORLD_LORE_BOOK.md утрачен. Для сверки с книгой «Интеграл Пьявица» используйте RAG-базу:
+- `psycopg2.connect(host='192.168.31.227', port=5432, user='leon', password='m2za7m7w', dbname='agency_contacts')`
+- Таблица `book_chunks` (id, chapter, chunk_index, text) — 1465 чанков, 15 глав
 
 ---
 
@@ -97,6 +108,6 @@
 
 ---
 
-**Разработано агентами:** @technical-director, @creative-director, @game-designer, @lead-programmer, @art-director, @narrative-director, @unity-specialist, @network-programmer, @gameplay-programmer, @ui-programmer, @audio-director, @world-builder
+**Разработано:** Малков Леонид Андреевич
 
-**Методология:** Collaborative Design Principle — Question → Options → Decision → Draft → Approval
+**Методология:** Всё под код. Если реализовано иначе — GDD правится под код. Если не реализовано — остаётся как план.

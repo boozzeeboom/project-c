@@ -1,20 +1,22 @@
 # 👤 GDD 26: Character Customisation & Equipment Visual
 
-**Версия:** v1.0 | **Последнее обновление:** 30 июня 2026 | **Статус:** ✅ L1+L3+L4 реализован
+**Версия:** v1.1 | **Последнее обновление:** 14 июля 2026 | **Статус:** ✅ L1+L3+L4 + Bug #1 + Equipment Visual Phase 2
+**Автор:** Малков Леонид Андреевич
 
 ---
 
 ## 1. Описание системы
 
-Кастомизация внешности персонажа (пол, пресет тела, цвета, волосы, одежда) + визуальное отображение экипированных предметов на персонаже через bone mapping.
+Кастомизация внешности персонажа (пол, пресет тела, цвета, волосы, одежда) + визуальное отображение экипированных предметов на персонаже через **EquipSlotToBone маппинг (13 EquipSlot → HumanBodyBones)**.
 
 **Связанные подсистемы:**
 - GDD_11_Inventory_Items.md §X.5.2 — Equipment Visual
 - GDD_13_UI_UX_System.md §X.9 — CustomisationWindow UI
 - GDD_01_Core_Gameplay.md — player controller
-- `docs/Character/Customisation/` — полная документация
+- `docs/Character/Customisation/` — полная документация customisation
+- `docs/Character/EquipmentVisual/` — полная документация Equipment Visual Phase 2
 
-**Тикеты:** T-CUS (L1+L3+L4 + Bug #1), T-EV (Phase 2 bone mapping)
+**Тикеты:** T-CUS (L1+L3+L4 + Bug #1), T-EV (Phase 2 bone mapping — EquipSlotToBone + CharacterEquipmentVisualApplier)
 
 ---
 
@@ -88,49 +90,55 @@ MonoBehaviour full-screen overlay (по паттерну SkillTreeWindow → Cha
 
 ---
 
-## 3. Equipment Visual System
+## 3. Equipment Visual System (Phase 2)
 
-### 3.1 Bone Mapping
+### 3.1 EquipSlotToBone Mapping
 
-| Слот | Bone (HumanBodyBones) | Описание |
-|------|----------------------|----------|
-| Weapon | RightHand | Оружие в правой руке |
-| Shield | LeftHand | Щит в левой руке |
-| Helmet | Head | Шлем |
-| Chest | Spine | Нагрудник |
-| Shoulders | LeftShoulder / RightShoulder | Наплечники |
-| Gloves | LeftHand / RightHand | Перчатки |
-| Boots | LeftFoot / RightFoot | Сапоги |
-| Belt | Hips | Пояс |
+**Файл:** `Assets/_Project/Scripts/Equipment/Visual/EquipSlotToBone.cs`
+**Namespace:** `ProjectC.Equipment.Visual`
+
+Статический класс маппинга 13 `EquipSlot` → `HumanBodyBones`:
+
+| EquipSlot | Bone | Описание |
+|-----------|------|----------|
+| `Head` | Head | Шлем |
+| `Chest` | Spine | Нагрудник |
+| `Legs` | Hips | Штаны |
+| `Feet` | LeftFoot | Сапоги (симметричные) |
+| `Back` | Spine | Плащ/ранец (offset через attachPositionOffset) |
+| `Hands` | LeftHand | Перчатки (симметричные) |
+| `Accessory1` | Spine | Аксессуар 1 (декоративный) |
+| `Accessory2` | Spine | Аксессуар 2 |
+| `WeaponMain` | RightHand | Основное оружие |
+| `WeaponOff` | LeftHand | Парное оружие / щит |
+| `Module1` | Spine | Имплант 1 |
+| `Module2` | Spine | Имплант 2 |
+| `Module3` | Spine | Имплант 3 |
+
+**Per-item override:** `ItemData.attachBoneOverride` (HumanBodyBones) позволяет переопределить кость для конкретного предмета. Если `LastBone` — используется default маппинг по EquipSlot.
 
 ### 3.2 Компоненты
 
 #### CharacterEquipmentVisualApplier
 
-**Файл:** `Assets/_Project/Scripts/Customisation/CharacterEquipmentVisualApplier.cs`
+**Файл:** `Assets/_Project/Scripts/Player/CharacterEquipmentVisualApplier.cs`
+*Примечание: компонент находится в `Player/`, не в `Customisation/`.*
 
-- Единая точка входа для customisation + equipment visual
-- OnEquipmentChanged → Instantiate/Destroy visual prefab на bone
-- Rate-limit N callback предотвращает duplicate equip
-
-#### EquipmentVisualSocket
-
-**Файл:** `Assets/_Project/Scripts/Items/EquipmentVisualSocket.cs`
-
-Определение socket на скелете:
-- `bone` (HumanBodyBones) — к какому bone крепить
-- `positionOffset` (Vector3) — смещение позиции
-- `rotationOffset` (Vector3) — смещение поворота
-- `scale` (Vector3) — масштаб модели
+- Единая точка входа для equipment visual
+- Подписывается на `EquipmentClientState.OnEquipmentUpdated`
+- Diff snapshot ↔ `_currentItems`, spawn/destroy по слоту
+- Parent к кости через `EquipSlotToBone.TryGetBoneTransform`
+- Anti-restrictive: warning + no-op если Animator не humanoid
 
 #### visualPrefab на ItemData
 
-**Файл:** `Assets/_Project/Scripts/Items/ItemData.cs`
+**Поля добавлены T-EV-03:**
 
-Новые поля (добавлены T-EV-03):
-- `visualPrefab` (GameObject) — 3D модель предмета (null default)
-- `attachBoneOverride` (HumanBodyBones) — override bone (LastBone = default slot)
-- `attachPositionOffset` / `attachRotation` / `attachScale` (Vector3) — per-item настройка
+| Поле | Тип | Описание |
+|------|-----|----------|
+| `visualPrefab` | GameObject | 3D модель предмета (null default) |
+| `attachBoneOverride` | HumanBodyBones | override bone (LastBone = default slot) |
+| `attachPositionOffset` / `attachRotation` / `attachScale` | Vector3 | per-item настройка позиции/поворота/масштаба |
 
 ---
 
@@ -143,7 +151,7 @@ MonoBehaviour full-screen overlay (по паттерну SkillTreeWindow → Cha
 5. Snapshot → `CustomisationSave` (JSON) → `PlayerPrefs`
 6. `NetworkPlayer` broadcast snapshot всем клиентам через RPC
 7. `CharacterCustomisationApplier.OnCustomisationUpdated` → apply scale/AOC/colors
-8. `CharacterEquipmentVisualApplier` синхронизирует экипировку
+8. `CharacterEquipmentVisualApplier` синхронизирует экипировку (diff → spawn/destroy per slot)
 
 ---
 
@@ -152,5 +160,6 @@ MonoBehaviour full-screen overlay (по паттерну SkillTreeWindow → Cha
 - [GDD_11_Inventory_Items.md](GDD_11_Inventory_Items.md) §X.5 — WeaponItemData + Equipment Visual
 - [GDD_13_UI_UX_System.md](GDD_13_UI_UX_System.md) §X.9 — CustomisationWindow UI
 - [GDD_INDEX.md](GDD_INDEX.md) — общая навигация
-- `docs/Character/Customisation/` — полная документация (AUDIT_*, IMPLEMENTATION_DESIGN.md, LOG.md)
+- `docs/Character/Customisation/` — полная документация customisation (AUDIT_*, IMPLEMENTATION_DESIGN.md, LOG.md)
+- `docs/Character/EquipmentVisual/` — полная документация Equipment Visual Phase 2 (00_DESIGN.md, 01_DATA_MODEL.md, 02_CHARACTER_APPLIER.md)
 - `docs/MMO_Development_Plan.md` §1.17 — план Character Customisation

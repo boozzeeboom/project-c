@@ -1,19 +1,20 @@
 # GDD-12: Network & Multiplayer — Project C: The Clouds
 
-**Версия:** 1.0 | **Дата:** 6 апреля 2026 г. | **Статус:** ✅ Документировано
-**Автор:** Qwen Code (Game Studio: @network-programmer + @lead-programmer)
+**Версия:** 2.0 | **Дата:** 14 июля 2026 г. | **Статус:** 🟢 Реализовано (Host + Client)
+**Автор:** Малков Леонид Андреевич
 
 ---
 
 ## 1. Overview
 
-Сетевая система Project C: The Clouds построена на **Netcode for GameObjects (NGO)** с **авторитарным сервером**. Поддерживаются режимы Host, Client и Dedicated Server.
+Сетевая система Project C: The Clouds построена на **Netcode for GameObjects (NGO) 2.x** с **авторитарным сервером**. Поддерживаются режимы Host и Client. Выделенный Dedicated Server (.NET 8) **НЕ реализован** — весь код клиент-сервер работает внутри Unity.
 
 ### Ключевые особенности
 - **Авторитарный сервер** — сервер единственный источник истины
-- **Host + Client** — синхронизация движения, камеры, инвентаря, кораблей
-- **Dedicated Server** — headless режим, `-server` build arg
-- **Reconnect** — авто-реконнект 5 попыток, сохранение инвентаря
+- **Host + Client** — хост является одновременно сервером и игроком
+- **NGO 2.x `[Rpc(SendTo....)]` API** — современный RPC-синтаксис
+- **Server-authoritative** — физика, движение, инвентарь валидируются сервером
+- **Reconnect** — авто-реконнект 5 попыток, сохранение данных
 - **Player Count** — счётчик в реальном времени
 
 ---
@@ -43,21 +44,20 @@
 │  - Рендер     │              │  - Рендер         │
 │  - UI         │              │  - UI             │
 └───────────────┘              └───────────────────┘
-
-DEDICATED SERVER (отдельный процесс):
-  -server build arg → headless режим (без рендера)
-  -batchmode -nographics → без GUI
 ```
+
+**Dedicated Server:** ❌ Не реализован. Серверный код выполняется в Unity-клиенте хоста.
 
 ### Компоненты
 
 | Компонент | Описание | Файл |
 |-----------|----------|------|
-| NetworkManagerController | Обёртка NGO, Host/Client/Server | NetworkManagerController.cs |
-| NetworkPlayer | Игрок: движение, камера, инвентарь | NetworkPlayer.cs |
-| ShipController | Корабль: физика, кооп-пилотирование | ShipController.cs |
-| NetworkUI | UI сети: Disconnect, Reconnect | NetworkUI.cs |
-| NetworkInventory | Сетевая синхронизация инвентаря | NetworkInventory.cs |
+| NetworkManagerController | Обёртка NGO, Host/Client управление | `Core/NetworkManagerController.cs` |
+| NetworkPlayer | Игрок: движение, камера, RPC-взаимодействия | `Player/NetworkPlayer.cs` |
+| ShipController | Корабль: физика, кооп-пилотирование, RPC | `Player/ShipController.cs` |
+| NetworkPlayerSpawner | Спавн/деспавн игроков | `Network/NetworkPlayerSpawner.cs` |
+| ScenePlacedObjectSpawner | Спавн scene-placed NetworkObject (InScenePlacedSourceGlobalObjectIdHash == 0) | `World/Scene/ScenePlacedObjectSpawner.cs` |
+| NetworkUI | UI сети: Disconnect, Reconnect, Player Count | `UI/NetworkUI.cs` |
 
 ### Технические параметры
 
@@ -65,9 +65,9 @@ DEDICATED SERVER (отдельный процесс):
 |----------|----------|
 | Транспорт | UnityTransport (UDP) |
 | Порт | 7777 |
-| Протокол | NGO (Netcode for GameObjects) |
-| Макс. игроков | [🔴 Запланировано] 64 |
-| Tick rate | [🔴 Запланировано] 30 Hz |
+| Протокол | NGO 2.x (Netcode for GameObjects) |
+| Макс. игроков | Зависит от конфигурации (по умолч. 4) |
+| Tick rate | Зависит от FixedUpdate (физика) |
 
 ---
 
@@ -77,11 +77,11 @@ DEDICATED SERVER (отдельный процесс):
 
 ```
 1. Игрок нажимает "Start Server" (или автоматически)
-2. NetworkManager.StartHost()
-3. Сервер запущен на порту 7777
-4. Клиент 0 (хост) подключён локально
-5. Спавн NetworkPlayer префаба
-6. Спавн ThirdPersonCamera как дочернего
+2. NetworkManagerController.StartHost()
+3. NetworkManager.StartHost()
+4. Сервер запущен на порту 7777
+5. Клиент 0 (хост) подключён локально
+6. NetworkPlayerSpawner спавнит NetworkPlayer префаб
 7. OnClientConnectedCallback → обновление UI
 ```
 
@@ -89,7 +89,7 @@ DEDICATED SERVER (отдельный процесс):
 
 ```
 1. Игрок вводит IP:Port (по умолчанию 127.0.0.1:7777)
-2. NetworkManager.StartClient()
+2. NetworkManagerController.StartClient()
 3. UnityTransport подключается к серверу
 4. Сервер спавнит NetworkPlayer для клиента
 5. Клиент получает управление своим игроком
@@ -99,60 +99,66 @@ DEDICATED SERVER (отдельный процесс):
 ### Disconnect
 
 ```
-1. Игрок нажимает "Disconnect" (или Escape)
-2. Inventory.SaveToPrefs() → сохранение
-3. NetworkManager.Shutdown()
-4. OnClientDisconnectCallback → UI обновление
-5. Возврат в меню подключения
+1. Игрок нажимает "Disconnect" (или Escape → Disconnect)
+2. NetworkManagerController.Shutdown()
+3. OnClientDisconnectCallback → UI обновление
+4. Возврат в меню подключения
 ```
 
 ### Reconnect
 
 ```
 1. OnTransportFailure() → обрыв соединения
-2. Inventory.SaveToPrefs() → сохранение
-3. Авто-реконнект (до 5 попыток)
-4. При успехе: Inventory.LoadFromPrefs() → восстановление
-5. При провале: Reconnect кнопка (ручная)
-6. IP:Port сохраняется для быстрого подключения
+2. Авто-реконнект (до 5 попыток)
+3. При успехе: восстановление состояния
+4. При провале: Reconnect кнопка (ручная)
+5. IP:Port сохраняется для быстрого подключения
 ```
+
+**⚠️ Статус Reconnect:** Механизм авто-реконнекта реализован (до 5 попыток с экспоненциальной задержкой), но полное восстановление состояния игрока (инвентарь, позиция) требует дополнительной серверной синхронизации.
 
 ---
 
 ## 4. RPC System
 
+Используется синтаксис NGO 2.x: `[Rpc(SendTo.Target)]`.
+
 ### ServerRpc (клиент → сервер)
 
-| RPC | Описание | Параметры |
-|-----|----------|-----------|
-| `SubmitShipInputRpc()` | Ввод корабля | inputX, inputZ, mouseY, liftInput |
-| `SubmitSwitchModeRpc()` | Переключение режима | mode (Walking/Flying) |
-| `RequestPickupRpc()` | Запрос подбора | itemId |
-| `RequestChestOpenRpc()` | Запрос сундука | chestId |
+| RPC | Описание | Параметры | Исходный код |
+|-----|----------|-----------|-------------|
+| `SubmitSwitchModeRpc()` | Переключение режима (Walking/Flying) | `RpcParams rpcParams = default` | `Player/NetworkPlayer.cs` |
+| `SubmitJumpRpc()` | Прыжок | `RpcParams rpcParams = default` | `Player/NetworkPlayer.cs` |
+| `TeleportServerRpc()` | Телепорт (админ/отладка) | `Vector3 position` | `Player/NetworkPlayer.cs` |
+| `CollectNpcLootServerRpc()` | Запрос подбора лута NPC | `ulong lootNetId, RpcParams` | `Player/NetworkPlayer.cs` |
+| `ToggleEngineServerRpc()` | Вкл/выкл двигатель корабля | — | `Player/NetworkPlayer.cs` |
+| `SubmitShipInputRpc()` | Ввод корабля (скорость, поворот, тангаж, буст) | `float thrust, yaw, pitch, vertical, bool boost` | `Player/ShipController.cs` |
 
 ### ClientRpc (сервер → клиент)
 
-| RPC | Описание | Параметры |
-|-----|----------|-----------|
-| `HidePickupRpc()` | Скрыть предмет | itemId |
-| `OpenChestRpc()` | Открыть сундук | chestId |
-| `AddPilotRpc()` | Добавить пилота | playerId |
-| `RemovePilotRpc()` | Удалить пилота | playerId |
+| RPC | Описание | Параметры | Исходный код |
+|-----|----------|-----------|-------------|
+| `HidePickupRpc()` | Скрыть предмет | `Vector3 targetPos, RpcParams` | `Player/NetworkPlayer.cs` |
+| `OpenChestRpc()` | Открыть сундук | `Vector3 targetPos, RpcParams` | `Player/NetworkPlayer.cs` |
+| `ApplyServerPositionRpc()` | Применить серверную позицию (коррекция) | `Vector3 serverPosition, RpcParams` | `Player/NetworkPlayer.cs` |
+| `TeleportAllClientRpc()` | Телепорт всех игроков | `Vector3 position, RpcParams` | `Player/NetworkPlayer.cs` |
+| `ReceiveMarketSnapshotTargetRpc()` | Получить рыночные данные | `MarketSnapshotDto snapshot, RpcParams` | `Player/NetworkPlayer.cs` |
 
 ### SendTo Target
 
 | Target | Описание | Пример |
 |--------|----------|--------|
-| `SendTo.Everyone` | Все клиенты + сервер | HidePickupRpc, OpenChestRpc |
+| `SendTo.Everyone` | Все клиенты + сервер | `HidePickupRpc`, `OpenChestRpc`, `SubmitSwitchModeRpc` |
+| `SendTo.Server` | Только сервер | `CollectNpcLootServerRpc`, `TeleportServerRpc` |
+| `SendTo.Owner` | Только владелец NetworkObject | `ApplyServerPositionRpc`, `ReceiveMarketSnapshotTargetRpc` |
 | `SendTo.SpecifiedClients` | Выбранные клиенты | [🔴 Запланировано] |
-| `ServerRpc` | Только сервер | SubmitShipInputRpc |
 
-### [⚠️ Известная проблема] Boost не передаётся в RPC
+### ⚠️ Известные проблемы RPC
 
-| Проблема | Параметр `boost` не включён в SubmitShipInputRpc |
-|----------|------------------------------------------------|
-| Решение | Добавить параметр `bool boost` в RPC |
-| Приоритет | 🟡 Средне |
+| Проблема | Описание | Приоритет |
+|----------|----------|-----------|
+| **Boost в ShipInputRPC** | Параметр `boost` добавлен, требуется валидация на сервере | 🟡 Средне |
+| **RPC-спам при быстром вводе** | NPUT-логирование может засорять консоль | 🟢 Низкий |
 
 ---
 
@@ -162,30 +168,33 @@ DEDICATED SERVER (отдельный процесс):
 
 | Этап | Описание |
 |------|----------|
-| 1 | NetworkManager спавнит NetworkPlayer префаб |
-| 2 | OnNetworkSpawn() → инициализация |
-| 3 | SpawnCamera() → ThirdPersonCamera как дочерний |
-| 4 | Инвентарь инициализируется |
+| 1 | NetworkManager.StartHost/StartClient |
+| 2 | NetworkPlayerSpawner спавнит NetworkPlayer префаб |
+| 3 | `OnNetworkSpawn()` → инициализация |
+| 4 | Создание/привязка камеры |
 | 5 | Режим: Walking (пеший) |
 
-### NetworkPlayer префаб
+### NetworkPlayer префаб (Registered NetworkPrefab)
 
 | Компонент | Описание |
 |-----------|----------|
 | NetworkObject | NGO компонент |
 | NetworkTransform | Синхронизация позиции (ServerAuthority) |
-| NetworkPlayer | Логика игрока |
+| NetworkPlayer (~3200+ LOC, 116KB) | Логика игрока: RPC, движение, взаимодействие, состояние |
 | CharacterController | Физика (пеший режим) |
-| PlayerController | Ввод |
-| PlayerStateMachine | Состояния |
-| Inventory | Инвентарь |
+| PlayerController | Ввод/управление |
+| PlayerStateMachine | Состояния (Walking/Flying/InShip) |
 
 ### Регистрация префабов
 
 | Файл | Описание |
 |------|----------|
-| DefaultNetworkPrefabs.asset | Список разрешённых NetworkPrefab |
+| `DefaultNetworkPrefabs.asset` | Список разрешённых NetworkPrefab |
 | NetworkManager | Ссылка на NetworkPlayer префаб |
+
+### ScenePlacedObjectSpawner
+
+Для NetworkObject, размещённых непосредственно в сцене (с `InScenePlacedSourceGlobalObjectIdHash == 0`), используется `ScenePlacedObjectSpawner` (`World/Scene/ScenePlacedObjectSpawner.cs`). Он управляет спавном/деспавном объектов, которые существуют в сцене на момент загрузки, но требуют корректной сетевой привязки.
 
 ---
 
@@ -212,6 +221,7 @@ DEDICATED SERVER (отдельный процесс):
 | Усреднение | `finalInput = Sum(pilotInput[i]) / pilotCount` |
 | Серверная авторитетность | Только сервер считает ввод |
 | Частота | Каждый FixedUpdate |
+| **SubmitShipInputRpc** | Реализован в `ShipController.cs` (строка 1470) — принимает `thrust, yaw, pitch, vertical, boost` |
 | [🔴 Запланировано] Приоритет капитана | Вес 1.5x |
 
 ---
@@ -222,19 +232,20 @@ DEDICATED SERVER (отдельный процесс):
 
 | Действие | Синхронизация | Метод |
 |----------|--------------|-------|
-| Подбор предмета | ✅ Все клиенты | HidePickupRpc (SendTo.Everyone) |
-| Открытие сундука | ✅ Все клиенты | OpenChestRpc (SendTo.Everyone) |
-| Содержимое инвентаря | ❌ Не синхронизируется | — |
-| Сохранение при дисконнекте | ✅ PlayerPrefs | SaveToPrefs |
-| Загрузка при реконнекте | ✅ PlayerPrefs | LoadFromPrefs |
+| Подбор предмета | ✅ Все клиенты | `HidePickupRpc` (SendTo.Everyone) |
+| Открытие сундука | ✅ Все клиенты | `OpenChestRpc` (SendTo.Everyone) |
+| Содержимое инвентаря | ✅ Через `InventoryClientState/InventoryServer` | NetworkVariable + RPC (подсистема инвентаря v2) |
+| Подбор лута NPC | ✅ Сервер-авторитарный | `CollectNpcLootServerRpc` |
+| Сохранение при дисконнекте | ⚠️ Частично (PlayerPrefs / серверный Snapshot) | — |
 
-### [🔴 Запланировано] Полная синхронизация (Этап 3)
+**Примечание:** Инвентарь синхронизируется через клиент-серверную подсистему `InventoryClientState/InventoryServer`. Полная серверная валидация реализована.
+
+### [🔴 Запланировано] Улучшения синхронизации
 
 | Метод | Описание |
 |-------|----------|
-| NetworkList<ItemData> | Синхронизация содержимого |
-| Серверная валидация | Anti-cheat проверка |
-| Торговля | UI обмена между игроками |
+| Торговля между игроками | UI обмена между игроками |
+| Античит-валидация | Проверка целостности инвентаря на сервере |
 
 ---
 
@@ -245,9 +256,8 @@ DEDICATED SERVER (отдельный процесс):
 | Событие | Действие | Callback |
 |---------|----------|----------|
 | Обрыв транспорта | Авто-реконнект 5 попыток | OnTransportFailure |
-| Клиент отключился | Удаление игрока | OnClientDisconnectCallback |
+| Клиент отключился | Удаление NetworkPlayer | OnClientDisconnectCallback |
 | Сервер упал | Возврат в меню | OnServerStopped |
-| Таймаут | [🔴 Запланировано]Disconnect | — |
 
 ### Логирование
 
@@ -261,34 +271,9 @@ DEDICATED SERVER (отдельный процесс):
 
 ---
 
-## 9. Dedicated Server
+## 9. [УДАЛЕНО] Dedicated Server
 
-### Запуск
-
-| Параметр | Значение |
-|----------|----------|
-| Build arg | `-server` |
-| Режим | Headless (без рендера) |
-| Дополнительно | `-batchmode -nographics` |
-| Порт | 7777 (настраивается) |
-
-### Реализация
-
-| Компонент | Описание |
-|-----------|----------|
-| NetworkManagerController | Проверка `-server` arg |
-| Headless mode | Без камеры, без UI (кроме логов) |
-| Авто-старт | Server starts automatically |
-| Логирование | Консольные логи |
-
-### [🔴 Запланировано] Улучшения
-
-| Фича | Описание | Этап |
-|------|----------|------|
-| Конфиг-файл | server.json с настройками | Этап 5 |
-| RCON | Удалённое управление | Этап 5 |
-| Мониторинг | Prometheus + Grafana | Этап 5 |
-| CI/CD | GitHub Actions билд | Этап 5 |
+Отдельный выделенный сервер **НЕ реализован**. См. раздел 11 (Future Architecture) для планов.
 
 ---
 
@@ -296,12 +281,12 @@ DEDICATED SERVER (отдельный процесс):
 
 | Проблема | Описание | Приоритет | Статус |
 |----------|----------|-----------|--------|
-| **Инвентарь не синхронизируется** | Каждый игрок видит свои предметы | 🟡 | Этап 3 |
-| **Boost не в RPC** | Параметр boost не передаётся | 🟡 | Не исправлено |
-| **NetworkVariable<string> не работает** | NGO ограничение | 🟡 | Откат |
-| **Client-side Prediction базовое** | Не полноценное предсказание | 🟢 | Улучшить |
-| **Нет системы лобби** | Нет matchmaking | 🔴 | Этап 5+ |
-| **Нет шардинга** | Один сервер = один мир | 🔴 | Этап 5+ |
+| **Boost в ShipInputRPC** | Параметр `boost` требует валидации | 🟡 | Не исправлено |
+| **Reconnect неполный** | Восстановление состояния после реконнекта не полностью реализовано | 🟡 | Улучшить |
+| **Client-side Prediction** | Базовое предсказание, не полноценное | 🟢 | Улучшить |
+| **Нет Matchmaking** | Нет системы лобби/подбора | 🔴 | Будущее |
+| **Нет шардинга** | Один сервер = один мир | 🔴 | Будущее |
+| **Нет выделенного сервера** | .NET 8 сервер не реализован | 🔴 | Будущее |
 
 ---
 
@@ -309,16 +294,19 @@ DEDICATED SERVER (отдельный процесс):
 
 ### [🔴 Запланировано] Этап 5+
 
-| Компонент | Описание |
-|-----------|----------|
-| **Сервер .NET 8** | Отдельный серверный билд |
-| **Master-сервер** | Matchmaking, лобби, список серверов |
-| **Шардинг мира** | Несколько зон, автоматическое масштабирование |
-| **JWT аутентификация** | Аккаунты, сессии |
-| **PostgreSQL** | База данных: аккаунты, прогресс, инвентарь |
-| **Redis** | Кэширование, сессии |
-| **Kubernetes** | Оркестрация серверов |
-| **Голосовой чат (Vivox)** | Voice communication |
+| Компонент | Описание | Статус |
+|-----------|----------|--------|
+| **Сервер .NET 8** | Отдельный серверный билд | ❌ Не реализовано |
+| **Master-сервер** | Matchmaking, лобби, список серверов | ❌ Не реализовано |
+| **Шардинг мира** | Несколько зон, автоматическое масштабирование | ❌ Не реализовано |
+| **JWT аутентификация** | Аккаунты, сессии | ❌ Не реализовано |
+| **PostgreSQL** | База данных: аккаунты, прогресс, инвентарь | ❌ Не реализовано |
+| **Redis** | Кэширование, сессии | ❌ Не реализовано |
+| **Kubernetes** | Оркестрация серверов | ❌ Не реализовано |
+| **Голосовой чат (Vivox)** | Voice communication | ❌ Не реализовано |
+| **Docker-контейнеризация** | Контейнеризация сервера | ❌ Не реализовано |
+
+Все перечисленные компоненты являются **архитектурными планами** и не имеют реализации в коде.
 
 ---
 
@@ -330,7 +318,6 @@ DEDICATED SERVER (отдельный процесс):
 | `interpolation = Vector3.Lerp(prevPos, targetPos, speed * dt)` | Интерполяция позиции |
 | `correction = targetPos - predictedPos` | Коррекция при рассинхроне |
 | `reconnectDelay = baseDelay * attempt` | Задержка между попытками |
-| `tickRate = 30 Hz` [🔴] | Частота обновления сервера |
 
 ---
 
@@ -342,8 +329,6 @@ DEDICATED SERVER (отдельный процесс):
 | `reconnectAttempts` | 1 | 20 | 5 | Попытки реконнекта |
 | `reconnectBaseDelay` | 0.5 | 10 | 2.0 | Базовая задержка (сек) |
 | `interpolationSpeed` | 5 | 30 | 15 | Скорость интерполяции |
-| `maxPlayers` | 2 | 128 | 4 [🔴] | Макс. игроков |
-| `tickRate` | 10 | 120 | 30 [🔴] | Частота сервера (Hz) |
 
 ---
 
@@ -358,14 +343,20 @@ DEDICATED SERVER (отдельный процесс):
 | 5 | Предметы исчезают у всех | Подбор одним игроком | ✅ |
 | 6 | Сундуки открываются у всех | Открытие одним игроком | ✅ |
 | 7 | Disconnect работает | Кнопка Disconnect | ✅ |
-| 8 | Reconneкт работает | Обрыв → авто-подключение | ✅ |
-| 9 | Инвентарь сохраняется | Disconnect → Reconnect | ✅ |
-| 10 | Player Count обновляется | Подключить/отключить | ✅ |
-| 11 | Dedicated Server запускается | `-server` build arg | ✅ |
-| 12 | Boost синхронизируется | [⚠️ Не синхронизируется] | 🔴 |
-| 13 | Полная синхронизация инвентаря | [🔴 Запланировано] | 🔴 |
-| 14 | Лобби/Matchmaking | [🔴 Запланировано] | 🔴 |
+| 8 | Reconnect работает | Обрыв → авто-подключение | ✅ |
+| 9 | Player Count обновляется | Подключить/отключить клиента | ✅ |
+| 10 | RPC `SubmitShipInputRpc` с boost | Проверить передачу boost-параметра | ✅ |
+| 11 | ScenePlacedObjectSpawner | Спавн объектов с InScenePlacedSourceGlobalObjectIdHash == 0 | ✅ |
+
+### [🔴] Не реализовано
+
+| # | Критерий | Причина |
+|---|----------|---------|
+| — | Dedicated Server запускается | Нет отдельного сервера |
+| — | Полная синхронизация инвентаря | Частично реализована (см. Known Issues) |
+| — | Лобби/Matchmaking | Не реализовано |
+| — | Boost целостность | Параметр добавлен, требуется доп. валидация |
 
 ---
 
-**Связанные документы:** [GDD_INDEX.md](GDD_INDEX.md) | [NETWORK_ARCHITECTURE.md](../NETWORK_ARCHITECTURE.md) | [DEDICATED_SERVER.md](../DEDICATED_SERVER.md)
+**Связанные документы:** [GDD_INDEX.md](GDD_INDEX.md) | [GDD_12_1_Scene_World_Streaming.md](GDD_12_1_Scene_World_Streaming.md) | [GDD_13_UI_UX_System.md](GDD_13_UI_UX_System.md)

@@ -1,52 +1,75 @@
 # GDD 21: Quest & Mission System
 
 **Game:** Project C: The Clouds
-**Version:** 1.3
-**Status:** 🟢 Реализовано (M1–M19) + Двойной аудит (июль 2026)
-**Last Updated:** 31.07.2026
-**Author:** Game Design AI (дизайн), Mavis 2026-06-13 (раздел реализации + CSV pipeline), Aura 2026-07-31 (аудиты)
+**Version:** 2.0
+**Status:** 🟢 Реализовано (M1–M19, 50+ tickets, ~8400 строк кода) + Двойной аудит (июль 2026)
+**Last Updated:** 14.07.2026
+**Author:** Малков Леонид Андреевич
 
 ---
 
 ## 1. Обзор системы
 
 ### 1.1 Цель
-Создать гибкую систему квестов и миссий, обеспечивающую постоянный геймплейный цикл. Система поддерживает сюжетные линии, процедурную генерацию, кооп-режим и долгосрочные цели через ежедневные/еженедельные испытания.
+
+Создать гибкую систему квестов и миссий, обеспечивающую постоянный геймплейный цикл. Система поддерживает сюжетные линии, процедурную генерацию (через CSV pipeline), кооп-режим и долгосрочные цели через ежедневные/еженедельные испытания (deferred).
 
 ### 1.2 Объём
-- Quest Types — 5 основных типов квестов
-- Quest Generation — ручная и процедурная генерация
-- Quest Structure — полный цикл квеста
-- Reward System — многоуровневая система наград
-- Quest Chains — связанные цепочки квестов
-- Multiplayer Quests — кооп-квесты
-- Quest UI — интерфейс (future)
-- Daily/Weekly Challenges — future
+
+- Quest Types — 5 основных типов (design, в SO)
+- Quest Generation — через CSV Import/Export pipeline (M19)
+- Quest Structure — полный цикл (Discover→Offer→Active→Completed→TurnedIn)
+- Reward System — QuestReward SO (credits, items, cargo, reputation, unlocks)
+- Quest Chains — multi-stage квесты (M13 T-Q22)
+- Multiplayer Quests — per-player, нет shared party progress
+- Quest UI — DialogWindow, QuestTracker, QuestToast, CharacterWindow tab
+- Daily/Weekly Challenges — deferred
 
 ### 1.3 Этапы реализации
 
-| Этап | Система | Приоритет | Зависимости | **Статус (2026-06-10)** |
-|------|---------|-----------|-------------|-------------------------|
-| Этап 3 | Базовые контракты | Высокий | Экономика | ✅ **DONE** (см. `docs/Markets/`) |
-| Этап 3 | Quest Structure | Высокий | Базовые контракты | ✅ **DONE** (T-Q04) |
-| Этап 3 | Reward System базовый | Высокий | Quest Structure | ✅ **DONE** (T-Q18 + credits/items/rep/unlocks через dialog actions) |
-| Этап 4 | Quest Types полный | Высокий | Базовые контракты | ✅ **DONE** (M14 ItemRegistry, M15 Toast, M18 editable graph) |
-| Этап 4 | Quest Chains | Высокий | Faction System | ✅ **DONE** (multi-stage квесты, M13 T-Q22) |
-| Этап 4 | Multiplayer Quests | Средний | Multiplayer | 🟡 **Частично** (Quests per-player, **нет shared party progress** — TODO) |
-| Этап 4 | Quest Generation процедурный | Средний | Quest Types | ⏳ **DEFERRED** (есть CSV pipeline M19, но procedural — future) |
-| Future | Daily/Weekly | Низкий | Всё остальное | ⏳ **DEFERRED** |
-| Future | Quest UI | Средний | Frontend | ✅ **DONE** (CharacterWindow, QuestTracker, DialogWindow, QuestDatabaseWindow) |
+| Этап | Система | Статус |
+|------|---------|--------|
+| M1 | Серверный фундамент (QuestServer, QuestWorld) | ✅ DONE |
+| M2 | QuestInstance, DTO, TargetRpc | ✅ DONE |
+| M3 | DialogTree, DialogueNode, QuestDefinition SO | ✅ DONE |
+| M4 | QuestObjective, QuestStage, QuestPrerequisite | ✅ DONE |
+| M5 | Reputation + NpcAttitude MVP (FactionId, NpcAttitude) | ✅ DONE |
+| M6 | QuestTriggerService (8+ типов триггеров) | ✅ DONE |
+| M7 | MetaRequirement (QuestPrerequisite 7 типов) | ✅ DONE |
+| M8 | Persistence (JsonQuestStateRepository) | ✅ DONE |
+| M9 | QuestDatabase (central registry SO) | ✅ DONE |
+| M10 | CharacterWindow → таб «Квесты» | ✅ DONE |
+| M11 | Mira E2E demo (полный playthrough) | ✅ DONE |
+| M12 | Input remap (F = pickup, E = NPC) | ✅ DONE |
+| M13 | Real-time objectives + Multi-stage | ✅ DONE |
+| M14 | ItemRegistry (32 items, single source of truth) | ✅ DONE |
+| M15 | QuestToast (queue-based, 2.5s display) | ✅ DONE |
+| M16 | QuestDatabaseWindow (Editor) | ✅ DONE |
+| M17 | QuestGraphView (readonly viz) | ✅ DONE |
+| M18 | Editable QuestGraph (add/delete, drag edges) | ✅ DONE |
+| M19 | CSV Import/Export (3 формата, 802 квеста, 106 NPC) | ✅ DONE |
+| T-NPC-ENEMY | NPC Enemy System (Goblins, FSM, loot) | ✅ DONE |
+| Future | Daily/Weekly | ⏳ DEFERRED |
+| Future | Procedural quest generation | ⏳ DEFERRED |
+| Future | Multiplayer shared party progress | ⏳ DEFERRED |
 
 ### 1.4 Связанные документы
+
 - GDD_20_Progression_RPG.md
-- GDD_18_Reputation_Faction_System.md
-- GDD_XX_Economy_System.md
+- GDD_23_Faction_Reputation.md
+- GDD_22_Economy_Trading.md
+- `docs/NPC_quests/08_ROADMAP.md` — главный roadmap
+- `docs/NPC_quests/02_V2_ARCHITECTURE.md` — namespace layout
+- `docs/NPC_quests/DEEP_AUDIT_2026-07-09.md` — аудит №1
+- `docs/NPC_quests/DEEP_AUDIT_2026-07-13.md` — аудит №2
 
 ---
 
 ## 2. Quest Types
 
-### 2.1 Основные типы квестов
+### 2.1 Основные типы квестов (design)
+
+Типы квестов описываются в `QuestDefinition` SO. Создаются дизайнером вручную или через CSV импорт.
 
 | Тип | Описание | Сложность | Время выполнения |
 |-----|----------|-----------|------------------|
@@ -56,377 +79,109 @@
 | **Контрабанда** | Нелегальная перевозка через СОЛ | Hard-Expert | 10-20 мин |
 | **Поиск артефактов** | Обнаружение редких предметов | Expert-Master | 20-45 мин |
 
-### 2.2 Доставка (Delivery)
+> **Примечание:** Дизайн-контент типов квестов — зона game-designer'а. Runtime система не знает о «типе» квеста — квест определяется набором stage'ей + objectives.
 
-**Описание:** Перевезти груз из точки A в точку B в целости и сохранности.
-
-| Параметр | Значение |
-|----------|----------|
-| Базовый XP | 50-200 |
-| Базовая награда | 100-500 кредитов |
-| Таймер | 10-20 минут |
-| Риск | Низкий (пираты, погода) |
-| Требования | Грузовой отсек |
-
-**Вариации:**
-- **Срочная доставка:** +50% награды, -50% времени
-- **Хрупкий груз:** Груз повреждается при столкновениях
-- **Опасный груз:** Привлекает пиратов
-- **Мультиточечная:** Доставка в 3-5 точек
-
-**Формулы:**
+Формулы наград (design reference):
 ```
-Награда = base_reward × (1 + distance_km / 100) × cargo_value_modifier × time_bonus
-XP = base_XP × (1 + distance_km / 200) × cargo_intact_bonus
-```
-
-### 2.3 Разведка (Reconnaissance)
-
-**Описание:** Исследовать неизвестную зону, собрать данные, вернуться с отчётом.
-
-| Параметр | Значение |
-|----------|----------|
-| Базовый XP | 100-300 |
-| Базовая награда | 200-600 кредитов |
-| Таймер | 15-30 минут |
-| Риск | Средний (неизвестность, аномалии) |
-| Требования | Сканер |
-
-**Вариации:**
-- **Картография:** Составить карту зоны
-- **Анализ аномалий:** Исследовать энергетические поля
-- **Поиск ресурсов:** Найти залежи ресурсов
-- **Фоторазведка:** Сфотографировать цели
-
-**Формулы:**
-```
-Награда = base_reward × area_level × data_completeness × survival_bonus
-XP = base_XP × area_level × discovery_count
-```
-
-### 2.4 Сопровождение (Escort)
-
-**Описание:** Защитить NPC или груз от атак пиратов/врагов.
-
-| Параметр | Значение |
-|----------|----------|
-| Базовый XP | 80-400 |
-| Базовая награда | 300-800 кредитов |
-| Таймер | 20-40 минут |
-| Риск | Высокий (волны врагов) |
-| Требования | Боевое снаряжение |
-
-**Вариации:**
-- **Конвой:** Защита группы торговых кораблей
-- **VIP:** Защита важного персонажа
-- **Блокада:** Удержание позиции N минут
-- **Прорыв:** Прорыв через вражескую линию
-
-**Формулы:**
-```
-Награда = base_reward × waves_count × escort_health × time_bonus
-XP = base_XP × waves_count × kills × escort_survived
-```
-
-### 2.5 Контрабанда (Smuggling)
-
-**Описание:** Перевезти нелегальный груз через зону СОЛ, избегая проверок.
-
-| Параметр | Значение |
-|----------|----------|
-| Базовый XP | 100-600 |
-| Базовая награда | 500-1500 кредитов |
-| Таймер | 10-25 минут |
-| Риск | Очень высокий (СОЛ, сканеры) |
-| Требования | Скрытный модуль, репутация подполья |
-
-**Вариации:**
-- **Тихий проход:** Избегать всех патрулей
-- **Обман сканеров:** Использовать глушилки
-- **Взятка:** Подкупить патруль (дорого)
-- **Прорыв:** Быстрый проход на скорости
-
-**Формулы:**
-```
-Награда = base_reward × risk_level × cargo_illegality × stealth_bonus
-XP = base_XP × risk_level × patrols_avoided
-```
-
-### 2.6 Поиск артефактов (Artifact Hunt)
-
-**Описание:** Найти и доставить редкий артефакт из опасной зоны.
-
-| Параметр | Значение |
-|----------|----------|
-| Базовый XP | 150-500 |
-| Базовая награда | 400-1200 кредитов |
-| Таймер | 25-60 минут |
-| Риск | Максимальный (ловушки, конкуренты) |
-| Требования | Высокий уровень, сканер+, боевой корабль |
-
-**Вариации:**
-- **Руины предтеч:** Древние технологические артефакты
-- **Обломки кораблей:** salvage с затонувших кораблей
-- **Энергетические кристаллы:** Редкие источники энергии
-- **Чёрные ящики:** Данные с разбившихся кораблей
-
-**Формулы:**
-```
-Награда = base_reward × artifact_rarity × zone_danger × completion_quality
-XP = base_XP × artifact_rarity × discovery_bonus
+Reward = base_reward × difficulty × reputation_modifier × completion_bonus
+XP = base_XP × difficulty × level_modifier × co_op_bonus
+Rep = base_rep × difficulty × faction_modifier
 ```
 
 ---
 
-## 3. Quest Generation
+## 3. Quest Structure (реализация)
 
-### 3.1 Методы генерации
+### 3.1 QuestState enum
 
-| Метод | Описание | Когда используется |
-|-------|----------|-------------------|
-| **Ручной** | Дизайнерские квесты с сюжетом | Основные сюжетные линии |
-| **Процедурный** | Генерация из пула параметров | Обычные контракты |
-| **Из пула** | Выбор из预制ленных шаблонов | Ежедневные квесты |
-| **Динамический** | Генерация на основе действий игрока | Реактивные квесты |
-
-### 3.2 Процедурная генерация
-
-**Параметры генерации:**
-```
-Quest = {
-    type: QuestType,
-    difficulty: DifficultyLevel,
-    location: Zone,
-    client: Faction/NPC,
-    reward_tier: RewardLevel,
-    time_limit: Duration,
-    special_conditions: Condition[]
+```csharp
+enum QuestState {
+    Discovered = 0,  // найден, но не начат
+    Offered = 1,     // предложен NPC
+    Active = 2,      // принят, в процессе
+    Completed = 3,   // условия выполнены, не сдан
+    Failed = 4,      // провален
+    TurnedIn = 5     // сдан, награды получены
 }
 ```
 
-**Алгоритм:**
-1. Определить уровень игрока
-2. Выбрать тип квеста (weighted random)
-3. Выбрать сложность (player_level ± 3)
-4. Выбрать локацию (разблокированные зоны)
-5. Сгенерировать награды (по формуле)
-6. Добавить специальные условия (30% шанс)
-7. Проверить балансировку
-8. Создать квест
+### 3.2 Жизненный цикл квеста
 
-**Веса типов квестов:**
-| Тип | Вес | Частота |
-|-----|-----|---------|
-| Доставка | 40% | Часто |
-| Разведка | 25% | Иногда |
-| Сопровождение | 15% | Редко |
-| Контрабанда | 12% | Редко |
-| Артефакты | 8% | Очень редко |
-
-### 3.3 Пул квестов
-
-| Параметр | Значение | Описание |
-|----------|----------|----------|
-| `max_active_quests` | 5 | Максимум активных квестов |
-| `quest_pool_size` | 20 | Квестов доступно на доске |
-| `refresh_interval` | 30 мин | Обновление пула |
-| `guaranteed_type` | 1 | Гарантия каждого типа в пуле |
-| `level_range` | ±5 | Диапазон уровней квестов |
-
-### 3.4 Ручные квесты
-
-**Сюжетные квесты:**
-- Создаются дизайнерами
-- Фиксированные награды и условия
-- Связаны с цепочками квестов
-- Уникальные диалоги и сцены
-
-**Шаблон сюжетного квеста:**
 ```
-Quest_Definition = {
-    id: "story_guild_thoughts_01",
-    name: "Первый Контакт",
-    type: Story,
-    faction: Guild_of_Thoughts,
-    min_level: 10,
-    prerequisites: ["completed_intro"],
-    stages: [
-        { id: 1, type: Dialogue, target: "Guild_Master" },
-        { id: 2, type: Delivery, target: "Outpost_Alpha", item: "Message" },
-        { id: 3, type: Dialogue, target: "Contact_Alpha" },
-        { id: 4, type: Return, target: "Guild_Master" }
-    ],
-    rewards: { xp: 500, credits: 300, reputation: 100, item: "Guild_Ring" }
-}
+[Discovered] → [Offered] → [Active] → [Completed] → [TurnedIn]
+                  ↓            ↓
+              [Declined]   [Failed]
 ```
+
+### 3.3 QuestDefinition (ScriptableObject)
+
+| Поле | Описание |
+|------|----------|
+| questId | Уникальный ID (string, stable key) |
+| displayName | Имя квеста |
+| description | Описание |
+| faction | FactionId привязка |
+| minReputation | Мин. репутация фракции |
+| stages[] | Массив этапов (QuestStage) |
+| rewards | QuestReward (credits, items, reputation, unlocks) |
+| prerequisites[] | QuestPrerequisite (7 типов) |
+| oneShot | Нельзя повторить |
+| discoverable | Можно найти через Discover |
+
+### 3.4 QuestStage
+
+| Поле | Описание |
+|------|----------|
+| stageId | int, уникальный в рамках квеста |
+| objectives[] | QuestObjective (8 типов) |
+| onEnterActions[] | DialogueAction (17 типов) при входе |
+| onCompleteActions[] | DialogueAction при завершении |
+| nextStageId | ID следующего этапа (null = последний) |
+
+### 3.5 QuestObjective (8 типов)
+
+| Тип | Описание |
+|-----|----------|
+| HaveItem | Иметь предмет в инвентаре |
+| TalkToNpc | Поговорить с NPC |
+| StandOnTrigger | Стоять на триггер-зоне |
+| ReachLocation | Достичь локации (poll 5s) |
+| ReputationAtLeast | Репутация фракции ≥ N |
+| NpcAttitudeAtLeast | Отношение NPC ≥ N |
+| WaitForEvent | Ждать WorldEventBus события |
+| EventDriven | Кастомное событие |
+
+### 3.6 QuestReward
+
+| Поле | Описание |
+|------|----------|
+| credits | float |
+| items[] | ItemQuantity (ItemRegistry id + count) |
+| cargoItems[] | ItemQuantity для грузового отсека |
+| reputation[] | ReputationDelta (FactionId + delta) |
+| unlocks[] | string[] (world flags, titles) |
+
+### 3.7 QuestPrerequisite (7 типов)
+
+QuestCompleted, QuestNotCompleted, FactionReputation, NpcAttitude, HasItem, Level, WorldFlag.
 
 ---
 
-## 4. Quest Structure
+## 4. Reward System
 
-### 4.1 Жизненный цикл квеста
+### 4.1 Компоненты наград (design)
 
-```
-[Доступен] → [Принят] → [В процессе] → [Завершён] → [Сдан]
-                   ↓
-              [Провален] → [Отменён/Заброшен]
-```
+| Тип награды | Диапазон |
+|-------------|----------|
+| XP | Через WorldEventBus → StatsServer (QuestCompleted: 10 XP базовых) |
+| Кредиты | Через QuestReward.credits → QuestServer.GiveCredits |
+| Ресурсы | Через QuestReward.items[] |
+| Репутация | Через QuestReward.reputation[] → QuestWorld.ModifyReputation |
+| Предметы | Через ItemRegistry → инвентарь игрока |
+| Разблокировки | World flags через QuestReward.unlocks[] |
 
-### 4.2 Этапы квеста
+### 4.2 Таблица лута (design)
 
-| Этап | Описание | Действия игрока |
-|------|----------|-----------------|
-| **Доступен** | Квест на доске | Просмотр, принятие |
-| **Принят** | Квест в журнале | Отмена, подготовка |
-| **В процессе** | Выполнение условий | Полёт, бой, доставка |
-| **Завершён** | Условия выполнены | Возврат к NPC |
-| **Сдан** | Награды получены | — |
-| **Провален** | Условия провала | Новый квест |
-
-### 4.3 Структура квеста
-
-```
-Quest = {
-    id: UniqueIdentifier,
-    name: string,
-    description: string,
-    type: QuestType,
-    difficulty: DifficultyLevel,
-    
-    // Этапы
-    stages: Stage[],
-    
-    // Условия
-    requirements: {
-        min_level: int,
-        min_reputation: int,
-        required_items: Item[],
-        completed_quests: QuestID[],
-        faction: Faction
-    },
-    
-    // Награды
-    rewards: {
-        xp: int,
-        credits: int,
-        reputation: { faction: int },
-        items: Item[],
-        title: string
-    },
-    
-    // Ограничения
-    time_limit: Duration,
-    max_failures: int,
-    is_repeatable: bool,
-    cooldown: Duration,
-    
-    // Метаданные
-    client: NPC/Faction,
-    location: Zone,
-    narrative_text: string
-}
-```
-
-### 4.4 Этапы (Stages)
-
-| Тип этапа | Описание | Пример |
-|-----------|----------|--------|
-| **Dialogue** | Разговор с NPC | Получить задание |
-| **Travel** | Полёт к точке | Добраться до зоны |
-| **Delivery** | Доставка предмета | Отправить груз |
-| **Combat** | Уничтожение цели | Уничтожить 5 пиратов |
-| **Explore** | Исследование зоны | Сканировать 3 точки |
-| **Protect** | Защита объекта | Защитить конвой |
-| **Collect** | Сбор предметов | Найти 3 артефакта |
-| **Return** | Возврат к NPC | Сдать квест |
-| **Choice** | Выбор игрока | Помочь фракции A или B |
-
-### 4.5 Условия провала
-
-| Условие | Описание | Когда срабатывает |
-|---------|----------|-------------------|
-| **Таймаут** | Время вышло | Истёк таймер квеста |
-| **Смерть** | Корабль уничтожен | HP = 0 |
-| **Потеря груза** | Груз уничтожен/украден | Cargo = 0 |
-| **NPC мёртв** | Защищаемый NPC убит | Escort_HP = 0 |
-| **Обнаружен** | Контрабанда раскрыта | Detection = 100% |
-| **Отмена** | Игрок отменил квест | Ручная отмена |
-
----
-
-## 5. Reward System
-
-### 5.1 Компоненты наград
-
-| Тип награды | Описание | Формула/Диапазон |
-|-------------|----------|------------------|
-| **XP** | Опыт для прогрессии | 50-2000 XP |
-| **Кредиты** | Валюта | 100-5000 кредитов |
-| **Ресурсы** | Материалы | 1-10 единиц |
-| **Репутация** | Отношение фракции | 10-200 очков |
-| **Предметы** | Экипировка/модули | По таблице лута |
-| **Титулы** | Уникальные звания | За цепочки квестов |
-| **Навыки** | Очки навыков | 1-3 SP за крупные квесты |
-
-### 5.2 Формулы наград
-
-**Базовая награда:**
-```
-Reward = base_reward × difficulty_multiplier × reputation_modifier × completion_bonus
-```
-
-**Множитель сложности:**
-| Difficulty | Множитель |
-|------------|-----------|
-| Easy | 1.0 |
-| Medium | 1.5 |
-| Hard | 2.2 |
-| Expert | 3.5 |
-| Master | 5.0 |
-
-**Множитель репутации:**
-```
-reputation_modifier = 1.0 + (faction_reputation / 1000) × 0.5
-# При репутации 1000: 1.5x
-# При репутации 5000: 3.5x
-```
-
-**Бонус качества выполнения:**
-```
-completion_bonus = 1.0 + time_bonus × 0.3 + no_damage_bonus × 0.2 + perfect_bonus × 0.3
-time_bonus = 1.0 если выполнено за <50% времени
-no_damage_bonus = 1.0 если корабль не повреждён
-perfect_bonus = 1.0 если все дополнительные условия выполнены
-```
-
-**XP награда:**
-```
-XP_reward = base_XP × difficulty × level_modifier × co_op_bonus
-level_modifier = 1.0 + (quest_level - player_level) × 0.1
-# Если квест выше уровня игрока: бонус
-# Если квест ниже уровня игрока: штраф
-```
-
-**Репутация награда:**
-```
-Rep_reward = base_rep × difficulty × faction_modifier
-faction_modifier = 1.5 если основная фракция квеста
-faction_modifier = 0.5 если враждебная фракция
-```
-
-### 5.3 Таблица наград по сложности
-
-| Сложность | XP | Кредиты | Репутация | Ресурсы |
-|-----------|-----|---------|-----------|---------|
-| Easy | 50-150 | 100-300 | 10-30 | 1-2 |
-| Medium | 100-300 | 200-600 | 20-60 | 2-3 |
-| Hard | 200-500 | 400-1000 | 40-100 | 3-5 |
-| Expert | 400-1000 | 800-2000 | 80-150 | 4-7 |
-| Master | 800-2000 | 1500-5000 | 150-200 | 5-10 |
-
-### 5.4 Таблица лута
-
-**Шанс выпадения предметов:**
 | Качество | Шанс | Пример |
 |----------|------|--------|
 | Обычный | 60% | Стандартные модули |
@@ -437,25 +192,86 @@ faction_modifier = 0.5 если враждебная фракция
 
 ---
 
-## 6. Quest Chains
+## 5. Skill Progression (RPG integration)
 
-### 6.1 Структура цепочки квестов
+XP за квесты идёт через WorldEventBus:
+- `QuestAcceptedEvent` → StatsServer.ApplyXp (3 XP базовых)
+- `QuestCompletedEvent` → StatsServer.ApplyXp (10 XP базовых)
 
+Оба конфигурируются в `ExperienceConfig`. StatType — через `StatSourceMapConfig`.
+
+---
+
+## 6. Dialog System
+
+### 6.1 DialogTree (ScriptableObject)
+
+| Компонент | Описание |
+|-----------|----------|
+| DialogTree | SO — дерево диалогов |
+| DialogueNode | Узел: текст NPC, опции, условия, действия |
+| DialogueEdge | Связь: label, targetNodeId, conditions[], action, hideIfUnavailable |
+| DialogueCondition | 12 типов условий (HasItem, QuestStateEquals, ReputationAtLeast, ...) |
+| DialogueAction | 17 типов действий (GiveCredits, TakeItem, AddReputation, AddNpcAttitude, CompleteObjective, ...) |
+
+### 6.2 DialogWindow (UI Toolkit)
+
+- Typewriter char-by-char (40 chars/sec), F-skip, mouse-click skip
+- ESC close, cursor management, pickingMode toggle
+- 4 FIX'ы от MarketWindow унаследованы
+- TEXT NPC всегда виден сверху, кнопки квестов прокручиваются (T-UI04 fix)
+
+---
+
+## 7. Quest UI
+
+### 7.1 QuestTracker (HUD overlay)
+
+- Singleton MonoBehaviour, scene-placed, DontDestroyOnLoad
+- Top-right позиция
+- `Track(questId)` / `Untrack()` / `Toggle(questId)`
+- Auto-hide когда нет tracked, auto-untrack если quest удалён
+- 9 UI Toolkit FIX'ы
+
+### 7.2 QuestToast (M15)
+
+- Runtime VisualElement, bottom-center
+- Queue-based (2.5s display)
+- События: "📜 Accepted: ...", "💚 mira_01 +5", "💰 +200 CR", "✨ Найден квест: ..."
+
+### 7.3 CharacterWindow → таб «Квесты» (T-Q11)
+
+- 4 под-секции: active / completed / failed / discovered
+- State badge + Accept-кнопка для Discovered
+- Track-кнопка в строках (T-Q12)
+
+### 7.4 Editor UI
+
+| Инструмент | Описание |
+|-----------|----------|
+| QuestDatabaseWindow (M16) | UI Toolkit EditorWindow, TreeView + Detail panel. `Tools > ProjectC > Quests > Quest Database Explorer` |
+| QuestNodeGraphView + QuestGraphView (M17) | Readonly graph viz: `Tools > ProjectC > Quests > Quest Node Graph` + `Assets/ProjectC/Open Quest Graph`. 4 node types: Quest, Stage, Objective, Reward |
+| Editable QuestNodeGraph (M18) | T-Q30..T-Q34: TextField в нодах, save back to SO, add/delete stages/objectives, quest-to-quest prereq edge, drag-create edges |
+
+---
+
+## 8. Quest Chains (multi-stage)
+
+### 8.1 Реализация (M13 T-Q22)
+
+Multi-stage квесты — один `QuestDefinition` с несколькими `QuestStage`, соединёнными `nextStageId`.
+
+**Flow:**
 ```
-Quest_Chain = {
-    id: ChainID,
-    name: string,
-    faction: Faction,
-    min_level: int,
-    quests: QuestID[],
-    total_rewards: Rewards,
-    is_storyline: bool
-}
+TryAdvanceStage:
+  → fire onCompleteActions[currentStage]
+  → transition (currentStageId = nextStageId)
+  → fire onEnterActions[nextStage]
 ```
 
-### 6.2 Цепочки гильдий
+### 8.2 Цепочки гильдий (design)
 
-**5 основных цепочек (по одной на гильдию):**
+5 основных цепочек (по одной на гильдию):
 
 | Гильдия | Цепочка | Квестов | Мин. уровень | Награда |
 |---------|---------|---------|--------------|---------|
@@ -465,762 +281,239 @@ Quest_Chain = {
 | Тайн | "Хранитель Тайн" | 10 | 15 | Секретная локация |
 | Успеха | "Золотой Путь" | 10 | 10 | Торговая монополия |
 
-### 6.3 Цепочки подполья
-
-| Организация | Цепочка | Квестов | Мин. уровень | Награда |
-|-------------|---------|---------|--------------|---------|
-| Сопротивление | "Свобода или Смерть" | 8 | 20 | Титул "Партизан" |
-| Свободные торговцы | "Чёрный Рынок" | 8 | 20 | Доступ к чёрному рынку |
-| Культ Фрейхейта | "Путь Фрейхейта" | 8 | 20 | Секретные знания |
-
-### 6.4 Пример цепочки: "Тайны Разума" (Гильдия Мысли)
-
-| # | Квест | Тип | Уровень | Награда |
-|---|-------|-----|---------|---------|
-| 1 | "Первый Контакт" | Dialogue/Travel | 10 | 500 XP, 300 кр, 100 реп |
-| 2 | "Послание в Облаках" | Delivery | 12 | 600 XP, 400 кр, 120 реп |
-| 3 | "Шифр Предтеч" | Puzzle/Explore | 14 | 700 XP, 500 кр, 150 реп |
-| 4 | "Тайная Встреча" | Escort | 16 | 800 XP, 600 кр, 180 реп |
-| 5 | "Расшифровка" | Collection | 18 | 900 XP, 700 кр, 200 реп |
-| 6 | "Прорыв Блокады" | Combat/Smuggling | 20 | 1000 XP, 800 кр, 250 реп |
-| 7 | "Секретная База" | Explore | 22 | 1100 XP, 900 кр, 300 реп |
-| 8 | "Предательство" | Choice/Combat | 24 | 1200 XP, 1000 кр, 350 реп |
-| 9 | "Финальный Шифр" | Puzzle/Combat | 26 | 1300 XP, 1200 кр, 400 реп |
-| 10 | "Откровение" | Story/Choice | 28 | 1500 XP, 1500 кр, 500 реп, титул |
-
-**Итого за цепочку:** 9600 XP, 7900 кр, 2550 реп, титул "Мыслитель"
-
-### 6.5 Ветвление цепочек
-
-```
-[Квест 1] → [Квест 2] → [Квест 3]
-                  ↓
-            [Выбор: A или B]
-             ↓            ↓
-        [Цепочка A]   [Цепочка B]
-             ↓            ↓
-        [Квест 4A]    [Квест 4B]
-             ↓            ↓
-        [Квест 5A]    [Квест 5B]
-             ↓            ↓
-              → [Квест 6] ←
-```
-
-**Пример:** В квесте 3 игрок выбирает помочь Сопротивлению или Культу Фрейхейта. Выбор влияет на:
-- Доступные следующие квесты
-- Репутацию с фракциями
-- Концовку цепочки
-- Доступ к секретным локациям
+> **Примечание:** В коде созданы тестовые квесты (5 штук: collect_copper_ore, find_artifact, stage_intro_demo, stage_multi_demo, collect_copper). Production-контент цепочек требует квест-дизайнера.
 
 ---
 
-## 7. Daily/Weekly Challenges (Future)
+## 9. CSV Import/Export Pipeline (M19)
 
-### 7.1 Ежедневные испытания
+### 9.1 Форматы
 
-| Параметр | Значение |
-|----------|----------|
-| Количество | 3 квеста в день |
-| Обновление | 00:00 UTC |
-| Время выполнения | 24 часа |
-| Награда | 200-1000 XP, 500-2000 кр |
-| Бонус серии | +10% за каждый день подряд |
+| Файл | Колонок | Описание |
+|------|---------|----------|
+| `*_quests.csv` | 21 колонка | Definition + stages + objectives + rewards + prerequisites |
+| `*_npcs.csv` | 9 колонок | NPC data + attitude links |
+| `*_dialogs.csv` | 15 колонок | Диалоговые деревья |
 
-**Примеры:**
-- "Доставь 3 груза за день"
-- "Исследуй 2 новые зоны"
-- "Заработай 5000 кредитов"
-- "Помоги 2 игрокам"
+### 9.2 Auto-фичи (T-Q19.1..3)
 
-### 7.2 Еженедельные испытания
+- Auto-populate `questTurnIns` (последний stage с TalkToNpc)
+- Auto-link `defaultDialogTree` по `{npcId}_default` convention
+- `NpcCsvImporter` — 395 строк, batch-update NPC
 
-| Параметр | Значение |
-|----------|----------|
-| Количество | 1-2 квеста в неделю |
-| Обновление | Понедельник 00:00 UTC |
-| Время выполнения | 7 дней |
-| Награда | 500-2000 XP, 2000-5000 кр, уникальные предметы |
+### 9.3 Тестовые данные
 
-**Примеры:**
-- "Выполни 10 контрактов"
-- "Заработай репутацию 500 с любой фракцией"
-- "Пройди кооп-рейд с 3 игроками"
-- "Найди 5 артефактов"
+- 106 NPC, 802 квеста — 1 кнопка импорт
+- Примеры: `Assets/_Project/Quests/Import/{example_quests,example_npcs,example_dialogs}.csv`
 
-### 7.3 Бонус серии
+### 9.4 Инструмент
 
-```
-Streak_Bonus = 1.0 + (consecutive_days × 0.1)
-# День 1: 1.0x
-# День 3: 1.3x
-# День 7: 1.7x
-# День 30: 4.0x (максимум)
-```
+`Tools > ProjectC > Quests > CSV Import/Export`
+
+### 9.5 Документация для writer'а
+
+`docs/NPC_quests/M19_CSV_PIPELINE_v2.md` (26 KB, 7 разделов)
 
 ---
 
-## 8. Quest UI (Future)
+## 10. Trigger System
 
-### 8.1 Компоненты интерфей
+### 10.1 QuestTriggerService
 
-| Компонент | Описание | Приоритет |
-|-----------|----------|-----------|
-| **Доска квестов** | Список доступных квестов | Высокий |
-| **Журнал квестов** | Активные квесты с прогрессом | Высокий |
-| **Маркеры на карте** | Навигационные точки | Средний |
-| **Подсказки** | Текущие цели квеста | Средний |
-| **Мини-карта** | Отображение целей | Средний |
-| **3D маркеры** | Маркеры в игровом мире | Низкий |
-| **Уведомления** | Оповещения о прогрессе | Высокий |
+- `QuestWorld.Update()` → `TriggerService.EvaluateAll()` каждые 5 секунд
+- Связывает WorldEventBus события с прогрессом квестов
 
-### 8.2 Журнал квестов
+### 10.2 Типы триггеров (8+)
 
-```
-┌─────────────────────────────────────┐
-│          ЖУРНАЛ КВЕСТОВ             │
-├─────────────────────────────────────┤
-│ [!] Первый Контакт (Гильдия Мысли)  │
-│     Этап 2/4: Доставить послание    │
-│     ━━━━━━━━░░░░ 50%               │
-│     Награда: 600 XP, 400 кр         │
-│     Таймер: 12:34                   │
-├─────────────────────────────────────┤
-│ [~] Разведка Зоны Альфа             │
-│     Этап 1/3: Исследовать 3 точки   │
-│     ━━░░░░░░░░ 20%                 │
-│     Награда: 300 XP, 250 кр         │
-│     Таймер: 18:45                   │
-└─────────────────────────────────────┘
-```
+| Тип | Описание |
+|-----|----------|
+| TalkedToNpc | Разговор с NPC |
+| HaveItem | Получение предмета |
+| CargoHasItem | Получение груза |
+| ReputationAtLeast | Репутация ≥ |
+| NpcAttitudeAtLeast | Отношение NPC ≥ |
+| LocationReached | Достижение локации (poll 5s) |
+| DayNightPhase | Время суток |
+| EventDriven | Кастомное событие |
+| KilledEntity (stub) | Убийство NPC |
+| ContractAccepted/Completed | Контракт (через ContractMetaBridge) |
 
 ---
 
-## 9. Multiplayer Quests
+## 11. NPC System
 
-### 9.1 Кооп-квесты
+### 11.1 NpcDefinition (ScriptableObject)
 
-**Типы кооп-квестов:**
-| Тип | Игроков | Описание |
-|-----|---------|----------|
-| Совместный | 2-4 | Все работают над одной целью |
-| Разделение ролей | 2-4 | Каждый выполняет свою роль |
-| Параллельный | 2-4 | Каждый делает своё, общий зачёт |
+| Поле | Описание |
+|------|----------|
+| npcId | Уникальный ID (string) |
+| displayName | Имя NPC |
+| faction | FactionId |
+| questOffers[] | Какие квесты предлагает |
+| questTurnIns[] | Какие квесты принимает |
+| attitudeLinks[] | Cross-faction influence конфиги |
 
-### 9.2 Разделение ролей
+### 11.2 NpcController (scene-placement)
 
-**Пример: Кооп-рейд (4 игрока)**
-| Роль | Задача | Награда |
-|------|--------|---------|
-| Лидер | Координация, бой | +20% к награде |
-| Пилот | Навигация, уклонение | +15% к награде |
-| Инженер | Ремонт, поддержка | +15% к награде |
-| Разведчик | Сканирование, разведка | +15% к награде |
+- MonoBehaviour с trigger collider
+- Scene-placed в `WorldScene_0_0.unity`
+- E-key chain extension
 
-### 9.3 Общие цели
+### 11.3 NPC Enemy System (T-NPC-ENEMY, июнь 2026)
 
-```
-Quest_Progress = sum(player_contributions) / total_required
-# Пример: Уничтожить 20 пиратов
-# Игрок 1: 7 kills
-# Игрок 2: 5 kills
-# Игрок 3: 6 kills
-# Игрок 4: 2 kills
-# Progress = 20/20 = 100% ✓
-```
-
-### 9.4 Распределение наград в коопе
-
-| Награда | Распределение |
-|---------|---------------|
-| XP | Каждый получает полную награду × co_op_bonus |
-| Кредиты | Делятся поровну или по вкладу |
-| Ресурсы | Каждый получает полный набор |
-| Репутация | Каждый получает полную награду |
-| Уникальные предметы | Random roll для каждого игрока |
-
-**Формула вклада:**
-```
-Player_Share = base_reward × (contribution / total_contribution) × co_op_bonus
-```
-
-### 9.5 Синхронизация квестов
-
-| Ситуация | Поведение |
-|----------|-----------|
-| Один игрок принял квест | Другие могут присоединиться |
-| Один игрок завершил этап | Прогресс синхронизируется |
-| Один игрок вышел | Квест продолжается для остальных |
-| Все игроки вышли | Квест провален |
-| Игрок переподключился | Прогресс восстанавливается (5 минут) |
+| Компонент | Назначение |
+|-----------|------------|
+| NpcBrain | FSM (Idle→Chase→Attack→Dead), 4 RPC |
+| NpcSpawner | Surface validation, rate-limit, leash 30m, batch spawn |
+| GoblinEnemy prefab | NetworkObject + NavMeshAgent + Animator |
+| NpcLootTable (SO) | Weighted item list, drop chance |
+| LootPicker | Drop items on death, pickup interaction |
 
 ---
 
-## 10. Quest Failure
+## 12. Contract → Quest Bridge
 
-### 10.1 Причины провала
+### 12.1 ContractMetaBridge
 
-| Причина | Описание | Восстановление |
-|---------|----------|----------------|
-| **Таймаут** | Время вышло | Новый квест, -5% репутации |
-| **Смерть** | Корабль уничтожен | Респаун, квест провален |
-| **Потеря груза** | Груз уничтожен | Новый квест, -10% репутации |
-| **NPC мёртв** | Защищаемый NPC убит | Новый квест, -15% репутации |
-| **Обнаружен** | Контрабанда раскрыта | Бой или побег, квест провален |
-| **Отмена** | Игрок отменил квест | Можно взять снова |
+Server-side singleton, scene-placed в BootstrapScene, DontDestroyOnLoad.
 
-### 10.2 Последствия провала
-
-| Тип провала | XP | Кредиты | Репутация |
-|-------------|-----|---------|-----------|
-| Таймаут | -2% | 0 | -5% |
-| Смерть | -5% | -5% | -10% |
-| Потеря груза | -3% | -10% | -10% |
-| NPC мёртв | -5% | 0 | -15% |
-| Отмена | 0 | 0 | 0 |
-
-### 10.3 Восстановление квеста
-
-```
-Quest_Retry = {
-    cooldown: Duration,
-    penalty: Reputation_Loss,
-    difficulty_increase: bool,
-    reward_decrease: bool
-}
-```
-
-| Параметр | Значение |
-|----------|----------|
-| Кулдаун | 1-6 часов (зависит от квеста) |
-| Штраф репутации | -50% от обычного |
-| Сложность | +1 уровень (макс +3) |
-| Награда | -20% от обычной |
+**Поток:**
+1. `ContractServer` публикует 3 events в `WorldEventBus`:
+   - `ContractAcceptedEvent`
+   - `ContractCompletedEvent`
+   - `ContractFailedEvent`
+2. `ContractMetaBridge` подписан → `QuestWorld.MarkContractAccepted/Completed/Failed`
+3. `QuestTriggerService.Evaluate($"ContractCompleted:{contractId}")`
 
 ---
 
-## 11. Example Quests
+## 13. Persistence
 
-### 11.1 Квест 1: "Срочная Доставка" (Доставка)
+### 13.1 JsonQuestStateRepository
 
-```
-Название: "Срочная Доставка"
-Тип: Delivery
-Сложность: Medium
-Уровень: 5-8
-Время: 12 минут
-
-ОПИСАНИЕ:
-Торговец Маркус просит доставить медицинский груз 
-на станцию "Омега-7". Груз хрупкий, время поджимает.
-
-ЭТАПЫ:
-1. Принять квест у Маркуса (Dialogue)
-2. Забрать груз (Collect)
-3. Доставить на Омега-7 (Travel/Delivery)
-4. Сдать груз доктору Чен (Return/Dialogue)
-
-УСЛОВИЯ:
-- Грузовой отсек ≥ 10 единиц
-- Хрупкий груз: столкновения повреждают груз
-- Таймер: 12 минут
-
-НАГРАДЫ:
-- XP: 250
-- Кредиты: 400
-- Репутация (Торговцы): +50
-- Шанс: Медицинский модуль (10%)
-
-ПРОВАЛ:
-- Таймаут: -10% репутации
-- Груз уничтожен: -20% репутации, потеря груза
-```
-
-### 11.2 Квест 2: "Туман Неизвестности" (Разведка)
-
-```
-Название: "Туман Неизвестности"
-Тип: Reconnaissance
-Сложность: Hard
-Уровень: 15-18
-Время: 25 минут
-
-ОПИСАНИЕ:
-В секторе "Дельта-9" замечены аномальные энергетические 
-сигналы. Гильдия Тайн хочет узнать источник.
-
-ЭТАПЫ:
-1. Получить задание от Гильдии Тайн (Dialogue)
-2. Полёт к сектору Дельта-9 (Travel)
-3. Сканировать 5 аномальных точек (Explore)
-4. Собрать энергетические образцы (Collect)
-5. Вернуться с данными (Return)
-6. Анализ данных (Dialogue/Choice)
-
-УСЛОВИЯ:
-- Сканер+ модуль
-- Мин. уровень: 15
-- Опасные аномалии: -10% HP при сближении
-
-НАГРАДЫ:
-- XP: 800
-- Кредиты: 900
-- Репутация (Гильдия Тайн): +150
-- Энергетический кристалл (100%)
-- Шанс: Секретная карта (15%)
-
-ПРОВАЛ:
-- Корабль уничтожен: -15% репутации
-- Данные потеряны: повторная попытка через 2 часа
-```
-
-### 11.3 Квест 3: "Конвой Свободы" (Сопровождение)
-
-```
-Название: "Конвой Свободы"
-Тип: Escort
-Сложность: Expert
-Уровень: 22-25
-Время: 35 минут
-
-ОПИСАНИЕ:
-Сопротивление организует конвой с оружием через 
-территорию СОЛ. Нужно защитить 3 торговых корабля.
-
-ЭТАПЫ:
-1. Встретиться с лидером Сопротивления (Dialogue)
-2. Присоединиться к конвою (Travel)
-3. Защита волны 1: 5 пиратов (Combat)
-4. Защита волны 2: 8 пиратов + 1 фрегат (Combat)
-5. Проход через зону СОЛ (Smuggling)
-6. Защита волны 3: 10 пиратов + 2 фрегата (Combat)
-7. Доставить конвой на базу (Return)
-
-УСЛОВИЯ:
-- Мин. уровень: 22
-- Боевой корабль
-- Минимум 1 игрок (кооп: до 4)
-- NPC-конвой: 3 корабля (HP: 500 каждый)
-
-НАГРАДЫ:
-- XP: 1500
-- Кредиты: 2000
-- Репутация (Сопротивление): +300
-- Оружейный модуль (50%)
-- Титул "Защитник Конвоя" (при 0 потерь)
-
-ПРОВАЛ:
-- Все NPC уничтожены: квест провален
-- Таймаут: квест провален
-```
-
-### 11.4 Квест 4: "Тень СОЛ" (Контрабанда)
-
-```
-Название: "Тень СОЛ"
-Тип: Smuggling
-Сложность: Hard-Expert
-Уровень: 18-22
-Время: 20 минут
-
-ОПИСАНИЕ:
-Свободные торговцы просят пронести контрабандный 
-груз через блокпост СОЛ. Обнаружение = бой.
-
-ЭТАПЫ:
-1. Получить груз у торговцев (Collect)
-2. Выбрать маршрут (Choice: 3 пути)
-3. Пройти через патрули (Stealth/Smuggling)
-4. Обмануть сканеры (Mini-game)
-5. Доставить груз (Delivery)
-6. Получить оплату (Return)
-
-УСЛОВИЯ:
-- Мин. уровень: 18
-- Скрытный модуль (рекомендуется)
-- Маршруты:
-  - A: Быстрый, но опасный (2 патруля)
-  - B: Средний (1 патруль, сканеры)
-  - C: Длинный, но безопасный (0 патрулей)
-
-НАГРАДЫ:
-- XP: 1000
-- Кредиты: 1500-2500 (зависит от маршрута)
-- Репутация (Свободные торговцы): +200
-- Глушилка СОЛ (20%)
-
-ПРОВАЛ:
-- Обнаружен: бой с СОЛ или побег
-- Груз конфискован: -20% репутации
-```
-
-### 11.5 Квест 5: "Руины Предтеч" (Поиск артефактов)
-
-```
-Название: "Руины Предтеч"
-Тип: Artifact Hunt
-Сложность: Master
-Уровень: 35-40
-Время: 60 минут
-
-ОПИСАНИЕ:
-В глубоких облаках обнаружены руины древней 
-цивилизации. Гильдия Мысли хочет исследовать их.
-
-ЭТАПЫ:
-1. Получить координаты от Гильдии Мысли (Dialogue)
-2. Полёт в глубокие облака (Travel)
-3. Найти вход в руины (Explore/Puzzle)
-4. Пройти ловушки (Skill challenge)
-5. Сканировать 7 артефактов (Collect)
-6. Решить головоломку предтеч (Puzzle)
-7. Забрать главный артефакт (Collect)
-8. Вернуться (Return)
-9. Анализ артефактов (Dialogue/Story)
-
-УСЛОВИЯ:
-- Мин. уровень: 35
-- Сканер+ модуль
-- Боевой корабль (охрана руин)
-- Ловушки: -20% HP за каждую
-- Конкуренты: другие игроки/пираты
-
-НАГРАДЫ:
-- XP: 2500
-- Кредиты: 4000
-- Репутация (Гильдия Мысли): +500
-- Артефакт Предтеч (100%)
-- Секретная локация (разблокировка)
-- Титул "Исследователь Руин"
-
-ПРОВАЛ:
-- Корабль уничтожен: -20% репутации
-- Артефакт потерян: повторная попытка через 24 часа
-```
+- `IQuestStateRepository` interface
+- Atomic JSON write per-client в `Application.persistentDataPath`
+- `QuestSaveData` (POCO): quests + rep + npcAttitude + 5 string sets
+- Immediate save на каждый state change
+- Load on `OnClientConnectedCallback` в `QuestServer`
 
 ---
 
-## 12. Формулы и Расчёты
+## 14. Аудиты (июль 2026)
 
-### 12.1 Основные формулы
-
-```
-# Награда за квест
-Reward = base_reward × difficulty × reputation_modifier × completion_bonus
-
-# XP за квест
-XP = base_XP × difficulty × level_modifier × co_op_bonus
-
-# Репутация за квест
-Rep = base_rep × difficulty × faction_modifier
-
-# Прогресс квеста (многоэтапного)
-Progress = completed_stages / total_stages × 100%
-
-# Шанс провала (оценка)
-Fail_Chance = 1.0 - (player_skill / required_skill)
-# player_skill < required_skill = высокий шанс провала
-```
-
-### 12.2 Формулы наград
-
-| Компонент | Формула |
-|-----------|---------|
-| Базовая награда | `base × difficulty × reputation × quality` |
-| XP | `base_XP × difficulty × level_mod × co_op` |
-| Репутация | `base_rep × difficulty × faction_mod` |
-| Кредиты | `base_credits × difficulty × time_bonus` |
-| Ресурсы | `floor(base_resources × difficulty × luck_mod)` |
-
-### 12.3 Коэффициенты
-
-| Коэффициент | Значение | Описание |
-|-------------|----------|----------|
-| `base_xp_easy` | 50-150 | XP за Easy квест |
-| `base_xp_medium` | 100-300 | XP за Medium квест |
-| `base_xp_hard` | 200-500 | XP за Hard квест |
-| `base_xp_expert` | 400-1000 | XP за Expert квест |
-| `base_xp_master` | 800-2000 | XP за Master квест |
-| `diff_easy` | 1.0 | Множитель Easy |
-| `diff_medium` | 1.5 | Множитель Medium |
-| `diff_hard` | 2.2 | Множитель Hard |
-| `diff_expert` | 3.5 | Множитель Expert |
-| `diff_master` | 5.0 | Множитель Master |
-| `rep_mod_friendly` | 1.5 | Множитель дружественной фракции |
-| `rep_mod_neutral` | 1.0 | Множитель нейтральной фракции |
-| `rep_mod_hostile` | 0.5 | Множитель враждебной фракции |
-
----
-
-## 13. Edge Cases и Обработка ошибок
-
-### 13.1 Дисконнект
-
-| Ситуация | Поведение |
-|----------|-----------|
-| Игрок вышел во время квеста | Прогресс сохраняется, 5 минут на переподключение |
-| Игрок вышел во время боя | Корабль переходит в AI-режим |
-| Игрок вышел при сдаче квеста | Квест помечен как "завершённый", награда при входе |
-| Долгий дисконнект (>24ч) | Квест провален, можно взять снова |
-
-### 13.2 Кооп-конфликты
-
-| Ситуация | Решение |
-|----------|---------|
-| Два игрока сдают квест одновременно | Оба получают награду |
-| Один игрок выполнил, другой нет | Каждый сдаёт индивидуально |
-| Конфликт наград | Награды делятся по вкладу |
-| Лидер группы вышел | Новый лидер назначается, квест продолжается |
-
-### 13.3 Баги и эксплойты
-
-| Ситуация | Решение |
-|----------|---------|
-| Квест не завершается | Ручной сброс, компенсация наград |
-| Двойная сдача квеста | Логирование, откат, бан при повторении |
-| Пропуск этапов | Серверная валидация, откат прогресса |
-| Читаерские награды | Откат, бан, репорт |
-
-### 13.4 Пограничные случаи
-
-| Ситуация | Решение |
-|----------|---------|
-| Квест выше уровня игрока | Разрешить, но с предупреждением |
-| Все квесты заняты | Подождать завершения или отменить |
-| Нет доступных квестов | Расширить пул, ждать обновления |
-| Квест требует недоступный предмет | Отменить квест, вернуть прогресс |
-
----
-
-## 14. Tuning Knobs
-
-### 14.1 Параметры для настройки
-
-| Параметр | Тип | По умолчанию | Мин | Макс | Описание |
-|----------|-----|--------------|-----|------|----------|
-| `quest_pool_size` | int | 20 | 10 | 50 | Квестов на доске |
-| `max_active_quests` | int | 5 | 1 | 20 | Максимум активных |
-| `quest_refresh_min` | int | 15 | 5 | 60 | Мин. время обновления |
-| `quest_timeout_multiplier` | float | 1.0 | 0.5 | 2.0 | Множитель таймера |
-| `reward_scaling` | float | 1.0 | 0.5 | 3.0 | Глобальный множитель наград |
-| `difficulty_curve` | float | 1.5 | 1.0 | 2.5 | Крутизна сложности |
-| `fail_reputation_loss` | float | 0.05 | 0 | 0.3 | Потеря репутации при провале |
-| `quest_retry_cooldown` | int | 60 | 5 | 720 | Кулдаун повтора (мин) |
-| `daily_quests_count` | int | 3 | 1 | 10 | Ежедневных квестов |
-| `weekly_quests_count` | int | 2 | 1 | 5 | Еженедельных квестов |
-| `streak_bonus_max` | int | 30 | 7 | 90 | Максимум дней серии |
-| `co_op_quest_bonus` | float | 1.2 | 1.0 | 2.0 | Бонус кооп-квестов |
-
-### 14.2 Профили сложности
-
-| Профиль | Reward Scaling | Timeout Mult | Fail Penalty | Описание |
-|---------|----------------|--------------|--------------|----------|
-| Casual | 1.3 | 1.5 | 0.02 | Лёгкий режим |
-| Standard | 1.0 | 1.0 | 0.05 | Обычный режим |
-| Hardcore | 0.8 | 0.7 | 0.15 | Сложный режим |
-| Speed Run | 1.5 | 0.5 | 0.1 | Быстрый, рискованный |
-
----
-
-## 15. Приложения
-
-### 15.1 Глоссарий
-
-| Термин | Определение |
-|--------|-------------|
-| Quest | Отдельное задание с условиями и наградами |
-| Chain | Связанная последовательность квестов |
-| Stage | Отдельный этап внутри квеста |
-| Daily/Weekly | Ежедневные/еженедельные испытания |
-| Co-op Quest | Квест для нескольких игроков |
-| Fail Condition | Условие провала квеста |
-| Tuning Knob | Параметр для настройки баланса |
-
-### 15.2 История изменений
-
-| Версия | Дата | Изменение | Автор |
-|--------|------|-----------|-------|
-| 1.0 | 06.04.2026 | Инициализация документа | Game Design AI |
-| 1.1 | 10.06.2026 | Добавлена §16 «Реализация в коде» (M1–M19, 50+ тикетов). §1.3 обновлена статусами. Дизайн-контент без изменений. | Mavis |
-| 1.2 | 13.06.2026 | Добавлен §16.5 «CSV Pipeline финал» (M19 T-Q19.1–T-Q19.3). §16.3 обновлён. §16.2 дополнен. | Mavis |
-
----
-
-## 16. Реализация в коде (v2, 2026-06-07..09)
-
-> **Секция добавлена Mavis 2026-06-10.** Дизайн-контент (типы квестов, генерация, формулы, reward-таблицы) остаётся в зоне game-designer'а. Здесь — **только статус реализации** и ссылки на актуальные артефакты.
-
-### 16.1 Что реализовано (M1–M19, 50+ тикетов, ~8400 строк кода)
-
-#### Серверный фундамент
-- ✅ **`QuestServer`** (NetworkBehaviour, BootstrapScene, DontDestroyOnLoad) — 9 RPC: `RequestTalkToNpc`, `RequestAdvanceDialogue`, `RequestAcceptQuest`, `RequestTurnInQuest`, `RequestTrackQuest`, `RequestRefreshQuests`, `RequestRefreshReputation`, `RequestRefreshNpcAttitude`, `RequestDiscoverQuest`. Rate limit 30 ops/min/client.
-- ✅ **`QuestWorld`** (POCO singleton) — `_questById`, `_questsByPlayer`, `_reputation`, `_npcAttitude`, `_worldFlags`, `_dialogByPlayer`. State на сервере.
-- ✅ **`QuestInstance`** (runtime state) — `questId`, `state`, `currentStageId`, `objectiveProgress[]`, `acceptedAt/completedAt`, `isTracked`.
-- ✅ **`WorldEventBus`** + **`QuestTriggerService`** — 8+ типов триггеров: `TalkedToNpc`, `HaveItem`, `CargoHasItem`, `ReputationAtLeast`, `NpcAttitudeAtLeast`, `LocationReached` (poll 5s), `DayNightPhase`, `EventDriven`, `KilledEntity` (stub), `ContractAccepted/Completed`.
-- ✅ **Real-time objective evaluation** (M13, T-Q20) — `QuestServer.Update()` → `QuestWorld.TickAll()` каждые 5 сек → `EvaluateAndAdvanceStage()`.
-- ✅ **Multi-stage квесты** (M13, T-Q22) — `TryAdvanceStage`: fire onCompleteActions → transition → fire onEnterActions. `TryTurnIn` мигрирован на TryAdvanceStage.
-- ✅ **Persistence** (M8, T-Q18) — `JsonQuestStateRepository` (per-client JSON в `Application.persistentDataPath`, atomic write через tmp → rename, **immediate save** на каждый state change).
-
-#### Client projection
-- ✅ **`QuestClientState`** (singleton, AutoSpawn через `RuntimeInitializeOnLoadMethod`) — `CurrentSnapshot`, `Reputation`, `NpcAttitude`, `LastResult`, `LastRepResult`. 6 events: `OnSnapshotUpdated`, `OnReputationUpdated`, `OnNpcAttitudeUpdated`, `OnQuestResult`, `OnReputationResult`, `OnQuestDiscovered`. `RequestAcceptQuest(questId, fromNpcId)`.
-- ✅ **DTOs** — `QuestSnapshotDto`, `QuestProgressDto`, `ObjectiveProgressDto`, `ReputationSnapshotDto`, `ReputationEntryDto`, `NpcAttitudeSnapshotDto`, `NpcAttitudeEntryDto`, `DialogStepDto`, `DialogOptionDto`, `DialogActionResultDto`, `QuestResultDto`, `QuestResultCode`, `ReputationResultDto`, `ReputationResultCode` (с writeback-паттерном для struct + string).
-- ✅ **6 TargetRpc receivers** в `NetworkPlayer.cs` → `QuestClientState.Raise*`.
-
-#### Data layer (ScriptableObjects)
-- ✅ **`QuestDefinition`** : SO — `questId`, `displayName`, `description`, `faction`, `minReputation`, `stages[]`, `rewards`, `prerequisites[]`, `oneShot`, `discoverable`. `GetStage()`, `GetEntryStage()`, `GetUnreachableStages()` (BFS).
-- ✅ **`QuestStage`** — `stageId`, `objectives[]`, `onEnterActions[]`, `onCompleteActions[]`, `nextStageId`.
-- ✅ **`QuestObjective`** — 8 типов: `HaveItem`, `TalkToNpc`, `StandOnTrigger`, `ReachLocation`, `ReputationAtLeast`, `NpcAttitudeAtLeast`, `WaitForEvent`, `EventDriven`.
-- ✅ **`QuestReward`** — `credits`, `items[]`, `cargoItems[]`, `reputation[]`, `unlocks[]`.
-- ✅ **`QuestPrerequisite`** — 7 типов атомарных prerequisite.
-- ✅ **`QuestState`** enum — `Discovered=0, Offered=1, Active=2, Completed=3, Failed=4, TurnedIn=5`.
-- ✅ **`DialogTree`** : SO — `nodes[]`, `localizationTable`, `GetNode()`, `GetUnreachableNodes()`.
-- ✅ **`DialogueNode`**, **`DialogueEdge`** (label, targetNodeId, condition[], action, hideIfUnavailable), **`DialogueCondition`** (12 типов), **`DialogueAction`** (17 типов).
-- ✅ **`NpcDefinition`** : SO — `npcId`, `displayName`, `faction`, `questOffers[]`, `questTurnIns[]`, `attitudeLinks[]` (cross-faction influence).
-- ✅ **`FactionDefinition`** : SO — `factionId`, `displayName`, `loreDescription`, `attitudeLinks[]`.
-- ✅ **`ProjectC.Factions.FactionId`** enum — 12 lore значений (GuildOfThoughts, GuildOfCreation, ..., Pirates, Neutral).
-- ✅ **`NpcAttitude`** struct — readonly, IEquatable, range −100..+200, clamp в ctor.
-- ✅ **`ItemRegistry`** (M14) — singleton SO, 32 items, `id ↔ ItemData` mapping. Single source of truth для item IDs (replaces Resources.LoadAll + alphabetical order fragile).
-- ✅ **`QuestDatabase`** — central registry SO, `factions[]`, `npcs[]`, `dialogTrees[]`, `quests[]` + lookup helpers.
-
-#### UI (игрок)
-- ✅ **`DialogWindow`** (UIDocument) — typewriter char-by-char (40 chars/sec), F-skip, mouse-click skip, ESC close, cursor management, pickingMode toggle. 4 FIX'ы от MarketWindow унаследованы.
-- ✅ **`QuestTracker`** (HUD overlay, top-right) — singleton MonoBehaviour, scene-placed, DontDestroyOnLoad, `Track(questId)` / `Untrack()` / `Toggle(questId)`, auto-hide когда нет tracked, auto-untrack если quest удалён. 9 FIX'ы UI Toolkit применены.
-- ✅ **CharacterWindow → таб «Квесты»** (T-Q11) — 4 под-секции: active / completed / failed / discovered, с state badge + Accept-кнопка для Discovered. Track-кнопка в строках (T-Q12).
-- ✅ **QuestToast** (M15) — runtime VisualElement, bottom-center, 2.5s display, queue-based, события: "📜 Accepted: ...", "💚 mira_01 +5", "💰 +200 CR", "✨ Найден квест: ...".
-
-#### UI (editor)
-- ✅ **`QuestDatabaseWindow`** (M16) — UI Toolkit EditorWindow, TreeView + Detail panel: `Tools > ProjectC > Quests > Quest Database Explorer`.
-- ✅ **`QuestNodeGraphView`** + **`QuestGraphView`** (M17) — readonly graph viz: `Tools > ProjectC > Quests > Quest Node Graph` + `Assets/ProjectC/Open Quest Graph`. 4 node types: Quest, Stage, Objective, Reward.
-- ✅ **Editable QuestNodeGraph** (M18) — T-Q30..T-Q34: TextField в нодах, save back to SO, add/delete stages/objectives, quest-to-quest prereq edge, drag-create edges.
-- ✅ **CSV Import/Export pipeline** (M19) — single-file flat CSV, 18 колонок, 4 обязательных. `Tools > ProjectC > Quests > CSV Import/Export`. Schema + Parser + Importer + Exporter + Window + sample CSV.
-
-#### Integration (cross-cutting)
-- ✅ **Contract → Quest bridge** (T-X5, T-Q15) — `ContractServer` публикует `ContractAcceptedEvent` / `ContractCompletedEvent` / `ContractFailedEvent`. `ContractMetaBridge` (server-side singleton, scene-placed, DontDestroyOnLoad) подписан → `QuestWorld.MarkContractAccepted/Completed` + `QuestTriggerService.Evaluate()`.
-- ✅ **NPC scene-placement** (T-Q11b) — `NpcController` MonoBehaviour, trigger collider, scene-placed `[Mira]` в `WorldScene_0_0.unity`, E-key chain extension.
-- ✅ **Mira E2E demo** (M11, 2026-06-08) — 10 bugfixes в `QuestServer.cs` (QuestStateEquals, HasItem, AcceptQuest=14, hideIfUnavailable, visibleEdges, snapshot push, GiveCredits, AddRep, AddAtt, onEnter). Полный playthrough: Pickup → E → "Помогу" → TakeItem → AcceptQuest → Active → Pickup → E → "Отдать" → TakeItem + AddRep + AddAtt + CompleteObjective + TryTurnIn + GiveCredits → Completed.
-
-#### Persistence
-- ✅ **`IQuestStateRepository`** + **`JsonQuestStateRepository`** (T-Q18) — atomic JSON write per-client в `persistentDataPath`. `QuestSaveData` (POCO) с quests + rep + npcAttitude + 5 string sets. Load on `OnClientConnectedCallback` в `QuestServer`.
-
-### 16.2 Тестовые quest assets (создано, в git)
-
-| questId | displayName | Stages | Objectives | Примечание |
-|---------|-------------|--------|------------|------------|
-| `collect_copper_ore` | Собрать 3 медных руды | 1 | HaveItem | Простой тест |
-| `find_artifact` | Найти артефакт (EventDriven) | 2 | EventDriven | С `discoverable=true` |
-| `stage_intro_demo` | Демо: stage с onEnter (CSV-imported) | 1 | TalkToNpc | Тест onEnter actions |
-| `stage_multi_demo` | Тест: multi-stage (CSV-imported) | 2 | HaveItem + TalkToNpc | Тест nextStageId |
-| `collect_copper` | Собрать 3 медных руды (CSV-imported) | 1 | HaveItem | Через M19 CSV pipeline |
-| — | **bulk test: 802 квеста, 106 NPC** | — | — | Импорт через M19 CSV pipeline (`Tools > ProjectC > Quests > CSV Import/Export`). 3 формата: `*_quests.csv` (21 колонок), `*_npcs.csv` (9 колонок), `*_dialogs.csv` (15 колонок) |
-
-### 16.3 Что открыто / TODO
-
-> **M19 CSV pipeline — ✅ DONE (2026-06-13).** T-Q19.1 (auto-populate `questTurnIns`), T-Q19.2 (auto-link `defaultDialogTree`), T-Q19.3 (`npcs.csv` 8 колонок) — все реализованы. См. §16.5 ниже.
-
-| # | Задача | Milestone | Приоритет | Ссылка |
-|---|---|---|---|---|
-| 1 | **M12 — Input remap (F = pickup, E = NPC)** | M12 | 🟡 Med (~45 мин) | `08_ROADMAP.md` §8.3 T-X4 |
-| 2 | **M17 polish — edges always visible** в QuestGraphView | M17 | 🟢 Low (~1 ч) | `08_ROADMAP.md` §8.3.5 |
-| 3 | **T-X2 — Faction migration** (`TradeItemDefinition.Faction` → `FactionId`) | M9 | 🟡 design discussion | `08_ROADMAP.md` §8.3 T-X2 |
-| 4 | **T-Q09b — GraphView sub-tab** внутри QuestDatabaseWindow | M10 | ⏭️ DEFERRED (покрыт M17) | `08_ROADMAP.md` §8.3 T-Q09b |
-| 5 | **Quest content — 5-10 production квестов** | post-MVP | 🔴 High | Сейчас 5 тестовых |
-| 6 | **Multiplayer shared party progress** | post-MVP | 🟢 Med | Сейчас per-player |
-| 7 | **Daily/Weekly Challenges** | Future | 🟢 Low | Из GDD §1.3 |
-| 8 | **Procedural quest generation** | Future | 🟢 Low | Из GDD §1.3 |
-| 9 | **Localization** (все строки в .po) | post-MVP | 🟢 Low (~3 ч) | Влияет на §1.2, §2-7 |
-| 10 | **MetaRequirement `_consumeOnUse`** | M7+ | 🟠 MEDIUM | `docs/MetaRequirement/50_KNOWN_ISSUES.md` |
-
-### 16.4 Где смотреть актуальный статус
-
-- **`docs/NPC_quests/08_ROADMAP.md`** — главный roadmap (50+ тикетов, 19 milestones, сессионные логи, риски, scope, что открыто)
-- **`docs/NPC_quests/old_session_log/99_FINAL_STATUS.md`** — итоговый статус 2026-06-09 (M1–M19 done)
-- **`docs/NPC_quests/02_V2_ARCHITECTURE.md`** — namespace layout, server/DTO/persistence pitfalls
-- **`docs/MMO_Development_Plan.md`** — общий план проекта (Этап 4.1 = квесты, статус ✅)
-
-### 16.5 CSV Pipeline финал (M19 T-Q19.1–T-Q19.3, 2026-06-13)
-
-| Подтикет | Что | Файлы |
-|----------|-----|-------|
-| T-Q19.1 | Auto-populate `questTurnIns` для каждого NPC (последний stage + TalkToNpc) | `QuestCsvImporter.cs` |
-| T-Q19.2 | Auto-link `defaultDialogTree` если DialogTree с именем `{npcId}_default` существует | `QuestCsvImporter.cs` |
-| T-Q19.3 | `npcs.csv` — 8 колонок (services, attitudeLinks, attitudeMin/Max, greetingText, voicePrefix, interactionRadius, showGreeting) | `NpcCsvImporter.cs` (новый, 395 строк) |
-
-**Итого по M19 CSV pipeline:**
-- **3 входных формата:** `*_quests.csv` (21 колонка), `*_npcs.csv` (9 колонок), `*_dialogs.csv` (15 колонок)
-- **DialogCsvImporter** — дерево диалогов: treeId, fromNodeId, fromText, fromSpeaker, edgeLabel, toNodeId, 11 условия, 17 действий
-- **NpcCsvImporter** — batch-update NPC: services (Trade,Repair,Refuel,Restock,Banking,Healing), attitudeLinks (FactionId:delta), greeting, voice
-- **Auto-обнаружение:** `*_dialogs.csv` и `*_npcs.csv` подхватываются автоматически если лежат рядом с `*_quests.csv`
-- **Примеры:** `Assets/_Project/Quests/Import/{example_quests,example_npcs,example_dialogs}.csv`
-- **Writer-документация:** `docs/NPC_quests/M19_CSV_PIPELINE_v2.md` (26 KB, 7 разделов для content writer'a)
-- **Тестовые данные:** 106 NPC, 802 квеста — 1 кнопка импорт
-
-### 16.6 NPC Enemy System (T-NPC-ENEMY, 2026-06-27..28)
-
-**Новое:** Hostile NPC (goblins) с FSM-логикой, спавном, анимацией и лутом. Потенциальная интеграция с боевой системой (T-RTC) и квестами.
-
-**Архитектура:**
-
-| Компонент | Файл | Назначение | Статус |
-|-----------|------|------------|--------|
-| `NpcBrain` | `Scripts/World/Npc/NpcBrain.cs` | FSM (Idle→Chase→Attack→Dead), 4 RPC: OnDeath/OnRage/OnCombatStart/OnCombatEnd | T-NPC-ENEMY-P0 ✅ |
-| `NpcSpawner` | `Scripts/World/Npc/NpcSpawner.cs` | Surface validation, rate-limit, leash 30m, batch spawn | T-NPC-ENEMY-P1 ✅ |
-| `NpcSpawnPoint` (SO) | `Data/Npc/NpcSpawnPoints.asset` | Position/rotation/type configs | T-NPC-ENEMY-P1 ✅ |
-| `NpcStatConfig` (SO) | `Data/Npc/NpcStatConfig.asset` | Health/damage/speed/aggroRange/attackRange | T-NPC-ENEMY-P1 ✅ |
-| `GoblinEnemy` prefab | `Prefabs/Npc/GoblinEnemy.prefab` | NetworkObject + NavMeshAgent + NpcBrain + Animator | T-NPC-ENEMY-P0 ✅ |
-| `GoblinAnimatorController` | `Animations/Npc/Goblin.controller` | 5-state: Idle/Walk/Run/Attack/Die | T-NPC-ENEMY-P2 ✅ |
-| `NpcLootTable` (SO) | `Data/Npc/NpcLootTable.asset` | Item drop lists per NPC type | T-NPC-ENEMY-P2 ✅ |
-| `LootPicker` | `Scripts/World/Npc/LootPicker.cs` | Drop items on death, pickup interaction | T-NPC-ENEMY-P2 ✅ |
-| `NpcNetworkState` | `Scripts/Network/NpcNetworkState.cs` | NetworkVariable sync: health/state/position | T-NPC-ENEMY-P2 ✅ |
-
-**FSM State Machine (NpcBrain):**
-
-```
-Idle ──[playerInAggroRange]──→ Chase ──[inAttackRange]──→ Attack ──[health≤0]──→ Dead
-  ↑                              ↑                            │
-  └──[leashExceeded]─────────────┘                            └──[outOfRange]──→ Chase
-```
-
-- Idle: random idle animation, rotation toward player if looking
-- Chase: NavMeshAgent.SetDestination(player), run animation, leash check (30m)
-- Attack: face target, play attack animation, damage on trigger (через Animation Event)
-- Dead: disables NavMeshAgent, plays death anim, body remains N секунд, then despawn
-
-**Спавн (NpcSpawner):**
-- `Surface Validation` — Raycast check: must be walkable terrain (walkable layer mask)
-- `Rate Limit` — Max N spawns per second (конфиг)
-- `Leash` — Max distance from spawn point (30m default)
-- `Batch Spawn` — Spawn group in radius on startup
-
-**Loot:**
-- `NpcLootTable` — weighted item list, drop chance, quantity range
-- `LootPicker` — OnDeath → Instantiate pickups in radius, interactable with E
-
-**Key design decisions:**
-- Goblin — first NPC тип, Architecture позволяет добавлять новые (Orc/Slime/etc.) через NpcType enum
-- Все NPC — `NetworkObject`, spawner через `ScenePlacedObjectSpawner`
-- NpcBrain FSM — `Update()` driven, NOT coroutine (для NetworkObject совместимости)
-- Loot — физические pickups в мире; не появляются если нет игрока в радиусе (оптимизация)
-
-**Stats:** +9 C# файлов, 3 SO конфига, 1 prefab, 1 AnimatorController, ~12 KB кода.
-
-### 16.7 Где смотреть актуальный статус (NPC Enemy)
-
-- **`docs/Character/EnemyNPC/`** — NPC Enemy дизайн и implementation logs
-- **`docs/MMO_Development_Plan.md`** §1.16 — план NPC Enemy System
-
----
-
-## 17. Аудиты системы квестов (июль 2026)
-
-**Двойной глубокий аудит (T-QAUDIT):**
+### Двойной глубокий аудит (T-QAUDIT)
 
 | Аудит | Дата | Файл | Ключевые находки |
 |-------|------|------|-----------------|
-| Первый | 2026-07-09 | `docs/NPC_quests/DEEP_AUDIT_2026-07-09.md` | Архитектура, стабы, дублирование, интеграции |
-| Повторный | 2026-07-13 | `docs/NPC_quests/DEEP_AUDIT_2026-07-13.md` | Сравнение с предыдущим, регрессы |
+| Первый | 2026-07-09 | docs/NPC_quests/DEEP_AUDIT_2026-07-09.md | Архитектура, стабы, дублирование, интеграции |
+| Повторный | 2026-07-13 | docs/NPC_quests/DEEP_AUDIT_2026-07-13.md | Сравнение с предыдущим, регрессы |
 
-**Критическое открытие:** Квестовые ассеты (FactionDefinition, NpcDefinition, QuestDefinition) утеряны — файлы отсутствуют, GUIDs в QuestDatabase висят в никуда. Требуется восстановление из CSV-бэкапов.
+### Критические находки
 
-**DialogWindow fix (T-UI04, `aa2a1ec`):** Текст NPC всегда виден сверху, кнопки квестов прокручиваются. Fix: 85vh → 520px (vh не поддерживается Unity USS).
+- **Квестовые ассеты утеряны:** FactionDefinition, NpcDefinition, QuestDefinition файлы отсутствуют, GUIDs в QuestDatabase висят в никуда. Требуется восстановление из CSV-бэкапов.
+- **DialogWindow fix (T-UI04, `aa2a1ec`):** Текст NPC всегда виден сверху, кнопки квестов прокручиваются. Fix: 85vh → 520px (vh не поддерживается Unity USS).
+
+---
+
+## 15. Что открыто / TODO
+
+| # | Задача | Milestone | Приоритет |
+|---|--------|-----------|-----------|
+| 1 | **Quest assets утеряны** (FactionDefinition, NpcDefinition, QuestDefinition SO) | Требуется восстановление | 🔴 High |
+| 2 | **Quest content — 5-10 production квестов** | post-MVP | 🔴 High |
+| 3 | **Multiplayer shared party progress** | post-MVP | 🟡 Med |
+| 4 | **Daily/Weekly Challenges** | Future | 🟢 Low |
+| 5 | **Procedural quest generation** | Future | 🟢 Low |
+| 6 | **Localization (все строки в .po)** | post-MVP | 🟢 Low |
+| 7 | **T-X2 — Faction migration** (TradeItemDefinition.Faction → FactionId) | design discussion | 🟡 Med |
+
+---
+
+## 16. Архитектура
+
+### 16.1 Server-side
+
+```
+QuestServer (NetworkBehaviour, BootstrapScene)
+  ├─ 9 RPC (RequestTalkToNpc, RequestAdvanceDialogue, RequestAcceptQuest, ...)
+  ├─ Rate limit 30 ops/min/client
+  └─ QuestWorld (POCO singleton)
+       ├─ _questById: Dictionary<string, QuestDefinition>
+       ├─ _questsByPlayer: Dictionary<ulong, List<QuestInstance>>
+       ├─ _reputation: Dictionary<(ulong, FactionId), int>
+       ├─ _npcAttitude: Dictionary<(ulong, string), int>
+       ├─ _worldFlags: Dictionary<(ulong, string), bool>
+       ├─ _dialogByPlayer: Dictionary<ulong, DialogSession>
+       ├─ TriggerService: QuestTriggerService
+       └─ Repository: IQuestStateRepository
+```
+
+### 16.2 Client-side
+
+```
+QuestClientState (singleton, AutoSpawn)
+  ├─ CurrentSnapshot (QuestSnapshotDto)
+  ├─ Reputation / NpcAttitude
+  ├─ LastResult / LastRepResult
+  ├─ 6 events: OnSnapshotUpdated, OnReputationUpdated, OnQuestResult, ...
+  └─ RequestAcceptQuest(questId, fromNpcId)
+
+UI:
+  ├─ DialogWindow (UIDocument)
+  ├─ QuestTracker (HUD overlay)
+  ├─ QuestToast (runtime VisualElement)
+  └─ CharacterWindow → tab «Квесты»
+```
+
+### 16.3 Data Layer (ScriptableObjects)
+
+QuestDefinition | QuestStage | QuestObjective | QuestReward | QuestPrerequisite | QuestState
+DialogTree | DialogueNode | DialogueEdge | DialogueCondition | DialogueAction | SpeakerRef
+NpcDefinition | FactionDefinition | FactionId | NpcAttitude
+QuestDatabase | ItemRegistry
+
+### 16.4 Editor Tooling
+
+QuestDatabaseWindow | QuestNodeGraphView | QuestGraphView | QuestGraphWindow
+QuestCsvImporter | QuestCsvExporter | QuestCsvSchema | QuestCsvWindow
+DialogCsvImporter | NpcCsvImporter | DialogueConditionDrawer
+QuestDefinitionValidator | QuestDatabaseAutoDiscover
+
+---
+
+## 17. Файлы (C#)
+
+```
+Quests/
+├── Bridges/ContractMetaBridge.cs
+├── Client/QuestClientState.cs
+├── Core/QuestInstance.cs, QuestWorld.cs
+├── Dialogue/DialogTree.cs, DialogueAction.cs, DialogueCondition.cs, DialogueNode.cs, SpeakerRef.cs
+├── Dto/DialogStepDto.cs, QuestProgressDto.cs, QuestResultDto.cs, QuestSnapshotDto.cs, ReputationSnapshotDto.cs
+├── Editor/DialogCsvImporter.cs, DialogueConditionDrawer.cs, NpcCsvImporter.cs, QuestCsv*.cs, QuestDatabase*.cs, QuestGraph*.cs, QuestNodeGraphView.cs
+├── Factions/FactionDefinition.cs, FactionId.cs, NpcAttitude.cs
+├── Network/QuestServer.cs
+├── NpcController.cs
+├── Npcs/NpcDefinition.cs
+├── Persistence/IQuestStateRepository.cs, JsonQuestStateRepository.cs, QuestSaveData.cs
+├── QuestDatabase.cs
+├── Quests/QuestDefinition.cs, QuestObjective.cs, QuestPrerequisite.cs, QuestReward.cs, QuestStage.cs, QuestState.cs, QuestStateTransition.cs
+├── Testing/M13QuestTriggerZone.cs
+├── Triggers/ConcreteTriggers.cs, IQuestTrigger.cs, QuestTriggerService.cs
+└── UI/DialogWindow.cs, QuestToast.cs, QuestTracker.cs
+```
+
+---
+
+## 18. Tuning Knobs
+
+| Параметр | Default | Описание |
+|----------|---------|----------|
+| MaxActiveQuestsPerPlayer | 20 | Максимум активных квестов |
+| QuestTriggerService tick interval | 5s | Частота оценки прогресса |
+| Dialog typewriter speed | 40 chars/sec | Скорость печати текста |
+| QuestToast display time | 2.5s | Время показа уведомления |
+| Rate limit | 30 ops/min/client | Защита от спама RPC |
 
 ---
 

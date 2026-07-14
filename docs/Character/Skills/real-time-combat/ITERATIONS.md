@@ -1,5 +1,16 @@
 # Итерации реализации — Ranged & Throwables
 
+## Итерация от 2026-07-31 (#6)
+
+**Задача:** Отключение атак при посадке в кресло пилота — замена `_controller.enabled` на `SetInputEnabled`
+**Коммит:** `63628fd` — T-CB09
+
+**Изменения:**
+- `Assets/_Project/Scripts/Player/NetworkPlayer.cs`:
+  - `SubmitSwitchModeRpc` посадка: `SetInputEnabled(false)` вместо `_controller.enabled = false`
+  - `SubmitSwitchModeRpc` выход: `SetInputEnabled(true)` вместо `_controller.enabled = true`
+- `docs/Character/Skills/real-time-combat/ITERATIONS.md` — запись #5, #6
+
 ## Итерация от 2026-07-31 (#5)
 
 **Задача:** Self-damage fix — отключить урон себе от базовых атак и AOE-скиллов, добавить toggle Allow Self Damage в инспектор

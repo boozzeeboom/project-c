@@ -1,5 +1,18 @@
 # Итерации реализации — Ranged & Throwables
 
+## Итерация от 2026-07-31 (#5)
+
+**Задача:** Self-damage fix — отключить урон себе от базовых атак и AOE-скиллов, добавить toggle Allow Self Damage в инспектор
+**Коммит:** `643bb1e` — T-CB08: Self-damage fix
+
+**Изменения:**
+- `Assets/_Project/Scripts/Skills/SkillNodeConfig.cs` — поле `_allowSelfDamage` (default false) + свойство `AllowSelfDamage`
+- `Assets/_Project/Scripts/Combat/Network/CombatServer.cs`:
+  - `ResolveAttack` — guard `attackerId == targetId`
+  - `CollectAoeTargetsFromRegistry` — параметры `attackerId`, `allowSelfDamage`; фильтр атакующего
+  - `ResolveSkillCast` — проброс флагов
+- `Assets/_Project/Editor/SkillNodeConfigEditor.cs` — toggle «Allow Self Damage» в инспекторе
+
 ## Итерация от 2026-07-31 (#4)
 
 **Задача:** VFX Fix — NPC унификация + player impact + robust pool

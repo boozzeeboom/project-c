@@ -46,3 +46,42 @@
 1. `ShipInputReader` отсутствовал на `Ship_Light_root` — `EngineThrusterVisual._inputReader` был null
 2. `Slot_Engine_Left` пропал (сцена не сохранилась в прошлый раз)
 3. Постмортем T-ENG01 неверно указывал GlobalObjectIdHash как корневую причину — реальная: модуль с множителями 0
+
+---
+
+## Итерация от 2026-07-14 (финал)
+
+**Задача:** T-ENG02 — финальная архитектура: _pivotPoint + _visuals
+**Коммит:** `67d008a` — T-ENG02: _pivotPoint + _visuals — два независимых трансформа
+
+**Финальная архитектура EngineThrusterVisual:**
+- `_pivotPoint` (RotationAnchor) — пустой маркер, двигается мышкой, задаёт точку вращения
+- `_visuals` (EngineVisuals) — контейнер Body + Blade, двигается мышкой, вращается кодом вокруг `_pivotPoint`
+- Оба трансформа полностью независимы — дизайнер не трогает дочерние объекты
+
+**Иерархия (Slot_Engine_Right):**
+```
+Slot_Engine_Right
+├── RotationAnchor   ← _pivotPoint (пустой, точка вращения)
+└── EngineVisuals    ← _visuals (Cylinder + Cube, вращается)
+    ├── Cylinder     ← Body
+    └── Cube         ← _propeller (лопасть)
+```
+
+**Эволюция pivot-решения (3 итерации):**
+1. `_pivotTransform` (Transform) — неудобно: двигаешь = дети едут
+2. `_pivotOffset` (Vector3) — неудобно: слепые числа
+3. `_pivotPoint` + `_visuals` (два Transform) — ✅ удобно: оба двигаются мышкой независимо
+
+**Все коммиты T-ENG02:**
+| Коммит | Описание |
+|---|---|
+| `6c6f50c` | Этапы 1-2: enum'ы + EngineThrusterVisual |
+| `4f2888b` | Документация итерации |
+| `c00f766` | Fix: ShipInputReader + Slot_Engine_Left |
+| `64df30b` | ITERATIONS.md fix |
+| `8bea729` | Fix позиции Slot_Engine_Left |
+| `b958c86` | Fix: Cube под Pivot |
+| `a25c81a` | _pivotOffset + _visualRoot |
+| `403c8b9` | _pivotTransform + _pivotOffset |
+| `67d008a` | **Финальная: _pivotPoint + _visuals** |

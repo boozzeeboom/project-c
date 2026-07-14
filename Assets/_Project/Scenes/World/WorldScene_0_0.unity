@@ -1580,7 +1580,7 @@ GameObject:
   m_Component:
   - component: {fileID: 191522081}
   m_Layer: 0
-  m_Name: Pivot
+  m_Name: EngineVisuals
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -15675,7 +15675,7 @@ GameObject:
   m_Component:
   - component: {fileID: 2070075316}
   m_Layer: 0
-  m_Name: PivotPoint
+  m_Name: RotationAnchor
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -15690,7 +15690,7 @@ Transform:
   m_GameObject: {fileID: 2070075315}
   serializedVersion: 2
   m_LocalRotation: {x: -0, y: -0, z: -0, w: 1}
-  m_LocalPosition: {x: -40122.1, y: -2502.36, z: -39974.97}
+  m_LocalPosition: {x: -1.04, y: 0, z: -6.94}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []

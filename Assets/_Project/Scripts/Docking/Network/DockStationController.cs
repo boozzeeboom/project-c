@@ -4,8 +4,9 @@
 //
 // Q4 (принято 2026-06-19): dockStationDefinition SO — без хардкода кол-ва pads.
 
-using ProjectC.Docking.Core;  // DockStationDefinition
-using ProjectC.Docking.Zones; // OuterCommZone
+using ProjectC.Docking.Core;     // DockStationDefinition
+using ProjectC.Docking.Stations; // PadStateSync
+using ProjectC.Docking.Zones;    // OuterCommZone
 using Unity.Netcode;
 using UnityEngine;
 
@@ -13,6 +14,7 @@ namespace ProjectC.Docking.Network
 {
     [RequireComponent(typeof(NetworkObject))]
     [RequireComponent(typeof(OuterCommZone))]
+    [RequireComponent(typeof(PadStateSync))]
     public class DockStationController : NetworkBehaviour
     {
         [Header("Definition")]

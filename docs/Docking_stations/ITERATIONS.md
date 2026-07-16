@@ -1,17 +1,34 @@
 # Итерации — Docking Stations
 
-## Итерация от 2026-07-12
+## Итерация от 2026-07-12 (реализация)
+
+**Задача:** Реализация T-DOCK-14a..14e — PadStateSync, интеграция с DockingWorld, материалы, DockPadVisualMarker v2.
+
+**План:** `docs/Docking_stations/11_VISUAL_MARKERS_PLAN.md`
+
+**Изменения:**
+- `Assets/_Project/Scripts/Docking/Stations/PadStateSync.cs` — новый NetworkBehaviour (ClientRpc-синхронизация падов)
+- `Assets/_Project/Scripts/Docking/Stations/DockPadVisualMarker.cs` — полный rewrite (7 состояний, holographic-эффекты)
+- `Assets/_Project/Scripts/Docking/Core/DockingWorld.cs` — интеграция с PadStateSync (6 точек вызова)
+- `Assets/_Project/Scripts/Docking/Network/DockStationController.cs` — +RequireComponent PadStateSync
+- `Assets/_Project/Scripts/Editor/PortStationCreator.cs` — обновлён под v2 материалы
+- `Assets/_Project/Prefabs/NPC_ZONES/Pad_01.prefab` — обновлён (7 материалов)
+- `Assets/_Project/Materials/Docking/` — 7 новых материалов (M_Pad_*)
+- `Assets/Generated_Models/PadRing/` — ring mesh
+- `docs/Docking_stations/06_ROADMAP.md` — T-DOCK-14 → ✅
+- `docs/Docking_stations/00_README.md` — Known issues обновлён
+
+## Итерация от 2026-07-12 (план)
 
 **Задача:** Глубокий анализ `DockPadVisualMarker` + план v2 с holographic-маркерами.
 
 **План:** `docs/Docking_stations/11_VISUAL_MARKERS_PLAN.md` — 6 тикетов T-DOCK-14a..14f
-**Коммит:** `5f973b0` — T-DOCK-14: План переработки DockPadVisualMarker v2
+**Коммит:** `6c65546` — T-DOCK-14: План переработки DockPadVisualMarker v2
 
 **Изменения:**
 - `docs/Docking_stations/11_VISUAL_MARKERS_PLAN.md` — новый документ
 - `docs/Docking_stations/00_README.md` — обновлён Known issues + навигация
 - `docs/Docking_stations/CHANGELOG.md` — запись 2026-07-12
-- `docs/Docking_stations/ITERATIONS.md` — эта запись
 
 ---
 

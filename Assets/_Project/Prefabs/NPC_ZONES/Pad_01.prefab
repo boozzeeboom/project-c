@@ -391,7 +391,16 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 08cd1efb17135dc408cc48f7ee66f728, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::ProjectC.Docking.Stations.DockPadVisualMarker
-  freeColor: {r: 0.2, g: 1, b: 0.2, a: 0.25}
-  occupiedColor: {r: 1, g: 0.2, b: 0.2, a: 0.35}
+  neutralMat: {fileID: 2100000, guid: 937d497d8052ff44bbd6447199084d87, type: 2}
+  freeMat: {fileID: 2100000, guid: f3a568270f2c17044a0b9249b11d00f3, type: 2}
+  pendingMat: {fileID: 2100000, guid: 9ff2e3cd183c78846a135a26c12d743d, type: 2}
+  assignedToMeMat: {fileID: 2100000, guid: b2ae913406acee146bc48979104a0f39, type: 2}
+  assignedOtherMat: {fileID: 2100000, guid: 357ac70d9496489409f0ee548f0b74b2, type: 2}
+  occupiedNpcMat: {fileID: 2100000, guid: 29233d7ea91dcf44da385e2ea7ddcd0e, type: 2}
+  occupiedPlayerMat: {fileID: 2100000, guid: 4dea1cf7d8fbb214aa3ec65aa2e3b9a6, type: 2}
   markerSize: 6
   markerHeight: 0.05
+  ringThickness: 0.3
+  ringExtraSize: 1.5
+  pulseSpeed: 2.5
+  ringRotateSpeed: 45

@@ -187,6 +187,9 @@ public class PortStationCreator : EditorWindow
         }
         EditorUtility.SetDirty(dockCtrl);
 
+        // T-DOCK-14e: PadStateSync — ручное добавление (AddComponent в Editor не подтягивает [RequireComponent])
+        root.AddComponent<PadStateSync>();
+
         // ============================================================
         // 5. Dockings container + RepairManager
         // ============================================================
@@ -261,10 +264,23 @@ public class PortStationCreator : EditorWindow
             var visualMarker = pad.AddComponent<DockPadVisualMarker>();
             using (var so = new SerializedObject(visualMarker))
             {
-                so.FindProperty("freeColor").colorValue = new Color(0.2f, 1f, 0.2f, 0.25f);
-                so.FindProperty("occupiedColor").colorValue = new Color(1f, 0.2f, 0.2f, 0.35f);
-                so.FindProperty("markerSize").floatValue = 6f;
-                so.FindProperty("markerHeight").floatValue = 0.05f;
+                // T-DOCK-14e: v2 material assignments (вместо старых freeColor/occupiedColor)
+                so.FindProperty("neutralMat").objectReferenceValue =
+                    AssetDatabase.LoadAssetAtPath<Material>("Assets/_Project/Materials/Docking/M_Pad_Neutral.mat");
+                so.FindProperty("freeMat").objectReferenceValue =
+                    AssetDatabase.LoadAssetAtPath<Material>("Assets/_Project/Materials/Docking/M_Pad_Free.mat");
+                so.FindProperty("pendingMat").objectReferenceValue =
+                    AssetDatabase.LoadAssetAtPath<Material>("Assets/_Project/Materials/Docking/M_Pad_Pending.mat");
+                so.FindProperty("assignedToMeMat").objectReferenceValue =
+                    AssetDatabase.LoadAssetAtPath<Material>("Assets/_Project/Materials/Docking/M_Pad_AssignedToMe.mat");
+                so.FindProperty("assignedOtherMat").objectReferenceValue =
+                    AssetDatabase.LoadAssetAtPath<Material>("Assets/_Project/Materials/Docking/M_Pad_AssignedOther.mat");
+                so.FindProperty("occupiedNpcMat").objectReferenceValue =
+                    AssetDatabase.LoadAssetAtPath<Material>("Assets/_Project/Materials/Docking/M_Pad_OccupiedNpc.mat");
+                so.FindProperty("occupiedPlayerMat").objectReferenceValue =
+                    AssetDatabase.LoadAssetAtPath<Material>("Assets/_Project/Materials/Docking/M_Pad_Occupied.mat");
+                so.FindProperty("markerSize").floatValue = 8f;
+                so.FindProperty("markerHeight").floatValue = 0.1f;
                 so.ApplyModifiedProperties();
             }
             EditorUtility.SetDirty(visualMarker);

@@ -1,0 +1,23 @@
+{
+  "task_id": "b5b5935d-cc73-4704-8ab9-380c564762f9",
+  "original_generation_task_id": "fde6cf0d-a361-4da8-8e86-4d1d36247d85",
+  "original_model_url": "https://tripo-data.rg1.data.tripo3d.com/tcli_af214df3136f4037b860bb82d8a79830/20260716/fde6cf0d-a361-4da8-8e86-4d1d36247d85/tripo_model_fde6cf0d-a361-4da8-8e86-4d1d36247d85.glb?Policy=eyJTdGF0ZW1lbnQiOlt7IlJlc291cmNlIjoiaHR0cHM6Ly90cmlwby1kYXRhLnJnMS5kYXRhLnRyaXBvM2QuY29tL3RjbGlfYWYyMTRkZjMxMzZmNDAzN2I4NjBiYjgyZDhhNzk4MzAvMjAyNjA3MTYvZmRlNmNmMGQtYTM2MS00ZGE4LThlODYtNGQxZDM2MjQ3ZDg1L3RyaXBvX21vZGVsX2ZkZTZjZjBkLWEzNjEtNGRhOC04ZTg2LTRkMWQzNjI0N2Q4NS5nbGIiLCJDb25kaXRpb24iOnsiRGF0ZUxlc3NUaGFuIjp7IkFXUzpFcG9jaFRpbWUiOjE3ODQzMTA5ODZ9fX1dfQ__&Signature=Vb6V747ghvOxlu39sHoNUV8jwGd7qx-HsfbTnMZ3JksRv6Yv02rvfXwtynqAthlDTBWGN5T~ODgtl91As~W-KTr0t23g4Nfo7Qf9lP-QJVfqw-QPZvPFORrMO2u8uxbOMMIfX7YlbtotUiNk0PH6Scwqg4tufZT1~W678bu4tQwke0Avut5Y24XT5nf-t8SUgj5irrK~5Hmcjlax0aQDBlJNVm9vPKga38dGCh94eaDiNjLBLnfBYGu19tU0N6K2AXyGVuPuVZOLzO9fD2kUyFAwAVkJBfK9iBLJ7pxC4BiZFz4DuhXT7grXbOQ2ZT-N2O~jcfvrR69j9TC5AR8qFw__&Key-Pair-Id=K1676C64NMVM2J",
+  "generation_type": "text_to_model",
+  "generation_date": "2026-07-16T22:56:33.169373",
+  "description": "A thin flat ring torus for a spaceship landing pad marker, sci-fi style. Outer diameter about 10 units, inner hole about 8 units, very thin height about 0.2 units. Clean geometry, minimal polygons, circular ring shape.",
+  "negative_prompt": "",
+  "pose_type": "Default",
+  "model_version": "P1-20260311",
+  "pbr": false,
+  "face_limit": 500,
+  "quad": false,
+  "convert_to_fbx": true,
+  "texture_files": [
+    {
+      "role": "BaseColor",
+      "path": "Q:\\Yandex.disk\\Yandex.Disk\\Unity-Projects\\ProjectC_client\\Assets\\Generated_Models\\PadRing\\PadRing_BaseColor.jpg",
+      "mime_type": "image/jpeg"
+    }
+  ],
+  "file_path": "Q:\\Yandex.disk\\Yandex.Disk\\Unity-Projects\\ProjectC_client\\Assets\\Generated_Models\\PadRing\\PadRing.fbx"
+}

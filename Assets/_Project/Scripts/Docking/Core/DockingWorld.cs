@@ -105,11 +105,17 @@ namespace ProjectC.Docking.Core
                             string padKey = PadKey(station.StationId, tb.PadId);
                             if (!_occupiedPads.ContainsKey(padKey))
                             {
-                                _occupiedPads[padKey] = ship.NetworkObject != null ? ship.NetworkObject.NetworkObjectId : 0;
+                                ulong shipId = ship.NetworkObject != null ? ship.NetworkObject.NetworkObjectId : 0;
+                                _occupiedPads[padKey] = shipId;
                                 // Блокируем двигатель
                                 if (ship.IsServer) ship.EnterDocked();
                                 Debug.Log($"[DockingWorld] ScanExistingOccupants: pad={tb.PadId} station={station.StationId} ship={ship.name} — registered + engine locked");
                                 totalOccupied++;
+
+                                // T-DOCK-14b: синхронизация визуального маркера
+                                var sync = station.GetComponent<PadStateSync>();
+                                if (sync != null)
+                                    sync.UpdatePadState(tb.PadId, isOccupied: true, occupiedByClientId: shipId);
                             }
                         }
                     }
@@ -225,6 +231,9 @@ namespace ProjectC.Docking.Core
             _pendingByShip[shipNetId] = a;
             // Pending assignment не занимает pad — другой игрок может запросить этот же
             // pad, если pending истечёт. После Confirm — pad блокируется.
+
+            // T-DOCK-14b: синхронизация визуального маркера
+            SyncPadMarker(a.stationId, a.padId, isPending: true);
         }
 
         public void ConfirmAssignment(ulong clientId, ulong shipNetId)
@@ -255,10 +264,18 @@ namespace ProjectC.Docking.Core
             // Удаляем из pending
             _pendingByClient.Remove(clientId);
             _pendingByShip.Remove(shipNetId);
+
+            // T-DOCK-14b: синхронизация визуального маркера
+            SyncPadMarker(a.stationId, a.padId, isAssigned: true, assignedTo: clientId, isPending: false);
         }
 
         public void CancelPendingAssignment(ulong clientId, ulong shipNetId)
         {
+            // T-DOCK-14b: снять pending с маркера
+            if (_pendingByClient.TryGetValue(clientId, out var pa))
+            {
+                SyncPadMarker(pa.stationId, pa.padId, isPending: false);
+            }
             _pendingByClient.Remove(clientId);
             _pendingByShip.Remove(shipNetId);
         }
@@ -290,13 +307,22 @@ namespace ProjectC.Docking.Core
             a.used = true;
             _assignmentsByShip[shipNetId] = a;
             _assignmentsByClient[clientId] = a;
+
+            // T-DOCK-14b: синхронизация визуального маркера — пад занят
+            SyncPadMarker(stationId, padId, isOccupied: true, occupiedBy: clientId);
+
             return MakeStatus(DockingStatus.Docked, stationId, padId);
         }
 
         public void ReleaseAssignment(ulong clientId, ulong shipNetId)
         {
+            string releasedStationId = null;
+            string releasedPadId = null;
+
             if (_assignmentsByClient.TryGetValue(clientId, out var a))
             {
+                releasedStationId = a.stationId;
+                releasedPadId = a.padId;
                 string padKey = PadKey(a.stationId, a.padId);
                 _occupiedPads.Remove(padKey);  // Q3: освобождаем pad
                 _assignmentsByClient.Remove(clientId);
@@ -311,6 +337,14 @@ namespace ProjectC.Docking.Core
                 {
                     if (kv.Value == shipNetId)
                     {
+                        // Извлекаем stationId/padId из ключа "stationId/padId"
+                        string pk = kv.Key;
+                        int slashIndex = pk.LastIndexOf('/');
+                        if (slashIndex > 0)
+                        {
+                            releasedStationId = pk.Substring(0, slashIndex);
+                            releasedPadId = pk.Substring(slashIndex + 1);
+                        }
                         _occupiedPads.Remove(kv.Key);
                         break;
                     }
@@ -319,6 +353,13 @@ namespace ProjectC.Docking.Core
             // Также чистим pending (если был)
             _pendingByClient.Remove(clientId);
             _pendingByShip.Remove(shipNetId);
+
+            // T-DOCK-14b: синхронизация визуального маркера
+            if (releasedStationId != null && releasedPadId != null)
+            {
+                SyncPadMarker(releasedStationId, releasedPadId,
+                    isAssigned: false, isOccupied: false, isPending: false);
+            }
         }
 
         public bool IsPadOccupied(string stationId, string padId)
@@ -337,6 +378,25 @@ namespace ProjectC.Docking.Core
         }
 
         // === Helpers ===
+
+        /// <summary>
+        /// T-DOCK-14b: обновить PadStateSync для визуального маркера.
+        /// Находит станцию через DockingZoneRegistry → PadStateSync → UpdatePadState.
+        /// </summary>
+        private static void SyncPadMarker(
+            string stationId, string padId,
+            bool? isAssigned = null,
+            ulong? assignedTo = null,
+            bool? isOccupied = null,
+            ulong? occupiedBy = null,
+            bool? isPending = null)
+        {
+            var station = DockingZoneRegistry.GetStation(stationId);
+            if (station == null) return;
+            var sync = station.GetComponent<PadStateSync>();
+            if (sync == null) return;
+            sync.UpdatePadState(padId, isOccupied, isPending, isAssigned, occupiedBy, assignedTo);
+        }
 
         private bool IsCompatible(ShipFlightClass[] allowed, ShipFlightClass shipClass)
         {

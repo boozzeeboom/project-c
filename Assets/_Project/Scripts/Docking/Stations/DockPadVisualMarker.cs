@@ -79,19 +79,20 @@ namespace ProjectC.Docking.Stations
             _surfaceProps = new MaterialPropertyBlock();
             _ringProps = new MaterialPropertyBlock();
 
-            // Удаляем старые _PadMarker от предыдущей версии скрипта
-            var oldMarker = transform.Find("_PadMarker");
-            if (oldMarker != null)
+            // Всегда удаляем старых визуальных детей — у них могут быть битые GUID материалов
+            foreach (var n in new[] { "_PadSurface", "_PadRing", "_PadMarker" })
             {
-                if (Application.isPlaying) Destroy(oldMarker.gameObject);
-                else DestroyImmediate(oldMarker.gameObject);
+                var old = transform.Find(n);
+                if (old != null)
+                {
+                    if (Application.isPlaying) Destroy(old.gameObject);
+                    else DestroyImmediate(old.gameObject);
+                }
             }
+            _surfaceRenderer = null;
+            _ringRenderer = null;
 
-            // T-DOCK-14d: [ExecuteAlways] — не дублируем визуалы при перекомпиляции
-            if (transform.Find("_PadSurface") == null)
-                BuildVisuals();
-            else
-                CacheVisualRefs(); // Play Mode: дети уже созданы в Edit Mode, нужно восстановить ссылки
+            BuildVisuals();
         }
 
         private void Start()
@@ -173,28 +174,6 @@ namespace ProjectC.Docking.Stations
             return go;
         }
 
-        private void CacheVisualRefs()
-        {
-            var surface = transform.Find("_PadSurface");
-            if (surface != null)
-            {
-                _surfaceRenderer = surface.GetComponent<MeshRenderer>();
-                // Перезатираем материал — дети могли сохраниться со старым GUID после пересоздания материалов
-                if (_surfaceRenderer != null && neutralMat != null)
-                    _surfaceRenderer.sharedMaterial = neutralMat;
-            }
-
-            var ring = transform.Find("_PadRing");
-            if (ring != null)
-            {
-                _ringRenderer = ring.GetComponent<MeshRenderer>();
-                if (_ringRenderer != null && neutralMat != null)
-                    _ringRenderer.sharedMaterial = neutralMat;
-            }
-
-            _currentMaterial = neutralMat;
-        }
-
         private void CleanupVisuals()
         {
             if (_padSurface != null)
@@ -270,7 +249,7 @@ namespace ProjectC.Docking.Stations
 
         private Material GetMaterialForState(PadVisualState state)
         {
-            return state switch
+            var mat = state switch
             {
                 PadVisualState.Free => freeMat ?? neutralMat,
                 PadVisualState.Pending => pendingMat ?? neutralMat,
@@ -280,13 +259,34 @@ namespace ProjectC.Docking.Stations
                 PadVisualState.OccupiedPlayer => occupiedPlayerMat ?? occupiedNpcMat,
                 _ => neutralMat
             };
+            // Fallback: если все ссылки битые — создаём runtime-материал
+            if (mat == null)
+            {
+                if (_fallbackMat == null)
+                    _fallbackMat = new Material(Shader.Find("Universal Render Pipeline/Unlit"));
+                mat = _fallbackMat;
+                mat.SetColor("_BaseColor", new Color(0.5f, 0.5f, 0.5f, 0.5f));
+            }
+            return mat;
         }
+
+        private Material _fallbackMat;
 
         private void ApplyMaterial()
         {
-            if (_surfaceRenderer != null && _currentMaterial != null)
+            // Защита: если материал null — создаём runtime fallback
+            if (_currentMaterial == null)
+            {
+                Debug.LogWarning($"[DockPadVisualMarker:{_padBox?.PadId}] _currentMaterial is null, using fallback", this);
+                if (_fallbackMat == null)
+                    _fallbackMat = new Material(Shader.Find("Universal Render Pipeline/Unlit"));
+                _fallbackMat.SetColor("_BaseColor", new Color(0.5f, 0.5f, 0.5f, 0.5f));
+                _currentMaterial = _fallbackMat;
+            }
+
+            if (_surfaceRenderer != null)
                 _surfaceRenderer.sharedMaterial = _currentMaterial;
-            if (_ringRenderer != null && _currentMaterial != null)
+            if (_ringRenderer != null)
                 _ringRenderer.sharedMaterial = _currentMaterial;
         }
 

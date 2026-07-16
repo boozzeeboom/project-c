@@ -32,6 +32,38 @@ MonoBehaviour:
     flightDurationSec: 0
     preferredShipClass: 3
     demandCategory: 0
+  - fromLocationId: PRIMIUM_FARM_0_1
+    toLocationId: PRIMIUM_FARM_0_2
+    dwellTimeSec: 60
+    dwellRandomAddMinSec: 20
+    dwellRandomAddMaxSec: 1000
+    flightDurationSec: 0
+    preferredShipClass: 3
+    demandCategory: 0
+  - fromLocationId: PRIMIUM_FARM_0_2
+    toLocationId: PRIMIUM_FARM_0_3
+    dwellTimeSec: 60
+    dwellRandomAddMinSec: 20
+    dwellRandomAddMaxSec: 1000
+    flightDurationSec: 0
+    preferredShipClass: 3
+    demandCategory: 0
+  - fromLocationId: PRIMIUM_FARM_0_3
+    toLocationId: PRIMIUM_FARM_0_4
+    dwellTimeSec: 60
+    dwellRandomAddMinSec: 20
+    dwellRandomAddMaxSec: 1000
+    flightDurationSec: 0
+    preferredShipClass: 3
+    demandCategory: 0
+  - fromLocationId: PRIMIUM_FARM_0_4
+    toLocationId: PRIMIUM
+    dwellTimeSec: 60
+    dwellRandomAddMinSec: 20
+    dwellRandomAddMaxSec: 1000
+    flightDurationSec: 0
+    preferredShipClass: 3
+    demandCategory: 0
   meanArrivalIntervalSec: 480
   arrivalIntervalStdDev: 90
   minArrivalSpacingSec: 60

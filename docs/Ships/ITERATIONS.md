@@ -1,5 +1,13 @@
 # Project C — Iterations Log
 
+## Итерация от 2026-07-24
+
+**Задача:** ShipController custom editor — группировка ~45 serialized полей в 8 foldout-секций + Runtime Info панель
+**Коммит:** `86a87f3` — T-SHIP01: ShipController custom editor — 8 foldout-групп + Runtime Info панель
+**Изменения:**
+- `Assets/_Project/Scripts/Player/Editor/ShipControllerEditor.cs` (новый)
+- `docs/Ships/shipcontroller-editor.md` (новый)
+
 ## Итерация от 2026-07-06 (Сводка периода 1–6 июля)
 
 **Задача:** Подробное саммари периода 1–6 июля: анализ 67 коммитов, перекрёстная документация, сводка в `docs/dev/summary_01-06_july_2026.md`

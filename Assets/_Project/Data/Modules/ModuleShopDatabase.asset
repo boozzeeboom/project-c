@@ -13,7 +13,6 @@ MonoBehaviour:
   m_Name: ModuleShopDatabase
   m_EditorClassIdentifier: Assembly-CSharp::ProjectC.Ship.ModuleShopDatabase
   entries:
-  - {fileID: 11400000, guid: 234a8c6195b06bd42b2d2f3825dedb0b, type: 2}
   - {fileID: 11400000, guid: c2178de5612ff9641b10a1cd8e3d28b0, type: 2}
   - {fileID: 11400000, guid: a208403ac63e8f2489c009314de4fac2, type: 2}
   - {fileID: 11400000, guid: b00006d9febb459439fc0e8ccd9c6f82, type: 2}

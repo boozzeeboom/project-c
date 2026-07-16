@@ -67,7 +67,6 @@ namespace ProjectC.Docking.Stations
         private MaterialPropertyBlock _surfaceProps;
         private MaterialPropertyBlock _ringProps;
 
-        private const string EMISSION_COLOR = "_EmissionColor";
         private const string BASE_COLOR = "_BaseColor";
 
         // ============================================================
@@ -328,13 +327,15 @@ namespace ProjectC.Docking.Stations
                     break;
             }
 
-            // Применяем пульсацию emission через MaterialPropertyBlock
+            // Пульсация alpha в _BaseColor (URP/Unlit не имеет _EmissionColor)
             if (_surfaceRenderer != null && _currentMaterial != null)
             {
                 _surfaceRenderer.GetPropertyBlock(_surfaceProps);
-                Color baseEmission = _currentMaterial.GetColor(EMISSION_COLOR);
-                if (baseEmission == Color.clear) baseEmission = _currentMaterial.GetColor(BASE_COLOR) * 0.5f;
-                _surfaceProps.SetColor(EMISSION_COLOR, baseEmission * emissionMultiplier);
+                Color baseColor = _currentMaterial.GetColor(BASE_COLOR);
+                float baseAlpha = baseColor.a;
+                // Модулируем alpha для эффекта пульсации
+                float pulsedAlpha = baseAlpha * emissionMultiplier;
+                _surfaceProps.SetColor(BASE_COLOR, new Color(baseColor.r, baseColor.g, baseColor.b, pulsedAlpha));
                 _surfaceRenderer.SetPropertyBlock(_surfaceProps);
             }
         }

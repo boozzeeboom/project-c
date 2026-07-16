@@ -174,7 +174,7 @@ namespace ProjectC.Editor
             EnsureFolder(NavMeshFolder);
 
             // --- Phase 1: Create dependent assets ---
-            string keyPath      = CreateKeyItemData(classStr);
+            string keyPath      = CreateKeyItemData(shipName, classStr);
             string damagePath   = CreateDamageConfig(classStr, p);
             string schedulePath = CreateEmptySchedule(classStr);
             string navMeshPath  = CreateDeckNavMeshAsset(classStr);
@@ -265,6 +265,8 @@ namespace ProjectC.Editor
             SetPrivateField(mez, "overheatThreshold", 10f);
             SetPrivateField(mez, "cooldownDuration", 15f);
             SetPrivateField(mez, "passiveModifier", 1.1f);
+            SetPrivateField(mez, "fuelSystem", fuel);
+            SetPrivateField(mez, "moduleManager", modMgr);
 
             // ShipHull
             var hull = root.AddComponent<ShipHull>();
@@ -283,7 +285,11 @@ namespace ProjectC.Editor
             SetPrivateField(inputReader, "mouseSensitivityY", 2f);
 
             // ShipRootReference
-            root.AddComponent<ShipRootReference>();
+            var rootSrr = root.AddComponent<ShipRootReference>();
+            SetPrivateField(rootSrr, "_shipController", sc);
+            SetPrivateField(rootSrr, "_rigidbody", rb);
+            SetPrivateField(rootSrr, "_networkObject", netObj);
+            SetPrivateField(rootSrr, "_root", root.transform);
 
             // --- NPC components (на том же root) ---
             var npcCtrl = root.AddComponent<NpcShipController>();
@@ -318,7 +324,8 @@ namespace ProjectC.Editor
             // MainVisual (Cube — заменяется дизайнером на модель)
             var mainVis = CreateChildCube(root, "MainVisual",
                 new Vector3(0, 0.51f, 0), Vector3.zero, p.visualScale, p.classColor);
-            mainVis.AddComponent<ShipRootReference>();
+            var mainVisSrr = mainVis.AddComponent<ShipRootReference>();
+            WireShipRootReference(mainVis, root, sc, rb, netObj);
             var mainVisCol = mainVis.GetComponent<BoxCollider>();
             if (mainVisCol == null) mainVisCol = mainVis.AddComponent<BoxCollider>();
 
@@ -329,6 +336,7 @@ namespace ProjectC.Editor
                 new Color(0.4f, 0.4f, 0.4f));
             platform.AddComponent<BoxCollider>();
             platform.AddComponent<ShipRootReference>();
+            WireShipRootReference(platform, root, sc, rb, netObj);
 
             // PilotSeat
             var pilotSeat = CreateChildCube(root, "PilotSeat",
@@ -340,6 +348,7 @@ namespace ProjectC.Editor
             SetPrivateField(pilotCtrl, "seatType", PilotSeatController.PilotSeatType.Pilot);
             SetPrivateField(pilotCtrl, "interactRadius", 7.37f);
             pilotSeat.AddComponent<ShipRootReference>();
+            WireShipRootReference(pilotSeat, root, sc, rb, netObj);
 
             // Door
             var door = CreateChildCube(root, "Door",
@@ -353,6 +362,7 @@ namespace ProjectC.Editor
             SetPrivateField(doorCtrl, "slideSpeed", 1.5f);
             SetPrivateField(doorCtrl, "startOpen", true);
             door.AddComponent<ShipRootReference>();
+            WireShipRootReference(door, root, sc, rb, netObj);
             var doorShake = door.AddComponent<ShipPartShake>();
             SetPrivateField(doorShake, "_frequency", 5f);
             SetPrivateField(doorShake, "_positionAmplitude", new Vector3(0.01f, 0.01f, 0.02f));
@@ -388,16 +398,17 @@ namespace ProjectC.Editor
             cargoVis.transform.localPosition = new Vector3(0, 5.86f, 0);
             cargoVis.transform.localRotation = Quaternion.identity;
             cargoVis.transform.localScale = new Vector3(p.visualScale.x * 0.9f, 10f, p.visualScale.z * 0.75f);
-            var cargoVisComp = cargoVis.AddComponent<ShipCargoVisual>();
-            SetPrivateField(cargoVisComp, "_spawnZone", cargoVis.GetComponent<BoxCollider>());
             var cargoVisBox = cargoVis.AddComponent<BoxCollider>();
             cargoVisBox.isTrigger = true;
+            var cargoVisComp = cargoVis.AddComponent<ShipCargoVisual>();
+            SetPrivateField(cargoVisComp, "_spawnZone", cargoVisBox);
             SetPrivateField(cargoVisComp, "_boxBaseSize", 0.5f);
             SetPrivateField(cargoVisComp, "_boxGap", 0.1f);
             SetPrivateField(cargoVisComp, "_maxVisibleBoxes", 50);
             SetPrivateField(cargoVisComp, "_debugLog", false);
             SetPrivateField(cargoVisComp, "_showOverflowIndicator", true);
             cargoVis.AddComponent<ShipRootReference>();
+            WireShipRootReference(cargoVis, root, sc, rb, netObj);
 
             // Exchanger (Cargo Console)
             var exchanger = new GameObject("Exchanger");
@@ -413,6 +424,7 @@ namespace ProjectC.Editor
             exchCol.isTrigger = true;
             exchCol.radius = 1.35f;
             exchanger.AddComponent<ShipRootReference>();
+            WireShipRootReference(exchanger, root, sc, rb, netObj);
             var exchConsole = exchanger.AddComponent<ShipCargoConsole>();
             SetPrivateField(exchConsole, "_interactionRadius", 1.35f);
             SetPrivateField(exchConsole, "_displayName", "Грузовой отсек");
@@ -528,6 +540,21 @@ namespace ProjectC.Editor
             return go;
         }
 
+        /// <summary>
+        /// Назначает поля ShipRootReference на дочернем объекте — ссылки на корневые компоненты.
+        /// Вызывается после AddComponent&lt;ShipRootReference&gt;().
+        /// </summary>
+        private static void WireShipRootReference(GameObject child, GameObject shipRoot,
+            ShipController sc, Rigidbody rb, NetworkObject netObj)
+        {
+            var srr = child.GetComponent<ShipRootReference>();
+            if (srr == null) return;
+            SetPrivateField(srr, "_shipController", sc);
+            SetPrivateField(srr, "_rigidbody", rb);
+            SetPrivateField(srr, "_networkObject", netObj);
+            SetPrivateField(srr, "_root", shipRoot.transform);
+        }
+
         private static void CreateModuleSlot(GameObject root, string slotName, Vector3 localPos, SlotType slotType)
         {
             var go = new GameObject(slotName);
@@ -563,9 +590,9 @@ namespace ProjectC.Editor
         // Asset creators
         // ================================================================
 
-        private static string CreateKeyItemData(string classStr)
+        private static string CreateKeyItemData(string shipName, string classStr)
         {
-            string fileName = $"Key_{classStr.ToLowerInvariant()}_ship";
+            string fileName = $"Key_{shipName}";
             string path = $"{KeyItemFolder}/{fileName}.asset";
 
             if (AssetDatabase.LoadAssetAtPath<ProjectC.Items.ItemData>(path) != null)
@@ -577,7 +604,7 @@ namespace ProjectC.Editor
                 System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
             itemTypeField?.SetValue(item, (ProjectC.Items.ItemType)System.Enum.Parse(
                 typeof(ProjectC.Items.ItemType), "Key"));
-            SetPrivateField(item, "description", $"Ключ корабля класса {classStr}");
+            SetPrivateField(item, "description", $"Ключ корабля «{shipName}» ({classStr})");
             SetPrivateField(item, "maxStack", 20);
             SetPrivateField(item, "weightKg", 1.0f);
             // EquipSlot.None — use int value 0 (safer than enum resolve)

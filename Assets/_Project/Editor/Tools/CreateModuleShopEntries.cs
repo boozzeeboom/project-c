@@ -20,46 +20,34 @@ namespace ProjectC.Editor.Tools
                 {"MODULE_MEZIY_YAW", 1500}, {"MODULE_MEZIY_THRUST", 2000},
             };
 
-            int created = 0;
-            var allEntries = new List<ModuleShopEntry>();
+            var allModules = new List<ShipModule>();
 
             foreach (var kv in prices)
             {
-                string id = kv.Key;
-                var mod = AssetDatabase.LoadAssetAtPath<ShipModule>($"{dir}/{id}.asset");
+                var mod = AssetDatabase.LoadAssetAtPath<ShipModule>($"{dir}/{kv.Key}.asset");
                 if (mod == null)
                 {
-                    Debug.LogWarning($"Module {id} not found");
+                    Debug.LogWarning($"Module {kv.Key} not found");
                     continue;
                 }
-
-                string entryPath = $"{dir}/ShopEntry_{id}.asset";
-                var entry = AssetDatabase.LoadAssetAtPath<ModuleShopEntry>(entryPath);
-                if (entry == null)
-                {
-                    entry = ScriptableObject.CreateInstance<ModuleShopEntry>();
-                    AssetDatabase.CreateAsset(entry, entryPath);
-                }
-                entry.module = mod;
-                entry.costCredits = kv.Value;
-                entry.requiredResources = new ResourceRequirement[0];
-                EditorUtility.SetDirty(entry);
-                allEntries.Add(entry);
-                created++;
+                mod.costCredits = kv.Value;
+                if (mod.requiredResources == null || mod.requiredResources.Length == 0)
+                    mod.requiredResources = new ResourceRequirement[0];
+                EditorUtility.SetDirty(mod);
+                allModules.Add(mod);
             }
 
-            // Update database
             string dbPath = $"{dir}/ModuleShopDatabase.asset";
             var db = AssetDatabase.LoadAssetAtPath<ModuleShopDatabase>(dbPath);
             if (db != null)
             {
-                db.entries = allEntries;
+                db.entries = allModules;
                 EditorUtility.SetDirty(db);
             }
 
             AssetDatabase.SaveAssets();
             AssetDatabase.Refresh();
-            Debug.Log($"[CreateModuleShopEntries] Created {created} entries");
+            Debug.Log($"[CreateModuleShopEntries] Updated {allModules.Count} modules in database");
         }
     }
 }

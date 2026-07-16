@@ -144,6 +144,14 @@ namespace ProjectC.Ship
         [Tooltip("Режим коллайдеров на визуале (None=отключены, Trigger=isTrigger, Solid=включены).")]
         public ModuleColliderMode colliderMode = ModuleColliderMode.None;
 
+        [Header("Shop (цены и ресурсы)")]
+        [Tooltip("Стоимость установки в кредитах")]
+        [Min(0)]
+        public int costCredits = 500;
+
+        [Tooltip("Список ресурсов, требуемых для установки (itemId + количество)")]
+        public ResourceRequirement[] requiredResources = new ResourceRequirement[0];
+
         /// <summary>
         /// Проверить совместимость модуля с классом корабля.
         /// </summary>

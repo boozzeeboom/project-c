@@ -18,11 +18,13 @@ namespace ProjectC.Ship
     }
 
     /// <summary>
-    /// ModuleShopEntry — запись в каталоге модулей ремонтного менеджера.
-    /// Связывает ShipModule с ценой в кредитах и требуемыми ресурсами.
-    /// Используется RepairManager + RepairManagerWindow.
+    /// DEPRECATED (T-MOD03): ModuleShopEntry объединён с ShipModule.
+    /// Цена и ресурсы теперь в ShipModule.costCredits / ShipModule.requiredResources.
+    /// ModuleShopDatabase.entries теперь List&lt;ShipModule&gt;.
+    /// Этот класс оставлен для справки; старые ShopEntry_*.asset файлы можно удалить.
     /// </summary>
-    [CreateAssetMenu(menuName = "ProjectC/Ship/Module Shop Entry", fileName = "ShopEntry_")]
+    [Obsolete("Use ShipModule.costCredits + ShipModule.requiredResources instead. ModuleShopDatabase.entries is now List<ShipModule>.")]
+    [CreateAssetMenu(menuName = "ProjectC/Ship/Module Shop Entry (DEPRECATED)", fileName = "ShopEntry_")]
     public class ModuleShopEntry : ScriptableObject
     {
         [Header("Модуль")]

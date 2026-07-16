@@ -548,9 +548,7 @@ namespace ProjectC.Ship
         {
             if (_shopDatabase != null)
             {
-                var entry = _shopDatabase.FindEntry(moduleId);
-                if (entry != null)
-                    return entry.module;
+                return _shopDatabase.FindEntry(moduleId);
             }
             // Fallback: поиск через ShipModuleCatalog (статический реестр)
             return ShipModuleCatalog.Find(moduleId);

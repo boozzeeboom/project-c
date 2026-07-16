@@ -587,10 +587,10 @@ namespace ProjectC.Ship.UI
         private int ComputeSellPrice(string moduleId)
         {
             if (_activeDatabase == null) return 0;
-            foreach (var entry in _activeDatabase.entries)
+            foreach (var mod in _activeDatabase.entries)
             {
-                if (entry != null && entry.module != null && entry.module.moduleId == moduleId)
-                    return Mathf.Max(1, entry.costCredits / 2);
+                if (mod != null && mod.moduleId == moduleId)
+                    return Mathf.Max(1, mod.costCredits / 2);
             }
             return 0;
         }
@@ -662,11 +662,9 @@ namespace ProjectC.Ship.UI
             }
 
             bool any = false;
-            foreach (var entry in _activeDatabase.entries)
+            foreach (var mod in _activeDatabase.entries)
             {
-                if (entry == null || entry.module == null) continue;
-
-                var mod = entry.module;
+                if (mod == null) continue;
 
                 // Совместимость со слотом
                 if (targetSlot != null && !targetSlot.ValidateCompatibility(mod))
@@ -701,11 +699,11 @@ namespace ProjectC.Ship.UI
                 infoCol.Add(nameLbl);
 
                 // Price + power
-                string priceStr = $"💰 {entry.costCredits} кр.";
-                if (entry.requiredResources != null && entry.requiredResources.Length > 0)
+                string priceStr = $"💰 {mod.costCredits} кр.";
+                if (mod.requiredResources != null && mod.requiredResources.Length > 0)
                 {
                     var resParts = new List<string>();
-                    foreach (var rr in entry.requiredResources)
+                    foreach (var rr in mod.requiredResources)
                         resParts.Add($"{rr.itemId} ×{rr.amount}");
                     priceStr += " + " + string.Join(", ", resParts);
                 }

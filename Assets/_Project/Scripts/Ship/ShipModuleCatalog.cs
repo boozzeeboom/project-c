@@ -24,12 +24,12 @@ namespace ProjectC.Ship
             }
 
             _modulesById.Clear();
-            foreach (var entry in database.entries)
+            foreach (var mod in database.entries)
             {
-                if (entry != null && entry.module != null && !string.IsNullOrEmpty(entry.module.moduleId))
+                if (mod != null && !string.IsNullOrEmpty(mod.moduleId))
                 {
-                    if (!_modulesById.ContainsKey(entry.module.moduleId))
-                        _modulesById[entry.module.moduleId] = entry.module;
+                    if (!_modulesById.ContainsKey(mod.moduleId))
+                        _modulesById[mod.moduleId] = mod;
                 }
             }
 

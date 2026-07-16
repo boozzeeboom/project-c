@@ -247,6 +247,18 @@ namespace ProjectC.Ship.Editor
 
             EditorGUILayout.EndScrollView();
 
+            // Add buttons
+            EditorGUILayout.BeginHorizontal();
+            if (GUILayout.Button("+ Add Module Entry", GUILayout.Height(22)))
+            {
+                AddModuleWindow.Show(db, _bulkCost);
+            }
+            if (GUILayout.Button("+ Mass Add from Catalog", GUILayout.Height(22)))
+            {
+                MassAddModulesWindow.Show(db, _bulkCost);
+            }
+            EditorGUILayout.EndHorizontal();
+
             EditorGUILayout.Space(8);
             serializedObject.ApplyModifiedProperties();
         }
@@ -325,5 +337,224 @@ namespace ProjectC.Ship.Editor
             }
         }
     }
+
+    /// <summary>
+    /// Окно добавления одного модуля в базу.
+    /// Позволяет выбрать ShipModule через ObjectField и задать цену.
+    /// </summary>
+    public class AddModuleWindow : EditorWindow
+    {
+        private ModuleShopDatabase _db;
+        private ShipModule _selectedModule;
+        private int _cost = 500;
+
+        public static void Show(ModuleShopDatabase db, int defaultCost)
+        {
+            var w = GetWindow<AddModuleWindow>(true, "Add Module Entry");
+            w._db = db;
+            w._cost = defaultCost;
+            w.minSize = new Vector2(350, 120);
+            w.maxSize = new Vector2(500, 140);
+        }
+
+        private void OnGUI()
+        {
+            EditorGUILayout.LabelField("Select ShipModule to add:", EditorStyles.boldLabel);
+            _selectedModule = (ShipModule)EditorGUILayout.ObjectField("Module", _selectedModule, typeof(ShipModule), false);
+            _cost = EditorGUILayout.IntField("Cost (CR)", _cost);
+
+            EditorGUILayout.Space(8);
+            EditorGUILayout.BeginHorizontal();
+            GUI.enabled = _selectedModule != null && !string.IsNullOrEmpty(_selectedModule.moduleId);
+            if (GUILayout.Button("Add", GUILayout.Height(28)))
+            {
+                // Check duplicate
+                bool exists = _db.entries.Any(e => e != null && e.module == _selectedModule);
+                if (exists)
+                {
+                    EditorUtility.DisplayDialog("Duplicate", $"Module '{_selectedModule.moduleId}' already in database.", "OK");
+                    return;
+                }
+
+                Undo.RecordObject(_db, "Add Module Entry");
+
+                // Try to find existing ShopEntry
+                string modulesPath = "Assets/_Project/Data/Modules";
+                var entryGuids = AssetDatabase.FindAssets("t:ModuleShopEntry", new[] { modulesPath });
+                ModuleShopEntry existingEntry = null;
+                foreach (var eg in entryGuids)
+                {
+                    var ep = AssetDatabase.GUIDToAssetPath(eg);
+                    var e = AssetDatabase.LoadAssetAtPath<ModuleShopEntry>(ep);
+                    if (e != null && e.module == _selectedModule) { existingEntry = e; break; }
+                }
+
+                if (existingEntry == null)
+                {
+                    string entryPath = System.IO.Path.Combine(modulesPath, $"ShopEntry_{_selectedModule.moduleId}.asset");
+                    entryPath = AssetDatabase.GenerateUniqueAssetPath(entryPath);
+                    existingEntry = ScriptableObject.CreateInstance<ModuleShopEntry>();
+                    existingEntry.module = _selectedModule;
+                    existingEntry.costCredits = _cost;
+                    existingEntry.requiredResources = new ResourceRequirement[0];
+                    AssetDatabase.CreateAsset(existingEntry, entryPath);
+                }
+
+                _db.entries.Add(existingEntry);
+                EditorUtility.SetDirty(_db);
+                AssetDatabase.SaveAssets();
+                AssetDatabase.Refresh();
+                Debug.Log($"[AddModule] Added: {_selectedModule.moduleId} ({_cost} CR)");
+                Close();
+            }
+            GUI.enabled = true;
+            if (GUILayout.Button("Cancel", GUILayout.Height(28)))
+                Close();
+            EditorGUILayout.EndHorizontal();
+        }
+    }
+
+    /// <summary>
+    /// Окно массового добавления модулей из каталога всех ShipModule в проекте.
+    /// Показывает все ShipModule, которых ещё нет в базе, с чекбоксами.
+    /// </summary>
+    public class MassAddModulesWindow : EditorWindow
+    {
+        private ModuleShopDatabase _db;
+        private List<ShipModule> _availableModules = new();
+        private HashSet<int> _selected = new();
+        private Vector2 _scroll;
+        private string _filter = "";
+        private int _defaultCost = 500;
+
+        public static void Show(ModuleShopDatabase db, int defaultCost)
+        {
+            var w = GetWindow<MassAddModulesWindow>(true, "Mass Add Modules");
+            w._db = db;
+            w._defaultCost = defaultCost;
+            w.minSize = new Vector2(400, 500);
+            w.LoadAvailable();
+        }
+
+        private void LoadAvailable()
+        {
+            _availableModules.Clear();
+            _selected.Clear();
+
+            var existing = new HashSet<ShipModule>(_db.entries.Where(x => x != null && x.module != null).Select(x => x.module));
+
+            var allGuids = AssetDatabase.FindAssets("t:ShipModule");
+            foreach (var guid in allGuids)
+            {
+                var path = AssetDatabase.GUIDToAssetPath(guid);
+                var mod = AssetDatabase.LoadAssetAtPath<ShipModule>(path);
+                if (mod == null || string.IsNullOrEmpty(mod.moduleId)) continue;
+                if (existing.Contains(mod)) continue;
+                _availableModules.Add(mod);
+            }
+
+            _availableModules = _availableModules.OrderBy(m => m.type).ThenBy(m => m.moduleId).ToList();
+        }
+
+        private void OnGUI()
+        {
+            EditorGUILayout.LabelField($"Available modules ({_availableModules.Count})", EditorStyles.boldLabel);
+            EditorGUILayout.Space(4);
+
+            EditorGUILayout.BeginHorizontal();
+            EditorGUILayout.LabelField("Default Cost:", GUILayout.Width(80));
+            _defaultCost = EditorGUILayout.IntField(_defaultCost, GUILayout.Width(60));
+            EditorGUILayout.EndHorizontal();
+            EditorGUILayout.Space(4);
+
+            EditorGUILayout.BeginHorizontal();
+            _filter = EditorGUILayout.TextField("Filter:", _filter);
+            if (GUILayout.Button("Select All", GUILayout.Width(80)))
+            {
+                for (int i = 0; i < _availableModules.Count; i++)
+                    if (string.IsNullOrEmpty(_filter) || _availableModules[i].moduleId.ToLowerInvariant().Contains(_filter.ToLowerInvariant()))
+                        _selected.Add(i);
+            }
+            if (GUILayout.Button("Deselect All", GUILayout.Width(80)))
+                _selected.Clear();
+            EditorGUILayout.EndHorizontal();
+            EditorGUILayout.Space(4);
+
+            _scroll = EditorGUILayout.BeginScrollView(_scroll);
+
+            for (int i = 0; i < _availableModules.Count; i++)
+            {
+                var mod = _availableModules[i];
+                if (!string.IsNullOrEmpty(_filter) && !mod.moduleId.ToLowerInvariant().Contains(_filter.ToLowerInvariant()))
+                    continue;
+
+                string icon = mod.type switch
+                {
+                    ModuleType.Propulsion => "🚀",
+                    ModuleType.Utility => "⚙",
+                    ModuleType.Special => "✨",
+                    ModuleType.Engine => "🔥",
+                    _ => "📦"
+                };
+
+                bool sel = _selected.Contains(i);
+                bool newSel = EditorGUILayout.ToggleLeft($"{icon} {mod.moduleId}  (T{mod.tier})", sel);
+                if (newSel != sel)
+                {
+                    if (newSel) _selected.Add(i); else _selected.Remove(i);
+                }
+            }
+
+            EditorGUILayout.EndScrollView();
+            EditorGUILayout.Space(8);
+
+            EditorGUILayout.BeginHorizontal();
+            if (GUILayout.Button($"Add Selected ({_selected.Count})", GUILayout.Height(30)))
+            {
+                string modulesPath = "Assets/_Project/Data/Modules";
+                var entryGuids = AssetDatabase.FindAssets("t:ModuleShopEntry", new[] { modulesPath });
+
+                Undo.RecordObject(_db, "Mass Add Modules");
+                int added = 0;
+
+                foreach (int idx in _selected.OrderBy(x => x))
+                {
+                    var mod = _availableModules[idx];
+
+                    ModuleShopEntry existingEntry = null;
+                    foreach (var eg in entryGuids)
+                    {
+                        var ep = AssetDatabase.GUIDToAssetPath(eg);
+                        var e = AssetDatabase.LoadAssetAtPath<ModuleShopEntry>(ep);
+                        if (e != null && e.module == mod) { existingEntry = e; break; }
+                    }
+
+                    if (existingEntry == null)
+                    {
+                        string entryPath = System.IO.Path.Combine(modulesPath, $"ShopEntry_{mod.moduleId}.asset");
+                        entryPath = AssetDatabase.GenerateUniqueAssetPath(entryPath);
+                        existingEntry = ScriptableObject.CreateInstance<ModuleShopEntry>();
+                        existingEntry.module = mod;
+                        existingEntry.costCredits = _defaultCost;
+                        existingEntry.requiredResources = new ResourceRequirement[0];
+                        AssetDatabase.CreateAsset(existingEntry, entryPath);
+                    }
+
+                    _db.entries.Add(existingEntry);
+                    added++;
+                }
+
+                EditorUtility.SetDirty(_db);
+                AssetDatabase.SaveAssets();
+                AssetDatabase.Refresh();
+                Debug.Log($"[MassAddModules] Added {added} modules");
+                Close();
+            }
+            if (GUILayout.Button("Cancel", GUILayout.Height(30)))
+                Close();
+            EditorGUILayout.EndHorizontal();
+        }
+    }
 }
 #endif
+

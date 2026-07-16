@@ -207,6 +207,18 @@ namespace ProjectC.Ship.Editor
 
                 EditorGUILayout.EndScrollView();
 
+                // Add buttons
+                EditorGUILayout.BeginHorizontal();
+                if (GUILayout.Button("+ Add Module Entry", GUILayout.Height(22)))
+                {
+                    AddModuleWindow.Show(db, _bulkCost);
+                }
+                if (GUILayout.Button("+ Mass Add from Catalog", GUILayout.Height(22)))
+                {
+                    MassAddModulesWindow.Show(db, _bulkCost);
+                }
+                EditorGUILayout.EndHorizontal();
+
                 EditorGUI.indentLevel--;
             }
 

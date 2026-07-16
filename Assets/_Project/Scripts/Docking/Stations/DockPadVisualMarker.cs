@@ -80,9 +80,19 @@ namespace ProjectC.Docking.Stations
             _surfaceProps = new MaterialPropertyBlock();
             _ringProps = new MaterialPropertyBlock();
 
+            // Удаляем старые _PadMarker от предыдущей версии скрипта
+            var oldMarker = transform.Find("_PadMarker");
+            if (oldMarker != null)
+            {
+                if (Application.isPlaying) Destroy(oldMarker.gameObject);
+                else DestroyImmediate(oldMarker.gameObject);
+            }
+
             // T-DOCK-14d: [ExecuteAlways] — не дублируем визуалы при перекомпиляции
             if (transform.Find("_PadSurface") == null)
                 BuildVisuals();
+            else
+                CacheVisualRefs(); // Play Mode: дети уже созданы в Edit Mode, нужно восстановить ссылки
         }
 
         private void Start()
@@ -162,6 +172,28 @@ namespace ProjectC.Docking.Stations
             mr.receiveShadows = false;
 
             return go;
+        }
+
+        private void CacheVisualRefs()
+        {
+            var surface = transform.Find("_PadSurface");
+            if (surface != null)
+            {
+                _surfaceRenderer = surface.GetComponent<MeshRenderer>();
+                // Перезатираем материал — дети могли сохраниться со старым GUID после пересоздания материалов
+                if (_surfaceRenderer != null && neutralMat != null)
+                    _surfaceRenderer.sharedMaterial = neutralMat;
+            }
+
+            var ring = transform.Find("_PadRing");
+            if (ring != null)
+            {
+                _ringRenderer = ring.GetComponent<MeshRenderer>();
+                if (_ringRenderer != null && neutralMat != null)
+                    _ringRenderer.sharedMaterial = neutralMat;
+            }
+
+            _currentMaterial = neutralMat;
         }
 
         private void CleanupVisuals()

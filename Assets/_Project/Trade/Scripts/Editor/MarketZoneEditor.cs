@@ -195,7 +195,7 @@ namespace ProjectC.Trade.Editor
 
                     // Buy/Sell toggles
                     EditorGUI.BeginChangeCheck();
-                    bool nb = EditorGUILayout.Toggle(item.allowBuy, GUILayout.Width(14));
+                    bool nb = EditorGUILayout.ToggleLeft("Buy", item.allowBuy, GUILayout.Width(48));
                     if (EditorGUI.EndChangeCheck())
                     {
                         Undo.RecordObject(cfg, "Toggle Buy");
@@ -203,7 +203,7 @@ namespace ProjectC.Trade.Editor
                         EditorUtility.SetDirty(cfg);
                     }
                     EditorGUI.BeginChangeCheck();
-                    bool ns = EditorGUILayout.Toggle(item.allowSell, GUILayout.Width(14));
+                    bool ns = EditorGUILayout.ToggleLeft("Sell", item.allowSell, GUILayout.Width(50));
                     if (EditorGUI.EndChangeCheck())
                     {
                         Undo.RecordObject(cfg, "Toggle Sell");
@@ -211,8 +211,10 @@ namespace ProjectC.Trade.Editor
                         EditorUtility.SetDirty(cfg);
                     }
 
+                    GUILayout.Space(4);
+
                     // Remove
-                    if (GUILayout.Button("✕", GUILayout.Width(22)))
+                    if (GUILayout.Button("✕", GUILayout.Width(24)))
                     {
                         Undo.RecordObject(cfg, "Remove Item");
                         cfg.items.RemoveAt(i);

@@ -1,5 +1,19 @@
 # Итерации разработки — ShipPresetCreator
 
+## Итерация от 2026-07-17 (v1.1 fix)
+
+**Задача:** Исправление багов после ревью: ShipRootReference wiring, Key naming, Meziy fuel/module, CargoVisual spawnZone.
+
+**Коммит:** `0176568` — T-SHIP01: fix — ShipRootReference wiring, Key naming, Meziy fuel/module, CargoVisual spawnZone
+
+**Исправления:**
+- ShipRootReference: всем дочерним объектам (MainVisual, Platform, PilotSeat, Door, CargoVisual, Exchanger) проставляются ссылки на корневые _shipController / _rigidbody / _networkObject / _root
+- Ключ: имя ассета = `Key_{ShipName}` (вместо `Key_{class}_ship`)
+- MeziyModuleActivator: проставлены fuelSystem и moduleManager
+- ShipCargoVisual: BoxCollider добавляется ДО присвоения в _spawnZone
+
+---
+
 ## Итерация от 2026-07-17
 
 **Задача:** Создать универсальный Editor-тул для генерации префаба корабля (Player + NPC) на основе анализа реальных кораблей Ship_Light_root и NPC_Ship_HeavyII_03 из сцены world0_0.

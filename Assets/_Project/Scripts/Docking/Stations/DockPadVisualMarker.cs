@@ -1,4 +1,4 @@
-// T-DOCK-14d: DockPadVisualMarker v4 — материалы в коде, ноль зависимости от сериализации.
+// T-DOCK-14d: DockPadVisualMarker v5 — гибрид: сериализованные материалы + кодогенерация как fallback.
 using UnityEngine;
 
 namespace ProjectC.Docking.Stations
@@ -12,6 +12,15 @@ namespace ProjectC.Docking.Stations
     [RequireComponent(typeof(DockingPadTriggerBox))]
     public class DockPadVisualMarker : MonoBehaviour
     {
+        [Header("Материалы (опционально — если не заданы, создаются в коде)")]
+        [SerializeField] private Material neutralMat;
+        [SerializeField] private Material freeMat;
+        [SerializeField] private Material pendingMat;
+        [SerializeField] private Material assignedToMeMat;
+        [SerializeField] private Material assignedOtherMat;
+        [SerializeField] private Material occupiedNpcMat;
+        [SerializeField] private Material occupiedPlayerMat;
+
         [Header("Размеры")]
         [SerializeField] private float markerSize = 8f;
         [SerializeField] private float markerHeight = 0.1f;
@@ -26,15 +35,15 @@ namespace ProjectC.Docking.Stations
         private MaterialPropertyBlock _props;
         private GameObject _visualRoot;
 
-        // Материалы создаются в коде — НЕ [SerializeField]. Ноль зависимости от GUID/сцены.
-        private static Material s_neutralMat;
-        private static Material s_freeMat;
-        private static Material s_pendingMat;
-        private static Material s_assignedToMeMat;
-        private static Material s_assignedOtherMat;
-        private static Material s_occupiedNpcMat;
-        private static Material s_occupiedPlayerMat;
-        private static bool s_matsCreated;
+        // Кодогенерация — заполняется при первом Awake, используется если поле не задано
+        private static Material s_defaultNeutral;
+        private static Material s_defaultFree;
+        private static Material s_defaultPending;
+        private static Material s_defaultAssignedToMe;
+        private static Material s_defaultAssignedOther;
+        private static Material s_defaultOccupiedNpc;
+        private static Material s_defaultOccupiedPlayer;
+        private static bool s_defaultsCreated;
 
         // ============================================================
         // LIFECYCLE
@@ -42,12 +51,12 @@ namespace ProjectC.Docking.Stations
 
         private void Awake()
         {
-            CreateMaterialsIfNeeded();
+            EnsureDefaults();
         }
 
         private void Start()
         {
-            CreateMaterialsIfNeeded(); // на случай если этот Start раньше чужого Awake
+            EnsureDefaults();
             _padBox = GetComponent<DockingPadTriggerBox>();
             _stateSync = GetComponentInParent<PadStateSync>();
             _props = new MaterialPropertyBlock();
@@ -80,30 +89,30 @@ namespace ProjectC.Docking.Stations
         }
 
         // ============================================================
-        // MATERIALS (кодогенерация)
+        // DEFAULT MATERIALS (кодогенерация, один раз)
         // ============================================================
 
-        private static void CreateMaterialsIfNeeded()
+        private static void EnsureDefaults()
         {
-            if (s_matsCreated) return;
-            s_matsCreated = true;
+            if (s_defaultsCreated) return;
+            s_defaultsCreated = true;
 
             var shader = Shader.Find("Universal Render Pipeline/Unlit");
             if (shader == null) shader = Shader.Find("Unlit/Color");
 
-            s_neutralMat        = NewMat(shader, "M_Pad_Neutral",       new Color(0.35f, 0.35f, 0.35f, 0.45f));
-            s_freeMat           = NewMat(shader, "M_Pad_Free",          new Color(0.0f,  0.9f,  0.5f,  0.6f));
-            s_pendingMat        = NewMat(shader, "M_Pad_Pending",       new Color(1.0f,  0.65f, 0.1f,  0.6f));
-            s_assignedToMeMat   = NewMat(shader, "M_Pad_AssignedToMe",  new Color(0.15f, 0.35f, 1.0f,  0.7f));
-            s_assignedOtherMat  = NewMat(shader, "M_Pad_AssignedOther", new Color(1.0f,  0.75f, 0.2f,  0.55f));
-            s_occupiedNpcMat    = NewMat(shader, "M_Pad_OccupiedNpc",   new Color(1.0f,  0.45f, 0.0f,  0.65f));
-            s_occupiedPlayerMat = NewMat(shader, "M_Pad_Occupied",      new Color(1.0f,  0.1f,  0.1f,  0.65f));
+            s_defaultNeutral        = NewDefault(shader, new Color(0.35f, 0.35f, 0.35f, 0.45f));
+            s_defaultFree           = NewDefault(shader, new Color(0.0f,  0.9f,  0.5f,  0.6f));
+            s_defaultPending        = NewDefault(shader, new Color(1.0f,  0.65f, 0.1f,  0.6f));
+            s_defaultAssignedToMe   = NewDefault(shader, new Color(0.15f, 0.35f, 1.0f,  0.7f));
+            s_defaultAssignedOther  = NewDefault(shader, new Color(1.0f,  0.75f, 0.2f,  0.55f));
+            s_defaultOccupiedNpc    = NewDefault(shader, new Color(1.0f,  0.45f, 0.0f,  0.65f));
+            s_defaultOccupiedPlayer = NewDefault(shader, new Color(1.0f,  0.1f,  0.1f,  0.65f));
         }
 
-        private static Material NewMat(Shader shader, string name, Color color)
+        private static Material NewDefault(Shader shader, Color color)
         {
             var mat = new Material(shader);
-            mat.name = name;
+            mat.name = "[Generated]";
             mat.SetColor("_BaseColor", color);
             mat.hideFlags = HideFlags.HideAndDontSave;
             return mat;
@@ -132,7 +141,7 @@ namespace ProjectC.Docking.Stations
             _surfaceRenderer.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;
             _surfaceRenderer.receiveShadows = false;
 
-            _currentMaterial = s_neutralMat;
+            _currentMaterial = neutralMat ?? s_defaultNeutral;
             ApplyMaterial();
         }
 
@@ -174,13 +183,13 @@ namespace ProjectC.Docking.Stations
         {
             return state switch
             {
-                PadVisualState.Free            => s_freeMat,
-                PadVisualState.Pending         => s_pendingMat,
-                PadVisualState.AssignedToMe    => s_assignedToMeMat,
-                PadVisualState.AssignedOther   => s_assignedOtherMat,
-                PadVisualState.OccupiedNpc     => s_occupiedNpcMat,
-                PadVisualState.OccupiedPlayer  => s_occupiedPlayerMat,
-                _                              => s_neutralMat
+                PadVisualState.Free            => freeMat            ?? s_defaultFree,
+                PadVisualState.Pending         => pendingMat         ?? s_defaultPending,
+                PadVisualState.AssignedToMe    => assignedToMeMat    ?? s_defaultAssignedToMe,
+                PadVisualState.AssignedOther   => assignedOtherMat   ?? s_defaultAssignedOther,
+                PadVisualState.OccupiedNpc     => occupiedNpcMat     ?? s_defaultOccupiedNpc,
+                PadVisualState.OccupiedPlayer  => occupiedPlayerMat  ?? s_defaultOccupiedPlayer,
+                _                              => neutralMat         ?? s_defaultNeutral
             };
         }
 

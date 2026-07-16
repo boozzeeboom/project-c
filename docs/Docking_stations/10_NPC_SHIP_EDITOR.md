@@ -103,6 +103,27 @@
 
 ---
 
+## Случайный Dwell (M3.2.15)
+
+Каждый route теперь поддерживает **рандомизацию длительности стоянки**:
+
+| Поле | Описание | Пример |
+|------|----------|--------|
+| `dwellTimeSec` | Базовая (гарантированная) длительность | 120 |
+| `dwellRandomAddMinSec` | Минимум добавочного случайного времени | 10 |
+| `dwellRandomAddMaxSec` | Максимум добавочного случайного времени | 10000 |
+
+**Формула:** `dwell = clamp(dwellTimeSec + Random(minAdd, maxAdd), minDwellTimeSec, maxDwellTimeSec)`
+
+**Пример:** `dwellTimeSec=120, randomAddMin=10, randomAddMax=10000, minDwell=60, maxDwell=3600`
+→ фактический dwell = `120 + Random(10, 10000)` = от 130с до 10120с (но не больше 3600 из-за clamp).
+
+**Backward compat:** оба поля `dwellRandomAdd*Sec` = 0 по умолчанию → поведение как раньше.
+
+**Где вычисляется:** `NpcShipController.ResolveDwellTime()` — вызывается один раз при `SetMode(Docked)`.
+
+---
+
 ## Связанные файлы
 
 | Файл | Роль |

@@ -34,8 +34,17 @@ namespace ProjectC.PeacefulShip.Core
         [Tooltip("LocationId второй станции (sync с DockStationDefinition.LocationId).")]
         public string toLocationId;         // "PRIMIUM_TEST_ZONE_2"
 
-        [Tooltip("Сколько секунд NPC стоит на pad'е (Docked + Loading).")]
+        [Tooltip("Базовая (гарантированная) длительность dwell на станции, сек.")]
         public float dwellTimeSec;          // 600 = 10 мин на станции (Q5: 30-90 сек Loading)
+
+        [Tooltip("Минимальная добавочная случайная длительность dwell, сек. " +
+                 "Фактический dwell = dwellTimeSec + Random(dwellRandomAddMinSec, dwellRandomAddMaxSec). " +
+                 "0 = без случайности.")]
+        [Min(0f)] public float dwellRandomAddMinSec;
+
+        [Tooltip("Максимальная добавочная случайная длительность dwell, сек. " +
+                 "Должен быть >= dwellRandomAddMinSec.")]
+        [Min(0f)] public float dwellRandomAddMaxSec;
 
         [Tooltip("Сколько секунд длится перелёт. Вычисляется при инициализации из дистанции.")]
         public float flightDurationSec;     // 1200 = 20 мин в полёте

@@ -409,16 +409,15 @@ namespace ProjectC.PeacefulShip.Stations
             if (m == NavMode.Docked) {
                 DockedSinceTime = Time.time;
                 // T-CARGO-NPC-01: сбрасываем _cargoTradeDone в false при КАЖДОМ входе в Docked.
-                // Без этого флаг остался бы = true с момента инициализации (default)
-                // и trade никогда бы не выполнился на первом docking'е.
-                // Сбрасываем здесь, а не в Lifting-блоке (старый код), потому что SetMode(Docked)
-                // вызывается из разных путей: из Berthing (нормальный) и из isDocked sync guard
-                // (если NPC родился уже docked).
                 _cargoTradeDone = false;
                 if (old == NavMode.Berthing) {
                     _scheduleAdvancedAfterDock = false; // после полёта — advance на след тике
                     AdvanceScheduleForCurrentNpc();
                 }
+                // M3.2.15: вычислить DwellTime из schedule + случайная добавка.
+                // base = route.dwellTimeSec + Random(dwellRandomAddMinSec, dwellRandomAddMaxSec)
+                // clamped to schedule.minDwellTimeSec..maxDwellTimeSec.
+                ResolveDwellTime();
             }
             if (m == NavMode.Lifting) {
                 // M3.2.14: освободить старый пад (если был) перед взлётом
@@ -614,13 +613,54 @@ namespace ProjectC.PeacefulShip.Stations
                 state.CurrentRoute = new ProjectC.PeacefulShip.Core.NpcShipRoute {
                     fromLocationId = route.toLocationId,
                     toLocationId = route.fromLocationId,
-                    dwellTimeSec = route.dwellTimeSec
+                    dwellTimeSec = route.dwellTimeSec,
+                    dwellRandomAddMinSec = route.dwellRandomAddMinSec,
+                    dwellRandomAddMaxSec = route.dwellRandomAddMaxSec,
+                    flightDurationSec = route.flightDurationSec,
+                    preferredShipClass = route.preferredShipClass,
+                    demandCategory = route.demandCategory
                 };
             } else {
                 state.CurrentRoute = route;
             }
             _scheduleAdvancedAfterDock = true;  // M3.2.11: не дать Docked handlerу advance снова
             if (debugMode) Debug.Log($"[NpcShipController:NPC:{npcInstanceId:X}] Schedule advanced to {state.CurrentRoute.toLocationId}");
+        }
+
+        // === M3.2.15: resolve DwellTime from schedule + random ===
+
+        /// <summary>
+        /// Вычисляет DwellTime при входе в Docked:
+        /// base = route.dwellTimeSec + Random(dwellRandomAddMinSec, dwellRandomAddMaxSec),
+        /// clamped to schedule.minDwellTimeSec..maxDwellTimeSec.
+        /// Если schedule или route недоступны — fallback 60s.
+        /// </summary>
+        void ResolveDwellTime()
+        {
+            var state = NpcShipWorld.Instance?.GetNpc(npcInstanceId);
+            var schedule = NpcShipWorld.Instance?.GetSchedule(npcInstanceId);
+            if (state == null || schedule == null)
+            {
+                DwellTime = 60f;
+                return;
+            }
+
+            var route = state.CurrentRoute;
+            float baseDwell = route.dwellTimeSec;
+            float randomAdd = 0f;
+            if (route.dwellRandomAddMaxSec > 0f)
+            {
+                float minAdd = Mathf.Max(0f, route.dwellRandomAddMinSec);
+                float maxAdd = Mathf.Max(minAdd, route.dwellRandomAddMaxSec);
+                randomAdd = Random.Range(minAdd, maxAdd);
+            }
+            DwellTime = Mathf.Clamp(baseDwell + randomAdd,
+                schedule.minDwellTimeSec, schedule.maxDwellTimeSec);
+
+            if (debugMode)
+                Debug.Log($"[NpcShipController:NPC:{npcInstanceId:X}] DwellTime resolved: " +
+                          $"base={baseDwell:F0} + random={randomAdd:F0} = {baseDwell + randomAdd:F0}s " +
+                          $"(clamped [{schedule.minDwellTimeSec:F0}..{schedule.maxDwellTimeSec:F0}] → {DwellTime:F0}s)");
         }
 
         // === T-CARGO-NPC-01: dwell cargo trade (unload + load) ===

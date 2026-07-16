@@ -55,7 +55,7 @@ namespace ProjectC.PeacefulShip.EditorTools
 
         public override float GetPropertyHeight(SerializedProperty property, GUIContent label)
         {
-            // 5 rows + optional warning row
+            // 6 rows + optional warning row
             var fromProp = property.FindPropertyRelative("fromLocationId");
             var toProp = property.FindPropertyRelative("toLocationId");
             var validIds = GetValidIds();
@@ -66,7 +66,7 @@ namespace ProjectC.PeacefulShip.EditorTools
             if (!string.IsNullOrEmpty(toProp.stringValue) && !validIds.Contains(toProp.stringValue))
                 hasWarning = true;
 
-            int rows = 5 + (hasWarning ? 1 : 0);
+            int rows = 6 + (hasWarning ? 1 : 0);
             return (EditorGUIUtility.singleLineHeight + EditorGUIUtility.standardVerticalSpacing) * rows
                    + EditorGUIUtility.standardVerticalSpacing;
         }
@@ -79,6 +79,8 @@ namespace ProjectC.PeacefulShip.EditorTools
             var toProp = property.FindPropertyRelative("toLocationId");
             var dwellProp = property.FindPropertyRelative("dwellTimeSec");
             var flightProp = property.FindPropertyRelative("flightDurationSec");
+            var dwellRandMinProp = property.FindPropertyRelative("dwellRandomAddMinSec");
+            var dwellRandMaxProp = property.FindPropertyRelative("dwellRandomAddMaxSec");
             var classProp = property.FindPropertyRelative("preferredShipClass");
             var demandProp = property.FindPropertyRelative("demandCategory");
 
@@ -119,9 +121,21 @@ namespace ProjectC.PeacefulShip.EditorTools
 
             // ── Dwell / Flight ──
             EditorGUI.PropertyField(new Rect(position.x, y, colW, lineH),
-                dwellProp, new GUIContent("Dwell (s)"));
+                dwellProp, new GUIContent("Dwell base (s)"));
             EditorGUI.PropertyField(new Rect(position.x + colW + 12, y, colW, lineH),
                 flightProp, new GUIContent("Flight (s)"));
+            y += lineH + sp;
+
+            // ── Random dwell add: +[min]..[max] s ──
+            var randLabelRect = new Rect(position.x, y, 60, lineH);
+            EditorGUI.LabelField(randLabelRect, "Random +");
+            var randMinRect = new Rect(position.x + 62, y, (colW - 82) / 2f, lineH);
+            EditorGUI.PropertyField(randMinRect, dwellRandMinProp, GUIContent.none);
+            var dashRect = new Rect(randMinRect.xMax + 2, y, 12, lineH);
+            EditorGUI.LabelField(dashRect, "..");
+            var randMaxRect = new Rect(dashRect.xMax + 2, y, (colW - 82) / 2f + colW - 82 - (colW - 82) / 2f, lineH);
+            EditorGUI.PropertyField(randMaxRect, dwellRandMaxProp, GUIContent.none);
+            EditorGUI.LabelField(new Rect(randMaxRect.xMax + 6, y, 14, lineH), "s");
             y += lineH + sp;
 
             // ── Ship Class / Demand ──

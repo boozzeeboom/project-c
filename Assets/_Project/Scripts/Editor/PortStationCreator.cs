@@ -195,7 +195,11 @@ public class PortStationCreator : EditorWindow
         var capsuleFilter = repairManager.AddComponent<MeshFilter>();
         capsuleFilter.sharedMesh = Resources.GetBuiltinResource<Mesh>("Capsule.fbx")
             ?? Resources.GetBuiltinResource<Mesh>("Capsule");
-        repairManager.AddComponent<MeshRenderer>();
+        var rmRenderer = repairManager.AddComponent<MeshRenderer>();
+        var urpLit = AssetDatabase.GetBuiltinExtraResource<Material>("Default-Material.mat");
+        if (urpLit == null)
+            urpLit = AssetDatabase.LoadAssetAtPath<Material>("Packages/com.unity.render-pipelines.universal/Runtime/Materials/Lit.mat");
+        if (urpLit != null) rmRenderer.sharedMaterial = urpLit;
 
         var capsuleCol = repairManager.AddComponent<CapsuleCollider>();
         capsuleCol.isTrigger = true;

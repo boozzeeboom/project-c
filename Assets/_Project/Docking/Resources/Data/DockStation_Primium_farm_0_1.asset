@@ -10,11 +10,12 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 6438017ff98961a4991a274123e603e2, type: 3}
-  m_Name: 
+  m_Name: DockStation_Primium_farm_0_1
   m_EditorClassIdentifier: Assembly-CSharp::ProjectC.Docking.Core.DockStationDefinition
-  stationId: 
-  locationId: 
-  displayName: 
+  stationId: DockStation_Primium_farm_0_1
+  locationId: PRIMIUM_FARM_0_1
+  displayName: "\u0424\u0435\u0440\u043C\u0430 \u041F\u0440\u0438\u043C\u0443\u043C\u0430
+    0_1"
   voiceLines: {fileID: 0}
-  maxConcurrentLandings: 1
-  landingWindowSeconds: 90
+  maxConcurrentLandings: 10
+  landingWindowSeconds: 300

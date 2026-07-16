@@ -1,5 +1,30 @@
 # Итерации — Docking Stations
 
+## Итерация от 2026-07-16 (фикс визуалов)
+
+**Задача:** Починка DockPadVisualMarker — розовые/серые пады в Play Mode, v3→v5.
+
+**Коммиты:** `b5a93f8` → `00592b6` → `c712e1c` → `d2eeeea` → `ab68de3`
+
+**Проблемы и решения:**
+1. `[ExecuteAlways]` + `Destroy()` отложенный → старые `_PadSurface` дети с битыми GUID висели до конца кадра поверх новых → **убран `[ExecuteAlways]`, заменён на `DestroyImmediate`**
+2. Сцена потеряла пользовательские фермы/пады (перезапись YAML) → **восстановлена из `b79b72e`**
+3. `[SerializeField] Material` поля — все `null` в рантайме несмотря на правильные GUID в YAML → **v4: хардкод-материалы через `new Material(Shader.Find(...))`**
+4. Хардкод неприемлем → **v5: гибрид — сериализованные поля + `?? s_default*` кодогенерация как fallback**
+
+**Архитектура v5:**
+- `[SerializeField] Material neutralMat/freeMat/...` — можно задать в инспекторе, используется если не null
+- `static Material s_defaultNeutral/...` — создаются в коде один раз (`Awake`, `HideAndDontSave`), если поле не задано
+- `ResolveMaterial(state)` → `field ?? s_default*` — приоритет: инспектор > код
+- `CreateVisual()` → один Quad (`_PadVisual`) над триггер-боксом
+- `LateUpdate()` → `DetermineState()` из `PadStateSync` → смена материала при изменении состояния
+- 7 состояний: Neutral, Free, Pending, AssignedToMe, AssignedOther, OccupiedNpc, OccupiedPlayer
+
+**Изменения:**
+- `Assets/_Project/Scripts/Docking/Stations/DockPadVisualMarker.cs` — v5 финальная версия
+
+---
+
 ## Итерация от 2026-07-12 (реализация)
 
 **Задача:** Реализация T-DOCK-14a..14e — PadStateSync, интеграция с DockingWorld, материалы, DockPadVisualMarker v2.

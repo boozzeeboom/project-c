@@ -70,6 +70,20 @@
 
 > ⚠️ locationId в DockStationDefinition и MarketConfig **совпадают** (синхронизированы).
 
+## Особенности реализации
+
+### Parenting
+Если выбран родитель, скрипт компенсирует его `lossyScale` — итоговый world-scale корня всегда 1.
+
+### Pad ship classes
+Каждый пад получает **все 4 класса**: Light, Medium, Heavy, HeavyII (массив `compatibleShipClasses`).
+
+### MarketConfig override
+NPC создаётся из префаба `Npc_peacfull_market_zone Variant.prefab`, после чего ссылка `_marketConfig` переопределяется на новый SO через `SerializedObject` + `PrefabUtility.RecordPrefabInstancePropertyModifications`.
+
+### Перезапись при повторе
+Если SO с таким namespace уже существует — удаляется и создаётся заново (`AssetDatabase.DeleteAsset` перед созданием).
+
 ## Эталонная заготовка
 
 Сцена: `WorldScene_0_0`  

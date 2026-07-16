@@ -16,9 +16,11 @@ MonoBehaviour:
   displayName: "\u0422\u043E\u0440\u0433\u043E\u0432\u0435\u0446 \u0422\u0435\u0441\u0442\u0417\u043E\u043D\u0430-\u041F\u0440\u0438\u043C\u0443\u043C"
   scheduleType: 0
   routes:
-  - fromLocationId: STN-PRM-001
-    toLocationId: PRIMIUM_TEST_ZONE
+  - fromLocationId: PRIMIUM
+    toLocationId: DockStation_Farm_0_0
     dwellTimeSec: 90
+    dwellRandomAddMinSec: 0
+    dwellRandomAddMaxSec: 0
     flightDurationSec: 120
     preferredShipClass: 3
     demandCategory: 0

@@ -67,6 +67,7 @@ namespace ProjectC.Trade.Editor
             EditorGUILayout.PropertyField(serializedObject.FindProperty("priceFloorRatio"));
             EditorGUILayout.PropertyField(serializedObject.FindProperty("priceCeilingRatio"));
             EditorGUILayout.PropertyField(serializedObject.FindProperty("decayHalfLifeSeconds"));
+            EditorGUILayout.PropertyField(serializedObject.FindProperty("regenMultiplier"));
             EditorGUILayout.Space(8);
 
             // === BULK ACTIONS ===

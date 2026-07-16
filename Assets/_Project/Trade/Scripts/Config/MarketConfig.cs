@@ -64,6 +64,11 @@ namespace ProjectC.Trade.Config
         [Range(60f, 86400f)]
         public float decayHalfLifeSeconds = 1800f;
 
+        [Header("Regen")]
+        [Tooltip("Глобальный множитель регенерации стока. 1.0 = как задано в каждом товаре. 0 = реген отключён. 2.0 = удвоенный.")]
+        [Range(0f, 5f)]
+        public float regenMultiplier = 1.0f;
+
         [Header("Items")]
         [Tooltip("Конфигурации товаров этого рынка. Runtime-состояние в MarketState.")]
         public List<MarketItemConfig> items = new List<MarketItemConfig>();

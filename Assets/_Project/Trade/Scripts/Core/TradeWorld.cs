@@ -887,7 +887,7 @@ namespace ProjectC.Trade.Core
                     if (s == null) continue;
                     s.demandFactor = PriceFormula.DecayFactor(s.demandFactor, dtSeconds, halfLife);
                     s.supplyFactor = PriceFormula.DecayFactor(s.supplyFactor, dtSeconds, halfLife);
-                    PriceFormula.RegenerateStock(s);
+                    PriceFormula.RegenerateStock(s, market.RegenMultiplier);
                     s.RecalculatePrice(market.PriceFloorRatio, market.PriceCeilingRatio);
                 }
             }

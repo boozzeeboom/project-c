@@ -75,6 +75,7 @@ namespace ProjectC.Trade.Editor
                 EditorGUILayout.PropertyField(so.FindProperty("priceFloorRatio"));
                 EditorGUILayout.PropertyField(so.FindProperty("priceCeilingRatio"));
                 EditorGUILayout.PropertyField(so.FindProperty("decayHalfLifeSeconds"));
+                EditorGUILayout.PropertyField(so.FindProperty("regenMultiplier"));
 
                 // --- Bulk Actions ---
                 EditorGUILayout.LabelField("Bulk Actions", EditorStyles.boldLabel);

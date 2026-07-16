@@ -22,10 +22,11 @@ namespace ProjectC.Trade.Core
 
         public IReadOnlyDictionary<string, MarketItemState> Items => _items;
 
-        // Per-market price corridor (из MarketConfig)
+        // Per-market overrides (из MarketConfig)
         public float PriceFloorRatio { get; private set; }
         public float PriceCeilingRatio { get; private set; }
         public float DecayHalfLifeSeconds { get; private set; }
+        public float RegenMultiplier { get; private set; }
 
         public MarketState(string locationId, MarketConfig config)
         {
@@ -44,6 +45,7 @@ namespace ProjectC.Trade.Core
             PriceFloorRatio = config != null ? config.priceFloorRatio : PriceFormula.PRICE_FLOOR_RATIO;
             PriceCeilingRatio = config != null ? config.priceCeilingRatio : PriceFormula.PRICE_CEILING_RATIO;
             DecayHalfLifeSeconds = config != null ? config.decayHalfLifeSeconds : PriceFormula.DEFAULT_HALF_LIFE_SECONDS;
+            RegenMultiplier = config != null ? config.regenMultiplier : 1.0f;
 
             if (config == null || config.items == null) return;
 

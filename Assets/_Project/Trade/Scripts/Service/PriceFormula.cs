@@ -93,12 +93,14 @@ namespace ProjectC.Trade.Service
         /// <summary>
         /// Пассивная регенерация стока (вызывается каждый tick).
         /// </summary>
-        public static void RegenerateStock(MarketItemState s)
+        public static void RegenerateStock(MarketItemState s, float regenMultiplier = 1.0f)
         {
             if (s == null || s.config == null) return;
+            if (regenMultiplier <= 0f) return; // regen disabled
             int cap = s.config.initialStock;
             if (s.availableStock >= cap) return;
-            int add = Mathf.Max(1, Mathf.RoundToInt(cap * Mathf.Clamp01(s.config.regenPerTick)));
+            float effectiveRegen = Mathf.Clamp01(s.config.regenPerTick * regenMultiplier);
+            int add = Mathf.Max(1, Mathf.RoundToInt(cap * effectiveRegen));
             s.availableStock = Mathf.Min(cap, s.availableStock + add);
             s.version++;
         }

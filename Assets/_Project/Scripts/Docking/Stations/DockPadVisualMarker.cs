@@ -50,6 +50,15 @@ namespace ProjectC.Docking.Stations
             _props = new MaterialPropertyBlock();
 
             CreateVisual();
+
+            if (name == "Pad_005")
+            {
+                Debug.Log($"[Pad_005] Start: padBox={_padBox?.PadId}, stateSync={(_stateSync != null)}, " +
+                    $"neutralMat={neutralMat?.name ?? "NULL"}, freeMat={freeMat?.name ?? "NULL"}, " +
+                    $"pendingMat={pendingMat?.name ?? "NULL"}, assignedToMeMat={assignedToMeMat?.name ?? "NULL"}, " +
+                    $"surfaceRenderer={_surfaceRenderer != null}, currentMat={_currentMaterial?.name ?? "NULL"}",
+                    this);
+            }
         }
 
         private void OnDestroy()
@@ -63,11 +72,18 @@ namespace ProjectC.Docking.Stations
 
         private void LateUpdate()
         {
-            if (_stateSync == null || _padBox == null) return;
+            if (_stateSync == null || _padBox == null)
+            {
+                if (name == "Pad_005")
+                    Debug.LogWarning($"[Pad_005] LateUpdate SKIP: stateSync={_stateSync != null} padBox={_padBox != null}", this);
+                return;
+            }
 
             var newState = DetermineState();
             if (newState != _currentState)
             {
+                if (name == "Pad_005")
+                    Debug.Log($"[Pad_005] State change: {_currentState} -> {newState}, mat={ResolveMaterial(newState)?.name ?? "NULL"}", this);
                 _currentState = newState;
                 _currentMaterial = ResolveMaterial(newState);
                 ApplyMaterial();
@@ -114,6 +130,14 @@ namespace ProjectC.Docking.Stations
             var state = _stateSync.GetState(_padBox.PadId);
             bool hasState = state.HasValue;
 
+            if (name == "Pad_005")
+            {
+                if (hasState)
+                    Debug.Log($"[Pad_005] DetermineState: hasState=YES assigned={state.Value.isAssigned} pending={state.Value.isPending} occupied={state.Value.isOccupied}", this);
+                else
+                    Debug.Log($"[Pad_005] DetermineState: hasState=NO", this);
+            }
+
             // 1. Занят кораблём?
             if (_padBox.IsShipInside || (hasState && state.Value.isOccupied))
             {
@@ -159,7 +183,7 @@ namespace ProjectC.Docking.Stations
             if (s_fallbackMat == null)
             {
                 s_fallbackMat = new Material(Shader.Find("Universal Render Pipeline/Unlit"));
-                s_fallbackMat.SetColor("_BaseColor", new Color(0.5f, 0.5f, 0.5f, 0.5f));
+                s_fallbackMat.SetColor("_BaseColor", new Color(1f, 0f, 1f, 0.9f)); // MAGENTA — сразу видно fallback
             }
             return s_fallbackMat;
         }

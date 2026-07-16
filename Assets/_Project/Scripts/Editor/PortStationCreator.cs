@@ -27,6 +27,9 @@ public class PortStationCreator : EditorWindow
     private string _displayName = "Ферма Примума 1_1";
     private int _padCount = 5;
     private float _padSpacing = 10f;
+    private float _commRange = 1000f;
+    private float _tradeRadius = 5f;
+    private float _shipDockRadius = 240f;
     private Transform _parent;
 
     private const string DockDefsPath = "Assets/_Project/Docking/Resources/Data";
@@ -47,6 +50,9 @@ public class PortStationCreator : EditorWindow
         _displayName = EditorGUILayout.TextField("Display Name", _displayName);
         _padCount = EditorGUILayout.IntSlider("Кол-во pads", _padCount, 1, 20);
         _padSpacing = EditorGUILayout.FloatField("Расстояние между pads", _padSpacing);
+        _commRange = EditorGUILayout.FloatField("Comm Range (OuterCommZone)", _commRange);
+        _tradeRadius = EditorGUILayout.FloatField("Trade Radius (MarketZone)", _tradeRadius);
+        _shipDockRadius = EditorGUILayout.FloatField("Ship Dock Radius (MarketZone)", _shipDockRadius);
         _parent = (Transform)EditorGUILayout.ObjectField("Parent (опционально)", _parent, typeof(Transform), true);
 
         EditorGUILayout.Space();
@@ -158,14 +164,14 @@ public class PortStationCreator : EditorWindow
         root.AddComponent<NetworkObject>();
         var sphereCol = root.AddComponent<SphereCollider>();
         sphereCol.isTrigger = true;
-        sphereCol.radius = 1000f;
+        sphereCol.radius = _commRange;
 
         // OuterCommZone
         var outerComm = root.AddComponent<OuterCommZone>();
         using (var so = new SerializedObject(outerComm))
         {
             so.FindProperty("stationId").stringValue = stationId;
-            so.FindProperty("commRange").floatValue = 1000f;
+            so.FindProperty("commRange").floatValue = _commRange;
             so.FindProperty("drawGizmos").boolValue = true;
             so.ApplyModifiedProperties();
         }
@@ -196,10 +202,8 @@ public class PortStationCreator : EditorWindow
         capsuleFilter.sharedMesh = Resources.GetBuiltinResource<Mesh>("Capsule.fbx")
             ?? Resources.GetBuiltinResource<Mesh>("Capsule");
         var rmRenderer = repairManager.AddComponent<MeshRenderer>();
-        var urpLit = AssetDatabase.GetBuiltinExtraResource<Material>("Default-Material.mat");
-        if (urpLit == null)
-            urpLit = AssetDatabase.LoadAssetAtPath<Material>("Packages/com.unity.render-pipelines.universal/Runtime/Materials/Lit.mat");
-        if (urpLit != null) rmRenderer.sharedMaterial = urpLit;
+        rmRenderer.sharedMaterial = AssetDatabase.LoadAssetAtPath<Material>(
+            "Packages/com.unity.render-pipelines.universal/Runtime/Materials/Lit.mat");
 
         var capsuleCol = repairManager.AddComponent<CapsuleCollider>();
         capsuleCol.isTrigger = true;
@@ -305,6 +309,8 @@ public class PortStationCreator : EditorWindow
                 using (var so = new SerializedObject(mz))
                 {
                     so.FindProperty("_marketConfig").objectReferenceValue = marketConfig;
+                    so.FindProperty("tradeRadius").floatValue = _tradeRadius;
+                    so.FindProperty("shipDockRadius").floatValue = _shipDockRadius;
                     so.ApplyModifiedProperties();
                 }
                 EditorUtility.SetDirty(mz);

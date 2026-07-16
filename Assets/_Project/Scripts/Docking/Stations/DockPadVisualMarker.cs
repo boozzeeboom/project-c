@@ -80,14 +80,13 @@ namespace ProjectC.Docking.Stations
             _ringProps = new MaterialPropertyBlock();
 
             // Всегда удаляем старых визуальных детей — у них могут быть битые GUID материалов
+            // DestroyImmediate всегда: в Play Mode Destroy() отложенный → старый объект
+            // висит до конца кадра, а новый создаётся рядом с тем же именем
             foreach (var n in new[] { "_PadSurface", "_PadRing", "_PadMarker" })
             {
                 var old = transform.Find(n);
                 if (old != null)
-                {
-                    if (Application.isPlaying) Destroy(old.gameObject);
-                    else DestroyImmediate(old.gameObject);
-                }
+                    DestroyImmediate(old.gameObject);
             }
             _surfaceRenderer = null;
             _ringRenderer = null;

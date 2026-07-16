@@ -174,7 +174,7 @@ namespace ProjectC.Trade.Editor
                 {
                     itemId = item.itemId,
                     definition = item,
-                    buyPrice = _bulkPrice
+                    buyPrice = item.basePrice > 0f ? item.basePrice : _bulkPrice
                 });
                 existingIds.Add(item.itemId);
                 added++;

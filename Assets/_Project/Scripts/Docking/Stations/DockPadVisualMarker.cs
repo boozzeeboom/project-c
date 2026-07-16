@@ -28,6 +28,7 @@ namespace ProjectC.Docking.Stations
 
     [DisallowMultipleComponent]
     [RequireComponent(typeof(DockingPadTriggerBox))]
+    [ExecuteAlways]
     public class DockPadVisualMarker : MonoBehaviour
     {
         [Header("Материалы (7 состояний)")]
@@ -78,11 +79,16 @@ namespace ProjectC.Docking.Stations
             _padBox = GetComponent<DockingPadTriggerBox>();
             _surfaceProps = new MaterialPropertyBlock();
             _ringProps = new MaterialPropertyBlock();
-            BuildVisuals();
+
+            // T-DOCK-14d: [ExecuteAlways] — не дублируем визуалы при перекомпиляции
+            if (transform.Find("_PadSurface") == null)
+                BuildVisuals();
         }
 
         private void Start()
         {
+            // T-DOCK-14d: PadStateSync нужен только в Play Mode
+            if (!Application.isPlaying) return;
             _stateSync = GetComponentInParent<PadStateSync>();
         }
 
@@ -93,6 +99,8 @@ namespace ProjectC.Docking.Stations
 
         private void LateUpdate()
         {
+            // T-DOCK-14d: обновление состояния — только в Play Mode
+            if (!Application.isPlaying) return;
             if (_stateSync == null) return;
 
             var newState = DetermineState();
@@ -158,8 +166,18 @@ namespace ProjectC.Docking.Stations
 
         private void CleanupVisuals()
         {
-            if (_padSurface != null) { if (Application.isPlaying) Destroy(_padSurface); else DestroyImmediate(_padSurface); }
-            if (_padRing != null) { if (Application.isPlaying) Destroy(_padRing); else DestroyImmediate(_padRing); }
+            if (_padSurface != null)
+            {
+                if (Application.isPlaying) Destroy(_padSurface);
+                else DestroyImmediate(_padSurface);
+                _padSurface = null;
+            }
+            if (_padRing != null)
+            {
+                if (Application.isPlaying) Destroy(_padRing);
+                else DestroyImmediate(_padRing);
+                _padRing = null;
+            }
         }
 
         // ============================================================

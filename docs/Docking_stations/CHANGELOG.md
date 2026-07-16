@@ -5,6 +5,27 @@
 
 ---
 
+## 2026-07-12 — План T-DOCK-14: Visual Markers v2
+
+**Сессия:** «проведи глубокий анализ DockPadVisualMarker»
+**Профиль:** project-c
+**Статус:** ✅ План утверждён, реализация — следующим шагом.
+
+### Созданные документы
+- `11_VISUAL_MARKERS_PLAN.md` — полный план переработки (6 тикетов `T-DOCK-14a..14f`, ~8 часов)
+
+### Обновлённые документы
+- `00_README.md` — Known issues обновлён (🔬 v2 план), навигация (+строка 11)
+- `CHANGELOG.md` — эта запись
+
+### Архитектурные решения
+- **Синхронизация:** `PadStateSync` (новый `NetworkBehaviour` на корне станции) с `NetworkList<PadStateEntry>`. Пады не становятся отдельными `NetworkObject`.
+- **Визуал:** Holographic Shader Graph (URP) + ring mesh + 5 материалов + particle guide (AssignedToMe).
+- **7 состояний:** `Neutral/Free/Pending/AssignedToMe/AssignedOther/OccupiedNpc/OccupiedPlayer`.
+- **Интеграция:** `DockingWorld` обновляет `PadStateSync` при `ConfirmAssignment/ReleaseAssignment/ScanExistingOccupants`.
+
+---
+
 ## 2026-06-20 — Критический аудит + рефакторинг (P0)
 
 **Сессия:** «нужен глубокий анализ и четкий рефакторинг чтобы уточнить объединить разрозненные подсистемы»

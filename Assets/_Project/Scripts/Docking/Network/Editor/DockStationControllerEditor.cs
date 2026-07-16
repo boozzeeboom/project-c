@@ -8,6 +8,7 @@ namespace ProjectC.Docking.Network
     /// <summary>
     /// DockStationControllerEditor — встраивает содержимое DockStationDefinition
     /// прямо в инспектор, с кнопкой Duplicate для клонирования ассета.
+    /// Geometry (PlatformCenter, PlatformAltitude) — read-only из transform.position.
     /// </summary>
     [CustomEditor(typeof(DockStationController))]
     public class DockStationControllerEditor : UnityEditor.Editor
@@ -20,19 +21,21 @@ namespace ProjectC.Docking.Network
             var ctrl = (DockStationController)target;
             var def = ctrl.StationDefinition;
             if (def != null)
-            {
                 _defSo = new SerializedObject(def);
-            }
-        }
-
-        private void OnDisable()
-        {
         }
 
         public override void OnInspectorGUI()
         {
             var ctrl = (DockStationController)target;
             serializedObject.Update();
+
+            // === Geometry: read-only from transform ===
+            EditorGUILayout.LabelField("Geometry (from Transform)", EditorStyles.boldLabel);
+            EditorGUI.BeginDisabledGroup(true);
+            EditorGUILayout.Vector3Field("Platform Center", ctrl.transform.position);
+            EditorGUILayout.FloatField("Platform Altitude", ctrl.transform.position.y);
+            EditorGUI.EndDisabledGroup();
+            EditorGUILayout.Space(4);
 
             // === Definition field ===
             var defProp = serializedObject.FindProperty("dockStationDefinition");
@@ -41,12 +44,8 @@ namespace ProjectC.Docking.Network
             if (EditorGUI.EndChangeCheck())
             {
                 serializedObject.ApplyModifiedProperties();
-                // Refresh nested SO
                 var def = ctrl.StationDefinition;
-                if (def != null)
-                    _defSo = new SerializedObject(def);
-                else
-                    _defSo = null;
+                _defSo = def != null ? new SerializedObject(def) : null;
             }
 
             if (defProp.objectReferenceValue == null)
@@ -57,23 +56,21 @@ namespace ProjectC.Docking.Network
                     "Or drop an existing .asset here.",
                     MessageType.Warning);
 
-                DrawRemainingFields();
+                DrawDebugField();
                 serializedObject.ApplyModifiedProperties();
                 return;
             }
 
             // === Duplicate button ===
-            EditorGUILayout.Space(4);
             EditorGUILayout.BeginHorizontal();
             if (GUILayout.Button("📋 Duplicate Definition", GUILayout.Height(22)))
             {
                 DuplicateDefinition(ctrl);
-                // Refresh after duplication
                 var newDef = ctrl.StationDefinition;
                 _defSo = newDef != null ? new SerializedObject(newDef) : null;
             }
             GUI.enabled = false;
-            GUILayout.Button("🔗 " + (ctrl.StationDefinition != null ? ctrl.StationDefinition.name : ""), GUILayout.Height(22));
+            GUILayout.Button("🔗 " + ctrl.StationDefinition.name, GUILayout.Height(22));
             GUI.enabled = true;
             EditorGUILayout.EndHorizontal();
 
@@ -88,13 +85,12 @@ namespace ProjectC.Docking.Network
                 EditorGUI.indentLevel++;
                 _defSo.Update();
 
-                // Draw all properties inline
                 var prop = _defSo.GetIterator();
                 bool enterChildren = true;
                 while (prop.NextVisible(enterChildren))
                 {
                     enterChildren = false;
-                    if (prop.name == "m_Script") continue; // skip script reference
+                    if (prop.name == "m_Script") continue;
                     EditorGUILayout.PropertyField(prop, true);
                 }
 
@@ -107,12 +103,11 @@ namespace ProjectC.Docking.Network
             }
 
             EditorGUILayout.Space(4);
-
-            DrawRemainingFields();
+            DrawDebugField();
             serializedObject.ApplyModifiedProperties();
         }
 
-        private void DrawRemainingFields()
+        private void DrawDebugField()
         {
             var debugProp = serializedObject.FindProperty("debugMode");
             if (debugProp != null)
@@ -132,9 +127,7 @@ namespace ProjectC.Docking.Network
             string srcDir = System.IO.Path.GetDirectoryName(srcPath);
             string srcName = System.IO.Path.GetFileNameWithoutExtension(srcPath);
 
-            // Determine save path
             string defaultName = srcName + "_Copy";
-            string defaultPath = System.IO.Path.Combine(srcDir, defaultName + ".asset");
             string savePath = EditorUtility.SaveFilePanelInProject(
                 "Duplicate DockStationDefinition",
                 defaultName,
@@ -142,14 +135,12 @@ namespace ProjectC.Docking.Network
                 "Choose save location for the duplicated definition",
                 srcDir);
 
-            if (string.IsNullOrEmpty(savePath)) return; // cancelled
+            if (string.IsNullOrEmpty(savePath)) return;
 
-            // Read source as SerializedObject
             var srcSo = new SerializedObject(src);
             var dst = CreateInstance<DockStationDefinition>();
             var dstSo = new SerializedObject(dst);
 
-            // Copy all serialized properties
             var prop = srcSo.GetIterator();
             bool enterChildren = true;
             while (prop.NextVisible(enterChildren))
@@ -161,7 +152,7 @@ namespace ProjectC.Docking.Network
                     dstSo.CopyFromSerializedProperty(prop);
             }
 
-            // Zero out identity fields so user sets them
+            // Clear identity so user sets new values
             var stId = dstSo.FindProperty("stationId");
             if (stId != null) stId.stringValue = "";
             var locId = dstSo.FindProperty("locationId");
@@ -171,13 +162,11 @@ namespace ProjectC.Docking.Network
 
             dstSo.ApplyModifiedProperties();
 
-            // Create unique path
             string finalPath = AssetDatabase.GenerateUniqueAssetPath(savePath);
             AssetDatabase.CreateAsset(dst, finalPath);
             AssetDatabase.SaveAssets();
             AssetDatabase.Refresh();
 
-            // Assign to controller
             var newDef = AssetDatabase.LoadAssetAtPath<DockStationDefinition>(finalPath);
             var ctrlSo = new SerializedObject(ctrl);
             ctrlSo.FindProperty("dockStationDefinition").objectReferenceValue = newDef;

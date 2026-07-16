@@ -32,6 +32,12 @@ namespace ProjectC.Docking.Network
         public string LocationId => dockStationDefinition != null ? dockStationDefinition.LocationId : "";
         public string DisplayName => dockStationDefinition != null ? dockStationDefinition.DisplayName : "";
 
+        /// <summary>Центр платформы — позиция этого объекта в мире.</summary>
+        public Vector3 PlatformCenter => transform.position;
+
+        /// <summary>Высота платформы — Y-координата этого объекта.</summary>
+        public float PlatformAltitude => transform.position.y;
+
         public bool IsDockStation => true;  // маркер для внешних систем
 
         private void Awake()

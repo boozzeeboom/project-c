@@ -25,7 +25,6 @@ public static class CreateTestZone
         defSo.FindProperty("stationId").stringValue = "STN-TST-001";
         defSo.FindProperty("locationId").stringValue = "PRIMIUM_TEST_ZONE";
         defSo.FindProperty("displayName").stringValue = "Тестовая Зона";
-        defSo.FindProperty("platformAltitude").floatValue = 2440f;
         defSo.ApplyModifiedProperties();
 
         var defPath = "Assets/_Project/Resources/PeacefulShip/DockStationDefinition_TestZone.asset";

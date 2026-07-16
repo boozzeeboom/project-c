@@ -33,8 +33,6 @@ public static class CreateTestZoneFixed
             s.FindProperty("stationId").stringValue = "STN-TST-001";
             s.FindProperty("locationId").stringValue = "PRIMIUM_TEST_ZONE_2";
             s.FindProperty("displayName").stringValue = "Тестовая Зона";
-            s.FindProperty("platformAltitude").floatValue = 2440f;
-            s.FindProperty("padLayout").objectReferenceValue = layout;
             s.FindProperty("maxConcurrentLandings").intValue = 2;
             s.ApplyModifiedProperties();
             AssetDatabase.CreateAsset(def, "Assets/_Project/Resources/PeacefulShip/DockStationDefinition_TestZone.asset");

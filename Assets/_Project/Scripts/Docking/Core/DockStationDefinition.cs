@@ -1,13 +1,15 @@
 // T-DOCK-04 (refactored): DockStationDefinition — обособленный SO.
-// PadLayout удалён: пады читаются из DockingPadTriggerBox в сцене.
+// T-DOCK-Editor: Geometry (PlatformCenter, PlatformAltitude) удалены из SO —
+//   теперь читаются из transform.position объекта с DockStationController.
 
 using UnityEngine;
 
 namespace ProjectC.Docking.Core
 {
     /// <summary>
-    /// Паспорт станции. Содержит identity, geometry, voice lines.
-    /// Pad'ы — из DockingPadTriggerBox в сцене.
+    /// Паспорт станции. Содержит identity, voice lines, limits.
+    /// Geometry (PlatformCenter, PlatformAltitude) — из transform.position
+    /// объекта с DockStationController, не из SO.
     /// </summary>
     [CreateAssetMenu(fileName = "DockStation_", menuName = "ProjectC/Docking/DockStationDefinition", order = 100)]
     public class DockStationDefinition : ScriptableObject
@@ -16,11 +18,6 @@ namespace ProjectC.Docking.Core
         [SerializeField] private string stationId = "";      // "STN-PRM-001"
         [SerializeField] private string locationId = "";     // "PRIMIUM" — синк с MarketZone.LocationId
         [SerializeField] private string displayName = "";    // "Док-станция Примум"
-
-        [Header("Geometry")]
-        [SerializeField] private Vector3 platformCenter = Vector3.zero;
-        [SerializeField, Tooltip("Из GDD-10 §2.2 — высота города (например 4348 для Примум).")]
-        private float platformAltitude = 4348f;
 
         [Header("Dispatcher")]
         [SerializeField] private DispatcherVoiceLines voiceLines;
@@ -32,8 +29,6 @@ namespace ProjectC.Docking.Core
         public string StationId => stationId;
         public string LocationId => locationId;
         public string DisplayName => string.IsNullOrEmpty(displayName) ? stationId : displayName;
-        public Vector3 PlatformCenter => platformCenter;
-        public float PlatformAltitude => platformAltitude;
         public DispatcherVoiceLines VoiceLines => voiceLines;
         public int MaxConcurrentLandings => maxConcurrentLandings;
         public float LandingWindowSeconds => landingWindowSeconds;

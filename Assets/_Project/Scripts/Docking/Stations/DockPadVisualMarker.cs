@@ -1,6 +1,4 @@
-// T-DOCK-14d: DockPadVisualMarker v3 — минимальный, надёжный.
-// Создаёт Quad-диск над триггер-боксом. Цвет меняется по состоянию из PadStateSync.
-
+// T-DOCK-14d: DockPadVisualMarker v4 — материалы в коде, ноль зависимости от сериализации.
 using UnityEngine;
 
 namespace ProjectC.Docking.Stations
@@ -14,15 +12,6 @@ namespace ProjectC.Docking.Stations
     [RequireComponent(typeof(DockingPadTriggerBox))]
     public class DockPadVisualMarker : MonoBehaviour
     {
-        [Header("Материалы")]
-        [SerializeField] private Material neutralMat;
-        [SerializeField] private Material freeMat;
-        [SerializeField] private Material pendingMat;
-        [SerializeField] private Material assignedToMeMat;
-        [SerializeField] private Material assignedOtherMat;
-        [SerializeField] private Material occupiedNpcMat;
-        [SerializeField] private Material occupiedPlayerMat;
-
         [Header("Размеры")]
         [SerializeField] private float markerSize = 8f;
         [SerializeField] private float markerHeight = 0.1f;
@@ -37,28 +26,33 @@ namespace ProjectC.Docking.Stations
         private MaterialPropertyBlock _props;
         private GameObject _visualRoot;
 
-        private static Material s_fallbackMat;
+        // Материалы создаются в коде — НЕ [SerializeField]. Ноль зависимости от GUID/сцены.
+        private static Material s_neutralMat;
+        private static Material s_freeMat;
+        private static Material s_pendingMat;
+        private static Material s_assignedToMeMat;
+        private static Material s_assignedOtherMat;
+        private static Material s_occupiedNpcMat;
+        private static Material s_occupiedPlayerMat;
+        private static bool s_matsCreated;
 
         // ============================================================
         // LIFECYCLE
         // ============================================================
 
+        private void Awake()
+        {
+            CreateMaterialsIfNeeded();
+        }
+
         private void Start()
         {
+            CreateMaterialsIfNeeded(); // на случай если этот Start раньше чужого Awake
             _padBox = GetComponent<DockingPadTriggerBox>();
             _stateSync = GetComponentInParent<PadStateSync>();
             _props = new MaterialPropertyBlock();
 
             CreateVisual();
-
-            if (name == "Pad_005")
-            {
-                Debug.Log($"[Pad_005] Start: padBox={_padBox?.PadId}, stateSync={(_stateSync != null)}, " +
-                    $"neutralMat={neutralMat?.name ?? "NULL"}, freeMat={freeMat?.name ?? "NULL"}, " +
-                    $"pendingMat={pendingMat?.name ?? "NULL"}, assignedToMeMat={assignedToMeMat?.name ?? "NULL"}, " +
-                    $"surfaceRenderer={_surfaceRenderer != null}, currentMat={_currentMaterial?.name ?? "NULL"}",
-                    this);
-            }
         }
 
         private void OnDestroy()
@@ -72,18 +66,11 @@ namespace ProjectC.Docking.Stations
 
         private void LateUpdate()
         {
-            if (_stateSync == null || _padBox == null)
-            {
-                if (name == "Pad_005")
-                    Debug.LogWarning($"[Pad_005] LateUpdate SKIP: stateSync={_stateSync != null} padBox={_padBox != null}", this);
-                return;
-            }
+            if (_stateSync == null || _padBox == null) return;
 
             var newState = DetermineState();
             if (newState != _currentState)
             {
-                if (name == "Pad_005")
-                    Debug.Log($"[Pad_005] State change: {_currentState} -> {newState}, mat={ResolveMaterial(newState)?.name ?? "NULL"}", this);
                 _currentState = newState;
                 _currentMaterial = ResolveMaterial(newState);
                 ApplyMaterial();
@@ -93,7 +80,37 @@ namespace ProjectC.Docking.Stations
         }
 
         // ============================================================
-        // VISUAL CREATION (один раз в Start)
+        // MATERIALS (кодогенерация)
+        // ============================================================
+
+        private static void CreateMaterialsIfNeeded()
+        {
+            if (s_matsCreated) return;
+            s_matsCreated = true;
+
+            var shader = Shader.Find("Universal Render Pipeline/Unlit");
+            if (shader == null) shader = Shader.Find("Unlit/Color");
+
+            s_neutralMat        = NewMat(shader, "M_Pad_Neutral",       new Color(0.35f, 0.35f, 0.35f, 0.45f));
+            s_freeMat           = NewMat(shader, "M_Pad_Free",          new Color(0.0f,  0.9f,  0.5f,  0.6f));
+            s_pendingMat        = NewMat(shader, "M_Pad_Pending",       new Color(1.0f,  0.65f, 0.1f,  0.6f));
+            s_assignedToMeMat   = NewMat(shader, "M_Pad_AssignedToMe",  new Color(0.15f, 0.35f, 1.0f,  0.7f));
+            s_assignedOtherMat  = NewMat(shader, "M_Pad_AssignedOther", new Color(1.0f,  0.75f, 0.2f,  0.55f));
+            s_occupiedNpcMat    = NewMat(shader, "M_Pad_OccupiedNpc",   new Color(1.0f,  0.45f, 0.0f,  0.65f));
+            s_occupiedPlayerMat = NewMat(shader, "M_Pad_Occupied",      new Color(1.0f,  0.1f,  0.1f,  0.65f));
+        }
+
+        private static Material NewMat(Shader shader, string name, Color color)
+        {
+            var mat = new Material(shader);
+            mat.name = name;
+            mat.SetColor("_BaseColor", color);
+            mat.hideFlags = HideFlags.HideAndDontSave;
+            return mat;
+        }
+
+        // ============================================================
+        // VISUAL CREATION
         // ============================================================
 
         private void CreateVisual()
@@ -115,7 +132,7 @@ namespace ProjectC.Docking.Stations
             _surfaceRenderer.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;
             _surfaceRenderer.receiveShadows = false;
 
-            _currentMaterial = neutralMat;
+            _currentMaterial = s_neutralMat;
             ApplyMaterial();
         }
 
@@ -130,15 +147,6 @@ namespace ProjectC.Docking.Stations
             var state = _stateSync.GetState(_padBox.PadId);
             bool hasState = state.HasValue;
 
-            if (name == "Pad_005")
-            {
-                if (hasState)
-                    Debug.Log($"[Pad_005] DetermineState: hasState=YES assigned={state.Value.isAssigned} pending={state.Value.isPending} occupied={state.Value.isOccupied}", this);
-                else
-                    Debug.Log($"[Pad_005] DetermineState: hasState=NO", this);
-            }
-
-            // 1. Занят кораблём?
             if (_padBox.IsShipInside || (hasState && state.Value.isOccupied))
             {
                 ulong occ = hasState ? state.Value.occupiedByClientId : 0;
@@ -147,7 +155,6 @@ namespace ProjectC.Docking.Stations
                     : PadVisualState.OccupiedPlayer;
             }
 
-            // 2. Назначен?
             if (hasState && state.Value.isAssigned)
             {
                 ulong localId = Unity.Netcode.NetworkManager.Singleton != null
@@ -157,7 +164,6 @@ namespace ProjectC.Docking.Stations
                     : PadVisualState.AssignedOther;
             }
 
-            // 3. Pending?
             if (hasState && state.Value.isPending)
                 return PadVisualState.Pending;
 
@@ -166,26 +172,16 @@ namespace ProjectC.Docking.Stations
 
         private Material ResolveMaterial(PadVisualState state)
         {
-            Material m = state switch
+            return state switch
             {
-                PadVisualState.Free            => freeMat,
-                PadVisualState.Pending         => pendingMat,
-                PadVisualState.AssignedToMe    => assignedToMeMat,
-                PadVisualState.AssignedOther   => assignedOtherMat,
-                PadVisualState.OccupiedNpc     => occupiedNpcMat,
-                PadVisualState.OccupiedPlayer  => occupiedPlayerMat,
-                _                              => neutralMat
+                PadVisualState.Free            => s_freeMat,
+                PadVisualState.Pending         => s_pendingMat,
+                PadVisualState.AssignedToMe    => s_assignedToMeMat,
+                PadVisualState.AssignedOther   => s_assignedOtherMat,
+                PadVisualState.OccupiedNpc     => s_occupiedNpcMat,
+                PadVisualState.OccupiedPlayer  => s_occupiedPlayerMat,
+                _                              => s_neutralMat
             };
-
-            if (m != null) return m;
-
-            // Fallback
-            if (s_fallbackMat == null)
-            {
-                s_fallbackMat = new Material(Shader.Find("Universal Render Pipeline/Unlit"));
-                s_fallbackMat.SetColor("_BaseColor", new Color(1f, 0f, 1f, 0.9f)); // MAGENTA — сразу видно fallback
-            }
-            return s_fallbackMat;
         }
 
         private void ApplyMaterial()

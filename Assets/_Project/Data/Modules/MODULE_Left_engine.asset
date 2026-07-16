@@ -43,3 +43,5 @@ MonoBehaviour:
   attachScale: {x: 1, y: 1, z: 1}
   attachAxis: 0
   colliderMode: 0
+  costCredits: 500
+  requiredResources: []

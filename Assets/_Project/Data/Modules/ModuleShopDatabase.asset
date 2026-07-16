@@ -13,11 +13,12 @@ MonoBehaviour:
   m_Name: ModuleShopDatabase
   m_EditorClassIdentifier: Assembly-CSharp::ProjectC.Ship.ModuleShopDatabase
   entries:
-  - {fileID: 11400000, guid: 410ab29a0f7ed77489de25e75246c4a7, type: 2}
-  - {fileID: 11400000, guid: e105c013b35234e49aa57c2588a60271, type: 2}
-  - {fileID: 11400000, guid: e0d067c4bed7d1449886ce4c56956b58, type: 2}
-  - {fileID: 11400000, guid: 0a5e5a8bd4f8eb84691db84301d72c62, type: 2}
-  - {fileID: 11400000, guid: b3ce88422fd142243ace98723d56b5f0, type: 2}
-  - {fileID: 11400000, guid: 52d5af0c30ff030458d9d2c38988cb23, type: 2}
-  - {fileID: 11400000, guid: 3dc13460c8c23a244affe5314884f081, type: 2}
-  - {fileID: 11400000, guid: e650babf2d049b54491d08e30a611568, type: 2}
+  - {fileID: 11400000, guid: 234a8c6195b06bd42b2d2f3825dedb0b, type: 2}
+  - {fileID: 11400000, guid: c2178de5612ff9641b10a1cd8e3d28b0, type: 2}
+  - {fileID: 11400000, guid: a208403ac63e8f2489c009314de4fac2, type: 2}
+  - {fileID: 11400000, guid: b00006d9febb459439fc0e8ccd9c6f82, type: 2}
+  - {fileID: 11400000, guid: eacc15c06a4503441bd35837a4e4c4a0, type: 2}
+  - {fileID: 11400000, guid: 17f0b3bcc7becb748a43444caf5a6f51, type: 2}
+  - {fileID: 11400000, guid: 27e8a6f32b93d7844a5f96c82fa065f6, type: 2}
+  - {fileID: 11400000, guid: c5404b7170fc2404b96145033206e59d, type: 2}
+  - {fileID: 11400000, guid: 35677b2852be0394494052a01d03fc4b, type: 2}

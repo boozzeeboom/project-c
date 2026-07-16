@@ -36,7 +36,8 @@ namespace ProjectC.Trade.Service
         /// <summary>
         /// Рассчитать цену с клемпингом.
         /// </summary>
-        public static float CalculatePrice(float basePrice, float demand, float supply, float eventMult)
+        public static float CalculatePrice(float basePrice, float demand, float supply, float eventMult,
+            float floorRatio = PRICE_FLOOR_RATIO, float ceilingRatio = PRICE_CEILING_RATIO)
         {
             if (basePrice <= 0f) return 0f;
 
@@ -45,8 +46,8 @@ namespace ProjectC.Trade.Service
             eventMult = Mathf.Clamp(eventMult, EVENT_MULT_MIN, EVENT_MULT_MAX);
 
             float price = basePrice * (1f + demand - supply) * eventMult;
-            float floor = basePrice * PRICE_FLOOR_RATIO;
-            float ceiling = basePrice * PRICE_CEILING_RATIO;
+            float floor = basePrice * Mathf.Clamp(floorRatio, 0.01f, 10f);
+            float ceiling = basePrice * Mathf.Clamp(ceilingRatio, 0.01f, 10f);
             return Mathf.Clamp(price, floor, ceiling);
         }
 
@@ -67,24 +68,26 @@ namespace ProjectC.Trade.Service
         /// <summary>
         /// Применить покупку: demand растёт, цена пересчитывается.
         /// </summary>
-        public static void ApplyBuy(MarketItemState s, int quantity)
+        public static void ApplyBuy(MarketItemState s, int quantity,
+            float? floorRatio = null, float? ceilingRatio = null)
         {
             if (s == null || quantity <= 0) return;
             s.demandFactor = Mathf.Clamp(s.demandFactor + quantity * DEMAND_PER_UNIT_BOUGHT, DEMAND_MIN, DEMAND_MAX);
             s.version++;
-            s.RecalculatePrice();
+            s.RecalculatePrice(floorRatio, ceilingRatio);
         }
 
         /// <summary>
         /// Применить продажу: supply растёт, сток растёт, цена пересчитывается.
         /// </summary>
-        public static void ApplySell(MarketItemState s, int quantity)
+        public static void ApplySell(MarketItemState s, int quantity,
+            float? floorRatio = null, float? ceilingRatio = null)
         {
             if (s == null || quantity <= 0) return;
             s.supplyFactor = Mathf.Clamp(s.supplyFactor + quantity * SUPPLY_PER_UNIT_SOLD, SUPPLY_MIN, SUPPLY_MAX);
             s.availableStock += quantity;
             s.version++;
-            s.RecalculatePrice();
+            s.RecalculatePrice(floorRatio, ceilingRatio);
         }
 
         /// <summary>

@@ -1,5 +1,6 @@
 using System.Collections.Generic;
 using ProjectC.Trade.Config;
+using ProjectC.Trade.Service;
 
 namespace ProjectC.Trade.Core
 {
@@ -21,6 +22,11 @@ namespace ProjectC.Trade.Core
 
         public IReadOnlyDictionary<string, MarketItemState> Items => _items;
 
+        // Per-market price corridor (из MarketConfig)
+        public float PriceFloorRatio { get; private set; }
+        public float PriceCeilingRatio { get; private set; }
+        public float DecayHalfLifeSeconds { get; private set; }
+
         public MarketState(string locationId, MarketConfig config)
         {
             this.locationId = locationId;
@@ -33,6 +39,12 @@ namespace ProjectC.Trade.Core
         public void Initialize()
         {
             _items.Clear();
+
+            // Кэшируем per-market overrides
+            PriceFloorRatio = config != null ? config.priceFloorRatio : PriceFormula.PRICE_FLOOR_RATIO;
+            PriceCeilingRatio = config != null ? config.priceCeilingRatio : PriceFormula.PRICE_CEILING_RATIO;
+            DecayHalfLifeSeconds = config != null ? config.decayHalfLifeSeconds : PriceFormula.DEFAULT_HALF_LIFE_SECONDS;
+
             if (config == null || config.items == null) return;
 
             for (int i = 0; i < config.items.Count; i++)
@@ -40,7 +52,7 @@ namespace ProjectC.Trade.Core
                 var cfg = config.items[i];
                 if (cfg == null || string.IsNullOrEmpty(cfg.itemId)) continue;
 
-                _items[cfg.itemId] = new MarketItemState(cfg)
+                var state = new MarketItemState(cfg)
                 {
                     availableStock = cfg.initialStock,
                     currentPrice = cfg.basePrice,
@@ -49,6 +61,8 @@ namespace ProjectC.Trade.Core
                     eventMultiplier = 1f,
                     version = 1
                 };
+                state.RecalculatePrice(PriceFloorRatio, PriceCeilingRatio);
+                _items[cfg.itemId] = state;
             }
         }
 

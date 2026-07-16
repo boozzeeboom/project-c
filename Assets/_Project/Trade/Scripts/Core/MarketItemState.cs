@@ -37,14 +37,17 @@ namespace ProjectC.Trade.Core
 
         /// <summary>
         /// Пересчитать цену по формуле с клемпингом.
+        /// Опциональные floorRatio/ceilingRatio — per-market overrides из MarketConfig.
         /// </summary>
-        public void RecalculatePrice()
+        public void RecalculatePrice(float? floorRatio = null, float? ceilingRatio = null)
         {
             currentPrice = PriceFormula.CalculatePrice(
                 config != null ? config.basePrice : 0f,
                 demandFactor,
                 supplyFactor,
-                eventMultiplier);
+                eventMultiplier,
+                floorRatio ?? PriceFormula.PRICE_FLOOR_RATIO,
+                ceilingRatio ?? PriceFormula.PRICE_CEILING_RATIO);
         }
     }
 }

@@ -421,6 +421,11 @@ namespace ProjectC.Trade.Core
             var market = GetMarket(locationId);
             if (market == null)
                 return TradeResult.Fail(TradeResultCode.MarketNotFound, "market lost after check", Repository.GetCredits(clientId), null, null);
+
+            // Режим SellOnly — покупка запрещена
+            if (market.config != null && market.config.tradeMode == MarketTradeMode.SellOnly)
+                return TradeResult.Fail(TradeResultCode.NotAllowed, "market is sell-only", Repository.GetCredits(clientId), null, null);
+
             var item = market.GetItem(itemId);
             if (item == null || item.config == null)
                 return TradeResult.Fail(TradeResultCode.ItemNotInMarket, "item not in market", Repository.GetCredits(clientId), null, null);
@@ -434,8 +439,8 @@ namespace ProjectC.Trade.Core
             if (item.availableStock < quantity)
                 return TradeResult.Fail(TradeResultCode.InsufficientStock, "stock", Repository.GetCredits(clientId), null, null);
 
-            // 3. Проверка и списание кредитов
-            float totalCost = item.currentPrice * quantity;
+            // 3. Проверка и списание кредитов (с учётом buyCommission)
+            float totalCost = item.currentPrice * quantity * (market.config != null ? market.config.buyCommission : 1f);
             float currentCredits = Repository.GetCredits(clientId);
             if (currentCredits < totalCost)
                 return TradeResult.Fail(TradeResultCode.InsufficientCredits, $"need {totalCost:F0}, have {currentCredits:F0}", currentCredits, null, null);
@@ -457,7 +462,7 @@ namespace ProjectC.Trade.Core
 
             // 6. Обновление рынка
             item.availableStock -= quantity;
-            PriceFormula.ApplyBuy(item, quantity);
+            PriceFormula.ApplyBuy(item, quantity, market.PriceFloorRatio, market.PriceCeilingRatio);
             Repository.SetWarehouse(clientId, locationId, warehouse.SaveToList());
 
             Debug.Log($"[TradeWorld] BUY client={clientId} loc={locationId} item={itemId} qty={quantity} cost={totalCost:F0} newCredits={newCredits:F0}");
@@ -479,11 +484,36 @@ namespace ProjectC.Trade.Core
             var market = GetMarket(locationId);
             if (market == null)
                 return TradeResult.Fail(TradeResultCode.MarketNotFound, "market lost after check", Repository.GetCredits(clientId), null, null);
-            var item = market.GetItem(itemId);
-            if (item == null || item.config == null)
-                return TradeResult.Fail(TradeResultCode.ItemNotInMarket, "item not in market", Repository.GetCredits(clientId), null, null);
-            if (!item.config.allowSell)
-                return TradeResult.Fail(TradeResultCode.ItemSellDisabled, "sell disabled", Repository.GetCredits(clientId), null, null);
+
+            // Режим BuyOnly — продажа запрещена
+            if (market.config != null && market.config.tradeMode == MarketTradeMode.BuyOnly)
+                return TradeResult.Fail(TradeResultCode.NotAllowed, "market is buy-only", Repository.GetCredits(clientId), null, null);
+
+            // buyAnyItem: принимать любой товар по глобальной цене
+            bool isBuyAnyItem = market.config != null && market.config.buyAnyItem && market.config.globalBuyPriceConfig != null;
+            MarketItemState item = null;
+            float sellPrice;
+
+            if (isBuyAnyItem)
+            {
+                // Ищем цену в глобальном конфиге
+                float globalPrice = market.config.globalBuyPriceConfig.GetBuyPrice(itemId);
+                if (globalPrice < 0f)
+                    return TradeResult.Fail(TradeResultCode.ItemNotInMarket, $"no global buy price for '{itemId}'", Repository.GetCredits(clientId), null, null);
+                sellPrice = globalPrice;
+            }
+            else
+            {
+                item = market.GetItem(itemId);
+                if (item == null || item.config == null)
+                    return TradeResult.Fail(TradeResultCode.ItemNotInMarket, "item not in market", Repository.GetCredits(clientId), null, null);
+                if (!item.config.allowSell)
+                    return TradeResult.Fail(TradeResultCode.ItemSellDisabled, "sell disabled", Repository.GetCredits(clientId), null, null);
+                item.RecalculatePrice();
+                if (item.currentPrice <= 0f)
+                    return TradeResult.Fail(TradeResultCode.PriceInvalid, "price=0", Repository.GetCredits(clientId), null, null);
+                sellPrice = item.currentPrice;
+            }
 
             var warehouse = GetOrLoadWarehouse(clientId, locationId);
             if (!warehouse.TryRemove(itemId, quantity, out var whFail))
@@ -491,23 +521,19 @@ namespace ProjectC.Trade.Core
                 return TradeResult.Fail(MapWarehouseFail(whFail), whFail, Repository.GetCredits(clientId), warehouse, null);
             }
 
-            item.RecalculatePrice();
-            if (item.currentPrice <= 0f)
-            {
-                // откат
-                warehouse.TryAdd(itemId, quantity, Resolver, out _);
-                return TradeResult.Fail(TradeResultCode.PriceInvalid, "price=0", Repository.GetCredits(clientId), warehouse, null);
-            }
-
-            // 80% от цены покупки (NPC-маржа) — как в старой системе
-            float revenue = item.currentPrice * quantity * 0.8f;
+            // Комиссия из MarketConfig (дефолт 0.8)
+            float commission = market.config != null ? market.config.sellCommission : 0.8f;
+            float revenue = sellPrice * quantity * commission;
             Repository.TryModifyCredits(clientId, revenue, out var newCredits, out _);
 
-            PriceFormula.ApplySell(item, quantity);
+            if (item != null)
+            {
+                PriceFormula.ApplySell(item, quantity, market.PriceFloorRatio, market.PriceCeilingRatio);
+            }
             Repository.SetWarehouse(clientId, locationId, warehouse.SaveToList());
 
-            Debug.Log($"[TradeWorld] SELL client={clientId} loc={locationId} item={itemId} qty={quantity} revenue={revenue:F0} newCredits={newCredits:F0}");
-            return TradeResult.Ok(newCredits, item.availableStock, warehouse, null);
+            Debug.Log($"[TradeWorld] SELL client={clientId} loc={locationId} item={itemId} qty={quantity} revenue={revenue:F0} newCredits={newCredits:F0} buyAnyItem={isBuyAnyItem}");
+            return TradeResult.Ok(newCredits, item != null ? item.availableStock : 0, warehouse, null);
         }
 
         /// <summary>
@@ -854,14 +880,15 @@ namespace ProjectC.Trade.Core
             // 3. Затухание demand/supply (time-based) + регенерация стока
             foreach (var market in _markets.Values)
             {
+                float halfLife = market.DecayHalfLifeSeconds;
                 foreach (var kv in market.Items)
                 {
                     var s = kv.Value;
                     if (s == null) continue;
-                    s.demandFactor = PriceFormula.DecayFactor(s.demandFactor, dtSeconds);
-                    s.supplyFactor = PriceFormula.DecayFactor(s.supplyFactor, dtSeconds);
+                    s.demandFactor = PriceFormula.DecayFactor(s.demandFactor, dtSeconds, halfLife);
+                    s.supplyFactor = PriceFormula.DecayFactor(s.supplyFactor, dtSeconds, halfLife);
                     PriceFormula.RegenerateStock(s);
-                    s.RecalculatePrice();
+                    s.RecalculatePrice(market.PriceFloorRatio, market.PriceCeilingRatio);
                 }
             }
 

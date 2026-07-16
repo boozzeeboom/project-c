@@ -42,5 +42,8 @@ namespace ProjectC.Trade
 
         // Финансы
         InsufficientCredits = 40,
+
+        // Режим торговли
+        NotAllowed = 50,
     }
 }

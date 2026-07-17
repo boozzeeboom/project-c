@@ -1,5 +1,18 @@
 # Итерации разработки — ShipPresetCreator
 
+## Итерация от 2026-07-17 (v1.3 — ходьба + Key)
+
+**Задача:** Персонаж проваливался сквозь палубу; ключ корабля был пустой (itemName, description, itemType не заполнялись).
+
+**Коммит:** `f8d441f` — T-SHIP05: fix — ходьба по палубе (NavMesh печётся при создании), Key ItemData заполняется корректно
+
+**Исправления:**
+- NavMesh: вместо пустого `new NavMeshData()` — вызов `NavMeshSurface.BuildNavMesh()` и сохранение запечённого NavMeshData в ассет
+- Key ItemData: `itemName`, `itemType`, `description` — публичные поля, `SetPrivateField` (NonPublic binding) их не видел → прямое присваивание
+- `itemType = ItemType.Key` (8), а не int 0
+
+---
+
 ## Итерация от 2026-07-17 (v1.2 — багфиксы по ревью)
 
 **Задача:** Убрана лишняя Platform, починены розовые материалы, восстановлена ходьба по палубе.

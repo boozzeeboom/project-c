@@ -133,7 +133,7 @@ namespace ProjectC.Editor
             },
             // Medium
             new ClassPreset {
-                thrustForce=4000f, maxSpeed=400f, yawForce=25f, pitchForce=20f, verticalForce=120f,
+                thrustForce=30000f, maxSpeed=400f, yawForce=150000f, pitchForce=20f, verticalForce=30000f,
                 yawSmooth=0.3f, pitchSmooth=0.7f, liftSmooth=1.0f, thrustSmooth=0.3f, yawDecay=1.0f,
                 windExposure=1.0f, massMultiplier=10f,
                 fuelMax=100f, fuelConsumption=0.8f, hullHP=200, modulePower=200,
@@ -322,6 +322,7 @@ namespace ProjectC.Editor
             // MainVisual (Cube — заменяется дизайнером на модель)
             var mainVis = CreateChildCube(root, "MainVisual",
                 new Vector3(0, 0.51f, 0), Vector3.zero, p.visualScale, p.classColor);
+            mainVis.layer = LayerMask.NameToLayer("ShipDeck");
             var mainVisSrr = mainVis.AddComponent<ShipRootReference>();
             WireShipRootReference(mainVis, root, sc, rb, netObj);
             var mainVisCol = mainVis.GetComponent<BoxCollider>();
@@ -366,19 +367,11 @@ namespace ProjectC.Editor
             navSurf.transform.localRotation = Quaternion.identity;
             navSurf.transform.localScale = Vector3.one;
             var nms = navSurf.AddComponent<NavMeshSurface>();
-            nms.collectObjects = CollectObjects.Children;
-            nms.size = new Vector3(10, 10, 10);
-            nms.center = new Vector3(0, 2, 0);
+            nms.collectObjects = CollectObjects.Volume;
+            nms.size = p.visualScale * 1.1f;
+            nms.center = new Vector3(0, 0.51f, 0);
             nms.ignoreNavMeshAgent = true;
             nms.ignoreNavMeshObstacle = true;
-            // useGeometry = RenderMeshes via reflection (API varies by package version)
-            var useGeoField = typeof(NavMeshSurface).GetField("m_UseGeometry",
-                System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
-            if (useGeoField == null)
-                useGeoField = typeof(NavMeshSurface).GetField("useGeometry",
-                    System.Reflection.BindingFlags.Public | System.Reflection.BindingFlags.Instance);
-            if (useGeoField != null)
-                useGeoField.SetValue(nms, 1); // 1 = RenderMeshes
             nms.enabled = false;
 
             // ShipCargoVisual

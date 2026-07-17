@@ -131,3 +131,4 @@ Packages/manifest.json
 Packages/packages-lock.json
 *.aura_temp
 .gitignore
+Assets/_Project/Scenes/World/WorldScene_0_0.zip

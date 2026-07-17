@@ -13,7 +13,6 @@ GameObject:
   - component: {fileID: 4337940098852376262}
   - component: {fileID: 5835502369336713382}
   - component: {fileID: 1547923644241861325}
-  - component: {fileID: 7273561618474822441}
   - component: {fileID: 436074920207793514}
   - component: {fileID: 3894514125880979465}
   m_Layer: 0
@@ -81,12 +80,13 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: d5a57f767e5e46a458fc5d3c628d0cbb, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Unity.Netcode.Runtime::Unity.Netcode.NetworkObject
-  GlobalObjectIdHash: 1593642715
+  GlobalObjectIdHash: 1187538174
   InScenePlacedSourceGlobalObjectIdHash: 0
   DeferredDespawnTick: 0
   Ownership: 1
   AlwaysReplicateAsRoot: 0
   SynchronizeTransform: 1
+  <InScenePlaced>k__BackingField: 0
   ActiveSceneSynchronization: 0
   SceneMigrationSynchronization: 0
   SpawnWithObservers: 1
@@ -108,6 +108,8 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::ProjectC.Player.ShipController
   ShowTopMostFoldoutHeaderGroup: 1
   shipFlightClass: 3
+  _debugLog: 0
+  _keyItemData: {fileID: 11400000, guid: b08791afdeeed1049a341e8452da084d, type: 2}
   _customDisplayName: 
   thrustForce: 6500
   maxSpeed: 100
@@ -121,6 +123,12 @@ MonoBehaviour:
   yawDecayTime: 1
   pitchDecayTime: 0.8
   antiGravity: 1
+  massMultiplier: 10
+  massLight: 800
+  massMedium: 1000
+  massHeavy: 1500
+  massHeavyII: 2000
+  shipConstraints: 0
   linearDrag: 0.4
   angularDrag: 8
   pitchStabForce: 15
@@ -156,7 +164,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::ProjectC.PeacefulShip.Stations.NpcShipController
   ShowTopMostFoldoutHeaderGroup: 1
-  schedule: {fileID: 11400000, guid: 1c116bc5217d9a141a0b667f2596aca3, type: 2}
+  schedule: {fileID: 0}
   npcInstanceId: 0
   npcThrustMult: 0.6
   npcYawMult: 0.4
@@ -176,19 +184,6 @@ MonoBehaviour:
   avoidBackOffSpeed: 5
   avoidBackOffTime: 1
   avoidTimeout: 8
---- !u!114 &7273561618474822441
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 932977974978979074}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 55671cf6ce2f4414e912ec6e6fe41088, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::ProjectC.PeacefulShip.Stations.NpcTestSpeedBooster
-  speedMultiplier: 10
 --- !u!114 &436074920207793514
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -612,6 +607,7 @@ MonoBehaviour:
   _boxBaseSize: 0.5
   _boxGap: 0.1
   _maxVisibleBoxes: 50
+  _debugLog: 0
   _showOverflowIndicator: 1
   _overflowPrefab: {fileID: 0}
 --- !u!65 &3396400627710881143

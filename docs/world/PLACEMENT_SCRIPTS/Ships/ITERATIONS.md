@@ -1,8 +1,21 @@
 # Итерации разработки — ShipPresetCreator
 
+## Итерация от 2026-07-18 (v1.7 — правки Heavy preset)
+
+**Задача:** Скорректировать физические параметры класса Heavy по эталону.
+
+**Исправления:**
+- `thrustForce`: 5 500 → 100 000
+- `verticalForce`: 800 → 50 000
+- `massMultiplier`: 10 → 25
+
+---
+
 ## Итерация от 2026-07-18 (v1.6 — NavMesh-слои, NpcSpawner, порядок компонентов)
 
 **Задача:** После создания через ShipPresetCreator корабль имел отличия от эталонного префаба `DONT-DELETE-NPC REFERENCE SHIP`: не работал NavMesh, отсутствовал NpcSpawner, неверные слои.
+
+**Коммит:** `601f52a` — T-SHIP06: fix — NavMesh-слои, NpcSpawner, порядок компонентов ShipPresetCreator
 
 **Сравнение с эталоном:** `Ship_old_1.prefab` vs `DONT-DELETE-NPC REFERENCE SHIP.prefab`
 

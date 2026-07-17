@@ -193,7 +193,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: d5a57f767e5e46a458fc5d3c628d0cbb, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Unity.Netcode.Runtime::Unity.Netcode.NetworkObject
-  GlobalObjectIdHash: 2692252030
+  GlobalObjectIdHash: 408340042
   InScenePlacedSourceGlobalObjectIdHash: 0
   DeferredDespawnTick: 0
   Ownership: 1
@@ -481,7 +481,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::ProjectC.Ship.ShipDeckNav
   ShowTopMostFoldoutHeaderGroup: 1
-  _deckNavMeshData: {fileID: 23800000, guid: c8fc7635a097af2479bb81b38ba5593a, type: 2}
+  _deckNavMeshData: {fileID: 23800000, guid: d2f92c0f41f7eb34fb843f210eb080f9, type: 2}
   _registerServerOnly: 1
   _navFrameSeparation: 5000
   _registerUnderShip: 1
@@ -550,7 +550,7 @@ MonoBehaviour:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 1813107270462534355}
-  m_Enabled: 0
+  m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 7a5ac11cc976e418e8d13136b07e1f52, type: 3}
   m_Name: 
@@ -573,7 +573,7 @@ MonoBehaviour:
   m_OverrideVoxelSize: 0
   m_VoxelSize: 0.16666667
   m_MinRegionArea: 2
-  m_NavMeshData: {fileID: 23800000, guid: c8fc7635a097af2479bb81b38ba5593a, type: 2}
+  m_NavMeshData: {fileID: 23800000, guid: d2f92c0f41f7eb34fb843f210eb080f9, type: 2}
   m_BuildHeightMesh: 0
 --- !u!1 &3481610686868435052
 GameObject:

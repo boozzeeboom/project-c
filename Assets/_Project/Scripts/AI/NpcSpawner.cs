@@ -188,6 +188,12 @@ namespace ProjectC.AI
                 _minDistanceFromOtherNpc = _config.minDistanceFromOtherNpc;
                 // T-NPC-08 v0.2: read activationRadius too.
                 activationRadius = _config.activationRadius;
+                // T-NPC-09: chunk integration from SO.
+                _autoPopulateChunks = _config.autoPopulateChunks;
+                _chunkSpawnRadius = _config.chunkSpawnRadius;
+                _maxAlivePerChunk = _config.maxAlivePerChunk;
+                // Debug from SO.
+                _showDebugLogs = _config.showDebugLogs;
                 // T-NPC-11: spawn cycle — only override from SO if explicitly non-default.
                 // Designer can set _spawnMode/_totalSpawnLimit directly on the component;
                 // the SO only wins when it has a meaningful non-default value.

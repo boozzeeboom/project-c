@@ -43,6 +43,16 @@ namespace ProjectC.AI
                  "0 = без лимита (используется только maxAliveCount, backward compat).")]
         [Range(0, 100)] public int totalSpawnLimit = 0;
 
+        [Header("Chunk Integration (T-NPC-09)")]
+        [Tooltip("Подписаться на ChunkLoader.OnChunkLoaded/OnChunkUnloaded. При загрузке чанка — спавнить NPC в его центре. false = старое zone-based поведение.")]
+        public bool autoPopulateChunks = false;
+
+        [Tooltip("Радиус спавна вокруг центра чанка (метры).")]
+        [Range(5f, 100f)] public float chunkSpawnRadius = 30f;
+
+        [Tooltip("Максимум NPC на один чанк. 0 = chunk-spawn выключен даже при autoPopulateChunks=true.")]
+        [Range(0, 20)] public int maxAlivePerChunk = 3;
+
         [Header("Surface validation")]
         [Tooltip("LayerMask террейна для raycast вниз (точка должна попасть на поверхность).")]
         public LayerMask groundMask = 1; // default layer
@@ -183,5 +193,9 @@ namespace ProjectC.AI
 
         [Tooltip("Таблица дропа (items + credits). Если null — fallback к формуле maxHp/4 credits (backward compat).")]
         public Items.LootTable lootTable;
+
+        [Header("Debug")]
+        [Tooltip("Включить debug-логи спавнера в консоль.")]
+        public bool showDebugLogs = false;
     }
 }

@@ -1,6 +1,6 @@
 # NpcSpawnerConfig Custom Editor
 
-> Добавлен в итерации 2026-07-20. См. также `docs/NPC_others_peacfull/npc_ship/ITERATIONS.md`.
+> Добавлен в итерации 2026-07-20. См. также `docs/Character/Skills/real-time-combat/ITERATIONS.md`.
 
 ## Назначение
 

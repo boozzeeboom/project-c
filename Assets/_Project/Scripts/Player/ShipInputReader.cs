@@ -59,6 +59,18 @@ namespace ProjectC.Player
         private bool _meziyThrustFwdHeld;
         private bool _meziyThrustBwdHeld;
 
+        private void OnDisable()
+        {
+            // Сброс всего ввода при отключении — чтобы визуалы корабля
+            // не видели stale-значения после выхода пилота.
+            _currentThrust = 0f;
+            _currentYaw = 0f;
+            _currentPitch = 0f;
+            _currentVertical = 0f;
+            _boostPressed = false;
+            _shiftHeld = false;
+        }
+
         private void Update()
         {
             // Сброс ввода каждый кадр

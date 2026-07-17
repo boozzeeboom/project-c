@@ -1082,6 +1082,11 @@ namespace ProjectC.Player
                 var skillInput = GetComponent<ProjectC.Skills.SkillInputService>();
                 if (skillInput != null) skillInput.enabled = true;
 
+                // Отключаем ShipInputReader чтобы клавиатура не влияла на визуалы корабля
+                ShipInputReader inputReader = _currentShip.GetComponent<ShipInputReader>();
+                if (inputReader != null)
+                    inputReader.enabled = false;
+
                 // Снимаем пилота (себя)
                 _currentShip.RemovePilot(OwnerClientId);
                 _currentShip = null;
@@ -1118,6 +1123,11 @@ namespace ProjectC.Player
                 // Без парентирования коллайдер игрока остаётся на месте, а корабль улетает →
                 // физика «дергается» из-за оверлапа коллайдеров.
                 transform.SetParent(_currentShip.ShipRoot, true);
+
+                // Включаем ShipInputReader для управления кораблём
+                ShipInputReader inputReader = _currentShip.GetComponent<ShipInputReader>();
+                if (inputReader != null)
+                    inputReader.enabled = true;
 
                 // Добавляем себя как пилота (кооп)
                 _currentShip.AddPilot(this);

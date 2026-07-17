@@ -329,15 +329,6 @@ namespace ProjectC.Editor
             var mainVisCol = mainVis.GetComponent<BoxCollider>();
             if (mainVisCol == null) mainVisCol = mainVis.AddComponent<BoxCollider>();
 
-            // Platform
-            var platform = CreateChildCube(root, "Platform",
-                new Vector3(0, 0, 0), Vector3.zero,
-                new Vector3(p.visualScale.x, 1f, p.visualScale.z),
-                new Color(0.4f, 0.4f, 0.4f));
-            platform.AddComponent<BoxCollider>();
-            platform.AddComponent<ShipRootReference>();
-            WireShipRootReference(platform, root, sc, rb, netObj);
-
             // PilotSeat
             var pilotSeat = CreateChildCube(root, "PilotSeat",
                 new Vector3(0, 1.18f, p.visualScale.z * 0.45f), Vector3.zero,
@@ -534,7 +525,8 @@ namespace ProjectC.Editor
             var mr = go.GetComponent<MeshRenderer>();
             if (mr != null)
             {
-                mr.sharedMaterial = new Material(Shader.Find("Universal Render Pipeline/Lit"));
+                var litMat = AssetDatabase.LoadAssetAtPath<Material>(URP_LitMat);
+                mr.sharedMaterial = new Material(litMat);
                 mr.sharedMaterial.color = color;
             }
             return go;

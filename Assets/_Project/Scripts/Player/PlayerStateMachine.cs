@@ -117,6 +117,9 @@ namespace ProjectC.Core
             transform.position = shipToExit.GetExitPosition();
 
             // Выключаем корабль
+            ShipInputReader inputReader = shipToExit.GetComponent<ShipInputReader>();
+            if (inputReader != null)
+                inputReader.enabled = false;
             shipToExit.enabled = false;
             _currentShip = null;
 
@@ -140,6 +143,9 @@ namespace ProjectC.Core
             if (walkController != null) walkController.enabled = false;
 
             // Включаем корабль
+            ShipInputReader inputReader = _currentShip.GetComponent<ShipInputReader>();
+            if (inputReader != null)
+                inputReader.enabled = true;
             _currentShip.enabled = true;
 
             // Камера — следит за кораблём

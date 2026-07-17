@@ -90,7 +90,7 @@ namespace ProjectC.Ship.Engine
 
         private void Update()
         {
-            if (_shipController == null || _inputReader == null)
+            if (_shipController == null || _inputReader == null || !_shipController.enabled)
                 return;
 
             if (!_shipController.IsEngineRunning)

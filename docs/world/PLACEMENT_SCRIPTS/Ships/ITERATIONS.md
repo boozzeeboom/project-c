@@ -1,5 +1,19 @@
 # Итерации разработки — ShipPresetCreator
 
+## Итерация от 2026-07-17 (v1.4 — коллизия палубы + Medium preset)
+
+**Задача:** Персонаж проваливается сквозь визуал; Medium имел неверные значения thrust/yaw/vertical.
+
+**Коммит:** `a456d9b` — T-SHIP06: fix — Medium preset, коллизия палубы (ShipDeck layer), NavMeshSurface Volume
+
+**Исправления:**
+- Medium: thrust=30000, yaw=150000, vertical=30000 (было 4000/25/120)
+- MainVisual теперь на слое `ShipDeck` (6) — CharacterController игрока корректно детектит палубу через Physics.SphereCast
+- NavMeshSurface: `CollectObjects.Children→Volume` с bounding box по visualScale — `BuildNavMesh()` находит MainVisual и печёт реальный navmesh
+- Убран reflection-хак `useGeometry` (не нужен при Volume)
+
+---
+
 ## Итерация от 2026-07-17 (v1.3 — ходьба + Key)
 
 **Задача:** Персонаж проваливался сквозь палубу; ключ корабля был пустой (itemName, description, itemType не заполнялись).

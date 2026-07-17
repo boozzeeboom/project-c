@@ -328,6 +328,20 @@ namespace ProjectC.Editor
             var mainVisCol = mainVis.GetComponent<BoxCollider>();
             if (mainVisCol == null) mainVisCol = mainVis.AddComponent<BoxCollider>();
 
+            // Floor — невидимый твёрдый коллайдер на уровне Y=0 для ходьбы.
+            // Аналог Platform на Ship_Light_root. MainVisual на Y=0.51 висит выше,
+            // CharacterController не может залезть на него с земли без этого коллайдера.
+            var floor = new GameObject("Floor");
+            floor.transform.SetParent(root.transform);
+            floor.transform.localPosition = Vector3.zero;
+            floor.transform.localRotation = Quaternion.identity;
+            floor.transform.localScale = new Vector3(p.visualScale.x, 0.1f, p.visualScale.z);
+            floor.layer = LayerMask.NameToLayer("ShipDeck");
+            var floorCol = floor.AddComponent<BoxCollider>();
+            floorCol.isTrigger = false;
+            floor.AddComponent<ShipRootReference>();
+            WireShipRootReference(floor, root, sc, rb, netObj);
+
             // PilotSeat
             var pilotSeat = CreateChildCube(root, "PilotSeat",
                 new Vector3(0, 1.18f, p.visualScale.z * 0.45f), Vector3.zero,
@@ -345,7 +359,9 @@ namespace ProjectC.Editor
                 new Vector3(-(p.visualScale.x * 0.3f), 1.25f, 0), Vector3.zero,
                 new Vector3(0.04f, 1.49f, 0.13f), Color.white);
             var doorCol = door.GetComponent<BoxCollider>();
-            doorCol.isTrigger = true;
+            // Дверь — твёрдая (не триггер). DoorController НЕ меняет isTrigger в Awake(),
+            // в отличие от PilotSeatController (который принудительно ставит isTrigger=true).
+            doorCol.isTrigger = false;
             var doorCtrl = door.AddComponent<DoorController>();
             SetPrivateField(doorCtrl, "slideDirection", new Vector3(0, 0, -1));
             SetPrivateField(doorCtrl, "slideDistance", 0.2f);

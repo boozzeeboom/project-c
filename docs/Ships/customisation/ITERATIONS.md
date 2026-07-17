@@ -1,5 +1,45 @@
 # Итерации реализации — Engine Visual System
 
+## Итерация от 2026-07-21 (fix 3)
+
+**Задача:** T-ENG02 — баг: визуалы двигателя реагируют на WASD после выхода из корабля (F)
+**Коммит:** `abfa9ff` — T-ENG02: фикс визуалов двигателя v2 — правильный путь disembark в NetworkPlayer
+
+**Симптомы:**
+- После выхода из корабля (F → пеший режим) нажатия WASD вызывали:
+  - A/D → отклонение двигателя (yaw)
+  - W/S → вращение лопастей + ShipPartShake
+- Корабль физически оставался в воздухе (правильно), но визуалы продолжали реагировать
+
+**Корневая причина:**
+1. Реальный disembark идёт через `NetworkPlayer` (не `PlayerStateMachine`)
+2. `NetworkPlayer` вызывает `RemovePilot()` → `RemovePilotRpc`, которая НЕ глушит `ShipController.enabled` (by design: idle/NPC должны работать)
+3. `ShipInputReader.enabled` остаётся `true` → `Update()` продолжает опрашивать `Keyboard.current` (WASD)
+4. `ShipInputReader._currentThrust`/`_currentYaw` обновляются от нажатий игрока в пешем режиме
+5. `EngineThrusterVisual` и `ShipPartShake` видят `_shipController.enabled=true` (не отключён) → читают живой ввод → анимируются
+
+**Исправление (3 уровня защиты):**
+| Уровень | Файл | Что |
+|---|---|---|
+| 1 (root cause) | `NetworkPlayer.cs` | Disembark: `inputReader.enabled = false`; Board: `enabled = true` |
+| 2 (stale state) | `ShipInputReader.cs` | `OnDisable()`: сброс `_currentThrust`/`_currentYaw`/etc в 0 |
+| 3 (defence) | `EngineThrusterVisual.cs` / `ShipPartShake.cs` | Проверка `!_shipController.enabled` в `Update()` |
+| 3 (legacy) | `PlayerStateMachine.cs` | Аналогично для офлайн/тестового режима |
+
+**Изменённые файлы:**
+- `Assets/_Project/Scripts/Player/NetworkPlayer.cs`
+- `Assets/_Project/Scripts/Player/ShipInputReader.cs`
+- `Assets/_Project/Scripts/Player/PlayerStateMachine.cs`
+- `Assets/_Project/Scripts/Ship/Engine/EngineThrusterVisual.cs`
+- `Assets/_Project/Scripts/Ship/ShipPartShake.cs`
+
+**Проверки:**
+- 0 ошибок компиляции ✅
+- `ShipController.cs` без изменений ✅
+- Два пути disembark покрыты (`NetworkPlayer` — основной, `PlayerStateMachine` — офлайн/тестовый) ✅
+
+---
+
 ## Итерация от 2026-07-21
 
 **Задача:** T-SHIP-SHAKE — визуальный дребезг частей корабля при тяге (W/S)

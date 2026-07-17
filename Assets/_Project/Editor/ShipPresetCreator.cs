@@ -11,6 +11,7 @@ using ProjectC.Ship.Key;
 using ProjectC.Ship.Combat;
 using ProjectC.PeacefulShip.Stations;
 using ProjectC.PeacefulShip.Core;
+using ProjectC.AI;
 using Unity.AI.Navigation;
 using UnityEngine.AI;
 using System.IO;
@@ -283,16 +284,8 @@ namespace ProjectC.Editor
             SetPrivateField(inputReader, "mouseSensitivityX", 2f);
             SetPrivateField(inputReader, "mouseSensitivityY", 2f);
 
-            // ShipRootReference
-            var rootSrr = root.AddComponent<ShipRootReference>();
-            SetPrivateField(rootSrr, "_shipController", sc);
-            SetPrivateField(rootSrr, "_rigidbody", rb);
-            SetPrivateField(rootSrr, "_networkObject", netObj);
-            SetPrivateField(rootSrr, "_root", root.transform);
-
             // --- NPC components (на том же root) ---
             var npcCtrl = root.AddComponent<NpcShipController>();
-            SetPrivateField(npcCtrl, "schedule", schedule);
             SetPrivateField(npcCtrl, "npcInstanceId", 0UL);
             SetPrivateField(npcCtrl, "npcThrustMult", 0.6f);
             SetPrivateField(npcCtrl, "npcYawMult", 0.4f);
@@ -303,9 +296,15 @@ namespace ProjectC.Editor
 
             var proxZone = root.AddComponent<NpcProximityZone>();
             SetPrivateField(proxZone, "awarenessRadius", 400f);
-            SetPrivateField(proxZone, "avoidanceRadius", 80f);
+            SetPrivateField(proxZone, "avoidanceRadius", 120f);
             SetPrivateField(proxZone, "clearHysteresis", 1.5f);
-            SetPrivateField(proxZone, "drawGizmos", false);
+            SetPrivateField(proxZone, "drawGizmos", true);
+
+            // NpcSpawner (на том же root)
+            var npcSpawner = root.AddComponent<NpcSpawner>();
+            SetPrivateField(npcSpawner, "_config",
+                AssetDatabase.LoadAssetAtPath<ProjectC.AI.NpcSpawnerConfig>(
+                    "Assets/_Project/Resources/AI/NpcSpawner_ship_deck.asset"));
 
             var deckNav = root.AddComponent<ShipDeckNav>();
             SetPrivateField(deckNav, "_registerServerOnly", true);
@@ -324,7 +323,8 @@ namespace ProjectC.Editor
             var platform = CreateChildCube(root, "Platform",
                 Vector3.zero, Vector3.zero,
                 new Vector3(p.visualScale.x, 0.9f, p.visualScale.z), p.classColor);
-            platform.layer = LayerMask.NameToLayer("Default");
+            platform.layer = LayerMask.NameToLayer("ShipDeck");
+            platform.tag = "Ship";
             var platformCol = platform.GetComponent<BoxCollider>();
             if (platformCol == null) platformCol = platform.AddComponent<BoxCollider>();
             platformCol.isTrigger = false;
@@ -368,11 +368,12 @@ namespace ProjectC.Editor
             // DeckNavSurface
             var navSurf = new GameObject("DeckNavSurface");
             navSurf.transform.SetParent(root.transform);
-            navSurf.transform.localPosition = new Vector3(0, 1.01f, 0);
+            navSurf.transform.localPosition = new Vector3(0, -0.37f, 0);
             navSurf.transform.localRotation = Quaternion.identity;
             navSurf.transform.localScale = Vector3.one;
             var nms = navSurf.AddComponent<NavMeshSurface>();
-            nms.collectObjects = CollectObjects.Volume;
+            nms.collectObjects = CollectObjects.All;
+            nms.useGeometry = NavMeshCollectGeometry.PhysicsColliders;
             nms.size = new Vector3(p.visualScale.x * 1.1f, 0.9f * 1.1f, p.visualScale.z * 1.1f);
             nms.center = new Vector3(0, 0.45f, 0);
             nms.ignoreNavMeshAgent = true;

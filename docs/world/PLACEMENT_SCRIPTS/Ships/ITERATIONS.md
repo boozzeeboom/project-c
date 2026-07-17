@@ -1,5 +1,34 @@
 # Итерации разработки — ShipPresetCreator
 
+## Итерация от 2026-07-18 (v1.6 — NavMesh-слои, NpcSpawner, порядок компонентов)
+
+**Задача:** После создания через ShipPresetCreator корабль имел отличия от эталонного префаба `DONT-DELETE-NPC REFERENCE SHIP`: не работал NavMesh, отсутствовал NpcSpawner, неверные слои.
+
+**Сравнение с эталоном:** `Ship_old_1.prefab` vs `DONT-DELETE-NPC REFERENCE SHIP.prefab`
+
+**Исправления:**
+
+| # | Проблема | Было | Стало |
+|---|----------|------|-------|
+| 1 | Platform слой | `Default` | `ShipDeck` |
+| 2 | Platform тег | (отсутствовал) | `Ship` |
+| 3 | NavMeshSurface.collectObjects | `Volume` | `All` |
+| 4 | NavMeshSurface.useGeometry | (Render Meshes) | `PhysicsColliders` |
+| 5 | DeckNavSurface Y | `1.01` | `-0.37` |
+| 6 | NpcSpawner на корне | отсутствовал | добавлен + загрузка `NpcSpawner_ship_deck.asset` |
+| 7 | ShipRootReference на корне | был (лишний) | удалён |
+| 8 | NpcProximityZone.avoidanceRadius | `80` | `120` |
+| 9 | NpcProximityZone.drawGizmos | `false` | `true` |
+| 10 | NpcShipController.schedule | назначался | не назначается (None) |
+
+**Ключевой инсайт по NavMesh:** эталон использует `collectObjects=All` + `useGeometry=PhysicsColliders` — запекает все Physics Colliders в иерархии (включая BoxCollider на Platform → слой ShipDeck). Предыдущий подход с `Volume` + `RenderMeshes` не работал, т.к. не учитывал слой коллайдера. Platform должна быть на слое `ShipDeck` (6), чтобы NPC могли по ней ходить.
+
+**Затронутые файлы:**
+- `Assets/_Project/Editor/ShipPresetCreator.cs` — все правки
+- Добавлен `using ProjectC.AI;`
+
+---
+
 ## Итерация от 2026-07-17 (v1.5 — Floor-коллайдер + дверь)
 
 **Задача:** Персонаж проваливается сквозь палубу; дверь была проходимой (isTrigger=true).

@@ -450,7 +450,9 @@ namespace ProjectC.UI.Client
                 _modulesContainer.Add(row);
             }
 
+#if PROJECTC_DEBUG_UI
             Debug.Log($"[MyShipsTab] Modules: {slots.Count} slots, {installedCount} installed");
+#endif
         }
 
         private void OpenRepairManager()

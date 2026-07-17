@@ -1,19 +1,24 @@
 # Итерации разработки
 
-## Итерация от 2026-07-09
+## Итерация от 2025-07-17
 
-**Задача:** Исправить USS и CS0618 варнинги в CharacterWindow.
-**Коммит:** `d815235` — T-UI03: исправлены USS и CS0618 варнинги в CharacterWindow
+**Задача:** Исправить баг: визуалы двигателя (EngineThrusterVisual, ShipPartShake) реагируют на WASD после выхода из корабля (F) и перехода в пеший режим.
+
+**Коммит:** `1812fea` — T-ENG02: фикс визуалов двигателя — реакция на WASD после выхода из корабля
+
 **Изменения:**
-- `Assets/_Project/UI/Resources/UI/CharacterWindow.uss` — удалены неподдерживаемые свойства (text-decoration, cursor, gap, overflow-y, z-index, inherit, align-items:baseline)
-- `Assets/_Project/Scripts/UI/Client/CharacterWindow.cs` — удалён [Obsolete] `_inventoryCache`, ссылки перенаправлены на `InventoryTab.InventoryCache`
-- `Assets/_Project/Scripts/UI/Client/CharacterWindow/InventoryTab.cs` — `InventoryListItem` сделан public, добавлен public accessor `InventoryCache`
+- `Assets/_Project/Scripts/Ship/Engine/EngineThrusterVisual.cs` — добавлена проверка `!_shipController.enabled` в Update()
+- `Assets/_Project/Scripts/Ship/ShipPartShake.cs` — добавлена проверка `!_shipController.enabled` в Update()
+- `Assets/_Project/Scripts/Player/PlayerStateMachine.cs` — Disembark() отключает ShipInputReader, ApplyFlying() включает его
 
-## Итерация от 2026-07-16
+## Итерация от 2025-07-17 (v2)
 
-**Задача:** Переработка блока характеристик в CharacterWindow — фикс полосок, цветов и позиционирования текста.
-**Коммит:** `354e3d2` — T-UI04: переработка блока характеристик в CharacterWindow — фикс полосок, цветов и текста
+**Задача:** Та же — первая итерация фиксила не тот код-путь. Реальный disembark идёт через NetworkPlayer, не PlayerStateMachine.
+
+**Коммит:** `abfa9ff` — T-ENG02: фикс визуалов двигателя v2 — правильный путь disembark в NetworkPlayer
+
 **Изменения:**
-- `Assets/_Project/Scripts/UI/Client/CharacterWindow.cs` — фикс формулы бара (strength вместо effectiveStrength), новый формат текста, ApplyTierClass через CSS-классы
-- `Assets/_Project/UI/Resources/UI/CharacterWindow.uss` — per-stat цвета fill-баров, tier-рамки, горизонтальный layout строк
-- `Assets/_Project/UI/Resources/UI/CharacterWindow.uxml` — добавлены per-stat классы на fill-бары и лейблы, горизонтальная структура stat-row
+- `Assets/_Project/Scripts/Player/NetworkPlayer.cs` — Disembark: отключает ShipInputReader; Board: включает ShipInputReader
+- `Assets/_Project/Scripts/Player/ShipInputReader.cs` — OnDisable(): сброс _currentThrust/_currentYaw в ноль
+- Защитные проверки `!_shipController.enabled` из v1 в EngineThrusterVisual, ShipPartShake сохранены
+- Фикс в PlayerStateMachine из v1 сохранён (для офлайн/тестового режима)

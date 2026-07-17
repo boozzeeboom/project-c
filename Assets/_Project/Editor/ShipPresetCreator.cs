@@ -319,28 +319,17 @@ namespace ProjectC.Editor
 
             // --- Children ---
 
-            // MainVisual (Cube — заменяется дизайнером на модель)
-            var mainVis = CreateChildCube(root, "MainVisual",
-                new Vector3(0, 0.51f, 0), Vector3.zero, p.visualScale, p.classColor);
-            mainVis.layer = LayerMask.NameToLayer("ShipDeck");
-            var mainVisSrr = mainVis.AddComponent<ShipRootReference>();
-            WireShipRootReference(mainVis, root, sc, rb, netObj);
-            var mainVisCol = mainVis.GetComponent<BoxCollider>();
-            if (mainVisCol == null) mainVisCol = mainVis.AddComponent<BoxCollider>();
-
-            // Floor — невидимый твёрдый коллайдер на уровне Y=0 для ходьбы.
-            // Аналог Platform на Ship_Light_root. MainVisual на Y=0.51 висит выше,
-            // CharacterController не может залезть на него с земли без этого коллайдера.
-            var floor = new GameObject("Floor");
-            floor.transform.SetParent(root.transform);
-            floor.transform.localPosition = Vector3.zero;
-            floor.transform.localRotation = Quaternion.identity;
-            floor.transform.localScale = new Vector3(p.visualScale.x, 0.1f, p.visualScale.z);
-            floor.layer = LayerMask.NameToLayer("ShipDeck");
-            var floorCol = floor.AddComponent<BoxCollider>();
-            floorCol.isTrigger = false;
-            floor.AddComponent<ShipRootReference>();
-            WireShipRootReference(floor, root, sc, rb, netObj);
+            // Platform — единый визуал + твёрдый коллайдер палубы (аналог Ship_Light_root).
+            // Cube с BoxCollider (isTrigger=false), Layer Default, position (0,0,0).
+            var platform = CreateChildCube(root, "Platform",
+                Vector3.zero, Vector3.zero,
+                new Vector3(p.visualScale.x, 0.9f, p.visualScale.z), p.classColor);
+            platform.layer = LayerMask.NameToLayer("Default");
+            var platformCol = platform.GetComponent<BoxCollider>();
+            if (platformCol == null) platformCol = platform.AddComponent<BoxCollider>();
+            platformCol.isTrigger = false;
+            platform.AddComponent<ShipRootReference>();
+            WireShipRootReference(platform, root, sc, rb, netObj);
 
             // PilotSeat
             var pilotSeat = CreateChildCube(root, "PilotSeat",
@@ -384,8 +373,8 @@ namespace ProjectC.Editor
             navSurf.transform.localScale = Vector3.one;
             var nms = navSurf.AddComponent<NavMeshSurface>();
             nms.collectObjects = CollectObjects.Volume;
-            nms.size = p.visualScale * 1.1f;
-            nms.center = new Vector3(0, 0.51f, 0);
+            nms.size = new Vector3(p.visualScale.x * 1.1f, 0.9f * 1.1f, p.visualScale.z * 1.1f);
+            nms.center = new Vector3(0, 0.45f, 0);
             nms.ignoreNavMeshAgent = true;
             nms.ignoreNavMeshObstacle = true;
             nms.enabled = false;
@@ -709,7 +698,7 @@ namespace ProjectC.Editor
             var baked = nms.navMeshData;
             if (baked == null)
             {
-                Debug.LogError("[ShipPresetCreator] BuildNavMesh() отработал, но navMeshData = null — проверьте что MainVisual имеет MeshRenderer + BoxCollider.");
+                Debug.LogError("[ShipPresetCreator] BuildNavMesh() отработал, но navMeshData = null — проверьте что Platform имеет MeshRenderer + BoxCollider.");
                 return null;
             }
 

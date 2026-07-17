@@ -314,11 +314,11 @@ namespace ProjectC.AI
                 return;
             }
 
-            if (_spawned.Count >= _maxAlive) return;
+            if (_spawned.Count >= _maxAlive) { if (_showDebugLogs) Debug.Log($"[NpcSpawner] TickSpawn: alive={_spawned.Count}/{_maxAlive} — limit reached, skipping"); return; }
 
             // Найти ближайшего игрока.
             var (clientId, playerObj) = FindNearestPlayer();
-            if (playerObj == null) return;
+            if (playerObj == null) { if (_showDebugLogs) Debug.Log($"[NpcSpawner] TickSpawn: no player found, skipping"); return; }
 
             // T-NPC-08 v0.2: активация только если игрок в зоне спавнера (для зонирования).
             Vector3 spawnerPos = _anchor != null ? _anchor.position : transform.position;
@@ -327,20 +327,21 @@ namespace ProjectC.AI
                 float distToPlayer = Vector3.Distance(spawnerPos, playerObj.transform.position);
                 if (distToPlayer > activationRadius)
                 {
+                    if (_showDebugLogs) Debug.Log($"[NpcSpawner] TickSpawn: player too far (dist={distToPlayer:F0} > activation={activationRadius}), skipping");
                     return;
                 }
             }
 
             // Rate-limit per player.
-            if (!CheckRateLimit(clientId)) return;
+            if (!CheckRateLimit(clientId)) { if (_showDebugLogs) Debug.Log($"[NpcSpawner] TickSpawn: rate-limit exceeded for client {clientId}, skipping"); return; }
 
             if (Random.value > _spawnChance) return;
 
             // T-NPC-08 v0.2: Spawn point — вокруг СПАВНЕРА (не вокруг игрока).
-            if (!TryFindSpawnPoint(spawnerPos, out Vector3 spawnPos)) return;
+            if (!TryFindSpawnPoint(spawnerPos, out Vector3 spawnPos)) { if (_showDebugLogs) Debug.Log($"[NpcSpawner] TickSpawn: no valid spawn point found (radius=[{_spawnRadiusMin},{_spawnRadiusMax}], groundMask={_groundMask}), skipping"); return; }
 
             // Validate distance от других NPC.
-            if (IsTooCloseToOtherNpc(spawnPos)) return;
+            if (IsTooCloseToOtherNpc(spawnPos)) { if (_showDebugLogs) Debug.Log($"[NpcSpawner] TickSpawn: too close to other NPC at {spawnPos}, skipping"); return; }
 
             // Spawn! (DRY: общий путь для zone-spawn и chunk-spawn через TrySpawnAtPoint)
             if (TrySpawnAtPoint(spawnerPos, clientId, out _))
@@ -629,13 +630,18 @@ namespace ProjectC.AI
                 Vector2 disc = Random.insideUnitCircle * _spawnRadiusMax;
                 if (disc.magnitude < _spawnRadiusMin) disc = disc.normalized * _spawnRadiusMin;
                 Vector3 candidate = anchorPos + new Vector3(disc.x, 0, disc.y);
-                if (Physics.Raycast(candidate + Vector3.up * (_groundRaycastDistance * 0.5f), Vector3.down,
+                Vector3 rayOrigin = candidate + Vector3.up * (_groundRaycastDistance * 0.5f);
+                if (Physics.Raycast(rayOrigin, Vector3.down,
                     out RaycastHit hit, _groundRaycastDistance, _groundMask, QueryTriggerInteraction.Ignore))
                 {
                     result = hit.point;
                     return true;
                 }
+                if (_showDebugLogs && attempt == 0)
+                    Debug.Log($"[NpcSpawner] TryFindSpawnPoint attempt#0: anchor={anchorPos:F1} candidate={candidate:F1} rayOrigin={rayOrigin:F1} maxDist={_groundRaycastDistance} groundMask={_groundMask.value} hitObj={(hit.collider != null ? hit.collider.name : "NONE")}");
             }
+            if (_showDebugLogs)
+                Debug.Log($"[NpcSpawner] TryFindSpawnPoint: ALL 6 attempts FAILED. anchor={anchorPos:F1} rayDist={_groundRaycastDistance} groundMask={_groundMask.value}");
             result = anchorPos;
             return false;
         }

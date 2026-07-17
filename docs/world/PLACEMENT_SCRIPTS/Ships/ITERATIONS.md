@@ -1,5 +1,23 @@
 # Итерации разработки — ShipPresetCreator
 
+## Итерация от 2026-07-17 (v1.5 — Floor-коллайдер + дверь)
+
+**Задача:** Персонаж проваливается сквозь палубу; дверь была проходимой (isTrigger=true).
+
+**Коммит:** `223bedd`
+
+**Анализ:**
+- `PilotSeatController.Awake()` принудительно ставит `isTrigger=true` — поэтому персонаж проходит сквозь PilotSeat
+- `DoorController` НЕ трогает `isTrigger` — дверь должна быть твёрдой
+- `Ship_Light_root` имеет `Platform` на Y=0 с твёрдым BoxCollider — это то, на чём стоит персонаж
+- MainVisual на Y=0.51 висит выше земли, CharacterController не может на него забраться
+
+**Исправления:**
+- Добавлен `Floor` — невидимый дочерний объект на Y=0 с BoxCollider (слой ShipDeck), аналог Platform
+- Door: `isTrigger = false` (было `true`)
+
+---
+
 ## Итерация от 2026-07-17 (v1.4 — коллизия палубы + Medium preset)
 
 **Задача:** Персонаж проваливается сквозь визуал; Medium имел неверные значения thrust/yaw/vertical.

@@ -10,23 +10,23 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 25688cb068b64e44cbc704a012513162, type: 3}
-  m_Name: NpcSpawner_Quest
+  m_Name: NpcSpawner_ship_deck
   m_EditorClassIdentifier: Assembly-CSharp::ProjectC.AI.NpcSpawnerConfig
   npcPrefab: {fileID: 3856242148590983311, guid: 6bd79345e39535a4c876dbecdf904793, type: 3}
-  spawnRadiusMin: 3
-  spawnRadiusMax: 54.7
+  spawnRadiusMin: 1
+  spawnRadiusMax: 6
   activationRadius: 147
-  maxAliveCount: 50
+  maxAliveCount: 5
   spawnCheckInterval: 10
   spawnChance: 1
-  maxSpawnsPerPlayerPerMinute: 60
+  maxSpawnsPerPlayerPerMinute: 8
   spawnMode: 0
   totalSpawnLimit: 0
   groundMask:
     serializedVersion: 2
-    m_Bits: 4294967295
-  groundRaycastDistance: 30
-  minDistanceFromOtherNpc: 10
+    m_Bits: 64
+  groundRaycastDistance: 10
+  minDistanceFromOtherNpc: 5
   difficultyByDistance:
     serializedVersion: 2
     m_Curve:
@@ -51,11 +51,11 @@ MonoBehaviour:
     m_PreInfinity: 2
     m_PostInfinity: 2
     m_RotationOrder: 4
-  behaviorType: 1
+  behaviorType: 2
   passiveAggroHpThreshold: 25
   passiveMaxHitsPerMinute: 3
   visualConfig: {fileID: 11400000, guid: fc4d8d684dd9e7a469841aa9bc0e802b, type: 2}
-  npcSkillSet: {fileID: 11400000, guid: 8149764943971cc4cbf60688846682d2, type: 2}
+  npcSkillSet: {fileID: 0}
   socialEnabled: 1
   personalityConfig: {fileID: 0}
   defaultIdleActivity: 0
@@ -68,7 +68,7 @@ MonoBehaviour:
   fleeAllySeekRadius: 30
   alarmRadius: 15
   allyDeathRadius: 20
-  isGuard: 0
+  isGuard: 1
   assignGroupOnSpawn: 1
   groupSpawnRadius: 25
   enableGrudgeMemory: 1
@@ -82,7 +82,7 @@ MonoBehaviour:
   woundedDuration: 15
   healHpThreshold: 0.4
   socialRole: {fileID: 11400000, guid: 04b6b91529c7a004988d2da2334e63cd, type: 2}
-  faction: {fileID: 11400000, guid: 9d04bc8ae32d31446b15ee6c18a4b916, type: 2}
+  faction: {fileID: 11400000, guid: d1ebf12d1b4b8c140894ec68927ccc28, type: 2}
   enableVengeanceMemory: 1
   lootPrefab: {fileID: 0}
   lootTable: {fileID: 0}

@@ -4,6 +4,43 @@
 
 ---
 
+## 2026-07-?? — FIX: detectCollisions=false ломал коллайдер платформы ✅ FIXED
+
+**Сессия:** Диагностика: NPC не спавнятся на палубе + игрок проваливается сквозь платформу.
+**Статус:** ✅ Compile-clean. Готово к тесту.
+
+### Симптомы
+
+| # | Симптом | Причина |
+|---|---------|---------|
+| 1 | `NpcSpawner.TryFindSpawnPoint` — 6 фейлов, `hitObj=NONE` | `Physics.Raycast` не видит BoxCollider платформы |
+| 2 | Игрок проваливается сквозь палубу | `CharacterController` не коллидирует |
+| 3 | Отключение `NpcShipController` → всё работает | Значит проблема в `NpcShipController` |
+
+### Корневая причина
+
+**`NpcShipController.SetMode(NavMode.Lifting)` выставлял `rb.detectCollisions = false`** (строка 433).
+`Rigidbody.detectCollisions = false` отключает ВСЕ дочерние коллайдеры из физического мира:
+- `Physics.Raycast` / `SphereCast` не находят коллайдер
+- `CharacterController` не коллидирует с поверхностью
+
+При `schedule = null` корабль застревал в `NavMode.Lifting` навсегда → `detectCollisions` оставался `false`.
+
+### Исправления
+
+| Файл | Изменение |
+|------|-----------|
+| `NpcShipController.cs:433` | Убран `rb.detectCollisions = false` |
+| `NpcShipController.cs:438-441` | Удалён restore `detectCollisions = true` (больше не нужен) |
+| `NpcShipController.cs:OnNetworkSpawn` | Добавлен явный `rb.detectCollisions = true` |
+| `NpcSpawner.cs` | Добавлены отладочные логи в `TickSpawn` и `TryFindSpawnPoint` |
+
+### Подробнее
+
+См. [`10_COLLIDER_BUG_detectCollisions_false.md`](./10_COLLIDER_BUG_detectCollisions_false.md)
+
+---
+
 ## 2026-06-24 — T-NS M3.2 (полный rewrite NPC movement на прямой Rigidbody) ✅ COMPILE-CLEAN
 
 **Commit:** `bc5444b`

@@ -113,6 +113,14 @@ namespace ProjectC.PeacefulShip.Stations
                 // ENGINE-STATE: NPC всегда с включённым двигателем
                 ship.SetEngineRunning(true);
             }
+
+            // FIX: гарантируем что detectCollisions включён — иначе платформа не работает
+            var rb = GetComponent<Rigidbody>();
+            if (rb != null)
+            {
+                rb.detectCollisions = true;
+                if (debugMode) Debug.Log($"[NpcShipController:{gameObject.name}] detectCollisions forced to TRUE on spawn");
+            }
             else
             {
                 Debug.LogError($"[NpcShipController:{gameObject.name}] no ShipController on root!", this);
@@ -430,14 +438,11 @@ namespace ProjectC.PeacefulShip.Stations
                 if (rb != null) {
                     rb.linearVelocity = Vector3.zero;
                     rb.angularVelocity = Vector3.zero;
-                    rb.detectCollisions = false;  // отключить collision detection при взлёте
+                    // FIX: НЕ отключаем detectCollisions — это ломает коллайдер платформы,
+                    // из-за чего игрок проваливается, NPC не спавнятся на палубе,
+                    // и raycast/spherecast не находят платформу.
                     rb.MoveRotation(Quaternion.Euler(0, rb.rotation.eulerAngles.y, 0));
                 }
-            }
-            // Включить обратно при выходе из Lifting
-            if (old == NavMode.Lifting && m != NavMode.Lifting) {
-                var rb = GetComponent<Rigidbody>();
-                if (rb != null) rb.detectCollisions = true;
             }
             if (debugMode) Debug.Log($"[NpcShipController:NPC:{npcInstanceId:X}] NavMode {old} → {m}");
         }

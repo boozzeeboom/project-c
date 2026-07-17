@@ -1,5 +1,18 @@
 # Итерации разработки — ShipPresetCreator
 
+## Итерация от 2026-07-17 (v1.2 — багфиксы по ревью)
+
+**Задача:** Убрана лишняя Platform, починены розовые материалы, восстановлена ходьба по палубе.
+
+**Коммит:** `2a26128` — T-SHIP04: фикс префаб-генератора — убрана лишняя Platform, починены розовые материалы, восстановлена ходьба по палубе
+
+**Изменения:**
+- Удалён дочерний объект Platform — на NPC-кораблях его нет, MainVisual с BoxCollider сам служит палубой
+- `CreateChildCube`: вместо `new Material(Shader.Find("URP/Lit"))` используется `new Material(AssetDatabase.LoadAssetAtPath<Material>(URP_LitMat))` — материалы больше не розовые
+- Ходьба: без перекрывающего коллайдера Platform, NavMeshSurface корректно печёт navmesh по MainVisual
+
+---
+
 ## Итерация от 2026-07-17 (v1.1 fix)
 
 **Задача:** Исправление багов после ревью: ShipRootReference wiring, Key naming, Meziy fuel/module, CargoVisual spawnZone.

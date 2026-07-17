@@ -177,7 +177,7 @@ namespace ProjectC.Editor
             string keyPath      = CreateKeyItemData(shipName, classStr);
             string damagePath   = CreateDamageConfig(classStr, p);
             string schedulePath = CreateEmptySchedule(classStr);
-            string navMeshPath  = CreateDeckNavMeshAsset(classStr);
+            // NavMeshData created AFTER hierarchy is built (needs baking)
 
             AssetDatabase.SaveAssets();
             AssetDatabase.Refresh();
@@ -186,7 +186,6 @@ namespace ProjectC.Editor
             var keyItem      = AssetDatabase.LoadAssetAtPath<ProjectC.Items.ItemData>(keyPath);
             var damageCfg    = AssetDatabase.LoadAssetAtPath<ShipDamageConfig>(damagePath);
             var schedule     = AssetDatabase.LoadAssetAtPath<NpcShipSchedule>(schedulePath);
-            var navMeshData  = AssetDatabase.LoadAssetAtPath<NavMeshData>(navMeshPath);
 
             // --- Phase 2: Build hierarchy ---
             var root = new GameObject(shipName);
@@ -309,7 +308,6 @@ namespace ProjectC.Editor
             SetPrivateField(proxZone, "drawGizmos", false);
 
             var deckNav = root.AddComponent<ShipDeckNav>();
-            SetPrivateField(deckNav, "_deckNavMeshData", navMeshData);
             SetPrivateField(deckNav, "_registerServerOnly", true);
             SetPrivateField(deckNav, "_navFrameSeparation", 5000f);
             SetPrivateField(deckNav, "_registerUnderShip", true);
@@ -480,6 +478,14 @@ namespace ProjectC.Editor
             // --- Wire ShipModuleManager slots ---
             // (Will be auto-discovered by Initialize in Awake via GetComponentsInChildren)
 
+            // --- Phase 3: Bake deck NavMesh ---
+            string navMeshPath = GetNavMeshAssetPath(classStr);
+            var navMeshData = BakeDeckNavMesh(root, navMeshPath);
+            if (navMeshData != null)
+            {
+                SetPrivateField(deckNav, "_deckNavMeshData", navMeshData);
+            }
+
             // --- Save as Prefab ---
             string prefabPath = $"{PrefabFolder}/{shipName}.prefab";
             GameObject prefab = PrefabUtility.SaveAsPrefabAsset(root, prefabPath);
@@ -591,19 +597,12 @@ namespace ProjectC.Editor
                 return path; // already exists
 
             var item = ScriptableObject.CreateInstance<ProjectC.Items.ItemData>();
-            SetPrivateField(item, "itemName", fileName);
-            var itemTypeField = typeof(ProjectC.Items.ItemData).GetField("itemType",
-                System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
-            itemTypeField?.SetValue(item, (ProjectC.Items.ItemType)System.Enum.Parse(
-                typeof(ProjectC.Items.ItemType), "Key"));
-            SetPrivateField(item, "description", $"Ключ корабля «{shipName}» ({classStr})");
-            SetPrivateField(item, "maxStack", 20);
-            SetPrivateField(item, "weightKg", 1.0f);
-            // EquipSlot.None — use int value 0 (safer than enum resolve)
-            var equipField = typeof(ProjectC.Items.ItemData).GetField("equipSlot",
-                System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
-            if (equipField != null)
-                equipField.SetValue(item, 0); // 0 = None
+            item.itemName = fileName;
+            item.itemType = ProjectC.Items.ItemType.Key;
+            item.description = $"Ключ корабля «{shipName}» ({classStr})";
+            item.maxStack = 20;
+            item.weightKg = 1.0f;
+            item.equipSlot = ProjectC.Equipment.EquipSlot.None;
 
             AssetDatabase.CreateAsset(item, path);
             return path;
@@ -659,18 +658,65 @@ namespace ProjectC.Editor
             return path;
         }
 
-        private static string CreateDeckNavMeshAsset(string classStr)
+        private static string GetNavMeshAssetPath(string classStr)
         {
             string navDir = $"{NavMeshFolder}/NavMesh-DeckNavSurface_{classStr}";
             EnsureFolder(navDir);
-            string path = $"{navDir}/NavMesh-DeckNavSurface.asset";
+            return $"{navDir}/NavMesh-DeckNavSurface.asset";
+        }
 
-            if (AssetDatabase.LoadAssetAtPath<NavMeshData>(path) != null)
-                return path;
+        /// <summary>
+        /// Включает NavMeshSurface на DeckNavSurface, печёт навмеш по MainVisual+BoxCollider,
+        /// сохраняет NavMeshData в ассет, выключает Surface обратно.
+        /// Возвращает запечённый NavMeshData (или null при ошибке).
+        /// </summary>
+        private static NavMeshData BakeDeckNavMesh(GameObject root, string assetPath)
+        {
+            var navSurf = root.transform.Find("DeckNavSurface");
+            if (navSurf == null)
+            {
+                Debug.LogError("[ShipPresetCreator] DeckNavSurface не найден — пропускаем бейк навмеша.");
+                return null;
+            }
 
-            var nmd = new NavMeshData();
-            AssetDatabase.CreateAsset(nmd, path);
-            return path;
+            var nms = navSurf.GetComponent<NavMeshSurface>();
+            if (nms == null)
+            {
+                Debug.LogError("[ShipPresetCreator] NavMeshSurface не найден на DeckNavSurface.");
+                return null;
+            }
+
+            // Временно включаем для бейка
+            nms.enabled = true;
+            try
+            {
+                nms.BuildNavMesh(); // void — результат попадает в nms.navMeshData
+            }
+            finally
+            {
+                nms.enabled = false;
+            }
+
+            var baked = nms.navMeshData;
+            if (baked == null)
+            {
+                Debug.LogError("[ShipPresetCreator] BuildNavMesh() отработал, но navMeshData = null — проверьте что MainVisual имеет MeshRenderer + BoxCollider.");
+                return null;
+            }
+
+            // Удаляем старый ассет если есть, сохраняем новый
+            if (AssetDatabase.LoadAssetAtPath<NavMeshData>(assetPath) != null)
+                AssetDatabase.DeleteAsset(assetPath);
+
+            AssetDatabase.CreateAsset(baked, assetPath);
+            AssetDatabase.SaveAssets();
+
+            // Отвязываем NavMeshData от поверхности — ассет уже сохранён,
+            // ссылка на него теперь в ShipDeckNav._deckNavMeshData
+            nms.navMeshData = null;
+
+            Debug.Log($"[ShipPresetCreator] NavMesh запечён и сохранён: {assetPath}");
+            return AssetDatabase.LoadAssetAtPath<NavMeshData>(assetPath);
         }
     }
 }

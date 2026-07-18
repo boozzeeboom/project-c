@@ -14,14 +14,17 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::ProjectC.AI.NpcSpawnerConfig
   npcPrefab: {fileID: 3856242148590983311, guid: 6bd79345e39535a4c876dbecdf904793, type: 3}
   spawnRadiusMin: 1
-  spawnRadiusMax: 6
+  spawnRadiusMax: 23.2
   activationRadius: 147
-  maxAliveCount: 5
+  maxAliveCount: 20
   spawnCheckInterval: 10
   spawnChance: 1
   maxSpawnsPerPlayerPerMinute: 8
   spawnMode: 0
   totalSpawnLimit: 0
+  autoPopulateChunks: 0
+  chunkSpawnRadius: 30
+  maxAlivePerChunk: 3
   groundMask:
     serializedVersion: 2
     m_Bits: 64
@@ -86,3 +89,4 @@ MonoBehaviour:
   enableVengeanceMemory: 1
   lootPrefab: {fileID: 0}
   lootTable: {fileID: 0}
+  showDebugLogs: 0

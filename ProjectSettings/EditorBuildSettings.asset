@@ -80,7 +80,4 @@ EditorBuildSettings:
   - enabled: 0
     path: Assets/_Project/Scenes/World/WorldScene_3_5.unity
     guid: cf0e42f869b35974995f0411a1fadf30
-  - enabled: 0
-    path: Assets/BootstrapScene.unity
-    guid: 6158efa5f0d12ad449b7605a0ab1c9ae
   m_configObjects: {}

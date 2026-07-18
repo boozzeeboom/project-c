@@ -21,6 +21,9 @@ namespace ProjectC.World.Scene
         [Tooltip("Префикс имени сцены (например 'WorldScene_' -> 'WorldScene_0_1')")]
         public string SceneNamePrefix = "WorldScene_";
 
+        [Tooltip("Формат пути к файлу сцены. {0} = префикс, {1} = GridX, {2} = GridZ")]
+        public string ScenePathFormat = "Assets/_Project/Scenes/World/{0}{1}_{2}.unity";
+
         [Tooltip("Использовать Additive загрузку (всегда true для этой архитектуры)")]
         public bool UseAdditiveLoading = true;
 
@@ -35,6 +38,20 @@ namespace ProjectC.World.Scene
                 return string.Empty;
             }
             return $"{SceneNamePrefix}{sceneId.GridX}_{sceneId.GridZ}";
+        }
+
+        /// <summary>
+        /// Получить полный путь к файлу сцены (для загрузки через SceneManager.LoadSceneAsync).
+        /// Использует ScenePathFormat: "Assets/_Project/Scenes/World/WorldScene_0_0.unity".
+        /// </summary>
+        public string GetScenePath(SceneID sceneId)
+        {
+            if (!IsValid(sceneId))
+            {
+                Debug.LogWarning($"[SceneRegistry] Invalid SceneID: {sceneId}");
+                return string.Empty;
+            }
+            return string.Format(ScenePathFormat, SceneNamePrefix, sceneId.GridX, sceneId.GridZ);
         }
 
         /// <summary>

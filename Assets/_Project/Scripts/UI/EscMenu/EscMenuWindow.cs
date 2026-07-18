@@ -367,8 +367,8 @@ namespace ProjectC.UI.EscMenu
             // Закрыть меню перед загрузкой
             Hide();
 
-            // Загрузить BootstrapScene
-            UnityEngine.SceneManagement.SceneManager.LoadScene("BootstrapScene");
+            // Загрузить BootstrapScene (полный путь для однозначности)
+            UnityEngine.SceneManagement.SceneManager.LoadScene("Assets/_Project/Scenes/BootstrapScene.unity");
         }
     }
 }

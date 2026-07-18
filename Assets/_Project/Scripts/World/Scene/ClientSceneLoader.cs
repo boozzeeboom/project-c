@@ -653,8 +653,8 @@ ManageLoadedScenesCount();
 
             _loadingScenes.Add(targetScene);
 
-            string sceneName = sceneRegistry != null ? sceneRegistry.GetSceneName(targetScene) : $"WorldScene_{targetScene.GridX}_{targetScene.GridZ}";
-            if (logSceneLoading) Debug.Log($"[CSL] LoadSceneCoroutine: Loading {sceneName}");
+            string scenePath = sceneRegistry != null ? sceneRegistry.GetScenePath(targetScene) : $"Assets/_Project/Scenes/World/WorldScene_{targetScene.GridX}_{targetScene.GridZ}.unity";
+            if (logSceneLoading) Debug.Log($"[CSL] LoadSceneCoroutine: Loading {scenePath}");
 
             yield return LoadSceneAsync(targetScene);
 
@@ -806,8 +806,9 @@ ManageLoadedScenesCount();
 
         private IEnumerator LoadSceneAsync(SceneID sceneId)
         {
+            string scenePath = sceneRegistry != null ? sceneRegistry.GetScenePath(sceneId) : $"Assets/_Project/Scenes/World/WorldScene_{sceneId.GridX}_{sceneId.GridZ}.unity";
             string sceneName = sceneRegistry != null ? sceneRegistry.GetSceneName(sceneId) : $"WorldScene_{sceneId.GridX}_{sceneId.GridZ}";
-            if (logSceneLoading) Debug.Log($"[CSL] LoadSceneAsync START: {sceneName}");
+            if (logSceneLoading) Debug.Log($"[CSL] LoadSceneAsync START: {scenePath}");
 
             if (_loadingScenes.Contains(sceneId))
             {
@@ -817,11 +818,11 @@ ManageLoadedScenesCount();
 
             _loadingScenes.Add(sceneId);
 
-            var asyncOp = SceneManager.LoadSceneAsync(sceneName, LoadSceneMode.Additive);
+            var asyncOp = SceneManager.LoadSceneAsync(scenePath, LoadSceneMode.Additive);
 
             if (asyncOp == null)
             {
-                if (logSceneLoading) Debug.LogError($"[CSL] FAILED to load scene: {sceneName} - NOT in Build Settings!");
+                if (logSceneLoading) Debug.LogError($"[CSL] FAILED to load scene: {scenePath} - NOT in Build Settings!");
                 _loadingScenes.Remove(sceneId);
                 yield break;
             }
@@ -832,11 +833,11 @@ ManageLoadedScenesCount();
             var loadedScene = UnityEngine.SceneManagement.SceneManager.GetSceneByName(sceneName);
             if (loadedScene.isLoaded)
             {
-                if (logSceneLoading) Debug.Log($"[CSL] LoadSceneAsync COMPLETE: {sceneName}");
+                if (logSceneLoading) Debug.Log($"[CSL] LoadSceneAsync COMPLETE: {scenePath}");
             }
             else
             {
-                if (logSceneLoading) Debug.LogError($"[CSL] VERIFY FAILED: Scene {sceneName} isLoaded=false!");
+                if (logSceneLoading) Debug.LogError($"[CSL] VERIFY FAILED: Scene {scenePath} isLoaded=false!");
             }
 
             if (_loadingScenes.Contains(sceneId))
@@ -849,8 +850,8 @@ ManageLoadedScenesCount();
 
         private IEnumerator UnloadSceneCoroutine(SceneID scene)
         {
-            string sceneName = sceneRegistry != null ? sceneRegistry.GetSceneName(scene) : $"WorldScene_{scene.GridX}_{scene.GridZ}";
-            if (logSceneLoading) Debug.Log($"[CSL] UnloadSceneCoroutine START: {sceneName}");
+            string scenePath = sceneRegistry != null ? sceneRegistry.GetScenePath(scene) : $"Assets/_Project/Scenes/World/WorldScene_{scene.GridX}_{scene.GridZ}.unity";
+            if (logSceneLoading) Debug.Log($"[CSL] UnloadSceneCoroutine START: {scenePath}");
 
             if (!_loadedScenes.Contains(scene))
             {
@@ -860,11 +861,11 @@ ManageLoadedScenesCount();
 
             _loadedScenes.Remove(scene);
 
-            var asyncOp = SceneManager.UnloadSceneAsync(sceneName);
+            var asyncOp = SceneManager.UnloadSceneAsync(scenePath);
 
             if (asyncOp == null)
             {
-                if (logSceneLoading) Debug.LogWarning($"[CSL] UnloadSceneAsync returned null for {sceneName}");
+                if (logSceneLoading) Debug.LogWarning($"[CSL] UnloadSceneAsync returned null for {scenePath}");
             }
             else
             {

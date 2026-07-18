@@ -4,6 +4,36 @@
 
 ---
 
+## 2026-07-?? — M3.2.N: Class-based speed variation (NavTick) ✅ COMPILE-CLEAN
+
+**Задача:** Все NPC-корабли летят с одинаковой скоростью (LiftSpeed=8, CruiseSpeed=12, ApproachSpeed=5, MaxYawRate=45) независимо от класса. Добавить зависимость от `ShipFlightClass`.
+
+### Решение
+
+Добавлен lookup базовых скоростей по `ShipFlightClass` + per-ship множители:
+
+| Класс | Lift (m/s) | Cruise (m/s) | Approach (m/s) | Yaw (°/s) |
+|-------|------------|-------------|----------------|-----------|
+| Light | 10 | 18 | 7 | 60 |
+| Medium | 8 | 12 | 5 | 45 |
+| Heavy | 6 | 8 | 3 | 30 |
+| HeavyII | 5 | 6 | 2 | 20 |
+
+**Формула:** `LiftSpeed = ClassBase.lift × liftSpeedMult` (и аналогично для cruise/approach/yaw).
+
+Множители (`[Range(0.1f, 3f)]`, default=1) видны в инспекторе → можно тонко настроить конкретный корабль (напр. «этот Heavy на 20% быстрее»).
+
+### Изменённые файлы
+
+| Файл | Изменение |
+|------|-----------|
+| `NpcShipController.cs` | + `GetClassBaseSpeeds()` static lookup, + 4 serialized multiplier fields, + `ResolveClassSpeeds()` в `OnNetworkSpawn`. Старые публичные поля `LiftSpeed`/etc → computed properties |
+| `NpcShipControllerEditor.cs` | Movement foldout: показывает ShipFlightClass, base speeds, multipliers, effective speeds |
+
+**Backward compat:** NavTick (`TickLift`, `TickCruise`, etc.) не менялся — они продолжают читать `LiftSpeed`, `CruiseSpeed`, `ApproachSpeed`, `MaxYawRate`, которые теперь вычисляются из класса.
+
+---
+
 ## 2026-07-?? — FIX: detectCollisions=false ломал коллайдер платформы ✅ FIXED
 
 **Сессия:** Диагностика: NPC не спавнятся на палубе + игрок проваливается сквозь платформу.

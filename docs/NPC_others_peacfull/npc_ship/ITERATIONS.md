@@ -1,5 +1,16 @@
 # ITERATIONS — Peaceful NPC Ships (runtime fixes)
 
+## Итерация от 2026-07-?? — M3.2.N: Class-based speed variation
+
+**Задача:** Ввести разнообразие скоростей NPC-кораблей относительно класса (ShipFlightClass). Все корабли летят с одинаковой скоростью.
+**Коммит:** `613b763` — T-NS-N01: Class-based speed variation для NavTick (NPC-корабли)
+**Изменения:**
+- `PeacefulShip/Stations/NpcShipController.cs`: +`GetClassBaseSpeeds()` static lookup, +4 serialized multiplier поля, +`ResolveClassSpeeds()`, старые public поля → computed properties
+- `PeacefulShip/Editor/NpcShipControllerEditor.cs`: Movement foldout показывает класс/базу/множители/эффективные скорости
+- `docs/NPC_others_peacfull/npc_ship/CHANGELOG.md`: запись итерации
+
+---
+
 ## Итерация от 2026-07-17
 
 **Задача:** NPC не спавнятся на палубе, игрок проваливается сквозь платформу при включённом NpcShipController.

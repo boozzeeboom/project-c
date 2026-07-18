@@ -129,6 +129,31 @@ namespace ProjectC.PeacefulShip.EditorTools
             if (_foldMovement)
             {
                 EditorGUI.indentLevel++;
+
+                // M3.2.N: Class-based speed profile
+                var ship = ctrl.GetComponent<ProjectC.Player.ShipController>();
+                var flightClass = ship != null ? ship.ShipFlightClass : ProjectC.Player.ShipFlightClass.Medium;
+                var (baseLift, baseCruise, baseApproach, baseYaw) = Stations.NpcShipController.GetClassBaseSpeeds(flightClass);
+
+                EditorGUILayout.LabelField("Ship Class", flightClass.ToString(), EditorStyles.boldLabel);
+                EditorGUILayout.LabelField("   Base Speeds",
+                    $"Lift={baseLift:F0}  Cruise={baseCruise:F0}  Approach={baseApproach:F0}  Yaw={baseYaw:F0}°/s",
+                    EditorStyles.miniLabel);
+
+                EditorGUILayout.Space(2);
+                DrawProp("liftSpeedMult");
+                DrawProp("cruiseSpeedMult");
+                DrawProp("approachSpeedMult");
+                DrawProp("maxYawRateMult");
+
+                EditorGUILayout.Space(2);
+                EditorGUI.BeginDisabledGroup(true);
+                EditorGUILayout.LabelField("   Effective Speeds",
+                    $"Lift={ctrl.LiftSpeed:F1}  Cruise={ctrl.CruiseSpeed:F1}  Approach={ctrl.ApproachSpeed:F1}  Yaw={ctrl.MaxYawRate:F0}°/s",
+                    EditorStyles.miniLabel);
+                EditorGUI.EndDisabledGroup();
+
+                EditorGUILayout.Space(4);
                 DrawProp("npcThrustMult");
                 DrawProp("npcYawMult");
                 DrawProp("npcArrivalToleranceMeters");

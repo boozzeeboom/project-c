@@ -58,6 +58,53 @@ namespace ProjectC.PeacefulShip.Stations
         [Min(1f)] [SerializeField] private float npcArrivalToleranceMeters = 50f;
 #pragma warning restore 0414
 
+        // ── M3.2.N: Class-based speed profile + per-ship multipliers ──
+        // Базовая скорость определяется ShipFlightClass (авто-определяется из ShipController).
+        // Множители (liftSpeedMult, etc.) позволяют тонко настроить конкретный корабль
+        // (напр. «этот Heavy на 20% быстрее из-за upgraded engines»).
+        // Эффективные скорости = ClassBaseSpeed × multiplier.
+
+        [Header("   Speed multipliers (× class base)")]
+        [Tooltip("Множитель скорости взлёта (м/с). База зависит от класса корабля.")]
+        [Range(0.1f, 3f)] [SerializeField] private float liftSpeedMult = 1f;
+
+        [Tooltip("Множитель крейсерской скорости (м/с). База зависит от класса корабля.")]
+        [Range(0.1f, 3f)] [SerializeField] private float cruiseSpeedMult = 1f;
+
+        [Tooltip("Множитель скорости подлёта (м/с). База зависит от класса корабля.")]
+        [Range(0.1f, 3f)] [SerializeField] private float approachSpeedMult = 1f;
+
+        [Tooltip("Множитель скорости поворота (°/с). База зависит от класса корабля.")]
+        [Range(0.1f, 3f)] [SerializeField] private float maxYawRateMult = 1f;
+
+        // ── Effective speeds (computed in OnNetworkSpawn) ──
+        // Публичные для отладки и Editor-инспектора. Присваиваются в ResolveClassSpeeds().
+        public float LiftSpeed { get; private set; }
+        public float CruiseSpeed { get; private set; }
+        public float ApproachSpeed { get; private set; }
+        public float MaxYawRate { get; private set; }
+
+        /// <summary>Базовые скорости по классу корабля (lift, cruise, approach, yaw).</summary>
+        public static (float lift, float cruise, float approach, float yaw) GetClassBaseSpeeds(ShipFlightClass cls) => cls switch
+        {
+            ShipFlightClass.Light   => (10f, 18f, 7f,  60f),
+            ShipFlightClass.Medium  => (8f,  12f, 5f,  45f),
+            ShipFlightClass.Heavy   => (6f,  8f,  3f,  30f),
+            ShipFlightClass.HeavyII => (5f,  6f,  2f,  20f),
+            _ => (8f, 12f, 5f, 45f),
+        };
+
+        void ResolveClassSpeeds()
+        {
+            var ship = GetComponent<ShipController>();
+            var cls = ship != null ? ship.ShipFlightClass : ShipFlightClass.Medium;
+            var (baseLift, baseCruise, baseApproach, baseYaw) = GetClassBaseSpeeds(cls);
+            LiftSpeed     = baseLift     * liftSpeedMult;
+            CruiseSpeed   = baseCruise   * cruiseSpeedMult;
+            ApproachSpeed = baseApproach * approachSpeedMult;
+            MaxYawRate    = baseYaw      * maxYawRateMult;
+        }
+
         [Header("Anti-gravity boost (Q8)")]
         [Tooltip("Длительность boost после ExitDocked (сек). 0 = отключить.")]
         [Min(0f)] [SerializeField] private float antiGravityBoostDuration = 5f;
@@ -113,6 +160,9 @@ namespace ProjectC.PeacefulShip.Stations
                 // ENGINE-STATE: NPC всегда с включённым двигателем
                 ship.SetEngineRunning(true);
             }
+
+            // M3.2.N: resolve class-based speeds (LiftSpeed, CruiseSpeed, etc.)
+            ResolveClassSpeeds();
 
             // FIX: гарантируем что detectCollisions включён — иначе платформа не работает
             var rb = GetComponent<Rigidbody>();
@@ -254,10 +304,6 @@ namespace ProjectC.PeacefulShip.Stations
         public NavMode CurrentMode { get; private set; } = NavMode.Docked;
         public float LiftStartY { get; set; }
         public Vector3 CruiseTargetPos { get; set; }
-        public float LiftSpeed = 8f;       // m/s
-        public float CruiseSpeed = 12f;     // m/s
-        public float ApproachSpeed = 5f;    // m/s возле станции
-        public float MaxYawRate = 45f;     // deg/s — ПРЯМОЙ angular velocity
         public float DwellTime = 5f;      // s — время на паде перед стартом (5s для теста, потом route.dwellTimeSec)
         public float DockedSinceTime { get; private set; } = -1000f;
         private bool _scheduleAdvancedAfterDock = true; // true = первый Docked не двигаем schedule

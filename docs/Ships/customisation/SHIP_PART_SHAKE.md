@@ -1,6 +1,7 @@
 # ShipPartShake — Дребезг частей корабля при тяге
 
 > **Дата:** 2026-07-21
+> **Последнее изменение:** 2026-07-21 (fix 4 — ShipInputReader.Awake gate)
 > **Тикет:** T-SHIP-SHAKE
 > **Файл:** `Assets/_Project/Scripts/Ship/ShipPartShake.cs`
 
@@ -84,6 +85,26 @@ _thrustThreshold = 0.1
 Для мягкой — уменьшить амплитуду кривой до ±0.5.
 
 ---
+
+## Input Gating (fix 4 — 2026-07-21)
+
+**Проблема:** `ShipInputReader.Update()` читает `Keyboard.current` напрямую, без проверки наличия пилота. Если `ShipInputReader.enabled = true` в префабе — ВСЕ корабли на сцене читают W/S игрока с первого кадра. Сценарий:
+
+1. Игрок в пешем режиме, не садился в корабль
+2. W/S зажимаются для ходьбы
+3. `ShipInputReader` (на каждом корабле) выставляет `_currentThrust ≠ 0`
+4. `ShipPartShake`/`EngineThrusterVisual` проверяют `_shipController.enabled` (true) и `IsEngineRunning` — если двигатель запущен (NPC-корабли через `NpcShipController.SetEngineRunning(true)`) → визуалы трясутся
+
+**Решение:** `ShipInputReader.Awake()` → `enabled = false`. Компонент стартует выключенным **всегда**. `NetworkPlayer.SubmitSwitchModeRpc` (стр. 1128) и `PlayerStateMachine.ApplyFlying` (стр. 148) включают его при посадке пилота.
+
+**Уровни защиты (defence in depth):**
+
+| Уровень | Где | Что |
+|---|---|---|
+| 1 (root cause) | `ShipInputReader.Awake()` | `enabled = false` — не читает клавиатуру без пилота |
+| 2 (disembark) | `NetworkPlayer.SubmitSwitchModeRpc` | `inputReader.enabled = false` при выходе |
+| 3 (stale state) | `ShipInputReader.OnDisable()` | Сброс `_currentThrust`/`_currentYaw`/etc в 0 |
+| 4 (defence) | `ShipPartShake.Update()` / `EngineThrusterVisual.Update()` | Проверка `!_shipController.enabled` и `!IsEngineRunning` |
 
 ## Зависимости
 

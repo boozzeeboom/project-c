@@ -1,5 +1,36 @@
 # Итерации реализации — Engine Visual System
 
+## Итерация от 2026-07-21 (fix 4)
+
+**Задача:** T-SHIP-SHAKE — баг: визуалы кораблей трясутся в пешем режиме (без посадки)
+**Коммит:** `см. git log -1`
+
+**Симптомы:**
+- В пешем режиме (игрок не садился в корабль) нажатия W/S вызывали:
+  - Дребезг `ShipPartShake` на **всех** кораблях в сцене
+  - Вращение лопастей + отклонение `EngineThrusterVisual`
+- Эффект проявлялся даже если игрок ни разу не нажимал F
+
+**Корневая причина:**
+1. `ShipInputReader.Update()` читает `Keyboard.current` напрямую, без проверки наличия пилота
+2. Если `ShipInputReader.enabled = true` в префабе — **каждый** корабль на сцене опрашивает W/S с первого кадра
+3. `ShipPartShake`/`EngineThrusterVisual` проверяют `_shipController.enabled` (true) и `IsEngineRunning` (true у NPC-кораблей через `NpcShipController.SetEngineRunning(true)`) → визуалы активируются
+4. Предыдущий fix 3 (disembark) покрывал только случай **после** выхода из корабля — не покрывал корабли, в которые игрок **никогда** не садился
+
+**Исправление:**
+- `ShipInputReader.Awake()` → `enabled = false` (1 строка)
+- `NetworkPlayer` и `PlayerStateMachine` включают компонент при посадке (как и раньше)
+
+**Изменённые файлы:**
+- `Assets/_Project/Scripts/Player/ShipInputReader.cs`
+- `docs/Ships/customisation/SHIP_PART_SHAKE.md`
+- `docs/Ships/customisation/ITERATIONS.md`
+
+**Проверки:**
+- 0 ошибок компиляции ✅
+
+---
+
 ## Итерация от 2026-07-21 (fix 3)
 
 **Задача:** T-ENG02 — баг: визуалы двигателя реагируют на WASD после выхода из корабля (F)

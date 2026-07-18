@@ -59,6 +59,13 @@ namespace ProjectC.Player
         private bool _meziyThrustFwdHeld;
         private bool _meziyThrustBwdHeld;
 
+        private void Awake()
+        {
+            // Всегда стартуем выключенным. NetworkPlayer.SubmitSwitchModeRpc
+            // и PlayerStateMachine.ApplyFlying включают при посадке пилота.
+            enabled = false;
+        }
+
         private void OnDisable()
         {
             // Сброс всего ввода при отключении — чтобы визуалы корабля

@@ -1,5 +1,13 @@
 # Итерации разработки — ShipPresetCreator
 
+## Итерация от 2026-07-18 (v1.8 — NavMesh-папка по имени корабля)
+
+**Задача:** Папка с NavMesh-сеткой создавалась по классу (`NavMesh-DeckNavSurface_HeavyII`), а не по имени корабля.
+
+**Исправление:** `GetNavMeshAssetPath` теперь принимает `shipName` вместо `classStr` — папка называется `NavMesh-DeckNavSurface_{ShipName}`.
+
+---
+
 ## Итерация от 2026-07-18 (v1.7 — правки Heavy + HeavyII preset)
 
 **Задача:** Скорректировать физические параметры классов Heavy и HeavyII.

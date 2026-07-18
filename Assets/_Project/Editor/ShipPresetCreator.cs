@@ -478,7 +478,7 @@ namespace ProjectC.Editor
             // (Will be auto-discovered by Initialize in Awake via GetComponentsInChildren)
 
             // --- Phase 3: Bake deck NavMesh ---
-            string navMeshPath = GetNavMeshAssetPath(classStr);
+            string navMeshPath = GetNavMeshAssetPath(shipName);
             var navMeshData = BakeDeckNavMesh(root, navMeshPath);
             if (navMeshData != null)
             {
@@ -657,9 +657,9 @@ namespace ProjectC.Editor
             return path;
         }
 
-        private static string GetNavMeshAssetPath(string classStr)
+        private static string GetNavMeshAssetPath(string shipName)
         {
-            string navDir = $"{NavMeshFolder}/NavMesh-DeckNavSurface_{classStr}";
+            string navDir = $"{NavMeshFolder}/NavMesh-DeckNavSurface_{shipName}";
             EnsureFolder(navDir);
             return $"{navDir}/NavMesh-DeckNavSurface.asset";
         }

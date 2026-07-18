@@ -1,0 +1,39 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 41e530c51a84c034f8e9695ad8984337, type: 3}
+  m_Name: NpcShipSchedule_Light_Default
+  m_EditorClassIdentifier: Assembly-CSharp::ProjectC.PeacefulShip.Stations.NpcShipSchedule
+  scheduleId: SCH-NPC-LIGHT-DEFAULT
+  displayName: "\u0420\u0430\u0441\u043F\u0438\u0441\u0430\u043D\u0438\u0435 Light
+    (\u043F\u0443\u0441\u0442\u043E\u0435)"
+  scheduleType: 0
+  routes: []
+  meanArrivalIntervalSec: 480
+  arrivalIntervalStdDev: 90
+  minArrivalSpacingSec: 60
+  minDwellTimeSec: 60
+  maxDwellTimeSec: 90
+  cargoTrade:
+    useUnlimitedCredits: 1
+    maxLoadSlots: 8
+    maxLoadWeightKg: 200
+    sellAllOnArrival: 1
+    buyConfiguredItemsAfterSell: 1
+    buyItems:
+    - itemId: resource_mezium_box
+      desiredQuantity: 3
+      sellOnArrival: 1
+      maxKeepQuantity: 0
+    - itemId: resource_antigrav_box
+      desiredQuantity: 2
+      sellOnArrival: 1
+      maxKeepQuantity: 0

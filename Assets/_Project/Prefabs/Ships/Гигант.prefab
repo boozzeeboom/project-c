@@ -1537,7 +1537,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: d5a57f767e5e46a458fc5d3c628d0cbb, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Unity.Netcode.Runtime::Unity.Netcode.NetworkObject
-  GlobalObjectIdHash: 1635542511
+  GlobalObjectIdHash: 1334684183
   InScenePlacedSourceGlobalObjectIdHash: 1334684183
   DeferredDespawnTick: 0
   Ownership: 1
@@ -1568,7 +1568,7 @@ MonoBehaviour:
   _debugLog: 0
   _keyItemData: {fileID: 11400000, guid: 16e0904e2657f1a47bce06086b26687b, type: 2}
   _customDisplayName: "\u0413\u0438\u0433\u0430\u043D\u0442"
-  thrustForce: 65000
+  thrustForce: 650000
   maxSpeed: 100
   yawForce: 500000
   pitchForce: 0
@@ -1584,7 +1584,7 @@ MonoBehaviour:
   massLight: 800
   massMedium: 1000
   massHeavy: 1500
-  massHeavyII: 2000
+  massHeavyII: 20000
   shipConstraints: 0
   linearDrag: 0.4
   angularDrag: 8
@@ -1666,15 +1666,15 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 9667864ab7695b24fabbb9516ee3ec33, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::ProjectC.Ship.ShipFuelSystem
-  currentFuel: 300
-  maxFuel: 300
-  fuelConsumptionRate: 1.5
-  fuelRegenRate: 0.3
+  currentFuel: 300000
+  maxFuel: 300000
+  fuelConsumptionRate: 40
+  fuelRegenRate: 0.1
   startEngineConsumption: 0.1
-  idleConsumptionRate: 0.05
-  atmosphericRefuelRate: 2
-  thrustPenaltyDuringRefuel: 0.5
-  speedPenaltyDuringRefuel: 0.7
+  idleConsumptionRate: 0.1
+  atmosphericRefuelRate: 150
+  thrustPenaltyDuringRefuel: 1
+  speedPenaltyDuringRefuel: 1
 --- !u!114 &216825289379053953
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -1867,10 +1867,10 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 5346576fa6c208e4f9822332d6587fe3, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::ProjectC.Ship.ShipRootReference
-  _shipController: {fileID: 0}
-  _rigidbody: {fileID: 0}
-  _networkObject: {fileID: 0}
-  _root: {fileID: 0}
+  _shipController: {fileID: 6608212313574679920}
+  _rigidbody: {fileID: 8064352247872514915}
+  _networkObject: {fileID: 5078006147924834318}
+  _root: {fileID: 4372873117873263850}
 --- !u!1 &8346340473116990554
 GameObject:
   m_ObjectHideFlags: 0

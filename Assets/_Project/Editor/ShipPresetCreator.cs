@@ -135,7 +135,8 @@ namespace ProjectC.Editor
         {
             // Light
             new ClassPreset {
-                thrustForce=5000f, maxSpeed=5000f, yawForce=70000f, pitchForce=25f, verticalForce=7000f,
+                thrustForce=50000f, maxSpeed=200f, yawForce=70000f, pitchForce=25f, verticalForce=70000f,
+
                 yawSmooth=0.25f, pitchSmooth=0.6f, liftSmooth=0.8f, thrustSmooth=0.2f, yawDecay=0.8f,
                 windExposure=1.2f, massMultiplier=15f,
                 fuelMax=50f, fuelConsumption=0.5f, hullHP=100, modulePower=100,

@@ -950,11 +950,11 @@ MonoBehaviour:
   _debugLog: 0
   _keyItemData: {fileID: 11400000, guid: 4e612a9a1f034504dae0ee963ba211ed, type: 2}
   _customDisplayName: "\u041B\u043E\u0440\u0435\u0439\u043D"
-  thrustForce: 5000
-  maxSpeed: 5000
+  thrustForce: 50000
+  maxSpeed: 200
   yawForce: 70000
   pitchForce: 25
-  verticalForce: 7000
+  verticalForce: 70000
   yawSmoothTime: 0.25
   pitchSmoothTime: 0.6
   liftSmoothTime: 0.8

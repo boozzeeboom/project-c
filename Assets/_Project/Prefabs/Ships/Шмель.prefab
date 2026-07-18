@@ -179,11 +179,11 @@ MonoBehaviour:
   _debugLog: 0
   _keyItemData: {fileID: 11400000, guid: 667a206df9dfa7f4e9e11d8275f89f73, type: 2}
   _customDisplayName: "\u0428\u043C\u0435\u043B\u044C"
-  thrustForce: 5000
-  maxSpeed: 5000
+  thrustForce: 50000
+  maxSpeed: 200
   yawForce: 70000
   pitchForce: 25
-  verticalForce: 7000
+  verticalForce: 70000
   yawSmoothTime: 0.25
   pitchSmoothTime: 0.6
   liftSmoothTime: 0.8

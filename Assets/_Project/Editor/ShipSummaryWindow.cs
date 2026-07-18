@@ -31,8 +31,8 @@ namespace ProjectC.Editor
         private List<ShipSummaryEntry> _ships = new List<ShipSummaryEntry>();
         private Vector2 _tableScroll;
         private Vector2 _detailScroll;
-        private int _selectedIndex = -1;
-        private HashSet<int> _multiSelected = new HashSet<int>();
+        private string _selectedPrefabPath;            // track by path, not index
+        private HashSet<string> _multiSelectedPaths = new HashSet<string>();
         private string _filterText = "";
 
         // ── Детальная панель: foldout states ──
@@ -169,8 +169,6 @@ namespace ProjectC.Editor
         private void Rescan()
         {
             _ships.Clear();
-            _selectedIndex = -1;
-            _multiSelected.Clear();
 
             string[] prefabGuids = AssetDatabase.FindAssets("t:Prefab", new[] { ShipsFolder });
             foreach (string guid in prefabGuids)
@@ -353,21 +351,25 @@ namespace ProjectC.Editor
                     s.flightClass.ToString().Contains(_filterText, StringComparison.OrdinalIgnoreCase)
                 ).ToList();
 
+            // ── Разрешаем селекцию по путям (индексы нестабильны при сортировке) ──
+            int selectedIndex = ResolveIndexByPath(filtered, _selectedPrefabPath);
+            var multiSelected = ResolveMultiByPath(filtered, _multiSelectedPaths);
+
             // ── Таблица ──
             float tableHeight = position.height * 0.45f;
             Rect tableRect = EditorGUILayout.GetControlRect(false, tableHeight);
-            DrawTable(tableRect, filtered);
+            DrawTable(tableRect, filtered, ref selectedIndex, multiSelected);
 
             EditorGUILayout.Space(4);
 
             // ── Нижняя панель: детали или batch ──
-            if (_multiSelected.Count >= 2)
+            if (multiSelected.Count >= 2)
             {
-                DrawBatchPanel(filtered);
+                DrawBatchPanel(filtered, multiSelected);
             }
-            else if (_selectedIndex >= 0 && _selectedIndex < filtered.Count)
+            else if (selectedIndex >= 0 && selectedIndex < filtered.Count)
             {
-                DrawDetailPanel(filtered[_selectedIndex]);
+                DrawDetailPanel(filtered[selectedIndex]);
             }
             else
             {
@@ -406,7 +408,8 @@ namespace ProjectC.Editor
         private SortColumn _sortCol = SortColumn.Name;
         private bool _sortAsc = true;
 
-        private void DrawTable(Rect rect, List<ShipSummaryEntry> ships)
+        private void DrawTable(Rect rect, List<ShipSummaryEntry> ships,
+            ref int selectedIndex, HashSet<int> multiSelected)
         {
             // Сортировка
             var sorted = SortShips(ships);
@@ -445,8 +448,9 @@ namespace ProjectC.Editor
                 var ship = sorted[i];
                 Rect rowRect = new Rect(0, rowHeight + i * rowHeight, totalWidth, rowHeight);
 
-                bool isSelected = _multiSelected.Contains(i);
-                if (isSelected)
+                // Highlight by path (stable across sorts)
+                bool isHighlighted = _multiSelectedPaths.Contains(ship.prefabPath);
+                if (isHighlighted)
                     EditorGUI.DrawRect(rowRect, new Color(0.25f, 0.45f, 0.7f, 0.5f));
                 else if (i % 2 == 0)
                     EditorGUI.DrawRect(rowRect, new Color(0.22f, 0.22f, 0.22f));
@@ -472,18 +476,20 @@ namespace ProjectC.Editor
                 Event evt = Event.current;
                 if (evt.type == EventType.MouseDown && rowRect.Contains(evt.mousePosition))
                 {
+                    string path = ship.prefabPath;
                     if (evt.control || evt.command)
                     {
-                        if (_multiSelected.Contains(i))
-                            _multiSelected.Remove(i);
+                        if (_multiSelectedPaths.Contains(path))
+                            _multiSelectedPaths.Remove(path);
                         else
-                            _multiSelected.Add(i);
+                            _multiSelectedPaths.Add(path);
+                        _selectedPrefabPath = null;
                     }
                     else
                     {
-                        _selectedIndex = i;
-                        _multiSelected.Clear();
-                        _multiSelected.Add(i);
+                        _selectedPrefabPath = path;
+                        _multiSelectedPaths.Clear();
+                        _multiSelectedPaths.Add(path);
                     }
                     evt.Use();
                     Repaint();
@@ -491,6 +497,10 @@ namespace ProjectC.Editor
             }
 
             GUI.EndScrollView();
+
+            // Обновляем resolved индексы для вызывающего кода
+            // ВАЖНО: резолвим против ships (filtered), не sorted — иначе индекс уедет
+            selectedIndex = ResolveIndexByPath(ships, _selectedPrefabPath);
         }
 
         private List<ShipSummaryEntry> SortShips(List<ShipSummaryEntry> ships)
@@ -696,10 +706,10 @@ namespace ProjectC.Editor
         // BATCH PANEL
         // ═══════════════════════════════════════════════════════════════
 
-        private void DrawBatchPanel(List<ShipSummaryEntry> filtered)
+        private void DrawBatchPanel(List<ShipSummaryEntry> filtered, HashSet<int> multiSelected)
         {
             var selectedShips = new List<ShipSummaryEntry>();
-            foreach (int idx in _multiSelected)
+            foreach (int idx in multiSelected)
             {
                 if (idx >= 0 && idx < filtered.Count)
                     selectedShips.Add(filtered[idx]);
@@ -859,6 +869,29 @@ namespace ProjectC.Editor
             var p = so.FindProperty(name);
             if (p != null && p.propertyType == SerializedPropertyType.Boolean)
                 target = p.boolValue;
+        }
+
+        /// <summary>
+        /// Разрешает индекс в списке по prefabPath. Если путь не найден — возвращает -1.
+        /// Используется чтобы избежать рассинхрона при сортировке/фильтрации.
+        /// </summary>
+        private static int ResolveIndexByPath(List<ShipSummaryEntry> list, string path)
+        {
+            if (string.IsNullOrEmpty(path)) return -1;
+            for (int i = 0; i < list.Count; i++)
+                if (list[i].prefabPath == path) return i;
+            return -1;
+        }
+
+        private static HashSet<int> ResolveMultiByPath(List<ShipSummaryEntry> list, HashSet<string> paths)
+        {
+            var result = new HashSet<int>();
+            foreach (string p in paths)
+            {
+                int idx = ResolveIndexByPath(list, p);
+                if (idx >= 0) result.Add(idx);
+            }
+            return result;
         }
 
         private static string F(float v)  => v >= 1000 ? $"{v/1000f:F1}k" : $"{v:F0}";

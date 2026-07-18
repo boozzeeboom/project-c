@@ -954,11 +954,11 @@ MonoBehaviour:
   _debugLog: 0
   _keyItemData: {fileID: 11400000, guid: aea7ff0e2090a084a961d5d89f464cb5, type: 2}
   _customDisplayName: "\u0421\u043A\u0430\u0442"
-  thrustForce: 5000
-  maxSpeed: 5000
+  thrustForce: 50000
+  maxSpeed: 200
   yawForce: 70000
   pitchForce: 25
-  verticalForce: 7000
+  verticalForce: 70000
   yawSmoothTime: 0.25
   pitchSmoothTime: 0.6
   liftSmoothTime: 0.8

@@ -1,12 +1,17 @@
 # Итерации разработки — ShipPresetCreator
 
-## Итерация от 2026-07-18 (v1.7 — правки Heavy preset)
+## Итерация от 2026-07-18 (v1.7 — правки Heavy + HeavyII preset)
 
-**Задача:** Скорректировать физические параметры класса Heavy по эталону.
+**Задача:** Скорректировать физические параметры классов Heavy и HeavyII.
 
-**Исправления:**
+**Heavy:**
 - `thrustForce`: 5 500 → 100 000
 - `verticalForce`: 800 → 50 000
+- `massMultiplier`: 10 → 25
+
+**HeavyII:**
+- `thrustForce`: 6 500 → 65 000
+- `verticalForce`: 1 200 → 120 000
 - `massMultiplier`: 10 → 25
 
 ---

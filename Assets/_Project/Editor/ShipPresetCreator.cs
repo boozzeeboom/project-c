@@ -150,9 +150,9 @@ namespace ProjectC.Editor
             },
             // HeavyII
             new ClassPreset {
-                thrustForce=6500f, maxSpeed=100f, yawForce=500000f, pitchForce=0f, verticalForce=1200f,
+                thrustForce=65000f, maxSpeed=100f, yawForce=500000f, pitchForce=0f, verticalForce=120000f,
                 yawSmooth=0.7f, pitchSmooth=1.1f, liftSmooth=1.5f, thrustSmooth=0.5f, yawDecay=2.0f,
-                windExposure=0.5f, massMultiplier=10f,
+                windExposure=0.5f, massMultiplier=25f,
                 fuelMax=300f, fuelConsumption=1.5f, hullHP=600, modulePower=400,
                 visualScale=new Vector3(13.3f,1f,22f), classColor=new Color(0.8f,0.8f,0.3f)
             },

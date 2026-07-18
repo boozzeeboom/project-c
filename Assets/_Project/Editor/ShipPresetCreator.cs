@@ -89,6 +89,15 @@ namespace ProjectC.Editor
                     return;
                 }
 
+                string prefabPath = $"{PrefabFolder}/{_shipName}.prefab";
+                if (AssetDatabase.LoadAssetAtPath<GameObject>(prefabPath) != null)
+                {
+                    EditorUtility.DisplayDialog("Предупреждение",
+                        $"Корабль с именем «{_shipName}» уже создан.\n\nПрефаб: {prefabPath}",
+                        "OK");
+                    return;
+                }
+
                 CreateShipPreset(_shipName, _selectedClass);
                 Close();
             }

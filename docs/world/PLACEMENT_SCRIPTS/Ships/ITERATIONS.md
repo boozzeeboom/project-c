@@ -1,5 +1,23 @@
 # Итерации разработки — ShipPresetCreator
 
+## Итерация от 2026-07-18 (v1.11 — ShipSummaryWindow)
+
+**Задача:** Создать EditorWindow для сводного просмотра и массового редактирования всех кораблей.
+
+**Коммит:** `fdffe8a` — T-SHIP07: ShipSummaryWindow — сводный редактор всех кораблей
+
+**Изменения:**
+- `Assets/_Project/Editor/ShipSummaryWindow.cs` — основной файл (~550 строк)
+- `docs/world/PLACEMENT_SCRIPTS/Ships/SHIP_SUMMARY_TOOL.md` — документация
+- Меню: `Tools → Project C → Ship Summary`
+- Таблица с 13 колонками: Name, Class, Thrust, MaxSpeed, Yaw, Pitch, Vert, Mass×, FuelMax, Fuel/s, HP, Power, WindExp
+- Детальная панель: foldout-секции Flight, Smoothing, Physics, Fuel, Cargo, NPC, Identity
+- Batch Edit: массовое применение значений к выделенной группе
+- Сортировка по любой колонке, фильтр по имени/классу
+- Чтение/запись через SerializedObject напрямую в префабы (без инстанцирования)
+
+---
+
 ## Итерация от 2026-07-18 (v1.10 — ShipRootReference на корне)
 
 **Задача:** В v1.6 был ошибочно убран `ShipRootReference` с корня (ориентировались на `DONT-DELETE-NPC REFERENCE SHIP`). Эталонный префаб `Гигант.prefab` имеет его на корне — возвращаем.

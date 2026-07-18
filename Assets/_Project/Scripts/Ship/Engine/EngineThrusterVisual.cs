@@ -48,9 +48,17 @@ namespace ProjectC.Ship.Engine
         [Tooltip("ShipRootReference на этой или родительской части корабля. Авто-поиск если null.")]
         [SerializeField] private ShipRootReference _rootRef;
 
+        [Header("NPC Fallback")]
+        [Tooltip("Скорость корабля (м/с), соответствующая 100% тяге. Используется когда нет пилота за штурвалом (NPC-автопилот).")]
+        [SerializeField] private float _maxReferenceSpeed = 10f;
+
+        [Tooltip("Угловая скорость рыскания (град/с), соответствующая 100% yaw. Используется для NPC-автопилота.")]
+        [SerializeField] private float _maxRefYawRate = 45f;
+
         // Кешированные ссылки
         private ShipController _shipController;
         private ShipInputReader _inputReader;
+        private Rigidbody _rbody;
 
         // Smooth state
         private float _currentAngle;
@@ -81,7 +89,10 @@ namespace ProjectC.Ship.Engine
             {
                 _shipController = _rootRef.ShipController;
                 if (_shipController != null)
+                {
                     _inputReader = _shipController.GetComponent<ShipInputReader>();
+                    _rbody = _shipController.GetComponent<Rigidbody>();
+                }
             }
 
             if (_shipController == null)
@@ -90,14 +101,38 @@ namespace ProjectC.Ship.Engine
 
         private void Update()
         {
-            if (_shipController == null || _inputReader == null || !_shipController.enabled)
+            if (_shipController == null || !_shipController.enabled)
                 return;
 
             if (!_shipController.IsEngineRunning)
                 return;
 
-            float thrustNorm = Mathf.Abs(_inputReader.CurrentThrust);
-            float yawNorm = _inputReader.CurrentYaw;
+            // Источник thrust/yaw: пилот за штурвалом → клавиатурный ввод,
+            // нет пилота (NPC-автопилот) → вывод из Rigidbody.
+            float thrustNorm, yawNorm;
+            if (_inputReader != null && _inputReader.isActiveAndEnabled)
+            {
+                thrustNorm = Mathf.Abs(_inputReader.CurrentThrust);
+                yawNorm = _inputReader.CurrentYaw;
+            }
+            else if (_rbody != null)
+            {
+                float speed = _rbody.linearVelocity.magnitude;
+                thrustNorm = _maxReferenceSpeed > 0.01f
+                    ? Mathf.Clamp01(speed / _maxReferenceSpeed)
+                    : 0f;
+
+                float yawRateRad = _rbody.angularVelocity.y;
+                float maxYawRad = _maxRefYawRate * Mathf.Deg2Rad;
+                yawNorm = maxYawRad > 0.001f
+                    ? Mathf.Clamp(yawRateRad / maxYawRad, -1f, 1f)
+                    : 0f;
+            }
+            else
+            {
+                thrustNorm = 0f;
+                yawNorm = 0f;
+            }
 
             // --- Propeller rotation ---
             if (_maxRpm != 0f && _propeller != null)

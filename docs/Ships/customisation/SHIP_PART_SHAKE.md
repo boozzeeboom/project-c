@@ -43,6 +43,7 @@ ShipPartShake (на визуале)
 | `_positionAmplitude` | Vector3 | (0.01, 0.01, 0.02) | Амплитуда позиции по XYZ в локальном пространстве |
 | `_rotationAmplitude` | Vector3 | (0.5, 0.3, 0.5) | Амплитуда вращения (градусы) вокруг локальных XYZ |
 | `_thrustThreshold` | float (0-1) | 0.05 | Минимальная тяга для активации дрожи |
+| `_maxReferenceSpeed` | float | 10 | Скорость (м/с) = 100% thrust для NPC-режима |
 | `_rootRef` | ShipRootReference | auto-find | Ссылка на корень корабля |
 
 ---
@@ -85,6 +86,22 @@ _thrustThreshold = 0.1
 Для мягкой — уменьшить амплитуду кривой до ±0.5.
 
 ---
+
+## NPC Fallback (fix 5 — 2026-07-21)
+
+**Проблема:** NPC-корабли управляются через `NpcShipController.NavTick()` — прямые `rb.linearVelocity` / `rb.MoveRotation`, минуя и `ShipInputReader`, и силовой конвейер `ShipController.FixedUpdate`. Визуалы (`ShipPartShake`, `EngineThrusterVisual`) видели `_inputReader.CurrentThrust = 0` (компонент отключён) → анимации не работали.
+
+**Решение:** когда `ShipInputReader` отключён (`!isActiveAndEnabled`), визуалы выводят thrust/yaw из фактического движения `Rigidbody`:
+
+```
+_player_ship:  _inputReader.isActiveAndEnabled → клавиатурный ввод (мгновенный)
+_npc_ship:    fallback → Rigidbody.velocity / angularVelocity
+```
+
+- **Thrust:** `Clamp01(linearVelocity.magnitude / _maxReferenceSpeed)`, по умолчанию `_maxReferenceSpeed = 10 м/с`
+- **Yaw:** `Clamp(angularVelocity.y / _maxRefYawRate, -1, 1)`, по умолчанию `_maxRefYawRate = 45°/с`
+
+Оба параметра настраиваются в инспекторе (секция «NPC Fallback»).
 
 ## Input Gating (fix 4 — 2026-07-21)
 

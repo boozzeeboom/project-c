@@ -1,5 +1,63 @@
 # Итерации реализации — Engine Visual System
 
+## Итерация от 2026-07-21 (fix 5)
+
+**Задача:** T-ENG02 / T-SHIP-SHAKE — NPC Fallback: визуалы кораблей (EngineThrusterVisual + ShipPartShake) работают на NPC-автопилоте
+**Коммит:** `см. git log -1`
+
+**Симптомы:**
+- NPC-корабли (NpcShipController) летают по маршруту, но визуалы молчат:
+  - Лопасти двигателей не вращаются
+  - ShipPartShake не вибрирует
+  - Отклонения двигателей по yaw нет
+- Игрок, севший в NPC-корабль, видит анимации (ShipInputReader включается)
+- Игрок в своём корабле видит анимации (клавиатурный ввод работает)
+
+**Корневая причина:**
+NPC-движение идёт через `NpcShipController.NavTick()` → прямые `rb.linearVelocity` / `rb.MoveRotation`, полностью минуя `ShipInputReader` и силовой конвейер `ShipController.FixedUpdate`. Fix 4 отключил `ShipInputReader` для кораблей без пилота (правильно). Но визуалы читали ТОЛЬКО из `ShipInputReader` → `_currentThrust = 0` для NPC.
+
+**Исправление — NPC Fallback в визуальных скриптах:**
+
+Когда `ShipInputReader` отключён (`!isActiveAndEnabled`), визуалы выводят thrust/yaw из `Rigidbody`:
+
+| Скрипт | Что выводится | Из чего | Новое поле |
+|---|---|---|---|
+| `ShipPartShake` | `targetThrust` | `Clamp01(linearVelocity.magnitude / _maxReferenceSpeed)` | `_maxReferenceSpeed = 10 м/с` |
+| `EngineThrusterVisual` | `thrustNorm` | Аналогично | `_maxReferenceSpeed = 10 м/с` |
+| `EngineThrusterVisual` | `yawNorm` | `Clamp(angularVelocity.y / _maxRefYawRate)` | `_maxRefYawRate = 45°/с` |
+
+**Архитектура источников ввода (defence in depth):**
+
+```
+Общий gate: _shipController.enabled && _shipController.IsEngineRunning
+  ├── _inputReader.isActiveAndEnabled? → клавиатурный ввод (игрок за штурвалом)
+  │     └── ShipInputReader.CurrentThrust / CurrentYaw (мгновенный)
+  └── else → Rigidbody fallback (NPC-автопилот, нет пилота)
+        ├── thrustNorm = speed / _maxReferenceSpeed
+        └── yawNorm   = angularVelocity.y / _maxRefYawRate
+```
+
+**Изменённые файлы:**
+- `Assets/_Project/Scripts/Ship/ShipPartShake.cs` — `_maxReferenceSpeed`, `_rbody`, fallback-логика
+- `Assets/_Project/Scripts/Ship/Engine/EngineThrusterVisual.cs` — `_maxReferenceSpeed`, `_maxRefYawRate`, `_rbody`, fallback-логика
+- `docs/Ships/customisation/SHIP_PART_SHAKE.md`
+- `docs/Ships/customisation/ITERATIONS.md`
+
+**Что НЕ сломано:**
+- ✅ `ShipInputReader.Awake() → enabled = false` (fix 4) — без изменений
+- ✅ `ShipInputReader.OnDisable()` сброс в 0 (fix 2) — без изменений
+- ✅ `_shipController.enabled` gate (fix 3) — без изменений
+- ✅ `IsEngineRunning` gate — без изменений
+- ✅ Игрок за штурвалом — клавиатурный ввод приоритетнее Rigidbody (нет инерции)
+
+**Проверки:**
+- 0 ошибок компиляции ✅
+- `ShipController.cs` без изменений ✅
+- `ShipInputReader.cs` без изменений ✅
+- `NpcShipController.cs` без изменений ✅
+
+---
+
 ## Итерация от 2026-07-21 (fix 4)
 
 **Задача:** T-SHIP-SHAKE — баг: визуалы кораблей трясутся в пешем режиме (без посадки)

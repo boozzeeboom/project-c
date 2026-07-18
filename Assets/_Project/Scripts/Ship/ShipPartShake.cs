@@ -42,9 +42,14 @@ namespace ProjectC.Ship
         [Tooltip("ShipRootReference на этой или родительской части корабля. Авто-поиск если null.")]
         [SerializeField] private ShipRootReference _rootRef;
 
+        [Header("NPC Fallback")]
+        [Tooltip("Скорость корабля (м/с), соответствующая 100% тяге. Используется когда нет пилота за штурвалом (NPC-автопилот).")]
+        [SerializeField] private float _maxReferenceSpeed = 10f;
+
         // Кешированные ссылки
         private ShipController _shipController;
         private ShipInputReader _inputReader;
+        private Rigidbody _rbody;
 
         // Сохранённая базовая позиция/вращение (до дрожи)
         private Vector3 _baseLocalPos;
@@ -76,7 +81,10 @@ namespace ProjectC.Ship
             {
                 _shipController = _rootRef.ShipController;
                 if (_shipController != null)
+                {
                     _inputReader = _shipController.GetComponent<ShipInputReader>();
+                    _rbody = _shipController.GetComponent<Rigidbody>();
+                }
             }
 
             if (_shipController == null)
@@ -85,13 +93,28 @@ namespace ProjectC.Ship
 
         private void Update()
         {
-            if (_shipController == null || _inputReader == null || !_shipController.enabled)
+            if (_shipController == null || !_shipController.enabled)
                 return;
 
             if (!_shipController.IsEngineRunning)
                 return;
 
-            float targetThrust = Mathf.Abs(_inputReader.CurrentThrust);
+            // Источник thrust: пилот за штурвалом → клавиатурный ввод,
+            // нет пилота (NPC-автопилот) → вывод из Rigidbody.velocity.
+            float targetThrust;
+            if (_inputReader != null && _inputReader.isActiveAndEnabled)
+            {
+                targetThrust = Mathf.Abs(_inputReader.CurrentThrust);
+            }
+            else if (_rbody != null && _maxReferenceSpeed > 0.01f)
+            {
+                float speed = _rbody.linearVelocity.magnitude;
+                targetThrust = Mathf.Clamp01(speed / _maxReferenceSpeed);
+            }
+            else
+            {
+                targetThrust = 0f;
+            }
 
             // Сглаживаем thrust для плавной атаки/затухания
             _smoothThrust = Mathf.SmoothDamp(_smoothThrust, targetThrust, ref _smoothVelocity, _smoothTime);

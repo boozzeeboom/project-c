@@ -39,16 +39,31 @@ EditorWindow для массового просмотра, сравнения и
 
 ## Детальная панель
 
-Foldout-секции (аналогично ShipControllerEditor):
-- **🚀 Flight & Movement** — thrustForce, maxSpeed, yaw/pitch/verticalForce, antiGravity, shipFlightClass
-- **🔄 Smoothing** — все SmoothTime и DecayTime
-- **⚖️ Physics & Mass** — massMultiplier, drag, mass per class + readonly Rigidbody mass/drag
-- **🎯 Stabilization** — autoStabilize, stabForces, maxPitchAngle
-- **🌬️ Wind & Environment** — windInfluence/Exposure/Decay, globalWind
-- **⛽ Fuel** — все параметры ShipFuelSystem
-- **📦 Cargo** — baseMaxCargoSlots/Weight/Volume, cargoPenaltyFactor + Power
-- **🤖 NPC** — npcThrustMult, npcYawMult, awarenessRadius, avoidanceRadius
-- **🔑 Identity & Debug** — customDisplayName, keyItemData
+Один foldout на компонент — каждый показывает **все** serialized-поля через `SerializedObject.GetIterator()`:
+
+- **🚀 ShipController** — все поля: shipFlightClass, thrustForce, maxSpeed, yaw/pitch/verticalForce,
+  antiGravity, yawSmoothTime..thrustSmoothTime, yawDecayTime, pitchDecayTime,
+  massMultiplier, massLight..massHeavyII, shipConstraints, linearDrag, angularDrag,
+  pitchStabForce, rollStabForce, maxPitchAngle, autoStabilize,
+  corridorSystem, windInfluence, windExposure, windDecayTime,
+  _globalWindEnabled, _globalWindForceScale, _globalWindVerticalFactor,
+  baseMaxCargoSlots/Weight/Volume, baseCargoPenaltyFactor,
+  moduleManager, meziyActivator, fuelSystem, meziyVisual,
+  _customDisplayName, _keyItemData, _debugLog, _showLegacyMeziyHud
+
+- **🤖 NpcShipController** — все поля: schedule, npcInstanceId, npcThrustMult, npcYawMult,
+  npcArrivalToleranceMeters, antiGravityBoostDuration, antiGravityBoostValue,
+  debugMode, avoidSeparateSpeed/Time, avoidStopTime, avoidBackOffSpeed/Time, avoidTimeout
+
+- **⛽ ShipFuelSystem** — все поля: currentFuel, maxFuel, fuelConsumptionRate, fuelRegenRate,
+  startEngineConsumption, idleConsumptionRate, atmosphericRefuelRate,
+  thrustPenaltyDuringRefuel, speedPenaltyDuringRefuel
+
+- **🔌 ShipModuleManager** — все поля: slots, availablePower
+
+- **🛡️ ShipHull** — все поля: _damageConfig, _debugLog + readonly Resolved HP
+
+- **📍 NpcProximityZone** — все поля: awarenessRadius, avoidanceRadius, clearHysteresis, drawGizmos
 
 Кнопка «Select Prefab in Project» — пингует префаб в Project-окне.
 

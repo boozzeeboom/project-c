@@ -36,15 +36,12 @@ namespace ProjectC.Editor
         private string _filterText = "";
 
         // ── Детальная панель: foldout states ──
-        private bool _foldFlight = true;
-        private bool _foldSmoothing;
-        private bool _foldPhysics = true;
-        private bool _foldStabilize;
-        private bool _foldWind;
-        private bool _foldCargo;
-        private bool _foldFuel = true;
-        private bool _foldNpc;
-        private bool _foldIdentity = true;
+        private bool _foldShipController = true;
+        private bool _foldNpcController = true;
+        private bool _foldFuelSystem;
+        private bool _foldModuleManager;
+        private bool _foldHull;
+        private bool _foldProximity;
 
         // ── Batch edit: значения ──
         private string _batchThrust = "";
@@ -551,143 +548,95 @@ namespace ProjectC.Editor
             EditorGUILayout.LabelField($"📋 {ship.displayName}", EditorStyles.largeLabel);
             if (!string.IsNullOrEmpty(ship.customDisplayName))
                 EditorGUILayout.LabelField($"   Display: {ship.customDisplayName}", EditorStyles.miniLabel);
+
+            EditorGUILayout.LabelField(
+                $"Rigidbody: mass={ship.rbMass:F0}  drag={ship.rbDrag:F2}  angDrag={ship.rbAngularDrag:F2}",
+                EditorStyles.miniLabel);
             EditorGUILayout.Space(4);
 
-            // ── Flight ──
-            _foldFlight = EditorGUILayout.BeginFoldoutHeaderGroup(_foldFlight, "🚀 Flight & Movement");
-            if (_foldFlight)
+            // ── ShipController (ALL fields) ──
+            _foldShipController = EditorGUILayout.BeginFoldoutHeaderGroup(_foldShipController, "🚀 ShipController");
+            if (_foldShipController)
             {
                 EditorGUI.indentLevel++;
-                DrawShipField(prefab, "ShipController", "shipFlightClass");
-                DrawShipField(prefab, "ShipController", "thrustForce");
-                DrawShipField(prefab, "ShipController", "maxSpeed");
-                DrawShipField(prefab, "ShipController", "yawForce");
-                DrawShipField(prefab, "ShipController", "pitchForce");
-                DrawShipField(prefab, "ShipController", "verticalForce");
-                DrawShipField(prefab, "ShipController", "antiGravity");
+                DrawAllSerializedFields(prefab, prefab.GetComponent<ShipController>());
                 EditorGUI.indentLevel--;
             }
             EditorGUILayout.EndFoldoutHeaderGroup();
 
-            // ── Smoothing ──
-            _foldSmoothing = EditorGUILayout.BeginFoldoutHeaderGroup(_foldSmoothing, "🔄 Smoothing");
-            if (_foldSmoothing)
+            // ── NpcShipController (ALL fields) ──
+            var npcCtrl = prefab.GetComponent<NpcShipController>();
+            if (npcCtrl != null)
             {
-                EditorGUI.indentLevel++;
-                DrawShipField(prefab, "ShipController", "yawSmoothTime");
-                DrawShipField(prefab, "ShipController", "pitchSmoothTime");
-                DrawShipField(prefab, "ShipController", "liftSmoothTime");
-                DrawShipField(prefab, "ShipController", "thrustSmoothTime");
-                DrawShipField(prefab, "ShipController", "yawDecayTime");
-                DrawShipField(prefab, "ShipController", "pitchDecayTime");
-                EditorGUI.indentLevel--;
+                _foldNpcController = EditorGUILayout.BeginFoldoutHeaderGroup(_foldNpcController, "🤖 NpcShipController");
+                if (_foldNpcController)
+                {
+                    EditorGUI.indentLevel++;
+                    DrawAllSerializedFields(prefab, npcCtrl);
+                    EditorGUI.indentLevel--;
+                }
+                EditorGUILayout.EndFoldoutHeaderGroup();
             }
-            EditorGUILayout.EndFoldoutHeaderGroup();
 
-            // ── Physics ──
-            _foldPhysics = EditorGUILayout.BeginFoldoutHeaderGroup(_foldPhysics, "⚖️ Physics & Mass");
-            if (_foldPhysics)
+            // ── ShipFuelSystem (ALL fields) ──
+            var fuel = prefab.GetComponent<ShipFuelSystem>();
+            if (fuel != null)
             {
-                EditorGUI.indentLevel++;
-                DrawShipField(prefab, "ShipController", "massMultiplier");
-                DrawShipField(prefab, "ShipController", "linearDrag");
-                DrawShipField(prefab, "ShipController", "angularDrag");
-
-                EditorGUILayout.LabelField("Base Mass per Class", EditorStyles.boldLabel);
-                DrawShipField(prefab, "ShipController", "massLight");
-                DrawShipField(prefab, "ShipController", "massMedium");
-                DrawShipField(prefab, "ShipController", "massHeavy");
-                DrawShipField(prefab, "ShipController", "massHeavyII");
-
-                EditorGUILayout.Space(4);
-                EditorGUILayout.LabelField($"Rigidbody: mass={ship.rbMass:F0}, drag={ship.rbDrag:F2}, angDrag={ship.rbAngularDrag:F2}",
-                    EditorStyles.miniLabel);
-                EditorGUI.indentLevel--;
+                _foldFuelSystem = EditorGUILayout.BeginFoldoutHeaderGroup(_foldFuelSystem, "⛽ ShipFuelSystem");
+                if (_foldFuelSystem)
+                {
+                    EditorGUI.indentLevel++;
+                    DrawAllSerializedFields(prefab, fuel);
+                    EditorGUI.indentLevel--;
+                }
+                EditorGUILayout.EndFoldoutHeaderGroup();
             }
-            EditorGUILayout.EndFoldoutHeaderGroup();
 
-            // ── Stabilization ──
-            _foldStabilize = EditorGUILayout.BeginFoldoutHeaderGroup(_foldStabilize, "🎯 Stabilization");
-            if (_foldStabilize)
+            // ── ShipModuleManager ──
+            var modMgr = prefab.GetComponent<ShipModuleManager>();
+            if (modMgr != null)
             {
-                EditorGUI.indentLevel++;
-                DrawShipField(prefab, "ShipController", "autoStabilize");
-                DrawShipField(prefab, "ShipController", "pitchStabForce");
-                DrawShipField(prefab, "ShipController", "rollStabForce");
-                DrawShipField(prefab, "ShipController", "maxPitchAngle");
-                EditorGUI.indentLevel--;
+                _foldModuleManager = EditorGUILayout.BeginFoldoutHeaderGroup(_foldModuleManager, "🔌 ShipModuleManager");
+                if (_foldModuleManager)
+                {
+                    EditorGUI.indentLevel++;
+                    DrawAllSerializedFields(prefab, modMgr);
+                    EditorGUI.indentLevel--;
+                }
+                EditorGUILayout.EndFoldoutHeaderGroup();
             }
-            EditorGUILayout.EndFoldoutHeaderGroup();
 
-            // ── Wind ──
-            _foldWind = EditorGUILayout.BeginFoldoutHeaderGroup(_foldWind, "🌬️ Wind & Environment");
-            if (_foldWind)
+            // ── ShipHull ──
+            var hull = prefab.GetComponent<ShipHull>();
+            if (hull != null)
             {
-                EditorGUI.indentLevel++;
-                DrawShipField(prefab, "ShipController", "windInfluence");
-                DrawShipField(prefab, "ShipController", "windExposure");
-                DrawShipField(prefab, "ShipController", "windDecayTime");
-                DrawShipField(prefab, "ShipController", "_globalWindEnabled");
-                DrawShipField(prefab, "ShipController", "_globalWindForceScale");
-                DrawShipField(prefab, "ShipController", "_globalWindVerticalFactor");
-                EditorGUI.indentLevel--;
+                _foldHull = EditorGUILayout.BeginFoldoutHeaderGroup(_foldHull, "🛡️ ShipHull");
+                if (_foldHull)
+                {
+                    EditorGUI.indentLevel++;
+                    DrawAllSerializedFields(prefab, hull);
+                    EditorGUILayout.Space(2);
+                    var config = hull.Config;
+                    if (config != null)
+                        EditorGUILayout.LabelField("Resolved HP", config.GetMaxHull(ship.flightClass).ToString(), EditorStyles.boldLabel);
+                    EditorGUI.indentLevel--;
+                }
+                EditorGUILayout.EndFoldoutHeaderGroup();
             }
-            EditorGUILayout.EndFoldoutHeaderGroup();
 
-            // ── Fuel ──
-            _foldFuel = EditorGUILayout.BeginFoldoutHeaderGroup(_foldFuel, "⛽ Fuel");
-            if (_foldFuel)
+            // ── NpcProximityZone ──
+            var prox = prefab.GetComponent<NpcProximityZone>();
+            if (prox != null)
             {
-                EditorGUI.indentLevel++;
-                DrawShipField(prefab, "ShipFuelSystem", "maxFuel");
-                DrawShipField(prefab, "ShipFuelSystem", "fuelConsumptionRate");
-                DrawShipField(prefab, "ShipFuelSystem", "fuelRegenRate");
-                DrawShipField(prefab, "ShipFuelSystem", "startEngineConsumption");
-                DrawShipField(prefab, "ShipFuelSystem", "idleConsumptionRate");
-                DrawShipField(prefab, "ShipFuelSystem", "atmosphericRefuelRate");
-                DrawShipField(prefab, "ShipFuelSystem", "thrustPenaltyDuringRefuel");
-                DrawShipField(prefab, "ShipFuelSystem", "speedPenaltyDuringRefuel");
-                EditorGUI.indentLevel--;
+                _foldProximity = EditorGUILayout.BeginFoldoutHeaderGroup(_foldProximity, "📍 NpcProximityZone");
+                if (_foldProximity)
+                {
+                    EditorGUI.indentLevel++;
+                    DrawAllSerializedFields(prefab, prox);
+                    EditorGUI.indentLevel--;
+                }
+                EditorGUILayout.EndFoldoutHeaderGroup();
             }
-            EditorGUILayout.EndFoldoutHeaderGroup();
-
-            // ── Cargo ──
-            _foldCargo = EditorGUILayout.BeginFoldoutHeaderGroup(_foldCargo, "📦 Cargo");
-            if (_foldCargo)
-            {
-                EditorGUI.indentLevel++;
-                DrawShipField(prefab, "ShipController", "baseMaxCargoSlots");
-                DrawShipField(prefab, "ShipController", "baseMaxCargoWeight");
-                DrawShipField(prefab, "ShipController", "baseMaxCargoVolume");
-                DrawShipField(prefab, "ShipController", "baseCargoPenaltyFactor");
-                EditorGUILayout.HelpBox("Power: " + ship.availablePower, MessageType.None);
-                EditorGUI.indentLevel--;
-            }
-            EditorGUILayout.EndFoldoutHeaderGroup();
-
-            // ── NPC ──
-            _foldNpc = EditorGUILayout.BeginFoldoutHeaderGroup(_foldNpc, "🤖 NPC");
-            if (_foldNpc)
-            {
-                EditorGUI.indentLevel++;
-                DrawShipField(prefab, "NpcShipController", "npcThrustMult");
-                DrawShipField(prefab, "NpcShipController", "npcYawMult");
-                DrawShipField(prefab, "NpcProximityZone", "awarenessRadius");
-                DrawShipField(prefab, "NpcProximityZone", "avoidanceRadius");
-                EditorGUI.indentLevel--;
-            }
-            EditorGUILayout.EndFoldoutHeaderGroup();
-
-            // ── Identity ──
-            _foldIdentity = EditorGUILayout.BeginFoldoutHeaderGroup(_foldIdentity, "🔑 Identity & Debug");
-            if (_foldIdentity)
-            {
-                EditorGUI.indentLevel++;
-                DrawShipField(prefab, "ShipController", "_customDisplayName");
-                DrawShipField(prefab, "ShipController", "_keyItemData");
-                EditorGUI.indentLevel--;
-            }
-            EditorGUILayout.EndFoldoutHeaderGroup();
 
             EditorGUILayout.EndScrollView();
 
@@ -701,36 +650,46 @@ namespace ProjectC.Editor
             }
         }
 
-        private void DrawShipField(GameObject prefab, string componentTypeName, string propertyName)
+        /// <summary>
+        /// Рисует ВСЕ serialized-поля компонента через SerializedObject.GetIterator().
+        /// Пропускает m_Script (ссылку на сам скрипт) и m_ObjectHideFlags.
+        /// При изменении — сохраняет в префаб и делает Rescan.
+        /// </summary>
+        private void DrawAllSerializedFields(GameObject prefab, Component comp)
         {
-            Component comp = null;
-            switch (componentTypeName)
-            {
-                case "ShipController":     comp = prefab.GetComponent<ShipController>(); break;
-                case "ShipFuelSystem":     comp = prefab.GetComponent<ShipFuelSystem>(); break;
-                case "ShipModuleManager":  comp = prefab.GetComponent<ShipModuleManager>(); break;
-                case "NpcShipController":  comp = prefab.GetComponent<NpcShipController>(); break;
-                case "NpcProximityZone":   comp = prefab.GetComponent<NpcProximityZone>(); break;
-            }
-
             if (comp == null) return;
 
-            var so = new SerializedObject(comp);
-            var prop = so.FindProperty(propertyName);
-            if (prop != null)
+            using (var so = new SerializedObject(comp))
             {
-                EditorGUI.BeginChangeCheck();
-                EditorGUILayout.PropertyField(prop, true);
-                if (EditorGUI.EndChangeCheck())
+                var prop = so.GetIterator();
+                bool enterChildren = true;
+
+                // Пропускаем m_Script (первый property)
+                if (prop.NextVisible(true))
                 {
-                    so.ApplyModifiedProperties();
-                    // Помечаем префаб dirty
-                    EditorUtility.SetDirty(prefab);
-                    // Перечитываем данные для таблицы
-                    Rescan();
+                    // Это m_Script — пропускаем
                 }
+
+                while (prop.NextVisible(enterChildren))
+                {
+                    enterChildren = false;
+
+                    // Пропускаем m_ObjectHideFlags
+                    if (prop.name == "m_ObjectHideFlags")
+                        continue;
+
+                    EditorGUI.BeginChangeCheck();
+                    EditorGUILayout.PropertyField(prop, true);
+                    if (EditorGUI.EndChangeCheck())
+                    {
+                        so.ApplyModifiedProperties();
+                        EditorUtility.SetDirty(prefab);
+                        Rescan();
+                    }
+                }
+
+                so.ApplyModifiedPropertiesWithoutUndo();
             }
-            so.Dispose();
         }
 
         // ═══════════════════════════════════════════════════════════════

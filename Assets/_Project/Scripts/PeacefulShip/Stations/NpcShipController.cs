@@ -58,27 +58,42 @@ namespace ProjectC.PeacefulShip.Stations
         [Min(1f)] [SerializeField] private float npcArrivalToleranceMeters = 50f;
 #pragma warning restore 0414
 
-        // ── M3.2.N: Class-based speed profile + per-ship multipliers ──
-        // Базовая скорость определяется ShipFlightClass (авто-определяется из ShipController).
-        // Множители (liftSpeedMult, etc.) позволяют тонко настроить конкретный корабль
-        // (напр. «этот Heavy на 20% быстрее из-за upgraded engines»).
-        // Эффективные скорости = ClassBaseSpeed × multiplier.
+        // ── M3.2.N: Class-based speed profile with designer override ──
+        // По умолчанию: эффективная скорость = ClassBaseSpeed × multiplier (множители ниже).
+        // Если overrideClassSpeeds = true — дизайнер задаёт абсолютные значения напрямую,
+        // игнорируя класс и множители. Позволяет создавать уникальные корабли.
 
-        [Header("   Speed multipliers (× class base)")]
-        [Tooltip("Множитель скорости взлёта (м/с). База зависит от класса корабля.")]
+        [Header("   Speed config")]
+        [Tooltip("Вкл: использовать абсолютные значения ниже (игнорируя класс и множители).\nВыкл: авто из класса × множители.")]
+        [SerializeField] private bool overrideClassSpeeds = false;
+
+        [Header("   ── Multipliers (× class base) ──")]
+        [Tooltip("Множитель скорости взлёта. База зависит от класса корабля.")]
         [Range(0.1f, 3f)] [SerializeField] private float liftSpeedMult = 1f;
 
-        [Tooltip("Множитель крейсерской скорости (м/с). База зависит от класса корабля.")]
+        [Tooltip("Множитель крейсерской скорости. База зависит от класса корабля.")]
         [Range(0.1f, 3f)] [SerializeField] private float cruiseSpeedMult = 1f;
 
-        [Tooltip("Множитель скорости подлёта (м/с). База зависит от класса корабля.")]
+        [Tooltip("Множитель скорости подлёта. База зависит от класса корабля.")]
         [Range(0.1f, 3f)] [SerializeField] private float approachSpeedMult = 1f;
 
-        [Tooltip("Множитель скорости поворота (°/с). База зависит от класса корабля.")]
+        [Tooltip("Множитель скорости поворота. База зависит от класса корабля.")]
         [Range(0.1f, 3f)] [SerializeField] private float maxYawRateMult = 1f;
 
+        [Header("   ── Absolute override (если Override = true) ──")]
+        [Tooltip("Скорость взлёта (м/с). Используется только при overrideClassSpeeds=true.")]
+        [Min(0.1f)] [SerializeField] private float customLiftSpeed = 8f;
+
+        [Tooltip("Крейсерская скорость (м/с). Используется только при overrideClassSpeeds=true.")]
+        [Min(0.1f)] [SerializeField] private float customCruiseSpeed = 12f;
+
+        [Tooltip("Скорость подлёта (м/с). Используется только при overrideClassSpeeds=true.")]
+        [Min(0.1f)] [SerializeField] private float customApproachSpeed = 5f;
+
+        [Tooltip("Скорость поворота (°/с). Используется только при overrideClassSpeeds=true.")]
+        [Min(1f)] [SerializeField] private float customMaxYawRate = 45f;
+
         // ── Effective speeds (computed in OnNetworkSpawn) ──
-        // Публичные для отладки и Editor-инспектора. Присваиваются в ResolveClassSpeeds().
         public float LiftSpeed { get; private set; }
         public float CruiseSpeed { get; private set; }
         public float ApproachSpeed { get; private set; }
@@ -96,13 +111,23 @@ namespace ProjectC.PeacefulShip.Stations
 
         void ResolveClassSpeeds()
         {
-            var ship = GetComponent<ShipController>();
-            var cls = ship != null ? ship.ShipFlightClass : ShipFlightClass.Medium;
-            var (baseLift, baseCruise, baseApproach, baseYaw) = GetClassBaseSpeeds(cls);
-            LiftSpeed     = baseLift     * liftSpeedMult;
-            CruiseSpeed   = baseCruise   * cruiseSpeedMult;
-            ApproachSpeed = baseApproach * approachSpeedMult;
-            MaxYawRate    = baseYaw      * maxYawRateMult;
+            if (overrideClassSpeeds)
+            {
+                LiftSpeed     = customLiftSpeed;
+                CruiseSpeed   = customCruiseSpeed;
+                ApproachSpeed = customApproachSpeed;
+                MaxYawRate    = customMaxYawRate;
+            }
+            else
+            {
+                var ship = GetComponent<ShipController>();
+                var cls = ship != null ? ship.ShipFlightClass : ShipFlightClass.Medium;
+                var (baseLift, baseCruise, baseApproach, baseYaw) = GetClassBaseSpeeds(cls);
+                LiftSpeed     = baseLift     * liftSpeedMult;
+                CruiseSpeed   = baseCruise   * cruiseSpeedMult;
+                ApproachSpeed = baseApproach * approachSpeedMult;
+                MaxYawRate    = baseYaw      * maxYawRateMult;
+            }
         }
 
         [Header("Anti-gravity boost (Q8)")]

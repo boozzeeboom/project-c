@@ -130,21 +130,42 @@ namespace ProjectC.PeacefulShip.EditorTools
             {
                 EditorGUI.indentLevel++;
 
-                // M3.2.N: Class-based speed profile
+                // M3.2.N: Class-based speed profile with override
                 var ship = ctrl.GetComponent<ProjectC.Player.ShipController>();
                 var flightClass = ship != null ? ship.ShipFlightClass : ProjectC.Player.ShipFlightClass.Medium;
                 var (baseLift, baseCruise, baseApproach, baseYaw) = Stations.NpcShipController.GetClassBaseSpeeds(flightClass);
 
+                var overrideProp = serializedObject.FindProperty("overrideClassSpeeds");
+                bool isOverride = overrideProp != null && overrideProp.boolValue;
+
                 EditorGUILayout.LabelField("Ship Class", flightClass.ToString(), EditorStyles.boldLabel);
-                EditorGUILayout.LabelField("   Base Speeds",
-                    $"Lift={baseLift:F0}  Cruise={baseCruise:F0}  Approach={baseApproach:F0}  Yaw={baseYaw:F0}°/s",
-                    EditorStyles.miniLabel);
+                if (!isOverride)
+                {
+                    EditorGUILayout.LabelField("   Class Base Speeds",
+                        $"Lift={baseLift:F0}  Cruise={baseCruise:F0}  Approach={baseApproach:F0}  Yaw={baseYaw:F0}°/s",
+                        EditorStyles.miniLabel);
+                }
 
                 EditorGUILayout.Space(2);
-                DrawProp("liftSpeedMult");
-                DrawProp("cruiseSpeedMult");
-                DrawProp("approachSpeedMult");
-                DrawProp("maxYawRateMult");
+                DrawProp("overrideClassSpeeds");
+
+                EditorGUILayout.Space(2);
+                if (isOverride)
+                {
+                    EditorGUILayout.LabelField("   Absolute Speeds (custom)", EditorStyles.boldLabel);
+                    DrawProp("customLiftSpeed");
+                    DrawProp("customCruiseSpeed");
+                    DrawProp("customApproachSpeed");
+                    DrawProp("customMaxYawRate");
+                }
+                else
+                {
+                    EditorGUILayout.LabelField("   Multipliers (× class base)", EditorStyles.boldLabel);
+                    DrawProp("liftSpeedMult");
+                    DrawProp("cruiseSpeedMult");
+                    DrawProp("approachSpeedMult");
+                    DrawProp("maxYawRateMult");
+                }
 
                 EditorGUILayout.Space(2);
                 EditorGUI.BeginDisabledGroup(true);

@@ -33,7 +33,7 @@ namespace ProjectC.PeacefulShip.EditorTools
         // ── Tab 3: Cargo Trade ──
         private Vector2 _scrollCargo;
 
-        [MenuItem("Tools/ProjectC/NPC Ship Schedule Overview")]
+        [MenuItem("Tools/Project C/NPC Ship Schedule Overview")]
         public static void Open()
         {
             var window = GetWindow<NpcShipScheduleOverviewWindow>("NPC Schedule Overview");

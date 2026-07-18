@@ -34,7 +34,7 @@ NpcShipSchedule — ScriptableObject-расписания мирных NPC-ко�
 
 ## Инструмент: NpcShipScheduleOverviewWindow
 
-**Где:** `Tools > ProjectC > NPC Ship Schedule Overview`
+**Где:** `Tools > Project C > NPC Ship Schedule Overview`
 
 ### Возможности
 

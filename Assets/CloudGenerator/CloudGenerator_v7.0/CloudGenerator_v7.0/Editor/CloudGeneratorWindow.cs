@@ -14,7 +14,7 @@ namespace ProjectC.CloudGenerator.Editor
         private Vector2 scrollPos;
         private List<CloudSphere> lastResult;
 
-        [MenuItem("Tools/Cloud Generator")]
+        [MenuItem("Tools/Project C/Cloud Generator")]
         public static void ShowWindow()
         {
             var window = GetWindow<CloudGeneratorWindow>("Cloud Generator");

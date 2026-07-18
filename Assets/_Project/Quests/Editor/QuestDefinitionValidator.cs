@@ -27,7 +27,7 @@ namespace ProjectC.Quests.Editor
         // Menu actions
         // ============================================================
 
-        [MenuItem("Tools/ProjectC/Validate All Quests", priority = 100)]
+        [MenuItem("Tools/Project C/Quests/Validate All Quests", priority = 100)]
         public static void ValidateAll()
         {
             var guids = AssetDatabase.FindAssets("t:QuestDefinition");
@@ -64,7 +64,7 @@ namespace ProjectC.Quests.Editor
             Debug.Log(report.ToString());
         }
 
-        [MenuItem("Tools/ProjectC/Validate Selected Quest", priority = 101)]
+        [MenuItem("Tools/Project C/Quests/Validate Selected Quest", priority = 101)]
         public static void ValidateSelected()
         {
             var def = Selection.activeObject as QuestDefinition;

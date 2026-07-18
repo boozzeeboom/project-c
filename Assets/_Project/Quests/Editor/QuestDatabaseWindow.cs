@@ -31,7 +31,7 @@ namespace ProjectC.Quests.Editor
         private VisualElement _detailPanel;
         private Label _statusLabel;
 
-        [MenuItem("Tools/ProjectC/Quests/Quest Database Explorer", priority = 100)]
+        [MenuItem("Tools/Project C/Quests/Quest Database Explorer", priority = 100)]
         public static void Open()
         {
             var w = GetWindow<QuestDatabaseWindow>();

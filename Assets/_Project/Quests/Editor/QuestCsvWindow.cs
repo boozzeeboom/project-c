@@ -36,7 +36,7 @@ namespace ProjectC.Quests.Editor
             public string errors;
         }
 
-        [MenuItem("Tools/ProjectC/Quests/CSV Import/Export", priority = 103)]
+        [MenuItem("Tools/Project C/Quests/CSV Import/Export", priority = 103)]
         public static void Open()
         {
             var w = GetWindow<QuestCsvWindow>();

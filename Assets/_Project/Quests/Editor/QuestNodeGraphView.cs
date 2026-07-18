@@ -592,7 +592,7 @@ namespace ProjectC.Quests.Editor
         private Button _saveBtn;
         private Button _revertBtn;
 
-        [MenuItem("Tools/ProjectC/Quests/Quest Node Graph", priority = 102)]
+        [MenuItem("Tools/Project C/Quests/Quest Node Graph", priority = 102)]
         public static void Open()
         {
             var w = GetWindow<QuestNodeGraphWindow>();

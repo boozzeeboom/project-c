@@ -64,7 +64,7 @@ namespace ProjectC.Items.Editor
         }
         private List<FlatRow> _flatRows = new List<FlatRow>();
 
-        [MenuItem("Tools/ProjectC/Resources/CSV Import/Export", priority = 200)]
+        [MenuItem("Tools/Project C/Resources/CSV Import/Export", priority = 200)]
         public static void Open()
         {
             var w = GetWindow<ResourcesCsvWindow>();

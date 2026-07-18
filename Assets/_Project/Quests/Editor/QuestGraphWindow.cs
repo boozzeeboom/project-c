@@ -16,7 +16,7 @@ namespace ProjectC.Quests.Editor
         private ObjectField _questField;
         private Label _statusLabel;
 
-        [MenuItem("Tools/ProjectC/Quests/Quest Graph View", priority = 101)]
+        [MenuItem("Tools/Project C/Quests/Quest Graph View", priority = 101)]
         public static void Open()
         {
             var w = GetWindow<QuestGraphWindow>();
@@ -25,7 +25,7 @@ namespace ProjectC.Quests.Editor
             w.Show();
         }
 
-        [MenuItem("Assets/ProjectC/Open Quest Graph", priority = 1000)]
+        [MenuItem("Assets/Project C/Open Quest Graph", priority = 1000)]
         public static void OpenFromAsset()
         {
             var sel = Selection.activeObject;
@@ -38,7 +38,7 @@ namespace ProjectC.Quests.Editor
             }
         }
 
-        [MenuItem("Assets/ProjectC/Open Quest Graph", validate = true)]
+        [MenuItem("Assets/Project C/Open Quest Graph", validate = true)]
         public static bool OpenFromAssetValidate() => Selection.activeObject is QuestDefinition;
 
         private void OnEnable()

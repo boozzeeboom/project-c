@@ -38,7 +38,7 @@ public class PortStationCreator : EditorWindow
     private const string ModuleShopDbPath = "Assets/_Project/Data/Modules/ModuleShopDatabase.asset";
     private const string NpcPrefabPath = "Assets/_Project/Prefabs/NPC_ZONES/Npc_peacfull_market_zone Variant.prefab";
 
-    [MenuItem("Tools/ProjectC/Create Port Station…", false, 100)]
+    [MenuItem("Tools/Project C/Create Port Station…", false, 100)]
     public static void ShowWindow() => GetWindow<PortStationCreator>("Port Station Creator");
 
     private void OnGUI()

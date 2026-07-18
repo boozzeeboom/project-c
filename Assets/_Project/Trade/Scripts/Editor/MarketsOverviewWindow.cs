@@ -17,7 +17,7 @@ namespace ProjectC.Trade.Editor
         private List<MarketConfig> _markets = new();
         private List<string> _allItemIds = new();
 
-        [MenuItem("Tools/ProjectC/Trade/Markets Overview")]
+        [MenuItem("Tools/Project C/Trade/Markets Overview")]
         public static void ShowWindow()
         {
             var w = GetWindow<MarketsOverviewWindow>("Markets Overview");

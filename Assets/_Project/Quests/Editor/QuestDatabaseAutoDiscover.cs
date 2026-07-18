@@ -41,7 +41,7 @@ namespace ProjectC.Quests.Editor
             };
         }
 
-        [MenuItem("Tools/ProjectC/Quests/Re-scan Quest Database", priority = 110)]
+        [MenuItem("Tools/Project C/Quests/Re-scan Quest Database", priority = 110)]
         public static void RescanMenu()
         {
             var db = GetOrCreateDatabase();

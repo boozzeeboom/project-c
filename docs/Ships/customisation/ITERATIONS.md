@@ -3,7 +3,7 @@
 ## Итерация от 2026-07-21 (fix 5)
 
 **Задача:** T-ENG02 / T-SHIP-SHAKE — NPC Fallback: визуалы кораблей (EngineThrusterVisual + ShipPartShake) работают на NPC-автопилоте
-**Коммит:** `см. git log -1`
+**Коммит:** `be85fba` — T-ENG02/T-SHIP-SHAKE fix 5: NPC Fallback
 
 **Симптомы:**
 - NPC-корабли (NpcShipController) летают по маршруту, но визуалы молчат:

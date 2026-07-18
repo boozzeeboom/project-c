@@ -33,7 +33,7 @@ namespace ProjectC.PeacefulShip.EditorTools
         // ── Tab 3: Cargo Trade ──
         private Vector2 _scrollCargo;
 
-        [MenuItem("Window/ProjectC/NPC Ship Schedule Overview")]
+        [MenuItem("Tools/ProjectC/NPC Ship Schedule Overview")]
         public static void Open()
         {
             var window = GetWindow<NpcShipScheduleOverviewWindow>("NPC Schedule Overview");
@@ -294,10 +294,8 @@ namespace ProjectC.PeacefulShip.EditorTools
                     {
                         Scene scene = EditorSceneManager.OpenScene(scenePath, OpenSceneMode.Additive);
 
-                        // Find all NpcShipController in this scene
                         var controllers = FindObjectsByType<NpcShipController>(FindObjectsInactive.Include);
 
-                        // Filter to only this scene's objects
                         foreach (var ctrl in controllers)
                         {
                             if (ctrl.gameObject.scene != scene) continue;
@@ -330,13 +328,6 @@ namespace ProjectC.PeacefulShip.EditorTools
             finally
             {
                 EditorUtility.ClearProgressBar();
-
-                // Re-open original scene
-                if (!string.IsNullOrEmpty(SceneManager.GetActiveScene().path))
-                {
-                    // Keep current scene, just ensure we cleaned up additive ones
-                }
-
                 _scanInProgress = false;
                 Repaint();
 

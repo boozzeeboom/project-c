@@ -284,6 +284,13 @@ namespace ProjectC.Editor
             SetPrivateField(inputReader, "mouseSensitivityX", 2f);
             SetPrivateField(inputReader, "mouseSensitivityY", 2f);
 
+            // ShipRootReference (на корне, после всех Player-компонентов)
+            var rootSrr = root.AddComponent<ShipRootReference>();
+            SetPrivateField(rootSrr, "_shipController", sc);
+            SetPrivateField(rootSrr, "_rigidbody", rb);
+            SetPrivateField(rootSrr, "_networkObject", netObj);
+            SetPrivateField(rootSrr, "_root", root.transform);
+
             // --- NPC components (на том же root) ---
             var npcCtrl = root.AddComponent<NpcShipController>();
             SetPrivateField(npcCtrl, "npcInstanceId", 0UL);

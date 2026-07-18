@@ -1,5 +1,13 @@
 # Итерации разработки — ShipPresetCreator
 
+## Итерация от 2026-07-18 (v1.10 — ShipRootReference на корне)
+
+**Задача:** В v1.6 был ошибочно убран `ShipRootReference` с корня (ориентировались на `DONT-DELETE-NPC REFERENCE SHIP`). Эталонный префаб `Гигант.prefab` имеет его на корне — возвращаем.
+
+**Исправление:** `ShipRootReference` снова добавляется на root после `ShipInputReader`, перед NPC-компонентами.
+
+---
+
 ## Итерация от 2026-07-18 (v1.9 — розовые материалы)
 
 **Задача:** На всех внутренних частях (PilotSeat, Door, EngineVisuals) материалы были розовые — `new Material(litMat)` терял шейдер при сохранении префаба.
@@ -50,7 +58,7 @@
 | 4 | NavMeshSurface.useGeometry | (Render Meshes) | `PhysicsColliders` |
 | 5 | DeckNavSurface Y | `1.01` | `-0.37` |
 | 6 | NpcSpawner на корне | отсутствовал | добавлен + загрузка `NpcSpawner_ship_deck.asset` |
-| 7 | ShipRootReference на корне | был (лишний) | удалён |
+| 7 | ShipRootReference на корне | был (лишний) | удалён (→ отменено в v1.10) |
 | 8 | NpcProximityZone.avoidanceRadius | `80` | `120` |
 | 9 | NpcProximityZone.drawGizmos | `false` | `true` |
 | 10 | NpcShipController.schedule | назначался | не назначается (None) |

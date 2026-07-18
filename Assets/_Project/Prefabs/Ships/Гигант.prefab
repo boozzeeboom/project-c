@@ -309,6 +309,7 @@ MonoBehaviour:
   _thrustThreshold: 0.05
   _smoothTime: 0.4
   _rootRef: {fileID: 2171919522714307928}
+  _maxReferenceSpeed: 10
 --- !u!1 &2038914181384409400
 GameObject:
   m_ObjectHideFlags: 0
@@ -1067,7 +1068,7 @@ Transform:
   m_GameObject: {fileID: 4599459893589217444}
   serializedVersion: 2
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalPosition: {x: 0, y: 0, z: 0.79}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []
@@ -1177,6 +1178,7 @@ GameObject:
   - component: {fileID: 3434832118544695411}
   - component: {fileID: 7945566367993598515}
   - component: {fileID: 6850803304575276231}
+  - component: {fileID: 3132803706817295089}
   m_Layer: 0
   m_Name: Slot_Engine
   m_TagString: Untagged
@@ -1234,7 +1236,9 @@ MonoBehaviour:
   _deflectionSmoothTime: 0.3
   _pivotPoint: {fileID: 3772475977574601354}
   _visuals: {fileID: 6116218806354294669}
-  _rootRef: {fileID: 0}
+  _rootRef: {fileID: 3132803706817295089}
+  _maxReferenceSpeed: 10
+  _maxRefYawRate: 45
 --- !u!114 &6850803304575276231
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -1303,7 +1307,24 @@ MonoBehaviour:
   _rotationAmplitude: {x: 0.5, y: 0.3, z: 0.5}
   _thrustThreshold: 0.05
   _smoothTime: 1.5
-  _rootRef: {fileID: 0}
+  _rootRef: {fileID: 3132803706817295089}
+  _maxReferenceSpeed: 10
+--- !u!114 &3132803706817295089
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 4904476507567858823}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 5346576fa6c208e4f9822332d6587fe3, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::ProjectC.Ship.ShipRootReference
+  _shipController: {fileID: 0}
+  _rigidbody: {fileID: 0}
+  _networkObject: {fileID: 0}
+  _root: {fileID: 0}
 --- !u!1 &4928388176484681398
 GameObject:
   m_ObjectHideFlags: 0
@@ -1438,6 +1459,7 @@ GameObject:
   - component: {fileID: 7231128035964814721}
   - component: {fileID: 2676350494864420181}
   - component: {fileID: 7584001700739152118}
+  - component: {fileID: 8446038419244633405}
   m_Layer: 0
   m_Name: "\u0413\u0438\u0433\u0430\u043D\u0442"
   m_TagString: Ship
@@ -1515,7 +1537,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: d5a57f767e5e46a458fc5d3c628d0cbb, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Unity.Netcode.Runtime::Unity.Netcode.NetworkObject
-  GlobalObjectIdHash: 1334684183
+  GlobalObjectIdHash: 1635542511
   InScenePlacedSourceGlobalObjectIdHash: 1334684183
   DeferredDespawnTick: 0
   Ownership: 1
@@ -1833,6 +1855,22 @@ MonoBehaviour:
   _registerServerOnly: 1
   _navFrameSeparation: 5000
   _registerUnderShip: 1
+--- !u!114 &8446038419244633405
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 5954733007135301770}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 5346576fa6c208e4f9822332d6587fe3, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::ProjectC.Ship.ShipRootReference
+  _shipController: {fileID: 0}
+  _rigidbody: {fileID: 0}
+  _networkObject: {fileID: 0}
+  _root: {fileID: 0}
 --- !u!1 &8346340473116990554
 GameObject:
   m_ObjectHideFlags: 0

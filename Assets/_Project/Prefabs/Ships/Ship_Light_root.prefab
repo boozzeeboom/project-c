@@ -1606,6 +1606,7 @@ MonoBehaviour:
   _thrustThreshold: 0.05
   _smoothTime: 0.4
   _rootRef: {fileID: 7864677768768174625}
+  _maxReferenceSpeed: 10
 --- !u!1 &6576465331172951145
 GameObject:
   m_ObjectHideFlags: 0
@@ -1805,6 +1806,8 @@ MonoBehaviour:
   _pivotPoint: {fileID: 1857060571007009785}
   _visuals: {fileID: 8173165384526042875}
   _rootRef: {fileID: 2659030070316191880}
+  _maxReferenceSpeed: 10
+  _maxRefYawRate: 45
 --- !u!114 &550922727212352830
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -1856,6 +1859,7 @@ MonoBehaviour:
   _thrustThreshold: 0.05
   _smoothTime: 1.5
   _rootRef: {fileID: 2659030070316191880}
+  _maxReferenceSpeed: 10
 --- !u!1 &7533877003074112949
 GameObject:
   m_ObjectHideFlags: 0

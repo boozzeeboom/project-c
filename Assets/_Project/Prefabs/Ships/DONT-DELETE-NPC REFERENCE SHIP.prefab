@@ -116,6 +116,7 @@ GameObject:
   - component: {fileID: 579744048572902643}
   - component: {fileID: 910421157238200656}
   - component: {fileID: 491568779037756438}
+  - component: {fileID: 2948032741197883737}
   m_Layer: 0
   m_Name: DONT-DELETE-NPC REFERENCE SHIP
   m_TagString: Ship
@@ -511,6 +512,22 @@ MonoBehaviour:
   _restartTriggers: []
   _lootPrefab: {fileID: 0}
   _lootTable: {fileID: 0}
+--- !u!114 &2948032741197883737
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1417379690576616084}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 5346576fa6c208e4f9822332d6587fe3, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::ProjectC.Ship.ShipRootReference
+  _shipController: {fileID: 0}
+  _rigidbody: {fileID: 0}
+  _networkObject: {fileID: 0}
+  _root: {fileID: 0}
 --- !u!1 &1813107270462534355
 GameObject:
   m_ObjectHideFlags: 0
@@ -969,6 +986,7 @@ GameObject:
   - component: {fileID: 3714280819646038565}
   - component: {fileID: 454861670032084212}
   - component: {fileID: 389474803019224678}
+  - component: {fileID: 1250038602712515855}
   m_Layer: 0
   m_Name: Slot_Engine
   m_TagString: Untagged
@@ -1026,7 +1044,9 @@ MonoBehaviour:
   _deflectionSmoothTime: 0.3
   _pivotPoint: {fileID: 2010854129999775249}
   _visuals: {fileID: 5977410693647495194}
-  _rootRef: {fileID: 0}
+  _rootRef: {fileID: 1250038602712515855}
+  _maxReferenceSpeed: 10
+  _maxRefYawRate: 45
 --- !u!114 &389474803019224678
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -1095,7 +1115,24 @@ MonoBehaviour:
   _rotationAmplitude: {x: 0.5, y: 0.3, z: 0.5}
   _thrustThreshold: 0.05
   _smoothTime: 1.5
-  _rootRef: {fileID: 0}
+  _rootRef: {fileID: 1250038602712515855}
+  _maxReferenceSpeed: 10
+--- !u!114 &1250038602712515855
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 4351922355378607480}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 5346576fa6c208e4f9822332d6587fe3, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::ProjectC.Ship.ShipRootReference
+  _shipController: {fileID: 0}
+  _rigidbody: {fileID: 0}
+  _networkObject: {fileID: 0}
+  _root: {fileID: 0}
 --- !u!1 &4735360376804119096
 GameObject:
   m_ObjectHideFlags: 0
@@ -1346,6 +1383,7 @@ MonoBehaviour:
   _thrustThreshold: 0.05
   _smoothTime: 0.4
   _rootRef: {fileID: 4917602222011382115}
+  _maxReferenceSpeed: 10
 --- !u!1 &5312412637174600244
 GameObject:
   m_ObjectHideFlags: 0

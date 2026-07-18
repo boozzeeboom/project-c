@@ -530,9 +530,7 @@ namespace ProjectC.Editor
             var mr = go.GetComponent<MeshRenderer>();
             if (mr != null)
             {
-                var litMat = AssetDatabase.LoadAssetAtPath<Material>(URP_LitMat);
-                mr.sharedMaterial = new Material(litMat);
-                mr.sharedMaterial.color = color;
+                mr.sharedMaterial = AssetDatabase.LoadAssetAtPath<Material>(URP_LitMat);
             }
             return go;
         }

@@ -1,5 +1,13 @@
 # Итерации разработки — ShipPresetCreator
 
+## Итерация от 2026-07-18 (v1.9 — розовые материалы)
+
+**Задача:** На всех внутренних частях (PilotSeat, Door, EngineVisuals) материалы были розовые — `new Material(litMat)` терял шейдер при сохранении префаба.
+
+**Исправление:** `CreateChildCube` теперь назначает `sharedMaterial` напрямую из ассета (`AssetDatabase.LoadAssetAtPath<Material>(URP_LitMat)`) без `new Material()`.
+
+---
+
 ## Итерация от 2026-07-18 (v1.8 — NavMesh-папка по имени корабля)
 
 **Задача:** Папка с NavMesh-сеткой создавалась по классу (`NavMesh-DeckNavSurface_HeavyII`), а не по имени корабля.

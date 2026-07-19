@@ -5,6 +5,7 @@
 // FSM transition diagram: docs/NPC_others_peacfull/pc_ship/04_LIVING_BEHAVIOR.md §2.
 
 using System.Collections.Generic;
+using ProjectC.Core.ShipPosition; // T-PERSIST: ShipPositionSaveData
 using ProjectC.PeacefulShip.Network;  // NpcShipZoneRegistry (T-NS02)
 using ProjectC.PeacefulShip.Stations;  // NpcShipSchedule, NpcShipController
 using ProjectC.Player;
@@ -107,6 +108,29 @@ namespace ProjectC.PeacefulShip.Core
             => _scheduleByNpcInstanceId.TryGetValue(id, out var s) ? s : null;
 
         public int AllNpcCount => _npcByInstanceId.Count;
+
+        // === T-PERSIST: RestoreNpcState ===
+
+        /// <summary>T-PERSIST: восстановить FSM-состояние NPC из сохранённых данных.</summary>
+        public void RestoreNpcState(ulong npcInstanceId, ShipPositionSaveData data)
+        {
+            if (!_npcByInstanceId.TryGetValue(npcInstanceId, out var state)) return;
+            if (!_scheduleByNpcInstanceId.TryGetValue(npcInstanceId, out var schedule)) return;
+
+            state.ScheduleIndex = data.scheduleIndex;
+            state.LastKnownPosition = new Vector3(data.px, data.py, data.pz);
+            state.StateEnteredAt = Time.time; // сервер перезапущен — таймер состояния сброшен
+
+            // Восстановить CurrentRoute из schedule по сохранённому индексу
+            if (schedule.routes != null && schedule.routes.Length > 0
+                && data.scheduleIndex >= 0 && data.scheduleIndex < schedule.routes.Length)
+            {
+                state.CurrentRoute = schedule.routes[data.scheduleIndex];
+            }
+
+            Debug.Log($"[NpcShipWorld] RestoreNpcState id={npcInstanceId:X} idx={state.ScheduleIndex} " +
+                      $"route={state.CurrentRoute.fromLocationId}→{state.CurrentRoute.toLocationId}");
+        }
 
         /// <summary>Read-only iterate all NPCs (for FSM tick, debugging).</summary>
         public IEnumerable<NpcShipState> AllNpcs => _npcByInstanceId.Values;

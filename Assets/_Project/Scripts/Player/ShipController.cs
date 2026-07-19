@@ -68,6 +68,27 @@ namespace ProjectC.Player
         /// (клиент видит тот же инспектор, что и сервер, scene-placed object).</summary>
         public string CustomDisplayName => _customDisplayName;
 
+        [Header("Persistence (T-PERSIST)")]
+        [Tooltip("Стабильный идентификатор для сохранения позиции. "
+            + "Если пусто — генерируется автоматически при первом чтении: sceneName/gameObject.name.")]
+        [SerializeField] private string _shipPersistentId = "";
+
+        /// <summary>
+        /// Стабильный идентификатор корабля для persistence (T-PERSIST).
+        /// Если не задан в инспекторе — авто-генерация: sceneName/gameObject.name.
+        /// </summary>
+        public string ShipPersistentId
+        {
+            get
+            {
+                if (!string.IsNullOrEmpty(_shipPersistentId))
+                    return _shipPersistentId!;
+                var scene = gameObject.scene;
+                _shipPersistentId = $"{scene.name}/{gameObject.name}";
+                return _shipPersistentId;
+            }
+        }
+
         // T-DOCK-09: Docking state (Q15 bool-flag)
         /// <summary>Сервер-авторитативный NetworkVariable: пристыкован ли корабль.</summary>
         private readonly NetworkVariable<bool> _netIsDocked = new NetworkVariable<bool>(

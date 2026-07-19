@@ -15,6 +15,7 @@
 // Q8: anti-gravity boost на 5 сек после ExitDocked (см. docs/.../04_LIVING_BEHAVIOR.md §2.3)
 
 using System.Collections;
+using ProjectC.Core.ShipPosition; // T-PERSIST: ShipPositionSaveData
 using ProjectC.Docking.Stations;
 using ProjectC.Docking.Zones;
 using ProjectC.PeacefulShip.Core;
@@ -337,6 +338,10 @@ namespace ProjectC.PeacefulShip.Stations
         // T-CARGO-NPC-01: флаг одноразового выполнения dwell-trade (unload+load) за docking.
         // Сбрасывается в false при lift (см. NavTick Docked-блок).
         private bool _cargoTradeDone = true;
+
+        // T-PERSIST: internal getters для ShipPositionServer
+        internal bool ScheduleAdvancedAfterDock => _scheduleAdvancedAfterDock;
+        internal bool CargoTradeDone => _cargoTradeDone;
 
         // === Control authority (handoff): игрок vs NPC-автопилот (см. 08_CONTROL_AUTHORITY_AND_PHYSICS.md) ===
         public enum ControlAuthority : byte { None, NpcAutopilot, HumanPilot }
@@ -863,6 +868,70 @@ namespace ProjectC.PeacefulShip.Stations
             _avoidOther = null;
             // Возврат на прошлый маршрут: прежний режим + прежняя CruiseTargetPos (не менялась)
             SetMode(_resumeMode == NavMode.Avoiding ? NavMode.Cruising : _resumeMode);
+        }
+
+        // === T-PERSIST: RestoreFromSave ===
+
+        /// <summary>Восстановление NavTick-состояния после перезапуска сервера. Server-only.</summary>
+        public void RestoreFromSave(ShipPositionSaveData data)
+        {
+            if (!IsServer) return;
+
+            // ── NavMode (критично: EnterDocked ставит kinematic) ──
+            NavMode savedMode = (NavMode)data.navMode;
+
+            // avoiding → transient → fallback to cruising
+            if (savedMode == NavMode.Avoiding)
+                savedMode = NavMode.Cruising;
+
+            DwellTime = data.dwellTime > 0 ? data.dwellTime : 60f;
+            _scheduleAdvancedAfterDock = data.scheduleAdvancedAfterDock;
+            _cargoTradeDone = data.cargoTradeDone;
+            AssignedPadId = string.IsNullOrEmpty(data.assignedPadId) ? null : data.assignedPadId;
+            CruiseTargetPos = new Vector3(data.pxCruise, data.pyCruise, data.pzCruise);
+            LiftStartY = data.liftStartY;
+
+            var ship = GetComponent<ShipController>();
+            var rb = GetComponent<Rigidbody>();
+
+            // Восстанавливаем режим
+            switch (savedMode)
+            {
+                case NavMode.Docked:
+                    CurrentMode = NavMode.Docked;
+                    DockedSinceTime = Time.time - Mathf.Min(data.dockedSinceTimeOffset, DwellTime * 0.9f);
+                    if (rb != null) rb.isKinematic = true;
+                    if (ship != null && !ship.IsDocked) ship.EnterDocked();
+                    break;
+
+                case NavMode.Lifting:
+                    CurrentMode = NavMode.Lifting;
+                    if (rb != null) rb.isKinematic = false;
+                    if (ship != null && ship.IsDocked) ship.ExitDocked();
+                    break;
+
+                case NavMode.Yawing:
+                case NavMode.Cruising:
+                    CurrentMode = savedMode;
+                    if (rb != null) rb.isKinematic = false;
+                    if (ship != null && ship.IsDocked) ship.ExitDocked();
+                    break;
+
+                case NavMode.Berthing:
+                    CurrentMode = NavMode.Berthing;
+                    if (rb != null) rb.isKinematic = false;
+                    if (ship != null && ship.IsDocked) ship.ExitDocked();
+                    // Если пад назначен и мы на дистанции касания — док сработает на первом NavTick
+                    break;
+            }
+
+            // Восстановить NpcShipState
+            if (NpcShipWorld.Instance != null)
+                NpcShipWorld.Instance.RestoreNpcState(npcInstanceId, data);
+
+            if (debugMode)
+                Debug.Log($"[NpcShipController:{gameObject.name}] RestoreFromSave mode={savedMode} " +
+                          $"idx={data.scheduleIndex} docked={ship != null && ship.IsDocked}");
         }
 
     }

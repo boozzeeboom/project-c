@@ -1,6 +1,7 @@
 #if UNITY_EDITOR
 using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 using UnityEditor;
 using UnityEditor.SceneManagement;
@@ -409,7 +410,7 @@ namespace ProjectC.PeacefulShip.EditorTools
                 return;
             }
 
-            // Build schedule name list for popups: [0] = "(none)", rest = schedules
+            // Build schedule name list for popups: [0] = "(none)", rest = schedules, last = "⊕ Create New..."
             var scheduleNames = new List<string> { "(none)" };
             if (_allSchedules != null)
             {
@@ -417,6 +418,8 @@ namespace ProjectC.PeacefulShip.EditorTools
                     if (s != null)
                         scheduleNames.Add($"{s.scheduleId} — {s.displayName}");
             }
+            scheduleNames.Add("⊕ Create New...");
+            int createNewIdx = scheduleNames.Count - 1;
 
             // Group by scene
             var grouped = _sceneShipEntries.GroupBy(e => e.SceneName).OrderBy(g => g.Key);
@@ -467,7 +470,7 @@ namespace ProjectC.PeacefulShip.EditorTools
                         }
                     }
 
-                    // Row 2: assign schedule popup + button
+                    // Row 2: assign schedule popup
                     using (new EditorGUILayout.HorizontalScope())
                     {
                         GUILayout.Space(20);
@@ -491,20 +494,28 @@ namespace ProjectC.PeacefulShip.EditorTools
 
                         if (newIdx != currentIdx)
                         {
-                            NpcShipSchedule newSch = null;
-                            if (newIdx > 0 && _allSchedules != null && newIdx - 1 < _allSchedules.Length)
-                                newSch = _allSchedules[newIdx - 1];
+                            if (newIdx == createNewIdx)
+                            {
+                                // "Create New..." selected
+                                CreateNewScheduleForShip(entry);
+                            }
+                            else
+                            {
+                                NpcShipSchedule newSch = null;
+                                if (newIdx > 0 && _allSchedules != null && newIdx - 1 < _allSchedules.Length)
+                                    newSch = _allSchedules[newIdx - 1];
 
-                            AssignScheduleToShip(entry, newSch);
+                                AssignScheduleToShip(entry, newSch);
 
-                            // Update entry
-                            entry.ScheduleId = newSch?.scheduleId;
-                            entry.ScheduleDisplayName = newSch?.displayName ?? "";
-                            entry.RouteCount = newSch?.routes?.Length ?? 0;
-                            entry.RouteSummary = newSch != null && newSch.routes != null && newSch.routes.Length > 0
-                                ? string.Join(", ", newSch.routes.Take(2).Select(r => $"{r.fromLocationId}→{r.toLocationId}"))
-                                  + (newSch.routes.Length > 2 ? " ..." : "")
-                                : "";
+                                // Update entry
+                                entry.ScheduleId = newSch?.scheduleId;
+                                entry.ScheduleDisplayName = newSch?.displayName ?? "";
+                                entry.RouteCount = newSch?.routes?.Length ?? 0;
+                                entry.RouteSummary = newSch != null && newSch.routes != null && newSch.routes.Length > 0
+                                    ? string.Join(", ", newSch.routes.Take(2).Select(r => $"{r.fromLocationId}→{r.toLocationId}"))
+                                      + (newSch.routes.Length > 2 ? " ..." : "")
+                                    : "";
+                            }
                         }
 
                         GUILayout.FlexibleSpace();
@@ -574,6 +585,80 @@ namespace ProjectC.PeacefulShip.EditorTools
             {
                 Debug.LogError($"[NpcShipScheduleOverview] Failed to assign schedule to '{entry.ShipName}': {ex.Message}");
             }
+        }
+
+        private const string DefaultSchedulePath = "Assets/_Project/Resources/PeacefulShip";
+
+        private void CreateNewScheduleForShip(SceneShipEntry entry)
+        {
+            string currentPath = DefaultSchedulePath;
+            if (!string.IsNullOrEmpty(entry.ScheduleId) && _allSchedules != null)
+            {
+                foreach (var s in _allSchedules)
+                {
+                    if (s != null && s.scheduleId == entry.ScheduleId)
+                    {
+                        string existingPath = AssetDatabase.GetAssetPath(s);
+                        if (!string.IsNullOrEmpty(existingPath))
+                            currentPath = Path.GetDirectoryName(existingPath);
+                        break;
+                    }
+                }
+            }
+
+            if (!Directory.Exists(currentPath))
+                Directory.CreateDirectory(currentPath);
+
+            string shipName = entry.ShipName.Replace(" ", "_").Replace("(", "").Replace(")", "");
+            string defaultName = $"NpcShipSchedule_{shipName}";
+            string savePath = EditorUtility.SaveFilePanelInProject(
+                "Create New NpcShipSchedule",
+                defaultName,
+                "asset",
+                "Choose save location for the new schedule",
+                currentPath);
+
+            if (string.IsNullOrEmpty(savePath)) return;
+
+            var newSchedule = CreateInstance<NpcShipSchedule>();
+            newSchedule.scheduleId = $"SCH-NPC-{shipName.ToUpperInvariant()}";
+            newSchedule.displayName = $"Расписание {entry.ShipName}";
+            newSchedule.scheduleType = NpcShipSchedule.ScheduleType.RoundTrip;
+            newSchedule.routes = new NpcShipRoute[1]
+            {
+                new NpcShipRoute
+                {
+                    fromLocationId = "",
+                    toLocationId = "",
+                    dwellTimeSec = 60f,
+                    flightDurationSec = 120f
+                }
+            };
+            newSchedule.minDwellTimeSec = 60f;
+            newSchedule.maxDwellTimeSec = 90f;
+
+            string finalPath = AssetDatabase.GenerateUniqueAssetPath(savePath);
+            AssetDatabase.CreateAsset(newSchedule, finalPath);
+            AssetDatabase.SaveAssets();
+            AssetDatabase.Refresh();
+
+            // Refresh schedule list so the new SO appears in popups
+            RefreshSchedules();
+
+            // Assign to the ship
+            AssignScheduleToShip(entry, newSchedule);
+
+            // Update entry
+            entry.ScheduleId = newSchedule.scheduleId;
+            entry.ScheduleDisplayName = newSchedule.displayName;
+            entry.RouteCount = newSchedule.routes?.Length ?? 0;
+            entry.RouteSummary = newSchedule.routes != null && newSchedule.routes.Length > 0
+                ? string.Join(", ", newSchedule.routes.Take(2).Select(r => $"{r.fromLocationId}→{r.toLocationId}"))
+                  + (newSchedule.routes.Length > 2 ? " ..." : "")
+                : "";
+
+            EditorGUIUtility.PingObject(newSchedule);
+            Debug.Log($"[NpcShipScheduleOverview] Created new schedule '{newSchedule.scheduleId}' at {finalPath} for '{entry.ShipName}'");
         }
 
         private void CacheWorldScenePaths()

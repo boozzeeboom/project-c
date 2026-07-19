@@ -8,6 +8,7 @@ using UnityEngine;
 using UnityEngine.SceneManagement;
 using ProjectC.PeacefulShip.Core;
 using ProjectC.PeacefulShip.Stations;
+using ProjectC.Docking.Network; // DockStationController for location dropdowns
 
 namespace ProjectC.PeacefulShip.EditorTools
 {
@@ -175,6 +176,26 @@ namespace ProjectC.PeacefulShip.EditorTools
             EditorGUILayout.BeginVertical(EditorStyles.helpBox);
             EditorGUI.indentLevel++;
 
+            // ── Toolbar with Scan button (like NpcShipScheduleEditor) ──
+            var stations = GetCachedSceneStations();
+            int stationCount = stations.Count;
+            EditorGUILayout.BeginHorizontal(EditorStyles.toolbar);
+            if (GUILayout.Button("🔍 Scan Scene Stations", EditorStyles.toolbarButton, GUILayout.Width(140)))
+            {
+                RefreshSceneStationCache();
+                Repaint();
+            }
+            if (stationCount <= 0)
+                EditorGUILayout.LabelField("No stations in open scenes — type IDs manually", EditorStyles.miniLabel);
+            else
+            {
+                var locIds = stations.Select(s => s.LocationId).Where(id => !string.IsNullOrEmpty(id)).Distinct().ToList();
+                EditorGUILayout.LabelField($"📍 {stationCount} stations: {string.Join(", ", locIds.Take(5))}{(locIds.Count > 5 ? " ..." : "")}", EditorStyles.miniLabel);
+            }
+            EditorGUILayout.EndHorizontal();
+
+            EditorGUILayout.Space(4);
+
             // ── Identity ──
             EditorGUILayout.LabelField("Identity", EditorStyles.boldLabel);
             var propId = so.FindProperty("scheduleId");
@@ -203,7 +224,7 @@ namespace ProjectC.PeacefulShip.EditorTools
 
             EditorGUILayout.Space(6);
 
-            // ── Routes ──
+            // ── Routes (uses NpcShipRouteDrawer for location dropdowns) ──
             EditorGUILayout.LabelField("Routes", EditorStyles.boldLabel);
             var propRoutes = so.FindProperty("routes");
 
@@ -220,34 +241,43 @@ namespace ProjectC.PeacefulShip.EditorTools
                     var routeElem = propRoutes.GetArrayElementAtIndex(ri);
 
                     EditorGUILayout.BeginVertical(EditorStyles.helpBox);
-                    EditorGUILayout.LabelField($"Route [{ri}]", EditorStyles.miniBoldLabel);
 
-                    var rFrom = routeElem.FindPropertyRelative("fromLocationId");
-                    var rTo = routeElem.FindPropertyRelative("toLocationId");
-                    var rDwell = routeElem.FindPropertyRelative("dwellTimeSec");
-                    var rAddMin = routeElem.FindPropertyRelative("dwellRandomAddMinSec");
-                    var rAddMax = routeElem.FindPropertyRelative("dwellRandomAddMaxSec");
-                    var rFlight = routeElem.FindPropertyRelative("flightDurationSec");
-                    var rClass = routeElem.FindPropertyRelative("preferredShipClass");
-                    var rDemand = routeElem.FindPropertyRelative("demandCategory");
+                    // Use PropertyField with includeChildren=true → invokes NpcShipRouteDrawer
+                    // which provides dropdown popups for fromLocationId/toLocationId from DockStationController
+                    EditorGUILayout.PropertyField(routeElem,
+                        new GUIContent($"Route [{ri}]"), true);
 
-                    EditorGUILayout.PropertyField(rFrom, new GUIContent("From Location"));
-                    EditorGUILayout.PropertyField(rTo, new GUIContent("To Location"));
-                    EditorGUILayout.PropertyField(rDwell, new GUIContent("Dwell Time (sec)"));
-                    EditorGUILayout.PropertyField(rAddMin, new GUIContent("Random Add Min (sec)"));
-                    EditorGUILayout.PropertyField(rAddMax, new GUIContent("Random Add Max (sec)"));
-                    EditorGUILayout.PropertyField(rFlight, new GUIContent("Flight Duration (sec)"));
-                    EditorGUILayout.PropertyField(rClass, new GUIContent("Preferred Ship Class"));
-                    EditorGUILayout.PropertyField(rDemand, new GUIContent("Demand Category"));
-
-                    using (new EditorGUILayout.HorizontalScope())
+                    if (routeElem.isExpanded)
                     {
-                        GUILayout.FlexibleSpace();
-                        if (GUILayout.Button("Remove Route", GUILayout.Width(110)))
+                        using (new EditorGUILayout.HorizontalScope())
                         {
-                            propRoutes.DeleteArrayElementAtIndex(ri);
-                            routesChanged = true;
-                            break; // exit loop — array modified
+                            GUILayout.FlexibleSpace();
+                            if (GUILayout.Button("Remove Route", GUILayout.Width(110)))
+                            {
+                                propRoutes.DeleteArrayElementAtIndex(ri);
+                                routesChanged = true;
+                                break;
+                            }
+                        }
+                    }
+                    else
+                    {
+                        // Show compact summary when collapsed
+                        var rFrom = routeElem.FindPropertyRelative("fromLocationId");
+                        var rTo = routeElem.FindPropertyRelative("toLocationId");
+                        using (new EditorGUILayout.HorizontalScope())
+                        {
+                            GUILayout.Space(20);
+                            EditorGUILayout.LabelField(
+                                $"{(string.IsNullOrEmpty(rFrom?.stringValue) ? "?" : rFrom.stringValue)} → {(string.IsNullOrEmpty(rTo?.stringValue) ? "?" : rTo.stringValue)}",
+                                EditorStyles.miniLabel);
+                            GUILayout.FlexibleSpace();
+                            if (GUILayout.Button("Remove", EditorStyles.miniButton, GUILayout.Width(56)))
+                            {
+                                propRoutes.DeleteArrayElementAtIndex(ri);
+                                routesChanged = true;
+                                break;
+                            }
                         }
                     }
 
@@ -261,12 +291,29 @@ namespace ProjectC.PeacefulShip.EditorTools
                     if (GUILayout.Button("+ Add Route", GUILayout.Width(120)))
                     {
                         propRoutes.InsertArrayElementAtIndex(propRoutes.arraySize);
-                        // Init new element defaults
                         var newElem = propRoutes.GetArrayElementAtIndex(propRoutes.arraySize - 1);
                         newElem.FindPropertyRelative("dwellTimeSec").floatValue = 60f;
                         newElem.FindPropertyRelative("dwellRandomAddMinSec").floatValue = 0f;
                         newElem.FindPropertyRelative("dwellRandomAddMaxSec").floatValue = 0f;
                         newElem.FindPropertyRelative("flightDurationSec").floatValue = 120f;
+                        newElem.isExpanded = true;
+                    }
+                }
+
+                // Route-level validation (reuse logic from NpcShipScheduleEditor)
+                if (stationCount > 0 && propRoutes.arraySize > 0)
+                {
+                    var validIds = new HashSet<string>(
+                        stations.Select(s => s.LocationId).Where(id => !string.IsNullOrEmpty(id)));
+                    for (int i = 0; i < propRoutes.arraySize; i++)
+                    {
+                        var el = propRoutes.GetArrayElementAtIndex(i);
+                        var from = el.FindPropertyRelative("fromLocationId");
+                        var to = el.FindPropertyRelative("toLocationId");
+                        if (!string.IsNullOrEmpty(from?.stringValue) && !validIds.Contains(from.stringValue))
+                            EditorGUILayout.HelpBox($"Route[{i}].fromLocationId '{from.stringValue}' — no station in scene", MessageType.Warning);
+                        if (!string.IsNullOrEmpty(to?.stringValue) && !validIds.Contains(to.stringValue))
+                            EditorGUILayout.HelpBox($"Route[{i}].toLocationId '{to.stringValue}' — no station in scene", MessageType.Warning);
                     }
                 }
             }
@@ -274,13 +321,31 @@ namespace ProjectC.PeacefulShip.EditorTools
             EditorGUI.indentLevel--;
             EditorGUILayout.EndVertical();
 
-            // Apply changes
             if (so.ApplyModifiedProperties())
             {
                 EditorUtility.SetDirty(sch);
             }
 
             so.Dispose();
+        }
+
+        // ── Scene station cache (shared by inline editor — mirrors NpcShipScheduleEditor + NpcShipRouteDrawer) ──
+
+        private static List<DockStationController> _cachedSceneStations;
+        private static double _sceneStationCacheTime;
+
+        private static List<DockStationController> GetCachedSceneStations()
+        {
+            double now = EditorApplication.timeSinceStartup;
+            if (_cachedSceneStations != null && (now - _sceneStationCacheTime) < 3.0)
+                return _cachedSceneStations;
+            return _cachedSceneStations ?? new List<DockStationController>();
+        }
+
+        private static void RefreshSceneStationCache()
+        {
+            _cachedSceneStations = FindObjectsByType<DockStationController>(FindObjectsInactive.Include).ToList();
+            _sceneStationCacheTime = EditorApplication.timeSinceStartup;
         }
 
         private void RefreshSchedules()

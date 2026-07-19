@@ -61,6 +61,10 @@ namespace ProjectC.Core.ShipPosition
 
         private void Start()
         {
+            // Инициализируем таймер чтобы первый save был через saveIntervalSec,
+            // а не на первом же кадре (когда корабли ещё не заспавнены).
+            _nextSaveTime = Time.time + saveIntervalSec;
+
             if (NetworkManager.Singleton != null)
                 NetworkManager.Singleton.OnServerStarted += OnServerStarted;
         }

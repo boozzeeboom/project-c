@@ -129,7 +129,7 @@ MonoBehaviour:
   runSpeed: 50
   rotationSpeed: 12
   jumpForce: 8
-  gravity: -20
+  gravity: 0
   _platformCarryEnabled: 1
   _platformMask:
     serializedVersion: 2

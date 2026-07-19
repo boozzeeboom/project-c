@@ -23,6 +23,7 @@ namespace ProjectC.PeacefulShip.EditorTools
         // ── Tab 1: Schedules ──
         private NpcShipSchedule[] _allSchedules;
         private Vector2 _scrollSchedules;
+        private int _expandedScheduleIndex = -1;
 
         // ── Tab 2: Ships in Scenes ──
         private Vector2 _scrollShips;
@@ -96,23 +97,31 @@ namespace ProjectC.PeacefulShip.EditorTools
 
             _scrollSchedules = EditorGUILayout.BeginScrollView(_scrollSchedules);
 
-            foreach (var sch in _allSchedules)
+            for (int si = 0; si < _allSchedules.Length; si++)
             {
+                var sch = _allSchedules[si];
                 if (sch == null) continue;
 
+                bool isExpanded = _expandedScheduleIndex == si;
                 int routeCount = sch.routes?.Length ?? 0;
                 int cargoCount = sch.cargoTrade?.buyItems?.Length ?? 0;
                 bool hasCargo = cargoCount > 0;
 
+                // ── Summary row ──
                 var rowRect = EditorGUILayout.BeginHorizontal(GUILayout.Height(22));
-                bool isEven = Array.IndexOf(_allSchedules, sch) % 2 == 0;
+                bool isEven = si % 2 == 0;
                 if (isEven)
                 {
                     var bg = new Color(0.25f, 0.25f, 0.28f, 0.6f);
                     EditorGUI.DrawRect(rowRect, bg);
                 }
 
-                if (GUILayout.Button(sch.scheduleId, EditorStyles.linkLabel, GUILayout.Width(180)))
+                // Expand/collapse toggle
+                bool newExpanded = GUILayout.Toggle(isExpanded, isExpanded ? "▼" : "▶", EditorStyles.label, GUILayout.Width(18));
+                if (newExpanded != isExpanded)
+                    _expandedScheduleIndex = newExpanded ? si : -1;
+
+                if (GUILayout.Button(sch.scheduleId, EditorStyles.linkLabel, GUILayout.Width(160)))
                 {
                     Selection.activeObject = sch;
                     EditorGUIUtility.PingObject(sch);
@@ -133,7 +142,6 @@ namespace ProjectC.PeacefulShip.EditorTools
 
                 GUILayout.Label($"{sch.meanArrivalIntervalSec:F0}±{sch.arrivalIntervalStdDev:F0}", GUILayout.Width(90));
 
-                // Mini route summary
                 string routeSummary = routeCount > 0
                     ? string.Join(", ", sch.routes.Take(2).Select(r => $"{r.fromLocationId}→{r.toLocationId}"))
                       + (routeCount > 2 ? " ..." : "")
@@ -141,16 +149,138 @@ namespace ProjectC.PeacefulShip.EditorTools
                 GUILayout.Label(routeSummary, EditorStyles.miniLabel);
 
                 EditorGUILayout.EndHorizontal();
+
+                // ── Expanded inline editor ──
+                if (isExpanded)
+                {
+                    DrawScheduleInlineEditor(sch);
+                }
             }
 
             EditorGUILayout.EndScrollView();
 
-            // Refresh button
             EditorGUILayout.Space(8);
             if (GUILayout.Button("🔄 Refresh Schedules", GUILayout.Width(160)))
             {
+                _expandedScheduleIndex = -1;
                 RefreshSchedules();
             }
+        }
+
+        private void DrawScheduleInlineEditor(NpcShipSchedule sch)
+        {
+            var so = new SerializedObject(sch);
+            so.Update();
+
+            EditorGUILayout.BeginVertical(EditorStyles.helpBox);
+            EditorGUI.indentLevel++;
+
+            // ── Identity ──
+            EditorGUILayout.LabelField("Identity", EditorStyles.boldLabel);
+            var propId = so.FindProperty("scheduleId");
+            var propName = so.FindProperty("displayName");
+            var propType = so.FindProperty("scheduleType");
+
+            EditorGUILayout.PropertyField(propId, new GUIContent("Schedule ID"));
+            EditorGUILayout.PropertyField(propName, new GUIContent("Display Name"));
+            EditorGUILayout.PropertyField(propType, new GUIContent("Schedule Type"));
+
+            EditorGUILayout.Space(6);
+
+            // ── Traffic Shaping ──
+            EditorGUILayout.LabelField("Traffic Shaping (Gaussian)", EditorStyles.boldLabel);
+            var propMean = so.FindProperty("meanArrivalIntervalSec");
+            var propStdDev = so.FindProperty("arrivalIntervalStdDev");
+            var propMinSpacing = so.FindProperty("minArrivalSpacingSec");
+            var propMinDwell = so.FindProperty("minDwellTimeSec");
+            var propMaxDwell = so.FindProperty("maxDwellTimeSec");
+
+            EditorGUILayout.PropertyField(propMean, new GUIContent("Mean Interval (sec)"));
+            EditorGUILayout.PropertyField(propStdDev, new GUIContent("StdDev (sec)"));
+            EditorGUILayout.PropertyField(propMinSpacing, new GUIContent("Min Spacing (sec)"));
+            EditorGUILayout.PropertyField(propMinDwell, new GUIContent("Min Dwell (sec)"));
+            EditorGUILayout.PropertyField(propMaxDwell, new GUIContent("Max Dwell (sec)"));
+
+            EditorGUILayout.Space(6);
+
+            // ── Routes ──
+            EditorGUILayout.LabelField("Routes", EditorStyles.boldLabel);
+            var propRoutes = so.FindProperty("routes");
+
+            if (propRoutes == null || !propRoutes.isArray)
+            {
+                EditorGUILayout.HelpBox("routes property not found.", MessageType.Error);
+            }
+            else
+            {
+                bool routesChanged = false;
+
+                for (int ri = 0; ri < propRoutes.arraySize; ri++)
+                {
+                    var routeElem = propRoutes.GetArrayElementAtIndex(ri);
+
+                    EditorGUILayout.BeginVertical(EditorStyles.helpBox);
+                    EditorGUILayout.LabelField($"Route [{ri}]", EditorStyles.miniBoldLabel);
+
+                    var rFrom = routeElem.FindPropertyRelative("fromLocationId");
+                    var rTo = routeElem.FindPropertyRelative("toLocationId");
+                    var rDwell = routeElem.FindPropertyRelative("dwellTimeSec");
+                    var rAddMin = routeElem.FindPropertyRelative("dwellRandomAddMinSec");
+                    var rAddMax = routeElem.FindPropertyRelative("dwellRandomAddMaxSec");
+                    var rFlight = routeElem.FindPropertyRelative("flightDurationSec");
+                    var rClass = routeElem.FindPropertyRelative("preferredShipClass");
+                    var rDemand = routeElem.FindPropertyRelative("demandCategory");
+
+                    EditorGUILayout.PropertyField(rFrom, new GUIContent("From Location"));
+                    EditorGUILayout.PropertyField(rTo, new GUIContent("To Location"));
+                    EditorGUILayout.PropertyField(rDwell, new GUIContent("Dwell Time (sec)"));
+                    EditorGUILayout.PropertyField(rAddMin, new GUIContent("Random Add Min (sec)"));
+                    EditorGUILayout.PropertyField(rAddMax, new GUIContent("Random Add Max (sec)"));
+                    EditorGUILayout.PropertyField(rFlight, new GUIContent("Flight Duration (sec)"));
+                    EditorGUILayout.PropertyField(rClass, new GUIContent("Preferred Ship Class"));
+                    EditorGUILayout.PropertyField(rDemand, new GUIContent("Demand Category"));
+
+                    using (new EditorGUILayout.HorizontalScope())
+                    {
+                        GUILayout.FlexibleSpace();
+                        if (GUILayout.Button("Remove Route", GUILayout.Width(110)))
+                        {
+                            propRoutes.DeleteArrayElementAtIndex(ri);
+                            routesChanged = true;
+                            break; // exit loop — array modified
+                        }
+                    }
+
+                    EditorGUILayout.EndVertical();
+                    EditorGUILayout.Space(2);
+                }
+
+                if (!routesChanged)
+                {
+                    EditorGUILayout.Space(2);
+                    if (GUILayout.Button("+ Add Route", GUILayout.Width(120)))
+                    {
+                        propRoutes.InsertArrayElementAtIndex(propRoutes.arraySize);
+                        // Init new element defaults
+                        var newElem = propRoutes.GetArrayElementAtIndex(propRoutes.arraySize - 1);
+                        newElem.FindPropertyRelative("dwellTimeSec").floatValue = 60f;
+                        newElem.FindPropertyRelative("dwellRandomAddMinSec").floatValue = 0f;
+                        newElem.FindPropertyRelative("dwellRandomAddMaxSec").floatValue = 0f;
+                        newElem.FindPropertyRelative("flightDurationSec").floatValue = 120f;
+                    }
+                }
+            }
+
+            EditorGUI.indentLevel--;
+            EditorGUILayout.EndVertical();
+
+            // Apply changes
+            if (so.ApplyModifiedProperties())
+            {
+                EditorUtility.SetDirty(sch);
+            }
+
+            so.Dispose();
         }
 
         private void RefreshSchedules()
@@ -214,6 +344,15 @@ namespace ProjectC.PeacefulShip.EditorTools
                 return;
             }
 
+            // Build schedule name list for popups: [0] = "(none)", rest = schedules
+            var scheduleNames = new List<string> { "(none)" };
+            if (_allSchedules != null)
+            {
+                foreach (var s in _allSchedules)
+                    if (s != null)
+                        scheduleNames.Add($"{s.scheduleId} — {s.displayName}");
+            }
+
             // Group by scene
             var grouped = _sceneShipEntries.GroupBy(e => e.SceneName).OrderBy(g => g.Key);
 
@@ -232,36 +371,82 @@ namespace ProjectC.PeacefulShip.EditorTools
 
                 foreach (var entry in ships)
                 {
-                    EditorGUILayout.BeginHorizontal();
-                    EditorGUI.indentLevel++;
+                    EditorGUILayout.BeginVertical(EditorStyles.helpBox);
 
-                    bool hasSchedule = !string.IsNullOrEmpty(entry.ScheduleId);
-                    var color = hasSchedule ? Color.white : Color.red;
-                    GUI.color = color;
-                    EditorGUILayout.LabelField("•", GUILayout.Width(14));
-                    EditorGUILayout.LabelField(entry.ShipName, GUILayout.Width(180));
-                    GUI.color = Color.white;
-
-                    if (hasSchedule)
+                    // Row 1: ship name + current schedule
+                    using (new EditorGUILayout.HorizontalScope())
                     {
-                        EditorGUILayout.LabelField(entry.ScheduleId, EditorStyles.boldLabel, GUILayout.Width(160));
-                        EditorGUILayout.LabelField($"\"{entry.ScheduleDisplayName}\"", EditorStyles.miniLabel);
-
-                        int routeCount = entry.RouteCount;
-                        string routeInfo = routeCount > 0
-                            ? $"{routeCount} route(s): " + entry.RouteSummary
-                            : "(no routes)";
-                        EditorGUILayout.LabelField(routeInfo, EditorStyles.miniLabel);
-                    }
-                    else
-                    {
-                        GUI.color = Color.red;
-                        EditorGUILayout.LabelField("⚠ NO SCHEDULE ASSIGNED!", EditorStyles.boldLabel);
+                        bool hasSchedule = !string.IsNullOrEmpty(entry.ScheduleId);
+                        var color = hasSchedule ? Color.white : Color.red;
+                        GUI.color = color;
+                        EditorGUILayout.LabelField("•", GUILayout.Width(14));
+                        EditorGUILayout.LabelField(entry.ShipName, EditorStyles.boldLabel, GUILayout.Width(180));
                         GUI.color = Color.white;
+
+                        if (hasSchedule)
+                        {
+                            EditorGUILayout.LabelField(entry.ScheduleId, GUILayout.Width(160));
+                            EditorGUILayout.LabelField($"\"{entry.ScheduleDisplayName}\"", EditorStyles.miniLabel);
+
+                            int routeCount = entry.RouteCount;
+                            string routeInfo = routeCount > 0
+                                ? $"{routeCount} route(s): " + entry.RouteSummary
+                                : "(no routes)";
+                            EditorGUILayout.LabelField(routeInfo, EditorStyles.miniLabel);
+                        }
+                        else
+                        {
+                            GUI.color = Color.red;
+                            EditorGUILayout.LabelField("⚠ NO SCHEDULE ASSIGNED!", EditorStyles.boldLabel);
+                            GUI.color = Color.white;
+                        }
                     }
 
-                    EditorGUI.indentLevel--;
-                    EditorGUILayout.EndHorizontal();
+                    // Row 2: assign schedule popup + button
+                    using (new EditorGUILayout.HorizontalScope())
+                    {
+                        GUILayout.Space(20);
+
+                        // Determine current popup index
+                        int currentIdx = 0; // "(none)"
+                        if (!string.IsNullOrEmpty(entry.ScheduleId) && _allSchedules != null)
+                        {
+                            for (int i = 0; i < _allSchedules.Length; i++)
+                            {
+                                if (_allSchedules[i] != null && _allSchedules[i].scheduleId == entry.ScheduleId)
+                                {
+                                    currentIdx = i + 1; // +1 because [0] is "(none)"
+                                    break;
+                                }
+                            }
+                        }
+
+                        EditorGUILayout.LabelField("Assign:", GUILayout.Width(48));
+                        int newIdx = EditorGUILayout.Popup(currentIdx, scheduleNames.ToArray(), GUILayout.Width(320));
+
+                        if (newIdx != currentIdx)
+                        {
+                            NpcShipSchedule newSch = null;
+                            if (newIdx > 0 && _allSchedules != null && newIdx - 1 < _allSchedules.Length)
+                                newSch = _allSchedules[newIdx - 1];
+
+                            AssignScheduleToShip(entry, newSch);
+
+                            // Update entry
+                            entry.ScheduleId = newSch?.scheduleId;
+                            entry.ScheduleDisplayName = newSch?.displayName ?? "";
+                            entry.RouteCount = newSch?.routes?.Length ?? 0;
+                            entry.RouteSummary = newSch != null && newSch.routes != null && newSch.routes.Length > 0
+                                ? string.Join(", ", newSch.routes.Take(2).Select(r => $"{r.fromLocationId}→{r.toLocationId}"))
+                                  + (newSch.routes.Length > 2 ? " ..." : "")
+                                : "";
+                        }
+
+                        GUILayout.FlexibleSpace();
+                    }
+
+                    EditorGUILayout.EndVertical();
+                    EditorGUILayout.Space(1);
                 }
 
                 EditorGUILayout.EndVertical();
@@ -269,6 +454,61 @@ namespace ProjectC.PeacefulShip.EditorTools
             }
 
             EditorGUILayout.EndScrollView();
+        }
+
+        private void AssignScheduleToShip(SceneShipEntry entry, NpcShipSchedule newSchedule)
+        {
+            try
+            {
+                // Open scene additively
+                Scene scene = EditorSceneManager.OpenScene(entry.ScenePath, OpenSceneMode.Additive);
+
+                // Find controller by ship name
+                var controllers = FindObjectsByType<NpcShipController>(FindObjectsInactive.Include);
+                NpcShipController target = null;
+                foreach (var ctrl in controllers)
+                {
+                    if (ctrl.gameObject.scene == scene && ctrl.gameObject.name == entry.ShipName)
+                    {
+                        target = ctrl;
+                        break;
+                    }
+                }
+
+                if (target == null)
+                {
+                    Debug.LogWarning($"[NpcShipScheduleOverview] Ship '{entry.ShipName}' not found in scene '{entry.SceneName}'");
+                    EditorSceneManager.CloseScene(scene, true);
+                    return;
+                }
+
+                // Assign schedule via SerializedObject
+                var so = new SerializedObject(target);
+                so.Update();
+                var propSchedule = so.FindProperty("schedule");
+                if (propSchedule != null)
+                {
+                    propSchedule.objectReferenceValue = newSchedule;
+                    so.ApplyModifiedProperties();
+                }
+                so.Dispose();
+
+                // Mark scene dirty
+                EditorSceneManager.MarkSceneDirty(scene);
+
+                // Save scene
+                EditorSceneManager.SaveScene(scene, entry.ScenePath);
+
+                // Close scene
+                EditorSceneManager.CloseScene(scene, true);
+
+                string schName = newSchedule != null ? $"'{newSchedule.scheduleId}'" : "null";
+                Debug.Log($"[NpcShipScheduleOverview] Assigned schedule {schName} to '{entry.ShipName}' in '{entry.SceneName}'");
+            }
+            catch (Exception ex)
+            {
+                Debug.LogError($"[NpcShipScheduleOverview] Failed to assign schedule to '{entry.ShipName}': {ex.Message}");
+            }
         }
 
         private void CacheWorldScenePaths()
@@ -368,12 +608,22 @@ namespace ProjectC.PeacefulShip.EditorTools
             {
                 if (sch == null) continue;
 
-                var cargo = sch.cargoTrade;
-                bool hasCargo = cargo != null && cargo.buyItems != null && cargo.buyItems.Length > 0;
+                var so = new SerializedObject(sch);
+                so.Update();
+
+                var propCargo = so.FindProperty("cargoTrade");
+                if (propCargo == null)
+                {
+                    so.Dispose();
+                    continue;
+                }
+
+                var propBuyItems = propCargo.FindPropertyRelative("buyItems");
+                bool hasCargo = propBuyItems != null && propBuyItems.isArray && propBuyItems.arraySize > 0;
 
                 EditorGUILayout.BeginVertical(EditorStyles.helpBox);
 
-                // Header row
+                // Header
                 using (new EditorGUILayout.HorizontalScope())
                 {
                     EditorGUILayout.LabelField($"📦 {sch.scheduleId}", EditorStyles.boldLabel, GUILayout.Width(170));
@@ -393,52 +643,99 @@ namespace ProjectC.PeacefulShip.EditorTools
                     }
                 }
 
-                if (hasCargo)
+                EditorGUI.indentLevel++;
+
+                // Behavior flags (editable toggles)
+                var propSellAll = propCargo.FindPropertyRelative("sellAllOnArrival");
+                var propBuyAfter = propCargo.FindPropertyRelative("buyConfiguredItemsAfterSell");
+                var propUnlimited = propCargo.FindPropertyRelative("useUnlimitedCredits");
+
+                EditorGUILayout.BeginHorizontal();
+                if (propSellAll != null) EditorGUILayout.PropertyField(propSellAll, new GUIContent("Sell on arrival"), GUILayout.Width(160));
+                if (propBuyAfter != null) EditorGUILayout.PropertyField(propBuyAfter, new GUIContent("Buy after sell"), GUILayout.Width(160));
+                if (propUnlimited != null) EditorGUILayout.PropertyField(propUnlimited, new GUIContent("Unlimited credits"), GUILayout.Width(160));
+                EditorGUILayout.EndHorizontal();
+
+                // Limits
+                var propSlots = propCargo.FindPropertyRelative("maxLoadSlots");
+                var propWeight = propCargo.FindPropertyRelative("maxLoadWeightKg");
+
+                EditorGUILayout.BeginHorizontal();
+                if (propSlots != null) EditorGUILayout.PropertyField(propSlots, new GUIContent("Max Slots"), GUILayout.Width(120));
+                if (propWeight != null) EditorGUILayout.PropertyField(propWeight, new GUIContent("Max Weight (kg)"), GUILayout.Width(160));
+                EditorGUILayout.EndHorizontal();
+
+                EditorGUILayout.Space(4);
+
+                // Buy items
+                if (propBuyItems != null && propBuyItems.isArray)
                 {
-                    EditorGUI.indentLevel++;
+                    EditorGUILayout.LabelField($"Buy Items ({propBuyItems.arraySize}):", EditorStyles.miniBoldLabel);
 
-                    // Behavior flags
-                    EditorGUILayout.BeginHorizontal();
-                    DrawFlag(cargo.sellAllOnArrival, "Sell all on arrival");
-                    DrawFlag(cargo.buyConfiguredItemsAfterSell, "Buy after sell");
-                    DrawFlag(cargo.useUnlimitedCredits, "Unlimited credits");
-                    EditorGUILayout.EndHorizontal();
-
-                    // Limits
-                    EditorGUILayout.LabelField(
-                        $"Max load: {cargo.maxLoadSlots} slots | {cargo.maxLoadWeightKg:F0} kg",
-                        EditorStyles.miniLabel);
-
-                    // Buy items table
-                    EditorGUILayout.LabelField($"Buy Items ({cargo.buyItems.Length}):", EditorStyles.miniBoldLabel);
-
-                    // Header
+                    // Table header
                     using (new EditorGUILayout.HorizontalScope(EditorStyles.toolbar))
                     {
-                        GUILayout.Label("Item ID", EditorStyles.toolbarButton, GUILayout.Width(220));
+                        GUILayout.Label("Item ID", EditorStyles.toolbarButton, GUILayout.Width(200));
                         GUILayout.Label("Qty", EditorStyles.toolbarButton, GUILayout.Width(50));
-                        GUILayout.Label("Sell?", EditorStyles.toolbarButton, GUILayout.Width(40));
-                        GUILayout.Label("Keep", EditorStyles.toolbarButton, GUILayout.Width(40));
+                        GUILayout.Label("Sell?", EditorStyles.toolbarButton, GUILayout.Width(50));
+                        GUILayout.Label("Keep", EditorStyles.toolbarButton, GUILayout.Width(50));
+                        GUILayout.FlexibleSpace();
                     }
 
-                    foreach (var item in cargo.buyItems)
+                    bool itemsModified = false;
+                    for (int i = 0; i < propBuyItems.arraySize; i++)
                     {
+                        var itemElem = propBuyItems.GetArrayElementAtIndex(i);
+                        var propItemId = itemElem.FindPropertyRelative("itemId");
+                        var propQty = itemElem.FindPropertyRelative("desiredQuantity");
+                        var propSell = itemElem.FindPropertyRelative("sellOnArrival");
+                        var propKeep = itemElem.FindPropertyRelative("maxKeepQuantity");
+
                         using (new EditorGUILayout.HorizontalScope())
                         {
-                            EditorGUILayout.LabelField(item.itemId ?? "(empty)", GUILayout.Width(220));
-                            EditorGUILayout.LabelField(item.desiredQuantity.ToString(), GUILayout.Width(50));
-                            GUI.color = item.sellOnArrival ? Color.green : Color.gray;
-                            EditorGUILayout.LabelField(item.sellOnArrival ? "✓" : "✗", GUILayout.Width(40));
-                            GUI.color = Color.white;
-                            EditorGUILayout.LabelField(item.maxKeepQuantity.ToString(), GUILayout.Width(40));
+                            EditorGUILayout.PropertyField(propItemId, GUIContent.none, GUILayout.Width(200));
+                            if (propQty != null) EditorGUILayout.PropertyField(propQty, GUIContent.none, GUILayout.Width(50));
+                            if (propSell != null) EditorGUILayout.PropertyField(propSell, GUIContent.none, GUILayout.Width(50));
+                            if (propKeep != null) EditorGUILayout.PropertyField(propKeep, GUIContent.none, GUILayout.Width(50));
+
+                            if (GUILayout.Button("✕", GUILayout.Width(24)))
+                            {
+                                propBuyItems.DeleteArrayElementAtIndex(i);
+                                itemsModified = true;
+                                break;
+                            }
                         }
                     }
 
-                    EditorGUI.indentLevel--;
+                    if (!itemsModified)
+                    {
+                        EditorGUILayout.Space(2);
+                        if (GUILayout.Button("+ Add Buy Item", GUILayout.Width(120)))
+                        {
+                            propBuyItems.InsertArrayElementAtIndex(propBuyItems.arraySize);
+                            var newItem = propBuyItems.GetArrayElementAtIndex(propBuyItems.arraySize - 1);
+                            var niId = newItem.FindPropertyRelative("itemId");
+                            var niQty = newItem.FindPropertyRelative("desiredQuantity");
+                            var niSell = newItem.FindPropertyRelative("sellOnArrival");
+                            var niKeep = newItem.FindPropertyRelative("maxKeepQuantity");
+                            if (niId != null) niId.stringValue = "";
+                            if (niQty != null) niQty.intValue = 1;
+                            if (niSell != null) niSell.boolValue = true;
+                            if (niKeep != null) niKeep.intValue = 0;
+                        }
+                    }
                 }
 
+                EditorGUI.indentLevel--;
                 EditorGUILayout.EndVertical();
                 EditorGUILayout.Space(4);
+
+                if (so.ApplyModifiedProperties())
+                {
+                    EditorUtility.SetDirty(sch);
+                }
+
+                so.Dispose();
             }
 
             EditorGUILayout.EndScrollView();
@@ -448,13 +745,6 @@ namespace ProjectC.PeacefulShip.EditorTools
             {
                 RefreshSchedules();
             }
-        }
-
-        private static void DrawFlag(bool value, string label)
-        {
-            GUI.color = value ? Color.green : Color.gray;
-            EditorGUILayout.LabelField($"{(value ? "✓" : "✗")} {label}", EditorStyles.miniLabel, GUILayout.Width(160));
-            GUI.color = Color.white;
         }
 
         // ════════════════════════════════════════════════
@@ -471,6 +761,7 @@ namespace ProjectC.PeacefulShip.EditorTools
             public string ScheduleDisplayName;
             public int RouteCount;
             public string RouteSummary;
+            [NonSerialized] public int SelectedSchedulePopupIndex;
         }
     }
 }

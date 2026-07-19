@@ -1,5 +1,18 @@
 # Итерации — NpcShipScheduleOverviewWindow
 
+## Итерация от 2026-07-18 (runtime analysis)
+
+**Задача:** Провести глубокий анализ возможности runtime-редактирования расписаний.
+
+**Изменения:**
+- `docs/world/PLACEMENT_SCRIPTS/Schedule/RUNTIME_EDITING_ANALYSIS.md` — полный анализ:
+  - Текущая архитектура (data flow, потребители, struct vs SO)
+  - Три уровня сложности: A (Editor Play-Mode), B (Runtime mirror + Server API), C (Full runtime)
+  - Оценка объёмов работ по каждому уровню
+  - Рекомендация: начать с уровня A (кнопка «Apply to Runtime»)
+
+---
+
 ## Итерация от 2026-07-18 (v2 — inline editing)
 
 **Задача:** Добавить inline-редактирование во все три вкладки: маршруты, назначение schedule кораблям, cargo trade.

@@ -1,0 +1,910 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: b1b184806d4ed8043b23acec74cb92fb, type: 3}
+  m_Name: MarketConfig_Primium_farm_1_1
+  m_EditorClassIdentifier: Assembly-CSharp::ProjectC.Trade.Config.MarketConfig
+  locationId: PRIMIUM_FARM_1_1
+  displayName: "\u0424\u0435\u0440\u043C\u0430 \u041F\u0440\u0438\u043C\u0443\u043C\u0430
+    1_1"
+  description: "\u0426\u0435\u043D\u0442\u0440\u0430\u043B\u044C\u043D\u0430\u044F
+    \u0440\u0430\u0441\u043F\u0440\u0435\u0434\u0435\u043B\u0438\u0442\u0435\u043B\u044C\u043D\u0430\u044F
+    \u0432\u0435\u0442\u043A\u0430."
+  tradeMode: 0
+  buyAnyItem: 0
+  globalBuyPriceConfig: {fileID: 11400000, guid: 9fe9080c051f91f47ace2b4fe92ced07, type: 2}
+  sellCommission: 0.8
+  buyCommission: 1
+  priceFloorRatio: 0.5
+  priceCeilingRatio: 5
+  decayHalfLifeSeconds: 1800
+  regenMultiplier: 0.22
+  items:
+  - itemId: antigrav_ingot_v01
+    definition: {fileID: 11400000, guid: a42e66c79c7d213499b91953538249f3, type: 2}
+    basePrice: 10
+    initialStock: 50
+    regenPerTick: 0.02
+    factionRestriction: 0
+    allowBuy: 1
+    allowSell: 1
+  - itemId: mesium_canister_v01
+    definition: {fileID: 11400000, guid: ed66825e934a87a43b520aee290591a8, type: 2}
+    basePrice: 10
+    initialStock: 50
+    regenPerTick: 0.02
+    factionRestriction: 0
+    allowBuy: 1
+    allowSell: 1
+  - itemId: resource_acoustic_felt_box
+    definition: {fileID: 11400000, guid: a6fc483ebc3887d4daa45ea271352b79, type: 2}
+    basePrice: 10
+    initialStock: 50
+    regenPerTick: 0.02
+    factionRestriction: 0
+    allowBuy: 1
+    allowSell: 1
+  - itemId: resource_activated_charcoal_box
+    definition: {fileID: 11400000, guid: 91889a76109241949bc2b0e9a0cecea9, type: 2}
+    basePrice: 10
+    initialStock: 50
+    regenPerTick: 0.02
+    factionRestriction: 0
+    allowBuy: 1
+    allowSell: 1
+  - itemId: resource_anti_corrosion_enamel_paint_box
+    definition: {fileID: 11400000, guid: 1e42dbdc792ea6f418a98f69008c72c9, type: 2}
+    basePrice: 10
+    initialStock: 50
+    regenPerTick: 0.02
+    factionRestriction: 0
+    allowBuy: 1
+    allowSell: 1
+  - itemId: resource_antigrav_box
+    definition: {fileID: 11400000, guid: 2c5c70b588765a04a8e3d0c094794ebb, type: 2}
+    basePrice: 10
+    initialStock: 50
+    regenPerTick: 0.02
+    factionRestriction: 0
+    allowBuy: 1
+    allowSell: 1
+  - itemId: resource_antigrav_brass_agl_8_box
+    definition: {fileID: 11400000, guid: 3c6b522c35870a6409995176836a3941, type: 2}
+    basePrice: 10
+    initialStock: 50
+    regenPerTick: 0.02
+    factionRestriction: 0
+    allowBuy: 1
+    allowSell: 1
+  - itemId: resource_antigrav_bronze_agb_12_box
+    definition: {fileID: 11400000, guid: 3f6e7b187bd6da744b9b2a383de57ae3, type: 2}
+    basePrice: 10
+    initialStock: 50
+    regenPerTick: 0.02
+    factionRestriction: 0
+    allowBuy: 1
+    allowSell: 1
+  - itemId: resource_antigrav_chips_box
+    definition: {fileID: 11400000, guid: ed8b447537c758041b198e426ff1d994, type: 2}
+    basePrice: 10
+    initialStock: 50
+    regenPerTick: 0.02
+    factionRestriction: 0
+    allowBuy: 1
+    allowSell: 1
+  - itemId: resource_antigrav_steel_ags_40_box
+    definition: {fileID: 11400000, guid: 4094229077a5ee44ba2b24316bff6373, type: 2}
+    basePrice: 10
+    initialStock: 50
+    regenPerTick: 0.02
+    factionRestriction: 0
+    allowBuy: 1
+    allowSell: 1
+  - itemId: resource_asbestos_sheet_box
+    definition: {fileID: 11400000, guid: 6ae3c8839f9d7804386eaaacb3d48183, type: 2}
+    basePrice: 10
+    initialStock: 50
+    regenPerTick: 0.02
+    factionRestriction: 0
+    allowBuy: 1
+    allowSell: 1
+  - itemId: resource_aviation_plywood_box
+    definition: {fileID: 11400000, guid: 918b49f17f7698941ba5d04a8de73edb, type: 2}
+    basePrice: 10
+    initialStock: 50
+    regenPerTick: 0.02
+    factionRestriction: 0
+    allowBuy: 1
+    allowSell: 1
+  - itemId: resource_balaclava_mask_box
+    definition: {fileID: 11400000, guid: c1c5a8da6e56c874aa2c3e0355d731b1, type: 2}
+    basePrice: 10
+    initialStock: 50
+    regenPerTick: 0.02
+    factionRestriction: 0
+    allowBuy: 1
+    allowSell: 1
+  - itemId: resource_beeswax_box
+    definition: {fileID: 11400000, guid: 91aa9238ccf17d54a92d1f9e082b8fd1, type: 2}
+    basePrice: 10
+    initialStock: 50
+    regenPerTick: 0.02
+    factionRestriction: 0
+    allowBuy: 1
+    allowSell: 1
+  - itemId: resource_black_leaf_tea_primium_box
+    definition: {fileID: 11400000, guid: 3a237d7e4fbb29a4eb01e3fae982c027, type: 2}
+    basePrice: 10
+    initialStock: 50
+    regenPerTick: 0.02
+    factionRestriction: 0
+    allowBuy: 1
+    allowSell: 1
+  - itemId: resource_book_poetry_above_the_clouds_box
+    definition: {fileID: 11400000, guid: 84dc67f1f673a6e4f9deb160c86a5d37, type: 2}
+    basePrice: 10
+    initialStock: 50
+    regenPerTick: 0.02
+    factionRestriction: 0
+    allowBuy: 1
+    allowSell: 1
+  - itemId: resource_borosilicate_glass_box
+    definition: {fileID: 11400000, guid: 25f97db5cff918b41a338b97262f4e84, type: 2}
+    basePrice: 10
+    initialStock: 50
+    regenPerTick: 0.02
+    factionRestriction: 0
+    allowBuy: 1
+    allowSell: 1
+  - itemId: resource_brass_sheet_box
+    definition: {fileID: 11400000, guid: 970293537e5c4fc41a0bbb215a1ce13b, type: 2}
+    basePrice: 10
+    initialStock: 50
+    regenPerTick: 0.02
+    factionRestriction: 0
+    allowBuy: 1
+    allowSell: 1
+  - itemId: resource_buckwheat_porridge_with_butter_box
+    definition: {fileID: 11400000, guid: 16fb90c46883c674295f39446d0844f7, type: 2}
+    basePrice: 10
+    initialStock: 50
+    regenPerTick: 0.02
+    factionRestriction: 0
+    allowBuy: 1
+    allowSell: 1
+  - itemId: resource_butter_pancakes_box
+    definition: {fileID: 11400000, guid: 1cf09734ab822a44db132a27f0d0c928, type: 2}
+    basePrice: 10
+    initialStock: 50
+    regenPerTick: 0.02
+    factionRestriction: 0
+    allowBuy: 1
+    allowSell: 1
+  - itemId: resource_cafeteria_menu_buffet_no5_box
+    definition: {fileID: 11400000, guid: 128b64dce83d0a64997b9bfc9e0c0abe, type: 2}
+    basePrice: 10
+    initialStock: 50
+    regenPerTick: 0.02
+    factionRestriction: 0
+    allowBuy: 1
+    allowSell: 1
+  - itemId: resource_canvas_apron_box
+    definition: {fileID: 11400000, guid: 9c5fba7ebfa8850429fff015b02686a0, type: 2}
+    basePrice: 10
+    initialStock: 50
+    regenPerTick: 0.02
+    factionRestriction: 0
+    allowBuy: 1
+    allowSell: 1
+  - itemId: resource_canvas_tape_measure_20m_box
+    definition: {fileID: 11400000, guid: 5242c0ae49ce36546afc740751add0ee, type: 2}
+    basePrice: 10
+    initialStock: 50
+    regenPerTick: 0.02
+    factionRestriction: 0
+    allowBuy: 1
+    allowSell: 1
+  - itemId: resource_canvas_tarpaulin_box
+    definition: {fileID: 11400000, guid: 7981c4d44b5666d4d90d8e65709f2bfa, type: 2}
+    basePrice: 10
+    initialStock: 50
+    regenPerTick: 0.02
+    factionRestriction: 0
+    allowBuy: 1
+    allowSell: 1
+  - itemId: resource_cast_iron_bollard_box
+    definition: {fileID: 11400000, guid: 55b5cb58e09cece4cbcff4d97ea1d534, type: 2}
+    basePrice: 10
+    initialStock: 50
+    regenPerTick: 0.02
+    factionRestriction: 0
+    allowBuy: 1
+    allowSell: 1
+  - itemId: resource_cast_iron_frying_pan_box
+    definition: {fileID: 11400000, guid: 7ef1d3f5b3f6238419c6863001a08537, type: 2}
+    basePrice: 10
+    initialStock: 50
+    regenPerTick: 0.02
+    factionRestriction: 0
+    allowBuy: 1
+    allowSell: 1
+  - itemId: resource_cast_iron_iron_box
+    definition: {fileID: 11400000, guid: 7e4e1741da4556049b81881298840ab1, type: 2}
+    basePrice: 10
+    initialStock: 50
+    regenPerTick: 0.02
+    factionRestriction: 0
+    allowBuy: 1
+    allowSell: 1
+  - itemId: resource_cast_iron_pot_box
+    definition: {fileID: 11400000, guid: 2ebba319a2c22084bbb471cbe5f97ffb, type: 2}
+    basePrice: 10
+    initialStock: 50
+    regenPerTick: 0.02
+    factionRestriction: 0
+    allowBuy: 1
+    allowSell: 1
+  - itemId: resource_cast_iron_weight_set_box
+    definition: {fileID: 11400000, guid: 97bcc93757912ea4a8f5c03dee0e2cf0, type: 2}
+    basePrice: 10
+    initialStock: 50
+    regenPerTick: 0.02
+    factionRestriction: 0
+    allowBuy: 1
+    allowSell: 1
+  - itemId: resource_caustic_alkali_box
+    definition: {fileID: 11400000, guid: 3f0a6d314630b2e47807eae49ff1fc21, type: 2}
+    basePrice: 10
+    initialStock: 50
+    regenPerTick: 0.02
+    factionRestriction: 0
+    allowBuy: 1
+    allowSell: 1
+  - itemId: resource_colored_glass_plumb_box
+    definition: {fileID: 11400000, guid: 1892e2563de1b084fba7f500b19e6b21, type: 2}
+    basePrice: 10
+    initialStock: 50
+    regenPerTick: 0.02
+    factionRestriction: 0
+    allowBuy: 1
+    allowSell: 1
+  - itemId: resource_copper_wire_box
+    definition: {fileID: 11400000, guid: 4fe6bfc3839e3e2408352630f649a638, type: 2}
+    basePrice: 10
+    initialStock: 50
+    regenPerTick: 0.02
+    factionRestriction: 0
+    allowBuy: 1
+    allowSell: 1
+  - itemId: resource_corrugated_cardboard_box_box
+    definition: {fileID: 11400000, guid: 8887694e6ce7eac43b9dca9104865fd0, type: 2}
+    basePrice: 10
+    initialStock: 50
+    regenPerTick: 0.02
+    factionRestriction: 0
+    allowBuy: 1
+    allowSell: 1
+  - itemId: resource_cover_tarp_box
+    definition: {fileID: 11400000, guid: cf668e25a1419cd4485ad2f540a26312, type: 2}
+    basePrice: 10
+    initialStock: 50
+    regenPerTick: 0.02
+    factionRestriction: 0
+    allowBuy: 1
+    allowSell: 1
+  - itemId: resource_dry_white_table_wine_box
+    definition: {fileID: 11400000, guid: 96e26e6794f19a74fa2a54b3dd15b1a3, type: 2}
+    basePrice: 10
+    initialStock: 50
+    regenPerTick: 0.02
+    factionRestriction: 0
+    allowBuy: 1
+    allowSell: 1
+  - itemId: resource_duralumin_aluminum_box
+    definition: {fileID: 11400000, guid: bf3e201469bb7cc44958257d4155c516, type: 2}
+    basePrice: 10
+    initialStock: 50
+    regenPerTick: 0.02
+    factionRestriction: 0
+    allowBuy: 1
+    allowSell: 1
+  - itemId: resource_engineers_square_box
+    definition: {fileID: 11400000, guid: c7fe02cb166055141963c042b1198ce0, type: 2}
+    basePrice: 10
+    initialStock: 50
+    regenPerTick: 0.02
+    factionRestriction: 0
+    allowBuy: 1
+    allowSell: 1
+  - itemId: resource_farm_timber_box
+    definition: {fileID: 11400000, guid: b4dad57359164664f97b86f87532f4b8, type: 2}
+    basePrice: 10
+    initialStock: 50
+    regenPerTick: 0.02
+    factionRestriction: 0
+    allowBuy: 1
+    allowSell: 1
+  - itemId: resource_filter_grade_silk_box
+    definition: {fileID: 11400000, guid: a7614a44b1191b34ea602aaa6b357b37, type: 2}
+    basePrice: 10
+    initialStock: 50
+    regenPerTick: 0.02
+    factionRestriction: 0
+    allowBuy: 1
+    allowSell: 1
+  - itemId: resource_fireproof_ceramics_box
+    definition: {fileID: 11400000, guid: c4f1a7e626081034c9950a1502701d5e, type: 2}
+    basePrice: 10
+    initialStock: 50
+    regenPerTick: 0.02
+    factionRestriction: 0
+    allowBuy: 1
+    allowSell: 1
+  - itemId: resource_galvanized_sheet_steel_box
+    definition: {fileID: 11400000, guid: c0118af21a055e04f8c65e9866050579, type: 2}
+    basePrice: 10
+    initialStock: 50
+    regenPerTick: 0.02
+    factionRestriction: 0
+    allowBuy: 1
+    allowSell: 1
+  - itemId: resource_glass_vial_50ml_box
+    definition: {fileID: 11400000, guid: 2f5c04159f8025541ac415481d750299, type: 2}
+    basePrice: 10
+    initialStock: 50
+    regenPerTick: 0.02
+    factionRestriction: 0
+    allowBuy: 1
+    allowSell: 1
+  - itemId: resource_gmag_7_box
+    definition: {fileID: 11400000, guid: 53134c7f5a2907a41ad7106c0298f966, type: 2}
+    basePrice: 10
+    initialStock: 50
+    regenPerTick: 0.02
+    factionRestriction: 0
+    allowBuy: 1
+    allowSell: 1
+  - itemId: resource_gmag_9_box
+    definition: {fileID: 11400000, guid: e9da075d1d1dd5240991feea0207d3e3, type: 2}
+    basePrice: 10
+    initialStock: 50
+    regenPerTick: 0.02
+    factionRestriction: 0
+    allowBuy: 1
+    allowSell: 1
+  - itemId: resource_gmag_grease_s_4_box
+    definition: {fileID: 11400000, guid: 78fa7aab9ba34b3449300ee572f3b1fd, type: 2}
+    basePrice: 10
+    initialStock: 50
+    regenPerTick: 0.02
+    factionRestriction: 0
+    allowBuy: 1
+    allowSell: 1
+  - itemId: resource_granulated_sugar_box
+    definition: {fileID: 11400000, guid: c0f8699acbe30f640b776ea4db580fa0, type: 2}
+    basePrice: 10
+    initialStock: 50
+    regenPerTick: 0.02
+    factionRestriction: 0
+    allowBuy: 1
+    allowSell: 1
+  - itemId: resource_gray_cast_iron_box
+    definition: {fileID: 11400000, guid: f621932a618aae244b1e16cdddd7bede, type: 2}
+    basePrice: 10
+    initialStock: 50
+    regenPerTick: 0.02
+    factionRestriction: 0
+    allowBuy: 1
+    allowSell: 1
+  - itemId: resource_guild_cloth_box
+    definition: {fileID: 11400000, guid: 5665c14823b587f4cad78f4d62626032, type: 2}
+    basePrice: 10
+    initialStock: 50
+    regenPerTick: 0.02
+    factionRestriction: 0
+    allowBuy: 1
+    allowSell: 1
+  - itemId: resource_imported_olive_oil_box
+    definition: {fileID: 11400000, guid: d1cd1e66693664a439e88c0708f3459d, type: 2}
+    basePrice: 10
+    initialStock: 50
+    regenPerTick: 0.02
+    factionRestriction: 0
+    allowBuy: 1
+    allowSell: 1
+  - itemId: resource_industrial_mag_5_box
+    definition: {fileID: 11400000, guid: 216bd764838e2e742bf3aa2bddf9184d, type: 2}
+    basePrice: 10
+    initialStock: 50
+    regenPerTick: 0.02
+    factionRestriction: 0
+    allowBuy: 1
+    allowSell: 1
+  - itemId: resource_lightweight_canvas_box
+    definition: {fileID: 11400000, guid: 4f90aee40d5687246b265ade885d49a9, type: 2}
+    basePrice: 10
+    initialStock: 50
+    regenPerTick: 0.02
+    factionRestriction: 0
+    allowBuy: 1
+    allowSell: 1
+  - itemId: resource_mag_graphite_brushes_box
+    definition: {fileID: 11400000, guid: bdc5506d33ba96b44940a34a1c8b9bd8, type: 2}
+    basePrice: 10
+    initialStock: 50
+    regenPerTick: 0.02
+    factionRestriction: 0
+    allowBuy: 1
+    allowSell: 1
+  - itemId: resource_mag_technical_passport_box
+    definition: {fileID: 11400000, guid: 129249089cfc1914eb880d656949b14d, type: 2}
+    basePrice: 10
+    initialStock: 50
+    regenPerTick: 0.02
+    factionRestriction: 0
+    allowBuy: 1
+    allowSell: 1
+  - itemId: resource_mezium_box
+    definition: {fileID: 11400000, guid: 5d929c36b885711499c8252d6e1a836e, type: 2}
+    basePrice: 10
+    initialStock: 50
+    regenPerTick: 0.02
+    factionRestriction: 0
+    allowBuy: 1
+    allowSell: 1
+  - itemId: resource_mezium_fuel_m_100_box
+    definition: {fileID: 11400000, guid: 621e95aa7171e1643a7cd3eb62b49118, type: 2}
+    basePrice: 10
+    initialStock: 50
+    regenPerTick: 0.02
+    factionRestriction: 0
+    allowBuy: 1
+    allowSell: 1
+  - itemId: resource_mezium_mag_concentrate_box
+    definition: {fileID: 11400000, guid: 9b57170257ec3f34294c8d2d657bac4b, type: 2}
+    basePrice: 10
+    initialStock: 50
+    regenPerTick: 0.02
+    factionRestriction: 0
+    allowBuy: 1
+    allowSell: 1
+  - itemId: resource_mezium_neutralizer_n_7_box
+    definition: {fileID: 11400000, guid: 3c5e853e1b5439d4fa9a7b6e41186972, type: 2}
+    basePrice: 10
+    initialStock: 50
+    regenPerTick: 0.02
+    factionRestriction: 0
+    allowBuy: 1
+    allowSell: 1
+  - itemId: resource_mezium_oil_box
+    definition: {fileID: 11400000, guid: 0a0bf916a091c6f479b9af47ec886faa, type: 2}
+    basePrice: 10
+    initialStock: 50
+    regenPerTick: 0.02
+    factionRestriction: 0
+    allowBuy: 1
+    allowSell: 1
+  - itemId: resource_mezium_resistant_sealant_hm_200_box
+    definition: {fileID: 11400000, guid: 0f983da9e045468499c01b4e7f2d17cc, type: 2}
+    basePrice: 10
+    initialStock: 50
+    regenPerTick: 0.02
+    factionRestriction: 0
+    allowBuy: 1
+    allowSell: 1
+  - itemId: resource_mezium_skin_neutralizer_box
+    definition: {fileID: 11400000, guid: e1db3caf56768a04a95d33cbc28034f2, type: 2}
+    basePrice: 10
+    initialStock: 50
+    regenPerTick: 0.02
+    factionRestriction: 0
+    allowBuy: 1
+    allowSell: 1
+  - itemId: resource_mountain_wool_box
+    definition: {fileID: 11400000, guid: 5cb5ce0bb75113b428ad4967fda8426c, type: 2}
+    basePrice: 10
+    initialStock: 50
+    regenPerTick: 0.02
+    factionRestriction: 0
+    allowBuy: 1
+    allowSell: 1
+  - itemId: resource_multilayer_felt_box
+    definition: {fileID: 11400000, guid: 11b2b643d5eba9749af5cc3c5b5de443, type: 2}
+    basePrice: 10
+    initialStock: 50
+    regenPerTick: 0.02
+    factionRestriction: 0
+    allowBuy: 1
+    allowSell: 1
+  - itemId: resource_oak_veneer_box
+    definition: {fileID: 11400000, guid: 114cd809d09f66140b09cd72f19e381f, type: 2}
+    basePrice: 10
+    initialStock: 50
+    regenPerTick: 0.02
+    factionRestriction: 0
+    allowBuy: 1
+    allowSell: 1
+  - itemId: resource_plumb_glass_writer_box
+    definition: {fileID: 11400000, guid: abf36a0d233e0064a8c526e550a59186, type: 2}
+    basePrice: 10
+    initialStock: 50
+    regenPerTick: 0.02
+    factionRestriction: 0
+    allowBuy: 1
+    allowSell: 1
+  - itemId: resource_portable_mag_1_box
+    definition: {fileID: 11400000, guid: 10dde53e16818f7489af3f5d5b3fbeed, type: 2}
+    basePrice: 10
+    initialStock: 50
+    regenPerTick: 0.02
+    factionRestriction: 0
+    allowBuy: 1
+    allowSell: 1
+  - itemId: resource_poster_caution_mezium_box
+    definition: {fileID: 11400000, guid: 6f4dd0903f4d632459722e06d74223fa, type: 2}
+    basePrice: 10
+    initialStock: 50
+    regenPerTick: 0.02
+    factionRestriction: 0
+    allowBuy: 1
+    allowSell: 1
+  - itemId: resource_pressed_cork_box
+    definition: {fileID: 11400000, guid: b2ea99ec0d4e414459f26618b0fabad0, type: 2}
+    basePrice: 10
+    initialStock: 50
+    regenPerTick: 0.02
+    factionRestriction: 0
+    allowBuy: 1
+    allowSell: 1
+  - itemId: resource_primium_forged_steel_box
+    definition: {fileID: 11400000, guid: 07089c8c16dc9fd4daba1f0c2dffa199, type: 2}
+    basePrice: 10
+    initialStock: 50
+    regenPerTick: 0.02
+    factionRestriction: 0
+    allowBuy: 1
+    allowSell: 1
+  - itemId: resource_purified_antigrav_ag_1_box
+    definition: {fileID: 11400000, guid: 5fb598a1f5efdae4fb7d5fd77dc5f357, type: 2}
+    basePrice: 10
+    initialStock: 50
+    regenPerTick: 0.02
+    factionRestriction: 0
+    allowBuy: 1
+    allowSell: 1
+  - itemId: resource_raw_antigrav_box
+    definition: {fileID: 11400000, guid: 80594035a88a7fd49b3599591cbc1114, type: 2}
+    basePrice: 10
+    initialStock: 50
+    regenPerTick: 0.02
+    factionRestriction: 0
+    allowBuy: 1
+    allowSell: 1
+  - itemId: resource_raw_mezium_box
+    definition: {fileID: 11400000, guid: 08ccd9ca1f9f0e24dabc56a3de615e3a, type: 2}
+    basePrice: 10
+    initialStock: 50
+    regenPerTick: 0.02
+    factionRestriction: 0
+    allowBuy: 1
+    allowSell: 1
+  - itemId: resource_red_table_wine_box
+    definition: {fileID: 11400000, guid: ee7a884312f9c88439599d992941e004, type: 2}
+    basePrice: 10
+    initialStock: 50
+    regenPerTick: 0.02
+    factionRestriction: 0
+    allowBuy: 1
+    allowSell: 1
+  - itemId: resource_refined_mezium_fuel_box
+    definition: {fileID: 11400000, guid: 78287c827429bc741973cb44fb1e7041, type: 2}
+    basePrice: 10
+    initialStock: 50
+    regenPerTick: 0.02
+    factionRestriction: 0
+    allowBuy: 1
+    allowSell: 1
+  - itemId: resource_rigging_impregnation_pt_1_box
+    definition: {fileID: 11400000, guid: c61b41a8b0e7af049a762e65f58df2cb, type: 2}
+    basePrice: 10
+    initialStock: 50
+    regenPerTick: 0.02
+    factionRestriction: 0
+    allowBuy: 1
+    allowSell: 1
+  - itemId: resource_rod_antigrav_box
+    definition: {fileID: 11400000, guid: 2c1135beb4ae7e34bb959dd1fe575e57, type: 2}
+    basePrice: 10
+    initialStock: 50
+    regenPerTick: 0.02
+    factionRestriction: 0
+    allowBuy: 1
+    allowSell: 1
+  - itemId: resource_round_porthole_glass_box
+    definition: {fileID: 11400000, guid: 3b384ff3f0859514e9b397247ba28ea3, type: 2}
+    basePrice: 10
+    initialStock: 50
+    regenPerTick: 0.02
+    factionRestriction: 0
+    allowBuy: 1
+    allowSell: 1
+  - itemId: resource_salted_butter_box
+    definition: {fileID: 11400000, guid: 03e04ecae755f3949b81e59d4f3a1340, type: 2}
+    basePrice: 10
+    initialStock: 50
+    regenPerTick: 0.02
+    factionRestriction: 0
+    allowBuy: 1
+    allowSell: 1
+  - itemId: resource_seam_sealant_nm_300_box
+    definition: {fileID: 11400000, guid: cda5d2a476c7f2149bcb3b761189a027, type: 2}
+    basePrice: 10
+    initialStock: 50
+    regenPerTick: 0.02
+    factionRestriction: 0
+    allowBuy: 1
+    allowSell: 1
+  - itemId: resource_sheet_antigrav_box
+    definition: {fileID: 11400000, guid: dd381a09735783e4eb3b66c61d000e3a, type: 2}
+    basePrice: 10
+    initialStock: 50
+    regenPerTick: 0.02
+    factionRestriction: 0
+    allowBuy: 1
+    allowSell: 1
+  - itemId: resource_shellac_varnish_box
+    definition: {fileID: 11400000, guid: 38ec665701a488e478e758045dc076d4, type: 2}
+    basePrice: 10
+    initialStock: 50
+    regenPerTick: 0.02
+    factionRestriction: 0
+    allowBuy: 1
+    allowSell: 1
+  - itemId: resource_skol_10_silver_box
+    definition: {fileID: 11400000, guid: d3d6b3eff0d8ff64397c62d15ebdc1c6, type: 2}
+    basePrice: 10
+    initialStock: 50
+    regenPerTick: 0.02
+    factionRestriction: 0
+    allowBuy: 1
+    allowSell: 1
+  - itemId: resource_skol_25_gold_silver_box
+    definition: {fileID: 11400000, guid: e29e73bbeec5a0c49903899bbb524d32, type: 2}
+    basePrice: 10
+    initialStock: 50
+    regenPerTick: 0.02
+    factionRestriction: 0
+    allowBuy: 1
+    allowSell: 1
+  - itemId: resource_skol_5_bronze_box
+    definition: {fileID: 11400000, guid: ff40bd238d85a414aaec440fd386da2c, type: 2}
+    basePrice: 10
+    initialStock: 50
+    regenPerTick: 0.02
+    factionRestriction: 0
+    allowBuy: 1
+    allowSell: 1
+  - itemId: resource_soapstone_talc_box
+    definition: {fileID: 11400000, guid: 71aa5cf90222436478dc83666a104277, type: 2}
+    basePrice: 10
+    initialStock: 50
+    regenPerTick: 0.02
+    factionRestriction: 0
+    allowBuy: 1
+    allowSell: 1
+  - itemId: resource_stabilized_mezium_m_1_box
+    definition: {fileID: 11400000, guid: b3ee4f4e9748670408770a0bd56bd6e6, type: 2}
+    basePrice: 10
+    initialStock: 50
+    regenPerTick: 0.02
+    factionRestriction: 0
+    allowBuy: 1
+    allowSell: 1
+  - itemId: resource_standard_mag_3_box
+    definition: {fileID: 11400000, guid: 178b69fa83564b847938624906649117, type: 2}
+    basePrice: 10
+    initialStock: 50
+    regenPerTick: 0.02
+    factionRestriction: 0
+    allowBuy: 1
+    allowSell: 1
+  - itemId: resource_steel_cable_6mm_box
+    definition: {fileID: 11400000, guid: f791355669d16834286c77813a062f73, type: 2}
+    basePrice: 10
+    initialStock: 50
+    regenPerTick: 0.02
+    factionRestriction: 0
+    allowBuy: 1
+    allowSell: 1
+  - itemId: resource_steel_canister_20l_box
+    definition: {fileID: 11400000, guid: 09031b4528e6fe94ebe542656c57e7e2, type: 2}
+    basePrice: 10
+    initialStock: 50
+    regenPerTick: 0.02
+    factionRestriction: 0
+    allowBuy: 1
+    allowSell: 1
+  - itemId: resource_steel_climbing_carabiner_box
+    definition: {fileID: 11400000, guid: 26c763d8aa93ada469fc023e0ef1c6cd, type: 2}
+    basePrice: 10
+    initialStock: 50
+    regenPerTick: 0.02
+    factionRestriction: 0
+    allowBuy: 1
+    allowSell: 1
+  - itemId: resource_steel_frame_rib_box
+    definition: {fileID: 11400000, guid: e96d70447e2bbd24798738da5cfd1639, type: 2}
+    basePrice: 10
+    initialStock: 50
+    regenPerTick: 0.02
+    factionRestriction: 0
+    allowBuy: 1
+    allowSell: 1
+  - itemId: resource_steel_heels_box
+    definition: {fileID: 11400000, guid: ab9dd9f21f4ef8248a4f25d91197394e, type: 2}
+    basePrice: 10
+    initialStock: 50
+    regenPerTick: 0.02
+    factionRestriction: 0
+    allowBuy: 1
+    allowSell: 1
+  - itemId: resource_steel_helmet_with_clips_box
+    definition: {fileID: 11400000, guid: c3daaedf1e518734ebf4c7fca042c26d, type: 2}
+    basePrice: 10
+    initialStock: 50
+    regenPerTick: 0.02
+    factionRestriction: 0
+    allowBuy: 1
+    allowSell: 1
+  - itemId: resource_steel_rivets_box
+    definition: {fileID: 11400000, guid: 6b7fc966dd926bd46a270ebdff460f6b, type: 2}
+    basePrice: 10
+    initialStock: 50
+    regenPerTick: 0.02
+    factionRestriction: 0
+    allowBuy: 1
+    allowSell: 1
+  - itemId: resource_steel_ruler_500mm_box
+    definition: {fileID: 11400000, guid: e1f21de8a7332394aa133bcd77687a73, type: 2}
+    basePrice: 10
+    initialStock: 50
+    regenPerTick: 0.02
+    factionRestriction: 0
+    allowBuy: 1
+    allowSell: 1
+  - itemId: resource_sulfuric_acid_box
+    definition: {fileID: 11400000, guid: 85a005a4afe69f0418f779b8a60ce475, type: 2}
+    basePrice: 10
+    initialStock: 50
+    regenPerTick: 0.02
+    factionRestriction: 0
+    allowBuy: 1
+    allowSell: 1
+  - itemId: resource_surgical_silk_suture_box
+    definition: {fileID: 11400000, guid: f86ce05e9e06e5642adc9ef41ec9402f, type: 2}
+    basePrice: 10
+    initialStock: 50
+    regenPerTick: 0.02
+    factionRestriction: 0
+    allowBuy: 1
+    allowSell: 1
+  - itemId: resource_teak_beam_box
+    definition: {fileID: 11400000, guid: 8133136d265dc774ea7908a1c37cf11e, type: 2}
+    basePrice: 10
+    initialStock: 50
+    regenPerTick: 0.02
+    factionRestriction: 0
+    allowBuy: 1
+    allowSell: 1
+  - itemId: resource_technical_antigrav_ag_2_box
+    definition: {fileID: 11400000, guid: e882d6b26effd584cbfaf55d145fc1b7, type: 2}
+    basePrice: 10
+    initialStock: 50
+    regenPerTick: 0.02
+    factionRestriction: 0
+    allowBuy: 1
+    allowSell: 1
+  - itemId: resource_technical_cardboard_box
+    definition: {fileID: 11400000, guid: f9e071985e288f04db058835f8e8846f, type: 2}
+    basePrice: 10
+    initialStock: 50
+    regenPerTick: 0.02
+    factionRestriction: 0
+    allowBuy: 1
+    allowSell: 1
+  - itemId: resource_technical_graphite_box
+    definition: {fileID: 11400000, guid: 509f52b029348734990475546aa67480, type: 2}
+    basePrice: 10
+    initialStock: 50
+    regenPerTick: 0.02
+    factionRestriction: 0
+    allowBuy: 1
+    allowSell: 1
+  - itemId: resource_technical_paraffin_box
+    definition: {fileID: 11400000, guid: f7a79af0218f518459105115091a7fb5, type: 2}
+    basePrice: 10
+    initialStock: 50
+    regenPerTick: 0.02
+    factionRestriction: 0
+    allowBuy: 1
+    allowSell: 1
+  - itemId: resource_technical_pressure_gauge_box
+    definition: {fileID: 11400000, guid: a0461ea004910684fbc1eca00ecebeac, type: 2}
+    basePrice: 10
+    initialStock: 50
+    regenPerTick: 0.02
+    factionRestriction: 0
+    allowBuy: 1
+    allowSell: 1
+  - itemId: resource_technical_rubber_box
+    definition: {fileID: 11400000, guid: dc2204c95b20c3648bb5dd88762e54f7, type: 2}
+    basePrice: 10
+    initialStock: 50
+    regenPerTick: 0.02
+    factionRestriction: 0
+    allowBuy: 1
+    allowSell: 1
+  - itemId: resource_technical_silver_box
+    definition: {fileID: 11400000, guid: 1472fbfb6fb791c408db686f67b06772, type: 2}
+    basePrice: 10
+    initialStock: 50
+    regenPerTick: 0.02
+    factionRestriction: 0
+    allowBuy: 1
+    allowSell: 1
+  - itemId: resource_technical_tin_box
+    definition: {fileID: 11400000, guid: 1463e8bb30b472e4fa444a3d33144488, type: 2}
+    basePrice: 10
+    initialStock: 50
+    regenPerTick: 0.02
+    factionRestriction: 0
+    allowBuy: 1
+    allowSell: 1
+  - itemId: resource_technical_tweezers_box
+    definition: {fileID: 11400000, guid: 1b94d201296ed4041945f65abae2f5a2, type: 2}
+    basePrice: 10
+    initialStock: 50
+    regenPerTick: 0.02
+    factionRestriction: 0
+    allowBuy: 1
+    allowSell: 1
+  - itemId: resource_tin_bronze_box
+    definition: {fileID: 11400000, guid: 098a4f6b5e938b944aeef688e3fa1d58, type: 2}
+    basePrice: 10
+    initialStock: 50
+    regenPerTick: 0.02
+    factionRestriction: 0
+    allowBuy: 1
+    allowSell: 1
+  - itemId: resource_underwear_knit_box
+    definition: {fileID: 11400000, guid: 6eefaee8fd0990b4384602347f020fe0, type: 2}
+    basePrice: 10
+    initialStock: 50
+    regenPerTick: 0.02
+    factionRestriction: 0
+    allowBuy: 1
+    allowSell: 1
+  - itemId: resource_universal_solvent_ru_5_box
+    definition: {fileID: 11400000, guid: e5cb93323dd833745a1e247975ded795, type: 2}
+    basePrice: 10
+    initialStock: 50
+    regenPerTick: 0.02
+    factionRestriction: 0
+    allowBuy: 1
+    allowSell: 1
+  - itemId: resource_vegetable_oil_box
+    definition: {fileID: 11400000, guid: 2490edde43899714aabf91a752b585ee, type: 2}
+    basePrice: 10
+    initialStock: 50
+    regenPerTick: 0.02
+    factionRestriction: 0
+    allowBuy: 1
+    allowSell: 1

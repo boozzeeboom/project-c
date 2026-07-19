@@ -76,7 +76,7 @@ namespace ProjectC.PeacefulShip.EditorTools
 
             if (_allSchedules == null || _allSchedules.Length == 0)
             {
-                EditorGUILayout.HelpBox("No NpcShipSchedule found in Resources/PeacefulShip/", MessageType.Warning);
+                EditorGUILayout.HelpBox("No NpcShipSchedule assets found in the project.", MessageType.Warning);
                 return;
             }
 
@@ -155,9 +155,20 @@ namespace ProjectC.PeacefulShip.EditorTools
 
         private void RefreshSchedules()
         {
-            _allSchedules = Resources.LoadAll<NpcShipSchedule>("PeacefulShip");
+            var guids = AssetDatabase.FindAssets("t:NpcShipSchedule");
+            var list = new List<NpcShipSchedule>(guids.Length);
+
+            foreach (var guid in guids)
+            {
+                string path = AssetDatabase.GUIDToAssetPath(guid);
+                var sch = AssetDatabase.LoadAssetAtPath<NpcShipSchedule>(path);
+                if (sch != null)
+                    list.Add(sch);
+            }
+
+            _allSchedules = list.ToArray();
             Array.Sort(_allSchedules, (a, b) => string.CompareOrdinal(a.scheduleId, b.scheduleId));
-            Debug.Log($"[NpcShipScheduleOverview] Loaded {_allSchedules.Length} schedules from Resources/PeacefulShip/");
+            Debug.Log($"[NpcShipScheduleOverview] Loaded {_allSchedules.Length} schedules project-wide");
         }
 
         // ════════════════════════════════════════════════
@@ -345,7 +356,7 @@ namespace ProjectC.PeacefulShip.EditorTools
 
             if (_allSchedules == null || _allSchedules.Length == 0)
             {
-                EditorGUILayout.HelpBox("No schedules loaded. Check Resources/PeacefulShip/.", MessageType.Warning);
+                EditorGUILayout.HelpBox("No schedules loaded. Click 'Refresh Schedules' in the All Schedules tab.", MessageType.Warning);
                 return;
             }
 

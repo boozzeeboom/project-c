@@ -10,26 +10,41 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 41e530c51a84c034f8e9695ad8984337, type: 3}
-  m_Name: NpcShipSchedule_HeavyII_Default
+  m_Name: "NpcShipSchedule_\u0413\u0438\u0433\u0430\u043D\u0442"
   m_EditorClassIdentifier: Assembly-CSharp::ProjectC.PeacefulShip.Stations.NpcShipSchedule
-  scheduleId: SCH-NPC-HEAVYII-DEFAULT
-  displayName: "\u0420\u0430\u0441\u043F\u0438\u0441\u0430\u043D\u0438\u0435 HeavyII
-    (\u043F\u0443\u0441\u0442\u043E\u0435)"
+  scheduleId: "SCH-NPC-\u0413\u0418\u0413\u0410\u041D\u0422"
+  displayName: "\u0420\u0430\u0441\u043F\u0438\u0441\u0430\u043D\u0438\u0435 \u0413\u0438\u0433\u0430\u043D\u0442"
   scheduleType: 0
   routes:
-  - fromLocationId: PRIMIUM
-    toLocationId: PRIMIUM_FARM_0_2
+  - fromLocationId: ROAD TO TERTIUS
+    toLocationId: ROAD TO SECUND
     dwellTimeSec: 60
-    dwellRandomAddMinSec: 60
-    dwellRandomAddMaxSec: 6000
-    flightDurationSec: 0
-    preferredShipClass: 0
+    dwellRandomAddMinSec: 250
+    dwellRandomAddMaxSec: 5000
+    flightDurationSec: 120
+    preferredShipClass: 3
+    demandCategory: 0
+  - fromLocationId: ROAD TO SECUND
+    toLocationId: PRIMIUM_FARM_0_4
+    dwellTimeSec: 60
+    dwellRandomAddMinSec: 50
+    dwellRandomAddMaxSec: 5000
+    flightDurationSec: 120
+    preferredShipClass: 3
+    demandCategory: 0
+  - fromLocationId: PRIMIUM_FARM_0_4
+    toLocationId: PRIMIUM
+    dwellTimeSec: 60
+    dwellRandomAddMinSec: 50
+    dwellRandomAddMaxSec: 5000
+    flightDurationSec: 120
+    preferredShipClass: 3
     demandCategory: 0
   meanArrivalIntervalSec: 480
   arrivalIntervalStdDev: 90
   minArrivalSpacingSec: 60
   minDwellTimeSec: 60
-  maxDwellTimeSec: 6000
+  maxDwellTimeSec: 5000
   cargoTrade:
     useUnlimitedCredits: 1
     maxLoadSlots: 8

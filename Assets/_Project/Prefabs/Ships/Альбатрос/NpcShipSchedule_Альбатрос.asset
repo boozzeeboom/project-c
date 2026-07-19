@@ -10,20 +10,19 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 41e530c51a84c034f8e9695ad8984337, type: 3}
-  m_Name: NpcShipSchedule_HeavyII_Default
+  m_Name: "NpcShipSchedule_\u0410\u043B\u044C\u0431\u0430\u0442\u0440\u043E\u0441"
   m_EditorClassIdentifier: Assembly-CSharp::ProjectC.PeacefulShip.Stations.NpcShipSchedule
-  scheduleId: SCH-NPC-HEAVYII-DEFAULT
-  displayName: "\u0420\u0430\u0441\u043F\u0438\u0441\u0430\u043D\u0438\u0435 HeavyII
-    (\u043F\u0443\u0441\u0442\u043E\u0435)"
+  scheduleId: "SCH-NPC-\u0410\u041B\u042C\u0411\u0410\u0422\u0420\u041E\u0421"
+  displayName: "\u0420\u0430\u0441\u043F\u0438\u0441\u0430\u043D\u0438\u0435 \u0410\u043B\u044C\u0431\u0430\u0442\u0440\u043E\u0441"
   scheduleType: 0
   routes:
   - fromLocationId: PRIMIUM
-    toLocationId: PRIMIUM_FARM_0_2
+    toLocationId: ROAD TO SECUND
     dwellTimeSec: 60
-    dwellRandomAddMinSec: 60
+    dwellRandomAddMinSec: 600
     dwellRandomAddMaxSec: 6000
-    flightDurationSec: 0
-    preferredShipClass: 0
+    flightDurationSec: 120
+    preferredShipClass: 3
     demandCategory: 0
   meanArrivalIntervalSec: 480
   arrivalIntervalStdDev: 90

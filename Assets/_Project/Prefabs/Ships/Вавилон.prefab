@@ -1067,6 +1067,7 @@ MonoBehaviour:
   _debugLog: 0
   _keyItemData: {fileID: 11400000, guid: 6e7d1892ed5462147a0d375b4d59ed4a, type: 2}
   _customDisplayName: "\u0412\u0430\u0432\u0438\u043B\u043E\u043D"
+  _shipPersistentId: 
   thrustForce: 65000
   maxSpeed: 100
   yawForce: 500000
@@ -1291,18 +1292,23 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::ProjectC.PeacefulShip.Stations.NpcShipController
   ShowTopMostFoldoutHeaderGroup: 1
-  schedule: {fileID: 11400000, guid: 1c116bc5217d9a141a0b667f2596aca3, type: 2}
+  schedule: {fileID: 11400000, guid: 3c4749f2a8f2b874ab4b5d5327ca3a93, type: 2}
   npcInstanceId: 0
   npcThrustMult: 0.6
   npcYawMult: 0.4
   npcArrivalToleranceMeters: 50
+  overrideClassSpeeds: 0
+  liftSpeedMult: 1
+  cruiseSpeedMult: 1
+  approachSpeedMult: 1
+  maxYawRateMult: 1
+  customLiftSpeed: 8
+  customCruiseSpeed: 12
+  customApproachSpeed: 5
+  customMaxYawRate: 45
   antiGravityBoostDuration: 5
   antiGravityBoostValue: 1.5
   debugMode: 0
-  LiftSpeed: 8
-  CruiseSpeed: 12
-  ApproachSpeed: 5
-  MaxYawRate: 45
   DwellTime: 5
   useNewNavTick: 1
   avoidSeparateSpeed: 8

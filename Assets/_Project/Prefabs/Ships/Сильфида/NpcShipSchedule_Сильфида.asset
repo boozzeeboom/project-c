@@ -16,31 +16,23 @@ MonoBehaviour:
   displayName: "\u0420\u0430\u0441\u043F\u0438\u0441\u0430\u043D\u0438\u0435 \u0421\u0438\u043B\u044C\u0444\u0438\u0434\u0430"
   scheduleType: 0
   routes:
-  - fromLocationId: 
-    toLocationId: 
-    dwellTimeSec: 60
+  - fromLocationId: PRIMIUM
+    toLocationId: ROAD TO SECUND
+    dwellTimeSec: 5000
     dwellRandomAddMinSec: 0
     dwellRandomAddMaxSec: 0
-    flightDurationSec: 120
+    flightDurationSec: 10000
     preferredShipClass: 0
     demandCategory: 0
   meanArrivalIntervalSec: 480
   arrivalIntervalStdDev: 90
   minArrivalSpacingSec: 60
   minDwellTimeSec: 60
-  maxDwellTimeSec: 90
+  maxDwellTimeSec: 10000
   cargoTrade:
     useUnlimitedCredits: 1
     maxLoadSlots: 8
     maxLoadWeightKg: 200
     sellAllOnArrival: 1
     buyConfiguredItemsAfterSell: 1
-    buyItems:
-    - itemId: resource_mezium_box
-      desiredQuantity: 3
-      sellOnArrival: 1
-      maxKeepQuantity: 0
-    - itemId: resource_antigrav_box
-      desiredQuantity: 2
-      sellOnArrival: 1
-      maxKeepQuantity: 0
+    buyItems: []

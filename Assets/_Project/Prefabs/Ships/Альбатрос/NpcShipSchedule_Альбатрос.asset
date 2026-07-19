@@ -35,12 +35,4 @@ MonoBehaviour:
     maxLoadWeightKg: 200
     sellAllOnArrival: 1
     buyConfiguredItemsAfterSell: 1
-    buyItems:
-    - itemId: resource_mezium_box
-      desiredQuantity: 3
-      sellOnArrival: 1
-      maxKeepQuantity: 0
-    - itemId: resource_antigrav_box
-      desiredQuantity: 2
-      sellOnArrival: 1
-      maxKeepQuantity: 0
+    buyItems: []

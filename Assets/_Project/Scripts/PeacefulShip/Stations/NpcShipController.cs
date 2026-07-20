@@ -486,6 +486,8 @@ namespace ProjectC.PeacefulShip.Stations
             }
 
             // T-NS-AV02: расхождение NPC-кораблей (только в круизе) и зданий (во всех свободных режимах).
+            // Berthing/Docked исключены: корабль на финальном заходе игнорирует билд-коллайдеры
+            // (позже переосмыслим подход к заходу в док).
             if (CurrentMode == NavMode.Lifting || CurrentMode == NavMode.Yawing || CurrentMode == NavMode.Cruising)
             {
                 var pz = ProximityZone;

@@ -30,11 +30,17 @@ namespace ProjectC.PeacefulShip.Stations
         [Tooltip("Гистерезис выхода: зона считается 'разошедшейся' на avoidanceRadius * этот множитель.")]
         [Range(1f, 3f)] [SerializeField] private float clearHysteresis = 1.5f;
 
+        [Header("Buildings")]
+        [Tooltip("Учитывать NpcProximityZoneBuilds (здания/препятствия) при поиске конфликтов.")]
+        [SerializeField] private bool considerBuildings = true;
+
         [Header("Debug")]
         [SerializeField] private bool drawGizmos = true;
+        [SerializeField] private bool verboseBuildLogging = false;
 
         public float AwarenessRadius => awarenessRadius;
         public float AvoidanceRadius => avoidanceRadius;
+        public bool ConsiderBuildings => considerBuildings;
         /// <summary>Радиус, с которого считаем что конфликт исчерпан (гистерезис).</summary>
         public float ClearRadius => avoidanceRadius * clearHysteresis;
 
@@ -91,6 +97,44 @@ namespace ProjectC.PeacefulShip.Stations
                 || m == NpcShipController.NavMode.Yawing
                 || m == NpcShipController.NavMode.Cruising
                 || m == NpcShipController.NavMode.Avoiding;
+        }
+
+        /// <summary>
+        /// Server-only: ближайшая building-зона (NpcProximityZoneBuilds),
+        /// чьи padded bounds пересекаются с нашей avoidance-сферой.
+        /// null — если конфликтов нет или considerBuildings = false.
+        /// </summary>
+        public NpcProximityZoneBuilds FindClosestBuildConflict(out float dist)
+        {
+            dist = float.MaxValue;
+            if (!considerBuildings) return null;
+
+            NpcProximityZoneBuilds closest = null;
+            Vector3 myPos = transform.position;
+
+            if (verboseBuildLogging)
+                Debug.Log($"[NpcProximityZone:{gameObject.name}] scanning {NpcBuildZoneRegistry.All.Count} build zones...");
+
+            foreach (var build in NpcBuildZoneRegistry.All)
+            {
+                if (build == null || !build.isActiveAndEnabled) continue;
+                if (!build.IsIntruding(myPos, avoidanceRadius)) continue;
+
+                float d = Vector3.Distance(myPos, build.ClosestPoint(myPos));
+                if (verboseBuildLogging)
+                    Debug.Log($"[NpcProximityZone:{gameObject.name}] build conflict: {build.gameObject.name} d={d:F1}");
+
+                if (d < dist)
+                {
+                    dist = d;
+                    closest = build;
+                }
+            }
+
+            if (verboseBuildLogging && closest != null)
+                Debug.Log($"[NpcProximityZone:{gameObject.name}] → closest build: {closest.gameObject.name} dist={dist:F1}");
+
+            return closest;
         }
 
 #if UNITY_EDITOR

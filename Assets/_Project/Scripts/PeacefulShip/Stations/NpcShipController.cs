@@ -379,6 +379,8 @@ namespace ProjectC.PeacefulShip.Stations
         private float _avoidStartedAt;
         private NavMode _resumeMode = NavMode.Cruising;
         private NpcShipController _avoidOther;
+        private NpcProximityZoneBuilds _avoidBuild;
+        private Vector3 _avoidFromPos; // точка, от которой считаем вектор "прочь" (центр корабля или ClosestPointOnBounds)
 
         private NpcProximityZone _proximityZone;
         private bool _proximityZoneResolved;
@@ -466,14 +468,30 @@ namespace ProjectC.PeacefulShip.Stations
                 return;
             }
 
-            // T-NS-AV02: расхождение NPC-кораблей — только в свободном круизе.
-            if (CurrentMode == NavMode.Cruising)
+            // T-NS-AV02: расхождение NPC-кораблей (только в круизе) и зданий (во всех свободных режимах).
+            if (CurrentMode == NavMode.Lifting || CurrentMode == NavMode.Yawing || CurrentMode == NavMode.Cruising)
             {
                 var pz = ProximityZone;
                 if (pz != null)
                 {
-                    var intruder = pz.FindClosestConflict(out _);
-                    if (intruder != null) EnterAvoid(rb, intruder);
+                    // Ship-to-ship: только в Cruising
+                    NpcShipController intruder = null;
+                    float shipDist = float.MaxValue;
+                    if (CurrentMode == NavMode.Cruising)
+                        intruder = pz.FindClosestConflict(out shipDist);
+
+                    // Ship-to-build: во всех свободных режимах
+                    var build = pz.FindClosestBuildConflict(out float buildDist);
+
+                    if (intruder != null && (build == null || shipDist <= buildDist))
+                    {
+                        EnterAvoid(rb, intruder);
+                    }
+                    else if (build != null)
+                    {
+                        if (debugMode) Debug.Log($"[NpcShipController:NPC:{npcInstanceId:X}] build avoidance: {build.gameObject.name} dist={buildDist:F1} fromPos={build.ClosestPoint(rb.position)}");
+                        EnterAvoid(rb, build);
+                    }
                 }
             }
 
@@ -811,6 +829,19 @@ namespace ProjectC.PeacefulShip.Stations
         void EnterAvoid(Rigidbody rb, NpcShipController other) {
             _resumeMode = (CurrentMode == NavMode.Avoiding) ? NavMode.Cruising : CurrentMode;
             _avoidOther = other;
+            _avoidBuild = null;
+            _avoidFromPos = other.transform.position;
+            _avoidPhase = AvoidPhase.Separate;
+            _avoidPhaseEnteredAt = Time.time;
+            _avoidStartedAt = Time.time;
+            SetMode(NavMode.Avoiding);
+        }
+
+        void EnterAvoid(Rigidbody rb, NpcProximityZoneBuilds build) {
+            _resumeMode = (CurrentMode == NavMode.Avoiding) ? NavMode.Cruising : CurrentMode;
+            _avoidOther = null;
+            _avoidBuild = build;
+            _avoidFromPos = build.ClosestPoint(rb.position);
             _avoidPhase = AvoidPhase.Separate;
             _avoidPhaseEnteredAt = Time.time;
             _avoidStartedAt = Time.time;
@@ -821,12 +852,9 @@ namespace ProjectC.PeacefulShip.Stations
             // Предохранитель — не зависаем в манёвре
             if (Time.time - _avoidStartedAt > avoidTimeout) { ResumeFromAvoid(rb); return; }
 
-            // Горизонтальный вектор "от соседа"
-            Vector3 away = Vector3.zero;
-            if (_avoidOther != null) {
-                away = rb.position - _avoidOther.transform.position;
-                away.y = 0f;
-            }
+            // Горизонтальный вектор "от препятствия"
+            Vector3 away = rb.position - _avoidFromPos;
+            away.y = 0f;
             if (away.sqrMagnitude < 0.01f) away = -transform.forward;
             away.Normalize();
 
@@ -854,18 +882,26 @@ namespace ProjectC.PeacefulShip.Stations
         }
 
         bool IsClearOfConflict() {
-            if (_avoidOther == null) return true;
-            var pz = ProximityZone;
-            if (pz == null) return true;
-            float d = Vector3.Distance(transform.position, _avoidOther.transform.position);
-            float otherAvoid = _avoidOther.ProximityZone != null ? _avoidOther.ProximityZone.AvoidanceRadius : 0f;
-            return d >= pz.ClearRadius + otherAvoid;
+            if (_avoidOther != null) {
+                var pz = ProximityZone;
+                if (pz == null) return true;
+                float d = Vector3.Distance(transform.position, _avoidOther.transform.position);
+                float otherAvoid = _avoidOther.ProximityZone != null ? _avoidOther.ProximityZone.AvoidanceRadius : 0f;
+                return d >= pz.ClearRadius + otherAvoid;
+            }
+            if (_avoidBuild != null) {
+                var pz = ProximityZone;
+                if (pz == null) return true;
+                return !_avoidBuild.IsIntruding(transform.position, pz.ClearRadius);
+            }
+            return true;
         }
 
         void ResumeFromAvoid(Rigidbody rb) {
             rb.linearVelocity = Vector3.zero;
             rb.angularVelocity = Vector3.zero;
             _avoidOther = null;
+            _avoidBuild = null;
             // Возврат на прошлый маршрут: прежний режим + прежняя CruiseTargetPos (не менялась)
             SetMode(_resumeMode == NavMode.Avoiding ? NavMode.Cruising : _resumeMode);
         }

@@ -166,6 +166,23 @@ public class NpcSocialBrainEditor : Editor
     {
         serializedObject.Update();
 
+        EditorGUILayout.BeginHorizontal();
+        if (GUILayout.Button("Collapse All", GUILayout.Width(100)))
+        {
+            _foldoutDebug = _foldoutFaction = _foldoutIdle = _foldoutSocialize = false;
+            _foldoutFlee = _foldoutGrudge = _foldoutAlarm = _foldoutCover = false;
+            _foldoutSurrender = _foldoutTick = false;
+        }
+        if (GUILayout.Button("Expand All", GUILayout.Width(100)))
+        {
+            _foldoutDebug = _foldoutFaction = _foldoutIdle = _foldoutSocialize = true;
+            _foldoutFlee = _foldoutGrudge = _foldoutAlarm = _foldoutCover = true;
+            _foldoutSurrender = _foldoutTick = true;
+        }
+        GUILayout.FlexibleSpace();
+        EditorGUILayout.EndHorizontal();
+        EditorGUILayout.Space(4);
+
         // ── 1. Debug ──
         _foldoutDebug = EditorGUILayout.BeginFoldoutHeaderGroup(_foldoutDebug, "▶ Debug");
         if (_foldoutDebug)

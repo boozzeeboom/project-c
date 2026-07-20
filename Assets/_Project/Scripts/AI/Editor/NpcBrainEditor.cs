@@ -112,6 +112,23 @@ public class NpcBrainEditor : Editor
     {
         serializedObject.Update();
 
+        EditorGUILayout.BeginHorizontal();
+        if (GUILayout.Button("Collapse All", GUILayout.Width(100)))
+        {
+            _foldoutDebug = _foldoutBehavior = _foldoutQuest = _foldoutRespawn = false;
+            _foldoutRanges = _foldoutCombat = _foldoutSocial = _foldoutDeckNav = false;
+            _foldoutPlatform = _foldoutTick = false;
+        }
+        if (GUILayout.Button("Expand All", GUILayout.Width(100)))
+        {
+            _foldoutDebug = _foldoutBehavior = _foldoutQuest = _foldoutRespawn = true;
+            _foldoutRanges = _foldoutCombat = _foldoutSocial = _foldoutDeckNav = true;
+            _foldoutPlatform = _foldoutTick = true;
+        }
+        GUILayout.FlexibleSpace();
+        EditorGUILayout.EndHorizontal();
+        EditorGUILayout.Space(4);
+
         // ── 1. Debug ──
         _foldoutDebug = EditorGUILayout.BeginFoldoutHeaderGroup(_foldoutDebug, "▶ Debug");
         if (_foldoutDebug)

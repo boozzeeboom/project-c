@@ -839,7 +839,7 @@ namespace ProjectC.PeacefulShip.Stations
                 ? NavMode.Cruising : CurrentMode;
             _avoidOther = other;
             _avoidBuild = null;
-            _avoidFromPos = other.transform.position;
+            _avoidFromPos = other.ProximityZone?.ClosestPoint(rb.position) ?? other.transform.position;
 
             // T-NS-BZ05: приоритет — выше делает full avoidance, ниже yield'ит
             if (AvoidancePriority < other.AvoidancePriority)
@@ -917,15 +917,14 @@ namespace ProjectC.PeacefulShip.Stations
         bool IsClearOfConflict() {
             if (_avoidOther != null) {
                 var pz = ProximityZone;
-                if (pz == null) return true;
-                float d = Vector3.Distance(transform.position, _avoidOther.transform.position);
-                float otherAvoid = _avoidOther.ProximityZone != null ? _avoidOther.ProximityZone.AvoidanceRadius : 0f;
-                return d >= pz.ClearRadius + otherAvoid;
+                var oz = _avoidOther.ProximityZone;
+                if (pz == null || oz == null) return true;
+                return pz.IsClearOf(oz);
             }
             if (_avoidBuild != null) {
                 var pz = ProximityZone;
                 if (pz == null) return true;
-                return !_avoidBuild.IsIntruding(transform.position, pz.ClearRadius);
+                return pz.IsClearOf(_avoidBuild);
             }
             return true;
         }

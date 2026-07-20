@@ -35,6 +35,8 @@ namespace ProjectC.AI
         public float idleAtWaypointSec = 3f;
         public float wanderRadius = 8f;
         [Range(0f, 5f)] public float patrolSpeed = 0f;
+        [Range(0.1f, 5f)] public float patrolArrivalThreshold = 1.5f;
+        [Range(5f, 60f)] public float patrolStuckTimeout = 15f;
 
         [Header("Flee (T-NPC-S04)")]
         public bool canFlee = true;
@@ -42,6 +44,8 @@ namespace ProjectC.AI
         public float fleeAllySeekRadius = 30f;
         public float fleeLeash = 80f;
         public float fleeTimeout = 15f;
+        [Range(5f, 50f)] public float fleeStraightDistance = 20f;
+        [Range(5f, 50f)] public float fleeNearLeashDistance = 20f;
 
         [Header("Grudge Memory (T-NPC-S05)")]
         public bool enableGrudgeMemory = true;
@@ -79,6 +83,45 @@ namespace ProjectC.AI
         [Range(0f, 1f)] public float healHpThreshold = 0.4f;
         [Range(0.01f, 0.2f)] public float healRegenRate = 0.05f;
         [Range(20f, 80f)] public float reinforcementSeekRadius = 50f;
+        [Range(2f, 15f)] public float postCombatGuardMin = 4f;
+        [Range(2f, 20f)] public float postCombatGuardMax = 6f;
+        [Range(0f, 1f)] public float woundedHpThreshold = 0.6f;
+        [Range(1f, 5f)] public float healingDurationMultiplier = 1.5f;
+        [Range(1f, 5f)] public float seekingReinforcementMultiplier = 2f;
+
+        [Header("Social Tick")]
+        [Range(0.1f, 2f)] public float socialTickInterval = 0.5f;
+
+        [Header("Idle Activity Tuning")]
+        [Range(2f, 40f)] public float socializeSearchRadius = 15f;
+        [Range(0.5f, 8f)] public float socializeApproachThreshold = 2f;
+        [Range(1f, 15f)] public float socializeCooldownMin = 3f;
+        [Range(2f, 20f)] public float socializeCooldownMax = 6f;
+        [Range(2f, 30f)] public float workAnimIntervalMin = 5f;
+        [Range(5f, 60f)] public float workAnimIntervalMax = 15f;
+        [Range(2f, 30f)] public float sitSearchInterval = 5f;
+        [Range(5f, 60f)] public float sitSearchRadius = 25f;
+        [Range(10f, 300f)] public float sleepDurationMin = 30f;
+        [Range(30f, 600f)] public float sleepDurationMax = 120f;
+        [Range(1f, 15f)] public float wanderCooldownMin = 3f;
+        [Range(2f, 20f)] public float wanderCooldownMax = 8f;
+
+        [Header("Emotion Tuning")]
+        [Range(1f, 15f)] public float victoryEmotionDuration = 5f;
+        [Range(0.5f, 3f)] public float allyKillSearchMultiplier = 1.5f;
+
+        [Header("Threat Thresholds")]
+        [Range(0f, 1f)] public float cautiousRecklessnessThreshold = 0.7f;
+        [Range(0f, 1f)] public float afraidRecklessnessThreshold = 0.8f;
+
+        [Header("Surrender Tuning")]
+        [Range(0f, 1f)] public float mercySurrenderRequired = 0.15f;
+
+        [Header("Cover Auto-Detect")]
+        public float[] coverAutoDetectAngles = { 0f, 30f, -30f, 60f, -60f };
+        [Range(0.5f, 5f)] public float coverRaycastUp = 2f;
+        [Range(5f, 30f)] public float coverThreatFwdDistance = 10f;
+        [Range(0.5f, 5f)] public float coverNavSampleRadius = 2f;
 
         // T-NPC-S19: короткая пауза после боя перед возобновлением idle.
         private float _postCombatGuardUntil;
@@ -101,7 +144,6 @@ namespace ProjectC.AI
         private bool _patrolPingPongForward = true;
         private float _patrolWaitUntil;
         private float _patrolStuckTimer;
-        private const float PATROL_STUCK_TIMEOUT = 15f;
 
         private Vector3 _wanderTarget;
         private float _wanderCooldown;
@@ -145,7 +187,7 @@ namespace ProjectC.AI
         public void Tick(NpcBrain brain)
         {
             if (Time.unscaledTime < _nextSocialTick) return;
-            _nextSocialTick = Time.unscaledTime + 0.5f;
+            _nextSocialTick = Time.unscaledTime + socialTickInterval;
             if (_brain == null || _agent == null) return;
             if (_brain.CurrentState != NpcBrain.BrainState.Idle &&
                 _brain.CurrentState != NpcBrain.BrainState.Chase) return;
@@ -171,7 +213,7 @@ namespace ProjectC.AI
             if (_wasInCombat && _brain.CurrentState == NpcBrain.BrainState.Idle
                 && _postCombat == PostCombatState.None && Time.unscaledTime > _postCombatGuardUntil)
             {
-                _postCombatGuardUntil = Time.unscaledTime + Random.Range(4f, 6f);
+                _postCombatGuardUntil = Time.unscaledTime + Random.Range(postCombatGuardMin, postCombatGuardMax);
                 _wasInCombat = false;
             }
 
@@ -294,14 +336,14 @@ namespace ProjectC.AI
             else
             {
                 Vector3 fleeDir = (transform.position - threatPos).normalized;
-                _fleeTarget = transform.position + fleeDir * 20f;
+                _fleeTarget = transform.position + fleeDir * fleeStraightDistance;
                 if (Vector3.Distance(_brain.SpawnPoint, threatPos) > Vector3.Distance(_fleeTarget, threatPos))
                     _fleeTarget = _brain.SpawnPoint;
             }
             if (Vector3.Distance(_fleeTarget, _brain.SpawnPoint) > fleeLeash)
             {
                 Vector3 dir = (_brain.SpawnPoint - threatPos).normalized;
-                _fleeTarget = _brain.SpawnPoint + dir * Mathf.Min(20f, fleeLeash * 0.5f);
+                _fleeTarget = _brain.SpawnPoint + dir * Mathf.Min(fleeNearLeashDistance, fleeLeash * 0.5f);
             }
             _brain.ForceFlee(threatPos);
         }
@@ -361,25 +403,25 @@ namespace ProjectC.AI
             if (_agent == null || !_agent.isOnNavMesh) return;
             if (Time.unscaledTime < _socializeCooldown) return;
             if (_socializePartner == null || _socializePartner.IsDead ||
-                Vector3.Distance(transform.position, _socializePartner.transform.position) > 15f)
+                Vector3.Distance(transform.position, _socializePartner.transform.position) > socializeSearchRadius)
                 _socializePartner = FindSocializePartner();
             if (_socializePartner != null)
             {
                 Vector3 midPoint = (transform.position + _socializePartner.transform.position) * 0.5f;
-                if (Vector3.Distance(transform.position, midPoint) > 2f)
+                if (Vector3.Distance(transform.position, midPoint) > socializeApproachThreshold)
                 {
                     _agent.isStopped = false;
                     _agent.SetDestination(midPoint);
                 }
                 else { _agent.isStopped = true; FaceTarget(_socializePartner.transform.position); }
             }
-            _socializeCooldown = Time.unscaledTime + Random.Range(3f, 6f);
+            _socializeCooldown = Time.unscaledTime + Random.Range(socializeCooldownMin, socializeCooldownMax);
         }
 
         private NpcSocialBrain FindSocializePartner()
         {
             NpcSocialBrain best = null;
-            float bestD = 15f * 15f;
+            float bestD = socializeSearchRadius * socializeSearchRadius;
             foreach (var o in AllBrains)
             {
                 if (o == this || o == null || o.IsDead || o._brain == null) continue;
@@ -399,7 +441,7 @@ namespace ProjectC.AI
             {
                 var anim = GetComponentInChildren<Animator>();
                 if (anim != null) { anim.SetInteger("WorkVariant", Random.Range(0, 3)); anim.SetTrigger("Work"); }
-                _workAnimTimer = Time.unscaledTime + Random.Range(5f, 15f);
+                _workAnimTimer = Time.unscaledTime + Random.Range(workAnimIntervalMin, workAnimIntervalMax);
             }
         }
 
@@ -412,9 +454,9 @@ namespace ProjectC.AI
                 else { _agent.isStopped = true; return; }
             }
             if (Time.unscaledTime < _sitSearchCooldown) return;
-            _sitSearchCooldown = Time.unscaledTime + 5f;
+            _sitSearchCooldown = Time.unscaledTime + sitSearchInterval;
             SitPoint best = null;
-            float bestD = 25f * 25f;
+            float bestD = sitSearchRadius * sitSearchRadius;
             foreach (var sp in SitPoint.AllSitPoints)
 
             {
@@ -437,7 +479,7 @@ namespace ProjectC.AI
             if (!_sleepInitialized)
             {
                 _sleepInitialized = true;
-                _sleepWakeTime = Time.unscaledTime + Random.Range(30f, 120f);
+                _sleepWakeTime = Time.unscaledTime + Random.Range(sleepDurationMin, sleepDurationMax);
                 var anim = GetComponentInChildren<Animator>();
                 if (anim != null) anim.SetBool("IsSleeping", true);
                 if (_agent != null && _agent.isOnNavMesh) _agent.isStopped = true;
@@ -457,7 +499,7 @@ namespace ProjectC.AI
             if (_agent == null || !_agent.isOnNavMesh) return;
             if (Time.unscaledTime < _patrolWaitUntil) return;
             Vector3 tgt = patrolWaypoints[_patrolIndex];
-            if (Vector3.Distance(transform.position, tgt) < 1.5f)
+            if (Vector3.Distance(transform.position, tgt) < patrolArrivalThreshold)
             {
                 _patrolWaitUntil = Time.unscaledTime + idleAtWaypointSec;
                 _patrolStuckTimer = 0f;
@@ -467,10 +509,10 @@ namespace ProjectC.AI
             }
 
             // T-NPC-S00 fix: anti-stuck timeout. Если агент не может добраться до waypoint >15с — пропускаем.
-            if (_agent.pathPending || _agent.remainingDistance > 1.5f)
+            if (_agent.pathPending || _agent.remainingDistance > patrolArrivalThreshold)
             {
-                _patrolStuckTimer += 0.5f; // SocialTick interval.
-                if (_patrolStuckTimer > PATROL_STUCK_TIMEOUT)
+                _patrolStuckTimer += socialTickInterval;
+                if (_patrolStuckTimer > patrolStuckTimeout)
                 {
                     if (_debugLog) Debug.Log($"[NpcSocialBrain] {name}: patrol stuck at waypoint {_patrolIndex}, skipping.");
                     _patrolStuckTimer = 0f;
@@ -518,7 +560,7 @@ namespace ProjectC.AI
                 if (_agent.speed != speed) _agent.speed = speed;
                 _agent.isStopped = false;
                 _agent.SetDestination(_wanderTarget);
-                _wanderCooldown = Time.unscaledTime + Random.Range(3f, 8f);
+                _wanderCooldown = Time.unscaledTime + Random.Range(wanderCooldownMin, wanderCooldownMax);
             }
         }
 
@@ -571,7 +613,7 @@ namespace ProjectC.AI
             else if (_isFleeing) target = NpcEmotion.Fear;
             else if (_brain.IsAggrod || inCombat) target = NpcEmotion.Anger;
             else if (_brain.CurrentAggroTarget != null) target = NpcEmotion.Alert;
-            else if (_emotion.Current == NpcEmotion.Victory && _emotion.TimeInCurrentState < 5f) target = NpcEmotion.Victory;
+            else if (_emotion.Current == NpcEmotion.Victory && _emotion.TimeInCurrentState < victoryEmotionDuration) target = NpcEmotion.Victory;
             else if (_morale.ShouldSurrender(hp)) target = NpcEmotion.Despair;
             else if (_morale.ShouldFlee(personalityConfig) && hp < 0.5f) target = NpcEmotion.Fear;
             else target = NpcEmotion.Calm;
@@ -619,7 +661,7 @@ namespace ProjectC.AI
             {
                 if (m == this || m == null || !m.IsDead) continue;
                 if (Vector3.Distance(transform.position, m.transform.position) > allyDeathRadius) continue;
-                killerTarget = m._brain?.CurrentAggroTarget ?? FindNearestPlayerInRange(allyDeathRadius * 1.5f);
+                killerTarget = m._brain?.CurrentAggroTarget ?? FindNearestPlayerInRange(allyDeathRadius * allyKillSearchMultiplier);
                 killerClientId = ResolvePlayerClientId(killerTarget);
                 if (killerTarget != null)
                 {
@@ -710,10 +752,10 @@ namespace ProjectC.AI
             {
                 case ThreatResult.Confident: return false;
                 case ThreatResult.Cautious:
-                    if (personalityConfig != null && personalityConfig.recklessness > 0.7f) return false;
+                    if (personalityConfig != null && personalityConfig.recklessness > cautiousRecklessnessThreshold) return false;
                     return true;
                 case ThreatResult.Afraid:
-                    if (personalityConfig != null && personalityConfig.recklessness > 0.8f) return false;
+                    if (personalityConfig != null && personalityConfig.recklessness > afraidRecklessnessThreshold) return false;
                     if (canFlee && !_isFleeing && _brain.CurrentAggroTarget != null) { StartFlee(); return true; }
                     DispatchVocalCue(NpcVocalCue.AlertCall);
                     return true;
@@ -777,19 +819,19 @@ namespace ProjectC.AI
 
         private Vector3? AutoDetectCover()
         {
-            Vector3 threatPos = _brain.CurrentAggroTarget != null ? _brain.CurrentAggroTarget.GetPosition() : transform.position + transform.forward * 10f;
+            Vector3 threatPos = _brain.CurrentAggroTarget != null ? _brain.CurrentAggroTarget.GetPosition() : transform.position + transform.forward * coverThreatFwdDistance;
             Vector3 awayFromThreat = (transform.position - threatPos).normalized;
-            float[] angles = { 0f, 30f, -30f, 60f, -60f };
+            float[] angles = coverAutoDetectAngles;
             foreach (float angle in angles)
             {
                 Vector3 dir = Quaternion.AngleAxis(angle, Vector3.up) * awayFromThreat;
                 Vector3 checkPos = transform.position + dir * coverSeekRadius * 0.7f;
-                if (Physics.Raycast(checkPos + Vector3.up * 2f, Vector3.down, out RaycastHit groundHit, 10f, ~0, QueryTriggerInteraction.Ignore))
+                if (Physics.Raycast(checkPos + Vector3.up * coverRaycastUp, Vector3.down, out RaycastHit groundHit, coverThreatFwdDistance, ~0, QueryTriggerInteraction.Ignore))
                 {
                     Vector3 toThreat = threatPos - groundHit.point;
                     if (Physics.Raycast(groundHit.point, toThreat.normalized, out RaycastHit wallHit, toThreat.magnitude, ~0, QueryTriggerInteraction.Ignore))
                     {
-                        if (NavMesh.SamplePosition(groundHit.point, out NavMeshHit navHit, 2f, NavMesh.AllAreas))
+                        if (NavMesh.SamplePosition(groundHit.point, out NavMeshHit navHit, coverNavSampleRadius, NavMesh.AllAreas))
                             return navHit.position;
                     }
                 }
@@ -817,7 +859,7 @@ namespace ProjectC.AI
             }
             if (hasNearbyAlly) return false;
             float mercy = personalityConfig != null ? personalityConfig.mercy : 0.2f;
-            if (mercy < 0.15f) return false;
+            if (mercy < mercySurrenderRequired) return false;
             _hasSurrendered = true;
             if (_brain != null) _brain.ForceSurrender();
             return true;
@@ -833,7 +875,7 @@ namespace ProjectC.AI
                 float hpPercent = _target.GetMaxHp() > 0 ? (float)_target.GetCurrentHp() / _target.GetMaxHp() : 1f;
                 if (hpPercent < healHpThreshold && HasNearbyDeadAllies()) StartPostCombat(PostCombatState.SeekingReinforcement);
                 else if (hpPercent < healHpThreshold) StartPostCombat(PostCombatState.Healing);
-                else if (hpPercent < 0.6f) StartPostCombat(PostCombatState.Wounded);
+                else if (hpPercent < woundedHpThreshold) StartPostCombat(PostCombatState.Wounded);
             }
             _wasInCombat = inCombat;
             switch (_postCombat)
@@ -860,7 +902,7 @@ namespace ProjectC.AI
         private void TickHealing()
         {
             if (_agent != null && _agent.isOnNavMesh) _agent.isStopped = true;
-            if (Time.unscaledTime - _postCombatTimer > woundedDuration * 1.5f) EndPostCombat();
+            if (Time.unscaledTime - _postCombatTimer > woundedDuration * healingDurationMultiplier) EndPostCombat();
         }
 
         private void TickSeekingReinforcement()
@@ -868,7 +910,7 @@ namespace ProjectC.AI
             Vector3 allyPos = FindNearestAlly();
             if (allyPos.sqrMagnitude > 0.1f && _agent != null && _agent.isOnNavMesh) { _agent.isStopped = false; _agent.SetDestination(allyPos); }
             else { _postCombat = PostCombatState.Wounded; _postCombatTimer = Time.unscaledTime; }
-            if (Time.unscaledTime - _postCombatTimer > woundedDuration * 2f) EndPostCombat();
+            if (Time.unscaledTime - _postCombatTimer > woundedDuration * seekingReinforcementMultiplier) EndPostCombat();
         }
 
         private bool HasNearbyDeadAllies()

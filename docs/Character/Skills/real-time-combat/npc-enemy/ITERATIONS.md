@@ -82,6 +82,52 @@
 =======
 # Итерации реализации Unified NPC Behavior Architecture
 
+## Итерация от 2026-07-30 — NpcSocialBrainEditor: кастомный инспектор + вынос хардкода
+
+**Задача:** `NpcSocialBrain` (~970 строк) содержал ~28 захардкоженных литералов в patrol, flee, socialize, work, sit, sleep, wander, cover auto-detect, post-combat и emotion подсистемах. Дефолтный инспектор показывал все публичные поля одним плоским списком без группировки. Дизайнеру требовалось:
+1. Вынести все хардкоженные константы в сериализованные поля с сохранением дефолтов
+2. Сгруппировать ~85 полей в логические foldout-секции в стиле `NpcSpawnerConfigEditor`
+
+**Коммит:** `b045063` — T-NPC-S01-EDITOR: NpcSocialBrain custom editor + expose hardcoded tuning params
+
+**Изменения:**
+- `NpcSocialBrain.cs` — (+28 serialized fields, −1 const, ~25 literal→field замен):
+  - **Patrol:** `patrolArrivalThreshold` (было 1.5f), `patrolStuckTimeout` (было const 15f)
+  - **Flee:** `fleeStraightDistance` (20f), `fleeNearLeashDistance` (20f)
+  - **Socialize:** `socializeSearchRadius` (15f), `socializeApproachThreshold` (2f), `socializeCooldownMin/Max` (3f/6f)
+  - **Work:** `workAnimIntervalMin/Max` (5f/15f)
+  - **Sit:** `sitSearchInterval` (5f), `sitSearchRadius` (25f)
+  - **Sleep:** `sleepDurationMin/Max` (30f/120f)
+  - **Wander:** `wanderCooldownMin/Max` (3f/8f)
+  - **Emotion:** `victoryEmotionDuration` (5f), `allyKillSearchMultiplier` (1.5f)
+  - **Threat:** `cautiousRecklessnessThreshold` (0.7f), `afraidRecklessnessThreshold` (0.8f)
+  - **Surrender:** `mercySurrenderRequired` (0.15f)
+  - **Post-Combat:** `postCombatGuardMin/Max` (4f/6f), `woundedHpThreshold` (0.6f), `healingDurationMultiplier` (1.5f), `seekingReinforcementMultiplier` (2f)
+  - **Cover:** `coverAutoDetectAngles` (float[]), `coverRaycastUp` (2f), `coverThreatFwdDistance` (10f), `coverNavSampleRadius` (2f)
+  - **Tick:** `socialTickInterval` (0.5f)
+  - Удалён `const float PATROL_STUCK_TIMEOUT` — заменён на сериализованный `patrolStuckTimeout`
+- `NpcSocialBrainEditor.cs` — (NEW) `[CustomEditor(typeof(NpcSocialBrain))]`, ~280 строк, 10 foldout-групп:
+  1. **Debug** — `_debugLog`
+  2. **Faction & Personality** — `faction`, `personalityConfig`
+  3. **Idle Activities** — idleActivity, patrol*, wander* (wander-поля — conditional)
+  4. **Socialize & Work Tuning** — все тонкие idle-настройки
+  5. **Flee** — conditional indent при `canFlee = true`
+  6. **Grudge & Vengeance** — conditional для grudgeDurationSec
+  7. **Alarm & Threat** — alarm + threat assessment + пороги reckless
+  8. **Cover** — seek + auto-detect
+  9. **Surrender & Post-Combat** — conditional indent для обеих подсистем
+  10. **Tick & Emotion** — socialTickInterval, victoryEmotionDuration
+
+**Тикеты:** T-NPC-S01-EDITOR
+
+**Результат:** Все хардкоженные значения вынесены в инспектор с сохранением обратной совместимости (дефолты = старые значения). Дизайнер может тюнить поведение NPC без правки кода. Инспектор сгруппирован по подсистемам в стиле остальных Editor-скриптов проекта.
+
+=======
+**Осталось (не в этом коммите):**
+- 🟡 P3: Монолит NpcSocialBrain (рефакторинг отложен — кастомный инспектор снижает остроту проблемы)
+
+=======
+
 ## Итерация от 2026-07-29 — Loot Config
 
 **Задача:** Вынос визуала дропа и лут-таблицы из хардкода `NpcTarget.SpawnLootPickup()` в инспектор `NpcSpawner` + `NpcSpawnerConfig`.

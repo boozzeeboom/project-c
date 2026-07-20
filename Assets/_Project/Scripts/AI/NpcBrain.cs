@@ -276,37 +276,19 @@ namespace ProjectC.AI
             if (_proxyGo != null) { Destroy(_proxyGo); _proxyGo = null; _proxyAgent = null; }
         }
 
-        private void OnNpcHpChanged(int newHp, int deltaHp)
+        private void OnNpcHpChanged(int newHp, int deltaHp, ulong attackerClientId)
         {
             if (!IsServer) return;
             if (_state == BrainState.Dead) return;
             if (deltaHp <= 0) return;
 
-            // T-NPC-S00 fix: записать обидчика в GrudgeTable (RecordPlayerHit).
+            // T-CNPC-01: портим отношение при ударе (всегда, без guard на _socialBrain).
+            if (!string.IsNullOrEmpty(_npcId) && QuestWorld.Instance != null)
+                QuestWorld.Instance.ModifyNpcAttitude(attackerClientId, _npcId, -2);
+
+            // T-NPC-S00 fix: записать обидчика в GrudgeTable.
             if (_socialBrain != null && _socialBrain.enableGrudgeMemory)
-            {
-                var nearestPlayer = FindNearestPlayerTarget(aggroRange * 3f);
-                if (nearestPlayer is ProjectC.Combat.PlayerTarget pt)
-                {
-                    // Найти clientId этого PlayerTarget.
-                    if (NetworkManager.Singleton != null)
-                    {
-                        foreach (var c in NetworkManager.Singleton.ConnectedClientsList)
-                        {
-                            if (c?.PlayerObject == null) continue;
-                            var cpt = c.PlayerObject.GetComponent<ProjectC.Combat.PlayerTarget>();
-                            if (cpt == pt)
-                            {
-                                _socialBrain.RecordPlayerHit(c.ClientId);
-                                // T-CNPC-01: портим отношение при ударе
-                                if (!string.IsNullOrEmpty(_npcId) && QuestWorld.Instance != null)
-                                    QuestWorld.Instance.ModifyNpcAttitude(c.ClientId, _npcId, -2);
-                                break;
-                            }
-                        }
-                    }
-                }
-            }
+                _socialBrain.RecordPlayerHit(attackerClientId);
 
             if (_behaviorType != BehaviorType.Passive) return;
             if (_isAggrod) return;

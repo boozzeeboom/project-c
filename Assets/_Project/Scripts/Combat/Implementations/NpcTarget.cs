@@ -27,8 +27,10 @@ namespace ProjectC.Combat
         private Items.LootTable _lootTable;
 
         // T-NPC-14: событие изменения HP (server-side). Подписывается NpcBrain для
-        // отслеживания cumulative damage / passive aggro. Параметры: (newHp, deltaHp).
-        public event Action<int, int> OnHpChanged;
+        // отслеживания cumulative damage / passive aggro.
+        // T-CNPC-01: attackerClientId добавлен для точной атрибуции репутационного штрафа.
+        // Параметры: (newHp, deltaHp, attackerClientId).
+        public event Action<int, int, ulong> OnHpChanged;
 
         /// <summary>T-CNPC-01: событие смерти NPC. Параметр: attackerClientId.</summary>
         public event Action<ulong> OnKilledEvent;
@@ -111,7 +113,7 @@ namespace ProjectC.Combat
             int newHp = Mathf.Max(0, _currentHp.Value - result.finalDamage);
             int delta = _currentHp.Value - newHp;  // positive = damage taken
             _currentHp.Value = newHp;
-            OnHpChanged?.Invoke(newHp, delta);  // T-NPC-14: passive aggro tracking
+            OnHpChanged?.Invoke(newHp, delta, attackerClientId);  // T-NPC-14: passive aggro tracking
 
             if (_debugLog)
             {

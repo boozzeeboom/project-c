@@ -820,6 +820,8 @@ namespace ProjectC.Quests
             if (QuestWorld.Instance == null || QuestWorld.Instance.TriggerService == null) return;
             int advances = QuestWorld.Instance.TriggerService.Evaluate(ev.PlayerId, $"ReputationAtLeast:{ev.Faction}");
             if (debugMode && advances > 0) Debug.Log($"[QuestServer] OnReputationChanged player={ev.PlayerId} faction={ev.Faction} → {advances} objective(s) advanced");
+            // T-CNPC-01: push snapshot so UI (CharacterWindow tab) updates immediately.
+            BroadcastReputationChange(ev.PlayerId);
         }
 
         private void OnNpcAttitudeChanged(NpcAttitudeChangedEvent ev)
@@ -827,6 +829,8 @@ namespace ProjectC.Quests
             if (QuestWorld.Instance == null || QuestWorld.Instance.TriggerService == null) return;
             int advances = QuestWorld.Instance.TriggerService.Evaluate(ev.PlayerId, $"NpcAttitudeAtLeast:{ev.NpcId}");
             if (debugMode && advances > 0) Debug.Log($"[QuestServer] OnNpcAttitudeChanged player={ev.PlayerId} npc={ev.NpcId} → {advances} objective(s) advanced");
+            // T-CNPC-01: push snapshot so DialogWindow badge updates immediately after combat penalty.
+            BroadcastNpcAttitudeChange(ev.PlayerId);
         }
 
         private void OnCustomEvent(CustomEvent ev)

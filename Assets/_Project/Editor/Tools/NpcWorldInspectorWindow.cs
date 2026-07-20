@@ -860,7 +860,7 @@ namespace ProjectC.Editor.Tools
                     entry.aiIdleActivity = socialBrain.idleActivity.ToString();
                     entry.aiCanFlee = socialBrain.canFlee;
                     if (socialBrain.faction != null)
-                        entry.aiFaction = socialBrain.faction.factionId;
+                        entry.aiFaction = socialBrain.faction.CombatKey;
                 }
 
                 // Combat data

@@ -82,7 +82,7 @@ MonoBehaviour:
   woundedDuration: 15
   healHpThreshold: 0.4
   socialRole: {fileID: 11400000, guid: 04b6b91529c7a004988d2da2334e63cd, type: 2}
-  faction: {fileID: 11400000, guid: 9d04bc8ae32d31446b15ee6c18a4b916, type: 2}
+  faction: {fileID: 11400000, guid: ebf417a0dc597fb41a620e277abd3e71, type: 2}
   enableVengeanceMemory: 1
   lootPrefab: {fileID: 0}
   lootTable: {fileID: 0}

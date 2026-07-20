@@ -41,6 +41,7 @@ using System.Linq;
 using ProjectC.Core;
 using ProjectC.Ship;
 using ProjectC.Quests;
+using ProjectC.Factions;
 
 namespace ProjectC.AI
 {
@@ -1182,7 +1183,7 @@ namespace ProjectC.AI
 
                 {
                     if (npc == null || npc == _socialBrain || npc.IsDead || npc._brain == null || npc.faction == null) continue;
-                    if (!_socialBrain.faction.IsHostile(npc.faction)) continue;
+                    if (!_socialBrain.faction.IsHostileTowards(npc.faction.factionId)) continue;
                     var nt = npc.GetComponent<NpcTarget>();
                     if (nt == null || !nt.IsAlive()) continue;
                     float d = (npc.transform.position - myPos).sqrMagnitude;

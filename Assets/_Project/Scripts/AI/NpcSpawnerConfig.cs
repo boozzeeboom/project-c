@@ -5,6 +5,7 @@
 // Designer-конфигурируемый, 0 hard-coded параметров в спавнере.
 
 using UnityEngine;
+using ProjectC.Factions;
 
 namespace ProjectC.AI
 {
@@ -179,9 +180,9 @@ namespace ProjectC.AI
         [Tooltip("Пресет социальной роли (Guard, Civilian, Merchant, etc). Если null — используется personalityConfig.")]
         public SocialRoleConfig socialRole;
 
-        [Header("Faction (T-NPC-S19)")]
+        [Header("Faction (T-NPC-S19, T-FACTION-UNIFY)")]
         [Tooltip("Фракция NPC. Определяет отношения «свой/чужой».")]
-        public NpcFaction faction;
+        public FactionDefinition faction;
 
         [Header("Vengeance (T-NPC-S20)")]
         [Tooltip("Включает кросс-спавн vengeance-память.")]

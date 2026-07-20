@@ -13,6 +13,10 @@ MonoBehaviour:
   m_Name: QuestDatabase
   m_EditorClassIdentifier: Assembly-CSharp::ProjectC.Quests.QuestDatabase
   factions:
+  - {fileID: 11400000, guid: f62f046b1ff73e245aa9373014122de8, type: 2}
+  - {fileID: 11400000, guid: ebf417a0dc597fb41a620e277abd3e71, type: 2}
+  - {fileID: 11400000, guid: 28c0968ce62999c428e0f95c10fbbbb4, type: 2}
+  - {fileID: 11400000, guid: da33f2fb82104954f84d56578574f344, type: 2}
   - {fileID: 11400000, guid: 52d26a5460fa81c4b8b59ee4d00d10d5, type: 2}
   - {fileID: 11400000, guid: 7c153a48dcec3c14c836d2a60a71f9bb, type: 2}
   - {fileID: 11400000, guid: 7b29b08d5a8c1ed42badb7f7cb4909f7, type: 2}

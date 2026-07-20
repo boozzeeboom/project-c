@@ -29,6 +29,7 @@ namespace ProjectC.AI
     /// Используется NpcSocialBrain для определения «свой/чужой» и replacement
     /// для NpcGroupController (помощь только Allied).
     /// </summary>
+    [Obsolete("Use FactionDefinition instead. T-FACTION-UNIFY")]
     [CreateAssetMenu(fileName = "NpcFaction_", menuName = "Project C/AI/Npc Faction")]
     public class NpcFaction : ScriptableObject
     {

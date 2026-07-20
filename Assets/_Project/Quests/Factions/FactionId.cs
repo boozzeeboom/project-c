@@ -26,6 +26,11 @@ namespace ProjectC.Factions
         FreeTraders = 8,       // Svobodnye Torgovtsy - neutral merchants
         SOL_Patrol = 9,        // SOL Patrol - hostile authority
         Pirates = 10,          // Pirates - hostile raiders
-        Neutral = 11           // Neutral - unaffiliated
+        Neutral = 11,          // Neutral - unaffiliated
+        // === T-FACTION-UNIFY: новые значения из NpcFaction ===
+        Bandits = 12,          // было NpcFaction_bandits (factionId="bandits")
+        Cultists = 13,         // было NpcFaction_cultists (factionId="cultists")
+        Guards = 14,           // было NpcFaction_guards (factionId="guards")
+        Villagers = 15         // было NpcFaction_villagers (factionId="villagers")
     }
 }

@@ -7,6 +7,7 @@ using System.Collections.Generic;
 using UnityEngine;
 using Unity.Netcode;
 using ProjectC.Combat.Core;
+using ProjectC.Factions;
 
 namespace ProjectC.AI
 {
@@ -94,10 +95,10 @@ namespace ProjectC.AI
             // T-NPC-S19: проверяем совместимость фракций. В группе — только Allied.
             if (members.Count > 0 && members[0] != null && members[0].faction != null && brain.faction != null)
             {
-                if (!members[0].faction.IsAllied(brain.faction))
+                if (!members[0].faction.IsAlliedWith(brain.faction.factionId))
                 {
                     if (_debugLog)
-                        Debug.Log($"[NpcGroupController] {brain.name} rejected: faction mismatch ({brain.faction?.factionId} vs {members[0].faction?.factionId})");
+                        Debug.Log($"[NpcGroupController] {brain.name} rejected: faction mismatch ({brain.faction?.CombatKey} vs {members[0].faction?.CombatKey})");
                     return;
                 }
             }
@@ -261,9 +262,9 @@ namespace ProjectC.AI
                         break;
                     case NpcVocalCue.VictoryRoar:
                         // Союзники воодушевляются, враги деморализуются.
-                        if (member.faction != null && source.faction != null && member.faction.IsAllied(source.faction))
+                        if (member.faction != null && source.faction != null && member.faction.IsAlliedWith(source.faction.factionId))
                             member.HearVictoryRoar();
-                        else if (member.faction != null && source.faction != null && member.faction.IsHostile(source.faction))
+                        else if (member.faction != null && source.faction != null && member.faction.IsHostileTowards(source.faction.factionId))
                             member.HearEnemyVictoryRoar();
                         break;
                     case NpcVocalCue.Taunt:

@@ -87,6 +87,64 @@ namespace ProjectC.Factions
                  "Первый tier, чей value <= reputation, побеждает (lower-bound inclusive).")]
         public ReputationTier[] reputationThresholds = Array.Empty<ReputationTier>();
 
+        // ============================================================
+        // T-FACTION-UNIFY: Combat fields (replaces NpcFaction)
+        // ============================================================
+
+        [Header("Combat (T-FACTION-UNIFY)")]
+        [Tooltip("Боевое отношение по умолчанию к фракциям, не указанным в combatRelations.")]
+        public FactionRelation defaultCombatRelation = FactionRelation.Neutral;
+
+        [Tooltip("Боевые отношения с конкретными фракциями (кто враг, кто союзник).")]
+        public FactionCombatRelation[] combatRelations = Array.Empty<FactionCombatRelation>();
+
+        /// <summary>
+        /// T-FACTION-UNIFY: ключ для VengeanceMemory (PascalCase, напр. "Bandits").
+        /// Используется вместо NpcFaction.factionId (который был lowercase "bandits").
+        /// VengeanceMemory runtime-only — пересоздаётся при старте сервера, persisted-ключей нет.
+        /// </summary>
+        public string CombatKey => factionId.ToString();
+
+        // Runtime cache: FactionId -> FactionRelation
+        private System.Collections.Generic.Dictionary<FactionId, FactionRelation> _combatRelationCache;
+
+        /// <summary>
+        /// Получить боевое отношение к другой фракции.
+        /// </summary>
+        public FactionRelation GetCombatRelation(FactionId other)
+        {
+            if (other == factionId) return FactionRelation.Allied;
+            BuildCombatCache();
+            if (_combatRelationCache.TryGetValue(other, out var rel))
+                return rel;
+            return defaultCombatRelation;
+        }
+
+        /// <summary>
+        /// Проверить, является ли другая фракция враждебной.
+        /// </summary>
+        public bool IsHostileTowards(FactionId other)
+            => GetCombatRelation(other) == FactionRelation.Hostile;
+
+        /// <summary>
+        /// Проверить, является ли другая фракция союзной.
+        /// </summary>
+        public bool IsAlliedWith(FactionId other)
+            => GetCombatRelation(other) == FactionRelation.Allied;
+
+        private void BuildCombatCache()
+        {
+            if (_combatRelationCache != null) return;
+            _combatRelationCache = new System.Collections.Generic.Dictionary<FactionId, FactionRelation>();
+            foreach (var entry in combatRelations)
+                _combatRelationCache[entry.targetFaction] = entry.relation;
+        }
+
+        private void OnEnable()
+        {
+            _combatRelationCache = null; // T-FACTION-UNIFY: очистка при domain reload
+        }
+
         /// <summary>
         /// Найти tier по значению репутации. O(N) — обычно 5-7 tier'ов, не страшно.
         /// </summary>

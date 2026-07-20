@@ -10,6 +10,7 @@ using UnityEngine;
 using UnityEngine.AI;
 using ProjectC.Combat;
 using ProjectC.Combat.Core;
+using ProjectC.Factions;
 
 namespace ProjectC.AI
 {
@@ -22,8 +23,8 @@ namespace ProjectC.AI
 
         [SerializeField] private bool _debugLog = false;
 
-        [Header("Faction (T-NPC-S19)")]
-        public NpcFaction faction;
+        [Header("Faction (T-NPC-S19, T-FACTION-UNIFY)")]
+        public FactionDefinition faction;
 
         [Header("Personality (T-NPC-S07)")]
         public NpcPersonalityConfig personalityConfig;
@@ -241,7 +242,7 @@ namespace ProjectC.AI
 
             {
                 if (o == this || o == null || o.IsDead || o._brain == null || o.faction == null) continue;
-                if (!faction.IsHostile(o.faction)) continue;
+                if (!faction.IsHostileTowards(o.faction.factionId)) continue;
                 float d = Vector3.Distance(transform.position, o.transform.position);
                 if (d <= _brain.aggroRange)
                 {
@@ -263,7 +264,7 @@ namespace ProjectC.AI
         private bool CheckVengeanceTrigger()
         {
             if (!enableVengeanceMemory) return false;
-            if (faction == null || string.IsNullOrEmpty(faction.factionId)) return false;
+            if (faction == null) return false;
             if (VengeanceMemory.Instance == null) return false;
             if (_brain.CurrentState != NpcBrain.BrainState.Idle) return false;
 
@@ -271,13 +272,13 @@ namespace ProjectC.AI
             foreach (var client in Unity.Netcode.NetworkManager.Singleton.ConnectedClientsList)
             {
                 if (client?.PlayerObject == null) continue;
-                if (!VengeanceMemory.Instance.HasVengeance(faction.factionId, client.ClientId)) continue;
+                if (!VengeanceMemory.Instance.HasVengeance(faction.CombatKey, client.ClientId)) continue;
                 var pt = client.PlayerObject.GetComponent<ProjectC.Combat.PlayerTarget>();
                 if (pt == null || !pt.IsAlive()) continue;
                 float dist = Vector3.Distance(transform.position, client.PlayerObject.transform.position);
                 if (dist <= VengeanceMemory.Instance.vengeanceTriggerRadius)
                 {
-                    if (_debugLog) Debug.Log($"[NpcSocialBrain] {name}: VengeanceTrigger player {client.ClientId} faction={faction.factionId}");
+                    if (_debugLog) Debug.Log($"[NpcSocialBrain] {name}: VengeanceTrigger player {client.ClientId} faction={faction.CombatKey}");
                     _brain.ForceChaseTarget(pt);
                     return true;
                 }
@@ -357,7 +358,7 @@ namespace ProjectC.AI
             foreach (var o in AllBrains)
             {
                 if (o == this || o._brain == null || o._brain.CurrentState == NpcBrain.BrainState.Dead) continue;
-                if (faction != null && o.faction != null && !faction.IsAllied(o.faction)) continue;
+                if (faction != null && o.faction != null && !faction.IsAlliedWith(o.faction.factionId)) continue;
                 float d = (o.transform.position - transform.position).sqrMagnitude;
                 if (d < bestD && d > 0.01f) { bestD = d; best = o.transform.position; }
             }
@@ -425,7 +426,7 @@ namespace ProjectC.AI
             foreach (var o in AllBrains)
             {
                 if (o == this || o == null || o.IsDead || o._brain == null) continue;
-                if (faction != null && o.faction != null && !faction.IsAllied(o.faction)) continue;
+                if (faction != null && o.faction != null && !faction.IsAlliedWith(o.faction.factionId)) continue;
                 if (o._brain.CurrentState != NpcBrain.BrainState.Idle) continue;
                 float d = (o.transform.position - transform.position).sqrMagnitude;
                 if (d < bestD && d > 0.01f) { bestD = d; best = o; }
@@ -666,7 +667,7 @@ namespace ProjectC.AI
                 if (killerTarget != null)
                 {
                     if (enableVengeanceMemory && faction != null && VengeanceMemory.Instance != null && killerClientId != 0)
-                        VengeanceMemory.Instance.RegisterKill(faction.factionId, killerClientId);
+                        VengeanceMemory.Instance.RegisterKill(faction.CombatKey, killerClientId);
                     float loyalty = personalityConfig != null ? personalityConfig.loyalty : 0.8f;
                     _emotion.Set(loyalty > 0.7f ? NpcEmotion.Anger : NpcEmotion.Fear);
                     _morale.OnAllyKilled(personalityConfig);
@@ -721,7 +722,7 @@ namespace ProjectC.AI
                 foreach (var o in AllBrains)
                 {
                     if (o == this || o == null || o._brain == null) continue;
-                    if (o.faction == null || !faction.IsAllied(o.faction)) continue;
+                    if (o.faction == null || !faction.IsAlliedWith(o.faction.factionId)) continue;
 
                     bool inCombat = o._brain.CurrentState == NpcBrain.BrainState.Chase || o._brain.CurrentState == NpcBrain.BrainState.Attack;
                     if (!inCombat || Vector3.Distance(transform.position, o.transform.position) > 15f) continue;

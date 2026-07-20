@@ -20,6 +20,11 @@
 - `Assets/_Project/Resources/Combat/NpcCombatData_Mira.asset` (новый SO: HP=500)
 - `docs/NPC_quests/Complete_v2/*` (3 документа: полный анализ + архитектура + план)
 
+**Доработка:** `fe83428` — [Mira]: CharacterController + HumanM_Model visual + Animator (как у атакующих NPC)
+- Убран Cube-плейсхолдер, добавлен CharacterController (height=2, radius=0.4)
+- Добавлен Visual child → HumanM_Model.fbx + SkinnedMeshRenderer + Animator (NpcAnimator_Goblin)
+- CapsuleCollider оставлен как trigger для E-key interaction (NpcController)
+
 ## Итерация от 2026-07-09 (аудит)
 
 **Задача:** Глубокий аудит всей системы квестов — архитектура, стабы, дублирование, интеграции

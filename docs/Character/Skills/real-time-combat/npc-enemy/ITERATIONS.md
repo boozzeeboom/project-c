@@ -82,6 +82,44 @@
 =======
 # Итерации реализации Unified NPC Behavior Architecture
 
+## Итерация от 2026-07-30 — NpcBrainEditor: кастомный инспектор + вынос хардкода
+
+**Задача:** `NpcBrain` (~1200 строк) содержал ~16 захардкоженных литералов + 2 const в passive aggro, social override, deck nav, combat, throw arc и platform carry подсистемах. Дефолтный инспектор показывал поля без группировки. Дизайнеру требовалось:
+1. Вынести хардкоженные константы в сериализованные поля с сохранением дефолтов
+2. Сгруппировать поля в логические foldout-секции
+
+**Коммит:** `ff81a36` — T-NPC-01-EDITOR: NpcBrain custom editor + expose hardcoded tuning params
+
+**Изменения:**
+- `NpcBrain.cs` — (+15 serialized fields, −2 consts, ~16 literal→field замен):
+  - **Passive:** `_passiveHitWindowSeconds` (было 60f), `_aggroSearchMultiplier` (2f)
+  - **Movement:** `_stoppingDistanceRatio` (0.9f), `_leashClearMultiplier` (1.5f)
+  - **Combat:** `_fallbackAttackCooldown` (1.5f), `_attackExitRangeMultiplier` (1.3f), `_throwArcSpeed` (15f)
+  - **Social:** `_socialOverrideTimeout` (1.5f), `_forceFleeDistance` (20f)
+  - **Deck Nav:** `_deckNavWarpRadii` ({2,10,50}), `_deckNavWarnProbeRadius` (200f), `_deckNavWarnCooldown` (2f)
+  - Удалены const `SOCIAL_OVERRIDE_TIMEOUT` и `WARP_WARN_INTERVAL`
+- `NpcBrainEditor.cs` — (NEW) `[CustomEditor(typeof(NpcBrain))]`, ~210 строк, 10 foldout-групп:
+  1. **Debug** — `_debugLog`
+  2. **Behavior** — behaviorType, passive-пороги (всегда видимы)
+  3. **Quest & Reputation** — npcId, hostilityThreshold
+  4. **Respawn** — conditional indent при `_respawnEnabled = true`
+  5. **Ranges & Movement** — aggroRange, attackRange, leashRange, moveSpeed, angularSpeed + tuning
+  6. **Combat Tuning** — fallback cooldown, exit multiplier, throw arc speed
+  7. **Social Integration** — conditional indent при `_socialEnabled = true`
+  8. **Deck Nav** — warp radii, warn probe, warn cooldown
+  9. **Platform Carry** — conditional indent при `_platformCarryEnabled = true`
+  10. **Tick** — tickRate
+
+**Тикеты:** T-NPC-01-EDITOR
+
+**Результат:** Все хардкоженные значения вынесены в инспектор с сохранением обратной совместимости. Дизайнер может тюнить FSM-поведение NPC без правки кода.
+
+=======
+**Осталось (не в этом коммите):**
+- 🟡 P3: Монолит NpcSocialBrain (рефакторинг отложен)
+
+=======
+
 ## Итерация от 2026-07-30 — NpcSocialBrainEditor: кастомный инспектор + вынос хардкода
 
 **Задача:** `NpcSocialBrain` (~970 строк) содержал ~28 захардкоженных литералов в patrol, flee, socialize, work, sit, sleep, wander, cover auto-detect, post-combat и emotion подсистемах. Дефолтный инспектор показывал все публичные поля одним плоским списком без группировки. Дизайнеру требовалось:

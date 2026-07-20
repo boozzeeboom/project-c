@@ -94,6 +94,10 @@ namespace ProjectC.AI
                  "(даже если cumulativeDamage% < aggroHpThreshold). Fallback для защиты от " +
                  "фарма квестовых NPC мелкими ударами. 0 = отключить fallback.")]
         [Range(0, 20)] [SerializeField] private int _maxHitsPerMinute = 3;
+        [Tooltip("Passive-only: окно в секундах для подсчёта ударов (maxHitsPerMinute fallback).")]
+        [Range(10f, 120f)] [SerializeField] private float _passiveHitWindowSeconds = 60f;
+        [Tooltip("Passive-only: множитель радиуса поиска цели при агро после удара.")]
+        [Range(1f, 5f)] [SerializeField] private float _aggroSearchMultiplier = 2f;
 
         [Header("Quest/Reputation (T-CNPC-01)")]
         [Tooltip("NPC id для системы репутации. Автоматически из NpcController, если пусто.")]
@@ -121,6 +125,16 @@ namespace ProjectC.AI
         [Range(0.5f, 10f)] public float moveSpeed = 3.5f;
         [Tooltip("Угловая скорость для разворота (degrees/sec).")]
         [Range(60f, 720f)] public float angularSpeed = 360f;
+        [Tooltip("Доля attackRange для stoppingDistance NavMeshAgent (0.5-1.0).")]
+        [Range(0.5f, 1f)] [SerializeField] private float _stoppingDistanceRatio = 0.9f;
+        [Tooltip("Множитель leashRange для сброса цели в Tick (если цель дальше чем leashRange * X).")]
+        [Range(1f, 3f)] [SerializeField] private float _leashClearMultiplier = 1.5f;
+        [Tooltip("Cooldown по умолчанию при отсутствии NpcAttacker.Data в HandleAttack.")]
+        [Range(0.5f, 5f)] [SerializeField] private float _fallbackAttackCooldown = 1.5f;
+        [Tooltip("Множитель effectiveRange для выхода из Attack обратно в Chase (dist > range * X).")]
+        [Range(1f, 3f)] [SerializeField] private float _attackExitRangeMultiplier = 1.3f;
+        [Tooltip("Скорость полёта снаряда для ThrowArcVisual fallback (м/с).")]
+        [Range(5f, 40f)] [SerializeField] private float _throwArcSpeed = 15f;
 
         [Header("Tick (server-side)")]
         [Tooltip("AI tick rate (server-side Update). 30 = ~2× в сек @ 60fps.")]
@@ -130,6 +144,18 @@ namespace ProjectC.AI
         [Tooltip("Включает NpcSocialBrain — patrol, flee, grudge, social triggers. " +
                  "Если false — NPC использует только старый FSM (backward compat).")]
         [SerializeField] private bool _socialEnabled = true;
+        [Tooltip("Таймаут socialOverrideLock — через сколько секунд Tick снова возьмёт контроль над _aggroTarget, если NpcSocialBrain не обновит лок.")]
+        [Range(0.5f, 5f)] [SerializeField] private float _socialOverrideTimeout = 1.5f;
+        [Tooltip("Базовая дистанция бегства в ForceFlee при отсутствии лучшего направления.")]
+        [Range(5f, 50f)] [SerializeField] private float _forceFleeDistance = 20f;
+
+        [Header("Deck Nav Tuning")]
+        [Tooltip("Массив радиусов SamplePosition для WarpProxyToNpc (пробует по порядку).")]
+        [SerializeField] private float[] _deckNavWarpRadii = { 2f, 10f, 50f };
+        [Tooltip("Максимальная дистанция SamplePosition для предупреждения о warp miss.")]
+        [Range(50f, 500f)] [SerializeField] private float _deckNavWarnProbeRadius = 200f;
+        [Tooltip("Интервал между повторными предупреждениями о warp miss (сек).")]
+        [Range(1f, 10f)] [SerializeField] private float _deckNavWarnCooldown = 2f;
 
         [Header("Платформа (moving-platform carry, server-side)")]
         [Tooltip("Возить NPC вместе с движущейся палубой корабля (не сдувать). См. docs/Character/Skills/real-time-combat/npc-enemy/01_CREW_ON_MOVING_SHIP.md")]
@@ -181,7 +207,6 @@ namespace ProjectC.AI
         private NpcSocialBrain _socialBrain;
         private bool _socialOverrideLock;
         private float _socialOverrideLockExpireTime;
-        private const float SOCIAL_OVERRIDE_TIMEOUT = 1.5f;
 
         // T-NPC-14: passive aggro tracking.
         private bool _isAggrod;
@@ -260,7 +285,7 @@ namespace ProjectC.AI
             {
                 _agent.speed = moveSpeed;
                 _agent.angularSpeed = angularSpeed;
-                _agent.stoppingDistance = attackRange * 0.9f;
+                _agent.stoppingDistance = attackRange * _stoppingDistanceRatio;
                 _agent.autoBraking = true;
             }
             EnterIdle();
@@ -295,7 +320,7 @@ namespace ProjectC.AI
 
             float now = Time.unscaledTime;
             _recentHitTimes.Enqueue(now);
-            while (_recentHitTimes.Count > 0 && now - _recentHitTimes.Peek() > 60f)
+            while (_recentHitTimes.Count > 0 && now - _recentHitTimes.Peek() > _passiveHitWindowSeconds)
                 _recentHitTimes.Dequeue();
             _aggroDamageAccumulator += deltaHp;
 
@@ -306,7 +331,7 @@ namespace ProjectC.AI
             {
                 _isAggrod = true;
                 if (_aggroTarget == null)
-                    _aggroTarget = FindNearestPlayerTarget(aggroRange * 2f);
+                    _aggroTarget = FindNearestPlayerTarget(aggroRange * _aggroSearchMultiplier);
                 if (_aggroTarget != null && _state == BrainState.Idle)
                     EnterChase();
             }
@@ -506,14 +531,13 @@ namespace ProjectC.AI
         }
 
         private float _warpWarnCooldown;
-        private const float WARP_WARN_INTERVAL = 2f;
         private void WarpProxyToNpc()
         {
             if (_proxyAgent == null || _deckNav == null) return;
             Vector3 deckLocal = _parentedToShip ? transform.localPosition : _deckNav.WorldToDeckLocal(transform.position);
             Vector3 navPos = _deckNav.DeckLocalToNav(deckLocal);
 
-            float[] radii = { 2f, 10f, 50f };
+            float[] radii = _deckNavWarpRadii;
             NavMeshHit hit = default;
             bool found = false;
             for (int i = 0; i < radii.Length; i++)
@@ -531,10 +555,10 @@ namespace ProjectC.AI
             }
             else if (Time.unscaledTime >= _warpWarnCooldown)
             {
-                _warpWarnCooldown = Time.unscaledTime + WARP_WARN_INTERVAL;
+                _warpWarnCooldown = Time.unscaledTime + _deckNavWarnCooldown;
                 float nearestMiss = -1f;
                 NavMeshHit probe = default;
-                if (NavMesh.SamplePosition(navPos, out probe, 200f, NavMesh.AllAreas))
+                if (NavMesh.SamplePosition(navPos, out probe, _deckNavWarnProbeRadius, NavMesh.AllAreas))
                     nearestMiss = Vector3.Distance(navPos, probe.position);
                 Debug.LogWarning(
                     $"[NpcBrain] {gameObject.name}: deckNav Warp miss — navPos={navPos:F2}, deckLocal={deckLocal:F2}, " +
@@ -597,7 +621,7 @@ namespace ProjectC.AI
             if (target == null) return;
             _aggroTarget = target;
             _socialOverrideLock = true;
-            _socialOverrideLockExpireTime = Time.unscaledTime + SOCIAL_OVERRIDE_TIMEOUT;
+            _socialOverrideLockExpireTime = Time.unscaledTime + _socialOverrideTimeout;
             if (_deckNavActive)
             {
                 EnsureProxy();
@@ -614,9 +638,9 @@ namespace ProjectC.AI
         public void ForceFlee(Vector3 fromPosition)
         {
             _socialOverrideLock = true;
-            _socialOverrideLockExpireTime = Time.unscaledTime + SOCIAL_OVERRIDE_TIMEOUT;
+            _socialOverrideLockExpireTime = Time.unscaledTime + _socialOverrideTimeout;
             Vector3 fleeDir = (transform.position - fromPosition).normalized;
-            Vector3 fleeTarget = transform.position + fleeDir * 20f;
+            Vector3 fleeTarget = transform.position + fleeDir * _forceFleeDistance;
             float spawnDistToThreat = Vector3.Distance(_spawnPoint, fromPosition);
             float fleeDistToThreat = Vector3.Distance(fleeTarget, fromPosition);
             if (spawnDistToThreat > fleeDistToThreat)
@@ -658,7 +682,7 @@ namespace ProjectC.AI
             {
                 if (_aggroTarget != null)
                 {
-                    if (!_aggroTarget.IsAlive() || distFromSpawn > leashRange * 1.5f)
+                    if (!_aggroTarget.IsAlive() || distFromSpawn > leashRange * _leashClearMultiplier)
                         _aggroTarget = null;
                 }
 
@@ -766,10 +790,10 @@ namespace ProjectC.AI
 
             float dist = Vector3.Distance(transform.position, _aggroTarget.GetPosition());
             float effectiveRange = GetEffectiveAttackRange();
-            if (dist > effectiveRange * 1.3f) { EnterChase(); return; }
+            if (dist > effectiveRange * _attackExitRangeMultiplier) { EnterChase(); return; }
 
             float now = Time.unscaledTime;
-            if (now >= _lastAttackTime + (_attacker != null && _attacker.Data != null ? _attacker.Data.cooldownSeconds : 1.5f))
+            if (now >= _lastAttackTime + (_attacker != null && _attacker.Data != null ? _attacker.Data.cooldownSeconds : _fallbackAttackCooldown))
                 TryAttack();
             else
                 FaceTarget(_aggroTarget.GetPosition());
@@ -839,7 +863,7 @@ namespace ProjectC.AI
                 else
                 {
                     // Fallback: старый ThrowArcVisual (editor only)
-                    float flightTime = Vector3.Distance(transform.position, targetPoint) / 15f;
+                    float flightTime = Vector3.Distance(transform.position, targetPoint) / _throwArcSpeed;
                     ProjectC.Combat.Client.ThrowArcVisual.Fire(
                         transform.position, targetPoint, flightTime,
                         skillConfig.aoeSize, new Color(1f, 0.4f, 0.2f, 0.8f));

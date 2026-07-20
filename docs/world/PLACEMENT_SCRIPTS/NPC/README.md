@@ -24,9 +24,21 @@ EditorWindow для просмотра ВСЕХ NPC-сущностей во вс
 - Для каждого: ✅ размещён в сцене / ⚠ не размещён
 - В какой сцене, summary quests (offers/turnIns), faction, services
 
+### Таб «🏛 Factions»
+- Сканирует все `FactionDefinition` SO (15 фракций) из `Assets/_Project/Quests/Data/Factions/`
+- Two-panel layout: список фракций слева (с цветовыми свотчами и счётчиком NPC), редактор справа
+- **Редактирование** (пишет изменения в `.asset` через `SerializedObject`):
+  - Identity: `displayName`, `color`, `loreDescription`
+  - Defaults: `defaultAttitude` (Hostile/Neutral/Friendly), `defaultCombatRelation` (Allied/Neutral/Hostile)
+  - `ReputationTier[]` — tier label, порог value, color, USS class (каждый tier редактируется построчно)
+  - `combatRelations[]` — добавление/удаление/редактирование targetFaction + relation с эмоджи (🤝⚔➖)
+- **Создание новой фракции** — находит первый свободный `FactionId` в enum, создаёт SO с дефолтными reputation-тирами
+- **Удаление фракции** — удаляет `.asset` файл с подтверждением
+- **Cross-reference** — показывает NPC из текущего Scene-скана, принадлежащих к выбранной фракции (с ping-кнопками)
+
 ## Архитектура
-- `NpcWorldInspectorData.cs` — структуры данных (NpcEntryType, NpcEntry, SceneNpcScanResult)
-- `NpcWorldInspectorWindow.cs` — EditorWindow с двумя табами и сканером
+- `NpcWorldInspectorData.cs` — структуры данных (NpcEntryType, NpcEntry, SceneNpcScanResult, FactionEntry, FactionCombatRelationEntry, FactionScanResult)
+- `NpcWorldInspectorWindow.cs` — EditorWindow с тремя табами и сканером
 - Паттерн сканирования: additive scene load + FindObjectsByType + serialize to strings + close scene
   (данные кэшируются как строки/пути, т.к. ссылки на объекты невалидны после закрытия сцены)
 
@@ -34,6 +46,8 @@ EditorWindow для просмотра ВСЕХ NPC-сущностей во вс
 - **Независим** от `NpcShipScheduleOverviewWindow` (тот только для кораблей, этот — все NPC)
 - Использует `QuestDatabase` из `QuestDatabaseAutoDiscover` для кросс-референса
 - Читает `NpcSpawnerConfig`, `NpcDefinition`, `NpcShipSchedule` через SerializedObject/AssetDatabase
+- Вкладка Factions работает с `FactionDefinition` SO (namespace `ProjectC.Factions`), использует `FactionId`, `FactionRelation`, `FactionCombatRelation`, `ReputationTier`
 
 ## История
 - **v1.0** (2026-07): Создание. Полный анализ NPC-подсистем, 4 типа NPC, 2 таба, cross-ref с QuestDatabase.
+- **v1.1** (2026-07): Добавлен таб «🏛 Factions» — сканирование, редактирование, создание и удаление `FactionDefinition` SO. Cross-reference с NPC из сцен.

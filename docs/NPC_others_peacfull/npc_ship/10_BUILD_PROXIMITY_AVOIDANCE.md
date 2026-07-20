@@ -117,6 +117,8 @@ NPC-корабли должны обходить статичные препят
 | T-NS-BZ03 | `NpcProximityZone`: `considerBuildings` + `FindClosestBuildConflict` | ~35 LOC |
 | T-NS-BZ04 | `NpcShipController`: `EnterAvoid(build)` + `_avoidFromPos` + правка NavTick | ~40 LOC |
 | T-NS-BZ05 | `AvoidancePriority`: приоритет расхождения (NpcInstanceId) + `NavMode.AvoidYield` | ~30 LOC |
+| T-NS-BZ06 | `ZoneShape` (Sphere/Box): выбор формы avoidance-зоны корабля | ~170 LOC |
+| T-NS-BZ07 | Raycast escape corridor: поиск выхода из Π-доков через веер лучей | ~35 LOC |
 
 ---
 
@@ -143,3 +145,52 @@ NPC-корабли должны обходить статичные препят
 - `TickAvoidYield` — `linearVelocity=0`, ждёт `IsClearOfConflict`
 - `ResumeFromAvoid` / `RestoreFromSave` — обрабатывают `AvoidYield`
 - `IsAvoidable` — включает `AvoidYield` (застывший корабль = препятствие)
+
+---
+
+## 9. Zone Shape — Sphere / Box (T-NS-BZ06)
+
+### Назначение
+Дизайнер выбирает форму avoidance-зоны корабля: Sphere (по умолчанию) или Box (вокруг коллайдера).
+
+### Параметры
+| Поле | Смысл |
+|------|-------|
+| `zoneShape` | Sphere (радиусы) или Box (коллайдер + padding) |
+| `avoidancePadding` | Отступ от коллайдера для Box mode |
+| `avoidanceRadius` | Радиус avoidance-сферы (только Sphere) |
+
+Awareness-зона всегда сфера (не зависит от `zoneShape`).
+
+### Геометрия (mixed shapes)
+`FindClosestConflict` поддерживает любые комбинации:
+- Sphere ↔ Sphere: `centerDist < r1 + r2`
+- Sphere ↔ Box: `centerDist - closestOnBox < r1`
+- Box ↔ Box: проверка пересечения AABB
+
+`IsClearOfConflict` использует те же проверки с гистерезисом (`clearHysteresis`).
+
+### Поиск коллайдера
+`FindLargestCollider()` — сканирует все дочерние коллайдеры, выбирает самый большой не-триггерный.
+
+---
+
+## 10. Raycast Escape Corridor (T-NS-BZ07)
+
+### Проблема
+В Π-образных доках avoidance толкает корабль от стен, запирая его внутри.
+
+### Решение
+При входе в avoidance выполняется веер из `avoidEscapeRays` горизонтальных лучей. Луч с максимальной дистанцией до попадания = самое открытое направление (выход из дока). Итоговый вектор движения: `lerp(away, escapeDir, avoidEscapeBlend)`.
+
+### Параметры
+| Поле | Дефолт | Смысл |
+|------|--------|-------|
+| `avoidEscapeRays` | 16 | Количество лучей (4-36) |
+| `avoidEscapeMaxDist` | 200 | Макс. дистанция луча (м) |
+| `avoidEscapeBlend` | 0.6 | Вес escape: 0=только away, 1=только escape |
+
+### Edge cases
+- Открытое пространство: все лучи `maxDist` → `escapeDir` случаен, но `away` доминирует
+- Все лучи короткие (заперт): `_escapeDir = zero` → чистый `away`
+- Корабль внутри MeshCollider: лучи не бьются об этот коллайдер → поведение как в открытом пространстве

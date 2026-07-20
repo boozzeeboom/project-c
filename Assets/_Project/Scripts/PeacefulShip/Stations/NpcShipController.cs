@@ -373,6 +373,15 @@ namespace ProjectC.PeacefulShip.Stations
         [Tooltip("Предохранитель: максимум времени в манёвре (с).")]
         [SerializeField] private float avoidTimeout = 8f;
 
+        // T-NS-BZ07: raycast escape corridor — поиск выхода из Π-доков
+        [Header("Escape corridor (raycast)")]
+        [Tooltip("Количество лучей для поиска выхода из тесного пространства.")]
+        [Range(4, 36)] [SerializeField] private int avoidEscapeRays = 16;
+        [Tooltip("Максимальная дистанция луча (м).")]
+        [Min(10f)] [SerializeField] private float avoidEscapeMaxDist = 200f;
+        [Tooltip("Вес направления выхода: 0 = только away, 1 = только escape.")]
+        [Range(0f, 1f)] [SerializeField] private float avoidEscapeBlend = 0.6f;
+
         private enum AvoidPhase : byte { Separate, Stop, BackOff }
         private AvoidPhase _avoidPhase;
         private float _avoidPhaseEnteredAt;
@@ -380,7 +389,8 @@ namespace ProjectC.PeacefulShip.Stations
         private NavMode _resumeMode = NavMode.Cruising;
         private NpcShipController _avoidOther;
         private NpcProximityZoneBuilds _avoidBuild;
-        private Vector3 _avoidFromPos; // точка, от которой считаем вектор "прочь" (центр корабля или ClosestPointOnBounds)
+        private Vector3 _avoidFromPos;
+        private Vector3 _escapeDir; // T-NS-BZ07: raycast-computed escape direction
 
         /// <summary>
         /// Приоритет расхождения: выше → делает полный манёвр, ниже → yield (ждёт).
@@ -834,12 +844,36 @@ namespace ProjectC.PeacefulShip.Stations
 
 // === T-NS-AV02: ship-to-ship avoidance maneuver ===
 
+        /// <summary>Raycast-веер для поиска самого открытого направления (выход из Π-доков).</summary>
+        Vector3 ComputeEscapeDir(Vector3 pos)
+        {
+            Vector3 bestDir = Vector3.zero;
+            float bestDist = 0f;
+            Vector3 origin = pos + Vector3.up * 2f;
+
+            for (int i = 0; i < avoidEscapeRays; i++)
+            {
+                float angle = i * (360f / avoidEscapeRays) * Mathf.Deg2Rad;
+                Vector3 dir = new Vector3(Mathf.Sin(angle), 0f, Mathf.Cos(angle));
+                if (Physics.Raycast(origin, dir, out var hit, avoidEscapeMaxDist))
+                {
+                    if (hit.distance > bestDist) { bestDist = hit.distance; bestDir = dir; }
+                }
+                else if (avoidEscapeMaxDist > bestDist)
+                {
+                    bestDist = avoidEscapeMaxDist; bestDir = dir;
+                }
+            }
+            return bestDir.sqrMagnitude > 0.001f ? bestDir : Vector3.zero;
+        }
+
         void EnterAvoid(Rigidbody rb, NpcShipController other) {
             _resumeMode = (CurrentMode == NavMode.Avoiding || CurrentMode == NavMode.AvoidYield)
                 ? NavMode.Cruising : CurrentMode;
             _avoidOther = other;
             _avoidBuild = null;
             _avoidFromPos = other.ProximityZone?.ClosestPoint(rb.position) ?? other.transform.position;
+            _escapeDir = ComputeEscapeDir(rb.position);
 
             // T-NS-BZ05: приоритет — выше делает full avoidance, ниже yield'ит
             if (AvoidancePriority < other.AvoidancePriority)
@@ -866,6 +900,7 @@ namespace ProjectC.PeacefulShip.Stations
             _avoidOther = null;
             _avoidBuild = build;
             _avoidFromPos = build.ClosestPoint(rb.position);
+            _escapeDir = ComputeEscapeDir(rb.position);
             // Здания всегда имеют приоритет 0 → корабль всегда делает full avoidance
             _avoidPhase = AvoidPhase.Separate;
             _avoidPhaseEnteredAt = Time.time;
@@ -891,10 +926,15 @@ namespace ProjectC.PeacefulShip.Stations
             if (away.sqrMagnitude < 0.01f) away = -transform.forward;
             away.Normalize();
 
+            // T-NS-BZ07: blend с escape-направлением (выход из Π-доков)
+            Vector3 moveDir = away;
+            if (_escapeDir.sqrMagnitude > 0.001f)
+                moveDir = Vector3.Lerp(away, _escapeDir, avoidEscapeBlend).normalized;
+
             float t = Time.time - _avoidPhaseEnteredAt;
             switch (_avoidPhase) {
                 case AvoidPhase.Separate:
-                    rb.linearVelocity = new Vector3(away.x * avoidSeparateSpeed, 0f, away.z * avoidSeparateSpeed);
+                    rb.linearVelocity = new Vector3(moveDir.x * avoidSeparateSpeed, 0f, moveDir.z * avoidSeparateSpeed);
                     rb.angularVelocity = Vector3.zero;
                     if (t >= avoidSeparateTime) { _avoidPhase = AvoidPhase.Stop; _avoidPhaseEnteredAt = Time.time; }
                     break;
@@ -904,7 +944,7 @@ namespace ProjectC.PeacefulShip.Stations
                     if (t >= avoidStopTime) { _avoidPhase = AvoidPhase.BackOff; _avoidPhaseEnteredAt = Time.time; }
                     break;
                 case AvoidPhase.BackOff:
-                    rb.linearVelocity = new Vector3(away.x * avoidBackOffSpeed, 0f, away.z * avoidBackOffSpeed);
+                    rb.linearVelocity = new Vector3(moveDir.x * avoidBackOffSpeed, 0f, moveDir.z * avoidBackOffSpeed);
                     rb.angularVelocity = Vector3.zero;
                     if (t >= avoidBackOffTime) {
                         if (IsClearOfConflict()) ResumeFromAvoid(rb);

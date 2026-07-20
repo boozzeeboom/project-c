@@ -96,7 +96,8 @@ namespace ProjectC.PeacefulShip.Stations
             return m == NpcShipController.NavMode.Lifting
                 || m == NpcShipController.NavMode.Yawing
                 || m == NpcShipController.NavMode.Cruising
-                || m == NpcShipController.NavMode.Avoiding;
+                || m == NpcShipController.NavMode.Avoiding
+                || m == NpcShipController.NavMode.AvoidYield;
         }
 
         /// <summary>

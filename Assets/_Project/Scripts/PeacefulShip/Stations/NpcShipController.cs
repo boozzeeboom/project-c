@@ -382,6 +382,13 @@ namespace ProjectC.PeacefulShip.Stations
         private NpcProximityZoneBuilds _avoidBuild;
         private Vector3 _avoidFromPos; // точка, от которой считаем вектор "прочь" (центр корабля или ClosestPointOnBounds)
 
+        /// <summary>
+        /// Приоритет расхождения: выше → делает полный манёвр, ниже → yield (ждёт).
+        /// Авто-назначается из NpcInstanceId (детерминированно, без сетевой коммуникации).
+        /// Здания имеют виртуальный приоритет 0 (ниже любого корабля).
+        /// </summary>
+        public uint AvoidancePriority => (uint)npcInstanceId;
+
         private NpcProximityZone _proximityZone;
         private bool _proximityZoneResolved;
         /// <summary>Ленивая ссылка на зону расхождения (может отсутствовать — тогда манёвр выключен).</summary>
@@ -398,7 +405,7 @@ namespace ProjectC.PeacefulShip.Stations
             }
         }
 
-        public enum NavMode : byte { Docked, Lifting, Yawing, Cruising, Berthing, Avoiding }
+        public enum NavMode : byte { Docked, Lifting, Yawing, Cruising, Berthing, Avoiding, AvoidYield }
 
         /// <summary>Вызывается из NpcShipWorld.Update каждый FixedUpdate.</summary>
         public void NavTick(float dt) {
@@ -501,6 +508,7 @@ namespace ProjectC.PeacefulShip.Stations
                 case NavMode.Cruising: TickCruise(rb); break;
                 case NavMode.Berthing: TickBerth(rb); break;
                 case NavMode.Avoiding: TickAvoid(rb); break;
+                case NavMode.AvoidYield: TickAvoidYield(rb); break;
             }
         }
 
@@ -827,10 +835,25 @@ namespace ProjectC.PeacefulShip.Stations
 // === T-NS-AV02: ship-to-ship avoidance maneuver ===
 
         void EnterAvoid(Rigidbody rb, NpcShipController other) {
-            _resumeMode = (CurrentMode == NavMode.Avoiding) ? NavMode.Cruising : CurrentMode;
+            _resumeMode = (CurrentMode == NavMode.Avoiding || CurrentMode == NavMode.AvoidYield)
+                ? NavMode.Cruising : CurrentMode;
             _avoidOther = other;
             _avoidBuild = null;
             _avoidFromPos = other.transform.position;
+
+            // T-NS-BZ05: приоритет — выше делает full avoidance, ниже yield'ит
+            if (AvoidancePriority < other.AvoidancePriority)
+            {
+                if (debugMode) Debug.Log($"[NpcShipController:NPC:{npcInstanceId:X}] YIELD to {other.NpcInstanceId:X} " +
+                    $"(myPrio={AvoidancePriority} otherPrio={other.AvoidancePriority})");
+                _avoidPhaseEnteredAt = Time.time;
+                _avoidStartedAt = Time.time;
+                SetMode(NavMode.AvoidYield);
+                return;
+            }
+
+            if (debugMode) Debug.Log($"[NpcShipController:NPC:{npcInstanceId:X}] AVOID {other.NpcInstanceId:X} " +
+                $"(myPrio={AvoidancePriority} otherPrio={other.AvoidancePriority})");
             _avoidPhase = AvoidPhase.Separate;
             _avoidPhaseEnteredAt = Time.time;
             _avoidStartedAt = Time.time;
@@ -838,14 +861,24 @@ namespace ProjectC.PeacefulShip.Stations
         }
 
         void EnterAvoid(Rigidbody rb, NpcProximityZoneBuilds build) {
-            _resumeMode = (CurrentMode == NavMode.Avoiding) ? NavMode.Cruising : CurrentMode;
+            _resumeMode = (CurrentMode == NavMode.Avoiding || CurrentMode == NavMode.AvoidYield)
+                ? NavMode.Cruising : CurrentMode;
             _avoidOther = null;
             _avoidBuild = build;
             _avoidFromPos = build.ClosestPoint(rb.position);
+            // Здания всегда имеют приоритет 0 → корабль всегда делает full avoidance
             _avoidPhase = AvoidPhase.Separate;
             _avoidPhaseEnteredAt = Time.time;
             _avoidStartedAt = Time.time;
             SetMode(NavMode.Avoiding);
+        }
+
+        /// <summary>Yield: низкий приоритет — стоим и ждём пока high-priority корабль уедет.</summary>
+        void TickAvoidYield(Rigidbody rb) {
+            if (Time.time - _avoidStartedAt > avoidTimeout) { ResumeFromAvoid(rb); return; }
+            rb.linearVelocity = Vector3.zero;
+            rb.angularVelocity = Vector3.zero;
+            if (IsClearOfConflict()) ResumeFromAvoid(rb);
         }
 
         void TickAvoid(Rigidbody rb) {
@@ -903,7 +936,7 @@ namespace ProjectC.PeacefulShip.Stations
             _avoidOther = null;
             _avoidBuild = null;
             // Возврат на прошлый маршрут: прежний режим + прежняя CruiseTargetPos (не менялась)
-            SetMode(_resumeMode == NavMode.Avoiding ? NavMode.Cruising : _resumeMode);
+            SetMode(_resumeMode == NavMode.Avoiding || _resumeMode == NavMode.AvoidYield ? NavMode.Cruising : _resumeMode);
         }
 
         // === T-PERSIST: RestoreFromSave ===
@@ -916,8 +949,8 @@ namespace ProjectC.PeacefulShip.Stations
             // ── NavMode (критично: EnterDocked ставит kinematic) ──
             NavMode savedMode = (NavMode)data.navMode;
 
-            // avoiding → transient → fallback to cruising
-            if (savedMode == NavMode.Avoiding)
+            // avoiding/avoidYield → transient → fallback to cruising
+            if (savedMode == NavMode.Avoiding || savedMode == NavMode.AvoidYield)
                 savedMode = NavMode.Cruising;
 
             DwellTime = data.dwellTime > 0 ? data.dwellTime : 60f;

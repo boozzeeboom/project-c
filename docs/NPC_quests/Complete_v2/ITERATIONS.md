@@ -6,6 +6,8 @@
 
 **Задача:** Объединить две системы фракций — боевую (NpcFaction) и квестовую (FactionDefinition) — в одну каноническую базу FactionDefinition.
 
+**Коммит:** `81fedb6` — T-FACTION-UNIFY: объединение NpcFaction → FactionDefinition (этапы A-D)
+
 **План:** `docs/NPC_quests/Complete_v2/03_FACTION_UNIFICATION_PLAN.md`
 
 **Выполнено:**

@@ -134,7 +134,7 @@ MonoBehaviour:
   _platformMask:
     serializedVersion: 2
     m_Bits: 4294967295
-  _platformProbeDistance: 0.5
+  _platformProbeDistance: 1
   _platformProbeRadius: 0.35
   _carryYaw: 1
   _platformMissFramesToClear: 3

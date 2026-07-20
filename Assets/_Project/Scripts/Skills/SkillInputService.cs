@@ -238,6 +238,10 @@ namespace ProjectC.Skills
         {
             if (slot == SkillInputSlot.None) return false;
 
+            // 0) Dialog open — block all combat attacks.
+            if (ProjectC.Quests.UI.DialogWindow.Instance != null && ProjectC.Quests.UI.DialogWindow.Instance.IsOpen)
+                return false;
+
             // 1) Slot привязан к skill? Для Primary/Secondary разрешаем unarmed attack без бинда.
             string skillId = GetSkillForSlot(slot);
             bool hasBind = !string.IsNullOrEmpty(skillId);

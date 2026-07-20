@@ -116,3 +116,30 @@ NPC-корабли должны обходить статичные препят
 | T-NS-BZ02 | `NpcProximityZoneBuilds` — компонент на здании | ~130 LOC |
 | T-NS-BZ03 | `NpcProximityZone`: `considerBuildings` + `FindClosestBuildConflict` | ~35 LOC |
 | T-NS-BZ04 | `NpcShipController`: `EnterAvoid(build)` + `_avoidFromPos` + правка NavTick | ~40 LOC |
+| T-NS-BZ05 | `AvoidancePriority`: приоритет расхождения (NpcInstanceId) + `NavMode.AvoidYield` | ~30 LOC |
+
+---
+
+## 8. Приоритет расхождения (T-NS-BZ05)
+
+### Проблема
+Два корабля при симметричном avoidance могут «танцевать» вокруг одной точки, мешая друг другу.
+
+### Решение
+Приоритет авто-назначается из `NpcInstanceId` (детерминированно, без сетевой коммуникации):
+
+| Приоритет | Действие |
+|-----------|---------|
+| Выше | Полный avoidance-манёвр (Separate → Stop → BackOff) |
+| Ниже | **AvoidYield** — нулевая скорость, ждёт пока high-priority уедет |
+| Здание (0) | Корабль всегда делает full avoidance |
+
+Оба корабля независимо приходят к одному решению — сравнение детерминировано.
+
+### Изменения
+- `NavMode.AvoidYield` — новый режим в enum
+- `AvoidancePriority` → `(uint)npcInstanceId`
+- `EnterAvoid(rb, other)` — сравнение приоритетов: выше → Avoiding, ниже → AvoidYield
+- `TickAvoidYield` — `linearVelocity=0`, ждёт `IsClearOfConflict`
+- `ResumeFromAvoid` / `RestoreFromSave` — обрабатывают `AvoidYield`
+- `IsAvoidable` — включает `AvoidYield` (застывший корабль = препятствие)

@@ -11,6 +11,7 @@ using UnityEditor.SceneManagement;
 using UnityEngine;
 using UnityEngine.SceneManagement;
 using ProjectC.Quests;
+using ProjectC.Factions;
 using ProjectC.AI;
 using ProjectC.Combat;
 using ProjectC.PeacefulShip.Stations;
@@ -25,7 +26,7 @@ namespace ProjectC.Editor.Tools
     /// </summary>
     public class NpcWorldInspectorWindow : EditorWindow
     {
-        private enum Tab { SceneNpcs, QuestDbCrossRef }
+        private enum Tab { SceneNpcs, QuestDbCrossRef, Factions }
         private Tab _currentTab = Tab.SceneNpcs;
 
         // ── Scan state ──
@@ -36,6 +37,15 @@ namespace ProjectC.Editor.Tools
         // ── Quest DB ──
         private QuestDatabase _questDb;
         private bool _questDbLoaded;
+
+        // ── Faction state ──
+        private FactionScanResult _factionResult;
+        private int _selectedFactionIndex = -1;
+        private Vector2 _scrollFactionList;
+        private Vector2 _scrollFactionDetail;
+        private bool _factionDirty;
+        private readonly Dictionary<string, FactionId> _factionNameToId = new Dictionary<string, FactionId>();
+        private readonly Dictionary<FactionId, string> _factionIdToAssetPath = new Dictionary<FactionId, string>();
 
         // ── UI state ──
         private Vector2 _scrollNpcs;
@@ -78,7 +88,7 @@ namespace ProjectC.Editor.Tools
             // Toolbar
             EditorGUILayout.BeginHorizontal(EditorStyles.toolbar);
             _currentTab = (Tab)GUILayout.Toolbar((int)_currentTab,
-                new[] { "🌍 Scene NPCs", "📋 Quest DB Cross-Ref" },
+                new[] { "🌍 Scene NPCs", "📋 Quest DB Cross-Ref", "🏛 Factions" },
                 GUILayout.Height(24));
 
             GUILayout.FlexibleSpace();
@@ -107,6 +117,7 @@ namespace ProjectC.Editor.Tools
             {
                 case Tab.SceneNpcs: DrawSceneNpcsTab(); break;
                 case Tab.QuestDbCrossRef: DrawQuestDbCrossRefTab(); break;
+                case Tab.Factions: DrawFactionsTab(); break;
             }
         }
 
@@ -1098,6 +1109,585 @@ namespace ProjectC.Editor.Tools
             _questDb = AssetDatabase.LoadAssetAtPath<QuestDatabase>(dbPath);
             _questDbLoaded = _questDb != null;
         }
+
+        // ════════════════════════════════════════════════
+        //  TAB 3: Factions
+        // ════════════════════════════════════════════════
+
+        private void DrawFactionsTab()
+        {
+            // Top bar
+            EditorGUILayout.BeginHorizontal(EditorStyles.toolbar);
+            if (GUILayout.Button("🔍 Scan Factions", EditorStyles.toolbarButton, GUILayout.Width(120)))
+                ScanFactions();
+
+            if (GUILayout.Button("➕ Create New", EditorStyles.toolbarButton, GUILayout.Width(110)))
+                CreateNewFaction();
+
+            GUILayout.FlexibleSpace();
+
+            if (_factionDirty && _selectedFactionIndex >= 0)
+            {
+                GUI.color = Color.yellow;
+                if (GUILayout.Button("💾 Save Changes", EditorStyles.toolbarButton, GUILayout.Width(120)))
+                    SaveFactionChanges();
+                GUI.color = Color.white;
+            }
+
+            if (_factionResult != null)
+                EditorGUILayout.LabelField($"{_factionResult.factionCount} factions", EditorStyles.miniLabel, GUILayout.Width(80));
+            EditorGUILayout.EndHorizontal();
+
+            EditorGUILayout.Space(4);
+
+            if (_factionResult == null || _factionResult.factions.Count == 0)
+            {
+                EditorGUILayout.HelpBox(
+                    "No faction data. Click 'Scan Factions' to load all FactionDefinition assets.\n\n" +
+                    "This scans Assets/_Project/Quests/Data/Factions/ for all FactionDefinition ScriptableObjects.",
+                    MessageType.Info);
+                return;
+            }
+
+            // Two-panel layout
+            EditorGUILayout.BeginHorizontal();
+
+            // ── Left panel: faction list ──
+            EditorGUILayout.BeginVertical(GUILayout.Width(260));
+            EditorGUILayout.LabelField("Factions", EditorStyles.boldLabel);
+            _scrollFactionList = EditorGUILayout.BeginScrollView(_scrollFactionList);
+
+            for (int i = 0; i < _factionResult.factions.Count; i++)
+            {
+                var f = _factionResult.factions[i];
+                bool isSelected = i == _selectedFactionIndex;
+
+                var rowRect = EditorGUILayout.BeginHorizontal(
+                    isSelected ? "ProjectBrowserHeaderBgTop" : "ProjectBrowserHeaderBgMiddle",
+                    GUILayout.Height(26));
+
+                if (isSelected)
+                    EditorGUI.DrawRect(rowRect, new Color(0.3f, 0.5f, 0.7f, 0.5f));
+
+                // Color swatch
+                var oldColor = GUI.color;
+                GUI.color = f.color;
+                EditorGUILayout.LabelField("■", GUILayout.Width(16));
+                GUI.color = oldColor;
+
+                // Faction name (clickable)
+                if (GUILayout.Button(f.displayName, EditorStyles.label, GUILayout.MinWidth(120)))
+                {
+                    _selectedFactionIndex = i;
+                    _factionDirty = false;
+                }
+
+                // NPC count pill
+                if (f.npcCount > 0)
+                {
+                    GUI.color = new Color(0.5f, 0.8f, 0.5f);
+                    GUILayout.Label($"{f.npcCount}", EditorStyles.miniButton, GUILayout.Width(30));
+                    GUI.color = oldColor;
+                }
+
+                EditorGUILayout.EndHorizontal();
+            }
+
+            EditorGUILayout.EndScrollView();
+            EditorGUILayout.EndVertical();
+
+            // Separator
+            EditorGUILayout.LabelField("", GUI.skin.verticalSlider, GUILayout.Width(2), GUILayout.ExpandHeight(true));
+
+            // ── Right panel: faction detail ──
+            EditorGUILayout.BeginVertical();
+            _scrollFactionDetail = EditorGUILayout.BeginScrollView(_scrollFactionDetail);
+
+            if (_selectedFactionIndex >= 0 && _selectedFactionIndex < _factionResult.factions.Count)
+                DrawFactionDetail(_factionResult.factions[_selectedFactionIndex]);
+            else
+                EditorGUILayout.HelpBox("Select a faction from the list to view and edit details.", MessageType.Info);
+
+            EditorGUILayout.EndScrollView();
+            EditorGUILayout.EndVertical();
+
+            EditorGUILayout.EndHorizontal();
+        }
+
+        private void DrawFactionDetail(FactionEntry f)
+        {
+            // ═══ Header ═══
+            EditorGUILayout.BeginHorizontal();
+            var oldColor = GUI.color;
+            GUI.color = f.color;
+            EditorGUILayout.LabelField($"■ {f.displayName} [{f.factionId}]", EditorStyles.whiteLargeLabel);
+            GUI.color = oldColor;
+
+            GUILayout.FlexibleSpace();
+
+            if (GUILayout.Button("📄 Ping Asset", GUILayout.Width(110)))
+                PingAsset(f.assetPath);
+            EditorGUILayout.EndHorizontal();
+
+            EditorGUILayout.Space(6);
+
+            // ═══ Identity ═══
+            EditorGUILayout.LabelField("Identity", EditorStyles.boldLabel);
+            EditorGUI.indentLevel++;
+
+            using (new EditorGUILayout.HorizontalScope())
+            {
+                EditorGUILayout.LabelField("Display Name:", GUILayout.Width(120));
+                var newName = EditorGUILayout.TextField(f.displayName);
+                if (newName != f.displayName) { f.displayName = newName; _factionDirty = true; }
+            }
+            using (new EditorGUILayout.HorizontalScope())
+            {
+                EditorGUILayout.LabelField("Faction ID:", GUILayout.Width(120));
+                EditorGUILayout.LabelField(f.factionId.ToString());
+            }
+            using (new EditorGUILayout.HorizontalScope())
+            {
+                EditorGUILayout.LabelField("Color:", GUILayout.Width(120));
+                var newColor = EditorGUILayout.ColorField(f.color);
+                if (newColor != f.color) { f.color = newColor; _factionDirty = true; }
+            }
+            using (new EditorGUILayout.HorizontalScope())
+            {
+                EditorGUILayout.LabelField("Asset Name:", GUILayout.Width(120));
+                EditorGUILayout.SelectableLabel(f.assetName, GUILayout.Height(18));
+            }
+
+            EditorGUI.indentLevel--;
+
+            EditorGUILayout.Space(4);
+
+            // ═══ Lore ═══
+            EditorGUILayout.LabelField("Lore", EditorStyles.boldLabel);
+            EditorGUI.indentLevel++;
+            EditorGUILayout.LabelField("Description:", GUILayout.Width(120));
+            var newLore = EditorGUILayout.TextArea(f.loreDescription ?? "", GUILayout.Height(40));
+            if (newLore != f.loreDescription) { f.loreDescription = newLore; _factionDirty = true; }
+            EditorGUI.indentLevel--;
+
+            EditorGUILayout.Space(4);
+
+            // ═══ Defaults ═══
+            EditorGUILayout.LabelField("Defaults", EditorStyles.boldLabel);
+            EditorGUI.indentLevel++;
+
+            using (new EditorGUILayout.HorizontalScope())
+            {
+                EditorGUILayout.LabelField("Default Attitude:", GUILayout.Width(130));
+                var newAtt = (FactionAttitude)EditorGUILayout.EnumPopup(f.defaultAttitude);
+                if (newAtt != f.defaultAttitude) { f.defaultAttitude = newAtt; _factionDirty = true; }
+            }
+            using (new EditorGUILayout.HorizontalScope())
+            {
+                EditorGUILayout.LabelField("Default Combat:", GUILayout.Width(130));
+                var newRel = (FactionRelation)EditorGUILayout.EnumPopup(f.defaultCombatRelation);
+                if (newRel != f.defaultCombatRelation) { f.defaultCombatRelation = newRel; _factionDirty = true; }
+            }
+
+            EditorGUI.indentLevel--;
+
+            EditorGUILayout.Space(4);
+
+            // ═══ Reputation Tiers ═══
+            EditorGUILayout.LabelField($"Reputation Tiers ({f.reputationThresholds?.Length ?? 0})", EditorStyles.boldLabel);
+            EditorGUI.indentLevel++;
+            if (f.reputationThresholds != null)
+            {
+                for (int t = 0; t < f.reputationThresholds.Length; t++)
+                {
+                    var tier = f.reputationThresholds[t];
+                    EditorGUILayout.BeginHorizontal(EditorStyles.helpBox);
+
+                    // tier label
+                    EditorGUILayout.LabelField("Tier:", GUILayout.Width(35));
+                    var newLabel = EditorGUILayout.TextField(tier.tier, GUILayout.Width(100));
+                    if (newLabel != tier.tier) { tier.tier = newLabel; _factionDirty = true; }
+
+                    // threshold
+                    EditorGUILayout.LabelField("≥", GUILayout.Width(15));
+                    var newVal = EditorGUILayout.IntField(tier.value, GUILayout.Width(50));
+                    if (newVal != tier.value) { tier.value = newVal; _factionDirty = true; }
+
+                    // color
+                    var newCol = EditorGUILayout.ColorField(tier.color, GUILayout.Width(60));
+                    if (newCol != tier.color) { tier.color = newCol; _factionDirty = true; }
+
+                    // USS class
+                    EditorGUILayout.LabelField("USS:", GUILayout.Width(35));
+                    var newUss = EditorGUILayout.TextField(tier.ussClass, GUILayout.Width(110));
+                    if (newUss != tier.ussClass) { tier.ussClass = newUss; _factionDirty = true; }
+
+                    EditorGUILayout.EndHorizontal();
+                }
+            }
+            EditorGUI.indentLevel--;
+
+            EditorGUILayout.Space(4);
+
+            // ═══ Combat Relations ═══
+            EditorGUILayout.LabelField($"Combat Relations ({f.combatRelations?.Count ?? 0})", EditorStyles.boldLabel);
+            EditorGUI.indentLevel++;
+
+            if (f.combatRelations != null && f.combatRelations.Count > 0)
+            {
+                for (int r = 0; r < f.combatRelations.Count; r++)
+                {
+                    var rel = f.combatRelations[r];
+                    EditorGUILayout.BeginHorizontal(EditorStyles.helpBox);
+
+                    EditorGUILayout.LabelField("vs", GUILayout.Width(20));
+                    var newTarget = (FactionId)EditorGUILayout.EnumPopup(rel.targetFaction, GUILayout.Width(160));
+                    if (newTarget != rel.targetFaction) { rel.targetFaction = newTarget; _factionDirty = true; }
+
+                    var newRel = (FactionRelation)EditorGUILayout.EnumPopup(rel.relation, GUILayout.Width(90));
+                    if (newRel != rel.relation) { rel.relation = newRel; _factionDirty = true; }
+
+                    var relColor = rel.relation switch
+                    {
+                        FactionRelation.Allied => Color.green,
+                        FactionRelation.Hostile => Color.red,
+                        _ => Color.gray
+                    };
+                    GUI.color = relColor;
+                    EditorGUILayout.LabelField(RelationEmoji(rel.relation), GUILayout.Width(20));
+                    GUI.color = Color.white;
+
+                    if (GUILayout.Button("✕", GUILayout.Width(24)))
+                    {
+                        f.combatRelations.RemoveAt(r);
+                        _factionDirty = true;
+                        break;
+                    }
+
+                    EditorGUILayout.EndHorizontal();
+                }
+            }
+
+            // Add relation button
+            using (new EditorGUILayout.HorizontalScope())
+            {
+                GUILayout.Space(20);
+                if (GUILayout.Button("➕ Add Combat Relation", GUILayout.Width(180)))
+                {
+                    f.combatRelations.Add(new FactionCombatRelationEntry
+                    {
+                        targetFaction = FactionId.None,
+                        relation = FactionRelation.Neutral
+                    });
+                    _factionDirty = true;
+                }
+            }
+
+            EditorGUI.indentLevel--;
+
+            EditorGUILayout.Space(4);
+
+            // ═══ Cross-Reference: Scene NPCs ═══
+            EditorGUILayout.LabelField($"Scene NPCs ({f.npcCount})", EditorStyles.boldLabel);
+            EditorGUI.indentLevel++;
+            if (f.npcCount > 0 && _scanResult != null)
+            {
+                var factionNpcs = _scanResult.entries.FindAll(e =>
+                {
+                    var fl = e.FactionLabel;
+                    return !string.IsNullOrEmpty(fl) &&
+                           (fl == f.factionId.ToString() || fl == f.assetName);
+                });
+
+                foreach (var npc in factionNpcs)
+                {
+                    EditorGUILayout.BeginHorizontal(EditorStyles.helpBox);
+                    EditorGUILayout.LabelField($"{npc.TypeLabel}", GUILayout.Width(110));
+                    if (GUILayout.Button(npc.goName, EditorStyles.linkLabel))
+                        PingSceneObject(npc);
+                    EditorGUILayout.LabelField(npc.sceneName, GUILayout.Width(140));
+                    EditorGUILayout.EndHorizontal();
+                }
+
+                if (factionNpcs.Count == 0)
+                    EditorGUILayout.LabelField("(no scene data — run Scan All World Scenes first)");
+            }
+            else
+            {
+                EditorGUILayout.LabelField(f.npcCount == 0
+                    ? "(no NPCs reference this faction)"
+                    : "(run Scene NPCs scan to see details)");
+            }
+            EditorGUI.indentLevel--;
+
+            EditorGUILayout.Space(8);
+
+            // ═══ Action buttons ═══
+            EditorGUILayout.BeginHorizontal();
+            if (_factionDirty)
+            {
+                GUI.backgroundColor = new Color(0.3f, 0.7f, 0.3f);
+                if (GUILayout.Button("💾 Save Changes", GUILayout.Height(28)))
+                    SaveFactionChanges();
+                GUI.backgroundColor = Color.white;
+                GUILayout.Space(8);
+                if (GUILayout.Button("↩ Revert", GUILayout.Height(28)))
+                    RevertFactionChanges();
+            }
+            GUILayout.FlexibleSpace();
+
+            GUI.backgroundColor = new Color(0.8f, 0.3f, 0.3f);
+            if (GUILayout.Button("🗑 Delete Faction", GUILayout.Height(28), GUILayout.Width(140)))
+            {
+                if (EditorUtility.DisplayDialog("Delete Faction",
+                    $"Delete '{f.displayName}' ({f.assetName})?\n\nThis will delete the asset file permanently.",
+                    "Delete", "Cancel"))
+                    DeleteFaction(f);
+            }
+            GUI.backgroundColor = Color.white;
+            EditorGUILayout.EndHorizontal();
+        }
+
+        // ═══ Faction operations ═══
+
+        private void ScanFactions()
+        {
+            _factionResult = new FactionScanResult();
+            _factionNameToId.Clear();
+            _factionIdToAssetPath.Clear();
+
+            var guids = AssetDatabase.FindAssets("t:FactionDefinition",
+                new[] { "Assets/_Project/Quests/Data/Factions" });
+
+            foreach (var guid in guids)
+            {
+                var path = AssetDatabase.GUIDToAssetPath(guid);
+                var def = AssetDatabase.LoadAssetAtPath<FactionDefinition>(path);
+                if (def == null) continue;
+
+                // Count scene NPCs for this faction
+                int npcCount = 0;
+                if (_scanResult != null)
+                {
+                    npcCount = _scanResult.entries.Count(e =>
+                    {
+                        var fl = e.FactionLabel;
+                        return !string.IsNullOrEmpty(fl) &&
+                               (fl == def.factionId.ToString() || fl == def.CombatKey);
+                    });
+                }
+
+                var entry = new FactionEntry
+                {
+                    assetPath = path,
+                    assetName = def.name,
+                    factionId = def.factionId,
+                    displayName = def.displayName,
+                    color = def.color,
+                    loreDescription = def.loreDescription,
+                    defaultAttitude = def.defaultAttitude,
+                    defaultCombatRelation = def.defaultCombatRelation,
+                    reputationThresholds = def.reputationThresholds,
+                    combatRelations = new List<FactionCombatRelationEntry>(),
+                    npcCount = npcCount,
+                };
+
+                foreach (var cr in def.combatRelations)
+                    entry.combatRelations.Add(new FactionCombatRelationEntry
+                    {
+                        targetFaction = cr.targetFaction,
+                        relation = cr.relation
+                    });
+
+                _factionResult.factions.Add(entry);
+                _factionNameToId[def.name] = def.factionId;
+                _factionNameToId[def.displayName] = def.factionId;
+                _factionIdToAssetPath[def.factionId] = path;
+            }
+
+            _factionResult.factions.Sort((a, b) => a.factionId.CompareTo(b.factionId));
+            _factionResult.scanTime = DateTime.Now;
+            _selectedFactionIndex = _factionResult.factions.Count > 0 ? 0 : -1;
+            _factionDirty = false;
+
+            Debug.Log($"[NpcWorldInspector] Faction scan complete: {_factionResult.factionCount} factions loaded.");
+        }
+
+        private void SaveFactionChanges()
+        {
+            if (_selectedFactionIndex < 0 || _selectedFactionIndex >= _factionResult.factions.Count) return;
+
+            var entry = _factionResult.factions[_selectedFactionIndex];
+
+            // Check if asset was renamed (assetName vs actual file name)
+            var actualPath = entry.assetPath;
+            var expectedDir = System.IO.Path.GetDirectoryName(actualPath);
+            var expectedPath = System.IO.Path.Combine(expectedDir, entry.assetName + ".asset").Replace("\\", "/");
+
+            if (actualPath != expectedPath)
+            {
+                var moveResult = AssetDatabase.MoveAsset(actualPath, expectedPath);
+                if (!string.IsNullOrEmpty(moveResult))
+                {
+                    Debug.LogError($"[NpcWorldInspector] Failed to rename asset: {moveResult}");
+                    return;
+                }
+                entry.assetPath = expectedPath;
+                actualPath = expectedPath;
+            }
+
+            var def = AssetDatabase.LoadAssetAtPath<FactionDefinition>(actualPath);
+            if (def == null)
+            {
+                Debug.LogError($"[NpcWorldInspector] FactionDefinition not found at {actualPath}");
+                return;
+            }
+
+            var so = new SerializedObject(def);
+
+            // Identity
+            so.FindProperty("displayName").stringValue = entry.displayName;
+            so.FindProperty("color").colorValue = entry.color;
+            so.FindProperty("loreDescription").stringValue = entry.loreDescription ?? "";
+
+            // FactionId — don't change (breaks references)
+
+            // Defaults
+            var attProp = so.FindProperty("defaultAttitude");
+            if (attProp != null) attProp.enumValueIndex = (int)entry.defaultAttitude;
+
+            var relProp = so.FindProperty("defaultCombatRelation");
+            if (relProp != null) relProp.enumValueIndex = (int)entry.defaultCombatRelation;
+
+            // Reputation tiers
+            var tiersProp = so.FindProperty("reputationThresholds");
+            if (tiersProp != null)
+            {
+                tiersProp.ClearArray();
+                if (entry.reputationThresholds != null)
+                {
+                    tiersProp.arraySize = entry.reputationThresholds.Length;
+                    for (int i = 0; i < entry.reputationThresholds.Length; i++)
+                    {
+                        var elem = tiersProp.GetArrayElementAtIndex(i);
+                        elem.FindPropertyRelative("tier").stringValue = entry.reputationThresholds[i].tier;
+                        elem.FindPropertyRelative("value").intValue = entry.reputationThresholds[i].value;
+                        elem.FindPropertyRelative("color").colorValue = entry.reputationThresholds[i].color;
+                        elem.FindPropertyRelative("ussClass").stringValue = entry.reputationThresholds[i].ussClass;
+                    }
+                }
+            }
+
+            // Combat relations
+            var crProp = so.FindProperty("combatRelations");
+            if (crProp != null)
+            {
+                crProp.ClearArray();
+                if (entry.combatRelations != null)
+                {
+                    crProp.arraySize = entry.combatRelations.Count;
+                    for (int i = 0; i < entry.combatRelations.Count; i++)
+                    {
+                        var elem = crProp.GetArrayElementAtIndex(i);
+                        elem.FindPropertyRelative("targetFaction").enumValueIndex =
+                            (int)entry.combatRelations[i].targetFaction;
+                        elem.FindPropertyRelative("relation").enumValueIndex =
+                            (int)entry.combatRelations[i].relation;
+                    }
+                }
+            }
+
+            so.ApplyModifiedProperties();
+            EditorUtility.SetDirty(def);
+            AssetDatabase.SaveAssetIfDirty(def);
+
+            _factionDirty = false;
+            Debug.Log($"[NpcWorldInspector] Saved changes to {entry.displayName} ({entry.assetName})");
+        }
+
+        private void RevertFactionChanges()
+        {
+            if (_selectedFactionIndex < 0) return;
+            ScanFactions(); // re-scan all; selection index preserved
+        }
+
+        private void CreateNewFaction()
+        {
+            // Find next available FactionId
+            var usedIds = new HashSet<FactionId>();
+            if (_factionResult != null)
+                foreach (var f in _factionResult.factions)
+                    usedIds.Add(f.factionId);
+
+            // Enum values start at 0, find first unused above None
+            FactionId newId = FactionId.None;
+            foreach (FactionId val in Enum.GetValues(typeof(FactionId)))
+            {
+                if (val == FactionId.None) continue;
+                if (!usedIds.Contains(val))
+                {
+                    newId = val;
+                    break;
+                }
+            }
+
+            if (newId == FactionId.None)
+            {
+                EditorUtility.DisplayDialog("Cannot Create",
+                    "All FactionId enum values are already used. Add a new value to FactionId.cs first.",
+                    "OK");
+                return;
+            }
+
+            var folder = "Assets/_Project/Quests/Data/Factions";
+            var assetName = $"Faction_{newId}";
+
+            // Create the SO
+            var def = ScriptableObject.CreateInstance<FactionDefinition>();
+            def.factionId = newId;
+            def.displayName = $"New Faction ({newId})";
+            def.color = Color.gray;
+            def.defaultAttitude = FactionAttitude.Neutral;
+            def.defaultCombatRelation = FactionRelation.Neutral;
+            def.reputationThresholds = new ReputationTier[]
+            {
+                new ReputationTier { tier = "Враг", value = -100, color = new Color(1f, 0.2f, 0.2f), ussClass = "rep-negative" },
+                new ReputationTier { tier = "Недруг", value = -25, color = new Color(1f, 0.4f, 0.2f), ussClass = "rep-negative" },
+                new ReputationTier { tier = "Нейтрален", value = 0, color = new Color(0.6f, 0.6f, 0.7f), ussClass = "rep-neutral" },
+                new ReputationTier { tier = "Друг", value = 25, color = new Color(0.4f, 0.7f, 0.4f), ussClass = "rep-positive" },
+                new ReputationTier { tier = "Уважаемый", value = 75, color = new Color(0.3f, 0.9f, 0.7f), ussClass = "rep-positive" },
+            };
+
+            var fullPath = System.IO.Path.Combine(folder, assetName + ".asset").Replace("\\", "/");
+            AssetDatabase.CreateAsset(def, fullPath);
+            AssetDatabase.SaveAssets();
+            AssetDatabase.Refresh();
+
+            Debug.Log($"[NpcWorldInspector] Created new faction: {fullPath}");
+
+            // Re-scan
+            ScanFactions();
+
+            // Select the new one
+            _selectedFactionIndex = _factionResult.factions.FindIndex(f => f.factionId == newId);
+            _factionDirty = false;
+        }
+
+        private void DeleteFaction(FactionEntry entry)
+        {
+            if (string.IsNullOrEmpty(entry.assetPath)) return;
+            AssetDatabase.DeleteAsset(entry.assetPath);
+            AssetDatabase.SaveAssets();
+            Debug.Log($"[NpcWorldInspector] Deleted faction: {entry.assetName}");
+            ScanFactions();
+        }
+
+        private static string RelationEmoji(FactionRelation rel) => rel switch
+        {
+            FactionRelation.Allied => "🤝",
+            FactionRelation.Hostile => "⚔",
+            _ => "➖"
+        };
     }
 }
 #endif

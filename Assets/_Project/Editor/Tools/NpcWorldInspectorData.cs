@@ -5,6 +5,7 @@
 using System;
 using System.Collections.Generic;
 using UnityEngine;
+using ProjectC.Factions;
 
 namespace ProjectC.Editor.Tools
 {
@@ -183,6 +184,40 @@ namespace ProjectC.Editor.Tools
                 return set;
             }
         }
+    }
+
+    /// <summary>Snapshot of a FactionDefinition asset for the Factions tab.</summary>
+    [Serializable]
+    public class FactionEntry
+    {
+        public string assetPath;
+        public string assetName;           // e.g. "GuildOfSecrets"
+        public FactionId factionId;
+        public string displayName;
+        public Color color;
+        public string loreDescription;
+        public FactionAttitude defaultAttitude;
+        public FactionRelation defaultCombatRelation;
+        public ReputationTier[] reputationThresholds;
+        public List<FactionCombatRelationEntry> combatRelations;
+        public int npcCount;              // how many scene NPCs reference this faction
+    }
+
+    /// <summary>Serializable mirror of FactionCombatRelation (since struct can't be directly stored).</summary>
+    [Serializable]
+    public class FactionCombatRelationEntry
+    {
+        public FactionId targetFaction;
+        public FactionRelation relation;
+    }
+
+    /// <summary>Result of scanning all FactionDefinition assets.</summary>
+    [Serializable]
+    public class FactionScanResult
+    {
+        public List<FactionEntry> factions = new List<FactionEntry>();
+        public DateTime scanTime;
+        public int factionCount => factions.Count;
     }
 }
 #endif

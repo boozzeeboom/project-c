@@ -13,9 +13,11 @@
 //   9. Social: Group & Memory — assignGroupOnSpawn, groupSpawnRadius, grudge, vengeance
 //  10. Faction, Role & Loot — socialRole, faction, lootPrefab, lootTable
 
+using System.Collections.Generic;
 using UnityEditor;
 using UnityEngine;
 using ProjectC.AI;
+using ProjectC.Factions;
 
 [CustomEditor(typeof(NpcSpawnerConfig))]
 public class NpcSpawnerConfigEditor : Editor
@@ -84,6 +86,10 @@ public class NpcSpawnerConfigEditor : Editor
     private SerializedProperty _faction;
     private SerializedProperty _lootPrefab;
     private SerializedProperty _lootTable;
+
+    // Faction dropdown cache
+    private FactionDefinition[] _cachedFactions;
+    private string[] _cachedFactionNames;
 
     private void OnEnable()
     {
@@ -302,7 +308,7 @@ public class NpcSpawnerConfigEditor : Editor
         if (_foldoutFactionLoot)
         {
             EditorGUILayout.PropertyField(_socialRole);
-            EditorGUILayout.PropertyField(_faction);
+            DrawFactionPopup();
             EditorGUILayout.Space(4);
             EditorGUILayout.PropertyField(_lootPrefab);
             EditorGUILayout.PropertyField(_lootTable);
@@ -310,5 +316,54 @@ public class NpcSpawnerConfigEditor : Editor
         EditorGUILayout.EndFoldoutHeaderGroup();
 
         serializedObject.ApplyModifiedProperties();
+    }
+
+    private void DrawFactionPopup()
+    {
+        if (_cachedFactions == null)
+        {
+            var guids = AssetDatabase.FindAssets("t:FactionDefinition");
+            var list = new List<FactionDefinition>();
+            var nameList = new List<string> { "(None)" };
+            list.Add(null);
+
+            for (int i = 0; i < guids.Length; i++)
+            {
+                string path = AssetDatabase.GUIDToAssetPath(guids[i]);
+                var fd = AssetDatabase.LoadAssetAtPath<FactionDefinition>(path);
+                if (fd != null && !string.IsNullOrEmpty(fd.displayName))
+                {
+                    list.Add(fd);
+                    nameList.Add($"{fd.displayName}  [{fd.factionId}]");
+                }
+            }
+
+            _cachedFactions = list.ToArray();
+            _cachedFactionNames = nameList.ToArray();
+        }
+
+        var currentFaction = _faction.objectReferenceValue as FactionDefinition;
+        int currentIndex = 0;
+        if (currentFaction != null)
+        {
+            for (int i = 1; i < _cachedFactions.Length; i++)
+            {
+                if (_cachedFactions[i] == currentFaction)
+                {
+                    currentIndex = i;
+                    break;
+                }
+            }
+        }
+
+        EditorGUILayout.BeginHorizontal();
+        EditorGUILayout.PrefixLabel("Faction");
+        int newIndex = EditorGUILayout.Popup(currentIndex, _cachedFactionNames);
+        EditorGUILayout.EndHorizontal();
+
+        if (newIndex != currentIndex)
+        {
+            _faction.objectReferenceValue = _cachedFactions[newIndex];
+        }
     }
 }

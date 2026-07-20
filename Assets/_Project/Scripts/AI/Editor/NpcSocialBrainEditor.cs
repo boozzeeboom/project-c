@@ -3,7 +3,7 @@
 //
 // Groups:
 //   1. Debug                    — _debugLog
-//   2. Faction & Personality    — faction, personalityConfig
+//   2. Faction & Personality    — faction (dropdown from assets), personalityConfig
 //   3. Idle Activities          — idleActivity, patrol*, wander*
 //   4. Socialize & Work         — socialize*, work*, sit*, sleep*
 //   5. Flee                     — flee params
@@ -13,9 +13,11 @@
 //   9. Surrender & Post-Combat  — surrender, post-combat
 //  10. Tick & Emotion           — socialTickInterval, victoryEmotionDuration
 
+using System.Collections.Generic;
 using UnityEditor;
 using UnityEngine;
 using ProjectC.AI;
+using ProjectC.Factions;
 
 [CustomEditor(typeof(NpcSocialBrain))]
 public class NpcSocialBrainEditor : Editor
@@ -94,6 +96,10 @@ public class NpcSocialBrainEditor : Editor
     private SerializedProperty _seekingReinforcementMultiplier;
     private SerializedProperty _socialTickInterval;
     private SerializedProperty _victoryEmotionDuration;
+
+    // Faction dropdown cache
+    private FactionDefinition[] _cachedFactions;
+    private string[] _cachedFactionNames;
 
     private void OnEnable()
     {
@@ -195,7 +201,7 @@ public class NpcSocialBrainEditor : Editor
         _foldoutFaction = EditorGUILayout.BeginFoldoutHeaderGroup(_foldoutFaction, "▶ Faction & Personality");
         if (_foldoutFaction)
         {
-            EditorGUILayout.PropertyField(_faction);
+            DrawFactionPopup();
             EditorGUILayout.PropertyField(_personalityConfig);
         }
         EditorGUILayout.EndFoldoutHeaderGroup();
@@ -367,5 +373,55 @@ public class NpcSocialBrainEditor : Editor
         EditorGUILayout.EndFoldoutHeaderGroup();
 
         serializedObject.ApplyModifiedProperties();
+    }
+
+    // T-FACTION-UNIFY: dropdown of all existing FactionDefinition assets
+    private void DrawFactionPopup()
+    {
+        if (_cachedFactions == null)
+        {
+            var guids = AssetDatabase.FindAssets("t:FactionDefinition");
+            var list = new List<FactionDefinition>();
+            var nameList = new List<string> { "(None)" };
+            list.Add(null); // index 0 = null
+
+            for (int i = 0; i < guids.Length; i++)
+            {
+                string path = AssetDatabase.GUIDToAssetPath(guids[i]);
+                var fd = AssetDatabase.LoadAssetAtPath<FactionDefinition>(path);
+                if (fd != null && !string.IsNullOrEmpty(fd.displayName))
+                {
+                    list.Add(fd);
+                    nameList.Add($"{fd.displayName}  [{fd.factionId}]");
+                }
+            }
+
+            _cachedFactions = list.ToArray();
+            _cachedFactionNames = nameList.ToArray();
+        }
+
+        var currentFaction = _faction.objectReferenceValue as FactionDefinition;
+        int currentIndex = 0;
+        if (currentFaction != null)
+        {
+            for (int i = 1; i < _cachedFactions.Length; i++)
+            {
+                if (_cachedFactions[i] == currentFaction)
+                {
+                    currentIndex = i;
+                    break;
+                }
+            }
+        }
+
+        EditorGUILayout.BeginHorizontal();
+        EditorGUILayout.PrefixLabel("Faction");
+        int newIndex = EditorGUILayout.Popup(currentIndex, _cachedFactionNames);
+        EditorGUILayout.EndHorizontal();
+
+        if (newIndex != currentIndex)
+        {
+            _faction.objectReferenceValue = _cachedFactions[newIndex];
+        }
     }
 }

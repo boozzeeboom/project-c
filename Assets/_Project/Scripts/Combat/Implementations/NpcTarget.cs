@@ -30,6 +30,9 @@ namespace ProjectC.Combat
         // отслеживания cumulative damage / passive aggro. Параметры: (newHp, deltaHp).
         public event Action<int, int> OnHpChanged;
 
+        /// <summary>T-CNPC-01: событие смерти NPC. Параметр: attackerClientId.</summary>
+        public event Action<ulong> OnKilledEvent;
+
         public void Initialize(NpcCombatData data, ulong targetId)
         {
             _data = data;
@@ -132,12 +135,16 @@ namespace ProjectC.Combat
                 }
             }
 
-            // T-NPC-01 v0.2: при смерти — death animation + loot spawn + 3s corpse delay.
+            // T-CNPC-01: при смерти — уведомляем NpcBrain о смерти (респавн + штраф).
             if (newHp == 0)
             {
-                if (_debugLog) Debug.Log($"[NpcTarget] npc={_targetId} killed. Spawning loot + Destroy in 3s.");
+                if (_debugLog) Debug.Log($"[NpcTarget] npc={_targetId} killed.");
                 OnKilled(attackerClientId);
-                Destroy(gameObject, 3.0f);
+                var brain = GetComponent<ProjectC.AI.NpcBrain>();
+                if (brain != null)
+                    brain.OnNpcDeath(attackerClientId);
+                else
+                    Destroy(gameObject, 3.0f); // fallback для старых врагов без респавна
             }
         }
 
@@ -163,6 +170,18 @@ namespace ProjectC.Combat
 
             // T-NPC-03: Spawn NpcLootPickup на месте смерти с credits из NpcCombatData.
             SpawnLootPickup(attackerClientId);
+
+            // T-CNPC-01: fire death event
+            OnKilledEvent?.Invoke(attackerClientId);
+        }
+
+        /// <summary>
+        /// T-CNPC-01: сброс HP до максимума (для респавна).
+        /// </summary>
+        public void ResetHealth()
+        {
+            if (!IsServer) return;
+            _currentHp.Value = _maxHp.Value;
         }
 
         /// <summary>

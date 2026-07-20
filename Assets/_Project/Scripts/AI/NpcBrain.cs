@@ -40,6 +40,7 @@ using ProjectC.Skills;
 using System.Linq;
 using ProjectC.Core;
 using ProjectC.Ship;
+using ProjectC.Quests;
 
 namespace ProjectC.AI
 {
@@ -93,6 +94,17 @@ namespace ProjectC.AI
                  "(даже если cumulativeDamage% < aggroHpThreshold). Fallback для защиты от " +
                  "фарма квестовых NPC мелкими ударами. 0 = отключить fallback.")]
         [Range(0, 20)] [SerializeField] private int _maxHitsPerMinute = 3;
+
+        [Header("Quest/Reputation (T-CNPC-01)")]
+        [Tooltip("NPC id для системы репутации. Автоматически из NpcController, если пусто.")]
+        [SerializeField] private string _npcId = "";
+        [Tooltip("Порог NpcAttitude, при котором NPC становится Aggressive. -50 = враждебность.")]
+        [Range(-100, 200)] [SerializeField] private int _hostilityThreshold = -50;
+
+        [Header("Respawn (scene-placed NPC)")]
+        [SerializeField] private bool _respawnEnabled = true;
+        [SerializeField] private float _respawnDelaySeconds = 30f;
+        [SerializeField] private int _maxRespawns = 0;
 
         [Header("Refs (auto-resolve)")]
         [SerializeField] private NpcAttacker _attacker;
@@ -162,6 +174,9 @@ namespace ProjectC.AI
         private NetworkObject _netObject;
         private bool _parentedToShip;
 
+        // T-CNPC-01: respawn tracking
+        private int _respawnCount;
+
         // T-NPC-S02: social brain companion
         private NpcSocialBrain _socialBrain;
         private bool _socialOverrideLock;
@@ -230,6 +245,17 @@ namespace ProjectC.AI
             if (_target != null)
                 _target.OnHpChanged += OnNpcHpChanged;
 
+            // T-CNPC-01: кэшируем npcId из NpcController
+            if (string.IsNullOrEmpty(_npcId))
+            {
+                var ctrl = GetComponent<NpcController>();
+                if (ctrl != null && ctrl.Definition != null)
+                    _npcId = ctrl.Definition.npcId;
+            }
+
+            // T-CNPC-01: подписка на NpcAttitudeChangedEvent
+            WorldEventBus.Subscribe<NpcAttitudeChangedEvent>(OnNpcAttitudeChanged);
+
             if (_agent != null)
             {
                 _agent.speed = moveSpeed;
@@ -245,6 +271,8 @@ namespace ProjectC.AI
             base.OnNetworkDespawn();
             if (_target != null)
                 _target.OnHpChanged -= OnNpcHpChanged;
+            // T-CNPC-01: отписка от WorldEventBus
+            WorldEventBus.Unsubscribe<NpcAttitudeChangedEvent>(OnNpcAttitudeChanged);
             if (_proxyGo != null) { Destroy(_proxyGo); _proxyGo = null; _proxyAgent = null; }
         }
 
@@ -267,7 +295,14 @@ namespace ProjectC.AI
                         {
                             if (c?.PlayerObject == null) continue;
                             var cpt = c.PlayerObject.GetComponent<ProjectC.Combat.PlayerTarget>();
-                            if (cpt == pt) { _socialBrain.RecordPlayerHit(c.ClientId); break; }
+                            if (cpt == pt)
+                            {
+                                _socialBrain.RecordPlayerHit(c.ClientId);
+                                // T-CNPC-01: портим отношение при ударе
+                                if (!string.IsNullOrEmpty(_npcId) && QuestWorld.Instance != null)
+                                    QuestWorld.Instance.ModifyNpcAttitude(c.ClientId, _npcId, -2);
+                                break;
+                            }
                         }
                     }
                 }
@@ -293,6 +328,78 @@ namespace ProjectC.AI
                 if (_aggroTarget != null && _state == BrainState.Idle)
                     EnterChase();
             }
+        }
+
+        // ============================================================
+        // T-CNPC-01: NpcAttitude → Behavior change
+        // ============================================================
+
+        private void OnNpcAttitudeChanged(NpcAttitudeChangedEvent ev)
+        {
+            if (!IsServer) return;
+            if (ev.NpcId != _npcId) return;
+            if (ev.NewValue < _hostilityThreshold)
+            {
+                if (_behaviorType != BehaviorType.Aggressive)
+                {
+                    ApplySpawnerBehavior(BehaviorType.Aggressive, _aggroHpThreshold, _maxHitsPerMinute);
+                    if (_debugLog) Debug.Log($"[NpcBrain:{_npcId}] Hostile: attitude={ev.NewValue} < threshold={_hostilityThreshold}");
+                }
+            }
+            else if (_behaviorType == BehaviorType.Aggressive)
+            {
+                ApplySpawnerBehavior(BehaviorType.Passive, _aggroHpThreshold, _maxHitsPerMinute);
+                if (_debugLog) Debug.Log($"[NpcBrain:{_npcId}] Forgave: attitude={ev.NewValue} >= threshold={_hostilityThreshold}");
+            }
+        }
+
+        // ============================================================
+        // T-CNPC-01: Death + Respawn (scene-placed NPC)
+        // ============================================================
+
+        /// <summary>
+        /// Вызывается NpcTarget при смерти NPC. Штраф к отношению + респавн.
+        /// </summary>
+        public void OnNpcDeath(ulong attackerClientId)
+        {
+            if (!IsServer) return;
+
+            // T-CNPC-01: большой штраф к отношению при убийстве
+            if (!string.IsNullOrEmpty(_npcId) && QuestWorld.Instance != null)
+                QuestWorld.Instance.ModifyNpcAttitude(attackerClientId, _npcId, -20);
+
+            if (!_respawnEnabled) return;
+            if (_maxRespawns > 0 && _respawnCount >= _maxRespawns) return;
+
+            StartCoroutine(RespawnCoroutine());
+        }
+
+        private System.Collections.IEnumerator RespawnCoroutine()
+        {
+            _respawnCount++;
+            _state = BrainState.Dead;
+
+            // Disable: agent, collider, visual
+            if (_agent != null) _agent.enabled = false;
+            var col = GetComponent<Collider>();
+            if (col != null) col.enabled = false;
+            foreach (var r in GetComponentsInChildren<Renderer>())
+                r.enabled = false;
+
+            yield return new WaitForSeconds(_respawnDelaySeconds);
+
+            // Reset HP + state
+            if (_target != null) _target.ResetHealth();
+            ResetAggroState();
+            _aggroTarget = null;
+            _state = BrainState.Idle;
+            if (_agent != null) _agent.enabled = true;
+            if (col != null) col.enabled = true;
+            foreach (var r in GetComponentsInChildren<Renderer>())
+                r.enabled = true;
+
+            EnterIdle();
+            if (_debugLog) Debug.Log($"[NpcBrain:{_npcId}] Respawned (count={_respawnCount}).");
         }
 
 

@@ -8706,7 +8706,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 7007062699081151284, guid: 617c9789828d9cf4d95c01fc83cc8b98, type: 3}
       propertyPath: GlobalObjectIdHash
-      value: 695313929
+      value: 1566967443
       objectReference: {fileID: 0}
     - target: {fileID: 7007062699081151284, guid: 617c9789828d9cf4d95c01fc83cc8b98, type: 3}
       propertyPath: InScenePlacedSourceGlobalObjectIdHash
@@ -18491,7 +18491,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 7007062699081151284, guid: 617c9789828d9cf4d95c01fc83cc8b98, type: 3}
       propertyPath: GlobalObjectIdHash
-      value: 2706331458
+      value: 1343390426
       objectReference: {fileID: 0}
     - target: {fileID: 7007062699081151284, guid: 617c9789828d9cf4d95c01fc83cc8b98, type: 3}
       propertyPath: InScenePlacedSourceGlobalObjectIdHash
@@ -27153,6 +27153,13 @@ GameObject:
   - component: {fileID: 1517819183}
   - component: {fileID: 1517819182}
   - component: {fileID: 1517819181}
+  - component: {fileID: 1517819184}
+  - component: {fileID: 1517819186}
+  - component: {fileID: 1517819185}
+  - component: {fileID: 1517819187}
+  - component: {fileID: 1517819188}
+  - component: {fileID: 1517819189}
+  - component: {fileID: 1517819190}
   m_Layer: 0
   m_Name: '[Mira]'
   m_TagString: Untagged
@@ -27216,6 +27223,219 @@ Transform:
   - {fileID: 761832592}
   m_Father: {fileID: 1895139888}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &1517819184
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1517819180}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: d5a57f767e5e46a458fc5d3c628d0cbb, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Unity.Netcode.Runtime::Unity.Netcode.NetworkObject
+  GlobalObjectIdHash: 191783631
+  InScenePlacedSourceGlobalObjectIdHash: 0
+  DeferredDespawnTick: 0
+  Ownership: 1
+  AlwaysReplicateAsRoot: 0
+  SynchronizeTransform: 1
+  <InScenePlaced>k__BackingField: 0
+  ActiveSceneSynchronization: 0
+  SceneMigrationSynchronization: 0
+  SpawnWithObservers: 1
+  DontDestroyWithOwner: 0
+  AutoObjectParentSync: 1
+  SyncOwnerTransformWhenParented: 1
+  AllowOwnerToParent: 0
+--- !u!114 &1517819185
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1517819180}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: c24099a9ee538794ea945de98bd3855d, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::ProjectC.AI.NpcBrain
+  ShowTopMostFoldoutHeaderGroup: 1
+  _debugLog: 0
+  _behaviorType: 1
+  _aggroHpThreshold: 25
+  _maxHitsPerMinute: 3
+  _npcId: 
+  _hostilityThreshold: -50
+  _respawnEnabled: 1
+  _respawnDelaySeconds: 30
+  _maxRespawns: 0
+  _attacker: {fileID: 1517819188}
+  _target: {fileID: 1517819187}
+  aggroRange: 10
+  attackRange: 2.5
+  leashRange: 40
+  moveSpeed: 3.5
+  angularSpeed: 360
+  tickRate: 10
+  _socialEnabled: 1
+  _platformCarryEnabled: 1
+  _platformMask:
+    serializedVersion: 2
+    m_Bits: 0
+  _platformProbeUp: 0.5
+  _platformProbeDistance: 0.6
+  _platformProbeRadius: 0.3
+  _carryYaw: 1
+  _platformMissFramesToClear: 3
+  _useParentingOnShips: 1
+--- !u!195 &1517819186
+NavMeshAgent:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1517819180}
+  m_Enabled: 1
+  m_AgentTypeID: 0
+  m_Radius: 0.5
+  m_Speed: 3.5
+  m_Acceleration: 8
+  avoidancePriority: 50
+  m_AngularSpeed: 360
+  m_StoppingDistance: 2.25
+  m_AutoTraverseOffMeshLink: 1
+  m_AutoBraking: 1
+  m_AutoRepath: 1
+  m_Height: 2
+  m_BaseOffset: 0
+  m_WalkableMask: 4294967295
+  m_ObstacleAvoidanceType: 4
+--- !u!114 &1517819187
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1517819180}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 5ee11148b5c08894495fd4a3b89de0a4, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::ProjectC.Combat.NpcTarget
+  ShowTopMostFoldoutHeaderGroup: 1
+  _data: {fileID: 11400000, guid: 89e903a4a20ea404ba98807efc2e6b61, type: 2}
+  _maxHpOverride: 0
+  _debugLog: 0
+--- !u!114 &1517819188
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1517819180}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 419f4361dd8b41d4e8f33b09cb72ea8e, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::ProjectC.Combat.NpcAttacker
+  ShowTopMostFoldoutHeaderGroup: 1
+  _data: {fileID: 11400000, guid: 89e903a4a20ea404ba98807efc2e6b61, type: 2}
+  _attackerIdOverride: 0
+  _skillSet: {fileID: 0}
+--- !u!114 &1517819189
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1517819180}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 31605bcffdb3e1a41a15283f358ca0ae, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::ProjectC.AI.NpcSocialBrain
+  _debugLog: 0
+  faction: {fileID: 11400000, guid: d1ebf12d1b4b8c140894ec68927ccc28, type: 2}
+  personalityConfig: {fileID: 0}
+  idleActivity: 0
+  patrolPattern: 0
+  patrolWaypoints: []
+  idleAtWaypointSec: 3
+  wanderRadius: 8
+  patrolSpeed: 0
+  canFlee: 1
+  fleeHpThreshold: 0.25
+  fleeAllySeekRadius: 30
+  fleeLeash: 80
+  fleeTimeout: 15
+  enableGrudgeMemory: 1
+  grudgeDurationSec: 300
+  alarmHearingRadius: 15
+  allyDeathRadius: 20
+  isGuard: 0
+  threatEvaluationRange: 30
+  _lastThreatResult: 0
+  coverSeekRadius: 25
+  coverSwitchInterval: 8
+  coverHpThreshold: 0.5
+  _currentCover: {fileID: 0}
+  surrenderHpThreshold: 0.1
+  surrenderAllyRadius: 20
+  canSurrender: 1
+  enableVengeanceMemory: 1
+  enablePostCombat: 1
+  woundedDuration: 15
+  healHpThreshold: 0.4
+  healRegenRate: 0.05
+  reinforcementSeekRadius: 50
+--- !u!114 &1517819190
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1517819180}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: e96cb6065543e43c4a752faaa1468eb1, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Unity.Netcode.Runtime::Unity.Netcode.Components.NetworkTransform
+  ShowTopMostFoldoutHeaderGroup: 1
+  NetworkTransformExpanded: 0
+  AutoOwnerAuthorityTickOffset: 1
+  PositionInterpolationType: 0
+  RotationInterpolationType: 0
+  ScaleInterpolationType: 0
+  PositionLerpSmoothing: 1
+  PositionMaxInterpolationTime: 0.1
+  RotationLerpSmoothing: 1
+  RotationMaxInterpolationTime: 0.1
+  ScaleLerpSmoothing: 1
+  ScaleMaxInterpolationTime: 0.1
+  AuthorityMode: 0
+  TickSyncChildren: 0
+  UseUnreliableDeltas: 0
+  SyncPositionX: 1
+  SyncPositionY: 1
+  SyncPositionZ: 1
+  SyncRotAngleX: 1
+  SyncRotAngleY: 1
+  SyncRotAngleZ: 1
+  SyncScaleX: 1
+  SyncScaleY: 1
+  SyncScaleZ: 1
+  PositionThreshold: 0.001
+  RotAngleThreshold: 0.01
+  ScaleThreshold: 0.01
+  UseQuaternionSynchronization: 0
+  UseQuaternionCompression: 0
+  UseHalfFloatPrecision: 0
+  InLocalSpace: 0
+  SwitchTransformSpaceWhenParented: 0
+  Interpolate: 1
+  SlerpPosition: 0
 --- !u!1001 &1526862534
 PrefabInstance:
   m_ObjectHideFlags: 0
@@ -32658,7 +32878,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 7007062699081151284, guid: 617c9789828d9cf4d95c01fc83cc8b98, type: 3}
       propertyPath: GlobalObjectIdHash
-      value: 1674472991
+      value: 3236008901
       objectReference: {fileID: 0}
     - target: {fileID: 7007062699081151284, guid: 617c9789828d9cf4d95c01fc83cc8b98, type: 3}
       propertyPath: InScenePlacedSourceGlobalObjectIdHash
@@ -37551,7 +37771,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 7007062699081151284, guid: 617c9789828d9cf4d95c01fc83cc8b98, type: 3}
       propertyPath: GlobalObjectIdHash
-      value: 1528660146
+      value: 60973262
       objectReference: {fileID: 0}
     - target: {fileID: 7007062699081151284, guid: 617c9789828d9cf4d95c01fc83cc8b98, type: 3}
       propertyPath: InScenePlacedSourceGlobalObjectIdHash
@@ -38449,7 +38669,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 7007062699081151284, guid: 617c9789828d9cf4d95c01fc83cc8b98, type: 3}
       propertyPath: GlobalObjectIdHash
-      value: 2036465635
+      value: 2720545640
       objectReference: {fileID: 0}
     - target: {fileID: 7007062699081151284, guid: 617c9789828d9cf4d95c01fc83cc8b98, type: 3}
       propertyPath: InScenePlacedSourceGlobalObjectIdHash

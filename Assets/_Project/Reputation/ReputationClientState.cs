@@ -6,6 +6,7 @@
 // UI читает из этого singleton (single source of truth на клиенте).
 
 using System;
+using System.Collections.Generic;
 using UnityEngine;
 using ProjectC.Quests.Dto;
 
@@ -29,6 +30,9 @@ namespace ProjectC.Reputation
 
         // ============ State ============
         public ReputationSnapshotDto? CurrentReputation { get; private set; }
+
+        // ============ T-KNOW: Known entities ============
+        public HashSet<byte> KnownFactionIds { get; private set; } = new HashSet<byte>();
 
         // ============ Events для UI ============
         public event Action<ReputationSnapshotDto> OnReputationUpdated;
@@ -57,8 +61,20 @@ namespace ProjectC.Reputation
         public void OnReputationSnapshotReceived(ReputationSnapshotDto snapshot)
         {
             CurrentReputation = snapshot;
+
+            // T-KNOW: update known factions
+            KnownFactionIds.Clear();
+            if (snapshot.knownFactionIds != null)
+            {
+                for (int i = 0; i < snapshot.knownFactionIds.Length; i++)
+                    KnownFactionIds.Add(snapshot.knownFactionIds[i]);
+            }
+            // Always ensure Neutral (11) is known — server-side гарантирует, но на клиенте тоже страховка
+            KnownFactionIds.Add((byte)ProjectC.Factions.FactionId.Neutral);
+
             OnReputationUpdated?.Invoke(snapshot);
-            if (Debug.isDebugBuild) Debug.Log($"[ReputationClientState] OnReputationSnapshotReceived: {snapshot.entries?.Length ?? 0} factions");
+            if (Debug.isDebugBuild)
+                Debug.Log($"[ReputationClientState] OnReputationSnapshotReceived: {snapshot.entries?.Length ?? 0} factions, {KnownFactionIds.Count} known");
         }
     }
 }

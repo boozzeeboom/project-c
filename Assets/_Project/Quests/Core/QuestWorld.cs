@@ -705,6 +705,15 @@ namespace ProjectC.Quests
         /// <summary>Per-player set of NPC ids the player has talked to at least once.</summary>
         private readonly Dictionary<ulong, HashSet<string>> _npcTalkedTo = new Dictionary<ulong, HashSet<string>>();
 
+        // ============ T-KNOW: Knowledge System ============
+
+        /// <summary>T-KNOW: какие фракции игрок «знает» (имеет право видеть в UI).</summary>
+        private readonly Dictionary<ulong, HashSet<FactionId>> _knownFactions = new();
+
+        /// <summary>T-KNOW: какие NPC игрок «знает». Отдельно от _npcTalkedTo — в будущем
+        /// знание может открываться через книги/квесты, а не только через диалог.</summary>
+        private readonly Dictionary<ulong, HashSet<string>> _knownNpcs = new();
+
         /// <summary>Per-player set of custom event ids that have occurred (DialogueAction.EmitEvent).</summary>
         private readonly Dictionary<ulong, HashSet<string>> _eventsOccurred = new Dictionary<ulong, HashSet<string>>();
 
@@ -760,7 +769,65 @@ namespace ProjectC.Quests
                 set = new HashSet<string>();
                 _npcTalkedTo[clientId] = set;
             }
-            if (set.Add(npcId)) SavePlayer(clientId); // T-Q18
+            bool needSave = set.Add(npcId); // T-Q18
+
+            // T-KNOW: unlock NPC knowledge (always — даже если уже был в _npcTalkedTo,
+            // чтобы наверняка знание было; idempotent через HashSet)
+            UnlockNpcKnowledge(clientId, npcId);
+
+            // T-KNOW: unlock faction knowledge via npcDefinition.faction
+            if (Database != null && !string.IsNullOrEmpty(npcId))
+            {
+                var npcDef = Database.GetNpc(npcId);
+                if (npcDef != null && npcDef.faction != FactionId.None)
+                {
+                    UnlockFactionKnowledge(clientId, npcDef.faction);
+                }
+            }
+
+            if (needSave) SavePlayer(clientId);
+        }
+
+        // ============ T-KNOW: Knowledge ============
+
+        public bool IsFactionKnown(ulong clientId, FactionId faction)
+        {
+            if (faction == FactionId.None) return true; // None is always "known" (not filtered)
+            return _knownFactions.TryGetValue(clientId, out var set) && set.Contains(faction);
+        }
+
+        public bool IsNpcKnown(ulong clientId, string npcId)
+        {
+            if (string.IsNullOrEmpty(npcId)) return false;
+            return _knownNpcs.TryGetValue(clientId, out var set) && set.Contains(npcId);
+        }
+
+        public void UnlockFactionKnowledge(ulong clientId, FactionId faction)
+        {
+            if (faction == FactionId.None) return;
+            if (!_knownFactions.TryGetValue(clientId, out var set))
+            {
+                set = new HashSet<FactionId>();
+                _knownFactions[clientId] = set;
+            }
+            if (set.Add(faction))
+            {
+                if (Debug.isDebugBuild)
+                    Debug.Log($"[QuestWorld] Knowledge unlocked: player={clientId} faction={faction}");
+                // NOT calling SavePlayer here — caller (MarkNpcTalked) already does
+            }
+        }
+
+        public void UnlockNpcKnowledge(ulong clientId, string npcId)
+        {
+            if (string.IsNullOrEmpty(npcId)) return;
+            if (!_knownNpcs.TryGetValue(clientId, out var set))
+            {
+                set = new HashSet<string>();
+                _knownNpcs[clientId] = set;
+            }
+            set.Add(npcId);
+            // NOT calling SavePlayer — caller already does
         }
 
         public bool HasEventOccurred(ulong clientId, string eventId)
@@ -1198,6 +1265,23 @@ namespace ProjectC.Quests
             }
             if (flagsEntry.values.Count > 0) data.stringSets.Add(flagsEntry);
 
+            // T-KNOW: known factions
+            if (_knownFactions.TryGetValue(clientId, out var knownFactionsSet) && knownFactionsSet.Count > 0)
+            {
+                foreach (var fid in knownFactionsSet)
+                    data.knownFactions.Add((int)fid);
+            }
+
+            // T-KNOW: known NPCs
+            if (_knownNpcs.TryGetValue(clientId, out var knownNpcsSet) && knownNpcsSet.Count > 0)
+            {
+                data.knownNpcs.AddRange(knownNpcsSet);
+            }
+
+            // T-KNOW: Neutral (11) auto-known для новых персонажей — гарантируем что всегда в сейве
+            if (!data.knownFactions.Contains((int)FactionId.Neutral))
+                data.knownFactions.Add((int)FactionId.Neutral);
+
             return data;
         }
 
@@ -1239,6 +1323,8 @@ namespace ProjectC.Quests
             _contractsCompleted.Remove(clientId);
             _contractsAccepted.Remove(clientId);
             _npcTalkedTo.Remove(clientId);
+            _knownFactions.Remove(clientId);
+            _knownNpcs.Remove(clientId);
             var flagToRemove = new List<(ulong, string)>();
             foreach (var kv in _worldFlags) if (kv.Key.Item1 == clientId) flagToRemove.Add(kv.Key);
             foreach (var k in flagToRemove) _worldFlags.Remove(k);
@@ -1318,6 +1404,30 @@ namespace ProjectC.Quests
                 }
             }
 
+            // T-KNOW: restore known factions
+            if (data.knownFactions != null && data.knownFactions.Count > 0)
+            {
+                var knownF = new HashSet<FactionId>();
+                foreach (int id in data.knownFactions)
+                    knownF.Add((FactionId)id);
+                _knownFactions[clientId] = knownF;
+            }
+            else
+            {
+                // New player / old save: auto-know Neutral
+                _knownFactions[clientId] = new HashSet<FactionId> { FactionId.Neutral };
+            }
+
+            // T-KNOW: restore known NPCs
+            if (data.knownNpcs != null && data.knownNpcs.Count > 0)
+            {
+                _knownNpcs[clientId] = new HashSet<string>(data.knownNpcs);
+            }
+            else
+            {
+                _knownNpcs[clientId] = new HashSet<string>();
+            }
+
             if (Debug.isDebugBuild) Debug.Log($"[QuestWorld] LoadPlayer: client={clientId} restored {data.quests?.Count ?? 0} quests, {data.reputation?.Count ?? 0} factions, {data.npcAttitude?.Count ?? 0} npcAttitudes");
             return true;
         }
@@ -1344,6 +1454,8 @@ namespace ProjectC.Quests
             _reputation.Clear();
             _npcAttitude.Clear();
             _worldFlags.Clear();
+            _knownFactions.Clear();
+            _knownNpcs.Clear();
             _dialogByPlayer.Clear();
         }
     }

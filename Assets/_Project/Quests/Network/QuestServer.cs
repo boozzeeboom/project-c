@@ -505,6 +505,9 @@ namespace ProjectC.Quests
             // the player may just press E and never select a dialogue option.
             QuestWorld.Instance?.MarkNpcTalked(clientId, npcId);
 
+            // T-KNOW: push updated reputation + npcAttitude snapshots with new known-фильтрами
+            BroadcastKnowledgeChange(clientId);
+
             // T-Q11c-fix: если сессия уже открыта (повторный E / stale state) — закрыть и открыть заново.
             // Иначе OpenDialog возвращает null и игрок видит "failed to open session".
             if (QuestWorld.Instance.GetDialogSession(clientId) != null)
@@ -935,15 +938,24 @@ namespace ProjectC.Quests
         {
             var w = QuestWorld.Instance;
             if (w == null) return new ReputationSnapshotDto { entries = null };
+
             var arr = new System.Collections.Generic.List<ReputationEntryDto>();
+            var knownList = new System.Collections.Generic.List<byte>();
             // Iterate all FactionId values (0..11 per T-Q01)
             foreach (ProjectC.Factions.FactionId fid in System.Enum.GetValues(typeof(ProjectC.Factions.FactionId)))
             {
                 if (fid == ProjectC.Factions.FactionId.None) continue;
                 int v = w.GetReputation(clientId, fid);
                 arr.Add(new ReputationEntryDto { faction = (byte)fid, value = v });
+                // T-KNOW: build known faction ids array
+                if (w.IsFactionKnown(clientId, fid))
+                    knownList.Add((byte)fid);
             }
-            return new ReputationSnapshotDto { entries = arr.ToArray() };
+            return new ReputationSnapshotDto
+            {
+                entries = arr.ToArray(),
+                knownFactionIds = knownList.ToArray()
+            };
         }
 
         private NpcAttitudeSnapshotDto BuildNpcAttitudeSnapshot(ulong clientId)
@@ -952,7 +964,7 @@ namespace ProjectC.Quests
             if (w == null) return new NpcAttitudeSnapshotDto { entries = null };
             // T-Q07: iterate questDatabase.questOffers[] to discover known NPC ids.
             // T-Q15: track all NpcDefinitions globally in QuestWorld, not just quest givers.
-            var knownNpcIds = new System.Collections.Generic.HashSet<string>();
+            var allNpcIds = new System.Collections.Generic.HashSet<string>();
             foreach (var def in w.GetAllQuests())
             {
                 if (def == null) continue;
@@ -964,18 +976,28 @@ namespace ProjectC.Quests
                         var obj = def.stages[s].objectives[o];
                         if (obj != null && !string.IsNullOrEmpty(obj.targetNpcId))
                         {
-                            knownNpcIds.Add(obj.targetNpcId);
+                            allNpcIds.Add(obj.targetNpcId);
                         }
                     }
                 }
             }
-            var arr = new NpcAttitudeEntryDto[knownNpcIds.Count];
-            int idx = 0;
-            foreach (var npcId in knownNpcIds)
+
+            // T-KNOW: build entries + knownNpcIds filtering
+            var arr = new System.Collections.Generic.List<NpcAttitudeEntryDto>();
+            var knownNpcList = new System.Collections.Generic.List<string>();
+            foreach (var npcId in allNpcIds)
             {
-                arr[idx++] = new NpcAttitudeEntryDto { npcId = npcId, value = w.GetNpcAttitude(clientId, npcId) };
+                int v = w.GetNpcAttitude(clientId, npcId);
+                arr.Add(new NpcAttitudeEntryDto { npcId = npcId, value = v });
+                if (w.IsNpcKnown(clientId, npcId))
+                    knownNpcList.Add(npcId);
             }
-            return new NpcAttitudeSnapshotDto { entries = arr };
+
+            return new NpcAttitudeSnapshotDto
+            {
+                entries = arr.ToArray(),
+                knownNpcIds = knownNpcList.ToArray()
+            };
         }
 
         // -------- Senders --------
@@ -1048,6 +1070,17 @@ namespace ProjectC.Quests
         {
             BroadcastReputationChange(clientId);
             BroadcastNpcAttitudeChange(clientId);
+        }
+
+        /// <summary>T-KNOW: отправляем свежий reputation + npcAttitude snapshot (с known-фильтрами) клиенту после изменения knowledge.</summary>
+        public void BroadcastKnowledgeChange(ulong clientId)
+        {
+            if (!IsServer) return;
+            var snapshot = BuildReputationSnapshot(clientId);
+            SendReputationSnapshotToClient(clientId, snapshot);
+            var npcSnapshot = BuildNpcAttitudeSnapshot(clientId);
+            SendNpcAttitudeSnapshotToClient(clientId, npcSnapshot);
+            if (debugMode) Debug.Log($"[QuestServer] BroadcastKnowledgeChange: client={clientId}");
         }
 
         /// <summary>T-Q13: NetworkManager.OnClientConnectedCallback handler. Push initial snapshots новому клиенту.

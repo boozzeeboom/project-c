@@ -960,40 +960,26 @@ namespace ProjectC.UI.Client
         {
             _reputationCache.Clear();
             var repState = ReputationClientState.Instance;
+
             if (repState == null || !repState.CurrentReputation.HasValue)
             {
-                // Snapshot ещё не пришёл — показать placeholder 5 фракций с value=0.
-                for (int i = 0; i < FactionFallback.Length; i++)
-                {
-                    var f = FactionFallback[i];
-                    _reputationCache.Add(new ReputationListItem
-                    {
-                        factionId = f.id, displayName = f.name, value = 0, color = f.color
-                    });
-                }
+                // Snapshot ещё не пришёл — показываем пусто (knowledge-based, нет смысла в fallback)
+                if (Debug.isDebugBuild) Debug.Log("[CharacterWindow] RefreshReputationCache: no snapshot yet, showing empty");
             }
             else
             {
-                // Snapshot пришёл: рендерим только те фракции что есть в snapshot
-                // (а если там < 5 — дополним placeholder'ом, чтобы UI не "потерял" строку).
                 var entries = repState.CurrentReputation.Value.entries;
-                if (entries == null || entries.Length == 0)
-                {
-                    for (int i = 0; i < FactionFallback.Length; i++)
-                    {
-                        var f = FactionFallback[i];
-                        _reputationCache.Add(new ReputationListItem
-                        {
-                            factionId = f.id, displayName = f.name, value = 0, color = f.color
-                        });
-                    }
-                }
-                else
+                var knownIds = repState.KnownFactionIds;
+                if (entries != null && knownIds != null)
                 {
                     for (int i = 0; i < entries.Length; i++)
                     {
                         var e = entries[i];
-                        var fb = FindFactionFallback((FactionId)e.faction);
+                        byte factionByte = e.faction;
+                        // T-KNOW: only known factions
+                        if (!knownIds.Contains(factionByte)) continue;
+
+                        var fb = FindFactionFallback((FactionId)factionByte);
                         _reputationCache.Add(new ReputationListItem
                         {
                             factionId = fb.id,
@@ -1003,12 +989,36 @@ namespace ProjectC.UI.Client
                         });
                     }
                 }
+
+                if (_reputationCache.Count == 0)
+                {
+                    // Если после фильтрации пусто — показываем хотя бы Neutral
+                    var neutralFb = FindFactionFallback(FactionId.Neutral);
+                    _reputationCache.Add(new ReputationListItem
+                    {
+                        factionId = neutralFb.id,
+                        displayName = neutralFb.name,
+                        value = GetRepValueForFaction(repState.CurrentReputation.Value.entries, (byte)FactionId.Neutral),
+                        color = neutralFb.color
+                    });
+                }
             }
             if (_reputationList != null)
             {
                 _reputationList.itemsSource = _reputationCache;
                 _reputationList.Rebuild();
             }
+        }
+
+        /// <summary>T-KNOW: найти значение репутации для конкретной фракции в массиве entries.</summary>
+        private static int GetRepValueForFaction(ReputationEntryDto[] entries, byte factionId)
+        {
+            if (entries == null) return 0;
+            for (int i = 0; i < entries.Length; i++)
+            {
+                if (entries[i].faction == factionId) return entries[i].value;
+            }
+            return 0;
         }
 
         private static (string id, string name, Color color) FindFactionFallback(FactionId id)
@@ -1057,11 +1067,15 @@ namespace ProjectC.UI.Client
             if (attState != null && attState.CurrentNpcAttitude.HasValue)
             {
                 var entries = attState.CurrentNpcAttitude.Value.entries;
-                if (entries != null)
+                var knownNpcIds = attState.KnownNpcIds;
+                if (entries != null && knownNpcIds != null)
                 {
                     for (int i = 0; i < entries.Length; i++)
                     {
                         var e = entries[i];
+                        // T-KNOW: only known NPC
+                        if (!knownNpcIds.Contains(e.npcId)) continue;
+
                         // T-P19: красивое имя вместо raw npcId
                         string displayName = FormatNpcDisplayName(e.npcId);
                         Color c = e.value > 0

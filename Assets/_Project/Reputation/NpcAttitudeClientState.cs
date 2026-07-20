@@ -6,6 +6,7 @@
 // UI читает из этого singleton (DialogWindow badge + CharacterWindow NpcAttitude секция).
 
 using System;
+using System.Collections.Generic;
 using UnityEngine;
 using ProjectC.Quests.Dto;
 
@@ -29,6 +30,9 @@ namespace ProjectC.Reputation
 
         // ============ State ============
         public NpcAttitudeSnapshotDto? CurrentNpcAttitude { get; private set; }
+
+        // ============ T-KNOW: Known entities ============
+        public HashSet<string> KnownNpcIds { get; private set; } = new HashSet<string>();
 
         // ============ Events для UI ============
         public event Action<NpcAttitudeSnapshotDto> OnNpcAttitudeUpdated;
@@ -57,8 +61,18 @@ namespace ProjectC.Reputation
         public void OnNpcAttitudeSnapshotReceived(NpcAttitudeSnapshotDto snapshot)
         {
             CurrentNpcAttitude = snapshot;
+
+            // T-KNOW: update known NPCs
+            KnownNpcIds.Clear();
+            if (snapshot.knownNpcIds != null)
+            {
+                for (int i = 0; i < snapshot.knownNpcIds.Length; i++)
+                    KnownNpcIds.Add(snapshot.knownNpcIds[i]);
+            }
+
             OnNpcAttitudeUpdated?.Invoke(snapshot);
-            if (Debug.isDebugBuild) Debug.Log($"[NpcAttitudeClientState] OnNpcAttitudeSnapshotReceived: {snapshot.entries?.Length ?? 0} NPCs");
+            if (Debug.isDebugBuild)
+                Debug.Log($"[NpcAttitudeClientState] OnNpcAttitudeSnapshotReceived: {snapshot.entries?.Length ?? 0} NPCs, {KnownNpcIds.Count} known");
         }
 
         // ============ Helpers ============

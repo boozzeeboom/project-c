@@ -61,5 +61,9 @@ namespace ProjectC.Quests.Persistence
 
         // Sets: eventsOccurred, contractsCompleted, contractsAccepted, npcTalkedTo, worldFlags.
         public List<StringSetSaveEntry> stringSets = new List<StringSetSaveEntry>();
+
+        // === T-KNOW: Knowledge system ===
+        public List<int> knownFactions = new List<int>();   // FactionId как int для JsonUtility
+        public List<string> knownNpcs = new List<string>();
     }
 }

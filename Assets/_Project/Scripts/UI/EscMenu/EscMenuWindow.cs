@@ -106,6 +106,11 @@ namespace ProjectC.UI.EscMenu
             if (settingsBtn != null)
                 settingsBtn.clicked += NavigateToSettingsMenu;
 
+            // СПАСЕНИЕ — респавн на дефолтную точку если застрял
+            var rescueBtn = rootPanel.Q<Button>("esc-rescue-btn");
+            if (rescueBtn != null)
+                rescueBtn.clicked += OnRescueClicked;
+
             // ВЫХОД В МЕНЮ
             var exitBtn = rootPanel.Q<Button>("esc-exit-btn");
             if (exitBtn != null)
@@ -308,6 +313,37 @@ namespace ProjectC.UI.EscMenu
         private void NavigateToGameplay()
         {
             NavigateTo(GameplaySettingsSection.Create(), "ГЕЙМПЛЕЙ");
+        }
+
+        // ==================== Rescue ====================
+
+        private void OnRescueClicked()
+        {
+            Debug.Log("[EscMenuWindow] Rescue requested");
+            Hide();
+
+            // Найти локального игрока
+            if (NetworkManager.Singleton == null || NetworkManager.Singleton.LocalClient == null)
+            {
+                Debug.LogError("[EscMenuWindow] Rescue: no NetworkManager or LocalClient");
+                return;
+            }
+
+            var playerObj = NetworkManager.Singleton.LocalClient.PlayerObject;
+            if (playerObj == null)
+            {
+                Debug.LogError("[EscMenuWindow] Rescue: LocalClient.PlayerObject is null");
+                return;
+            }
+
+            var tracker = playerObj.GetComponent<ProjectC.Player.PlayerRespawnTracker>();
+            if (tracker == null)
+            {
+                Debug.LogError("[EscMenuWindow] Rescue: PlayerRespawnTracker not found on player");
+                return;
+            }
+
+            tracker.ForceDefaultRespawnServerRpc();
         }
 
         // ==================== Exit to Menu ====================

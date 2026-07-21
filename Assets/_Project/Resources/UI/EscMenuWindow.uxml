@@ -13,6 +13,7 @@
                 <ui:VisualElement name="esc-buttons" class="esc-buttons">
                     <ui:Button name="esc-continue-btn" text="ПРОДОЛЖИТЬ" class="esc-btn" />
                     <ui:Button name="esc-settings-btn" text="НАСТРОЙКИ" class="esc-btn" />
+                    <ui:Button name="esc-rescue-btn" text="СПАСЕНИЕ" class="esc-btn" />
                     <ui:Button name="esc-exit-btn" text="ВЫХОД В МЕНЮ" class="esc-btn esc-btn-warning" />
                 </ui:VisualElement>
             </ui:ScrollView>

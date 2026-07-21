@@ -301,6 +301,51 @@ namespace ProjectC.Player
         }
 
         /// <summary>
+        /// T-PLAYER-PERSIST: принудительный респавн на дефолтную точку (игнорирует корабли).
+        /// Вызывается из EscMenu «СПАСЕНИЕ» когда игрок застрял.
+        /// </summary>
+        [ServerRpc(RequireOwnership = false)]
+        public void ForceDefaultRespawnServerRpc()
+        {
+            PerformDefaultRespawn();
+        }
+
+        /// <summary>
+        /// Респавн ТОЛЬКО на дефолтную точку RespawnManager, без ship-проверок.
+        /// </summary>
+        private void PerformDefaultRespawn()
+        {
+            if (_isRespawning)
+            {
+                if (_debugLog) Debug.LogWarning($"[PlayerRespawnTracker] PerformDefaultRespawn skipped: already respawning (client={OwnerClientId})");
+                return;
+            }
+            _isRespawning = true;
+            _fallStartTime = float.MaxValue;
+
+            if (_respawnManager == null)
+            {
+                _respawnManager = FindAnyObjectByType<RespawnManager>();
+                if (_respawnManager == null)
+                {
+                    Debug.LogError($"[PlayerRespawnTracker] ForceDefaultRespawn: RespawnManager not found! client={OwnerClientId}");
+                    _isRespawning = false;
+                    return;
+                }
+            }
+
+            int index = _currentRespawnIndex >= 0 ? _currentRespawnIndex : 0;
+            Vector3 targetPos = _respawnManager.GetEffectivePosition(index);
+
+            if (_debugLog) Debug.Log($"[PlayerRespawnTracker] ForceDefaultRespawn: client={OwnerClientId} to index={index} pos={targetPos}");
+
+            TeleportToClientRpc(targetPos);
+
+            if (IsServer && !IsClient)
+                Invoke(nameof(ResetRespawningFlag), 0.5f);
+        }
+
+        /// <summary>
         /// T-HP01: Респавн с восстановлением HP до процента от максимума.
         /// Вызывается из PlayerTarget.ApplyDamage при смерти (серверный код).
         /// Выполняет стандартный телепорт + восстанавливает HP на PlayerTarget.

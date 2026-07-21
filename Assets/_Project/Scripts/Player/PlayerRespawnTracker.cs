@@ -114,7 +114,20 @@ namespace ProjectC.Player
                 Vector3 shipPos = np.CurrentShip.GetExitPosition();
                 TeleportToClientRpc(shipPos);
                 if (_debugLog)
-                    Debug.Log($"[PlayerRespawnTracker] Ship-proximity respawn for client={OwnerClientId} at ship exit {shipPos}");
+                    Debug.Log($"[PlayerRespawnTracker] Ship-proximity respawn (IsInShip) for client={OwnerClientId} at ship exit {shipPos}");
+
+                if (IsServer && !IsClient)
+                    Invoke(nameof(ResetRespawningFlag), 0.5f);
+                return true;
+            }
+
+            // T-PLAYER-PERSIST: fallback — LastShip (игрок вышел из корабля и упал)
+            if (np != null && np.LastShip != null && np.LastShip.IsSpawned)
+            {
+                Vector3 shipPos = np.LastShip.GetExitPosition();
+                TeleportToClientRpc(shipPos);
+                if (_debugLog)
+                    Debug.Log($"[PlayerRespawnTracker] Ship-proximity respawn (LastShip) for client={OwnerClientId} at ship exit {shipPos}");
 
                 if (IsServer && !IsClient)
                     Invoke(nameof(ResetRespawningFlag), 0.5f);

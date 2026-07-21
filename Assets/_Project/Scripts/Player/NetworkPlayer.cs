@@ -94,9 +94,10 @@ namespace ProjectC.Player
 
         private ThirdPersonCamera _myCamera;
 
-        // Состояние
+        // Состояние (корабль/пеший)
         private bool _inShip = false;
         private ShipController _currentShip;
+        private ShipController _lastShip; // T-PLAYER-PERSIST: не обнуляется при выходе
         private List<Renderer> _playerRenderers = new List<Renderer>();
         private List<Collider> _playerColliders = new List<Collider>();
 
@@ -175,6 +176,12 @@ namespace ProjectC.Player
 
         public bool IsInShip => _inShip;
         public ShipController CurrentShip => _currentShip;
+
+        /// <summary>
+        /// T-PLAYER-PERSIST: последний корабль игрока (не обнуляется при выходе).
+        /// Используется для ship-proximity respawn когда IsInShip=false после падения с корабля.
+        /// </summary>
+        public ShipController LastShip => _lastShip;
 
         /// <summary>
         /// Реальная мировая позиция игрока. Если пилот сидит в корабле — это
@@ -1122,6 +1129,7 @@ namespace ProjectC.Player
 
                 // Снимаем пилота (себя)
                 _currentShip.RemovePilot(OwnerClientId);
+                _lastShip = _currentShip; // T-PLAYER-PERSIST: запомнить перед обнулением
                 _currentShip = null;
 
                 _inShip = false;

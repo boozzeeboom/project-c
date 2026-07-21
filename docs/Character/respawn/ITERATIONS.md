@@ -16,6 +16,40 @@
 - `PlayerRespawnTracker.cs` — ship-proximity respawn (IsInShip→GetExitPosition, TryFindNearestOwnedShip через MetaRequirementRegistry)
 - `BootstrapScene.unity` — [PlayerPositionServer] GameObject
 
+## Итерация от 2026-07-21 (T-PLAYER-PERSIST fix 1 — engine persistence)
+
+**Задача:** Корабль без пилота падал после рестарта сервера — состояние двигателя (`isEngineRunning`) и `_frozenByNoPilot` не сохранялись в ShipPositions.json.
+
+**Коммит:** `8d03865` — T-PLAYER-PERSIST: fix — сохранять isEngineRunning в DTO, восстанавливать двигатель + freeze при рестарте сервера
+
+**Изменения:**
+- `ShipPositionSaveData.cs` — +isEngineRunning поле
+- `ShipPositionServer.cs` (Update) — сохраняется ship.IsEngineRunning
+- `ShipPositionServer.cs` (ApplyRestore) — SetEngineRunning(true) + ApplyPersistenceFreeze()
+- `ShipController.cs` — ApplyPersistenceFreeze(): новый public метод для принудительного freeze
+
+## Итерация от 2026-07-21 (T-PLAYER-PERSIST fix 2 — ship-proximity respawn)
+
+**Задача:** Респавн на корабле не работал — после выхода из корабля `IsInShip=false` и `CurrentShip=null`, первый чек в PerformRespawn никогда не срабатывал. `TryFindNearestOwnedShip` падал на проверке KeyRodInstanceWorld.
+
+**Коммит:** `bf6fbf9` — T-PLAYER-PERSIST: fix ship-proximity respawn — LastShip вместо IsInShip/CurrentShip
+
+**Изменения:**
+- `NetworkPlayer.cs` — +_lastShip поле, LastShip property, сохраняется перед обнулением _currentShip при выходе
+- `PlayerRespawnTracker.cs` — LastShip fallback в PerformRespawn (игрок вышел → упал → респавн на LastShip)
+- Восстановлены потерянные поля _inShip, _currentShip, _playerRenderers
+
+## Итерация от 2026-07-21 (T-PLAYER-PERSIST fix 3 — rescue button)
+
+**Задача:** Кнопка «СПАСЕНИЕ» в EscMenu для экстренного респавна на дефолтную точку (игрок застрял / баг / нужен ТП).
+
+**Коммит:** `785f250` — T-PLAYER-PERSIST: кнопка «СПАСЕНИЕ» в EscMenu — респавн на дефолтную точку
+
+**Изменения:**
+- `EscMenuWindow.uxml` — +esc-rescue-btn между настройками и выходом
+- `EscMenuWindow.cs` — OnRescueClicked → ForceDefaultRespawnServerRpc
+- `PlayerRespawnTracker.cs` — ForceDefaultRespawnServerRpc + PerformDefaultRespawn (без ship-проверок)
+
 ## Итерация от 2026-07-21 (T-HP01)
 
 **Задача:** Система здоровья персонажа — HP зависит от STR с настраиваемым множителем, отображение в CharacterWindow, респавн при смерти с восстановлением 30% HP.

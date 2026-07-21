@@ -1,6 +1,6 @@
 # Player-Ship Position Persistence — Финальный план (Merged)
 
-> **Статус:** План ✅ | Реализация: ⏳
+> **Статус:** План ✅ | Реализация: ✅
 > **Цель:** Привязать респавн и сохранение позиции игрока к кораблю. Игрок, вышедший в полёте, при возвращении появляется у своего корабля (зависшего в воздухе). При падении с корабля — респавн на нём же (если ближе дефолтной точки). Корабль без пилота замирает, не тратит топливо, не сдувается ветром.
 > **Дата:** 2026-07-21
 > **Основание:** Анализ PLAYER_SHIP_POSITION_PERSISTENCE.md (v1), SHIP_POSITION_PERSISTENCE_FINAL.md, фактического кода ShipController (FixedUpdate, AddPilot/RemovePilot), NetworkPlayer, PlayerRespawnTracker, WindManager.
@@ -48,6 +48,28 @@ PlayerPositionServer (5s):
 
 ---
 
+## Реализация (2026-07-21)
+
+**Все 10 этапов плана выполнены.** Коммиты: `269d4ad`, `8d03865`, `bf6fbf9`, `785f250`.
+
+### Отклонения от плана
+
+| # | Пункт плана | Реализация | Причина |
+|---|-------------|------------|---------|
+| **D12** | §10 Out of scope: engine после restore всегда OFF | `isEngineRunning` сохранён и восстановлен | Критично: корабль падал после рестарта сервера |
+| **D5** | `TryFindNearestOwnedShip` через `MetaRequirementRegistry` | Добавлен `LastShip` в NetworkPlayer как основной механизм | `CanPlayerUse` зависит от KeyRodInstanceWorld — ненадёжно |
+| — | Нет в плане | Кнопка «СПАСЕНИЕ» в EscMenu → `ForceDefaultRespawnServerRpc` | Запрошено: экстренный ТП при застревании
+
+### Финальный flow
+
+- **Freeze:** `_frozenByNoPilot` → ветер/топливо/антиграв пропущены, velocity=0 каждый кадр
+- **Save:** ShipPositionServer → PlayerPositionServer → единый write `ShipPositions.json`
+- **Restore (restart):** позиция + `SetEngineRunning(true)` + `ApplyPersistenceFreeze()`
+- **Restore (connect):** 5s delay → `RestorePlayer(clientId)` → телепорт к кораблю или на позицию
+- **Respawn:** `IsInShip` → `LastShip` → `TryFindNearestOwnedShip` → `RespawnManager`
+- **Спасение:** EscMenu → `ForceDefaultRespawnServerRpc` → только `RespawnManager`
+
+---
 ## 2. Общая схема (revised)
 
 ```
@@ -906,5 +928,4 @@ flowchart TD
 
 ---
 
-**Создано:** 2026-07-21 на основе анализа ShipController (FixedUpdate, AddPilot/RemovePilot), NetworkPlayer (OnNetworkSpawn/Despawn, SubmitSwitchModeRpc), PlayerRespawnTracker (PerformRespawn, RespawnWithHpRestore), WindManager, ShipPositionPersistence_FINAL.md, PLAYER_SHIP_POSITION_PERSISTENCE.md.
-**Следующий шаг:** Запрос на реализацию T-PP-DTO.
+

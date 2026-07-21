@@ -2356,5 +2356,54 @@ namespace ProjectC.Player
             }
             return nearest;
         }
+
+        // ═══════════════════════════════════════════════════════════
+        // T-PLAYER-PERSIST: Ship Recall — вызвать корабль на пад
+        // ═══════════════════════════════════════════════════════════
+
+        /// <summary>
+        /// Вызвать корабль на указанную позицию пада. Вызывается из RepairManagerWindow.
+        /// Сервер: телепортирует корабль, списывает кредиты, снимает freeze.
+        /// </summary>
+        [Rpc(SendTo.Server, RequireOwnership = false)]
+        public void RecallShipToPadServerRpc(Vector3 padPosition, int cost, RpcParams rpcParams = default)
+        {
+            if (!IsServer) return;
+
+            // Списать кредиты с отправителя (клиент = владелец корабля)
+            ulong clientId = rpcParams.Receive.SenderClientId;
+            if (cost > 0)
+            {
+                var trade = ProjectC.Trade.Core.TradeWorld.Instance;
+                if (trade?.Repository != null)
+                {
+                    if (!trade.Repository.TryModifyCredits(clientId, -cost, out float newCredits, out string failReason))
+                    {
+                        Debug.LogWarning($"[ShipController:{name}] Recall denied: client={clientId}, reason={failReason}");
+                        return;
+                    }
+                    Debug.Log($"[ShipController:{name}] Player {clientId} paid {cost} CR for ship recall (new={newCredits:F0})");
+                }
+            }
+
+            // Если пристыкован — отстыковать
+            if (_netIsDocked.Value)
+                ExitDocked();
+
+            // Телепорт на пад
+            if (_rb != null)
+            {
+                _rb.position = padPosition;
+                _rb.linearVelocity = Vector3.zero;
+                _rb.angularVelocity = Vector3.zero;
+            }
+
+            // Снять freeze
+            _frozenByNoPilot = false;
+
+            if (_debugLog)
+                Debug.Log($"[ShipController:{name}] Recalled to pad at {padPosition}, cost={cost}");
+        }
     }
 }
+

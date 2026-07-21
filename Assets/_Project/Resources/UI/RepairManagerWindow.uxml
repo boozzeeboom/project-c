@@ -85,6 +85,16 @@
                 </ui:VisualElement>
             </ui:VisualElement>
 
+            <!-- Ship Recall — вызвать корабль на ближайший пад -->
+            <ui:VisualElement name="repair-recall-section" class="repair-section">
+                <ui:Label text="🚁 Вернуть корабль:" class="repair-section-label" />
+                <ui:Label name="repair-recall-info" text="Корабль появится на ближайшем свободном паде" class="repair-info-label" />
+                <ui:VisualElement class="repair-paint-actions">
+                    <ui:Label name="repair-recall-cost-label" text="Стоимость: 500 кр." class="repair-info-label" />
+                    <ui:Button name="repair-recall-btn" text="🚁 Вызвать" class="repair-btn repair-btn-install" />
+                </ui:VisualElement>
+            </ui:VisualElement>
+
             <!-- Footer -->
             <ui:VisualElement name="repair-footer" class="repair-footer">
 

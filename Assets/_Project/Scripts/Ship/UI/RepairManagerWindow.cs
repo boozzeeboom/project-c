@@ -65,6 +65,13 @@ namespace ProjectC.Ship.UI
         private Button _paintApplyBtn;
         private Label _paintCostLabel;
 
+        // Ship Recall
+        private VisualElement _recallSection;
+        private Button _recallBtn;
+        private Label _recallCostLabel;
+        private Label _recallInfoLabel;
+        private int _shipRecallCost = 500;
+
         // State
 
         private bool _built;
@@ -205,6 +212,18 @@ namespace ProjectC.Ship.UI
                 _hullBtn.clicked += OnRepairHullClicked;
             }
 
+            // Ship Recall
+            _recallSection = _root.Q<VisualElement>("repair-recall-section");
+            _recallBtn = _root.Q<Button>("repair-recall-btn");
+            _recallCostLabel = _root.Q<Label>("repair-recall-cost-label");
+            _recallInfoLabel = _root.Q<Label>("repair-recall-info");
+
+            if (_recallBtn != null)
+            {
+                _recallBtn.clicked -= OnRecallShipClicked;
+                _recallBtn.clicked += OnRecallShipClicked;
+            }
+
             WireCameraArrows();
             BuildPaintPalette();
             WirePaintApplyButton();
@@ -260,13 +279,17 @@ namespace ProjectC.Ship.UI
             }
         }
 
-        public void Show(ModuleShopDatabase database, int repaintCost = 0)
+        public void Show(ModuleShopDatabase database, int repaintCost = 0, int shipRecallCost = 500)
         {
             _activeDatabase = database ?? shopDatabase;
             _repaintCost = repaintCost;
+            _shipRecallCost = shipRecallCost;
 
             if (_activeDatabase != null)
                 ShipModuleCatalog.Initialize(_activeDatabase);
+
+            if (_recallCostLabel != null)
+                _recallCostLabel.text = $"Стоимость: {_shipRecallCost} кр.";
 
             RefreshShipList();
             RefreshCredits();
@@ -520,9 +543,75 @@ namespace ProjectC.Ship.UI
                     _statusLabel.text = "Запрос на ремонт корпуса отправлен...";
                 StartCoroutine(DelayedRefresh(0.5f));
             }
+        }
+
+        // ═══════════════════════════════════════════════════════════
+        // Ship Recall — вызвать корабль на ближайший свободный пад
+        // ═══════════════════════════════════════════════════════════
+
+        private void OnRecallShipClicked()
+        {
+            if (_selectedKeyId <= 0) return;
+            if (!_shipByKeyId.TryGetValue(_selectedKeyId, out var sc)) return;
+
+            // Проверить credits
+            float credits = 0f;
+            var trade = ProjectC.Trade.Core.TradeWorld.Instance;
+            if (trade?.Repository != null)
+            {
+                ulong myId = Unity.Netcode.NetworkManager.Singleton != null
+                    ? Unity.Netcode.NetworkManager.Singleton.LocalClientId : 0;
+                credits = trade.Repository.GetCredits(myId);
+            }
+
+            if (credits < _shipRecallCost)
+            {
+                if (_statusLabel != null)
+                    _statusLabel.text = $"Недостаточно кредитов! Нужно {_shipRecallCost}, есть {credits:F0}";
+                return;
+            }
+
+            // Найти ближайший свободный пад
+            var pads = FindObjectsByType<ProjectC.Docking.Stations.DockingPadTriggerBox>(
+                FindObjectsInactive.Exclude, FindObjectsSortMode.None);
+
+            ProjectC.Docking.Stations.DockingPadTriggerBox nearestPad = null;
+            float nearestDist = float.MaxValue;
+
+            foreach (var pad in pads)
+            {
+                if (pad.IsShipInside) continue; // занят
+
+                float dist = Vector3.Distance(
+                    _playerCam != null ? _playerCam.transform.position : Vector3.zero,
+                    pad.transform.position);
+
+                if (dist < nearestDist)
+                {
+                    nearestDist = dist;
+                    nearestPad = pad;
+                }
+            }
+
+            if (nearestPad == null)
+            {
+                if (_statusLabel != null)
+                    _statusLabel.text = "Нет свободных падов!";
+                return;
+            }
+
+            // Отправить RPC на корабль
+            if (sc.IsSpawned)
+            {
+                sc.RecallShipToPadServerRpc(nearestPad.transform.position, _shipRecallCost);
+                if (_statusLabel != null)
+                    _statusLabel.text = $"Корабль вызван на пад {nearestPad.PadId}...";
+                StartCoroutine(DelayedRefresh(1f));
+            }
             else
             {
-                Debug.LogWarning("[RepairManagerWindow] ShipModuleServer not found on ship");
+                if (_statusLabel != null)
+                    _statusLabel.text = "Корабль не заспавнен.";
             }
         }
 

@@ -61,5 +61,20 @@ namespace ProjectC.Core.ShipPosition
     public class ShipPositionListWrapper
     {
         public List<ShipPositionSaveData> ships = new List<ShipPositionSaveData>();
+        public List<PlayerPositionSaveData> players = new List<PlayerPositionSaveData>(); // T-PLAYER-PERSIST
+    }
+
+    /// <summary>
+    /// T-PLAYER-PERSIST: Данные сохранения позиции игрока.
+    /// Матчинг при restore — по clientId (NGO NetworkClientId).
+    /// </summary>
+    [Serializable]
+    public class PlayerPositionSaveData
+    {
+        public ulong clientId;           // NGO NetworkClientId
+        public float px, py, pz;         // world position
+        public bool inShip;              // игрок был на корабле в момент save?
+        public string shipPersistentId;  // _shipPersistentId корабля (если inShip)
+        public long savedAtUnix;
     }
 }

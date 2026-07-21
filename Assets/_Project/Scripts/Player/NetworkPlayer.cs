@@ -311,6 +311,39 @@ namespace ProjectC.Player
             // Add-only: PlayerAttacker + PlayerTarget как компоненты, register/unregister в lifecycle.
             // Skip для scene-placed PlayerSpawner-пустышек (выше guard на NetworkPlayerSpawner).
             RegisterWithCombatServer();
+
+            // T-PLAYER-PERSIST: восстановить позицию из save при connect
+            // Задержка 5s — после ShipPositionServer.RestoreCoroutine (3.5s)
+            // и PlayerPositionServer инициализации.
+            // D10: 5s вместо 4s для защиты от timing race на медленных серверах.
+            if (IsServer)
+            {
+                StartCoroutine(RestorePlayerPositionCoroutine());
+            }
+        }
+
+        /// <summary>
+        /// T-PLAYER-PERSIST: корутина восстановления позиции игрока из save.
+        /// Задержка 5s — после ShipPositionServer.RestoreCoroutine (3.5s).
+        /// </summary>
+        private System.Collections.IEnumerator RestorePlayerPositionCoroutine()
+        {
+            yield return new WaitForSeconds(5f);
+
+            if (ProjectC.Core.ShipPosition.PlayerPositionServer.Instance != null)
+            {
+                bool restored = ProjectC.Core.ShipPosition.PlayerPositionServer.Instance.RestorePlayer(this);
+                if (restored)
+                {
+                    // Сбросить fall detection чтобы не тригернуть респавн после телепорта
+                    var tracker = GetComponent<PlayerRespawnTracker>();
+                    if (tracker != null) tracker.ResetFallTimer();
+                }
+            }
+            else
+            {
+                Debug.LogWarning($"[NetworkPlayer] PlayerPositionServer.Instance == null — skip restore for client={OwnerClientId}");
+            }
         }
 
         /// <summary>

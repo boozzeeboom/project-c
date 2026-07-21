@@ -138,10 +138,20 @@ namespace ProjectC.Core.ShipPosition
                 allData.Add(data);
             }
 
-            _repo.SaveAll(allData);
+            // T-PLAYER-PERSIST (D12): забираем players из PlayerPositionServer
+            List<PlayerPositionSaveData> playerData = new();
+            if (PlayerPositionServer.Instance != null)
+            {
+                PlayerPositionServer.Instance.CollectPlayers();
+                playerData = PlayerPositionServer.Instance.GetPendingPlayers();
+            }
+
+            // Единый write (ships + players)
+            var wrapper = new ShipPositionListWrapper { ships = allData, players = playerData };
+            _repo.SaveAll(wrapper);
 
             if (debugMode)
-                Debug.Log($"[ShipPositionServer] Saved {allData.Count} ships");
+                Debug.Log($"[ShipPositionServer] Saved {allData.Count} ships + {playerData.Count} players");
         }
 
         // === Restore ===
@@ -156,10 +166,17 @@ namespace ProjectC.Core.ShipPosition
             // Ждём ScenePlacedObjectSpawner + DiscoverNpcShipsDelayed (2s) + запас
             yield return new WaitForSeconds(restoreDelaySec);
 
-            var savedList = _repo.LoadAll();
-            if (savedList.Count == 0)
+            // T-PLAYER-PERSIST (D12): загружаем wrapper с ships + players
+            var wrapper = _repo.LoadAllWrapper();
+
+            // Загружаем players в PlayerPositionServer
+            if (PlayerPositionServer.Instance != null)
+                PlayerPositionServer.Instance.LoadSavedPlayers(wrapper.players);
+
+            var savedList = wrapper.ships;
+            if (savedList == null || savedList.Count == 0)
             {
-                Debug.Log("[ShipPositionServer] No saved positions. Skip restore.");
+                Debug.Log("[ShipPositionServer] No saved ships. Skip restore.");
                 yield break;
             }
 

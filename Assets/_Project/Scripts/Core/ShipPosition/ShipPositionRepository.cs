@@ -29,6 +29,13 @@ namespace ProjectC.Core.ShipPosition
 
         /// <summary>Save all ship positions overwriting the file.</summary>
         void SaveAll(List<ShipPositionSaveData> ships);
+
+        // T-PLAYER-PERSIST: unified save/load with player data
+        /// <summary>Load all persisted data (ships + players).</summary>
+        ShipPositionListWrapper LoadAllWrapper();
+
+        /// <summary>Save all data (ships + players) overwriting the file.</summary>
+        void SaveAll(ShipPositionListWrapper wrapper);
     }
 
     /// <summary>
@@ -95,6 +102,52 @@ namespace ProjectC.Core.ShipPosition
                 catch (Exception ex)
                 {
                     Debug.LogError($"[JsonShipPositionRepository] SaveAll failed: {ex.Message}");
+                }
+            }
+        }
+
+        // T-PLAYER-PERSIST: unified save/load with player data
+
+        public ShipPositionListWrapper LoadAllWrapper()
+        {
+            var path = FilePath;
+            lock (_ioLock)
+            {
+                if (!File.Exists(path))
+                {
+                    Debug.Log($"[JsonShipPositionRepository] No save file at {path}. Returning empty wrapper.");
+                    return new ShipPositionListWrapper();
+                }
+
+                try
+                {
+                    var json = File.ReadAllText(path);
+                    var wrapper = JsonUtility.FromJson<ShipPositionListWrapper>(json);
+                    return wrapper ?? new ShipPositionListWrapper();
+                }
+                catch (Exception ex)
+                {
+                    Debug.LogError($"[JsonShipPositionRepository] LoadAllWrapper failed: {ex.Message}. Returning empty.");
+                    return new ShipPositionListWrapper();
+                }
+            }
+        }
+
+        public void SaveAll(ShipPositionListWrapper wrapper)
+        {
+            var path = FilePath;
+
+            lock (_ioLock)
+            {
+                try
+                {
+                    var json = JsonUtility.ToJson(wrapper, prettyPrint: false);
+                    File.WriteAllText(path, json);
+                    Debug.Log($"[JsonShipPositionRepository] Saved {wrapper.ships?.Count ?? 0} ships + {wrapper.players?.Count ?? 0} players to {path}");
+                }
+                catch (Exception ex)
+                {
+                    Debug.LogError($"[JsonShipPositionRepository] SaveAll(wrapper) failed: {ex.Message}");
                 }
             }
         }

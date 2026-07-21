@@ -439,6 +439,9 @@ namespace ProjectC.Player
         // Список пилотов (кооп-управление)
         private HashSet<ulong> _pilots = new HashSet<ulong>();
 
+        // T-PLAYER-PERSIST (D1, D6): заморозка при отсутствии пилотов
+        private bool _frozenByNoPilot = false;
+
         // Накопленный ввод от всех пилотов (сервер)
         private float _sumThrust, _sumYaw, _sumPitch, _sumVertical;
         private int _boostCount, _inputCount;
@@ -1258,7 +1261,8 @@ namespace ProjectC.Player
             }
 
             // ENGINE-STATE: idle расход топлива (двигатель включён, ввода нет)
-            if (_engineRunning && !_hasNpcPilot && fuelSystem != null && !engineStalled && isIdle)
+            // T-PLAYER-PERSIST: frozen = топливо не тратится
+            if (_engineRunning && !_hasNpcPilot && fuelSystem != null && !engineStalled && isIdle && !_frozenByNoPilot)
             {
                 fuelSystem.ConsumeFuel(fuelSystem.IdleConsumptionRate * dt);
             }
@@ -1467,14 +1471,27 @@ namespace ProjectC.Player
             ApplyMeziyEffects(dt);
 
             // 9.6. Ветер (Сессия 3)
-            ApplyWind(dt);
+            // T-PLAYER-PERSIST: frozen = ветер не применяется
+            if (!_frozenByNoPilot)
+            {
+                ApplyWind(dt);
 
-            // 9.65. Глобальный ветер из WindManager (аддитивно к зонам)
-            ApplyGlobalWind(dt);
+                // 9.65. Глобальный ветер из WindManager (аддитивно к зонам)
+                ApplyGlobalWind(dt);
+            }
 
 
             // 10. Ограничение скорости (с учётом штрафа дозаправки)
             ClampVelocity(isRefueling);
+
+            // T-PLAYER-PERSIST (D1): каждый кадр держим velocity = 0 пока frozen
+            if (_frozenByNoPilot && _rb != null)
+            {
+                if (_rb.linearVelocity.sqrMagnitude > 0.001f)
+                    _rb.linearVelocity = Vector3.zero;
+                if (_rb.angularVelocity.sqrMagnitude > 0.001f)
+                    _rb.angularVelocity = Vector3.zero;
+            }
 
             // 11. Ограничение угла тангажа
             ClampPitchAngle();
@@ -1530,6 +1547,8 @@ namespace ProjectC.Player
 
         private void ApplyAntiGravity()
         {
+            // T-PLAYER-PERSIST: frozen = антигравитация не нужна (velocity zeroится)
+            if (_frozenByNoPilot) return;
             if (antiGravity <= 0f) return;
             // ENGINE-STATE: без двигателя (и без NPC) — не компенсируем гравитацию
             if (!_engineRunning && !_hasNpcPilot) return;
@@ -1834,6 +1853,7 @@ namespace ProjectC.Player
         private void AddPilotRpc(ulong clientId, RpcParams rpcParams = default)
         {
             _pilots.Add(clientId);
+            _frozenByNoPilot = false; // T-PLAYER-PERSIST: разморозка
             enabled = true;
         }
 
@@ -1852,8 +1872,24 @@ namespace ProjectC.Player
         private void RemovePilotRpc(ulong clientId, RpcParams rpcParams = default)
         {
             _pilots.Remove(clientId);
-            // ENGINE-STATE: не глушим enabled — idle-режим или NPC
-            // должны продолжать работу. FixedUpdate gate сам разрулит.
+
+            // T-PLAYER-PERSIST: если пилотов не осталось и двигатель включён — заморозка
+            if (_pilots.Count == 0 && _engineRunning && !_hasNpcPilot && !_frozenByNoPilot)
+            {
+                if (_rb != null)
+                {
+                    _rb.linearVelocity = Vector3.zero;
+                    _rb.angularVelocity = Vector3.zero;
+                }
+                _frozenByNoPilot = true;
+
+                // Сбросить накопленный ввод
+                _sumThrust = 0; _sumYaw = 0; _sumPitch = 0; _sumVertical = 0;
+                _boostCount = 0; _inputCount = 0;
+
+                if (_debugLog)
+                    Debug.Log($"[ShipController:{name}] Frozen by no pilot. Engine ON, fuel/wind suspended.");
+            }
         }
 
         /// <summary>
@@ -2127,6 +2163,7 @@ namespace ProjectC.Player
         public void ApplyExternalForce(Vector3 force)
         {
             if (!IsServer || _rb == null) return;
+            if (_frozenByNoPilot) return; // T-PLAYER-PERSIST: frozen = игнор
             _rb.AddForce(force, ForceMode.Force);
         }
 

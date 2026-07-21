@@ -23,6 +23,10 @@ namespace ProjectC.Player
         [Tooltip("Задержка в секундах перед респавном после обнаружения падения.")]
         [SerializeField] private float _respawnDelay = 0.5f;
 
+        [Header("Ship Respawn Proximity")]
+        [Tooltip("Максимальная дистанция до owned корабля для респавна на нём.")]
+        [SerializeField] private float _ownedShipRespawnRadius = 200f; // T-PLAYER-PERSIST D5
+
         [Header("Debug")]
         [Tooltip("Логировать события респавна.")]
         [SerializeField] private bool _debugLog = false;
@@ -103,6 +107,32 @@ namespace ProjectC.Player
             _isRespawning = true;
             _fallStartTime = float.MaxValue;
 
+            // T-PLAYER-PERSIST: если игрок был на корабле — респавним на нём
+            var np = GetComponent<NetworkPlayer>();
+            if (np != null && np.IsInShip && np.CurrentShip != null && np.CurrentShip.IsSpawned)
+            {
+                Vector3 shipPos = np.CurrentShip.GetExitPosition();
+                TeleportToClientRpc(shipPos);
+                if (_debugLog)
+                    Debug.Log($"[PlayerRespawnTracker] Ship-proximity respawn for client={OwnerClientId} at ship exit {shipPos}");
+
+                if (IsServer && !IsClient)
+                    Invoke(nameof(ResetRespawningFlag), 0.5f);
+                return true;
+            }
+
+            // T-PLAYER-PERSIST: поиск ближайшего owned корабля (D5)
+            if (TryFindNearestOwnedShip(np, out Vector3 nearestShipPos))
+            {
+                TeleportToClientRpc(nearestShipPos);
+                if (_debugLog)
+                    Debug.Log($"[PlayerRespawnTracker] Nearest-owned-ship respawn for client={OwnerClientId} at {nearestShipPos}");
+
+                if (IsServer && !IsClient)
+                    Invoke(nameof(ResetRespawningFlag), 0.5f);
+                return true;
+            }
+
             // T-HP01: защита от null если RespawnManager не найден в сцене
             if (_respawnManager == null)
             {
@@ -128,6 +158,48 @@ namespace ProjectC.Player
                 Invoke(nameof(ResetRespawningFlag), 0.5f);
 
             return true;
+        }
+
+        /// <summary>
+        /// T-PLAYER-PERSIST (D5): поиск ближайшего owned корабля для респавна.
+        /// </summary>
+        private bool TryFindNearestOwnedShip(NetworkPlayer np, out Vector3 nearestPos)
+        {
+            nearestPos = Vector3.zero;
+
+            if (np == null || Unity.Netcode.NetworkManager.Singleton == null) return false;
+
+            ulong clientId = np.OwnerClientId;
+            var allShips = FindObjectsByType<ShipController>(FindObjectsSortMode.None);
+            ShipController nearestShip = null;
+            float nearestDistSq = float.MaxValue;
+            float proximityThresholdSq = _ownedShipRespawnRadius * _ownedShipRespawnRadius;
+
+            foreach (var ship in allShips)
+            {
+                if (!ship.IsSpawned) continue;
+
+                // Проверка владения через MetaRequirementRegistry
+                bool isOwned = ProjectC.MetaRequirement.MetaRequirementRegistry.Instance != null
+                    && ProjectC.MetaRequirement.MetaRequirementRegistry.Instance.CanPlayerUse(clientId, ship.NetworkObjectId);
+
+                if (!isOwned) continue;
+
+                float distSq = (ship.transform.position - transform.position).sqrMagnitude;
+                if (distSq < nearestDistSq && distSq <= proximityThresholdSq)
+                {
+                    nearestDistSq = distSq;
+                    nearestShip = ship;
+                }
+            }
+
+            if (nearestShip != null)
+            {
+                nearestPos = nearestShip.GetExitPosition();
+                return true;
+            }
+
+            return false;
         }
 
         private void ResetRespawningFlag()

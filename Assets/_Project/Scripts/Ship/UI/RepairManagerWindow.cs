@@ -60,6 +60,7 @@ namespace ProjectC.Ship.UI
 
         // Ship repainting
         private int _repaintCost;
+        private int _hullRepairCost;
         private Color? _selectedPaintColor;
         private VisualElement _paintSection;
         private Button _paintApplyBtn;
@@ -279,11 +280,12 @@ namespace ProjectC.Ship.UI
             }
         }
 
-        public void Show(ModuleShopDatabase database, int repaintCost = 0, int shipRecallCost = 500)
+        public void Show(ModuleShopDatabase database, int repaintCost = 0, int shipRecallCost = 500, int hullRepairCost = 300)
         {
             _activeDatabase = database ?? shopDatabase;
             _repaintCost = repaintCost;
             _shipRecallCost = shipRecallCost;
+            _hullRepairCost = hullRepairCost;
 
             if (_activeDatabase != null)
                 ShipModuleCatalog.Initialize(_activeDatabase);
@@ -509,8 +511,6 @@ namespace ProjectC.Ship.UI
                 _hullBarFill.style.backgroundColor = c;
             }
 
-            int cost = hull.Config != null ? hull.Config.repairCostCredits : 0;
-
             if (_hullLabel != null)
             {
                 _hullLabel.text = hull.IsBroken
@@ -524,7 +524,7 @@ namespace ProjectC.Ship.UI
                 bool isDocked = sc.IsDocked;
                 _hullBtn.SetEnabled(needsRepair && isDocked);
                 _hullBtn.text = needsRepair
-                    ? $"🔧 Починить ({cost} кр.)"
+                    ? $"🔧 Починить ({_hullRepairCost} кр.)"
                     : "✓ Целый";
                 _hullBtn.tooltip = !isDocked ? "Корабль должен быть в доке" : string.Empty;
             }
@@ -538,7 +538,7 @@ namespace ProjectC.Ship.UI
             var server = sc.GetComponent<ShipModuleServer>();
             if (server != null)
             {
-                server.RequestRepairHull(_selectedKeyId);
+                server.RequestRepairHull(_selectedKeyId, _hullRepairCost);
                 if (_statusLabel != null)
                     _statusLabel.text = "Запрос на ремонт корпуса отправлен...";
                 StartCoroutine(DelayedRefresh(0.5f));

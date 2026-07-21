@@ -145,6 +145,8 @@ namespace ProjectC.Ship.Editor
             EditorGUILayout.Space(4);
             EditorGUILayout.LabelField("Repair Manager Settings", EditorStyles.boldLabel);
             EditorGUILayout.PropertyField(serializedObject.FindProperty("_repaintCost"));
+            EditorGUILayout.PropertyField(serializedObject.FindProperty("_hullRepairCost"));
+            EditorGUILayout.PropertyField(serializedObject.FindProperty("_shipRecallCost"));
             EditorGUILayout.PropertyField(serializedObject.FindProperty("_interactionRadius"));
             EditorGUILayout.PropertyField(serializedObject.FindProperty("_interactHint"));
         }

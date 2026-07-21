@@ -642,7 +642,6 @@ namespace ProjectC.Editor
             cfg.minCollisionRelativeSpeed = 3f;
             cfg.postUndockGraceSeconds = 3f;
             cfg.brokenSpeedMultiplier = 0.1f;
-            cfg.repairCostCredits = 300;
             cfg.verboseLogging = true;
 
             AssetDatabase.CreateAsset(cfg, path);

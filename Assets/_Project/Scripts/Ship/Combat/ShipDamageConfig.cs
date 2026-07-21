@@ -61,8 +61,8 @@ namespace ProjectC.Ship.Combat
         [Range(0f, 1f)] public float brokenSpeedMultiplier = 0.1f;
 
         [Header("Ремонт")]
-        [Tooltip("Стоимость ремонта корпуса в кредитах (полное восстановление).")]
-        [Min(0)] public int repairCostCredits = 300;
+        [Tooltip("❌ УСТАРЕЛО: стоимость теперь задаётся на NPC RepairManager (_hullRepairCost). Оставлено для обратной совместимости.")]
+        [Min(0)] [HideInInspector] public int repairCostCredits = 300;
 
         [Header("Debug")]
         [Tooltip("Подробные логи в консоль при каждом изменении HP")]

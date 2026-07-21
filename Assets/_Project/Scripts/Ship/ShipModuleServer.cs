@@ -20,10 +20,6 @@ namespace ProjectC.Ship
     [RequireComponent(typeof(NetworkObject))]
     public class ShipModuleServer : NetworkBehaviour
     {
-        [Header("Каталог модулей (для lookup по moduleId)")]
-        [Tooltip("Ссылка на базу модулей. Используется для поиска ShipModule по moduleId на клиенте после RPC.")]
-        [SerializeField] private ModuleShopDatabase _shopDatabase;
-
         // Ссылки на компоненты корабля
         private ProjectC.Player.ShipController _shipController;
         private ShipModuleManager _moduleManager;
@@ -458,14 +454,14 @@ namespace ProjectC.Ship
         // ============================================================
 
         /// <summary>Клиент отправляет запрос на ремонт корпуса.</summary>
-        public void RequestRepairHull(int keyInstanceId)
+        public void RequestRepairHull(int keyInstanceId, int cost)
         {
             if (!IsClient) return;
-            RequestRepairHullRpc(keyInstanceId);
+            RequestRepairHullRpc(keyInstanceId, cost);
         }
 
         [Rpc(SendTo.Server)]
-        private void RequestRepairHullRpc(int keyInstanceId,
+        private void RequestRepairHullRpc(int keyInstanceId, int cost,
             RpcParams rpcParams = default)
         {
             if (!IsServer) return;
@@ -510,8 +506,7 @@ namespace ProjectC.Ship
                 return;
             }
 
-            // --- Списание кредитов ---
-            int cost = hull.Config != null ? hull.Config.repairCostCredits : 0;
+            // --- Списание кредитов (цена передана NPC RepairManager) ---
             if (cost > 0)
             {
                 var trade = ProjectC.Trade.Core.TradeWorld.Instance;
@@ -542,15 +537,9 @@ namespace ProjectC.Ship
         // Helpers
         // ============================================================
 
-        /// <summary>Поиск ShipModule по moduleId через каталог.</summary>
-
+        /// <summary>Поиск ShipModule по moduleId через статический реестр ShipModuleCatalog.</summary>
         private ShipModule FindModuleById(string moduleId)
         {
-            if (_shopDatabase != null)
-            {
-                return _shopDatabase.FindEntry(moduleId);
-            }
-            // Fallback: поиск через ShipModuleCatalog (статический реестр)
             return ShipModuleCatalog.Find(moduleId);
         }
     }

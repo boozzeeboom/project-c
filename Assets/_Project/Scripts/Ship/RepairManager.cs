@@ -23,6 +23,10 @@ namespace ProjectC.Ship
         [Tooltip("Стоимость покраски корабля в кредитах.")]
         [SerializeField] private int _repaintCost = 500;
 
+        [Header("Ремонт корпуса")]
+        [Tooltip("Стоимость ремонта корпуса в кредитах.")]
+        [SerializeField] private int _hullRepairCost = 300;
+
         [Header("Ship Recall")]
         [Tooltip("Стоимость вызова корабля на ближайший пад в кредитах.")]
         [SerializeField] private int _shipRecallCost = 500;
@@ -71,7 +75,7 @@ namespace ProjectC.Ship
                 return;
             }
 
-            RepairManagerWindow.Instance.Show(_shopDatabase, _repaintCost, _shipRecallCost);
+            RepairManagerWindow.Instance.Show(_shopDatabase, _repaintCost, _shipRecallCost, _hullRepairCost);
             Debug.Log("[RepairManager] RepairManagerWindow opened");
 
         }

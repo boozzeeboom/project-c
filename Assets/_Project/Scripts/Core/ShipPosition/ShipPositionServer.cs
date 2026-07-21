@@ -44,6 +44,7 @@ namespace ProjectC.Core.ShipPosition
 
         private IShipPositionRepository _repo;
         private float _nextSaveTime;
+        private bool _restoreCompleted;
 
         // === Lifecycle ===
 
@@ -81,6 +82,7 @@ namespace ProjectC.Core.ShipPosition
         private void Update()
         {
             if (!IsServerSafe()) return;
+            if (!_restoreCompleted) return;
             if (Time.time < _nextSaveTime) return;
             _nextSaveTime = Time.time + saveIntervalSec;
 
@@ -208,6 +210,10 @@ namespace ProjectC.Core.ShipPosition
             }
 
             Debug.Log($"[ShipPositionServer] Restored {restored}/{savedList.Count} ships from save");
+
+            // Разрешаем save после restore и сбрасываем таймер (не копим отложенные save)
+            _restoreCompleted = true;
+            _nextSaveTime = Time.time + saveIntervalSec;
         }
 
         private void ApplyRestore(ShipController ship, ShipPositionSaveData data)

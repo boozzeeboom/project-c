@@ -35,6 +35,7 @@ namespace ProjectC.Core.ShipPosition
 
         // ── saved data (загружается из ShipPositionServer.RestoreCoroutine) ──
         private List<PlayerPositionSaveData> _savedPlayers = new();
+        private bool _dataLoaded;
 
         private void Awake()
         {
@@ -102,9 +103,16 @@ namespace ProjectC.Core.ShipPosition
         public void LoadSavedPlayers(List<PlayerPositionSaveData> players)
         {
             _savedPlayers = players ?? new List<PlayerPositionSaveData>();
+            _dataLoaded = true;
             if (_debugMode)
                 Debug.Log($"[PlayerPositionServer] Loaded {_savedPlayers.Count} saved players from ShipPositions.json");
         }
+
+        /// <summary>
+        /// Сигнал: ShipPositionServer.RestoreCoroutine завершил загрузку данных.
+        /// NetworkPlayer.RestorePlayerPositionCoroutine ждёт этого флага.
+        /// </summary>
+        public bool DataLoaded => _dataLoaded;
 
         /// <summary>
         /// Restore позиции игрока при connect.

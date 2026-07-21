@@ -331,25 +331,32 @@ namespace ProjectC.Player
 
         /// <summary>
         /// T-PLAYER-PERSIST: корутина восстановления позиции игрока из save.
-        /// Задержка 5s — после ShipPositionServer.RestoreCoroutine (3.5s).
+        /// Ждёт флага DataLoaded от PlayerPositionServer (выставляется после
+        /// ShipPositionServer.RestoreCoroutine), вместо фиксированной задержки.
         /// </summary>
         private System.Collections.IEnumerator RestorePlayerPositionCoroutine()
         {
-            yield return new WaitForSeconds(5f);
-
-            if (ProjectC.Core.ShipPosition.PlayerPositionServer.Instance != null)
+            // Ждём пока ShipPositionServer.RestoreCoroutine загрузит данные
+            var ppServer = ProjectC.Core.ShipPosition.PlayerPositionServer.Instance;
+            float waited = 0f;
+            while (ppServer == null || !ppServer.DataLoaded)
             {
-                bool restored = ProjectC.Core.ShipPosition.PlayerPositionServer.Instance.RestorePlayer(this);
-                if (restored)
+                if (waited > 30f)
                 {
-                    // Сбросить fall detection чтобы не тригернуть респавн после телепорта
-                    var tracker = GetComponent<PlayerRespawnTracker>();
-                    if (tracker != null) tracker.ResetFallTimer();
+                    Debug.LogWarning("[NetworkPlayer] Timed out waiting for PlayerPositionServer data — skip restore");
+                    yield break;
                 }
+                yield return new WaitForSeconds(0.5f);
+                waited += 0.5f;
+                ppServer = ProjectC.Core.ShipPosition.PlayerPositionServer.Instance;
             }
-            else
+
+            bool restored = ppServer.RestorePlayer(this);
+            if (restored)
             {
-                Debug.LogWarning($"[NetworkPlayer] PlayerPositionServer.Instance == null — skip restore for client={OwnerClientId}");
+                // Сбросить fall detection чтобы не тригернуть респавн после телепорта
+                var tracker = GetComponent<PlayerRespawnTracker>();
+                if (tracker != null) tracker.ResetFallTimer();
             }
         }
 

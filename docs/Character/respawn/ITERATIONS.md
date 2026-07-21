@@ -69,6 +69,19 @@
 - `Assets/_Project/Scripts/UI/EscMenu/EscMenuWindow.cs` — фикс SceneManager
 - `Assets/BootstrapScene.unity` — StatsServer._healthConfig назначен
 
+## Итерация от 2026-07-22 (T-PLAYER-PERSIST fix 4 — timing races)
+
+**Задача:** Два timing race при restore позиций:
+1. Первый save (5s) срабатывал до restore (6s) — перезаписывал `ShipPositions.json` текущими позициями, старые терялись.
+2. `RestorePlayerPositionCoroutine` (5s) срабатывала до `ShipPositionServer.RestoreCoroutine` (6s) — `_savedPlayers` был пуст, игрок спавнился на дефолте.
+
+**Коммит:** `<будет заполнен>`
+
+**Изменения:**
+- `ShipPositionServer.cs` — `_restoreCompleted` флаг: Update() пропускает save до завершения RestoreCoroutine; сброс `_nextSaveTime` после restore
+- `PlayerPositionServer.cs` — `_dataLoaded` флаг + `DataLoaded` property: сигнал что RestoreCoroutine загрузил данные
+- `NetworkPlayer.cs` — `RestorePlayerPositionCoroutine` заменён фиксированный `WaitForSeconds(5f)` на цикл опроса `DataLoaded` (timeout 30s)
+
 ## Итерация от 2026-07-16
 
 **Задача:** Fix death respawn — NetworkBehaviour.IsServer врал в coroutine/timer (баг NGO 2.x), респавн не срабатывал.

@@ -47,6 +47,9 @@ namespace ProjectC.Ship
         [Tooltip("Как определяется направление ветра.")]
         public SplineWindDirectionMode directionMode = SplineWindDirectionMode.AlongSpline;
 
+        [Tooltip("Развернуть направление на 180° (поток в обратную сторону сплайна).")]
+        public bool reverseDirection = false;
+
         [Header("Производительность")]
         [Tooltip("Интервал обновления кэша ShipController (сек).")]
         [Min(0.5f)]
@@ -192,6 +195,9 @@ namespace ProjectC.Ship
                     direction = windData.windDirection.normalized;
                 }
 
+                if (reverseDirection)
+                    direction = -direction;
+
                 _shipEntries[ship] = new ShipSplineEntry
                 {
                     splineT = t,
@@ -288,10 +294,12 @@ namespace ProjectC.Ship
                 float3 localPos = _splineContainer.transform.InverseTransformPoint(worldPosition);
                 SplineUtility.GetNearestPoint(spline, localPos, out float3 _, out float t);
                 float3 localTangent = SplineUtility.EvaluateTangent(spline, t);
-                return _splineContainer.transform.TransformDirection(localTangent).normalized;
+                Vector3 dir = _splineContainer.transform.TransformDirection(localTangent).normalized;
+                return reverseDirection ? -dir : dir;
             }
 
-            return windData.windDirection.normalized;
+            Vector3 customDir = windData.windDirection.normalized;
+            return reverseDirection ? -customDir : customDir;
         }
 
         /// <summary>Количество кораблей в зоне (для дебага).</summary>

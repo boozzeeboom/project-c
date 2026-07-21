@@ -78,6 +78,11 @@ namespace ProjectC.Ship
         // Кэш: корабль → его сплайн-параметры (один GetNearestPoint на цикл детекции)
         private readonly Dictionary<ShipController, ShipSplineEntry> _shipEntries = new();
 
+        // Статический реестр: ShipController → displayName зоны (для HUD)
+        private static readonly Dictionary<ShipController, string> ShipZoneNames = new();
+        public static string GetZoneDisplayName(ShipController ship)
+            => ship != null && ShipZoneNames.TryGetValue(ship, out var name) ? name : "";
+
         // Массив всех ShipController — обновляется редко
         private ShipController[] _cachedShips = System.Array.Empty<ShipController>();
         private float _nextCacheRefresh;
@@ -130,6 +135,11 @@ namespace ProjectC.Ship
 
         private void OnDisable()
         {
+            // Чистим статический реестр от кораблей этой зоны
+            foreach (var ship in _shipEntries.Keys)
+            {
+                if (ship != null) ShipZoneNames.Remove(ship);
+            }
             _shipEntries.Clear();
         }
 
@@ -210,6 +220,9 @@ namespace ProjectC.Ship
                     direction = direction,
                     nearestPoint = nearestWorld
                 };
+
+                // Регистрация в статическом реестре для HUD
+                ShipZoneNames[ship] = windData.displayName;
             }
         }
 

@@ -87,6 +87,9 @@ namespace ProjectC.Ship.UI
         private Label _altCorridorLabel;
         private VisualElement _altBarFill; // сюда добавляются/удаляются строки
 
+        // S-HUD-03e-v2: Wind corridor label (SplineWindZone)
+        private Label _windCorridorLabel;
+
         // LocalPlayer (кешируем после нахождения; null если не найден)
         private ProjectC.Player.NetworkPlayer _localPlayer;
 
@@ -871,6 +874,18 @@ namespace ProjectC.Ship.UI
 
             _colEnv.Add(windRow);
 
+            // ── WIND CORRIDOR row (SplineWindZone) ──
+            _windCorridorLabel = new Label { name = "wind-corridor" };
+            _windCorridorLabel.text = "";
+            _windCorridorLabel.style.fontSize = 9;
+            _windCorridorLabel.style.color = new Color(0.31f, 0.78f, 0.47f, 0.85f);
+            _windCorridorLabel.style.unityTextAlign = TextAnchor.MiddleLeft;
+            _windCorridorLabel.style.marginLeft = 2;
+            _windCorridorLabel.style.marginBottom = 1;
+            _windCorridorLabel.style.height = 12;
+            _windCorridorLabel.style.display = DisplayStyle.None; // скрыт пока нет зоны
+            _colEnv.Add(_windCorridorLabel);
+
             // ── ALT row ──
             var altRow = new VisualElement { name = "env-alt" };
             altRow.style.flexDirection = FlexDirection.Row;
@@ -1023,6 +1038,21 @@ namespace ProjectC.Ship.UI
             _altCorridorLabel.text = corrName;
             _altBarFill.style.height = Length.Percent(fillPct);
             _altBarFill.style.backgroundColor = fillColor;
+
+            // === WIND CORRIDOR (SplineWindZone) ===
+            if (_windCorridorLabel != null)
+            {
+                string windZone = SplineWindZone.GetZoneDisplayName(ship);
+                if (!string.IsNullOrEmpty(windZone))
+                {
+                    _windCorridorLabel.text = $"⇴ {windZone}";
+                    _windCorridorLabel.style.display = DisplayStyle.Flex;
+                }
+                else
+                {
+                    _windCorridorLabel.style.display = DisplayStyle.None;
+                }
+            }
         }
 
         // ==================== S-HUD-03f: Dispatch (K5 — docking system) ====================

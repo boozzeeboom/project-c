@@ -104,6 +104,7 @@ namespace ProjectC.Core.ShipPosition
                     rz = ship.transform.rotation.z,
                     rw = ship.transform.rotation.w,
                     isDocked = ship.IsDocked,
+                    isEngineRunning = ship.IsEngineRunning, // T-PLAYER-PERSIST
                     savedAtUnix = DateTimeOffset.UtcNow.ToUnixTimeSeconds()
                 };
 
@@ -218,6 +219,16 @@ namespace ProjectC.Core.ShipPosition
                 ship.EnterDocked();
             else if (!data.isDocked && ship.IsDocked)
                 ship.ExitDocked();
+
+            // T-PLAYER-PERSIST: restore engine state + freeze
+            // Если двигатель был включён при последнем save — включаем и замораживаем
+            // (пилотов сейчас нет, сервер только стартовал).
+            if (!data.isNpc && data.isEngineRunning)
+            {
+                ship.SetEngineRunning(true);
+                // Freeze: velocity уже zero, но нужно также установить _frozenByNoPilot
+                ship.ApplyPersistenceFreeze();
+            }
 
             if (!data.isNpc) return; // всё, player ship готов
 

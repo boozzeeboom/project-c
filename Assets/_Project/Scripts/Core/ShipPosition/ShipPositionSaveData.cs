@@ -32,6 +32,7 @@ namespace ProjectC.Core.ShipPosition
 
         // ═══ Player ship state ═══
         public bool isDocked;
+        public bool isEngineRunning;     // T-PLAYER-PERSIST: состояние двигателя
 
         // ═══ NPC NavTick state ═══
         public int navMode;              // (int)NavMode

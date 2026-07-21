@@ -1893,6 +1893,29 @@ namespace ProjectC.Player
         }
 
         /// <summary>
+        /// T-PLAYER-PERSIST: принудительная заморозка из ShipPositionServer.ApplyRestore.
+        /// Вызывается после восстановления engine=ON при старте сервера.
+        /// </summary>
+        public void ApplyPersistenceFreeze()
+        {
+            if (!IsServer) return;
+            if (_frozenByNoPilot) return; // уже frozen
+
+            _frozenByNoPilot = true;
+            _sumThrust = 0; _sumYaw = 0; _sumPitch = 0; _sumVertical = 0;
+            _boostCount = 0; _inputCount = 0;
+
+            if (_rb != null)
+            {
+                _rb.linearVelocity = Vector3.zero;
+                _rb.angularVelocity = Vector3.zero;
+            }
+
+            if (_debugLog)
+                Debug.Log($"[ShipController:{name}] Persistence freeze applied. Engine ON, ship held in place.");
+        }
+
+        /// <summary>
         /// Сессия 5_3: Применить passive/active между эффекты к кораблю.
         /// Вызывается из FixedUpdate после стабилизации.
         /// - Пассивный эффект: бесплатный множитель управления (через ApplyModuleModifiers)

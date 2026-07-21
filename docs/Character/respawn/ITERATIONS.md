@@ -1,6 +1,22 @@
 # Итерации разработки
 
-## Итерация от 2026-07-21
+## Итерация от 2026-07-21 (T-PLAYER-PERSIST)
+
+**Задача:** Player-ship position persistence — привязка респавна и сохранения позиции игрока к кораблю. Игрок, вышедший в полёте, при возвращении появляется у своего корабля (зависшего в воздухе). При падении с корабля — респавн на нём же. Корабль без пилота замирает, не тратит топливо, не сдувается ветром.
+
+**Коммит:** `269d4ad` — T-PLAYER-PERSIST: Player-ship position persistence — freeze, save, restore, ship-proximity respawn
+
+**Изменения:**
+- `ShipController.cs` — _frozenByNoPilot, freeze в RemovePilotRpc, unfreeze в AddPilotRpc, velocity-zeroing каждый FixedUpdate, guards на idle fuel/wind/antiGravity/ApplyExternalForce
+- `PlayerPositionServer.cs` (новый) — singleton, CollectPlayers, GetPendingPlayers, LoadSavedPlayers, RestorePlayer
+- `ShipPositionSaveData.cs` — PlayerPositionSaveData + ShipPositionListWrapper.players
+- `ShipPositionRepository.cs` — LoadAllWrapper / SaveAll(ShipPositionListWrapper)
+- `ShipPositionServer.cs` — единый write ships+players, загрузка players в RestoreCoroutine
+- `NetworkPlayer.cs` — RestorePlayerPositionCoroutine (5s delay)
+- `PlayerRespawnTracker.cs` — ship-proximity respawn (IsInShip→GetExitPosition, TryFindNearestOwnedShip через MetaRequirementRegistry)
+- `BootstrapScene.unity` — [PlayerPositionServer] GameObject
+
+## Итерация от 2026-07-21 (T-HP01)
 
 **Задача:** Система здоровья персонажа — HP зависит от STR с настраиваемым множителем, отображение в CharacterWindow, респавн при смерти с восстановлением 30% HP.
 

@@ -49,22 +49,48 @@ namespace ProjectC.Ship
 
         [Header("Производительность")]
         [Tooltip("Интервал обновления кэша ShipController (сек).")]
-        [Min(0.1f)]
-        [SerializeField] private float _shipCacheRefreshInterval = 1f;
+        [Min(0.5f)]
+        [SerializeField] private float _shipCacheRefreshInterval = 2f;
+
+        [Tooltip("Шаг детекции: каждый N-й FixedUpdate (1 = каждый, 5 = ~10 Гц).")]
+        [Min(1)]
+        [SerializeField] private int _detectionStep = 5;
 
         [Header("Gizmos")]
         [Tooltip("Точек на сегмент сплайна для визуализации коридора.")]
         [Min(4)]
-        [SerializeField] private int _gizmoSamplesPerSegment = 20;
+        [SerializeField] private int _gizmoSamplesPerSegment = 12;
 
         // ============================================================
         // State
         // ============================================================
 
         private SplineContainer _splineContainer;
-        private HashSet<ShipController> _shipsInZone = new();
+
+        // Кэш: корабль → его сплайн-параметры (один GetNearestPoint на цикл детекции)
+        private readonly Dictionary<ShipController, ShipSplineEntry> _shipEntries = new();
+
+        // Массив всех ShipController — обновляется редко
         private ShipController[] _cachedShips = System.Array.Empty<ShipController>();
         private float _nextCacheRefresh;
+
+        // Счётчик кадров для троттлинга
+        private int _frameCounter;
+
+        // Предварительно посчитанная сила для Constant/Custom (не зависит от позиции)
+        private Vector3 _cachedForceDirection;
+        private float _cachedForceMagnitude;
+
+        // ============================================================
+        // Structs
+        // ============================================================
+
+        private struct ShipSplineEntry
+        {
+            public float splineT;      // параметр на сплайне
+            public float distance;     // расстояние до сплайна
+            public Vector3 direction;  // направление ветра (мировое)
+        }
 
         // ============================================================
         // Unity Lifecycle
@@ -80,13 +106,30 @@ namespace ProjectC.Ship
             if (windData == null)
                 return;
 
+            // Троттлинг: детекция раз в _detectionStep FixedUpdate
+            _frameCounter++;
+            if (_frameCounter < _detectionStep)
+            {
+                // Между циклами детекции — всё равно применяем силу
+                // по последним известным сплайн-параметрам
+                ApplyWindToShipsCached();
+                return;
+            }
+
+            _frameCounter = 0;
+
             RefreshShipCache();
-            DetectShips();
-            ApplyWindToShips();
+            DetectShipsAndCacheSplineData();
+            ApplyWindToShipsCached();
+        }
+
+        private void OnDisable()
+        {
+            _shipEntries.Clear();
         }
 
         // ============================================================
-        // Detection
+        // Cache
         // ============================================================
 
         private void RefreshShipCache()
@@ -96,11 +139,18 @@ namespace ProjectC.Ship
 
             _nextCacheRefresh = Time.time + _shipCacheRefreshInterval;
             _cachedShips = FindObjectsByType<ShipController>(FindObjectsSortMode.None);
+
+            // Прогрев: при первом заполнении кэша сразу делаем детекцию
+            _frameCounter = _detectionStep;
         }
 
-        private void DetectShips()
+        // ============================================================
+        // Detection (один GetNearestPoint на корабль)
+        // ============================================================
+
+        private void DetectShipsAndCacheSplineData()
         {
-            _shipsInZone.Clear();
+            _shipEntries.Clear();
 
             if (_cachedShips == null || _cachedShips.Length == 0)
                 return;
@@ -109,52 +159,110 @@ namespace ProjectC.Ship
             if (spline == null)
                 return;
 
+            Transform splineTransform = _splineContainer.transform;
+
             foreach (var ship in _cachedShips)
             {
                 if (ship == null)
                     continue;
 
-                // Переводим мировую позицию корабля в локальное пространство сплайна
                 Vector3 worldPos = ship.transform.position;
-                float3 localPos = _splineContainer.transform.InverseTransformPoint(worldPos);
+                float3 localPos = splineTransform.InverseTransformPoint(worldPos);
 
+                // ЕДИНСТВЕННЫЙ вызов GetNearestPoint на корабль за цикл
                 float distance = SplineUtility.GetNearestPoint(
                     spline,
                     localPos,
                     out float3 _,
-                    out float _
+                    out float t
                 );
 
-                if (distance <= corridorRadius)
+                if (distance > corridorRadius)
+                    continue;
+
+                // Определяем направление
+                Vector3 direction;
+                if (directionMode == SplineWindDirectionMode.AlongSpline)
                 {
-                    _shipsInZone.Add(ship);
+                    float3 localTangent = SplineUtility.EvaluateTangent(spline, t);
+                    direction = splineTransform.TransformDirection(localTangent).normalized;
                 }
+                else
+                {
+                    direction = windData.windDirection.normalized;
+                }
+
+                _shipEntries[ship] = new ShipSplineEntry
+                {
+                    splineT = t,
+                    distance = distance,
+                    direction = direction
+                };
             }
         }
 
         // ============================================================
-        // Wind Force
+        // Force Application (reuse cached spline data — zero extra lookups)
         // ============================================================
 
-        private void ApplyWindToShips()
+        private void ApplyWindToShipsCached()
         {
-            foreach (var ship in _shipsInZone)
+            if (_shipEntries.Count == 0)
+                return;
+
+            float forceMagnitude = ComputeForceMagnitude(Vector3.zero);
+
+            foreach (var kv in _shipEntries)
             {
+                ShipController ship = kv.Key;
                 if (ship == null)
                     continue;
 
-                Vector3 force = GetWindForceAtPosition(ship.transform.position);
+                ShipSplineEntry entry = kv.Value;
+
+                // Shear: пересчитываем magnitude с учётом высоты (дёшево)
+                if (windData.profile == WindProfile.Shear)
+                {
+                    forceMagnitude = windData.windForce + ship.transform.position.y * windData.shearGradient;
+                }
+
+                Vector3 force = entry.direction * forceMagnitude;
                 if (force.sqrMagnitude > 0.001f)
                 {
-                    // ApplyExternalForce уже проверяет IsServer внутри — безопасно.
                     ship.ApplyExternalForce(force);
                 }
             }
         }
 
+        private float ComputeForceMagnitude(Vector3 worldPosition)
+        {
+            switch (windData.profile)
+            {
+                case WindProfile.Constant:
+                    return windData.windForce;
+
+                case WindProfile.Gust:
+                {
+                    float gustFactor = Mathf.Sin(Time.time * (2f * Mathf.PI) / windData.gustInterval);
+                    float variation = gustFactor * windData.windVariation;
+                    return windData.windForce * (1f + variation);
+                }
+
+                case WindProfile.Shear:
+                    return windData.windForce + worldPosition.y * windData.shearGradient;
+
+                default:
+                    return windData.windForce;
+            }
+        }
+
+        // ============================================================
+        // Public API
+        // ============================================================
+
         /// <summary>
-        /// Рассчитать силу ветра в заданной мировой позиции.
-        /// Возвращает Vector3 силы (ньютоны), готовый для AddForce.
+        /// Рассчитать силу ветра в заданной мировой позиции (для внешних запросов).
+        /// Делает отдельный GetNearestPoint — не для частого вызова.
         /// </summary>
         public Vector3 GetWindForceAtPosition(Vector3 worldPosition)
         {
@@ -162,39 +270,12 @@ namespace ProjectC.Ship
                 return Vector3.zero;
 
             Vector3 direction = GetWindDirection(worldPosition);
-            float forceMagnitude;
-
-            switch (windData.profile)
-            {
-                case WindProfile.Constant:
-                    forceMagnitude = windData.windForce;
-                    break;
-
-                case WindProfile.Gust:
-                {
-                    float gustFactor = Mathf.Sin(Time.time * (2f * Mathf.PI) / windData.gustInterval);
-                    float variation = gustFactor * windData.windVariation;
-                    forceMagnitude = windData.windForce * (1f + variation);
-                    break;
-                }
-
-                case WindProfile.Shear:
-                {
-                    float shearBoost = worldPosition.y * windData.shearGradient;
-                    forceMagnitude = windData.windForce + shearBoost;
-                    break;
-                }
-
-                default:
-                    forceMagnitude = windData.windForce;
-                    break;
-            }
-
-            return direction * forceMagnitude;
+            float magnitude = ComputeForceMagnitude(worldPosition);
+            return direction * magnitude;
         }
 
         /// <summary>
-        /// Получить направление ветра в заданной точке.
+        /// Получить направление ветра в заданной точке (для внешних запросов).
         /// </summary>
         public Vector3 GetWindDirection(Vector3 worldPosition)
         {
@@ -205,32 +286,16 @@ namespace ProjectC.Ship
                     return Vector3.forward;
 
                 float3 localPos = _splineContainer.transform.InverseTransformPoint(worldPosition);
-
-                SplineUtility.GetNearestPoint(
-                    spline,
-                    localPos,
-                    out float3 _,
-                    out float t
-                );
-
-                // Касательная в локальном пространстве → мировое направление
+                SplineUtility.GetNearestPoint(spline, localPos, out float3 _, out float t);
                 float3 localTangent = SplineUtility.EvaluateTangent(spline, t);
                 return _splineContainer.transform.TransformDirection(localTangent).normalized;
             }
 
-            // Custom mode — используем направление из WindZoneData
             return windData.windDirection.normalized;
         }
 
-        // ============================================================
-        // Public API
-        // ============================================================
-
         /// <summary>Количество кораблей в зоне (для дебага).</summary>
-        public int ShipCount => _shipsInZone.Count;
-
-        /// <summary>Живой список кораблей в зоне (read-only для внешнего использования).</summary>
-        public IReadOnlyCollection<ShipController> ShipsInZone => _shipsInZone;
+        public int ShipCount => _shipEntries.Count;
 
         // ============================================================
         // Gizmos
@@ -266,7 +331,7 @@ namespace ProjectC.Ship
             int totalSamples = (knotCount - 1) * _gizmoSamplesPerSegment + 1;
             float step = 1f / (totalSamples - 1);
 
-            // Рисуем коридор как серию окружностей вдоль сплайна
+            // Коридор: кольца вдоль сплайна
             for (int i = 0; i < totalSamples; i++)
             {
                 float tNorm = i * step;
@@ -278,16 +343,14 @@ namespace ProjectC.Ship
                 float3 localTangent = SplineUtility.EvaluateTangent(spline, splineT);
                 Vector3 worldDir = _splineContainer.transform.TransformDirection(localTangent).normalized;
 
-                // Полупрозрачная окружность (диск)
                 Color ringColor = new(windColor.r, windColor.g, windColor.b, 0.08f);
                 DrawGizmoCircle(worldPos, worldDir, r, ringColor);
 
-                // Контур
                 Color outlineColor = new(windColor.r, windColor.g, windColor.b, 0.35f);
                 DrawGizmoCircle(worldPos, worldDir, r, outlineColor);
             }
 
-            // Стрелки направления (каждые N колец)
+            // Стрелки направления
             int arrowInterval = Mathf.Max(1, _gizmoSamplesPerSegment / 2);
             for (int i = 0; i < totalSamples; i += arrowInterval)
             {
@@ -307,7 +370,6 @@ namespace ProjectC.Ship
                 Gizmos.color = windColor;
                 Gizmos.DrawLine(arrowStart, arrowEnd);
 
-                // Наконечник
                 Vector3 right = Vector3.Cross(Vector3.up, worldDir).normalized;
                 if (right.sqrMagnitude < 0.01f)
                     right = Vector3.Cross(Vector3.right, worldDir).normalized;

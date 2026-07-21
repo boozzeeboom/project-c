@@ -1,6 +1,6 @@
 # GDD_10: Ship System v4.1
 
-**Версия:** 5.0 | **Дата:** 14 июля 2026 г. | **Статус:** 🟢 Актуализировано по коду — §5 (Ship Key deprecated → MetaRequirement), §2 (Altitude Corridor ✅), §4 (Modules ✅), §X.5 (Wind ✅), §X.6 (Cargo ✅), §X.7 (Combat ✅)
+**Версия:** 6.0 | **Дата:** 21 июля 2026 г. | **Статус:** 🟢 Актуализировано по коду — §5 (Ship Key deprecated → MetaRequirement), §2 (Altitude Corridor ✅), §4 (Modules ✅), §X.5 (Wind ✅), §X.6 (Cargo ✅), §X.7 (Combat ✅), §7 (DockPadVisualMarker v5 ✅)
 **Автор:** Малков Леонид Андреевич
 **Ветка:** `qwen-gamestudio-agent-dev` (дизайн), `feature/npc-quest-v2` (merged) (реализация)
 
@@ -408,7 +408,7 @@ public class KeyRodData : ScriptableObject {
 
 ## 7. Стыковка и Диспетчер
 
-> **Статус (2026-07-05):** ✅ **MVP реализован — цикл Docked→Loading→Undocking→Departing.** Подробности в `docs/Docking_stations/` и `docs/NPC_others_peacfull/`. ⚠️ Визуальные маркеры падов (`DockPadVisualMarker`) требуют переработки.
+> **Статус (2026-07-17):** ✅ **MVP реализован — цикл Docked→Loading→Undocking→Departing.** Подробности в `docs/Docking_stations/` и `docs/NPC_others_peacfull/`. ✅ **DockPadVisualMarker v5 (2026-07-17)** — гибрид [SerializeField] + кодогенерация, URP/Unlit прозрачность, alpha-пульсация. Тикет T-DOCK-14a-e закрыт.
 
 ### 7.1 Поток Стыковки (как реализовано)
 

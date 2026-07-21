@@ -1,6 +1,6 @@
 # GDD-02: World & Environment — Project C: The Clouds
 
-**Версия:** 1.2 | **Дата:** 14 июля 2026 г. | **Статус:** ✅ Документировано + NPC + квестовые зоны + Veil + Day/Night + Wind реализованы
+**Версия:** 1.3 | **Дата:** 21 июля 2026 г. | **Статус:** ✅ Документировано + NPC + квестовые зоны + Veil + Day/Night + Wind + SplineWindZone реализованы
 **Автор:** Малков Леонид Андреевич
 
 ---
@@ -202,6 +202,7 @@
 | Цикл дня/ночи | ✅ Реализовано | Движение солнца, окраска облаков |
 | Procedural Noise | ✅ Реализовано | FBM noise 512x512 для облаков |
 | **Ветер (Wind)** | ✅ Реализовано | `ServerWeatherController` — authoritative broadcast (0.5 Hz), `WindManager` — единый источник (direction/speed), вариация направления (до ±15°) и скорости (±20%), множители влияния на корабли и персонажей |
+| **Spline Wind Corridors** | ✅ Реализовано (2026-07-21) | `SplineWindZone` — сплайновые ветровые коридоры параллельно с WindZone. reverseDirection toggle, centeringStrength, троттлинг детекции. HUD K4 displayName. См. `docs/dev/RETROSPECTIVE_2026-07-14_2026-07-21.md` §2.18 |
 
 ### [🟡 Частично / 🔴 Запланировано] Будущая погода
 

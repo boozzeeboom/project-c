@@ -250,9 +250,10 @@ complete_thanks node:
 |-----------|--------|
 | **FactionId enum** (11 lore values) | ✅ DONE |
 | **NpcAttitude struct** (readonly, −100..+200) | ✅ DONE |
-| **NpcFaction → FactionId** migration (`[Obsolete]` alias) | ✅ DONE |
+| **NpcFaction → FactionDefinition объединение** (T-FACTION-UNIFY, 2026-07-20) | ✅ DONE |
 | **FactionDefinition SO** (factionId, displayName, lore, attitudeLinks) | ✅ DONE |
 | **NpcDefinition SO** (npcId, faction, questOffers, questTurnIns, attitudeLinks) | ✅ DONE |
+| **Knowledge System** (T-KNOW, 2026-07-20) — server-authoritative faction/NPC knowledge с UI filtering | ✅ DONE |
 | **ReputationClientState** (singleton, AutoSpawn, OnReputationUpdated) | ✅ DONE |
 | **NpcAttitudeClientState** (singleton, AutoSpawn, OnNpcAttitudeUpdated) | ✅ DONE |
 | **QuestWorld.ModifyReputation** (server-side, broadcast + event + persist) | ✅ DONE |

@@ -1,6 +1,6 @@
 # План разработки ММО "Project C: The Clouds" на Unity
 
-**Последнее обновление:** 31 июля 2026 г. | **Текущая версия:** `v0.0.50 — NPC Unified Behavior + Stats Refactor + VFX`
+**Последнее обновление:** 21 июля 2026 г. | **Текущая версия:** `v0.0.60 — Persistence + Editor Tools + NPC Navigation`
 
 > **Что нового (7–31 июля 2026):** **134 коммита, 17 эпиков.** Подробная ретроспектива: `docs/dev/retrospective_d1850f6c_to_HEAD.md`.
 >
@@ -27,6 +27,30 @@
 > **🖥️ UI:** Переработка блока характеристик (цвета per-stat, tier-рамки, font-size 11px). DialogWindow fix. Кнопка «БРОСИТЬ» в инвентаре. Pickup перенесён с E на F.
 >
 > **📚 Документация:** `docs/dev/retrospective_d1850f6c_to_HEAD.md`, `docs/dev/ITERATIONS.md`, 6 аудитов, 15+ итерационных логов.
+>
+> **Speed-run 14–21 июля:** **134 коммита, 21 рабочий поток.** Подробная ретроспектива: `docs/dev/RETROSPECTIVE_2026-07-14_2026-07-21.md`.
+>
+> **🏗️ Editor Tools (T-TRADE01-04, T-MOD01-03, T-DOCK-Editor, T-SHIP01/06-08, T-NS-TOOL01, T-NPCEDIT01-02, T-EDITOR01, T-NPC-S01-EDITOR, T-NPC-01-EDITOR):** Кастомные редакторы для MarketConfig, TradeDatabase, MarketZone (inline на сцене), ModuleShopDB, RepairManager, DockStationController (inline Definition+Duplicate), ShipController (8 foldout+Runtime), ShipSummaryWindow (сводный по всем кораблям), ShipPresetCreator (универсальный), NpcShipScheduleOverviewWindow (3 вкладки), NpcShipController, NpcShipSchedule, NpcSpawnerConfig, NpcBrain, NpcSocialBrain. Унификация меню Tools/Project C, чистка старых editor-скриптов, Collapse/Expand для NPC редакторов.
+>
+> **🚢 NPC Navigation (T-NS-N01, T-NS-BZ01-07, T-NS11):** Class-based speed + override toggle для NavTick. Ship-to-Build avoidance (проход сквозь здания). AvoidancePriority, ZoneShape (Sphere|Box), Raycast escape corridor из Π-образных доков. Фикс detectCollisions=false на платформе NPC-корабля.
+>
+> **💾 Persistence (T-PERSIST, T-PLAYER-PERSIST, T-PSHPER):** Ship Position Persistence (core). Player-ship persistence: freeze → save → restore → ship-proximity respawn. Фиксы: isEngineRunning в DTO, LastShip вместо IsInShip, save-before-restore timing race, UXML-артефакты. Кнопки «СПАСЕНИЕ» (EscMenu) и «Вызвать корабль» (RepairManager, за кредиты). Архитектурная справка.
+>
+> **🌬️ Spline Wind Corridors (T-WIND02):** SplineWindZone — сплайновые ветровые коридоры. reverseDirection, centeringStrength, перф-фикс (один GetNearestPoint + троттлинг), HUD K4 displayName.
+>
+> **🏛️ Faction Unification + Knowledge System (T-FACTION-UNIFY, T-FACT01, T-KNOW):** NpcFaction → FactionDefinition объединение (A-F). Выпадающий список фракций в редакторах, таб «🏛 Factions» в NpcWorldInspector. Server-authoritative Knowledge System с UI фильтрацией.
+>
+> **👤 Civilian NPC (T-CNPC-01):** [Mira] — CharacterController + HumanM_Model + Animator. AI+Quest через репутацию. Фикс атрибуции attackerClientId. Руководство по настройке NPC.
+>
+> **🔧 DockPadVisualMarker v2→v5 (T-DOCK-14*):** 16 коммитов от `[ExecuteAlways]` до гибрида SerializeField+код. URP/Unlit шейдер, alpha-пульсация, fallback-материал. Стабилен.
+>
+> **⚙️ Core fix (T-CORE):** Загрузка сцен по полным путям вместо имён — решение проблемы коллизии имён сцен.
+>
+> **🎮 Ship Presets & Engine (T-SHIP04-08, T-ENG02, T-SHIP-SHAKE):** Medium/Heavy/HeavyII пресеты. NavMesh по имени корабля. Фикс розовых материалов (sharedMaterial из ассета). ShipRootReference return to root. Fix disembark — визуалы не реагируют на WASD без пилота. NPC Fallback — визуалы на Rigidbody.
+>
+> **💰 Prices refactoring (T-MOD04, T-MODUL):** Все цены централизованы в NPC RepairManager. Кнопка «Вызвать» в RepairManagerWindow.
+>
+> **🧹 Docs & Roadmap:** GDD v2, roadmap v2, README update.
 
 > **Предыдущее обновление (30 июня 2026):** **Character Customisation L1+L3+L4 ✅ + v0.0.35.** Полный цикл — 6 документов дизайна → 15 C# файлов (CustomisationSave, DTO, ClientState, Applier, UI Window) → M/F переключение, 6 пресетов тела, 2 стиля волос, цвета кожи/волос/одежды, AnimatorOverrideController. UI по паттерну SkillTreeWindow. Bug #1 (domain reload → heightScale=0 → персонаж невидим) исправлен.
 >
@@ -212,7 +236,7 @@
 
 **UI:**
 - ✅ `CommPanelWindow` (UI Toolkit) — двусторонний диалог с диспетчером, кнопки `[Запросить посадку]`, `[Хорошо]`, `[Отбой]`, `[Отменить запрос]`, `[Отстыковка]`. Расположен справа (`right:24px; top:50%`), компактный (320×~200px). Не модальный (без затемнения экрана). Theme + `!important`-стили по канону `docs/UI/UI_TOOLKIT_GUIDE.md`.
-- ✅ `DockPadVisualMarker` (runtime Quad-метка на каждом паде) — создаёт Quad + Unlit/Color материал, читает `_padBox.IsShipInside`. ⚠️ Цвет не меняется корректно — **требует переработки** (тикет `T-DOCK-14`).
+|- ✅ `DockPadVisualMarker` v5 (2026-07-17) — гибрид [SerializeField] + кодогенерация, URP/Unlit шейдер, alpha-пульсация fallback-материал. Тикет T-DOCK-14 закрыт. Подробнее: `docs/dev/RETROSPECTIVE_2026-07-14_2026-07-21.md` §2.3.
 
 **FSM / физика:**
 - ✅ `ShipController._netIsDocked` (NetworkVariable<bool>, server-write) — сервер-авторитативный флаг
@@ -243,7 +267,7 @@
 - ✅ **Departure subsystem** — отдельная подсистема вылета по запросу через T (`08_DEPARTURE_SUBSYSTEM.md`)
 - ⏳ **Автопилот стыковки** (модуль `MODULE_AUTO_DOCK`) — GDD-10 §4.2 P2-T2
 - ✅ **NPC-корабли на падах (M3.2)** — Полный round-trip: док → взлёт → полёт → CommZone → пад → стыковка → обратно. 4 NPC, 2 станции. Документация: `docs/NPC_others_peacfull/pc_ship/`.
-- ⏳ **`DockPadVisualMarker` v2** — переделка маркера с правильной реакцией на `IsShipInside`
+- ✅ **`DockPadVisualMarker` v5 (2026-07-17)** — гибрид [SerializeField] + кодогенерация, URP/Unlit прозрачность, alpha-пульсация. Полный рефакторинг: T-DOCK-14a-e. Подробнее: `docs/dev/RETROSPECTIVE_2026-07-14_2026-07-21.md` §2.3
 
 **Документация:**
 - ✅ `docs/Docking_stations/AUDIT_AND_REFACTOR.md` — полный аудит + 5 фаз рефакторинга
@@ -981,6 +1005,117 @@
 | **P5** | Cargo ownership guard (4 метода в ShipCargoServer + MarketServer) | ✅ |
 
 **Документация:** `docs/Ships/SHIP_REFACTOR_PLAN_2026-07-21.md`, `docs/Ships/ITERATIONS.md`.
+
+#### 3.4.5.7 Speed-run: Editor Tools, Navigation, Persistence, Wind — 14–21 июля
+
+> **134 коммита, 21 рабочий поток.** Полная ретроспектива: `docs/dev/RETROSPECTIVE_2026-07-14_2026-07-21.md`.
+
+**🏗️ Editor Tools — кастомные редакторы для всех подсистем**
+
+| Компонент | Назначение | Статус |
+|-----------|-----------|--------|
+| `MarketConfig` editor | Кастомный Inspector + новые параметры рынка | T-TRADE01 ✅ |
+| `GlobalBuyPriceConfig` + `TradeDatabase` editors | Редакторы прайсов и базы товаров | T-TRADE02 ✅ |
+| `MarketZoneEditor` | Inline редактирование MarketConfig прямо из сцены | T-TRADE03 ✅ |
+| `regenMultiplier` | Глобальный множитель регенерации стока | T-TRADE04 ✅ |
+| `ModuleShopDatabase` + `RepairManager` editors | Инспекторы модульного магазина и менеджера починки | T-MOD01 ✅ |
+| `AddModuleWindow` + `MassAddModulesWindow` | Массовое добавление модулей | T-MOD02 ✅ |
+| `ModuleShopEntry` объединён с `ShipModule` | Устранение дублирования классов | T-MOD03 ✅ |
+| `DockStationController` editor + Duplicate | Inline Definition + Duplicate tools | T-DOCK-Editor ✅ |
+| `ShipController` custom editor | 8 foldout-групп + Runtime Info панель | T-SHIP01 ✅ |
+| `ShipPresetCreator` | Универсальный Editor-тул создания кораблей по пресетам | T-SHIP01 ✅ |
+| `ShipSummaryWindow` | Сводный редактор всех кораблей в проекте | T-SHIP07 ✅ |
+| `NpcShipScheduleOverviewWindow` | 3-вкладочный обзор расписаний NPC-кораблей | T-NS-TOOL01 ✅ |
+| `NpcShipController` / `NpcShipSchedule` editors | Кастомные редакторы NPC-кораблей | T-NPCEDIT01 ✅ |
+| `NpcShipController.RandomDwell` | Случайный dwell-интервал (M3.2.15) | T-NPCEDIT02 ✅ |
+| `NpcSpawnerConfig` editor | Chunk/debug поля перенесены из кода в SO | T-NPC02 ✅ |
+| `NpcBrain` / `NpcSocialBrain` editors | Expose hardcoded tuning params, Collapse/Expand | T-NPC-S01-EDITOR / T-NPC-01-EDITOR / T-NPC-EDITOR ✅ |
+| Tools/Project C унификация | Чистка старых editor-скриптов, единый путь меню | T-EDITOR01 ✅ |
+| `NpcWorldInspector` | Унифицированный NPC инспектор по всем WorldScene | feat ✅ |
+
+**🚢 NPC Navigation (T-NS-N01, T-NS-BZ01-07, T-NS11)**
+
+| Компонент | Назначение | Статус |
+|-----------|-----------|--------|
+| Class-based speed variation | Скорость NPC-кораблей по классам | T-NS-N01 ✅ |
+| Speed override toggle | Дизайнер может задать абсолютные значения | T-NS-N01 ✅ |
+| Ship-to-Build avoidance | Обход зданий NPC-кораблями | T-NS-BZ01..04 ✅ |
+| `AvoidancePriority` | Приоритет расхождения кораблей | T-NS-BZ05 ✅ |
+| `ZoneShape` (Sphere\|Box) | Выбор формы avoidance-зоны | T-NS-BZ06 ✅ |
+| Raycast escape corridor | Выход из Π-образных доков | T-NS-BZ07 ✅ |
+| Berthing comment | Явный комментарий: билд-коллайдеры игнорируются при заходе | T-NS-BZ07 ✅ |
+| `detectCollisions=false` fix | Баг ломал коллайдер платформы NPC-корабля | T-NS11 ✅ |
+
+**💾 Persistence (T-PERSIST, T-PLAYER-PERSIST)**
+
+| Компонент | Назначение | Статус |
+|-----------|-----------|--------|
+| Ship Position Persistence | Freeze → save → restore базовой позиции корабля | T-PERSIST ✅ |
+| `_nextSaveTime` init | Предотвращение пустого save на первом кадре | T-PERSIST-FIX ✅ |
+| Player-ship persistence | freeze при даунтайме, save DTO, restore при перезаходе | T-PLAYER-PERSIST ✅ |
+| `isEngineRunning` в DTO | Сохранение и восстановление состояния двигателя | fix ✅ |
+| `LastShip` вместо `IsInShip` | Respawn в правильный корабль | fix ✅ |
+| Save-before-restore timing race | Player restore до загрузки данных | fix ✅ |
+| UXML-артефакты `=======` | Восстановление RepairManagerWindow.uxml | fix ✅ |
+| `restoreDelaySec` 6s + диагностика | Debug-логи в RestoreCoroutine | debug ✅ |
+| Кнопка «СПАСЕНИЕ» | Аварийный респавн на дефолтную точку из EscMenu | ✅ |
+| Кнопка «Вызвать корабль» | Телепорт на ближайший свободный пад за кредиты в RepairManager | ✅ |
+
+**🌬️ Spline Wind Corridors (T-WIND02)**
+
+| Компонент | Назначение | Статус |
+|-----------|-----------|--------|
+| `SplineWindZone` | Сплайновые ветровые коридоры (параллельно с WindZone) | ✅ |
+| Perf fix: 1 GetNearestPoint + троттлинг | Один запрос на корабль, throttle детекции | ✅ |
+| `reverseDirection` toggle | Разворот потока на 180° вдоль сплайна | ✅ |
+| `centeringStrength` | Сила центрирующей силы удержания в трубе | ✅ |
+| HUD K4 displayName | Отображение имени сплайнового коридора | ✅ |
+
+**🏛️ Faction Unification (T-FACTION-UNIFY, T-FACT01)**
+
+| Компонент | Назначение | Статус |
+|-----------|-----------|--------|
+| `NpcFaction` → `FactionDefinition` | Объединение двух классов фракций (этапы A-D) | ✅ |
+| Этап F (очистка) | Выпадающий список фракций в редакторах | ✅ |
+| Удалены тулзы миграции | CreateFactionAssets + FactionMigrationTool (чистка техдолга) | ✅ |
+| Таб «🏛 Factions» в NpcWorldInspector | Сканирование, редактирование и создание FactionDefinition SO | T-FACT01 ✅ |
+
+**🧠 Knowledge System (T-KNOW)**
+- Server-authoritative faction/NPC knowledge with UI filtering — ✅
+
+**👤 Civilian NPC [Mira] (T-CNPC-01)**
+
+| Компонент | Назначение | Статус |
+|-----------|-----------|--------|
+| AI+Quest через репутацию | Атакующий и квестовый NPC на одном GO | ✅ |
+| Mira — CharacterController + HumanM_Model + Animator | Как у атакующих NPC | ✅ |
+| Руководство по настройке NPC | Чеклист, пошаговая инструкция, data flow | ✅ |
+| Фикс атрибуции `attackerClientId` | Точное списание репутации + снапшоты клиенту | ✅ |
+
+**🎮 Ship Presets & Visual Fixes (T-SHIP04-08, T-ENG02, T-SHIP-SHAKE)**
+
+| Компонент | Назначение | Статус |
+|-----------|-----------|--------|
+| ShipPresetCreator — Medium/Heavy/HeavyII | 3 пресета с кастомной физикой | T-SHIP06/SHIP08 ✅ |
+| NavMesh по имени корабля | Папка — имя, не класс | T-SHIP06 ✅ |
+| ShipRootReference return to root | По эталону Гигант.prefab | T-SHIP06 ✅ |
+| Фикс розовых материалов | sharedMaterial напрямую из ассета (URP Lit) | T-SHIP06 ✅ |
+| Deck collision (Floor Y=0), solid door | Коллизия палубы, дверь не trigger | T-SHIP07 ✅ |
+| Проверка дубликата имени префаба | Защита от двух кораблей с одним именем | T-SHIP08 ✅ |
+| Light preset fix | Правка лёгких кораблей | T-SHIP08 ✅ |
+| Engine visuals after disembark | WASD не триггерит визуалы после выхода | T-ENG02 ✅ |
+| ShipInputReader.Awake gate | Нет пилота — нет ввода | T-SHIP-SHAKE fix 4 ✅ |
+| NPC Fallback — визуалы на Rigidbody | Визуалы работают на автопилоте | T-ENG02/SHIP-SHAKE fix 5 ✅ |
+
+**💰 Prices Refactoring & Ship Recall (T-MOD04, T-MODUL)**
+
+| Компонент | Назначение | Статус |
+|-----------|-----------|--------|
+| Все цены → NPC RepairManager | Централизация цен, устранение разброса | T-MOD04 ✅ |
+| Кнопка «Вызвать» в RepairManagerWindow | Ship recall + документация | T-MODUL ✅ |
+
+**🔧 Core fix**
+- `T-CORE`: Загрузка сцен по полным путям вместо имён — решение проблемы коллизии имён — ✅
 
 ---
 

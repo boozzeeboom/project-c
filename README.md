@@ -7,7 +7,7 @@ Unity 6 · URP · Netcode for GameObjects
 
 ## ⚡
 
-**Версия:** v0.0.50 · **Этап:** Визуальный прототип (Stage 2.5)
+**Версия:** v0.0.60 · **Этап:** Визуальный прототип (Stage 2.5)
 **Build target:** StandaloneWindows64
 
 ---
@@ -16,15 +16,19 @@ Unity 6 · URP · Netcode for GameObjects
 
 **Бой и навыки:** Дальний бой (луки/арбалеты/пневматика/винтовки) · Метательное оружие (гранаты/антиграв) · Skill Tree (27+ узлов, сохранение, перезарядка, слоты) · Прицеливание Q/E · Damage Numbers · VFX-инфраструктура
 
-**NPC:** Единая архитектура поведения (4 фазы) · Патрули, эмоции, фракции, группы, тактики боя · NPC-скиллы · Волновой спавн · Лут
+**NPC:** Единая архитектура поведения (4 фазы) · Патрули, эмоции, фракции, группы, тактики боя · NPC-скиллы · Волновой спавн · Лут · **NPC Navigation: Ship-to-Build avoidance, class speed, escape corridor** · **Civilian NPC [Mira]**
 
 **Статы:** Сквозной аудит + рефакторинг (10 проблем P0–P10) · StatBucket · Единая формула Player/NPC · Equipment multipliers
 
 **Экономика и прогрессия:** Крафтинг (аудит + 12/12 фиксов) · Майнинг (аудит + критические фиксы) · Инвентарь v2 · Торговля · Рынок · Обмен · Система квестов (двойной аудит)
 
-**Корабли:** Composite Ship · Стыковка · NPC Ships M3.2 · Грузовая система v2 · Cargo Trade · Ремонт · Engine ON/OFF · Ship Damage · Ветер (корабль + персонаж) · NPC Crew на палубе
+**Корабли:** Composite Ship · Стыковка + **DockPadVisualMarker v5** · NPC Ships M3.2 · Грузовая система v2 · Cargo Trade · Ремонт · Engine ON/OFF · Ship Damage · Ветер (корабль + персонаж) · NPC Crew на палубе · **Ship Preset Creator (Medium/Heavy/HeavyII)** · **ShipSummaryWindow**
 
-**Персонаж:** Кастомизация внешности · Equipment Visual · Skill Tree оконный UI · Input System (New Input System)
+**Персонаж:** Кастомизация внешности · Equipment Visual · Skill Tree оконный UI · Input System (New Input System) · **Player-ship persistence (freeze/save/restore)** · **Кнопки «СПАСЕНИЕ» + «Вызвать корабль»**
+
+**Редакторы:** Кастомные редакторы для всех подсистем — MarketConfig, TradeDatabase, ModuleShop, DockStation, ShipController, NpcShipSchedule, NpcBrain, NpcSpawnerConfig · **NpcWorldInspector**
+
+**Мир:** Облака (Ghibli) · 24 стриминговые сцены · День/Ночь · **Spline Wind Corridors** · **Faction Unification + Knowledge System**
 
 ---
 

@@ -1,0 +1,22 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 3b3e30f7f981a8c44bdbeaf070f45e90, type: 3}
+  m_Name: Spline-Primum-Quartus
+  m_EditorClassIdentifier: Assembly-CSharp::ProjectC.Ship.WindZoneData
+  zoneId: Spline-Primum-Secund
+  displayName: "\u041F\u0440\u0438\u043C\u0443\u043C-\u041A\u0432\u0430\u0440\u0442\u0443\u0441"
+  windDirection: {x: 0, y: 0, z: 1}
+  windForce: 1000000
+  windVariation: 0
+  profile: 0
+  gustInterval: 2
+  shearGradient: 0.1

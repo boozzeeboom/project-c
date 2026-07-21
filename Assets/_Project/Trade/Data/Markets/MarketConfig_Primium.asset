@@ -17,6 +17,15 @@ MonoBehaviour:
   description: "\u0421\u0442\u043E\u043B\u0438\u0446\u0430 \u043C\u0430\u043D\u0443\u0444\u0430\u043A\u0442\u0443\u0440,
     \u0438\u0441\u0442\u043E\u0447\u043D\u0438\u043A \u043C\u0435\u0437\u0438\u044F
     \u0438 \u0430\u043D\u0442\u0438\u0433\u0440\u0430\u0432\u0438\u044F."
+  tradeMode: 0
+  buyAnyItem: 1
+  globalBuyPriceConfig: {fileID: 11400000, guid: 9fe9080c051f91f47ace2b4fe92ced07, type: 2}
+  sellCommission: 0.5
+  buyCommission: 1
+  priceFloorRatio: 0.5
+  priceCeilingRatio: 5
+  decayHalfLifeSeconds: 1800
+  regenMultiplier: 1
   items:
   - itemId: resource_mezium_box
     definition: {fileID: 11400000, guid: 5d929c36b885711499c8252d6e1a836e, type: 2}

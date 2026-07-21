@@ -1031,6 +1031,7 @@ GameObject:
   - component: {fileID: 4666653673173994686}
   - component: {fileID: 8318201465246744848}
   - component: {fileID: 7526951523390525451}
+  - component: {fileID: 5216927811836695900}
   m_Layer: 0
   m_Name: "\u0421\u0438\u043B\u044C\u0444\u0438\u0434\u0430"
   m_TagString: Ship
@@ -1108,7 +1109,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: d5a57f767e5e46a458fc5d3c628d0cbb, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Unity.Netcode.Runtime::Unity.Netcode.NetworkObject
-  GlobalObjectIdHash: 2721880555
+  GlobalObjectIdHash: 3626958620
   InScenePlacedSourceGlobalObjectIdHash: 2721880555
   DeferredDespawnTick: 0
   Ownership: 1
@@ -1139,6 +1140,7 @@ MonoBehaviour:
   _debugLog: 0
   _keyItemData: {fileID: 11400000, guid: 4077b5044c371034f98d7f090ca78553, type: 2}
   _customDisplayName: "\u0421\u0438\u043B\u044C\u0444\u0438\u0434\u0430"
+  _shipPersistentId: 
   thrustForce: 30000
   maxSpeed: 400
   yawForce: 150000
@@ -1363,18 +1365,23 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::ProjectC.PeacefulShip.Stations.NpcShipController
   ShowTopMostFoldoutHeaderGroup: 1
-  schedule: {fileID: 11400000, guid: 1c116bc5217d9a141a0b667f2596aca3, type: 2}
+  schedule: {fileID: 11400000, guid: 0dc45e6e38007fa4ab86b583c9d0dcec, type: 2}
   npcInstanceId: 0
   npcThrustMult: 0.6
   npcYawMult: 0.4
   npcArrivalToleranceMeters: 50
+  overrideClassSpeeds: 0
+  liftSpeedMult: 1
+  cruiseSpeedMult: 1
+  approachSpeedMult: 1
+  maxYawRateMult: 1
+  customLiftSpeed: 8
+  customCruiseSpeed: 12
+  customApproachSpeed: 5
+  customMaxYawRate: 45
   antiGravityBoostDuration: 5
   antiGravityBoostValue: 1.5
   debugMode: 0
-  LiftSpeed: 8
-  CruiseSpeed: 12
-  ApproachSpeed: 5
-  MaxYawRate: 45
   DwellTime: 5
   useNewNavTick: 1
   avoidSeparateSpeed: 8
@@ -1383,6 +1390,9 @@ MonoBehaviour:
   avoidBackOffSpeed: 5
   avoidBackOffTime: 1
   avoidTimeout: 8
+  avoidEscapeRays: 16
+  avoidEscapeMaxDist: 200
+  avoidEscapeBlend: 0.6
 --- !u!114 &4666653673173994686
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -1395,10 +1405,14 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: ffa5b741d6e5e704c9d54f70dbf012cf, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::ProjectC.PeacefulShip.Stations.NpcProximityZone
+  zoneShape: 0
   awarenessRadius: 400
   avoidanceRadius: 31.2
+  avoidancePadding: 4.9
   clearHysteresis: 1.5
-  drawGizmos: 1
+  considerBuildings: 1
+  drawGizmos: 0
+  verboseBuildLogging: 0
 --- !u!114 &8318201465246744848
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -1442,6 +1456,19 @@ MonoBehaviour:
   _registerServerOnly: 1
   _navFrameSeparation: 5000
   _registerUnderShip: 1
+--- !u!114 &5216927811836695900
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 5280015872767050384}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: dacc43e42022482409c4d0f8634c9abc, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::ProjectC.Ship.ShipModuleServer
+  ShowTopMostFoldoutHeaderGroup: 1
 --- !u!1 &5407895997569248789
 GameObject:
   m_ObjectHideFlags: 0

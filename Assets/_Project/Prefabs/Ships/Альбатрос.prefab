@@ -1292,6 +1292,7 @@ GameObject:
   - component: {fileID: 8024395407565753292}
   - component: {fileID: 3854409267526816195}
   - component: {fileID: 2679687254810862557}
+  - component: {fileID: 6868829361824007614}
   m_Layer: 0
   m_Name: "\u0410\u043B\u044C\u0431\u0430\u0442\u0440\u043E\u0441"
   m_TagString: Ship
@@ -1369,7 +1370,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: d5a57f767e5e46a458fc5d3c628d0cbb, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Unity.Netcode.Runtime::Unity.Netcode.NetworkObject
-  GlobalObjectIdHash: 2675069416
+  GlobalObjectIdHash: 2832410324
   InScenePlacedSourceGlobalObjectIdHash: 2675069416
   DeferredDespawnTick: 0
   Ownership: 1
@@ -1650,6 +1651,9 @@ MonoBehaviour:
   avoidBackOffSpeed: 5
   avoidBackOffTime: 1
   avoidTimeout: 8
+  avoidEscapeRays: 16
+  avoidEscapeMaxDist: 200
+  avoidEscapeBlend: 0.6
 --- !u!114 &8024395407565753292
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -1662,10 +1666,14 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: ffa5b741d6e5e704c9d54f70dbf012cf, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::ProjectC.PeacefulShip.Stations.NpcProximityZone
+  zoneShape: 0
   awarenessRadius: 400
   avoidanceRadius: 43.2
+  avoidancePadding: 4.9
   clearHysteresis: 1.5
-  drawGizmos: 1
+  considerBuildings: 1
+  drawGizmos: 0
+  verboseBuildLogging: 0
 --- !u!114 &3854409267526816195
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -1709,6 +1717,19 @@ MonoBehaviour:
   _registerServerOnly: 1
   _navFrameSeparation: 5000
   _registerUnderShip: 1
+--- !u!114 &6868829361824007614
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 4794494763504228605}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: dacc43e42022482409c4d0f8634c9abc, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::ProjectC.Ship.ShipModuleServer
+  ShowTopMostFoldoutHeaderGroup: 1
 --- !u!1 &6439382456775534381
 GameObject:
   m_ObjectHideFlags: 0

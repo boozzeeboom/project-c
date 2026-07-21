@@ -1460,6 +1460,7 @@ GameObject:
   - component: {fileID: 2676350494864420181}
   - component: {fileID: 7584001700739152118}
   - component: {fileID: 8446038419244633405}
+  - component: {fileID: 4286032380098898028}
   m_Layer: 0
   m_Name: "\u0413\u0438\u0433\u0430\u043D\u0442"
   m_TagString: Ship
@@ -1537,7 +1538,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: d5a57f767e5e46a458fc5d3c628d0cbb, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Unity.Netcode.Runtime::Unity.Netcode.NetworkObject
-  GlobalObjectIdHash: 1334684183
+  GlobalObjectIdHash: 3687596903
   InScenePlacedSourceGlobalObjectIdHash: 1334684183
   DeferredDespawnTick: 0
   Ownership: 1
@@ -1802,6 +1803,9 @@ MonoBehaviour:
   avoidBackOffSpeed: 5
   avoidBackOffTime: 1
   avoidTimeout: 8
+  avoidEscapeRays: 16
+  avoidEscapeMaxDist: 200
+  avoidEscapeBlend: 0.6
 --- !u!114 &7231128035964814721
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -1814,10 +1818,14 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: ffa5b741d6e5e704c9d54f70dbf012cf, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::ProjectC.PeacefulShip.Stations.NpcProximityZone
+  zoneShape: 0
   awarenessRadius: 500
   avoidanceRadius: 180
+  avoidancePadding: 4.9
   clearHysteresis: 1.5
-  drawGizmos: 1
+  considerBuildings: 1
+  drawGizmos: 0
+  verboseBuildLogging: 0
 --- !u!114 &2676350494864420181
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -1877,6 +1885,19 @@ MonoBehaviour:
   _rigidbody: {fileID: 8064352247872514915}
   _networkObject: {fileID: 5078006147924834318}
   _root: {fileID: 4372873117873263850}
+--- !u!114 &4286032380098898028
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 5954733007135301770}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: dacc43e42022482409c4d0f8634c9abc, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::ProjectC.Ship.ShipModuleServer
+  ShowTopMostFoldoutHeaderGroup: 1
 --- !u!1 &8346340473116990554
 GameObject:
   m_ObjectHideFlags: 0

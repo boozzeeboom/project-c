@@ -5113,18 +5113,6 @@ PrefabInstance:
       propertyPath: m_Name
       value: "\u0423\u0433\u043E\u043B\u044C\u0449\u0438\u043A"
       objectReference: {fileID: 0}
-    - target: {fileID: 2225078109481327348, guid: 7a9c517d79f5dad478d743dd2652cf1d, type: 3}
-      propertyPath: zoneShape
-      value: 0
-      objectReference: {fileID: 0}
-    - target: {fileID: 2225078109481327348, guid: 7a9c517d79f5dad478d743dd2652cf1d, type: 3}
-      propertyPath: drawGizmos
-      value: 0
-      objectReference: {fileID: 0}
-    - target: {fileID: 2225078109481327348, guid: 7a9c517d79f5dad478d743dd2652cf1d, type: 3}
-      propertyPath: avoidancePadding
-      value: 4.9
-      objectReference: {fileID: 0}
     - target: {fileID: 2801957393549942676, guid: 7a9c517d79f5dad478d743dd2652cf1d, type: 3}
       propertyPath: GlobalObjectIdHash
       value: 3466615606
@@ -6361,18 +6349,6 @@ PrefabInstance:
       propertyPath: GlobalObjectIdHash
       value: 1819323975
       objectReference: {fileID: 0}
-    - target: {fileID: 8373928406201704502, guid: 5661f1364cf80b642905e7a79fcb5dfd, type: 3}
-      propertyPath: zoneShape
-      value: 0
-      objectReference: {fileID: 0}
-    - target: {fileID: 8373928406201704502, guid: 5661f1364cf80b642905e7a79fcb5dfd, type: 3}
-      propertyPath: drawGizmos
-      value: 0
-      objectReference: {fileID: 0}
-    - target: {fileID: 8373928406201704502, guid: 5661f1364cf80b642905e7a79fcb5dfd, type: 3}
-      propertyPath: avoidancePadding
-      value: 4.9
-      objectReference: {fileID: 0}
     - target: {fileID: 8894653580410497216, guid: 5661f1364cf80b642905e7a79fcb5dfd, type: 3}
       propertyPath: m_LocalPosition.x
       value: 40480
@@ -6473,18 +6449,6 @@ PrefabInstance:
     - target: {fileID: 7886732646368109564, guid: 45239ae9fd5bdd64dafb2910a927d691, type: 3}
       propertyPath: m_LocalEulerAnglesHint.z
       value: 0
-      objectReference: {fileID: 0}
-    - target: {fileID: 8024395407565753292, guid: 45239ae9fd5bdd64dafb2910a927d691, type: 3}
-      propertyPath: zoneShape
-      value: 0
-      objectReference: {fileID: 0}
-    - target: {fileID: 8024395407565753292, guid: 45239ae9fd5bdd64dafb2910a927d691, type: 3}
-      propertyPath: drawGizmos
-      value: 0
-      objectReference: {fileID: 0}
-    - target: {fileID: 8024395407565753292, guid: 45239ae9fd5bdd64dafb2910a927d691, type: 3}
-      propertyPath: avoidancePadding
-      value: 4.9
       objectReference: {fileID: 0}
     m_RemovedComponents: []
     m_RemovedGameObjects: []
@@ -8333,18 +8297,6 @@ PrefabInstance:
     - target: {fileID: 7136846278023162379, guid: 1e2d8b401f2a125439d5c02b93eeb29a, type: 3}
       propertyPath: m_Name
       value: "\u0411\u0435\u0440\u0435\u0433"
-      objectReference: {fileID: 0}
-    - target: {fileID: 8322851947256442730, guid: 1e2d8b401f2a125439d5c02b93eeb29a, type: 3}
-      propertyPath: zoneShape
-      value: 0
-      objectReference: {fileID: 0}
-    - target: {fileID: 8322851947256442730, guid: 1e2d8b401f2a125439d5c02b93eeb29a, type: 3}
-      propertyPath: drawGizmos
-      value: 0
-      objectReference: {fileID: 0}
-    - target: {fileID: 8322851947256442730, guid: 1e2d8b401f2a125439d5c02b93eeb29a, type: 3}
-      propertyPath: avoidancePadding
-      value: 4.9
       objectReference: {fileID: 0}
     m_RemovedComponents: []
     m_RemovedGameObjects: []
@@ -10196,6 +10148,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::ProjectC.Ship.RepairManager
   _shopDatabase: {fileID: 11400000, guid: e95e359cc484f184cadcf9fff794f96b, type: 2}
   _repaintCost: 500
+  _hullRepairCost: 300
   _shipRecallCost: 500
   _interactionRadius: 20.76
   _interactHint: "\U0001F6E0 \u0420\u0435\u043C\u043E\u043D\u0442\u043D\u044B\u0439
@@ -10712,6 +10665,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::ProjectC.Ship.RepairManager
   _shopDatabase: {fileID: 11400000, guid: e95e359cc484f184cadcf9fff794f96b, type: 2}
   _repaintCost: 500
+  _hullRepairCost: 300
   _shipRecallCost: 500
   _interactionRadius: 20.76
   _interactHint: "\U0001F6E0 \u0420\u0435\u043C\u043E\u043D\u0442\u043D\u044B\u0439
@@ -12393,22 +12347,6 @@ PrefabInstance:
       propertyPath: m_Name
       value: "\u041B\u0435\u0442\u0443\u0447\u0438\u0439"
       objectReference: {fileID: 0}
-    - target: {fileID: 8224975508823256019, guid: c4d2b5ad8c8b04a458e2285699f4aea0, type: 3}
-      propertyPath: zoneShape
-      value: 0
-      objectReference: {fileID: 0}
-    - target: {fileID: 8224975508823256019, guid: c4d2b5ad8c8b04a458e2285699f4aea0, type: 3}
-      propertyPath: drawGizmos
-      value: 0
-      objectReference: {fileID: 0}
-    - target: {fileID: 8224975508823256019, guid: c4d2b5ad8c8b04a458e2285699f4aea0, type: 3}
-      propertyPath: avoidancePadding
-      value: 4.9
-      objectReference: {fileID: 0}
-    - target: {fileID: 8224975508823256019, guid: c4d2b5ad8c8b04a458e2285699f4aea0, type: 3}
-      propertyPath: verboseBuildLogging
-      value: 0
-      objectReference: {fileID: 0}
     m_RemovedComponents: []
     m_RemovedGameObjects: []
     m_AddedGameObjects: []
@@ -12477,6 +12415,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::ProjectC.Ship.RepairManager
   _shopDatabase: {fileID: 11400000, guid: e95e359cc484f184cadcf9fff794f96b, type: 2}
   _repaintCost: 500
+  _hullRepairCost: 300
   _shipRecallCost: 500
   _interactionRadius: 20.76
   _interactHint: "\U0001F6E0 \u0420\u0435\u043C\u043E\u043D\u0442\u043D\u044B\u0439
@@ -15932,22 +15871,6 @@ PrefabInstance:
       propertyPath: m_LocalEulerAnglesHint.z
       value: 0
       objectReference: {fileID: 0}
-    - target: {fileID: 1060584439670597940, guid: ec75e183f0327844cb08299fd2108ebc, type: 3}
-      propertyPath: zoneShape
-      value: 0
-      objectReference: {fileID: 0}
-    - target: {fileID: 1060584439670597940, guid: ec75e183f0327844cb08299fd2108ebc, type: 3}
-      propertyPath: drawGizmos
-      value: 0
-      objectReference: {fileID: 0}
-    - target: {fileID: 1060584439670597940, guid: ec75e183f0327844cb08299fd2108ebc, type: 3}
-      propertyPath: avoidanceRadius
-      value: 44.2
-      objectReference: {fileID: 0}
-    - target: {fileID: 1060584439670597940, guid: ec75e183f0327844cb08299fd2108ebc, type: 3}
-      propertyPath: avoidancePadding
-      value: 4.9
-      objectReference: {fileID: 0}
     - target: {fileID: 8030880911573377953, guid: ec75e183f0327844cb08299fd2108ebc, type: 3}
       propertyPath: m_Name
       value: "\u041E\u043B\u0438\u043C\u043F"
@@ -17587,6 +17510,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::ProjectC.Ship.RepairManager
   _shopDatabase: {fileID: 11400000, guid: e95e359cc484f184cadcf9fff794f96b, type: 2}
   _repaintCost: 500
+  _hullRepairCost: 300
   _shipRecallCost: 500
   _interactionRadius: 20.76
   _interactHint: "\U0001F6E0 \u0420\u0435\u043C\u043E\u043D\u0442\u043D\u044B\u0439
@@ -21296,18 +21220,6 @@ PrefabInstance:
       propertyPath: m_Name
       value: "\u0416\u0443\u043A"
       objectReference: {fileID: 0}
-    - target: {fileID: 9076484465917801318, guid: f1dfd7bb0a4c6ba479d7d5d88814691a, type: 3}
-      propertyPath: zoneShape
-      value: 0
-      objectReference: {fileID: 0}
-    - target: {fileID: 9076484465917801318, guid: f1dfd7bb0a4c6ba479d7d5d88814691a, type: 3}
-      propertyPath: drawGizmos
-      value: 0
-      objectReference: {fileID: 0}
-    - target: {fileID: 9076484465917801318, guid: f1dfd7bb0a4c6ba479d7d5d88814691a, type: 3}
-      propertyPath: avoidancePadding
-      value: 4.9
-      objectReference: {fileID: 0}
     - target: {fileID: 9155879481820569555, guid: f1dfd7bb0a4c6ba479d7d5d88814691a, type: 3}
       propertyPath: GlobalObjectIdHash
       value: 2278921892
@@ -22615,18 +22527,6 @@ PrefabInstance:
       propertyPath: m_Name
       value: "\u041F\u0435\u0449\u0435\u0440\u0430"
       objectReference: {fileID: 0}
-    - target: {fileID: 8794067490155052748, guid: 5126f1674446bb742996bb08fd308bf9, type: 3}
-      propertyPath: zoneShape
-      value: 0
-      objectReference: {fileID: 0}
-    - target: {fileID: 8794067490155052748, guid: 5126f1674446bb742996bb08fd308bf9, type: 3}
-      propertyPath: drawGizmos
-      value: 0
-      objectReference: {fileID: 0}
-    - target: {fileID: 8794067490155052748, guid: 5126f1674446bb742996bb08fd308bf9, type: 3}
-      propertyPath: avoidancePadding
-      value: 4.9
-      objectReference: {fileID: 0}
     m_RemovedComponents: []
     m_RemovedGameObjects: []
     m_AddedGameObjects: []
@@ -23578,6 +23478,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::ProjectC.Ship.RepairManager
   _shopDatabase: {fileID: 11400000, guid: e95e359cc484f184cadcf9fff794f96b, type: 2}
   _repaintCost: 500
+  _hullRepairCost: 300
   _shipRecallCost: 500
   _interactionRadius: 20.76
   _interactHint: "\U0001F6E0 \u0420\u0435\u043C\u043E\u043D\u0442\u043D\u044B\u0439
@@ -25695,18 +25596,6 @@ PrefabInstance:
     serializedVersion: 3
     m_TransformParent: {fileID: 0}
     m_Modifications:
-    - target: {fileID: 931201030210976908, guid: 17d138159a0aa7c48a38261299bb3280, type: 3}
-      propertyPath: zoneShape
-      value: 0
-      objectReference: {fileID: 0}
-    - target: {fileID: 931201030210976908, guid: 17d138159a0aa7c48a38261299bb3280, type: 3}
-      propertyPath: drawGizmos
-      value: 0
-      objectReference: {fileID: 0}
-    - target: {fileID: 931201030210976908, guid: 17d138159a0aa7c48a38261299bb3280, type: 3}
-      propertyPath: avoidancePadding
-      value: 4.9
-      objectReference: {fileID: 0}
     - target: {fileID: 1171079311907173941, guid: 17d138159a0aa7c48a38261299bb3280, type: 3}
       propertyPath: m_Name
       value: "\u0428\u043C\u0435\u043B\u044C"
@@ -26902,10 +26791,6 @@ PrefabInstance:
       propertyPath: GlobalObjectIdHash
       value: 2317759439
       objectReference: {fileID: 0}
-    - target: {fileID: 4148041641968703888, guid: 8256984dcbf64c04b8922c2c32131ae9, type: 3}
-      propertyPath: schedule
-      value: 
-      objectReference: {fileID: 11400000, guid: 1c116bc5217d9a141a0b667f2596aca3, type: 2}
     - target: {fileID: 4375928684233543869, guid: 8256984dcbf64c04b8922c2c32131ae9, type: 3}
       propertyPath: m_Name
       value: "\u0421\u0442\u0440\u0430\u043D\u043D\u0438\u043A"
@@ -26949,22 +26834,6 @@ PrefabInstance:
     - target: {fileID: 6967063317147357393, guid: 8256984dcbf64c04b8922c2c32131ae9, type: 3}
       propertyPath: m_LocalEulerAnglesHint.z
       value: 0
-      objectReference: {fileID: 0}
-    - target: {fileID: 7840598042252923846, guid: 8256984dcbf64c04b8922c2c32131ae9, type: 3}
-      propertyPath: zoneShape
-      value: 0
-      objectReference: {fileID: 0}
-    - target: {fileID: 7840598042252923846, guid: 8256984dcbf64c04b8922c2c32131ae9, type: 3}
-      propertyPath: drawGizmos
-      value: 0
-      objectReference: {fileID: 0}
-    - target: {fileID: 7840598042252923846, guid: 8256984dcbf64c04b8922c2c32131ae9, type: 3}
-      propertyPath: avoidanceRadius
-      value: 70.5
-      objectReference: {fileID: 0}
-    - target: {fileID: 7840598042252923846, guid: 8256984dcbf64c04b8922c2c32131ae9, type: 3}
-      propertyPath: avoidancePadding
-      value: 4.9
       objectReference: {fileID: 0}
     m_RemovedComponents: []
     m_RemovedGameObjects: []
@@ -28256,18 +28125,6 @@ PrefabInstance:
     serializedVersion: 3
     m_TransformParent: {fileID: 0}
     m_Modifications:
-    - target: {fileID: 1065817193251255252, guid: f88cc8ec7bdd02a4c95b6ef9806a9296, type: 3}
-      propertyPath: zoneShape
-      value: 0
-      objectReference: {fileID: 0}
-    - target: {fileID: 1065817193251255252, guid: f88cc8ec7bdd02a4c95b6ef9806a9296, type: 3}
-      propertyPath: drawGizmos
-      value: 0
-      objectReference: {fileID: 0}
-    - target: {fileID: 1065817193251255252, guid: f88cc8ec7bdd02a4c95b6ef9806a9296, type: 3}
-      propertyPath: avoidancePadding
-      value: 4.9
-      objectReference: {fileID: 0}
     - target: {fileID: 2327573258458865788, guid: f88cc8ec7bdd02a4c95b6ef9806a9296, type: 3}
       propertyPath: m_LocalPosition.x
       value: 40228.33
@@ -28991,18 +28848,6 @@ PrefabInstance:
       propertyPath: m_Name
       value: "\u0412\u0435\u0442\u0440\u043E\u0432\u043E\u0440\u043E\u0442"
       objectReference: {fileID: 0}
-    - target: {fileID: 5674528968234166610, guid: 822e0bd9fb98bfc4ea7f82954ec00ab3, type: 3}
-      propertyPath: zoneShape
-      value: 0
-      objectReference: {fileID: 0}
-    - target: {fileID: 5674528968234166610, guid: 822e0bd9fb98bfc4ea7f82954ec00ab3, type: 3}
-      propertyPath: drawGizmos
-      value: 0
-      objectReference: {fileID: 0}
-    - target: {fileID: 5674528968234166610, guid: 822e0bd9fb98bfc4ea7f82954ec00ab3, type: 3}
-      propertyPath: avoidancePadding
-      value: 4.9
-      objectReference: {fileID: 0}
     m_RemovedComponents: []
     m_RemovedGameObjects: []
     m_AddedGameObjects: []
@@ -29016,18 +28861,6 @@ PrefabInstance:
     serializedVersion: 3
     m_TransformParent: {fileID: 0}
     m_Modifications:
-    - target: {fileID: 1820502806711753235, guid: d4bd0bc638874f849bb0e7dac45e4be6, type: 3}
-      propertyPath: zoneShape
-      value: 0
-      objectReference: {fileID: 0}
-    - target: {fileID: 1820502806711753235, guid: d4bd0bc638874f849bb0e7dac45e4be6, type: 3}
-      propertyPath: drawGizmos
-      value: 0
-      objectReference: {fileID: 0}
-    - target: {fileID: 1820502806711753235, guid: d4bd0bc638874f849bb0e7dac45e4be6, type: 3}
-      propertyPath: avoidancePadding
-      value: 4.9
-      objectReference: {fileID: 0}
     - target: {fileID: 2215842046835404880, guid: d4bd0bc638874f849bb0e7dac45e4be6, type: 3}
       propertyPath: m_LocalPosition.x
       value: 40311.7
@@ -29853,18 +29686,6 @@ PrefabInstance:
       propertyPath: m_LocalEulerAnglesHint.z
       value: 0
       objectReference: {fileID: 0}
-    - target: {fileID: 5794129474632815231, guid: f901f72cf786dfa439c0b2df37a217d1, type: 3}
-      propertyPath: zoneShape
-      value: 0
-      objectReference: {fileID: 0}
-    - target: {fileID: 5794129474632815231, guid: f901f72cf786dfa439c0b2df37a217d1, type: 3}
-      propertyPath: drawGizmos
-      value: 0
-      objectReference: {fileID: 0}
-    - target: {fileID: 5794129474632815231, guid: f901f72cf786dfa439c0b2df37a217d1, type: 3}
-      propertyPath: avoidancePadding
-      value: 4.9
-      objectReference: {fileID: 0}
     - target: {fileID: 6716019714239139776, guid: f901f72cf786dfa439c0b2df37a217d1, type: 3}
       propertyPath: m_Name
       value: "\u0412\u0430\u0432\u0438\u043B\u043E\u043D"
@@ -30264,6 +30085,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::ProjectC.Ship.RepairManager
   _shopDatabase: {fileID: 11400000, guid: e95e359cc484f184cadcf9fff794f96b, type: 2}
   _repaintCost: 500
+  _hullRepairCost: 300
   _shipRecallCost: 500
   _interactionRadius: 20.76
   _interactHint: "\U0001F6E0 \u0420\u0435\u043C\u043E\u043D\u0442\u043D\u044B\u0439
@@ -32264,18 +32086,6 @@ PrefabInstance:
       propertyPath: m_Name
       value: "\u0413\u0438\u0433\u0430\u043D\u0442"
       objectReference: {fileID: 0}
-    - target: {fileID: 7231128035964814721, guid: cd50dee177b57174cb2645e50b31b70c, type: 3}
-      propertyPath: zoneShape
-      value: 0
-      objectReference: {fileID: 0}
-    - target: {fileID: 7231128035964814721, guid: cd50dee177b57174cb2645e50b31b70c, type: 3}
-      propertyPath: drawGizmos
-      value: 0
-      objectReference: {fileID: 0}
-    - target: {fileID: 7231128035964814721, guid: cd50dee177b57174cb2645e50b31b70c, type: 3}
-      propertyPath: avoidancePadding
-      value: 4.9
-      objectReference: {fileID: 0}
     m_RemovedComponents: []
     m_RemovedGameObjects: []
     m_AddedGameObjects: []
@@ -32714,10 +32524,6 @@ PrefabInstance:
     serializedVersion: 3
     m_TransformParent: {fileID: 0}
     m_Modifications:
-    - target: {fileID: 139896100244724121, guid: 291c8d6790c39ff4395aaf483341399f, type: 3}
-      propertyPath: schedule
-      value: 
-      objectReference: {fileID: 11400000, guid: 763ae8cfc7dd5a34d98cbe078165c037, type: 2}
     - target: {fileID: 2356130661414943933, guid: 291c8d6790c39ff4395aaf483341399f, type: 3}
       propertyPath: m_Name
       value: "\u041C\u0430\u0441\u0442\u043E\u0434\u043E\u043D\u0442"
@@ -32761,26 +32567,6 @@ PrefabInstance:
     - target: {fileID: 6736293840917821520, guid: 291c8d6790c39ff4395aaf483341399f, type: 3}
       propertyPath: m_LocalEulerAnglesHint.z
       value: 0
-      objectReference: {fileID: 0}
-    - target: {fileID: 7345202240640569286, guid: 291c8d6790c39ff4395aaf483341399f, type: 3}
-      propertyPath: zoneShape
-      value: 0
-      objectReference: {fileID: 0}
-    - target: {fileID: 7345202240640569286, guid: 291c8d6790c39ff4395aaf483341399f, type: 3}
-      propertyPath: drawGizmos
-      value: 0
-      objectReference: {fileID: 0}
-    - target: {fileID: 7345202240640569286, guid: 291c8d6790c39ff4395aaf483341399f, type: 3}
-      propertyPath: avoidanceRadius
-      value: 89.9
-      objectReference: {fileID: 0}
-    - target: {fileID: 7345202240640569286, guid: 291c8d6790c39ff4395aaf483341399f, type: 3}
-      propertyPath: awarenessRadius
-      value: 397.4
-      objectReference: {fileID: 0}
-    - target: {fileID: 7345202240640569286, guid: 291c8d6790c39ff4395aaf483341399f, type: 3}
-      propertyPath: avoidancePadding
-      value: 4.9
       objectReference: {fileID: 0}
     - target: {fileID: 7903739627667095757, guid: 291c8d6790c39ff4395aaf483341399f, type: 3}
       propertyPath: GlobalObjectIdHash
@@ -33889,6 +33675,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::ProjectC.Ship.RepairManager
   _shopDatabase: {fileID: 11400000, guid: e95e359cc484f184cadcf9fff794f96b, type: 2}
   _repaintCost: 500
+  _hullRepairCost: 300
   _shipRecallCost: 500
   _interactionRadius: 20.76
   _interactHint: "\U0001F6E0 \u0420\u0435\u043C\u043E\u043D\u0442\u043D\u044B\u0439
@@ -34726,22 +34513,6 @@ PrefabInstance:
     serializedVersion: 3
     m_TransformParent: {fileID: 0}
     m_Modifications:
-    - target: {fileID: 4666653673173994686, guid: 8af663ff8766d1a409624d9dfd0bdd70, type: 3}
-      propertyPath: zoneShape
-      value: 0
-      objectReference: {fileID: 0}
-    - target: {fileID: 4666653673173994686, guid: 8af663ff8766d1a409624d9dfd0bdd70, type: 3}
-      propertyPath: drawGizmos
-      value: 0
-      objectReference: {fileID: 0}
-    - target: {fileID: 4666653673173994686, guid: 8af663ff8766d1a409624d9dfd0bdd70, type: 3}
-      propertyPath: avoidancePadding
-      value: 4.9
-      objectReference: {fileID: 0}
-    - target: {fileID: 5006660475228269667, guid: 8af663ff8766d1a409624d9dfd0bdd70, type: 3}
-      propertyPath: schedule
-      value: 
-      objectReference: {fileID: 11400000, guid: 0dc45e6e38007fa4ab86b583c9d0dcec, type: 2}
     - target: {fileID: 5280015872767050384, guid: 8af663ff8766d1a409624d9dfd0bdd70, type: 3}
       propertyPath: m_Name
       value: "\u0421\u0438\u043B\u044C\u0444\u0438\u0434\u0430"
@@ -36870,18 +36641,6 @@ PrefabInstance:
     serializedVersion: 3
     m_TransformParent: {fileID: 0}
     m_Modifications:
-    - target: {fileID: 3248469507805353010, guid: f029b503c412a1f43a43ef1fcadbf0d7, type: 3}
-      propertyPath: zoneShape
-      value: 0
-      objectReference: {fileID: 0}
-    - target: {fileID: 3248469507805353010, guid: f029b503c412a1f43a43ef1fcadbf0d7, type: 3}
-      propertyPath: drawGizmos
-      value: 0
-      objectReference: {fileID: 0}
-    - target: {fileID: 3248469507805353010, guid: f029b503c412a1f43a43ef1fcadbf0d7, type: 3}
-      propertyPath: avoidancePadding
-      value: 4.9
-      objectReference: {fileID: 0}
     - target: {fileID: 3388651589181611464, guid: f029b503c412a1f43a43ef1fcadbf0d7, type: 3}
       propertyPath: m_LocalPosition.x
       value: 40373.1
@@ -36990,18 +36749,6 @@ PrefabInstance:
     - target: {fileID: 6423233993187137997, guid: 8724ae8f508dbc94f882c0450956dc78, type: 3}
       propertyPath: m_Name
       value: "\u041B\u043E\u0440\u0435\u0439\u043D"
-      objectReference: {fileID: 0}
-    - target: {fileID: 8641457667011299189, guid: 8724ae8f508dbc94f882c0450956dc78, type: 3}
-      propertyPath: zoneShape
-      value: 0
-      objectReference: {fileID: 0}
-    - target: {fileID: 8641457667011299189, guid: 8724ae8f508dbc94f882c0450956dc78, type: 3}
-      propertyPath: drawGizmos
-      value: 0
-      objectReference: {fileID: 0}
-    - target: {fileID: 8641457667011299189, guid: 8724ae8f508dbc94f882c0450956dc78, type: 3}
-      propertyPath: avoidancePadding
-      value: 4.9
       objectReference: {fileID: 0}
     m_RemovedComponents: []
     m_RemovedGameObjects: []
@@ -38886,18 +38633,6 @@ PrefabInstance:
       propertyPath: m_LocalEulerAnglesHint.z
       value: 0
       objectReference: {fileID: 0}
-    - target: {fileID: 8333655633282922577, guid: b81f079e28f223d4b9fa06564918bc4c, type: 3}
-      propertyPath: zoneShape
-      value: 0
-      objectReference: {fileID: 0}
-    - target: {fileID: 8333655633282922577, guid: b81f079e28f223d4b9fa06564918bc4c, type: 3}
-      propertyPath: drawGizmos
-      value: 0
-      objectReference: {fileID: 0}
-    - target: {fileID: 8333655633282922577, guid: b81f079e28f223d4b9fa06564918bc4c, type: 3}
-      propertyPath: avoidancePadding
-      value: 4.9
-      objectReference: {fileID: 0}
     m_RemovedComponents: []
     m_RemovedGameObjects: []
     m_AddedGameObjects: []
@@ -38952,6 +38687,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::ProjectC.Ship.RepairManager
   _shopDatabase: {fileID: 11400000, guid: e95e359cc484f184cadcf9fff794f96b, type: 2}
   _repaintCost: 500
+  _hullRepairCost: 300
   _shipRecallCost: 500
   _interactionRadius: 20.76
   _interactHint: "\U0001F6E0 \u0420\u0435\u043C\u043E\u043D\u0442\u043D\u044B\u0439
@@ -40320,41 +40056,11 @@ PrefabInstance:
       propertyPath: m_LocalEulerAnglesHint.z
       value: 0
       objectReference: {fileID: 0}
-    - target: {fileID: 8712427589522649248, guid: 79919f26789a06d4890b3281acdaf191, type: 3}
-      propertyPath: thrustForce
-      value: 500000
-      objectReference: {fileID: 0}
-    - target: {fileID: 8712427589522649248, guid: 79919f26789a06d4890b3281acdaf191, type: 3}
-      propertyPath: verticalForce
-      value: 70000
-      objectReference: {fileID: 0}
     m_RemovedComponents: []
     m_RemovedGameObjects: []
     m_AddedGameObjects: []
-    m_AddedComponents:
-    - targetCorrespondingSourceObject: {fileID: 337059921531908604, guid: 79919f26789a06d4890b3281acdaf191, type: 3}
-      insertIndex: -1
-      addedObject: {fileID: 8645957853286282448}
+    m_AddedComponents: []
   m_SourcePrefab: {fileID: 100100000, guid: 79919f26789a06d4890b3281acdaf191, type: 3}
---- !u!1 &8645957853286282447 stripped
-GameObject:
-  m_CorrespondingSourceObject: {fileID: 337059921531908604, guid: 79919f26789a06d4890b3281acdaf191, type: 3}
-  m_PrefabInstance: {fileID: 8645957853286282446}
-  m_PrefabAsset: {fileID: 0}
---- !u!114 &8645957853286282448
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 8645957853286282447}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: dacc43e42022482409c4d0f8634c9abc, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::ProjectC.Ship.ShipModuleServer
-  ShowTopMostFoldoutHeaderGroup: 1
-  _shopDatabase: {fileID: 11400000, guid: e95e359cc484f184cadcf9fff794f96b, type: 2}
 --- !u!1660057539 &9223372036854775807
 SceneRoots:
   m_ObjectHideFlags: 0

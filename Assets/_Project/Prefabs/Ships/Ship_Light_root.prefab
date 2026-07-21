@@ -24,6 +24,7 @@ GameObject:
   - component: {fileID: 3430226287062973314}
   - component: {fileID: 2659030070316191880}
   - component: {fileID: 4594721854162178879}
+  - component: {fileID: 8045687988327995554}
   m_Layer: 0
   m_Name: Ship_Light_root
   m_TagString: Ship
@@ -178,7 +179,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: d5a57f767e5e46a458fc5d3c628d0cbb, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Unity.Netcode.Runtime::Unity.Netcode.NetworkObject
-  GlobalObjectIdHash: 1781600573
+  GlobalObjectIdHash: 2192752483
   InScenePlacedSourceGlobalObjectIdHash: 3849520571
   DeferredDespawnTick: 0
   Ownership: 1
@@ -209,11 +210,12 @@ MonoBehaviour:
   _debugLog: 0
   _keyItemData: {fileID: 11400000, guid: b08791afdeeed1049a341e8452da084d, type: 2}
   _customDisplayName: Pushka
-  thrustForce: 5000
+  _shipPersistentId: 
+  thrustForce: 500000
   maxSpeed: 5000
   yawForce: 70000
   pitchForce: 25
-  verticalForce: 7000
+  verticalForce: 70000
   yawSmoothTime: 0.25
   pitchSmoothTime: 0.6
   liftSmoothTime: 0.8
@@ -429,6 +431,19 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::ProjectC.Player.ShipInputReader
   mouseSensitivityX: 2
   mouseSensitivityY: 2
+--- !u!114 &8045687988327995554
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 337059921531908604}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: dacc43e42022482409c4d0f8634c9abc, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::ProjectC.Ship.ShipModuleServer
+  ShowTopMostFoldoutHeaderGroup: 1
 --- !u!1 &815396333043235192
 GameObject:
   m_ObjectHideFlags: 0

@@ -2,6 +2,7 @@
 
 **Дата:** 2026-07-19  
 **Статус:** ✅ Phase 1 (Repair Manager + Runtime Install) реализован  
+**Последнее изменение:** T-MOD04 — рефакторинг цен (все цены на NPC RepairManager)  
 
 ---
 

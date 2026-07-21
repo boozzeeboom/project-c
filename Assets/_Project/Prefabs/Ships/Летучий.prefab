@@ -1312,6 +1312,7 @@ GameObject:
   - component: {fileID: 8224975508823256019}
   - component: {fileID: 4878506771319942562}
   - component: {fileID: 8606611501786600065}
+  - component: {fileID: 6102810012407234792}
   m_Layer: 0
   m_Name: "\u041B\u0435\u0442\u0443\u0447\u0438\u0439"
   m_TagString: Ship
@@ -1389,7 +1390,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: d5a57f767e5e46a458fc5d3c628d0cbb, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Unity.Netcode.Runtime::Unity.Netcode.NetworkObject
-  GlobalObjectIdHash: 960756635
+  GlobalObjectIdHash: 1077161459
   InScenePlacedSourceGlobalObjectIdHash: 960756635
   DeferredDespawnTick: 0
   Ownership: 1
@@ -1420,6 +1421,7 @@ MonoBehaviour:
   _debugLog: 0
   _keyItemData: {fileID: 11400000, guid: 002b255eba733e944bd46758583aa9f6, type: 2}
   _customDisplayName: "\u041B\u0435\u0442\u0443\u0447\u0438\u0439"
+  _shipPersistentId: 
   thrustForce: 30000
   maxSpeed: 400
   yawForce: 150000
@@ -1649,13 +1651,18 @@ MonoBehaviour:
   npcThrustMult: 0.6
   npcYawMult: 0.4
   npcArrivalToleranceMeters: 50
+  overrideClassSpeeds: 0
+  liftSpeedMult: 1
+  cruiseSpeedMult: 1
+  approachSpeedMult: 1
+  maxYawRateMult: 1
+  customLiftSpeed: 8
+  customCruiseSpeed: 12
+  customApproachSpeed: 5
+  customMaxYawRate: 45
   antiGravityBoostDuration: 5
   antiGravityBoostValue: 1.5
   debugMode: 0
-  LiftSpeed: 8
-  CruiseSpeed: 12
-  ApproachSpeed: 5
-  MaxYawRate: 45
   DwellTime: 5
   useNewNavTick: 1
   avoidSeparateSpeed: 8
@@ -1664,6 +1671,9 @@ MonoBehaviour:
   avoidBackOffSpeed: 5
   avoidBackOffTime: 1
   avoidTimeout: 8
+  avoidEscapeRays: 16
+  avoidEscapeMaxDist: 200
+  avoidEscapeBlend: 0.6
 --- !u!114 &8224975508823256019
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -1676,10 +1686,14 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: ffa5b741d6e5e704c9d54f70dbf012cf, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::ProjectC.PeacefulShip.Stations.NpcProximityZone
+  zoneShape: 0
   awarenessRadius: 400
   avoidanceRadius: 25.7
+  avoidancePadding: 4.9
   clearHysteresis: 1.5
-  drawGizmos: 1
+  considerBuildings: 1
+  drawGizmos: 0
+  verboseBuildLogging: 0
 --- !u!114 &4878506771319942562
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -1723,6 +1737,19 @@ MonoBehaviour:
   _registerServerOnly: 1
   _navFrameSeparation: 5000
   _registerUnderShip: 1
+--- !u!114 &6102810012407234792
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 6314410203132540618}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: dacc43e42022482409c4d0f8634c9abc, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::ProjectC.Ship.ShipModuleServer
+  ShowTopMostFoldoutHeaderGroup: 1
 --- !u!1 &6770585325489923698
 GameObject:
   m_ObjectHideFlags: 0

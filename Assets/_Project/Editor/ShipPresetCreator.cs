@@ -328,7 +328,11 @@ namespace ProjectC.Editor
             SetPrivateField(deckNav, "_navFrameSeparation", 5000f);
             SetPrivateField(deckNav, "_registerUnderShip", true);
 
+            // ShipModuleServer — NetworkBehaviour, ссылки резолвятся в Awake через GetComponent<>
+            root.AddComponent<ShipModuleServer>();
+
             // Wire references on ShipController
+
             SetPrivateField(sc, "moduleManager", modMgr);
             SetPrivateField(sc, "meziyActivator", mez);
             SetPrivateField(sc, "fuelSystem", fuel);

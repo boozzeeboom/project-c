@@ -163,5 +163,65 @@ RepairManagerWindow (UIDocument)
 
 ---
 
-*Документация ведётся агентом Aura. 2026-07-19*
+## 6. Ship Recall — вызов корабля на пад (2026-07-22)
+
+### 6.1 Описание
+
+Игрок может вызвать свой корабль на ближайший свободный посадочный пад через RepairManagerWindow.
+Корабль мгновенно телепортируется, снимается с freeze, списывается стоимость в кредитах.
+
+### 6.2 Как работает
+
+| Шаг | Действие |
+|-----|----------|
+| 1 | Игрок подходит к RepairManager NPC в доке → E |
+| 2 | В окне выбирает свой корабль в дропдауне |
+| 3 | Справа от дропдауна — кнопка «🚁 Вызвать» и цена |
+| 4 | Клиент ищет все DockingPadTriggerBox → фильтрует свободные → ближайший к игроку |
+| 5 | `RecallShipToPadServerRpc(padPosition, cost)` → сервер |
+| 6 | Сервер: списывает кредиты через `TradeWorld.TryModifyCredits`, отстыковывает если нужно, телепортирует, снимает `_frozenByNoPilot` |
+
+### 6.3 Архитектура
+
+```
+RepairManagerWindow (клиент)
+  ├── Дропдаун выбора корабля + кнопка «🚁 Вызвать» + цена
+  ├── OnRecallShipClicked()
+  │     ├── Проверка credits ≥ _shipRecallCost
+  │     ├── FindObjectsByType<DockingPadTriggerBox> → filter IsShipInside==false → nearest
+  │     └── sc.RecallShipToPadServerRpc(nearestPad.position, cost)
+  │
+ShipController.RecallShipToPadServerRpc (сервер)
+  ├── TradeWorld.TryModifyCredits(clientId, -cost)
+  ├── ExitDocked() (если пристыкован)
+  ├── rb.position = padPosition, velocity = zero
+  └── _frozenByNoPilot = false
+```
+
+### 6.4 Настройка
+
+| Параметр | Где | По умолчанию |
+|----------|-----|-------------|
+| `_shipRecallCost` | `RepairManager` (инспектор) | 500 кр. |
+
+### 6.5 Файлы
+
+| Файл | Роль |
+|------|------|
+| `Assets/_Project/Scripts/Ship/UI/RepairManagerWindow.cs` | Кнопка + логика вызова |
+| `Assets/_Project/Scripts/Ship/RepairManager.cs` | `_shipRecallCost` → `Show()` |
+| `Assets/_Project/Scripts/Player/ShipController.cs` | `RecallShipToPadServerRpc` |
+| `Assets/_Project/Resources/UI/RepairManagerWindow.uxml` | `repair-recall-section` в строке с дропдауном |
+| `Assets/_Project/Resources/UI/RepairManagerWindow.uss` | `.repair-ship-selector-row`, `.repair-recall-row`, `.repair-recall-cost` |
+
+### 6.6 Верификация
+
+1. Открыть RepairManagerWindow (E на NPC в доке)
+2. Выбрать корабль в дропдауне — справа кнопка «🚁 Вызвать» с ценой
+3. Нажать «🚁 Вызвать» — корабль должен телепортироваться на ближайший свободный пад
+4. Проверить: кредиты списаны, корабль не в freeze, может взлететь
+
+---
+
+*Документация ведётся агентом Aura. 2026-07-22*
 

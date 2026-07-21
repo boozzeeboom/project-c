@@ -10196,6 +10196,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::ProjectC.Ship.RepairManager
   _shopDatabase: {fileID: 11400000, guid: e95e359cc484f184cadcf9fff794f96b, type: 2}
   _repaintCost: 500
+  _shipRecallCost: 500
   _interactionRadius: 20.76
   _interactHint: "\U0001F6E0 \u0420\u0435\u043C\u043E\u043D\u0442\u043D\u044B\u0439
     \u043C\u0435\u043D\u0435\u0434\u0436\u0435\u0440 [E]"
@@ -10711,6 +10712,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::ProjectC.Ship.RepairManager
   _shopDatabase: {fileID: 11400000, guid: e95e359cc484f184cadcf9fff794f96b, type: 2}
   _repaintCost: 500
+  _shipRecallCost: 500
   _interactionRadius: 20.76
   _interactHint: "\U0001F6E0 \u0420\u0435\u043C\u043E\u043D\u0442\u043D\u044B\u0439
     \u043C\u0435\u043D\u0435\u0434\u0436\u0435\u0440 [E]"
@@ -12475,6 +12477,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::ProjectC.Ship.RepairManager
   _shopDatabase: {fileID: 11400000, guid: e95e359cc484f184cadcf9fff794f96b, type: 2}
   _repaintCost: 500
+  _shipRecallCost: 500
   _interactionRadius: 20.76
   _interactHint: "\U0001F6E0 \u0420\u0435\u043C\u043E\u043D\u0442\u043D\u044B\u0439
     \u043C\u0435\u043D\u0435\u0434\u0436\u0435\u0440 [E]"
@@ -17584,6 +17587,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::ProjectC.Ship.RepairManager
   _shopDatabase: {fileID: 11400000, guid: e95e359cc484f184cadcf9fff794f96b, type: 2}
   _repaintCost: 500
+  _shipRecallCost: 500
   _interactionRadius: 20.76
   _interactHint: "\U0001F6E0 \u0420\u0435\u043C\u043E\u043D\u0442\u043D\u044B\u0439
     \u043C\u0435\u043D\u0435\u0434\u0436\u0435\u0440 [E]"
@@ -23574,6 +23578,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::ProjectC.Ship.RepairManager
   _shopDatabase: {fileID: 11400000, guid: e95e359cc484f184cadcf9fff794f96b, type: 2}
   _repaintCost: 500
+  _shipRecallCost: 500
   _interactionRadius: 20.76
   _interactHint: "\U0001F6E0 \u0420\u0435\u043C\u043E\u043D\u0442\u043D\u044B\u0439
     \u043C\u0435\u043D\u0435\u0434\u0436\u0435\u0440 [E]"
@@ -30259,6 +30264,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::ProjectC.Ship.RepairManager
   _shopDatabase: {fileID: 11400000, guid: e95e359cc484f184cadcf9fff794f96b, type: 2}
   _repaintCost: 500
+  _shipRecallCost: 500
   _interactionRadius: 20.76
   _interactHint: "\U0001F6E0 \u0420\u0435\u043C\u043E\u043D\u0442\u043D\u044B\u0439
     \u043C\u0435\u043D\u0435\u0434\u0436\u0435\u0440 [E]"
@@ -33883,6 +33889,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::ProjectC.Ship.RepairManager
   _shopDatabase: {fileID: 11400000, guid: e95e359cc484f184cadcf9fff794f96b, type: 2}
   _repaintCost: 500
+  _shipRecallCost: 500
   _interactionRadius: 20.76
   _interactHint: "\U0001F6E0 \u0420\u0435\u043C\u043E\u043D\u0442\u043D\u044B\u0439
     \u043C\u0435\u043D\u0435\u0434\u0436\u0435\u0440 [E]"
@@ -38945,6 +38952,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::ProjectC.Ship.RepairManager
   _shopDatabase: {fileID: 11400000, guid: e95e359cc484f184cadcf9fff794f96b, type: 2}
   _repaintCost: 500
+  _shipRecallCost: 500
   _interactionRadius: 20.76
   _interactHint: "\U0001F6E0 \u0420\u0435\u043C\u043E\u043D\u0442\u043D\u044B\u0439
     \u043C\u0435\u043D\u0435\u0434\u0436\u0435\u0440 [E]"
@@ -40266,7 +40274,7 @@ PrefabInstance:
       objectReference: {fileID: 120909673}
     - target: {fileID: 4121116096810191470, guid: 79919f26789a06d4890b3281acdaf191, type: 3}
       propertyPath: GlobalObjectIdHash
-      value: 2944321156
+      value: 2192752483
       objectReference: {fileID: 0}
     - target: {fileID: 6058236553517238473, guid: 79919f26789a06d4890b3281acdaf191, type: 3}
       propertyPath: 'm_Materials.Array.data[0]'
@@ -40323,8 +40331,30 @@ PrefabInstance:
     m_RemovedComponents: []
     m_RemovedGameObjects: []
     m_AddedGameObjects: []
-    m_AddedComponents: []
+    m_AddedComponents:
+    - targetCorrespondingSourceObject: {fileID: 337059921531908604, guid: 79919f26789a06d4890b3281acdaf191, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 8645957853286282448}
   m_SourcePrefab: {fileID: 100100000, guid: 79919f26789a06d4890b3281acdaf191, type: 3}
+--- !u!1 &8645957853286282447 stripped
+GameObject:
+  m_CorrespondingSourceObject: {fileID: 337059921531908604, guid: 79919f26789a06d4890b3281acdaf191, type: 3}
+  m_PrefabInstance: {fileID: 8645957853286282446}
+  m_PrefabAsset: {fileID: 0}
+--- !u!114 &8645957853286282448
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 8645957853286282447}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: dacc43e42022482409c4d0f8634c9abc, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::ProjectC.Ship.ShipModuleServer
+  ShowTopMostFoldoutHeaderGroup: 1
+  _shopDatabase: {fileID: 11400000, guid: e95e359cc484f184cadcf9fff794f96b, type: 2}
 --- !u!1660057539 &9223372036854775807
 SceneRoots:
   m_ObjectHideFlags: 0

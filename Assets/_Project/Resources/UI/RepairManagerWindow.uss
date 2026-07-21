@@ -71,6 +71,26 @@
     margin-bottom: 3px !important;
 }
 
+/* === Ship selector row (dropdown + recall) === */
+.repair-ship-selector-row {
+    flex-direction: row !important;
+    align-items: center !important;
+    flex-shrink: 0 !important;
+}
+
+.repair-recall-row {
+    flex-direction: row !important;
+    align-items: center !important;
+    flex-shrink: 0 !important;
+    margin-left: 16px !important;
+}
+
+.repair-recall-cost {
+    font-size: 12px !important;
+    color: rgb(200, 210, 50) !important;
+    margin-right: 8px !important;
+}
+
 /* === Ship info bar === */
 .repair-ship-info {
     flex-direction: row !important;
@@ -124,6 +144,7 @@
     flex-grow: 1 !important;
     flex-shrink: 1 !important;
     min-height: 0 !important;
+
     padding: 4px 16px 8px 16px !important;
     flex-direction: column !important;
     overflow: hidden !important;

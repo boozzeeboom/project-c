@@ -23,13 +23,20 @@
                 <ui:Button name="repair-close-btn" text="✕" class="repair-close-btn" />
             </ui:VisualElement>
 
-            <!-- Ship selector (dropdown) -->
+            <!-- Ship selector (dropdown) + Recall button -->
             <ui:VisualElement name="repair-ship-selector" class="repair-section">
                 <ui:Label text="Корабль:" class="repair-section-label" />
-                <ui:VisualElement name="repair-ship-dropdown-container" class="repair-dropdown-container" />
+                <ui:VisualElement class="repair-ship-selector-row">
+                    <ui:VisualElement name="repair-ship-dropdown-container" class="repair-dropdown-container" />
+                    <ui:VisualElement name="repair-recall-section" class="repair-recall-row">
+                        <ui:Label name="repair-recall-cost-label" text="500 кр." class="repair-recall-cost" />
+                        <ui:Button name="repair-recall-btn" text="🚁 Вызвать" class="repair-btn repair-btn-install" />
+                    </ui:VisualElement>
+                </ui:VisualElement>
             </ui:VisualElement>
 
             <!-- Ship info bar -->
+=======
             <ui:VisualElement name="repair-ship-info" class="repair-ship-info">
                 <ui:Label name="repair-ship-class" text="Класс: —" class="repair-info-label" />
                 <ui:Label name="repair-ship-power" text="Энергия: —" class="repair-info-label" />
@@ -73,16 +80,6 @@
                 <ui:VisualElement class="repair-paint-actions">
                     <ui:Label name="repair-paint-cost-label" text="Стоимость: —" class="repair-info-label" />
                     <ui:Button name="repair-paint-apply-btn" text="🎨 Покрасить" class="repair-btn repair-btn-install" />
-                </ui:VisualElement>
-            </ui:VisualElement>
-
-            <!-- Ship Recall — вызвать корабль на ближайший пад -->
-            <ui:VisualElement name="repair-recall-section" class="repair-section">
-                <ui:Label text="🚁 Вернуть корабль:" class="repair-section-label" />
-                <ui:Label name="repair-recall-info" text="Корабль появится на ближайшем свободном паде" class="repair-info-label" />
-                <ui:VisualElement class="repair-paint-actions">
-                    <ui:Label name="repair-recall-cost-label" text="Стоимость: 500 кр." class="repair-info-label" />
-                    <ui:Button name="repair-recall-btn" text="🚁 Вызвать" class="repair-btn repair-btn-install" />
                 </ui:VisualElement>
             </ui:VisualElement>
 

@@ -69,7 +69,6 @@ namespace ProjectC.Ship.UI
         private VisualElement _recallSection;
         private Button _recallBtn;
         private Label _recallCostLabel;
-        private Label _recallInfoLabel;
         private int _shipRecallCost = 500;
 
         // State
@@ -216,7 +215,6 @@ namespace ProjectC.Ship.UI
             _recallSection = _root.Q<VisualElement>("repair-recall-section");
             _recallBtn = _root.Q<Button>("repair-recall-btn");
             _recallCostLabel = _root.Q<Label>("repair-recall-cost-label");
-            _recallInfoLabel = _root.Q<Label>("repair-recall-info");
 
             if (_recallBtn != null)
             {
@@ -235,7 +233,9 @@ namespace ProjectC.Ship.UI
             if (shopDatabase != null)
                 ShipModuleCatalog.Initialize(shopDatabase);
 
-            Debug.Log($"[RepairManagerWindow] Built: rootVE.children={_root.childCount}, styleSheets={_root.styleSheets.count}");
+            Debug.Log($"[RepairManagerWindow] Built: rootVE.children={_root.childCount}, " +
+                $"recallSection={(_recallSection != null)}, recallBtn={(_recallBtn != null)}, " +
+                $"recallCostLabel={(_recallCostLabel != null)}");
         }
 
         // ============================================================
@@ -289,7 +289,7 @@ namespace ProjectC.Ship.UI
                 ShipModuleCatalog.Initialize(_activeDatabase);
 
             if (_recallCostLabel != null)
-                _recallCostLabel.text = $"Стоимость: {_shipRecallCost} кр.";
+                _recallCostLabel.text = $"{_shipRecallCost} кр.";
 
             RefreshShipList();
             RefreshCredits();

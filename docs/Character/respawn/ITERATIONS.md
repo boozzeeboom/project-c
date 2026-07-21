@@ -75,7 +75,7 @@
 1. Первый save (5s) срабатывал до restore (6s) — перезаписывал `ShipPositions.json` текущими позициями, старые терялись.
 2. `RestorePlayerPositionCoroutine` (5s) срабатывала до `ShipPositionServer.RestoreCoroutine` (6s) — `_savedPlayers` был пуст, игрок спавнился на дефолте.
 
-**Коммит:** `<будет заполнен>`
+**Коммит:** `64dc04e` — T-PLAYER-PERSIST: fix timing races — save-before-restore + player restore before data loaded
 
 **Изменения:**
 - `ShipPositionServer.cs` — `_restoreCompleted` флаг: Update() пропускает save до завершения RestoreCoroutine; сброс `_nextSaveTime` после restore

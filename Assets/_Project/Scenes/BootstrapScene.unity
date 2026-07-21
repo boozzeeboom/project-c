@@ -17901,7 +17901,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::ProjectC.Core.ShipPosition.ShipPositionServer
   saveIntervalSec: 5
-  restoreDelaySec: 3.5
+  restoreDelaySec: 6
   debugMode: 1
 --- !u!1 &1445737466
 GameObject:

@@ -164,11 +164,17 @@ namespace ProjectC.Core.ShipPosition
 
         private IEnumerator RestoreCoroutine()
         {
+            Debug.Log($"[ShipPositionServer] RestoreCoroutine: waiting {restoreDelaySec}s for scenes to load...");
+
             // Ждём ScenePlacedObjectSpawner + DiscoverNpcShipsDelayed (2s) + запас
             yield return new WaitForSeconds(restoreDelaySec);
 
+            Debug.Log("[ShipPositionServer] RestoreCoroutine: loading save...");
+
             // T-PLAYER-PERSIST (D12): загружаем wrapper с ships + players
             var wrapper = _repo.LoadAllWrapper();
+
+            Debug.Log($"[ShipPositionServer] Loaded: {wrapper.ships?.Count ?? 0} ships, {wrapper.players?.Count ?? 0} players");
 
             // Загружаем players в PlayerPositionServer
             if (PlayerPositionServer.Instance != null)
@@ -177,11 +183,12 @@ namespace ProjectC.Core.ShipPosition
             var savedList = wrapper.ships;
             if (savedList == null || savedList.Count == 0)
             {
-                Debug.Log("[ShipPositionServer] No saved ships. Skip restore.");
+                Debug.LogWarning("[ShipPositionServer] No saved ships in file. Skip restore.");
                 yield break;
             }
 
             var allShips = FindObjectsByType<ShipController>(FindObjectsSortMode.None);
+            Debug.Log($"[ShipPositionServer] Found {allShips.Length} ShipControllers in loaded scenes");
             int restored = 0;
 
             foreach (var ship in allShips)

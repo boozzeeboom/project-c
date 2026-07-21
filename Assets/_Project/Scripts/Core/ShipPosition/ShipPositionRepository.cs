@@ -115,7 +115,7 @@ namespace ProjectC.Core.ShipPosition
             {
                 if (!File.Exists(path))
                 {
-                    Debug.Log($"[JsonShipPositionRepository] No save file at {path}. Returning empty wrapper.");
+                    Debug.LogWarning($"[JsonShipPositionRepository] No save file at {path}. Returning empty wrapper.");
                     return new ShipPositionListWrapper();
                 }
 

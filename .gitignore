@@ -131,6 +131,11 @@ Packages/manifest.json
 Packages/packages-lock.json
 *.aura_temp
 .gitignore
+
+# Lore VCS local state
+.lore/
 Assets/_Project/Scenes/World/WorldScene_0_0.zip
 Assets/_Project/Prefabs/Ships/DONT-DELETE-NPC REFERENCE SHIP*
 Assets/_Project/Prefabs/NPC/\[Mira] - DON`T DELETE DEFOULT.zip
+docs/dev/LORE_SETUP.md
+.loreignore

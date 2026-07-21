@@ -15,16 +15,7 @@
             <ui:Button name="cam-arrow-down"  text="▼" class="cam-arrow-btn" />
         </ui:VisualElement>
 
-
-
-            <!-- Header -->
-=======
         <ui:VisualElement name="main-container" class="repair-panel">
-
-            <!-- Header -->
-
-=======
-
 
             <!-- Header -->
             <ui:VisualElement name="repair-header" class="repair-header">
@@ -97,7 +88,6 @@
 
             <!-- Footer -->
             <ui:VisualElement name="repair-footer" class="repair-footer">
-
                 <ui:Label name="repair-credits-label" text="💰 Кредиты: —" class="repair-credits-label" />
                 <ui:Label name="repair-status-label" text="" class="repair-status-label" />
             </ui:VisualElement>

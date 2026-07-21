@@ -50,6 +50,11 @@ namespace ProjectC.Ship
         [Tooltip("Развернуть направление на 180° (поток в обратную сторону сплайна).")]
         public bool reverseDirection = false;
 
+        [Header("Центрирование (удержание в трубе)")]
+        [Tooltip("Сила притяжения к центру сплайна. 0 = без центрирования, 1 = слабо, 10 = жёсткая труба.")]
+        [Min(0f)]
+        public float centeringStrength = 3f;
+
         [Header("Производительность")]
         [Tooltip("Интервал обновления кэша ShipController (сек).")]
         [Min(0.5f)]
@@ -80,19 +85,16 @@ namespace ProjectC.Ship
         // Счётчик кадров для троттлинга
         private int _frameCounter;
 
-        // Предварительно посчитанная сила для Constant/Custom (не зависит от позиции)
-        private Vector3 _cachedForceDirection;
-        private float _cachedForceMagnitude;
-
         // ============================================================
         // Structs
         // ============================================================
 
         private struct ShipSplineEntry
         {
-            public float splineT;      // параметр на сплайне
-            public float distance;     // расстояние до сплайна
-            public Vector3 direction;  // направление ветра (мировое)
+            public float splineT;          // параметр на сплайне
+            public float distance;         // расстояние до сплайна
+            public Vector3 direction;      // направление ветра вдоль сплайна (мировое)
+            public Vector3 nearestPoint;   // ближайшая точка на сплайне (мировая)
         }
 
         // ============================================================
@@ -176,12 +178,15 @@ namespace ProjectC.Ship
                 float distance = SplineUtility.GetNearestPoint(
                     spline,
                     localPos,
-                    out float3 _,
+                    out float3 nearestLocal,
                     out float t
                 );
 
                 if (distance > corridorRadius)
                     continue;
+
+                // Ближайшая точка на сплайне в мировых координатах
+                Vector3 nearestWorld = splineTransform.TransformPoint(nearestLocal);
 
                 // Определяем направление
                 Vector3 direction;
@@ -202,7 +207,8 @@ namespace ProjectC.Ship
                 {
                     splineT = t,
                     distance = distance,
-                    direction = direction
+                    direction = direction,
+                    nearestPoint = nearestWorld
                 };
             }
         }
@@ -233,6 +239,17 @@ namespace ProjectC.Ship
                 }
 
                 Vector3 force = entry.direction * forceMagnitude;
+
+                // Центрирующая сила: тянет корабль к центру сплайна
+                // Квадратичная кривая: 0 в центре, максимум на границе коридора
+                if (centeringStrength > 0f && entry.distance > 0.01f)
+                {
+                    float t = entry.distance / corridorRadius;       // 0..1
+                    float strength = centeringStrength * t * t;       // квадратичный рост к краю
+                    Vector3 toCenter = (entry.nearestPoint - ship.transform.position).normalized;
+                    force += toCenter * (strength * windData.windForce);
+                }
+
                 if (force.sqrMagnitude > 0.001f)
                 {
                     ship.ApplyExternalForce(force);

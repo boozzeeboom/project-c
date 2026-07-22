@@ -2178,7 +2178,7 @@ namespace ProjectC.Player
 
                 if (rollFound == 0 || yawFound == 0)
                 {
-                    Debug.LogWarning("[ShipController] Some meziy modules NOT found!");
+                    Debug.Log("[ShipController] Some meziy modules NOT found!");
                 }
             }
         }

@@ -269,7 +269,7 @@ namespace ProjectC.Ship.Key
             if (registeredShipId != 0
                 && _primaryInstanceByShipId.TryGetValue(registeredShipId, out var existingId))
             {
-                Debug.LogWarning($"[KeyRodInstanceWorld] CreateInstance: ship={registeredShipId} already has instance={existingId}. " +
+                Debug.Log($"[KeyRodInstanceWorld] CreateInstance: ship={registeredShipId} already has instance={existingId}. " +
                                  $"1:1 binding violated. Returning existing instance id.");
                 return existingId;
             }

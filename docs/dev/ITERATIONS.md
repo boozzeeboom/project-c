@@ -1,6 +1,19 @@
 # Итерации разработки
 
+## Итерация от 2025-07-18 (вечер)
+
+**Задача:** Исправить runtime-варнинги после теста — kinematic velocity, DontDestroyOnLoad, ShipCargoVisual.
+
+**Коммит:** `a264438` — T-CORE15: Fix runtime warnings
+
+**Изменения:**
+- `ShipController.cs` — 5 мест `_rb.linearVelocity/angularVelocity` обёрнуты в `!isKinematic`
+- `ShipPositionServer.cs` — `ApplyRestore`: velocity только если `!isKinematic`
+- `ShipCargoVisual.cs` — `Debug.LogError` → `Debug.LogWarning` для пустых `_boxPrefabs`
+- `ConstellationController.cs` — `SetParent(null)` перед `DontDestroyOnLoad`
+
 ## Итерация от 2025-07-18
+
 
 **Задача:** Исправить ~35 накопившихся compiler warnings (obsolete API Unity 6: RPC, FindObjectsSortMode, FindFirstObjectByType, FindObjectOfType; CS0414/CS0219/CS0253; TMP asset corruption).
 

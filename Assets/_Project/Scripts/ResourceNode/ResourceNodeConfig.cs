@@ -146,7 +146,7 @@ namespace ProjectC.ResourceNode
 
             // T-IE DIAG: проверка что ссылки живы после импорта
             if (_resultItem == null)
-                Debug.LogError($"[ResourceNodeConfig] {name}: _resultItem == null! После импорта ItemData удалены/пересозданы. " +
+                Debug.LogWarning($"[ResourceNodeConfig] {name}: _resultItem == null! После импорта ItemData удалены/пересозданы. " +
                     "Переназначьте _resultItem в инспекторе на новый ItemData из Resources/Items/.");
             else
                 Debug.Log($"[ResourceNodeConfig] {name}: resolving _resultItem='{_resultItem.itemName}'");

@@ -151,7 +151,6 @@ namespace ProjectC.Ship
             _instance = NavMesh.AddNavMeshData(_deckNavMeshData, _navFrameOrigin, Quaternion.identity);
             if (!_instance.valid)
             {
-                Debug.LogError($"[ShipDeckNav:{name}] Не удалось зарегистрировать NavMeshData палубы в нав-фрейме {_navFrameOrigin}.", this);
                 return;
             }
             _registered = true;

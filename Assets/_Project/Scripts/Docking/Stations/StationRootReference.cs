@@ -26,9 +26,8 @@ namespace ProjectC.Docking.Stations
             StationNetworkObject = root.GetComponent<NetworkObject>();
             if (StationController == null)
             {
-                Debug.LogWarning(
-                    $"[StationRootReference] No DockStationController on root of {gameObject.name}. " +
-                    $"Этот GO не привязан к DockStation.", this);
+                // Expected for RepairManager/non-station objects — silent.
+                return;
             }
         }
     }

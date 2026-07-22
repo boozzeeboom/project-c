@@ -243,7 +243,8 @@ namespace ProjectC.Ship
             // Полная заправка при старте
             currentFuel = maxFuel;
 
-            Debug.Log($"[ShipFuelSystem] Initialized. Class: {shipClass}, Capacity: {maxFuel}, Consumption: {fuelConsumptionRate}/s");
+            if (Debug.isDebugBuild)
+                Debug.Log($"[ShipFuelSystem] Initialized. Class: {shipClass}, Capacity: {maxFuel}, Consumption: {fuelConsumptionRate}/s");
         }
     }
 }

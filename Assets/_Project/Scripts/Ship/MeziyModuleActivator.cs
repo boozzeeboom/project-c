@@ -129,7 +129,8 @@ namespace ProjectC.Ship
                 }
             }
 
-            Debug.Log($"[MeziyModuleActivator] Initialized {meziyStates.Count} meziy modules (passive mode).");
+            if (Debug.isDebugBuild)
+                Debug.Log($"[MeziyModuleActivator] Initialized {meziyStates.Count} meziy modules (passive mode).");
         }
 
         /// <summary>

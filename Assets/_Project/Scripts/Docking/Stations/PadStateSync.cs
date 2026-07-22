@@ -193,7 +193,7 @@ namespace ProjectC.Docking.Stations
             }
             if (!_serverState.TryGetValue(padId, out var entry))
             {
-                if (debugMode)
+                if (debugMode && Debug.isDebugBuild)
                     Debug.Log($"[PadStateSync:{name}] Pad '{padId}' not found");
                 return;
             }

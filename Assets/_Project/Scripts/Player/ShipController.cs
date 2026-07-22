@@ -836,7 +836,8 @@ namespace ProjectC.Player
             if (itemId > 0)
             {
                 int instId = KeyRodInstanceWorld.CreateInstance(itemId, NetworkObjectId, KeyRodInstance.OWNER_NONE);
-                Debug.Log($"[ShipController] Created KeyRodInstance: id={instId}, ship={NetworkObjectId}, item={_keyItemData.name}");
+                if (Debug.isDebugBuild)
+                    Debug.Log($"[ShipController] Created KeyRodInstance: id={instId}, ship={NetworkObjectId}, item={_keyItemData.name}");
             }
         }
 
@@ -2178,7 +2179,8 @@ namespace ProjectC.Player
 
                 if (rollFound == 0 || yawFound == 0)
                 {
-                    Debug.Log("[ShipController] Some meziy modules NOT found!");
+                    if (Debug.isDebugBuild)
+                        Debug.Log("[ShipController] Some meziy modules NOT found!");
                 }
             }
         }

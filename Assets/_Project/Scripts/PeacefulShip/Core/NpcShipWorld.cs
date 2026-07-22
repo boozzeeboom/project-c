@@ -128,7 +128,8 @@ namespace ProjectC.PeacefulShip.Core
                 state.CurrentRoute = schedule.routes[data.scheduleIndex];
             }
 
-            Debug.Log($"[NpcShipWorld] RestoreNpcState id={npcInstanceId:X} idx={state.ScheduleIndex} " +
+            if (Debug.isDebugBuild)
+                Debug.Log($"[NpcShipWorld] RestoreNpcState id={npcInstanceId:X} idx={state.ScheduleIndex} " +
                       $"route={state.CurrentRoute.fromLocationId}→{state.CurrentRoute.toLocationId}");
         }
 

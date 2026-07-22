@@ -90,7 +90,8 @@ namespace ProjectC.Ship.Client
             ship.OnTelemetryStateChanged += (prev, next) => OnShipTelemetryUpdated(shipNetId, next);
             var initial = ship.TelemetryState;
             _allShips[shipNetId] = initial;
-            Debug.Log($"[ShipTelemetryClientState] SubscribeToShip: ship={shipNetId} ({initial.displayName})");
+            if (Debug.isDebugBuild)
+                Debug.Log($"[ShipTelemetryClientState] SubscribeToShip: ship={shipNetId} ({initial.displayName})");
         }
 
         /// <summary>Отписаться (при despawn ShipController).</summary>

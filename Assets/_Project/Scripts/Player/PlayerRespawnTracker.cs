@@ -183,7 +183,7 @@ namespace ProjectC.Player
             if (np == null || Unity.Netcode.NetworkManager.Singleton == null) return false;
 
             ulong clientId = np.OwnerClientId;
-            var allShips = FindObjectsByType<ShipController>(FindObjectsSortMode.None);
+            var allShips = FindObjectsByType<ShipController>();
             ShipController nearestShip = null;
             float nearestDistSq = float.MaxValue;
             float proximityThresholdSq = _ownedShipRespawnRadius * _ownedShipRespawnRadius;
@@ -294,7 +294,7 @@ namespace ProjectC.Player
         /// <summary>
         /// Публичный ServerRpc для ручного запроса респавна.
         /// </summary>
-        [ServerRpc(RequireOwnership = false)]
+        [Rpc(SendTo.Server, InvokePermission = RpcInvokePermission.Everyone)]
         public void RequestRespawnServerRpc()
         {
             PerformRespawn();
@@ -304,7 +304,7 @@ namespace ProjectC.Player
         /// T-PLAYER-PERSIST: принудительный респавн на дефолтную точку (игнорирует корабли).
         /// Вызывается из EscMenu «СПАСЕНИЕ» когда игрок застрял.
         /// </summary>
-        [ServerRpc(RequireOwnership = false)]
+        [Rpc(SendTo.Server, InvokePermission = RpcInvokePermission.Everyone)]
         public void ForceDefaultRespawnServerRpc()
         {
             PerformDefaultRespawn();

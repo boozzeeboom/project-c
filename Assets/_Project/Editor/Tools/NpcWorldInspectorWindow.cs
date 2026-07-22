@@ -1064,7 +1064,7 @@ namespace ProjectC.Editor.Tools
                 Scene scene = EditorSceneManager.OpenScene(entry.scenePath, OpenSceneMode.Additive);
 
                 // Find by name (best effort)
-                var allObjects = FindObjectsByType<GameObject>(FindObjectsInactive.Include, FindObjectsSortMode.None);
+                var allObjects = FindObjectsByType<GameObject>(FindObjectsInactive.Include);
                 GameObject found = null;
                 foreach (var go in allObjects)
                 {

@@ -86,7 +86,7 @@ namespace ProjectC.Core.ShipPosition
             if (Time.time < _nextSaveTime) return;
             _nextSaveTime = Time.time + saveIntervalSec;
 
-            var allShips = FindObjectsByType<ShipController>(FindObjectsSortMode.None);
+            var allShips = FindObjectsByType<ShipController>();
             var allData = new List<ShipPositionSaveData>(allShips.Length);
 
             foreach (var ship in allShips)
@@ -189,7 +189,7 @@ namespace ProjectC.Core.ShipPosition
                 yield break;
             }
 
-            var allShips = FindObjectsByType<ShipController>(FindObjectsSortMode.None);
+            var allShips = FindObjectsByType<ShipController>();
             Debug.Log($"[ShipPositionServer] Found {allShips.Length} ShipControllers in loaded scenes");
             int restored = 0;
 

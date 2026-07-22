@@ -37,10 +37,12 @@ namespace ProjectC.Core
 
         [Header("Вращение")]
         [Tooltip("Чувствительность мыши X")]
+#pragma warning disable CS0414
         [SerializeField] private float mouseSensitivityX = 3f;
 
         [Tooltip("Чувствительность мыши Y")]
         [SerializeField] private float mouseSensitivityY = 3f;
+#pragma warning restore CS0414
 
         [Tooltip("Минимальный угол обзора")]
         [SerializeField] private float minVerticalAngle = -80f;

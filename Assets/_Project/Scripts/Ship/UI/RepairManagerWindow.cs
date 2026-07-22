@@ -573,7 +573,7 @@ namespace ProjectC.Ship.UI
 
             // Найти ближайший свободный пад
             var pads = FindObjectsByType<ProjectC.Docking.Stations.DockingPadTriggerBox>(
-                FindObjectsInactive.Exclude, FindObjectsSortMode.None);
+                FindObjectsInactive.Exclude);
 
             ProjectC.Docking.Stations.DockingPadTriggerBox nearestPad = null;
             float nearestDist = float.MaxValue;

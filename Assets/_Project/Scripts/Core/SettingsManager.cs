@@ -22,7 +22,9 @@ namespace ProjectC.Core
         private const string KEY_ANTI_ALIASING = "Settings.AntiAliasing";
         private const string KEY_RESOLUTION = "Settings.Resolution";
 
+#pragma warning disable CS0414
         private static bool _initialized = false;
+#pragma warning restore CS0414
 
         // ===== Свойства =====
 

@@ -29,7 +29,9 @@ namespace ProjectC.Quests.Editor
         // T-Q32: button visibility helpers
         private readonly List<VisualElement> _editButtons = new List<VisualElement>();
         // T-Q33: multi-quest mode
+#pragma warning disable CS0414
         private bool _showAllMode;
+#pragma warning restore CS0414
         private const string DATABASE_PATH = "Assets/_Project/Quests/Data/QuestDatabase.asset";
 
         public bool EditMode

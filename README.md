@@ -59,3 +59,4 @@ Unity 6 · URP · Netcode for GameObjects
 ## 📬 Контакты
 
 [Telegram @indeed174](https://t.me/indeed174) · [Telegram-канал @thegravity_ru](https://t.me/thegravity_ru) · [GitHub](https://github.com/boozzeeboom/project-c) · [Сайт](https://thegravity.ru/project-c/)
+

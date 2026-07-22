@@ -51,7 +51,7 @@ namespace ProjectC.Core.ShipPosition
         {
             if (!IsServerSafe()) return;
 
-            var allPlayers = FindObjectsByType<NetworkPlayer>(FindObjectsSortMode.None);
+            var allPlayers = FindObjectsByType<NetworkPlayer>();
             var collected = new List<PlayerPositionSaveData>(allPlayers.Length);
 
             foreach (var np in allPlayers)
@@ -138,7 +138,7 @@ namespace ProjectC.Core.ShipPosition
             if (match.inShip && !string.IsNullOrEmpty(match.shipPersistentId))
             {
                 // Игрок был на корабле — ищем корабль
-                var allShips = FindObjectsByType<ShipController>(FindObjectsSortMode.None);
+                var allShips = FindObjectsByType<ShipController>();
                 var ship = Array.Find(allShips, s => s.IsSpawned && s.ShipPersistentId == match.shipPersistentId);
 
                 if (ship != null)

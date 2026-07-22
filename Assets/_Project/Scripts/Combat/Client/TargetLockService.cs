@@ -290,7 +290,7 @@ namespace ProjectC.Combat.Client
             Vector3 playerPos = GetPlayerPosition();
             float rangeSq = _maxCycleRange * _maxCycleRange;
 
-            foreach (var npc in FindObjectsByType<NpcTarget>(FindObjectsSortMode.None))
+            foreach (var npc in FindObjectsByType<NpcTarget>())
             {
                 if (npc == null || !npc.IsAlive()) continue;
                 float dSq = (npc.transform.position - playerPos).sqrMagnitude;
@@ -304,7 +304,7 @@ namespace ProjectC.Combat.Client
                 });
             }
 
-            foreach (var pt in FindObjectsByType<PlayerTarget>(FindObjectsSortMode.None))
+            foreach (var pt in FindObjectsByType<PlayerTarget>())
             {
                 if (pt == null || !pt.IsAlive()) continue;
                 if (pt.GetTargetId() == GetLocalPlayerId()) continue;
@@ -322,24 +322,24 @@ namespace ProjectC.Combat.Client
 
         private Vector3 GetPlayerPosition()
         {
-            var np = FindFirstObjectByType<ProjectC.Player.NetworkPlayer>();
+            var np = FindAnyObjectByType<ProjectC.Player.NetworkPlayer>();
             return np != null ? np.transform.position : Vector3.zero;
         }
 
         private ulong GetLocalPlayerId()
         {
-            var np = FindFirstObjectByType<ProjectC.Player.NetworkPlayer>();
+            var np = FindAnyObjectByType<ProjectC.Player.NetworkPlayer>();
             return np != null ? np.OwnerClientId : 0UL;
         }
 
         private GameObject FindGameObjectByTargetId(ulong targetId)
         {
             if (targetId == 0UL) return null;
-            foreach (var npc in FindObjectsByType<NpcTarget>(FindObjectsSortMode.None))
+            foreach (var npc in FindObjectsByType<NpcTarget>())
             {
                 if (npc != null && npc.GetTargetId() == targetId) return npc.gameObject;
             }
-            foreach (var pt in FindObjectsByType<PlayerTarget>(FindObjectsSortMode.None))
+            foreach (var pt in FindObjectsByType<PlayerTarget>())
             {
                 if (pt != null && pt.GetTargetId() == targetId) return pt.gameObject;
             }

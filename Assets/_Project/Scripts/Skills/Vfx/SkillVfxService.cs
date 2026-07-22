@@ -29,7 +29,7 @@ namespace ProjectC.Skills.Vfx
             {
                 if (_instance == null)
                 {
-                    _instance = FindObjectOfType<SkillVfxService>();
+                    _instance = FindAnyObjectByType<SkillVfxService>();
                     if (_instance == null)
                     {
                         var go = new GameObject("[SkillVfxService]");

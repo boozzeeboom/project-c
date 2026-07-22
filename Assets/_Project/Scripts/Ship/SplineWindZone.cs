@@ -153,7 +153,7 @@ namespace ProjectC.Ship
                 return;
 
             _nextCacheRefresh = Time.time + _shipCacheRefreshInterval;
-            _cachedShips = FindObjectsByType<ShipController>(FindObjectsSortMode.None);
+            _cachedShips = FindObjectsByType<ShipController>();
 
             // Прогрев: при первом заполнении кэша сразу делаем детекцию
             _frameCounter = _detectionStep;

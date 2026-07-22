@@ -684,7 +684,6 @@ namespace ProjectC.Items.Editor
                         if (itemRef != null && csvInvNames.Contains(itemRef.itemName)) continue;
 
                         // Decide: SKIP / DELETE.
-                        string reason = null;
                         bool shouldDelete = false;
                         if (itemRef == null)
                         {
@@ -702,7 +701,6 @@ namespace ProjectC.Items.Editor
                         {
                             // Safe to delete.
                             shouldDelete = true;
-                            reason = "not in CSV";
                         }
 
                         if (shouldDelete)

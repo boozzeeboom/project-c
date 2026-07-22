@@ -2365,7 +2365,7 @@ namespace ProjectC.Player
         /// Вызвать корабль на указанную позицию пада. Вызывается из RepairManagerWindow.
         /// Сервер: телепортирует корабль, списывает кредиты, снимает freeze.
         /// </summary>
-        [Rpc(SendTo.Server, RequireOwnership = false)]
+        [Rpc(SendTo.Server, InvokePermission = RpcInvokePermission.Everyone)]
         public void RecallShipToPadServerRpc(Vector3 padPosition, int cost, RpcParams rpcParams = default)
         {
             if (!IsServer) return;

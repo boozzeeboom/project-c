@@ -42,10 +42,12 @@ namespace ProjectC.Core
 
         [Header("Настройки вращения")]
         [Tooltip("Чувствительность мыши по горизонтали")]
+#pragma warning disable CS0414
         [SerializeField] private float mouseSensitivityX = 3f;
 
         [Tooltip("Чувствительность мыши по вертикали")]
         [SerializeField] private float mouseSensitivityY = 3f;
+#pragma warning restore CS0414
 
         [Tooltip("Минимальный угол обзора по вертикали")]
         [SerializeField] private float minVerticalAngle = -89f;

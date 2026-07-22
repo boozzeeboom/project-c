@@ -686,7 +686,7 @@ namespace ProjectC.AI
             {
                 if (c?.PlayerObject == null) continue;
                 var pt = c.PlayerObject.GetComponent<ProjectC.Combat.PlayerTarget>();
-                if (pt != null && pt == target) return c.ClientId;
+                if (pt != null && (UnityEngine.Object)pt == (UnityEngine.Object)target) return c.ClientId;
             }
             return 0;
         }

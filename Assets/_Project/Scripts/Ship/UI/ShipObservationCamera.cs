@@ -17,7 +17,9 @@ namespace ProjectC.Ship.UI
         [SerializeField] private float _distance = 20f;
 
         [Tooltip("Скорость вращения (градусов в секунду при зажатой стрелке)")]
+#pragma warning disable CS0414
         [SerializeField] private float _rotateSpeed = 60f;
+#pragma warning restore CS0414
 
         [Tooltip("Минимальный вертикальный угол (pitch)")]
         [SerializeField] private float _minPitch = 5f;

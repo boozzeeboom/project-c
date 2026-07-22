@@ -157,6 +157,7 @@ namespace ProjectC.Core
             _skyDomeObject.transform.localRotation = Quaternion.identity;
             
             _skyDomeObject.layer = LayerMask.NameToLayer("Ignore Raycast");
+            _skyDomeObject.transform.SetParent(null);
             DontDestroyOnLoad(_skyDomeObject);
         }
 

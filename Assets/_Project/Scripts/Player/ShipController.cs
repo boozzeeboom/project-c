@@ -131,11 +131,15 @@ namespace ProjectC.Player
                     // последующем physics-step (см. AUDIT_AND_REFACTOR.md §6 R3).
                     if (_rb != null)
                     {
-                        _rb.linearVelocity = Vector3.zero;
-                        _rb.angularVelocity = Vector3.zero;
+                        if (!_rb.isKinematic)
+                        {
+                            _rb.linearVelocity = Vector3.zero;
+                            _rb.angularVelocity = Vector3.zero;
+                        }
                         _rb.isKinematic = true;
                     }
                     if (_debugLog) Debug.Log($"[ShipController:{name}] EnterDocked — engine locked");
+
                 }
 
                 /// <summary>Server-only: время последней отстыковки (для грейс-периода урона корпусу).</summary>
@@ -1485,7 +1489,7 @@ namespace ProjectC.Player
             ClampVelocity(isRefueling);
 
             // T-PLAYER-PERSIST (D1): каждый кадр держим velocity = 0 пока frozen
-            if (_frozenByNoPilot && _rb != null)
+            if (_frozenByNoPilot && _rb != null && !_rb.isKinematic)
             {
                 if (_rb.linearVelocity.sqrMagnitude > 0.001f)
                     _rb.linearVelocity = Vector3.zero;
@@ -1876,7 +1880,7 @@ namespace ProjectC.Player
             // T-PLAYER-PERSIST: если пилотов не осталось и двигатель включён — заморозка
             if (_pilots.Count == 0 && _engineRunning && !_hasNpcPilot && !_frozenByNoPilot)
             {
-                if (_rb != null)
+                if (_rb != null && !_rb.isKinematic)
                 {
                     _rb.linearVelocity = Vector3.zero;
                     _rb.angularVelocity = Vector3.zero;
@@ -1905,7 +1909,7 @@ namespace ProjectC.Player
             _sumThrust = 0; _sumYaw = 0; _sumPitch = 0; _sumVertical = 0;
             _boostCount = 0; _inputCount = 0;
 
-            if (_rb != null)
+            if (_rb != null && !_rb.isKinematic)
             {
                 _rb.linearVelocity = Vector3.zero;
                 _rb.angularVelocity = Vector3.zero;
@@ -2394,8 +2398,11 @@ namespace ProjectC.Player
             if (_rb != null)
             {
                 _rb.position = padPosition;
-                _rb.linearVelocity = Vector3.zero;
-                _rb.angularVelocity = Vector3.zero;
+                if (!_rb.isKinematic)
+                {
+                    _rb.linearVelocity = Vector3.zero;
+                    _rb.angularVelocity = Vector3.zero;
+                }
             }
 
             // Снять freeze

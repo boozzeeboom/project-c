@@ -208,7 +208,7 @@ namespace ProjectC.Ship.Cargo
 
             if (_boxPrefabs == null || _boxPrefabs.Length == 0)
             {
-                Debug.LogError(
+                Debug.LogWarning(
                     $"[ShipCargoVisual] '{gameObject.name}': _boxPrefabs array is empty. " +
                     "Assign at least 1 prefab.", this);
             }

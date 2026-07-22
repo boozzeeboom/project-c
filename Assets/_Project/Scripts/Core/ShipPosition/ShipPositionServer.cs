@@ -223,8 +223,11 @@ namespace ProjectC.Core.ShipPosition
             {
                 rb.position = new Vector3(data.px, data.py, data.pz);
                 rb.rotation = new Quaternion(data.rx, data.ry, data.rz, data.rw);
-                rb.linearVelocity = Vector3.zero;
-                rb.angularVelocity = Vector3.zero;
+                if (!rb.isKinematic)
+                {
+                    rb.linearVelocity = Vector3.zero;
+                    rb.angularVelocity = Vector3.zero;
+                }
             }
 
             // restore docking state

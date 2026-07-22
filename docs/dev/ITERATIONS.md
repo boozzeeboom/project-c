@@ -1,6 +1,32 @@
 # Итерации разработки
 
+## Итерация от 2025-07-18
+
+**Задача:** Исправить ~35 накопившихся compiler warnings (obsolete API Unity 6: RPC, FindObjectsSortMode, FindFirstObjectByType, FindObjectOfType; CS0414/CS0219/CS0253; TMP asset corruption).
+
+**Коммит:** `c530371` — T-CORE14: Fix ~35 accumulated compiler warnings
+
+**Изменения:**
+- `PlayerRespawnTracker.cs` — `[ServerRpc(RequireOwnership)]` → `[Rpc(SendTo.Server, InvokePermission)]`, `FindObjectsByType<T>(FindObjectsSortMode)` → `FindObjectsByType<T>()`
+- `ShipController.cs` — `[Rpc(SendTo.Server, RequireOwnership)]` → `[Rpc(SendTo.Server, InvokePermission)]`
+- `TargetLockService.cs` — `FindObjectsByType<T>(FindObjectsSortMode)` → `FindObjectsByType<T>()`, `FindFirstObjectByType` → `FindAnyObjectByType`
+- `ShipPositionServer.cs` — `FindObjectsByType<T>(FindObjectsSortMode)` → `FindObjectsByType<T>()`
+- `PlayerPositionServer.cs` — `FindObjectsByType<T>(FindObjectsSortMode)` → `FindObjectsByType<T>()`
+- `RepairManagerWindow.cs` — `FindObjectsByType<T>(FindObjectsInactive, FindObjectsSortMode)` → `FindObjectsByType<T>(FindObjectsInactive)`
+- `SplineWindZone.cs` — `FindObjectsByType<T>(FindObjectsSortMode)` → `FindObjectsByType<T>()`
+- `NpcWorldInspectorWindow.cs` — `FindObjectsByType<T>(FindObjectsInactive, FindObjectsSortMode)` → `FindObjectsByType<T>(FindObjectsInactive)`
+- `SkillVfxService.cs` — `FindObjectOfType` → `FindAnyObjectByType`
+- `NpcSocialBrain.cs` — CS0253: cast к `UnityEngine.Object` при сравнении `IDamageTarget`
+- `SettingsManager.cs` — CS0414 suppress для `_initialized`
+- `ThirdPersonCamera.cs` — CS0414 suppress для `mouseSensitivityX/Y`
+- `ShipObservationCamera.cs` — CS0414 suppress для `_rotateSpeed`
+- `WorldCamera.cs` — CS0414 suppress для `mouseSensitivityX/Y`
+- `QuestNodeGraphView.cs` — CS0414 suppress для `_showAllMode`
+- `ResourcesCsvImporter.cs` — CS0219: удалён неиспользуемый `reason`
+- `LiberationSans SDF - Fallback.asset` — пересохранён после force refresh (corrupt metadata)
+
 ## Итерация от 2025-07-17
+
 
 **Задача:** Исправить баг: визуалы двигателя (EngineThrusterVisual, ShipPartShake) реагируют на WASD после выхода из корабля (F) и перехода в пеший режим.
 

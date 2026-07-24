@@ -76,7 +76,7 @@ namespace ProjectC.Core
 
         [Header("Smoothing")]
         [Tooltip("Время сглаживания позиции (SmoothDamp)")]
-        [SerializeField] private float positionSmoothTime = 0.12f;
+        [SerializeField] private float positionSmoothTime = 0.2f;
 
         // ═══════════════════════════════════════════════════════════
         // Inspector: Anti-Pop
@@ -284,6 +284,7 @@ namespace ProjectC.Core
 
         private float _collisionExitTime;
         private bool _wasColliding;
+        private Vector3 _lastCollisionPos;
 
         // ═══════════════════════════════════════════════════════════
         // Internal State: Input
@@ -566,7 +567,23 @@ namespace ProjectC.Core
                 return;
             }
 
+            // Инициализация при первом вызове или если _lagTargetPos далеко (телепорт)
+            float initDist = Vector3.Distance(_lagTargetPos, target.position);
+            if (initDist > 100f || _lagTargetPos == Vector3.zero)
+            {
+                _lagTargetPos = target.position;
+                return;
+            }
+
             Vector3 delta = target.position - _lagTargetPos;
+
+            // Clamp: предотвращаем слишком большое отставание (телепорт, высокая скорость)
+            float maxLagDist = _isShip ? 30f : 10f;
+            if (delta.magnitude > maxLagDist)
+            {
+                delta = delta.normalized * maxLagDist;
+                _lagTargetPos = target.position - delta;
+            }
 
             // Динамический lag: при беге отставание уменьшается
             float lagXZ, lagY;
@@ -575,18 +592,21 @@ namespace ProjectC.Core
                 float speed = delta.magnitude / Mathf.Max(Time.deltaTime, 0.0001f);
                 float speedFactor = Mathf.InverseLerp(0f, 10f, speed);
                 float dynamicMultiplier = Mathf.Lerp(1f, 0.3f, speedFactor);
-                lagXZ = 1f / (lagHorizontalTime * dynamicMultiplier);
-                lagY = 1f / (lagVerticalTime * dynamicMultiplier);
+                // Используем Lerp вместо экспоненты — стабильнее на высоких скоростях
+                float effectiveLagXZ = lagHorizontalTime * dynamicMultiplier;
+                float effectiveLagY = lagVerticalTime * dynamicMultiplier;
+                lagXZ = 1f - Mathf.Exp(-Time.deltaTime / Mathf.Max(effectiveLagXZ, 0.001f));
+                lagY = 1f - Mathf.Exp(-Time.deltaTime / Mathf.Max(effectiveLagY, 0.001f));
             }
             else
             {
-                lagXZ = 1f / Mathf.Max(lagHorizontalTime, 0.001f);
-                lagY = 1f / Mathf.Max(lagVerticalTime, 0.001f);
+                lagXZ = 1f - Mathf.Exp(-Time.deltaTime / Mathf.Max(lagHorizontalTime, 0.001f));
+                lagY = 1f - Mathf.Exp(-Time.deltaTime / Mathf.Max(lagVerticalTime, 0.001f));
             }
 
-            _lagTargetPos.x += delta.x * lagXZ * Time.deltaTime;
-            _lagTargetPos.z += delta.z * lagXZ * Time.deltaTime;
-            _lagTargetPos.y += delta.y * lagY * Time.deltaTime;
+            _lagTargetPos.x += delta.x * lagXZ;
+            _lagTargetPos.z += delta.z * lagXZ;
+            _lagTargetPos.y += delta.y * lagY;
         }
 
         // ═══════════════════════════════════════════════════════════
@@ -632,13 +652,13 @@ namespace ProjectC.Core
             {
                 _wasColliding = true;
                 _collisionExitTime = currentTime;
-
-                return hitInfo.point + hitInfo.normal * (sphereCastRadius + wallOffset);
+                _lastCollisionPos = hitInfo.point + hitInfo.normal * (sphereCastRadius + wallOffset);
+                return _lastCollisionPos;
             }
             else if (_wasColliding && currentTime - _collisionExitTime < antiPopTime)
             {
                 // Anti-pop гистерезис: остаёмся прижатыми ещё antiPopTime
-                return transform.position;
+                return _lastCollisionPos;
             }
             else
             {

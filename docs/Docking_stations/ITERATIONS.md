@@ -1,5 +1,19 @@
 # Итерации — Docking Stations
 
+## Итерация от 2026-07-24 — T-DOCK15: фикс спама Pad Occupied в FixedUpdate
+
+**Задача:** Устранить спам логов и CPU-нагрузку от Physics.OverlapBox при попытке NPC назначить занятый пад.
+
+**Коммит:** `8d391a9d3c6616c1215f59b98e56d2cdd8876a06` — T-DOCK15: фикс спама Pad Occupied в FixedUpdate
+
+**Изменения:**
+- `Assets/_Project/Scripts/PeacefulShip/Stations/NpcShipController.cs` — retry-cooldown 3 сек (`_lastPadAssignAttemptTime`, `PAD_ASSIGN_RETRY_SEC`)
+- `Assets/_Project/Scripts/Docking/Core/DockingWorld.cs` — авто-регистрация корабля в `_occupiedPads` при обнаружении через Physics.OverlapBox
+
+**Корень проблемы:** `_occupiedPads` расходился с реальностью — застыкованные корабли не были зарегистрированы в словаре. Каждый FixedUpdate NPC долбил `Physics.OverlapBox` по всем падам.
+
+---
+
 ## Итерация от 2026-07-16 (фикс визуалов)
 
 **Задача:** Починка DockPadVisualMarker — розовые/серые пады в Play Mode, v3→v5.

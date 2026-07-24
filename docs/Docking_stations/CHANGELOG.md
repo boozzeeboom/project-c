@@ -5,6 +5,24 @@
 
 ---
 
+## 2026-07-24 — T-DOCK15: фикс спама Pad Occupied
+
+**Сессия:** «чтото очень сильно грузит игру, консоль спамит»
+
+**Статус:** ✅ Исправлено.
+
+**Проблема:** `DockingWorld.AssignPad` спамил `Debug.Log` + `Physics.OverlapBox` каждый FixedUpdate для каждого NPC без пада. `_occupiedPads` не был синхронизирован с реальностью.
+
+**Решение:**
+1. `NpcShipController.TickBerth` — retry-cooldown 3 сек между попытками
+2. `DockingWorld.AssignPad` — авто-регистрация occupancy при physics-обнаружении
+
+**Затронутые файлы:**
+- `Assets/_Project/Scripts/PeacefulShip/Stations/NpcShipController.cs`
+- `Assets/_Project/Scripts/Docking/Core/DockingWorld.cs`
+
+---
+
 ## 2026-07-12 — План T-DOCK-14: Visual Markers v2
 
 **Сессия:** «проведи глубокий анализ DockPadVisualMarker»

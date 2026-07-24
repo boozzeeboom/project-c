@@ -4,6 +4,19 @@
 
 ---
 
+## 2026-07-24 — T-DOCK15: retry-cooldown в TickBerth
+
+**Сессия:** фикс спама консоли — `[DockingWorld] Pad physically occupied`.
+
+**Статус:** ✅ Исправлено.
+
+**Проблема:** `TickBerth` → `TryAssignPadFromDispatcher` вызывался каждый FixedUpdate для NPC без пада.
+
+**Решение:** добавлен cooldown `PAD_ASSIGN_RETRY_SEC = 3f` через `_lastPadAssignAttemptTime`.
+
+**Файл:** `Assets/_Project/Scripts/PeacefulShip/Stations/NpcShipController.cs`
+
+---
 ## 2026-07-?? — M3.2.N: Class-based speed variation (NavTick) ✅ COMPILE-CLEAN
 
 **Задача:** Все NPC-корабли летят с одинаковой скоростью (LiftSpeed=8, CruiseSpeed=12, ApproachSpeed=5, MaxYawRate=45) независимо от класса. Добавить зависимость от `ShipFlightClass`.

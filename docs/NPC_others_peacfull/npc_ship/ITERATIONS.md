@@ -1,5 +1,19 @@
 # ITERATIONS — Peaceful NPC Ships (runtime fixes)
 
+## Итерация от 2026-07-24 — T-DOCK15: фикс спама Pad Occupied в FixedUpdate (NpcShipController)
+
+**Задача:** NPC-корабли в режиме Berthing спамили `TryAssignPadFromDispatcher()` каждый FixedUpdate.
+
+**Коммит:** `8d391a9d3c6616c1215f59b98e56d2cdd8876a06` — T-DOCK15
+
+**Изменения:**
+- `NpcShipController.cs` — добавлен `_lastPadAssignAttemptTime` + `PAD_ASSIGN_RETRY_SEC = 3f` в `TickBerth`
+- `DockingWorld.cs` — авто-регистрация occupancy в `_occupiedPads` (см. `docs/Docking_stations/ITERATIONS.md`)
+
+**Эффект:** вместо 50 вызовов/сек → не чаще раза в 3 секунды на NPC.
+
+---
+
 ## Итерация от 2026-07-?? — M3.2.N: Class-based speed variation
 
 **Задача:** Ввести разнообразие скоростей NPC-кораблей относительно класса (ShipFlightClass). Все корабли летят с одинаковой скоростью.

@@ -465,6 +465,10 @@ namespace ProjectC.Core
                 _camera.nearClipPlane = 0.5f;
             }
 
+            // Defaults из инспектора (до загрузки SettingsManager)
+            _cachedMouseSensitivity = mouseSensitivity;
+            _cachedInvertY = invertY;
+
             _lookAction = new InputAction("Look", binding: "<Mouse>/delta", expectedControlType: "Vector2");
             _moveAction = new InputAction("Move", expectedControlType: "Vector2");
             _moveAction.AddCompositeBinding("2DVector")

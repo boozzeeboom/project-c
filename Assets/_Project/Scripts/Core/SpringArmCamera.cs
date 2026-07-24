@@ -98,6 +98,43 @@ namespace ProjectC.Core
         [SerializeField] private float recoveryRatio = 0.4f;
 
         // ═══════════════════════════════════════════════════════════
+        // Inspector: Camera Lag
+        // ═══════════════════════════════════════════════════════════
+
+        [Header("Camera Lag")]
+        [Tooltip("Включить инерцию камеры (отставание от target)")]
+        [SerializeField] private bool lagEnabled = true;
+
+        [Tooltip("Время отставания по горизонтали (XZ)")]
+        [SerializeField] private float lagHorizontalTime = 0.15f;
+
+        [Tooltip("Время отставания по вертикали (Y)")]
+        [SerializeField] private float lagVerticalTime = 0.05f;
+
+        [Tooltip("Динамический lag: при беге отставание уменьшается")]
+        [SerializeField] private bool dynamicLagEnabled = true;
+
+        // ═══════════════════════════════════════════════════════════
+        // Inspector: Adaptive Distance
+        // ═══════════════════════════════════════════════════════════
+
+        [Header("Adaptive Distance")]
+        [Tooltip("Автоматически уменьшать дистанцию в узких пространствах")]
+        [SerializeField] private bool adaptiveDistanceEnabled = true;
+
+        [Tooltip("Порог срабатывания (отношение actualDist/desiredDist)")]
+        [SerializeField] private float adaptiveThreshold = 0.7f;
+
+        [Tooltip("Задержка перед уменьшением дистанции (гистерезис)")]
+        [SerializeField] private float adaptiveDelay = 0.5f;
+
+        [Tooltip("Скорость уменьшения дистанции")]
+        [SerializeField] private float adaptiveSpeed = 3f;
+
+        [Tooltip("Скорость восстановления дистанции")]
+        [SerializeField] private float adaptiveRecoverySpeed = 2f;
+
+        // ═══════════════════════════════════════════════════════════
         // Inspector: Mode Transition
         // ═══════════════════════════════════════════════════════════
 
@@ -143,6 +180,18 @@ namespace ProjectC.Core
         private float _distanceVelocity;
         private float _heightVelocity;
         private float _lookAtVelocity;
+
+        // ═══════════════════════════════════════════════════════════
+        // Internal State: Camera Lag
+        // ═══════════════════════════════════════════════════════════
+
+        private Vector3 _lagTargetPos;
+
+        // ═══════════════════════════════════════════════════════════
+        // Internal State: Adaptive Distance
+        // ═══════════════════════════════════════════════════════════
+
+        private float _lastClearTime;
 
         // ═══════════════════════════════════════════════════════════
         // Internal State: Collision
@@ -215,6 +264,7 @@ namespace ProjectC.Core
             if (newTarget != null)
             {
                 target = newTarget;
+                _lagTargetPos = target.position;
             }
         }
 
@@ -262,6 +312,8 @@ namespace ProjectC.Core
             _targetDistance = distance;
             _targetHeight = height;
             _targetLookAtHeight = lookAtHeightWalk;
+            _lagTargetPos = target.position;
+            _lastClearTime = Time.time;
 
             // Блокируем курсор ТОЛЬКО если NetworkManager активен
             bool inActiveGame = NetworkManager.Singleton != null && NetworkManager.Singleton.IsListening;
@@ -346,8 +398,10 @@ namespace ProjectC.Core
             // Pipeline
             ReadInput();
             UpdateModeTransition();
+            UpdateLag();
             Vector3 desiredPos = ComputeDesiredPosition();
             Vector3 resolvedPos = ResolveCollision(desiredPos);
+            UpdateAdaptiveDistance();
             SmoothPosition(resolvedPos);
             UpdateLookAt();
         }
@@ -388,13 +442,48 @@ namespace ProjectC.Core
         }
 
         // ═══════════════════════════════════════════════════════════
-        // Pipeline Step 3: ComputeDesiredPosition
+        // Pipeline Step 3: UpdateLag
+        // ═══════════════════════════════════════════════════════════
+
+        private void UpdateLag()
+        {
+            if (!lagEnabled || target == null)
+            {
+                _lagTargetPos = target != null ? target.position : Vector3.zero;
+                return;
+            }
+
+            Vector3 delta = target.position - _lagTargetPos;
+
+            // Динамический lag: при беге отставание уменьшается
+            float lagXZ, lagY;
+            if (dynamicLagEnabled)
+            {
+                float speed = delta.magnitude / Mathf.Max(Time.deltaTime, 0.0001f);
+                float speedFactor = Mathf.InverseLerp(0f, 10f, speed);
+                float dynamicMultiplier = Mathf.Lerp(1f, 0.3f, speedFactor);
+                lagXZ = 1f / (lagHorizontalTime * dynamicMultiplier);
+                lagY = 1f / (lagVerticalTime * dynamicMultiplier);
+            }
+            else
+            {
+                lagXZ = 1f / Mathf.Max(lagHorizontalTime, 0.001f);
+                lagY = 1f / Mathf.Max(lagVerticalTime, 0.001f);
+            }
+
+            _lagTargetPos.x += delta.x * lagXZ * Time.deltaTime;
+            _lagTargetPos.z += delta.z * lagXZ * Time.deltaTime;
+            _lagTargetPos.y += delta.y * lagY * Time.deltaTime;
+        }
+
+        // ═══════════════════════════════════════════════════════════
+        // Pipeline Step 4: ComputeDesiredPosition
         // ═══════════════════════════════════════════════════════════
 
         private Vector3 ComputeDesiredPosition()
         {
             Vector3 orbitDir = SphericalToCartesian(_yaw, _pitch);
-            return target.position + orbitDir * _currentDistance + Vector3.up * _currentHeight;
+            return _lagTargetPos + orbitDir * _currentDistance + Vector3.up * _currentHeight;
         }
 
         private static Vector3 SphericalToCartesian(float yaw, float pitch)
@@ -415,7 +504,7 @@ namespace ProjectC.Core
 
         private Vector3 ResolveCollision(Vector3 desiredPos)
         {
-            Vector3 from = target.position + Vector3.up * _currentLookAtHeight;
+            Vector3 from = _lagTargetPos + Vector3.up * _currentLookAtHeight;
             Vector3 direction = (desiredPos - from).normalized;
             float maxDist = Vector3.Distance(from, desiredPos);
 
@@ -451,7 +540,7 @@ namespace ProjectC.Core
 
         private void SmoothPosition(Vector3 cameraTargetPos)
         {
-            float actualDist = Vector3.Distance(cameraTargetPos, target.position);
+            float actualDist = Vector3.Distance(cameraTargetPos, _lagTargetPos);
             float desiredDist = _targetDistance;
             float ratio = actualDist / Mathf.Max(desiredDist, 0.1f);
 
@@ -474,12 +563,49 @@ namespace ProjectC.Core
         }
 
         // ═══════════════════════════════════════════════════════════
-        // Pipeline Step 6: UpdateLookAt
+        // Pipeline Step 6: UpdateAdaptiveDistance
+        // ═══════════════════════════════════════════════════════════
+
+        private void UpdateAdaptiveDistance()
+        {
+            if (!adaptiveDistanceEnabled) return;
+
+            float actualDist = Vector3.Distance(transform.position, _lagTargetPos);
+            float desiredDist = _isShip ? shipDistance : distance;
+            float ratio = actualDist / Mathf.Max(desiredDist, 0.1f);
+            float currentTime = Time.time;
+
+            if (ratio < adaptiveThreshold && _wasColliding)
+            {
+                // Камера постоянно прижата → уменьшаем дистанцию
+                if (currentTime - _lastClearTime > adaptiveDelay)
+                {
+                    float minDist = Mathf.Max(1f, actualDist - wallOffset - sphereCastRadius);
+                    _targetDistance = Mathf.Lerp(
+                        _targetDistance, minDist,
+                        adaptiveSpeed * Time.deltaTime);
+                }
+            }
+            else
+            {
+                // Восстанавливаем базовую дистанцию
+                float baseDist = _isShip ? shipDistance : distance;
+                _targetDistance = Mathf.Lerp(
+                    _targetDistance, baseDist,
+                    adaptiveRecoverySpeed * Time.deltaTime);
+
+                if (ratio > 0.95f)
+                    _lastClearTime = currentTime;
+            }
+        }
+
+        // ═══════════════════════════════════════════════════════════
+        // Pipeline Step 7: UpdateLookAt
         // ═══════════════════════════════════════════════════════════
 
         private void UpdateLookAt()
         {
-            Vector3 lookTarget = target.position + Vector3.up * _currentLookAtHeight;
+            Vector3 lookTarget = _lagTargetPos + Vector3.up * _currentLookAtHeight;
             transform.LookAt(lookTarget);
         }
 

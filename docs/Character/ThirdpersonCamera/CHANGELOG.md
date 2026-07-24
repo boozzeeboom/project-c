@@ -5,7 +5,23 @@
 
 ---
 
-## Итерация от 2026-07-26
+## Итерация от 2026-07-26 (Phase 2)
+
+**Задача:** Phase 2 — Camera Lag + Adaptive Distance
+**Коммит:** `b891391` — T-CAM02: Phase 2 — Camera Lag + Adaptive Distance
+
+**Изменения:**
+- `SpringArmCamera.cs` — +UpdateLag(), +UpdateAdaptiveDistance(), все расчёты через _lagTargetPos
+
+**Результат:**
+- ✅ Раздельный XZ/Y Camera Lag с динамическим множителем (бег → меньше отставания)
+- ✅ Adaptive Distance: авто-уменьшение дистанции при persistent collision + плавное восстановление
+- ✅ Устранены P3 (адаптация) и P5 (инерция)
+- ✅ 0 compile errors
+
+---
+
+## Итерация от 2026-07-26 (Phase 1)
 
 **Задача:** Phase 1 — Spring Arm Core (collision avoidance + smoothing)
 **Коммит:** `f2f3fbd` — T-CAM01: ThirdPersonCamera → SpringArmCamera (Phase 1 — collision avoidance + smoothing)

@@ -91,11 +91,27 @@
 
 ## Следующие шаги
 
-**Phase 2** (Camera Lag + Adaptive Distance):
-- Camera Lag (раздельный XZ/Y)
-- Adaptive Distance (авто-прижимание в помещениях)
-- Wall Recovery (уже частично в Phase 1)
-
 **Phase 3** (Occlusion Fade):
 - Screen-space dither через URP Renderer Feature
 - Или per-object fade (проще, но грязнее)
+
+---
+
+## Phase 2 — Complete (2026-07-26)
+
+**Коммит:** `b891391` — T-CAM02: Camera Lag + Adaptive Distance
+
+### Добавлено:
+- ✅ `UpdateLag()` — раздельный XZ/Y lag, динамический множитель при беге
+- ✅ `UpdateAdaptiveDistance()` — авто-уменьшение дистанции при persistent collision
+- ✅ `_lagTargetPos` — все расчёты позиции идут через lag-позицию
+
+### Устранено:
+| P3 | Нет адаптации дистанции | ✅ Adaptive Distance |
+| P5 | Нет инерции/запаздывания | ✅ Camera Lag |
+
+### Параметры (новые в инспекторе):
+- lagHorizontalTime = 0.15, lagVerticalTime = 0.05
+- dynamicLagEnabled = true
+- adaptiveThreshold = 0.7, adaptiveDelay = 0.5
+- adaptiveSpeed = 3, adaptiveRecoverySpeed = 2

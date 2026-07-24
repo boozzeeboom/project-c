@@ -152,6 +152,43 @@ namespace ProjectC.Core
         [SerializeField] private float occlusionFadeSpeed = 5f;
 
         // ═══════════════════════════════════════════════════════════
+        // Inspector: FOV Dynamics
+        // ═══════════════════════════════════════════════════════════
+
+        [Header("FOV Dynamics")]
+        [Tooltip("Включить динамический FOV (скорость → FOV)")]
+        [SerializeField] private bool fovDynamicsEnabled = true;
+
+        [Tooltip("Базовый FOV (пеший)")]
+        [SerializeField] private float baseFovWalk = 70f;
+
+        [Tooltip("Базовый FOV (корабль)")]
+        [SerializeField] private float baseFovShip = 75f;
+
+        [Tooltip("Добавка FOV при спринте")]
+        [SerializeField] private float sprintFovBoost = 5f;
+
+        [Tooltip("Добавка FOV в режиме корабля")]
+        [SerializeField] private float shipFovBoost = 10f;
+
+        [Tooltip("Скорость изменения FOV")]
+        [SerializeField] private float fovChangeSpeed = 3f;
+
+        // ═══════════════════════════════════════════════════════════
+        // Inspector: Auto-Center
+        // ═══════════════════════════════════════════════════════════
+
+        [Header("Auto-Center")]
+        [Tooltip("Плавно доворачивать камеру за спину при движении вперёд")]
+        [SerializeField] private bool autoCenterEnabled = true;
+
+        [Tooltip("Скорость доворота (градусов/сек)")]
+        [SerializeField] private float autoCenterSpeed = 90f;
+
+        [Tooltip("Порог ввода вперёд для срабатывания")]
+        [SerializeField] private float autoCenterThreshold = 0.5f;
+
+        // ═══════════════════════════════════════════════════════════
         // Inspector: Mode Transition
         // ═══════════════════════════════════════════════════════════
 
@@ -218,6 +255,20 @@ namespace ProjectC.Core
         private Renderer _currentOccludedRenderer;
         private float _currentDitherAmount;
         private static readonly int DitherAmountId = Shader.PropertyToID("_DitherAmount");
+
+        // ═══════════════════════════════════════════════════════════
+        // Internal State: FOV
+        // ═══════════════════════════════════════════════════════════
+
+        private float _currentFov;
+        private float _targetFov;
+        private float _fovVelocity;
+
+        // ═══════════════════════════════════════════════════════════
+        // Internal State: Auto-Center
+        // ═══════════════════════════════════════════════════════════
+
+        private InputAction _moveAction;  // для чтения W
 
         // ═══════════════════════════════════════════════════════════
         // Internal State: Collision
@@ -314,6 +365,12 @@ namespace ProjectC.Core
             _targetDistance = isShip ? shipDistance : distance;
             _targetHeight = isShip ? shipHeight : height;
             _targetLookAtHeight = isShip ? lookAtHeightShip : lookAtHeightWalk;
+
+            // Мгновенно задаём целевой FOV (сгладится в UpdateFov)
+            if (fovDynamicsEnabled)
+            {
+                _targetFov = isShip ? baseFovShip + shipFovBoost : baseFovWalk;
+            }
         }
 
         /// <summary>
@@ -340,6 +397,10 @@ namespace ProjectC.Core
             _targetLookAtHeight = lookAtHeightWalk;
             _lagTargetPos = target.position;
             _lastClearTime = Time.time;
+
+            _currentFov = baseFovWalk;
+            _targetFov = baseFovWalk;
+            if (_camera != null) _camera.fieldOfView = _currentFov;
 
             // Блокируем курсор ТОЛЬКО если NetworkManager активен
             bool inActiveGame = NetworkManager.Singleton != null && NetworkManager.Singleton.IsListening;
@@ -396,10 +457,25 @@ namespace ProjectC.Core
             }
 
             _lookAction = new InputAction("Look", binding: "<Mouse>/delta", expectedControlType: "Vector2");
+            _moveAction = new InputAction("Move", expectedControlType: "Vector2");
+            _moveAction.AddCompositeBinding("2DVector")
+                .With("Up", "<Keyboard>/w")
+                .With("Down", "<Keyboard>/s")
+                .With("Left", "<Keyboard>/a")
+                .With("Right", "<Keyboard>/d");
         }
 
-        private void OnEnable() => _lookAction.Enable();
-        private void OnDisable() => _lookAction.Disable();
+        private void OnEnable()
+        {
+            _lookAction.Enable();
+            _moveAction.Enable();
+        }
+
+        private void OnDisable()
+        {
+            _lookAction.Disable();
+            _moveAction.Disable();
+        }
 
         private void OnDestroy()
         {
@@ -431,6 +507,8 @@ namespace ProjectC.Core
             SmoothPosition(resolvedPos);
             UpdateLookAt();
             CheckOcclusion();
+            UpdateFov();
+            UpdateAutoCenter();
         }
 
         // ═══════════════════════════════════════════════════════════
@@ -725,6 +803,62 @@ namespace ProjectC.Core
             if (_currentDitherAmount < 0.01f)
             {
                 _currentOccludedRenderer = null;
+            }
+        }
+
+        // ═══════════════════════════════════════════════════════════
+        // Pipeline Step 9: UpdateFov
+        // ═══════════════════════════════════════════════════════════
+
+        private void UpdateFov()
+        {
+            if (!fovDynamicsEnabled || _camera == null) return;
+
+            // Базовый FOV зависит от режима
+            float baseFov = _isShip ? baseFovShip : baseFovWalk;
+
+            // Добавка за скорость (спринт)
+            float speedBoost = 0f;
+            if (!_isShip && _lagTargetPos != target.position)
+            {
+                float speed = Vector3.Distance(target.position, _lagTargetPos) / Mathf.Max(Time.deltaTime, 0.0001f);
+                if (speed > 8f) // ~sprint speed
+                    speedBoost = sprintFovBoost;
+            }
+
+            // Добавка за режим корабля
+            float shipBoost = _isShip ? shipFovBoost : 0f;
+
+            _targetFov = baseFov + speedBoost + shipBoost;
+
+            _currentFov = Mathf.SmoothDamp(
+                _currentFov, _targetFov,
+                ref _fovVelocity, 1f / fovChangeSpeed);
+
+            _camera.fieldOfView = _currentFov;
+        }
+
+        // ═══════════════════════════════════════════════════════════
+        // Pipeline Step 10: UpdateAutoCenter
+        // ═══════════════════════════════════════════════════════════
+
+        private void UpdateAutoCenter()
+        {
+            if (!autoCenterEnabled || target == null || _isShip) return;
+
+            Vector2 moveInput = _moveAction.ReadValue<Vector2>();
+            float forwardInput = moveInput.y; // W > 0, S < 0
+
+            if (forwardInput > autoCenterThreshold)
+            {
+                float targetYaw = target.eulerAngles.y;
+                float delta = Mathf.DeltaAngle(_yaw, targetYaw);
+
+                // Не доворачиваем если угол слишком большой — игрок специально смотрит в сторону
+                if (Mathf.Abs(delta) < 120f)
+                {
+                    _yaw += Mathf.Sign(delta) * autoCenterSpeed * Time.deltaTime;
+                }
             }
         }
 

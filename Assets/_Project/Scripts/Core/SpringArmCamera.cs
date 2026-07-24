@@ -62,7 +62,7 @@ namespace ProjectC.Core
 
         [Header("Spring Arm")]
         [Tooltip("Радиус SphereCast для определения коллизий")]
-        [SerializeField] private float sphereCastRadius = 0.4f;
+        [SerializeField] private float sphereCastRadius = 0.5f;
 
         [Tooltip("Слои для проверки коллизий")]
         [SerializeField] private LayerMask collisionMask = ~0;
@@ -76,7 +76,7 @@ namespace ProjectC.Core
 
         [Header("Smoothing")]
         [Tooltip("Время сглаживания позиции (SmoothDamp)")]
-        [SerializeField] private float positionSmoothTime = 0.15f;
+        [SerializeField] private float positionSmoothTime = 0.08f;
 
         [Tooltip("Время сглаживания в режиме корабля (быстрее)")]
         [SerializeField] private float positionSmoothTimeShip = 0.05f;
@@ -123,7 +123,7 @@ namespace ProjectC.Core
 
         [Header("Adaptive Distance")]
         [Tooltip("Автоматически уменьшать дистанцию в узких пространствах")]
-        [SerializeField] private bool adaptiveDistanceEnabled = true;
+        [SerializeField] private bool adaptiveDistanceEnabled = false;
 
         [Tooltip("Порог срабатывания (отношение actualDist/desiredDist)")]
         [SerializeField] private float adaptiveThreshold = 0.7f;
@@ -534,17 +534,32 @@ namespace ProjectC.Core
 
         private void UpdateModeTransition()
         {
-            _currentDistance = Mathf.SmoothDamp(
+            // Dead-zone snap: убивает микро-осцилляции когда почти достигли цели
+            const float snapThreshold = 0.01f;
+
+            _currentDistance = SmoothDampWithSnap(
                 _currentDistance, _targetDistance,
-                ref _distanceVelocity, modeSwitchSmoothTime);
+                ref _distanceVelocity, modeSwitchSmoothTime, snapThreshold);
 
-            _currentHeight = Mathf.SmoothDamp(
+            _currentHeight = SmoothDampWithSnap(
                 _currentHeight, _targetHeight,
-                ref _heightVelocity, modeSwitchSmoothTime);
+                ref _heightVelocity, modeSwitchSmoothTime, snapThreshold);
 
-            _currentLookAtHeight = Mathf.SmoothDamp(
+            _currentLookAtHeight = SmoothDampWithSnap(
                 _currentLookAtHeight, _targetLookAtHeight,
-                ref _lookAtVelocity, modeSwitchSmoothTime);
+                ref _lookAtVelocity, modeSwitchSmoothTime, snapThreshold);
+        }
+
+        private static float SmoothDampWithSnap(
+            float current, float target,
+            ref float velocity, float smoothTime, float snapThreshold)
+        {
+            if (Mathf.Abs(current - target) < snapThreshold && Mathf.Abs(velocity) < snapThreshold)
+            {
+                velocity = 0f;
+                return target;
+            }
+            return Mathf.SmoothDamp(current, target, ref velocity, smoothTime);
         }
 
         // ═══════════════════════════════════════════════════════════

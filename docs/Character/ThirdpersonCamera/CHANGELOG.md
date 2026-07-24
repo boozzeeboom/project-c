@@ -5,6 +5,24 @@
 
 ---
 
+## Итерация от 2026-07-26 (Phase 3)
+
+**Задача:** Phase 3 — Occlusion Fade
+**Коммит:** `8e0412d` — T-CAM03: Phase 3 — Occlusion Fade
+
+**Изменения:**
+- `SpringArmCamera.cs` — +CheckOcclusion(), +RestoreOccludedRenderer()
+- `OcclusionDither.shader` — URP Lit + Bayer 8x8 dither через clip()
+
+**Результат:**
+- ✅ Raycast occlusion detection (каждый 3-й кадр)
+- ✅ Per-object dither через MaterialPropertyBlock._DitherAmount
+- ✅ Плавный fade-in/out (occlusionFadeSpeed = 5)
+- ✅ Устранена P4 (occlusion handling)
+- ✅ 0 compile errors
+
+---
+
 ## Итерация от 2026-07-26 (Phase 2)
 
 **Задача:** Phase 2 — Camera Lag + Adaptive Distance

@@ -1,117 +1,84 @@
-# SpringArmCamera — Phase 1 Implementation Report
+# SpringArmCamera — Implementation Report
 
 > **Дата:** 2026-07-26
 > **Исполнитель:** Aura (Project C agent)
-> **Статус:** ✅ Complete
+> **Статус:** ✅ Phase 1-3 Complete (Core + Lag + Occlusion)
 
 ---
 
-## Что сделано
+## Итоговый статус проблем
 
-### 1. Создан `SpringArmCamera.cs`
-**Путь:** `Assets/_Project/Scripts/Core/SpringArmCamera.cs` (~400 строк)
-
-Реализованные шаги LateUpdate pipeline:
-- ✅ `ReadInput()` — yaw/pitch orbit (как в ThirdPersonCamera)
-- ✅ `UpdateModeTransition()` — SmoothDamp для walk↔ship (distance, height, lookAtHeight)
-- ✅ `ComputeDesiredPosition()` — сферические координаты
-- ✅ `ResolveCollision()` — SphereCast (radius 0.4m) + anti-pop гистерезис (0.2s)
-- ✅ `SmoothPosition()` — SmoothDamp + fast wall recovery (3x быстрее при ratio < 0.4)
-- ✅ `UpdateLookAt()` — динамическая высота (1.5m walk / 4m ship)
-- ✅ `OnDrawGizmosSelected()` — визуализация SphereCast
-- ✅ Полный API-контракт: `CameraForward`, `CameraRight`, `CameraComponent`, `SetTarget`, `SetTargetMode`, `SetShipMode`, `InitializeCamera`
-
-**НЕ включено (Phase 2):**
-- Camera Lag (инерция)
-- Adaptive Distance
-- Occlusion Dither
-- Auto-Center Behind Player
-
-### 2. Обновлены зависимые файлы
-
-| Файл | Изменения |
-|------|-----------|
-| `NetworkPlayer.cs` | `ThirdPersonCamera` → `SpringArmCamera` (4 места: поле prefab, поле _myCamera, GetComponent, FindAnyObjectByType) |
-| `PlayerController.cs` | `ThirdPersonCamera` → `SpringArmCamera` (2 места: поле cameraController, FindAnyObjectByType) |
-| `PlayerStateMachine.cs` | `ThirdPersonCamera` → `SpringArmCamera` (1 место: поле cameraController) |
-| `RepairManagerWindow.cs` | `ThirdPersonCamera` → `SpringArmCamera` (1 место: FindAnyObjectByType в CachePlayerCamera) |
-
-### 3. Обновлён префаб
-**Путь:** `Assets/_Project/Prefabs/ThirdPersonCamera.prefab`
-
-Компоненты:
-- Transform
-- Camera (farClipPlane=1000000, nearClipPlane=0.5)
-- UniversalAdditionalCameraData
-- **SpringArmCamera** (заменил ThirdPersonCamera)
-
-Имя объекта: `ThirdPersonCamera` — **сохранено** (FloatingOriginMP)
-
-### 4. НЕ затронуты (как и планировалось)
-- `FloatingOriginMP.cs` — ищет по имени `"ThirdPersonCamera"`, не по типу → работает
-- `Billboard.cs` — использует `Transform`, не тип → работает
-- `ShipObservationCamera.cs` — получает `Camera` через `RepairManagerWindow.CachePlayerCamera()` → работает
+| # | Проблема | Статус | Phase |
+|---|----------|--------|-------|
+| P1 | Камера проходит сквозь стены | ✅ SphereCast collision | 1 |
+| P2 | Нет сглаживания (рывки) | ✅ SmoothDamp position | 1 |
+| P3 | Нет адаптации дистанции | ✅ Adaptive Distance | 2 |
+| P4 | Нет occlusion handling | ✅ Dither fade | 3 |
+| P5 | Нет инерции/запаздывания | ✅ Camera Lag | 2 |
+| P6 | LookAt фиксирован (1.5m) | ✅ Dynamic LookAt | 1 |
+| P7 | Переключение walk/ship мгновенное | ✅ SmoothDamp mode transition | 1 |
+| P8 | nearClipPlane = 0.5 | ⬜ Future | — |
+| P9 | Нет FOV dynamics | ⬜ Future | — |
+| P10 | Нет auto-center | ⬜ Future | — |
 
 ---
 
-## Проверка
+## Текущий LateUpdate pipeline (9 шагов)
 
-- ✅ 0 compile errors
-- ✅ Все 4 зависимых файла обновлены
-- ✅ Префаб содержит SpringArmCamera вместо ThirdPersonCamera
-- ✅ API-контракт сохранён
-
----
-
-## Что устранено (из 10 проблем)
-
-| # | Проблема | Статус |
-|---|----------|--------|
-| P1 | Камера проходит сквозь стены | ✅ SphereCast collision avoidance |
-| P2 | Нет сглаживания (рывки) | ✅ SmoothDamp position |
-| P6 | LookAt фиксирован (1.5m) | ✅ Dynamic LookAt (walk/ship) |
-| P7 | Переключение walk/ship мгновенное | ✅ SmoothDamp mode transition |
+```
+ReadInput → UpdateModeTransition → UpdateLag → ComputeDesiredPosition
+→ ResolveCollision → UpdateAdaptiveDistance → SmoothPosition
+→ UpdateLookAt → CheckOcclusion
+```
 
 ---
 
-## Параметры инспектора (рекомендуемые)
+## Файлы
 
-В префабе выставлены defaults из ресёрча:
-- sphereCastRadius = 0.4
-- wallOffset = 0.3
-- positionSmoothTime = 0.12
-- antiPopTime = 0.2
-- recoverySpeed = 10
-- recoveryRatio = 0.4
-- modeSwitchSmoothTime = 0.5
-- lookAtHeightWalk = 1.5
-- lookAtHeightShip = 4.0
+| Файл | Действие |
+|------|----------|
+| `SpringArmCamera.cs` | Новый (~550 строк) — полный SpringArm |
+| `OcclusionDither.shader` | Новый — URP Lit + Bayer 8x8 dither |
+| `NetworkPlayer.cs` | ThirdPersonCamera → SpringArmCamera |
+| `PlayerController.cs` | ThirdPersonCamera → SpringArmCamera |
+| `PlayerStateMachine.cs` | ThirdPersonCamera → SpringArmCamera |
+| `RepairManagerWindow.cs` | ThirdPersonCamera → SpringArmCamera |
+| `ThirdPersonCamera.prefab` | Замена компонента |
 
----
-
-## Следующие шаги
-
-**Phase 3** (Occlusion Fade):
-- Screen-space dither через URP Renderer Feature
-- Или per-object fade (проще, но грязнее)
+### НЕ затронуты (совместимость):
+- `FloatingOriginMP.cs` — ищет по имени, не по типу
+- `Billboard.cs` — использует Transform
+- `ShipObservationCamera.cs` — получает Camera через RepairManagerWindow
 
 ---
 
-## Phase 2 — Complete (2026-07-26)
+## Параметры инспектора
 
-**Коммит:** `b891391` — T-CAM02: Camera Lag + Adaptive Distance
+| Параметр | Walk | Ship |
+|----------|------|------|
+| distance | 5 | 18 |
+| height | 2 | 6 |
+| sphereCastRadius | 0.4 | 0.4 |
+| wallOffset | 0.3 | 0.3 |
+| positionSmoothTime | 0.12 | 0.12 |
+| antiPopTime | 0.2 | 0.2 |
+| recoverySpeed | 10 | 10 |
+| recoveryRatio | 0.4 | 0.4 |
+| lagHorizontalTime | 0.15 | 0.15 |
+| lagVerticalTime | 0.05 | 0.05 |
+| adaptiveThreshold | 0.7 | 0.7 |
+| adaptiveDelay | 0.5 | 0.5 |
+| occlusionFadeSpeed | 5 | 5 |
+| maxOcclusionCheckDist | 30 | 30 |
+| modeSwitchSmoothTime | 0.5 | 0.5 |
+| lookAtHeight | 1.5 | 4.0 |
 
-### Добавлено:
-- ✅ `UpdateLag()` — раздельный XZ/Y lag, динамический множитель при беге
-- ✅ `UpdateAdaptiveDistance()` — авто-уменьшение дистанции при persistent collision
-- ✅ `_lagTargetPos` — все расчёты позиции идут через lag-позицию
+---
 
-### Устранено:
-| P3 | Нет адаптации дистанции | ✅ Adaptive Distance |
-| P5 | Нет инерции/запаздывания | ✅ Camera Lag |
+## Коммиты
 
-### Параметры (новые в инспекторе):
-- lagHorizontalTime = 0.15, lagVerticalTime = 0.05
-- dynamicLagEnabled = true
-- adaptiveThreshold = 0.7, adaptiveDelay = 0.5
-- adaptiveSpeed = 3, adaptiveRecoverySpeed = 2
+| Phase | Коммит | Описание |
+|-------|--------|----------|
+| 1 | `f2f3fbd` | T-CAM01: SpringArmCamera core |
+| 2 | `b891391` | T-CAM02: Camera Lag + Adaptive Distance |
+| 3 | `8e0412d` | T-CAM03: Occlusion Fade |

@@ -66,7 +66,7 @@ namespace ProjectC.Player
 
 
         [Header("Камера")]
-        [SerializeField] private ThirdPersonCamera cameraPrefab;
+        [SerializeField] private SpringArmCamera cameraPrefab;
 
         [Header("Корабль")]
         [Tooltip("Максимальная дистанция для посадки (м)")]
@@ -92,7 +92,7 @@ namespace ProjectC.Player
         private Vector3 _windVelocity = Vector3.zero;
         private Vector3 _windVelocitySmooth = Vector3.zero;
 
-        private ThirdPersonCamera _myCamera;
+        private SpringArmCamera _myCamera;
 
         // Состояние (корабль/пеший)
         private bool _inShip = false;
@@ -548,7 +548,7 @@ namespace ProjectC.Player
                 // - Двойное смещение позиции: из parent и из LateUpdate
                 var camObj = Instantiate(cameraPrefab.gameObject);
                 camObj.name = $"ThirdPersonCamera_{OwnerClientId}";
-                _myCamera = camObj.GetComponent<ThirdPersonCamera>();
+                _myCamera = camObj.GetComponent<SpringArmCamera>();
                 if (_myCamera != null)
                 {
                     _myCamera.SetTarget(transform);
@@ -557,7 +557,7 @@ namespace ProjectC.Player
             }
             else
             {
-                _myCamera = FindAnyObjectByType<ThirdPersonCamera>();
+                _myCamera = FindAnyObjectByType<SpringArmCamera>();
                 if (_myCamera != null)
                 {
                     _myCamera.SetTarget(transform);

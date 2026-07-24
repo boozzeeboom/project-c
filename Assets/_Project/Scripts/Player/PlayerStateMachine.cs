@@ -37,7 +37,7 @@ namespace ProjectC.Core
 
         [Header("Камера")]
         [Tooltip("ThirdPersonCamera")]
-        [SerializeField] private ThirdPersonCamera cameraController;
+        [SerializeField] private SpringArmCamera cameraController;
 
         [Header("Состояние")]
         [SerializeField] private PlayerState currentState = PlayerState.Walking;

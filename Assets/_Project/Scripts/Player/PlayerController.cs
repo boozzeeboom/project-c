@@ -33,7 +33,7 @@ namespace ProjectC.Player
 
         [Header("Камера")]
         [Tooltip("Ссылка на ThirdPersonCamera")]
-        [SerializeField] private ThirdPersonCamera cameraController;
+        [SerializeField] private SpringArmCamera cameraController;
 
         // CharacterController
         private CharacterController _controller;
@@ -80,7 +80,7 @@ namespace ProjectC.Player
         {
             if (cameraController == null)
             {
-                cameraController = FindAnyObjectByType<ThirdPersonCamera>();
+                cameraController = FindAnyObjectByType<SpringArmCamera>();
             }
         }
 

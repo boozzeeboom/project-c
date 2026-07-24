@@ -901,7 +901,7 @@ namespace ProjectC.Ship.UI
         {
             if (_playerCam != null) return;
 
-            var tpc = FindAnyObjectByType<ThirdPersonCamera>();
+            var tpc = FindAnyObjectByType<SpringArmCamera>();
             if (tpc != null)
                 _playerCam = tpc.GetComponent<Camera>();
         }

@@ -83,3 +83,4 @@ ReadInput → UpdateModeTransition → UpdateLag → ComputeDesiredPosition
 | 2 | `b891391` | T-CAM02: Camera Lag + Adaptive Distance |
 | 3 | `8e0412d` | T-CAM03: Occlusion Fade |
 | 5 | `68d0432` | T-CAM04: FOV Dynamics + Auto-Center |
+| 6 | `12019d3` | T-CAM05: Over-the-shoulder + cleanup |

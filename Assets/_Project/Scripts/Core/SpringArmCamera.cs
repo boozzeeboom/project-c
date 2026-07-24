@@ -135,6 +135,23 @@ namespace ProjectC.Core
         [SerializeField] private float adaptiveRecoverySpeed = 2f;
 
         // ═══════════════════════════════════════════════════════════
+        // Inspector: Occlusion
+        // ═══════════════════════════════════════════════════════════
+
+        [Header("Occlusion")]
+        [Tooltip("Включить fade объектов между камерой и персонажем")]
+        [SerializeField] private bool occlusionEnabled = true;
+
+        [Tooltip("Слои объектов, которые могут перекрывать обзор")]
+        [SerializeField] private LayerMask occlusionMask = ~0;
+
+        [Tooltip("Максимальная дистанция проверки occlusion")]
+        [SerializeField] private float maxOcclusionCheckDist = 30f;
+
+        [Tooltip("Скорость fade-in/out (единиц dither в секунду)")]
+        [SerializeField] private float occlusionFadeSpeed = 5f;
+
+        // ═══════════════════════════════════════════════════════════
         // Inspector: Mode Transition
         // ═══════════════════════════════════════════════════════════
 
@@ -192,6 +209,15 @@ namespace ProjectC.Core
         // ═══════════════════════════════════════════════════════════
 
         private float _lastClearTime;
+
+        // ═══════════════════════════════════════════════════════════
+        // Internal State: Occlusion
+        // ═══════════════════════════════════════════════════════════
+
+        private int _occlusionCheckCounter;
+        private Renderer _currentOccludedRenderer;
+        private float _currentDitherAmount;
+        private static readonly int DitherAmountId = Shader.PropertyToID("_DitherAmount");
 
         // ═══════════════════════════════════════════════════════════
         // Internal State: Collision
@@ -404,6 +430,7 @@ namespace ProjectC.Core
             UpdateAdaptiveDistance();
             SmoothPosition(resolvedPos);
             UpdateLookAt();
+            CheckOcclusion();
         }
 
         // ═══════════════════════════════════════════════════════════
@@ -607,6 +634,98 @@ namespace ProjectC.Core
         {
             Vector3 lookTarget = _lagTargetPos + Vector3.up * _currentLookAtHeight;
             transform.LookAt(lookTarget);
+        }
+
+        // ═══════════════════════════════════════════════════════════
+        // Pipeline Step 8: CheckOcclusion
+        // ═══════════════════════════════════════════════════════════
+
+        /// <summary>
+        /// Проверка occlusion: если объект между камерой и персонажем — дизерим его.
+        /// Использует MaterialPropertyBlock._DitherAmount (совместим с ProjectC/OcclusionDither шейдером).
+        /// Проверка каждый 3-й кадр для оптимизации.
+        /// </summary>
+        private void CheckOcclusion()
+        {
+            if (!occlusionEnabled || target == null || _camera == null) return;
+
+            _occlusionCheckCounter++;
+            if (_occlusionCheckCounter % 3 != 0) return;
+
+            // Проверка: виден ли target на экране
+            Vector3 targetLookPos = target.position + Vector3.up * _currentLookAtHeight;
+            Vector3 viewportPos = _camera.WorldToViewportPoint(targetLookPos);
+            bool onScreen = viewportPos.x > 0f && viewportPos.x < 1f
+                         && viewportPos.y > 0f && viewportPos.y < 1f
+                         && viewportPos.z > 0f && viewportPos.z < maxOcclusionCheckDist;
+
+            if (!onScreen)
+            {
+                RestoreOccludedRenderer();
+                return;
+            }
+
+            // Raycast от камеры к персонажу
+            Vector3 dir = targetLookPos - transform.position;
+            float dist = dir.magnitude;
+
+            if (Physics.Raycast(transform.position, dir.normalized,
+                               out RaycastHit hit, dist, occlusionMask))
+            {
+                if (hit.transform == target || hit.transform.IsChildOf(target))
+                {
+                    // Луч попал в самого персонажа — чисто
+                    RestoreOccludedRenderer();
+                    return;
+                }
+
+                var renderer = hit.collider.GetComponentInChildren<Renderer>();
+                if (renderer == null)
+                {
+                    RestoreOccludedRenderer();
+                    return;
+                }
+
+                // Новый или тот же объект перекрывает
+                if (renderer != _currentOccludedRenderer)
+                {
+                    RestoreOccludedRenderer();
+                    _currentOccludedRenderer = renderer;
+                }
+
+                // Плавно наращиваем dither
+                _currentDitherAmount = Mathf.MoveTowards(
+                    _currentDitherAmount, 1f, occlusionFadeSpeed * Time.deltaTime);
+
+                MaterialPropertyBlock mpb = new MaterialPropertyBlock();
+                renderer.GetPropertyBlock(mpb);
+                mpb.SetFloat(DitherAmountId, _currentDitherAmount);
+                renderer.SetPropertyBlock(mpb);
+            }
+            else
+            {
+                // Луч чистый
+                RestoreOccludedRenderer();
+            }
+        }
+
+        private void RestoreOccludedRenderer()
+        {
+            if (_currentOccludedRenderer == null) return;
+
+            // Плавно убираем dither
+            _currentDitherAmount = Mathf.MoveTowards(
+                _currentDitherAmount, 0f, occlusionFadeSpeed * Time.deltaTime);
+
+            MaterialPropertyBlock mpb = new MaterialPropertyBlock();
+            _currentOccludedRenderer.GetPropertyBlock(mpb);
+            mpb.SetFloat(DitherAmountId, _currentDitherAmount);
+            _currentOccludedRenderer.SetPropertyBlock(mpb);
+
+            if (_currentDitherAmount < 0.01f)
+            {
+                _currentOccludedRenderer = null;
+            }
         }
 
         // ═══════════════════════════════════════════════════════════

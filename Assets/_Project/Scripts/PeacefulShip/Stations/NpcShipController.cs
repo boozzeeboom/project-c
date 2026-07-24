@@ -392,6 +392,10 @@ namespace ProjectC.PeacefulShip.Stations
         private Vector3 _avoidFromPos;
         private Vector3 _escapeDir; // T-NS-BZ07: raycast-computed escape direction
 
+        // PAD-ASSIGN-THROTTLE: не долбим диспетчер каждый FixedUpdate
+        private float _lastPadAssignAttemptTime = float.MinValue;
+        private const float PAD_ASSIGN_RETRY_SEC = 3f;
+
         /// <summary>
         /// Приоритет расхождения: выше → делает полный манёвр, ниже → yield (ждёт).
         /// Авто-назначается из NpcInstanceId (детерминированно, без сетевой коммуникации).
@@ -641,8 +645,13 @@ namespace ProjectC.PeacefulShip.Stations
         }
 
         void TickBerth(Rigidbody rb) {
-            // Если пад не назначен — запросить у диспетчера
+            // Если пад не назначен — запросить у диспетчера (с троттлингом)
             if (string.IsNullOrEmpty(AssignedPadId)) {
+                if (Time.time - _lastPadAssignAttemptTime < PAD_ASSIGN_RETRY_SEC) {
+                    rb.linearVelocity = Vector3.zero;
+                    return;
+                }
+                _lastPadAssignAttemptTime = Time.time;
                 var padId = TryAssignPadFromDispatcher();
                 if (!string.IsNullOrEmpty(padId)) {
                     AssignedPadId = padId;

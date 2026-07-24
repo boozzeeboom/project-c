@@ -182,10 +182,19 @@ namespace ProjectC.Docking.Core
                 bool physicallyOccupied = false;
                 for (int i = 0; i < hits.Length; i++)
                 {
-                    if (hits[i].GetComponentInParent<ShipController>() != null)
+                    var foundShip = hits[i].GetComponentInParent<ShipController>();
+                    if (foundShip != null)
                     {
                         physicallyOccupied = true;
-                        Debug.Log($"[DockingWorld] Pad {tb.PadId} physically occupied by ship inside trigger — skipping");
+                        // PAD-OCCUPANCY-AUTO-REGISTER: если корабль физически в триггере,
+                        // регистрируем его в _occupiedPads — чтобы следующие вызовы не делали Physics.OverlapBox
+                        ulong shipNetId = foundShip.NetworkObject != null ? foundShip.NetworkObject.NetworkObjectId : 0;
+                        if (!_occupiedPads.ContainsKey(padKey))
+                        {
+                            _occupiedPads[padKey] = shipNetId;
+                            if (Debug.isDebugBuild)
+                                Debug.Log($"[DockingWorld] Pad {tb.PadId} auto-registered: ship={foundShip.name} netId={shipNetId} (was missing from _occupiedPads)");
+                        }
                         break;
                     }
                 }

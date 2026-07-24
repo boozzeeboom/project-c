@@ -142,3 +142,32 @@ docs/dev/LORE_SETUP.md
 lore-gui.bat
 lore-gui.py
 lore-save.bat
+
+# Content assets — tracked via Lore VCS, not git
+*.unity
+*.prefab
+*.fbx
+*.jpg
+*.png
+*.tga
+*.psd
+*.exr
+*.wav
+*.ogg
+*.mp3
+*.mp4
+*.avi
+
+# Animation assets
+*.anim
+*.controller
+*.overrideController
+
+# Shader assets
+*.shader
+*.shadergraph
+*.hlsl
+*.cginc
+
+# Unity metadata (regenerated on import — not needed in VCS)
+*.meta

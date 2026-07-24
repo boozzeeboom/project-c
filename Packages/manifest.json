@@ -2,6 +2,7 @@
   "dependencies": {
     "com.coplaydev.coplay": "https://github.com/CoplayDev/coplay-unity-plugin.git#beta",
     "com.coplaydev.unity-mcp": "https://github.com/CoplayDev/unity-mcp.git?path=/MCPForUnity#main",
+    "com.projectc.lore-unity": "https://github.com/boozzeeboom/unity-lore-ui.git",
     "com.ramenvr.aura-unity": "https://github.com/ramenvr/AuraForUnityPlugin.git",
     "com.unity.2d.sprite": "1.0.0",
     "com.unity.2d.tilemap": "1.0.0",

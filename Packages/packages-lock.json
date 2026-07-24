@@ -27,6 +27,13 @@
       },
       "hash": "c14de1e6dc01ab42d2bb358730cff954bce0ce6b"
     },
+    "com.projectc.lore-unity": {
+      "version": "https://github.com/boozzeeboom/unity-lore-ui.git",
+      "depth": 0,
+      "source": "git",
+      "dependencies": {},
+      "hash": "4b60cb13af982ac631cc35ea62d9e34b3ca6cd28"
+    },
     "com.ramenvr.aura-unity": {
       "version": "https://github.com/ramenvr/AuraForUnityPlugin.git",
       "depth": 0,

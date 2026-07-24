@@ -189,6 +189,14 @@ namespace ProjectC.Core
         [SerializeField] private float autoCenterThreshold = 0.5f;
 
         // ═══════════════════════════════════════════════════════════
+        // Inspector: Over-the-Shoulder
+        // ═══════════════════════════════════════════════════════════
+
+        [Header("Over-the-Shoulder")]
+        [Tooltip("Горизонтальный сдвиг камеры вправо от центра (0 = по центру)")]
+        [SerializeField] private float shoulderOffset = 0.7f;
+
+        // ═══════════════════════════════════════════════════════════
         // Inspector: Mode Transition
         // ═══════════════════════════════════════════════════════════
 
@@ -711,6 +719,14 @@ namespace ProjectC.Core
         private void UpdateLookAt()
         {
             Vector3 lookTarget = _lagTargetPos + Vector3.up * _currentLookAtHeight;
+
+            // Over-the-shoulder offset: сдвиг камеры вправо от центра
+            if (shoulderOffset > 0.001f && !_isShip)
+            {
+                Vector3 rightOffset = transform.right * shoulderOffset;
+                lookTarget += rightOffset;
+            }
+
             transform.LookAt(lookTarget);
         }
 

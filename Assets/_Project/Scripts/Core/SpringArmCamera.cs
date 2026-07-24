@@ -76,7 +76,10 @@ namespace ProjectC.Core
 
         [Header("Smoothing")]
         [Tooltip("Время сглаживания позиции (SmoothDamp)")]
-        [SerializeField] private float positionSmoothTime = 0.2f;
+        [SerializeField] private float positionSmoothTime = 0.15f;
+
+        [Tooltip("Время сглаживания в режиме корабля (быстрее)")]
+        [SerializeField] private float positionSmoothTimeShip = 0.05f;
 
         // ═══════════════════════════════════════════════════════════
         // Inspector: Anti-Pop
@@ -102,8 +105,8 @@ namespace ProjectC.Core
         // ═══════════════════════════════════════════════════════════
 
         [Header("Camera Lag")]
-        [Tooltip("Включить инерцию камеры (отставание от target)")]
-        [SerializeField] private bool lagEnabled = true;
+        [Tooltip("Включить инерцию камеры — ТОЛЬКО для walk (корабль — всегда без лага)")]
+        [SerializeField] private bool lagEnabled = false;
 
         [Tooltip("Время отставания по горизонтали (XZ)")]
         [SerializeField] private float lagHorizontalTime = 0.15f;
@@ -180,7 +183,7 @@ namespace ProjectC.Core
 
         [Header("Auto-Center")]
         [Tooltip("Плавно доворачивать камеру за спину при движении вперёд")]
-        [SerializeField] private bool autoCenterEnabled = true;
+        [SerializeField] private bool autoCenterEnabled = false;
 
         [Tooltip("Скорость доворота (градусов/сек)")]
         [SerializeField] private float autoCenterSpeed = 90f;
@@ -276,7 +279,7 @@ namespace ProjectC.Core
         // Internal State: Auto-Center
         // ═══════════════════════════════════════════════════════════
 
-        private InputAction _moveAction;  // для чтения W
+        private float _lastForwardInput;  // для AutoCenter (выставляется извне)
 
         // ═══════════════════════════════════════════════════════════
         // Internal State: Collision
@@ -470,25 +473,10 @@ namespace ProjectC.Core
             _cachedInvertY = invertY;
 
             _lookAction = new InputAction("Look", binding: "<Mouse>/delta", expectedControlType: "Vector2");
-            _moveAction = new InputAction("Move", expectedControlType: "Vector2");
-            _moveAction.AddCompositeBinding("2DVector")
-                .With("Up", "<Keyboard>/w")
-                .With("Down", "<Keyboard>/s")
-                .With("Left", "<Keyboard>/a")
-                .With("Right", "<Keyboard>/d");
         }
 
-        private void OnEnable()
-        {
-            _lookAction.Enable();
-            _moveAction.Enable();
-        }
-
-        private void OnDisable()
-        {
-            _lookAction.Disable();
-            _moveAction.Disable();
-        }
+        private void OnEnable() => _lookAction.Enable();
+        private void OnDisable() => _lookAction.Disable();
 
         private void OnDestroy()
         {
@@ -565,7 +553,8 @@ namespace ProjectC.Core
 
         private void UpdateLag()
         {
-            if (!lagEnabled || target == null)
+            // Корабль — всегда без лага (иначе камера болтается)
+            if (!lagEnabled || _isShip || target == null)
             {
                 _lagTargetPos = target != null ? target.position : Vector3.zero;
                 return;
@@ -647,10 +636,15 @@ namespace ProjectC.Core
 
             if (maxDist < 0.01f) return desiredPos;
 
+            // Исключаем слой цели из проверки (корабельные коллайдеры, сам персонаж)
+            int mask = collisionMask;
+            if (target != null)
+                mask &= ~(1 << target.gameObject.layer);
+
             float currentTime = Time.time;
             bool hit = Physics.SphereCast(
                 from, sphereCastRadius, direction,
-                out RaycastHit hitInfo, maxDist, collisionMask);
+                out RaycastHit hitInfo, maxDist, mask);
 
             if (hit)
             {
@@ -681,10 +675,13 @@ namespace ProjectC.Core
             float desiredDist = _targetDistance;
             float ratio = actualDist / Mathf.Max(desiredDist, 0.1f);
 
+            // Разное время сглаживания для walk/ship
+            float smoothTime = _isShip ? positionSmoothTimeShip : positionSmoothTime;
+
             if (ratio < recoveryRatio)
             {
                 // Fast recovery: камера сильно прижата
-                float fastSmoothTime = positionSmoothTime * 0.3f;
+                float fastSmoothTime = smoothTime * 0.3f;
                 transform.position = Vector3.SmoothDamp(
                     transform.position, cameraTargetPos,
                     ref _recoveryVelocity, fastSmoothTime,
@@ -692,10 +689,9 @@ namespace ProjectC.Core
             }
             else
             {
-                // Normal smooth
                 transform.position = Vector3.SmoothDamp(
                     transform.position, cameraTargetPos,
-                    ref _positionVelocity, positionSmoothTime);
+                    ref _positionVelocity, smoothTime);
             }
         }
 
@@ -886,20 +882,25 @@ namespace ProjectC.Core
         {
             if (!autoCenterEnabled || target == null || _isShip) return;
 
-            Vector2 moveInput = _moveAction.ReadValue<Vector2>();
-            float forwardInput = moveInput.y; // W > 0, S < 0
-
-            if (forwardInput > autoCenterThreshold)
+            if (_lastForwardInput > autoCenterThreshold)
             {
                 float targetYaw = target.eulerAngles.y;
                 float delta = Mathf.DeltaAngle(_yaw, targetYaw);
 
-                // Не доворачиваем если угол слишком большой — игрок специально смотрит в сторону
                 if (Mathf.Abs(delta) < 120f)
                 {
                     _yaw += Mathf.Sign(delta) * autoCenterSpeed * Time.deltaTime;
                 }
             }
+        }
+
+        /// <summary>
+        /// Сообщить камере о forward-вводе для AutoCenter.
+        /// Вызывать из NetworkPlayer.Update(): 0..1 (W) или -1..0 (S).
+        /// </summary>
+        public void SetForwardInput(float forwardInput)
+        {
+            _lastForwardInput = forwardInput;
         }
 
         // ═══════════════════════════════════════════════════════════

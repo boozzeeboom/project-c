@@ -2,7 +2,7 @@
 
 > **Дата:** 2026-07-26
 > **Исполнитель:** Aura (Project C agent)
-> **Статус:** ✅ Phase 1-3 Complete (Core + Lag + Occlusion)
+> **Статус:** ✅ Phase 1-5 Complete (All phases done)
 
 ---
 
@@ -17,18 +17,18 @@
 | P5 | Нет инерции/запаздывания | ✅ Camera Lag | 2 |
 | P6 | LookAt фиксирован (1.5m) | ✅ Dynamic LookAt | 1 |
 | P7 | Переключение walk/ship мгновенное | ✅ SmoothDamp mode transition | 1 |
-| P8 | nearClipPlane = 0.5 | ⬜ Future | — |
-| P9 | Нет FOV dynamics | ⬜ Future | — |
-| P10 | Нет auto-center | ⬜ Future | — |
+| P8 | nearClipPlane = 0.5 | ⬜ Minor (не критично) | — |
+| P9 | Нет FOV dynamics | ✅ FOV Dynamics | 5 |
+| P10 | Нет auto-center | ✅ Auto-Center | 5 |
 
 ---
 
-## Текущий LateUpdate pipeline (9 шагов)
+## Текущий LateUpdate pipeline (11 шагов)
 
 ```
 ReadInput → UpdateModeTransition → UpdateLag → ComputeDesiredPosition
 → ResolveCollision → UpdateAdaptiveDistance → SmoothPosition
-→ UpdateLookAt → CheckOcclusion
+→ UpdateLookAt → CheckOcclusion → UpdateFov → UpdateAutoCenter
 ```
 
 ---
@@ -82,3 +82,4 @@ ReadInput → UpdateModeTransition → UpdateLag → ComputeDesiredPosition
 | 1 | `f2f3fbd` | T-CAM01: SpringArmCamera core |
 | 2 | `b891391` | T-CAM02: Camera Lag + Adaptive Distance |
 | 3 | `8e0412d` | T-CAM03: Occlusion Fade |
+| 5 | `68d0432` | T-CAM04: FOV Dynamics + Auto-Center |

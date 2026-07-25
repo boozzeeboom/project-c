@@ -32,7 +32,7 @@
       "depth": 0,
       "source": "git",
       "dependencies": {},
-      "hash": "4b60cb13af982ac631cc35ea62d9e34b3ca6cd28"
+      "hash": "e1103be79fb5dcaa3f7a3bd7453ffc03009fed56"
     },
     "com.ramenvr.aura-unity": {
       "version": "https://github.com/ramenvr/AuraForUnityPlugin.git",

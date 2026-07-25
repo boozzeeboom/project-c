@@ -21,11 +21,6 @@ namespace ProjectC.Docking.Core
     {
         public static DockingWorld Instance { get; private set; }
 
-        [Header("Performance")]
-        [Tooltip("Layer mask для Physics.OverlapBox при проверке занятости падов. " +
-                 "Сузьте до слоёв с ShipController для лучшей производительности.")]
-        [SerializeField] private LayerMask padCheckLayerMask = ~0;
-
         // === server-only state (Q3: SOT) ===
         // Occupant = кто занимает pad. ulong = clientId для игрока, или NPC ID (Phase 2).
         private readonly Dictionary<string, ulong> _occupiedPads = new Dictionary<string, ulong>();
@@ -101,7 +96,7 @@ namespace ProjectC.Docking.Core
                     var box = tb.GetComponent<BoxCollider>();
                     if (box != null) boxSize = box.size;
 
-                    Collider[] hits = Physics.OverlapBox(padWorldPos, boxSize * 0.5f, tb.transform.rotation, padCheckLayerMask, QueryTriggerInteraction.Collide);
+                    Collider[] hits = Physics.OverlapBox(padWorldPos, boxSize * 0.5f, tb.transform.rotation, ~0, QueryTriggerInteraction.Collide);
                     for (int i = 0; i < hits.Length; i++)
                     {
                         var ship = hits[i].GetComponentInParent<ShipController>();
@@ -183,7 +178,7 @@ namespace ProjectC.Docking.Core
                     boxSize = tb.transform.lossyScale;
                 }
 
-                Collider[] hits = Physics.OverlapBox(worldPadPos, boxSize * 0.5f, worldPadRot, padCheckLayerMask, QueryTriggerInteraction.Collide);
+                Collider[] hits = Physics.OverlapBox(worldPadPos, boxSize * 0.5f, worldPadRot, ~0, QueryTriggerInteraction.Collide);
                 bool physicallyOccupied = false;
                 for (int i = 0; i < hits.Length; i++)
                 {

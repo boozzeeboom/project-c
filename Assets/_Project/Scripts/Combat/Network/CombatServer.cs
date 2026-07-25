@@ -216,13 +216,14 @@ namespace ProjectC.Combat
                     var obstruction = obsHit.collider.GetComponentInParent<IDamageTarget>();
                     if (obstruction != null && obstruction.GetTargetId() != targetId)
                     {
-                        Debug.Log($"[CombatServer/Obstruction] ResolveAttack: target={target.GetDisplayName()} blocked by {obstruction.GetDisplayName()}, redirecting damage");
+                        if (_debugLog) Debug.Log($"[CombatServer/Obstruction] ResolveAttack: target={target.GetDisplayName()} blocked by {obstruction.GetDisplayName()}, redirecting damage");
                         target = obstruction;
                         targetId = target.GetTargetId();
                     }
                     else if (obstruction == null)
                     {
-                        Debug.Log($"[CombatServer/Obstruction] ResolveAttack: target={target.GetDisplayName()} blocked by non-damageable ({obsHit.collider.name}), MISS");
+                        if (_debugLog) Debug.Log($"[CombatServer/Obstruction] ResolveAttack: target={target.GetDisplayName()} blocked by non-damageable ({obsHit.collider.name}), MISS");
+
                         SendErrorToClient(attackerId, "LineOfSightBlocked");
                         return;
                     }
@@ -365,7 +366,8 @@ namespace ProjectC.Combat
             
             if (source == null)
             {
-                Debug.LogWarning($"[CombatServer] ResolveSkillCast: InvalidSource — sourceId={sourceId} not found in attacker's active sources (count={attacker.GetActiveDamageSources().Count}). skill='{skillId}'");
+                if (_debugLog) Debug.LogWarning($"[CombatServer] ResolveSkillCast: InvalidSource — sourceId={sourceId} not found in attacker's active sources (count={attacker.GetActiveDamageSources().Count}). skill='{skillId}'");
+
                 SendErrorToClient(attackerId, "InvalidSource");
                 return;
             }
@@ -392,7 +394,8 @@ namespace ProjectC.Combat
             Vector3 forward = Vector3.forward;
             if (attacker is MonoBehaviour mb && mb.transform != null) { forward = mb.transform.forward; }
 
-            Debug.Log($"[CombatServer] ResolveSkillCast: skill='{skillId}' aoeOrigin={aoeOrigin} aoeSize={skillConfig.aoeSize} useTargetPoint={useTargetPoint} targetsInRegistry={_targets.Count}");
+            if (_debugLog) Debug.Log($"[CombatServer] ResolveSkillCast: skill='{skillId}' aoeOrigin={aoeOrigin} aoeSize={skillConfig.aoeSize} useTargetPoint={useTargetPoint} targetsInRegistry={_targets.Count}");
+
 
             var results = new System.Collections.Generic.List<ProjectC.Combat.Core.IDamageTarget>();
             var hitPoints = new System.Collections.Generic.List<Vector3>();
@@ -404,7 +407,8 @@ namespace ProjectC.Combat
 
             if (isRangedSingleTarget)
             {
-                Debug.Log($"[CombatServer/R5] Ranged single-target: skill='{skillId}' sourceId={sourceId} source={source?.GetDisplayName() ?? "NULL"} sourceType={source?.GetDamageType().ToString() ?? "N/A"} sourceRange={source?.GetRange() ?? 0f:F1}m");
+                if (_debugLog) Debug.Log($"[CombatServer/R5] Ranged single-target: skill='{skillId}' sourceId={sourceId} source={source?.GetDisplayName() ?? "NULL"} sourceType={source?.GetDamageType().ToString() ?? "N/A"} sourceRange={source?.GetRange() ?? 0f:F1}m");
+
             }
 
             if (skillConfig.aoeFormula == ProjectC.Skills.AoeFormula.SingleTarget)
@@ -426,14 +430,16 @@ namespace ProjectC.Combat
                         if (obstruction != null && obstruction.GetTargetId() != primaryTargetId)
                         {
                             // Obstruction is another damageable — redirect damage to it.
-                            Debug.Log($"[CombatServer/Obstruction] skill='{skillId}': preferred={preferredTarget.GetDisplayName()} blocked by {obstruction.GetDisplayName()}, redirecting damage");
+                            if (_debugLog) Debug.Log($"[CombatServer/Obstruction] skill='{skillId}': preferred={preferredTarget.GetDisplayName()} blocked by {obstruction.GetDisplayName()}, redirecting damage");
+
                             results.Add(obstruction);
                             hitPoints.Add(obstructionHit.point);
                         }
                         else if (obstruction == null)
                         {
                             // Raycast hit a wall/terrain — shot blocked, miss.
-                            Debug.Log($"[CombatServer/Obstruction] skill='{skillId}': preferred={preferredTarget.GetDisplayName()} blocked by non-damageable ({obstructionHit.collider.name}), MISS");
+                            if (_debugLog) Debug.Log($"[CombatServer/Obstruction] skill='{skillId}': preferred={preferredTarget.GetDisplayName()} blocked by non-damageable ({obstructionHit.collider.name}), MISS");
+
                             SendErrorToClient(attackerId, "LineOfSightBlocked");
                             return;
                         }
@@ -476,7 +482,8 @@ namespace ProjectC.Combat
             if (results.Count == 0)
             {
                 string context = isRangedSingleTarget ? "NO target found (SingleTarget)" : "NO targets in AOE";
-                Debug.LogWarning($"[CombatServer] ResolveSkillCast: {context}! skill='{skillId}' origin={aoeOrigin} size={skillConfig.aoeSize} registryTargets={_targets.Count}");
+                if (_debugLog) Debug.LogWarning($"[CombatServer] ResolveSkillCast: {context}! skill='{skillId}' origin={aoeOrigin} size={skillConfig.aoeSize} registryTargets={_targets.Count}");
+
                 return;
             }
 
@@ -512,13 +519,15 @@ namespace ProjectC.Combat
                         if (aoeObs != null && aoeObs.GetTargetId() != target.GetTargetId())
                         {
                             // Redirect damage to obstruction instead.
-                            Debug.Log($"[CombatServer/AOE-Obstruction] skill='{skillId}': target={target.GetDisplayName()} blocked by {aoeObs.GetDisplayName()}, redirecting");
+                            if (_debugLog) Debug.Log($"[CombatServer/AOE-Obstruction] skill='{skillId}': target={target.GetDisplayName()} blocked by {aoeObs.GetDisplayName()}, redirecting");
+
                             target = aoeObs;
                         }
                         else if (aoeObs == null)
                         {
                             // Wall/terrain — skip this target entirely.
-                            Debug.Log($"[CombatServer/AOE-Obstruction] skill='{skillId}': target={target.GetDisplayName()} blocked by non-damageable ({aoeObsHit.collider.name}), skipping");
+                            if (_debugLog) Debug.Log($"[CombatServer/AOE-Obstruction] skill='{skillId}': target={target.GetDisplayName()} blocked by non-damageable ({aoeObsHit.collider.name}), skipping");
+
                             continue;
                         }
                         // else: aoeObs == target — raycast hit the target, OK.
@@ -553,23 +562,27 @@ namespace ProjectC.Combat
                         int unscaledFinal = result.finalDamage;
                         result.preDefenseDamage = Mathf.Max(1, (int)(unscaledPre * dmgPct));
                         result.finalDamage = Mathf.Max(1, (int)(unscaledFinal * dmgPct));
-                        Debug.Log($"[CombatServer/R5-D100] skill='{skillId}' d100={d100Roll} <= hitChance={hitChance} → HIT, dmgPct={dmgPct:F2}, preDefense: {unscaledPre}→{result.preDefenseDamage}, final: {unscaledFinal}→{result.finalDamage}");
+                        if (_debugLog) Debug.Log($"[CombatServer/R5-D100] skill='{skillId}' d100={d100Roll} <= hitChance={hitChance} → HIT, dmgPct={dmgPct:F2}, preDefense: {unscaledPre}→{result.preDefenseDamage}, final: {unscaledFinal}→{result.finalDamage}");
+
                     }
                     else
                     {
                         result.isHit = false;
                         result.finalDamage = 0;
-                        Debug.Log($"[CombatServer/R5-D100] skill='{skillId}' d100={d100Roll} > hitChance={hitChance} → MISS");
+                        if (_debugLog) Debug.Log($"[CombatServer/R5-D100] skill='{skillId}' d100={d100Roll} > hitChance={hitChance} → MISS");
+
                     }
                 }
 
-                Debug.Log($"[DamageCalculator/AOE] attacker={attackerId} → target={target.GetTargetId()} ({target.GetDisplayName()}), skill='{skillId}', source={source.GetDisplayName()}: isHit={result.isHit} preDefense={result.preDefenseDamage} final={result.finalDamage} isCrit={result.isCrit}");
+                if (_debugLog) Debug.Log($"[DamageCalculator/AOE] attacker={attackerId} → target={target.GetTargetId()} ({target.GetDisplayName()}), skill='{skillId}', source={source.GetDisplayName()}: isHit={result.isHit} preDefense={result.preDefenseDamage} final={result.finalDamage} isCrit={result.isCrit}");
+
 
                 if (result.isHit)
                 {
                     target.ApplyDamage(result, attackerId);
                     hitsLanded++;
-                    Debug.Log($"[CombatServer] AOE damage applied: target={target.GetDisplayName()} hpAfter={target.GetCurrentHp()}/{target.GetMaxHp()}");
+                    if (_debugLog) Debug.Log($"[CombatServer] AOE damage applied: target={target.GetDisplayName()} hpAfter={target.GetCurrentHp()}/{target.GetMaxHp()}");
+
                 }
 
                 var dto = DamageResultDto.FromResult(result);
@@ -650,7 +663,8 @@ namespace ProjectC.Combat
                     }
                 }
 
-                Debug.Log($"[CombatServer] AOE check: target='{target.GetDisplayName()}' pos={targetPos} dist={dist:F1}m inAoe={inAoe} (origin={origin}, size={size})");
+                if (_debugLog) Debug.Log($"[CombatServer] AOE check: target='{target.GetDisplayName()}' pos={targetPos} dist={dist:F1}m inAoe={inAoe} (origin={origin}, size={size})");
+
 
                 if (!inAoe) continue;
                 inRangeCount++;
@@ -662,7 +676,8 @@ namespace ProjectC.Combat
                 outHitPoints.Add(targetPos);
             }
 
-            Debug.Log($"[CombatServer] CollectAoeTargetsFromRegistry: formula={formula} size={size} totalTargets={totalChecked} alive={aliveCount} inRange={inRangeCount} uniqueFound={outResults.Count}");
+            if (_debugLog) Debug.Log($"[CombatServer] CollectAoeTargetsFromRegistry: formula={formula} size={size} totalTargets={totalChecked} alive={aliveCount} inRange={inRangeCount} uniqueFound={outResults.Count}");
+
         }
 
         private static Vector3 ClosestPointOnSegment(Vector3 a, Vector3 b, Vector3 point)

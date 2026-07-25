@@ -161,7 +161,6 @@ namespace ProjectC.Docking.Zones
                 if (DockingZoneRegistry.LocalPlayerStation != _stationController)
                 {
                     DockingZoneRegistry.LocalPlayerStation = _stationController;
-                    Debug.Log($"[OuterCommZone:{stationId}] local player entered zone (dist={playerDist:F1})");
                 }
             }
             else
@@ -169,8 +168,8 @@ namespace ProjectC.Docking.Zones
                 if (DockingZoneRegistry.LocalPlayerStation == _stationController)
                 {
                     DockingZoneRegistry.LocalPlayerStation = null;
-                    Debug.Log($"[OuterCommZone:{stationId}] local player left zone (dist={playerDist:F1})");
                 }
+
             }
 
             // Проверяем корабль (чтобы T-key работал только из пилот-кресла в зоне)
@@ -233,7 +232,7 @@ namespace ProjectC.Docking.Zones
                 if (_playersInRange.Add(id))
                 {
                     _missingTicks.Remove(id);
-                    Debug.Log($"[OuterCommZone:{stationId}] server: player {id} entered zone");
+
                 }
             }
             var toRemove = new List<ulong>();
@@ -270,8 +269,8 @@ namespace ProjectC.Docking.Zones
             }
             foreach (var id in found)
             {
-                if (_shipsInRange.Add(id))
-                    Debug.Log($"[OuterCommZone:{stationId}] server: ship {id} entered zone");
+                _shipsInRange.Add(id);
+
             }
             var toRemove = new List<ulong>();
             foreach (var id in _shipsInRange)

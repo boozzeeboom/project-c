@@ -109,8 +109,8 @@ namespace ProjectC.Docking.Core
                                 _occupiedPads[padKey] = shipId;
                                 // Блокируем двигатель
                                 if (ship.IsServer) ship.EnterDocked();
-                                Debug.Log($"[DockingWorld] ScanExistingOccupants: pad={tb.PadId} station={station.StationId} ship={ship.name} — registered + engine locked");
                                 totalOccupied++;
+
 
                                 // T-DOCK-14b: синхронизация визуального маркера
                                 var sync = station.GetComponent<PadStateSync>();
@@ -121,7 +121,8 @@ namespace ProjectC.Docking.Core
                     }
                 }
             }
-            Debug.Log($"[DockingWorld] ScanExistingOccupants: completed, {totalOccupied} pads occupied");
+            // quiet
+
         }
 
         public static void Shutdown()

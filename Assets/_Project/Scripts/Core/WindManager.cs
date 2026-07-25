@@ -62,11 +62,12 @@ namespace ProjectC.Core
         // Round-robin индекс
         private int _nextZoneIndex;
 
-        private struct ZoneRuntimeState
+        private class ZoneRuntimeState
         {
             public Dictionary<ShipController, SplineWindZone.ShipSplineEntry> entries;
             public int frameCounter;       // счётчик для троттлинга детекции
         }
+
 
 
         // ============================================================

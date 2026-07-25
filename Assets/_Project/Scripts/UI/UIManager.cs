@@ -90,8 +90,11 @@ namespace ProjectC.UI
             var kb = UnityEngine.InputSystem.Keyboard.current;
             if (kb != null && kb.escapeKey.wasPressedThisFrame)
             {
+#if UNITY_EDITOR
                 Debug.Log($"[UIManager] Esc detected in Update. _openPanels={_openPanels.Count}");
+#endif
             }
+
             HandleGlobalInput();
         }
 

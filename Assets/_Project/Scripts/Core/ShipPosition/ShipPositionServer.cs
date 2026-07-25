@@ -40,7 +40,8 @@ namespace ProjectC.Core.ShipPosition
         [SerializeField] private float restoreDelaySec = 3.5f;
 
         [Header("Debug")]
-        [SerializeField] private bool debugMode = true;
+        [SerializeField] private bool debugMode = false;
+
 
         private IShipPositionRepository _repo;
         private float _nextSaveTime;

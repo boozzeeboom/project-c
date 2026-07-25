@@ -137,7 +137,8 @@ Packages/packages-lock.json
 Assets/_Project/Scenes/World/WorldScene_0_0.zip
 Assets/_Project/Prefabs/Ships/DONT-DELETE-NPC REFERENCE SHIP*
 Assets/_Project/Prefabs/NPC/\[Mira] - DON`T DELETE DEFOULT.zip
-docs/dev/LORE_SETUP.md
+Assets/Graphy - Ultimate Stats Monitor*
+/ProfilerCaptures*
 .loreignore
 lore-gui.bat
 lore-gui.py

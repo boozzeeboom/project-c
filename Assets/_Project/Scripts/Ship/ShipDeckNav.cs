@@ -149,11 +149,14 @@ namespace ProjectC.Ship
             if (_registered) return;
             if (_deckNavMeshData == null)
             {
+#if UNITY_EDITOR
                 Debug.LogWarning($"[ShipDeckNav:{name}] Deck NavMesh Data не назначен — навигация по палубе выключена. " +
                                  $"Запеки палубу и назначь ассет (см. §5 в 01_CREW_ON_MOVING_SHIP.md).", this);
+#endif
                 _registrationFailed = true;
                 return;
             }
+
 
             if (_registerUnderShip)
             {
@@ -173,14 +176,20 @@ namespace ProjectC.Ship
             {
                 // PERF: не спамим warning — NavMesh не работает на больших координатах (>10km от origin).
                 // Это ожидаемо для world0_0. Логируем один раз и не пытаемся перерегистрировать.
+#if UNITY_EDITOR
                 Debug.LogWarning($"[ShipDeckNav:{name}] NavMesh registration failed at {_navFrameOrigin}. " +
                                  $"Ship too far from origin — deck navigation disabled.", this);
+#endif
                 _registrationFailed = true;
+
                 return;
             }
             _registered = true;
+#if UNITY_EDITOR
             Debug.Log($"[ShipDeckNav:{name}] Registered at {_navFrameOrigin}", this);
+#endif
         }
+
 
         private void Unregister()
         {

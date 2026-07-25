@@ -1,5 +1,20 @@
 # Project C — Iterations Log
 
+## Итерация от 2026-07-24 (T-PERSIST-FIX)
+
+**Задача:** Позиции кораблей перестали сохраняться — файл `ShipPositions.json` не создавался после перезапуска/очистки.
+
+**Коммит:** `054386c` — T-PERSIST-FIX: deadlock _restoreCompleted + ThreadPool persistentDataPath
+
+**Изменения:**
+- `ShipPositionServer.cs` — `RestoreCoroutine`: `_restoreCompleted` выставляется даже при пустом save  
+- `ShipPositionServer.cs` — `Update()`: синхронный save вместо ThreadPool
+- `ShipPositionRepository.cs` — `SaveAll(wrapper)`: добавлен `Debug.Log`, убран `throw`
+
+**Корневые причины:**
+1. Deadlock `_restoreCompleted`: нет файла → нет кораблей для restore → `_restoreCompleted=false` → `Update()` не сохраняет → файл никогда не создаётся
+2. ThreadPool: `Application.persistentDataPath` на фоновом потоке падал → файл писался в корень проекта мимо `persistentDataPath`
+
 ## Итерация от 2026-07-24
 
 **Задача:** ShipController custom editor — группировка ~45 serialized полей в 8 foldout-секций + Runtime Info панель

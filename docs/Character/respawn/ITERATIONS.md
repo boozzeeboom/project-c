@@ -82,6 +82,21 @@
 - `PlayerPositionServer.cs` — `_dataLoaded` флаг + `DataLoaded` property: сигнал что RestoreCoroutine загрузил данные
 - `NetworkPlayer.cs` — `RestorePlayerPositionCoroutine` заменён фиксированный `WaitForSeconds(5f)` на цикл опроса `DataLoaded` (timeout 30s)
 
+## Итерация от 2026-07-24 (T-PERSIST-FIX)
+
+**Задача:** Позиции кораблей и игроков перестали сохраняться/восстанавливаться — файл `ShipPositions.json` не создавался, респавн не работал.
+
+**Коммит:** `054386c` — T-PERSIST-FIX: deadlock _restoreCompleted + ThreadPool persistentDataPath
+
+**Изменения:**
+- `ShipPositionServer.cs` — `RestoreCoroutine`: `_restoreCompleted` теперь выставляется даже при пустом save (без этого `Update()` никогда не запускал сохранение)
+- `ShipPositionServer.cs` — `Update()`: синхронный `_repo.SaveAll()` вместо `ThreadPool.QueueUserWorkItem` (`Application.persistentDataPath` — main-thread-only API)
+- `ShipPositionRepository.cs` — `SaveAll(wrapper)`: убран `throw` из фонового потока, добавлен `Debug.Log`
+
+**Причины (2 бага):**
+1. Deadlock `_restoreCompleted`: при первом запуске/после удаления save-файла `RestoreCoroutine` делал `yield break` без флага → `Update()` никогда не входил в цикл сохранения
+2. ThreadPool + `Application.persistentDataPath`: save уходил в фоновый поток, `Application.persistentDataPath` кидал `UnityException` → `FilePath` молча фоллбэчился на относительный путь → файл писался в корень проекта, а читался из `persistentDataPath`
+
 ## Итерация от 2026-07-16
 
 **Задача:** Fix death respawn — NetworkBehaviour.IsServer врал в coroutine/timer (баг NGO 2.x), респавн не срабатывал.

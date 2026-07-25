@@ -149,12 +149,12 @@ namespace ProjectC.Core.ShipPosition
                 playerData = PlayerPositionServer.Instance.GetPendingPlayers();
             }
 
-            // Единый write (ships + players)
+            // Единый write (ships + players) — PERF: off main thread
             var wrapper = new ShipPositionListWrapper { ships = allData, players = playerData };
-            _repo.SaveAll(wrapper);
+            System.Threading.ThreadPool.QueueUserWorkItem(_ => _repo.SaveAll(wrapper));
 
             if (debugMode)
-                Debug.Log($"[ShipPositionServer] Saved {allData.Count} ships + {playerData.Count} players");
+                Debug.Log($"[ShipPositionServer] Queued save: {allData.Count} ships + {playerData.Count} players");
         }
 
         // === Restore ===

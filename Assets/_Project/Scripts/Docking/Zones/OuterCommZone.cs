@@ -33,6 +33,18 @@ namespace ProjectC.Docking.Zones
         [SerializeField, Min(50f)] private float commRange = 1000f;  // Q5: настраивается
         [SerializeField] private bool drawGizmos = true;
 
+        [Header("Performance")]
+        [Tooltip("Layer mask для Physics.OverlapSphere (серверный поллинг). Оставьте ~0 для всех слоёв, " +
+                 "или сузьте до слоёв с NetworkPlayer/ShipController для лучшей производительности.")]
+        [SerializeField] private LayerMask pollLayerMask = ~0;
+        [Tooltip("Интервал поллинга (сек). По умолчанию 0.25.")]
+        [SerializeField, Min(0.1f)] private float pollInterval = 0.25f;
+
+        // PERF: кешируем FindLocalPlayer чтобы не делать FindObjectsByType каждый кадр
+        private static NetworkPlayer _cachedLocalPlayer;
+        private static float _cachedLocalPlayerTime;
+        private const float LOCAL_PLAYER_CACHE_TTL = 0.5f;
+
         public string StationId => stationId;
         public float CommRange => commRange;
 
@@ -102,13 +114,12 @@ namespace ProjectC.Docking.Zones
         // ========================================================
 
         private float _pollTimer;
-        private const float POLL_INTERVAL = 0.25f;
         private const int MISS_THRESHOLD = 3;
 
         private void Update()
         {
             _pollTimer += Time.deltaTime;
-            if (_pollTimer < POLL_INTERVAL) return;
+            if (_pollTimer < pollInterval) return;
             _pollTimer = 0f;
 
             if (_isServer)
@@ -180,13 +191,21 @@ namespace ProjectC.Docking.Zones
 
         private static NetworkPlayer FindLocalPlayer()
         {
+            // PERF: cache — FindObjectsByType дорогой, а вызывается каждые 0.25s из каждой зоны
+            if (_cachedLocalPlayer != null && Time.time - _cachedLocalPlayerTime < LOCAL_PLAYER_CACHE_TTL)
+                return _cachedLocalPlayer;
+
             var players = FindObjectsByType<NetworkPlayer>(FindObjectsInactive.Exclude);
             for (int i = 0; i < players.Length; i++)
             {
                 if (players[i] == null || !players[i].IsOwner) continue;
                 if (players[i].GetComponent<NetworkPlayerSpawner>() != null) continue;
+                _cachedLocalPlayer = players[i];
+                _cachedLocalPlayerTime = Time.time;
                 return players[i];
             }
+            _cachedLocalPlayer = null;
+            _cachedLocalPlayerTime = Time.time;
             return null;
         }
 
@@ -201,7 +220,7 @@ namespace ProjectC.Docking.Zones
 
         private void PollPlayersInRange()
         {
-            var hits = Physics.OverlapSphere(transform.position, commRange, ~0, QueryTriggerInteraction.Ignore);
+            var hits = Physics.OverlapSphere(transform.position, commRange, pollLayerMask, QueryTriggerInteraction.Ignore);
             var found = new HashSet<ulong>();
             for (int i = 0; i < hits.Length; i++)
             {
@@ -241,7 +260,7 @@ namespace ProjectC.Docking.Zones
 
         private void PollShipsInRange()
         {
-            var hits = Physics.OverlapSphere(transform.position, commRange, ~0, QueryTriggerInteraction.Ignore);
+            var hits = Physics.OverlapSphere(transform.position, commRange, pollLayerMask, QueryTriggerInteraction.Ignore);
             var found = new HashSet<ulong>();
             for (int i = 0; i < hits.Length; i++)
             {

@@ -52,6 +52,8 @@ namespace ProjectC.Ship
         private NavMeshDataInstance _instance;
         private Vector3 _navFrameOrigin;
         private bool _registered;
+        private bool _registrationFailed;         // PERF: не спамим повторными попытками
+        private float _nextRegistrationAttempt;   // PERF: cooldown между попытками
         private Vector3 _lastRegisteredShipPos;
         // Static slot counter — для старого slot-based режима (не используется при _registerUnderShip=true).
         private static int _nextSlot;
@@ -94,7 +96,8 @@ namespace ProjectC.Ship
         {
             base.OnNetworkSpawn();
             if (_registerServerOnly && !IsServer) return;
-            Register();
+            // PERF: размазываем регистрацию по времени — не все 21 корабль в одном кадре
+            _nextRegistrationAttempt = Time.time + UnityEngine.Random.Range(0f, 2f);
         }
 
         public override void OnNetworkDespawn()
@@ -110,7 +113,23 @@ namespace ProjectC.Ship
         // срабатывает раз в несколько минут, перерегистрирует безболезненно.
         private void LateUpdate()
         {
-            if (!_registered || !IsServer) return;
+            if (!IsServer) return;
+
+            // PERF: отложенная/повторная регистрация (cooldown после провала)
+            if (!_registered && !_registrationFailed && Time.time >= _nextRegistrationAttempt)
+            {
+                if (_deckNavMeshData == null) { _registrationFailed = true; return; }
+                Register();
+                if (!_registered)
+                {
+                    // Не спамим — следующая попытка через 5 секунд
+                    _nextRegistrationAttempt = Time.time + 5f;
+                }
+                return;
+            }
+
+            if (!_registered) return;
+
             // Проверяем только если наш navFrameOrigin привязан к ShipRoot (не slot-based).
             if (!_registerUnderShip) return;
 
@@ -132,6 +151,7 @@ namespace ProjectC.Ship
             {
                 Debug.LogWarning($"[ShipDeckNav:{name}] Deck NavMesh Data не назначен — навигация по палубе выключена. " +
                                  $"Запеки палубу и назначь ассет (см. §5 в 01_CREW_ON_MOVING_SHIP.md).", this);
+                _registrationFailed = true;
                 return;
             }
 
@@ -151,9 +171,15 @@ namespace ProjectC.Ship
             _instance = NavMesh.AddNavMeshData(_deckNavMeshData, _navFrameOrigin, Quaternion.identity);
             if (!_instance.valid)
             {
+                // PERF: не спамим warning — NavMesh не работает на больших координатах (>10km от origin).
+                // Это ожидаемо для world0_0. Логируем один раз и не пытаемся перерегистрировать.
+                Debug.LogWarning($"[ShipDeckNav:{name}] NavMesh registration failed at {_navFrameOrigin}. " +
+                                 $"Ship too far from origin — deck navigation disabled.", this);
+                _registrationFailed = true;
                 return;
             }
             _registered = true;
+            Debug.Log($"[ShipDeckNav:{name}] Registered at {_navFrameOrigin}", this);
         }
 
         private void Unregister()

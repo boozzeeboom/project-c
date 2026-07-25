@@ -75,6 +75,11 @@ namespace ProjectC.Core
         public static readonly ProfilerMarker CameraUpdate =
             new(ProfilerCategory.Scripts, "Player.Camera.Update");
 
+        // ==================== Network ====================
+        public static int RpcSentPerInterval;
+        public static int RpcReceivedPerInterval;
+        public static float NetworkRttMs;
+
         // ==================== Misc ====================
         public static readonly ProfilerMarker CraftingServerTick =
             new(ProfilerCategory.Scripts, "Crafting.Server.Tick");

@@ -96,8 +96,10 @@
 ## Итерация от 2026-08 — T-WIND03: Рефакторинг архитектуры SplineWindZone
 
 **Задача:** Убрать FixedUpdate из SplineWindZone — централизованный round-robin процессинг в WindManager.
+**Коммит:** `0016d74` — T-WIND03: рефакторинг SplineWindZone
 
-**Проблема:** 2 зоны × 50 кораблей × GetNearestPoint каждый FixedUpdate = **40ms на кадр** (профайлер `ProjectC_client_2026-07-25_23-26-47.data`). Каждая зона бежала свой FixedUpdate независимо → O(зоны × корабли).
+**Проблема:**
+ 2 зоны × 50 кораблей × GetNearestPoint каждый FixedUpdate = **40ms на кадр** (профайлер `ProjectC_client_2026-07-25_23-26-47.data`). Каждая зона бежала свой FixedUpdate независимо → O(зоны × корабли).
 
 **Решение:**
 - `SplineWindZone` → пассивный дескриптор (данные + Gizmos), без FixedUpdate
@@ -123,7 +125,8 @@
 
 **Изменения:**
 - `SplineWindZone.cs` — вырезан FixedUpdate, RefreshShipCache, DetectShipsAndCacheSplineData, ApplyWindToShipsCached. Поля `_detectionStep`/`_shipCacheRefreshInterval` удалены. Добавлены статические `SetZoneDisplayName`/`ClearZoneDisplayName`, публичный `SplineContainer`, `ComputeForceMagnitude`.
-- `WindManager.cs` — добавлен `FixedUpdate` с `ProcessSplineWindZones`, round-robin `_nextZoneIndex`, `_zoneStates`, `_shipSnapshot`, `_splineZonesPerFrame`.
+- `WindManager.cs` — добавлен `FixedUpdate` с `ProcessSplineWindZones`, round-robin `_nextZoneIndex`, `_zoneStates`, `_shipSnapshot`, `_splineZonesPerFrame`, `_splineDetectionStep`.
+
 
 **Ожидаемый эффект:** -90% CPU на сплайновый ветер (с 40ms до ~3ms на 2 зоны).
 

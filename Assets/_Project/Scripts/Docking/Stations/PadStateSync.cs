@@ -45,9 +45,11 @@ namespace ProjectC.Docking.Stations
     {
         public FixedString32Bytes stationId;
         public int padCount;
-        // Сериализуем как массив фиксированной длины (макс 16 падов)
+        // Сериализуем как массив фиксированной длины (макс 32 пада)
         public PadStateEntry pad0, pad1, pad2, pad3, pad4, pad5, pad6, pad7;
         public PadStateEntry pad8, pad9, pad10, pad11, pad12, pad13, pad14, pad15;
+        public PadStateEntry pad16, pad17, pad18, pad19, pad20, pad21, pad22, pad23;
+        public PadStateEntry pad24, pad25, pad26, pad27, pad28, pad29, pad30, pad31;
 
         public PadStateEntry GetPad(int index)
         {
@@ -57,6 +59,10 @@ namespace ProjectC.Docking.Stations
                 4 => pad4, 5 => pad5, 6 => pad6, 7 => pad7,
                 8 => pad8, 9 => pad9, 10 => pad10, 11 => pad11,
                 12 => pad12, 13 => pad13, 14 => pad14, 15 => pad15,
+                16 => pad16, 17 => pad17, 18 => pad18, 19 => pad19,
+                20 => pad20, 21 => pad21, 22 => pad22, 23 => pad23,
+                24 => pad24, 25 => pad25, 26 => pad26, 27 => pad27,
+                28 => pad28, 29 => pad29, 30 => pad30, 31 => pad31,
                 _ => default
             };
         }
@@ -73,6 +79,14 @@ namespace ProjectC.Docking.Stations
                 case 10: pad10 = entry; break; case 11: pad11 = entry; break;
                 case 12: pad12 = entry; break; case 13: pad13 = entry; break;
                 case 14: pad14 = entry; break; case 15: pad15 = entry; break;
+                case 16: pad16 = entry; break; case 17: pad17 = entry; break;
+                case 18: pad18 = entry; break; case 19: pad19 = entry; break;
+                case 20: pad20 = entry; break; case 21: pad21 = entry; break;
+                case 22: pad22 = entry; break; case 23: pad23 = entry; break;
+                case 24: pad24 = entry; break; case 25: pad25 = entry; break;
+                case 26: pad26 = entry; break; case 27: pad27 = entry; break;
+                case 28: pad28 = entry; break; case 29: pad29 = entry; break;
+                case 30: pad30 = entry; break; case 31: pad31 = entry; break;
             }
         }
 
@@ -88,6 +102,14 @@ namespace ProjectC.Docking.Stations
             s.SerializeValue(ref pad10); s.SerializeValue(ref pad11);
             s.SerializeValue(ref pad12); s.SerializeValue(ref pad13);
             s.SerializeValue(ref pad14); s.SerializeValue(ref pad15);
+            s.SerializeValue(ref pad16); s.SerializeValue(ref pad17);
+            s.SerializeValue(ref pad18); s.SerializeValue(ref pad19);
+            s.SerializeValue(ref pad20); s.SerializeValue(ref pad21);
+            s.SerializeValue(ref pad22); s.SerializeValue(ref pad23);
+            s.SerializeValue(ref pad24); s.SerializeValue(ref pad25);
+            s.SerializeValue(ref pad26); s.SerializeValue(ref pad27);
+            s.SerializeValue(ref pad28); s.SerializeValue(ref pad29);
+            s.SerializeValue(ref pad30); s.SerializeValue(ref pad31);
         }
     }
 
@@ -137,9 +159,9 @@ namespace ProjectC.Docking.Stations
                 return;
             }
 
-            if (_triggerBoxes.Length > 16)
+            if (_triggerBoxes.Length > 32)
             {
-                Debug.LogError($"[PadStateSync:{name}] Too many pads ({_triggerBoxes.Length}), max 16 supported");
+                Debug.LogError($"[PadStateSync:{name}] Too many pads ({_triggerBoxes.Length}), max 32 supported");
                 return;
             }
 

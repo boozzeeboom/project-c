@@ -512,6 +512,10 @@ namespace ProjectC.AI
 
         private void EnsureProxy()
         {
+            // PERF: не создаём NavMeshAgent если нет зарегистрированного навмеша палубы.
+            // NavMeshAgent.AddComponent при отсутствии навмеша спамит "no valid NavMesh".
+            if (_deckNav == null || !_deckNav.IsReady) return;
+
             if (_proxyGo != null) { _proxyGo.SetActive(true); return; }
             _proxyGo = new GameObject($"NpcDeckNavProxy_{name}");
             _proxyGo.hideFlags = HideFlags.HideAndDontSave;

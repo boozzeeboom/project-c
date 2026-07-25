@@ -19,11 +19,11 @@ namespace ProjectC.Ship
     }
 
     /// <summary>
-    /// Сплайновая зона ветра — ветровой «коридор» вдоль SplineContainer.
-    /// Работает ПАРАЛЛЕЛЬНО с существующими WindZone (триггерными), не трогает WindManager.
+    /// Сплайновая зона ветра — пассивный дескриптор ветрового «коридора» вдоль SplineContainer.
+    /// НЕ содержит FixedUpdate — вся логика процессинга в WindManager (BootstrapScene).
     ///
     /// Обнаружение кораблей: distance-based (кратчайшее расстояние до сплайна ≤ corridorRadius).
-    /// Сила применяется напрямую через ShipController.ApplyExternalForce().
+    /// Сила применяется через WindManager → ShipController.ApplyExternalForce().
     ///
     /// Размещается в рабочих игровых сценах (не в BootstrapScene).
     /// Требует SplineContainer на том же GameObject.
@@ -55,15 +55,6 @@ namespace ProjectC.Ship
         [Min(0f)]
         public float centeringStrength = 3f;
 
-        [Header("Производительность")]
-        [Tooltip("Интервал обновления кэша ShipController (сек).")]
-        [Min(0.5f)]
-        [SerializeField] private float _shipCacheRefreshInterval = 2f;
-
-        [Tooltip("Шаг детекции: каждый N-й FixedUpdate (1 = каждый, 5 = ~10 Гц).")]
-        [Min(1)]
-        [SerializeField] private int _detectionStep = 5;
-
         [Header("Gizmos")]
         [Tooltip("Точек на сегмент сплайна для визуализации коридора.")]
         [Min(4)]
@@ -73,35 +64,39 @@ namespace ProjectC.Ship
         // State
         // ============================================================
 
-        private SplineContainer _splineContainer;
-
-        // Кэш: корабль → его сплайн-параметры (один GetNearestPoint на цикл детекции)
-        private readonly Dictionary<ShipController, ShipSplineEntry> _shipEntries = new();
+        /// <summary>SplineContainer этого коридора (для WindManager).</summary>
+        public SplineContainer SplineContainer { get; private set; }
 
         // Статический реестр: ShipController → displayName зоны (для HUD)
         private static readonly Dictionary<ShipController, string> ShipZoneNames = new();
         public static string GetZoneDisplayName(ShipController ship)
             => ship != null && ShipZoneNames.TryGetValue(ship, out var name) ? name : "";
 
+        /// <summary>Очистить HUD-имя для корабля (вызывается WindManager при выходе из зоны).</summary>
+        internal static void ClearZoneDisplayName(ShipController ship)
+        {
+            if (ship != null) ShipZoneNames.Remove(ship);
+        }
+
+        /// <summary>Установить HUD-имя для корабля (вызывается WindManager при входе в зону).</summary>
+        internal static void SetZoneDisplayName(ShipController ship, string name)
+        {
+            if (ship != null) ShipZoneNames[ship] = name;
+        }
+
         // T-PERF-opt: статический реестр ВСЕХ ShipController — корабли сами регистрируются при спавне.
         // Убирает FindObjectsByType<> из горячего пути (аллокации + поиск по сцене).
         internal static readonly HashSet<ShipController> AllShips = new();
 
-        // T-PERF-opt: статический список всех SplineWindZone для возможности будущей батч-обработки.
-        private static readonly List<SplineWindZone> AllZones = new();
-
-        // Кэш кораблей (копия из AllShips) — обновляется редко
-        private ShipController[] _cachedShips = System.Array.Empty<ShipController>();
-        private float _nextCacheRefresh;
-
-        // Счётчик кадров для троттлинга (+ случайный сдвиг для stagger)
-        private int _frameCounter;
+        // Статический список всех SplineWindZone — WindManager читает его.
+        internal static readonly List<SplineWindZone> AllZones = new();
 
         // ============================================================
         // Structs
         // ============================================================
 
-        private struct ShipSplineEntry
+        /// <summary>Закэшированные сплайн-параметры для корабля в зоне.</summary>
+        public struct ShipSplineEntry
         {
             public float splineT;          // параметр на сплайне
             public float distance;         // расстояние до сплайна
@@ -115,9 +110,7 @@ namespace ProjectC.Ship
 
         private void Awake()
         {
-            _splineContainer = GetComponent<SplineContainer>();
-            // T-PERF-opt: случайный сдвиг счётчика — зоны детектят в разных кадрах
-            _frameCounter = UnityEngine.Random.Range(0, _detectionStep);
+            SplineContainer = GetComponent<SplineContainer>();
         }
 
         private void OnEnable()
@@ -128,190 +121,6 @@ namespace ProjectC.Ship
         private void OnDisable()
         {
             AllZones.Remove(this);
-            // Чистим статический реестр от кораблей этой зоны
-            foreach (var ship in _shipEntries.Keys)
-            {
-                if (ship != null) ShipZoneNames.Remove(ship);
-            }
-            _shipEntries.Clear();
-        }
-
-        private void FixedUpdate()
-        {
-            if (windData == null)
-                return;
-
-            // Троттлинг: детекция раз в _detectionStep FixedUpdate
-            _frameCounter++;
-            if (_frameCounter < _detectionStep)
-            {
-                // Между циклами детекции — всё равно применяем силу
-                // по последним известным сплайн-параметрам
-                ApplyWindToShipsCached();
-                return;
-            }
-
-            _frameCounter = 0;
-
-            RefreshShipCache();
-            DetectShipsAndCacheSplineData();
-            ApplyWindToShipsCached();
-        }
-
-        // ============================================================
-        // Cache (T-PERF-opt: использует статический реестр вместо FindObjectsByType)
-        // ============================================================
-
-        private void RefreshShipCache()
-        {
-            if (Time.time < _nextCacheRefresh)
-                return;
-
-            _nextCacheRefresh = Time.time + _shipCacheRefreshInterval;
-
-            // Копируем из статического реестра (O(N) без аллокаций поиска по сцене)
-            lock (AllShips)
-            {
-                if (_cachedShips.Length != AllShips.Count)
-                    _cachedShips = new ShipController[AllShips.Count];
-                AllShips.CopyTo(_cachedShips);
-            }
-
-            // Прогрев: при первом заполнении кэша сразу делаем детекцию
-            _frameCounter = _detectionStep;
-        }
-
-        // ============================================================
-        // Detection (один GetNearestPoint на корабль)
-        // ============================================================
-
-        private void DetectShipsAndCacheSplineData()
-        {
-            _shipEntries.Clear();
-
-            if (_cachedShips == null || _cachedShips.Length == 0)
-                return;
-
-            var spline = _splineContainer.Spline;
-            if (spline == null)
-                return;
-
-            Transform splineTransform = _splineContainer.transform;
-
-            foreach (var ship in _cachedShips)
-            {
-                if (ship == null)
-                    continue;
-
-                Vector3 worldPos = ship.transform.position;
-                float3 localPos = splineTransform.InverseTransformPoint(worldPos);
-
-                // ЕДИНСТВЕННЫЙ вызов GetNearestPoint на корабль за цикл
-                float distance = SplineUtility.GetNearestPoint(
-                    spline,
-                    localPos,
-                    out float3 nearestLocal,
-                    out float t
-                );
-
-                if (distance > corridorRadius)
-                    continue;
-
-                // Ближайшая точка на сплайне в мировых координатах
-                Vector3 nearestWorld = splineTransform.TransformPoint(nearestLocal);
-
-                // Определяем направление
-                Vector3 direction;
-                if (directionMode == SplineWindDirectionMode.AlongSpline)
-                {
-                    float3 localTangent = SplineUtility.EvaluateTangent(spline, t);
-                    direction = splineTransform.TransformDirection(localTangent).normalized;
-                }
-                else
-                {
-                    direction = windData.windDirection.normalized;
-                }
-
-                if (reverseDirection)
-                    direction = -direction;
-
-                _shipEntries[ship] = new ShipSplineEntry
-                {
-                    splineT = t,
-                    distance = distance,
-                    direction = direction,
-                    nearestPoint = nearestWorld
-                };
-
-                // Регистрация в статическом реестре для HUD
-                ShipZoneNames[ship] = windData.displayName;
-            }
-        }
-
-        // ============================================================
-        // Force Application (reuse cached spline data — zero extra lookups)
-        // ============================================================
-
-        private void ApplyWindToShipsCached()
-        {
-            if (_shipEntries.Count == 0)
-                return;
-
-            float forceMagnitude = ComputeForceMagnitude(Vector3.zero);
-
-            foreach (var kv in _shipEntries)
-            {
-                ShipController ship = kv.Key;
-                if (ship == null)
-                    continue;
-
-                ShipSplineEntry entry = kv.Value;
-
-                // Shear: пересчитываем magnitude с учётом высоты (дёшево)
-                if (windData.profile == WindProfile.Shear)
-                {
-                    forceMagnitude = windData.windForce + ship.transform.position.y * windData.shearGradient;
-                }
-
-                Vector3 force = entry.direction * forceMagnitude;
-
-                // Центрирующая сила: тянет корабль к центру сплайна
-                // Квадратичная кривая: 0 в центре, максимум на границе коридора
-                if (centeringStrength > 0f && entry.distance > 0.01f)
-                {
-                    float t = entry.distance / corridorRadius;       // 0..1
-                    float strength = centeringStrength * t * t;       // квадратичный рост к краю
-                    Vector3 toCenter = (entry.nearestPoint - ship.transform.position).normalized;
-                    force += toCenter * (strength * windData.windForce);
-                }
-
-                if (force.sqrMagnitude > 0.001f)
-                {
-                    ship.ApplyExternalForce(force);
-                }
-            }
-        }
-
-        private float ComputeForceMagnitude(Vector3 worldPosition)
-        {
-            switch (windData.profile)
-            {
-                case WindProfile.Constant:
-                    return windData.windForce;
-
-                case WindProfile.Gust:
-                {
-                    float gustFactor = Mathf.Sin(Time.time * (2f * Mathf.PI) / windData.gustInterval);
-                    float variation = gustFactor * windData.windVariation;
-                    return windData.windForce * (1f + variation);
-                }
-
-                case WindProfile.Shear:
-                    return windData.windForce + worldPosition.y * windData.shearGradient;
-
-                default:
-                    return windData.windForce;
-            }
         }
 
         // ============================================================
@@ -339,14 +148,14 @@ namespace ProjectC.Ship
         {
             if (directionMode == SplineWindDirectionMode.AlongSpline)
             {
-                var spline = _splineContainer.Spline;
+                var spline = SplineContainer.Spline;
                 if (spline == null)
                     return Vector3.forward;
 
-                float3 localPos = _splineContainer.transform.InverseTransformPoint(worldPosition);
+                float3 localPos = SplineContainer.transform.InverseTransformPoint(worldPosition);
                 SplineUtility.GetNearestPoint(spline, localPos, out float3 _, out float t);
                 float3 localTangent = SplineUtility.EvaluateTangent(spline, t);
-                Vector3 dir = _splineContainer.transform.TransformDirection(localTangent).normalized;
+                Vector3 dir = SplineContainer.transform.TransformDirection(localTangent).normalized;
                 return reverseDirection ? -dir : dir;
             }
 
@@ -354,8 +163,28 @@ namespace ProjectC.Ship
             return reverseDirection ? -customDir : customDir;
         }
 
-        /// <summary>Количество кораблей в зоне (для дебага).</summary>
-        public int ShipCount => _shipEntries.Count;
+        /// <summary>Вычислить магнитуду силы ветра с учётом профиля (Constant/Gust/Shear).</summary>
+        public float ComputeForceMagnitude(Vector3 worldPosition)
+        {
+            switch (windData.profile)
+            {
+                case WindProfile.Constant:
+                    return windData.windForce;
+
+                case WindProfile.Gust:
+                {
+                    float gustFactor = Mathf.Sin(Time.time * (2f * Mathf.PI) / windData.gustInterval);
+                    float variation = gustFactor * windData.windVariation;
+                    return windData.windForce * (1f + variation);
+                }
+
+                case WindProfile.Shear:
+                    return windData.windForce + worldPosition.y * windData.shearGradient;
+
+                default:
+                    return windData.windForce;
+            }
+        }
 
         // ============================================================
         // Gizmos
@@ -364,12 +193,12 @@ namespace ProjectC.Ship
 #if UNITY_EDITOR
         private void OnDrawGizmos()
         {
-            if (_splineContainer == null)
-                _splineContainer = GetComponent<SplineContainer>();
-            if (_splineContainer == null || _splineContainer.Spline == null)
+            if (SplineContainer == null)
+                SplineContainer = GetComponent<SplineContainer>();
+            if (SplineContainer == null || SplineContainer.Spline == null)
                 return;
 
-            var spline = _splineContainer.Spline;
+            var spline = SplineContainer.Spline;
 
             // Цвет по силе: синий → красный
             Color windColor;
@@ -398,10 +227,10 @@ namespace ProjectC.Ship
                 float splineT = SplineUtility.ConvertIndexUnit(spline, tNorm, PathIndexUnit.Normalized);
 
                 float3 localPos = SplineUtility.EvaluatePosition(spline, splineT);
-                Vector3 worldPos = _splineContainer.transform.TransformPoint(localPos);
+                Vector3 worldPos = SplineContainer.transform.TransformPoint(localPos);
 
                 float3 localTangent = SplineUtility.EvaluateTangent(spline, splineT);
-                Vector3 worldDir = _splineContainer.transform.TransformDirection(localTangent).normalized;
+                Vector3 worldDir = SplineContainer.transform.TransformDirection(localTangent).normalized;
 
                 Color ringColor = new(windColor.r, windColor.g, windColor.b, 0.08f);
                 DrawGizmoCircle(worldPos, worldDir, r, ringColor);
@@ -418,10 +247,10 @@ namespace ProjectC.Ship
                 float splineT = SplineUtility.ConvertIndexUnit(spline, tNorm, PathIndexUnit.Normalized);
 
                 float3 localPos = SplineUtility.EvaluatePosition(spline, splineT);
-                Vector3 worldPos = _splineContainer.transform.TransformPoint(localPos);
+                Vector3 worldPos = SplineContainer.transform.TransformPoint(localPos);
 
                 float3 localTangent = SplineUtility.EvaluateTangent(spline, splineT);
-                Vector3 worldDir = _splineContainer.transform.TransformDirection(localTangent).normalized;
+                Vector3 worldDir = SplineContainer.transform.TransformDirection(localTangent).normalized;
 
                 float arrowLen = Mathf.Clamp((windData != null ? windData.windForce : 20f) * 0.3f, 2f, 15f);
                 Vector3 arrowStart = worldPos;
@@ -447,11 +276,10 @@ namespace ProjectC.Ship
             {
                 float3 firstPos = SplineUtility.EvaluatePosition(spline,
                     SplineUtility.ConvertIndexUnit(spline, 0f, PathIndexUnit.Normalized));
-                Vector3 labelPos = _splineContainer.transform.TransformPoint(firstPos);
+                Vector3 labelPos = SplineContainer.transform.TransformPoint(firstPos);
                 UnityEditor.Handles.Label(
                     labelPos + Vector3.up * (r + 2f),
-                    $"{windData.displayName}  [{windData.profile}]  ({windData.windForce:F0}N)"
-                );
+                    $"{windData.displayName}  [{windData.profile}]  ({windData.windForce:F0}N)");
             }
         }
 

@@ -21,20 +21,29 @@
 ## Архитектура
 
 ```
-GameObject
+GameObject (в игровой сцене, например world0_0)
 ├── SplineContainer         ← рисуешь сплайн в Scene View
-└── SplineWindZone          ← новый компонент
+└── SplineWindZone          ← пассивный дескриптор (НЕТ FixedUpdate)
     ├── windData            ← WindZoneData SO (тот же, что у обычных WindZone)
     ├── corridorRadius      ← радиус коридора (м)
     ├── directionMode       ← AlongSpline / Custom
-    └── _shipCacheRefreshInterval ← интервал обновления кэша кораблей
+    ├── reverseDirection    ← разворот потока на 180°
+    └── centeringStrength   ← сила притяжения к центру трубы
+
+WindManager (BootstrapScene, DontDestroyOnLoad)
+├── FixedUpdate → ProcessSplineWindZones()
+│   ├── Снапшот AllShips (lock+copy, один раз на кадр)
+│   ├── Round-robin: детекция 1 зоны за FixedUpdate
+│   │   └── GetNearestPoint × корабли → кэш _zoneStates[zone].entries
+│   └── ApplyAllCachedForces: для ВСЕХ зон из кэша → AddForce
+└── _splineZonesPerFrame = 1 (настройка агрессивности)
 ```
 
-- **Обнаружение**: каждые `_shipCacheRefreshInterval` сек кэшируются все `ShipController`
-  через `FindObjectsByType`, затем в `FixedUpdate` проверяется расстояние до сплайна.
-- **Применение силы**: напрямую через `ShipController.ApplyExternalForce()` —
-  тот же метод, что используют обычные `WindZone`. Server-only проверка внутри.
-- **WindManager не трогается**: сплайновая зона — полностью независимая система.
+- **Обнаружение**: WindManager делает снапшот статического `SplineWindZone.AllShips`
+  (корабли регистрируются при спавне) → round-robin по `AllZones` → одна зона за кадр.
+- **Применение силы**: `ShipController.ApplyExternalForce()` — тот же метод, что у обычных WindZone.
+- **SplineWindZone — пассивный**: только данные + Gizmos. Никакой своей логики в FixedUpdate.
+
 
 ## Как создать
 
@@ -71,21 +80,25 @@ GameObject
 
 ## Производительность
 
-- Кэш `ShipController[]` обновляется раз в `_shipCacheRefreshInterval` (по умолчанию 1 сек).
-- `FindObjectsByType` дорогой, но вызывается редко. При ≤50 кораблей на сцене — ОК.
-- Проверка расстояния до сплайна — `SplineUtility.GetNearestPoint` — выполняется каждый
-  `FixedUpdate`, но только для кораблей в кэше. O(N_ships × log(N_spline_segments)).
-- Если в сцене много сплайновых зон — увеличить `_shipCacheRefreshInterval` до 2-3 сек.
+- **ApplyAllCachedForces** каждый FixedUpdate — O(зоны × корабли_в_зоне), <0.5ms.
+- **Round-robin + per-zone throttling:** `_splineDetectionStep=5` — каждая зона детектится раз в 5 вызовов (~10 Гц).
+  Снапшот кораблей (lock+copy) только в кадре детекции.
+- **Детекция:** `GetNearestPoint` × корабли — только для выбранной зоны. O(N_ships × log(segments)).
+- При 2 зонах и 50 кораблях: средняя ~**1ms/кадр** (4 из 5 кадров — 0.5ms, 1 из 5 — ~3ms).
+- Много зон (>5): увеличить `_splineZonesPerFrame` или уменьшить `_splineDetectionStep`.
+
+
 
 ## Взаимодействие с другими системами
 
 | Система | Взаимодействие |
 |---------|---------------|
-| **WindManager** | НЕ трогается. Сплайн-зоны работают независимо. |
+| **WindManager** | Центральный дирижёр — читает `AllZones`, процессит в `FixedUpdate`. |
 | **WindZone (триггерный)** | Параллельно. Обе зоны применяют силы через `ApplyExternalForce` — аддитивно. |
-| **ShipController.ApplyWind()** | НЕ регистрируется через `RegisterWindZone`. Использует свой цикл. |
-| **ShipController.ApplyGlobalWind()** | Продолжает работать как обычно. |
-| **Глобальный ветер (WindManager)** | Применяется отдельно в `ApplyGlobalWind`. Суммируется со сплайн-зоной. |
+| **ShipController.ApplyWind()** | Работает как обычно (триггерные зоны через `RegisterWindZone`). |
+| **ShipController.ApplyGlobalWind()** | Глобальный ветер. Суммируется со сплайн-зонами аддитивно. |
+| **ShipController.AllShips** | Статический реестр на `SplineWindZone`. Корабли регистрируются при спавне. |
+
 
 ## Gizmos (Scene View)
 
@@ -111,15 +124,19 @@ GameObject
 - **Ширина коридора** — `corridorRadius`.
 - **Сила** — `windForce` в `WindZoneData`.
 - **Плавность** — больше точек в сплайне = точнее коридор.
-- **Частота обновления кэша** — `_shipCacheRefreshInterval` (меньше = отзывчивее, но дороже).
+- **Агрессивность детекции** — `_splineZonesPerFrame` в WindManager (1 = round-robin экономно, all = каждая зона каждый кадр).
+- **Fixed Timestep** — уменьшить для более плавного ветра (0.01с вместо 0.02с), ценой CPU.
+
 
 ## Файлы
 
 | Файл | Назначение |
 |------|-----------|
-| `Assets/_Project/Scripts/Ship/SplineWindZone.cs` | Компонент сплайновой зоны ветра |
+| `Assets/_Project/Scripts/Ship/SplineWindZone.cs` | Пассивный дескриптор сплайновой зоны (данные + Gizmos) |
+| `Assets/_Project/Scripts/Core/WindManager.cs` | Центральный дирижёр: глобальный ветер + round-robin SplineWindZone |
 | `Assets/_Project/Scripts/Ship/WindZoneData.cs` | ScriptableObject с параметрами (общий) |
 | `Assets/_Project/Scripts/Ship/WindZone.cs` | Обычная триггерная зона (параллельная система) |
-| `Assets/_Project/Scripts/Core/WindManager.cs` | Глобальный ветер (BootstrapScene) |
 | `docs/world/Winds/GlobalWind_Ships.md` | Документация глобального ветра |
 | `docs/world/Winds/SplineWindZone.md` | Этот файл |
+| `docs/world/Winds/ITERATIONS.md` | История итераций |
+

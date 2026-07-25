@@ -140,7 +140,8 @@ namespace ProjectC.World.Streaming
 
         [Header("Debug")]
         [Tooltip("Показать debug логи (ВКЛЮЧИ ДЛЯ ОТЛАДКИ!)")]
-        public bool showDebugLogs = true;  // TRUE by default for debugging
+        public bool showDebugLogs = false;
+
 
         [Tooltip("Показывать debug HUD на экране")]
         public bool showDebugHUD = true;  // TRUE by default for debugging

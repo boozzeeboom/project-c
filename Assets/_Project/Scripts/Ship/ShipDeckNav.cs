@@ -54,7 +54,9 @@ namespace ProjectC.Ship
         private bool _registered;
         private bool _registrationFailed;         // PERF: не спамим повторными попытками
         private float _nextRegistrationAttempt;   // PERF: cooldown между попытками
+        private float _nextReregistrationTime;    // PERF: cooldown на перерегистрацию (Unregister+Register)
         private Vector3 _lastRegisteredShipPos;
+
         // Static slot counter — для старого slot-based режима (не используется при _registerUnderShip=true).
         private static int _nextSlot;
 
@@ -96,8 +98,11 @@ namespace ProjectC.Ship
         {
             base.OnNetworkSpawn();
             if (_registerServerOnly && !IsServer) return;
-            // PERF: размазываем регистрацию по времени — не все 21 корабль в одном кадре
-            _nextRegistrationAttempt = Time.time + UnityEngine.Random.Range(0f, 2f);
+            // PERF: размазываем регистрацию по времени — не все корабли в одном кадре.
+            // NavMesh.AddNavMeshData broadcast'ит всем агентам → дорого (6-50ms).
+            // Разброс 0-10s: при 20 кораблях это ~1 регистрация в 0.5s, а не каждые 0.1s.
+            _nextRegistrationAttempt = Time.time + UnityEngine.Random.Range(0f, 10f);
+
         }
 
         public override void OnNetworkDespawn()
@@ -139,9 +144,17 @@ namespace ProjectC.Ship
             delta.y = 0f;
             if (delta.sqrMagnitude > (_navFrameSeparation * 0.5f) * (_navFrameSeparation * 0.5f))
             {
+                // PERF: NavMesh.AddNavMeshData broadcast'ит всем агентам (дорого — 20-50ms).
+                // Cooldown 30s между перерегистрациями чтобы не дёргало каждый кадр
+                // при быстром движении.
+                if (Time.time < _nextReregistrationTime)
+                    return;
+
                 Unregister();
                 Register();
+                _nextReregistrationTime = Time.time + 30f;
             }
+
         }
 
         private void Register()

@@ -32,3 +32,25 @@
 - CraftingServer не имеет `Update()` — вместо него инструментирован `CraftingTimeService`
 
 **Статус:** ✅ Phase 0 + Phase 1 завершены
+
+---
+
+## Итерация №2 — 2026-07-25
+
+**Задача:** Phase 2 — Runtime HUD & Tools
+
+**Коммит:** `8aff027` — T-PERF-07..09: Phase 2 — Runtime HUD + CPU Budget + NGO Metrics
+
+**Изменения:**
+- `Assets/_Project/Scripts/Core/ProjectCPerfHUD.cs` — создан (OnGUI HUD, F3 toggle, читает ProjectCPerfCounters)
+- `Assets/_Project/Scripts/Core/CpuBudgetTracker.cs` — создан (ProfilerRecorder-мониторинг Scripts/Render/Physics)
+- `Assets/_Project/Scripts/Core/NgoMetricsCollector.cs` — создан (RTT, клиенты, RPC counts)
+- `Assets/_Project/Scripts/Core/ProjectCPerfCounters.cs` — добавлены поля RpcSentPerInterval, RpcReceivedPerInterval, NetworkRttMs
+
+**Отклонения от research-документа:**
+- Graphy Asset Store версия не имеет API `.AddGraph()`/`.UpdateGraph()` — ProjectCPerfHUD сделан автономным на OnGUI
+- `NetworkMetrics` в NGO 2.13 не публичен — используется `NetworkTransport.GetCurrentRtt()` + ProfilerRecorder
+- `GetCurrentRtt` возвращает `ulong`, не `float`
+- `OnDemandRendering.renderFrameCount` не существует в Unity 6 — убран
+
+**Статус:** ✅ Phase 2 завершён

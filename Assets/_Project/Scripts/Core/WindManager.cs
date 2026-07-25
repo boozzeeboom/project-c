@@ -65,8 +65,11 @@ namespace ProjectC.Core
         private class ZoneRuntimeState
         {
             public Dictionary<ShipController, SplineWindZone.ShipSplineEntry> entries;
-            public int frameCounter;       // счётчик для троттлинга детекции
+            public int frameCounter;
+            public Bounds worldBounds;       // AABB сплайна + corridorRadius (мировой), для предфильтра
+            public bool boundsValid;
         }
+
 
 
 
@@ -203,10 +206,12 @@ namespace ProjectC.Core
                     state = new ZoneRuntimeState
                     {
                         entries = new Dictionary<ShipController, SplineWindZone.ShipSplineEntry>(),
-                        frameCounter = 0
+                        frameCounter = 0,
+                        boundsValid = false
                     };
                     _zoneStates[zone] = state;
                 }
+
 
                 state.frameCounter++;
                 if (state.frameCounter < _splineDetectionStep)
@@ -232,13 +237,20 @@ namespace ProjectC.Core
         {
             state.entries.Clear();
 
-
             var spline = zone.SplineContainer.Spline;
             Transform splineTransform = zone.SplineContainer.transform;
             float radius = zone.corridorRadius;
             var windData = zone.windData;
             var directionMode = zone.directionMode;
             bool reverse = zone.reverseDirection;
+
+            // Lazy precompute AABB расширенный на corridorRadius
+            if (!state.boundsValid)
+            {
+                state.worldBounds = ComputeSplineWorldBounds(spline, splineTransform);
+                state.worldBounds.Expand(radius * 2f);
+                state.boundsValid = true;
+            }
 
             for (int i = 0; i < shipCount; i++)
             {
@@ -247,7 +259,13 @@ namespace ProjectC.Core
                     continue;
 
                 Vector3 worldPos = ship.transform.position;
+
+                // AABB pre-filter: отсекаем корабли далеко от сплайна до вызова GetNearestPoint
+                if (!state.worldBounds.Contains(worldPos))
+                    continue;
+
                 float3 localPos = splineTransform.InverseTransformPoint(worldPos);
+
 
                 float distance = SplineUtility.GetNearestPoint(
                     spline,
@@ -336,5 +354,22 @@ namespace ProjectC.Core
                 }
             }
         }
+
+        // ============================================================
+        // Helpers
+        // ============================================================
+
+        private static Bounds ComputeSplineWorldBounds(Spline spline, Transform transform)
+        {
+            if (spline.Count == 0)
+                return new Bounds(transform.position, Vector3.zero);
+
+            float3 firstKnot = spline[0].Position;
+            Bounds b = new Bounds(transform.TransformPoint(firstKnot), Vector3.zero);
+            for (int i = 1; i < spline.Count; i++)
+                b.Encapsulate(transform.TransformPoint(spline[i].Position));
+            return b;
+        }
     }
 }
+

@@ -9,6 +9,8 @@ using System;
 using System.Collections.Generic;
 using UnityEngine;
 using ProjectC.Combat.Core;
+using Unity.Profiling;
+using ProjectC.Core;
 
 namespace ProjectC.Combat.Client
 {
@@ -86,6 +88,7 @@ namespace ProjectC.Combat.Client
 
         private void Update()
         {
+            using var _ = ProjectCPerfCounters.TargetLockUpdate.Auto();
             // Auto-unlock if locked target dies or goes too far.
             if (LockedTargetId != 0UL)
             {

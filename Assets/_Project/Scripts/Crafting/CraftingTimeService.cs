@@ -3,6 +3,8 @@
 using System;
 using UnityEngine;
 using UnityEngine.Events;
+using Unity.Profiling;
+using ProjectC.Core;
 
 namespace ProjectC.Crafting
 {
@@ -68,6 +70,7 @@ namespace ProjectC.Crafting
 
         private void Update()
         {
+            using var _ = ProjectCPerfCounters.CraftingServerTick.Auto();
             if (!_isServer) return;
             _tickTimer += Time.deltaTime;
             if (_tickTimer >= CurrentTickInterval)

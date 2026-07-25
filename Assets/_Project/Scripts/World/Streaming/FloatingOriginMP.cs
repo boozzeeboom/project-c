@@ -2,6 +2,8 @@ using System;
 using System.Collections.Generic;
 using Unity.Netcode;
 using UnityEngine;
+using Unity.Profiling;
+using ProjectC.Core;
 
 namespace ProjectC.World.Streaming
 {
@@ -411,6 +413,7 @@ namespace ProjectC.World.Streaming
 
         void LateUpdate()
         {
+            using var _ = ProjectCPerfCounters.FloatingOriginUpdate.Auto();
             // Если roots не найдены - НЕ сдвигаем!
             if (!_initialized || _worldRoots.Count == 0)
             {

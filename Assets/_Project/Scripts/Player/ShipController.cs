@@ -8,6 +8,8 @@ using ProjectC.Ship.Key;     // T-KEY-07: KeyRodInstanceWorld
 using ProjectC.Ship.Client;  // T-KEY-07: ShipTelemetryClientState
 using ProjectC.Trade.Core; // T-CARGO-02: ShipClass, TradeWorld, ShipClassLimits
 using ProjectC.Ship.Combat; // T-HULL: ShipHull, ShipDamageConfig, HullState
+using Unity.Profiling;
+using ProjectC.Core;
 
 namespace ProjectC.Player
 {
@@ -749,6 +751,8 @@ namespace ProjectC.Player
             base.OnNetworkSpawn();
             if (!IsServer) return;
 
+            ProjectCPerfCounters.ActiveShips++;
+
             // Резолвим CargoClass сразу — дешёвая операция, можно даже на клиенте
             _resolvedCargoClass = ShipClassMappingConfig.Default.Resolve(shipFlightClass) ?? ShipClass.Light;
 
@@ -795,6 +799,8 @@ namespace ProjectC.Player
 
         public override void OnNetworkDespawn()
         {
+            if (IsServer) ProjectCPerfCounters.ActiveShips--;
+
             // T-CARGO-06: отписка из registry (важно: до base.OnNetworkDespawn,
             // чтобы NetworkObjectId ещё был валиден)
             ShipCargoRegistry.Unregister(NetworkObjectId);
@@ -1194,6 +1200,7 @@ namespace ProjectC.Player
 
         private void FixedUpdate()
         {
+            using var _ = ProjectCPerfCounters.ShipControllerFixedUpdate.Auto();
             if (_rb == null) return;
 
             // T-KEY-07: telemetry update — server-only, throttled внутри метода.

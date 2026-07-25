@@ -121,6 +121,7 @@ namespace ProjectC.Core
 
         private void Update()
         {
+            using var _ = ProjectCPerfCounters.DistantCloudUpdate.Auto();
             ApplyHSVToMaterials();
             if (_currentCount == 0) return;
 

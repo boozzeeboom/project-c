@@ -172,6 +172,7 @@ namespace ProjectC.Core
 
         private void Update()
         {
+            using var _ = ProjectCPerfCounters.NearCloudUpdate.Auto();
             if (_currentCount == 0) return;
 
             Vector3 playerPos = GetPlayerPosition();

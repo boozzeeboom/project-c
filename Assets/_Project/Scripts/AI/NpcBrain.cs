@@ -38,6 +38,7 @@ using ProjectC.Combat;
 using ProjectC.Combat.Core;
 using ProjectC.Skills;
 using System.Linq;
+using Unity.Profiling;
 using ProjectC.Core;
 using ProjectC.Ship;
 using ProjectC.Quests;
@@ -255,6 +256,7 @@ namespace ProjectC.AI
         {
             base.OnNetworkSpawn();
             if (!IsServer) { enabled = false; return; }
+            ProjectCPerfCounters.ActiveNpcs++;
             if (_attacker == null) _attacker = GetComponent<NpcAttacker>();
             if (_target == null) _target = GetComponent<NpcTarget>();
             // T-NPC-S19 fix: NpcAttacker.Target = null → IsAlive()=false, _defaultSource=null → InvalidSource.
@@ -295,6 +297,7 @@ namespace ProjectC.AI
         public override void OnNetworkDespawn()
         {
             base.OnNetworkDespawn();
+            ProjectCPerfCounters.ActiveNpcs--;
             if (_target != null)
                 _target.OnHpChanged -= OnNpcHpChanged;
             // T-CNPC-01: отписка от WorldEventBus
@@ -413,6 +416,7 @@ namespace ProjectC.AI
 
         private void Update()
         {
+            using var _ = ProjectCPerfCounters.NpcBrainUpdate.Auto();
             if (!IsServer || _state == BrainState.Dead || _state == BrainState.Surrendered) return;
             if (Time.unscaledTime < _nextTickTime) return;
             _nextTickTime = Time.unscaledTime + (1f / Mathf.Max(1, tickRate));
@@ -421,6 +425,7 @@ namespace ProjectC.AI
 
         private void FixedUpdate()
         {
+            using var _ = ProjectCPerfCounters.NpcBrainFixedUpdate.Auto();
             if (!IsServer || !_platformCarryEnabled) return;
             if (_platformMask == 0) return;
 

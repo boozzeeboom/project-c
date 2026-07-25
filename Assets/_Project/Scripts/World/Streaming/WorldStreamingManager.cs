@@ -5,6 +5,8 @@ using UnityEngine;
 using ProjectC.World.Core;
 using ProjectC.World.Scene;
 using ProjectC.World.Streaming;
+using Unity.Profiling;
+using ProjectC.Core;
 
 namespace ProjectC.World
 {
@@ -275,6 +277,7 @@ namespace ProjectC.World
         
         private void Update()
         {
+            using var _ = ProjectCPerfCounters.StreamingUpdate.Auto();
             if (!_initialized) return;
             
             // Periodic chunk loading/unloading check

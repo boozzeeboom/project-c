@@ -75,6 +75,7 @@ namespace ProjectC.Core
 
         private void Update()
         {
+            using var _ = ProjectCPerfCounters.WindUpdate.Auto();
             if (!float.IsNaN(_targetSpeed) && !float.IsInfinity(_targetSpeed))
             {
                 CurrentWindSpeed = Mathf.Lerp(CurrentWindSpeed, _targetSpeed, _interpolationSpeed * Time.deltaTime);

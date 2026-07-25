@@ -44,6 +44,7 @@ namespace ProjectC.Core
         /// </summary>
         private void Update()
         {
+            using var _ = ProjectCPerfCounters.CloudLayerUpdate.Auto();
             if (clouds.Count == 0) return;
 
             // Движение слоя

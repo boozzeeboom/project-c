@@ -310,6 +310,7 @@ namespace ProjectC.Core
 
         void Update()
         {
+            using var _ = ProjectCPerfCounters.DayNightUpdate.Auto();
             // Poll as backup (in case event didn't fire)
             if (ServerWeatherController.Instance != null)
             {

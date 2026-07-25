@@ -17,6 +17,7 @@ using ProjectC.Input;   // T-INP-14: InputBindingsConfig
 using ProjectC.World.Streaming;
 using ProjectC.World.Chest;
 using System.Collections.Generic;
+using Unity.Profiling;
 
 namespace ProjectC.Player
 {
@@ -579,6 +580,7 @@ namespace ProjectC.Player
 
         private void Update()
         {
+            using var _ = ProjectCPerfCounters.PlayerUpdate.Auto();
             if (!IsOwner) return;
 
             // T-HP01-fix: после смерти блокируем ВЕСЬ ввод (движение, скиллы, F/E, всё).

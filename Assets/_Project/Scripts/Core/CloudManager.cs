@@ -1,4 +1,5 @@
 using UnityEngine;
+using Unity.Profiling;
 using ProjectC.World.Clouds;
 
 namespace ProjectC.Core
@@ -173,6 +174,7 @@ namespace ProjectC.Core
 
         private void Update()
         {
+            using var _ = ProjectCPerfCounters.CloudManagerUpdate.Auto();
             if (!_initialized) return;
 
             if (WindManager.Instance != null)

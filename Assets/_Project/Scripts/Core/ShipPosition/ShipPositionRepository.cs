@@ -143,13 +143,11 @@ namespace ProjectC.Core.ShipPosition
                 {
                     var json = JsonUtility.ToJson(wrapper, prettyPrint: false);
                     File.WriteAllText(path, json);
-                    // PERF: не логируем — вызывается из ThreadPool, Debug API main-thread-only
+                    Debug.Log($"[JsonShipPositionRepository] Saved {wrapper.ships?.Count ?? 0} ships + {wrapper.players?.Count ?? 0} players to {path}");
                 }
                 catch (Exception ex)
                 {
-                    // Тоже не можем логировать через Debug из фонового потока.
-                    // Ошибка будет видна в консоли через unhandled exception.
-                    throw new System.IO.IOException($"[JsonShipPositionRepository] SaveAll failed: {ex.Message}", ex);
+                    Debug.LogError($"[JsonShipPositionRepository] SaveAll failed: {ex.Message}");
                 }
             }
         }

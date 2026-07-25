@@ -149,12 +149,13 @@ namespace ProjectC.Core.ShipPosition
                 playerData = PlayerPositionServer.Instance.GetPendingPlayers();
             }
 
-            // Единый write (ships + players) — PERF: off main thread
+            // Единый write (ships + players) — синхронно, ThreadPool не работает:
+            // Application.persistentDataPath — main-thread-only API
             var wrapper = new ShipPositionListWrapper { ships = allData, players = playerData };
-            System.Threading.ThreadPool.QueueUserWorkItem(_ => _repo.SaveAll(wrapper));
+            _repo.SaveAll(wrapper);
 
             if (debugMode)
-                Debug.Log($"[ShipPositionServer] Queued save: {allData.Count} ships + {playerData.Count} players");
+                Debug.Log($"[ShipPositionServer] Saved: {allData.Count} ships + {playerData.Count} players");
         }
 
         // === Restore ===
@@ -186,6 +187,9 @@ namespace ProjectC.Core.ShipPosition
             if (savedList == null || savedList.Count == 0)
             {
                 Debug.LogWarning("[ShipPositionServer] No saved ships in file. Skip restore.");
+                // FIX: разрешаем save даже без предыдущих данных — иначе save никогда не запустится
+                _restoreCompleted = true;
+                _nextSaveTime = Time.time + saveIntervalSec;
                 yield break;
             }
 

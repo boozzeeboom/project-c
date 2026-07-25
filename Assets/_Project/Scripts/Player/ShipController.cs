@@ -749,6 +749,10 @@ namespace ProjectC.Player
         public override void OnNetworkSpawn()
         {
             base.OnNetworkSpawn();
+
+            // T-PERF-opt: регистрация в статическом реестре SplineWindZone (все корабли, не только сервер)
+            SplineWindZone.AllShips.Add(this);
+
             if (!IsServer) return;
 
             ProjectCPerfCounters.ActiveShips++;
@@ -799,6 +803,9 @@ namespace ProjectC.Player
 
         public override void OnNetworkDespawn()
         {
+            // T-PERF-opt: удаление из статического реестра SplineWindZone
+            SplineWindZone.AllShips.Remove(this);
+
             if (IsServer) ProjectCPerfCounters.ActiveShips--;
 
             // T-CARGO-06: отписка из registry (важно: до base.OnNetworkDespawn,

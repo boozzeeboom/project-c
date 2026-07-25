@@ -83,11 +83,18 @@ namespace ProjectC.Ship
         public static string GetZoneDisplayName(ShipController ship)
             => ship != null && ShipZoneNames.TryGetValue(ship, out var name) ? name : "";
 
-        // Массив всех ShipController — обновляется редко
+        // T-PERF-opt: статический реестр ВСЕХ ShipController — корабли сами регистрируются при спавне.
+        // Убирает FindObjectsByType<> из горячего пути (аллокации + поиск по сцене).
+        internal static readonly HashSet<ShipController> AllShips = new();
+
+        // T-PERF-opt: статический список всех SplineWindZone для возможности будущей батч-обработки.
+        private static readonly List<SplineWindZone> AllZones = new();
+
+        // Кэш кораблей (копия из AllShips) — обновляется редко
         private ShipController[] _cachedShips = System.Array.Empty<ShipController>();
         private float _nextCacheRefresh;
 
-        // Счётчик кадров для троттлинга
+        // Счётчик кадров для троттлинга (+ случайный сдвиг для stagger)
         private int _frameCounter;
 
         // ============================================================
@@ -109,6 +116,24 @@ namespace ProjectC.Ship
         private void Awake()
         {
             _splineContainer = GetComponent<SplineContainer>();
+            // T-PERF-opt: случайный сдвиг счётчика — зоны детектят в разных кадрах
+            _frameCounter = UnityEngine.Random.Range(0, _detectionStep);
+        }
+
+        private void OnEnable()
+        {
+            AllZones.Add(this);
+        }
+
+        private void OnDisable()
+        {
+            AllZones.Remove(this);
+            // Чистим статический реестр от кораблей этой зоны
+            foreach (var ship in _shipEntries.Keys)
+            {
+                if (ship != null) ShipZoneNames.Remove(ship);
+            }
+            _shipEntries.Clear();
         }
 
         private void FixedUpdate()
@@ -133,18 +158,8 @@ namespace ProjectC.Ship
             ApplyWindToShipsCached();
         }
 
-        private void OnDisable()
-        {
-            // Чистим статический реестр от кораблей этой зоны
-            foreach (var ship in _shipEntries.Keys)
-            {
-                if (ship != null) ShipZoneNames.Remove(ship);
-            }
-            _shipEntries.Clear();
-        }
-
         // ============================================================
-        // Cache
+        // Cache (T-PERF-opt: использует статический реестр вместо FindObjectsByType)
         // ============================================================
 
         private void RefreshShipCache()
@@ -153,7 +168,14 @@ namespace ProjectC.Ship
                 return;
 
             _nextCacheRefresh = Time.time + _shipCacheRefreshInterval;
-            _cachedShips = FindObjectsByType<ShipController>();
+
+            // Копируем из статического реестра (O(N) без аллокаций поиска по сцене)
+            lock (AllShips)
+            {
+                if (_cachedShips.Length != AllShips.Count)
+                    _cachedShips = new ShipController[AllShips.Count];
+                AllShips.CopyTo(_cachedShips);
+            }
 
             // Прогрев: при первом заполнении кэша сразу делаем детекцию
             _frameCounter = _detectionStep;

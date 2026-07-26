@@ -887,7 +887,7 @@ namespace ProjectC.Player
             // Гравитация применяется ТОЛЬКО в воздухе (!groundedForMovement) —
             // иначе gravity копился поверх -2f и создавал избыточную пенетрацию
             // → CharacterController выталкивал вверх → micro-bounce.
-            if (groundedForMovement && _velocity.y < 0) _velocity.y = -2f;
+            if (groundedForMovement && _velocity.y < 0) _velocity.y = -0.5f;
 
             // R2-NONE: animator parameters
             if (_animator != null)

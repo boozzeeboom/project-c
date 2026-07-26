@@ -877,7 +877,11 @@ namespace ProjectC.Player
             // На движущейся платформе считаем персонажа «на земле»: палуба NPC может
             // колебаться по вертикали (altHold) → isGrounded мигает и персонаж «подпрыгивает».
             bool groundedForMovement = _isGrounded || _onPlatform;
-            if (groundedForMovement && _velocity.y < 0) _velocity.y = -2f;
+            // T-JITTER02: keep-grounded смягчён с -2f до -0.5f.
+            // -2f каждый кадр толкал CC в землю → penetration resolution
+            // выталкивал вверх → micro-bounce transform.position → тряска камеры.
+            // -0.5f достаточно для slope-stick без micro-bounce.
+            if (groundedForMovement && _velocity.y < 0) _velocity.y = -0.5f;
 
             // R2-NONE: animator parameters
             if (_animator != null)

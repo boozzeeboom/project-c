@@ -96,7 +96,7 @@ namespace ProjectC.Player
 
             if (_isGrounded && _velocity.y < 0)
             {
-                _velocity.y = -2f;
+                _velocity.y = -0.5f;
             }
 
             // Направление от камеры

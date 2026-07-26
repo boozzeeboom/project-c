@@ -394,17 +394,6 @@ namespace ProjectC.Core
             if (Vector3.Distance(transform.position, cameraTargetPos) < 0.003f)
                 return;
 
-            // Защита от near-clip
-            float minDist = Mathf.Max(0.1f, _camera.nearClipPlane + sphereCastRadius + 0.2f);
-            Vector3 lookTarget = _lagTargetPos + Vector3.up * _currentLookAtHeight;
-            float distToLook = Vector3.Distance(cameraTargetPos, lookTarget);
-            if (distToLook < minDist)
-            {
-                Vector3 pushDir = (cameraTargetPos - lookTarget).normalized;
-                if (pushDir.sqrMagnitude < 0.0001f) pushDir = Vector3.back;
-                cameraTargetPos = lookTarget + pushDir * minDist;
-            }
-
             float actualDist = Vector3.Distance(cameraTargetPos, _lagTargetPos);
             float desiredDist = _targetDistance;
             float ratio = actualDist / Mathf.Max(desiredDist, 0.1f);
@@ -424,6 +413,15 @@ namespace ProjectC.Core
                 if (step.magnitude > maxStep)
                     newPos = transform.position + step.normalized * maxStep;
             }
+
+            // Near-clip защита на ФИНАЛЬНОЙ позиции (не на target):
+            // раньше пушили cameraTargetPos каждый кадр → цель прыгала → осцилляция.
+            // Теперь применяем как minimum-distance constraint после Lerp — без рывков.
+            float minDist = Mathf.Max(0.1f, _camera.nearClipPlane + sphereCastRadius + 0.2f);
+            Vector3 lookTarget = _lagTargetPos + Vector3.up * _currentLookAtHeight;
+            float distToLook = Vector3.Distance(newPos, lookTarget);
+            if (distToLook < minDist && distToLook > 0.001f)
+                newPos = lookTarget + (newPos - lookTarget).normalized * minDist;
 
             transform.position = newPos;
         }

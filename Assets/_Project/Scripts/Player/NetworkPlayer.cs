@@ -55,6 +55,9 @@ namespace ProjectC.Player
         [Tooltip("Сколько кадров без опоры терпим, прежде чем считать что сошли с платформы (гистерезис).")]
         [Min(1)] [SerializeField] private int _platformMissFramesToClear = 3;
 
+        [Tooltip("Минимальная дельта позиции платформы за кадр (м), которая считается движением. Дельты меньше — floating-point шум, игнорируются.")]
+        [SerializeField] private float _platformMinDelta = 0.0005f;
+
 
         [Header("Ветер (WindManager)")]
         [Tooltip("Разрешить глобальному ветру сносить персонажа в пешем режиме.")]
@@ -944,10 +947,18 @@ namespace ProjectC.Player
         // двигаются прямой записью rb.linearVelocity/MoveRotation в NavTick, поэтому
         // палуба уезжает из-под ног. Считаем на owner-клиенте по ДЕЛЬТЕ transform платформы
         // (её velocity на клиенте недоступен из-за server-auth NetworkTransform).
+        //
+        // FIX (2026-07): микротряска персонажа при standing.
+        //   DetectGroundPlatform() теперь фильтрует спящие/стационарные Rigidbody —
+        //   статичная геометрия больше не считается «платформой».
+        //   ApplyPlatformCarry() игнорирует sub-0.5mm дельты как floating-point шум.
+        //   См. INVESTIGATION_CHARACTER_MICRO_JITTER.md (этот же коммит).
 
         /// <summary>
-        /// Probe вниз по _platformMask. Возвращает корневой Transform движущейся платформы
-        /// под ногами (attachedRigidbody, иначе сам collider), или null.
+        /// Probe вниз по _platformMask. Возвращает Transform платформы, только если
+        /// она реально движется (Rigidbody не спит и имеет ненулевую скорость).
+        /// Статичная геометрия и спящие Rigidbody игнорируются — это предотвращает
+        /// микротряску от floating-point шума / interpolation jitter.
         /// </summary>
         private Transform DetectGroundPlatform()
         {
@@ -961,7 +972,23 @@ namespace ProjectC.Player
                     castDist, _platformMask, QueryTriggerInteraction.Ignore))
             {
                 var rb = hit.collider.attachedRigidbody;
-                return rb != null ? rb.transform : hit.collider.transform;
+                if (rb == null)
+                    return null; // Статичная геометрия без Rigidbody — не платформа.
+
+                // Спящий Rigidbody = объект стоит на месте, перенос не нужен.
+                if (rb.IsSleeping())
+                    return null;
+
+                // Kinematic Rigidbody, но без движения — не платформа.
+                // (Kinematic объекты двигаются через MovePosition; если velocity ~0 — стоят.)
+                if (rb.isKinematic && rb.linearVelocity.sqrMagnitude < 0.0001f)
+                    return null;
+
+                // Non-kinematic с околонулевой скоростью — микротряска физики, не платформа.
+                if (!rb.isKinematic && rb.linearVelocity.sqrMagnitude < 0.0001f)
+                    return null;
+
+                return rb.transform;
             }
             return null;
         }
@@ -1017,6 +1044,16 @@ namespace ProjectC.Player
 
             // Δ позиции палубы (включая вертикаль — держит на палубе при взлёте/снижении).
             Vector3 deltaPos = platform.position - _platformLastPos;
+
+            // Фильтр шума: дельты меньше порога — floating-point jitter,
+            // не должны толкать персонажа. Кеш позиции всё равно обновляем,
+            // чтобы шум не накапливался.
+            if (deltaPos.sqrMagnitude < _platformMinDelta * _platformMinDelta)
+            {
+                _platformLastPos = platform.position;
+                _platformLastRot = platform.rotation;
+                return;
+            }
 
             // Δ yaw вокруг мировой оси Y (pitch/roll платформы НЕ переносим).
             if (_carryYaw)

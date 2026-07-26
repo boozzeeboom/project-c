@@ -19,3 +19,22 @@
   - `docs/Ships/` — 2 файла (ship_collision_analysis, SHIP_KEY_SETUP_v11)
   - `docs/UI/` — 1 файл (PERF_UIElementsRepaintPanels_INVESTIGATION)
 - `docs/dev/` очищен
+
+## Итерация от 2026-07-31 (вторая)
+
+**Задача:** Полный аудит документации — сверка всех подсистем с кодом, удаление дизайн-фазы (код реализован), архивация устаревших сессий, актуализация ссылок.
+**Коммит:** `a86247a` — T-DOCS01: Аудит и очистка документации — ~180 файлов в архив, актуализация ссылок
+**Изменения:**
+- Character: убраны дизайн-документы 02-10, аудиты 11-14, подсистемные планы (Character-menu, Customisation, EquipmentVisual, input-system, ThirdpersonCamera, Knowledges, turn-based-battles)
+- Ships: убран legacy (11 файлов), дизайн-планы (5 файлов)
+- Crafting_system: убраны дизайн-документы 00-50
+- Docking_stations: убраны дизайн-документы 01-07, 09, 11
+- Markets: убран устаревший аудит, исправлена ссылка
+- MetaRequirement: убраны 00-50, RECIPES
+- Mining: убраны аудиты с исправленными проблемами
+- NPC_quests: убраны 00-07, 09, 10, old_session_log, Complete_v2
+- world: убраны планы April 2026 (6), старые сессии (~70)
+- context: убран устаревший контекст
+- gdd: исправлены битые ссылки (GDD_INDEX, GDD_00, GDD_01)
+- Character/00_README.md: полная переработка
+- Всего ~180 файлов в 23 архивные папки

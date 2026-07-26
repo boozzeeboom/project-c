@@ -146,6 +146,7 @@ namespace ProjectC.Player
                  "Нормальный путь — Animator SetTrigger(MinePlay/LumberPlay/GatherPlay) на PlayerAnimation controller. " +
                  "0 = fallback отключён.")]
         [SerializeField] private float _gatherScaleAmplitude = 0f;  // T-G09: по умолчанию выключен, приоритет у Animator
+        [SerializeField] private bool _diagnosticDisableAnimator = false;  // T-JITTER10: diagnostic
         [Tooltip("FALLBACK: период пульсации scale (см. tooltip выше).")]
         [SerializeField] [Range(0.1f, 1.5f)] private float _gatherPulsePeriod = 0.6f;
         private Coroutine _gatherPulseCoroutine;
@@ -238,6 +239,10 @@ namespace ProjectC.Player
             // T-INP-08 fix: на префабе первый Animator (на root) часто без controller.
             // Skip empty Animators — ищем первый с непустым runtimeAnimatorController (Visual_Model).
             _animator = FindFirstValidAnimator();
+
+            // T-JITTER10: diagnostic — disable Animator to isolate jitter source (H4/H8).
+            if (_diagnosticDisableAnimator && _animator != null)
+                _animator.enabled = false;
 
             // T-JITTER01: NetworkTransform на owner'е должен работать в режиме Owner authority.
             // Interpolate=true «дерётся» с CharacterController.Move() — интерполирует обратно.

@@ -12,11 +12,12 @@ namespace ProjectC.Core
     /// Архитектура: независимый корневой объект (НЕ дочерний игроку — FloatingOriginMP).
     /// 
     /// Pipeline: ReadInput → ModeTransition → CameraLag → ComputeDesired
-    ///        → ResolveCollision(+AntiPop) → AdaptiveDistance → SmoothPosition(+Recovery) → LookAt
+    ///        → ResolveCollision(+AntiPop, цепной SphereCast) → AdaptiveDistance
+    ///        → SmoothPosition(+Recovery, +minDist clamp) → LookAt
     /// 
     /// Lag = инерция следования за целью (walk 0.15s, ship отключён).
-    /// SmoothDamp = быстрый anti-jitter фильтр позиции камеры (0.04s).
-    /// Два фильтра в РАЗНЫХ временных масштабах — не конфликтуют.
+    /// SmoothDamp = быстрый anti-jitter фильтр позиции камеры (0.06s).
+    /// Цепной SphereCast: если попали в персонажа — продолжаем искать стену за ним.
     /// </summary>
     public class SpringArmCamera : MonoBehaviour
     {
@@ -42,7 +43,7 @@ namespace ProjectC.Core
         [SerializeField] private float wallOffset = 0.3f;
 
         [Header("Anti-Pop")]
-        [Tooltip("Гистерезис при выходе из коллизии (сек) — предотвращает дрожание у стен")]
+        [Tooltip("Гистерезис при выходе из коллизии (сек)")]
         [SerializeField] private float antiPopTime = 0.2f;
 
         [Header("Wall Recovery")]
@@ -75,7 +76,7 @@ namespace ProjectC.Core
 
         [Header("Smoothing")]
         [Tooltip("Anti-jitter сглаживание позиции камеры (быстрое — инерция в Lag)")]
-        [SerializeField] private float positionSmoothTime = 0.04f;
+        [SerializeField] private float positionSmoothTime = 0.06f;
         [SerializeField] private float modeSwitchSmoothTime = 0.5f;
 
         [Header("LookAt")]
@@ -313,10 +314,13 @@ namespace ProjectC.Core
             if (maxDist < 0.01f) return desiredPos;
 
             float currentTime = Time.time;
+            float remainingDist = maxDist;
+            Vector3 castOrigin = from;
 
-            if (Physics.SphereCast(from, sphereCastRadius, dir, out RaycastHit hitInfo, maxDist, collisionMask))
+            // Цепной SphereCast: если попали в персонажа — продолжаем искать стену за ним
+            for (int i = 0; i < 2; i++)
             {
-                if (hitInfo.transform == target || (target != null && hitInfo.transform.IsChildOf(target)))
+                if (!Physics.SphereCast(castOrigin, sphereCastRadius, dir, out RaycastHit hitInfo, remainingDist, collisionMask))
                 {
                     if (_wasColliding && currentTime - _collisionExitTime < antiPopTime)
                         return _lastCollisionPos;
@@ -324,20 +328,27 @@ namespace ProjectC.Core
                     return desiredPos;
                 }
 
-                _wasColliding = true;
-                _collisionExitTime = currentTime;
-                _lastCollisionPos = hitInfo.point + hitInfo.normal * (sphereCastRadius + wallOffset);
+                bool hitSelf = hitInfo.transform == target || (target != null && hitInfo.transform.IsChildOf(target));
+
+                if (!hitSelf)
+                {
+                    _wasColliding = true;
+                    _collisionExitTime = currentTime;
+                    _lastCollisionPos = hitInfo.point + hitInfo.normal * (sphereCastRadius + wallOffset);
+                    return _lastCollisionPos;
+                }
+
+                // Попали в себя — продолжаем каст от точки за персонажем
+                float distToHit = hitInfo.distance;
+                remainingDist -= (distToHit + sphereCastRadius + 0.1f);
+                if (remainingDist <= 0f) break;
+                castOrigin = castOrigin + dir * (distToHit + sphereCastRadius + 0.1f);
+            }
+
+            if (_wasColliding && currentTime - _collisionExitTime < antiPopTime)
                 return _lastCollisionPos;
-            }
-            else if (_wasColliding && currentTime - _collisionExitTime < antiPopTime)
-            {
-                return _lastCollisionPos;
-            }
-            else
-            {
-                _wasColliding = false;
-                return desiredPos;
-            }
+            _wasColliding = false;
+            return desiredPos;
         }
 
         private void UpdateAdaptiveDistance()
@@ -373,6 +384,17 @@ namespace ProjectC.Core
 
         private void SmoothPosition(Vector3 cameraTargetPos)
         {
+            // Защита от near-clip: камера не ближе чем nearClip + запас
+            float minDist = Mathf.Max(0.1f, _camera.nearClipPlane + sphereCastRadius + 0.2f);
+            Vector3 lookTarget = _lagTargetPos + Vector3.up * _currentLookAtHeight;
+            float distToTarget = Vector3.Distance(cameraTargetPos, lookTarget);
+            if (distToTarget < minDist)
+            {
+                Vector3 pushDir = (cameraTargetPos - lookTarget).normalized;
+                if (pushDir.sqrMagnitude < 0.0001f) pushDir = Vector3.back;
+                cameraTargetPos = lookTarget + pushDir * minDist;
+            }
+
             float actualDist = Vector3.Distance(cameraTargetPos, _lagTargetPos);
             float desiredDist = _targetDistance;
             float ratio = actualDist / Mathf.Max(desiredDist, 0.1f);

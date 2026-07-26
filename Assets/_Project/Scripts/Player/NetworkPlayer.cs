@@ -239,14 +239,20 @@ namespace ProjectC.Player
             // Skip empty Animators — ищем первый с непустым runtimeAnimatorController (Visual_Model).
             _animator = FindFirstValidAnimator();
 
-            // T-JITTER01: NetworkTransform.Interpolate отключается в коде для owner'а,
-            // а не вручную в Editor. Interpolate=true на owner-клиенте «дерётся»
-            // с CharacterController.Move() — NetworkTransform интерполирует трансформ
-            // обратно, создавая микротряску. См. INVESTIGATION_CHARACTER_MICRO_JITTER.md.
+            // T-JITTER01: NetworkTransform на owner'е должен работать в режиме Owner authority.
+            // Interpolate=true «дерётся» с CharacterController.Move() — интерполирует обратно.
+            // AuthorityMode=Server — даже с Interpolate=false сервер снапает позицию,
+            // создавая микротряску при каждом расхождении server↔client.
+            // Решение: Owner authority — CharacterController.Move() authoritative,
+            // сервер только ретранслирует позицию другим клиентам.
             if (IsOwner)
             {
                 var nt = GetComponent<NetworkTransform>();
-                if (nt != null) nt.Interpolate = false;
+                if (nt != null)
+                {
+                    nt.Interpolate = false;
+                    nt.AuthorityMode = NetworkTransform.AuthorityModes.Owner;
+                }
             }
 
             // FIX (2026-06-04, INVESTIGATION_GHOST_PLAYER_CLONE.md, "second layer"):
